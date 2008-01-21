@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xml.cmod,v 1.95 2006/09/19 13:35:01 nilsson Exp $
+|| $Id: xml.cmod,v 1.96 2008/01/21 22:39:03 grubba Exp $
 */
 
 #include "global.h"
@@ -645,7 +645,7 @@ PIKECLASS Simple
   PIKEVAR mapping is_cdata flags ID_STATIC|ID_PRIVATE;
   CVAR int flags;
 
-  DECLARE_STORAGE;
+  DECLARE_STORAGE
 
   /* Forward decl. */
   static int Simple_Context_program_fun_num;
@@ -962,7 +962,7 @@ PIKECLASS Simple
     CVAR int flags;
     CVAR int doc_seq_pos;
 
-    DECLARE_STORAGE;
+    DECLARE_STORAGE
 
 #define POP() do {							\
       struct xmlinput *i = THIS->input;					\
@@ -1067,13 +1067,13 @@ static inline int xmlread(int z, int line)
 #define SIMPLE_READNAME_PERIOD() simple_readname_period()
 #define SIMPLE_READNMTOKEN() simple_readnmtoken()
 
-static void sys();
-static int low_parse_dtd();
-static void free_xmldata();
-static void simple_readname();
-static int simple_readname_period();
-static void simple_read_system_literal();
-static void simple_read_pubid_literal();
+static void sys(void);
+static int low_parse_dtd(void);
+static void free_xmldata(void);
+static void simple_readname(void);
+static int simple_readname_period(void);
+static void simple_read_system_literal(void);
+static void simple_read_pubid_literal(void);
 static int low_parse_xml(struct pike_string *end);
 static void xmlerror(char *desc, struct pike_string *tag_name);
 
@@ -1466,14 +1466,14 @@ static inline void very_low_sys(struct mapping *callbackinfo)
   apply_svalue(&THIS->func, 5+THIS->extra_args->size);
 }
 
-static inline void low_sys()
+static inline void low_sys(void)
 {
   struct xmlinput *i = THIS->input;
   UPDATE_LOCATION(i->pos, i->callbackinfo);
   very_low_sys(i->callbackinfo);
 }
 
-static void sys()
+static void sys(void)
 {
   low_sys();
   if(SAFE_IS_ZERO(sp-1)) pop_stack();
@@ -1495,7 +1495,7 @@ static void xmlerror(char *desc, struct pike_string *tag_name)
   pop_stack();
 }
 
-    static int read_smeg_pereference()
+    static int read_smeg_pereference(void)
     {
       struct mapping *callbackinfo;
       struct pike_string *name=0;
@@ -1713,7 +1713,7 @@ static void read_entityvalue(struct string_builder *X,
   }
 }
 
-static void simple_read_system_literal()
+static void simple_read_system_literal(void)
 {
   BEGIN_STRING(name);
   SKIPSPACE();
@@ -1721,7 +1721,7 @@ static void simple_read_system_literal()
   END_STRING(name);
 }
 
-static void simple_read_pubid_literal()
+static void simple_read_pubid_literal(void)
 {
   BEGIN_STRING(name);
   SKIPSPACE();
@@ -1760,7 +1760,7 @@ static void simple_read_system_attvalue(int is_cdata)
 }
 
 
-static void simple_readname()
+static void simple_readname(void)
 {
   check_stack(1);
   BEGIN_STRING(name);
@@ -1769,7 +1769,7 @@ static void simple_readname()
   END_STRING(name);
 }
 
-static int simple_readname_period()
+static int simple_readname_period(void)
 {
   /* Returns whether '.' is included somewhere in the name. */
   int  found_period = 0;
@@ -1781,7 +1781,7 @@ static int simple_readname_period()
   return found_period;
 }
 
-static void simple_readnmtoken()
+static void simple_readnmtoken(void)
 {
   BEGIN_STRING(name);
   READNMTOKEN(name);
@@ -1825,7 +1825,7 @@ static void simple_read_attributes(struct mapping *is_cdata)
   }
 }
 
-static void parse_optional_xmldecl()
+static void parse_optional_xmldecl(void)
 {
   if(GOBBLE("<?xml"))
   {
@@ -2003,7 +2003,7 @@ void read_choice_seq_or_name(int maybe_pcdata)
 #endif
 }
 
-static int really_low_parse_dtd()
+static int really_low_parse_dtd(void)
 {
   int done=0;
 #ifdef PIKE_DEBUG
@@ -2597,7 +2597,7 @@ static int really_low_parse_dtd()
   return done;
 }
 
-static int low_parse_dtd()
+static int low_parse_dtd(void)
 {
   int done;
   struct svalue *save_sp=sp;
@@ -3070,7 +3070,7 @@ static int low_parse_xml(struct pike_string *end)
 	return;
       }
       parse_optional_xmldecl();
-      low_parse_dtd(THIS);
+      low_parse_dtd();
     }
 
     /*! @decl string parse_entity()
