@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pgresult.c,v 1.33 2006/05/19 10:58:33 grubba Exp $
+|| $Id: pgresult.c,v 1.34 2008/01/21 15:08:36 grubba Exp $
 */
 
 /*
@@ -310,8 +310,7 @@ static void f_seek (INT32 args)
  */
 static void f_fetch_row (INT32 args)
 {
-	int j,k,numfields;
-	char * value;
+	int j,numfields;
 
 	check_all_args("postgres_result->fetch_row",args,0);
 	pgdebug("f_fetch_row(); cursor=%d.\n",THIS->cursor);
@@ -322,9 +321,11 @@ static void f_fetch_row (INT32 args)
 	    int docommit=THIS->pgod->docommit;
 	    int dofetch=1;
 	    PQ_FETCH();
-	    PQclear(res);
+	    THIS->result = NULL;
+	    /* FIXME: Race-condition on THIS->result. */
 	    THREADS_ALLOW();
 	    PQ_LOCK();
+	    PQclear(res);
 	    res=PQexec(conn,FETCHCMD);
 	    if(!res || PQresultStatus(res)!=PGRES_TUPLES_OK
 	       || !PQntuples(res)) {
@@ -350,36 +351,42 @@ badresult:
 	}
 	numfields=PQnfields(THIS->result);
 	for (j=0;j<numfields;j++) {
-	        void*binbuf = 0;
-	        size_t binlen;
-		value=PQgetvalue(THIS->result,THIS->cursor,j);
-		k=PQgetlength(THIS->result,THIS->cursor,j);
-		switch(PQftype(THIS->result,j)) {
-		  /* FIXME: This code is questionable, and BPCHAROID
-		   *        and BYTEAOID are usually not available
-		   *        to Postgres frontends.
-		   */
+	  if (PQgetisnull(THIS->result, THIS->cursor, j)) {
+	    push_int(0);
+	  } else {
+#if defined(HAVE_PQUNESCAPEBYTEA) && defined(BYTEAOID)
+	    void *binbuf = 0;
+	    size_t binlen;
+#endif
+	    char *value = PQgetvalue(THIS->result, THIS->cursor, j);
+	    int len = PQgetlength(THIS->result, THIS->cursor, j);
+	    switch(PQftype(THIS->result, j)) {
+	      /* FIXME: This code is questionable, and BPCHAROID
+	       *        and BYTEAOID are usually not available
+	       *        to Postgres frontends.
+	       */
 #if defined(CUT_TRAILING_SPACES) && defined(BPCHAROID)
-		case BPCHAROID:
-		  for(;k>0 && value[k]==' ';k--);
-		  break;
+	    case BPCHAROID:
+	      for(;len>0 && value[len]==' ';len--);
+	      break;
 #endif
 #if defined(HAVE_PQUNESCAPEBYTEA) && defined(BYTEAOID)
-		case BYTEAOID:
-		  if(binbuf=PQunescapeBytea(value,&binlen))
-		    value=binbuf,k=binlen;
-		  break;
+	    case BYTEAOID:
+	      if(binbuf = PQunescapeBytea(value, &binlen)) {
+		value = binbuf;
+		len = binlen;
+	      }
+	      break;
 #endif
-		}
+	    }
 
-                if (PQgetisnull(THIS->result, THIS->cursor, j)) {
-                  push_int(0);
-                } else {
-                  push_string(make_shared_binary_string(value,k));
-                }
+	    push_string(make_shared_binary_string(value, len));
 
-		if(binbuf)
-		  free(binbuf);
+#if defined(HAVE_PQUNESCAPEBYTEA) && defined(BYTEAOID)
+	    if(binbuf)
+	      free(binbuf);
+#endif
+	  }
 	}
 	f_aggregate(numfields);
 	THIS->cursor++;
