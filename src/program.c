@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.638 2008/01/13 19:53:49 grubba Exp $
+|| $Id: program.c,v 1.639 2008/01/21 22:43:42 grubba Exp $
 */
 
 #include "global.h"
@@ -5800,9 +5800,9 @@ PMOD_EXPORT int low_find_lfun(struct program *p, ptrdiff_t lfun)
 					     dmalloc_touch(struct program *,
 							   p),
 					     SEE_STATIC);
+#if 0
   if (i < 0 || !(p->flags & PROGRAM_FIXED)) return i;
   id = ID_FROM_INT(p, i);
-#if 0
   if (IDENTIFIER_IS_PIKE_FUNCTION(id->identifier_flags) &&
       (id->func.offset == -1)) {
     /* Function prototype. */
