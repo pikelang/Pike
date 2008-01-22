@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: memory.c,v 1.34 2005/05/19 22:35:40 mast Exp $
+|| $Id: memory.c,v 1.35 2008/01/22 17:17:44 grubba Exp $
 */
 
 /*! @module System
@@ -883,29 +883,22 @@ static void memory_index_write(INT32 args)
    }
    else
    {
-      if (THIS->size==0)
-	 push_empty_string();
-      else
-      {
-	 INT_TYPE pos1,pos2;
-	 size_t rpos1,rpos2;
-	 struct pike_string *ps;
+     INT_TYPE pos1, pos2;
+     struct pike_string *ps;
 
-	 get_all_args("Memory.`[]=",args,"%i%i%S",&pos1,&pos2,&ps);
-	 if (pos1<0) rpos1=0; else rpos1=(size_t)pos1;
-	 if ((size_t)pos2>=THIS->size) rpos2=THIS->size-1; 
-	 else rpos2=(size_t)pos2;
+     get_all_args("Memory.`[]=", args, "%i%i%S", &pos1, &pos2, &ps);
 
-	 if (pos2<pos1 ||
-	     ps->len != pos2-pos1+1)
-	    Pike_error("Memory.`[]=: source and destination "
-		       "not equally long (%ld v/s %ld; can't resize memory)\n",
-		       DO_NOT_WARN((long)ps->len),(long)pos2-(long)pos1);
-	 else
-	    MEMCPY(THIS->p+pos1,ps->str,ps->len);
+     if (pos1 < 0) pos1 = 0;
+     if (pos2 < 0) pos2 = 0;
 
-	 ref_push_string(ps);
-      }
+     if ((pos2<pos1) || (ps->len != pos2-pos1+1))
+       Pike_error("Memory.`[]=: source and destination "
+		  "not equally long (%ld v/s %ld; can't resize memory)\n",
+		  DO_NOT_WARN((long)ps->len), (long)pos2-(long)pos1);
+     else
+       MEMCPY(THIS->p+pos1, ps->str, ps->len);
+
+     ref_push_string(ps);
    }
    stack_pop_n_elems_keep_top(args);
 }
