@@ -71,14 +71,14 @@ array(string) get_lang_files_dirs()
   pgtk2_verify_inited();
   pgtk2_pop_n_elems(args);
   {
-    const GSList *gsl,*gs2;
+    const GSList *gsl;
     int i=0;
-    gsl=gs2=gtk_source_languages_manager_get_lang_files_dirs(
+    gsl=gtk_source_languages_manager_get_lang_files_dirs(
 			GTK_SOURCE_LANGUAGES_MANAGER(THIS->obj));
-    while (gs2) {
-      push_text(gs2->data);
+    while (gsl) {
+      push_text(gsl->data);
       i++;
-      gs2=g_slist_next(gs2);
+      gsl=g_slist_next(gsl);
     }
     f_aggregate(i);
   }

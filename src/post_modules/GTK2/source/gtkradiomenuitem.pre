@@ -85,14 +85,14 @@ array(GTK2.RadioMenuItem) get_group()
   pgtk2_verify_inited();
   pgtk2_pop_n_elems(args);
   {
-    GSList *ml,*m2;
+    GSList *gsl;
     int i=0;
-    ml=m2=gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(THIS->obj));
-    while (m2) {
-      push_gobject(m2->data);
-      g_object_ref(GTK_RADIO_MENU_ITEM(m2->data));
+    gsl=gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(THIS->obj));
+    while (gsl) {
+      push_gobject(gsl->data);
+      g_object_ref(GTK_RADIO_MENU_ITEM(gsl->data));
       i++;
-      m2=g_slist_next(m2);
+      gsl=g_slist_next(gsl);
     }
     f_aggregate(i);
   }

@@ -53,14 +53,14 @@ array(GTK2.RadioAction) get_group()
   pgtk2_verify_inited();
   pgtk2_pop_n_elems(args);
   {
-    GSList *gl,*g2;
+    GSList *gsl;
     int i=0;
-    gl=g2=gtk_radio_action_get_group(GTK_RADIO_ACTION(THIS->obj));
-    while (g2) {
-      push_gobject(g2->data);
-      g_object_ref(g2->data);
+    gsl=gtk_radio_action_get_group(GTK_RADIO_ACTION(THIS->obj));
+    while (gsl) {
+      push_gobject(gsl->data);
+      g_object_ref(gsl->data);
       i++;
-      g2=g_slist_next(g2);
+      gsl=g_slist_next(gsl);
     }
     f_aggregate(i);
   }

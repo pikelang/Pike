@@ -90,15 +90,15 @@ array(GTK2.Widget) get_widgets()
   pgtk2_verify_inited();
   pgtk2_pop_n_elems(args);
   {
-    GSList *gl,*g2;
+    GSList *gsl;
     int i=0;
 
-    gl=g2=gtk_size_group_get_widgets(GTK_SIZE_GROUP(THIS->obj));
-    while (g2) {
-      push_gobject(g2->data);
-      g_object_ref(GTK_WIDGET(g2->data));
+    gsl=gtk_size_group_get_widgets(GTK_SIZE_GROUP(THIS->obj));
+    while (gsl) {
+      push_gobject(gsl->data);
+      g_object_ref(GTK_WIDGET(gsl->data));
       i++;
-      g2=g_slist_next(g2);
+      gsl=g_slist_next(gsl);
     }
     f_aggregate(i);
   }
