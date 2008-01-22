@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xcf.c,v 1.55 2008/01/22 21:18:57 grubba Exp $
+|| $Id: xcf.c,v 1.56 2008/01/22 21:23:51 grubba Exp $
 */
 
 #include "global.h"
@@ -1225,7 +1225,7 @@ void image_xcf_f__decode_tiles( INT32 args )
     if(!tile_ss)
       continue;
 
-    tile.s = tile_ss->s;
+    tile.s = NULL;
     tile.str = (unsigned char *)(tile_ss->s->str + tile_ss->offset);
     tile.len = tile_ss->len;
 
@@ -1238,6 +1238,7 @@ void image_xcf_f__decode_tiles( INT32 args )
     {
       struct buffer s = tile, od, d;
       int i;
+      od.s = NULL;
       od.len = eheight*ewidth*bpp;  /* Max and only size, really */
       df = (char *)(od.str = (unsigned char *)xalloc( eheight*ewidth*bpp+1 ));
       d = od;
