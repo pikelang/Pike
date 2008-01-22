@@ -335,6 +335,7 @@ PIKECLASS Deflate
 
   PIKEFUN string read(string data){
     struct pike_string *retstr;
+    /* FIXME: Ought to use string_builder instead. */
     dynamic_buffer retbuf;
     bz_stream *s;
     ONERROR err;
@@ -481,8 +482,8 @@ PIKECLASS Deflate
    *! @[Bz2.Inflate->inflate()]
    */
   
-  PIKEFUN string deflate(string data, int|void mode){
-    struct pike_string *data;
+  PIKEFUN string deflate(string data, int|void mode)
+  {
     int flush_mode = 0;
     
     switch (args){
@@ -976,9 +977,8 @@ PIKECLASS File
    *! or "w". Read is default.
    */
   
-  PIKEFUN int open(string filename, string|void mode){
-    struct pike_string *tmp;
-    
+  PIKEFUN int open(string filename, string|void mode)
+  {
     if (!mode) {
       if (args > 1) {
 	pop_n_elems(args-1);
@@ -1032,6 +1032,8 @@ PIKECLASS File
   
   PIKEFUN string read(int|void bytes){
     void *buf = NULL;
+
+    /* FIXME: Ought to use string_builder instead. */
     dynamic_buffer retbuf;
     struct pike_string *retstr;
     int to_be_read = 0;
