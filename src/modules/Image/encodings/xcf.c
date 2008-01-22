@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xcf.c,v 1.53 2005/01/23 13:30:05 nilsson Exp $
+|| $Id: xcf.c,v 1.54 2008/01/22 13:16:45 grubba Exp $
 */
 
 #include "global.h"
@@ -50,10 +50,8 @@ extern struct program *image_program;
 struct buffer
 {
   struct pike_string *s;
-  ptrdiff_t base_offset;
-  ptrdiff_t base_len;
-  size_t len;
   unsigned char *str;
+  size_t len;
 };
 
 struct substring
@@ -329,10 +327,8 @@ static struct buffer read_string( struct buffer *data )
 {
   struct buffer res = *data;
   res.len = xcf_read_int( data );
-  res.base_offset = (data->base_offset+(data->base_len-data->len));
   res.str = (unsigned char *)read_data( data, res.len );
   if(res.len > 0)  res.len--;  /* len includes ending \0 */
-  res.base_len = res.len;
   if(!res.str)
     Pike_error("String read failed\n");
   return res;
@@ -348,14 +344,10 @@ static struct property read_property( struct buffer * data )
     read_uint(data); /* bogus 'len'... */
     foo = read_uint( data );
     res.data.len = foo*3;
-    res.data.base_offset = data->base_offset+(data->base_len-data->len);
-    res.data.base_len = res.data.len;
     res.data.str = (unsigned char *)read_data( data,foo*3 );
     res.data.s   = data->s;
   } else {
     res.data.len = read_uint( data );
-    res.data.base_offset = data->base_offset+(data->base_len-data->len);
-    res.data.base_len = res.data.len;
     res.data.str = (unsigned char *)read_data( data,res.data.len );
     res.data.s   = data->s;
   }
@@ -763,7 +755,7 @@ static struct gimp_image read_image( struct buffer * data )
 
 static void push_buffer( struct buffer *b )
 {
-  push_substring( b->s, b->base_offset+(b->base_len-b->len), b->len );
+  push_substring( b->s, b->str - (unsigned char *)b->s->str, b->len );
 /* push_string( make_shared_binary_string( (char *)b->str, b->len ) );*/
 }
 
@@ -900,8 +892,6 @@ static void image_xcf____decode( INT32 args )
     Pike_error("Too many arguments to Image.XCF.___decode()\n");
 
   b.s = s;
-  b.base_offset = 0;
-  b.base_len = s->len;
   b.len = s->len;
   b.str = (unsigned char *)s->str;
 
