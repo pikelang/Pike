@@ -433,6 +433,33 @@ array(array(array)) diff3 (array a, array b, array c)
   return ({ares, bres, cres});
 }
 
+#if 0
+array(array(array)) compact_diff3 (array a, array b, array old)
+//! Given three arrays like those returned from @ref{diff3@}, this
+//! function "compacts" the diff3 result by removing all differences
+//! where @tt{a@} and @tt{b@} agrees against @tt{old@}. The result is
+//! on the same form as the result from @ref{diff@}, and doesn't
+//! include the sequence from @tt{old@}.
+{
+//   a = a + ({}), b = b + ({});
+
+//   if (sizeof (a) && a[0] == b[0] && !sizeof (a[0]))
+//     a[0] = b[0] = 0;
+//   int prev = 0;
+//   for (int i = 1; i < sizeof (a); i++)
+//     if (a[i] == b[i])
+//       if (!sizeof (a[i])) {
+// 	a[i] = b[i] = 0;
+//       }
+//       else if (prev != i - 1) {
+// 	int joined = 0;
+// 	if (!sizeof (a[i])) {
+// 	  if (!sizeof (a[prev])) b[prev] +=
+// 	}
+//       }
+}
+#endif
+
 //! Sort without respect to number formatting (most notably leading
 //! zeroes).
 int(-1..1) dwim_sort_func(string a, string b)
