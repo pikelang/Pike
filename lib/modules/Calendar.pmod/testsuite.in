@@ -1,5 +1,5 @@
 START_MARKER
-dnl $Id: testsuite.in,v 1.14 2008/01/05 22:14:32 grubba Exp $
+dnl $Id: testsuite.in,v 1.15 2008/01/23 15:23:54 mast Exp $
 
 dnl NOTE:
 dnl   *every* time the Calendar tests have failed, it's not the 
@@ -121,5 +121,22 @@ test_any([[
   object k=Calendar.Events.se["midsummers eve"]->next(Calendar.Year());
   return k->second(1)!=k->second(2);
 ]], 1)
+
+test_eq([[Calendar.ISO.Day (2007, 12, 31)->week()->month_day()]], 31);
+
+dnl Tests for year spanning weeks.
+test_any([[
+  object d = Calendar.ISO.dwim_day ("2007-12-01");
+  d->week_day();
+  return d->range (d)->week()->year_no();
+]], 2007)
+test_eq([[Calendar.ISO.Day (2007, 12, 31)->format_iso_week()]], "2008-W01")
+test_eq([[Calendar.ISO.Day (2007, 12, 31)->format_iso_week_short()]], "200801")
+test_eq([[Calendar.ISO.Day (2007, 12, 31)->set_size (Calendar.ISO.Week())->format_iso_week()]], "2008-W01")
+test_eq([[Calendar.ISO.Day (2007, 12, 31)->set_size (Calendar.ISO.Week())->year_no()]], 2008)
+test_eq([[Calendar.ISO.Week (2008, 1)->set_size (Calendar.ISO.Day())->format_ymd()]], "2007-12-31")
+test_eq([[Calendar.ISO.Week (2008, 1)->set_size (Calendar.ISO.Day())->year_no()]], 2007)
+test_eq([[Calendar.ISO.Week (2008, 1)->year_no()]], 2008)
+test_eq([[Calendar.ISO.Year (Calendar.ISO.Week (2008, 1))->year_no()]], 2008)
 
 END_MARKER
