@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.648 2008/01/21 11:44:48 grubba Exp $
+|| $Id: builtin_functions.c,v 1.649 2008/01/23 19:52:49 grubba Exp $
 */
 
 #include "global.h"
@@ -3959,12 +3959,12 @@ node *optimize_replace(node *n)
 	node *ret = NULL;
 	INT32 args;
 	args = eval_low(*arg1, 1);
-	if (args != 1) return NULL;
+	if (args != 1) goto failed;
 	if (arg2) {
 	  args += eval_low(*arg2, 1);
 	  if (!args) {
 	    /* eval_low() returned -1. */
-	    return NULL;
+	    goto failed;
 	  }
 	}
 
@@ -3988,6 +3988,7 @@ node *optimize_replace(node *n)
 	  return ret;
 	}
       }
+    failed:
       UNSETJMP(tmp);
       pop_n_elems(Pike_sp - save_sp);
     }
