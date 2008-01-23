@@ -134,7 +134,7 @@ if test "x$with_java" = xyes; then
     if test "x$JAVA_HOME" = x; then
       pike_cv_java_java_home=no
       java_home_guess=`"$srcdir/find_java_home.sh"`
-      for tmp_java_home in /usr/java /usr/local/java /usr/local/jdk* /usr/java*/jre /usr/java/jdk*/jre /usr/java/j2sdk*/jre /usr/local/java*/jre /usr/local/jdk*/jre /usr/local/jre* /usr/local/j2sdk*/jre /usr/local/j2re* /usr/lib/j2se/*/jre "$java_home_guess" "$pike_java_user_lib_directory"/..; do
+      for tmp_java_home in /usr/java /usr/local/java /usr/local/jdk* /usr/java*/jre /usr/java/jdk*/jre /usr/java/j2sdk*/jre /usr/local/java*/jre /usr/local/jdk*/jre /usr/local/jre* /usr/local/j2sdk*/jre /usr/local/j2re* /usr/lib/j2se/*/jre /usr/lib/jvm/*/jre "$java_home_guess" "$pike_java_user_lib_directory"/..; do
 	if test -d $tmp_java_home/.; then
 	  tmp_arch_dir=nowhere
 	  for ad in $java_arch_dirs; do
@@ -211,10 +211,15 @@ if test "x$with_java" = xyes; then
     export LIBPATH
   fi
 
+  # FIXME: If several jvm's are installed then we can find the include
+  # files for a different one from the JAVA_HOME search above. This is
+  # not only a matter of having paths in the same order; e.g.
+  # /usr/lib/jvm/* can match more than one viable jvm's.
+
   AC_MSG_CHECKING(for the Java include directory)
   AC_CACHE_VAL(pike_cv_java_include_dir, [
     pike_cv_java_include_dir=no
-    for tmp_java_incdir in /usr/java* /usr/local/java* /usr/local/jdk* /usr/local/jre* /usr/java/j2sdk* /usr/local/j2sdk* "$pike_cv_java_java_home"/../.. "$pike_cv_java_java_home"/.. "$pike_cv_java_java_home" "$pike_java_user_include_directory"; do
+    for tmp_java_incdir in /usr/java*  /usr/local/java* /usr/local/jdk* /usr/local/jre* /usr/java/j2sdk* /usr/local/j2sdk* /usr/lib/jvm/* "$pike_cv_java_java_home"/../.. "$pike_cv_java_java_home"/.. "$pike_cv_java_java_home" "$pike_java_user_include_directory"; do
       if test -d $tmp_java_incdir/. && "$LS" "$tmp_java_incdir/include/jni.h" >/dev/null 2>&1 ; then
 	 pike_cv_java_include_dir="$tmp_java_incdir/include"
       else
