@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: support.c,v 1.17 2007/11/28 13:17:24 per Exp $
+|| $Id: support.c,v 1.18 2008/01/23 04:27:46 per Exp $
 */
 
 #include <version.h>
@@ -595,6 +595,8 @@ static int pgtk2_push_pike_object_param(const GValue *a) {
 }
 
 static int pgtk2_push_gparamspec_param(const GValue *a) {
+    push_int(0);
+    return PUSHED_VALUE;
 }
 
 static struct push_callback {
@@ -723,15 +725,16 @@ void push_gvalue_r(const GValue *param, GType t) {
 		break;
 	}
     }
-
-    char *a="";
-    if (!s) {
-      a="Unknown child of ";
-      s=g_type_name(g_type_parent(t));
-      if (!s)
-	s="unknown type";
+    {
+	char *a="";
+	if (!s) {
+	    a="Unknown child of ";
+	    s=g_type_name(g_type_parent(t));
+	    if (!s)
+		s="unknown type";
+	}
+	Pike_error("No push callback for type %d (%s%s)\n",t,a,s);
     }
-    Pike_error("No push callback for type %d (%s%s)\n",t,a,s);
   }
   return;
 }
@@ -753,7 +756,7 @@ void pgtk2_signal_func_wrapper(struct signal_data *d,
 			       guint n_params,
 			       const GValue *param_values,
 			       GValue *return_value) {
-  int i;
+  unsigned int i;
 
   if (!last_used_callback)
     build_push_callbacks();
@@ -1213,9 +1216,12 @@ void pgtk2_set_gvalue(GValue *gv, GType gt, struct svalue *sv) {
       g_value_set_double(gv,(gdouble)pgtk2_get_float(sv));
       break;
     case G_TYPE_STRING:
-      if (sv->type==PIKE_T_STRING) {
-	g_value_set_string(gv,CGSTR0(sv->u.string));
-	add_ref(sv->u.string); 
+      if (sv->type==PIKE_T_STRING) 
+      {
+	  push_svalue( sv );
+	  f_string_to_utf8(1);
+	  g_value_set_string(gv,CGSTR0(Pike_sp[-1].u.string));
+	  pop_stack();
       } else
 	g_value_set_string(gv,"");
       break;
@@ -1232,7 +1238,7 @@ void pgtk2_set_gvalue(GValue *gv, GType gt, struct svalue *sv) {
     case G_TYPE_POINTER:
       if (sv->type==PIKE_T_OBJECT) {
 	g_value_set_pointer(gv,sv->u.object);
-	add_ref(sv->u.object);
+ 	add_ref(sv->u.object); 
       } else
 	g_value_set_pointer(gv,NULL);
       break;
