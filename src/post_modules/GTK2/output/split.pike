@@ -234,7 +234,7 @@ array(string) output( mapping(string:Class) classes,
               "PIKE_MODULE_EXIT {\n"+exitfun+"}\n\n"
 	      "struct program *pgtk2_type_to_program(GObject *widget)\n"
               "{\n"
-	      "  if (!widget) return NULL;\n"
+	      "  if (!widget) return pg2_object_program;\n"
               +type_switch+
 	      "  return pg2_object_program;\n}\n\n" );
 
