@@ -173,25 +173,25 @@ void add_actions(array(mapping(string:mixed)) entries)
 	continue;
       m=(ITEM(a)+i)->u.mapping;
       sv=low_mapping_string_lookup(m,_STR("name"));
-      if (sv && sv->type==PIKE_T_STRING) {
+      if (sv && sv->type==PIKE_T_STRING && !sv->u.string->size_shift) {
 	gta.name=(const gchar *)STR0(sv->u.string);
       } else
         continue;
       sv=low_mapping_string_lookup(m,_STR("stock_id"));
-      if (sv && sv->type==PIKE_T_STRING) {
+      if (sv && sv->type==PIKE_T_STRING && !sv->u.string->size_shift) {
 	gta.stock_id=(const gchar *)STR0(sv->u.string);
       }
       sv=low_mapping_string_lookup(m,_STR("label"));
-      if (sv && sv->type==PIKE_T_STRING) {
+      if (sv && sv->type==PIKE_T_STRING && !sv->u.string->size_shift) {
 	gta.label=(const gchar *)STR0(sv->u.string);
       } else
 	continue;
       sv=low_mapping_string_lookup(m,_STR("accelerator"));
-      if (sv && sv->type==PIKE_T_STRING) {
+      if (sv && sv->type==PIKE_T_STRING && !sv->u.string->size_shift) {
 	gta.accelerator=(const gchar *)STR0(sv->u.string);
       }
       sv=low_mapping_string_lookup(m,_STR("tooltip"));
-      if (sv && sv->type==PIKE_T_STRING) {
+      if (sv && sv->type==PIKE_T_STRING && !sv->u.string->size_shift) {
 	gta.tooltip=(const gchar *)STR0(sv->u.string);
       }
 
@@ -254,20 +254,20 @@ void add_toggle_actions(array(mapping(string:mixed)) entries)
 	continue;
       m=(ITEM(a)+i)->u.mapping;
       sv=low_mapping_string_lookup(m,_STR("name"));
-      if (sv && sv->type==PIKE_T_STRING)
+      if (sv && sv->type==PIKE_T_STRING && !sv->u.string->size_shift)
 	gta.name=(const gchar *)STR0(sv->u.string);
       else
 	continue;
       sv=low_mapping_string_lookup(m,_STR("stock_id"));
-      if (sv && sv->type==PIKE_T_STRING)
+      if (sv && sv->type==PIKE_T_STRING && !sv->u.string->size_shift)
 	gta.stock_id=(const gchar *)STR0(sv->u.string);
       sv=low_mapping_string_lookup(m,_STR("label"));
-      if (sv && sv->type==PIKE_T_STRING)
+      if (sv && sv->type==PIKE_T_STRING && !sv->u.string->size_shift)
 	gta.label=(const gchar *)STR0(sv->u.string);
       else
 	continue;
       sv=low_mapping_string_lookup(m,_STR("accelerator"));
-      if (sv && sv->type==PIKE_T_STRING)
+      if (sv && sv->type==PIKE_T_STRING && !sv->u.string->size_shift)
 	gta.accelerator=(const gchar *)STR0(sv->u.string);
 
       /* FIXME: Verify that the strings are copied by
@@ -336,36 +336,35 @@ void add_radio_actions(array(mapping(string:mixed)) entries,
 	continue;
       m=(ITEM(a)+i)->u.mapping;
       sv=low_mapping_string_lookup(m,_STR("name"));
-      if (sv && sv->type==PIKE_T_STRING)
+      if (sv && sv->type==PIKE_T_STRING && !sv->u.string->size_shift)
 	gta[j].name=(const gchar *)STR0(sv->u.string);
       else
 	continue;
       sv=low_mapping_string_lookup(m,_STR("stock_id"));
-      if (sv && sv->type==PIKE_T_STRING)
+      if (sv && sv->type==PIKE_T_STRING && !sv->u.string->size_shift)
 	gta[j].stock_id=(const gchar *)STR0(sv->u.string);
       sv=low_mapping_string_lookup(m,_STR("label"));
-      if (sv && sv->type==PIKE_T_STRING)
+      if (sv && sv->type==PIKE_T_STRING && !sv->u.string->size_shift)
 	gta[j].label=(const gchar *)STR0(sv->u.string);
       else
 	continue;
       sv=low_mapping_string_lookup(m,_STR("accelerator"));
-      if (sv && sv->type==PIKE_T_STRING)
+      if (sv && sv->type==PIKE_T_STRING && !sv->u.string->size_shift)
 	gta[j].accelerator=(const gchar *)STR0(sv->u.string);
       sv=low_mapping_string_lookup(m,_STR("tooltip"));
-      if (sv && sv->type==PIKE_T_STRING)
+      if (sv && sv->type==PIKE_T_STRING && !sv->u.string->size_shift)
 	gta[j].tooltip=(const gchar *)STR0(sv->u.string);
       sv=low_mapping_string_lookup(m,_STR("value"));
-      if (sv)
+      if (sv && sv->type == PIKE_T_INT)
 	gta[j].value=PGTK_GETINT(sv);
       j++;
     }
-    if (sv2 && sv2->type!=PIKE_T_FUNCTION) {
-      g_free(gta);
-      Pike_error("Invalid callback.\n");
-    }
     sd=(struct signal_data *)g_malloc(sizeof(struct signal_data));
-    if (sd==NULL)
-      SIMPLE_OUT_OF_MEMORY_ERROR("add_radio_actions",sizeof(struct signal_data));
+    if (!sd) {
+      g_free(gta);
+      SIMPLE_OUT_OF_MEMORY_ERROR("add_radio_actions",
+				 sizeof(struct signal_data));
+    }
     assign_svalue_no_free(&sd->cb,sv2);
     assign_svalue_no_free(&sd->args,sv3);
     gtk_action_group_add_radio_actions(GTK_ACTION_GROUP(THIS->obj),
