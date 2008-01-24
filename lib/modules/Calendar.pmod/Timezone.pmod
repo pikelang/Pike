@@ -339,7 +339,7 @@ class Timezone_Encapsule
 
    string _sprintf(int t) 
    { 
-      return (t=='O')?sprintf("%O%s",what,extra_name):0; 
+      return (t=='O')?sprintf("%O%s",what,extra_name || ""):0;
    }
 
    int raw_utc_offset() { return what->raw_utc_offset()+extra_offset; }
@@ -552,7 +552,8 @@ class Runtime_timezone_compiler
       { 
 	 return (t=='O')?
 	    sprintf("Shift(%s,%d%s,%+d,%O)",
-		    dayrule,time,timetype,offset,s):
+		    dayrule || "<unset>", time,
+		    timetype || "<unset>", offset, s):
 	    0;
       }
 
