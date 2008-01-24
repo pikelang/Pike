@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.279 2007/12/18 19:10:03 grubba Exp $
+|| $Id: object.c,v 1.280 2008/01/24 18:34:19 grubba Exp $
 */
 
 #include "global.h"
@@ -732,7 +732,7 @@ static void call_destroy(struct object *o, enum object_destruct_reason reason)
     if(Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE)
       Pike_fatal("Calling destroy() inside gc.\n");
 #endif
-    if(check_destroy_called_mark_semafore(o))
+    if(check_destroy_called_mark_semaphore(o))
     {
       JMP_BUF jmp;
 
