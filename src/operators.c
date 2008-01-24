@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.168 2003/11/12 19:01:29 mast Exp $
+|| $Id: operators.c,v 1.169 2008/01/24 17:48:17 mast Exp $
 */
 
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.168 2003/11/12 19:01:29 mast Exp $");
+RCSID("$Id: operators.c,v 1.169 2008/01/24 17:48:17 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -2908,6 +2908,7 @@ PMOD_EXPORT void o_not(void)
   default:
     free_svalue(sp-1);
     sp[-1].type=T_INT;
+    sp[-1].subtype = NUMBER_NUMBER;
     sp[-1].u.integer=0;
   }
 }
