@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.224 2008/01/09 13:42:49 grubba Exp $
+|| $Id: operators.c,v 1.225 2008/01/24 17:48:18 mast Exp $
 */
 
 #include "global.h"
@@ -280,6 +280,7 @@ PMOD_EXPORT void o_cast_to_int(void)
 #endif /* AUTO_BIGNUM */
       {
 	sp[-1].type=T_INT;
+	sp[-1].subtype = NUMBER_NUMBER;
 	sp[-1].u.integer=i;
       }
     }
@@ -300,6 +301,7 @@ PMOD_EXPORT void o_cast_to_int(void)
       int i=atoi(sp[-1].u.string->str);
       free_string(sp[-1].u.string);
       sp[-1].type=T_INT;
+      sp[-1].subtype = NUMBER_NUMBER;
       sp[-1].u.integer=i;
     }
     else
@@ -314,6 +316,7 @@ PMOD_EXPORT void o_cast_to_int(void)
       int i=STRTOL(sp[-1].u.string->str,0,10);
       free_string(sp[-1].u.string);
       sp[-1].type=T_INT;
+      sp[-1].subtype = NUMBER_NUMBER;
       sp[-1].u.integer=i;
     }
 #endif /* AUTO_BIGNUM */
@@ -4189,6 +4192,7 @@ PMOD_EXPORT void o_not(void)
   default:
     free_svalue(sp-1);
     sp[-1].type=T_INT;
+    sp[-1].subtype = NUMBER_NUMBER;
     sp[-1].u.integer=0;
   }
 }
