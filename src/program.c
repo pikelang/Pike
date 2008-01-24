@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.640 2008/01/21 22:46:18 grubba Exp $
+|| $Id: program.c,v 1.641 2008/01/24 13:58:26 mast Exp $
 */
 
 #include "global.h"
@@ -2176,8 +2176,8 @@ void fixate_program(void)
       if(found_better!=-1)
 	continue;
     }
-    if ((fun->func.offset == -1) && (funp->id_flags & ID_INLINE) &&
-	IDENTIFIER_IS_PIKE_FUNCTION(fun->identifier_flags)) {
+    if (IDENTIFIER_IS_PIKE_FUNCTION(fun->identifier_flags) &&
+	(fun->func.offset == -1) && (funp->id_flags & ID_INLINE)) {
       my_yyerror("Missing definition for local function %S.",
 		 fun->name);
     }
