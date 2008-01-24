@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: colortable.c,v 1.128 2006/07/28 14:43:52 grubba Exp $
+|| $Id: colortable.c,v 1.129 2008/01/24 22:45:36 grubba Exp $
 */
 
 #include "global.h"
@@ -3217,7 +3217,7 @@ static INLINE void _build_cubicle(struct neo_colortable *nct,
    INT32 n = nct->u.flat.numentries;
 
    int i=0;
-   int *p=xalloc(n*sizeof(struct nctlu_cubicle));
+   int *p = xalloc(n * sizeof(INT32));
    int *pp; /* write */
 
    rmin=(r*256)/red;   rmax=((r+1)*256)/red-1;
@@ -3270,8 +3270,8 @@ static INLINE void _build_cubicle(struct neo_colortable *nct,
    while (0);
 #endif
 
-   cub->n=i;
-   cub->index=realloc(p,i*sizeof(struct nctlu_cubicle));
+   cub->n = i;
+   cub->index = realloc(p, i * sizeof(INT32));
 
    if (!cub->index) 
       cub->index=p; /* out of memory, or weird */
