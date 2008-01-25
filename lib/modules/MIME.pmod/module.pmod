@@ -3,7 +3,7 @@
 // RFC1521 functionality for Pike
 //
 // Marcus Comstedt 1996-1999
-// $Id: module.pmod,v 1.17 2007/09/16 05:06:10 mbaehr Exp $
+// $Id: module.pmod,v 1.18 2008/01/25 21:53:10 grubba Exp $
 
 
 //! RFC1521, the @b{Multipurpose Internet Mail Extensions@} memo, defines a
@@ -298,9 +298,9 @@ string decode_words_text_remapped( string txt )
 //! @[MIME.decode_words_tokenized_remapped]
 //! @[MIME.decode_words_text]
 //!
-array(array(string)|int) decode_words_tokenized( string phrase )
+array(array(string)|int) decode_words_tokenized( string phrase, int|void flags )
 {
-  return Array.map(tokenize(phrase),
+  return Array.map(tokenize(phrase, flags),
 		   lambda(string|int item) {
 		     return intp(item)? item : decode_word(item);
 		   });
@@ -315,9 +315,10 @@ array(array(string)|int) decode_words_tokenized( string phrase )
 //! @[MIME.decode_words_tokenized_labled_remapped]
 //! @[MIME.decode_words_text_remapped]
 //!
-array(string|int) decode_words_tokenized_remapped( string phrase )
+array(string|int) decode_words_tokenized_remapped( string phrase,
+						   int|void flags )
 {
-  return Array.map(decode_words_tokenized(phrase),
+  return Array.map(decode_words_tokenized(phrase, flags),
 		   lambda(array(string)|int item) {
 		     return intp(item)? item : remap(item);
 		   });
@@ -347,9 +348,9 @@ array(string|int) decode_words_tokenized_remapped( string phrase )
 //! @[MIME.decode_words_tokenized_labled_remapped]
 //!
 array(array(string|int|array(array(string))))
-  decode_words_tokenized_labled( string phrase )
+decode_words_tokenized_labled( string phrase, int|void flags )
 {
-  return Array.map( tokenize_labled( phrase ),
+  return Array.map( tokenize_labled( phrase, flags ),
 		    lambda(array(string|int) item) {
 		      switch(item[0]) {
 		      case "encoded-word":
@@ -370,9 +371,9 @@ array(array(string|int|array(array(string))))
 //! without RFC1522 escapes, and with all characters in UNICODE encoding.
 //!
 array(array(string|int))
-  decode_words_tokenized_labled_remapped(string phrase)
+decode_words_tokenized_labled_remapped(string phrase, int|void flags)
 {
-  return Array.map(decode_words_tokenized_labled(phrase),
+  return Array.map(decode_words_tokenized_labled(phrase, flags),
 		   lambda(array(string|int|array(array(string|int))) item) {
 		     switch(item[0]) {
 		     case "word":
@@ -683,8 +684,8 @@ class Message {
 
   import Array;
 
-  string encoded_data;
-  string decoded_data;
+  static string encoded_data;
+  static string decoded_data;
 
   //! This mapping contains all the headers of the message.
   //!
@@ -862,7 +863,7 @@ class Message {
   //! Do not use this method unless you know what you are doing.
   //!
   //! @seealso
-  //! @[getdata()]
+  //! @[getdata()], @[setencoded], @[data]
   //!
   void setdata( string data )
   {
@@ -872,19 +873,43 @@ class Message {
     }
   }
 
+  //! @decl string data
+  //!
+  //! This variable contains the raw data of the message body entity.
+  //!
+  //! The @[type] and @[subtype] attributes indicate how this data should
+  //! be interpreted.
+  //!
+  //! @note
+  //!   In Pike 7.6 and earlier you had to use @[getdata()] and
+  //!   @[setdata()] to access this value.
+  //!
+  //! @seealso
+  //!   @[getdata()], @[setdata()]
+
+  void `->data=(string data)
+  {
+    setdata(data);
+  }
+
   //! This method returns the raw data of the message body entity.
   //!
   //! The @[type] and @[subtype] attributes indicate how this data should
   //! be interpreted.
   //!
   //! @seealso
-  //! @[getencoded()]
+  //! @[setdata()], @[getencoded()], @[data]
   //!
   string getdata( )
   {
     if (encoded_data && !decoded_data)
       decoded_data = decode( encoded_data, transfer_encoding );
     return decoded_data;
+  }
+
+  string `->data()
+  {
+    return getdata();
   }
 
   //! This method returns the data of the message body entity, encoded
