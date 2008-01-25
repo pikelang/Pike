@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mime.c,v 1.39 2004/10/07 22:49:57 nilsson Exp $
+|| $Id: mime.c,v 1.40 2008/01/25 21:48:22 grubba Exp $
 */
 
 /*
@@ -22,6 +22,7 @@
 #include "program.h"
 #include "interpret.h"
 #include "builtin_functions.h"
+#include "module_support.h"
 #include "pike_error.h"
 
 #ifdef __CHAR_UNSIGNED__
@@ -67,6 +68,15 @@ static SIGNED char qprtab[(1<<(CHAR_BIT-1))-'0'];
 #define CT_QUOTE   9
 unsigned char rfc822ctype[1<<CHAR_BIT];
 
+/*! @decl constant TOKENIZE_KEEP_ESCAPES
+ *!
+ *! Don't unquote backslash-sequences in quoted strings during tokenizing.
+ *! This is used for bug-compatibility with Microsoft...
+ *!
+ *! @seealso
+ *!   @[tokenize()], @[tokenize_labled()]
+ */
+#define TOKENIZE_KEEP_ESCAPES	1
 
 /** Externally available functions **/
 
@@ -125,11 +135,13 @@ PIKE_MODULE_INIT
 			 "function(string,void|string:string)",
 			 OPT_TRY_OPTIMIZE);
 
+  add_integer_constant("TOKENIZE_KEEP_ESCAPES", TOKENIZE_KEEP_ESCAPES, 0);
+
   add_function_constant( "tokenize", f_tokenize,
-			 "function(string:array(string|int))",
+			 "function(string, int|void:array(string|int))",
 			 OPT_TRY_OPTIMIZE );
   add_function_constant( "tokenize_labled", f_tokenize_labled,
-			 "function(string:array(array(string|int)))",
+			 "function(string, int|void:array(array(string|int)))",
 			 OPT_TRY_OPTIMIZE );
   add_function_constant( "quote", f_quote,
 			 "function(array(string|int):string)",
@@ -682,19 +694,25 @@ static void f_encode_uue( INT32 args )
 }
 
 
-static void low_tokenize( INT32 args, int mode )
+static void low_tokenize( const char *funname, INT32 args, int mode )
 {
 
   /* Tokenize string in sp[-args].u.string.  We'll just push the
      tokens on the stack, and then do an aggregate_array just
      before exiting. */
-  
-  unsigned char *src = (unsigned char *)sp[-args].u.string->str;
+
+  unsigned char *src;
+  int flags = 0;
   struct array *arr;
   struct pike_string *str;
-  ptrdiff_t cnt = sp[-args].u.string->len;
+  ptrdiff_t cnt;
   INT32 n = 0, l, e, d;
   char *p;
+
+  get_all_args(funname, args, "%S.%d", &str, &flags);
+
+  src = STR0(str);
+  cnt = str->len;
 
   while (cnt>0)
     switch (rfc822ctype[*src]) {
@@ -761,23 +779,29 @@ static void low_tokenize( INT32 args, int mode )
 	if (src[l] == '"')
 	  break;
 	else
-	  if (src[l] == '\\') {
+	  if ((src[l] == '\\') && !(flags & TOKENIZE_KEEP_ESCAPES)) {
 	    e++;
 	    l++;
 	  }
 
-      /* l is the distance to the ending ", and e is the number of \
-	 escapes encountered on the way */
-      str = begin_shared_string( l-e-1 );
-
-      /* Copy the string and remove \ escapes */
-      for (p = str->str, e = 1; e < l; e++)
-	*p++ = (src[e] == '\\'? src[++e] : src[e]);
-
       /* Push the resulting string */
       if(mode)
 	push_constant_text("word");
-      push_string( end_shared_string( str ) );
+
+      if (e) {
+	/* l is the distance to the ending ", and e is the number of	\
+	   escapes encountered on the way */
+	str = begin_shared_string( l-e-1 );
+
+	/* Copy the string and remove \ escapes */
+	for (p = str->str, e = 1; e < l; e++)
+	  *p++ = (src[e] == '\\'? src[++e] : src[e]);
+
+	push_string( end_shared_string( str ) );
+      } else {
+	/* No escapes. */
+	push_string(make_shared_binary_string( (char *)src+1, l-1));
+      }
       if(mode)
 	f_aggregate(2);
       n++;
@@ -882,16 +906,26 @@ static void low_tokenize( INT32 args, int mode )
 
   /* Create the resulting array and push it */
   arr = aggregate_array( n );
-  pop_n_elems( 1 );
+  pop_n_elems( args );
   push_array( arr );
 }
 
-/*! @decl array(string|int) tokenize(string header)
+/*! @decl array(string|int) tokenize(string header, int|void flags)
  *!
  *! A structured header field, as specified by RFC822, is constructed from
  *! a sequence of lexical elements.
  *!
- *! These are:
+ *! @param header
+ *!   The header value to parse.
+ *!
+ *! @param flags
+ *!   An optional set of flags. Currently only one flag is defined:
+ *!   @int
+ *!     @value @[TOKENIZE_KEEP_ESCAPES]
+ *!       Keep backslash-escapes in quoted-strings.
+ *!   @endint
+ *!
+ *! The lexical elements parsed are:
  *! @dl
  *!   @item
  *!     individual special characters
@@ -932,24 +966,26 @@ static void low_tokenize( INT32 args, int mode )
  */
 static void f_tokenize( INT32 args )
 {
-  if (args != 1)
-    Pike_error( "Wrong number of arguments to MIME.tokenize()\n" );
-
-  if (sp[-1].type != T_STRING)
-    Pike_error( "Wrong type of argument to MIME.tokenize()\n" );
-
-  if (sp[-1].u.string->size_shift != 0)
-    Pike_error( "Char out of range for MIME.tokenize()\n" );
-
-  low_tokenize( args, 0 );
+  low_tokenize("MIME.tokenize", args, 0 );
 }
 
-/*! @decl array(array(string|int)) tokenize_labled(string header)
+/*! @decl array(array(string|int)) tokenize_labled(string header, @
+ *!						   int|void flags)
  *!
  *! Similar to @[tokenize()], but labels the contents, by making
  *! arrays with two elements; the first a label, and the second
  *! the value that @[tokenize()] would have put there, except
  *! for that comments are kept.
+ *!
+ *! @param header
+ *!   The header value to parse.
+ *!
+ *! @param flags
+ *!   An optional set of flags. Currently only one flag is defined:
+ *!   @int
+ *!     @value @[TOKENIZE_KEEP_ESCAPES]
+ *!       Keep backslash-escapes in quoted-strings.
+ *!   @endint
  *!
  *! The following labels exist:
  *! @string
@@ -971,16 +1007,7 @@ static void f_tokenize( INT32 args )
  */
 static void f_tokenize_labled( INT32 args )
 {
-  if (args != 1)
-    Pike_error( "Wrong number of arguments to MIME.tokenize_labled()\n" );
-
-  if (sp[-1].type != T_STRING)
-    Pike_error( "Wrong type of argument to MIME.tokenize_labled()\n" );
-
-  if (sp[-1].u.string->size_shift != 0)
-    Pike_error( "Char out of range for MIME.tokenize_labled()\n" );
-
-  low_tokenize( args, 1 );
+  low_tokenize("MIME.tokenize_labled", args, 1);
 }
 
 
