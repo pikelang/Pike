@@ -3,7 +3,7 @@
 // RFC1521 functionality for Pike
 //
 // Marcus Comstedt 1996-1999
-// $Id: module.pmod,v 1.18 2008/01/25 21:53:10 grubba Exp $
+// $Id: module.pmod,v 1.19 2008/01/25 22:26:29 grubba Exp $
 
 
 //! RFC1521, the @b{Multipurpose Internet Mail Extensions@} memo, defines a
@@ -1188,26 +1188,22 @@ class Message {
       boundary = params["boundary"];
     }
     if (headers["content-disposition"]) {
-      int ismsie=1;	// kludge for MSIE undoubled backslashes in filenames
-      if(ismsie) {
-       string s=headers["content-disposition"];
-#define MSIEFILENAME	"; filename=\""
-       int offset = search(s, MSIEFILENAME);
-       if (offset>=0) {
-	 // Perform approximate check for MSIE
-	 offset += sizeof(MSIEFILENAME);
-	 // FIXME: Consider paths of the type \\host\path\from\root\.
-	 if (offset+4 <= sizeof(s) &&
-	     (s[offset]=='\\' && s[offset+1]!='\\' ||
-	      s[offset+1]==':' && s[offset+2]=='\\' && s[offset+3]!='\\' &&
-	      (s[offset]>='a' && s[offset]<='z' ||
-	       s[offset]>='A' && s[offset]<='Z')))
-	   headers["content-disposition"] =
-	     s[0..offset-1] + replace(s[offset..], "\\", "\\\\");
-        }
+      array(array(string|int)) arr;
+      array(array(string|int)) arr2;
+      mixed err = catch {
+	  arr = tokenize(headers["content-disposition"]) / ({';'});
+	};
+      mixed err2 = catch {
+	  arr2 = tokenize(headers["content-disposition"],
+			  MIME.TOKENIZE_KEEP_ESCAPES) / ({';'});
+	};
+      if (err) {
+	if (!guess || err2) throw(err);
+	// Known broken, probably MSIE.
+	arr = arr2;
+	arr2 = 0;
       }
-      array(array(string|int)) arr =
-	tokenize(headers["content-disposition"]) / ({';'});
+      
       array(string|int) p;
       if(sizeof(arr[0])!=1 || !stringp(arr[0][0]))
       {
@@ -1220,11 +1216,25 @@ class Message {
 	  if(sizeof(p))
 	  {
 	    if(sizeof(p)<3 || p[1]!='=' || !stringp(p[0]))
-	      if(guess)
+	      if(guess) {
 		break;
-	      else
+	      } else
 		error("invalid parameter %O in Content-Disposition\n", p[0]);
-	    disp_params[ lower_case(p[0]) ] = p[2..]*"";
+	    string param = lower_case(p[0]);
+	    string val = p[2..]*"";
+	    if ((param == "filename") && guess && arr2 &&
+		!has_value(val, "/") && !has_value(val, "\\")) {
+	      // Check for MSIE.
+	      string val2;
+	      foreach(arr2, array(string|int) p2) {
+		if ((sizeof(p2) < 3) || (p2[1] != '=') ||
+		    (lower_case(p2[0]) != "filename")) continue;
+		val2 = p2[2..]*"";
+		break;
+	      }
+	      if (val2 && has_value(val2, "\\")) val = val2;
+	    }
+	    disp_params[ param ] = val;
 	  }
       }
     }
