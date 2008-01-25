@@ -1077,6 +1077,9 @@ class cYear
 	    m=md=w=wd=CALUNKNOWN;
 	    yd=1;
 	    return;
+	 case "unix": case "unix_r": case "julian": case "julian_r":
+	    // Handled by ::create.
+	    break;
 	 default:
 	    if (intp(args[0]) && sizeof(args)==1)
 	    {
@@ -1383,6 +1386,9 @@ class cMonth
 	       create_julian_day(args[2]);
 	       n=args[3];
 	       return;
+	    case "unix": case "unix_r": case "julian": case "julian_r":
+	       // Handled by ::create.
+	       break;
 	    default:
 	       if (intp(args[0]) && sizeof(args)==2)
 	       {
@@ -1678,6 +1684,9 @@ class cWeek
 	       create_julian_day(args[2]);
 	       n=args[3];
 	       return;
+	    case "unix": case "unix_r": case "julian": case "julian_r":
+	       // Handled by ::create.
+	       break;
 	    default:
 	       if (intp(args[0]) && sizeof(args)==2)
 	       {
@@ -1992,6 +2001,7 @@ class cDay
 	    case "julian_r":
 	    case "unix":
 	    case "julian":
+	       // Handled by ::create.
 	       break;
 	    default:
 	       rules=default_rules;
