@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: apply_low.h,v 1.31 2007/12/31 12:38:52 grubba Exp $
+|| $Id: apply_low.h,v 1.32 2008/01/26 22:34:17 mast Exp $
 */
 
     {
@@ -254,12 +254,11 @@
 	      dmalloc_touch_svalue(Pike_sp-i);
 	    }
 	  }
-#endif /* DEBUG_MALLOC */	      
-	  Pike_sp[-args-1].type=T_INT;
+#endif /* DEBUG_MALLOC */
 	}else{
 	  free_svalue(Pike_sp-args-1);
-	  Pike_sp[-args-1].type=T_INT;
 	}
+	mark_free_svalue (Pike_sp - args - 1);
 	low_object_index_no_free(Pike_sp-args-1,o,fun);
 
 	/* No profiling code for calling variables - Hubbe */

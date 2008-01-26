@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.249 2008/01/19 17:06:50 grubba Exp $
+|| $Id: encode.c,v 1.250 2008/01/26 22:34:19 mast Exp $
 */
 
 #include "global.h"
@@ -444,7 +444,7 @@ static void zap_unfinished_program(struct program *p)
   for(e=0;e<p->num_constants;e++)
   {
     free_svalue(& p->constants[e].sval);
-    p->constants[e].sval.type=T_INT;
+    mark_free_svalue (&p->constants[e].sval);
   }
   
   for(e=0;e<p->num_inherits;e++)
@@ -1847,6 +1847,7 @@ void f_encode_value_canonic(INT32 args)
   data->encoded=allocate_mapping(128);
   data->delayed = allocate_array (0);
   data->counter.type=T_INT;
+  data->counter.subtype=NUMBER_NUMBER;
   data->counter.u.integer=COUNTER_START;
   
 #ifdef ENCODE_DEBUG
@@ -3056,7 +3057,7 @@ static void decode_value2(struct decode_data *data)
 #include "program_areas.h"
 
 	    for(e=0;e<p->num_constants;e++)
-	      p->constants[e].sval.type=T_INT;
+	      mark_free_svalue (&p->constants[e].sval);
 
 	    debug_malloc_touch(dat);
 	    debug_malloc_touch(p);
@@ -4457,7 +4458,7 @@ int re_decode(struct decode_data *data, int ignored)
   JMP_BUF recovery;
   struct svalue orig_thrown;
   move_svalue (&orig_thrown, &throw_value);
-  throw_value.type = T_INT;
+  mark_free_svalue (&throw_value);
 
   if (SETJMP (recovery)) {
     UNSETJMP (recovery);

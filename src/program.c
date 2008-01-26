@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.641 2008/01/24 13:58:26 mast Exp $
+|| $Id: program.c,v 1.642 2008/01/26 22:34:23 mast Exp $
 */
 
 #include "global.h"
@@ -1657,7 +1657,7 @@ struct node_s *resolve_identifier(struct pike_string *ident)
 	  if (throw_value.type == T_STRING) {
 	    my_yyerror("%S", throw_value.u.string);
 	    free_svalue(&throw_value);
-	    throw_value.type = T_INT;
+	    mark_free_svalue (&throw_value);
 	  }
 	  else {
 	    handle_compile_exception ("Error resolving %S.", ident);
@@ -1668,7 +1668,7 @@ struct node_s *resolve_identifier(struct pike_string *ident)
 	   * least in rtldebug mode, but this borken, borken, boRKen. :P */
 	  struct svalue thrown;
 	  move_svalue (&thrown, &throw_value);
-	  throw_value.type = T_INT;
+	  mark_free_svalue (&throw_value);
 #ifdef PIKE_DEBUG
 	  {
 	    struct pike_string *msg = format_exception_for_error_msg (&thrown);
@@ -6754,7 +6754,7 @@ void handle_compile_exception (const char *yyerror_fmt, ...)
 {
   struct svalue thrown;
   move_svalue (&thrown, &throw_value);
-  throw_value.type = T_INT;
+  mark_free_svalue (&throw_value);
 
   if (yyerror_fmt) {
     va_list args;
@@ -7350,6 +7350,7 @@ static void run_cleanup(struct compilation *c, int delayed)
 	for (i = 0; i < p->num_constants; i++) {
 	  free_svalue(&p->constants[i].sval);
 	  p->constants[i].sval.type = T_INT;
+	  p->constants[i].sval.subtype = NUMBER_NUMBER;
 	}
       }
 
@@ -7468,6 +7469,7 @@ struct program *compile(struct pike_string *aprog,
   if((c->target=atarget)) add_ref(atarget);
   if((c->placeholder=aplaceholder)) add_ref(aplaceholder);
   c->default_module.type=T_INT;
+  c->default_module.subtype = NUMBER_NUMBER;
 
   if (c->handler)
   {
@@ -8143,6 +8145,7 @@ size_t gc_free_all_unreferenced_programs(void)
       {
 	free_svalue(& p->constants[e].sval);
 	p->constants[e].sval.type=T_INT;
+	p->constants[e].sval.subtype = NUMBER_NUMBER;
       }
 
       for(e=0;e<p->num_inherits;e++)

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sscanf.c,v 1.169 2007/05/20 19:16:48 nilsson Exp $
+|| $Id: sscanf.c,v 1.170 2008/01/26 22:34:24 mast Exp $
 */
 
 #include "global.h"
@@ -1202,6 +1202,7 @@ CHAROPT2(								 \
 		  INT32 x;						 \
 		  struct svalue tmp;					 \
 		  tmp.type=T_INT;					 \
+		  tmp.subtype = NUMBER_NUMBER;				\
 		  tmp.u.integer=input[eye];				 \
 		  x=switch_lookup(set.a, &tmp);				 \
 		  if( set.neg != (x<0 && (x&1)) ) break;		 \

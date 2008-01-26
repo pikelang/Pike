@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: html.c,v 1.177 2005/05/19 22:35:36 mast Exp $
+|| $Id: html.c,v 1.178 2008/01/26 22:34:25 mast Exp $
 */
 
 #include "global.h"
@@ -3991,7 +3991,7 @@ static void html_read(INT32 args)
 	 struct out_piece *z = THIS->out;
 	 type_field |= 1 << z->v.type;
 	 ITEM(res)[i] = z->v;
-	 z->v.type = T_INT;
+	 mark_free_svalue (&z->v);
 	 THIS->out = THIS->out->next;
 	 really_free_out_piece (z);
       }
@@ -4038,7 +4038,7 @@ static void html_read(INT32 args)
        if (THIS->out->v.u.string->len == n) {
 	 struct out_piece *z = THIS->out;
 	 push_string (z->v.u.string);
-	 z->v.type = T_INT;
+	 mark_free_svalue (&z->v);
 	 THIS->out = z->next;
 	 really_free_out_piece (z);
        }

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.402 2008/01/16 19:41:13 grubba Exp $
+|| $Id: las.c,v 1.403 2008/01/26 22:34:21 mast Exp $
 */
 
 #include "global.h"
@@ -5163,11 +5163,11 @@ ptrdiff_t eval_low(node *n,int print_error)
 	  handle_compile_exception("Error evaluating constant.");
 	else {
 	  free_svalue(&throw_value);
-	  throw_value.type = T_INT;
+	  mark_free_svalue (&throw_value);
 	}
       else {
 	free_svalue(&throw_value);
-	throw_value.type = T_INT;
+	mark_free_svalue (&throw_value);
 	/* Assume the node will throw errors at runtime too. */
 	n->tree_info |= OPT_SIDE_EFFECT;
 	n->node_info |= OPT_SIDE_EFFECT;

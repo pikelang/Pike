@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.330 2008/01/13 18:21:32 grubba Exp $
+|| $Id: signal_handler.c,v 1.331 2008/01/26 22:34:23 mast Exp $
 */
 
 #include "global.h"
@@ -1146,6 +1146,7 @@ static void init_pid_status(struct object *o)
   THIS->state=PROCESS_UNKNOWN;
   THIS->result=-1;
   THIS->callback.type = T_INT;
+  THIS->callback.subtype = NUMBER_NUMBER;
   THIS->callback.u.integer = 0;
 #endif
 }
@@ -1157,6 +1158,7 @@ static void exit_pid_status(struct object *o)
   {
     struct svalue key;
     key.type=PIKE_T_INT;
+    key.subtype = NUMBER_NUMBER;
     key.u.integer=THIS->pid;
     map_delete(pid_mapping, &key);
   }
@@ -4805,8 +4807,10 @@ void init_signals(void)
   init_interleave_mutex(&handle_protection_mutex);
 #endif /* __NT__ */
 
-  for(e=0;e<MAX_SIGNALS;e++)
+  for(e=0;e<MAX_SIGNALS;e++) {
     signal_callbacks[e].type = PIKE_T_INT;
+    signal_callbacks[e].subtype = NUMBER_NUMBER;
+  }
 
   low_init_signals();
 
@@ -4954,5 +4958,6 @@ void exit_signals(void)
   {
     free_svalue(signal_callbacks+e);
     signal_callbacks[e].type = PIKE_T_INT;
+    signal_callbacks[e].subtype = NUMBER_NUMBER;
   }
 }

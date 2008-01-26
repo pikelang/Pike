@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: math.c,v 1.86 2007/03/31 14:10:36 grubba Exp $
+|| $Id: math.c,v 1.87 2008/01/26 22:34:27 mast Exp $
 */
 
 #include "global.h"
@@ -703,6 +703,7 @@ void f_abs(INT32 args)
 {
   struct svalue zero;
   zero.type=T_INT;
+  zero.subtype = NUMBER_NUMBER;
   zero.u.integer=0;
 
   check_all_args("abs",args,BIT_INT|BIT_FLOAT|BIT_OBJECT,0);

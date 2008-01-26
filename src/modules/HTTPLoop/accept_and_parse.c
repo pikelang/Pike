@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: accept_and_parse.c,v 1.38 2005/11/14 21:15:25 nilsson Exp $
+|| $Id: accept_and_parse.c,v 1.39 2008/01/26 22:34:25 mast Exp $
 */
 
 /* Hohum. Here we go. This is try number four for a more optimized
@@ -553,7 +553,7 @@ static void finished_p(struct callback *foo, void *b, void *c)
 /*       JMP_BUF recovery; */
 
 /*       free_svalue(& throw_value); */
-/*       throw_value.type=T_INT; */
+/*       mark_free_svalue (&throw_value); */
 
 /*       if(SETJMP(recovery)) */
 /*       { */

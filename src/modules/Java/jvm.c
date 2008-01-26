@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: jvm.c,v 1.83 2008/01/17 16:36:11 grubba Exp $
+|| $Id: jvm.c,v 1.84 2008/01/26 22:34:25 mast Exp $
 */
 
 /*
@@ -2035,7 +2035,7 @@ static void do_native_dispatch(void *arg)
     pop_n_elems(Pike_sp-osp);
     UNSETJMP(recovery);
     free_svalue(&throw_value);
-    throw_value.type = PIKE_T_INT;
+    mark_free_svalue (&throw_value);
     return;
   }
 

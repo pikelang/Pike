@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.194 2008/01/05 18:05:10 nilsson Exp $
+|| $Id: mapping.c,v 1.195 2008/01/26 22:34:21 mast Exp $
 */
 
 #include "global.h"
@@ -190,12 +190,12 @@ static void init_mapping(struct mapping *m,
     for(e=1;e<size;e++)
     {
       md->free_list[e-1].next = md->free_list + e;
-      md->free_list[e-1].ind.type=T_INT;
-      md->free_list[e-1].val.type=T_INT;
+      mark_free_svalue (&md->free_list[e-1].ind);
+      mark_free_svalue (&md->free_list[e-1].val);
     }
     md->free_list[e-1].next=0;
-    md->free_list[e-1].ind.type=T_INT;
-    md->free_list[e-1].val.type=T_INT;
+    mark_free_svalue (&md->free_list[e-1].ind);
+    mark_free_svalue (&md->free_list[e-1].val);
 #endif /* !PIKE_MAPPING_KEYPAIR_LOOP */
     md->ind_types = 0;
     md->val_types = 0;
@@ -987,8 +987,8 @@ PMOD_EXPORT void map_delete_no_free(struct mapping *m,
 
   FREE_KEYPAIR(md, k);
 
-  md->free_list->ind.type=T_INT;
-  md->free_list->val.type=T_INT;
+  mark_free_svalue (&md->free_list->ind);
+  mark_free_svalue (&md->free_list->val);
 
   md->size--;
 #ifdef MAPPING_SIZE_DEBUG
@@ -1048,8 +1048,8 @@ PMOD_EXPORT void check_mapping_for_destruct(struct mapping *m)
 	  free_svalue(& k->ind);
 	  free_svalue(& k->val);
 	  FREE_KEYPAIR(md, k);
-	  md->free_list->ind.type = T_INT;
-	  md->free_list->val.type = T_INT;
+	  mark_free_svalue (&md->free_list->ind);
+	  mark_free_svalue (&md->free_list->val);
 	  md->size--;
 #ifdef MAPPING_SIZE_DEBUG
 	  if(m->data ==md)
@@ -1214,8 +1214,10 @@ PMOD_EXPORT void mapping_index_no_free(struct svalue *dest,
 
   if(!IS_DESTRUCTED (key) && (p=low_mapping_lookup(m,key)))
   {
+#if 0
     if(p->type==T_INT)
       p->subtype=NUMBER_NUMBER;
+#endif
 
     assign_svalue_no_free(dest, p);
   }else{
@@ -1946,7 +1948,7 @@ void describe_mapping(struct mapping *m,struct processing *p,int indent)
     Pike_interpreter.trace_level = 0;
     if(SETJMP(catch)) {
       free_svalue(&throw_value);
-      throw_value.type = T_INT;
+      mark_free_svalue (&throw_value);
     }
     else
       sort_array_destructively(a);
@@ -2364,8 +2366,8 @@ void check_all_mappings(void)
 	}								\
 	(*prev_)->next = k->next;					\
         FREE_KEYPAIR(MD, k);						\
-        MD->free_list->ind.type = T_INT;				\
-        MD->free_list->val.type = T_INT;				\
+	mark_free_svalue (&MD->free_list->ind);				\
+	mark_free_svalue (&MD->free_list->val);				\
 	MD->size--;							\
 	DO_IF_MAPPING_SIZE_DEBUG(					\
 	  if(M->data ==MD)						\
@@ -2397,8 +2399,8 @@ void check_all_mappings(void)
       {									\
 	*prev=k->next;							\
         FREE_KEYPAIR(MD, k);						\
-        MD->free_list->ind.type = T_INT;				\
-        MD->free_list->val.type = T_INT;				\
+	mark_free_svalue (&MD->free_list->ind);				\
+	mark_free_svalue (&MD->free_list->val);				\
 	MD->size--;							\
 	DO_IF_MAPPING_SIZE_DEBUG(					\
 	  if(M->data ==MD)						\

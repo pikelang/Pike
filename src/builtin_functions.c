@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.649 2008/01/23 19:52:49 grubba Exp $
+|| $Id: builtin_functions.c,v 1.650 2008/01/26 22:34:17 mast Exp $
 */
 
 #include "global.h"
@@ -3942,9 +3942,10 @@ node *optimize_replace(node *n)
       struct svalue *save_sp = Pike_sp;
       JMP_BUF tmp;
       if (SETJMP(tmp)) {
-	struct svalue thrown = throw_value;
+	struct svalue thrown;
 	struct pike_string *s;
-	throw_value.type = T_INT;
+	move_svalue (&thrown, &throw_value);
+	mark_free_svalue (&throw_value);
 	pop_n_elems(Pike_sp - save_sp);
 	yywarning("Optimizer failure in replace().");
 	s = format_exception_for_error_msg (&thrown);
@@ -6082,10 +6083,12 @@ static struct array* diff_compare_table(struct array *a,struct array *b,int *u)
       }
       else
       {
-	 pval->u.array=resize_array(pval->u.array,pval->u.array->size+1);
-	 pval->u.array->item[pval->u.array->size-1].type=T_INT;
-	 pval->u.array->item[pval->u.array->size-1].subtype=NUMBER_NUMBER;
-	 pval->u.array->item[pval->u.array->size-1].u.integer=i;
+	struct array *a = pval->u.array=
+	  resize_array(pval->u.array,pval->u.array->size+1);
+	struct svalue *s = ITEM(a) + pval->u.array->size-1;
+	s->type=T_INT;
+	s->subtype=NUMBER_NUMBER;
+	s->u.integer=i;
       }
    }
 
@@ -7533,6 +7536,10 @@ PMOD_EXPORT void f_object_variablep(INT32 args)
 /*! @module Array
  */
 
+#ifdef HAVE_UNION_INIT
+static const struct svalue one = {PIKE_T_INT, NUMBER_NUMBER, {1}};
+#endif
+
 /*! @decl array uniq(array a)
  *!
  *!   Remove elements that are duplicates.
@@ -7552,15 +7559,20 @@ PMOD_EXPORT void f_uniq_array(INT32 args)
 {
   struct array *a, *b;
   struct mapping *m;
+#ifndef HAVE_UNION_INIT
   struct svalue one;
+#endif
   int i, j=0,size=0;
 
   get_all_args("uniq", args, "%a", &a);
   push_mapping(m = allocate_mapping(a->size));
   push_array(b = allocate_array(a->size));
 
+#ifndef HAVE_UNION_INIT
   one.type = T_INT;
+  one.subtype = NUMBER_NUMBER;
   one.u.integer = 1;
+#endif
   for(i =0; i< a->size; i++)
   {
     mapping_insert(m, ITEM(a)+i, &one);
@@ -7982,8 +7994,8 @@ PMOD_EXPORT void f_map(INT32 args)
 	 push_svalue(mysp-3); /* arr */
 	 f_values(1);
 	 push_svalue(mysp-2); /* fun */
-	 *Pike_sp=mysp[-1];        /* extra */
-	 mysp[-1].type=T_INT;
+	 move_svalue (Pike_sp, mysp-1); /* extra */
+	 mark_free_svalue (mysp-1);
 	 dmalloc_touch_svalue(Pike_sp);
 	 push_array_items(Pike_sp->u.array);
 	 f_map(splice+2);     /* ... arr fun extra -> ... retval */
@@ -7999,7 +8011,7 @@ PMOD_EXPORT void f_map(INT32 args)
 	       (multiset)(map(indices(arr),fun,@extra)); */
 	 push_svalue(Pike_sp-args);      /* take indices from arr */
 	 free_svalue(Pike_sp-args-1);    /* move it to top of stack */
-	 Pike_sp[-args-1].type=T_INT;    
+	 mark_free_svalue (Pike_sp-args-1);
 	 f_indices(1);              /* call f_indices */
 	 Pike_sp--;
 	 dmalloc_touch_svalue(Pike_sp);
@@ -8019,7 +8031,7 @@ PMOD_EXPORT void f_map(INT32 args)
 	       (string)(map((array)arr,fun,@extra)); */
 	 push_svalue(Pike_sp-args);      /* take indices from arr */
 	 free_svalue(Pike_sp-args-1);    /* move it to top of stack */
-	 Pike_sp[-args-1].type=T_INT;    
+	 mark_free_svalue (Pike_sp-args-1);
 	 o_cast(NULL,T_ARRAY);      /* cast the string to an array */
 	 Pike_sp--;                       
 	 dmalloc_touch_svalue(Pike_sp);
@@ -8139,7 +8151,7 @@ PMOD_EXPORT void f_map(INT32 args)
    if (UNSAFE_IS_ZERO (Pike_sp-args+1)) {
      free_svalue (Pike_sp-args+1);
      move_svalue (Pike_sp-args+1, Pike_sp-args);
-     Pike_sp[-args].type = T_INT;
+     mark_free_svalue (Pike_sp-args);
      mega_apply (APPLY_STACK, args-1, 0, 0);
      stack_pop_keep_top();
      return;
@@ -8400,8 +8412,8 @@ PMOD_EXPORT void f_filter(INT32 args)
 	                 map(values(arr),fun,@extra)); */
 	 MEMMOVE(Pike_sp-args+2,Pike_sp-args,args*sizeof(*Pike_sp));
 	 Pike_sp+=2;
-	 Pike_sp[-args-2].type=T_INT;
-	 Pike_sp[-args-1].type=T_INT;
+	 mark_free_svalue (Pike_sp-args-2);
+	 mark_free_svalue (Pike_sp-args-1);
 
 	 push_svalue(Pike_sp-args);
 	 f_indices(1);
@@ -8438,7 +8450,7 @@ PMOD_EXPORT void f_filter(INT32 args)
       case T_MULTISET:
 	 push_svalue(Pike_sp-args);      /* take indices from arr */
 	 free_svalue(Pike_sp-args-1);    /* move it to top of stack */
-	 Pike_sp[-args-1].type=T_INT;    
+	 mark_free_svalue (Pike_sp-args-1);
 	 f_indices(1);              /* call f_indices */
 	 Pike_sp--;                       
 	 dmalloc_touch_svalue(Pike_sp);
@@ -8456,7 +8468,7 @@ PMOD_EXPORT void f_filter(INT32 args)
       case T_STRING:
 	 push_svalue(Pike_sp-args);      /* take indices from arr */
 	 free_svalue(Pike_sp-args-1);    /* move it to top of stack */
-	 Pike_sp[-args-1].type=T_INT;    
+	 mark_free_svalue (Pike_sp-args-1);
 	 o_cast(NULL,T_ARRAY);      /* cast the string to an array */
 	 Pike_sp--;                       
 	 dmalloc_touch_svalue(Pike_sp);

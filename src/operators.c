@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.225 2008/01/24 17:48:18 mast Exp $
+|| $Id: operators.c,v 1.226 2008/01/26 22:34:22 mast Exp $
 */
 
 #include "global.h"
@@ -1491,7 +1491,7 @@ PMOD_EXPORT void f_add(INT32 args)
     
     tmp=sp[-args].u.string->len;
     r=new_realloc_shared_string(sp[-args].u.string,size,max_shift);
-    sp[-args].type=T_INT;
+    mark_free_svalue (sp - args);
     buf=MKPCHARP_STR_OFF(r,tmp);
     for(e=-args+1;e<0;e++)
     {
@@ -5367,7 +5367,9 @@ static void f_string_assignment_assign_index(INT32 args)
 static void init_string_assignment_storage(struct object *o)
 {
   THIS->lval[0].type = T_INT;
+  THIS->lval[0].subtype = PIKE_T_FREE;
   THIS->lval[1].type = T_INT;
+  THIS->lval[1].subtype = PIKE_T_FREE;
   THIS->s = NULL;
 }
 

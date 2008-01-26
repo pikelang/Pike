@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.280 2008/01/24 18:34:19 grubba Exp $
+|| $Id: object.c,v 1.281 2008/01/26 22:34:22 mast Exp $
 */
 
 #include "global.h"
@@ -607,7 +607,7 @@ PMOD_EXPORT struct object *get_master(void)
 	/* do nothing */
 	UNSETJMP(tmp);
 	free_svalue(&throw_value);
-	throw_value.type = T_INT;
+	mark_free_svalue (&throw_value);
       }else{
 	f_decode_value(2);
 	UNSETJMP(tmp);
@@ -743,14 +743,14 @@ static void call_destroy(struct object *o, enum object_destruct_reason reason)
 #endif
 
       free_svalue (&throw_value);
-      throw_value.type = T_INT;
+      mark_free_svalue (&throw_value);
 
       if (SETJMP (jmp)) {
 	UNSETJMP (jmp);
 	if (gc_destruct_everything) {
 	  struct svalue err;
 	  move_svalue (&err, &throw_value);
-	  throw_value.type = T_INT;
+	  mark_free_svalue (&throw_value);
 	  if (!SETJMP (jmp)) {
 	    push_svalue (&err);
 	    push_int (0);

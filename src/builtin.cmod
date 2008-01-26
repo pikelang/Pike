@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.192 2007/08/06 08:09:36 nilsson Exp $
+|| $Id: builtin.cmod,v 1.193 2008/01/26 22:34:17 mast Exp $
 */
 
 #include "global.h"
@@ -570,6 +570,7 @@ PIKEFUN mapping(string:mixed) gc_parameters (void|mapping(string:mixed) params)
       }
     }, {
       get.type = T_INT;
+      get.subtype = NUMBER_NUMBER;
       get.u.integer = gc_enabled;
     });
   HANDLE_FLOAT_FACTOR ("garbage_ratio_low", gc_garbage_ratio_low);
@@ -1895,7 +1896,7 @@ PIKECLASS Buffer
 
       if (shift == Pike_sp[-args].u.string->size_shift &&
 	  init_string_builder_with_string (&str->str, Pike_sp[-args].u.string)) {
-	Pike_sp[-args].type = T_INT;
+	mark_free_svalue (Pike_sp - args);
 	if (sum > str->str.s->len)
 	  string_build_mkspace (&str->str, sum - str->str.s->len, shift);
 	init_from_arg0 = 1;

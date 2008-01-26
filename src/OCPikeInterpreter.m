@@ -114,9 +114,8 @@ static void set_default_master(void)
 	        dynbuf_string s;
 	        struct svalue t;
 
-	        *(Pike_sp++) = throw_value;
-	        dmalloc_touch_svalue(Pike_sp-1);
-	        throw_value.type=T_INT;  
+		move_svalue (Pike_sp++, &throw_value);
+		mark_free_svalue (&throw_value);
 	        err = (struct generic_error_struct *)
 	          get_storage (Pike_sp[-1].u.object, generic_error_program);
 

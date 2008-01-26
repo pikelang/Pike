@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: requestobject.c,v 1.30 2005/05/06 00:48:32 nilsson Exp $
+|| $Id: requestobject.c,v 1.31 2008/01/26 22:34:25 mast Exp $
 */
 
 #include "global.h"
@@ -593,6 +593,7 @@ void f_aap_index_op(INT32 args)
     else
     {
       sp[-1].type = T_INT;
+      sp[-1].subtype = NUMBER_NUMBER;
       sp[-1].u.integer = 0;
     }
     push_string(s_since);

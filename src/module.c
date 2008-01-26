@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: module.c,v 1.46 2007/10/06 13:45:22 grubba Exp $
+|| $Id: module.c,v 1.47 2008/01/26 22:34:21 mast Exp $
 */
 
 #include "global.h"
@@ -154,7 +154,7 @@ static void exit_builtin_modules(void)
 
   exit_pike_security();
   free_svalue(& throw_value);
-  throw_value.type=T_INT;
+  mark_free_svalue (&throw_value);
 
   do_gc(NULL, 1);
 

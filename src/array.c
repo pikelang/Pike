@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.197 2007/12/24 15:33:43 grubba Exp $
+|| $Id: array.c,v 1.198 2008/01/26 22:34:17 mast Exp $
 */
 
 #include "global.h"
@@ -408,11 +408,7 @@ PMOD_EXPORT struct array *array_insert(struct array *v,struct svalue *s,INT32 in
 	      (char *)(ITEM(v)+index),
 	      (v->size-index) * sizeof(struct svalue));
     }
-    ITEM(v)[index].type=T_INT;
-#ifdef __CHECKER__
-    ITEM(v)[index].subtype=0;
-    ITEM(v)[index].u.refs=0;
-#endif
+    assert_free_svalue (ITEM(v) + index);
     v->size++;
   }else{
     struct array *ret;
@@ -423,17 +419,13 @@ PMOD_EXPORT struct array *array_insert(struct array *v,struct svalue *s,INT32 in
 
     MEMCPY(ITEM(ret), ITEM(v), sizeof(struct svalue) * index);
     MEMCPY(ITEM(ret)+index+1, ITEM(v)+index, sizeof(struct svalue) * (v->size-index));
-    ITEM(ret)[index].type=T_INT;
-#ifdef __CHECKER__
-    ITEM(ret)[index].subtype=0;
-    ITEM(ret)[index].u.refs=0;
-#endif
+    assert_free_svalue (ITEM(ret) + index);
     v->size=0;
     free_array(v);
     v=ret;
   }
 
-  array_set_index(v,index,s);
+  array_set_index_no_free (v,index,s);
 
   return v;
 }
@@ -1605,6 +1597,7 @@ PMOD_EXPORT struct array *add_arrays(struct svalue *argp, INT32 args)
 	if ((v->item - v->real_item) >= tmp) {
 	  debug_malloc_touch(v);
 	  argp[e].type=T_INT;
+	  argp[e].subtype = NUMBER_NUMBER;
 	  for(tmp=e-1;tmp>=0;tmp--)
 	  {
 	    debug_malloc_touch(argp[tmp].u.array);
@@ -1645,6 +1638,7 @@ PMOD_EXPORT struct array *add_arrays(struct svalue *argp, INT32 args)
     if (v2) {
       debug_malloc_touch(v2);
       argp[e2].type=T_INT;
+      argp[e2].subtype = NUMBER_NUMBER;
       MEMMOVE((char *)(ITEM(v2)+tmp2), (char *)ITEM(v2),
 	      v2->size * sizeof(struct svalue));
       v2->item += tmp2;
@@ -1683,6 +1677,7 @@ PMOD_EXPORT struct array *add_arrays(struct svalue *argp, INT32 args)
     e=argp[0].u.array->size;
     v=resize_array(argp[0].u.array, size);
     argp[0].type=T_INT;
+    argp[0].subtype = NUMBER_NUMBER;
     size=e;
     e=1;
   }else{

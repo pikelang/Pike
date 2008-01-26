@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.105 2007/12/27 22:11:04 nilsson Exp $
+|| $Id: multiset.c,v 1.106 2008/01/26 22:34:22 mast Exp $
 */
 
 #include "global.h"
@@ -870,11 +870,7 @@ PMOD_EXPORT struct multiset *real_allocate_multiset (int allocsize,
    * multisets with allocsize, since prepare_for_add shrinks them. */
 
 #ifdef PIKE_DEBUG
-  if (cmp_less) {
-    if(cmp_less->type == T_INT)
-      cmp_less->subtype = NUMBER_NUMBER;
-    check_svalue (cmp_less);
-  }
+  if (cmp_less) check_svalue (cmp_less);
 #endif
 
   if (allocsize || cmp_less || (flags & ~MULTISET_INDVAL)) {
@@ -882,7 +878,10 @@ PMOD_EXPORT struct multiset *real_allocate_multiset (int allocsize,
     add_ref (l->msd);
     fix_free_list (l->msd, 0);
     if (cmp_less) assign_svalue_no_free (&l->msd->cmp_less, cmp_less);
-    else l->msd->cmp_less.type = T_INT;
+    else {
+      l->msd->cmp_less.type = T_INT;
+      l->msd->cmp_less.subtype = NUMBER_NUMBER;
+    }
   }
   else {
     l->msd = flags & MULTISET_INDVAL ? &empty_indval_msd : &empty_ind_msd;
@@ -1040,6 +1039,7 @@ PMOD_EXPORT void multiset_set_flags (struct multiset *l, int flags)
 	  COPY_NODE_IND (onode, nnode, TYPE);				\
 	  INDVAL (							\
 	    nnode->val.type = T_INT;					\
+	    nnode->val.subtype = NUMBER_NUMBER;				\
 	    nnode->val.u.integer = 1;					\
 	  );								\
       }									\
@@ -1067,11 +1067,7 @@ PMOD_EXPORT void multiset_set_cmp_less (struct multiset *l,
 #ifdef PIKE_DEBUG
   debug_malloc_touch (l);
   debug_malloc_touch (old);
-  if (cmp_less) {
-    if(cmp_less->type == T_INT)
-      cmp_less->subtype = NUMBER_NUMBER;
-    check_svalue (cmp_less);
-  }
+  if (cmp_less) check_svalue (cmp_less);
 #endif
 
 again:
@@ -1084,7 +1080,10 @@ again:
     if (prepare_for_change (l, l->node_refs)) old = l->msd;
     free_svalue (&old->cmp_less);
     if (cmp_less) assign_svalue_no_free (&old->cmp_less, cmp_less);
-    else old->cmp_less.type = T_INT;
+    else {
+      old->cmp_less.type = T_INT;
+      old->cmp_less.subtype = NUMBER_NUMBER;
+    }
   }
 
   else {
@@ -1103,7 +1102,10 @@ again:
 
     free_svalue (&new.msd->cmp_less);
     if (cmp_less) assign_svalue_no_free (&new.msd->cmp_less, cmp_less);
-    else new.msd->cmp_less.type = T_INT;
+    else {
+      new.msd->cmp_less.type = T_INT;
+      new.msd->cmp_less.subtype = NUMBER_NUMBER;
+    }
 
     do {
       low_use_multiset_index (new.list, ind);
@@ -1170,11 +1172,7 @@ PMOD_EXPORT struct multiset *mkmultiset_2 (struct array *indices,
   if (values && values->size != indices->size)
     Pike_fatal ("Indices and values not of same size (%d vs %d).\n",
 	   indices->size, values->size);
-  if (cmp_less) {
-    if(cmp_less->type == T_INT)
-      cmp_less->subtype = NUMBER_NUMBER;
-    check_svalue (cmp_less);
-  }
+  if (cmp_less) check_svalue (cmp_less);
 #endif
 
   new.l = NULL, new.msd2 = NULL;
@@ -1182,7 +1180,10 @@ PMOD_EXPORT struct multiset *mkmultiset_2 (struct array *indices,
 				     values ? MULTISET_INDVAL : 0);
 
   if (cmp_less) assign_svalue_no_free (&new.msd->cmp_less, cmp_less);
-  else new.msd->cmp_less.type = T_INT;
+  else {
+    new.msd->cmp_less.type = T_INT;
+    new.msd->cmp_less.subtype = NUMBER_NUMBER;
+  }
 
   if (!indices->size)
     fix_free_list (new.msd, 0);
@@ -2024,6 +2025,7 @@ PMOD_EXPORT void multiset_insert (struct multiset *l,
       }									\
       else {								\
 	NEW->iv.val.type = T_INT;					\
+	NEW->iv.val.subtype = NUMBER_NUMBER;				\
 	NEW->iv.val.u.integer = 1;					\
 	MSD->val_types |= BIT_INT;					\
       }									\
@@ -2136,6 +2138,7 @@ PMOD_EXPORT ptrdiff_t multiset_insert_2 (struct multiset *l,
 	    else {
 	      free_svalue (&RBNODE (node)->iv.val);
 	      RBNODE (node)->iv.val.type = T_INT;
+	      RBNODE (node)->iv.val.subtype = NUMBER_NUMBER;
 	      RBNODE (node)->iv.val.u.integer = 1;
 	      msd->val_types |= BIT_INT;
 	    }
@@ -2513,6 +2516,7 @@ PMOD_EXPORT int multiset_delete_2 (struct multiset *l,
 	      move_svalue (removed_val, &val);
 	    else {
 	      removed_val->type = T_INT;
+	      removed_val->subtype = NUMBER_NUMBER;
 	      removed_val->u.integer = 1;
 	    }
 	  else
@@ -3725,7 +3729,11 @@ struct multiset *copy_multiset_recursively (struct multiset *l,
     pos++;
 
     new.node->i.ind.type = T_INT;
-    if (got_values) new.node->iv.val.type = T_INT;
+    new.node->i.ind.subtype = NUMBER_NUMBER;
+    if (got_values) {
+      new.node->iv.val.type = T_INT;
+      new.node->iv.val.type = NUMBER_NUMBER;
+    }
 
     low_use_multiset_index (node, ind);
     if (!IS_DESTRUCTED (&ind)) {

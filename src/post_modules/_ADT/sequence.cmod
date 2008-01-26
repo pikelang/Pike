@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sequence.cmod,v 1.18 2006/08/06 14:33:51 mast Exp $
+|| $Id: sequence.cmod,v 1.19 2008/01/26 22:34:27 mast Exp $
 */
 
 #include "global.h"
@@ -928,6 +928,7 @@ PIKECLASS Sequence
 
 	ind.u.integer = THIS->pos;
 	ind.type = T_INT;
+	ind.subtype = NUMBER_NUMBER;
 	simple_array_index_no_free(&retval, THIS->sequence->a, &ind);
 	simple_set_index(THIS->sequence->a, &ind, val);
 	push_svalue(&retval);
@@ -981,6 +982,7 @@ PIKECLASS Sequence
     struct svalue ind;
     ind.u.integer=THIS_SEQUENCE->a->size;
     ind.type=T_INT;
+    ind.subtype = NUMBER_NUMBER;
     ref_push_object(Pike_fp->current_object);
     push_svalue(&ind);
     push_object(clone_object(Sequence_SequenceIterator_program, 2));

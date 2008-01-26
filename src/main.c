@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.227 2007/05/18 14:00:48 grubba Exp $
+|| $Id: main.c,v 1.228 2008/01/26 22:34:21 mast Exp $
 */
 
 #include "global.h"
@@ -549,9 +549,8 @@ int main(int argc, char **argv)
 	dynbuf_string s;
 	struct svalue t;
 
-	*(Pike_sp++) = throw_value;
-	dmalloc_touch_svalue(Pike_sp-1);
-	throw_value.type=T_INT;
+	move_svalue (Pike_sp++, &throw_value);
+	mark_free_svalue (&throw_value);
 	err = (struct generic_error_struct *)
 	  get_storage (Pike_sp[-1].u.object, generic_error_program);
 

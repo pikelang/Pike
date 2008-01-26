@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.196 2007/12/17 18:01:52 grubba Exp $
+|| $Id: interpret_functions.h,v 1.197 2008/01/26 22:34:20 mast Exp $
 */
 
 /*
@@ -650,7 +650,7 @@ OPCODE0(F_LTOSVAL2, "ltosval2", I_UPDATE_SP, {
   dmalloc_touch_svalue(Pike_sp-1);
 
   move_svalue (Pike_sp, Pike_sp - 1);
-  Pike_sp[-1].type = PIKE_T_INT;
+  mark_free_svalue (Pike_sp - 1);
   Pike_sp++;
   lvalue_to_svalue_no_free(Pike_sp-2, Pike_sp-4);
   /* This is so that foo+=bar (and similar things) will be faster.
@@ -678,7 +678,7 @@ OPCODE0(F_LTOSVAL3, "ltosval3", I_UPDATE_SP, {
 
   move_svalue (Pike_sp, Pike_sp - 1);
   move_svalue (Pike_sp - 1, Pike_sp - 2);
-  Pike_sp[-2].type = PIKE_T_INT;
+  mark_free_svalue (Pike_sp - 2);
   Pike_sp++;
   lvalue_to_svalue_no_free(Pike_sp-3, Pike_sp-5);
 
@@ -722,7 +722,7 @@ OPCODE0(F_LTOSVAL1, "ltosval1", I_UPDATE_SP, {
 OPCODE0(F_ADD_TO, "+=", I_UPDATE_SP, {
   ONERROR uwp;
   move_svalue (Pike_sp, Pike_sp - 1);
-  Pike_sp[-1].type=PIKE_T_INT;
+  mark_free_svalue (Pike_sp - 1);
   Pike_sp++;
   lvalue_to_svalue_no_free(Pike_sp-2,Pike_sp-4);
 
@@ -791,7 +791,7 @@ OPCODE0(F_ADD_TO, "+=", I_UPDATE_SP, {
 OPCODE0(F_ADD_TO_AND_POP, "+= and pop", I_UPDATE_SP, {
   ONERROR uwp;
   move_svalue (Pike_sp, Pike_sp - 1);
-  Pike_sp[-1].type=PIKE_T_INT;
+  mark_free_svalue (Pike_sp - 1);
   Pike_sp++;
   lvalue_to_svalue_no_free(Pike_sp-2,Pike_sp-4);
 
@@ -1106,7 +1106,7 @@ OPCODE2_BRANCH(F_BRANCH_IF_NOT_LOCAL_ARROW, "branch if !local->x", 0, {
   tmp.type=PIKE_T_STRING;
   tmp.u.string=Pike_fp->context.prog->strings[arg1];
   tmp.subtype=1;
-  Pike_sp->type=PIKE_T_INT;	
+  mark_free_svalue (Pike_sp);
   Pike_sp++;
   index_no_free(Pike_sp-1,Pike_fp->locals+arg2, &tmp);
   print_return_value();
@@ -1378,7 +1378,7 @@ OPCODE0_PTRJUMP(F_CATCH, "catch", I_UPDATE_ALL, {
 	UNSETJMP (cc->recovery);
 	Pike_fp->expendible = cc->save_expendible;
 	move_svalue (Pike_sp++, &throw_value);
-	throw_value.type=T_INT;
+	mark_free_svalue (&throw_value);
 	low_destruct_objects_to_destruct();
 
 	if (cc->continue_reladdr < 0)
@@ -1802,7 +1802,7 @@ OPCODE2(F_LOCAL_LOCAL_INDEX, "local[local]", I_UPDATE_SP, {
   LOCAL_VAR(struct svalue *s);
   s = Pike_fp->locals + arg1;
   if(s->type == PIKE_T_STRING) s->subtype=0;
-  Pike_sp++->type=PIKE_T_INT;
+  mark_free_svalue (Pike_sp++);
   index_no_free(Pike_sp-1,Pike_fp->locals+arg2,s);
 });
 
@@ -1833,8 +1833,7 @@ OPCODE2(F_LOCAL_ARROW, "local->x", I_UPDATE_SP, {
   tmp.type=PIKE_T_STRING;
   tmp.u.string=Pike_fp->context.prog->strings[arg1];
   tmp.subtype=1;
-  Pike_sp->type=PIKE_T_INT;	
-  Pike_sp++;
+  mark_free_svalue (Pike_sp++);
   index_no_free(Pike_sp-1,Pike_fp->locals+arg2, &tmp);
   print_return_value();
 });

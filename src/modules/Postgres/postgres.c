@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: postgres.c,v 1.54 2008/01/20 22:30:03 grubba Exp $
+|| $Id: postgres.c,v 1.55 2008/01/26 22:34:26 mast Exp $
 */
 
 /*
@@ -86,7 +86,7 @@ static void pgres_create (struct object * o) {
 	THIS->dblink=NULL;
 	THIS->last_error=NULL;
 	THIS->notify_callback=(struct svalue*)xalloc(sizeof(struct svalue));
-	THIS->notify_callback->type=PIKE_T_INT;
+	mark_free_svalue (&THIS->notify_callback);
 	THIS->docommit=0;
 	THIS->dofetch=0;
 	THIS->lastcommit=0;
@@ -115,9 +115,7 @@ static void pgres_destroy (struct object * o)
 			free_string(THIS->last_error);
 		THIS->last_error=NULL;
 	}
-	if (THIS->notify_callback->type!=PIKE_T_INT) {
-		free_svalue(THIS->notify_callback);
-	}
+	free_svalue(THIS->notify_callback);
 	free(THIS->notify_callback);
 #if defined(PIKE_THREADS) && defined(PQ_THREADSAFE)
 	mt_destroy(&THIS->mutex);
@@ -645,9 +643,9 @@ static void f_callback(INT32 args)
 		       args, BIT_INT|BIT_FUNCTION, 0);
 
 	if (Pike_sp[-args].type==PIKE_T_INT) {
-		if (THIS->notify_callback->type!=PIKE_T_INT) {
+		if (THIS->notify_callback->type!=PIKE_T_FREE) {
 			free_svalue(THIS->notify_callback);
-			THIS->notify_callback->type=PIKE_T_INT;
+			mark_free_svalue (&THIS->notify_callback);
 		}
 		pop_n_elems(args);
 		return;

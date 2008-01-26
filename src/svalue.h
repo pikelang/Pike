@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.h,v 1.148 2007/10/12 13:31:05 mast Exp $
+|| $Id: svalue.h,v 1.149 2008/01/26 22:34:24 mast Exp $
 */
 
 #ifndef SVALUE_H
@@ -127,6 +127,18 @@ struct svalue
 
 #define PIKE_T_GET_SET 32	/* Getter setter.
 				 * Only valid in struct identifier */
+
+/* Type to put in freed svalues. Only the type field in such svalues
+ * is defined. Freeing a PIKE_T_FREE svalue is allowed and does
+ * nothing. mark_free_svalue() is preferably used to set this type.
+ *
+ * Traditionally T_INT has been used for this without setting a proper
+ * subtype; if T_INT is to be used then the subtype must be set to
+ * NUMBER_NUMBER.
+ *
+ * PIKE_T_FREE svalues are recorded as BIT_INT in type hint fields.
+ */
+#define PIKE_T_FREE 237
 
 #define PIKE_T_ATTRIBUTE 238	/* Attribute node. */
 #define PIKE_T_NSTRING 239	/* Narrow string. Only for serialization. */
@@ -481,6 +493,28 @@ static INLINE union anything *dmalloc_check_union(union anything *u,int type, ch
 
 #endif	/* !PIKE_DEBUG */
 
+/* This marks an svalue as free. After this it may only be used as
+ * input to the svalue free functions (which do nothing with it). Only
+ * the type field is defined (see PIKE_T_FREE above). */
+#define mark_free_svalue(X) do {					\
+    struct svalue *_X__ = (X);						\
+    DO_IF_DMALLOC (_X__->u.refs = (void *) -1);				\
+    PIKE_MEM_WO(*_X__);							\
+    _X__->type = PIKE_T_FREE;						\
+  } while (0)
+
+/* This is a debug macro to assert that an svalue is free and
+ * shouldn't be read at all until it's overwritten. As opposed to
+ * mark_free_svalue, it is not valid input to the svalue free
+ * functions and no field in it is defined. */
+#define assert_free_svalue(X) do {					\
+    DO_IF_DEBUG (							\
+      struct svalue *_X__ = (X);					\
+      _X__->type = PIKE_T_UNKNOWN;					\
+      _X__->u.refs = (void *) -1;					\
+      PIKE_MEM_WO (*_X__);						\
+    );									\
+  } while (0)
 
 /* This define
  * should check that the svalue address (X) is on the local stack,
@@ -502,15 +536,20 @@ static INLINE union anything *dmalloc_check_union(union anything *u,int type, ch
   _tmp=*_a; *_a=*_b; *_b=_tmp;				\
 }while(0)
 
+/* Handles PIKE_T_FREE. */
 #define free_svalue_unlocked(X) do {				\
   struct svalue *_s=(X);					\
   assert_svalue_locked(_s);					\
-  check_type(_s->type); check_refs(_s);				\
-  if(_s->type<=MAX_REF_TYPE) {					\
-    if(sub_ref(_s->u.dummy) <=0) { really_free_svalue(_s); }	\
-  }								\
-  DO_IF_DMALLOC(_s->type=PIKE_T_UNKNOWN;_s->u.refs=(void *)-1); \
-  PIKE_MEM_WO(*_s);						\
+  DO_IF_DEBUG (							\
+    if (_s->type != PIKE_T_FREE) {				\
+      check_type(_s->type);					\
+      check_refs(_s);						\
+    }								\
+  );								\
+  if(_s->type<=MAX_REF_TYPE && sub_ref(_s->u.dummy) <=0)	\
+    really_free_svalue(_s);					\
+  else								\
+    assert_free_svalue (_s);					\
 }while(0)
 
 #define free_short_svalue_unlocked(X,T) do {				\
@@ -524,24 +563,35 @@ static INLINE union anything *dmalloc_check_union(union anything *u,int type, ch
   PIKE_MEM_WO(_s->refs);						\
 }while(0)
 
+/* Handles PIKE_T_FREE. */
 #define add_ref_svalue_unlocked(X) do {				\
   struct svalue *_tmp=(X);					\
-  check_type(_tmp->type); check_refs(_tmp);			\
+  DO_IF_DEBUG (							\
+    if (_tmp->type != PIKE_T_FREE) {				\
+      check_type(_tmp->type);					\
+      check_refs(_tmp);						\
+    }								\
+  );								\
   if(_tmp->type <= MAX_REF_TYPE) add_ref(_tmp->u.dummy);	\
 }while(0)
 
+/* Handles PIKE_T_FREE. */
 #define assign_svalue_no_free_unlocked(X,Y) do {	\
   struct svalue *_to=(X);				\
   const struct svalue *_from=(Y);			\
-  check_type(_from->type); check_refs(_from);		\
-  DO_IF_DEBUG(if (_to == _from) {			\
-		Pike_fatal(msg_assign_svalue_error,	\
-			   _to);			\
-	      });					\
+  DO_IF_DEBUG (						\
+    if (_from->type != PIKE_T_FREE) {			\
+      check_type(_from->type);				\
+      check_refs(_from);				\
+    }							\
+    if (_to == _from)					\
+      Pike_fatal(msg_assign_svalue_error, _to);		\
+  );							\
   *_to=*_from;						\
   if(_to->type <= MAX_REF_TYPE) add_ref(_to->u.dummy);	\
 }while(0)
 
+/* Handles PIKE_T_FREE. */
 #define assign_svalue_unlocked(X,Y) do {	\
   struct svalue *_to2=(X);			\
   const struct svalue *_from2=(Y);		\
@@ -551,17 +601,18 @@ static INLINE union anything *dmalloc_check_union(union anything *u,int type, ch
   }						\
 }while(0)
 
+/* Handles PIKE_T_FREE. */
 #define move_svalue(TO, FROM) do {					\
     struct svalue *_to = (TO);						\
     struct svalue *_from = (FROM);					\
     dmalloc_touch_svalue(_from);					\
     *_to = *_from;							\
-    DO_IF_DMALLOC(_from->type = PIKE_T_UNKNOWN; _from->u.refs = (void *) -1); \
-    PIKE_MEM_WO(*_from);						\
+    assert_free_svalue (_from);						\
   } while (0)
 
 extern const struct svalue dest_ob_zero;
 
+/* Handles PIKE_T_FREE. */
 #define free_mixed_svalues(X,Y) do {		\
   struct svalue *s_=(X);			\
   ptrdiff_t num_=(Y);				\
@@ -572,6 +623,7 @@ extern const struct svalue dest_ob_zero;
   }						\
 }while(0)
 
+/* Handles PIKE_T_FREE. */
 #ifdef DEBUG_MALLOC
 #define free_svalues(X,Y,Z) debug_free_svalues((X),(Y),(Z), DMALLOC_NAMED_LOCATION(" free_svalues"));
 #else
@@ -767,6 +819,7 @@ static INLINE void free_svalue(struct svalue *s)
   INT64 tmp;
   struct svalue zero;
   zero.type=PIKE_T_INT;
+  zero.subtype = NUMBER_NUMBER;
   tmp=pike_atomic_swap64((INT64 *)s, *(INT64 *)&zero);
   free_svalue_unlocked((struct svalue *)&tmp);
 }

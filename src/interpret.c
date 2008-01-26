@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.384 2008/01/13 19:08:30 grubba Exp $
+|| $Id: interpret.c,v 1.385 2008/01/26 22:34:20 mast Exp $
 */
 
 #include "global.h"
@@ -2278,9 +2278,8 @@ PMOD_EXPORT void call_handle_error(void)
     Pike_interpreter.trace_level = 0;
     Pike_interpreter.svalue_stack_margin = LOW_SVALUE_STACK_MARGIN;
     Pike_interpreter.c_stack_margin = LOW_C_STACK_MARGIN;
-    *(Pike_sp++) = throw_value;
-    dmalloc_touch_svalue(Pike_sp-1);
-    throw_value.type=T_INT;
+    move_svalue (Pike_sp++, &throw_value);
+    mark_free_svalue (&throw_value);
 
     if (get_master()) {		/* May return NULL at odd times. */
       ONERROR tmp;
@@ -2320,7 +2319,7 @@ PMOD_EXPORT void call_handle_error(void)
 
   else {
     free_svalue(&throw_value);
-    throw_value.type=T_INT;
+    mark_free_svalue (&throw_value);
   }
 }
 
@@ -2413,7 +2412,7 @@ PMOD_EXPORT void safe_apply_low2(struct object *o, int fun, int args,
   JMP_BUF recovery;
 
   free_svalue(& throw_value);
-  throw_value.type=T_INT;
+  mark_free_svalue (&throw_value);
   if(SETJMP_SP(recovery, args))
   {
     if(fun_name) call_handle_error();
@@ -2521,7 +2520,7 @@ PMOD_EXPORT int safe_apply_handler(const char *fun,
 #endif /* 0 */
 
   free_svalue(& throw_value);
-  throw_value.type=T_INT;
+  mark_free_svalue (&throw_value);
 
   if (SETJMP_SP(recovery, args)) {
     ret = 0;
@@ -2610,7 +2609,7 @@ PMOD_EXPORT void safe_apply_svalue(struct svalue *s, int args, int handle_errors
 {
   JMP_BUF recovery;
   free_svalue(& throw_value);
-  throw_value.type=T_INT;
+  mark_free_svalue (&throw_value);
   if(SETJMP_SP(recovery, args))
   {
     if(handle_errors) call_handle_error();

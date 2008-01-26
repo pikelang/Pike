@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: colortable.c,v 1.129 2008/01/24 22:45:36 grubba Exp $
+|| $Id: colortable.c,v 1.130 2008/01/26 22:34:25 mast Exp $
 */
 
 #include "global.h"
@@ -918,7 +918,9 @@ rerun_mask:
 
 static struct nct_flat _img_get_flat_from_array(struct array *arr)
 {
+#if 0
    struct svalue s,s2;
+#endif
    struct nct_flat flat;
    int i,n=0;
 
@@ -926,7 +928,9 @@ static struct nct_flat _img_get_flat_from_array(struct array *arr)
    flat.entries=(struct nct_flat_entry*)
       xalloc(flat.numentries*sizeof(struct nct_flat_entry));
 
+#if 0
    s2.type=s.type=T_INT;
+#endif
    for (i=0; i<arr->size; i++)
    {
       if (arr->item[i].type==T_INT && !arr->item[i].u.integer)

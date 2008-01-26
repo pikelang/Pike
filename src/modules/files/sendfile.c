@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sendfile.c,v 1.77 2008/01/23 22:20:02 grubba Exp $
+|| $Id: sendfile.c,v 1.78 2008/01/26 22:34:27 mast Exp $
 */
 
 /*
@@ -202,6 +202,7 @@ static void exit_pike_sendfile(struct object *o)
    */
   free_svalue(&(THIS->callback));
   THIS->callback.type = T_INT;
+  THIS->callback.subtype = NUMBER_NUMBER;
   THIS->callback.u.integer = 0;
   if (THIS->backend_callback) {
     remove_callback (THIS->backend_callback);
@@ -253,6 +254,7 @@ static void sf_call_callback(struct pike_sendfile *this)
 
     free_svalue(&this->callback);
     this->callback.type = T_INT;
+    this->callback.subtype = NUMBER_NUMBER;
     this->callback.u.integer = 0;
   } else {
     free_array(this->args);
@@ -787,6 +789,7 @@ static void sf_create(INT32 args)
    */
   free_svalue(&(THIS->callback));
   THIS->callback.type = T_INT;
+  THIS->callback.subtype = NUMBER_NUMBER;
   THIS->callback.u.integer = 0;
 
   /* NOTE: The references to the stuff in sf are held by the stack.
@@ -795,6 +798,7 @@ static void sf_create(INT32 args)
 
   MEMSET(&sf, 0, sizeof(struct pike_sendfile));
   sf.callback.type = T_INT;
+  sf.callback.subtype = NUMBER_NUMBER;
 
   get_all_args("sendfile", args, "%A%O%l%l%A%o%*",
 	       &(sf.headers), &(sf.from_file), &offset,
@@ -851,6 +855,7 @@ static void sf_create(INT32 args)
     sf.from_file = NULL;
     sf.from = NULL;
     sp[1-args].type = T_INT;
+    sp[1-args].subtype = NUMBER_NUMBER;
     sp[1-args].u.integer = 0;
   }
 

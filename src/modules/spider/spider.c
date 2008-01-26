@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: spider.c,v 1.133 2007/06/02 04:11:30 mbaehr Exp $
+|| $Id: spider.c,v 1.134 2008/01/26 22:34:27 mast Exp $
 */
 
 #include "global.h"
@@ -263,7 +263,7 @@ void f_parse_html_lines(INT32 args)
     return;
   }
 
-  sp[-args].type=T_INT;
+  mark_free_svalue (sp - args);
 
   add_ref(single=sp[1-args].u.mapping);
   add_ref(cont=sp[2-args].u.mapping);

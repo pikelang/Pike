@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.169 2007/12/27 17:13:37 grubba Exp $
+|| $Id: mpz_glue.c,v 1.170 2008/01/26 22:34:25 mast Exp $
 */
 
 #include "global.h"
@@ -1063,7 +1063,7 @@ static void name(INT32 args)						\
        case T_STRING:                                                   \
         MEMMOVE(sp-args+1, sp-args, sizeof(struct svalue)*args);        \
         sp++; args++;                                                   \
-        sp[-args].type=T_INT;                                           \
+	sp[-args].type=PIKE_T_FREE;					\
         sp[-args].u.string=low_get_mpz_digits(THIS, 10);                \
         sp[-args].type=T_STRING;                                        \
         f_add(args);                                                    \
@@ -1154,7 +1154,7 @@ static void PIKE_CONCAT(name,_eq)(INT32 args)				\
        case T_STRING:                                                   \
         MEMMOVE(sp-args+1, sp-args, sizeof(struct svalue)*args);        \
         sp++; args++;                                                   \
-        sp[-args].type=T_INT;                                           \
+	sp[-args].type=PIKE_T_FREE;					\
         sp[-args].u.string=low_get_mpz_digits(THIS, 10);                \
         sp[-args].type=T_STRING;                                        \
         f_add(args);                                                    \
@@ -2081,7 +2081,7 @@ PIKE_MODULE_EXIT
   {
     extern struct svalue auto_bignum_program;
     free_svalue(&auto_bignum_program);
-    auto_bignum_program.type=T_INT;
+    auto_bignum_program.type=PIKE_T_FREE;
     if(bignum_program)
     {
       free_program(bignum_program);

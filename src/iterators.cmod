@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iterators.cmod,v 1.63 2007/11/11 13:19:32 nilsson Exp $
+|| $Id: iterators.cmod,v 1.64 2008/01/26 22:34:20 mast Exp $
 */
 
 #include "global.h"
@@ -1090,8 +1090,7 @@ PIKECLASS file_line_iterator
       THIS->current = NULL;
       THIS->offset = 0;
       THIS->index = 0;
-      THIS->feed.type = T_INT;
-      THIS->feed.u.integer = 0;
+      mark_free_svalue (&THIS->feed);
     }
 
   EXIT
@@ -1105,8 +1104,7 @@ PIKECLASS file_line_iterator
 	THIS->current = NULL;
       }
       free_svalue(&THIS->feed);
-      THIS->feed.type = T_INT;
-      THIS->feed.u.integer = 0;
+      assert_free_svalue (&THIS->feed);
     }
   
   
@@ -1275,7 +1273,7 @@ PIKECLASS string_split_iterator
       ssi->buffer = NULL;					\
       ssi->offset = 0;						\
       offset = 0;						\
-      if (ssi->feed.type == T_INT) {				\
+      if (ssi->feed.type == PIKE_T_FREE) {			\
 	if (!(FLAGS)) {						\
 	  copy_shared_string(ssi->current, empty_pike_string);	\
 	  ssi->index++;						\
@@ -1292,8 +1290,7 @@ PIKECLASS string_split_iterator
 	  goto reskip_empty;					\
 	}							\
 	free_svalue(&ssi->feed);				\
-	ssi->feed.type = T_INT;					\
-	ssi->feed.u.integer = 0;				\
+	mark_free_svalue (&ssi);				\
 	pop_stack();						\
 	if (!(FLAGS)) {						\
 	  copy_shared_string(ssi->current, empty_pike_string);	\
@@ -1315,7 +1312,7 @@ PIKECLASS string_split_iterator
       COMPLEX_SCAN_PUSH(ssi, SHIFT, end);			\
     }								\
     if ((end == ssi->buffer->len) &&				\
-	(ssi->feed.type != T_INT)) {				\
+	(ssi->feed.type != PIKE_T_FREE)) {			\
       apply_svalue(&ssi->feed, 0);				\
       if ((Pike_sp[-1].type == T_STRING) &&			\
 	  (Pike_sp[-1].u.string->len)) {			\
@@ -1335,8 +1332,7 @@ PIKECLASS string_split_iterator
       								\
       /* Make sure we don't call feed() any more. */		\
       free_svalue(&ssi->feed);					\
-      ssi->feed.type = T_INT;					\
-      ssi->feed.u.integer = 0;					\
+      mark_free_svalue (&ssi);					\
     }								\
     ssi->offset = end+1;					\
     ssi->current = Pike_sp[-1].u.string;			\
@@ -1452,15 +1448,14 @@ PIKECLASS string_split_iterator
 	push_int(THIS->buffer->len);
 	o_range();
       }
-      for (i = 1; THIS->feed.type != T_INT; i++) {
+      for (i = 1; THIS->feed.type != PIKE_T_FREE; i++) {
 	apply_svalue(&THIS->feed, 0);
 	if ((Pike_sp[-1].type != T_STRING) ||
 	    (!Pike_sp[-1].u.string->len)) {
 	  /* End of stream marker. */
 	  pop_stack();
 	  free_svalue(&THIS->feed);
-	  THIS->feed.type = T_INT;
-	  THIS->feed.u.integer = 0;
+	  mark_free_svalue (&THIS->feed);
 	  break;
 	}
       }
@@ -1586,7 +1581,8 @@ PIKECLASS string_split_iterator
 	if (feed) {
 	  assign_svalue(&THIS->feed, feed);
 	} else {
-	  /* NB: THIS->feed has already been set to 0 by the init code. */
+	  /* NB: THIS->feed has already been set to PIKE_T_FREE by the
+	   * init code. */
 	}
       } else {
 	THIS->flags = 0;
@@ -1606,8 +1602,7 @@ PIKECLASS string_split_iterator
       THIS->split_set = NULL;
       THIS->split_set_size = 0;
       THIS->flags = 0;
-      THIS->feed.type = T_INT;
-      THIS->feed.u.integer = 0;
+      mark_free_svalue (&THIS->feed);
     }
 
   EXIT
@@ -1623,8 +1618,7 @@ PIKECLASS string_split_iterator
       free(THIS->split_set);
       THIS->split_set = NULL;
       free_svalue(&THIS->feed);
-      THIS->feed.type = T_INT;
-      THIS->feed.u.integer = 0;
+      mark_free_svalue (&THIS->feed);
     }
 
   OPTIMIZE

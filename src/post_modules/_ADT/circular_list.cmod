@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: circular_list.cmod,v 1.17 2006/08/06 14:33:51 mast Exp $
+|| $Id: circular_list.cmod,v 1.18 2008/01/26 22:34:27 mast Exp $
 */
 
 #include "global.h"
@@ -90,6 +90,7 @@ PIKECLASS CircularList
     FIX_AND_CHECK_INDEX(index, THIS->size, 0);
     ind.u.integer = circ2array(index);
     ind.type = T_INT;
+    ind.subtype = NUMBER_NUMBER;
     simple_array_index_no_free(Pike_sp, THIS->a, &ind);
     Pike_sp++;
   }
@@ -117,7 +118,8 @@ PIKECLASS CircularList
     FIX_AND_CHECK_INDEX(index, THIS->size, 0);
     ind.u.integer = circ2array(index);
     ind.type = T_INT;
-    should_copy();  	
+    ind.subtype = NUMBER_NUMBER;
+    should_copy();
     simple_set_index(THIS->a, &ind, value);
     pop_n_elems(args);
   } 
@@ -472,6 +474,7 @@ PIKECLASS CircularList
     }
     ind.u.integer = THIS->pos;
     ind.type = T_INT;
+    ind.subtype = NUMBER_NUMBER;
     simple_set_index(THIS->a, &ind, value);
     THIS->size++;
     pop_n_elems(args);
@@ -673,6 +676,7 @@ PIKECLASS CircularList
     }
     ind.u.integer=circ2array(THIS->size-1);
     ind.type =T_INT;
+    ind.subtype = NUMBER_NUMBER;
     simple_array_index_no_free(Pike_sp, THIS->a, &ind);
     Pike_sp++;
   }
@@ -692,6 +696,7 @@ PIKECLASS CircularList
     }
     ind.u.integer=THIS->pos;
     ind.type =T_INT;
+    ind.subtype = NUMBER_NUMBER;
     simple_array_index_no_free(Pike_sp, THIS->a, &ind);
     Pike_sp++;
   }
@@ -717,8 +722,10 @@ PIKECLASS CircularList
     THIS->size--;
     ind.u.integer=circ2array(THIS->size);
     ind.type =T_INT;
+    ind.subtype = NUMBER_NUMBER;
     zero.u.integer=0;
     zero.type =T_INT;
+    zero.subtype = NUMBER_NUMBER;
     simple_array_index_no_free(Pike_sp, THIS->a, &ind);
     simple_set_index(THIS->a, &ind, &zero);
     Pike_sp++;
@@ -745,8 +752,10 @@ PIKECLASS CircularList
     should_copy();
     ind.u.integer=THIS->pos;
     ind.type =T_INT;
+    ind.subtype = NUMBER_NUMBER;
     zero.u.integer=0;
     zero.type =T_INT;
+    zero.subtype = NUMBER_NUMBER;
     if (++THIS->pos >= THIS->a->size)
     {
       THIS->pos = 0;
@@ -777,6 +786,7 @@ PIKECLASS CircularList
     
     ind.u.integer=circ2array(THIS->size);
     ind.type =T_INT;
+    ind.subtype = NUMBER_NUMBER;
     THIS->size++;
     simple_set_index(THIS->a, &ind, value);
   }
@@ -805,6 +815,7 @@ PIKECLASS CircularList
     }
     ind.u.integer = THIS->pos;
     ind.type = T_INT;
+    ind.subtype = NUMBER_NUMBER;
     simple_set_index(THIS->a, &ind, value);
     THIS->size++;
     pop_n_elems(args);
@@ -1251,6 +1262,7 @@ PIKECLASS CircularList
 
 	ind.u.integer =  (THIS->pos+THIS->list->pos)%THIS->list->a->size;
 	ind.type = T_INT;
+	ind.subtype = NUMBER_NUMBER;
 	simple_array_index_no_free(&retval, THIS->list->a, &ind);
 	simple_set_index(THIS->list->a, &ind, val);
 	push_svalue(&retval);
@@ -1305,6 +1317,7 @@ PIKECLASS CircularList
     struct svalue ind;
     ind.u.integer=THIS_CIRCULARLIST->size;
     ind.type=T_INT;
+    ind.subtype = NUMBER_NUMBER;
     ref_push_object(Pike_fp->current_object);
     push_svalue(&ind);
     push_object(clone_object(CircularList_CircularListIterator_program, 2));

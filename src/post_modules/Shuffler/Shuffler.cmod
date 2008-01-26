@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: Shuffler.cmod,v 1.44 2008/01/21 22:53:58 grubba Exp $
+|| $Id: Shuffler.cmod,v 1.45 2008/01/26 22:34:27 mast Exp $
 */
 
 #include "global.h"
@@ -210,8 +210,9 @@ PIKECLASS Shuffle
     THIS->shuffler = 0;
     THIS->throttler = 0;
     THIS->sent = 0;
-    THIS->done_callback.type = PIKE_T_INT;
+    mark_free_svalue (&THIS->done_callback);
     THIS->request_arg.type = PIKE_T_INT;
+    THIS->request_arg.subtype = NUMBER_NUMBER;
     THIS->request_arg.u.integer = 0;
     THIS->leftovers.len = 0;
     THIS->current_source = NULL;
@@ -343,7 +344,7 @@ PIKECLASS Shuffle
     /* If a callback exists, we call it before destroying
      * source and destination
      */
-    if( t->done_callback.type != PIKE_T_INT )
+    if( t->done_callback.type != PIKE_T_FREE )
     {
       SHUFFLE_DEBUG3("_all_done(%d): Calling done callback: %p\n", t,
 		    reason, t->done_callback.u.object);
@@ -404,6 +405,8 @@ PIKECLASS Shuffle
   {
     SHUFFLE_DEBUG2("set_done_callback(%p)\n", THIS, cb->u.object );
     assign_svalue( &THIS->done_callback,cb);
+    if (THIS->done_callback.type == PIKE_T_INT)
+      mark_free_svalue (&THIS->done_callback);
   }
 
   PIKEFUN void set_request_arg( mixed arg )

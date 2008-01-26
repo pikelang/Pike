@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.163 2007/10/22 09:49:44 grubba Exp $
+|| $Id: cpp.c,v 1.164 2008/01/26 22:34:19 mast Exp $
 */
 
 #include "global.h"
@@ -214,7 +214,7 @@ static void cpp_handle_exception(struct cpp *this,
 {
   struct svalue thrown;
   move_svalue (&thrown, &throw_value);
-  throw_value.type = T_INT;
+  mark_free_svalue (&throw_value);
 
   if (cpp_error_fmt) {
     va_list args;
@@ -537,7 +537,7 @@ static int do_safe_index_call(struct cpp *this, struct pike_string *s)
   if (SETJMP_SP(recovery, 1)) {
     if (CPP_TEST_COMPAT (this, 7, 4)) {
       free_svalue (&throw_value);
-      throw_value.type = T_INT;
+      mark_free_svalue (&throw_value);
     }
     else if(this->picky_cpp) {
       cpp_warning (this, "Error indexing module with %S.", s);
@@ -638,7 +638,7 @@ void cpp_func_constant(struct cpp *this, INT32 args)
 	       !throw_value.u.string->size_shift) {
 	cpp_error(this, throw_value.u.string->str);
 	free_svalue(&throw_value);
-	throw_value.type = T_INT;
+	mark_free_svalue (&throw_value);
 	res = 0;
       } else if(this->picky_cpp) {
 	cpp_warning (this, "Error resolving %S.", str);

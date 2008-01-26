@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.233 2007/10/12 13:31:05 mast Exp $
+|| $Id: svalue.c,v 1.234 2008/01/26 22:34:24 mast Exp $
 */
 
 #include "global.h"
@@ -97,71 +97,57 @@ PMOD_EXPORT void really_free_short_svalue_ptr(void **s, TYPE_T type)
 
 PMOD_EXPORT void really_free_svalue(struct svalue *s)
 {
-  int tmp=s->type;
-  s->type=T_INT;
-  switch(tmp)
+  struct svalue tmp;
+  move_svalue (&tmp, s);
+  mark_free_svalue (s);
+
+  switch(tmp.type)
   {
   case T_ARRAY:
-    really_free_array(s->u.array);
-#ifdef PIKE_DEBUG
-    s->type = 99;
-#endif
+    really_free_array(tmp.u.array);
     break;
     
   case T_MAPPING:
-    really_free_mapping(s->u.mapping);
-#ifdef PIKE_DEBUG
-    s->type = 99;
-#endif
+    really_free_mapping(tmp.u.mapping);
     break;
     
   case T_MULTISET:
-    really_free_multiset(s->u.multiset);
-#ifdef PIKE_DEBUG
-    s->type = 99;
-#endif
+    really_free_multiset(tmp.u.multiset);
     break;
     
   case T_FUNCTION:
-    if(s->subtype == FUNCTION_BUILTIN)
+    if(tmp.subtype == FUNCTION_BUILTIN)
     {
-      really_free_callable(s->u.efun);
+      really_free_callable(tmp.u.efun);
       break;
     }
     /* fall through */
     
   case T_OBJECT:
-    schedule_really_free_object(s->u.object);
-    break;
+    schedule_really_free_object(tmp.u.object);
+    return;
     
   case T_PROGRAM:
-    really_free_program(s->u.program);
-#ifdef PIKE_DEBUG
-    s->type = 99;
-#endif
+    really_free_program(tmp.u.program);
     break;
     
   case T_TYPE:
     /* Add back the reference, and call the normal free_type(). */
-    add_ref(s->u.type);
-    free_type(s->u.type);
-#ifdef PIKE_DEBUG
-    s->type = 99;
-#endif /* PIKE_DEBUG */
+    add_ref(tmp.u.type);
+    free_type(tmp.u.type);
     break;
 
   case T_STRING:
-    really_free_string(s->u.string);
-#ifdef PIKE_DEBUG
-    s->type = 99;
-#endif
+    really_free_string(tmp.u.string);
     break;
     
 #ifdef PIKE_DEBUG
   default:
-    Pike_fatal("Bad type in free_svalue.\n");
+    Pike_fatal("Bad type in really_free_svalue.\n");
 #endif
   }
+
+  assert_free_svalue (s);
 }
 
 PMOD_EXPORT void do_free_svalue(struct svalue *s)
@@ -185,10 +171,9 @@ PMOD_EXPORT void debug_free_svalues(struct svalue *s, size_t num, INT32 type_hin
 
 #define DOTYPE(X,Y,Z) case X:						\
    while(num--) {							\
-    DO_IF_DMALLOC(debug_malloc_update_location(s->u.Z, dmalloc_location));	\
+    DO_IF_DMALLOC(debug_malloc_update_location(s->u.Z, dmalloc_location)); \
     Y(s->u.Z);								\
-    DO_IF_DMALLOC(s->u.Z=(void *)-1);					\
-    PIKE_MEM_WO(s->u.Z);						\
+    assert_free_svalue (s);						\
     s++;								\
    }return
 
@@ -244,8 +229,6 @@ PMOD_EXPORT void debug_free_svalues(struct svalue *s, size_t num, INT32 type_hin
       if(!sub_ref(s->u.dummy))
       {
 	really_free_svalue(s);
-	DO_IF_DMALLOC(s->u.refs=0);
-	PIKE_MEM_WO(*s);
       }
       s++;
     }
@@ -263,8 +246,7 @@ PMOD_EXPORT void debug_free_svalues(struct svalue *s, size_t num, INT32 type_hin
 	  really_free_callable(s->u.efun);
 	else
 	  schedule_really_free_object(s->u.object);
-	DO_IF_DMALLOC(s->u.refs=0);
-	PIKE_MEM_WO(*s);
+	assert_free_svalue (s);
       }
       s++;
     }
@@ -2049,7 +2031,10 @@ PMOD_EXPORT void real_gc_mark_external_svalues(const struct svalue *s, ptrdiff_t
 
   for(e=0;e<num;e++,s++)
   {
-    check_svalue((struct svalue *) s);
+#ifdef PIKE_DEBUG
+    if (s->type != PIKE_T_FREE)
+      check_svalue((struct svalue *) s);
+#endif
     
     gc_svalue_location=(void *)s;
 

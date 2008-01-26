@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_error.h,v 1.41 2007/07/03 08:54:37 mast Exp $
+|| $Id: pike_error.h,v 1.42 2008/01/26 22:34:22 mast Exp $
 */
 
 #ifndef PIKE_ERROR_H
@@ -386,7 +386,7 @@ PMOD_EXPORT extern const char msg_div_by_zero[];
                 __exception_rethrow = 1; \
             if(__is_exception) { \
 		free_svalue(&throw_value); \
-		throw_value.type = T_INT; \
+		mark_free_svalue (&throw_value); \
 	    } \
 	    else \
                 UNSETJMP(exception); \
