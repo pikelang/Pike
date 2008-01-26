@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.108 2007/07/10 01:19:59 bill Exp $
+|| $Id: mysql.c,v 1.109 2008/01/26 22:23:37 mast Exp $
 */
 
 /*
@@ -183,10 +183,13 @@ static void init_mysql_struct(struct object *o)
 {
   MEMSET(PIKE_MYSQL, 0, sizeof(struct precompiled_mysql));
   INIT_MYSQL_LOCK();
-  PIKE_MYSQL->mysql = (MYSQL *)xalloc(sizeof(MYSQL));
 #if defined(HAVE_MYSQL_REAL_CONNECT)
-  mysql_init(PIKE_MYSQL->mysql);
-#endif /* HAVE_MYSQL_REAL_CONNECT */
+  PIKE_MYSQL->mysql = mysql_init (NULL);
+  if (!PIKE_MYSQL->mysql)
+    Pike_error ("Out of memory when initializing mysql connection.\n");
+#else
+  PIKE_MYSQL->mysql = (MYSQL *)xalloc(sizeof(MYSQL));
+#endif
 }
 
 static void exit_mysql_struct(struct object *o)
@@ -229,9 +232,11 @@ static void exit_mysql_struct(struct object *o)
   if (socket) {
     mysql_close(socket);
   }
+#ifndef HAVE_MYSQL_REAL_CONNECT
   if (mysql) {
     free(mysql);
   }
+#endif
 
   MYSQL_DISALLOW();
 
