@@ -1110,6 +1110,7 @@ class cYear
 //! method void create("julian",int|float julian_day)
 //! method void create(int year)
 //! method void create(string year)
+//! method void create(TimeRange range)
 //!	It's possible to create the standard year
 //!	by using three different methods; either the normal
 //!	way - from standard unix time or the julian day,
@@ -1256,7 +1257,10 @@ class cYear
 
    static void convert_from(TimeRange other)
    {
-      ::convert_from(other);
+      if (other->y)
+	 create(other->y);
+      else
+         ::convert_from(other);
       if (other->number_of_years)
 	 n=other->number_of_years();
       else
