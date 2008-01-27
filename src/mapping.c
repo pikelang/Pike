@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.195 2008/01/26 22:34:21 mast Exp $
+|| $Id: mapping.c,v 1.196 2008/01/27 14:41:10 grubba Exp $
 */
 
 #include "global.h"
@@ -1214,10 +1214,9 @@ PMOD_EXPORT void mapping_index_no_free(struct svalue *dest,
 
   if(!IS_DESTRUCTED (key) && (p=low_mapping_lookup(m,key)))
   {
-#if 0
+    /* Never return NUMBER_UNDEFINED for existing entries. */
     if(p->type==T_INT)
       p->subtype=NUMBER_NUMBER;
-#endif
 
     assign_svalue_no_free(dest, p);
   }else{
