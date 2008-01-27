@@ -1746,6 +1746,9 @@ class cWeek
 	       mnd=args[9];
 	       wd=1;
 	       wy=y;
+	       // Adjust according to julian day (typically to
+	       // correct the year).
+	       create_julian_day(jd);
 	       nd=CALUNKNOWN;
 	       return;
 	    case "ymd_jd":
@@ -2050,6 +2053,9 @@ class cDay
 	       w=args[10];
 	       wd=args[11];
 	       mnd=args[12];
+	       // Adjust according to julian day (typically to
+	       // correct the year in case weeks are involved).
+	       create_julian_day(jd);
 	       nw=CALUNKNOWN;
 	       return;
 	    case "ymd_yd":
