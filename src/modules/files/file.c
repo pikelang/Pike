@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.374 2008/01/01 11:05:22 grubba Exp $
+|| $Id: file.c,v 1.375 2008/01/27 20:50:29 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -2464,8 +2464,11 @@ static void file_set_backend (INT32 args)
   if (!backend)
     SIMPLE_BAD_ARG_ERROR ("Stdio.File->set_backend", 1, "object(Pike.Backend)");
 
+  /* FIXME: Only allow set_backend() if the file is open? */
+
 #ifdef __NT__
-  if (!(fd_query_properties(THIS->box.fd, fd_CAN_NONBLOCK) & fd_CAN_NONBLOCK)) {
+  if ((THIS->box.fd >= 0) &&
+      !(fd_query_properties(THIS->box.fd, fd_CAN_NONBLOCK) & fd_CAN_NONBLOCK)) {
     Pike_error("set_backend() on non-socket!\n");
   }
 #endif /* __NT__ */
@@ -2767,8 +2770,6 @@ int my_socketpair(int family, int type, int protocol, int sv[2])
   int retries=0;
   /* Solaris and AIX think this variable should be a size_t, everybody else
    * thinks it should be an int.
-   *
-   * FIXME: Configure-test?
    */
   ACCEPT_SIZE_T len;
 
@@ -2780,6 +2781,16 @@ int my_socketpair(int family, int type, int protocol, int sv[2])
     errno=EINVAL;
     return -1;
   }
+
+  sv[0] = -1;
+
+  if((sv[1]=fd_socket(AF_INET, SOCK_STREAM, 0)) <0) {
+    SP_DEBUG((stderr, "my_socketpair:fd_socket() failed, errno:%d (2)\n",
+	      errno));
+    return -1;
+  }
+
+  /* FIXME: The remainder of the code is NOT multithread-safe! */
 
   if(socketpair_fd==-1)
   {
@@ -2838,13 +2849,6 @@ int my_socketpair(int family, int type, int protocol, int sv[2])
     my_addr.sin_addr.s_addr=inet_addr("127.0.0.1");
   }
 
-
-  if((sv[1]=fd_socket(AF_INET, SOCK_STREAM, 0)) <0) {
-    SP_DEBUG((stderr, "my_socketpair:fd_socket() failed, errno:%d (2)\n",
-	      errno));
-    return -1;
-  }
-
 /*  set_nonblocking(sv[1],1); */
 
 retry_connect:
@@ -2893,6 +2897,12 @@ retry_connect:
   do
   {
     ACCEPT_SIZE_T len3;
+
+    if (sv[0] >= 0) {
+      /* Close the bad fd from last loop. */
+      while (fd_close(sv[0]) && errno == EINTR)
+	;
+    }
 
     len3=sizeof(addr);
   retry_accept:
