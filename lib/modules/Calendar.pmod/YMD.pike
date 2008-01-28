@@ -676,8 +676,9 @@ class YMD
    }
 
    array(cYear) years(int ...range)
+   // Note: This is zero based.
    {
-      int from=1,n=number_of_years(),to=n;
+      int from=0,n=number_of_years()-1,to=n;
 
       if (sizeof(range)) 
 	 if (sizeof(range)<2)
@@ -685,8 +686,8 @@ class YMD
 	 else
 	 {
 	    [from,to]=range;
-	    if (from>=n) return ({}); else if (from<0) from=0;
-	    if (to>=n) to=n; else if (to<from) return ({});
+	    if (from>n) return ({}); else if (from<0) from=0;
+	    if (to>n) to=n; else if (to<from) return ({});
 	 }
 
       return map(enumerate(1+to-from,1,y+from),
@@ -695,7 +696,8 @@ class YMD
    }
 
    cYear year(void|int m) 
-   { 
+   // Note: This is zero based.
+   {
       if (!m || (!n&&m==-1))
 	 return Year("ymd_y",rules,y,yjd,1);
 
