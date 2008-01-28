@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.642 2008/01/26 22:34:23 mast Exp $
+|| $Id: program.c,v 1.643 2008/01/28 15:17:23 grubba Exp $
 */
 
 #include "global.h"
@@ -1605,7 +1605,7 @@ struct node_s *resolve_identifier(struct pike_string *ident)
     struct svalue *tmp=low_mapping_string_lookup(resolve_cache,ident);
     if(tmp)
     {
-      if(!(SAFE_IS_ZERO(tmp) && tmp->subtype==1))
+      if (!SAFE_IS_ZERO(tmp))
 	return mkconstantsvaluenode(tmp);
 
       return 0;
@@ -2657,6 +2657,10 @@ static void exit_program_struct(struct program *p)
     /* Make sure to break the circularity... */
     struct program *parent = p->parent;
     p->parent = NULL;
+    if (!parent->refs) {
+      dump_program_tables(p, 2);
+      Pike_fatal("Program parent is dead.\n");
+    }
     free_program(parent);
   }
 
