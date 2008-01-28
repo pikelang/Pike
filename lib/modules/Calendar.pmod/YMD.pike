@@ -453,13 +453,13 @@ class YMD
    string format_iso_week()
    {
       if (w==CALUNKNOWN) make_week();
-      return sprintf("%04d-W%02d",y,w);
+      return sprintf("%04d-W%02d",wy,w);
    }
 
    string format_iso_week_short()
    {
       if (w==CALUNKNOWN) make_week();
-      return sprintf("%04d%02d",y,w);
+      return sprintf("%04d%02d",wy,w);
    }
 
    string format_week()
@@ -605,7 +605,7 @@ class YMD
 	 if (md==CALUNKNOWN) make_month();
 	 if (md==1) 
 	    return Month("ymd_yjmw",rules,y,yjd,jd,m,
-			 t->number_of_months()*n,wd,w)
+			 t->number_of_months()*n,wd,w,wy)
 	       ->autopromote();
       }
 
@@ -619,7 +619,7 @@ class YMD
 // fallback on days
       if (t->is_ymd)
 	 return Day("ymd_ydmw",rules,y,yjd,jd,yd,
-		    n*t->number_of_days(),m,md,w,wd,mnd);
+		    n*t->number_of_days(),m,md,wy,w,wd,mnd);
 
       error("set_size: incompatible class %O\n",
 	    object_program(t));
@@ -1081,7 +1081,7 @@ class cYear
 	    y=args[2];
 	    jd=yjd=args[3];
 	    n=args[4];
-	    m=md=w=wd=CALUNKNOWN;
+	    m=md=wy=w=wd=CALUNKNOWN;
 	    yd=1;
 	    return;
 	 case "ymd_yn":
@@ -1089,7 +1089,7 @@ class cYear
 	    y=args[2];
 	    jd=yjd=julian_day_from_year(y);
 	    n=args[3];
-	    m=md=w=wd=CALUNKNOWN;
+	    m=md=wy=w=wd=CALUNKNOWN;
 	    yd=1;
 	    return;
 	 case "unix": case "unix_r": case "julian": case "julian_r":
@@ -1102,7 +1102,7 @@ class cYear
 	       y=args[0];
 	       jd=yjd=julian_day_from_year(y);
 	       n=1;
-	       m=md=w=wd=CALUNKNOWN;
+	       m=md=wy=w=wd=CALUNKNOWN;
 	       yd=1;
 	       return;
 	    }
@@ -1112,7 +1112,7 @@ class cYear
 	       rules=default_rules;
 	       jd=yjd=julian_day_from_year(y);
 	       n=1;
-	       m=md=w=wd=CALUNKNOWN;
+	       m=md=wy=w=wd=CALUNKNOWN;
 	       yd=1;
 	       return;
 	    }
@@ -1133,7 +1133,7 @@ class cYear
 	 jd=yjd;
 	 n=1;
 	 md=yd=m=1;
-	 wd=w=CALUNKNOWN; // unknown
+	 wy=w=wd=CALUNKNOWN; // unknown
       }
    }
 
@@ -1376,7 +1376,7 @@ class cMonth
 	       m=args[3];
 	       n=args[4];
 	       md=1;
-	       w=wd=CALUNKNOWN;
+	       wy=w=wd=CALUNKNOWN;
 	       [y,m,nd,yd]=year_month_from_month(y,m);
 	       yjd=julian_day_from_year(y);
 	       jd=yjd+yd-1;
@@ -1393,6 +1393,7 @@ class cMonth
 	       n=args[6];
 	       wd=args[7];
 	       w=args[8];
+	       wy=args[9];
 	       md=1;
 	       nw=nd=CALUNKNOWN;
 	       return;
@@ -1432,7 +1433,7 @@ class cMonth
 
 	 n=1;
 	 md=1;
-	 nw=wd=w=CALUNKNOWN; // unknown
+	 nw=wd=w=wy=CALUNKNOWN; // unknown
       }
    }
 
@@ -1478,7 +1479,7 @@ class cMonth
 
    cDay beginning()
    {
-      return Month("ymd_yjmw",rules,y,yjd,jd,m,0,wd,w)
+      return Month("ymd_yjmw",rules,y,yjd,jd,m,0,wd,w,wy)
 	 ->autopromote();
    }
 
@@ -1502,7 +1503,7 @@ class cMonth
 	    int n1=months_to_month(to->y,to->is_year?1:to->m);
 	    if (n1<0)
 	       error("distance: negative distance (%d months)\n",n1);
-	    return Month("ymd_yjmw",rules,y,yjd,jd,m,n1,wd,w)
+	    return Month("ymd_yjmw",rules,y,yjd,jd,m,n1,wd,w,wy)
 	       ->autopromote();
 	 }
 
@@ -1510,7 +1511,7 @@ class cMonth
 	 int d2=to->jd;
 	 if (d2<d1)
 	    error("distance: negative distance (%d days)\n",d2-d1);
-	 return Day("ymd_ydmw",rules,y,yjd,jd,yd,d2-d1,m,1,w,wd,mnd)
+	 return Day("ymd_ydmw",rules,y,yjd,jd,yd,d2-d1,m,1,wy,w,wd,mnd)
 	    ->autopromote();
       }
 
@@ -1603,7 +1604,7 @@ class cMonth
 
    cMonth set_ruleset(.Ruleset r)
    {
-      return Month("ymd_yjmw",r,y,yjd,jd,m,n,wd,w);
+      return Month("ymd_yjmw",r,y,yjd,jd,m,n,wd,w,wy);
    }
 
 // --- needs to be defined
@@ -1707,7 +1708,7 @@ class cWeek
 	       {
 		  create("ymd_yw",default_rules,args[0],args[1],1);
 		  if (y!=args[0])
-		     error("month %d doesn't exist in %d\n",args[1],args[0]);
+		     error("Week %d doesn't exist in %d\n",args[1],args[0]);
 		  return;
 	       }
 	       break;
@@ -1815,7 +1816,7 @@ class cWeek
 	 int d2=to->julian_day();
 	 if (d2<d1)
 	    error("distance: negative distance (%d days)\n",d2-d1);
-	 return Day("ymd_ydmw",rules,y,yjd,jd,yd,d2-d1,m,md,w,1,mnd)
+	 return Day("ymd_ydmw",rules,y,yjd,jd,yd,d2-d1,m,md,wy,w,1,mnd)
 	    ->autopromote();
       }
 
@@ -1992,9 +1993,10 @@ class cDay
 	       n=args[6];
 	       m=args[7];
 	       md=args[8];
-	       w=args[9];
-	       wd=args[10];
-	       mnd=args[11];
+	       wy=args[9];
+	       w=args[10];
+	       wd=args[11];
+	       mnd=args[12];
 	       nw=CALUNKNOWN;
 	       return;
 	    case "ymd_yd":
@@ -2004,13 +2006,13 @@ class cDay
 	       jd=args[4];
 	       yd=args[5];
 	       n=args[6];
-	       wd=nw=md=m=w=CALUNKNOWN;
+	       wy=wd=nw=md=m=w=CALUNKNOWN;
 	       return;
 	    case "ymd_jd":
 	       rules=args[1];
 	       create_julian_day(args[2]);
 	       n=args[3];
-	       wd=nw=md=m=w=CALUNKNOWN;
+	       wy=wd=nw=md=m=w=CALUNKNOWN;
 	       return;
 	    case "unix_r":
 	    case "julian_r":
@@ -2020,7 +2022,7 @@ class cDay
 	       break;
 	    default:
 	       rules=default_rules;
-	       wd=nw=md=m=w=CALUNKNOWN;
+	       wy=wd=nw=md=m=w=CALUNKNOWN;
 	       n=1;
 	       switch (sizeof(args))
 	       {
@@ -2078,7 +2080,7 @@ class cDay
    void create_julian_day(int|float _jd)
    {
       n=1;
-      nw=md=m=wd=w=CALUNKNOWN; // unknown
+      nw=md=m=wd=w=wy=CALUNKNOWN; // unknown
 
       if (floatp(_jd))
       {
@@ -2140,7 +2142,7 @@ class cDay
 
    cDay beginning()
    {
-      return Day("ymd_ydmw",rules,y,yjd,jd,yd,0,m,md,w,wd,mnd);
+      return Day("ymd_ydmw",rules,y,yjd,jd,yd,0,m,md,wy,w,wd,mnd);
    }
 
    cDay end()
@@ -2243,7 +2245,7 @@ class cDay
 	 int d2=to->jd;
 	 if (d2<d1)
 	    error("distance: negative distance (%d days)\n",d2-d1);
-	 return Day("ymd_ydmw",rules,y,yjd,jd,yd,d2-d1,m,md,w,wd,mnd)
+	 return Day("ymd_ydmw",rules,y,yjd,jd,yd,d2-d1,m,md,wy,w,wd,mnd)
 	    ->autopromote();
       }
 
@@ -2277,7 +2279,7 @@ class cDay
 
    cDay set_ruleset(.Ruleset r)
    {
-      return Day("ymd_ydmw",r,y,yjd,jd,yd,n,m,md,w,wd,mnd);
+      return Day("ymd_ydmw",r,y,yjd,jd,yd,n,m,md,wy,w,wd,mnd);
    }
 
 // backwards compatible with calendar I
