@@ -94,6 +94,7 @@ static array(int) year_month_from_month(int y,int m)
 static array(int) month_from_yday(int y,int yd)
 {
 // [month,day-of-month,ndays,month-year-day]
+   if (yd<1) return ({12,31+yd,32,335+year_leap_year(y-1)});
    int l=year_leap_year(y);
    if (yd<32) return ({1,yd,31,1});
    yd-=l;
