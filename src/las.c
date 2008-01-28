@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.403 2008/01/26 22:34:21 mast Exp $
+|| $Id: las.c,v 1.404 2008/01/28 18:41:50 grubba Exp $
 */
 
 #include "global.h"
@@ -862,6 +862,7 @@ node *debug_mknode(int token, node *a, node *b)
     break;
 
   case F_APPEND_ARRAY:
+  case F_MULTI_ASSIGN:
   case F_ASSIGN:
   case F_MOD_EQ:
   case F_AND_EQ:
