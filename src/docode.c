@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.c,v 1.192 2008/01/28 18:43:14 grubba Exp $
+|| $Id: docode.c,v 1.193 2008/01/28 18:59:24 grubba Exp $
 */
 
 #include "global.h"
@@ -643,8 +643,6 @@ static void emit_multi_assign(node *vals, node *vars, int no)
   node *var;
   node *val;
   node **valp = my_get_arg(&vals, no);
-
-  fprintf(stderr, "emit_multi_assign(%p, %p)\n", vals, vars);
 
   if (!vars && (!valp || !*valp)) return;
   if (!(vars && valp && (val = *valp))) {
