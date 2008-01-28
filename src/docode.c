@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.c,v 1.191 2007/12/17 18:02:35 grubba Exp $
+|| $Id: docode.c,v 1.192 2008/01/28 18:43:14 grubba Exp $
 */
 
 #include "global.h"
@@ -638,6 +638,130 @@ static void emit_range (node *n DO_IF_DEBUG (COMMA int num_args))
   emit1 (F_RANGE, bound_types);
 }
 
+static void emit_multi_assign(node *vals, node *vars, int no)
+{
+  node *var;
+  node *val;
+  node **valp = my_get_arg(&vals, no);
+
+  fprintf(stderr, "emit_multi_assign(%p, %p)\n", vals, vars);
+
+  if (!vars && (!valp || !*valp)) return;
+  if (!(vars && valp && (val = *valp))) {
+    yyerror("Argument count mismatch for multi-assignment.\n");
+    return;
+  }
+  
+  if (vars->token == F_LVALUE_LIST) {
+    var = CAR(vars);
+    vars = CDR(vars);
+  } else {
+    var = vars;
+    vars = NULL;
+  }
+
+  switch(var->token) {
+  case F_LOCAL:
+    if(var->u.integer.a >= 
+       find_local_frame(CDR(var)->u.integer.b)->max_number_of_locals)
+      yyerror("Illegal to use local variable here.");
+
+    if(var->u.integer.b) goto normal_assign;
+
+    if (var->node_info & OPT_ASSIGNMENT) {
+      /* Initialize. */
+      emit0(F_CONST0);
+      emit1(F_ASSIGN_LOCAL_AND_POP, var->u.integer.a);
+    }
+    code_expression(val, 0, "RHS");
+    emit_multi_assign(vals, vars, no+1);
+    emit1(F_ASSIGN_LOCAL_AND_POP, var->u.integer.a );
+    break;
+
+    /* FIXME: Make special case for F_EXTERNAL */
+  case F_IDENTIFIER:
+    if(!IDENTIFIER_IS_VARIABLE( ID_FROM_INT(Pike_compiler->new_program,
+					    var->u.id.number)->identifier_flags))
+    {
+      yyerror("Cannot assign functions or constants.\n");
+    }else{
+      code_expression(val, 0, "RHS");
+      emit_multi_assign(vals, vars, no+1);
+      emit1(F_ASSIGN_GLOBAL_AND_POP, var->u.id.number);
+    }
+    break;
+
+  case F_GET_SET:
+    {
+      /* Check for the setter function. */
+      struct program_state *state = Pike_compiler;
+      int program_id = var->u.integer.a;
+      int level = 0;
+      while (state && (state->new_program->id != program_id)) {
+	state = state->previous;
+	level++;
+      }
+      if (!state) {
+	yyerror("Lost parent.");
+      } else {
+	struct reference *ref =
+	  PTR_FROM_INT(state->new_program, var->u.integer.b);
+	struct identifier *id =
+	  ID_FROM_PTR(state->new_program, ref);
+	struct inherit *inh =
+	  INHERIT_FROM_PTR(state->new_program, ref);
+	int f;
+#ifdef PIKE_DEBUG
+	if (!IDENTIFIER_IS_VARIABLE(id->identifier_flags) ||
+	    (id->run_time_type != PIKE_T_GET_SET)) {
+	  Pike_fatal("Not a getter/setter in a F_GET_SET node!\n"
+		     "  identifier_flags: 0x%08x\n"
+		     "  run_time_type; %s (%d)\n",
+		     id->identifier_flags,
+		     get_name_of_type(id->run_time_type),
+		     id->run_time_type);
+	}
+#endif /* PIKE_DEBUG */
+	f = ((INT32 *)(inh->prog->program + id->func.offset))[1];
+	if (f == -1) {
+	  yywarning("Variable %S lacks a setter.", id->name);
+	} else if (!level) {
+	  f += inh->identifier_level;
+	  emit0(F_MARK);
+	  code_expression(val, 0, "RHS");
+	  emit_multi_assign(vals, vars, no+1);
+	  emit1(F_CALL_LFUN, f);
+	  emit0(F_POP_VALUE);
+	}
+      }
+    }
+    /* FALL_THROUGH */
+  case F_EXTERNAL:
+    /* Check that it is in this context */
+    if(Pike_compiler ->new_program->id == var->u.integer.a)
+    {
+      /* Check that it is a variable */
+      if(var->u.integer.b != IDREF_MAGIC_THIS &&
+	 IDENTIFIER_IS_VARIABLE( ID_FROM_INT(Pike_compiler->new_program, var->u.integer.b)->identifier_flags))
+      {
+	code_expression(val, 0, "RHS");
+	emit_multi_assign(vals, vars, no+1);
+	emit1(F_ASSIGN_GLOBAL_AND_POP, var->u.integer.b);
+	break;
+      }
+    }
+    /* fall through */
+
+  default:
+  normal_assign:
+    do_docode(var, DO_LVALUE);
+    if(do_docode(val, 0) != 1) yyerror("RHS is void!");
+    emit_multi_assign(vals, vars, no+1);
+    emit0(F_ASSIGN_AND_POP);
+    break;
+  }
+}
+
 static int do_docode2(node *n, int flags)
 {
   ptrdiff_t tmp1,tmp2,tmp3;
@@ -1015,6 +1139,27 @@ static int do_docode2(node *n, int flags)
       emit0(F_ASSIGN_AND_POP);
       return 0;
     }else{
+      emit0(F_ASSIGN);
+      return 1;
+    }
+
+  case F_MULTI_ASSIGN:
+    if (flags & DO_POP) {
+      emit_multi_assign(CAR(n), CDR(n), 0);
+      return 0;
+    } else {
+      /* Fall back to the normal assign case. */
+      tmp1=do_docode(CDR(n),DO_LVALUE);
+#ifdef PIKE_DEBUG
+      if(tmp1 & 1)
+	Pike_fatal("Very internal compiler error.\n");
+#endif
+      emit1(F_ARRAY_LVALUE, DO_NOT_WARN((INT32)(tmp1>>1)));
+      emit0(F_MARK);
+      PUSH_CLEANUP_FRAME(do_pop_mark, 0);
+      do_docode(CAR(n), 0);
+      emit_apply_builtin("aggregate");
+      POP_AND_DONT_CLEANUP;
       emit0(F_ASSIGN);
       return 1;
     }
