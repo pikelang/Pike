@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.643 2008/01/28 15:17:23 grubba Exp $
+|| $Id: program.c,v 1.644 2008/01/28 15:18:09 grubba Exp $
 */
 
 #include "global.h"
@@ -2657,10 +2657,12 @@ static void exit_program_struct(struct program *p)
     /* Make sure to break the circularity... */
     struct program *parent = p->parent;
     p->parent = NULL;
+#ifdef PIKE_DEBUG
     if (!parent->refs) {
       dump_program_tables(p, 2);
       Pike_fatal("Program parent is dead.\n");
     }
+#endif
     free_program(parent);
   }
 
