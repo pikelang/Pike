@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.644 2008/01/28 15:18:09 grubba Exp $
+|| $Id: program.c,v 1.645 2008/01/28 19:46:13 mast Exp $
 */
 
 #include "global.h"
@@ -1605,7 +1605,7 @@ struct node_s *resolve_identifier(struct pike_string *ident)
     struct svalue *tmp=low_mapping_string_lookup(resolve_cache,ident);
     if(tmp)
     {
-      if (!SAFE_IS_ZERO(tmp))
+      if(!IS_UNDEFINED (tmp))
 	return mkconstantsvaluenode(tmp);
 
       return 0;
@@ -1645,7 +1645,7 @@ struct node_s *resolve_identifier(struct pike_string *ident)
 	    resolve_cache=dmalloc_touch(struct mapping *, allocate_mapping(10));
 	  mapping_string_insert(resolve_cache,ident,Pike_sp-1);
 
-	  if(!(SAFE_IS_ZERO(Pike_sp-1) && Pike_sp[-1].subtype==1))
+	  if(!IS_UNDEFINED (Pike_sp-1))
 	  {
 	    ret=mkconstantsvaluenode(Pike_sp-1);
 	  }

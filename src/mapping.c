@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.197 2008/01/28 00:49:36 mast Exp $
+|| $Id: mapping.c,v 1.198 2008/01/28 19:46:13 mast Exp $
 */
 
 #include "global.h"
@@ -748,7 +748,6 @@ PMOD_EXPORT void low_mapping_insert(struct mapping *m,
      * possible to tell the difference. */
     assign_svalue (&k->ind, key);
   assign_svalue(& k->val, val);
-  if (val->type == T_INT) k->val.subtype = NUMBER_NUMBER;
 #ifdef PIKE_DEBUG
   if(d_flag>1)  check_mapping(m);
 #endif
@@ -790,7 +789,6 @@ PMOD_EXPORT void low_mapping_insert(struct mapping *m,
   md->val_types |= 1 << val->type;
   assign_svalue_no_free(& k->ind, key);
   assign_svalue_no_free(& k->val, val);
-  if (val->type == T_INT) k->val.subtype = NUMBER_NUMBER;
   k->hval = h2;
   md->size++;
 #ifdef MAPPING_SIZE_DEBUG
@@ -1216,16 +1214,14 @@ PMOD_EXPORT void mapping_index_no_free(struct svalue *dest,
 
   if(!IS_DESTRUCTED (key) && (p=low_mapping_lookup(m,key)))
   {
-#if 0
-    /* Never return NUMBER_UNDEFINED for existing entries. */
-    /* No, but UNDEFINED values are reasonably not stored in the first
-     * place. (Or it's at least more efficient to take care of that
-     * when they're stored.) /mast */
-    if(p->type==T_INT)
-      p->subtype=NUMBER_NUMBER;
-#endif
-
     assign_svalue_no_free(dest, p);
+
+    /* Never return NUMBER_UNDEFINED for existing entries. */
+    /* Note: There is code that counts on storing UNDEFINED in mapping
+     * values (using e.g. low_mapping_lookup to get them), so we have
+     * to fix the subtype here rather than in mapping_insert. */
+    if(p->type==T_INT)
+      dest->subtype=NUMBER_NUMBER;
   }else{
     dest->type=T_INT;
     dest->u.integer=0;
