@@ -2,7 +2,7 @@
 // This file is part of Pike. For copyright information see COPYRIGHT.
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
-// $Id: treeopt.in,v 1.93 2008/01/28 17:00:26 grubba Exp $
+// $Id: treeopt.in,v 1.94 2008/01/28 18:44:26 grubba Exp $
 //
 // The tree optimizer
 //
@@ -661,14 +661,14 @@ F_COMMA_EXPR(F_ASSIGN(0, 1 = F_LOCAL),
   }
   ;
 
-// // [ vars... ] = ({ vals... })  ==>  multi_assign(vals, vars)
-// F_ASSIGN(F_APPLY(F_CONSTANT
-// 		 [$$->u.sval.type == T_FUNCTION]
-// 		 [$$->u.sval.subtype == FUNCTION_BUILTIN]
-// 		 [$$->u.sval.u.efun->function == debug_f_aggregate],
-// 		 0),
-// 	 F_ARRAY_LVALUE(1, -)):
-//   F_MULTI_ASSIGN($0, $1);
+// [ vars... ] = ({ vals... })  ==>  multi_assign(vals, vars)
+F_ASSIGN(F_APPLY(F_CONSTANT
+		 [$$->u.sval.type == T_FUNCTION]
+		 [$$->u.sval.subtype == FUNCTION_BUILTIN]
+		 [$$->u.sval.u.efun->function == debug_f_aggregate],
+		 0 = +[count_args($$) >= 0]),
+	 F_ARRAY_LVALUE(1, -)):
+  F_MULTI_ASSIGN($0, $1);
 
 // [ vars... ] = allocate(n, x)
 //   ==>
