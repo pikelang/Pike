@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.797 2008/01/29 17:54:17 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.798 2008/01/29 20:47:29 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -1611,7 +1611,7 @@ test_any([[ int a,b; [ [a],b]=({ ({ 1 }) ,2}); return a]],1)
 test_any([[ int a,b; [ [a],b]=({ ({ 1 }) ,2}); return b]],2)
 test_any([[ int a; catch { [a]=({1,2}); return 0; }; return 1]],1)
 test_compile_error([[ int a,b; catch { [a,b]=({1}); return 0; }; return 1]],1)
-test_any([[ int a,b; catch { [a,b]=lambda(){ return ({1}); }() return 0; }; return 1]],1)
+test_any([[ int a,b; catch { [a,b]=lambda(){ return ({1}); }(); return 0; }; return 1]],1)
 test_any([[ mapping m=([]); m[m]=m; return stringp(sprintf("%O",m)); ]],1)
 dnl test_any([[ 
 dnl // don't know if this /should/ be valid  /Mirar
