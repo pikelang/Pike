@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc.c,v 1.46 2007/12/18 15:58:17 mast Exp $
+|| $Id: odbc.c,v 1.47 2008/01/29 16:13:29 mast Exp $
 */
 
 /*
@@ -53,6 +53,12 @@ SQLHENV odbc_henv = SQL_NULL_HENV;
 /*
  * Functions
  */
+
+#ifdef PIKE_THREADS
+/* See f_connect_lock doc below. */
+static int enable_connect_lock = 1;
+static PIKE_MUTEX_T connect_mutex STATIC_MUTEX_INIT;
+#endif
 
 /*
  * Helper functions
@@ -314,12 +320,21 @@ static void f_create(INT32 args)
   /* FIXME: Support wide strings. */
 
   ODBC_ALLOW();
-  code = SQLConnect(hdbc, (unsigned char *)database->str,
-		    DO_NOT_WARN((SQLSMALLINT)database->len),
-		    (unsigned char *)user->str,
-		    DO_NOT_WARN((SQLSMALLINT)user->len),
-		    (unsigned char *)pwd->str,
-		    DO_NOT_WARN((SQLSMALLINT)pwd->len));
+#ifdef PIKE_THREADS
+  {
+    int lock_enabled = enable_connect_lock;
+    if (lock_enabled) mt_lock (&connect_mutex);
+#endif
+    code = SQLConnect(hdbc, (unsigned char *)database->str,
+		      DO_NOT_WARN((SQLSMALLINT)database->len),
+		      (unsigned char *)user->str,
+		      DO_NOT_WARN((SQLSMALLINT)user->len),
+		      (unsigned char *)pwd->str,
+		      DO_NOT_WARN((SQLSMALLINT)pwd->len));
+#ifdef PIKE_THREADS
+    if (lock_enabled) mt_unlock (&connect_mutex);
+  }
+#endif
   ODBC_DISALLOW();
   odbc_check_error("odbc->create", "Connect failed", code, NULL, NULL);
   PIKE_ODBC->flags |= PIKE_ODBC_CONNECTED;
@@ -584,6 +599,38 @@ static void f_list_dbs(INT32 args)
   f_aggregate(cnt);
 }
 
+#ifdef PIKE_THREADS
+/*! @decl int(0..1) connect_lock (void|int enable)
+ *!
+ *! Enable or disable a mutex that serializes all ODBC SQLConnect
+ *! calls (i.e. when ODBC connections are created). This lock might be
+ *! necessary to work around bugs in ODBC drivers.
+ *!
+ *! @param enable
+ *!   Enables the mutex if nonzero, disables it otherwise. The state
+ *!   is not changed if this argument is left out.
+ *!
+ *! @returns
+ *!   The old state of the flag.
+ *!
+ *! @note
+ *! This is currently enabled by default due to bugs in the current
+ *! FreeTDS library (version 0.63), but that might change if the
+ *! demand for this kludge ceases in the future. Therefore, if this
+ *! setting is important to you then always set it explicitly.
+ *! Hopefully most users don't need to bother with it.
+ */
+static void f_connect_lock (INT32 args)
+{
+  int old = enable_connect_lock;
+  if (args) {
+    enable_connect_lock = !UNSAFE_IS_ZERO (Pike_sp - args);
+    pop_n_elems (args);
+  }
+  push_int (old);
+}
+#endif
+
 #endif /* HAVE_ODBC */
 
 /*
@@ -655,6 +702,8 @@ PIKE_MODULE_INIT
  
   /* function(void|string:array(string)) */
   ADD_FUNCTION("list_dbs", f_list_dbs,tFunc(tOr(tVoid,tStr),tArr(tStr)), ID_PUBLIC);
+
+  ADD_FUNCTION ("connect_lock", f_connect_lock, tFunc(tOr(tVoid,tInt),tInt01), ID_PUBLIC);
 
   init_odbc_res_programs();
 
