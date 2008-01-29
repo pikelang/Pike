@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.c,v 1.194 2008/01/29 15:24:25 grubba Exp $
+|| $Id: docode.c,v 1.195 2008/01/29 20:08:39 grubba Exp $
 */
 
 #include "global.h"
@@ -1210,29 +1210,37 @@ static int do_docode2(node *n, int flags)
 	emit0(n->token);
 	return n->token==F_ASSIGN;
       }
-#if 0
-      /* Not enabled, since it has side effects if the function throws. */
     case F_APPLY:
       if ((CAAR(n)->token == F_CONSTANT) &&
 	  (CAAR(n)->u.sval.type == T_FUNCTION) &&
-	  (CAAR(n)->u.sval.subtype == FUNCTION_BUILTIN)) {
+	  (CAAR(n)->u.sval.subtype == FUNCTION_BUILTIN) &&
+	  (CAAR(n)->u.sval.u.efun->function != f_map) &&
+	  (CAAR(n)->u.sval.u.efun->function != f_filter)) {
 	/* efuns typically don't access object variables. */
 	node *args = CDAR(n);
 	if (args) {
-	  if (args->token == F_ARG_LIST) {
-	  } else if (node_is_eq(CDR(n), args)) {
+	  node **arg = my_get_arg(&args, 0);
+	  if (arg && node_is_eq(CDR(n), *arg)) {
+	    /* First arg is the lvalue.
+	     *
+	     * We optimize this to allow for destructive operations.
+	     */
+	    int no = 0;
 	    tmp1 = do_docode(CDR(n), DO_LVALUE);
-	    emit0(F_LTOSVAL1);
+	    emit0(F_MARK_AND_CONST0);
+	    PUSH_CLEANUP_FRAME(do_pop_mark, 0);
+	    while ((arg = my_get_arg(&args, ++no)) && *arg) {
+	      do_docode(*arg, 0);
+	    }
 	    tmp1=store_constant(&CAAR(n)->u.sval,
 				!(CAAR(n)->tree_info & OPT_EXTERNAL_DEPEND),
 				CAAR(n)->name);
-	    emit1(F_CALL_BUILTIN1, DO_NOT_WARN((INT32)tmp1));
-	    emit0(n->token);
+	    emit1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN, DO_NOT_WARN((INT32)tmp1));
+	    POP_AND_DONT_CLEANUP;
 	    return 1;
 	  }
 	}
       }
-#endif /* 0 */
 
     default:
       switch(CDR(n)->token)
