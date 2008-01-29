@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.650 2008/01/26 22:34:17 mast Exp $
+|| $Id: builtin_functions.c,v 1.651 2008/01/29 20:10:06 grubba Exp $
 */
 
 #include "global.h"
@@ -3334,11 +3334,26 @@ node *fix_object_program_type(node *n)
   return NULL;
 }
 
-/*! @decl string reverse(string s)
- *! @decl array reverse(array a)
- *! @decl int reverse(int i)
+/*! @decl string reverse(string s, int|void start, int|void end)
+ *! @decl array reverse(array a, int|void start, int|void end)
+ *! @decl int reverse(int i, int|void start, int|void end)
  *!
  *!   Reverses a string, array or int.
+ *!
+ *!   @param s
+ *!     String to reverse.
+ *!   @param a
+ *!     Array to reverse.
+ *!   @param i
+ *!     Integer to reverse.
+ *!   @param start
+ *!     Optional start index of the range to reverse.
+ *!     Default: @expr{0@} (zero).
+ *!   @param end
+ *!     Optional end index of the range to reverse.
+ *!     Default for strings: @expr{sizeof(s)-1@}.
+ *!     Default for arrays: @expr{sizeof(a)-1@}.
+ *!     Default for integers: @expr{Pike.get_runtime_info()->int_size - 1@}.
  *!
  *!   This function reverses a string, char by char, an array, value
  *!   by value or an int, bit by bit and returns the result. It's not
@@ -3352,32 +3367,61 @@ node *fix_object_program_type(node *n)
  */
 PMOD_EXPORT void f_reverse(INT32 args)
 {
-  if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("reverse", 1);
+  struct svalue *sv;
+  int start = 0, end = -1;
 
-  switch(Pike_sp[-args].type)
+  get_all_args("reverse", args, "%*.%d%d", &sv, &start, &end);
+
+  switch(sv->type)
   {
   case T_STRING:
   {
     INT32 e;
     struct pike_string *s;
-    s=begin_wide_shared_string(Pike_sp[-args].u.string->len,
-			       Pike_sp[-args].u.string->size_shift);
-    switch(Pike_sp[-args].u.string->size_shift)
+    if (start < 0) {
+      start = 0;
+    } else if (start >= sv->u.string->len) {
+      /* Noop. */
+      pop_n_elems(args-1);
+      break;
+    }
+    if ((end < 0) || (end >= sv->u.string->len)) {
+      end = sv->u.string->len;
+    } else if (end <= start) {
+      /* Noop. */
+      pop_n_elems(args-1);
+      break;
+    } else {
+      end++;
+    }
+    s=begin_wide_shared_string(sv->u.string->len, sv->u.string->size_shift);
+    switch(sv->u.string->size_shift)
     {
       case 0:
-	for(e=0;e<Pike_sp[-args].u.string->len;e++)
-	  STR0(s)[e]=STR0(Pike_sp[-args].u.string)[Pike_sp[-args].u.string->len-1-e];
+	for(e=0;e<start;e++)
+	  STR0(s)[e]=STR0(sv->u.string)[e];
+	for(;e<end;e++)
+	  STR0(s)[e]=STR0(sv->u.string)[end-1-e-start];
+	for(;e<sv->u.string->len;e++)
+	  STR0(s)[e]=STR0(sv->u.string)[e];
 	break;
 
       case 1:
-	for(e=0;e<Pike_sp[-args].u.string->len;e++)
-	  STR1(s)[e]=STR1(Pike_sp[-args].u.string)[Pike_sp[-args].u.string->len-1-e];
+	for(e=0;e<start;e++)
+	  STR1(s)[e]=STR1(sv->u.string)[e];
+	for(;e<end;e++)
+	  STR1(s)[e]=STR1(sv->u.string)[end-1-e-start];
+	for(;e<sv->u.string->len;e++)
+	  STR1(s)[e]=STR1(sv->u.string)[e];
 	break;
 
       case 2:
-	for(e=0;e<Pike_sp[-args].u.string->len;e++)
-	  STR2(s)[e]=STR2(Pike_sp[-args].u.string)[Pike_sp[-args].u.string->len-1-e];
+	for(e=0;e<start;e++)
+	  STR2(s)[e]=STR2(sv->u.string)[e];
+	for(;e<end;e++)
+	  STR2(s)[e]=STR2(sv->u.string)[end-1-e-start];
+	for(;e<sv->u.string->len;e++)
+	  STR2(s)[e]=STR2(sv->u.string)[e];
 	break;
     }
     s=low_end_shared_string(s);
@@ -3388,6 +3432,7 @@ PMOD_EXPORT void f_reverse(INT32 args)
 
   case T_INT:
   {
+    /* FIXME: Ought to use INT_TYPE! */
     INT32 e;
     e=Pike_sp[-args].u.integer;
     e=((e & 0x55555555UL)<<1) + ((e & 0xaaaaaaaaUL)>>1);
@@ -3404,8 +3449,8 @@ PMOD_EXPORT void f_reverse(INT32 args)
 
   case T_ARRAY:
   {
-    struct array *a;
-    a=reverse_array(Pike_sp[-args].u.array);
+    struct array *a = sv->u.array;
+    a = reverse_array(a, start, (end < 0)?a->size:end);
     pop_n_elems(args);
     push_array(a);
     break;
@@ -9159,11 +9204,11 @@ void init_builtin_efuns(void)
 		 tFunc(tSetvar(1,tMapping) tMix tMix,tVar(1))),
 	    OPT_TRY_OPTIMIZE, optimize_replace, 0);
   
-/* function(int:int)|function(string:string)|function(0=array:0) */
   ADD_EFUN("reverse",f_reverse,
-	   tOr3(tFunc(tInt,tInt),
-		tFunc(tStr,tStr),
-		tFunc(tSetvar(0, tArray),tVar(0))),0);
+	   tOr3(tFunc(tInt tOr(tVoid, tInt) tOr(tVoid, tInt), tInt),
+		tFunc(tStr tOr(tVoid, tInt) tOr(tVoid, tInt), tStr),
+		tFunc(tSetvar(0, tArray) tOr(tVoid, tInt) tOr(tVoid, tInt),
+		      tVar(0))),0);
   
 /* function(mixed,array:array) */
   ADD_EFUN("rows",f_rows,
