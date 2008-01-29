@@ -1,7 +1,7 @@
 // This file is part of Pike. For copyright information see COPYRIGHT.
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
-// $Id: peep.in,v 1.81 2007/05/29 16:50:48 grubba Exp $
+// $Id: peep.in,v 1.82 2008/01/29 20:05:34 grubba Exp $
 
 NOP :
 POP_N_ELEMS (0) : 
@@ -555,6 +555,8 @@ LOW_MKCALLOPTS(CALL_FUNCTION)
 LOW_MKCALLOPTS(CALL_OTHER)
 
 CALL_BUILTIN1 POP_VALUE : CALL_BUILTIN1_AND_POP ($1a)
+
+LTOSVAL_CALL_BUILTIN_AND_ASSIGN POP_VALUE : LTOSVAL_CALL_BUILTIN_AND_ASSIGN_POP($1a)
 
 #define OPT_TYPEP(X,Y) \
  CALL_BUILTIN1 [ Pike_compiler->new_program->constants[$1a].sval.u.efun->function == X ] BRANCH_WHEN_ZERO : BRANCH_IF_TYPE_IS_NOT(Y) POINTER($2a);
