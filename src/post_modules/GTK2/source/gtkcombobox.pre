@@ -185,12 +185,15 @@ string get_active_text()
   pgtk2_verify_inited();
   pgtk2_pop_n_elems(args);
   {
-    const gchar *a1;
+    gchar *a1;
     a1=gtk_combo_box_get_active_text(GTK_COMBO_BOX(THIS->obj));
     if (a1==NULL)
       push_string(empty_pike_string);
     else
+    {
       PGTK_PUSH_GCHAR(a1);
+      free( a1 );
+    }
   }
 }
 endrequire;

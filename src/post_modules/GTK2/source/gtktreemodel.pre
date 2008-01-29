@@ -120,6 +120,7 @@ array get_row(GTK2.TreeIter iter)
       GValue v={0};
       gtk_tree_model_get_value(GTK_TREE_MODEL(THIS->obj),gti,i,&v);
       pgtk2_push_gvalue_rt(&v); 
+      g_value_unset(&v);
     }
     f_aggregate(cols);
   }
