@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc.c,v 1.47 2008/01/29 16:13:29 mast Exp $
+|| $Id: odbc.c,v 1.48 2008/01/29 16:36:50 mast Exp $
 */
 
 /*
@@ -50,15 +50,15 @@ struct program *odbc_program = NULL;
 
 SQLHENV odbc_henv = SQL_NULL_HENV;
 
-/*
- * Functions
- */
-
 #ifdef PIKE_THREADS
 /* See f_connect_lock doc below. */
 static int enable_connect_lock = 1;
 static PIKE_MUTEX_T connect_mutex STATIC_MUTEX_INIT;
 #endif
+
+/*
+ * Functions
+ */
 
 /*
  * Helper functions
