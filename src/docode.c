@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.c,v 1.193 2008/01/28 18:59:24 grubba Exp $
+|| $Id: docode.c,v 1.194 2008/01/29 15:24:25 grubba Exp $
 */
 
 #include "global.h"
@@ -661,7 +661,7 @@ static void emit_multi_assign(node *vals, node *vars, int no)
   switch(var->token) {
   case F_LOCAL:
     if(var->u.integer.a >= 
-       find_local_frame(CDR(var)->u.integer.b)->max_number_of_locals)
+       find_local_frame(var->u.integer.b)->max_number_of_locals)
       yyerror("Illegal to use local variable here.");
 
     if(var->u.integer.b) goto normal_assign;
@@ -1210,6 +1210,29 @@ static int do_docode2(node *n, int flags)
 	emit0(n->token);
 	return n->token==F_ASSIGN;
       }
+#if 0
+      /* Not enabled, since it has side effects if the function throws. */
+    case F_APPLY:
+      if ((CAAR(n)->token == F_CONSTANT) &&
+	  (CAAR(n)->u.sval.type == T_FUNCTION) &&
+	  (CAAR(n)->u.sval.subtype == FUNCTION_BUILTIN)) {
+	/* efuns typically don't access object variables. */
+	node *args = CDAR(n);
+	if (args) {
+	  if (args->token == F_ARG_LIST) {
+	  } else if (node_is_eq(CDR(n), args)) {
+	    tmp1 = do_docode(CDR(n), DO_LVALUE);
+	    emit0(F_LTOSVAL1);
+	    tmp1=store_constant(&CAAR(n)->u.sval,
+				!(CAAR(n)->tree_info & OPT_EXTERNAL_DEPEND),
+				CAAR(n)->name);
+	    emit1(F_CALL_BUILTIN1, DO_NOT_WARN((INT32)tmp1));
+	    emit0(n->token);
+	    return 1;
+	  }
+	}
+      }
+#endif /* 0 */
 
     default:
       switch(CDR(n)->token)
