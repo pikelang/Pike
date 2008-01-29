@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.h,v 1.150 2008/01/28 19:47:29 mast Exp $
+|| $Id: svalue.h,v 1.151 2008/01/29 10:00:22 mast Exp $
 */
 
 #ifndef SVALUE_H
@@ -388,7 +388,11 @@ do{ \
 PMOD_EXPORT extern void describe(void *); /* defined in gc.c */
 PMOD_EXPORT extern const char msg_type_error[];
 PMOD_EXPORT extern const char msg_assign_svalue_error[];
-#define check_type(T) if(T > MAX_TYPE && T!=T_SVALUE_PTR && T!=T_OBJ_INDEX && T!=T_VOID && T!=T_DELETED && T!=T_ARRAY_LVALUE) Pike_fatal(msg_type_error,T)
+#define check_type(T) do {						\
+    if(T > MAX_TYPE && T!=T_SVALUE_PTR && T!=T_OBJ_INDEX &&		\
+       T!=T_VOID && T!=T_DELETED && T!=T_ARRAY_LVALUE)			\
+      Pike_fatal(msg_type_error,T);					\
+  } while (0)
 
 #define check_svalue(S) debug_check_svalue(dmalloc_check_svalue(S,DMALLOC_LOCATION()))
 
@@ -482,11 +486,11 @@ static INLINE union anything *dmalloc_check_union(union anything *u,int type, ch
 
 #else  /* !PIKE_DEBUG */
 
-#define check_svalue(S)
-#define check_type(T)
-#define check_refs(S)
-#define check_refs2(S,T)
-#define check_type_hint(SVALS, NUM, TYPE_HINT)
+#define check_svalue(S) 0
+#define check_type(T) do {} while (0)
+#define check_refs(S) do {} while (0)
+#define check_refs2(S,T) do {} while (0)
+#define check_type_hint(SVALS, NUM, TYPE_HINT) 0
 #define dmalloc_check_svalue(S,L) (S)
 #define dmalloc_check_svalues(S,L,N) (S)
 #define dmalloc_check_union(U,T,L) (U)
