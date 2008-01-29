@@ -632,12 +632,13 @@ mixed style_get_property(string name)
   pgtk2_verify_inited();
   {
     char *name;
-    GValue v;
+    GValue v = {0};
     get_all_args("style_get_property",args,"%s",&name);
     gtk_widget_style_get_property(GTK_WIDGET(THIS->obj),name,&v);
 /*  pgtk2_push_gvalue(&v); */
     pgtk2_pop_n_elems(args);
     push_gvalue_r(&v,G_VALUE_TYPE(&v));
+    g_value_unset( &v );
 /*    push_int(0); */
   }
 }
