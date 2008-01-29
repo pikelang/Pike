@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.h,v 1.55 2006/08/09 01:55:45 mast Exp $
+|| $Id: pike_memory.h,v 1.56 2008/01/29 12:02:19 per Exp $
 */
 
 #ifndef MEMORY_H
@@ -30,6 +30,12 @@
 #endif	/* USE_VALGRIND */
 
 #ifdef HAVE_VALGRIND_MACROS
+
+#ifndef VALGRIND_MAKE_NOACCESS
+#define VALGRIND_MAKE_NOACCESS VALGRIND_MAKE_MEM_NOACCESS
+#define VALGRIND_MAKE_WRITABLE VALGRIND_MAKE_MEM_UNDEFINED
+#define VALGRIND_MAKE_READABLE VALGRIND_MAKE_MEM_DEFINED
+#endif
 
 /* No Access */
 #define PIKE_MEM_NA(lvalue) do {					\
