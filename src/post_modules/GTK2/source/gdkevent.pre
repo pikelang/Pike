@@ -21,7 +21,7 @@ int pgtk2_last_event_time()
 
 void destroy()
 {
-  if( THIS->obj )
+  if( THIS->obj && THIS->owned )
     g_free( THIS->obj );
   THIS->obj = 0;
   pgtk2_pop_n_elems(args);
@@ -211,7 +211,7 @@ mixed _index(string ind)
      if( is_same_string(index,_STR("context")) )
      {
        pop_n_elems( args );
-       push_gdkobject( e->dnd.context, drag_context);
+       push_gdkobject( e->dnd.context, drag_context, 0);
        return;
      }
      break;
@@ -481,7 +481,7 @@ mixed cast(string to)
      ref_push_string(_STR("send_event")); push_int( e->dnd.send_event );
      ref_push_string(_STR("x_root")); push_int( e->dnd.x_root );
      ref_push_string(_STR("y_root")); push_int( e->dnd.y_root );
-     ref_push_string(_STR("context"));push_gdkobject( e->dnd.context, drag_context);
+     ref_push_string(_STR("context"));push_gdkobject( e->dnd.context, drag_context, 0);
      break;
   }
   f_aggregate_mapping( Pike_sp - osp );

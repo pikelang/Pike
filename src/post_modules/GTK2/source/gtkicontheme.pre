@@ -93,7 +93,7 @@ GTK2.IconInfo lookup_icon(string name, int size, int flags)
     gi=gtk_icon_theme_lookup_icon(GTK_ICON_THEME(THIS->obj),name,size,flags);
     pgtk2_pop_n_elems(args);
     if (gi)
-      push_gobjectclass(gi,pgtk2_icon_info_program);
+      push_pgdk2object(gi,pgtk2_icon_info_program,1);
     else
       push_int(0);
   }

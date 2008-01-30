@@ -38,14 +38,6 @@ void create(int|void fast_mode, Image.Image|void image)
   pgtk2__init_this_object();
 }
 
-void destroy()
-{
-  if (THIS->obj)
-    g_object_unref(G_OBJECT(THIS->obj));
-  THIS->obj=0;
-  pgtk2_pop_n_elems(args);
-  push_int(0);
-}
 %{
 #define HEADER "P6\n%d %d\n255\n"
 #define HEADER_SIZE 20

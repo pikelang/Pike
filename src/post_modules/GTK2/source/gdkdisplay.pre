@@ -156,7 +156,7 @@ mapping get_window_at_pointer()
     gint x,y;
     GdkWindow *gw;
     gw=gdk_display_get_window_at_pointer(GDK_DISPLAY_OBJECT(THIS->obj),&x,&y);
-/*    push_text("window"); push_gdkobject(gw,window); */
+/*    push_text("window"); push_gobject(gw,window); */
     ref_push_string(_STR("window")); push_gobject(gw);
     ref_push_string(_STR("x")); push_int(x);
     ref_push_string(_STR("y")); push_int(y);

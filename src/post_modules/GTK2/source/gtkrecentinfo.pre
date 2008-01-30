@@ -5,7 +5,7 @@ class GTK2.RecentInfo;
 void destroy()
 //! Destructor.
 {
-  if (THIS->obj)
+  if (THIS->obj && THIS->owned)
     gtk_recent_info_unref((GtkRecentInfo *)THIS->obj);
   THIS->obj=NULL;
   pgtk2_pop_n_elems(args);
@@ -17,7 +17,7 @@ string get_uri()
 {
   pgtk2_verify_inited();
   pgtk2_pop_n_elems(args);
-  push_string(gtk_recent_info_get_uri((GtkRecentInfo *)THIS->obj));
+  push_text(gtk_recent_info_get_uri((GtkRecentInfo *)THIS->obj));
 }
 
 string get_display_name()
@@ -26,7 +26,7 @@ string get_display_name()
 {
   pgtk2_verify_inited();
   pgtk2_pop_n_elems(args);
-  push_string(gtk_recent_info_get_display_name((GtkRecentInfo *)THIS->obj));
+  push_text(gtk_recent_info_get_display_name((GtkRecentInfo *)THIS->obj));
 }
 
 string get_description()
@@ -34,7 +34,7 @@ string get_description()
 {
   pgtk2_verify_inited();
   pgtk2_pop_n_elems(args);
-  push_string(gtk_recent_info_get_description((GtkRecentInfo *)THIS->obj));
+  push_text(gtk_recent_info_get_description((GtkRecentInfo *)THIS->obj));
 }
 
 //! Gets the (short) description of the resource.
@@ -44,7 +44,7 @@ string get_mime_type()
 {
   pgtk2_verify_inited();
   pgtk2_pop_n_elems(args);
-  push_string(gtk_recent_info_get_mime_type((GtkRecentInfo *)THIS->obj));
+  push_text(gtk_recent_info_get_mime_type((GtkRecentInfo *)THIS->obj));
 }
 
 
@@ -91,7 +91,7 @@ string last_application()
 {
   pgtk2_verify_inited();
   pgtk2_pop_n_elems(args);
-  push_string(gtk_recent_info_last_application((GtkRecentInfo *)THIS->obj));
+  push_text(gtk_recent_info_last_application((GtkRecentInfo *)THIS->obj));
 }
 
 array get_groups()
@@ -106,7 +106,7 @@ array get_groups()
     groups=gr=gtk_recent_info_get_groups((GtkRecentInfo *)THIS->obj,NULL);
     i=0;
     while (gr) {
-      push_string(make_shared_binary_string(*gr,strlen(*gr)));
+      push_text(*gr);
       i++;
       gr++;
     }
@@ -173,7 +173,7 @@ string get_short_name()
 {
   pgtk2_verify_inited();
   pgtk2_pop_n_elems(args);
-  push_string(gtk_recent_info_get_short_name((GtkRecentInfo *)THIS->obj));
+  push_text(gtk_recent_info_get_short_name((GtkRecentInfo *)THIS->obj));
 }
 
 string get_uri_display()
@@ -181,7 +181,7 @@ string get_uri_display()
 {
   pgtk2_verify_inited();
   pgtk2_pop_n_elems(args);
-  push_string(gtk_recent_info_get_uri_display((GtkRecentInfo *)THIS->obj));
+  push_text(gtk_recent_info_get_uri_display((GtkRecentInfo *)THIS->obj));
 }
 
 int get_age()

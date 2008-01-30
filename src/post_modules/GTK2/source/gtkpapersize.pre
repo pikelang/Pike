@@ -40,7 +40,7 @@ void create(string|void name, string|void ppd_display_name,
 void destroy()
 //! Destructor.
 {
-  if (THIS->obj)
+  if (THIS->obj && THIS->owned)
     gtk_paper_size_free((GtkPaperSize *)(THIS->obj));
   THIS->obj=0;
   pgtk2_pop_n_elems(args);
@@ -56,14 +56,8 @@ void destroy()
     GtkPaperSize *gps;
 
     gps=gtk_paper_size_copy((GtkPaperSize *)(THIS->obj));
-    push_gobjectclass(gps,pgtk2_paper_size_program);
+    push_pgdk2object(gps,pgtk2_paper_size_program,1);
   }
-}
-
-void free()
-//! Free a paper size.
-{
-  pgtk2_paper_size_destroy(args);
 }
 
 int is_equal(GTK2.PaperSize size1)

@@ -1283,8 +1283,25 @@ class Class( string name, string file, int line )
     switch( mn )
     {
      case "GDK2":
-       _push="  push_gdkobject( %s, "+lower_case(nn)+" );";
-       break;
+	 switch( nn )
+	 {
+	     case "Atom":
+	     case "Color":
+	     case "Colormap":
+	     case "DragContext":
+	     case "Event":
+	     case "Rectangle":
+	     case "Region":
+		 // FIXME: Add way to tell if the value is owned by
+		 // pikegtk or not. currently we assume it's not,
+		 // since that was (in effect) what happened before
+		 // unless the user explicitly called destruct.
+		 _push="  push_gdkobject( %s, "+lower_case(nn)+", 0 );";
+		 break;
+	 }
+	 if( _push )
+	     break;
+	 /* Fallthrough */
      case "GTK2":
      case "Gnome2":
      case "Pango":

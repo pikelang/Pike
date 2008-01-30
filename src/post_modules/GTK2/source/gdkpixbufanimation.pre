@@ -50,7 +50,7 @@ GDK2.PixbufAnimationIter get_iter()
   {
     GdkPixbufAnimationIter *iter;
     iter=gdk_pixbuf_animation_get_iter(GDK_PIXBUF_ANIMATION(THIS->obj),NULL);
-    push_gdkobject(iter,pixbuf_animation_iter);
+    push_gobject(iter);
   }
 }
 

@@ -84,7 +84,7 @@ void set_displayed_row(?GTK2.TreePath path)
   pgtk2_pop_n_elems(args);
   {
     GtkTreePath *path=gtk_cell_view_get_displayed_row(GTK_CELL_VIEW(THIS->obj));
-    push_gobjectclass(path,pgtk2_tree_path_program);
+    push_pgdk2object(path,pgtk2_tree_path_program,1);
   }
 }
 

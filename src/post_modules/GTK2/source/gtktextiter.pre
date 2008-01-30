@@ -13,17 +13,11 @@ class GTK2.TextIter;
 
 void destroy()
 {
-  if (THIS->obj)
+  if (THIS->obj && THIS->owned)
     gtk_text_iter_free((GtkTextIter *)(THIS->obj));
   THIS->obj=0;
   pgtk2_pop_n_elems(args);
   push_int(0);
-}
-
-void free()
-//! Free an iterator.
-{
-  pgtk2_text_iter_destroy(args);
 }
 
 int get_offset()

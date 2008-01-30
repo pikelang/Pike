@@ -20,15 +20,6 @@ Pango.TabArray copy()
   }
 }
 
-void destroy()
-{
-  if (THIS->obj)
-    pango_tab_array_free((PangoTabArray *)THIS->obj);
-  THIS->obj=0;
-  pgtk2_pop_n_elems(args);
-  push_int(0);
-}
-
 int get_size()
 //! Gets the number of tab stops.
 {

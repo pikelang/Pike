@@ -208,7 +208,7 @@ array(GDK2.Window) children()
   gl=g2=gdk_window_get_children(GDK_WINDOW(THIS->obj));
 
   while (g2) {
-    push_gdkobject(g2->data,window);
+    push_gobject(g2->data);
 
 
 /*

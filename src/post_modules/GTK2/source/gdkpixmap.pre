@@ -93,9 +93,13 @@ void set(GDK2.Image|Image.Image image)
 
 void destroy()
 {
-  if (THIS->obj)
-    g_object_unref(THIS->obj);
-  THIS->obj=0;
+  /*
+      if (THIS->obj)
+      g_object_unref(THIS->obj);
+      THIS->obj=0;
+      
+      Done by g.object
+  */
 
   if (THIS->extra_data)
     g_object_unref(THIS->extra_data);

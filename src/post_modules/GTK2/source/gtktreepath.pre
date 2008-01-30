@@ -113,7 +113,7 @@ array(int) get_indices()
 
 void destroy()
 {
-  if (THIS->obj)
+  if (THIS->obj && THIS->owned)
     gtk_tree_path_free((GtkTreePath *)THIS->obj);
   THIS->obj=0;
   pgtk2_pop_n_elems(args);
@@ -128,7 +128,7 @@ GTK2.TreePath copy()
     GtkTreePath *a1;
     a1=(GtkTreePath *)gtk_tree_path_copy((GtkTreePath *)THIS->obj);
     pgtk2_pop_n_elems(args);
-    push_gobjectclass(a1,pgtk2_tree_path_program);
+    push_pgdk2object(a1,pgtk2_tree_path_program,1);
   }
 }
 

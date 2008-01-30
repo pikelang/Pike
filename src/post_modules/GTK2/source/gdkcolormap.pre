@@ -125,7 +125,7 @@ void free_colors(array(GDK2.Color) colors)
     gc=(GdkColor *)xalloc(sizeof(GdkColor));
     gdk_colormap_query_color(GDK_COLORMAP(THIS->obj),pix,gc);
     pgtk2_pop_n_elems(args);
-    push_gdkobject(gc,color);
+    push_gdkobject(gc,color,1);
   }
 }
 
@@ -136,9 +136,8 @@ void free_colors(array(GDK2.Color) colors)
   pgtk2_pop_n_elems(args);
   {
     GdkVisual *gv;
-
     gv=gdk_colormap_get_visual(GDK_COLORMAP(THIS->obj));
-    push_gdkobject(gv,visual);
+    push_gobject(gv);
   }
 }
 

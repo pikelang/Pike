@@ -90,7 +90,7 @@ void set_color(int|GDK2.Color red, ?int green, ?int blue)
     if (color==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("get_color",sizeof(GdkColor));
     gtk_color_button_get_color(GTK_COLOR_BUTTON(THIS->obj),color);
-    push_gdkobject(color,color);
+    push_gdkobject(color,color,1);
   }
 }
 

@@ -105,9 +105,10 @@ void destroy()
 //! not free the color from the X-colormap (in case of pseudocolor)
 //! right now.
 {
-  if (THIS->obj) {
+  if (THIS->obj && THIS->owned) {
     g_free(THIS->obj);
     THIS->obj=0;
+    THIS->owned=0;
   }
   pgtk2_pop_n_elems(args);
   push_int(0);

@@ -50,16 +50,6 @@ void create(int|Image.Image xsize_or_image, int|void ysize, string|void bitmap)
   pgtk2__init_this_object();
 }
 
-void destroy()
-//! Destructor. Destroys the bitmap. This will free the bitmap on the X-server.
-{
-  if (THIS->obj)
-/*    gdk_bitmap_unref( (void *)THIS->obj ); */
-    g_object_unref((void *)THIS->obj);
-  pgtk2_pop_n_elems(args);
-  THIS->obj=0;
-}
-
 void ref()
 //! Add a reference
 {

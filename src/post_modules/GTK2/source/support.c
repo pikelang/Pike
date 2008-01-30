@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: support.c,v 1.19 2008/01/29 12:17:26 per Exp $
+|| $Id: support.c,v 1.20 2008/01/30 13:29:55 per Exp $
 */
 
 #include <version.h>
@@ -277,7 +277,7 @@ void push_gobjectclass(void *obj, struct program *def) {
 }
 
 
-void push_pgdk2object(void *obj, struct program *def) {
+void push_pgdk2object(void *obj, struct program *def, int owned) {
   struct object *o;
   if (!obj) {
     push_int(0);
@@ -286,10 +286,7 @@ void push_pgdk2object(void *obj, struct program *def) {
   o=low_clone(def);
   call_c_initializers(o);
   ((struct object_wrapper *)o->storage)->obj=obj;
-
-  /* TODO: Check all usage of this function to see that it does not
-   * assume 2 refs on the object instead of 1. 
-   */
+  ((struct object_wrapper *)o->storage)->owned = owned;
   push_object(o); 
   return;
 }
@@ -430,7 +427,7 @@ struct my_pixel pgtk2_pixel_from_xpixel(unsigned int pix, GdkImage *i) {
 
 void push_atom(GdkAtom a) {
   /* this should really be inserted in the GDK.Atom mapping. */
-  push_pgdk2object((void *)a,pgdk2__atom_program);
+    push_pgdk2object((void *)a,pgdk2__atom_program,0);
 }
 
 void push_Xpseudo32bitstring(void *f, int nelems) {
@@ -465,7 +462,7 @@ void push_gdk_event(GdkEvent *e) {
       return;
     }
     *f=*e;
-    push_gdkobject(f,event);
+    push_gdkobject(f,event,1);
   } else
     push_int(0);
 }
@@ -495,7 +492,7 @@ static int pgtk2_push_ctree_node_param(const GValue *a )
 */
 
 static int pgtk2_push_gdk_drag_context_param(const GValue *a) {
-  push_gdkobject(g_value_get_pointer(a),drag_context);
+  push_gdkobject(g_value_get_pointer(a),drag_context,0);
   return PUSHED_VALUE;
 }
 
@@ -577,13 +574,13 @@ static int pgtk2_push_object_param(const GValue *a) {
   if (g_type_is_a(G_VALUE_TYPE(a),G_TYPE_BOXED)) {
     gp=g_value_get_boxed(a);
     if (G_VALUE_HOLDS(a,g_type_from_name("GdkColor"))) {
-      push_gdkobject(gp,color);
+      push_gdkobject(gp,color,0);
     } else if (G_VALUE_HOLDS(a,g_type_from_name("GtkTreePath"))) {
-      pgtk2_push_gobjectclass(gp,pgtk2_tree_path_program);
+      push_pgdk2object(gp,pgtk2_tree_path_program,0);
     } else if (G_VALUE_HOLDS(a,g_type_from_name("GdkRectangle"))) {
-      push_gdkobject(gp,rectangle);
+      push_gdkobject(gp,rectangle,0);
     } else if (G_VALUE_HOLDS(a,g_type_from_name("GdkRegion"))) {
-      push_gdkobject(gp,region);
+      push_gdkobject(gp,region,0);
     }
   } else {
     obj=g_value_get_object(a);
@@ -1131,7 +1128,7 @@ void pgtk2__low_get_property(GObject *g, char *prop) {
 	  if (gc==NULL)
 	    Pike_error("Out of memory allocating %d bytes\n",sizeof(GdkColor));
 	  g_object_get(g,prop,gc,NULL);
-	  push_gdkobject(gc,color);
+	  push_gdkobject(gc,color,1);
 	} else {
 	  Pike_error("Unable to handle type %s.\n",g_type_name(gps->value_type));
 	}
@@ -1258,8 +1255,8 @@ int pgtk2_tree_sortable_callback(GtkTreeModel *model, GtkTreeIter *a,
   int res;
 /*  push_gobjectclass(model,pgtk2_tree_model_program); */
   push_gobject(model);
-  push_gobjectclass(a,pgtk2_tree_iter_program);
-  push_gobjectclass(b,pgtk2_tree_iter_program);
+  push_pgdk2object(a,pgtk2_tree_iter_program,0);
+  push_pgdk2object(b,pgtk2_tree_iter_program,0);
   push_svalue(&d->args);
   apply_svalue(&d->cb,4);
   res=Pike_sp[-1].u.integer;

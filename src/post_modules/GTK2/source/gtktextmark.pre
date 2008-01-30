@@ -27,12 +27,3 @@ string get_name();
 
 int get_left_gravity();
 //! Determines whether the mark has left gravity.
-
-void destroy()
-{
-  if (THIS->obj)
-    g_object_unref(THIS->obj);
-  THIS->obj=0;
-  pgtk2_pop_n_elems(args);
-  push_int(0);
-}

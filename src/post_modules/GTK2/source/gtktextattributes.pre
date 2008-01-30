@@ -10,16 +10,11 @@ void create()
   pgtk2_verify_setup();
   {
     GtkTextAttributes *gta;
-/*
-  gta=g_malloc(sizeof(GtkTextAttributes));
-  if (gta==NULL)
-    SIMPLE_OUT_OF_MEMORY_ERROR("create",sizeof(GtkTextAttributes));
-*/
     gta=gtk_text_attributes_new();
     THIS->obj=(void *)gta;
+    THIS->owned = 1;
   }
   pgtk2_pop_n_elems(args);
-  pgtk2__init_this_object();
 }
 
 GTK2.TextAttributes copy()
@@ -30,7 +25,7 @@ GTK2.TextAttributes copy()
     GtkTextAttributes *a1;
     a1=gtk_text_attributes_copy((GtkTextAttributes *)(THIS->obj));
     pgtk2_pop_n_elems(args);
-    push_gobjectclass(a1,pgtk2_text_attributes_program);
+    push_pgdk2object(a1,pgtk2_text_attributes_program,1);
   }
 }
 
@@ -43,14 +38,13 @@ GTK2.TextAttributes copy_values(GTK2.TextAttributes dest)
     get_all_args("copy_values",args,"%o",&a1);
     gtk_text_attributes_copy_values((GtkTextAttributes *)(THIS->obj),
 		(GtkTextAttributes *)get_gobject(a1));
-    pgtk2_pop_n_elems(args);
-    push_gobjectclass(a1,pgtk2_text_attributes_program);
+    pgtk2_return_this(args);
   }
 }
 
 void destroy()
 {
-  if (THIS->obj)
+  if (THIS->obj && THIS->owned)
     gtk_text_attributes_unref((GtkTextAttributes *)(THIS->obj));
   THIS->obj=0;
   pgtk2_pop_n_elems(args);

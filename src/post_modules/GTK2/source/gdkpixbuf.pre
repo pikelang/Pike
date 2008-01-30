@@ -676,14 +676,15 @@ void saturate_and_pixelate(GDK2.Pixbuf dest, float saturation,
   {
     INT_TYPE x,y,dx,dy,w,h,a;
     GdkBitmap *b;
+
     get_all_args("render_threshold_alpha",args,"%i%i%i%i%i%i%i",&x,&y,&dx,&dy,
 		 &w,&h,&a);
-    b=(GdkBitmap *)g_malloc(sizeof(GdkBitmap));
+    b = gdk_pixmap_new( NULL, w, h, 1 );
     if (!b)
       SIMPLE_OUT_OF_MEMORY_ERROR("render_threshold_alpha",sizeof(GdkBitmap));
     gdk_pixbuf_render_threshold_alpha(GDK_PIXBUF(THIS->obj),b,
 			x,y,dx,dy,w,h,a);
     pgtk2_pop_n_elems(args);
-    push_gdkobject(b,bitmap);
+    push_gobject(b);
   }
 }

@@ -30,7 +30,7 @@ void create(GTK2.Widget|GDK2.Drawable context, mapping|void attributes)
     get_all_args("'()",args,"%o%m",&o,&m);
 
 #define VALUE(X,Y)					\
-    if (sv=simple_mapping_string_lookup(m,#X)) {	\
+    if ( (sv=simple_mapping_string_lookup(m,#X)) ) {	\
       values.X=sv->u.integer;				\
       have_values|=Y;					\
     }
@@ -65,15 +65,6 @@ void create(GTK2.Widget|GDK2.Drawable context, mapping|void attributes)
   THIS->obj=G_OBJECT(gc);
   pgtk2_pop_n_elems(args);
   pgtk2__init_this_object();
-}
-
-void destroy()
-{
-  if (THIS->obj)
-    g_object_unref(GDK_GC(THIS->obj));
-  destruct(Pike_fp->current_object);
-  pgtk2_pop_n_elems(args);
-  push_int(0);
 }
 
 GDK2.Screen get_screen();
@@ -130,8 +121,8 @@ mapping(string:mixed) get_values()
     }
     *f=v.foreground;
     *b=v.background;
-    ref_push_string(_STR("foreground"));  push_gdkobject(f,color);
-    ref_push_string(_STR("background"));  push_gdkobject(b,color);
+    ref_push_string(_STR("foreground"));  push_gdkobject(f,color,1);
+    ref_push_string(_STR("background"));  push_gdkobject(b,color,1);
   }
   f_aggregate_mapping(Pike_sp-osp);
 }

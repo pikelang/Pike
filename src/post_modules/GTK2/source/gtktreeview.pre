@@ -463,7 +463,7 @@ mapping get_path_at_pos(int x, int y)
 			GTK_TREE_VIEW_COLUMN(get_gobject(o2)),
 			rect);
     pgtk2_pop_n_elems(args);
-    push_gdkobject(rect,rectangle);
+    push_gdkobject(rect,rectangle,1);
   }
 }
 
@@ -488,7 +488,7 @@ mapping get_path_at_pos(int x, int y)
 			GTK_TREE_VIEW_COLUMN(get_gobject(o2)),
 			rect);
     pgtk2_pop_n_elems(args);
-    push_gdkobject(rect,rectangle);
+    push_gdkobject(rect,rectangle,1);
   }
 }
 
@@ -507,7 +507,7 @@ mapping get_path_at_pos(int x, int y)
     if (gr==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("get_visible_rect",sizeof(GdkRectangle));
     gtk_tree_view_get_visible_rect(GTK_TREE_VIEW(THIS->obj),gr);
-    push_gdkobject(gr,rectangle);
+    push_gdkobject(gr,rectangle,1);
   }
 }
 

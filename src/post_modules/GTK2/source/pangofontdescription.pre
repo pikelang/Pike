@@ -26,9 +26,12 @@ void create(?string desc)
       THIS->obj=(void *)pango_font_description_from_string(str);
     else
       THIS->obj=(void *)pango_font_description_new();
+
     pgtk2_pop_n_elems(args);
   } else
     THIS->obj=(void *)pango_font_description_new();
+
+  THIS->owned = 1;
   pgtk2__init_this_object();
 }
 
@@ -40,7 +43,7 @@ Pango.FontDescription copy()
     PangoFontDescription *pfd=pango_font_description_copy(
 		(PangoFontDescription *)THIS->obj);
     pgtk2_pop_n_elems(args);
-    push_gobjectclass(pfd,ppango2_font_description_program);
+    push_pgdk2object(pfd,ppango2_font_description_program,1);
   }
 }
 
@@ -62,7 +65,7 @@ int equal(Pango.FontDescription desc)
 
 void destroy()
 {
-  if (THIS->obj)
+  if (THIS->obj && THIS->owned)
     pango_font_description_free((PangoFontDescription *)THIS->obj);
   THIS->obj=0;
   pgtk2_pop_n_elems(args);

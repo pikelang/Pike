@@ -66,14 +66,5 @@ void create(?int best, int|void depth, int|void type)
   pgtk2__init_this_object();
 }
 
-void destroy()
-{
-  if (THIS->obj)
-    g_object_unref(THIS->obj);
-  THIS->obj=NULL;
-  pgtk2_pop_n_elems(args);
-  push_int(0);
-}
-
 +GDK2.Screen get_screen();
 //! Gets the screen to which this visual belongs.

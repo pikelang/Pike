@@ -7,7 +7,7 @@ class GTK2.IconInfo;
 
 void destroy()
 {
-  if (THIS->obj)
+  if (THIS->obj && THIS->owned )
     gtk_icon_info_free((GtkIconInfo *)THIS->obj);
   THIS->obj=NULL;
   pgtk2_pop_n_elems(args);
@@ -21,7 +21,7 @@ GTK2.IconInfo copy()
   pgtk2_pop_n_elems(args);
   {
     GtkIconInfo *gi=gtk_icon_info_copy((GtkIconInfo *)THIS->obj);
-    push_gobjectclass(gi,pgtk2_icon_info_program);
+    push_pgdk2object(gi,pgtk2_icon_info_program,1);
   }
 }
 

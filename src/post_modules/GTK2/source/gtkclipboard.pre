@@ -20,15 +20,16 @@ void create()
 }
 */
 
+
 void destroy()
 {
-/*
-  if (THIS->obj)
-    g_free(THIS->obj);
-*/
+    /* From API doc: 
+       
+    Once a clipboard object has been created, it is
+    persistent and, since it is owned by GTK+, must not be freed or
+    unrefd. 
+    */
   THIS->obj=0;
-  pgtk2_pop_n_elems(args);
-  push_int(0);
 }
 
 GTK2.Clipboard get(GDK2.Atom selection)

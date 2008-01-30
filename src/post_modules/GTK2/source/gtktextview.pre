@@ -120,7 +120,7 @@ int place_cursor_onscreen();
     gtk_text_view_get_visible_rect(GTK_TEXT_VIEW(THIS->obj),
 			gdr);
     pgtk2_pop_n_elems(args);
-    push_gdkobject(gdr,rectangle);
+    push_gdkobject(gdr,rectangle,1);
   }
 }
 
@@ -141,7 +141,7 @@ int place_cursor_onscreen();
     gtk_text_view_get_iter_location(GTK_TEXT_VIEW(THIS->obj),
 		(GtkTextIter *)get_pg2object(o1,pgtk2_text_iter_program),gdr);
     pgtk2_pop_n_elems(args);
-    push_gdkobject(gdr,rectangle);
+    push_gdkobject(gdr,rectangle,1);
   }
 }
 

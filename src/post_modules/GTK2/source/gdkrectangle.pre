@@ -68,7 +68,8 @@ mixed cast(string type)
 
 void destroy()
 {
-  g_free(THIS->obj);
+  if( THIS->obj && THIS->owned )
+      g_free(THIS->obj);
   pgtk2_pop_n_elems(args);
   push_int(0);
 }
