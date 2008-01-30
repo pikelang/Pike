@@ -96,7 +96,7 @@ mapping(string:mixed) get_values()
   ref_push_string(_STR("clip_mask"));  push_gobject(v.clip_mask);
   ref_push_string(_STR("stipple"));    push_gobject(v.stipple);
   ref_push_string(_STR("tile"));       push_gobject(v.tile);
-/*push_text("font");       push_gdkobject(v.font,font); */
+/*push_text("font");       push_gdkobject(v.font,font,0); */
 
 /*if (v.font)  g_object_ref(v.font); */
   if (v.tile)

@@ -116,9 +116,6 @@ mapping(string:object) get_image()
       push_int(0);
     ref_push_string(_STR("mask"));
     if(m) {
-/*
-      push_gdkobject(m,bitmap);
-*/
       push_gobject(m);
       g_object_ref(m);
     } else
@@ -149,9 +146,6 @@ mapping(string:object) get_pixmap()
       push_int(0);
     ref_push_string(_STR("mask"));
     if (m) {
-/*
-      push_gdkobject(m,bitmap);
-*/
       push_gobject(m);
       g_object_ref(m);
     } else

@@ -121,8 +121,8 @@ mapping(string:mixed) get_tag_style(string id)
         SIMPLE_OUT_OF_MEMORY_ERROR("get_tag_style",sizeof(GdkColor));
       *fg=gs->foreground;
       *bg=gs->background;
-      ref_push_string(_STR("foreground")); push_gdkobject(fg,color);
-      ref_push_string(_STR("background")); push_gdkobject(bg,color);
+      ref_push_string(_STR("foreground")); push_gdkobject(fg,color,1);
+      ref_push_string(_STR("background")); push_gdkobject(bg,color,1);
       ref_push_string(_STR("italic")); push_int(gs->italic);
       ref_push_string(_STR("bold")); push_int(gs->bold);
       ref_push_string(_STR("underline")); push_int(gs->underline);
@@ -210,8 +210,8 @@ mapping(string:mixed) get_tag_default_style(string id)
         SIMPLE_OUT_OF_MEMORY_ERROR("get_tag_default_style",sizeof(GdkColor));
       *fg=gs->foreground;
       *bg=gs->background;
-      ref_push_string(_STR("foreground")); push_gdkobject(fg,color);
-      ref_push_string(_STR("background")); push_gdkobject(bg,color);
+      ref_push_string(_STR("foreground")); push_gdkobject(fg,color,1);
+      ref_push_string(_STR("background")); push_gdkobject(bg,color,1);
       ref_push_string(_STR("italic")); push_int(gs->italic);
       ref_push_string(_STR("bold")); push_int(gs->bold);
       ref_push_string(_STR("underline")); push_int(gs->underline);

@@ -229,10 +229,7 @@ GDK2.Color data_get_color(int index)
       SIMPLE_OUT_OF_MEMORY_ERROR("get_color",sizeof(GdkColor));
     gtk_databox_data_get_color(GTK_DATABOX(THIS->obj),index,col);
     pgtk2_pop_n_elems(args);
-    if (col)
-      push_gdkobject(col,color);
-    else
-      push_int(0);
+    push_gdkobject(col,color,1);
   }
 }
 

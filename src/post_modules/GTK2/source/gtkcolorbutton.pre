@@ -112,52 +112,5 @@ void set_title(string title);
 string get_title();
 //! Get the title.
 
-/*
-void set_property(string property, mixed value)
-//! Set property.
-{
-  pgtk2_verify_inited();
-  {
-    struct pike_string *prop;
-    struct svalue *sv;
-    get_all_args("set_property",args,"%n%*",&prop,&sv);
-    if (is_same_string(prop,_STR("color"))) {
-      GdkColor *color;
-      if (sv->type!=PIKE_T_OBJECT)
-	Pike_error("Improper type for this property.\n");
-      color=(GdkColor *)get_gdkobject(sv->u.object,color);
-      setprop(prop->str,color);
-      RETURN_THIS();
-    } else {
-      pg2_object_set_property(args);
-    }
-  }
-}
-
-mixed get_property(string property)
-//! Get property.
-{
-  pgtk2_verify_inited();
-  {
-    struct pike_string *prop;
-    get_all_args("get_property",args,"%n",&prop);
-    if (is_same_string(prop,_STR("color"))) {
-      GdkColor *color;
-      gpointer *v;
-      color=(GdkColor *)g_malloc(sizeof(GdkColor));
-      if (color==NULL)
-	SIMPLE_OUT_OF_MEMORY_ERROR("get_property",sizeof(GdkColor));
-      g_object_get(G_OBJECT(THIS->obj),prop->str,&color,NULL);
-      pgtk2_pop_n_elems(args);
-      push_gdkobject(color,color);
-    } else {
-      char *s=g_strdup(prop->str);
-      pgtk2_pop_n_elems(args);
-      pgtk2_get_property(G_OBJECT(THIS->obj),s);
-      g_free(s);
-    }
-  }
-}
-*/
 endrequire;
 

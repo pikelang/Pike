@@ -241,7 +241,7 @@ GDK2.Color get_color(?string spec)
       SIMPLE_OUT_OF_MEMORY_ERROR("get_color",sizeof(GdkColor));
     gnome_canvas_get_color(GNOME_CANVAS(THIS->obj),spec,color);
     pgtk2_pop_n_elems(args);
-    push_gdkobject(color,color);
+    push_gdkobject(color,color,1);
   }
 }
 
