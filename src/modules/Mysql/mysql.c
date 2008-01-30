@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.109 2008/01/26 22:23:37 mast Exp $
+|| $Id: mysql.c,v 1.110 2008/01/30 17:12:28 grubba Exp $
 */
 
 /*
@@ -242,11 +242,8 @@ static void exit_mysql_struct(struct object *o)
 
   DESTROY_MYSQL_LOCK();
 }
-void pike_mysql_set_ssl(struct mapping *options) {
-
-  // for some reason, we may get here without an options mapping.
-  if(!options) return;
-
+void pike_mysql_set_ssl(struct mapping *options)
+{
 #ifdef HAVE_MYSQL_SSL
     char *ssl_key = NULL;
     char *ssl_cert = NULL;
@@ -254,7 +251,12 @@ void pike_mysql_set_ssl(struct mapping *options) {
     char *ssl_capath = NULL;
     char *ssl_cipher = NULL;
     struct svalue *val = NULL;
+#endif /* HAVE_MYSQL_SSL */
 
+  // for some reason, we may get here without an options mapping.
+  if(!options) return;
+
+#ifdef HAVE_MYSQL_SSL
     if ((val = simple_mapping_string_lookup(options, "ssl_key")) &&
 	(val->type == T_STRING) &&
 	(!val->u.string->size_shift))
