@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.198 2008/01/29 20:01:48 grubba Exp $
+|| $Id: interpret_functions.h,v 1.199 2008/01/30 16:52:24 grubba Exp $
 */
 
 /*
@@ -2335,44 +2335,91 @@ OPCODE1(F_CALL_BUILTIN1_AND_POP, "call builtin1 & pop", I_UPDATE_ALL, {
   pop_stack();
 });
 
-OPCODE1_TAIL(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN_POP,
-	     "ltosval, call builtin, assign & pop", I_UPDATE_ALL, {
-  OPCODE1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN, "ltosval, call builtin & assign",
-	  I_UPDATE_ALL, {
-    INT32 args = DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp));
-    ONERROR uwp;
+OPCODE1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN, "ltosval, call builtin & assign",
+	I_UPDATE_ALL, {
+  INT32 args = DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp));
+  ONERROR uwp;
 
-    /* FIXME: Assert that args > 0 */
+  /* FIXME: Assert that args > 0 */
 
-    free_svalue(Pike_sp-args);
-    lvalue_to_svalue_no_free(Pike_sp-args, Pike_sp-args-2);
-    /* This is so that foo = efun(foo,...) (and similar things) will be faster.
-     * It's done by freeing the old reference to foo after it has been
-     * pushed on the stack. That way foo can have only 1 reference if we
-     * are lucky, and then the low array/multiset/mapping manipulation
-     * routines can be destructive if they like.
-     */
-    if( (1 << Pike_sp[-args].type) &
-	(BIT_ARRAY | BIT_MULTISET | BIT_MAPPING | BIT_STRING) )
-    {
-      LOCAL_VAR(struct svalue tmp);
-      tmp.type = PIKE_T_INT;
-      tmp.subtype = NUMBER_NUMBER;
-      tmp.u.integer = 0;
-      assign_lvalue(Pike_sp-args-2, &tmp);
-    }
-    /* NOTE: Pike_sp-args-2 is the lvalue, Pike_sp-args is the original value.
-     *       If an error gets thrown, the original value will thus be restored.
-     *       If the efun succeeds, Pike_sp-args will hold the result.
-     */
-    SET_ONERROR(uwp, o_assign_lvalue, Pike_sp-args-2);
-    DO_CALL_BUILTIN(args);
-    CALL_AND_UNSET_ONERROR(uwp);
-    free_svalue(Pike_sp-3);
-    free_svalue(Pike_sp-2);
-    move_svalue(Pike_sp - 3, Pike_sp - 1);
-    Pike_sp-=2;
-  });
+  STACK_LEVEL_START(args+2);
+
+  free_svalue(Pike_sp-args);
+  lvalue_to_svalue_no_free(Pike_sp-args, Pike_sp-args-2);
+  /* This is so that foo = efun(foo,...) (and similar things) will be faster.
+   * It's done by freeing the old reference to foo after it has been
+   * pushed on the stack. That way foo can have only 1 reference if we
+   * are lucky, and then the low array/multiset/mapping manipulation
+   * routines can be destructive if they like.
+   */
+  if( (1 << Pike_sp[-args].type) &
+      (BIT_ARRAY | BIT_MULTISET | BIT_MAPPING | BIT_STRING) )
+  {
+    LOCAL_VAR(struct svalue tmp);
+    tmp.type = PIKE_T_INT;
+    tmp.subtype = NUMBER_NUMBER;
+    tmp.u.integer = 0;
+    assign_lvalue(Pike_sp-args-2, &tmp);
+  }
+  /* NOTE: Pike_sp-args-2 is the lvalue, Pike_sp-args is the original value.
+   *       If an error gets thrown, the original value will thus be restored.
+   *       If the efun succeeds, Pike_sp-args will hold the result.
+   */
+  SET_ONERROR(uwp, o_assign_lvalue, Pike_sp-args-2);
+  DO_CALL_BUILTIN(args);
+  STACK_LEVEL_CHECK(3);
+  CALL_AND_UNSET_ONERROR(uwp);
+
+  STACK_LEVEL_CHECK(3);
+  free_svalue(Pike_sp-3);
+  free_svalue(Pike_sp-2);
+  move_svalue(Pike_sp - 3, Pike_sp - 1);
+  Pike_sp-=2;
+  STACK_LEVEL_DONE(1);
+});
+
+OPCODE1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN_POP,
+	"ltosval, call builtin, assign & pop", I_UPDATE_ALL, {
+  INT32 args = DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp));
+  ONERROR uwp;
+
+  /* FIXME: Assert that args > 0 */
+
+  STACK_LEVEL_START(args+2);
+
+  free_svalue(Pike_sp-args);
+  lvalue_to_svalue_no_free(Pike_sp-args, Pike_sp-args-2);
+  /* This is so that foo = efun(foo,...) (and similar things) will be faster.
+   * It's done by freeing the old reference to foo after it has been
+   * pushed on the stack. That way foo can have only 1 reference if we
+   * are lucky, and then the low array/multiset/mapping manipulation
+   * routines can be destructive if they like.
+   */
+  if( (1 << Pike_sp[-args].type) &
+      (BIT_ARRAY | BIT_MULTISET | BIT_MAPPING | BIT_STRING) )
+  {
+    LOCAL_VAR(struct svalue tmp);
+    tmp.type = PIKE_T_INT;
+    tmp.subtype = NUMBER_NUMBER;
+    tmp.u.integer = 0;
+    assign_lvalue(Pike_sp-args-2, &tmp);
+  }
+  /* NOTE: Pike_sp-args-2 is the lvalue, Pike_sp-args is the original value.
+   *       If an error gets thrown, the original value will thus be restored.
+   *       If the efun succeeds, Pike_sp-args will hold the result.
+   */
+  SET_ONERROR(uwp, o_assign_lvalue, Pike_sp-args-2);
+  DO_CALL_BUILTIN(args);
+  STACK_LEVEL_CHECK(3);
+  CALL_AND_UNSET_ONERROR(uwp);
+
+  STACK_LEVEL_CHECK(3);
+  free_svalue(Pike_sp-3);
+  free_svalue(Pike_sp-2);
+  move_svalue(Pike_sp - 3, Pike_sp - 1);
+  Pike_sp-=2;
+  STACK_LEVEL_DONE(1);
+
   pop_stack();
 });
 
