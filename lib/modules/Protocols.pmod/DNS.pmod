@@ -1,4 +1,4 @@
-// $Id: DNS.pmod,v 1.93 2008/01/31 13:08:59 grubba Exp $
+// $Id: DNS.pmod,v 1.94 2008/01/31 22:45:09 grubba Exp $
 // Not yet finished -- Fredrik Hubinette
 
 //! Domain Name System
@@ -600,14 +600,7 @@ class server
 //! 	Synchronous DNS client.
 class client 
 {
-
   inherit protocol;
-
-  static private int is_ip(string ip)
-  {
-    // FIXME: Doesn't work with IPv6
-    return (replace(ip, "0123456789."/1, allocate(11,"")) == "");
-  }
 
 #ifdef __NT__
   array(string) get_tcpip_param(string val, void|string fallbackvalue)
@@ -640,9 +633,16 @@ class client
 #endif
     return sizeof(res) ? res : ({ fallbackvalue });
   }
-#endif
+
+#else /* !__NT__ */
 
   static private mapping(string:string) etc_hosts;
+
+  static private int is_ip(string ip)
+  {
+    // FIXME: Doesn't work with IPv6
+    return (replace(ip, "0123456789."/1, allocate(11,"")) == "");
+  }
 
   static private string read_etc_file(string fname)
   {
@@ -670,7 +670,6 @@ class client
     return res;
   }
 
-#ifndef __NT__
   static private string match_etc_hosts(string host)
   {
     if (!etc_hosts) {
