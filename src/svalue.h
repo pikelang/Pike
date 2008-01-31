@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.h,v 1.151 2008/01/29 10:00:22 mast Exp $
+|| $Id: svalue.h,v 1.152 2008/01/31 13:42:31 grubba Exp $
 */
 
 #ifndef SVALUE_H
@@ -713,7 +713,7 @@ PMOD_EXPORT void copy_svalues_recursively_no_free(struct svalue *to,
 						  size_t num,
 						  struct mapping *m);
 void check_short_svalue(const union anything *u, TYPE_T type);
-void debug_check_svalue(const struct svalue *s);
+PMOD_EXPORT void debug_check_svalue(const struct svalue *s);
 void debug_check_type_hint (const struct svalue *svals, size_t num, TYPE_FIELD type_hint);
 PMOD_EXPORT void real_gc_mark_external_svalues(const struct svalue *s, ptrdiff_t num,
 					       const char *place);
