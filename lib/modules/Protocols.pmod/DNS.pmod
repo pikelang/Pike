@@ -1,4 +1,4 @@
-// $Id: DNS.pmod,v 1.92 2008/01/05 14:45:21 grubba Exp $
+// $Id: DNS.pmod,v 1.93 2008/01/31 13:08:59 grubba Exp $
 // Not yet finished -- Fredrik Hubinette
 
 //! Domain Name System
@@ -670,6 +670,7 @@ class client
     return res;
   }
 
+#ifndef __NT__
   static private string match_etc_hosts(string host)
   {
     if (!etc_hosts) {
@@ -699,6 +700,7 @@ class client
     }
     return etc_hosts[lower_case(host)];
   }
+#endif /* !__NT__ */
 
   // FIXME: Read hosts entry in /etc/nswitch.conf?
 
