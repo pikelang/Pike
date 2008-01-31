@@ -83,8 +83,8 @@ int main()
    
    f->open_socket();
    // NOTE: Some OS's (NT) signal connection failure on the
-   //       error callback.
-   f->set_nonblocking(rcb,ok,fail);
+   //       error callback (aka read_oob callback).
+   f->set_nonblocking(rcb,ok,fail,fail,0);
    int ok;
    if (catch { ok = f->connect("127.0.0.1",z); } &&
        catch { ok = f->connect("localhost",z); })
