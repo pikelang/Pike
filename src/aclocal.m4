@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.161 2008/01/31 14:11:10 grubba Exp $
+dnl $Id: aclocal.m4,v 1.162 2008/02/01 19:44:45 mast Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -594,11 +594,14 @@ define([PIKE_RETAIN_VARIABLES],
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.161 2008/01/31 14:11:10 grubba Exp $
+  # $Id: aclocal.m4,v 1.162 2008/02/01 19:44:45 mast Exp $
 
   MY_AC_PROG_CC
 
-  AC_DEFINE([POSIX_SOURCE], [], [This should always be defined.])
+  dnl The following shouldn't be necessary; it comes from the core
+  dnl machine.h via global.h anyway. Defining it here makes the
+  dnl compiler complain about redefinition.
+  dnl AC_DEFINE([POSIX_SOURCE], [], [This should always be defined.])
 
   AC_SUBST(CONFIG_HEADERS)
 
