@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.645 2008/01/28 19:46:13 mast Exp $
+|| $Id: program.c,v 1.646 2008/02/02 14:27:50 grubba Exp $
 */
 
 #include "global.h"
@@ -3183,6 +3183,7 @@ void check_program(struct program *p)
 	if( (p->identifiers[e].func.offset /* + OFFSETOF(object,storage)*/ ) &
 	    (alignof_variable(p->identifiers[e].run_time_type)-1))
 	{
+	  dump_program_tables(p, 0);
 	  Pike_fatal("Variable %s offset is not properly aligned (%ld).\n",
 		     p->identifiers[e].name->str,
 		     PTRDIFF_T_TO_LONG(p->identifiers[e].func.offset));
