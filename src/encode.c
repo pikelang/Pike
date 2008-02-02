@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.250 2008/01/26 22:34:19 mast Exp $
+|| $Id: encode.c,v 1.251 2008/02/02 21:39:44 grubba Exp $
 */
 
 #include "global.h"
@@ -117,6 +117,7 @@
 #define ID_ENTRY_FUNCTION	1
 #define ID_ENTRY_CONSTANT	2
 #define ID_ENTRY_INHERIT	3
+#define ID_ENTRY_ALIAS		4
 
 struct encode_data
 {
@@ -1441,7 +1442,27 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		}
 
 		if (IDENTIFIER_IS_ALIAS(id->identifier_flags)) {
-		  Pike_error("Encoding of aliases not supported yet.\n");
+		  code_number(ID_ENTRY_ALIAS, data);
+
+		  /* flags */
+		  code_number(ref->id_flags, data);
+
+		  /* name */
+		  str_sval.u.string = id->name;
+		  encode_value2(&str_sval, data, 0);
+
+		  /* depth */
+		  code_number(id->func.ext_ref.depth, data);
+
+		  /* refno */
+		  code_number(id->func.ext_ref.id, data);
+
+		  /* type */
+		  ref_push_type_value(id->type);
+		  encode_value2(Pike_sp-1, data, 0);
+		  pop_stack();
+		  break;
+		  
 		} else switch (id->identifier_flags & IDENTIFIER_TYPE_MASK) {
 		case IDENTIFIER_CONSTANT:
 		  EDB(3,
@@ -4112,6 +4133,67 @@ static void decode_value2(struct decode_data *data)
 		dmalloc_touch_svalue(Pike_sp-1);
 		dmalloc_touch_svalue(Pike_sp-2);
 		Pike_sp -= 2;
+	      }
+	      break;
+	    case ID_ENTRY_ALIAS:
+	      {
+		int depth;
+		int refno;
+		int no;
+		int n;
+
+		/* name */
+		decode_value2(data);
+		if (Pike_sp[-1].type != T_STRING) {
+		  ref_push_program (p);
+		  decode_error(Pike_sp - 1, Pike_sp - 2,
+			       "Bad alias name (not a string): ");
+		}
+
+		/* depth */
+		decode_number(depth, data);
+
+		/* refno */
+		decode_number(refno, data);
+
+		/* FIXME:
+		 *   Verify validity of depth and refno.
+		 */
+
+		/* type */
+		decode_value2(data);
+		if (Pike_sp[-1].type != T_TYPE) {
+		  ref_push_program (p);
+		  decode_error(Pike_sp - 1, Pike_sp - 2,
+			       "Bad constant type (not a type): ");
+		}
+
+		/* Expected identifier number. */
+		decode_number(no, data);
+
+		EDB(5,
+		    fprintf(stderr,
+			    "%*slow_define_alias(\"%s\", X, 0x%04x)\n",
+			    data->depth, "",
+			    Pike_sp[-2].u.string->str, id_flags));
+
+		/* Alters
+		 *
+		 * variable_index, identifiers and
+		 * identifier_references
+		 */
+		n = low_define_alias(Pike_sp[-2].u.string,
+				     Pike_sp[-1].u.type, id_flags,
+				     depth, refno);
+
+		if (no != n) {
+		  ref_push_program (p);
+		  decode_error(Pike_sp - 1, Pike_sp - 3,
+			       "Bad alias identifier offset "
+			       "(expected %d, got %d) for ", no, n);
+		}
+
+		pop_n_elems(2);
 	      }
 	      break;
 	    case ID_ENTRY_INHERIT:
