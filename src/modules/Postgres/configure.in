@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.18 2002/12/21 19:40:23 grendel Exp $
+dnl $Id: configure.in,v 1.19 2008/02/04 15:33:55 grubba Exp $
 
 AC_INIT(postgres.c)
 AC_CONFIG_HEADER(pgres_config.h)
@@ -87,16 +87,42 @@ dnl check it not to be a stale entry
   fi
 
 dnl final ckeck, just to be sure we didn't mess up
-  AC_CHECK_HEADERS(postgres.h postgres_fe.h libpq-fe.h)
+  AC_CHECK_HEADERS(postgres.h postgres_fe.h \
+		   server/postgres.h server/postgres_fe.h \
+		   postgresql/server/postgres.h \
+		   postgresql/server/postgres_fe.h \
+		   server/catalog/pg_type.h catalog/pg_type.h \
+		   postgresql/server/catalog/pg_type.h \
+		   server/pg_config.h postgresql/server/pg_config.h \
+		   pg_config.h libpq-fe.h)
   
 dnl check whether we have Postgres 7.2 or newer
   HAVE_PG72=no
-  if test -f $pike_cv_pgres_include_dir/pg_config.h; then
-    case `grep 'PG_VERSION \"' $pike_cv_pgres_include_dir/pg_config.h | cut -d '"' -f 2` in
-       7.[[2-9]]*|8.*) HAVE_PG72=yes
-             AC_DEFINE(HAVE_PG72) ;;
-    esac
-  fi
+  AC_EGREP_CPP([\"7\.[2-9].*], [
+#ifdef HAVE_POSTGRESQL_SERVER_PG_CONFIG_H
+#include <postgresql/server/pg_config.h>
+#elif defined(HAVE_SERVER_PG_CONFIG_H)
+#elif defined(HAVE_PG_CONFIG_H)
+#include <pg_config.h>
+#endif
+PG_VERSION
+  ], [
+    HAVE_PG72=yes
+    AC_DEFINE(HAVE_PG72)
+  ], [
+    AC_EGREP_CPP([\"[8-9]\..*], [
+#ifdef HAVE_POSTGRESQL_SERVER_PG_CONFIG_H
+#include <postgresql/server/pg_config.h>
+#elif defined(HAVE_SERVER_PG_CONFIG_H)
+#elif defined(HAVE_PG_CONFIG_H)
+#include <pg_config.h>
+#endif
+PG_VERSION
+    ], [
+      HAVE_PG72=yes
+      AC_DEFINE(HAVE_PG72)
+    ])
+  ])
   
   echo "Have Postgres 7.2? $HAVE_PG72"
   if test x$ac_cv_header_libpq_fe_h$HAVE_PG72 != xyesyes ; then
