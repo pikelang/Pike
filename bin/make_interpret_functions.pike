@@ -2,6 +2,8 @@
 
 mapping ops=([]);
 
+int errors;
+
 array fixit2(array x)
 {
   array ret=({});
@@ -11,11 +13,25 @@ array fixit2(array x)
       if(objectp(x[e]) && ops[(string)x[e]])
       {
 	opcodes+=x[e..e]+fixit2(x[e+1])[0];
-	array tmp=fixit2((x[e+1]/ ({ Parser.Pike.Token(",") }) )[-1][0]);
+	array args = x[e+1]/ ({ Parser.Pike.Token(",") });
+	array tmp = fixit2(args[-1][0]);
 	
 	ret+=({ tmp[0] });
 	opcodes+=tmp[1];
 	e++;
+	// Note: There's always an '}' at the end of x.
+	if ((string)x[e+1] != ";") {
+	  werror("Missing semicolon after definition of opcode %s(%s)\n",
+		 (string)args[0][1], (string)args[1][0]);
+	  errors++;
+	} else e++;
+	// Note: There must not be code after a nested opcode definition,
+	//       it will not work in the byte-code interpreter case.
+	if (x[e+1] != "}") {
+	  werror("Remainder: after %s(%s): %O\n",
+		 (string)args[0][1], (string)args[1][0], x[e+1..]);
+	  errors++;
+	}
       }
       else if(arrayp(x[e]))
       {
@@ -136,4 +152,6 @@ int main(int argc, array(string) argv)
     write(Parser.Pike.simple_reconstitute(x));
   else
     write(Parser.Pike.reconstitute_with_line_numbers(x));
+
+  return errors;
 }
