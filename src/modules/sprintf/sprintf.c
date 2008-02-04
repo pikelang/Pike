@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.147 2007/10/02 16:53:08 grubba Exp $
+|| $Id: sprintf.c,v 1.148 2008/02/04 21:46:49 nilsson Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -78,10 +78,12 @@
  *!     @value '|'
  *!       Centered within field size.
  *!     @value '='
- *!       Column mode if strings are greater than field size.
+ *!       Column mode if strings are greater than field size. Breaks
+ *!       between words (possibly skipping or adding spaces). Can not be
+ *!       used together with '/'.
  *!     @value '/'
- *!       Rough line break (break at exactly field size instead of between
- *!       words).
+ *!       Column mode with rough line break (break at exactly field size
+ *!       instead of between words). Can not be used together with '='.
  *!     @value '#'
  *!       Table mode, print a list of '\n' separated word (top-to-bottom
  *!       order).
@@ -1866,7 +1868,7 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
 
   for(a=format;COMPARE_PCHARP(a,<,format_end);INC_PCHARP(a,1))
   {
-    int num_snurkel;
+    int num_snurkel, column;
 
     if(EXTRACT_PCHARP(a)!='%')
     {
@@ -1876,6 +1878,7 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
       continue;
     }
     num_snurkel=0;
+    column=0;
     arg=NULL;
     setwhat=0;
     begin=a;
@@ -1930,7 +1933,19 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
 	if(setwhat==2) setwhat=4;
 	continue;
 
-      case '=': case '/': case '#': case '$': case '|': case ' ': case '+':
+      case '/':
+        column |= ROUGH_LINEBREAK;
+        if( column & LINEBREAK )
+          my_yyerror("Can not use both the modifiers / and =.\n");
+        continue;
+
+      case '=':
+        column |= LINEBREAK;
+        if( column & ROUGH_LINEBREAK )
+          my_yyerror("Can not use both the modifiers / and =.\n");
+        continue;
+
+      case '#': case '$': case '|': case ' ': case '+':
       case '!': case '^': case '>': case '_':
 	continue;
 
