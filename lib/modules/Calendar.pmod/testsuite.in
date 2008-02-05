@@ -1,5 +1,5 @@
 START_MARKER
-dnl $Id: testsuite.in,v 1.15 2008/01/23 15:23:54 mast Exp $
+dnl $Id: testsuite.in,v 1.16 2008/02/05 21:34:47 mast Exp $
 
 dnl NOTE:
 dnl   *every* time the Calendar tests have failed, it's not the 
@@ -138,5 +138,23 @@ test_eq([[Calendar.ISO.Week (2008, 1)->set_size (Calendar.ISO.Day())->format_ymd
 test_eq([[Calendar.ISO.Week (2008, 1)->set_size (Calendar.ISO.Day())->year_no()]], 2007)
 test_eq([[Calendar.ISO.Week (2008, 1)->year_no()]], 2008)
 test_eq([[Calendar.ISO.Year (Calendar.ISO.Week (2008, 1))->year_no()]], 2008)
+
+test_eq([[Calendar.ISO.Day (2007, 5, 31)->add (1, Calendar.ISO.Month())]], Calendar.ISO.Day (2007, 6, 30))
+test_eq([[Calendar.ISO.Day (2007, 5, 31)->add (2, Calendar.ISO.Month())]], Calendar.ISO.Day (2007, 7, 31))
+test_eq([[Calendar.ISO.Day (2007, 5, 31)->add (1, Calendar.ISO.Month())->add (1, Calendar.ISO.Month())]], Calendar.ISO.Day (2007, 7, 30))
+test_eq([[Calendar.ISO.Day (2007, 5, 31)->add (-1, Calendar.ISO.Month())]], Calendar.ISO.Day (2007, 4, 30))
+test_eq([[Calendar.ISO.Day (2007, 5, 31)->add (-2, Calendar.ISO.Month())]], Calendar.ISO.Day (2007, 3, 31))
+test_eq([[Calendar.ISO.Day (2007, 5, 31)->add (-1, Calendar.ISO.Month())->add (1, Calendar.ISO.Month())]], Calendar.ISO.Day (2007, 5, 30))
+
+test_eq([[Calendar.ISO.Day (1900, 1, 31)->add (1, Calendar.ISO.Month())]], Calendar.ISO.Day (1900, 2, 28))
+test_eq([[Calendar.ISO.Day (2000, 1, 31)->add (1, Calendar.ISO.Month())]], Calendar.ISO.Day (2000, 2, 29))
+test_eq([[Calendar.ISO.Day (2004, 1, 31)->add (1, Calendar.ISO.Month())]], Calendar.ISO.Day (2004, 2, 29))
+
+test_eq([[Calendar.ISO.Day (2004, 2, 29)->add (1, Calendar.ISO.Year())]], Calendar.ISO.Day (2005, 2, 28))
+test_eq([[Calendar.ISO.Day (2004, 2, 29)->add (4, Calendar.ISO.Year())]], Calendar.ISO.Day (2008, 2, 29))
+test_eq([[Calendar.ISO.Day (2004, 2, 29)->add (2, Calendar.ISO.Year())->add (2, Calendar.ISO.Year())]], Calendar.ISO.Day (2008, 2, 28))
+test_eq([[Calendar.ISO.Day (2004, 2, 29)->add (-1, Calendar.ISO.Year())]], Calendar.ISO.Day (2003, 2, 28))
+test_eq([[Calendar.ISO.Day (2004, 2, 29)->add (-4, Calendar.ISO.Year())]], Calendar.ISO.Day (2000, 2, 29))
+test_eq([[Calendar.ISO.Day (2004, 2, 29)->add (-2, Calendar.ISO.Year())->add (2, Calendar.ISO.Year())]], Calendar.ISO.Day (2004, 2, 28))
 
 END_MARKER

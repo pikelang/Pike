@@ -2226,11 +2226,27 @@ class cDay
 
    static TimeRange _move(int x,YMD step)
    {
-      if (step->is_year)
-	 return year()->add(x,step)->place(this,1);
+      if (step->is_year) {
+	TimeRange stepped = year()->add(x,step);
+	if (TimeRange placed = stepped->place(this,0))
+	  return placed;
+	// If we couldn't place our day in the target year it means
+	// we're on a leap day and the target year doesn't have any.
+	// We return the closest day in the same month.
+	TimeRange placed = stepped->place (month());
+	if (md == CALUNKNOWN) make_month();
+	return placed->day (md < placed->number_of_days() ? md : -1);
+      }
 
-      if (step->is_month)
-	 return month()->add(x,step)->place(this,1);
+      if (step->is_month) {
+	TimeRange stepped = month()->add(x,step);
+	if (TimeRange placed = stepped->place(this,0))
+	  return placed;
+	// The target month is shorter and our date doesn't exist in
+	// it. We return the closest (i.e. last) day of the target
+	// month.
+	return stepped->day (-1);
+      }
 
       if (step->is_week)
 	 return week()->add(x,step)->place(this,1);
