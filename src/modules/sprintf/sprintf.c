@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.148 2008/02/04 21:46:49 nilsson Exp $
+|| $Id: sprintf.c,v 1.149 2008/02/05 17:54:01 grubba Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -1102,8 +1102,16 @@ static void low_pike_sprintf(struct format_stack *fs,
       case '.': setwhat=2; continue;
       case ':': setwhat=1; continue;
 
-      case '=': fs->fsp->flags|=LINEBREAK; continue;
-      case '/': fs->fsp->flags|=ROUGH_LINEBREAK; continue;
+      case '=': fs->fsp->flags|=LINEBREAK;
+	if (fs->fsp->flags & ROUGH_LINEBREAK)
+	  sprintf_error(fs,
+			"Combining modifiers '=' and '/' is not allowed.\n");
+	continue;
+      case '/': fs->fsp->flags|=ROUGH_LINEBREAK;
+	if (fs->fsp->flags & LINEBREAK)
+	  sprintf_error(fs,
+			"Combining modifiers '=' and '/' is not allowed.\n");
+	continue;
       case '#': fs->fsp->flags|=COLUMN_MODE; continue;
       case '$': fs->fsp->flags|=INVERSE_COLUMN_MODE; continue;
 
