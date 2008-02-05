@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.h,v 1.77 2008/01/15 23:39:26 grubba Exp $
+|| $Id: las.h,v 1.78 2008/02/05 23:20:32 mast Exp $
 */
 
 #ifndef LAS_H
@@ -19,6 +19,8 @@ typedef void (*c_fun)(INT32);
 
 /* Flags used by yytype_error() */
 #define YYTE_IS_WARNING	1
+
+struct compiler_frame;		/* Avoid gcc warning. */
 
 void yytype_error(const char *msg, struct pike_type *expected_t,
 		  struct pike_type *got_t, unsigned int flags);
