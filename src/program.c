@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.648 2008/02/03 19:38:18 grubba Exp $
+|| $Id: program.c,v 1.649 2008/02/06 18:29:09 grubba Exp $
 */
 
 #include "global.h"
@@ -4842,9 +4842,9 @@ int define_variable(struct pike_string *name,
 	 * can change the compile-time type. */
 	n2 = define_alias(name, type, flags & ~ID_EXTERN, 0, n);
 
-	/* Hide the old variable and make it local. */
+	/* Hide the old variable. */
 	Pike_compiler->new_program->identifier_references[n].id_flags |=
-	  ID_HIDDEN|ID_INLINE;
+	  ID_HIDDEN;
 	return n2;
       }
     }
