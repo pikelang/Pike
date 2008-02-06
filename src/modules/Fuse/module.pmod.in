@@ -192,7 +192,18 @@ class Operations
     string getxattr( string path, string name );
 
     //! Set the extended attribute @[name] on @[path] to @[value]
-    string setxattr(string path, string name, string value, int flags );
+    int setxattr(string path, string name, string value, int flags );
+
+    //! Create and open or just open the given @[path]
+    int creat( string path, int mode, int flag );
+
+    //! Return if the user is allowed to access the @[path]. If the
+    //! 'default_permissions' mount option is given, this method is not
+    //! called.
+    int access( string path, int mode ); 
+
+    //! Write unwritten data. 
+    int flush( string path, int flags );
 }
 
 static class MyOps
@@ -254,6 +265,8 @@ static class MyOps
   }
 
     //! @ignore
+    WRAP0(access);
+    WRAP0(creat);
     WRAP(getattr);
     WRAP(readlink);
     WRAP(readdir);
