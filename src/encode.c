@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.252 2008/02/06 12:38:17 grubba Exp $
+|| $Id: encode.c,v 1.253 2008/02/06 18:58:15 grubba Exp $
 */
 
 #include "global.h"
@@ -1465,8 +1465,6 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		  ref_push_type_value(id->type);
 		  encode_value2(Pike_sp-1, data, 0);
 		  pop_stack();
-		  break;
-		  
 		} else switch (id->identifier_flags & IDENTIFIER_TYPE_MASK) {
 		case IDENTIFIER_CONSTANT:
 		  EDB(3,
