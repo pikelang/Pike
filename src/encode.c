@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.253 2008/02/06 18:58:15 grubba Exp $
+|| $Id: encode.c,v 1.254 2008/02/06 19:17:15 mast Exp $
 */
 
 #include "global.h"
@@ -2030,22 +2030,36 @@ static int my_extract_char(struct decode_data *data)
   if((LEN) == -1)							    \
   {									    \
     INT32 what, e, num, numh;						    \
+    ptrdiff_t sz;							\
     DECODE("get_string_data");						    \
     what &= TAG_MASK;							    \
-    if(data->ptr + num > data->len || num <0)				    \
-      Pike_error("Failed to decode string. (string range error)\n");		    \
     if(what<0 || what>2)						    \
-      Pike_error("Failed to decode string. (Illegal size shift)\n");		    \
-    STR=begin_wide_shared_string(num, what);				    \
-    MEMCPY(STR->str, data->data + data->ptr, num << what);		    \
-    data->ptr+=(num << what);						    \
+      Pike_error ("Failed to decode string: Illegal size shift %d.\n",	\
+		  what);						\
+    sz = (ptrdiff_t) num << what;					\
+    if (sz < 0)								\
+      Pike_error ("Failed to decode string: Illegal negative size "	\
+		  "%"PRINTPTRDIFFT"d.\n", sz);				\
+    if (sz > data->len - data->ptr)					\
+      Pike_error ("Failed to decode string: Too large size %"PRINTPTRDIFFT"d " \
+		  "(max is %"PRINTPTRDIFFT"d).\n",			\
+		  sz, data->len - data->ptr);				\
+    STR=begin_wide_shared_string(num, what);				\
+    MEMCPY(STR->str, data->data + data->ptr, sz);			\
+    data->ptr += sz;							\
     BITFLIP(STR);							    \
     STR=end_shared_string(STR);                                             \
   }else{								    \
-    if(data->ptr + (LEN) > data->len || (LEN) <0)			    \
-      Pike_error("Failed to decode string. (string range error)\n");		    \
-    STR=make_shared_binary_string((char *)(data->data + data->ptr), (LEN)); \
-    data->ptr+=(LEN);							    \
+    ptrdiff_t sz = (LEN);						\
+    if (sz < 0)								\
+      Pike_error ("Failed to decode string: Illegal negative size "	\
+		  "%"PRINTPTRDIFFT"d.\n", sz);				\
+    if (sz > data->len - data->ptr)					\
+      Pike_error ("Failed to decode string: Too large size %"PRINTPTRDIFFT"d " \
+		  "(max is %"PRINTPTRDIFFT"d).\n",			\
+		  sz, data->len - data->ptr);				\
+    STR=make_shared_binary_string((char *)(data->data + data->ptr), sz); \
+    data->ptr += sz;							\
   }									    \
 }while(0)
 
