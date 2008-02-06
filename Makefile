@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.164 2007/04/19 11:17:01 mast Exp $
+# $Id: Makefile,v 1.165 2008/02/06 21:57:54 mast Exp $
 #
 # Meta Makefile
 #
@@ -11,12 +11,11 @@
 # pass on the command line. (Using the magic MAKEFLAGS variable
 # directly here might not work all the time due to the $(DO_MAKE)
 # recursion.)
-#MAKE_FLAGS=-j2
+#MAKE_FLAGS=
 
 # Set to a flag for parallelizing make, e.g. -j2. It's given to make
-# at the level where it's most effective. (Don't use when the make
-# program has smart job control, e.g. GNU make.)
-#MAKE_PARALLEL=
+# at the level where it's most effective.
+#MAKE_PARALLEL=-j`test -f /proc/cpuinfo && grep processor /proc/cpuinfo | wc -l || echo 1`
 
 # Tip: Remove "-r" from the line below if you don't want to rebuild
 # from scratch every time you upgrade the kernel.
