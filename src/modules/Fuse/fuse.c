@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fuse.c,v 1.10 2006/12/29 16:26:15 grubba Exp $
+|| $Id: fuse.c,v 1.11 2008/02/06 16:36:23 per Exp $
 */
 
 #include "global.h"
@@ -63,32 +63,6 @@ static void push_fuse_cmd(struct fuse_cmd *cmd, struct fuse *f)
 }
 
 static struct object *global_fuse_obj; // There Can Be Only One
-
-static int our_fuse_loop( struct fuse *f )
-{
-    if (f == NULL)
-        return -1;
-
-    while (1) 
-    {
-        struct fuse_cmd *cmd;
-
-        if (fuse_exited(f))
-	{
-            break;
-	}
-	THREADS_ALLOW();
-        cmd = fuse_read_cmd(f);
-	THREADS_DISALLOW();
-        if (cmd == NULL)
-            continue;
-	push_fuse_cmd( cmd,f );
-        apply( global_fuse_obj, "___process_cmd", 1 );
-	pop_stack();
-    }
-    return 0;
-}
-
 
 #define DEFAULT_ERRNO() do{if(Pike_sp[-1].u.integer) return -Pike_sp[-1].u.integer;return -ENOENT;}while(0)
 
@@ -309,12 +283,14 @@ static int pf_write(const char *path, const char *buf, size_t size,
 
 static int pf_statfs(const char *path, struct statvfs *stbuf)
 {
+    struct mapping *m;
+    struct svalue *val;
+
     push_text( path );
-    apply( global_fuse_obj, "statvfs", 1 );
+    apply( global_fuse_obj, "statfs", 1 );
     if( Pike_sp[-1].type != PIKE_T_MAPPING )
 	DEFAULT_ERRNO();
-    struct mapping *m = Pike_sp[-1].u.mapping;
-    struct svalue *val;
+    m = Pike_sp[-1].u.mapping;
     memset( stbuf, 0, sizeof(*stbuf) );
     stbuf->f_namemax = 4096;
     stbuf->f_bsize = 1024;
@@ -376,13 +352,14 @@ static int pf_setxattr(const char *path, const char *name, const char *value,
 static int pf_getxattr(const char *path, const char *name, char *value,
 		       size_t size)
 {
+    unsigned int ds;
     push_text( path );
     push_text( name );
     apply( global_fuse_obj, "getxattr", 2 );
     if( Pike_sp[-1].type != PIKE_T_STRING ||
 	(Pike_sp[-1].u.string->size_shift) )
 	DEFAULT_ERRNO();
-    unsigned int ds = Pike_sp[-1].u.string->len <<Pike_sp[-1].u.string->size_shift;
+    ds = Pike_sp[-1].u.string->len <<Pike_sp[-1].u.string->size_shift;
     if( !size )
 	return ds;
     if( size < ds )
@@ -393,6 +370,8 @@ static int pf_getxattr(const char *path, const char *name, char *value,
 
 static int pf_listxattr(const char *path, char *list, size_t size)
 {
+    unsigned int ds;
+
     push_text( path );
     apply( global_fuse_obj, "listxattr", 1 );
     if( Pike_sp[-1].type != PIKE_T_ARRAY )
@@ -402,7 +381,7 @@ static int pf_listxattr(const char *path, char *list, size_t size)
     if( Pike_sp[-1].type != PIKE_T_STRING ||
 	(Pike_sp[-1].u.string->size_shift) )
 	DEFAULT_ERRNO();
-    unsigned int ds = Pike_sp[-1].u.string->len <<Pike_sp[-1].u.string->size_shift;
+    ds = Pike_sp[-1].u.string->len <<Pike_sp[-1].u.string->size_shift;
     if( !size )
 	return ds;
     if( size < ds )
@@ -421,15 +400,84 @@ static int pf_removexattr(const char *path, const char *name)
     return -Pike_sp[-1].u.integer;
 }
 
+static int pf_flush( const char *path, struct fuse_file_info *fi)
+{
+    push_text( path );
+    push_int( fi->flags );
+    apply( global_fuse_obj, "flush", 2 );
+    if (Pike_sp[-1].type != T_INT)
+	DEFAULT_ERRNO();
+    return -Pike_sp[-1].u.integer;
+}
+
+static int pf_opendir( const char *path, struct fuse_file_info *fi)
+{
+    push_text( path );
+    push_int( fi->flags );
+    apply( global_fuse_obj, "opendir", 2 );
+    if (Pike_sp[-1].type != T_INT)
+	DEFAULT_ERRNO();
+    return -Pike_sp[-1].u.integer;
+}
+
+static int pf_creat( const char *path, mode_t mode, struct fuse_file_info *fi)
+{
+    push_text( path );
+    push_int( mode );
+    push_int( fi->flags );
+    apply( global_fuse_obj, "creat", 3 );
+    if (Pike_sp[-1].type != T_INT)
+	DEFAULT_ERRNO();
+    return -Pike_sp[-1].u.integer;
+}
+
+static int pf_access( const char *path, int mode)
+{
+    push_text( path );
+    push_int( mode );
+    apply( global_fuse_obj, "access", 2 );
+    if (Pike_sp[-1].type != T_INT)
+	DEFAULT_ERRNO();
+    return -Pike_sp[-1].u.integer;
+}
+
+static int pf_releasedir( const char *path, struct fuse_file_info *fi)
+{
+    push_text( path );
+    apply( global_fuse_obj, "releasedir", 1 );
+    if (Pike_sp[-1].type != T_INT)
+	DEFAULT_ERRNO();
+    return -Pike_sp[-1].u.integer;
+}
+
+static int pf_fsyncdir( const char *path, int nometa, struct fuse_file_info *fi)
+{
+    push_text( path );
+    push_int( nometa );
+    apply( global_fuse_obj, "fsyncdir", 2 );
+    if (Pike_sp[-1].type != T_INT)
+	DEFAULT_ERRNO();
+    return -Pike_sp[-1].u.integer;
+}
+
+/* static int pf_readdir( const char *path,  */
+/* 		       struct fuse_fill_dir_t fill, off_t off,  */
+/* 		       struct fuse_file_info *info ) */
+/* { */
+/*     push_text( path ); */
+/*     push_int( off ); */
+    
+/* } */
+
 static struct fuse_operations pike_fuse_oper = {
     .getattr	= pf_getattr,
     .readlink	= pf_readlink,
     .getdir	= pf_getdir,
     .mknod	= pf_mknod,
     .mkdir	= pf_mkdir,
-    .symlink	= pf_symlink,
     .unlink	= pf_unlink,
     .rmdir	= pf_rmdir,
+    .symlink	= pf_symlink,
     .rename	= pf_rename,
     .link	= pf_link,
     .chmod	= pf_chmod,
@@ -440,26 +488,65 @@ static struct fuse_operations pike_fuse_oper = {
     .read	= pf_read,
     .write	= pf_write,
     .statfs	= pf_statfs,
+/*     .flush	= pf_flush, */
     .release	= pf_release,
     .fsync	= pf_fsync,
     .setxattr	= pf_setxattr,
     .getxattr	= pf_getxattr,
     .listxattr	= pf_listxattr,
     .removexattr= pf_removexattr,
+/*     .opendir    = pf_opendir, */
+/*     .readdir    = pf_readdir, */
+/*     .releasedir = pf_releasedir, */
+/*     .fsyncdir   = pf_fsyncdir, */
+    .access     = pf_access,
+    .create     = pf_creat, 
 };
+
+struct passon {
+    struct fuse *f;
+    struct fuse_cmd *cmd; 
+};
+
+static void low_dispatch_fuse_command( void *ptr )
+{
+    struct passon *x = (struct passon *)ptr;
+    push_fuse_cmd( x->cmd,x->f );
+    apply( global_fuse_obj, "___process_cmd", 1 );
+    pop_stack();
+}
+
+static void dispatch_fuse_command( struct fuse *f, struct fuse_cmd *cmd, void *a )
+{
+    struct passon x = {
+	.f = f,
+	.cmd = cmd
+    };
+    call_with_interpreter(low_dispatch_fuse_command, &x );
+}
+
+static int global_fuse_fd;
+static char *global_fuse_mp;
+static struct fuse *global_fuse;
+static void pf_fuse_teardown( )
+{
+    if( global_fuse )
+    {
+	fuse_teardown( global_fuse, global_fuse_fd, global_fuse_mp );
+	global_fuse = NULL;
+    }
+}
 
 static void f_fuse_run( INT32 nargs )
 {
     struct fuse *fuse;
-    char *mountpoint;
-    int fd;
-    int multithreaded;
-    int argc, i;
-    char **argv;
+    int i, multi, fd;
+    char **argv, *mountpoint;
     struct array *args;
     if( global_fuse_obj )
 	Pike_error("There can be only one.\n"
 		   "You have to run multiple processes to have multiple FUSE filesystems\n");
+
     get_all_args( "run", nargs, "%o%a", &global_fuse_obj, &args );
 
     argv = malloc( sizeof(char *) * args->size );
@@ -474,131 +561,28 @@ static void f_fuse_run( INT32 nargs )
 	argv[i] = args->item[i].u.string->str;
     }
     fuse = fuse_setup(args->size, argv, &pike_fuse_oper, sizeof(pike_fuse_oper), 
-		      &mountpoint, &multithreaded, &fd);
-
+		      &mountpoint, &multi, &fd );
     free( argv );
+
+    global_fuse = fuse;
+    global_fuse_mp = mountpoint;
+    global_fuse_fd = fd;
+    atexit( pf_fuse_teardown );
 
     if (fuse == NULL)
 	Pike_error("Fuse init failed\n");
 
-    our_fuse_loop( fuse );
-    global_fuse_obj=NULL;
-    fuse_teardown(fuse, mountpoint);
-}
-
-struct new_fuse_storage
-{
-  struct fd_callback_box box;
-  char *mountpoint;
-  int multithreaded;
-  struct fuse *fuse;
-};
-
-#define THIS_FUSE	((struct new_fuse_storage *)(Pike_fp->current_storage))
-
-static void init_new_fuse_storage(struct object *o)
-{
-  THIS_FUSE->box.fd = -1;
-  THIS_FUSE->mountpoint = NULL;
-  THIS_FUSE->multithreaded = 0;
-  THIS_FUSE->fuse = NULL;
-}
-
-static void exit_new_fuse_storage(struct object *o)
-{
-  if (THIS_FUSE->fuse) {
-    fuse_teardown(THIS_FUSE->fuse, THIS_FUSE->mountpoint);
-  }
-  init_new_fuse_storage(o);
-}
-
-static struct fuse_operations pike_new_fuse_oper = {
-#if 0
-    .getattr	= pf_getattr,
-    .readlink	= pf_readlink,
-    .getdir	= pf_getdir,
-    .mknod	= pf_mknod,
-    .mkdir	= pf_mkdir,
-    .symlink	= pf_symlink,
-    .unlink	= pf_unlink,
-    .rmdir	= pf_rmdir,
-    .rename	= pf_rename,
-    .link	= pf_link,
-    .chmod	= pf_chmod,
-    .chown	= pf_chown,
-    .truncate	= pf_truncate,
-    .utime	= pf_utime,
-    .open	= pf_open,
-    .read	= pf_read,
-    .write	= pf_write,
-    .statfs	= pf_statfs,
-    .release	= pf_release,
-    .fsync	= pf_fsync,
-    .setxattr	= pf_setxattr,
-    .getxattr	= pf_getxattr,
-    .listxattr	= pf_listxattr,
-    .removexattr= pf_removexattr,
-#else /* !0 */
-    0,
-#endif /* 0 */
-};
-
-static void f_new_fuse_setup(INT32 args)
-{
-  int i;
-  char **argv;
-  struct array *argvector;
-  ONERROR tmp;
-
-  if (THIS_FUSE->fuse) {
-    Pike_error("This fuse has already been setup.\n");
-  }
-  get_all_args("setup", args, "%a", &argvector);
-
-  argv = xalloc(sizeof(char *) * argvector->size);
-  SET_ONERROR(tmp, free, argv);
-  for (i=0; i < argvector->size; i++) {
-    if ((argvector->item[i].type != PIKE_T_STRING) ||
-	(argvector->item[i].u.string->size_shift)) {
-      SIMPLE_BAD_ARG_ERROR("setup", 1, "array(string(8bit))");
-    }
-    argv[i] = argvector->item[i].u.string->str;
-  }
-  THIS_FUSE->fuse = fuse_setup(argvector->size, argv,
-			       &pike_new_fuse_oper, sizeof(pike_new_fuse_oper),
-			       &THIS_FUSE->mountpoint,
-			       &THIS_FUSE->multithreaded,
-			       &THIS_FUSE->box.fd);
-  free(argv);
-  /* FIXME: Do we need to save args for later? (eg mountpoint) */
-
-  if (!THIS_FUSE->fuse) {
-    Pike_error("Failed to setup fuse.\n");
-  }
-}
-
-static void f_new_fuse_run( INT32 args )
-{
-  struct fuse *fuse;
-  if (!THIS_FUSE->fuse) {
-    Pike_error("This fuse has not been initialized yet.\n");
-  }
-  get_all_args( "run", args, "");
-
-  while ((fuse = THIS_FUSE->fuse) && !fuse_exited(fuse)) 
-  {
-    struct fuse_cmd *cmd;
-
+    enable_external_threads();
     THREADS_ALLOW();
-    /* FIXME: Race-condition! */
-    cmd = fuse_read_cmd(fuse);
+    if( !fuse_exited( fuse ) )
+	fuse_loop_mt_proc( fuse, dispatch_fuse_command, 0 );
     THREADS_DISALLOW();
-    if (cmd) {
-      fuse_process_cmd(fuse, cmd);
-    }
-  }
-  pop_n_elems(args);
-  push_int(0);
+    // NOTE: Returning to pike tends to hang the kernel, unfortunately, unless pike exits correctly.
+    // Hence exit here.
+    fuse_teardown( fuse, fd, mountpoint );
+    global_fuse = NULL;
+    exit(0); 
+    global_fuse_obj=NULL;
 }
 
 PIKE_MODULE_EXIT
@@ -609,48 +593,8 @@ PIKE_MODULE_EXIT
 
 PIKE_MODULE_INIT
 {
-  start_new_program();
-  {
-    ADD_STORAGE(struct new_fuse_storage);
-    set_init_callback(init_new_fuse_storage);
-    set_exit_callback(exit_new_fuse_storage);
-
-    ADD_FUNCTION("setup", f_new_fuse_run, tFunc(tArr(tStr), tVoid), 0);
-    ADD_FUNCTION("run", f_new_fuse_run, tFunc(tNone, tVoid), 0);
-
-#if 0
-#define FOO(NAME, TYPE)				\
-    PIKE_CONCAT3(f_, NAME, _num) =		\
-      ADD_FUNCTION(TOSTR(NAME), NULL, TYPE, 0)
-
-    FOO(getattr, tFunc(tStr, tOr(tObjImpl_STDIO_STAT, tInt1Plus)));
-    FOO(readlink, tFunc(tStr, tOr(tStr, tIntPlus)));
-    FOO(readdir, tFunc(tStr tFunc(tStr, tVoid), tInt));
-    FOO(mknod, tFunc(tStr tInt tInt, tInt));
-    FOO(mkdir, tFunc(tStr tInt, tInt));
-    FOO(symlink, tFunc(tStr tStr, tInt));
-    FOO(unlink, tFunc(tStr, tInt));
-    FOO(rmdir, tFunc(tStr, tInt));
-    FOO(rename, tFunc(tStr tStr, tInt));
-    FOO(link, tFunc(tStr tStr, tInt));
-    FOO(chmod, tFunc(tStr tInt, tInt));
-    FOO(chown, tFunc(tStr tInt tInt, tInt));
-    FOO(truncate, tFunc(tStr tInt, tInt));
-    FOO(utime, tFunc(tStr tInt tInt, tInt));
-    FOO(open, tFunc(tStr tInt, tInt));
-    FOO(read, tFunc(tStr tInt tInt, tInt));
-    FOO(write, tFunc(tStr tStr tInt, tInt));
-    FOO(statfs, tFunc(tStr, tMap(tStr, tInt)));
-    FOO(release, tFunc(tStr, tInt));
-    FOO(fsync, tFunc(tStr tInt, tInt));
-    FOO(setxattr, tFunc(tStr tStr tStr tInt, tStr));
-    FOO(getxattr, tFunc(tStr tStr tStr tInt, tInt));
-    FOO(listxattr, tFunc(tStr, tOr(tArr(tStr), tInt)));
-    FOO(removexattr, tFunc(tStr tStr, tInt));
-#endif /* 0 */
-  }
-  end_class("Fuse", 0);
     ADD_FUNCTION( "run", f_fuse_run, tFunc(tObj tArr(tStr),tVoid ), 0 );
+
     start_new_program( );
     {
 	ADD_STORAGE( struct getdir_storage );
