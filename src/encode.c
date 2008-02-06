@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.251 2008/02/02 21:39:44 grubba Exp $
+|| $Id: encode.c,v 1.252 2008/02/06 12:38:17 grubba Exp $
 */
 
 #include "global.h"
@@ -437,6 +437,7 @@ static void zap_unfinished_program(struct program *p)
   int e;
   debug_malloc_touch(p);
   if(p->flags & PROGRAM_FIXED) return; /* allow natural zapping */
+  debug_malloc_touch(p);
   if(p->parent)
   {
     free_program(p->parent);
@@ -1004,6 +1005,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
       if(Pike_sp[-1].type == T_INT && Pike_sp[-1].subtype == NUMBER_UNDEFINED)
       {
 	struct program *p=val->u.program;
+	debug_malloc_touch(p);
 	pop_stack();
 	if( (p->flags & PROGRAM_HAS_C_METHODS) || p->event_handler )
 	{
@@ -1392,6 +1394,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		 * in the inherit. */
 		{
 		  struct program *p2 = p->inherits[ref->inherit_offset].prog;
+		  debug_malloc_touch(p);
+		  debug_malloc_touch(p2);
 		  int i;
 		  for (i=0; i < p2->num_identifier_references; i++) {
 		    struct reference *ref2 = p2->identifier_references + i;
@@ -2278,6 +2282,7 @@ static void low_decode_type(struct decode_data *data)
 	    if (!prog) {
 	      Pike_error("Failed to decode object type.\n");
 	    }
+	    debug_malloc_touch(prog);
 	    push_object_type_backwards(flag, prog->id);
 	  }
 	  break;
@@ -2343,6 +2348,7 @@ static int init_placeholder(struct object *placeholder);
 
 static void cleanup_new_program_decode (int *orig_compilation_depth)
 {
+  debug_malloc_touch(Pike_compiler->new_program);
   end_first_pass(0);
   compilation_depth = *orig_compilation_depth;
 }
@@ -2405,6 +2411,7 @@ static INT32 decode_portable_bytecode(INT32 string_no)
   int e;
   ONERROR err;
 
+  debug_malloc_touch(p);
   if ((string_no < 0) || (string_no >= p->num_strings)) {
     Pike_error("Bad bytecode string number: %d (expected 0 - %d).\n",
 	       string_no, p->num_strings-1);
@@ -2870,24 +2877,28 @@ static void decode_value2(struct decode_data *data)
 	      Pike_sp[-1].u.string,
 	      p->inherits[Pike_sp[-2].subtype].prog,
 	      SEE_STATIC|SEE_PRIVATE);
+	    debug_malloc_touch(p);
 	    if (f >= 0) {
 	      struct svalue func;
 	      low_object_index_no_free(&func, Pike_sp[-2].u.object, f);
 #ifdef PIKE_SECURITY
 	      /* FIXME: Check access to the function. */
 #endif
+	      debug_malloc_touch(p);
 	      pop_n_elems(2);
 	      *Pike_sp++ = func;
 	      dmalloc_touch_svalue(Pike_sp-1);
 	      break;
 	    }
 	    else if (data->pickyness) {
+	      debug_malloc_touch(p);
 	      if (Pike_sp[-1].u.string->size_shift)
 		decode_error(NULL, Pike_sp - 2, "Couldn't find identifier in ");
 	      else
 		decode_error(NULL, Pike_sp - 2, "Couldn't find identifier %s in ",
 			     Pike_sp[-1].u.string->str);
 	    }
+	    debug_malloc_touch(p);
 	  }
 	  pop_stack();
 	  break;
@@ -2958,6 +2969,7 @@ static void decode_value2(struct decode_data *data)
 
 	  SETUP_DECODE_MEMOBJ(T_PROGRAM, program, p, low_allocate_program(),;);
 
+	  debug_malloc_touch(p);
 	  SET_ONERROR(err3, zap_unfinished_program, p);
 	  
 	  if(data->pass == 1)
@@ -3622,6 +3634,7 @@ static void decode_value2(struct decode_data *data)
 	     * Pike_compiler->new_program and we want ride on that one
 	     * just like when it's created there. */
 	    p = delayed_enc_val->u.program;
+	    debug_malloc_touch(p);
 	  }
 	  else
 	    p = NULL;
@@ -3660,6 +3673,7 @@ static void decode_value2(struct decode_data *data)
 		print_svalue(stderr, &prog);
 		fputc('\n', stderr););
 	    mapping_insert(data->decoded, &entry_id, &prog);
+	    debug_malloc_touch(p);
 	  }
 
 	  debug_malloc_touch(p);
@@ -3679,6 +3693,7 @@ static void decode_value2(struct decode_data *data)
 	  decode_value2(data);
 	  if (Pike_sp[-1].type == T_PROGRAM) {
 	    p->parent = Pike_sp[-1].u.program;
+	    debug_malloc_touch(p->parent);
 	  } else if ((Pike_sp[-1].type == T_INT) &&
 		     (!Pike_sp[-1].u.integer)) {
 	    p->parent = NULL;
