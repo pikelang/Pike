@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fuse.c,v 1.11 2008/02/06 16:36:23 per Exp $
+|| $Id: fuse.c,v 1.12 2008/02/07 20:59:13 grubba Exp $
 */
 
 #include "global.h"
@@ -23,6 +23,7 @@
 #include "backend.h"
 
 #ifdef HAVE_LIBFUSE
+/* Attempt to use FUSE API version 2.6 (if possible). */
 #define FUSE_USE_VERSION 26
 #include <fuse.h>
 #include <stdio.h>
@@ -532,7 +533,11 @@ static void pf_fuse_teardown( )
 {
     if( global_fuse )
     {
+#if FUSE_VERSION <= 25
 	fuse_teardown( global_fuse, global_fuse_fd, global_fuse_mp );
+#else
+	fuse_teardown( global_fuse, global_fuse_mp );
+#endif
 	global_fuse = NULL;
     }
 }
@@ -579,7 +584,11 @@ static void f_fuse_run( INT32 nargs )
     THREADS_DISALLOW();
     // NOTE: Returning to pike tends to hang the kernel, unfortunately, unless pike exits correctly.
     // Hence exit here.
+#if FUSE_VERSION <= 25
     fuse_teardown( fuse, fd, mountpoint );
+#else
+    fuse_teardown( fuse, mountpoint);
+#endif
     global_fuse = NULL;
     exit(0); 
     global_fuse_obj=NULL;
@@ -608,6 +617,9 @@ PIKE_MODULE_INIT
 	ADD_FUNCTION( "`()", f_fuse_cmd_process, tFunc(tVoid,tVoid), 0 );
     }
     fuse_cmd_program = end_program();
+
+    add_integer_constant("FUSE_MAJOR_VERSION", FUSE_MAJOR_VERSION, 0);
+    add_integer_constant("FUSE_MINOR_VERSION", FUSE_MINOR_VERSION, 0);
 }
 #else
 PIKE_MODULE_EXIT
