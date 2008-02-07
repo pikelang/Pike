@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.410 2008/01/04 20:42:25 nilsson Exp $
+// $Id: master.pike.in,v 1.411 2008/02/07 01:47:15 mast Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -1639,9 +1639,17 @@ class dirnode
       }
       if (has_suffix(fname, ".pmod")) {
 	if (stat->isdir) {
-	  resolv_debug("dirnode(%O)->ind(%O) => found subdirectory %O\n",
-		       dirname, index, fname);
-	  return dirnode(fname, compilation_handler);
+	  if (dirnode n = fc[fname]) {
+	    // Avoid duplicate dirnodes for the same dirs. This can
+	    // happen if the master is replaced, e.g. with master_76
+	    // in 7.6/modules/__default.pmod.
+	    resolv_debug("dirnode(%O)->ind(%O) => found subdirectory %O, "
+			 "returning old dirnode\n", dirname, index, fname);
+	    return n;
+	  }
+	  resolv_debug("dirnode(%O)->ind(%O) => found subdirectory %O, "
+		       "creating new dirnode\n", dirname, index, fname);
+	  return fc[fname] = dirnode(fname, compilation_handler);
 	}
 	resolv_debug("dirnode(%O)->ind(%O) casting (object)%O\n",
 		     dirname, index, fname);
