@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.254 2008/02/06 19:17:15 mast Exp $
+|| $Id: encode.c,v 1.255 2008/02/07 15:02:48 mast Exp $
 */
 
 #include "global.h"
@@ -78,7 +78,7 @@
  *   TAG_TYPE == PIKE_T_FLOAT == 9
  * These are NOT to be renumbered unless the file-format version is changed!
  */
-/* Current encoding: ¶ik0
+/* Current encoding: ¶ke0
  *
  * +---+-+-+-------+
  * |s z|s|n|t y p e|
