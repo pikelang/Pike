@@ -3,7 +3,7 @@
 //! This is the Badi calendar,
 //! used in the Baha'i religion.
 
-inherit .YMD:YMD;
+inherit Calendar.YMD:YMD;
 
 #include "constants.h"
 

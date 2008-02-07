@@ -4,7 +4,7 @@
 //! of the Gregorian calendar, but with weeks that starts on
 //! Monday instead of Sunday.
 
-inherit .Gregorian:Gregorian;
+inherit Calendar.Gregorian:Gregorian;
 
 #include "constants.h"
 

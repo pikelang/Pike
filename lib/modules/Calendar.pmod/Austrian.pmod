@@ -6,7 +6,7 @@
 //! This calendar exist only for backwards compatible 
 //! purposes. 
 
-inherit .ISO;
+inherit Calendar.ISO;
 
 private static mixed __initstuff=lambda()
 {

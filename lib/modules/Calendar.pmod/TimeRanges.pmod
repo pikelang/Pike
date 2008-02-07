@@ -1,6 +1,6 @@
 //! module Calendar
 
-// $Id: TimeRanges.pmod,v 1.33 2007/10/12 13:05:51 grubba Exp $
+// $Id: TimeRanges.pmod,v 1.34 2008/02/07 01:39:53 mast Exp $
 
 #pike __REAL_VERSION__
 
@@ -14,7 +14,7 @@ object calendar_object=this;
 
 string _sprintf(int t) { return (t=='O')?calendar_name():0; }
 
-.Ruleset default_rules=Calendar.default_rules;
+Calendar.Ruleset default_rules=Calendar.default_rules;
 
 //------------------------------------------------------------------------
 //! class TimeRange
@@ -36,7 +36,7 @@ class TimeRange
 {
    constant is_timerange=1;
 
-   .Ruleset rules;
+   Calendar.Ruleset rules;
 
 //! method void create("unix",int unixtime)
 //! method void create("unix",int unixtime,int seconds_len)
@@ -879,8 +879,8 @@ class TimeRange
 //!	this may include timezone shanges,
 //!	and change the time of day.
 
-   this_program set_ruleset(.Ruleset r);
-   .Ruleset ruleset()
+   this_program set_ruleset(Calendar.Ruleset r);
+   Calendar.Ruleset ruleset()
    {
       return rules;
    }
@@ -900,12 +900,12 @@ class TimeRange
 //!	<tt>Year(2003)-&gt;...-&gt;set_timezone(TimeZone.CET)-&gt;...-&gt;hour(14)-&gt;...</tt>
 //!
 
-   this_program set_timezone(string|.Rule.Timezone tz)
+   this_program set_timezone(string|Calendar.Rule.Timezone tz)
    {
       return set_ruleset(rules->set_timezone(tz));
    }
 
-   .Rule.Timezone timezone()
+   Calendar.Rule.Timezone timezone()
    {
       return rules->timezone;
    }
@@ -915,12 +915,12 @@ class TimeRange
 //! method Language language()
 //!	Set or get the current language rule.
 
-   this_program set_language(string|.Rule.Language lang)
+   this_program set_language(string|Calendar.Rule.Language lang)
    {
       return set_ruleset(rules->set_language(lang));
    }
 
-   .Rule.Language language()
+   Calendar.Rule.Language language()
    {
       return rules->language;
    }
@@ -1143,7 +1143,7 @@ class cSuperTimeRange
       return ::_sprintf(t,m);
    }
 
-   TimeRange set_timezone(string|.Rule.Timezone tz)
+   TimeRange set_timezone(string|Calendar.Rule.Timezone tz)
    {
 // fixme?
       return `|(@map(parts,"set_timezone",tz));

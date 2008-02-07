@@ -9,7 +9,7 @@ static string flat(string s)
 
 static class _language_base
 {
-   inherit .Rule.Language;
+   inherit Calendar.Rule.Language;
 
    static mapping events_translate=0;
 
@@ -2162,10 +2162,10 @@ class cSERBIAN_UNICODE
 
 static mapping _cache=([]);
 
-.Rule.Language `[](string lang)
+Calendar.Rule.Language `[](string lang)
 {
    lang=upper_case(lang);
-   .Rule.Language l=_cache[lang];
+   Calendar.Rule.Language l=_cache[lang];
    if (l) return l;
    program cl=::`[]("c"+lang);
    

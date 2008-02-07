@@ -229,7 +229,7 @@ class cTick
 
    int __hash() { return (int)t; }
 
-   Calendar.TimeRange set_ruleset(.Ruleset r)
+   Calendar.TimeRange set_ruleset(Calendar.Ruleset r)
    {
       return Tick("stardate",r,t,len);
    }
@@ -298,7 +298,7 @@ function(mixed...:cTick) Day=cTick;
 //------------------------------------------------------------------------
 
 //! Give the zero-length time period of the current time.
-/*.Time.TimeofDay*/cTick now()
+/*Calendar.Time.TimeofDay*/cTick now()
 {
    return Tick();
 }

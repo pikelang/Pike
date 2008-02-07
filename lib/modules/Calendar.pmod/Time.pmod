@@ -16,7 +16,7 @@
 //- these classes majorly works on seconds
 //- an hour is 3600 seconds, a minute is 60 seconds
 
-inherit .TimeRanges:TimeRanges;
+inherit Calendar.TimeRanges:TimeRanges;
 
 #include "constants.h"
 
@@ -30,7 +30,8 @@ function(mixed...:TimeRange) Day;
 #error Calendar.Time needs bignums (Gmp.mpz)
 #endif
 
-.Rule.Timezone Timezone_UTC=.Rule.Timezone(0,"UTC"); // needed for dumping
+Calendar.Rule.Timezone Timezone_UTC=
+  Calendar.Rule.Timezone(0,"UTC"); // needed for dumping
 
 string calendar_name() { return "Time"; }
 
@@ -80,14 +81,14 @@ class TimeofDay
       switch (args[0])
       {
 	 case "timeofday":
-	    rules=[object(.Ruleset)]args[1];
+	    rules=[object(Calendar.Ruleset)]args[1];
 	    ux=[int]args[2];
 	    len=[int]args[3];
 	    ls=CALUNKNOWN;
 	    return;
 
 	 case "timeofday_sd":
-	    rules=[object(.Ruleset)]args[1];
+	    rules=[object(Calendar.Ruleset)]args[1];
 	    ux=[int]args[2];
 	    len=[int]args[3];
 	    ls=[int]args[4];
@@ -948,7 +949,7 @@ class TimeofDay
 
 // --------
 
-   this_program set_ruleset(.Ruleset r)
+   this_program set_ruleset(Calendar.Ruleset r)
    {
       return 
 	 Second("timeofday",r,ux,len)
@@ -1635,7 +1636,7 @@ class cFraction
       }
       else if (args[0]=="timeofday_f")
       {
-	 rules=[object(.Ruleset)]args[1];
+	 rules=[object(Calendar.Ruleset)]args[1];
 	 ux=[int]args[2];
 	 ns=[int]args[3];
 	 len_s=[int]args[4];
@@ -1665,7 +1666,7 @@ class cFraction
       else switch (args[0])
       {
 	 case "timeofday":
-	    rules=[object(.Ruleset)]args[1];
+	    rules=[object(Calendar.Ruleset)]args[1];
 	    ux=[int]args[2];
 	    len=[int]args[3];
 	    ls=CALUNKNOWN;
@@ -1817,7 +1818,7 @@ class cFraction
       return this;
    }
 
-   this_program set_ruleset(.Ruleset r)
+   this_program set_ruleset(Calendar.Ruleset r)
    {
       return 
 	 Fraction("timeofday",r,ux,len,ns)
@@ -2073,22 +2074,22 @@ TimeofDay now()
 //!	Result: Fraction(Fri 2 Jun 2000 16:03:02.323912 UTC)
 //!	</pre>
 
-this_program set_timezone(string|.Rule.Timezone tz)
+this_program set_timezone(string|Calendar.Rule.Timezone tz)
 {
    return set_ruleset(default_rules->set_timezone(tz));
 }
 
-.Rule.Timezone timezone()
+Calendar.Rule.Timezone timezone()
 {
    return default_rules->timezone;
 }
 
-this_program set_language(string|.Rule.Language lang)
+this_program set_language(string|Calendar.Rule.Language lang)
 {
    return set_ruleset(default_rules->set_language(lang));
 }
 
-.Rule.Language language()
+Calendar.Rule.Language language()
 {
    return default_rules->language;
 }
@@ -2099,14 +2100,14 @@ this_program set_language(string|.Rule.Language lang)
 //!	<ref>set_ruleset</ref> returns a new calendar object,
 //!	but with the new ruleset.
 
-this_program set_ruleset(.Ruleset r)
+this_program set_ruleset(Calendar.Ruleset r)
 {
    this_program c=this_program();
    c->default_rules=r;
    return c;
 }
 
-.Ruleset ruleset()
+Calendar.Ruleset ruleset()
 {
    return default_rules;
 }

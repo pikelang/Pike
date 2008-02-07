@@ -5,7 +5,7 @@
 //! which derivate - the @[ISO] calendar - is used in most of
 //! Europe.
 
-inherit .YMD:YMD;
+inherit Calendar.YMD:YMD;
 
 #include "constants.h"
 

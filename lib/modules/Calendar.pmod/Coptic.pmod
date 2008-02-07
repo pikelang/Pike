@@ -16,7 +16,7 @@
 //! with the @[Gregorian] calendar, which is odd.
 
 // inherit some rules from Gregorian, like week numbering
-inherit .Gregorian:Gregorian;
+inherit Calendar.Gregorian:Gregorian;
 
 string calendar_name() { return "Coptic"; }
 

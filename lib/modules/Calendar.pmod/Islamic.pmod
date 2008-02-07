@@ -20,7 +20,7 @@
 //! what to call years before 1 - go for "BH"; positive
 //! years are "AH", anno Hegirac.
 
-inherit .YMD:YMD;
+inherit Calendar.YMD:YMD;
 
 #include "constants.h"
 

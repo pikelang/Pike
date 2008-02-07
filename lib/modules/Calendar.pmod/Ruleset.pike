@@ -2,8 +2,8 @@
 
 //! This is the container class for rules.
 
-.Rule.Timezone timezone;
-.Rule.Language language;
+Calendar.Rule.Timezone timezone;
+Calendar.Rule.Language language;
 
 mapping(string:string) abbr2zone=
 ([
@@ -31,11 +31,11 @@ mapping(string:string) abbr2zone=
 ]);
 
 //!
-this_program set_timezone(string|.Rule.Timezone t)
+this_program set_timezone(string|Calendar.Rule.Timezone t)
 {
    if (stringp(t)) {
      string name = t;
-      t=.Timezone[t];
+      t=Calendar.Timezone[t];
       if (!t) error("No timezone %O\n",name);
    }
 
@@ -48,7 +48,7 @@ this_program set_timezone(string|.Rule.Timezone t)
 }
 
 //!
-this_program set_language(string|.Rule.Language lang)
+this_program set_language(string|Calendar.Rule.Language lang)
 {
    this_program r=clone();
    if (stringp(lang))
@@ -87,7 +87,7 @@ this_program set_abbr2zone(mapping(string:string) abbr2zone)
 }
 
 //!
-this_program set_rule(.Rule.Language|.Rule.Timezone rule)
+this_program set_rule(Calendar.Rule.Language|Calendar.Rule.Timezone rule)
 {
    this_program r=clone();
    if (rule->is_timezone) r->timezone=rule;

@@ -10,7 +10,7 @@
 
 //  #pragma strict_types
 
-inherit .Time:Time;
+inherit Calendar.Time:Time;
 
 #include "constants.h"
 
@@ -75,7 +75,7 @@ class YMD
 
   // [*]: might be uninitialized (CALUNKNOWN)
 
-   .Ruleset rules;
+   Calendar.Ruleset rules;
    constant is_ymd=1;
 
 // ----------------------------------------
@@ -1391,7 +1391,7 @@ class cYear
 	 return ::week(@mp);
    }
 
-   cYear set_ruleset(.Ruleset r)
+   cYear set_ruleset(Calendar.Ruleset r)
    {
       return Year("ymd_y",r,y,yjd,n);
    }
@@ -1655,7 +1655,7 @@ class cMonth
       return n;
    }
 
-   cMonth set_ruleset(.Ruleset r)
+   cMonth set_ruleset(Calendar.Ruleset r)
    {
       return Month("ymd_yjmw",r,y,yjd,jd,m,n,wd,w,wy);
    }
@@ -1995,7 +1995,7 @@ class cWeek
 	 return ::day(@mp);
    }
 
-   cWeek set_ruleset(.Ruleset r)
+   cWeek set_ruleset(Calendar.Ruleset r)
    {
       return Week("ymd_yjwm",r,y,yjd,jd,w,n,md,m,mnd);
    }
@@ -2355,7 +2355,7 @@ class cDay
 	 ->number_of_weeks();
    }
 
-   cDay set_ruleset(.Ruleset r)
+   cDay set_ruleset(Calendar.Ruleset r)
    {
       return Day("ymd_ydmw",r,y,yjd,jd,yd,n,m,md,wy,w,wd,mnd);
    }
@@ -2642,7 +2642,7 @@ static TimeRange dwim_zone(TimeRange origin,string zonename,
    if (origin->rules->abbr2zone[zonename])
       zonename=origin->rules->abbr2zone[zonename];
 
-   .Rule.Timezone zone=.Timezone[zonename];
+   Calendar.Rule.Timezone zone=Calendar.Timezone[zonename];
    if (!zone)
    {
       if (sscanf(zonename,"%[^-+]%s",string a,string b)==2 && a!="" && b!="")
@@ -2652,9 +2652,9 @@ static TimeRange dwim_zone(TimeRange origin,string zonename,
 
 	 return 
 	    dwim_tod(origin->set_timezone(
-	       .Timezone.make_new_timezone(
+	       Calendar.Timezone.make_new_timezone(
 		  tr->timezone(),
-		  .Timezone.decode_timeskew(b))),
+		  Calendar.Timezone.decode_timeskew(b))),
 	       whut,@args);
       }
       if(!abbr2zones)
@@ -2729,7 +2729,7 @@ TimeRange parse(string fmt,string arg,void|TimeRange context)
 
    TimeRange low;
 
-   .Calendar cal=this;
+   Calendar.Calendar cal=this;
 
 
 //  #define NOCATCH

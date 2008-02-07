@@ -64,16 +64,16 @@
 // ----------------------------------------------------------------
 // static
 
-.Rule.Timezone UTC=.Rule.Timezone(0,"UTC");
+Calendar.Rule.Timezone UTC=Calendar.Rule.Timezone(0,"UTC");
 
 // ----------------------------------------------------------------
 // from the system
 
-.Rule.Timezone locale=0;
+Calendar.Rule.Timezone locale=0;
 
-static function(:.Rule.Timezone) _locale()
+static function(:Calendar.Rule.Timezone) _locale()
 {
-   .Rule.Timezone tz;
+   Calendar.Rule.Timezone tz;
 
 // try to get the real local time settings
 
@@ -143,7 +143,7 @@ static function(:.Rule.Timezone) _locale()
    return expert(localtime()); 
 };
 
-.Rule.Timezone tz_from_tzfile(string tzfile)
+Calendar.Rule.Timezone tz_from_tzfile(string tzfile)
 {
    array header = array_sscanf(tzfile, "%4s%16s%4c%4c%4c%4c%4c%4c");
    if( sizeof(header)<8 ) return 0;
@@ -160,9 +160,9 @@ static function(:.Rule.Timezone) _locale()
 // ----------------------------------------------------------------
 // expert system to pick out the correct timezone
 
-static .Rule.Timezone timezone_expert_rec(.Rule.Timezone try,
-					 mapping|array|string tree,
-					 object cal)
+static Calendar.Rule.Timezone timezone_expert_rec(Calendar.Rule.Timezone try,
+						  mapping|array|string tree,
+						  object cal)
 {
    int t=tree->test,uo;
    if (t<0)
@@ -187,9 +187,9 @@ static .Rule.Timezone timezone_expert_rec(.Rule.Timezone try,
    return `[](tree);
 }
 
-static .Rule.Timezone timezone_select(.Rule.Timezone try,
-					array tree,
-					object cal)
+static Calendar.Rule.Timezone timezone_select(Calendar.Rule.Timezone try,
+					      array tree,
+					      object cal)
 {
 #if constant(tzname)
    array res=({});
@@ -213,7 +213,7 @@ static array timezone_collect(string|mapping|array tree)
 
 static object expert_cal, expert_tzn;
 
-.Rule.Timezone expert(.Rule.Timezone try)
+Calendar.Rule.Timezone expert(Calendar.Rule.Timezone try)
 {
    if(!expert_cal)
      expert_cal=master()->resolv("Calendar")["ISO_UTC"];
@@ -308,7 +308,7 @@ class localtime
 
 class Timezone_Encapsule
 {
-   .Rule.Timezone what;
+   Calendar.Rule.Timezone what;
  
    constant is_timezone=1;
    constant is_dst_timezone=1; // ask me
@@ -317,7 +317,7 @@ class Timezone_Encapsule
    static int extra_offset;
    string name;
 
-   static void create(.Rule.Timezone enc,string name,int off)
+   static void create(Calendar.Rule.Timezone enc,string name,int off)
    {
       what=enc;
       extra_name=name;
@@ -345,15 +345,16 @@ class Timezone_Encapsule
    int raw_utc_offset() { return what->raw_utc_offset()+extra_offset; }
 }
 
-static private .Rule.Timezone _make_new_timezone_i(string tz,int plusminus)
+static private Calendar.Rule.Timezone _make_new_timezone_i(string tz,
+							   int plusminus)
 {
-   .Rule.Timezone z=`[](tz);
+   Calendar.Rule.Timezone z=`[](tz);
    if (!z) return UNDEFINED;
    return make_new_timezone(z,plusminus);
 }
 
 // internal, don't use this outside calendar module
-.Rule.Timezone make_new_timezone(.Rule.Timezone z,int plusminus)
+Calendar.Rule.Timezone make_new_timezone(Calendar.Rule.Timezone z,int plusminus)
 {
    if (plusminus>14*3600 || plusminus<-14*3600)
       error("difference out of range -14..14 h\n");
@@ -399,7 +400,7 @@ int decode_timeskew(string w)
    return neg*a*3600; // ignore litter
 }
 
-static private .Rule.Timezone _magic_timezone(string tz)
+static private Calendar.Rule.Timezone _magic_timezone(string tz)
 {
    string z,w;
 
@@ -436,7 +437,7 @@ static private .Rule.Timezone _magic_timezone(string tz)
    return ::`[](replace(tz,"-/+"/1,"__p"/1));
 }
 
-.Rule.Timezone `[](string tz)
+Calendar.Rule.Timezone `[](string tz)
 {
   mixed p=::`[](tz);
   if (!p && tz=="locale") return locale=_locale();
@@ -1147,7 +1148,7 @@ class Runtime_timezone_compiler
     (["TZrules":Dummymodule(find_rule),
       "TZRules":TZRules,
       "TZHistory":TZHistory,
-      "Rule":.Rule,
+      "Rule":Calendar.Rule,
       "ZEROSHIFT":({0,0,0,""})
     ]);
 
@@ -1437,7 +1438,7 @@ class Runtime_timezone_compiler
       constant is_dst_timezone=1;
 
 // figure out what timezone to use
-      .Rule.Timezone whatrule(int ux);
+      Calendar.Rule.Timezone whatrule(int ux);
 
       string name=sprintf("%O",this_program);
 

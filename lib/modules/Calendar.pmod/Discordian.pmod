@@ -23,7 +23,7 @@
 
 // the discordian calendar follows the gregorian years, very practical ;)
 
-inherit .Gregorian:Gregorian;
+inherit Calendar.Gregorian:Gregorian;
 
 #include "constants.h"
 

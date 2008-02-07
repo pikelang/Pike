@@ -12,7 +12,7 @@
 //! used in the Calendar module as a common unit for
 //! absolute time.
 
-inherit .Gregorian:Gregorian;
+inherit Calendar.Gregorian:Gregorian;
 
 string calendar_name() { return "Julian"; }
 
