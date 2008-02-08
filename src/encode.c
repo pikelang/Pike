@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.256 2008/02/08 18:40:25 grubba Exp $
+|| $Id: encode.c,v 1.257 2008/02/08 19:25:04 grubba Exp $
 */
 
 #include "global.h"
@@ -2363,7 +2363,7 @@ static void cleanup_new_program_decode (int *orig_compilation_depth)
   debug_malloc_touch(Pike_compiler->new_program);
   debug_malloc_touch(Pike_compiler->new_program->parent);
   /* The program is consistent enough to be freed... */
-  p->flags &= ~PROGRAM_AVOID_CHECK;
+  Pike_compiler->new_program->flags &= ~PROGRAM_AVOID_CHECK;
   end_first_pass(0);
   compilation_depth = *orig_compilation_depth;
 }
