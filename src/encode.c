@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.255 2008/02/07 15:02:48 mast Exp $
+|| $Id: encode.c,v 1.256 2008/02/08 18:40:25 grubba Exp $
 */
 
 #include "global.h"
@@ -1394,9 +1394,9 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		 * in the inherit. */
 		{
 		  struct program *p2 = p->inherits[ref->inherit_offset].prog;
+		  int i;
 		  debug_malloc_touch(p);
 		  debug_malloc_touch(p2);
-		  int i;
 		  for (i=0; i < p2->num_identifier_references; i++) {
 		    struct reference *ref2 = p2->identifier_references + i;
 		    if (!(ref2->inherit_offset) &&
@@ -2361,6 +2361,9 @@ static int init_placeholder(struct object *placeholder);
 static void cleanup_new_program_decode (int *orig_compilation_depth)
 {
   debug_malloc_touch(Pike_compiler->new_program);
+  debug_malloc_touch(Pike_compiler->new_program->parent);
+  /* The program is consistent enough to be freed... */
+  p->flags &= ~PROGRAM_AVOID_CHECK;
   end_first_pass(0);
   compilation_depth = *orig_compilation_depth;
 }
@@ -2688,7 +2691,7 @@ static void decode_value2(struct decode_data *data)
       if(num<0)
 	Pike_error("Failed to decode mapping. (mapping size is negative)\n");
 
-      /* Heruetical */
+      /* Heuristical */
       if(data->ptr + num > data->len)
 	Pike_error("Failed to decode mapping. (not enough data)\n");
 
@@ -3894,6 +3897,7 @@ static void decode_value2(struct decode_data *data)
 #endif /* 0 */
 	    decode_number(entry_type, data);
 	  }
+
 	  while (entry_type != ID_ENTRY_EOT) {
 	    decode_number(id_flags, data);
 	    switch(entry_type) {
@@ -4125,19 +4129,24 @@ static void decode_value2(struct decode_data *data)
 		/* id_flags */
 		ref.id_flags = id_flags;
 
-		/* identifier_offset */
-		ref.identifier_offset =
-		  Pike_compiler->new_program->num_identifiers;
-		add_to_identifiers(id);
-
-		/* ref.inherit_offset */
-		ref.inherit_offset = 0;
-
 		EDB(5,
 		    fprintf(stderr,
 			    "%*sdefining constant(\"%s\", X, 0x%04x)\n",
 			    data->depth, "",
 			    Pike_sp[-2].u.string->str, id_flags));
+
+		/* identifier_offset */
+		ref.identifier_offset =
+		  Pike_compiler->new_program->num_identifiers;
+		add_to_identifiers(id);
+
+		/* References now held by the new program identifier. */
+		dmalloc_touch_svalue(Pike_sp-1);
+		dmalloc_touch_svalue(Pike_sp-2);
+		Pike_sp -= 2;
+
+		/* ref.inherit_offset */
+		ref.inherit_offset = 0;
 
 		/* Alters
 		 *
@@ -4157,9 +4166,6 @@ static void decode_value2(struct decode_data *data)
 			       "(expected %d, got %d) for ", no, n);
 		}
 
-		dmalloc_touch_svalue(Pike_sp-1);
-		dmalloc_touch_svalue(Pike_sp-2);
-		Pike_sp -= 2;
 	      }
 	      break;
 	    case ID_ENTRY_ALIAS:
