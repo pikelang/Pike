@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.257 2008/02/08 19:25:04 grubba Exp $
+|| $Id: encode.c,v 1.258 2008/02/08 22:12:09 grubba Exp $
 */
 
 #include "global.h"
@@ -1589,7 +1589,12 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	    /* Encode next inherit. */
 	    if (inherit_num < p->num_inherits) {
 	      /* Inherit */
-	      INT16 inherit_flags_change = 0;
+
+	      /* Flags that have been set by/after the inherit. */
+	      INT16 inherit_flags_set = 0;
+	      /* Mask of flags that may have been affected by
+	       * the inherit. */
+	      INT16 inherit_flags_mask = ~(ID_HIDDEN|ID_INHERITED);
 	      struct inherit *inh = p->inherits + inherit_num;
 	      struct reference *ref = p->identifier_references + d;
 	      int i;
@@ -1606,17 +1611,33 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 
 	      /* Calculate id_flags */
 	      for (i = 0; i < inh->prog->num_identifier_references; i++) {
-		/* Ignore overloaded identifiers. */
 		if (ref[i].inherit_offset) {
-		  inherit_flags_change |= ref[i].id_flags ^
+		  INT16 id_flags = ref[i].id_flags;
+		  INT16 inh_id_flags =
 		    inh->prog->identifier_references[i].id_flags;
+		  /* Ignore identifiers that have been hidden. */
+		  if (!(id_flags & ID_HIDDEN)) {
+		    inherit_flags_set |= id_flags & ~inh_id_flags;
+		    if (inh_id_flags & ID_PUBLIC) {
+		      /* Public symbols aren't affected by a
+		       * private inherit. */
+		      inherit_flags_mask &= id_flags | ID_PRIVATE;
+		    } else {
+		      inherit_flags_mask &= id_flags;
+		    }
+		  }
+		} else {
+		  /* If an inherited identifiers has been overloaded,
+		   * it can not have been a local inherit. */
+		  inherit_flags_mask &= ~ID_LOCAL;
 		}
 	      }
 	      EDB(5,
-		  fprintf(stderr, "%*sraw inherit_flags: %04x\n",
-			  data->depth, "", inherit_flags_change));
-	      inherit_flags_change &= ~(ID_HIDDEN|ID_INHERITED);
-	      code_number(inherit_flags_change, data);
+		  fprintf(stderr, "%*sraw inherit_flags_set: %04x:%04x\n",
+			  data->depth, "",
+			  inherit_flags_set, inherit_flags_mask));
+	      inherit_flags_set &= inherit_flags_mask;
+	      code_number(inherit_flags_set, data);
 
 	      EDB(5,
 		  fprintf(stderr, "%*sinherit_flags: %04x\n",
