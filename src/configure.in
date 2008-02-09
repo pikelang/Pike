@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.871 2007/12/15 14:58:11 marcus Exp $")
+AC_REVISION("$Id: configure.in,v 1.872 2008/02/09 13:14:34 marcus Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -7649,6 +7649,11 @@ $bundle_info])
 	        cpu="i386"
 	      fi
 	      extra_configure_args="${extra_configure_args} --build=${cpu}-unknown-winnt`uname -r|sed -e 's/-/_/g'` --disable-assembler"
+	    else
+	    # Regular cross-compilation, without rtncl
+	      if test "x$cross_compiling" = "xyes" -a "x$host_alias" != x; then
+		extra_configure_args="${extra_configure_args} --host=$host_alias"
+	      fi
 	    fi
 
             # Nettle doesn't support assembler on Darwin x86 yet.
