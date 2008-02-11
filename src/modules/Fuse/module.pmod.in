@@ -206,95 +206,7 @@ class Operations
     int flush( string path, int flags );
 }
 
-static class MyOps
-{
-    inherit Operations;
-    object handler;
-#if constant(thread_create)
-    array(Thread.Thread) threads;
-    Thread.Queue queue = Thread.Queue();
-
-    void handle_thread()
-    {
-	while( function cb = queue->read() )
-	    if( mixed err = catch(cb()) )
-	    {
-		werror("Fatal error while processing FUSE commands: %s\n", 
-		       describe_backtrace(err) );
-		exit(-1);
-	    }
-    }
-
-    void ___process_cmd( function cb )
-    {
-	if( !sizeof( threads ) )
-	    cb();
-	else
-	    queue->write( cb );
-    }
-#else /* !constant(thread_create) */
-    void ___process_cmd( function cb )
-    {
-      cb();
-    }
-#endif /* constant(thread_create) */
-
-    void create( object _handler, int _nthreads )
-    {
-	handler = _handler;
-#if constant(thread_create)
-	threads = ({});
-	if( _nthreads )
-	    while( --_nthreads )
-		threads += ({ thread_create( handle_thread ) });
-#endif /* constant(thread_create) */
-    }
-
-
-#define WRAP(X) mixed X(mixed ... args) {	\
-    if(!handler->X) return System.ENOENT;	\
-    return handler->X(@args);			\
-  }
-#define WRAPC(X) mixed X(mixed ... args) {	\
-    if(!handler->X) return System.EACCES;	\
-    return handler->X(@args);			\
-  }
-#define WRAP0(X) mixed X(mixed ... args) {	\
-    if(!handler->X)return 0;			\
-    return handler->X(@args);			\
-  }
-
-    //! @ignore
-    WRAP0(access);
-    WRAP0(creat);
-    WRAP(getattr);
-    WRAP(readlink);
-    WRAP(readdir);
-    WRAPC(mknod);
-    WRAPC(mkdir);
-    WRAP(unlink);
-    WRAP(rmdir);
-    WRAP(symlink);
-    WRAP(link);
-    WRAPC(rename);
-    WRAPC(chmod);
-    WRAPC(chown);
-    WRAPC(truncate);
-    WRAPC(utime);
-    WRAPC(read);
-    WRAPC(write);
-    WRAP(statfs);
-
-    WRAPC(removexattr);
-    WRAPC(getxattr);
-    WRAPC(setxattr);
-    WRAPC(listxattr);
-    WRAP0(open);
-    WRAP0(release);
-    WRAP0(fsync);
-    //! @endignore
-}
-
+//! @decl void run( Operations handler, array(string) args );
 //! Start fuse. Args is as in argv in main().
 //! The first argument (argv[0], program name) is used as the filesystem name.
 //! The first non-flag argument after argv[0] is used as the mountpoint.
@@ -321,8 +233,8 @@ static class MyOps
 //!     debug                  enable debug output
 //!     fsname=NAME            set filesystem name in mtab (overrides argv[0])
 //! @}
-void run( Operations handler, int nthreads, array(string) args )
-{
-    ::run( MyOps( handler, nthreads ), args );
-}
+
+// {
+//     ::run( handler, args );
+// }
 #endif
