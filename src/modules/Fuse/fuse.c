@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fuse.c,v 1.12 2008/02/07 20:59:13 grubba Exp $
+|| $Id: fuse.c,v 1.13 2008/02/11 08:37:16 per Exp $
 */
 
 #include "global.h"
@@ -512,9 +512,9 @@ struct passon {
 static void low_dispatch_fuse_command( void *ptr )
 {
     struct passon *x = (struct passon *)ptr;
-    push_fuse_cmd( x->cmd,x->f );
-    apply( global_fuse_obj, "___process_cmd", 1 );
-    pop_stack();
+    struct svalue *old = Pike_sp;
+    fuse_process_cmd( x->f, x->cmd );
+    pop_n_elems( Pike_sp - old );
 }
 
 static void dispatch_fuse_command( struct fuse *f, struct fuse_cmd *cmd, void *a )
@@ -523,6 +523,27 @@ static void dispatch_fuse_command( struct fuse *f, struct fuse_cmd *cmd, void *a
 	.f = f,
 	.cmd = cmd
     };
+    struct thread_state *state;
+
+    if((state = thread_state_for_id(th_self()))==NULL) 
+    {
+	struct object *thread_obj;
+	fprintf( stderr, "Creating a new pike-thread\n");
+
+	mt_lock_interpreter();
+	init_interpreter();
+	Pike_interpreter.stack_top=((char *)&state)+ (thread_stack_size-16384) * STACK_DIRECTION;
+	Pike_interpreter.recoveries = NULL;
+	thread_obj = fast_clone_object(thread_id_prog);
+	INIT_THREAD_STATE((struct thread_state *)(thread_obj->storage +
+						  thread_storage_offset));
+	num_threads++;
+	thread_table_insert(Pike_interpreter.thread_state);
+	state = Pike_interpreter.thread_state;
+	SWAP_OUT_THREAD(state);
+	mt_unlock_interpreter();
+    }
+
     call_with_interpreter(low_dispatch_fuse_command, &x );
 }
 
