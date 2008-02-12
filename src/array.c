@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.199 2008/01/29 20:10:06 grubba Exp $
+|| $Id: array.c,v 1.200 2008/02/12 18:51:29 grubba Exp $
 */
 
 #include "global.h"
@@ -1230,7 +1230,7 @@ PMOD_EXPORT INT32 *stable_sort_array_destructively(struct array *v)
 
   if(!v->size) return NULL;
 
-  /* Overlow safe: ((1<<29)-4)*4 < ULONG_MAX */
+  /* Overflow safe: ((1<<29)-4)*4 < ULONG_MAX */
   current_order=(INT32 *)xalloc(v->size * sizeof(INT32));
   SET_ONERROR(tmp, free, current_order);
   for(e=0; e<v->size; e++) current_order[e]=e;
