@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.649 2008/02/06 18:29:09 grubba Exp $
+|| $Id: program.c,v 1.650 2008/02/12 18:51:08 grubba Exp $
 */
 
 #include "global.h"
@@ -2666,6 +2666,8 @@ static void exit_program_struct(struct program *p)
 #ifdef PIKE_DEBUG
     if (!parent->refs) {
       dump_program_tables(p, 2);
+      fprintf(stderr, "Dead parent:\n");
+      dump_program_tables(parent, 2);
       Pike_fatal("Program parent is dead.\n");
     }
 #endif
@@ -2943,6 +2945,7 @@ void dump_program_tables (struct program *p, int indent)
 	  indent, "", indent, "");
   for (d=0; d < p->num_identifier_references; d++) {
     struct reference *ref = p->identifier_references + d;
+    struct identifier *id = ID_FROM_PTR(p, ref);
 
     fprintf(stderr, "%*s  %4d: %5x %7d %10d  %s\n",
 	    indent, "",
@@ -2950,7 +2953,16 @@ void dump_program_tables (struct program *p, int indent)
 	    ref->identifier_offset,
 	    ID_FROM_PTR(p,ref)->name->size_shift ? "(wide)" :
 	    ID_FROM_PTR(p,ref)->name->str);
-    if (IDENTIFIER_IS_PIKE_FUNCTION(ID_FROM_PTR(p,ref)->identifier_flags)) {
+    if (IDENTIFIER_IS_ALIAS(id->identifier_flags)) {
+      fprintf (stderr, "%*s                                  Alias for %d:%d\n",
+	       indent, "", id->func.ext_ref.depth, id->func.ext_ref.id);
+    } else if (IDENTIFIER_IS_CONSTANT(id->identifier_flags)) {
+      fprintf (stderr, "%*s                                  Constant #%ld\n",
+	       indent, "", (long)id->func.offset);
+    } else if (IDENTIFIER_IS_VARIABLE(id->identifier_flags)) {
+      fprintf (stderr, "%*s                                  Offset: 0x%08lx\n",
+	       indent, "", (long)id->func.offset);
+    } else if (IDENTIFIER_IS_PIKE_FUNCTION(id->identifier_flags)) {
       INT32 line;
       struct program *inh_p = INHERIT_FROM_PTR(p,ref)->prog;
       struct pike_string *file =
@@ -2959,6 +2971,9 @@ void dump_program_tables (struct program *p, int indent)
 	fprintf (stderr, "%*s                                  %s:%d\n",
 		 indent, "", file->str, line);
       free_string (file);
+    } else {
+      fprintf (stderr, "%*s                                  Cfun: %p\n",
+	       indent, "", id->func.c_fun);
     }
   }
 
@@ -3013,15 +3028,15 @@ void dump_program_tables (struct program *p, int indent)
   }
   fprintf(stderr, "\n"
 	  "%*sConstant table:\n"
-	  "%*s  ####: Type            Name\n",
+	  "%*s  ####: Type            Raw\n",
 	  indent, "", indent, "");
   for (d = 0; d < p->num_constants; d++) {
     struct program_constant *c = p->constants + d;
-#if 0
-    fprintf(stderr, "%*s  %4d: %-15s %s%s%s\n",
+#if 1
+    fprintf(stderr, "%*s  %4d: %-15s %p\n",
 	    indent, "",
 	    d, get_name_of_type (c->sval.type),
-	    c->name?"\"":"",c->name?c->name->str:"NULL",c->name?"\"":"");
+	    c->sval.u.ptr);
 #else /* !0 */
     fprintf(stderr, "%*s  %4d: %-15s %"PRINTPTRDIFFT"d\n",
 	    indent, "",
