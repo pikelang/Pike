@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.650 2008/02/12 18:51:08 grubba Exp $
+|| $Id: program.c,v 1.651 2008/02/14 18:23:11 grubba Exp $
 */
 
 #include "global.h"
@@ -3246,9 +3246,12 @@ void check_program(struct program *p)
 
     i=ID_FROM_INT(p, e);
 
-    if(IDENTIFIER_IS_VARIABLE(i->identifier_flags) &&
-       !IDENTIFIER_IS_ALIAS(i->identifier_flags))
-    {
+    if (IDENTIFIER_IS_ALIAS(i->identifier_flags)) {
+      if ((!i->func.ext_ref.depth) && (i->func.ext_ref.id == e)) {
+	dump_program_tables(p, 0);
+	Pike_fatal("Circular alias for reference %d!\n", e);
+      }
+    } else if (IDENTIFIER_IS_VARIABLE(i->identifier_flags)) {
       size_t q, size;
       /* Variable */
       ptrdiff_t offset = INHERIT_FROM_INT(p, e)->storage_offset+i->func.offset;
