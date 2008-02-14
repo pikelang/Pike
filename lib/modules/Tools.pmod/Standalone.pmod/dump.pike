@@ -6,7 +6,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dump.pike,v 1.7 2004/09/17 14:32:35 nilsson Exp $
+|| $Id: dump.pike,v 1.8 2008/02/14 09:30:31 grubba Exp $
 */
 
 constant description = "Dumps Pike files into object files.";
@@ -27,6 +27,8 @@ string fakeroot(string s)
 #endif
 
 object progress_bar;
+
+array(int) debug_level = ({});
 
 class GTKProgress {
 #if constant(GTK.Window)
@@ -107,10 +109,14 @@ class MyMaster
   {
     object old_master = master();
     ::create();
-    foreach (indices (old_master), string var)
+    foreach (indices (old_master), string var) {
       catch {this[var] = old_master[var];};
+    }
     programs["/master"] = this_program;
     objects[this_program] = this;
+#if constant(_gdb_breakpoint)
+    _gdb_breakpoint();
+#endif
   }
 }
 
@@ -210,8 +216,9 @@ do_dump: {
       {
 	string s;
 	if ((err = catch {
-	    s=encode_value(p, master()->Encoder(p));
-	    p=decode_value(s, master()->Decoder());
+	    s=encode_value(p, master()->Encoder(p), @debug_level);
+	    werror("\n------------------------\n\n");
+	    p=decode_value(s, master()->Decoder(), @debug_level);
 	  }))
 	  logmsg_long(describe_backtrace(err));
 
@@ -312,6 +319,11 @@ void dump_files() {
     exit(0);
   }
 
+#if constant(alarm)
+  // Dumping shouldn't take more than a minute per file.
+  alarm(60);
+#endif
+
   string file = files[pos++];
 
   if(progress_bar)
@@ -328,6 +340,9 @@ void dump_files() {
   if (!dumpit(file, outfile) && !nt_install)
     pos = sizeof(files); // exit
 
+#if constant(alarm)
+  alarm(0);
+#endif
   call_out(dump_files, 0);
 }
 
@@ -347,6 +362,7 @@ int main(int argc, array(string) argv)
     ({"target-dir", Getopt.HAS_ARG, ({"-t", "--target-dir"})}),
     ({"update-only", Getopt.MAY_HAVE_ARG, ({"-u", "--update-only"})}),
     ({"nt-install", Getopt.NO_ARG, ({"--nt-install"})}),
+    ({"debug", Getopt.MAY_HAVE_ARG, ({ "-D", "--debug-level" })}),
   })), array opt)
     switch (opt[0]) {
 
@@ -405,6 +421,11 @@ int main(int argc, array(string) argv)
 	else
 	  update = 1;
 	break;
+
+    case "debug":
+      if (sizeof(debug_level)) debug_level[0] += (int)opt[1];
+      else debug_level = ({ (int)opt[1] });
+      break;
     }
 
   // Remove the name of the program.
