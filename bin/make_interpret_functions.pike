@@ -24,7 +24,9 @@ array fixit2(array x)
 	  werror("Missing semicolon after definition of opcode %s(%s)\n",
 		 (string)args[0][1], (string)args[1][0]);
 	  errors++;
-	} else e++;
+	} else {
+	  ret += ({ x[++e] });
+	}
 	// Note: There must not be code after a nested opcode definition,
 	//       it will not work in the byte-code interpreter case.
 	if (x[e+1] != "}") {
