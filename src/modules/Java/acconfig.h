@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.6 2003/05/17 20:29:27 grubba Exp $
+|| $Id: acconfig.h,v 1.7 2008/02/15 21:43:09 marcus Exp $
 */
 
 /*
@@ -40,5 +40,8 @@
 
 /* Define for debug if you java has ibmFindDLL(). */
 #undef HAVE_IBMFINDDLL
+
+/* Define in you have libffi */
+#define HAVE_FFI
 
 #endif /* PIKE_JAVA_CONFIG_H */
