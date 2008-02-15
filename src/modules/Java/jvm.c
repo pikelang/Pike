@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: jvm.c,v 1.84 2008/01/26 22:34:25 mast Exp $
+|| $Id: jvm.c,v 1.85 2008/02/15 21:42:57 marcus Exp $
 */
 
 /*
@@ -48,9 +48,13 @@
 #include <winbase.h>
 #endif /* HAVE_WINBASE_H */
 
+#ifdef HAVE_FFI_H
+#include <ffi.h>
+#endif /* HAVE_FFI_H */
+
 #ifdef _REENTRANT
 #if defined(HAVE_SPARC_CPU) || defined(HAVE_X86_CPU) || defined(HAVE_PPC_CPU) \
- || defined(HAVE_ALPHA_CPU)
+ || defined(HAVE_ALPHA_CPU) || defined(HAVE_FFI)
 #define SUPPORT_NATIVE_METHODS
 #endif /* HAVE_SPARC_CPU || HAVE_X86_CPU || HAVE_PPC_CPU || HAVE_ALPHA_CPU */
 #endif /* _REENTRANT */
@@ -1481,6 +1485,146 @@ struct native_method_context;
  *   dbl_args	bitfield: There are double arguments at these positions.
  */
 
+static void native_dispatch(struct native_method_context *ctx,
+			    JNIEnv *env, jclass cls, void *args,
+			    jvalue *rc);
+
+#ifdef HAVE_FFI
+
+struct cpu_context {
+  ffi_java_raw_closure closure;
+  ffi_cif cif;
+  ffi_type **atypes;
+};
+
+static void ffi_dispatch(ffi_cif *cif, void *rval, ffi_java_raw *raw,
+			 void *userdata)
+{
+  jvalue v;
+  native_dispatch(userdata, raw[0].ptr, raw[1].ptr, raw+2, &v);
+  switch(cif->rtype->type) {
+  case FFI_TYPE_POINTER:
+    *(jobject *)rval = v.l;
+    break;
+  case FFI_TYPE_SINT8:
+    *(jbyte *)rval = v.b;
+    break;
+  case FFI_TYPE_UINT16:
+    *(jchar *)rval = v.c;
+    break;
+  case FFI_TYPE_SINT16:
+    *(jshort *)rval = v.s;
+    break;
+  case FFI_TYPE_SINT32:
+    *(jint *)rval = v.i;
+    break;
+  case FFI_TYPE_SINT64:
+    *(jlong *)rval = v.j;
+    break;
+  case FFI_TYPE_FLOAT:
+    *(jfloat *)rval = v.f;
+    break;
+  case FFI_TYPE_DOUBLE:
+    *(jdouble *)rval = v.d;
+    break;
+  }
+}
+
+static ffi_type *get_ffi_type(char p)
+{
+  switch(p) {
+  case 'L':
+  case '[':
+    return &ffi_type_pointer;
+    
+  case 'Z':
+    if (sizeof (jboolean) == sizeof (jbyte))
+      return &ffi_type_sint8;
+    else
+      return &ffi_type_sint32;
+
+  case 'B':
+    return &ffi_type_sint8;
+  case 'C':
+    return &ffi_type_uint16;
+  case 'S': 
+    return &ffi_type_sint16;
+  case 'I':
+  default:
+    return &ffi_type_sint32;
+  case 'J':
+    return &ffi_type_sint64;
+  case 'F':
+    return &ffi_type_float;
+  case 'D':
+    return &ffi_type_double;
+  case 'V':
+    return &ffi_type_void;
+  }
+}
+
+static void *make_stub(struct cpu_context *ctx, void *data, int statc, int rt,
+		       int args, int flt_args, int dbl_args,
+		       const char *signature)
+{
+  ffi_status s;
+  ffi_type *rtype, **atypes;
+  ffi_abi abi;
+  int na = 2;
+
+  ctx->atypes = atypes = xalloc(args*sizeof(ffi_type *));
+  atypes[0] = &ffi_type_pointer;
+  atypes[1] = &ffi_type_pointer;
+  while(*signature && *signature != ')')
+    if(*signature == '(')
+      signature++;
+    else {
+      atypes[na++] = get_ffi_type(*signature);
+      switch(*signature++) {
+      case '[':
+	while(*signature == '[')
+	  signature++;
+	if(!*signature)
+	  break;
+	if(*signature++ != 'L')
+	  break;
+      case 'L':
+	while(*signature && *signature++!=';');
+      }
+    }
+  if(*signature) signature++;
+  rtype = get_ffi_type(*signature);
+
+#if defined (_WIN32) || defined (__WIN32__) || defined (WIN32)
+  abi = FFI_STDCALL;
+#else
+  abi = FFI_DEFAULT_ABI;
+#endif
+
+  s = ffi_prep_cif(&ctx->cif, abi, na, rtype, atypes);
+  if(s != FFI_OK)
+    Pike_error("ffi error %d\n", s);
+
+  s = ffi_prep_java_raw_closure (&ctx->closure, &ctx->cif,
+				 ffi_dispatch, data);
+  if(s != FFI_OK)
+    Pike_error("ffi error %d\n", s);
+
+  return &ctx->closure;
+}
+
+#if FFI_SIZEOF_JAVA_RAW == 8
+#define NUM_RAWS(ty) (sizeof(ty)>=sizeof(jlong)?2:1)
+#define GET_NATIVE_ARG(ty) (((args)=((ffi_java_raw *)(args))+NUM_RAWS(ty)),*(ty *)(((ffi_java_raw *)(args))-NUM_RAWS(ty)))
+#endif
+
+#define EXTRA_FREE_NATIVE_CON(c) do {		\
+    if((c).cpu.atypes)				\
+      free((c).cpu.atypes);			\
+  } while(0)
+
+#else
+
 #ifdef HAVE_SPARC_CPU
 
 #ifdef _LP64
@@ -1945,6 +2089,111 @@ static void *low_make_stub(struct cpu_context *ctx, void *data, int statc,
 #endif /* HAVE_X86_CPU */
 #endif /* HAVE_SPARC_CPU */
 
+static jboolean JNICALL native_dispatch_z(struct native_method_context *ctx,
+					  JNIEnv *env, jobject obj, void *args)
+{
+  jvalue v;
+  native_dispatch(ctx, env, obj, args, &v);
+  return v.z;
+}
+
+static jbyte JNICALL native_dispatch_b(struct native_method_context *ctx,
+				       JNIEnv *env, jobject obj, void *args)
+{
+  jvalue v;
+  native_dispatch(ctx, env, obj, args, &v);
+  return v.b;
+}
+
+static jchar JNICALL native_dispatch_c(struct native_method_context *ctx,
+				       JNIEnv *env, jobject obj, void *args)
+{
+  jvalue v;
+  native_dispatch(ctx, env, obj, args, &v);
+  return v.c;
+}
+
+static jshort JNICALL native_dispatch_s(struct native_method_context *ctx,
+					JNIEnv *env, jobject obj, void *args)
+{
+  jvalue v;
+  native_dispatch(ctx, env, obj, args, &v);
+  return v.s;
+}
+
+static jint JNICALL native_dispatch_i(struct native_method_context *ctx,
+				      JNIEnv *env, jobject obj, void *args)
+{
+  jvalue v;
+  native_dispatch(ctx, env, obj, args, &v);
+  return v.i;
+}
+
+static jlong JNICALL native_dispatch_j(struct native_method_context *ctx,
+				       JNIEnv *env, jobject obj, void *args)
+{
+  jvalue v;
+  native_dispatch(ctx, env, obj, args, &v);
+  return v.j;
+}
+
+static jfloat JNICALL native_dispatch_f(struct native_method_context *ctx,
+					JNIEnv *env, jobject obj, void *args)
+{
+  jvalue v;
+  native_dispatch(ctx, env, obj, args, &v);
+  return v.f;
+}
+
+static jdouble JNICALL native_dispatch_d(struct native_method_context *ctx,
+					 JNIEnv *env, jobject obj, void *args)
+{
+  jvalue v;
+  native_dispatch(ctx, env, obj, args, &v);
+  return v.d;
+}
+
+static jobject JNICALL native_dispatch_l(struct native_method_context *ctx,
+					 JNIEnv *env, jobject obj, void *args)
+{
+  jvalue v;
+  native_dispatch(ctx, env, obj, args, &v);
+  return v.l;
+}
+
+static void JNICALL native_dispatch_v(struct native_method_context *ctx,
+				      JNIEnv *env, jobject obj, void *args)
+{
+  jvalue v;
+  native_dispatch(ctx, env, obj, args, &v);
+}
+
+static void *make_stub(struct cpu_context *ctx, void *data, int statc, int rt,
+		       int args, int flt_args, int dbl_args,
+		       const char *signature)
+{
+  void (*disp)() = (void (*)())native_dispatch_v;
+
+  switch(rt) {
+  case 'Z': disp = (void (*)())native_dispatch_z; break;
+  case 'B': disp = (void (*)())native_dispatch_b; break;
+  case 'C': disp = (void (*)())native_dispatch_c; break;
+  case 'S': disp = (void (*)())native_dispatch_s; break;
+  case 'I': disp = (void (*)())native_dispatch_i; break;
+  case 'J': disp = (void (*)())native_dispatch_j; break;
+  case 'F': disp = (void (*)())native_dispatch_f; break;
+  case 'D': disp = (void (*)())native_dispatch_d; break;
+  case '[':
+  case 'L': disp = (void (*)())native_dispatch_l; break;
+  default:
+    disp = (void (*)())native_dispatch_v;
+  }
+
+  return low_make_stub(ctx, data, statc, disp, args, flt_args, dbl_args);
+}
+
+#endif /* HAVE_FFI */
+
 struct natives_storage;
 
 struct native_method_context {
@@ -2125,108 +2374,6 @@ static void native_dispatch(struct native_method_context *ctx,
   call_with_interpreter(do_native_dispatch, &d);
 }
 
-static jboolean JNICALL native_dispatch_z(struct native_method_context *ctx,
-					  JNIEnv *env, jobject obj, void *args)
-{
-  jvalue v;
-  native_dispatch(ctx, env, obj, args, &v);
-  return v.z;
-}
-
-static jbyte JNICALL native_dispatch_b(struct native_method_context *ctx,
-				       JNIEnv *env, jobject obj, void *args)
-{
-  jvalue v;
-  native_dispatch(ctx, env, obj, args, &v);
-  return v.b;
-}
-
-static jchar JNICALL native_dispatch_c(struct native_method_context *ctx,
-				       JNIEnv *env, jobject obj, void *args)
-{
-  jvalue v;
-  native_dispatch(ctx, env, obj, args, &v);
-  return v.c;
-}
-
-static jshort JNICALL native_dispatch_s(struct native_method_context *ctx,
-					JNIEnv *env, jobject obj, void *args)
-{
-  jvalue v;
-  native_dispatch(ctx, env, obj, args, &v);
-  return v.s;
-}
-
-static jint JNICALL native_dispatch_i(struct native_method_context *ctx,
-				      JNIEnv *env, jobject obj, void *args)
-{
-  jvalue v;
-  native_dispatch(ctx, env, obj, args, &v);
-  return v.i;
-}
-
-static jlong JNICALL native_dispatch_j(struct native_method_context *ctx,
-				       JNIEnv *env, jobject obj, void *args)
-{
-  jvalue v;
-  native_dispatch(ctx, env, obj, args, &v);
-  return v.j;
-}
-
-static jfloat JNICALL native_dispatch_f(struct native_method_context *ctx,
-					JNIEnv *env, jobject obj, void *args)
-{
-  jvalue v;
-  native_dispatch(ctx, env, obj, args, &v);
-  return v.f;
-}
-
-static jdouble JNICALL native_dispatch_d(struct native_method_context *ctx,
-					 JNIEnv *env, jobject obj, void *args)
-{
-  jvalue v;
-  native_dispatch(ctx, env, obj, args, &v);
-  return v.d;
-}
-
-static jobject JNICALL native_dispatch_l(struct native_method_context *ctx,
-					 JNIEnv *env, jobject obj, void *args)
-{
-  jvalue v;
-  native_dispatch(ctx, env, obj, args, &v);
-  return v.l;
-}
-
-static void JNICALL native_dispatch_v(struct native_method_context *ctx,
-				      JNIEnv *env, jobject obj, void *args)
-{
-  jvalue v;
-  native_dispatch(ctx, env, obj, args, &v);
-}
-
-static void *make_stub(struct cpu_context *ctx, void *data, int statc, int rt,
-		       int args, int flt_args, int dbl_args)
-{
-  void (*disp)() = (void (*)())native_dispatch_v;
-
-  switch(rt) {
-  case 'Z': disp = (void (*)())native_dispatch_z; break;
-  case 'B': disp = (void (*)())native_dispatch_b; break;
-  case 'C': disp = (void (*)())native_dispatch_c; break;
-  case 'S': disp = (void (*)())native_dispatch_s; break;
-  case 'I': disp = (void (*)())native_dispatch_i; break;
-  case 'J': disp = (void (*)())native_dispatch_j; break;
-  case 'F': disp = (void (*)())native_dispatch_f; break;
-  case 'D': disp = (void (*)())native_dispatch_d; break;
-  case '[':
-  case 'L': disp = (void (*)())native_dispatch_l; break;
-  default:
-    disp = (void (*)())native_dispatch_v;
-  }
-
-  return low_make_stub(ctx, data, statc, disp, args, flt_args, dbl_args);
-}
-
 #ifndef FLT_ARG_OFFS
 #define FLT_ARG_OFFS args
 #endif
@@ -2272,6 +2419,8 @@ static void build_native_entry(JNIEnv *env, jclass cls,
       args ++;
       break;
     case '[':
+      while(*p == '[')
+	p++;
       if(!*p)
 	break;
       if(*p++ != 'L') { args++; break; }
@@ -2282,7 +2431,7 @@ static void build_native_entry(JNIEnv *env, jclass cls,
     }
   if(*p) p++;
   jnm->fnPtr = make_stub(&con->cpu, con, statc, *p, args+wargs+2,
-			 flt_args, dbl_args);
+			 flt_args, dbl_args, sig->str);
 }
 
 static void init_natives_struct(struct object *o)
@@ -2321,6 +2470,9 @@ static void exit_natives_struct(struct object *o)
 	free_string(n->cons[i].name);
       if(n->cons[i].sig)
 	free_string(n->cons[i].sig);
+#ifdef EXTRA_FREE_NATIVE_CON
+      EXTRA_FREE_NATIVE_CON(n->cons[i]);
+#endif
     }
     mexec_free(n->cons);
   }
