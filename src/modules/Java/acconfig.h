@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.8 2008/02/15 21:42:57 marcus Exp $
+|| $Id: acconfig.h,v 1.9 2008/02/16 01:55:58 marcus Exp $
 */
 
 /*
@@ -45,6 +45,6 @@
 #undef HAVE_IBMFINDDLL
 
 /* Define in you have libffi */
-#define HAVE_FFI
+#undef HAVE_FFI
 
 #endif /* PIKE_JAVA_CONFIG_H */
