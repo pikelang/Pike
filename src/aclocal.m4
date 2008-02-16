@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.163 2008/02/16 16:23:17 grubba Exp $
+dnl $Id: aclocal.m4,v 1.164 2008/02/16 22:33:36 grubba Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -594,7 +594,7 @@ define([PIKE_RETAIN_VARIABLES],
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.163 2008/02/16 16:23:17 grubba Exp $
+  # $Id: aclocal.m4,v 1.164 2008/02/16 22:33:36 grubba Exp $
 
   MY_AC_PROG_CC
 
@@ -1074,7 +1074,7 @@ dnl Checks if bundle_name is available, and if it is enables it and
 dnl invalidates the cache variables specified in invalidate_set.
 dnl Otherwise if opt_error_msg has been specified performs an error exit.
 define(PIKE_ENABLE_BUNDLE, [
-  PIKE_LOW_ENABLE_BUNDLE([$1], [$2], ifelse([$3], , , [AC_MSG_ERROR([$3])]))
+  PIKE_LOW_ENABLE_BUNDLE([$1], [$2], ifelse([$3], , , [AC_MSG_ERROR([[$3]])]))
 ])
 
 #############################################################################
