@@ -12,6 +12,8 @@ inherit .Hash;
 
 .HashState `()() { return Nettle.SHA256_State(); }
 
+string asn1_id() { return "`\206H\1e\3\4\0\1"; }
+
 #else
 constant this_program_does_not_exist=1;
 #endif
