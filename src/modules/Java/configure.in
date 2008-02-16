@@ -270,6 +270,9 @@ if test "x$with_java" = xyes; then
     :
   fi
   AC_CHECK_HEADERS(jni.h winbase.h setjmp.h ffi.h)
+  AC_CHECK_TYPES([ffi_java_raw, ffi_java_raw_closure],,,[#ifdef HAVE_FFI_H
+#include <ffi.h>
+#endif])
 
   pike_cv_java=no
 

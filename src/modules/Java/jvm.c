@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: jvm.c,v 1.85 2008/02/15 21:42:57 marcus Exp $
+|| $Id: jvm.c,v 1.86 2008/02/16 15:05:56 marcus Exp $
 */
 
 /*
@@ -1491,13 +1491,25 @@ static void native_dispatch(struct native_method_context *ctx,
 
 #ifdef HAVE_FFI
 
+#ifdef HAVE_FFI_JAVA_RAW
+#define JAVA_RAW_TYPE ffi_java_raw
+#else
+#define JAVA_RAW_TYPE ffi_raw
+#endif
+
+#ifdef HAVE_FFI_JAVA_RAW_CLOSURE
+#define JAVA_RAW_CLOSURE_TYPE ffi_java_raw_closure
+#else
+#define JAVA_RAW_CLOSURE_TYPE ffi_raw_closure
+#endif
+
 struct cpu_context {
-  ffi_java_raw_closure closure;
+  JAVA_RAW_CLOSURE_TYPE closure;
   ffi_cif cif;
   ffi_type **atypes;
 };
 
-static void ffi_dispatch(ffi_cif *cif, void *rval, ffi_java_raw *raw,
+static void ffi_dispatch(ffi_cif *cif, void *rval, JAVA_RAW_TYPE *raw,
 			 void *userdata)
 {
   jvalue v;
@@ -1613,9 +1625,15 @@ static void *make_stub(struct cpu_context *ctx, void *data, int statc, int rt,
   return &ctx->closure;
 }
 
+#ifndef FFI_SIZEOF_ARG
+#define FFI_SIZEOF_ARG SIZEOF_ARG
+#endif
+#ifndef FFI_SIZEOF_JAVA_RAW
+#define FFI_SIZEOF_JAVA_RAW FFI_SIZEOF_ARG
+#endif
 #if FFI_SIZEOF_JAVA_RAW == 8
 #define NUM_RAWS(ty) (sizeof(ty)>=sizeof(jlong)?2:1)
-#define GET_NATIVE_ARG(ty) (((args)=((ffi_java_raw *)(args))+NUM_RAWS(ty)),*(ty *)(((ffi_java_raw *)(args))-NUM_RAWS(ty)))
+#define GET_NATIVE_ARG(ty) (((args)=((JAVA_RAW_TYPE *)(args))+NUM_RAWS(ty)),*(ty *)(((JAVA_RAW_TYPE *)(args))-NUM_RAWS(ty)))
 #endif
 
 #define EXTRA_FREE_NATIVE_CON(c) do {		\
