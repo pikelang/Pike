@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: jvm.c,v 1.87 2008/02/17 00:23:17 marcus Exp $
+|| $Id: jvm.c,v 1.88 2008/02/17 17:01:43 marcus Exp $
 */
 
 /*
@@ -1505,19 +1505,23 @@ static void ffi_dispatch(ffi_cif *cif, void *rval, void **args,
 		  args+2, &v);
   switch(cif->rtype->type) {
   case FFI_TYPE_POINTER:
-    *(jobject *)rval = v.l;
+#if FFI_SIZEOF_ARG == 8 && FFI_SIZEOF_JAVA_RAW == 4
+    *(ffi_sarg *)rval = (ffi_sarg)(void *)v.l;
+#else
+    *(void**)rval = v.l;
+#endif
     break;
   case FFI_TYPE_SINT8:
-    *(jbyte *)rval = v.b;
+    *(ffi_sarg *)rval = v.b;
     break;
   case FFI_TYPE_UINT16:
-    *(jchar *)rval = v.c;
+    *(ffi_arg *)rval = v.c;
     break;
   case FFI_TYPE_SINT16:
-    *(jshort *)rval = v.s;
+    *(ffi_sarg *)rval = v.s;
     break;
   case FFI_TYPE_SINT32:
-    *(jint *)rval = v.i;
+    *(ffi_sarg *)rval = v.i;
     break;
   case FFI_TYPE_SINT64:
     *(jlong *)rval = v.j;
