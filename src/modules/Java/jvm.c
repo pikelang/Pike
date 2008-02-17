@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: jvm.c,v 1.86 2008/02/16 15:05:56 marcus Exp $
+|| $Id: jvm.c,v 1.87 2008/02/17 00:23:17 marcus Exp $
 */
 
 /*
@@ -1491,29 +1491,18 @@ static void native_dispatch(struct native_method_context *ctx,
 
 #ifdef HAVE_FFI
 
-#ifdef HAVE_FFI_JAVA_RAW
-#define JAVA_RAW_TYPE ffi_java_raw
-#else
-#define JAVA_RAW_TYPE ffi_raw
-#endif
-
-#ifdef HAVE_FFI_JAVA_RAW_CLOSURE
-#define JAVA_RAW_CLOSURE_TYPE ffi_java_raw_closure
-#else
-#define JAVA_RAW_CLOSURE_TYPE ffi_raw_closure
-#endif
-
 struct cpu_context {
-  JAVA_RAW_CLOSURE_TYPE closure;
+  ffi_closure closure;
   ffi_cif cif;
   ffi_type **atypes;
 };
 
-static void ffi_dispatch(ffi_cif *cif, void *rval, JAVA_RAW_TYPE *raw,
+static void ffi_dispatch(ffi_cif *cif, void *rval, void **args,
 			 void *userdata)
 {
   jvalue v;
-  native_dispatch(userdata, raw[0].ptr, raw[1].ptr, raw+2, &v);
+  native_dispatch(userdata, *(JNIEnv **)args[0], *(jclass *)args[1],
+		  args+2, &v);
   switch(cif->rtype->type) {
   case FFI_TYPE_POINTER:
     *(jobject *)rval = v.l;
@@ -1617,24 +1606,17 @@ static void *make_stub(struct cpu_context *ctx, void *data, int statc, int rt,
   if(s != FFI_OK)
     Pike_error("ffi error %d\n", s);
 
-  s = ffi_prep_java_raw_closure (&ctx->closure, &ctx->cif,
-				 ffi_dispatch, data);
+  s = ffi_prep_closure (&ctx->closure, &ctx->cif,
+			ffi_dispatch, data);
   if(s != FFI_OK)
     Pike_error("ffi error %d\n", s);
 
   return &ctx->closure;
 }
 
-#ifndef FFI_SIZEOF_ARG
-#define FFI_SIZEOF_ARG SIZEOF_ARG
-#endif
-#ifndef FFI_SIZEOF_JAVA_RAW
-#define FFI_SIZEOF_JAVA_RAW FFI_SIZEOF_ARG
-#endif
-#if FFI_SIZEOF_JAVA_RAW == 8
-#define NUM_RAWS(ty) (sizeof(ty)>=sizeof(jlong)?2:1)
-#define GET_NATIVE_ARG(ty) (((args)=((JAVA_RAW_TYPE *)(args))+NUM_RAWS(ty)),*(ty *)(((JAVA_RAW_TYPE *)(args))-NUM_RAWS(ty)))
-#endif
+#define ARGS_TYPE void**
+#define GET_NATIVE_ARG(ty) (*(ty*)*(args)++)
+#define USE_SMALL_ARGS
 
 #define EXTRA_FREE_NATIVE_CON(c) do {		\
     if((c).cpu.atypes)				\
@@ -2322,9 +2304,25 @@ static void do_native_dispatch(void *arg)
     while(*p && *p!=')') {
       switch(*p++) {
       case 'Z':
+#ifdef USE_SMALL_ARGS
+	push_int(GET_NATIVE_ARG(jboolean));
+	break;
+#endif
       case 'B':
+#ifdef USE_SMALL_ARGS
+	push_int(GET_NATIVE_ARG(jbyte));
+	break;
+#endif
       case 'C':
+#ifdef USE_SMALL_ARGS
+	push_int(GET_NATIVE_ARG(jchar));
+	break;
+#endif
       case 'S':
+#ifdef USE_SMALL_ARGS
+	push_int(GET_NATIVE_ARG(jshort));
+	break;
+#endif
       case 'I':
       default:
 	push_int(GET_NATIVE_ARG(jint));
