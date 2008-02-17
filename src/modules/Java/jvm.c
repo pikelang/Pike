@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: jvm.c,v 1.75 2008/02/17 17:01:50 marcus Exp $
+|| $Id: jvm.c,v 1.76 2008/02/17 20:01:33 marcus Exp $
 */
 
 /*
@@ -22,7 +22,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.75 2008/02/17 17:01:50 marcus Exp $");
+RCSID("$Id: jvm.c,v 1.76 2008/02/17 20:01:33 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -1481,6 +1481,13 @@ static void native_dispatch(struct native_method_context *ctx,
 			    jvalue *rc);
 
 #ifdef HAVE_FFI
+
+#ifndef HAVE_FFI_ARG
+#define ffi_arg UINT_ARG
+#endif
+#ifndef HAVE_FFI_SARG
+#define ffi_sarg SINT_ARG
+#endif
 
 struct cpu_context {
   ffi_closure closure;
