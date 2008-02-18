@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.108 2005/12/19 20:25:44 grubba Exp $
+# $Id: configure.in,v 1.109 2008/02/18 18:31:24 grubba Exp $
 AC_INIT(file.c)
 AC_CONFIG_HEADER(file_machine.h)
 
@@ -26,6 +26,11 @@ AC_HAVE_HEADERS(sys/types.h sys/socket.h arpa/inet.h sys/socketvar.h \
 #include <sys/param.h>
 #endif
 ])
+
+# FIXME: Detect broken <sys/socketvar.h> on Solaris 10?
+#   <sys/socketvar.h> includes <sys/zone.h>, which attempts to include
+#   <sys/tsol/label.h>, which is only available if patch 120050 (sparc)
+#   or patch 120051 (x86) has been applied.
 
 if test "x$ac_cv_header_sys_sendfile_h" = "xyes"; then
   AC_MSG_CHECKING([if <sys/sendfile.h> supports _FILE_OFFSET_BITS=64])
@@ -56,7 +61,7 @@ AC_HAVE_FUNCS(getwd perror readdir_r statvfs statfs ustat lseek64 lstat fsync \
  grantpt unlockpt ptsname posix_openpt socketpair writev sendfile munmap \
  madvise poll setsockopt getprotobyname truncate64 ftruncate64 inet_ntoa \
  inet_ntop execve listxattr flistxattr getxattr fgetxattr setxattr fsetxattr \
- fdopendir pathconf fpathconf dirfd)
+ fdopendir pathconf fpathconf dirfd openat unlinkat)
 
 AC_FUNC_MMAP
 
