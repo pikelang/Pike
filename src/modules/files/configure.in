@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.109 2008/02/18 18:31:24 grubba Exp $
+# $Id: configure.in,v 1.110 2008/02/18 18:42:49 grubba Exp $
 AC_INIT(file.c)
 AC_CONFIG_HEADER(file_machine.h)
 
@@ -61,7 +61,7 @@ AC_HAVE_FUNCS(getwd perror readdir_r statvfs statfs ustat lseek64 lstat fsync \
  grantpt unlockpt ptsname posix_openpt socketpair writev sendfile munmap \
  madvise poll setsockopt getprotobyname truncate64 ftruncate64 inet_ntoa \
  inet_ntop execve listxattr flistxattr getxattr fgetxattr setxattr fsetxattr \
- fdopendir pathconf fpathconf dirfd openat unlinkat)
+ fdopendir pathconf fpathconf dirfd fstatat openat unlinkat)
 
 AC_FUNC_MMAP
 
