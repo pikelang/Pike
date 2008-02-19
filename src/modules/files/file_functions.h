@@ -2,13 +2,17 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file_functions.h,v 1.40 2007/10/12 12:58:41 grubba Exp $
+|| $Id: file_functions.h,v 1.41 2008/02/19 22:25:00 grubba Exp $
 */
 
 #define CB_FUNC tFunc(tNone,tOr(tVoid,tMixed))
 
 /* function(string,string,void|int:int) */
 FILE_FUNC("open",file_open, tFunc(tStr tStr tOr(tVoid,tInt),tInt))
+#ifdef HAVE_OPENAT
+/* function(string,string,void|int:int) */
+FILE_FUNC("openat",file_openat, tFunc(tStr tStr tOr(tVoid,tInt),tInt))
+#endif
 /* function(string|void:int) */
 FILE_FUNC("close",file_close, tFunc(tOr(tStr,tVoid),tInt))
 /* function(int|void,int|void:string) */
