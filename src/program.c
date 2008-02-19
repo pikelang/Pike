@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.651 2008/02/14 18:23:11 grubba Exp $
+|| $Id: program.c,v 1.652 2008/02/19 15:35:25 grubba Exp $
 */
 
 #include "global.h"
@@ -2908,6 +2908,7 @@ int sizeof_variable(int run_time_type)
     case T_MIXED: return sizeof(struct svalue);
     case T_FLOAT: return sizeof(FLOAT_TYPE);
     case T_INT: return sizeof(INT_TYPE);
+    case PIKE_T_GET_SET: return 0;
     default: return sizeof(void *);
   }
 }
@@ -2920,6 +2921,7 @@ static ptrdiff_t alignof_variable(int run_time_type)
     case T_MIXED: return ALIGNOF(struct svalue);
     case T_FLOAT: return ALIGNOF(FLOAT_TYPE);
     case T_INT: return ALIGNOF(INT_TYPE);
+    case PIKE_T_GET_SET: return 1;
     default: return ALIGNOF(void *);
   }
 }
@@ -3201,7 +3203,7 @@ void check_program(struct program *p)
     if (!IDENTIFIER_IS_ALIAS(p->identifiers[e].identifier_flags)) {
       if(IDENTIFIER_IS_VARIABLE(p->identifiers[e].identifier_flags))
       {
-	if( (p->identifiers[e].func.offset /* + OFFSETOF(object,storage)*/ ) &
+	if((p->identifiers[e].func.offset /* + OFFSETOF(object,storage)*/ ) &
 	    (alignof_variable(p->identifiers[e].run_time_type)-1))
 	{
 	  dump_program_tables(p, 0);
