@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sendfile.c,v 1.78 2008/01/26 22:34:27 mast Exp $
+|| $Id: sendfile.c,v 1.79 2008/02/20 19:43:36 grubba Exp $
 */
 
 /*
@@ -439,6 +439,13 @@ void low_do_sendfile(struct pike_sendfile *this)
 #endif /* HAVE_FREEBSD_SENDFILE */
 
     if (len < 0) {
+      /* Send entire file.
+       *
+       * From FreeBSD:
+       *   The nbytes argument specifies how many bytes of the file
+       *   should be sent, with 0 having the special meaning of send
+       *   until the end of file has been reached.
+       */
       len = 0;
     }
 
@@ -765,13 +772,34 @@ static void worker(void *this_)
  * Functions callable from Pike code
  */
 
-/* void create(array(string) headers, object from, int offset, int len,
- *             array(string) trailers, object to, 
- *             function callback, mixed ... args)
- *
- * @note
- *   In Pike 7.7 and later the @[callback] function will be called
- *   from the backend associated with @[to].
+/*! void create(array(string) headers, object from, int offset, int len,
+ *!             array(string) trailers, object to, 
+ *!             function callback, mixed ... args)
+ *!
+ *! Low-level implementation of @[Stdio.sendfile()].
+ *!
+ *! Sends @[headers] followed by @[len] bytes starting at @[offset]
+ *! from the file @[from] followed by @[trailers] to the file @[to].
+ *! When completed @[callback] will be called with the total number of
+ *! bytes sent as the first argument, followed by @[args].
+ *!
+ *! Any of @[headers], @[from] and @[trailers] may be left out
+ *! by setting them to @expr{0@}.
+ *!
+ *! Setting @[offset] to @expr{-1@} means send from the current position in
+ *! @[from].
+ *!
+ *! Setting @[len] to @expr{-1@} means send until @[from]'s end of file is
+ *! reached.
+ *!
+ *! @note
+ *!   Don't use this class directly! Use @[Stdio.sendfile()] instead.
+ *!
+ *!   In Pike 7.7 and later the @[callback] function will be called
+ *!   from the backend associated with @[to].
+ *!
+ *! @seealso
+ *!   @[Stdio.sendfile()]
  */
 static void sf_create(INT32 args)
 {
