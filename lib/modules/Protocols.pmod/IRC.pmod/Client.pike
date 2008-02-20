@@ -5,6 +5,7 @@
 import ".";
 
 Raw raw;
+//FIXME: Unknown what this default password is good for. Probably not needed.
 string pass=MIME.encode_base64(Crypto.Random.random_string(6));
 
 mapping options;
@@ -26,6 +27,8 @@ mapping channels=([]);
 //!       Defaults to @expr{"Unknown"@} on systems without @[getpwuid] and
 //!       @[getuid] and to @expr{String.capitalize(getpwuid(getuid())[0])@}
 //!       on systems with.
+//!     @member string "pass"
+//!       Server password, if any. Public servers seldom require this.
 //!     @member string "realname"
 //!       Defaults to @expr{"Mr. Anonymous"@} on systems without @[getpwuid]
 //!       and @[getuid] and to @expr{getpwuid(getuid())[4]@} on systems with.
@@ -97,7 +100,7 @@ void create(string _server,void|mapping(string:mixed) _options)
 
    cmd->create(raw);
 
-   cmd->pass(pass); 
+   cmd->pass(options->pass||pass); 
    cmd->nick(options->nick);
    cmd->user(options->user,options->host,options->server,options->realname);
 
