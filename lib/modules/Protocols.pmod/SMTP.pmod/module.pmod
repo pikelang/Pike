@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod,v 1.44 2004/06/04 17:13:03 vida Exp $
+// $Id: module.pmod,v 1.45 2008/02/21 14:01:00 agehall Exp $
 //
 
 #pike __REAL_VERSION__
@@ -126,10 +126,22 @@ class Client
     cmd("DATA");
 
     // Perform quoting according to RFC 2821 4.5.2.
+    // and 2.3.7
     if (sizeof(body) && body[0] == '.') {
       body = "." + body;
     }
-    body = replace(body, "\r\n.", "\r\n..");
+    body = replace(body, ({
+		     "\r\n.",
+		     "\r\n",
+		     "\r",
+		     "\n",
+		   }),
+		   ({
+		     "\r\n..",
+		     "\r\n",
+		     "\r\n",
+		     "\r\n",
+		   }));
 
     // RFC 2821 4.1.1.4:
     //   An extra <CRLF> MUST NOT be added, as that would cause an empty
