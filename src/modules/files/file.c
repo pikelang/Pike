@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.376 2008/02/19 22:25:00 grubba Exp $
+|| $Id: file.c,v 1.377 2008/02/23 23:45:15 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -1863,7 +1863,7 @@ static void file_open(INT32 args)
  *!   Not available on all architectures, or in Pike 7.6 and earlier.
  *!
  *! @seealso
- *!   @[open()]
+ *!   @[open()], @[statat()]
  */
 static void file_openat(INT32 args)
 {
@@ -2267,7 +2267,7 @@ static void file_truncate(INT32 args)
  *!   Prior to Pike 7.1 this function returned an array(int).
  *!
  *! @seealso
- *!   @[file_stat()]
+ *!   @[file_stat()], @[statat()]
  */
 static void file_stat(INT32 args)
 {
@@ -2300,6 +2300,70 @@ static void file_stat(INT32 args)
     push_stat(&s);
   }
 }
+
+
+#ifdef HAVE_FSTATAT
+/*! @decl Stat statat(string path, void|int(0..1) symlink)
+ *!
+ *! Get status for a file relative an open directory.
+ *!
+ *! This function returns the same information as the function
+ *! @[file_stat()], but relative to the file it is called in. If file is not
+ *! an open file, @expr{0@} (zero) is returned. Zero is also returned
+ *! if file is a pipe or socket.
+ *!
+ *! @returns
+ *!   See @[file_stat()] for a description of the return value.
+ *!
+ *! @note
+ *!   Not available on all architectures, or in Pike 7.6 and earlier.
+ *!
+ *! @seealso
+ *!   @[file_stat()], @[stat()], @[openat()]
+ */
+static void file_statat(INT32 args)
+{
+  int fd;
+  PIKE_STAT_T s;
+  int tmp;
+  struct pike_string *path;
+  int nofollow = 0;
+
+  if(FD < 0)
+    Pike_error("File not open.\n");
+
+  get_all_args("statat", args, "%S.%d", &path, &nofollow);
+
+  if (string_has_null(path)) {
+    /* Filenames with NUL are not supported. */
+    ERRNO = errno = ENOENT;
+    pop_n_elems(args);
+    push_int(0);
+    return;
+  }
+
+  fd=FD;
+
+ retry:
+  THREADS_ALLOW();
+  tmp = fstatat(dirfd, path->str, &s, nofollow?AT_SYMLINK_NOFOLLOW:0);
+  THREADS_DISALLOW();
+
+  if(tmp < 0)
+  {
+    if(errno == EINTR) {
+      check_threads_etc();
+      goto retry;
+    }
+    ERRNO=errno;
+    push_int(0);
+  }else{
+    ERRNO=0;
+    push_stat(&s);
+  }
+  stack_pop_n_elems_keep_top(args);
+}
+#endif /* HAVE_FSTATAT */
 
 #if defined(HAVE_FSETXATTR) && defined(HAVE_FGETXATTR) && defined(HAVE_FLISTXATTR)
 /* All A-OK.*/

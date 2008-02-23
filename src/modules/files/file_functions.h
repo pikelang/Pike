@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file_functions.h,v 1.41 2008/02/19 22:25:00 grubba Exp $
+|| $Id: file_functions.h,v 1.42 2008/02/23 23:45:24 grubba Exp $
 */
 
 #define CB_FUNC tFunc(tNone,tOr(tVoid,tMixed))
@@ -49,6 +49,10 @@ FILE_FUNC("tell",file_tell, tFunc(tNone,tInt))
 FILE_FUNC("truncate",file_truncate, tFunc(tInt,tInt))
 /* function(:object) */
 FILE_FUNC("stat",file_stat, tFunc(tNone,tObjImpl_STDIO_STAT))
+#ifdef HAVE_FSTATAT
+FILE_FUNC("statat", file_statat,
+	  tFunc(tStr tOr(tVoid, tInt01), tObjImpl_STDIO_STAT))
+#endif /* HAVE_FSTATAT */
 /* function(:int) */
 FILE_FUNC("errno",file_errno, tFunc(tNone,tInt))
 /* function(:int) */
