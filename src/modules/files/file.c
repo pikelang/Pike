@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.377 2008/02/23 23:45:15 grubba Exp $
+|| $Id: file.c,v 1.378 2008/02/24 09:58:11 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -2346,7 +2346,7 @@ static void file_statat(INT32 args)
 
  retry:
   THREADS_ALLOW();
-  tmp = fstatat(dirfd, path->str, &s, nofollow?AT_SYMLINK_NOFOLLOW:0);
+  tmp = fstatat(fd, path->str, &s, nofollow?AT_SYMLINK_NOFOLLOW:0);
   THREADS_DISALLOW();
 
   if(tmp < 0)
