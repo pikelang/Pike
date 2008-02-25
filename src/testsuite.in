@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.798 2008/01/29 20:47:29 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.799 2008/02/25 14:49:02 per Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -3852,6 +3852,8 @@ test_encode(100000.0)
 test_encode(3.1875)
 test_encode(0.0000019073486328125)
 test_encode(({}))
+// This should work both with and without bignums.
+test_encode(({0xffffffff+1, 0xffffffff+2}))
 test_encode(([]))
 test_encode("foobar")
 test_encode((<>))
