@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.260 2008/02/14 18:03:08 grubba Exp $
+|| $Id: encode.c,v 1.261 2008/02/26 21:50:36 grubba Exp $
 */
 
 #include "global.h"
@@ -577,10 +577,19 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
       if (i != (INT32)i)
       {
 #ifdef AUTO_BIGNUM
+	 /* Reuse the id. */
+	 data->counter.u.integer--;
+	 /* Make sure we don't find ourselves again below... */
+	 map_delete(data->encoded, val);
+
+	 /* Encode as a bignum */
 	 push_int(i);
 	 convert_stack_top_to_bignum();
 	 encode_value2(Pike_sp-1,data, 0);
 	 pop_stack();
+
+	 /* Restore the entry we removed above. */
+	 mapping_insert(data->encoded, val, &entry_id);
 #else
 	 Pike_error ("Cannot encode integers with more than 32 bits "
 		     "without bignum support.\n");
@@ -1656,7 +1665,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 
 	      EDB(5,
 		  fprintf(stderr, "%*sinherit_flags: %04x\n",
-			  data->depth, "", inherit_flags_change));
+			  data->depth, "", inherit_flags_set));
 
 	      /* Identifier reference level at insertion. */
 	      code_number(d_max, data);
