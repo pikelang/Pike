@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.226 2008/01/26 22:34:22 mast Exp $
+|| $Id: operators.c,v 1.227 2008/02/27 23:59:18 grubba Exp $
 */
 
 #include "global.h"
@@ -615,7 +615,7 @@ PMOD_EXPORT void o_cast(struct pike_type *type, INT32 run_time_type)
 	    struct pike_string *file;
 	    INT32 lineno;
 	    if(Pike_fp->pc &&
-	       (file = low_get_line(Pike_fp->pc, Pike_fp->context.prog, &lineno))) {
+	       (file = low_get_line(Pike_fp->pc, Pike_fp->context->prog, &lineno))) {
 	      push_string(file);
 	    }else{
 	      push_int(0);
@@ -652,7 +652,7 @@ PMOD_EXPORT void o_cast(struct pike_type *type, INT32 run_time_type)
 	  struct pike_string *file;
 	  INT32 lineno;
 	  if(Pike_fp->pc &&
-	     (file = low_get_line(Pike_fp->pc, Pike_fp->context.prog, &lineno))) {
+	     (file = low_get_line(Pike_fp->pc, Pike_fp->context->prog, &lineno))) {
 	    push_string(file);
 	  }else{
 	    push_int(0);
@@ -1031,11 +1031,10 @@ void o_check_soft_cast(struct svalue *s, struct pike_type *type)
     ONERROR tmp1;
     ONERROR tmp2;
 
-    if (Pike_fp->current_object && Pike_fp->context.prog &&
-	Pike_fp->current_object->prog) {
+    if (Pike_fp->current_program) {
       /* Look up the function-name */
       struct pike_string *name =
-	ID_FROM_INT(Pike_fp->current_object->prog, Pike_fp->fun)->name;
+	ID_FROM_INT(Pike_fp->current_program, Pike_fp->fun)->name;
       if ((!name->size_shift) && (name->len < 100))
 	fname = name->str;
     }

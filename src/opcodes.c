@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: opcodes.c,v 1.169 2008/01/28 18:06:16 grubba Exp $
+|| $Id: opcodes.c,v 1.170 2008/02/27 23:59:16 grubba Exp $
 */
 
 #include "global.h"
@@ -322,8 +322,8 @@ const char *low_get_f_name(int n, struct program *p)
 
 const char *get_f_name(int n)
 {
-  if (Pike_fp && Pike_fp->context.prog)
-    return low_get_f_name(n, Pike_fp->context.prog);
+  if (Pike_fp && Pike_fp->context)
+    return low_get_f_name(n, Pike_fp->context->prog);
   return low_get_f_name(n, NULL);
 }
 

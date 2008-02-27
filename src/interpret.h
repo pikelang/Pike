@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.h,v 1.170 2007/06/17 01:33:51 mast Exp $
+|| $Id: interpret.h,v 1.171 2008/02/27 23:59:13 grubba Exp $
 */
 
 #ifndef INTERPRET_H
@@ -89,6 +89,9 @@ struct pike_frame
   struct svalue **save_mark_sp;
   struct svalue **mark_sp_base;
   struct object *current_object;
+  struct program *current_program;	/* program containing the context. */
+  struct inherit *context;
+  char *current_storage;
 
   DO_IF_SECURITY(struct object *current_creds;)
 #if defined(PROFILING)
@@ -96,8 +99,6 @@ struct pike_frame
   cpu_time_t start_time;	/** Adjusted time when thr frame started. */
   cpu_time_t self_time_base;	/* ??? */
 #endif
-  struct inherit context;
-  char *current_storage;
 };
 
 #define PIKE_FRAME_RETURN_INTERNAL 1
@@ -606,8 +607,8 @@ PMOD_EXPORT extern const char msg_pop_neg[];
 			       time_in_children);			\
 		  });							\
       Pike_interpreter.accounted_time += self_time;			\
-      /* FIXME: Can context.prog be NULL? */				\
-      function = _fp_->context.prog->identifiers + _fp_->ident;		\
+      /* FIXME: Can context->prog be NULL? */				\
+      function = _fp_->context->prog->identifiers + _fp_->ident;		\
       /* function->total_time =						\
 	 Pike_fp->self_time_base + time_passed; */			\
       function->total_time += time_passed;				\
@@ -796,7 +797,7 @@ static INLINE void strict_apply_svalue(struct svalue *sval, INT32 args)
 
 #define apply_current(FUN, ARGS)			\
   apply_low(Pike_fp->current_object,			\
-	    (FUN) + Pike_fp->context.identifier_level,	\
+	    (FUN) + Pike_fp->context->identifier_level,	\
 	    (ARGS))
 
 PMOD_EXPORT extern int d_flag; /* really in main.c */

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.193 2008/01/26 22:34:17 mast Exp $
+|| $Id: builtin.cmod,v 1.194 2008/02/27 23:59:12 grubba Exp $
 */
 
 #include "global.h"
@@ -1608,7 +1608,7 @@ void low_backtrace(struct Pike_interpreter *i)
 
     bf = OBJ2_BACKTRACE_FRAME(o);
 
-    if ((bf->prog = f->context.prog)) {
+    if ((bf->prog = f->context->prog)) {
       add_ref(bf->prog);
       bf->pc = f->pc;
     }

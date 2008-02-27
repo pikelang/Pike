@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.281 2008/01/26 22:34:22 mast Exp $
+|| $Id: object.c,v 1.282 2008/02/27 23:59:15 grubba Exp $
 */
 
 #include "global.h"
@@ -158,59 +158,46 @@ PMOD_EXPORT struct object *low_clone(struct program *p)
   return o;
 }
 
-#define LOW_PUSH_FRAME(O)	do{		\
-  struct pike_frame *pike_frame=alloc_pike_frame();		\
-  pike_frame->next=Pike_fp;			\
-  pike_frame->current_object=O;			\
-  pike_frame->locals=0;				\
-  pike_frame->num_locals=0;				\
-  pike_frame->fun=-1;				\
-  pike_frame->pc=0;					\
-  pike_frame->context.prog=0;                        \
-  pike_frame->context.parent=0;                        \
-  Pike_fp= pike_frame
-
-
-#define LOW_PUSH_FRAME2(O)                      \
+#define LOW_PUSH_FRAME2(O, P)			\
   pike_frame=alloc_pike_frame();		\
   pike_frame->next=Pike_fp;			\
   pike_frame->current_object=O;			\
+  pike_frame->current_program=P;		\
   pike_frame->locals=0;				\
-  pike_frame->num_locals=0;				\
+  pike_frame->num_locals=0;			\
   pike_frame->fun=-1;				\
-  pike_frame->pc=0;					\
-  pike_frame->context.prog=0;                        \
-  pike_frame->context.parent=0;                        \
-  Pike_fp= pike_frame
+  pike_frame->pc=0;				\
+  pike_frame->context=NULL;                     \
+  Pike_fp = pike_frame
 
-#define PUSH_FRAME(O) \
-  LOW_PUSH_FRAME(O); \
-  add_ref(pike_frame->current_object)
+#define LOW_PUSH_FRAME(O, P)	do{		\
+    struct pike_frame *pike_frame;		\
+    LOW_PUSH_FRAME2(O, P)
 
-#define PUSH_FRAME2(O) \
-  do{LOW_PUSH_FRAME2(O); add_ref(pike_frame->current_object);}while(0)
+
+#define PUSH_FRAME(O, P)			\
+  LOW_PUSH_FRAME(O, P);				\
+  add_ref(pike_frame->current_object);		\
+  add_ref(pike_frame->current_program)
+
+#define PUSH_FRAME2(O, P) do{			\
+    LOW_PUSH_FRAME2(O, P);			\
+    add_ref(pike_frame->current_object);	\
+    add_ref(pike_frame->current_program);	\
+  }while(0)
 
 /* Note: there could be a problem with programs without functions */
-#define SET_FRAME_CONTEXT(X)						     \
-  if(pike_frame->context.prog) free_program(pike_frame->context.prog);	     \
-  pike_frame->context=(X);						     \
-  pike_frame->fun=pike_frame->context.identifier_level;                      \
-  add_ref(pike_frame->context.prog);					     \
-  pike_frame->current_storage=o->storage+pike_frame->context.storage_offset; \
-  pike_frame->context.parent=0;
-  
-
 #define LOW_SET_FRAME_CONTEXT(X)					     \
   pike_frame->context=(X);						     \
-  pike_frame->fun=pike_frame->context.identifier_level;			     \
-  pike_frame->current_storage=o->storage+pike_frame->context.storage_offset; \
-  pike_frame->context.parent=0;
+  pike_frame->fun=pike_frame->context->identifier_level;		\
+  pike_frame->current_storage=o->storage+pike_frame->context->storage_offset
 
+#define SET_FRAME_CONTEXT(X)						\
+  LOW_SET_FRAME_CONTEXT(X)
+  
 #define LOW_UNSET_FRAME_CONTEXT()		\
-  pike_frame->context.parent=0;			\
-  pike_frame->context.prog=0;			\
-  pike_frame->current_storage=0;		\
-  pike_frame->context.parent=0;
+  pike_frame->context = NULL;			\
+  pike_frame->current_storage = NULL
   
 
 #ifdef DEBUG
@@ -236,6 +223,7 @@ PMOD_EXPORT struct object *low_clone(struct program *p)
 
 #define LOW_POP_FRAME()				\
   add_ref(Pike_fp->current_object); \
+  add_ref(Pike_fp->current_program); \
   POP_FRAME();
 
 
@@ -287,10 +275,10 @@ PMOD_EXPORT void call_c_initializers(struct object *o)
     {
       if( !frame_pushed )
       {
-	PUSH_FRAME2(o);
+	PUSH_FRAME2(o, p);
 	frame_pushed = 1;
       }
-      SET_FRAME_CONTEXT(p->inherits[e]);
+      SET_FRAME_CONTEXT(p->inherits + e);
       prog->event_handler(PROG_EVENT_INIT);
     }
   }
@@ -314,10 +302,10 @@ void call_prog_event(struct object *o, int event)
     {
       if( !frame_pushed )
       {
-	PUSH_FRAME2(o);
+	PUSH_FRAME2(o, p);
 	frame_pushed = 1;
       }
-      SET_FRAME_CONTEXT(p->inherits[e]);
+      SET_FRAME_CONTEXT(p->inherits + e);
       prog->event_handler(event);
     }
   }
@@ -855,10 +843,10 @@ PMOD_EXPORT void destruct_object (struct object *o, enum object_destruct_reason 
     {
       if( !frame_pushed )
       {
-	PUSH_FRAME2(o);
+	PUSH_FRAME2(o, p);
 	frame_pushed = 1;
       }
-      SET_FRAME_CONTEXT(p->inherits[e]);
+      SET_FRAME_CONTEXT(p->inherits + e);
       prog->event_handler(PROG_EVENT_EXIT);
     }
 
@@ -1861,18 +1849,18 @@ PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o)
 	  if(PARENT_INFO(o)->parent)
 	    gc_mark_object_as_referenced(PARENT_INFO(o)->parent);
 
-	LOW_PUSH_FRAME(o);
+	LOW_PUSH_FRAME(o, p);
 
 	for(e=p->num_inherits-1; e>=0; e--)
 	{
 	  int q;
       
-	  LOW_SET_FRAME_CONTEXT(p->inherits[e]);
+	  LOW_SET_FRAME_CONTEXT(p->inherits + e);
 
-	  for(q=0;q<(int)pike_frame->context.prog->num_variable_index;q++)
+	  for(q=0;q<(int)pike_frame->context->prog->num_variable_index;q++)
 	  {
-	    int d=pike_frame->context.prog->variable_index[q];
-	    struct identifier *id = pike_frame->context.prog->identifiers + d;
+	    int d=pike_frame->context->prog->variable_index[q];
+	    struct identifier *id = pike_frame->context->prog->identifiers + d;
 	    int id_flags = id->identifier_flags;
 	    int rtt = id->run_time_type;
 
@@ -1899,8 +1887,8 @@ PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o)
 	    }
 	  }
 
-	  if(pike_frame->context.prog->event_handler)
-	    pike_frame->context.prog->event_handler(PROG_EVENT_GC_RECURSE);
+	  if(pike_frame->context->prog->event_handler)
+	    pike_frame->context->prog->event_handler(PROG_EVENT_GC_RECURSE);
 
 	  LOW_UNSET_FRAME_CONTEXT();
 	}
@@ -1926,18 +1914,18 @@ PMOD_EXPORT void real_gc_cycle_check_object(struct object *o, int weak)
       if (!o2) Pike_fatal("Object not on gc_internal_object list.\n");
 #endif
 
-      LOW_PUSH_FRAME(o);
+      LOW_PUSH_FRAME(o, p);
 
       for(e=p->num_inherits-1; e>=0; e--)
       {
 	int q;
       
-	LOW_SET_FRAME_CONTEXT(p->inherits[e]);
+	LOW_SET_FRAME_CONTEXT(p->inherits + e);
 
-	for(q=0;q<(int)pike_frame->context.prog->num_variable_index;q++)
+	for(q=0;q<(int)pike_frame->context->prog->num_variable_index;q++)
 	{
-	  int d=pike_frame->context.prog->variable_index[q];
-	  struct identifier *id = pike_frame->context.prog->identifiers + d;
+	  int d=pike_frame->context->prog->variable_index[q];
+	  struct identifier *id = pike_frame->context->prog->identifiers + d;
 	  int id_flags = id->identifier_flags;
 	  int rtt = id->run_time_type;
 	
@@ -1964,8 +1952,8 @@ PMOD_EXPORT void real_gc_cycle_check_object(struct object *o, int weak)
 	  }
 	}
 
-	if(pike_frame->context.prog->event_handler)
-	  pike_frame->context.prog->event_handler(PROG_EVENT_GC_RECURSE);
+	if(pike_frame->context->prog->event_handler)
+	  pike_frame->context->prog->event_handler(PROG_EVENT_GC_RECURSE);
 
 	LOW_UNSET_FRAME_CONTEXT();
       }
@@ -2000,17 +1988,17 @@ static INLINE void gc_check_object(struct object *o)
       if(p->flags & PROGRAM_USES_PARENT && PARENT_INFO(o)->parent)
 	debug_gc_check (PARENT_INFO(o)->parent, " as parent of an object");
 
-      LOW_PUSH_FRAME(o);
+      LOW_PUSH_FRAME(o, p);
     
       for(e=p->num_inherits-1; e>=0; e--)
       {
 	int q;
-	LOW_SET_FRAME_CONTEXT(p->inherits[e]);
+	LOW_SET_FRAME_CONTEXT(p->inherits + e);
 
-	for(q=0;q<(int)pike_frame->context.prog->num_variable_index;q++)
+	for(q=0;q<(int)pike_frame->context->prog->num_variable_index;q++)
 	{
-	  int d=pike_frame->context.prog->variable_index[q];
-	  struct identifier *id = pike_frame->context.prog->identifiers + d;
+	  int d=pike_frame->context->prog->variable_index[q];
+	  struct identifier *id = pike_frame->context->prog->identifiers + d;
 	  int id_flags = id->identifier_flags;
 	  int rtt = id->run_time_type;
 	
@@ -2037,8 +2025,8 @@ static INLINE void gc_check_object(struct object *o)
 	  }
 	}
       
-	if(pike_frame->context.prog->event_handler)
-	  pike_frame->context.prog->event_handler(PROG_EVENT_GC_CHECK);
+	if(pike_frame->context->prog->event_handler)
+	  pike_frame->context->prog->event_handler(PROG_EVENT_GC_CHECK);
 
 	LOW_UNSET_FRAME_CONTEXT();
       }

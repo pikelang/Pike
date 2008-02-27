@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.385 2008/01/26 22:34:20 mast Exp $
+|| $Id: interpret.c,v 1.386 2008/02/27 23:59:12 grubba Exp $
 */
 
 #include "global.h"
@@ -142,10 +142,8 @@ void gc_mark_stack_external (struct pike_frame *f,
   for (; f; f = f->next)
     GC_ENTER (f, T_PIKE_FRAME) {
       if (!debug_gc_check (f, " as frame on stack")) {
-	if(f->context.parent)
-	  gc_mark_external (f->context.parent, " in context.parent in frame on stack");
 	gc_mark_external (f->current_object, " in current_object in frame on stack");
-	gc_mark_external (f->context.prog, " in context.prog in frame on stack");
+	gc_mark_external (f->current_program, " in current_program in frame on stack");
 	if (f->locals) {		/* Check really needed? */
 	  if (f->flags & PIKE_FRAME_MALLOCED_LOCALS) {
 	    gc_mark_external_svalues(f->locals, f->num_locals,
@@ -872,7 +870,7 @@ static INLINE void low_debug_instr_prologue (PIKE_INSTR_T instr)
     struct pike_string *filep;
     INT32 linep;
 
-    filep = get_line(Pike_fp->pc,Pike_fp->context.prog,&linep);
+    filep = get_line(Pike_fp->pc,Pike_fp->context->prog,&linep);
     if (filep && !filep->size_shift) {
       file = filep->str;
       while((f=STRCHR(file,'/')))
@@ -881,7 +879,7 @@ static INLINE void low_debug_instr_prologue (PIKE_INSTR_T instr)
     fprintf(stderr,"- %s:%4ld:(%"PRINTPTRDIFFT"d): "
 	    "%-25s %4"PRINTPTRDIFFT"d %4"PRINTPTRDIFFT"d\n",
 	    file ? file : "-",(long)linep,
-	    Pike_fp->pc - Pike_fp->context.prog->program,
+	    Pike_fp->pc - Pike_fp->context->prog->program,
 	    get_opcode_name(instr),
 	    Pike_sp-Pike_interpreter.evaluator_stack,
 	    Pike_mark_sp-Pike_interpreter.mark_stack);
@@ -906,8 +904,8 @@ static INLINE void low_debug_instr_prologue (PIKE_INSTR_T instr)
     if(backlog[backlogp].program)
       free_program(backlog[backlogp].program);
 
-    backlog[backlogp].program=Pike_fp->context.prog;
-    add_ref(Pike_fp->context.prog);
+    backlog[backlogp].program=Pike_fp->context->prog;
+    add_ref(Pike_fp->context->prog);
     backlog[backlogp].instruction=instr;
     backlog[backlogp].pc = Pike_fp->pc;
     backlog[backlogp].stack = Pike_sp - Pike_interpreter.evaluator_stack;
@@ -970,9 +968,9 @@ static INLINE void low_debug_instr_prologue (PIKE_INSTR_T instr)
 
       case 2:
 	check_object_context(Pike_fp->current_object,
-			     Pike_fp->context.prog,
+			     Pike_fp->context->prog,
 			     Pike_fp->current_object->storage+
-			     Pike_fp->context.storage_offset);
+			     Pike_fp->context->storage_offset);
       case 1:
       case 0:
 	break;
@@ -1575,7 +1573,7 @@ static void do_trace_call(INT32 args, dynamic_buffer *old_buf)
   if(Pike_fp && Pike_fp->pc)
   {
     char *f;
-    filep = get_line(Pike_fp->pc,Pike_fp->context.prog,&linep);
+    filep = get_line(Pike_fp->pc,Pike_fp->context->prog,&linep);
     if (filep->size_shift)
       file = "...";
     else {
@@ -1660,7 +1658,7 @@ static void do_trace_return (int got_retval, dynamic_buffer *old_buf)
   if(Pike_fp && Pike_fp->pc)
   {
     char *f;
-    filep = get_line(Pike_fp->pc,Pike_fp->context.prog,&linep);
+    filep = get_line(Pike_fp->pc,Pike_fp->context->prog,&linep);
     if (filep->size_shift)
       file = "...";
     else {
@@ -1708,8 +1706,7 @@ static void do_trace_return (int got_retval, dynamic_buffer *old_buf)
 #undef EXIT_BLOCK
 #define EXIT_BLOCK(X) do {						\
   free_object(X->current_object);					\
-  if(X->context.prog) free_program(X->context.prog);			\
-  if(X->context.parent) free_object(X->context.parent);			\
+  if(X->current_program) free_program(X->current_program);		\
   if(X->scope) free_pike_scope(X->scope);				\
   DO_IF_SECURITY( if(X->current_creds) {				\
     free_object(X->current_creds);					\
@@ -1719,9 +1716,8 @@ static void do_trace_return (int got_retval, dynamic_buffer *old_buf)
   Pike_fatal("Pike frame is not supposed to have malloced locals here!\n"));	\
 									\
   DO_IF_DMALLOC(							\
-    X->context.prog=0;							\
-    X->context.parent=0;						\
-    X->context.name=0;							\
+    X->current_program=0;						\
+    X->context=0;							\
     X->scope=0;								\
     X->current_object=0;						\
     X->flags=0;								\
@@ -2111,7 +2107,7 @@ void unlink_previous_frame(void)
     cpu_time_t child_time =
       Pike_interpreter.accounted_time - current->children_base;
     struct identifier *function =
-      current->context.prog->identifiers + current->ident;
+      current->context->prog->identifiers + current->ident;
     function->total_time += total_time;
     total_time -= child_time;
     function->self_time += total_time;
@@ -2347,8 +2343,9 @@ PMOD_EXPORT int apply_low_safe_and_stupid(struct object *o, INT32 offset)
 
   /* FIXME: Is this up-to-date with mega_apply? */
   new_frame->next = Pike_fp;
-  new_frame->current_object = o;
-  new_frame->context=o->prog->inherits[0];
+  add_ref(new_frame->current_object = o);
+  add_ref(new_frame->current_program = o->prog);
+  new_frame->context = o->prog->inherits;
   new_frame->locals = Pike_sp;
   new_frame->expendible=new_frame->locals;
   new_frame->args = 0;
@@ -2357,7 +2354,6 @@ PMOD_EXPORT int apply_low_safe_and_stupid(struct object *o, INT32 offset)
   new_frame->fun = o->prog->num_identifier_references-1;
   new_frame->pc = 0;
   new_frame->current_storage=o->storage;
-  new_frame->context.parent=0;
 
 #ifdef PIKE_DEBUG      
   if (Pike_fp && (new_frame->locals < Pike_fp->locals)) {
@@ -2367,9 +2363,6 @@ PMOD_EXPORT int apply_low_safe_and_stupid(struct object *o, INT32 offset)
 #endif /* PIKE_DEBUG */
 
   Pike_fp = new_frame;
-
-  add_ref(new_frame->current_object);
-  add_ref(new_frame->context.prog);
 
   saved_jmpbuf = Pike_interpreter.catching_eval_jmpbuf;
   Pike_interpreter.catching_eval_jmpbuf = NULL;
@@ -2755,20 +2748,20 @@ void gdb_backtrace (
       char *file = NULL;
       INT32 line;
 
-      if (f->context.prog) {
+      if (f->context) {
 	if (f->pc)
-	  file = low_get_line_plain (f->pc, f->context.prog, &line, 0);
+	  file = low_get_line_plain (f->pc, f->context->prog, &line, 0);
 	else
-	  file = low_get_program_line_plain (f->context.prog, &line, 0);
+	  file = low_get_program_line_plain (f->context->prog, &line, 0);
       }
       if (file)
 	fprintf (stderr, "%s:%d: ", file, line);
       else
 	fputs ("unknown program: ", stderr);
 
-      if (f->current_object && f->current_object->prog) {
+      if (f->current_program) {
 	/* FIXME: Wide string identifiers. */
-	fputs (safe_idname_from_int(f->current_object->prog, f->fun), stderr);
+	fputs (safe_idname_from_int(f->current_program, f->fun), stderr);
 	fputc ('(', stderr);
       }
       else

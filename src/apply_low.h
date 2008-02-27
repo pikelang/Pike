@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: apply_low.h,v 1.32 2008/01/26 22:34:17 mast Exp $
+|| $Id: apply_low.h,v 1.33 2008/02/27 23:59:11 grubba Exp $
 */
 
     {
@@ -113,9 +113,10 @@
 
       new_frame->next = Pike_fp;
       new_frame->current_object = o;
-      new_frame->context = p->inherits[ ref->inherit_offset ];
+      new_frame->current_program = p;
+      new_frame->context = p->inherits + ref->inherit_offset;
 
-      function = new_frame->context.prog->identifiers + ref->identifier_offset;
+      function = new_frame->context->prog->identifiers + ref->identifier_offset;
       new_frame->fun = DO_NOT_WARN((unsigned INT16)fun);
 
       
@@ -128,16 +129,16 @@
 		  ref->id_flags);
 
 	  fprintf(stderr,"-- context: prog->id=%d inlev=%d idlev=%d pi=%d po=%d so=%ld name=%s\n",
-		  new_frame->context.prog->id,
-		  new_frame->context.inherit_level,
-		  new_frame->context.identifier_level,
-		  new_frame->context.parent_identifier,
-		  new_frame->context.parent_offset,
-		  DO_NOT_WARN((long)new_frame->context.storage_offset),
-		  new_frame->context.name ? new_frame->context.name->str  : "NULL");
+		  new_frame->context->prog->id,
+		  new_frame->context->inherit_level,
+		  new_frame->context->identifier_level,
+		  new_frame->context->parent_identifier,
+		  new_frame->context->parent_offset,
+		  DO_NOT_WARN((long)new_frame->context->storage_offset),
+		  new_frame->context->name ? new_frame->context->name->str  : "NULL");
 	  if(Pike_interpreter.trace_level>19)
 	  {
-	    describe(new_frame->context.prog);
+	    describe(new_frame->context->prog);
 	  }
 	}
 #endif
@@ -160,8 +161,7 @@
       new_frame->save_sp=save_sp;
       
       add_ref(new_frame->current_object);
-      add_ref(new_frame->context.prog);
-      if(new_frame->context.parent) add_ref(new_frame->context.parent);
+      add_ref(new_frame->current_program);
 #ifdef SCOPE
       if(new_frame->scope) add_ref(new_frame->scope);
 #endif
@@ -208,7 +208,7 @@
       case IDENTIFIER_C_FUNCTION:
 	debug_malloc_touch(Pike_fp);
 	Pike_fp->num_args=args;
-	new_frame->current_storage = o->storage+new_frame->context.storage_offset;
+	new_frame->current_storage = o->storage+new_frame->context->storage_offset;
 	new_frame->num_locals=args;
 	check_threads_etc();
 	(*function->func.c_fun)(args);
@@ -216,7 +216,7 @@
 	
       case IDENTIFIER_CONSTANT:
       {
-	struct svalue *s=&(Pike_fp->context.prog->
+	struct svalue *s=&(Pike_fp->context->prog->
 			   constants[function->func.offset].sval);
 	debug_malloc_touch(Pike_fp);
 	if(s->type == T_PROGRAM)
@@ -289,7 +289,7 @@
 #endif
 
 	debug_malloc_touch(Pike_fp);
-	pc=new_frame->context.prog->program + function->func.offset;
+	pc=new_frame->context->prog->program + function->func.offset;
 
 	/*
 	 * FIXME: The following stack stuff could probably

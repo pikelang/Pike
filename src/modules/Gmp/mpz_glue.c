@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.170 2008/01/26 22:34:25 mast Exp $
+|| $Id: mpz_glue.c,v 1.171 2008/02/27 23:59:24 grubba Exp $
 */
 
 #include "global.h"
@@ -57,7 +57,7 @@ long random(void)
 
 #undef THIS
 #define THIS ((MP_INT *)(fp->current_storage))
-#define THIS_PROGRAM (fp->context.prog)
+#define THIS_PROGRAM (fp->context->prog)
 
 struct program *mpzmod_program = NULL;
 #ifdef AUTO_BIGNUM

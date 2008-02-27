@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.652 2008/02/19 15:35:25 grubba Exp $
+|| $Id: program.c,v 1.653 2008/02/27 23:59:23 grubba Exp $
 */
 
 #include "global.h"
@@ -1786,6 +1786,7 @@ struct program *id_to_program_cache[ID_TO_PROGRAM_CACHE_SIZE];
 
 struct program *id_to_program(INT32 id)
 {
+  struct program_state *state;
   struct program *p;
   INT32 h;
   if(!id) return 0;
@@ -1807,6 +1808,13 @@ struct program *id_to_program(INT32 id)
       id_to_program_cache[h]=p;
       /* fprintf(stderr, "found: %p\n", p); */
       return p;
+    }
+  }
+
+  /* Check if it is a program being compiled right now. */
+  for (state = Pike_compiler; state; state = state->previous) {
+    if (state->new_program && state->new_program->id == id) {
+      return state->new_program;
     }
   }
 
@@ -3630,7 +3638,7 @@ static void compat_event_handler(int e)
 {
   oldhandlertype handler;
   debug_malloc_touch(Pike_fp->current_object);
-  handler=((oldhandlertype *)Pike_fp->context.prog->program)[e];
+  handler=((oldhandlertype *)Pike_fp->context->prog->program)[e];
   if(handler) handler(Pike_fp->current_object);
   debug_malloc_touch(Pike_fp->current_object);
 }
@@ -7748,10 +7756,8 @@ static void gc_check_frame(struct pike_frame *f)
   {
     if(f->current_object)
       debug_gc_check (f->current_object, " as current_object in trampoline frame");
-    if(f->context.prog)
-      debug_gc_check (f->context.prog, " as context.prog in trampoline frame");
-    if(f->context.parent)
-      debug_gc_check (f->context.parent, " as context.parent in trampoline frame");
+    if(f->current_program)
+      debug_gc_check (f->current_program, " as current_program in trampoline frame");
     debug_gc_check_svalues (f->locals, f->num_locals, " in locals of trampoline frame");
     if(f->scope && !debug_gc_check (f->scope, " as scope frame of trampoline frame"))
       gc_check_frame(f->scope);
@@ -7768,8 +7774,7 @@ static void gc_check_trampoline(struct object *o)
 static void gc_recurse_frame(struct pike_frame *f)
 {
   if(f->current_object) gc_recurse_object(f->current_object);
-  if(f->context.prog)   gc_recurse_program(f->context.prog);
-  if(f->context.parent) gc_recurse_object(f->context.parent);
+  if(f->current_program) gc_recurse_program(f->current_program);
   if(f->flags & PIKE_FRAME_MALLOCED_LOCALS)
     gc_recurse_svalues(f->locals,f->num_locals);
   if(f->scope)          gc_recurse_frame(f->scope);
