@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ia32.c,v 1.46 2006/09/08 17:20:46 grubba Exp $
+|| $Id: ia32.c,v 1.47 2008/02/28 10:35:59 grubba Exp $
 */
 
 /*
@@ -526,7 +526,8 @@ static void ia32_push_global (INT32 arg)
   enum ia32_reg tmp_reg = alloc_reg ((1 << fp_reg) | (1 << sp_reg));
   load_fp_reg ((1 << tmp_reg) | (1 << sp_reg));
 
-  MOV_RELADDR16_TO_REG (OFFSETOF (pike_frame, context.identifier_level), fp_reg, tmp_reg);
+  MOV_RELADDR_TO_REG (OFFSETOF (pike_frame, context), fp_reg, tmp_reg);
+  MOV_RELADDR16_TO_REG (OFFSETOF (inherit, identifier_level), tmp_reg, tmp_reg);
   ADD_VAL_TO_REG (arg, tmp_reg);
   MOV_REG_TO_RELSTACK (tmp_reg, 8);
 
@@ -578,10 +579,11 @@ static void ia32_push_string (INT32 x, int subtype)
   enum ia32_reg tmp_reg = alloc_reg ((1 << fp_reg) | (1 << sp_reg));
   load_fp_reg ((1 << tmp_reg) | (1 << sp_reg));
 
-  MOV_RELADDR_TO_REG (OFFSETOF (pike_frame, context.prog), fp_reg, tmp_reg);
+  MOV_RELADDR_TO_REG (OFFSETOF (pike_frame, context), fp_reg, tmp_reg);
+  MOV_RELADDR_TO_REG (OFFSETOF (inherit, prog), tmp_reg, tmp_reg);
   MOV_RELADDR_TO_REG (OFFSETOF (program, strings), tmp_reg, tmp_reg);
   MOV_RELADDR_TO_REG (x * sizeof (struct pike_string *), tmp_reg, tmp_reg);
-  /* tmp_reg is now Pike_fp->context.prog->strings[x] */
+  /* tmp_reg is now Pike_fp->context->prog->strings[x] */
 
   load_sp_reg (1 << tmp_reg);
 

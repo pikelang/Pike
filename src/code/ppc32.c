@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ppc32.c,v 1.41 2006/09/08 17:20:46 grubba Exp $
+|| $Id: ppc32.c,v 1.42 2008/02/28 10:35:59 grubba Exp $
 */
 
 /*
@@ -194,8 +194,10 @@ void ppc32_push_constant(INT32 arg)
   }
 
   LOAD_FP_REG();
-  /* lwz r3,context.prog(pike_fp) */
-  LWZ(PPC_REG_ARG1, PPC_REG_PIKE_FP, OFFSETOF(pike_frame, context.prog));
+  /* lwz r3,context(pike_fp) */
+  LWZ(PPC_REG_ARG1, PPC_REG_PIKE_FP, OFFSETOF(pike_frame, context));
+  /* lwz r3,prog(r3) */
+  LWZ(PPC_REG_ARG1, PPC_REG_ARG1, OFFSETOF(inherit, prog));
   /* lwz r3,constants(r3) */
   LWZ(PPC_REG_ARG1, PPC_REG_ARG1, OFFSETOF(program, constants));
 
@@ -252,12 +254,13 @@ void ppc32_local_lvalue(INT32 arg)
 void ppc32_push_global(INT32 arg)
 {
   LOAD_FP_REG();
-  /* lha r5,context.identifier_level(pike_fp) */
-  LHA(PPC_REG_ARG3, PPC_REG_PIKE_FP,
-      OFFSETOF(pike_frame, context.identifier_level));
+  /* lwz r5,context(pike_fp) */
+  LWZ(PPC_REG_ARG3, PPC_REG_PIKE_FP, OFFSETOF(pike_frame, context));
   /* lwz r4,current_object(pike_fp) */
   LWZ(PPC_REG_ARG2, PPC_REG_PIKE_FP, 
       OFFSETOF(pike_frame, current_object));
+  /* lha r5,identifier_level(r5) */
+  LHA(PPC_REG_ARG3, PPC_REG_ARG3, OFFSETOF(inherit, identifier_level));
   if(arg > 32767) {
     /* addis r5,r5,%hi(arg) */
     ADDIS(PPC_REG_ARG3, PPC_REG_ARG3, (arg+32768)>>16);
@@ -313,8 +316,10 @@ void ppc32_push_string(INT32 arg, int st)
   LOAD_FP_REG();
   LOAD_SP_REG();
   
-  /* lwz r11,context.prog(pike_fp) */
-  LWZ(11, PPC_REG_PIKE_FP, OFFSETOF(pike_frame, context.prog));
+  /* lwz r11,context(pike_fp) */
+  LWZ(11, PPC_REG_PIKE_FP, OFFSETOF(pike_frame, context));
+  /* lwz r11,prog(r11) */
+  LWZ(11, 11, OFFSETOF(inherit, prog));
   /* lwz r11,strings(r11) */
   LWZ(11, 11, OFFSETOF(program, strings));
 
