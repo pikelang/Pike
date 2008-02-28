@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.411 2008/02/07 01:47:15 mast Exp $
+// $Id: master.pike.in,v 1.412 2008/02/28 18:18:28 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -2475,14 +2475,42 @@ class CompatResolver
     }
 
     if (current_file && !stringp(current_file)) {
-      error( "resolv(%O, %O, %O): current_file is not a string!\n",
-	     identifier, current_file, current_handler,
-	     backtrace() );
+      error("resolv(%O, %O, %O): current_file is not a string!\n",
+	    identifier, current_file, current_handler);
     }
 
-    array(string) tmp=identifier/".";
-    mixed ret = resolv_base(tmp[0], current_file, current_handler);
-    foreach(tmp[1..],string index) {
+    array(string) tmp = identifier/"::";
+    mixed ret;
+    if (sizeof(tmp) > 1) {
+      string scope = tmp[0];
+      tmp = tmp[1]/":";
+      switch(scope) {
+      case "predef":
+	ret = all_constants();
+	break;
+      default:
+	if (sscanf(scope, "%d.%d%*s", int major, int minor) == 3) {
+	  // Versioned identifier.
+	  ret = get_compilation_handler(major, minor);
+	  if (ret) {
+	    if (tmp[0] == "__default") {
+	      tmp = tmp[1..];
+	      ret = ret->resolv("__default");
+	    } else {
+	      ret = ret->get_default_module();
+	    }
+	    break;
+	  }
+	}
+	error("resolv(%O, %O, %O): Unsupported scope: %O!\n",
+	      identifier, current_file, current_handler, scope);
+      }
+    } else {
+      tmp = identifier/".";
+      ret = resolv_base(tmp[0], current_file, current_handler);
+      tmp = tmp[1..];
+    }
+    foreach(tmp,string index) {
       resolv_debug("indexing %O with %O...\n",
 		   ret, index);
       resolv_debug("indices(Gmp): %O\n", indices(ret));
@@ -4100,7 +4128,8 @@ class Encoder
   static mapping(mixed:string) rev_static_modules = ([]);
 
   static array find_index (object|program parent, mixed child,
-			   array(object) module_object)
+			   array(object) module_object,
+			   int|void try)
   {
     array id;
 
@@ -4130,12 +4159,21 @@ class Encoder
 	    break find_id;
 	  }
 
+	if (try) {
+	  ENC_MSG("Cannot find %O in %O.\n", child, parent);
+	  return UNDEFINED;
+	}
 	error ("Cannot find %O in %O.\n", child, parent);
       }
     }
 
-    if (!stringp (id[0]))
+    if (!stringp (id[0])) {
+      if (try) {
+	ENC_MSG("Got nonstring index %O for %O in %O.\n", id[0], child, parent);
+	return UNDEFINED;
+      }
       error ("Got nonstring index %O for %O in %O.\n", id[0], child, parent);
+    }
 
     return id;
   }
@@ -4148,7 +4186,8 @@ class Encoder
   compare: {
       if (resolved == what) {
 	ENC_MSG ("  compare_resolved: %O is %O\n", what, resolved);
-	break compare;
+	/* No need for anything advanced. resolv() does the job. */
+	return "r" + name;
       }
 
       if (objectp (resolved)) {
@@ -4271,6 +4310,7 @@ class Encoder
 	if (string path = programs_reverse_lookup (prog)) {
 	  ENC_MSG ("  found path in programs: %O\n", path);
 	  string name = program_path_to_name (path);
+	  ENC_MSG ("  program name: %O\n", name);
 	  if (string|array ref = compare_resolved (name,
 						   what->_module_value || what,
 						   resolv (name), module_object))
@@ -4322,9 +4362,11 @@ class Encoder
 	    return UNDEFINED;
 	  }
 	  else {
+	    ENC_MSG("  parent has name: %O\n", parent_name);
 	    if (objectp (parent_object[0])) parent = parent_object[0];
 	    array id = find_index (parent, what, module_object);
-	    if (equal (id, ({"_module_value"})))
+	    if ((equal(id, ({"_module_value"}))) ||
+		(equal(id, ({ "__default" })) && has_suffix(parent_name, "::")))
 	      ENC_RETURN (parent_name);
 	    else
 	      ENC_RETURN ((arrayp (parent_name) ? parent_name : ({parent_name})) + id);
@@ -4370,8 +4412,10 @@ class Encoder
 	}
 
 	else {
+	  ENC_MSG("  parent has name: %O\n", parent_name);
 	  if (objectp (parent_object[0])) parent = parent_object[0];
-	  if (parent["_module_value"] == what && objects_reverse_lookup (parent)) {
+	  if (parent["_module_value"] == what &&
+	      objects_reverse_lookup (parent)) {
 	    ENC_MSG ("  found as _module_value of parent module\n");
 	    ENC_RETURN (parent_name);
 	  }
@@ -4381,8 +4425,21 @@ class Encoder
 	      ENC_MSG ("  found function name in parent: %O\n", id);
 	      id = ({id});
 	    }
-	    else
+	    else {
+	      if (stringp(parent_name) &&
+		  has_suffix(parent_name, "::__default") &&
+		  parent->all_constants) {
+		if (id = find_index(parent->all_constants(), what,
+				    module_object, 1)) {
+		  ENC_MSG("  found in all_constants() for %O: %O\n",
+			  parent, id);
+		  ENC_RETURN(({parent_name[..sizeof(parent_name)-
+					   (1+sizeof("__default"))] + id[0]}) +
+			     id[1..]);
+		}
+	      }
 	      id = find_index (parent, what, module_object);
+	    }
 	    if (equal (id, ({"_module_value"})))
 	      ENC_RETURN (parent_name);
 	    else
