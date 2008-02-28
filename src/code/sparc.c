@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sparc.c,v 1.50 2008/02/28 12:02:21 grubba Exp $
+|| $Id: sparc.c,v 1.51 2008/02/28 15:41:42 grubba Exp $
 */
 
 /*
@@ -518,7 +518,7 @@ static void sparc_push_lfun(unsigned int no)
   /* add %i0, 1, %i0 */
   SPARC_ADD(SPARC_REG_I0, SPARC_REG_I0, 1, 1);
   /* lduw [ %pike_fp, %offset(pike_frame, context) ], %i1 */
-  PIKE_LDPTR(SPARC_REG_PIKE_OBJ, SPARC_REG_I1,
+  PIKE_LDPTR(SPARC_REG_I1, SPARC_REG_PIKE_FP,
 	     OFFSETOF(pike_frame, context), 1);
   /* stw %i0, [ %pike_obj, %offset(object, refs) ] */
   SPARC_STW(SPARC_REG_I0, SPARC_REG_PIKE_OBJ,
