@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.261 2008/02/26 21:50:36 grubba Exp $
+|| $Id: encode.c,v 1.262 2008/02/29 14:27:09 grubba Exp $
 */
 
 #include "global.h"
@@ -2904,8 +2904,13 @@ static void decode_value2(struct decode_data *data)
 	  break;
       }
 
-      if(Pike_sp[-1].type != T_OBJECT && data->pickyness)
-	decode_error(NULL, Pike_sp - 1, "Failed to decode object. Got: ");
+      if((Pike_sp[-1].type != T_OBJECT) && data->pickyness) {
+	if (num != 2) {
+	  decode_error(NULL, Pike_sp - 1, "Failed to decode object. Got: ");
+	} else if (Pike_sp[-1].type != PIKE_T_INT) {
+	  decode_error(NULL, Pike_sp - 1, "Failed to decode bignum. Got: ");
+	}
+      }
 
       break;
     }
