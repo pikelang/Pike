@@ -1,5 +1,5 @@
 START_MARKER
-// $Id: testsuite.in,v 1.8 2007/06/19 18:51:11 mast Exp $
+// $Id: testsuite.in,v 1.9 2008/03/02 18:21:56 marcus Exp $
 
 cond( [[ master()->resolv("Java")->jvm ]],
 [[
@@ -10,34 +10,99 @@ cond( [[ master()->resolv("Java")->jvm ]],
 	->toLowerCase()]],"foo")
   test_eq([[(string)Java.pkg.java.lang.Character(4711)]],"\11147")
   test_do(Stdio.write_file("conftest.class", MIME.decode_base64(#"
-yv66vgADAC0ANQcAJQcAKQcAKgcAKwcALAoAAwAQCgAFABEKAAEAEgoABQATCgAFABQJAAEAFQkA
-AQAWCQABABcJAAEAGAkAAQAZDAAdABoMAB0AHAwAKAAbDAAtABoMAC8AGgwAMAAeDAAxACAMADIA
-IwwAMwAhDAA0ACABAAMoKVYBAAcoQkRTSSlEAQAXKExqYXZhL2xhbmcvUnVubmFibGU7KVYBAAY8
-aW5pdD4BAAFCAQAEQ29kZQEAAUQBAAFJAQAPTGluZU51bWJlclRhYmxlAQABUwEAClNvdXJjZUZp
-bGUBAAhjb25mdGVzdAEADWNvbmZ0ZXN0LmphdmEBAAVlbnRyeQEABGZ1bmMBAB5qYXZhL2xhbmcv
-SW50ZXJydXB0ZWRFeGNlcHRpb24BABBqYXZhL2xhbmcvT2JqZWN0AQASamF2YS9sYW5nL1J1bm5h
-YmxlAQAQamF2YS9sYW5nL1RocmVhZAEABGpvaW4BAANydW4BAAVzdGFydAEABXZhcl9hAQAFdmFy
-X2IBAAV2YXJfYwEABXZhcl9kAQAHdmFyX3JlcwAhAAEAAwABAAQABQACADAAHgAAAAIAMQAgAAAA
-AgAyACMAAAACADMAIQAAAAIANAAgAAAABAABAB0AGgABAB8AAAAdAAEAAQAAAAUqtwAGsQAAAAEA
-IgAAAAYAAQAAAAEAAQAnABsAAQAfAAAAewADAAcAAAAzKhu1AAsqKLUADCoVBLUADSoVBbUADrsA
-BVkqtwAHOgYZBrYAChkGtgAJKrQAD69Xp//1AAEAJQAvAC8AAgABACIAAAAuAAsAAAAJAAUACgAK
-AAsAEAAMABYADQAgAA4AJQAQACUAEQAqABIALwATADAAEAEMACgAGwAAAAEALgAaAAEAHwAAADQA
-BgABAAAAGCoqtAALKrQADCq0AA0qtAAOuAAItQAPsQAAAAEAIgAAAAoAAgAAABgAFwAWAAEAJAAA
-AAIAJg==
+yv66vgAAAC4AYAcAAgEACGNvbmZ0ZXN0BwAEAQAQamF2YS9sYW5nL09iamVjdAcABgEAEmphdmEv
+bGFuZy9SdW5uYWJsZQEABXZhcl9hAQABQgEABXZhcl9iAQABRAEABXZhcl9jAQABUwEABXZhcl9k
+AQABSQEAB3Zhcl9yZXMBAAJbRAEABjxpbml0PgEAAygpVgEABENvZGUKAAMAFQwAEQASAQAPTGlu
+ZU51bWJlclRhYmxlAQAEZnVuYwEAByhCRFNJKUQBAAJyegEAAygpWgEAAnJiAQADKClCAQACcmMB
+AAMoKUMBAAJycwEAAygpUwEAAnJpAQADKClJAQACcmoBAAMoKUoBAAJyZgEAAygpRgEAAnJkAQAD
+KClEAQACcmwBABQoKUxqYXZhL2xhbmcvU3RyaW5nOwEABWVudHJ5AQAIKEJEU0kpW0QJAAEALgwA
+BwAICQABADAMAAkACgkAAQAyDAALAAwJAAEANAwADQAOCQABADYMAA8AEAcAOAEAEGphdmEvbGFu
+Zy9UaHJlYWQKADcAOgwAEQA7AQAXKExqYXZhL2xhbmcvUnVubmFibGU7KVYKADcAPQwAPgASAQAF
+c3RhcnQKADcAQAwAQQASAQAEam9pbgcAQwEAHmphdmEvbGFuZy9JbnRlcnJ1cHRlZEV4Y2VwdGlv
+bgEAA3J1bgoAAQBGDAAZABoKAAEASAwAGwAcCgABAEoMAB0AHgoAAQBMDAAfACAKAAEATgwAIQAi
+CgABAFAMACMAJAoAAQBSDAAlACYKAAEAVAwAJwAoCgABAFYMACkAKgoAWABaBwBZAQAQamF2YS9s
+YW5nL1N0cmluZwwAWwAiAQAGbGVuZ3RoCgABAF0MABcAGAEAClNvdXJjZUZpbGUBAA1jb25mdGVz
+dC5qYXZhACEAAQADAAEABQAFAAIABwAIAAAAAgAJAAoAAAACAAsADAAAAAIADQAOAAAAAgAPABAA
+AAANAAEAEQASAAEAEwAAAB0AAQABAAAABSq3ABSxAAAAAQAWAAAABgABAAAAAQEMABcAGAAAAQwA
+GQAaAAABDAAbABwAAAEMAB0AHgAAAQwAHwAgAAABDAAhACIAAAEMACMAJAAAAQwAJQAmAAABDAAn
+ACgAAAEMACkAKgAAAAEAKwAsAAEAEwAAAH8AAwAHAAAAOyobtQAtKii1AC8qFQS1ADEqFQW1ADMq
+EAq8B7UANbsAN1kqtwA5OgYZBrYAPBkGtgA/KrQANbBXp//1AAEALQA2ADcAQgABABYAAAAqAAoA
+AAAVAAUAFgAKABcAEAAYABYAGQAeABoAKAAbAC0AHQA3AB4AOAAcAAEARAASAAEAEwAAAMIABwAB
+AAAAgiq0ADUDuABFmQAHBKcABAOHUiq0ADUEuABHh1IqtAA1BbgASYdSKrQANQa4AEuHUiq0ADUH
+uABNh1IqtAA1CLgAT4pSKrQANRAGuABRjVIqtAA1EAe4AFNSKrQANRAIuABVtgBXh1IqtAA1EAkq
+tAAtKrQALyq0ADEqtAAzuABcUrEAAAABABYAAAAuAAsAAAAjABIAJAAcACUAJgAmADAAJwA6ACgA
+RAApAE8AKgBZACsAZwAsAIEALQABAF4AAAACAF8=
 ")))
-  test_any([[
+  test_any_equal([[
 #if constant(Java.NATIVE_METHODS)
+    int rz() { return 1; }; int rb() { return 2; }; int rc() { return 3; };
+    int rs() { return 4; }; int ri() { return 5; }; int rj() { return 6; };
+    float rf() { return 7.0; }; float rd() { return 8.0; };
+    string rl() { return "Hello, world!"; };
     object u = Java.pkg.java.io.File->_constructor("(Ljava/lang/String;)")
 	(Java.pkg.java.lang.System->getProperty("user.dir"))->toURL();
     object t = Java.pkg.java.net.URLClassLoader(u->_obj->get_object_class()
 	->new_array(1,u->_obj))->loadClass("conftest");
-    object n = t->_obj->register_natives(({({"func", "(BDSI)D", `+})}));
-    return t->newInstance()->entry(17, 42.5, 99, 777);
+    object n = t->_obj->register_natives(({({"func", "(BDSI)D", `+}),
+	({"rz", "()Z", rz}),({"rb", "()B", rb}),({"rc", "()C", rc}),
+	({"rs", "()S", rs}),({"ri", "()I", ri}),({"rj", "()J", rj}),
+	({"rf", "()F", rf}),({"rd", "()D", rd}),
+	({"rl", "()Ljava/lang/String;", rl})}));
+    return values(t->newInstance()->entry(17, 42.5, 99, 777));
 #else
     write("Warning: Native methods not supported.\n");
-    return 935.5;
+    return ({1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,13.0,935.5});
 #endif
-  ]],935.5)
+  ]],({1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,13.0,935.5}))
   test_do(rm("conftest.class"))
 ]])
 END_MARKER
+
+conftest.java:
+
+public class conftest implements Runnable {
+    private byte var_a;
+    private double var_b;
+    private short var_c;
+    private int var_d;
+    private double[] var_res;
+
+    protected static native double func(byte a, double b, short c, int d);
+    protected native static boolean rz();
+    protected native static byte rb();
+    protected native static char rc();
+    protected native static short rs();
+    protected native static int ri();
+    protected native static long rj();
+    protected native static float rf();
+    protected native static double rd();
+    protected native static String rl();
+
+    public double[] entry(byte a, double b, short c, int d)
+    {
+	var_a = a;
+	var_b = b;
+	var_c = c;
+	var_d = d;
+	var_res = new double[10];
+	Thread t = new Thread(this);
+	t.start();
+	for(;;)
+	    try { t.join(); return var_res; }
+	    catch(InterruptedException e) {}
+    }
+
+    public void run()
+    {
+	var_res[0] = (rz()? 1:0);
+	var_res[1] = rb();
+	var_res[2] = rc();
+	var_res[3] = rs();
+	var_res[4] = ri();
+	var_res[5] = rj();
+	var_res[6] = rf();
+	var_res[7] = rd();
+	var_res[8] = rl().length();
+	var_res[9] = func(var_a, var_b, var_c, var_d);
+    }
+}
