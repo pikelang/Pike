@@ -1,0 +1,2 @@
+libffi is the Foreign Function Interface library.  It can be downloaded
+from http://sources.redhat.com/libffi/.

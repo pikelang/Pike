@@ -367,11 +367,13 @@ if test "x$with_java" = xyes; then
 	LINKER_OPTIONS="${LINKER_OPTIONS} -lthread"
       ], [])
 
+      pike_java_ffi=no
       AC_CHECK_LIB(ffi, ffi_prep_closure, [
 	if test "$ac_cv_header_ffi_h" = yes; then
 	  LIBS="-lffi $LIBS"
 	  JAVA_LIBS="-lffi ${JAVA_LIBS}"
 	  AC_DEFINE(HAVE_FFI)
+	  pike_java_ffi=yes
 	else
 	  :
 	fi
@@ -470,10 +472,60 @@ if test "x$with_java" = xyes; then
       CPPFLAGS="$OLD_CPPFLAGS"
     ])
     AC_MSG_RESULT($pike_cv_java_working)
+
+    AC_MSG_CHECKING(for known machine language)
+    AC_CACHE_VAL(pike_cv_java_cpu, [
+      case $pike_cv_java_arch  in
+        sparc) pike_cv_java_cpu=sparc;;
+        i386|x86) pike_cv_java_cpu=x86;;
+        x86_64) pike_cv_java_cpu=x86_64;;
+        powerpc|ppc) pike_cv_java_cpu=ppc;;
+        alpha) pike_cv_java_cpu=alpha;;
+        *) pike_cv_java_cpu=no;;
+      esac
+    ])
+    AC_MSG_RESULT($pike_cv_java_cpu)
+
+    case $pike_cv_java_cpu in
+      sparc) AC_DEFINE(HAVE_SPARC_CPU);;
+      x86) AC_DEFINE(HAVE_X86_CPU);;
+      x86_64) AC_DEFINE(HAVE_X86_64_CPU);;
+      ppc) AC_DEFINE(HAVE_PPC_CPU);;
+      alpha) AC_DEFINE(HAVE_ALPHA_CPU);;
+    esac
+
+    if test "x$pike_cv_sys_os" = xWindows_NT ; then
+      # We'll do LoadLibrary ourselves instead of relying on jvm.lib to
+      # do it for us.  That way we'll avoid nasty popup dialogs...
+      JAVA_LIBS="-lkernel32 -lws2_32 -ladvapi32"
+    else
+      :
+    fi
+
     PIKE_FEATURE(Java,[yes ($JAVA_LIBS)])
+    if test "$pike_java_ffi" = no; then
+      if test "$pike_cv_java_cpu" = no -o "$pike_cv_java_cpu" = x86_64; then
+        PIKE_FEATURE(Java,[yes ($JAVA_LIBS) (no native methods)])
+      else
+        :
+      fi
+    else
+      :
+    fi
+
     if test "$pike_cv_java_working" = no; then
       pike_cv_java=no;
       PIKE_FEATURE(Java,[no (JVM does not work)])
+    else
+      if test "$pike_java_ffi" = no; then
+	dnl Try to enable the bundled FFI
+	PIKE_ENABLE_BUNDLE(libffi, [
+	  ac_cv_header_ffi_h
+	  ac_cv_lib_ffi_ffi_prep_closure
+	  ac_cv_type_ffi_arg
+	  ac_cv_type_ffi_sarg
+	])
+      fi
     fi
   else
     :
@@ -491,35 +543,7 @@ if test "x$with_java" = xyes; then
     if test "x$pike_cv_java_java_home" = xno; then :; else
       AC_DEFINE_UNQUOTED(JAVA_HOME, "${pike_cv_java_java_home}")
     fi
-    if test "x$pike_cv_sys_os" = xWindows_NT ; then
-      # We'll do LoadLibrary ourselves instead of relying on jvm.lib to
-      # do it for us.  That way we'll avoid nasty popup dialogs...
-      JAVA_LIBS=""
-    else
-      :
-    fi
   fi
-
-  AC_MSG_CHECKING(for known machine language)
-  AC_CACHE_VAL(pike_cv_java_cpu, [
-    case $pike_cv_java_arch  in
-      sparc) pike_cv_java_cpu=sparc;;
-      i386|x86) pike_cv_java_cpu=x86;;
-      x86_64) pike_cv_java_cpu=x86_64;;
-      powerpc|ppc) pike_cv_java_cpu=ppc;;
-      alpha) pike_cv_java_cpu=alpha;;
-      *) pike_cv_java_cpu=no;;
-    esac
-  ])
-  AC_MSG_RESULT($pike_cv_java_cpu)
-
-  case $pike_cv_java_cpu in
-    sparc) AC_DEFINE(HAVE_SPARC_CPU);;
-    x86) AC_DEFINE(HAVE_X86_CPU);;
-    x86_64) AC_DEFINE(HAVE_X86_64_CPU);;
-    ppc) AC_DEFINE(HAVE_PPC_CPU);;
-    alpha) AC_DEFINE(HAVE_ALPHA_CPU);;
-  esac
 
   if test "x$JAVA_LIBPATH" = x; then :; else
     AC_DEFINE_UNQUOTED(JAVA_LIBPATH, "${JAVA_LIBPATH}")
@@ -529,12 +553,6 @@ if test "x$with_java" = xyes; then
 else
   :
 fi
-
-if test x"${pike_cv_java}${pike_cv_sys_os}" = xyesWindows_NT ; then
-  JAVA_LIBS="-lkernel32 -lws2_32 -ladvapi32 $JAVA_LIBS"
-  PIKE_FEATURE(Java,[yes ($JAVA_LIBS)])
-fi
-
 
 LIBPATH="$OLD_LIBPATH"
 
