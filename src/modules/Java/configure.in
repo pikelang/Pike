@@ -519,12 +519,12 @@ if test "x$with_java" = xyes; then
     else
       if test "$pike_java_ffi" = no; then
 	dnl Try to enable the bundled FFI
-	PIKE_ENABLE_BUNDLE(libffi, [
+	PIKE_LOW_ENABLE_BUNDLE(libffi, [
 	  ac_cv_header_ffi_h
 	  ac_cv_lib_ffi_ffi_prep_closure
 	  ac_cv_type_ffi_arg
 	  ac_cv_type_ffi_sarg
-	])
+        ])
       fi
     fi
   else
