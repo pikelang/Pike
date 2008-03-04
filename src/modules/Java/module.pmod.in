@@ -201,8 +201,13 @@ static class jmethod {
       case 'L':
 	if((!objectp(args[ap])) && (!stringp(args[ap])))
 	  return 0;
+	int sp0=sp;
 	while(sig[sp++]!=';')
 	  ;
+	if(stringp(args[ap]) &&
+	   !(<"java/lang/String","java/lang/Object","java/lang/Comparable",
+	      "java/lang/CharSequence","java/io/Serializable" >)[sig[sp0..sp-2]])
+	  return 0;
 	break;
       default:
 	return 0;
@@ -224,7 +229,8 @@ static class jmethod {
     if(!sizeof(applicable))
       error("No method signatures are applicable.  Resolution incomplete.\n");
 
-    error("Multiple method signatures apply.  Resolution incomplete.\n");
+    error("Multiple method signatures apply.  Resolution incomplete.\n"
+	  "Applicable signatures:\n%{  %s\n%}", applicable/1);
   }
 
   mixed `()(mixed ... args)
