@@ -502,29 +502,33 @@ if test "x$with_java" = xyes; then
       :
     fi
 
-    PIKE_FEATURE(Java,[yes ($JAVA_LIBS)])
-    if test "$pike_java_ffi" = no; then
-      if test "$pike_cv_java_cpu" = no -o "$pike_cv_java_cpu" = x86_64; then
-        PIKE_FEATURE(Java,[yes ($JAVA_LIBS) (no native methods)])
-      else
-        :
-      fi
-    else
-      :
-    fi
-
     if test "$pike_cv_java_working" = no; then
       pike_cv_java=no;
       PIKE_FEATURE(Java,[no (JVM does not work)])
     else
+      PIKE_FEATURE(Java,[yes ($JAVA_LIBS)])
+
       if test "$pike_java_ffi" = no; then
 	dnl Try to enable the bundled FFI
+	pike_java_ffi=yes
 	PIKE_LOW_ENABLE_BUNDLE(libffi, [
 	  ac_cv_header_ffi_h
 	  ac_cv_lib_ffi_ffi_prep_closure
 	  ac_cv_type_ffi_arg
 	  ac_cv_type_ffi_sarg
+        ], [
+	  pike_java_ffi=no
         ])
+      fi
+
+      if test "$pike_java_ffi" = no; then
+        if test "$pike_cv_java_cpu" = no -o "$pike_cv_java_cpu" = x86_64; then
+          PIKE_FEATURE(Java,[yes ($JAVA_LIBS) (no native methods)])
+        else
+          :
+        fi
+      else
+        :
       fi
     fi
   else
