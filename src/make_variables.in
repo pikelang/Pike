@@ -1,6 +1,6 @@
 # -*- Makefile -*-
 #
-# $Id: make_variables.in,v 1.29 2008/01/11 00:22:27 grubba Exp $
+# $Id: make_variables.in,v 1.30 2008/03/05 21:32:14 grubba Exp $
 #
 # Note: This template is actually used only for make_variables in the
 # subdirectories; the one created in the build base dir is just an
@@ -27,7 +27,7 @@
 #propagated_variables: LDSHARED_MODULE_REQS
 #propagated_variables: TMP_BUILDDIR TMP_BINDIR PIKE_SRC_DIR BUILD_BASE
 #propagated_variables: BUILD_PIKE POST_MODULE_BUILD_TYPE
-#propagated_variables: MT_FIX_MODULE_SO
+#propagated_variables: MT_FIX_MODULE_SO PKG_CONFIG_PATH
 
 @SET_MAKE@
 prefix=@prefix@
