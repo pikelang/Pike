@@ -270,27 +270,7 @@ if test "x$with_java" = xyes; then
     :
   fi
 
-  MY_AC_PATH_PROG(PKG_CONFIG, ${ac_tool_prefix}pkg-config, no)
-  if test "$PKG_CONFIG" = no; then :; else
-    AC_MSG_CHECKING([if a pkg-config based libffi is installed])
-    if "$PKG_CONFIG" libffi; then
-      AC_MSG_RESULT([yes])
-      AC_MSG_CHECKING([for stuff to add to CPPFLAGS])
-      AC_MSG_RESULT([`$PKG_CONFIG --cflags-only-I`]);
-      CPPFLAGS="$CPPFLAGS `$PKG_CONFIG --cflags-only-I`"
-      AC_MSG_CHECKING([for stuff to add to CFLAGS])
-      AC_MSG_RESULT([`$PKG_CONFIG --cflags-only-other`]);
-      CFLAGS="$CFLAGS `$PKG_CONFIG --cflags-only-other`"
-      AC_MSG_CHECKING([for stuff to add to LDFLAGS])
-      AC_MSG_RESULT([`$PKG_CONFIG --libs-only-L`]);
-      LDFLAGS="$LDFLAGS `$PKG_CONFIG --libs-only-L`"
-      AC_MSG_CHECKING([for stuff to add to LIBS])
-      AC_MSG_RESULT([`$PKG_CONFIG --libs-only-l --libs-only-other`]);
-      LIBS="$LIBS `$PKG_CONFIG --libs-only-l --libs-only-other`"
-    else
-      AC_MSG_RESULT([no])
-    fi
-  fi
+  PIKE_PKG_CONFIG(libffi)
 
   AC_CHECK_HEADERS(jni.h winbase.h setjmp.h ffi.h)
   AC_CHECK_TYPES([ffi_arg, ffi_sarg],,,[#ifdef HAVE_FFI_H
