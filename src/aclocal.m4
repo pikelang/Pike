@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.165 2008/03/05 22:24:29 grubba Exp $
+dnl $Id: aclocal.m4,v 1.166 2008/03/06 11:41:37 grubba Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -594,7 +594,7 @@ define([PIKE_RETAIN_VARIABLES],
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.165 2008/03/05 22:24:29 grubba Exp $
+  # $Id: aclocal.m4,v 1.166 2008/03/06 11:41:37 grubba Exp $
 
   MY_AC_PROG_CC
 
@@ -1621,7 +1621,7 @@ AC_DEFUN(PIKE_FIND_LIB_INCLUDE,
 ])
 
 AC_DEFUN(PIKE_PROG_PKG_CONFIG,
-xo[
+[
   MY_AC_PATH_PROG(PKG_CONFIG, ${ac_tool_prefix}pkg-config, no)
 ])
 
@@ -1629,18 +1629,18 @@ dnl package, variable, options
 AC_DEFUN(PIKE_LOW_PKG_CONFIG,
 [
   AC_MSG_CHECKING([for stuff to add to $2])
-  pkg_stuff="`PKG_CONFIG $3 $1`"
-  AC_MSG_RESULT($pkg_stuff)
-  $2="[$]$2 $pkg_stuff"
+  pkg_stuff="`${PKG_CONFIG} $3 $1`"
+  AC_MSG_RESULT(${pkg_stuff})
+  $2="[$]$2 ${pkg_stuff}"
 ])
 
 dnl package
 AC_DEFUN(PIKE_PKG_CONFIG,
 [
   AC_REQUIRE([PIKE_PROG_PKG_CONFIG])dnl
-  if test "$PKG_CONFIG" = no; then :; else
+  if test "${PKG_CONFIG}" = no; then :; else
     AC_MSG_CHECKING([if a pkg-config based $1 is installed])
-    if "$PKG_CONFIG" "$1"; then
+    if "${PKG_CONFIG}" "$1"; then
       AC_MSG_RESULT(yes)
       PIKE_LOW_PKG_CONFIG([$1], [CPPFLAGS], [--cflags-only-I])
       PIKE_LOW_PKG_CONFIG([$1], [CFLAGS],   [--cflags-only-other])
