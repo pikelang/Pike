@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.232 2008/03/07 17:01:50 grubba Exp $
+// $Id: module.pmod,v 1.233 2008/03/07 18:50:07 grubba Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -565,6 +565,7 @@ class File
     }
   }
 
+#if constant(files.__HAVE_OPENAT__)
   //! @decl File openat(string filename, string mode)
   //! @decl File openat(string filename, string mode, int mask)
   //!
@@ -588,6 +589,7 @@ class File
       return 0;
     }
   }
+#endif
 
   //! @decl void create()
   //! @decl void create(string filename)
@@ -1682,6 +1684,7 @@ class FILE
     return query_num_arg() ? file::pipe(flags) : file::pipe();
   }
 
+#if constant(files.__HAVE_OPENAT__)
   //! @decl FILE openat(string filename, string mode)
   //! @decl FILE openat(string filename, string mode, int mask)
   //!
@@ -1706,6 +1709,7 @@ class FILE
       return 0;
     }
   }
+#endif
   
   int assign(File|FILE foo)
   {
