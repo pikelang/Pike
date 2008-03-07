@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.378 2008/02/24 09:58:11 grubba Exp $
+|| $Id: file.c,v 1.379 2008/03/07 18:40:56 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -4710,6 +4710,21 @@ PIKE_MODULE_INIT
 #if !defined(__NT__) && (defined(HAVE_POSIX_OPENPT) || defined(PTY_MASTER_PATHNAME))
   add_integer_constant("__HAVE_OPENPT__",1,0);
 #endif
+
+#ifdef HAVE_OPENAT
+  add_integer_constant("__HAVE_OPENAT__",1,0);
+#endif
+
+#ifdef HAVE_FSTATAT
+  add_integer_constant("__HAVE_STATAT__",1,0);
+#endif
+
+#if 0
+  /* Not implemented yet. */
+#ifdef HAVE_UNLINKAT
+  add_integer_constant("__HAVE_UNLINKAT__",1,0);
+#endif
+#endif /* 0 */
 
   /* function(:array(int)) */
   ADD_FUNCTION2("get_all_active_fd", f_get_all_active_fd,
