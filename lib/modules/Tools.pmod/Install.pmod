@@ -1,10 +1,16 @@
 #pike __REAL_VERSION__
 
-//
-//! Common routines which are useful for various install scripts based on Pike.
-//
-
 //!
+//! Common routines which are useful for various install scripts based on Pike.
+//!
+
+//! Return an array of enabled features.
+//!
+//! @note
+//!   Used by the @[master] when given the option @tt{--features@}.
+//!
+//! @seealso
+//!   @[Tools.Standalone.features]
 array(string) features()
 {
   array a = ({}), m = ({});
@@ -44,8 +50,8 @@ array(string) features()
 
   foreach(({ "Nettle", "Dbm", "DVB", "_Ffmpeg", "GL", "GLUT", "GTK", "Gdbm",
 	     "Gmp", "Gz", "_Image_FreeType", "_Image_GIF", "_Image_JPEG",
-             "_Image_TIFF", "_Image_TTF", "_Image_XFace", "Image.PNG", "Java",
-             "Mird", "Msql", "Mysql", "Odbc", "Oracle", "PDF", "Perl",
+             "_Image_TIFF", "_Image_TTF", "_Image_XFace", "Image.PNG",
+	     "Java.jvm", "Mird", "Msql", "Mysql", "Odbc", "Oracle", "PDF", "Perl",
              "Postgres", "SANE", "SDL", "Ssleay", "Yp", "sybase", "_WhiteFish",
 	     "X", "Bz2", "COM", "Fuse", "GTK2", "Gettext", "HTTPAccept",
 	     "Kerberos", "SQLite", "_Image_SVG", "_Regexp_PCRE",
@@ -54,13 +60,12 @@ array(string) features()
   {
     catch
     {
-      if(([ "Java":2 ])[modname] <
-	 sizeof(indices(master()->resolv(modname) || ({})) -
+      if(sizeof(indices(master()->resolv(modname) || ({})) -
 		({ "dont_dump_module" })))
       {
 	if(modname[0] == '_')
 	  modname = replace(modname[1..], "_", ".");
-	m += ({ modname });
+	m += ({ (["Java.jvm":"Java"])[modname] || modname });
       }
     };
   }
