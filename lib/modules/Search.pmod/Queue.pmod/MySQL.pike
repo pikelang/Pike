@@ -108,7 +108,10 @@ void add_uri( Standards.URI uri, int recurse, string template, void|int force )
       }
     }
     else
-      db->query( "insert into "+table+
+      // There's a race condition between the select query in has_uri()
+      // and this query, so we ignore duplicate key errors from MySQL
+      // by using the "ignore" keyword.
+      db->query( "insert ignore into "+table+
 		 " (uri,uri_md5,recurse,template) values (%s,%s,%d,%s)",
 		 string_to_utf8((string)r),
 		 to_md5((string)r), recurse, (template||"") );
