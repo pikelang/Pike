@@ -54,6 +54,12 @@ int main() {
   f("get_profiling_info", "PROFILING");
   f("load_module", "USE_DYNAMIC_MODULES");
 
+  write("\nRuntime options\n");
+  mapping(string:string|int) rt = Pike.get_runtime_info();
+  item("32-bit ABI", rt->abi == 32);
+  item("64-bit ABI", rt->abi == 64);
+  item("Auto bignum", rt->auto_bignum);  
+
   test_ipv6();
 
   write("\nBuiltin functions\n");
@@ -280,6 +286,9 @@ int main() {
   I(Stdio.File()->proxy);
   I(Stdio.File()->lock);
   I(Stdio.File()->trylock);
+  I(Stdio.File()->openat);
+  I(Stdio.File()->statat);
+  I(Stdio.File()->unlinkat);
   I(Stdio.File()->openpt);
   I(Stdio.File()->grantpt);
   item("Stdio.File()->tcgetattr/tcsetattr/tcsendbrak/tcflush",
