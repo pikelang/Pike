@@ -42,6 +42,8 @@ if test "x$with_java" = xyes; then
   ])
   AC_MSG_RESULT($pike_cv_java_sysos)
 
+  PIKE_SELECT_ABI
+
   AC_MSG_CHECKING(which architecture we are using)
   AC_CACHE_VAL(pike_cv_java_arch, [
     if test "x$pike_cv_java_sysos" = xwindows_nt; then
@@ -58,33 +60,56 @@ if test "x$with_java" = xyes; then
 	*) pike_cv_java_arch="`echo $aix_cputype | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz'`";;
       esac
     else
-      if pike_cv_java_arch="`$uname -p || uname -p 2>/dev/null`"; then :;
+      if pike_cv_java_arch="`$uname -p || uname -p 2>/dev/null`"; then
+	# On some linuxen the output of uname -p is much too verbose
+	# eg "Intel(R) Core(TM)2 Duo CPU T7500 @ 2.20GHz"
+	# This is not useable...
+        # Let the fallback below handle it instead.
+	if test `echo "$pike_cv_java_arch"| wc -c` -gt 10; then
+	  pike_cv_java_arch=no
+	fi
       else pike_cv_java_arch=no; fi
     fi
 
     dnl Linux kluge
-
+    dnl FIXME: Enable for other OSes as well?
     if test x"$pike_cv_java_arch":"$pike_cv_java_sysos" = xunknown:linux -o \
 	    x"$pike_cv_java_arch":"$pike_cv_java_sysos" = xno:linux; then
       pike_cv_java_arch="`uname -m`"
     fi
     pike_cv_java_arch="`echo $pike_cv_java_arch|sed -e 's/^i[[4-9]]86/i386/'`"
     pike_cv_java_arch="`echo $pike_cv_java_arch|sed -e 's/athlon/i386/'`"
+
+    # Adjust according to the ABI
+    case "x$pike_cv_java_arch:$pike_cv_abi" in
+      xi386:64)
+        # uname -p on Solaris/x86 returns i386 even when running a 64-bit
+        # kernel.
+        pike_cv_java_arch="x86_64"
+      ;;
+      xx86_64:32)
+        # 32-bit binary on a 64-bit OS.
+        pike_cv_java_arch="i386"
+      ;;
+      xsparc:64)
+        pike_cv_java_arch="sparcv9"
+      ;;
+    esac
   ])
   AC_MSG_RESULT($pike_cv_java_arch)
 
   java_arch_dirs=$pike_cv_java_arch
-  if test x$java_arch_dirs = xx86_64; then
-    # Some dists (e.g. Ubuntu) has decided to use "amd64" as arch
-    # specifier in dirs etc even though uname -m returns "x86_64".
-    java_arch_dirs="x86_64 amd64"
-  fi
-  if test "x$java_arch_dirs" = xsparc; then
-    case "$CC" in
-      *" -q64"*|*" -m64"*|*" -xtarget=generic64"*|*" -xarch=generic64"*)
-	java_arch_dirs="sparcv9 sparc";;
-    esac
-  fi
+  case "x$java_arch_dirs" in
+    xx86_64)
+      # Some dists (e.g. Ubuntu and Solaris) have decided to use "amd64"
+      # as arch specifier in dirs etc even though uname -m returns "x86_64".
+      java_arch_dirs="x86_64 amd64"
+    ;;
+    xsparcv9)
+      # FIXME: Is this needed?
+      java_arch_dirs="sparcv9 sparc"
+    ;;
+  esac
 
   AC_MSG_CHECKING(what kind of threads to use)
   AC_CACHE_VAL(pike_cv_java_threads_type, [
