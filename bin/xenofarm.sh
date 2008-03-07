@@ -1,6 +1,6 @@
 #! /bin/sh
 
-# $Id: xenofarm.sh,v 1.28 2005/08/31 16:37:16 grubba Exp $
+# $Id: xenofarm.sh,v 1.29 2008/03/07 22:15:25 grubba Exp $
 # This file scripts the xenofarm actions and creates a result package
 # to send back.
 
@@ -32,8 +32,12 @@ xenofarm_build() {
 
 xenofarm_post_build() {
   POST_RESULT=0
+  log_start features
+  bin/pike -x features > xenofarm_result/features.txt 2>&1
+  log_end $?
+  [ $LASTERR = 0 ] || return 1
   log_start benchmark
-  $MAKE benchmark > xenofarm_result/benchmark.txt 2>&1
+  $MAKE benchmark > xenofarm_result/benchmark.txt 2>/dev/null
   log_end $?
   POST_RESULT=$LASTERR
 
