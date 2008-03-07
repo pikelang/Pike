@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.231 2007/12/28 13:35:24 nilsson Exp $
+// $Id: module.pmod,v 1.232 2008/03/07 17:01:50 grubba Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -559,6 +559,30 @@ class File
       register_open_file ("pipe", open_file_id, backtrace());
       register_open_file ("pipe", o->open_file_id, backtrace());
       fix_internal_callbacks();
+      return o;
+    }else{
+      return 0;
+    }
+  }
+
+  //! @decl File openat(string filename, string mode)
+  //! @decl File openat(string filename, string mode, int mask)
+  //!
+  //! Open a file relative to an open directory.
+  //!
+  //! @seealso
+  //!   @[File.statat()], @[File.unlinkat()]
+  File openat(string filename, string mode, int|void mask)
+  {
+    if(query_num_arg()<3)
+      mask = 0777;
+    if(Fd fd=[object(Fd)]::openat(filename, mode, mask))
+    {
+      File o=File();
+      o->_fd=fd;
+      string path = combine_path(debug_file||"", filename);
+      o->_setup_debug(path, mode, mask);
+      register_open_file(path, o->open_file_id, backtrace());
       return o;
     }else{
       return 0;
@@ -1658,6 +1682,30 @@ class FILE
     return query_num_arg() ? file::pipe(flags) : file::pipe();
   }
 
+  //! @decl FILE openat(string filename, string mode)
+  //! @decl FILE openat(string filename, string mode, int mask)
+  //!
+  //! Same as @[Stdio.File()->openat()], but returns a @[Stdio.FILE]
+  //! object.
+  //!
+  //! @seealso
+  //!   @[Stdio.File()->openat()]
+  FILE openat(string filename, string mode, int|void mask)
+  {
+    if(query_num_arg()<3)
+      mask = 0777;
+    if(Fd fd=[object(Fd)]_fd->openat(filename, mode, mask))
+    {
+      FILE o=FILE();
+      o->_fd=fd;
+      string path = combine_path(debug_file||"", filename);
+      o->_setup_debug(path, mode, mask);
+      register_open_file(path, o->open_file_id, backtrace());
+      return o;
+    }else{
+      return 0;
+    }
+  }
   
   int assign(File|FILE foo)
   {
