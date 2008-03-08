@@ -192,6 +192,7 @@ int main() {
 
   write("\nJava\n");
   M(Java.jvm);
+  f("Java.NATIVE_METHODS", "Java native methods");
 
   write("\nKerberos\n");
   M(Kerberos.Context);
