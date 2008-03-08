@@ -163,7 +163,7 @@ if test "x$with_java" = xyes; then
 	if test -d $tmp_java_home/.; then
 	  tmp_arch_dir=nowhere
 	  for ad in $java_arch_dirs; do
-	    if test -d "$tmp_java_home/lib/$ad"; then
+	    if test -d "$tmp_java_home/lib/$ad/."; then
 	      tmp_arch_dir="$tmp_java_home/lib/$ad"
 	      tmp_arch="$ad"
 	      break
@@ -193,9 +193,17 @@ if test "x$with_java" = xyes; then
       else
         pike_cv_java_java_home="$JAVA_HOME"
       fi
+      for ad in $java_arch_dirs ""; do
+	if test -d "$pike_cv_java_java_home/lib/$ad/."; then
+	  java_arch_dir="$ad"
+	  break
+	fi
+      done
     fi
   ])
   AC_MSG_RESULT($pike_cv_java_java_home)
+  AC_MSG_CHECKING([for Java architecture directory name])
+  AC_MSG_RESULT([$java_arch_dir])
 
   # Known buglet: $java_arch_dir isn't cached, so the following must
   # also be cached when $pike_cv_java_java_home is.
