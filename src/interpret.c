@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.386 2008/02/27 23:59:12 grubba Exp $
+|| $Id: interpret.c,v 1.387 2008/03/09 16:48:55 grubba Exp $
 */
 
 #include "global.h"
@@ -2333,11 +2333,17 @@ PMOD_EXPORT int apply_low_safe_and_stupid(struct object *o, INT32 offset)
    * (eg F_EXTERN) to work.
    */
   if (use_dummy_reference) {
+    struct identifier dummy;
     struct reference dummy_ref = {
       0, 0, ID_HIDDEN,
     };
-    /* check_program() doesn't like our identifier... */
-    o->prog->flags |= PROGRAM_AVOID_CHECK;
+    copy_shared_string(dummy.name, empty_string);
+    copy_pike_type(dummy.type, function_type_string);
+    dummy.identifier_flags = IDENTIFIER_PIKE_FUNCTION|IDENTIFIER_HAS_BODY;
+    dummy.func.offset = offset;
+    dummy.opt_flags = 0;
+    dummy_ref.identifier_offset = Pike_compiler->new_program->num_identifiers;
+    debug_add_to_identifiers(dummy);
     add_to_identifier_references(dummy_ref);
   }
 
@@ -2389,8 +2395,9 @@ PMOD_EXPORT int apply_low_safe_and_stupid(struct object *o, INT32 offset)
   Pike_interpreter.catching_eval_jmpbuf = saved_jmpbuf;
 
   if (use_dummy_reference) {
+    /* Pop the dummy identifier. */
     Pike_compiler->new_program->num_identifier_references--;
-    o->prog->flags = p_flags;
+    Pike_compiler->new_program->num_identifiers--;
   }
 
   assert (new_frame == Pike_fp);
