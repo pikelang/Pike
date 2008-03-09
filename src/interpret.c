@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.388 2008/03/09 17:28:20 grubba Exp $
+|| $Id: interpret.c,v 1.389 2008/03/09 17:36:34 grubba Exp $
 */
 
 #include "global.h"
@@ -2343,7 +2343,7 @@ PMOD_EXPORT int apply_low_safe_and_stupid(struct object *o, INT32 offset)
     dummy.func.offset = offset;
     dummy.opt_flags = 0;
     dummy_ref.identifier_offset = Pike_compiler->new_program->num_identifiers;
-    debug_add_to_identifiers(dummy);
+    add_to_identifiers(dummy);
     add_to_identifier_references(dummy_ref);
   }
 
@@ -2396,6 +2396,8 @@ PMOD_EXPORT int apply_low_safe_and_stupid(struct object *o, INT32 offset)
 
   if (use_dummy_reference) {
     /* Pop the dummy identifier. */
+    free_type(function_type_string);
+    free_string(empty_pike_string);
     Pike_compiler->new_program->num_identifier_references--;
     Pike_compiler->new_program->num_identifiers--;
   }
