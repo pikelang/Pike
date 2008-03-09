@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.194 2008/02/27 23:59:12 grubba Exp $
+|| $Id: builtin.cmod,v 1.195 2008/03/09 20:46:47 grubba Exp $
 */
 
 #include "global.h"
@@ -2915,16 +2915,16 @@ PIKEFUN array __automap__(mixed fun, mixed ... tmpargs)
     free_svalue(&(NODE)->val);				\
   } while(0)
 
-BLOCK_ALLOC_FILL_PAGES(list_node, 4);
+BLOCK_ALLOC_FILL_PAGES(pike_list_node, 4);
 
-PMOD_EXPORT void free_list_node(struct list_node *node)
+PMOD_EXPORT void free_list_node(struct pike_list_node *node)
 {
   if (!sub_ref(node)) {
-    really_free_list_node(node);
+    really_free_pike_list_node(node);
   }
 }
 
-PMOD_EXPORT void unlink_list_node(struct list_node *n)
+PMOD_EXPORT void unlink_list_node(struct pike_list_node *n)
 {
 #ifdef PIKE_DEBUG
   if (!n) {
@@ -2958,7 +2958,7 @@ PMOD_EXPORT void unlink_list_node(struct list_node *n)
   }
 }
 
-PMOD_EXPORT void detach_list_node(struct list_node *n)
+PMOD_EXPORT void detach_list_node(struct pike_list_node *n)
 {
 #ifdef PIKE_DEBUG
   if (!n) {
@@ -2989,8 +2989,8 @@ PMOD_EXPORT void detach_list_node(struct list_node *n)
   }
 }
 
-PMOD_EXPORT void prepend_list_node(struct list_node *node,
-				   struct list_node *new_node)
+PMOD_EXPORT void prepend_list_node(struct pike_list_node *node,
+				   struct pike_list_node *new_node)
 {
 #ifdef PIKE_DEBUG
   if (!node) {
@@ -3013,8 +3013,8 @@ PMOD_EXPORT void prepend_list_node(struct list_node *node,
   add_ref(new_node);
 }
 
-PMOD_EXPORT void append_list_node(struct list_node *node,
-				  struct list_node *new_node)
+PMOD_EXPORT void append_list_node(struct pike_list_node *node,
+				  struct pike_list_node *new_node)
 {
 #ifdef PIKE_DEBUG
   if (!node) {
@@ -3046,15 +3046,15 @@ PMOD_EXPORT void append_list_node(struct list_node *node,
  */
 PIKECLASS List
 {
-  CVAR struct list_node *head;
+  CVAR struct pike_list_node *head;
   CVAR INT32 head_sentinel_refs;
-  CVAR struct list_node *tail;		/* Always NULL. */
+  CVAR struct pike_list_node *tail;		/* Always NULL. */
   CVAR INT32 tail_sentinel_refs;
-  CVAR struct list_node *tail_pred;
+  CVAR struct pike_list_node *tail_pred;
   CVAR INT32 num_elems;
 
-#define HEAD_SENTINEL(this)	((struct list_node *)(&this->head))
-#define TAIL_SENTINEL(this)	((struct list_node *)(&this->tail))
+#define HEAD_SENTINEL(this)	((struct pike_list_node *)(&this->head))
+#define TAIL_SENTINEL(this)	((struct pike_list_node *)(&this->tail))
 
   /* Sentinel overlap description:
    *
@@ -3091,8 +3091,8 @@ PIKECLASS List
 
   EXIT
   {
-    struct list_node *node = THIS->head;
-    struct list_node *next;
+    struct pike_list_node *node = THIS->head;
+    struct pike_list_node *next;
     while ((next = node->next)) {
 #ifdef PIKE_DEBUG
       if (node->refs != 2) {
@@ -3108,9 +3108,9 @@ PIKECLASS List
   /* These two functions perform the same thing,
    * but are optimized to minimize recursion.
    */
-  static void gc_check_list_node_backward(struct list_node *node,
+  static void gc_check_list_node_backward(struct pike_list_node *node,
 					  const char *msg);
-  static void gc_check_list_node_forward(struct list_node *node,
+  static void gc_check_list_node_forward(struct pike_list_node *node,
 					 const char *msg)
   {
     while (node && !debug_gc_check(&node->refs, msg)) {
@@ -3121,7 +3121,7 @@ PIKECLASS List
     }
   }
 
-  static void gc_check_list_node_backward(struct list_node *node,
+  static void gc_check_list_node_backward(struct pike_list_node *node,
 					  const char *msg)
   {
     while (node && !debug_gc_check(&node->refs, msg)) {
@@ -3142,8 +3142,8 @@ PIKECLASS List
   /* Called at gc_mark time */
   GC_RECURSE
   {
-    struct list_node *node = THIS->head;
-    struct list_node *next;
+    struct pike_list_node *node = THIS->head;
+    struct pike_list_node *next;
     while ((next = node->next)) {
       gc_recurse_svalues(&node->val, 1);
       node = next;
@@ -3186,7 +3186,7 @@ PIKECLASS List
     if (!THIS->num_elems) {
       push_constant_text("ADT.List(/* empty */)");
     } else if (c == 'O') {
-      struct list_node *node = THIS->head;
+      struct pike_list_node *node = THIS->head;
       if (THIS->num_elems == 1) {
 	push_constant_text("ADT.List(/* 1 element */\n");
       } else {
@@ -3290,9 +3290,9 @@ PIKECLASS List
    */
   PIKEFUN void append(mixed ... values)
   {
-    struct list_node *node = TAIL_SENTINEL(THIS);
+    struct pike_list_node *node = TAIL_SENTINEL(THIS);
     while (args--) {
-      struct list_node *new_node = alloc_list_node();
+      struct pike_list_node *new_node = alloc_pike_list_node();
       new_node->val = *(--Pike_sp);
       prepend_list_node(node, new_node);
       free_list_node(node = new_node);
@@ -3310,9 +3310,9 @@ PIKECLASS List
    */
   PIKEFUN void insert(mixed ... values)
   {
-    struct list_node *node = THIS->head;
+    struct pike_list_node *node = THIS->head;
     while (args--) {
-      struct list_node *new_node = alloc_list_node();
+      struct pike_list_node *new_node = alloc_pike_list_node();
       new_node->val = *(--Pike_sp);
       prepend_list_node(node, new_node);
       free_list_node(node = new_node);
@@ -3343,7 +3343,7 @@ PIKECLASS List
     program_flags PROGRAM_USES_PARENT;
     flags ID_STATIC;
   {
-    CVAR struct list_node *cur;
+    CVAR struct pike_list_node *cur;
     CVAR INT32 ind;		/* Not meaningful, but requred by the API. */
 
     /* NOTE: cur may never refer to an unlinked node.
@@ -3385,10 +3385,10 @@ PIKECLASS List
     /* These two functions perform the same thing,
      * but are optimized to minimize recursion.
      */
-    static void gc_recurse_list_node_tree_backward(struct list_node *node,
-						   struct list_node *back);
-    static void gc_recurse_list_node_tree_forward(struct list_node *node,
-						  struct list_node *back)
+    static void gc_recurse_list_node_tree_backward(struct pike_list_node *node,
+						   struct pike_list_node *back);
+    static void gc_recurse_list_node_tree_forward(struct pike_list_node *node,
+						  struct pike_list_node *back)
     {
       if (!node || !node->next) return;
       if (node->next->prev == node) {
@@ -3428,8 +3428,8 @@ PIKECLASS List
       }
     }
 
-    static void gc_recurse_list_node_tree_backward(struct list_node *node,
-						   struct list_node *next)
+    static void gc_recurse_list_node_tree_backward(struct pike_list_node *node,
+						   struct pike_list_node *next)
     {
       if (!node || !node->prev) return;
       if (node->prev->next == node) {
@@ -3569,7 +3569,7 @@ PIKECLASS List
      */
     PIKEFUN int(0..1) next()
     {
-      struct list_node *next;
+      struct pike_list_node *next;
       if ((next = THIS->cur->next)) {
 	free_list_node(THIS->cur);
 	add_ref(THIS->cur = next);
@@ -3597,7 +3597,7 @@ PIKECLASS List
      */
     PIKEFUN int(0..1) prev()
     {
-      struct list_node *prev;
+      struct pike_list_node *prev;
       if ((prev = THIS->cur->prev)) {
 	free_list_node(THIS->cur);
 	add_ref(THIS->cur = prev);
@@ -3646,11 +3646,11 @@ PIKECLASS List
      */
     PIKEFUN void insert(mixed val)
     {
-      struct list_node *new_node;
+      struct pike_list_node *new_node;
       if (!THIS->cur->prev) {
 	Pike_error("Attempt to insert before the start sentinel.\n");
       }
-      new_node = alloc_list_node();
+      new_node = alloc_pike_list_node();
       assign_svalue_no_free(&new_node->val, val);
       prepend_list_node(THIS->cur, new_node);
       free_list_node(THIS->cur);
@@ -3669,11 +3669,11 @@ PIKECLASS List
      */
     PIKEFUN void append(mixed val)
     {
-      struct list_node *new_node;
+      struct pike_list_node *new_node;
       if (!THIS->cur->next) {
 	Pike_error("Attempt to append after the end sentinel.\n");
       }
-      new_node = alloc_list_node();
+      new_node = alloc_pike_list_node();
       assign_svalue_no_free(&new_node->val, val);
       append_list_node(THIS->cur, new_node);
       free_list_node(new_node);
@@ -3695,7 +3695,7 @@ PIKECLASS List
      */
     PIKEFUN void delete()
     {
-      struct list_node *next;
+      struct pike_list_node *next;
       if (!(next = THIS->cur->next) || !THIS->cur->prev) {
 	Pike_error("Attempt to delete a sentinel.\n");
       }
@@ -3743,12 +3743,12 @@ PIKECLASS List
 
 void init_builtin(void)
 {
-  init_list_node_blocks();
+  init_pike_list_node_blocks();
 INIT
 }
 
 void exit_builtin(void)
 {
 EXIT
-  free_all_list_node_blocks();
+  free_all_pike_list_node_blocks();
 }

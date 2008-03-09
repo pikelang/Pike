@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.h,v 1.34 2006/07/05 19:21:29 mast Exp $
+|| $Id: builtin_functions.h,v 1.35 2008/03/09 20:46:47 grubba Exp $
 */
 
 #ifndef BUILTIN_EFUNS_H
@@ -191,21 +191,21 @@ PMOD_EXPORT void f_function_program(INT32 args);
 PMOD_EXPORT void f_random(INT32 args);
 PMOD_EXPORT void f_backtrace(INT32 args);
 
-struct list_node
+struct pike_list_node
 {
   /* NOTE: Unusual order of elements due to use of sentinels. */
-  struct list_node *next;
+  struct pike_list_node *next;
   INT32 refs;
-  struct list_node *prev;
+  struct pike_list_node *prev;
   struct svalue val;
 };
-BLOCK_ALLOC_FILL_PAGES(list_node, 4);
-PMOD_EXPORT void free_list_node(struct list_node *node);
-PMOD_EXPORT void unlink_list_node(struct list_node *n);
-PMOD_EXPORT void prepend_list_node(struct list_node *node,
-				   struct list_node *new_node);
-PMOD_EXPORT void append_list_node(struct list_node *node,
-				  struct list_node *new_node);
+BLOCK_ALLOC_FILL_PAGES(pike_list_node, 4);
+PMOD_EXPORT void free_list_node(struct pike_list_node *node);
+PMOD_EXPORT void unlink_list_node(struct pike_list_node *n);
+PMOD_EXPORT void prepend_list_node(struct pike_list_node *node,
+				   struct pike_list_node *new_node);
+PMOD_EXPORT void append_list_node(struct pike_list_node *node,
+				  struct pike_list_node *new_node);
 void init_builtin(void);
 void exit_builtin(void);
 
