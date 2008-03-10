@@ -1,4 +1,4 @@
-// $Id: DNS.pmod,v 1.74 2006/12/11 16:03:15 bill Exp $
+// $Id: DNS.pmod,v 1.75 2008/03/10 13:41:19 grubba Exp $
 // Not yet finished -- Fredrik Hubinette
 
 //! Domain Name System
@@ -950,7 +950,7 @@ class client
     string ret;
     foreach(m->an, mapping m2)
     {
-      if(m2->preference<minpref)
+      if(m2->mx && m2->preference<minpref)
       {
 	ret=m2->mx;
 	minpref=m2->preference;
@@ -978,7 +978,7 @@ class client
     if (!m) {
       return 0;
     }
-    array a = m->an;
+    array a = filter(m->an, `[], "mx");
     array(string) b = column( a, "mx");
     sort( column( a, "preference"), b);
 
