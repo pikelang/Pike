@@ -2,8 +2,10 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.11 2008/03/13 13:24:39 grubba Exp $
+|| $Id: acconfig.h,v 1.12 2008/03/13 15:10:06 grubba Exp $
 */
+
+#ifndef PIKE_POSTGRES_H
 
 #undef STDC_HEADERS
 
@@ -76,3 +78,4 @@
 
 #endif
 
+#endif /* !PIKE_POSTGRES_H */
