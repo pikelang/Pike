@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.10 2007/01/28 21:36:55 peter Exp $
+|| $Id: acconfig.h,v 1.11 2008/03/13 13:24:39 grubba Exp $
 */
 
 #undef STDC_HEADERS
@@ -39,6 +39,20 @@
 
 /* This is needed to avoid broken <openssl/kssl.h> headerfiles. */
 #define OPENSSL_NO_KRB5
+
+/* This is needed to avoid broken prototypes for some builtin functions
+ * (cf <server/port.h>). We don't care about the prototypes, since
+ * we won't use those functions in this module anyway.
+ *	/grubba 2008-03-13
+ */
+#define HAVE_CRYPT 1
+#define HAVE_GETOPT 1
+#define HAVE_ISINF 1
+#define HAVE_RINT 1
+#define HAVE_STRDUP 1
+#define HAVE_RANDOM 1
+#define HAVE_UNSETENV 1
+#define HAVE_SRANDOM 1
 
 /* Time to include stuff. */
 
