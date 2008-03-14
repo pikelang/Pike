@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.389 2008/03/09 17:36:34 grubba Exp $
+|| $Id: interpret.c,v 1.390 2008/03/14 08:49:51 grubba Exp $
 */
 
 #include "global.h"
@@ -2339,6 +2339,7 @@ PMOD_EXPORT int apply_low_safe_and_stupid(struct object *o, INT32 offset)
     };
     copy_shared_string(dummy.name, empty_pike_string);
     copy_pike_type(dummy.type, function_type_string);
+    dummy.run_time_type = PIKE_T_FUNCTION;
     dummy.identifier_flags = IDENTIFIER_PIKE_FUNCTION|IDENTIFIER_HAS_BODY;
     dummy.func.offset = offset;
     dummy.opt_flags = 0;
