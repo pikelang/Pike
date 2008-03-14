@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file_functions.h,v 1.43 2008/03/07 16:46:27 grubba Exp $
+|| $Id: file_functions.h,v 1.44 2008/03/14 19:41:26 grubba Exp $
 */
 
 #define CB_FUNC tFunc(tNone,tOr(tVoid,tMixed))
@@ -52,6 +52,9 @@ FILE_FUNC("stat",file_stat, tFunc(tNone,tObjImpl_STDIO_STAT))
 #ifdef HAVE_FSTATAT
 FILE_FUNC("statat", file_statat,
 	  tFunc(tStr tOr(tVoid, tInt01), tObjImpl_STDIO_STAT))
+#ifdef HAVE_UNLINKAT
+FILE_FUNC("unlinkat", file_unlinkat, tFunc(tStr, tInt01));
+#endif /* HAVE_UNLINKAT */
 #endif /* HAVE_FSTATAT */
 /* function(:int) */
 FILE_FUNC("errno",file_errno, tFunc(tNone,tInt))

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.379 2008/03/07 18:40:56 grubba Exp $
+|| $Id: file.c,v 1.380 2008/03/14 19:41:12 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -799,8 +799,8 @@ static void file_read(INT32 args)
  *!       at EOF.
  *!
  *!     @value 1
- *!       Regard EOF as an error. Return @expr{-1@} and set @[errno] to
- *!       @expr{EPIPE@} at EOF.
+ *!       Regard EOF as an error. Return @expr{-1@} and set @[errno()]
+ *!       to return @expr{EPIPE@} at EOF.
  *!   @endint
  *!
  *! @returns
@@ -1863,7 +1863,7 @@ static void file_open(INT32 args)
  *!   Not available on all architectures, or in Pike 7.6 and earlier.
  *!
  *! @seealso
- *!   @[open()], @[statat()]
+ *!   @[open()], @[statat()], @[unlinkat()]
  */
 static void file_openat(INT32 args)
 {
@@ -2319,7 +2319,7 @@ static void file_stat(INT32 args)
  *!   Not available on all architectures, or in Pike 7.6 and earlier.
  *!
  *! @seealso
- *!   @[file_stat()], @[stat()], @[openat()]
+ *!   @[file_stat()], @[stat()], @[openat()], @[unlinkat()]
  */
 static void file_statat(INT32 args)
 {
@@ -2363,6 +2363,65 @@ static void file_statat(INT32 args)
   }
   stack_pop_n_elems_keep_top(args);
 }
+
+#ifdef HAVE_UNLINKAT
+/*! @decl int unlinkat(string f)
+ *!
+ *! Remove a file or directory relative to an open file.
+ *!
+ *! @returns
+ *!   Returns @expr{0@} (zero) on failure, @expr{1@} otherwise.
+ *!
+ *! @seealso
+ *!   @[rm()], @[openat()], @[statat()]
+ */
+static void file_unlinkat(INT32 args)
+{
+  int dir_fd;
+  PIKE_STAT_T st;
+  struct pike_string *str;
+  INT32 i;
+
+  destruct_objects_to_destruct();
+
+  VALID_FILE_IO("rm","write");
+
+  if((dir_fd = FD) < 0)
+    Pike_error("File not open.\n");
+
+  get_all_args("unlinkat", args, "%S", &str);
+
+  if (string_has_null(str)) {
+    /* Filenames with NUL are not supported. */
+    ERRNO = ENOENT;
+    pop_n_elems(args);
+    push_int(0);
+    return;
+  }
+
+  THREADS_ALLOW_UID();
+  do {
+    i = fstatat(dir_fd, str->str, &st, AT_SYMLINK_NOFOLLOW);
+  } while ((i < 0) && (errno == EINTR));
+  if (i >= 0) {
+    int flag = 0;
+    if ((st.st_mode & S_IFMT) == S_IFDIR) {
+      flag = AT_REMOVEDIR;
+    }
+    do {
+      i = unlinkat(dir_fd, str->str, flag);
+    } while ((i < 0) && (errno == EINTR));
+  }
+  THREADS_DISALLOW_UID();
+  pop_n_elems(args);
+  if (i < 0) {
+    ERRNO = errno;
+    push_int(0);
+  } else {
+    push_int(1);
+  }
+}
+#endif /* HAVE_UNLINKAT */
 #endif /* HAVE_FSTATAT */
 
 #if defined(HAVE_FSETXATTR) && defined(HAVE_FGETXATTR) && defined(HAVE_FLISTXATTR)
