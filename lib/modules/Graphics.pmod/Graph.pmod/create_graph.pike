@@ -403,12 +403,13 @@ mapping(string:mixed) init(mapping(string:mixed) diagram_data)
   }
   if (!(diagram_data->yminvalue))
     diagram_data->yminvalue=yminvalue;
-  if (!(diagram_data["ymaxvalue"]))
+  if (!(diagram_data["ymaxvalue"])) {
       if (ymaxvalue<0.0)
         diagram_data["ymaxvalue"]=0.0;
       else
         diagram_data["ymaxvalue"]=ymaxvalue;
-  diagram_data["ymaxvalue"]=max(diagram_data["ymaxvalue"], diagram_data["yminvalue"]+STORTLITET);
+      diagram_data["ymaxvalue"] =
+	max(diagram_data["ymaxvalue"], diagram_data["yminvalue"]+STORTLITET);
   }
 
   //Create empty names on xnames if the names don't exist.
