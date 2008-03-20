@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.412 2008/02/28 18:18:28 grubba Exp $
+// $Id: master.pike.in,v 1.413 2008/03/20 15:03:07 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -1508,6 +1508,12 @@ class dirnode
   static string base_from_filename(string fname)
   {
     string low_name = FIX_CASE(fname);
+    catch {
+      // FIXME: Warn on failure?
+      low_name = utf8_to_string(low_name);
+      // FIXME: MacOS X/HFS uses decomposed Unicode by default.
+      //        Use Unicode.normalize(low_name, "NFC") to fix.
+    };
     if (has_prefix(low_name, ".#")) return 0;
     if (has_suffix(low_name, ".pike") ||
 	has_suffix(low_name, ".pmod")) {
