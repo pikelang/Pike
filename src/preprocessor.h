@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: preprocessor.h,v 1.90 2007/10/22 15:12:30 grubba Exp $
+|| $Id: preprocessor.h,v 1.91 2008/03/20 15:34:16 grubba Exp $
 */
 
 /*
@@ -1601,6 +1601,12 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 		pos--;
 		READSTRING(nf);
 		push_string(finish_string_builder(&nf));
+		if (!TEST_COMPAT(7,6)) {
+		  /* In Pike 7.7 and later filenames belonging to Pike
+		   * are assumed to be encoded according to UTF-8.
+		   */
+		  f_string_to_utf8(1);
+		}
 		ref_push_string(this->current_file);
 		push_int(1);
 		break;
@@ -1620,6 +1626,12 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 		  pos++;
 		}
 		push_string(MAKE_BINARY_STRING(data+tmp, pos-tmp));
+		if (!TEST_COMPAT(7,6)) {
+		  /* In Pike 7.7 and later filenames belonging to Pike
+		   * are assumed to be encoded according to UTF-8.
+		   */
+		  f_string_to_utf8(1);
+		}
 		ref_push_string(this->current_file);
 		pos++;
 		push_int(0);
@@ -1696,10 +1708,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	      break;
 	    }
 
-	    /* Why not just use ref_push_string(new_file)? */
-	    assign_svalue_no_free(Pike_sp,Pike_sp-1);
-	    Pike_sp++;
-	    dmalloc_touch_svalue(Pike_sp-1);
+	    ref_push_string(new_file);
 
 	    if (!safe_apply_handler ("read_include",
 				     this->handler, this->compat_handler,
