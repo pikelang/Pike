@@ -286,3 +286,30 @@ static string line_expand_tab(string line, int tab_width,
   }
   return result;
 }
+
+//! rotates each character by 13 positions 
+string rot13(string input)
+{
+  return rot(input, 13);
+}
+
+//! rotates each character by n positions
+string rot(string input, int pos)
+{
+  for(int i=0; i<sizeof(input); i++)
+  {
+    if (input[i] >= 65 && input[i] <= 90)
+    {
+      input[i] += pos;
+      if (input[i] > 90)
+        input[i] -= 26;
+    }
+    else if (input[i] >= 97 && input[i] <= 122)
+    {
+      input[i] += pos;
+      if (input[i] > 122)
+        input[i] -= 26;
+    }
+  }
+  return input;
+}
