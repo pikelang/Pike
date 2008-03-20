@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.653 2008/02/27 23:59:23 grubba Exp $
+|| $Id: program.c,v 1.654 2008/03/20 15:34:37 grubba Exp $
 */
 
 #include "global.h"
@@ -4460,6 +4460,12 @@ int call_handle_inherit(struct pike_string *s)
 
   reference_shared_string(s);
   push_string(s);
+  if (!TEST_COMPAT(7,6)) {
+    /* In Pike 7.7 and later filenames belonging to Pike are assumed
+     * to be encoded according to UTF-8.
+     */
+    f_string_to_utf8(1);
+  }
   ref_push_string(lex.current_file);
   if (error_handler && error_handler->prog) {
     ref_push_object(error_handler);
