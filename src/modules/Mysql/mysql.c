@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.83 2006/11/17 18:43:12 mast Exp $
+|| $Id: mysql.c,v 1.84 2008/03/21 17:35:52 grubba Exp $
 */
 
 /*
@@ -96,7 +96,7 @@
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.83 2006/11/17 18:43:12 mast Exp $");
+RCSID("$Id: mysql.c,v 1.84 2008/03/21 17:35:52 grubba Exp $");
 
 /*! @module Mysql
  *!
@@ -359,7 +359,8 @@ static void pike_mysql_reconnect (int reconnect)
   socket = PIKE_MYSQL->socket;
   PIKE_MYSQL->socket = NULL;
 
-  if ((val = simple_mapping_string_lookup(PIKE_MYSQL->options,
+  if (PIKE_MYSQL->options &&
+      (val = simple_mapping_string_lookup(PIKE_MYSQL->options,
 					  "connect_options")) &&
       (val->type == T_INT) && (val->u.integer)) {
     options = (unsigned int)val->u.integer;
