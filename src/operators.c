@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.227 2008/02/27 23:59:18 grubba Exp $
+|| $Id: operators.c,v 1.228 2008/03/22 13:50:23 grubba Exp $
 */
 
 #include "global.h"
@@ -1641,6 +1641,7 @@ PMOD_EXPORT void f_add(INT32 args)
     for(e=-args; e<0; e++) size+=sp[e].u.integer;
     sp-=args-1;
     sp[-1].u.integer=size;
+    sp[-1].subtype = NUMBER_NUMBER;
 #endif /* AUTO_BIGNUM */
     break;
 
@@ -2251,6 +2252,7 @@ PMOD_EXPORT void o_subtract(void)
 #endif /* AUTO_BIGNUM */
     sp--;
     sp[-1].u.integer -= sp[0].u.integer;
+    sp[-1].subtype = NUMBER_NUMBER;
     return;
 
   case T_STRING:
@@ -2474,6 +2476,7 @@ PMOD_EXPORT void o_and(void)
   case T_INT:
     sp--;
     sp[-1].u.integer &= sp[0].u.integer;
+    sp[-1].subtype = NUMBER_NUMBER;
     break;
 
   case T_MAPPING:
@@ -2765,6 +2768,7 @@ PMOD_EXPORT void o_or(void)
   case T_INT:
     sp--;
     sp[-1].u.integer |= sp[0].u.integer;
+    sp[-1].subtype = NUMBER_NUMBER;
     break;
 
   case T_MAPPING:
@@ -2999,6 +3003,7 @@ PMOD_EXPORT void o_xor(void)
   case T_INT:
     sp--;
     sp[-1].u.integer ^= sp[0].u.integer;
+    sp[-1].subtype = NUMBER_NUMBER;
     break;
 
   case T_MAPPING:
@@ -3209,6 +3214,7 @@ PMOD_EXPORT void o_lsh(void)
   if (sp[-1].u.integer > 31) {
     sp--;
     sp[-1].u.integer = 0;
+    sp[-1].subtype = NUMBER_NUMBER;
     return;
   }
 #endif /* !AUTO_BIGNUM */
@@ -3218,6 +3224,7 @@ PMOD_EXPORT void o_lsh(void)
   }
   sp--;
   sp[-1].u.integer = sp[-1].u.integer << sp->u.integer;
+  sp[-1].subtype = NUMBER_NUMBER;
 }
 
 /*! @decl int `<<(int arg1, int arg2)
@@ -3292,11 +3299,13 @@ PMOD_EXPORT void o_rsh(void)
     } else {
       sp[-1].u.integer = 0;
     }
+    sp[-1].subtype = NUMBER_NUMBER;
     return;
   }
   
   sp--;
   sp[-1].u.integer = sp[-1].u.integer >> sp->u.integer;
+  sp[-1].subtype = NUMBER_NUMBER;
 }
 
 /*! @decl int `>>(int arg1, int arg2)
@@ -3515,6 +3524,7 @@ PMOD_EXPORT void o_multiply(void)
 #endif /* AUTO_BIGNUM */
     sp--;
     sp[-1].u.integer *= sp[0].u.integer;
+    sp[-1].subtype = NUMBER_NUMBER;
     return;
 
   default:
@@ -3879,6 +3889,7 @@ PMOD_EXPORT void o_divide(void)
       if(tmp*sp[0].u.integer!=sp[-1].u.integer)
 	tmp--;
     sp[-1].u.integer=tmp;
+    sp[-1].subtype = NUMBER_NUMBER;
     return;
   }
     
@@ -4086,6 +4097,7 @@ PMOD_EXPORT void o_mod(void)
 	sp[-1].u.integer=-(-sp[-1].u.integer % -sp[0].u.integer);
       }
     }
+    sp[-1].subtype = NUMBER_NUMBER;
     return;
 
   default:
@@ -4174,6 +4186,7 @@ PMOD_EXPORT void o_not(void)
   {
   case T_INT:
     sp[-1].u.integer = !sp[-1].u.integer;
+    sp[-1].subtype = NUMBER_NUMBER;
     break;
 
   case T_FUNCTION:
@@ -4256,6 +4269,7 @@ PMOD_EXPORT void o_compl(void)
     
   case T_INT:
     sp[-1].u.integer = ~ sp[-1].u.integer;
+    sp[-1].subtype = NUMBER_NUMBER;
     break;
 
   case T_FLOAT:
@@ -4388,6 +4402,7 @@ PMOD_EXPORT void o_negate(void)
     }
 #endif /* AUTO_BIGNUM */
     sp[-1].u.integer = - sp[-1].u.integer;
+    sp[-1].subtype = NUMBER_NUMBER;
     return;
 
   default: 
