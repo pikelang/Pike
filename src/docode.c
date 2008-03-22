@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.c,v 1.195 2008/01/29 20:08:39 grubba Exp $
+|| $Id: docode.c,v 1.196 2008/03/22 13:22:20 grubba Exp $
 */
 
 #include "global.h"
@@ -1220,7 +1220,8 @@ static int do_docode2(node *n, int flags)
 	node *args = CDAR(n);
 	if (args) {
 	  node **arg = my_get_arg(&args, 0);
-	  if (arg && node_is_eq(CDR(n), *arg)) {
+	  if (arg && node_is_eq(CDR(n), *arg) &&
+	      !(args->tree_info & OPT_ASSIGNMENT)) {
 	    /* First arg is the lvalue.
 	     *
 	     * We optimize this to allow for destructive operations.
