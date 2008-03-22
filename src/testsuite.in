@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.799 2008/02/25 14:49:02 per Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.800 2008/03/22 13:10:05 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -2977,6 +2977,7 @@ test_any([[int x,y; if(x==y || x==1) return 2; return 0;]],2);
 test_any([[int x,y; if(x==y && x==0) return 2; return 0;]],2);
 test_any([[int x,y=1; if(x==y || x==1) return 2; return 0;]],0);
 test_any([[int x,y=1; if(x==y && x==0) return 2; return 0;]],0);
+test_any([[int x = 1; x = x + (x = 0, 1); return x;]], 2);
 
 
 test_any([[
