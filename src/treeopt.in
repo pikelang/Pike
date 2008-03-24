@@ -2,7 +2,7 @@
 // This file is part of Pike. For copyright information see COPYRIGHT.
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
-// $Id: treeopt.in,v 1.94 2008/01/28 18:44:26 grubba Exp $
+// $Id: treeopt.in,v 1.95 2008/03/24 12:02:46 grubba Exp $
 //
 // The tree optimizer
 //
@@ -98,7 +98,20 @@ F_APPLY(0 = F_CONSTANT
 		F_ARG_LIST(2 = +[!match_types(object_type_string, $$->type)],
 			   3 = +[pike_types_le($$->type, int_type_string)]))):
   F_APPLY($1, F_ARG_LIST(F_APPLY($0, $2), $3));
-			   
+
+// Some convenience stuff:
+F_LT(0, 1):
+  {
+    $$ = mkopernode("`<", $0, $1);
+  }
+  ;
+
+F_GT(0, 1):
+  {
+    $$ = mkopernode("`<", $0, $1);
+  }
+  ;
+		   
 // search(indices(map), key) < 0)  =>  zero_type(map[key]) if typeof(map) <= mapping
 F_LT(F_APPLY(F_CONSTANT
 	     [$$->u.sval.type == T_FUNCTION]
@@ -1431,7 +1444,9 @@ F_FOR(0 = F_APPLY(1 = F_CONSTANT
 ;
 
 // If the loop variable is unused, we can throw it away.
-F_INC_LOOP(F_VAL_LVAL(0,
+F_INC_LOOP(F_VAL_LVAL(0 = +[ !($$->tree_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT|
+						OPT_CASE|OPT_CONTINUE|
+						OPT_BREAK|OPT_RETURN)) ],
 		      1 = +[ !($$->tree_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT|
 						OPT_CASE|OPT_CONTINUE|
 						OPT_BREAK|OPT_RETURN)) ]),
@@ -1450,6 +1465,25 @@ F_INC_LOOP(F_VAL_LVAL(0,
   }
   ;
 
+// Incremental loop with empty body ==> assignment.
+F_INC_LOOP(F_VAL_LVAL(0 = +[ !($$->tree_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT|
+						OPT_CASE|OPT_CONTINUE|
+						OPT_BREAK|OPT_RETURN)) ],
+		      1 = +[ !($$->tree_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT|
+						OPT_CASE|OPT_CONTINUE|
+						OPT_BREAK|OPT_RETURN)) ]),
+	   -):
+  F_POP_VALUE('?'(F_LT(F_INC($1, -), $0), ':'(F_ASSIGN($0, $1), -)), -);
+
+// Decremental loop with empty body ==> assignment.
+F_DEC_LOOP(F_VAL_LVAL(0 = +[ !($$->tree_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT|
+						OPT_CASE|OPT_CONTINUE|
+						OPT_BREAK|OPT_RETURN)) ],
+		      1 = +[ !($$->tree_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT|
+						OPT_CASE|OPT_CONTINUE|
+						OPT_BREAK|OPT_RETURN)) ]),
+	   -):
+  F_POP_VALUE('?'(F_GT(F_DEC($1, -), $0), ':'(F_ASSIGN($0, $1), -)), -);
 
 // // If the loop variable is unused, we can throw it away.
 // F_DEC_LOOP(F_VAL_LVAL(0,
