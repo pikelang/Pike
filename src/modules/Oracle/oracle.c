@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: oracle.c,v 1.90 2008/03/10 18:02:21 grubba Exp $
+|| $Id: oracle.c,v 1.91 2008/03/25 15:11:56 grubba Exp $
 */
 
 /*
@@ -809,7 +809,38 @@ OCIError *get_global_error_handle(void)
   return global_error_handle;
 }
 
+static void f_num_rows(INT32 args)
+{
+  struct dbquery *dbquery = THIS_RESULT_QUERY;
+  struct dbcon *dbcon = THIS_RESULT_DBCON;
 
+#ifdef ORACLE_DEBUG
+  fprintf(stderr,"%s\n",__FUNCTION__);
+#endif
+
+  sword rc;
+  ub4 rows;
+
+  THREADS_ALLOW();
+
+/*  LOCK(dbcon->lock);  */
+
+  rc=OCIAttrGet(dbquery->statement,
+		OCI_HTYPE_STMT,
+		&rows,
+		0,
+		OCI_ATTR_ROW_COUNT,
+		dbcon->error_handle); /* <- FIXME */
+
+  THREADS_DISALLOW();
+/*  UNLOCK(dbcon->lock); */
+
+  if(rc != OCI_SUCCESS)
+    ora_error_handler(dbcon->error_handle, rc, "OCIAttrGet");
+
+  pop_n_elems(args);
+  push_int(rows);
+}
 
 static void f_num_fields(INT32 args)
 {
@@ -2522,6 +2553,9 @@ PIKE_MODULE_INIT
 	ADD_FUNCTION("create", f_big_typed_query_create,
 		     tFunc(tOr(tVoid,tMap(tStr,tMix)) tOr(tVoid,tInt)
 			   tOr(tVoid,tObj),tVoid), ID_PUBLIC);
+	
+	/* function(:int) */
+	ADD_FUNCTION("num_rows", f_num_rows, tFunc(tNone,tInt), ID_PUBLIC);
 	
 	/* function(:int) */
 	ADD_FUNCTION("num_fields", f_num_fields,tFunc(tNone,tInt), ID_PUBLIC);
