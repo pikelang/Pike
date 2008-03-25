@@ -3,7 +3,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Query.pmod,v 1.30 2004/12/29 13:27:22 anders Exp $
+// $Id: Query.pmod,v 1.31 2008/03/25 08:46:58 liin Exp $
 
 static function(string,int:string) blobfeeder(Search.Database.Base db,
                                               array words)
@@ -15,7 +15,7 @@ static function(string,int:string) blobfeeder(Search.Database.Base db,
            return db->get_blob(word, state[word]++, blobcache);
          };
 }
-
+ 
 static array(string) uniq_preserve_order(array(string) a) {
   array(string) result = ({});
   foreach (a, string s)
@@ -90,6 +90,9 @@ static Search.ResultSet sort_resultset(Search.ResultSet resultset,
 //!     @elem array(string) 1
 //!       All wanted words in the query. (I.e. not the words that were
 //!       preceded by minus.)
+//!     @elem array(string) 2
+//!       All wanted globs in the query. (I.e. not the globs that were 
+//!       preceded by minus.)       
 //!   @endarray
 //!
 array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
@@ -141,6 +144,7 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
     static constant ParseNode = Search.Grammar.ParseNode;
 
     static array(array(string)|string) words = ({ });
+    static array(array(string)|string) glob_words = ({ });
     static ADT.Stack stack = ADT.Stack();
     static function(Search.ResultSet:void) push;
     static function(void:Search.ResultSet) pop;
@@ -149,7 +153,7 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
       exec(q);
       if (sizeof(stack) != 1)
         error("Stack should have exactly one item!");
-      return ({ pop(), words });
+      return ({ pop(), words, glob_words });
     }
 
 
@@ -275,11 +279,13 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
             [array ordinaryWords, array ordinaryWordGlobs] = split_words(q->words);
             [array minusWords, array minusWordGlobs] = split_words(q->minusWords);
 
+
 //        werror("[%-10s] plus: %-15s   ordinary: %-15s   minus: %-15s\n", q->field, q>plusWords*", ", q->words*", ", q->minusWords*", ");
             
             int hasPlus = sizeof(q->plusWords) || sizeof(q->plusPhrases);
             int hasOrdinary = sizeof(q->words) || sizeof(q->phrases);
             int hasMinus = sizeof(q->minusWords) || sizeof(q->minusPhrases);
+	    glob_words += Array.uniq(plusWordGlobs | ordinaryWordGlobs);
 
             if(hasPlus)
             {
@@ -290,6 +296,7 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
                 push(do_query_and(db, plusWords, ranking));
                 first = 0;
               }
+
               foreach(plusWordGlobs, string plusWordGlob)
               {
                 push(do_query_or(db, db->expand_word_glob(plusWordGlob, max_globs), ranking));
