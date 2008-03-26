@@ -3,7 +3,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Query.pmod,v 1.31 2008/03/25 08:46:58 liin Exp $
+// $Id: Query.pmod,v 1.32 2008/03/26 18:08:53 jonasw Exp $
 
 static function(string,int:string) blobfeeder(Search.Database.Base db,
                                               array words)
@@ -108,8 +108,8 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
 
   q = Search.Grammar.optimize(q);
   
-  if (!q)                                  // The query was a null query
-    return ({ Search.ResultSet(), ({}) }); // so return an empty resultset
+  if (!q)                                        // The query was a null query
+    return ({ Search.ResultSet(), ({}), ({}) }); // so return an empty resultset
 
   string error = Search.Grammar.validate(q);
   if (error)
@@ -281,10 +281,28 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
 
 
 //        werror("[%-10s] plus: %-15s   ordinary: %-15s   minus: %-15s\n", q->field, q>plusWords*", ", q->words*", ", q->minusWords*", ");
-            
+
+	    //  Subtracting "*" gives empty result
+	    if (has_value(minusWordGlobs, "*")) {
+	      push(Search.ResultSet());
+	      break;
+	    }
+	    
             int hasPlus = sizeof(q->plusWords) || sizeof(q->plusPhrases);
             int hasOrdinary = sizeof(q->words) || sizeof(q->phrases);
             int hasMinus = sizeof(q->minusWords) || sizeof(q->minusPhrases);
+	    int hasEverything =
+	      has_value(plusWordGlobs, "*") ||
+	      has_value(ordinaryWordGlobs, "*");
+	    if (hasEverything) {
+	      //  FIXME: Ranking?
+	      push(db->get_all_documents());
+	      hasPlus = 0;
+	      hasOrdinary = 0;
+	      plusWordGlobs -= ({ "*" });
+	      ordinaryWordGlobs -= ({ "*" });
+	    }
+	    
 	    glob_words += Array.uniq(plusWordGlobs | ordinaryWordGlobs);
 
             if(hasPlus)
@@ -365,7 +383,7 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
               push(r1->add_ranking(r2));
             }
             
-            if((hasPlus || hasOrdinary) && hasMinus)
+            if((hasPlus || hasOrdinary || hasEverything) && hasMinus)
             {
               int first = 1;
               if (sizeof(q->minusWords))
