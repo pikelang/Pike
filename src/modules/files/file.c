@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.380 2008/03/14 19:41:12 grubba Exp $
+|| $Id: file.c,v 1.381 2008/03/26 18:49:23 mbaehr Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -1857,7 +1857,7 @@ static void file_open(INT32 args)
  *! Open a file relative to an opened directory.
  *!
  *! @returns
- *!   Returns a new file object on success, and @expr{0} (zero) on failure.
+ *!   Returns a new file object on success, and @expr{0@} (zero) on failure.
  *!
  *! @note
  *!   Not available on all architectures, or in Pike 7.6 and earlier.
