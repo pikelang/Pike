@@ -1,5 +1,5 @@
 // -*- Pike -*-
-// $Id: module.pmod.in,v 1.8 2004/02/19 13:53:38 nilsson Exp $
+// $Id: module.pmod.in,v 1.9 2008/03/26 01:51:27 bill Exp $
 // original author: mirar
 
 #pike __REAL_VERSION__
@@ -207,6 +207,64 @@ class Plain
       }
    }
 
+//! replaces matches in a string, with support for backreferences (matched groups)
+//! @param subject
+//!    the string to be tested against the regular expression
+//!
+//! @param subst
+//!    string to be inserted in place of each match. backreferences can be inserted into
+//!    the string to be substituted using the syntax %[n]s where n is the nth matching string group,
+//!    and 0 (zero) is the full match.
+//!
+//!  example:
+//!   > Regexp.PCRE.Plain("my name is ([a-zA-Z]+)")->replace_positional("allow me to introduce myself: my name is john", "%[0]s is my name");
+//!   (1) Result: "allow me to introduce myself: john is my name"
+  string replace_positional(string subject, string subst)
+  {
+    return _replace_positional(subject, replace_positional_sprintf, subst);
+  }
+
+  static string replace_positional_sprintf(string m, array comp, string subst)
+  {
+    return sprintf(subst, m, @comp);
+  }
+
+  string _replace_positional(string subject,string|function with, mixed|void ... args)
+   {
+      int i=0;
+      String.Buffer buf = String.Buffer();
+
+      for (;;)
+      {
+         array substrings = ({});
+         array(int)|int v=exec(subject,i);
+
+         if (intp(v) && !handle_exec_error([int]v)) break;
+
+         if (v[0]>i) buf+=subject[i..v[0]-1];
+
+         if(sizeof(v)>2)
+         {
+           int c = 2;
+           do
+           {
+             substrings += ({ subject[v[c]..(v[c+1]-1)] });
+             c+=2;
+           }
+           while(c<= (sizeof(v)-2));
+         }
+
+         if (stringp(with)) buf+=with;
+           else { string o = with(subject[v[0]..v[1]-1], substrings, @args); buf+=o; }
+
+         i=v[1];
+      }
+       
+      buf+=subject[i..];
+      
+      return buf->get();                
+   }            
+               
 /**** "internal" ***********************************************/
 
    string _sprintf(int t,mapping fum)
