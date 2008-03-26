@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.654 2008/03/20 15:34:37 grubba Exp $
+|| $Id: program.c,v 1.655 2008/03/26 15:07:11 grubba Exp $
 */
 
 #include "global.h"
@@ -5988,6 +5988,7 @@ int store_prog_string(struct pike_string *str)
   return i;
 }
 
+/* NOTE: O(n²)! */
 int store_constant(struct svalue *foo,
 		   int equal,
 		   struct pike_string *constant_name)
@@ -5995,13 +5996,14 @@ int store_constant(struct svalue *foo,
   struct program_constant tmp;
   volatile unsigned int e;
 
-  for(e=0;e<Pike_compiler->new_program->num_constants;e++)
-  {
-    JMP_BUF jmp;
-    if (SETJMP(jmp)) {
-      handle_compile_exception ("Error comparing constants.");
-      /* Assume that if `==() throws an error, the svalues aren't equal. */
-    } else {
+  JMP_BUF jmp;
+  if (SETJMP(jmp)) {
+    handle_compile_exception ("Error comparing constants.");
+    /* Assume that if `==() throws an error, the svalues aren't equal. */
+    e = Pike_compiler->new_program->num_constants;
+  } else {
+    for(e=0;e<Pike_compiler->new_program->num_constants;e++)
+    {
       struct program_constant *c = Pike_compiler->new_program->constants+e;
 
       if (foo->type == c->sval.type) {
@@ -6026,8 +6028,8 @@ int store_constant(struct svalue *foo,
 	}
       }
     }
-    UNSETJMP(jmp);
   }
+  UNSETJMP(jmp);
   assign_svalue_no_free(&tmp.sval,foo);
 #if 0
   if((tmp.name=constant_name)) add_ref(constant_name);
