@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.413 2008/03/20 15:03:07 grubba Exp $
+// $Id: master.pike.in,v 1.414 2008/03/26 22:31:04 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -87,12 +87,12 @@ int show_if_constant_errors = 0;
 // ---  Functions begin here.
 
 // Have to access some stuff without going through the resolver.
-private constant Builtin = _static_modules.Builtin;
+private object(_static_modules.Builtin) Builtin = _static_modules.Builtin();
 private constant Files = _static_modules.files;
 
 #define Stat Files.Stat
 #define capitalize(X) (upper_case((X)[..0])+(X)[1..])
-#define trim_all_whites(X) (Builtin()->string_trim_all_whites (X))
+#define trim_all_whites(X) (Builtin.string_trim_all_whites (X))
 
 private function write = Files()->_stdout->write;
 private function werror = Files()->_stderr->write;
@@ -724,7 +724,7 @@ static void call_compile_warning (object handler, string file,
 
 #if constant(_static_modules.Builtin.mutex)
 #define THREADED
-Builtin.mutex compilation_mutex = Builtin()->mutex();
+_static_modules.Builtin.mutex compilation_mutex = Builtin.mutex();
 #endif
 
 #ifdef __NT__
@@ -771,7 +771,7 @@ array(string) module_defined(object|program mod)
 {
   array files = ({});
   if (programp(mod))
-    return ({ Builtin()->program_defined([program]mod) });
+    return ({ Builtin.program_defined([program]mod) });
 
   array mods;
   if (mod->is_resolv_joinnode)
@@ -782,9 +782,9 @@ array(string) module_defined(object|program mod)
   foreach (mods;; object mod)
   {
     if (mod->is_resolv_dirnode)
-      files += ({ Builtin()->program_defined(object_program(mod->module)) });
+      files += ({ Builtin.program_defined(object_program(mod->module)) });
     else
-      files += ({ Builtin()->program_defined(object_program(mod)) });
+      files += ({ Builtin.program_defined(object_program(mod)) });
   }
   return files;
 }
@@ -834,7 +834,7 @@ object show_doc(program|object|function obj)
       source = source_cache[prog];
     else
     {
-      array sourceref = array_sscanf(Builtin()->program_defined(prog), 
+      array sourceref = array_sscanf(Builtin.program_defined(prog), 
                                      "%s%[:]%[0-9]");
       source = master_read_file(sourceref[0]);
       if (sizeof(sourceref[1]) && sizeof(sourceref[2]))
@@ -1112,8 +1112,8 @@ program low_cast_to_program(string pname,
   string ext;
   string nname;
 
-  // werror("low_cast_to_program(%O, %O, %O, %O)\n",
-  // pname, current_file, handler, mkobj);
+  //werror("low_cast_to_program(%O, %O, %O, %O)\n",
+  //	 pname, current_file, handler, mkobj);
 
   if(sscanf(reverse(BASENAME(pname)),"%s.%s",ext, nname))
   {
@@ -1484,6 +1484,9 @@ object dirnode(string dirname, object|void compilation_handler)
 }
 
 #else /* !0 */
+
+static object Unicode;
+
 //! Module node representing a single directory.
 //!
 //! @seealso
@@ -1511,8 +1514,15 @@ class dirnode
     catch {
       // FIXME: Warn on failure?
       low_name = utf8_to_string(low_name);
-      // FIXME: MacOS X/HFS uses decomposed Unicode by default.
-      //        Use Unicode.normalize(low_name, "NFC") to fix.
+      if (Builtin.string_width(low_name)) {
+	// We might need to normalize the string (cf MacOS X).
+
+	// Load the Unicode module if it hasn't already been loaded.
+	if (!Unicode) {
+	  Unicode = resolv("Unicode");
+	}
+	low_name = Unicode.normalize(low_name, "NFC");
+      }
     };
     if (has_prefix(low_name, ".#")) return 0;
     if (has_suffix(low_name, ".pike") ||
@@ -2649,7 +2659,7 @@ void _main(array(string) orig_argv, array(string) env)
   string postparseaction=0;
 
   predefines = initial_predefines =
-    Builtin()->_take_over_initial_predefines();
+    Builtin._take_over_initial_predefines();
   _pike_file_name = orig_argv[0];
 #if constant(thread_create)
   _backend_thread = this_thread();
@@ -3704,7 +3714,7 @@ string describe_program(program|function p)
     }
   }
 
-  if(s=Builtin()->program_defined(p))
+  if(s=Builtin.program_defined(p))
     return BASENAME(s);
 
   return 0;
