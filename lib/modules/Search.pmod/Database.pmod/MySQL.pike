@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: MySQL.pike,v 1.86 2007/11/16 10:12:03 wellhard Exp $
+// $Id: MySQL.pike,v 1.87 2008/03/26 18:09:13 jonasw Exp $
 
 inherit .Base;
 
@@ -262,7 +262,16 @@ Search.ResultSet get_deleted_documents()
     return deleted_documents = Search.ResultSet(ids);
   }
 }
-  
+
+Search.ResultSet get_all_documents()
+{
+  array ids =
+    (array(int)) db->query("SELECT id FROM document ORDER BY id")->id;
+  return Search.ResultSet(ids);
+}
+
+
+
 // ----------------------------------------------
 // Field handling
 // ----------------------------------------------

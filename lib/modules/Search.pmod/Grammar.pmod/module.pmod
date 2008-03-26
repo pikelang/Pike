@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: module.pmod,v 1.12 2004/08/07 15:27:00 js Exp $
+// $Id: module.pmod,v 1.13 2008/03/26 18:09:15 jonasw Exp $
 
 //! Abstract parse tree node.
 class ParseNode {
@@ -180,6 +180,16 @@ ParseNode optimize(ParseNode node, string|void parentOp) {
 	  && node->phrases==({}) && node->plusPhrases==({}) &&
 	  node->minusPhrases==({}) )
 	return 0;
+      //  Fix "minus" queries without corresponding starting selection
+      //  by adding "*" as the starting selection.
+      if (sizeof(node->minusWords) || sizeof(node->minusPhrases)) {
+        if (!sizeof(node->plusWords)
+            && !sizeof(node->plusPhrases)
+            && !sizeof(node->words)
+            && !sizeof(node->phrases)) {
+	  node->words = ({ "*" });
+	}
+      }
   }
   if (newChildren)
     node->children = newChildren;
@@ -196,6 +206,9 @@ static private void _validate(ParseNode node, ParseNode parent) {
     case "and":
       break;
     case "text":
+      //  NOTE: This should no longer be happening since we adjust these
+      //  nodes during the optimization phase to be constructed as
+      //  ("*" - phrase).
       if (sizeof(node->minusWords) || sizeof(node->minusPhrases)) {
         if (!sizeof(node->plusWords)
             && !sizeof(node->plusPhrases)
