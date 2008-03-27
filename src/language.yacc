@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.406 2008/01/07 10:38:04 grubba Exp $
+|| $Id: language.yacc,v 1.407 2008/03/27 12:21:59 grubba Exp $
 */
 
 %pure_parser
@@ -38,6 +38,7 @@
 %token TOK_ADD_EQ
 %token TOK_AND_EQ
 %token TOK_ARRAY_ID
+%token TOK_ATTRIBUTE_ID
 %token TOK_BREAK
 %token TOK_CASE
 %token TOK_CLASS
@@ -64,6 +65,7 @@
 %token TOK_INLINE
 %token TOK_LOCAL_ID
 %token TOK_FINAL_ID
+%token TOK_FUNCTION_NAME
 %token TOK_INT_ID
 %token TOK_LAMBDA
 %token TOK_MULTISET_ID
@@ -1222,10 +1224,12 @@ magic_identifiers2:
     TOK_VOID_ID       { $$ = "void"; }
   | TOK_MIXED_ID      { $$ = "mixed"; }
   | TOK_ARRAY_ID      { $$ = "array"; }
+  | TOK_ATTRIBUTE_ID  { $$ = "__attribute__"; }
   | TOK_MAPPING_ID    { $$ = "mapping"; }
   | TOK_MULTISET_ID   { $$ = "multiset"; }
   | TOK_OBJECT_ID     { $$ = "object"; }
   | TOK_FUNCTION_ID   { $$ = "function"; }
+  | TOK_FUNCTION_NAME { $$ = "__FUNCTION__"; }
   | TOK_PROGRAM_ID    { $$ = "program"; }
   | TOK_STRING_ID     { $$ = "string"; }
   | TOK_FLOAT_ID      { $$ = "float"; }
@@ -1399,6 +1403,21 @@ basic_type:
   | TOK_PROGRAM_ID  opt_object_type   { push_type(T_PROGRAM); }
   | TOK_ARRAY_ID    opt_array_type    { push_type(T_ARRAY); }
   | TOK_MULTISET_ID opt_array_type    { push_type(T_MULTISET); }
+  | TOK_ATTRIBUTE_ID '(' string_constant ',' type7 ')'
+  {
+    push_type_attribute($3->u.sval.u.string);
+    free_node($3);
+  }
+  | TOK_ATTRIBUTE_ID '(' string_constant error ')'
+  {
+    push_type(T_MIXED);
+    push_type_attribute($3->u.sval.u.string);
+    free_node($3);
+  }
+  | TOK_ATTRIBUTE_ID error
+  {
+    push_type(T_MIXED);
+  }
   ;
 
 identifier_type: idents
@@ -4103,6 +4122,8 @@ string: TOK_STRING
 bad_identifier: bad_expr_ident
   | TOK_ARRAY_ID
   { yyerror_reserved("array"); }
+  | TOK_ATTRIBUTE_ID
+  { yyerror_reserved("__attribute__"); }
   | TOK_CLASS
   { yyerror_reserved("class"); }
   | TOK_ENUM
@@ -4111,6 +4132,8 @@ bad_identifier: bad_expr_ident
   { yyerror_reserved("float");}
   | TOK_FUNCTION_ID
   { yyerror_reserved("function");}
+  | TOK_FUNCTION_NAME
+  { yyerror_reserved("__FUNCTION__");}
   | TOK_INT_ID
   { yyerror_reserved("int"); }
   | TOK_MAPPING_ID
