@@ -3,7 +3,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Query.pmod,v 1.32 2008/03/26 18:08:53 jonasw Exp $
+// $Id: Query.pmod,v 1.33 2008/03/27 08:04:06 liin Exp $
 
 static function(string,int:string) blobfeeder(Search.Database.Base db,
                                               array words)
@@ -83,7 +83,7 @@ static Search.ResultSet sort_resultset(Search.ResultSet resultset,
 //!   Used when searching in the field "any:".
 //!
 //! @returns
-//!   An array with two elements:
+//!   An array with three elements:
 //!   @array
 //!     @elem Search.ResultSet 0
 //!       The ResultSet containing the hits.
