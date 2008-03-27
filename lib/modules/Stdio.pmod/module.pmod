@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.233 2008/03/07 18:50:07 grubba Exp $
+// $Id: module.pmod,v 1.234 2008/03/27 17:28:21 grubba Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -799,7 +799,7 @@ class File
   }
 #endif
 
-  /*FIXME: deprecated*/ this_program set_peek_file_before_read_callback(int(0..1) ignored)
+  __deprecated__(this_program) set_peek_file_before_read_callback(int(0..1) ignored)
   {
     // This hack is not necessary anymore - the backend now properly
     // ignores events if other callbacks/threads has managed to read
