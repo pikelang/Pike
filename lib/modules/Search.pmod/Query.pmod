@@ -3,7 +3,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Query.pmod,v 1.33 2008/03/27 08:04:06 liin Exp $
+// $Id: Query.pmod,v 1.34 2008/03/27 12:57:37 jonasw Exp $
 
 static function(string,int:string) blobfeeder(Search.Database.Base db,
                                               array words)
@@ -157,7 +157,7 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
     }
 
 
-    void exec(ParseNode q) {
+    void exec(ParseNode q, void|int use_AND_optimization) {
       int max_globs = 100;
       switch (q->op) {
         case "and":
@@ -165,7 +165,7 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
           int first = 1;
           foreach (q->children, ParseNode child)
           {
-            exec(child);
+            exec(child, (q->op == "and") && !first);
             if (!first) {
               Search.ResultSet r2 = pop();
               Search.ResultSet r1 = pop();
@@ -180,7 +180,7 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
           {
           int first = 1;
           foreach (q->children, ParseNode child) {
-            exec(child);
+            exec(child, 0);
             if (!first) {
               Search.ResultSet r2 = pop();
               Search.ResultSet r1 = pop();
@@ -296,7 +296,14 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
 	      has_value(ordinaryWordGlobs, "*");
 	    if (hasEverything) {
 	      //  FIXME: Ranking?
-	      push(db->get_all_documents());
+	      if (use_AND_optimization && sizeof(stack)) {
+		//  If the current operation is AND we can never get a
+		//  result set after subtraction containing more entries than
+		//  the set pushed on the stack from our previous siblings.
+		push(stack->top());
+	      } else {
+		push(db->get_all_documents());
+	      }
 	      hasPlus = 0;
 	      hasOrdinary = 0;
 	      plusWordGlobs -= ({ "*" });

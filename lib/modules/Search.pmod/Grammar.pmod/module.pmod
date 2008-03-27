@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: module.pmod,v 1.13 2008/03/26 18:09:15 jonasw Exp $
+// $Id: module.pmod,v 1.14 2008/03/27 12:57:39 jonasw Exp $
 
 //! Abstract parse tree node.
 class ParseNode {
@@ -151,6 +151,22 @@ ParseNode optimize(ParseNode node, string|void parentOp) {
       }
       if (sizeof(newChildren) == 1)
         return newChildren[0];
+      else {
+	//  If we have a negative word only we try to place it at the
+	//  end of the children list. This will save us a fetch of all
+	//  document IDs in the execution pass to compute the negation.
+	int(0..1) is_minus_only(ParseNode n) {
+	  return
+	    !sizeof(n->plusWords) &&
+	    !sizeof(n->plusPhrases) &&
+	    (!sizeof(n->words) || has_value(n->words, "*"))&&
+	    !sizeof(n->phrases) &&
+	    (sizeof(n->minusWords) ||
+	     sizeof(n->minusPhrases));
+	};
+	array(ParseNode) minus_only_items = filter(newChildren, is_minus_only);
+	newChildren = (newChildren - minus_only_items) + minus_only_items;
+      }
       break;
     case "or":
       if (!sizeof(node->children))
