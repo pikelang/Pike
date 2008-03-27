@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lexer.h,v 1.63 2007/12/28 13:40:31 nilsson Exp $
+|| $Id: lexer.h,v 1.64 2008/03/27 12:23:36 grubba Exp $
 */
 
 /*
@@ -403,11 +403,11 @@ static struct pike_string *readstring(void)
 
 
 
+static int low_yylex(YYSTYPE *);
 int yylex(YYSTYPE *yylval)
 #if LEXDEBUG>4
 {
   int t;
-  int low_yylex(YYSTYPE *);
 #if LEXDEBUG>8
   fprintf(stderr, "YYLEX:\n");
 #endif /* LEXDEBUG>8 */
@@ -417,7 +417,7 @@ int yylex(YYSTYPE *yylval)
   {
     fprintf(stderr,"YYLEX: '%c' (%d) at %s:%d\n",t,t,lex.current_file->str,lex.current_line);
   }else{
-    fprintf(stderr,"YYLEX: %s (%d) at %s:%d\n",low_get_f_name(t,0),t,lex.current_file->str,lex.current_line);
+    fprintf(stderr,"YYLEX: token #%d at %s:%d\n",t,lex.current_file->str,lex.current_line);
   }
   return t;
 }
@@ -447,7 +447,7 @@ static int low_yylex(YYSTYPE *yylval)
 
       PIKE_MEM_WO_RANGE (yylval, sizeof (YYSTYPE));
 
-      if(len>1 && len<10)
+      if(len>1 && len<16)
       {
 	/* NOTE: TWO_CHAR() will generate false positives with wide strings,
 	 * but that doesn't matter, since ISWORD() will fix it.
@@ -578,6 +578,10 @@ static int low_yylex(YYSTYPE *yylval)
 	  break;
 	case TWO_CHAR('w','h'):
 	  if(ISWORD("while")) return TOK_WHILE;
+	  break;
+	case TWO_CHAR('_','_'):
+	  if(ISWORD("__attribute__")) return TOK_ATTRIBUTE_ID;
+	  if(ISWORD("__FUNCTION__")) return TOK_FUNCTION_NAME;
 	  break;
 	}
       }
