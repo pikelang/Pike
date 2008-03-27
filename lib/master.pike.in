@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.414 2008/03/26 22:31:04 grubba Exp $
+// $Id: master.pike.in,v 1.415 2008/03/27 14:09:12 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -1514,7 +1514,7 @@ class dirnode
     catch {
       // FIXME: Warn on failure?
       low_name = utf8_to_string(low_name);
-      if (Builtin.string_width(low_name)) {
+      if (Builtin.string_width(low_name) > 8) {
 	// We might need to normalize the string (cf MacOS X).
 
 	// Load the Unicode module if it hasn't already been loaded.
