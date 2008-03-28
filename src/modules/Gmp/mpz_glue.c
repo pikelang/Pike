@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.172 2008/03/28 20:17:13 mast Exp $
+|| $Id: mpz_glue.c,v 1.173 2008/03/28 20:23:35 mast Exp $
 */
 
 #include "global.h"
@@ -2126,7 +2126,7 @@ static void *pike_mp_realloc (void *ptr, size_t old_size, size_t new_size)
   return ret;
 }
 
-static void *pike_mp_free (void *ptr, size_t size)
+static void pike_mp_free (void *ptr, size_t size)
 {
   free (ptr);
 }
