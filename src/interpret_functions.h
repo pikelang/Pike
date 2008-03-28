@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.200 2008/02/27 23:59:14 grubba Exp $
+|| $Id: interpret_functions.h,v 1.201 2008/03/28 23:11:33 mast Exp $
 */
 
 /*
@@ -2413,14 +2413,8 @@ OPCODE1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN_POP,
   STACK_LEVEL_CHECK(3);
   CALL_AND_UNSET_ONERROR(uwp);
 
-  STACK_LEVEL_CHECK(3);
-  free_svalue(Pike_sp-3);
-  free_svalue(Pike_sp-2);
-  move_svalue(Pike_sp - 3, Pike_sp - 1);
-  Pike_sp-=2;
-  STACK_LEVEL_DONE(1);
-
-  pop_stack();
+  pop_n_elems (3);
+  STACK_LEVEL_DONE (0);
 });
 
 #ifndef ENTRY_PROLOGUE_SIZE
