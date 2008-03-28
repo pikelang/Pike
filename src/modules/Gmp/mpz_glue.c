@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.163 2006/10/20 07:20:17 nilsson Exp $
+|| $Id: mpz_glue.c,v 1.164 2008/03/28 20:17:13 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.163 2006/10/20 07:20:17 nilsson Exp $");
+RCSID("$Id: mpz_glue.c,v 1.164 2008/03/28 20:17:13 mast Exp $");
 #include "gmp_machine.h"
 #include "module.h"
 
@@ -1952,6 +1952,33 @@ PIKE_MODULE_EXIT
 #define tMpz_binop_type tFuncV(tNone, tMpz_arg, tMpz_ret)
 #define tMpz_cmpop_type tFunc(tMixed, tInt01)
 
+static void *pike_mp_alloc (size_t alloc_size)
+{
+  void *ret = malloc (alloc_size);
+  if (!ret)
+    /* According to gmp docs, we're neither allowed to return zero nor
+     * longjmp here. */
+    Pike_fatal ("Failed to allocate %"PRINTSIZET"db in gmp library.\n",
+		alloc_size);
+  return ret;
+}
+
+static void *pike_mp_realloc (void *ptr, size_t old_size, size_t new_size)
+{
+  void *ret = realloc (ptr, new_size);
+  if (!ret)
+    /* According to gmp docs, we're neither allowed to return zero nor
+     * longjmp here. */
+    Pike_fatal ("Failed to reallocate %"PRINTSIZET"db block "
+		"to %"PRINTSIZET"db in gmp library.\n", old_size, new_size);
+  return ret;
+}
+
+static void *pike_mp_free (void *ptr, size_t size)
+{
+  free (ptr);
+}
+
 #define MPZ_DEFS()							\
   ADD_STORAGE(MP_INT);							\
   									\
@@ -2047,6 +2074,14 @@ PIKE_MODULE_INIT
     fatal("Gmp.mpz initialized twice!\n");
   }
 #endif /* PIKE_DEBUG */
+
+  /* Make sure that gmp uses the same malloc functions as we do since
+   * we got code that frees blocks allocated inside gmp (e.g.
+   * mpf.get_string). This also ensures that gmp uses dlmalloc if we
+   * do on Windows. In case gmp already uses the same malloc, this is
+   * essentially just a NOP. */
+  mp_set_memory_functions (pike_mp_alloc, pike_mp_realloc, pike_mp_free);
+
   start_new_program();
 
   MPZ_DEFS();
