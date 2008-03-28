@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.173 2008/03/28 20:23:35 mast Exp $
+|| $Id: mpz_glue.c,v 1.174 2008/03/28 20:27:22 mast Exp $
 */
 
 #include "global.h"
@@ -2098,12 +2098,6 @@ PIKE_MODULE_EXIT
 }
 
 
-#define tMpz_arg tOr3(tInt,tFloat,tObj)
-#define tMpz_ret tObjIs_GMP_MPZ
-#define tMpz_shift_type tFunc(tMpz_arg,tMpz_ret)
-#define tMpz_binop_type tFuncV(tNone, tMpz_arg, tMpz_ret)
-#define tMpz_cmpop_type tFunc(tMixed, tInt01)
-
 static void *pike_mp_alloc (size_t alloc_size)
 {
   void *ret = malloc (alloc_size);
@@ -2130,6 +2124,13 @@ static void pike_mp_free (void *ptr, size_t size)
 {
   free (ptr);
 }
+
+
+#define tMpz_arg tOr3(tInt,tFloat,tObj)
+#define tMpz_ret tObjIs_GMP_MPZ
+#define tMpz_shift_type tFunc(tMpz_arg,tMpz_ret)
+#define tMpz_binop_type tFuncV(tNone, tMpz_arg, tMpz_ret)
+#define tMpz_cmpop_type tFunc(tMixed, tInt01)
 
 #define MPZ_DEFS()							\
   ADD_STORAGE(MP_INT);							\
