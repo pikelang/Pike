@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.118 2008/03/28 20:17:13 mast Exp $
+|| $Id: mpz_glue.c,v 1.119 2008/03/28 20:23:32 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.118 2008/03/28 20:17:13 mast Exp $");
+RCSID("$Id: mpz_glue.c,v 1.119 2008/03/28 20:23:32 mast Exp $");
 #include "gmp_machine.h"
 #include "module.h"
 
@@ -1626,7 +1626,7 @@ static void *pike_mp_realloc (void *ptr, size_t old_size, size_t new_size)
   return ret;
 }
 
-static void *pike_mp_free (void *ptr, size_t size)
+static void pike_mp_free (void *ptr, size_t size)
 {
   free (ptr);
 }
