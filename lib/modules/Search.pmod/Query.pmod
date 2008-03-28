@@ -3,7 +3,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Query.pmod,v 1.34 2008/03/27 12:57:37 jonasw Exp $
+// $Id: Query.pmod,v 1.35 2008/03/28 12:53:28 liin Exp $
 
 static function(string,int:string) blobfeeder(Search.Database.Base db,
                                               array words)
@@ -90,7 +90,7 @@ static Search.ResultSet sort_resultset(Search.ResultSet resultset,
 //!     @elem array(string) 1
 //!       All wanted words in the query. (I.e. not the words that were
 //!       preceded by minus.)
-//!     @elem array(string) 2
+//!     @elem array(mapping) 2
 //!       All wanted globs in the query. (I.e. not the globs that were 
 //!       preceded by minus.)       
 //!   @endarray
@@ -310,8 +310,10 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
 	      ordinaryWordGlobs -= ({ "*" });
 	    }
 	    
-	    glob_words += Array.uniq(plusWordGlobs | ordinaryWordGlobs);
-
+	    foreach(Array.uniq(plusWordGlobs || ({}) | 
+			       ordinaryWordGlobs || ({})), string w)
+	      glob_words += ({ ([ q->field : w]) });
+	    
             if(hasPlus)
             {
               int first = 1;
