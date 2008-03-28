@@ -1,10 +1,10 @@
 // -*- Pike -*-
 
-// $Id: module.pike,v 1.26 2007/07/29 16:11:47 peter Exp $
+// $Id: module.pike,v 1.27 2008/03/28 22:49:58 mast Exp $
 
 #pike __REAL_VERSION__
 
-constant version = ("$Revision: 1.26 $"/" ")[1];
+constant version = ("$Revision: 1.27 $"/" ")[1];
 constant description = "Pike module installer.";
 
 // Source directory
@@ -197,6 +197,14 @@ void do_make(array(string) cmd)
 
 int main(int argc, array(string) argv)
 {
+  string specspath=include_path+"/specs";
+
+  if(!Stdio.is_file(specspath))
+  {
+    werror("Missing specs file at %s\n",specspath);
+    return 1;
+  }
+
   run_pike = master()->_pike_file_name;
 #ifdef NOT_INSTALLED
   run_pike += " -DNOT_INSTALLED";
@@ -208,7 +216,7 @@ int main(int argc, array(string) argv)
     run_pike += " -m"+master()->_master_file_name;
   putenv("RUNPIKE", run_pike);
 
-  load_specs(include_path+"/specs");
+  load_specs(specspath);
   
   foreach(Getopt.find_all_options(argv,aggregate(
     ({"autoconf",Getopt.NO_ARG,({"--autoconf"}) }),
