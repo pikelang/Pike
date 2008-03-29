@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.391 2008/03/29 01:52:49 mast Exp $
+|| $Id: interpret.c,v 1.392 2008/03/29 02:53:26 mast Exp $
 */
 
 #include "global.h"
@@ -339,6 +339,7 @@ PMOD_EXPORT void init_interpreter(void)
  * object[index] : { object, index } (external object indexing)
  * local variable : { svalue pointer (T_SVALUE_PTR), nothing (T_VOID) }
  * global variable : { object, identifier index (T_OBJ_INDEX) } (internal object indexing)
+ * lvalue array: { T_ARRAY_LVALUE, array with lvalue pairs }
  */
 
 void lvalue_to_svalue_no_free(struct svalue *to,struct svalue *lval)
