@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: apply_low.h,v 1.33 2008/02/27 23:59:11 grubba Exp $
+|| $Id: apply_low.h,v 1.34 2008/03/29 01:35:01 mast Exp $
 */
 
     {
@@ -166,9 +166,20 @@
       if(new_frame->scope) add_ref(new_frame->scope);
 #endif
 #ifdef PIKE_DEBUG      
-      if (Pike_fp && (new_frame->locals < Pike_fp->locals)) {
-	fatal("New locals below old locals: %p < %p\n",
-	      new_frame->locals, Pike_fp->locals);
+      if (Pike_fp) {
+	if (new_frame->locals < Pike_fp->locals) {
+	  fatal("New locals below old locals: %p < %p\n",
+		new_frame->locals, Pike_fp->locals);
+	}
+
+	if (d_flag > 1) {
+	  /* Liberal use of variables for debugger convenience. */
+	  size_t i;
+	  struct svalue *l = Pike_fp->locals;
+	  for (i = 0; l + i < Pike_sp; i++)
+	    if (l[i].type != PIKE_T_FREE)
+	      debug_check_svalue (l + i);
+	}
       }
 #endif /* PIKE_DEBUG */
 
