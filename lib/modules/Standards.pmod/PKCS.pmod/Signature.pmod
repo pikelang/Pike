@@ -11,11 +11,13 @@
 #pike __REAL_VERSION__
 
 //! @decl string build_digestinfo(string msg, Crypto.Hash hash)
-//! Construct a PKCS-1 digestinfo
+//! Construct a PKCS-1 digestinfo.
 //! @param msg
 //!   message to digest
 //! @param hash
 //!   crypto hash object such as @[Crypto.SHA1] or @[Crypto.MD5]
+//! @seealso
+//!   Crypto.RSA()->sign, Crypto.RSA()->cooked_sign
 string build_digestinfo(string msg, HASH hash)
 {
   if(!hash->asn1_id) error("Unknown ASN.1 id for hash.\n");
