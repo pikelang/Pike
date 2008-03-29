@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.151 2008/01/26 22:34:20 mast Exp $
+|| $Id: error.c,v 1.152 2008/03/29 01:29:47 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -539,14 +539,24 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_va_fatal(const char *fmt, va_list args
   /* Prevent double fatal. */
   if (in_fatal)
   {
-    if (fmt) (void)VFPRINTF(stderr, fmt, args);
+    if (fmt) {
+      va_list a;
+      va_copy (a, args);	/* FIXME: Assumes C99. */
+      (void)VFPRINTF(stderr, fmt, a);
+      va_end (a);
+    }
     do_abort();
   }
 
   in_fatal = 1;
 #ifdef PIKE_DEBUG
   if (d_flag) {
-    if (fmt) (void)VFPRINTF(stderr, fmt, args);
+    if (fmt) {
+      va_list a;
+      va_copy (a, args);	/* FIXME: Assumes C99. */
+      (void)VFPRINTF(stderr, fmt, a);
+      va_end (a);
+    }
     dump_backlog();
   }
 #endif
