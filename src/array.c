@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.200 2008/02/12 18:51:29 grubba Exp $
+|| $Id: array.c,v 1.201 2008/03/29 02:43:01 mast Exp $
 */
 
 #include "global.h"
@@ -363,7 +363,7 @@ PMOD_EXPORT void simple_set_index(struct array *a,struct svalue *ind,struct sval
     {
       INT32 i, n;
       check_stack(2);
-      Pike_sp++->type = T_VOID;
+      mark_free_svalue (Pike_sp++);
       push_svalue(ind);
       for (i = 0, n = a->size; i < n; i++) {
 	assign_svalue(Pike_sp-2, &a->item[i]);
