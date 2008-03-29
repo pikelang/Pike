@@ -1,5 +1,5 @@
 // -*- Pike -*-
-// $Id: module.pmod.in,v 1.9 2008/03/26 01:51:27 bill Exp $
+// $Id: module.pmod.in,v 1.10 2008/03/29 16:13:15 nilsson Exp $
 // original author: mirar
 
 #pike __REAL_VERSION__
@@ -239,9 +239,11 @@ class Plain
          array substrings = ({});
          array(int)|int v=exec(subject,i);
 
-         if (intp(v) && !handle_exec_error([int]v)) break;
+         if (intp(v) && !handle_exec_error([int]v))
+           break;
 
-         if (v[0]>i) buf+=subject[i..v[0]-1];
+         if (v[0]>i)
+           buf->add(subject[i..v[0]-1]);
 
          if(sizeof(v)>2)
          {
@@ -254,13 +256,17 @@ class Plain
            while(c<= (sizeof(v)-2));
          }
 
-         if (stringp(with)) buf+=with;
-           else { string o = with(subject[v[0]..v[1]-1], substrings, @args); buf+=o; }
+         if (stringp(with))
+           buf->add(with);
+         else {
+           string o = with(subject[v[0]..v[1]-1], substrings, @args);
+           buf->add(o);
+         }
 
          i=v[1];
       }
        
-      buf+=subject[i..];
+      buf->add( subject[i..] );
       
       return buf->get();                
    }            
