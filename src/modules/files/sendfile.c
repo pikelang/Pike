@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sendfile.c,v 1.79 2008/02/20 19:43:36 grubba Exp $
+|| $Id: sendfile.c,v 1.80 2008/03/29 16:22:30 mbaehr Exp $
 */
 
 /*
@@ -772,8 +772,8 @@ static void worker(void *this_)
  * Functions callable from Pike code
  */
 
-/*! void create(array(string) headers, object from, int offset, int len,
- *!             array(string) trailers, object to, 
+/*! @decl void create(array(string) headers, object from, int offset, int len, @
+ *!             array(string) trailers, object to, @
  *!             function callback, mixed ... args)
  *!
  *! Low-level implementation of @[Stdio.sendfile()].
