@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.302 2008/03/29 16:20:15 mast Exp $
+|| $Id: gc.c,v 1.303 2008/03/29 18:58:22 mast Exp $
 */
 
 #include "global.h"
@@ -1142,57 +1142,61 @@ again:
       if (((struct object *) a)->refs > 0 && p) {
 	size_t inh_idx, var_idx, var_count = 0;
 
-	fprintf (stderr, "%*s**Object variables:\n", indent, "");
+	if (((struct object *)a)->prog) {
+	  fprintf (stderr, "%*s**Object variables:\n", indent, "");
 
-	for (inh_idx = 0; inh_idx < p->num_inherits; inh_idx++) {
-	  struct inherit *inh = p->inherits + inh_idx;
-	  struct program *p2 = inh->prog;
+	  for (inh_idx = 0; inh_idx < p->num_inherits; inh_idx++) {
+	    struct inherit *inh = p->inherits + inh_idx;
+	    struct program *p2 = inh->prog;
 
-	  if (inh->inherit_level) {
-	    if (inh->name) {
-	      fprintf (stderr, "%*s**%*s=== In inherit ",
-		       indent, "", inh->inherit_level + 1, "");
-	      safe_print_short_svalue (stderr, (union anything *) &inh->name,
-				       T_STRING);
-	      fprintf (stderr, ", program %d:\n", inh->prog->id);
+	    if (inh->inherit_level) {
+	      if (inh->name) {
+		fprintf (stderr, "%*s**%*s=== In inherit ",
+			 indent, "", inh->inherit_level + 1, "");
+		safe_print_short_svalue (stderr, (union anything *) &inh->name,
+					 T_STRING);
+		fprintf (stderr, ", program %d:\n", inh->prog->id);
+	      }
+	      else
+		fprintf (stderr,
+			 "%*s**%*s=== In nameless inherit, program %d:\n",
+			 indent, "", inh->inherit_level + 1, "", inh->prog->id);
 	    }
-	    else
-	      fprintf (stderr, "%*s**%*s=== In nameless inherit, program %d:\n",
-		       indent, "", inh->inherit_level + 1, "", inh->prog->id);
+
+	    for (var_idx = 0; var_idx < p2->num_variable_index; var_idx++) {
+	      struct identifier *id =
+		p2->identifiers + p2->variable_index[var_idx];
+	      void *ptr;
+
+	      fprintf (stderr, "%*s**%*srtt: %-8s  name: ",
+		       indent, "", inh->inherit_level + 1, "",
+		       get_name_of_type (id->run_time_type));
+
+	      if (id->name->size_shift)
+		safe_print_short_svalue (stderr, (union anything *) &id->name,
+					 T_STRING);
+	      else
+		fprintf (stderr, "%-20s", id->name->str);
+
+	      fprintf (stderr, "  off: %4"PRINTPTRDIFFT"d  value: ",
+		       inh->storage_offset + id->func.offset);
+
+	      ptr = PIKE_OBJ_STORAGE ((struct object *) a) +
+		inh->storage_offset + id->func.offset;
+	      if (id->run_time_type == T_MIXED)
+		safe_print_svalue_compact (stderr, (struct svalue *) ptr);
+	      else
+		safe_print_short_svalue_compact (stderr, (union anything *) ptr,
+						 id->run_time_type);
+
+	      fputc ('\n', stderr);
+	      var_count++;
+	    }
 	  }
 
-	  for (var_idx = 0; var_idx < p2->num_variable_index; var_idx++) {
-	    struct identifier *id = p2->identifiers + p2->variable_index[var_idx];
-	    void *ptr;
-
-	    fprintf (stderr, "%*s**%*srtt: %-8s  name: ",
-		     indent, "", inh->inherit_level + 1, "",
-		     get_name_of_type (id->run_time_type));
-
-	    if (id->name->size_shift)
-	      safe_print_short_svalue (stderr, (union anything *) &id->name,
-				       T_STRING);
-	    else
-	      fprintf (stderr, "%-20s", id->name->str);
-
-	    fprintf (stderr, "  off: %4"PRINTPTRDIFFT"d  value: ",
-		     inh->storage_offset + id->func.offset);
-
-	    ptr = PIKE_OBJ_STORAGE ((struct object *) a) +
-	      inh->storage_offset + id->func.offset;
-	    if (id->run_time_type == T_MIXED)
-	      safe_print_svalue_compact (stderr, (struct svalue *) ptr);
-	    else
-	      safe_print_short_svalue_compact (stderr, (union anything *) ptr,
-					       id->run_time_type);
-
-	    fputc ('\n', stderr);
-	    var_count++;
-	  }
+	  if (!var_count)
+	    fprintf (stderr, "%*s** (none)\n", indent, "");
 	}
-
-	if (!var_count)
-	  fprintf (stderr, "%*s** (none)\n", indent, "");
 
 	fprintf(stderr,"%*s**Describing program %p of object:\n",indent,"", p);
 #ifdef DEBUG_MALLOC
@@ -1932,6 +1936,7 @@ void exit_gc(void)
 }
 
 #ifdef PIKE_DEBUG
+
 PMOD_EXPORT void gc_check_zapped (void *a, TYPE_T type, const char *file, int line)
 {
   struct marker *m = find_marker (a);
@@ -1939,9 +1944,7 @@ PMOD_EXPORT void gc_check_zapped (void *a, TYPE_T type, const char *file, int li
     fprintf (stderr, "Free of leaked %s %p from %s:%d, %d refs remaining\n",
 	     get_name_of_type (type), a, file, line, *(INT32 *)a - 1);
 }
-#endif
 
-#ifdef PIKE_DEBUG
 /* This function marks some known externals. The rest are handled by
  * callbacks added with add_gc_callback. */
 static void mark_externals (void)
@@ -1984,9 +1987,7 @@ void locate_references(void *a)
     gc_check_all_mappings();
     gc_check_all_programs();
     gc_check_all_objects();
-#if defined (PIKE_DEBUG) || defined (DO_PIKE_CLEANUP)
     debug_gc_check_all_types();
-#endif
   } GC_LEAVE;
 
 #ifdef DEBUG_MALLOC
