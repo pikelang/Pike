@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.157 2007/12/26 21:51:31 grubba Exp $
+|| $Id: acconfig.h,v 1.158 2008/03/29 11:50:55 mast Exp $
 */
 
 #ifndef MACHINE_H
@@ -357,6 +357,9 @@
 
 /* Your va_list is a state pointer? */
 #undef VA_LIST_IS_STATE_PTR
+
+/* Defined if va_copy exists in stdarg.h. */
+#undef HAVE_VA_COPY
 
 /* Does your compiler grock 'volatile' */
 #define VOLATILE volatile
