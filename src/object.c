@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.282 2008/02/27 23:59:15 grubba Exp $
+|| $Id: object.c,v 1.283 2008/03/29 02:55:42 mast Exp $
 */
 
 #include "global.h"
@@ -2607,7 +2607,8 @@ void check_object_context(struct object *o,
     }else{
       union anything *u;
       u=(union anything *)(current_storage + id->func.offset);
-      check_short_svalue(u, id->run_time_type);
+      if (id->run_time_type != PIKE_T_GET_SET)
+	check_short_svalue(u, id->run_time_type);
     }
   }
 }
