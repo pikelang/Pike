@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.392 2008/03/29 02:53:26 mast Exp $
+|| $Id: interpret.c,v 1.393 2008/03/29 16:14:46 mast Exp $
 */
 
 #include "global.h"
@@ -2027,9 +2027,8 @@ void low_return(void)
   }else{
     if(save_sp+1 < Pike_sp)
     {
-      assign_svalue(save_sp,Pike_sp-1);
-      pop_n_elems(Pike_sp-save_sp-1);
-      
+      stack_pop_n_elems_keep_top (Pike_sp - save_sp - 1);
+
       /* consider using a flag for immediate destruct instead... */
       destruct_objects_to_destruct();
     }
