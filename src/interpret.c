@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.390 2008/03/14 08:49:51 grubba Exp $
+|| $Id: interpret.c,v 1.391 2008/03/29 01:52:49 mast Exp $
 */
 
 #include "global.h"
@@ -845,7 +845,7 @@ void reset_evaluator(void)
 
 #ifdef PIKE_DEBUG
 
-#define BACKLOG 1024
+#define BACKLOG 100
 struct backlog
 {
   PIKE_INSTR_T instruction;
