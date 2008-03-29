@@ -97,6 +97,11 @@ class Buffer {
   inherit Nettle.Proxy;
 }
 
+//! @decl string rot13(string data)
+//! Convenience function that accesses the crypt function of a
+//! substitution object keyed to perform standard ROT13 (de)ciphering.
+function(string:string) rot13 = Crypto.Substitution()->set_rot_key()->crypt;
+
 
 #else
 constant this_program_does_not_exist=1;
