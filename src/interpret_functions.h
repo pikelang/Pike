@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.201 2008/03/28 23:11:33 mast Exp $
+|| $Id: interpret_functions.h,v 1.202 2008/03/29 01:33:18 mast Exp $
 */
 
 /*
@@ -458,6 +458,7 @@ OPCODE2(F_LOCAL_2_GLOBAL, "global = local", 0, {
 
 OPCODE2(F_GLOBAL_2_LOCAL, "local = global", 0, {
   free_svalue(Pike_fp->locals + arg2);
+  mark_free_svalue (Pike_fp->locals + arg2);
   low_index_current_object_no_free(Pike_fp->locals + arg2, arg1);
 });
 
@@ -2262,7 +2263,7 @@ OPCODE1_JUMP(F_CALL_OTHER_AND_RETURN,"call other & return", I_UPDATE_ALL, {
     do_trace_call(args_, &save_buf);					 \
   }									 \
   (*(s->u.efun->function))(args_);					 \
-  s->u.efun->runs++;                                                     \
+  DO_IF_PROFILING (s->u.efun->runs++);					 \
   if(Pike_sp != expected_stack + !s->u.efun->may_return_void)		 \
   {									 \
     if(Pike_sp < expected_stack)					 \
@@ -2345,6 +2346,7 @@ OPCODE1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN, "ltosval, call builtin & assign",
   STACK_LEVEL_START(args+2);
 
   free_svalue(Pike_sp-args);
+  mark_free_svalue (Pike_sp - args);
   lvalue_to_svalue_no_free(Pike_sp-args, Pike_sp-args-2);
   /* This is so that foo = efun(foo,...) (and similar things) will be faster.
    * It's done by freeing the old reference to foo after it has been
@@ -2388,6 +2390,7 @@ OPCODE1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN_POP,
   STACK_LEVEL_START(args+2);
 
   free_svalue(Pike_sp-args);
+  mark_free_svalue (Pike_sp - args);
   lvalue_to_svalue_no_free(Pike_sp-args, Pike_sp-args-2);
   /* This is so that foo = efun(foo,...) (and similar things) will be faster.
    * It's done by freeing the old reference to foo after it has been
