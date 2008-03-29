@@ -226,7 +226,7 @@ this_program set_decrypt_key(mapping(string:string|array(string)) key) {
   return set_key(key);
 }
 
-int|string crypt(string x) {
+string crypt(string x) {
   if(mode)
     return decrypt(x);
   else
