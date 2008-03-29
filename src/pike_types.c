@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.317 2008/03/27 12:31:11 grubba Exp $
+|| $Id: pike_types.c,v 1.318 2008/03/29 16:20:16 mast Exp $
 */
 
 #include "global.h"
@@ -2417,34 +2417,6 @@ void debug_gc_check_all_types (void)
   }
 }
 
-/* Leak reporting similar to the exit_with_cleanup code in
- * exit_builtin_modules. */
-
-void report_all_type_leaks (void)
-{
-  unsigned INT32 index;
-  if (!gc_keep_markers)
-    Pike_fatal ("Should only be called in final cleanup.\n");
-  for (index = 0; index < pike_type_hash_size; index++) {
-    struct pike_type *t;
-    for (t = pike_type_hash[index]; t; t = t->next) {
-      struct marker *m = find_marker (t);
-      /* We aren't hooked in to the gc mark pass so we don't have
-       * markers for types with only external references. */
-      INT32 m_refs = m ? m->refs : 0;
-      if (t->refs != m_refs) {
-	fprintf (stderr, "Type at %p got %d unaccounted refs: ",
-		 t, t->refs - m_refs);
-	simple_describe_type (t);
-	fputc ('\n', stderr);
-#ifdef DEBUG_MALLOC
-	debug_malloc_dump_references (t, 2, 1, 0);
-#endif
-      }
-    }
-  }
-}
-
 void free_all_leaked_types (void)
 {
   unsigned INT32 index;
@@ -2454,21 +2426,24 @@ void free_all_leaked_types (void)
     struct pike_type *t;
     for (t = pike_type_hash[index]; t; t = t->next) {
       struct marker *m = find_marker (t);
-      INT32 m_refs = m ? m->refs : 0;
-      INT32 refs = t->refs;
-      if (refs > m_refs) {
+      if (m) {
+	INT32 refs = t->refs;
+	if (refs > m->refs) {
 #ifdef PIKE_DEBUG
-	if (m) m->flags |= GC_CLEANUP_FREED;
+	  m->flags |= GC_CLEANUP_FREED;
 #endif /* PIKE_DEBUG */
-	do {
-	  free_type (t);
-	  refs--;
-	} while (refs > m_refs);
-	/* t is invalid here, as is its next pointer.
-	 * Start over from the top of this hash entry.
-	 */
-	index--;
-	break;
+	  do {
+	    free_type (t);
+	    refs--;
+	  } while (refs > m->refs);
+	  if (!refs) {
+	    /* t is invalid here, as is its next pointer.
+	     * Start over from the top of this hash entry.
+	     */
+	    index--;
+	    break;
+	  }
+	}
       }
     }
   }
@@ -7713,8 +7688,12 @@ void cleanup_pike_type_table(void)
 #endif /* DO_PIKE_CLEANUP */
 }
 
-#if 0
-#ifdef PIKE_DEBUG
+#if defined (PIKE_DEBUG) || defined (DO_PIKE_CLEANUP)
+
+/* This is only enough gc stuff to detect leaking pike_type structs
+ * and to locate references to them. More is needed if types are
+ * extended to contain pointers to other memory objects or if they
+ * might contain cycles. */
 
 void gc_mark_type_as_referenced(struct pike_type *t)
 {
@@ -7748,78 +7727,17 @@ void gc_mark_type_as_referenced(struct pike_type *t)
   }
 }
 
-unsigned gc_touch_all_types(void)
+static void gc_check_type (struct pike_type *t)
 {
-  size_t e;
-  unsigned n = 0;
-  if (!pike_type_hash) return 0;
-  for(e=0;e<pike_type_hash_size;e++)
-  {
-    struct pike_type *t;
-    for(t = pike_type_hash[e]; t; t=t->next) debug_gc_touch(t), n++;
-  }
-  return n;
-}
+  debug_malloc_touch (t);
 
-void gc_mark_all_types(void)
-{
-  size_t e;
-  if(!pike_type_hash) return;
-  for(e=0;e<pike_type_hash_size;e++)
-  {
-    struct pike_type *t;
-    for(t=pike_type_hash[e]; t; t=t->next) {
-      if (gc_is_referenced(t)) {
-	gc_mark_type_as_referenced(t);
-      }
-    }
-  }
-}
-
-size_t gc_free_all_unreferenced_types(void)
-{
-  size_t unreferenced = 0;
-  size_t e;
-  for (e = 0; e < pike_type_hash_size; e++) {
-    struct pike_type *t;
-  loop:
-    for (t = pike_type_hash[e]; t; t = t->next) {
-      struct marker *m = find_marker(t);
-      if (!m) continue;
-      if ((m->flags & GC_GOT_EXTRA_REF) == GC_GOT_EXTRA_REF) {
-	if (gc_do_free(t)) {
-	  free_type(t);
-	  unreferenced++;
-	  /* The hash table may have been modified! */
-	  goto loop;
-	}
-      }
-    }
-  }
-  for (e = 0; e < pike_type_hash_size; e++) {
-    struct pike_type *t;
-    for (t = pike_type_hash[e]; t; t = t->next) {
-      struct marker *m = find_marker(t);
-      if (!m) continue;
-      if ((m->flags & GC_GOT_EXTRA_REF) == GC_GOT_EXTRA_REF) {
-	fprintf(stderr, "There's still an extra ref to ");
-	simple_describe_type(t);
-	fprintf(stderr, "\n");
-      }
-    }
-  }
-  return unreferenced;
-}
-
-void real_gc_cycle_check_type(struct pike_type *t, int weak)
-{
-  GC_CYCLE_ENTER(t, PIKE_T_TYPE, weak) {
+  GC_ENTER (t, PIKE_T_TYPE) {
     switch(t->type) {
       case PIKE_T_SCOPE:
       case T_ASSIGN:
       case PIKE_T_NAME:
       case PIKE_T_ATTRIBUTE:
-	if (t->cdr) gc_cycle_check_type(t->cdr, 0);
+	if (t->cdr) debug_gc_check (t->cdr, " as cdr in a type");
 	break;
       case PIKE_T_FUNCTION:
       case T_MANY:
@@ -7828,34 +7746,28 @@ void real_gc_cycle_check_type(struct pike_type *t, int weak)
       case PIKE_T_MAPPING:
       case T_OR:
       case T_AND:
-	if (t->cdr) gc_cycle_check_type(t->cdr, 0);
-      /* FALL_THOUGH */
+	if (t->cdr) debug_gc_check (t->cdr, " as cdr in a type");
+	/* FALL_THOUGH */
       case PIKE_T_ARRAY:
       case PIKE_T_MULTISET:
       case T_NOT:
       case PIKE_T_TYPE:
       case PIKE_T_PROGRAM:
-	if (t->car) gc_cycle_check_type(t->car, 0);
+	if (t->car) debug_gc_check (t->car, " as car in a type");
 	break;
     }
-  } GC_CYCLE_LEAVE;
+  } GC_LEAVE;
 }
 
-void gc_cycle_check_all_types(void)
+void gc_check_all_types (void)
 {
-#if 0
   size_t e;
-  if(!pike_type_hash) return;
+  if (!pike_type_hash) return;
   for(e=0;e<pike_type_hash_size;e++)
   {
     struct pike_type *t;
-    for(t=pike_type_hash[e]; t; t=t->next) {
-      real_gc_cycle_check_type(t, 0);
-      gc_cycle_run_queue();
-    }
+    for(t = pike_type_hash[e]; t; t=t->next) gc_check_type (t);
   }
-#endif
 }
 
-#endif /* PIKE_DEBUG */
-#endif /* 0 */
+#endif /* PIKE_DEBUG || DO_PIKE_CLEANUP */

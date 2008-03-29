@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.655 2008/03/26 15:07:11 grubba Exp $
+|| $Id: program.c,v 1.656 2008/03/29 16:20:18 mast Exp $
 */
 
 #include "global.h"
@@ -8008,10 +8008,10 @@ void gc_mark_program_as_referenced(struct program *p)
       if(p->parent)
 	gc_mark_program_as_referenced(p->parent);
 
-      for(e=0;e<p->num_constants;e++)
+      for(e = p->num_constants - 1; e >= 0; e--)
 	gc_mark_svalues(& p->constants[e].sval, 1);
 
-      for(e=0;e<p->num_inherits;e++)
+      for(e = p->num_inherits - 1; e >= 0; e--)
       {
 	if(p->inherits[e].parent)
 	  gc_mark_object_as_referenced(p->inherits[e].parent);
@@ -8019,6 +8019,11 @@ void gc_mark_program_as_referenced(struct program *p)
 	if(e && p->inherits[e].prog)
 	  gc_mark_program_as_referenced(p->inherits[e].prog);
       }
+
+#if defined (PIKE_DEBUG) || defined (DO_PIKE_CLEANUP)
+      for (e = p->num_identifiers - 1; e >= 0; e--)
+	gc_mark_type_as_referenced (p->identifiers[e].type);
+#endif
 
     } GC_LEAVE;
 }
@@ -8030,10 +8035,10 @@ void real_gc_cycle_check_program(struct program *p, int weak)
 
     if (!(p->flags & PROGRAM_AVOID_CHECK))
     {
-      for(e=0;e<p->num_constants;e++)
+      for(e = p->num_constants - 1; e >= 0; e--)
 	gc_cycle_check_svalues(& p->constants[e].sval, 1);
       
-      for(e=0;e<p->num_inherits;e++)
+      for(e = p->num_inherits - 1; e >= 0; e--)
       {
 	if(p->inherits[e].parent)
 	  gc_cycle_check_object(p->inherits[e].parent, 0);
@@ -8042,11 +8047,6 @@ void real_gc_cycle_check_program(struct program *p, int weak)
 	  gc_cycle_check_program(p->inherits[e].prog, 0);
       }
 
-#ifdef DEBUG_MALLOC
-      for (e = 0; e < p->num_identifiers; e++)
-	gc_cycle_check_type(p->identifiers[e].type, 0);
-#endif
-      
       /* Strong ref follows. It must be last. */
       if(p->parent)
 	gc_cycle_check_program(p->parent, 0);
@@ -8072,11 +8072,11 @@ static void gc_check_program(struct program *p)
     if(p->parent)
       debug_gc_check (p->parent, " as parent program of a program");
   
-    for(e=0;e<p->num_constants;e++) {
+    for(e = p->num_constants - 1; e >= 0; e--) {
       debug_gc_check_svalues (&p->constants[e].sval, 1, " as program constant");
     }
   
-    for(e=0;e<p->num_inherits;e++)
+    for(e = p->num_inherits - 1; e >= 0; e--)
     {
       if(p->inherits[e].parent)
       {
@@ -8096,19 +8096,18 @@ static void gc_check_program(struct program *p)
 #if defined (PIKE_DEBUG) || defined (DO_PIKE_CLEANUP)
     if (gc_keep_markers || Pike_in_gc == GC_PASS_LOCATE)
     {
-      int e;
-      for(e=0;e<(int)p->num_strings;e++)
+      for(e = p->num_strings - 1; e >= 0; e--)
 	debug_gc_check (p->strings[e], " in the string storage of a program");
-
-      for(e=0;e<(int)p->num_identifiers;e++)
-      {
+      for(e = p->num_identifiers - 1; e >= 0; e--)
 	debug_gc_check (p->identifiers[e].name,
 			" as identifier name in a program");
-	debug_gc_check (p->identifiers[e].type,
-			" as identifier type in a program");
-      }
     }
+
+    for(e = p->num_identifiers - 1; e >= 0; e--)
+      debug_gc_check (p->identifiers[e].type,
+		      " as identifier type in a program");
 #endif
+
   } GC_LEAVE;
 }
 

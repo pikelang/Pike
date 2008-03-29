@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: module.c,v 1.49 2008/02/15 17:37:04 grubba Exp $
+|| $Id: module.c,v 1.50 2008/03/29 16:20:16 mast Exp $
 */
 
 #include "global.h"
@@ -191,7 +191,8 @@ static void exit_builtin_modules(void)
       type_type_string, void_type_string, zero_type_string, any_type_string, \
       weak_type_string,
 
-#define REPORT_LINKED_LIST_LEAKS(TYPE, START, STATICS, T_TYPE, NAME) do { \
+#define REPORT_LINKED_LIST_LEAKS(TYPE, START, STATICS, T_TYPE, NAME,	\
+				 PRINT_EXTRA) do {			\
       struct TYPE *x;							\
       for (x = START; x; x = x->next) {					\
 	struct marker *m = find_marker (x);				\
@@ -213,37 +214,64 @@ static void exit_builtin_modules(void)
 	      fputs ("Leak(s) found at exit:\n", stderr);		\
 	      leak_found = 1;						\
 	    }								\
-	    fprintf (stderr, NAME " got %d unaccounted references: ",	\
-		     x->refs - (m->refs + is_static));			\
-	    print_short_svalue (stderr, (union anything *) &x, T_TYPE);	\
+	    fprintf (stderr, NAME " at %p got %d unaccounted references: ", \
+		     x, x->refs - (m->refs + is_static));		\
+	    safe_print_short_svalue (stderr, (union anything *) &x, T_TYPE); \
 	    fputc ('\n', stderr);					\
-	    DO_IF_DEBUG(if (T_TYPE == T_PROGRAM) {			\
-			  struct program *p = (struct program *)x;	\
-			  if (p->parent) {				\
-			    fprintf(stderr, "    Parent is: %p\n", \
-				    p->parent);				\
-			    dump_program_tables(p->parent, 6);		\
-			  }						\
-			  fprintf(stderr, "  Symbol tables:\n");	\
-			  dump_program_tables(p, 4);			\
-			});						\
-	    DO_IF_DMALLOC (debug_malloc_dump_references (x, 2, 1, 0));	\
+	    {PRINT_EXTRA;}						\
+	    DO_IF_DMALLOC (						\
+	      debug_malloc_dump_references (x, 2, 1, 0);		\
+	      fputc ('\n', stderr);					\
+	    );								\
 	  }								\
 	}								\
       }									\
     } while (0)
 
-    REPORT_LINKED_LIST_LEAKS (array, first_array, STATIC_ARRAYS, T_ARRAY, "Array");
-    REPORT_LINKED_LIST_LEAKS (multiset, first_multiset, NOTHING, T_MULTISET, "Multiset");
-    REPORT_LINKED_LIST_LEAKS (mapping, first_mapping, NOTHING, T_MAPPING, "Mapping");
-    REPORT_LINKED_LIST_LEAKS (program, first_program, NOTHING, T_PROGRAM, "Program");
-    REPORT_LINKED_LIST_LEAKS (object, first_object, NOTHING, T_OBJECT, "Object");
-    report_all_type_leaks();
+    REPORT_LINKED_LIST_LEAKS (array, first_array, STATIC_ARRAYS, T_ARRAY, "Array", {});
+    REPORT_LINKED_LIST_LEAKS (multiset, first_multiset, NOTHING, T_MULTISET, "Multiset", {});
+    REPORT_LINKED_LIST_LEAKS (mapping, first_mapping, NOTHING, T_MAPPING, "Mapping", {});
+    REPORT_LINKED_LIST_LEAKS (
+      program, first_program, NOTHING, T_PROGRAM, "Program",
+      {
+	/* This kind of info is rarely useful - the output from
+	 * print_short_svalue is usually enough to identify the program, and
+	 * the dmalloc ref dump shows where it has been used.
+	DO_IF_DEBUG(
+	  struct program *p = (struct program *)x;
+	  if (p->parent) {
+	    fprintf(stderr, "    Parent is: %p\n",
+		    p->parent);
+	    dump_program_tables(p->parent, 6);
+	  }
+	  fprintf(stderr, "  Symbol tables:\n");
+	  dump_program_tables(p, 4);
+	);
+	*/
+      }
+    );
+    REPORT_LINKED_LIST_LEAKS (
+      object, first_object, NOTHING, T_OBJECT, "Object", {
+	DO_IF_DEBUG (
+	  if (!x->prog) {
+	    struct program *p = id_to_program (x->program_id);
+	    if (p) {
+	      fputs ("Destructed object - program was: ", stderr);
+	      safe_print_short_svalue (stderr,
+				       (union anything *) &p, T_PROGRAM);
+	      fputc ('\n', stderr);
+	    }
+	    else
+	      fprintf (stderr, "Destructed object - "
+		       "program gone too, its id was %d\n", x->program_id);
+	  }
+	);
+      });
 
     {
       size_t index;
       for (index = 0; index < pike_type_hash_size; index++) {
-	REPORT_LINKED_LIST_LEAKS(pike_type, pike_type_hash[index], STATIC_TYPES, PIKE_T_TYPE, "Type");
+	REPORT_LINKED_LIST_LEAKS(pike_type, pike_type_hash[index], STATIC_TYPES, PIKE_T_TYPE, "Type", {});
       }
     }
 

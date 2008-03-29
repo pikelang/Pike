@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.h,v 1.110 2007/11/11 13:49:01 nilsson Exp $
+|| $Id: pike_types.h,v 1.111 2008/03/29 16:20:17 mast Exp $
 */
 
 #ifndef PIKE_TYPES_H
@@ -94,15 +94,20 @@ extern struct pike_type *type_stack[PIKE_TYPE_STACK_SIZE];
 extern struct pike_type **pike_type_mark_stack[PIKE_TYPE_STACK_SIZE/4];
 
 #ifdef DEBUG_MALLOC
-#define free_type(T)	debug_free_type((struct pike_type *)debug_malloc_pass_named(T, "free_type"))
 #define check_type_string(T) debug_check_type_string((struct pike_type *)debug_malloc_pass_named(T, "check_type_string"))
-#else /* !DEBUG_MALLOC */
-#define free_type debug_free_type
-#ifdef PIKE_DEBUG
+#elif defined (PIKE_DEBUG)
 #define check_type_string debug_check_type_string
 #endif /* PIKE_DEBUG */
-#endif /* DEBUG_MALLOC */
 
+#define free_type(T) do {						\
+    struct pike_type *t_ = (T);						\
+    debug_malloc_touch_named (t_, "free_type");				\
+    DO_IF_DEBUG (							\
+      DO_IF_PIKE_CLEANUP (						\
+	if (gc_external_refs_zapped)					\
+	  gc_check_zapped (t_, PIKE_T_TYPE, __FILE__, __LINE__)));	\
+    debug_free_type (t_);						\
+  } while (0)
 
 extern int max_correct_args;
 PMOD_EXPORT extern struct pike_type *string0_type_string;
@@ -217,7 +222,6 @@ void simple_describe_type(struct pike_type *s);
 void my_describe_type(struct pike_type *type);
 struct pike_string *describe_type(struct pike_type *type);
 void debug_gc_check_all_types (void);
-void report_all_type_leaks (void);
 void free_all_leaked_types (void);
 TYPE_T compile_type_to_runtime_type(struct pike_type *s);
 struct pike_type *or_pike_types(struct pike_type *a,
@@ -266,6 +270,8 @@ struct pike_type *object_type_to_program_type(struct pike_type *obj_t);
 PMOD_EXPORT char *get_name_of_type(TYPE_T t);
 void cleanup_pike_types(void);
 void cleanup_pike_type_table(void);
+void gc_mark_type_as_referenced(struct pike_type *t);
+void gc_check_all_types (void);
 int type_may_overload(struct pike_type *type, int lfun);
 void yyexplain_nonmatching_types(struct pike_type *type_a,
 				 struct pike_type *type_b,
@@ -273,7 +279,6 @@ void yyexplain_nonmatching_types(struct pike_type *type_a,
 struct pike_type *debug_make_pike_type(const char *t);
 struct pike_string *type_to_string(struct pike_type *t);
 int pike_type_allow_premature_toss(struct pike_type *type);
-void real_gc_cycle_check_type(struct pike_type *t, int weak);
 void register_attribute_handler(struct pike_string *attr,
 				struct svalue *handler);
 /* Prototypes end here */
@@ -374,13 +379,6 @@ void register_attribute_handler(struct pike_string *attr,
 #define push_finished_type_with_markers debug_push_finished_type_with_markers
 #define push_finished_type_backwards debug_push_finished_type_backwards
 #endif
-
-#if 0
-#define gc_cycle_check_type(T, WEAK) \
-  gc_cycle_enqueue((gc_cycle_check_cb *)real_gc_cycle_check_type, (T), (WEAK))
-#else
-#define gc_cycle_check_type(T, WEAK)
-#endif /* 0 */
 
 #ifndef PIKE_DEBUG
 #define check_type_string(X)

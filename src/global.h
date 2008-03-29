@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: global.h,v 1.110 2007/06/18 09:21:24 mast Exp $
+|| $Id: global.h,v 1.111 2008/03/29 16:20:16 mast Exp $
 */
 
 #ifndef GLOBAL_H
@@ -433,6 +433,12 @@ typedef struct p_wchar_p
 #else
 #define DO_IF_DEBUG(X)
 #define NDEBUG
+#endif
+
+#if defined (PIKE_DEBUG) || defined (DO_PIKE_CLEANUP)
+#define DO_IF_DEBUG_OR_CLEANUP(X) X
+#else
+#define DO_IF_DEBUG_OR_CLEANUP(X)
 #endif
 
 #ifdef INTERNAL_PROFILING

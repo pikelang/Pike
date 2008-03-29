@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.301 2007/12/28 13:38:15 nilsson Exp $
+|| $Id: gc.c,v 1.302 2008/03/29 16:20:15 mast Exp $
 */
 
 #include "global.h"
@@ -3376,7 +3376,7 @@ size_t do_gc(void *ignored, int explicit_call)
     gc_check_all_programs();
     gc_check_all_objects();
 #if defined (PIKE_DEBUG) || defined (DO_PIKE_CLEANUP)
-    debug_gc_check_all_types();
+    gc_check_all_types();
 #endif
   } END_ACCEPT_UNFINISHED_TYPE_FIELDS;
 
