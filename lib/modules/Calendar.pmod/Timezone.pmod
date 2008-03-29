@@ -1174,9 +1174,24 @@ class Runtime_timezone_compiler
 
       Zone z=Zone(s);   
       int n=0;
+
+#if constant(Regexp.PCRE.Studied)
+      if (has_value(s,"\\") ||
+          has_value(s,"(") ||
+          has_value(s,"["))
+        return 0;
+      Regexp.PCRE.Studied re=Regexp.PCRE.Studied("[Zz]one[ \t]*"+s+"[ \t]");
+#endif
+
       for (;;)
       {
+#if constant(Regexp.PCRE.Studied)
+        array(int)|int v=re->exec(all_rules,n);
+        if (!arrayp(v) || !sizeof(v)) return UNDEFINED;
+        n=v[0];
+#else
 	 n=search(all_rules,s,n);
+#endif
 #ifdef RTTZC_DEBUG
 	 werror("hit at: %O\n",n);
 #endif
