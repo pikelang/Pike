@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.h,v 1.154 2008/03/29 02:43:42 mast Exp $
+|| $Id: svalue.h,v 1.155 2008/03/29 16:20:28 mast Exp $
 */
 
 #ifndef SVALUE_H
@@ -80,7 +80,7 @@ union anything
   struct svalue *lval;		/**< Used with T_SVALUE_PTR. */
   void *ptr;
 #ifdef DEBUG_MALLOC
-  char *loc;			/* Only used for PIKE_T_UNKNOWN debugging. */
+  char *loc;			/* Only used for free svalue debugging. */
 #endif
 };
 
