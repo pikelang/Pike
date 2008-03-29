@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.h,v 1.152 2008/01/31 13:42:31 grubba Exp $
+|| $Id: svalue.h,v 1.153 2008/03/29 01:37:29 mast Exp $
 */
 
 #ifndef SVALUE_H
@@ -79,6 +79,9 @@ union anything
   int identifier;		/**< Used with T_OBJ_INDEX. */
   struct svalue *lval;		/**< Used with T_SVALUE_PTR. */
   void *ptr;
+#ifdef DEBUG_MALLOC
+  char *loc;			/* Only used for PIKE_T_UNKNOWN debugging. */
+#endif
 };
 
 #ifndef STRUCT_SVALUE_DECLARED
@@ -394,6 +397,14 @@ PMOD_EXPORT extern const char msg_assign_svalue_error[];
       Pike_fatal(msg_type_error,T);					\
   } while (0)
 
+#define check_svalue_type(S) do {					\
+    const struct svalue *sval_ = (S);					\
+    TYPE_T typ_ = sval_->type;						\
+    if (typ_ > MAX_TYPE && typ_ != T_SVALUE_PTR && typ_ != T_OBJ_INDEX && \
+	typ_ != T_VOID && typ_ != T_DELETED && typ_ != T_ARRAY_LVALUE)	\
+      debug_check_suspect_svalue_type (sval_);				\
+  } while (0)
+
 #define check_svalue(S) debug_check_svalue(dmalloc_check_svalue(S,DMALLOC_LOCATION()))
 
 void low_thorough_check_short_svalue (const union anything *u, TYPE_T type);
@@ -488,6 +499,7 @@ static INLINE union anything *dmalloc_check_union(union anything *u,int type, ch
 
 #define check_svalue(S) 0
 #define check_type(T) do {} while (0)
+#define check_svalue_type(S) do {} while (0)
 #define check_refs(S) do {} while (0)
 #define check_refs2(S,T) do {} while (0)
 #define check_type_hint(SVALS, NUM, TYPE_HINT) 0
@@ -502,7 +514,10 @@ static INLINE union anything *dmalloc_check_union(union anything *u,int type, ch
  * the type field is defined (see PIKE_T_FREE above). */
 #define mark_free_svalue(X) do {					\
     struct svalue *_X__ = (X);						\
-    DO_IF_DMALLOC (_X__->u.refs = (void *) -1);				\
+    DO_IF_DMALLOC (							\
+      _X__->u.loc = " " __FILE__ ":" DEFINETOSTR (__LINE__);		\
+      _X__->u.loc++; /* Attempt to achieve an odd address. */		\
+    );									\
     PIKE_MEM_WO(*_X__);							\
     _X__->type = PIKE_T_FREE;						\
   } while (0)
@@ -515,7 +530,11 @@ static INLINE union anything *dmalloc_check_union(union anything *u,int type, ch
     DO_IF_DEBUG (							\
       struct svalue *_X__ = (X);					\
       _X__->type = PIKE_T_UNKNOWN;					\
-      _X__->u.refs = (void *) -1;					\
+      DO_IF_DMALLOC (							\
+	_X__->u.loc = " " __FILE__ ":" DEFINETOSTR (__LINE__);		\
+	_X__->u.loc++; /* Attempt to achieve an odd address. */		\
+      );								\
+      DO_IF_NOT_DMALLOC (_X__->u.ptr = (void *) -1);			\
       PIKE_MEM_WO (*_X__);						\
     );									\
   } while (0)
@@ -546,7 +565,7 @@ static INLINE union anything *dmalloc_check_union(union anything *u,int type, ch
   assert_svalue_locked(_s);					\
   DO_IF_DEBUG (							\
     if (_s->type != PIKE_T_FREE) {				\
-      check_type(_s->type);					\
+      check_svalue_type(_s);					\
       check_refs(_s);						\
     }								\
   );								\
@@ -572,7 +591,7 @@ static INLINE union anything *dmalloc_check_union(union anything *u,int type, ch
   struct svalue *_tmp=(X);					\
   DO_IF_DEBUG (							\
     if (_tmp->type != PIKE_T_FREE) {				\
-      check_type(_tmp->type);					\
+      check_svalue_type(_tmp);					\
       check_refs(_tmp);						\
     }								\
   );								\
@@ -585,7 +604,7 @@ static INLINE union anything *dmalloc_check_union(union anything *u,int type, ch
   const struct svalue *_from=(Y);			\
   DO_IF_DEBUG (						\
     if (_from->type != PIKE_T_FREE) {			\
-      check_type(_from->type);				\
+      check_svalue_type(_from);				\
       check_refs(_from);				\
     }							\
     if (_to == _from)					\
@@ -713,6 +732,7 @@ PMOD_EXPORT void copy_svalues_recursively_no_free(struct svalue *to,
 						  size_t num,
 						  struct mapping *m);
 void check_short_svalue(const union anything *u, TYPE_T type);
+PMOD_EXPORT void debug_check_suspect_svalue_type (const struct svalue *s);
 PMOD_EXPORT void debug_check_svalue(const struct svalue *s);
 void debug_check_type_hint (const struct svalue *svals, size_t num, TYPE_FIELD type_hint);
 PMOD_EXPORT void real_gc_mark_external_svalues(const struct svalue *s, ptrdiff_t num,

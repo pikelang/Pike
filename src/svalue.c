@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.235 2008/01/28 01:08:33 mast Exp $
+|| $Id: svalue.c,v 1.236 2008/03/29 01:37:29 mast Exp $
 */
 
 #include "global.h"
@@ -325,7 +325,7 @@ PMOD_EXPORT void assign_to_short_svalue(union anything *u,
 			    TYPE_T type,
 			    const struct svalue *s)
 {
-  check_type(s->type);
+  check_svalue_type (s);
   check_refs(s);
 
   if(s->type == type)
@@ -353,7 +353,7 @@ PMOD_EXPORT void assign_to_short_svalue_no_free(union anything *u,
 				    TYPE_T type,
 				    const struct svalue *s)
 {
-  check_type(s->type);
+  check_svalue_type (s);
   check_refs(s);
 
   if(s->type == type)
@@ -443,7 +443,7 @@ PMOD_EXPORT unsigned INT32 hash_svalue(const struct svalue *s)
 {
   unsigned INT32 q;
 
-  check_type(s->type);
+  check_svalue_type (s);
   check_refs(s);
 
   switch(s->type)
@@ -500,7 +500,7 @@ PMOD_EXPORT unsigned INT32 hash_svalue(const struct svalue *s)
 
 PMOD_EXPORT int svalue_is_true(const struct svalue *s)
 {
-  check_type(s->type);
+  check_svalue_type (s);
   check_refs(s);
 
   switch(s->type)
@@ -563,7 +563,7 @@ PMOD_EXPORT int svalue_is_true(const struct svalue *s)
 
 PMOD_EXPORT int safe_svalue_is_true(const struct svalue *s)
 {
-  check_type(s->type);
+  check_svalue_type (s);
   check_refs(s);
 
   switch(s->type)
@@ -662,8 +662,8 @@ PMOD_EXPORT int is_identical(const struct svalue *a, const struct svalue *b)
 
 PMOD_EXPORT int is_eq(const struct svalue *a, const struct svalue *b)
 {
-  check_type(a->type);
-  check_type(b->type);
+  check_svalue_type (a);
+  check_svalue_type (b);
   check_refs(a);
   check_refs(b);
 
@@ -819,8 +819,8 @@ PMOD_EXPORT int low_is_equal(const struct svalue *a,
 			     const struct svalue *b,
 			     struct processing *p)
 {
-  check_type(a->type);
-  check_type(b->type);
+  check_svalue_type (a);
+  check_svalue_type (b);
   check_refs(a);
   check_refs(b);
 
@@ -1245,7 +1245,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
    * the raw error can be printed in exit_on_error. */
   check_c_stack(250);
 
-  check_type(s->type);
+  check_svalue_type (s);
   check_refs(s);
 
   indent+=2;
@@ -1855,7 +1855,7 @@ PMOD_EXPORT void copy_svalues_recursively_no_free(struct svalue *to,
   {
     struct svalue *tmp;
 
-    check_type(from->type);
+    check_svalue_type (from);
     check_refs(from);
 
     if ((tmp = low_mapping_lookup(m, from))) {
@@ -1982,9 +1982,27 @@ void check_short_svalue(const union anything *u, TYPE_T type)
   low_check_short_svalue(u,type);
 }
 
-void debug_check_svalue(const struct svalue *s)
+PMOD_EXPORT void debug_check_suspect_svalue_type (const struct svalue *s)
 {
-  check_type(s->type);
+  /* This is only called if s->type is suspect, i.e:
+   * t > MAX_TYPE && t != T_SVALUE_PTR && t != T_OBJ_INDEX &&
+   * t != T_VOID && t != T_DELETED && t != T_ARRAY_LVALUE */
+  if (s->type == PIKE_T_FREE || s->type == PIKE_T_UNKNOWN) {
+#ifdef DEBUG_MALLOC
+    Pike_fatal ("Using %s freed svalue at %p.\nIt was freed at %s.\n",
+		s->type == PIKE_T_FREE ? "marked" : "unmarked", s, s->u.loc);
+#else
+    Pike_fatal ("Using %s freed svalue at %p.\n",
+		s->type == PIKE_T_FREE ? "marked" : "unmarked", s);
+#endif
+  }
+  else
+    Pike_fatal ("Invalid type %d in svalue at %p.\n", s->type, s);
+}
+
+PMOD_EXPORT void debug_check_svalue(const struct svalue *s)
+{
+  check_svalue_type (s);
   if(s->type<=MAX_REF_TYPE &&
      ((PIKE_POINTER_ALIGNMENT-1) & (ptrdiff_t)(s->u.refs)))
     Pike_fatal("Odd pointer! type=%d u->refs=%p\n",s->type,s->u.refs);
