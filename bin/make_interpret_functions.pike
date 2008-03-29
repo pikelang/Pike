@@ -132,6 +132,7 @@ int main(int argc, array(string) argv)
 
   string file=argv[1];
   mixed x=Stdio.read_file(file);
+  x -= "\r"; // < 7.6.120 didn't hide \r.
   x=Parser.Pike.split(x);
   x=Parser.Pike.tokenize(x,file);
   x=Parser.Pike.hide_whitespaces(x);
