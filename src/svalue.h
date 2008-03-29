@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.h,v 1.153 2008/03/29 01:37:29 mast Exp $
+|| $Id: svalue.h,v 1.154 2008/03/29 02:43:42 mast Exp $
 */
 
 #ifndef SVALUE_H
@@ -154,11 +154,12 @@ struct svalue
 #define PIKE_T_UNKNOWN 247
 
 /** svalue.u.identifer is an identifier index in an object. Primarily
- * used in lvalues on stack. */
+ * used in lvalues on stack, but can also occur in arrays containing
+ * lvalue pairs. */
 #define T_OBJ_INDEX 248
 
 /** svalue.u.lval points to an svalue. Primarily used in lvalues on
- * stack. */
+ * stack, but can also occur in arrays containing lvalue pairs. */
 #define T_SVALUE_PTR 249
 
 #define T_ARRAY_LVALUE 250
@@ -391,18 +392,19 @@ do{ \
 PMOD_EXPORT extern void describe(void *); /* defined in gc.c */
 PMOD_EXPORT extern const char msg_type_error[];
 PMOD_EXPORT extern const char msg_assign_svalue_error[];
+
+#define IS_INVALID_TYPE(T)						\
+  ((T > MAX_TYPE && T < T_OBJ_INDEX && T != T_VOID) || T > T_ARRAY_LVALUE)
+
 #define check_type(T) do {						\
-    if(T > MAX_TYPE && T!=T_SVALUE_PTR && T!=T_OBJ_INDEX &&		\
-       T!=T_VOID && T!=T_DELETED && T!=T_ARRAY_LVALUE)			\
-      Pike_fatal(msg_type_error,T);					\
+    TYPE_T typ_ = (T);							\
+    if (IS_INVALID_TYPE (typ_)) Pike_fatal(msg_type_error, typ_);	\
   } while (0)
 
 #define check_svalue_type(S) do {					\
     const struct svalue *sval_ = (S);					\
     TYPE_T typ_ = sval_->type;						\
-    if (typ_ > MAX_TYPE && typ_ != T_SVALUE_PTR && typ_ != T_OBJ_INDEX && \
-	typ_ != T_VOID && typ_ != T_DELETED && typ_ != T_ARRAY_LVALUE)	\
-      debug_check_suspect_svalue_type (sval_);				\
+    if (IS_INVALID_TYPE (typ_)) debug_svalue_type_error (sval_);	\
   } while (0)
 
 #define check_svalue(S) debug_check_svalue(dmalloc_check_svalue(S,DMALLOC_LOCATION()))
@@ -732,7 +734,7 @@ PMOD_EXPORT void copy_svalues_recursively_no_free(struct svalue *to,
 						  size_t num,
 						  struct mapping *m);
 void check_short_svalue(const union anything *u, TYPE_T type);
-PMOD_EXPORT void debug_check_suspect_svalue_type (const struct svalue *s);
+PMOD_EXPORT void debug_svalue_type_error (const struct svalue *s);
 PMOD_EXPORT void debug_check_svalue(const struct svalue *s);
 void debug_check_type_hint (const struct svalue *svals, size_t num, TYPE_FIELD type_hint);
 PMOD_EXPORT void real_gc_mark_external_svalues(const struct svalue *s, ptrdiff_t num,

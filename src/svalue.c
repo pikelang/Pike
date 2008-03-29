@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.236 2008/03/29 01:37:29 mast Exp $
+|| $Id: svalue.c,v 1.237 2008/03/29 02:43:42 mast Exp $
 */
 
 #include "global.h"
@@ -1982,11 +1982,9 @@ void check_short_svalue(const union anything *u, TYPE_T type)
   low_check_short_svalue(u,type);
 }
 
-PMOD_EXPORT void debug_check_suspect_svalue_type (const struct svalue *s)
+PMOD_EXPORT void debug_svalue_type_error (const struct svalue *s)
 {
-  /* This is only called if s->type is suspect, i.e:
-   * t > MAX_TYPE && t != T_SVALUE_PTR && t != T_OBJ_INDEX &&
-   * t != T_VOID && t != T_DELETED && t != T_ARRAY_LVALUE */
+  /* This is only called if s->type is invalid. */
   if (s->type == PIKE_T_FREE || s->type == PIKE_T_UNKNOWN) {
 #ifdef DEBUG_MALLOC
     Pike_fatal ("Using %s freed svalue at %p.\nIt was freed at %s.\n",
