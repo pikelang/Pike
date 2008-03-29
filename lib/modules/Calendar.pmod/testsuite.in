@@ -1,5 +1,5 @@
 START_MARKER
-dnl $Id: testsuite.in,v 1.16 2008/02/05 21:34:47 mast Exp $
+dnl $Id: testsuite.in,v 1.17 2008/03/29 21:03:21 nilsson Exp $
 
 dnl NOTE:
 dnl   *every* time the Calendar tests have failed, it's not the 
@@ -19,6 +19,7 @@ test_eq(Calendar.ISO.Week(2002,1)->day()->format_ymd(),"2001-12-31")
 
 test_eval_error(Calendar.ISO.set_timezone("Europe/Stockholm")
 		->dwim_time("2000-03-26 02:01:17"))
+test_eval_error(Calendar.Second()->set_timezone("n"))
 
 test_eq(Calendar.ISO_UTC.dwim_time("2000-03-26 02:01:17")->unix_time(),
 	954036077)
