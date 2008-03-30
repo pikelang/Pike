@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.318 2008/03/29 16:20:16 mast Exp $
+|| $Id: pike_types.c,v 1.319 2008/03/30 01:24:10 mast Exp $
 */
 
 #include "global.h"
@@ -172,29 +172,50 @@ PMOD_EXPORT char *get_name_of_type(TYPE_T t)
 {
   switch(t)
   {
-    case T_ARRAY: return "array";
-    case T_FLOAT: return "float";
-    case T_MANY: case T_FUNCTION: return "function";
-    case T_INT: return "int";
-    case T_SVALUE_PTR: return "svalue_ptr";
-    case T_OBJ_INDEX: return "obj_index";
-    case T_MAPPING: return "mapping";
-    case T_MULTISET: return "multiset";
-    case T_OBJECT: return "object";
-    case T_PROGRAM: return "program";
-    case T_STRING: return "string";
-    case PIKE_T_NSTRING: return "narrow_string";
-    case T_TYPE: return "type";
-    case T_ZERO: return "zero";
-    case T_VOID: return "void";
-    case T_MIXED: return "mixed";
-    case T_STORAGE: return "object storage";
-    case T_MAPPING_DATA: return "mapping_data";
-    case T_PIKE_FRAME: return "pike_frame";
-    case T_MULTISET_DATA: return "multiset_data";
-    case T_STRUCT_CALLABLE: return "callable";
-    case PIKE_T_GET_SET: return "getter/setter";
-    default: return "unknown";
+    case T_ARRAY:	return "array";
+    case T_MAPPING:	return "mapping";
+    case T_MULTISET:	return "multiset";
+    case T_OBJECT:	return "object";
+    case T_FUNCTION:	return "function";
+    case T_PROGRAM:	return "program";
+    case T_STRING:	return "string";
+    case T_TYPE:	return "type";
+    case T_INT:		return "int";
+    case T_FLOAT:	return "float";
+    case T_ZERO:	return "zero";
+    case T_VOID:	return "void";
+    case T_MIXED:	return "mixed";
+    default:		return "unknown";
+
+#ifdef PIKE_DEBUG
+      /* Let's make it able to describe any type constant in debug mode. */
+    case T_UNFINISHED:		return "T_UNFINISHED";
+    case T_MANY:		return "T_MANY";
+    case PIKE_T_INT_UNTYPED:	return "PIKE_T_INT_UNTYPED";
+    case PIKE_T_GET_SET:	return "PIKE_T_GET_SET";
+    case PIKE_T_FREE:		return "PIKE_T_FREE";
+    case PIKE_T_ATTRIBUTE:	return "PIKE_T_ATTRIBUTE";
+    case PIKE_T_NSTRING:	return "PIKE_T_NSTRING";
+    case PIKE_T_RING:		return "PIKE_T_RING";
+    case PIKE_T_NAME:		return "PIKE_T_NAME";
+    case PIKE_T_SCOPE:		return "PIKE_T_SCOPE";
+    case PIKE_T_TUPLE:		return "PIKE_T_TUPLE";
+    case T_ASSIGN:		return "T_ASSIGN";
+    case T_DELETED:		return "T_DELETED";
+    case PIKE_T_UNKNOWN:	return "PIKE_T_UNKNOWN";
+    case T_OBJ_INDEX:		return "T_OBJ_INDEX";
+    case T_SVALUE_PTR:		return "T_SVALUE_PTR";
+    case T_ARRAY_LVALUE:	return "T_ARRAY_LVALUE";
+    case T_NOT:			return "T_NOT";
+    case T_AND:			return "T_AND";
+    case T_OR:			return "T_OR";
+
+    case T_STORAGE:		return "object storage";
+    case T_MAPPING_DATA:	return "mapping_data";
+    case T_PIKE_FRAME:		return "pike_frame";
+    case T_MULTISET_DATA:	return "multiset_data";
+    case T_STRUCT_CALLABLE:	return "callable";
+#endif
   }
 }
 
@@ -300,7 +321,8 @@ void debug_free_type(struct pike_type *t)
     case PIKE_T_RING:
       /* Free car & cdr */
       free_type(car);
-      t = (struct pike_type *)debug_malloc_pass(cdr);
+      t = (struct pike_type *) cdr;
+      debug_free_type_preamble (t);
       goto loop;
 
     case T_ARRAY:
@@ -310,19 +332,22 @@ void debug_free_type(struct pike_type *t)
     case T_PROGRAM:
     case T_STRING:
       /* Free car */
-      t = (struct pike_type *)debug_malloc_pass(car);
+      t = (struct pike_type *) car;
+      debug_free_type_preamble (t);
       goto loop;
 	
     case T_SCOPE:
     case T_ASSIGN:
       /* Free cdr */
-      t = (struct pike_type *)debug_malloc_pass(cdr);
+      t = (struct pike_type *) cdr;
+      debug_free_type_preamble (t);
       goto loop;
 
     case PIKE_T_ATTRIBUTE:
     case PIKE_T_NAME:
       free_string((struct pike_string *)car);
-      t = (struct pike_type *)debug_malloc_pass(cdr);
+      t = (struct pike_type *) cdr;
+      debug_free_type_preamble (t);
       goto loop;
 
 #ifdef PIKE_DEBUG
@@ -2350,106 +2375,6 @@ struct pike_string *describe_type(struct pike_type *type)
   low_describe_type(type);
   return free_buf(&save_buf);
 }
-
-#if defined (PIKE_DEBUG) || defined (DO_PIKE_CLEANUP)
-
-void debug_gc_check_all_types (void)
-{
-  if (gc_keep_markers || Pike_in_gc == GC_PASS_LOCATE) {
-    unsigned INT32 index;
-    for (index = 0; index < pike_type_hash_size; index++) {
-      struct pike_type *t;
-      for (t = pike_type_hash[index]; t; t = t->next) {
-	GC_ENTER (t, T_TYPE) {
-	  switch (t->type) {
-	    case T_FUNCTION:
-	    case T_MANY:
-	    case T_TUPLE:
-	    case T_MAPPING:
-	    case T_OR:
-	    case T_AND:
-	    case PIKE_T_RING:
-	    case PIKE_T_ATTRIBUTE:
-	    case PIKE_T_NAME:
-	      debug_gc_check (t->car, " as car in a type");
-	      debug_gc_check (t->cdr, " as cdr in a type");
-	      break;
-	    case T_ARRAY:
-	    case T_MULTISET:
-	    case T_NOT:
-	    case T_TYPE:
-	    case T_PROGRAM:
-	    case T_STRING:
-	      debug_gc_check (t->car, " as car in a type");
-	      break;
-	    case T_SCOPE:
-	    case T_ASSIGN:
-	      debug_gc_check (t->cdr, " as cdr in a type");
-	      break;
-#ifdef PIKE_DEBUG
-	    case '0':
-	    case '1':
-	    case '2':
-	    case '3':
-	    case '4':
-	    case '5':
-	    case '6':
-	    case '7':
-	    case '8':
-	    case '9':
-	    case T_FLOAT:
-	    case T_MIXED:
-	    case T_VOID:
-	    case T_ZERO:
-	    case PIKE_T_UNKNOWN:
-	    case T_INT:
-	    case T_OBJECT:
-	      break;
-	    default:
-	      Pike_fatal("debug_gc_check_all_types: "
-			 "Unhandled type-node: %d\n", t->type);
-	      break;
-#endif /* PIKE_DEBUG */
-	  }
-	} GC_LEAVE;
-      }
-    }
-  }
-}
-
-void free_all_leaked_types (void)
-{
-  unsigned INT32 index;
-  if (!gc_keep_markers)
-    Pike_fatal ("Should only be called in final cleanup.\n");
-  for (index = 0; index < pike_type_hash_size; index++) {
-    struct pike_type *t;
-    for (t = pike_type_hash[index]; t; t = t->next) {
-      struct marker *m = find_marker (t);
-      if (m) {
-	INT32 refs = t->refs;
-	if (refs > m->refs) {
-#ifdef PIKE_DEBUG
-	  m->flags |= GC_CLEANUP_FREED;
-#endif /* PIKE_DEBUG */
-	  do {
-	    free_type (t);
-	    refs--;
-	  } while (refs > m->refs);
-	  if (!refs) {
-	    /* t is invalid here, as is its next pointer.
-	     * Start over from the top of this hash entry.
-	     */
-	    index--;
-	    break;
-	  }
-	}
-      }
-    }
-  }
-}
-
-#endif  /* PIKE_DEBUG || DO_PIKE_CLEANUP */
 
 
 /******/
@@ -7534,49 +7459,10 @@ struct pike_string *type_to_string(struct pike_type *t)
   return free_buf(&save_buf);
 }
 
-#if 0
-#ifdef DEBUG_MALLOC
-static void gc_mark_external_types(struct callback *cb, void *a, void *b)
-{
-  GC_ENTER(pike_type_hash, PIKE_T_TYPE) {
-    if (string0_type_string)
-      gc_mark_external(string0_type_string, " as string0_type_string");
-    if (string_type_string)
-      gc_mark_external(string_type_string, " as string_type_string");
-    if (int_type_string)
-      gc_mark_external(int_type_string, " as int_type_string");
-    if (object_type_string)
-      gc_mark_external(object_type_string, " as object_type_string");
-    if (program_type_string)
-      gc_mark_external(program_type_string, " as program_type_string");
-    if (float_type_string)
-      gc_mark_external(float_type_string, " as float_type_string");
-    if (mixed_type_string)
-      gc_mark_external(mixed_type_string, " as mixed_type_string");
-    if (array_type_string)
-      gc_mark_external(array_type_string, " as array_type_string");
-    if (multiset_type_string)
-      gc_mark_external(multiset_type_string, " as multiset_type_string");
-    if (mapping_type_string)
-      gc_mark_external(mapping_type_string, " as mapping_type_string");
-    if (function_type_string)
-      gc_mark_external(function_type_string, " as function_type_string");
-    if (type_type_string)
-      gc_mark_external(type_type_string, " as type_type_string");
-    if (void_type_string)
-      gc_mark_external(void_type_string, " as void_type_string");
-    if (zero_type_string)
-      gc_mark_external(zero_type_string, " as zero_type_string");
-    if (any_type_string)
-      gc_mark_external(any_type_string, " as any_type_string");
-    if (weak_type_string)
-      gc_mark_external(weak_type_string, " as weak_type_string");
-  } GC_LEAVE;
-}
-
-static struct callback *dmalloc_gc_callback = NULL;
-#endif /* DEBUG_MALLOC */
-#endif /* 0 */
+#ifdef PIKE_DEBUG
+static void gc_mark_external_types(struct callback *cb, void *a, void *b);
+static struct callback *pike_type_gc_callback = NULL;
+#endif /* PIKE_DEBUG */
 
 void init_types(void)
 {
@@ -7606,21 +7492,17 @@ void init_types(void)
 				    tFuncV(tNone,tZero,tOr(tMix,tVoid))));
   /* add_ref(weak_type_string);	*//* LEAK */
 
-#if 0
-#ifdef DEBUG_MALLOC
-  dmalloc_gc_callback = add_gc_callback(gc_mark_external_types, NULL, NULL);
-#endif /* DEBUG_MALLOC */
-#endif /* 0 */
+#ifdef PIKE_DEBUG
+  pike_type_gc_callback = add_gc_callback(gc_mark_external_types, NULL, NULL);
+#endif
 }
 
 void cleanup_pike_types(void)
 {
 #ifdef DO_PIKE_CLEANUP
-  struct pike_type_location *t = all_pike_type_locations;
-
-  while(t) {
-    free_type(t->t);
-    t = t->next;
+  while (all_pike_type_locations) {
+    free_type(all_pike_type_locations->t);
+    all_pike_type_locations = all_pike_type_locations->next;
   }
 #endif /* DO_PIKE_CLEANUP */
 
@@ -7659,11 +7541,9 @@ void cleanup_pike_types(void)
   free_type(weak_type_string);
   weak_type_string = NULL;
 
-#if 0
-#ifdef DEBUG_MALLOC
-  remove_callback(dmalloc_gc_callback);
-#endif /* DEBUG_MALLOC */
-#endif /* 0 */
+#ifdef PIKE_DEBUG
+  remove_callback(pike_type_gc_callback);
+#endif
 }
 
 void cleanup_pike_type_table(void)
@@ -7727,42 +7607,121 @@ void gc_mark_type_as_referenced(struct pike_type *t)
   }
 }
 
-static void gc_check_type (struct pike_type *t)
+#ifdef PIKE_DEBUG
+static void gc_mark_external_types(struct callback *cb, void *a, void *b)
+{
+  unsigned int e;
+  for (e = 0; e < NELEM (a_markers); e++) {
+    if (a_markers[e])
+      gc_mark_external (a_markers[e], " in a_markers");
+    if (b_markers[e])
+      gc_mark_external (b_markers[e], " in b_markers");
+  }
+
+  if (string0_type_string)
+    gc_mark_external(string0_type_string, " as string0_type_string");
+  if (string_type_string)
+    gc_mark_external(string_type_string, " as string_type_string");
+  if (int_type_string)
+    gc_mark_external(int_type_string, " as int_type_string");
+  if (object_type_string)
+    gc_mark_external(object_type_string, " as object_type_string");
+  if (program_type_string)
+    gc_mark_external(program_type_string, " as program_type_string");
+  if (float_type_string)
+    gc_mark_external(float_type_string, " as float_type_string");
+  if (mixed_type_string)
+    gc_mark_external(mixed_type_string, " as mixed_type_string");
+  if (array_type_string)
+    gc_mark_external(array_type_string, " as array_type_string");
+  if (multiset_type_string)
+    gc_mark_external(multiset_type_string, " as multiset_type_string");
+  if (mapping_type_string)
+    gc_mark_external(mapping_type_string, " as mapping_type_string");
+  if (function_type_string)
+    gc_mark_external(function_type_string, " as function_type_string");
+  if (type_type_string)
+    gc_mark_external(type_type_string, " as type_type_string");
+  if (void_type_string)
+    gc_mark_external(void_type_string, " as void_type_string");
+  if (zero_type_string)
+    gc_mark_external(zero_type_string, " as zero_type_string");
+  if (any_type_string)
+    gc_mark_external(any_type_string, " as any_type_string");
+  if (weak_type_string)
+    gc_mark_external(weak_type_string, " as weak_type_string");
+
+  {
+    struct pike_type_location *t = all_pike_type_locations;
+    while(t) {
+      gc_mark_external (t->t, " as constant type");
+      t = t->next;
+    }
+  }
+}
+#endif
+
+void gc_check_type (struct pike_type *t)
 {
   debug_malloc_touch (t);
 
-  GC_ENTER (t, PIKE_T_TYPE) {
-    switch(t->type) {
-      case PIKE_T_SCOPE:
-      case T_ASSIGN:
-      case PIKE_T_NAME:
-      case PIKE_T_ATTRIBUTE:
-	if (t->cdr) debug_gc_check (t->cdr, " as cdr in a type");
-	break;
-      case PIKE_T_FUNCTION:
+  GC_ENTER (t, T_TYPE) {
+    switch (t->type) {
+      case T_FUNCTION:
       case T_MANY:
-      case PIKE_T_RING:
-      case PIKE_T_TUPLE:
-      case PIKE_T_MAPPING:
+      case T_TUPLE:
+      case T_MAPPING:
       case T_OR:
       case T_AND:
-	if (t->cdr) debug_gc_check (t->cdr, " as cdr in a type");
-	/* FALL_THOUGH */
-      case PIKE_T_ARRAY:
-      case PIKE_T_MULTISET:
-      case T_NOT:
-      case PIKE_T_TYPE:
-      case PIKE_T_PROGRAM:
-	if (t->car) debug_gc_check (t->car, " as car in a type");
+      case PIKE_T_RING:
+      case PIKE_T_ATTRIBUTE:
+      case PIKE_T_NAME:
+	debug_gc_check (t->car, " as car in a type");
+	debug_gc_check (t->cdr, " as cdr in a type");
 	break;
+      case T_ARRAY:
+      case T_MULTISET:
+      case T_NOT:
+      case T_TYPE:
+      case T_PROGRAM:
+      case T_STRING:
+	debug_gc_check (t->car, " as car in a type");
+	break;
+      case T_SCOPE:
+      case T_ASSIGN:
+	debug_gc_check (t->cdr, " as cdr in a type");
+	break;
+#ifdef PIKE_DEBUG
+      case '0':
+      case '1':
+      case '2':
+      case '3':
+      case '4':
+      case '5':
+      case '6':
+      case '7':
+      case '8':
+      case '9':
+      case T_FLOAT:
+      case T_MIXED:
+      case T_VOID:
+      case T_ZERO:
+      case PIKE_T_UNKNOWN:
+      case T_INT:
+      case T_OBJECT:
+	break;
+      default:
+	Pike_fatal("gc_check_type: "
+		   "Unhandled type-node: %d\n", t->type);
+	break;
+#endif /* PIKE_DEBUG */
     }
   } GC_LEAVE;
 }
 
 void gc_check_all_types (void)
 {
-  size_t e;
-  if (!pike_type_hash) return;
+  unsigned INT32 e;
   for(e=0;e<pike_type_hash_size;e++)
   {
     struct pike_type *t;

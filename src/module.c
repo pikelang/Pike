@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: module.c,v 1.50 2008/03/29 16:20:16 mast Exp $
+|| $Id: module.c,v 1.51 2008/03/30 01:24:10 mast Exp $
 */
 
 #include "global.h"
@@ -184,13 +184,6 @@ static void exit_builtin_modules(void)
 
 #define STATIC_ARRAYS &empty_array, &weak_empty_array,
 
-#define STATIC_TYPES string0_type_string, string_type_string, \
-      int_type_string, object_type_string, program_type_string, \
-      float_type_string, mixed_type_string, array_type_string,	\
-      multiset_type_string, mapping_type_string, function_type_string, \
-      type_type_string, void_type_string, zero_type_string, any_type_string, \
-      weak_type_string,
-
 #define REPORT_LINKED_LIST_LEAKS(TYPE, START, STATICS, T_TYPE, NAME,	\
 				 PRINT_EXTRA) do {			\
       struct TYPE *x;							\
@@ -209,20 +202,26 @@ static void exit_builtin_modules(void)
 	  for (i = 0; i < (ptrdiff_t) (NELEM (statics) - 1); i++)	\
 	    if (x == statics[i])					\
 	      is_static = 1;						\
+	  /* Note: m->xrefs is always zero here since the mark pass	\
+	   * isn't run in gc_destruct_everything mode. */		\
 	  if (x->refs != m->refs + is_static) {				\
 	    if (!leak_found) {						\
 	      fputs ("Leak(s) found at exit:\n", stderr);		\
 	      leak_found = 1;						\
 	    }								\
-	    fprintf (stderr, NAME " at %p got %d unaccounted references: ", \
-		     x, x->refs - (m->refs + is_static));		\
+	    fprintf (stderr, NAME " at %p got %d unaccounted refs "	\
+		     "(and %d accounted): ",				\
+		     x, x->refs - (m->refs + is_static),		\
+		     m->refs + is_static);				\
 	    safe_print_short_svalue (stderr, (union anything *) &x, T_TYPE); \
-	    fputc ('\n', stderr);					\
 	    {PRINT_EXTRA;}						\
+	    fputc ('\n', stderr);					\
+	    /* describe (x); */						\
 	    DO_IF_DMALLOC (						\
 	      debug_malloc_dump_references (x, 2, 1, 0);		\
 	      fputc ('\n', stderr);					\
 	    );								\
+	    DO_IF_DEBUG (m->flags |= GC_CLEANUP_LEAKED);		\
 	  }								\
 	}								\
       }									\
@@ -239,6 +238,7 @@ static void exit_builtin_modules(void)
 	 * the dmalloc ref dump shows where it has been used.
 	DO_IF_DEBUG(
 	  struct program *p = (struct program *)x;
+	  fputc ('\n', stderr);
 	  if (p->parent) {
 	    fprintf(stderr, "    Parent is: %p\n",
 		    p->parent);
@@ -252,26 +252,26 @@ static void exit_builtin_modules(void)
     );
     REPORT_LINKED_LIST_LEAKS (
       object, first_object, NOTHING, T_OBJECT, "Object", {
-	DO_IF_DEBUG (
-	  if (!x->prog) {
-	    struct program *p = id_to_program (x->program_id);
-	    if (p) {
-	      fputs ("Destructed object - program was: ", stderr);
-	      safe_print_short_svalue (stderr,
-				       (union anything *) &p, T_PROGRAM);
-	      fputc ('\n', stderr);
-	    }
-	    else
-	      fprintf (stderr, "Destructed object - "
-		       "program gone too, its id was %d\n", x->program_id);
-	  }
-	);
+	if (!x->prog) {
+	  fputs (" (destructed)", stderr);
+	  DO_IF_DEBUG ({
+	      struct program *p = id_to_program (x->program_id);
+	      if (p) {
+		fputs ("\n  Program for destructed object: ", stderr);
+		safe_print_short_svalue (stderr,
+					 (union anything *) &p, T_PROGRAM);
+	      }
+	      else
+		fprintf (stderr, "\n  Program for destructed object gone too, "
+			 "its id was: %d", x->program_id);
+	    });
+	}
       });
 
     {
       size_t index;
       for (index = 0; index < pike_type_hash_size; index++) {
-	REPORT_LINKED_LIST_LEAKS(pike_type, pike_type_hash[index], STATIC_TYPES, PIKE_T_TYPE, "Type", {});
+	REPORT_LINKED_LIST_LEAKS(pike_type, pike_type_hash[index], NOTHING, PIKE_T_TYPE, "Type", {});
       }
     }
 
@@ -280,6 +280,12 @@ static void exit_builtin_modules(void)
     /* Just remove the extra external refs reported above and do
      * another gc so that we don't report the blocks again in the low
      * level dmalloc reports. */
+
+#ifdef PIKE_DEBUG
+    /* If we stumble on the real refs whose refcounts we're zapping,
+     * we should try to handle it gracefully, and log all frees. */
+    gc_external_refs_zapped = 1;
+#endif
 
 #if 1
     /* It can be a good idea to disable this to leave the blocks
@@ -302,7 +308,6 @@ static void exit_builtin_modules(void)
 	      is_static = 1;						\
 	  refs = x->refs;						\
 	  while (refs > m->refs + is_static) {				\
-	    DO_IF_DEBUG (m->flags |= GC_CLEANUP_FREED);			\
 	    PIKE_CONCAT(free_, TYPE) (x);				\
 	    refs--;							\
 	  }								\
@@ -315,17 +320,17 @@ static void exit_builtin_modules(void)
     ZAP_LINKED_LIST_LEAKS (mapping, first_mapping, NOTHING);
     ZAP_LINKED_LIST_LEAKS (program, first_program, NOTHING);
     ZAP_LINKED_LIST_LEAKS (object, first_object, NOTHING);
-    free_all_leaked_types();
+
+    {
+      size_t index;
+      for (index = 0; index < pike_type_hash_size; index++) {
+	ZAP_LINKED_LIST_LEAKS(pike_type, pike_type_hash[index], NOTHING);
+      }
+    }
 
 #undef ZAP_LINKED_LIST_LEAKS
 
-#ifdef PIKE_DEBUG
-    /* If we stumble on the real refs whose refcounts we've zapped
-     * above we should try to handle it gracefully. */
-    gc_external_refs_zapped = 1;
-#endif
-
-#endif
+#endif	/* 1 */
 
     do_gc (NULL, 1);
 

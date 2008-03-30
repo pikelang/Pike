@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.h,v 1.111 2008/03/29 16:20:17 mast Exp $
+|| $Id: pike_types.h,v 1.112 2008/03/30 01:24:10 mast Exp $
 */
 
 #ifndef PIKE_TYPES_H
@@ -99,15 +99,21 @@ extern struct pike_type **pike_type_mark_stack[PIKE_TYPE_STACK_SIZE/4];
 #define check_type_string debug_check_type_string
 #endif /* PIKE_DEBUG */
 
-#define free_type(T) do {						\
-    struct pike_type *t_ = (T);						\
-    debug_malloc_touch_named (t_, "free_type");				\
+#define debug_free_type_preamble(T) do {				\
+    debug_malloc_touch_named (T, "free_type");				\
     DO_IF_DEBUG (							\
       DO_IF_PIKE_CLEANUP (						\
 	if (gc_external_refs_zapped)					\
-	  gc_check_zapped (t_, PIKE_T_TYPE, __FILE__, __LINE__)));	\
+	  gc_check_zapped (T, PIKE_T_TYPE, __FILE__, __LINE__)));	\
+  } while (0)
+
+#define free_type(T) do {						\
+    struct pike_type *t_ = (T);						\
+    debug_free_type_preamble (t_);					\
     debug_free_type (t_);						\
   } while (0)
+
+#define free_pike_type free_type
 
 extern int max_correct_args;
 PMOD_EXPORT extern struct pike_type *string0_type_string;
@@ -221,8 +227,6 @@ void stupid_describe_type(char *a, ptrdiff_t len);
 void simple_describe_type(struct pike_type *s);
 void my_describe_type(struct pike_type *type);
 struct pike_string *describe_type(struct pike_type *type);
-void debug_gc_check_all_types (void);
-void free_all_leaked_types (void);
 TYPE_T compile_type_to_runtime_type(struct pike_type *s);
 struct pike_type *or_pike_types(struct pike_type *a,
 				struct pike_type *b,
@@ -271,6 +275,7 @@ PMOD_EXPORT char *get_name_of_type(TYPE_T t);
 void cleanup_pike_types(void);
 void cleanup_pike_type_table(void);
 void gc_mark_type_as_referenced(struct pike_type *t);
+void gc_check_type (struct pike_type *t);
 void gc_check_all_types (void);
 int type_may_overload(struct pike_type *type, int lfun);
 void yyexplain_nonmatching_types(struct pike_type *type_a,

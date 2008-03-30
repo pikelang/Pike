@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.h,v 1.155 2008/03/29 16:20:28 mast Exp $
+|| $Id: svalue.h,v 1.156 2008/03/30 01:24:10 mast Exp $
 */
 
 #ifndef SVALUE_H
@@ -571,10 +571,18 @@ static INLINE union anything *dmalloc_check_union(union anything *u,int type, ch
       check_refs(_s);						\
     }								\
   );								\
-  if(_s->type<=MAX_REF_TYPE && sub_ref(_s->u.dummy) <=0)	\
-    really_free_svalue(_s);					\
-  else								\
+  if (_s->type > MAX_REF_TYPE)					\
     assert_free_svalue (_s);					\
+  else {							\
+    DO_IF_DEBUG (						\
+      DO_IF_PIKE_CLEANUP (					\
+	if (gc_external_refs_zapped)				\
+	  gc_check_zapped (_s->u.ptr, _s->type, __FILE__, __LINE__))); \
+    if (sub_ref(_s->u.dummy) <=0)				\
+      really_free_svalue(_s);					\
+    else							\
+      assert_free_svalue (_s);					\
+  }								\
 }while(0)
 
 #define free_short_svalue_unlocked(X,T) do {				\
@@ -582,6 +590,10 @@ static INLINE union anything *dmalloc_check_union(union anything *u,int type, ch
   check_type(_t); check_refs2(_s,_t);					\
   assert_svalue_locked(_s);						\
   if(_t<=MAX_REF_TYPE && _s->refs) {					\
+    DO_IF_DEBUG (							\
+      DO_IF_PIKE_CLEANUP (						\
+	if (gc_external_refs_zapped)					\
+	  gc_check_zapped (_s->ptr, _t, __FILE__, __LINE__)));		\
     if(sub_ref(_s->dummy) <= 0) really_free_short_svalue(_s,_t);	\
   }									\
   DO_IF_DMALLOC(_s->refs=(void *)-1);					\

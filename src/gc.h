@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.h,v 1.129 2007/06/10 18:11:13 mast Exp $
+|| $Id: gc.h,v 1.130 2008/03/30 01:24:10 mast Exp $
 */
 
 #ifndef GC_H
@@ -251,9 +251,11 @@ struct marker
 /* The thing has been visited by gc_checked_as_weak(). */
 #define GC_WATCHED		0x01000000
 /* The thing has been set under watch by gc_watch(). */
-#define GC_CLEANUP_FREED	0x02000000
-/* The thing was freed by the cleanup code under the assumption that
- * references were lost. */
+#define GC_CLEANUP_LEAKED	0x02000000
+/* The thing was reported as leaked by the cleanup code. The extra
+ * unaccounted refs to it have been/will be freed there too. Thus
+ * later frees of this object are logged since the "legitimate" free
+ * might still take place so the thing runs out of refs too early. */
 #endif
 
 PMOD_EXPORT struct marker *pmod_get_marker (void *p);
