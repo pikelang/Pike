@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: module_support.c,v 1.69 2008/03/28 22:08:45 mast Exp $
+|| $Id: module_support.c,v 1.70 2008/03/31 10:29:50 mast Exp $
 */
 
 #include "global.h"
@@ -137,7 +137,7 @@ PMOD_EXPORT void check_all_args(const char *fnname, int args, ... )
  *   %D: int of float -> int
  *   %+: positive int -> INT_TYPE
  *   %l: int or bignum -> LONGEST
- *   %s: char *				Only narrow (8 bit) strings.
+ *   %s: char *				Only narrow (8 bit) strings without NUL.
  *   %n: struct pike_string *           Only narrow (8 bit) strings.
  *   %N: struct pike_string * or NULL   Only narrow (8 bit) strings.
  *   %t: struct pike_string *           Any string width. (*)
@@ -174,6 +174,7 @@ PMOD_EXPORT void check_all_args(const char *fnname, int args, ... )
 #define ARGS_OPT	-1 /* At end of args but not fmt and has passed a period. */
 #define ARGS_SHORT	-2 /* At end of args but not fmt and has not passed a period. */
 #define ARGS_LONG	-3 /* At end of fmt but not args. */
+#define ARGS_NUL_IN_STRING -4	/* 8 bit string got embedded NUL. */
 /* Positive values: Stopped at arg with invalid type. The value is the
  * format letter for the expected type. */
 
@@ -292,8 +293,10 @@ static int va_get_args_2(struct svalue *s,
       if(s->type != T_STRING) goto type_err;
       if(s->u.string->size_shift) goto type_err;
 
-      /* FIXME: Should set a better error message. */
-      if(string_has_null(s->u.string)) goto type_err;
+      if(string_has_null(s->u.string)) {
+	*info = ARGS_NUL_IN_STRING;
+	return ret;
+      }
 
       *cast_arg(ptr, char **)=s->u.string->str;
       break;
@@ -478,6 +481,16 @@ PMOD_EXPORT void get_all_args(const char *fname, INT32 args,
 	wrong_number_of_args_error (fname, args, ret);
 #endif
       break;
+
+    case ARGS_NUL_IN_STRING:
+      bad_arg_error(
+	fname, sp-args, args,
+	ret+1,
+	"string (8bit)",
+	sp+ret-args,
+	"Bad argument %d to %s(). NUL char in string not allowed.\n",
+	ret+1, fname);
+      /* NOT REACHED */
 
     case ARGS_SHORT:
     default: {
