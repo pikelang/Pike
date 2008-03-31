@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: module_support.c,v 1.70 2008/03/31 10:29:50 mast Exp $
+|| $Id: module_support.c,v 1.71 2008/03/31 14:25:22 mast Exp $
 */
 
 #include "global.h"
@@ -137,7 +137,8 @@ PMOD_EXPORT void check_all_args(const char *fnname, int args, ... )
  *   %D: int of float -> int
  *   %+: positive int -> INT_TYPE
  *   %l: int or bignum -> LONGEST
- *   %s: char *				Only narrow (8 bit) strings without NUL.
+ *   %c: char *				Only narrow (8 bit) strings without NUL.
+ *   %C: char *	or NULL			Only narrow (8 bit) strings without NUL.
  *   %n: struct pike_string *           Only narrow (8 bit) strings.
  *   %N: struct pike_string * or NULL   Only narrow (8 bit) strings.
  *   %t: struct pike_string *           Any string width. (*)
@@ -158,12 +159,19 @@ PMOD_EXPORT void check_all_args(const char *fnname, int args, ... )
  *
  * For compatibility:
  *
+ *   %s: char *				Only 8 bit strings without NUL.
  *   %S: struct pike_string *		Only 8bit strings
  *   %W: struct pike_string *		Allow wide strings
  *   %M: struct multiset *
  *
  * A period can be specified between type specifiers to mark the start
- * of optional arguments.
+ * of optional arguments. If the real arguments run out in the list of
+ * optional arguments, the remaining pointers won't be assigned at
+ * all.
+ *
+ * Note: A lowercase type specifier (i.e. one that doesn't accept
+ * NULL) in the optional args list leads to behavior that breaks
+ * common coding conventions. Try to avoid it.
  *
  * *)  Contrived letter since the logical one is taken for historical
  *     reasons. :\
@@ -289,6 +297,13 @@ static int va_get_args_2(struct svalue *s,
       }
       goto type_err;
 
+    case 'C':
+      if(s->type != T_STRING && UNSAFE_IS_ZERO (s)) {
+	*cast_arg(ptr, char **) = NULL;
+	break;
+      }
+      /* FALL THROUGH */
+    case 'c':
     case 's':
       if(s->type != T_STRING) goto type_err;
       if(s->u.string->size_shift) goto type_err;
@@ -502,8 +517,9 @@ PMOD_EXPORT void get_all_args(const char *fname, INT32 args,
 	case 'd': case 'i': case 'l': expected_type = "int"; break;
 	case 'D': case 'I': expected_type = "int|float"; break;
 	case '+': expected_type = "int(0..)"; break;
-	case 's': case 'n': case 'S': expected_type = "string (8bit)"; break;
-	case 'N': expected_type = "string (8bit) or zero"; break;
+	case 'c': case 's': case 'n': case 'S':
+	  expected_type = "string (8bit)"; break;
+	case 'C': case 'N': expected_type = "string (8bit) or zero"; break;
 	case 't': case 'W': expected_type = "string"; break;
 	case 'T': expected_type = "string or zero"; break;
 	case 'a': expected_type = "array"; break;
