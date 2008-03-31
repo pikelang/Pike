@@ -151,8 +151,10 @@ int search_array(array arr, string|function|int fun, mixed ... args)
 //! Applies the function @[sum] columnwise on the elements in the
 //! provided arrays. E.g. @expr{sum_array(`+,a,b,c)@} does the same
 //! as @expr{`+(a[*],b[*],c[*])@}.
-array sum_arrays(function(mixed ...:mixed) sum, array ... args)
+array sum_arrays(function(int(0..0) ...:mixed) sum, array ... args)
 {
+  // FIXME: int(0..0) in the function prototype above is a kludge.
+  // See the FIXME in sort_array.
   array ret = allocate(sizeof(args[0]));
   for(int e=0; e<sizeof(args[0]); e++)
     ret[e] = sum( @column(args, e) );
@@ -175,9 +177,14 @@ array sum_arrays(function(mixed ...:mixed) sum, array ... args)
 //! @[map()], @[sort()], @[`>()], @[dwim_sort_func], @[lyskom_sort_func],
 //! @[oid_sort_func]
 //!
-array sort_array(array arr, function(mixed,mixed,mixed ...:int)|void cmp,
+array sort_array(array arr, function(int(0..0),int(0..0),mixed ...:int)|void cmp,
                  mixed ... args)
 {
+  // FIXME: The two int(0..0) in the function prototype above are
+  // kludges to avoid strict_type warnings on correctly typed cmp
+  // functions. The correct way to fix it would be to infer the real
+  // type from the array elements in arr.
+
   array bar,tmp;
   int len,start;
   int length;
@@ -730,11 +737,13 @@ array common_prefix(array(array) arrs)
 //!   Array.all( ({ 2, 4, 6, 8 }), `<, 17 )
 //! @seealso
 //!   @[any], @[has_value]
-int(0..1) all( array a, function(mixed, mixed ...:mixed) predicate,
+int(0..1) all( array a, function(int(0..0), mixed ...:mixed) predicate,
 	       mixed ... extra_args )
 {
+  // FIXME: int(0..0) in the function prototype above is a kludge.
+  // See the FIXME in sort_array.
   foreach( a, mixed elem )
-    if( !predicate( elem, @extra_args ) )
+    if( !predicate( [int(0..0)] elem, @extra_args ) )
       return 0;
   return 1;
 }
@@ -747,11 +756,13 @@ int(0..1) all( array a, function(mixed, mixed ...:mixed) predicate,
 //!   Array.any( ({ 2, 4, 6, 8 }), `>, 5 )
 //! @seealso
 //!   @[all], @[has_value]
-int(0..1) any( array a, function(mixed, mixed ...:mixed) predicate,
+int(0..1) any( array a, function(int(0..0), mixed ...:mixed) predicate,
 	       mixed ... extra_args )
 {
+  // FIXME: int(0..0) in the function prototype above is a kludge.
+  // See the FIXME in sort_array.
   foreach( a, mixed elem )
-    if( predicate( elem, @extra_args ) )
+    if( predicate( [int(0..0)] elem, @extra_args ) )
       return 1;
   return 0;
 }
@@ -766,12 +777,14 @@ int(0..1) any( array a, function(mixed, mixed ...:mixed) predicate,
 //!   > ({ ({ 4, 5, 6 }), ({ 0, 1, 2, 3, 7, 8 }) })
 //! @seealso
 //!   @[filter], @[`/], @[`%]
-array(array) partition( array a, function(mixed, mixed ...:mixed) arbiter,
+array(array) partition( array a, function(int(0..0), mixed ...:mixed) arbiter,
 			mixed ... extra_args )
 {
+  // FIXME: int(0..0) in the function prototype above is a kludge.
+  // See the FIXME in sort_array.
   array first = ({}), second = ({});
   foreach( a, mixed elem )
-    if( arbiter( elem, @extra_args ) )
+    if( arbiter( [int(0..0)] elem, @extra_args ) )
       first += ({ elem });
     else
       second += ({ elem });
