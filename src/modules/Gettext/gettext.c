@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gettext.c,v 1.23 2008/03/31 14:39:21 mast Exp $
+|| $Id: gettext.c,v 1.24 2008/03/31 14:42:25 mast Exp $
 */
 
 #include "global.h"
@@ -29,7 +29,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: gettext.c,v 1.23 2008/03/31 14:39:21 mast Exp $");
+RCSID("$Id: gettext.c,v 1.24 2008/03/31 14:42:25 mast Exp $");
 
 /*! @module Locale
  */
@@ -250,6 +250,7 @@ void f_bindtextdomain(INT32 args)
       Pike_error ("Pike has been compiled with a version of libintl "
 		  "that doesn't support NULL as directory name.\n");
 #endif
+  }
 
   pop_n_elems(args);
   if(returnstring == NULL)
