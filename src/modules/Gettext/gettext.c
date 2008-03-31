@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gettext.c,v 1.25 2005/11/14 21:28:25 nilsson Exp $
+|| $Id: gettext.c,v 1.26 2008/03/31 14:38:02 mast Exp $
 */
 
 #include "global.h"
@@ -35,6 +35,13 @@
 /*! @module Gettext
  *!
  *! This module enables access to localization functions from within Pike.
+ *!
+ *! @note
+ *! The message conversion functions in this module do not handle
+ *! Unicode strings. They only provide thin wrappers to
+ *! @tt{gettext(3)@} etc, which means strings are assumed to be
+ *! encoded according to the @tt{LC_*@} and @tt{LANG@} variables. See
+ *! the docs for @tt{gettext(3)@} for details.
  */
 
 /******************** PUBLIC FUNCTIONS BELOW THIS LINE */
@@ -68,25 +75,26 @@
  */
 void f_gettext(INT32 args)
 {
-  check_all_args("Locale.Gettext.gettext", args, BIT_STRING,
-		 BIT_STRING|BIT_VOID, BIT_INT|BIT_VOID, 0);
+  const char *domain, *msg;
+  INT32 cat;
+
+  get_all_args("Locale.Gettext.gettext", args, "%c.%C%I", &msg, &domain, &cat);
 
   switch(args) {
+#ifdef PIKE_DEBUG
   case 0:
     /* NOT_REACHED, but... */
     Pike_error("Too few arguments to Locale.Gettext.gettext().\n");
     break;
+#endif
   case 1:
-    push_text(gettext(Pike_sp[-args].u.string->str));
+    push_text(gettext(msg));
     break;
   case 2:
-    push_text(dgettext(Pike_sp[1-args].u.string->str,
-		       Pike_sp[-args].u.string->str));
+    push_text(dgettext(domain, msg));
     break;
   default:
-    push_text(dcgettext(Pike_sp[1-args].u.string->str,
-			Pike_sp[-args].u.string->str,
-			Pike_sp[2-args].u.integer));
+    push_text(dcgettext(domain, msg, cat));
     break;
   }
 
@@ -107,10 +115,10 @@ void f_gettext(INT32 args)
 */
 void f_dgettext(INT32 args)
 {
-  struct pike_string *domain, *msg;
-  get_all_args("Locale.Gettext.dgettext", args, "%S%S", &domain, &msg);
+  const char *domain, *msg;
+  get_all_args("Locale.Gettext.dgettext", args, "%c%c", &domain, &msg);
 
-  push_text(dgettext(domain->str, msg->str));
+  push_text(dgettext(domain, msg));
 
   stack_pop_n_elems_keep_top(args);
 }
@@ -132,13 +140,13 @@ void f_dgettext(INT32 args)
  */
 void f_dcgettext(INT32 args)
 {
-  struct pike_string *domain, *msg;
+  const char *domain, *msg;
   INT_TYPE category;
 
-  get_all_args("Locale.Gettext.dcgettext", args, "%S%S%i",
+  get_all_args("Locale.Gettext.dcgettext", args, "%c%c%i",
 	       &domain, &msg, &category);
 
-  push_text(dcgettext(domain->str, msg->str, category));
+  push_text(dcgettext(domain, msg, category));
 
   stack_pop_n_elems_keep_top(args);
 }
@@ -171,17 +179,9 @@ void f_dcgettext(INT32 args)
  */
 void f_textdomain(INT32 args)
 {
-  char *domain=NULL, *returnstring;
-  if (args != 0 && args != 1)
-    Pike_error( "Wrong number of arguments to Gettext.textdomain()\n" );
-
-  if(args) {
-    if(sp[-args].type == T_STRING)
-      domain = sp[-args].u.string->str;
-    else if(!(sp[-args].type == T_INT && sp[-args].u.integer == 0))
-      Pike_error( "Bad argument 1 to Gettext.textdomain(), "
-		  "expected string|void\n" );
-  }
+  const char *domain = NULL;
+  char *returnstring;
+  get_all_args ("Locale.Gettext.textdomain", args, ".%C", &domain);
   returnstring = textdomain(domain);
   pop_n_elems(args);
   push_text(returnstring);
@@ -190,15 +190,20 @@ void f_textdomain(INT32 args)
 /*! @decl string bindtextdomain(string|void domainname, string|void dirname)
  *!
  *! Binds the path predicate for a message @[domainname] domainname to
- *! the directory name specified by @[dirname]. If @[domainname] is a
- *! non-empty string and has not been bound previously, bindtextdomain()
- *! binds @[domainname] with @[dirname]. 
+ *! the directory name specified by @[dirname].
+ *!
+ *! If @[domainname] is a non-empty string and has not been bound
+ *! previously, bindtextdomain() binds @[domainname] with @[dirname].
  *! 
  *! If @[domainname] is a non-empty string and has been bound previously,
- *! bindtextdomain() replaces the old binding with @[dirname]. The @[dirname]
- *! argument can be an absolute or relative pathname being resolved when
- *! @[gettext()], @[dgettext()] or @[dcgettext()] are called. If @[domainname]
- *! is zero or an empty string, @[bindtextdomain()] returns 0.
+ *! bindtextdomain() replaces the old binding with @[dirname].
+ *!
+ *! The @[dirname] argument can be an absolute or relative pathname
+ *! being resolved when @[gettext()], @[dgettext()] or @[dcgettext()]
+ *! are called.
+ *!
+ *! If @[domainname] is zero or an empty string, @[bindtextdomain()]
+ *! returns 0.
  *!
  *! User defined domain names cannot begin with the string @expr{"SYS_"@}.
  *! Domain names beginning with this string are reserved for system use.
@@ -215,25 +220,27 @@ void f_textdomain(INT32 args)
  */
 void f_bindtextdomain(INT32 args)
 {
-  char *returnstring, *domain = NULL, *dirname = NULL;
-  if (args < 1 || args > 2)
-    Pike_error( "Wrong number of arguments to Gettext.bindtextdomain()\n" );
-  switch(args)
-  {
-   case 2:
-    if(sp[-1].type == T_STRING)
-      dirname = sp[-1].u.string->str;
-    else if(!(sp[-1].type == T_INT && sp[-1].u.integer == 0))
-      Pike_error( "Bad argument 2 to Gettext.bindtextdomain(), expected string|void\n" );
-    /* FALLTHROUGH */
-    
-   case 1:
-    if(sp[-args].type == T_STRING)
-      domain = sp[-args].u.string->str;
-    else if(!(sp[-args].type == T_INT && sp[-args].u.integer == 0))
-      Pike_error( "Bad argument 1 to Gettext.bindtextdomain(), expected string|void\n" );
+  char *returnstring;
+  const char *domain = NULL, *dirname = NULL;
+  get_all_args ("Locale.Gettext.bindtextdomain", args,
+		".%C%C", &domain, &dirname);
+
+  if (!domain || !*domain)
+    returnstring = NULL;
+  else {
+#ifdef BINDTEXTDOMAIN_HANDLES_NULL
+    returnstring = bindtextdomain (domain, dirname);
+#else
+    if (dirname)
+      returnstring = bindtextdomain (domain, dirname);
+    else
+      /* Awkward, but not much we can do. Still better than a
+       * coredump.. */
+      Pike_error ("Pike has been compiled with a version of libintl "
+		  "that doesn't support NULL as directory name.\n");
+#endif
   }
-  returnstring = bindtextdomain(domain, dirname);
+
   pop_n_elems(args);
   if(returnstring == NULL)
     push_int(0);
@@ -263,11 +270,11 @@ void f_bindtextdomain(INT32 args)
 void f_setlocale(INT32 args)
 {
   char *returnstring;
-  struct pike_string *locale;
+  const char *locale;
   INT_TYPE category;
-  get_all_args("Gettext.setlocale", args, "%i%S", &category, &locale);
+  get_all_args("Locale.Gettext.setlocale", args, "%i%c", &category, &locale);
 
-  returnstring = setlocale(category, locale->str);
+  returnstring = setlocale(category, locale);
   pop_n_elems(args);
   if(returnstring == NULL)
     push_int(0);
