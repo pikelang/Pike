@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gettext.c,v 1.22 2003/12/12 17:42:49 nilsson Exp $
+|| $Id: gettext.c,v 1.23 2008/03/31 14:39:21 mast Exp $
 */
 
 #include "global.h"
@@ -29,7 +29,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: gettext.c,v 1.22 2003/12/12 17:42:49 nilsson Exp $");
+RCSID("$Id: gettext.c,v 1.23 2008/03/31 14:39:21 mast Exp $");
 
 /*! @module Locale
  */
@@ -235,7 +235,22 @@ void f_bindtextdomain(INT32 args)
     else if(!(sp[-args].type == T_INT && sp[-args].u.integer == 0))
       Pike_error( "Bad argument 1 to Gettext.bindtextdomain(), expected string|void\n" );
   }
-  returnstring = bindtextdomain(domain, dirname);
+
+  if (!domain || !*domain)
+    returnstring = NULL;
+  else {
+#ifdef BINDTEXTDOMAIN_HANDLES_NULL
+    returnstring = bindtextdomain (domain, dirname);
+#else
+    if (dirname)
+      returnstring = bindtextdomain (domain, dirname);
+    else
+      /* Awkward, but not much we can do. Still better than a
+       * coredump.. */
+      Pike_error ("Pike has been compiled with a version of libintl "
+		  "that doesn't support NULL as directory name.\n");
+#endif
+
   pop_n_elems(args);
   if(returnstring == NULL)
     push_int(0);
