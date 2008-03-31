@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rusage.c,v 1.48 2007/06/19 18:22:50 mast Exp $
+|| $Id: rusage.c,v 1.49 2008/03/31 22:16:10 mast Exp $
 */
 
 #include "global.h"
@@ -45,6 +45,10 @@
 
 #ifdef HAVE_TIMES
 long pike_clk_tck = 0;
+#endif
+
+#ifdef __NT__
+LARGE_INTEGER perf_freq;
 #endif
 
 /*
@@ -480,7 +484,7 @@ PMOD_EXPORT cpu_time_t fallback_gct (void)
 		     &exitTime.ft_struct,
 		     &kernelTime.ft_struct,
 		     &userTime.ft_struct))
-    return (userTime.ft_scalar + kernelTime.ft_scalar) * 100;
+    return ((cpu_time_t) userTime.ft_scalar + kernelTime.ft_scalar) * 100;
   else
     return (cpu_time_t) -1;
 }
@@ -489,40 +493,41 @@ PMOD_EXPORT cpu_time_t fallback_gct (void)
 PMOD_EXPORT cpu_time_t fallback_gct_res (void)
 {
   /* Got 100 ns resolution according to docs. */
-  return MAXIMUM (CPU_TIME_TICKS / 10000000, 1);
+  return 100; /* = CPU_TIME_TICKS / 10000000 */
 }
 
 #endif
 
 #ifdef DEFINE_FALLBACK_GRT
 
-PMOD_EXPORT const char fallback_grt_impl[] = "GetThreadTimes()";
+PMOD_EXPORT const char fallback_grt_impl[] = "QueryPerformanceCounter()";
 
-PMOD_EXPORT int fallback_grt_is_monotonic = -1;
-/* Don't know since the below looks totally bogus. */
+PMOD_EXPORT int fallback_grt_is_monotonic = 1;
+/* The doc isn't outspoken on this, but it's a reasonable assumption
+ * since its expressed use is to measure small time intervals by
+ * calculating differences. */
+
+/* Disclaimer from MSDN:
+ *
+ * On a multiprocessor computer, it should not matter which processor
+ * is called. However, you can get different results on different
+ * processors due to bugs in the basic input/output system (BIOS) or
+ * the hardware abstraction layer (HAL).
+ */
 
 PMOD_EXPORT cpu_time_t fallback_grt (void)
 {
-  union {
-    unsigned __int64 ft_scalar;
-    FILETIME ft_struct;
-  } creationTime, exitTime, kernelTime, userTime;
-  if (GetThreadTimes(GetCurrentThread(),
-		     &creationTime.ft_struct,
-		     &exitTime.ft_struct,
-		     &kernelTime.ft_struct,
-		     &userTime.ft_struct))
-    /* FIXME: Isn't this completely bogus? /mast */
-    return exitTime.ft_scalar * 100;
-  else
+  LARGE_INTEGER res;
+  if (!perf_freq.QuadPart || !QueryPerformanceCounter (&res))
     return (cpu_time_t) -1;
+  return CONVERT_TIME (res.QuadPart, perf_freq.QuadPart, CPU_TIME_TICKS);
 }
 
 #define HAVE_FALLBACK_GRT_RES
 PMOD_EXPORT cpu_time_t fallback_grt_res (void)
 {
-  /* Got 100 ns resolution according to docs. */
-  return MAXIMUM (CPU_TIME_TICKS / 10000000, 1);
+  if (!perf_freq.QuadPart) return (cpu_time_t) -1;
+  return CPU_TIME_TICKS / perf_freq.QuadPart;
 }
 
 #endif
@@ -754,6 +759,11 @@ void init_rusage (void)
 {
 #ifdef HAVE_TIMES
   pike_clk_tck = sysconf (_SC_CLK_TCK);
+#endif
+
+#ifdef __NT__
+  if (!QueryPerformanceFrequency (&perf_freq))
+    perf_freq.QuadPart = 0;
 #endif
 
 #ifdef GCT_RUNTIME_CHOICE
