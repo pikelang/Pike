@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.319 2008/03/30 01:24:10 mast Exp $
+|| $Id: pike_types.c,v 1.320 2008/04/01 13:20:07 mast Exp $
 */
 
 #include "global.h"
@@ -7651,6 +7651,7 @@ static void gc_mark_external_types(struct callback *cb, void *a, void *b)
   if (weak_type_string)
     gc_mark_external(weak_type_string, " as weak_type_string");
 
+#ifdef DO_PIKE_CLEANUP
   {
     struct pike_type_location *t = all_pike_type_locations;
     while(t) {
@@ -7658,6 +7659,7 @@ static void gc_mark_external_types(struct callback *cb, void *a, void *b)
       t = t->next;
     }
   }
+#endif
 }
 #endif
 
