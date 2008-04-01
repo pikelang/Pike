@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: nt.c,v 1.75 2007/12/20 18:55:14 nilsson Exp $
+|| $Id: nt.c,v 1.76 2008/04/01 00:12:56 nilsson Exp $
 */
 
 /*
@@ -535,7 +535,7 @@ LINKFUNC(BOOL,lookupaccountsid,
 LINKFUNC(BOOL,setnamedsecurityinfo,
          (LPTSTR,SE_OBJECT_TYPE,SECURITY_INFORMATION,PSID,PSID,PACL,PACL) );
 LINKFUNC(DWORD,getnamedsecurityinfo,
-         (LPTSTR,SE_OBJECT_TYPE,SECURITY_INFORMATION,PSID*,PSID*,PACL*,PACL*,PSECURITY_DESCRIPTOR) );
+         (LPTSTR,SE_OBJECT_TYPE,SECURITY_INFORMATION,PSID*,PSID*,PACL*,PACL*,PSECURITY_DESCRIPTOR*) );
 
 LINKFUNC(BOOL,initializeacl, (PACL,DWORD,DWORD) );
 LINKFUNC(BOOL,addaccessallowedace, (PACL,DWORD,DWORD,PSID) );
@@ -3215,8 +3215,8 @@ struct sctx_storage {
   int        hctxt_alloced;
   TCHAR      lpPackageName[1024];
   DWORD      cbMaxMessage;
-  char *     buf;
-  int        cBuf;
+  BYTE *     buf;
+  DWORD      cBuf;
   int        done;
   int        lastError;
 };
