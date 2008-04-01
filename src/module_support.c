@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: module_support.c,v 1.71 2008/03/31 14:25:22 mast Exp $
+|| $Id: module_support.c,v 1.72 2008/04/01 08:02:10 mast Exp $
 */
 
 #include "global.h"
@@ -230,23 +230,28 @@ static int va_get_args_2(struct svalue *s,
     {
     case 'd':
       if(s->type != T_INT) goto type_err;
+      /* FIXME: Range checks, including bignum objects. */
       *cast_arg(ptr, int *)=s->u.integer;
       break;
     case 'i':
       if(s->type != T_INT) goto type_err;
+      /* FIXME: Error reporting for bignum objects. */
       *cast_arg(ptr, INT_TYPE *)=s->u.integer;
       break;
     case '+':
       if(s->type != T_INT) goto type_err;
       if(s->u.integer<0) goto type_err;
+      /* FIXME: Error reporting for bignum objects. */
       *cast_arg(ptr, INT_TYPE *)=s->u.integer;
       break;
 
     case 'D':
       if(s->type == T_INT)
+	/* FIXME: Range checks. */
 	 *cast_arg(ptr, int *)=s->u.integer;
       else if(s->type == T_FLOAT)
-        *cast_arg(ptr, int *)=
+	/* FIXME: Range checks. */
+	*cast_arg(ptr, int *)=
 	  DO_NOT_WARN((int)s->u.float_number);
       else 
       {
@@ -254,8 +259,10 @@ static int va_get_args_2(struct svalue *s,
         push_svalue( s );
         f_cast( );
 	if(sp[-1].type == T_INT)
+	  /* FIXME: Range checks. */
 	  *cast_arg(ptr, int *)=sp[-1].u.integer;
 	else if(s->type == T_FLOAT)
+	  /* FIXME: Range checks. Btw, does this case occur? */
 	  *cast_arg(ptr, int *)=
 	    DO_NOT_WARN((int)sp[-1].u.float_number);
 	else
@@ -268,15 +275,18 @@ static int va_get_args_2(struct svalue *s,
       if(s->type == T_INT)
 	 *cast_arg(ptr, INT_TYPE *)=s->u.integer;
       else if(s->type == T_FLOAT)
-        *cast_arg(ptr, INT_TYPE *) = DO_NOT_WARN((INT_TYPE)s->u.float_number);
+	/* FIXME: Range checks. */
+	*cast_arg(ptr, INT_TYPE *) = DO_NOT_WARN((INT_TYPE)s->u.float_number);
       else 
       {
+	/* FIXME: Error reporting for bignum objects. */
         ref_push_type_value(int_type_string);
         push_svalue( s );
         f_cast( );
 	if(sp[-1].type == T_INT)
 	  *cast_arg(ptr, INT_TYPE *)=sp[-1].u.integer;
 	else if(s->type == T_FLOAT)
+	  /* FIXME: Range checks. Btw, does this case occur? */
 	  *cast_arg(ptr, INT_TYPE *)=
 	    DO_NOT_WARN((INT_TYPE)sp[-1].u.float_number);
 	else
@@ -295,6 +305,7 @@ static int va_get_args_2(struct svalue *s,
         break;
 #endif
       }
+      /* FIXME: Error reporting for bignum objects. */
       goto type_err;
 
     case 'C':
