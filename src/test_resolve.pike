@@ -7,6 +7,20 @@ int ok=1;
 int num_ok;
 int num_failed;
 
+// Pike shouldn't produce any warnings on its own modules, so report
+// that as errors.
+int got_warnings_in_last_test;
+
+class CompileErrorHandler
+{
+  void compile_warning (string file, int line, string err)
+  {
+    werror ("test: Erroneous warning: %s:%s: %s\n",
+	    master()->trim_file_name (file), line ? (string) line : "-", err);
+    got_warnings_in_last_test = 1;
+  }
+}
+
 void test_resolv(string file, int base_size, object|void handler)
 {
 #if constant(alarm)
@@ -18,9 +32,12 @@ void test_resolv(string file, int base_size, object|void handler)
     prg = prg[..sizeof(prg)-8];
   // write("Resolving %O...\n", prg);
   mixed err;
-  if(err = catch( (handler||master())->resolv(prg) ) ) {
-    werror("test: failed to peek at %O: %s\n",
-	   prg, describe_error(err));
+  got_warnings_in_last_test = 0;
+  if(err = catch( (handler||master())->resolv(prg) ) ||
+     got_warnings_in_last_test ) {
+    if (!err && (!objectp (err) || !err->is_compilation_error))
+      werror("test: Error during compilation of %s: %s\n",
+	     prg, describe_backtrace(err));
     num_failed++;
     ok=0;
   } else {
@@ -114,6 +131,11 @@ int main()
 #if constant(alarm)
   alarm(1*60);	// 1 minute should be sufficient for each part of this test.
 #endif
+
+  // Use the old classic way to avoid potential different code paths
+  // in the handlers.
+  master()->set_inhibit_compile_errors (CompileErrorHandler());
+
   Array.map(master()->pike_module_path,test_dir);
   // FIXME: Forward compatibility?
   foreach(({"0.6","7.0","7.2","7.4"}),string ver) {
