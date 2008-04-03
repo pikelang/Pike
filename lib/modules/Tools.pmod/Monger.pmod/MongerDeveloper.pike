@@ -1,10 +1,10 @@
 // -*- Pike -*-
 
-// $Id: MongerDeveloper.pike,v 1.5 2008/04/03 14:58:18 grubba Exp $
+// $Id: MongerDeveloper.pike,v 1.6 2008/04/03 16:11:38 grubba Exp $
 
 #pike __REAL_VERSION__
 
-constant version = ("$Revision: 1.5 $"/" ")[1];
+constant version = ("$Revision: 1.6 $"/" ")[1];
 constant description = "MongerDeveloper: the Pike module manger.";
 
 private string default_repository = "http://modules.gotpike.org:8000/xmlrpc/index.pike";
@@ -14,11 +14,13 @@ private string builddir;
 
 private int use_force=0;
 private int use_local=0;
+#if 0
 private string my_command;
 private string my_version;
 private string run_pike;
 private array(string) pike_args = ({});
 private string original_dir;
+#endif /* 0 */
 private string username, password;
 private mapping created = ([]);
 
@@ -209,6 +211,7 @@ array get_dependencies(string module_name, string version)
   return a;
 }
 
+#if 0
 private mapping get_module_action_data(string name, string|void version)
 {
   int module_id;
@@ -268,7 +271,6 @@ private mapping get_module_action_data(string name, string|void version)
   return vi + info;
 }
 
-#if 0
 private void do_download(string name, string|void version)
 {
   mapping vi = get_module_action_data(name, version);
