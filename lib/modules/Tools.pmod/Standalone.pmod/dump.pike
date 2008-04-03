@@ -6,7 +6,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dump.pike,v 1.8 2008/02/14 09:30:31 grubba Exp $
+|| $Id: dump.pike,v 1.9 2008/04/03 14:54:31 grubba Exp $
 */
 
 constant description = "Dumps Pike files into object files.";
@@ -124,12 +124,12 @@ class Handler
 {
   void compile_error(string file,int line,string err)
   {
-    logmsg_long("%s:%d:%s\n",file,line,err);
+    logmsg_long("%s:%d:(E)%s\n",file,line,err);
   }
 
   void compile_warning(string file,int line,string err)
   {
-    logmsg_long("%s:%d:%s\n",file,line,err);
+    logmsg_long("%s:%d:(W)%s\n",file,line,err);
   }
 
   int compile_exception (array|object trace)
@@ -157,6 +157,8 @@ int dumpit(string file, string outfile)
 {
   int ok = 0;
   next_file = file;
+
+  // werror("Dumping %s ==> %s\n", file, outfile);
 
 do_dump: {
     if(Stdio.Stat s=file_stat(fakeroot(file)))
@@ -216,9 +218,9 @@ do_dump: {
       {
 	string s;
 	if ((err = catch {
-	    s=encode_value(p, master()->Encoder(p), @debug_level);
-	    werror("\n------------------------\n\n");
-	    p=decode_value(s, master()->Decoder(), @debug_level);
+	    s=([function](mixed)encode_value)(p, master()->Encoder(p), @debug_level);
+	    // werror("\n------------------------\n\n");
+	    p=([function](mixed)decode_value)(s, master()->Decoder(), @debug_level);
 	  }))
 	  logmsg_long(describe_backtrace(err));
 
