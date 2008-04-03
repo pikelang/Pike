@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.381 2008/03/26 18:49:23 mbaehr Exp $
+|| $Id: file.c,v 1.382 2008/04/03 09:15:40 per Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -3154,12 +3154,13 @@ retry_connect:
 
     len3=sizeof(addr);
   retry_accept:
+    retries++;
     sv[0]=fd_accept(socketpair_fd,(struct sockaddr *)&addr,&len3);
 
     if(sv[0] < 0) {
       SP_DEBUG((stderr, "my_socketpair:fd_accept() failed, errno:%d (2)\n",
 		errno));
-      if(errno==EINTR) goto retry_accept;
+      if(retries <= 20) goto retry_accept;
       while (fd_close(sv[1]) && errno == EINTR) {}
       return -1;
     }
