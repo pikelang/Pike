@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc_result.c,v 1.54 2007/12/07 17:35:50 mast Exp $
+|| $Id: odbc_result.c,v 1.55 2008/04/04 11:58:51 mast Exp $
 */
 
 /*
@@ -426,6 +426,11 @@ static void f_execute(INT32 args)
     ODBC_DISALLOW();
   }
 
+#ifdef ODBC_DEBUG
+  fprintf (stderr, "ODBC:execute: SQLExecDirect returned %d, "
+	   "cols %d, rows %d\n", code, num_fields, num_rows);
+#endif
+
   if (err_msg)
     odbc_error ("odbc_result->execute", err_msg, PIKE_ODBC_RES->odbc, hstmt,
 		code, NULL, NULL);
@@ -554,10 +559,11 @@ static void f_fetch_row(INT32 args)
 	SWORD field_type = PIKE_ODBC_RES->field_info[i].type;
 
 	while(1) {
+	  int got_more_data = 0;
 
 #ifdef ODBC_DEBUG
 	  fprintf(stderr, "ODBC:fetch_row(): field_info[%d].type: ", i);
-	  if (field_info == SQL_C_CHAR) {
+	  if (field_type == SQL_C_CHAR) {
 	    fprintf(stderr, "SQL_C_CHAR\n");
 #ifdef SQL_WCHAR
 	  } else if (field_type == SQL_C_WCHAR) {
@@ -569,6 +575,7 @@ static void f_fetch_row(INT32 args)
 #endif /* ODBC_DEBUG */
 
 	  ODBC_ALLOW();
+
 	  code = SQLGetData(hstmt, (SQLUSMALLINT)(i+1),
 			    field_type,
 			    blob_buf, BLOB_BUFSIZ
@@ -589,6 +596,34 @@ static void f_fetch_row(INT32 args)
 			      field_type, blob_buf, BLOB_BUFSIZ, &len);
 	  }
 #endif
+
+	  if (code == SQL_SUCCESS_WITH_INFO) {
+	    /* Might be more data to get. We need to look at the SQLSTATE. */
+	    do {
+	      unsigned char sqlstate[256];
+	      SDWORD native_error; /* Ignored. */
+	      unsigned char errmsg[1]; /* Ignored. */
+	      SWORD errmsg_len;	/* Ignored. */
+	      RETCODE code2 = SQLError (SQL_NULL_HENV, SQL_NULL_HDBC, hstmt,
+					sqlstate, &native_error,
+					errmsg, 1, &errmsg_len);
+	      if (code2 == SQL_SUCCESS || code2 == SQL_SUCCESS_WITH_INFO) {
+#ifdef ODBC_DEBUG
+		fprintf (stderr, "ODBC:fetch_row(): Got SQL_SUCCESS_WITH_INFO "
+			 "- SQLSTATE is: %s\n", sqlstate);
+#endif
+		if (!strcmp ((char *) sqlstate, "01004")) {
+		  /* SQLSTATE 01004: String data, right truncated */
+		  got_more_data = 1;
+		  break;
+		}
+	      }
+	      else
+		/* FIXME: Proper error reporting. */
+		break;
+	    } while (1);
+	  }
+
 	  ODBC_DISALLOW();
 
 #ifdef SQL_WCHAR
@@ -617,11 +652,12 @@ static void f_fetch_row(INT32 args)
 	      push_int(0);
 	    }
 	    break;
-	  } else if (code == SQL_SUCCESS_WITH_INFO) {
+	  } else if (got_more_data) {
 	    /* Data truncated. */
 	    num_strings++;
 #ifdef ODBC_DEBUG
-	    fprintf(stderr, "[%d] ", num_strings);
+	    fprintf(stderr, "ODBC:fetch_row(): [%d] got truncated\n",
+		    num_strings);
 #endif /* ODBC_DEBUG */
 	    if (field_type == SQL_C_BINARY) {
 	      push_string(make_shared_binary_string(blob_buf, BLOB_BUFSIZ));
@@ -640,9 +676,14 @@ static void f_fetch_row(INT32 args)
 	  } else {
 	    num_strings++;
 #ifdef ODBC_DEBUG
-	    fprintf(stderr, "[%d] ", num_strings);
+	    fprintf(stderr, "ODBC:fetch_row(): [%d] got data, length %d\n",
+		    num_strings, (int) len);
 #endif /* ODBC_DEBUG */
-	    if (len < BLOB_BUFSIZ
+	    if (len < (BLOB_BUFSIZ
+#ifdef SQL_WCHAR
+		       * ((field_type == SQL_C_WCHAR) ? sizeof(SQLWCHAR):1)
+#endif
+		      )
 #ifdef SQL_NO_TOTAL
                 && (len != SQL_NO_TOTAL)
 #endif /* SQL_NO_TOTAL */
@@ -658,34 +699,22 @@ static void f_fetch_row(INT32 args)
 #endif
 	    } else {
 	      /* Truncated, but no support for chained SQLGetData calls. */
-	      char *buf;
+	      /* NB: len is always in bytes - no wide char specials
+	       * necessary. */
+	      char *buf = xalloc(len+2);
 	      SQLLEN newlen = 0;
-#ifdef SQL_WCHAR
-	      buf = xalloc((len+2) * sizeof(SQLWCHAR));
-#else
-	      buf = xalloc(len+2);
-#endif
 
 	      ODBC_ALLOW();
 	      code = SQLGetData(hstmt, (SQLUSMALLINT)(i+1),
-				field_type, buf, (len+1)
-#ifdef SQL_WCHAR
-				* ((field_type == SQL_C_WCHAR)?
-				   sizeof(SQLWCHAR):1)
-#endif
-				, &newlen);
+				field_type, buf, len+1, &newlen);
 	      ODBC_DISALLOW();
 
-	      if (code != SQL_SUCCESS) {
-		Pike_error("odbc->fetch_row(): "
-			   "Unexpected code from SQLGetData(): %d\n"
-			   "type: %d\n",
-			   code, PIKE_ODBC_RES->field_info[i].type);
-	      }
+	      odbc_check_error("odbc->fetch_row", "SQLGetData() failed to "
+			       "fetch long field\n", code, NULL, NULL);
 	      if (len != newlen) {
 		Pike_error("odbc->fetch_row(): "
 			   "Unexpected length from SQLGetData(): "
-			   "%d (expected %d)\n", newlen, len);
+			   "%d (expected %d)\n", (int) newlen, (int) len);
 	      }
 #ifdef SQL_WCHAR
 	      if (field_type == SQL_C_WCHAR) {
