@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.407 2008/03/27 12:21:59 grubba Exp $
+|| $Id: language.yacc,v 1.408 2008/04/04 11:36:26 grubba Exp $
 */
 
 %pure_parser
@@ -254,6 +254,7 @@ int yylex(YYSTYPE *yylval);
 %type <number> modifier
 %type <number> modifier_list
 %type <number> modifiers
+%type <number> implicit_modifiers
 %type <number> inherit_specifier
 %type <number> function_type_list
 %type <number> function_type_list2
@@ -340,6 +341,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> normal_label_statement
 %type <n> optional_else_part
 %type <n> optional_label
+%type <n> propagated_type
 %type <n> return
 %type <n> sscanf
 %type <n> statement
@@ -1092,8 +1094,8 @@ def: modifiers type_or_error optional_constant optional_stars
   | facet {}
   | import {}
   | constant {}
-  | class { free_node($1); }
-  | enum { free_node($1); }
+  | modifiers class { free_node($2); }
+  | modifiers enum { free_node($2); }
   | typedef {}
   | error TOK_LEX_EOF
   {
@@ -1283,7 +1285,7 @@ modifiers: modifier_list
  ;
 
 modifier_list: /* empty */ { $$ = 0; }
-  | modifier modifier_list { $$ = $1 | $2; }
+  | modifier_list modifier { $$ = $1 | $2; }
   ;
 
 optional_stars: optional_stars '*' { $$=$1 + 1; }
@@ -1899,14 +1901,22 @@ failsafe_block: block
               | TOK_LEX_EOF { yyerror("Unexpected end of file."); $$=0; }
               ;
 
+/* Type at $-2 */
+propagated_type:
+  {
+    $$ = $<n>-2;
+  }
+  ;
 
+/* Type at $0 */
 local_name_list: new_local_name
-  | local_name_list ',' { $<n>$=$<n>0; } new_local_name
+  | local_name_list ',' propagated_type new_local_name
     { $$ = mknode(F_COMMA_EXPR, mkcastnode(void_type_string, $1), $4); }
   ;
 
+/* Type at $0 */
 local_name_list2: new_local_name2
-  | local_name_list2 ',' { $<n>$=$<n>0; } new_local_name
+  | local_name_list2 ',' propagated_type new_local_name
     { $$ = mknode(F_COMMA_EXPR, mkcastnode(void_type_string, $1), $4); }
   ;
 
@@ -2499,49 +2509,50 @@ failsafe_program: '{' program end_block
 		}
                 ;
 
-class: modifiers TOK_CLASS line_number_info optional_identifier
+/* Modifiers at $0. */
+class: TOK_CLASS line_number_info optional_identifier
   {
-    if(!$4)
+    if(!$3)
     {
       struct pike_string *s;
       char buffer[42];
       sprintf(buffer,"__class_%ld_%ld_line_%d",
 	      (long)Pike_compiler->new_program->id,
 	      (long)Pike_compiler->local_class_counter++,
-	      (int) $3->line_number);
+	      (int) $2->line_number);
       s=make_shared_string(buffer);
-      $4=mkstrnode(s);
+      $3=mkstrnode(s);
       free_string(s);
-      $1|=ID_STATIC | ID_PRIVATE | ID_INLINE;
+      $<number>0|=ID_STATIC | ID_PRIVATE | ID_INLINE;
     }
     /* fprintf(stderr, "LANGUAGE.YACC: CLASS start\n"); */
     if(Pike_compiler->compiler_pass==1)
     {
-      if ($1 & ID_EXTERN) {
+      if ($<number>0 & ID_EXTERN) {
 	yywarning("Extern declared class definition.");
       }
-      low_start_new_program(0, 1, $4->u.sval.u.string,
-			    $1,
+      low_start_new_program(0, 1, $3->u.sval.u.string,
+			    $<number>0,
 			    &$<number>$);
 
       /* fprintf(stderr, "Pass 1: Program %s has id %d\n",
 	 $4->u.sval.u.string->str, Pike_compiler->new_program->id); */
 
-      store_linenumber($3->line_number, $3->current_file);
+      store_linenumber($2->line_number, $2->current_file);
       debug_malloc_name(Pike_compiler->new_program,
-			$3->current_file->str,
-			$3->line_number);
+			$2->current_file->str,
+			$2->line_number);
     }else{
       int i;
       struct identifier *id;
       int tmp=Pike_compiler->compiler_pass;
-      i=isidentifier($4->u.sval.u.string);
+      i=isidentifier($3->u.sval.u.string);
       if(i<0)
       {
 	/* Seriously broken... */
 	yyerror("Pass 2: program not defined!");
 	low_start_new_program(0, 2, 0,
-			      $1,
+			      $<number>0,
 			      &$<number>$);
       }else{
 	id=ID_FROM_INT(Pike_compiler->new_program, i);
@@ -2553,8 +2564,8 @@ class: modifiers TOK_CLASS line_number_info optional_identifier
 		constants[id->func.offset].sval)->type == T_PROGRAM))
 	  {
 	    low_start_new_program(s->u.program, 2,
-				  $4->u.sval.u.string,
-				  $1,
+				  $3->u.sval.u.string,
+				  $<number>0,
 				  &$<number>$);
 
 	    /* fprintf(stderr, "Pass 2: Program %s has id %d\n",
@@ -2563,13 +2574,13 @@ class: modifiers TOK_CLASS line_number_info optional_identifier
 	  }else{
 	    yyerror("Pass 2: constant redefined!");
 	    low_start_new_program(0, 2, 0,
-				  $1,
+				  $<number>0,
 				  &$<number>$);
 	  }
 	}else{
 	  yyerror("Pass 2: class constant no longer constant!");
 	  low_start_new_program(0, 2, 0,
-				$1,
+				$<number>0,
 				&$<number>$);
 	}
       }
@@ -2586,7 +2597,7 @@ class: modifiers TOK_CLASS line_number_info optional_identifier
     struct program *p;
 
     /* Check if we have create arguments but no locally defined create(). */
-    if ($7) {
+    if ($6) {
       struct pike_string *create_string = NULL;
       struct reference *ref = NULL;
       struct identifier *id = NULL;
@@ -2734,12 +2745,12 @@ class: modifiers TOK_CLASS line_number_info optional_identifier
       Pike_compiler->num_parse_error = 1;
     }
 
-    $$=mkidentifiernode($<number>5);
+    $$=mkidentifiernode($<number>4);
 
+    free_node($2);
     free_node($3);
-    free_node($4);
     check_tree($$,0);
-    lex.pragmas = $<number>6;
+    lex.pragmas = $<number>5;
   }
   ;
 
@@ -2815,7 +2826,8 @@ enum_list: enum_def
   | error
   ;
 
-enum: modifiers TOK_ENUM
+/* Modifiers at $0. */
+enum: TOK_ENUM
   {
     if ((Pike_compiler->current_modifiers & ID_EXTERN) &&
 	(Pike_compiler->compiler_pass == 1)) {
@@ -2830,12 +2842,12 @@ enum: modifiers TOK_ENUM
   {
     struct pike_type *t = pop_unfinished_type();
     pop_stack();
-    if ($4) {
+    if ($3) {
       ref_push_type_value(t);
-      add_constant($4->u.sval.u.string, Pike_sp-1,
+      add_constant($3->u.sval.u.string, Pike_sp-1,
 		   (Pike_compiler->current_modifiers & ~ID_EXTERN) | ID_INLINE);
       pop_stack();
-      free_node($4);
+      free_node($3);
     }
     $$ = mktypenode(t);
     free_type(t);
@@ -3417,6 +3429,13 @@ apply:
   }
   ;
 
+implicit_modifiers:
+  {
+    $$ = Pike_compiler->current_modifiers = ID_STATIC|ID_INLINE|ID_PRIVATE |
+      (lex.pragmas & ID_MODIFIER_MASK);
+  }
+  ;
+
 expr4: string
   | TOK_NUMBER 
   | TOK_FLOAT { $$=mkfloatnode((FLOAT_TYPE)$1); }
@@ -3425,8 +3444,8 @@ expr4: string
   | typeof
   | sscanf
   | lambda
-  | class
-  | enum
+  | implicit_modifiers class { $$ = $2; }
+  | implicit_modifiers enum { $$ = $2; }
   | idents2
   | apply
   | expr4 open_bracket_with_line_info '*' ']'
