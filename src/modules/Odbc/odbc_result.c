@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc_result.c,v 1.55 2008/04/04 11:58:51 mast Exp $
+|| $Id: odbc_result.c,v 1.56 2008/04/04 14:35:23 mast Exp $
 */
 
 /*
@@ -10,6 +10,11 @@
  *
  * Henrik Grubbström
  */
+
+/* FIXME: ODBC allows for multiple result sets from the same query.
+ * Support for SQLMoreResults should be added to support that (and it
+ * needs to work also in the case when the first result set has no
+ * columns). */
 
 /*
  * Includes
