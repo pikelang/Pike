@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.165 2008/03/27 13:10:33 grubba Exp $
+|| $Id: cpp.c,v 1.166 2008/04/04 13:17:28 grubba Exp $
 */
 
 #include "global.h"
@@ -1874,6 +1874,8 @@ void f_cpp(INT32 args)
   do_magic_define(&this,"__MINOR__",insert_current_minor);
 
   {
+#if 0
+    /* Left in place for documentation reference purposes. */
     struct define *def =
       alloc_empty_define(make_shared_string("__deprecated__"), 1);
     def->args = 1;
@@ -1881,6 +1883,7 @@ void f_cpp(INT32 args)
     def->parts[0].argument = 0;
     REF_MAKE_CONST_STRING(def->parts[0].postfix, ")");
     this.defines = hash_insert(this.defines, &def->link);
+#endif /* 0 */
 
     simple_add_define(&this, "__PIKE__", " 1 ");
 
