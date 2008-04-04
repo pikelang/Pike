@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lexer.h,v 1.64 2008/03/27 12:23:36 grubba Exp $
+|| $Id: lexer.h,v 1.65 2008/04/04 13:16:46 grubba Exp $
 */
 
 /*
@@ -581,6 +581,7 @@ static int low_yylex(YYSTYPE *yylval)
 	  break;
 	case TWO_CHAR('_','_'):
 	  if(ISWORD("__attribute__")) return TOK_ATTRIBUTE_ID;
+	  if(ISWORD("__deprecated__")) return TOK_DEPRECATED_ID;
 	  if(ISWORD("__FUNCTION__")) return TOK_FUNCTION_NAME;
 	  break;
 	}
