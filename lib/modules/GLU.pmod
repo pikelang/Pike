@@ -1,5 +1,5 @@
 /*
- * $Id: GLU.pmod,v 1.14 2004/04/16 15:43:01 nilsson Exp $
+ * $Id: GLU.pmod,v 1.15 2008/04/04 19:11:11 grubba Exp $
  *
  * GL Utilities module.
  */
@@ -49,7 +49,6 @@ void gluLookAt(float|object eye,float|object center,float|object up,
 	       float ... old_api)
 {
   Math.Matrix x,y,z;
-  float mag;
 
   if (!objectp(eye))
   {
