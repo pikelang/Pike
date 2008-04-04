@@ -198,7 +198,7 @@ string eatIdentifier(void|int allowScopePrefix) {
   readToken();
 
   // Special hax for `->symbol and `->symbol=
-  if( s=="`->" && peekToken()=="symbol" )
+  if( s=="`->" && isIdent(peekToken()) )
   {
     s += readToken();
     if( peekToken()=="=" )
