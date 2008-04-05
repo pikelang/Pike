@@ -27,7 +27,7 @@ static mapping(string : string) reverseMatchTokens =
 static multiset(string) modifiers =
 (< "nomask", "final", "static", "extern",
    "private", "local", "public", "protected",
-   "inline", "optional", "variant"  >);
+   "inline", "optional", "variant", "__deprecated__"  >);
 
 static multiset(string) scopeModules =
 (< "predef", "top", "lfun", "efun" >);
