@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.409 2008/04/04 13:16:19 grubba Exp $
+|| $Id: language.yacc,v 1.410 2008/04/06 11:49:58 grubba Exp $
 */
 
 %pure_parser
@@ -3736,7 +3736,7 @@ inherit_specifier: TOK_IDENTIFIER TOK_COLON_COLON
       if (inherit_depth == compilation_depth) break;
       if (!TEST_COMPAT (7, 2) &&
 	  ID_FROM_INT (inherit_state->previous->new_program,
-		       inherit_state->previous->parent_identifier)->name ==
+		       inherit_state->parent_identifier)->name ==
 	  $1->u.sval.u.string) {
 	e = 0;
 	break;

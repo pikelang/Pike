@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.656 2008/03/29 16:20:18 mast Exp $
+|| $Id: program.c,v 1.657 2008/04/06 11:49:58 grubba Exp $
 */
 
 #include "global.h"
@@ -2362,21 +2362,8 @@ void low_start_new_program(struct program *p,
   }
 #endif
 
-#if 0
-#ifdef SHARED_NODES
-  if (!node_hash.table) {
-    node_hash.table = malloc(sizeof(node *)*32831);
-    if (!node_hash.table) {
-      Pike_fatal("Out of memory!\n");
-    }
-    MEMSET(node_hash.table, 0, sizeof(node *)*32831);
-    node_hash.size = 32831;
-  }
-#endif /* SHARED_NODES */
-#endif /* 0 */
-
   /* We don't want to change thread, but we don't want to
-   * wait for the other threads to complete.
+   * wait for the other threads to complete either.
    */
   low_init_threads_disable();
 
@@ -2421,7 +2408,6 @@ void low_start_new_program(struct program *p,
       add_ref(p->parent = Pike_compiler->new_program);
   }
   p->flags &=~ PROGRAM_VIRGIN;
-  Pike_compiler->parent_identifier=id;
   if(idp) *idp=id;
 
   CDFPRINTF((stderr, "th(%ld) %p low_start_new_program() %s "
@@ -2435,6 +2421,7 @@ void low_start_new_program(struct program *p,
 #define PUSH
 #include "compilation.h"
 
+  Pike_compiler->parent_identifier=id;
   Pike_compiler->compiler_pass = pass;
 
   Pike_compiler->num_used_modules=0;
