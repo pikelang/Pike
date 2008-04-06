@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.657 2008/04/06 11:49:58 grubba Exp $
+|| $Id: program.c,v 1.658 2008/04/06 21:43:31 grubba Exp $
 */
 
 #include "global.h"
@@ -1215,6 +1215,8 @@ struct program *first_program = 0;
 static int current_program_id = PROG_DYNAMIC_ID_START;
 
 struct program *null_program=0;
+
+struct program *compilation_program = 0;
 
 struct object *error_handler=0;
 struct object *compat_handler=0;
@@ -7064,6 +7066,11 @@ int report_compiler_dependency(struct program *p)
 }
 
 
+/*! @class PikeCompiler
+ *!
+ *!   The Pike compiler.
+ */
+
 struct compilation
 {
   struct Supporter supporter;
@@ -7095,7 +7102,6 @@ static void free_compilation(struct compilation *c)
   if(c->placeholder) free_object(c->placeholder);
   free_svalue(& c->default_module);
   free_supporter(&c->supporter);
-  free((char *)c);
   verify_supporters();
 }
 
@@ -7473,10 +7479,139 @@ static int call_delayed_pass2(struct compilation *cc, int finish)
 	     (long) th_self(), cc->target, ok ? "done" : "failed"));
 
   free_compilation(cc);
+  free(cc);
   verify_supporters();
 
   return ok;
 }
+
+#define THIS_COMPILATION  ((struct compilation *)(Pike_fp->current_storage))
+
+static void compilation_event_handler(int e)
+{
+  struct compilation *c = THIS_COMPILATION;
+  switch (e) {
+  case PROG_EVENT_INIT:
+    c->default_module.type = T_INT;
+    c->default_module.subtype = NUMBER_NUMBER;
+    break;
+  case PROG_EVENT_EXIT:
+    free_compilation(c);
+    break;
+  }
+}
+
+/*! @decl compile(string code)
+ *!
+ *!   Compile a segment of Pike code.
+ */
+static void f_compilation_compile(INT32 args)
+{
+  pop_n_elems(args);
+  push_int(0);
+}
+
+/*! @decl report(SeverityLevel severity, @
+ *!              string filename, int linenumber, @
+ *!              string subsystem, @
+ *!              string message, mixed ... extra_args)
+ *!
+ *!   Report a diagnostic from the compiler.
+ */
+static void f_compilation_report(INT32 args)
+{
+  int level;
+  struct pike_string *filename;
+  INT_TYPE linenumber;
+  struct pike_string *subsystem;
+  struct pike_string *message;
+  if (args > 5) {
+    f_sprintf(args - 4);
+    args = 5;
+  }
+  get_all_args("report", args, "%d%S%i%S%S",
+	       &level, &filename, &linenumber, &subsystem, &message);
+  fprintf(stderr, "%s:%ld: %s\n", filename->str, linenumber, message->str);
+  pop_n_elems(args);
+  push_int(0);
+}
+
+/* Strap the compiler by creating the compilation program by hand. */
+static void compile_compiler(void)
+{
+  struct program *p = compilation_program = low_allocate_program();
+  struct reference *ref;
+  struct identifier *i;
+  struct inherit *inh;
+  unsigned INT16 *ix;
+
+  p->parent_info_storage = -1;
+  p->event_handler = compilation_event_handler;
+  p->flags |= PROGRAM_HAS_C_METHODS;
+
+  p->inherits = inh = malloc(sizeof(struct inherit));
+  p->identifier_references = ref = malloc(sizeof(struct reference) * 2);
+  p->identifiers = i = malloc(sizeof(struct identifier) * 2);
+  p->identifier_index = ix = malloc(sizeof(unsigned INT16) * 2);
+
+  inh->prog = p;
+  inh->inherit_level = 0;
+  inh->identifier_level = 0;
+  inh->parent_identifier = -1;
+  inh->parent_offset = OBJECT_PARENT;
+  inh->identifier_ref_offset = 0;
+  inh->storage_offset = 0;
+  inh->parent = NULL;
+  inh->name = NULL;
+  p->num_inherits = 1;
+
+  /* ADD_STORAGE(struct compilation); */
+  p->alignment_needed = ALIGNOF(struct compilation);
+  p->inherits->storage_offset = 0;
+  p->storage_needed = sizeof(struct compilation);
+
+  /* ADD_FUNCTION("compile", f_compilation_compile, ...); */
+  i->name = make_shared_string("compile");
+  i->type = make_pike_type(tFunc(tStr, tPrg(tObj)));
+  i->run_time_type = T_FUNCTION;
+  i->identifier_flags = IDENTIFIER_C_FUNCTION;
+  i->func.c_fun = f_compilation_compile;
+  i->opt_flags = 0;
+  i++;
+  *(ix++) = ref->identifier_offset = compilation_program->num_identifiers++;
+  p->num_identifier_index++;
+  ref->id_flags = 0;
+  ref->inherit_offset = 0;
+  ref++;
+  p->num_identifier_references++;
+
+  /* ADD_FUNCTION("report", f_compilation_report, ...); */
+  i->name = make_shared_string("report");
+  i->type = make_pike_type(tFuncV(tName("SeverityLevel", tInt03) tStr tIntPos
+				  tStr tStr, tMix, tVoid));
+  i->run_time_type = T_FUNCTION;
+  i->identifier_flags = IDENTIFIER_C_FUNCTION;
+  i->func.c_fun = f_compilation_report;
+  i->opt_flags = 0;
+  i++;
+  *(ix++) = ref->identifier_offset = compilation_program->num_identifiers++;
+  p->num_identifier_index++;
+  ref->id_flags = 0;
+  ref->inherit_offset = 0;
+  ref++;
+  p->num_identifier_references++;
+
+  p->flags |= PROGRAM_PASS_1_DONE;
+
+  fsort_program_identifier_index(p->identifier_index, ix-1, p);
+  p->flags |= PROGRAM_FIXED;
+
+  optimize_program(p);
+  p->flags |= PROGRAM_FINISHED;
+}
+
+/*! @endclass
+ */
 
 struct program *compile(struct pike_string *aprog,
 			struct object *ahandler,/* error handler */
@@ -7563,6 +7698,7 @@ struct program *compile(struct pike_string *aprog,
 
     debug_malloc_touch(c);
     free_compilation(c);
+    free(c);
 
     if (!dependants_ok) {
       CDFPRINTF((stderr, "th(%ld) %p compile() reporting failure "
@@ -7817,6 +7953,8 @@ void init_program(void)
   struct svalue id;
   init_program_blocks();
 
+  compile_compiler();
+
   MAKE_CONST_STRING(this_program_string,"this_program");
   MAKE_CONST_STRING(this_string,"this");
   MAKE_CONST_STRING(UNDEFINED_string,"UNDEFINED");
@@ -7953,6 +8091,11 @@ void cleanup_program(void)
     placeholder_program=0;
   }
 #endif
+
+  if (compilation_program) {
+    free_program(compilation_program);
+    compilation_program = 0;
+  }
 }
 
 void gc_mark_program_as_referenced(struct program *p)
