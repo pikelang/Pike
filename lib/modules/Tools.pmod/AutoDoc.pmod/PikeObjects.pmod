@@ -238,6 +238,29 @@ class VarargsType {
   string xml() { return xmltag("varargs", type->xml()); }
 }
 
+class AttributeType {
+  inherit Type;
+  string attribute;
+  Type subtype;
+  int prefix;
+  void create() { ::create("__attribute__"); }
+  string print() {
+    if (attribute == "\"deprecated\"") {
+      return prefix?"__deprecated__ " + subtype->print():
+	"__deprecated__(" + subtype->print() + ")";
+    } else {
+      return prefix?"__attribute__(" + attribute + ") " + subtype->print():
+	"__attribute__(" + attribute + ", " + subtype->print() + ")";
+    }
+  }
+  string xml() {
+    return xmltag("attribute",
+		  (prefix?xmltag("prefix"):"") +
+		  xmltag("attribute", attribute) +
+		  xmltag("subtype", subtype->xml()));
+  }
+}
+
 //========================================================================
 // DOCUMENTATION OBJECT
 //========================================================================
