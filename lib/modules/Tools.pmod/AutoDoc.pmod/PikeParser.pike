@@ -27,7 +27,7 @@ static mapping(string : string) reverseMatchTokens =
 static multiset(string) modifiers =
 (< "nomask", "final", "static", "extern",
    "private", "local", "public", "protected",
-   "inline", "optional", "variant", "__deprecated__"  >);
+   "inline", "optional", "variant"  >);
 
 static multiset(string) scopeModules =
 (< "predef", "top", "lfun", "efun" >);
@@ -413,6 +413,49 @@ TypeType parseTypeType()
   return t;
 }
 
+AttributeType parseAttribute()
+{
+  eat("__attribute__");
+  AttributeType t = AttributeType();
+  eat("(");
+  string s = peekToken();
+  if (sizeof(s) >= 2 && s[0] == '"') {
+    t->attribute = s;
+  } else parseError("expected attribute name");
+  if (peekToken() == ",") {
+    readToken();
+    if (peekToken() != ")") {
+      t->subtype = parseType();
+      eat(")");
+      return t;
+    }
+  }
+  eat(")");
+  t->prefix = 1;
+  t->subtype = parseType();
+  return t;
+}
+
+AttributeType parseDeprecated()
+{
+  eat("__deprecated__");
+  AttributeType t = AttributeType();
+  t->attribute = "\"deprecated\"";
+  if (peekToken() == "(") {
+    readToken();
+    if (peekToken() == ")") {
+      readToken();
+    } else {
+      t->subtype = parseType();
+      eat(")");
+      return t;
+    }
+  }
+  t->prefix = 1;
+  t->subtype = parseType();
+  return t;
+}
+
 Type parseType() {
   string s = peekToken();
   switch(s) {
@@ -447,6 +490,10 @@ Type parseType() {
       return parseProgram();
     case "type":
       return parseTypeType();
+    case "__attribute__":
+      return parseAttributeType();
+    case "__deprecated__":
+      return parseDeprecated();
     case ".":
       return parseObject();
     default:
