@@ -413,7 +413,7 @@ TypeType parseTypeType()
   return t;
 }
 
-AttributeType parseAttribute()
+AttributeType parseAttributeType()
 {
   eat("__attribute__");
   AttributeType t = AttributeType();
