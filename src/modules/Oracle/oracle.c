@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: oracle.c,v 1.91 2008/03/25 15:11:56 grubba Exp $
+|| $Id: oracle.c,v 1.92 2008/04/07 15:50:20 grubba Exp $
 */
 
 /*
@@ -510,6 +510,7 @@ struct inout
 #else
     INT32 i;
 #endif
+    char *buf;
     char shortstr[32];
     OCIDate date;
     OCINumber num;
@@ -1063,6 +1064,7 @@ static void f_fetch_fields(INT32 args)
       struct dbresultinfo *info;
       char *type_name;
       int data_size;
+      char *addr;
       
 /*      pike_gdb_breakpoint(); */
       THREADS_ALLOW();
@@ -1135,6 +1137,8 @@ static void f_fetch_fields(INT32 args)
       info->decimals=scale;
       info->real_type=type;
 
+      addr = (char *)&info->data.u;
+
       data_size=0;
 
       switch(type)
@@ -1182,13 +1186,13 @@ static void f_fetch_fields(INT32 args)
 	case SQLT_LNG: /* long */
 	case SQLT_LVC: /* long varchar */
 	  type_name="char";
-	  if ((size >= 0) && (size < sizeof(info->data.u.shortstr))) {
-	    data_size = size;
-	    type = SQLT_CHR;
-	    break;
-	  }
-	  data_size=-1;
-	  type=SQLT_LNG;
+	  data_size = size;
+	  type = SQLT_CHR;
+	  addr = info->data.u.buf = xalloc(size);
+#ifdef ORACLE_DEBUG
+	  fprintf(stderr, "Allocated %ld bytes at %p for field.\n",
+		  (long)size, addr);
+#endif
 	  break;
 	  
       case SQLT_CLOB:
@@ -1263,7 +1267,7 @@ static void f_fetch_fields(INT32 args)
 			i+1,
 			/* NOTE: valuep is ignored in
 			 * OCI_DYNAMIC_FETCH mode. */
-			&info->data.u,
+			addr,
 #ifdef STATIC_BUFFERS
 			data_size<0? STATIC_BUFFERS :data_size,
 #else
@@ -1373,7 +1377,10 @@ static void push_inout_value(struct inout *inout,
   switch(inout->ftype)
   {
     case SQLT_CHR:
-      push_string(make_shared_binary_string(inout->u.shortstr,inout->len));
+#ifdef ORACLE_DEBUG
+      fprintf(stderr, "Buffer is %p (%ld bytes)\n", inout->u.buf, inout->len);
+#endif
+      push_string(make_shared_binary_string(inout->u.buf,inout->len));
       break;
     case SQLT_BIN:
     case SQLT_LBI:
@@ -1547,7 +1554,7 @@ static void push_inout_value(struct inout *inout,
       Pike_error("Unknown data type.\n");
       break;
   }
-  free_inout(inout);
+  /* free_inout(inout); */
 }
 
 static void init_inout(struct inout *i)
@@ -1557,10 +1564,23 @@ static void init_inout(struct inout *i)
   i->xlen=0;
   i->len=0;
   i->indicator=0;
+#ifdef ORACLE_DEBUG
+  fprintf(stderr, "Zapping inout buf: %p\n", i->u.buf);
+#endif
+  i->u.buf = NULL;
 }
 
 static void free_inout(struct inout *i)
 {
+  if (i->ftype == SQLT_CHR) {
+    if (i->u.buf) {
+#ifdef ORACLE_DEBUG
+      fprintf(stderr, "Freeing inout buf: %p\n", i->u.buf);
+#endif
+      free(i->u.buf);
+      i->u.buf = NULL;
+    }
+  }
   if(STRING_BUILDER_STR(i->output))
   {
     free_string_builder(& i->output);
