@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.658 2008/04/06 21:43:31 grubba Exp $
+|| $Id: program.c,v 1.659 2008/04/07 01:45:53 mbaehr Exp $
 */
 
 #include "global.h"
@@ -7501,7 +7501,7 @@ static void compilation_event_handler(int e)
   }
 }
 
-/*! @decl compile(string code)
+/*! @decl void compile(string code)
  *!
  *!   Compile a segment of Pike code.
  */
@@ -7511,7 +7511,7 @@ static void f_compilation_compile(INT32 args)
   push_int(0);
 }
 
-/*! @decl report(SeverityLevel severity, @
+/*! @decl void report(SeverityLevel severity, @
  *!              string filename, int linenumber, @
  *!              string subsystem, @
  *!              string message, mixed ... extra_args)
