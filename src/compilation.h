@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: compilation.h,v 1.33 2007/10/05 17:44:30 grubba Exp $
+|| $Id: compilation.h,v 1.34 2008/04/10 10:42:29 grubba Exp $
 */
 
 /*
@@ -13,13 +13,12 @@
 
 /*
  * IMEMBER: do not reset this member when pushing
- * DMEMBER: This member should be the same when popping as when pushing.
  * ZMEMBER: reset this member to zero when pushing
  * STACKMEMBER: Like IMEMBER, but is not allowed to become more when popping
  *
  * defining STRUCT defines the structures
  * defining DECLARE creates global vars for saving linked list
- *                  of these lists...
+ *                  of these lists and the start sentinel.
  * defining PUSH pushes the selected state(s) on the stack(s)
  * defining POP pops the selected state(s) from the stack(s)
  *
@@ -33,34 +32,26 @@
 #endif
 
 #ifdef STRUCT
-#define IMEMBER(X,Y,Z) X Y ;
-#define DMEMBER(X,Y,Z) X Y ;
-#define STACKMEMBER(X,Y,Z) X Y ;
-#define IMEMBER2(X,Y,Z,Q) X Y Z ;
-#define ZMEMBER(X,Y,Z) X Y ;
-#define ZMEMBER2(X,Y,Z,Q) X Y Z ;
-#define SNAME(X,Y) struct X { struct X *previous;
+#define IMEMBER(TYPE, FIELD, VALUE)	TYPE FIELD;
+#define STACKMEMBER(TYPE, FIELD, VALUE)	TYPE FIELD;
+#define ZMEMBER(TYPE, FIELD, VALUE)	TYPE FIELD;
+#define SNAME(STRUCT_TAG, VAR_NAME)			\
+  struct STRUCT_TAG { struct STRUCT_TAG *previous;
 #define SEND };
 #endif
 
 #ifdef EXTERN
 #define IMEMBER(X,Y,Z)
-#define DMEMBER(X,Y,Z)
 #define STACKMEMBER(X,Y,z)
-#define IMEMBER2(X,Y,Z,Q)
 #define ZMEMBER(X,Y,Z)
-#define ZMEMBER2(X,Y,Z,Q)
 #define SNAME(X,Y) PMOD_EXPORT extern struct X * Y;
 #define SEND
 #endif
 
 #ifdef DECLARE
 #define IMEMBER(X,Y,Z) Z,
-#define DMEMBER(X,Y,Z) Z,
 #define STACKMEMBER(X,Y,Z) Z,
-#define IMEMBER2(X,Y,Z,Q) Q,
 #define ZMEMBER(X,Y,Z) Z,
-#define ZMEMBER2(X,Y,Z,Q) Q,
 #define SNAME(X,Y) \
   extern struct X PIKE_CONCAT(Y,_base); \
   struct X * Y = & PIKE_CONCAT(Y,_base); \
@@ -70,11 +61,8 @@
 
 #ifdef PUSH
 #define IMEMBER(X,Y,Z) MEMCPY((char *)&(nEw->Y), (char *)&(Pike_compiler->Y), sizeof(nEw->Y));
-#define DMEMBER(X,Y,Z) IMEMBER(X,Y)
 #define STACKMEMBER(X,Y,Z) (nEw->Y=Pike_compiler->Y);
-#define IMEMBER2(X,Y,Z,Q) IMEMBER(X,Y)
 #define ZMEMBER(X,Y,Z) MEMSET((char *)&(nEw->Y), 0, sizeof(nEw->Y));
-#define ZMEMBER2(X,Y,Z,Q) ZMEMBER(X,Y)
 #define SNAME(X,Y) { \
       struct X *nEw; \
       nEw=ALLOC_STRUCT(X); \
@@ -88,14 +76,7 @@
 
 #ifdef POP
 #define IMEMBER(X,Y,Z) 
-#define IMEMBER2(X,Y,Z,Q) IMEMBER(X,Y)
 #define ZMEMBER(X,Y,Z) 
-#define ZMEMBER2(X,Y,Z,Q) ZMEMBER(X,Y)
-
-#define DMEMBER(X,Y,Z) DO_DEBUG_CODE( \
-    if(MEMCMP((char *)&(Pike_compiler->Y), (char *)&(oLd->Y), sizeof(oLd->Y))) \
-      Pike_fatal("Variable " #Y " became whacked during compilation.\n"); ) \
-  IMEMBER(X,Y)
 
 #define STACKMEMBER(X,Y,Z) DO_DEBUG_CODE( \
     if(Pike_compiler->Y < oLd->Y) \
@@ -156,10 +137,7 @@
 #undef PCODE
 #undef STRMEMBER
 #undef IMEMBER
-#undef DMEMBER
 #undef ZMEMBER
-#undef IMEMBER2
-#undef ZMEMBER2
 #undef SNAME
 #undef SEND
 #undef STACKMEMBER
