@@ -13,11 +13,14 @@ void create(?string path)
     get_all_args("create",args,"%s",&s);
     if (s) {
       THIS->obj=(void *)gtk_tree_path_new_from_string(s);
+      THIS->owned=1;
     } else {
       THIS->obj=(void *)gtk_tree_path_new_first();
+      THIS->owned=1;
     }
   } else {
     THIS->obj=(void *)gtk_tree_path_new_first();
+    THIS->owned=1;
   }
   pgtk2_pop_n_elems(args);
   pgtk2__init_this_object();

@@ -43,7 +43,7 @@ void create(GTK2.TreeModel model)
 			GTK_TREE_MODEL_SORT(THIS->obj),
 			(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program));
     pgtk2_pop_n_elems(args);
-    push_gobjectclass(gtp,pgtk2_tree_path_program);
+    push_pgdk2object(gtp,pgtk2_tree_path_program,1);
   }
 }
 
@@ -81,7 +81,7 @@ void create(GTK2.TreeModel model)
 			GTK_TREE_MODEL_SORT(THIS->obj),
 			(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program));
     pgtk2_pop_n_elems(args);
-    push_gobjectclass(gtp,pgtk2_tree_path_program);
+    push_pgdk2object(gtp,pgtk2_tree_path_program,1);
   }
 }
 

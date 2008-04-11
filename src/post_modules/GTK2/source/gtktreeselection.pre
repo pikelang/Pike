@@ -75,7 +75,7 @@ array get_selected_rows(GTK2.TreeModel model)
 			&model);
     pgtk2_pop_n_elems(args);
     while (g2) {
-      push_gobjectclass((GtkTreePath *)g2->data,pgtk2_tree_path_program);
+      push_pgdk2object((GtkTreePath *)g2->data,pgtk2_tree_path_program,1);
       i++;
       g2=g_list_next(g2);
     }

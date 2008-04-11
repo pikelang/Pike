@@ -102,7 +102,7 @@ int get_column_type(int index);
     path=(void *)gtk_tree_model_get_path(GTK_TREE_MODEL(THIS->obj),
 		(GtkTreeIter *)get_pg2object(o1,pgtk2_tree_iter_program));
     pgtk2_pop_n_elems(args);
-    push_gobjectclass(path,pgtk2_tree_path_program);
+    push_pgdk2object(path,pgtk2_tree_path_program,1);
   }
 }
 

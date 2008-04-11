@@ -50,7 +50,7 @@ GTK2.TreePath get_path()
   {
     GtkTreePath *gp=gtk_tree_row_reference_get_path(
 		(GtkTreeRowReference *)THIS->obj);
-    push_gobjectclass(gp,pgtk2_tree_path_program);
+    push_pgdk2object(gp,pgtk2_tree_path_program,1);
   }
 }
 

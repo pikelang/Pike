@@ -304,7 +304,8 @@ mapping(string:object) get_cursor()
     GtkTreePath *path;
     GtkTreeViewColumn *col;
     gtk_tree_view_get_cursor(GTK_TREE_VIEW(THIS->obj),&path,&col);
-    ref_push_string(_STR("path")); push_gobjectclass(path,pgtk2_tree_path_program);
+    ref_push_string(_STR("path"));push_pgdk2object((GtkTreePath *)path,pgtk2_tree_path_program,1);
+
     ref_push_string(_STR("column")); push_gobject(col);
     f_aggregate_mapping(4);
   }
@@ -423,7 +424,7 @@ mapping get_path_at_pos(int x, int y)
 			x,y,&path,&col,&cell_x,&cell_y);
     ref_push_string(_STR("path"));
     if (res)
-      push_gobjectclass(path,pgtk2_tree_path_program);
+      push_pgdk2object(path,pgtk2_tree_path_program,1);
     else
       push_int(0);
     ref_push_string(_STR("column"));
@@ -523,8 +524,8 @@ array get_visible_range()
     int res;
     res=gtk_tree_view_get_visible_range(GTK_TREE_VIEW(THIS->obj),&s,&e);
     if (res) {
-      push_gobjectclass(s,pgtk2_tree_path_program);
-      push_gobjectclass(e,pgtk2_tree_path_program);
+      push_pgdk2object(s,pgtk2_tree_path_program,1);
+      push_pgdk2object(e,pgtk2_tree_path_program,1);
       f_aggregate(2);
     } else
       ref_push_array(&empty_array);
