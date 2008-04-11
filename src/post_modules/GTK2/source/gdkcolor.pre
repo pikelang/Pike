@@ -32,6 +32,7 @@ void create(object|int color_or_r,int|void g,int|void b)
   c=g_malloc(sizeof(GdkColor));
   if (c==NULL)
     SIMPLE_OUT_OF_MEMORY_ERROR("",sizeof(GdkColor));
+  THIS->owned = 1;
   THIS->obj=(void *)c;
   c->red=(guint16)r;
   c->green=(guint16)g;

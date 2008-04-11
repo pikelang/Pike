@@ -37,9 +37,9 @@ int drag_data_delete(GTK2.TreePath path)
   
     pgtk2_pop_n_elems(args);
     if (res)
-      push_gobjectclass(sel,pgtk2_selection_data_program);
+	push_pgdk2object(sel,pgtk2_selection_data_program,1);
     else
-      push_int(0);
+	push_int(0);
   }
 }
 

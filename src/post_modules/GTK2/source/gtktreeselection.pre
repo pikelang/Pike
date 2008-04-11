@@ -43,9 +43,14 @@ array get_selected()
     res=gtk_tree_selection_get_selected(GTK_TREE_SELECTION(THIS->obj),
 		&model,iter);
     if (res)
-      push_gobjectclass(iter,pgtk2_tree_iter_program);
+    {
+      push_pgdk2object(iter,pgtk2_tree_iter_program,1);
+    }
     else
+    {
+      g_free(iter);
       PGTK_PUSH_INT(0);
+    }
     push_gobject(model);
     f_aggregate(2);
   }

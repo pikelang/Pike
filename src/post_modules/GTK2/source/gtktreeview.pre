@@ -801,11 +801,13 @@ array get_selected()
       SIMPLE_OUT_OF_MEMORY_ERROR("get_selected",sizeof(GtkTreeIter));
     sel=gtk_tree_view_get_selection(GTK_TREE_VIEW(THIS->obj));
     if (gtk_tree_selection_get_selected(sel,&model,iter)) {
-      push_gobjectclass(iter,pgtk2_tree_iter_program);
+      push_pgdk2object(iter,pgtk2_tree_iter_program,1);
       push_gobject(model);
       f_aggregate(2);
-    } else
+    } else {
       push_int(0);
+      g_free(iter);
+    }
   }
 }
 endrequire;

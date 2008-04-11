@@ -20,17 +20,19 @@ GTK2.TreeIter copy()
 //! Creates a copy of this tree iter.
 {
   if (THIS->obj) {
-    GtkTreeIter *a1;
-    a1=(GtkTreeIter *)gtk_tree_iter_copy((GtkTreeIter *)THIS->obj);
+    GtkTreeIter *a1 = g_malloc( sizeof( GtkTreeIter ) );
+    if (a1==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("get_iter",sizeof(GtkTreeIter));
+    *a1 = *(GtkTreeIter *)THIS->obj;
     pgtk2_pop_n_elems(args);
-    push_gobjectclass(a1,pgtk2_tree_iter_program);
+    push_pgdk2object(a1,pgtk2_tree_iter_program,1);
   }
 }
 
 void destroy()
 {
   if (THIS->obj && THIS->owned)
-    gtk_tree_iter_free((GtkTreeIter *)THIS->obj);
+    g_free((GtkTreeIter *)THIS->obj);
   THIS->obj=0;
   pgtk2_pop_n_elems(args);
   push_int(0);

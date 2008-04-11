@@ -35,9 +35,10 @@ int get_column_type(int index);
 		iter,(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program));
     pgtk2_pop_n_elems(args);
     if (res) {
-      push_gobjectclass(iter,pgtk2_tree_iter_program);
+	push_pgdk2object(iter,pgtk2_tree_iter_program,1);
     } else {
       push_int(0);
+      g_free( iter );
     }
   }
 }
@@ -59,9 +60,10 @@ int get_column_type(int index);
 		iter,s);
     pgtk2_pop_n_elems(args);
     if (res) {
-      push_gobjectclass(iter,pgtk2_tree_iter_program);
+	push_pgdk2object(iter,pgtk2_tree_iter_program,1);
     } else {
       push_int(0);
+      g_free( iter );
     }
   }
 }
@@ -80,9 +82,10 @@ int get_column_type(int index);
     res=gtk_tree_model_get_iter_first(GTK_TREE_MODEL(THIS->obj),
 		iter);
     if (res) {
-      push_gobjectclass(iter,pgtk2_tree_iter_program);
+	push_pgdk2object(iter,pgtk2_tree_iter_program,1);
     } else {
       push_int(0);
+      g_free( iter );
     }
   }
 }
@@ -117,7 +120,7 @@ array get_row(GTK2.TreeIter iter)
     pgtk2_pop_n_elems(args);
     cols=gtk_tree_model_get_n_columns(GTK_TREE_MODEL(THIS->obj));
     for (i=0; i<cols; i++) {
-      GValue v={0};
+      GValue v = {0};
       gtk_tree_model_get_value(GTK_TREE_MODEL(THIS->obj),gti,i,&v);
       pgtk2_push_gvalue_rt(&v); 
       g_value_unset(&v);
@@ -174,7 +177,13 @@ mixed get_value(GTK2.TreeIter iter, int column)
     res=gtk_tree_model_iter_children(GTK_TREE_MODEL(THIS->obj),
 		iter,(GtkTreeIter *)get_pg2object(o1,pgtk2_tree_iter_program));
     pgtk2_pop_n_elems(args);
-    push_gobjectclass(iter,pgtk2_tree_iter_program);
+    if( res )
+	push_pgdk2object(iter,pgtk2_tree_iter_program,1);
+    else
+    {
+	push_int(0);
+	g_free(iter);
+    }
   }
 }
 
@@ -231,9 +240,10 @@ int iter_n_children(GTK2.TreeIter iter)
 		iter,(GtkTreeIter *)get_pg2object(o1,pgtk2_tree_iter_program),n);
     pgtk2_pop_n_elems(args);
     if (res) {
-      push_gobjectclass(iter,pgtk2_tree_iter_program);
+	push_pgdk2object(iter,pgtk2_tree_iter_program,1);
     } else {
       push_int(0);
+      g_free( iter );
     }
   }
 }
@@ -254,9 +264,10 @@ int iter_n_children(GTK2.TreeIter iter)
 		iter,(GtkTreeIter *)get_pg2object(o1,pgtk2_tree_iter_program));
     pgtk2_pop_n_elems(args);
     if (res) {
-      push_gobjectclass(iter,pgtk2_tree_iter_program);
+	push_pgdk2object(iter,pgtk2_tree_iter_program,1);
     } else {
       push_int(0);
+      g_free( iter );
     }
   }
 }

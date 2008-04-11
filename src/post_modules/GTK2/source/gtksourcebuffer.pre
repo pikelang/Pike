@@ -374,7 +374,7 @@ GTK2.TextIter get_iter_at_marker(GTK2.SourceMarker marker)
     gtk_source_buffer_get_iter_at_marker(GTK_SOURCE_BUFFER(THIS->obj),
 			gti,(GtkSourceMarker *)get_gobject(o1));
     pgtk2_pop_n_elems(args);
-    push_gobjectclass(gti,pgtk2_text_iter_program);
+    push_pgdk2object(gti,pgtk2_text_iter_program,1);
   }
 }
 

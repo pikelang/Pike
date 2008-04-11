@@ -161,7 +161,7 @@ int place_cursor_onscreen();
       SIMPLE_OUT_OF_MEMORY_ERROR("get_line_at_y",sizeof(GtkTextIter));
     gtk_text_view_get_line_at_y(GTK_TEXT_VIEW(THIS->obj),
 		gti,y,NULL);
-    push_gobjectclass(gti,pgtk2_text_iter_program);
+    push_pgdk2object(gti,pgtk2_text_iter_program,1);
   }
 }
 
@@ -222,7 +222,8 @@ require gtk26;
       SIMPLE_OUT_OF_MEMORY_ERROR("get_iter_at_position",sizeof(GtkTextIter));
     gtk_text_view_get_iter_at_position(GTK_TEXT_VIEW(THIS->obj),
 		iter,&trailing,x,y);
-    push_gobjectclass(iter,pgtk2_text_iter_program);
+    push_pgdk2object(iter,pgtk2_text_iter_program,1);
+//    push_gobjectclass(iter,pgtk2_text_iter_program);
   }
 }
 endrequire;

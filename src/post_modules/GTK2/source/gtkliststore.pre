@@ -170,7 +170,7 @@ void remove(GTK2.TreeIter iter)
       SIMPLE_OUT_OF_MEMORY_ERROR("insert",sizeof(GtkTreeIter));
     gtk_list_store_insert(GTK_LIST_STORE(THIS->obj),gt,pos);
     pgtk2_pop_n_elems(args);
-    push_gobjectclass(gt,pgtk2_tree_iter_program);
+    push_pgdk2object(gt,pgtk2_tree_iter_program,1);
   }
 }
 
@@ -190,7 +190,7 @@ void remove(GTK2.TreeIter iter)
     gtk_list_store_insert_before(GTK_LIST_STORE(THIS->obj),
 	gt,(GtkTreeIter *)get_pg2object(o1,pgtk2_tree_iter_program));
     pgtk2_pop_n_elems(args);
-    push_gobjectclass(gt,pgtk2_tree_iter_program);
+    push_pgdk2object(gt,pgtk2_tree_iter_program,1);
   }
 }
 
@@ -210,7 +210,7 @@ void remove(GTK2.TreeIter iter)
     gtk_list_store_insert_before(GTK_LIST_STORE(THIS->obj),
 	gt,(GtkTreeIter *)get_pg2object(o1,pgtk2_tree_iter_program));
     pgtk2_pop_n_elems(args);
-    push_gobjectclass(gt,pgtk2_tree_iter_program);
+    push_pgdk2object(gt,pgtk2_tree_iter_program,1);
   }
 }
 
@@ -224,7 +224,7 @@ void remove(GTK2.TreeIter iter)
     if (gt==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("prepend",sizeof(GtkTreeIter));
     gtk_list_store_prepend(GTK_LIST_STORE(THIS->obj),gt);
-    push_gobjectclass(gt,pgtk2_tree_iter_program);
+    push_pgdk2object(gt,pgtk2_tree_iter_program,1);
   }
 }
 
@@ -238,7 +238,7 @@ void remove(GTK2.TreeIter iter)
     if (gt==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("append",sizeof(GtkTreeIter));
     gtk_list_store_append(GTK_LIST_STORE(THIS->obj),gt);
-    push_gobjectclass(gt,pgtk2_tree_iter_program);
+    push_pgdk2object(gt,pgtk2_tree_iter_program,1);
   }
 }
 

@@ -667,7 +667,7 @@ void remove_all_tags(GTK2.TextIter start, GTK2.TextIter end)
       SIMPLE_OUT_OF_MEMORY_ERROR("get_iter_at_line_offset",sizeof(GtkTextIter));
     gtk_text_buffer_get_iter_at_line_offset(GTK_TEXT_BUFFER(THIS->obj),
 		gti,line,ch);
-    push_gobjectclass(gti,pgtk2_text_iter_program);
+    push_pgdk2object(gti,pgtk2_text_iter_program,1);
   }
 }
 
@@ -688,7 +688,8 @@ void remove_all_tags(GTK2.TextIter start, GTK2.TextIter end)
       SIMPLE_OUT_OF_MEMORY_ERROR("get_iter_at_offset",sizeof(GtkTextIter));
     gtk_text_buffer_get_iter_at_offset(GTK_TEXT_BUFFER(THIS->obj),
 		gti,ch);
-    push_gobjectclass(gti,pgtk2_text_iter_program);
+    push_pgdk2object(gti,pgtk2_text_iter_program,1);
+//    push_gobjectclass(gti,pgtk2_text_iter_program);
   }
 }
 
@@ -706,7 +707,8 @@ void remove_all_tags(GTK2.TextIter start, GTK2.TextIter end)
       SIMPLE_OUT_OF_MEMORY_ERROR("get_iter_at_line",sizeof(GtkTextIter));
     gtk_text_buffer_get_iter_at_line(GTK_TEXT_BUFFER(THIS->obj),
 		gti,line);
-    push_gobjectclass(gti,pgtk2_text_iter_program);
+    push_pgdk2object(gti,pgtk2_text_iter_program,1);
+//    push_gobjectclass(gti,pgtk2_text_iter_program);
   }
 }
 
@@ -727,7 +729,8 @@ void remove_all_tags(GTK2.TextIter start, GTK2.TextIter end)
       SIMPLE_OUT_OF_MEMORY_ERROR("get_iter_at_line_index",sizeof(GtkTextIter));
     gtk_text_buffer_get_iter_at_line_index(GTK_TEXT_BUFFER(THIS->obj),
 		gti,line,index);
-    push_gobjectclass(gti,pgtk2_text_iter_program);
+    push_pgdk2object(gti,pgtk2_text_iter_program,1);
+//    push_gobjectclass(gti,pgtk2_text_iter_program);
   }
 }
 
@@ -745,7 +748,8 @@ void remove_all_tags(GTK2.TextIter start, GTK2.TextIter end)
     gtk_text_buffer_get_iter_at_mark(GTK_TEXT_BUFFER(THIS->obj),
 		gti,GTK_TEXT_MARK(get_gobject(o1)));
     pgtk2_pop_n_elems(args);
-    push_gobjectclass(gti,pgtk2_text_iter_program);
+    push_pgdk2object(gti,pgtk2_text_iter_program,1);
+//    push_gobjectclass(gti,pgtk2_text_iter_program);
   }
 }
 
@@ -763,7 +767,8 @@ void remove_all_tags(GTK2.TextIter start, GTK2.TextIter end)
     gtk_text_buffer_get_iter_at_child_anchor(GTK_TEXT_BUFFER(THIS->obj),
 		gti,GTK_TEXT_CHILD_ANCHOR(get_gobject(o1)));
     pgtk2_pop_n_elems(args);
-    push_gobjectclass(gti,pgtk2_text_iter_program);
+    push_pgdk2object(gti,pgtk2_text_iter_program,1);
+//    push_gobjectclass(gti,pgtk2_text_iter_program);
   }
 }
 
@@ -780,7 +785,8 @@ void remove_all_tags(GTK2.TextIter start, GTK2.TextIter end)
     if (gti==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("get_start_iter",sizeof(GtkTextIter));
     gtk_text_buffer_get_start_iter(GTK_TEXT_BUFFER(THIS->obj),gti);
-    push_gobjectclass(gti,pgtk2_text_iter_program);
+    push_pgdk2object(gti,pgtk2_text_iter_program,1);
+//    push_gobjectclass(gti,pgtk2_text_iter_program);
   }
 }
 
@@ -798,7 +804,8 @@ void remove_all_tags(GTK2.TextIter start, GTK2.TextIter end)
     if (gti==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("get_end_iter",sizeof(GtkTextIter));
     gtk_text_buffer_get_end_iter(GTK_TEXT_BUFFER(THIS->obj),gti);
-    push_gobjectclass(gti,pgtk2_text_iter_program);
+    push_pgdk2object(gti,pgtk2_text_iter_program,1);
+//    push_gobjectclass(gti,pgtk2_text_iter_program);
   }
 }
 
@@ -817,8 +824,8 @@ array(GTK2.TextIter) get_bounds()
     if (gt2==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("get_bounds",sizeof(GtkTextIter));
     gtk_text_buffer_get_bounds(GTK_TEXT_BUFFER(THIS->obj),gti,gt2);
-    push_gobjectclass(gti,pgtk2_text_iter_program);
-    push_gobjectclass(gt2,pgtk2_text_iter_program);
+    push_pgdk2object(gti,pgtk2_text_iter_program,1);
+    push_pgdk2object(gt2,pgtk2_text_iter_program,1);
     f_aggregate(2);
   }
 }

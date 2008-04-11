@@ -45,8 +45,8 @@ array backward_search(string str, int flags, ?GTK2.TextIter limit)
 			str,flags,match_start,match_end,limit);
     pgtk2_pop_n_elems(args);
     push_int(res);
-    push_gobjectclass(match_start,pgtk2_text_iter_program);
-    push_gobjectclass(match_end,pgtk2_text_iter_program);
+    push_pgdk2object(match_start,pgtk2_text_iter_program,1);
+    push_pgdk2object(match_end,pgtk2_text_iter_program,1);
     f_aggregate(3);
   }
 }
@@ -80,8 +80,8 @@ array forward_search(string str, int flags, ?GTK2.TextIter limit)
 			str,flags,match_start,match_end,limit);
     pgtk2_pop_n_elems(args);
     push_int(res);
-    push_gobjectclass(match_start,pgtk2_text_iter_program);
-    push_gobjectclass(match_end,pgtk2_text_iter_program);
+    push_pgdk2object(match_start,pgtk2_text_iter_program,1);
+    push_pgdk2object(match_end,pgtk2_text_iter_program,1);
     f_aggregate(3);
   }
 }
