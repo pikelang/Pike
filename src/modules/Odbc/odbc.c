@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc.c,v 1.48 2008/01/29 16:36:50 mast Exp $
+|| $Id: odbc.c,v 1.49 2008/04/12 13:22:29 grubba Exp $
 */
 
 /*
@@ -345,7 +345,7 @@ static void f_create_dsn(INT32 args)
 {
   struct pike_string *connectstring = NULL;
 
-  SQLCHAR outconnectionstring[1024]; // Smallest allowed buffer = 1024
+  SQLCHAR outconnectionstring[1024]; /* Smallest allowed buffer = 1024 */
   SQLSMALLINT stringlength2;
 
   get_all_args("odbc->create_dsn", args, "%S", &connectstring);
