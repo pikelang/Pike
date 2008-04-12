@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.166 2008/04/04 13:17:28 grubba Exp $
+|| $Id: cpp.c,v 1.167 2008/04/12 13:26:30 grubba Exp $
 */
 
 #include "global.h"
@@ -224,7 +224,8 @@ static void cpp_handle_exception(struct cpp *this,
   }
 
   push_svalue(&thrown);
-  low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
+  low_safe_apply_handler("compile_exception",
+			 this->handler, this->compat_handler, 1);
 
   if (SAFE_IS_ZERO(sp-1)) {
     struct pike_string *s = format_exception_for_error_msg (&thrown);
