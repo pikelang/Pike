@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.153 2008/03/29 11:50:56 mast Exp $
+|| $Id: error.c,v 1.154 2008/04/12 14:04:09 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -116,6 +116,15 @@ PMOD_EXPORT DECLSPEC(noreturn) void pike_throw(void) ATTRIBUTE((noreturn))
   {
     while(Pike_interpreter.recoveries->onerror)
     {
+      while(Pike_fp != Pike_interpreter.recoveries->onerror->frame_pointer)
+      {
+#ifdef PIKE_DEBUG
+	if(!Pike_fp)
+	  Pike_fatal("Popped out of stack frames.\n");
+#endif
+	POP_PIKE_FRAME();
+      }
+
       (*Pike_interpreter.recoveries->onerror->func)(Pike_interpreter.recoveries->onerror->arg);
       Pike_interpreter.recoveries->onerror=Pike_interpreter.recoveries->onerror->previous;
     }
@@ -133,6 +142,24 @@ PMOD_EXPORT DECLSPEC(noreturn) void pike_throw(void) ATTRIBUTE((noreturn))
   if(!Pike_interpreter.recoveries)
     Pike_fatal("No error recovery context.\n");
 
+  /* Don't pop the stack before the onerrors have run; they might need
+   * items from the stack.
+   */
+
+  while(Pike_interpreter.recoveries->onerror)
+  {
+    while(Pike_fp != Pike_interpreter.recoveries->onerror->frame_pointer)
+    {
+#ifdef PIKE_DEBUG
+      if(!Pike_fp)
+	Pike_fatal("Popped out of stack frames.\n");
+#endif
+      POP_PIKE_FRAME();
+    }
+    (*Pike_interpreter.recoveries->onerror->func)(Pike_interpreter.recoveries->onerror->arg);
+    Pike_interpreter.recoveries->onerror=Pike_interpreter.recoveries->onerror->previous;
+  }
+
   while(Pike_fp != Pike_interpreter.recoveries->frame_pointer)
   {
 #ifdef PIKE_DEBUG
@@ -140,16 +167,6 @@ PMOD_EXPORT DECLSPEC(noreturn) void pike_throw(void) ATTRIBUTE((noreturn))
       Pike_fatal("Popped out of stack frames.\n");
 #endif
     POP_PIKE_FRAME();
-  }
-
-  /* Don't pop the stack before the onerrors have run; they might need
-   * items from the stack.
-   */
-
-  while(Pike_interpreter.recoveries->onerror)
-  {
-    (*Pike_interpreter.recoveries->onerror->func)(Pike_interpreter.recoveries->onerror->arg);
-    Pike_interpreter.recoveries->onerror=Pike_interpreter.recoveries->onerror->previous;
   }
 
 #ifdef PIKE_DEBUG

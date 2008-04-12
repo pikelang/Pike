@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_error.h,v 1.42 2008/01/26 22:34:22 mast Exp $
+|| $Id: pike_error.h,v 1.43 2008/04/12 14:04:09 grubba Exp $
 */
 
 #ifndef PIKE_ERROR_H
@@ -96,6 +96,7 @@ struct pike_frame;
 typedef struct ONERROR
 {
   struct ONERROR *previous;
+  struct pike_frame *frame_pointer;
   error_call func;
   void *arg;
 #ifdef PIKE_DEBUG
@@ -165,6 +166,7 @@ PMOD_EXPORT extern const char msg_unsetjmp_nosync_2[];
      check_recovery_context(); \
      OED_FPRINTF((stderr, "SET_ONERROR(%p, %p, %p) %s:%d\n", \
                   &(X), (Y), (void *)(Z), __FILE__, __LINE__)); \
+     X.frame_pointer = Pike_interpreter.frame_pointer; \
      X.func=(error_call)(Y); \
      DO_IF_DMALLOC( if( X.func == free ) X.func=dmalloc_free;) \
      X.arg=(void *)(Z); \
@@ -210,6 +212,7 @@ PMOD_EXPORT extern const char msg_assert_onerr[];
   do{ \
      X.func=(error_call)(Y); \
      X.arg=(void *)(Z); \
+     X.frame_pointer = Pike_interpreter.frame_pointer; \
      if(!Pike_interpreter.recoveries) break; \
      X.previous=Pike_interpreter.recoveries->onerror; \
      Pike_interpreter.recoveries->onerror=&X; \
