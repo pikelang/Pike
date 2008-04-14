@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_compiler.h,v 1.1 2008/04/14 10:14:41 grubba Exp $
+|| $Id: pike_compiler.h,v 1.2 2008/04/14 12:17:44 grubba Exp $
 */
 
 #ifndef PIKE_COMPILER_H
@@ -46,6 +46,12 @@ struct compilation
 #endif
 #define THIS_COMPILATION  ((struct compilation *)(Pike_fp->current_storage))
 #define MAYBE_THIS_COMPILATION  ((Pike_fp && compilation_program && (Pike_fp->context->prog == compilation_program))?THIS_COMPILATION:NULL)
+
+/* Report levels */
+#define REPORT_INFO	0	/* FYI. */
+#define REPORT_WARNING	1	/* Compiler warning. */
+#define REPORT_ERROR	2	/* Compilation error. */
+#define REPORT_FATAL	3	/* Unrecoverable error. */
 
 /* Function numbers. */
 #define CE_REPORT_FUN_NUM		0
