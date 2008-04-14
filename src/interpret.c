@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.394 2008/04/12 16:18:17 grubba Exp $
+|| $Id: interpret.c,v 1.395 2008/04/14 16:33:32 grubba Exp $
 */
 
 #include "global.h"
@@ -2407,10 +2407,11 @@ PMOD_EXPORT int apply_low_safe_and_stupid(struct object *o, INT32 offset)
   return ret;
 }
 
-PMOD_EXPORT void safe_apply_low2(struct object *o, int fun, int args,
-				 const char *fun_name)
+PMOD_EXPORT int safe_apply_low2(struct object *o, int fun, int args,
+				const char *fun_name)
 {
   JMP_BUF recovery;
+  int ret = 0;
 
   free_svalue(& throw_value);
   mark_free_svalue (&throw_value);
@@ -2418,6 +2419,7 @@ PMOD_EXPORT void safe_apply_low2(struct object *o, int fun, int args,
   {
     if(fun_name) call_handle_error();
     push_int(0);
+    ret = 0;
   }else{
     if (fun >= 0) {
       apply_low(o,fun,args);
@@ -2427,23 +2429,25 @@ PMOD_EXPORT void safe_apply_low2(struct object *o, int fun, int args,
       pop_n_elems(args);
       push_int(0);
     }
+    ret = 1;
   }
   UNSETJMP(recovery);
+  return ret;
 }
 
-PMOD_EXPORT void safe_apply_low(struct object *o, int fun, int args)
+PMOD_EXPORT int safe_apply_low(struct object *o, int fun, int args)
 {
-  safe_apply_low2(o, fun, args, "Unknown function.");
+  return safe_apply_low2(o, fun, args, "Unknown function.");
 }
 
-PMOD_EXPORT void safe_apply(struct object *o, const char *fun, INT32 args)
+PMOD_EXPORT int safe_apply(struct object *o, const char *fun, INT32 args)
 {
   int id;
 #ifdef PIKE_DEBUG
   if(!o->prog) Pike_fatal("Apply safe on destructed object.\n");
 #endif
   id = find_identifier(fun, o->prog);
-  safe_apply_low2(o, id, args, fun);
+  return safe_apply_low2(o, id, args, fun);
 }
 
 /* Returns nonzero if the function was called in some handler. */
