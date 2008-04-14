@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.660 2008/04/14 10:14:41 grubba Exp $
+|| $Id: program.c,v 1.661 2008/04/14 12:19:18 grubba Exp $
 */
 
 #include "global.h"
@@ -7361,13 +7361,6 @@ void run_pass2(struct compilation *c)
 	     (long)th_self(), Pike_compiler->new_program,
 	     threads_disabled, compilation_depth));
 
-  CDFPRINTF((stderr,
-	     "th(%ld) %p:\n"
-	     "%s\n"
-	     "---\n"
-	     "%s\n", (long)th_self(), Pike_compiler->new_program,
-	     c->prog->str, c->lex.pos));
-
   verify_supporters();
 
   do_yyparse();  /* Parse da program */
@@ -8876,14 +8869,14 @@ void low_pop_local_variables(int level)
     if ((Pike_compiler->compiler_pass == 2) &&
 	!(Pike_compiler->compiler_frame->variable[e].flags &
 	  LOCAL_VAR_IS_USED)) {
-      struct pike_string *save_file = c->lex.current_file;
-      int save_line = c->lex.current_line;
-      c->lex.current_file = Pike_compiler->compiler_frame->variable[e].file;
-      c->lex.current_line = Pike_compiler->compiler_frame->variable[e].line;
-      yywarning("Unused local variable %S.",
-		Pike_compiler->compiler_frame->variable[e].name);
-      c->lex.current_file = save_file;
-      c->lex.current_line = save_line;
+      push_int(1); /* Warning */
+      ref_push_string(Pike_compiler->compiler_frame->variable[e].file);
+      push_int(Pike_compiler->compiler_frame->variable[e].line);
+      push_constant_text("parse");
+      push_constant_text("Unused local variable %S.");
+      ref_push_string(Pike_compiler->compiler_frame->variable[e].name);
+      safe_apply_current(CE_REPORT_FUN_NUM, 6);
+      pop_stack();
     }
     free_string(Pike_compiler->compiler_frame->variable[e].name);
     free_type(Pike_compiler->compiler_frame->variable[e].type);
@@ -8908,16 +8901,14 @@ void pop_local_variables(int level)
       if ((Pike_compiler->compiler_pass == 2) &&
 	  !(Pike_compiler->compiler_frame->variable[level].flags &
 	    LOCAL_VAR_IS_USED)) {
-	struct pike_string *save_file = c->lex.current_file;
-	int save_line = c->lex.current_line;
-	c->lex.current_file =
-	  Pike_compiler->compiler_frame->variable[level].file;
-	c->lex.current_line =
-	  Pike_compiler->compiler_frame->variable[level].line;
-	yywarning("Unused local variable %S.",
-		Pike_compiler->compiler_frame->variable[level].name);
-	c->lex.current_file = save_file;
-	c->lex.current_line = save_line;
+	push_int(1); /* Warning */
+	ref_push_string(Pike_compiler->compiler_frame->variable[level].file);
+	push_int(Pike_compiler->compiler_frame->variable[level].line);
+	push_constant_text("parse");
+	push_constant_text("Unused local variable %S.");
+	ref_push_string(Pike_compiler->compiler_frame->variable[level].name);
+	safe_apply_current(CE_REPORT_FUN_NUM, 6);
+	pop_stack();
 	/* Make sure we only warn once... */
 	Pike_compiler->compiler_frame->variable[level].flags |=
 	  LOCAL_VAR_IS_USED;
@@ -9146,21 +9137,13 @@ void yywarning(char *fmt, ...)
   va_end(args);
   msg = finish_string_builder(&s);
 
-  if (master_object) {
-    ref_push_string(c->lex.current_file);
-    push_int(c->lex.current_line);
-    push_string(msg);
-
-    low_safe_apply_handler("compile_warning",
-			   c->handler, c->compat_handler, 3);
-    pop_stack();
-  } else {
-    if (!msg->size_shift) {
-      fprintf(stderr, "%s:%d: Warning: %s\n",
-	      c->lex.current_file->str, c->lex.current_line, msg->str);
-    }
-    free_string(msg);
-  }
+  push_int(1);	/* Warning. */
+  ref_push_string(c->lex.current_file);
+  push_int(c->lex.current_line);
+  push_constant_text("parse");
+  push_string(msg);
+  safe_apply_current(CE_REPORT_FUN_NUM, 5);
+  pop_stack();
 }
 
 
