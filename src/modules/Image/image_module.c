@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_module.c,v 1.23 2005/11/23 00:44:38 nilsson Exp $
+|| $Id: image_module.c,v 1.24 2008/04/14 10:15:24 grubba Exp $
 */
 
 #include "global.h"
@@ -135,11 +135,13 @@ static void image_magic_index(INT32 args)
 	 if (!submagic[i].o)
 	 {
 	    struct program *p;
+	    enter_compiler(submagic[i].ps, 0);
 	    start_new_program();
 	    (submagic[i].init)();
 	    IMAGE_CHECK_STACK(submagic[i].name);
 	    p=end_program();
 	    p->id = PROG_IMAGE_SUBMAGIC_START+i;
+	    exit_compiler();
 	    submagic[i].o=clone_object(p,0);
 	    free_program(p);
 	 }
