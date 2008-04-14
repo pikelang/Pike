@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dynamic_load.c,v 1.89 2006/07/05 19:06:32 mast Exp $
+|| $Id: dynamic_load.c,v 1.90 2008/04/14 10:14:38 grubba Exp $
 */
 
 #ifdef TESTING
@@ -389,9 +389,7 @@ static void cleanup_compilation(struct compilation_save *save)
   if (p) {
     free_program(p);
   }
-  free_string(lex.current_file);
   compilation_depth = save->compilation_depth;
-  lex = save->lex;
 }
 
 /*! @decl program load_module(string module_name)
@@ -538,9 +536,8 @@ void f_load_module(INT32 args)
   new_module->init=init;
   new_module->exit=exit;
 
-  save.lex = lex;
-  lex.current_line=1;
-  lex.current_file=make_shared_string("-");
+  enter_compiler(new_module->name, 1);
+
   save.compilation_depth=compilation_depth;
   compilation_depth=-1;
   start_new_program();
@@ -570,9 +567,8 @@ void f_load_module(INT32 args)
   pop_n_elems(args);
   {
     struct program *p = end_program();
-    free_string(lex.current_file);
+    exit_compiler();
     compilation_depth = save.compilation_depth;
-    lex = save.lex;
     if (p) {
       if (
 #if 0

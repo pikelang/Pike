@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.320 2008/04/01 13:20:07 mast Exp $
+|| $Id: pike_types.c,v 1.321 2008/04/14 10:14:41 grubba Exp $
 */
 
 #include "global.h"
@@ -27,6 +27,7 @@
 #include "opcodes.h"
 #include "cyclic.h"
 #include "gc.h"
+#include "pike_compiler.h"
 #include "block_alloc.h"
 
 #ifdef PIKE_DEBUG
@@ -55,6 +56,7 @@
 				 * Perform weaker checking for OR-nodes. */
 #define LE_A_B_GROUPED	0/*12*/	/* Both the above two flags. */
 #endif
+#define LE_USE_HANDLERS	16	/* Call handlers if appropriate. */
 
 /*
  * Flags used by low_get_first_arg_type()
@@ -1871,10 +1873,18 @@ void simple_describe_type(struct pike_type *s)
 	break;
 
       case PIKE_T_ATTRIBUTE:
-	fprintf(stderr, "__attribute__(\"%s\", ",
-		((struct pike_string *)s->car)->str);
-	simple_describe_type(s->cdr);
-	fprintf(stderr, ")");
+	{
+	  struct pike_string *deprecated;
+	  MAKE_CONST_STRING(deprecated, "deprecated");
+	  if (((struct pike_string *)s->car) == deprecated) {
+	    fprintf(stderr, "__deprecated__(");
+	  } else {
+	    fprintf(stderr, "__attribute__(\"%s\", ",
+		    ((struct pike_string *)s->car)->str);
+	  }
+	  simple_describe_type(s->cdr);
+	  fprintf(stderr, ")");
+	}
 	break;
 
       case T_SCOPE:
@@ -2214,10 +2224,16 @@ static void low_describe_type(struct pike_type *t)
       
     case PIKE_T_ATTRIBUTE:
       if (!((struct pike_string *)t->car)->size_shift) {
-	my_strcat("__attribute__(\"");
-	my_binary_strcat(((struct pike_string *)t->car)->str,
-			 ((struct pike_string *)t->car)->len);
-	my_strcat("\", ");
+	struct pike_string *deprecated;
+	MAKE_CONST_STRING(deprecated, "deprecated");
+	if (((struct pike_string *)t->car) == deprecated) {
+	  my_strcat("__deprecated__(");
+	} else {
+	  my_strcat("__attribute__(\"");
+	  my_binary_strcat(((struct pike_string *)t->car)->str,
+			   ((struct pike_string *)t->car)->len);
+	  my_strcat("\", ");
+	}
 	my_describe_type(t->cdr);
 	my_strcat(")");
       } else {
@@ -3727,9 +3743,38 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
 #endif
     /* FALL_THROUGH */
   case PIKE_T_NAME:
-  case PIKE_T_ATTRIBUTE:
     a = a->cdr;
     goto recurse;
+  case PIKE_T_ATTRIBUTE:
+    if ((b->type == PIKE_T_ATTRIBUTE) && (a->car == b->car)) {
+      a = a->cdr;
+      b = b->cdr;
+      goto recurse;
+    }
+#if 0
+    if (!flags & LE_USE_HANDLERS) {
+      a = a->cdr;
+      goto recurse;
+    }
+#endif /* 0 */
+    if (!low_pike_types_le(a->cdr, b, array_cnt, flags)) return 0;
+#if 0
+    ref_push_string((struct pike_string *)a->car);
+    ref_push_type_value(a->cdr);
+    ref_push_type_value(b);
+    push_int(1);
+    if (safe_apply_handler("handle_attribute", error_handler, compat_handler,
+			   4, 0)) {
+      if ((Pike_sp[-1].type == T_INT) &&
+	  (Pike_sp[-1].subtype == NUMBER_NUMBER) &&
+	  (!Pike_sp[-1].u.integer)) {
+	pop_stack();
+	return 0;
+      }
+      pop_stack();
+    }
+#endif /* 0 */
+    return 1;
 
   case T_NOT:
     if (b->type == T_NOT) {
@@ -3863,13 +3908,37 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
     b = b->car;
     goto recurse;
 
+  case PIKE_T_ATTRIBUTE:
+#if 0
+    if (!flags & LE_USE_HANDLERS) {
+      b = b->cdr;
+      goto recurse;
+    }
+#endif /* 0 */
+    if (!low_pike_types_le(a, b->cdr, array_cnt, flags)) return 0;
+#if 0
+    ref_push_string((struct pike_string *)b->car);
+    ref_push_type_value(a);
+    ref_push_type_value(b->cdr);
+    push_int(2);
+    if (safe_apply_handler("handle_attribute", error_handler, compat_handler,
+			   4, 0)) {
+      if ((Pike_sp[-1].type == T_INT) &&
+	  (Pike_sp[-1].subtype == NUMBER_NUMBER) &&
+	  (!Pike_sp[-1].u.integer)) {
+	pop_stack();
+	return 0;
+      }
+      pop_stack();
+    }
+#endif /* 0 */
+    return 1;
   case PIKE_T_SCOPE:
 #ifdef TYPE_GROUPING
     flags |= LE_B_GROUPED;
 #endif
     /* FALL_THROUGH */
   case PIKE_T_NAME:
-  case PIKE_T_ATTRIBUTE:
     b = b->cdr;
     goto recurse;
 
@@ -4318,7 +4387,9 @@ int check_soft_cast(struct pike_type *to, struct pike_type *from)
  */
 static int low_get_return_type(struct pike_type *a, struct pike_type *b)
 {
+  struct compilation *c = THIS_COMPILATION;
   int tmp;
+  CHECK_COMPILER();
   switch(a->type)
   {
   case T_OR:
@@ -4380,7 +4451,7 @@ static int low_get_return_type(struct pike_type *a, struct pike_type *b)
   if(a)
   {
 #if 0
-    if ((lex.pragmas & ID_STRICT_TYPES) &&
+    if ((c->lex.pragmas & ID_STRICT_TYPES) &&
 	!low_pike_types_le(a, b, 0, 0)) {
       yywarning("Type mismatch");
     }
@@ -4441,6 +4512,13 @@ static struct pike_type *debug_low_index_type(struct pike_type *t,
 {
   struct pike_type *tmp;
   struct program *p;
+  int pragmas = 0;
+
+  if (n) {
+    struct compilation *c = THIS_COMPILATION;
+    CHECK_COMPILER();
+    pragmas = c->lex.pragmas;
+  }
 
   switch(low_check_indexing(t, index_type, n))
   {
@@ -4519,7 +4597,7 @@ static struct pike_type *debug_low_index_type(struct pike_type *t,
     return mixed_type_string;
 
   case T_MIXED:
-    if (lex.pragmas & ID_STRICT_TYPES) {
+    if (pragmas & ID_STRICT_TYPES) {
       yywarning("Indexing mixed.");
     }
     add_ref(mixed_type_string);
@@ -4633,8 +4711,11 @@ static struct pike_type *debug_low_range_type(struct pike_type *t,
 					      struct pike_type *index1_type,
 					      struct pike_type *index2_type)
 {
+  struct compilation *c = THIS_COMPILATION;
   struct pike_type *tmp;
   struct program *p;
+
+  CHECK_COMPILER();
 
   while((t->type == PIKE_T_NAME) ||
 	(t->type == PIKE_T_ATTRIBUTE)) {
@@ -4736,7 +4817,7 @@ static struct pike_type *debug_low_range_type(struct pike_type *t,
       yywarning("Ranging object without index operator.");
       return 0;
     }
-    if (lex.pragmas & ID_STRICT_TYPES) {
+    if (c->lex.pragmas & ID_STRICT_TYPES) {
       yywarning("Ranging generic object.");
     }
     add_ref(mixed_type_string);
@@ -4744,7 +4825,7 @@ static struct pike_type *debug_low_range_type(struct pike_type *t,
   }
 
   case T_MIXED:
-    if (lex.pragmas & ID_STRICT_TYPES) {
+    if (c->lex.pragmas & ID_STRICT_TYPES) {
       yywarning("Ranging mixed.");
     }
     add_ref(mixed_type_string);
@@ -5892,14 +5973,16 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
       }
 
       if (tmp2->type == PIKE_T_ATTRIBUTE) {
+	struct compilation *c = MAYBE_THIS_COMPILATION;
 	/* Perform extra argument checking based on the attribute. */
 	/* FIXME: Support multiple attributes. */
 	ref_push_string((struct pike_string *)tmp2->car);
 	push_svalue(sval);
 	ref_push_type_value(tmp2->cdr);
 	ref_push_type_value(res);
-	if (safe_apply_handler("handle_attribute_constant", error_handler,
-			       compat_handler, 4, 0)) {
+	if (safe_apply_handler("handle_attribute_constant",
+			       c?c->handler:NULL,
+			       c?c->compat_handler:NULL, 4, 0)) {
 	  if ((Pike_sp[-1].type == PIKE_T_TYPE)) {
 	    type_stack_mark();
 	    push_finished_type(Pike_sp[-1].u.type);
@@ -6454,10 +6537,13 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
 				 struct pike_type *fun_type,
 				 node *args, INT32 *argno)
 {
+  struct compilation *c = THIS_COMPILATION;
   struct pike_type *tmp = NULL;
   struct pike_type *res = NULL;
   struct svalue *sval = NULL;
   int flags = 0;
+
+  CHECK_COMPILER();
 
   debug_malloc_touch(fun_type);
 
@@ -6549,7 +6635,7 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
       if (cnt == 256) {
 	yywarning("In argument %d to %S: The @-operator argument must be an empty array.",
 		  *argno, fun_name);
-      } else if (lex.pragmas & ID_STRICT_TYPES) {
+      } else if (c->lex.pragmas & ID_STRICT_TYPES) {
 	yywarning("In argument %d to %S: The @-operator argument has a max length of %d.",
 		  *argno, fun_name, 256-cnt);
       }
@@ -6571,7 +6657,7 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
       fprintf(stderr, " OK.\n");
     }
 #endif /* PIKE_DEBUG */
-    if (lex.pragmas & ID_STRICT_TYPES) {
+    if (c->lex.pragmas & ID_STRICT_TYPES) {
       if (!(tmp = low_new_check_call(fun_type, args->type,
 				     flags|CALL_STRICT, sval))) {
 	yywarning("Type mismatch in argument %d to %S.",

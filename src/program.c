@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.659 2008/04/07 01:45:53 mbaehr Exp $
+|| $Id: program.c,v 1.660 2008/04/14 10:14:41 grubba Exp $
 */
 
 #include "global.h"
@@ -35,6 +35,7 @@
 #include "version.h"
 #include "block_alloc.h"
 #include "pikecode.h"
+#include "pike_compiler.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -44,6 +45,7 @@
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
 
+static void low_enter_compiler(struct object *ce, int inherit);
 static void exit_program_struct(struct program *);
 static size_t add_xstorage(size_t size,
 			   size_t alignment,
@@ -1218,9 +1220,6 @@ struct program *null_program=0;
 
 struct program *compilation_program = 0;
 
-struct object *error_handler=0;
-struct object *compat_handler=0;
-
 struct program *gc_internal_program = 0;
 static struct program *gc_mark_program_pos = 0;
 
@@ -1616,23 +1615,24 @@ struct node_s *resolve_identifier(struct pike_string *ident)
 
   if(get_master())
   {
+    struct compilation *c = THIS_COMPILATION;
     DECLARE_CYCLIC();
     node *ret=0;
-    if(BEGIN_CYCLIC(ident, lex.current_file))
+    if(BEGIN_CYCLIC(ident, c->lex.current_file))
     {
       my_yyerror("Recursive module dependency in %S.", ident);
     }else{
       SET_CYCLIC_RET(1);
 
       ref_push_string(ident);
-      ref_push_string(lex.current_file);
-      if (error_handler) {
-	ref_push_object(error_handler);
+      ref_push_string(c->lex.current_file);
+      if (c->handler) {
+	ref_push_object(c->handler);
       } else {
 	push_int(0);
       }
 
-      if (safe_apply_handler("resolv", error_handler, compat_handler, 3, 0)) {
+      if (safe_apply_handler("resolv", c->handler, c->compat_handler, 3, 0)) {
 	if (Pike_compiler->compiler_pass == 2 &&
 	    ((Pike_sp[-1].type == T_OBJECT &&
 	      Pike_sp[-1].u.object == placeholder_object) ||
@@ -1977,6 +1977,7 @@ struct pike_string *find_program_name(struct program *p, INT32 *line)
 
 int override_identifier (struct reference *new_ref, struct pike_string *name)
 {
+  struct compilation *c = THIS_COMPILATION;
   int id = -1, cur_id = 0, is_used = 0;
 
   int new_is_variable =
@@ -1988,6 +1989,8 @@ int override_identifier (struct reference *new_ref, struct pike_string *name)
    * and then see if should be overwritten
    * /Hubbe
    */
+
+  CHECK_COMPILER();
 
   for(;cur_id<Pike_compiler->new_program->num_identifier_references;cur_id++)
   {
@@ -2040,7 +2043,7 @@ int override_identifier (struct reference *new_ref, struct pike_string *name)
       sub_ref = PTR_FROM_INT(inh->prog, cur_id - inh->identifier_level);
 
       /* Check if the symbol was used before it was inherited. */
-      if ((lex.pragmas & ID_STRICT_TYPES) &&
+      if ((c->lex.pragmas & ID_STRICT_TYPES) &&
 	  (sub_ref->id_flags & ID_USED)) {
 	struct identifier *sub_id = ID_FROM_PTR(inh->prog, sub_ref);
 	if (IDENTIFIER_IS_FUNCTION(sub_id->identifier_flags)) {
@@ -2085,8 +2088,11 @@ int override_identifier (struct reference *new_ref, struct pike_string *name)
 
 void fixate_program(void)
 {
+  struct compilation *c = THIS_COMPILATION;
   INT32 i,e,t;
   struct program *p=Pike_compiler->new_program;
+
+  CHECK_COMPILER();
 
   if(p->flags & PROGRAM_FIXED) return;
 #ifdef PIKE_DEBUG
@@ -2161,7 +2167,7 @@ void fixate_program(void)
 	  if(funa_is_prototype && (funb->func.offset != -1) &&
 	     !(funp->id_flags & ID_INLINE))
 	  {
-	    if ((lex.pragmas & ID_STRICT_TYPES) &&
+	    if ((c->lex.pragmas & ID_STRICT_TYPES) &&
 		(funp->id_flags & ID_USED)) {
 	      /* Verify that the types are compatible. */
 	      if (!pike_types_le(funb->type, fun->type)) {
@@ -2175,7 +2181,7 @@ void fixate_program(void)
 	  }
 	  if(!funa_is_prototype && funb->func.offset == -1)
 	  {
-	    if ((lex.pragmas & ID_STRICT_TYPES) &&
+	    if ((c->lex.pragmas & ID_STRICT_TYPES) &&
 		(funpb->id_flags & ID_USED)) {
 	      /* Verify that the types are compatible. */
 	      if (!pike_types_le(fun->type, funb->type)) {
@@ -2267,12 +2273,12 @@ void fixate_program(void)
     INT32 line;
     struct pike_string *tmp;
     struct memory_map *m=0;;
-    if(lex.current_file && 
-       lex.current_file->str &&
-       lex.current_file->len &&
-       !strcmp(lex.current_file->str,"-"))
+    if(c->lex.current_file && 
+       c->lex.current_file->str &&
+       c->lex.current_file->len &&
+       !strcmp(c->lex.current_file->str,"-"))
     {
-      m=dmalloc_alloc_mmap( DBSTR(lex.current_file), lex.current_line);
+      m=dmalloc_alloc_mmap( DBSTR(c->lex.current_file), c->lex.current_line);
     }
     else if( (tmp=find_program_name(Pike_compiler->new_program, &line)) )
     {
@@ -2353,8 +2359,11 @@ void low_start_new_program(struct program *p,
 			   int flags,
 			   int *idp)
 {
+  struct compilation *c = THIS_COMPILATION;
   int id=0;
   struct svalue tmp;
+
+  CHECK_COMPILER();
 
 #ifdef WITH_FACETS
   if(Pike_compiler->compiler_pass == 1 && p) {
@@ -2387,7 +2396,7 @@ void low_start_new_program(struct program *p,
       fprintf(stderr,"Compiling class %s, depth=%d\n",name->str,compilation_depth);
     }else{
       fprintf(stderr,"Compiling file %s, depth=%d\n",
-	      lex.current_file ? lex.current_file->str : "-",
+	      c->lex.current_file ? c->lex.current_file->str : "-",
 	      compilation_depth);
 #endif
     }
@@ -2499,10 +2508,10 @@ void low_start_new_program(struct program *p,
 #endif
 
   if (compilation_depth >= 1) {
-    if(TEST_COMPAT(7,2) || (lex.pragmas & ID_SAVE_PARENT))
+    if(TEST_COMPAT(7,2) || (c->lex.pragmas & ID_SAVE_PARENT))
     {
       p->flags |= PROGRAM_USES_PARENT;
-    }else if (!(lex.pragmas & ID_DONT_SAVE_PARENT)) {
+    }else if (!(c->lex.pragmas & ID_DONT_SAVE_PARENT)) {
       struct pike_string *tmp=findstring("__pragma_save_parent__");
       if(tmp)
       {
@@ -2613,17 +2622,23 @@ void low_start_new_program(struct program *p,
 
 PMOD_EXPORT void debug_start_new_program(int line, const char *file)
 {
-  struct pike_string *save_file =
-    dmalloc_touch(struct pike_string *, lex.current_file);
-  int save_line = lex.current_line;
+  struct pike_string *save_file;
+  int save_line;
+  struct compilation *c;
+
+  CHECK_COMPILER();
+  c = THIS_COMPILATION;
+
+  save_file = dmalloc_touch(struct pike_string *, c->lex.current_file);
+  save_line = c->lex.current_line;
 
   { /* Trim off the leading path of the compilation environment. */
     const char *p = DEFINETOSTR(PIKE_SRC_ROOT), *f = file;
     while (*p && *p == *f) p++, f++;
     while (*f == '/' || *f == '\\') f++;
 
-    lex.current_file = make_shared_string(f);
-    lex.current_line = line;
+    c->lex.current_file = make_shared_string(f);
+    c->lex.current_line = line;
   }
 
   CDFPRINTF((stderr,
@@ -2632,12 +2647,12 @@ PMOD_EXPORT void debug_start_new_program(int line, const char *file)
 	     (long)th_self(), line, file, threads_disabled, compilation_depth));
 
   low_start_new_program(0,1,0,0,0);
-  store_linenumber(line,lex.current_file);
+  store_linenumber(line,c->lex.current_file);
   debug_malloc_name(Pike_compiler->new_program, file, line);
 
-  free_string(lex.current_file);
-  lex.current_file = dmalloc_touch(struct pike_string *, save_file);
-  lex.current_line = save_line;
+  free_string(c->lex.current_file);
+  c->lex.current_file = dmalloc_touch(struct pike_string *, save_file);
+  c->lex.current_line = save_line;
 }
 
 
@@ -3042,6 +3057,17 @@ void dump_program_tables (struct program *p, int indent)
 	    d, get_name_of_type (c->sval.type),
 	    c->offset);
 #endif /* 0 */
+  }
+
+  fprintf(stderr, "\n"
+	  "%*sLFUN table:\n"
+	  "%*s  LFUN  Ref# Name\n",
+	  indent, "", indent, "");
+  for (d = 0; d < NUM_LFUNS; d++) {
+    if (p->lfuns[d] != -1) {
+      fprintf(stderr, "%*s  %4d: %04d %s\n",
+	      indent, "", d, p->lfuns[d], lfun_names[d]);
+    }
   }
 
   fprintf(stderr, "\n"
@@ -4445,7 +4471,10 @@ void compiler_do_inherit(node *n,
 
 int call_handle_inherit(struct pike_string *s)
 {
+  struct compilation *c = THIS_COMPILATION;
   int args;
+
+  CHECK_COMPILER();
 
   reference_shared_string(s);
   push_string(s);
@@ -4455,14 +4484,14 @@ int call_handle_inherit(struct pike_string *s)
      */
     f_string_to_utf8(1);
   }
-  ref_push_string(lex.current_file);
-  if (error_handler && error_handler->prog) {
-    ref_push_object(error_handler);
+  ref_push_string(c->lex.current_file);
+  if (c->handler && c->handler->prog) {
+    ref_push_object(c->handler);
     args = 3;
   }
   else args = 2;
 
-  if (safe_apply_handler("handle_inherit", error_handler, compat_handler,
+  if (safe_apply_handler("handle_inherit", c->handler, c->compat_handler,
 			 args, BIT_PROGRAM|BIT_FUNCTION|BIT_ZERO))
     if (Pike_sp[-1].type != T_INT)
       return 1;
@@ -5314,12 +5343,15 @@ INT32 define_function(struct pike_string *name,
 		      union idptr *func,
 		      unsigned opt_flags)
 {
+  struct compilation *c = THIS_COMPILATION;
   struct identifier *funp,fun;
   struct reference ref;
   struct svalue *lfun_type;
   int run_time_type = T_FUNCTION;
   INT32 i;
   INT32 getter_setter_offset = -1;
+
+  CHECK_COMPILER();
 
 #ifdef PROGRAM_BUILD_DEBUG
   {
@@ -5351,7 +5383,7 @@ INT32 define_function(struct pike_string *name,
 	my_yyerror("Type mismatch for callback function %S:", name);
 	yytype_error(NULL, lfun_type->u.type, type, 0);
 	Pike_fatal("Type mismatch!\n");
-      } else if (lex.pragmas & ID_STRICT_TYPES) {
+      } else if (c->lex.pragmas & ID_STRICT_TYPES) {
 	yywarning("Type mismatch for callback function %S:", name);
 	yytype_error(NULL, lfun_type->u.type, type,
 		     YYTE_IS_WARNING);
@@ -5396,7 +5428,7 @@ INT32 define_function(struct pike_string *name,
 	if (!match_types(type, gs_type)) {
 	  my_yyerror("Type mismatch for callback function %S:", name);
 	  yytype_error(NULL, gs_type, type, 0);
-	} else if (lex.pragmas & ID_STRICT_TYPES) {
+	} else if (c->lex.pragmas & ID_STRICT_TYPES) {
 	  yywarning("Type mismatch for callback function %S:", name);
 	  yytype_error(NULL, gs_type, type, YYTE_IS_WARNING);
 	}
@@ -6791,6 +6823,10 @@ struct pike_string *format_exception_for_error_msg (struct svalue *thrown)
 void handle_compile_exception (const char *yyerror_fmt, ...)
 {
   struct svalue thrown;
+  struct compilation *c = THIS_COMPILATION;
+
+  CHECK_COMPILER();
+
   move_svalue (&thrown, &throw_value);
   mark_free_svalue (&throw_value);
 
@@ -6802,7 +6838,7 @@ void handle_compile_exception (const char *yyerror_fmt, ...)
   }
 
   push_svalue(&thrown);
-  low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
+  low_safe_apply_handler("compile_exception", c->handler, c->compat_handler, 1);
 
   if (SAFE_IS_ZERO(sp-1)) {
     struct pike_string *s = format_exception_for_error_msg (&thrown);
@@ -6960,6 +6996,8 @@ void init_supporter(struct Supporter *s,
 		    supporter_callback *fun,
 		    void *data)
 {
+  CDFPRINTF((stderr, "th(%ld) init_supporter() supporter=%p data=%p.\n",
+	     (long) th_self(), s, data));
   verify_supporters();
 #ifdef PIKE_DEBUG
   s->magic = 0x500b0127;
@@ -6995,6 +7033,9 @@ int unlink_current_supporter(struct Supporter *c)
     ret++;
     c->next_dependant = c->depends_on->dependants;
     c->depends_on->dependants=c;
+    add_ref(c->self);
+    CDFPRINTF((stderr, "th(%ld) unlink_current_supporter() supporter=%p depends on %p.\n",
+	       (long) th_self(), c, c->depends_on));
   }
   current_supporter=c->previous;
   verify_supporters();
@@ -7017,9 +7058,13 @@ int call_dependants(struct Supporter *s, int finish)
 {
   int ok = 1;
   struct Supporter *tmp;
+  CDFPRINTF((stderr, "th(%ld) call_dependants() supporter=%p finish=%d.\n",
+	     (long) th_self(), s, finish));
   verify_supporters();
   while((tmp=s->dependants))
   {
+    CDFPRINTF((stderr, "th(%ld) dependant: %p (data:%p).\n",
+	       (long) th_self(), tmp, tmp->data));
     s->dependants=tmp->next_dependant;
 #ifdef PIKE_DEBUG
     tmp->next_dependant=0;
@@ -7027,6 +7072,7 @@ int call_dependants(struct Supporter *s, int finish)
     verify_supporters();
     if (!tmp->fun(tmp->data, finish)) ok = 0;
     verify_supporters();
+    free_object(tmp->self);
   }
   return ok;
 }
@@ -7040,6 +7086,10 @@ int report_compiler_dependency(struct program *p)
     /* Depends on self... */
     return 0;
   }
+
+  CDFPRINTF((stderr, "th(%ld) %p depends on %p\n",
+	     (long)th_self(), Pike_compiler->new_program, p));
+
   verify_supporters();
   if (Pike_compiler->flags & COMPILATION_FORCE_RESOLVE)
     return 0;
@@ -7066,40 +7116,20 @@ int report_compiler_dependency(struct program *p)
 }
 
 
-/*! @class PikeCompiler
+/*! @class CompilerEnviroment
  *!
- *!   The Pike compiler.
+ *!   The compiler environment.
  */
-
-struct compilation
-{
-  struct Supporter supporter;
-  struct pike_string *prog;
-  struct object *handler;
-  int major, minor;
-  struct program *target;
-  struct object *placeholder;
-  
-  struct program *p;
-  struct lex save_lex;
-  int save_depth;
-  int saved_threads_disabled;
-  struct object *saved_handler;
-  struct object *saved_compat_handler;
-  dynamic_buffer used_modules_save;
-  INT32 num_used_modules_save;
-  struct mapping *resolve_cache_save;
-
-  struct svalue default_module;
-};
 
 static void free_compilation(struct compilation *c)
 {
   debug_malloc_touch(c);
-  free_string(c->prog);
+  if (c->prog) free_string(c->prog);
   if(c->handler) free_object(c->handler);
+  if(c->compat_handler) free_object(c->compat_handler);
   if(c->target) free_program(c->target);
   if(c->placeholder) free_object(c->placeholder);
+  if(c->lex.current_file) free_string(c->lex.current_file);
   free_svalue(& c->default_module);
   free_supporter(&c->supporter);
   verify_supporters();
@@ -7111,12 +7141,8 @@ static void run_init(struct compilation *c)
   c->save_depth=compilation_depth;
   compilation_depth=-1;
 
-  c->saved_handler = error_handler;
-  if((error_handler = c->handler))
-    add_ref(error_handler);
-
-  c->saved_compat_handler = compat_handler;
-  compat_handler=0;
+  if (c->compat_handler) free_object(c->compat_handler);
+  c->compat_handler=0;
 
   c->used_modules_save = used_modules;
   c->num_used_modules_save = Pike_compiler->num_used_modules;
@@ -7125,31 +7151,30 @@ static void run_init(struct compilation *c)
   c->resolve_cache_save = resolve_cache;
   resolve_cache = 0;
 
-  c->save_lex=lex;
-
-  lex.current_line=1;
-  lex.current_file=make_shared_string("-");
+  c->lex.current_line=1;
+  free_string(c->lex.current_file);
+  c->lex.current_file=make_shared_string("-");
 
   if (runtime_options & RUNTIME_STRICT_TYPES)
   {
-    lex.pragmas = ID_STRICT_TYPES;
+    c->lex.pragmas = ID_STRICT_TYPES;
   } else {
-    lex.pragmas = 0;
+    c->lex.pragmas = 0;
   }
 
-  lex.end = c->prog->str + (c->prog->len << c->prog->size_shift);
+  c->lex.end = c->prog->str + (c->prog->len << c->prog->size_shift);
 
   switch(c->prog->size_shift)
   {
-    case 0: lex.current_lexer = yylex0; break;
-    case 1: lex.current_lexer = yylex1; break;
-    case 2: lex.current_lexer = yylex2; break;
+    case 0: c->lex.current_lexer = yylex0; break;
+    case 1: c->lex.current_lexer = yylex1; break;
+    case 2: c->lex.current_lexer = yylex2; break;
     default:
       Pike_fatal("Program has bad shift %d!\n", c->prog->size_shift);
       break;
   }
 
-  lex.pos=c->prog->str;
+  c->lex.pos=c->prog->str;
 }
 
 static void run_init2(struct compilation *c)
@@ -7191,14 +7216,6 @@ static void run_exit(struct compilation *c)
     free_mapping(resolve_cache);
   resolve_cache = c->resolve_cache_save;
 
-  if (error_handler) free_object(error_handler);
-  error_handler = c->saved_handler;
-
-  if (compat_handler)  free_object(compat_handler);
-  compat_handler = c->saved_compat_handler;
-
-  free_string(lex.current_file);
-  lex=c->save_lex;
   verify_supporters();
 }
 
@@ -7286,15 +7303,16 @@ static int run_pass1(struct compilation *c)
 
   if (!Pike_compiler->new_program->num_linenumbers) {
     /* The lexer didn't write an initial entry. */
-    store_linenumber(0, lex.current_file);
+    store_linenumber(0, c->lex.current_file);
 #ifdef DEBUG_MALLOC
-    if(strcmp(lex.current_file->str,"-"))
-      debug_malloc_name(Pike_compiler->new_program, lex.current_file->str, 0);
+    if(strcmp(c->lex.current_file->str,"-"))
+      debug_malloc_name(Pike_compiler->new_program, c->lex.current_file->str, 0);
 #endif
   }
 
   CDFPRINTF((stderr, "th(%ld) %p run_pass1() done for %s\n",
-	     (long)th_self(), Pike_compiler->new_program, lex.current_file->str));
+	     (long)th_self(), Pike_compiler->new_program,
+	     c->lex.current_file->str));
 
   ret=unlink_current_supporter(& c->supporter);
 
@@ -7343,12 +7361,20 @@ void run_pass2(struct compilation *c)
 	     (long)th_self(), Pike_compiler->new_program,
 	     threads_disabled, compilation_depth));
 
+  CDFPRINTF((stderr,
+	     "th(%ld) %p:\n"
+	     "%s\n"
+	     "---\n"
+	     "%s\n", (long)th_self(), Pike_compiler->new_program,
+	     c->prog->str, c->lex.pos));
+
   verify_supporters();
 
   do_yyparse();  /* Parse da program */
 
   CDFPRINTF((stderr, "th(%ld) %p run_pass2() done for %s\n",
-	     (long)th_self(), Pike_compiler->new_program, lex.current_file->str));
+	     (long)th_self(), Pike_compiler->new_program,
+	     c->lex.current_file->str));
 
   verify_supporters();
 
@@ -7458,11 +7484,19 @@ static int call_delayed_pass2(struct compilation *cc, int finish)
   int ok = 0;
   debug_malloc_touch(cc);
 
+  debug_malloc_touch(cc->p);
+
   CDFPRINTF((stderr, "th(%ld) %p %s delayed compile.\n",
 	     (long) th_self(), cc->p, finish ? "continuing" : "cleaning up"));
 
+  /* Reenter the delayed compilation. */
+  add_ref(cc->supporter.self);
+  low_enter_compiler(cc->supporter.self, cc->compilation_inherit);
+
   if(finish && cc->p) run_pass2(cc);
   run_cleanup(cc,1);
+
+  exit_compiler();
   
   debug_malloc_touch(cc);
 
@@ -7478,48 +7512,46 @@ static int call_delayed_pass2(struct compilation *cc, int finish)
   CDFPRINTF((stderr, "th(%ld) %p delayed compile %s.\n",
 	     (long) th_self(), cc->target, ok ? "done" : "failed"));
 
-  free_compilation(cc);
-  free(cc);
   verify_supporters();
 
   return ok;
 }
 
-#define THIS_COMPILATION  ((struct compilation *)(Pike_fp->current_storage))
-
 static void compilation_event_handler(int e)
 {
   struct compilation *c = THIS_COMPILATION;
+
   switch (e) {
   case PROG_EVENT_INIT:
+    CDFPRINTF((stderr, "th(%ld) compilation: INIT(%p).\n",
+	       (long) th_self(), c));
+    MEMSET(c, 0, sizeof(*c));
+    c->supporter.self = Pike_fp->current_object; /* NOTE: Not ref-counted! */
+    c->compilation_inherit =
+      Pike_fp->context - Pike_fp->current_object->prog->inherits;
     c->default_module.type = T_INT;
     c->default_module.subtype = NUMBER_NUMBER;
+    c->lex.current_line = 1;
+    c->lex.current_file = make_shared_string("-");
     break;
   case PROG_EVENT_EXIT:
+    CDFPRINTF((stderr, "th(%ld) compilation: EXIT(%p).\n",
+	       (long) th_self(), c));
     free_compilation(c);
     break;
   }
 }
 
-/*! @decl void compile(string code)
- *!
- *!   Compile a segment of Pike code.
- */
-static void f_compilation_compile(INT32 args)
-{
-  pop_n_elems(args);
-  push_int(0);
-}
-
 /*! @decl void report(SeverityLevel severity, @
- *!              string filename, int linenumber, @
- *!              string subsystem, @
- *!              string message, mixed ... extra_args)
+ *!                   string filename, int linenumber, @
+ *!                   string subsystem, @
+ *!                   string message, mixed ... extra_args)
  *!
  *!   Report a diagnostic from the compiler.
  */
 static void f_compilation_report(INT32 args)
 {
+  struct compilation *c = THIS_COMPILATION;
   int level;
   struct pike_string *filename;
   INT_TYPE linenumber;
@@ -7529,30 +7561,355 @@ static void f_compilation_report(INT32 args)
     f_sprintf(args - 4);
     args = 5;
   }
-  get_all_args("report", args, "%d%S%i%S%S",
+  get_all_args("report", args, "%d%W%i%W%W",
 	       &level, &filename, &linenumber, &subsystem, &message);
-  fprintf(stderr, "%s:%ld: %s\n", filename->str, linenumber, message->str);
+
+  /* Ignore informational level messages */
+  if (level) {
+    if ((c->handler && c->handler->prog) ||
+	(c->compat_handler && c->compat_handler->prog) ||
+	get_master()) {
+      ref_push_string(filename);
+      push_int(linenumber);
+      ref_push_string(message);
+      if (level >= 2) {
+	low_safe_apply_handler("compile_error",
+			       c->handler, c->compat_handler, 3);
+	args++;
+      } else {
+	low_safe_apply_handler("compile_warning",
+			       c->handler, c->compat_handler, 3);
+	args++;
+      }
+    } else {
+      if (level >= 2) {
+	fprintf(stderr, "%s:%ld: %s\n",
+		filename->str, linenumber, message->str);
+      } else {
+	fprintf(stderr, "%s:%ld: Warning: %s\n",
+		filename->str, linenumber, message->str);
+      }
+      fflush(stderr);
+    }
+  }
   pop_n_elems(args);
   push_int(0);
 }
 
+/*! @decl program compile(string source, CompilationHandler|void handler, @
+ *!                       int|void major, int|void minor,@
+ *!                       program|void target, object|void placeholder)
+ *!
+ *!   Compile a string to a program.
+ *!
+ *!   This function takes a piece of Pike code as a string and
+ *!   compiles it into a clonable program.
+ *!
+ *!   The optional argument @[handler] is used to specify an alternative
+ *!   error handler. If it is not specified the current master object will
+ *!   be used.
+ *!
+ *!   The optional arguments @[major] and @[minor] are used to tell the
+ *!   compiler to attempt to be compatible with Pike @[major].@[minor].
+ *!
+ *! @note
+ *!   Note that @[source] must contain the complete source for a program.
+ *!   It is not possible to compile a single expression or statement.
+ *!
+ *!   Also note that @[compile()] does not preprocess the program.
+ *!   To preprocess the program you can use @[compile_string()] or
+ *!   call the preprocessor manually by calling @[cpp()].
+ *!
+ *! @seealso
+ *!   @[compile_string()], @[compile_file()], @[cpp()], @[master()],
+ *!   @[CompilationHandler]
+ */
+static void f_compilation_compile(INT32 args)
+{
+  struct pike_string *aprog;
+  struct object *ahandler = NULL;/* error handler */
+  int amajor = -1;
+  int aminor = -1;
+  struct program *atarget = NULL;
+  struct object *aplaceholder = NULL;
+  int delay, dependants_ok = 1;
+  struct program *ret;
+#ifdef PIKE_DEBUG
+  ONERROR tmp;
+#endif
+  struct compilation *c = THIS_COMPILATION;
+
+  if (c->target) {
+    Pike_error("CompilationEnvironment in use.\n");
+  }
+
+  STACK_LEVEL_START(args);
+
+  get_all_args("compile", args, "%W.%O%d%d%P%O",
+	       &aprog, &ahandler,
+	       &amajor, &aminor,
+	       &atarget, &aplaceholder);
+
+  if (args == 3) {
+    SIMPLE_BAD_ARG_ERROR("compile", 4, "int");
+  }
+
+  check_c_stack(65536);
+
+  CDFPRINTF((stderr, "th(%ld) %p compile() enter, placeholder=%p\n",
+	     (long) th_self(), atarget, aplaceholder));
+
+  debug_malloc_touch(c);
+
+  verify_supporters();
+
+  if (c->p) free_program(c->p);
+  c->p = NULL;
+  if (c->prog) free_string(c->prog);
+  add_ref(c->prog=aprog);
+  if (ahandler) {
+    if (c->handler) free_object(c->handler);
+    add_ref(c->handler = ahandler);
+  }
+  c->major=amajor;
+  c->minor=aminor;
+
+  if((c->target=atarget)) add_ref(atarget);
+  else c->target = low_allocate_program();
+
+  if (c->placeholder) free_object(c->placeholder);
+  if ((c->placeholder=aplaceholder)) add_ref(aplaceholder);
+
+  if (c->handler)
+  {
+    if (safe_apply_handler ("get_default_module", c->handler, NULL,
+			    0, BIT_MAPPING|BIT_OBJECT|BIT_ZERO)) {
+      if(SAFE_IS_ZERO(Pike_sp-1))
+      {
+	pop_stack();
+	ref_push_mapping(get_builtin_constants());
+      }
+    } else {
+      ref_push_mapping(get_builtin_constants());
+    }
+  }else{
+    ref_push_mapping(get_builtin_constants());
+  }
+  free_svalue(& c->default_module);
+  c->default_module=Pike_sp[-1];
+  dmalloc_touch_svalue(Pike_sp-1);
+  Pike_sp--;
+
+#ifdef PIKE_DEBUG
+  SET_ONERROR(tmp, fatal_on_error,"Compiler exited with longjump!\n");
+#endif
+
+  low_init_threads_disable();
+  c->saved_threads_disabled = threads_disabled;
+
+  init_supporter(& c->supporter,
+		 (supporter_callback *) call_delayed_pass2,
+		 (void *)c);
+
+  delay=run_pass1(c) && c->p;
+  dependants_ok = call_dependants(& c->supporter, !!c->p );
+#ifdef PIKE_DEBUG
+  /* FIXME */
+  UNSET_ONERROR(tmp);
+#endif
+
+  if(delay)
+  {
+    CDFPRINTF((stderr, "th(%ld) %p compile() finish later, placeholder=%p.\n",
+	       (long) th_self(), c->target, c->placeholder));
+    /* finish later */
+    add_ref(c->p);
+    verify_supporters();
+    /* We're hanging in the supporter. */
+    ret = c->p;
+  }else{
+    /* finish now */
+    if(c->p) run_pass2(c);
+    debug_malloc_touch(c);
+    run_cleanup(c,0);
+    
+    ret=c->p;
+    c->p = NULL;
+
+    debug_malloc_touch(c);
+
+    if (!dependants_ok) {
+      CDFPRINTF((stderr, "th(%ld) %p compile() reporting failure "
+		 "since a dependant failed.\n",
+		 (long) th_self(), c->target));
+      if (ret) free_program(ret);
+      throw_error_object(low_clone(compilation_error_program), 0, 0, 0,
+			 "Compilation failed.\n");
+    }
+    if(!ret) {
+      CDFPRINTF((stderr, "th(%ld) %p compile() failed.\n",
+		 (long) th_self(), c->target));
+      throw_error_object(low_clone(compilation_error_program), 0, 0, 0,
+			 "Compilation failed.\n");
+    }
+    debug_malloc_touch(ret);
+#ifdef PIKE_DEBUG
+    if (a_flag > 2) {
+      dump_program_tables(ret, 0);
+    }
+#endif /* PIKE_DEBUG */
+    verify_supporters();
+  }
+  STACK_LEVEL_DONE(args);
+  pop_n_elems(args);
+  if (ret)
+    push_program(ret);
+  else
+    push_int(0);
+}
+
+/* Fake being called via CompilationEnvironment()->compile()
+ *
+ * This function is used to set up the environment for
+ * compiling C efuns and modules.
+ *
+ * Note: Since this is a stack frame, it will be cleaned up
+ *       automatically on error, so no need to use ONERROR().
+ *
+ * Note: Steals a reference from ce.
+ */
+static void low_enter_compiler(struct object *ce, int inherit)
+{
+  struct pike_frame *new_frame = alloc_pike_frame();
+#ifdef PROFILING
+  new_frame->children_base = Pike_interpreter.accounted_time;
+  new_frame->start_time = get_cpu_time() - Pike_interpreter.unlocked_time;
+  new_frame->ident = CE_COMPILE_FUN_NUM;	/* Fake call of compile(). */
+#endif /* PROFILING */
+  new_frame->next = Pike_fp;
+  new_frame->current_object = ce;
+  /* Note: The compilation environment object hangs on this frame,
+   *       so that it will be freed when the frame dies.
+   */
+  new_frame->current_program = ce->prog;
+  add_ref(new_frame->current_program);
+  new_frame->context = compilation_program->inherits + inherit;
+  new_frame->current_storage = ce->storage + new_frame->context->storage_offset;
+#ifdef PIKE_DEBUG
+  if (new_frame->context->prog != compilation_program) {
+    Pike_fatal("Invalid inherit for compilation context (%p != %p).\n",
+	       new_frame->context->prog, compilation_program);
+  }
+#endif /* PIKE_DEBUG */
+  new_frame->fun = new_frame->context->identifier_level + CE_COMPILE_FUN_NUM;
+  new_frame->expendible = Pike_sp;
+  new_frame->locals = Pike_sp;
+  new_frame->save_sp = Pike_sp;
+  new_frame->save_mark_sp = Pike_mark_sp;
+  new_frame->mark_sp_base = Pike_mark_sp;
+  new_frame->args = 0;
+  new_frame->num_locals = 0;
+  new_frame->pc = 0;
+  new_frame->return_addr = 0;
+  new_frame->scope = 0;
+  new_frame->save_sp = Pike_sp;
+  Pike_fp = new_frame;
+}
+
+void enter_compiler(struct pike_string *filename, int linenumber)
+{
+  struct object *ce = clone_object(compilation_program, 0);
+  struct compilation *c;
+
+  low_enter_compiler(ce, 0);
+
+  c = THIS_COMPILATION;
+  if (filename) {
+    free_string(c->lex.current_file);
+    copy_shared_string(c->lex.current_file, filename);
+  }
+  if (linenumber) {
+    c->lex.current_line = linenumber;
+  }
+}
+
+/* Reverse the effect of enter_compiler().
+ */
+void exit_compiler(void)
+{
+#ifdef PIKE_DEBUG
+  if ((Pike_fp->current_program != compilation_program) ||
+      (Pike_fp->fun != 2)) {
+    Pike_fatal("exit_compiler(): Frame stack out of whack!\n");
+  }
+#endif /* PIKE_DEBUG */
+  POP_PIKE_FRAME();
+}
+
+/*! @class PikeCompiler
+ *!
+ *!   The Pike compiler.
+ */
+
+/*! @decl void report(SeverityLevel severity, @
+ *!                   string filename, int linenumber, @
+ *!                   string subsystem, @
+ *!                   string message, mixed ... extra_args)
+ *!
+ *!   Report a diagnostic from the compiler.
+ *!
+ *!   The default implementation calls @[CompilerEnvironment::report()]
+ *!   with the same arguments.
+ */
+
+#define THIS_PROGRAM_STATE  ((struct program_state *)(Pike_fp->current_storage))
+
+static void program_state_event_handler(int event)
+{
+#if 0
+  struct program_state *c = THIS_PROGRAM_STATE;
+  switch (event) {
+  case PROG_EVENT_INIT:
+#define INIT
+#include "compilation.h"
+    break;
+  case PROG_EVENT_EXIT:
+#define EXIT
+#include "compilation.h"
+    break;
+  }
+#endif /* 0 */
+
+  fprintf(stderr, "program_state_event_handler(%d) obj:%p prog:%p\n",
+	  event, Pike_fp->current_object, Pike_fp->current_program);
+}
+
+/*! @endclass
+ */
+
+/*! @endclass
+ */
+
 /* Strap the compiler by creating the compilation program by hand. */
 static void compile_compiler(void)
 {
-  struct program *p = compilation_program = low_allocate_program();
-  struct reference *ref;
-  struct identifier *i;
-  struct inherit *inh;
-  unsigned INT16 *ix;
+  struct program *p = compilation_program = low_allocate_program(), *p2;
+  struct program_constant *pc;
+  struct reference *ref, *ref2;
+  struct identifier *i, *i2;
+  struct inherit *inh, *inh2;
+  unsigned INT16 *ix, *ix2;
+  int e;
 
   p->parent_info_storage = -1;
   p->event_handler = compilation_event_handler;
   p->flags |= PROGRAM_HAS_C_METHODS;
 
-  p->inherits = inh = malloc(sizeof(struct inherit));
-  p->identifier_references = ref = malloc(sizeof(struct reference) * 2);
-  p->identifiers = i = malloc(sizeof(struct identifier) * 2);
-  p->identifier_index = ix = malloc(sizeof(unsigned INT16) * 2);
+  p->inherits = inh = xalloc(sizeof(struct inherit));
+  p->identifier_references = ref = xalloc(sizeof(struct reference) * 3);
+  p->identifiers = i = xalloc(sizeof(struct identifier) * 3);
+  p->identifier_index = ix = xalloc(sizeof(unsigned INT16) * 3);
+  p->constants = pc = xalloc(sizeof(struct program_constant) * 1);
 
   inh->prog = p;
   inh->inherit_level = 0;
@@ -7570,21 +7927,6 @@ static void compile_compiler(void)
   p->inherits->storage_offset = 0;
   p->storage_needed = sizeof(struct compilation);
 
-  /* ADD_FUNCTION("compile", f_compilation_compile, ...); */
-  i->name = make_shared_string("compile");
-  i->type = make_pike_type(tFunc(tStr, tPrg(tObj)));
-  i->run_time_type = T_FUNCTION;
-  i->identifier_flags = IDENTIFIER_C_FUNCTION;
-  i->func.c_fun = f_compilation_compile;
-  i->opt_flags = 0;
-  i++;
-  *(ix++) = ref->identifier_offset = compilation_program->num_identifiers++;
-  p->num_identifier_index++;
-  ref->id_flags = 0;
-  ref->inherit_offset = 0;
-  ref++;
-  p->num_identifier_references++;
-
   /* ADD_FUNCTION("report", f_compilation_report, ...); */
   i->name = make_shared_string("report");
   i->type = make_pike_type(tFuncV(tName("SeverityLevel", tInt03) tStr tIntPos
@@ -7593,6 +7935,121 @@ static void compile_compiler(void)
   i->identifier_flags = IDENTIFIER_C_FUNCTION;
   i->func.c_fun = f_compilation_report;
   i->opt_flags = 0;
+#ifdef PROFILING
+  i->self_time = 0;
+  i->num_calls = 0;
+  i->total_time = 0;
+#endif
+  i++;
+  *(ix++) = ref->identifier_offset = compilation_program->num_identifiers++;
+  p->num_identifier_index++;
+  ref->id_flags = 0;
+  ref->inherit_offset = 0;
+  ref++;
+  p->num_identifier_references++;
+
+  p2 = low_allocate_program();
+
+  pc->sval.u.program = p2;
+  pc->sval.type = T_PROGRAM;
+  pc->sval.subtype = 0;
+  pc->offset = -1;
+  i->name = make_shared_string("PikeCompiler");
+  i->type = get_type_of_svalue(&pc->sval);
+  i->run_time_type = T_PROGRAM;
+  i->identifier_flags = IDENTIFIER_CONSTANT;
+  i->func.offset = p->num_constants++;
+  pc++;
+  i->opt_flags = 0;
+#ifdef PROFILING
+  i->self_time = 0;
+  i->num_calls = 0;
+  i->total_time = 0;
+#endif
+  i++;
+  *(ix++) = ref->identifier_offset = compilation_program->num_identifiers++;
+  p->num_identifier_index++;
+  ref->id_flags = 0;
+  ref->inherit_offset = 0;
+  ref++;
+  p->num_identifier_references++;
+
+  /* FIXME: Parent info. */
+  p2->event_handler = program_state_event_handler;
+  p2->flags |= PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT|PROGRAM_HAS_C_METHODS;
+  p2->parent_info_storage = 0;
+  p2->xstorage = sizeof(struct parent_info);
+
+  p2->inherits = inh2 = malloc(sizeof(struct inherit));
+  p2->identifier_references = ref2 = malloc(sizeof(struct reference) * 2);
+  p2->identifiers = i2 = malloc(sizeof(struct identifier) * 2);
+  p2->identifier_index = ix2 = malloc(sizeof(unsigned INT16) * 2);
+
+  inh2->prog = p2;
+  inh2->inherit_level = 0;
+  inh2->identifier_level = 0;
+  inh2->parent_identifier = -1;
+  inh2->parent_offset = OBJECT_PARENT;
+  inh2->identifier_ref_offset = 0;
+  inh2->storage_offset = p2->xstorage;
+  inh2->parent = NULL;
+  inh2->name = NULL;
+  p2->num_inherits = 1;
+
+  /* ADD_STORAGE(struct program_state); */
+  p2->alignment_needed = ALIGNOF(struct program_state);
+  p2->inherits->storage_offset = p2->xstorage;
+  p2->storage_needed = p2->xstorage + sizeof(struct program_state);
+
+  /* low_define_alias(NULL, NULL, 0, 1, 0); */
+  i2->name = make_shared_string("report");
+  i2->type = make_pike_type(tFuncV(tName("SeverityLevel", tInt03) tStr tIntPos
+				   tStr tStr, tMix, tVoid));
+  i2->run_time_type = T_FUNCTION;
+  i2->identifier_flags = IDENTIFIER_C_FUNCTION | IDENTIFIER_ALIAS;
+  i2->func.ext_ref.depth = 1;
+  i2->func.ext_ref.id = 0;
+  i2->opt_flags = 0;
+#ifdef PROFILING
+  i2->self_time = 0;
+  i2->num_calls = 0;
+  i2->total_time = 0;
+#endif
+  i2++;
+  *(ix2++) = ref2->identifier_offset = p2->num_identifiers++;
+  p2->num_identifier_index++;
+  ref2->id_flags = 0;
+  ref2->inherit_offset = 0;
+  ref2++;
+  p2->num_identifier_references++;
+  
+
+  p2->flags |= PROGRAM_PASS_1_DONE;
+
+  fsort_program_identifier_index(p2->identifier_index, ix2-1, p2);
+  p2->flags |= PROGRAM_FIXED;
+
+  /* Yes, it is supposed to start at 0  /Grubba */
+  for(e=0;e<NUM_LFUNS;e++) {
+    int id = p2->lfuns[e] = low_find_lfun(p2, e);
+  }
+
+  optimize_program(p2);
+  p2->flags |= PROGRAM_FINISHED;
+
+
+  /* ADD_FUNCTION("compile", f_compilation_compile, ...); */
+  i->name = make_shared_string("compile");
+  i->type = make_pike_type(tFunc(tStr, tPrg(tObj)));
+  i->run_time_type = T_FUNCTION;
+  i->identifier_flags = IDENTIFIER_C_FUNCTION;
+  i->func.c_fun = f_compilation_compile;
+  i->opt_flags = 0;
+#ifdef PROFILING
+  i->self_time = 0;
+  i->num_calls = 0;
+  i->total_time = 0;
+#endif
   i++;
   *(ix++) = ref->identifier_offset = compilation_program->num_identifiers++;
   p->num_identifier_index++;
@@ -7606,12 +8063,16 @@ static void compile_compiler(void)
   fsort_program_identifier_index(p->identifier_index, ix-1, p);
   p->flags |= PROGRAM_FIXED;
 
+  /* Yes, it is supposed to start at 0  /Grubba */
+  for(e=0;e<NUM_LFUNS;e++) {
+    int id = p->lfuns[e] = low_find_lfun(p, e);
+  }
+
   optimize_program(p);
   p->flags |= PROGRAM_FINISHED;
-}
 
-/*! @endclass
- */
+  add_global_program("CompilerEnvironment", p);
+}
 
 struct program *compile(struct pike_string *aprog,
 			struct object *ahandler,/* error handler */
@@ -7624,14 +8085,23 @@ struct program *compile(struct pike_string *aprog,
 #ifdef PIKE_DEBUG
   ONERROR tmp;
 #endif
-  struct compilation *c=ALLOC_STRUCT(compilation);
+  struct object *ce;
+  struct compilation *c;
 
-  verify_supporters();
+  /* FIXME! */
+
+  Pike_fatal("Old C-level compile() function called!\n");
 
   CDFPRINTF((stderr, "th(%ld) %p compile() enter, placeholder=%p\n",
 	     (long) th_self(), atarget, aplaceholder));
 
+  ce = clone_object(compilation_program, 0);
+  c = (struct compilation *)ce->storage;
+
   debug_malloc_touch(c);
+
+  verify_supporters();
+
   c->p = NULL;
   add_ref(c->prog=aprog);
   if((c->handler=ahandler)) add_ref(ahandler);
@@ -7697,8 +8167,7 @@ struct program *compile(struct pike_string *aprog,
     ret=c->p;
 
     debug_malloc_touch(c);
-    free_compilation(c);
-    free(c);
+    free_object(ce);
 
     if (!dependants_ok) {
       CDFPRINTF((stderr, "th(%ld) %p compile() reporting failure "
@@ -7955,6 +8424,8 @@ void init_program(void)
 
   compile_compiler();
 
+  enter_compiler(NULL, 0);
+
   MAKE_CONST_STRING(this_program_string,"this_program");
   MAKE_CONST_STRING(this_string,"this");
   MAKE_CONST_STRING(UNDEFINED_string,"UNDEFINED");
@@ -8036,6 +8507,8 @@ void init_program(void)
     low_add_constant("__placeholder_object",&s);
     debug_malloc_touch(placeholder_object);
   }
+
+  exit_compiler();
 }
 
 void cleanup_program(void)
@@ -8395,6 +8868,7 @@ void push_compiler_frame(int lexical_scope)
 
 void low_pop_local_variables(int level)
 {
+  struct compilation *c = THIS_COMPILATION;
   while(Pike_compiler->compiler_frame->current_number_of_locals > level)
   {
     int e;
@@ -8402,14 +8876,14 @@ void low_pop_local_variables(int level)
     if ((Pike_compiler->compiler_pass == 2) &&
 	!(Pike_compiler->compiler_frame->variable[e].flags &
 	  LOCAL_VAR_IS_USED)) {
-      struct pike_string *save_file = lex.current_file;
-      int save_line = lex.current_line;
-      lex.current_file = Pike_compiler->compiler_frame->variable[e].file;
-      lex.current_line = Pike_compiler->compiler_frame->variable[e].line;
+      struct pike_string *save_file = c->lex.current_file;
+      int save_line = c->lex.current_line;
+      c->lex.current_file = Pike_compiler->compiler_frame->variable[e].file;
+      c->lex.current_line = Pike_compiler->compiler_frame->variable[e].line;
       yywarning("Unused local variable %S.",
 		Pike_compiler->compiler_frame->variable[e].name);
-      lex.current_file = save_file;
-      lex.current_line = save_line;
+      c->lex.current_file = save_file;
+      c->lex.current_line = save_line;
     }
     free_string(Pike_compiler->compiler_frame->variable[e].name);
     free_type(Pike_compiler->compiler_frame->variable[e].type);
@@ -8423,6 +8897,7 @@ void low_pop_local_variables(int level)
 void pop_local_variables(int level)
 {
 #if 1
+  struct compilation *c = THIS_COMPILATION;
   /* We need to save the variables Kuppo (but not their names) */
   if(level < Pike_compiler->compiler_frame->min_number_of_locals)
   {
@@ -8433,14 +8908,16 @@ void pop_local_variables(int level)
       if ((Pike_compiler->compiler_pass == 2) &&
 	  !(Pike_compiler->compiler_frame->variable[level].flags &
 	    LOCAL_VAR_IS_USED)) {
-	struct pike_string *save_file = lex.current_file;
-	int save_line = lex.current_line;
-	lex.current_file = Pike_compiler->compiler_frame->variable[level].file;
-	lex.current_line = Pike_compiler->compiler_frame->variable[level].line;
+	struct pike_string *save_file = c->lex.current_file;
+	int save_line = c->lex.current_line;
+	c->lex.current_file =
+	  Pike_compiler->compiler_frame->variable[level].file;
+	c->lex.current_line =
+	  Pike_compiler->compiler_frame->variable[level].line;
 	yywarning("Unused local variable %S.",
 		Pike_compiler->compiler_frame->variable[level].name);
-	lex.current_file = save_file;
-	lex.current_line = save_line;
+	c->lex.current_file = save_file;
+	c->lex.current_line = save_line;
 	/* Make sure we only warn once... */
 	Pike_compiler->compiler_frame->variable[level].flags |=
 	  LOCAL_VAR_IS_USED;
@@ -8649,9 +9126,12 @@ int find_child(struct program *parent, struct program *child)
 
 void yywarning(char *fmt, ...)
 {
+  struct compilation *c = THIS_COMPILATION;
   struct string_builder s;
   struct pike_string *msg;
   va_list args;
+
+  CHECK_COMPILER();
 
   /* If we have parse errors we might get erroneous warnings,
    * so don't print them.
@@ -8667,21 +9147,17 @@ void yywarning(char *fmt, ...)
   msg = finish_string_builder(&s);
 
   if (master_object) {
-    if (lex.current_file) {
-      ref_push_string(lex.current_file);
-    } else {
-      push_empty_string();
-    }
-    push_int(lex.current_line);
+    ref_push_string(c->lex.current_file);
+    push_int(c->lex.current_line);
     push_string(msg);
 
     low_safe_apply_handler("compile_warning",
-			   error_handler, compat_handler, 3);
+			   c->handler, c->compat_handler, 3);
     pop_stack();
   } else {
     if (!msg->size_shift) {
       fprintf(stderr, "%s:%d: Warning: %s\n",
-	      lex.current_file->str, lex.current_line, msg->str);
+	      c->lex.current_file->str, c->lex.current_line, msg->str);
     }
     free_string(msg);
   }
@@ -9001,6 +9477,10 @@ PMOD_EXPORT void *parent_storage(int depth)
 
 PMOD_EXPORT void change_compiler_compatibility(int major, int minor)
 {
+  struct compilation *c = THIS_COMPILATION;
+
+  CHECK_COMPILER();
+
   STACK_LEVEL_START(0);
 
   if(major == PIKE_MAJOR_VERSION && minor == PIKE_MINOR_VERSION)
@@ -9010,8 +9490,8 @@ PMOD_EXPORT void change_compiler_compatibility(int major, int minor)
     if(major == Pike_compiler->compat_major &&
        minor == Pike_compiler->compat_minor) {
       /* Optimization -- reuse the current compat handler. */
-      if (compat_handler) {
-	ref_push_object(compat_handler);
+      if (c->compat_handler) {
+	ref_push_object(c->compat_handler);
       } else {
 	push_int(0);
       }
@@ -9024,10 +9504,10 @@ PMOD_EXPORT void change_compiler_compatibility(int major, int minor)
 
   STACK_LEVEL_CHECK(1);
 
-  if(compat_handler)
+  if(c->compat_handler)
   {
-    free_object(compat_handler);
-    compat_handler = NULL;
+    free_object(c->compat_handler);
+    c->compat_handler = NULL;
   }
   
   if((Pike_sp[-1].type == T_OBJECT) && (Pike_sp[-1].u.object->prog))
@@ -9036,14 +9516,15 @@ PMOD_EXPORT void change_compiler_compatibility(int major, int minor)
       /* FIXME: */
       Pike_error("Subtyped compat handlers are not supported yet.\n");
     }
-    compat_handler = dmalloc_touch(struct object *, Pike_sp[-1].u.object);
+    c->compat_handler = dmalloc_touch(struct object *, Pike_sp[-1].u.object);
     dmalloc_touch_svalue(Pike_sp-1);
     Pike_sp--;
   } else {
     pop_stack();
   }
 
-  if (safe_apply_handler ("get_default_module", error_handler, compat_handler,
+  if (safe_apply_handler ("get_default_module",
+			  c->handler, c->compat_handler,
 			  0, BIT_MAPPING|BIT_OBJECT|BIT_ZERO)) {
     if(Pike_sp[-1].type == T_INT)
     {

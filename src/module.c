@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: module.c,v 1.51 2008/03/30 01:24:10 mast Exp $
+|| $Id: module.c,v 1.52 2008/04/14 10:14:40 grubba Exp $
 */
 
 #include "global.h"
@@ -383,11 +383,8 @@ void init_modules(void)
 {
   struct program *p = NULL;
   volatile unsigned int e;
-  struct lex save_lex;
 
-  save_lex = lex;
-  lex.current_line=1;
-  lex.current_file=make_shared_string("-");
+  enter_compiler(NULL, 1);
 
   start_new_program();
   Pike_compiler->new_program->id=PROG___BUILTIN_ID;
@@ -428,8 +425,8 @@ void init_modules(void)
   push_object(low_clone(p=end_program()));
   f_add_constant(2);
   free_program(p);
-  free_string(lex.current_file);
-  lex = save_lex;
+
+  exit_compiler();
 }
 
 void exit_modules(void)

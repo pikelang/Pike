@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.236 2007/12/28 13:38:16 nilsson Exp $
+|| $Id: program.h,v 1.237 2008/04/14 10:14:41 grubba Exp $
 */
 
 #ifndef PROGRAM_H
@@ -659,11 +659,9 @@ PMOD_EXPORT void gc_check_zapped (void *a, TYPE_T type, const char *file, int li
 BLOCK_ALLOC_FILL_PAGES(program, n/a);
 
 
-extern struct object *error_handler;
-extern struct object *compat_handler;
-
 extern struct program *first_program;
 extern struct program *null_program;
+extern struct program *compilation_program;
 extern struct program *pike_trampoline_program;
 extern struct program *gc_internal_program;
 extern struct program *placeholder_program;
@@ -695,12 +693,11 @@ struct Supporter
   struct Supporter *depends_on;
   struct Supporter *dependants;
   struct Supporter *next_dependant;
+  struct object *self;
   supporter_callback *fun;
   void *data;
   struct program *prog;
 };
-
-
 
 /* Prototypes begin here */
 PMOD_EXPORT void do_free_program (struct program *p);
@@ -887,6 +884,8 @@ int call_dependants(struct Supporter *s, int finish);
 int report_compiler_dependency(struct program *p);
 struct compilation;
 void run_pass2(struct compilation *c);
+void enter_compiler(struct pike_string *filename, int linenumber);
+void exit_compiler(void);
 struct program *compile(struct pike_string *aprog,
 			struct object *ahandler,
 			int amajor, int aminor,

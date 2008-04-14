@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lexer.h,v 1.65 2008/04/04 13:16:46 grubba Exp $
+|| $Id: lexer.h,v 1.66 2008/04/14 10:14:40 grubba Exp $
 */
 
 /*
@@ -30,17 +30,17 @@
 
 #define WCHAR p_wchar0
 
-#define LOOK() EXTRACT_UCHAR(lex.pos)
-#define GETC() EXTRACT_UCHAR(lex.pos++)
-#define SKIP() lex.pos++
-#define SKIPN(N) (lex.pos += (N))
+#define LOOK() EXTRACT_UCHAR(lex->pos)
+#define GETC() EXTRACT_UCHAR(lex->pos++)
+#define SKIP() lex->pos++
+#define SKIPN(N) (lex->pos += (N))
 
 #define READBUF(X) do {				\
   register int C;				\
-  buf = lex.pos;				\
+  buf = lex->pos;				\
   while((C = LOOK()) && (X))			\
-    lex.pos++;					\
-  len = (size_t)(lex.pos - buf);		\
+    lex->pos++;					\
+  len = (size_t)(lex->pos - buf);		\
 } while(0)
 
 #define TWO_CHAR(X,Y) ((X)<<8)+(Y)
@@ -60,17 +60,17 @@
 
 #else /* SHIFT != 0 */
 
-#define LOOK() INDEX_CHARP(lex.pos,0,SHIFT)
-#define SKIP() (lex.pos += (1<<SHIFT))
-#define SKIPN(N) (lex.pos += ((N)<<SHIFT))
-#define GETC() (SKIP(),INDEX_CHARP(lex.pos-(1<<SHIFT),0,SHIFT))
+#define LOOK() INDEX_CHARP(lex->pos,0,SHIFT)
+#define SKIP() (lex->pos += (1<<SHIFT))
+#define SKIPN(N) (lex->pos += ((N)<<SHIFT))
+#define GETC() (SKIP(),INDEX_CHARP(lex->pos-(1<<SHIFT),0,SHIFT))
 
 #define READBUF(X) do {				\
   register int C;				\
-  buf = lex.pos;				\
+  buf = lex->pos;				\
   while((C = LOOK()) && (X))			\
     SKIP();					\
-  len = (size_t)((lex.pos - buf) >> SHIFT);	\
+  len = (size_t)((lex->pos - buf) >> SHIFT);	\
 } while(0)
 
 #define TWO_CHAR(X,Y) ((X)<<8)+(Y)
@@ -314,11 +314,11 @@ int parse_esc_seq (WCHAR *buf, int *chr, ptrdiff_t *len)
   return 0;
 }
 
-static int char_const(void)
+static int char_const(struct lex *lex)
 {
   int c;
   ptrdiff_t l;
-  switch (parse_esc_seq ((WCHAR *)lex.pos, &c, &l)) {
+  switch (parse_esc_seq ((WCHAR *)lex->pos, &c, &l)) {
     case 0:
       break;
     case 1:
@@ -326,11 +326,11 @@ static int char_const(void)
       return '\r';
     case 2:
       SKIP();
-      lex.current_line++;
+      lex->current_line++;
       return '\n';
     case 3:
       yyerror("Unexpected end of file.");
-      lex.pos -= (1<<SHIFT);
+      lex->pos -= (1<<SHIFT);
       return 0;
     case 4: case 5: case 6:
       yywarning ("Too large character value in escape.");
@@ -347,7 +347,7 @@ static int char_const(void)
   return c;
 }
 
-static struct pike_string *readstring(void)
+static struct pike_string *readstring(struct lex *lex)
 {
   int c;
   struct string_builder tmp;
@@ -374,17 +374,17 @@ static struct pike_string *readstring(void)
     switch(c=GETC())
     {
     case 0:
-      lex.pos -= (1<<SHIFT);
+      lex->pos -= (1<<SHIFT);
       yyerror("End of file in string.");
       break;
       
     case '\n':
-      lex.current_line++;
+      lex->current_line++;
       yyerror("Newline in string.");
       break;
       
     case '\\':
-      string_builder_putchar(&tmp,char_const());
+      string_builder_putchar(&tmp, char_const(lex));
       continue;
       
     case '"':
@@ -403,8 +403,8 @@ static struct pike_string *readstring(void)
 
 
 
-static int low_yylex(YYSTYPE *);
-int yylex(YYSTYPE *yylval)
+static int low_yylex(struct lex *lex, YYSTYPE *);
+int yylex(struct lex *lex, YYSTYPE *yylval)
 #if LEXDEBUG>4
 {
   int t;
@@ -412,7 +412,7 @@ int yylex(YYSTYPE *yylval)
   fprintf(stderr, "YYLEX:\n");
 #endif /* LEXDEBUG>8 */
 
-  t=low_yylex(yylval);
+  t=low_yylex(lex, yylval);
   if(t<256)
   {
     fprintf(stderr,"YYLEX: '%c' (%d) at %s:%d\n",t,t,lex.current_file->str,lex.current_line);
@@ -422,7 +422,7 @@ int yylex(YYSTYPE *yylval)
   return t;
 }
 
-static int low_yylex(YYSTYPE *yylval)
+static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 #endif /* LEXDEBUG>4 */
 {
   INT32 c;
@@ -442,7 +442,7 @@ static int low_yylex(YYSTYPE *yylval)
 
     if((c>'9') && lex_isidchar(c))
     {
-      lex.pos -= (1<<SHIFT);
+      lex->pos -= (1<<SHIFT);
       READBUF(lex_isidchar(C));
 
       PIKE_MEM_WO_RANGE (yylval, sizeof (YYSTYPE));
@@ -609,8 +609,8 @@ static int low_yylex(YYSTYPE *yylval)
     switch(c)
     {
     case 0:
-      lex.pos -= (1<<SHIFT);
-      if(lex.end != lex.pos)
+      lex->pos -= (1<<SHIFT);
+      if(lex->end != lex->pos)
 	yyerror("Illegal character (NUL)");
 
 #ifdef TOK_LEX_EOF
@@ -620,7 +620,7 @@ static int low_yylex(YYSTYPE *yylval)
 #endif /* TOK_LEX_EOF */
 
     case '\n':
-      lex.current_line++;
+      lex->current_line++;
       continue;
 
     case 0x1b: case 0x9b:	/* ESC or CSI */
@@ -648,22 +648,22 @@ static int low_yylex(YYSTYPE *yylval)
       {
       case '0': case '1': case '2': case '3': case '4':
       case '5': case '6': case '7': case '8': case '9':
-	lex.current_line=lex_atoi(buf)-1;
+	lex->current_line=lex_atoi(buf)-1;
 	SKIPSPACE();
 	if(GOBBLE('"'))
 	{
-	  struct pike_string *tmp=readstring();
-	  free_string(lex.current_file);
-	  lex.current_file = dmalloc_touch(struct pike_string *, tmp);
+	  struct pike_string *tmp=readstring(lex);
+	  free_string(lex->current_file);
+	  lex->current_file = dmalloc_touch(struct pike_string *, tmp);
 	}
 	if (Pike_compiler->compiler_pass == 1 &&
 	    !Pike_compiler->new_program->num_linenumbers) {
 	  /* A nested program will always get an entry right away in
 	   * language.yacc. */
-	  store_linenumber(0, lex.current_file);
+	  store_linenumber(0, lex->current_file);
 #ifdef DEBUG_MALLOC
-	  if(strcmp(lex.current_file->str,"-"))
-	    debug_malloc_name(Pike_compiler->new_program, lex.current_file->str, 0);
+	  if(strcmp(lex->current_file->str,"-"))
+	    debug_malloc_name(Pike_compiler->new_program, lex->current_file->str, 0);
 #endif
 	}
 	break;
@@ -675,23 +675,23 @@ static int low_yylex(YYSTYPE *yylval)
 	  READBUF(C!='\n');
 	  if (ISWORD("all_inline"))
 	  {
-	    lex.pragmas |= ID_INLINE;
+	    lex->pragmas |= ID_INLINE;
 	  }
 	  else if (ISWORD("all_final") || ISWORD("all_nomask"))
 	  {
-	    lex.pragmas |= ID_FINAL;
+	    lex->pragmas |= ID_FINAL;
 	  }
 	  else if (ISWORD("strict_types"))
 	  {
-	    lex.pragmas |= ID_STRICT_TYPES;
+	    lex->pragmas |= ID_STRICT_TYPES;
 	  }
 	  else if (ISWORD("save_parent"))
 	  {
-	    lex.pragmas |= ID_SAVE_PARENT;
+	    lex->pragmas |= ID_SAVE_PARENT;
 	  }
 	  else if (ISWORD("dont_save_parent"))
 	  {
-	    lex.pragmas |= ID_DONT_SAVE_PARENT;
+	    lex->pragmas |= ID_DONT_SAVE_PARENT;
 	  }
 	  break;
 	}
@@ -763,12 +763,12 @@ static int low_yylex(YYSTYPE *yylval)
       switch(c=GETC())
       {
       case 0:
-	lex.pos -= (1<<SHIFT);
+	lex->pos -= (1<<SHIFT);
 	yyerror("Unexpected end of file\n");
 	break;
 
       case '\\':
-	c = char_const();
+	c = char_const(lex);
 	break;
 
       case '\'':
@@ -783,7 +783,7 @@ static int low_yylex(YYSTYPE *yylval)
 	
     case '"':
     {
-      struct pike_string *s=readstring();
+      struct pike_string *s=readstring(lex);
       yylval->n=mkstrnode(s);
       free_string(s);
       return TOK_STRING;
@@ -799,10 +799,10 @@ static int low_yylex(YYSTYPE *yylval)
 	if(GOBBLE('.')) return TOK_DOT_DOT_DOT;
 	return TOK_DOT_DOT;
       }
-      if (((c = INDEX_CHARP(lex.pos, 0, SHIFT)) <= '9') &&
+      if (((c = INDEX_CHARP(lex->pos, 0, SHIFT)) <= '9') &&
 	  (c >= '0')) {
 	/* FIXME: Only in Pike 7.7 and later mode? */
-	lex.pos -= (1<<SHIFT);
+	lex->pos -= (1<<SHIFT);
 	goto read_float;
       }
       return '.';
@@ -825,8 +825,8 @@ static int low_yylex(YYSTYPE *yylval)
 	sval.subtype = NUMBER_NUMBER;
 	sval.u.integer = 0;
 	wide_string_to_svalue_inumber(&sval,
-				      lex.pos,
-				      (void **)&lex.pos,
+				      lex->pos,
+				      (void **)&lex->pos,
 				      base,
 				      0,
 				      SHIFT);
@@ -845,23 +845,23 @@ static int low_yylex(YYSTYPE *yylval)
       long l = 0;
       struct svalue sval;
 
-      lex.pos -= (1<<SHIFT);
-      if(INDEX_CHARP(lex.pos, 0, SHIFT)=='0')
-	for(l=1;INDEX_CHARP(lex.pos, l, SHIFT)<='9' &&
-	      INDEX_CHARP(lex.pos, l, SHIFT)>='0';l++)
-	  if(INDEX_CHARP(lex.pos, l, SHIFT)>='8')
+      lex->pos -= (1<<SHIFT);
+      if(INDEX_CHARP(lex->pos, 0, SHIFT)=='0')
+	for(l=1;INDEX_CHARP(lex->pos, l, SHIFT)<='9' &&
+	      INDEX_CHARP(lex->pos, l, SHIFT)>='0';l++)
+	  if(INDEX_CHARP(lex->pos, l, SHIFT)>='8')
 	    my_yyerror("Illegal octal digit '%c'.",
-		       INDEX_CHARP(lex.pos, l, SHIFT));
+		       INDEX_CHARP(lex->pos, l, SHIFT));
 
     read_float:
-      f=lex_strtod(lex.pos, &p1);
+      f=lex_strtod(lex->pos, &p1);
 
       sval.type = PIKE_T_INT;
       sval.subtype = NUMBER_NUMBER;
       sval.u.integer = 0;      
 
       wide_string_to_svalue_inumber(&sval,
-				    lex.pos,
+				    lex->pos,
 				    &p2,
 				    0,
 				    0,
@@ -890,7 +890,7 @@ static int low_yylex(YYSTYPE *yylval)
 	    if ((INDEX_CHARP(p3, l, SHIFT) == ':') &&
 		(INDEX_CHARP(p3, l+1, SHIFT) == ':')) {
 	      /* Version prefix. */
-	      lex.pos = p3;
+	      lex->pos = p3;
 	      yylval->n = mkversionnode(major, sval.u.integer);
 	      return TOK_VERSION;
 	    }
@@ -900,12 +900,12 @@ static int low_yylex(YYSTYPE *yylval)
 	yylval->fnum=(FLOAT_TYPE)f;
 #if 0
 	fprintf(stderr, "LEX: \"%.8s\" => %f, %f\n",
-		(char *)lex.pos, f, yylval->fnum);
+		(char *)lex->pos, f, yylval->fnum);
 #endif /* 0 */
-	lex.pos=p1;
+	lex->pos=p1;
 	if (lex_isidchar (LOOK())) {
 	  my_yyerror ("Invalid char '%c' in constant.",
-		      INDEX_CHARP (lex.pos, l, SHIFT));
+		      INDEX_CHARP (lex->pos, l, SHIFT));
 	  do SKIP(); while (lex_isidchar (LOOK()));
 	}
 	return TOK_FLOAT;
@@ -914,10 +914,10 @@ static int low_yylex(YYSTYPE *yylval)
 	yylval->n = mksvaluenode(&sval);
 	free_svalue(&sval);
 	debug_malloc_touch(yylval->n);
-	lex.pos=p2;
+	lex->pos=p2;
 	if (lex_isidchar (LOOK())) {
 	  my_yyerror ("Invalid char '%c' in constant.",
-		      INDEX_CHARP (lex.pos, l, SHIFT));
+		      INDEX_CHARP (lex->pos, l, SHIFT));
 	  do SKIP(); while (lex_isidchar (LOOK()));
 	}
 	return TOK_NUMBER;
@@ -1142,7 +1142,7 @@ static int low_yylex(YYSTYPE *yylval)
 	    return TOK_IDENTIFIER;
 	  }
 	yyerror("Illegal ` identifier.");
-	lex.pos -= (1<<SHIFT);
+	lex->pos -= (1<<SHIFT);
 	tmp="```";
 	break;
       }

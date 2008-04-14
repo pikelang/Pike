@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.410 2008/04/06 11:49:58 grubba Exp $
+|| $Id: language.yacc,v 1.411 2008/04/14 10:14:38 grubba Exp $
 */
 
 %pure_parser
@@ -189,9 +189,10 @@ static void __yy_memcpy(char *to, YY_FROM_CONST char *from,
 }
 
 %{
-/* Needs to be included after YYSTYPE is defined. */
+/* Need to be included after YYSTYPE is defined. */
 #define INCLUDED_FROM_LANGUAGE_YACC
 #include "lex.h"
+#include "pike_compiler.h"
 %}
 
 %{
@@ -948,12 +949,13 @@ def: modifiers optional_attributes type_or_error optional_constant optional_star
     {
       int f;
       node *check_args = NULL;
-      struct pike_string *save_file = lex.current_file;
-      int save_line = lex.current_line;
+      struct compilation *c = THIS_COMPILATION;
+      struct pike_string *save_file = c->lex.current_file;
+      int save_line  = c->lex.current_line;
       int num_required_args = 0;
       struct identifier *i;
-      lex.current_file = $6->current_file;
-      lex.current_line = $6->line_number;
+      c->lex.current_file = $6->current_file;
+      c->lex.current_line = $6->line_number;
 
       if (($1 & ID_EXTERN) && (Pike_compiler->compiler_pass == 1)) {
 	yywarning("Extern declared function definition.");
@@ -1044,8 +1046,8 @@ def: modifiers optional_attributes type_or_error optional_constant optional_star
 	  /* Prepend the arg checking code. */
 	  $13 = mknode(F_COMMA_EXPR, mknode(F_POP_VALUE, check_args, NULL), $13);
 	}
-	lex.current_line = l;
-	lex.current_file = f;
+	c->lex.current_line = l;
+	c->lex.current_file = f;
       }
 
       f=dooptcode($6->u.sval.u.string, $13, $<n>12->u.sval.u.type, $1);
@@ -1073,8 +1075,8 @@ def: modifiers optional_attributes type_or_error optional_constant optional_star
       }
 #endif
 
-      lex.current_line = save_line;
-      lex.current_file = save_file;
+      c->lex.current_line = save_line;
+      c->lex.current_file = save_file;
     } else {
       /* Prototype; don't warn about unused arguments. */
       for (e = Pike_compiler->compiler_frame->current_number_of_locals; e--;) {
@@ -1140,13 +1142,13 @@ def: modifiers optional_attributes type_or_error optional_constant optional_star
   | modifiers
    '{' 
     {
-      $<number>$=lex.pragmas;
-      lex.pragmas|=$1;
+      $<number>$=THIS_COMPILATION->lex.pragmas;
+      THIS_COMPILATION->lex.pragmas|=$1;
     }
       program
    close_brace_or_eof
     {
-      lex.pragmas=$<number>3;
+      THIS_COMPILATION->lex.pragmas=$<number>3;
     }
   ;
 
@@ -1188,7 +1190,7 @@ new_arg_name: type7 optional_dot_dot_dot optional_identifier
     i = add_local_name($3->u.sval.u.string, compiler_pop_type(),0);
     if (i >= 0 &&
 	(!$3->u.sval.u.string->len ||
-	 !(lex.pragmas & ID_STRICT_TYPES))) {
+	 !(THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES))) {
       /* Only warn about unused arguments in strict types mode. */
       Pike_compiler->compiler_frame->variable[i].flags |= LOCAL_VAR_IS_USED;
     }
@@ -1303,7 +1305,8 @@ magic_identifier: TOK_IDENTIFIER
 
 modifiers: modifier_list
  {
-   $$=Pike_compiler->current_modifiers=$1 | (lex.pragmas & ID_MODIFIER_MASK);
+   $$=Pike_compiler->current_modifiers=$1 |
+     (THIS_COMPILATION->lex.pragmas & ID_MODIFIER_MASK);
  }
  ;
 
@@ -1852,7 +1855,7 @@ new_local_name: optional_stars TOK_IDENTIFIER
     while($1--) push_type(T_ARRAY);
     id = add_local_name($2->u.sval.u.string, compiler_pop_type(),0);
     if (id >= 0) {
-      if (!(lex.pragmas & ID_STRICT_TYPES)) {
+      if (!(THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES)) {
 	/* Only warn about unused initialized variables in strict types mode. */
 	Pike_compiler->compiler_frame->variable[id].flags |= LOCAL_VAR_IS_USED;
       }
@@ -1900,7 +1903,7 @@ new_local_name2: TOK_IDENTIFIER
     add_ref($<n>0->u.sval.u.type);
     id = add_local_name($1->u.sval.u.string, $<n>0->u.sval.u.type, 0);
     if (id >= 0) {
-      if (!(lex.pragmas & ID_STRICT_TYPES)) {
+      if (!(THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES)) {
 	/* Only warn about unused initialized variables in strict types mode. */
 	Pike_compiler->compiler_frame->variable[id].flags |= LOCAL_VAR_IS_USED;
       }
@@ -2139,10 +2142,11 @@ lambda: TOK_LAMBDA line_number_info push_compiler_frame1
     struct pike_type *type;
     int f,e;
     struct pike_string *name;
-    struct pike_string *save_file = lex.current_file;
-    int save_line = lex.current_line;
-    lex.current_file = $2->current_file;
-    lex.current_line = $2->line_number;
+    struct compilation *c = THIS_COMPILATION;
+    struct pike_string *save_file = c->lex.current_file;
+    int save_line = c->lex.current_line;
+    c->lex.current_file = $2->current_file;
+    c->lex.current_line = $2->line_number;
 
     debug_malloc_touch($7);
     $7=mknode(F_COMMA_EXPR,$7,mknode(F_RETURN,mkintnode(0),0));
@@ -2212,8 +2216,8 @@ lambda: TOK_LAMBDA line_number_info push_compiler_frame1
     }
     free_string(name);
     free_type(type);
-    lex.current_line = save_line;
-    lex.current_file = save_file;
+    c->lex.current_line = save_line;
+    c->lex.current_file = save_file;
     free_node ($2);
     pop_compiler_frame();
   }
@@ -2306,10 +2310,11 @@ local_function: TOK_IDENTIFIER push_compiler_frame1 func_args
   {
     int localid;
     struct identifier *i=ID_FROM_INT(Pike_compiler->new_program, $<number>4);
-    struct pike_string *save_file = lex.current_file;
-    int save_line = lex.current_line;
-    lex.current_file = $1->current_file;
-    lex.current_line = $1->line_number;
+    struct compilation *c = THIS_COMPILATION;
+    struct pike_string *save_file = c->lex.current_file;
+    int save_line = c->lex.current_line;
+    c->lex.current_file = $1->current_file;
+    c->lex.current_line = $1->line_number;
 
     $5=mknode(F_COMMA_EXPR,$5,mknode(F_RETURN,mkintnode(0),0));
 
@@ -2321,8 +2326,8 @@ local_function: TOK_IDENTIFIER push_compiler_frame1 func_args
 
     i->opt_flags = Pike_compiler->compiler_frame->opt_flags;
 
-    lex.current_line = save_line;
-    lex.current_file = save_file;
+    c->lex.current_line = save_line;
+    c->lex.current_file = save_file;
     pop_compiler_frame();
     free_node($1);
 
@@ -2437,10 +2442,11 @@ local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
   {
     int localid;
     struct identifier *i=ID_FROM_INT(Pike_compiler->new_program, $<number>5);
-    struct pike_string *save_file = lex.current_file;
-    int save_line = lex.current_line;
-    lex.current_file = $2->current_file;
-    lex.current_line = $2->line_number;
+    struct compilation *c = THIS_COMPILATION;
+    struct pike_string *save_file = c->lex.current_file;
+    int save_line = c->lex.current_line;
+    c->lex.current_file = $2->current_file;
+    c->lex.current_line = $2->line_number;
 
     debug_malloc_touch($6);
     $6=mknode(F_COMMA_EXPR,$6,mknode(F_RETURN,mkintnode(0),0));
@@ -2454,8 +2460,8 @@ local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
 
     i->opt_flags = Pike_compiler->compiler_frame->opt_flags;
 
-    lex.current_line = save_line;
-    lex.current_file = save_file;
+    c->lex.current_line = save_line;
+    c->lex.current_file = save_file;
     pop_compiler_frame();
     free_node($2);
 
@@ -2646,8 +2652,8 @@ class: TOK_CLASS line_number_info optional_identifier
   }
   {
     /* Clear scoped modifiers. */
-    $<number>$ = lex.pragmas;
-    lex.pragmas &= ~ID_MODIFIER_MASK;
+    $<number>$ = THIS_COMPILATION->lex.pragmas;
+    THIS_COMPILATION->lex.pragmas &= ~ID_MODIFIER_MASK;
   }
   optional_create_arguments failsafe_program
   {
@@ -2807,7 +2813,7 @@ class: TOK_CLASS line_number_info optional_identifier
     free_node($2);
     free_node($3);
     check_tree($$,0);
-    lex.pragmas = $<number>5;
+    THIS_COMPILATION->lex.pragmas = $<number>5;
   }
   ;
 
@@ -2970,7 +2976,7 @@ optional_else_part: { $$=0; }
 
 safe_lvalue: lvalue
   {
-    if (!(lex.pragmas & ID_STRICT_TYPES) && $1) {
+    if (!(THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES) && $1) {
       if ($1->token == F_ARRAY_LVALUE) {
 	mark_lvalues_as_used(CAR($1));
       } else if (($1->token == F_LOCAL) && !($1->u.integer.b)) {
@@ -3213,7 +3219,7 @@ expr0: expr01
   | bad_expr_ident '=' expr0 { $$=$3; }
   | open_bracket_with_line_info low_lvalue_list ']' '=' expr0
   {
-    if (!(lex.pragmas & ID_STRICT_TYPES)) {
+    if (!(THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES)) {
       mark_lvalues_as_used($2);
     }
     $$=mknode(F_ASSIGN,$5,mknode(F_ARRAY_LVALUE,$2,0));
@@ -3386,10 +3392,11 @@ optional_block: /* EMPTY */ { $$=0; }
     struct pike_type *type;
     int f/*, e */;
     struct pike_string *name;
-    struct pike_string *save_file = lex.current_file;
-    int save_line = lex.current_line;
-    lex.current_file = $2->current_file;
-    lex.current_line = $2->line_number;
+    struct compilation *c = THIS_COMPILATION;
+    struct pike_string *save_file = c->lex.current_file;
+    int save_line = c->lex.current_line;
+    c->lex.current_file = $2->current_file;
+    c->lex.current_line = $2->line_number;
 
     /* block code */
     unuse_modules(Pike_compiler->num_used_modules - $<number>1);
@@ -3443,8 +3450,8 @@ optional_block: /* EMPTY */ { $$=0; }
       $$ = mkidentifiernode(f);
     }
 
-    lex.current_line = save_line;
-    lex.current_file = save_file;
+    c->lex.current_line = save_line;
+    c->lex.current_file = save_file;
     free_node ($2);
     free_string(name);
     free_type(type);
@@ -3489,7 +3496,7 @@ apply:
 implicit_modifiers:
   {
     $$ = Pike_compiler->current_modifiers = ID_STATIC|ID_INLINE|ID_PRIVATE |
-      (lex.pragmas & ID_MODIFIER_MASK);
+      (THIS_COMPILATION->lex.pragmas & ID_MODIFIER_MASK);
   }
   ;
 
@@ -4072,7 +4079,7 @@ catch: TOK_CATCH
 
 sscanf: TOK_SSCANF '(' expr0 ',' expr0 lvalue_list ')'
   {
-    if ($6 && !(lex.pragmas & ID_STRICT_TYPES)) {
+    if ($6 && !(THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES)) {
       mark_lvalues_as_used($6);
     }
     $$=mknode(F_SSCANF,mknode(F_ARG_LIST,$3,$5),$6);
@@ -4311,6 +4318,7 @@ bad_expr_ident:
 
 void low_yyerror(struct pike_string *str)
 {
+  struct compilation *c = THIS_COMPILATION;
   extern int cumulative_parse_error;
 
   STACK_LEVEL_START(0);
@@ -4320,38 +4328,19 @@ void low_yyerror(struct pike_string *str)
     Pike_fatal("Stack error (underflow)\n");
 #endif
 
+  CHECK_COMPILER();
+
   if (Pike_compiler->num_parse_error > 20) return;
   Pike_compiler->num_parse_error++;
   cumulative_parse_error++;
 
-  if ((error_handler && error_handler->prog) || get_master())
-  {
-    if (lex.current_file) {
-      ref_push_string(lex.current_file);
-    } else {
-      /* yyerror() can be called from define_function(), which
-       * can be called by the C module initialization code.
-       */
-      push_empty_string();
-    }
-    push_int(lex.current_line);
-    ref_push_string(str);
-    low_safe_apply_handler("compile_error", error_handler, compat_handler, 3);
-    pop_stack();
-  }else{
-    if (lex.current_file) {
-      (void)fprintf(stderr, "%s:%ld: %s\n",
-		    lex.current_file->str,
-		    (long)lex.current_line,
-		    str->str);
-    } else {
-      (void)fprintf(stderr, "NULL:%ld: %s\n",
-		    (long)lex.current_line,
-		    str->str);
-    }
-    fflush(stderr);
-  }
-
+  push_int(2);	/* ERROR */
+  ref_push_string(c->lex.current_file);
+  push_int(c->lex.current_line);
+  push_constant_text("parse");
+  ref_push_string(str);
+  apply_current(0, 5);	/* report(). */
+  pop_stack();
   STACK_LEVEL_DONE(0);
 }
 
@@ -4376,7 +4365,7 @@ static struct pike_string *get_new_name()
   sprintf(buf,"__lambda_%ld_%ld_line_%d",
 	  (long)Pike_compiler->new_program->id,
 	  (long)(Pike_compiler->local_class_counter++ & 0xffffffff), /* OSF/1 cc bug. */
-	  (int) lex.current_line);
+	  (int) THIS_COMPILATION->lex.current_line);
   return make_shared_string(buf);
 }
 
@@ -4450,9 +4439,9 @@ int low_add_local_name(struct compiler_frame *frame,
     reference_shared_string(str);
     frame->variable[var].def = def;
 
-    frame->variable[var].line=lex.current_line;
-    frame->variable[var].file=lex.current_file;
-    reference_shared_string(lex.current_file);
+    frame->variable[var].line = THIS_COMPILATION->lex.current_line;
+    copy_shared_string(frame->variable[var].file,
+		       THIS_COMPILATION->lex.current_file);
 
     frame->variable[var].flags = 0;
 
@@ -4642,17 +4631,18 @@ static void safe_inc_enum(void)
 
 static int call_handle_import(struct pike_string *s)
 {
+  struct compilation *c = THIS_COMPILATION;
   int args;
 
   ref_push_string(s);
-  ref_push_string(lex.current_file);
-  if (error_handler && error_handler->prog) {
-    ref_push_object(error_handler);
+  ref_push_string(c->lex.current_file);
+  if (c->handler && c->handler->prog) {
+    ref_push_object(c->handler);
     args = 3;
   }
   else args = 2;
 
-  if (safe_apply_handler("handle_import", error_handler, compat_handler,
+  if (safe_apply_handler("handle_import", c->handler, c->compat_handler,
 			 args, BIT_MAPPING|BIT_OBJECT|BIT_PROGRAM|BIT_ZERO))
     if (Pike_sp[-1].type != T_INT)
       return 1;

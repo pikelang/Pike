@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.262 2008/02/29 14:27:09 grubba Exp $
+|| $Id: encode.c,v 1.263 2008/04/14 10:14:38 grubba Exp $
 */
 
 #include "global.h"
@@ -30,6 +30,7 @@
 #include "pike_types.h"
 #include "opcodes.h"
 #include "peep.h"
+#include "pike_compiler.h"
 
 /* #define ENCODE_DEBUG */
 
@@ -2413,11 +2414,6 @@ static void cleanup_new_program_decode (int *orig_compilation_depth)
   compilation_depth = *orig_compilation_depth;
 }
 
-static void set_lex_pragmas(ptrdiff_t old_pragmas)
-{
-  lex.pragmas = DO_NOT_WARN((INT32)old_pragmas);
-}
-
 static DECLSPEC(noreturn) void decode_error (struct svalue *decoding,
 					     struct svalue *other,
 					     char *msg, ...)
@@ -3648,7 +3644,8 @@ static void decode_value2(struct decode_data *data)
 	  int entry_type;
 	  INT16 id_flags;
 	  INT16 p_flags;
-	  ptrdiff_t old_pragmas = lex.pragmas;
+	  ptrdiff_t old_pragmas;
+	  struct compilation *c;
 #define FOO(NUMTYPE,Y,ARGTYPE,NAME) \
           NUMTYPE PIKE_CONCAT(local_num_, NAME) = 0;
 #include "program_areas.h"
@@ -3704,11 +3701,15 @@ static void decode_value2(struct decode_data *data)
 	  else
 	    p = NULL;
 
+	  enter_compiler(NULL, 0);
+
+	  c = THIS_COMPILATION;
+
 	  /* We don't want to be affected by #pragma save_parent or
 	   * __pragma_save_parent__.
 	   */
-	  lex.pragmas = (old_pragmas & ~ID_SAVE_PARENT)|ID_DONT_SAVE_PARENT;
-	  SET_ONERROR(err2, set_lex_pragmas, (ptrdiff_t) old_pragmas);
+	  old_pragmas = c->lex.pragmas;
+	  c->lex.pragmas = (old_pragmas & ~ID_SAVE_PARENT)|ID_DONT_SAVE_PARENT;
 
 	  /* Start the new program. */
 	  orig_compilation_depth = compilation_depth;
@@ -4400,8 +4401,7 @@ static void decode_value2(struct decode_data *data)
 	  compilation_depth = orig_compilation_depth;
 	  push_program(p);
 
-	  /* Restore lex.pragmas. */
-	  CALL_AND_UNSET_ONERROR(err2);
+	  exit_compiler();
 
 	  EDB(5, dump_program_tables(p, data->depth));
 #ifdef PIKE_DEBUG

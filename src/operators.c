@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.229 2008/03/29 02:04:40 mast Exp $
+|| $Id: operators.c,v 1.230 2008/04/14 10:14:40 grubba Exp $
 */
 
 #include "global.h"
@@ -30,6 +30,7 @@
 #include "builtin_functions.h"
 #include "cyclic.h"
 #include "pike_security.h"
+#include "pike_compiler.h"
 
 #define sp Pike_sp
 
@@ -1737,6 +1738,7 @@ PMOD_EXPORT void f_add(INT32 args)
 
 static int generate_sum(node *n)
 {
+  struct compilation *c = THIS_COMPILATION;
   node **first_arg, **second_arg, **third_arg;
   int num_args;
   switch(count_args(CDR(n)))
@@ -2046,6 +2048,7 @@ static int generate_comparison(node *n)
 {
   if(count_args(CDR(n))==2)
   {
+    struct compilation *c = THIS_COMPILATION;
     if(do_docode(CDR(n),DO_NOT_COPY) != 2)
       Pike_fatal("Count args was wrong in generate_comparison.\n");
 
@@ -2366,6 +2369,7 @@ PMOD_EXPORT void f_minus(INT32 args)
 
 static int generate_minus(node *n)
 {
+  struct compilation *c = THIS_COMPILATION;
   switch(count_args(CDR(n)))
   {
   case 1:
@@ -2703,6 +2707,7 @@ PMOD_EXPORT void f_and(INT32 args)
 
 static int generate_and(node *n)
 {
+  struct compilation *c = THIS_COMPILATION;
   switch(count_args(CDR(n)))
   {
   case 1:
@@ -2937,6 +2942,7 @@ PMOD_EXPORT void f_or(INT32 args)
 
 static int generate_or(node *n)
 {
+  struct compilation *c = THIS_COMPILATION;
   switch(count_args(CDR(n)))
   {
   case 1:
@@ -3176,6 +3182,7 @@ PMOD_EXPORT void f_xor(INT32 args)
 
 static int generate_xor(node *n)
 {
+  struct compilation *c = THIS_COMPILATION;
   switch(count_args(CDR(n)))
   {
   case 1:
@@ -3259,6 +3266,7 @@ PMOD_EXPORT void f_lsh(INT32 args)
 
 static int generate_lsh(node *n)
 {
+  struct compilation *c = THIS_COMPILATION;
   if(count_args(CDR(n))==2)
   {
     do_docode(CDR(n),DO_NOT_COPY_TOPLEVEL);
@@ -3342,6 +3350,7 @@ static int generate_rsh(node *n)
 {
   if(count_args(CDR(n))==2)
   {
+    struct compilation *c = THIS_COMPILATION;
     do_docode(CDR(n),DO_NOT_COPY);
     emit0(F_RSH);
     return 1;
@@ -3623,6 +3632,7 @@ PMOD_EXPORT void f_multiply(INT32 args)
 
 static int generate_multiply(node *n)
 {
+  struct compilation *c = THIS_COMPILATION;
   switch(count_args(CDR(n)))
   {
   case 1:
@@ -3993,6 +4003,7 @@ static int generate_divide(node *n)
 {
   if(count_args(CDR(n))==2)
   {
+    struct compilation *c = THIS_COMPILATION;
     do_docode(CDR(n),DO_NOT_COPY_TOPLEVEL);
     emit0(F_DIVIDE);
     return 1;
@@ -4173,6 +4184,7 @@ static int generate_mod(node *n)
 {
   if(count_args(CDR(n))==2)
   {
+    struct compilation *c = THIS_COMPILATION;
     do_docode(CDR(n),DO_NOT_COPY_TOPLEVEL);
     emit0(F_MOD);
     return 1;
@@ -4252,6 +4264,7 @@ static int generate_not(node *n)
 {
   if(count_args(CDR(n))==1)
   {
+    struct compilation *c = THIS_COMPILATION;
     do_docode(CDR(n),DO_NOT_COPY);
     emit0(F_NOT);
     return 1;
@@ -4373,6 +4386,7 @@ static int generate_compl(node *n)
 {
   if(count_args(CDR(n))==1)
   {
+    struct compilation *c = THIS_COMPILATION;
     do_docode(CDR(n),DO_NOT_COPY);
     emit0(F_COMPL);
     return 1;
@@ -5293,6 +5307,7 @@ static node *optimize_sizeof(node *n)
 
 static int generate_sizeof(node *n)
 {
+  struct compilation *c = THIS_COMPILATION;
   if(count_args(CDR(n)) != 1) return 0;
   if(do_docode(CDR(n),DO_NOT_COPY) != 1)
     Pike_fatal("Count args was wrong in sizeof().\n");

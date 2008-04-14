@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: compilation.h,v 1.34 2008/04/10 10:42:29 grubba Exp $
+|| $Id: compilation.h,v 1.35 2008/04/14 10:14:35 grubba Exp $
 */
 
 /*
@@ -97,6 +97,47 @@
 #endif
 
 
+#ifdef INIT
+#define IMEMBER(X,Y,Z) MEMCPY((char *)&(c->Y), (char *)&(Pike_compiler->Y), sizeof(c->Y));
+#define STACKMEMBER(X,Y,Z) (c->Y=Pike_compiler->Y);
+#define ZMEMBER(X,Y,Z) MEMSET((char *)&(c->Y), 0, sizeof(c->Y));
+#define SNAME(X,Y) { \
+      c->previous = Pike_compiler;
+#define SEND \
+      Pike_compiler = c; \
+      }
+
+#endif
+
+
+#ifdef EXIT
+#define IMEMBER(X,Y,Z) 
+#define ZMEMBER(X,Y,Z) 
+
+#define STACKMEMBER(X,Y,Z) DO_DEBUG_CODE( \
+    if(c->Y < oLd->Y) \
+      Pike_fatal("Stack " #Y " shrunk %ld steps compilation, currently: %p.\n", \
+            PTRDIFF_T_TO_LONG(oLd->Y - c->Y), c->Y); )
+
+#define SNAME(X,Y) { \
+    struct X *oLd = c->previous;
+
+#define SEND							\
+    if (Pike_compiler == c) {					\
+      Pike_compiler=oLd;					\
+    } else {							\
+      struct program_state *tmp = Pike_compiler;		\
+      while (tmp && (tmp->previous != c))			\
+        tmp = tmp->previous;					\
+      if (tmp) tmp->previous = oLd;				\
+      else Pike_fatal("Lost track of compiler_state %p\n", c);	\
+    }								\
+  }
+#undef PCODE
+#define PCODE(X) X
+#endif
+
+
 #ifdef PIKE_DEBUG
 #define STRMEMBER(X,Y) \
   PCODE(if(Pike_compiler->X) Pike_fatal("Variable " #X " not deallocated properly.\n");) \
@@ -144,6 +185,8 @@
 
 #undef EXTERN
 #undef STRUCT
+#undef EXIT
+#undef INIT
 #undef PUSH
 #undef POP
 #undef DECLARE

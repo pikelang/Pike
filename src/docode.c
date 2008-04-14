@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.c,v 1.196 2008/03/22 13:22:20 grubba Exp $
+|| $Id: docode.c,v 1.197 2008/04/14 10:14:35 grubba Exp $
 */
 
 #include "global.h"
@@ -27,6 +27,7 @@
 #include "lex.h"
 #include "mapping.h"
 #include "multiset.h"
+#include "pike_compiler.h"
 
 static int do_docode2(node *n, int flags);
 
@@ -187,6 +188,7 @@ int alloc_label(void) { return ++label_no; }
 
 int do_jump(int token,INT32 lbl)
 {
+  struct compilation *c = THIS_COMPILATION;
   if(lbl==-1) lbl=alloc_label();
   emit1(token, lbl);
   return lbl;
@@ -201,6 +203,7 @@ static int lbl_cache[LBLCACHESIZE];
 
 static int do_branch(INT32 lbl)
 {
+  struct compilation *c = THIS_COMPILATION;
   if(lbl==-1)
   {
     lbl=alloc_label();
@@ -232,6 +235,7 @@ static int do_branch(INT32 lbl)
 
 static void low_insert_label(int lbl)
 {
+  struct compilation *c = THIS_COMPILATION;
   lbl_cache[ lbl % LBLCACHESIZE ] = CURRENT_INSTR;
   emit1(F_LABEL, lbl);
 }
@@ -245,6 +249,7 @@ static int ins_label(int lbl)
 
 void do_pop(int x)
 {
+  struct compilation *c = THIS_COMPILATION;
 #ifdef PIKE_DEBUG
   if (x < 0) Pike_fatal("Cannot do pop of %d args.\n", x);
 #endif
@@ -259,22 +264,26 @@ void do_pop(int x)
 
 static void do_pop_mark(void *ignored)
 {
+  struct compilation *c = THIS_COMPILATION;
   emit0(F_POP_MARK);
 }
 
 static void do_pop_to_mark(void *ignored)
 {
+  struct compilation *c = THIS_COMPILATION;
   emit0(F_POP_TO_MARK);
 }
 
 static void do_cleanup_synch_mark(void)
 {
+  struct compilation *c = THIS_COMPILATION;
   if (d_flag > 2)
     emit0(F_CLEANUP_SYNCH_MARK);
 }
 
 static void do_escape_catch(void)
 {
+  struct compilation *c = THIS_COMPILATION;
   emit0(F_ESCAPE_CATCH);
 }
 
@@ -284,16 +293,17 @@ int do_docode(node *n, int flags)
 {
   int i;
   int stack_depth_save = current_stack_depth;
-  int save_current_line=lex.current_line;
+  struct compilation *c = THIS_COMPILATION;
+  int save_current_line = c->lex.current_line;
   if(!n) return 0;
-  lex.current_line=n->line_number;
+  c->lex.current_line=n->line_number;
 #ifdef PIKE_DEBUG
   if (current_stack_depth == -4711) Pike_fatal("do_docode() used outside docode().\n");
 #endif
   i=do_docode2(n, flags);
   current_stack_depth = stack_depth_save + i;
 
-  lex.current_line=save_current_line;
+  c->lex.current_line=save_current_line;
   return i;
 }
 
@@ -312,9 +322,9 @@ static void code_expression(node *n, int flags, char *err)
   case 1: return;
   case 2:
     Pike_fatal("Internal compiler error (%s), line %ld, file %s\n",
-	  err,
-	  (long)lex.current_line,
-	  lex.current_file?lex.current_file->str:"Unknown");
+	       err,
+	       (long)THIS_COMPILATION->lex.current_line,
+	       THIS_COMPILATION->lex.current_file->str);
   }
 }
 
@@ -412,6 +422,7 @@ static INT32 count_cases(node *n)
 
 int generate_call_function(node *n)
 {
+  struct compilation *c = THIS_COMPILATION;
   emit0(F_MARK);
   PUSH_CLEANUP_FRAME(do_pop_mark, 0);
   do_docode(CDR(n),DO_NOT_COPY);
@@ -433,6 +444,7 @@ static INLINE struct compiler_frame *find_local_frame(INT32 depth)
 static int do_lfun_call(int id, node *args)
 {
 #if 1
+  struct compilation *c = THIS_COMPILATION;
   struct reference *ref =
     Pike_compiler->new_program->identifier_references + id;
 
@@ -509,6 +521,7 @@ static int do_lfun_call(int id, node *args)
 static void emit_apply_builtin(char *func)
 {
   INT32 tmp1;
+  struct compilation *c = THIS_COMPILATION;
   struct pike_string *n1=make_shared_string(func);
   node *n=find_module_identifier(n1,0);
   free_string(n1);
@@ -535,6 +548,7 @@ static void emit_apply_builtin(char *func)
 static int do_encode_automap_arg_list(node *n,
 				      int flags)
 {
+  struct compilation *c = THIS_COMPILATION;
   int stack_depth_save = current_stack_depth;
   if(!n) return 0;
   switch(n->token)
@@ -572,6 +586,7 @@ static int do_encode_automap_arg_list(node *n,
 static void emit_builtin_svalue(char *func)
 {
   INT32 tmp1;
+  struct compilation *c = THIS_COMPILATION;
   struct pike_string *n1=make_shared_string(func);
   node *n=find_module_identifier(n1,0);
   free_string(n1);
@@ -594,6 +609,7 @@ static void emit_builtin_svalue(char *func)
 
 static void emit_range (node *n DO_IF_DEBUG (COMMA int num_args))
 {
+  struct compilation *c = THIS_COMPILATION;
   node *low = CADR (n), *high = CDDR (n);
   int bound_types;
 
@@ -640,6 +656,7 @@ static void emit_range (node *n DO_IF_DEBUG (COMMA int num_args))
 
 static void emit_multi_assign(node *vals, node *vars, int no)
 {
+  struct compilation *c = THIS_COMPILATION;
   node *var;
   node *val;
   node **valp = my_get_arg(&vals, no);
@@ -762,6 +779,7 @@ static void emit_multi_assign(node *vals, node *vars, int no)
 
 static int do_docode2(node *n, int flags)
 {
+  struct compilation *c = THIS_COMPILATION;
   ptrdiff_t tmp1,tmp2,tmp3;
   int ret;
 
@@ -2128,7 +2146,7 @@ static int do_docode2(node *n, int flags)
 	      if (!match_types(case_val->type, current_switch.type)) {
 		yytype_error("Type mismatch in case.",
 			     current_switch.type, case_val->type, 0);
-	      } else if (lex.pragmas & ID_STRICT_TYPES) {
+	      } else if (c->lex.pragmas & ID_STRICT_TYPES) {
 		yytype_error("Type mismatch in case.",
 			     current_switch.type, case_val->type, YYTE_IS_WARNING);
 	      }
@@ -2261,11 +2279,11 @@ static int do_docode2(node *n, int flags)
       struct statement_label_name *lbl_name;
       for (lbl_name = label->name; lbl_name; lbl_name = lbl_name->next)
 	if (lbl_name->str == name.str) {
-	  INT32 save_line = lex.current_line;
-	  lex.current_line = name.line_number;
+	  INT32 save_line = c->lex.current_line;
+	  c->lex.current_line = name.line_number;
 	  my_yyerror("Duplicate nested labels, previous one on line %d.",
 		     lbl_name->line_number);
-	  lex.current_line = save_line;
+	  c->lex.current_line = save_line;
 	  goto label_check_done;
 	}
     }
@@ -2657,6 +2675,7 @@ static int do_docode2(node *n, int flags)
 /* Used to generate code for functions. */
 INT32 do_code_block(node *n)
 {
+  struct compilation *c = THIS_COMPILATION;
   INT32 entry_point;
 #ifdef PIKE_DEBUG
   if (current_stack_depth != -4711) Pike_fatal("Reentrance in do_code_block().\n");

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.405 2008/02/26 21:51:37 grubba Exp $
+|| $Id: las.c,v 1.406 2008/04/14 10:14:39 grubba Exp $
 */
 
 #include "global.h"
@@ -30,6 +30,7 @@
 #include "opcodes.h"
 #include "pikecode.h"
 #include "gc.h"
+#include "pike_compiler.h"
 #include "block_alloc.h"
 
 /* Define this if you want the optimizer to be paranoid about aliasing
@@ -375,7 +376,7 @@ static int check_node_type(node *n, struct pike_type *t, const char *msg)
     yytype_error(msg, t, n->type, 0);
     return 0;
   }
-  if (lex.pragmas & ID_STRICT_TYPES) {
+  if (THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES) {
     yytype_error(msg, t, n->type, YYTE_IS_WARNING);
   }
   if (runtime_options & RUNTIME_CHECK_TYPES) {
@@ -620,6 +621,8 @@ static node *debug_mkemptynode(void)
 {
   node *res=alloc_node_s();
 
+  CHECK_COMPILER();
+
 #ifdef __CHECKER__
   MEMSET(res, 0, sizeof(node));
 #endif /* __CHECKER__ */
@@ -627,8 +630,8 @@ static node *debug_mkemptynode(void)
   res->refs = 0;
   add_ref(res);	/* For DMALLOC... */
   res->token=0;
-  res->line_number=lex.current_line;
-  copy_shared_string(res->current_file, lex.current_file);
+  res->line_number=THIS_COMPILATION->lex.current_line;
+  copy_shared_string(res->current_file, THIS_COMPILATION->lex.current_file);
   res->type=0;
   res->name=0;
   res->node_info=0;
@@ -3235,6 +3238,7 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
 
 void fix_type_field(node *n)
 {
+  struct compilation *c = THIS_COMPILATION;
   struct pike_type *type_a, *type_b;
   struct pike_type *old_type;
 
@@ -3365,7 +3369,7 @@ void fix_type_field(node *n)
 	  yytype_error("Bad type in assignment.",
 		       CDR(n)->type, CAR(n)->type, 0);
 	} else {
-	  if (lex.pragmas & ID_STRICT_TYPES) {
+	  if (c->lex.pragmas & ID_STRICT_TYPES) {
 	    struct pike_string *t1 = describe_type(CAR(n)->type);
 	    struct pike_string *t2 = describe_type(CDR(n)->type);
 #ifdef PIKE_DEBUG
@@ -3580,7 +3584,7 @@ void fix_type_field(node *n)
       s = pop_type();
       f = CAR(n)->type?CAR(n)->type:mixed_type_string;
       n->type = check_call(s, f,
-			   (lex.pragmas & ID_STRICT_TYPES) &&
+			   (c->lex.pragmas & ID_STRICT_TYPES) &&
 			   !(n->node_info & OPT_WEAK_TYPE));
       args = count_arguments(s);
       max_args = count_arguments(f);
@@ -3838,7 +3842,7 @@ void fix_type_field(node *n)
 
       n->type = check_call(call_type,
 			   op_node->type ? op_node->type : mixed_type_string,
-			   (lex.pragmas & ID_STRICT_TYPES) &&
+			   (c->lex.pragmas & ID_STRICT_TYPES) &&
 			   !(op_node->node_info & OPT_WEAK_TYPE));
       if (n->type) {
 	/* Type check ok. */
@@ -3902,7 +3906,7 @@ void fix_type_field(node *n)
 	  yytype_error("Type mismatch in case range.",
 		       CAR(n)->type, CDR(n)->type, 0);
 	}
-      } else if ((lex.pragmas & ID_STRICT_TYPES) &&
+      } else if ((c->lex.pragmas & ID_STRICT_TYPES) &&
 		 (CAR(n)->type != CDR(n)->type)) {
 	/* The type should be the same for both CAR & CDR. */
 	if (!pike_types_le(CDR(n)->type, CAR(n)->type)) {
@@ -4016,7 +4020,7 @@ void fix_type_field(node *n)
 		if (!match_types(CADAR(n)->type, index_type)) {
 		  yytype_error("Type mismatch for index in foreach().",
 			       index_type, CADAR(n)->type, 0);
-		} else if (lex.pragmas & ID_STRICT_TYPES) {
+		} else if (c->lex.pragmas & ID_STRICT_TYPES) {
 		  yytype_error("Type mismatch for index in foreach().",
 			       index_type, CADAR(n)->type, YYTE_IS_WARNING);
 		}
@@ -4046,7 +4050,7 @@ void fix_type_field(node *n)
 		if (!match_types(CDDAR(n)->type, value_type)) {
 		  yytype_error("Type mismatch for value in foreach().",
 			       value_type, CDDAR(n)->type, 0);
-		} else if (lex.pragmas & ID_STRICT_TYPES) {
+		} else if (c->lex.pragmas & ID_STRICT_TYPES) {
 		  yytype_error("Type mismatch for value in foreach().",
 			       value_type, CDDAR(n)->type, YYTE_IS_WARNING);
 		}
@@ -4064,7 +4068,7 @@ void fix_type_field(node *n)
 	  if (!pike_types_le(array_zero, CAAR(n)->type)) {
 	    yyerror("Bad argument 1 to foreach().");
 	  } else {
-	    if ((lex.pragmas & ID_STRICT_TYPES) &&
+	    if ((c->lex.pragmas & ID_STRICT_TYPES) &&
 		!pike_types_le(CAAR(n)->type, array_type_string)) {
 	      struct pike_string *t = describe_type(CAAR(n)->type);
 	      yywarning("Argument 1 to foreach() is not always an array.");
@@ -4944,9 +4948,10 @@ static node *localopt(node *n)
 static void optimize(node *n)
 {
   node *tmp1, *tmp2, *tmp3;
+  struct compilation *c = THIS_COMPILATION;
   struct pike_string *save_file =
-    dmalloc_touch(struct pike_string *, lex.current_file);
-  INT32 save_line = lex.current_line;
+    dmalloc_touch(struct pike_string *, c->lex.current_file);
+  INT32 save_line = c->lex.current_line;
 
   do
   {
@@ -4963,8 +4968,8 @@ static void optimize(node *n)
       continue;
     }
 
-    lex.current_line = n->line_number;
-    lex.current_file = dmalloc_touch(struct pike_string *, n->current_file);
+    c->lex.current_line = n->line_number;
+    c->lex.current_file = dmalloc_touch(struct pike_string *, n->current_file);
 
     n->tree_info = n->node_info;
     if(car_is_node(n)) n->tree_info |= CAR(n)->tree_info;
@@ -5078,8 +5083,8 @@ static void optimize(node *n)
     n=n->parent;
   }while(n);
 
-  lex.current_line = save_line;
-  lex.current_file = dmalloc_touch(struct pike_string *, save_file);
+  c->lex.current_line = save_line;
+  c->lex.current_file = dmalloc_touch(struct pike_string *, save_file);
 }
 
 void optimize_node(node *n)
@@ -5392,6 +5397,8 @@ int dooptcode(struct pike_string *name,
   int args, vargs, ret;
   struct svalue *foo;
 
+  CHECK_COMPILER();
+
   optimize_node(n);
 
   check_tree(n, 0);
@@ -5451,10 +5458,12 @@ int dooptcode(struct pike_string *name,
 	   tmp.c_fun != f_backtrace)
 	{
 #ifdef PIKE_DEBUG
+	  struct compilation *c = THIS_COMPILATION;
+
 	  if(a_flag > 1)
 	    fprintf(stderr,"%s:%d: IDENTIFIER OPTIMIZATION %s == %s\n",
-		    lex.current_file->str,
-		    lex.current_line,
+		    c->lex.current_file->str,
+		    c->lex.current_line,
 		    name->str,
 		    foo->u.efun->name->str);
 #endif

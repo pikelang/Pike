@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.651 2008/01/29 20:10:06 grubba Exp $
+|| $Id: builtin_functions.c,v 1.652 2008/04/14 10:14:35 grubba Exp $
 */
 
 #include "global.h"
@@ -44,6 +44,7 @@
 #include "docode.h"
 #include "lex.h"
 #include "pike_float.h"
+#include "pike_compiler.h"
 
 #ifdef HAVE_POLL
 #ifdef HAVE_POLL_H
@@ -1463,6 +1464,8 @@ PMOD_EXPORT void f_zero_type(INT32 args)
 
 static int generate_zero_type(node *n)
 {
+  struct compilation *c = THIS_COMPILATION;
+  CHECK_COMPILER();
   if(count_args(CDR(n)) != 1) return 0;
   if(do_docode(CDR(n),DO_NOT_COPY) != 1)
     Pike_fatal("Count args was wrong in generate_zero_type().\n");
@@ -2386,9 +2389,24 @@ PMOD_EXPORT void f_all_constants(INT32 args)
  */
 PMOD_EXPORT void f_get_active_compilation_handler(INT32 args)
 {
+  struct compilation *c = NULL;
+
+  if (compilation_program) {
+    struct pike_frame *compiler_frame = Pike_fp;
+
+    while (compiler_frame &&
+	   (compiler_frame->context->prog != compilation_program)) {
+      compiler_frame = compiler_frame->next;
+    }
+
+    if (compiler_frame) {
+      c = (struct compilation *)compiler_frame->current_storage;
+    }
+  }
+  
   pop_n_elems(args);
-  if (compat_handler) {
-    ref_push_object(compat_handler);
+  if (c && c->compat_handler) {
+    ref_push_object(c->compat_handler);
   } else {
     push_int(0);
   }
@@ -2408,9 +2426,24 @@ PMOD_EXPORT void f_get_active_compilation_handler(INT32 args)
  */
 PMOD_EXPORT void f_get_active_error_handler(INT32 args)
 {
+  struct compilation *c = NULL;
+
+  if (compilation_program) {
+    struct pike_frame *compiler_frame = Pike_fp;
+
+    while (compiler_frame &&
+	   (compiler_frame->context->prog != compilation_program)) {
+      compiler_frame = compiler_frame->next;
+    }
+
+    if (compiler_frame) {
+      c = (struct compilation *)compiler_frame->current_storage;
+    }
+  }
+  
   pop_n_elems(args);
-  if (error_handler) {
-    ref_push_object(error_handler);
+  if (c && c->handler) {
+    ref_push_object(c->handler);
   } else {
     push_int(0);
   }
@@ -2550,6 +2583,8 @@ static node *optimize_this_object(node *n)
 static int generate_this_object(node *n)
 {
   int level;
+  struct compilation *c = THIS_COMPILATION;
+  CHECK_COMPILER();
 
   if (CDR (n)) {
     if (CDR (n)->token != F_CONSTANT)
@@ -4076,62 +4111,14 @@ node *optimize_replace(node *n)
  */
 PMOD_EXPORT void f_compile(INT32 args)
 {
-  struct program *p=0;
-  struct object *o;
-  struct object *placeholder=0;
-  int major=-1;
-  int minor=-1;
+  struct object *ce = clone_object(compilation_program, 0);
+  ONERROR err;
 
+  SET_ONERROR(err, do_free_object, ce);
 
-  check_all_args("compile",args,
-		 BIT_STRING,
-		 BIT_VOID | BIT_INT | BIT_OBJECT,
-		 BIT_VOID | BIT_INT,
-		 BIT_VOID | BIT_INT,
-		 BIT_VOID | BIT_INT | BIT_PROGRAM,
-		 BIT_VOID | BIT_INT | BIT_OBJECT,
-		 0);
+  apply_low(ce, CE_COMPILE_FUN_NUM, args);
 
-  check_c_stack(65536);
-
-  o=0;
-  switch(args)
-  {
-    case 3:
-      SIMPLE_BAD_ARG_ERROR("compile", 4, "int");
-    default:
-      if(Pike_sp[5-args].type == T_OBJECT) {
-	if (Pike_sp[5-args].subtype) {
-	  Pike_error("compile: "
-		     "Subtyped placeholder objects are not supported yet.\n");
-	}
-	placeholder=Pike_sp[5-args].u.object;
-      }
-
-    case 5:
-      if(Pike_sp[4-args].type == T_PROGRAM)
-	p=Pike_sp[4-args].u.program;
-
-    case 4:
-      major=Pike_sp[2-args].u.integer;
-      minor=Pike_sp[3-args].u.integer;
-      
-    case 2:
-      if(Pike_sp[1-args].type == T_OBJECT) {
-	if (Pike_sp[1-args].subtype) {
-	  Pike_error("compile: "
-		     "Subtyped handler objects are not supported yet.\n");
-	}
-	o=Pike_sp[1-args].u.object;
-      }
-      
-    case 0: case 1: break;
-  }
-
-  p = compile(Pike_sp[-args].u.string, o, major, minor, p, placeholder);
-
-  pop_n_elems(args);
-  push_program(p);
+  CALL_AND_UNSET_ONERROR(err);
 }
 
 
