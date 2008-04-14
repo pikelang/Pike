@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_compiler.h,v 1.2 2008/04/14 12:17:44 grubba Exp $
+|| $Id: pike_compiler.h,v 1.3 2008/04/14 16:34:54 grubba Exp $
 */
 
 #ifndef PIKE_COMPILER_H
@@ -57,5 +57,6 @@ struct compilation
 #define CE_REPORT_FUN_NUM		0
 #define CE_PIKE_COMPILER_FUN_NUM	1
 #define CE_COMPILE_FUN_NUM		2
+#define CE_RESOLV_FUN_NUM		3
 
 #endif	/* !PIKE_COMPILER_H */

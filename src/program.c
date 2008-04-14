@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.662 2008/04/14 13:18:09 grubba Exp $
+|| $Id: program.c,v 1.663 2008/04/14 16:34:54 grubba Exp $
 */
 
 #include "global.h"
@@ -1592,6 +1592,9 @@ struct node_s *find_module_identifier(struct pike_string *ident,
 
 struct node_s *resolve_identifier(struct pike_string *ident)
 {
+  struct compilation *c = THIS_COMPILATION;
+  node *ret = NULL;
+
   /* Handle UNDEFINED */
   if (ident == UNDEFINED_string) {
     struct svalue s;
@@ -1613,88 +1616,70 @@ struct node_s *resolve_identifier(struct pike_string *ident)
     }
   }
 
-  if(get_master())
-  {
-    struct compilation *c = THIS_COMPILATION;
-    DECLARE_CYCLIC();
-    node *ret=0;
-    if(BEGIN_CYCLIC(ident, c->lex.current_file))
-    {
-      my_yyerror("Recursive module dependency in %S.", ident);
-    }else{
-      SET_CYCLIC_RET(1);
+  CHECK_COMPILER();
 
-      ref_push_string(ident);
-      ref_push_string(c->lex.current_file);
-      if (c->handler) {
-	ref_push_object(c->handler);
-      } else {
-	push_int(0);
-      }
-
-      if (safe_apply_handler("resolv", c->handler, c->compat_handler, 3, 0)) {
-	if (Pike_compiler->compiler_pass == 2 &&
-	    ((Pike_sp[-1].type == T_OBJECT &&
-	      Pike_sp[-1].u.object == placeholder_object) ||
-	     (Pike_sp[-1].type == T_PROGRAM &&
-	      Pike_sp[-1].u.program == placeholder_program))) {
-	  my_yyerror("Got placeholder %s (resolver problem) "
-		     "when resolving %S.",
-		     get_name_of_type (Pike_sp[-1].type), ident->str);
-	}
-	else {
-	  if(!resolve_cache)
-	    resolve_cache=dmalloc_touch(struct mapping *, allocate_mapping(10));
-	  mapping_string_insert(resolve_cache,ident,Pike_sp-1);
-
-	  if(!IS_UNDEFINED (Pike_sp-1))
-	  {
-	    ret=mkconstantsvaluenode(Pike_sp-1);
-	  }
-	}
-	pop_stack();
+  ref_push_string(ident);
+  ref_push_string(c->lex.current_file);
+  if (c->handler) {
+    ref_push_object(c->handler);
+  } else {
+    push_int(0);
+  }
+  if (!safe_apply_current(CE_RESOLV_FUN_NUM, 3)) {
+    if(Pike_compiler->compiler_pass==2) {
+      if (throw_value.type == T_STRING) {
+	my_yyerror("%S", throw_value.u.string);
+	free_svalue(&throw_value);
+	mark_free_svalue (&throw_value);
       }
       else {
-	if(Pike_compiler->compiler_pass==2) {
-	  if (throw_value.type == T_STRING) {
-	    my_yyerror("%S", throw_value.u.string);
-	    free_svalue(&throw_value);
-	    mark_free_svalue (&throw_value);
-	  }
-	  else {
-	    handle_compile_exception ("Error resolving %S.", ident);
-	  }
-	}
-	else {
-	  /* FIXME: Error goes to /dev/null. Now we get a warning at
-	   * least in rtldebug mode, but this borken, borken, boRKen. :P */
-	  struct svalue thrown;
-	  move_svalue (&thrown, &throw_value);
-	  mark_free_svalue (&throw_value);
-#ifdef PIKE_DEBUG
-	  {
-	    struct pike_string *msg = format_exception_for_error_msg (&thrown);
-	    if (msg) {
-	      yywarning ("Ignoring resolv() exception in pass %d:",
-			 Pike_compiler->compiler_pass);
-	      yywarning ("%S", msg);
-	      free_string (msg);
-	    }
-	    else
-	      yywarning ("Ignoring resolv() exception in pass %d",
-			 Pike_compiler->compiler_pass);
-	  }
-#endif
-	  free_svalue (&thrown);
-	}
+	handle_compile_exception ("Error resolving %S.", ident);
       }
+    } else {
+      /* FIXME: Error goes to /dev/null. Now we get a warning at
+       * least in rtldebug mode, but this borken, borken, boRKen. :P */
+      struct svalue thrown;
+      move_svalue (&thrown, &throw_value);
+      mark_free_svalue (&throw_value);
+#ifdef PIKE_DEBUG
+      {
+	struct pike_string *msg = format_exception_for_error_msg (&thrown);
+	if (msg) {
+	  yywarning("Ignoring resolv() exception in pass %d:",
+		    Pike_compiler->compiler_pass);
+	  yywarning ("%S", msg);
+	  free_string (msg);
+	}
+	else
+	  yywarning("Ignoring resolv() exception in pass %d",
+		     Pike_compiler->compiler_pass);
+      }
+#endif
+      free_svalue (&thrown);
     }
-    END_CYCLIC();
-
-    return ret;
   }
 
-  return 0;
+  if (Pike_compiler->compiler_pass == 2 &&
+      ((Pike_sp[-1].type == T_OBJECT &&
+	Pike_sp[-1].u.object == placeholder_object) ||
+       (Pike_sp[-1].type == T_PROGRAM &&
+	Pike_sp[-1].u.program == placeholder_program))) {
+    my_yyerror("Got placeholder %s (resolver problem) "
+	       "when resolving %S.",
+	       get_name_of_type (Pike_sp[-1].type), ident->str);
+  } else {
+    if(!resolve_cache)
+      resolve_cache=dmalloc_touch(struct mapping *, allocate_mapping(10));
+    mapping_string_insert(resolve_cache,ident,Pike_sp-1);
+
+    if(!IS_UNDEFINED (Pike_sp-1))
+    {
+      ret=mkconstantsvaluenode(Pike_sp-1);
+    }
+  }
+  pop_stack();
+
+  return ret;
 }
 
 /*! @decl constant this
@@ -7761,6 +7746,33 @@ static void f_compilation_compile(INT32 args)
     push_int(0);
 }
 
+static void f_compilation_resolv(INT32 args)
+{
+  struct pike_string *ident;
+  struct pike_string *filename;
+  struct object *handler;
+
+  get_all_args("resolv", args, "%W%W%O", &ident, &filename, &handler);
+
+  if(get_master())
+  {
+    struct compilation *c = THIS_COMPILATION;
+    DECLARE_CYCLIC();
+    if(BEGIN_CYCLIC(ident, filename))
+    {
+      my_yyerror("Recursive module dependency in %S.", ident);
+    }else{
+      SET_CYCLIC_RET(1);
+
+      low_unsafe_apply_handler("resolv", handler, c->compat_handler, args);
+    }
+    END_CYCLIC();
+  } else {
+    pop_n_elems(args);
+    push_undefined();
+  }
+}
+
 /* Fake being called via CompilationEnvironment()->compile()
  *
  * This function is used to set up the environment for
@@ -7899,9 +7911,9 @@ static void compile_compiler(void)
   p->flags |= PROGRAM_HAS_C_METHODS;
 
   p->inherits = inh = xalloc(sizeof(struct inherit));
-  p->identifier_references = ref = xalloc(sizeof(struct reference) * 3);
-  p->identifiers = i = xalloc(sizeof(struct identifier) * 3);
-  p->identifier_index = ix = xalloc(sizeof(unsigned INT16) * 3);
+  p->identifier_references = ref = xalloc(sizeof(struct reference) * 4);
+  p->identifiers = i = xalloc(sizeof(struct identifier) * 4);
+  p->identifier_index = ix = xalloc(sizeof(unsigned INT16) * 4);
   p->constants = pc = xalloc(sizeof(struct program_constant) * 1);
 
   inh->prog = p;
@@ -8001,7 +8013,7 @@ static void compile_compiler(void)
   i2->run_time_type = T_FUNCTION;
   i2->identifier_flags = IDENTIFIER_C_FUNCTION | IDENTIFIER_ALIAS;
   i2->func.ext_ref.depth = 1;
-  i2->func.ext_ref.id = 0;
+  i2->func.ext_ref.id = CE_REPORT_FUN_NUM;
   i2->opt_flags = 0;
 #ifdef PROFILING
   i2->self_time = 0;
@@ -8050,6 +8062,27 @@ static void compile_compiler(void)
   ref->inherit_offset = 0;
   ref++;
   p->num_identifier_references++;
+
+  /* ADD_FUNCTION("resolv", f_compilation_resolv, ...); */
+  i->name = make_shared_string("resolv");
+  i->type = make_pike_type(tFunc(tStr tStr tObj, tMix));
+  i->run_time_type = T_FUNCTION;
+  i->identifier_flags = IDENTIFIER_C_FUNCTION;
+  i->func.c_fun = f_compilation_resolv;
+  i->opt_flags = 0;
+#ifdef PROFILING
+  i->self_time = 0;
+  i->num_calls = 0;
+  i->total_time = 0;
+#endif
+  i++;
+  *(ix++) = ref->identifier_offset = compilation_program->num_identifiers++;
+  p->num_identifier_index++;
+  ref->id_flags = 0;
+  ref->inherit_offset = 0;
+  ref++;
+  p->num_identifier_references++;
+
 
   p->flags |= PROGRAM_PASS_1_DONE;
 
