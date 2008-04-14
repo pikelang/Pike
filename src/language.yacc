@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.411 2008/04/14 10:14:38 grubba Exp $
+|| $Id: language.yacc,v 1.412 2008/04/14 13:19:24 grubba Exp $
 */
 
 %pure_parser
@@ -4334,12 +4334,12 @@ void low_yyerror(struct pike_string *str)
   Pike_compiler->num_parse_error++;
   cumulative_parse_error++;
 
-  push_int(2);	/* ERROR */
+  push_int(REPORT_ERROR);
   ref_push_string(c->lex.current_file);
   push_int(c->lex.current_line);
   push_constant_text("parse");
   ref_push_string(str);
-  apply_current(0, 5);	/* report(). */
+  safe_apply_current(0, 5);	/* report(). */
   pop_stack();
   STACK_LEVEL_DONE(0);
 }
