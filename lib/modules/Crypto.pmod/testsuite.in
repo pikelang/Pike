@@ -1,5 +1,5 @@
 START_MARKER
-// $Id: testsuite.in,v 1.39 2005/02/18 18:06:57 grubba Exp $
+// $Id: testsuite.in,v 1.40 2008/04/15 02:11:48 nilsson Exp $
 
 // Nettle.Yarrow
 
@@ -269,7 +269,11 @@ test_do( RSB->set_private_key(RSA->get_d(),
 test_equal( RSA->get_d(), RSB->get_d() )
 test_equal( RSA->get_p(), RSB->get_p() )
 test_equal( RSA->get_q(), RSB->get_q() )
+test_true([[ RSA->verify("hej", Crypto.MD2, RSB->sign("hej", Crypto.MD2)) ]])
+test_true([[ RSA->verify("hej", Crypto.MD4, RSB->sign("hej", Crypto.MD4)) ]])
 test_true([[ RSA->verify("hej", Crypto.MD5, RSB->sign("hej", Crypto.MD5)) ]])
+test_true([[ RSA->verify("hej", Crypto.SHA1, RSB->sign("hej", Crypto.SHA1)) ]])
+test_true([[ RSA->verify("hej", Crypto.SHA256, RSB->sign("hej", Crypto.SHA256)) ]])
 test_false([[ RSA->verify("hoj", Crypto.MD5, RSB->sign("hej", Crypto.MD5)) ]])
 test_true( RSA->sha_verify("hej", RSB->sha_sign("hej")) )
 test_false( RSA->sha_verify("hoj", RSB->sha_sign("hej")) )
@@ -372,6 +376,8 @@ test_eq( C->decrypt(C->encrypt("A"*100)), "A"*100 )
 
 test_do( add_constant("C") )
 
+test_eq( Crypto.rot13("Pelle"), "Cryyr" )
+test_eq( Crypto.rot13("Cryyr"), "Pelle" )
 
 
 dnl
