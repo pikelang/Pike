@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.665 2008/04/15 13:07:52 grubba Exp $
+|| $Id: program.c,v 1.666 2008/04/15 19:16:41 grubba Exp $
 */
 
 #include "global.h"
@@ -7899,24 +7899,22 @@ static void program_state_event_handler(int event)
 /* Strap the compiler by creating the compilation program by hand. */
 static void compile_compiler(void)
 {
-  struct program *p = compilation_program = low_allocate_program(), *p2;
-  struct program_constant *pc;
-  struct reference *ref, *ref2;
-  struct identifier *i, *i2;
-  struct inherit *inh, *inh2;
-  unsigned INT16 *ix, *ix2;
-  int e;
+  struct program *p = compilation_program = low_allocate_program();
+  struct object *ce;
+  struct inherit *inh;
 
   p->parent_info_storage = -1;
   p->event_handler = compilation_event_handler;
   p->flags |= PROGRAM_HAS_C_METHODS;
 
-  p->inherits = inh = xalloc(sizeof(struct inherit));
-  p->identifier_references = ref = xalloc(sizeof(struct reference) * 4);
-  p->identifiers = i = xalloc(sizeof(struct identifier) * 4);
-  p->identifier_index = ix = xalloc(sizeof(unsigned INT16) * 4);
-  p->constants = pc = xalloc(sizeof(struct program_constant) * 1);
+  /* ADD_STORAGE(struct compilation); */
+  p->alignment_needed = ALIGNOF(struct compilation);
+  p->storage_needed = sizeof(struct compilation);
 
+  /* Add the initial inherit, this is needed for clone_object()
+   * to actually call the event handler, and for low_enter_compiler()
+   * to find the storage and context. */
+  p->inherits = inh = xalloc(sizeof(struct inherit));
   inh->prog = p;
   inh->inherit_level = 0;
   inh->identifier_level = 0;
@@ -7928,177 +7926,50 @@ static void compile_compiler(void)
   inh->name = NULL;
   p->num_inherits = 1;
 
-  /* ADD_STORAGE(struct compilation); */
-  p->alignment_needed = ALIGNOF(struct compilation);
-  p->inherits->storage_offset = 0;
-  p->storage_needed = sizeof(struct compilation);
-
-  /* ADD_FUNCTION("report", f_compilation_report, ...); */
-  i->name = make_shared_string("report");
-  i->type = make_pike_type(tFuncV(tName("SeverityLevel", tInt03) tStr tIntPos
-				  tStr tStr, tMix, tVoid));
-  i->run_time_type = T_FUNCTION;
-  i->identifier_flags = IDENTIFIER_C_FUNCTION;
-  i->func.c_fun = f_compilation_report;
-  i->opt_flags = 0;
-#ifdef PROFILING
-  i->self_time = 0;
-  i->num_calls = 0;
-  i->total_time = 0;
-#endif
-  i++;
-  *(ix++) = ref->identifier_offset = compilation_program->num_identifiers++;
-  p->num_identifier_index++;
-  ref->id_flags = 0;
-  ref->inherit_offset = 0;
-  ref++;
-  p->num_identifier_references++;
-
-  p2 = low_allocate_program();
-
-  pc->sval.u.program = p2;
-  pc->sval.type = T_PROGRAM;
-  pc->sval.subtype = 0;
-  pc->offset = -1;
-  i->name = make_shared_string("PikeCompiler");
-  i->type = get_type_of_svalue(&pc->sval);
-  i->run_time_type = T_PROGRAM;
-  i->identifier_flags = IDENTIFIER_CONSTANT;
-  i->func.offset = p->num_constants++;
-  pc++;
-  i->opt_flags = 0;
-#ifdef PROFILING
-  i->self_time = 0;
-  i->num_calls = 0;
-  i->total_time = 0;
-#endif
-  i++;
-  *(ix++) = ref->identifier_offset = compilation_program->num_identifiers++;
-  p->num_identifier_index++;
-  ref->id_flags = 0;
-  ref->inherit_offset = 0;
-  ref++;
-  p->num_identifier_references++;
-
-  /* FIXME: Parent info. */
-  p2->event_handler = program_state_event_handler;
-  p2->flags |= PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT|PROGRAM_HAS_C_METHODS;
-  p2->parent_info_storage = 0;
-  p2->xstorage = sizeof(struct parent_info);
-
-  p2->inherits = inh2 = malloc(sizeof(struct inherit));
-  p2->identifier_references = ref2 = malloc(sizeof(struct reference) * 2);
-  p2->identifiers = i2 = malloc(sizeof(struct identifier) * 2);
-  p2->identifier_index = ix2 = malloc(sizeof(unsigned INT16) * 2);
-
-  inh2->prog = p2;
-  inh2->inherit_level = 0;
-  inh2->identifier_level = 0;
-  inh2->parent_identifier = -1;
-  inh2->parent_offset = OBJECT_PARENT;
-  inh2->identifier_ref_offset = 0;
-  inh2->storage_offset = p2->xstorage;
-  inh2->parent = NULL;
-  inh2->name = NULL;
-  p2->num_inherits = 1;
-
-  /* ADD_STORAGE(struct program_state); */
-  p2->alignment_needed = ALIGNOF(struct program_state);
-  p2->inherits->storage_offset = p2->xstorage;
-  p2->storage_needed = p2->xstorage + sizeof(struct program_state);
-
-  /* low_define_alias(NULL, NULL, 0, 1, 0); */
-  i2->name = make_shared_string("report");
-  i2->type = make_pike_type(tFuncV(tName("SeverityLevel", tInt03) tStr tIntPos
-				   tStr tStr, tMix, tVoid));
-  i2->run_time_type = T_FUNCTION;
-  i2->identifier_flags = IDENTIFIER_C_FUNCTION | IDENTIFIER_ALIAS;
-  i2->func.ext_ref.depth = 1;
-  i2->func.ext_ref.id = CE_REPORT_FUN_NUM;
-  i2->opt_flags = 0;
-#ifdef PROFILING
-  i2->self_time = 0;
-  i2->num_calls = 0;
-  i2->total_time = 0;
-#endif
-  i2++;
-  *(ix2++) = ref2->identifier_offset = p2->num_identifiers++;
-  p2->num_identifier_index++;
-  ref2->id_flags = 0;
-  ref2->inherit_offset = 0;
-  ref2++;
-  p2->num_identifier_references++;
-  
-
-  p2->flags |= PROGRAM_PASS_1_DONE;
-
-  fsort_program_identifier_index(p2->identifier_index, ix2-1, p2);
-  p2->flags |= PROGRAM_FIXED;
-
-  /* Yes, it is supposed to start at 0  /Grubba */
-  for(e=0;e<NUM_LFUNS;e++) {
-    int id = p2->lfuns[e] = low_find_lfun(p2, e);
-  }
-
-  optimize_program(p2);
-  p2->flags |= PROGRAM_FINISHED;
-
-
-  /* ADD_FUNCTION("compile", f_compilation_compile, ...); */
-  i->name = make_shared_string("compile");
-  i->type = make_pike_type(tFunc(tStr, tPrg(tObj)));
-  i->run_time_type = T_FUNCTION;
-  i->identifier_flags = IDENTIFIER_C_FUNCTION;
-  i->func.c_fun = f_compilation_compile;
-  i->opt_flags = 0;
-#ifdef PROFILING
-  i->self_time = 0;
-  i->num_calls = 0;
-  i->total_time = 0;
-#endif
-  i++;
-  *(ix++) = ref->identifier_offset = compilation_program->num_identifiers++;
-  p->num_identifier_index++;
-  ref->id_flags = 0;
-  ref->inherit_offset = 0;
-  ref++;
-  p->num_identifier_references++;
-
-  /* ADD_FUNCTION("resolv", f_compilation_resolv, ...); */
-  i->name = make_shared_string("resolv");
-  i->type = make_pike_type(tFunc(tStr tStr tObj, tMix));
-  i->run_time_type = T_FUNCTION;
-  i->identifier_flags = IDENTIFIER_C_FUNCTION;
-  i->func.c_fun = f_compilation_resolv;
-  i->opt_flags = 0;
-#ifdef PROFILING
-  i->self_time = 0;
-  i->num_calls = 0;
-  i->total_time = 0;
-#endif
-  i++;
-  *(ix++) = ref->identifier_offset = compilation_program->num_identifiers++;
-  p->num_identifier_index++;
-  ref->id_flags = 0;
-  ref->inherit_offset = 0;
-  ref++;
-  p->num_identifier_references++;
-
-
+  /* Force clone_object() to accept the program... */
   p->flags |= PROGRAM_PASS_1_DONE;
+  ce = clone_object(p, 0);
+  p->flags &= ~PROGRAM_PASS_1_DONE;
 
-  fsort_program_identifier_index(p->identifier_index, ix-1, p);
-  p->flags |= PROGRAM_FIXED;
+  low_enter_compiler(ce, 0);
 
-  /* Yes, it is supposed to start at 0  /Grubba */
-  for(e=0;e<NUM_LFUNS;e++) {
-    int id = p->lfuns[e] = low_find_lfun(p, e);
-  }
+  low_start_new_program(p, 1, NULL, 0, NULL);
+  free_program(p);	/* Remove the extra ref we just got... */
 
-  optimize_program(p);
-  p->flags |= PROGRAM_FINISHED;
+  /* low_start_new_program() has zapped the inherit we
+   * created above, so we need to repair the frame pointer.
+   */
+  Pike_fp->context = p->inherits;
 
-  add_global_program("CompilerEnvironment", p);
+  /* MAGIC! We're now executing inside the object being compiled,
+   * and have done sufficient stuff to be able to call and use
+   * the normal program building functions.
+   */
+
+  ADD_FUNCTION("report", f_compilation_report, 
+	       tFuncV(tName("SeverityLevel", tInt03) tStr tIntPos
+		      tStr tStr, tMix, tVoid),0);
+
+  start_new_program();
+
+  ADD_STORAGE(struct program_state);
+  Pike_compiler->new_program->event_handler = program_state_event_handler;
+  Pike_compiler->new_program->flags |=
+    PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT|PROGRAM_HAS_C_METHODS;
+
+  /* Alias for report above. */
+  low_define_alias(NULL, NULL, 0, 1, CE_REPORT_FUN_NUM);
+
+  end_class("PikeCompiler", 0);
+
+  ADD_FUNCTION("compile", f_compilation_compile, tFunc(tStr, tPrg(tObj)), 0);
+
+  ADD_FUNCTION("resolv", f_compilation_resolv, tFunc(tStr tStr tObj, tMix), 0);
+
+  add_global_program("CompilerEnvironment",
+		     compilation_program = end_program());
+
+  exit_compiler();
 }
 
 struct program *compile(struct pike_string *aprog,
@@ -8449,10 +8320,6 @@ void init_program(void)
   struct svalue id;
   init_program_blocks();
 
-  compile_compiler();
-
-  enter_compiler(NULL, 0);
-
   MAKE_CONST_STRING(this_program_string,"this_program");
   MAKE_CONST_STRING(this_string,"this");
   MAKE_CONST_STRING(UNDEFINED_string,"UNDEFINED");
@@ -8477,6 +8344,10 @@ void init_program(void)
 
   lfun_getter_type_string = make_pike_type(tFuncV(tNone, tVoid, tMix));
   lfun_setter_type_string = make_pike_type(tFuncV(tZero, tVoid, tVoid));
+
+  compile_compiler();
+
+  enter_compiler(NULL, 0);
 
   start_new_program();
   debug_malloc_touch(Pike_compiler->fake_object);
