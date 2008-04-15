@@ -124,9 +124,9 @@ int(0..1) verify_rsaref(string msg, string s)
 //! Make an SSL signatrue of message @[msg].
 string sign_ssl(string msg)
 {
-  return Standards.ASN1.Types.asn1_sequence(
+  return Standards.ASN1.Types.Sequence(
     Array.map(raw_sign(hash(msg)),
-	      Standards.ASN1.Types.asn1_integer))->get_der();
+	      Standards.ASN1.Types.Integer))->get_der();
 }
 
 //! Verify an SSL signature @[s] of message @[msg].
@@ -168,7 +168,7 @@ array(Gmp.mpz) nist_primes(int l)
   int L = 512 + 64 * l;
 
   int n = (L-1) / 160;
-  int b = (L-1) % 160;
+  //  int b = (L-1) % 160;
 
   for (;;)
   {
