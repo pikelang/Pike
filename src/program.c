@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.663 2008/04/14 16:34:54 grubba Exp $
+|| $Id: program.c,v 1.664 2008/04/15 02:07:22 nilsson Exp $
 */
 
 #include "global.h"
@@ -36,6 +36,7 @@
 #include "block_alloc.h"
 #include "pikecode.h"
 #include "pike_compiler.h"
+#include "module_support.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -8906,7 +8907,7 @@ void low_pop_local_variables(int level)
       ref_push_string(Pike_compiler->compiler_frame->variable[e].file);
       push_int(Pike_compiler->compiler_frame->variable[e].line);
       push_constant_text("parse");
-      push_constant_text("Unused local variable %S.");
+      push_constant_text("Unused local variable %s.");
       ref_push_string(Pike_compiler->compiler_frame->variable[e].name);
       safe_apply_current(CE_REPORT_FUN_NUM, 6);
       pop_stack();
@@ -8938,7 +8939,7 @@ void pop_local_variables(int level)
 	ref_push_string(Pike_compiler->compiler_frame->variable[level].file);
 	push_int(Pike_compiler->compiler_frame->variable[level].line);
 	push_constant_text("parse");
-	push_constant_text("Unused local variable %S.");
+	push_constant_text("Unused local variable %s.");
 	ref_push_string(Pike_compiler->compiler_frame->variable[level].name);
 	safe_apply_current(CE_REPORT_FUN_NUM, 6);
 	pop_stack();
