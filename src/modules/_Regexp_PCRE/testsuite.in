@@ -5,6 +5,25 @@ cond([[ master()->resolv("Regexp.PCRE.Plain") ]],
            "agurka-boom-fooabadoom")
    test_eq(Regexp.PCRE("b[^-]*m")->replace("abam-boom-fooabadoom","gurka"),
            "agurka-gurka-fooagurka")
+
+   test_eq(Regexp.PCRE("o+")->replace("foobar",""),"fbar");
+   test_eq(Regexp.PCRE("o*")->replace("foobar",""),"fbar");
+   test_eq(Regexp.PCRE("^o*")->replace("foobar",""),"foobar");
+   test_eq(Regexp.PCRE("o*$")->replace("foobar",""),"foobar");
+
+   test_any_equal(
+      array x=({});
+      Regexp.PCRE("o+")->matchall("foobar", lambda(mixed s) {
+        x += ({ s });
+      });
+      return x*({});, ({"oo"}))
+
+   test_any_equal(
+      array x=({});
+      Regexp.PCRE("o*")->matchall("foobar", lambda(mixed s) {
+        x += ({ s });
+      });
+      return x*({});, ({"","oo","","","",""}))
 ]])
 
 cond([[ master()->resolv("Regexp.PCRE.Widestring") ]],
