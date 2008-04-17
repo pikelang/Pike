@@ -1,5 +1,5 @@
 // -*- Pike -*-
-// $Id: module.pmod.in,v 1.10 2008/03/29 16:13:15 nilsson Exp $
+// $Id: module.pmod.in,v 1.11 2008/04/17 03:37:46 nilsson Exp $
 // original author: mirar
 
 #pike __REAL_VERSION__
@@ -133,7 +133,7 @@ class Plain
 	 if (stringp(with)) res->add(with);
 	 else res->add(with(subject[v[0]..v[1]-1]));
 
-	 i=v[1];
+	 if (i!=v[1]) i=v[1]; else res->add(subject[i..i++]);
       }
 
       res->add(subject[i..]);
@@ -203,7 +203,7 @@ class Plain
 	 if (intp(v) && !handle_exec_error([int]v)) 
 	    return this;
 	 callback(split_subject(subject,v),v);
-	 i=v[1];
+         if (i!=v[1]) i=v[1]; else i++;
       }
    }
 
