@@ -1,5 +1,5 @@
 /*
- * $Id: pike_embed.c,v 1.14 2007/10/06 13:45:22 grubba Exp $
+ * $Id: pike_embed.c,v 1.15 2008/04/18 19:45:42 grubba Exp $
  *
  * Pike embedding API.
  *
@@ -381,6 +381,10 @@ void init_pike_runtime(void (*exit_cb)(int))
   TRACE((stderr, "Init opcodes...\n"));
 
   init_opcodes();
+
+  TRACE((stderr, "Init destruct...\n"));
+
+  low_init_object();
 
   TRACE((stderr, "Init programs...\n"));
 

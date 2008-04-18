@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.284 2008/04/14 10:14:40 grubba Exp $
+|| $Id: object.c,v 1.285 2008/04/18 19:45:42 grubba Exp $
 */
 
 #include "global.h"
@@ -367,6 +367,7 @@ PMOD_EXPORT struct object *debug_clone_object(struct program *p, int args)
   debug_malloc_touch(o);
   debug_malloc_touch(o->storage);
   if (!args) {
+    /* Pop o from the stack. */
     Pike_sp--;
   } else {
     UNSET_ONERROR(tmp);
@@ -2501,13 +2502,17 @@ static void f_magic_values (INT32 args)
 /*! @endnamespace
  */
 
+void low_init_object(void)
+{
+  init_destroy_called_mark_hash();
+}
+
 void init_object(void)
 {
   ptrdiff_t offset;
 
   enter_compiler(NULL, 0);
 
-  init_destroy_called_mark_hash();
   start_new_program();
   offset=ADD_STORAGE(struct magic_index_struct);
   MAP_VARIABLE("__obj", tObj, ID_STATIC,
