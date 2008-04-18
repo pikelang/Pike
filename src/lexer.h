@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lexer.h,v 1.66 2008/04/14 10:14:40 grubba Exp $
+|| $Id: lexer.h,v 1.67 2008/04/18 20:26:55 grubba Exp $
 */
 
 /*
@@ -1014,7 +1014,7 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	}
       }
       
-      switch(GETC())
+      switch(c = GETC())
       {
       case '/': tmp="```/"; break;
       case '%': tmp="```%"; break;
@@ -1112,7 +1112,7 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	break;
 
       default:
-	  if (!offset && lex_isidchar(LOOK())) {
+	  if (offset==2 && lex_isidchar(c)) {
 	    /* Getter/setter (new-style)
 	     *
 	     * Either
@@ -1125,9 +1125,9 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	    struct pike_string *s;
 	    READBUF(lex_isidchar(C));
 	    if (GOBBLE('=')) len += 1;
-	    /* Adjust for the prefix (`). */
-	    len += 1;
-	    buf -= 1<<SHIFT;
+	    /* Adjust for the prefix (`c). */
+	    len += 2;
+	    buf -= 2<<SHIFT;
 #if (SHIFT == 0)
 	    s = make_shared_binary_string(buf, len);
 #else /* SHIFT != 0 */
