@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.238 2008/04/15 13:07:52 grubba Exp $
+|| $Id: program.h,v 1.239 2008/04/18 19:56:01 grubba Exp $
 */
 
 #ifndef PROGRAM_H
@@ -661,7 +661,9 @@ BLOCK_ALLOC_FILL_PAGES(program, n/a);
 
 extern struct program *first_program;
 extern struct program *null_program;
+extern struct program *compilation_env_program;
 extern struct program *compilation_program;
+extern struct object *compilation_environment;
 extern struct program *pike_trampoline_program;
 extern struct program *gc_internal_program;
 extern struct program *placeholder_program;

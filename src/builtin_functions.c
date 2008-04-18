@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.652 2008/04/14 10:14:35 grubba Exp $
+|| $Id: builtin_functions.c,v 1.653 2008/04/18 19:56:01 grubba Exp $
 */
 
 #include "global.h"
@@ -4107,18 +4107,11 @@ node *optimize_replace(node *n)
  *!
  *! @seealso
  *!   @[compile_string()], @[compile_file()], @[cpp()], @[master()],
- *!   @[CompilationHandler]
+ *!   @[CompilationHandler], @[DefaultCompilationEnvironment]
  */
 PMOD_EXPORT void f_compile(INT32 args)
 {
-  struct object *ce = clone_object(compilation_program, 0);
-  ONERROR err;
-
-  SET_ONERROR(err, do_free_object, ce);
-
-  apply_low(ce, CE_COMPILE_FUN_NUM, args);
-
-  CALL_AND_UNSET_ONERROR(err);
+  apply_low(compilation_environment, CE_COMPILE_FUN_NUM, args);
 }
 
 

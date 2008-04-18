@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_compiler.h,v 1.3 2008/04/14 16:34:54 grubba Exp $
+|| $Id: pike_compiler.h,v 1.4 2008/04/18 19:56:01 grubba Exp $
 */
 
 #ifndef PIKE_COMPILER_H
@@ -20,6 +20,7 @@ struct compilation
   int major, minor;			/* compat version */
   struct program *target;		/* Program being compiled. */
   struct object *placeholder;
+  int flags;
   
   struct program *p;			/* Compiled program or NULL. */
   struct lex lex;
@@ -47,16 +48,25 @@ struct compilation
 #define THIS_COMPILATION  ((struct compilation *)(Pike_fp->current_storage))
 #define MAYBE_THIS_COMPILATION  ((Pike_fp && compilation_program && (Pike_fp->context->prog == compilation_program))?THIS_COMPILATION:NULL)
 
+/* Flags. */
+#define COMPILER_BUSY	1	/* The compiler is busy compiling. */
+#define COMPILER_DONE	2	/* The is finished compiling. */
+
 /* Report levels */
 #define REPORT_INFO	0	/* FYI. */
 #define REPORT_WARNING	1	/* Compiler warning. */
 #define REPORT_ERROR	2	/* Compilation error. */
 #define REPORT_FATAL	3	/* Unrecoverable error. */
 
-/* Function numbers. */
+/* CompilerEnvironment function numbers. */
 #define CE_REPORT_FUN_NUM		0
-#define CE_PIKE_COMPILER_FUN_NUM	1
-#define CE_COMPILE_FUN_NUM		2
-#define CE_RESOLV_FUN_NUM		3
+#define CE_COMPILE_FUN_NUM		1
+#define CE_RESOLV_FUN_NUM		2
+#define CE_PIKE_COMPILER_FUN_NUM	3
+
+/* PikeCompiler function numbers. */
+#define PC_REPORT_FUN_NUM		0
+#define PC_COMPILE_FUN_NUM		1
+#define PC_RESOLV_FUN_NUM		2
 
 #endif	/* !PIKE_COMPILER_H */
