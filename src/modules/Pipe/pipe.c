@@ -207,7 +207,7 @@ static INLINE void output_try_write_some(struct object *obj);
 static void push_callback(ptrdiff_t no)
 {
   add_ref(Pike_sp->u.object=THISOBJ);
-  Pike_sp->subtype = DO_NOT_WARN(no + Pike_fp->context.identifier_level);
+  Pike_sp->subtype = DO_NOT_WARN(no + Pike_fp->context->identifier_level);
   Pike_sp->type = T_FUNCTION;
   Pike_sp++;
 }
