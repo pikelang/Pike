@@ -1,0 +1,10 @@
+# $Id: Makefile.in,v 1.8 2008/04/18 10:36:33 srb Exp $
+@make_variables@
+VPATH=@srcdir@
+OBJS=pipe.o
+MODULE_LDFLAGS=@LDFLAGS@
+
+CONFIG_HEADERS=@CONFIG_HEADERS@
+
+@dynamic_module_makefile@
+@dependencies@

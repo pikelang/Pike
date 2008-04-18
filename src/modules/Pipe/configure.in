@@ -1,0 +1,12 @@
+# $Id: configure.in,v 1.9 2008/04/18 10:36:33 srb Exp $
+AC_INIT(pipe.c)
+AC_CONFIG_HEADER(config.h)
+
+AC_MODULE_INIT()
+
+AC_HAVE_HEADERS(sys/mman.h linux/mman.h sys/id.h sys/file.h)
+AC_HAVE_FUNCS(mmap munmap geteuid seteuid setresuid madvise)
+
+AC_OUTPUT(Makefile,echo FOO >stamp-h )
+
+
