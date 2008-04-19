@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_compiler.h,v 1.4 2008/04/18 19:56:01 grubba Exp $
+|| $Id: pike_compiler.h,v 1.5 2008/04/19 10:10:07 grubba Exp $
 */
 
 #ifndef PIKE_COMPILER_H
@@ -53,7 +53,7 @@ struct compilation
 #define COMPILER_DONE	2	/* The is finished compiling. */
 
 /* Report levels */
-#define REPORT_INFO	0	/* FYI. */
+#define REPORT_NOTICE	0	/* FYI. */
 #define REPORT_WARNING	1	/* Compiler warning. */
 #define REPORT_ERROR	2	/* Compilation error. */
 #define REPORT_FATAL	3	/* Unrecoverable error. */
