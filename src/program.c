@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.668 2008/04/19 10:11:20 grubba Exp $
+|| $Id: program.c,v 1.669 2008/04/19 13:52:45 grubba Exp $
 */
 
 #include "global.h"
@@ -2748,15 +2748,22 @@ static void exit_program_struct(struct program *p)
       dmfree(p->program);
     }
 #endif /* PIKE_USE_MACHINE_CODE */
-#define FOO(NUMTYPE,TYPE,ARGTYPE,NAME) p->NAME=0;
+#define FOO(NUMTYPE,TYPE,ARGTYPE,NAME)	do {			     \
+      p->NAME=0;						     \
+    } while(0);
+    
 #include "program_areas.h"
   }else{
 #ifdef PIKE_USE_MACHINE_CODE
 #define BAR(NUMTYPE,TYPE,ARGTYPE,NAME)				\
-    if(p->NAME) { mexec_free((char *)p->NAME); p->NAME=0; }
+    if(p->NAME) {						\
+      mexec_free((char *)p->NAME); p->NAME=0;			\
+    }
 #endif /* PIKE_USE_MACHINE_CODE */
 #define FOO(NUMTYPE,TYPE,ARGTYPE,NAME)			\
-    if(p->NAME) { dmfree((char *)p->NAME); p->NAME=0; }
+    if(p->NAME) {					\
+      dmfree((char *)p->NAME); p->NAME=0;		\
+    }
 #include "program_areas.h"
   }
 
@@ -7273,6 +7280,10 @@ static void free_compilation(struct compilation *c)
     free_program(c->target);
     c->target = NULL;
   }
+  if(c->p) {
+    free_program(c->p);
+    c->p = NULL;
+  }
   if(c->placeholder) {
     free_object(c->placeholder);
     c->placeholder = NULL;
@@ -7468,7 +7479,7 @@ static int run_pass1(struct compilation *c)
 
   ret=unlink_current_supporter(& c->supporter);
 
-  c->p=end_first_pass(0);
+  c->p=debug_malloc_pass(end_first_pass(0));
 
   run_exit(c);
 
@@ -7529,7 +7540,7 @@ void run_pass2(struct compilation *c)
 
   verify_supporters();
 
-  c->p=end_program();
+  c->p=debug_malloc_pass(end_program());
 
   run_exit(c);
 }
@@ -7660,6 +7671,7 @@ static int call_delayed_pass2(struct compilation *cc, int finish)
   if(cc->p) {
     ok = finish;
     free_program(cc->p); /* later */
+    cc->p = NULL;
   }
 
   CDFPRINTF((stderr, "th(%ld) %p delayed compile %s.\n",
@@ -7888,12 +7900,6 @@ static void f_compilation_create(INT32 args)
  */
 static void f_compilation_compile(INT32 args)
 {
-  struct pike_string *aprog;
-  struct object *ahandler = NULL;/* error handler */
-  int amajor = -1;
-  int aminor = -1;
-  struct program *atarget = NULL;
-  struct object *aplaceholder = NULL;
   int delay, dependants_ok = 1;
   struct program *ret;
 #ifdef PIKE_DEBUG
@@ -7961,14 +7967,14 @@ static void f_compilation_compile(INT32 args)
     /* finish later */
     verify_supporters();
     /* We're hanging in the supporter. */
-    ret = c->p;
+    ret = debug_malloc_pass(c->p);
   }else{
     /* finish now */
     run_pass2(c);
     debug_malloc_touch(c);
     run_cleanup(c,0);
     
-    ret = c->p;
+    ret = debug_malloc_pass(c->p);
 
     debug_malloc_touch(c);
 
@@ -8286,6 +8292,8 @@ static void compile_compiler(void)
 		    tPrg(tObj), PIKE_T_PROGRAM, ID_HIDDEN);
   PIKE_MAP_VARIABLE("current_file", OFFSETOF(compilation, lex.current_file),
 		    tStr, PIKE_T_STRING, ID_HIDDEN);
+  PIKE_MAP_VARIABLE("default_module", OFFSETOF(compilation, default_module),
+		    tOr(tMap(tStr,tMix),tObj), PIKE_T_MIXED, 0);
 
   /* end_class()/end_program() adds the parent_info storage once more.
    * Remove the one we added above, so that we don't get it double.
