@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.669 2008/04/19 13:52:45 grubba Exp $
+|| $Id: program.c,v 1.670 2008/04/19 15:36:48 mbaehr Exp $
 */
 
 #include "global.h"
@@ -7252,6 +7252,9 @@ static void f_compilation_env_resolv(INT32 args)
     push_undefined();
   }
 }
+
+/*! @endclass
+ */
 
 /*! @class PikeCompiler
  *!
