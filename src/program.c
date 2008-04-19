@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.667 2008/04/18 19:56:01 grubba Exp $
+|| $Id: program.c,v 1.668 2008/04/19 10:11:20 grubba Exp $
 */
 
 #include "global.h"
@@ -7109,12 +7109,28 @@ int report_compiler_dependency(struct program *p)
  *!   The compiler environment.
  */
 
+/*! @decl enum SeverityLevel
+ *!   Message severity level.
+ *! { NOTICE, WARNING, ERROR, FATAL }
+ *!
+ *! @constant NOTICE
+ *! @constant WARNING
+ *! @constant ERROR
+ *! @constant FATAL
+ *!
+ *! @seealso
+ *!   @[report()]
+ */
+
 /*! @decl void report(SeverityLevel severity, @
  *!                   string filename, int linenumber, @
  *!                   string subsystem, @
  *!                   string message, mixed ... extra_args)
  *!
  *!   Report a diagnostic from the compiler.
+ *!
+ *! @seealso
+ *!   @[PikeCompiler()->report()]
  */
 static void f_compilation_env_report(INT32 args)
 {
@@ -7654,11 +7670,6 @@ static int call_delayed_pass2(struct compilation *cc, int finish)
   return ok;
 }
 
-/*! @class PikeCompiler
- *!
- *!   The Pike compiler.
- */
-
 static void compilation_event_handler(int e)
 {
   struct compilation *c = THIS_COMPILATION;
@@ -8097,6 +8108,8 @@ PMOD_EXPORT void exit_compiler(void)
 
 /*! @class CompilerState
  *!
+ *!   Keeps the state of a single program/class during compilation.
+ *!
  *! @note
  *!   Not in use yet!
  */
@@ -8284,6 +8297,23 @@ static void compile_compiler(void)
    * so we need to repair the frame pointer.
    */
   Pike_fp->context = compilation_program->inherits;
+
+  {
+    struct pike_string *type_name;
+    struct svalue type_value;
+
+    /* enum SeverityLevel { NOTICE, WARNING, ERROR, FATAL } */
+    type_value.type = PIKE_T_TYPE;
+    type_value.subtype = 0;
+    type_value.u.type = CONSTTYPE(tName("SeverityLevel", tInt03));
+    simple_add_constant("SeverityLevel", &type_value, 0);
+    free_svalue(&type_value);
+
+    add_integer_constant("NOTICE",  REPORT_NOTICE, 0);
+    add_integer_constant("WARNING", REPORT_WARNING, 0);
+    add_integer_constant("ERROR",   REPORT_ERROR, 0);
+    add_integer_constant("FATAL",   REPORT_FATAL, 0);
+  }
 
   compilation_env_program = end_program();
 
