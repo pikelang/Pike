@@ -107,13 +107,14 @@
 #define READ_BUFFER_SIZE 65536
 #define MAX_BYTES_IN_BUFFER 65536
 
-/*
- *  usage:
- *  single socket output  
- *  or regular file output and (multiple, adding) socket output 
- *     with no mmap input 
- *
- *  multiple socket output without regular file output illegal
+/*! @module Pipe
+ *!
+ *!  Single socket output.
+ *!
+ *!  Regular file output and (multiple, adding) socket output 
+ *!  with no mmap input.
+ *!
+ *!  Multiple socket output without regular file output illegal.
  */
 
 static struct program *pipe_program, *output_program;
@@ -160,6 +161,11 @@ struct buffer
   struct pike_string *s;
   struct buffer *next;
 };
+
+/*! @class pipe
+ *!
+ *! Concatenation pipe.
+ */
 
 struct pipe
 {
@@ -696,7 +702,10 @@ static INLINE void output_try_write_some(struct object *obj)
 
 /********** methods *********************************************************/
 
-/* Add an input to this pipe */
+/*! @decl void input(object obj)
+ *!
+ *! Add an input file to this pipe.
+ */
 static void pipe_input(INT32 args)
 {
    struct input *i;
@@ -808,6 +817,10 @@ static void pipe_input(INT32 args)
    push_int(0);
 }
 
+/*! @decl void write(string bytes)
+ *!
+ *! Add an input string to this pipe.
+ */
 static void pipe_write(INT32 args)
 {
   struct input *i;
@@ -832,6 +845,10 @@ static void pipe_write(INT32 args)
 
 void f_mark_fd(INT32 args);
 
+/*! @decl void output(object obj, int|void start_pos)
+ *!
+ *!   Add an output file object.
+ */
 static void pipe_output(INT32 args)
 {
   struct object *obj;
@@ -940,6 +957,12 @@ static void pipe_output(INT32 args)
   pop_n_elems(args-1);
 }
 
+/*! @decl void set_done_callback(void|function(mixed:mixed) done_cb, @
+ *!                              void|mixed id)
+ *!
+ *! Set the callback function to be called when all the outputs
+ *! have been sent.
+ */
 static void pipe_set_done_callback(INT32 args)
 {
   if (args==0)
@@ -962,6 +985,12 @@ static void pipe_set_done_callback(INT32 args)
   pop_n_elems(args-1); 
 }
 
+/*! @decl void set_output_closed_callback(void|function(mixed, object:mixed) close_cb, @
+ *!                                       void|mixed id)
+ *!
+ *! Set the callback function to be called when one of the outputs has
+ *! been closed from the other side.
+ */
 static void pipe_set_output_closed_callback(INT32 args)
 {
   if (args==0)
@@ -983,6 +1012,10 @@ static void pipe_set_output_closed_callback(INT32 args)
   pop_n_elems(args-1); 
 }
 
+/*! @decl void finish()
+ *!
+ *! Terminate and reinitialize the pipe.
+ */
 static void pipe_finish(INT32 args)
 {
    pop_n_elems(args);
@@ -990,6 +1023,10 @@ static void pipe_finish(INT32 args)
    pipe_done();
 }
 
+/*! @decl void start()
+ *!
+ *! Start sending the input(s) to the output(s).
+ */
 static void pipe_start(INT32 args) /* force start */
 {
   low_start();
@@ -997,6 +1034,10 @@ static void pipe_start(INT32 args) /* force start */
     pop_n_elems(args-1);
 }
 
+/*! @decl int bytes_sent()
+ *!
+ *! Return the number of bytes sent.
+ */
 static void f_bytes_sent(INT32 args)
 {
   pop_n_elems(args);
@@ -1103,6 +1144,10 @@ static void pipe_close_input_callback(INT32 args)
      pop_n_elems(args-1);
 }
 
+/*! @decl string version()
+ *!
+ *! Return the version of the module.
+ */
 static void pipe_version(INT32 args)
 {
    pop_n_elems(args);
@@ -1262,6 +1307,12 @@ void f__pipe_debug(INT32 args)
   push_int(DO_NOT_WARN(sbuffers));
   f_aggregate(7);
 }
+
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
 
 PIKE_MODULE_INIT
 {
