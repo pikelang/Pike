@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.671 2008/04/19 17:04:30 grubba Exp $
+|| $Id: program.c,v 1.672 2008/04/19 18:01:14 grubba Exp $
 */
 
 #include "global.h"
@@ -7110,6 +7110,21 @@ int report_compiler_dependency(struct program *p)
   return ret;
 }
 
+/*! @module DefaultCompilationEnvironment
+ *!
+ *!   The @[CompilerEnvironment] object that is used
+ *!   for loading C-modules and by @[predef::compile()].
+ *!
+ *! @note
+ *!   @[predef::compile()] is essentially an alias for the
+ *!   @[CompilerEnvironment::compile()] in this object.
+ *!
+ *! @seealso
+ *!   @[CompilerEnvironment], @[predef::compile()]
+ */
+
+/*! @endmodule
+ */
 
 /*! @class CompilerEnviroment
  *!
@@ -7198,6 +7213,15 @@ static void f_compilation_env_report(INT32 args)
  *!
  *!   The optional arguments @[major] and @[minor] are used to tell the
  *!   compiler to attempt to be compatible with Pike @[major].@[minor].
+ *!
+ *! @note
+ *!   This function essentially performs
+ *!   @code
+ *!     program compile(mixed ... args)
+ *!     {
+ *!       return PikeCompiler(@@args)->compile();
+ *!     }
+ *!   @endcode
  *!
  *! @note
  *!   Note that @[source] must contain the complete source for a program.
