@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.672 2008/04/19 18:01:14 grubba Exp $
+|| $Id: program.c,v 1.673 2008/04/20 13:00:42 grubba Exp $
 */
 
 #include "global.h"
@@ -1628,7 +1628,7 @@ struct node_s *resolve_identifier(struct pike_string *ident)
   } else {
     push_int(0);
   }
-  if (!safe_apply_current(PC_RESOLV_FUN_NUM, 3)) {
+  if (!safe_apply_current2(PC_RESOLV_FUN_NUM, 3, NULL)) {
     if(Pike_compiler->compiler_pass==2) {
       if (throw_value.type == T_STRING) {
 	my_yyerror("%S", throw_value.u.string);
