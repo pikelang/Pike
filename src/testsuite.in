@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.801 2008/03/22 14:10:05 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.802 2008/04/20 17:45:48 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -9675,7 +9675,10 @@ test_eq(7.4::hash, hash_7_4)
 // - hash_value
 define(test_hash_value, [[
   test_true(intp(hash_value($1)))
+  dnl Make sure the value to hash has a chance at surviving the optimizer...
+  test_do(add_constant("test_value", $1))
   test_eq(hash_value($1),hash_value($1))
+  test_do(add_constant("test_value"))
 ]])
 test_hash_value(77)
 test_hash_value(5.0)
