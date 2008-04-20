@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.h,v 1.173 2008/04/14 16:33:32 grubba Exp $
+|| $Id: interpret.h,v 1.174 2008/04/20 13:00:16 grubba Exp $
 */
 
 #ifndef INTERPRET_H
@@ -804,6 +804,11 @@ static INLINE void strict_apply_svalue(struct svalue *sval, INT32 args)
   safe_apply_low(Pike_fp->current_object,			\
 		 (FUN) + Pike_fp->context->identifier_level,	\
 		 (ARGS))
+
+#define safe_apply_current2(FUN, ARGS, FUNNAME)			\
+  safe_apply_low2(Pike_fp->current_object,			\
+		  (FUN) + Pike_fp->context->identifier_level,	\
+		  (ARGS), (FUNNAME))
 
 PMOD_EXPORT extern int d_flag; /* really in main.c */
 
