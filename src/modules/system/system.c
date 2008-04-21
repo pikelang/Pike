@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.183 2007/09/12 11:16:54 grubba Exp $
+|| $Id: system.c,v 1.184 2008/04/21 09:06:54 grubba Exp $
 */
 
 /*
@@ -3038,12 +3038,12 @@ PIKE_MODULE_INIT
   ADD_EFUN("readlink", f_readlink,tFunc(tStr,tStr), OPT_EXTERNAL_DEPEND);
   ADD_FUNCTION2("readlink", f_readlink,tFunc(tStr,tStr), 0, OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_READLINK */
-#ifdef HAVE_RESOLVEPATH
+#if defined(HAVE_RESOLVEPATH) || defined(HAVE_REALPATH)
   
 /* function(string:string) */
   ADD_EFUN("resolvepath", f_resolvepath,tFunc(tStr,tStr), OPT_EXTERNAL_DEPEND);
   ADD_FUNCTION2("resolvepath", f_resolvepath,tFunc(tStr,tStr), 0, OPT_EXTERNAL_DEPEND);
-#endif /* HAVE_RESOLVEPATH */
+#endif /* HAVE_RESOLVEPATH || HAVE_REALPATH */
 
   /* function(int|void:int) */
   ADD_EFUN("umask", f_umask, tFunc(tOr(tInt,tVoid),tInt), OPT_SIDE_EFFECT);
