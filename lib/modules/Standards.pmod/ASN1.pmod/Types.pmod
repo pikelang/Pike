@@ -1,5 +1,5 @@
 //
-// $Id: Types.pmod,v 1.40 2008/01/05 14:37:59 grubba Exp $
+// $Id: Types.pmod,v 1.41 2008/04/22 09:48:19 grubba Exp $
 //
 
 //! Encodes various asn.1 objects according to the Distinguished
@@ -84,7 +84,11 @@ class Object
   string der;
 
   // Should be overridden by subclasses
-  this_program decode_primitive(string contents);
+  this_program decode_primitive(string contents,
+				function(ADT.struct,
+					 mapping(int:program(Object)):
+					 Object) decoder,
+				mapping(int:program(Object)) types);
   this_program begin_decode_constructed(string raw);
   this_program decode_constructed_element(int i, object e);
   this_program end_decode_constructed(int length);
@@ -232,7 +236,11 @@ class String
     return build_der(value);
   }
 
-  this_program decode_primitive(string contents) {
+  this_program decode_primitive(string contents,
+				function(ADT.struct,
+					 mapping(int:program(Object)):
+					 Object)|void decoder,
+				mapping(int:program(Object))|void types) {
     record_der_contents(contents);
     value = contents;
     return this;
@@ -265,18 +273,22 @@ class Boolean
   //! value of object
   int value;
 
-  this_program init(int x) { value = x; return this; }
+  this_program init(int x) {
+    value = x;
+    return this;
+  }
 
-  string der_encode() { return build_der(value ? "\377" : "\0"); }
+  string der_encode() {
+    return build_der(value ? "\377" : "\0");
+  }
 
-  this_program decode_primitive(string contents) {
-    if (sizeof(contents) != 1)
-    {
-      WERROR("asn1_boolean->decode_primitive: Bad length.\n");
-      return 0;
-    }
+  this_program decode_primitive(string contents,
+				function(ADT.struct,
+					 mapping(int:program(Object)):
+					 Object)|void decoder,
+				mapping(int:program(Object))|void types) {
     record_der_contents(contents);
-    value = contents[0];
+    value = (contents != "\0");
     return this;
   }
 
@@ -327,7 +339,11 @@ class Integer
     return build_der(s);
   }
 
-  this_object decode_primitive(string contents) {
+  this_object decode_primitive(string contents,
+				function(ADT.struct,
+					 mapping(int:program(Object)):
+					 Object)|void decoder,
+				mapping(int:program(Object))|void types) {
     record_der_contents(contents);
     value = Gmp.mpz(contents, 256);
     if (contents[0] & 0x80)  /* Negative */
@@ -367,7 +383,10 @@ class BitString
 
   int unused = 0;
 
-  this_program init(string s) { value = s; return this; }
+  this_program init(string s) {
+    value = s;
+    return this;
+  }
 
   string der_encode() {
     return build_der(sprintf("%c%s", unused, value));
@@ -398,7 +417,11 @@ class BitString
     }
   }
 
-  this_program decode_primitive(string contents) {
+  this_program decode_primitive(string contents,
+				function(ADT.struct,
+					 mapping(int:program(Object)):
+					 Object)|void decoder,
+				mapping(int:program(Object))|void types) {
     record_der_contents(contents);
     if (!sizeof(contents))
       return 0;
@@ -444,7 +467,11 @@ class Null
 
   string der_encode() { return build_der(""); }
 
-  this_program decode_primitive(string contents) {
+  this_program decode_primitive(string contents,
+				function(ADT.struct,
+					 mapping(int:program(Object)):
+					 Object)|void decoder,
+				mapping(int:program(Object))|void types) {
     record_der_contents(contents);
     return !sizeof(contents) && this;
   }
@@ -487,7 +514,11 @@ class Identifier
 			     map(id[2..], to_base_128)));
   }
 
-  this_program decode_primitive(string contents) {
+  this_program decode_primitive(string contents,
+				function(ADT.struct,
+					 mapping(int:program(Object)):
+					 Object)|void decoder,
+				mapping(int:program(Object))|void types) {
     record_der_contents(contents);
 
     if (contents[0] < 120)
@@ -550,7 +581,11 @@ class UTF8String
     return build_der(string_to_utf8(value));
   }
 
-  this_program decode_primitive(string(0..255) contents) {
+  this_program decode_primitive(string(0..255) contents,
+				function(ADT.struct,
+					 mapping(int:program(Object)):
+					 Object)|void decoder,
+				mapping(int:program(Object))|void types) {
     record_der(contents);
     if (catch {
       value = utf8_to_string(contents);
@@ -573,6 +608,20 @@ class Sequence
     array(string) a = elements->get_der();
     WERROR("ASN1.Sequence: der_encode(elements) = '%O\n", a);
     return build_der(`+("", @ a));
+  }
+
+  this_program decode_primitive(string contents,
+				function(ADT.struct,
+					 mapping(int:program(Object)):
+					 Object) decoder,
+				mapping(int:program(Object)) types) {
+    record_der(contents);
+    elements = ({});
+    ADT.struct struct = ADT.struct(contents);
+    while (!struct->is_empty()) {
+      elements += ({ decoder(struct, types) });
+    }
+    return this;
   }
 }
 
@@ -658,6 +707,12 @@ int(0..1) asn1_teletex_valid (string s)
 //!
 //! The translation is only complete for 8-bit latin 1 strings. It
 //! encodes strictly to T.61, but decodes from the superset T.51.
+//!
+//! @note
+//!   CCITT Recommendation T.61 is also known as ISO-IR 103:1985.
+//!
+//! @seealso
+//!   @[Locale.Charset]
 class TeletexString
 {
   inherit String;
@@ -1005,7 +1060,11 @@ class TeletexString
 			     [array(string)]encode_to));
   }
 
-  this_program decode_primitive (string contents) {
+  this_program decode_primitive (string contents,
+				function(ADT.struct,
+					 mapping(int:program(Object)):
+					 Object)|void decoder,
+				mapping(int:program(Object))|void types) {
     record_der (contents);
 
     array(string) parts =
@@ -1098,7 +1157,11 @@ class UniversalString
     error( "Encoding not implemented\n" );
   }
 
-  this_program decode_primitive (string contents) {
+  this_program decode_primitive (string contents,
+				function(ADT.struct,
+					 mapping(int:program(Object)):
+					 Object)|void decoder,
+				mapping(int:program(Object))|void types) {
     error( "Decoding not implemented\n" ); contents;
   }
 }
@@ -1125,7 +1188,11 @@ class BMPString
     return build_der (string_to_unicode (value));
   }
 
-  this_program decode_primitive (string(0..255) contents) {
+  this_program decode_primitive (string(0..255) contents,
+				function(ADT.struct,
+					 mapping(int:program(Object)):
+					 Object)|void decoder,
+				mapping(int:program(Object))|void types) {
     record_der (contents);
     value = unicode_to_string (contents);
     return this;
