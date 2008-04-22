@@ -1,5 +1,5 @@
 //
-// $Id: Types.pmod,v 1.41 2008/04/22 09:48:19 grubba Exp $
+// $Id: Types.pmod,v 1.42 2008/04/22 13:11:15 grubba Exp $
 //
 
 //! Encodes various asn.1 objects according to the Distinguished
@@ -709,7 +709,9 @@ int(0..1) asn1_teletex_valid (string s)
 //! encodes strictly to T.61, but decodes from the superset T.51.
 //!
 //! @note
-//!   CCITT Recommendation T.61 is also known as ISO-IR 103:1985.
+//!   CCITT Recommendation T.61 is also known as ISO-IR 103:1985
+//!   (graphic characters) and ISO-IR 106:1985 and ISO-IR 107:1985
+//!   (control characters).
 //!
 //! @seealso
 //!   @[Locale.Charset]
