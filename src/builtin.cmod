@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.195 2008/03/09 20:46:47 grubba Exp $
+|| $Id: builtin.cmod,v 1.196 2008/04/22 18:32:53 mast Exp $
 */
 
 #include "global.h"
@@ -598,12 +598,20 @@ PIKEFUN mapping(string:mixed) gc_parameters (void|mapping(string:mixed) params)
  *! @[time()], @[localtime()], @[mktime()], @[gmtime()]
  */
 PMOD_EXPORT
-PIKEFUN string ctime(int timestamp)
+PIKEFUN string ctime(longest timestamp)
   efun;
   optflags OPT_TRY_OPTIMIZE;
 {
-  time_t i=(time_t)timestamp;
-  char *s = ctime (&i);
+  time_t i;
+  char *s;
+
+#if SIZEOF_TIME_T < SIZEOF_LONGEST
+  if (tt > MAX_TIME_T || tt < MIN_TIME_T)
+    SIMPLE_ARG_ERROR ("gmtime", 1, "Timestamp outside valid range.");
+#endif
+
+  i = (time_t) timestamp;
+  s = ctime (&i);
   if (!s) Pike_error ("ctime() on this system cannot handle "
 		      "the timestamp %ld.\n", (long) i);
   RETURN make_shared_string(s);

@@ -1,6 +1,6 @@
 /* Integer types with defined sizes.
  *
- * $Id: pike_int_types.h,v 1.3 2004/12/14 15:06:47 mast Exp $
+ * $Id: pike_int_types.h,v 1.4 2008/04/22 18:32:54 mast Exp $
  *
  * Extracted from global.h 1.90
  */
@@ -107,12 +107,14 @@
 # define MAX_ULONGEST MAX_UINT64
 # define MAX_LONGEST MAX_INT64
 # define MIN_LONGEST MIN_INT64
+# define SIZEOF_LONGEST SIZEOF_INT64
 #else
 # define LONGEST INT32
 # define PRINTLONGEST ""
 # define MAX_ULONGEST MAX_UINT32
 # define MAX_LONGEST MAX_INT32
 # define MIN_LONGEST MIN_INT32
+# define SIZEOF_LONGEST 4
 #endif
 
 #if SIZEOF_TIME_T == SIZEOF_INT

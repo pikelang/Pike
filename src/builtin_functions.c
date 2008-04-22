@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.653 2008/04/18 19:56:01 grubba Exp $
+|| $Id: builtin_functions.c,v 1.654 2008/04/22 18:32:53 mast Exp $
 */
 
 #include "global.h"
@@ -5047,12 +5047,17 @@ PMOD_EXPORT void f_gmtime(INT32 args)
   struct tm tm_s;
 #endif
   struct tm *tm;
-  INT_TYPE tt;
+  LONGEST tt;
   time_t t;
 
-  get_all_args("gmtime", args, "%i", &tt);
+  get_all_args("gmtime", args, "%l", &tt);
 
-  t = tt;
+#if SIZEOF_TIME_T < SIZEOF_LONGEST
+  if (tt > MAX_TIME_T || tt < MIN_TIME_T)
+    SIMPLE_ARG_ERROR ("gmtime", 1, "Timestamp outside valid range.");
+#endif
+  t = (time_t) tt;
+
 #ifdef HAVE_GMTIME_R
   tm = gmtime_r (&t, &tm_s);
 #elif defined (HAVE_GMTIME_S)
@@ -5115,12 +5120,17 @@ PMOD_EXPORT void f_gmtime(INT32 args)
 PMOD_EXPORT void f_localtime(INT32 args)
 {
   struct tm *tm;
-  INT_TYPE tt;
+  LONGEST tt;
   time_t t;
 
-  get_all_args("localtime", args, "%i", &tt);
+  get_all_args("localtime", args, "%l", &tt);
 
-  t = tt;
+#if SIZEOF_TIME_T < SIZEOF_LONGEST
+  if (tt > MAX_TIME_T || tt < MIN_TIME_T)
+    SIMPLE_ARG_ERROR ("gmtime", 1, "Timestamp outside valid range.");
+#endif
+  t = (time_t) tt;
+
   tm = localtime(&t);
   if (!tm) Pike_error ("localtime() on this system cannot handle "
 		       "the timestamp %ld.\n", (long) t);
