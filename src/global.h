@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: global.h,v 1.80 2005/03/18 21:38:18 grubba Exp $
+|| $Id: global.h,v 1.81 2008/04/22 18:17:55 mast Exp $
 */
 
 #ifndef GLOBAL_H
@@ -162,14 +162,13 @@ void *alloca();
 
 #if SIZEOF_LONG >= 8
 #define INT64 long
-#else
-#if SIZEOF___INT64 - 0 >= 8
+#define SIZEOF_INT64 SIZEOF_LONG
+#elif SIZEOF___INT64 - 0 >= 8
 #define INT64 __int64
-#else
-#if SIZEOF_LONG_LONG - 0 >= 8
+#define SIZEOF_INT64 SIZEOF___INT64
+#elif SIZEOF_LONG_LONG - 0 >= 8
 #define INT64 long long
-#endif
-#endif
+#define SIZEOF_INT64 SIZEOF_LONG_LONG
 #endif
 
 #if SIZEOF_SHORT >= 4
@@ -237,8 +236,10 @@ void *alloca();
 
 #ifdef INT64
 #define LONGEST INT64
+#define SIZEOF_LONGEST SIZEOF_INT64
 #else
 #define LONGEST INT32
+#define SIZEOF_LONGEST 4
 #endif
 
 #define SIZE_T unsigned INT32

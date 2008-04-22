@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.108 2004/03/12 21:58:28 mast Exp $
+|| $Id: builtin.cmod,v 1.109 2008/04/22 18:17:55 mast Exp $
 */
 
 #include "global.h"
@@ -372,12 +372,38 @@ PIKEFUN int trace(int level, void|string facility)
  *! @seealso
  *! @[time()], @[localtime()], @[mktime()], @[gmtime()]
  */
-PIKEFUN string ctime(int timestamp)
+PIKEFUN string ctime(int|object timestamp)
   efun;
   optflags OPT_TRY_OPTIMIZE;
 {
-  time_t i=(time_t)timestamp;
-  char *s = ctime (&i);
+  LONGEST tt;
+  time_t i;
+  char *s;
+
+  if (timestamp->type != PIKE_T_INT
+#ifdef AUTO_BIGNUM
+      && !is_bignum_object_in_svalue (timestamp)
+#endif
+     ) SIMPLE_BAD_ARG_ERROR ("ctime", 1, "int");
+#ifdef AUTO_BIGNUM
+  if (timestamp->type == PIKE_T_INT)
+    tt = Pike_sp[0-1].u.integer;
+  else
+#if SIZEOF_LONGEST > SIZEOF_INT_TYPE
+    if (!int64_from_bignum (&tt, Pike_sp[0-1].u.object))
+#endif
+      Pike_error ("ctime(): Integer too large.\n");
+#else
+  tt = Pike_sp[0-1].u.integer;
+#endif
+
+#if SIZEOF_TIME_T < SIZEOF_LONGEST
+  if ((time_t) tt != tt)
+    Pike_error ("ctime(): Timestamp outside valid range.");
+#endif
+  i = (time_t) tt;
+
+  s = ctime (&i);
   if (!s) Pike_error ("ctime() on this system cannot handle "
 		      "the timestamp %ld.\n", (long) i);
   RETURN make_shared_string(s);
