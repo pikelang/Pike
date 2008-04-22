@@ -70,6 +70,12 @@ constant precompile_api_version = "2";
  *
  * The corresponding cleanup code will be inserted instead of the word EXIT.
  *
+ * Magic types in function argument lists:
+ *   bignum    A native int or bignum object. The C storage type is
+ *             struct svalue.
+ *   longest   A native int or bignum object which is range checked and stored
+ *             in a LONGEST.
+ *
  * Currently, the following attributes are understood:
  *   efun;          makes this function a global constant (no value)
  *   flags;         ID_STATIC | ID_NOMASK etc.
@@ -251,6 +257,8 @@ int parse_type(array t, int p)
 	  case "multiset":
 	  case "int":
 	    if(arrayp(t[p])) p++;
+	  case "bignum":
+	  case "longest":
 	  case "string":
 	  case "float":
 	    break;
@@ -396,7 +404,14 @@ class PikeType
 	case "6":
 	case "7":
 	case "8":
-	case "9": return "mixed";
+	case "9":
+	case "bignum":
+	  return "mixed";
+
+	  // FIXME: Guess the special "longest" type ought to be
+	  // "CTYPE LONGEST" instead, but the CTYPE stuff seems to be
+	  // broken and I don't want to dig into it.. /mast
+	case "longest": return "LONGEST";
 
       case "int":
       case "float":
@@ -415,6 +430,20 @@ class PikeType
 	default: return "object";
       }
     }
+
+  string realtype()
+  /* Similar to basetype, but returns the source description if the
+   * base type. */
+  {
+    string ts = (string) t;
+    switch (ts) {
+      case "bignum":
+      case "longest":
+	return ts;
+      default:
+	return basetype();
+    }
+  }
 
   /* Return an array of all possible basetypes for this type
    */
@@ -478,6 +507,10 @@ class PikeType
       case "void":
 	return ({ ret });
 
+	case "bignum":
+	case "longest":
+	  return ({"int", "object"});
+
 	default:  return ({ "object" });
       }
     }
@@ -518,7 +551,7 @@ class PikeType
 
   string c_storage_type(int|void is_struct_entry)
     {
-      string btype = /*may_be_void() ? "mixed" : */basetype();
+      string btype = /*may_be_void() ? "mixed" : */realtype();
       switch (btype)
       {
 	case "void": return "void";
@@ -537,11 +570,16 @@ class PikeType
 	  
 	case "function":
 	case "mixed":
+	case "bignum":
 	  if (is_struct_entry) {
 	    return "struct svalue";
 	  } else {
 	    return "struct svalue *";
 	  }
+
+	case "longest":
+	  return "LONGEST";
+
 	default:
 	  werror("Unknown type %s\n",btype);
 	  exit(1);
@@ -628,6 +666,10 @@ class PikeType
 				   (int)(string)(args[0]->t),
 				   (int)(string)(args[1]->t)));
 
+	case "bignum":
+	case "longest":
+	  return "tInt";
+
 	case "object":  return "tObj";
 	default:
 	  return sprintf("tName(%O, tObjImpl_%s)",
@@ -693,6 +735,10 @@ class PikeType
 		      args[1]->t ==  "2147483647" ? "" : args[1]->t);
 	  if(ret=="int(..)") return "int";
 	  return ret;
+
+	case "bignum":
+	case "longest":
+	  return "int";
 
 	default:
 	  return ret;
@@ -921,6 +967,7 @@ class Argument
   int _line;
   string _file;
   string _typename;
+  string _realtype;
 
   int is_c_type() { return _is_c_type; }
   int may_be_void() { return type()->may_be_void(); }
@@ -933,6 +980,12 @@ class Argument
       if(_basetype) return _basetype;
       return _basetype = type()->basetype();
     }
+
+  string realtype()
+  {
+    if (_realtype) return _realtype;
+    return _realtype = type()->realtype();
+  }
 
   string c_type()
     {
@@ -1996,6 +2049,7 @@ class ParseBlock
 	      }
 	    }
 
+	  check_arg: {
 	    if(arg->is_c_type() && arg->basetype() == "string")
 	    {
 	      /* Special case for 'char *' */
@@ -2009,7 +2063,7 @@ class ParseBlock
 	      });
 	    } else {
 
-	      switch(arg->basetype())
+	      switch(arg->realtype())
 	      {
 	      default:
 		ret+=({
@@ -2029,21 +2083,40 @@ class ParseBlock
 		});
 		break;
 
+	      case "longest":
+	      case "bignum":
+		// Note that for "longest" we always accept a bignum
+		// object, even if LONGEST isn't longer than INT_TYPE.
+		// That way we get a more natural error below if the
+		// bignum is too large (i.e. "Integer too large"
+		// instead of "Expected int, got object").
+		ret += ({
+		  PC.Token (
+		    sprintf ("if (Pike_sp[%d%s].type != PIKE_T_INT",
+			     argnum, check_argbase),
+		    arg->line()),
+		  "\n#ifdef AUTO_BIGNUM\n",
+		  PC.Token (
+		    sprintf ("  && !is_bignum_object_in_svalue (Pike_sp%+d%s)",
+			     argnum, check_argbase),
+		    arg->line()),
+		  "\n#endif\n",
+		  PC.Token (")", arg->line()),
+		});
+		break;
+
 	      case "mixed":
+		break check_arg;
 	      }
 	    }
-	    switch(arg->basetype())
-	    {
-	    default:
-	      ret+=({
-		PC.Token(sprintf(" SIMPLE_BAD_ARG_ERROR(%O,%d%s,%O);\n",
-				 attributes->errname || attributes->name || name,
-				 argnum+1,
-				 (argnum == repeat_arg)?"+argcnt":"",
-				 arg->typename()),arg->line()),
-	      });
 
-	    case "mixed":
+	    ret+=({
+	      PC.Token(sprintf(" SIMPLE_ARG_TYPE_ERROR(%O,%d%s,%O);\n",
+			       attributes->errname || attributes->name || name,
+			       argnum+1,
+			       (argnum == repeat_arg)?"+argcnt":"",
+			       arg->typename()),arg->line()),
+	    });
 	    }
 
 	    if (argnum == repeat_arg) {
@@ -2085,6 +2158,40 @@ class ParseBlock
 
 		case "struct program *":
 		  // Program arguments are assigned directly in the check above.
+		  break;
+
+		case "LONGEST":
+		  ret += ({
+		    "\n#ifdef AUTO_BIGNUM\n",
+		    PC.Token (
+		      sprintf ("if (Pike_sp[%d%s].type == PIKE_T_INT)\n",
+			       argnum, argbase),
+		      arg->line()),
+		    PC.Token (
+		      sprintf (" %s = Pike_sp[%d%s].u.integer;\n",
+			       arg->name(), argnum, argbase),
+		      arg->line()),
+		    PC.Token ("else", arg->line()),
+		    "\n#if SIZEOF_LONGEST > SIZEOF_INT_TYPE\n",
+		    PC.Token (
+		      sprintf ("if (!int64_from_bignum (&(%s), "
+			       "Pike_sp[%d%s].u.object))\n",
+			       arg->name(), argnum, argbase),
+		      arg->line()),
+		    "\n#endif\n",
+		    PC.Token (
+		      sprintf (" SIMPLE_ARG_ERROR (%O, %d,"
+			       " \"Integer too large.\");\n",
+			       attributes->errname || attributes->name || name,
+			       argnum+1),
+		      arg->line()),
+		    "\n#else\n",
+		    PC.Token (
+		      sprintf ("%s = Pike_sp[%d%s].u.integer;\n",
+			       arg->name(), argnum, argbase),
+		      arg->line()),
+		    "\n#endif\n",
+		  });
 		  break;
 
 		default:
