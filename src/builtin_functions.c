@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.482 2008/04/23 07:37:03 mast Exp $
+|| $Id: builtin_functions.c,v 1.483 2008/04/23 11:16:55 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.482 2008/04/23 07:37:03 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.483 2008/04/23 11:16:55 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -4175,7 +4175,7 @@ PMOD_EXPORT void f_gmtime(INT32 args)
 
 #if SIZEOF_TIME_T < SIZEOF_LONGEST
   if ((time_t) tt != tt)
-    SIMPLE_ARG_ERROR ("gmtime", 1, "Timestamp outside valid range.");
+    SIMPLE_BAD_ARG_ERROR ("gmtime", 1, "int.");
 #endif
   t = (time_t) tt;
 
@@ -4241,7 +4241,7 @@ PMOD_EXPORT void f_localtime(INT32 args)
 
 #if SIZEOF_TIME_T < SIZEOF_LONGEST
   if ((time_t) tt != tt)
-    SIMPLE_ARG_ERROR ("localtime", 1, "Timestamp outside valid range.");
+    SIMPLE_BAD_ARG_ERROR ("localtime", 1, "int");
 #endif
   t = (time_t) tt;
 
