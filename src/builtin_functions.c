@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.654 2008/04/22 18:32:53 mast Exp $
+|| $Id: builtin_functions.c,v 1.655 2008/04/23 07:37:04 mast Exp $
 */
 
 #include "global.h"
@@ -5127,7 +5127,7 @@ PMOD_EXPORT void f_localtime(INT32 args)
 
 #if SIZEOF_TIME_T < SIZEOF_LONGEST
   if (tt > MAX_TIME_T || tt < MIN_TIME_T)
-    SIMPLE_ARG_ERROR ("gmtime", 1, "Timestamp outside valid range.");
+    SIMPLE_ARG_ERROR ("localtime", 1, "Timestamp outside valid range.");
 #endif
   t = (time_t) tt;
 
