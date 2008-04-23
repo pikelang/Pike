@@ -1,5 +1,5 @@
 START_MARKER
-dnl $Id: testsuite.in,v 1.17 2008/03/29 21:03:21 nilsson Exp $
+dnl $Id: testsuite.in,v 1.18 2008/04/23 00:13:43 nilsson Exp $
 
 dnl NOTE:
 dnl   *every* time the Calendar tests have failed, it's not the 
@@ -53,7 +53,15 @@ test_false( Calendar.parse("%Y w%W %e %h:%m %p %z","1913 w4 monday 2:14 pm CET")
   < Calendar.set_timezone("CET")->Minute(1913,1,20,14,14) )
 test_false( Calendar.parse("%Y w%W %e %h:%m %p %z","1913 w4 monday 2:14 pm CET")
   > Calendar.set_timezone("CET")->Minute(1913,1,20,14,14) )
-dnl The two objects above is not equal, which really is a bug.
+dnl The two objects above are not equal, which really is a bug.
+
+dnl Bug 1884
+test_equal( Calendar.ISO.parse("%dT%h:%m:%s", "19980717T14:08:55")->set_timezone("UTC"),
+            Calendar.ISO.parse("%dT%h:%m:%s", "19980717T14:08:55")->set_timezone("UTC") )
+test_equal( Calendar.ISO.set_timezone("UTC")->parse("%dT%h:%m:%s", "19980717T14:08:55"),
+            Calendar.ISO.set_timezone("UTC")->parse("%dT%h:%m:%s", "19980717T14:08:55") )
+
+
 
 
 dnl From verify.pike
