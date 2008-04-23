@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.196 2008/04/22 18:32:53 mast Exp $
+|| $Id: builtin.cmod,v 1.197 2008/04/23 00:14:04 nilsson Exp $
 */
 
 #include "global.h"
@@ -606,7 +606,7 @@ PIKEFUN string ctime(longest timestamp)
   char *s;
 
 #if SIZEOF_TIME_T < SIZEOF_LONGEST
-  if (tt > MAX_TIME_T || tt < MIN_TIME_T)
+  if (timestamp > MAX_TIME_T || timestamp < MIN_TIME_T)
     SIMPLE_ARG_ERROR ("gmtime", 1, "Timestamp outside valid range.");
 #endif
 
