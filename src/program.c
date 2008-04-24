@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.673 2008/04/20 13:00:42 grubba Exp $
+|| $Id: program.c,v 1.674 2008/04/24 16:03:54 grubba Exp $
 */
 
 #include "global.h"
@@ -3052,6 +3052,15 @@ void dump_program_tables (struct program *p, int indent)
 	    d, get_name_of_type (c->sval.type),
 	    c->offset);
 #endif /* 0 */
+  }
+
+  fprintf(stderr, "\n"
+	  "%*sString table:\n"
+	  "%*s  ####: Value\n",
+	  indent, "", indent, "");
+  for (d = 0; d < p->num_strings; d++) {
+    fprintf(stderr, "%*s  %4d: [%p]\"%s\"(%d characters)\n",
+	    indent, "", (int)d, p->strings[d], p->strings[d]->str, p->strings[d]->len);
   }
 
   fprintf(stderr, "\n"
@@ -7260,7 +7269,6 @@ static void f_compilation_env_resolv(INT32 args)
 
   if(get_master())
   {
-    struct compilation *c = THIS_COMPILATION;
     DECLARE_CYCLIC();
     if(BEGIN_CYCLIC(ident, filename))
     {
@@ -7271,6 +7279,57 @@ static void f_compilation_env_resolv(INT32 args)
       APPLY_MASTER("resolv", args);
     }
     END_CYCLIC();
+  } else {
+    pop_n_elems(args);
+    push_undefined();
+  }
+}
+
+/*! @decl object get_compilation_handler(int major, int minor)
+ *!
+ *!   Get compatibility handler for Pike @[major].@[minor].
+ *!
+ *! @note
+ *!   This function is typically called by
+ *!   @[PikeCompiler()->get_compilation_handler()].
+ */
+static void f_compilation_env_get_compilation_handler(INT32 args)
+{
+  if(get_master())
+  {
+    APPLY_MASTER("get_compilation_handler", args);
+  } else {
+    pop_n_elems(args);
+    push_undefined();
+  }
+}
+
+/*! @decl mapping(string:mixed)|object get_default_module()
+ *!
+ *!   Get the default module for the current compatibility level
+ *!   (ie typically the value returned by @[predef::all_constants()]).
+ *!
+ *!   The default implementation calls the corresponding function
+ *!   in the master object.
+ *!
+ *! @returns
+ *!   @mixed
+ *!     @type mapping(string:mixed)|object
+ *!       Constant table to use.
+ *!
+ *!     @type int(0..0)
+ *!       Use the builtin constant table.
+ *!   @endmixed
+ *!
+ *! @note
+ *!   This function is typically called by 
+ *!   @[Pike_compiler()->get_default_module()].
+ */
+static void f_compilation_env_get_default_module(INT32 args)
+{
+  if(get_master())
+  {
+    APPLY_MASTER("get_default_module", args);
   } else {
     pop_n_elems(args);
     push_undefined();
@@ -7718,8 +7777,10 @@ static void compilation_event_handler(int e)
     c->supporter.self = Pike_fp->current_object; /* NOTE: Not ref-counted! */
     c->compilation_inherit =
       Pike_fp->context - Pike_fp->current_object->prog->inherits;
-    c->default_module.type = T_INT;
-    c->default_module.subtype = NUMBER_NUMBER;
+    add_ref(c->default_module.u.mapping = get_builtin_constants());
+    c->default_module.type = T_MAPPING;
+    c->major = -1;
+    c->minor = -1;
     c->lex.current_line = 1;
     c->lex.current_file = make_shared_string("-");
     break;
@@ -7804,7 +7865,7 @@ static void f_compilation_report(INT32 args)
  *!                   int|void major, int|void minor,@
  *!                   program|void target, object|void placeholder)
  *!
- *!   Create a Pike compiler object for a source string.
+ *!   Create a PikeCompiler object for a source string.
  *!
  *!   This function takes a piece of Pike code as a string and
  *!   initializes a compiler object accordingly.
@@ -7878,34 +7939,16 @@ static void f_compilation_create(INT32 args)
   if (c->handler) free_object(c->handler);
   if ((c->handler=ahandler)) add_ref(ahandler);
 
-  c->major=amajor;
-  c->minor=aminor;
-
   if (c->target) free_program(c->target);
   if ((c->target=atarget)) add_ref(atarget);
 
   if (c->placeholder) free_object(c->placeholder);
   if ((c->placeholder=aplaceholder)) add_ref(aplaceholder);
 
-  if (c->handler)
-  {
-    if (safe_apply_handler ("get_default_module", c->handler, NULL,
-			    0, BIT_MAPPING|BIT_OBJECT|BIT_ZERO)) {
-      if(SAFE_IS_ZERO(Pike_sp-1))
-      {
-	pop_stack();
-	ref_push_mapping(get_builtin_constants());
-      }
-    } else {
-      ref_push_mapping(get_builtin_constants());
-    }
-  }else{
-    ref_push_mapping(get_builtin_constants());
-  }
-  free_svalue(& c->default_module);
-  c->default_module=Pike_sp[-1];
-  dmalloc_touch_svalue(Pike_sp-1);
-  Pike_sp--;
+  push_int(amajor?amajor:-1);
+  push_int(aminor?aminor:-1);
+  apply_current(PC_CHANGE_COMPILER_COMPATIBILITY_FUN_NUM, 2);
+  pop_stack();
   STACK_LEVEL_DONE(args);
   pop_n_elems(args);
   push_int(0);
@@ -8056,6 +8099,207 @@ static void f_compilation_resolv(INT32 args)
   }
 }
 
+/*! @decl object get_compilation_handler(int major, int minor)
+ *!
+ *!   Get compatibility handler for Pike @[major].@[minor].
+ *!
+ *! @note
+ *!   This function is called by @[change_compiler_compatibility()].
+ */
+static void f_compilation_get_compilation_handler(INT32 args)
+{
+  struct compilation *c = THIS_COMPILATION;
+  struct object *handler;
+  int fun = -1;
+
+  if (((handler = c->handler) && handler->prog &&
+       ((fun = find_identifier("get_compilation_handler", handler->prog)) != -1)) ||
+      ((handler = c->compat_handler) && handler->prog &&
+       ((fun = find_identifier("get_compilation_handler", handler->prog)) != -1))) {
+    apply_low(handler, fun, args);
+  } else {
+    apply_external(1, CE_GET_COMPILATION_HANDLER_FUN_NUM, args);
+  }
+}
+
+/*! @decl mapping(string:mixed)|object get_default_module()
+ *!
+ *!   Get the default module for the current compatibility level
+ *!   (ie typically the value returned by @[predef::all_constants()]).
+ *!
+ *!   The default implementation calls the corresponding function
+ *!   in the current handler, the current compatibility handler
+ *!   or in the parent @[CompilationEnvironment] in that order.
+ *!
+ *! @returns
+ *!   @mixed
+ *!     @type mapping(string:mixed)|object
+ *!       Constant table to use.
+ *!
+ *!     @type int(0..0)
+ *!       Use the builtin constant table.
+ *!   @endmixed
+ *!
+ *! @note
+ *!   This function is called by @[change_compiler_compatibility()].
+ */
+static void f_compilation_get_default_module(INT32 args)
+{
+  struct compilation *c = THIS_COMPILATION;
+  struct object *handler;
+  int fun = -1;
+
+  if (((handler = c->handler) && handler->prog &&
+       ((fun = find_identifier("get_default_module", handler->prog)) != -1)) ||
+      ((handler = c->compat_handler) && handler->prog &&
+       ((fun = find_identifier("get_default_module", handler->prog)) != -1))) {
+    apply_low(handler, fun, args);
+  } else {
+    apply_external(1, CE_GET_DEFAULT_MODULE_FUN_NUM, args);
+  }
+}
+
+/*! @decl void change_compiler_compatibility(int major, int minor)
+ *!
+ *!   Change compiler to attempt to be compatible with Pike @[major].@[minor].
+ */
+static void f_compilation_change_compiler_compatibility(INT32 args)
+{
+  struct compilation *c = THIS_COMPILATION;
+  int major = -1;
+  int minor = -1;
+
+  STACK_LEVEL_START(args);
+
+  get_all_args("change_compiler_compatibility", args, "%d%d",
+	       &major, &minor);
+
+  if ((major == -1) && (minor == -1)) {
+    major = PIKE_MAJOR_VERSION;
+    minor = PIKE_MINOR_VERSION;
+  }
+
+  if ((major == Pike_compiler->compat_major) &&
+      (minor == Pike_compiler->compat_minor)) {
+    /* Optimization: Already at this compat level. */
+    pop_n_elems(args);
+    push_int(0);
+    return;
+  }
+
+  Pike_compiler->compat_major=major;
+  Pike_compiler->compat_minor=minor;
+
+  /* Optimization: The up to date compiler shouldn't need a compat handler. */
+  if((major != PIKE_MAJOR_VERSION) || (minor != PIKE_MINOR_VERSION))
+  {
+    apply_current(PC_GET_COMPILATION_HANDLER_FUN_NUM, args);
+
+    if((Pike_sp[-1].type == T_OBJECT) && (Pike_sp[-1].u.object->prog))
+    {
+      if (Pike_sp[-1].subtype) {
+	/* FIXME: */
+	Pike_error("Subtyped compat handlers are not supported yet.\n");
+      }
+      if (c->compat_handler == Pike_sp[-1].u.object) {
+	/* Still at the same compat level. */
+	pop_stack();
+	push_int(0);
+	return;
+      } else {
+	if(c->compat_handler) free_object(c->compat_handler);
+	c->compat_handler = Pike_sp[-1].u.object;
+	dmalloc_touch_svalue(Pike_sp-1);
+	Pike_sp--;
+      }
+    } else {
+      pop_stack();
+      if(c->compat_handler) {
+	free_object(c->compat_handler);
+	c->compat_handler = NULL;
+      } else {
+	/* No change in compat handler. */
+	push_int(0);
+	return;
+      }
+    }
+  } else {
+    pop_n_elems(args);
+    if (c->compat_handler) {
+      free_object(c->compat_handler);
+      c->compat_handler = NULL;    
+    } else {
+      /* No change in compat handler. */
+      push_int(0);
+      return;
+    }
+  }
+
+  STACK_LEVEL_CHECK(0);
+
+  Pike_fp->args = 0;	/* Clean up the stack frame. */
+
+  apply_current(PC_GET_DEFAULT_MODULE_FUN_NUM, 0);
+  
+  if(Pike_sp[-1].type == T_INT)
+  {
+    pop_stack();
+    ref_push_mapping(get_builtin_constants());
+  }
+
+  STACK_LEVEL_CHECK(1);
+
+  assign_svalue(&c->default_module, Pike_sp-1);
+
+  /* Replace the implicit import of all_constants() with
+   * the new value.
+   */
+  if(Pike_compiler->num_used_modules)
+  {
+    free_svalue( (struct svalue *)used_modules.s.str );
+    ((struct svalue *)used_modules.s.str)[0]=sp[-1];
+    sp--;
+    dmalloc_touch_svalue(sp);
+    if(Pike_compiler->module_index_cache)
+    {
+      free_mapping(Pike_compiler->module_index_cache);
+      Pike_compiler->module_index_cache=0;
+    }
+  }else{
+    use_module(sp-1);
+    pop_stack();
+  }
+
+  STACK_LEVEL_DONE(0);
+  push_int(0);
+}
+
+static void f_compilation__sprintf(INT32 args)
+{
+  struct compilation *c = THIS_COMPILATION;
+  struct string_builder buf;
+  init_string_builder_alloc(&buf, 50, 0);
+  string_builder_strcat(&buf, "PikeCompiler(");
+  if (c->prog) {
+    string_builder_strcat(&buf, "\"\", ");
+  } else {
+    string_builder_strcat(&buf, "UNDEFINED, ");
+  }
+  if (c->handler) {
+    ref_push_object(c->handler);
+    string_builder_sprintf(&buf, "%O, ", Pike_sp-1);
+    pop_stack();
+  } else {
+    string_builder_strcat(&buf, "UNDEFINED, ");
+  }
+  string_builder_sprintf(&buf, "%d, %d, %s, %s)",
+			 c->major, c->minor,
+			 c->target?"target":"UNDEFINED",
+			 c->placeholder?"placeholder":"UNDEFINED");
+  pop_n_elems(args);
+  push_string(finish_string_builder(&buf));
+}
+
 /* Fake being called via PikeCompiler()->compile()
  *
  * This function is used to set up the environment for
@@ -8161,9 +8405,6 @@ static void program_state_event_handler(int event)
     break;
   }
 #endif /* 0 */
-
-  fprintf(stderr, "program_state_event_handler(%d) obj:%p prog:%p\n",
-	  event, Pike_fp->current_object, Pike_fp->current_program);
 }
 
 /*! @endclass
@@ -8287,7 +8528,22 @@ static void compile_compiler(void)
   ADD_FUNCTION("create", f_compilation_create,
 	       tFunc(tOr(tStr, tVoid) tOr(tObj, tVoid)
 		     tOr(tInt, tVoid) tOr(tInt, tVoid)
-		     tOr(tPrg(tObj), tVoid) tOr(tObj, tVoid), tVoid), 0);
+		     tOr(tPrg(tObj), tVoid) tOr(tObj, tVoid), tVoid),
+	       ID_STATIC);
+
+  ADD_FUNCTION("get_compilation_handler",
+	       f_compilation_get_compilation_handler,
+	       tFunc(tInt tInt, tObj), 0);
+  
+  ADD_FUNCTION("get_default_module", f_compilation_get_default_module,
+	       tFunc(tNone, tOr(tMap(tStr, tMix), tObj)), 0);
+
+  ADD_FUNCTION("change_compiler_compatibility",
+	       f_compilation_change_compiler_compatibility,
+	       tFunc(tInt tInt, tVoid), 0);
+
+  ADD_FUNCTION("_sprintf", f_compilation__sprintf,
+	       tFunc(tInt tOr(tMap(tStr, tMix), tVoid), tStr), ID_STATIC);
 
   start_new_program();
 
@@ -8329,6 +8585,14 @@ static void compile_compiler(void)
    * so we need to repair the frame pointer.
    */
   Pike_fp->context = compilation_program->inherits;
+
+  ADD_FUNCTION("get_compilation_handler",
+	       f_compilation_env_get_compilation_handler,
+	       tFunc(tInt tInt, tObj), 0);
+  
+  ADD_FUNCTION("get_default_module",
+	       f_compilation_env_get_default_module,
+	       tFunc(tNone, tOr(tMap(tStr, tMix), tObj)), 0);
 
   {
     struct pike_string *type_name;
@@ -9759,86 +10023,14 @@ PMOD_EXPORT void *parent_storage(int depth)
 
 PMOD_EXPORT void change_compiler_compatibility(int major, int minor)
 {
-  struct compilation *c = THIS_COMPILATION;
-
   CHECK_COMPILER();
 
-  STACK_LEVEL_START(0);
+  push_int(major);
+  push_int(minor);
 
-  if(major == PIKE_MAJOR_VERSION && minor == PIKE_MINOR_VERSION)
-  {
-    push_int(0); /* optimization */
-  } else {
-    if(major == Pike_compiler->compat_major &&
-       minor == Pike_compiler->compat_minor) {
-      /* Optimization -- reuse the current compat handler. */
-      if (c->compat_handler) {
-	ref_push_object(c->compat_handler);
-      } else {
-	push_int(0);
-      }
-    } else {
-      push_int(major);
-      push_int(minor);
-      SAFE_APPLY_MASTER("get_compilation_handler",2);
-    }
-  }
-
-  STACK_LEVEL_CHECK(1);
-
-  if(c->compat_handler)
-  {
-    free_object(c->compat_handler);
-    c->compat_handler = NULL;
-  }
-  
-  if((Pike_sp[-1].type == T_OBJECT) && (Pike_sp[-1].u.object->prog))
-  {
-    if (Pike_sp[-1].subtype) {
-      /* FIXME: */
-      Pike_error("Subtyped compat handlers are not supported yet.\n");
-    }
-    c->compat_handler = dmalloc_touch(struct object *, Pike_sp[-1].u.object);
-    dmalloc_touch_svalue(Pike_sp-1);
-    Pike_sp--;
-  } else {
-    pop_stack();
-  }
-
-  if (safe_apply_handler ("get_default_module",
-			  c->handler, c->compat_handler,
-			  0, BIT_MAPPING|BIT_OBJECT|BIT_ZERO)) {
-    if(Pike_sp[-1].type == T_INT)
-    {
-      pop_stack();
-      ref_push_mapping(get_builtin_constants());
-    }
-  } else {
-    ref_push_mapping(get_builtin_constants());
-  }
-
-  STACK_LEVEL_CHECK(1);
-
-  if(Pike_compiler->num_used_modules)
-  {
-    free_svalue( (struct svalue *)used_modules.s.str );
-    ((struct svalue *)used_modules.s.str)[0]=sp[-1];
-    sp--;
-    dmalloc_touch_svalue(sp);
-    if(Pike_compiler->module_index_cache)
-    {
-      free_mapping(Pike_compiler->module_index_cache);
-      Pike_compiler->module_index_cache=0;
-    }
-  }else{
-    use_module(sp-1);
-    pop_stack();
-  }
-
-  Pike_compiler->compat_major=major;
-  Pike_compiler->compat_minor=minor;
-
-  STACK_LEVEL_DONE(0);
+  safe_apply_current2(PC_CHANGE_COMPILER_COMPATIBILITY_FUN_NUM, 2,
+		      "change_compiler_compatibility");
+  pop_stack();
 }
 
 #ifdef PIKE_USE_MACHINE_CODE
