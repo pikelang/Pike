@@ -1,5 +1,5 @@
 //
-// $Id: Decode.pmod,v 1.20 2007/12/27 21:48:52 nilsson Exp $
+// $Id: Decode.pmod,v 1.21 2008/04/25 13:48:36 grubba Exp $
 //
 
 #pike __REAL_VERSION__
@@ -174,7 +174,7 @@ class Constructed
   werror("Decoding Primitive\n");
 #endif
   // Primitive encoding
-  return p ? p()->decode_primitive(contents)
+  return p ? p()->decode_primitive(contents, this_object(), types)
     : Primitive(tag, contents);
 }
 
