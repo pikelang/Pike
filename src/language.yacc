@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.414 2008/04/18 19:57:13 grubba Exp $
+|| $Id: language.yacc,v 1.415 2008/04/25 13:04:15 grubba Exp $
 */
 
 %pure_parser
@@ -3833,14 +3833,15 @@ low_idents: TOK_IDENTIFIER
   }
   | TOK_PREDEF TOK_COLON_COLON TOK_IDENTIFIER
   {
+    struct compilation *c = THIS_COMPILATION;
     node *tmp2;
-    extern dynamic_buffer used_modules;
 
-    if(Pike_compiler->last_identifier) free_string(Pike_compiler->last_identifier);
+    if(Pike_compiler->last_identifier)
+      free_string(Pike_compiler->last_identifier);
     copy_shared_string(Pike_compiler->last_identifier, $3->u.sval.u.string);
 
-    tmp2=mkconstantsvaluenode((struct svalue *) used_modules.s.str );
-    $$=index_node(tmp2, "predef", $3->u.sval.u.string);
+    tmp2 = mkconstantsvaluenode(&c->default_module);
+    $$ = index_node(tmp2, "predef", $3->u.sval.u.string);
     if(!$$->name)
       add_ref( $$->name=$3->u.sval.u.string );
     free_node(tmp2);
@@ -3852,10 +3853,9 @@ low_idents: TOK_IDENTIFIER
   }
   | TOK_VERSION TOK_COLON_COLON TOK_IDENTIFIER
   {
+    struct compilation *c = THIS_COMPILATION;
     int old_major = Pike_compiler->compat_major;
     int old_minor = Pike_compiler->compat_minor;
-    extern dynamic_buffer used_modules;
-    struct svalue *predef = (struct svalue *)used_modules.s.str;
     struct svalue *efun = NULL;
 
     change_compiler_compatibility($1->u.integer.a, $1->u.integer.b);
@@ -3865,9 +3865,9 @@ low_idents: TOK_IDENTIFIER
     copy_shared_string(Pike_compiler->last_identifier, $3->u.sval.u.string);
 
     /* Check predef:: first, and then the modules. */
-    if (Pike_compiler->num_used_modules &&
-	(predef->type == T_MAPPING) &&
-	(efun = low_mapping_lookup(predef->u.mapping, &($3->u.sval)))) {
+    if ((c->default_module.type == T_MAPPING) &&
+	(efun = low_mapping_lookup(c->default_module.u.mapping,
+				   &($3->u.sval)))) {
       $$ = mkconstantsvaluenode(efun);
     } else if (!($$ = resolve_identifier(Pike_compiler->last_identifier))) {
       if((Pike_compiler->flags & COMPILATION_FORCE_RESOLVE) ||
@@ -4443,7 +4443,12 @@ int low_add_local_name(struct compiler_frame *frame,
     copy_shared_string(frame->variable[var].file,
 		       THIS_COMPILATION->lex.current_file);
 
-    frame->variable[var].flags = 0;
+    if (pike_types_le(void_type_string, type)) {
+      /* Don't warn about unused voidable variables. */
+      frame->variable[var].flags = LOCAL_VAR_IS_USED;
+    } else {
+      frame->variable[var].flags = 0;
+    }
 
     frame->current_number_of_locals++;
     if(frame->current_number_of_locals > frame->max_number_of_locals)
