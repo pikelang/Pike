@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.285 2008/04/18 19:45:42 grubba Exp $
+|| $Id: object.c,v 1.286 2008/04/25 11:21:27 grubba Exp $
 */
 
 #include "global.h"
@@ -549,6 +549,7 @@ PMOD_EXPORT struct object *get_master(void)
        !simple_mapping_string_lookup(get_builtin_constants(),
 				     "_static_modules"))
     {
+      inside = 0;
       /* fprintf(stderr, "Builtin_constants: %p\n", get_builtin_constants()); */
       /* fprintf(stderr,"Cannot load master object yet!\n"); */
       return 0;
