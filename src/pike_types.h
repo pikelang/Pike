@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.h,v 1.112 2008/03/30 01:24:10 mast Exp $
+|| $Id: pike_types.h,v 1.113 2008/04/25 13:45:22 grubba Exp $
 */
 
 #ifndef PIKE_TYPES_H
@@ -268,7 +268,8 @@ struct pike_type *get_first_arg_type(struct pike_type *fun_type,
 struct pike_type *new_check_call(struct pike_string *fun_name,
 				 struct pike_type *fun_type,
 				 node *args, INT32 *argno);
-struct pike_type *zzap_function_return(struct pike_type *t, INT32 id);
+struct pike_type *zzap_function_return(struct pike_type *t,
+				       struct pike_type *fun_ret);
 struct pike_type *get_type_of_svalue(struct svalue *s);
 struct pike_type *object_type_to_program_type(struct pike_type *obj_t);
 PMOD_EXPORT char *get_name_of_type(TYPE_T t);

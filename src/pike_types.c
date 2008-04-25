@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.321 2008/04/14 10:14:41 grubba Exp $
+|| $Id: pike_types.c,v 1.322 2008/04/25 13:45:22 grubba Exp $
 */
 
 #include "global.h"
@@ -5876,7 +5876,7 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
       push_type(T_MANY);
       fun_type = pop_unfinished_type();
     } else {
-      fun_type = zzap_function_return(tmp, CDR_TO_INT(fun_type->car));
+      fun_type = zzap_function_return(tmp, fun_type->car);
     }
     res = lower_new_check_call(fun_type, arg_type, flags, sval CHECK_CALL_ARGS);
     free_type(fun_type);
@@ -6226,7 +6226,7 @@ struct pike_type *new_get_return_type(struct pike_type *fun_type,
       res = fun_type->car;
       break;
     } else {
-      fun_type = zzap_function_return(tmp, CDR_TO_INT(fun_type->car));
+      fun_type = zzap_function_return(tmp, fun_type->car);
     }
     res = new_get_return_type(fun_type, flags);
     free_type(fun_type);
@@ -6724,13 +6724,14 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
   return NULL;
 }
 
-struct pike_type *zzap_function_return(struct pike_type *a, INT32 id)
+struct pike_type *zzap_function_return(struct pike_type *a,
+				       struct pike_type *fun_ret)
 {
   struct pike_type *ret = NULL;
   switch(a->type)
   {
     case T_SCOPE:
-      ret = zzap_function_return(a->cdr, id);
+      ret = zzap_function_return(a->cdr, fun_ret);
       if (!ret) return NULL;
       type_stack_mark();
       push_finished_type(ret);
@@ -6741,8 +6742,8 @@ struct pike_type *zzap_function_return(struct pike_type *a, INT32 id)
     case T_OR:
     {
       struct pike_type *ar, *br;
-      ar = zzap_function_return(a->car, id);
-      br = zzap_function_return(a->cdr, id);
+      ar = zzap_function_return(a->car, fun_ret);
+      br = zzap_function_return(a->cdr, fun_ret);
       if(ar && br) ret = or_pike_types(ar, br, 0);
       if(ar) free_type(ar);
       if(br) free_type(br);
@@ -6762,7 +6763,7 @@ struct pike_type *zzap_function_return(struct pike_type *a, INT32 id)
 	a = a->cdr;
       }
       push_finished_type(a->car);
-      push_object_type(1, id);
+      push_finished_type(fun_ret);
       push_reverse_type(T_MANY);
       while(nargs-- > 0) {
 	push_reverse_type(T_FUNCTION);
@@ -6771,15 +6772,15 @@ struct pike_type *zzap_function_return(struct pike_type *a, INT32 id)
     }
 
     case T_ARRAY:
-      return zzap_function_return(a->car, id);
+      return zzap_function_return(a->car, fun_ret);
 
     case PIKE_T_NAME:
-      return zzap_function_return(a->cdr, id);
+      return zzap_function_return(a->cdr, fun_ret);
 
     case PIKE_T_ATTRIBUTE:
       {
 	struct pike_type *res;
-	if ((res = zzap_function_return(a->cdr, id))) {
+	if ((res = zzap_function_return(a->cdr, fun_ret))) {
 	  type_stack_mark();
 	  push_finished_type(res);
 	  push_type_attribute((struct pike_string *)a->car);
@@ -6793,7 +6794,7 @@ struct pike_type *zzap_function_return(struct pike_type *a, INT32 id)
       /* I wonder when this occurrs, but apparently it does... */
       /* FIXME: */
       type_stack_mark();
-      push_object_type(1, id);
+      push_finished_type(fun_ret);
       push_type(T_VOID);
       push_type(T_MIXED);
       push_type(T_OR);
@@ -6930,8 +6931,12 @@ struct pike_type *get_type_of_svalue(struct svalue *s)
   {
     /* FIXME: An alternative would be to push program(object(1,p->id)). */
     struct pike_type *a;
-    struct pike_string *tmp;
+    struct pike_type *ret_type;
     int id;
+
+    type_stack_mark();
+    push_object_type(1, s->u.program->id);
+    ret_type = pop_unfinished_type();
 
     if(s->u.program->identifiers)
     {
@@ -6939,28 +6944,40 @@ struct pike_type *get_type_of_svalue(struct svalue *s)
       if(id>=0)
       {
 	a = ID_FROM_INT(s->u.program, id)->type;
-	if((a = zzap_function_return(a, s->u.program->id)))
+	if((a = zzap_function_return(a, ret_type))) {
+	  free_type(ret_type);
 	  return a;
-	tmp=describe_type(ID_FROM_INT(s->u.program, id)->type);
-	/* yywarning("Failed to zzap function return for type: %s.", tmp->str);*/
-	free_string(tmp);
+	}
+#if 0
+	{
+	  struct pike_string *tmp =
+	    describe_type(ID_FROM_INT(s->u.program, id)->type);
+	  yywarning("Failed to zzap function return for type: %s.", tmp->str);
+	  free_string(tmp);
+	}
+#endif /* 0 */
       }
       if (!(s->u.program->flags & PROGRAM_PASS_1_DONE)) {
 	/* We haven't added all identifiers in s->u.program yet,
 	 * so we might find a create() later.
 	 */
-	if((a = zzap_function_return(function_type_string, s->u.program->id)))
+	if((a = zzap_function_return(function_type_string, ret_type))) {
+	  free_type(ret_type);
 	  return a;
+	}
       }
     } else {
-      if((a = zzap_function_return(function_type_string, s->u.program->id)))
+      if((a = zzap_function_return(function_type_string, ret_type))) {
+	free_type(ret_type);
 	return a;
+      }
     }
 
     type_stack_mark();
-    push_object_type(1, s->u.program->id);
+    push_finished_type(ret_type);
     push_type(T_VOID);
     push_type(T_MANY);
+    free_type(ret_type);
     return pop_unfinished_type();
   }
 
