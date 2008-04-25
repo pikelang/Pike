@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.674 2008/04/24 16:03:54 grubba Exp $
+|| $Id: program.c,v 1.675 2008/04/25 11:26:30 grubba Exp $
 */
 
 #include "global.h"
@@ -7945,12 +7945,26 @@ static void f_compilation_create(INT32 args)
   if (c->placeholder) free_object(c->placeholder);
   if ((c->placeholder=aplaceholder)) add_ref(aplaceholder);
 
-  push_int(amajor?amajor:-1);
-  push_int(aminor?aminor:-1);
-  apply_current(PC_CHANGE_COMPILER_COMPATIBILITY_FUN_NUM, 2);
-  pop_stack();
-  STACK_LEVEL_DONE(args);
-  pop_n_elems(args);
+  c->major = amajor?amajor:-1;
+  c->minor = aminor?aminor:-1;
+
+  /* NOTE: Can't use change_compiler_compatibility() here,
+   *       since we don't have a PikeCompiler yet!
+   */
+
+  apply_current(PC_GET_DEFAULT_MODULE_FUN_NUM, 0);
+  
+  if(Pike_sp[-1].type == T_INT)
+  {
+    pop_stack();
+    ref_push_mapping(get_builtin_constants());
+  }
+
+  assign_svalue(&c->default_module, Pike_sp-1);
+
+  STACK_LEVEL_DONE(args+1);
+  pop_n_elems(args+1);
+
   push_int(0);
 }
 
@@ -8240,7 +8254,7 @@ static void f_compilation_change_compiler_compatibility(INT32 args)
   Pike_fp->args = 0;	/* Clean up the stack frame. */
 
   apply_current(PC_GET_DEFAULT_MODULE_FUN_NUM, 0);
-  
+
   if(Pike_sp[-1].type == T_INT)
   {
     pop_stack();
