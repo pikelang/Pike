@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dumpmaster.pike,v 1.15 2006/03/17 18:36:44 grubba Exp $
+|| $Id: dumpmaster.pike,v 1.16 2008/04/25 15:46:32 grubba Exp $
 */
 
 string fr;
@@ -10,6 +10,11 @@ string fr;
 array encoded=({});
 
 private function werror = _static_modules.files()->_stderr->write;
+
+mapping get_default_module()
+{
+  return 0;	// Use the builitin default.
+}
 
 void handle_error(mixed err)
 {
