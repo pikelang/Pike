@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: module_support.c,v 1.73 2008/04/14 10:05:14 grubba Exp $
+|| $Id: module_support.c,v 1.74 2008/04/25 13:46:30 grubba Exp $
 */
 
 #include "global.h"
@@ -168,6 +168,11 @@ PMOD_EXPORT void check_all_args(const char *fnname, int args, ... )
  * of optional arguments. If the real arguments run out in the list of
  * optional arguments, the remaining pointers won't be assigned at
  * all.
+ *
+ * Note: If there are more arguments than there are type specifiers
+ * the excessive arguments will be silently ignored. This may change
+ * in the future, in which case an extra marker must be added to get
+ * this behaviour.
  *
  * Note: A lowercase type specifier (i.e. one that doesn't accept
  * NULL) in the optional args list leads to behavior that breaks

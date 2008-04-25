@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_compiler.h,v 1.6 2008/04/24 16:03:54 grubba Exp $
+|| $Id: pike_compiler.h,v 1.7 2008/04/25 13:46:30 grubba Exp $
 */
 
 #ifndef PIKE_COMPILER_H
@@ -17,7 +17,7 @@ struct compilation
   struct pike_string *prog;		/* String to compile. */
   struct object *handler;		/* error_handler */
   struct object *compat_handler;	/* compat_handler */
-  int major, minor;			/* compat version */
+  int major, minor;			/* Base compat version */
   struct program *target;		/* Program being compiled. */
   struct object *placeholder;
   int flags;
