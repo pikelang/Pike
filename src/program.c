@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.675 2008/04/25 11:26:30 grubba Exp $
+|| $Id: program.c,v 1.676 2008/04/26 11:17:38 grubba Exp $
 */
 
 #include "global.h"
@@ -7429,6 +7429,17 @@ static void run_init2(struct compilation *c)
   Pike_compiler->compiler = c;
 
   initialize_buf(&used_modules);
+
+  /* Get the proper default module. */
+  safe_apply_current2(PC_GET_DEFAULT_MODULE_FUN_NUM, 0, NULL);
+  if(Pike_sp[-1].type == T_INT)
+  {
+    pop_stack();
+    ref_push_mapping(get_builtin_constants());
+  }
+  assign_svalue(&c->default_module, Pike_sp-1);
+  pop_stack();
+
   use_module(& c->default_module);
 
   Pike_compiler->compat_major=PIKE_MAJOR_VERSION;
@@ -7948,22 +7959,8 @@ static void f_compilation_create(INT32 args)
   c->major = amajor?amajor:-1;
   c->minor = aminor?aminor:-1;
 
-  /* NOTE: Can't use change_compiler_compatibility() here,
-   *       since we don't have a PikeCompiler yet!
-   */
-
-  apply_current(PC_GET_DEFAULT_MODULE_FUN_NUM, 0);
-  
-  if(Pike_sp[-1].type == T_INT)
-  {
-    pop_stack();
-    ref_push_mapping(get_builtin_constants());
-  }
-
-  assign_svalue(&c->default_module, Pike_sp-1);
-
-  STACK_LEVEL_DONE(args+1);
-  pop_n_elems(args+1);
+  STACK_LEVEL_DONE(args);
+  pop_n_elems(args);
 
   push_int(0);
 }
