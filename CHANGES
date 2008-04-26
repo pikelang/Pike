@@ -14,6 +14,12 @@ o Several declarations and definitions (most notably the debug and
   runtime flags) have moved from main.h to pike_embed.h, in an attempt
   to add support for embedding.
 
+o Major compiler API cleanups.
+  The Pike compiler is now executing in a pike function context
+  (rather than in an efun context), and it is possible to customize
+  some of its behaviour via inherit (rather than via handler objects).
+  As a consequence the compiler is now much closer to being thread-safe.
+
 o New `[..] operator function.
   Range operations have been separated from the `[] operator function
   and is handled by a new `[..] which provides greater control in how
@@ -144,8 +150,18 @@ o Unicode
 o protected
   The modifier protected is now an alias for the modifier static.
 
+o Pike_fp->context
+  Pike_fp->context is now a pointer to the current struct inherit
+  rather than a copy of it. This allows for easier access to
+  inherited symbols in C-code.
+
 
 Extensions and New Functions
+
+o __attribute__ and __deprecated__
+  It's now possible to set custom attributes on types. This is
+  currently used to improve the argument checking for sprintf()
+  and related functions, and for marking symbols as deprecated.
 
 o ADT.BitBuffer
  
