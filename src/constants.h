@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: constants.h,v 1.34 2005/04/08 16:54:41 grubba Exp $
+|| $Id: constants.h,v 1.35 2008/04/26 16:07:39 grubba Exp $
 */
 
 #ifndef ADD_EFUN_H
@@ -29,7 +29,6 @@ struct callable
   INT16 internal_flags;
 #ifdef PIKE_DEBUG
   INT8 may_return_void;
-  long compiles;
   long runs;
   struct callable *prev;
 #endif

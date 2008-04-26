@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: constants.c,v 1.57 2007/04/17 12:20:46 grubba Exp $
+|| $Id: constants.c,v 1.58 2008/04/26 16:07:39 grubba Exp $
 */
 
 #include "global.h"
@@ -115,7 +115,6 @@ PMOD_EXPORT struct callable *low_make_callable(c_fun fun,
     free_type(z);
   }
   f->runs=0;
-  f->compiles=0;
 #endif
   return f;
 }
