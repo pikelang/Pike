@@ -1,5 +1,5 @@
 /*
- * $Id: Tokenizer.cmod,v 1.37 2006/10/03 16:47:34 grubba Exp $
+ * $Id: Tokenizer.cmod,v 1.38 2008/04/26 13:45:06 grubba Exp $
  *
  * Interface to pike code tokenizer.
  *
@@ -1194,7 +1194,7 @@ PIKECLASS TokenizingCompiler
       stack_pop_n_elems_keep_top(args);
     }
 
-    PIKEFUN void handle_pike_compat(int major, int minor)
+    PIKEFUN void change_compiler_compatibility(int major, int minor)
       flags ID_STATIC;
     {
       ref_push_string(MK_STRING("pike_major"));
@@ -1252,7 +1252,7 @@ PIKECLASS TokenizingCompiler
 	return;
       } else if (cmd == pike_str) {
 	/* FIXME: Use more paranoid parsing of version? */
-	apply_current(f_TokenizingCompiler_pike_tokenizer_handle_pike_compat_fun_num,
+	apply_current(f_TokenizingCompiler_pike_tokenizer_change_compiler_compatibility_fun_num,
 		   low_sscanf(extras, MK_STRING("%d.%d")));
 	pop_n_elems(args);
 	/* NOTE: We keep one argument on the stack. */
@@ -1482,7 +1482,7 @@ PIKECLASS TokenizingCompiler
 	if (UNSAFE_IS_ZERO(Pike_sp-1)) return;
 	pop_stack();
 	low_object_index_no_free(Pike_sp, Pike_fp->current_object,
-				 Pike_fp->context.identifier_level +
+				 Pike_fp->context->identifier_level +
 				 tc_pt_inh_current_symbol);
 	Pike_sp++;
 	if (SAFE_IS_ZERO(Pike_sp-1)) {
@@ -2066,8 +2066,8 @@ PIKECLASS PikeCompiler
 #define tObjImpl_SCOPE	tObj
 #define tObjImpl_MODIFIERS	tObj
 
-    /*! @decl parse_meta_program(Scope scope, Iterator tokens_left, @
-     *!                          Modifiers current_modifiers)
+    /*! @decl void parse_meta_program(Scope scope, Iterator tokens_left, @
+     *!                               Modifiers current_modifiers)
      *! Called at
      *!   break · ';'
      *!   break · label ';'
@@ -2116,8 +2116,8 @@ PIKECLASS PikeCompiler
   {
     INHERIT PikeCompiler_Break;
 
-    /*! @decl parse_meta_program(Scope scope, Iterator tokens_left, @
-     *!                          Modifiers current_modifiers)
+    /*! @decl void parse_meta_program(Scope scope, Iterator tokens_left, @
+     *!                               Modifiers current_modifiers)
      *! Called at
      *!   break · ';'
      */
@@ -2181,7 +2181,7 @@ PIKECLASS PikeCompiler
       prototype;
     {}
 
-    PIKEFUN void handle_pike_compat(int major, int minor)
+    PIKEFUN void change_compiler_compatibility(int major, int minor)
     {
       apply_current(f_PikeCompiler_pike_tokenizer_get_lookup_for_pike_version_fun_num, 2);
       apply_current(f_TokenizingCompiler_pike_tokenizer_set_token_lookup_fun_num +
@@ -2193,7 +2193,7 @@ PIKECLASS PikeCompiler
     {
       push_int(PIKE_MAJOR_VERSION);
       push_int(PIKE_MINOR_VERSION);
-      apply_current(f_PikeCompiler_pike_tokenizer_handle_pike_compat_fun_num,
+      apply_current(f_PikeCompiler_pike_tokenizer_change_compiler_compatibility_fun_num,
 		    2);
       pop_stack();
       apply_current(pc_pt_inh_create, args);
