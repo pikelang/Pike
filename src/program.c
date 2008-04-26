@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.677 2008/04/26 14:27:08 grubba Exp $
+|| $Id: program.c,v 1.678 2008/04/26 16:08:13 grubba Exp $
 */
 
 #include "global.h"
@@ -833,7 +833,8 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!   It's assumed that this function is side-effect free.
  */
 
-/*! @decl mixed lfun::`[..](zero low, int low_bound_type, zero high, int high_bound_type)
+/*! @decl mixed lfun::`[..](zero low, int low_bound_type, @
+ *!                         zero high, int high_bound_type)
  *!
  *!   Subrange callback.
  *!
