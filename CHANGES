@@ -116,6 +116,9 @@ o PIKE_PORTABLE_BYTECODE
    --with-portable-bytecode is now the default. Pike programs that have
    been dumped on one architecture now can be decoded on another.
 
+o AMD64 code generation
+  Pike is now able to create native code for AMD64 processors.
+
 o Math.Matrix 
   Multiplication were bugged and gave B*A instead of A*B. Now fixed. 
 
@@ -309,10 +312,10 @@ o Odbc
   Now supports UnixODBC properly.
   Fixed various issues with Unicode.
 
-o Parser.Pike
+o Parser.Pike and Parser.C
 
-  Parsing of Pike has been rewritten in C for increased performance.
-  #string directives should be handled correctly now.
+  Parser.Pike and Parser.C has been rewritten in C for increased
+  performance. The #string directives should be handled correctly now.
 
 o Parser.RCS
   FIXME: Rewrite
@@ -601,12 +604,10 @@ Sql.Sql dsn
 New src:
 embed/libpike
 tmodule
-code/amd64
 Fuse
 Protocols.DNS_SD
 Charset gb18030
         gbk
-Parser c.c / pike.c
 GTK2
 SQLite
 
@@ -681,7 +682,9 @@ update(?):
 
 Geography.pmod/Countries.pmod
 MIME.pmod/ext...
-Bittorrent.pmod/PeerID.pmod
 
 fixme:
 Process.locate_binary
+
+----
+modules/_Charset
