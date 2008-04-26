@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_compiler.h,v 1.8 2008/04/26 14:27:08 grubba Exp $
+|| $Id: pike_compiler.h,v 1.9 2008/04/26 19:04:26 grubba Exp $
 */
 
 #ifndef PIKE_COMPILER_H
@@ -27,15 +27,16 @@ struct compilation
   int compilation_inherit;		/* Inherit in supporter->self containing
 					 * compilation_program. */
 
+  struct svalue default_module;		/* predef:: */
   dynamic_buffer used_modules;		/* Stack of svalues with imported
 					 * modules. */
   INT32 num_used_modules;		/* Number of entries on the stack. */
 
-  int save_depth;
+  int compilation_depth;		/* Current class nesting depth. */
+
   int saved_threads_disabled;
   struct mapping *resolve_cache_save;
 
-  struct svalue default_module;
 };
 
 #ifdef PIKE_DEBUG

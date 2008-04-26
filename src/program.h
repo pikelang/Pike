@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.239 2008/04/18 19:56:01 grubba Exp $
+|| $Id: program.h,v 1.240 2008/04/26 19:04:26 grubba Exp $
 */
 
 #ifndef PROGRAM_H
@@ -668,8 +668,6 @@ extern struct program *pike_trampoline_program;
 extern struct program *gc_internal_program;
 extern struct program *placeholder_program;
 extern struct object *placeholder_object;
-
-extern int compilation_depth;
 
 /* Flags for identifier finding... */
 #define SEE_STATIC 1

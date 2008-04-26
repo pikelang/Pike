@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.655 2008/04/23 07:37:04 mast Exp $
+|| $Id: builtin_functions.c,v 1.656 2008/04/26 19:04:25 grubba Exp $
 */
 
 #include "global.h"
@@ -2535,12 +2535,16 @@ static node *optimize_this_object(node *n)
   int level = 0;
 
   if (CDR (n)) {
+    struct compilation *c = THIS_COMPILATION;
     struct program_state *state = Pike_compiler;
+
+    CHECK_COMPILER();
+
     if (CDR (n)->token != F_CONSTANT) {
       /* Not a constant expression. Make sure there are parent
        * pointers all the way. */
       int i;
-      for (i = 0; i < compilation_depth; i++, state = state->previous)
+      for (i = 0; i < c->compilation_depth; i++, state = state->previous)
 	state->new_program->flags |= PROGRAM_USES_PARENT | PROGRAM_NEEDS_PARENT;
       return NULL;
     }
@@ -2551,7 +2555,7 @@ static node *optimize_this_object(node *n)
 	Pike_fatal ("The type check for this_object() failed.\n");
 #endif
       level = CDR (n)->u.sval.u.integer;
-      for (i = MINIMUM(level, compilation_depth); i;
+      for (i = MINIMUM(level, c->compilation_depth); i;
 	   i--, state = state->previous) {
 	state->new_program->flags |=
 	  PROGRAM_USES_PARENT | PROGRAM_NEEDS_PARENT;

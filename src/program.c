@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.678 2008/04/26 16:08:13 grubba Exp $
+|| $Id: program.c,v 1.679 2008/04/26 19:04:26 grubba Exp $
 */
 
 #include "global.h"
@@ -1227,7 +1227,6 @@ struct object *compilation_environment = NULL;
 struct program *gc_internal_program = 0;
 static struct program *gc_mark_program_pos = 0;
 
-int compilation_depth=-1;
 static struct mapping *resolve_cache=0;
 
 #ifdef PIKE_DEBUG
@@ -1562,7 +1561,7 @@ struct node_s *find_module_identifier(struct pike_string *ident,
   {
     struct program_state *p=Pike_compiler;
     int n;
-    for(n=0;n<=compilation_depth;n++,p=p->previous)
+    for(n=0;n<=c->compilation_depth;n++,p=p->previous)
     {
       int i;
       if(see_inherit)
@@ -1765,11 +1764,12 @@ struct node_s *program_magic_identifier (struct program_state *state,
 /* Fixme: allow level=0 to return the current level */
 struct program *parent_compilation(int level)
 {
+  struct compilation *c = THIS_COMPILATION;
   int n;
   struct program_state *p=Pike_compiler->previous;
   for(n=0;n<level;n++)
   {
-    if(n>=compilation_depth) return 0;
+    if(n>=c->compilation_depth) return 0;
     p=p->previous;
     if(!p) return 0;
   }
@@ -2007,7 +2007,7 @@ int override_identifier (struct reference *new_ref, struct pike_string *name)
 
 #ifdef PROGRAM_BUILD_DEBUG
     fprintf(stderr, "%.*soverloaded reference %d (id_flags:0x%04x)\n",
-	    compilation_depth, "                ", cur_id, ref->id_flags);
+	    c->compilation_depth, "", cur_id, ref->id_flags);
 #endif
 
     if (!new_is_variable && IDENTIFIER_IS_VARIABLE(i->identifier_flags)) {
@@ -2371,7 +2371,7 @@ void low_start_new_program(struct program *p,
    */
   low_init_threads_disable();
 
-  compilation_depth++;
+  c->compilation_depth++;
 
   if (!Pike_compiler->compiler_frame) {
     new_node_s_context();
@@ -2386,11 +2386,12 @@ void low_start_new_program(struct program *p,
       tmp.u.program=p;
       id=add_constant(name, &tmp, flags & ~ID_EXTERN);
 #if 0
-      fprintf(stderr,"Compiling class %s, depth=%d\n",name->str,compilation_depth);
+      fprintf(stderr,"Compiling class %s, depth=%d\n",
+	      name->str, c->compilation_depth);
     }else{
       fprintf(stderr,"Compiling file %s, depth=%d\n",
 	      c->lex.current_file ? c->lex.current_file->str : "-",
-	      compilation_depth);
+	      c->compilation_depth);
 #endif
     }
   }else{
@@ -2408,7 +2409,7 @@ void low_start_new_program(struct program *p,
     }
   }
   if (pass == 1) {
-    if(compilation_depth >= 1)
+    if(c->compilation_depth >= 1)
       add_ref(p->parent = Pike_compiler->new_program);
   }
   p->flags &=~ PROGRAM_VIRGIN;
@@ -2418,7 +2419,7 @@ void low_start_new_program(struct program *p,
 	     "pass=%d: threads_disabled:%d, compilation_depth:%d\n",
 	     (long)th_self(), p, name ? name->str : "-",
 	     Pike_compiler->compiler_pass,
-	     threads_disabled, compilation_depth));
+	     threads_disabled, c->compilation_depth));
 
   init_type_stack();
 
@@ -2490,17 +2491,19 @@ void low_start_new_program(struct program *p,
 #ifdef PROGRAM_BUILD_DEBUG
   if (name) {
     fprintf (stderr, "%.*sstarting program %d (pass=%d): ",
-	     compilation_depth, "                ", Pike_compiler->new_program->id, Pike_compiler->compiler_pass);
+	     c->compilation_depth, "",
+	     Pike_compiler->new_program->id, Pike_compiler->compiler_pass);
     push_string (name);
     print_svalue (stderr, --Pike_sp);
     putc ('\n', stderr);
   }
   else
     fprintf (stderr, "%.*sstarting program %d (pass=%d)\n",
-	     compilation_depth, "                ", Pike_compiler->new_program->id, Pike_compiler->compiler_pass);
+	     c->compilation_depth, "",
+	     Pike_compiler->new_program->id, Pike_compiler->compiler_pass);
 #endif
 
-  if (compilation_depth >= 1) {
+  if (c->compilation_depth >= 1) {
     if(TEST_COMPAT(7,2) || (c->lex.pragmas & ID_SAVE_PARENT))
     {
       p->flags |= PROGRAM_USES_PARENT;
@@ -2637,7 +2640,8 @@ PMOD_EXPORT void debug_start_new_program(int line, const char *file)
   CDFPRINTF((stderr,
 	     "th(%ld) start_new_program(%d, %s): "
 	     "threads_disabled:%d, compilation_depth:%d\n",
-	     (long)th_self(), line, file, threads_disabled, compilation_depth));
+	     (long)th_self(), line, file,
+	     threads_disabled, c->compilation_depth));
 
   low_start_new_program(0,1,0,0,0);
   store_linenumber(line,c->lex.current_file);
@@ -3397,6 +3401,7 @@ void check_program(struct program *p)
  */
 struct program *end_first_pass(int finish)
 {
+  struct compilation *c = THIS_COMPILATION;
   int e;
   struct program *prog;
   struct pike_string *s;
@@ -3495,7 +3500,8 @@ struct program *end_first_pass(int finish)
 
 #ifdef PROGRAM_BUILD_DEBUG
   fprintf (stderr, "%.*sfinishing program %d (pass=%d)\n",
-	   compilation_depth, "                ", Pike_compiler->new_program->id, Pike_compiler->compiler_pass);
+	   c->compilation_depth, "",
+	   Pike_compiler->new_program->id, Pike_compiler->compiler_pass);
 #endif
 
   toss_compilation_resources();
@@ -3504,7 +3510,8 @@ struct program *end_first_pass(int finish)
   CDFPRINTF((stderr,
 	     "th(%ld) end_first_pass(): "
 	     "compilation_depth:%d, Pike_compiler->compiler_pass:%d\n",
-	     (long)th_self(), compilation_depth, Pike_compiler->compiler_pass));
+	     (long)th_self(),
+	     c->compilation_depth, Pike_compiler->compiler_pass));
 #endif
 
   if(!Pike_compiler->compiler_frame && (Pike_compiler->compiler_pass==2 || !prog) && resolve_cache)
@@ -3528,9 +3535,9 @@ struct program *end_first_pass(int finish)
 	     "th(%ld) %p end_first_pass(%d): "
 	     "threads_disabled:%d, compilation_depth:%d\n",
 	     (long)th_self(), prog, finish,
-	     threads_disabled, compilation_depth));
+	     threads_disabled, c->compilation_depth));
 
-  compilation_depth--;
+  c->compilation_depth--;
 
   exit_threads_disable(NULL);
 
@@ -3915,6 +3922,7 @@ node *reference_inherited_identifier(struct pike_string *super_name,
 				     struct pike_string *function_name)
 {
   int n,e,id;
+  struct compilation *c = THIS_COMPILATION;
   struct program_state *state=Pike_compiler->previous;
 
   struct program *p;
@@ -3968,7 +3976,7 @@ node *reference_inherited_identifier(struct pike_string *super_name,
   }
 
 
-  for(n=0;n<compilation_depth;n++,state=state->previous)
+  for(n=0;n<c->compilation_depth;n++,state=state->previous)
   {
     struct program *p=state->new_program;
 
@@ -4202,7 +4210,7 @@ PMOD_EXPORT void low_inherit(struct program *p,
      * previous compilations, but I'm too lazy to figure out
      * exactly how deep down we need to go...
      */
-    for(e=0;e<compilation_depth;e++,state=state->previous)
+    for(e=0;e<c->compilation_depth;e++,state=state->previous)
       state->new_program->flags |= PROGRAM_USES_PARENT;
 #endif
   }
@@ -4751,8 +4759,10 @@ PMOD_EXPORT int map_variable(const char *name,
   struct pike_type *t;
 
 #ifdef PROGRAM_BUILD_DEBUG
+  struct compilation *c = THIS_COMPILATION;
   fprintf (stderr, "%.*sdefining variable (pass=%d): %s %s\n",
-	   compilation_depth, "                ", Pike_compiler->compiler_pass, type, name);
+	   c->compilation_depth, "",
+	   Pike_compiler->compiler_pass, type, name);
 #endif
 
   n=make_shared_string(name);
@@ -4780,9 +4790,10 @@ PMOD_EXPORT int quick_map_variable(const char *name,
 
 #ifdef PROGRAM_BUILD_DEBUG
   {
+    struct compilation *c = THIS_COMPILATION;
     struct pike_string *d = describe_type (t);
     fprintf (stderr, "%.*sdefining variable (pass=%d): %s ",
-	     compilation_depth, "                ", Pike_compiler->compiler_pass, d->str);
+	     c->compilation_depth, "", Pike_compiler->compiler_pass, d->str);
     free_string (d);
     push_string (n);
     print_svalue (stderr, --Pike_sp);
@@ -4810,9 +4821,10 @@ int define_variable(struct pike_string *name,
 
 #ifdef PROGRAM_BUILD_DEBUG
   {
+    struct compilation *c = THIS_COMPILATION;
     struct pike_string *d = describe_type (type);
     fprintf (stderr, "%.*sdefining variable (pass=%d): %s ",
-	     compilation_depth, "                ", Pike_compiler->compiler_pass, d->str);
+	     c->compilation_depth, "", Pike_compiler->compiler_pass, d->str);
     free_string (d);
     push_string (name);
     print_svalue (stderr, --Pike_sp);
@@ -4961,12 +4973,13 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
   struct svalue zero;
 
 #ifdef PROGRAM_BUILD_DEBUG
+  struct compilation *cc = THIS_COMPILATION;
   {
     if (c) {
       struct pike_type *t = get_type_of_svalue(c);
       struct pike_string *d = describe_type (t);
       fprintf (stderr, "%.*sdefining constant (pass=%d): %s ",
-	       compilation_depth, "                ",
+	       cc->compilation_depth, "",
 	       Pike_compiler->compiler_pass, d->str);
       free_type(t);
       free_string (d);
@@ -4977,7 +4990,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
     }
     else {
       fprintf (stderr, "%.*sdeclaring constant (pass=%d): ",
-	       compilation_depth, "                ",
+	       cc->compilation_depth, "",
 	       Pike_compiler->compiler_pass);
       push_string (name);
       print_svalue (stderr, --Pike_sp);
@@ -5096,7 +5109,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
       }
 #ifdef PROGRAM_BUILD_DEBUG
       fprintf (stderr, "%.*sstored constant #%d at %d\n",
-	       compilation_depth, "                ",
+	       cc->compilation_depth, "",
 	       n, id->func.offset);
 #endif
       return n;
@@ -5366,7 +5379,7 @@ INT32 define_function(struct pike_string *name,
   {
     struct pike_string *d = describe_type (type);
     fprintf (stderr, "%.*sdefining function (pass=%d): %s ",
-	     compilation_depth, "                ", Pike_compiler->compiler_pass, d->str);
+	     c->compilation_depth, "", Pike_compiler->compiler_pass, d->str);
     free_string (d);
     push_string (name);
     print_svalue (stderr, --Pike_sp);
@@ -5512,7 +5525,7 @@ INT32 define_function(struct pike_string *name,
 
 #ifdef PROGRAM_BUILD_DEBUG
     fprintf(stderr, "%.*sexisted as identifier #%d\n",
-	  compilation_depth, "                ", i);
+	  c->compilation_depth, "", i);
 #endif
 
     funp=ID_FROM_INT(Pike_compiler->new_program, i);
@@ -5569,7 +5582,7 @@ INT32 define_function(struct pike_string *name,
     }else{
 #ifdef PROGRAM_BUILD_DEBUG
       fprintf(stderr, "%.*sidentifier was inherited\n",
-	      compilation_depth, "                ");
+	      c->compilation_depth, "");
 #endif
 
       if((ref.id_flags & ID_FINAL)
@@ -5586,7 +5599,7 @@ INT32 define_function(struct pike_string *name,
       {
 #ifdef PROGRAM_BUILD_DEBUG
 	fprintf(stderr, "%.*sidentifier is local\n",
-		compilation_depth, "                ");
+		c->compilation_depth, "");
 #endif
 
 	goto make_a_new_def;
@@ -5595,7 +5608,7 @@ INT32 define_function(struct pike_string *name,
       /* Otherwise we alter the existing definition */
 #ifdef PROGRAM_BUILD_DEBUG
       fprintf(stderr, "%.*saltering the existing definition\n",
-	      compilation_depth, "                ");
+	      c->compilation_depth, "");
 #endif
 
       copy_shared_string(fun.name, name);
@@ -5700,7 +5713,7 @@ INT32 define_function(struct pike_string *name,
 
 #ifdef PROGRAM_BUILD_DEBUG
   fprintf(stderr, "%.*sadded new definition #%d\n",
-	  compilation_depth, "                ", i);
+	  c->compilation_depth, "", i);
 #endif
 
   if (getter_setter_offset >= 0) {
@@ -7389,8 +7402,6 @@ static void free_compilation(struct compilation *c)
 static void run_init(struct compilation *c)
 {
   debug_malloc_touch(c);
-  c->save_depth=compilation_depth;
-  compilation_depth=-1;
 
   if (c->compat_handler) free_object(c->compat_handler);
   c->compat_handler=0;
@@ -7458,12 +7469,11 @@ static void run_exit(struct compilation *c)
 #endif
 
 #ifdef PIKE_DEBUG
-  if (compilation_depth != -1) {
+  if (c->compilation_depth != -1) {
     fprintf(stderr, "compile(): compilation_depth is %d\n",
-	    compilation_depth);
+	    c->compilation_depth);
   }
 #endif /* PIKE_DEBUG */
-  compilation_depth=c->save_depth;
 
   if (resolve_cache)
     free_mapping(resolve_cache);
@@ -7508,7 +7518,7 @@ static int run_pass1(struct compilation *c)
 
 #if 0
   CDFPRINTF((stderr, "th(%ld) compile() starting compilation_depth=%d\n",
-	     (long)th_self(),compilation_depth));
+	     (long)th_self(),c->compilation_depth));
 #endif
 
   if(c->placeholder && c->placeholder->prog != null_program) {
@@ -7529,7 +7539,7 @@ static int run_pass1(struct compilation *c)
 	     "th(%ld) %p run_pass1() start: "
 	     "threads_disabled:%d, compilation_depth:%d\n",
 	     (long)th_self(), Pike_compiler->new_program,
-	     threads_disabled, compilation_depth));
+	     threads_disabled, c->compilation_depth));
 
   run_init2(c);
 
@@ -7618,7 +7628,7 @@ void run_pass2(struct compilation *c)
 	     "th(%ld) %p run_pass2() start: "
 	     "threads_disabled:%d, compilation_depth:%d\n",
 	     (long)th_self(), Pike_compiler->new_program,
-	     threads_disabled, compilation_depth));
+	     threads_disabled, c->compilation_depth));
 
   verify_supporters();
 
@@ -7649,8 +7659,10 @@ static void run_cleanup(struct compilation *c, int delayed)
   exit_threads_disable(NULL);
 
   CDFPRINTF((stderr,
-	     "th(%ld) %p run_cleanup(): threads_disabled:%d, compilation_depth:%d\n",
-	     (long)th_self(), c->target, threads_disabled, compilation_depth));
+	     "th(%ld) %p run_cleanup(): "
+	     "threads_disabled:%d, compilation_depth:%d\n",
+	     (long)th_self(), c->target,
+	     threads_disabled, c->compilation_depth));
   if (!c->p)
   {
     /* fprintf(stderr, "Destructing placeholder.\n"); */
@@ -7791,6 +7803,7 @@ static void compilation_event_handler(int e)
     c->minor = -1;
     c->lex.current_line = 1;
     c->lex.current_file = make_shared_string("-");
+    c->compilation_depth = -1;
     break;
   case PROG_EVENT_EXIT:
     CDFPRINTF((stderr, "th(%ld) compilation: EXIT(%p).\n",

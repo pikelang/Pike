@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.263 2008/04/14 10:14:38 grubba Exp $
+|| $Id: encode.c,v 1.264 2008/04/26 19:04:25 grubba Exp $
 */
 
 #include "global.h"
@@ -2404,14 +2404,13 @@ static int init_placeholder(struct object *placeholder);
   (X)=pop_unfinished_type();			\
 } while(0)
 
-static void cleanup_new_program_decode (int *orig_compilation_depth)
+static void cleanup_new_program_decode (void *ignored)
 {
   debug_malloc_touch(Pike_compiler->new_program);
   debug_malloc_touch(Pike_compiler->new_program->parent);
   /* The program is consistent enough to be freed... */
   Pike_compiler->new_program->flags &= ~PROGRAM_AVOID_CHECK;
   end_first_pass(0);
-  compilation_depth = *orig_compilation_depth;
 }
 
 static DECLSPEC(noreturn) void decode_error (struct svalue *decoding,
@@ -3638,7 +3637,6 @@ static void decode_value2(struct decode_data *data)
 	  struct program *p;
 	  ONERROR err;
 	  ONERROR err2;
-	  int orig_compilation_depth;
 	  int byteorder;
 	  int bytecode_method;
 	  int entry_type;
@@ -3712,8 +3710,6 @@ static void decode_value2(struct decode_data *data)
 	  c->lex.pragmas = (old_pragmas & ~ID_SAVE_PARENT)|ID_DONT_SAVE_PARENT;
 
 	  /* Start the new program. */
-	  orig_compilation_depth = compilation_depth;
-	  compilation_depth = -1;
 	  low_start_new_program(p, 1, NULL, 0, NULL);
 	  p = Pike_compiler->new_program;
 #if TWO_PASS_DECODE_WORKS
@@ -3726,7 +3722,7 @@ static void decode_value2(struct decode_data *data)
 	  /* Kludge to get end_first_pass() to free the program. */
 	  Pike_compiler->num_parse_error++;
 
-	  SET_ONERROR(err, cleanup_new_program_decode, &orig_compilation_depth);
+	  SET_ONERROR(err, cleanup_new_program_decode, NULL);
 
 	  debug_malloc_touch(p);
 
@@ -4398,7 +4394,6 @@ static void decode_value2(struct decode_data *data)
 	    decode_error(Pike_sp - 1, NULL, "Failed to decode program.\n");
 	  }
 	  pop_stack();
-	  compilation_depth = orig_compilation_depth;
 	  push_program(p);
 
 	  exit_compiler();

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dynamic_load.c,v 1.90 2008/04/14 10:14:38 grubba Exp $
+|| $Id: dynamic_load.c,v 1.91 2008/04/26 19:04:25 grubba Exp $
 */
 
 #ifdef TESTING
@@ -377,19 +377,12 @@ static modfun CAST_TO_FUN(void *ptr)
 #define CAST_TO_FUN(X)	((modfun)X)
 #endif /* NO_CAST_TO_FUN */
 
-struct compilation_save
-{
-  struct lex lex;
-  int compilation_depth;
-};
-
-static void cleanup_compilation(struct compilation_save *save)
+static void cleanup_compilation(void *ignored)
 {
   struct program *p = end_program();
   if (p) {
     free_program(p);
   }
-  compilation_depth = save->compilation_depth;
 }
 
 /*! @decl program load_module(string module_name)
@@ -411,7 +404,6 @@ static void cleanup_compilation(struct compilation_save *save)
  */
 void f_load_module(INT32 args)
 {
-  extern int compilation_depth;
   extern int global_callable_flags;
 
   void *module;
@@ -420,8 +412,6 @@ void f_load_module(INT32 args)
   struct pike_string *module_name;
 
   ONERROR err;
-
-  struct compilation_save save;
 
   module_name = Pike_sp[-args].u.string;
 
@@ -538,8 +528,6 @@ void f_load_module(INT32 args)
 
   enter_compiler(new_module->name, 1);
 
-  save.compilation_depth=compilation_depth;
-  compilation_depth=-1;
   start_new_program();
 
   global_callable_flags|=CALLABLE_DYNAMIC;
@@ -547,7 +535,7 @@ void f_load_module(INT32 args)
 #ifdef PIKE_DEBUG
   { struct svalue *save_sp=Pike_sp;
 #endif
-  SET_ONERROR(err, cleanup_compilation, &save);
+  SET_ONERROR(err, cleanup_compilation, NULL);
 #if defined(__NT__) && defined(_M_IA64)
   fprintf(stderr, "Calling pike_module_init()...\n");
 #endif /* __NT__ && _M_IA64 */
@@ -568,7 +556,6 @@ void f_load_module(INT32 args)
   {
     struct program *p = end_program();
     exit_compiler();
-    compilation_depth = save.compilation_depth;
     if (p) {
       if (
 #if 0
