@@ -165,6 +165,7 @@ testfont binary
 /lib/modules/Pike.pmod foreign_ident
 /lib/modules/Pike.pmod/module.pmod foreign_ident
 /lib/modules/Protocols.pmod/Bittorrent.pmod/Torrent.pike foreign_ident
+/lib/modules/Protocols.pmod/Bittorrent.pmod/testsuite.in foreign_ident
 /lib/modules/Protocols.pmod/DNS.pmod foreign_ident
 /lib/modules/Protocols.pmod/DNS_SD.pmod foreign_ident
 /lib/modules/Protocols.pmod/HTTP.pmod/Query.pike foreign_ident

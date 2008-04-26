@@ -1,0 +1,27 @@
+dnl $Id: testsuite.in,v 1.1 2008/04/26 22:16:27 nilsson Exp $
+
+START_MARKER
+
+test_do( add_constant("id",lambda(string x) { x=x+" "*(20-sizeof(x)); return Protocols.Bittorrent.PeerID.identify_peer(x); }) )
+
+test_eq( id(""), "unknown" )
+test_eq( id("-AZ2060-"), "Azureus 2.0.6.0" )
+test_eq( id("-AR1234-"), "Arctic 1234" )
+test_eq( id("S58B-----"), "Shadow 5.8.11" )
+test_eq( id("M3-4-2--"), "Mainline 3.4.2" )
+test_eq( id("M4-20-8-"), "Mainline 4.20.8" )
+test_eq( id("XBT054d-"), "XBT 0.5.4 (debug)" )
+test_eq( id("XBT054--"), "XBT 0.5.4" )
+test_eq( id("OP800B"), "Opera 800B" )
+test_eq( id("-ML2.7.2-kgjjfkd"), "MLdonkey 2.7.2" )
+test_eq( id("-BOWA0C-"), "Bits on Wheels" )
+test_eq( id("AZ2500BT"), "BitTyrant 1.1" )
+test_eq( id("\0\3BS"), "BitSpirit 3" )
+test_eq( id("10RS"), "Rufus 10" )
+test_eq( id("-G3"), "G3 Torrent" )
+test_eq( id("BLZ123"), "Blizzard 123")
+test_eq( id("\0"*20), "Experimental 3.1" )
+
+test_do( add_constant("id") )
+
+END_MARKER
