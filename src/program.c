@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.676 2008/04/26 11:17:38 grubba Exp $
+|| $Id: program.c,v 1.677 2008/04/26 14:27:08 grubba Exp $
 */
 
 #include "global.h"
@@ -1227,7 +1227,6 @@ struct program *gc_internal_program = 0;
 static struct program *gc_mark_program_pos = 0;
 
 int compilation_depth=-1;
-dynamic_buffer used_modules;
 static struct mapping *resolve_cache=0;
 
 #ifdef PIKE_DEBUG
@@ -1431,12 +1430,14 @@ void add_relocated_int_to_program(INT32 i)
 
 void use_module(struct svalue *s)
 {
+  struct compilation *c = THIS_COMPILATION;
   if( (1<<s->type) & (BIT_MAPPING | BIT_OBJECT | BIT_PROGRAM))
   {
+    c->num_used_modules++;
     Pike_compiler->num_used_modules++;
     assign_svalue_no_free((struct svalue *)
 			  low_make_buf_space(sizeof(struct svalue),
-					     &used_modules), s);
+					     &c->used_modules), s);
     if(Pike_compiler->module_index_cache)
     {
       free_mapping(Pike_compiler->module_index_cache);
@@ -1449,14 +1450,16 @@ void use_module(struct svalue *s)
 
 void unuse_modules(INT32 howmany)
 {
+  struct compilation *c = THIS_COMPILATION;
   if(!howmany) return;
 #ifdef PIKE_DEBUG
-  if(howmany *sizeof(struct svalue) > used_modules.s.len)
+  if(howmany *sizeof(struct svalue) > c->used_modules.s.len)
     Pike_fatal("Unusing too many modules.\n");
 #endif
+  c->num_used_modules -= howmany;
   Pike_compiler->num_used_modules-=howmany;
-  low_make_buf_space(-sizeof(struct svalue)*howmany, &used_modules);
-  free_svalues((struct svalue *)low_make_buf_space(0, &used_modules),
+  low_make_buf_space(-sizeof(struct svalue)*howmany, &c->used_modules);
+  free_svalues((struct svalue *)low_make_buf_space(0, &c->used_modules),
 	       howmany,
 	       BIT_MAPPING | BIT_OBJECT | BIT_PROGRAM);
   if(Pike_compiler->module_index_cache)
@@ -1549,10 +1552,11 @@ struct node_s *resolve_identifier(struct pike_string *ident);
 struct node_s *find_module_identifier(struct pike_string *ident,
 				      int see_inherit)
 {
+  struct compilation *c = THIS_COMPILATION;
   struct node_s *ret;
 
   struct svalue *modules=(struct svalue *)
-    (used_modules.s.str + used_modules.s.len);
+    (c->used_modules.s.str + c->used_modules.s.len);
 
   {
     struct program_state *p=Pike_compiler;
@@ -1579,7 +1583,7 @@ struct node_s *find_module_identifier(struct pike_string *ident,
 			    modules))) return ret;
       modules-=p->num_used_modules;
 #ifdef PIKE_DEBUG
-      if( ((char *)modules ) < used_modules.s.str)
+      if( ((char *)modules ) < c->used_modules.s.str)
 	Pike_fatal("Modules out of whack!\n");
 #endif
     }
@@ -2423,7 +2427,7 @@ void low_start_new_program(struct program *p,
   Pike_compiler->parent_identifier=id;
   Pike_compiler->compiler_pass = pass;
 
-  Pike_compiler->num_used_modules=0;
+  Pike_compiler->num_used_modules=0;	/* FIXME: Duplicate? */
 
   if(p->flags & PROGRAM_FINISHED)
   {
@@ -7390,10 +7394,6 @@ static void run_init(struct compilation *c)
   if (c->compat_handler) free_object(c->compat_handler);
   c->compat_handler=0;
 
-  c->used_modules_save = used_modules;
-  c->num_used_modules_save = Pike_compiler->num_used_modules;
-  Pike_compiler->num_used_modules=0;
-
   c->resolve_cache_save = resolve_cache;
   resolve_cache = 0;
 
@@ -7428,8 +7428,6 @@ static void run_init2(struct compilation *c)
   debug_malloc_touch(c);
   Pike_compiler->compiler = c;
 
-  initialize_buf(&used_modules);
-
   /* Get the proper default module. */
   safe_apply_current2(PC_GET_DEFAULT_MODULE_FUN_NUM, 0, NULL);
   if(Pike_sp[-1].type == T_INT)
@@ -7452,14 +7450,11 @@ static void run_init2(struct compilation *c)
 static void run_exit(struct compilation *c)
 {
   debug_malloc_touch(c);
-  toss_buffer(&used_modules);
-  used_modules = c->used_modules_save;
 
 #ifdef PIKE_DEBUG
-  if(Pike_compiler->num_used_modules)
+  if(c->num_used_modules)
     Pike_fatal("Failed to pop modules properly.\n");
 #endif
-  Pike_compiler->num_used_modules = c->num_used_modules_save ;
 
 #ifdef PIKE_DEBUG
   if (compilation_depth != -1) {
@@ -7788,6 +7783,7 @@ static void compilation_event_handler(int e)
     c->supporter.self = Pike_fp->current_object; /* NOTE: Not ref-counted! */
     c->compilation_inherit =
       Pike_fp->context - Pike_fp->current_object->prog->inherits;
+    initialize_buf(&c->used_modules);
     add_ref(c->default_module.u.mapping = get_builtin_constants());
     c->default_module.type = T_MAPPING;
     c->major = -1;
@@ -7798,6 +7794,7 @@ static void compilation_event_handler(int e)
   case PROG_EVENT_EXIT:
     CDFPRINTF((stderr, "th(%ld) compilation: EXIT(%p).\n",
 	       (long) th_self(), c));
+    toss_buffer(&c->used_modules);
     free_compilation(c);
     break;
   }
@@ -8265,10 +8262,10 @@ static void f_compilation_change_compiler_compatibility(INT32 args)
   /* Replace the implicit import of all_constants() with
    * the new value.
    */
-  if(Pike_compiler->num_used_modules)
+  if(c->num_used_modules)
   {
-    free_svalue( (struct svalue *)used_modules.s.str );
-    ((struct svalue *)used_modules.s.str)[0]=sp[-1];
+    free_svalue( (struct svalue *)c->used_modules.s.str );
+    ((struct svalue *)c->used_modules.s.str)[0]=sp[-1];
     sp--;
     dmalloc_touch_svalue(sp);
     if(Pike_compiler->module_index_cache)
