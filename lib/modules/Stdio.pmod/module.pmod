@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.236 2008/04/28 13:24:43 grubba Exp $
+// $Id: module.pmod,v 1.237 2008/04/28 15:46:13 grubba Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -1550,7 +1550,13 @@ class FILE
   //!
   //! @fixme
   //!   Consider using one of
-  //!   ISO-IR-190 (@tt{"\e%/G"@} - switch to UTF-8 level 1)
+  //!   ISO-IR-196 (@tt{"\e%G"@} - switch to UTF-8 with return)
+  //!   or ISO-IR-190 (@tt{"\e%/G"@} - switch to UTF-8 level 1 no return)
+  //!   or ISO-IR-191 (@tt{"\e%/H"@} - switch to UTF-8 level 2 no return)
+  //!   or ISO-IR-192 (@tt{"\e%/I"@} - switch to UTF-8 level 3 no return)
+  //!   or ISO-IR-193 (@tt{"\e%/J"@} - switch to UTF-16 level 1 no return)
+  //!   or ISO-IR-194 (@tt{"\e%/K"@} - switch to UTF-16 level 2 no return)
+  //!   or ISO-IR-195 (@tt{"\e%/L"@} - switch to UTF-16 level 3 no return)
   //!   or ISO-IR-162 (@tt{"\e%/@@"@} - switch to UCS-2 level 1)
   //!   or ISO-IR-163 (@tt{"\e%/A"@} - switch to UCS-4 level 1)
   //!   or ISO-IR-174 (@tt{"\e%/C"@} - switch to UCS-2 level 2)
