@@ -1,5 +1,5 @@
 START_MARKER
-dnl $Id: testsuite.in,v 1.8 2004/05/02 18:28:17 nilsson Exp $
+dnl $Id: testsuite.in,v 1.9 2008/04/30 17:01:38 nilsson Exp $
 
 test_any([[
 #pike 7.4
@@ -31,8 +31,8 @@ void make_cert() {
   ASSERT(rsa->public_key_equal(rsa_again));
 
   array attrs = ({
-    (["organizationName":Standards.ASN1.Types.asn1_printable_string("Test")]),
-    (["commonName":Standards.ASN1.Types.asn1_printable_string("*")]),
+    (["organizationName":Standards.ASN1.Types.PrintableString("Test")]),
+    (["commonName":Standards.ASN1.Types.PrintableString("*")]),
   });
 
   _cert = Tools.PEM.simple_build_pem("CERTIFICATE",
