@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iterators.cmod,v 1.64 2008/01/26 22:34:20 mast Exp $
+|| $Id: iterators.cmod,v 1.65 2008/05/01 21:33:24 mast Exp $
 */
 
 #include "global.h"
@@ -1290,7 +1290,7 @@ PIKECLASS string_split_iterator
 	  goto reskip_empty;					\
 	}							\
 	free_svalue(&ssi->feed);				\
-	mark_free_svalue (&ssi);				\
+	mark_free_svalue (&ssi->feed);				\
 	pop_stack();						\
 	if (!(FLAGS)) {						\
 	  copy_shared_string(ssi->current, empty_pike_string);	\
@@ -1332,7 +1332,7 @@ PIKECLASS string_split_iterator
       								\
       /* Make sure we don't call feed() any more. */		\
       free_svalue(&ssi->feed);					\
-      mark_free_svalue (&ssi);					\
+      mark_free_svalue (&ssi->feed);				\
     }								\
     ssi->offset = end+1;					\
     ssi->current = Pike_sp[-1].u.string;			\
