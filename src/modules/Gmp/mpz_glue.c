@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.175 2008/05/01 20:46:19 mast Exp $
+|| $Id: mpz_glue.c,v 1.176 2008/05/01 21:14:04 mast Exp $
 */
 
 #include "global.h"
@@ -180,42 +180,6 @@ static void gmp_push_int64 (INT64 i)
   }
 }
 
-static void gmp_push_uint64 (unsigned INT64 i)
-{
-  if (i <= MAX_INT_TYPE) {
-    push_int(DO_NOT_WARN((INT_TYPE)i));
-  }
-  else {
-    MP_INT *mpz;
-
-    push_object (fast_clone_object (bignum_program));
-    mpz = OBTOMPZ (sp[-1].u.object);
-
-#if SIZEOF_LONG >= SIZEOF_INT64
-    mpz_set_ui (mpz, i);
-#else
-    {
-#ifdef HAVE_MPZ_IMPORT
-      mpz_import (mpz, 1, 1, SIZEOF_INT64, 0, 0, &i);
-#else
-      {
-	size_t n =
-	  ((SIZEOF_INT64 + SIZEOF_LONG - 1) / SIZEOF_LONG - 1)
-	  /* The above is the position of the top unsigned long in the INT64. */
-	  * ULONG_BITS;
-	mpz_set_ui (mpz, (unsigned long) (i >> n));
-	while (n) {
-	  n -= ULONG_BITS;
-	  mpz_mul_2exp (mpz, mpz, ULONG_BITS);
-	  mpz_add_ui (mpz, mpz, (unsigned long) (i >> n));
-	}
-      }
-#endif	/* !HAVE_MPZ_IMPORT */
-    }
-#endif	/* SIZEOF_LONG < SIZEOF_INT64 */
-  }
-}
-
 static mpz_t mpz_int64_min;
 
 static int gmp_int64_from_bignum (INT64 *i, struct object *bignum)
@@ -223,7 +187,7 @@ static int gmp_int64_from_bignum (INT64 *i, struct object *bignum)
   MP_INT *mpz = OBTOMPZ (bignum);
   int neg = mpz_sgn (mpz) < 0;
 
-  /* Note: Similar code in mpzmod_reduce and gmp_uint64_from_bignum. */
+  /* Note: Similar code in mpzmod_reduce and gmp_ulongest_from_bignum. */
 
   /* Get the index of the highest limb that have bits within the range
    * of the INT64. */
@@ -270,15 +234,36 @@ overflow:
   return 0;
 }
 
-static int gmp_uint64_from_bignum (unsigned INT64 *i, struct object *bignum)
+#endif /* INT64 */
+
+static void gmp_push_ulongest (unsigned LONGEST i)
+{
+  if (i <= MAX_INT_TYPE) {
+    push_int(DO_NOT_WARN((INT_TYPE)i));
+  }
+  else {
+    MP_INT *mpz;
+
+    push_object (fast_clone_object (bignum_program));
+    mpz = OBTOMPZ (sp[-1].u.object);
+
+#if SIZEOF_LONG >= SIZEOF_LONGEST
+    mpz_set_ui (mpz, i);
+#else
+#error LONGEST should always be at least the same size as long.
+#endif
+  }
+}
+
+static int gmp_ulongest_from_bignum (unsigned LONGEST *i, struct object *bignum)
 {
   MP_INT *mpz = OBTOMPZ (bignum);
 
   /* Note: Similar code in gmp_int64_from_bignum. */
 
   /* Get the index of the highest limb that have bits within the range
-   * of the INT64. */
-  size_t pos = (UINT64_BITS + GMP_NUMB_BITS - 1) / GMP_NUMB_BITS - 1;
+   * of LONGEST. */
+  size_t pos = (ULONGEST_BITS + GMP_NUMB_BITS - 1) / GMP_NUMB_BITS - 1;
 
 #ifdef PIKE_DEBUG
   if ((bignum->prog != bignum_program) &&
@@ -290,19 +275,20 @@ static int gmp_uint64_from_bignum (unsigned INT64 *i, struct object *bignum)
   if (mpz_sgn (mpz) < 0) return 0;
 
   if (mpz_size (mpz) <= pos + 1) {
-    unsigned INT64 res;
-#if UINT64_BITS == GMP_NUMB_BITS
+    unsigned LONGEST res;
+#if ULONGEST_BITS == GMP_NUMB_BITS
     res = MPZ_GETLIMBN (mpz, 0) & GMP_NUMB_MASK;
-#elif UINT64_BITS < GMP_NUMB_BITS
+#elif ULONGEST_BITS < GMP_NUMB_BITS
     mp_limb_t val = MPZ_GETLIMBN (mpz, 0) & GMP_NUMB_MASK;
-    if (val >= (mp_limb_t) 1 << UINT64_BITS) return 0;
-    res = val;
+    res = DO_NOT_WARN ((unsigned LONGEST) val);
+    if (val != res) return 0;
 #else
     res = 0;
     for (;; pos--) {
       res |= MPZ_GETLIMBN (mpz, pos) & GMP_NUMB_MASK;
       if (pos == 0) break;
-      if (res >= (unsigned INT64) 1 << (UINT64_BITS - GMP_NUMB_BITS)) return 0;
+      if (res >= (unsigned LONGEST) 1 << (ULONGEST_BITS - GMP_NUMB_BITS))
+	return 0;
       res <<= GMP_NUMB_BITS;
     }
 #endif
@@ -313,8 +299,6 @@ static int gmp_uint64_from_bignum (unsigned INT64 *i, struct object *bignum)
 
   return 0;
 }
-
-#endif /* INT64 */
 
 #else
 #define PUSH_REDUCED(o) push_object(o)
@@ -2171,8 +2155,12 @@ PIKE_MODULE_EXIT
     mpz_clear (mpz_int_type_min);
 #ifdef INT64
     mpz_clear (mpz_int64_min);
-    hook_in_int64_funcs (NULL, NULL, NULL, NULL, NULL);
 #endif
+    hook_in_gmp_funcs (
+#ifdef INT64
+      NULL, NULL, NULL,
+#endif
+      NULL, NULL);
   }
 #endif
 #endif
@@ -2385,10 +2373,13 @@ PIKE_MODULE_INIT
     mpz_init (mpz_int64_min);
     mpz_setbit (mpz_int64_min, INT64_BITS);
     mpz_neg (mpz_int64_min, mpz_int64_min);
-    hook_in_int64_funcs (gmp_push_int64, gmp_push_uint64,
-			 gmp_int64_from_bignum, gmp_uint64_from_bignum,
-			 gmp_reduce_stack_top_bignum);
 #endif
+    hook_in_gmp_funcs (
+#ifdef INT64
+      gmp_push_int64, gmp_int64_from_bignum,
+      gmp_reduce_stack_top_bignum,
+#endif
+      gmp_push_ulongest, gmp_ulongest_from_bignum);
 
 #if 0
     /* magic /Hubbe
