@@ -1,6 +1,20 @@
-dnl $Id: testsuite.in,v 1.39 2007/12/27 00:51:47 nilsson Exp $
+dnl $Id: testsuite.in,v 1.40 2008/05/01 21:08:15 nilsson Exp $
 
 START_MARKER
+
+dnl - Arg
+
+test_equal( Arg.parse("aa --hopp --haha=ho -bar=foo x y"/" "),
+ ([ "hopp":1, "haha":"ho", "b":1, "a":1, "r":"foo", Arg.REST: ({"x","y"}) ]) )
+test_equal( Arg.parse("aa -bar -x=6"/" "),
+ ([ "b":1, "a":1, "r":1, "x":"6", Arg.REST: ({}) ]) )
+test_equal( Arg.parse("aa --foo --bar"/" "),
+ ([ "foo":1, "bar":1, Arg.REST: ({}) ]) )
+test_equal( Arg.parse("aa --foo - --bar"/" "),
+ ([ "foo":1, Arg.REST: ({ "-","--bar" }) ]) )
+test_equal( Arg.parse("aa --foo x --bar"/" "),
+ ([ "foo":1, Arg.REST: ({ "x","--bar" }) ]) )
+
 
 dnl - Array
 
