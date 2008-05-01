@@ -1,5 +1,5 @@
 /*
- * $Id: pike_embed.h,v 1.8 2005/11/23 15:07:21 grubba Exp $
+ * $Id: pike_embed.h,v 1.9 2008/05/01 21:25:32 mast Exp $
  *
  * Pike embedding API.
  *
@@ -60,7 +60,7 @@ void pike_enable_stack_profiling(void);
 PMOD_EXPORT struct callback *add_exit_callback(callback_func call,
 					       void *arg,
 					       callback_func free_func);
-DECLSPEC(noreturn) void pike_do_exit(int num) ATTRIBUTE((noreturn));
+void pike_do_exit(int num);
 
 void pike_push_argv(int argc, char **argv);
 void pike_push_env(void);
