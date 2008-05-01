@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.656 2008/04/26 19:04:25 grubba Exp $
+|| $Id: builtin_functions.c,v 1.657 2008/05/01 20:35:18 mast Exp $
 */
 
 #include "global.h"
@@ -3622,6 +3622,7 @@ void compile_replace_many(struct replace_many_context *ctx,
   ctx->v = NULL;
   ctx->empty_repl = NULL;
 
+#if INT32_MAX >= LONG_MAX
   /* NOTE: The following test is needed, since sizeof(struct tupel)
    *       is somewhat greater than sizeof(struct svalue).
    */
@@ -3630,6 +3631,7 @@ void compile_replace_many(struct replace_many_context *ctx,
 	       "exceeds %" PRINTSIZET "u).\n",
 	       from->size,
 	       (size_t)(LONG_MAX/sizeof(struct replace_many_tupel)));
+#endif
   ctx->v = (struct replace_many_tupel *)
     xalloc(sizeof(struct replace_many_tupel) * from->size);
 
