@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.212 2008/01/20 19:55:14 grubba Exp $
+ * $Id: backend.cmod,v 1.213 2008/05/01 19:57:57 mast Exp $
  *
  * Backend object.
  */
@@ -311,10 +311,13 @@ PIKECLASS Backend
    * Hooks to inheriting classes.
    */
 #ifdef PIKE_DEBUG
-  CVAR void (*debug_handler)(struct Backend_struct *me, void *data);
+  typedef void debug_handler_fn (struct Backend_struct *me, void *data);
+  CVAR debug_handler_fn *debug_handler;
 #endif /* PIKE_DEBUG */
-  CVAR void (*update_fd_set_handler)(struct Backend_struct *me, void *data,
-				     int fd, int old_events, int new_events);
+  typedef void update_fd_set_handler_fn (struct Backend_struct *me, void *data,
+					 int fd,
+					 int old_events, int new_events);
+  CVAR update_fd_set_handler_fn *update_fd_set_handler;
   CVAR void *handler_data;
 
   /*
@@ -3709,9 +3712,9 @@ PIKECLASS GenericBackend
 		    THR_NO, me->id));
 
 #ifdef PIKE_DEBUG
-    me->debug_handler = gb_backend_do_debug;
+    me->debug_handler = (debug_handler_fn *) gb_backend_do_debug;
 #endif
-    me->update_fd_set_handler = gb_update_fd_set;
+    me->update_fd_set_handler = (update_fd_set_handler_fn *) gb_update_fd_set;
     me->handler_data = THIS;
 
     IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: Registering backend...\n",
