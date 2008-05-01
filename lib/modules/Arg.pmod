@@ -1,7 +1,7 @@
 //
 // Argument parser
 // By Martin Nilsson
-// $Id: Arg.pmod,v 1.1 2008/05/01 20:50:25 nilsson Exp $
+// $Id: Arg.pmod,v 1.2 2008/05/01 21:07:35 nilsson Exp $
 //
 
 #pike __REAL_VERSION__
@@ -470,7 +470,7 @@ class SimpleOptions
     }
 
     sscanf( arg, "-%s=%s", name, value ) || sscanf( arg, "-%s", name );
-    if( !name ) return 0;
+    if( !name || !sizeof(name) ) return 0;
     foreach( name/1; int pos; string c )
       if( pos == sizeof(name)-1 )
         values[c] = value||1;
