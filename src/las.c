@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.406 2008/04/14 10:14:39 grubba Exp $
+|| $Id: las.c,v 1.407 2008/05/01 20:41:43 mast Exp $
 */
 
 #include "global.h"
@@ -3543,7 +3543,7 @@ void fix_type_field(node *n)
       if ((n->type = new_get_return_type(dmalloc_touch(struct pike_type *, f),
 					 0))) {
 	/* Type/argument-check OK. */
-	debug_malloc_pass(n->type);
+	debug_malloc_touch(n->type);
 
 	free_type(f);
 	if(n->token == F_AUTO_MAP)
