@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: avs.c,v 1.21 2006/09/22 12:15:02 grubba Exp $
+|| $Id: avs.c,v 1.22 2008/05/01 21:51:12 mast Exp $
 */
 
 #include "global.h"
@@ -79,7 +79,7 @@ void image_avs_f__decode(INT32 args)
   push_int( h );
   ao = clone_object( image_program, 2);
 
-  for(c=0; c<w*h; c++)
+  for(c=0; c< (unsigned) w * h; c++)
   {
     rgb_group pix, apix;
     apix.r = apix.g = apix.b = q[c*4+8];
