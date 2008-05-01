@@ -1,12 +1,12 @@
 //
-// $Id: Types.pmod,v 1.42 2008/04/22 13:11:15 grubba Exp $
+// $Id: Types.pmod,v 1.43 2008/05/01 10:42:43 nilsson Exp $
 //
 
 //! Encodes various asn.1 objects according to the Distinguished
 //! Encoding Rules (DER)
 
 #pike __REAL_VERSION__
-#pragma strict_types
+//#pragma strict_types
 #define COMPATIBILITY
 
 #if constant(Gmp) && constant(Gmp.mpz)

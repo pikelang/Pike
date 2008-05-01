@@ -1,9 +1,9 @@
 //
-// $Id: Decode.pmod,v 1.21 2008/04/25 13:48:36 grubba Exp $
+// $Id: Decode.pmod,v 1.22 2008/05/01 10:42:43 nilsson Exp $
 //
 
 #pike __REAL_VERSION__
-#pragma strict_types
+//#pragma strict_types
 #define COMPATIBILITY
 
 //! Decodes a DER object.
