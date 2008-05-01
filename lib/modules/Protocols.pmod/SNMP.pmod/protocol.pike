@@ -17,7 +17,7 @@
 //!      2570   : v3 description
 //!
 
-// $Id: protocol.pike,v 1.17 2008/01/04 20:50:42 nilsson Exp $
+// $Id: protocol.pike,v 1.18 2008/05/01 10:41:11 nilsson Exp $
 
 
 #include "snmp_globals.h"
@@ -27,7 +27,7 @@
 // --- ASN.1 hack
 class asn1_application_octet_string
 {
-  inherit Standards.ASN1.Types.asn1_octet_string;
+  inherit Standards.ASN1.Types.OctetString;
   constant cls = 1;
   constant type_name = "APPLICATION OCTET_STRING";
   int tagx;
@@ -42,7 +42,7 @@ class asn1_application_octet_string
 
 class asn1_application_integer
 {
-  inherit Standards.ASN1.Types.asn1_integer;
+  inherit Standards.ASN1.Types.Integer;
   constant cls = 1;
   constant type_name = "APPLICATION INTEGER";
   int tagx;

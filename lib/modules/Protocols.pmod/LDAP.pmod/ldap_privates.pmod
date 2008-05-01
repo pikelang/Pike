@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: ldap_privates.pmod,v 1.13 2005/03/10 19:10:55 mast Exp $
+// $Id: ldap_privates.pmod,v 1.14 2008/05/01 10:40:49 nilsson Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -40,14 +40,14 @@
 
 class asn1_enumerated
 {
-  inherit Standards.ASN1.Types.asn1_integer;
+  inherit Standards.ASN1.Types.Integer;
   constant tag = 10;
   constant type_name = "ENUMERATED";
 }
 
 class asn1_boolean
 {
-  inherit Standards.ASN1.Types.asn1_object;
+  inherit Standards.ASN1.Types.Object;
   constant tag = 1;
   constant type_name = "BOOLEAN";
   int value;
@@ -75,7 +75,7 @@ class asn1_boolean
 
 class asn1_application_sequence
 {
-  inherit Standards.ASN1.Types.asn1_sequence;
+  inherit Standards.ASN1.Types.Sequence;
   constant cls = 1;
   constant type_name = "APPLICATION SEQUENCE";
   int tagx;
@@ -95,7 +95,7 @@ class asn1_application_sequence
 
 class asn1_application_octet_string
 {
-  inherit Standards.ASN1.Types.asn1_octet_string;
+  inherit Standards.ASN1.Types.OctetString;
   constant cls = 1;
   constant type_name = "APPLICATION OCTET_STRING";
   int tagx;
@@ -115,7 +115,7 @@ class asn1_application_octet_string
 
 class asn1_context_boolean
 {
-  inherit Standards.ASN1.Types.asn1_boolean;
+  inherit Standards.ASN1.Types.Boolean;
   constant cls = 2;
   constant type_name = "CONTEXT BOOLEAN";
   int tagx;
@@ -135,7 +135,7 @@ class asn1_context_boolean
 
 class asn1_context_integer
 {
-  inherit Standards.ASN1.Types.asn1_integer;
+  inherit Standards.ASN1.Types.Integer;
   constant cls = 2;
   constant type_name = "CONTEXT INTEGER";
   int tagx;
@@ -155,7 +155,7 @@ class asn1_context_integer
 
 class asn1_context_octet_string
 {
-  inherit Standards.ASN1.Types.asn1_octet_string;
+  inherit Standards.ASN1.Types.OctetString;
   constant cls = 2;
   constant type_name = "CONTEXT OCTET_STRING";
   int tagx;
@@ -173,10 +173,9 @@ class asn1_context_octet_string
   }
 }
 
-
 class asn1_context_sequence
 {
-  inherit Standards.ASN1.Types.asn1_sequence;
+  inherit Standards.ASN1.Types.Sequence;
   constant cls = 2;
   constant type_name = "CONTEXT SEQUENCE";
   int tagx;
@@ -196,7 +195,7 @@ class asn1_context_sequence
 
 class asn1_context_set
 {
-  inherit Standards.ASN1.Types.asn1_set;
+  inherit Standards.ASN1.Types.Set;
   constant cls = 2;
   constant type_name = "CONTEXT SET";
   int tagx;
@@ -216,7 +215,7 @@ class asn1_context_set
 
 class asn1_sequence
 {
-  inherit Standards.ASN1.Types.asn1_sequence;
+  inherit Standards.ASN1.Types.Sequence;
   constant type_name = "SEQUENCE";
   constant cls = 2;
   constant tag = 0;
@@ -338,18 +337,18 @@ object|mapping der_decode(object data,
 static mapping(int(0..3):mapping(int:program|function)) ldap_type_proc = ([
   0:([
     1 : asn1_boolean,
-    2 : Standards.ASN1.Types.asn1_integer,
-    3 : Standards.ASN1.Types.asn1_bit_string,
-    4 : Standards.ASN1.Types.asn1_octet_string,
-    5 : Standards.ASN1.Types.asn1_null,
-    6 : Standards.ASN1.Types.asn1_identifier,
+    2 : Standards.ASN1.Types.Integer,
+    3 : Standards.ASN1.Types.BitString,
+    4 : Standards.ASN1.Types.OctetString,
+    5 : Standards.ASN1.Types.Null,
+    6 : Standards.ASN1.Types.Identifier,
     // 9 : asn1_real,
     10 : asn1_enumerated,
-    16 : Standards.ASN1.Types.asn1_sequence,
-    17 : Standards.ASN1.Types.asn1_set,
-    19 : Standards.ASN1.Types.asn1_printable_string,
-    20 : Standards.ASN1.Types.asn1_teletex_string,
-    23 : Standards.ASN1.Types.asn1_utc,
+    16 : Standards.ASN1.Types.Sequence,
+    17 : Standards.ASN1.Types.Set,
+    19 : Standards.ASN1.Types.PrintableString,
+    20 : Standards.ASN1.Types.TeletexString,
+    23 : Standards.ASN1.Types.UTC,
   ]),
   1:([
     1 : asn1_application_sequence,	// [1] BindResponse
