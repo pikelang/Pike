@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.167 2008/04/12 13:26:30 grubba Exp $
+|| $Id: cpp.c,v 1.168 2008/05/01 20:39:40 mast Exp $
 */
 
 #include "global.h"
@@ -1021,7 +1021,7 @@ while(1)					\
   case '"':  break;				\
   case '\\':					\
   {						\
-    int tmp;					\
+    unsigned tmp;				\
     if(data[pos+1]=='\n')			\
     {						\
       pos++;					\
@@ -1112,7 +1112,7 @@ while(1)					\
   case '"':  break;				\
   case '\\':					\
   {						\
-    int tmp;					\
+    unsigned tmp;				\
     if(data[pos+1]=='\n')			\
     {						\
       pos++;					\

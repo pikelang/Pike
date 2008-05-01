@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_search.c,v 1.27 2006/07/05 19:15:35 mast Exp $
+|| $Id: pike_search.c,v 1.28 2008/05/01 20:39:40 mast Exp $
 */
 
 /* New memory searcher functions */
@@ -83,7 +83,7 @@ static void free_mem_searcher(void *m)
  ( ((PTR)[3] << 24) + ( (PTR)[2] << 16 ) +( (PTR)[1] << 8 ) +  (PTR)[0] )
 #endif /* PIKE_BYTEORDER == 4321 */
 
-#define HUBBE_ALIGN0(q) q=(char *)(PTR_TO_INT(q) & ~(sizeof(INT32) - 1))
+#define HUBBE_ALIGN0(q) q=(p_wchar0 *)(PTR_TO_INT(q) & ~(sizeof(INT32) - 1))
 #define GET_4_ALIGNED_CHARS0(PTR)  (*(INT32 *)(PTR))
 #define GET_4_UNALIGNED_CHARS0(PTR)  EXTRACT_INT(PTR)
 
@@ -198,8 +198,10 @@ PMOD_EXPORT char *my_memmem(char *needle,
 			    size_t haystacklen)
 {
   struct pike_mem_searcher tmp;
-  init_memsearch0(&tmp, needle, (ptrdiff_t)needlelen, (ptrdiff_t)haystacklen);
-  return tmp.mojt.vtab->func0(tmp.mojt.data, haystack, (ptrdiff_t)haystacklen);
+  init_memsearch0(&tmp, (p_wchar0 *) needle, (ptrdiff_t)needlelen,
+		  (ptrdiff_t)haystacklen);
+  return (char *) tmp.mojt.vtab->func0(tmp.mojt.data, (p_wchar0 *) haystack,
+				       (ptrdiff_t)haystacklen);
   /* No free required - Hubbe */
 }
 

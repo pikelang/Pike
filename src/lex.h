@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lex.h,v 1.36 2008/04/14 10:14:40 grubba Exp $
+|| $Id: lex.h,v 1.37 2008/05/01 20:39:40 mast Exp $
 */
 
 #ifndef LEX_H
@@ -31,9 +31,9 @@ struct lex
 
 /* Prototypes begin here */
 
-int parse_esc_seq0 (p_wchar0 *buf, int *chr, ptrdiff_t *len);
-int parse_esc_seq1 (p_wchar1 *buf, int *chr, ptrdiff_t *len);
-int parse_esc_seq2 (p_wchar2 *buf, int *chr, ptrdiff_t *len);
+int parse_esc_seq0 (p_wchar0 *buf, unsigned *chr, ptrdiff_t *len);
+int parse_esc_seq1 (p_wchar1 *buf, unsigned *chr, ptrdiff_t *len);
+int parse_esc_seq2 (p_wchar2 *buf, unsigned *chr, ptrdiff_t *len);
 
 int yylex0(struct lex *, YYSTYPE *);
 int yylex1(struct lex *, YYSTYPE *);

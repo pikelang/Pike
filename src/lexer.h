@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lexer.h,v 1.67 2008/04/18 20:26:55 grubba Exp $
+|| $Id: lexer.h,v 1.68 2008/05/01 20:39:40 mast Exp $
 */
 
 /*
@@ -181,7 +181,7 @@ static double lex_strtod(char *buf, char **end)
  * is removed and the escape remains otherwise intact.
  */
 
-int parse_esc_seq (WCHAR *buf, int *chr, ptrdiff_t *len)
+int parse_esc_seq (WCHAR *buf, unsigned *chr, ptrdiff_t *len)
 /* buf is assumed to be after the backslash. Return codes:
  * 0: All ok. The char's in *chr, consumed length in *len.
  * 1: Found a literal \r at *buf.
@@ -194,7 +194,7 @@ int parse_esc_seq (WCHAR *buf, int *chr, ptrdiff_t *len)
  * 8: Not 8 digits in \U escape. *len is up to the last found digit. */
 {
   ptrdiff_t l = 1;
-  int c;
+  unsigned c;
 
   switch ((c = *buf))
   {
@@ -213,10 +213,10 @@ int parse_esc_seq (WCHAR *buf, int *chr, ptrdiff_t *len)
 
     case '0': case '1': case '2': case '3':
     case '4': case '5': case '6': case '7': {
-      int of = 0;
+      unsigned of = 0;
       c-='0';
       for (l = 1; buf[l] >= '0' && buf[l] <= '8'; l++) {
-	if (!of) of = INT_TYPE_MUL_OVERFLOW (c, eight);
+	if (!of) of = UNSIGNED_INT_TYPE_MUL_OVERFLOW (c, eight);
 	c = 8 * c + buf[l] - '0';
       }
       if (of) {*len = l; return 4;}
@@ -224,21 +224,21 @@ int parse_esc_seq (WCHAR *buf, int *chr, ptrdiff_t *len)
     }
       
     case 'x': {
-      int of = 0;
+      unsigned of = 0;
       c=0;
       for (l = 1;; l++) {
 	switch (buf[l]) {
 	  case '0': case '1': case '2': case '3': case '4':
 	  case '5': case '6': case '7': case '8': case '9':
-	    if (!of) of = INT_TYPE_MUL_OVERFLOW (c, sixteen);
+	    if (!of) of = UNSIGNED_INT_TYPE_MUL_OVERFLOW (c, sixteen);
 	    c = 16 * c + buf[l] - '0';
 	    continue;
 	  case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
-	    if (!of) of = INT_TYPE_MUL_OVERFLOW (c, sixteen);
+	    if (!of) of = UNSIGNED_INT_TYPE_MUL_OVERFLOW (c, sixteen);
 	    c = 16 * c + buf[l] - 'a' + 10;
 	    continue;
 	  case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
-	    if (!of) of = INT_TYPE_MUL_OVERFLOW (c, sixteen);
+	    if (!of) of = UNSIGNED_INT_TYPE_MUL_OVERFLOW (c, sixteen);
 	    c = 16 * c + buf[l] - 'A' + 10;
 	    continue;
 	}
@@ -249,13 +249,13 @@ int parse_esc_seq (WCHAR *buf, int *chr, ptrdiff_t *len)
     }
 
     case 'd': {
-      int of = 0;
+      unsigned of = 0;
       c=0;
       for (l = 1;; l++) {
 	switch (buf[l]) {
 	  case '0': case '1': case '2': case '3': case '4':
 	  case '5': case '6': case '7': case '8': case '9':
-	    if (!of) of = INT_TYPE_MUL_OVERFLOW (c, ten);
+	    if (!of) of = UNSIGNED_INT_TYPE_MUL_OVERFLOW (c, ten);
 	    c = 10 * c + buf[l] - '0';
 	    continue;
 	}
@@ -314,9 +314,9 @@ int parse_esc_seq (WCHAR *buf, int *chr, ptrdiff_t *len)
   return 0;
 }
 
-static int char_const(struct lex *lex)
+static unsigned char_const(struct lex *lex)
 {
-  int c;
+  unsigned c;
   ptrdiff_t l;
   switch (parse_esc_seq ((WCHAR *)lex->pos, &c, &l)) {
     case 0:
@@ -334,7 +334,7 @@ static int char_const(struct lex *lex)
       return 0;
     case 4: case 5: case 6:
       yywarning ("Too large character value in escape.");
-      c = (int) MAX_UINT32;
+      c = MAX_UINT32;
       break;
     case 7:
       yywarning ("Too few hex digits in \\u escape.");
