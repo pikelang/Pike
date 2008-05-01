@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.331 2008/01/26 22:34:23 mast Exp $
+|| $Id: signal_handler.c,v 1.332 2008/05/01 21:27:51 mast Exp $
 */
 
 #include "global.h"
@@ -4774,7 +4774,7 @@ PMOD_EXPORT void low_init_signals(void)
       /* 64-bit Solaris 10 in Xenofarm fails with SIGPIPE.
        * Force a core dump.
        */
-      my_signal(SIGPIPE, abort);
+      my_signal(SIGPIPE, (sigfunctype) abort);
     }
   }
 #endif
