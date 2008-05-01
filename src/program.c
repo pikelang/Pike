@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.679 2008/04/26 19:04:26 grubba Exp $
+|| $Id: program.c,v 1.680 2008/05/01 20:42:20 mast Exp $
 */
 
 #include "global.h"
@@ -3068,7 +3068,7 @@ void dump_program_tables (struct program *p, int indent)
 	  "%*s  ####: Value\n",
 	  indent, "", indent, "");
   for (d = 0; d < p->num_strings; d++) {
-    fprintf(stderr, "%*s  %4d: [%p]\"%s\"(%d characters)\n",
+    fprintf(stderr, "%*s  %4d: [%p]\"%s\"(%"PRINTPTRDIFFT"d characters)\n",
 	    indent, "", (int)d, p->strings[d], p->strings[d]->str, p->strings[d]->len);
   }
 
