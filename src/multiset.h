@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.h,v 1.41 2006/08/06 16:10:41 mast Exp $
+|| $Id: multiset.h,v 1.42 2008/05/01 21:44:33 mast Exp $
 */
 
 #ifndef MULTISET_H
@@ -446,7 +446,7 @@ void check_all_multisets (int safe);
 void debug_dump_multiset (struct multiset *l);
 #endif
 
-void count_memory_in_multisets (INT32 *num, INT32 *size);
+void count_memory_in_multisets (size_t *num, size_t *size);
 void init_multiset (void);
 void exit_multiset (void);
 void test_multiset (void);

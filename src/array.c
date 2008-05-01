@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.203 2008/05/01 20:15:44 mast Exp $
+|| $Id: array.c,v 1.204 2008/05/01 21:44:32 mast Exp $
 */
 
 #include "global.h"
@@ -2816,9 +2816,9 @@ void debug_dump_array(struct array *a)
  *  memory allocated for arrays (array structs + svalues). Called from
  *  _memory_usage, which is exposed through Debug.memory_usage().
  */
-void count_memory_in_arrays(INT32 *num_, INT32 *size_)
+void count_memory_in_arrays(size_t *num_, size_t *size_)
 {
-  INT32 num=0, size=0;
+  size_t num=0, size=0;
   struct array *m;
   for(m=first_array;m;m=m->next)
   {

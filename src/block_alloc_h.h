@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: block_alloc_h.h,v 1.24 2008/01/24 18:34:19 grubba Exp $
+|| $Id: block_alloc_h.h,v 1.25 2008/05/01 21:44:32 mast Exp $
 */
 
 #undef BLOCK_ALLOC
@@ -26,7 +26,7 @@ void PIKE_CONCAT3(new_,DATA,_context)(void);				\
 void PIKE_CONCAT3(really_free_,DATA,_unlocked)(struct DATA *d);		\
 void PIKE_CONCAT(really_free_,DATA)(struct DATA *d);			\
 void PIKE_CONCAT3(free_all_,DATA,_blocks)(void);			\
-void PIKE_CONCAT3(count_memory_in_,DATA,s)(INT32 *num, INT32 *size);	\
+void PIKE_CONCAT3(count_memory_in_,DATA,s)(size_t *num, size_t *size);	\
 void PIKE_CONCAT3(init_,DATA,_blocks)(void)
 
 

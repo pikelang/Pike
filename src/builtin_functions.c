@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.657 2008/05/01 20:35:18 mast Exp $
+|| $Id: builtin_functions.c,v 1.658 2008/05/01 21:44:32 mast Exp $
 */
 
 #include "global.h"
@@ -7004,64 +7004,64 @@ struct callback *add_memory_usage_callback(callback_func call,
  */
 PMOD_EXPORT void f__memory_usage(INT32 args)
 {
-  INT32 num,size;
+  size_t num,size;
   struct svalue *ss;
   pop_n_elems(args);
   ss=Pike_sp;
 
   count_memory_in_mappings(&num, &size);
   push_text("num_mappings");
-  push_int(num);
+  push_ulongest(num);
   push_text("mapping_bytes");
-  push_int(size);
+  push_ulongest(size);
 
   count_memory_in_strings(&num, &size);
   push_text("num_strings");
-  push_int(num);
+  push_ulongest(num);
   push_text("string_bytes");
-  push_int(size);
+  push_ulongest(size);
 
   count_memory_in_arrays(&num, &size);
   push_text("num_arrays");
-  push_int(num);
+  push_ulongest(num);
   push_text("array_bytes");
-  push_int(size);
+  push_ulongest(size);
 
   count_memory_in_programs(&num,&size);
   push_text("num_programs");
-  push_int(num);
+  push_ulongest(num);
   push_text("program_bytes");
-  push_int(size);
+  push_ulongest(size);
 
   count_memory_in_multisets(&num, &size);
   push_text("num_multisets");
-  push_int(num);
+  push_ulongest(num);
   push_text("multiset_bytes");
-  push_int(size);
+  push_ulongest(size);
 
   count_memory_in_objects(&num, &size);
   push_text("num_objects");
-  push_int(num);
+  push_ulongest(num);
   push_text("object_bytes");
-  push_int(size);
+  push_ulongest(size);
 
   count_memory_in_callbacks(&num, &size);
   push_text("num_callbacks");
-  push_int(num);
+  push_ulongest(num);
   push_text("callback_bytes");
-  push_int(size);
+  push_ulongest(size);
 
   count_memory_in_callables(&num, &size);
   push_text("num_callables");
-  push_int(num);
+  push_ulongest(num);
   push_text("callable_bytes");
-  push_int(size);
+  push_ulongest(size);
 
   count_memory_in_pike_frames(&num, &size);
   push_text("num_frames");
-  push_int(num);
+  push_ulongest(num);
   push_text("frame_bytes");
-  push_int(size);
+  push_ulongest(size);
 
 #ifdef DEBUG_MALLOC
   {
@@ -7072,27 +7072,27 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
 
     count_memory_in_memory_maps(&num, &size);
     push_text("num_memory_maps");
-    push_int(num);
+    push_ulongest(num);
     push_text("memory_map_bytes");
-    push_int(size);
+    push_ulongest(size);
 
     count_memory_in_memory_map_entrys(&num, &size);
     push_text("num_memory_map_entries");
-    push_int(num);
+    push_ulongest(num);
     push_text("memory_map_entrie_bytes");
-    push_int(size);
+    push_ulongest(size);
 
     count_memory_in_memlocs(&num, &size);
     push_text("num_memlocs");
-    push_int(num);
+    push_ulongest(num);
     push_text("memloc_bytes");
-    push_int(size);
+    push_ulongest(size);
 
     count_memory_in_memhdrs(&num, &size);
     push_text("num_memhdrs");
-    push_int(num);
+    push_ulongest(num);
     push_text("memhdr_bytes");
-    push_int(size);
+    push_ulongest(size);
   }
 #endif
 

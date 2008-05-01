@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.240 2008/04/26 19:04:26 grubba Exp $
+|| $Id: program.h,v 1.241 2008/05/01 21:44:33 mast Exp $
 */
 
 #ifndef PROGRAM_H
@@ -935,7 +935,7 @@ PMOD_EXPORT void change_compiler_compatibility(int major, int minor);
 void make_program_executable(struct program *p);
 /* Prototypes end here */
 
-void count_memory_in_programs(INT32*,INT32*);
+void count_memory_in_programs(size_t *, size_t *);
 
 #ifndef PIKE_USE_MACHINE_CODE
 #define make_program_executable(X)

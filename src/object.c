@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.286 2008/04/25 11:21:27 grubba Exp $
+|| $Id: object.c,v 1.287 2008/05/01 21:44:33 mast Exp $
 */
 
 #include "global.h"
@@ -1175,7 +1175,7 @@ PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
       if (fun >= 0) {
 	DECLARE_CYCLIC();
 	fun += p->inherits[ref->inherit_offset].identifier_level;
-	if (!BEGIN_CYCLIC(o, fun)) {
+	if (!BEGIN_CYCLIC(o, (size_t) fun)) {
 	  SET_CYCLIC_RET(1);
 	  apply_low(o, fun, 0);
 	} else {
@@ -1443,7 +1443,7 @@ PMOD_EXPORT void object_low_set_index(struct object *o,
     if (fun >= 0) {
       DECLARE_CYCLIC();
       fun += p->inherits[ref->inherit_offset].identifier_level;
-      if (!BEGIN_CYCLIC(o, fun)) {
+      if (!BEGIN_CYCLIC(o, (size_t) fun)) {
 	SET_CYCLIC_RET(1);
 	push_svalue(from);
 	apply_low(o, fun, 1);
