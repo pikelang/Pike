@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: my_gmp.h,v 1.24 2005/06/16 09:21:43 grubba Exp $
+|| $Id: my_gmp.h,v 1.25 2008/05/01 20:46:19 mast Exp $
 */
 
 /*
@@ -144,6 +144,7 @@ extern struct program *bignum_program;
 #define INT_TYPE_BITS (SIZEOF_INT_TYPE * CHAR_BIT - 1)
 #ifdef INT64
 #define INT64_BITS (SIZEOF_INT64 * CHAR_BIT - 1)
+#define UINT64_BITS (SIZEOF_INT64 * CHAR_BIT)
 #endif
 
 #if SIZEOF_INT_TYPE > SIZEOF_LONG
