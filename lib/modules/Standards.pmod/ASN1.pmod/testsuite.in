@@ -1,7 +1,21 @@
 START_MARKER
-dnl $Id: testsuite.in,v 1.8 2004/05/02 18:30:14 nilsson Exp $
+dnl $Id: testsuite.in,v 1.9 2008/05/01 10:42:28 nilsson Exp $
 
 dnl Tests from ITU-T Rec.X690 (07/2002)
+dnl (originally from A Layman's Guide to a Subset of ASN.1, BER, and
+dnl  DER)
+
+define(test_decode,[[
+  test_eq(Standards.ASN1.Decode.simple_der_decode(String.hex2string($1-" "))->debug_string(),$2)
+]])
+
+test_decode("0500","NULL")
+
+dnl 5.4
+test_decode("03 04 06 6e 5d c0", "BIT STRING (18) 11011100101110111")
+test_decode("03 04 06 6e 5d e0", "BIT STRING (18) 11011100101110111")
+test_decode("03 81 04 06 6e 5d c0", "BIT STRING (18) 11011100101110111")
+
 
 dnl §8.8
 test_eq( Standards.ASN1.Types.Null()->get_der(), "\5\0" )
