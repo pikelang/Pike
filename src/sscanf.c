@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sscanf.c,v 1.170 2008/01/26 22:34:24 mast Exp $
+|| $Id: sscanf.c,v 1.171 2008/05/01 20:38:11 mast Exp $
 */
 
 #include "global.h"
@@ -848,14 +848,16 @@ CHAROPT2(								 \
 	    chars_matched[0]=eye;					\
 	    return matches;						\
 	  }								\
-          for(e=0;e<field_length;e++)					\
-          {								\
-	    if(input[eye+e]>255)					\
+	  CHAROPT2 (							\
+	    for(e=0;e<field_length;e++)					\
 	    {								\
-	      chars_matched[0]=eye;					\
-	      return matches;						\
+	      if(input[eye+e]>255)					\
+	      {								\
+		chars_matched[0]=eye;					\
+		return matches;						\
+	      }								\
 	    }								\
-          }								\
+	  );								\
 	  if (minus_flag)						\
 	  {								\
 	    int x, pos=0;						\
