@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.415 2008/03/27 14:09:12 grubba Exp $
+// $Id: master.pike.in,v 1.416 2008/05/01 10:39:56 nilsson Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -3170,7 +3170,7 @@ void compile_error(string file,int line,string err)
   {
     if (objectp(val) && val->compile_error) {
       val->compile_error(file, line, err);
-    } else {
+    } else if (callablep(val)) {
       val(file, line, err);
     }
   }
