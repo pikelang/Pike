@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.202 2008/05/01 19:53:59 mast Exp $
+|| $Id: array.c,v 1.203 2008/05/01 20:15:44 mast Exp $
 */
 
 #include "global.h"
@@ -2443,7 +2443,7 @@ PMOD_EXPORT void apply_array(struct array *a, INT32 args)
   check_stack(args);
   check_array_for_destruct(a);
   for (e=0; e<args; e++)
-    hash = hash * 33 + DO_NOT_WARN ((INT32)(size_t)Pike_sp[-e-1].u.ptr);
+    hash = hash * 33 + DO_NOT_WARN ((INT32) PTR_TO_INT (Pike_sp[-e-1].u.ptr));
 
   if (!(cycl = (struct array *)BEGIN_CYCLIC(a, (ptrdiff_t)hash))) {
     push_array(aa = allocate_array_no_init(0, a->size));
