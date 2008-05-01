@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.149 2008/02/05 17:54:01 grubba Exp $
+|| $Id: sprintf.c,v 1.150 2008/05/01 19:39:17 mast Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -1348,7 +1348,7 @@ static void low_pike_sprintf(struct format_stack *fs,
           sprintf_error(fs, "Length of string to %%H is 0.\n");
 
         if( tmp >= (1<<(l*8)) )
-          sprintf_error(fs, "Length of string to %%%dH too large.\n", l);
+	  sprintf_error(fs, "Length of string to %%%"PRINTPTRDIFFT"dH too large.\n", l);
 
 
         x=(char *)alloca(l);
