@@ -1,7 +1,7 @@
 //
 // Argument parser
 // By Martin Nilsson
-// $Id: Arg.pike,v 1.3 2007/09/16 13:32:54 nilsson Exp $
+// $Id: Arg.pmod,v 1.1 2008/05/01 20:50:25 nilsson Exp $
 //
 
 #pike __REAL_VERSION__
@@ -314,6 +314,13 @@ class HasArg
   }
 }
 
+object REST = class {
+    static string _sprintf(int t)
+    {
+      return "Arg.REST";
+    }
+  }();
+
 // FIXME: Support for rc files? ( Arg x = Arg("--x")|INIFile(path, name); )
 // FIXME: Support for type casts? ( Arg level = Integer(Arg("--level"));
 
@@ -374,6 +381,15 @@ class LowOptions
                                       mapping(string:string) env)
   {
     return 0;
+  }
+
+  static mixed cast(string to)
+  {
+    if( to=="mapping" )
+    {
+      return values + ([ REST : argv ]);
+    }
+    return UNDEFINED;
   }
 }
 
@@ -446,19 +462,21 @@ class SimpleOptions
 
     if( has_prefix(arg, "--") )
     {
-      sscanf( arg, "--%s=%s", name, value );
+      sscanf( arg, "--%s=%s", name, value ) || sscanf( arg, "--%s", name );
       if(!name) return 0; // arg == "--"
       values[name] = value||1;
+      argv[0]=0;
       return 1;
     }
 
-    sscanf( arg, "-%s=%s", name, value );
+    sscanf( arg, "-%s=%s", name, value ) || sscanf( arg, "-%s", name );
     if( !name ) return 0;
     foreach( name/1; int pos; string c )
       if( pos == sizeof(name)-1 )
-        values[name] = value||1;
+        values[c] = value||1;
       else
-        values[name] = 1;
+        values[c] = 1;
+    argv[0]=0;
     return 1;
   }
 }
@@ -496,5 +514,6 @@ class Getopt
 
 void main(int num, array args)
 {
-  werror("%O\n", Getopt( args )->verbose );
+  //  werror("%O\n", Getopt( args )->verbose );
+  werror("%O\n", parse(args));
 }
