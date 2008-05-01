@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: bignum.h,v 1.31 2006/07/05 21:01:04 mast Exp $
+|| $Id: bignum.h,v 1.32 2008/05/01 20:49:15 mast Exp $
 */
 
 #include "global.h"
@@ -60,23 +60,40 @@ PMOD_EXPORT void convert_svalue_to_bignum(struct svalue *s);
 
 #ifdef INT64
 PMOD_EXPORT extern void (*push_int64)(INT64 i);
+PMOD_EXPORT extern void (*push_uint64) (unsigned INT64 i);
+
+/* Returns nonzero iff conversion is successful. */
 PMOD_EXPORT extern int (*int64_from_bignum) (INT64 *i, struct object *bignum);
+PMOD_EXPORT extern int (*uint64_from_bignum) (unsigned INT64 *i,
+					      struct object *bignum);
+
 PMOD_EXPORT extern void (*reduce_stack_top_bignum) (void);
 PMOD_EXPORT void hook_in_int64_funcs (
   void (*push_int64_val)(INT64),
+  void (*push_uint64_val) (unsigned INT64),
   int (*int64_from_bignum_val) (INT64 *, struct object *),
+  int (*uint64_from_bignum_val) (unsigned INT64 *, struct object *),
   void (*reduce_stack_top_bignum_val) (void));
 #else
 #define push_int64(i) push_int((INT_TYPE)(i))
+#define push_uint64(i) push_int((INT_TYPE)(i))
 #define int64_from_bignum(I,BIGNUM)	0
+#define uint64_from_bignum(I,BIGNUM)	0
 #endif /* INT64 */
 /* Prototypes end here */
 
 #else
 
 #define push_int64(i) push_int((INT_TYPE)(i))
+#define push_uint64(i) push_int((INT_TYPE)(i))
 #define int64_from_bignum(I,BIGNUM)	0
+#define uint64_from_bignum(I,BIGNUM)	0
 
 #endif /* AUTO_BIGNUM */
+
+/* Less confusing names, considering that push_int64 pushes a 32 bit
+ * int if INT64 isn't available. */
+#define push_longest push_int64
+#define push_ulongest push_uint64
 
 #endif /* BIGNUM_H */
