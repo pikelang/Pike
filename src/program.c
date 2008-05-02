@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.681 2008/05/02 04:15:14 mast Exp $
+|| $Id: program.c,v 1.682 2008/05/02 10:56:06 grubba Exp $
 */
 
 #include "global.h"
@@ -4507,23 +4507,15 @@ int call_handle_inherit(struct pike_string *s)
 
   CHECK_COMPILER();
 
-  reference_shared_string(s);
-  push_string(s);
+  ref_push_string(s);
   if (!TEST_COMPAT(7,6)) {
     /* In Pike 7.7 and later filenames belonging to Pike are assumed
      * to be encoded according to UTF-8.
      */
     f_string_to_utf8(1);
   }
-  ref_push_string(c->lex.current_file);
-  if (c->handler && c->handler->prog) {
-    ref_push_object(c->handler);
-    args = 3;
-  }
-  else args = 2;
 
-  if (safe_apply_handler("handle_inherit", c->handler, c->compat_handler,
-			 args, BIT_PROGRAM|BIT_FUNCTION|BIT_ZERO))
+  if (safe_apply_current2(PC_HANDLE_INHERIT_FUN_NUM, 1, NULL))
     if (Pike_sp[-1].type != T_INT)
       return 1;
     else {
@@ -7368,6 +7360,22 @@ static void f_compilation_env_get_default_module(INT32 args)
   }
 }
 
+/*! @decl program handle_inherit(string inh, string current_file, @
+ *!                              object|void handler)
+ *!
+ *!   Look up an inherit @[inh].
+ */
+static void f_compilation_env_handle_inherit(INT32 args)
+{
+  if(get_master())
+  {
+    APPLY_MASTER("handle_inherit", args);
+  } else {
+    pop_n_elems(args);
+    push_undefined();
+  }
+}
+
 /*! @class PikeCompiler
  *!
  *!   The Pike compiler.
@@ -8310,6 +8318,35 @@ static void f_compilation_change_compiler_compatibility(INT32 args)
   push_int(0);
 }
 
+/*! @decl program handle_inherit(string inh)
+ *!
+ *!   Look up an inherit @[inh] in the current program.
+ */
+static void f_compilation_handle_inherit(INT32 args)
+{
+  struct compilation *c = THIS_COMPILATION;
+  struct object *handler;
+  int fun = -1;
+
+  if (args > 1) pop_n_elems(args-1);
+
+  ref_push_string(c->lex.current_file);
+  if (c->handler && c->handler->prog) {
+    ref_push_object(c->handler);
+    args = 3;
+  }
+  else args = 2;
+
+  if (((handler = c->handler) && handler->prog &&
+       ((fun = find_identifier("handle_inherit", handler->prog)) != -1)) ||
+      ((handler = c->compat_handler) && handler->prog &&
+       ((fun = find_identifier("handle_inherit", handler->prog)) != -1))) {
+    apply_low(handler, fun, args);
+  } else {
+    apply_external(1, CE_HANDLE_INHERIT_FUN_NUM, args);
+  }
+}
+
 static void f_compilation__sprintf(INT32 args)
 {
   struct compilation *c = THIS_COMPILATION;
@@ -8578,6 +8615,9 @@ static void compile_compiler(void)
 	       f_compilation_change_compiler_compatibility,
 	       tFunc(tInt tInt, tVoid), 0);
 
+  ADD_FUNCTION("handle_inherit", f_compilation_handle_inherit,
+	       tFunc(tStr, tPrg(tObj)), 0);
+
   ADD_FUNCTION("_sprintf", f_compilation__sprintf,
 	       tFunc(tInt tOr(tMap(tStr, tMix), tVoid), tStr), ID_STATIC);
 
@@ -8629,6 +8669,9 @@ static void compile_compiler(void)
   ADD_FUNCTION("get_default_module",
 	       f_compilation_env_get_default_module,
 	       tFunc(tNone, tOr(tMap(tStr, tMix), tObj)), 0);
+
+  ADD_FUNCTION("handle_inherit", f_compilation_env_handle_inherit,
+	       tFunc(tStr tStr tOr(tObj, tVoid), tPrg(tObj)), 0);
 
   {
     struct pike_string *type_name;
