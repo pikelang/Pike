@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.305 2008/05/02 04:15:09 mast Exp $
+|| $Id: gc.c,v 1.306 2008/05/02 04:29:37 mast Exp $
 */
 
 #include "global.h"
@@ -4179,6 +4179,7 @@ void f_count_memory (INT32 args)
 
   gc_mark_run_queue();
 
+#if 0
 #ifdef PIKE_DEBUG
   {
     size_t num, size;
@@ -4188,6 +4189,7 @@ void f_count_memory (INT32 args)
 	     "used %"PRINTSIZET"u bytes for %"PRINTSIZET"u markers.\n",
 	     checked, marked, size, num);
   }
+#endif
 #endif
 
   Pike_in_gc = 0;
