@@ -1,7 +1,7 @@
 //
 // Struct ADT
 // By Martin Nilsson
-// $Id: Struct.pike,v 1.17 2005/04/02 22:32:18 nilsson Exp $
+// $Id: Struct.pike,v 1.18 2008/05/02 17:30:12 peter Exp $
 //
 
 #pike __REAL_VERSION__
@@ -28,6 +28,13 @@
 //!     tag->title = "A new title" + "\0"*19;
 //!     f->seek(-128);
 //!     f->write( (string)tag );
+//!   }
+//!
+//! @example
+//!   class MyBinHollerithString {
+//!     inherit ADT.Struct;
+//!     Item strlen = Word();
+//!     Item str = Chars(strlen);
 //!   }
 
 static local array(Item) items = ({});
@@ -315,22 +322,34 @@ class Gnol {
 //! A string of bytes.
 class Chars {
   inherit Item;
-  int size;
+  int|Item dynsize;
   static string value;
 
-  //! @decl static void create(int size, void|string value)
-  //! The number of bytes that are part of this struct item.
+  int _dynsize()
+  {
+    if(objectp(dynsize))
+      return dynsize->get();
+    return dynsize;
+  }
+
+  //! @decl static void create(int|Item size, void|string value)
+  //! @[size] is the number of bytes that are part of this struct
+  //! item, or optionally an earlier Item that will be looked up in
+  //! runtime.
   //! The initial value of the char string is @[value] or,
   //! if not provided, a string of zero bytes.
-  static void create(int _size, void|string _value) {
-    size = _size;
+  static void create(int|Item _size, void|string _value) {
+    dynsize = _size;
+    if(intp(_size))
+      size = _size;
     if(_value)
       set(_value);
     else
-      value = "\0"*size;
+      value = "\0"*_dynsize();
   }
 
   void set(string in) {
+    size = _dynsize();
     if(sizeof(in)!=size)
       error("String has wrong size (%d instead of %d).\n",
 	    sizeof(in), size);
@@ -338,6 +357,7 @@ class Chars {
     value = in;
   }
   void decode(object f) {
+    size = _dynsize();
     value=f->read(size);
     if(!value || sizeof(value)!=size) error("End of data reached.\n");
   }
