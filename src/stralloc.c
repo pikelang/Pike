@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.214 2008/05/01 21:44:33 mast Exp $
+|| $Id: stralloc.c,v 1.215 2008/05/02 00:40:21 mast Exp $
 */
 
 #include "global.h"
@@ -543,6 +543,11 @@ static void stralloc_rehash(void)
 
 /* Allocation of strings */
 
+/* Without the str at the end, to get the size of the header. */
+struct pike_string_hdr {
+  PIKE_STRING_CONTENTS;
+};
+
 /* Allocate some fixed string sizes with BLOCK_ALLOC. */
 
 /* Use the BLOCK_ALLOC() stuff for short strings */
@@ -615,7 +620,7 @@ PMOD_EXPORT struct pike_string *debug_begin_shared_string(size_t len)
   if (len <= SHORT_STRING_THRESHOLD) {
     t=(struct pike_string *)alloc_short_pike_string0();
   } else {
-    t=(struct pike_string *)xalloc(len + sizeof(struct pike_string));
+    t=(struct pike_string *)xalloc(len + 1 + sizeof(struct pike_string_hdr));
     t->flags = STRING_NOT_HASHED | STRING_NOT_SHARED;
   }
   t->refs = 1;
@@ -731,7 +736,8 @@ PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(size_t len, int s
       t = (struct pike_string *)alloc_short_pike_string2();
     }
   } else {
-    t=(struct pike_string *)xalloc((len<<shift) + sizeof(struct pike_string));
+    t=(struct pike_string *)xalloc(((len + 1)<<shift) +
+				   sizeof(struct pike_string_hdr));
     t->flags = STRING_NOT_HASHED|STRING_NOT_SHARED;
   }
   t->refs = 1;
@@ -1101,7 +1107,7 @@ struct pike_string *add_string_status(int verbose)
       }
       UNLOCK_BUCKET(e);
     }
-    overhead_bytes=(sizeof(struct pike_string)-1)*num_distinct_strings;
+    overhead_bytes=sizeof(struct pike_string_hdr)*num_distinct_strings;
     my_strcat("\nShared string hash table:\n");
     my_strcat("-------------------------\t Strings    Bytes\n");
 
@@ -1574,7 +1580,7 @@ PMOD_EXPORT struct pike_string *realloc_unlinked_string(struct pike_string *a,
     }
   } else if (size > SHORT_STRING_THRESHOLD) {
     r=(struct pike_string *)realloc((char *)a,
-				    sizeof(struct pike_string)+
+				    sizeof(struct pike_string_hdr)+
 				    ((size+1)<<a->size_shift));
   }
 	
@@ -2075,6 +2081,18 @@ void cleanup_shared_string_table(void)
 #endif /* DO_PIKE_CLEANUP */
 }
 
+static INLINE size_t memory_in_string (struct pike_string *s)
+{
+  if (s->len <= SHORT_STRING_THRESHOLD)
+    switch (s->size_shift) {
+      case 0: return sizeof (struct short_pike_string0);
+      case 1: return sizeof (struct short_pike_string1);
+      default: return sizeof (struct short_pike_string2);
+    }
+  else
+    return sizeof (struct pike_string_hdr) + ((s->len + 1) << s->size_shift);
+}
+
 void count_memory_in_strings(size_t *num, size_t *size)
 {
   unsigned INT32 e;
@@ -2092,7 +2110,7 @@ void count_memory_in_strings(size_t *num, size_t *size)
     for(p=base_table[e];p;p=p->next)
     {
       num_++;
-      size_+=sizeof(struct pike_string)+(p->len<<p->size_shift);
+      size_ += memory_in_string (p);
     }
     UNLOCK_BUCKET(e);
   }
