@@ -1,7 +1,7 @@
 //
 // Struct ADT
 // By Martin Nilsson
-// $Id: Struct.pike,v 1.18 2008/05/02 17:30:12 peter Exp $
+// $Id: Struct.pike,v 1.19 2008/05/02 23:06:58 nilsson Exp $
 //
 
 #pike __REAL_VERSION__
@@ -31,7 +31,7 @@
 //!   }
 //!
 //! @example
-//!   class MyBinHollerithString {
+//!   class HollerithString {
 //!     inherit ADT.Struct;
 //!     Item strlen = Word();
 //!     Item str = Chars(strlen);
@@ -322,15 +322,8 @@ class Gnol {
 //! A string of bytes.
 class Chars {
   inherit Item;
-  int|Item dynsize;
+  static Item dynsize;
   static string value;
-
-  int _dynsize()
-  {
-    if(objectp(dynsize))
-      return dynsize->get();
-    return dynsize;
-  }
 
   //! @decl static void create(int|Item size, void|string value)
   //! @[size] is the number of bytes that are part of this struct
@@ -339,25 +332,31 @@ class Chars {
   //! The initial value of the char string is @[value] or,
   //! if not provided, a string of zero bytes.
   static void create(int|Item _size, void|string _value) {
-    dynsize = _size;
     if(intp(_size))
       size = _size;
+    else
+    {
+      dynsize = _size;
+      size = dynsize->get();
+    }
+
     if(_value)
       set(_value);
     else
-      value = "\0"*_dynsize();
+      value = "\0"*size;
   }
 
   void set(string in) {
-    size = _dynsize();
-    if(sizeof(in)!=size)
+    if(!dynsize && sizeof(in)!=size)
       error("String has wrong size (%d instead of %d).\n",
 	    sizeof(in), size);
     if(String.width(in)!=8) error("Wide strings not allowed.\n");
+    if(dynsize) dynsize->set(sizeof(in));
     value = in;
   }
   void decode(object f) {
-    size = _dynsize();
+    if(objectp(dynsize))
+      size =  dynsize->get();
     value=f->read(size);
     if(!value || sizeof(value)!=size) error("End of data reached.\n");
   }
