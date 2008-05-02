@@ -1,318 +1,330 @@
 //
 // Argument parser
 // By Martin Nilsson
-// $Id: Arg.pmod,v 1.2 2008/05/01 21:07:35 nilsson Exp $
+// $Id: Arg.pmod,v 1.3 2008/05/02 00:45:24 nilsson Exp $
 //
 
 #pike __REAL_VERSION__
 
-//! Base class for parsing an argument. Inherit this class to create
-//! custom made argument types.
-class Arg
+class ArgLibrary
 {
-  constant is_arg = 1;
-  static Arg next;
 
-  //! Should return 1 for set options or a string containing the value
-  //! of the option. Returning 0 means the option was not set (or
-  //! matched). To properly chain arguments parsers, return
-  //! @expr{::get_value(argv, env)@} instead of @expr{0@}, unless you
-  //! want to explicitly stop the chain and not set this option.
-  int(0..1)|string get_value(array(string) argv, mapping(string:string) env)
+  //! Base class for parsing an argument. Inherit this class to create
+  //! custom made argument types.
+  class Arg
   {
-    if(next) return next->get_value(argv, env);
-    return 0;
-  }
+    constant is_arg = 1;
+    static Arg next;
 
-  //! Should return a list of arguments that is parsed. To properly
-  //! chain argument parsers, return @expr{your_args + ::get_args()@}.
-  array(string) get_args()
-  {
-    return next->get_args();
-  }
-
-  static this_program `|(mixed thing)
-  {
-    if( !objectp(thing) || !thing->is_arg )
-      error("Can only or %O with another %O.\n",
-            this, this_program);
-
-    if( next )
+    //! Should return 1 for set options or a string containing the
+    //! value of the option. Returning 0 means the option was not set
+    //! (or matched). To properly chain arguments parsers, return
+    //! @expr{::get_value(argv, env)@} instead of @expr{0@}, unless
+    //! you want to explicitly stop the chain and not set this option.
+    int(0..1)|string get_value(array(string) argv, mapping(string:string) env)
     {
-      next = next | thing;
+      if(next) return next->get_value(argv, env);
+      return 0;
+    }
+
+    //! Should return a list of arguments that is parsed. To properly
+    //! chain argument parsers, return @expr{your_args +
+    //! ::get_args()@}.
+    array(string) get_args()
+    {
+      return next->get_args();
+    }
+
+    static this_program `|(mixed thing)
+    {
+      if( !objectp(thing) || !thing->is_arg )
+        error("Can only or %O with another %O.\n",
+              this, this_program);
+
+      if( next )
+      {
+        next = next | thing;
+        return this;
+      }
+
+      next = thing;
       return this;
     }
 
-    next = thing;
-    return this;
-  }
-
-  //! This function will be called by @expr{_sprintf@}, which handles
-  //! formatting of chaining between objects.
-  static string __sprintf()
-  {
-    return sprintf("%O()", this_program);
-  }
-
-  static string _sprintf(int t)
-  {
-    if( t!='O' ) return UNDEFINED;
-    if( !next )
-      return __sprintf();
-    else
-      return sprintf("%s|%O", __sprintf(), next);
-  }
-}
-
-//! Parses an argument without parameter, such as --help, -x or "x"
-//! from -axb.
-//!
-//! @example
-//!   Arg verbose = NoArg("-v")|NoArg("--verbose");
-class NoArg
-{
-  inherit Arg;
-  static string arg;
-  static int double;
-
-  static void create(string _arg)
-  {
-    if( sizeof(_arg)>2 && has_prefix(_arg, "--") )
-      double = 1;
-    else if( sizeof(_arg)!=2 || _arg[0]!='-' || _arg=="--" )
-      error("%O not a valid argument.\n", _arg);
-    arg = _arg;
-  }
-
-  int(0..1)|string get_value(array(string) argv, mapping(string:string) env)
-  {
-    if( double )
+    //! This function will be called by @expr{_sprintf@}, which
+    //! handles formatting of chaining between objects.
+    static string __sprintf()
     {
-      if( argv[0]==arg )
-      {
-        argv[0] = 0;
-        return 1;
-      }
-      return ::get_value(argv, env);
+      return sprintf("%O()", this_program);
     }
 
-    if( sizeof(argv[0])>1 && argv[0][0]=='-' && argv[0][1]!='-' )
+    static string _sprintf(int t)
     {
-      array parts = argv[0]/"=";
-      if( has_value(parts[0], arg[1..1]) )
-      {
-        parts[0] -= arg[1..1];
-        argv[0] = parts*"=";
-        if(argv[0]=="-") argv[0] = 0;
-        return 1;
-      }
+      if( t!='O' ) return UNDEFINED;
+      if( !next )
+        return __sprintf();
+      else
+        return sprintf("%s|%O", __sprintf(), next);
+    }
+  }
+
+  //! Parses an argument without parameter, such as --help, -x or "x"
+  //! from -axb.
+  //!
+  //! @example
+  //!   Arg verbose = NoArg("-v")|NoArg("--verbose");
+  class NoArg
+  {
+    inherit Arg;
+    static string arg;
+    static int double;
+
+    static void create(string _arg)
+    {
+      if( sizeof(_arg)>2 && has_prefix(_arg, "--") )
+        double = 1;
+      else if( sizeof(_arg)!=2 || _arg[0]!='-' || _arg=="--" )
+        error("%O not a valid argument.\n", _arg);
+      arg = _arg;
     }
 
-    return ::get_value(argv, env);
-  }
-
-  array(string) get_args()
-  {
-    return ({ arg }) + ::get_args();
-  }
-
-  static string __sprintf()
-  {
-    return sprintf("%O(%O)", this_program, arg);
-  }
-}
-
-//! Environment fallback for an argument. Can of course be used as
-//! only Arg source.
-//!
-//! @example
-//!   Arg debug = NoArg("--debug")|Env("MY_DEBUG");
-class Env
-{
-  inherit Arg;
-  static string name;
-
-  static void create(string _name)
-  {
-    name = _name;
-  }
-
-  int(0..1)|string get_value(array(string) argv, mapping(string:string) env)
-  {
-    if( env[name] ) return env[name];
-    return ::get_value(argv, env);
-  }
-
-  static string __sprintf()
-  {
-    return sprintf("%O(%O)", this_program, name);
-  }
-}
-
-//! Default value for a setting.
-//!
-//! @example
-//!   Arg output = HasArg("-o")|Default("a.out");
-class Default
-{
-  inherit Arg;
-  static string value;
-
-  static void create(string _value)
-  {
-    value = _value;
-  }
-
-  string get_value(array(string) argv, mapping(string:string) env)
-  {
-    return value;
-  }
-
-  static string __sprintf()
-  {
-    return sprintf("%O(%O)", this_program, value);
-  }
-}
-
-//! Parses an argument that may have a parameter. @tt{--foo@},
-//! @tt{-x@} and x in a sequence like @tt{-axb@} will set the variable
-//! to @expr{1@}. @tt{--foo=bar@}, @tt{-x bar@} and @tt{-x=bar@} will
-//! set the variable to @expr{bar@}.
-//!
-//! @example
-//!   Arg debug = MaybyArg("--debug");
-class MaybyArg
-{
-  inherit NoArg;
-
-  int(0..1)|string get_value(array(string) argv, mapping(string:string) env)
-  {
-    if( double )
+    int(0..1)|string get_value(array(string) argv, mapping(string:string) env)
     {
-      // --foo
-      if( argv[0]==arg )
+      if( !sizeof(argv) ) return ::get_value(argv, env);
+
+      if( double )
       {
-        argv[0] = 0;
-        return 1;
+        if( argv[0]==arg )
+        {
+          argv[0] = 0;
+          return 1;
+        }
+        return ::get_value(argv, env);
       }
 
-      // --foo=bar
-      if( sscanf(argv[0], arg+"=%s", string ret)==1 )
+      if( sizeof(argv[0])>1 && argv[0][0]=='-' && argv[0][1]!='-' )
       {
-        argv[0] = 0;
-        return ret;
+        array parts = argv[0]/"=";
+        if( has_value(parts[0], arg[1..1]) )
+        {
+          parts[0] -= arg[1..1];
+          argv[0] = parts*"=";
+          if(argv[0]=="-") argv[0] = 0;
+          return 1;
+        }
       }
 
       return ::get_value(argv, env);
     }
 
-    // -x
-    if( sizeof(argv[0])>1 && argv[0][0]=='-' && argv[0][1]!='-' )
+    array(string) get_args()
     {
-      array parts = argv[0]/"=";
+      return ({ arg }) + ::get_args();
+    }
 
-      if( has_value(parts[0], arg[1..1]) &&
-          ( sizeof(parts)==1 ||
-            parts[0][-1]!=arg[1] ) )
+    static string __sprintf()
+    {
+      return sprintf("%O(%O)", this_program, arg);
+    }
+  }
+
+  //! Environment fallback for an argument. Can of course be used as
+  //! only Arg source.
+  //!
+  //! @example
+  //!   Arg debug = NoArg("--debug")|Env("MY_DEBUG");
+  class Env
+  {
+    inherit Arg;
+    static string name;
+
+    static void create(string _name)
+    {
+      name = _name;
+    }
+
+    int(0..1)|string get_value(array(string) argv, mapping(string:string) env)
+    {
+      if( env[name] ) return env[name];
+      return ::get_value(argv, env);
+    }
+
+    static string __sprintf()
+    {
+      return sprintf("%O(%O)", this_program, name);
+    }
+  }
+
+  //! Default value for a setting.
+  //!
+  //! @example
+  //!   Arg output = HasArg("-o")|Default("a.out");
+  class Default
+  {
+    inherit Arg;
+    static string value;
+
+    static void create(string _value)
+    {
+      value = _value;
+    }
+
+    string get_value(array(string) argv, mapping(string:string) env)
+    {
+      return value;
+    }
+
+    static string __sprintf()
+    {
+      return sprintf("%O(%O)", this_program, value);
+    }
+  }
+
+  //! Parses an argument that may have a parameter. @tt{--foo@},
+  //! @tt{-x@} and x in a sequence like @tt{-axb@} will set the
+  //! variable to @expr{1@}. @tt{--foo=bar@}, @tt{-x bar@} and
+  //! @tt{-x=bar@} will set the variable to @expr{bar@}.
+  //!
+  //! @example
+  //!   Arg debug = MaybeArg("--debug");
+  class MaybeArg
+  {
+    inherit NoArg;
+
+    int(0..1)|string get_value(array(string) argv, mapping(string:string) env)
+    {
+      if( !sizeof(argv) ) return ::get_value(argv, env);
+
+      if( double )
       {
-        // -xy, -xy=z
-        parts[0] -= arg[1..1];
-        argv[0] = parts*"=";
-        if(argv[0]=="-") argv[0] = 0;
-        return 1;
+        // --foo
+        if( argv[0]==arg )
+        {
+          argv[0] = 0;
+          return 1;
+        }
+
+        // --foo=bar
+        if( sscanf(argv[0], arg+"=%s", string ret)==1 )
+        {
+          argv[0] = 0;
+          return ret;
+        }
+
+        return ::get_value(argv, env);
       }
-      else if( sizeof(parts)>1 && parts[0][-1]==arg[1] )
+
+      // -x
+      if( sizeof(argv[0])>1 && argv[0][0]=='-' && argv[0][1]!='-' )
       {
-        // -yx=z
+        array parts = argv[0]/"=";
+
+        if( has_value(parts[0], arg[1..1]) &&
+            ( sizeof(parts)==1 ||
+              parts[0][-1]!=arg[1] ) )
+        {
+          // -xy, -xy=z
+          parts[0] -= arg[1..1];
+          argv[0] = parts*"=";
+          if(argv[0]=="-") argv[0] = 0;
+          return 1;
+        }
+        else if( sizeof(parts)>1 && parts[0][-1]==arg[1] )
+        {
+          // -yx=z
           parts[0] -= arg[1..1];
           if( parts[0]=="-" )
             argv[0] = 0;
           else
             argv[0] = parts[0];
           return parts[1..]*"=";
+        }
+
+        return ::get_value(argv, env);
       }
 
       return ::get_value(argv, env);
     }
-
-    return ::get_value(argv, env);
   }
-}
 
-//! Parses an argument that has a parameter. @tt{--foo=bar@}, @tt{-x
-//! bar@} and @tt{-x=bar@} will set the variable to @expr{bar@}.
-//!
-//! @example
-//!   Arg user = HasArg("--user")|HasArg("-u");
-class HasArg
-{
-  inherit NoArg;
-
-  int(0..1)|string get_value(array(string) argv, mapping(string:string) env)
+  //! Parses an argument that has a parameter. @tt{--foo=bar@}, @tt{-x
+  //! bar@} and @tt{-x=bar@} will set the variable to @expr{bar@}.
+  //!
+  //! @example
+  //!   Arg user = HasArg("--user")|HasArg("-u");
+  class HasArg
   {
-    if( double )
+    inherit NoArg;
+
+    int(0..1)|string get_value(array(string) argv, mapping(string:string) env)
     {
-      // --foo bar
-      if( argv[0]==arg )
+      if( !sizeof(argv) ) return ::get_value(argv, env);
+
+      if( double )
       {
-        if( sizeof(argv)>1 )
+        // --foo bar
+        if( argv[0]==arg )
+        {
+          if( sizeof(argv)>1 )
+          {
+            argv[0] = 0;
+            string ret = argv[1];
+            argv[1] = 0;
+            return ret;
+          }
+          return 0; // FIXME: Signal failure
+        }
+
+        // --foo=bar
+        if( sscanf(argv[0], arg+"=%s", string ret)==1 )
         {
           argv[0] = 0;
-          string ret = argv[1];
-          argv[1] = 0;
           return ret;
         }
-        return 0; // FIXME: Signal failure
+        return ::get_value(argv, env);
       }
 
-      // --foo=bar
-      if( sscanf(argv[0], arg+"=%s", string ret)==1 )
+      if( sizeof(argv[0])>1 && argv[0][0]=='-' && argv[0][1]!='-' )
       {
-        argv[0] = 0;
-        return ret;
-      }
-      return ::get_value(argv, env);
-    }
-
-    if( sizeof(argv[0])>1 && argv[0][0]=='-' && argv[0][1]!='-' )
-    {
-      array parts = argv[0]/"=";
-      if( sizeof(parts[0]) && parts[0][-1]==arg[1..1] )
-      {
-        if( sizeof(parts)==1 )
+        array parts = argv[0]/"=";
+        if( sizeof(parts[0]) && parts[0][-1]==arg[1] )
         {
-          // "-xxxy z"
-          if(sizeof(argv)>1)
+          if( sizeof(parts)==1 )
           {
+            // "-xxxy z"
+            if(sizeof(argv)>1)
+            {
+              parts[0] -= arg[1..1];
+              if( parts[0]=="-" )
+                argv[0] = 0;
+              else
+                argv[0] = parts[0];
+              string ret = argv[1];
+              argv[1] = 0;
+              return ret;
+            }
+
+            // Fail. "-y" without any more elements in argv.
+            return ::get_value(argv, env);
+          }
+          else
+          {
+            // "-xxxy=z"
             parts[0] -= arg[1..1];
             if( parts[0]=="-" )
               argv[0] = 0;
             else
               argv[0] = parts[0];
-            string ret = argv[1];
-            argv[1] = 0;
-            return ret;
+            return parts[1..]*"=";
           }
-
-          // Fail. "-y" without any more elements in argv.
-          return ::get_value(argv, env);
-        }
-        else
-        {
-          // "-xxxy=z"
-          parts[0] -= arg[1..1];
-          if( parts[0]=="-" )
-            argv[0] = 0;
-          else
-            argv[0] = parts[0];
-          return parts[1..]*"=";
         }
       }
-    }
 
-    return ::get_value(argv, env);
+      return ::get_value(argv, env);
+    }
   }
-}
+
+} // -- ArgLibrary
 
 object REST = class {
     static string _sprintf(int t)
@@ -326,6 +338,8 @@ object REST = class {
 
 class LowOptions
 {
+  static inherit ArgLibrary;
+
   static mapping(string:Arg) args = ([]);
   static mapping(string:int(1..1)|string) values = ([]);
   static array(string) argv;
@@ -344,10 +358,9 @@ class LowOptions
 
     argv = _argv[1..];
     mapping(string:Arg) unset = args+([]);
+
     while(1)
     {
-      if(!sizeof(argv)) break;
-
       int(0..1)|string value;
       foreach(unset; string index; Arg arg)
       {
@@ -368,6 +381,8 @@ class LowOptions
       else
         while( sizeof(argv) && argv[0] == 0 )
           argv = argv[1..];
+
+      if(!sizeof(argv)) break;
     }
     if( sizeof(unset) )
     {
@@ -411,7 +426,7 @@ class Options
   static int(0..1)|string unhandled_argument(array(string) argv,
                                              mapping(string:string) env)
   {
-    if( argv[0]!="--help" ) return 0;
+    if( !sizeof(argv) || argv[0]!="--help" ) return 0;
 
     string s = index("help_pre");
     if( s )
@@ -509,11 +524,13 @@ class Getopt
 {
   inherit Options;
   Arg verbose = NoArg("-v")|NoArg("--verbose")|Env("VERBOSE");
+  Arg name = HasArg("-n")|HasArg("--name")|Default("Donald");
+  Arg debug = MaybeArg("-d")|MaybeArg("--debug");
 }
 
 
 void main(int num, array args)
 {
-  //  werror("%O\n", Getopt( args )->verbose );
-  werror("%O\n", parse(args));
+  Options o = Getopt(args);
+  werror("%O\n", (mapping)o );
 }
