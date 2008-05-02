@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.680 2008/05/01 20:42:20 mast Exp $
+|| $Id: program.c,v 1.681 2008/05/02 04:15:14 mast Exp $
 */
 
 #include "global.h"
@@ -60,7 +60,7 @@ static size_t add_xstorage(size_t size,
   struct program *p;				\
   for(p=first_program;p;p=p->next)		\
   {						\
-    size+=p->total_size;			\
+    size+=p->total_size - sizeof (struct program); \
   }						\
 }while(0)
 
@@ -3733,8 +3733,8 @@ PMOD_EXPORT void set_exit_callback(void (*exit)(struct object *))
 
 /*
  * This callback is used by the gc to traverse all references to
- * objects. It should call some gc_recurse_* function exactly once for
- * each reference that the pike internals doesn't know about.
+ * things in memory. It should call some gc_recurse_* function exactly
+ * once for each reference that the pike internals doesn't know about.
  *
  * If a reference is shared between objects, it should be traversed
  * once for every instance sharing it.
@@ -3746,6 +3746,18 @@ PMOD_EXPORT void set_exit_callback(void (*exit)(struct object *))
  * The callback is called after any mapped variables on the object
  * have been recursed (and possibly freed).
  *
+ * If there are unmapped pointers to allocated memory then you should
+ * add something like this to the recurse callback so that
+ * Pike.count_memory remains accurate:
+ *
+ *   if (Pike_in_gc == GC_PASS_COUNT_MEMORY)
+ *     gc_counted_bytes += <size of the allocated memory block(s)>
+ *
+ * If the allocated memory is shared between objects then it gets more
+ * complicated and you should insert calls to the gc check callback
+ * too. See e.g. multiset.c or mapping.c for how to handle that
+ * correctly.
+ *
  * This function is obsolete; see pike_set_prog_event_callback for
  * details.
  */
@@ -3756,15 +3768,17 @@ PMOD_EXPORT void set_gc_recurse_callback(void (*m)(struct object *))
 }
 
 /*
- * This callback is used by the gc to count all references to objects.
- * It should call gc_check, gc_check_(weak_)svalues or
+ * This callback is used by the gc to count all references to things
+ * in memory. It should call gc_check, gc_check_(weak_)svalues or
  * gc_check_(weak_)short_svalue exactly once for each reference that
- * the pike internals doesn't know about.
+ * the pike internals don't know about.
  *
  * If a reference is shared between objects, it should be counted once
  * for all shared instances. The return value from gc_check is useful
  * to ensure this; it's zero when called the first time for its
- * argument.
+ * argument (it is perfectly fine to use gc_check on things that the
+ * pike core doesn't know about, but they must have an INT32 refcount
+ * first).
  *
  * This function is obsolete; see pike_set_prog_event_callback for
  * details.
@@ -9149,6 +9163,8 @@ void cleanup_program(void)
   }
 }
 
+static void gc_check_program(struct program *p);
+
 void gc_mark_program_as_referenced(struct program *p)
 {
   debug_malloc_touch(p);
@@ -9176,6 +9192,11 @@ void gc_mark_program_as_referenced(struct program *p)
   if(gc_mark(p))
     GC_ENTER (p, T_PROGRAM) {
       int e;
+
+      if (Pike_in_gc == GC_PASS_COUNT_MEMORY) {
+	gc_counted_bytes += p->total_size;
+	gc_check_program (p);
+      }
 
       if (p == gc_mark_program_pos)
 	gc_mark_program_pos = p->next;

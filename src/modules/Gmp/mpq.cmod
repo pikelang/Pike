@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpq.cmod,v 1.26 2005/09/14 18:59:34 marcus Exp $
+|| $Id: mpq.cmod,v 1.27 2008/05/02 04:15:18 mast Exp $
 */
 
 #include "global.h"
@@ -33,6 +33,7 @@
 #include "bignum.h"
 #include "operators.h"
 #include "mapping.h"
+#include "gc.h"
 
 #include "my_gmp.h"
 
@@ -936,7 +937,20 @@ PIKECLASS mpq
 #endif
       mpq_clear(THISMPQ);
     }
-  
+
+  GC_RECURSE
+  {
+    if (Pike_in_gc == GC_PASS_COUNT_MEMORY)
+      gc_counted_bytes +=
+#ifdef MPZ_T_HAS__MP_ALLOC
+	mpq_numref (THISMPQ)[0]._mp_alloc * sizeof (mp_limb_t) +
+	mpq_denref (THISMPQ)[0]._mp_alloc * sizeof (mp_limb_t) +
+#else
+	mpz_size (mpq_numref (THISMPQ)) * sizeof (mp_limb_t) +
+	mpz_size (mpq_denref (THISMPQ)) * sizeof (mp_limb_t) +
+#endif
+	sizeof (mpq_t);
+  }
 }
 
 /*! @endclass

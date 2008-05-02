@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.47 2006/07/04 20:32:15 mast Exp $
+# $Id: configure.in,v 1.48 2008/05/02 04:15:18 mast Exp $
 AC_INIT(mpz_glue.c)
 AC_CONFIG_HEADER(gmp_machine.h)
 AC_ARG_WITH(gmp,     [  --with(out)-gmp        Support bignums],[],[with_gmp=yes])
@@ -375,6 +375,20 @@ required by many applications.  (Such as Roxen) However,
 if you know that you do not need GMP, you may re-run configure
 with the option --without-bignums instead.
     ])
+  fi
+
+  AC_MSG_CHECKING([if mpz_t has _mp_alloc])
+  AC_CACHE_VAL(pike_cv_mpz_t_has__mp_alloc, [
+    AC_TRY_COMPILE([
+    ],[
+      int s;
+      mpz_t foo;
+      s = foo[0]._mp_alloc;
+    ], pike_cv_mpz_t_has__mp_alloc=yes, pike_cv_mpz_t_has__mp_alloc=no)
+  ])
+  AC_MSG_RESULT($pike_cv_mpz_t_has__mp_alloc)
+  if test "$pike_cv_mpz_t_has__mp_alloc" = "yes"; then
+    AC_DEFINE(MPZ_T_HAS__MP_ALLOC)
   fi
 fi
 

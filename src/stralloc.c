@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.215 2008/05/02 00:40:21 mast Exp $
+|| $Id: stralloc.c,v 1.216 2008/05/02 04:15:16 mast Exp $
 */
 
 #include "global.h"
@@ -2122,6 +2122,13 @@ void count_memory_in_strings(size_t *num, size_t *size)
   size[0]=size_;
 }
 
+void gc_mark_string_as_referenced (struct pike_string *s)
+{
+  if (gc_mark (s))
+    if (Pike_in_gc == GC_PASS_COUNT_MEMORY)
+      gc_counted_bytes += memory_in_string (s);
+}
+
 #ifdef PIKE_DEBUG
 unsigned gc_touch_all_strings(void)
 {
@@ -2143,7 +2150,8 @@ void gc_mark_all_strings(void)
   for(e=0;e<htable_size;e++)
   {
     struct pike_string *p;
-    for(p=base_table[e];p;p=p->next) gc_is_referenced(p);
+    for(p=base_table[e];p;p=p->next)
+      gc_mark_string_as_referenced(p);
   }
 }
 #endif

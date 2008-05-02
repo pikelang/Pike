@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.287 2008/05/01 21:44:33 mast Exp $
+|| $Id: object.c,v 1.288 2008/05/02 04:15:13 mast Exp $
 */
 
 #include "global.h"
@@ -1820,6 +1820,7 @@ PMOD_EXPORT struct array *object_values(struct object *o)
   return a;
 }
 
+static void gc_check_object(struct object *o);
 
 PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o)
 {
@@ -1831,7 +1832,12 @@ PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o)
 
     GC_ENTER (o, T_OBJECT) {
       int e;
-      struct program *p;
+      struct program *p = o->prog;
+
+      if (Pike_in_gc == GC_PASS_COUNT_MEMORY) {
+	if (p) gc_counted_bytes += p->storage_needed;
+	gc_check_object (o);
+      }
 
       if (o == gc_mark_object_pos)
 	gc_mark_object_pos = o->next;
@@ -1842,7 +1848,7 @@ PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o)
 	DOUBLELINK(first_object, o); /* Linked in first. */
       }
 
-      if(o && (p=o->prog) && PIKE_OBJ_INITED(o)) {
+      if(p && PIKE_OBJ_INITED(o)) {
 	debug_malloc_touch(p);
 
 	gc_mark_program_as_referenced (p);
@@ -1976,7 +1982,7 @@ PMOD_EXPORT void real_gc_cycle_check_object(struct object *o, int weak)
   } GC_CYCLE_LEAVE;
 }
 
-static INLINE void gc_check_object(struct object *o)
+static void gc_check_object(struct object *o)
 {
   int e;
   struct program *p;

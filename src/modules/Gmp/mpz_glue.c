@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.177 2008/05/02 04:03:46 mast Exp $
+|| $Id: mpz_glue.c,v 1.178 2008/05/02 04:15:18 mast Exp $
 */
 
 #include "global.h"
@@ -36,6 +36,7 @@
 #include "module_support.h"
 #include "bignum.h"
 #include "operators.h"
+#include "gc.h"
 
 #include "my_gmp.h"
 
@@ -2147,6 +2148,18 @@ static void exit_mpz_glue(struct object *o)
 #endif
   mpz_clear(THIS);
 }
+
+static void gc_recurse_mpz (struct object *o)
+{
+  if (Pike_in_gc == GC_PASS_COUNT_MEMORY)
+    gc_counted_bytes +=
+#ifdef MPZ_T_HAS__MP_ALLOC
+      THIS[0]._mp_alloc * sizeof (mp_limb_t) +
+#else
+      mpz_size (THIS) * sizeof (mp_limb_t) +
+#endif
+      sizeof (mpz_t);
+}
 #endif
 
 PIKE_MODULE_EXIT
@@ -2305,7 +2318,8 @@ static void pike_mp_free (void *ptr, size_t size)
   ADD_FUNCTION("_random",mpzmod_random,tFunc(tNone,tMpz_ret),0);	\
   									\
   set_init_callback(init_mpz_glue);					\
-  set_exit_callback(exit_mpz_glue);
+  set_exit_callback(exit_mpz_glue);					\
+  set_gc_recurse_callback (gc_recurse_mpz);
 
 
 PIKE_MODULE_INIT

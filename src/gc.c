@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.304 2008/03/30 01:24:09 mast Exp $
+|| $Id: gc.c,v 1.305 2008/05/02 04:15:09 mast Exp $
 */
 
 #include "global.h"
@@ -110,6 +110,7 @@ PMOD_EXPORT int Pike_in_gc = 0;
 int gc_generation = 0;
 time_t last_gc;
 int gc_trace = 0, gc_debug = 0;
+PMOD_EXPORT size_t gc_counted_bytes;
 #ifdef DO_PIKE_CLEANUP
 int gc_destruct_everything = 0;
 #endif
@@ -518,7 +519,7 @@ static void gc_cycle_pop();
 #undef find_marker
 #define find_marker debug_find_marker
 
-PTR_HASH_ALLOC_FIXED_FILL_PAGES(marker,2)
+PTR_HASH_ALLOC_FILL_PAGES(marker,2)
 
 #undef get_marker
 #define get_marker(X) ((struct marker *) debug_malloc_pass(debug_get_marker(X)))
@@ -1785,7 +1786,7 @@ static INLINE struct marker *gc_check_debug(void *a, int weak)
 	   gc_found_place ? gc_found_place : "");
 #endif
 
-  if (Pike_in_gc != GC_PASS_CHECK)
+  if (Pike_in_gc != GC_PASS_CHECK && Pike_in_gc != GC_PASS_COUNT_MEMORY)
     Pike_fatal("gc check attempted in invalid pass.\n");
 
   m = get_marker(a);
@@ -1797,8 +1798,9 @@ static INLINE struct marker *gc_check_debug(void *a, int weak)
     gc_fatal(a, 1, "Refs changed in gc check pass.\n");
   if (m->refs + m->xrefs >= *(INT32 *) a)
     /* m->refs will be incremented by the caller. */
-    gc_fatal(a, 1, "Thing is getting more internal refs than refs "
-	     "(a pointer has probably been checked more than once).\n");
+    gc_fatal (a, 1, "Thing is getting more internal refs (%d + %d) "
+	      "than refs (%d) (a pointer has probably been checked "
+	      "more than once).\n", m->refs, m->xrefs, *(INT32 *) a);
   checked++;
 
   return m;
@@ -1830,7 +1832,7 @@ PMOD_EXPORT INT32 real_gc_check(void *a)
   return ret;
 }
 
-INT32 real_gc_check_weak(void *a)
+PMOD_EXPORT INT32 real_gc_check_weak(void *a)
 {
   struct marker *m;
   INT32 ret;
@@ -2001,7 +2003,7 @@ void locate_references(void *a)
 #endif
 
   fprintf(stderr,"**Done looking for references to %p, "
-	  "found %"PRINTSIZET"d refs.\n", a, found_ref_count);
+	  "found %"PRINTSIZET"u refs.\n", a, found_ref_count);
 
   Pike_in_gc = orig_in_gc;
   gc_found_place = orig_gc_found_place;
@@ -2370,9 +2372,10 @@ int gc_mark(void *a)
   struct marker *m;
 
 #ifdef PIKE_DEBUG
-  if (Pike_in_gc == GC_PASS_ZAP_WEAK && !find_marker (a))
+  if ((Pike_in_gc == GC_PASS_ZAP_WEAK || Pike_in_gc == GC_PASS_COUNT_MEMORY) &&
+      !find_marker (a))
     gc_fatal (a, 0, "gc_mark() called for for thing without marker "
-	      "in zap weak pass.\n");
+	      "in pass %d.\n", Pike_in_gc);
 #endif
 
   m = get_marker (a);
@@ -2383,52 +2386,80 @@ int gc_mark(void *a)
     gc_watched_found (m, "gc_mark()");
   }
   if (!a) Pike_fatal("Got null pointer.\n");
-  if (Pike_in_gc != GC_PASS_MARK && Pike_in_gc != GC_PASS_ZAP_WEAK)
-    Pike_fatal("gc mark attempted in invalid pass.\n");
+  if (Pike_in_gc != GC_PASS_MARK && Pike_in_gc != GC_PASS_ZAP_WEAK &&
+      Pike_in_gc != GC_PASS_COUNT_MEMORY)
+    Pike_fatal("GC mark attempted in invalid pass.\n");
   if (!*(INT32 *) a)
     gc_fatal(a, 0, "Marked a thing without refs.\n");
-  if (m->weak_refs < 0)
+  if (m->refs > *(INT32 *) a)
+    /* This ought to be catched already in gc_check(_weak). */
+    gc_fatal (a, 1, "GC check counted %d refs to thing with refcount %d.\n",
+	      m->refs, *(INT32 *) a);
+  if (m->flags & GC_NOT_REFERENCED && m->refs != *(INT32 *) a &&
+      Pike_in_gc != GC_PASS_COUNT_MEMORY)
+    gc_fatal (a, 0, "GC_NOT_REFERENCED set for thing "
+	      "with refcount %d and counted refs %d.\n", *(INT32 *) a, m->refs);
+  if (m->weak_refs < 0 && Pike_in_gc != GC_PASS_COUNT_MEMORY)
     gc_fatal(a, 0, "Marking thing scheduled for weak free.\n");
 #endif
 
-  if (Pike_in_gc == GC_PASS_ZAP_WEAK) {
-    /* Things are visited in the zap weak pass through the mark
-     * functions to free refs to internal things that only got weak
-     * external references. That happens only when a thing also have
-     * internal cyclic nonweak refs. */
+  switch (Pike_in_gc) {
+    case GC_PASS_ZAP_WEAK:
+      /* Things are visited in the zap weak pass through the mark
+       * functions to free refs to internal things that only got weak
+       * external references. That happens only when a thing also have
+       * internal cyclic nonweak refs. */
 #ifdef PIKE_DEBUG
-    if (!(m->flags & GC_MARKED))
-      gc_fatal(a, 0, "gc_mark() called for thing in zap weak pass "
-	       "that wasn't marked before.\n");
+      if (!(m->flags & GC_MARKED))
+	gc_fatal(a, 0, "gc_mark() called for thing in zap weak pass "
+		 "that wasn't marked before.\n");
 #endif
-    if (m->flags & GC_FREE_VISITED) {
-      debug_malloc_touch (a);
-      return 0;
-    }
-    else {
-      debug_malloc_touch (a);
-      m->flags |= GC_FREE_VISITED;
-      return 1;
-    }
-  }
+      if (m->flags & GC_FREE_VISITED) {
+	debug_malloc_touch (a);
+	return 0;
+      }
+      else {
+	debug_malloc_touch (a);
+	m->flags |= GC_FREE_VISITED;
+	return 1;
+      }
 
-  else if (m->flags & GC_MARKED) {
-    debug_malloc_touch (a);
+    case GC_PASS_COUNT_MEMORY:
+      if (m->flags & GC_NOT_REFERENCED) {
+	/* All refs to this thing are internal, so return true to get
+	 * it counted and recursed. */
+	debug_malloc_touch (a);
+	m->flags = (m->flags & ~GC_NOT_REFERENCED) | GC_MARKED;
+	DO_IF_DEBUG(marked++);
+	return 1;
+      }
+
+      else {
+	debug_malloc_touch (a);
+	return 0;
+      }
+
+    default:
+      if (m->flags & GC_MARKED) {
+	debug_malloc_touch (a);
 #ifdef PIKE_DEBUG
-    if (m->weak_refs != 0)
-      gc_fatal(a, 0, "weak_refs changed in marker already visited by gc_mark().\n");
+	if (m->weak_refs != 0)
+	  gc_fatal (a, 0, "weak_refs changed in marker "
+		    "already visited by gc_mark().\n");
 #endif
-    return 0;
-  }
-  else {
-    debug_malloc_touch (a);
-    if (m->weak_refs) {
-      gc_ext_weak_refs -= m->weak_refs;
-      m->weak_refs = 0;
-    }
-    m->flags = (m->flags & ~GC_NOT_REFERENCED) | GC_MARKED;
-    DO_IF_DEBUG(marked++);
-    return 1;
+	return 0;
+      }
+
+      else {
+	debug_malloc_touch (a);
+	if (m->weak_refs) {
+	  gc_ext_weak_refs -= m->weak_refs;
+	  m->weak_refs = 0;
+	}
+	m->flags = (m->flags & ~GC_NOT_REFERENCED) | GC_MARKED;
+	DO_IF_DEBUG(marked++);
+	return 1;
+      }
   }
 }
 
@@ -3809,7 +3840,7 @@ size_t do_gc(void *ignored, int explicit_call)
 		destroy_count, destroy_count == 1 ? "was" : "were", timestr);
       else
 #endif
-	fprintf(stderr, "done (%"PRINTSIZET"d of %"PRINTSIZET"d "
+	fprintf(stderr, "done (%"PRINTSIZET"u of %"PRINTSIZET"u "
 		"%s unreferenced)%s\n",
 		unreferenced, start_num_objs,
 		unreferenced == 1 ? "was" : "were",
@@ -3992,6 +4023,178 @@ void dump_gc_info(void)
 #endif
 
   fprintf(stderr,"in_gc                      : %d\n", Pike_in_gc);
+}
+
+/*! @decl int count_memory (zero flags, @
+ *!         array|multiset|mapping|object|program|string|type|int... things)
+ *! @appears Pike.count_memory
+ *!
+ *! This function returns the number of bytes that all @[things]
+ *! occupy. Or to be more precise, it returns the number of bytes that
+ *! would be freed if all those things would lose their references at
+ *! the same time. I.e. it not only counts the memory in the things
+ *! themselves, but also in all the things that are directly and
+ *! indirectly referenced from those things, and only from those
+ *! things.
+ *!
+ *! The memory counted is only that which is directly occupied by the
+ *! things in question, including any overallocation for mappings,
+ *! multisets and arrays. Other memory overhead that they give rise to
+ *! is not counted. This means that if you would count the memory
+ *! occupied by all the pike accessible things you would get a figure
+ *! significantly lower than what the OS gives for the pike process.
+ *!
+ *! Also, if you were to actually free the things, you should not
+ *! expect the size of the pike process to drop the amount of bytes
+ *! returned by this function. That since Pike often retains the
+ *! memory to be reused later.
+ *!
+ *! However, what you should expect is that if you actually free the
+ *! things and then later allocates some more things for which this
+ *! function returns the same size, there should be essentially no
+ *! increase in the size of the pike process (some increase might
+ *! occur due to internal fragmentation and memory pooling, but it
+ *! should be small overall).
+ *!
+ *! @param flags
+ *!   Reserved for future use to be able to pass various flags to
+ *!   control the counting. Right now this argument should always be
+ *!   zero.
+ *!
+ *! @param things
+ *!   One or more things to count memory size for. Only things passed
+ *!   by reference are allowed, except for functions which are
+ *!   forbidden because a meaningful size calculation can't be done
+ *!   for them.
+ *!
+ *!   Integers are allowed because they are bignum objects when they
+ *!   become sufficiently large. However, passing an integer that is
+ *!   small enough to fit into the native integer type will return
+ *!   zero.
+ *!
+ *! @note
+ *! The result of @code{Pike.count_memory(0,a,b)@} might be larger
+ *! than the sum of @code{Pike.count_memory(0,a)@} and
+ *! @code{Pike.count_memory(0,b)@} since @code{a@} and @code{b@}
+ *! together might reference things that aren't referenced from
+ *! anywhere else.
+ *!
+ *! @note
+ *! It's possible that a string that is referenced still isn't
+ *! counted, because strings are always shared in Pike and the same
+ *! string might be used in some unrelated part of the program.
+ */
+void f_count_memory (INT32 args)
+{
+  if (args < 1)
+    SIMPLE_TOO_FEW_ARGS_ERROR ("count_memory", 1);
+  if (Pike_sp[-args].type != T_INT || Pike_sp[-args].u.integer)
+    SIMPLE_ARG_TYPE_ERROR ("count_memory", 1, "zero");
+
+  if (Pike_in_gc)
+    /* FIXME: This can happen if the function gets called in
+     * GC_PASS_FREE..GC_PASS_DESTRUCT. The markers should be cleaned
+     * up before GC_PASS_FREE. */
+    Pike_error ("This function cannot work while the gc is running.\n");
+
+  /* Not calling init_gc here since we don't want a hash table big
+   * enough to handle a marker for every thing in memory. */
+  init_marker_hash();
+
+  Pike_in_gc = GC_PASS_COUNT_MEMORY;
+  gc_counted_bytes = 0;
+#ifdef PIKE_DEBUG
+  checked = marked = 0;
+#endif
+
+  /* In GC_PASS_COUNT_MEMORY mode, gc_mark only returns true once for
+   * each thing which have all refs accounted for by earlier gc check
+   * calls (i.e. have GC_NOT_REFERENCED set). The
+   * gc_mark_*_as_referenced functions (whose names are highly
+   * confusing in this case) then add the size to gc_counted_bytes and
+   * do a gc check before continuing with the mark calls as usual.
+   *
+   * That way gc checking is used to count all internal references
+   * from each "unreferenced" thing. If they add up to the real
+   * refcount then the last gc mark call recurses. */
+
+  {
+    int i;
+    for (i = -args + 1; i < 0; i++) {
+      struct svalue *s = Pike_sp + i;
+
+      if (s->type == T_INT)
+	continue;
+
+      else if (s->type > MAX_REF_TYPE) {
+	Pike_in_gc = 0;
+	cleanup_markers();
+	SIMPLE_ARG_TYPE_ERROR (
+	  "count_memory", i + args + 1,
+	  "array|multiset|mapping|object|program|string|type|int");
+      }
+
+      else {
+	struct marker *m;
+
+	if (s->type == T_FUNCTION) {
+	  struct svalue s2;
+	  if (!(s2.u.program = program_from_function (s))) {
+	    Pike_in_gc = 0;
+	    cleanup_markers();
+	    SIMPLE_ARG_TYPE_ERROR (
+	      "count_memory", i + args + 1,
+	      "array|multiset|mapping|object|program|string|type|int");
+	  }
+	  add_ref (s2.u.program);
+	  s2.type = T_PROGRAM;
+	  free_svalue (s);
+	  move_svalue (s, &s2);
+	}
+
+	m = get_marker (s->u.ptr);
+	if (!(m->flags & GC_MARKED)) {
+	  m->flags |= GC_NOT_REFERENCED; /* Make gc_mark return true for it. */
+
+	  switch (s->type) {
+	    case T_ARRAY:
+	      gc_mark_array_as_referenced (s->u.array); break;
+	    case T_MULTISET:
+	      gc_mark_multiset_as_referenced (s->u.multiset); break;
+	    case T_MAPPING:
+	      gc_mark_mapping_as_referenced (s->u.mapping); break;
+	    case T_PROGRAM:
+	      gc_mark_program_as_referenced (s->u.program); break;
+	    case T_OBJECT:
+	      gc_mark_object_as_referenced (s->u.object); break;
+	    case T_STRING:
+	      gc_mark_string_as_referenced (s->u.string); break;
+	    case T_TYPE:
+	      gc_mark_type_as_referenced (s->u.type); break;
+	  }
+	}
+      }
+    }
+  }
+
+  gc_mark_run_queue();
+
+#ifdef PIKE_DEBUG
+  {
+    size_t num, size;
+    count_memory_in_markers (&num, &size);
+    fprintf (stderr,
+	     "count_memory checked %u refs, visited %u things and "
+	     "used %"PRINTSIZET"u bytes for %"PRINTSIZET"u markers.\n",
+	     checked, marked, size, num);
+  }
+#endif
+
+  Pike_in_gc = 0;
+  cleanup_markers();
+
+  pop_n_elems (args);
+  push_ulongest (gc_counted_bytes);
 }
 
 void cleanup_gc(void)

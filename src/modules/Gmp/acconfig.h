@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.7 2005/06/16 09:21:43 grubba Exp $
+|| $Id: acconfig.h,v 1.8 2008/05/02 04:15:18 mast Exp $
 */
 
 #ifndef GMP_MACHINE_H
@@ -61,5 +61,8 @@
 
 /* Define to the actual number of numb bits if known. */
 #undef PIKE_GMP_NUMB_BITS
+
+/* Defined if mpz_t has _mp_alloc in it. */
+#undef MPZ_T_HAS__MP_ALLOC
 
 #endif

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.h,v 1.130 2008/03/30 01:24:10 mast Exp $
+|| $Id: gc.h,v 1.131 2008/05/02 04:15:10 mast Exp $
 */
 
 #ifndef GC_H
@@ -72,6 +72,7 @@ extern ALLOC_COUNT_TYPE num_allocs, alloc_threshold;
 PMOD_EXPORT extern int Pike_in_gc;
 extern int gc_generation;
 extern int gc_trace, gc_debug;
+PMOD_EXPORT extern size_t gc_counted_bytes;
 #ifdef CPU_TIME_MIGHT_NOT_BE_THREAD_LOCAL
 extern cpu_time_t auto_gc_time;
 #endif
@@ -308,7 +309,7 @@ void debug_describe_svalue(struct svalue *s);
 void gc_watch(void *a);
 void debug_gc_touch(void *a);
 PMOD_EXPORT int real_gc_check(void *a);
-int real_gc_check_weak(void *a);
+PMOD_EXPORT int real_gc_check_weak(void *a);
 void exit_gc(void);
 void locate_references(void *a);
 void debug_gc_add_extra_ref(void *a);
@@ -329,6 +330,7 @@ void do_gc_recurse_short_svalue(union anything *u, int type);
 int gc_do_free(void *a);
 size_t do_gc(void *ignored, int explicit_call);
 void f__gc_status(INT32 args);
+void f_count_memory (INT32 args);
 void cleanup_gc(void);
 
 #if defined (PIKE_DEBUG) && defined (DEBUG_MALLOC)
@@ -514,7 +516,8 @@ static INLINE int debug_gc_check_weak (void *a, const char *place)
 #define GC_PASS_DESTRUCT	500
 
 #define GC_PASS_LOCATE -1
-#define GC_PASS_DISABLED -2
+#define GC_PASS_COUNT_MEMORY -2
+#define GC_PASS_DISABLED -3
 
 #ifdef PIKE_DEBUG
 extern int gc_in_cycle_check;
