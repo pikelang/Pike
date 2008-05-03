@@ -543,6 +543,32 @@ o ADT.Set
   and code readability.
 
 o Arg
+  The new argument parser module allows for Getopt style arugment
+  parsing, but with a much simpler and object oriented API.
+
+    class Parser
+    {
+      inherit Arg.Options;
+      Opt verbose = NoOpt("-v")|NoOpt("--verbose")|Env("VERBOSE");
+      Opt name = HasOpt("-f")|HasOpt("--file")|Default("out");
+      Opt debug = MaybeOpt("-d")|MaybeOpt("--debug");
+    }
+  
+    void main(int argc, array(string) argv)
+    {
+      Parser p = Parser(argv);
+      werror("name: %O, verbose: %O, debug: %O\n",
+             p->name, p->verbose, p->debug);
+    }
+
+  A more simplistic interface is also available for smaller hacks and
+  programs.
+
+    void main(int argc, array(string) argv)
+    {
+      mapping opts = Arg.parse(argv);
+      argv = opts[Arg.REST];
+    }
 
 o Protocols.DNS_SD
   This module provides an interface to DNS Service Discovery. The
