@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.40 2008/05/01 21:08:15 nilsson Exp $
+dnl $Id: testsuite.in,v 1.41 2008/05/03 14:19:03 nilsson Exp $
 
 START_MARKER
 
@@ -14,6 +14,34 @@ test_equal( Arg.parse("aa --foo - --bar"/" "),
  ([ "foo":1, Arg.REST: ({ "-","--bar" }) ]) )
 test_equal( Arg.parse("aa --foo x --bar"/" "),
  ([ "foo":1, Arg.REST: ({ "x","--bar" }) ]) )
+
+test_any([[
+
+class Opt
+{
+  inherit Arg.Options;
+  Opt verbose = NoOpt("-v")|NoOpt("--verbose")|Env("VERBOSE");
+  Opt name = HasOpt("-n")|HasOpt("--name")|Default("Donald");
+  Opt debug = MaybeOpt("-d")|MaybeOpt("--debug");
+};
+
+add_constant("o",Opt);
+return 1;
+]], 1)
+
+test_equal( sort(indices(o(({"x"})))) , ({ "debug", "name", "verbose" }) )
+test_equal( (mapping)o(({"x"}),([])) , ([ "name" : "Donald", Arg.REST:({}) ]) )
+test_equal( o(({"x"}),([]))->verbose , 0 )
+test_equal( o(({"x"}),([]))->debug , 0 )
+test_equal( o(({"x"}),([]))->name , "Donald" )
+test_equal( o("x --name=foo"/" ",([]))->name , "foo" )
+test_equal( o("x -n=foo"/" ",([]))->name , "foo" )
+test_equal( o("x -n foo"/" ",([]))->name , "foo" )
+test_equal( (mapping)o("x -dvn foo xor"/" ",([])), ([ "debug":1, "verbose":1, "name":"foo", Arg.REST : ({ "xor" }) ]) )
+test_equal( o(({"x"}),(["VERBOSE":"1"]))->verbose, "1" )
+test_equal( (mapping)o("x --verbose=5"/" ",([])), ([ "name":"Donald", Arg.REST : ({ "--verbose=5" }) ]) )
+
+test_do(add_constant("o"))
 
 
 dnl - Array
