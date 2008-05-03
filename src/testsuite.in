@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.804 2008/05/03 20:06:07 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.805 2008/05/03 21:21:31 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -11152,16 +11152,16 @@ test_compile_any(
 test_compile_warning(
   class A { int foo(__deprecated__(int)|void x) { return x; } };
 )
-test_compile_warning(
+test_compile_any(
   class A { int foo(__deprecated__(int)|void x) { return (int)x; } };
 )
 test_compile_warning(
   class A { int foo(__deprecated__(int)|void x) { return (int)x; } };
-  A()->foo(0);
+  A()->foo(1);
 )
 test_compile_any(
   class A { int foo(__deprecated__(int)|void x) { return (int)x; } };
-  A()->foo();
+  mixed bar = A()->foo();
 )
 
 // - modifiers, compile time access properties
