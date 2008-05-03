@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.42 2008/05/03 13:11:42 marcus Exp $ */
+/* $Id: socktest.pike,v 1.43 2008/05/03 13:22:55 marcus Exp $ */
 
 // #define OOB_DEBUG
 
@@ -99,19 +99,19 @@ class Socket {
     got_callback();
     if(input_buffer != expected_data)
     {
-      write("Failed to read complete data, errno=%d.\n",err);
+      predef::write("Failed to read complete data, errno=%d.\n",err);
       if(sizeof(input_buffer) < 100)
       {
-	write(num+":Input buffer: "+input_buffer+"\n");
+	predef::write(num+":Input buffer: "+input_buffer+"\n");
       }else{
-	write(num+":Input buffer: "+sizeof(input_buffer)+" bytes.\n");
+	predef::write(num+":Input buffer: "+sizeof(input_buffer)+" bytes.\n");
       }
 
       if(sizeof(expected_data) < 100)
       {
-	write(num+":Expected data: "+expected_data+"\n");
+	predef::write(num+":Expected data: "+expected_data+"\n");
       }else{
-	write(num+":Expected data: "+sizeof(expected_data)+" bytes.\n");
+	predef::write(num+":Expected data: "+sizeof(expected_data)+" bytes.\n");
       }
 
       exit(1);
@@ -134,7 +134,7 @@ class Socket {
       {
 	output_buffer=output_buffer[tmp..];
       } else {
-	write("Failed to write all data.\n");
+	predef::write("Failed to write all data.\n");
 	exit(1);
       }
     }else{
@@ -164,7 +164,7 @@ class Socket {
     }else{
       if(!open_socket(0, ANY))
       {
-	write("Failed to open socket: "+strerror(errno())+"\n");
+	predef::write("Failed to open socket: "+strerror(errno())+"\n");
 	fd_fail();
       }
     }
@@ -185,14 +185,14 @@ class Socket2
       int prerefs = _refs ("%s");
       int tmp=write(({"%s"}), output_buffer);
       if (_refs ("%s") != prerefs) {
-	write ("Format string leak from %d to %d.\n", prerefs, _refs ("%s"));
+	predef::write ("Format string leak from %d to %d.\n", prerefs, _refs ("%s"));
 	exit (1);
       }
       if(tmp >= 0)
       {
 	output_buffer=output_buffer[tmp..];
       } else {
-	write("Failed to write all data.\n");
+	predef::write("Failed to write all data.\n");
 	exit(1);
       }
     }else{
