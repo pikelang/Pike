@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.684 2008/05/03 15:51:50 grubba Exp $
+|| $Id: program.c,v 1.685 2008/05/03 15:54:13 grubba Exp $
 */
 
 #include "global.h"
@@ -1576,8 +1576,8 @@ struct node_s *find_module_identifier(struct pike_string *ident,
 	      ((p->num_inherits + 1) < p->new_program->num_inherits) &&
 	      (PTR_FROM_INT(p->new_program, i)->inherit_offset >
 	       p->num_inherits)) {
-	    /* Don't look up symbols inherited later, when looking up
-	     * inherits...
+	    /* Don't look up symbols inherited later, since we need to get
+	     * the same symbol in both passes in the force_resolve mode.
 	     */
 	    continue;
 	  }
