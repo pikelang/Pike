@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: compilation.h,v 1.35 2008/04/14 10:14:35 grubba Exp $
+|| $Id: compilation.h,v 1.36 2008/05/03 15:51:50 grubba Exp $
 */
 
 /*
@@ -164,6 +164,7 @@
   ZMEMBER(INT32,current_modifiers,0)
   ZMEMBER(int,varargs,0)
   ZMEMBER(int, num_create_args, 0)
+  ZMEMBER(int, num_inherits, 0)	/* Used during second pass. */
   STRMEMBER(last_identifier,0)
   ZMEMBER(struct mapping *,module_index_cache,0)
   STACKMEMBER(struct pike_type **,type_stackp,type_stack)

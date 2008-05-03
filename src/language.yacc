@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.416 2008/04/26 19:04:26 grubba Exp $
+|| $Id: language.yacc,v 1.417 2008/05/03 15:51:50 grubba Exp $
 */
 
 %pure_parser
@@ -501,7 +501,7 @@ inheritance: modifiers TOK_INHERIT inherit_ref optional_rename_inherit ';'
     if (($1 & ID_EXTERN) && (Pike_compiler->compiler_pass == 1)) {
       yywarning("Extern declared inherit.");
     }
-    if($3 && !(Pike_compiler->new_program->flags & PROGRAM_PASS_1_DONE))
+    if($3)
     {
       struct pike_string *s=Pike_sp[-1].u.string;
       if($4) s=$4->u.sval.u.string;

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.683 2008/05/03 15:29:25 nilsson Exp $
+|| $Id: program.c,v 1.684 2008/05/03 15:51:50 grubba Exp $
 */
 
 #include "global.h"
@@ -1571,6 +1571,16 @@ struct node_s *find_module_identifier(struct pike_string *ident,
 						   SEE_STATIC|SEE_PRIVATE);
 	if(i!=-1)
 	{
+	  if ((p->flags & COMPILATION_FORCE_RESOLVE) &&
+	      (p->compiler_pass == 2) &&
+	      ((p->num_inherits + 1) < p->new_program->num_inherits) &&
+	      (PTR_FROM_INT(p->new_program, i)->inherit_offset >
+	       p->num_inherits)) {
+	    /* Don't look up symbols inherited later, when looking up
+	     * inherits...
+	     */
+	    continue;
+	  }
 	  return p == Pike_compiler ?
 	    mkidentifiernode(i) :
 	    mkexternalnode(p->new_program, i);
@@ -4196,6 +4206,16 @@ PMOD_EXPORT void low_inherit(struct program *p,
   if(!p)
   {
     yyerror("Illegal program pointer.");
+    return;
+  }
+
+  if (Pike_compiler->compiler_pass == 2) {
+    struct program *old_p =
+      Pike_compiler->new_program->inherits[Pike_compiler->num_inherits+1].prog;
+    Pike_compiler->num_inherits += old_p->num_inherits;
+    if (old_p != p) {
+      yyerror("Got different program for inherit in second pass.");
+    }
     return;
   }
 
@@ -6866,6 +6886,7 @@ void handle_compile_exception (const char *yyerror_fmt, ...)
   }
 
   push_svalue(&thrown);
+  /* safe_apply_current(PC_FILTER_EXCEPTION_FUN_NUM, 1); */
   low_safe_apply_handler("compile_exception", c->handler, c->compat_handler, 1);
 
   if (SAFE_IS_ZERO(sp-1)) {
@@ -7373,6 +7394,29 @@ static void f_compilation_env_handle_inherit(INT32 args)
   } else {
     pop_n_elems(args);
     push_undefined();
+  }
+}
+
+/*! @decl int filter_exception(SeverityLevel level, mixed err)
+ */
+static void f_compilation_env_filter_exception(INT32 args)
+{
+  int level;
+  struct svalue *err;
+
+  get_all_args("filter_exception", args, "%d%*", &level, &err);
+  if (args > 2) {
+    pop_n_elems(args-2);
+    args = 2;
+  }
+
+  if (level >= REPORT_WARNING) {
+    if (level >= REPORT_ERROR) {
+      APPLY_MASTER("compile_exception", 1);
+    } else {
+      push_int(level);
+      push_string(format_exception_for_error_msg(err));
+    }
   }
 }
 

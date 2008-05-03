@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.802 2008/04/20 17:45:48 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.803 2008/05/03 15:51:50 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -2441,6 +2441,26 @@ class b {
 }
 ]])
 test_compile([[Stdio.File foo=Stdio.FILE();]])
+
+test_any([[
+  // Test symbol lookup for inherit in multi-pass.
+  // LysLysKOM 16472935
+  // An old pike will attempt to lookup X in the innermost X
+  // during the second pass and thus fail with a compilation error.
+  class X {
+    constant foo = "outer";
+    class X {
+      constant foo = "middle";
+      class X {
+        constant foo = "inner";
+      }
+    }
+  };
+  class Y {
+    inherit X.X;
+  };
+  return Y()->foo;
+]], "middle")
 
 test_any([[string gurk="bozo"; string b(int x) { return (x?b(x-1)+gurk:""); }; return b(5)]],[["bozo"*5]])
 
