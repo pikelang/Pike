@@ -1,7 +1,7 @@
 //
 // Argument parser
 // By Martin Nilsson
-// $Id: Arg.pmod,v 1.4 2008/05/03 14:18:53 nilsson Exp $
+// $Id: Arg.pmod,v 1.5 2008/05/03 17:14:50 nilsson Exp $
 //
 
 #pike __REAL_VERSION__
@@ -32,6 +32,7 @@ class OptLibrary
     //! ::get_opts()@}.
     array(string) get_opts()
     {
+      if(!next) return ({});
       return next->get_opts();
     }
 
@@ -353,6 +354,7 @@ class LowOptions
   static mapping(string:Opt) opts = ([]);
   static mapping(string:int(1..1)|string) values = ([]);
   static array(string) argv;
+  static string application;
 
   static void create(array(string) _argv, void|mapping(string:string) env)
   {
@@ -366,6 +368,7 @@ class LowOptions
       if(objectp(val) && val->is_opt) opts[index]=val;
     }
 
+    application = _argv[0];
     argv = _argv[1..];
     mapping(string:Opt) unset = opts+([]);
 
@@ -419,9 +422,12 @@ class LowOptions
 
   static mixed cast(string to)
   {
-    if( to=="mapping" )
+    switch( to )
     {
+    case "mapping":
       return values + ([ REST : argv ]);
+    case "array":
+      return argv;
     }
     return UNDEFINED;
   }
@@ -453,8 +459,7 @@ class Options
 
     foreach(opts; string i; Opt opt)
     {
-      // FIXME: Make a list of the attibutes parsed by arg.
-
+      write( opt->get_opts()*", " + "\n");
       s = index(i+"_help");
       if( s )
         write( s ); // FIXME: Format
