@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sparc.h,v 1.30 2006/03/15 12:29:50 grubba Exp $
+|| $Id: sparc.h,v 1.31 2008/05/03 12:33:59 marcus Exp $
 */
 
 #define PIKE_OPCODE_ALIGN	4
@@ -11,10 +11,11 @@
 #define PIKE_BYTECODE_SPARC64
 #endif
 
+#define REGISTER_ASSIGN(R,V)	({__asm__ (""::"r"(R=(V))); R;})
 #define DEF_PROG_COUNTER	register unsigned INT32 *reg_pc __asm__ ("%i7")
 #define GLOBAL_DEF_PROG_COUNTER	DEF_PROG_COUNTER
 #define PROG_COUNTER		(reg_pc + 2)
-#define SET_PROG_COUNTER(X)	(reg_pc = ((unsigned INT32 *)(X))-2)
+#define SET_PROG_COUNTER(X)	REGISTER_ASSIGN(reg_pc, ((unsigned INT32 *)(X))-2)
 
 #define LOW_GET_JUMP()	((INT32)PROG_COUNTER[0])
 #define LOW_SKIPJUMP()	(SET_PROG_COUNTER(PROG_COUNTER + 1))
