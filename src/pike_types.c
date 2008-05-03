@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.323 2008/05/02 04:15:14 mast Exp $
+|| $Id: pike_types.c,v 1.324 2008/05/03 20:06:07 grubba Exp $
 */
 
 #include "global.h"
@@ -3683,6 +3683,7 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
 			      int array_cnt, unsigned int flags)
 #endif /* PIKE_TYPE_DEBUG */
 {
+  struct compilation *c = MAYBE_THIS_COMPILATION;
   int ret;
 
  recurse:
@@ -3751,29 +3752,23 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
       b = b->cdr;
       goto recurse;
     }
-#if 0
-    if (!flags & LE_USE_HANDLERS) {
+    if (!c) {
       a = a->cdr;
       goto recurse;
     }
-#endif /* 0 */
     if (!low_pike_types_le(a->cdr, b, array_cnt, flags)) return 0;
-#if 0
     ref_push_string((struct pike_string *)a->car);
     ref_push_type_value(a->cdr);
     ref_push_type_value(b);
-    push_int(1);
-    if (safe_apply_handler("handle_attribute", error_handler, compat_handler,
-			   4, 0)) {
-      if ((Pike_sp[-1].type == T_INT) &&
-	  (Pike_sp[-1].subtype == NUMBER_NUMBER) &&
-	  (!Pike_sp[-1].u.integer)) {
-	pop_stack();
-	return 0;
-      }
+    safe_apply_current2(PC_POP_TYPE_ATTRIBUTE_FUN_NUM, 3,
+			"pop_type_attribute");
+    if ((Pike_sp[-1].type == T_INT) &&
+	(Pike_sp[-1].subtype == NUMBER_NUMBER) &&
+	(!Pike_sp[-1].u.integer)) {
       pop_stack();
+      return 0;
     }
-#endif /* 0 */
+    pop_stack();
     return 1;
 
   case T_NOT:
@@ -3909,29 +3904,23 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
     goto recurse;
 
   case PIKE_T_ATTRIBUTE:
-#if 0
-    if (!flags & LE_USE_HANDLERS) {
+    if (!c) {
       b = b->cdr;
       goto recurse;
     }
-#endif /* 0 */
     if (!low_pike_types_le(a, b->cdr, array_cnt, flags)) return 0;
-#if 0
     ref_push_string((struct pike_string *)b->car);
     ref_push_type_value(a);
     ref_push_type_value(b->cdr);
-    push_int(2);
-    if (safe_apply_handler("handle_attribute", error_handler, compat_handler,
-			   4, 0)) {
-      if ((Pike_sp[-1].type == T_INT) &&
-	  (Pike_sp[-1].subtype == NUMBER_NUMBER) &&
-	  (!Pike_sp[-1].u.integer)) {
-	pop_stack();
-	return 0;
-      }
+    safe_apply_current2(PC_PUSH_TYPE_ATTRIBUTE_FUN_NUM, 3,
+			"push_type_attribute");
+    if ((Pike_sp[-1].type == T_INT) &&
+	(Pike_sp[-1].subtype == NUMBER_NUMBER) &&
+	(!Pike_sp[-1].u.integer)) {
       pop_stack();
+      return 0;
     }
-#endif /* 0 */
+    pop_stack();
     return 1;
   case PIKE_T_SCOPE:
 #ifdef TYPE_GROUPING

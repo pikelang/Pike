@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.803 2008/05/03 15:51:50 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.804 2008/05/03 20:06:07 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -11130,6 +11130,39 @@ test_compile_error_any(class A {final int f(){}} class B {inherit A; int f;})
 test_compile_error_any(class A {nomask int f(){}} class B {inherit A; int f;})
 test_compile_any(class A {local int f(){}} class B {inherit A; int f;})
 test_compile_any(class A {inline int f(){}} class B {inherit A; int f;})
+
+// - attributes
+test_compile_any(
+  class A { __deprecated__ int foo(int x) { return x; } };
+)
+test_compile_warning(
+  class A { __deprecated__ int foo(int x) { return x; } };
+  A()->foo(0);
+)
+test_compile_warning(
+  class A { __deprecated__ int foo(int x) { return x; } };
+  function bar = A()->foo;
+)
+test_compile_warning(
+  class A { __deprecated__(int) foo(int x) { return x; } };
+)
+test_compile_any(
+  class A { __deprecated__(int) foo(int x) { return (__deprecated__(int))x; } };
+)
+test_compile_warning(
+  class A { int foo(__deprecated__(int)|void x) { return x; } };
+)
+test_compile_warning(
+  class A { int foo(__deprecated__(int)|void x) { return (int)x; } };
+)
+test_compile_warning(
+  class A { int foo(__deprecated__(int)|void x) { return (int)x; } };
+  A()->foo(0);
+)
+test_compile_any(
+  class A { int foo(__deprecated__(int)|void x) { return (int)x; } };
+  A()->foo();
+)
 
 // - modifiers, compile time access properties
 
