@@ -1,20 +1,20 @@
 //
 // Argument parser
 // By Martin Nilsson
-// $Id: Arg.pmod,v 1.3 2008/05/02 00:45:24 nilsson Exp $
+// $Id: Arg.pmod,v 1.4 2008/05/03 14:18:53 nilsson Exp $
 //
 
 #pike __REAL_VERSION__
 
-class ArgLibrary
+class OptLibrary
 {
 
   //! Base class for parsing an argument. Inherit this class to create
-  //! custom made argument types.
-  class Arg
+  //! custom made option types.
+  class Opt
   {
-    constant is_arg = 1;
-    static Arg next;
+    constant is_opt = 1;
+    static Opt next;
 
     //! Should return 1 for set options or a string containing the
     //! value of the option. Returning 0 means the option was not set
@@ -27,17 +27,17 @@ class ArgLibrary
       return 0;
     }
 
-    //! Should return a list of arguments that is parsed. To properly
-    //! chain argument parsers, return @expr{your_args +
-    //! ::get_args()@}.
-    array(string) get_args()
+    //! Should return a list of options that are parsed. To properly
+    //! chain argument parsers, return @expr{your_opts +
+    //! ::get_opts()@}.
+    array(string) get_opts()
     {
-      return next->get_args();
+      return next->get_opts();
     }
 
     static this_program `|(mixed thing)
     {
-      if( !objectp(thing) || !thing->is_arg )
+      if( !objectp(thing) || !thing->is_opt )
         error("Can only or %O with another %O.\n",
               this, this_program);
 
@@ -68,24 +68,24 @@ class ArgLibrary
     }
   }
 
-  //! Parses an argument without parameter, such as --help, -x or "x"
+  //! Parses an option without parameter, such as --help, -x or "x"
   //! from -axb.
   //!
   //! @example
-  //!   Arg verbose = NoArg("-v")|NoArg("--verbose");
-  class NoArg
+  //!   Opt verbose = NoOpt("-v")|NoOpt("--verbose");
+  class NoOpt
   {
-    inherit Arg;
-    static string arg;
+    inherit Opt;
+    static string opt;
     static int double;
 
-    static void create(string _arg)
+    static void create(string _opt)
     {
-      if( sizeof(_arg)>2 && has_prefix(_arg, "--") )
+      if( sizeof(_opt)>2 && has_prefix(_opt, "--") )
         double = 1;
-      else if( sizeof(_arg)!=2 || _arg[0]!='-' || _arg=="--" )
-        error("%O not a valid argument.\n", _arg);
-      arg = _arg;
+      else if( sizeof(_opt)!=2 || _opt[0]!='-' || _opt=="--" )
+        error("%O not a valid option.\n", _opt);
+      opt = _opt;
     }
 
     int(0..1)|string get_value(array(string) argv, mapping(string:string) env)
@@ -94,7 +94,7 @@ class ArgLibrary
 
       if( double )
       {
-        if( argv[0]==arg )
+        if( argv[0]==opt )
         {
           argv[0] = 0;
           return 1;
@@ -105,9 +105,9 @@ class ArgLibrary
       if( sizeof(argv[0])>1 && argv[0][0]=='-' && argv[0][1]!='-' )
       {
         array parts = argv[0]/"=";
-        if( has_value(parts[0], arg[1..1]) )
+        if( has_value(parts[0], opt[1..1]) )
         {
-          parts[0] -= arg[1..1];
+          parts[0] -= opt[1..1];
           argv[0] = parts*"=";
           if(argv[0]=="-") argv[0] = 0;
           return 1;
@@ -117,25 +117,25 @@ class ArgLibrary
       return ::get_value(argv, env);
     }
 
-    array(string) get_args()
+    array(string) get_opts()
     {
-      return ({ arg }) + ::get_args();
+      return ({ opt }) + ::get_opts();
     }
 
     static string __sprintf()
     {
-      return sprintf("%O(%O)", this_program, arg);
+      return sprintf("Arg.NoOpt(%O)", opt);
     }
   }
 
-  //! Environment fallback for an argument. Can of course be used as
-  //! only Arg source.
+  //! Environment fallback for an option. Can of course be used as
+  //! only Opt source.
   //!
   //! @example
-  //!   Arg debug = NoArg("--debug")|Env("MY_DEBUG");
+  //!   Opt debug = NoOpt("--debug")|Env("MY_DEBUG");
   class Env
   {
-    inherit Arg;
+    inherit Opt;
     static string name;
 
     static void create(string _name)
@@ -151,17 +151,17 @@ class ArgLibrary
 
     static string __sprintf()
     {
-      return sprintf("%O(%O)", this_program, name);
+      return sprintf("Arg.Env(%O)", name);
     }
   }
 
   //! Default value for a setting.
   //!
   //! @example
-  //!   Arg output = HasArg("-o")|Default("a.out");
+  //!   Opt output = HasOpt("-o")|Default("a.out");
   class Default
   {
-    inherit Arg;
+    inherit Opt;
     static string value;
 
     static void create(string _value)
@@ -176,20 +176,20 @@ class ArgLibrary
 
     static string __sprintf()
     {
-      return sprintf("%O(%O)", this_program, value);
+      return sprintf("Arg.Default(%O)", value);
     }
   }
 
-  //! Parses an argument that may have a parameter. @tt{--foo@},
+  //! Parses an option that may have a parameter. @tt{--foo@},
   //! @tt{-x@} and x in a sequence like @tt{-axb@} will set the
   //! variable to @expr{1@}. @tt{--foo=bar@}, @tt{-x bar@} and
   //! @tt{-x=bar@} will set the variable to @expr{bar@}.
   //!
   //! @example
-  //!   Arg debug = MaybeArg("--debug");
-  class MaybeArg
+  //!   Opt debug = MaybeOpt("--debug");
+  class MaybeOpt
   {
-    inherit NoArg;
+    inherit NoOpt;
 
     int(0..1)|string get_value(array(string) argv, mapping(string:string) env)
     {
@@ -198,14 +198,14 @@ class ArgLibrary
       if( double )
       {
         // --foo
-        if( argv[0]==arg )
+        if( argv[0]==opt )
         {
           argv[0] = 0;
           return 1;
         }
 
         // --foo=bar
-        if( sscanf(argv[0], arg+"=%s", string ret)==1 )
+        if( sscanf(argv[0], opt+"=%s", string ret)==1 )
         {
           argv[0] = 0;
           return ret;
@@ -219,20 +219,20 @@ class ArgLibrary
       {
         array parts = argv[0]/"=";
 
-        if( has_value(parts[0], arg[1..1]) &&
+        if( has_value(parts[0], opt[1..1]) &&
             ( sizeof(parts)==1 ||
-              parts[0][-1]!=arg[1] ) )
+              parts[0][-1]!=opt[1] ) )
         {
           // -xy, -xy=z
-          parts[0] -= arg[1..1];
+          parts[0] -= opt[1..1];
           argv[0] = parts*"=";
           if(argv[0]=="-") argv[0] = 0;
           return 1;
         }
-        else if( sizeof(parts)>1 && parts[0][-1]==arg[1] )
+        else if( sizeof(parts)>1 && parts[0][-1]==opt[1] )
         {
           // -yx=z
-          parts[0] -= arg[1..1];
+          parts[0] -= opt[1..1];
           if( parts[0]=="-" )
             argv[0] = 0;
           else
@@ -245,16 +245,21 @@ class ArgLibrary
 
       return ::get_value(argv, env);
     }
+
+    static string __sprintf()
+    {
+      return sprintf("Arg.MaybeOpt(%O)", opt);
+    }
   }
 
-  //! Parses an argument that has a parameter. @tt{--foo=bar@}, @tt{-x
+  //! Parses an option that has a parameter. @tt{--foo=bar@}, @tt{-x
   //! bar@} and @tt{-x=bar@} will set the variable to @expr{bar@}.
   //!
   //! @example
-  //!   Arg user = HasArg("--user")|HasArg("-u");
-  class HasArg
+  //!   Opt user = HasOpt("--user")|HasOpt("-u");
+  class HasOpt
   {
-    inherit NoArg;
+    inherit NoOpt;
 
     int(0..1)|string get_value(array(string) argv, mapping(string:string) env)
     {
@@ -263,7 +268,7 @@ class ArgLibrary
       if( double )
       {
         // --foo bar
-        if( argv[0]==arg )
+        if( argv[0]==opt )
         {
           if( sizeof(argv)>1 )
           {
@@ -276,7 +281,7 @@ class ArgLibrary
         }
 
         // --foo=bar
-        if( sscanf(argv[0], arg+"=%s", string ret)==1 )
+        if( sscanf(argv[0], opt+"=%s", string ret)==1 )
         {
           argv[0] = 0;
           return ret;
@@ -287,14 +292,14 @@ class ArgLibrary
       if( sizeof(argv[0])>1 && argv[0][0]=='-' && argv[0][1]!='-' )
       {
         array parts = argv[0]/"=";
-        if( sizeof(parts[0]) && parts[0][-1]==arg[1] )
+        if( sizeof(parts[0]) && parts[0][-1]==opt[1] )
         {
           if( sizeof(parts)==1 )
           {
             // "-xxxy z"
             if(sizeof(argv)>1)
             {
-              parts[0] -= arg[1..1];
+              parts[0] -= opt[1..1];
               if( parts[0]=="-" )
                 argv[0] = 0;
               else
@@ -310,7 +315,7 @@ class ArgLibrary
           else
           {
             // "-xxxy=z"
-            parts[0] -= arg[1..1];
+            parts[0] -= opt[1..1];
             if( parts[0]=="-" )
               argv[0] = 0;
             else
@@ -322,9 +327,14 @@ class ArgLibrary
 
       return ::get_value(argv, env);
     }
+
+    static string __sprintf()
+    {
+      return sprintf("Arg.HasOpt(%O)", opt);
+    }
   }
 
-} // -- ArgLibrary
+} // -- OptLibrary
 
 object REST = class {
     static string _sprintf(int t)
@@ -333,14 +343,14 @@ object REST = class {
     }
   }();
 
-// FIXME: Support for rc files? ( Arg x = Arg("--x")|INIFile(path, name); )
-// FIXME: Support for type casts? ( Arg level = Integer(Arg("--level"));
+// FIXME: Support for rc files? ( Opt x = Opt("--x")|INIFile(path, name); )
+// FIXME: Support for type casts? ( Opt level = Integer(Opt("--level"));
 
 class LowOptions
 {
-  static inherit ArgLibrary;
+  static inherit OptLibrary;
 
-  static mapping(string:Arg) args = ([]);
+  static mapping(string:Opt) opts = ([]);
   static mapping(string:int(1..1)|string) values = ([]);
   static array(string) argv;
 
@@ -353,16 +363,18 @@ class LowOptions
     foreach(::_indices(2), string index)
     {
       mixed val = ::`[](index, 2);
-      if(objectp(val) && val->is_arg) args[index]=val;
+      if(objectp(val) && val->is_opt) opts[index]=val;
     }
 
     argv = _argv[1..];
-    mapping(string:Arg) unset = args+([]);
+    mapping(string:Opt) unset = opts+([]);
 
     while(1)
     {
+      if(!sizeof(argv)) break;
+
       int(0..1)|string value;
-      foreach(unset; string index; Arg arg)
+      foreach(unset; string index; Opt arg)
       {
         value = arg->get_value(argv, env);
         if(value)
@@ -381,13 +393,20 @@ class LowOptions
       else
         while( sizeof(argv) && argv[0] == 0 )
           argv = argv[1..];
-
-      if(!sizeof(argv)) break;
     }
+
     if( sizeof(unset) )
     {
-      // FIXME: Make sure all fallbacks are properly fetched. Call
-      // with (0, env)?
+      int(0..1)|string value;
+      foreach(unset; string index; Opt arg)
+      {
+        value = arg->get_value(({}), env);
+        if(value)
+        {
+          m_delete(unset, index);
+          values[index] = value;
+        }
+      }
     }
 
   }
@@ -432,7 +451,7 @@ class Options
     if( s )
       write( s+"\n" );
 
-    foreach(args; string i; Arg arg)
+    foreach(opts; string i; Opt opt)
     {
       // FIXME: Make a list of the attibutes parsed by arg.
 
@@ -507,30 +526,12 @@ class SimpleOptions
 //
 // void main(int n, array argv)
 // {
-//   mapping args = Arg.parse(argv);
-//   argv = args[Arg.REST];
+//   mapping opts = Arg.parse(argv);
+//   argv = opts[Arg.REST];
 // }
 
 
 mapping(string:string|int(1..1)) parse(array(string) argv)
 {
   return (mapping)SimpleOptions(argv);
-}
-
-
-// --- test stuff
-
-class Getopt
-{
-  inherit Options;
-  Arg verbose = NoArg("-v")|NoArg("--verbose")|Env("VERBOSE");
-  Arg name = HasArg("-n")|HasArg("--name")|Default("Donald");
-  Arg debug = MaybeArg("-d")|MaybeArg("--debug");
-}
-
-
-void main(int num, array args)
-{
-  Options o = Getopt(args);
-  werror("%O\n", (mapping)o );
 }
