@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.288 2008/05/02 04:15:13 mast Exp $
+|| $Id: object.c,v 1.289 2008/05/03 13:08:05 mast Exp $
 */
 
 #include "global.h"
@@ -1835,7 +1835,7 @@ PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o)
       struct program *p = o->prog;
 
       if (Pike_in_gc == GC_PASS_COUNT_MEMORY) {
-	if (p) gc_counted_bytes += p->storage_needed;
+	if (p) gc_counted_bytes += p->storage_needed + sizeof (struct object);
 	gc_check_object (o);
       }
 
