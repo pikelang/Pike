@@ -19,6 +19,12 @@ class CompileErrorHandler
 	    master()->trim_file_name (file), line ? (string) line : "-", err);
     got_warnings_in_last_test = 1;
   }
+
+  void compile_error (string file, int line, string err)
+  {
+    werror ("test: Compilation error: %s:%s: %s\n",
+	    master()->trim_file_name (file), line ? (string) line : "-", err);
+  }
 }
 
 void test_resolv(string file, int base_size, object|void handler)
