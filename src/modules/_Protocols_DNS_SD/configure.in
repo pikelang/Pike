@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.3 2005/09/03 03:21:21 grendel Exp $
+# $Id: configure.in,v 1.4 2008/05/03 14:32:32 marcus Exp $
 
 AC_INIT(sd.c)
 AC_CONFIG_HEADER(config.h)
@@ -15,9 +15,17 @@ if test x$with_dnssd = xyes ; then
   AC_CHECK_HEADERS(dns_sd.h howl.h)
   
   if test x$ac_cv_header_dns_sd_h = xyes; then
-    PIKE_FEATURE(DNS-SD,[yes (dns_sd.h)])
-    AC_DEFINE(HAVE_DNS_SD)
-
+    PIKE_FEATURE(DNS-SD,[no (libdns_sd not found)])
+    AC_CHECK_FUNC(DNSServiceRegister, [
+      PIKE_FEATURE(DNS-SD,[yes (dns_sd.h)])
+      AC_DEFINE(HAVE_DNS_SD)
+    ], [
+      AC_CHECK_LIB(dns_sd, DNSServiceRegister, [
+        PIKE_FEATURE(DNS-SD,[yes (dns_sd.h -ldns_sd)])
+        AC_DEFINE(HAVE_DNS_SD)
+        LIBS="${LIBS} -ldns_sd"
+      ])
+    ])
   elif test x$ac_cv_header_howl_h = xyes; then
     PIKE_FEATURE(DNS-SD,[no (libhowl not found)])
     AC_DEFINE(HAVE_HOWL)
