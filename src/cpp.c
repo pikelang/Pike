@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.168 2008/05/01 20:39:40 mast Exp $
+|| $Id: cpp.c,v 1.169 2008/05/03 15:29:24 nilsson Exp $
 */
 
 #include "global.h"
@@ -517,9 +517,11 @@ static void check_defined(struct cpp *this,
   case 2:
     s = binary_findstring2((p_wchar2 *)args[0].arg.ptr, args[0].len);
     break;
+#ifdef PIKE_DEBUG
   default:
     Pike_fatal("cpp(): Symbol has unsupported shift: %d\n", args[0].arg.shift);
     break;
+#endif
   }
   if(s && find_define(s))
   {
@@ -1472,8 +1474,10 @@ static ptrdiff_t low_cpp(struct cpp *this, void *data, ptrdiff_t len,
   case 2:
     return lower_cpp2(this, (p_wchar2 *)data, len,
 		      flags, auto_convert, charset);
+#ifdef PIKE_DEBUG
   default:
     Pike_fatal("low_cpp(): Bad shift: %d\n", shift);
+#endif
   }
   /* NOT_REACHED */
   return 0;

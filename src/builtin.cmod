@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.198 2008/04/23 07:37:03 mast Exp $
+|| $Id: builtin.cmod,v 1.199 2008/05/03 15:29:24 nilsson Exp $
 */
 
 #include "global.h"
@@ -2491,8 +2491,10 @@ PIKECLASS bootstring
 	    s[p] = DO_NOT_WARN ((p_wchar2) n);
 	  }
 	  break;
+#ifdef PIKE_DEBUG
 	default:
 	  Pike_fatal("Illegal shift size!\n");
+#endif
 	}
       i++;
     }

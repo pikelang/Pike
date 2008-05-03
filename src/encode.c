@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.264 2008/04/26 19:04:25 grubba Exp $
+|| $Id: encode.c,v 1.265 2008/05/03 15:29:24 nilsson Exp $
 */
 
 #include "global.h"
@@ -2548,8 +2548,10 @@ static INT32 decode_portable_bytecode(INT32 string_no)
 #undef SIGNED_CHAR
 #undef EMIT_BYTECODE
 #undef EMIT_BYTECODE2
+#ifdef PIKE_DEBUG
   default:
     Pike_fatal("Bad size_shift: %d\n", bytecode->size_shift);
+#endif
   }
   UNSET_ONERROR(err);
   return assemble(1);

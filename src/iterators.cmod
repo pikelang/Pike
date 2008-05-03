@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iterators.cmod,v 1.65 2008/05/01 21:33:24 mast Exp $
+|| $Id: iterators.cmod,v 1.66 2008/05/03 15:29:24 nilsson Exp $
 */
 
 #include "global.h"
@@ -1360,8 +1360,10 @@ PIKECLASS string_split_iterator
 	NEW_SKIP_CASE(0, ssi->flags);
 	NEW_SKIP_CASE(1, ssi->flags);
 	NEW_SKIP_CASE(2, ssi->flags);
+#ifdef PIKE_DEBUG
       default:
 	Pike_fatal("Unsupported size shift!\n");
+#endif
       }
     scan_more:
       switch(ssi->buffer->size_shift)
@@ -1369,8 +1371,10 @@ PIKECLASS string_split_iterator
 	NEW_SCAN_MORE_CASE(0);
 	NEW_SCAN_MORE_CASE(1);
 	NEW_SCAN_MORE_CASE(2);
+#ifdef PIKE_DEBUG
       default:
 	Pike_fatal("Unsupported size shift!\n");
+#endif
       }
     }
 
@@ -1474,17 +1478,21 @@ PIKECLASS string_split_iterator
 	      SIMPLE_SKIP_CASE(THIS, 0, off);
 	      SIMPLE_SKIP_CASE(THIS, 1, off);
 	      SIMPLE_SKIP_CASE(THIS, 2, off);
+#ifdef PIKE_DEBUG
 	    default:
 	      Pike_fatal("Unsupported size shift!\n");
+#endif
 	    }
 	  } else {
 	    switch(THIS->buffer->size_shift) {
 	      COMPLEX_SKIP_CASE(THIS, 0, off);
 	      COMPLEX_SKIP_CASE(THIS, 1, off);
 	      COMPLEX_SKIP_CASE(THIS, 2, off);
+#ifdef PIKE_DEBUG
 	    default:
 	      Pike_fatal("Unsupported size shift!\n");
-	    }	  
+#endif
+	    }
 	  }
 	  if (off >= THIS->buffer->len) {
 	    break;
@@ -1496,16 +1504,20 @@ PIKECLASS string_split_iterator
 	    SIMPLE_SCAN_CASE(THIS, 0, off);
 	    SIMPLE_SCAN_CASE(THIS, 1, off);
 	    SIMPLE_SCAN_CASE(THIS, 2, off);
+#ifdef PIKE_DEBUG
 	  default:
 	    Pike_fatal("Unsupported size shift!\n");
+#endif
 	  }
 	} else {
 	  switch(THIS->buffer->size_shift) {
 	    COMPLEX_SCAN_CASE(THIS, 0, off);
 	    COMPLEX_SCAN_CASE(THIS, 1, off);
 	    COMPLEX_SCAN_CASE(THIS, 2, off);
+#ifdef PIKE_DEBUG
 	  default:
 	    Pike_fatal("Unsupported size shift!\n");
+#endif
 	  }
 	}
       }

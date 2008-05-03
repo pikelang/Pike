@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.216 2008/05/02 04:15:16 mast Exp $
+|| $Id: stralloc.c,v 1.217 2008/05/03 15:29:26 nilsson Exp $
 */
 
 #include "global.h"
@@ -157,7 +157,9 @@ static INLINE unsigned INT32 generic_extract (const void *str, int size, ptrdiff
     case 1: return ((unsigned INT16 *)str)[pos];
     case 2: return ((unsigned INT32 *)str)[pos];
   }
+#ifdef PIKE_DEBUG
   Pike_fatal("Illegal shift size!\n");
+#endif
   return 0;
 }
 
@@ -202,8 +204,10 @@ PMOD_EXPORT void low_set_index(struct pike_string *s, ptrdiff_t pos,
     case 0: STR0(s)[pos]=value; break;
     case 1: STR1(s)[pos]=value; break;
     case 2: STR2(s)[pos]=value; break;
+#ifdef PIKE_DEBUG
     default:
       Pike_fatal("Illegal shift size!\n");
+#endif
   }
   s->flags |= STRING_NOT_HASHED;
 }
@@ -799,8 +803,10 @@ PMOD_EXPORT struct pike_string *end_shared_string(struct pike_string *s)
 
   switch(s->size_shift)
   {
+#ifdef PIKE_DEBUG
     default:
       Pike_fatal("ARGHEL! size_shift:%d\n", s->size_shift);
+#endif
 
     case 2:
       switch(find_magnitude2(STR2(s),s->len))
@@ -896,8 +902,10 @@ PMOD_EXPORT struct pike_string * debug_make_shared_binary_pcharp(const PCHARP st
       return make_shared_binary_string1((p_wchar1 *)(str.ptr),  len);
     case 2:
       return make_shared_binary_string2((p_wchar2 *)(str.ptr),  len);
+#ifdef PIKE_DEBUG
     default:
       Pike_fatal("Unknown string width!\n");
+#endif
   }
   /* NOT REACHED */
   return NULL;	/* Keep the compiler happy */
@@ -1683,8 +1691,10 @@ PMOD_EXPORT struct pike_string *modify_shared_string(struct pike_string *a,
 	free_string(a);
 	return end_shared_string(b);
 
+#ifdef PIKE_DEBUG
       default:
 	Pike_fatal("Odd wide string conversion!\n");
+#endif
     }
   }
 
@@ -1884,7 +1894,9 @@ PMOD_EXPORT struct pike_string *string_slice(struct pike_string *s,
     case 2:
       return make_shared_binary_string2(STR2(s)+start,len);
   }
+#ifdef PIKE_DEBUG
   Pike_fatal("Illegal shift size!\n");
+#endif
   return 0;
 }
 
@@ -3004,7 +3016,9 @@ PMOD_EXPORT PCHARP MEMCHR_PCHARP(PCHARP ptr, int chr, ptrdiff_t len)
     case 1: return MKPCHARP(MEMCHR1((p_wchar1 *)ptr.ptr,chr,len),1);
     case 2: return MKPCHARP(MEMCHR2((p_wchar2 *)ptr.ptr,chr,len),2);
   }
+#ifdef PIKE_DEBUG
   Pike_fatal("Illegal shift in MEMCHR_PCHARP.\n");
+#endif
   return MKPCHARP(0,0); /* make wcc happy */
 }
 
@@ -3447,8 +3461,10 @@ PMOD_EXPORT p_wchar0 *require_wstring0(struct pike_string *s,
     case 2:
       return 0;
 
+#ifdef PIKE_DEBUG
     default:
       Pike_fatal("Illegal shift size in string.\n");
+#endif
   }
   return 0;
 }
@@ -3470,8 +3486,10 @@ PMOD_EXPORT p_wchar1 *require_wstring1(struct pike_string *s,
     case 2:
       return 0;
 
+#ifdef PIKE_DEBUG
     default:
       Pike_fatal("Illegal shift size in string.\n");
+#endif
   }
   return 0;
 }
@@ -3496,8 +3514,10 @@ PMOD_EXPORT p_wchar2 *require_wstring2(struct pike_string *s,
       *to_free=0;
       return STR2(s);
 
+#ifdef PIKE_DEBUG
     default:
       Pike_fatal("Illegal shift size in string.\n");
+#endif
   }
   return 0;
 }

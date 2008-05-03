@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: preprocessor.h,v 1.92 2008/05/01 20:39:40 mast Exp $
+|| $Id: preprocessor.h,v 1.93 2008/05/03 15:29:24 nilsson Exp $
 */
 
 /*
@@ -1855,9 +1855,11 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	  case 2:
 	    calc_2(this, (p_wchar2 *)tmp.s->str, tmp.s->len, 0, 0);
 	    break;
+#ifdef PIKE_DEBUG
 	  default:
 	    Pike_fatal("cpp(): Bad shift: %d\n", tmp.s->size_shift);
 	    break;
+#endif
 	  }
 	  if(SAFE_IS_ZERO(Pike_sp-1)) nflags|=CPP_NO_OUTPUT;
 	  pop_stack();
@@ -1982,9 +1984,11 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	  case 2:
 	    calc_2(this, (p_wchar2 *)tmp.s->str, tmp.s->len,0,0);
 	    break;
+#ifdef PIKE_DEBUG
 	  default:
 	    Pike_fatal("cpp(): Bad shift: %d\n", tmp.s->size_shift);
 	    break;
+#endif
 	  }
 	  free_string_builder(&tmp);
 	  if(!SAFE_IS_ZERO(Pike_sp-1)) flags&=~CPP_NO_OUTPUT;

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.682 2008/05/02 10:56:06 grubba Exp $
+|| $Id: program.c,v 1.683 2008/05/03 15:29:25 nilsson Exp $
 */
 
 #include "global.h"
@@ -7449,9 +7449,11 @@ static void run_init(struct compilation *c)
     case 0: c->lex.current_lexer = yylex0; break;
     case 1: c->lex.current_lexer = yylex1; break;
     case 2: c->lex.current_lexer = yylex2; break;
+#ifdef PIKE_DEBUG
     default:
       Pike_fatal("Program has bad shift %d!\n", c->prog->size_shift);
       break;
+#endif
   }
 
   c->lex.pos=c->prog->str;

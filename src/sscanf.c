@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sscanf.c,v 1.171 2008/05/01 20:38:11 mast Exp $
+|| $Id: sscanf.c,v 1.172 2008/05/03 15:29:25 nilsson Exp $
 */
 
 #include "global.h"
@@ -1390,10 +1390,12 @@ INT32 low_sscanf(struct pike_string *data, struct pike_string *format)
 			    STR2(format), format->len,
 			    &matched_chars, &x);
     break;
+#ifdef PIKE_DEBUG
   default:
     Pike_fatal("Unsupported shift-combination to low_sscanf(): %d:%d\n",
 	       data->size_shift, format->size_shift);
     break;
+#endif
   }
   return i;
 }

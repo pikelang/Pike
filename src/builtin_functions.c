@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.659 2008/05/02 04:15:09 mast Exp $
+|| $Id: builtin_functions.c,v 1.660 2008/05/03 15:29:24 nilsson Exp $
 */
 
 #include "global.h"
@@ -336,9 +336,11 @@ PMOD_EXPORT void f_hash(INT32 args)
   case 2:
     i = simple_hashmem2(STR2(s), s->len, 100);
     break;
+#ifdef PIKE_DEBUG
   default:
     Pike_fatal("hash(): Unsupported string shift: %d\n", s->size_shift);
     break;
+#endif
   }
 
   if(args > 1)
@@ -498,7 +500,7 @@ static struct case_info *find_ci_shift0(INT32 c)
       case CIM_UPPERDELTA: C = c + ci->data; break; \
       case CIM_CASEBIT: C = c | ci->data; break; \
       case CIM_CASEBITOFF: C = ((c - ci->data) | ci->data) + ci->data; break; \
-      default: Pike_fatal("lower_case(): Unknown case_info mode: %d\n", ci->mode); \
+      DO_IF_DEBUG( default: Pike_fatal("lower_case(): Unknown case_info mode: %d\n", ci->mode); ) \
     } \
    }} \
   } while(0)
@@ -513,7 +515,7 @@ static struct case_info *find_ci_shift0(INT32 c)
       case CIM_UPPERDELTA: C = c + ci->data; break; \
       case CIM_CASEBIT: C = c | ci->data; break; \
       case CIM_CASEBITOFF: C = ((c - ci->data) | ci->data) + ci->data; break; \
-      default: Pike_fatal("lower_case(): Unknown case_info mode: %d\n", ci->mode); \
+      DO_IF_DEBUG( default: Pike_fatal("lower_case(): Unknown case_info mode: %d\n", ci->mode); ) \
     } \
    }} \
   } while(0)
@@ -528,7 +530,7 @@ static struct case_info *find_ci_shift0(INT32 c)
       case CIM_LOWERDELTA: C = c - ci->data; break; \
       case CIM_CASEBIT: C = c & ~ci->data; break; \
       case CIM_CASEBITOFF: C = ((c - ci->data)& ~ci->data) + ci->data; break; \
-      default: Pike_fatal("upper_case(): Unknown case_info mode: %d\n", ci->mode); \
+      DO_IF_DEBUG( default: Pike_fatal("upper_case(): Unknown case_info mode: %d\n", ci->mode); ) \
     } \
    }} \
   } while(0)
@@ -543,7 +545,7 @@ static struct case_info *find_ci_shift0(INT32 c)
       case CIM_LOWERDELTA: C = c - ci->data; break; \
       case CIM_CASEBIT: C = c & ~ci->data; break; \
       case CIM_CASEBITOFF: C = ((c - ci->data)& ~ci->data) + ci->data; break; \
-      default: Pike_fatal("lower_case(): Unknown case_info mode: %d\n", ci->mode); \
+      DO_IF_DEBUG( default: Pike_fatal("lower_case(): Unknown case_info mode: %d\n", ci->mode); ) \
     } \
    }} \
   } while(0)
@@ -609,8 +611,10 @@ PMOD_EXPORT void f_lower_case(INT32 args)
     while(i--) {
       DO_LOWER_CASE(str[i]);
     }
+#ifdef PIKE_DEBUG
   } else {
     Pike_fatal("lower_case(): Bad string shift:%d\n", orig->size_shift);
+#endif
   }
 
   pop_n_elems(args);
@@ -706,8 +710,10 @@ PMOD_EXPORT void f_upper_case(INT32 args)
     while(i--) {
       DO_UPPER_CASE(str[i]);
     }
+#ifdef PIKE_DEBUG
   } else {
     Pike_fatal("lower_case(): Bad string shift:%d\n", orig->size_shift);
+#endif
   }
 
   pop_n_elems(args);
@@ -901,10 +907,12 @@ PMOD_EXPORT void f_search(INT32 args)
 	  }
 	}
 	break;
+#ifdef PIKE_DEBUG
       default:
 	Pike_fatal("search(): Unsupported string shift: %d!\n",
 	      haystack->size_shift);
 	break;
+#endif
       }
       if (start >= haystack->len) {
 	start = -1;
@@ -1607,9 +1615,11 @@ PMOD_EXPORT void f_string_to_unicode(INT32 args)
       out = end_shared_string(out);
     }
     break;
+#ifdef PIKE_DEBUG
   default:
-    Pike_error("string_to_unicode(): Bad string shift: %d!\n", in->size_shift);
+    Pike_fatal("string_to_unicode(): Bad string shift: %d!\n", in->size_shift);
     break;
+#endif
   }
   pop_n_elems(args);
   push_string(out);

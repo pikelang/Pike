@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.230 2008/04/14 10:14:40 grubba Exp $
+|| $Id: operators.c,v 1.231 2008/05/03 15:29:24 nilsson Exp $
 */
 
 #include "global.h"
@@ -446,10 +446,12 @@ PMOD_EXPORT void o_cast_to_string(void)
 	  }
 	}
 	break;
+#ifdef PIKE_DEBUG
       default:
 	free_string(end_shared_string(s));
 	Pike_fatal("cast: Bad shift: %d.\n", shift);
 	break;
+#endif
       }
       s = end_shared_string(s);
       pop_stack();
