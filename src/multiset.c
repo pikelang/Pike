@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.107 2008/05/02 04:15:13 mast Exp $
+|| $Id: multiset.c,v 1.108 2008/05/03 13:09:28 mast Exp $
 */
 
 #include "global.h"
@@ -4094,9 +4094,9 @@ void gc_mark_multiset_as_referenced (struct multiset *l)
 
       if (gc_mark (msd)) {
 	if (Pike_in_gc == GC_PASS_COUNT_MEMORY) {
-	  gc_counted_bytes += (l->msd->flags & MULTISET_INDVAL ?
-			       NODE_OFFSET (msnode_indval, l->msd->allocsize) :
-			       NODE_OFFSET (msnode_ind, l->msd->allocsize));
+	  gc_counted_bytes += (msd->flags & MULTISET_INDVAL ?
+			       NODE_OFFSET (msnode_indval, msd->allocsize) :
+			       NODE_OFFSET (msnode_ind, msd->allocsize));
 	  gc_check_msd (l);
 	}
 
