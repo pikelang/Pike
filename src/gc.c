@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.306 2008/05/02 04:29:37 mast Exp $
+|| $Id: gc.c,v 1.307 2008/05/03 14:58:09 mbaehr Exp $
 */
 
 #include "global.h"
@@ -4073,9 +4073,9 @@ void dump_gc_info(void)
  *!   zero.
  *!
  *! @note
- *! The result of @code{Pike.count_memory(0,a,b)@} might be larger
- *! than the sum of @code{Pike.count_memory(0,a)@} and
- *! @code{Pike.count_memory(0,b)@} since @code{a@} and @code{b@}
+ *! The result of @code{Pike.count_memory(0,a,b)} might be larger
+ *! than the sum of @code{Pike.count_memory(0,a)} and
+ *! @code{Pike.count_memory(0,b)} since @code{a} and @code{b}
  *! together might reference things that aren't referenced from
  *! anywhere else.
  *!
