@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.686 2008/05/03 20:06:06 grubba Exp $
+|| $Id: program.c,v 1.687 2008/05/04 14:04:10 grubba Exp $
 */
 
 #include "global.h"
@@ -8487,6 +8487,52 @@ static void f_compilation_push_type_attribute(INT32 args)
   push_int(1);
 }
 
+/*! @decl int(0..1) apply_type_attribute(string attribute, @
+ *!                                      type a, type b)
+ *!
+ *!   Type attribute handler.
+ *!
+ *!   Called during type checking when @[a] has been successfully
+ *!   had a partial evaluation with the argument @[b] and
+ *!   @[a] had the type attribute @[attribute] before the
+ *!   evaluation.
+ *!
+ *!   The default implementation implements the "deprecated"
+ *!   attribute.
+ *!
+ *! @returns
+ *!   Returns @expr{1@} if the type check should be allowed
+ *!   (ie @expr{__attribute__(attribute, a)(b)@}) is valid,
+ *!   and @expr{0@} (zero) otherwise.
+ *!
+ *! @seealso
+ *!   @[pop_type_attribute()], @[push_type_attribute()]
+ */
+static void f_compilation_apply_type_attribute(INT32 args)
+{
+  struct pike_string *attr;
+  struct svalue *a, *b;
+  struct compilation *c = THIS_COMPILATION;
+  struct pike_string *deprecated_string;
+
+  get_all_args("apply_type_attribute", args, "%W%*%*", &attr, &a, &b);
+
+  if (Pike_compiler->compiler_pass == 2) {
+    MAKE_CONST_STRING(deprecated_string, "deprecated");
+    if (attr == deprecated_string) {
+      push_int(REPORT_WARNING);
+      ref_push_string(c->lex.current_file);
+      push_int(c->lex.current_line);
+      push_constant_text("type_check");
+      push_constant_text("Calling a deprecated value.");
+      apply_current(PC_REPORT_FUN_NUM, 5);
+      args++;
+    }
+  }
+  pop_n_elems(args);
+  push_int(1);
+}
+
 static void f_compilation__sprintf(INT32 args)
 {
   struct compilation *c = THIS_COMPILATION;
@@ -8762,6 +8808,9 @@ static void compile_compiler(void)
 	       tFunc(tStr tType(tMix) tType(tMix), tInt01), 0);
 
   ADD_FUNCTION("push_type_attribute", f_compilation_push_type_attribute,
+	       tFunc(tStr tType(tMix) tType(tMix), tInt01), 0);
+
+  ADD_FUNCTION("apply_type_attribute", f_compilation_apply_type_attribute,
 	       tFunc(tStr tType(tMix) tType(tMix), tInt01), 0);
 
   ADD_FUNCTION("_sprintf", f_compilation__sprintf,

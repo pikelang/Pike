@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_compiler.h,v 1.11 2008/05/03 20:06:06 grubba Exp $
+|| $Id: pike_compiler.h,v 1.12 2008/05/04 14:04:10 grubba Exp $
 */
 
 #ifndef PIKE_COMPILER_H
@@ -82,5 +82,6 @@ struct compilation
 #define PC_HANDLE_INHERIT_FUN_NUM			7
 #define PC_POP_TYPE_ATTRIBUTE_FUN_NUM			8
 #define PC_PUSH_TYPE_ATTRIBUTE_FUN_NUM			9
+#define PC_APPLY_TYPE_ATTRIBUTE_FUN_NUM			10
 
 #endif	/* !PIKE_COMPILER_H */

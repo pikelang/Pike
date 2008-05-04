@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.324 2008/05/03 20:06:07 grubba Exp $
+|| $Id: pike_types.c,v 1.325 2008/05/04 14:04:11 grubba Exp $
 */
 
 #include "global.h"
@@ -5717,6 +5717,7 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
 #endif /* PIKE_TYPE_DEBUG */
 					      )
 {
+  struct compilation *c = MAYBE_THIS_COMPILATION;
   struct pike_type *res = NULL;
   struct pike_type *tmp;
   struct pike_type *tmp2;
@@ -5749,6 +5750,22 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
 
   case PIKE_T_ATTRIBUTE:
     res = lower_new_check_call(fun_type->cdr, arg_type, flags, sval CHECK_CALL_ARGS);
+    if (!res) return NULL;
+    if (c) {
+      ref_push_string((struct pike_string *)fun_type->car);
+      ref_push_type_value(fun_type->cdr);
+      ref_push_type_value(arg_type);
+      safe_apply_current2(PC_APPLY_TYPE_ATTRIBUTE_FUN_NUM, 3,
+			  "apply_type_attribute");
+      if ((Pike_sp[-1].type == T_INT) &&
+	  (Pike_sp[-1].subtype == NUMBER_NUMBER) &&
+	  (!Pike_sp[-1].u.integer)) {
+	pop_stack();
+	free_type(res);
+	return NULL;
+      }
+      pop_stack();
+    }
     type_stack_mark();
     push_finished_type(res);
     push_type_attribute((struct pike_string *)fun_type->car);
@@ -5965,6 +5982,7 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
 	struct compilation *c = MAYBE_THIS_COMPILATION;
 	/* Perform extra argument checking based on the attribute. */
 	/* FIXME: Support multiple attributes. */
+	/* FIXME: Ought to use PikeCompiler! */
 	ref_push_string((struct pike_string *)tmp2->car);
 	push_svalue(sval);
 	ref_push_type_value(tmp2->cdr);
@@ -6073,6 +6091,9 @@ struct pike_type *low_new_check_call(struct pike_type *fun_type,
   case PIKE_T_NAME:
     arg_type = arg_type->cdr;
     goto loop;
+
+    /* FIXME: PIKE_T_ATTRIBUTE's ought to propagate out to the basic types.
+     */
 
   case T_OR:
     if (!(tmp = low_new_check_call(fun_type, arg_type->car, flags, sval))) {
