@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: font.c,v 1.90 2006/03/06 08:47:36 peter Exp $
+|| $Id: font.c,v 1.91 2008/05/04 00:34:22 nilsson Exp $
 */
 
 #include "global.h"
@@ -799,8 +799,10 @@ void font_text_extents(INT32 args)
 	  if (xsize > max) max=xsize;
 	}
 	break;
+#ifdef PIKE_DEBUG
       default:
 	Pike_fatal("Illegal shift size!\n");
+#endif
      }
      if (max>maxwidth2) maxwidth2=max;
   }

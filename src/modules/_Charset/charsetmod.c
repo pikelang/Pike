@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: charsetmod.c,v 1.63 2007/12/28 13:36:16 nilsson Exp $
+|| $Id: charsetmod.c,v 1.64 2008/05/04 00:34:22 nilsson Exp $
 */
 
 #ifdef HAVE_CONFIG_H
@@ -1024,8 +1024,10 @@ static void feed_gb18030e(struct std_cs_stor *cs, struct string_builder *sb,
       }
     }
     break;
+#ifdef PIKE_DEBUG
   default:
     Pike_fatal("Illegal shift size!\n");
+#endif
   }
 }
 
@@ -1103,8 +1105,10 @@ static void feed_gbke(struct std_cs_stor *cs, struct string_builder *sb,
       }
     }
     break;
+#ifdef PIKE_DEBUG
   default:
     Pike_fatal("Illegal shift size!\n");
+#endif
   }
 }
 
@@ -1617,8 +1621,10 @@ static void feed_utf8e(struct std_cs_stor *cs, struct string_builder *sb,
       }
     }
     break;
+#ifdef PIKE_DEBUG
   default:
     Pike_fatal("Illegal shift size!\n");
+#endif
   }
 }
 
@@ -1751,8 +1757,10 @@ static void feed_utf_ebcdice(struct std_cs_stor *cs, struct string_builder *sb,
       }
     }
     break;
+#ifdef PIKE_DEBUG
   default:
     Pike_fatal("Illegal shift size!\n");
+#endif
   }
 }
 
@@ -1822,8 +1830,10 @@ static void feed_utf7_5e(struct std_cs_stor *cs, struct string_builder *sb,
       /* FIXME: Encode using surrogates? */
     }
     break;
+#ifdef PIKE_DEBUG
   default:
     Pike_fatal("Illegal shift size!\n");
+#endif
   }
 }
 
@@ -1976,8 +1986,10 @@ static void feed_utf7e(struct utf7_stor *u7, struct string_builder *sb,
 	}
     }
     break;
+#ifdef PIKE_DEBUG
   default:
     Pike_fatal("Illegal shift size!\n");
+#endif
   }
 
   u7->dat = dat;
@@ -2083,8 +2095,10 @@ static void feed_std8e(struct std8e_stor *s8, struct string_builder *sb,
 	  REPLACE_CHAR(c, feed_std8e, s8, p - STR2(str) - 1);
     }
     break;
+#ifdef PIKE_DEBUG
   default:
     Pike_fatal("Illegal shift size!\n");
+#endif
   }
 }
 
@@ -2189,8 +2203,10 @@ static void feed_std16e(struct std16e_stor *s16, struct string_builder *sb,
 	  REPLACE_CHAR(c, feed_std16e, s16, p - STR2(str) - 1);
     }
     break;
+#ifdef PIKE_DEBUG
   default:
     Pike_fatal("Illegal shift size!\n");
+#endif
   }
 }
 

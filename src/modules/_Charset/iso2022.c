@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iso2022.c,v 1.45 2007/12/28 13:36:16 nilsson Exp $
+|| $Id: iso2022.c,v 1.46 2008/05/04 00:34:22 nilsson Exp $
 */
 
 #ifdef HAVE_CONFIG_H
@@ -1201,8 +1201,10 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
       }
     }
     break;
+#ifdef PIKE_DEBUG
   default:
     Pike_fatal("Illegal shift size!\n");
+#endif
   }
 }
 
