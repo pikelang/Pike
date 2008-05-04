@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: freetype.c,v 1.30 2005/10/31 09:12:02 grubba Exp $
+|| $Id: freetype.c,v 1.31 2008/05/04 03:32:27 mast Exp $
 */
 
 #include "config.h"
@@ -152,7 +152,7 @@ static void image_ft_face_write_char( INT32 args )
         }
   } else if( slot->bitmap.pixel_mode == ft_pixel_mode_mono ) {
     int p = slot->bitmap.pitch;
-    char *s = slot->bitmap.buffer;
+    unsigned char *s = slot->bitmap.buffer;
     p *= 8;
     if( s )
       for( y = 0; y<i->ysize; y++ )
