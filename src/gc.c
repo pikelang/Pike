@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.309 2008/05/03 21:56:53 nilsson Exp $
+|| $Id: gc.c,v 1.310 2008/05/04 04:48:32 mast Exp $
 */
 
 #include "global.h"
@@ -2380,6 +2380,9 @@ int gc_mark(void *a)
 
   m = get_marker (a);
 
+  /* Note: m->refs and m->xrefs are useless already here due to how
+   * gc_free_(short_)svalue works. */
+
 #ifdef PIKE_DEBUG
   if (gc_is_watching && m && m->flags & GC_WATCHED) {
     /* This is useful to set breakpoints on. */
@@ -2391,14 +2394,6 @@ int gc_mark(void *a)
     Pike_fatal("GC mark attempted in invalid pass.\n");
   if (!*(INT32 *) a)
     gc_fatal(a, 0, "Marked a thing without refs.\n");
-  if (m->refs > *(INT32 *) a)
-    /* This ought to be catched already in gc_check(_weak). */
-    gc_fatal (a, 1, "GC check counted %d refs to thing with refcount %d.\n",
-	      m->refs, *(INT32 *) a);
-  if (m->flags & GC_NOT_REFERENCED && m->refs != *(INT32 *) a &&
-      Pike_in_gc != GC_PASS_COUNT_MEMORY)
-    gc_fatal (a, 0, "GC_NOT_REFERENCED set for thing "
-	      "with refcount %d and counted refs %d.\n", *(INT32 *) a, m->refs);
   if (m->weak_refs < 0 && Pike_in_gc != GC_PASS_COUNT_MEMORY)
     gc_fatal(a, 0, "Marking thing scheduled for weak free.\n");
 #endif
@@ -3415,6 +3410,9 @@ size_t do_gc(void *ignored, int explicit_call)
   GC_VERBOSE_DO(fprintf(stderr, "| check: %u references in %d things, "
 			"counted %"PRINTSIZET"u weak refs\n",
 			checked, num_objects, gc_ext_weak_refs));
+
+  /* Object alloc/free are still disallowed, but refs might be lowered
+   * by gc_free_(short_)svalue. */
 
   Pike_in_gc=GC_PASS_MARK;
 
