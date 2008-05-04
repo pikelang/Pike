@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.325 2008/05/04 14:04:11 grubba Exp $
+|| $Id: pike_types.c,v 1.326 2008/05/04 16:49:07 grubba Exp $
 */
 
 #include "global.h"
@@ -6155,6 +6155,7 @@ struct pike_type *low_new_check_call(struct pike_type *fun_type,
 struct pike_type *new_get_return_type(struct pike_type *fun_type,
 				      INT32 flags)
 {
+  struct compilation *c = MAYBE_THIS_COMPILATION;
   struct pike_type *res = NULL;
   struct pike_type *tmp;
   struct pike_type *tmp2;
@@ -6179,9 +6180,32 @@ struct pike_type *new_get_return_type(struct pike_type *fun_type,
   case PIKE_T_SCOPE:
   case T_ASSIGN:
   case PIKE_T_NAME:
-  case PIKE_T_ATTRIBUTE:
     fun_type = fun_type->cdr;
     goto loop;
+
+  case PIKE_T_ATTRIBUTE:
+    tmp = new_get_return_type(fun_type->cdr, flags);
+    if (!tmp) break;
+    if (c) {
+      ref_push_string((struct pike_string *)fun_type->car);
+      ref_push_type_value(fun_type->cdr);
+      safe_apply_current2(PC_APPLY_TYPE_ATTRIBUTE_FUN_NUM, 2,
+			  "apply_type_attribute");
+      if ((Pike_sp[-1].type == T_INT) &&
+	  (Pike_sp[-1].subtype == NUMBER_NUMBER) &&
+	  (!Pike_sp[-1].u.integer)) {
+	free_type(tmp);
+	pop_stack();
+	break;
+      }
+      pop_stack();
+    }
+    type_stack_mark();
+    push_finished_type(tmp);
+    push_type_attribute((struct pike_string *)fun_type->car);
+    res = pop_unfinished_type();
+    free_type(tmp);
+    break;
 
   case PIKE_T_RING:
     fun_type = fun_type->car;

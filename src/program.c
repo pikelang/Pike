@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.687 2008/05/04 14:04:10 grubba Exp $
+|| $Id: program.c,v 1.688 2008/05/04 16:49:07 grubba Exp $
 */
 
 #include "global.h"
@@ -8488,9 +8488,19 @@ static void f_compilation_push_type_attribute(INT32 args)
 }
 
 /*! @decl int(0..1) apply_type_attribute(string attribute, @
- *!                                      type a, type b)
+ *!                                      type a, type|void b)
  *!
  *!   Type attribute handler.
+ *!
+ *! @param attribute
+ *!   Attribute that @[a] had.
+ *!
+ *! @param a
+ *!   Type of the value being called.
+ *!
+ *! @param b
+ *!   Type of the first argument in the call, or
+ *!   @[UNDEFINED] if no more arguments.
  *!
  *!   Called during type checking when @[a] has been successfully
  *!   had a partial evaluation with the argument @[b] and
@@ -8511,15 +8521,18 @@ static void f_compilation_push_type_attribute(INT32 args)
 static void f_compilation_apply_type_attribute(INT32 args)
 {
   struct pike_string *attr;
-  struct svalue *a, *b;
+  struct svalue *a, *b = NULL;
   struct compilation *c = THIS_COMPILATION;
   struct pike_string *deprecated_string;
 
-  get_all_args("apply_type_attribute", args, "%W%*%*", &attr, &a, &b);
+  get_all_args("apply_type_attribute", args, "%W%*.%*", &attr, &a, &b);
 
   if (Pike_compiler->compiler_pass == 2) {
     MAKE_CONST_STRING(deprecated_string, "deprecated");
-    if (attr == deprecated_string) {
+    if ((attr == deprecated_string) &&
+	(!b ||
+	 ((b->type == T_INT) && (b->subtype == NUMBER_UNDEFINED) &&
+	  (!b->u.integer)))) {
       push_int(REPORT_WARNING);
       ref_push_string(c->lex.current_file);
       push_int(c->lex.current_line);
@@ -8811,7 +8824,7 @@ static void compile_compiler(void)
 	       tFunc(tStr tType(tMix) tType(tMix), tInt01), 0);
 
   ADD_FUNCTION("apply_type_attribute", f_compilation_apply_type_attribute,
-	       tFunc(tStr tType(tMix) tType(tMix), tInt01), 0);
+	       tFunc(tStr tType(tMix) tOr(tType(tMix), tVoid), tInt01), 0);
 
   ADD_FUNCTION("_sprintf", f_compilation__sprintf,
 	       tFunc(tInt tOr(tMap(tStr, tMix), tVoid), tStr), ID_STATIC);
