@@ -1,6 +1,6 @@
 /* sqlite.cmod -*- c -*-
  *
- * $Id: sqlite.cmod,v 1.18 2007/12/18 18:24:14 grubba Exp $
+ * $Id: sqlite.cmod,v 1.19 2008/05/05 19:15:15 grubba Exp $
  */
 
 #include "global.h"
@@ -130,7 +130,7 @@ PIKECLASS SQLite
   CVAR sqlite3 *db;
 
 PIKECLASS ResObj
-  flags ID_PRIVATE | ID_STATIC;
+  flags ID_PRIVATE | ID_STATIC | ID_HIDDEN;
 {
   CVAR struct object *dbobj;
   CVAR struct mapping *bindings;
