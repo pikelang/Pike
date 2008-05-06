@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.108 2008/05/03 13:09:28 mast Exp $
+|| $Id: multiset.c,v 1.109 2008/05/06 19:19:10 mast Exp $
 */
 
 #include "global.h"
@@ -3800,8 +3800,9 @@ PMOD_EXPORT ptrdiff_t multiset_get_nth (struct multiset *l, size_t n)
   return MSNODE2OFF (l->msd, RBNODE (rb_get_nth (HDR (l->msd->root), n)));
 }
 
-#define GC_MSD_GOT_NODE_REFS GC_USER_1
-#define GC_MSD_VISITED GC_USER_2
+#define GC_MSD_VISITED GC_USER_1
+#define GC_MSD_GOT_EXT_REFS GC_USER_2
+#define GC_MSD_GOT_NODE_REFS GC_USER_3
 
 unsigned gc_touch_all_multisets (void)
 {
@@ -3863,12 +3864,14 @@ static void gc_check_msd (struct multiset *l)
 
   if (!(m->flags & GC_MSD_VISITED))
     GC_ENTER (l, T_MULTISET) {
+      if (m->refs < msd->refs) m->flags |= GC_MSD_GOT_EXT_REFS;
+
       if (msd->root) {
 	union msnode *node = low_multiset_first (msd);
 	struct svalue ind;
 
 #define WITH_NODES_BLOCK(TYPE, OTHERTYPE, IND, INDVAL)			\
-	if (!(msd->flags & MULTISET_WEAK) || m->refs < msd->refs)	\
+	if (!(msd->flags & MULTISET_WEAK) || (m->flags & GC_MSD_GOT_EXT_REFS)) \
 	  do {								\
 	    low_use_multiset_index (node, ind);				\
 	    debug_gc_check_svalues (&ind, 1, " as multiset index");	\
@@ -4104,7 +4107,7 @@ void gc_mark_multiset_as_referenced (struct multiset *l)
 	  struct marker *m = get_marker (msd);
 	  TYPE_FIELD ind_types = 0, val_types = 0;
 
-	  if (m->refs < msd->refs) {
+	  if (m->flags & GC_MSD_GOT_EXT_REFS) {
 	    /* Must leave the multiset data untouched if there are direct
 	     * external refs to it. */
 	    GC_RECURSE_MSD_IN_USE (msd, gc_mark_svalues, ind_types, val_types);
@@ -4176,7 +4179,7 @@ void real_gc_cycle_check_multiset (struct multiset *l, int weak)
       struct marker *m = get_marker (msd);
       TYPE_FIELD ind_types = 0, val_types = 0;
 
-      if (m->refs < msd->refs) {
+      if (m->flags & GC_MSD_GOT_EXT_REFS) {
 	/* Must leave the multiset data untouched if there are direct
 	 * external refs to it. */
 	GC_RECURSE_MSD_IN_USE (msd, gc_cycle_check_svalues, ind_types, val_types);

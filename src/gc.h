@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.h,v 1.131 2008/05/02 04:15:10 mast Exp $
+|| $Id: gc.h,v 1.132 2008/05/06 19:19:10 mast Exp $
 */
 
 #ifndef GC_H
@@ -227,6 +227,7 @@ struct marker
  * references but only weak external references. */
 #define GC_USER_1		0x0100
 #define GC_USER_2		0x0200
+#define GC_USER_3		0x0400
 /* Flags free for use in the gc callbacks for the specific data types.
  * E.g. multisets use these flags on the multiset_data blocks. */
 
