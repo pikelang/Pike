@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.805 2008/05/03 21:21:31 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.806 2008/05/06 19:48:18 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -45,6 +45,10 @@ test_true([[stringp(#string "Makefile")]]);
 test_any([[class Bar { array(int) foo = ({}); };
 	   class Foo { inherit Bar; array(int) foo = ({1}); };
 	   return sizeof(Foo()->foo);]],1);
+
+# __func__
+test_eq(__func__, "a")
+test_eq("b", __func__)
 
 test_eq(8, 0b1000);
 test_eq(-8, -0b1000);
