@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.417 2008/05/03 15:51:50 grubba Exp $
+|| $Id: language.yacc,v 1.418 2008/05/06 19:42:29 grubba Exp $
 */
 
 %pure_parser
@@ -281,6 +281,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> simple_type2
 %type <n> simple_identifier_type
 %type <n> string_constant
+%type <n> string_segment
 %type <n> string
 %type <n> TOK_STRING
 %type <n> TOK_NUMBER
@@ -4185,8 +4186,26 @@ lvalue_list: /* empty */ { $$ = 0; }
   }
   ;
 
-string: TOK_STRING 
-  | string TOK_STRING
+string_segment: TOK_STRING
+  | TOK_FUNCTION_NAME
+  {
+    struct compiler_frame *f = Pike_compiler->compiler_frame;
+    if (!f) {
+      yyerror("Invalid use of __func__.");
+      $$ = mkstrnode(empty_pike_string);
+    } else if (f->current_function_number < 0) {
+      yyerror("No function defined yet.");
+      $$ = mkstrnode(empty_pike_string);
+    } else {
+      struct identifier *id =
+	ID_FROM_INT(Pike_compiler->new_program, f->current_function_number);
+      $$ = mkstrnode(id->name);
+    }
+  }
+  ;
+
+string: string_segment
+  | string string_segment
   {
     struct pike_string *a,*b;
     copy_shared_string(a,$1->u.sval.u.string);
