@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lexer.h,v 1.68 2008/05/01 20:39:40 mast Exp $
+|| $Id: lexer.h,v 1.69 2008/05/06 19:41:08 grubba Exp $
 */
 
 /*
@@ -582,7 +582,7 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	case TWO_CHAR('_','_'):
 	  if(ISWORD("__attribute__")) return TOK_ATTRIBUTE_ID;
 	  if(ISWORD("__deprecated__")) return TOK_DEPRECATED_ID;
-	  if(ISWORD("__FUNCTION__")) return TOK_FUNCTION_NAME;
+	  if(ISWORD("__func__")) return TOK_FUNCTION_NAME;
 	  break;
 	}
       }
