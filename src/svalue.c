@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.239 2008/03/30 01:24:10 mast Exp $
+|| $Id: svalue.c,v 1.240 2008/05/06 19:20:27 mast Exp $
 */
 
 #include "global.h"
@@ -2426,7 +2426,7 @@ void real_gc_free_svalue(struct svalue *s)
 	Pike_in_gc != GC_PASS_ZAP_WEAK)
       Pike_fatal("gc_free_svalue() called in invalid gc pass.\n");
 #endif
-    if (((1 << s->type) & BIT_COMPLEX) && *(s->u.refs) == 1)
+    if (s->type <= MAX_COMPLEX && *(s->u.refs) == 1)
       gc_delayed_free(s->u.refs, s->type);
   }
   free_svalue(s);
@@ -2440,7 +2440,7 @@ void real_gc_free_short_svalue(union anything *u, TYPE_T type)
 	Pike_in_gc != GC_PASS_ZAP_WEAK)
       Pike_fatal("gc_free_short_svalue() called in invalid gc pass.\n");
 #endif
-    if (((1 << type) & BIT_COMPLEX) && *u->refs == 1)
+    if (type <= MAX_COMPLEX && *u->refs == 1)
       gc_delayed_free(u->refs, type);
   }
   free_short_svalue(u, type);
