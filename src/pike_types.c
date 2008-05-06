@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.326 2008/05/04 16:49:07 grubba Exp $
+|| $Id: pike_types.c,v 1.327 2008/05/06 15:28:26 grubba Exp $
 */
 
 #include "global.h"
@@ -3168,7 +3168,9 @@ static struct pike_type *low_match_types2(struct pike_type *a,
   struct pike_type *ret;
   if(a == b) return a;
 
+#ifdef PIKE_DEBUG
   fatal_check_c_stack(1024);
+#endif
 
   switch(a->type)
   {
@@ -3623,9 +3625,10 @@ static struct pike_type *low_match_types2(struct pike_type *a,
   case T_VOID:
   case T_MIXED:
     break;
-
+#ifdef PIKE_DEBUG
   default:
     Pike_fatal("Error in type string.\n");
+#endif
   }
   return ret;
 }
@@ -4309,6 +4312,12 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
 
     INT32 bmin = CAR_TO_INT(b);
     INT32 bmax = CDR_TO_INT(b);
+
+    /* Handle implicit zero... */
+    if (amin == 1) amin = 0;
+    if (bmin == 1) bmin = 0;
+    if (amax == -1) amax = 0;
+    if (bmax == -1) bmax = 0;
     
     if(amin < bmin || amax > bmax) return 0;
     break;
@@ -4331,8 +4340,10 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
   case T_MIXED:
     break;
 
+#ifdef PIKE_DEBUG
   default:
     Pike_fatal("Error in type string.\n");
+#endif
   }
   return 1;
 }
@@ -7220,8 +7231,10 @@ static void low_make_pike_type(unsigned char *type_string,
   struct pike_type *tmp;
 
   switch(type = *type_string) {
+#ifdef PIKE_DEBUG
   case T_SCOPE:
     Pike_fatal("Not supported yet.\n");
+#endif
   case T_ASSIGN:
     if ((type_string[1] < '0') || (type_string[1] > '9')) {
       Pike_fatal("low_make_pike_type(): Bad marker: %d\n", type_string[1]);
@@ -7346,10 +7359,12 @@ static void low_make_pike_type(unsigned char *type_string,
 	     !type_string[bytes+4] && !type_string[bytes+5])
 	    break;
 	break;
+#ifdef PIKE_DEBUG
       default: /* will not happen? */
 	 bytes=0;
 	 Pike_fatal("unexpected case in make_pike_type (%d)\n",
 		    type_string[1]);
+#endif
       }
       str = begin_wide_shared_string(bytes>>size_shift, size_shift);
       MEMCPY(str->str, type_string+2, bytes);
@@ -7390,10 +7405,12 @@ static void low_make_pike_type(unsigned char *type_string,
       free_string(str);
       break;
     }
+#ifdef PIKE_DEBUG
   default:
     Pike_fatal("compile_type_string(): Error in type string %d.\n", type);
     /* NOT_REACHED */
     break;
+#endif
   }
 }
 
@@ -7467,11 +7484,13 @@ int pike_type_allow_premature_toss(struct pike_type *type)
     case PIKE_T_ZERO:
     case T_VOID:
       return 1;
+#ifdef PIKE_DEBUG
   default:
     Pike_fatal("pike_type_allow_premature_toss: Unknown type (code: %d)\n",
 	       type->type);
     /* NOT_REACHED */
     return 0;
+#endif
   }
 }
 
