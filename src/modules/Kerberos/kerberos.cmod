@@ -1,5 +1,5 @@
-/*
- * $Id: kerberos.cmod,v 1.1 2004/05/13 08:57:08 grubba Exp $
+/* -*- c -*-
+ * $Id: kerberos.cmod,v 1.2 2008/05/06 19:14:33 mast Exp $
  *
  * Kerberos support for Pike.
  *
@@ -79,7 +79,8 @@ PIKECLASS Context
       return;
     }
 
-    if ((err_code = krb5_parse_name(THIS->ctx, STR0(user), &principal))) {
+    if ((err_code = krb5_parse_name(THIS->ctx, (const char *) STR0(user),
+				    &principal))) {
       KRB_FPRINTF((stderr, "Failed to parse user name: %d\n", err_code));
       pop_n_elems(args);
       push_int(0);
@@ -90,7 +91,8 @@ PIKECLASS Context
     krb5_verify_init_creds_opt_init(&verify_creds_opt);
 
     if ((err_code = krb5_get_init_creds_password(THIS->ctx, &creds,
-						 principal, STR0(password),
+						 principal,
+						 (char *) STR0(password),
 						 krb5_prompter_posix,
 						 NULL, 0, NULL,
 						 &get_creds_opt))) {
