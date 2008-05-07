@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.419 2008/05/07 10:06:21 grubba Exp $
+|| $Id: language.yacc,v 1.420 2008/05/07 15:10:39 grubba Exp $
 */
 
 %pure_parser
@@ -2128,7 +2128,9 @@ push_compiler_frame1: /* empty */
 
 implicit_identifier: /* empty */
   {
-    $$=mkstrnode(get_new_name());
+    struct pike_string *name;
+    $$=mkstrnode(name = get_new_name());
+    free_string(name);
   }
   ;
 
@@ -2249,7 +2251,6 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier push_compiler_frame1
     } else {
       $$ = mkidentifiernode(f);
     }
-    free_string(name);
     free_type(type);
     c->lex.current_line = save_line;
     c->lex.current_file = save_file;
@@ -3534,8 +3535,13 @@ apply:
 
 implicit_modifiers:
   {
-    $$ = Pike_compiler->current_modifiers = ID_STATIC|ID_INLINE|ID_PRIVATE |
-      (THIS_COMPILATION->lex.pragmas & ID_MODIFIER_MASK);
+    if (TEST_COMPAT(7, 6)) {
+      $$ = Pike_compiler->current_modifiers =
+	(THIS_COMPILATION->lex.pragmas & ID_MODIFIER_MASK);
+    } else {
+      $$ = Pike_compiler->current_modifiers = ID_STATIC|ID_INLINE|ID_PRIVATE |
+	(THIS_COMPILATION->lex.pragmas & ID_MODIFIER_MASK);
+    }
   }
   ;
 
