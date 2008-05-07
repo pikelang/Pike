@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.420 2008/05/07 15:10:39 grubba Exp $
+|| $Id: language.yacc,v 1.421 2008/05/07 17:26:17 grubba Exp $
 */
 
 %pure_parser
@@ -2151,28 +2151,37 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier push_compiler_frame1
     $<number>$ = Pike_compiler->varargs;
     Pike_compiler->varargs = 0;
 
-    /* Define a tentative prototype for the lambda. */
-    push_finished_type(mixed_type_string);
-    e=$6-1;
-    if($<number>$)
-    {
-      push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
-      e--;
-      pop_type_stack(T_ARRAY);
-    }else{
-      push_type(T_VOID);
+    if (Pike_compiler->compiler_pass == 1) {
+      /* Define a tentative prototype for the lambda. */
+      push_finished_type(mixed_type_string);
+      e=$6-1;
+      if($<number>$)
+      {
+	push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
+	e--;
+	pop_type_stack(T_ARRAY);
+      }else{
+	push_type(T_VOID);
+      }
+      Pike_compiler->varargs=0;
+      push_type(T_MANY);
+      for(; e>=0; e--) {
+	push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
+	push_type(T_FUNCTION);
+      }    
+      type=compiler_pop_type();
+      Pike_compiler->compiler_frame->current_function_number =
+	define_function(name, type,
+			ID_STATIC | ID_PRIVATE | ID_INLINE | ID_USED,
+			IDENTIFIER_PIKE_FUNCTION, NULL,
+			(unsigned INT16)
+			(Pike_compiler->compiler_frame->opt_flags));
+      free_type(type);
+    } else {
+      /* In pass 2 we just reuse the type from pass 1. */
+      Pike_compiler->compiler_frame->current_function_number =
+	isidentifier(name);
     }
-    Pike_compiler->varargs=0;
-    push_type(T_MANY);
-    for(; e>=0; e--) {
-      push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
-      push_type(T_FUNCTION);
-    }    
-    type=compiler_pop_type();
-    Pike_compiler->compiler_frame->current_function_number =
-      define_function(name, type, ID_STATIC | ID_PRIVATE | ID_INLINE | ID_USED,
-		      IDENTIFIER_PIKE_FUNCTION, NULL, 0);
-    free_type(type);
   }
   failsafe_block
   {
@@ -2232,13 +2241,17 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier push_compiler_frame1
     simple_describe_type(type);
     fprintf(stderr, "\n");
 #endif /* LAMBDA_DEBUG */
-    if(Pike_compiler->compiler_pass == 2)
-      Pike_compiler->compiler_frame->current_function_number=isidentifier(name);
 
     f=dooptcode(name,
 		$8,
 		type,
 		ID_STATIC | ID_PRIVATE | ID_INLINE | ID_USED);
+
+#ifdef PIKE_DEBUG
+    if (f != Pike_compiler->compiler_frame->current_function_number) {
+      Pike_fatal("Lost track of lambda %s.\n", name->str);
+    }
+#endif /* PIKE_DEBUG */
 
 #ifdef LAMBDA_DEBUG
     fprintf(stderr, "%d:   lexical_scope: 0x%08x\n",
