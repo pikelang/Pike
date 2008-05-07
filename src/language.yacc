@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.418 2008/05/06 19:42:29 grubba Exp $
+|| $Id: language.yacc,v 1.419 2008/05/07 10:06:21 grubba Exp $
 */
 
 %pure_parser
@@ -288,6 +288,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> optional_attributes
 %type <n> optional_rename_inherit
 %type <n> optional_identifier
+%type <n> implicit_identifier
 %type <n> TOK_IDENTIFIER
 %type <n> TOK_VERSION
 %type <n> attribute
@@ -2125,7 +2126,13 @@ push_compiler_frame1: /* empty */
   }
   ;
 
-lambda: TOK_LAMBDA line_number_info push_compiler_frame1
+implicit_identifier: /* empty */
+  {
+    $$=mkstrnode(get_new_name());
+  }
+  ;
+
+lambda: TOK_LAMBDA line_number_info implicit_identifier push_compiler_frame1
   {
     debug_malloc_touch(Pike_compiler->compiler_frame->current_return_type);
     if(Pike_compiler->compiler_frame->current_return_type)
@@ -2135,8 +2142,35 @@ lambda: TOK_LAMBDA line_number_info push_compiler_frame1
   }
   func_args
   {
+    struct pike_string *name = $3->u.sval.u.string;
+    struct pike_type *type;
+    int e;
+
     $<number>$ = Pike_compiler->varargs;
     Pike_compiler->varargs = 0;
+
+    /* Define a tentative prototype for the lambda. */
+    push_finished_type(mixed_type_string);
+    e=$6-1;
+    if($<number>$)
+    {
+      push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
+      e--;
+      pop_type_stack(T_ARRAY);
+    }else{
+      push_type(T_VOID);
+    }
+    Pike_compiler->varargs=0;
+    push_type(T_MANY);
+    for(; e>=0; e--) {
+      push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
+      push_type(T_FUNCTION);
+    }    
+    type=compiler_pop_type();
+    Pike_compiler->compiler_frame->current_function_number =
+      define_function(name, type, ID_STATIC | ID_PRIVATE | ID_INLINE | ID_USED,
+		      IDENTIFIER_PIKE_FUNCTION, NULL, 0);
+    free_type(type);
   }
   failsafe_block
   {
@@ -2149,12 +2183,12 @@ lambda: TOK_LAMBDA line_number_info push_compiler_frame1
     c->lex.current_file = $2->current_file;
     c->lex.current_line = $2->line_number;
 
-    debug_malloc_touch($7);
-    $7=mknode(F_COMMA_EXPR,$7,mknode(F_RETURN,mkintnode(0),0));
+    debug_malloc_touch($8);
+    $8=mknode(F_COMMA_EXPR,$8,mknode(F_RETURN,mkintnode(0),0));
     if (Pike_compiler->compiler_pass == 2) {
       /* Doing this in pass 1 might induce too strict checks on types
        * in cases where we got placeholders. */
-      type=find_return_type($7);
+      type=find_return_type($8);
       if (type) {
 	push_finished_type(type);
 	free_type(type);
@@ -2167,8 +2201,8 @@ lambda: TOK_LAMBDA line_number_info push_compiler_frame1
       push_type(T_MIXED);
     }
 
-    e=$5-1;
-    if($<number>6)
+    e=$6-1;
+    if($<number>7)
     {
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
       e--;
@@ -2185,7 +2219,7 @@ lambda: TOK_LAMBDA line_number_info push_compiler_frame1
     
     type=compiler_pop_type();
 
-    name = get_new_name();
+    name = $3->u.sval.u.string;
 
 #ifdef LAMBDA_DEBUG
     fprintf(stderr, "%d: LAMBDA: %s 0x%08lx 0x%08lx\n%d:   type: ",
@@ -2200,7 +2234,7 @@ lambda: TOK_LAMBDA line_number_info push_compiler_frame1
       Pike_compiler->compiler_frame->current_function_number=isidentifier(name);
 
     f=dooptcode(name,
-		$7,
+		$8,
 		type,
 		ID_STATIC | ID_PRIVATE | ID_INLINE | ID_USED);
 
@@ -2219,14 +2253,16 @@ lambda: TOK_LAMBDA line_number_info push_compiler_frame1
     free_type(type);
     c->lex.current_line = save_line;
     c->lex.current_file = save_file;
+    free_node($3);
     free_node ($2);
     pop_compiler_frame();
   }
-  | TOK_LAMBDA line_number_info push_compiler_frame1 error
+  | TOK_LAMBDA line_number_info implicit_identifier push_compiler_frame1 error
   {
     pop_compiler_frame();
     $$ = mkintnode(0);
     COPY_LINE_NUMBER_INFO($$, $2);
+    free_node($3);
     free_node($2);
   }
   ;
@@ -3376,7 +3412,9 @@ expr3: expr4
  */
 
 optional_block: /* EMPTY */ { $$=0; }
-  | '{' line_number_info push_compiler_frame0
+  | '{' line_number_info
+  /* FIXME: Use implicit_identifier to make __func__ point to the lambda? */
+  push_compiler_frame0
   {
     debug_malloc_touch(Pike_compiler->compiler_frame->current_return_type);
     if(Pike_compiler->compiler_frame->current_return_type)
@@ -4190,12 +4228,8 @@ string_segment: TOK_STRING
   | TOK_FUNCTION_NAME
   {
     struct compiler_frame *f = Pike_compiler->compiler_frame;
-    if (!f) {
-      yyerror("Invalid use of __func__.");
-      $$ = mkstrnode(empty_pike_string);
-    } else if (f->current_function_number < 0) {
-      yyerror("No function defined yet.");
-      $$ = mkstrnode(empty_pike_string);
+    if (!f || (f->current_function_number < 0)) {
+      $$ = mkstrnode(lfun_strings[LFUN___INIT]);
     } else {
       struct identifier *id =
 	ID_FROM_INT(Pike_compiler->new_program, f->current_function_number);
