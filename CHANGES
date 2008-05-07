@@ -2,25 +2,31 @@ Changes since Pike 7.6:
 ----------------------------------------------------------------------
 
 o Added ABI selection.
+
   It's now possible to select whether to compile in 32bit or 64bit
   mode at configure time by using the --with-abi option.
 
 o New syntax to index from the end in range operations.
+
   A "<" can be added before an index in the [..] operator to count
   from the end instead. This is convenient to e.g. chop off the last
   element in an array: a[..<1].
 
-o Several declarations and definitions (most notably the debug and
+o Improved support for embedding.
+
+  Several declarations and definitions (most notably the debug and
   runtime flags) have moved from main.h to pike_embed.h, in an attempt
   to add support for embedding.
 
 o Major compiler API cleanups.
+
   The Pike compiler is now executing in a pike function context
   (rather than in an efun context), and it is possible to customize
   some of its behaviour via inherit (rather than via handler objects).
   As a consequence the compiler is now much closer to being thread-safe.
 
 o New `[..] operator function.
+
   Range operations have been separated from the `[] operator function
   and is handled by a new `[..] which provides greater control in how
   the range bounds are specified. For compatibility, if there is no
@@ -29,7 +35,9 @@ o New `[..] operator function.
   FIXME: Describe relation with Pike.INDEX_FROM_BEG/END & OPEN_BOUND.
 
 o Generalized this and this_program.
+
   It is now possible to refer to inherits in objects. Example:
+
     class A {
       int a;
       void foo() { werror("A\n"); }
@@ -40,11 +48,14 @@ o Generalized this and this_program.
       void foo() { werror("B\n"); }
       A::this_program get_a() { return A::this; }
     }
+
   In the above B()->get_a() will return an object with two symbols,
   'a' and 'foo', but B()->get_a()->foo() will still write "B\n".
 
 o Added support for getters and setters.
+
   It is now possible to simulate variables with functions. Example:
+
     class A {
       private int a;
       int `b() { return a; }		// Getter for the symbol b.
@@ -60,6 +71,7 @@ o Added support for getters and setters.
     werror("%d\n", a->b);		// Calls `b().
 
 o Unicode escapes.
+
   Pike now understands the common way to escape unicode chars, using
   \uxxxx and \Uxxxxxxxx escapes. These escapes works both in string
   and character literals and in the preprocessor. The latter means
@@ -68,6 +80,7 @@ o Unicode escapes.
   code charset.
 
 o New (stricter) type checker for function calls.
+
   The type checker for function calls is now based on the concept
   of currification. This should provide for error messages that
   are more easily understood. It also is much better att typechecking
@@ -76,16 +89,20 @@ o New (stricter) type checker for function calls.
   Pike.get_first_arg_type(), Pike.low_check_call() and Pike.get_return_type().
 
 o Added generic attributes for types.
+
   Provides a method to hook into the type checker, so that it is
   possible to make custom type checking.
   No syntax yet.
   Added such a type checker for sprintf().
 
 o Stricter typing of strings.
+
   The string type may now have an (optional) value range. Example:
+
     string(0..255) bytes;
 
 o Stdio.*
+
   Stdio.cp can now work recursively in a directory tree.
   Stdio.cp now keeps permissions when copying.
   Added Stdio.recursive_mv which works on every OS and also when the
@@ -101,25 +118,31 @@ o Prepared for having multiple different active backend implementations.
   NOTE!
   NOTE! Changed the argument for backend callbacks!
   NOTE!
-  NOTE! The argument is now a struct Backend_struct * when called at entry (was NULL).
+  NOTE! The argument is now a struct Backend_struct * when called
+  NOTE! at entry (was NULL).
   NOTE! The argument is now NULL when called at exit (was 1).
   NOTE!
 
 o bin/precompile.pike
-   Voidable pointer types are no longer promoted to mixed.
+
+  Voidable pointer types are no longer promoted to mixed.
 
 o cpp
+
   The preprocessor now supports macro expansion in the #include and #string
   directives.
 
 o PIKE_PORTABLE_BYTECODE
+
    --with-portable-bytecode is now the default. Pike programs that have
    been dumped on one architecture now can be decoded on another.
 
 o Math.Matrix 
-  Multiplication were bugged and gave B*A instead of A*B. Now fixed. 
+
+  Multiplication was bugged and gave B*A instead of A*B. Now fixed. 
 
 o Destruct reason passed to lfun::destroy.
+
   lfun::destroy now receives an integer flag that tells why the object
   is being destructed, e.g. if it was an explicit call to destroy(),
   running out of references, or reaped by the garbage collector.
@@ -132,25 +155,31 @@ o Support for class symbols with storage in parent scope.
   Also added support for aliased symbols.
 
 o Improved support for mixin.
+
   The Pike compiler now supports mixin for symbols that have been
   declared static.
 
 o Implicit and explicit create().
+
   The compiler now supports defining classes with both an implicit
   and an explicit create().
 
 o Warnings for unused private symbols.
+
   The compiler now checks that all symbols that have been declared
   private actually are used.
 
 o Unicode
+
   Case information and the Unicode module are updated to Unicode
   5.0.0.
 
 o protected
+
   The modifier protected is now an alias for the modifier static.
 
 o Pike_fp->context
+
   Pike_fp->context is now a pointer to the current struct inherit
   rather than a copy of it. This allows for easier access to
   inherited symbols in C-code.
@@ -159,9 +188,20 @@ o Pike_fp->context
 Extensions and New Functions
 
 o __attribute__ and __deprecated__
+
   It's now possible to set custom attributes on types. This is
   currently used to improve the argument checking for sprintf()
   and related functions, and for marking symbols as deprecated.
+
+o __func__
+
+  The symbol __func__ now evaluates to the name of the current
+  function. Note that this name currently can differ from the
+  declared name in case of local functions (ie lambdas). Note
+  also that __func__ behaves like a litteral string, so implicit
+  string concatenation is supported. eg:
+
+    error("Error in " __func__ ".\n");
 
 o ADT.BitBuffer
  
@@ -215,11 +255,21 @@ o Calendar
 
   - Timezones are now read from /etc/localtime, if available.
 
+o CompilerEnvironment & CompilerEnvironment()->PikeCompiler
+
+  The Pike compiler has been refactored to be more object-oriented
+  and more transparent. It is now possible to customize the compiler
+  by overloading functions in the above two classes.
+
 o Debug
 
   The new function count_objects() will return the different kinds of
   objects existing within the Pike process. Useful when trying to
   pinpoint a leak of Pike objects.
+
+o DefaultCompilerEnvironment
+
+  The CompilerEnvironment object used by Pike internally.
 
 o Error
 
@@ -238,8 +288,8 @@ o Float
   The function isnan() can be used to check if a float is Not a
   Number.
 
-  > Float.isnan(Math.inf/Math.inf);
-  (1) Result: 1
+    > Float.isnan(Math.inf/Math.inf);
+    (1) Result: 1
 
 o Geography.Position
 
@@ -267,6 +317,7 @@ o Int
   Int.inf is an object that can be used as an infinitly large integer.
 
 o Locale.Charset
+
   FIXME: Rewrite
   Remapped and documented the use of the private character space.
   ISO-IR non-spacers are now converted into combiners.
@@ -301,10 +352,12 @@ o MIME
     strings.
 
 o Mysql
+
   Unicode support. FIXME: Document in more detail. C.f. check-in 1.25
   of lib/modules/Sql.pmod/mysql.pike.
 
 o Odbc
+
   FIXME: Rewrite
   Now supports UnixODBC properly.
   Fixed various issues with Unicode.
@@ -315,6 +368,7 @@ o Parser.Pike and Parser.C
   performance. The #string directives should be handled correctly now.
 
 o Parser.RCS
+
   FIXME: Rewrite
   Handle broken RCS files better.
 
@@ -326,6 +380,7 @@ o Parser.XML.NSTree
   - Fixed crash bug.
 
 o Parser.XML.Tree
+
   FIXME: Rewrite
   Added rendering of DTD ENTITY nodes.
   The renderer now knows about the internal_subset attribute for the
@@ -433,6 +488,7 @@ o Protocols.XMLRPC
   The new AsyncClient class implements an asynchronous XMLRPC client.
 
 o Regexp.PCRE.Widestring
+
   This feature is now reported in the basic feature list (pike
   --features).
 
@@ -513,10 +569,15 @@ o Web.RDF
     added to an RDF set.
 
 o sprintf
+
+  sprintf() and friends now attempt to perform compile-time argument
+  checking.
+
   sprintf() now attempts to lookup the name of the program when
   formatting types of objects and programs.
 
 o gethrtime, gethrvtime, gauge
+
   Added support for POSIX style timers using clock_gettime(3). Notably
   this fixes nice high resolution thread local cpu time and monotonic
   real time on reasonably modern Linux systems.
@@ -533,6 +594,7 @@ o ADT.List
 o ADT.Trie
 
 o ADT.Set
+
   ADT.Set implements a datatype for sets. These sets behave much
   like multisets, except that they are restricted to containing only
   one instance of each member value.
@@ -543,6 +605,7 @@ o ADT.Set
   and code readability.
 
 o Arg
+
   The new argument parser module allows for Getopt style arugment
   parsing, but with a much simpler and object oriented API.
 
@@ -571,6 +634,7 @@ o Arg
     }
 
 o Protocols.DNS_SD
+
   This module provides an interface to DNS Service Discovery. The
   functionality of DNS-SD is described at <http://www.dns-sd.org/>.
 
@@ -589,17 +653,21 @@ o Protocols.DNS_SD
   of the Service class is valid.
 
 o Bittorrent.Tracker
+
   Bittorrent tracker with support for scraping and UDP extension.
 
 o Protocols.HTTP.Server.Proxy
+
   A simple HTTP proxy.
 
 o Standards.TLD
+
   Country domains and other TLDs according to IANA. Useful when
   parsing log information or providing live information about clients
   connecting to your server.
 
 o Tools.Shoot
+
   Several new tests have been added to benchmark and improve on
   various aspects of Pike. ReplaceParallel and ReplaceSerial compares
   the time it takes to replace multiple substrings of a string in a
@@ -611,6 +679,7 @@ o Tools.Shoot
   task, to remove XML tags from a string.
 
 o Web.CGI
+
   Provides a CGI interface on the callee side. Retrieves information
   from environment variables and populates the variables in the
   Request object.
@@ -640,23 +709,31 @@ Incompatible changes
   source file or starting Pike with -V7.6.
 
 o Array.transpose_old
+
   This function is removed.
 
 o _Charset
+
   This internal module has had most of its content removed.
 
+  FIXME: Que??????????
+
 o Crypto
-  The old crypto functions from Pike 7.4 has been removed. These
+
+  The old crypto functions from Pike 7.4 have been removed. These
   functions produced a warning when used in Pike 7.6.
 
 o Debug.describe_program
+
   The API for this debug function has changed.
 
 o Image.Image
+
   The functions select_colors(), map_closest(), map_fast() and
   map_fs() has been removed. Use Image.Colortable operations instead.
 
 o Parser.XML
+
   The XML parsers are now stricter in verifying the correctness
   of the XML. The function compat_allow_errors can be called in the
   create method of the Parser.XML.Simple and Parser.XML.Validating
@@ -664,31 +741,37 @@ o Parser.XML
   be created with PARSE_COMPAT_ALLOW_ERRORS_7_6 as flag.
 
 o Protocols.LDAP.client
+
   The "dn" field wasn't properly utf-8 decoded in 7.6 and earlier. If
   your application does it yourself, you need to use the compatibility
   version of this class.
 
 o spider.XML
+
   The spider module no longer contains the XML parser. The functions
   isbasechar(), iscombiningchar(), isdigit(), isextender(),
   isfirstnamechar(), ishexchar(), isidiographic(), isletter(),
   isnamechar() and isspace() has also been moved to the Parser module.
 
 o Sql.Sql
+
   Pike will no longer create a .column entry in SQL query responses if
   there is no table name.
 
 o Standards.UUID
-  Functions new() and new_string() has been removed. Use
+
+  Functions new() and new_string() have been removed. Use
   make_version1(-1)->encode() and make_version1(-1)->str() instead.
 
 o Stdio
-  The functions read_file(), read_bytes(), write_file() and
-  append_file() now always throw errors upon errors, to allow easier
-  use as errno doesn't have to be checked. read_file() and
-  read_bytes() still returns 0 if the file does not exists.
 
-o The modules Mird, Perl, Pipe and Ssleay have been removed.
+  The functions read_file(), read_bytes(), write_file() and
+  append_file() now always throw errors on error conditions,
+  to allow easier use as errno doesn't have to be checked.
+  read_file() and read_bytes() still return 0 if the file
+  does not exist.
+
+o The modules Mird, Perl and Ssleay have been removed.
 
 
 -------------------- NOTES------------
