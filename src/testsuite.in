@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.806 2008/05/06 19:48:18 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.807 2008/05/07 12:31:32 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -11342,6 +11342,13 @@ test_equal(indices(class {class A {int f(){}} class B {final inherit A;} class C
 test_equal(indices(class {class A {int f(){}} class B {nomask inherit A;} class C {inherit B;}}()->C()), ({"f"}))
 test_equal(indices(class {class A {int f(){}} class B {local inherit A;} class C {inherit B;}}()->C()), ({"f"}))
 test_equal(indices(class {class A {int f(){}} class B {inline inherit A;} class C {inherit B;}}()->C()), ({"f"}))
+
+test_any([[
+  class Y {
+    static object x = class X {}();
+  };
+  return has_index (Y(), "X");
+]], 1)
 
 // - modifiers, binding and redefinition properties with compile time access
 
