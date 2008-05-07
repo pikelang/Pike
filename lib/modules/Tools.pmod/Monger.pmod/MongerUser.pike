@@ -1,10 +1,10 @@
 // -*- Pike -*-
 
-// $Id: MongerUser.pike,v 1.5 2008/05/07 17:44:33 bill Exp $
+// $Id: MongerUser.pike,v 1.6 2008/05/07 17:50:14 bill Exp $
 
 #pike __REAL_VERSION__
 
-constant version = ("$Revision: 1.5 $"/" ")[1];
+constant version = ("$Revision: 1.6 $"/" ")[1];
 constant description = "Monger: the Pike module manger.";
 
 string repository = "http://modules.gotpike.org:8000/xmlrpc/index.pike";
@@ -269,7 +269,15 @@ void do_download(string name, string|void version)
   if(vi->download)
   {
     write("beginning download of version %s...\n", vi->version);
-    array rq = Protocols.HTTP.get_url_nice(vi->download);
+    array rq;
+    if(arrayp(vi->download))
+      foreach(vi->download;; string u)
+      {
+        rq = Protocols.HTTP.get_url_nice(u);
+        if(rq) break;  
+      }
+    else
+      rq = Protocols.HTTP.get_url_nice(vi->download);
     if(!rq) 
       exit(1, "download error: unable to access download url\n");
     else
@@ -294,7 +302,15 @@ void do_install(string name, string|void version)
     cd(builddir);
 
     write("beginning download of version %s...\n", vi->version);
-    array rq = Protocols.HTTP.get_url_nice(vi->download);
+    array rq;
+    if(arrayp(vi->download))
+      foreach(vi->download;; string u)
+      {
+        rq = Protocols.HTTP.get_url_nice(u);
+        if(rq) break;  
+      }
+    else
+      rq = Protocols.HTTP.get_url_nice(vi->download);
     if(!rq) 
       exit(1, "download error: unable to access download url\n");
     else
