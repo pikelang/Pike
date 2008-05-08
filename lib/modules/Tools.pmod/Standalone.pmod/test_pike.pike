@@ -1,7 +1,7 @@
 #! /usr/bin/env pike
 #pike __REAL_VERSION__
 
-/* $Id: test_pike.pike,v 1.129 2008/01/07 21:03:02 grubba Exp $ */
+/* $Id: test_pike.pike,v 1.130 2008/05/08 12:57:59 grubba Exp $ */
 
 #if !constant(_verify_internals)
 #define _verify_internals()
@@ -847,7 +847,7 @@ int main(int argc, array(string) argv)
 	    break;
 	  }
 	}
-	string linetester="int __cpp_line=__LINE__; int __rtl_line=[int]backtrace()[-1][1];\n";
+	string linetester="int __cpp_line=__LINE__; int __rtl_line=([array(array(int))]backtrace())[-1][1];\n";
 
 	string to_compile = test + linetester + widener;
 
@@ -1153,6 +1153,9 @@ int main(int argc, array(string) argv)
 		  }
 		}
 	      }
+#if constant(_dump_program_tables)
+	      _dump_program_tables(object_program(o));
+#endif
 	    }
 	    else {
 	      successes++;
