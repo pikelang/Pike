@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.688 2008/05/04 16:49:07 grubba Exp $
+|| $Id: program.c,v 1.689 2008/05/08 10:50:19 grubba Exp $
 */
 
 #include "global.h"
@@ -10190,6 +10190,10 @@ void yyexplain_not_compatible(struct program *a, struct program *b, int flags)
   int e;
   struct pike_string *s=findstring("__INIT");
   int res = 1;
+  INT32 a_line = 0;
+  INT32 b_line = 0;
+  struct pike_string *a_file;
+  struct pike_string *b_file;
   DECLARE_CYCLIC();
 
   /* Optimize the loop somewhat */
@@ -10204,6 +10208,9 @@ void yyexplain_not_compatible(struct program *a, struct program *b, int flags)
     return;
   }
   SET_CYCLIC_RET(1);
+
+  a_file = get_program_line(a, &a_line);
+  b_file = get_program_line(b, &b_line);
 
   for(e=0;e<b->num_identifier_references;e++)
   {
@@ -10225,13 +10232,34 @@ void yyexplain_not_compatible(struct program *a, struct program *b, int flags)
     if(((bid->run_time_type != PIKE_T_INT) ||
 	(ID_FROM_INT(a, i)->run_time_type != PIKE_T_INT)) &&
        !match_types(ID_FROM_INT(a,i)->type, bid->type)) {
-      if (flags & YYTE_IS_WARNING)
-	yywarning("Identifier %S is incompatible.", bid->name);
-      else
-	my_yyerror("Identifier %S is incompatible.", bid->name);
+      if (flags & YYTE_IS_WARNING) {
+	push_int(REPORT_WARNING);
+	push_int(REPORT_WARNING);
+      } else {
+	push_int(REPORT_ERROR);
+	push_int(REPORT_ERROR);
+      }
+      ref_push_string(a_file);
+      push_int(a_line);
+      push_constant_text("type_check");
+      push_constant_text("Identifier %s in %O is incompatible");
+      ref_push_string(bid->name);
+      ref_push_program(a);
+      safe_apply_current2(PC_REPORT_FUN_NUM, 7, "report");
+      pop_stack();
+      ref_push_string(b_file);
+      push_int(b_line);
+      push_constant_text("type_check");
+      push_constant_text("with identifier %s in %O");
+      ref_push_string(bid->name);
+      ref_push_program(b);
+      safe_apply_current2(PC_REPORT_FUN_NUM, 7, "report");
+      pop_stack();
       yytype_error(NULL, ID_FROM_INT(a,i)->type, bid->type, flags);
     }
   }
+  free_string(b_file);
+  free_string(a_file);
   END_CYCLIC();
   return;
 }
