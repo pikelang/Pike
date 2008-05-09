@@ -137,10 +137,6 @@ o PIKE_PORTABLE_BYTECODE
    --with-portable-bytecode is now the default. Pike programs that have
    been dumped on one architecture now can be decoded on another.
 
-o Math.Matrix 
-
-  Multiplication was bugged and gave B*A instead of A*B. Now fixed. 
-
 o Destruct reason passed to lfun::destroy.
 
   lfun::destroy now receives an integer flag that tells why the object
@@ -202,6 +198,11 @@ o __func__
   string concatenation is supported. eg:
 
     error("Error in " __func__ ".\n");
+
+o limit()
+
+  The new toplevel function limit(a, x, b) is a convenience function
+  that works like min(max(a,x),b).
 
 o ADT.BitBuffer
  
@@ -341,6 +342,13 @@ o Image.FreeType
 
   supports monochrome fonts
 
+o Image.GIF
+
+  FIXME
+
+  fixed image leaks
+  fixed some decoding errors 
+
 o Image.Image
 
   FIXME
@@ -394,6 +402,16 @@ o Locale.Charset
   (Locale.Charset.EncodeError and Locale.Charset.DecodeError) to make
   it possible to catch such errors in a better way. FIXME: Not
   finished.
+
+o Math
+
+  - Multiplication was bugged and gave B*A instead of A*B, which is
+    now fixed.
+
+  - Matrix objects now have xsize() and ysize() methods to query their
+    dimensions.
+
+  - To ease your logarithmic needs log2() and logn() have been added.
 
 o MIME
 
@@ -691,6 +709,10 @@ o Arg
       argv = opts[Arg.REST];
     }
 
+o Kerberos
+
+  FIXME
+
 o Protocols.DNS_SD
 
   This module provides an interface to DNS Service Discovery. The
@@ -849,6 +871,8 @@ MIME.pmod/ext...
 fixme:
 Process.locate_binary
 
+__deprecated__
+
 ----
 modules/_Charset
 
@@ -858,3 +882,5 @@ CommonLog: fixed sign bug
 files: FIXME
 Gettext: lots of build fixes
 gmp: FIXME
+java: FIXME
+mysql: FIXME
