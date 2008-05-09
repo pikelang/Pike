@@ -700,6 +700,12 @@ private Stdio.File send_fd=0;
 private int send_stop;
 private int keep_alive=0;
 
+//! Returns the amount of data sent.
+int sent_data()
+{
+  return sent;
+}
+
 void send_write()
 {
    remove_call_out(send_timeout);
