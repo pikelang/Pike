@@ -13,6 +13,8 @@ object con;
 object ctx;
 array(function) close_callbacks = ({ });
 
+static string|int last_error;
+
 int nice; // don't throw from call_sync
 
 static void enable_async()
@@ -44,6 +46,8 @@ int connect(string host, int port, void|int timeout)
   add_constant ("Remote_debug_conn_nr", _debug_conn_nr + 1);
 #endif
 
+  last_error = 0;
+
   string s, sv;
   int end_time=time()+(timeout||60);
 
@@ -58,8 +62,10 @@ int connect(string host, int port, void|int timeout)
     error("Already connected to "+con->query_address()+".\n");
 
   con = Stdio.File();
-  if(!con->connect(host, port))
+  if(!con->connect(host, port)) {
+    last_error = con->errno();
     return 0;
+  }
   con->write("Pike remote client "+PROTO_VERSION+"\n");
   s="";
   con->set_nonblocking();
@@ -70,25 +76,44 @@ int connect(string host, int port, void|int timeout)
      sleep(0.02);
      if (time()>end_time) 
      {
+	last_error = "Handshake timeout";
 	con->close();
 	return 0;
      }
   }
-  if((sscanf(s,"Pike remote server %4s\n", sv) == 1) && 
-     (sv == PROTO_VERSION))
-  {
-    DEBUGMSG("connected\n");
-    ctx = Context(replace(con->query_address(1), " ", "-"), this_object());
+
+  if((sscanf(s,"Pike remote server %4s\n", sv) == 1)) {
+    if (sv == PROTO_VERSION)
+    {
+      DEBUGMSG("connected\n");
+      ctx = Context(replace(con->query_address(1), " ", "-"), this_object());
 #if constant(thread_create)
-    thread_create( read_thread );
+      thread_create( read_thread );
 #else
-    con->set_nonblocking(read_some, write_some, closed_connection);
+      con->set_nonblocking(read_some, write_some, closed_connection);
 #endif
-    if (!max_call_threads)
-      call_out( enable_async, 0 ); // :-)
-    return 1;
+      if (!max_call_threads)
+	call_out( enable_async, 0 ); // :-)
+      return 1;
+    }
+    else
+      last_error = sprintf ("Invalid protocol version, want %s, got %s",
+			    PROTO_VERSION, sv);
   }
+  else
+    last_error = "Invalid handshake response";
+
   return 0;
+}
+
+string error_message()
+//! Returns an error message for the last error, in case @[connect]
+//! returns zero. Returns zero if the last @[connect] call was
+//! successful.
+{
+  if (!last_error) return 0;
+  if (stringp (last_error)) return last_error;
+  return strerror (last_error);
 }
 
 // - start_server
