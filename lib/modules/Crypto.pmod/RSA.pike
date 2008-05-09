@@ -1,4 +1,4 @@
-/* $Id: RSA.pike,v 1.9 2008/01/05 14:33:57 grubba Exp $
+/* $Id: RSA.pike,v 1.10 2008/05/09 02:20:24 nilsson Exp $
  *
  * Follow the PKCS#1 standard for padding and encryption.
  */
@@ -18,67 +18,71 @@ static int size;
 static Gmp.mpz p;
 static Gmp.mpz q;
 
-//! Returns the RSA modulo.
+//! Returns the RSA modulo (n).
 Gmp.mpz get_n()
 {
   return n;
 }
 
-//! Returns the RSA public exponent.
+//! Returns the RSA public exponent (e).
 Gmp.mpz get_e()
 {
   return e;
 }
 
-//! Returns the RSA private exponent (if known).
+//! Returns the RSA private exponent (d), if known.
 Gmp.mpz get_d()
 {
   return d;
 }
 
-//! Returns the first RSA prime (if known).
+//! Returns the first RSA prime (p), if known.
 Gmp.mpz get_p()
 {
   return p;
 }
 
-//! Returns the second RSA prime (if known).
+//! Returns the second RSA prime (q), if known.
 Gmp.mpz get_q()
 {
   return q;
 }
 
-//! Returns the RSA modulo as a binary string.
+//! Returns the RSA modulo (n) as a binary string.
 string cooked_get_n()
 {
   return n->digits(256);
 }
 
-//! Returns the RSA public exponent as a binary string.
+//! Returns the RSA public exponent (e) as a binary string.
 string cooked_get_e()
 {
   return e->digits(256);
 }
 
-//! Returns the RSA private exponent (if known) as a binary string.
+//! Returns the RSA private exponent (d) as a binary string, if known.
 string cooked_get_d()
 {
   return d->digits(256);
 }
 
-//! Returns the first RSA prime (if known) as a binary string.
+//! Returns the first RSA prime (p) as a binary string, if known.
 string cooked_get_p()
 {
   return p->digits(256);
 }
 
-//! Returns the second RSA prime (if known) as a binary string.
+//! Returns the second RSA prime (q) as a binary string, if known.
 string cooked_get_q()
 {
   return q->digits(256);
 }
 
 //! Sets the public key.
+//! @param modulo
+//!   The RSA modulo, often called n. This value needs to be >=12.
+//! @param pub
+//!   The public RSA exponent, often called e.
 this_program set_public_key(Gmp.mpz|int modulo, Gmp.mpz|int pub)
 {
   n = Gmp.mpz(modulo);
@@ -90,12 +94,14 @@ this_program set_public_key(Gmp.mpz|int modulo, Gmp.mpz|int pub)
 }
 
 //! Sets the private key.
+//! @param priv
+//!   The private RSA exponent, often called d.
 //! @param extra
 //!   @array
 //!     @elem Gmp.mpz|int 0
-//!       The first prime.
+//!       The first prime, often called p.
 //!     @elem Gmp.mpz|int 1
-//!       The second prime.
+//!       The second prime, often called q.
 //!   @endarray
 this_program set_private_key(Gmp.mpz|int priv, array(Gmp.mpz|int)|void extra)
 {
@@ -117,7 +123,8 @@ int query_blocksize() {
 }
 
 //! Pads the @[message] to the current block size with method @[type]
-//! and returns the result as an integer.
+//! and returns the result as an integer. This is equvivalent to
+//! OS2IP(EME-PKCS1-V1_5-ENCODE(message)) in PKCS-1.
 //! @param type
 //!   @int
 //!     @value 1
@@ -247,8 +254,11 @@ int sha_verify(string message, string signature)
   return raw_verify(s, Gmp.mpz(signature, 256));
 }
 
-//! @fixme
-//!   Document this function.
+// Broken implementation of RSA/MD5 SIG RFC 2537. The 0x00 01 FF* 00
+// prefix is missing.
+
+// (RSA/SHA-1 SIG is in RFC 3110)
+
 string md5_sign(string message, mixed|void r)
 {
   string s = Crypto.MD5->hash(message);
@@ -256,14 +266,13 @@ string md5_sign(string message, mixed|void r)
   return cooked_sign(s);r;
 }
 
-//! @fixme
-//!   Document this function.
 int md5_verify(string message, string signature)
 {
   string s = Crypto.MD5->hash(message);
   s = "0 0\14\6\10*\x86H\x86\xf7\15\2\5\5\0\4\20"+s;
   return raw_verify(s, Gmp.mpz(signature, 256));
 }
+
 
 //! Generate a prime with @[bits] number of bits using random function
 //! @[r].
