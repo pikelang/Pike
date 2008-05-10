@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.329 2008/05/08 15:28:40 grubba Exp $
+|| $Id: pike_types.c,v 1.330 2008/05/10 11:53:41 grubba Exp $
 */
 
 #include "global.h"
@@ -3446,6 +3446,42 @@ static struct pike_type *low_match_types2(struct pike_type *a,
      */
     return a;
 
+  case TWOT(PIKE_T_TYPE, T_FUNCTION):
+  case TWOT(PIKE_T_TYPE, T_MANY):
+    /* Convert the type to a casting function. */
+    type_stack_mark();
+    push_finished_type(a->car);
+    push_type(T_VOID);
+    push_type(T_MANY);
+    push_type(T_MIXED);
+    push_type(T_FUNCTION);
+    ret = a;
+    a = pop_unfinished_type();
+    if (low_match_types(a, b, flags)) {
+      free_type(a);
+      return ret;
+    }
+    free_type(a);
+    return NULL;
+
+  case TWOT(T_FUNCTION, PIKE_T_TYPE):
+  case TWOT(T_MANY, PIKE_T_TYPE):
+    /* Convert the type to a casting function. */
+    type_stack_mark();
+    push_finished_type(b->car);
+    push_type(T_VOID);
+    push_type(T_MANY);
+    push_type(T_MIXED);
+    push_type(T_FUNCTION);
+    b = pop_unfinished_type();
+    ret = low_match_types(a, b, flags);
+    free_type(b);
+    return ret;
+
+  case TWOT(PIKE_T_TYPE, T_PROGRAM):
+  case TWOT(T_PROGRAM, PIKE_T_TYPE):
+    return low_match_types(a->car, b->car, flags);
+
   case TWOT(T_OBJECT, T_FUNCTION):
   case TWOT(T_OBJECT, T_MANY):
   {
@@ -4101,6 +4137,44 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
     /* FIXME: Should also look at the subtype of the program. */
     return 1;
 
+  case TWOT(PIKE_T_TYPE, T_FUNCTION):
+  case TWOT(PIKE_T_TYPE, T_MANY):
+    /* Convert the type to a casting function. */
+    type_stack_mark();
+    push_finished_type(a->car);
+    push_type(T_VOID);
+    push_type(T_MANY);
+    push_type(T_MIXED);
+    push_type(T_FUNCTION);
+    a = pop_unfinished_type();
+    if (low_pike_types_le(a, b, array_cnt, flags)) {
+      free_type(a);
+      return 1;
+    }
+    free_type(a);
+    return 0;
+
+  case TWOT(T_FUNCTION, PIKE_T_TYPE):
+  case TWOT(T_MANY, PIKE_T_TYPE):
+    /* Convert the type to a casting function. */
+    type_stack_mark();
+    push_finished_type(b->car);
+    push_type(T_VOID);
+    push_type(T_MANY);
+    push_type(T_MIXED);
+    push_type(T_FUNCTION);
+    b = pop_unfinished_type();
+    if (low_pike_types_le(a, b, array_cnt, flags)) {
+      free_type(b);
+      return 1;
+    }
+    free_type(b);
+    return 0;
+
+  case TWOT(PIKE_T_TYPE, T_PROGRAM):
+  case TWOT(T_PROGRAM, PIKE_T_TYPE):
+    return low_pike_types_le(a->car, b->car, array_cnt, flags);
+
   case TWOT(T_OBJECT, T_FUNCTION):
   case TWOT(T_OBJECT, T_MANY):
     {
@@ -4469,6 +4543,7 @@ static int low_get_return_type(struct pike_type *a, struct pike_type *b)
       push_finished_type_with_markers(a, a_markers, 0);
       return 1;
 
+    case T_TYPE:
     case T_PROGRAM:
       push_finished_type(a->car);
       return 1;
@@ -5443,6 +5518,18 @@ struct pike_type *soft_cast(struct pike_type *soft_type,
 	return NULL;
       }
       break;
+    case T_TYPE:
+      /* Convert to a function returning the subtype and retry. */
+      type_stack_mark();
+      push_finished_type(soft_type->car);
+      push_type(T_VOID);
+      push_type(T_MANY);
+      push_type(T_MIXED);
+      push_type(T_FUNCTION);
+      tmp = pop_unfinished_type();
+      res = soft_cast(tmp, orig_type, flags);
+      break;
+
     case T_PROGRAM:
       /* Convert to a function returning an object. */
       copy_pike_type(tmp3, soft_type->car);	/* Return type */
@@ -5873,6 +5960,15 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
     }
     break;
 
+  case PIKE_T_TYPE:
+    /* FIXME: Check that the cast is valid. */
+    type_stack_mark();
+    push_finished_type(fun_type->car);
+    push_type(T_VOID);
+    push_type(T_MANY);
+    res = pop_unfinished_type();
+    break;
+
   case PIKE_T_PROGRAM:
     tmp = low_object_lfun_type(fun_type->car, LFUN_CREATE);
     if (!tmp) {
@@ -6272,6 +6368,10 @@ struct pike_type *new_get_return_type(struct pike_type *fun_type,
   case T_NOT:
     /* Doesn't match. */
     break;
+  case PIKE_T_TYPE:
+    /* Casting requires an argument... */
+    res = NULL;
+    break;
   case PIKE_T_PROGRAM:
     tmp = low_object_lfun_type(fun_type->car, LFUN_CREATE);
     if (!tmp) {
@@ -6537,6 +6637,10 @@ struct pike_type *get_first_arg_type(struct pike_type *fun_type,
       push_type(T_NOT);
       res = pop_unfinished_type();
     }
+    break;
+  case PIKE_T_TYPE:
+    /* FIXME: Limit to valid cast operations. */
+    copy_pike_type(res, mixed_type_string);
     break;
   case PIKE_T_PROGRAM:
     if ((fun_type = low_object_lfun_type(fun_type->car, LFUN_CREATE))) {
