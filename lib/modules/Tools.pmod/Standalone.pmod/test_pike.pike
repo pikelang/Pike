@@ -1,7 +1,7 @@
 #! /usr/bin/env pike
 #pike __REAL_VERSION__
 
-/* $Id: test_pike.pike,v 1.130 2008/05/08 12:57:59 grubba Exp $ */
+/* $Id: test_pike.pike,v 1.131 2008/05/10 20:49:06 mast Exp $ */
 
 #if !constant(_verify_internals)
 #define _verify_internals()
@@ -1153,7 +1153,7 @@ int main(int argc, array(string) argv)
 		  }
 		}
 	      }
-#if constant(_dump_program_tables)
+#if 0 && constant(_dump_program_tables)
 	      _dump_program_tables(object_program(o));
 #endif
 	    }
