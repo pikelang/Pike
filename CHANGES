@@ -28,7 +28,7 @@ o Major compiler API cleanups.
 o New `[..] operator function.
 
   Range operations have been separated from the `[] operator function
-  and is now handled by the new `[..] which provides greater control
+  and are now handled by the new `[..] which provides greater control
   for how the range bounds are specified. For compatibility, if there
   is no `[..] then `[] is still called for range operations.
 
