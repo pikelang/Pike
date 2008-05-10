@@ -70,6 +70,15 @@ o Added support for getters and setters.
     a->b = 17;				// Calls `b=(17).
     werror("%d\n", a->b);		// Calls `b().
 
+o Casting to derived types.
+
+  It is now possible to call a value of type type to perform the
+  corresponding value cast. eg:
+
+    typedef string MyString;
+
+    return MyString(17);		// Casts 17 to "17".
+
 o Unicode escapes.
 
   Pike now understands the common way to escape unicode chars, using
