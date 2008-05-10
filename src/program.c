@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.689 2008/05/08 10:50:19 grubba Exp $
+|| $Id: program.c,v 1.690 2008/05/10 20:43:25 mast Exp $
 */
 
 #include "global.h"
@@ -1405,7 +1405,9 @@ void ins_short(int i, void (*func)(char tmp))
   }
 }
 
-#ifdef PIKE_DEBUG
+#if 0
+/* This check is not possible to do since the identifier is added
+ * before checking for duplicates in add_constant. */
 static void debug_add_to_identifiers (struct identifier id)
 {
   if (d_flag) {
