@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.396 2008/05/10 11:53:41 grubba Exp $
+|| $Id: interpret.c,v 1.397 2008/05/10 23:27:05 mast Exp $
 */
 
 #include "global.h"
@@ -851,7 +851,7 @@ struct backlog
 {
   PIKE_INSTR_T instruction;
   INT32 arg,arg2;
-  struct program *program;
+  INT32 program_id;
   PIKE_OPCODE_T *pc;
 #ifdef _REENTRANT
   struct thread_state *thread_state;
@@ -902,11 +902,7 @@ static INLINE void low_debug_instr_prologue (PIKE_INSTR_T instr)
     backlogp++;
     if(backlogp >= BACKLOG) backlogp=0;
 
-    if(backlog[backlogp].program)
-      free_program(backlog[backlogp].program);
-
-    backlog[backlogp].program=Pike_fp->context->prog;
-    add_ref(Pike_fp->context->prog);
+    backlog[backlogp].program_id = Pike_fp->context->prog->id;
     backlog[backlogp].instruction=instr;
     backlog[backlogp].pc = Pike_fp->pc;
     backlog[backlogp].stack = Pike_sp - Pike_interpreter.evaluator_stack;
@@ -1006,10 +1002,12 @@ void dump_backlog(void)
   e=backlogp;
   do
   {
+    struct program *p;
     e++;
     if(e>=BACKLOG) e=0;
 
-    if(backlog[e].program)
+    p = id_to_program (backlog[e].program_id);
+    if (p)
     {
       struct pike_string *file;
       INT32 line;
@@ -1022,12 +1020,12 @@ void dump_backlog(void)
       }
 #endif
 
-      file = get_line(backlog[e].pc,backlog[e].program, &line);
+      file = get_line(backlog[e].pc,p, &line);
 #ifdef HAVE_COMPUTED_GOTO
       fprintf(stderr,"%s:%ld:(%"PRINTPTRDIFFT"d): %s",
 	      file->str,
 	      (long)line,
-	      backlog[e].pc - backlog[e].program->program,
+	      backlog[e].pc - p->program,
 	      get_opcode_name(backlog[e].instruction));
 #else /* !HAVE_COMPUTED_GOTO */
       if(backlog[e].instruction+F_OFFSET > F_MAX_OPCODE)
@@ -1035,7 +1033,7 @@ void dump_backlog(void)
 	fprintf(stderr,"%s:%ld:(%"PRINTPTRDIFFT"d): ILLEGAL INSTRUCTION %d\n",
 		file->str,
 		(long)line,
-		backlog[e].pc - backlog[e].program->program,
+		backlog[e].pc - p->program,
 		backlog[e].instruction + F_OFFSET);
 	free_string(file);
 	continue;
@@ -1044,8 +1042,8 @@ void dump_backlog(void)
       fprintf(stderr,"%s:%ld:(%"PRINTPTRDIFFT"d): %s",
 	      file->str,
 	      (long)line,
-	      backlog[e].pc - backlog[e].program->program,
-	      low_get_f_name(backlog[e].instruction + F_OFFSET, backlog[e].program));
+	      backlog[e].pc - p->program,
+	      low_get_f_name(backlog[e].instruction + F_OFFSET, p));
       if(instrs[backlog[e].instruction].flags & I_HASARG2)
       {
 	fprintf(stderr,"(%ld,%ld)",
@@ -3004,16 +3002,6 @@ PMOD_EXPORT void cleanup_interpret(void)
   while(Pike_fp)
     POP_PIKE_FRAME();
 
-#ifdef PIKE_DEBUG
-  for(e=0;e<BACKLOG;e++)
-  {
-    if(backlog[e].program)
-    {
-      free_program(backlog[e].program);
-      backlog[e].program=0;
-    }
-  }
-#endif
   reset_evaluator();
 
   low_cleanup_interpret(&Pike_interpreter);
