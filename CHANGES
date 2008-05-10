@@ -28,9 +28,9 @@ o Major compiler API cleanups.
 o New `[..] operator function.
 
   Range operations have been separated from the `[] operator function
-  and is handled by a new `[..] which provides greater control in how
-  the range bounds are specified. For compatibility, if there is no
-  `[..] then `[] is still called for range operations.
+  and is now handled by the new `[..] which provides greater control
+  for how the range bounds are specified. For compatibility, if there
+  is no `[..] then `[] is still called for range operations.
 
   FIXME: Describe relation with Pike.INDEX_FROM_BEG/END & OPEN_BOUND.
 
@@ -116,6 +116,8 @@ o Prepared for having multiple different active backend implementations.
   new backend implementation.
 
   NOTE!
+  NOTE! C-API incompatibility!
+  NOTE!
   NOTE! Changed the argument for backend callbacks!
   NOTE!
   NOTE! The argument is now a struct Backend_struct * when called
@@ -180,6 +182,9 @@ o Pike_fp->context
   rather than a copy of it. This allows for easier access to
   inherited symbols in C-code.
 
+  NOTE!
+  NOTE! C-API incompatibility!
+  NOTE!
 
 Extensions and New Functions
 
@@ -405,8 +410,8 @@ o Locale.Charset
 
 o Math
 
-  - Multiplication was bugged and gave B*A instead of A*B, which is
-    now fixed.
+  - Matrix multiplication was bugged and gave B*A instead of A*B,
+    which is now fixed.
 
   - Matrix objects now have xsize() and ysize() methods to query their
     dimensions.
@@ -749,14 +754,14 @@ o Standards.TLD
 o Tools.Shoot
 
   Several new tests have been added to benchmark and improve on
-  various aspects of Pike. ReplaceParallel and ReplaceSerial compares
-  the time it takes to replace multiple substrings of a string in a
+  various aspects of Pike. ReplaceParallel and ReplaceSerial measure
+  the times it takes to replace multiple substrings of a string in a
   single call to replace and with subsequent calls.
 
   TagRemoveArraySscanf, TagRemoveDivide, TagRemoveLoop,
   TagRemoveParserHTML, TagRemovePCRE, TagRemoveSearch and
-  TagRemoveSscanf compares different methods of completing the same
-  task, to remove XML tags from a string.
+  TagRemoveSscanf measure different methods of completing the same
+  task; to remove XML tags from a string.
 
 o Web.CGI
 
@@ -790,12 +795,12 @@ Incompatible changes
 
 o Array.transpose_old
 
-  This function is removed.
+  This function has been removed.
 
 o _Charset
 
-  This internal module has had most of its content removed. It is
-  still available from Local.Charset.
+  The parts of this internal module that were written in Pike
+  have moved to Locale.Charset.
 
 o Crypto
 
@@ -830,7 +835,7 @@ o spider.XML
   The spider module no longer contains the XML parser. The functions
   isbasechar(), iscombiningchar(), isdigit(), isextender(),
   isfirstnamechar(), ishexchar(), isidiographic(), isletter(),
-  isnamechar() and isspace() has also been moved to the Parser module.
+  isnamechar() and isspace() have also been moved to the Parser module.
 
 o Sql.Sql
 
