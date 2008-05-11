@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.242 2008/05/11 02:35:23 mast Exp $
+|| $Id: program.h,v 1.243 2008/05/11 14:55:54 mast Exp $
 */
 
 #ifndef PROGRAM_H
@@ -905,7 +905,7 @@ void check_all_programs(void);
 void placeholder_index(INT32 args);
 void init_program(void);
 void cleanup_program(void);
-void visit_program (struct program *p, int action);
+PMOD_EXPORT void visit_program (struct program *p, int action);
 void gc_mark_program_as_referenced(struct program *p);
 void real_gc_cycle_check_program(struct program *p, int weak);
 unsigned gc_touch_all_programs(void);

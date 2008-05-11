@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.h,v 1.103 2008/05/11 02:36:00 mast Exp $
+|| $Id: stralloc.h,v 1.104 2008/05/11 14:55:54 mast Exp $
 */
 
 #ifndef STRALLOC_H
@@ -330,7 +330,7 @@ PMOD_EXPORT struct pike_string *string_replace(struct pike_string *str,
 void init_shared_string_table(void);
 void cleanup_shared_string_table(void);
 void count_memory_in_strings(size_t *num, size_t *size);
-void visit_string (struct pike_string *s, int action);
+PMOD_EXPORT void visit_string (struct pike_string *s, int action);
 void gc_mark_string_as_referenced (struct pike_string *s);
 unsigned gc_touch_all_strings(void);
 void gc_mark_all_strings(void);

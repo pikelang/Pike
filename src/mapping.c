@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.200 2008/05/11 02:35:22 mast Exp $
+|| $Id: mapping.c,v 1.201 2008/05/11 14:55:53 mast Exp $
 */
 
 #include "global.h"
@@ -2347,7 +2347,7 @@ static void visit_mapping_data (struct mapping_data *md, int action,
   }
 }
 
-void visit_mapping (struct mapping *m, int action)
+PMOD_EXPORT void visit_mapping (struct mapping *m, int action)
 {
   switch (action) {
 #ifdef PIKE_DEBUG

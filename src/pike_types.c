@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.331 2008/05/11 02:35:22 mast Exp $
+|| $Id: pike_types.c,v 1.332 2008/05/11 14:55:53 mast Exp $
 */
 
 #include "global.h"
@@ -7837,7 +7837,7 @@ void cleanup_pike_type_table(void)
 #endif /* DO_PIKE_CLEANUP */
 }
 
-void visit_type (struct pike_type *t, int action)
+PMOD_EXPORT void visit_type (struct pike_type *t, int action)
 {
   switch (action) {
 #ifdef PIKE_DEBUG

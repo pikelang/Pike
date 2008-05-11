@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.h,v 1.74 2008/05/11 02:35:21 mast Exp $
+|| $Id: array.h,v 1.75 2008/05/11 14:55:53 mast Exp $
 */
 
 #ifndef ARRAY_H
@@ -192,7 +192,7 @@ void array_replace(struct array *a,
 PMOD_EXPORT void check_array(struct array *a);
 void check_all_arrays(void);
 #endif
-void visit_array (struct array *a, int action);
+PMOD_EXPORT void visit_array (struct array *a, int action);
 void gc_mark_array_as_referenced(struct array *a);
 void real_gc_cycle_check_array(struct array *a, int weak);
 unsigned gc_touch_all_arrays(void);

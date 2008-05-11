@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.206 2008/05/11 02:35:21 mast Exp $
+|| $Id: array.c,v 1.207 2008/05/11 14:55:52 mast Exp $
 */
 
 #include "global.h"
@@ -2595,7 +2595,7 @@ void check_all_arrays(void)
 #endif /* PIKE_DEBUG */
 
 
-void visit_array (struct array *a, int action)
+PMOD_EXPORT void visit_array (struct array *a, int action)
 {
   switch (action) {
 #ifdef PIKE_DEBUG

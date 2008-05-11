@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.218 2008/05/11 02:36:00 mast Exp $
+|| $Id: stralloc.c,v 1.219 2008/05/11 14:55:54 mast Exp $
 */
 
 #include "global.h"
@@ -2134,7 +2134,7 @@ void count_memory_in_strings(size_t *num, size_t *size)
   size[0]=size_;
 }
 
-void visit_string (struct pike_string *s, int action)
+PMOD_EXPORT void visit_string (struct pike_string *s, int action)
 {
   switch (action) {
 #ifdef PIKE_DEBUG

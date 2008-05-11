@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.691 2008/05/11 02:35:22 mast Exp $
+|| $Id: program.c,v 1.692 2008/05/11 14:55:54 mast Exp $
 */
 
 #include "global.h"
@@ -9416,7 +9416,7 @@ void cleanup_program(void)
 }
 
 
-void visit_program (struct program *p, int action)
+PMOD_EXPORT void visit_program (struct program *p, int action)
 {
   switch (action) {
 #ifdef PIKE_DEBUG

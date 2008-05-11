@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: constants.c,v 1.59 2008/05/11 02:35:22 mast Exp $
+|| $Id: constants.c,v 1.60 2008/05/11 14:55:53 mast Exp $
 */
 
 #include "global.h"
@@ -190,7 +190,7 @@ PMOD_EXPORT struct callable *quick_add_efun(const char *name, ptrdiff_t name_len
   return ret;
 }
 
-void visit_callable (struct callable *c, int action)
+PMOD_EXPORT void visit_callable (struct callable *c, int action)
 {
   switch (action) {
 #ifdef PIKE_DEBUG

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.290 2008/05/11 02:35:22 mast Exp $
+|| $Id: object.c,v 1.291 2008/05/11 14:55:53 mast Exp $
 */
 
 #include "global.h"
@@ -1822,7 +1822,7 @@ PMOD_EXPORT struct array *object_values(struct object *o)
 }
 
 
-void visit_object (struct object *o, int action)
+PMOD_EXPORT void visit_object (struct object *o, int action)
 {
   struct program *p = o->prog;
 

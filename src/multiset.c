@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.110 2008/05/11 02:35:22 mast Exp $
+|| $Id: multiset.c,v 1.111 2008/05/11 14:55:53 mast Exp $
 */
 
 #include "global.h"
@@ -3847,7 +3847,7 @@ static void visit_multiset_data (struct multiset_data *msd, int action,
   }
 }
 
-void visit_multiset (struct multiset *l, int action)
+PMOD_EXPORT void visit_multiset (struct multiset *l, int action)
 {
   switch (action) {
 #ifdef PIKE_DEBUG

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.h,v 1.67 2008/05/11 02:35:22 mast Exp $
+|| $Id: mapping.h,v 1.68 2008/05/11 14:55:53 mast Exp $
 */
 
 #ifndef MAPPING_H
@@ -372,7 +372,7 @@ PMOD_EXPORT void mapping_search_no_free(struct svalue *to,
 void check_mapping(const struct mapping *m);
 void check_all_mappings(void);
 #endif
-void visit_mapping (struct mapping *m, int action);
+PMOD_EXPORT void visit_mapping (struct mapping *m, int action);
 void gc_mark_mapping_as_referenced(struct mapping *m);
 void real_gc_cycle_check_mapping(struct mapping *m, int weak);
 unsigned gc_touch_all_mappings(void);
