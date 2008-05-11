@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.313 2008/05/11 14:34:56 mast Exp $
+|| $Id: gc.c,v 1.314 2008/05/11 16:57:37 mast Exp $
 */
 
 #include "global.h"
@@ -4245,7 +4245,7 @@ static struct mc_marker *my_make_mc_marker (void *thing,
 #if defined (PIKE_DEBUG) || defined (MEMORY_COUNT_DEBUG)
 static void describe_mc_marker (struct mc_marker *m)
 {
-  fprintf (stderr, "%s %p: refs %d, int %d, la %d, dist %d",
+  fprintf (stderr, "%s %p: refs %d, int %d, la %d, dist %u",
 	   get_name_of_type (type_from_visit_fn (m->visit_fn)),
 	   m->thing, *(INT32 *) m->thing, m->int_refs, m->la_refs, m->dist);
   if (m->flags & MC_FLAG_REFCOUNTED) fputs (", RC", stderr);
@@ -4719,9 +4719,9 @@ void f_count_memory (INT32 args)
       if (val->type != T_INT || val->u.integer < 0)
 	SIMPLE_ARG_ERROR ("count_memory", 1,
 			  "\"lookahead\" is not a non-negative integer.");
-#if MAX_INT_TYPE > UINT_MAX
-      if (Pike_sp[-args].u.integer > UINT_MAX)
-	mc_lookahead = UINT_MAX;
+#if MAX_INT_TYPE > MAX_UINT32
+      if (val->u.integer > MAX_UINT32)
+	mc_lookahead = MAX_UINT32;
       else
 #endif
 	mc_lookahead = val->u.integer;
@@ -4751,9 +4751,9 @@ void f_count_memory (INT32 args)
     if (Pike_sp[-args].type != T_INT || Pike_sp[-args].u.integer < 0)
       SIMPLE_ARG_TYPE_ERROR ("count_memory", 1, "int(0..)");
 
-#if MAX_INT_TYPE > UINT_MAX
-    if (Pike_sp[-args].u.integer > UINT_MAX)
-      mc_lookahead = UINT_MAX;
+#if MAX_INT_TYPE > MAX_UINT32
+    if (Pike_sp[-args].u.integer > MAX_UINT32)
+      mc_lookahead = MAX_UINT32;
     else
 #endif
       mc_lookahead = Pike_sp[-args].u.integer;
