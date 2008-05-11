@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: queue.c,v 1.10 2002/10/11 01:39:37 nilsson Exp $
+|| $Id: queue.c,v 1.11 2008/05/11 22:44:01 mast Exp $
 */
 
 #include "global.h"
@@ -15,6 +15,11 @@ struct queue_entry
   queue_call call;
   void *data;
 };
+
+/* FIXME: Add a way to keep the first block even when the queue
+ * becomes empty. In e.g. the gc the queue becomes empty very
+ * frequently which causes the first block to be freed and allocated a
+ * lot. */
 
 #define QUEUE_ENTRIES 8191
 

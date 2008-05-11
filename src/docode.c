@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.c,v 1.197 2008/04/14 10:14:35 grubba Exp $
+|| $Id: docode.c,v 1.198 2008/05/11 22:44:00 mast Exp $
 */
 
 #include "global.h"
@@ -611,7 +611,7 @@ static void emit_range (node *n DO_IF_DEBUG (COMMA int num_args))
 {
   struct compilation *c = THIS_COMPILATION;
   node *low = CADR (n), *high = CDDR (n);
-  int bound_types;
+  int bound_types;		/* Got bogus gcc warning here. */
 
   switch (low->token) {
     case F_RANGE_FROM_BEG: bound_types = RANGE_LOW_FROM_BEG; break;

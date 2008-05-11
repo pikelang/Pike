@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.213 2008/05/01 19:57:57 mast Exp $
+ * $Id: backend.cmod,v 1.214 2008/05/11 22:43:07 mast Exp $
  *
  * Backend object.
  */
@@ -3658,7 +3658,7 @@ PIKECLASS GenericBackend
    */
   PIKEFUN float|int(0..0) `()(void|float|int(0..0) sleep_time)
   {
-    struct timeval timeout;
+    struct timeval timeout;	/* Got bogus gcc warning on timeout.tv_usec. */
 
     if (sleep_time && sleep_time->type == PIKE_T_FLOAT) {
       timeout.tv_sec = (long) floor (sleep_time->u.float_number);
