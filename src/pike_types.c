@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.332 2008/05/11 14:55:53 mast Exp $
+|| $Id: pike_types.c,v 1.333 2008/05/11 22:40:11 mast Exp $
 */
 
 #include "global.h"
@@ -7447,6 +7447,11 @@ static void low_make_pike_type(unsigned char *type_string,
        * be non-zero.
        */
       switch(type_string[1]) {
+      default: /* will not happen? */
+#ifdef PIKE_DEBUG
+	 Pike_fatal("unexpected case in make_pike_type (%d)\n",
+		    type_string[1]);
+#endif
       case 0: case 4:
 	bytes = strlen((char *)type_string+2);
 	break;
@@ -7472,12 +7477,6 @@ static void low_make_pike_type(unsigned char *type_string,
 	     !type_string[bytes+4] && !type_string[bytes+5])
 	    break;
 	break;
-#ifdef PIKE_DEBUG
-      default: /* will not happen? */
-	 bytes=0;
-	 Pike_fatal("unexpected case in make_pike_type (%d)\n",
-		    type_string[1]);
-#endif
       }
       str = begin_wide_shared_string(bytes>>size_shift, size_shift);
       MEMCPY(str->str, type_string+2, bytes);
@@ -7553,6 +7552,13 @@ int pike_type_allow_premature_toss(struct pike_type *type)
 #endif /* 0 */
   switch(type->type)
   {
+    default:
+#ifdef PIKE_DEBUG
+      Pike_fatal("pike_type_allow_premature_toss: Unknown type (code: %d)\n",
+		 type->type);
+      /* NOT_REACHED */
+      return 0;
+#endif
     case T_NOT:
       return !pike_type_allow_premature_toss(type->car);
 
@@ -7597,13 +7603,6 @@ int pike_type_allow_premature_toss(struct pike_type *type)
     case PIKE_T_ZERO:
     case T_VOID:
       return 1;
-#ifdef PIKE_DEBUG
-  default:
-    Pike_fatal("pike_type_allow_premature_toss: Unknown type (code: %d)\n",
-	       type->type);
-    /* NOT_REACHED */
-    return 0;
-#endif
   }
 }
 
