@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lexer.h,v 1.69 2008/05/06 19:41:08 grubba Exp $
+|| $Id: lexer.h,v 1.70 2008/05/11 22:38:20 mast Exp $
 */
 
 /*
@@ -826,7 +826,7 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	sval.u.integer = 0;
 	wide_string_to_svalue_inumber(&sval,
 				      lex->pos,
-				      (void **)&lex->pos,
+				      &lex->pos,
 				      base,
 				      0,
 				      SHIFT);
@@ -842,7 +842,7 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
     {
       char *p1, *p2;
       double f;
-      long l = 0;
+      long l = 0;		/* GCC thinks l is unitialized here. Hmm..? */
       struct svalue sval;
 
       lex->pos -= (1<<SHIFT);
