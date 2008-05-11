@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.311 2008/05/11 02:31:57 mast Exp $
+|| $Id: gc.c,v 1.312 2008/05/11 02:57:23 mast Exp $
 */
 
 #include "global.h"
@@ -4045,12 +4045,10 @@ PMOD_EXPORT TYPE_T type_from_visit_fn (visit_thing_fn *fn)
   return PIKE_T_UNKNOWN;
 }
 
-/* Memory count mode
+/* Memory counting
  *
  * This mode is used by f_count_memory, and it's recognized by a
- * nonzero value in mc_pass. The cycle check functions are reused but
- * work completely differently when mc_pass is set, and it takes
- * precedence over Pike_in_gc.
+ * nonzero value in mc_pass.
  *
  * The basic idea is to follow and count all refs from the starting
  * point things given to f_count_memory. Whenever the counted refs add
@@ -4616,7 +4614,7 @@ PMOD_EXPORT int mc_count_bytes (void *thing)
  *!   However, the lookahead is by default blocked by programs, i.e.
  *!   it never follows references emanating from programs. That since
  *!   programs seldom are part of dynamic data structures, and they
- *!   also typically contain a lot of references to global data which
+ *!   also typically contain numerous references to global data which
  *!   would add a lot of work to the lookahead search.
  *!
  *!   To control the search in more detail, @[options] can be a
