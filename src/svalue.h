@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.h,v 1.156 2008/03/30 01:24:10 mast Exp $
+|| $Id: svalue.h,v 1.157 2008/05/11 02:36:55 mast Exp $
 */
 
 #ifndef SVALUE_H
@@ -489,13 +489,22 @@ static INLINE union anything *dmalloc_check_union(union anything *u,int type, ch
 #define sub_ref(X) (--((INT32 *)debug_malloc_update_location( &((X)->refs), DMALLOC_NAMED_LOCATION(" sub_ref")))[0] > 0)
 #endif
 
-
-#else
+#else  /* !DEBUG_MALLOC */
 #define dmalloc_check_svalue(S,L) (S)
 #define dmalloc_check_svalues(S,L,N) (S)
 #define dmalloc_check_union(U,T,L) (U)
 
-#endif
+#endif	/* !DEBUG_MALLOC */
+
+/* To be used for type checking in macros. */
+static INLINE struct array *pass_array (struct array *a) {return a;}
+static INLINE struct mapping *pass_mapping (struct mapping *m) {return m;}
+static INLINE struct multiset *pass_multiset (struct multiset *l) {return l;}
+static INLINE struct object *pass_object (struct object *o) {return o;}
+static INLINE struct program *pass_program (struct program *p) {return p;}
+static INLINE struct pike_string *pass_string (struct pike_string *s) {return s;}
+static INLINE struct pike_type *pass_type (struct pike_type *t) {return t;}
+static INLINE struct callable *pass_callable (struct callable *c) {return c;}
 
 #else  /* !PIKE_DEBUG */
 
@@ -508,6 +517,15 @@ static INLINE union anything *dmalloc_check_union(union anything *u,int type, ch
 #define dmalloc_check_svalue(S,L) (S)
 #define dmalloc_check_svalues(S,L,N) (S)
 #define dmalloc_check_union(U,T,L) (U)
+
+#define pass_array(A) (A)
+#define pass_mapping(M) (M)
+#define pass_multiset(L) (L)
+#define pass_object(O) (O)
+#define pass_program(P) (P)
+#define pass_string(S) (S)
+#define pass_type(T) (T)
+#define pass_callable(C) (C)
 
 #endif	/* !PIKE_DEBUG */
 
@@ -772,7 +790,6 @@ int svalues_are_constant(struct svalue *s,
 			 INT32 num,
 			 TYPE_FIELD hint,
 			 struct processing *p);
-/* Prototypes end here */
 
 #define gc_cycle_check_without_recurse gc_mark_without_recurse
 #define gc_cycle_check_weak_without_recurse gc_mark_without_recurse
