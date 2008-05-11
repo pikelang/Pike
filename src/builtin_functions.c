@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.661 2008/05/11 02:02:50 mast Exp $
+|| $Id: builtin_functions.c,v 1.662 2008/05/11 02:39:07 mast Exp $
 */
 
 #include "global.h"
@@ -9589,7 +9589,11 @@ void init_builtin_efuns(void)
   ADD_EFUN("_gc_status",f__gc_status,
 	   tFunc(tNone,tMap(tString,tOr(tInt,tFloat))),
 	   OPT_EXTERNAL_DEPEND);
-  ADD_FUNCTION ("count_memory", f_count_memory, tFuncV(tZero,tMix,tInt), 0);
+  ADD_FUNCTION ("count_memory", f_count_memory,
+		tFuncV(tOr(tIntPos,tMap(tString,tInt)),
+		       tOr8(tArray,tMultiset,tMapping,tObj,tPrg(tObj),
+			    tString,tType(tMix),tInt),
+		       tInt), 0);
 
   ADD_INT_CONSTANT ("NATIVE_INT_MAX", MAX_INT_TYPE, 0);
   ADD_INT_CONSTANT ("NATIVE_INT_MIN", MIN_INT_TYPE, 0);
