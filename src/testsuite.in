@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.811 2008/05/08 12:56:08 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.812 2008/05/11 02:40:13 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -5947,6 +5947,155 @@ test_do(add_constant("blatinka");)
       }
     }()->test();
   ]], 1)
+
+// Pike.count_memory
+// time(1) is used below to avoid constants with extra refs.
+test_true([[Pike.count_memory (0, ({})) == 0]])
+test_true([[Pike.count_memory (0, ({time(1)})) > 0]])
+test_true([[Pike.count_memory (0, (<time(1)>)) > 0]])
+test_true([[Pike.count_memory (0, (<time(1)>)) >
+	    Pike.count_memory (0, (<1>))]])
+test_true([[Pike.count_memory (0, ([1: time(1)])) > 0]])
+test_true([[Pike.count_memory (0, ([1: time(1)])) >
+	    Pike.count_memory (0, ([1: 2]))]])
+test_true([[Pike.count_memory (0, class {}) > 0]])
+test_true([[Pike.count_memory (0, class {}()) > 0]])
+test_true([[Pike.count_memory (0, class {float f;}()) >
+	    Pike.count_memory (0, class {}())]])
+test_true([[Pike.count_memory (0, "foo") > 0]])
+test_true([[Pike.count_memory (0, typeof (map)) > 0]])
+test_true([[Pike.count_memory (0, 17) == 0]])
+test_true([[Pike.count_memory (0, ({"some string with no other ref in memory " +
+				    Standards.UUID.make_version4()->str()})) >
+	    Pike.count_memory (0, ({""}))]])
+test_true([[Pike.count_memory (0, class X {mapping(X:array(int)) x;}) >
+	    Pike.count_memory (0, class Y {int x;})]])
+test_true([[Pike.count_memory (0, ({compile (
+				      "constant x = ([1: time(1)]);")})) >
+	    Pike.count_memory (0, ({([1: time(1)])}))]])
+test_any([[
+  array a1 = ({({time(1)})}), a2 = ({a1[0]});
+  return Pike.count_memory (0, a1, a2) >
+    Pike.count_memory (0, a1) + Pike.count_memory (0, a2);
+]], 1)
+test_any([[
+  mapping m = ([1: time(1)]);
+  return Pike.count_memory (0, ({m})) == Pike.count_memory (0, ({0}));
+]], 1)
+test_any([[
+  array a = ({([1: time(1)])});
+  return Pike.count_memory (0, a) > Pike.count_memory (0, ({([])}));
+]], 1)
+test_any([[
+  program p = class {};
+  return Pike.count_memory (0, p) > Pike.count_memory (0, p());
+]], 1)
+test_any([[
+  class X (void|object a) {};
+  X o = X();
+  int size = Pike.count_memory (0, o);
+  o->a = X();
+  return Pike.count_memory (0, o) > size;
+]], 1)
+test_any([[
+  class X (void|object a) {};
+  X o = X (X (X()));
+  int size = Pike.count_memory (0, o);
+  o->a->a->a = o->a;
+  return Pike.count_memory (3, o) == size;
+]], 1)
+test_any([[
+  class X (void|object a) {};
+  X o = X (X (X()));
+  o->a->a->a = o->a;
+  return Pike.count_memory (2, o) < Pike.count_memory (3, o);
+]], 1)
+test_any([[
+  class X (void|object a) {};
+  X o = X (X (X()));
+  int size = Pike.count_memory (0, o);
+  o->a->a->a = o->a;
+  return Pike.count_memory ((["lookahead": 3]), o) == size;
+]], 1)
+test_any([[
+  class X (void|object a) {};
+  X o = X (X (X()));
+  int size = Pike.count_memory (0, o);
+  return Pike.count_memory ((["lookahead": 3, "block_objects": 1]), o) == size;
+]], 1)
+test_any([[
+  class X (void|object a) {};
+  X o = X (X (X()));
+  int size = Pike.count_memory ((["block_objects": 1]), o);
+  o->a->a->a = o->a;
+  return Pike.count_memory ((["lookahead": 3, "block_objects": 1]), o) < size;
+]], 1)
+test_any([[
+  class X (void|object a) {};
+  X o = X (X (X()));
+  int size = Pike.count_memory (0, o);
+  o->a->a->a = o->a;
+  X r = o->a->a;
+  return Pike.count_memory (10, o) < size;
+]], 1)
+test_any([[
+  class X (void|object a) {};
+  X o = X (X (X()));
+  o->a->a->a = o->a;
+  X r = o->a->a;
+  int size = Pike.count_memory (3, o);
+  r = o->a;
+  return Pike.count_memory (3, o) == size;
+]], 1)
+test_any([[
+  class X (void|object a, void|object b) {};
+  X o = X (X (X()));
+  o->a->a->a = o->a;
+  X o2 = X();
+  o->b = o2;
+  o2->a = o->a->a;
+  int size = Pike.count_memory (3, o);
+  o2 = 0;
+  return Pike.count_memory (3, o) > size;
+]], 1)
+test_any([[
+  class X (void|object a, void|object b) {};
+  X o = X (X(), X());
+  o->a->b = o->b;
+  o->b->a = o->a;
+  int size = Pike.count_memory (3, o);
+  o->a->a = o->b->b = X();
+  return Pike.count_memory (3, o) > size;
+]], 1)
+test_any([[
+  class X (void|object a, void|object b) {};
+  X o = X (X(), X());
+  o->a->b = o->b;
+  o->b->a = o->a;
+  X o2 = X (X(), X());
+  o2->a->b = o2->b;
+  o2->b->a = o2->a;
+  o2->a->a = o2->b->b = X();
+  o->a->a = o->b->b = o2;
+  o2 = 0;
+  mapping m = (["lookahead": 3, "collect_stats": 1]);
+  Pike.count_memory (m, o);
+  return m->rounds == 3 && m->max_distance == 2;
+]], 1)
+test_true([[Pike.count_memory (Int.NATIVE_MAX, ({master()})) ==
+	    Pike.count_memory (0, ({0}))]])
+test_do([[
+  mapping m = (["lookahead": Int.NATIVE_MAX,
+		"block_programs": 0,
+		"collect_stats": 1]);
+  Pike.count_memory (m, master());
+]])
+cond([[has_value (cpp ("__AUTO_BIGNUM__"), "1")]], [[
+  test_true([[Pike.count_memory (0, Int.NATIVE_MAX + 1) >
+	      Pike.count_memory (0, 17)]])
+  test_true([[Pike.count_memory (0, Int.NATIVE_MAX * Int.NATIVE_MAX) >
+	      Pike.count_memory (0, Int.NATIVE_MAX)]])
+]])
 
 // Numerical limits.
 test_true([[Int.NATIVE_MIN <= -2147483648]])
