@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.h,v 1.157 2008/05/11 02:36:55 mast Exp $
+|| $Id: svalue.h,v 1.158 2008/05/11 14:47:57 mast Exp $
 */
 
 #ifndef SVALUE_H
@@ -426,6 +426,13 @@ void low_thorough_check_short_svalue (const union anything *u, TYPE_T type);
 	low_thorough_check_short_svalue (&sval_->u, sval_->type);	\
   } while (0)
 
+void check_short_svalue(const union anything *u, TYPE_T type);
+PMOD_EXPORT void debug_svalue_type_error (const struct svalue *s);
+PMOD_EXPORT void debug_check_svalue(const struct svalue *s);
+void debug_check_type_hint (const struct svalue *svals, size_t num, TYPE_FIELD type_hint);
+PMOD_EXPORT void real_gc_mark_external_svalues(const struct svalue *s, ptrdiff_t num,
+					       const char *place);
+
 PMOD_EXPORT extern const char msg_sval_obj_wo_refs[];
 #define check_refs(S) do {\
  if((S)->type <= MAX_REF_TYPE && (!(S)->u.refs || (S)->u.refs[0] < 0)) { \
@@ -509,6 +516,7 @@ static INLINE struct callable *pass_callable (struct callable *c) {return c;}
 #else  /* !PIKE_DEBUG */
 
 #define check_svalue(S) 0
+#define check_short_svalue(U, T) 0
 #define check_type(T) do {} while (0)
 #define check_svalue_type(S) do {} while (0)
 #define check_refs(S) do {} while (0)
@@ -763,12 +771,6 @@ PMOD_EXPORT void copy_svalues_recursively_no_free(struct svalue *to,
 						  const struct svalue *from,
 						  size_t num,
 						  struct mapping *m);
-void check_short_svalue(const union anything *u, TYPE_T type);
-PMOD_EXPORT void debug_svalue_type_error (const struct svalue *s);
-PMOD_EXPORT void debug_check_svalue(const struct svalue *s);
-void debug_check_type_hint (const struct svalue *svals, size_t num, TYPE_FIELD type_hint);
-PMOD_EXPORT void real_gc_mark_external_svalues(const struct svalue *s, ptrdiff_t num,
-					       const char *place);
 PMOD_EXPORT void real_gc_check_svalues(const struct svalue *s, size_t num);
 void gc_check_weak_svalues(const struct svalue *s, size_t num);
 PMOD_EXPORT void real_gc_check_short_svalue(const union anything *u, TYPE_T type);
