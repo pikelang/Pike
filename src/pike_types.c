@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.330 2008/05/10 11:53:41 grubba Exp $
+|| $Id: pike_types.c,v 1.331 2008/05/11 02:35:22 mast Exp $
 */
 
 #include "global.h"
@@ -7837,10 +7837,169 @@ void cleanup_pike_type_table(void)
 #endif /* DO_PIKE_CLEANUP */
 }
 
+void visit_type (struct pike_type *t, int action)
+{
+  switch (action) {
+#ifdef PIKE_DEBUG
+    default:
+      Pike_fatal ("Unknown visit action %d.\n", action);
+    case VISIT_NORMAL:
+      break;
+#endif
+    case VISIT_COMPLEX_ONLY:
+      return;
+    case VISIT_COUNT_BYTES:
+      mc_counted_bytes += sizeof (struct pike_type);
+      break;
+  }
+
+  switch (t->type) {
+    case T_FUNCTION:
+    case T_MANY:
+    case T_TUPLE:
+    case T_MAPPING:
+    case T_OR:
+    case T_AND:
+    case PIKE_T_RING:
+      visit_type_ref (t->car, REF_TYPE_INTERNAL);
+      /* FALL_THROUGH */
+    case T_SCOPE:
+    case T_ASSIGN:
+      visit_type_ref (t->cdr, REF_TYPE_INTERNAL);
+      break;
+    case T_ARRAY:
+    case T_MULTISET:
+    case T_NOT:
+    case T_TYPE:
+    case T_PROGRAM:
+    case T_STRING:
+      visit_type_ref (t->car, REF_TYPE_INTERNAL);
+      break;
+    case PIKE_T_ATTRIBUTE:
+    case PIKE_T_NAME:
+      visit_string_ref ((struct pike_string *) t->car, REF_TYPE_INTERNAL);
+      visit_type_ref (t->cdr, REF_TYPE_INTERNAL);
+      break;
+#ifdef PIKE_DEBUG
+    case '0':
+    case '1':
+    case '2':
+    case '3':
+    case '4':
+    case '5':
+    case '6':
+    case '7':
+    case '8':
+    case '9':
+    case T_FLOAT:
+    case T_MIXED:
+    case T_VOID:
+    case T_ZERO:
+    case PIKE_T_UNKNOWN:
+    case T_INT:
+    case T_OBJECT:
+      break;
+    default:
+      Pike_fatal("visit_type: Unhandled type-node: %d\n", t->type);
+      break;
+#endif /* PIKE_DEBUG */
+  }
+}
+
+#if defined (PIKE_DEBUG) || defined (DO_PIKE_CLEANUP)
+
 /* This is only enough gc stuff to detect leaking pike_type structs
- * and to get _locate_references and Pike.count_memory working. More
- * is needed if types are extended to contain pointers to other memory
- * objects or if they might contain cycles. */
+ * and to locate references to them. More is needed if types are
+ * extended to contain pointers to other memory objects or if they
+ * might contain cycles. */
+
+void gc_mark_type_as_referenced(struct pike_type *t)
+{
+  if (gc_mark(t)) {
+    GC_ENTER(t, PIKE_T_TYPE) {
+      switch(t->type) {
+      case PIKE_T_SCOPE:
+      case T_ASSIGN:
+      case PIKE_T_NAME:
+      case PIKE_T_ATTRIBUTE:
+	if (t->cdr) gc_mark_type_as_referenced(t->cdr);
+	break;
+      case PIKE_T_FUNCTION:
+      case T_MANY:
+      case PIKE_T_RING:
+      case PIKE_T_TUPLE:
+      case PIKE_T_MAPPING:
+      case T_OR:
+      case T_AND:
+	if (t->cdr) gc_mark_type_as_referenced(t->cdr);
+      /* FALL_THOUGH */
+      case PIKE_T_ARRAY:
+      case PIKE_T_MULTISET:
+      case T_NOT:
+      case PIKE_T_TYPE:
+      case PIKE_T_PROGRAM:
+	if (t->car) gc_mark_type_as_referenced(t->car);
+	break;
+      }      
+    } GC_LEAVE;
+  }
+}
+
+#ifdef PIKE_DEBUG
+static void gc_mark_external_types(struct callback *cb, void *a, void *b)
+{
+  unsigned int e;
+  for (e = 0; e < NELEM (a_markers); e++) {
+    if (a_markers[e])
+      gc_mark_external (a_markers[e], " in a_markers");
+    if (b_markers[e])
+      gc_mark_external (b_markers[e], " in b_markers");
+  }
+
+  if (string0_type_string)
+    gc_mark_external(string0_type_string, " as string0_type_string");
+  if (string_type_string)
+    gc_mark_external(string_type_string, " as string_type_string");
+  if (int_type_string)
+    gc_mark_external(int_type_string, " as int_type_string");
+  if (object_type_string)
+    gc_mark_external(object_type_string, " as object_type_string");
+  if (program_type_string)
+    gc_mark_external(program_type_string, " as program_type_string");
+  if (float_type_string)
+    gc_mark_external(float_type_string, " as float_type_string");
+  if (mixed_type_string)
+    gc_mark_external(mixed_type_string, " as mixed_type_string");
+  if (array_type_string)
+    gc_mark_external(array_type_string, " as array_type_string");
+  if (multiset_type_string)
+    gc_mark_external(multiset_type_string, " as multiset_type_string");
+  if (mapping_type_string)
+    gc_mark_external(mapping_type_string, " as mapping_type_string");
+  if (function_type_string)
+    gc_mark_external(function_type_string, " as function_type_string");
+  if (type_type_string)
+    gc_mark_external(type_type_string, " as type_type_string");
+  if (void_type_string)
+    gc_mark_external(void_type_string, " as void_type_string");
+  if (zero_type_string)
+    gc_mark_external(zero_type_string, " as zero_type_string");
+  if (any_type_string)
+    gc_mark_external(any_type_string, " as any_type_string");
+  if (weak_type_string)
+    gc_mark_external(weak_type_string, " as weak_type_string");
+
+#ifdef DO_PIKE_CLEANUP
+  {
+    struct pike_type_location *t = all_pike_type_locations;
+    while(t) {
+      gc_mark_external (t->t, " as constant type");
+      t = t->next;
+    }
+  }
+#endif
+}
+#endif
 
 void gc_check_type (struct pike_type *t)
 {
@@ -7899,101 +8058,6 @@ void gc_check_type (struct pike_type *t)
     }
   } GC_LEAVE;
 }
-
-void gc_mark_type_as_referenced(struct pike_type *t)
-{
-  if (gc_mark(t)) {
-    if (Pike_in_gc == GC_PASS_COUNT_MEMORY) {
-      gc_counted_bytes += sizeof (struct pike_type);
-      gc_check_type (t);
-    }
-
-    GC_ENTER(t, PIKE_T_TYPE) {
-      switch(t->type) {
-      case PIKE_T_SCOPE:
-      case T_ASSIGN:
-      case PIKE_T_NAME:
-      case PIKE_T_ATTRIBUTE:
-	if (t->cdr) gc_mark_type_as_referenced(t->cdr);
-	break;
-      case PIKE_T_FUNCTION:
-      case T_MANY:
-      case PIKE_T_RING:
-      case PIKE_T_TUPLE:
-      case PIKE_T_MAPPING:
-      case T_OR:
-      case T_AND:
-	if (t->cdr) gc_mark_type_as_referenced(t->cdr);
-      /* FALL_THOUGH */
-      case PIKE_T_ARRAY:
-      case PIKE_T_MULTISET:
-      case T_NOT:
-      case PIKE_T_TYPE:
-      case PIKE_T_PROGRAM:
-	if (t->car) gc_mark_type_as_referenced(t->car);
-	break;
-      }      
-    } GC_LEAVE;
-  }
-}
-
-#if defined (PIKE_DEBUG) || defined (DO_PIKE_CLEANUP)
-
-#ifdef PIKE_DEBUG
-static void gc_mark_external_types(struct callback *cb, void *a, void *b)
-{
-  unsigned int e;
-  for (e = 0; e < NELEM (a_markers); e++) {
-    if (a_markers[e])
-      gc_mark_external (a_markers[e], " in a_markers");
-    if (b_markers[e])
-      gc_mark_external (b_markers[e], " in b_markers");
-  }
-
-  if (string0_type_string)
-    gc_mark_external(string0_type_string, " as string0_type_string");
-  if (string_type_string)
-    gc_mark_external(string_type_string, " as string_type_string");
-  if (int_type_string)
-    gc_mark_external(int_type_string, " as int_type_string");
-  if (object_type_string)
-    gc_mark_external(object_type_string, " as object_type_string");
-  if (program_type_string)
-    gc_mark_external(program_type_string, " as program_type_string");
-  if (float_type_string)
-    gc_mark_external(float_type_string, " as float_type_string");
-  if (mixed_type_string)
-    gc_mark_external(mixed_type_string, " as mixed_type_string");
-  if (array_type_string)
-    gc_mark_external(array_type_string, " as array_type_string");
-  if (multiset_type_string)
-    gc_mark_external(multiset_type_string, " as multiset_type_string");
-  if (mapping_type_string)
-    gc_mark_external(mapping_type_string, " as mapping_type_string");
-  if (function_type_string)
-    gc_mark_external(function_type_string, " as function_type_string");
-  if (type_type_string)
-    gc_mark_external(type_type_string, " as type_type_string");
-  if (void_type_string)
-    gc_mark_external(void_type_string, " as void_type_string");
-  if (zero_type_string)
-    gc_mark_external(zero_type_string, " as zero_type_string");
-  if (any_type_string)
-    gc_mark_external(any_type_string, " as any_type_string");
-  if (weak_type_string)
-    gc_mark_external(weak_type_string, " as weak_type_string");
-
-#ifdef DO_PIKE_CLEANUP
-  {
-    struct pike_type_location *t = all_pike_type_locations;
-    while(t) {
-      gc_mark_external (t->t, " as constant type");
-      t = t->next;
-    }
-  }
-#endif
-}
-#endif
 
 void gc_check_all_types (void)
 {

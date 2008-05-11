@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.205 2008/05/02 04:15:09 mast Exp $
+|| $Id: array.c,v 1.206 2008/05/11 02:35:21 mast Exp $
 */
 
 #include "global.h"
@@ -2595,6 +2595,31 @@ void check_all_arrays(void)
 #endif /* PIKE_DEBUG */
 
 
+void visit_array (struct array *a, int action)
+{
+  switch (action) {
+#ifdef PIKE_DEBUG
+    default:
+      Pike_fatal ("Unknown visit action %d.\n", action);
+    case VISIT_NORMAL:
+    case VISIT_COMPLEX_ONLY:
+      break;
+#endif
+    case VISIT_COUNT_BYTES:
+      mc_counted_bytes += sizeof (struct array) +
+	(a->malloced_size - 1) * sizeof (struct svalue);
+      break;
+  }
+
+  if (a->type_field &
+      (action & VISIT_COMPLEX_ONLY ? BIT_COMPLEX : BIT_REF_TYPES)) {
+    size_t e, s = a->size;
+    int ref_type = a->flags & ARRAY_WEAK_FLAG ? REF_TYPE_WEAK : REF_TYPE_NORMAL;
+    for (e = 0; e < s; e++)
+      visit_svalue (ITEM (a) + e, ref_type);
+  }
+}
+
 static void gc_check_array(struct array *a)
 {
   GC_ENTER (a, T_ARRAY) {
@@ -2614,12 +2639,6 @@ void gc_mark_array_as_referenced(struct array *a)
 {
   if(gc_mark(a))
     GC_ENTER (a, T_ARRAY) {
-      if (Pike_in_gc == GC_PASS_COUNT_MEMORY) {
-	gc_counted_bytes += sizeof (struct array) +
-	  (a->malloced_size - 1) * sizeof (struct svalue);
-	gc_check_array (a);
-      }
-
       if (a == gc_mark_array_pos)
 	gc_mark_array_pos = a->next;
       if (a == gc_internal_array)

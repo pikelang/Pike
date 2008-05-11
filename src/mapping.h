@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.h,v 1.66 2008/01/05 17:58:54 nilsson Exp $
+|| $Id: mapping.h,v 1.67 2008/05/11 02:35:22 mast Exp $
 */
 
 #ifndef MAPPING_H
@@ -372,6 +372,7 @@ PMOD_EXPORT void mapping_search_no_free(struct svalue *to,
 void check_mapping(const struct mapping *m);
 void check_all_mappings(void);
 #endif
+void visit_mapping (struct mapping *m, int action);
 void gc_mark_mapping_as_referenced(struct mapping *m);
 void real_gc_cycle_check_mapping(struct mapping *m, int weak);
 unsigned gc_touch_all_mappings(void);
@@ -388,6 +389,9 @@ int mapping_is_constant(struct mapping *m,
 
 #define allocate_mapping(X) dmalloc_touch(struct mapping *,debug_allocate_mapping(X))
 
+#define visit_mapping_ref(M, REF_TYPE)				\
+  visit_ref (pass_mapping (M), (REF_TYPE),			\
+	     (visit_thing_fn *) &visit_mapping, NULL)
 #define gc_cycle_check_mapping(X, WEAK) \
   gc_cycle_enqueue((gc_cycle_check_cb *) real_gc_cycle_check_mapping, (X), (WEAK))
 

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.h,v 1.94 2008/04/18 19:45:42 grubba Exp $
+|| $Id: object.h,v 1.95 2008/05/11 02:35:22 mast Exp $
 */
 
 #ifndef OBJECT_H
@@ -123,6 +123,8 @@ union anything *object_get_item_ptr(struct object *o,
 PMOD_EXPORT int object_equal_p(struct object *a, struct object *b, struct processing *p);
 PMOD_EXPORT struct array *object_indices(struct object *o);
 PMOD_EXPORT struct array *object_values(struct object *o);
+void visit_object (struct object *o, int action);
+PMOD_EXPORT void visit_function (struct svalue *s, int ref_type);
 PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o);
 PMOD_EXPORT void real_gc_cycle_check_object(struct object *o, int weak);
 unsigned gc_touch_all_objects(void);
@@ -155,6 +157,9 @@ void check_all_objects(void);
 #define master() debug_master()
 #endif
 
+#define visit_object_ref(O, REF_TYPE)				\
+  visit_ref (pass_object (O), (REF_TYPE),			\
+	     (visit_thing_fn *) &visit_object, NULL)
 #define gc_cycle_check_object(X, WEAK) \
   gc_cycle_enqueue((gc_cycle_check_cb *) real_gc_cycle_check_object, (X), (WEAK))
 

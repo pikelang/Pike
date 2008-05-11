@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.289 2008/05/03 13:08:05 mast Exp $
+|| $Id: object.c,v 1.290 2008/05/11 02:35:22 mast Exp $
 */
 
 #include "global.h"
@@ -27,6 +27,7 @@
 #include "module_support.h"
 #include "fdlib.h"
 #include "mapping.h"
+#include "multiset.h"
 #include "constants.h"
 #include "encode.h"
 #include "pike_types.h"
@@ -1820,6 +1821,151 @@ PMOD_EXPORT struct array *object_values(struct object *o)
   return a;
 }
 
+
+void visit_object (struct object *o, int action)
+{
+  struct program *p = o->prog;
+
+  if (o->next == o) return; /* Fake object used by compiler */
+
+  switch (action) {
+#ifdef PIKE_DEBUG
+    default:
+      Pike_fatal ("Unknown visit action %d.\n", action);
+    case VISIT_NORMAL:
+    case VISIT_COMPLEX_ONLY:
+      break;
+#endif
+    case VISIT_COUNT_BYTES:
+      mc_counted_bytes += sizeof (struct object);
+      if (p) mc_counted_bytes += p->storage_needed;
+      break;
+  }
+
+  if (PIKE_OBJ_INITED (o)) {
+    struct pike_frame *pike_frame = NULL;
+    struct inherit *inh = p->inherits;
+    char *storage = o->storage;
+    int e;
+
+    debug_malloc_touch (p);
+    debug_malloc_touch (o);
+    debug_malloc_touch (storage);
+
+    visit_program_ref (p, REF_TYPE_NORMAL);
+
+    for (e = p->num_inherits - 1; e >= 0; e--) {
+      struct program *inh_prog = inh[e].prog;
+      unsigned INT16 *inh_prog_var_idxs = inh_prog->variable_index;
+      struct identifier *inh_prog_ids = inh_prog->identifiers;
+      char *inh_storage = storage + inh[e].storage_offset;
+
+      int q, num_vars = (int) inh_prog->num_variable_index;
+
+      for (q = 0; q < num_vars; q++) {
+	int d = inh_prog_var_idxs[q];
+	struct identifier *id = inh_prog_ids + d;
+	int id_flags = id->identifier_flags;
+	int rtt = id->run_time_type;
+	void *var;
+	union anything *u;
+
+	if (IDENTIFIER_IS_ALIAS (id_flags))
+	  continue;
+
+	var = inh_storage + id->func.offset;
+	u = (union anything *) var;
+#ifdef DEBUG_MALLOC
+	if (rtt <= MAX_REF_TYPE)
+	  debug_malloc_touch (u->ptr);
+#endif
+
+	switch (rtt) {
+	  case T_MIXED: {
+	    struct svalue *s = (struct svalue *) var;
+	    dmalloc_touch_svalue (s);
+	    if ((s->type != T_OBJECT && s->type != T_FUNCTION) ||
+		s->u.object != o ||
+		!(id_flags & IDENTIFIER_NO_THIS_REF))
+	      visit_svalue (s, REF_TYPE_NORMAL);
+	    break;
+	  }
+
+	  case T_ARRAY:
+	    if (u->array)
+	      visit_array_ref (u->array, REF_TYPE_NORMAL);
+	    break;
+	  case T_MAPPING:
+	    if (u->mapping)
+	      visit_mapping_ref (u->mapping, REF_TYPE_NORMAL);
+	    break;
+	  case T_MULTISET:
+	    if (u->multiset)
+	      visit_multiset_ref (u->multiset, REF_TYPE_NORMAL);
+	    break;
+	  case T_PROGRAM:
+	    if (u->program)
+	      visit_program_ref (u->program, REF_TYPE_NORMAL);
+	    break;
+
+	  case T_OBJECT:
+	    if (u->object && (u->object != o ||
+			      !(id_flags & IDENTIFIER_NO_THIS_REF)))
+	      visit_object_ref (u->object, REF_TYPE_NORMAL);
+	    break;
+
+	  case T_STRING:
+	    if (u->string && !(action & VISIT_COMPLEX_ONLY))
+	      visit_string_ref (u->string, REF_TYPE_NORMAL);
+	    break;
+	  case T_TYPE:
+	    if (u->type && !(action & VISIT_COMPLEX_ONLY))
+	      visit_type_ref (u->type, REF_TYPE_NORMAL);
+	    break;
+
+#ifdef PIKE_DEBUG
+	  case PIKE_T_GET_SET:
+	  case T_INT:
+	  case T_FLOAT:
+	    break;
+	  default:
+	    Pike_fatal ("Invalid runtime type %d.\n", rtt);
+#endif
+	}
+      }
+
+      if (inh_prog->event_handler) {
+	if (!pike_frame) PUSH_FRAME2 (o, p);
+	SET_FRAME_CONTEXT (inh + e);
+	inh_prog->event_handler (PROG_EVENT_GC_RECURSE);
+      }
+    }
+
+    if (pike_frame) POP_FRAME2();
+
+    /* Strong ref follows. It must be last. */
+    if (p->flags & PROGRAM_USES_PARENT)
+      if (PARENT_INFO (o)->parent)
+	visit_object_ref (PARENT_INFO (o)->parent, REF_TYPE_STRONG);
+  }
+}
+
+PMOD_EXPORT void visit_function (struct svalue *s, int ref_type)
+{
+#ifdef PIKE_DEBUG
+  if (s->type != T_FUNCTION)
+    Pike_fatal ("Should only be called for a function svalue.\n");
+#endif
+
+  if (s->subtype == FUNCTION_BUILTIN)
+    /* Could avoid this if we had access to the action from the caller
+     * and check if it's VISIT_COMPLEX_ONLY. However, visit_callable
+     * will only return first thing. */
+    visit_callable_ref (s->u.efun, ref_type);
+  else
+    visit_object_ref (s->u.object, ref_type);
+}
+
 static void gc_check_object(struct object *o);
 
 PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o)
@@ -1833,11 +1979,6 @@ PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o)
     GC_ENTER (o, T_OBJECT) {
       int e;
       struct program *p = o->prog;
-
-      if (Pike_in_gc == GC_PASS_COUNT_MEMORY) {
-	if (p) gc_counted_bytes += p->storage_needed + sizeof (struct object);
-	gc_check_object (o);
-      }
 
       if (o == gc_mark_object_pos)
 	gc_mark_object_pos = o->next;

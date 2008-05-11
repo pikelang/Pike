@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.h,v 1.73 2008/05/01 21:44:32 mast Exp $
+|| $Id: array.h,v 1.74 2008/05/11 02:35:21 mast Exp $
 */
 
 #ifndef ARRAY_H
@@ -192,6 +192,7 @@ void array_replace(struct array *a,
 PMOD_EXPORT void check_array(struct array *a);
 void check_all_arrays(void);
 #endif
+void visit_array (struct array *a, int action);
 void gc_mark_array_as_referenced(struct array *a);
 void real_gc_cycle_check_array(struct array *a, int weak);
 unsigned gc_touch_all_arrays(void);
@@ -211,6 +212,9 @@ PMOD_EXPORT struct array *implode_array(struct array *a, struct array *b);
 
 #define array_get_flags(a) ((a)->flags)
 
+#define visit_array_ref(A, REF_TYPE)					\
+  visit_ref (pass_array (A), (REF_TYPE),				\
+	     (visit_thing_fn *) &visit_array, NULL)
 #define gc_cycle_check_array(X, WEAK) \
   gc_cycle_enqueue((gc_cycle_check_cb *) real_gc_cycle_check_array, (X), (WEAK))
 

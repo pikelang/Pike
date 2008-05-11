@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.690 2008/05/10 20:43:25 mast Exp $
+|| $Id: program.c,v 1.691 2008/05/11 02:35:22 mast Exp $
 */
 
 #include "global.h"
@@ -3758,17 +3758,16 @@ PMOD_EXPORT void set_exit_callback(void (*exit)(struct object *))
  * The callback is called after any mapped variables on the object
  * have been recursed (and possibly freed).
  *
- * If there are unmapped pointers to allocated memory then you should
- * add something like this to the recurse callback so that
- * Pike.count_memory remains accurate:
+ * If there are pointers to allocated memory that you keep track of on
+ * the C level then you should add something like this to the recurse
+ * callback so that Pike.count_memory remains accurate:
  *
- *   if (Pike_in_gc == GC_PASS_COUNT_MEMORY)
- *     gc_counted_bytes += <size of the allocated memory block(s)>
+ *   if (mc_count_bytes (Pike_fp->current_storage))
+ *     mc_counted_bytes += <size of the allocated memory block(s)>
  *
  * If the allocated memory is shared between objects then it gets more
- * complicated and you should insert calls to the gc check callback
- * too. See e.g. multiset.c or mapping.c for how to handle that
- * correctly.
+ * complicated and you need to write visit_thing_fn callbacks. See
+ * e.g. visit_mapping and visit_mapping_data for how to do that.
  *
  * This function is obsolete; see pike_set_prog_event_callback for
  * details.
@@ -9416,6 +9415,63 @@ void cleanup_program(void)
   }
 }
 
+
+void visit_program (struct program *p, int action)
+{
+  switch (action) {
+#ifdef PIKE_DEBUG
+    default:
+      Pike_fatal ("Unknown visit action %d.\n", action);
+    case VISIT_NORMAL:
+    case VISIT_COMPLEX_ONLY:
+      break;
+#endif
+    case VISIT_COUNT_BYTES:
+      mc_counted_bytes += p->total_size;
+      break;
+  }
+
+  if (!(p->flags & PROGRAM_AVOID_CHECK)) {
+    int e;
+    struct program_constant *consts = p->constants;
+    struct inherit *inh = p->inherits;
+
+    for (e = p->num_constants - 1; e >= 0; e--)
+      visit_svalue (&consts[e].sval, REF_TYPE_NORMAL);
+
+    for (e = p->num_inherits - 1; e >= 0; e--) {
+      if (inh[e].parent)
+	visit_object_ref (inh[e].parent, REF_TYPE_NORMAL);
+
+      if (e && inh[e].prog)
+	visit_program_ref (inh[e].prog, REF_TYPE_NORMAL);
+    }
+
+    if (!(action & VISIT_COMPLEX_ONLY)) {
+      struct identifier *ids = p->identifiers;
+      struct pike_string **strs = p->strings;
+
+      for (e = p->num_inherits - 1; e >= 0; e--) {
+	if (inh[e].name)
+	  visit_string_ref (inh[e].name, REF_TYPE_NORMAL);
+      }
+
+      for (e = p->num_identifiers - 1; e >= 0; e--) {
+	struct identifier *id = ids + e;
+	visit_string_ref (id->name, REF_TYPE_NORMAL);
+	visit_type_ref (id->type, REF_TYPE_NORMAL);
+      }
+
+      for (e = p->num_strings - 1; e >= 0; e--)
+	visit_string_ref (strs[e], REF_TYPE_NORMAL);
+    }
+
+    /* Strong ref follows. It must be last. */
+    if (p->parent)
+      visit_program_ref (p->parent, REF_TYPE_STRONG);
+  }
+}
+
 static void gc_check_program(struct program *p);
 
 void gc_mark_program_as_referenced(struct program *p)
@@ -9445,11 +9501,6 @@ void gc_mark_program_as_referenced(struct program *p)
   if(gc_mark(p))
     GC_ENTER (p, T_PROGRAM) {
       int e;
-
-      if (Pike_in_gc == GC_PASS_COUNT_MEMORY) {
-	gc_counted_bytes += p->total_size;
-	gc_check_program (p);
-      }
 
       if (p == gc_mark_program_pos)
 	gc_mark_program_pos = p->next;

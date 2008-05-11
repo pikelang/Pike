@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: constants.h,v 1.35 2008/04/26 16:07:39 grubba Exp $
+|| $Id: constants.h,v 1.36 2008/05/11 02:35:22 mast Exp $
 */
 
 #ifndef ADD_EFUN_H
@@ -75,10 +75,14 @@ PMOD_EXPORT struct callable *quick_add_efun(const char *name, ptrdiff_t name_len
 					    int flags,
 					    optimize_fun optimize,
 					    docode_fun docode);
+void visit_callable (struct callable *c, int action);
 void init_builtin_constants(void);
 void exit_builtin_constants(void);
 /* Prototypes end here */
 
+#define visit_callable_ref(C, REF_TYPE)				\
+  visit_ref (pass_callable (C), (REF_TYPE),			\
+	     (visit_thing_fn *) &visit_callable, NULL)
 
 #include "pike_macros.h"
 

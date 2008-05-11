@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.199 2008/05/02 04:15:11 mast Exp $
+|| $Id: mapping.c,v 1.200 2008/05/11 02:35:22 mast Exp $
 */
 
 #include "global.h"
@@ -277,7 +277,7 @@ PMOD_EXPORT void do_free_mapping(struct mapping *m)
     inl_free_mapping(m);
 }
 
-/* This function is used to rehash a mapping without loosing the internal
+/* This function is used to rehash a mapping without losing the internal
  * order in each hash chain. This is to prevent mappings from becoming
  * inefficient just after being rehashed.
  */
@@ -2316,13 +2316,61 @@ void check_all_mappings(void)
 }
 #endif
 
+static void visit_mapping_data (struct mapping_data *md, int action,
+				struct mapping *m)
+{
+  switch (action) {
+#ifdef PIKE_DEBUG
+    default:
+      Pike_fatal ("Unknown visit action %d.\n", action);
+    case VISIT_NORMAL:
+    case VISIT_COMPLEX_ONLY:
+      break;
+#endif
+    case VISIT_COUNT_BYTES:
+      mc_counted_bytes += MAPPING_DATA_SIZE (md->hashsize, md->num_keypairs);
+      break;
+  }
+
+  if ((md->ind_types | md->val_types) &
+      (action & VISIT_COMPLEX_ONLY ? BIT_COMPLEX : BIT_REF_TYPES)) {
+    int ind_ref_type =
+      md->flags & MAPPING_WEAK_INDICES ? REF_TYPE_WEAK : REF_TYPE_NORMAL;
+    int val_ref_type =
+      md->flags & MAPPING_WEAK_VALUES ? REF_TYPE_WEAK : REF_TYPE_NORMAL;
+    INT32 e;
+    struct keypair *k;
+    NEW_MAPPING_LOOP (md) {
+      visit_svalue (&k->ind, ind_ref_type);
+      visit_svalue (&k->val, val_ref_type);
+    }
+  }
+}
+
+void visit_mapping (struct mapping *m, int action)
+{
+  switch (action) {
+#ifdef PIKE_DEBUG
+    default:
+      Pike_fatal ("Unknown visit action %d.\n", action);
+    case VISIT_NORMAL:
+    case VISIT_COMPLEX_ONLY:
+      break;
+#endif
+    case VISIT_COUNT_BYTES:
+      mc_counted_bytes += sizeof (struct mapping);
+      break;
+  }
+
+  visit_ref (m->data, REF_TYPE_INTERNAL,
+	     (visit_thing_fn *) &visit_mapping_data, m);
+}
+
 #ifdef MAPPING_SIZE_DEBUG
 #define DO_IF_MAPPING_SIZE_DEBUG(x) x
 #else
 #define DO_IF_MAPPING_SIZE_DEBUG(x)
 #endif
-
-static void gc_check_md (struct mapping_data *md);
 
 #define GC_RECURSE_MD_IN_USE(MD, RECURSE_FN, IND_TYPES, VAL_TYPES) do { \
   INT32 e;								\
@@ -2338,7 +2386,7 @@ static void gc_check_md (struct mapping_data *md);
 } while (0)
 
 #ifdef PIKE_MAPPING_KEYPAIR_LOOP
-/* NOTE: Broken code below! */
+#error Broken code below!
 #define GC_RECURSE(M, MD, REC_KEYPAIR, TYPE, IND_TYPES, VAL_TYPES) do {	\
     int remove;								\
     struct keypair *k,**prev_;						\
@@ -2465,11 +2513,6 @@ void gc_mark_mapping_as_referenced(struct mapping *m)
     GC_ENTER (m, T_MAPPING) {
       struct mapping_data *md = m->data;
 
-      if (Pike_in_gc == GC_PASS_COUNT_MEMORY) {
-	gc_counted_bytes += sizeof (struct mapping);
-	gc_check (md);
-      }
-
       if (m == gc_mark_mapping_pos)
 	gc_mark_mapping_pos = m->next;
       if (m == gc_internal_mapping)
@@ -2479,52 +2522,44 @@ void gc_mark_mapping_as_referenced(struct mapping *m)
 	DOUBLELINK(first_mapping, m); /* Linked in first. */
       }
 
-      if(gc_mark(md)) {
-	if (Pike_in_gc == GC_PASS_COUNT_MEMORY) {
-	  gc_counted_bytes +=
-	    MAPPING_DATA_SIZE (md->hashsize, md->num_keypairs);
-	  gc_check_md (md);
+      if(gc_mark(md) && ((md->ind_types | md->val_types) & BIT_COMPLEX)) {
+	TYPE_FIELD ind_types = 0, val_types = 0;
+	if (MAPPING_DATA_IN_USE(md)) {
+	  /* Must leave the mapping data untouched if it's busy. */
+	  debug_malloc_touch(m);
+	  debug_malloc_touch(md);
+	  GC_RECURSE_MD_IN_USE(md, gc_mark_svalues, ind_types, val_types);
+	  gc_assert_checked_as_nonweak(md);
 	}
-
-	if ((md->ind_types | md->val_types) & BIT_COMPLEX) {
-	  TYPE_FIELD ind_types = 0, val_types = 0;
-	  if (MAPPING_DATA_IN_USE(md)) {
-	    /* Must leave the mapping data untouched if it's busy. */
-	    debug_malloc_touch(m);
-	    debug_malloc_touch(md);
-	    GC_RECURSE_MD_IN_USE(md, gc_mark_svalues, ind_types, val_types);
-	    gc_assert_checked_as_nonweak(md);
+	else
+	  switch (md->flags & MAPPING_WEAK) {
+	    case 0:
+	      debug_malloc_touch(m);
+	      debug_malloc_touch(md);
+	      GC_RECURSE(m, md, GC_REC_KP, gc_mark, ind_types, val_types);
+	      gc_assert_checked_as_nonweak(md);
+	      break;
+	    case MAPPING_WEAK_INDICES:
+	      debug_malloc_touch(m);
+	      debug_malloc_touch(md);
+	      GC_RECURSE(m, md, GC_REC_KP_IND, gc_mark, ind_types, val_types);
+	      gc_assert_checked_as_weak(md);
+	      break;
+	    case MAPPING_WEAK_VALUES:
+	      debug_malloc_touch(m);
+	      debug_malloc_touch(md);
+	      GC_RECURSE(m, md, GC_REC_KP_VAL, gc_mark, ind_types, val_types);
+	      gc_assert_checked_as_weak(md);
+	      break;
+	    default:
+	      debug_malloc_touch(m);
+	      debug_malloc_touch(md);
+	      GC_RECURSE(m, md, GC_REC_KP_BOTH, gc_mark, ind_types, val_types);
+	      gc_assert_checked_as_weak(md);
+	      break;
 	  }
-	  else
-	    switch (md->flags & MAPPING_WEAK) {
-	      case 0:
-		debug_malloc_touch(m);
-		debug_malloc_touch(md);
-		GC_RECURSE(m, md, GC_REC_KP, gc_mark, ind_types, val_types);
-		gc_assert_checked_as_nonweak(md);
-		break;
-	      case MAPPING_WEAK_INDICES:
-		debug_malloc_touch(m);
-		debug_malloc_touch(md);
-		GC_RECURSE(m, md, GC_REC_KP_IND, gc_mark, ind_types, val_types);
-		gc_assert_checked_as_weak(md);
-		break;
-	      case MAPPING_WEAK_VALUES:
-		debug_malloc_touch(m);
-		debug_malloc_touch(md);
-		GC_RECURSE(m, md, GC_REC_KP_VAL, gc_mark, ind_types, val_types);
-		gc_assert_checked_as_weak(md);
-		break;
-	      default:
-		debug_malloc_touch(m);
-		debug_malloc_touch(md);
-		GC_RECURSE(m, md, GC_REC_KP_BOTH, gc_mark, ind_types,val_types);
-		gc_assert_checked_as_weak(md);
-		break;
-	    }
-	  md->val_types = val_types;
-	  md->ind_types = ind_types;
-	}
+	md->val_types = val_types;
+	md->ind_types = ind_types;
       }
     } GC_LEAVE;
 }
@@ -2583,45 +2618,52 @@ void real_gc_cycle_check_mapping(struct mapping *m, int weak)
   } GC_CYCLE_LEAVE;
 }
 
-static void gc_check_md (struct mapping_data *md)
+static void gc_check_mapping(struct mapping *m)
 {
-  INT32 e;
-  struct keypair *k;
+  struct mapping_data *md = m->data;
 
-  if (!(md->flags & MAPPING_WEAK) || MAPPING_DATA_IN_USE(md))
-    /* Disregard the weak flag if the mapping data is busy; we must
-     * leave it untouched in that case anyway. */
-    NEW_MAPPING_LOOP(md)
-    {
-      debug_gc_check_svalues(&k->ind, 1, " as mapping index");
-      debug_gc_check_svalues(&k->val, 1, " as mapping value");
-    }
-  else {
-    switch (md->flags & MAPPING_WEAK) {
-      case MAPPING_WEAK_INDICES:
-	NEW_MAPPING_LOOP(md)
-	{
-	  debug_gc_check_weak_svalues(&k->ind, 1, " as mapping index");
-	  debug_gc_check_svalues(&k->val, 1, " as mapping value");
+  if((md->ind_types | md->val_types) & BIT_COMPLEX)
+    GC_ENTER (m, T_MAPPING) {
+      INT32 e;
+      struct keypair *k;
+
+      if(!debug_gc_check (md, " as mapping data block of a mapping")) {
+	if (!(md->flags & MAPPING_WEAK) || MAPPING_DATA_IN_USE(md))
+	  /* Disregard the weak flag if the mapping data is busy; we must
+	   * leave it untouched in that case anyway. */
+	  NEW_MAPPING_LOOP(md)
+	  {
+	    debug_gc_check_svalues(&k->ind, 1, " as mapping index");
+	    debug_gc_check_svalues(&k->val, 1, " as mapping value");
+	  }
+	else {
+	  switch (md->flags & MAPPING_WEAK) {
+	    case MAPPING_WEAK_INDICES:
+	      NEW_MAPPING_LOOP(md)
+	      {
+		debug_gc_check_weak_svalues(&k->ind, 1, " as mapping index");
+		debug_gc_check_svalues(&k->val, 1, " as mapping value");
+	      }
+	      break;
+	    case MAPPING_WEAK_VALUES:
+	      NEW_MAPPING_LOOP(md)
+	      {
+		debug_gc_check_svalues(&k->ind, 1, " as mapping index");
+		debug_gc_check_weak_svalues(&k->val, 1, " as mapping value");
+	      }
+	      break;
+	    default:
+	      NEW_MAPPING_LOOP(md)
+	      {
+		debug_gc_check_weak_svalues(&k->ind, 1, " as mapping index");
+		debug_gc_check_weak_svalues(&k->val, 1, " as mapping value");
+	      }
+	      break;
+	  }
+	  gc_checked_as_weak(md);
 	}
-	break;
-      case MAPPING_WEAK_VALUES:
-	NEW_MAPPING_LOOP(md)
-	{
-	  debug_gc_check_svalues(&k->ind, 1, " as mapping index");
-	  debug_gc_check_weak_svalues(&k->val, 1, " as mapping value");
-	}
-	break;
-      default:
-	NEW_MAPPING_LOOP(md)
-	{
-	  debug_gc_check_weak_svalues(&k->ind, 1, " as mapping index");
-	  debug_gc_check_weak_svalues(&k->val, 1, " as mapping value");
-	}
-	break;
-    }
-    gc_checked_as_weak(md);
-  }
+      }
+    } GC_LEAVE;
 }
 
 unsigned gc_touch_all_mappings(void)
@@ -2645,22 +2687,15 @@ void gc_check_all_mappings(void)
 
   for(m=first_mapping;m;m=m->next)
   {
-    struct mapping_data *md = m->data;
-
 #ifdef DEBUG_MALLOC
-    if (((int) PTR_TO_INT (md)) == 0x55555555) {
+    if (((int) PTR_TO_INT (m->data)) == 0x55555555) {
       fprintf(stderr, "** Zapped mapping in list of active mappings!\n");
       describe_something(m, T_MAPPING, 0,2,0, NULL);
       Pike_fatal("Zapped mapping in list of active mappings!\n");
     }
 #endif /* DEBUG_MALLOC */
 
-    if((md->ind_types | md->val_types) & BIT_COMPLEX)
-      GC_ENTER (m, T_MAPPING) {
-	if(!debug_gc_check (md, " as mapping data block of a mapping"))
-	  gc_check_md (md);
-      } GC_LEAVE;
-
+    gc_check_mapping(m);
 #ifdef PIKE_DEBUG
     if(d_flag > 1) check_mapping_type_fields(m);
 #endif
