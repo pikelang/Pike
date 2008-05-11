@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpq.cmod,v 1.27 2008/05/02 04:15:18 mast Exp $
+|| $Id: mpq.cmod,v 1.28 2008/05/11 02:38:27 mast Exp $
 */
 
 #include "global.h"
@@ -940,8 +940,8 @@ PIKECLASS mpq
 
   GC_RECURSE
   {
-    if (Pike_in_gc == GC_PASS_COUNT_MEMORY)
-      gc_counted_bytes +=
+    if (mc_count_bytes (THIS))
+      mc_counted_bytes +=
 #ifdef MPZ_T_HAS__MP_ALLOC
 	mpq_numref (THISMPQ)[0]._mp_alloc * sizeof (mp_limb_t) +
 	mpq_denref (THISMPQ)[0]._mp_alloc * sizeof (mp_limb_t) +
