@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: jvm.c,v 1.89 2008/02/17 20:01:25 marcus Exp $
+|| $Id: jvm.c,v 1.90 2008/05/11 22:51:03 mast Exp $
 */
 
 /*
@@ -3408,8 +3408,12 @@ static void f_create(INT32 args)
 
   /* load and initialize a Java VM, return a JNI interface 
    * pointer in env */
-  if(JNI_CreateJavaVM(&j->jvm, (void**)&j->env, &j->vm_args))
-    Pike_error( "Failed to create virtual machine\n" );
+  {
+    union {JNIEnv **envp; void **vp;} p_cnv; /* To avoid aliasing. */
+    p_cnv.envp = &j->env;
+    if(JNI_CreateJavaVM(&j->jvm, p_cnv.vp, &j->vm_args))
+      Pike_error( "Failed to create virtual machine\n" );
+  }
 
   /* Java tries to be a wiseguy with the locale... */
 #ifdef HAVE_SETLOCALE
