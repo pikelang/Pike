@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.310 2008/05/04 04:48:32 mast Exp $
+|| $Id: gc.c,v 1.311 2008/05/11 02:31:57 mast Exp $
 */
 
 #include "global.h"
@@ -26,10 +26,11 @@ struct callback *gc_evaluator_callback=0;
 #include "interpret.h"
 #include "bignum.h"
 #include "pike_threadlib.h"
-
 #include "gc.h"
 #include "main.h"
+
 #include <math.h>
+#include <assert.h>
 
 #include "block_alloc.h"
 
@@ -110,7 +111,6 @@ PMOD_EXPORT int Pike_in_gc = 0;
 int gc_generation = 0;
 time_t last_gc;
 int gc_trace = 0, gc_debug = 0;
-PMOD_EXPORT size_t gc_counted_bytes;
 #ifdef DO_PIKE_CLEANUP
 int gc_destruct_everything = 0;
 #endif
@@ -189,7 +189,7 @@ static struct gc_rec_frame *kill_list = &sentinel_frame;
  * When a thing is recursed into, a gc_rec_frame is pushed onto the
  * recursion stack whose top pointer is stack_top. After that the
  * links emanating from that thing are collected through the
- * gc_cycle_check_* function and pushed as link_frames onto a link
+ * gc_cycle_check_* functions and pushed as link_frames onto a link
  * stack that is specific to the rec frame. gc_rec_frame.u.link_top is
  * the top pointer of that stack. The link frames are then popped off
  * again one by one. If the thing that the link points to hasn't been
@@ -519,7 +519,7 @@ static void gc_cycle_pop();
 #undef find_marker
 #define find_marker debug_find_marker
 
-PTR_HASH_ALLOC_FILL_PAGES(marker,2)
+PTR_HASH_ALLOC_FIXED_FILL_PAGES(marker,2)
 
 #undef get_marker
 #define get_marker(X) ((struct marker *) debug_malloc_pass(debug_get_marker(X)))
@@ -1786,7 +1786,7 @@ static INLINE struct marker *gc_check_debug(void *a, int weak)
 	   gc_found_place ? gc_found_place : "");
 #endif
 
-  if (Pike_in_gc != GC_PASS_CHECK && Pike_in_gc != GC_PASS_COUNT_MEMORY)
+  if (Pike_in_gc != GC_PASS_CHECK)
     Pike_fatal("gc check attempted in invalid pass.\n");
 
   m = get_marker(a);
@@ -2372,10 +2372,9 @@ int gc_mark(void *a)
   struct marker *m;
 
 #ifdef PIKE_DEBUG
-  if ((Pike_in_gc == GC_PASS_ZAP_WEAK || Pike_in_gc == GC_PASS_COUNT_MEMORY) &&
-      !find_marker (a))
+  if (Pike_in_gc == GC_PASS_ZAP_WEAK && !find_marker (a))
     gc_fatal (a, 0, "gc_mark() called for for thing without marker "
-	      "in pass %d.\n", Pike_in_gc);
+	      "in zap weak pass.\n");
 #endif
 
   m = get_marker (a);
@@ -2389,72 +2388,54 @@ int gc_mark(void *a)
     gc_watched_found (m, "gc_mark()");
   }
   if (!a) Pike_fatal("Got null pointer.\n");
-  if (Pike_in_gc != GC_PASS_MARK && Pike_in_gc != GC_PASS_ZAP_WEAK &&
-      Pike_in_gc != GC_PASS_COUNT_MEMORY)
+  if (Pike_in_gc != GC_PASS_MARK && Pike_in_gc != GC_PASS_ZAP_WEAK)
     Pike_fatal("GC mark attempted in invalid pass.\n");
   if (!*(INT32 *) a)
     gc_fatal(a, 0, "Marked a thing without refs.\n");
-  if (m->weak_refs < 0 && Pike_in_gc != GC_PASS_COUNT_MEMORY)
+  if (m->weak_refs < 0)
     gc_fatal(a, 0, "Marking thing scheduled for weak free.\n");
 #endif
 
-  switch (Pike_in_gc) {
-    case GC_PASS_ZAP_WEAK:
-      /* Things are visited in the zap weak pass through the mark
-       * functions to free refs to internal things that only got weak
-       * external references. That happens only when a thing also have
-       * internal cyclic nonweak refs. */
+  if (Pike_in_gc == GC_PASS_ZAP_WEAK) {
+    /* Things are visited in the zap weak pass through the mark
+     * functions to free refs to internal things that only got weak
+     * external references. That happens only when a thing also have
+     * internal cyclic nonweak refs. */
 #ifdef PIKE_DEBUG
-      if (!(m->flags & GC_MARKED))
-	gc_fatal(a, 0, "gc_mark() called for thing in zap weak pass "
-		 "that wasn't marked before.\n");
+    if (!(m->flags & GC_MARKED))
+      gc_fatal(a, 0, "gc_mark() called for thing in zap weak pass "
+	       "that wasn't marked before.\n");
 #endif
-      if (m->flags & GC_FREE_VISITED) {
-	debug_malloc_touch (a);
-	return 0;
-      }
-      else {
-	debug_malloc_touch (a);
-	m->flags |= GC_FREE_VISITED;
-	return 1;
-      }
+    if (m->flags & GC_FREE_VISITED) {
+      debug_malloc_touch (a);
+      return 0;
+    }
+    else {
+      debug_malloc_touch (a);
+      m->flags |= GC_FREE_VISITED;
+      return 1;
+    }
+  }
 
-    case GC_PASS_COUNT_MEMORY:
-      if (m->flags & GC_NOT_REFERENCED) {
-	/* All refs to this thing are internal, so return true to get
-	 * it counted and recursed. */
-	debug_malloc_touch (a);
-	m->flags = (m->flags & ~GC_NOT_REFERENCED) | GC_MARKED;
-	DO_IF_DEBUG(marked++);
-	return 1;
-      }
-
-      else {
-	debug_malloc_touch (a);
-	return 0;
-      }
-
-    default:
-      if (m->flags & GC_MARKED) {
-	debug_malloc_touch (a);
+  else if (m->flags & GC_MARKED) {
+    debug_malloc_touch (a);
 #ifdef PIKE_DEBUG
-	if (m->weak_refs != 0)
-	  gc_fatal (a, 0, "weak_refs changed in marker "
-		    "already visited by gc_mark().\n");
+    if (m->weak_refs != 0)
+      gc_fatal (a, 0, "weak_refs changed in marker "
+		"already visited by gc_mark().\n");
 #endif
-	return 0;
-      }
+    return 0;
+  }
 
-      else {
-	debug_malloc_touch (a);
-	if (m->weak_refs) {
-	  gc_ext_weak_refs -= m->weak_refs;
-	  m->weak_refs = 0;
-	}
-	m->flags = (m->flags & ~GC_NOT_REFERENCED) | GC_MARKED;
-	DO_IF_DEBUG(marked++);
-	return 1;
-      }
+  else {
+    debug_malloc_touch (a);
+    if (m->weak_refs) {
+      gc_ext_weak_refs -= m->weak_refs;
+      m->weak_refs = 0;
+    }
+    m->flags = (m->flags & ~GC_NOT_REFERENCED) | GC_MARKED;
+    DO_IF_DEBUG(marked++);
+    return 1;
   }
 }
 
@@ -4023,7 +4004,568 @@ void dump_gc_info(void)
   fprintf(stderr,"in_gc                      : %d\n", Pike_in_gc);
 }
 
-/*! @decl int count_memory (zero flags, @
+void cleanup_gc(void)
+{
+#ifdef PIKE_DEBUG
+  if (gc_evaluator_callback) {
+    remove_callback(gc_evaluator_callback);
+    gc_evaluator_callback = NULL;
+  }
+#endif /* PIKE_DEBUG */
+}
+
+/* Visit things API */
+
+PMOD_EXPORT visit_ref_cb *visit_ref = NULL;
+
+/* Be careful if extending this with internal types like
+ * T_MAPPING_DATA and T_MULTISET_DATA; there's code that assumes
+ * type_from_visit_fn only returns types that fit in a TYPE_FIELD. */
+PMOD_EXPORT visit_thing_fn *const visit_fn_from_type[MAX_REF_TYPE + 1] = {
+  (visit_thing_fn *) &visit_array,
+  (visit_thing_fn *) &visit_mapping,
+  (visit_thing_fn *) &visit_multiset,
+  (visit_thing_fn *) &visit_object,
+  /* visit_function must be called with a whole svalue, so it's not
+   * included here. */
+  (visit_thing_fn *) (ptrdiff_t) -1,
+  (visit_thing_fn *) &visit_program,
+  (visit_thing_fn *) &visit_string,
+  (visit_thing_fn *) &visit_type,
+};
+
+PMOD_EXPORT TYPE_T type_from_visit_fn (visit_thing_fn *fn)
+{
+  /* Since the array to search is so small, linear search is probably
+   * fastest. */
+  unsigned t;
+  for (t = 0; t < NELEM (visit_fn_from_type); t++)
+    if (visit_fn_from_type[t] == fn)
+      return (TYPE_T) t;
+  return PIKE_T_UNKNOWN;
+}
+
+/* Memory count mode
+ *
+ * This mode is used by f_count_memory, and it's recognized by a
+ * nonzero value in mc_pass. The cycle check functions are reused but
+ * work completely differently when mc_pass is set, and it takes
+ * precedence over Pike_in_gc.
+ *
+ * The basic idea is to follow and count all refs from the starting
+ * point things given to f_count_memory. Whenever the counted refs add
+ * up to the refcount for a thing, that thing is known to have only
+ * internal refs, and so it's memory counted and then all its refs are
+ * followed too.
+ *
+ * To cope with internal cyclic refs, there's a "lookahead" algorithm
+ * which recurses through more things in the hope of finding cycles
+ * that otherwise would make us miss internal refs. This lookahead is
+ * limited by mc_lookahead and mc_block_lookahead.
+ *
+ * All things are categorized as follows:
+ *
+ * o  Internal things: These are known to have only internal
+ *    references and are memory counted. The things given to
+ *    f_count_memory as starting points are initially asserted to be
+ *    internal regardless of how many refs they got.
+ *
+ * o  Lookahead things: A lookahead thing is one that has been found
+ *    by following refs from an internal thing.
+ *
+ *    Every lookahead thing has a distance which is the number of refs
+ *    that were followed from an internal thing to reach it. If a
+ *    lookahead thing later on is found through another path with
+ *    fewer refs, its distance is lowered so that it eventually
+ *    reflects the shortest path. The traversal stops when the
+ *    distance reaches mc_lookahead (or if the type is blocked by
+ *    mc_block_lookahead).
+ *
+ *    Lookahead things are further divided into three categories:
+ *
+ *    o  Incomplete: Things whose refcounts (still) are higher than
+ *       all refs coming to them from both internal and lookahead
+ *       things.
+ *    o  Complete: Things whose refs from internal and lookahead
+ *       things equal their refcounts. I.e. we've found all refs going
+ *       to these.
+ *    o  Indirectly incomplete: In MC_PASS_MARK_EXTERNAL, these are
+ *       all the complete things found to be referenced by incomplete
+ *       things.
+ *
+ *    These sets are tracked through three double linked lists,
+ *    mc_incomplete, mc_complete, and mc_indirect respectively.
+ *
+ * o  Unvisited things: Everything else that hasn't been visited yet.
+ *
+ * For every visited thing we record the number of refs from internal
+ * things (int_refs) and from lookahead things (la_refs).
+ *
+ * The basic algorithm for finding all internal things works like
+ * this:
+ *
+ * First the starting point things are labelled internal and put into
+ * the work list (mc_work_list).
+ *
+ * mc_pass is set to MC_PASS_LOOKAHEAD:
+ *
+ * We do a breadth-first recursion through the things in the work list
+ * until we reach the mc_lookahead distance.
+ *
+ * Every time we visit something we calculate its distance as either
+ * the same as the distance of the source thing (if the target is
+ * found to be internal or if the followed ref is REF_TYPE_INTERNAL),
+ * or the next greater distance (otherwise). If the distance is lower
+ * than mc_lookahead and the thing is either new or its current
+ * distance is greater, it's added to the work list.
+ *
+ * Since new things always are added to the work list at the same or
+ * the next greater distance, it will never hold things at more than
+ * two distances at once. Thus we can simply enqueue things at the
+ * same distance first and those at the next distance last.
+ *
+ * We might however need to dequeue something at the greater distance
+ * to be able to reenqueue it at the same distance. mc_work_list is
+ * double linked to be able to dequeue quickly.
+ *
+ * int_refs and la_refs are updated when things are visited. They
+ * become internal if int_refs add up to the refcount. Otherwise they
+ * are put in the incomplete or complete sets as appropriate.
+ *
+ * mc_pass is set to MC_PASS_MARK_EXTERNAL:
+ *
+ * At this point the set of lookahead things is complete (as far as we
+ * are concerned), and it's divided into complete and incomplete
+ * lookahead things. All references in the incomplete list are
+ * followed to build up the set of indirectly incomplete things. The
+ * incomplete and indirectly incomplete things are referenced
+ * externally and should not be memory counted.
+ *
+ * If there's anything left in the complete list then it's internal
+ * cyclic stuff. In that case we put those things into the work list
+ * at distance zero, move the indirectly incomplete list back to
+ * complete and repeat MC_PASS_LOOKAHEAD. Otherwise we're done.
+ */
+
+/* #define MEMORY_COUNT_DEBUG */
+
+PMOD_EXPORT int mc_pass;
+PMOD_EXPORT size_t mc_counted_bytes;
+
+static unsigned mc_lookahead;
+static TYPE_FIELD mc_block_lookahead;
+static TYPE_FIELD mc_block_lookahead_default = BIT_PROGRAM|BIT_STRING;
+/* Strings are blocked because they don't contain refs. */
+
+static unsigned mc_ext_toggle_bias = 0;
+
+#define MC_PASS_LOOKAHEAD 1
+#define MC_PASS_MARK_EXTERNAL 2
+
+/* Set in when the refs emanating from a thing have been counted. */
+#define MC_FLAG_REFCOUNTED	0x01
+
+/* Set when a thing has become internal. */
+#define MC_FLAG_INTERNAL	0x02
+
+/* Set when a thing has been called with VISIT_COUNT_BYTES (after the
+ * visit function has returned). */
+#define MC_FLAG_MEMCOUNTED	0x04
+
+/* A toggle flag to mark external (i.e. incomplete and indirectly
+ * incomplete) things in MC_PASS_MARK_EXTERNAL so that we don't
+ * recurse them repeatedly. If mc_ext_toggle_bias is zero then it's
+ * external if this is set. If mc_ext_toggle_bias is one then it's
+ * external if this is cleared. mc_ext_toggle_bias toggles every time
+ * we leave MC_PASS_MARK_EXTERNAL, thus we avoid the work to go
+ * through the externals clear the flag for the next round. */
+#define MC_FLAG_EXT_TOGGLE	0x08
+
+#define IS_EXTERNAL(M)							\
+  (((M)->flags ^ mc_ext_toggle_bias) & MC_FLAG_EXT_TOGGLE)
+#define INIT_CLEARED_EXTERNAL(M) do {					\
+    struct mc_marker *_m = (M);						\
+    if (mc_ext_toggle_bias) _m->flags |= MC_FLAG_EXT_TOGGLE;		\
+  } while (0)
+#define FLAG_EXTERNAL(M) do {						\
+    struct mc_marker *_m = (M);						\
+    assert (!IS_EXTERNAL (_m));						\
+    _m->flags ^= MC_FLAG_EXT_TOGGLE;					\
+  } while (0)
+#define TOGGLE_EXT_FLAGS() do {						\
+    mc_ext_toggle_bias ^= MC_FLAG_EXT_TOGGLE;				\
+  } while (0)
+
+struct mc_marker
+{
+  struct mc_marker *hash_next;	/* Used by PTR_HASH_ALLOC. */
+  struct mc_marker *wl_prev;	/* Work list pointers. wl_next is NULL for */
+  struct mc_marker *wl_next;	/*   things not on the work list. */
+  struct mc_marker *dl_prev;	/* For the mc_incomplete, mc_complete and */
+  struct mc_marker *dl_next;	/*   mc_indirect lists. Used iff not internal.*/
+  void *thing;			/* Referenced thing. */
+  visit_thing_fn *visit_fn;	/* Visit function for it */
+  void *extra;			/*   and its extra data. */
+  INT32 int_refs;		/* These refcounts are bogus */
+  INT32 la_refs;		/*   for internal things. */
+  unsigned INT32 dist;		/* Distance. */
+  unsigned INT16 flags;
+};
+
+#undef BLOCK_ALLOC_NEXT
+#undef BLOCK_ALLOC_NEXT
+#define BLOCK_ALLOC_NEXT hash_next
+#undef PTR_HASH_ALLOC_DATA
+#define PTR_HASH_ALLOC_DATA thing
+#undef INIT_BLOCK
+#define INIT_BLOCK(f)
+#undef EXIT_BLOCK
+#define EXIT_BLOCK(f)
+
+PTR_HASH_ALLOC_FILL_PAGES (mc_marker, 2)
+
+static struct mc_marker *my_make_mc_marker (void *thing,
+					    visit_thing_fn *visit_fn,
+					    void *extra)
+{
+  struct mc_marker *m = make_mc_marker (thing);
+  assert (thing);
+  assert (visit_fn);
+  m->thing = thing;
+  m->visit_fn = visit_fn;
+  m->extra = extra;
+  m->int_refs = m->la_refs = m->flags = 0;
+  INIT_CLEARED_EXTERNAL (m);
+  m->wl_next = NULL;
+#ifdef PIKE_DEBUG
+  m->wl_prev = m->dl_prev = m->dl_next = (void *) (ptrdiff_t) -1;
+  m->dist = MAX_UINT32;
+#endif
+  return m;
+}
+
+#if defined (PIKE_DEBUG) || defined (MEMORY_COUNT_DEBUG)
+static void describe_mc_marker (struct mc_marker *m)
+{
+  fprintf (stderr, "%s %p: refs %d, int %d, la %d, dist %d",
+	   get_name_of_type (type_from_visit_fn (m->visit_fn)),
+	   m->thing, *(INT32 *) m->thing, m->int_refs, m->la_refs, m->dist);
+  if (m->flags & MC_FLAG_REFCOUNTED) fputs (", RC", stderr);
+  if (m->flags & MC_FLAG_INTERNAL) fputs (", INT", stderr);
+  if (m->flags & MC_FLAG_MEMCOUNTED) fputs (", MC", stderr);
+  if (IS_EXTERNAL (m)) fputs (", EXT", stderr);
+  if (m->wl_next) fputs (", on wl", stderr);
+}
+#endif
+
+static struct mc_marker mc_work_list = {
+  /* Sentinel. The work list starts at work_list.wl_next. */
+  (void *) (ptrdiff_t) -1,
+  &mc_work_list, &mc_work_list,
+  (void *) (ptrdiff_t) -1, (void *) (ptrdiff_t) -1,
+  (void *) (ptrdiff_t) -1, (void *) (ptrdiff_t) -1, (void *) (ptrdiff_t) -1,
+  -1, -1, -1, -1
+};
+
+#define WL_ADD_FIRST(M) do {						\
+    struct mc_marker *_m = (M);						\
+    struct mc_marker *_list_next = mc_work_list.wl_next;		\
+    DO_IF_DEBUG (assert (_m->wl_prev == (void *) (ptrdiff_t) -1));	\
+    assert (_m->wl_next == NULL);					\
+    _m->wl_prev = &mc_work_list;					\
+    _m->wl_next = _list_next;						\
+    mc_work_list.wl_next = _list_next->wl_prev = _m;			\
+  } while (0)
+
+#define WL_ADD_LAST(M) do {						\
+    struct mc_marker *_m = (M);						\
+    struct mc_marker *_list_prev = mc_work_list.wl_prev;		\
+    DO_IF_DEBUG (assert (_m->wl_prev == (void *) (ptrdiff_t) -1));	\
+    assert (_m->wl_next == NULL);					\
+    _m->wl_prev = _list_prev;						\
+    _m->wl_next = &mc_work_list;					\
+    mc_work_list.wl_prev = _list_prev->wl_next = _m;			\
+  } while (0)
+
+#define WL_REMOVE(M) do {						\
+    struct mc_marker *_m = (M);						\
+    struct mc_marker *_list_prev = _m->wl_prev;				\
+    struct mc_marker *_list_next = _m->wl_next;				\
+    assert (_m->wl_prev != (void *) (ptrdiff_t) -1);			\
+    assert (_m->wl_next != (void *) (ptrdiff_t) -1);			\
+    _list_prev->wl_next = _list_next;					\
+    _list_next->wl_prev = _list_prev;					\
+    DO_IF_DEBUG (_m->wl_prev = (void *) (ptrdiff_t) -1);		\
+    _m->wl_next = NULL;							\
+  } while (0)
+
+static INLINE void mc_wl_enqueue_first (struct mc_marker *m)
+{
+  if (m->wl_next) WL_REMOVE (m);
+  WL_ADD_FIRST (m);
+}
+
+static INLINE void mc_wl_enqueue_last (struct mc_marker *m)
+{
+  /* Note: Does not try to remove from the queue first. */
+  WL_ADD_LAST (m);
+}
+
+static INLINE struct mc_marker *mc_wl_dequeue()
+{
+  struct mc_marker *m = mc_work_list.wl_next;
+  if (m != &mc_work_list) {
+    WL_REMOVE (m);
+    return m;
+  }
+  return NULL;
+}
+
+static struct mc_marker mc_incomplete = {
+  /* Sentinel for the incomplete lookaheads list. */
+  (void *) (ptrdiff_t) -1,
+  (void *) (ptrdiff_t) -1, (void *) (ptrdiff_t) -1,
+  &mc_incomplete, &mc_incomplete,
+  (void *) (ptrdiff_t) -1, (void *) (ptrdiff_t) -1, (void *) (ptrdiff_t) -1,
+  -1, -1, -1, -1
+};
+
+static struct mc_marker mc_complete = {
+  /* Sentinel for the complete lookaheads list. */
+  (void *) (ptrdiff_t) -1,
+  (void *) (ptrdiff_t) -1, (void *) (ptrdiff_t) -1,
+  &mc_complete, &mc_complete,
+  (void *) (ptrdiff_t) -1, (void *) (ptrdiff_t) -1, (void *) (ptrdiff_t) -1,
+  -1, -1, -1, -1
+};
+
+static struct mc_marker mc_indirect = {
+  /* Sentinel for the indirectly incomplete lookaheads list. */
+  (void *) (ptrdiff_t) -1,
+  (void *) (ptrdiff_t) -1, (void *) (ptrdiff_t) -1,
+  &mc_indirect, &mc_indirect,
+  (void *) (ptrdiff_t) -1, (void *) (ptrdiff_t) -1, (void *) (ptrdiff_t) -1,
+  -1, -1, -1, -1
+};
+
+#define DL_IS_EMPTY(LIST) (LIST.dl_next == &LIST)
+
+#define DL_ADD(LIST, M) do {						\
+    struct mc_marker *_m = (M);						\
+    struct mc_marker *_list_next = LIST.dl_next;			\
+    DO_IF_DEBUG (							\
+      assert (_m->dl_prev == (void *) (ptrdiff_t) -1);			\
+      assert (_m->dl_next == (void *) (ptrdiff_t) -1);			\
+    );									\
+    _m->dl_prev = &LIST;						\
+    _m->dl_next = _list_next;						\
+    LIST.dl_next = _list_next->dl_prev = _m;				\
+  } while (0)
+
+#define DL_REMOVE(M) do {						\
+    struct mc_marker *_m = (M);						\
+    struct mc_marker *_list_prev = _m->dl_prev;				\
+    struct mc_marker *_list_next = _m->dl_next;				\
+    assert (_m->dl_prev != (void *) (ptrdiff_t) -1);			\
+    assert (_m->dl_next != (void *) (ptrdiff_t) -1);			\
+    _list_prev->dl_next = _list_next;					\
+    _list_next->dl_prev = _list_prev;					\
+    DO_IF_DEBUG (_m->dl_prev = _m->dl_next = (void *) (ptrdiff_t) -1);	\
+  } while (0)
+
+#define DL_MOVE(FROM_LIST, TO_LIST) do {				\
+    assert (TO_LIST.dl_prev == &TO_LIST);				\
+    assert (TO_LIST.dl_next == &TO_LIST);				\
+    if (FROM_LIST.dl_next != &FROM_LIST) {				\
+      TO_LIST.dl_prev = FROM_LIST.dl_prev;				\
+      TO_LIST.dl_next = FROM_LIST.dl_next;				\
+      FROM_LIST.dl_prev->dl_next = &TO_LIST;				\
+      FROM_LIST.dl_next->dl_prev = &TO_LIST;				\
+      FROM_LIST.dl_prev = FROM_LIST.dl_next = &FROM_LIST;		\
+    }									\
+  } while (0)
+
+#define DL_MAKE_EMPTY(LIST) do {					\
+    LIST.dl_prev = LIST.dl_next = &LIST;				\
+  } while (0)
+
+static struct mc_marker *mc_ref_from = (void *) (ptrdiff_t) -1;
+
+#ifdef MEMORY_COUNT_DEBUG
+static void MC_DEBUG_MSG (struct mc_marker *m, const char *msg)
+{
+  switch (mc_pass) {
+    case MC_PASS_LOOKAHEAD: fputs ("LA ", stderr); break;
+    case MC_PASS_MARK_EXTERNAL: fputs ("ME ", stderr); break;
+  }
+  if (m) {
+    if (mc_ref_from != (void *) (ptrdiff_t) -1) fputs ("  [", stderr);
+    else fputs ("[", stderr);
+    describe_mc_marker (m);
+    fprintf (stderr, "] %s\n", msg);
+  }
+  else if (mc_ref_from != (void *) (ptrdiff_t) -1) {
+    fputs ("{", stderr);
+    describe_mc_marker (mc_ref_from);
+    fprintf (stderr, "} %s\n", msg);
+  }
+}
+#else
+#define MC_DEBUG_MSG(m, msg) do {} while (0)
+#endif
+
+/* memory_count_enter gets called both from the gc_check_* calls we
+ * make for each thing in the work list, and also from the calls made
+ * through the gc_check_* functions for each reference inside the
+ * things. We use mc_has_entered_thing to figure out which. */
+
+static void pass_lookahead_visit_ref (void *thing, int ref_type,
+				      visit_thing_fn *visit_fn, void *extra)
+{
+  struct mc_marker *ref_to = find_mc_marker (thing);
+  int ref_to_is_new = !ref_to;
+  unsigned cur_dist;
+  int ref_from_flags;
+
+  assert (mc_pass == MC_PASS_LOOKAHEAD);
+#ifdef PIKE_DEBUG
+  assert (mc_ref_from != (void *) (ptrdiff_t) -1);
+#endif
+
+  cur_dist = mc_ref_from->dist;
+  ref_from_flags = mc_ref_from->flags;
+
+  if (ref_to_is_new) {
+    ref_to = my_make_mc_marker (thing, visit_fn, extra);
+    MC_DEBUG_MSG (ref_to, "visiting new thing");
+    assert (!(ref_from_flags & MC_FLAG_REFCOUNTED));
+  }
+  else if (ref_to->flags & MC_FLAG_INTERNAL) {
+    /* Ignore refs to internal things. Can't treat them like other
+     * things anyway since the int_refs aren't valid for the starting
+     * points. */
+    MC_DEBUG_MSG (ref_to, "ignored internal");
+    return;
+  }
+  else
+    MC_DEBUG_MSG (ref_to, "visiting old thing");
+
+  if (ref_from_flags & MC_FLAG_INTERNAL) {
+    if (!(ref_from_flags & MC_FLAG_REFCOUNTED))
+      ref_to->int_refs++;
+    else {
+      /* mc_ref_from is a former lookahead thing that has become internal. */
+      assert (ref_to->la_refs > 0);
+      ref_to->la_refs--;
+      ref_to->int_refs++;
+    }
+
+    assert (ref_to->int_refs + ref_to->la_refs <= *(INT32 *) thing);
+
+    if (ref_to->int_refs == *(INT32 *) thing) {
+      /* Found a new internal thing. */
+      ref_to->flags |= MC_FLAG_INTERNAL;
+      ref_to->dist = 0;
+      if (!ref_to_is_new) DL_REMOVE (ref_to);
+      mc_wl_enqueue_first (ref_to);
+      MC_DEBUG_MSG (ref_to, "made internal and enqueued");
+      return;
+    }
+    else
+      MC_DEBUG_MSG (ref_to, "added internal ref");
+  }
+
+  else {
+    if (!(ref_from_flags & MC_FLAG_REFCOUNTED)) {
+      ref_to->la_refs++;
+      MC_DEBUG_MSG (ref_to, "added lookahead ref");
+    }
+
+    assert (ref_to->int_refs + ref_to->la_refs <= *(INT32 *) thing);
+  }
+
+  if (!(ref_from_flags & MC_FLAG_REFCOUNTED)) {
+    if (ref_to->int_refs + ref_to->la_refs == *(INT32 *) thing) {
+      /* The thing has become complete. */
+      if (!ref_to_is_new) DL_REMOVE (ref_to);
+      DL_ADD (mc_complete, ref_to);
+      MC_DEBUG_MSG (ref_to, "refs are complete");
+    }
+    else
+      if (ref_to_is_new) DL_ADD (mc_incomplete, ref_to);
+  }
+
+  {
+    /* Internal refs don't count as any distance, so the distance to
+     * ref_to is the same as cur_dist in that case. */
+    unsigned ref_to_dist =
+      ref_type & REF_TYPE_INTERNAL ? cur_dist : cur_dist + 1;
+
+    if (ref_to_is_new || ref_to->dist > ref_to_dist) {
+      unsigned type;
+
+      ref_to->dist = ref_to_dist;
+#ifdef MEMORY_COUNT_DEBUG
+      if (ref_to_dist == cur_dist)
+	MC_DEBUG_MSG (ref_to, "lowered to dist + 0");
+      else
+	MC_DEBUG_MSG (ref_to, "lowered to dist + 1");
+#endif
+
+      type = type_from_visit_fn (visit_fn);
+      if (mc_block_lookahead & (1 << type))
+	MC_DEBUG_MSG (ref_to, "type is blocked - not enqueued");
+      else if (ref_to_dist < mc_lookahead) {
+	if (ref_to_dist == cur_dist)
+	  mc_wl_enqueue_first (ref_to);
+	else
+	  mc_wl_enqueue_last (ref_to);
+	MC_DEBUG_MSG (ref_to, "enqueued");
+      }
+      else
+	MC_DEBUG_MSG (ref_to, "at max distance - not enqueued");
+    }
+  }
+}
+
+static void pass_mark_external_visit_ref (void *thing, int ref_type,
+					  visit_thing_fn *visit_fn, void *extra)
+{
+  struct mc_marker *ref_to = find_mc_marker (thing);
+
+  assert (mc_pass == MC_PASS_MARK_EXTERNAL);
+
+  if (ref_to) {
+    if (!(ref_to->flags & MC_FLAG_INTERNAL)) {
+      /* Only interested in existing lookahead things. */
+
+      if (!IS_EXTERNAL (ref_to)) {
+	assert (ref_to->int_refs + ref_to->la_refs == *(INT32 *) thing);
+	DL_REMOVE (ref_to);
+	FLAG_EXTERNAL (ref_to);
+	DL_ADD (mc_indirect, ref_to);
+	mc_wl_enqueue_last (ref_to);
+	MC_DEBUG_MSG (ref_to, "marked external");
+      }
+      else
+	MC_DEBUG_MSG (ref_to, "already external");
+    }
+    else
+      MC_DEBUG_MSG (ref_to, "ignored internal");
+  }
+}
+
+PMOD_EXPORT int mc_count_bytes (void *thing)
+{
+  if (mc_pass == MC_PASS_LOOKAHEAD) {
+    struct mc_marker *m = find_mc_marker (thing);
+    if ((m->flags & (MC_FLAG_INTERNAL|MC_FLAG_MEMCOUNTED)) == MC_FLAG_INTERNAL)
+      return 1;
+  }
+  return 0;
+}
+
+/*! @decl int count_memory (int(0..)|mapping(string:int) options, @
  *!         array|multiset|mapping|object|program|string|type|int... things)
  *! @appears Pike.count_memory
  *!
@@ -4032,8 +4574,8 @@ void dump_gc_info(void)
  *! would be freed if all those things would lose their references at
  *! the same time. I.e. it not only counts the memory in the things
  *! themselves, but also in all the things that are directly and
- *! indirectly referenced from those things, and only from those
- *! things.
+ *! indirectly referenced from those things and not from anywhere
+ *! else.
  *!
  *! The memory counted is only that which is directly occupied by the
  *! things in question, including any overallocation for mappings,
@@ -4052,12 +4594,79 @@ void dump_gc_info(void)
  *! function returns the same size, there should be essentially no
  *! increase in the size of the pike process (some increase might
  *! occur due to internal fragmentation and memory pooling, but it
- *! should be small overall).
+ *! should be small in general and over time).
  *!
- *! @param flags
- *!   Reserved for future use to be able to pass various flags to
- *!   control the counting. Right now this argument should always be
- *!   zero.
+ *! The search for things only referenced from the arguments can
+ *! handle limited cyclic structures. That is done by doing a
+ *! "lookahead", i.e. searching through things that apparently have
+ *! other outside references. You can control how long this lookahead
+ *! should be through @[options] (see below). If the lookahead is too
+ *! short to cover the cycles in a structure then a too low value is
+ *! returned. If the lookahead is made gradually longer then the
+ *! returned value will eventually become accurate and not increase
+ *! anymore. If the lookahead is too long then unnecessary time might
+ *! be spent searching through things that really have external
+ *! references.
+ *!
+ *! @param options
+ *!   If this is an integer, it specifies the maximum lookahead
+ *!   distance. To e.g. cover cycles of length 2 (i.e. where two
+ *!   things point at each other), this has to be 3.
+ *!
+ *!   However, the lookahead is by default blocked by programs, i.e.
+ *!   it never follows references emanating from programs. That since
+ *!   programs seldom are part of dynamic data structures, and they
+ *!   also typically contain a lot of references to global data which
+ *!   would add a lot of work to the lookahead search.
+ *!
+ *!   To control the search in more detail, @[options] can be a
+ *!   mapping instead:
+ *!
+ *!   @mapping
+ *!     @member int lookahead
+ *!       The maximum lookahead distance.
+ *!     @member int block_arrays
+ *!     @member int block_mappings
+ *!     @member int block_multisets
+ *!     @member int block_objects
+ *!     @member int block_programs
+ *!       When any of these are given with a nonzero value, the
+ *!       corresponding type is blocked in when lookahead references
+ *!       are followed. They are unblocked if the flag is given with a
+ *!       zero value.
+ *!     @member int collect_stats
+ *!       If this is nonzero then the mapping is extended with more
+ *!       elements containing statistics from the search; see below.
+ *!   @endmapping
+ *!
+ *!   When the @expr{collect_stats@} flag is set, the mapping is
+ *!   extended with these elements:
+ *!
+ *!   @mapping
+ *!     @member int internal
+ *!       Number of things that were marked internal and hence memory
+ *!       counted. It includes the things given as arguments.
+ *!     @member int cyclic
+ *!       Number of things that were marked internal only after
+ *!       resolving cycles through the lookahead.
+ *!     @member int external
+ *!       Number of things that were visited through the lookahead but
+ *!       were found to be external.
+ *!     @member int visits
+ *!       Number of times things were visited in total.
+ *!     @member int rounds
+ *!       Number of search rounds. Whenever the lookahead discovers a
+ *!       cycle, another round has to be made to search for more
+ *!       internal things referenced from the cycle.
+ *!     @member int max_distance
+ *!       The maximum distance in the cyclic things that were
+ *!       eventually marked internal. This gives a measure on how much
+ *!       the lookahead can be lowered while still handling the same
+ *!       cycles.
+ *!     @member int size
+ *!       The memory occupied by the internal things. This is the same
+ *!       as the return value, but it's put here too for convenience.
+ *!   @endmapping
  *!
  *! @param things
  *!   One or more things to count memory size for. Only things passed
@@ -4080,41 +4689,80 @@ void dump_gc_info(void)
  *! @note
  *! It's possible that a string that is referenced still isn't
  *! counted, because strings are always shared in Pike and the same
- *! string might be used in some unrelated part of the program.
+ *! string might be in use in some unrelated part of the program.
+ *!
+ *! @note
+ *! Things (normally programs) that are blocked in the lookahead
+ *! search are still recursed and memory counted properly if they are
+ *! given as arguments or only got internal references.
  */
 void f_count_memory (INT32 args)
 {
+  struct mapping *opts = NULL;
+  unsigned count_internal, count_cyclic, count_visited;
+  unsigned count_visits, count_rounds, max_dist;
+
   if (args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR ("count_memory", 1);
-  if (Pike_sp[-args].type != T_INT || Pike_sp[-args].u.integer)
-    SIMPLE_ARG_TYPE_ERROR ("count_memory", 1, "zero");
 
-  if (Pike_in_gc)
-    /* FIXME: This can happen if the function gets called in
-     * GC_PASS_FREE..GC_PASS_DESTRUCT. The markers should be cleaned
-     * up before GC_PASS_FREE. */
-    Pike_error ("This function cannot work while the gc is running.\n");
+  mc_block_lookahead = mc_block_lookahead_default;
 
-  /* Not calling init_gc here since we don't want a hash table big
-   * enough to handle a marker for every thing in memory. */
-  init_marker_hash();
+  if (Pike_sp[-args].type == T_MAPPING) {
+    struct mapping *m = Pike_sp[-args].u.mapping;
+    struct pike_string *ind;
+    struct svalue *val;
 
-  Pike_in_gc = GC_PASS_COUNT_MEMORY;
-  gc_counted_bytes = 0;
-#ifdef PIKE_DEBUG
-  checked = marked = 0;
+    MAKE_CONST_STRING (ind, "lookahead");
+    if ((val = low_mapping_string_lookup (m, ind))) {
+      if (val->type != T_INT || val->u.integer < 0)
+	SIMPLE_ARG_ERROR ("count_memory", 1,
+			  "\"lookahead\" is not a non-negative integer.");
+#if MAX_INT_TYPE > UINT_MAX
+      if (Pike_sp[-args].u.integer > UINT_MAX)
+	mc_lookahead = UINT_MAX;
+      else
 #endif
+	mc_lookahead = val->u.integer;
+    }
 
-  /* In GC_PASS_COUNT_MEMORY mode, gc_mark only returns true once for
-   * each thing which have all refs accounted for by earlier gc check
-   * calls (i.e. have GC_NOT_REFERENCED set). The
-   * gc_mark_*_as_referenced functions (whose names are highly
-   * confusing in this case) then add the size to gc_counted_bytes and
-   * do a gc check before continuing with the mark calls as usual.
-   *
-   * That way gc checking is used to count all internal references
-   * from each "unreferenced" thing. If they add up to the real
-   * refcount then the last gc mark call recurses. */
+#define CHECK_BLOCK_FLAG(NAME, TYPE_BIT) do {				\
+      MAKE_CONST_STRING (ind, NAME);					\
+      if ((val = low_mapping_string_lookup (m, ind))) {			\
+	if (UNSAFE_IS_ZERO (val))					\
+	  mc_block_lookahead &= ~TYPE_BIT;				\
+	else								\
+	  mc_block_lookahead |= TYPE_BIT;				\
+      }									\
+    } while (0)
+    CHECK_BLOCK_FLAG ("block_arrays", BIT_ARRAY);
+    CHECK_BLOCK_FLAG ("block_mappings", BIT_MAPPING);
+    CHECK_BLOCK_FLAG ("block_multisets", BIT_MULTISET);
+    CHECK_BLOCK_FLAG ("block_objects", BIT_OBJECT);
+    CHECK_BLOCK_FLAG ("block_programs", BIT_PROGRAM);
+
+    MAKE_CONST_STRING (ind, "collect_stats");
+    if ((val = low_mapping_string_lookup (m, ind)) && !UNSAFE_IS_ZERO (val))
+      opts = m;
+  }
+
+  else {
+    if (Pike_sp[-args].type != T_INT || Pike_sp[-args].u.integer < 0)
+      SIMPLE_ARG_TYPE_ERROR ("count_memory", 1, "int(0..)");
+
+#if MAX_INT_TYPE > UINT_MAX
+    if (Pike_sp[-args].u.integer > UINT_MAX)
+      mc_lookahead = UINT_MAX;
+    else
+#endif
+      mc_lookahead = Pike_sp[-args].u.integer;
+  }
+
+  init_mc_marker_hash();
+
+  assert (!mc_pass);
+  assert (visit_ref == NULL);
+  assert (mc_work_list.wl_prev == &mc_work_list);
+  assert (mc_work_list.wl_next == &mc_work_list);
 
   {
     int i;
@@ -4124,85 +4772,212 @@ void f_count_memory (INT32 args)
       if (s->type == T_INT)
 	continue;
 
-      else if (s->type > MAX_REF_TYPE) {
-	Pike_in_gc = 0;
-	cleanup_markers();
+      else if (s->type > MAX_REF_TYPE)
 	SIMPLE_ARG_TYPE_ERROR (
 	  "count_memory", i + args + 1,
 	  "array|multiset|mapping|object|program|string|type|int");
-      }
 
       else {
-	struct marker *m;
-
 	if (s->type == T_FUNCTION) {
 	  struct svalue s2;
-	  if (!(s2.u.program = program_from_function (s))) {
-	    Pike_in_gc = 0;
-	    cleanup_markers();
+	  if (!(s2.u.program = program_from_function (s)))
 	    SIMPLE_ARG_TYPE_ERROR (
 	      "count_memory", i + args + 1,
 	      "array|multiset|mapping|object|program|string|type|int");
-	  }
 	  add_ref (s2.u.program);
 	  s2.type = T_PROGRAM;
 	  free_svalue (s);
 	  move_svalue (s, &s2);
 	}
 
-	m = get_marker (s->u.ptr);
-	if (!(m->flags & GC_MARKED)) {
-	  m->flags |= GC_NOT_REFERENCED; /* Make gc_mark return true for it. */
+	if (find_mc_marker (s->u.ptr)) {
+	  /* The user passed the same thing several times. Ignore it. */
+	}
 
-	  switch (s->type) {
-	    case T_ARRAY:
-	      gc_mark_array_as_referenced (s->u.array); break;
-	    case T_MULTISET:
-	      gc_mark_multiset_as_referenced (s->u.multiset); break;
-	    case T_MAPPING:
-	      gc_mark_mapping_as_referenced (s->u.mapping); break;
-	    case T_PROGRAM:
-	      gc_mark_program_as_referenced (s->u.program); break;
-	    case T_OBJECT:
-	      gc_mark_object_as_referenced (s->u.object); break;
-	    case T_STRING:
-	      gc_mark_string_as_referenced (s->u.string); break;
-	    case T_TYPE:
-	      gc_mark_type_as_referenced (s->u.type); break;
-	  }
+	else if (s->type == T_ARRAY &&
+		 (s->u.array == &empty_array ||
+		  s->u.array == &weak_empty_array)) {
+	  /* Special cases for statically allocated things. */
+	}
+
+	else {
+	  struct mc_marker *m =
+	    my_make_mc_marker (s->u.ptr, visit_fn_from_type[s->type], NULL);
+	  m->dist = 0;
+	  m->flags = MC_FLAG_INTERNAL;
+	  mc_wl_enqueue_last (m);
+	  MC_DEBUG_MSG (m, "enqueued starting point");
 	}
       }
     }
   }
 
-  gc_mark_run_queue();
+  assert (mc_incomplete.dl_prev == &mc_incomplete);
+  assert (mc_incomplete.dl_next == &mc_incomplete);
+  assert (mc_complete.dl_prev == &mc_complete);
+  assert (mc_complete.dl_next == &mc_complete);
+#ifdef PIKE_DEBUG
+  assert (mc_ref_from == (void *) (ptrdiff_t) -1);
+#endif
+
+  mc_counted_bytes = 0;
+  count_internal = count_cyclic = count_visited = 0;
+  count_visits = count_rounds = max_dist = 0;
+
+  do {
+    count_rounds++;
+
+#ifdef MEMORY_COUNT_DEBUG
+    fputs ("MC_PASS_LOOKAHEAD\n", stderr);
+#endif
+    mc_pass = MC_PASS_LOOKAHEAD;
+    visit_ref = pass_lookahead_visit_ref;
+
+    while ((mc_ref_from = mc_wl_dequeue())) {
+      int action;
+
+      if ((mc_ref_from->flags & (MC_FLAG_INTERNAL|MC_FLAG_MEMCOUNTED)) ==
+	  MC_FLAG_INTERNAL) {
+	action = VISIT_COUNT_BYTES; /* Memory count this. */
+	count_internal++;
+	MC_DEBUG_MSG (NULL, "enter with byte counting");
+      }
+      else {
+	action = VISIT_NORMAL;
+	MC_DEBUG_MSG (NULL, "enter");
+      }
+
+      count_visits++;
+      mc_ref_from->visit_fn (mc_ref_from->thing, action, mc_ref_from->extra);
+
+      if (!(mc_ref_from->flags & MC_FLAG_REFCOUNTED)) {
+	mc_ref_from->flags |= MC_FLAG_REFCOUNTED;
+	count_visited++;
+      }
+
+      if (mc_ref_from->flags & MC_FLAG_INTERNAL)
+	mc_ref_from->flags |= MC_FLAG_MEMCOUNTED;
+      MC_DEBUG_MSG (NULL, "leave");
+    }
+#if defined (PIKE_DEBUG) || defined (MEMORY_COUNT_DEBUG)
+    mc_ref_from = (void *) (ptrdiff_t) -1;
+#endif
+
+#ifdef MEMORY_COUNT_DEBUG
+    fputs ("MC_PASS_MARK_EXTERNAL\n", stderr);
+#endif
+    mc_pass = MC_PASS_MARK_EXTERNAL;
+    visit_ref = pass_mark_external_visit_ref;
+
+    assert (mc_indirect.dl_next == &mc_indirect);
+    assert (mc_indirect.dl_prev == &mc_indirect);
+
+    {
+      struct mc_marker *m;
+      for (m = mc_incomplete.dl_next; m != &mc_incomplete; m = m->dl_next) {
+	int type = type_from_visit_fn (m->visit_fn);
+	FLAG_EXTERNAL (m);
+	if (mc_block_lookahead & (1 << type))
+	  MC_DEBUG_MSG (m, "type blocked - not enqueued");
+	else {
+	  mc_wl_enqueue_last (m);
+	  MC_DEBUG_MSG (m, "enqueued external");
+	}
+      }
+
+      while ((m = mc_wl_dequeue())) {
+	MC_DEBUG_MSG (m, "visiting external");
+	count_visits++;
+	m->visit_fn (m->thing, VISIT_NORMAL, m->extra);
+      }
+    }
+
+    if (DL_IS_EMPTY (mc_complete)) break;
+
+    {
+      /* We've found some internal cyclic stuff. Put it in the work
+       * list for the next round. */
+      struct mc_marker *m = mc_complete.dl_next;
+      assert (m != &mc_complete);
+      do {
+	DL_REMOVE (m);
+	if (m->dist > max_dist) max_dist = m->dist;
+	m->dist = 0;
+	m->flags |= MC_FLAG_INTERNAL;
+	mc_wl_enqueue_last (m);
+	count_cyclic++;
+	MC_DEBUG_MSG (m, "enqueued cyclic internal");
+	m = mc_complete.dl_next;
+      } while (m != &mc_complete);
+    }
+
+    DL_MOVE (mc_indirect, mc_complete);
+
+    TOGGLE_EXT_FLAGS();
+
+#ifdef PIKE_DEBUG
+    if (d_flag) {
+      struct mc_marker *m;
+      for (m = mc_incomplete.dl_next; m != &mc_incomplete; m = m->dl_next)
+	assert (!IS_EXTERNAL (m));
+      for (m = mc_complete.dl_next; m != &mc_complete; m = m->dl_next)
+	assert (!IS_EXTERNAL (m));
+    }
+#endif
+  } while (1);
+
+#ifdef MEMORY_COUNT_DEBUG
+  fputs ("memory counting done\n", stderr);
+#endif
 
 #if 0
+  fprintf (stderr, "count_memory stats: %u internal, %u cyclic, %u external\n"
+	   "count_memory stats: %u visits, %u rounds, %u max distance\n",
+	   count_internal, count_cyclic,
+	   count_visited - count_internal,
+	   count_visits, count_rounds, max_dist);
 #ifdef PIKE_DEBUG
   {
     size_t num, size;
-    count_memory_in_markers (&num, &size);
-    fprintf (stderr,
-	     "count_memory checked %u refs, visited %u things and "
-	     "used %"PRINTSIZET"u bytes for %"PRINTSIZET"u markers.\n",
-	     checked, marked, size, num);
+    count_memory_in_mc_markers (&num, &size);
+    fprintf (stderr, "count_memory used %"PRINTSIZET"u bytes "
+	     "for %"PRINTSIZET"u markers.\n", size, num);
   }
 #endif
 #endif
 
-  Pike_in_gc = 0;
-  cleanup_markers();
+  if (opts) {
+#define INSERT_STAT(NAME, VALUE) do {					\
+      struct pike_string *ind;						\
+      push_ulongest (VALUE);						\
+      MAKE_CONST_STRING (ind, NAME);					\
+      mapping_string_insert (opts, ind, Pike_sp - 1);			\
+      pop_stack();							\
+    } while (0)
+    INSERT_STAT ("internal", count_internal);
+    INSERT_STAT ("cyclic", count_cyclic);
+    INSERT_STAT ("external", count_visited - count_internal);
+    INSERT_STAT ("visits", count_visits);
+    INSERT_STAT ("rounds", count_rounds);
+    INSERT_STAT ("max_distance", max_dist);
+    INSERT_STAT ("size", mc_counted_bytes);
+  }
+
+  mc_pass = 0;
+  visit_ref = NULL;
+
+  DL_MAKE_EMPTY (mc_incomplete);
+  DL_MAKE_EMPTY (mc_indirect);
+#ifdef DO_PIKE_CLEANUP
+  {
+    size_t e;
+    for (e = 0; e < mc_marker_hash_table_size; e++)
+      while (mc_marker_hash_table[e])
+	remove_mc_marker (mc_marker_hash_table[e]->thing);
+  }
+#endif
+  exit_mc_marker_hash();
 
   pop_n_elems (args);
-  push_ulongest (gc_counted_bytes);
-}
-
-void cleanup_gc(void)
-{
-#ifdef PIKE_DEBUG
-  if (gc_evaluator_callback) {
-    remove_callback(gc_evaluator_callback);
-    gc_evaluator_callback = NULL;
-  }
-#endif /* PIKE_DEBUG */
+  push_ulongest (mc_counted_bytes);
 }

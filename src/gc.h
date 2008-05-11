@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.h,v 1.132 2008/05/06 19:19:10 mast Exp $
+|| $Id: gc.h,v 1.133 2008/05/11 02:31:57 mast Exp $
 */
 
 #ifndef GC_H
@@ -72,7 +72,6 @@ extern ALLOC_COUNT_TYPE num_allocs, alloc_threshold;
 PMOD_EXPORT extern int Pike_in_gc;
 extern int gc_generation;
 extern int gc_trace, gc_debug;
-PMOD_EXPORT extern size_t gc_counted_bytes;
 #ifdef CPU_TIME_MIGHT_NOT_BE_THREAD_LOCAL
 extern cpu_time_t auto_gc_time;
 #endif
@@ -284,7 +283,6 @@ extern size_t gc_ext_weak_refs;
 
 typedef void gc_cycle_check_cb (void *data, int weak);
 
-/* Prototypes begin here */
 struct gc_frame;
 struct callback *debug_add_gc_callback(callback_func call,
 				 void *arg,
@@ -478,9 +476,11 @@ static INLINE int debug_gc_check_weak (void *a, const char *place)
    gc_cycle_check_weak_short_svalue((U), (T)) : gc_mark_weak_short_svalue((U), (T)))
 
 #define GC_RECURSE_THING(V, T)						\
-  (DMALLOC_TOUCH_MARKER(V, Pike_in_gc == GC_PASS_CYCLE) ?		\
-   PIKE_CONCAT(gc_cycle_check_, T)(V, 0) :				\
-   PIKE_CONCAT3(gc_mark_, T, _as_referenced)(V))
+  (mc_pass ?								\
+   PIKE_CONCAT3 (visit_,T,_ref) (debug_malloc_pass (V), REF_TYPE_NORMAL) : \
+   (DMALLOC_TOUCH_MARKER(V, Pike_in_gc == GC_PASS_CYCLE) ?		\
+    PIKE_CONCAT(gc_cycle_check_, T)(V, 0) :				\
+    PIKE_CONCAT3(gc_mark_, T, _as_referenced)(V)))
 #define gc_recurse_array(V) GC_RECURSE_THING((V), array)
 #define gc_recurse_mapping(V) GC_RECURSE_THING((V), mapping)
 #define gc_recurse_multiset(V) GC_RECURSE_THING((V), multiset)
@@ -517,8 +517,7 @@ static INLINE int debug_gc_check_weak (void *a, const char *place)
 #define GC_PASS_DESTRUCT	500
 
 #define GC_PASS_LOCATE -1
-#define GC_PASS_COUNT_MEMORY -2
-#define GC_PASS_DISABLED -3
+#define GC_PASS_DISABLED -2
 
 #ifdef PIKE_DEBUG
 extern int gc_in_cycle_check;
@@ -567,5 +566,104 @@ extern int gc_in_cycle_check;
     DO_IF_DEBUG(gc_in_cycle_check = 0);					\
   }									\
 } while (0)
+
+/* Generic API to follow refs in arbitrary structures (experimental).
+ *
+ * The check/mark/cycle check callbacks in the gc might be converted
+ * to this. Global state is fair play by design; the intention is to
+ * use thread local storage when the time comes. */
+
+/* A visit_thing_fn is made for every type of refcounted block. An
+ * INT32 refcounter is assumed to be first in every block. The
+ * visit_thing_fn should call visit_ref exactly once for every
+ * refcounted ref inside src_thing, in a stable order. dst_thing is
+ * then the target of the ref, ref_type describes the type of the ref
+ * itself (REF_TYPE_*), visit_dst is the visit_thing_fn for the target
+ * block, and extra is an arbitrary value passed along to visit_dst.
+ *
+ * action identifies some action that the visit_thing_fn should take
+ * (VISIT_*). Also, visit_ref_cb is likely to get a return value that
+ * identifies an action that should be taken on the ref.
+ *
+ * visit_thing_fn's must be reentrant. visit_dst might be called
+ * immediately, queued and called later, or not called at all. */
+
+typedef void visit_thing_fn (void *src_thing, int action, void *extra);
+typedef void visit_ref_cb (void *dst_thing, int ref_type,
+			   visit_thing_fn *visit_dst, void *extra);
+PMOD_EXPORT extern visit_ref_cb *visit_ref;
+
+#define REF_TYPE_STRENGTH 0x03	/* Bits for normal/weak/strong. */
+#define REF_TYPE_NORMAL	0x00	/* Normal (nonweak and nonstrong) ref. */
+#define REF_TYPE_WEAK	0x01	/* Weak ref. */
+#define REF_TYPE_STRONG	0x02	/* Strong ref. Note restrictions above. */
+
+#define REF_TYPE_INTERNAL 0x04	/* "Internal" ref. */
+/* An "internal" ref is one that should be considered internal within
+ * a structure that is treated as one unit on the pike level. E.g. the
+ * refs from mappings and multisets to their data blocks are internal.
+ * In general, if the target block isn't one of the eight referenced
+ * pike types then the ref is internal. Internal refs must not make up
+ * a cycle. They don't count towards the lookahead distance in
+ * f_count_memory. */
+
+#define VISIT_NORMAL 0
+/* Alias for zero which indicates normal (no) action: Visit all refs
+ * to all (refcounted) blocks and do nothing else. */
+
+#define VISIT_COMPLEX_ONLY 0x01
+/* Bit flag. If this is set, only follow refs to blocks that might
+ * contain more refs. */
+
+#define VISIT_COUNT_BYTES 0x02
+/* Add the number of bytes allocated for the block to
+ * mc_counted_bytes, then visit the refs. Never combined with
+ * VISIT_COMPLEX_ONLY. */
+
+/* Map between type and visit function for the standard ref types. */
+PMOD_EXPORT extern visit_thing_fn *const visit_fn_from_type[MAX_REF_TYPE + 1];
+PMOD_EXPORT TYPE_T type_from_visit_fn (visit_thing_fn *fn);
+
+static INLINE void real_visit_short_svalue (const union anything *u, TYPE_T t,
+					    int ref_type)
+{
+  check_short_svalue (u, t);
+  if (t <= MAX_REF_TYPE)
+    visit_ref (u->ptr, ref_type, visit_fn_from_type[t], NULL);
+}
+#define visit_short_svalue(U, T, REF_TYPE) \
+  (real_visit_short_svalue (debug_malloc_pass ((U)->ptr), (T), (REF_TYPE)))
+
+#ifdef DEBUG_MALLOC
+static INLINE void dmalloc_visit_svalue (struct svalue *s,
+					 int ref_type, char *l)
+{
+  int t = s->type;
+  check_svalue (s);
+  dmalloc_check_svalue (s, l);
+  if (t <= MAX_REF_TYPE) {
+    if (t == PIKE_T_FUNCTION) visit_function (s, ref_type);
+    else visit_ref (s->u.ptr, ref_type, visit_fn_from_type[t], NULL);
+  }
+}
+#define visit_svalue(S, REF_TYPE) \
+  dmalloc_visit_svalue ((S), (REF_TYPE), DMALLOC_LOCATION())
+#else
+static INLINE void visit_svalue (struct svalue *s, int ref_type)
+{
+  int t = s->type;
+  check_svalue (s);
+  if (t <= MAX_REF_TYPE) {
+    if (t == PIKE_T_FUNCTION) visit_function (s, ref_type);
+    else visit_ref (s->u.ptr, ref_type, visit_fn_from_type[t], NULL);
+  }
+}
+#endif
+
+/* Memory counting */
+
+PMOD_EXPORT extern int mc_pass;
+PMOD_EXPORT extern size_t mc_counted_bytes;
+PMOD_EXPORT int mc_count_bytes (void *thing);
 
 #endif
