@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.189 2008/01/01 18:53:02 grubba Exp $
+|| $Id: pike_memory.c,v 1.190 2008/05/11 14:54:09 mast Exp $
 */
 
 #include "global.h"
@@ -2994,7 +2994,7 @@ static LOCATION low_dynamic_location(char type, const char *file, int line)
 {
   struct dmalloc_string **prev, *str;
   int len=strlen(file);
-  unsigned long h,hval=hashmem(file,len,64)+line;
+  unsigned long h,hval=hashmem((const unsigned char *) file,len,64)+line;
   h=hval % DSTRHSIZE;
 
   mt_lock(&debug_malloc_mutex);
