@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.660 2008/05/03 15:29:24 nilsson Exp $
+|| $Id: builtin_functions.c,v 1.661 2008/05/11 02:02:50 mast Exp $
 */
 
 #include "global.h"
@@ -7075,10 +7075,10 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
 
 #ifdef DEBUG_MALLOC
   {
-    extern void count_memory_in_memory_maps(INT32*, INT32*);
-    extern void count_memory_in_memory_map_entrys(INT32*, INT32*);
-    extern void count_memory_in_memlocs(INT32*, INT32*);
-    extern void count_memory_in_memhdrs(INT32*, INT32*);
+    extern void count_memory_in_memory_maps(size_t*, size_t*);
+    extern void count_memory_in_memory_map_entrys(size_t*, size_t*);
+    extern void count_memory_in_memlocs(size_t*, size_t*);
+    extern void count_memory_in_memhdrs(size_t*, size_t*);
 
     count_memory_in_memory_maps(&num, &size);
     push_text("num_memory_maps");
