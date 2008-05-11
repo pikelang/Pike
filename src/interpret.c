@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.397 2008/05/10 23:27:05 mast Exp $
+|| $Id: interpret.c,v 1.398 2008/05/11 22:03:26 mast Exp $
 */
 
 #include "global.h"
@@ -2007,7 +2007,7 @@ void low_return(void)
   struct svalue *save_sp = Pike_fp->save_sp;
   int trace_level = Pike_interpreter.trace_level;
   struct object *o;
-  int fun = 0;
+  int fun;
 
   if (trace_level > 1) {
     o = Pike_fp->current_object;
