@@ -485,6 +485,10 @@ o Parser.XML.Tree
 
 o Pike
 
+  - A new function count_memory() has been added which can calculate
+    the memory consumed by arbitrary data structures. Useful when
+    implementing memory caches.
+
   - A new function get_runtime_info() has been added which returns
     information about current ABI, if automatic bignums are enabled,
     what bytecode method is used, the size of native floats and
