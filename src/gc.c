@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.312 2008/05/11 02:57:23 mast Exp $
+|| $Id: gc.c,v 1.313 2008/05/11 14:34:56 mast Exp $
 */
 
 #include "global.h"
@@ -4261,8 +4261,9 @@ static struct mc_marker mc_work_list = {
   (void *) (ptrdiff_t) -1,
   &mc_work_list, &mc_work_list,
   (void *) (ptrdiff_t) -1, (void *) (ptrdiff_t) -1,
-  (void *) (ptrdiff_t) -1, (void *) (ptrdiff_t) -1, (void *) (ptrdiff_t) -1,
-  -1, -1, -1, -1
+  (void *) (ptrdiff_t) -1, (visit_thing_fn *) (ptrdiff_t) -1,
+  (void *) (ptrdiff_t) -1,
+  -1, -1, MAX_UINT32, (unsigned INT16) -1
 };
 
 #define WL_ADD_FIRST(M) do {						\
@@ -4324,8 +4325,9 @@ static struct mc_marker mc_incomplete = {
   (void *) (ptrdiff_t) -1,
   (void *) (ptrdiff_t) -1, (void *) (ptrdiff_t) -1,
   &mc_incomplete, &mc_incomplete,
-  (void *) (ptrdiff_t) -1, (void *) (ptrdiff_t) -1, (void *) (ptrdiff_t) -1,
-  -1, -1, -1, -1
+  (void *) (ptrdiff_t) -1, (visit_thing_fn *) (ptrdiff_t) -1,
+  (void *) (ptrdiff_t) -1,
+  -1, -1, MAX_UINT32, (unsigned INT16) -1
 };
 
 static struct mc_marker mc_complete = {
@@ -4333,8 +4335,9 @@ static struct mc_marker mc_complete = {
   (void *) (ptrdiff_t) -1,
   (void *) (ptrdiff_t) -1, (void *) (ptrdiff_t) -1,
   &mc_complete, &mc_complete,
-  (void *) (ptrdiff_t) -1, (void *) (ptrdiff_t) -1, (void *) (ptrdiff_t) -1,
-  -1, -1, -1, -1
+  (void *) (ptrdiff_t) -1, (visit_thing_fn *) (ptrdiff_t) -1,
+  (void *) (ptrdiff_t) -1,
+  -1, -1, MAX_UINT32, (unsigned INT16) -1
 };
 
 static struct mc_marker mc_indirect = {
@@ -4342,8 +4345,9 @@ static struct mc_marker mc_indirect = {
   (void *) (ptrdiff_t) -1,
   (void *) (ptrdiff_t) -1, (void *) (ptrdiff_t) -1,
   &mc_indirect, &mc_indirect,
-  (void *) (ptrdiff_t) -1, (void *) (ptrdiff_t) -1, (void *) (ptrdiff_t) -1,
-  -1, -1, -1, -1
+  (void *) (ptrdiff_t) -1, (visit_thing_fn *) (ptrdiff_t) -1,
+  (void *) (ptrdiff_t) -1,
+  -1, -1, MAX_UINT32, (unsigned INT16) -1
 };
 
 #define DL_IS_EMPTY(LIST) (LIST.dl_next == &LIST)
