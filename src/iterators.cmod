@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iterators.cmod,v 1.66 2008/05/03 15:29:24 nilsson Exp $
+|| $Id: iterators.cmod,v 1.67 2008/05/11 22:42:14 mast Exp $
 */
 
 #include "global.h"
@@ -1357,13 +1357,13 @@ PIKECLASS string_split_iterator
       }
     reskip_empty:
       switch(ssi->buffer->size_shift) {
+      default:
+#ifdef PIKE_DEBUG
+	Pike_fatal("Unsupported size shift!\n");
+#endif
 	NEW_SKIP_CASE(0, ssi->flags);
 	NEW_SKIP_CASE(1, ssi->flags);
 	NEW_SKIP_CASE(2, ssi->flags);
-#ifdef PIKE_DEBUG
-      default:
-	Pike_fatal("Unsupported size shift!\n");
-#endif
       }
     scan_more:
       switch(ssi->buffer->size_shift)
