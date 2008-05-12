@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.416 2008/05/01 10:39:56 nilsson Exp $
+// $Id: master.pike.in,v 1.417 2008/05/12 13:54:14 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -1221,6 +1221,10 @@ mixed handle_attribute_constant(string attr, mixed arg,
   switch(attr) {
   case "sprintf_format":
     return __handle_sprintf_format(attr, arg, arg_type, cont_type);
+  case "lower_case":
+    if (stringp(arg) && lower_case(arg) != arg) {
+      /* FIXME: Warn. */
+    }
   }
   return UNDEFINED;
 }
@@ -3020,19 +3024,19 @@ void _main(array(string) orig_argv, array(string) env)
     };
 
     if (err) {
-      string eno = strerror(errno());
       string fn = argv[0];
       if( !file_stat(fn) )
       {
         if( file_stat(fn+".pike") )
           fn += ".pike";
         else
-          exit(1, "Could not find file %O. %s.\n", fn, eno);
+          exit(1, "Could not find file %O.\n", fn);
       }
       if( !file_stat(fn)->isreg )
 	exit(1, "File %O is not a regular file.\n", fn);
       if( !master_read_file(fn) )
-	exit(1, "File %O is not readable. %s.\n", fn, eno);
+	exit(1, "File %O is not readable. %s.\n",
+	     fn, strerror(errno()));
       exit(1, "Pike: Failed to compile script:\n"
            "%s\n", stringp(err[0])?err[0]:describe_backtrace(err));
     }
