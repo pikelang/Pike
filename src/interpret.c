@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.399 2008/05/11 22:44:00 mast Exp $
+|| $Id: interpret.c,v 1.400 2008/05/12 16:33:07 grubba Exp $
 */
 
 #include "global.h"
@@ -404,6 +404,8 @@ void lvalue_to_svalue_no_free(struct svalue *to,struct svalue *lval)
       break;
       
     default:
+      fprintf(stderr, "TOSVAL: lval->type: %d (%s)\n",
+	      lval->type, get_name_of_type(lval->type));
       if(SAFE_IS_ZERO(lval))
 	index_error(0,0,0,lval,lval+1,"Indexing the NULL value.\n");
       else
@@ -468,6 +470,8 @@ PMOD_EXPORT void assign_lvalue(struct svalue *lval,struct svalue *from)
     break;
     
   default:
+    fprintf(stderr, "ASSIGN: lval->type: %d (%s)\n",
+	    lval->type, get_name_of_type(lval->type));
    if(SAFE_IS_ZERO(lval))
      index_error(0,0,0,lval,lval+1,"Indexing the NULL value.\n");
    else
@@ -512,6 +516,8 @@ union anything *get_pointer_if_this_type(struct svalue *lval, TYPE_T t)
     case T_MULTISET: return 0;
       
     default:
+      fprintf(stderr, "GETPTR: lval->type: %d (%s)\n",
+	      lval->type, get_name_of_type(lval->type));
       if(SAFE_IS_ZERO(lval))
 	index_error(0,0,0,lval,lval+1,"Indexing the NULL value.\n");
       else
@@ -590,7 +596,8 @@ static struct inherit dummy_inherit
  *   Input:
  *     struct object *o		// object to start from.
  *     struct inherit *inherit	// inherit in o->prog.
- *     int parent_identifier	// identifier in o to start from.
+ *    (int parent_identifier)	// identifier in o to start from.
+ *                              // Only if depth == 0.
  *
  *   Output:
  *     struct object *o		// object containing the scope.
@@ -2667,7 +2674,10 @@ void slow_check_stack(void)
   if(Pike_mark_sp < Pike_interpreter.mark_stack)
     Pike_fatal("Mark stack underflow.\n");
 
-  for(s=Pike_interpreter.evaluator_stack;s<Pike_sp;s++) check_svalue(s);
+  for(s=Pike_interpreter.evaluator_stack;s<Pike_sp;s++) {
+    /* NOTE: Freed svalues are allowed on the stack. */
+    if (s->type != PIKE_T_FREE) check_svalue(s);
+  }
 
   s=Pike_interpreter.evaluator_stack;
   for(m=Pike_interpreter.mark_stack;m<Pike_mark_sp;m++)
