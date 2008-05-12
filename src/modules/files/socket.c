@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: socket.c,v 1.97 2007/11/03 16:59:10 grubba Exp $
+|| $Id: socket.c,v 1.98 2008/05/12 12:37:48 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -536,23 +536,31 @@ static void port_accept(INT32 args)
   push_object(o);
 }
 
-/*! @decl string query_address(string arg1)
+/*! @decl string query_address()
  *!
- *! @fixme
- *!   Document this function.
+ *! Get the address and port of the local socket end-point.
+ *!
+ *! @returns
+ *!   This function returns the address and port of a socket end-point
+ *!   on the form @expr{"x.x.x.x port"@} (IPv4) or
+ *!   @expr{"x:x:x:x:x:x:x:x port"@} (IPv6).
+ *!
+ *!   If there is some error querying or formatting the address,
+ *!   @expr{0@} (zero) is returned and @[errno()] will return the
+ *!   error code.
+ *!
+ *! @throws
+ *!   An error is thrown if the socket isn't bound.
  */
 static void socket_query_address(INT32 args)
 {
   PIKE_SOCKADDR addr;
   int i;
   char buffer[496];
-#ifndef HAVE_INET_NTOP
-  char *q;
-#endif
   ACCEPT_SIZE_T len;
 
   if(THIS->box.fd <0)
-    Pike_error("socket->query_address(): Socket not bound yet.\n");
+    Pike_error("Stdio.Port->query_address(): Socket not bound yet.\n");
 
   len=sizeof(addr);
   i=fd_getsockname(THIS->box.fd,(struct sockaddr *)&addr,&len);
@@ -565,12 +573,28 @@ static void socket_query_address(INT32 args)
   }
 
 #ifdef HAVE_INET_NTOP
-  inet_ntop(SOCKADDR_FAMILY(addr), SOCKADDR_IN_ADDR(addr),
-	    buffer, sizeof(buffer)-20);
+  if(!inet_ntop(SOCKADDR_FAMILY(addr), SOCKADDR_IN_ADDR(addr),
+		buffer, sizeof(buffer)-20))
+  {
+    THIS->my_errno = errno;
+    push_int(0);
+    return;
+  }
 #else
-  q=inet_ntoa(*SOCKADDR_IN_ADDR(addr));
-  strncpy(buffer,q,sizeof(buffer)-20);
-  buffer[sizeof(buffer)-20]=0;
+  if(SOCKADDR_FAMILY(addr) == AF_INET)
+  {
+    char *q = inet_ntoa(*SOCKADDR_IN_ADDR(addr));
+    strncpy(buffer,q,sizeof(buffer)-20);
+    buffer[sizeof(buffer)-20]=0;
+  }else{
+#ifdef EAFNOSUPPORT
+    ERRNO=EAFNOSUPPORT;
+#else
+    ERRNO=EINVAL;
+#endif
+    push_int(0);
+    return;
+  }
 #endif
   sprintf(buffer+strlen(buffer)," %d",(int)(ntohs(addr.ipv4.sin_port)));
 
