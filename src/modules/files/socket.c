@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: socket.c,v 1.98 2008/05/12 12:37:48 mast Exp $
+|| $Id: socket.c,v 1.99 2008/05/12 21:00:14 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -588,9 +588,9 @@ static void socket_query_address(INT32 args)
     buffer[sizeof(buffer)-20]=0;
   }else{
 #ifdef EAFNOSUPPORT
-    ERRNO=EAFNOSUPPORT;
+    THIS->my_errno = EAFNOSUPPORT;
 #else
-    ERRNO=EINVAL;
+    THIS->my_errno = EINVAL;
 #endif
     push_int(0);
     return;
