@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.400 2008/05/12 16:33:07 grubba Exp $
+|| $Id: interpret.c,v 1.401 2008/05/12 17:20:20 grubba Exp $
 */
 
 #include "global.h"
@@ -404,8 +404,6 @@ void lvalue_to_svalue_no_free(struct svalue *to,struct svalue *lval)
       break;
       
     default:
-      fprintf(stderr, "TOSVAL: lval->type: %d (%s)\n",
-	      lval->type, get_name_of_type(lval->type));
       if(SAFE_IS_ZERO(lval))
 	index_error(0,0,0,lval,lval+1,"Indexing the NULL value.\n");
       else
@@ -470,8 +468,6 @@ PMOD_EXPORT void assign_lvalue(struct svalue *lval,struct svalue *from)
     break;
     
   default:
-    fprintf(stderr, "ASSIGN: lval->type: %d (%s)\n",
-	    lval->type, get_name_of_type(lval->type));
    if(SAFE_IS_ZERO(lval))
      index_error(0,0,0,lval,lval+1,"Indexing the NULL value.\n");
    else
@@ -516,8 +512,6 @@ union anything *get_pointer_if_this_type(struct svalue *lval, TYPE_T t)
     case T_MULTISET: return 0;
       
     default:
-      fprintf(stderr, "GETPTR: lval->type: %d (%s)\n",
-	      lval->type, get_name_of_type(lval->type));
       if(SAFE_IS_ZERO(lval))
 	index_error(0,0,0,lval,lval+1,"Indexing the NULL value.\n");
       else
