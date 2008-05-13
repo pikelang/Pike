@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.692 2008/05/11 14:55:54 mast Exp $
+|| $Id: program.c,v 1.693 2008/05/13 17:11:18 grubba Exp $
 */
 
 #include "global.h"
@@ -3308,15 +3308,10 @@ void check_program(struct program *p)
       if (i->run_time_type == PIKE_T_GET_SET) {
 	struct reference *ref = PTR_FROM_INT(p, e);
 	if (!ref->inherit_offset) {
-	  INT32 *gs_info = (INT32 *)(p->program + i->func.offset);
-	  if ((gs_info + 2) > (INT32 *)(p->program + p->num_program)) {
-	    dump_program_tables(p, 0);
-	    Pike_fatal("Getter/setter variable outside program!\n");
-	  }
-	  if (gs_info[0] >= p->num_identifier_references) {
+	  if (i->func.gs_info.getter >= p->num_identifier_references) {
 	    Pike_fatal("Getter outside references.\n");
 	  }
-	  if (gs_info[1] >= p->num_identifier_references) {
+	  if (i->func.gs_info.setter >= p->num_identifier_references) {
 	    Pike_fatal("Setter outside references.\n");
 	  }
 	}
@@ -5398,7 +5393,7 @@ INT32 define_function(struct pike_string *name,
   struct svalue *lfun_type;
   int run_time_type = T_FUNCTION;
   INT32 i;
-  INT32 getter_setter_offset = -1;
+  INT16 *getter_setter = NULL;
 
   CHECK_COMPILER();
 
@@ -5450,6 +5445,7 @@ INT32 define_function(struct pike_string *name,
     struct pike_string *symbol = NULL;
     struct pike_type *symbol_type = NULL;
     struct pike_type *gs_type = NULL;
+    int is_setter = 0;
     int delta = 1;	/* new-style */
     if (index_shared_string(name, 1) == '-') {
       /* Getter setter (old-style). */
@@ -5458,14 +5454,12 @@ INT32 define_function(struct pike_string *name,
     if (index_shared_string(name, name->len-1) != '=') {
       /* fprintf(stderr, "Got getter: %s\n", name->str); */
       gs_type = lfun_getter_type_string;
-      getter_setter_offset = 0;
       symbol = string_slice(name, delta, name->len-delta);
       symbol_type = get_argument_type(type, -1);
     } else if (name->len > delta+1) {
       /* fprintf(stderr, "Got setter: %s\n", name->str); */
       gs_type = lfun_setter_type_string;
-      getter_setter_offset =
-	((PIKE_OPCODE_T *)(((INT32 *)0) + 1)) - ((PIKE_OPCODE_T *)0);
+      is_setter = 1;
       symbol = string_slice(name, delta, name->len-(delta+1));
       symbol_type = get_argument_type(type, 0);
     }
@@ -5490,10 +5484,8 @@ INT32 define_function(struct pike_string *name,
 	struct identifier *id = ID_FROM_INT(Pike_compiler->new_program, i);
 	if (!IDENTIFIER_IS_VARIABLE(id->identifier_flags)) {
 	  my_yyerror("Illegal to redefine function %S with variable.", symbol);
-	  getter_setter_offset = -1;
 	} else if (id->run_time_type != PIKE_T_GET_SET) {
 	  my_yyerror("Illegal to redefine a current variable with a getter/setter: %S.", symbol);
-	  getter_setter_offset = -1;
 	} else {
 	  if ((ref->id_flags | ID_USED) != (flags | ID_USED)) {
 	    if (Pike_compiler->compiler_pass == 1) {
@@ -5501,22 +5493,20 @@ INT32 define_function(struct pike_string *name,
 	    }
 	    ref->id_flags &= flags | ID_USED;
 	  }
-	  getter_setter_offset += id->func.offset;
+	  getter_setter = &id->func.gs_info.getter + is_setter;
 	}
 	/* FIXME: Update id->type here. */
       } else {
-	INT32 offset = Pike_compiler->new_program->num_program;
-	getter_setter_offset += offset;
-	/* Get/set information.
-	 *   reference number to getter.
-	 *   reference number to setter.
-	 * NOTE: Only place-holders for now.
-	 *       The proper entry gets set when we have added the function.
-	 */
-	ins_pointer(-1);
-	ins_pointer(-1);
-	low_define_variable(symbol, symbol_type, flags,
-			    offset, PIKE_T_GET_SET);
+	struct identifier *id;
+	i = low_define_variable(symbol, symbol_type, flags,
+				~0, PIKE_T_GET_SET);
+	id = ID_FROM_INT(Pike_compiler->new_program, i);
+
+	/* Paranoia. */
+	id->func.gs_info.getter = -1;
+	id->func.gs_info.setter = -1;
+
+	getter_setter = &id->func.gs_info.getter + is_setter;
       }
       /* NOTE: The function needs to have the same PRIVATE/INLINE
        *       behaviour as the variable for overloading to behave
@@ -5570,8 +5560,8 @@ INT32 define_function(struct pike_string *name,
       {
 	my_yyerror("Identifier %S defined twice.", name);
 
-	if (getter_setter_offset >= 0) {
-	  upd_pointer(getter_setter_offset, i);
+	if (getter_setter) {
+	  *getter_setter = i;
 	}
 	return i;
       }
@@ -5678,12 +5668,12 @@ INT32 define_function(struct pike_string *name,
       }
 #endif
 
-      if (getter_setter_offset >= 0) {
-	INT32 old_i = (INT32)read_pointer(getter_setter_offset);
+      if (getter_setter) {
+	INT32 old_i = *getter_setter;
 	if ((old_i >= 0) && (old_i != overridden)) {
 	  my_yyerror("Multiple definitions for %S.", name);
 	}
-	upd_pointer(getter_setter_offset, overridden);
+	*getter_setter = overridden;
       }
       return overridden;
     }
@@ -5743,12 +5733,12 @@ INT32 define_function(struct pike_string *name,
 	  c->compilation_depth, "", i);
 #endif
 
-  if (getter_setter_offset >= 0) {
-    INT32 old_i = (INT32)read_pointer(getter_setter_offset);
+  if (getter_setter) {
+    INT32 old_i = *getter_setter;
     if (old_i >= 0) {
       my_yyerror("Multiple definitions for %S.", name);
     }
-    upd_pointer(getter_setter_offset, i);
+    *getter_setter = i;
   }
 
   return i;

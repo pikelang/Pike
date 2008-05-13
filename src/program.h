@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.243 2008/05/11 14:55:54 mast Exp $
+|| $Id: program.h,v 1.244 2008/05/13 17:11:19 grubba Exp $
 */
 
 #ifndef PROGRAM_H
@@ -204,6 +204,13 @@ union idptr
     unsigned short depth;	/* Scope count. */
     unsigned short id;		/* Reference number. */
   } ext_ref;
+
+  /* Getter/setter reference pair. (IDENTIFIER_VARIABLE && PIKE_T_GET_SET)
+   */
+  struct {
+    INT16 getter;		/* Reference to getter. */
+    INT16 setter;		/* Reference to setter. */
+  } gs_info;
 
   /* C function pointer. (IDENTIFIER_C_FUNCTION) */
   void (*c_fun)(INT32);
