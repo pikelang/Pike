@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.314 2008/05/11 16:57:37 mast Exp $
+|| $Id: gc.c,v 1.315 2008/05/13 19:03:59 mast Exp $
 */
 
 #include "global.h"
@@ -161,15 +161,16 @@ struct gc_rec_frame		/* See cycle checking blurb below. */
 };
 
 /* rf_flags bits. */
-#define GC_PREV_WEAK		0x01
-#define GC_PREV_STRONG		0x02
-#define GC_PREV_BROKEN		0x04
-#define GC_MARK_LIVE		0x08
-#define GC_ON_KILL_LIST		0x10
+#define GC_PREV_WEAK		0x0001
+#define GC_PREV_STRONG		0x0002
+#define GC_PREV_BROKEN		0x0004
+#define GC_MARK_LIVE		0x0008
+#define GC_ON_KILL_LIST		0x0010
 #ifdef PIKE_DEBUG
-#define GC_ON_CYCLE_PIECE_LIST	0x20
-#define GC_FRAME_FREED		0x40
-#define GC_FOLLOWED_NONSTRONG	0x80
+#define GC_ON_CYCLE_PIECE_LIST	0x0020
+#define GC_FRAME_FREED		0x0040
+#define GC_FOLLOWED_NONSTRONG	0x0080
+#define GC_IS_VALID_CP_CYCLE_ID	0x0100
 #endif
 
 static struct gc_rec_frame sentinel_frame = {
@@ -564,22 +565,43 @@ static void describe_rec_stack (struct gc_rec_frame *p1, const char *p1_name,
 				struct gc_rec_frame *p2, const char *p2_name,
 				struct gc_rec_frame *p3, const char *p3_name)
 {
-  struct gc_rec_frame *l;
+  struct gc_rec_frame *l, *cp;
   size_t longest;
+
   if (p1) longest = strlen (p1_name);
   if (p2) {size_t l = strlen (p2_name); if (l > longest) longest = l;}
   if (p3) {size_t l = strlen (p3_name); if (l > longest) longest = l;}
   longest++;
+
+  /* Note: Stack is listed from top to bottom, but cycle piece lists
+   * are lists from first to last, i.e. reverse order. */
+
   for (l = stack_top; l != &sentinel_frame; l = l->prev) {
     size_t c = 0;
+
     if (!l) {fputs ("  <broken prev link in rec stack>\n", stderr); break;}
     fprintf (stderr, "  %p", l);
+
     if (l == p1) {fprintf (stderr, " %s", p1_name); c += strlen (p1_name) + 1;}
     if (l == p2) {fprintf (stderr, " %s", p2_name); c += strlen (p2_name) + 1;}
     if (l == p3) {fprintf (stderr, " %s", p3_name); c += strlen (p3_name) + 1;}
     fprintf (stderr, ": %*s", c < longest ? (int) (longest - c) : 0, "");
+
     describe_rec_frame (l);
     fputc ('\n', stderr);
+
+    for (cp = l->cycle_piece; cp; cp = cp->cycle_piece) {
+      fprintf (stderr, "    %p", cp);
+
+      c = 0;
+      if (cp == p1) {fprintf (stderr, " %s", p1_name); c += strlen (p1_name)+1;}
+      if (cp == p2) {fprintf (stderr, " %s", p2_name); c += strlen (p2_name)+1;}
+      if (cp == p3) {fprintf (stderr, " %s", p3_name); c += strlen (p3_name)+1;}
+      fprintf (stderr, ": %*s", c < longest ? (int) (longest - c) : 0, "");
+
+      describe_rec_frame (cp);
+      fputc ('\n', stderr);
+    }
   }
 }
 
@@ -2246,6 +2268,43 @@ static void check_rec_stack (struct gc_rec_frame *p1, const char *p1n,
       else if (l->rf_flags & GC_PREV_WEAK)
 	rec_stack_fatal (l, "err", p1, p1n, p2, p2n, file, line,
 			 "Unexpected weak ref before %p inside a cycle.\n", l);
+
+      if (l->rf_flags & GC_IS_VALID_CP_CYCLE_ID)
+	rec_stack_fatal (l, "err", p1, p1n, p2, p2n, file, line,
+			 "Frame %p got stray "
+			 "GC_IS_VALID_CP_CYCLE_ID flag.\n", l);
+      if (l->cycle_piece) {
+	struct gc_rec_frame *cp = l->cycle_piece;
+	l->rf_flags |= GC_IS_VALID_CP_CYCLE_ID;
+
+	while (1) {
+	  if (!cp->cycle_id ||
+	      !(cp->cycle_id->rf_flags & GC_IS_VALID_CP_CYCLE_ID))
+	    rec_stack_fatal (cp, "err", p1, p1n, p2, p2n, file, line,
+			     "Unexpected cycle id for frame %p "
+			     "on cycle piece list.\n", cp);
+	  if (cp->rf_flags & GC_IS_VALID_CP_CYCLE_ID)
+	    rec_stack_fatal (cp, "err", p1, p1n, p2, p2n, file, line,
+			     "Frame %p got stray "
+			     "GC_IS_VALID_CP_CYCLE_ID flag.\n", cp);
+	  cp->rf_flags |= GC_IS_VALID_CP_CYCLE_ID;
+	  check_cycle_piece_frame (cp, file, line);
+	  if (!cp->cycle_piece) break;
+	  cp = cp->cycle_piece;
+	}
+
+	if (l->cycle_piece->u.last_cycle_piece != cp)
+	  rec_stack_fatal (l->cycle_piece, "err", p1, p1n, p2, p2n, file, line,
+			   "last_cycle_piece is wrong for frame %p, "
+			   "expected %p.\n", l->cycle_piece, cp);
+
+	l->rf_flags &= ~GC_IS_VALID_CP_CYCLE_ID;
+	cp = l->cycle_piece;
+	do {
+	  cp->rf_flags &= ~GC_IS_VALID_CP_CYCLE_ID;
+	  cp = cp->cycle_piece;
+	} while (cp);
+      }
     }
   }
 }
