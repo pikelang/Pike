@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.693 2008/05/13 17:11:18 grubba Exp $
+|| $Id: program.c,v 1.694 2008/05/14 10:52:47 grubba Exp $
 */
 
 #include "global.h"
@@ -4908,10 +4908,16 @@ int define_variable(struct pike_string *name,
 			   type)) {
 	    my_yyerror("Illegal to redefine inherited variable %S "
 		       "with different type.", name);
+	    yytype_error(NULL,
+			 ID_FROM_INT(Pike_compiler->new_program, n)->type,
+			 type, 0);
 	    return n;
 	  } else {
 	    yywarning("Redefining inherited variable %S "
 		      "with different type.", name);
+	    yytype_error(NULL,
+			 ID_FROM_INT(Pike_compiler->new_program, n)->type,
+			 type, YYTE_IS_WARNING);
 	  }
 	}
 	
@@ -4919,8 +4925,8 @@ int define_variable(struct pike_string *name,
 	if(!IDENTIFIER_IS_VARIABLE(ID_FROM_INT(Pike_compiler->new_program, n)->
 				   identifier_flags))
 	{
-	  my_yyerror("Illegal to redefine inherited variable %S "
-		     "with different type.", name);
+	  my_yyerror("Illegal to redefine inherited symbol %S "
+		     "to a variable.", name);
 	  return n;
 	}
 
@@ -4930,6 +4936,9 @@ int define_variable(struct pike_string *name,
 	     compile_type_to_runtime_type(type))) {
 	  my_yyerror("Illegal to redefine inherited variable %S "
 		     "with different type.", name);
+	  yytype_error(NULL,
+		       ID_FROM_INT(Pike_compiler->new_program, n)->type,
+		       type, 0);
 	  return n;
 	}
 
