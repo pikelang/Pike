@@ -2684,7 +2684,7 @@ TimeRange parse(string fmt,string arg,void|TimeRange context)
    if (!nfmt)
    {
 //        nfmt=replace(fmt," %","%*[ \t]%"); // whitespace -> whitespace
-#define ALNU "%[^- -,./:-?[-`{-¿]"
+#define ALNU "%[^ -,./:-?[-`{-¿-]"
 #define AMPM "%[ampAMP.]"
 #define NUME "%[0-9]"
 #define ZONE "%[-+0-9A-Za-z/]"
