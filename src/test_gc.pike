@@ -95,6 +95,17 @@ array(int) a() {
 	  }
 	}
       }
+      class B_live_nested_4
+      {
+	inherit B_live;
+	string id = \"live_nested[4]\";
+	void check_live (mapping(object:int) checked) {
+	  checked[this_object()] = 1;
+	  if (catch (check_live_0 (checked)))
+	    my_error (\"Parent for %s got destructed too early.\\n\", id);
+	  else ::check_live (checked);
+	}
+      }
     ", __FILE__));
 
   add_constant ("B_dead_nested_0", compile_string ("# " + __LINE__ + #"\n
@@ -131,13 +142,29 @@ array(int) a() {
 	  }
 	}
       }
+      class B_dead_nested_4
+      {
+	inherit B_dead;
+	void check_live (mapping(object:int) checked) {
+	  checked[this_object()] = 1;
+	  if (catch (check_live_0 (checked)))
+	    my_error (\"Parent for %s got destructed too early.\\n\", id);
+	  else ::check_live (checked);
+	}
+      }
     ", __FILE__));
 
   array(array) destruct_order_tests = ({
     ({3,			// Wanted number of live objects.
       0,			// Wanted number of dead objects.
-      0,			// Wanted live nested objects.
-      0,			// Wanted dead nested objects.
+      0,			// Live nested objects configuration.
+      0,			// Dead nested objects configuration.
+      // Nested objects configurations (x is either "live" or "dead"):
+      //  1: x_nested_0 {}
+      //  2: x_nested_0 {x_nested_1 {}}
+      //  3: x_nested_0 {x_nested_1 {x_nested_2 {}}}
+      //  4: x_nested_0 {x_nested_1 {x_nested_2 {} x_nested_3 {}}}
+      //  5: x_nested_0 {x_nested_1 {} x_nested_4 {}}
       // Assignments to connect them on the form "obj1->var = obj2".
       ({"live_0->n1 = live_1",
 	"live_0->nk1 = live_2",
@@ -368,53 +395,59 @@ array(int) a() {
     ({3, 0, 2, 0,	// 43
       ({"live_0->n1 = live_0", "live_0->nk1 = live_nested_0",
 	"live_1->n1 = live_1", "live_1->nk1 = live_nested_1",
-	"live_nested_0->nk1 = live_2",
+	"live_nested_0->n1 = live_2",
 	"live_2->n1 = live_nested_1",
       })}),
-    ({3, 0, 3, 0,	// 44
+    ({3, 0, 2, 0,	// 44
+      ({"live_0->n1 = live_0", "live_0->nk1 = live_nested_0",
+	"live_1->n1 = live_1", "live_1->nk1 = live_nested_1",
+	"live_nested_0->nk1 = live_2",
+	"live_2->w1 = live_nested_1",
+      })}),
+    ({3, 0, 3, 0,	// 45
       ({"live_0->n1 = live_0", "live_0->nk1 = live_nested_0",
 	"live_1->n1 = live_1", "live_1->nk1 = live_nested_2",
 	"live_2->n1 = live_2", "live_2->nk1 = live_nested_1",
 	"live_nested_0->n1 = live_nested_2",
 	"live_nested_1->nk1 = live_0",
       })}),
-    ({0, 2, 0, 2,	// 45
+    ({0, 2, 0, 2,	// 46
       ({"dead_0->n1 = dead_0", "dead_0->nk1 = dead_nested_0",
 	"dead_1->n1 = dead_1", "dead_1->nk1 = dead_nested_1",
 	"dead_nested_0->n1 = dead_nested_1",
       })}),
-    ({0, 2, 0, 2,	// 46
+    ({0, 2, 0, 2,	// 47
       ({"dead_0->n1 = dead_0", "dead_0->nk1 = dead_nested_0",
 	"dead_1->n1 = dead_1", "dead_1->nk1 = dead_nested_1",
 	"dead_nested_0->w1 = dead_nested_1",
       })}),
-    ({3, 0, 0, 3,	// 47
+    ({3, 0, 0, 3,	// 48
       ({"live_0->n1 = live_0", "live_0->nk1 = dead_nested_0",
 	"live_1->n1 = live_1", "live_1->nk1 = dead_nested_2",
 	"live_2->n1 = live_2", "live_2->nk1 = dead_nested_1",
 	"dead_nested_0->n1 = dead_nested_2",
       })}),
-    ({4, 0, 0, 4,	// 48
+    ({4, 0, 0, 4,	// 49
       ({"live_0->n1 = live_0", "live_0->nk1 = dead_nested_0",
 	"live_1->n1 = live_1", "live_1->nk1 = dead_nested_1",
 	"live_2->n1 = live_2", "live_2->nk1 = dead_nested_2",
 	"live_3->n1 = live_3", "live_3->nk1 = dead_nested_3",
 	"dead_nested_0->n1 = dead_nested_3",
       })}),
-    ({3, 0, 0, 2,	// 49
+    ({3, 0, 0, 2,	// 50
       ({"live_0->n1 = live_0", "live_0->nk1 = dead_nested_0",
 	"live_1->n1 = live_1", "live_1->nk1 = dead_nested_1",
 	"dead_nested_0->nk1 = live_2",
 	"live_2->n1 = dead_nested_1",
       })}),
-    ({3, 0, 0, 3,	// 50
+    ({3, 0, 0, 3,	// 51
       ({"live_0->n1 = live_0", "live_0->nk1 = dead_nested_0",
 	"live_1->n1 = live_1", "live_1->nk1 = dead_nested_2",
 	"live_2->n1 = live_2", "live_2->nk1 = dead_nested_1",
 	"dead_nested_0->n1 = dead_nested_2",
 	"dead_nested_1->nk1 = live_0",
       })}),
-    ({0, 4, 2, 2,	// 51
+    ({0, 4, 2, 2,	// 52
       ({"dead_0->n1 = dead_0", "dead_0->nk1 = live_nested_0",
 	"dead_1->n1 = dead_1", "dead_1->nk1 = live_nested_1",
 	"dead_2->n1 = dead_2", "dead_2->nk1 = dead_nested_0",
@@ -422,143 +455,149 @@ array(int) a() {
 	"live_nested_0->n1 = dead_nested_1",
 	"dead_nested_0->n1 = live_nested_1",
       })}),
-    ({4, 0, 0, 0,	// 52
+    ({4, 0, 0, 0,	// 53
       ({"live_0->w1 = live_1",
 	"live_1->n1 = live_1", "live_1->nk1 = live_0", "live_1->nk2 = live_2",
 	"live_2->w1 = live_3",
 	"live_3->n1 = live_3", "live_3->nk1 = live_0",
       })}),
-    ({4, 0, 0, 0,	// 53
+    ({4, 0, 0, 0,	// 54
       ({"live_0->w1 = live_1",
 	"live_1->n1 = live_1", "live_1->nk2 = live_0", "live_1->nk1 = live_2",
 	"live_2->w1 = live_3",
-	"live_3->n1 = live_3", "live_3->nk1 = live_0",
-      })}),
-    ({4, 0, 0, 0,	// 54
-      ({"live_0->n1 = live_0", "live_0->w1 = live_1",
-	"live_1->w1 = live_2",
-	"live_2->n1 = live_2", "live_2->nk1 = live_1", "live_2->nk2 = live_3",
 	"live_3->n1 = live_3", "live_3->nk1 = live_0",
       })}),
     ({4, 0, 0, 0,	// 55
       ({"live_0->n1 = live_0", "live_0->w1 = live_1",
 	"live_1->w1 = live_2",
+	"live_2->n1 = live_2", "live_2->nk1 = live_1", "live_2->nk2 = live_3",
+	"live_3->n1 = live_3", "live_3->nk1 = live_0",
+      })}),
+    ({4, 0, 0, 0,	// 56
+      ({"live_0->n1 = live_0", "live_0->w1 = live_1",
+	"live_1->w1 = live_2",
 	"live_2->n1 = live_2", "live_2->nk2 = live_1", "live_2->nk1 = live_3",
 	"live_3->n1 = live_3", "live_3->nk1 = live_0",
       })}),
-    ({3, 0, 0, 0,	// 56
+    ({3, 0, 0, 0,	// 57
       ({"live_0->nk1 = live_2",
 	"live_1->n1 = live_1", "live_1->nk1 = live_0", "live_1->nk2 = live_2",
       })}),
-    ({3, 0, 0, 0,	// 57
+    ({3, 0, 0, 0,	// 58
       ({"live_0->nk1 = live_2",
 	"live_1->n1 = live_1", "live_1->nk2 = live_0", "live_1->nk1 = live_2",
       })}),
-    ({2, 1, 0, 0,	// 58
+    ({2, 1, 0, 0,	// 59
       ({"live_0->n1 = live_1", "live_0->n2 = dead_0",
 	"live_0->checkfn = lambda (object o) {return o->n2[0];}",
 	"live_1->n1 = live_0",
 	"dead_0->n1 = dead_0",
       })}),
-    ({2, 1, 0, 0,	// 59
+    ({2, 1, 0, 0,	// 60
       ({"live_0->n2 = live_1", "live_0->n1 = dead_0",
 	"live_0->checkfn = lambda (object o) {return o->n1[0];}",
 	"live_1->n1 = live_0",
 	"dead_0->n1 = dead_0",
       })}),
-    ({1, 2, 0, 2,	// 60
+    ({1, 2, 0, 2,	// 61
       ({"live_0->n1 = dead_nested_0", "live_0->n2 = dead_nested_0",
 	"dead_0->n1 = dead_0", "dead_0->n2 = dead_nested_0",
 	"dead_1->n1 = dead_1", "dead_1->n2 = dead_nested_1",
 	"dead_nested_0->n1 = live_0", "dead_nested_0->n2 = dead_nested_1",
       })}),
-    ({1, 2, 0, 2,	// 61
+    ({1, 2, 0, 2,	// 62
       ({"live_0->n1 = dead_nested_0", "live_0->n2 = dead_nested_0",
 	"dead_0->n1 = dead_0", "dead_0->n2 = dead_nested_0",
 	"dead_1->n1 = dead_1", "dead_1->n2 = dead_nested_1",
 	"dead_nested_0->n2 = live_0", "dead_nested_0->n1 = dead_nested_1",
       })}),
-    ({3, 0, 0, 0,	// 62
+    ({3, 0, 0, 0,	// 63
       ({"live_0->n1 = live_1",
 	"live_1->n1 = live_0", "live_1->n2 = live_2",
 	"live_2->n1 = live_1",
       })}),
-    ({3, 0, 0, 0,	// 63
+    ({3, 0, 0, 0,	// 64
       ({"live_0->n1 = live_1",
 	"live_1->n2 = live_0", "live_1->n1 = live_2",
 	"live_2->n1 = live_1",
       })}),
-    ({2, 0, 2, 0,	// 64
+    ({2, 0, 2, 0,	// 65
       ({"live_0->n1 = live_1", "live_0->n2 = live_nested_1",
 	"live_1->w1 = live_nested_0",
 	"live_nested_0->n2 = live_0",
       })}),
-    ({2, 0, 2, 0,	// 65
+    ({2, 0, 2, 0,	// 66
       ({"live_0->n2 = live_1", "live_0->n1 = live_nested_1",
 	"live_1->w1 = live_nested_0",
 	"live_nested_0->n2 = live_0",
       })}),
-    ({1, 1, 3, 0,	// 66
+    ({1, 1, 3, 0,	// 67
       ({"dead_0->n1 = dead_0", "dead_0->nk1 = live_nested_0",
 	"live_nested_0->n1 = live_0", "live_nested_0->n2 = live_nested_2",
 	"live_0->n1 = live_nested_1",
       })}),
-    ({1, 1, 3, 0,	// 67
+    ({1, 1, 3, 0,	// 68
       ({"dead_0->n1 = dead_0", "dead_0->nk1 = live_nested_0",
 	"live_nested_0->n2 = live_0", "live_nested_0->n1 = live_nested_2",
 	"live_0->n1 = live_nested_1",
       })}),
-    ({0, 1, 2, 2,	// 68
+    ({0, 1, 2, 2,	// 69
       ({"dead_0->n1 = dead_0", "dead_0->nk1 = live_nested_0",
 	"live_nested_0->n2 = live_nested_1", "live_nested_0->n1 = dead_nested_0",
 	"live_nested_1->n1 = dead_nested_1",
 	"dead_nested_0->n1 = live_nested_1",
       })}),
-    ({0, 1, 2, 2,	// 69
+    ({0, 1, 2, 2,	// 70
       ({"dead_0->n1 = dead_0", "dead_0->nk1 = live_nested_0",
 	"live_nested_0->n1 = live_nested_1", "live_nested_0->n2 = dead_nested_0",
 	"live_nested_1->n1 = dead_nested_1",
 	"dead_nested_0->n1 = live_nested_1",
       })}),
-    ({0, 1, 2, 2,	// 70
+    ({0, 1, 2, 2,	// 71
       ({"dead_0->n1 = dead_0", "dead_0->nk1 = live_nested_0",
 	"live_nested_0->n1 = live_nested_1", "live_nested_0->n2 = dead_nested_1",
 	"live_nested_1->n1 = dead_nested_0",
 	"dead_nested_0->n1 = live_nested_0",
       })}),
-    ({0, 1, 2, 2,	// 71
+    ({0, 1, 2, 2,	// 72
       ({"dead_0->n1 = dead_0", "dead_0->nk1 = live_nested_0",
 	"live_nested_0->n2 = live_nested_1", "live_nested_0->n1 = dead_nested_1",
 	"live_nested_1->n1 = dead_nested_0",
 	"dead_nested_0->n1 = live_nested_0",
       })}),
-    ({2, 0, 2, 0,	// 72
+    ({2, 0, 2, 0,	// 73
       ({"live_0->n1 = live_1",
 	"live_1->n1 = live_nested_1",
 	"live_nested_1->n1 = live_0",
 	"live_nested_0->n1 = live_1",
       })}),
-    ({2, 0, 4, 0,	// 73
+    ({2, 0, 4, 0,	// 74
       ({"live_0->n1 = live_1", "live_0->n2 = live_nested_2", "live_0->n3 = live_nested_3",
 	"live_1->n1 = live_0",
 	"live_nested_1->n1 = live_0",
       })}),
-    ({2, 0, 4, 0,	// 74
+    ({2, 0, 4, 0,	// 75
       ({"live_0->n2 = live_1", "live_0->n3 = live_nested_2", "live_0->n1 = live_nested_3",
 	"live_1->n1 = live_0",
 	"live_nested_1->n1 = live_0",
       })}),
-    ({2, 0, 4, 0,	// 75
+    ({2, 0, 4, 0,	// 76
       ({"live_0->n3 = live_1", "live_0->n1 = live_nested_2", "live_0->n2 = live_nested_3",
 	"live_1->n1 = live_0",
 	"live_nested_1->n1 = live_0",
       })}),
-    ({2, 1, 2, 0,	// 76
+    ({2, 1, 2, 0,	// 77
       ({"dead_0->n1 = dead_0", "dead_0->nk1 = live_nested_0",
 	"live_nested_0->n2 = live_nested_1", "live_nested_0->n1 = live_1",
 	"live_nested_1->n1 = live_0",
 	"live_0->n1 = live_nested_0",
 	"live_1->n1 = live_0",
+      })}),
+    ({1, 0, 5, 0,	// 78
+      ({"live_0->w1 = live_nested_1",
+	"live_nested_0->n1 = live_nested_1",
+	"live_nested_0->n2 = live_nested_4",
+	"live_nested_0->n3 = live_0",
       })}),
 //      ({3, 0, 0, 0, // Not possible without weak refs directly in objects.
 //        ({"live_0->n1 = live_0", "live_0->wk1 = live_1",
@@ -572,7 +611,7 @@ array(int) a() {
   foreach (destruct_order_tests;
 	   int test;
 	   [int nlive, int ndead, int nlnested, int ndnested, array setup]) {
-    int to_garb = nlive + ndead + nlnested + ndnested;
+    int to_garb;
 
     foreach (setup; int i; string assignment) {
       array a = setup[i] = array_sscanf (assignment, "%s->%s = %s");
@@ -585,23 +624,27 @@ array(int) a() {
     for (int i = 0; i < nlive; i++) obj_names += ({"live_" + i});
     for (int i = 0; i < ndead; i++) obj_names += ({"dead_" + i});
     switch (nlnested) {
-      // Don't count the implied parent objects.
+      // Don't permute the implied parent objects.
       case 1: obj_names += ({"live_nested_0"}); break;
       case 2: obj_names += ({"live_nested_1"}); break;
       case 3: obj_names += ({"live_nested_2"}); break;
       case 4: obj_names += ({"live_nested_2", "live_nested_3"}); break;
-      case 5..: error ("Too many live nested in test %d\n", test);
+      case 5: obj_names += ({"live_nested_1", "live_nested_4"}); nlnested = 3; break;
+      case 6..: error ("Too many live nested in test %d\n", test);
     }
     switch (ndnested) {
       case 1: obj_names += ({"dead_nested_0"}); break;
       case 2: obj_names += ({"dead_nested_1"}); break;
       case 3: obj_names += ({"dead_nested_2"}); break;
       case 4: obj_names += ({"dead_nested_2", "dead_nested_3"}); break;
-      case 5..: error ("Too many dead nested in test %d\n", test);
+      case 5: obj_names += ({"dead_nested_1", "dead_nested_4"}); ndnested = 3; break;
+      case 6..: error ("Too many dead nested in test %d\n", test);
     }
 
+    to_garb += nlive + ndead + nlnested + ndnested;
+
     int n = 1;
-    for (int f = nlive + ndead; f > 1; f--) n *= f;
+    for (int f = sizeof (obj_names); f > 1; f--) n *= f;
     write ("\rGC destruct order test %d, %d permutations    ", test, n);
     tests += n;
 
@@ -610,13 +653,18 @@ array(int) a() {
 
       foreach (({"dead", "live"}), string base) {
 	int i, j;
-	if ((i = search (alloc_order, base + "_nested_2")) >= 0 ||
-	    (j = search (alloc_order, base + "_nested_3")) >= 0) {
+	i = search (alloc_order, base + "_nested_2");
+	j = search (alloc_order, base + "_nested_3");
+	if (i >= 0 || j >= 0) {
 	  i = i >= 0 ? j >= 0 ? min (i, j) : i : j;
 	  alloc_order = alloc_order[..i-1] + ({base + "_nested_1"}) + alloc_order[i..];
 	}
-	if ((i = search (alloc_order, base + "_nested_1")) >= 0)
+	i = search (alloc_order, base + "_nested_1");
+	j = search (alloc_order, base + "_nested_4");
+	if (i >= 0 || j >= 0) {
+	  i = i >= 0 ? j >= 0 ? min (i, j) : i : j;
 	  alloc_order = alloc_order[..i-1] + ({base + "_nested_0"}) + alloc_order[i..];
+	}
       }
 
       // All this fiddling to make sure the objects are created in the
@@ -640,6 +688,7 @@ array(int) a() {
 	    case '0': obj_creates += "C_" + obj + "();\n"; break;
 	    case '1': obj_creates += basename + "_0->C_" + obj + "();\n"; break;
 	    case '2': case '3': obj_creates += basename + "_1->C_" + obj + "();\n"; break;
+	    case '4': obj_creates += basename + "_0->C_" + obj + "();\n"; break;
 	  }
 	}
 	else {
@@ -699,6 +748,8 @@ array(int) a() {
 	      prog += "class C_" + base + "_nested_3 {\n" + class_body + "}\n";
 	    prog += "}\n";
 	  }
+	  if ((class_body = class_bodies[base + "_nested_4"]))
+	    prog += "class C_" + base + "_nested_4 {\n" + class_body + "}\n";
 	  prog += "}\n\n";
 	}
 
@@ -730,7 +781,9 @@ array(int) a() {
 	break;
       }
 
+#if constant (__signal_watchdog)
       __signal_watchdog();
+#endif
     }
   }
 
@@ -744,4 +797,11 @@ array(int) a() {
   add_constant ("B_dead_nested_0");
 
   return ({ tests-tests_failed, tests_failed });
+}
+
+// Only to be able to run standalone as well.
+int main()
+{
+  [int ok, int failed] = a();
+  werror ("%d tests ok, %d failed\n", ok, failed);
 }
