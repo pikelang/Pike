@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.417 2008/05/12 13:54:14 grubba Exp $
+// $Id: master.pike.in,v 1.418 2008/05/14 18:02:38 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -608,7 +608,7 @@ mapping(program:string) source_cache;
 
 mapping (program:object|NoValue) objects=([
   this_program : this,
-  object_program(_static_modules): _static_modules
+  object_program(_static_modules): _static_modules,
 ]);
 
 mapping(string:object|NoValue) fc=([]);
@@ -3605,6 +3605,8 @@ string describe_module(object|program mod, array(object)|void ret_obj)
 	return (objectp (objects[parent_fun]) && programs["/master"] != parent_fun?
 		res+".":res+"->");
     };
+    string res = search(all_constants(), mod);
+    if (res) return res;
   }
   if (!object_program(parent_fun)) {
     // We might be a top-level entity.
@@ -3662,7 +3664,8 @@ string describe_object(object o)
   string s;
   if(zero_type (o)) return 0;	// Destructed.
 
-  if (o == _static_modules) return "_static_modules";
+  // Handled by the search of all_constants() below.
+  // if (o == _static_modules) return "_static_modules";
 
   program|function(mixed...:void|object) parent_fun = object_program(o);
 
@@ -3684,6 +3687,7 @@ string describe_object(object o)
       }
     }
   };
+  if ((s = search(all_constants(), o))) return s;
   // When running with RESOLV_DEBUG this function may
   // get called before objects has been initialized.
   if(objects && objectp (objects[parent_fun]))
@@ -3721,7 +3725,7 @@ string describe_program(program|function p)
   if(s=Builtin.program_defined(p))
     return BASENAME(s);
 
-  return 0;
+  return search(all_constants(), p);
 }
 
 //!
@@ -3731,6 +3735,8 @@ string describe_function (function f)
 
   string name;
 
+  if (name = search(all_constants(), f)) return name;
+
   if(string s = programs_reverse_lookup (f))
   {
     if(has_suffix(s, ".pmod"))
@@ -3738,7 +3744,7 @@ string describe_function (function f)
     else
       name = trim_file_name(s);
   }
-  else
+  else 
     if (catch (name = function_name (f))) name = "function";
 
   object o = function_object([function(mixed...:void|mixed)]f);
