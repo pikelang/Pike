@@ -2645,7 +2645,7 @@ static TimeRange dwim_zone(TimeRange origin,string zonename,
    Calendar.Rule.Timezone zone=Calendar.Timezone[zonename];
    if (!zone)
    {
-      if (sscanf(zonename,"%[^-+]%s",string a,string b)==2 && a!="" && b!="")
+      if (sscanf(zonename,"%[^+-]%s",string a,string b)==2 && a!="" && b!="")
       {
 	 TimeRange tr=dwim_zone(origin,a,whut,@args);
 	 if (!tr) return 0;
