@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.h,v 1.115 2008/05/11 14:55:54 mast Exp $
+|| $Id: pike_types.h,v 1.116 2008/05/14 16:02:05 grubba Exp $
 */
 
 #ifndef PIKE_TYPES_H
@@ -76,6 +76,7 @@ BLOCK_ALLOC(pike_type, n/a);
 #define CALL_STRICT	0x0001	/* Strict checking. */
 #define CALL_LAST_ARG	0x0002	/* This is the last argument. */
 #define CALL_7_6	0x0004	/* Pike 7.6 compatibility mode. */
+#define CALL_WEAK_VOID	0x0008	/* Allow promotion of void to zero. */
 
 /*
  * soft_cast() flags
