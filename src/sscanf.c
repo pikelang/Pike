@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sscanf.c,v 1.173 2008/05/11 22:41:03 mast Exp $
+|| $Id: sscanf.c,v 1.174 2008/05/14 20:07:24 marcus Exp $
 */
 
 #include "global.h"
@@ -293,7 +293,9 @@ static ptrdiff_t PIKE_CONCAT(read_set,SIZE) (			\
   MEMSET(set->c, 0, sizeof(set->c));				\
   set->a=0;							\
 								\
-  if(match[cnt]=='^')						\
+  if(match[cnt]=='^' &&						\
+     (cnt+2>=match_len || match[cnt+1]!='-' ||			\
+      match[cnt+2]==']'))					\
   {								\
     set->neg=1;							\
     cnt++;							\
@@ -325,7 +327,7 @@ static ptrdiff_t PIKE_CONCAT(read_set,SIZE) (			\
 	break;							\
       }								\
 								\
-      if(last >= match[cnt])					\
+      if(last > match[cnt])					\
 	Pike_error("Error in sscanf format string.\n");		\
 								\
 CHAROPT(							\
@@ -1466,14 +1468,24 @@ INT32 low_sscanf(struct pike_string *data, struct pike_string *format)
  *!     @expr{"%2c"@} and then the resulting number of characters.
  *!   @value "%[set]"
  *!     Matches a string containing a given set of characters (those given
- *!     inside the brackets). %[^set] means any character except those inside
- *!     brackets. Ranges of characters can be defined by using a minus
- *!     character between the first and the last character to be included in
- *!     the range. Example: %[0-9H] means any number or 'H'. Note that sets
- *!     that includes the character '-' must have it first in the brackets to
- *!     avoid having a range defined. Sets including the character ']' must
+ *!     inside the brackets). Ranges of characters can be defined by using
+ *!     a minus character between the first and the last character to be
+ *!     included in the range. Example: %[0-9H] means any number or 'H'.
+ *!     Note that sets that includes the character '-' must have it first
+ *!     (not possible in complemented sets, see below) or last in the brackets
+ *!     to avoid having a range defined. Sets including the character ']' must
  *!     list this first too. If both '-' and ']' should be included
- *!     then put ']' first and '-' last.
+ *!     then put ']' first and '-' last.  It is not possible to make a range
+ *!     that ends with ']'; make the range end with '\' instead and put ']'
+ *!     at the beginning of the set.  Likewise it is generally not possible
+ *!     to have a range start with '-'; make the range start with '.' instead
+ *!     and put '-' at the end of the set.  If the first character after the
+ *!     [ bracket is '^' (%[^set]), and this character does not begin a
+ *!     range, it means that the set is complemented, which is to say that
+ *!     any character except those inside brackets is matched.  To include '-'
+ *!     in a complemented set, it must be put last, not first.  To include '^'
+ *!     in a non-complemented set, it can be put anywhere but first, or be
+ *!     specified as a range ("^-^").
  *!   @value "%{format%}"
  *!     Repeatedly matches 'format' as many times as possible and assigns an
  *!     array of arrays with the results to the lvalue.
