@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.58 2008/05/14 14:34:09 marcus Exp $
+# $Id: configure.in,v 1.59 2008/05/14 15:03:23 marcus Exp $
 #
 # Configure script for the mysql-module
 #
@@ -45,16 +45,16 @@ else
       $with_root/usr/local $with_root/sw/local $with_root/sw \
       $with_root/usr/gnu $with_root/opt/gnu $with_root/sw/gnu \
       $with_root/usr/freeware $with_root/usr/pkg \
+      $with_root/opt/csw $with_root/opt/csw/mysql5 $with_root/opt/csw/mysql4 \
       $with_root/usr/sfw $with_root/opt/sfw \
-      $with_root/opt/csw /opt/csw/mysql5 /opt/csw/mysql4 \
       $with_root/usr $with_root
     do
       if test -d "$dir_prefix/."; then :; else continue; fi
 
       for subdir in mysql .; do
         if test -d "$dir_prefix/$subdir/."; then :; else continue; fi
-        for libdir in "lib$with_abi" "lib/$with_abi" "lib"; do
-          if test -d "$dir_prefix/$subdir/$libdir/mysql/."; then
+        for libdir in $pike_cv_abi_suffixes; do
+          if test -d "$dir_prefix/$subdir/lib$libdir/mysql/." || test -d "$dir_prefix/$subdir/lib/mysql$libdir/."; then
             pike_cv_mysql_lib_dir_prefix="$dir_prefix/$subdir"
 	    break 3
           fi
@@ -69,10 +69,15 @@ else
     AC_MSG_CHECKING(for Mysql lib directory)
     AC_CACHE_VAL(pike_cv_mysql_lib_dir, [
       pike_cv_mysql_lib_dir="no"
-      for libdir in "lib$with_abi" "lib/$with_abi" "lib"; do
-        if test -d "$pike_cv_mysql_lib_dir_prefix/$libdir/mysql/."; then
-          pike_cv_mysql_lib_dir="$pike_cv_mysql_lib_dir_prefix/$libdir/mysql"
+      for libdir in $pike_cv_abi_suffixes; do
+        if test -d "$pike_cv_mysql_lib_dir_prefix/lib$libdir/mysql/."; then
+          pike_cv_mysql_lib_dir="$pike_cv_mysql_lib_dir_prefix/lib$libdir/mysql"
 	  break
+	else
+          if test -d "$pike_cv_mysql_lib_dir_prefix/lib/mysql$libdir/."; then
+            pike_cv_mysql_lib_dir="$pike_cv_mysql_lib_dir_prefix/lib/mysql$libdir"
+	    break
+          fi
         fi
       done
     ])
