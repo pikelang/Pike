@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.315 2008/05/13 19:03:59 mast Exp $
+|| $Id: gc.c,v 1.316 2008/05/14 21:09:07 mast Exp $
 */
 
 #include "global.h"
@@ -2912,8 +2912,8 @@ int gc_cycle_push(void *data, struct marker *m, int weak)
 	if (break_pos) {
 	  struct gc_rec_frame *rot_beg;
 	  rot_beg = rotate_rec_stack (cycle_frame, break_pos);
-	  cycle_frame->rf_flags =
-	    (cycle_frame->rf_flags & ~(GC_PREV_WEAK|GC_PREV_BROKEN)) | GC_PREV_STRONG;
+	  rot_beg->rf_flags &= ~(GC_PREV_WEAK|GC_PREV_BROKEN);
+	  if (weak >= 0) rot_beg->rf_flags |= GC_PREV_STRONG;
 
 	  if (rot_beg->cycle_id != break_pos->prev->cycle_id)
 	    /* Ensure that the cycle id frame is kept deepest in the
