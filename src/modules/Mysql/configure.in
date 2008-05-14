@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.57 2007/03/20 16:40:24 grubba Exp $
+# $Id: configure.in,v 1.58 2008/05/14 14:34:09 marcus Exp $
 #
 # Configure script for the mysql-module
 #
@@ -87,7 +87,7 @@ else
       pike_cv_mysql_include_dir="no"
       for incdir in include/mysql include; do
         if test -d "$pike_cv_mysql_lib_dir_prefix/$incdir/."; then
-          $pike_cv_mysql_include_dir="$pike_cv_mysql_lib_dir_prefix/$incdir"
+          pike_cv_mysql_include_dir="$pike_cv_mysql_lib_dir_prefix/$incdir"
 	  break
         fi
       done
