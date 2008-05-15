@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.202 2008/03/29 01:33:18 mast Exp $
+|| $Id: interpret_functions.h,v 1.203 2008/05/15 15:13:03 grubba Exp $
 */
 
 /*
@@ -1962,7 +1962,7 @@ OPCODE1(F_SIZEOF_LOCAL, "sizeof local", I_UPDATE_SP, {
   push_int(pike_sizeof(Pike_fp->locals+arg1));
 });
 
-OPCODE1_ALIAS(F_SSCANF, "sscanf", I_UPDATE_SP, o_sscanf);
+OPCODE2_ALIAS(F_SSCANF, "sscanf", I_UPDATE_SP, o_sscanf);
 
 #define MKAPPLY(OP,OPCODE,NAME,TYPE,  ARG2, ARG3)			   \
   PIKE_CONCAT(OP,_JUMP)(PIKE_CONCAT(F_,OPCODE),NAME,			\

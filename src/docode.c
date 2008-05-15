@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.c,v 1.199 2008/05/13 17:11:18 grubba Exp $
+|| $Id: docode.c,v 1.200 2008/05/15 15:13:04 grubba Exp $
 */
 
 #include "global.h"
@@ -2332,9 +2332,9 @@ static int do_docode2(node *n, int flags)
   }
 
   case F_SSCANF:
-    tmp1=do_docode(CAR(n),DO_NOT_COPY);
+    tmp1=do_docode(CDAR(n),DO_NOT_COPY);
     tmp2=do_docode(CDR(n),DO_NOT_COPY | DO_LVALUE);
-    emit1(F_SSCANF, DO_NOT_WARN((INT32)(tmp1+tmp2)));
+    emit2(F_SSCANF, DO_NOT_WARN((INT32)(tmp1+tmp2)), CAAR(n)->u.sval.u.integer);
     return 1;
 
   case F_CATCH: {

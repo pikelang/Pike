@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.407 2008/05/01 20:41:43 mast Exp $
+|| $Id: las.c,v 1.408 2008/05/15 15:13:04 grubba Exp $
 */
 
 #include "global.h"
@@ -4103,8 +4103,9 @@ void fix_type_field(node *n)
     break;
 
   case F_SSCANF:
-    if (!CAR(n) || (CAR(n)->token != F_ARG_LIST) ||
-	!CAAR(n) || !CDAR(n)) {
+    if (!CAR(n) || (CAR(n)->token != ':') ||
+	!CDAR(n) || (CDAR(n)->token != F_ARG_LIST) ||
+	!CADAR(n) || !CDDAR(n)) {
       yyerror("Too few arguments to sscanf().");
     } else {
       check_node_type(CAAR(n), string_type_string,
@@ -4263,9 +4264,9 @@ static void find_usage(node *n, unsigned char *usage,
 	usage[i] |= catch_u[i];
       }
       /* Only the first two arguments are evaluated. */
-      if (CAR(n)) {
-	find_usage(CDAR(n), usage, switch_u, cont_u, break_u, catch_u);
-      find_usage(CAAR(n), usage, switch_u, cont_u, break_u, catch_u);
+      if (CAR(n) && CDAR(n)) {
+	find_usage(CDDAR(n), usage, switch_u, cont_u, break_u, catch_u);
+	find_usage(CADAR(n), usage, switch_u, cont_u, break_u, catch_u);
       }
       return;
     }
@@ -4549,14 +4550,15 @@ static node *low_localopt(node *n,
 	usage[i] |= catch_u[i];
       }
       /* Only the first two arguments are evaluated. */
-      if (CAR(n)) {
-	cdr = low_localopt(CDAR(n), usage, switch_u, cont_u, break_u, catch_u);
-	car = low_localopt(CAAR(n), usage, switch_u, cont_u, break_u, catch_u);
+      if (CAR(n) && CDAR(n)) {
+	cdr = low_localopt(CDDAR(n), usage, switch_u, cont_u, break_u, catch_u);
+	car = low_localopt(CADAR(n), usage, switch_u, cont_u, break_u, catch_u);
 	
 	if (CDR(n)) {
 	  ADD_NODE_REF(CDR(n));
 	}
-	return mknode(F_SSCANF, mknode(F_ARG_LIST, car, cdr), CDR(n));
+	return mknode(F_SSCANF, mknode(':', CAAR(n),
+				       mknode(F_ARG_LIST, car, cdr)), CDR(n));
       }
       ADD_NODE_REF(n);
       return n;

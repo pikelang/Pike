@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sscanf.c,v 1.176 2008/05/15 10:10:42 marcus Exp $
+|| $Id: sscanf.c,v 1.177 2008/05/15 15:13:03 grubba Exp $
 */
 
 #include "global.h"
@@ -1561,7 +1561,7 @@ INT32 low_sscanf(struct pike_string *data, struct pike_string *format)
  *!   @[sprintf], @[array_sscanf]
  *    @[parse_format]
  */
-void o_sscanf(INT32 args)
+void o_sscanf(INT32 args, INT32 flags)
 {
   INT32 i=0;
   int x;

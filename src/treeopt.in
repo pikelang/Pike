@@ -2,7 +2,7 @@
 // This file is part of Pike. For copyright information see COPYRIGHT.
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
-// $Id: treeopt.in,v 1.95 2008/03/24 12:02:46 grubba Exp $
+// $Id: treeopt.in,v 1.96 2008/05/15 15:13:04 grubba Exp $
 //
 // The tree optimizer
 //
@@ -189,12 +189,13 @@ F_GE(F_APPLY(F_CONSTANT
 //   =>
 //
 // (sscanf(s, "%*" + A + "s" + "xxxx", ...) || 1) - 1
-F_SSCANF(F_ARG_LIST(F_RANGE(0 = +[ pike_types_le($$->type,
-						 string_type_string)],
-			    ':'(F_RANGE_FROM_BEG(1 = +[ pike_types_le($$->type,
-								      int_type_string)], -),
-				F_RANGE_OPEN)),
-		    2 = +), 3):
+F_SSCANF(':'(4 = +,
+	     F_ARG_LIST(F_RANGE(0 = +[ pike_types_le($$->type,
+						     string_type_string)],
+				':'(F_RANGE_FROM_BEG(1 = +[ pike_types_le($$->type,
+									  int_type_string)], -),
+				    F_RANGE_OPEN)),
+			2 = +)), 3):
 {
   struct pike_string *percent_star_string;
   struct pike_string *s_string;
@@ -203,6 +204,7 @@ F_SSCANF(F_ARG_LIST(F_RANGE(0 = +[ pike_types_le($$->type,
   $$ = mkopernode("`-",
 		  mknode(F_LOR,
 			 mknode(F_SSCANF,
+				mknode(':', $4,
 				mknode(F_ARG_LIST, $0,
 				       mkopernode("`+",
 						  mknode(F_ARG_LIST,
@@ -210,7 +212,7 @@ F_SSCANF(F_ARG_LIST(F_RANGE(0 = +[ pike_types_le($$->type,
 							 $1),
 						  mknode(F_ARG_LIST,
 							 mkstrnode(s_string),
-							 $2))),
+							 $2)))),
 				$3),
 			 mkintnode(1)),
 		  mkintnode(1));
