@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sscanf.c,v 1.175 2008/05/15 09:51:18 grubba Exp $
+|| $Id: sscanf.c,v 1.176 2008/05/15 10:10:42 marcus Exp $
 */
 
 #include "global.h"
@@ -313,7 +313,7 @@ static ptrdiff_t PIKE_CONCAT(read_set,SIZE) (			\
       Pike_error("Error in sscanf format string.\n");		\
   }								\
 								\
-  for(;match[cnt]!=']';cnt++)					\
+  for(;match[cnt]!=']';)					\
   {								\
     if(match[cnt]=='-')						\
     {								\
@@ -353,27 +353,28 @@ CHAROPT(							\
 	sp[-1].u.integer=match[cnt];				\
       }								\
 )								\
-      continue;							\
-    } else if(cnt>=match_len)					\
-      Pike_error("Error in sscanf format string.\n");		\
-								\
-    last=match[cnt];						\
-    if(last < (size_t)sizeof(set->c))				\
-      set->c[last]=1;						\
+    } else {							\
+      last=match[cnt];						\
+      if(last < (size_t)sizeof(set->c))				\
+        set->c[last]=1;						\
 CHAROPT(							\
-    else{							\
-      if(set_size &&						\
-	 ((size_t)sp[-1].u.integer) == last-1)			\
-      {								\
-	sp[-1].u.integer++;					\
-      }else{							\
-	check_stack(2);						\
-	push_int64(last);					\
-	push_int64(last);					\
-	set_size++;						\
+      else{							\
+        if(set_size &&						\
+	   ((size_t)sp[-1].u.integer) == last-1)		\
+        {							\
+	  sp[-1].u.integer++;					\
+        }else{							\
+	  check_stack(2);					\
+	  push_int64(last);					\
+	  push_int64(last);					\
+	  set_size++;						\
+        }							\
       }								\
+  )								\
     }								\
-)								\
+    cnt++;							\
+    if(cnt>=match_len)						\
+      Pike_error("Error in sscanf format string.\n");		\
   }								\
 								\
 CHAROPT(							\
