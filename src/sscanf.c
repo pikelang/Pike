@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sscanf.c,v 1.174 2008/05/14 20:07:24 marcus Exp $
+|| $Id: sscanf.c,v 1.175 2008/05/15 09:51:18 grubba Exp $
 */
 
 #include "global.h"
@@ -354,7 +354,9 @@ CHAROPT(							\
       }								\
 )								\
       continue;							\
-    }								\
+    } else if(cnt>=match_len)					\
+      Pike_error("Error in sscanf format string.\n");		\
+								\
     last=match[cnt];						\
     if(last < (size_t)sizeof(set->c))				\
       set->c[last]=1;						\
