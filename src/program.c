@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.695 2008/05/14 14:10:38 grubba Exp $
+|| $Id: program.c,v 1.696 2008/05/16 13:28:08 grubba Exp $
 */
 
 #include "global.h"
@@ -103,7 +103,8 @@ BLOCK_ALLOC_FILL_PAGES(program, 4)
 #define DECLARE
 #include "compilation.h"
 
-struct pike_string *this_program_string, *this_string;
+struct pike_string *this_program_string;
+static struct pike_string *this_string, *this_function_string;
 static struct pike_string *UNDEFINED_string;
 
 const char *const lfun_names[]  = {
@@ -1415,7 +1416,11 @@ static void debug_add_to_identifiers (struct identifier id)
     for (i = 0; i < Pike_compiler->new_program->num_identifiers; i++)
       if (Pike_compiler->new_program->identifiers[i].name == id.name) {
 	dump_program_tables (Pike_compiler->new_program, 0);
-	Pike_fatal ("Adding identifier twice, old at %d.\n", i);
+	Pike_fatal ("Adding identifier twice, old at %s:%d #%d.\n",
+		    Pike_compiler->new_program->identifiers[i].filename?
+		    Pike_compiler->new_program->identifiers[i].filename:"-",
+		    Pike_compiler->new_program->identifiers[i].linenumber,
+		    i);
       }
   }
   add_to_identifiers (id);
@@ -1746,6 +1751,22 @@ struct node_s *program_magic_identifier (struct program_state *state,
       n->node_info &= ~OPT_NOT_CONST;
       n->tree_info &= ~OPT_NOT_CONST;
       return n;
+    }
+
+    /* Handle this_function */
+    if (ident == this_function_string) {
+      int i;
+      if ((i = Pike_compiler->compiler_frame->current_function_number) >= 0) {
+	struct identifier *id;
+	id = ID_FROM_INT(Pike_compiler->new_program, i);
+	if (id->identifier_flags & IDENTIFIER_SCOPED) {
+	  return mktrampolinenode(i, Pike_compiler->compiler_frame->previous);
+	} else {
+	  return mkidentifiernode(i);
+	}
+      } else {
+	/* FIXME: Fall back to __INIT? */
+      }
     }
   }
 
@@ -2713,6 +2734,8 @@ static void exit_program_struct(struct program *p)
 	free_string(p->identifiers[e].name);
       if(p->identifiers[e].type)
 	free_type(p->identifiers[e].type);
+      if(p->identifiers[e].filename)
+	free_string(p->identifiers[e].filename);
     }
   }
 
@@ -2977,12 +3000,15 @@ void dump_program_tables (struct program *p, int indent)
     struct reference *ref = p->identifier_references + d;
     struct identifier *id = ID_FROM_PTR(p, ref);
 
-    fprintf(stderr, "%*s  %4d: %5x %7d %10d  %s\n",
+    fprintf(stderr,
+	    "%*s  %4d: %5x %7d %10d  %s\n"
+	    "%*s        %s:%d\n",
 	    indent, "",
 	    d, ref->id_flags, ref->inherit_offset,
 	    ref->identifier_offset,
-	    ID_FROM_PTR(p,ref)->name->size_shift ? "(wide)" :
-	    ID_FROM_PTR(p,ref)->name->str);
+	    id->name->size_shift ? "(wide)" : id->name->str,
+	    indent, "",
+	    id->filename?id->filename:"-", id->linenumber);
     if (IDENTIFIER_IS_ALIAS(id->identifier_flags)) {
       fprintf (stderr, "%*s                                  Alias for %d:%d\n",
 	       indent, "", id->func.ext_ref.depth, id->func.ext_ref.id);
@@ -3041,10 +3067,14 @@ void dump_program_tables (struct program *p, int indent)
   for (d=0; d < p->num_identifiers; d++) {
     struct identifier *id = p->identifiers + d;
 
-    fprintf(stderr, "%*s  %4d: %5x %6"PRINTPTRDIFFT"d %4d \"%s\"\n",
+    fprintf(stderr,
+	    "%*s  %4d: %5x %6"PRINTPTRDIFFT"d %4d \"%s\"\n",
+	    "%*s        %s:%d\n",
 	    indent, "",
 	    d, id->identifier_flags, id->func.offset,
-	    id->run_time_type, id->name->str);
+	    id->run_time_type, id->name->str,
+	    indent, "",
+	    id->filename?id->filename:"-", id->linenumber);
   }
 
   fprintf(stderr, "\n"
@@ -4582,6 +4612,7 @@ int low_define_alias(struct pike_string *name, struct pike_type *type,
   int n;
   int e;
 
+  struct compilation *c = THIS_COMPILATION;
   struct program_state *state = Pike_compiler;
   struct identifier dummy, *id;
   struct reference ref;
@@ -4621,6 +4652,8 @@ int low_define_alias(struct pike_string *name, struct pike_type *type,
   } else {
     copy_pike_type(dummy.type, id->type);
   }
+  copy_shared_string(dummy.filename, c->lex.current_file);
+  dummy.linenumber = c->lex.current_line;
   dummy.identifier_flags = id->identifier_flags | IDENTIFIER_ALIAS;
   dummy.run_time_type = id->run_time_type;	/* Not actually used. */
   dummy.func.ext_ref.depth = depth;
@@ -4732,6 +4765,7 @@ int low_define_variable(struct pike_string *name,
 {
   int n;
 
+  struct compilation *c = THIS_COMPILATION;
   struct identifier dummy;
   struct reference ref;
 
@@ -4746,6 +4780,8 @@ int low_define_variable(struct pike_string *name,
 
   copy_shared_string(dummy.name, name);
   copy_pike_type(dummy.type, type);
+  copy_shared_string(dummy.filename, c->lex.current_file);
+  dummy.linenumber = c->lex.current_line;
   dummy.identifier_flags = IDENTIFIER_VARIABLE;
   dummy.run_time_type=run_time_type;
   dummy.func.offset=offset - Pike_compiler->new_program->inherits[0].storage_offset;
@@ -4999,12 +5035,12 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
 			     INT32 flags)
 {
   int n;
+  struct compilation *cc = THIS_COMPILATION;
   struct identifier dummy;
   struct reference ref;
   struct svalue zero;
 
 #ifdef PROGRAM_BUILD_DEBUG
-  struct compilation *cc = THIS_COMPILATION;
   {
     if (c) {
       struct pike_type *t = get_type_of_svalue(c);
@@ -5157,6 +5193,8 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
 
   copy_shared_string(dummy.name, name);
   dummy.identifier_flags = IDENTIFIER_CONSTANT;
+  copy_shared_string(dummy.filename, cc->lex.current_file);
+  dummy.linenumber = cc->lex.current_line;
 
 #if 1
   if (c) {
@@ -5639,6 +5677,8 @@ INT32 define_function(struct pike_string *name,
 
       copy_shared_string(fun.name, name);
       copy_pike_type(fun.type, type);
+      copy_shared_string(fun.filename, c->lex.current_file);
+      fun.linenumber = c->lex.current_line;
 
       fun.run_time_type = run_time_type;
 
@@ -5701,6 +5741,8 @@ INT32 define_function(struct pike_string *name,
 
     copy_shared_string(fun.name, name);
     copy_pike_type(fun.type, type);
+    copy_shared_string(fun.filename, c->lex.current_file);
+    fun.linenumber = c->lex.current_line;
 
     fun.identifier_flags=function_flags;
     fun.run_time_type = run_time_type;
@@ -9257,6 +9299,7 @@ void init_program(void)
   struct svalue id;
   init_program_blocks();
 
+  MAKE_CONST_STRING(this_function_string,"this_function");
   MAKE_CONST_STRING(this_program_string,"this_program");
   MAKE_CONST_STRING(this_string,"this");
   MAKE_CONST_STRING(UNDEFINED_string,"UNDEFINED");
