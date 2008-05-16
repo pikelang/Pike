@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.265 2008/05/03 15:29:24 nilsson Exp $
+|| $Id: encode.c,v 1.266 2008/05/16 18:20:07 grubba Exp $
 */
 
 #include "global.h"
@@ -1163,6 +1163,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	  code_number(p->identifiers[d].identifier_flags,data);
 	  code_number(p->identifiers[d].run_time_type,data);
 	  code_number(p->identifiers[d].opt_flags,data);
+	  code_number(p->identifiers[d].filename_strno, data);
+	  code_number(p->identifiers[d].linenumber, data);
 	  if (IDENTIFIER_IS_ALIAS(p->identifiers[d].identifier_flags)) {
 	    code_number(p->identifiers[d].func.ext_ref.depth,data);
 	    code_number(p->identifiers[d].func.ext_ref.id,data);
@@ -1436,6 +1438,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		    (index_shared_string(id->name, 0) == '`') &&
 		    (index_shared_string(id->name, 1) == '-') &&
 		    (index_shared_string(id->name, 2) == '>')) {
+		  /* Potential old-style getter/setter. */
 		  struct pike_string *symbol = NULL;
 		  if (index_shared_string(id->name, id->name->len-1) != '=') {
 		    /* Getter callback. */
@@ -1443,6 +1446,29 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		  } else if (id->name->len > 4) {
 		    /* Setter callback. */
 		    symbol = string_slice(id->name, 3, id->name->len - 4);
+		  }
+		  if (symbol) {
+		    int i = really_low_find_shared_string_identifier(symbol, p,
+						  SEE_STATIC|SEE_PRIVATE);
+		    if (i >= 0) {
+		      /* Found the symbol. */
+		      gs_flags = PTR_FROM_INT(p, i)->id_flags;
+		    }
+		    free_string(symbol);
+		  }
+		} else if (id->name && (id->name->len>1) &&
+			   (index_shared_string(id->name, 0) == '`') &&
+			   ((((unsigned)index_shared_string(id->name, 1)) >=
+			     256) ||
+			    isidchar(index_shared_string(id->name, 1)))) {
+		  /* New-style getter/setter. */
+		  struct pike_string *symbol = NULL;
+		  if (index_shared_string(id->name, id->name->len-1) != '=') {
+		    /* Getter callback. */
+		    symbol = string_slice(id->name, 1, id->name->len - 1);
+		  } else if (id->name->len > 2) {
+		    /* Setter callback. */
+		    symbol = string_slice(id->name, 1, id->name->len - 2);
 		  }
 		  if (symbol) {
 		    int i = really_low_find_shared_string_identifier(symbol, p,
@@ -1480,16 +1506,23 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		  str_sval.u.string = id->name;
 		  encode_value2(&str_sval, data, 0);
 
+		  /* type */
+		  ref_push_type_value(id->type);
+		  encode_value2(Pike_sp-1, data, 0);
+		  pop_stack();
+
+		  /* filename */
+		  code_number(id->filename_strno, data);
+
+		  /* linenumber */
+		  code_number(id->linenumber, data);
+
 		  /* depth */
 		  code_number(id->func.ext_ref.depth, data);
 
 		  /* refno */
 		  code_number(id->func.ext_ref.id, data);
 
-		  /* type */
-		  ref_push_type_value(id->type);
-		  encode_value2(Pike_sp-1, data, 0);
-		  pop_stack();
 		} else switch (id->identifier_flags & IDENTIFIER_TYPE_MASK) {
 		case IDENTIFIER_CONSTANT:
 		  EDB(3,
@@ -1507,13 +1540,19 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		  str_sval.u.string = id->name;
 		  encode_value2(&str_sval, data, 0);
 
-		  /* offset */
-		  code_number(id->func.offset, data);
-
 		  /* type */
 		  ref_push_type_value(id->type);
 		  encode_value2(Pike_sp-1, data, 0);
 		  pop_stack();
+
+		  /* filename */
+		  code_number(id->filename_strno, data);
+
+		  /* linenumber */
+		  code_number(id->linenumber, data);
+
+		  /* offset */
+		  code_number(id->func.offset, data);
 
 		  /* run-time type */
 		  code_number(id->run_time_type, data);
@@ -1539,6 +1578,12 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		  ref_push_type_value(id->type);
 		  encode_value2(Pike_sp-1, data, 0);
 		  pop_stack();
+
+		  /* filename */
+		  code_number(id->filename_strno, data);
+
+		  /* linenumber */
+		  code_number(id->linenumber, data);
 
 		  /* func_flags (aka identifier_flags) */
 		  code_number(id->identifier_flags, data);
@@ -1590,6 +1635,13 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		  ref_push_type_value(id->type);
 		  encode_value2(Pike_sp-1, data, 0);
 		  pop_stack();
+
+		  /* filename */
+		  code_number(id->filename_strno, data);
+
+		  /* linenumber */
+		  code_number(id->linenumber, data);
+
 		  break;
 
 		default:;
@@ -3369,6 +3421,8 @@ static void decode_value2(struct decode_data *data)
 	    decode_number(p->identifiers[d].identifier_flags,data);
 	    decode_number(p->identifiers[d].run_time_type,data);
 	    decode_number(p->identifiers[d].opt_flags,data);
+	    decode_number(p->identifiers[d].filename_strno, data);
+	    decode_number(p->identifiers[d].linenumber, data);
 	    if (IDENTIFIER_IS_ALIAS(p->identifiers[d].identifier_flags)) {
 	      decode_number(p->identifiers[d].func.ext_ref.depth, data);
 	      decode_number(p->identifiers[d].func.ext_ref.id, data);
@@ -3646,6 +3700,8 @@ static void decode_value2(struct decode_data *data)
 	  INT16 p_flags;
 	  ptrdiff_t old_pragmas;
 	  struct compilation *c;
+	  struct pike_string *save_current_file;
+	  unsigned INT32 save_current_line;
 #define FOO(NUMTYPE,Y,ARGTYPE,NAME) \
           NUMTYPE PIKE_CONCAT(local_num_, NAME) = 0;
 #include "program_areas.h"
@@ -3710,6 +3766,9 @@ static void decode_value2(struct decode_data *data)
 	   */
 	  old_pragmas = c->lex.pragmas;
 	  c->lex.pragmas = (old_pragmas & ~ID_SAVE_PARENT)|ID_DONT_SAVE_PARENT;
+
+	  copy_shared_string(save_current_file, c->lex.current_file);
+	  save_current_line = c->lex.current_line;
 
 	  /* Start the new program. */
 	  low_start_new_program(p, 1, NULL, 0, NULL);
@@ -3949,6 +4008,47 @@ static void decode_value2(struct decode_data *data)
 
 	  while (entry_type != ID_ENTRY_EOT) {
 	    decode_number(id_flags, data);
+	    if ((entry_type != ID_ENTRY_RAW) &&
+		(entry_type != ID_ENTRY_INHERIT)) {
+	      /* Common identifier fields. */
+
+	      unsigned INT32 filename_strno;
+
+	      /* name */
+	      decode_value2(data);
+	      if (Pike_sp[-1].type != T_STRING) {
+		ref_push_program (p);
+		decode_error(Pike_sp - 1, Pike_sp - 2,
+			     "Bad identifier name (not a string): ");
+	      }
+
+	      /* type */
+	      decode_value2(data);
+	      if (Pike_sp[-1].type != T_TYPE) {
+		ref_push_program (p);
+		decode_error(Pike_sp - 1, Pike_sp - 2,
+			     "Bad identifier type (not a type): ");
+	      }
+
+	      /* filename */
+	      decode_number(filename_strno, data);
+	      if (filename_strno >= p->num_strings) {
+		ref_push_program(p);
+		decode_error(NULL, NULL,
+			     "String number out of range: %ld >= %ld",
+			     (long)filename_strno, (long)p->num_strings);
+	      }
+	      free_string(c->lex.current_file);
+	      copy_shared_string(c->lex.current_file,
+				 p->strings[filename_strno]);
+
+	      /* linenumber */
+	      decode_number(c->lex.current_line, data);
+
+	      /* Identifier name and type on the pike stack.
+	       * Definition location in c->lex.
+	       */
+	    }
 	    switch(entry_type) {
 	    case ID_ENTRY_RAW:
 	      {
@@ -3991,22 +4091,6 @@ static void decode_value2(struct decode_data *data)
 	      {
 		int no, n;
 
-		/* name */
-		decode_value2(data);
-		if (Pike_sp[-1].type != T_STRING) {
-		  ref_push_program (p);
-		  decode_error(Pike_sp - 1, Pike_sp - 2,
-			       "Bad variable name (not a string): ");
-		}
-
-		/* type */
-		decode_value2(data);
-		if (Pike_sp[-1].type != T_TYPE) {
-		  ref_push_program (p);
-		  decode_error(Pike_sp - 1, Pike_sp - 2,
-			       "Bad variable type (not a type): ");
-		}
-
 		/* Expected identifier offset */
 		decode_number(no, data);
 
@@ -4041,22 +4125,6 @@ static void decode_value2(struct decode_data *data)
 		unsigned INT16 opt_flags;
 		int no;
 		int n;
-
-		/* name */
-		decode_value2(data);
-		if (Pike_sp[-1].type != T_STRING) {
-		  ref_push_program (p);
-		  decode_error(Pike_sp - 1, Pike_sp - 2,
-			       "Bad function name (not a string): ");
-		}
-
-		/* type */
-		decode_value2(data);
-		if (Pike_sp[-1].type != T_TYPE) {
-		  ref_push_program (p);
-		  decode_error(Pike_sp - 1, Pike_sp - 2,
-			       "Bad function type (not a type): ");
-		}
 
 		/* func_flags (aka identifier_flags) */
 		decode_number(func_flags, data);
@@ -4133,14 +4201,8 @@ static void decode_value2(struct decode_data *data)
 		int no;
 		int n;
 
-		/* name */
-		decode_value2(data);
-		if (Pike_sp[-1].type != T_STRING) {
-		  ref_push_program (p);
-		  decode_error(Pike_sp - 1, Pike_sp - 2,
-			       "Bad constant name (not a string): ");
-		}
-		id.name = Pike_sp[-1].u.string;
+		id.name = Pike_sp[-2].u.string;
+		id.type = Pike_sp[-1].u.type;
 
 		/* identifier_flags */
 		id.identifier_flags = IDENTIFIER_CONSTANT;
@@ -4151,15 +4213,6 @@ static void decode_value2(struct decode_data *data)
 		/* FIXME:
 		 *   Verify validity of func.offset
 		 */
-
-		/* type */
-		decode_value2(data);
-		if (Pike_sp[-1].type != T_TYPE) {
-		  ref_push_program (p);
-		  decode_error(Pike_sp - 1, Pike_sp - 2,
-			       "Bad constant type (not a type): ");
-		}
-		id.type = Pike_sp[-1].u.type;
 
 		/* run_time_type */
 		decode_number(id.run_time_type, data);
@@ -4224,14 +4277,6 @@ static void decode_value2(struct decode_data *data)
 		int no;
 		int n;
 
-		/* name */
-		decode_value2(data);
-		if (Pike_sp[-1].type != T_STRING) {
-		  ref_push_program (p);
-		  decode_error(Pike_sp - 1, Pike_sp - 2,
-			       "Bad alias name (not a string): ");
-		}
-
 		/* depth */
 		decode_number(depth, data);
 
@@ -4241,14 +4286,6 @@ static void decode_value2(struct decode_data *data)
 		/* FIXME:
 		 *   Verify validity of depth and refno.
 		 */
-
-		/* type */
-		decode_value2(data);
-		if (Pike_sp[-1].type != T_TYPE) {
-		  ref_push_program (p);
-		  decode_error(Pike_sp - 1, Pike_sp - 2,
-			       "Bad constant type (not a type): ");
-		}
 
 		/* Expected identifier number. */
 		decode_number(no, data);
@@ -4375,6 +4412,11 @@ static void decode_value2(struct decode_data *data)
 	    }
 	    decode_number(entry_type, data);
 	  }
+
+	  /* Restore c->lex. */
+	  free_string(c->lex.current_file);
+	  c->lex.current_file = save_current_file;
+	  c->lex.current_line = save_current_line;
 
 #ifdef ENCODE_DEBUG
 	  data->depth-=2;
