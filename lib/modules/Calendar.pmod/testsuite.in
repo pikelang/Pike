@@ -1,5 +1,5 @@
 START_MARKER
-dnl $Id: testsuite.in,v 1.18 2008/04/23 00:13:43 nilsson Exp $
+dnl $Id: testsuite.in,v 1.19 2008/05/16 19:45:50 mast Exp $
 
 dnl NOTE:
 dnl   *every* time the Calendar tests have failed, it's not the 
@@ -41,6 +41,13 @@ test_dwim("Tue Nov 19 07:04:03 MET DST 2002","MET")
 test_dwim("Tue Nov 19 07:04:03 METDST 2002","MET")
 
 test_eq(arrayp(Calendar.TZnames.zonenames()), 1)
+test_do([[
+  foreach (Calendar.TZnames.zones; string r1; array(string) r2s)
+    foreach (r2s, string r2) {
+      werror (r1 + "/" + r2 + "\n");
+      Calendar.ISO.Second()->set_timezone (r1 + "/" + r2);
+    }
+]])
 
 dnl FAQ tests
 test_eq( Calendar.dwim_day("1/2/3"), Calendar.Day(2003,1,2) )
