@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.316 2008/05/14 21:09:07 mast Exp $
+|| $Id: gc.c,v 1.317 2008/05/16 16:34:39 mast Exp $
 */
 
 #include "global.h"
@@ -2252,10 +2252,9 @@ static void check_rec_stack (struct gc_rec_frame *p1, const char *p1n,
 			     struct gc_rec_frame *p2, const char *p2n,
 			     const char *file, int line)
 {
-#ifndef DEBUG_MALLOC
-  if (gc_debug)
-#endif
-  {
+  /* This debug check is disabled during the final cleanup since this
+   * is O(n^2) on the stack size, and the stack gets a lot larger then. */
+  if (gc_debug && !gc_destruct_everything) {
     struct gc_rec_frame *l, *last_cycle_id;
     for (l = &sentinel_frame; l != stack_top;) {
       l = l->next;
