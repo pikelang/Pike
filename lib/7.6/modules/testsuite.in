@@ -106,5 +106,11 @@ db->query("select 1"), ({ ([ ".1":"1", "1":"1" ]) }) )
   test_do( add_constant("db") )
 ]])
 
+test_equal(
+#pike 7.6
+array_sscanf("^^;|", "%[^-|]%s"), ({ "^^;", "|" }) );
+test_any([[
+#pike 7.6
+mixed a; sscanf("^^;|","%[^-|]",a); return a]],"^^;")
 
 END_MARKER

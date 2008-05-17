@@ -1,5 +1,5 @@
 // Compatibility namespace
-// $Id: __default.pmod,v 1.3 2008/02/07 01:51:49 mast Exp $
+// $Id: __default.pmod,v 1.4 2008/05/17 14:10:02 marcus Exp $
 
 #pike 7.7
 
@@ -63,6 +63,7 @@ mapping(string:mixed) all_constants()
 
   ret->_describe_program = _describe_program;
   ret->sprintf = sprintf_76;
+  ret->array_sscanf = array_sscanf_76;
   ret->master = get_master_76;
   return ret;
 }

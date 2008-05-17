@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.813 2008/05/12 13:32:14 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.814 2008/05/17 14:10:01 marcus Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -6942,6 +6942,9 @@ class Bar {
 };
   return Bar()->foo()
 ]], "foobarbaz")
+
+test_equal( array_sscanf("^^;|", "%[^-|]%s"), ({ "^^", ";|" }) )
+test_any([[mixed a; sscanf("^^;|","%[^-|]",a); return a]],"^^")
 
 // sscanf %O -------------------------------------------------------------
 

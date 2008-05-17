@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.662 2008/05/11 02:39:07 mast Exp $
+|| $Id: builtin_functions.c,v 1.663 2008/05/17 14:10:01 marcus Exp $
 */
 
 #include "global.h"
@@ -9317,6 +9317,9 @@ void init_builtin_efuns(void)
   
 /* function(string,string:array) */
   ADD_EFUN("array_sscanf",f_sscanf,tFunc(tStr tStr,tArray),0);
+
+/* function(string,string:array) */
+  ADD_EFUN("array_sscanf_76",f_sscanf_76,tFunc(tStr tStr,tArray),0);
 
   /* Some Wide-string stuff */
   
