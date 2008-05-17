@@ -711,15 +711,37 @@ class Runtime_timezone_compiler
       }
    }
 
+  object compile_handler = class {
+    mapping(string:mixed) get_default_module() {
+      return constants;
+    }
+
+    mapping constants = all_constants() +
+    (["TZrules":Dummymodule(find_rule),
+      "TZRules":TZRules,
+      "TZHistory":TZHistory,
+      "Rule":Calendar.Rule,
+      "ZEROSHIFT":({0,0,0,""})
+    ]);
+
+  }();
+
    class Rule
    {
       string id;
 
       mapping rules=([]);
 
+      array(string) lines = ({});
+
       int amt=0;
 
       void create(string _id) { id=_id; }
+
+      void add_line(string line)
+      {
+	 lines += ({ line });
+      }
    
       void add(string line)
       {
@@ -915,6 +937,42 @@ class Runtime_timezone_compiler
 
 	 return ({s, last});
       }
+
+
+     program compile()
+     {
+#ifdef RTTZC_TIMING
+       float t1=time(t);
+#endif
+
+       foreach(lines, string line) add(line);
+
+       string c = dump();
+
+#ifdef RTTZC_TIMING
+       float td=time(t);
+       werror("dump %O: %O\n",rule_name,td-t1);
+#endif
+
+#ifdef RTTZC_DEBUG
+       werror("%s\n",c);
+#endif
+
+       program p;
+       mixed err=catch { p=compile_string(c, 0, compile_handler); };
+       if (err)
+       {
+	 int i=0; 
+	 foreach (c/"\n",string line) write("%2d: %s\n",++i,line);
+	 error(err);
+       }
+#ifdef RTTZC_TIMING
+       float t3=time(t);
+       werror("compile %O: %O\n",rule_name,t3-td);
+#endif
+       return rule_cache[id] = p;
+     }
+
    }
 
    class Zone
@@ -923,7 +981,24 @@ class Runtime_timezone_compiler
 
       array rules=({});
 
-      void create(string _id) { id=_id; }
+      array(string) lines = ({});
+
+      array(string) aliases = ({});
+
+      void create(string _id) {
+	id=_id;
+	aliases = ({ id });
+      }
+
+      void add_alias(string zone_alias)
+      {
+	 aliases += ({ zone_alias });
+      }
+
+      void add_line(string line)
+      {
+	 lines += ({ line });
+      }
 
       void add(string line)
       {
@@ -1101,6 +1176,48 @@ class Runtime_timezone_compiler
 
 	 return res*"";
       }
+
+     object compile()
+     {
+       string zone_name = id;
+       // werror("Compiling zone %O...\n", zone_name);
+
+#ifdef RTTZC_TIMING
+       float t1=time(t);
+#endif
+
+       foreach(lines, string line) add(line);
+
+       string c=dump();
+
+#ifdef RTTZC_TIMING
+       float td=time(t);
+       werror("dump %O: %O\n",zone_name,td-t1);
+       float td=time(t);
+#endif
+
+#ifdef RTTZC_DEBUG
+       werror("%s\n",c);
+#endif
+
+       program p;
+       mixed err=catch { p=compile_string(c, 0, compile_handler); };
+       if (err)
+       {
+	 int i=0; 
+	 foreach (c/"\n",string line) write("%2d: %s\n",++i,line);
+	 error(err);
+       }
+       object zo=p();
+       if (zo->thezone) zo=zo->thezone;
+
+#ifdef RTTZC_TIMING
+       float t3=time(t);
+       werror("compile %O: %O\n",zone_name,t3-td);
+#endif
+       return zo;
+     }
+
    }
 
    string base_path=combine_path(__FILE__,"../tzdata/");
@@ -1119,9 +1236,11 @@ class Runtime_timezone_compiler
       "systemv",
    });
 
-   mapping zone_cache=([]);
-   mapping rule_cache=([]);
-   string all_rules=0;
+   mapping zone_cache;
+   mapping rule_cache;
+   string all_rules;
+   static mapping(string:Zone) zones = ([]);
+   static mapping(string:Rule) rules = ([]);
 
    string get_all_rules()
    {
@@ -1139,203 +1258,126 @@ class Runtime_timezone_compiler
       mixed `[](string s) { return f(s); }
    }
 
-  object compile_handler = class {
-    mapping(string:mixed) get_default_module() {
-      return constants;
-    }
-
-    mapping constants = all_constants() +
-    (["TZrules":Dummymodule(find_rule),
-      "TZRules":TZRules,
-      "TZHistory":TZHistory,
-      "Rule":Calendar.Rule,
-      "ZEROSHIFT":({0,0,0,""})
-    ]);
-
-  }();
-
 //  #define RTTZC_DEBUG
 //  #define RTTZC_TIMING
+
+   void parse_all_rules()
+   {
+      if (!all_rules) all_rules=get_all_rules();
+#ifdef RTTZC_TIMING
+      float t1=time(t);
+#endif
+
+      rule_cache = ([]);
+      zone_cache = ([]);
+
+      mapping(string:string) zone_aliases = ([]);
+
+      Zone current_zone;
+      foreach(all_rules/"\n", string line) {
+	line = (line/"#")[0];
+	if ((line == "") || (line == " ")) continue;
+
+	if (has_prefix(line, "Rule")) {
+	  current_zone = 0;
+	  
+	  string rule_name, interval;
+	  if (sscanf(line, "Rule%*[ \t]%[^ \t]%*[ \t]%s",
+		     rule_name, interval) == 4) {
+	    Rule r = rules[rule_name];
+	    if (!r) {
+	      r = rules[rule_name] = Rule(rule_name);
+	    }
+	    r->add_line(interval);
+	  } else {
+	    werror("Failed to parse directive %O.\n", line);
+	  }
+	} else if (has_prefix(line, "Zone")) {
+	  string zone_name, zone_info;
+	  if (sscanf(line, "Zone%*[ \t]%[^ \t]%*[ \t]%s",
+		     zone_name, zone_info) == 4) {
+	    // werror("Creating zone %O.\n", zone_name);
+	    Zone z = current_zone = zones[zone_name] = Zone(zone_name);
+	    z->add_line(zone_info);
+	  } else {
+	    werror("Failed to parse directive %O.\n", line);
+	  }
+	} else if (has_prefix(line, "Link")) {
+	  string zone_name, zone_alias;
+	  if (sscanf(line, "Link%*[ \t]%[^ \t]%*[ \t]%[^ \t]",
+		     zone_name, zone_alias) == 4) {
+	    Zone z = zones[zone_name];
+	    if (z) {
+	      z->add_alias(zone_alias);
+	      zones[zone_alias] = z;
+	    } else if (zone_cache[zone_name]) {
+	      zone_cache[zone_alias] = zone_cache[zone_name];
+	    } else {
+	      // werror("Deferred alias: %O ==> %O.\n", zone_alias, zone_name);
+	      zone_aliases[zone_alias] = zone_name;
+	    }
+	  } else {
+	    werror("Failed to parse directive %O.\n", line);
+	  }
+	} else if (current_zone) {
+	  string prefix, suffix;
+	  if ((sscanf(line, "%*[ \t]%[-0-9]%s", prefix, suffix) == 3) &&
+	      sizeof(prefix)) {
+	    current_zone->add_line(prefix + suffix);
+	  }
+	} else {
+	  // werror("Skipping line %O.\n", line);
+	}
+      }
+#ifdef RTTZC_TIMING
+      float td=time(t);
+      werror("parsing: %O\n",td-t1);
+#endif
+
+      // Fixup the zone aliases.
+      foreach(zone_aliases; string zone_alias; string zone_name) {
+	Zone z;
+	if ((z = zones[zone_name])) {
+	  z->add_alias(zone_alias);
+	  zones[zone_alias] = z;
+	} else if (!(zone_cache[zone_alias] = zone_cache[zone_name])) {
+	  werror("Zone %O is a link to a nonexistant zone %O.\n",
+		 zone_alias, zone_name);
+	}
+      }
+   }
 
    object find_zone(string s)
    {
 #ifdef RTTZC_DEBUG
       werror("Searching for zone %O\n",s);
 #endif
-      if (zone_cache[s]) return zone_cache[s];
-      if (s=="") return UNDEFINED;
-
-      if (!all_rules) all_rules=get_all_rules();
-
-#ifdef RTTZC_TIMING
-      int t=time(1);
-      float t1=time(t);
-#endif
-
-      Zone z=Zone(s);   
-      int n=0;
-
-#if constant(Regexp.PCRE.Studied)
-      if (has_value(s,"\\") ||
-          has_value(s,"(") ||
-          has_value(s,"["))
-        return 0;
-      Regexp.PCRE.Studied re=Regexp.PCRE.Studied("[Zz]one[ \t]*"+s+"[ \t]");
-#endif
-
-      for (;;)
-      {
-#if constant(Regexp.PCRE.Studied)
-        array(int)|int v=re->exec(all_rules,n);
-        if (!arrayp(v) || !sizeof(v)) return UNDEFINED;
-        n=v[0];
-#else
-	 n=search(all_rules,s,n);
-#endif
-#ifdef RTTZC_DEBUG
-	 werror("hit at: %O\n",n);
-#endif
-	 if (n==-1) 
-	    return UNDEFINED;
-	 int i=max(n-100,0)-1,j;
-	 do i=search(all_rules,"\nZone",(j=i)+1); while (i<n && i!=-1);
-
-	 if (j<n &&
-	     sscanf(all_rules[j..j+8000],"\nZone%*[ \t]%[^ \t]%*[ \t]%s\n%s", 
-		    string a,string b,string q)==5 && 
-	     a==s)
-	 {
-	    z->add(b);
-	    foreach (q/"\n",string line)
-	    {
-	       if (sscanf(line,"%*[ \t]%[-0-9]%s",a,b)==3 && sizeof(a))
-		  z->add(a+b);
-	       else if (sscanf(line,"%*[ ]#%*s")<2)
-		  break; // end of zone
-	    }
-	    break;
-	 }
-	 i=max(n-100,0)-1;
-	 do i=search(all_rules,"\nLink",(j=i)+1); while (i<n && i!=-1);
-	 if (j<n &&
-	     sscanf(all_rules[j..j+100],"\nLink%*[ \t]%[^ \t]%*[ \t]%[^ \t\n]", 
-		    string a,string b)==4 &&
-	     b==s)
-	    return find_zone(a);
-	 n++;
+      if (!zone_cache) parse_all_rules();
+      object ret = zone_cache[s];
+      if (ret) return ret;
+      Zone z;
+      if (!(z = zones[s])) return UNDEFINED;
+      ret = z->compile();
+      foreach(z->aliases, string zone_alias) {
+	zone_cache[zone_alias] = ret;
+	m_delete(zones, zone_alias);
       }
-#ifdef RTTZC_TIMING
-      float t2=time(t);
-      werror("find %O: %O\n",s,t2-t1);
-#endif
-
-      string c=z->dump();
-
-#ifdef RTTZC_TIMING
-      float td=time(t);
-      werror("dump %O: %O\n",s,td-t2);
-      float td=time(t);
-#endif
-
-#ifdef RTTZC_DEBUG
-      werror("%s\n",c);
-#endif
-
-      program p;
-      mixed err=catch { p=compile_string(c, 0, compile_handler); };
-      if (err)
-      {
-	 int i=0; 
-	 foreach (c/"\n",string line) write("%2d: %s\n",++i,line);
-	 error(err);
-      }
-      object zo=p();
-      if (zo->thezone) zo=zo->thezone;
-
-#ifdef RTTZC_TIMING
-      float t3=time(t);
-      werror("compile %O: %O\n",s,t3-td);
-#endif
-
-      return zone_cache[s]=zo;
+      m_delete(zones, s);
+      return ret;
    }
-
-//  #define RTTZC_TIMING
 
    program find_rule(string s)
    {
-      s=UNFIXID(s);
-      if (rule_cache[s]) return rule_cache[s];
-#ifdef RTTZC_DEBUG
-      werror("Searching for rule %O\n",s);
-#endif
-
-      if (!all_rules) all_rules=get_all_rules();
-
-#ifdef RTTZC_TIMING
-      int t=time(1);
-      float t1=time(t);
-#endif
-
-      Rule r=Rule(s);   
-      int n=0;
-      for (;;)
-      {
-	 n=search(all_rules,s,n);
-#ifdef RTTZC_DEBUG
-	 werror("hit at: %O\n",n);
-#endif
-	 if (n==-1) 
-	    return UNDEFINED;
-
-	 int i=max(n-100,0)-1,j;
-	 do i=search(all_rules,"\nRule",(j=i)+1); while (i<n && i!=-1);
-
-	 if (j<n && 
-	     sscanf(all_rules[j..j+8000],"\nRule%*[ \t]%[^ \t]%*[ \t]%s\n%s",
-		    string a,string b,string q)==5 && a==s)
-	 {
-	    r->add(b);
-#ifdef RTTZC_TIMING
-	    float tf=time(t);
-	    werror("find %O at: %O\n",s,tf-t1);
-	    float tq=time(t);
-#endif
-	    foreach (q/"\n",string line)
-	       if (sscanf(line,"Rule%*[ \t]%[^ \t]%*[ \t]%s",a,b)==4 &&
-		   a==s)
-  		  r->add(b);
-	       else if (sscanf(line,"%*[ ]#%*s")<2)
-		  break; // end of zone
-#ifdef RTTZC_TIMING
-	    float tf=time(t);
-	    werror("load %O: %O\n",s,tf-tq);
-#endif
-	    break;
-	 }
-	 n++;
-      }
-      string c=r->dump();
-
-#ifdef RTTZC_DEBUG
-      werror("%s\n",c);
-#endif
-#ifdef RTTZC_TIMING
-      float t2=time(t);
-      werror("find %O: %O\n",s,t2-t1);
-      float t2=time(t);
-#endif
-
-      program p=compile_string(c, 0, compile_handler);
-
-#ifdef RTTZC_TIMING
-      float t3=time(t);
-      werror("compile %O: %O\n",s,t3-t2);
-#endif
-
-      return rule_cache[s]=p;
+      if (!rule_cache) parse_all_rules();
+      s = UNFIXID(s);
+      program ret = rule_cache[s];
+      if (ret) return ret;
+      Rule r;
+      if (!(r = rules[s])) return UNDEFINED;
+      ret = rule_cache[s] = r->compile();
+      m_delete(rules, s);
+      return ret;
    }
-
 
    int main(int ac,array(string) am)
    {
