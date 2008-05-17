@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.266 2008/05/16 18:20:07 grubba Exp $
+|| $Id: encode.c,v 1.267 2008/05/17 13:36:56 grubba Exp $
 */
 
 #include "global.h"
@@ -2465,6 +2465,13 @@ static void cleanup_new_program_decode (void *ignored)
   end_first_pass(0);
 }
 
+static void restore_current_file(void *save_current_file)
+{
+  struct compilation *c = THIS_COMPILATION;
+  free_string(c->lex.current_file);
+  c->lex.current_file = save_current_file;
+}
+
 static DECLSPEC(noreturn) void decode_error (struct svalue *decoding,
 					     struct svalue *other,
 					     char *msg, ...)
@@ -3767,9 +3774,6 @@ static void decode_value2(struct decode_data *data)
 	  old_pragmas = c->lex.pragmas;
 	  c->lex.pragmas = (old_pragmas & ~ID_SAVE_PARENT)|ID_DONT_SAVE_PARENT;
 
-	  copy_shared_string(save_current_file, c->lex.current_file);
-	  save_current_line = c->lex.current_line;
-
 	  /* Start the new program. */
 	  low_start_new_program(p, 1, NULL, 0, NULL);
 	  p = Pike_compiler->new_program;
@@ -3786,6 +3790,11 @@ static void decode_value2(struct decode_data *data)
 	  SET_ONERROR(err, cleanup_new_program_decode, NULL);
 
 	  debug_malloc_touch(p);
+
+	  copy_shared_string(save_current_file, c->lex.current_file);
+	  save_current_line = c->lex.current_line;
+
+	  SET_ONERROR(err2, restore_current_file, save_current_file);
 
 	  if (!delayed_enc_val) {
 	    struct svalue prog;
@@ -4414,8 +4423,7 @@ static void decode_value2(struct decode_data *data)
 	  }
 
 	  /* Restore c->lex. */
-	  free_string(c->lex.current_file);
-	  c->lex.current_file = save_current_file;
+	  CALL_AND_UNSET_ONERROR(err2);
 	  c->lex.current_line = save_current_line;
 
 #ifdef ENCODE_DEBUG
