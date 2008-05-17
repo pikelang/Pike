@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sscanf.c,v 1.178 2008/05/17 14:10:00 marcus Exp $
+|| $Id: sscanf.c,v 1.179 2008/05/17 22:48:33 grubba Exp $
 */
 
 #include "global.h"
@@ -16,6 +16,7 @@
 #include "operators.h"
 #include "bignum.h"
 #include "pike_float.h"
+#include "pike_types.h"
 #include "sscanf.h"
 
 #define sp Pike_sp
@@ -1636,3 +1637,344 @@ void f_sscanf_76(INT32 args)
   pop_n_elems(args);
   push_array(a);
 }
+
+static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
+				       int cnt, int flags)
+{
+  for(; cnt < format_len; cnt++)
+  {
+    int no_assign=0;
+
+    while((cnt<format_len) && (INDEX_PCHARP(format, cnt) != '%'))
+      cnt++;
+    cnt++;
+    if (cnt >= format_len) break;
+
+    while(1)
+    {
+      switch(INDEX_PCHARP(format, cnt))
+      {
+      case '%':
+	break;
+
+      case '*':
+	no_assign=1;
+	/* FALL_THROUGH */
+
+      case '-':
+      case '+':
+      case '0': case '1': case '2': case '3': case '4':
+      case '5': case '6': case '7': case '8': case '9':
+	cnt++;
+	if(cnt>=format_len)
+	  Pike_error("Error in sscanf format string.\n");
+	continue;
+
+	case '{':
+	{
+	  int e;
+	  int depth = 1;
+	  for(e=cnt+1;depth;e++)
+	  {
+	    if(e>=format_len)
+	    {
+	      Pike_error("Missing %%} in format string.\n");
+	      break;
+	    }
+	    if(INDEX_PCHARP(format, e)=='%')
+	    {
+	      switch(INDEX_PCHARP(format, e+1))
+	      {
+		case '%': e++; break;
+		case '}': depth--; break;
+		case '{': depth++; break;
+	      }
+	    }
+	  }
+	  if (!no_assign) {
+	    type_stack_mark();
+	    push_sscanf_argument_types(format, e, cnt+1, flags);
+	    /* Join the argument types. */
+	    push_type(PIKE_T_ZERO);
+	    for (depth = pop_stack_mark(); depth > 1; depth--) {
+	      push_type(T_OR);
+	    }
+	    push_type(PIKE_T_ARRAY);
+	  }
+	  cnt = e+2;
+	  break;
+	}
+
+	case 'n':
+        case 'b':
+        case 'o':
+        case 'd':
+        case 'x':
+        case 'D':
+        case 'i':
+	case 'c':
+	  if (!no_assign)
+	    push_finished_type(int_type_string);
+	  break;
+
+	case '[':
+	  {
+	    int ch;
+	    cnt++;
+	    if (cnt >= format_len) {
+	      Pike_error("Error in sscanf format string.\n");
+	      break;
+	    }
+	    if((INDEX_PCHARP(format, cnt)=='^') &&
+	       (cnt+2>=format_len ||
+		(INDEX_PCHARP(format, cnt+1)!='-') ||
+		(INDEX_PCHARP(format, cnt+2)==']') ||
+		(flags & SSCANF_FLAG_76_COMPAT)))
+	    {
+	      cnt++;
+	      if(cnt >= format_len)
+		Pike_error("Error in sscanf format string.\n");
+	    }
+
+	    if(((ch = INDEX_PCHARP(format, cnt))==']') || (ch=='-'))
+	    {
+	      cnt++;
+	      if(cnt >= format_len)
+		Pike_error("Error in sscanf format string.\n");
+	      ch = INDEX_PCHARP(format, cnt);
+	    }
+
+	    while(ch != ']')
+	    {
+	      if(ch == '-')
+	      {
+		cnt++;
+		if(cnt >= format_len)
+		  Pike_error("Error in sscanf format string.");
+
+		if(INDEX_PCHARP(format, cnt)==']')
+		{
+		  break;
+		}
+	      }
+	      cnt++;
+	      if(cnt>=format_len)
+		Pike_error("Error in sscanf format string.");
+	      ch = INDEX_PCHARP(format, cnt);
+	    }
+	  }
+	  /* FALL_THROUGH */
+      case 's':
+      case 'H':
+	if (!no_assign)
+	  push_finished_type(string_type_string);
+	break;
+
+	case 'F':
+        case 'f':
+	  if (!no_assign)
+	    push_finished_type(float_type_string);
+	  break;
+
+	  break;
+
+        case 'O':
+	  if (!no_assign)
+	    push_finished_type(mixed_type_string);
+	  break;
+
+	default:
+	  Pike_error("Unknown sscanf token %%%c(0x%02x)\n",
+		     INDEX_PCHARP(format, cnt), INDEX_PCHARP(format, cnt));
+      }
+      break;
+    }
+  }
+}
+
+void f___handle_sscanf_format(INT32 args)
+{
+  struct pike_type *res;
+  struct pike_type *tmp;
+  struct pike_string *attr;
+  struct pike_string *fmt;
+  struct pike_string *sscanf_format_string;
+  struct pike_string *sscanf_76_format_string;
+  int flags = 0;
+  int found = 0;
+  int fmt_count;
+#if 0
+  fprintf(stderr, "__handle_sprintf_format()\n");
+#endif /* 0 */
+  if (args != 4)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("__handle_sscanf_format", 4);
+  if (Pike_sp[-4].type != PIKE_T_STRING)
+    SIMPLE_ARG_TYPE_ERROR("__handle_sscanf_format", 1, "string");
+  if (Pike_sp[-3].type != PIKE_T_STRING)
+    SIMPLE_ARG_TYPE_ERROR("__handle_sscanf_format", 2, "string");
+  if (Pike_sp[-2].type != PIKE_T_TYPE)
+    SIMPLE_ARG_TYPE_ERROR("__handle_sscanf_format", 3, "type");
+  if (Pike_sp[-1].type != PIKE_T_TYPE)
+    SIMPLE_ARG_TYPE_ERROR("__handle_sscanf_format", 4, "type");
+
+  tmp = Pike_sp[-1].u.type;
+  if ((tmp->type != PIKE_T_FUNCTION) && (tmp->type != T_MANY)) {
+    SIMPLE_ARG_TYPE_ERROR("__handle_sscanf_format", 4, "type(function)");
+  }
+
+  MAKE_CONST_STRING(sscanf_format_string, "sscanf_format");  
+  MAKE_CONST_STRING(sscanf_76_format_string, "sscanf_76_format");  
+
+  if (Pike_sp[-4].u.string != sscanf_format_string) {
+    if (Pike_sp[-4].u.string != sscanf_76_format_string) {
+      pop_n_elems(args);
+      push_undefined();
+      return;
+    }
+    flags = SSCANF_FLAG_76_COMPAT;
+  }
+
+  fmt = Pike_sp[-3].u.string;
+  MAKE_CONST_STRING(attr, "sscanf_args");  
+
+  type_stack_mark();
+  type_stack_mark();
+  for (; tmp; tmp = tmp->cdr) {
+    struct pike_type *arg = tmp->car;
+    int array_cnt = 0;
+    while(arg) {
+      switch(arg->type) {
+      case PIKE_T_ATTRIBUTE:
+	if (arg->car == (struct pike_type *)attr)
+	  break;
+	/* FALL_THROUGH */
+      case PIKE_T_NAME:
+	arg = arg->cdr;
+	continue;
+      case PIKE_T_ARRAY:
+	array_cnt++;
+	arg = arg->car;
+	continue;
+      default:
+	arg = NULL;
+	break;
+      }
+      break;
+    }
+    if (arg) {
+      type_stack_mark();
+      push_sscanf_argument_types(MKPCHARP(fmt->str, fmt->size_shift),
+				 fmt->len, 0, flags);
+      if (!array_cnt) {
+	pop_stack_mark();
+	push_type(T_VOID);	/* No more args */
+	while (tmp->type == PIKE_T_FUNCTION) {
+	  tmp = tmp->cdr;
+	}
+	push_finished_type(tmp->cdr);	/* return type */
+	push_reverse_type(T_MANY);
+	fmt_count = pop_stack_mark();
+	while (fmt_count > 1) {
+	  push_reverse_type(T_FUNCTION);
+	  fmt_count--;
+	}
+	res = pop_unfinished_type();
+	pop_n_elems(args);
+	push_type_value(res);
+	return;
+      } else {
+	/* Join the argument types into the array. */
+	push_type(PIKE_T_ZERO);
+	for (fmt_count = pop_stack_mark(); fmt_count > 1; fmt_count--) {
+	  push_type(T_OR);
+	}
+	while (array_cnt--) {
+	  push_type(PIKE_T_ARRAY);
+	}
+	found = 1;
+      }
+    } else {
+      push_finished_type(tmp->car);
+    }
+    if (tmp->type == T_MANY) {
+      /* Get the return type. */
+      tmp = tmp->cdr;
+      break;
+    }
+  }
+  if (found) {
+    /* Found, but inside an array, so we need to build the function
+     * type here.
+     */
+    push_finished_type(tmp);	/* Return type. */
+    push_reverse_type(T_MANY);
+    fmt_count = pop_stack_mark();
+    while (fmt_count > 1) {
+      push_reverse_type(T_FUNCTION);
+      fmt_count--;
+    }
+    res = pop_unfinished_type();
+    pop_n_elems(args);
+    push_type_value(res);
+  } else if (tmp) {
+    /* Check if it's in the return type. */
+    struct pike_type *arg = tmp;
+    int array_cnt = 0;
+    while(arg) {
+      switch(arg->type) {
+      case PIKE_T_ATTRIBUTE:
+	if (arg->car == (struct pike_type *)attr)
+	  break;
+	/* FALL_THROUGH */
+      case PIKE_T_NAME:
+	arg = arg->cdr;
+	continue;
+      case PIKE_T_ARRAY:
+	array_cnt++;
+	arg = arg->car;
+	continue;
+      default:
+	arg = NULL;
+	break;
+      }
+      break;
+    }
+    if (arg) {
+      type_stack_mark();
+      push_sscanf_argument_types(MKPCHARP(fmt->str, fmt->size_shift),
+				 fmt->len, 0, flags);
+      /* Join the argument types. */
+      push_type(PIKE_T_ZERO);
+      for (fmt_count = pop_stack_mark(); fmt_count > 1; fmt_count--) {
+	push_type(T_OR);
+      }
+      while (array_cnt--) {
+	push_type(PIKE_T_ARRAY);
+      }
+
+      /* Rebuild the function type backwards. */
+      push_reverse_type(T_MANY);
+      fmt_count = pop_stack_mark();
+      while (fmt_count > 1) {
+	push_reverse_type(T_FUNCTION);
+	fmt_count--;
+      }
+      res = pop_unfinished_type();
+      pop_n_elems(args);
+      push_type_value(res);
+      return;
+    }
+  }
+
+  /* No marker found. */
+#if 0
+  simple_describe_type(Pike_sp[-1].u.type);
+  fprintf(stderr, " ==> No marker found.\n");
+#endif /* 0 */
+  pop_stack_mark();
+  type_stack_pop_to_mark();
+  pop_n_elems(args);
+  push_undefined();
+}
+
+

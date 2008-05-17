@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.409 2008/05/17 14:09:28 marcus Exp $
+|| $Id: las.c,v 1.410 2008/05/17 22:48:32 grubba Exp $
 */
 
 #include "global.h"
@@ -3232,10 +3232,6 @@ static struct pike_string *get_name_of_function(node *n)
   return name;
 }
 
-struct pike_type *new_check_call(struct pike_string *fun_name,
-				 struct pike_type *fun_type,
-				 node *args, int *argno);
-
 void fix_type_field(node *n)
 {
   struct compilation *c = THIS_COMPILATION;
@@ -3532,7 +3528,7 @@ void fix_type_field(node *n)
 
       /* NOTE: new_check_call() steals a reference from f! */
       copy_pike_type(f, CAR(n)->type);
-      f = debug_malloc_pass(new_check_call(name, f, CDR(n), &args));
+      f = debug_malloc_pass(new_check_call(name, f, CDR(n), &args, 0));
 
       if (!f) {
 	/* Errors have been generated. */
@@ -4107,14 +4103,31 @@ void fix_type_field(node *n)
 	!CDAR(n) || (CDAR(n)->token != F_ARG_LIST) ||
 	!CADAR(n) || !CDDAR(n)) {
       yyerror("Too few arguments to sscanf().");
+      MAKE_CONSTANT_TYPE(n->type, tIntPos);
     } else {
-      check_node_type(CADAR(n), string_type_string,
-		      "Bad argument 1 to sscanf().");
-      check_node_type(CDDAR(n), string_type_string,
-		      "Bad argument 2 to sscanf().");
+      struct pike_string *sscanf_name;
+      struct pike_type *sscanf_type;
+      node *args;
+      INT32 argno = 0;
+      if (CAAR(n)->u.sval.u.integer & SSCANF_FLAG_76_COMPAT) {
+	MAKE_CONST_STRING(sscanf_name, "sscanf_76");
+	add_ref(sscanf_type = sscanf_76_type_string);
+      } else {
+	MAKE_CONST_STRING(sscanf_name, "sscanf");
+	add_ref(sscanf_type = sscanf_type_string);
+      }	
+      args = mknode(F_ARG_LIST, CDAR(n), CDR(n));
+      add_ref(CDAR(n));
+      add_ref(CDR(n));
+      sscanf_type = new_check_call(sscanf_name, sscanf_type, args, &argno, 0);
+      free_node(args);
+      if (sscanf_type) {
+	n->type = new_get_return_type(sscanf_type, 0);
+	free_type(sscanf_type);
+      } else {
+	MAKE_CONSTANT_TYPE(n->type, tIntPos);
+      }
     }
-    /* FIXME: */
-    MAKE_CONSTANT_TYPE(n->type, tIntPos);
     break;
 
   case F_UNDEFINED:

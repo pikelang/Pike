@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.h,v 1.116 2008/05/14 16:02:05 grubba Exp $
+|| $Id: pike_types.h,v 1.117 2008/05/17 22:48:33 grubba Exp $
 */
 
 #ifndef PIKE_TYPES_H
@@ -77,6 +77,7 @@ BLOCK_ALLOC(pike_type, n/a);
 #define CALL_LAST_ARG	0x0002	/* This is the last argument. */
 #define CALL_7_6	0x0004	/* Pike 7.6 compatibility mode. */
 #define CALL_WEAK_VOID	0x0008	/* Allow promotion of void to zero. */
+#define CALL_ARG_LVALUE	0x0010	/* Argument is lvalue (sscanf). */
 
 /*
  * soft_cast() flags
@@ -133,6 +134,8 @@ PMOD_EXPORT extern struct pike_type *void_type_string;
 PMOD_EXPORT extern struct pike_type *zero_type_string;
 PMOD_EXPORT extern struct pike_type *any_type_string;
 PMOD_EXPORT extern struct pike_type *weak_type_string;
+extern struct pike_type *sscanf_type_string;
+extern struct pike_type *sscanf_76_type_string;
 
 #define CONSTTYPE(X) make_pike_type(X)
 
@@ -268,7 +271,7 @@ struct pike_type *get_first_arg_type(struct pike_type *fun_type,
 				     INT32 flags);
 struct pike_type *new_check_call(struct pike_string *fun_name,
 				 struct pike_type *fun_type,
-				 node *args, INT32 *argno);
+				 node *args, INT32 *argno, INT32 flags);
 struct pike_type *zzap_function_return(struct pike_type *t,
 				       struct pike_type *fun_ret);
 struct pike_type *get_type_of_svalue(struct svalue *s);

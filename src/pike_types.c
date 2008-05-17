@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.334 2008/05/14 16:02:04 grubba Exp $
+|| $Id: pike_types.c,v 1.335 2008/05/17 22:48:32 grubba Exp $
 */
 
 #include "global.h"
@@ -97,6 +97,8 @@ PMOD_EXPORT struct pike_type *void_type_string;
 PMOD_EXPORT struct pike_type *zero_type_string;
 PMOD_EXPORT struct pike_type *any_type_string;
 PMOD_EXPORT struct pike_type *weak_type_string;	/* array|mapping|multiset|function */
+struct pike_type *sscanf_type_string;
+struct pike_type *sscanf_76_type_string;
 
 #ifdef DO_PIKE_CLEANUP
 struct pike_type_location *all_pike_type_locations = NULL;
@@ -6701,20 +6703,22 @@ struct pike_type *get_first_arg_type(struct pike_type *fun_type,
 /* NOTE: fun_type loses a reference. */
 struct pike_type *new_check_call(struct pike_string *fun_name,
 				 struct pike_type *fun_type,
-				 node *args, INT32 *argno)
+				 node *args, INT32 *argno, INT32 flags)
 {
   struct compilation *c = THIS_COMPILATION;
   struct pike_type *tmp = NULL;
   struct pike_type *res = NULL;
   struct svalue *sval = NULL;
-  int flags = 0;
 
   CHECK_COMPILER();
 
   debug_malloc_touch(fun_type);
 
-  while (args && (args->token == F_ARG_LIST) && fun_type) {
-    fun_type = new_check_call(fun_name, fun_type, CAR(args), argno);
+  while (args &&
+	 ((args->token == F_ARG_LIST) || (args->token == F_LVALUE_LIST)) &&
+	 fun_type) {
+    if (args->token == F_LVALUE_LIST) flags |= CALL_ARG_LVALUE;
+    fun_type = new_check_call(fun_name, fun_type, CAR(args), argno, flags);
     debug_malloc_touch(fun_type);
     args = CDR(args);
   }
@@ -6823,7 +6827,9 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
       fprintf(stderr, " OK.\n");
     }
 #endif /* PIKE_DEBUG */
-    if (c->lex.pragmas & ID_STRICT_TYPES) {
+    if ((c->lex.pragmas & ID_STRICT_TYPES) &&
+	/* FIXME: Strict types not supported for lvalues yet. */
+	!(flags & CALL_ARG_LVALUE)){
       if (!(tmp = low_new_check_call(fun_type, args->type,
 				     flags|CALL_STRICT, sval))) {
 	yywarning("Type mismatch in argument %d to %S.",
@@ -7766,6 +7772,10 @@ void init_types(void)
   any_type_string = CONSTTYPE(tOr(tVoid,tMix));
   weak_type_string = CONSTTYPE(tOr4(tArray,tMultiset,tMapping,
 				    tFuncV(tNone,tZero,tOr(tMix,tVoid))));
+  sscanf_type_string = CONSTTYPE(tFuncV(tStr tAttr("sscanf_format", tStr),
+					tAttr("sscanf_args", tMix), tIntPos));
+  sscanf_76_type_string = CONSTTYPE(tFuncV(tStr tAttr("sscanf_76_format", tStr),
+					   tAttr("sscanf_args", tMix), tIntPos));
   /* add_ref(weak_type_string);	*//* LEAK */
 
 #ifdef PIKE_DEBUG
@@ -7816,7 +7826,10 @@ void cleanup_pike_types(void)
   any_type_string = NULL;
   free_type(weak_type_string);
   weak_type_string = NULL;
-
+  free_type(sscanf_type_string);
+  sscanf_type_string = NULL;
+  free_type(sscanf_76_type_string);
+  sscanf_76_type_string = NULL;
 #ifdef PIKE_DEBUG
   remove_callback(pike_type_gc_callback);
 #endif
