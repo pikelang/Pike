@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.423 2008/05/17 14:10:00 marcus Exp $
+|| $Id: language.yacc,v 1.424 2008/05/18 13:42:09 grubba Exp $
 */
 
 %pure_parser
@@ -4392,8 +4392,10 @@ bad_expr_ident:
 
 void low_yyerror(struct pike_string *str)
 {
-  struct compilation *c = THIS_COMPILATION;
+  struct compilation *c = MAYBE_THIS_COMPILATION;
   extern int cumulative_parse_error;
+
+  if (!c) return;
 
   STACK_LEVEL_START(0);
 

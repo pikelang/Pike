@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.697 2008/05/16 18:20:07 grubba Exp $
+|| $Id: program.c,v 1.698 2008/05/18 13:42:10 grubba Exp $
 */
 
 #include "global.h"
@@ -10067,12 +10067,12 @@ int find_child(struct program *parent, struct program *child)
 
 void yywarning(char *fmt, ...)
 {
-  struct compilation *c = THIS_COMPILATION;
+  struct compilation *c = MAYBE_THIS_COMPILATION;
   struct string_builder s;
   struct pike_string *msg;
   va_list args;
 
-  CHECK_COMPILER();
+  if (!c) return;
 
   /* If we have parse errors we might get erroneous warnings,
    * so don't print them.
