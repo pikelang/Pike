@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sscanf.c,v 1.180 2008/05/18 12:31:31 grubba Exp $
+|| $Id: sscanf.c,v 1.181 2008/05/18 16:53:33 grubba Exp $
 */
 
 #include "global.h"
@@ -1708,7 +1708,7 @@ static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
 	    push_type(PIKE_T_ARRAY);
 	    push_type(PIKE_T_ARRAY);
 	  }
-	  cnt = e+2;
+	  cnt = e;
 	  break;
 	}
 
@@ -1799,8 +1799,9 @@ static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
 	  break;
 
 	default:
-	  my_yyerror("Unknown sscanf token %%%c(0x%02x).",
-		     INDEX_PCHARP(format, cnt), INDEX_PCHARP(format, cnt));
+	  my_yyerror("Unknown sscanf token %%%c(0x%02x) at offset %d.",
+		     INDEX_PCHARP(format, cnt), INDEX_PCHARP(format, cnt),
+		     cnt-1);
 	  break;
       }
       break;
