@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.410 2008/05/17 22:48:32 grubba Exp $
+|| $Id: las.c,v 1.411 2008/05/18 11:43:50 grubba Exp $
 */
 
 #include "global.h"
@@ -4118,7 +4118,7 @@ void fix_type_field(node *n)
       }	
       args = mknode(F_ARG_LIST, CDAR(n), CDR(n));
       add_ref(CDAR(n));
-      add_ref(CDR(n));
+      if (CDR(n)) add_ref(CDR(n));
       sscanf_type = new_check_call(sscanf_name, sscanf_type, args, &argno, 0);
       free_node(args);
       if (sscanf_type) {
