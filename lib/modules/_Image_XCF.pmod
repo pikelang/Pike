@@ -234,7 +234,7 @@ class GimpImage
   {
     object p = PathPoint( );
     int x, y;
-    sscanf(data, "%4c%4c%4c%s", p->type, x, y);
+    sscanf(data, "%4c%4c%4c%s", p->type, x, y, data);
     SIGNED(x);
     SIGNED(y);
     p->x = (float)x;
@@ -245,7 +245,7 @@ class GimpImage
   static string read_point_bz2( string data, Path path )
   {
     object p = PathPoint( );
-    sscanf(data, "%4c%4F%4F%s", p->type, p->x, p->y);
+    sscanf(data, "%4c%4F%4F%s", p->type, p->x, p->y, data);
     return data;
   }
 
@@ -269,7 +269,7 @@ class GimpImage
          data = read_point_bz2( data, path );
        break;
      case 3:
-       sscanf(data, "%4%4cc%s", path->ptype, path->tattoo, data );
+       sscanf(data, "%4c%4c%s", path->ptype, path->tattoo, data );
        while(num_points--)
          data = read_point_bz2( data, path );
        break;
