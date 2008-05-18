@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.411 2008/05/18 11:43:50 grubba Exp $
+|| $Id: las.c,v 1.412 2008/05/18 15:37:28 grubba Exp $
 */
 
 #include "global.h"
@@ -4122,9 +4122,20 @@ void fix_type_field(node *n)
       sscanf_type = new_check_call(sscanf_name, sscanf_type, args, &argno, 0);
       free_node(args);
       if (sscanf_type) {
-	n->type = new_get_return_type(sscanf_type, 0);
+	if (!(n->type = new_get_return_type(sscanf_type, 0))) {
+	  struct pike_type *expected;
+	  if ((expected = get_first_arg_type(sscanf_type, 0))) {
+	    my_yyerror("Too few arguments to %S (got %d).", sscanf_name, argno);
+	    yytype_error(NULL, expected, NULL, 0);
+	    free_type(expected);
+	  } else {
+	    my_yyerror("Attempt to call a non function value %S.", sscanf_name);
+	    yytype_error(NULL, function_type_string, sscanf_type, 0);
+	  }
+	}
 	free_type(sscanf_type);
-      } else {
+      }
+      if (!n->type) {
 	MAKE_CONSTANT_TYPE(n->type, tIntPos);
       }
     }
