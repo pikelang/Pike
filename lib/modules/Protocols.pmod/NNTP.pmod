@@ -13,7 +13,8 @@ class protocol
   //!  used internally by command().
   int readreturncode()
   {
-    int space, code, r;
+    int space, code;
+    string r;
     rest=0;
 
     do {
