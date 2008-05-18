@@ -393,7 +393,7 @@ int decode_timeskew(string w)
 
    if (sscanf(w,"%d:%d:%d",a,b,c)==3)
       return neg*(a*3600+b*60+c);
-   else if (sscanf(w,"%d:%d",a,b,c)==2)
+   else if (sscanf(w,"%d:%d",a,b)==2)
       return neg*(a*3600+b*60);
    sscanf(w,"%d%s",a,s);
    if (s!="") { sscanf(w,"%f",f); if (f!=(float)a) return neg*(int)(f*3600); }
