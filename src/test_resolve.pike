@@ -59,6 +59,8 @@ void test_dir(string dir, int|void base_size, object|void handler)
   alarm(1*60);	// 1 minute should be sufficient for this test.
 #endif
   if(!base_size) base_size=sizeof(dir);
+  string prefix = "";
+  if (handler) prefix = (handler->ver || "") + " ";
   array(string) files = get_dir(dir);
   // Ensure that .so files are loaded before .pike and .pmod files.
   // Otherwise their loading errors will be hidden.
@@ -78,7 +80,8 @@ void test_dir(string dir, int|void base_size, object|void handler)
     string file=combine_path(dir,s);
     mixed stat=file_stat(file);
     if(!stat) continue;
-    write ("Testing %s: %s%*s\r",
+    write ("Testing %s%s: %s%*s\r",
+	   prefix,
 	   stat[1] == -2 ? "dir" : "file",
 	   (dir / "/")[-1] + "/" + s,
 	   60 - sizeof ((dir / "/")[-1]) - sizeof (s), "");
@@ -142,11 +145,14 @@ int main()
   // in the handlers.
   master()->set_inhibit_compile_errors (CompileErrorHandler());
 
-  Array.map(master()->pike_module_path,test_dir);
-  // FIXME: Forward compatibility?
-  foreach(({"0.6","7.0","7.2","7.4"}),string ver) {
-    object handler = master()->get_compilation_handler(@(array(int))(ver/"."));
-    Array.map(handler->pike_module_path,test_dir,0,handler);
+  // Prime the compat_handler_cache.
+  master()->get_compilation_handler(0, 0);
+
+  // Note: Get at all versions (including the main version)
+  //       by going via the handler cache.
+  foreach(Array.uniq(values(master()->compat_handler_cache)), object handler) {
+    Array.map(handler->pike_module_path, test_dir, 0,
+	      (handler != master())?handler:UNDEFINED);
   }
   write ("%*s\r", 75, "");
   Tools.Testsuite.report_result (num_ok, num_failed);
