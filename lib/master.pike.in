@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.418 2008/05/14 18:02:38 grubba Exp $
+// $Id: master.pike.in,v 1.419 2008/05/18 15:46:05 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -1209,24 +1209,6 @@ void handle_error(array|object trace)
     }
   }
   // predef::trace(0);
-}
-
-mixed handle_attribute_constant(string attr, mixed arg,
-				mixed arg_type, mixed cont_type)
-{
-#if 0
-  werror("handle_attribute_constant(%O, %O, %O, %O)\n",
-	 attr, arg, arg_type, cont_type);
-#endif /* 0 */
-  switch(attr) {
-  case "sprintf_format":
-    return __handle_sprintf_format(attr, arg, arg_type, cont_type);
-  case "lower_case":
-    if (stringp(arg) && lower_case(arg) != arg) {
-      /* FIXME: Warn. */
-    }
-  }
-  return UNDEFINED;
 }
 
 /* This array contains the names of the functions
@@ -4833,7 +4815,7 @@ CompatResolver get_compilation_handler(int major, int minor)
   /* We need to define RESOLVER_HACK when we add
    * version-specific stuff in the CompatResolver.
    * As long as all the compatibility is done in the
-   * module dierctories, RESOLVER_HACK can be undefined
+   * module directories, RESOLVER_HACK can be undefined
    */
 
   /* No compat needed */
