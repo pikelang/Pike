@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sscanf.c,v 1.179 2008/05/17 22:48:33 grubba Exp $
+|| $Id: sscanf.c,v 1.180 2008/05/18 12:31:31 grubba Exp $
 */
 
 #include "global.h"
@@ -1666,8 +1666,10 @@ static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
       case '0': case '1': case '2': case '3': case '4':
       case '5': case '6': case '7': case '8': case '9':
 	cnt++;
-	if(cnt>=format_len)
-	  Pike_error("Error in sscanf format string.\n");
+	if(cnt>=format_len) {
+	  yyerror("Error in sscanf format string.");
+	  break;
+	}
 	continue;
 
 	case '{':
@@ -1678,7 +1680,7 @@ static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
 	  {
 	    if(e>=format_len)
 	    {
-	      Pike_error("Missing %%} in format string.\n");
+	      yyerror("Missing %%} in format string.");
 	      break;
 	    }
 	    if(INDEX_PCHARP(format, e)=='%')
@@ -1694,11 +1696,16 @@ static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
 	  if (!no_assign) {
 	    type_stack_mark();
 	    push_sscanf_argument_types(format, e, cnt+1, flags);
-	    /* Join the argument types. */
-	    push_type(PIKE_T_ZERO);
-	    for (depth = pop_stack_mark(); depth > 1; depth--) {
-	      push_type(T_OR);
+	    if (!(depth = pop_stack_mark())) {
+	      push_type(PIKE_T_ZERO);
+	    } else {
+	      /* Join the argument types. */
+	      while (depth > 2) {
+		push_type(T_OR);
+		depth--;
+	      }
 	    }
+	    push_type(PIKE_T_ARRAY);
 	    push_type(PIKE_T_ARRAY);
 	  }
 	  cnt = e+2;
@@ -1722,7 +1729,7 @@ static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
 	    int ch;
 	    cnt++;
 	    if (cnt >= format_len) {
-	      Pike_error("Error in sscanf format string.\n");
+	      yyerror("Error in sscanf format string.");
 	      break;
 	    }
 	    if((INDEX_PCHARP(format, cnt)=='^') &&
@@ -1732,15 +1739,19 @@ static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
 		(flags & SSCANF_FLAG_76_COMPAT)))
 	    {
 	      cnt++;
-	      if(cnt >= format_len)
-		Pike_error("Error in sscanf format string.\n");
+	      if(cnt >= format_len) {
+		yyerror("Error in sscanf format string.");
+		break;
+	      }
 	    }
 
 	    if(((ch = INDEX_PCHARP(format, cnt))==']') || (ch=='-'))
 	    {
 	      cnt++;
-	      if(cnt >= format_len)
-		Pike_error("Error in sscanf format string.\n");
+	      if(cnt >= format_len) {
+		yyerror("Error in sscanf format string.");
+		break;
+	      }
 	      ch = INDEX_PCHARP(format, cnt);
 	    }
 
@@ -1749,8 +1760,10 @@ static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
 	      if(ch == '-')
 	      {
 		cnt++;
-		if(cnt >= format_len)
-		  Pike_error("Error in sscanf format string.");
+		if(cnt >= format_len) {
+		  yyerror("Error in sscanf format string.");
+		  break;
+		}
 
 		if(INDEX_PCHARP(format, cnt)==']')
 		{
@@ -1758,8 +1771,10 @@ static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
 		}
 	      }
 	      cnt++;
-	      if(cnt>=format_len)
-		Pike_error("Error in sscanf format string.");
+	      if(cnt>=format_len) {
+		yyerror("Error in sscanf format string.");
+		break;
+	      }
 	      ch = INDEX_PCHARP(format, cnt);
 	    }
 	  }
@@ -1784,8 +1799,9 @@ static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
 	  break;
 
 	default:
-	  Pike_error("Unknown sscanf token %%%c(0x%02x)\n",
+	  my_yyerror("Unknown sscanf token %%%c(0x%02x).",
 		     INDEX_PCHARP(format, cnt), INDEX_PCHARP(format, cnt));
+	  break;
       }
       break;
     }
@@ -1883,10 +1899,14 @@ void f___handle_sscanf_format(INT32 args)
 	push_type_value(res);
 	return;
       } else {
-	/* Join the argument types into the array. */
-	push_type(PIKE_T_ZERO);
-	for (fmt_count = pop_stack_mark(); fmt_count > 1; fmt_count--) {
-	  push_type(T_OR);
+	if (!(fmt_count = pop_stack_mark())) {
+	  push_type(PIKE_T_ZERO);
+	} else {
+	  /* Join the argument types into the array. */
+	  while (fmt_count > 2) {
+	    push_type(T_OR);
+	    fmt_count--;
+	  }
 	}
 	while (array_cnt--) {
 	  push_type(PIKE_T_ARRAY);
