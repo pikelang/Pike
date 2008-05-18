@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.h,v 1.104 2008/05/11 14:55:54 mast Exp $
+|| $Id: stralloc.h,v 1.105 2008/05/18 15:41:57 grubba Exp $
 */
 
 #ifndef STRALLOC_H
@@ -475,5 +475,6 @@ static INLINE void string_builder_binary_strcat(struct string_builder *s,
 #undef CONVERT
 
 PMOD_EXPORT void f_sprintf(INT32 num_arg);
+void f___handle_sprintf_format(INT32 args);
 
 #endif /* STRALLOC_H */

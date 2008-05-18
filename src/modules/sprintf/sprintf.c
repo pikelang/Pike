@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.150 2008/05/01 19:39:17 mast Exp $
+|| $Id: sprintf.c,v 1.151 2008/05/18 15:41:57 grubba Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -1898,10 +1898,10 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
       default:
 	if(EXTRACT_PCHARP(a) < 256 && isprint(EXTRACT_PCHARP(a)))
 	{
-	  my_yyerror("Error in format string, %c is not a format.\n",
+	  my_yyerror("Error in format string, %c is not a format.",
 		     EXTRACT_PCHARP(a));
 	}else{
-	  my_yyerror("Error in format string, U%08x is not a format.\n",
+	  my_yyerror("Error in format string, U%08x is not a format.",
 		     EXTRACT_PCHARP(a));
 	}
 	num_snurkel = 0;
@@ -1929,7 +1929,7 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
 	switch(setwhat)
 	{
 	case 0: case 1:
-	  if(tmp < 0) my_yyerror("Illegal width %d.\n", tmp);
+	  if(tmp < 0) my_yyerror("Illegal width %d.", tmp);
 	case 2: case 3: case 4: break;
 	}
 	continue;
@@ -1944,13 +1944,13 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
       case '/':
         column |= ROUGH_LINEBREAK;
         if( column & LINEBREAK )
-          my_yyerror("Can not use both the modifiers / and =.\n");
+          my_yyerror("Can not use both the modifiers / and =.");
         continue;
 
       case '=':
         column |= LINEBREAK;
         if( column & ROUGH_LINEBREAK )
-          my_yyerror("Can not use both the modifiers / and =.\n");
+          my_yyerror("Can not use both the modifiers / and =.");
         continue;
 
       case '#': case '$': case '|': case ' ': case '+':
@@ -1966,7 +1966,7 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
 	for(INC_PCHARP(a,1);INDEX_PCHARP(a,tmp)!='\'';tmp++)
 	{
 	  if(COMPARE_PCHARP(a,>=,format_end))
-	    my_yyerror("Unfinished pad string in format string.\n");
+	    my_yyerror("Unfinished pad string in format string.");
 	}
 	INC_PCHARP(a,tmp);
 	continue;
@@ -1982,7 +1982,7 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
 	/* FIXME: !!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 	return 0;	/* FAILURE! */
 	if(!lastarg)
-	  my_yyerror("No last argument.\n");
+	  my_yyerror("No last argument.");
 	arg=lastarg;
 	continue;
 
@@ -1997,10 +1997,10 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
 	} else
 	  tmp=STRTOL_PCHARP(a,&a,10);
 	if(EXTRACT_PCHARP(a)!=']') 
-	  my_yyerror("Expected ] in format string, not %c.\n",
+	  my_yyerror("Expected ] in format string, not %c.",
 		     EXTRACT_PCHARP(a));
 	if(tmp >= num_arg)
-	  my_yyerror("Not enough arguments to [%d].\n", tmp);
+	  my_yyerror("Not enough arguments to [%d].", tmp);
 	/* arg = argp+tmp; */
 	continue;
 	
@@ -2013,7 +2013,7 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
 	{
 	  if (!INDEX_PCHARP(a,e) &&
 	      !COMPARE_PCHARP(ADD_PCHARP(a,e),<,format_end)) {
-	    yyerror("Missing %} in format string.\n");
+	    yyerror("Missing %} in format string.");
 	    break;
 	  } else if(INDEX_PCHARP(a,e)=='%') {
 	    switch(INDEX_PCHARP(a,e+1))
@@ -2236,7 +2236,7 @@ static node *optimize_sprintf(node *n)
   return ret;
 }
 
-static void f___handle_sprintf_format(INT32 args)
+void f___handle_sprintf_format(INT32 args)
 {  
   struct pike_type *res;
   struct pike_type *tmp;
