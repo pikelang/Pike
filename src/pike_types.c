@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.335 2008/05/17 22:48:32 grubba Exp $
+|| $Id: pike_types.c,v 1.336 2008/05/18 15:44:51 grubba Exp $
 */
 
 #include "global.h"
@@ -5766,36 +5766,6 @@ struct pike_type *soft_cast(struct pike_type *soft_type,
   return res;
 }
 
-/*! @class CompilationHandler
- */
-
-/*! @decl type handle_attribute_constant(string attr, mixed value, @
- *!                                      type arg_type, type cont_type)
- *!
- *!   Handle constant arguments to attributed parameter types.
- *!
- *!   This function is called when a function parameter with the
- *!   attribute @[attr] is called with the constant value @[value].
- *!
- *!   This function is typically used to perform specialized
- *!   argument checking.
- *!
- *! @param arg_type
- *!   The declared type of the parameter.
- *!
- *! @param cont_type
- *!   The type for the continued function.
- *!
- *! @returns
- *!   Returns a new continuation type if it succeeded in strengthening
- *!   the type.
- *!
- *!   Returns @expr{UNDEFINED@} otherwise (this is not an error indication).
- */
-
-/*! @endclass
- */
-
 /* Check whether arg_type may be used as the type of the first argument
  * in a call to fun_type.
  *
@@ -6097,17 +6067,14 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
 
       if (tmp2->type == PIKE_T_ATTRIBUTE) {
 	struct compilation *c = MAYBE_THIS_COMPILATION;
-	/* Perform extra argument checking based on the attribute. */
-	/* FIXME: Support multiple attributes. */
-	/* FIXME: Ought to use PikeCompiler! */
-	ref_push_string((struct pike_string *)tmp2->car);
-	push_svalue(sval);
-	ref_push_type_value(tmp2->cdr);
-	ref_push_type_value(res);
-	if (safe_apply_handler("handle_attribute_constant",
-			       c?c->handler:NULL,
-			       c?c->compat_handler:NULL, 4, 0)) {
-	  if ((Pike_sp[-1].type == PIKE_T_TYPE)) {
+	if (c) {
+	  /* Perform extra argument checking based on the attribute. */
+	  ref_push_string((struct pike_string *)tmp2->car);
+	  push_svalue(sval);
+	  ref_push_type_value(tmp2->cdr);
+	  ref_push_type_value(res);
+	  safe_apply_current(PC_APPLY_ATTRIBUTE_CONSTANT_FUN_NUM, 4);
+	  if (Pike_sp[-1].type == PIKE_T_TYPE) {
 	    type_stack_mark();
 	    push_finished_type(Pike_sp[-1].u.type);
 	    push_finished_type(res);
