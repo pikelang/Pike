@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.814 2008/05/17 14:10:01 marcus Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.815 2008/05/18 14:09:45 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -4416,8 +4416,9 @@ test_do(class c { Stdio.File foo; object bar=foo; })
 test_any(if(int i=1) return i; return 0;,1)
 test_compile(for(int i=0;i<100;i++) return 0;)
 test_compile(foreach(({}),mixed i){i;})
-test_compile(sscanf("","",mixed foo);foo;)
-test_compile_error(sscanf("","",float))
+test_compile(sscanf("","%O",mixed foo);foo;)
+test_compile_error(sscanf("","",mixed foo);)
+test_compile_error(sscanf("","%f",float))
 test_compile_error(sscanf("",float))
 
 // ++
