@@ -366,7 +366,7 @@ Event.Event find_region(string c)
 array all_regions()
 {
    if (!all_data) read_all_data();
-   return `+(@array_sscanf(all_data,"%{%*s\nRegion \"%s\"%}"));
+   return `+(@array_sscanf(all_data,"%{%*s\nRegion \"%s\"%}")[0]);
 }
 
 // -----------------------------------------------------------------------
