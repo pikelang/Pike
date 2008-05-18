@@ -101,8 +101,6 @@ o Added generic attributes for types.
 
   Provides a method to hook into the type checker, so that it is
   possible to make custom type checking.
-  No syntax yet.
-  Added such a type checker for sprintf().
 
 o Stricter typing of strings.
 
@@ -217,6 +215,12 @@ o limit()
 
   The new toplevel function limit(a, x, b) is a convenience function
   that works like min(max(a,x),b).
+
+o sprintf() and sscanf()
+
+  The format string for sprintf() and sscanf() et al is now
+  syntax checked at compile-time, and the arguments after it
+  are matched against it.
 
 o ADT.BitBuffer
  
