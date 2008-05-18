@@ -10,7 +10,7 @@
 // and zic(8) is the usual compiler.
 
 // pike mkrules.pike ../data/{africa,antarctica,asia,australasia,backward,etcetera,europe,northamerica,pacificnew,southamerica,systemv}
-// $Id: mkrules.pike,v 1.11 2006/11/04 19:06:48 nilsson Exp $
+// $Id: mkrules.pike,v 1.12 2008/05/18 13:15:17 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -676,7 +676,7 @@ void collect_rules(string file)
 	    }
 	    else if ((t="",sscanf(line,"%[ \t]",t),t==line))
 	       ;
-	    else if (sscanf(line,"%*[ \t]#%s",t,s)==2)
+	    else if (sscanf(line,"%*[ \t]#%s",t)==2)
 	       ;
 	    else
 	       complain("unknown keyword %O...\n",line[..10]);
