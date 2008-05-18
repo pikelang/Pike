@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.698 2008/05/18 13:42:10 grubba Exp $
+|| $Id: program.c,v 1.699 2008/05/18 15:36:23 grubba Exp $
 */
 
 #include "global.h"
@@ -8586,6 +8586,69 @@ static void f_compilation_apply_type_attribute(INT32 args)
   push_int(1);
 }
 
+/*! @decl type(mixed) apply_attribute_constant(string attr, @
+ *!                                            mixed value, @
+ *!                                            type arg_type, @
+ *!                                            void cont_type)
+ *!
+ *!   Handle constant arguments to attributed function argument types.
+ *!
+ *! @param attr
+ *!   Attribute that @[arg_type] had.
+ *!
+ *! @param value
+ *!   Constant value sent as parameter.
+ *!
+ *! @param arg_type
+ *!   Declared type of the function argument.
+ *!
+ *! @param cont_type
+ *!   Continuation function type after the current argument.
+ *!
+ *!   This function is called when a function is called
+ *!   with the constant value @[value] and it has been
+ *!   successfully matched against @[arg_type],
+ *!   and @[arg_type] had the type attribute @[attr].
+ *!
+ *!   This function is typically used to perform specialized
+ *!   argument checking and to allow for a strengthening
+ *!   of the function type based on @[value].
+ *!
+ *!   The default implementation implements the @expr{"sprintf_format"@},
+ *!   @expr{"sscanf_format"@} and @expr{"sscanf_76_format"@} attributes.
+ *!
+ *! @returns
+ *!   Returns a continuation type if it succeeded in strengthening the type.
+ *!
+ *!   Returns @tt{UNDEFINED@} otherwise (this is not an error indication).
+ *!
+ *! @seealso
+ *!   @[pop_type_attribute()], @[push_type_attribute()]
+ */
+static void f_compilation_apply_attribute_constant(INT32 args)
+{
+  struct pike_string *attribute;
+  struct pike_string *test;
+  get_all_args("apply_attribute_constant", args, "%S", &attribute);
+  MAKE_CONST_STRING(test, "sprintf_format");
+  if (attribute == test) {
+    f___handle_sprintf_format(args);
+    return;
+  }
+  MAKE_CONST_STRING(test, "sscanf_format");
+  if (attribute == test) {
+    f___handle_sscanf_format(args);
+    return;
+  }
+  MAKE_CONST_STRING(test, "sscanf_76_format");
+  if (attribute == test) {
+    f___handle_sscanf_format(args);
+    return;
+  }
+  pop_n_elems(args);
+  push_undefined();
+}
+
 static void f_compilation__sprintf(INT32 args)
 {
   struct compilation *c = THIS_COMPILATION;
@@ -8827,6 +8890,10 @@ static void compile_compiler(void)
    * the normal program building functions.
    */
 
+  /* NOTE: The order of these identifiers is hard-coded in
+   *       the PC_*_FUN_NUM definitions in "pike_compiler.h".
+   */
+
   ADD_FUNCTION("report", f_compilation_report, 
 	       tFuncV(tName("SeverityLevel", tInt03) tStr tIntPos
 		      tStr tStr, tMix, tVoid),0);
@@ -8865,6 +8932,11 @@ static void compile_compiler(void)
 
   ADD_FUNCTION("apply_type_attribute", f_compilation_apply_type_attribute,
 	       tFunc(tStr tType(tMix) tOr(tType(tMix), tVoid), tInt01), 0);
+
+  ADD_FUNCTION("apply_attribute_constant",
+	       f_compilation_apply_attribute_constant,
+	       tFunc(tStr tMix tType(tMix) tType(tFunction),
+		     tType(tFunction)), 0);
 
   ADD_FUNCTION("_sprintf", f_compilation__sprintf,
 	       tFunc(tInt tOr(tMap(tStr, tMix), tVoid), tStr), ID_STATIC);
