@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sscanf.c,v 1.181 2008/05/18 16:53:33 grubba Exp $
+|| $Id: sscanf.c,v 1.182 2008/05/19 13:00:23 grubba Exp $
 */
 
 #include "global.h"
@@ -1965,9 +1965,11 @@ void f___handle_sscanf_format(INT32 args)
       push_sscanf_argument_types(MKPCHARP(fmt->str, fmt->size_shift),
 				 fmt->len, 0, flags);
       /* Join the argument types. */
-      push_type(PIKE_T_ZERO);
-      for (fmt_count = pop_stack_mark(); fmt_count > 1; fmt_count--) {
+      if (!(fmt_count = pop_stack_mark())) {
+	push_type(PIKE_T_ZERO);
+      } else while (fmt_count > 2) {
 	push_type(T_OR);
+	fmt_count--;
       }
       while (array_cnt--) {
 	push_type(PIKE_T_ARRAY);
