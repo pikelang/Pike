@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.419 2008/05/18 15:46:05 grubba Exp $
+// $Id: master.pike.in,v 1.420 2008/05/19 22:03:11 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -4357,7 +4357,16 @@ class Encoder
 
       if (function|program prog = object_program (what)) {
 	ENC_MSG ("  got program of object: %O\n", prog);
-	if (object|program parent = function_object (prog) || function_program (prog)) {
+	object|program parent;
+	if (!(parent = function_object (prog) || function_program (prog))) {
+	  // Check if prog is in a module directory.
+	  if (string path = programs_reverse_lookup (prog)) {
+	    path = combine_path(path, "..");
+	    ENC_MSG ("  found parent path in programs: %O\n", path);
+	    parent = fc[path];
+	  }
+	}
+	if (parent) {
 	  ENC_MSG ("  got parent of program: %O\n", parent);
 	  // We're going to subindex the parent so we ask for the
 	  // module object and not the program. That since we'll
