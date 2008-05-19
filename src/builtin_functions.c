@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.664 2008/05/17 22:48:32 grubba Exp $
+|| $Id: builtin_functions.c,v 1.665 2008/05/19 11:31:00 grubba Exp $
 */
 
 #include "global.h"
@@ -9318,12 +9318,12 @@ void init_builtin_efuns(void)
 /* function(string,string:array) */
   ADD_EFUN("array_sscanf", f_sscanf,
 	   tFunc(tStr tAttr("sscanf_format", tStr),
-		 tArr(tAttr("sscanf_args", tMix))), 0);
+		 tArr(tAttr("sscanf_args", tMix))), OPT_TRY_OPTIMIZE);
 
 /* function(string,string:array) */
   ADD_EFUN("array_sscanf_76", f_sscanf_76,
 	   tFunc(tStr tAttr("sscanf_76_format", tStr),
-		 tArr(tAttr("sscanf_args", tMix))), 0);
+		 tArr(tAttr("sscanf_args", tMix))), OPT_TRY_OPTIMIZE);
 
   ADD_EFUN("__handle_sscanf_format", f___handle_sscanf_format,
 	   tFunc(tStr tStr tType(tMix) tType(tMix), tType(tMix)),
