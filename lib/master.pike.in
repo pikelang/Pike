@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.421 2008/05/20 15:05:45 grubba Exp $
+// $Id: master.pike.in,v 1.422 2008/05/20 16:30:15 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -4158,7 +4158,7 @@ class Encoder
     }
 
     name = "r" + name;
-    string|array res = has_value (name, ".") ? name / "." : name;
+    string|array res = name;
 
     if (append)
       if (module_object) {
