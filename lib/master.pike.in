@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.420 2008/05/19 22:03:11 grubba Exp $
+// $Id: master.pike.in,v 1.421 2008/05/20 15:05:45 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -1386,91 +1386,6 @@ object cast_to_object(string oname, string current_file,
 // FIXME: Won't this cause problems when inheriting "/master"?
 static class ZERO_TYPE {};
 
-#if 0
-object dirnode(string dirname, object|void compilation_handler)
-{
-  resolv_debug("Creating dirnode(%O, %O)...\n", d, h);
-
-  fc[dirname]=this;
-
-  array(string) files = sort(master_get_dir(d)||({}));
-  if (!sizeof(d)) return ZERO_TYPE();
-
-  array(string) bases = map(files, base_from_filename);
-  files = filter(files, bases);
-  bases = filter(bases, bases);
-  resolv_debug("dirnode(%O,%O) got %d files.\n",
-	       d, h, sizeof(bases));
-  if (!sizeof(files)) return ZERO_TYPE();
-
-  array(string) segments = allocate(sizeof(files) + 10, "");
-
-  mapping(string:array(int|string)) file_paths = ([]);
-
-  foreach(files; int no; string fname) {
-    fname = combine_path(dirname, fname);
-    string base = bases[no];
-    if (base == "module") {
-      segments[0] = sprintf("inherit \"%s\";\n", fname);
-      continue;
-    }
-    array(string) paths = file_paths[base];
-    if (!paths) {
-      // New entry.
-      file_paths[base] = ({ no, fname });
-      continue;
-    }
-
-    // Multiple files. Order according to prio_from_filename().
-    // Insert sort. Worst case is 3 filenames.
-    int prio = prio_from_filename(fname);
-    int index;
-    foreach(paths; index; string other_fname) {
-      if (!index) continue;
-      if (prio_from_filename(other_fname) <= prio) break;
-    }
-    file_paths[base] = paths[..index-1] + ({ fname }) + paths[index..];
-  }
-  foreach(file_paths; string base; array(int|string) paths) {
-    if (sizeof(paths) == 2) {
-      // Single file.
-      if (has_suffix(FIX_CASE(paths[1]), ".pmod")) {
-	segments[5 + paths[0]] =
-	  sprintf("static mixed __%s = 0;\n"
-		  "object `->%s()\n"
-		  "{\n"
-		  "  if (__%s || zero_type(__%s)) return __%s;\n"
-		  "  return __%s = \n"
-		  "    (low_cast_to_object(\"%s\", 0, __compilation_handler)\n"
-		  "       || UNDEFINED);\n"
-		  "}\n",
-		  base,
-		  base,
-		  base, base, base,
-		  base,
-		  paths[1]);
-      } else {
-	segments[5 + paths[0]] =
-	  sprintf("static mixed __%s = 0;\n"
-		  "program `->%s()\n"
-		  "{\n"
-		  "  if (__%s || zero_type(__%s)) return __%s;\n"
-		  "  return __%s = \n"
-		  "    (low_cast_to_program(\"%s\", 0, __compilation_handler)\n"
-		  "       || UNDEFINED);\n"
-		  "}\n",
-		  base,
-		  base,
-		  base, base, base,
-		  base,
-		  paths[1]);
-      }
-    }
-  }
-}
-
-#else /* !0 */
-
 static object Unicode;
 
 //! Module node representing a single directory.
@@ -1839,7 +1754,6 @@ class dirnode
     return as=='O' && sprintf("master()->dirnode(%O)",dirname);
   }
 }
-#endif /* 0 */
 
 //! Module node holding possibly multiple directories,
 //! and optionally falling back to another level.
@@ -2485,7 +2399,7 @@ class CompatResolver
     mixed ret;
     if (sizeof(tmp) > 1) {
       string scope = tmp[0];
-      tmp = tmp[1]/":";
+      tmp = tmp[1]/".";
       switch(scope) {
       case "predef":
 	ret = all_constants();
@@ -2495,12 +2409,13 @@ class CompatResolver
 	  // Versioned identifier.
 	  ret = get_compilation_handler(major, minor);
 	  if (ret) {
-	    if (tmp[0] == "__default") {
-	      tmp = tmp[1..];
-	      ret = ret->resolv("__default");
+	    mixed mod = ret->get_default_module();
+	    if (!zero_type(mod = mod[tmp[0]])) {
+	      ret = mod;
 	    } else {
-	      ret = ret->get_default_module();
+	      ret = ret->resolv(tmp[0]);
 	    }
+	    tmp = tmp[1..];
 	    break;
 	  }
 	}
