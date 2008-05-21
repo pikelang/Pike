@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.268 2008/05/21 13:07:02 grubba Exp $
+|| $Id: encode.c,v 1.269 2008/05/21 20:07:41 grubba Exp $
 */
 
 #include "global.h"
@@ -2937,6 +2937,20 @@ static void decode_value2(struct decode_data *data)
 			   "Cannot decode objects without a "
 			   "\"decode_object\" function in the codec.\n");
 	    apply_low(data->codec,fun,2);
+	    if ((Pike_sp[-1].type == T_ARRAY) &&
+		((fun = FIND_LFUN(o->prog, LFUN_CREATE)) != -1)) {
+	      /* Call lfun::create(@args). */
+	      INT32 args;
+	      Pike_sp--;
+	      args = Pike_sp->u.array->size;
+	      if (args) {
+		/* Note: Eats reference */
+		push_array_items(Pike_sp->u.array);
+	      } else {
+		free_array(Pike_sp->u.array);
+	      }
+	      apply_low(o, fun, args);
+	    }
 	    pop_stack();
 	  }
 
@@ -3605,21 +3619,23 @@ static void decode_value2(struct decode_data *data)
 	       * to see what objects are now finished.
 	       */
 	      {
-		int fun = -1;
+		int decode_fun = -1;
 		struct unfinished_obj_link *l, **ptr;
 		if (data->unfinished_objects) {
 		  if(!data->codec)
 		    decode_error(Pike_sp - 1, NULL,
 				 "Cannot decode object without codec.\n");
 
-		  fun = find_identifier("decode_object", data->codec->prog);
-		  if (fun < 0)
+		  decode_fun =
+		    find_identifier("decode_object", data->codec->prog);
+		  if (decode_fun < 0)
 		    decode_error(Pike_sp - 1, NULL,
 				 "Cannot decode objects without a "
 				 "\"decode_object\" function in the codec.\n");
 		}
 		for(ptr= &data->unfinished_objects ; (l=*ptr);)
 		{
+		  int fun;
 		  struct object *o=l->o;
 		  if(o->prog)
 		  {
@@ -3643,7 +3659,21 @@ static void decode_value2(struct decode_data *data)
 		  free((char *)l);
 
 		  /* Let the codec do it's job... */
-		  apply_low(data->codec, fun, 2);
+		  apply_low(data->codec, decode_fun, 2);
+		  if ((Pike_sp[-1].type == T_ARRAY) &&
+		      ((fun = FIND_LFUN(o->prog, LFUN_CREATE)) != -1)) {
+		    /* Call lfun::create(@args). */
+		    INT32 args;
+		    Pike_sp--;
+		    args = Pike_sp->u.array->size;
+		    if (args) {
+		      /* Note: Eats reference to the array. */
+		      push_array_items(Pike_sp->u.array);
+		    } else {
+		      free_array(Pike_sp->u.array);
+		    }
+		    apply_low(o, fun, args);
+		  }
 		  pop_stack();
 		}
 	      }
