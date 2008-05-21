@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.267 2008/05/17 13:36:56 grubba Exp $
+|| $Id: encode.c,v 1.268 2008/05/21 13:07:02 grubba Exp $
 */
 
 #include "global.h"
@@ -2021,6 +2021,7 @@ struct unfinished_obj_link
 {
   struct unfinished_obj_link *next;
   struct object *o;
+  struct svalue decode_arg;
 };
 
 struct decode_data
@@ -2901,9 +2902,21 @@ static void decode_value2(struct decode_data *data)
 		 * compatibility mode. */
 	      }else{
 		struct unfinished_obj_link *ol=ALLOC_STRUCT(unfinished_obj_link);
-		ol->o=o;
+		EDB(2,fprintf(stderr,
+			      "%*sDecoded an unfinished object to <%d>: ",
+			      data->depth, "", entry_id.u.integer);
+		print_svalue(stderr, Pike_sp-1);
+		fputc('\n', stderr););
+		add_ref(ol->o = o);
 		ol->next=data->unfinished_objects;
+		ol->decode_arg.type = PIKE_T_INT;
+		ol->decode_arg.subtype = NUMBER_UNDEFINED;
+		ol->decode_arg.u.integer = 0;
 		data->unfinished_objects=ol;
+		decode_value2(data);
+		assign_svalue(&ol->decode_arg, Pike_sp-1);
+		pop_stack();
+		break;
 	      }
 	    }
 
@@ -3592,7 +3605,19 @@ static void decode_value2(struct decode_data *data)
 	       * to see what objects are now finished.
 	       */
 	      {
+		int fun = -1;
 		struct unfinished_obj_link *l, **ptr;
+		if (data->unfinished_objects) {
+		  if(!data->codec)
+		    decode_error(Pike_sp - 1, NULL,
+				 "Cannot decode object without codec.\n");
+
+		  fun = find_identifier("decode_object", data->codec->prog);
+		  if (fun < 0)
+		    decode_error(Pike_sp - 1, NULL,
+				 "Cannot decode objects without a "
+				 "\"decode_object\" function in the codec.\n");
+		}
 		for(ptr= &data->unfinished_objects ; (l=*ptr);)
 		{
 		  struct object *o=l->o;
@@ -3609,8 +3634,17 @@ static void decode_value2(struct decode_data *data)
 		      continue;
 		    }
 		  }
+
+		  /* Note: We steal the references from l. */
+		  push_object(o);
+		  *(Pike_sp++) = l->decode_arg;
+
 		  *ptr = l->next;
 		  free((char *)l);
+
+		  /* Let the codec do it's job... */
+		  apply_low(data->codec, fun, 2);
+		  pop_stack();
 		}
 	      }
 	    }else{
@@ -4640,6 +4674,8 @@ static void free_decode_data (struct decode_data *data, int delay,
   {
     struct unfinished_obj_link *tmp=data->unfinished_objects;
     data->unfinished_objects=tmp->next;
+    free_svalue(&tmp->decode_arg);
+    free_object(tmp->o);
     free((char *)tmp);
   }
 
