@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.699 2008/05/18 15:36:23 grubba Exp $
+|| $Id: program.c,v 1.700 2008/05/21 21:55:48 grubba Exp $
 */
 
 #include "global.h"
@@ -6869,6 +6869,8 @@ PMOD_EXPORT struct pike_string *low_get_function_line (struct object *o,
   return NULL;
 }
 
+/* FIXME: Consider converting these to using va_yyreport(). */
+
 PMOD_EXPORT void va_yyerror(const char *fmt, va_list args)
 {
   struct string_builder s;
@@ -7983,6 +7985,7 @@ static void f_compilation_report(INT32 args)
   get_all_args("report", args, "%d%W%i%W%W",
 	       &level, &filename, &linenumber,
 	       &subsystem, &message);
+
   ref_push_string(filename);
   push_int(linenumber);
   ref_push_string(message);
@@ -8627,6 +8630,7 @@ static void f_compilation_apply_type_attribute(INT32 args)
  */
 static void f_compilation_apply_attribute_constant(INT32 args)
 {
+  struct compilation *c = THIS_COMPILATION;
   struct pike_string *attribute;
   struct pike_string *test;
   get_all_args("apply_attribute_constant", args, "%S", &attribute);
@@ -10137,35 +10141,54 @@ int find_child(struct program *parent, struct program *child)
 }
 #endif /* 0 */
 
-void yywarning(char *fmt, ...)
+void va_yyreport(int severity_level, const char *system,
+		 const char *fmt, va_list args)
 {
   struct compilation *c = MAYBE_THIS_COMPILATION;
   struct string_builder s;
   struct pike_string *msg;
-  va_list args;
 
-  if (!c) return;
+  if (!c) return;	/* No compiler context. */
 
   /* If we have parse errors we might get erroneous warnings,
    * so don't print them.
    * This has the additional benefit of making it easier to
    * visually locate the actual error message.
    */
-  if (Pike_compiler->num_parse_error) return;
+  if ((severity_level <= REPORT_WARNING) &&
+      Pike_compiler->num_parse_error) {
+    return;
+  }
 
   init_string_builder(&s, 0);
-  va_start(args,fmt);
   string_builder_vsprintf(&s, fmt, args);
-  va_end(args);
   msg = finish_string_builder(&s);
 
-  push_int(REPORT_WARNING);
+  push_int(severity_level);
   ref_push_string(c->lex.current_file);
   push_int(c->lex.current_line);
-  push_constant_text("parse");
+  push_text(system);
   push_string(msg);
   safe_apply_current(PC_REPORT_FUN_NUM, 5);
   pop_stack();
+}
+
+void yyreport(int severity_level, const char *system, const char *fmt, ...)
+{
+  va_list args;
+
+  va_start(args,fmt);
+  va_yyreport(severity_level, system, fmt, args);
+  va_end(args);
+}
+
+void yywarning(char *fmt, ...)
+{
+  va_list args;
+
+  va_start(args,fmt);
+  va_yyreport(REPORT_WARNING, "parse", fmt, args);
+  va_end(args);
 }
 
 

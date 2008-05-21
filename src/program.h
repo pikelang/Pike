@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.246 2008/05/16 18:20:08 grubba Exp $
+|| $Id: program.h,v 1.247 2008/05/21 21:55:49 grubba Exp $
 */
 
 #ifndef PROGRAM_H
@@ -304,7 +304,7 @@ struct program_constant
 #define ID_FINAL           0x04	/* Symbol may not be overloaded */
 #define ID_NOMASK          0x04	/* Symbol may not be overloaded (deprecated) */
 #define ID_PUBLIC          0x08 /* Anti private */
-#define ID_USED		   0x10 /* This reference has been used. Check
+#define ID_USED		   0x10 /* This identifier has been used. Check
 				 * that the type is compatible when
 				 * overloading. */
 #define ID_LOCAL           0x20 /* Locally referenced symbol (not virtual) */
@@ -934,6 +934,9 @@ PMOD_EXPORT struct program *program_from_function(const struct svalue *f);
 PMOD_EXPORT struct program *program_from_svalue(const struct svalue *s);
 struct find_child_cache_s;
 int find_child(struct program *parent, struct program *child);
+void va_yyreport(int severity_level, const char *system,
+		 const char *fmt, va_list args);
+void yyreport(int severity_level, const char *system, const char *fmt, ...);
 void yywarning(char *fmt, ...);
 struct implements_cache_s;
 PMOD_EXPORT int implements(struct program *a, struct program *b);
