@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.231 2008/05/03 15:29:24 nilsson Exp $
+|| $Id: operators.c,v 1.232 2008/05/21 21:13:04 mast Exp $
 */
 
 #include "global.h"
@@ -1551,7 +1551,14 @@ PMOD_EXPORT void f_add(INT32 args)
     } else {
       e = -args;
     }
-      
+
+    /* These calculations should always give some margin based on the size. */
+    /* One extra char for the sign. */
+#define MAX_INT_SPRINTF_LEN (1 + (SIZEOF_INT_TYPE * 5 + 1) / 2)
+    /* Six extra chars: Mantissa sign, decimal point, zero before the
+     * decimal point, the 'e', exponent sign, and an extra digit due
+     * to the mantissa/exponent split. */
+#define MAX_FLOAT_SPRINTF_LEN (6 + (SIZEOF_FLOAT_TYPE * 5 + 1) / 2)
 
     size=0;
     for(e=-args;e<0;e++)
@@ -1565,11 +1572,11 @@ PMOD_EXPORT void f_add(INT32 args)
 	break;
 
       case T_INT:
-	size+=14;
+	size += MAX_INT_SPRINTF_LEN;
 	break;
 
       case T_FLOAT:
-	size+=22;
+	size += MAX_FLOAT_SPRINTF_LEN;
 	break;
       }
     }
@@ -1589,10 +1596,23 @@ PMOD_EXPORT void f_add(INT32 args)
 
       case T_INT:
 	sprintf(buffer,"%"PRINTPIKEINT"d",sp[e].u.integer);
+#ifdef PIKE_DEBUG
+	if (strlen (buffer) > MAX_INT_SPRINTF_LEN)
+	  Pike_fatal ("Formatted integer %s is %"PRINTSIZET"u, "
+		      "longer than assumed max %"PRINTSIZET"u.\n",
+		      buffer, strlen (buffer), MAX_INT_SPRINTF_LEN);
+#endif
 	goto append_buffer;
 
       case T_FLOAT:
 	sprintf(buffer,"%"PRINTPIKEFLOAT"f",sp[e].u.float_number);
+#ifdef PIKE_DEBUG
+	if (strlen (buffer) > MAX_FLOAT_SPRINTF_LEN)
+	  Pike_fatal ("Formatted float %s is %"PRINTSIZET"u, "
+		      "longer than assumed max %"PRINTSIZET"u.\n",
+		      buffer, strlen (buffer), MAX_FLOAT_SPRINTF_LEN);
+#endif
+
       append_buffer:
 	switch(max_shift)
 	{
