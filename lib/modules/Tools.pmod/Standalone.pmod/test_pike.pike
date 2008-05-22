@@ -1,7 +1,7 @@
 #! /usr/bin/env pike
 #pike __REAL_VERSION__
 
-/* $Id: test_pike.pike,v 1.131 2008/05/10 20:49:06 mast Exp $ */
+/* $Id: test_pike.pike,v 1.132 2008/05/22 20:20:42 mast Exp $ */
 
 #if !constant(_verify_internals)
 #define _verify_internals()
@@ -718,9 +718,13 @@ int main(int argc, array(string) argv)
 	    };
 
 	    if(err) {
-	      werror( "\nConditional %d %s failed:\n"
-		      "%s\n", e+1, testline?"(line "+testline+")":"",
-		      describe_backtrace(err) );
+	      if (err && err->is_cpp_or_compilation_error)
+		werror( "\nConditional %d%s failed.\n",
+			e+1, testline?" (line "+testline+")":"");
+	      else
+		werror( "\nConditional %d%s failed:\n"
+			"%s\n", e+1, testline?" (line "+testline+")":"",
+			describe_backtrace(err) );
 	      errors++;
 	      tmp = -1;
 	    }
@@ -881,11 +885,15 @@ int main(int argc, array(string) argv)
 	  wf = WarningFlag();
 	  master()->set_inhibit_compile_errors(wf);
 	  _dmalloc_set_name(fname,0);
-	  if(catch(compile_string(to_compile, testsuite)))
+	  if(mixed err = catch(compile_string(to_compile, testsuite)))
 	  {
 	    _dmalloc_set_name();
 	    master()->set_inhibit_compile_errors(0);
-	    werror(pad_on_error + fname + " failed.\n");
+	    if (objectp (err) && err->is_cpp_or_compilation_error)
+	      werror ("%s%s failed.\n", pad_on_error, fname);
+	    else
+	      werror ("%s%s failed:\n%s", pad_on_error, fname,
+		      describe_backtrace (err));
 	    print_code(test);
 	    errors++;
 	  }
@@ -908,10 +916,20 @@ int main(int argc, array(string) argv)
 	case "COMPILE_ERROR":
 	  master()->set_inhibit_compile_errors(1);
 	  _dmalloc_set_name(fname,0);
-	  if(catch(compile_string(to_compile, testsuite)))
+	  if(mixed err = catch(compile_string(to_compile, testsuite)))
 	  {
-	    _dmalloc_set_name();
-	    successes++;
+	    if (objectp (err) && err->is_cpp_or_compilation_error) {
+	      _dmalloc_set_name();
+	      successes++;
+	    }
+	    else {
+	      _dmalloc_set_name();
+	      werror("%s%s failed.\n"
+		     "Expected compile error, got another kind of error:\n%s",
+		     pad_on_error, fname, describe_backtrace (err));
+	      print_code(test);
+	      errors++;
+	    }
 	  }
 	  else {
 	    _dmalloc_set_name();
@@ -926,10 +944,14 @@ int main(int argc, array(string) argv)
 	  wf = WarningFlag();
 	  master()->set_inhibit_compile_errors(wf);
 	  _dmalloc_set_name(fname,0);
-	  if(catch(compile_string(to_compile, testsuite)))
+	  if(mixed err = catch(compile_string(to_compile, testsuite)))
 	  {
 	    _dmalloc_set_name();
-	    werror(pad_on_error + fname + " failed.\n");
+	    if (objectp (err) && err->is_cpp_or_compilation_error)
+	      werror ("%s%s failed.\n", pad_on_error, fname);
+	    else
+	      werror ("%s%s failed:\n%s", pad_on_error, fname,
+		      describe_backtrace (err));
 	    print_code(test);
 	    errors++;
 	  }
@@ -952,6 +974,8 @@ int main(int argc, array(string) argv)
 
 	  at = gauge {
 	    err=catch {
+		// Is it intentional that compilation errors are
+		// considered success too? /mast
 	      a = compile_string(to_compile, testsuite)()->a();
 	    };
 	  };
@@ -1016,14 +1040,12 @@ int main(int argc, array(string) argv)
 	    if(t) trace(0);
 	    master()->set_inhibit_compile_errors(0);
 	    watchdog_show_last_test();
-	    werror(pad_on_error + fname + " failed.\n");
+	    if (objectp (err) && err->is_cpp_or_compilation_error)
+	      werror ("%s%s failed.\n", pad_on_error, fname);
+	    else
+	      werror ("%s%s failed:\n%s\n",
+		      pad_on_error, fname, describe_backtrace (err));
 	    print_code(test);
-	    if (arrayp(err) && sizeof(err) && stringp(err[0])) {
-	      werror("Error: " + master()->describe_backtrace(err));
-	    }
-	    if (objectp(err)) {
-	      werror("Error: " + master()->describe_backtrace(err));
-	    }
 	    errors++;
 	    break;
 	  }
