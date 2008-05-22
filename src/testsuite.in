@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.819 2008/05/21 21:15:59 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.820 2008/05/22 14:39:15 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -592,6 +592,15 @@ test_compile_error([[ float b=17.0; string a; a=b*42; ]])
 test_compile_error([[ float b=17.0; string a; a=b*42.0; ]])
 
 test_compile_error([[class F {inherit master()->dirnode;};]]);
+
+test_program_equal([[
+#pike 7.6
+  string a()
+  {
+    string|array(string) res = ({"spud"});
+    return res + ({});
+  }
+]], ({"spud"}))
 
 // Warnings
 
