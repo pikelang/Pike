@@ -106,7 +106,7 @@ CONDITION()__file__:__line__: test TESTNO, expected result: [[\$1]]
 SEPARATOR
 divert(-1)dnl]])
 
-define(START_MARKER,[[divert(0)START
+define(START_MARKER,[[divert(0)START [[\$1]]
 divert(-1)]])
 define(END_MARKER,[[divert(0)END
 divert(-1)]])

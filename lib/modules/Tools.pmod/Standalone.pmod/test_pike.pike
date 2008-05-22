@@ -1,7 +1,7 @@
 #! /usr/bin/env pike
 #pike __REAL_VERSION__
 
-/* $Id: test_pike.pike,v 1.133 2008/05/22 20:48:22 mast Exp $ */
+/* $Id: test_pike.pike,v 1.134 2008/05/22 21:50:42 mast Exp $ */
 
 #if !constant(_verify_internals)
 #define _verify_internals()
@@ -70,7 +70,7 @@ array find_testsuites(string dir)
   return ret;
 }
 
-array(string) read_tests( string fn ) {
+array(string|array(string)) read_tests( string fn ) {
   string|array(string) tests = Stdio.read_file( fn );
   if(!tests) {
     werror("Failed to read test file %O, errno=%d.\n",
@@ -78,16 +78,18 @@ array(string) read_tests( string fn ) {
     exit(1);
   }
 
-  if(has_prefix(tests, "START")) {
-    tests = tests[6..];
+  string pike_compat;
+  if(sscanf (tests, "START%s\n%s", pike_compat, tests) == 2) {
     if(!has_suffix(tests, "END\n"))
       werror("%s: Missing end marker.\n", fn);
     else
-      tests = tests[..sizeof(tests)-1-4];
+      tests = tests[..<sizeof ("END\n")];
+    pike_compat = String.trim_whites (pike_compat);
+    if (pike_compat == "") pike_compat = 0;
   }
 
   tests = tests/"\n....\n";
-  return tests[0..sizeof(tests)-2];
+  return ({pike_compat, tests[..<1]});
 }
 
 mapping(string:int) pushed_warnings = ([]);
@@ -677,9 +679,11 @@ int main(int argc, array(string) argv)
   testloop:
     foreach(testsuites, string testsuite)
     {
-      tests = read_tests( testsuite );
+      [string pike_compat, tests] = read_tests( testsuite );
 
-      werror("Doing tests in %s (%d tests)\n", testsuite, sizeof(tests));
+      werror("Doing tests in %s%s (%d tests)\n", testsuite,
+	     pike_compat ? " in " + pike_compat + " compat mode" : "",
+	     sizeof(tests));
       int qmade, qskipped, qmadep, qskipp;
 
       int testno, testline;
@@ -811,6 +815,9 @@ int main(int argc, array(string) argv)
 	  errors++;
 	  continue;
 	}
+
+	if (pike_compat)
+	  test = "#pike " + pike_compat + "\n" + test;
 
 	if (prompt) {
 	  if (Stdio.Readline()->
