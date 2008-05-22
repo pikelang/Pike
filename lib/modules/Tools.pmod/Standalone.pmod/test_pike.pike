@@ -1,7 +1,7 @@
 #! /usr/bin/env pike
 #pike __REAL_VERSION__
 
-/* $Id: test_pike.pike,v 1.132 2008/05/22 20:20:42 mast Exp $ */
+/* $Id: test_pike.pike,v 1.133 2008/05/22 20:48:22 mast Exp $ */
 
 #if !constant(_verify_internals)
 #define _verify_internals()
@@ -974,8 +974,11 @@ int main(int argc, array(string) argv)
 
 	  at = gauge {
 	    err=catch {
-		// Is it intentional that compilation errors are
-		// considered success too? /mast
+	      // Is it intentional that compilation errors are
+	      // considered success too? /mast
+	      // Yes, apparently it is. There are tests that doesn't
+	      // care whether the error is catched during compilation
+	      // or evaluation. /mast
 	      a = compile_string(to_compile, testsuite)()->a();
 	    };
 	  };
