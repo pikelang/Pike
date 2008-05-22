@@ -1,18 +1,16 @@
-START_MARKER
+START_MARKER(7.4)
 
 test_equal([[
-#pike 7.4
 Array.diff3_old(({"a"}),({"a","b"}),({"b","a"})) ]],
 	   ({({({   }),({"a"}),({   })}),
 	     ({({   }),({"a"}),({"b"})}),
 	     ({({"b"}),({"a"}),({   })})}) )
 
-test_true(
-#pike 7.4
-arrayp( rusage() ))
+test_true(arrayp( rusage() ))
 
-test_eq(
-#pike 7.4
-hash("hello\12345"), hash_7_4("hello\12345"))
+test_eq(hash("hello\12345"), hash_7_4("hello\12345"))
+
+test_compile_error( String.String_buffer x; )
+test_eval_error( String.strmult("foo",4); )
 
 END_MARKER

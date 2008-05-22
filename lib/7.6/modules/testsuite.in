@@ -1,116 +1,64 @@
-START_MARKER
+START_MARKER(7.6)
 
-test_eq(
-#pike 7.6
-sizeof(_describe_program(ADT.Struct)[0]), 6);
+test_eq(sizeof(_describe_program(ADT.Struct)[0]), 6);
 
-test_eq(
-#pike 7.6
-sizeof(Debug.describe_program(ADT.Struct)[0]), 6);
+test_eq(sizeof(Debug.describe_program(ADT.Struct)[0]), 6);
 
-test_true(
-#pike 7.6
-functionp(Array.transpose_old))
+test_true(functionp(Array.transpose_old))
 
-test_true(
-#pike 7.6
-functionp(Image.Image()->select_colors))
+test_true(functionp(Image.Image()->select_colors))
 
-test_true(
-#pike 7.6
-functionp(Image.Image()->map_closest))
+test_true(functionp(Image.Image()->map_closest))
 
-test_true(
-#pike 7.6
-functionp(Image.Image()->map_fast))
+test_true(functionp(Image.Image()->map_fast))
 
-test_true(
-#pike 7.6
-functionp(Image.Image()->map_fs))
+test_true(functionp(Image.Image()->map_fs))
 
-test_eq(
-#pike 7.6
-Image.image,Image.Image)
+test_eq(Image.image,Image.Image)
 
-test_eq(
-#pike 7.6
-Image.font,Image.Font)
+test_eq(Image.font,Image.Font)
 
-test_eq(
-#pike 7.6
-Image.colortable,Image.Colortable)
+test_eq(Image.colortable,Image.Colortable)
 
-test_true(
-#pike 7.6
-functionp(Standards.UUID.new))
+test_true(functionp(Standards.UUID.new))
 
-test_true(
-#pike 7.6
-functionp(Standards.UUID.new_string))
+test_true(functionp(Standards.UUID.new_string))
 
-test_true(
-#pike 7.6
-objectp(spider.XML()))
+test_true(objectp(spider.XML()))
 
-test_true(
-#pike 7.6
-functionp(spider.isbasechar))
+test_true(functionp(spider.isbasechar))
 
-test_true(
-#pike 7.6
-functionp(spider.iscombiningchar))
+test_true(functionp(spider.iscombiningchar))
 
-test_true(
-#pike 7.6
-functionp(spider.isdigit))
+test_true(functionp(spider.isdigit))
 
-test_true(
-#pike 7.6
-functionp(spider.isextender))
+test_true(functionp(spider.isextender))
 
-test_true(
-#pike 7.6
-functionp(spider.isfirstnamechar))
+test_true(functionp(spider.isfirstnamechar))
 
-test_true(
-#pike 7.6
-functionp(spider.ishexchar))
+test_true(functionp(spider.ishexchar))
 
-test_true(
-#pike 7.6
-functionp(spider.isidographic))
+test_true(functionp(spider.isidographic))
 
-test_true(
-#pike 7.6
-functionp(spider.isletter))
+test_true(functionp(spider.isletter))
 
-test_true(
-#pike 7.6
-functionp(spider.isnamechar))
+test_true(functionp(spider.isnamechar))
 
-test_true(
-#pike 7.6
-functionp(spider.isspace))
+test_true(functionp(spider.isspace))
 
 
 test_do([[
   catch {
-#pike 7.6
     add_constant( "db", Sql.Sql("mysql://localhost") );
   };
 ]])
 
 ifefun(db,[[
-  test_equal(
-db->query("select 1"), ({ ([ ".1":"1", "1":"1" ]) }) )
+  test_equal( db->query("select 1"), ({ ([ ".1":"1", "1":"1" ]) }) )
   test_do( add_constant("db") )
 ]])
 
-test_equal(
-#pike 7.6
-array_sscanf("^^;|", "%[^-|]%s"), ({ "^^;", "|" }) );
-test_any([[
-#pike 7.6
-mixed a; sscanf("^^;|","%[^-|]",a); return a]],"^^;")
+test_equal(array_sscanf("^^;|", "%[^-|]%s"), ({ "^^;", "|" }) );
+test_any([[mixed a; sscanf("^^;|","%[^-|]",a); return a]],"^^;")
 
 END_MARKER

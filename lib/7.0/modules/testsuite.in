@@ -1,7 +1,4 @@
-START_MARKER
-test_compile([[#pike 7.0
-functionp(Stdio.read_bytes);]])
-
-test_compile([[#pike 7.0
-functionp(Stdio.read_file);]])
+START_MARKER(7.0)
+test_compile([[functionp(Stdio.read_bytes);]])
+test_compile([[functionp(Stdio.read_file);]])
 END_MARKER
