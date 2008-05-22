@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: errors.h,v 1.36 2006/09/20 16:15:55 mast Exp $
+|| $Id: errors.h,v 1.37 2008/05/22 20:17:13 mast Exp $
 */
 
 #ifdef ERR_DECLARE
@@ -24,6 +24,7 @@ struct PIKE_CONCAT(NAME,_error_struct) { \
 };
 
 #define ERR_VAR(TYPE,CTYPE,RUNTYPE,NAME) TYPE NAME ;
+#define ERR_CONST(TYPE, NAME, VALUE)
 
 /* Some compilers (eg cl) don't like empty structs... */
 #define EMPTY ERR_VAR(INT_TYPE, int, PIKE_T_INT, ignored__)
@@ -48,6 +49,8 @@ struct PIKE_CONCAT(NAME,_error_struct) { \
 #define ERR_VAR(TYPE,CTYPE,RUNTYPE,NAME2) \
   MAP_VARIABLE(#NAME2, CTYPE, 0, \
 	       current_offset + (((char *)&(foo.NAME2))-((char *)&foo)), RUNTYPE);
+#define ERR_CONST(TYPE, NAME, VALUE) \
+  PIKE_CONCAT3 (add_, TYPE, _constant) (NAME, VALUE, 0);
 
 /* Reference foo just to avoid warning. */
 #define EMPTY (void) &foo;
@@ -81,6 +84,10 @@ struct PIKE_CONCAT(NAME,_error_struct) { \
 
 #ifndef ERR_VAR
 #define ERR_VAR(TYPE,CTYPE,RUNTYPE,NAME)
+#endif
+
+#ifndef ERR_CONST
+#define ERR_CONST(TYPE, NAME, VALUE)
 #endif
 
 #ifndef ERR_FUNC
@@ -138,9 +145,15 @@ DECLARE_ERROR(permission, Permission,
   ERR_VAR(struct pike_string *, tStr, PIKE_T_STRING,permission_type)
 )
 
-DECLARE_ERROR(cpp, Cpp, ERR_INHERIT(generic), EMPTY)
+DECLARE_ERROR(
+  cpp, Cpp, ERR_INHERIT(generic),
+  ERR_CONST (integer, "is_cpp_or_compilation_error", 1)
+)
 
-DECLARE_ERROR(compilation, Compilation, ERR_INHERIT(generic), EMPTY)
+DECLARE_ERROR(
+  compilation, Compilation, ERR_INHERIT(generic),
+  ERR_CONST (integer, "is_cpp_or_compilation_error", 1)
+)
 
 DECLARE_ERROR(master_load, MasterLoad, ERR_INHERIT (generic), EMPTY)
 
@@ -153,6 +166,7 @@ DECLARE_ERROR (module_load, ModuleLoad,
 #undef DECLARE_ERROR
 #undef ERR_INHERIT
 #undef ERR_VAR
+#undef ERR_CONST
 #undef EMPTY
 #undef ERR_FUNC
 #undef ERR_FUNC_SAVE_ID
