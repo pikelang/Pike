@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.700 2008/05/21 21:55:48 grubba Exp $
+|| $Id: program.c,v 1.701 2008/05/22 20:13:19 mast Exp $
 */
 
 #include "global.h"
@@ -3066,7 +3066,7 @@ void dump_program_tables (struct program *p, int indent)
     struct identifier *id = p->identifiers + d;
 
     fprintf(stderr,
-	    "%*s  %4d: %5x %6"PRINTPTRDIFFT"d %4d \"%s\"\n",
+	    "%*s  %4d: %5x %6"PRINTPTRDIFFT"d %4d \"%s\"\n"
 	    "%*s        %s:%d\n",
 	    indent, "",
 	    d, id->identifier_flags, id->func.offset,
