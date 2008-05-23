@@ -87,7 +87,7 @@ static array(int) week_from_julian_day(int jd)
 
 static array(int) week_from_week(int y,int w)
 {
-// [year,week,1 (wd),ndays,week-julian-day]
+// [week-year,week,1 (wd),ndays,week-julian-day]
 
    int yjd=julian_day_from_year(y);
    int wjd=-WEEK_MAJORITY+yjd-(yjd+WEEK_MAJORITY-1)%7;
@@ -114,18 +114,41 @@ class cYear
 	 {
 	    int l1=year_leap_year(what->y);
 	    int l2=year_leap_year(y);
-	    if (l1||l2)
+	    if (l1 != l2)
 	    {
-	       int ld1=(what->y<2000)?55:60; // 24th or 29th february
-	       int ld2=(y<2000)?55:60; // 24th or 29th february
-
-	       if (l1 && wyd==ld1) 
-		  if (l2) wyd=ld2;
-		  else { if (!force) return 0; }
-	       else
-	       {
-		  if (l1 && wyd>ld1) wyd--;
-		  if (l2 && wyd>=ld2) wyd++;
+	       // (Apparently) the leap day was moved from February 24th to
+	       // 29th on year 2000 in the ISO calendar.
+	       //
+	       // This code was overly clever and enforced that move by mapping
+	       // the 24th in leap years before 2000 to 29th in 2000 and
+	       // following leap years. That leads to nonlinear behavior, i.e.
+	       //
+	       //                 Day(y1,m1,d1) <= Day(y2,m2,d2)
+	       //                              ===>
+	       //      Day(y1,m1,d1) + n*Year() <= Day(y2,m2,d2) + n*Year()
+	       //
+	       // wasn't always true in the ISO calendar. That's bad when doing
+	       // date arithmetic.
+	       //
+	       // That has now been fixed by simply mapping all days one-to-one
+	       // between leap years, regardless whether they're before 2000 or
+	       // not.
+	       //
+	       // The exact date for the leap day still has effect when
+	       // converting between leap and non-leap years, though.
+	       //
+	       // /mast
+	       if (l1) {
+		 int ld1=(what->y<2000)?55:60; // 24th or 29th february
+		 if (wyd>ld1) wyd--;
+		 else if (wyd==ld1) {
+		   if (force) wyd--; // Lossy case - prefer to keep the month.
+		   else return 0;
+		 }
+	       }
+	       else {
+		  int ld2=(y<2000)?55:60; // 24th or 29th february
+		  if (wyd>=ld2) wyd++;
 	       }
 	    }
 	 }
@@ -134,7 +157,7 @@ class cYear
 	 return Day("ymd_yd",rules,y,yjd,yjd+wyd-1,wyd,what->n);
       }
 
-      return ::place(what);
+      return ::place(what, force);
    }
 }
 
@@ -152,18 +175,21 @@ class cMonth
 	 {
 	    int l1=year_leap_year(what->y);
 	    int l2=year_leap_year(y);
-	    if (l1||l2)
+	    if (l1 != l2)
 	    {
-	       int ld1=(what->y<2000)?24:29; // 24th or 29th february
-	       int ld2=(y<2000)?24:29; // 24th or 29th february
-
-	       if (l1 && wmd==ld1) 
-		  if (l2) wmd=ld2;
-		  else { if (!force) return 0; }
+	       // See note above about leap day mapping.
+	       if (l1) {
+		 int ld1=(what->y<2000)?24:29; // 24th or 29th february
+		 if (wmd>ld1) wmd--;
+		 else if (wmd==ld1) {
+		   if (force) wmd--; // Lossy case - prefer to keep the month.
+		   else return 0;
+		 }
+	       }
 	       else
 	       {
-		  if (l1 && wmd>ld1) wmd--;
-		  if (l2 && wmd>=ld2) wmd++;
+		  int ld2=(y<2000)?24:29; // 24th or 29th february
+		  if (wmd>=ld2) wmd++;
 	       }
 	    }
 	 }
@@ -171,6 +197,6 @@ class cMonth
 	 return Day("ymd_yd",rules,y,yjd,jd+wmd-1,yd+wmd-1,what->n);
       }
 
-      return ::place(what);
+      return ::place(what, force);
    }
 }
