@@ -33,18 +33,13 @@ static mixed `[](string what)
       if (what == "_module_value") return UNDEFINED;
       booted++;
       stage++;
-// bootstrap in the right order
-      master()->resolv("Calendar")["Timezone"];
-      master()->resolv("Calendar")["TimeRanges"];
-      object Time = master()->resolv("Calendar")["Time"];
-      master()->resolv("Calendar")["YMD"];
-      master()->resolv("Calendar")["Gregorian"];
 
 // load ISO
 // it can crash here if you're loading from compiled modules
 // that is updated without all of the calendar module is updated
       iso_utc=master()->resolv("Calendar")["ISO"];
       iso_utc=iso_utc->set_timezone("UTC");
+      object Time = master()->resolv("Calendar")["Time"];
       Time->Day = iso_utc->cDay;
       stage--;
       object tz=
@@ -85,5 +80,10 @@ static mixed `[](string what)
    }
    return defcal[what];
 }
-static mixed `-> = `[];
+
+static mixed `-> (string what)
+{
+  // This becomes an alias.
+  return `[] (what);
+}
 #endif
