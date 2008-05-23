@@ -2,49 +2,58 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: errors.h,v 1.37 2008/05/22 20:17:13 mast Exp $
+|| $Id: errors.h,v 1.38 2008/05/23 19:39:06 grubba Exp $
 */
 
 #ifdef ERR_DECLARE
+#define DECLARE_PURE_ERROR(NAME, SCNAME, INHERIT) \
+  PMOD_EXPORT struct program *PIKE_CONCAT(NAME,_error_program);
 #define DECLARE_ERROR(NAME, SCNAME, INHERIT, DECL) \
-PMOD_EXPORT struct program *PIKE_CONCAT(NAME,_error_program); \
-ptrdiff_t PIKE_CONCAT(NAME,_error_offset); \
-DECL
+  DECLARE_PURE_ERROR(NAME, SCNAME, INHERIT)	   \
+  ptrdiff_t PIKE_CONCAT(NAME,_error_offset);	   \
+  DECL
 
 #define ERR_FUNC_SAVE_ID(VAR, NAME, FUNC, TYPE, FLAGS) static int VAR;
 
 #endif
 
 #ifdef ERR_EXT_DECLARE
-#define DECLARE_ERROR(NAME, SCNAME, INHERIT, DECL) \
-PMOD_EXPORT extern struct program *PIKE_CONCAT(NAME,_error_program); \
-extern ptrdiff_t PIKE_CONCAT(NAME,_error_offset); \
-struct PIKE_CONCAT(NAME,_error_struct) { \
-  DECL \
-};
+#define DECLARE_PURE_ERROR(NAME, SCNAME, INHERIT) \
+  PMOD_EXPORT extern struct program *PIKE_CONCAT(NAME,_error_program);
+#define DECLARE_ERROR(NAME, SCNAME, INHERIT, DECL)	\
+  DECLARE_PURE_ERROR(NAME, SCNAME, INHERIT)		\
+  extern ptrdiff_t PIKE_CONCAT(NAME,_error_offset);	\
+  struct PIKE_CONCAT(NAME,_error_struct) {		\
+    DECL						\
+  };
 
 #define ERR_VAR(TYPE,CTYPE,RUNTYPE,NAME) TYPE NAME ;
 #define ERR_CONST(TYPE, NAME, VALUE)
 
 /* Some compilers (eg cl) don't like empty structs... */
-#define EMPTY ERR_VAR(INT_TYPE, int, PIKE_T_INT, ignored__)
+/* #define EMPTY ERR_VAR(INT_TYPE, int, PIKE_T_INT, ignored__) */
 
 #endif /* ERR_EXT_DECLARE */
 
 #ifdef ERR_SETUP
-#define DECLARE_ERROR(NAME, SCNAME, INHERIT, DECL) do{\
-  ptrdiff_t current_offset=0; \
-  struct PIKE_CONCAT(NAME,_error_struct) foo; \
-  start_new_program(); \
-  INHERIT \
-  current_offset = PIKE_CONCAT(NAME,_error_offset) = \
-    ADD_STORAGE(struct PIKE_CONCAT(NAME,_error_struct));\
-  add_string_constant("error_type", #SCNAME, 0); \
-  add_integer_constant("is_" #NAME "_error",1,0); \
-  DECL \
-  PIKE_CONCAT(NAME,_error_program)=end_program(); \
-  add_program_constant( #SCNAME "Error",PIKE_CONCAT(NAME,_error_program),0); \
-}while(0);
+#define DECLARE_PURE_ERROR(NAME, SCNAME, INHERIT) do {	\
+    start_new_program();				\
+    INHERIT						\
+    add_string_constant("error_type", #SCNAME, 0);	\
+    add_integer_constant("is_" #NAME "_error",1,0);	\
+    PIKE_CONCAT(NAME,_error_program)=end_program();	\
+    add_program_constant( #SCNAME "Error",PIKE_CONCAT(NAME,_error_program),0); \
+  } while(0);
+#define DECLARE_ERROR(NAME, SCNAME, INHERIT, DECL) do {			\
+    ptrdiff_t current_offset=0;						\
+    struct PIKE_CONCAT(NAME,_error_struct) foo;				\
+    DECLARE_PURE_ERROR(NAME, SCNAME,					\
+		       INHERIT						\
+		       current_offset =					\
+		       PIKE_CONCAT(NAME,_error_offset) =		\
+		       ADD_STORAGE(struct PIKE_CONCAT(NAME,_error_struct)); \
+		       DECL)						\
+  } while(0);
 
 #define ERR_VAR(TYPE,CTYPE,RUNTYPE,NAME2) \
   MAP_VARIABLE(#NAME2, CTYPE, 0, \
@@ -53,7 +62,7 @@ struct PIKE_CONCAT(NAME,_error_struct) { \
   PIKE_CONCAT3 (add_, TYPE, _constant) (NAME, VALUE, 0);
 
 /* Reference foo just to avoid warning. */
-#define EMPTY (void) &foo;
+/* #define EMPTY (void) &foo; */
 
 #define ERR_INHERIT(NAME) \
   low_inherit(PIKE_CONCAT(NAME,_error_program),0,0,0,0,0);
@@ -67,11 +76,13 @@ struct PIKE_CONCAT(NAME,_error_struct) { \
 #endif
 
 #ifdef ERR_CLEANUP
-#define DECLARE_ERROR(NAME, SCNAME, INHERIT, DECL) \
-  if(PIKE_CONCAT(NAME,_error_program)) {\
-    free_program(PIKE_CONCAT(NAME,_error_program)); \
-    PIKE_CONCAT(NAME,_error_program)=0;\
+#define DECLARE_PURE_ERROR(NAME, SCNAME, INHERIT)	\
+  if(PIKE_CONCAT(NAME,_error_program)) {		\
+    free_program(PIKE_CONCAT(NAME,_error_program));	\
+    PIKE_CONCAT(NAME,_error_program)=0;			\
   }
+#define DECLARE_ERROR(NAME, SCNAME, INHERIT, DECL)	\
+  DECLARE_PURE_ERROR(NAME, SCNAME, INHERIT)
 #endif
 
 #ifndef EMPTY
@@ -145,17 +156,19 @@ DECLARE_ERROR(permission, Permission,
   ERR_VAR(struct pike_string *, tStr, PIKE_T_STRING,permission_type)
 )
 
-DECLARE_ERROR(
-  cpp, Cpp, ERR_INHERIT(generic),
+DECLARE_PURE_ERROR(
+  cpp, Cpp,
+  ERR_INHERIT(generic)
   ERR_CONST (integer, "is_cpp_or_compilation_error", 1)
 )
 
-DECLARE_ERROR(
-  compilation, Compilation, ERR_INHERIT(generic),
+DECLARE_PURE_ERROR(
+  compilation, Compilation,
+  ERR_INHERIT(generic)
   ERR_CONST (integer, "is_cpp_or_compilation_error", 1)
 )
 
-DECLARE_ERROR(master_load, MasterLoad, ERR_INHERIT (generic), EMPTY)
+DECLARE_PURE_ERROR(master_load, MasterLoad, ERR_INHERIT (generic))
 
 DECLARE_ERROR (module_load, ModuleLoad,
 	       ERR_INHERIT (generic),
@@ -163,6 +176,7 @@ DECLARE_ERROR (module_load, ModuleLoad,
   ERR_VAR (struct pike_string *, tStr, PIKE_T_STRING, reason)
 )
 
+#undef DECLARE_PURE_ERROR
 #undef DECLARE_ERROR
 #undef ERR_INHERIT
 #undef ERR_VAR
