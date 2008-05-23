@@ -25,8 +25,8 @@ static int year_remaining_days(int y,int yday);
 static array(int) year_month_from_month(int y,int m); // [y,m,ndays,myd]
 static array(int) month_from_yday(int y,int yday); // [m,day-of-month,ndays,myd]
 
-static array(int) week_from_week(int y,int w);   // [y,w,wd,ndays,wjd]
-static array(int) week_from_julian_day(int jd);  // [y,w,wd,ndays,wjd]
+static array(int) week_from_week(int y,int w);   // [wy,w,wd,ndays,wjd]
+static array(int) week_from_julian_day(int jd);  // [wy,w,wd,ndays,wjd]
 
 static string f_month_name_from_number;
 static string f_month_shortname_from_number;
@@ -56,6 +56,10 @@ class YMD
 
 // --- generic for all YMD:
 
+   // The correct year to use in context with yjd, yd, m and md is y.
+   // The correct year to use in context with w is wy.
+   // The correct year to use without context is year_no() (= either y or wy).
+
    int y;   // year
    int yjd; // julian day of the first day of the year
 
@@ -73,7 +77,7 @@ class YMD
    int utco=CALUNKNOWN; // [*] distance to UTC
    string tzn=0;        // timezone name
 
-  // [*]: might be uninitialized (CALUNKNOWN)
+   // [*]: might be uninitialized (CALUNKNOWN)
 
    Calendar.Ruleset rules;
    constant is_ymd=1;
@@ -226,7 +230,7 @@ class YMD
 
    string year_name()
    {
-      return rules->language[f_year_name_from_number](y);
+      return rules->language[f_year_name_from_number](year_no());
    }
 
    string week_name()
@@ -265,7 +269,7 @@ class YMD
       return rules->language[f_week_day_shortname_from_number](wd);
    }
 
-   int leap_year() { return year_leap_year(y); }
+   int leap_year() { return year_leap_year(year_no()); }
 
    int hour_no() { return 0; }
    int minute_no() { return 0; }
@@ -300,17 +304,36 @@ class YMD
 //!	used to calculate the day of the week with the given 
 //!	week number. Year day is also backwards compatible,
 //!	ie, one (1) less then from the year_day() function.
+//!
+//! note:
+//!     If this function is called in a Week object that begins with
+//!     the first week of a year, it returns the previous year if that
+//!     is where the week starts. To keep the representation
+//!     unambiguous, the returned week number is then one more than
+//!     the number of weeks in that year.
+//!
+//!     E.g. Week(2008,1)->datetime() will return year 2007 and week
+//!     53 since the first week of 2008 starts in 2007.
 
    mapping datetime(void|int skip_stuff)
    {
       if (m==CALUNKNOWN) make_month();
       if (w==CALUNKNOWN) make_week();
+
+      int week;
+      if (y == wy)
+	week = w;
+      else
+	// w is the first week of the year and it begins in the
+	// previous year, so we know y == wy - 1 and w == 1.
+	week = week_from_week (y, 0)[1] + 1;
+
       if (skip_stuff) // called from timeofday
 	 return ([ "year":     y,
 		   "month":    m,
 		   "day":      md,
 		   "yearday":  yd-1,
-		   "week":     w,
+		   "week":     week,
 		   "week_day": compat_week_day(wd)
 	 ]);
       else
@@ -319,7 +342,7 @@ class YMD
 		   "month":    m,
 		   "day":      md,
 		   "yearday":  yd-1,
-		   "week":     w,
+		   "week":     week,
 		   "week_day": compat_week_day(wd),
 		   "timezone": utc_offset(),
 		   "julian":   jd,
@@ -396,7 +419,7 @@ class YMD
       if (m==CALUNKNOWN) make_month();
       if (w==CALUNKNOWN) make_week();
       return sprintf("%04d-%02d-%02d (%s) -W%02d-%d (%s)",
-		     ((yd < 1)?y-1:y),m,md,
+		     y,m,md,
 		     month_shortname(),
 		     w,wd, // fixme - what weekday?
 		     week_day_shortname());
@@ -429,7 +452,7 @@ class YMD
                 ("SunMonTueWedThuFriSat"/3)[compat_week_day(wd)],
                 md,
                 ("zzzJanFebMarAprMayJunJulAugSepOctNovDec"/3)[m],
-                ((yd < 1)?y-1:y));
+		y);
    }
 
    string format_ext_time_short()
@@ -440,25 +463,25 @@ class YMD
       return
          sprintf("%s, %d %s %d 00:00:00 GMT",
                      week_day_shortname(),
-                     month_day(),month_shortname(),year_no());
+		     month_day(),month_shortname(),y);
    }
 
    string format_ymd()
    {
       if (m==CALUNKNOWN) make_month();
-      return sprintf("%04d-%02d-%02d",((yd < 1)?y-1:y),m,md);
+      return sprintf("%04d-%02d-%02d",y,m,md);
    }
 
    string format_ymd_short()
    {
       if (m==CALUNKNOWN) make_month();
-      return sprintf("%04d%02d%02d",((yd < 1)?y-1:y),m,md);
+      return sprintf("%04d%02d%02d",y,m,md);
    }
 
    string format_ymd_xshort()
    {
       if (m==CALUNKNOWN) make_month();
-      return sprintf("%02d%02d%02d",((yd < 1)?y-1:y)%100,m,md);
+      return sprintf("%02d%02d%02d",y%100,m,md);
    }
 
    string format_iso_week()
@@ -475,12 +498,14 @@ class YMD
 
    string format_week()
    {
-      return sprintf("%04d-%s",y,week_name());
+      if (w==CALUNKNOWN) make_week();
+      return sprintf("%04d-%s",wy,week_name());
    }
 
    string format_week_short()
    {
-      return sprintf("%04d%s",y,week_name());
+      if (w==CALUNKNOWN) make_week();
+      return sprintf("%04d%s",wy,week_name());
    }
 
    string format_month()
@@ -624,7 +649,7 @@ class YMD
       if (t->is_week)
       {
 	 if (wd==CALUNKNOWN) make_week();
-	 if (wd==1) return Week("ymd_yjwm",rules,y,yjd,jd,w,t->n*n,md,m,mnd);
+	 if (wd==1) return Week("ymd_yjwm",rules,y,yjd,jd,wy,w,t->n*n,md,m,mnd);
       }
 
 // fallback on days
@@ -689,18 +714,21 @@ class YMD
       return 1+y-year_from_julian_day(jd+m-1)[0];
    }
 
-   array(cYear) years(int ...range)
+   array(cYear) years(void|int from, void|int to)
    {
-      int from=1,n=number_of_years(),to=n;
+      int n=number_of_years();
 
-      if (sizeof(range)) 
-	 if (sizeof(range)<2)
-	    error("Illegal numbers of arguments to days()\n");
+      if (zero_type (from)) {
+	from = 1;
+	to = n;
+      }
+      else
+	 if (zero_type (to))
+	    error("Illegal numbers of arguments to years()\n");
 	 else
 	 {
-	    [from,to]=range;
-	    if (from>=n) return ({}); else if (from<0) from=0;
-	    if (to>=n) to=n; else if (to<from) return ({});
+	    if (from>n) return ({}); else if (from<1) from=1;
+	    if (to>n) to=n; else if (to<from) return ({});
 	 }
 
       return map(enumerate(1+to-from,1,y+from-1),
@@ -708,17 +736,19 @@ class YMD
 		 { return Year("ymd_yn",rules,x,1); });
    }
 
-   cYear year(void|int m) 
-   { 
-      if (!m || (!n&&m==-1))
+   cYear year(void|int m)
+   {
+      if (zero_type (m)) m=1;
+
+      if (!n&&m==-1)
 	 return Year("ymd_y",rules,y,yjd,1);
 
-      if (m<0) m=number_of_years()+m;
+      if (m<0) m += 1 + number_of_years();
 
       array(TimeRange) res=years(m,m);
       if (sizeof(res)==1) return res[0];
-      error("not in range (Year 0..%d exist)\n",
-	    number_of_years()-1);
+      error("Not in range (Year 1..%d exist)\n",
+	    number_of_years());
    }
    
 
@@ -726,16 +756,19 @@ class YMD
 
    int number_of_days();
 
-   array(cDay) days(int ...range)   
+   array(cDay) days(void|int from, void|int to)
    {
-      int from=1,n=number_of_days(),to=n;
+      int n=number_of_days();
 
-      if (sizeof(range)) 
-	 if (sizeof(range)<2)
-	    error("Illegal numbers of arguments to days()\n");
+      if (zero_type (from)) {
+	from = 1;
+	to = n;
+      }
+      else
+	 if (zero_type (to))
+	    error("Illegal number of arguments to days()\n");
 	 else
 	 {
-	    [from,to]=range;
 	    if (from>n) return ({}); else if (from<1) from=1;
 	    if (to>n) to=n; else if (to<from) return ({});
 	 }
@@ -747,12 +780,6 @@ class YMD
       array(cDay) res=({});
 
       to-=from-1;
-
-      if (zyd<1)
-      {
-	 [zy,zyjd]=year_from_julian_day(zjd);
-	 zyd=zjd-zyjd+1;
-      }
 
       for (;;)
       {
@@ -775,11 +802,9 @@ class YMD
       return res;
    }
 
-   cDay day(int ... mp) 
+   cDay day(void|int m, mixed... ignored)
    {
-      int m;
-      if (sizeof(mp)) m=mp[0];
-      else m=1;
+      if (zero_type (m)) m=1;
 
       if (!n)
 	 return Day("ymd_yd",rules,y,yjd,jd,yd,1);
@@ -1257,10 +1282,25 @@ class cYear
 
    static void convert_from(TimeRange other)
    {
-      if (other->y)
-	 create(other->y);
-      else
-         ::convert_from(other);
+#if 0
+      // The following is disabled since it leads to inconsistent
+      // behavior with other time ranges when they are converted to
+      // partly overlapping time ranges. If the user wants to convert
+      // a week to the year it "unambiguously" belongs to, (s)he can
+      // do Calendar.ISO.Year(week->year_no()).
+      if (other->is_week) {
+	// Weeks aren't even on years but they still unambiguously
+	// belong to years. We therefore convert using the week year
+	// instead of the default method that uses the julian day.
+	create ("ymd_yn", other->rules, other->wy,
+		other->n > 1 ?
+		other->week(-1)->wy - other->wy + 1 :
+		other->n);
+	return;
+      }
+#endif
+
+      ::convert_from(other);
       if (other->number_of_years)
 	 n=other->number_of_years();
       else
@@ -1278,7 +1318,7 @@ class cYear
       if (what->is_week)
       {
 	 cWeek week=Week("ymd_yw",rules,y,what->w,what->n);
-	 if (!force && week->y!=y) return 0; // not this year
+	 if (!force && week->wy!=y) return 0; // not this year
 	 return week;
       }
 
@@ -1527,16 +1567,16 @@ class cMonth
 			month_shortname(),
 			mo->month_shortname(),
 			year_name());
-      return nice_print()+" .. "+month(-1)->nice_print();
+      return nice_print()+" .. "+mo->nice_print();
    }
 
-   cDay beginning()
+   TimeRange beginning()
    {
       return Month("ymd_yjmw",rules,y,yjd,jd,m,0,wd,w,wy)
 	 ->autopromote();
    }
 
-   cDay end()
+   TimeRange end()
    {
       return Month("ymd_ym",rules,y,m+n,0)
 	 ->autopromote();
@@ -1697,6 +1737,8 @@ class cWeek
 {
    inherit YMD;
 
+   // Note: wy, w and wd are never CALUNKNOWN in this class.
+
    constant is_week=1;
 
 //!
@@ -1723,14 +1765,17 @@ class cWeek
 	 {
 	    case "ymd_yw":
 	       rules=args[1];
-	       y=args[2];
+	       wy=args[2];
 	       w=args[3];
 	       n=args[4];
 	       m=md=CALUNKNOWN;
-	       [y,w,wd,int nd,jd]=week_from_week(y,w);
-	       yjd=julian_day_from_year(y);
+	       [wy,w,wd,int nd,jd]=week_from_week(wy,w);
+	       int wyjd=julian_day_from_year(wy);
+	       if (wyjd > jd)
+		 y = wy - 1, yjd = julian_day_from_year (y);
+	       else
+		 y = wy, yjd = wyjd;
 	       yd=1+jd-yjd;
-	       wy=y;
 	       if (n!=1) nd=CALUNKNOWN;
 	       return;
 	    case "ymd_yjwm":
@@ -1739,16 +1784,13 @@ class cWeek
 	       yjd=args[3];
 	       jd=args[4];
 	       yd=1+jd-yjd;
-	       w=args[5];
-	       n=args[6];
-	       md=args[7];
-	       m=args[8];
-	       mnd=args[9];
+	       wy=args[5];
+	       w=args[6];
+	       n=args[7];
+	       md=args[8];
+	       m=args[9];
+	       mnd=args[10];
 	       wd=1;
-	       wy=y;
-	       // Adjust according to julian day (typically to
-	       // correct the year).
-	       create_julian_day(jd);
 	       nd=CALUNKNOWN;
 	       return;
 	    case "ymd_jd":
@@ -1763,7 +1805,9 @@ class cWeek
 	       if (intp(args[0]) && sizeof(args)==2)
 	       {
 		  create("ymd_yw",default_rules,args[0],args[1],1);
-		  if (y!=args[0])
+		  if (wy!=args[0])
+		    // FIXME: Allow weeks 0 and 53/54 if they contain
+		    // at least one day in this year.
 		     error("Week %d doesn't exist in %d\n",args[1],args[0]);
 		  return;
 	       }
@@ -1781,13 +1825,12 @@ class cWeek
       else
       {
 	 int zwd;
-	 [y,w,zwd,int nd,jd]=week_from_julian_day(_jd);
-	 yjd=julian_day_from_year(y);
+	 [wy,w,zwd,int nd,jd]=week_from_julian_day(_jd);
+	 [y,yjd]=year_from_julian_day(_jd);
 	 yd=1+jd-yjd;
 
 	 n=1;
 	 wd=1;
-	 wy=y;
 	 md=m=CALUNKNOWN; // unknown
       }
    }
@@ -1807,6 +1850,18 @@ class cWeek
 	 default:
 	    return ::_sprintf(t,m);
       }
+   }
+
+   int year_no()
+   {
+     return wy>0?wy:-1+wy;
+   }
+
+   int year_day()
+   //! Can be less than 1 for the first week of the year if it begins
+   //! in the previous year.
+   {
+     return y != wy ? 1 + jd - julian_day_from_year (wy) : yd;
    }
 
    string nice_print()
@@ -1830,23 +1885,23 @@ class cWeek
    {
       if (!n) return day()->nice_print()+" "+minute()->nice_print()+" sharp";
       cWeek wo=week(-1);
-      if (wo->y==y)
+      if (wo->wy==wy)
 	 return sprintf("%s..%s %s",
 			week_name(),
 			wo->week_name(),
 			year_name());
-      return nice_print()+" .. "+week(-1)->nice_print();
+      return nice_print()+" .. "+wo->nice_print();
    }
 
-   cDay beginning()
+   TimeRange beginning()
    {
-      return Week("ymd_yjwm",rules,y,yjd,jd,w,0,md,m,mnd)
+      return Week("ymd_yjwm",rules,y,yjd,jd,wy,w,0,md,m,mnd)
 	 ->autopromote();
    }
 
-   cDay end()
+   TimeRange end()
    {
-      return Week("ymd_yw",rules,y,w+n,0)
+      return Week("ymd_yw",rules,wy,w+n,0)
 	 ->autopromote();
    }
 
@@ -1859,10 +1914,10 @@ class cWeek
       
       if (to->is_week)
       {
-	 int n1=weeks_to_week(to->y,to->w);
+	 int n1=weeks_to_week(to->wy,to->w);
 	 if (n1<0)
 	    error("distance: negative distance (%d weeks)\n",n1);
-	 return Week("ymd_yjwm",rules,y,yjd,jd,w,n1,md,m,mnd)
+	 return Week("ymd_yjwm",rules,y,yjd,jd,wy,w,n1,md,m,mnd)
 	    ->autopromote();
       }
 
@@ -1891,11 +1946,18 @@ class cWeek
    TimeRange _move(int x,YMD step)
    {
       if (step->is_week)
-	 return Week("ymd_yw",rules,y,w+x*step->n,n)
+	 return Week("ymd_yw",rules,wy,w+x*step->n,n)
 	    ->autopromote();
 
-      if (step->is_year)
-	 return year()->add(x,step)->place(this,1);
+      if (step->is_year) {
+	TimeRange stepped = year()->add(x,step);
+	if (TimeRange placed = stepped->place(this,0))
+	  return placed;
+	// If we couldn't place our week in the target year it means
+	// we're in week 53 and the target year got only 52 weeks. We
+	// return the closest week of the target year, i.e. week 52.
+	return Week ("ymd_yw", rules, stepped->y, 52, n);
+      }
 
       if (step->number_of_days)
 	 return Day("ymd_jd",rules,
@@ -1927,7 +1989,7 @@ class cWeek
 	 return month()->place(what,force); // just fallback
       
       if (what->is_week)
-	 return Week("ymd_yw",rules,y,w,what->number_of_weeks());
+	 return Week("ymd_yw",rules,wy,w,what->number_of_weeks());
 
       if (what->is_day)
 	 return place_day(what->week_day(),what->n,force);
@@ -1942,9 +2004,9 @@ class cWeek
 
    int number_of_years()
    {
-      if (n<=1) return 1;
+      if (n<=1 && y == wy) return 1;
 
-      [int y2,int w2,int wd2,int nd2,int jd2]=week_from_week(y,w+n);
+      [int y2,int w2,int wd2,int nd2,int jd2]=week_from_week(wy,w+n);
       return 1+y2-y;
    }
 
@@ -1997,7 +2059,7 @@ class cWeek
 
    cWeek set_ruleset(Calendar.Ruleset r)
    {
-      return Week("ymd_yjwm",r,y,yjd,jd,w,n,md,m,mnd);
+      return Week("ymd_yjwm",r,y,yjd,jd,wy,w,n,md,m,mnd);
    }
 
 // --- needs to be defined
@@ -2053,9 +2115,6 @@ class cDay
 	       w=args[10];
 	       wd=args[11];
 	       mnd=args[12];
-	       // Adjust according to julian day (typically to
-	       // correct the year in case weeks are involved).
-	       create_julian_day(jd);
 	       nw=CALUNKNOWN;
 	       return;
 	    case "ymd_yd":
@@ -2202,12 +2261,12 @@ class cDay
       return nice_print()+" .. "+day(-1)->nice_print();
    }
 
-   cDay beginning()
+   TimeRange beginning()
    {
       return Day("ymd_ydmw",rules,y,yjd,jd,yd,0,m,md,wy,w,wd,mnd);
    }
 
-   cDay end()
+   TimeRange end()
    {
       return Day("ymd_jd",rules,jd+n,0)
 	 ->autopromote();
