@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-//  $Id: Session.pike,v 1.35 2008/01/13 17:02:43 nilsson Exp $
+//  $Id: Session.pike,v 1.36 2008/05/23 10:31:21 grubba Exp $
 
 import ".";
 
@@ -1275,5 +1275,5 @@ void register_async_message_callback(function(int,int,string:void) cb)
 
 string _sprintf(int t)
 {
-  return t=='O' && sprintf("%O(%s)", this_program, server);
+  return t=='O' && sprintf("%O(%s)", this_program, server||"");
 }
