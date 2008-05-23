@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_error.h,v 1.43 2008/04/12 14:04:09 grubba Exp $
+|| $Id: pike_error.h,v 1.44 2008/05/23 12:33:54 mast Exp $
 */
 
 #ifndef PIKE_ERROR_H
@@ -79,6 +79,7 @@ typedef void (*error_call)(void *);
 struct pike_frame;
 #endif
 
+#define THROW_N_A 0
 #define THROW_ERROR 10
 #define THROW_THREAD_EXIT 20
 #define THROW_THREAD_KILLED 30
