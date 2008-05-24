@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: html.c,v 1.179 2008/05/24 13:22:47 mast Exp $
+|| $Id: html.c,v 1.180 2008/05/24 13:34:22 mast Exp $
 */
 
 #include "global.h"
@@ -4000,9 +4000,9 @@ static void html_read(INT32 args)
       {
 	 struct out_piece *z = THIS->out;
 	 type_field |= 1 << z->v.type;
-	 ITEM(res)[i] = z->v;
+	 move_svalue (&ITEM(res)[i], &z->v);
 	 mark_free_svalue (&z->v);
-	 THIS->out = THIS->out->next;
+	 THIS->out = z->next;
 	 really_free_out_piece (z);
       }
       res->type_field = type_field;
@@ -4021,23 +4021,22 @@ static void html_read(INT32 args)
        ptrdiff_t l = 0;
        init_string_builder_alloc (&buf, n, THIS->out_max_shift);
        while (l < n) {
-	 struct out_piece *z;
+	 struct out_piece *z = THIS->out;
 #ifdef PIKE_DEBUG
-	 if (THIS->out->v.type != T_STRING)
+	 if (z->v.type != T_STRING)
 	    Pike_fatal ("Got nonstring in parsed data\n");
 #endif
-	 if (THIS->out->v.u.string->len>n)
+	 if (z->v.u.string->len>n)
 	 {
 	    struct pike_string *ps;
-	    string_builder_append (&buf, MKPCHARP_STR (THIS->out->v.u.string), n);
-	    ps=string_slice(THIS->out->v.u.string,n,THIS->out->v.u.string->len-n);
-	    free_string(THIS->out->v.u.string);
-	    THIS->out->v.u.string=ps;
+	    string_builder_append (&buf, MKPCHARP_STR (z->v.u.string), n);
+	    ps=string_slice(z->v.u.string,n,z->v.u.string->len-n);
+	    free_string(z->v.u.string);
+	    z->v.u.string=ps;
 	    break;
 	 }
-	 l+=THIS->out->v.u.string->len;
-	 string_builder_shared_strcat (&buf, THIS->out->v.u.string);
-	 z=THIS->out;
+	 l+=z->v.u.string->len;
+	 string_builder_shared_strcat (&buf, z->v.u.string);
 	 THIS->out=z->next;
 	 really_free_out_piece (z);
        }
