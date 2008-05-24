@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: block_alloc.h,v 1.85 2008/05/01 21:44:32 mast Exp $
+|| $Id: block_alloc.h,v 1.86 2008/05/24 12:02:05 mast Exp $
 */
 
 #undef PRE_INIT_BLOCK
@@ -22,6 +22,13 @@
 #undef PTR_HASH_ALLOC_FILL_PAGES
 #undef PTR_HASH_ALLOC_FIXED_FILL_PAGES
 
+/* Define this to keep freed blocks around in a backlog, which can
+ * help locating leftover pointers to other blocks. It can also hide
+ * bugs since the blocks remain intact a while after they are freed.
+ * Valgrind will immediately detect attempts to use blocks on the
+ * backlog list, though. Only available with dmalloc debug. */
+/* #define DMALLOC_BLOCK_BACKLOG */
+
 /* Note: The block_alloc mutex is held while PRE_INIT_BLOCK runs. */
 #define PRE_INIT_BLOCK(X)
 #define INIT_BLOCK(X)
@@ -34,6 +41,12 @@
 
 #ifndef BLOCK_ALLOC_USED
 #define BLOCK_ALLOC_USED DO_IF_DMALLOC(real_used) DO_IF_NOT_DMALLOC(used)
+#endif
+
+#if defined (DMALLOC_BLOCK_BACKLOG) && defined (DEBUG_MALLOC)
+#define DO_IF_BLOCK_BACKLOG(X) X
+#else
+#define DO_IF_BLOCK_BACKLOG(X)
 #endif
 
 /* Invalidate the block as far as possible if running with dmalloc.
@@ -116,7 +129,7 @@ static struct PIKE_CONCAT(DATA,_block) *PIKE_CONCAT(DATA,_free_blocks)=	\
 									\
 static INT32 PIKE_CONCAT3(num_empty_,DATA,_blocks)=0;			\
 DO_IF_RUN_UNLOCKED(static PIKE_MUTEX_T PIKE_CONCAT(DATA,_mutex);)       \
-DO_IF_DMALLOC(								\
+DO_IF_BLOCK_BACKLOG (							\
   static struct DATA *PIKE_CONCAT(DATA,s_to_free)[4 * (BSIZE)];		\
   static size_t PIKE_CONCAT(DATA,s_to_free_ptr) = 0;			\
 )									\
@@ -270,7 +283,6 @@ void PIKE_CONCAT(really_free_,DATA)(struct DATA *d)			\
   DO_IF_RUN_UNLOCKED(mt_lock(&PIKE_CONCAT(DATA,_mutex)));               \
 									\
   DO_IF_DMALLOC({							\
-      struct DATA *d2;							\
       blk = PIKE_CONCAT(DATA,_free_blocks);				\
       if(blk == NULL || (char *)d < (char *)blk ||			\
 	 (char *)d >= (char *)(blk->x+(BSIZE))) {			\
@@ -287,16 +299,19 @@ void PIKE_CONCAT(really_free_,DATA)(struct DATA *d)			\
 	}								\
 	blk->used--;							\
 	dmalloc_mark_as_free(d, 1);					\
-	PIKE_MEM_NA(*d);						\
-	d2 = PIKE_CONCAT(DATA,s_to_free)[PIKE_CONCAT(DATA,s_to_free_ptr)]; \
-	PIKE_CONCAT(DATA,s_to_free)[PIKE_CONCAT(DATA,s_to_free_ptr)] = d; \
-	PIKE_CONCAT(DATA,s_to_free_ptr) =				\
-	  (PIKE_CONCAT(DATA,s_to_free_ptr) + 1) %			\
-	  NELEM(PIKE_CONCAT(DATA,s_to_free));				\
-	if ((d = d2))							\
-	  PIKE_MEM_WO(*d);						\
-	else								\
-	  return;							\
+	DO_IF_BLOCK_BACKLOG({						\
+	    struct DATA *d2 =						\
+	      PIKE_CONCAT(DATA,s_to_free)[PIKE_CONCAT(DATA,s_to_free_ptr)]; \
+	    PIKE_MEM_NA(*d);						\
+	    PIKE_CONCAT(DATA,s_to_free)[PIKE_CONCAT(DATA,s_to_free_ptr)] = d; \
+	    PIKE_CONCAT(DATA,s_to_free_ptr) =				\
+	      (PIKE_CONCAT(DATA,s_to_free_ptr) + 1) %			\
+	      NELEM(PIKE_CONCAT(DATA,s_to_free));			\
+	    if ((d = d2))						\
+	      PIKE_MEM_WO(*d);						\
+	    else							\
+	      return;							\
+	  });								\
       }									\
       else if (dmalloc_check_allocated (d, 0)) {			\
 	PIKE_CONCAT(dmalloc_late_free_,DATA) (d);			\
@@ -401,7 +416,10 @@ static void PIKE_CONCAT3(free_all_,DATA,_blocks_unlocked)(void)		\
   struct PIKE_CONCAT(DATA,_block) *tmp;					\
 									\
   DO_IF_DMALLOC(							\
-    MEMSET(PIKE_CONCAT(DATA,s_to_free), 0, sizeof(PIKE_CONCAT(DATA,s_to_free))); \
+    DO_IF_BLOCK_BACKLOG (						\
+      MEMSET(PIKE_CONCAT(DATA,s_to_free), 0,				\
+	     sizeof(PIKE_CONCAT(DATA,s_to_free)));			\
+    );									\
     while ((tmp = PIKE_CONCAT(DATA,_blocks))) {				\
       PIKE_CONCAT(DATA,_blocks) = tmp->next;				\
       PIKE_CONCAT3(dmalloc_free_,DATA,_block) (				\
