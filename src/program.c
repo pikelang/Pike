@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.701 2008/05/22 20:13:19 mast Exp $
+|| $Id: program.c,v 1.702 2008/05/24 15:14:12 grubba Exp $
 */
 
 #include "global.h"
@@ -106,6 +106,10 @@ BLOCK_ALLOC_FILL_PAGES(program, 4)
 struct pike_string *this_program_string;
 static struct pike_string *this_string, *this_function_string;
 static struct pike_string *UNDEFINED_string;
+
+/* Common compiler subsystems */
+struct pike_string *parser_system_string;
+struct pike_string *type_check_system_string;
 
 const char *const lfun_names[]  = {
   "__INIT",
@@ -2076,11 +2080,12 @@ int override_identifier (struct reference *new_ref, struct pike_string *name)
 	  if ((Pike_compiler->compiler_pass == 2) &&
 	      !pike_types_le(ID_FROM_PTR(Pike_compiler->new_program,
 					 new_ref)->type, sub_id->type)) {
-	    yywarning("Type mismatch when overloading function %S.", name);
-	    yyexplain_nonmatching_types(sub_id->type,
-					ID_FROM_PTR(Pike_compiler->new_program,
-						    new_ref)->type,
-					YYTE_IS_WARNING);
+	    yytype_report(REPORT_WARNING,
+			  NULL, 0, sub_id->type,
+			  NULL, 0, ID_FROM_PTR(Pike_compiler->new_program,
+					       new_ref)->type,
+			  0, "Type mismatch when overloading function %S.",
+			  name);
 	  }
 	} else {
 	  struct identifier *new_id;
@@ -2095,9 +2100,10 @@ int override_identifier (struct reference *new_ref, struct pike_string *name)
 		(new_id->run_time_type == PIKE_T_INT) &&
 		(IDENTIFIER_IS_CONSTANT(sub_id->identifier_flags) ||
 		 match_types(sub_id->type, new_id->type)))) {
-	    yywarning("Type mismatch when overloading %S.", name);
-	    yyexplain_nonmatching_types(sub_id->type, new_id->type,
-					YYTE_IS_WARNING);
+	    yytype_report(REPORT_WARNING,
+			  NULL, 0, sub_id->type,
+			  NULL, 0, new_id->type,
+			  0, "Type mismatch when overloading %S.", name);
 	  }
 	}
       }
@@ -2197,9 +2203,10 @@ void fixate_program(void)
 		(funp->id_flags & ID_USED)) {
 	      /* Verify that the types are compatible. */
 	      if (!pike_types_le(funb->type, fun->type)) {
-		yywarning("Type mismatch when overloading %S.", fun->name);
-		yyexplain_nonmatching_types(fun->type, funb->type,
-					    YYTE_IS_WARNING);
+		yytype_report(REPORT_WARNING, NULL, 0, fun->type,
+			      NULL, 0, funb->type,
+			      0, "Type mismatch when overloading %S.",
+			      fun->name);
 	      }
 	    }
 	    funp->inherit_offset = funpb->inherit_offset;
@@ -2211,9 +2218,10 @@ void fixate_program(void)
 		(funpb->id_flags & ID_USED)) {
 	      /* Verify that the types are compatible. */
 	      if (!pike_types_le(fun->type, funb->type)) {
-		yywarning("Type mismatch when overloading %S.", fun->name);
-		yyexplain_nonmatching_types(funb->type, fun->type,
-					    YYTE_IS_WARNING);
+		yytype_report(REPORT_WARNING, NULL, 0, funb->type,
+			      NULL, 0, fun->type,
+			      0, "Type mismatch when overloading %S.",
+			      fun->name);
 	      }
 	    }
 	    funpb->inherit_offset = funp->inherit_offset;
@@ -4889,7 +4897,7 @@ int define_variable(struct pike_string *name,
 #endif
 
   if(type == void_type_string)
-    yyerror("Variables can't be of type void");
+    yyerror("Variables can't be of type void.");
 
   n = isidentifier(name);
 
@@ -4938,21 +4946,16 @@ int define_variable(struct pike_string *name,
  	if(ID_FROM_INT(Pike_compiler->new_program, n)->type != type &&
 	   !pike_types_le(type,
 			  ID_FROM_INT(Pike_compiler->new_program, n)->type)) {
+	  int level = REPORT_WARNING;
 	  if (!match_types(ID_FROM_INT(Pike_compiler->new_program, n)->type,
 			   type)) {
-	    my_yyerror("Illegal to redefine inherited variable %S "
-		       "with different type.", name);
-	    yytype_error(NULL,
-			 ID_FROM_INT(Pike_compiler->new_program, n)->type,
-			 type, 0);
-	    return n;
-	  } else {
-	    yywarning("Redefining inherited variable %S "
-		      "with different type.", name);
-	    yytype_error(NULL,
-			 ID_FROM_INT(Pike_compiler->new_program, n)->type,
-			 type, YYTE_IS_WARNING);
+	    level = REPORT_ERROR;
 	  }
+	  yytype_report(level, NULL, 0,
+			ID_FROM_INT(Pike_compiler->new_program, n)->type,
+			NULL, 0, type, 0,
+			"Illegal to redefine inherited variable %S "
+			"with different type.", name);
 	}
 	
 
@@ -4968,11 +4971,11 @@ int define_variable(struct pike_string *name,
 	     PIKE_T_MIXED) &&
 	    (ID_FROM_INT(Pike_compiler->new_program, n)->run_time_type !=
 	     compile_type_to_runtime_type(type))) {
-	  my_yyerror("Illegal to redefine inherited variable %S "
-		     "with different type.", name);
-	  yytype_error(NULL,
-		       ID_FROM_INT(Pike_compiler->new_program, n)->type,
-		       type, 0);
+	  yytype_report(REPORT_ERROR, NULL, 0,
+			ID_FROM_INT(Pike_compiler->new_program, n)->type,
+			NULL, 0, type, 0,
+			"Illegal to redefine inherited variable %S "
+			"with different type.", name);
 	  return n;
 	}
 
@@ -5468,15 +5471,15 @@ INT32 define_function(struct pike_string *name,
     }
 #endif /* PIKE_DEBUG */
     if (!pike_types_le(type, lfun_type->u.type)) {
+      int level = REPORT_NOTICE;
       if (!match_types(type, lfun_type->u.type)) {
-	my_yyerror("Type mismatch for callback function %S:", name);
-	yytype_error(NULL, lfun_type->u.type, type, 0);
-	Pike_fatal("Type mismatch!\n");
+	level = REPORT_ERROR;
       } else if (c->lex.pragmas & ID_STRICT_TYPES) {
-	yywarning("Type mismatch for callback function %S:", name);
-	yytype_error(NULL, lfun_type->u.type, type,
-		     YYTE_IS_WARNING);
+	level = REPORT_WARNING;
       }
+      yytype_report(level, NULL, 0, lfun_type->u.type,
+		    NULL, 0, type, 0,
+		    "Type mismatch for callback function %S:", name);
     }
   } else if (((name->len > 3) &&
 	      (index_shared_string(name, 0) == '`') &&
@@ -5513,13 +5516,15 @@ INT32 define_function(struct pike_string *name,
       /* We got a getter or a setter. */
       struct reference *ref;
       if (!pike_types_le(type, gs_type)) {
+	int level = REPORT_NOTICE;
 	if (!match_types(type, gs_type)) {
-	  my_yyerror("Type mismatch for callback function %S:", name);
-	  yytype_error(NULL, gs_type, type, 0);
+	  level = REPORT_ERROR;
 	} else if (c->lex.pragmas & ID_STRICT_TYPES) {
-	  yywarning("Type mismatch for callback function %S:", name);
-	  yytype_error(NULL, gs_type, type, YYTE_IS_WARNING);
+	  level = REPORT_WARNING;
 	}
+	yytype_report(level, NULL, 0, gs_type,
+		      NULL, 0, type, 0,
+		       "Type mismatch for callback function %S:", name);
       }
       i = isidentifier(symbol);
       if ((i >= 0) && 
@@ -5621,8 +5626,10 @@ INT32 define_function(struct pike_string *name,
 	if(!match_types(type, funp->type))
 	{
 	  if (!(flags & ID_VARIANT)) {
-	    my_yyerror("Prototype doesn't match for function %S.", name);
-	    yytype_error(NULL, funp->type, type, 0);
+	    yytype_report(REPORT_ERROR, NULL, 0,
+			  funp->type,
+			  NULL, 0, type, 0,
+			 "Prototype doesn't match for function %S.", name);
 	  }
 	}
       }
@@ -6869,25 +6876,181 @@ PMOD_EXPORT struct pike_string *low_get_function_line (struct object *o,
   return NULL;
 }
 
-/* FIXME: Consider converting these to using va_yyreport(). */
-
-PMOD_EXPORT void va_yyerror(const char *fmt, va_list args)
+/* Main entry point for compiler messages originating from
+ * C-code.
+ *
+ * Sends the message along to PikeCompiler()->report().
+ *
+ * NOTE: The format string fmt (and vargs) is only formatted with
+ *       string_builder_vsprintf() if the number of extra
+ *       Pike stack arguments (args) is zero.
+ */
+PMOD_EXPORT void va_yyreport(int severity_level,
+			     struct pike_string *file, INT32 line,
+			     struct pike_string *system, INT32 args,
+			     const char *fmt, va_list vargs)
 {
+  struct compilation *c = MAYBE_THIS_COMPILATION;
   struct string_builder s;
-  struct pike_string *tmp;
-  init_string_builder(&s, 0);
-  string_builder_vsprintf(&s, fmt, args);
-  tmp = finish_string_builder(&s);
-  low_yyerror(tmp);
-  free_string(tmp);
+  struct pike_string *msg;
+
+  if (!c) return;	/* No compiler context. */
+
+  STACK_LEVEL_START(args);
+
+#ifdef PIKE_DEBUG
+  if(Pike_interpreter.recoveries && Pike_sp-Pike_interpreter.evaluator_stack < Pike_interpreter.recoveries->stack_pointer)
+    Pike_fatal("Stack error (underflow)\n");
+#endif
+
+  /* Convert type errors to warnings in non-strict compat mode. */
+  if ((system == type_check_system_string) &&
+      (severity_level == REPORT_ERROR) &&
+      (c->major != -1) &&
+      !(c->lex.pragmas & ID_STRICT_TYPES) &&
+      ((c->major < PIKE_MAJOR_VERSION) ||
+       ((c->major == PIKE_MAJOR_VERSION) &&
+	(c->minor < PIKE_MINOR_VERSION)))) {
+    severity_level = REPORT_WARNING;
+  }
+
+  /* If we have parse errors we might get erroneous warnings,
+   * so don't print them.
+   * This has the additional benefit of making it easier to
+   * visually locate the actual error message.
+   */
+  if ((severity_level <= REPORT_WARNING) &&
+      Pike_compiler->num_parse_error) {
+    return;
+  }
+
+  if (severity_level >= REPORT_ERROR) {
+    if (Pike_compiler->num_parse_error > 20) return;
+    Pike_compiler->num_parse_error++;
+    cumulative_parse_error++;
+  }
+
+  push_int(severity_level);
+  ref_push_string(file?file:c->lex.current_file);
+  push_int(line?line:c->lex.current_line);
+  ref_push_string(system);
+  if (args) {
+    int i = args;
+    push_text(fmt);
+    /* Copy the arguments. */
+    while (i--) {
+      push_svalue(Pike_sp-(args+5));
+    }
+  } else {
+    init_string_builder(&s, 0);
+    string_builder_vsprintf(&s, fmt, vargs);
+    push_string(finish_string_builder(&s));
+  }
+
+  safe_apply_current(PC_REPORT_FUN_NUM, args + 5);
+  pop_stack();
+  if (args) pop_n_elems(args);
+  STACK_LEVEL_DONE(0);
 }
+
+PMOD_EXPORT void low_yyreport(int severity_level,
+			      struct pike_string *file, INT32 line,
+			      struct pike_string *system,
+			      INT32 args, const char *fmt, ...)
+{
+  va_list vargs;
+
+  va_start(vargs,fmt);
+  va_yyreport(severity_level, file, line, system, args, fmt, vargs);
+  va_end(vargs);
+}
+
+PMOD_EXPORT void yyreport(int severity_level, struct pike_string *system,
+			  INT32 args, const char *fmt, ...)
+{
+  va_list vargs;
+
+  va_start(vargs,fmt);
+  va_yyreport(severity_level, NULL, 0, system, args, fmt, vargs);
+  va_end(vargs);
+}
+
+PMOD_EXPORT void yywarning(char *fmt, ...)
+{
+  va_list vargs;
+
+  va_start(vargs,fmt);
+  va_yyreport(REPORT_WARNING, NULL, 0, parser_system_string, 0, fmt, vargs);
+  va_end(vargs);
+}
+
+/* FIXME: Consider converting these to using va_yyreport(). */
 
 PMOD_EXPORT void my_yyerror(const char *fmt,...)
 {
-  va_list args;
-  va_start(args,fmt);
-  va_yyerror (fmt, args);
-  va_end(args);
+  va_list vargs;
+  va_start(vargs,fmt);
+  va_yyreport(REPORT_ERROR, NULL, 0, parser_system_string, 0, fmt, vargs);
+  va_end(vargs);
+}
+
+PMOD_EXPORT void yyerror(const char *str)
+{
+  my_yyerror("%s", str);
+}
+
+/* Main entry point for errors from the type-checking subsystems.
+ *
+ * The message (if any) will be formatted for the same source
+ * position as the got_t.
+ *
+ * The expect_t will be formatted for the same position as the got_t
+ * if there's no expected_file/expected_line.
+ *
+ * The got_t will be formatted for the current lex position if there's
+ * no got_file/got_line.
+ */
+void yytype_report(int severity_level,
+		   struct pike_string *expected_file, INT32 expected_line, 
+		   struct pike_type *expected_t,
+		   struct pike_string *got_file, INT32 got_line,
+		   struct pike_type *got_t,
+		   INT32 args, const char *fmt, ...)
+{
+  if (fmt)
+  {
+    va_list vargs;
+    va_start(vargs, fmt);
+    va_yyreport(severity_level, got_file, got_line, type_check_system_string,
+		args, fmt, vargs);
+    va_end(vargs);
+  }
+
+  if (expected_t && got_t) {
+    yyexplain_nonmatching_types(severity_level,
+				expected_file?expected_file:got_file,
+				expected_line?expected_line:got_line,
+				expected_t,
+				got_file, got_line, got_t);
+  } else if (expected_t) {
+    ref_push_type_value(expected_t);
+    low_yyreport(severity_level,
+		 expected_file?expected_file:got_file,
+		 expected_line?expected_line:got_line,
+		 type_check_system_string,
+		 1, "Expected: %O.");
+  } else if (got_t) {
+    ref_push_type_value(got_t);
+    low_yyreport(severity_level, got_file, got_line, type_check_system_string,
+		 1, "Got     : %O");
+  }
+}
+
+void yytype_error(const char *msg, struct pike_type *expected_t,
+		  struct pike_type *got_t, unsigned int flags)
+{
+  yytype_report((flags & YYTE_IS_WARNING)?REPORT_WARNING:REPORT_ERROR,
+		NULL, 0, expected_t, NULL, 0, got_t, 0, "%s", msg);
 }
 
 struct pike_string *format_exception_for_error_msg (struct svalue *thrown)
@@ -6923,7 +7086,8 @@ void handle_compile_exception (const char *yyerror_fmt, ...)
   if (yyerror_fmt) {
     va_list args;
     va_start (args, yyerror_fmt);
-    va_yyerror (yyerror_fmt, args);
+    va_yyreport(REPORT_ERROR, NULL, 0, parser_system_string, 0,
+		yyerror_fmt, args);
     va_end (args);
   }
 
@@ -6934,8 +7098,8 @@ void handle_compile_exception (const char *yyerror_fmt, ...)
   if (SAFE_IS_ZERO(sp-1)) {
     struct pike_string *s = format_exception_for_error_msg (&thrown);
     if (s) {
-      low_yyerror(s);
-      free_string (s);
+      push_string(s);
+      yyreport(REPORT_ERROR, parser_system_string, 1, "%s");
     }
   }
 
@@ -7257,6 +7421,7 @@ static void f_compilation_env_report(INT32 args)
   INT_TYPE linenumber;
   struct pike_string *subsystem;
   struct pike_string *message;
+
   if (args > 5) {
     f_sprintf(args - 4);
     args = 5;
@@ -7947,7 +8112,7 @@ static void f_compilation_report(INT32 args)
   int fun = -1;
 
   /* FIXME: get_all_args() ought to have a marker
-   *        indicating that accept more arguments...
+   *        indicating that we accept more arguments...
    */
   get_all_args("report", args, "%d", &level);
 
@@ -9378,6 +9543,9 @@ void init_program(void)
   MAKE_CONST_STRING(this_string,"this");
   MAKE_CONST_STRING(UNDEFINED_string,"UNDEFINED");
 
+  MAKE_CONST_STRING(parser_system_string, "parser");
+  MAKE_CONST_STRING(type_check_system_string, "type_check");
+
   lfun_ids = allocate_mapping(NUM_LFUNS);
   lfun_types = allocate_mapping(NUM_LFUNS);
   for (i=0; i < NELEM(lfun_names); i++) {
@@ -10141,56 +10309,6 @@ int find_child(struct program *parent, struct program *child)
 }
 #endif /* 0 */
 
-void va_yyreport(int severity_level, const char *system,
-		 const char *fmt, va_list args)
-{
-  struct compilation *c = MAYBE_THIS_COMPILATION;
-  struct string_builder s;
-  struct pike_string *msg;
-
-  if (!c) return;	/* No compiler context. */
-
-  /* If we have parse errors we might get erroneous warnings,
-   * so don't print them.
-   * This has the additional benefit of making it easier to
-   * visually locate the actual error message.
-   */
-  if ((severity_level <= REPORT_WARNING) &&
-      Pike_compiler->num_parse_error) {
-    return;
-  }
-
-  init_string_builder(&s, 0);
-  string_builder_vsprintf(&s, fmt, args);
-  msg = finish_string_builder(&s);
-
-  push_int(severity_level);
-  ref_push_string(c->lex.current_file);
-  push_int(c->lex.current_line);
-  push_text(system);
-  push_string(msg);
-  safe_apply_current(PC_REPORT_FUN_NUM, 5);
-  pop_stack();
-}
-
-void yyreport(int severity_level, const char *system, const char *fmt, ...)
-{
-  va_list args;
-
-  va_start(args,fmt);
-  va_yyreport(severity_level, system, fmt, args);
-  va_end(args);
-}
-
-void yywarning(char *fmt, ...)
-{
-  va_list args;
-
-  va_start(args,fmt);
-  va_yyreport(REPORT_WARNING, "parse", fmt, args);
-  va_end(args);
-}
-
 
 
 /* returns 1 if a implements b */
@@ -10373,7 +10491,8 @@ PMOD_EXPORT int is_compatible(struct program *a, struct program *b)
 }
 
 /* Explains why a is not compatible with b */
-void yyexplain_not_compatible(struct program *a, struct program *b, int flags)
+void yyexplain_not_compatible(int severity_level,
+			      struct program *a, struct program *b)
 {
   int e;
   struct pike_string *s=findstring("__INIT");
@@ -10420,30 +10539,13 @@ void yyexplain_not_compatible(struct program *a, struct program *b, int flags)
     if(((bid->run_time_type != PIKE_T_INT) ||
 	(ID_FROM_INT(a, i)->run_time_type != PIKE_T_INT)) &&
        !match_types(ID_FROM_INT(a,i)->type, bid->type)) {
-      if (flags & YYTE_IS_WARNING) {
-	push_int(REPORT_WARNING);
-	push_int(REPORT_WARNING);
-      } else {
-	push_int(REPORT_ERROR);
-	push_int(REPORT_ERROR);
-      }
-      ref_push_string(a_file);
-      push_int(a_line);
-      push_constant_text("type_check");
-      push_constant_text("Identifier %s in %O is incompatible");
       ref_push_string(bid->name);
       ref_push_program(a);
-      safe_apply_current2(PC_REPORT_FUN_NUM, 7, "report");
-      pop_stack();
-      ref_push_string(b_file);
-      push_int(b_line);
-      push_constant_text("type_check");
-      push_constant_text("with identifier %s in %O");
-      ref_push_string(bid->name);
       ref_push_program(b);
-      safe_apply_current2(PC_REPORT_FUN_NUM, 7, "report");
-      pop_stack();
-      yytype_error(NULL, ID_FROM_INT(a,i)->type, bid->type, flags);
+      yytype_report(severity_level,
+		    a_file, a_line, ID_FROM_INT(a, i)->type,
+		    b_file, b_line, bid->type, 3,
+		    "Identifier %s in %O is incompatible with the same in %O.");
     }
   }
   free_string(b_file);
@@ -10453,10 +10555,15 @@ void yyexplain_not_compatible(struct program *a, struct program *b, int flags)
 }
 
 /* Explains why a does not implement b */
-void yyexplain_not_implements(struct program *a, struct program *b, int flags)
+void yyexplain_not_implements(int severity_level,
+			      struct program *a, struct program *b)
 {
   int e;
   struct pike_string *s=findstring("__INIT");
+  INT32 a_line = 0;
+  INT32 b_line = 0;
+  struct pike_string *a_file;
+  struct pike_string *b_file;
   DECLARE_CYCLIC();
 
   if (BEGIN_CYCLIC(a, b)) {
@@ -10464,6 +10571,9 @@ void yyexplain_not_implements(struct program *a, struct program *b, int flags)
     return;
   }
   SET_CYCLIC_RET(1);
+
+  a_file = get_program_line(a, &a_line);
+  b_file = get_program_line(b, &b_line);
 
   for(e=0;e<b->num_identifier_references;e++)
   {
@@ -10477,25 +10587,31 @@ void yyexplain_not_implements(struct program *a, struct program *b, int flags)
     if (i == -1) {
       if (b->identifier_references[e].id_flags & (ID_OPTIONAL))
 	continue;		/* It's ok... */
-      if(flags & YYTE_IS_WARNING)
-	yywarning("Missing identifier %S.", bid->name);
-      else
-	my_yyerror("Missing identifier %S.", bid->name);
+      yytype_report(severity_level,
+		    b_file, b_line, bid->type,
+		    a_file, a_line, NULL,
+		    0, "Missing identifier %S.", bid->name);
       continue;
     }
 
     if (!pike_types_le(bid->type, ID_FROM_INT(a, i)->type)) {
       if(!match_types(ID_FROM_INT(a,i)->type, bid->type)) {
-	my_yyerror("Type of identifier %S does not match.", bid->name);
-	yytype_error(NULL, ID_FROM_INT(a,i)->type, bid->type, 0);
+	yytype_report(severity_level,
+		      b_file, b_line, bid->type,
+		      a_file, a_line, ID_FROM_INT(a, i)->type,
+		      0, "Type of identifier %S does not match.", bid->name);
       } else {
-	yywarning("Type of identifier %S is not strictly compatible.",
-		  bid->name);
-	yytype_error(NULL, ID_FROM_INT(a,i)->type, bid->type, YYTE_IS_WARNING);
+	yytype_report(REPORT_WARNING,
+		      NULL, 0, bid->type,
+		      NULL, 0, ID_FROM_INT(a, i)->type,
+		      0, "Type of identifier %S is not strictly compatible.",
+		      bid->name);
       }
       continue;
     }
   }
+  free_string(b_file);
+  free_string(a_file);
   END_CYCLIC();
 }
 

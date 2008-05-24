@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.h,v 1.117 2008/05/17 22:48:33 grubba Exp $
+|| $Id: pike_types.h,v 1.118 2008/05/24 15:14:12 grubba Exp $
 */
 
 #ifndef PIKE_TYPES_H
@@ -284,9 +284,13 @@ void gc_mark_type_as_referenced(struct pike_type *t);
 void gc_check_type (struct pike_type *t);
 void gc_check_all_types (void);
 int type_may_overload(struct pike_type *type, int lfun);
-void yyexplain_nonmatching_types(struct pike_type *type_a,
-				 struct pike_type *type_b,
-				 int flags);
+void yyexplain_nonmatching_types(int severity_level,
+				 struct pike_string *a_file,
+				 INT32 a_line,
+				 struct pike_type *type_a,
+				 struct pike_string *b_file,
+				 INT32 b_line,
+				 struct pike_type *type_b);
 struct pike_type *debug_make_pike_type(const char *t);
 struct pike_string *type_to_string(struct pike_type *t);
 int pike_type_allow_premature_toss(struct pike_type *type);

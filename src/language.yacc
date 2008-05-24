@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.424 2008/05/18 13:42:09 grubba Exp $
+|| $Id: language.yacc,v 1.425 2008/05/24 15:14:12 grubba Exp $
 */
 
 %pure_parser
@@ -155,6 +155,7 @@
 
 /* #define LAMBDA_DEBUG	1 */
 
+static void yyerror_reserved(const char *keyword);
 static struct pike_string *get_new_name();
 int add_local_name(struct pike_string *, struct pike_type *, node *);
 int low_add_local_name(struct compiler_frame *,
@@ -4390,48 +4391,9 @@ bad_expr_ident:
 
 %%
 
-void low_yyerror(struct pike_string *str)
-{
-  struct compilation *c = MAYBE_THIS_COMPILATION;
-  extern int cumulative_parse_error;
-
-  if (!c) return;
-
-  STACK_LEVEL_START(0);
-
-#ifdef PIKE_DEBUG
-  if(Pike_interpreter.recoveries && Pike_sp-Pike_interpreter.evaluator_stack < Pike_interpreter.recoveries->stack_pointer)
-    Pike_fatal("Stack error (underflow)\n");
-#endif
-
-  CHECK_COMPILER();
-
-  if (Pike_compiler->num_parse_error > 20) return;
-  Pike_compiler->num_parse_error++;
-  cumulative_parse_error++;
-
-  push_int(REPORT_ERROR);
-  ref_push_string(c->lex.current_file);
-  push_int(c->lex.current_line);
-  push_constant_text("parse");
-  ref_push_string(str);
-  safe_apply_current(PC_REPORT_FUN_NUM, 5);
-  pop_stack();
-  STACK_LEVEL_DONE(0);
-}
-
-PMOD_EXPORT void yyerror(const char *str)
-{
-  push_text(str);
-  low_yyerror(Pike_sp[-1].u.string);
-  pop_stack();
-}
-
 static void yyerror_reserved(const char *keyword)
 {
-  char fmt[100];
-  SNPRINTF(fmt, sizeof(fmt), "%s is a reserved word.", keyword);
-  yyerror(fmt);
+  my_yyerror("%s is a reserved word.", keyword);
 }
 
 static struct pike_string *get_new_name()

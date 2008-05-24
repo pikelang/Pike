@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sscanf.c,v 1.183 2008/05/21 21:59:07 grubba Exp $
+|| $Id: sscanf.c,v 1.184 2008/05/24 15:14:12 grubba Exp $
 */
 
 #include "global.h"
@@ -17,7 +17,6 @@
 #include "bignum.h"
 #include "pike_float.h"
 #include "pike_types.h"
-#include "pike_compiler.h"
 #include "sscanf.h"
 
 #define sp Pike_sp
@@ -1642,15 +1641,6 @@ void f_sscanf_76(INT32 args)
 static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
 				       int cnt, int flags)
 {
-  struct compilation *c = THIS_COMPILATION;
-  int severity_level = REPORT_ERROR;
-
-  if ((c->major != -1) &&
-      ((c->major < 7) || ((c->major == 7) && (c->minor < 7)))) {
-    /* Compat mode: Pike 7.6 or earlier. */
-    severity_level = REPORT_WARNING;
-  }
-
   for(; cnt < format_len; cnt++)
   {
     int no_assign=0;
@@ -1677,8 +1667,8 @@ static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
       case '5': case '6': case '7': case '8': case '9':
 	cnt++;
 	if(cnt>=format_len) {
-	  yyreport(severity_level, "type_check",
-		   "Error in sscanf format string.");
+	  yyreport(REPORT_ERROR, type_check_system_string,
+		   0, "Error in sscanf format string.");
 	  break;
 	}
 	continue;
@@ -1691,8 +1681,8 @@ static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
 	  {
 	    if(e>=format_len)
 	    {
-	      yyreport(severity_level, "type_check",
-		       "Missing %%} in format string.");
+	      yyreport(REPORT_ERROR, type_check_system_string,
+		       0, "Missing %%} in format string.");
 	      break;
 	    }
 	    if(INDEX_PCHARP(format, e)=='%')
@@ -1741,8 +1731,8 @@ static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
 	    int ch;
 	    cnt++;
 	    if (cnt >= format_len) {
-	      yyreport(severity_level, "type_check",
-		       "Error in sscanf format string.");
+	      yyreport(REPORT_ERROR, type_check_system_string,
+		       0, "Error in sscanf format string.");
 	      break;
 	    }
 	    if((INDEX_PCHARP(format, cnt)=='^') &&
@@ -1753,8 +1743,8 @@ static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
 	    {
 	      cnt++;
 	      if(cnt >= format_len) {
-		yyreport(severity_level, "type_check",
-			 "Error in sscanf format string.");
+		yyreport(REPORT_ERROR, type_check_system_string,
+			 0, "Error in sscanf format string.");
 		break;
 	      }
 	    }
@@ -1763,8 +1753,8 @@ static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
 	    {
 	      cnt++;
 	      if(cnt >= format_len) {
-		yyreport(severity_level, "type_check",
-			 "Error in sscanf format string.");
+		yyreport(REPORT_ERROR, type_check_system_string,
+			 0, "Error in sscanf format string.");
 		break;
 	      }
 	      ch = INDEX_PCHARP(format, cnt);
@@ -1776,8 +1766,8 @@ static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
 	      {
 		cnt++;
 		if(cnt >= format_len) {
-		  yyreport(severity_level, "type_check",
-			   "Error in sscanf format string.");
+		  yyreport(REPORT_ERROR, type_check_system_string,
+			   0, "Error in sscanf format string.");
 		  break;
 		}
 
@@ -1788,8 +1778,8 @@ static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
 	      }
 	      cnt++;
 	      if(cnt>=format_len) {
-		yyreport(severity_level, "type_check",
-			 "Error in sscanf format string.");
+		yyreport(REPORT_ERROR, type_check_system_string,
+			 0, "Error in sscanf format string.");
 		break;
 	      }
 	      ch = INDEX_PCHARP(format, cnt);
@@ -1816,8 +1806,8 @@ static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
 	  break;
 
 	default:
-	  yyreport(severity_level, "type_check",
-		   "Unknown sscanf token %%%c(0x%02x) at offset %d.",
+	  yyreport(REPORT_ERROR, type_check_system_string,
+		   0, "Unknown sscanf token %%%c(0x%02x) at offset %d.",
 		   INDEX_PCHARP(format, cnt), INDEX_PCHARP(format, cnt),
 		   cnt-1);
 	  break;
@@ -1838,14 +1828,6 @@ void f___handle_sscanf_format(INT32 args)
   int flags = 0;
   int found = 0;
   int fmt_count;
-  struct compilation *c = THIS_COMPILATION;
-  int severity_level = REPORT_ERROR;
-
-  if ((c->major != -1) &&
-      ((c->major < 7) || ((c->major == 7) && (c->minor < 7)))) {
-    /* Compat mode: Pike 7.6 or earlier. */
-    severity_level = REPORT_WARNING;
-  }
 
 #if 0
   fprintf(stderr, "__handle_sprintf_format()\n");
@@ -1925,11 +1907,6 @@ void f___handle_sscanf_format(INT32 args)
 	res = pop_unfinished_type();
 	pop_n_elems(args);
 	push_type_value(res);
-	if (severity_level <= REPORT_WARNING) {
-	  /* Disable further checks in compat mode. */
-	  pop_stack();
-	  push_undefined();
-	}
 	return;
       } else {
 	if (!(fmt_count = pop_stack_mark())) {
@@ -1969,11 +1946,6 @@ void f___handle_sscanf_format(INT32 args)
     res = pop_unfinished_type();
     pop_n_elems(args);
     push_type_value(res);
-    if (severity_level <= REPORT_WARNING) {
-      /* Disable further checks in compat mode. */
-      pop_stack();
-      push_undefined();
-    }
     return;
   } else if (tmp) {
     /* Check if it's in the return type. */
@@ -2023,11 +1995,6 @@ void f___handle_sscanf_format(INT32 args)
       res = pop_unfinished_type();
       pop_n_elems(args);
       push_type_value(res);
-      if (severity_level <= REPORT_WARNING) {
-	/* Disable further checks in compat mode. */
-	pop_stack();
-	push_undefined();
-      }
       return;
     }
   }

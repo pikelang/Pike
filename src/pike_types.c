@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.336 2008/05/18 15:44:51 grubba Exp $
+|| $Id: pike_types.c,v 1.337 2008/05/24 15:14:12 grubba Exp $
 */
 
 #include "global.h"
@@ -4529,7 +4529,7 @@ static int low_get_return_type(struct pike_type *a, struct pike_type *b)
 #if 0
     if ((c->lex.pragmas & ID_STRICT_TYPES) &&
 	!low_pike_types_le(a, b, 0, 0)) {
-      yywarning("Type mismatch");
+      yyreport_type(REPORT_WARNING, NULL, 0, b, NULL, 0, a, 0, "Type mismatch");
     }
 #endif /* 0 */
     switch(a->type)
@@ -4925,22 +4925,18 @@ static struct pike_type *debug_low_range_type(struct pike_type *t,
     /* Check that the index types are compatible with int. */
     {
       if (index1_type && !low_match_types(int_type_string, index1_type, 0)) {
-	struct pike_string *s = describe_type(t);
-	yywarning("Bad argument 1 to range operator on %s.",
-		  s->str);
-	free_string(s);
-	yyexplain_nonmatching_types(int_type_string, index1_type,
-				    YYTE_IS_WARNING);
+	ref_push_type_value(t);
+	yytype_report(REPORT_WARNING, NULL, 0, int_type_string,
+		      NULL, 0, index1_type,
+		      1, "Bad argument 1 to range operator on %O.");
 	/* Bad index1 type. */
 	return 0;
       }
       if (index2_type && !low_match_types(int_type_string, index2_type, 0)) {
-	struct pike_string *s = describe_type(t);
-	yywarning("Bad argument 2 to range operator on %s.",
-		  s->str);
-	free_string(s);
-	yyexplain_nonmatching_types(int_type_string, index2_type,
-				    YYTE_IS_WARNING);
+	ref_push_type_value(t);
+	yytype_report(REPORT_WARNING, NULL, 0, int_type_string,
+		      NULL, 0, index2_type,
+		      1, "Bad argument 2 to range operator on %O.");
 	/* Bad index2 type. */
 	return 0;
       }
@@ -4979,7 +4975,8 @@ struct pike_type *range_type(struct pike_type *type,
   clear_markers();
   t = low_range_type(type, index1_type, index2_type);
   if(!t) {
-    yyerror("Invalid range operation.");
+    yytype_report(REPORT_ERROR, NULL, 0, NULL, NULL, 0, NULL,
+		  0, "Invalid range operation.");
     copy_pike_type(t, type);
   }
   return t;
@@ -5318,24 +5315,21 @@ struct pike_type *check_call(struct pike_type *args,
   {
     if (strict) {
       if (!strict_check_call(type, args)) {
-	struct pike_string *type_t = describe_type(type);
 	struct pike_type *func_zero_type;
 
 	MAKE_CONSTANT_TYPE(func_zero_type, tFuncV(tNone,tZero,tMix));
 
 	if (!low_pike_types_le(type, func_zero_type, 0, 0)) {
-	  yywarning("Calling non-function value.");
-	  yywarning("Type called: %s", type_t->str);
+	  yytype_report(REPORT_WARNING, NULL, 0, function_type_string,
+			NULL, 0, type,
+			0, "Calling non-function value.");
 	} else {
-	  struct pike_string *arg_t = describe_type(args);
-	  yywarning("Arguments not strictly compatible.");
-	  yywarning("Expected: %s", type_t->str);
-	  yywarning("Got     : %s", arg_t->str);
-	  free_string(arg_t);
+	  yytype_report(REPORT_WARNING, NULL, 0, type,
+			NULL, 0, args,
+			0, "Arguments not strictly compatible.");
 	}
 
 	free_type(func_zero_type);
-	free_string(type_t);
       }
     }
     return pop_unfinished_type();
@@ -6799,14 +6793,12 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
 	!(flags & CALL_ARG_LVALUE)){
       if (!(tmp = low_new_check_call(fun_type, args->type,
 				     flags|CALL_STRICT, sval))) {
-	yywarning("Type mismatch in argument %d to %S.",
-		  *argno, fun_name);
-	if ((tmp = get_first_arg_type(fun_type, 0))) {
-	  yytype_error(NULL, tmp, args->type, YYTE_IS_WARNING);
-	  free_type(tmp);
-	} else {
-	  yytype_error(NULL, NULL, args->type, YYTE_IS_WARNING);
-	}
+	tmp = get_first_arg_type(fun_type, 0);
+	yytype_report(REPORT_WARNING, NULL, 0, tmp,
+		      NULL, 0, args->type,
+		      0, "Type mismatch in argument %d to %S.",
+		      *argno, fun_name);
+	if (tmp) free_type(tmp);
       } else {
 	free_type(tmp);
       }
@@ -6823,9 +6815,8 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
       fprintf(stderr, " Bad argument.\n");
     }
 #endif /* PIKE_DEBUG */
-    my_yyerror("Bad argument %d to %S.",
-	       *argno, fun_name);
-    yytype_error(NULL, tmp, args->type, 0);
+    yytype_report(REPORT_ERROR, NULL, 0, tmp, NULL, 0, args->type,
+		  0, "Bad argument %d to %S.", *argno, fun_name);
 
     /* Try advancing with the suggested type, so that we can check
      * the rest of the arguments.
@@ -6855,9 +6846,10 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
       fprintf(stderr, " Too many arguments.\n");
     }
 #endif /* PIKE_DEBUG */
-    my_yyerror("Too many arguments to %S (expected %d arguments).",
-	       fun_name, *argno - 1);
-    yytype_error(NULL, NULL, args->type, 0);
+    yytype_report(REPORT_ERROR, NULL, 0, NULL,
+		  NULL, 0, args->type,
+		  0, "Too many arguments to %S (expected %d arguments).",
+		  fun_name, *argno - 1);
   }
   free_type(fun_type);
   return NULL;
@@ -7248,9 +7240,13 @@ int type_may_overload(struct pike_type *type, int lfun)
 }
 
 
-void yyexplain_nonmatching_types(struct pike_type *type_a,
-				 struct pike_type *type_b,
-				 int flags)
+void yyexplain_nonmatching_types(int severity_level,
+				 struct pike_string *a_file,
+				 INT32 a_line,
+				 struct pike_type *type_a,
+				 struct pike_string *b_file,
+				 INT32 b_line,
+				 struct pike_type *type_b)
 {
   DECLARE_CYCLIC();
 
@@ -7267,18 +7263,13 @@ void yyexplain_nonmatching_types(struct pike_type *type_a,
 #endif /* 0 */
   {
     struct pike_string *s1, *s2;
-    s1 = describe_type(type_a);
-    s2 = describe_type(type_b);
-    if(flags & YYTE_IS_WARNING)
-    {
-      yywarning("Expected: %S", s1);
-      yywarning("Got     : %S", s2);
-    }else{
-      my_yyerror("Expected: %S", s1);
-      my_yyerror("Got     : %S", s2);
-    }
-    free_string(s1);
-    free_string(s2);
+
+    ref_push_type_value(type_a);
+    yytype_report(severity_level, NULL, 0, NULL, a_file, a_line, NULL,
+		  1, "Expected: %O");
+    ref_push_type_value(type_b);
+    yytype_report(severity_level, NULL, 0, NULL, b_file, b_line, NULL,
+		  1, "Got     : %O");
   }
 
   /* Protect against circularities. */
@@ -7290,9 +7281,9 @@ void yyexplain_nonmatching_types(struct pike_type *type_a,
 
   if(implements_a && implements_b) {
     if (implements_mode) {
-      yyexplain_not_implements(implements_a, implements_b, flags);
+      yyexplain_not_implements(severity_level, implements_a, implements_b);
     } else {
-      yyexplain_not_compatible(implements_a, implements_b, flags);
+      yyexplain_not_compatible(severity_level, implements_a, implements_b);
     }
   }
   END_CYCLIC();

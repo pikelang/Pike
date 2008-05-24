@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.412 2008/05/18 15:37:28 grubba Exp $
+|| $Id: las.c,v 1.413 2008/05/24 15:14:12 grubba Exp $
 */
 
 #include "global.h"
@@ -373,11 +373,11 @@ static int check_node_type(node *n, struct pike_type *t, const char *msg)
 {
   if (pike_types_le(n->type, t)) return 1;
   if (!match_types(n->type, t)) {
-    yytype_error(msg, t, n->type, 0);
+    yytype_report(REPORT_ERROR, NULL, 0, t, NULL, 0, n->type, 0, msg);
     return 0;
   }
   if (THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES) {
-    yytype_error(msg, t, n->type, YYTE_IS_WARNING);
+    yytype_report(REPORT_WARNING, NULL, 0, t, NULL, 0, n->type, 0, msg);
   }
   if (runtime_options & RUNTIME_CHECK_TYPES) {
     node *p = n->parent;
@@ -1323,28 +1323,28 @@ node *debug_mksoftcastnode(struct pike_type *type, node *n)
     if (n->type) {
 #ifdef NEW_ARG_CHECK
       if (!(result_type = soft_cast(type, n->type, 0))) {
-	struct pike_string *t1 = describe_type(type);
-	struct pike_string *t2 = describe_type(n->type);
-	my_yyerror("Soft cast of %S to %S isn't a valid cast.",
-		   t2, t1);
-	free_string(t2);
-	free_string(t1);
+	ref_push_type_value(n->type);
+	ref_push_type_value(type);
+	yytype_report(REPORT_ERROR,
+		      NULL, 0, NULL,
+		      NULL, 0, NULL,
+		      2, "Soft cast of %O to %O isn't a valid cast.");
       } else if (result_type == n->type) {
-	struct pike_string *t1 = describe_type(type);
-	struct pike_string *t2 = describe_type(n->type);
-	yywarning("Soft cast of %S to %S is a noop.",
-		   t2, t1);
-	free_string(t2);
-	free_string(t1);
+	ref_push_type_value(n->type);
+	ref_push_type_value(type);
+	yytype_report(REPORT_WARNING,
+		      NULL, 0, NULL,
+		      NULL, 0, NULL,
+		      2, "Soft cast of %O to %O is a noop.");
       }
 #else /* !NEW_ARG_CHECK */
       if (!check_soft_cast(type, n->type)) {
-	struct pike_string *t1 = describe_type(type);
-	struct pike_string *t2 = describe_type(n->type);
-	yywarning("Soft cast to %S isn't a restriction of %S.",
-		  t1, t2);
-	free_string(t2);
-	free_string(t1);
+	ref_push_type_value(type);
+	ref_push_type_value(n->type);
+	yytype_report(REPORT_WARNING,
+		      NULL, 0, NULL,
+		      NULL, 0, NULL,
+		      2, "Soft cast to %S isn't a restriction of %S.");
       }
       /* FIXME: check_soft_cast() is weaker than pike_types_le()
        * The resulting type should probably be the and between the old
@@ -1658,12 +1658,21 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
 	  if(Pike_compiler->new_program->flags & PROGRAM_PASS_1_DONE)
 	  {
 	    if (!exception) {
+	      struct compilation *c = THIS_COMPILATION;
 	      if (node_name) {
 		my_yyerror("Index %S not present in module \"%s\".",
 			   id, node_name);
 	      } else {
 		my_yyerror("Index %S not present in module.", id);
 	      }
+	      push_int(REPORT_ERROR);
+	      ref_push_string(c->lex.current_file);
+	      push_int(c->lex.current_line);
+	      push_constant_text("compiler");
+	      push_constant_text("Indexed module was: %O.");
+	      resolv_constant(n);
+	      safe_apply_current(PC_REPORT_FUN_NUM, 6);
+	      pop_stack();
 	    }
 	  }else if (!(Pike_compiler->flags & COMPILATION_FORCE_RESOLVE)) {
 	    /* Hope it's there in pass 2 */
@@ -3054,38 +3063,6 @@ static void low_build_function_type(node *n)
   }
 }
 
-void yytype_error(const char *msg, struct pike_type *expected_t,
-		  struct pike_type *got_t, unsigned int flags)
-{
-  if (msg)
-  {
-    if (flags & YYTE_IS_WARNING)
-      yywarning("%s", msg);
-    else
-      yyerror(msg);
-  }
-
-  if (expected_t && got_t) {
-    yyexplain_nonmatching_types(expected_t, got_t, flags);
-  } else if (expected_t) {
-    struct pike_string *s = describe_type(expected_t);
-    if (flags & YYTE_IS_WARNING) {
-      yywarning("Expected: %S", s);
-    } else {
-      my_yyerror("Expected: %S", s);
-    }
-    free_string(s);
-  } else if (got_t) {
-    struct pike_string *s = describe_type(got_t);
-    if (flags & YYTE_IS_WARNING) {
-      yywarning("Got     : %S", s);
-    } else {
-      my_yyerror("Got     : %S", s);
-    }
-    free_string(s);
-  }
-}
-
 static struct pike_string *get_name_of_function(node *n)
 {
   struct pike_string *name = NULL;
@@ -3253,33 +3230,28 @@ void fix_type_field(node *n)
       struct pike_type *soft_type = NULL;
       if (CDR(n) && (CDR(n)->token == F_CONSTANT) &&
 	  (CDR(n)->u.sval.type == T_TYPE)) {
-	struct pike_string *t1;
-	struct pike_string *t2;
 	soft_type = CDR(n)->u.sval.u.type;
 	if ((n->type = soft_cast(soft_type, CAR(n)->type, 0))) {
 	  /* Success. */
 	  break;
 	}
-	t1 = describe_type(soft_type);
-	t2 = describe_type(CAR(n)->type);
-	my_yyerror("Soft cast of %S to %S isn't a valid cast.",
-		   t2, t1);
-	free_string(t2);
-	free_string(t1);
+	ref_push_type_value(CAR(n)->type);
+	ref_push_type_value(soft_type);
+	yytype_report(REPORT_ERROR, NULL, 0, NULL, NULL, 0, NULL, 2,
+		      "Soft cast of %O to %O isn't a valid cast.");
       } else {
-	yytype_error("Soft cast with non-type.",
-		     type_type_string,
-		     CDR(n)->type, 0);
+	yytype_report(REPORT_ERROR, NULL, 0, type_type_string,
+		      NULL, 0, CDR(n)->type, 0,
+		      "Soft cast with non-type.");
       }
       /* Failure: Fall through to the old code. */
 #else /* !NEW_ARG_CHECK */
       if (!check_soft_cast(old_type, CAR(n)->type)) {
-	struct pike_string *t1 = describe_type(old_type);
-	struct pike_string *t2 = describe_type(CAR(n)->type);
-	yywarning("Soft cast to %S isn't a restriction of %S.",
-		  t1, t2);
-	free_string(t2);
-	free_string(t1);
+	ref_push_type_value(old_type);
+	ref_push_type_value(CAR(n)->type);
+	yytype_report(REPORT_ERROR, NULL, 0, NULL, NULL, 0, NULL, 2,
+		      "Soft cast to %S isn't a restriction of %S.",
+		      t1, t2);
       }
       /* FIXME: check_soft_cast() is weaker than pike_types_le()
        * The resulting type should probably be the AND between the old
@@ -3362,8 +3334,9 @@ void fix_type_field(node *n)
 		match_types(array_type_string, CDR(n)->type)) ||
 	       match_types(array_type_string, CADR(n)->type))) &&
 	    !match_types(CDR(n)->type,CAR(n)->type)) {
-	  yytype_error("Bad type in assignment.",
-		       CDR(n)->type, CAR(n)->type, 0);
+	  yytype_report(REPORT_ERROR, NULL, 0, CDR(n)->type,
+			NULL, 0, CAR(n)->type,
+			0, "Bad type in assignment.");
 	} else {
 	  if (c->lex.pragmas & ID_STRICT_TYPES) {
 	    struct pike_string *t1 = describe_type(CAR(n)->type);
@@ -3441,8 +3414,9 @@ void fix_type_field(node *n)
       type_b=CDR(n)->type;
       if(!check_indexing(type_a, type_b, n))
 	if(!Pike_compiler->catch_level)
-	  yyerror("Indexing on illegal type.");
-      n->type=index_type(type_a, type_b,n);
+	  yytype_report(REPORT_ERROR, NULL, 0, NULL, NULL, 0, type_b,
+			0, "Indexing on illegal type.");
+      n->type = index_type(type_a, type_b, n);
     } else {
       copy_pike_type(n->type, mixed_type_string);
     }
@@ -3468,8 +3442,9 @@ void fix_type_field(node *n)
       struct pike_type *array_type;
       MAKE_CONSTANT_TYPE(array_type, tArr(tZero));
       if (!pike_types_le(array_type, CAR(n)->type)) {
-	yytype_error("Bad argument to splice operator.",
-		     array_type, CAR(n)->type, 0);
+	yytype_report(REPORT_ERROR, NULL, 0, array_type,
+		      NULL, 0, CAR(n)->type,
+		      0, "Bad argument to splice operator.");
       }
       free_type(array_type);
       /* FIXME: The type field of the splice operator is not yet utilized.
@@ -3491,7 +3466,10 @@ void fix_type_field(node *n)
       type_a=CAR(n)->type;
       if(!match_types(type_a, array_type_string))
 	if(!Pike_compiler->catch_level)
-	  yyerror("[*] on non-array.");
+	  yytype_report(REPORT_ERROR,
+			NULL, 0, array_type_string,
+			NULL, 0, type_a,
+			0, "[*] on non-array.");
       n->type=index_type(type_a, int_type_string, n);
     }
     break;
@@ -3512,8 +3490,9 @@ void fix_type_field(node *n)
 
       if (!match_types(CAR(n)->type, function_type_string) &&
 	  !match_types(CAR(n)->type, array_type_string)) {
-	yytype_error("Calling non function value.",
-		     function_type_string, CAR(n)->type, 0);
+	yytype_report(REPORT_ERROR, NULL, 0, function_type_string,
+		      NULL, 0, CAR(n)->type,
+		      0, "Calling non function value.");
 	copy_pike_type(n->type, mixed_type_string);
 
 	/* print_tree(n); */
@@ -3556,14 +3535,19 @@ void fix_type_field(node *n)
       copy_pike_type(n->type, mixed_type_string);
 
       if ((s = get_first_arg_type(dmalloc_touch(struct pike_type *, f), 0))) {
-	my_yyerror("Too few arguments to %S (got %d).", name, args);
-	yytype_error(NULL, s, NULL, 0);
+	yytype_report(REPORT_ERROR, NULL, 0, s,
+		      NULL, 0, NULL,
+		      0, "Too few arguments to %S (got %d).",
+		      name, args);
 	free_type(s);
-	yytype_error("Function type:", CAR(n)->type, NULL, 0);
-	yytype_error("Remaining type:", f, NULL, 0);
+	yytype_report(REPORT_ERROR, NULL, 0, NULL,
+		      NULL, 0, CAR(n)->type,
+		      0, "Function type:");
       } else {
-	my_yyerror("Attempt to call a non function value %S.", name);
-	yytype_error(NULL, function_type_string, f, 0);
+	yytype_report(REPORT_ERROR, NULL, 0, function_type_string,
+		      NULL, 0, f,
+		      0, "Attempt to call a non function value %S.",
+		      name);
       }
       free_type(f);
       break;
@@ -3720,8 +3704,7 @@ void fix_type_field(node *n)
 	  my_yyerror("Too few arguments to %s.", alternate_name);
 	}
       } else if (name) {
-	my_yyerror("Bad argument %d to %S.",
-		   max_correct_args+1, name);
+	my_yyerror("Bad argument %d to %S.", max_correct_args+1, name);
       } else {
 	my_yyerror("Bad argument %d to %s.",
 		   max_correct_args+1, alternate_name);
@@ -3846,9 +3829,10 @@ void fix_type_field(node *n)
 	free_type(call_type);
 	break;
       }
-      my_yyerror("Bad arguments to %S.", op_string);
-      yytype_error(NULL, op_node->type ? op_node->type : mixed_type_string,
-		   call_type, 0);
+      yytype_report(REPORT_ERROR, NULL, 0,
+		    op_node->type ? op_node->type : mixed_type_string,
+		    NULL, 0, call_type,
+		    0, "Bad arguments to %S.", op_string);
       free_node(op_node);
       free_type(call_type);
     }
@@ -3899,8 +3883,10 @@ void fix_type_field(node *n)
       if (!match_types(CAR(n)->type, CDR(n)->type)) {
 	if (!match_types(CAR(n)->type, int_type_string) ||
 	    !match_types(CDR(n)->type, int_type_string)) {
-	  yytype_error("Type mismatch in case range.",
-		       CAR(n)->type, CDR(n)->type, 0);
+	  yytype_report(REPORT_ERROR,
+			NULL, 0, CAR(n)->type,
+			NULL, 0, CDR(n)->type,
+			0, "Type mismatch in case range.");
 	}
       } else if ((c->lex.pragmas & ID_STRICT_TYPES) &&
 		 (CAR(n)->type != CDR(n)->type)) {
@@ -3909,14 +3895,18 @@ void fix_type_field(node *n)
 	  /* Note that zero should be handled as int(0..0) here. */
 	  if (!(CAR(n)->type == zero_type_string) ||
 	      !(pike_types_le(CDR(n)->type, int_type_string))) {
-	    yytype_error("Type mismatch in case range.",
-			 CAR(n)->type, CDR(n)->type, YYTE_IS_WARNING);
+	    yytype_report(REPORT_ERROR,
+			  NULL, 0, CAR(n)->type,
+			  NULL, 0, CDR(n)->type,
+			  0, "Type mismatch in case range.");
 	  }
 	} else if (!pike_types_le(CAR(n)->type, CDR(n)->type)) {
 	  if (!(CDR(n)->type == zero_type_string) ||
 	      !(pike_types_le(CAR(n)->type, int_type_string))) {
-	    yytype_error("Type mismatch in case range.",
-			 CDR(n)->type, CAR(n)->type, YYTE_IS_WARNING);
+	    yytype_report(REPORT_WARNING,
+			  NULL, 0, CAR(n)->type,
+			  NULL, 0, CDR(n)->type,
+			  0, "Type mismatch in case range.");
 	  }
 	}
       }
@@ -4010,16 +4000,22 @@ void fix_type_field(node *n)
 	    index_type = check_call(foreach_call_type, index_fun_type, 0);
 	    if (!index_type) {
 	      /* Should not happen. */
-	      yyerror("Bad iterator type for index in foreach().");
+	      yytype_report(REPORT_ERROR,
+			    NULL, 0, NULL,
+			    NULL, 0, NULL,
+			    0, "Bad iterator type for index in foreach().");
 	    } else {
 	      if (!pike_types_le(index_type, CADAR(n)->type)) {
+		int level = REPORT_NOTICE;
 		if (!match_types(CADAR(n)->type, index_type)) {
-		  yytype_error("Type mismatch for index in foreach().",
-			       index_type, CADAR(n)->type, 0);
+		  level = REPORT_ERROR;
 		} else if (c->lex.pragmas & ID_STRICT_TYPES) {
-		  yytype_error("Type mismatch for index in foreach().",
-			       index_type, CADAR(n)->type, YYTE_IS_WARNING);
+		  level = REPORT_WARNING;
 		}
+		yytype_report(level,
+			      NULL, 0, index_type,
+			      NULL, 0, CADAR(n)->type,
+			      0, "Type mismatch for index in foreach().");
 	      }
 	      free_type(index_type);
 	    }
@@ -4040,16 +4036,22 @@ void fix_type_field(node *n)
 	    value_type = check_call(foreach_call_type, value_fun_type, 0);
 	    if (!value_type) {
 	      /* Should not happen. */
-	      yyerror("Bad iterator type for value in foreach().");
+	      yytype_report(REPORT_ERROR,
+			    NULL, 0, NULL,
+			    NULL, 0, NULL,
+			    0, "Bad iterator type for value in foreach().");
 	    } else {
 	      if (!pike_types_le(value_type, CDDAR(n)->type)) {
+		int level = REPORT_NOTICE;
 		if (!match_types(CDDAR(n)->type, value_type)) {
-		  yytype_error("Type mismatch for value in foreach().",
-			       value_type, CDDAR(n)->type, 0);
+		  level = REPORT_ERROR;
 		} else if (c->lex.pragmas & ID_STRICT_TYPES) {
-		  yytype_error("Type mismatch for value in foreach().",
-			       value_type, CDDAR(n)->type, YYTE_IS_WARNING);
+		  level = REPORT_WARNING;
 		}
+		yytype_report(level,
+			      NULL, 0, value_type,
+			      NULL, 0, CDDAR(n)->type,
+			      0, "Type mismatch for value in foreach().");
 	      }
 	      free_type(value_type);
 	    }
@@ -4062,14 +4064,18 @@ void fix_type_field(node *n)
 	  MAKE_CONSTANT_TYPE(array_zero, tArr(tZero));
 	  
 	  if (!pike_types_le(array_zero, CAAR(n)->type)) {
-	    yyerror("Bad argument 1 to foreach().");
+	    yytype_report(REPORT_ERROR,
+			  NULL, 0, array_zero,
+			  NULL, 0, CAAR(n)->type,
+			  0, "Bad argument 1 to foreach().");
 	  } else {
 	    if ((c->lex.pragmas & ID_STRICT_TYPES) &&
 		!pike_types_le(CAAR(n)->type, array_type_string)) {
-	      struct pike_string *t = describe_type(CAAR(n)->type);
-	      yywarning("Argument 1 to foreach() is not always an array.");
-	      yywarning("Got: %S", t);
-	      free_string(t);
+	      yytype_report(REPORT_WARNING,
+			    NULL, 0, CAAR(n)->type,
+			    NULL, 0, array_type_string,
+			    0,
+			    "Argument 1 to foreach() is not always an array.");
 	    }
 	    
 	    if (!CDAR(n)) {
@@ -4125,12 +4131,19 @@ void fix_type_field(node *n)
 	if (!(n->type = new_get_return_type(sscanf_type, 0))) {
 	  struct pike_type *expected;
 	  if ((expected = get_first_arg_type(sscanf_type, 0))) {
-	    my_yyerror("Too few arguments to %S (got %d).", sscanf_name, argno);
-	    yytype_error(NULL, expected, NULL, 0);
+	    yytype_report(REPORT_ERROR,
+			  NULL, 0, expected,
+			  NULL, 0, NULL,
+			  0, "Too few arguments to %S (got %d).",
+			  sscanf_name, argno);
 	    free_type(expected);
 	  } else {
-	    my_yyerror("Attempt to call a non function value %S.", sscanf_name);
-	    yytype_error(NULL, function_type_string, sscanf_type, 0);
+	    /* Most likely not reached. */
+	    yytype_report(REPORT_ERROR,
+			  NULL, 0, function_type_string,
+			  NULL, 0, sscanf_type,
+			  0, "Attempt to call a non function value %S.",
+			  sscanf_name);
 	  }
 	}
 	free_type(sscanf_type);

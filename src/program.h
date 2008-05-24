@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.247 2008/05/21 21:55:49 grubba Exp $
+|| $Id: program.h,v 1.248 2008/05/24 15:14:12 grubba Exp $
 */
 
 #ifndef PROGRAM_H
@@ -52,6 +52,10 @@ PMOD_EXPORT extern struct program_state * Pike_compiler;
   } while(0)
 
 extern struct pike_string *this_program_string;
+
+/* Common compiler subsystems */
+extern struct pike_string *parser_system_string;
+extern struct pike_string *type_check_system_string;
 
 #define LFUN___INIT 0
 #define LFUN_CREATE 1
@@ -682,6 +686,12 @@ extern struct object *placeholder_object;
 #define SEE_STATIC 1
 #define SEE_PRIVATE 2
 
+/* Report levels */
+#define REPORT_NOTICE	0	/* FYI. */
+#define REPORT_WARNING	1	/* Compiler warning. */
+#define REPORT_ERROR	2	/* Compilation error. */
+#define REPORT_FATAL	3	/* Unrecoverable error. */
+
 
 #define COMPILER_IN_CATCH 1
 
@@ -879,8 +889,27 @@ PMOD_EXPORT struct pike_string *get_line(PIKE_OPCODE_T *pc,
 					 struct program *prog, INT32 *linep);
 PMOD_EXPORT struct pike_string *low_get_function_line (struct object *o,
 						       int fun, INT32 *linep);
-PMOD_EXPORT void va_yyerror(const char *fmt, va_list args);
+PMOD_EXPORT void va_yyreport(int severity_level,
+			     struct pike_string *file, INT32 line,
+			     struct pike_string *system, INT32 args,
+			     const char *fmt, va_list vargs);
+PMOD_EXPORT void low_yyreport(int severity_level,
+			      struct pike_string *file, INT32 line,
+			      struct pike_string *system,
+			      INT32 args, const char *fmt, ...);
+PMOD_EXPORT void yyreport(int severity_level, struct pike_string *system,
+			  INT32 args, const char *fmt, ...);
+PMOD_EXPORT void yywarning(char *fmt, ...);
 PMOD_EXPORT void my_yyerror(const char *fmt,...);
+PMOD_EXPORT void yyerror(const char *s);
+void yytype_report(int severity_level,
+		   struct pike_string *expect_file, INT32 expect_line, 
+		   struct pike_type *expected_t,
+		   struct pike_string *got_file, INT32 got_line,
+		   struct pike_type *got_t,
+		   INT32 args, const char *fmt, ...);
+void yytype_error(const char *msg, struct pike_type *expected_t,
+		  struct pike_type *got_t, unsigned int flags);
 struct pike_string *format_exception_for_error_msg (struct svalue *thrown);
 void handle_compile_exception (const char *yyerror_fmt, ...);
 struct supporter_marker;
@@ -934,15 +963,13 @@ PMOD_EXPORT struct program *program_from_function(const struct svalue *f);
 PMOD_EXPORT struct program *program_from_svalue(const struct svalue *s);
 struct find_child_cache_s;
 int find_child(struct program *parent, struct program *child);
-void va_yyreport(int severity_level, const char *system,
-		 const char *fmt, va_list args);
-void yyreport(int severity_level, const char *system, const char *fmt, ...);
-void yywarning(char *fmt, ...);
 struct implements_cache_s;
 PMOD_EXPORT int implements(struct program *a, struct program *b);
 PMOD_EXPORT int is_compatible(struct program *a, struct program *b);
-void yyexplain_not_compatible(struct program *a, struct program *b, int flags);
-void yyexplain_not_implements(struct program *a, struct program *b, int flags);
+void yyexplain_not_compatible(int severity_level,
+			      struct program *a, struct program *b);
+void yyexplain_not_implements(int severity_level,
+			      struct program *a, struct program *b);
 PMOD_EXPORT void *parent_storage(int depth);
 PMOD_EXPORT void change_compiler_compatibility(int major, int minor);
 void make_program_executable(struct program *p);

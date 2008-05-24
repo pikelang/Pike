@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.152 2008/05/21 21:59:07 grubba Exp $
+|| $Id: sprintf.c,v 1.153 2008/05/24 15:14:13 grubba Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -311,7 +311,6 @@
 #include "cyclic.h"
 #include "module.h"
 #include "pike_float.h"
-#include "pike_compiler.h"
 #include <ctype.h>
 
 #include "config.h"
@@ -1870,14 +1869,6 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
 
   PCHARP a,begin;
   PCHARP format_end=ADD_PCHARP(format,format_len);
-  struct compilation *c = THIS_COMPILATION;
-  int severity_level = REPORT_ERROR;
-
-  if ((c->major != -1) &&
-      ((c->major < 7) || ((c->major == 7) && (c->minor < 7)))) {
-    /* Compat mode: Pike 7.6 or earlier. */
-    severity_level = REPORT_WARNING;
-  }
 
   check_c_stack(500);
 
@@ -1907,12 +1898,12 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
       default:
 	if(EXTRACT_PCHARP(a) < 256 && isprint(EXTRACT_PCHARP(a)))
 	{
-	  yyreport(severity_level, "type_check",
-		   "Error in format string, %c is not a format.",
+	  yyreport(REPORT_ERROR, type_check_system_string,
+		   0, "Error in format string, %c is not a format.",
 		   EXTRACT_PCHARP(a));
 	}else{
-	  yyreport(severity_level, "type_check",
-		   "Error in format string, U%08x is not a format.",
+	  yyreport(REPORT_ERROR, type_check_system_string,
+		   0, "Error in format string, U%08x is not a format.",
 		   EXTRACT_PCHARP(a));
 	}
 	num_snurkel = 0;
@@ -1941,8 +1932,8 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
 	{
 	case 0: case 1:
 	  if(tmp < 0) {
-	    yyreport(severity_level, "type_check",
-		     "Illegal width %d.", tmp);
+	    yyreport(REPORT_ERROR, type_check_system_string,
+		     0, "Illegal width %d.", tmp);
 	  }
 	case 2: case 3: case 4: break;
 	}
@@ -1958,16 +1949,16 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
       case '/':
         column |= ROUGH_LINEBREAK;
         if( column & LINEBREAK ) {
-	  yyreport(severity_level, "type_check",
-		   "Can not use both the modifiers / and =.");
+	  yyreport(REPORT_ERROR, type_check_system_string,
+		   0, "Can not use both the modifiers / and =.");
 	}
         continue;
 
       case '=':
         column |= LINEBREAK;
         if( column & ROUGH_LINEBREAK ) {
-	  yyreport(severity_level, "type_check",
-		   "Can not use both the modifiers / and =.");
+	  yyreport(REPORT_ERROR, type_check_system_string,
+		   0, "Can not use both the modifiers / and =.");
 	}
         continue;
 
@@ -1984,8 +1975,8 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
 	for(INC_PCHARP(a,1);INDEX_PCHARP(a,tmp)!='\'';tmp++)
 	{
 	  if(COMPARE_PCHARP(a,>=,format_end)) {
-	    yyreport(severity_level, "type_check",
-		     "Unfinished pad string in format string.");
+	    yyreport(REPORT_ERROR, type_check_system_string,
+		     0, "Unfinished pad string in format string.");
 	  }
 	}
 	INC_PCHARP(a,tmp);
@@ -2002,8 +1993,8 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
 	/* FIXME: !!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 	return 0;	/* FAILURE! */
 	if(!lastarg) {
-	  yyreport(severity_level, "type_check",
-		   "No last argument.");
+	  yyreport(REPORT_ERROR, type_check_system_string,
+		   0, "No last argument.");
 	}
 	arg=lastarg;
 	continue;
@@ -2019,13 +2010,13 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
 	} else
 	  tmp=STRTOL_PCHARP(a,&a,10);
 	if(EXTRACT_PCHARP(a)!=']')  {
-	  yyreport(severity_level, "type_check",
-		   "Expected ] in format string, not %c.",
+	  yyreport(REPORT_ERROR, type_check_system_string,
+		   0, "Expected ] in format string, not %c.",
 		   EXTRACT_PCHARP(a));
 	}
 	if(tmp >= num_arg) {
-	  yyreport(severity_level, "type_check",
-		   "Not enough arguments to [%d].", tmp);
+	  yyreport(REPORT_ERROR, type_check_system_string,
+		   0, "Not enough arguments to [%d].", tmp);
 	}
 	/* arg = argp+tmp; */
 	continue;
@@ -2039,8 +2030,8 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
 	{
 	  if (!INDEX_PCHARP(a,e) &&
 	      !COMPARE_PCHARP(ADD_PCHARP(a,e),<,format_end)) {
-	    yyreport(severity_level, "type_check",
-		     "Missing %} in format string.");
+	    yyreport(REPORT_ERROR, type_check_system_string,
+		     0, "Missing %%} in format string.");
 	    break;
 	  } else if(INDEX_PCHARP(a,e)=='%') {
 	    switch(INDEX_PCHARP(a,e+1))
@@ -2232,14 +2223,6 @@ void f___handle_sprintf_format(INT32 args)
   struct pike_string *fmt;
   int found = 0;
   int fmt_count;
-  struct compilation *c = THIS_COMPILATION;
-  int severity_level = REPORT_ERROR;
-
-  if ((c->major != -1) &&
-      ((c->major < 7) || ((c->major == 7) && (c->minor < 7)))) {
-    /* Compat mode: Pike 7.6 or earlier. */
-    severity_level = REPORT_WARNING;
-  }
 
 #if 0
   fprintf(stderr, "__handle_sprintf_format()\n");
@@ -2307,11 +2290,6 @@ void f___handle_sprintf_format(INT32 args)
 	  res = pop_unfinished_type();
 	  pop_n_elems(args);
 	  push_type_value(res);
-	  if (severity_level <= REPORT_WARNING) {
-	    /* Disable further checks in compat mode. */
-	    pop_stack();
-	    push_undefined();
-	  }
 	  return;
 	} else {
 	  /* Join the argument types into the array. */
@@ -2355,11 +2333,6 @@ void f___handle_sprintf_format(INT32 args)
     res = pop_unfinished_type();
     pop_n_elems(args);
     push_type_value(res);
-    if (severity_level <= REPORT_WARNING) {
-      /* Disable further checks in compat mode. */
-      pop_stack();
-      push_undefined();
-    }
   } else {
     /* No marker found. */
 #if 0
