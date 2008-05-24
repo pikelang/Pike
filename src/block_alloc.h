@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: block_alloc.h,v 1.86 2008/05/24 12:02:05 mast Exp $
+|| $Id: block_alloc.h,v 1.87 2008/05/24 12:18:50 mast Exp $
 */
 
 #undef PRE_INIT_BLOCK
@@ -45,8 +45,10 @@
 
 #if defined (DMALLOC_BLOCK_BACKLOG) && defined (DEBUG_MALLOC)
 #define DO_IF_BLOCK_BACKLOG(X) X
+#define DO_IF_NOT_BLOCK_BACKLOG(X)
 #else
 #define DO_IF_BLOCK_BACKLOG(X)
+#define DO_IF_NOT_BLOCK_BACKLOG(X) X
 #endif
 
 /* Invalidate the block as far as possible if running with dmalloc.
@@ -359,7 +361,7 @@ void PIKE_CONCAT(really_free_,DATA)(struct DATA *d)			\
   );									\
 									\
   DO_PRE_INIT_BLOCK(d);							\
-  DO_IF_DMALLOC({							\
+  DO_IF_BLOCK_BACKLOG ({						\
       struct DATA *d2 = (void *)blk->PIKE_CONCAT3(free_,DATA,s);	\
       d->BLOCK_ALLOC_NEXT = NULL;					\
       if (d2) {								\
@@ -375,7 +377,7 @@ void PIKE_CONCAT(really_free_,DATA)(struct DATA *d)			\
 	blk->PIKE_CONCAT3(free_,DATA,s)=d;				\
       }									\
     });									\
-  DO_IF_NOT_DMALLOC({							\
+  DO_IF_NOT_BLOCK_BACKLOG ({						\
       d->BLOCK_ALLOC_NEXT = (void *)blk->PIKE_CONCAT3(free_,DATA,s);	\
       blk->PIKE_CONCAT3(free_,DATA,s)=d;				\
     });									\
