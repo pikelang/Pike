@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.154 2008/04/12 14:04:09 grubba Exp $
+|| $Id: error.c,v 1.155 2008/05/24 12:28:58 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -129,14 +129,17 @@ PMOD_EXPORT DECLSPEC(noreturn) void pike_throw(void) ATTRIBUTE((noreturn))
       Pike_interpreter.recoveries->onerror=Pike_interpreter.recoveries->onerror->previous;
     }
 
-    if (Pike_interpreter.catch_ctx &&
-	&Pike_interpreter.catch_ctx->recovery == Pike_interpreter.recoveries) {
-      struct catch_context *cc = Pike_interpreter.catch_ctx;
-      Pike_interpreter.catch_ctx = cc->prev;
-      really_free_catch_context (cc);
+    {
+      JMP_BUF *prev_rec = Pike_interpreter.recoveries->previous;
+      if (Pike_interpreter.catch_ctx &&
+	  (&Pike_interpreter.catch_ctx->recovery ==
+	   Pike_interpreter.recoveries)) {
+	struct catch_context *cc = Pike_interpreter.catch_ctx;
+	Pike_interpreter.catch_ctx = cc->prev;
+	really_free_catch_context (cc);
+      }
+      Pike_interpreter.recoveries = prev_rec;
     }
-
-    Pike_interpreter.recoveries=Pike_interpreter.recoveries->previous;
   }
 
   if(!Pike_interpreter.recoveries)
