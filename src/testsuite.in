@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.820 2008/05/22 14:39:15 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.821 2008/05/24 16:46:57 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -4687,11 +4687,15 @@ test_any([[mapping m=([1:1]); m[1]++; return m[1];]],2)
 test_any([[mapping m=([1:1]); m[1]++; return m[1]++;]],2)
 test_any([[mapping m=([]); m[1]++; m[1]++; return m[1];]],2)
 
+ignore_warning("Bad argument 2 to m_delete.", [[
+ignore_warning("Expected: string.", [[
+ignore_warning("Got     : int(17..17).", [[
 test_any([[
 #pike 7.6
   mapping(string:int) x = ([]);
   return zero_type (m_delete (x, 17));
 ]], 1)
+]])]])]])
 
 // multiset tests
 
@@ -6971,19 +6975,26 @@ class Bar {
 test_equal( array_sscanf("^^;|", "%[^-|]%s"), ({ "^^", ";|" }) )
 test_any([[mixed a; sscanf("^^;|","%[^-|]",a); return a]],"^^")
 
+ignore_warning("Bad argument 3 to sscanf_76.", [[
+ignore_warning("Expected: string.", [[
+ignore_warning("Got     : int.", [[
 test_any([[
 #pike 7.6
   int foo;
   sscanf ("11", "%s", foo);
   return foo;
 ]], "11")
+]])]])]])
 
+ignore_warning("Too many arguments to sscanf_76 (expected 2 arguments).", [[
+ignore_warning("Got     : string.", [[
 test_any([[
 #pike 7.6
   string s;
   sscanf ("foo", "%*s", s);
   return s;
 ]], 0)
+]])]])
 
 // sscanf %O -------------------------------------------------------------
 
