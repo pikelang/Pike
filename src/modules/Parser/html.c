@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: html.c,v 1.178 2008/01/26 22:34:25 mast Exp $
+|| $Id: html.c,v 1.179 2008/05/24 13:22:47 mast Exp $
 */
 
 #include "global.h"
@@ -94,7 +94,7 @@ struct piece
 #undef EXIT_BLOCK
 #define EXIT_BLOCK(p) free_string (p->s);
 
-BLOCK_ALLOC (piece, 53);
+BLOCK_ALLOC_FILL_PAGES (piece, 2);
 
 struct out_piece
 {
@@ -107,7 +107,7 @@ struct out_piece
 #undef EXIT_BLOCK
 #define EXIT_BLOCK(p) free_svalue (&p->v)
 
-BLOCK_ALLOC (out_piece, 211);
+BLOCK_ALLOC_FILL_PAGES (out_piece, 2);
 
 struct feed_stack
 {
@@ -142,7 +142,7 @@ struct feed_stack
     really_free_piece (f);						\
   }
 
-BLOCK_ALLOC (feed_stack, 31);
+BLOCK_ALLOC (feed_stack, 1);
 
 enum types {
   TYPE_TAG,			/* empty tag callback */
@@ -446,7 +446,7 @@ static void debug_mark_spot(char *desc,struct piece *feed,int c)
    l=strlen(desc)+1;
    if (l<40) l=40;
    m=75-l; if (m<10) m=10;
-   fprintf(stderr,"%-*s »",DO_NOT_WARN((int)l),desc);
+   fprintf(stderr,"%-*s `",DO_NOT_WARN((int)l),desc);
    i=c-m/2;
    if (i+m>=feed->s->len) i=feed->s->len-m;
    if (i<0) i=0; 
@@ -464,17 +464,18 @@ static void debug_mark_spot(char *desc,struct piece *feed,int c)
 	   DO_NOT_WARN((long)i0),
 	   (void *)feed, c,
 	   DO_NOT_WARN((long)feed->s->len));
-   fprintf(stderr,"»\n%*s\n",
+   fprintf(stderr,"`\n%*s\n",
 	   DO_NOT_WARN((int)(l+c-i0+3)),
 	   buf);
 }
 
-static void debug_print_chars (p_wchar2 *chars, size_t numchars)
+static void debug_print_chars (const p_wchar2 *chars, size_t numchars)
 {
   size_t i;
   for (i=0; i<numchars; i++)
     if (i > 30) {
-      fprintf (stderr, "... (number of chars suspiciously large: %d)", numchars);
+      fprintf (stderr, "... (number of chars suspiciously large: "
+	       "%"PRINTSIZET"u)", numchars);
       break;
     }
     else if (chars[i]<33 || (chars[i]>126 && chars[i]<160)
@@ -493,7 +494,7 @@ static void debug_print_search_chars (struct parser_html_storage *this)
   fprintf (stderr, "  look_for_start:  ");
   debug_print_chars (LOOK_FOR_START (this), NUM_LOOK_FOR_START (this));
   for (i = 0; i < NARGQ (this); i++) {
-    fprintf (stderr, "  look_for_end[%d]: ", i);
+    fprintf (stderr, "  look_for_end[%"PRINTSIZET"u]: ", i);
     debug_print_chars (LOOK_FOR_END (this)[i], NUM_LOOK_FOR_END (this)[i]);
   }
 }
@@ -1424,7 +1425,8 @@ static void put_out_feed_range(struct parser_html_storage *this,
 			       struct piece *tail,
 			       ptrdiff_t c_tail)
 {
-   DEBUG((stderr,"put out feed range %p:%d - %p:%d\n",
+   DEBUG((stderr,"put out feed range "
+	  "%p:%"PRINTPTRDIFFT"d - %p:%"PRINTPTRDIFFT"d\n",
 	  head,c_head,tail,c_tail));
    /* fit it in range (this allows other code to ignore eof stuff) */
    if (c_tail>tail->s->len) c_tail=tail->s->len;
@@ -1514,7 +1516,7 @@ static INLINE void push_feed_range(struct piece *head,
       ref_push_string(empty_pike_string);
    else if (n>1)
       f_add(n);
-   DEBUG((stderr,"push len=%d\n",sp[-1].u.string->len));
+   DEBUG((stderr,"push len=%"PRINTPTRDIFFT"d\n",sp[-1].u.string->len));
 }
 
 /* -------------------------------------------------------- */
@@ -1627,16 +1629,20 @@ static void skip_feed_range(struct feed_stack *st,
       if (head==tail && c_tail<tail->s->len)
       {
 	 skip_piece_range(&(st->pos),head,c_head,c_tail);
+	 *headp = head;
 	 *c_headp=c_tail;
 	 return;
       }
       skip_piece_range(&(st->pos),head,c_head,head->s->len);
-      *headp=head->next;
-      really_free_piece (head);
-      head=*headp;
+      {
+	struct piece *next = head->next;
+	really_free_piece (head);
+	head = next;
+      }
       c_head=0;
    }
 
+   *headp = head;
    *c_headp = 0;
 }
 
@@ -1662,10 +1668,10 @@ static int scan_forward(struct piece *feed,
 
    if (num_look_for<0) num_look_for=-num_look_for,rev=1;
 
-#ifdef SCAN_DEBUG
+#ifdef HTML_DEBUG
    if (THIS->flags & FLAG_DEBUG_MODE) {
       DEBUG_MARK_SPOT("scan_forward",feed,c);
-      fprintf(stderr,"    n=%d%s; ",num_look_for,rev?"; rev":"");
+      fprintf(stderr,"    n=%"PRINTPTRDIFFT"d%s; ",num_look_for,rev?"; rev":"");
       debug_print_chars (look_for, num_look_for);
    }
 #define SCAN_DEBUG_MARK_SPOT(A,B,C) DEBUG_MARK_SPOT(A,B,C)
@@ -2127,7 +2133,7 @@ static int scan_for_end_of_tag(struct parser_html_storage *this,
    /*          ^                      ^ */
    /*       here now             scan here */
 
-   DEBUG((stderr,"scan for end of tag: %p:%d\n",feed,c));
+   DEBUG((stderr,"scan for end of tag: %p:%"PRINTPTRDIFFT"d\n",feed,c));
 
    if (got_fin) *got_fin = 0;
 
@@ -2140,13 +2146,14 @@ static int scan_for_end_of_tag(struct parser_html_storage *this,
       if (!res) {
 	 if (!finished) 
 	 {
-	    DEBUG((stderr,"scan for end of tag: wait at %p:%d\n",feed,c));
+	    DEBUG((stderr,"scan for end of tag: "
+		   "wait at %p:%"PRINTPTRDIFFT"d\n",feed,c));
 	    return 0; /* not found - no end of tag, yet */
 	 }
 	 else
 	 {
-	    DEBUG((stderr,"scan for end of tag: forced end at %p:%d\n",
-		   destp[0],*d_p));
+	    DEBUG((stderr,"scan for end of tag: "
+		   "forced end at %p:%"PRINTPTRDIFFT"d\n", destp[0],*d_p));
 	    return 1; /* end of tag, sure... */
 	 }
       }
@@ -2234,14 +2241,14 @@ static int scan_for_end_of_tag(struct parser_html_storage *this,
 	if (!res) {
 	  if (!finished) 
 	  {
-	    DEBUG((stderr,"scan for end of tag: wait at %p:%d\n",
-		   destp[0],*d_p));
+	    DEBUG((stderr,"scan for end of tag: "
+		   "wait at %p:%"PRINTPTRDIFFT"d\n", destp[0],*d_p));
 	    return 0; /* not found - no end of tag, yet */
 	  }
 	  else
 	  {
-	    DEBUG((stderr,"scan for end of tag: forced end at %p:%d\n",
-		   feed,c));
+	    DEBUG((stderr,"scan for end of tag: "
+		   "forced end at %p:%"PRINTPTRDIFFT"d\n", feed,c));
 	    return 1; /* end of tag, sure... */
 	  }
 	}
@@ -2303,7 +2310,7 @@ static int quote_tag_lookup (struct parser_html_storage *this,
     if (val) {
       int i;
       struct array *arr;
-      DEBUG ((stderr, "quote tag lookup: found entry %c%c at %d\n",
+      DEBUG ((stderr, "quote tag lookup: found entry %c%c at %"PRINTSIZET"u\n",
 	      isprint (buf.str[0]) ? buf.str[0] : '.',
 	      isprint (buf.str[1]) ? buf.str[1] : '.', checklen));
 #ifdef PIKE_DEBUG
@@ -2360,7 +2367,7 @@ static int quote_tag_lookup (struct parser_html_storage *this,
     }
 #ifdef HTML_DEBUG
     else
-      DEBUG ((stderr, "quote tag lookup: no entry %c%c at %d\n",
+      DEBUG ((stderr, "quote tag lookup: no entry %c%c at %"PRINTSIZET"u\n",
 	      isprint (buf.str[0]) ? buf.str[0] : '.',
 	      isprint (buf.str[1]) ? buf.str[1] : '.', checklen));
 #endif
@@ -2422,7 +2429,8 @@ static newstate handle_result(struct parser_html_storage *this,
 	 if (skip) skip_feed_range(st,head,c_head,tail,c_tail);
 
 	 if (sp[-1].u.string->len) {
-	   DEBUG((stderr,"handle_result: pushing string (len=%d) on feedstack\n",
+	   DEBUG((stderr,"handle_result: pushing string "
+		  "(len=%"PRINTPTRDIFFT"d) on feedstack\n",
 		  sp[-1].u.string->len));
 	   add_local_feed (this, sp[-1].u.string);
 	   pop_stack();
@@ -2587,9 +2595,9 @@ static newstate data_callback (struct parser_html_storage *this,
 
   cend = this->data_cb_feed_end->s->len;
 
-  DEBUG((stderr, "%*d calling _data callback %p:%d..%p:%d\n",
+  DEBUG((stderr, "%*d calling _data callback %p:0..%p:%"PRINTPTRDIFFT"d\n",
 	 this->stack_count, this->stack_count,
-	 this->data_cb_feed, 0, this->data_cb_feed_end, cend));
+	 this->data_cb_feed, this->data_cb_feed_end, cend));
 
   uwp_pos.this = this;
   uwp_pos.orig_pos = this->top.pos;
@@ -2935,7 +2943,8 @@ static newstate find_end_of_container(struct parser_html_storage *this,
 	  DEBUG_MARK_SPOT("find_end_of_cont : push end",feed,c);
 	  if (res)
 	  {
-	    DEBUG((stderr,"find_end_of_cont : (pushed) return %d %p:%d\n",
+	    DEBUG((stderr,"find_end_of_cont : "
+		   "(pushed) return %d %p:%"PRINTPTRDIFFT"d\n",
 		   res,s1,c1));
 	    return res;
 	  }
@@ -3027,12 +3036,12 @@ static newstate do_try_feed(struct parser_html_storage *this,
 
 	   if (this->callback__data.type != T_INT) {
 	     struct piece *f;
-	     DEBUG((stderr, "put data cb feed range %p:%d - %p:%d\n",
+	     DEBUG((stderr, "put data cb feed range "
+		    "%p:%"PRINTPTRDIFFT"d - %p:%"PRINTPTRDIFFT"d\n",
 		    *feed, st->c, dst, cdst));
 	     push_feed_range (*feed, st->c, dst, cdst);
 	     f = alloc_piece();
 	     f->s = (--sp)->u.string;
-	     f->next = NULL;
 	     if (this->data_cb_feed) {
 	       this->data_cb_feed_end->next = f;
 	       this->data_cb_feed_end = f;
@@ -3074,7 +3083,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	 struct piece *tagend = NULL;
 	 ptrdiff_t ctagend;
 
-	 DEBUG((stderr,"%*d do_try_feed scan tag %p:%d\n",
+	 DEBUG((stderr,"%*d do_try_feed scan tag %p:%"PRINTPTRDIFFT"d\n",
 		this->stack_count,this->stack_count,
 		*feed,st->c));
 #ifdef PIKE_DEBUG
@@ -3124,15 +3133,15 @@ static newstate do_try_feed(struct parser_html_storage *this,
 					 e1,ce1,e2,ce2,
 					 st,feed,&(st->c),dst,cdst)))
 	     {
-	       DEBUG((stderr,"%*d quote tag callback return %d %p:%d\n",
-		      this->stack_count,this->stack_count,
-		      res,*feed,st->c));
+	       DEBUG((stderr,"%*d quote tag callback return %d "
+		      "%p:%"PRINTPTRDIFFT"d\n", this->stack_count,
+		      this->stack_count, res,*feed,st->c));
 	       st->ignore_data=(res==STATE_WAIT);
 	       pop_stack();
 	       return res;
 	     }
 
-	     DEBUG((stderr,"%*d quote tag callback done %p:%d\n",
+	     DEBUG((stderr,"%*d quote tag callback done %p:%"PRINTPTRDIFFT"d\n",
 		    this->stack_count,this->stack_count,
 		    *feed,st->c));
 
@@ -3206,9 +3215,9 @@ static newstate do_try_feed(struct parser_html_storage *this,
 					      &e1,&ce1,&e2,&ce2,
 					      finished)))
 	       {
-		  DEBUG((stderr,"%*d find end of cont return %d %p:%d\n",
-			 this->stack_count,this->stack_count,
-			 res,*feed,st->c));
+		  DEBUG((stderr,"%*d find end of cont return %d "
+			 "%p:%"PRINTPTRDIFFT"d\n", this->stack_count,
+			 this->stack_count, res,*feed,st->c));
 		  st->ignore_data=(res==STATE_WAIT);
 		  pop_stack();
 		  return res;
@@ -3222,14 +3231,14 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	       if ((res=tag_callback(this,thisobj,tag,
 				     st,feed,&(st->c),dst=e2,cdst=ce2)))
 	       {
-		  DEBUG((stderr,"%*d tag callback return %d %p:%d\n",
-			 this->stack_count,this->stack_count,
-			 res,*feed,st->c));
+		  DEBUG((stderr,"%*d tag callback return %d "
+			 "%p:%"PRINTPTRDIFFT"d\n", this->stack_count,
+			 this->stack_count, res,*feed,st->c));
 		  st->ignore_data=(res==STATE_WAIT);
 		  return res;
 	       }
 
-	       DEBUG((stderr,"%*d tag callback done %p:%d\n",
+	       DEBUG((stderr,"%*d tag callback done %p:%"PRINTPTRDIFFT"d\n",
 		      this->stack_count,this->stack_count,
 		      *feed,st->c));
 
@@ -3244,9 +3253,9 @@ static newstate do_try_feed(struct parser_html_storage *this,
 					   tagend,ctagend+1,e1,ce1,
 					   st,feed,&(st->c),dst=e2,cdst=ce2)))
 	       {
-		  DEBUG((stderr,"%*d container callback return %d %p:%d\n",
-			 this->stack_count,this->stack_count,
-			 res,*feed,st->c));
+		  DEBUG((stderr,"%*d container callback return %d "
+			 "%p:%"PRINTPTRDIFFT"d\n", this->stack_count,
+			 this->stack_count, res,*feed,st->c));
 		  st->ignore_data=(res==STATE_WAIT);
 		  return res;
 	       }
@@ -3274,7 +3283,8 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	      return res ? res : STATE_REREAD;
 	    }
 
-	    DEBUG((stderr,"%*d calling _tag callback %p:%d..%p:%d\n",
+	    DEBUG((stderr,"%*d calling _tag callback "
+		   "%p:%"PRINTPTRDIFFT"d..%p:%"PRINTPTRDIFFT"d\n",
 		   this->stack_count,this->stack_count,
 		   *feed,st->c+1,tagend,ctagend));
 
@@ -3286,9 +3296,8 @@ static newstate do_try_feed(struct parser_html_storage *this,
 
 	    if ((res=handle_result(this,st,feed,&(st->c),dst,cdst,1)))
 	    {
-	       DEBUG((stderr,"%*d do_try_feed return %d %p:%d\n",
-		      this->stack_count,this->stack_count,
-		      res,*feed,st->c));
+	       DEBUG((stderr,"%*d do_try_feed return %d %p:%"PRINTPTRDIFFT"d\n",
+		      this->stack_count,this->stack_count, res,*feed,st->c));
 	       st->ignore_data=(res==STATE_WAIT);
 	       return res;
 	    }
@@ -3446,8 +3455,9 @@ static newstate do_try_feed(struct parser_html_storage *this,
 				 -(ptrdiff_t)N_WS(this)) ||
 		  !scan_forward_arg (this, s1, c1, &s2, &c2,
 				     SCAN_ARG_PUSH, finished, NULL)) {
-		DEBUG((stderr,"%*d do_try_feed wait in splice arg at %p:%d\n",
-		       this->stack_count,this->stack_count,s1,c1));
+		DEBUG((stderr,"%*d do_try_feed wait in splice arg at "
+		       "%p:%"PRINTPTRDIFFT"d\n", this->stack_count,
+		       this->stack_count,s1,c1));
 
 		/* Put out collected data up to the splice arg name. */
 		put_out_feed_range(this,*feed,st->c,dst,cdst);
@@ -3456,7 +3466,8 @@ static newstate do_try_feed(struct parser_html_storage *this,
 		return STATE_WAIT;
 	      }
 
-	      DEBUG((stderr,"%*d do_try_feed got splice arg %p:%d..%p:%d\n",
+	      DEBUG((stderr,"%*d do_try_feed got splice arg "
+		     "%p:%"PRINTPTRDIFFT"d..%p:%"PRINTPTRDIFFT"d\n",
 		     this->stack_count,this->stack_count,s1,c1,s2,c2));
 
 	      /* Put out collected data, but skip the splice arg itself. */
@@ -3575,9 +3586,8 @@ static newstate do_try_feed(struct parser_html_storage *this,
     parse_entity: {
 	p_wchar2 end_found;
 
-	DEBUG((stderr,"%*d do_try_feed scan entity %p:%d\n",
-	       this->stack_count,this->stack_count,
-	       *feed,st->c));
+	DEBUG((stderr,"%*d do_try_feed scan entity %p:%"PRINTPTRDIFFT"d\n",
+	       this->stack_count,this->stack_count, *feed,st->c));
 
 #ifdef PIKE_DEBUG
 	if (!scan_entity) Pike_fatal ("Shouldn't parse entities now.\n");
@@ -3651,26 +3661,26 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	    if ((res=entity_callback(this,thisobj,v,
 				     st,feed,&(st->c),dst,cdst)))
 	    {
-	      DEBUG((stderr,"%*d entity callback return %d %p:%d\n",
-		     this->stack_count,this->stack_count,
-		     res,*feed,st->c));
+	      DEBUG((stderr,"%*d entity callback return %d "
+		     "%p:%"PRINTPTRDIFFT"d\n", this->stack_count,
+		     this->stack_count, res,*feed,st->c));
 	      st->ignore_data=(res==STATE_WAIT);
 	      return res;
 	    }
 
-	    DEBUG((stderr,"%*d entity callback done %p:%d\n",
-		   this->stack_count,this->stack_count,
-		   *feed,st->c));
+	    DEBUG((stderr,"%*d entity callback done %p:%"PRINTPTRDIFFT"d\n",
+		   this->stack_count,this->stack_count, *feed,st->c));
 
 	    recheck_scan(this,&scan_entity);
 
 	    switch (ctx) {
 	      case CTX_DATA:
-		goto done;
 	      case CTX_SPLICE_ARG:
-		break;
+		goto done;
 	      default:
-		goto continue_in_arg; /* Shouldn't skip ws here. */
+		if (*feed)
+		  goto continue_in_arg; /* Shouldn't skip ws here. */
+		goto done;
 	    }
 	  }
 	}
@@ -3685,9 +3695,9 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	    return res ? res : STATE_REREAD;
 	  }
 
-	  DEBUG((stderr,"%*d calling _entity callback %p:%d..%p:%d\n",
-		 this->stack_count,this->stack_count,
-		 *feed,st->c,dst,cdst));
+	  DEBUG((stderr,"%*d calling _entity callback "
+		 "%p:%"PRINTPTRDIFFT"d..%p:%"PRINTPTRDIFFT"d\n",
+		 this->stack_count,this->stack_count, *feed,st->c,dst,cdst));
 
 	  /* low-level entity call */
 	  this->type = TYPE_ENTITY;
@@ -3697,9 +3707,8 @@ static newstate do_try_feed(struct parser_html_storage *this,
 
 	  if ((res=handle_result(this,st,feed,&(st->c),dst,cdst,1)))
 	  {
-	    DEBUG((stderr,"%*d do_try_feed return %d %p:%d\n",
-		   this->stack_count,this->stack_count,
-		   res,*feed,st->c));
+	    DEBUG((stderr,"%*d do_try_feed return %d %p:%"PRINTPTRDIFFT"d\n",
+		   this->stack_count,this->stack_count, res,*feed,st->c));
 	    st->ignore_data=(res==STATE_WAIT);
 	    return res;
 	  }
@@ -3707,11 +3716,12 @@ static newstate do_try_feed(struct parser_html_storage *this,
 
 	  switch (ctx) {
 	    case CTX_DATA:
-	      goto done;
 	    case CTX_SPLICE_ARG:
-	      break;
+	      goto done;
 	    default:
-	      goto continue_in_arg; /* Shouldn't skip ws here. */
+	      if (*feed)
+		goto continue_in_arg; /* Shouldn't skip ws here. */
+	      goto done;
 	  }
 	}
 	else if (flags & FLAG_IGNORE_UNKNOWN) {
@@ -3878,7 +3888,7 @@ static void low_feed(struct pike_string *ps)
 
 static void html_feed(INT32 args)
 {
-   DEBUG((stderr,"feed %d chars\n",
+   DEBUG((stderr,"feed %"PRINTPTRDIFFT"d chars\n",
 	  (args&&sp[-args].type==T_STRING)?
 	  sp[-args].u.string->len:-1));
 
@@ -3920,7 +3930,7 @@ static void html_feed_insert(INT32 args)
       SIMPLE_BAD_ARG_ERROR("feed_insert",1,"string");
 
    DEBUG((stderr,"html_feed_insert: "
-	  "pushing string (len=%d) on feedstack\n",
+	  "pushing string (len=%"PRINTPTRDIFFT"d) on feedstack\n",
 	  sp[-args].u.string->len));
 
    add_local_feed (THIS, sp[-args].u.string);
