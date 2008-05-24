@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.703 2008/05/24 15:42:51 grubba Exp $
+|| $Id: program.c,v 1.704 2008/05/24 16:20:00 grubba Exp $
 */
 
 #include "global.h"
@@ -6923,11 +6923,15 @@ PMOD_EXPORT void va_yyreport(int severity_level,
    */
   if ((severity_level <= REPORT_WARNING) &&
       Pike_compiler->num_parse_error) {
+    pop_n_elems(args);
     return;
   }
 
   if (severity_level >= REPORT_ERROR) {
-    if (Pike_compiler->num_parse_error > 20) return;
+    if (Pike_compiler->num_parse_error > 20) {
+      pop_n_elems(args);
+      return;
+    }
     Pike_compiler->num_parse_error++;
     cumulative_parse_error++;
   }
@@ -7044,7 +7048,7 @@ void yytype_report(int severity_level,
   } else if (got_t) {
     ref_push_type_value(got_t);
     low_yyreport(severity_level, got_file, got_line, type_check_system_string,
-		 1, "Got     : %O");
+		 1, "Got     : %O.");
   }
 }
 
