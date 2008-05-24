@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.705 2008/05/24 16:21:21 grubba Exp $
+|| $Id: program.c,v 1.706 2008/05/24 16:41:03 grubba Exp $
 */
 
 #include "global.h"
@@ -6912,11 +6912,11 @@ PMOD_EXPORT void va_yyreport(int severity_level,
   /* Convert type errors to warnings in non-strict compat mode. */
   if ((system == type_check_system_string) &&
       (severity_level == REPORT_ERROR) &&
-      (c->major != -1) &&
+      (Pike_compiler->compat_major != -1) &&
       !(c->lex.pragmas & ID_STRICT_TYPES) &&
-      ((c->major < PIKE_MAJOR_VERSION) ||
-       ((c->major == PIKE_MAJOR_VERSION) &&
-	(c->minor < PIKE_MINOR_VERSION)))) {
+      ((Pike_compiler->compat_major < PIKE_MAJOR_VERSION) ||
+       ((Pike_compiler->compat_major == PIKE_MAJOR_VERSION) &&
+	(Pike_compiler->compat_minor < PIKE_MINOR_VERSION)))) {
     severity_level = REPORT_WARNING;
   }
 
