@@ -1,5 +1,5 @@
 START_MARKER
-// $Id: testsuite.in,v 1.23 2007/10/15 17:11:39 grubba Exp $
+// $Id: testsuite.in,v 1.24 2008/05/24 21:40:12 grubba Exp $
 
 // Tools.Hilfe
 define(test_hilfe_setup_low,[[test_do([[
@@ -79,7 +79,9 @@ test_hilfe("class { int i=4; }()->i;", "4")
 //  test("class A{}();", "object")
 test_hilfe("indices((<1,2>));","({ /""* 2 elements *""/\n    1,\n    2\n})")
 test_hilfe("void nop(mixed m){};", "")
-test_hilfe("nop(({}));", "0")
+test_hilfe("nop(({}));",
+  "Compiler Warning: 1:Returning a void expression. Converted to zero.\n"
+  "0")
 test_hilfe("int a;", "")
 test_hilfe("a++;", "0")
 test_hilfe("a;", "1")
@@ -92,8 +94,8 @@ test_hilfe("int|float a=2;", "")
 test_hilfe("a=2.0;", "2.0")
 test_hilfe("int b=2;", "")
 test_hilfe("b=2.0;", "Compiler Error: 1:Bad type in assignment.\n"
-       "Compiler Error: 1:Expected: int\n"
-       "Compiler Error: 1:Got     : float\n")
+       "Compiler Error: 1:Expected: int.\n"
+       "Compiler Error: 1:Got     : float.\n")
 test_hilfe("Image.Image i=Image.Image();", "")
 test_hilfe("i;", [["Image.Image( 0 x 0 /""* 0.0Kb *""/)"]])
 test_hilfe([["constant z=`+(1,2),y=2;"]], "")
@@ -111,7 +113,9 @@ test_hilfe("new", "")
 test_hilfe("int i;", "")
 test_hilfe("i;", "0")
 test_hilfe("void foo() { i++; }", "")
-test_hilfe("foo();", "0")
+test_hilfe("foo();",
+  "Compiler Warning: 1:Returning a void expression. Converted to zero.\n"
+  "0")
 test_hilfe("i;", "1")
 test_hilfe("i*2;", "2")
 test_hilfe("2*i;", "2")
@@ -134,7 +138,9 @@ test_hilfe("i;", "1")
 
 test_hilfe("mixed x=\"bar\";", "")
 test_hilfe("void foo(mixed x){ x?werror(\"\"):werror(\"\");};","")
-test_hilfe("foo(1);", "0")
+test_hilfe("foo(1);", 
+  "Compiler Warning: 1:Returning a void expression. Converted to zero.\n"
+  "0")
 
 test_hilfe("array a = ({1});", "")
 test_hilfe("({2})+a;", "({ /* 2 elements */\n    2,\n    1\n})")
