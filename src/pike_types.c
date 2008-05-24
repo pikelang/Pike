@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.337 2008/05/24 15:14:12 grubba Exp $
+|| $Id: pike_types.c,v 1.338 2008/05/24 21:45:10 grubba Exp $
 */
 
 #include "global.h"
@@ -7266,10 +7266,10 @@ void yyexplain_nonmatching_types(int severity_level,
 
     ref_push_type_value(type_a);
     yytype_report(severity_level, NULL, 0, NULL, a_file, a_line, NULL,
-		  1, "Expected: %O");
+		  1, "Expected: %O.");
     ref_push_type_value(type_b);
     yytype_report(severity_level, NULL, 0, NULL, b_file, b_line, NULL,
-		  1, "Got     : %O");
+		  1, "Got     : %O.");
   }
 
   /* Protect against circularities. */
