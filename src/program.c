@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.704 2008/05/24 16:20:00 grubba Exp $
+|| $Id: program.c,v 1.705 2008/05/24 16:21:21 grubba Exp $
 */
 
 #include "global.h"
@@ -6896,7 +6896,11 @@ PMOD_EXPORT void va_yyreport(int severity_level,
   struct string_builder s;
   struct pike_string *msg;
 
-  if (!c) return;	/* No compiler context. */
+  if (!c) {
+    /* No compiler context. */
+    pop_n_elems(args);
+    return;
+  }
 
   STACK_LEVEL_START(args);
 
