@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.702 2008/05/24 15:14:12 grubba Exp $
+|| $Id: program.c,v 1.703 2008/05/24 15:42:51 grubba Exp $
 */
 
 #include "global.h"
@@ -5477,9 +5477,11 @@ INT32 define_function(struct pike_string *name,
       } else if (c->lex.pragmas & ID_STRICT_TYPES) {
 	level = REPORT_WARNING;
       }
-      yytype_report(level, NULL, 0, lfun_type->u.type,
-		    NULL, 0, type, 0,
-		    "Type mismatch for callback function %S:", name);
+      if (level != REPORT_NOTICE) {
+	yytype_report(level, NULL, 0, lfun_type->u.type,
+		      NULL, 0, type, 0,
+		      "Type mismatch for callback function %S:", name);
+      }
     }
   } else if (((name->len > 3) &&
 	      (index_shared_string(name, 0) == '`') &&
