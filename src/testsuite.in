@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.821 2008/05/24 16:46:57 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.822 2008/05/24 17:25:18 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -593,6 +593,9 @@ test_compile_error([[ float b=17.0; string a; a=b*42.0; ]])
 
 test_compile_error([[class F {inherit master()->dirnode;};]]);
 
+ignore_warning("Wrong return type.", [[
+ignore_warning("Expected: string.", [[
+ignore_warning("Got     : array(string).", [[
 test_program_equal([[
 #pike 7.6
   string a()
@@ -601,6 +604,7 @@ test_program_equal([[
     return res + ({});
   }
 ]], ({"spud"}))
+]])]])]])
 
 // Warnings
 
