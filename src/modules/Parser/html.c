@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: html.c,v 1.160 2004/02/10 22:46:06 mast Exp $
+|| $Id: html.c,v 1.161 2008/05/24 13:19:22 mast Exp $
 */
 
 #include "global.h"
@@ -446,7 +446,7 @@ static void debug_mark_spot(char *desc,struct piece *feed,int c)
    l=strlen(desc)+1;
    if (l<40) l=40;
    m=75-l; if (m<10) m=10;
-   fprintf(stderr,"%-*s »",DO_NOT_WARN((int)l),desc);
+   fprintf(stderr,"%-*s Â»",DO_NOT_WARN((int)l),desc);
    i=c-m/2;
    if (i+m>=feed->s->len) i=feed->s->len-m;
    if (i<0) i=0; 
@@ -464,7 +464,7 @@ static void debug_mark_spot(char *desc,struct piece *feed,int c)
 	   DO_NOT_WARN((long)i0),
 	   (void *)feed, c,
 	   DO_NOT_WARN((long)feed->s->len));
-   fprintf(stderr,"»\n%*s\n",
+   fprintf(stderr,"Â»\n%*s\n",
 	   DO_NOT_WARN((int)(l+c-i0+3)),
 	   buf);
 }
@@ -3618,11 +3618,12 @@ static newstate do_try_feed(struct parser_html_storage *this,
 
 	    switch (ctx) {
 	      case CTX_DATA:
-		goto done;
 	      case CTX_SPLICE_ARG:
-		break;
+		goto done;
 	      default:
-		goto continue_in_arg; /* Shouldn't skip ws here. */
+		if (*feed)
+		  goto continue_in_arg; /* Shouldn't skip ws here. */
+		goto done;
 	    }
 	  }
 	}
@@ -3659,11 +3660,12 @@ static newstate do_try_feed(struct parser_html_storage *this,
 
 	  switch (ctx) {
 	    case CTX_DATA:
-	      goto done;
 	    case CTX_SPLICE_ARG:
-	      break;
+	      goto done;
 	    default:
-	      goto continue_in_arg; /* Shouldn't skip ws here. */
+	      if (*feed)
+		goto continue_in_arg; /* Shouldn't skip ws here. */
+	      goto done;
 	  }
 	}
 	else if (flags & FLAG_IGNORE_UNKNOWN) {
