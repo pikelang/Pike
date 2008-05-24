@@ -1,5 +1,4 @@
 START_MARKER
-// -*- Pike -*-
 
 define(test_parser, [[
   define([[WIDENER]], "\0")
@@ -1293,4 +1292,22 @@ test_any(
     p2->add_quote_tag ("?", lambda () {return ({"p2"});}, "?");
     return p1->finish("<??>")->read();
   ]], "p1")
+
+test_any([[
+  int|string entity_callback(object parser, string entity, object id, mixed ... extra)
+  {
+    if(entity=="&foobar;")
+    {
+      // return string ending with XML entity will crash:
+      // "&nbsp;" will crash
+      // "&nbsp; " won't crash
+      return "&nbsp;";
+    }
+    return 0;
+  };
+  object my_parser = Parser.HTML();
+  my_parser->_set_entity_callback(entity_callback);
+  return my_parser->finish("<a href=\"mailto:&foobar;\"></a>")->read();
+]], "<a href=\"mailto:&nbsp;\"></a>")
+
 END_MARKER
