@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.272 2008/05/26 12:15:35 grubba Exp $
+|| $Id: encode.c,v 1.273 2008/05/26 15:38:56 grubba Exp $
 */
 
 #include "global.h"
@@ -2033,10 +2033,12 @@ struct decode_data
   struct mapping *decoded;
   struct unfinished_prog_link *unfinished_programs;
   struct unfinished_obj_link *unfinished_objects;
+  struct unfinished_obj_link *unfinished_placeholders;
   struct svalue counter;
   struct object *codec;
   int pickyness;
   int pass;
+  int delay_counter;
   struct pike_string *raw;
   struct decode_data *next;
 #ifdef PIKE_THREADS
@@ -3735,6 +3737,8 @@ static void decode_value2(struct decode_data *data)
 	      print_svalue (stderr, Pike_sp - 1);
 	      fputc ('\n', stderr););
 
+	  data->delay_counter++;
+
 #if 0
 	  /* Is this necessary? In that case, how do we pass an
 	   * adequate context to __register_new_program so that it
@@ -3894,6 +3898,8 @@ static void decode_value2(struct decode_data *data)
 		fputc('\n', stderr););
 	    mapping_insert(data->decoded, &entry_id, &prog);
 	    debug_malloc_touch(p);
+	  } else {
+	    data->delay_counter--;
 	  }
 
 	  debug_malloc_touch(p);
@@ -4634,8 +4640,33 @@ static void decode_value2(struct decode_data *data)
 	      (char *)xalloc(p->storage_needed) :
 	      (char *)NULL;
 	    call_c_initializers(placeholder);
-	    call_pike_initializers(placeholder, 0);
+	    if (!data->delay_counter) {
+	      call_pike_initializers(placeholder, 0);
+	    } else {
+	      /* It's not safe to call __INIT() or create() yet, since
+	       * there are delayed programs left.
+	       */
+	      struct unfinished_obj_link *up =
+		ALLOC_STRUCT(unfinished_obj_link);
+	      up->next = data->unfinished_placeholders;
+	      data->unfinished_placeholders = up;
+	      add_ref(up->o = placeholder);
+	    }
 	    pop_stack();
+	  }
+
+	  if (!data->delay_counter) {
+	    /* Call the Pike initializers for the delayed placeholders. */
+	    struct unfinished_obj_link *up;
+
+	    while ((up = data->unfinished_placeholders)) {
+	      struct object *o;
+	      data->unfinished_placeholders = up->next;
+	      push_object(o = up->o);
+	      free(up);
+	      call_pike_initializers(o, 0);
+	      pop_stack();
+	    }
 	  }
 
 #ifdef ENCODE_DEBUG
@@ -4730,6 +4761,8 @@ static void free_decode_data (struct decode_data *data, int delay,
       Pike_fatal("We have unfinished programs left in decode()!\n");
     if(data->unfinished_objects)
       Pike_fatal("We have unfinished objects left in decode()!\n");
+    if(data->unfinished_placeholders)
+      Pike_fatal("We have unfinished placeholders left in decode()!\n");
   }
 #endif
 
@@ -4749,6 +4782,14 @@ static void free_decode_data (struct decode_data *data, int delay,
     struct unfinished_obj_link *tmp=data->unfinished_objects;
     data->unfinished_objects=tmp->next;
     free_svalue(&tmp->decode_arg);
+    free_object(tmp->o);
+    free((char *)tmp);
+  }
+
+  while(data->unfinished_placeholders)
+  {
+    struct unfinished_obj_link *tmp=data->unfinished_placeholders;
+    data->unfinished_placeholders=tmp->next;
     free_object(tmp->o);
     free((char *)tmp);
   }
@@ -4861,6 +4902,8 @@ static INT32 my_decode(struct pike_string *tmp,
   data->pass=1;
   data->unfinished_programs=0;
   data->unfinished_objects=0;
+  data->unfinished_placeholders = NULL;
+  data->delay_counter = 0;
   data->raw = tmp;
   data->next = current_decode;
 #ifdef PIKE_THREADS
