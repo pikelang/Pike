@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.270 2008/05/26 09:26:57 grubba Exp $
+|| $Id: encode.c,v 1.271 2008/05/26 10:41:23 grubba Exp $
 */
 
 #include "global.h"
@@ -4537,8 +4537,8 @@ static void decode_value2(struct decode_data *data)
 	    debug_malloc_touch(c->placeholder);
 	    free_program(c->placeholder->prog);
 	    add_ref(c->placeholder->prog = p);
-	    c->placeholder->storage=c->p->storage_needed ?
-	      (char *)xalloc(c->p->storage_needed) :
+	    c->placeholder->storage = p->storage_needed ?
+	      (char *)xalloc(p->storage_needed) :
 	      (char *)NULL;
 	    call_c_initializers(c->placeholder);
 	    call_pike_initializers(c->placeholder,0);
