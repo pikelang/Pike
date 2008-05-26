@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.271 2008/05/26 10:41:23 grubba Exp $
+|| $Id: encode.c,v 1.272 2008/05/26 12:15:35 grubba Exp $
 */
 
 #include "global.h"
@@ -3772,6 +3772,7 @@ static void decode_value2(struct decode_data *data)
 	  ptrdiff_t old_pragmas;
 	  struct compilation *c;
 	  struct pike_string *save_current_file;
+	  struct object *placeholder = NULL;
 	  unsigned INT32 save_current_line;
 #define FOO(NUMTYPE,Y,ARGTYPE,NAME) \
           NUMTYPE PIKE_CONCAT(local_num_, NAME) = 0;
@@ -3853,25 +3854,30 @@ static void decode_value2(struct decode_data *data)
 
 	  SET_ONERROR(err, cleanup_new_program_decode, NULL);
 
-	  /* FIXME: Ought to accept codecs without __register_new_program(). */
-
-	  ref_push_program(p);
-	  apply(data->codec, "__register_new_program", 1);
-	      
-	  /* Returned a placeholder */
-	  if(Pike_sp[-1].type == T_OBJECT)
 	  {
-	    add_ref(c->placeholder=Pike_sp[-1].u.object);
-	    if(c->placeholder->prog != null_program) {
-	      Pike_error("Placeholder object is not "
-			 "a __null_program clone.\n");
+	    int fun = find_identifier("__register_new_program",
+				      data->codec->prog);
+
+	    if (fun >= 0) {
+	      ref_push_program(p);
+	      apply_low(data->codec, fun, 1);
+	      
+	      /* Returned a placeholder */
+	      if(Pike_sp[-1].type == T_OBJECT)
+	      {
+		add_ref(c->placeholder=Pike_sp[-1].u.object);
+		if(c->placeholder->prog != null_program) {
+		  Pike_error("Placeholder object is not "
+			     "a __null_program clone.\n");
+		}
+	      } else if (Pike_sp[-1].type != T_INT ||
+			 Pike_sp[-1].u.integer) {
+		Pike_error ("Expected placeholder object or zero "
+			    "from __register_new_program.\n");
+	      }
+	      pop_stack();
 	    }
-	  } else if (Pike_sp[-1].type != T_INT ||
-		     Pike_sp[-1].u.integer) {
-	    Pike_error ("Expected placeholder object or zero "
-			"from __register_new_program.\n");
 	  }
-	  pop_stack();
 
 	  copy_shared_string(save_current_file, c->lex.current_file);
 	  save_current_line = c->lex.current_line;
@@ -4531,17 +4537,8 @@ static void decode_value2(struct decode_data *data)
 	  push_program(p);
 
 	  if (c->placeholder) {
-	    if (c->placeholder->prog != null_program) {
-	      Pike_error("Placeholder has been zapped during decoding.\n");
-	    }
-	    debug_malloc_touch(c->placeholder);
-	    free_program(c->placeholder->prog);
-	    add_ref(c->placeholder->prog = p);
-	    c->placeholder->storage = p->storage_needed ?
-	      (char *)xalloc(p->storage_needed) :
-	      (char *)NULL;
-	    call_c_initializers(c->placeholder);
-	    call_pike_initializers(c->placeholder,0);
+	    push_object(placeholder = c->placeholder);
+	    c->placeholder = NULL;
 	  }
 
 	  exit_compiler();
@@ -4625,6 +4622,21 @@ static void decode_value2(struct decode_data *data)
 
 	  EDB(5, fprintf(stderr, "%*sProgram flags: 0x%04x\n",
 			 data->depth, "", p->flags));
+
+	  if (placeholder) {
+	    if (placeholder->prog != null_program) {
+	      Pike_error("Placeholder has been zapped during decoding.\n");
+	    }
+	    debug_malloc_touch(placeholder);
+	    free_program(placeholder->prog);
+	    add_ref(placeholder->prog = p);
+	    placeholder->storage = p->storage_needed ?
+	      (char *)xalloc(p->storage_needed) :
+	      (char *)NULL;
+	    call_c_initializers(placeholder);
+	    call_pike_initializers(placeholder, 0);
+	    pop_stack();
+	  }
 
 #ifdef ENCODE_DEBUG
 	  data->depth -= 2;
