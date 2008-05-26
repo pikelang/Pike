@@ -206,6 +206,10 @@ class LocaleObject
   }
 }
 
+// Used to delay lookup of the Charset module until run-time when dumped,
+// and thus resolve the circularity.
+static object(Locale) locale = Locale; 
+
 object get_object(string project, string lang) {
 
   // Is there such a project?
@@ -279,7 +283,7 @@ object get_object(string project, string lang) {
       default:
 	object dec;
 	// FIXME: Is this the best way of using Locale.Charset.decoder ?
-	if(catch(dec = .Charset.decoder(encoding))) {
+	if(catch(dec = locale.Charset.decoder(encoding))) {
 	  werror("\n* Warning: unknown encoding %O in %O\n",
 		 encoding, filename);
 	  break;
