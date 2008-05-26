@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.269 2008/05/21 20:07:41 grubba Exp $
+|| $Id: encode.c,v 1.270 2008/05/26 09:26:57 grubba Exp $
 */
 
 #include "global.h"
@@ -3853,7 +3853,25 @@ static void decode_value2(struct decode_data *data)
 
 	  SET_ONERROR(err, cleanup_new_program_decode, NULL);
 
-	  debug_malloc_touch(p);
+	  /* FIXME: Ought to accept codecs without __register_new_program(). */
+
+	  ref_push_program(p);
+	  apply(data->codec, "__register_new_program", 1);
+	      
+	  /* Returned a placeholder */
+	  if(Pike_sp[-1].type == T_OBJECT)
+	  {
+	    add_ref(c->placeholder=Pike_sp[-1].u.object);
+	    if(c->placeholder->prog != null_program) {
+	      Pike_error("Placeholder object is not "
+			 "a __null_program clone.\n");
+	    }
+	  } else if (Pike_sp[-1].type != T_INT ||
+		     Pike_sp[-1].u.integer) {
+	    Pike_error ("Expected placeholder object or zero "
+			"from __register_new_program.\n");
+	  }
+	  pop_stack();
 
 	  copy_shared_string(save_current_file, c->lex.current_file);
 	  save_current_line = c->lex.current_line;
@@ -4511,6 +4529,20 @@ static void decode_value2(struct decode_data *data)
 	  }
 	  pop_stack();
 	  push_program(p);
+
+	  if (c->placeholder) {
+	    if (c->placeholder->prog != null_program) {
+	      Pike_error("Placeholder has been zapped during decoding.\n");
+	    }
+	    debug_malloc_touch(c->placeholder);
+	    free_program(c->placeholder->prog);
+	    add_ref(c->placeholder->prog = p);
+	    c->placeholder->storage=c->p->storage_needed ?
+	      (char *)xalloc(c->p->storage_needed) :
+	      (char *)NULL;
+	    call_c_initializers(c->placeholder);
+	    call_pike_initializers(c->placeholder,0);
+	  }
 
 	  exit_compiler();
 
