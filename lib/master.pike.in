@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.422 2008/05/20 16:30:15 grubba Exp $
+// $Id: master.pike.in,v 1.423 2008/05/26 17:56:38 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -964,6 +964,7 @@ static program low_findprog(string pname,
 	    programs[fname] = no_value;
 	    call_compile_warning (handler, oname,
 				  "Decode failed: " + describe_error(err));
+	    // handle_error(err);
 	  } else if (out_of_date_warning) {
 	    call_compile_warning (handler, oname,
 				  "Compiled file is out of date");
@@ -1689,6 +1690,7 @@ class dirnode
   mixed safe_index(string index)
   {
     mixed err;
+    resolv_debug ("dirnode(%O):     %O...\n", dirname, index);
     if (err = catch { return `[](index); }) {
       call_compile_warning (compilation_handler,
 			    dirname+"."+fname,
@@ -1709,16 +1711,22 @@ class dirnode
       return;
     }
 
+    resolv_debug ("dirnode(%O) => Filling cache...\n", dirname);
+
     // NOTE: We rely on side effects in `[]() and safe_index()
     //       to fill the cache.
 
     // Why shouldn't thrown errors be propagated here? /mast
     if (module) {
+      resolv_debug("dirnode(%O): module: %O, indices:%{%O, %}\n",
+		   dirname, module, indices(module));
       map(indices(module), safe_index);
     }
 
     map(indices(file_paths), safe_index);
-    _cache_full = 1;
+    _cache_full = (object_program(module) != __null_program);
+    resolv_debug ("dirnode(%O) => Cache %s.\n", dirname,
+		  _cache_full?"full":"partially filled");
   }
 
   static array(string) _indices()
@@ -2430,7 +2438,7 @@ class CompatResolver
     foreach(tmp,string index) {
       resolv_debug("indexing %O with %O...\n",
 		   ret, index);
-      resolv_debug("indices(Gmp): %O\n", indices(ret));
+      resolv_debug("indices(%O): %O\n", ret, indices(ret));
       if (zero_type(ret)) break;
       ret = ret[index];
     }
