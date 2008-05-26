@@ -1,5 +1,5 @@
 /*
- * $Id: Tokenizer.cmod,v 1.39 2008/05/17 14:51:06 grubba Exp $
+ * $Id: Tokenizer.cmod,v 1.40 2008/05/26 09:07:36 grubba Exp $
  *
  * Interface to pike code tokenizer.
  *
@@ -24,6 +24,8 @@
 #include "version.h"
 
 DECLARATIONS
+
+#define yyerror(X)	tokenizer_yyerror(context, X)
 
 extern struct program *List_program;
 static int f_List_append_fun_num;

@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.1 2002/10/17 10:43:18 grubba Exp $
+ * $Id: acconfig.h,v 1.2 2008/05/26 09:07:36 grubba Exp $
  */
 
 @TOP@
@@ -74,7 +74,6 @@ void free_sval(struct compiler_context *context, struct svalue *sval);
 void free_context(struct compiler_context *context);
 
 void tokenizer_yyerror(struct compiler_context *context, char *msg);
-#define yyerror(X)	tokenizer_yyerror(context, X)
 
 /* Pike.yacc */
 int tokenizer_yyparse(void *context);
