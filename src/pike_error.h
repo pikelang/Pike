@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_error.h,v 1.45 2008/05/27 15:59:17 mast Exp $
+|| $Id: pike_error.h,v 1.46 2008/05/27 17:35:34 grubba Exp $
 */
 
 #ifndef PIKE_ERROR_H
@@ -109,7 +109,7 @@ typedef struct ONERROR
 typedef struct JMP_BUF
 {
   struct JMP_BUF *previous;
-  LOW_JMP_BUF recovery;
+  volatile LOW_JMP_BUF recovery;
   struct pike_frame *frame_pointer;
   ptrdiff_t stack_pointer;
   ptrdiff_t mark_sp;
@@ -128,18 +128,19 @@ extern int throw_severity;
 #ifdef PIKE_DEBUG
 PMOD_EXPORT extern const char msg_unsetjmp_nosync_1[];
 PMOD_EXPORT extern const char msg_unsetjmp_nosync_2[];
-#define UNSETJMP(X) do{ \
-   check_recovery_context(); \
-   OED_FPRINTF((stderr, "unsetjmp(%p) %s:%d\n", \
-                &(X),  __FILE__, __LINE__)); \
-  if(Pike_interpreter.recoveries != &X) { \
-    if(Pike_interpreter.recoveries) \
-      Pike_fatal(msg_unsetjmp_nosync_1,Pike_interpreter.recoveries->file); \
-    else \
-      Pike_fatal(msg_unsetjmp_nosync_2); \
-    } \
-    Pike_interpreter.recoveries=X.previous; \
-   check_recovery_context(); \
+#define UNSETJMP(X) do{						\
+    check_recovery_context();					\
+    OED_FPRINTF((stderr, "unsetjmp(%p) %s:%d\n",		\
+		 &(X),  __FILE__, __LINE__));			\
+    if(Pike_interpreter.recoveries != &X) {			\
+      if(Pike_interpreter.recoveries)				\
+	Pike_fatal(msg_unsetjmp_nosync_1,			\
+		   Pike_interpreter.recoveries->file);		\
+      else							\
+	Pike_fatal(msg_unsetjmp_nosync_2);			\
+    }								\
+    Pike_interpreter.recoveries=X.previous;			\
+    check_recovery_context();					\
   }while (0)
 
 #ifdef DMALLOC_LOCATION
@@ -162,41 +163,42 @@ PMOD_EXPORT extern const char msg_unsetjmp_nosync_2[];
 
 
 #ifdef PIKE_DEBUG
-#define SET_ONERROR(X,Y,Z) \
-  do{ \
-     check_recovery_context(); \
-     OED_FPRINTF((stderr, "SET_ONERROR(%p, %p, %p) %s:%d\n", \
-                  &(X), (Y), (void *)(Z), __FILE__, __LINE__)); \
-     X.frame_pointer = Pike_interpreter.frame_pointer; \
-     X.func=(error_call)(Y); \
-     DO_IF_DMALLOC( if( X.func == free ) X.func=dmalloc_free;) \
-     X.arg=(void *)(Z); \
-     if(!Pike_interpreter.recoveries) break; \
-     X.previous=Pike_interpreter.recoveries->onerror; \
-     X.file = __FILE__; \
-     X.line = __LINE__; \
-     Pike_interpreter.recoveries->onerror=&X; \
+#define SET_ONERROR(X,Y,Z)					\
+  do{								\
+    check_recovery_context();					\
+    OED_FPRINTF((stderr, "SET_ONERROR(%p, %p, %p) %s:%d\n",	\
+		 &(X), (Y), (void *)(Z), __FILE__, __LINE__));	\
+    X.frame_pointer = Pike_interpreter.frame_pointer;		\
+    X.func=(error_call)(Y);					\
+    DO_IF_DMALLOC( if( X.func == free ) X.func=dmalloc_free);	\
+    X.arg=(void *)(Z);						\
+    if(!Pike_interpreter.recoveries) break;			\
+    X.previous=Pike_interpreter.recoveries->onerror;		\
+    X.file = __FILE__;						\
+    X.line = __LINE__;						\
+    Pike_interpreter.recoveries->onerror=&X;			\
   }while(0)
 
 PMOD_EXPORT extern const char msg_last_setjmp[];
 PMOD_EXPORT extern const char msg_unset_onerr_nosync_1[];
 PMOD_EXPORT extern const char msg_unset_onerr_nosync_2[];
-#define UNSET_ONERROR(X) do {\
-    check_recovery_context(); \
-    OED_FPRINTF((stderr, "UNSET_ONERROR(%p) %s:%d\n", \
-                 &(X), __FILE__, __LINE__)); \
-    if(!Pike_interpreter.recoveries) break; \
-    if(Pike_interpreter.recoveries->onerror != &(X)) { \
-      fprintf(stderr,msg_last_setjmp,Pike_interpreter.recoveries->file); \
-      if (Pike_interpreter.recoveries->onerror) { \
-	Pike_fatal(msg_unset_onerr_nosync_1,\
-	           Pike_interpreter.recoveries->onerror, &(X), \
+#define UNSET_ONERROR(X) do {					\
+    check_recovery_context();					\
+    OED_FPRINTF((stderr, "UNSET_ONERROR(%p) %s:%d\n",		\
+                 &(X), __FILE__, __LINE__));			\
+    if(!Pike_interpreter.recoveries) break;			\
+    if(Pike_interpreter.recoveries->onerror != &(X)) {		\
+      fprintf(stderr,msg_last_setjmp,				\
+	      Pike_interpreter.recoveries->file);		\
+      if (Pike_interpreter.recoveries->onerror) {		\
+	Pike_fatal(msg_unset_onerr_nosync_1,			\
+	           Pike_interpreter.recoveries->onerror, &(X),	\
                    Pike_interpreter.recoveries->onerror->file); \
-      } else { \
-        Pike_fatal(msg_unset_onerr_nosync_2); \
-      } \
-    } \
-    Pike_interpreter.recoveries->onerror=(X).previous; \
+      } else {							\
+        Pike_fatal(msg_unset_onerr_nosync_2);			\
+      }								\
+    }								\
+    Pike_interpreter.recoveries->onerror=(X).previous;		\
   } while(0)
 
 PMOD_EXPORT extern const char msg_assert_onerr[];
@@ -255,7 +257,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void Pike_error(const char *fmt,...) ATTRIBUTE((n
 PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE((noreturn));
 PMOD_EXPORT DECLSPEC(noreturn) void generic_error_va(
   struct object *o, const char *func, const struct svalue *base_sp, int args,
-  const char *fmt, va_list *fmt_args)
+  const char *fmt, va_list fmt_args)
   ATTRIBUTE((noreturn));
 PMOD_EXPORT DECLSPEC(noreturn) void throw_error_object(
   struct object *o,
@@ -331,6 +333,7 @@ PMOD_EXPORT extern const char msg_bad_arg_2[];
 PMOD_EXPORT extern const char msg_out_of_mem[];
 PMOD_EXPORT extern const char msg_out_of_mem_2[];
 
+#if 1
 static INLINE void DECLSPEC(noreturn) out_of_memory_error (
   const char *func,
   struct svalue *base_sp,  int args,
@@ -343,6 +346,15 @@ static INLINE void DECLSPEC(noreturn) out_of_memory_error (
   resource_error (func, base_sp, args, "memory", amount,
 		  amount ? msg_out_of_mem_2 : msg_out_of_mem, amount);
 }
+#else
+#define out_of_memory_error(FUNC, BASE_SP, ARGS, AMOUNT)	\
+  do {								\
+    size_t amount_ = (AMOUNT);					\
+    int args_ = (ARGS);						\
+    resource_error((FUNC), (BASE_SP), args_, "memory", amount_,	\
+		   msg_out_of_mem_2, amount_);			\
+  } while(0)
+#endif
 
 #define SIMPLE_OUT_OF_MEMORY_ERROR(FUNC, AMOUNT) \
    out_of_memory_error(FUNC, Pike_sp-args, args, AMOUNT)

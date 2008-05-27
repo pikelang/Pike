@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.157 2008/05/27 15:59:17 mast Exp $
+|| $Id: error.c,v 1.158 2008/05/27 17:35:34 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -14,6 +14,7 @@
 #include "stralloc.h"
 #include "builtin_functions.h"
 #include "array.h"
+#include "mapping.h"
 #include "object.h"
 #include "main.h"
 #include "builtin_functions.h"
@@ -27,6 +28,8 @@
    definitions, so we disable them here. */
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
+
+/* #define ERROR_DEBUG */
 
 PMOD_EXPORT const char msg_fatal_error[] =
   "%s:%d: Fatal error:\n";
@@ -61,6 +64,8 @@ PMOD_EXPORT const char msg_div_by_zero[] =
  */
 
 #ifdef PIKE_DEBUG
+/* struct mapping *recovery_lookup = NULL; */
+
 PMOD_EXPORT void check_recovery_context(void)
 {
   char foo;
@@ -68,11 +73,18 @@ PMOD_EXPORT void check_recovery_context(void)
   if(Pike_interpreter.recoveries &&
      Pike_interpreter.recoveries->on_stack &&
      TESTILITEST > 0) {
+    struct svalue *s;
     fprintf(stderr, "Recoveries is out biking (Pike_interpreter.recoveries=%p, Pike_sp=%p, %ld)!\n",
 	    Pike_interpreter.recoveries, &foo,
 	    DO_NOT_WARN((long)TESTILITEST));
-    fprintf(stderr, "Last recovery was added at %s\n",
-	    Pike_interpreter.recoveries->file);
+    fprintf(stderr, "Last recovery was added at %s:\n",
+	    Pike_interpreter.recoveries->file,
+	    Pike_interpreter.recoveries->line);
+    push_int((ptrdiff_t)Pike_interpreter.recoveries);
+/*     if ((s = low_mapping_lookup(recovery_lookup, Pike_sp-1))) { */
+/*       fprintf(stderr, "Try also looking at %s.\n", (char*)s->u.integer); */
+/*     } */
+    pop_stack();
     Pike_fatal("Recoveries is out biking (Pike_interpreter.recoveries=%p, C sp=%p, %ld)!\n",
 	  Pike_interpreter.recoveries, &foo,
 	  DO_NOT_WARN((long)TESTILITEST));
@@ -103,6 +115,14 @@ PMOD_EXPORT JMP_BUF *init_recovery(JMP_BUF *r, size_t stack_pop_levels DEBUG_INI
   r->severity=THROW_ERROR;
   Pike_interpreter.recoveries=r;
   check_recovery_context();
+#ifdef PIKE_DEBUG
+/*   if (recovery_lookup && Pike_sp) { */
+/*     push_int((ptrdiff_t)r); */
+/*     push_int((ptrdiff_t)location); */
+/*     mapping_insert(recovery_lookup, Pike_sp-2, Pike_sp-1); */
+/*     pop_n_elems(2); */
+/*   } */
+#endif
   return r;
 }
 
@@ -914,7 +934,7 @@ static void f_error_create(INT32 args)
 #define ERROR_DONE(FOO) \
   PIKE_CONCAT(FOO,_error_va(o,func, \
 			      base_sp,  args, \
-			      desc,&foo)); \
+			      desc,foo)); \
   va_end(foo)
 
 #define ERROR_STRUCT(STRUCT,O) \
@@ -950,7 +970,7 @@ static void f_error_create(INT32 args)
  */
 PMOD_EXPORT DECLSPEC(noreturn) void generic_error_va(
   struct object *o, const char *func, const struct svalue *base_sp, int args,
-  const char *fmt, va_list *fmt_args)
+  const char *fmt, va_list fmt_args)
 {
   struct generic_error_struct *err =
     (struct generic_error_struct *) get_storage (o, generic_error_program);
@@ -971,7 +991,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void generic_error_va(
   if (fmt) {
     struct string_builder s;
     init_string_builder(&s, 0);
-    string_builder_vsprintf(&s, fmt, *fmt_args);
+    string_builder_vsprintf(&s, fmt, fmt_args);
 
 #if 0
     if (!master_program) {
@@ -1071,7 +1091,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void bad_arg_error(
     ERROR_STRUCT(bad_argument,o)->expected_type = NULL;
   ERROR_COPY_SVALUE(bad_argument, got_value);
   DWERROR((stderr, "%s():Bad arg %d (expected %s)\n",
-	   func, which_arg, expected_type));
+	   func, which_argument, expected_type));
   ERROR_DONE(generic);
 }
 
@@ -1147,11 +1167,16 @@ void init_error(void)
 
 #ifdef PIKE_DEBUG
   dmalloc_accept_leak(add_gc_callback(gc_check_throw_value,0,0));
+
+/*   recovery_lookup = allocate_mapping(100); */
 #endif
 }
 
 void cleanup_error(void)
 {
+#ifdef PIKE_DEBUG
+/*   free_mapping(recovery_lookup); */
+#endif
 #define ERR_CLEANUP
 #include "errors.h"
 }
