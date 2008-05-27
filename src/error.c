@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.158 2008/05/27 17:35:34 grubba Exp $
+|| $Id: error.c,v 1.159 2008/05/27 17:37:33 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -77,7 +77,7 @@ PMOD_EXPORT void check_recovery_context(void)
     fprintf(stderr, "Recoveries is out biking (Pike_interpreter.recoveries=%p, Pike_sp=%p, %ld)!\n",
 	    Pike_interpreter.recoveries, &foo,
 	    DO_NOT_WARN((long)TESTILITEST));
-    fprintf(stderr, "Last recovery was added at %s:\n",
+    fprintf(stderr, "Last recovery was added at %s:%d\n",
 	    Pike_interpreter.recoveries->file,
 	    Pike_interpreter.recoveries->line);
     push_int((ptrdiff_t)Pike_interpreter.recoveries);
