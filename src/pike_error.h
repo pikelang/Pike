@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_error.h,v 1.44 2008/05/23 12:33:54 mast Exp $
+|| $Id: pike_error.h,v 1.45 2008/05/27 15:59:17 mast Exp $
 */
 
 #ifndef PIKE_ERROR_H
@@ -253,11 +253,9 @@ PMOD_EXPORT void exit_on_error(const void *msg);
 PMOD_EXPORT void fatal_on_error(const void *msg);
 PMOD_EXPORT DECLSPEC(noreturn) void Pike_error(const char *fmt,...) ATTRIBUTE((noreturn));
 PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE((noreturn));
-void DECLSPEC(noreturn) generic_error_va(struct object *o,
-		      const char *func,
-		      struct svalue *base_sp,  int args,
-		      const char *fmt,
-		      va_list foo)
+PMOD_EXPORT DECLSPEC(noreturn) void generic_error_va(
+  struct object *o, const char *func, const struct svalue *base_sp, int args,
+  const char *fmt, va_list *fmt_args)
   ATTRIBUTE((noreturn));
 PMOD_EXPORT DECLSPEC(noreturn) void throw_error_object(
   struct object *o,

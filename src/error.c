@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.156 2008/05/27 01:39:44 mast Exp $
+|| $Id: error.c,v 1.157 2008/05/27 15:59:17 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -914,7 +914,7 @@ static void f_error_create(INT32 args)
 #define ERROR_DONE(FOO) \
   PIKE_CONCAT(FOO,_error_va(o,func, \
 			      base_sp,  args, \
-			      desc,foo)); \
+			      desc,&foo)); \
   va_end(foo)
 
 #define ERROR_STRUCT(STRUCT,O) \
@@ -938,15 +938,27 @@ static void f_error_create(INT32 args)
   add_ref( ERROR_STRUCT(STRUCT,o)->X=X )
 
 
-DECLSPEC(noreturn) void generic_error_va(struct object *o,
-					 const char *func,
-					 struct svalue *base_sp,  int args,
-					 const char *fmt,
-					 va_list foo)
-     ATTRIBUTE((noreturn))
+/* This prepares the passed object o, which is assumed to inherit
+ * generic_error_program, and throws it:
+ * o  A backtrace is assigned to error_backtrace.
+ * o  If func is specified, a frame is constructed for at the end of
+ *    backtrace using it as function name and base_sp[0..args-1] as
+ *    arguments.
+ * o  If fmt is specified, an error message is created from it and
+ *    fmt_args using string_builder_vsprintf. (fmt_args is passed as a
+ *    va_list pointer to be able to pass NULL if fmt is NULL.)
+ */
+PMOD_EXPORT DECLSPEC(noreturn) void generic_error_va(
+  struct object *o, const char *func, const struct svalue *base_sp, int args,
+  const char *fmt, va_list *fmt_args)
 {
-  struct string_builder s;
-  int i;
+  struct generic_error_struct *err =
+    (struct generic_error_struct *) get_storage (o, generic_error_program);
+
+#ifdef PIKE_DEBUG
+  if (!err)
+    Pike_fatal ("Got an object which doesn't inherit generic_error_program.\n");
+#endif
 
   if(in_error)
   {
@@ -954,22 +966,28 @@ DECLSPEC(noreturn) void generic_error_va(struct object *o,
     in_error=0;
     Pike_fatal("Recursive error() calls, original error: %s",tmp);
   }
+  in_error = fmt ? fmt : "no error message";
 
-  in_error = fmt;
-  init_string_builder(&s, 0);  
-  string_builder_vsprintf(&s, fmt, foo);
+  if (fmt) {
+    struct string_builder s;
+    init_string_builder(&s, 0);
+    string_builder_vsprintf(&s, fmt, *fmt_args);
 
 #if 0
-  if (!master_program) {
-    fprintf(stderr, "ERROR: %s\n", s.s->str);
-  }
+    if (!master_program) {
+      fprintf(stderr, "ERROR: %s\n", s.s->str);
+    }
 #endif
 
-  ERROR_STRUCT(generic,o)->error_message = finish_string_builder(&s);
+    if (err->error_message) free_string (err->error_message);
+    err->error_message = finish_string_builder(&s);
+  }
+
   f_backtrace(0);
 
   if(func)
   {
+    int i;
     push_int(0);
     push_int(0);
     push_text(func);
@@ -982,9 +1000,10 @@ DECLSPEC(noreturn) void generic_error_va(struct object *o,
   }
 
   if(Pike_sp[-1].type!=PIKE_T_ARRAY)
-    Pike_fatal("Error failed to generate a backtrace!\n");
+    Pike_fatal("f_backtrace failed to generate a backtrace!\n");
 
-  ERROR_STRUCT(generic,o)->error_backtrace=Pike_sp[-1].u.array;
+  if (err->error_backtrace) free_array (err->error_backtrace);
+  err->error_backtrace=Pike_sp[-1].u.array;
   Pike_sp--;
   dmalloc_touch_svalue(Pike_sp);
 
