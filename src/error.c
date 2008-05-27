@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.161 2008/05/27 19:10:33 grubba Exp $
+|| $Id: error.c,v 1.162 2008/05/27 19:36:00 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -928,7 +928,7 @@ static void f_error_create(INT32 args)
   struct object *o; \
   va_start(foo,desc); \
   ASSERT_THREAD_SWAPPED_IN(); \
-  o=low_clone(PIKE_CONCAT(FEL,_error_program)); \
+  o=fast_clone_object(PIKE_CONCAT(FEL,_error_program)); \
   DWERROR((stderr, "%s(): Throwing a " #FEL " error\n", func))
 
 #define ERROR_DONE(FOO) \
@@ -970,9 +970,6 @@ static void f_error_create(INT32 args)
  * o  If fmt is specified, an error message is created from it and
  *    fmt_args using string_builder_vsprintf. (fmt_args is passed as a
  *    va_list pointer to be able to pass NULL if fmt is NULL.)
- *
- * Note: error_message and error_backtrace are not freed before being
- * assigned.
  */
 PMOD_EXPORT DECLSPEC(noreturn) void generic_error_va(
   struct object *o, const char *func, const struct svalue *base_sp, int args,
@@ -1005,6 +1002,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void generic_error_va(
     }
 #endif
 
+    if (err->error_message) free_string(err->error_message);
     err->error_message = finish_string_builder(&s);
   }
 
@@ -1027,6 +1025,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void generic_error_va(
   if(Pike_sp[-1].type!=PIKE_T_ARRAY)
     Pike_fatal("f_backtrace failed to generate a backtrace!\n");
 
+  if (err->error_backtrace) free_array(err->error_backtrace);
   err->error_backtrace=Pike_sp[-1].u.array;
   Pike_sp--;
   dmalloc_touch_svalue(Pike_sp);
@@ -1044,6 +1043,12 @@ PMOD_EXPORT DECLSPEC(noreturn) void generic_error_va(
 }
 
 
+/* Throw a preallocated error object.
+ *
+ * NOTE: The object MUST NOT have been cloned by a plain low_clone()!
+ *       At least fast_clone_object() MUST have been used, or the object
+ *       data must have been properly initialized in some other way!
+ */
 PMOD_EXPORT DECLSPEC(noreturn) void throw_error_object(
   struct object *o,
   const char *func,

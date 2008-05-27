@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.169 2008/05/03 15:29:24 nilsson Exp $
+|| $Id: cpp.c,v 1.170 2008/05/27 19:36:00 grubba Exp $
 */
 
 #include "global.h"
@@ -1956,7 +1956,7 @@ void f_cpp(INT32 args)
   if(this.compile_errors)
   {
     free_string_builder(&this.buf);
-    throw_error_object(low_clone(cpp_error_program), 0, 0, 0,
+    throw_error_object(fast_clone_object(cpp_error_program), 0, 0, 0,
 		       "Cpp() failed\n");
   }else{
     pop_n_elems(sp - save_sp);

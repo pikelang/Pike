@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.706 2008/05/24 16:41:03 grubba Exp $
+|| $Id: program.c,v 1.707 2008/05/27 19:36:00 grubba Exp $
 */
 
 #include "global.h"
@@ -8178,12 +8178,29 @@ static void f_compilation_report(INT32 args)
  *!   This function takes a piece of Pike code as a string and
  *!   initializes a compiler object accordingly.
  *!
+ *! @param source
+ *!   Source code to compile.
+ *!
+ *! @param handler
  *!   The optional argument @[handler] is used to specify an alternative
  *!   error handler. If it is not specified the current master object
  *!   at compile time will be used.
  *!
+ *! @param major
+ *! @param minor
  *!   The optional arguments @[major] and @[minor] are used to tell the
  *!   compiler to attempt to be compatible with Pike @[major].@[minor].
+ *!
+ *! @param target
+ *!   @[__empty_program()] program to fill in. The virgin program
+ *!   returned by @[__empty_program()] will be modified and returned
+ *!   by @[compile()] on success.
+ *!
+ *! @param placeholder
+ *!   @[__null_program()] placeholder object to fill in. The object
+ *!   will be modified into an instance of the resulting program
+ *!   on successfull compile. Note that @[lfun::create()] in the
+ *!   program will be called without any arguments.
  *!
  *! @note
  *!   Note that @[source] must contain the complete source for a program.
@@ -8192,6 +8209,11 @@ static void f_compilation_report(INT32 args)
  *!   Also note that no preprocessing is performed.
  *!   To preprocess the program you can use @[compile_string()] or
  *!   call the preprocessor manually by calling @[cpp()].
+ *!
+ *! @note
+ *!   Note that all references to @[target] and @[placeholder] should
+ *!   removed if @[compile()] failes. On failure the @[placeholder]
+ *!   object will be destructed.
  *!
  *! @seealso
  *!   @[compile_string()], @[compile_file()], @[cpp()], @[master()],
@@ -8283,7 +8305,7 @@ static void f_compilation_compile(INT32 args)
   struct compilation *c = THIS_COMPILATION;
 
   if (c->flags & COMPILER_BUSY) {
-    Pike_error("CompilationEnvironment in use.\n");
+    Pike_error("PikeCompiler in use.\n");
   }
 
   get_all_args("compile", args, "");
@@ -8358,13 +8380,13 @@ static void f_compilation_compile(INT32 args)
 		 "since a dependant failed.\n",
 		 (long) th_self(), c->target));
       if (ret) free_program(ret);
-      throw_error_object(low_clone(compilation_error_program), 0, 0, 0,
+      throw_error_object(fast_clone_object(compilation_error_program), 0, 0, 0,
 			 "Compilation failed.\n");
     }
     if(!ret) {
       CDFPRINTF((stderr, "th(%ld) %p compile() failed.\n",
 		 (long) th_self(), c->target));
-      throw_error_object(low_clone(compilation_error_program), 0, 0, 0,
+      throw_error_object(fast_clone_object(compilation_error_program), 0, 0, 0,
 			 "Compilation failed.\n");
     }
     debug_malloc_touch(ret);
@@ -9300,13 +9322,13 @@ struct program *compile(struct pike_string *aprog,
 		 "since a dependant failed.\n",
 		 (long) th_self(), c->target));
       if (ret) free_program(ret);
-      throw_error_object(low_clone(compilation_error_program), 0, 0, 0,
+      throw_error_object(fast_clone_object(compilation_error_program), 0, 0, 0,
 			 "Compilation failed.\n");
     }
     if(!ret) {
       CDFPRINTF((stderr, "th(%ld) %p compile() failed.\n",
 		 (long) th_self(), c->target));
-      throw_error_object(low_clone(compilation_error_program), 0, 0, 0,
+      throw_error_object(fast_clone_object(compilation_error_program), 0, 0, 0,
 			 "Compilation failed.\n");
     }
     debug_malloc_touch(ret);
@@ -9599,7 +9621,9 @@ void init_program(void)
 
   /*! @decl constant __null_program
    *!
-   *! Program used internally by the compiler.
+   *! Program used internally by the compiler to create objects
+   *! that are later modified into instances of the compiled program
+   *! by the compiler.
    *!
    *! @seealso
    *!   @[__placeholder_object]

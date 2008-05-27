@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dynamic_load.c,v 1.91 2008/04/26 19:04:25 grubba Exp $
+|| $Id: dynamic_load.c,v 1.92 2008/05/27 19:36:00 grubba Exp $
 */
 
 #ifdef TESTING
@@ -440,7 +440,7 @@ void f_load_module(INT32 args)
 
   if(!module)
   {
-    struct object *err_obj = low_clone (module_load_error_program);
+    struct object *err_obj = fast_clone_object(module_load_error_program);
 #define LOADERR_STRUCT(OBJ) \
     ((struct module_load_error_struct *) (err_obj->storage + module_load_error_offset))
 
