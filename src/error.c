@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.155 2008/05/24 12:28:58 mast Exp $
+|| $Id: error.c,v 1.156 2008/05/27 01:39:44 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -681,6 +681,8 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE(
  *! remains the same in the rethrown error.
  */
 
+#define GENERIC_ERROR_THIS ((struct generic_error_struct *)CURRENT_STORAGE)
+
 #define ERR_DECLARE
 #include "errors.h"
 
@@ -799,27 +801,45 @@ static void f_error_backtrace(INT32 args)
  */
 static void f_error__sprintf(INT32 args)
 {
-  struct program *p = Pike_fp->current_object->prog;
-  /* FIXME: What about obscure overloadings? */
-  int i = find_identifier("error_type", p);
-  struct identifier *id = ID_FROM_INT(p, i);
   int mode = 0;
+
   if(args>0 && Pike_sp[-args].type == PIKE_T_INT)
     mode = Pike_sp[-args].u.integer;
   pop_n_elems(args);
+
   if(mode != 'O') {
     push_undefined();
     return;
   }
-  push_constant_text ("Error.");
-  push_svalue(&PROG_FROM_INT(p, i)->constants[id->func.offset].sval);
+
+  {
+    struct program *p = Pike_fp->current_object->prog;
+    int i;
+    struct pike_string *error_name_str;
+    /* error_name is the name the error program wants in printouts
+     * like this. To still let inheriting programs fall back to
+     * describe_program if they don't provide it, we make it private
+     * in the base error classes and allow us to see private
+     * identifiers here. */
+    MAKE_CONST_STRING (error_name_str, "error_name");
+    i = really_low_find_shared_string_identifier (error_name_str, p,
+						  SEE_PRIVATE);
+    if (i != -1)
+      push_svalue (&PROG_FROM_INT (p, i)->
+		   constants[ID_FROM_INT (p, i)->func.offset].sval);
+    else {
+      ref_push_program (p);
+      SAFE_APPLY_MASTER ("describe_program", 1);
+    }
+  }
+
   push_constant_text("(%O)");
   if(GENERIC_ERROR_THIS->error_message)
     ref_push_string(GENERIC_ERROR_THIS->error_message);
   else
     push_int(0);
   f_sprintf(2);
-  f_add(3);
+  f_add(2);
 }
 
 /*! @decl int(0..1) _is_type(string t)

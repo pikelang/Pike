@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: errors.h,v 1.38 2008/05/23 19:39:06 grubba Exp $
+|| $Id: errors.h,v 1.39 2008/05/27 01:39:44 mast Exp $
 */
 
 #ifdef ERR_DECLARE
@@ -40,6 +40,7 @@
     start_new_program();				\
     INHERIT						\
     add_string_constant("error_type", #SCNAME, 0);	\
+    add_string_constant ("error_name", "Error." #SCNAME, ID_PRIVATE|ID_USED); \
     add_integer_constant("is_" #NAME "_error",1,0);	\
     PIKE_CONCAT(NAME,_error_program)=end_program();	\
     add_program_constant( #SCNAME "Error",PIKE_CONCAT(NAME,_error_program),0); \
@@ -124,8 +125,6 @@ DECLARE_ERROR(generic, Generic, EMPTY ,
   ERR_FUNC("_is_type", f_error__is_type, tFunc(tString, tInt01), ID_STATIC)
   ERR_FUNC("create",f_error_create,tFunc(tStr tOr(tVoid,tArr(tMixed)),tVoid),ID_STATIC)
 )
-
-#define GENERIC_ERROR_THIS ((struct generic_error_struct *)CURRENT_STORAGE)
 
 DECLARE_ERROR(index, Index,
 	      ERR_INHERIT(generic),
