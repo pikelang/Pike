@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.h,v 1.44 2008/05/11 14:55:53 mast Exp $
+|| $Id: multiset.h,v 1.45 2008/05/27 22:49:23 mast Exp $
 */
 
 #ifndef MULTISET_H
@@ -19,6 +19,9 @@
 #include "dmalloc.h"
 #include "rbtree.h"
 #include "block_alloc_h.h"
+
+/* Keep this defined so that code can test which multiset API is in use. */
+#define PIKE_NEW_MULTISETS
 
 /* Note: Don't access the ind svalue (or at least not its type field)
  * in the following directly, since the rbtree flags overlay that. Use
