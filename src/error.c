@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.159 2008/05/27 17:37:33 grubba Exp $
+|| $Id: error.c,v 1.160 2008/05/27 18:50:44 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -960,13 +960,19 @@ static void f_error_create(INT32 args)
 
 /* This prepares the passed object o, which is assumed to inherit
  * generic_error_program, and throws it:
+ *
  * o  A backtrace is assigned to error_backtrace.
+ *
  * o  If func is specified, a frame is constructed for at the end of
  *    backtrace using it as function name and base_sp[0..args-1] as
  *    arguments.
+ *
  * o  If fmt is specified, an error message is created from it and
  *    fmt_args using string_builder_vsprintf. (fmt_args is passed as a
  *    va_list pointer to be able to pass NULL if fmt is NULL.)
+ *
+ * Note: error_message and error_backtrace are not freed before being
+ * assigned.
  */
 PMOD_EXPORT DECLSPEC(noreturn) void generic_error_va(
   struct object *o, const char *func, const struct svalue *base_sp, int args,
@@ -999,7 +1005,6 @@ PMOD_EXPORT DECLSPEC(noreturn) void generic_error_va(
     }
 #endif
 
-    if (err->error_message) free_string (err->error_message);
     err->error_message = finish_string_builder(&s);
   }
 
@@ -1022,7 +1027,6 @@ PMOD_EXPORT DECLSPEC(noreturn) void generic_error_va(
   if(Pike_sp[-1].type!=PIKE_T_ARRAY)
     Pike_fatal("f_backtrace failed to generate a backtrace!\n");
 
-  if (err->error_backtrace) free_array (err->error_backtrace);
   err->error_backtrace=Pike_sp[-1].u.array;
   Pike_sp--;
   dmalloc_touch_svalue(Pike_sp);
