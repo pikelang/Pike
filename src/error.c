@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.160 2008/05/27 18:50:44 mast Exp $
+|| $Id: error.c,v 1.161 2008/05/27 19:10:33 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -933,8 +933,8 @@ static void f_error_create(INT32 args)
 
 #define ERROR_DONE(FOO) \
   PIKE_CONCAT(FOO,_error_va(o,func, \
-			      base_sp,  args, \
-			      desc,foo)); \
+			      base_sp, args, \
+			      desc, &foo)); \
   va_end(foo)
 
 #define ERROR_STRUCT(STRUCT,O) \
@@ -976,7 +976,7 @@ static void f_error_create(INT32 args)
  */
 PMOD_EXPORT DECLSPEC(noreturn) void generic_error_va(
   struct object *o, const char *func, const struct svalue *base_sp, int args,
-  const char *fmt, va_list fmt_args)
+  const char *fmt, va_list *fmt_args)
 {
   struct generic_error_struct *err =
     (struct generic_error_struct *) get_storage (o, generic_error_program);
@@ -990,14 +990,14 @@ PMOD_EXPORT DECLSPEC(noreturn) void generic_error_va(
   {
     const char *tmp=in_error;
     in_error=0;
-    Pike_fatal("Recursive error() calls, original error: %s",tmp);
+    Pike_fatal("Recursive error() calls, original error: %s", tmp);
   }
   in_error = fmt ? fmt : "no error message";
 
   if (fmt) {
     struct string_builder s;
     init_string_builder(&s, 0);
-    string_builder_vsprintf(&s, fmt, fmt_args);
+    string_builder_vsprintf(&s, fmt, *fmt_args);
 
 #if 0
     if (!master_program) {
