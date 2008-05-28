@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dmalloc.h,v 1.62 2006/08/09 01:55:45 mast Exp $
+|| $Id: dmalloc.h,v 1.63 2008/05/28 18:16:04 mast Exp $
 */
 
 #ifndef DMALLOC_H
@@ -197,7 +197,7 @@ PMOD_EXPORT void* dlpvalloc(size_t);
 #define DO_IF_NOT_DMALLOC(X) X
 #define dmalloc_trace(X)
 #define dmalloc_register(X,Y,Z)
-#define dmalloc_unregister(X,Y)
+#define dmalloc_unregister(X,Y) 1
 #define debug_free(X,Y,Z) free((X))
 #define debug_malloc_name(P,FN,LINE)
 #define debug_malloc_copy_names(p,p2) 0
