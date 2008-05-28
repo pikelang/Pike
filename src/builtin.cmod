@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.199 2008/05/03 15:29:24 nilsson Exp $
+|| $Id: builtin.cmod,v 1.200 2008/05/28 20:15:57 mast Exp $
 */
 
 #include "global.h"
@@ -1638,7 +1638,7 @@ void low_backtrace(struct Pike_interpreter *i)
 						  stack_top - f->locals));
       INT32 varargs = 0;
 
-      if(of) {
+      if(of && of->locals) {
 	/* f->num_args can be too large, so this is necessary for some
 	 * reason. I don't know why. /mast */
 	numargs = DO_NOT_WARN((INT32)MINIMUM(f->num_args,of->locals - f->locals));
