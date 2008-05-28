@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.423 2008/05/26 17:56:38 grubba Exp $
+// $Id: master.pike.in,v 1.424 2008/05/28 19:07:18 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -129,6 +129,93 @@ void resolv_debug (string fmt, mixed... args)
 #define DEC_RESOLV_MSG_DEPTH() 0
 #define resolv_debug(X...) do {} while (0)
 #endif	// !RESOLV_DEBUG
+
+// Some API compatibility stuff.
+
+static class Pike_0_6_master
+{
+  int is_absolute_path(string p);
+  array(string) explode_path(string p);
+  string dirname(string x);
+  string basename(string x);
+  string describe_backtrace(array(mixed) trace);
+  object low_cast_to_object(string oname, string current_file);
+  array(string) pike_include_path;
+  array(string) pike_module_path;
+  array(string) pike_program_path;
+  int want_warnings;
+  program compile_string(string data, void|string name);
+  program compile_file(string file);
+#ifdef GETCWD_CACHE
+  string current_path;
+  int cd(string s);
+  string getcwd();
+#endif
+  string combine_path_with_cwd(string path);
+#ifdef FILE_STAT_CACHE
+  int invalidate_time;
+  mapping(string:multiset(string)) dir_cache;
+  array(mixed) master_file_stat(string x);
+#endif
+  mapping (string:array(string)) environment;
+  mixed getenv(string|void s);
+  void putenv(string var, string val);
+  void add_include_path(string tmp);
+  void remove_include_path(string tmp);
+  void add_module_path(string tmp);
+  void remove_module_path(string tmp);
+  void add_program_path(string tmp);
+  void remove_program_path(string tmp);
+  mapping(string:program|NoValue) programs;
+#if constant(_static_modules.Builtin.mutex)
+  object compilation_mutex;
+#endif
+  program cast_to_program(string pname, string current_file);
+  void handle_error(array(mixed) trace);
+  __deprecated__ object new(mixed prog, mixed ... args)
+  {
+    if(stringp(prog))
+      prog=cast_to_program(prog,backtrace()[-2][0]);
+    return prog(@args);
+  }
+  local constant mkmultiset = predef::mkmultiset;
+  __deprecated__(function) clone = new;
+  constant master_efuns = ({});
+  void create();
+  program handle_inherit(string pname, string current_file);
+  mapping (program:object) objects;
+  object low_cast_to_object(string oname, string current_file);
+  object cast_to_object(string oname, string current_file);
+  class dirnode {};
+  class joinnode {};
+  mapping(string:mixed) fc;
+  object findmodule(string fullname);
+  mixed handle_import(string what, string|void current_file);
+  local static object Pike_0_6_compat_handler;
+  local mixed resolv(string identifier, string|void current_file)
+  {
+    if (!Pike_0_6_compat_handler) {
+      Pike_0_6_compat_handler = global::get_compilation_handler(0, 6);
+    }
+    return Pike_0_6_compat_handler->resolv(identifier, current_file);
+  }
+  string _pike_file_name;
+  string _master_file_name;
+  void _main(array(string) orig_argv, array(string) env);
+  mixed inhibit_compile_errors;
+  void set_inhibit_compile_errors(mixed f);
+  string trim_file_name(string s);
+  void compile_error(string file,int line,string err);
+  void compile_warning(string file,int line,string err);
+  string handle_include(string f, string current_file, int local_include);
+  string read_include(string f);
+  string stupid_describe(mixed m);
+  string describe_program(program p);
+  string describe_backtrace(array(mixed) trace);
+  class Codec {};
+}
+
+static private inherit Pike_0_6_master;
 
 //! @appears error
 //! Throws an error. A more readable version of the code
@@ -2451,6 +2538,7 @@ class CompatResolver
 #endif /* RESOLV_DEBUG */
     return ret;
   }
+
 
   //! This function is called whenever an #include directive is
   //! encountered. It receives the argument for #include and should
@@ -4818,4 +4906,14 @@ string _sprintf(int t)
   case 't': return "master";
   case 'O': return "master()";
   }
+}
+
+object get_compat_master(int major, int minor)
+{
+  switch(major) {
+  case 0:
+    if (minor <= 6) return Pike_0_6_master::this;
+    break;
+  }
+  return this;
 }
