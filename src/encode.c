@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.273 2008/05/26 15:38:56 grubba Exp $
+|| $Id: encode.c,v 1.274 2008/05/28 16:59:43 grubba Exp $
 */
 
 #include "global.h"
@@ -892,7 +892,15 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	    EDB(5,fprintf(stderr, "%*s(UNDEFINED)\n", data->depth, ""));
 
 	    if (val->subtype) {
-	      Pike_error("Encoding of subtyped objects is not supported yet.\n");
+	      /* Subtyped object.
+	       *
+	       * Encode the subtype, and then try encoding the plain object.
+	       */
+	      code_entry(TAG_OBJECT, 4, data);
+	      code_number(val->subtype, data);
+	      pop_stack();
+	      ref_push_object(val->u.object);
+	      break;
 	    }
 
 	    /* We have to remove ourself from the cache */
@@ -2857,6 +2865,10 @@ static void decode_value2(struct decode_data *data)
 
     case TAG_OBJECT:
     {
+      int subtype = 0;
+      if (num == 4) {
+	decode_number(subtype, data);
+      }
       decode_value2(data);
 
       switch(num)
@@ -2982,6 +2994,21 @@ static void decode_value2(struct decode_data *data)
 	case 3:
 	  pop_stack();
 	  decode_value2(data);
+	  break;
+
+        case 4:
+	  /* Subtyped object. */
+	  if ((Pike_sp[-1].type != T_OBJECT) || Pike_sp[-1].subtype ||
+	      !Pike_sp[-1].u.object->prog) {
+	    decode_error(NULL, Pike_sp-1, "Expected plain object. Got: ");
+	  }
+	  if ((subtype < 0) ||
+	      (subtype >= Pike_sp[-1].u.object->prog->num_inherits)) {
+	    decode_error(NULL, Pike_sp-1,
+			 "Invalid subtype for object: %d (max: %d). Object: ",
+			 subtype, Pike_sp[-1].u.object->prog->num_inherits);
+	  }
+	  Pike_sp[-1].subtype = subtype;
 	  break;
 
 	default:
