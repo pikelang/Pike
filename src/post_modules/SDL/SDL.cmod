@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: SDL.cmod,v 1.30 2008/05/29 10:11:16 grubba Exp $
+|| $Id: SDL.cmod,v 1.31 2008/05/29 23:05:59 nilsson Exp $
 */
 
 #include "global.h"
@@ -1029,7 +1029,9 @@ PIKECLASS Surface {
     THIS->fast_set_pixel = NULL;
   }
   
-  EXIT {
+  EXIT
+    gc_trivial;
+  {
     if(THIS->_s) {
       SDL_FreeSurface(THIS->_s);
       THIS->_s = NULL;
@@ -1834,7 +1836,9 @@ PIKECLASS Joystick {
     THIS->joystick = NULL;
   }
 
-  EXIT {
+  EXIT
+    gc_trivial;
+  {
     if(THIS->joystick != NULL) {
       SDL_JoystickClose(THIS->joystick);
       THIS->joystick = NULL;
@@ -2082,7 +2086,9 @@ PIKECLASS CD {
   INIT {
     THIS->cd = NULL;
   }
-  EXIT {
+  EXIT
+    gc_trivial;
+  {
     if(THIS->cd) {
       SDL_CDClose(THIS->cd);
       THIS->cd = NULL;
@@ -2261,7 +2267,9 @@ PIKECLASS Music {
   INIT {
     THIS->music = NULL;
   }
-  EXIT {
+  EXIT
+    gc_trivial;
+  {
     if(THIS->music != NULL) {
       Mix_FreeMusic(THIS->music);
       THIS->music = NULL;

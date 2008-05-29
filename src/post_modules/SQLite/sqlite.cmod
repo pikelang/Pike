@@ -1,6 +1,6 @@
 /* sqlite.cmod -*- c -*-
  *
- * $Id: sqlite.cmod,v 1.19 2008/05/05 19:15:15 grubba Exp $
+ * $Id: sqlite.cmod,v 1.20 2008/05/29 23:06:34 nilsson Exp $
  */
 
 #include "global.h"
@@ -220,13 +220,25 @@ PIKECLASS ResObj
     THIS->stmt = NULL;
     THIS->bindings = NULL;
   }
-  EXIT {
+
+  EXIT
+    gc_trivial;
+  {
     if(THIS->stmt)
+    {
       sqlite3_finalize(THIS->stmt);
+      THIS->stmt = NULL;
+    }
     if(THIS->dbobj)
+    {
       free_object(THIS->dbobj);
+      THIS->dbobj = NULL;
+    }
     if(THIS->bindings)
+    {
       free_mapping(THIS->bindings);
+      THIS->bindings = NULL;
+    }
   }
 }
 
@@ -467,7 +479,10 @@ PIKECLASS ResObj
   INIT {
     THIS->db = NULL;
   }
-  EXIT {
+
+  EXIT
+    gc_trivial;
+  {
     if(THIS->db) {
       int i;
       /* FIXME: sqlite3_close can fail. What do we do then? */
@@ -478,6 +493,7 @@ PIKECLASS ResObj
 	  THREADS_DISALLOW();
 	} else break;
       }
+      THIS->db = NULL;
     }
   }
 
