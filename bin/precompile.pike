@@ -39,6 +39,7 @@ constant precompile_api_version = "2";
  *   }
  *
  *   EXIT
+ *     gc_trivial;
  *   {
  *     // Object cleanup code.
  *   }
@@ -117,6 +118,15 @@ constant precompile_api_version = "2";
  *   name;          The name used when doing add_function.
  *   prototype;     Ignore the function body, just add a prototype entry.
  *   program_flags; PROGRAM_USES_PARENT | PROGRAM_DESTRUCT_IMMEDIATE etc.
+ *   gc_trivial;    Only valid for EXIT functions. This instructs the gc that
+ *                  the EXIT function is trivial and that it's ok to destruct
+ *                  objects of this program in any order. In general, if there
+ *                  is an EXIT function, the gc has to take the same care as if
+ *                  there is a destroy function. But if the EXIT function
+ *                  doesn't mind that arbitrary referenced pike objects gets
+ *                  destructed before this one (which is very common), then
+ *                  this attribute can be added to make the gc work a little
+ *                  easier.
  *
  * POLYMORPHIC FUNCTION OVERLOADING
  *   You can define the same function several times with different
@@ -1217,7 +1227,8 @@ constant valid_attributes = (<
  *   "attrflagname":1,
  * ])
  */
-mapping parse_attributes(array attr, void|string location)
+mapping parse_attributes(array attr, void|string location,
+			 void|multiset really_valid_attributes)
 {
   mapping attributes=([]);
   foreach(attr/ ({";"}), attr)
@@ -1248,7 +1259,7 @@ mapping parse_attributes(array attr, void|string location)
 	  attributes[(string)attr[0]]=merge(tmp);
       }
 
-      if(!valid_attributes[(string)attr[0]]) {
+      if(!(really_valid_attributes || valid_attributes)[(string)attr[0]]) {
 	werror("%s:%d: Invalid attribute name %O.\n",
 	       attr[0]->file, attr[0]->line, (string)attr[0]);
 	exit(1);
@@ -1587,6 +1598,8 @@ class ParseBlock
       //        the source file.
       //	/grubba 2004-12-10
 
+      string gc_live_obj_define = make_unique_name (base, "gc", "live", "obj");
+
       int e;
       for(e = 0; e < sizeof(x); e++) {
 	array|PC.Token t;
@@ -1746,8 +1759,21 @@ class ParseBlock
 	    break;
 	  }
 
+	case "EXIT": {
+	  int p;
+	  for(p=e+1;p<sizeof(x);p++)
+	    if(arrayp(x[p]) && x[p][0]=="{")
+	      break;
+
+	  mapping attributes =
+	    parse_attributes (x[e+1..p-1], 0, (<"gc_trivial">));
+
+	  if (!attributes->gc_trivial)
+	    ret += DEFINE (gc_live_obj_define);
+	}
+	  // Fall through.
+
 	case "INIT":
-	case "EXIT":
 	case "GC_RECURSE":
 	case "GC_CHECK":
 	case "OPTIMIZE":
@@ -1812,8 +1838,13 @@ class ParseBlock
 		   ({ "  default: break; \n"
 		      "  }\n}\n" }));
 	
-	addfuncs+=IFDEF(ev_handler_define,
-			({ PC.Token(sprintf("  pike_set_prog_event_callback(%s);\n",funcname)) }));
+	addfuncs+=
+	  IFDEF(ev_handler_define,
+		({ PC.Token(sprintf("  pike_set_prog_event_callback(%s);\n",funcname)) }) +
+		IFDEF (gc_live_obj_define,
+		       0,
+		       ({PC.Token ("  Pike_compiler->new_program->flags &= ~PROGRAM_LIVE_OBJ;\n")}))
+	       );
       }
       if (opt_callback) {
 	addfuncs +=
