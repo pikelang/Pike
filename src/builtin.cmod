@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.200 2008/05/28 20:15:57 mast Exp $
+|| $Id: builtin.cmod,v 1.201 2008/05/29 20:40:21 mast Exp $
 */
 
 #include "global.h"
@@ -444,7 +444,7 @@ PIKEFUN multiset(1) mkmultiset(array(1=mixed) a)
  *!   The old trace level in the current thread is returned.
  */
 PMOD_EXPORT
-PIKEFUN int trace(int level, void|string facility, void|int all_threads)
+PIKEFUN int trace(int level, void|string facility, void|zero|int all_threads)
   efun;
   optflags OPT_SIDE_EFFECT;
 {
@@ -465,7 +465,7 @@ PIKEFUN int trace(int level, void|string facility, void|int all_threads)
   else {
     old_level = Pike_interpreter.trace_level;
 #ifdef PIKE_THREADS
-    if (!all_threads || UNSAFE_IS_ZERO (all_threads))
+    if (!all_threads)
       Pike_interpreter.trace_level = level;
     else {
       struct thread_state *s;
@@ -917,17 +917,13 @@ PIKEFUN int get_weak_flag(multiset m)
 
 /*! @decl program __empty_program(int|void line, string|void file)
  */
-PIKEFUN program __empty_program(int|void line, string|void file)
+PIKEFUN program __empty_program(int|zero|void line, string|void file)
   efun;
   optflags OPT_EXTERNAL_DEPEND;
 {
-  if (line && line->type != T_INT)
-    SIMPLE_BAD_ARG_ERROR("__empty_program", 1, "int|void");
-  else {
-    struct program *prog = low_allocate_program();
-    if (file) ext_store_program_line (prog, line->u.integer, file);
-    RETURN prog;
-  }
+  struct program *prog = low_allocate_program();
+  if (file) ext_store_program_line (prog, line, file);
+  RETURN prog;
 }
 
 /*! @decl string function_name(function f)
@@ -2706,13 +2702,13 @@ PIKECLASS Time
 
   /*! @decl static void create( int fast );
    *!
-   *! If fast is true, do not request a new time from the system,
+   *! If @[fast] is true, do not request a new time from the system,
    *! instead use the global current time variable.
    *!
    *! This will only work in callbacks, but can save significant amounts
    *! of CPU.
    */
-  PIKEFUN void create( int|void fast )
+  PIKEFUN void create( int|zero|void fast )
   {
     THIS->hard_update = !fast;
   }
@@ -2759,13 +2755,13 @@ PIKECLASS Timer
    *!   Create a new timer object. The timer keeps track of relative time
    *!   with sub-second precision.
    *!   
-   *!   If fast is specified, the timer will not do system calls to get
+   *!   If @[fast] is specified, the timer will not do system calls to get
    *!   the current time but instead use the one maintained by pike. This
-   *!   will result in faster but somewhat more inexact timekeeping. 
-   *!   Also, if your program never utilizes the pike event loop the pike
-   *!   maintained current time never change.
+   *!   will result in faster but more or less inexact timekeeping.
+   *!   The pike maintained time is only updated when a @[Pike.Backend]
+   *!   object stops waiting and starts executing code.
    */
-  PIKEFUN void create( int|void fast )
+  PIKEFUN void create( int|zero|void fast )
   {
     extern struct timeval current_time;
     THIS->hard_update = !fast;
