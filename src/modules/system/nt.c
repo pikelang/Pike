@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: nt.c,v 1.76 2008/04/01 00:12:56 nilsson Exp $
+|| $Id: nt.c,v 1.77 2008/05/29 09:46:51 grubba Exp $
 */
 
 /*
@@ -3311,9 +3311,9 @@ BOOL GenServerContext (BYTE *pIn, DWORD cbIn, BYTE *pOut, DWORD *pcbOut,
   SecBuffer         InSecBuff;
   ULONG             Attribs = 0;
  
-  //----------------------------------------------------------------
-  // Prepare output buffers
-  //
+  /*----------------------------------------------------------------
+   * Prepare output buffers
+   */
 
   OutBuffDesc.ulVersion = 0;
   OutBuffDesc.cBuffers = 1;
@@ -3323,9 +3323,9 @@ BOOL GenServerContext (BYTE *pIn, DWORD cbIn, BYTE *pOut, DWORD *pcbOut,
   OutSecBuff.BufferType = SECBUFFER_TOKEN;
   OutSecBuff.pvBuffer = pOut;
 
-  //----------------------------------------------------------------
-  // Prepare input buffers
-  //
+  /*----------------------------------------------------------------
+   * Prepare input buffers
+   */
 
   InBuffDesc.ulVersion = 0;
   InBuffDesc.cBuffers = 1;
@@ -3355,9 +3355,9 @@ BOOL GenServerContext (BYTE *pIn, DWORD cbIn, BYTE *pOut, DWORD *pcbOut,
   }
   sctx->hctxt_alloced = 1;
 
-  //----------------------------------------------------------------
-  // Complete token -- if applicable
-  //
+  /*----------------------------------------------------------------
+   * Complete token -- if applicable
+   */
    
   if ((SEC_I_COMPLETE_NEEDED == ss) 
       || (SEC_I_COMPLETE_AND_CONTINUE == ss))  
@@ -3379,7 +3379,7 @@ BOOL GenServerContext (BYTE *pIn, DWORD cbIn, BYTE *pOut, DWORD *pcbOut,
 
   return TRUE;
 
-} // end GenServerContext
+} /* end GenServerContext */
 
 
 static void f_sctx_gencontext(INT32 args)
@@ -3494,7 +3494,8 @@ static void f_sctx_getlasterror(INT32 args)
                 FORMAT_MESSAGE_IGNORE_INSERTS,
                 NULL,
                 sctx->lastError,
-                MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // Default language
+		/* Default language */
+                MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
                 (LPTSTR) &lpMsgBuf,
                 0,
                 NULL 
