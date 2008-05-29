@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: udp.c,v 1.78 2007/11/03 17:00:50 grubba Exp $
+|| $Id: udp.c,v 1.79 2008/05/29 22:00:55 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -175,7 +175,7 @@ static void udp_close(INT32 args)
 /*! @decl UDP bind(int|string port)
  *! @decl UDP bind(int|string port, string address)
  *!
- *! Binds a port for recieving or transmitting UDP.
+ *! Binds a port for receiving or transmitting UDP.
  *! @throws
  *!   Throws error when unable to bind port.
  */
