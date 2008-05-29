@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.248 2008/05/24 15:14:12 grubba Exp $
+|| $Id: program.h,v 1.249 2008/05/29 16:28:27 grubba Exp $
 */
 
 #ifndef PROGRAM_H
@@ -321,9 +321,10 @@ struct program_constant
 
 #define ID_MODIFIER_MASK 0x07ff
 
-#define ID_STRICT_TYPES  0x8000	/* #pragma strict_types */
-#define ID_SAVE_PARENT  0x10000 /* #pragma save_parent */
-#define ID_DONT_SAVE_PARENT 0x20000 /* #pragma dont_save_parent */
+#define ID_STRICT_TYPES             0x8000 /* #pragma strict_types */
+#define ID_SAVE_PARENT             0x10000 /* #pragma save_parent */
+#define ID_DONT_SAVE_PARENT        0x20000 /* #pragma dont_save_parent */
+#define ID_NO_DEPRECATION_WARNINGS 0x40000 /* #pragma no_deprecation_warnings */
 
 
 /*
