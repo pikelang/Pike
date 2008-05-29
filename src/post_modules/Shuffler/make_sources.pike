@@ -9,7 +9,6 @@ void main(int argc, array argv)
   string init = "";
   string make = "";
   string objs = "";
-  int first;
   foreach( sort( files ), string f )
   {
     objs += replace( f, ".c", ".o" )+" ";
