@@ -1,5 +1,5 @@
 // Compatibility namespace
-// $Id: __default.pmod,v 1.15 2005/01/08 19:57:16 grubba Exp $
+// $Id: __default.pmod,v 1.16 2008/05/29 18:13:50 grubba Exp $
 
 #pike 7.5
 
@@ -110,11 +110,17 @@ array(int) rusage() {
 	    m->stksize });
 }
 
+object master()
+{
+  return __REAL_VERSION__::master()->get_compat_master(7, 4);
+}
+
 mapping(string:mixed) all_constants()
 {
   mapping(string:mixed) ret = predef::all_constants()+([]);
   ret->rusage = rusage;
   ret->hash = hash_7_4;
+  ret->master = master;
 #if constant(__builtin.security)
   ret->call_with_creds = __builtin.security.call_with_creds;
   ret->get_current_creds = __builtin.security.get_current_creds;

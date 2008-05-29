@@ -1,5 +1,5 @@
 // Compatibility namespace
-// $Id: __default.pmod,v 1.4 2008/05/17 14:10:02 marcus Exp $
+// $Id: __default.pmod,v 1.5 2008/05/29 18:13:50 grubba Exp $
 
 #pike 7.7
 
@@ -19,42 +19,9 @@ static array(array(int|string)) _describe_program(program p)
 	     });
 }
 
-// This replacement for the master is necessary to make code like
-// master()->resolv(...) look things up in the 7.6 compat tree.
-static class Master76
+object master()
 {
-  inherit "/master";
-
-  static object master_76_compat_handler =
-    get_compilation_handler (7, 6);
-
-  mixed resolv (string identifier, string|void current_file,
-		object|void current_handler)
-  {
-    return master_76_compat_handler->resolv (identifier, current_file,
-					     current_handler);
-  }
-
-  static void create()
-  {
-    object m = master();
-    ::create();
-    compat_major = m->compat_major;
-    compat_minor = m->compat_minor;
-    fc = m->fc;
-    currentversion = m->currentversion;
-    compat_handler_cache = m->compat_handler_cache;
-  }
-
-  static string _sprintf(int t) {return t == 'O' && "master_76()";}
-}
-
-static object master_76;
-
-static object get_master_76()
-{
-  if (master_76) return master_76;
-  return master_76 = Master76();
+  return __REAL_VERSION__::master()->get_compat_master(7, 6);
 }
 
 mapping(string:mixed) all_constants()
@@ -64,6 +31,6 @@ mapping(string:mixed) all_constants()
   ret->_describe_program = _describe_program;
   ret->sprintf = sprintf_76;
   ret->array_sscanf = array_sscanf_76;
-  ret->master = get_master_76;
+  ret->master = master;
   return ret;
 }

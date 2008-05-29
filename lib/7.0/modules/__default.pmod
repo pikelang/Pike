@@ -1,5 +1,5 @@
 // Compatibility namespace
-// $Id: __default.pmod,v 1.6 2002/12/30 15:05:38 grubba Exp $
+// $Id: __default.pmod,v 1.7 2008/05/29 18:13:50 grubba Exp $
 
 #pike 7.1
 
@@ -93,6 +93,11 @@ mapping m_delete(mapping m, mixed x)
 //! @seealso
 //!   @[predef::hash_7_0()], @[predef::hash()]
 
+object master()
+{
+  return __REAL_VERSION__::master()->get_compat_master(7, 0);
+}
+
 mapping(string:mixed) all_constants()
 {
   mapping(string:mixed) ret=predef::all_constants()+([]);
@@ -105,6 +110,7 @@ mapping(string:mixed) all_constants()
   ret->_typeof=_typeof;
   ret->m_delete=m_delete;
   ret->hash=hash_7_0;
+  ret->master=master;
 
   return ret;
 }

@@ -18,6 +18,11 @@ array(mixed) aggregate(mixed ... args)
   return args;
 }
 
+object master()
+{
+  return __REAL_VERSION__::master()->get_compat_master(0, 6);
+}
+
 mapping(string:mixed) all_constants()
 {
   mapping(string:mixed) ret=predef::all_constants()+([]);

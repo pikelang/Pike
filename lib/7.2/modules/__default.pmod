@@ -1,5 +1,5 @@
 // Compatibility namespace
-// $Id: __default.pmod,v 1.18 2003/11/16 16:03:39 grubba Exp $
+// $Id: __default.pmod,v 1.19 2008/05/29 18:13:50 grubba Exp $
 
 #pike 7.3
 
@@ -114,6 +114,11 @@ SPIDER(get_all_active_fd);
 SPIDER(fd_info);
 //! @endignore
 
+object master()
+{
+  return __REAL_VERSION__::master()->get_compat_master(7, 2);
+}
+
 mapping(string:mixed) all_constants()
 {
   mapping(string:mixed) ret=predef::all_constants()+([]);
@@ -127,6 +132,8 @@ mapping(string:mixed) all_constants()
 #endif
   ADD(new);
   ADD(clone);
+
+  ADD(master);
 
   // spider
   ADD(_low_program_name);
