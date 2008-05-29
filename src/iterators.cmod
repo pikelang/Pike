@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iterators.cmod,v 1.67 2008/05/11 22:42:14 mast Exp $
+|| $Id: iterators.cmod,v 1.68 2008/05/29 21:58:44 mast Exp $
 */
 
 #include "global.h"
@@ -444,6 +444,7 @@ PIKECLASS mapping_iterator
     }
 
   EXIT
+    gc_trivial;
     {
       if (THIS->md) {
 	THIS->md->valrefs--;
@@ -573,6 +574,7 @@ PIKECLASS array_iterator
     }
 
   EXIT
+    gc_trivial;
     {
       if (THIS->a)
 	free_array(THIS->a);
@@ -767,6 +769,7 @@ PIKECLASS multiset_iterator
     }
 
   EXIT
+    gc_trivial;
     {
       if (THIS->l) {
 	if (THIS->nodepos >= 0) sub_msnode_ref (THIS->l);
@@ -919,6 +922,7 @@ PIKECLASS string_iterator
     }
 
   EXIT
+    gc_trivial;
     {
       free_string(THIS->s);
     }
@@ -1094,6 +1098,7 @@ PIKECLASS file_line_iterator
     }
 
   EXIT
+    gc_trivial;
     {
       if (THIS->buffer) {
 	free_string(THIS->buffer);
@@ -1618,6 +1623,7 @@ PIKECLASS string_split_iterator
     }
 
   EXIT
+    gc_trivial;
     {
       if (THIS->buffer) {
 	free_string(THIS->buffer);

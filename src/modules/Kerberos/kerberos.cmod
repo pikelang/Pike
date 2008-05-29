@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: kerberos.cmod,v 1.2 2008/05/06 19:14:33 mast Exp $
+ * $Id: kerberos.cmod,v 1.3 2008/05/29 21:58:44 mast Exp $
  *
  * Kerberos support for Pike.
  *
@@ -48,6 +48,7 @@ PIKECLASS Context
   }
 
   EXIT
+    gc_trivial;
   {
     if (THIS->ctx) {
       krb5_free_context(THIS->ctx);

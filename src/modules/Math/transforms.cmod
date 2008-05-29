@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: transforms.cmod,v 1.13 2004/03/21 06:09:46 nilsson Exp $
+|| $Id: transforms.cmod,v 1.14 2008/05/29 21:58:44 mast Exp $
 */
 
 #include "global.h"
@@ -276,6 +276,7 @@ PIKECLASS FFT
     }
 
   EXIT
+    gc_trivial;
     {
       if (THIS->r_cr_plan_size>0)
 	rfftw_destroy_plan(THIS->r_cr_plan);

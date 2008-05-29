@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.214 2008/05/11 22:43:07 mast Exp $
+ * $Id: backend.cmod,v 1.215 2008/05/29 21:58:44 mast Exp $
  *
  * Backend object.
  */
@@ -2015,6 +2015,7 @@ PIKECLASS Backend
   }
   
   EXIT
+    gc_trivial;
   {
     struct Backend_struct *me=THIS;
     int e;
@@ -3747,6 +3748,7 @@ PIKECLASS GenericBackend
   }
   
   EXIT
+    gc_trivial;
   {
     struct Backend_struct *me = THIS->backend;
     int e;

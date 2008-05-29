@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpf.cmod,v 1.36 2008/05/11 02:38:27 mast Exp $
+|| $Id: mpf.cmod,v 1.37 2008/05/29 21:58:44 mast Exp $
 */
 
 #include "global.h"
@@ -892,6 +892,7 @@ PIKECLASS mpf
     }
   
   EXIT
+    gc_trivial;
     {
 #ifdef PIKE_DEBUG
       if(!fp) Pike_fatal("ZERO FP\n");

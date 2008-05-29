@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.201 2008/05/29 20:40:21 mast Exp $
+|| $Id: builtin.cmod,v 1.202 2008/05/29 21:58:44 mast Exp $
 */
 
 #include "global.h"
@@ -1267,6 +1267,7 @@ PIKECLASS backtrace_frame
   }
 
   EXIT
+    gc_trivial;
   {
     if (THIS->filename) {
       free_string(THIS->filename);
@@ -2006,6 +2007,7 @@ PIKECLASS Buffer
     }
 
   EXIT
+    gc_trivial;
     {
       struct Buffer_struct *str = THIS;
       if( str->str.s )
@@ -2157,6 +2159,7 @@ PIKECLASS multi_string_replace
   }
 
   EXIT
+    gc_trivial;
   {
     if (THIS->from) free_array(THIS->from);
     if (THIS->to) free_array(THIS->to);
@@ -2192,6 +2195,7 @@ PIKECLASS single_string_replace
   }
 
   EXIT
+    gc_trivial;
   {
     if (THIS->mojt.vtab) {
       THIS->mojt.vtab->freeme(THIS->mojt.data);
@@ -3096,6 +3100,7 @@ PIKECLASS List
   }
 
   EXIT
+    gc_trivial;
   {
     struct pike_list_node *node = THIS->head;
     struct pike_list_node *next;
@@ -3375,6 +3380,7 @@ PIKECLASS List
     }
 
     EXIT
+      gc_trivial;
     {
       if (THIS->cur) {
 	free_list_node(THIS->cur);
