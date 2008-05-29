@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.425 2008/05/29 12:50:26 grubba Exp $
+// $Id: master.pike.in,v 1.426 2008/05/29 17:36:41 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -160,8 +160,11 @@ static class Pike_0_6_master
   string combine_path_with_cwd(string path);
 #ifdef FILE_STAT_CACHE
   extern int invalidate_time;
-  mapping(string:multiset(string)) dir_cache;
-  array(mixed) master_file_stat(string x);
+  extern mapping(string:multiset(string)) dir_cache;
+  local array(mixed) master_file_stat(string x)
+  {
+    return (array)global::master_file_stat(x);
+  }
 #endif
   mapping (string:array(string)) environment;
   mixed getenv(string|void s);
@@ -178,14 +181,14 @@ static class Pike_0_6_master
 #endif
   program cast_to_program(string pname, string current_file);
   void handle_error(array(mixed) trace);
-  __deprecated__ object new(mixed prog, mixed ... args)
+  local __deprecated__ object new(mixed prog, mixed ... args)
   {
     if(stringp(prog))
       prog=cast_to_program(prog,backtrace()[-2][0]);
     return prog(@args);
   }
   local constant mkmultiset = predef::mkmultiset;
-  __deprecated__(function) clone = new;
+  local __deprecated__(function) clone = new;
   constant master_efuns = ({});
   void create();
   program handle_inherit(string pname, string current_file);
@@ -209,13 +212,13 @@ static class Pike_0_6_master
   extern string _master_file_name;
   void _main(array(string) orig_argv, array(string) env);
   extern mixed inhibit_compile_errors;
-  extern void set_inhibit_compile_errors(mixed f);
+  void set_inhibit_compile_errors(mixed f);
   string trim_file_name(string s);
   void compile_error(string file,int line,string err);
   void compile_warning(string file,int line,string err);
   string handle_include(string f, string current_file, int local_include);
   string read_include(string f);
-  string stupid_describe(mixed m)
+  local __deprecated__ string stupid_describe(mixed m)
   {
     switch(string typ=sprintf("%t",m))
     {
@@ -246,9 +249,303 @@ static class Pike_0_6_master
   string describe_program(program p);
   string describe_backtrace(array(mixed) trace);
   class Codec {};
+
+  object get_compat_master(int major, int minor);
 }
 
-static inherit Pike_0_6_master;
+class Pike_7_0_master
+{
+  inherit Pike_0_6_master;
+  constant bt_max_string_len = 1;
+  constant out_of_date_warning = 1;
+#ifdef PIKE_FAKEROOT
+  extern object o;
+  string fakeroot(string s);
+#endif
+#ifdef PIKE_AUTORELOAD
+  extern int autoreload_on;
+  extern int newest;
+#endif
+  string master_read_file();
+  string normalize_path(string X);
+  program cast_to_program(string pname, string current_file,
+			  object|void handler);
+  void handle_error(array(mixed)|object trace);
+  static private constant mkmultiset = mkmultiset;
+  program handle_inherit(string pname, string current_file, object|void handler);
+  mixed handle_import(string what, string|void current_file, object|void handler);
+  mixed resolv_base(string identifier, string|void current_file);
+
+  // FIXME: Not in 7.7!
+  extern mapping resolv_cache;
+  local static object Pike_7_0_compat_handler;
+  local mixed resolv(string identifier, string|void current_file)
+  {
+    if (!Pike_7_0_compat_handler) {
+      Pike_7_0_compat_handler = global::get_compilation_handler(7, 0);
+    }
+    return Pike_7_0_compat_handler->resolv(identifier, current_file);
+  }
+  mixed get_inhibit_compile_errors();
+  string decode_charset(string data, string charset);
+  local __deprecated__(int) clipped=0;
+  local __deprecated__(int) canclip=0;
+#pragma no_deprecation_warnings
+  local __deprecated__ string stupid_describe(mixed m, int maxlen)
+  {
+    string typ;
+    if (catch (typ=sprintf("%t",m)))
+      typ = "object";		// Object with a broken _sprintf(), probably.
+    switch(typ)
+    {
+    case "int":
+    case "float":
+      return (string)m;
+      
+    case "string":
+      canclip++;
+      if(sizeof(m) < maxlen)
+      {
+	string t = sprintf("%O", m);
+	if (sizeof(t) < (maxlen + 2)) {
+	  return t;
+	}
+	t = 0;
+      }
+      clipped++;
+      if(maxlen>10)
+      {
+	return sprintf("%O+[%d]",m[..maxlen-5],sizeof(m)-(maxlen-5));
+      }else{
+	return "string["+sizeof(m)+"]";
+      }
+      
+    case "array":
+      if(!sizeof(m)) return "({})";
+      if(maxlen<5)
+      {
+	clipped++;
+	return "array["+sizeof(m)+"]";
+      }
+      canclip++;
+      return "({" + stupid_describe_comma_list(m,maxlen-2) +"})";
+      
+    case "mapping":
+      if(!sizeof(m)) return "([])";
+      return "mapping["+sizeof(m)+"]";
+      
+    case "multiset":
+      if(!sizeof(m)) return "(<>)";
+      return "multiset["+sizeof(m)+"]";
+      
+    case "function":
+      if(string tmp=describe_program(m)) return tmp;
+      if(object o=function_object(m))
+	return (describe_object(o)||"")+"->"+function_name(m);
+      else {
+	string tmp;
+	if (catch (tmp = function_name(m)))
+	  // The function object has probably been destructed.
+	  return "function";
+	return tmp || "function";
+      }
+
+    case "program":
+      if(string tmp=describe_program(m)) return tmp;
+      return typ;
+
+    default:
+      if (objectp(m))
+	if(string tmp=describe_object(m)) return tmp;
+      return typ;
+    }
+  }
+  local __deprecated__ string stupid_describe_comma_list(array x, int maxlen)
+  {
+    string ret="";
+
+    if(!sizeof(x)) return "";
+    if(maxlen<0) return ",,,"+sizeof(x);
+
+    int clip=min(maxlen/2,sizeof(x));
+    int len=maxlen;
+    int done=0;
+
+//  int loopcount=0;
+
+    while(1)
+    {
+//    if(loopcount>10000) werror("len=%d\n",len);
+      array(string) z=allocate(clip);
+      array(int) isclipped=allocate(clip);
+      array(int) clippable=allocate(clip);
+      for(int e=0;e<clip;e++)
+      {
+	clipped=0;
+	canclip=0;
+	z[e]=stupid_describe(x[e],len);
+	isclipped[e]=clipped;
+	clippable[e]=canclip;
+      }
+
+      while(1)
+      {
+//      if(loopcount>10000)  werror("clip=%d maxlen=%d\n",clip,maxlen);
+	string ret = z[..clip-1]*",";
+//      if(loopcount>10000)  werror("sizeof(ret)=%d z=%O isclipped=%O done=%d\n",sizeof(ret),z[..clip-1],isclipped[..clip-1],done);
+	if(done || sizeof(ret)<=maxlen+1)
+	{
+	  int tmp=sizeof(x)-clip-1;
+//        if(loopcount>10000) werror("CLIPPED::::: %O\n",isclipped);
+	  clipped=`+(0,@isclipped);
+	  if(tmp>=0)
+	  {
+	    clipped++;
+	    ret+=",,,"+tmp;
+	  }
+	  canclip++;
+	  return ret;
+	}
+
+	int last_newlen=len;
+	int newlen;
+	int clipsuggest;
+	while(1)
+	{
+//        if(loopcount++ > 20000) return "";
+//        if(!(loopcount & 0xfff)) werror("GNORK\n");
+	  int smallsize=0;
+	  int num_large=0;
+	  clipsuggest=0;
+
+	  for(int e=0;e<clip;e++)
+	  {
+//          if(loopcount>10000) werror("sizeof(z[%d])=%d  len=%d\n",e,sizeof(z[e]),len);
+
+	    if((sizeof(z[e])>=last_newlen || isclipped[e]) && clippable[e])
+	      num_large++;
+	    else
+	      smallsize+=sizeof(z[e]);
+
+	    if(num_large * 15 + smallsize < maxlen) clipsuggest=e+1;
+	  }
+        
+//        if(loopcount>10000) werror("num_large=%d  maxlen=%d  smallsize=%d clippsuggest=%d\n",num_large,maxlen,smallsize,clipsuggest);
+	  newlen=num_large ? (maxlen-smallsize)/num_large : 0;
+       
+//        if(loopcount>10000) werror("newlen=%d\n",newlen);
+
+	  if(newlen<8 || newlen >= last_newlen) break;
+	  last_newlen=newlen;
+//        if(loopcount>10000) werror("len decreased, retrying.\n");
+	}
+
+	if(newlen < 8 && clip)
+	{
+	  clip-= (clip/4) || 1;
+	  if(clip > clipsuggest) clip=clipsuggest;
+//        if(loopcount>10000) werror("clip decreased, retrying.\n");
+	}else{
+	  len=newlen;
+	  done++;
+	  break;
+	}
+      }
+    }
+
+    return ret;
+  }
+#pragma deprecation_warnings
+
+  string describe_object(object o);
+  string describe_backtrace(array(mixed) trace, void|int linewidth);
+  string describe_error(mixed trace);
+
+  object get_compat_master(int major, int minor)
+  {
+    return Pike_0_6_master::this;
+  }
+}
+
+static class Pike_7_2_master
+{
+  inherit Pike_7_0_master;
+#ifdef PIKE_MODULE_RELOC
+  string relocate_module(string s);
+  string unrelocate_module(string s);
+#endif
+  extern int compat_major;
+  extern int compat_minor;
+  Stat master_file_stat(string x);
+  object low_cast_to_object(string oname, string current_file,
+			    object|void current_handler);
+  object findmodule(string fullname, object|void handler);
+  local static object Pike_7_2_compat_handler;
+  local mixed resolv(string identifier, string|void current_file)
+  {
+    if (!Pike_7_2_compat_handler) {
+      Pike_7_2_compat_handler = global::get_compilation_handler(7, 2);
+    }
+    return Pike_7_2_compat_handler->resolv(identifier, current_file);
+  }
+  void runtime_warning(string where, string what, mixed ... args);
+  static int clipped;
+  static int canclip;
+  static string stupid_describe(mixed m, int maxlen);
+  static string stupid_describe_comma_list(array x, int maxlen);
+  class Describer {};
+  string describe_function(function f);
+  class CompatResolver {};
+  class Version {};
+  extern object currentversion;
+  extern mapping(object:object) compat_handler_cache;
+  object get_compilation_handler(int major, int minor);
+  string _sprintf();
+  object get_compat_master(int major, int minor)
+  {
+    if ((major > 0) || (minor > 6)) return Pike_7_0_master::this;
+    return Pike_7_0_master::get_compat_master(major, minor);
+  }
+}
+
+static class Pike_7_4_master
+{
+  inherit Pike_7_2_master;
+  local static object Pike_7_4_compat_handler;
+  local mixed resolv(string identifier, string|void current_file)
+  {
+    if (!Pike_7_4_compat_handler) {
+      Pike_7_4_compat_handler = global::get_compilation_handler(7, 4);
+    }
+    return Pike_7_4_compat_handler->resolv(identifier, current_file);
+  }
+  object get_compat_master(int major, int minor)
+  {
+    if ((major == 7) && (minor > 0)) return Pike_7_2_master::this;
+    return Pike_7_2_master::get_compat_master(major, minor);
+  }
+}
+
+static class Pike_7_6_master
+{
+  inherit Pike_7_4_master;
+  local static object Pike_7_6_compat_handler;
+  local mixed resolv(string identifier, string|void current_file)
+  {
+    if (!Pike_7_6_compat_handler) {
+      Pike_7_6_compat_handler = global::get_compilation_handler(7, 6);
+    }
+    return Pike_7_6_compat_handler->resolv(identifier, current_file);
+  }
+  object get_compat_master(int major, int minor)
+  {
+    if ((major == 7) && (minor > 2)) return Pike_7_4_master::this;
+    return Pike_7_4_master::get_compat_master(major, minor);
+  }
+}
+
+// Namespaces for compat masters.
+static inherit Pike_7_6_master;
 
 //! @appears error
 //! Throws an error. A more readable version of the code
@@ -4988,12 +5285,9 @@ string _sprintf(int t)
   }
 }
 
-object get_compat_master(int major, int minor)
+local object get_compat_master(int major, int minor)
 {
-  switch(major) {
-  case 0:
-    if (minor <= 6) return Pike_0_6_master::this;
-    break;
-  }
-  return this;
+  if ((major > 7) || ((major == 7) && (minor > 6))) return this;
+  if ((major == 7) && (minor > 4)) return Pike_7_6_master::this;
+  return Pike_7_6_master::get_compat_master(major, minor);
 }
