@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.707 2008/05/27 19:36:00 grubba Exp $
+|| $Id: program.c,v 1.708 2008/05/29 12:36:35 grubba Exp $
 */
 
 #include "global.h"
@@ -2172,6 +2172,7 @@ void fixate_program(void)
       int found_better=-1;
       int funa_is_prototype;
 
+      /* NOTE: Mixin is currently not supported for PRIVATE symbols. */
       if(funp->id_flags & ID_PRIVATE) continue;
       funa_is_prototype = fun->func.offset == -1;
 /*    if(fun->func.offset == -1) continue; * prototype */
@@ -2965,6 +2966,7 @@ int sizeof_variable(int run_time_type)
     case T_MIXED: return sizeof(struct svalue);
     case T_FLOAT: return sizeof(FLOAT_TYPE);
     case T_INT: return sizeof(INT_TYPE);
+    case PIKE_T_FREE:
     case PIKE_T_GET_SET: return 0;
     default: return sizeof(void *);
   }
@@ -2978,6 +2980,7 @@ static ptrdiff_t alignof_variable(int run_time_type)
     case T_MIXED: return ALIGNOF(struct svalue);
     case T_FLOAT: return ALIGNOF(FLOAT_TYPE);
     case T_INT: return ALIGNOF(INT_TYPE);
+    case PIKE_T_FREE:
     case PIKE_T_GET_SET: return 1;
     default: return ALIGNOF(void *);
   }
@@ -3281,6 +3284,7 @@ void check_program(struct program *p)
       Pike_fatal("Unknown flags in identifier flag field.\n");
 
     if((p->identifiers[e].run_time_type!=T_MIXED) &&
+       (p->identifiers[e].run_time_type!=PIKE_T_FREE) &&
        (p->identifiers[e].run_time_type!=PIKE_T_GET_SET))
       check_type(p->identifiers[e].run_time_type);
 
@@ -3355,7 +3359,7 @@ void check_program(struct program *p)
       }
       size=sizeof_variable(i->run_time_type);
 
-      if((offset+size > (size_t)p->storage_needed) || offset<0)
+      if(size && ((offset+size > (size_t)p->storage_needed) || offset<0))
 	Pike_fatal("Variable outside storage! (%s)\n",i->name->str);
 
       for(q=0;q<size;q++)
@@ -4798,6 +4802,8 @@ int low_define_variable(struct pike_string *name,
   dummy.total_time=0;
 #endif
 
+  if (run_time_type == PIKE_T_FREE) dummy.func.offset = -1;
+
   ref.id_flags=flags;
   ref.identifier_offset=Pike_compiler->new_program->num_identifiers;
   ref.inherit_offset=0;
@@ -4991,10 +4997,13 @@ int define_variable(struct pike_string *name,
     }
   }
 
-  run_time_type=compile_type_to_runtime_type(type);
+  if (flags & ID_EXTERN) {
+    run_time_type = PIKE_T_FREE;
+  } else {
+    run_time_type=compile_type_to_runtime_type(type);
 
-  switch(run_time_type)
-  {
+    switch(run_time_type)
+    {
 #ifdef AUTO_BIGNUM
     case T_INT:
 #endif
@@ -5003,6 +5012,7 @@ int define_variable(struct pike_string *name,
     case T_FUNCTION:
     case T_PROGRAM:
       run_time_type = T_MIXED;
+    }
   }
 
   n=low_define_variable(name,type,flags,

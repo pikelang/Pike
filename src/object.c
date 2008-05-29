@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.294 2008/05/29 10:11:13 grubba Exp $
+|| $Id: object.c,v 1.295 2008/05/29 12:36:35 grubba Exp $
 */
 
 #include "global.h"
@@ -259,11 +259,14 @@ PMOD_EXPORT void call_c_initializers(struct object *o)
 	  s->type=T_INT;
 	  s->u.integer=0;
 	  s->subtype=0;
-	} else if (prog->identifiers[d].run_time_type != PIKE_T_GET_SET) {
+	} else {
 	  union anything *u;
 	  u=(union anything *)(storage + prog->identifiers[d].func.offset);
 	  switch(prog->identifiers[d].run_time_type)
 	  {
+	    case PIKE_T_FREE:
+	    case PIKE_T_GET_SET:
+	      break;
 	    case T_INT: u->integer=0; break;
 	    case T_FLOAT: u->float_number=0.0; break;
 	    default: u->refs=0; break;
@@ -879,7 +882,7 @@ PMOD_EXPORT void destruct_object (struct object *o, enum object_destruct_reason 
 	  dmalloc_touch_svalue(s);
 #endif /* DEBUG_MALLOC */
 	}
-      }else if(rtt != PIKE_T_GET_SET){
+      } else if ((rtt != PIKE_T_GET_SET) && (rtt != PIKE_T_FREE)) {
 	union anything *u;
 	u=(union anything *)(storage + id->func.offset);
 #ifdef DEBUG_MALLOC
@@ -1187,7 +1190,7 @@ PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
       } else {
 	Pike_error("No getter for variable %S.\n", i->name);
       }
-    } else if (!PIKE_OBJ_STORAGE(o)) {
+    } else if ((i->run_time_type == PIKE_T_FREE) || !PIKE_OBJ_STORAGE(o)) {
       /* Variable storage not allocated. */
 #ifdef PIKE_DEBUG
       if (p->flags & PROGRAM_FINISHED) {
@@ -1195,7 +1198,8 @@ PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
       }
 #endif /* PIKE_DEBUG */
       to->type = T_INT;
-      to->subtype = NUMBER_NUMBER;
+      to->subtype = ((i->run_time_type == PIKE_T_FREE)?
+		     NUMBER_UNDEFINED:NUMBER_NUMBER);
       to->u.integer = 0;      
     } else {
       void *ptr=LOW_GET_GLOBAL(o,f,i);
@@ -1467,8 +1471,9 @@ PMOD_EXPORT void object_low_set_index(struct object *o,
       Pike_error("No setter for variable %S.\n", i->name);
     }
   }
-  else
-  {
+  else if (rtt == PIKE_T_FREE) {
+    Pike_error("Attempt to store data in extern variable %S.\n", i->name);
+  } else {
     /* Partial code duplication from assign_to_short_svalue. */
     union anything *u = (union anything *) LOW_GET_GLOBAL(o,f,i);
     if(from->type == rtt)
@@ -1956,6 +1961,7 @@ PMOD_EXPORT void visit_object (struct object *o, int action)
 
 #ifdef PIKE_DEBUG
 	  case PIKE_T_GET_SET:
+	  case PIKE_T_FREE:
 	  case T_INT:
 	  case T_FLOAT:
 	    break;
@@ -2044,7 +2050,8 @@ PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o)
 	    int id_flags = id->identifier_flags;
 	    int rtt = id->run_time_type;
 
-	    if (IDENTIFIER_IS_ALIAS(id_flags) || (rtt == PIKE_T_GET_SET))
+	    if (IDENTIFIER_IS_ALIAS(id_flags) || (rtt == PIKE_T_GET_SET) ||
+		(rtt == PIKE_T_FREE))
 	      continue;
 	
 	    if(rtt == T_MIXED)
@@ -2109,7 +2116,8 @@ PMOD_EXPORT void real_gc_cycle_check_object(struct object *o, int weak)
 	  int id_flags = id->identifier_flags;
 	  int rtt = id->run_time_type;
 	
-	  if (IDENTIFIER_IS_ALIAS(id_flags) || (rtt == PIKE_T_GET_SET))
+	  if (IDENTIFIER_IS_ALIAS(id_flags) || (rtt == PIKE_T_GET_SET) ||
+	      (rtt == PIKE_T_FREE))
 	    continue;
 	
 	  if(rtt == T_MIXED)
@@ -2182,7 +2190,8 @@ static void gc_check_object(struct object *o)
 	  int id_flags = id->identifier_flags;
 	  int rtt = id->run_time_type;
 	
-	  if (IDENTIFIER_IS_ALIAS(id_flags) || (rtt == PIKE_T_GET_SET))
+	  if (IDENTIFIER_IS_ALIAS(id_flags) || (rtt == PIKE_T_GET_SET) ||
+	      (rtt == PIKE_T_FREE))
 	    continue;
 	
 	  if(rtt == T_MIXED)
@@ -2795,7 +2804,8 @@ void check_object_context(struct object *o,
     }else{
       union anything *u;
       u=(union anything *)(current_storage + id->func.offset);
-      if (id->run_time_type != PIKE_T_GET_SET)
+      if ((id->run_time_type != PIKE_T_GET_SET) &&
+	  (id->run_time_type != PIKE_T_FREE))
 	check_short_svalue(u, id->run_time_type);
     }
   }
