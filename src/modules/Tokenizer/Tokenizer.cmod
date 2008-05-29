@@ -1,5 +1,5 @@
 /*
- * $Id: Tokenizer.cmod,v 1.40 2008/05/26 09:07:36 grubba Exp $
+ * $Id: Tokenizer.cmod,v 1.41 2008/05/29 10:13:57 grubba Exp $
  *
  * Interface to pike code tokenizer.
  *
@@ -1625,13 +1625,14 @@ PIKECLASS Group
    */
   PIKEFUN void append(object(Token) token)
   {
+    /* FIXME: Object subtype? */
     /* FIXME: Should check the value of the constants,
      *        and not just the existence.
      */
     if (find_shared_string_identifier(MK_STRING("is_end_group"),
 				      token->prog) != -1) {
       /* Group end marker. */
-      object_index_no_free(Pike_sp, token, MK_STRING_SVALUE("symbol"));
+      object_index_no_free(Pike_sp, token, 0, MK_STRING_SVALUE("symbol"));
       Pike_sp++;
       low_index_current_object_no_free(Pike_sp, group_terminator_fun_num);
       Pike_sp++;
@@ -1648,7 +1649,7 @@ PIKECLASS Group
 #if 0
 	/* FIXME: Where can we find report()? */
 	push_int(2);
-	object_index_no_free(Pike_sp, token, MK_STRING_SVALUE("context"));
+	object_index_no_free(Pike_sp, token, 0, MK_STRING_SVALUE("context"));
 	Pike_sp++;
 	ref_push_string(MK_STRING("grouping"));
 	ref_push_string(MK_STRING("Unexpected %O (expected %O)."));
@@ -1927,7 +1928,7 @@ PIKECLASS GroupingCompiler
       push_undefined();
       ref_push_string(MK_STRING("grouping"));
       ref_push_string(MK_STRING("Missing %O at end of file."));
-      object_index_no_free(Pike_sp, Pike_sp[-5].u.object,
+      object_index_no_free(Pike_sp, Pike_sp[-5].u.object, Pike_sp[-5].subtype,
 			   MK_STRING_SVALUE("terminator"));
       Pike_sp++;
       apply_current(groupingcompiler_inh_report, 5);
@@ -1989,20 +1990,21 @@ PIKECLASS PikeCompiler
 	apply_shared(tokens_left, MK_STRING("value"), 0);
 	if (Pike_sp[-1].type == T_OBJECT) {
 	  object_index_no_free(Pike_sp, Pike_sp[-1].u.object,
-			       MK_STRING_SVALUE("token"));
+			       Pike_sp[-1].subtype, MK_STRING_SVALUE("token"));
 	  Pike_sp++;
 	  if (Pike_sp[-1].type != T_STRING) {
 	    pop_stack();
 	    push_undefined();
 	  }
-	  object_index_no_free(Pike_sp, Pike_sp[-2].u.object,
-			       MK_STRING_SVALUE("symbol"));
+	  object_index_no_free(Pike_sp, Pike_sp[-2].u.object, 
+			       Pike_sp[-2].subtype, MK_STRING_SVALUE("symbol"));
 	  Pike_sp++;
 	  if (Pike_sp[-1].type != T_STRING) {
 	    pop_stack();
 	    push_undefined();
 	  }
 	  object_index_no_free(Pike_sp, Pike_sp[-3].u.object,
+			       Pike_sp[-3].subtype,
 			       MK_STRING_SVALUE("context"));
 	  Pike_sp++;
 	  if (Pike_sp[-1].type != T_MAPPING) {
