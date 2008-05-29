@@ -177,7 +177,7 @@ o Warnings for unused private symbols.
 o Unicode
 
   Case information and the Unicode module are updated to Unicode
-  5.0.0.
+  5.1.0.
 
 o protected
 
