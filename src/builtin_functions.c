@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.666 2008/05/28 18:55:50 grubba Exp $
+|| $Id: builtin_functions.c,v 1.667 2008/05/29 10:11:14 grubba Exp $
 */
 
 #include "global.h"
@@ -2924,8 +2924,7 @@ PMOD_EXPORT void f_indices(INT32 args)
     break;
 
   case T_OBJECT:
-    /* FIXME: Object subtype! */
-    a=object_indices(Pike_sp[-args].u.object);
+    a=object_indices(Pike_sp[-args].u.object, Pike_sp[-args].subtype);
     break;
 
   case T_PROGRAM:
@@ -3223,8 +3222,7 @@ PMOD_EXPORT void f_values(INT32 args)
     break;
 
   case T_OBJECT:
-    /* FIXME: Object subtype! */
-    a=object_values(Pike_sp[-args].u.object);
+    a=object_values(Pike_sp[-args].u.object, Pike_sp[-args].subtype);
     break;
 
   case T_PROGRAM:

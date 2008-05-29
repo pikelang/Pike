@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.232 2008/05/21 21:13:04 mast Exp $
+|| $Id: operators.c,v 1.233 2008/05/29 10:11:15 grubba Exp $
 */
 
 #include "global.h"
@@ -58,7 +58,7 @@ void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
     break;
 
   case T_OBJECT:
-    object_index_no_free(to, what->u.object, ind);
+    object_index_no_free(to, what->u.object, what->subtype, ind);
     break;
 
   case T_MULTISET: {

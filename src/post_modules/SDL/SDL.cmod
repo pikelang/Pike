@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: SDL.cmod,v 1.29 2005/11/12 20:37:07 nilsson Exp $
+|| $Id: SDL.cmod,v 1.30 2008/05/29 10:11:16 grubba Exp $
 */
 
 #include "global.h"
@@ -99,7 +99,7 @@ static struct object *image_make_rgb_color(INT32 r,INT32 g,INT32 b)
  * someone inherited us. */
  #define OBJ_INDEX() do { \
       struct svalue res; \
-      object_index_no_free2 (&res, Pike_fp->current_object, Pike_sp-1); \
+      object_index_no_free2 (&res, Pike_fp->current_object, 0, Pike_sp-1); \
       pop_stack(); \
       *Pike_sp++ = res; \
     } while(0) \

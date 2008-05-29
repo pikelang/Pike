@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.293 2008/05/27 19:36:00 grubba Exp $
+|| $Id: object.c,v 1.294 2008/05/29 10:11:13 grubba Exp $
 */
 
 #include "global.h"
@@ -1253,9 +1253,11 @@ PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
  * identifier index. */
 PMOD_EXPORT void object_index_no_free2(struct svalue *to,
 				       struct object *o,
+				       int inherit_number,
 				       struct svalue *index)
 {
   struct program *p;
+  struct inherit *inh;
   int f = -1;
 
   if(!o || !(p=o->prog))
@@ -1264,10 +1266,13 @@ PMOD_EXPORT void object_index_no_free2(struct svalue *to,
     return; /* make gcc happy */
   }
 
+  p = (inh = p->inherits + inherit_number)->prog;
+
   switch(index->type)
   {
   case T_STRING:
     f=find_shared_string_identifier(index->u.string, p);
+    if (f >= 0) f += inh->identifier_level;
     break;
 
   case T_OBJ_INDEX:
@@ -1298,9 +1303,11 @@ PMOD_EXPORT void object_index_no_free2(struct svalue *to,
  * `-> or `[] lfuns, not seeing private and static etc. */
 PMOD_EXPORT void object_index_no_free(struct svalue *to,
 				      struct object *o,
+				      int inherit_number,
 				      struct svalue *index)
 {
   struct program *p = NULL;
+  struct inherit *inh;
   int lfun,l;
 
   if(!o || !(p=o->prog))
@@ -1308,6 +1315,8 @@ PMOD_EXPORT void object_index_no_free(struct svalue *to,
     Pike_error("Lookup in destructed object.\n");
     return; /* make gcc happy */
   }
+
+  p = (inh = p->inherits + inherit_number)->prog;
 
 #ifdef PIKE_DEBUG
   if (index->type > MAX_TYPE)
@@ -1345,13 +1354,14 @@ PMOD_EXPORT void object_index_no_free(struct svalue *to,
   }
   if(l != -1)
   {
+    l += inh->identifier_level;
     push_svalue(index);
     apply_lfun(o, lfun, 1);
     *to=sp[-1];
     sp--;
     dmalloc_touch_svalue(sp);
   } else {
-    object_index_no_free2(to, o, index);
+    object_index_no_free2(to, o, inherit_number, index);
   }
 }
 
@@ -1520,10 +1530,12 @@ PMOD_EXPORT void object_low_set_index(struct object *o,
  * indexed. If index is T_OBJ_INDEX then any identifier is accessed
  * through identifier index. */
 PMOD_EXPORT void object_set_index2(struct object *o,
+				   int inherit_number,
 				   struct svalue *index,
 				   struct svalue *from)
 {
   struct program *p;
+  struct inherit *inh;
   int f = -1;
 
   if(!o || !(p=o->prog))
@@ -1532,10 +1544,13 @@ PMOD_EXPORT void object_set_index2(struct object *o,
     return; /* make gcc happy */
   }
 
+  p = (inh = p->inherits + inherit_number)->prog;
+
   switch(index->type)
   {
   case T_STRING:
     f=find_shared_string_identifier(index->u.string, p);
+    if (f >= 0) f += inh->identifier_level;
     break;
 
   case T_OBJ_INDEX:
@@ -1564,17 +1579,22 @@ PMOD_EXPORT void object_set_index2(struct object *o,
 /* Assign a variable through external indexing, i.e. by going through
  * `->= or `[]= lfuns, not seeing private and static etc. */
 PMOD_EXPORT void object_set_index(struct object *o,
+				  int inherit_number,
 				  struct svalue *index,
 				  struct svalue *from)
 {
   int lfun;
+  int fun;
   struct program *p = NULL;
+  struct inherit *inh;
 
   if(!o || !(p=o->prog))
   {
     Pike_error("Lookup in destructed object.\n");
     return; /* make gcc happy */
   }
+
+  p = (inh = p->inherits + inherit_number)->prog;
 
 #ifdef PIKE_DEBUG
   if (index->type > MAX_TYPE)
@@ -1583,14 +1603,14 @@ PMOD_EXPORT void object_set_index(struct object *o,
 
   lfun=ARROW_INDEX_P(index) ? LFUN_ASSIGN_ARROW : LFUN_ASSIGN_INDEX;
 
-  if(FIND_LFUN(p, lfun) != -1)
+  if((fun = FIND_LFUN(p, lfun)) != -1)
   {
     push_svalue(index);
     push_svalue(from);
-    apply_lfun(o, lfun, 2);
+    apply_low(o, fun + inh->identifier_level, 2);
     pop_stack();
   } else {
-    object_set_index2(o, index, from);
+    object_set_index2(o, inherit_number, index, from);
   }
 }
 
@@ -1649,11 +1669,12 @@ static union anything *object_low_get_item_ptr(struct object *o,
 
 
 union anything *object_get_item_ptr(struct object *o,
+				    int inherit_number,
 				    struct svalue *index,
 				    TYPE_T type)
 {
-
   struct program *p;
+  struct inherit *inh;
   int f;
 
   debug_malloc_touch(o);
@@ -1665,6 +1686,7 @@ union anything *object_get_item_ptr(struct object *o,
     return 0; /* make gcc happy */
   }
 
+  p = (inh = p->inherits + inherit_number)->prog;
 
   switch(index->type)
   {
@@ -1680,6 +1702,7 @@ union anything *object_get_item_ptr(struct object *o,
     }
     
     f=find_shared_string_identifier(index->u.string, p);
+    if (f >= 0) f += inh->identifier_level;
     break;
 
   case T_OBJ_INDEX:
@@ -1758,17 +1781,21 @@ PMOD_EXPORT int object_equal_p(struct object *a, struct object *b, struct proces
   return 1;
 }
 
-PMOD_EXPORT struct array *object_indices(struct object *o)
+PMOD_EXPORT struct array *object_indices(struct object *o, int inherit_number)
 {
   struct program *p;
+  struct inherit *inh;
   struct array *a;
+  int fun;
   int e;
 
   p=o->prog;
   if(!p)
     Pike_error("indices() on destructed object.\n");
 
-  if(FIND_LFUN(p,LFUN__INDICES) == -1)
+  p = (inh = p->inherits + inherit_number)->prog;
+
+  if((fun = FIND_LFUN(p, LFUN__INDICES)) == -1)
   {
     a=allocate_array_no_init(p->num_identifier_index,0);
     for(e=0;e<(int)p->num_identifier_index;e++)
@@ -1779,7 +1806,7 @@ PMOD_EXPORT struct array *object_indices(struct object *o)
     }
     a->type_field = BIT_STRING;
   }else{
-    apply_lfun(o, LFUN__INDICES, 0);
+    apply_low(o, fun + inh->identifier_level, 0);
     if(sp[-1].type != T_ARRAY)
       Pike_error("Bad return type from o->_indices()\n");
     a=sp[-1].u.array;
@@ -1789,28 +1816,33 @@ PMOD_EXPORT struct array *object_indices(struct object *o)
   return a;
 }
 
-PMOD_EXPORT struct array *object_values(struct object *o)
+PMOD_EXPORT struct array *object_values(struct object *o, int inherit_number)
 {
   struct program *p;
+  struct inherit *inh;
   struct array *a;
+  int fun;
   int e;
   
   p=o->prog;
   if(!p)
     Pike_error("values() on destructed object.\n");
 
-  if(FIND_LFUN(p,LFUN__VALUES)==-1)
+  p = (inh = p->inherits + inherit_number)->prog;
+
+  if((fun = FIND_LFUN(p, LFUN__VALUES)) == -1)
   {
     TYPE_FIELD types = 0;
     a=allocate_array_no_init(p->num_identifier_index,0);
     for(e=0;e<(int)p->num_identifier_index;e++)
     {
-      low_object_index_no_free(ITEM(a)+e, o, p->identifier_index[e]);
+      low_object_index_no_free(ITEM(a)+e, o,
+			       p->identifier_index[e] + inh->identifier_level);
       types |= 1 << ITEM(a)[e].type;
     }
     a->type_field = types;
   }else{
-    apply_lfun(o, LFUN__VALUES, 0);
+    apply_low(o, fun + inh->identifier_level, 0);
     if(sp[-1].type != T_ARRAY)
       Pike_error("Bad return type from o->_values()\n");
     a=sp[-1].u.array;

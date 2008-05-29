@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.401 2008/05/12 17:20:20 grubba Exp $
+|| $Id: interpret.c,v 1.402 2008/05/29 10:11:14 grubba Exp $
 */
 
 #include "global.h"
@@ -380,7 +380,7 @@ void lvalue_to_svalue_no_free(struct svalue *to,struct svalue *lval)
       if (lval[1].type == T_OBJ_INDEX)
 	low_object_index_no_free (to, lval->u.object, lval[1].u.identifier);
       else
-	object_index_no_free(to, lval->u.object, lval+1);
+	object_index_no_free(to, lval->u.object, lval->subtype, lval+1);
       break;
       
     case T_ARRAY:
@@ -449,7 +449,7 @@ PMOD_EXPORT void assign_lvalue(struct svalue *lval,struct svalue *from)
     if (lval[1].type == T_OBJ_INDEX)
       object_low_set_index (lval->u.object, lval[1].u.identifier, from);
     else
-      object_set_index(lval->u.object, lval+1, from);
+      object_set_index(lval->u.object, lval->subtype, lval+1, from);
     break;
 
   case T_ARRAY:
@@ -501,7 +501,7 @@ union anything *get_pointer_if_this_type(struct svalue *lval, TYPE_T t)
 
     case T_OBJECT:
       /* FIXME: What about object subtypes? */
-      return object_get_item_ptr(lval->u.object,lval+1,t);
+      return object_get_item_ptr(lval->u.object, lval->subtype, lval+1, t);
       
     case T_ARRAY:
       return array_get_item_ptr(lval->u.array,lval+1,t);

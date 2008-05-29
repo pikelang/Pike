@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: colors.c,v 1.75 2005/11/12 20:36:07 nilsson Exp $
+|| $Id: colors.c,v 1.76 2008/05/29 10:11:15 grubba Exp $
 */
 
 /*
@@ -863,7 +863,7 @@ static void image_color_index(INT32 args)
    if (args!=1)
       Pike_error("Image.Color[]: illegal number of arguments\n");
 
-   object_index_no_free2(&s,THISOBJ,sp-1);
+   object_index_no_free2(&s, THISOBJ, 0, sp-1);
    if (s.type==T_INT && sp[-1].type==T_STRING)
    {
       if (sp[-1].u.string==str_r)
@@ -1439,7 +1439,7 @@ static void image_guess_color(INT32 args)
 static void image_colors_index(INT32 args)
 {
    struct svalue s;
-   object_index_no_free2(&s,THISOBJ,sp-1);
+   object_index_no_free2(&s, THISOBJ, 0, sp-1);
    if (s.type!=T_INT)
    {
       pop_stack();

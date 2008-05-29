@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.h,v 1.96 2008/05/11 14:55:53 mast Exp $
+|| $Id: object.h,v 1.97 2008/05/29 10:11:14 grubba Exp $
 */
 
 #ifndef OBJECT_H
@@ -103,26 +103,31 @@ PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
 					  struct object *o,
 					  ptrdiff_t f);
 PMOD_EXPORT void object_index_no_free2(struct svalue *to,
-			  struct object *o,
-			  struct svalue *key);
+				       struct object *o,
+				       int inherit_level,
+				       struct svalue *key);
 PMOD_EXPORT void object_index_no_free(struct svalue *to,
-			   struct object *o,
-			   struct svalue *key);
+				      struct object *o,
+				      int inherit_level,
+				      struct svalue *key);
 PMOD_EXPORT void object_low_set_index(struct object *o,
-			  int f,
-			  struct svalue *from);
+				      int f,
+				      struct svalue *from);
 PMOD_EXPORT void object_set_index2(struct object *o,
-		      struct svalue *key,
-		      struct svalue *from);
+				   int inherit_level,
+				   struct svalue *key,
+				   struct svalue *from);
 PMOD_EXPORT void object_set_index(struct object *o,
-		       struct svalue *key,
-		       struct svalue *from);
+				  int inherit_level,
+				  struct svalue *key,
+				  struct svalue *from);
 union anything *object_get_item_ptr(struct object *o,
+				    int inherit_level,
 				    struct svalue *key,
 				    TYPE_T type);
 PMOD_EXPORT int object_equal_p(struct object *a, struct object *b, struct processing *p);
-PMOD_EXPORT struct array *object_indices(struct object *o);
-PMOD_EXPORT struct array *object_values(struct object *o);
+PMOD_EXPORT struct array *object_indices(struct object *o, int inherit_level);
+PMOD_EXPORT struct array *object_values(struct object *o, int inherit_level);
 PMOD_EXPORT void visit_object (struct object *o, int action);
 PMOD_EXPORT void visit_function (struct svalue *s, int ref_type);
 PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o);

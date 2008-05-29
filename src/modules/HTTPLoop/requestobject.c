@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: requestobject.c,v 1.31 2008/01/26 22:34:25 mast Exp $
+|| $Id: requestobject.c,v 1.32 2008/05/29 10:11:15 grubba Exp $
 */
 
 #include "global.h"
@@ -426,7 +426,7 @@ void f_aap_index_op(INT32 args)
   if(!THIS->misc_variables) 
   {
     struct svalue s;
-    object_index_no_free2(&s, Pike_fp->current_object, sp-1);
+    object_index_no_free2(&s, Pike_fp->current_object, 0, sp-1);
     pop_stack();
     *sp=s;
     sp++;
@@ -672,7 +672,7 @@ void f_aap_index_op(INT32 args)
   }
   {
     struct svalue s;
-    object_index_no_free2(&s, Pike_fp->current_object, sp-1);
+    object_index_no_free2(&s, Pike_fp->current_object, 0, sp-1);
     pop_stack();
     *sp=s;
     sp++;
