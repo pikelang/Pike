@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lexer.h,v 1.70 2008/05/11 22:38:20 mast Exp $
+|| $Id: lexer.h,v 1.71 2008/05/29 16:29:11 grubba Exp $
 */
 
 /*
@@ -692,6 +692,14 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	  else if (ISWORD("dont_save_parent"))
 	  {
 	    lex->pragmas |= ID_DONT_SAVE_PARENT;
+	  }
+	  else if (ISWORD("no_deprecation_warnings"))
+	  {
+	    lex->pragmas |= ID_NO_DEPRECATION_WARNINGS;
+	  }
+	  else if (ISWORD("deprecation_warnings"))
+	  {
+	    lex->pragmas &= ~ID_NO_DEPRECATION_WARNINGS;
 	  }
 	  break;
 	}
