@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.708 2008/05/29 12:36:35 grubba Exp $
+|| $Id: program.c,v 1.709 2008/05/29 16:32:55 grubba Exp $
 */
 
 #include "global.h"
@@ -8674,7 +8674,8 @@ static void f_compilation_pop_type_attribute(INT32 args)
 
   if (Pike_compiler->compiler_pass == 2) {
     MAKE_CONST_STRING(deprecated_string, "deprecated");
-    if (attr == deprecated_string) {
+    if ((attr == deprecated_string) &&
+	!(c->lex.pragmas & ID_NO_DEPRECATION_WARNINGS)) {
       push_int(REPORT_WARNING);
       ref_push_string(c->lex.current_file);
       push_int(c->lex.current_line);
@@ -8720,7 +8721,8 @@ static void f_compilation_push_type_attribute(INT32 args)
 
   if (Pike_compiler->compiler_pass == 2) {
     MAKE_CONST_STRING(deprecated_string, "deprecated");
-    if (attr == deprecated_string &&
+    if ((attr == deprecated_string) &&
+	!(c->lex.pragmas & ID_NO_DEPRECATION_WARNINGS) &&
 	!((a->type == PIKE_T_TYPE) && (a->u.type == zero_type_string))) {
       /* Don't warn about setting deprecated values to zero. */
       push_int(REPORT_WARNING);
@@ -8780,6 +8782,7 @@ static void f_compilation_apply_type_attribute(INT32 args)
   if (Pike_compiler->compiler_pass == 2) {
     MAKE_CONST_STRING(deprecated_string, "deprecated");
     if ((attr == deprecated_string) &&
+	!(c->lex.pragmas & ID_NO_DEPRECATION_WARNINGS) &&
 	(!b ||
 	 ((b->type == T_INT) && (b->subtype == NUMBER_UNDEFINED) &&
 	  (!b->u.integer)))) {
