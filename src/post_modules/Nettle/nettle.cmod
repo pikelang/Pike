@@ -1,5 +1,5 @@
 /* nettle.cmod -*- c -*- */
-/* $Id: nettle.cmod,v 1.44 2008/05/29 22:50:20 nilsson Exp $ */
+/* $Id: nettle.cmod,v 1.45 2008/05/29 23:03:47 nilsson Exp $ */
 
 #include "global.h"
 #include "interpret.h"
@@ -201,11 +201,15 @@ PIKECLASS Yarrow
     THIS->sources = NULL;
     yarrow256_init(&THIS->ctx, 0, NULL);
   }
+
   EXIT
     gc_trivial;
   {
-    /* It's ok to call free(NULL); */
-    free(THIS->sources);
+    if( THIS->sources )
+    {
+      free(THIS->sources);
+      THIS->sources = NULL;
+    }
   }
 }
 
@@ -316,8 +320,8 @@ PIKECLASS CBC
 
   INIT
   {
-    THIS->object = 0;
-    THIS->iv = 0;
+    THIS->object = NULL;
+    THIS->iv = NULL;
     THIS->block_size = 0;
     THIS->mode = 0;
   }
@@ -325,12 +329,15 @@ PIKECLASS CBC
   EXIT
     gc_trivial;
   {
-    if(THIS->object) free_object(THIS->object);
+    if(THIS->object) {
+      free_object(THIS->object);
+      THIS->object = NULL;
+    }
     if(THIS->iv) {
       MEMSET(THIS->iv, 0, THIS->block_size);
       free(THIS->iv);
+      THIS->iv = NULL;
     }
-    THIS->iv = 0;
   }
 
   INLINE static void cbc_encrypt_step(const unsigned INT8 *const source,
@@ -539,9 +546,9 @@ PIKECLASS Proxy {
   CVAR int backlog_len;
 
   INIT {
-    THIS->object = 0;
+    THIS->object = NULL;
     THIS->block_size = 0;
-    THIS->backlog = 0;
+    THIS->backlog = NULL;
     THIS->backlog_len = 0;
   }
 
@@ -551,9 +558,12 @@ PIKECLASS Proxy {
     if(THIS->backlog) {
       MEMSET(THIS->backlog, 0, THIS->block_size);
       free(THIS->backlog);
+      THIS->backlog = NULL;
     }
-    if(THIS->object)
+    if(THIS->object) {
       free_object(THIS->object);
+      THIS->object = NULL;
+    }
   }
 
   /*! @decl void create(program|object|function cipher, mixed ... args)
@@ -817,6 +827,7 @@ PIKECLASS LFib
     gc_trivial;
   {
     free(THIS->ctx);
+    THIS->ctx = NULL;
   }
 
   /* @decl void create(int seed)

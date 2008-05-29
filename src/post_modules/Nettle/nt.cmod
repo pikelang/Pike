@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: nt.cmod,v 1.15 2008/05/29 22:50:20 nilsson Exp $
+ * $Id: nt.cmod,v 1.16 2008/05/29 23:03:47 nilsson Exp $
  */
 
 #include "global.h"
@@ -119,13 +119,16 @@ PIKECLASS CryptContext
 
   INIT
   {
-    THIS->handle = 0;
+    THIS->handle = NULL;
   }
   EXIT
     gc_trivial;
   {
     if(THIS->handle)
+    {
       CryptReleaseContext(THIS->handle, 0);
+      THIS->handle = NULL;
+    }
   }
 }
 

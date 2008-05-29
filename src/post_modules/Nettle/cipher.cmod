@@ -1,5 +1,5 @@
 /* cipher.cmod -*- c -*- */
-/* $Id: cipher.cmod,v 1.36 2008/05/29 22:50:20 nilsson Exp $ */
+/* $Id: cipher.cmod,v 1.37 2008/05/29 23:03:46 nilsson Exp $ */
 
 #include "global.h"
 #include "interpret.h"
@@ -306,7 +306,9 @@ PIKECLASS CipherState
 	assert(info);
 	assert(info->meta);
 	memset(THIS->ctx, 0, info->meta->context_size);
+        THIS->ctx = NULL;
       }
+      THIS->crypt = NULL;
     }
 }
 /*! @endclass CipherState */
