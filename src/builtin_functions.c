@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.667 2008/05/29 10:11:14 grubba Exp $
+|| $Id: builtin_functions.c,v 1.668 2008/05/29 20:08:14 nilsson Exp $
 */
 
 #include "global.h"
@@ -419,11 +419,13 @@ struct case_info {
   INT16 data;
 };
 
-#define CIM_NONE	0	/* Case-less */
-#define CIM_UPPERDELTA	1	/* Upper-case, delta to lower-case in data */
-#define CIM_LOWERDELTA	2	/* Lower-case, -delta to upper-case in data */
-#define CIM_CASEBIT	3	/* Some case, case mask in data */
-#define CIM_CASEBITOFF	4	/* Same as above, but also offset by data */
+#define CIM_NONE	   0	/* Case-less */
+#define CIM_UPPERDELTA	   1	/* Upper-case, delta to lower-case in data */
+#define CIM_LOWERDELTA	   2	/* Lower-case, -delta to upper-case in data */
+#define CIM_CASEBIT	   3	/* Some case, case mask in data */
+#define CIM_CASEBITOFF	   4	/* Same as above, but also offset by data */
+#define CIM_LONGUPPERDELTA 5	/* Upper-case, delta + 0x7fff. */
+#define CIM_LONGLOWERDELTA 6	/* Lower-case, delta + 0x7fff. */
 
 static const struct case_info case_info[] = {
 #include "case_info.h"
@@ -492,14 +494,17 @@ static struct case_info *find_ci_shift0(INT32 c)
 
 #define DO_LOWER_CASE(C) do {\
     INT32 c = C; \
-    if(c<0xb5){if(c >= 'A' && c <= 'Z' ) C=c+0x20;}else {\
+    if(c<0xb5){if(c >= 'A' && c <= 'Z' ) C=c+0x20; } \
+    /*else if(c==0xa77d) C=0x1d79;*/ else { \
     struct case_info *ci = find_ci(c); \
     if (ci) { \
       switch(ci->mode) { \
-      case CIM_NONE: case CIM_LOWERDELTA: break; \
+      case CIM_NONE: case CIM_LOWERDELTA: case CIM_LONGLOWERDELTA: break; \
       case CIM_UPPERDELTA: C = c + ci->data; break; \
       case CIM_CASEBIT: C = c | ci->data; break; \
       case CIM_CASEBITOFF: C = ((c - ci->data) | ci->data) + ci->data; break; \
+      case CIM_LONGUPPERDELTA: \
+        C = c + ci->data + ( ci->data>0 ? 0x7fff : -0x8000 ); break; \
       DO_IF_DEBUG( default: Pike_fatal("lower_case(): Unknown case_info mode: %d\n", ci->mode); ) \
     } \
    }} \
@@ -522,14 +527,17 @@ static struct case_info *find_ci_shift0(INT32 c)
 
 #define DO_UPPER_CASE(C) do {\
     INT32 c = C; \
-    if(c<0xb5){if(c >= 'a' && c <= 'z' ) C=c-0x20;}else {\
+    if(c<0xb5){if(c >= 'a' && c <= 'z' ) C=c-0x20; } \
+    /*else if(c==0x1d79) C=0xa77d;*/ else {\
     struct case_info *ci = find_ci(c); \
     if (ci) { \
       switch(ci->mode) { \
-      case CIM_NONE: case CIM_UPPERDELTA: break; \
+      case CIM_NONE: case CIM_UPPERDELTA: case CIM_LONGUPPERDELTA: break; \
       case CIM_LOWERDELTA: C = c - ci->data; break; \
       case CIM_CASEBIT: C = c & ~ci->data; break; \
       case CIM_CASEBITOFF: C = ((c - ci->data)& ~ci->data) + ci->data; break; \
+      case CIM_LONGLOWERDELTA: \
+        C = c - ci->data - ( ci->data>0 ? 0x7fff : -0x8000 ); break; \
       DO_IF_DEBUG( default: Pike_fatal("upper_case(): Unknown case_info mode: %d\n", ci->mode); ) \
     } \
    }} \

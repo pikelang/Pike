@@ -1,7 +1,7 @@
 #! /usr/bin/env pike
 
 /*
- * $Id: make_ci.pike,v 1.11 2004/04/12 01:11:15 nilsson Exp $
+ * $Id: make_ci.pike,v 1.12 2008/05/29 20:08:43 nilsson Exp $
  *
  * Creates the file case_info.h
  *
@@ -15,6 +15,8 @@
 #define CIM_LOWERDELTA	2	/* Lower-case, -delta to upper-case in data */
 #define CIM_CASEBIT	3	/* Some case, case bit in data */
 #define CIM_CASEBITOFF	4	/* Same as above, but also offset by data */
+#define CIM_LONGUPPERDELTA 5    /* Upper-case, delta + 0x7fff. */
+#define CIM_LONGLOWERDELTA 6    /* Lower-case, delta + 0x7fff. */
 
 int main(int argc, array(string) argv)
 {
@@ -40,10 +42,10 @@ int main(int argc, array(string) argv)
     if (!sizeof(line)) continue;
 
     if (sizeof(info) != 15) {
-      werror(sprintf("Syntax error on line %d: "
-		     "Bad number of fields:%d (expected 15)\n"
-		     "%O\n",
-		     lineno, sizeof(info), line));
+      werror("Syntax error on line %d: "
+             "Bad number of fields:%d (expected 15)\n"
+             "%O\n",
+             lineno, sizeof(info), line);
       exit(1);
     }
     int char;
@@ -67,6 +69,14 @@ int main(int argc, array(string) argv)
 	  mode = CIM_CASEBITOFF;
 	}
       }
+      else if( delta>0x7fff ) {
+        mode = CIM_LONGUPPERDELTA;
+        delta -= 0x7fff;
+      }
+      else if( delta<-0x8000 ) {
+        mode = CIM_LONGUPPERDELTA;
+        delta += 0x8000;
+      }
       d = delta;
     } else if (sizeof(info[14])) {
       // Lower-case char
@@ -79,6 +89,14 @@ int main(int argc, array(string) argv)
 	} else {
 	  mode = CIM_CASEBITOFF;
 	}
+      }
+      else if( delta>0x7fff ) {
+        mode = CIM_LONGLOWERDELTA;
+        delta -= 0x7fff;
+      }
+      else if( delta<-0x8000 ) {
+        mode = CIM_LONGLOWERDELTA;
+        delta += 0x8000;
       }
       d = delta;
     }
@@ -101,13 +119,15 @@ int main(int argc, array(string) argv)
   for (int i = 0; i < sizeof (ci); i++) {
     array(int) info = ci[i];
     if ((info[2] <= -0x8000) || (info[2] > 0x7fff)) {
-      error("Case information out of range for shorts: %d\n", info[2]);
+      werror("Case information out of range for shorts: %d\n", info[2]);
+      exit(1);
     }
     table[i] =
       sprintf("{ 0x%06x, %s, %s0x%04x, },\n",
 	      info[0],
 	      ({ "CIM_NONE", "CIM_UPPERDELTA", "CIM_LOWERDELTA",
-		 "CIM_CASEBIT", "CIM_CASEBITOFF" })[info[1]],
+		 "CIM_CASEBIT", "CIM_CASEBITOFF",
+                 "CIM_LONGUPPERDELTA", "CIM_LONGLOWERDELTA" })[info[1]],
 	      (info[2]<0)?"-":"",
 	      (info[2]<0)?-info[2]:info[2]);
   }
@@ -115,16 +135,16 @@ int main(int argc, array(string) argv)
   Stdio.File outfile = Stdio.File(argv[1], "wct");
 
   outfile->
-    write(sprintf("/*\n"
-		  " * Created by\n"
-		  " * $Id: make_ci.pike,v 1.11 2004/04/12 01:11:15 nilsson Exp $\n"
-		  " * on %s"
-		  " *\n"
-		  " * Table used for looking up the case of\n"
-		  " * Unicode characters.\n"
-		  " *\n"
-		  " * Henrik Grubbström 1999-03-20\n"
-		  " */\n\n", ctime(time())));
+    write("/*\n"
+          " * Created by\n"
+          " * $Id: make_ci.pike,v 1.12 2008/05/29 20:08:43 nilsson Exp $\n"
+          " * on %s"
+          " *\n"
+          " * Table used for looking up the case of\n"
+          " * Unicode characters.\n"
+          " *\n"
+          " * Henrik Grubbström 1999-03-20\n"
+          " */\n\n", ctime(time()));
 
   map(table, outfile->write);
 
@@ -132,8 +152,7 @@ int main(int argc, array(string) argv)
     if (ci[lineno][0] > 0xff)
       break;
 
-  outfile->write(sprintf("\n\n#define CASE_INFO_SHIFT0_HIGH 0x%04x\n",
-			 lineno));
+  outfile->write("\n\n#define CASE_INFO_SHIFT0_HIGH 0x%04x\n", lineno);
 
   exit(0);
 }
