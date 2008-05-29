@@ -1,5 +1,5 @@
 /* nettle.cmod -*- c -*- */
-/* $Id: nettle.cmod,v 1.43 2007/12/20 19:03:46 nilsson Exp $ */
+/* $Id: nettle.cmod,v 1.44 2008/05/29 22:50:20 nilsson Exp $ */
 
 #include "global.h"
 #include "interpret.h"
@@ -202,6 +202,7 @@ PIKECLASS Yarrow
     yarrow256_init(&THIS->ctx, 0, NULL);
   }
   EXIT
+    gc_trivial;
   {
     /* It's ok to call free(NULL); */
     free(THIS->sources);
@@ -322,6 +323,7 @@ PIKECLASS CBC
   }
 
   EXIT
+    gc_trivial;
   {
     if(THIS->object) free_object(THIS->object);
     if(THIS->iv) {
@@ -543,7 +545,9 @@ PIKECLASS Proxy {
     THIS->backlog_len = 0;
   }
 
-  EXIT {
+  EXIT
+    gc_trivial;
+  {
     if(THIS->backlog) {
       MEMSET(THIS->backlog, 0, THIS->block_size);
       free(THIS->backlog);
@@ -809,7 +813,9 @@ PIKECLASS LFib
     THIS->ctx = xalloc(sizeof(struct knuth_lfib_ctx));
   }
 
-  EXIT {
+  EXIT
+    gc_trivial;
+  {
     free(THIS->ctx);
   }
 

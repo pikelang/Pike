@@ -1,5 +1,5 @@
 /* cipher.cmod -*- c -*- */
-/* $Id: cipher.cmod,v 1.35 2005/12/12 20:51:40 nilsson Exp $ */
+/* $Id: cipher.cmod,v 1.36 2008/05/29 22:50:20 nilsson Exp $ */
 
 #include "global.h"
 #include "interpret.h"
@@ -298,6 +298,7 @@ PIKECLASS CipherState
     }
 
   EXIT
+    gc_trivial;
     {
       if (THIS->ctx && Pike_fp->current_object->prog)
       {

@@ -1,5 +1,5 @@
 /* hash.cmod -*- c -*- */
-/* $Id: hash.cmod,v 1.27 2005/12/12 20:51:40 nilsson Exp $ */
+/* $Id: hash.cmod,v 1.28 2008/05/29 22:50:20 nilsson Exp $ */
 
 #include "global.h"
 #include "interpret.h"
@@ -317,6 +317,7 @@ PIKECLASS HashState
       THIS->ctx = NULL;
     }
   EXIT
+    gc_trivial;
     {
       werror("HashState->EXIT\n");
       if (THIS->ctx && Pike_fp->current_object->prog)
