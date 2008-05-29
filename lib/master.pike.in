@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.426 2008/05/29 17:36:41 grubba Exp $
+// $Id: master.pike.in,v 1.427 2008/05/29 18:12:12 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -163,7 +163,8 @@ static class Pike_0_6_master
   extern mapping(string:multiset(string)) dir_cache;
   local array(mixed) master_file_stat(string x)
   {
-    return (array)global::master_file_stat(x);
+    Stat st = global::master_file_stat(x);
+    return st && (array)st;
   }
 #endif
   mapping (string:array(string)) environment;
@@ -476,7 +477,9 @@ static class Pike_7_2_master
 #endif
   extern int compat_major;
   extern int compat_minor;
+#ifdef FILE_STAT_CACHE
   Stat master_file_stat(string x);
+#endif
   object low_cast_to_object(string oname, string current_file,
 			    object|void current_handler);
   object findmodule(string fullname, object|void handler);
@@ -500,7 +503,10 @@ static class Pike_7_2_master
   extern object currentversion;
   extern mapping(object:object) compat_handler_cache;
   object get_compilation_handler(int major, int minor);
-  string _sprintf();
+  local string _sprintf(int|void t)
+  {
+    return UNDEFINED;
+  }
   object get_compat_master(int major, int minor)
   {
     if ((major > 0) || (minor > 6)) return Pike_7_0_master::this;
