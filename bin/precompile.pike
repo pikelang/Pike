@@ -75,10 +75,34 @@ constant precompile_api_version = "2";
  * disabled by putting ", ..." last in the argument list.
  *
  * Magic types in function argument lists:
+ *
  *   bignum    A native int or bignum object. The C storage type is
  *             struct svalue.
+ *
  *   longest   A native int or bignum object which is range checked and stored
  *             in a LONGEST.
+ *
+ *   zero      If used like "zero|Something" then a zero value is allowed in
+ *             addition to Something (which is how it works by default in pike
+ *             code). This will not cause an svalue to be constructed on the C
+ *             level, rather 0/NULL is assigned to the C type.
+ *
+ *             Note that this is almost the same as how void works in
+ *             "void|Something", except that the argument still is required.
+ *
+ *             "zero" interacts with "void" in a special way: If you write
+ *             "void|int" then the C storage will be an svalue to make it
+ *             possible to tell a missing argument from a zero integer. If you
+ *             write "void|zero|int" then it's assumed that you don't care
+ *             about that, and so the C storage will be an INT_TYPE which will
+ *             be assigned zero both if the argument is zero and when it's left
+ *             out. This applies to the int and float runtime types, but not
+ *             for the special case "void|zero".
+ *
+ * Note: If a function argument accepts more than one runtime type, e.g.
+ * "int|string", then no type checking at all is performed on the svalue. That
+ * is not a bug - the user code have to do a type check later anyway, and it's
+ * more efficient to add the error handling there.
  *
  * Currently, the following attributes are understood:
  *   efun;          makes this function a global constant (no value)
@@ -376,6 +400,20 @@ class PikeType
       }
     }
 
+  static array(PikeType) strip_zero_alt()
+  /* Assumes this is an '|' node. Returns args without any 'zero'
+   * alternatives. */
+  {
+    if (!args) return 0;
+    array(PikeType) a = ({});
+    foreach (args, PikeType arg)
+      if (arg->basetype() != "zero") a += ({arg});
+    if (!sizeof (a) && sizeof (args))
+      // Make sure we don't strip away the entire type.
+      a = ({args[0]});
+    return a;
+  }
+
   /*
    * return the 'one-word' description of this type
    */
@@ -387,11 +425,27 @@ class PikeType
 	case "CTYPE":
 	  return args[1]->basetype();
 
-	case "|":
-	  array(string) tmp=args->basetype() - ({"void"});
-	  if(sizeof (tmp) == 1 || (sizeof (tmp) > 1 && `==(@tmp)))
-	    return tmp[0];
-	  return "mixed";
+	case "|": {
+	  // If there's only one type except "void" and "zero" then return it,
+	  // else return "mixed". Plus some special cases if we only got "void"
+	  // and "zero" in there.
+	  int got_zero;
+	  string single_type;
+	  foreach (args, PikeType arg) {
+	    string type = arg->basetype();
+	    if (type == "zero")
+	      got_zero = 1;
+	    else if (type != "void") {
+	      if (single_type && single_type != type)
+		return "mixed";
+	      else
+		single_type = type;
+	    }
+	  }
+	  if (single_type) return single_type;
+	  else if (got_zero) return "zero";
+	  else return "void";
+	}
 
 	case "=":
 	case "&":
@@ -429,6 +483,7 @@ class PikeType
       case "program":
       case "mixed":
       case "void":
+      case "zero":
 	return ret;
 
 	default: return "object";
@@ -509,6 +564,7 @@ class PikeType
       case "multiset":
       case "type":
       case "void":
+      case "zero":
 	return ({ ret });
 
 	case "bignum":
@@ -534,35 +590,43 @@ class PikeType
     }
 
   /*
-   * Return 1 if this type is or matches 'void'
+   * Check if this type matches 'void' and/or 'zero'.
    */
-  int may_be_void()
+  int may_be_void_or_zero (int(0..) may_be_void, int(0..) may_be_zero)
+  {
+    switch((string)t)
     {
-      switch((string)t)
-      {
-	case "void": return 1;
-	case "|":
-	  for(int e=0;e<sizeof(args);e++)
-	    if(args[e]->may_be_void())
-	      return 1;
-	  return 0;
+      case "zero": return may_be_zero;
+      case "void": return may_be_void;
+      case "|":
+	return max (0, @args->may_be_void_or_zero (may_be_void, may_be_zero));
 
-	case "=":
-	case "&":
-	  return args[-1]->may_be_void();
-      }
+      case "=":
+      case "&":
+	return args[-1]->may_be_void_or_zero (may_be_void, may_be_zero);
     }
+    return 0;
+  }
+
+  int may_be_void()		// Compat wrapper.
+  {
+    return may_be_void_or_zero (1, 0);
+  }
 
   string c_storage_type(int|void is_struct_entry)
     {
-      string btype = /*may_be_void() ? "mixed" : */realtype();
+      string btype = realtype();
       switch (btype)
       {
 	case "void": return "void";
-	case "int":
+	case "zero":
 	  return may_be_void()?"struct svalue *":"INT_TYPE";
+	case "int":
+	  return (may_be_void_or_zero (1, 2) == 1 ?
+		  "struct svalue *" : "INT_TYPE");
 	case "float":
-	  return may_be_void()?"struct svalue *":"FLOAT_TYPE";
+	  return (may_be_void_or_zero (1, 2) == 1 ?
+		  "struct svalue *" : "FLOAT_TYPE");
 	case "string": return "struct pike_string *";
 	  
 	case "array":
@@ -591,9 +655,10 @@ class PikeType
     }
 
   /*
-   * Make a C representation, like 'tInt'
+   * Make a C representation, like 'tInt'. Can also strip off an
+   * "|zero" alternative on the top level.
    */
-  string output_c_type()
+  string output_c_type (void|int ignore_zero_alt)
     {
       string ret=(string)t;
 //      werror("FOO: %O %O\n",t,args);
@@ -606,7 +671,9 @@ class PikeType
 	  return fiddle("tAnd",args->output_c_type());
 	  
 	case "|":
-	  return fiddle("tOr",args->output_c_type());
+	  array(PikeType) a = strip_zero_alt();
+	  if (sizeof (a) == 1) return a[0]->output_c_type();
+	  return fiddle("tOr",a->output_c_type());
 
 	case "!":
 	  return sprintf("tNot(%s)",args[0]->output_c_type());
@@ -644,7 +711,7 @@ class PikeType
 	case "=":
 	  return sprintf("tSetvar(%s,%s)",
 			 (string)args[0]->t,
-			 args[1]->output_c_type());
+			 args[1]->output_c_type (ignore_zero_alt));
 
 	case "0":
 	case "1":
@@ -757,13 +824,19 @@ class PikeType
     }
 
   /* 
-   * Copy and remove type assignments
+   * Copy and remove type assignments. Can also strip off an "|zero"
+   * alternative on the top level.
    */
-  PikeType copy_and_strip_type_assignments()
+  PikeType copy_and_strip_type_assignments (void|int ignore_zero_alt)
     {
       if("=" == (string)t)
-	return args[1]->copy_and_strip_type_assignments();
-      return PikeType(t, args && args->copy_and_strip_type_assignments());
+	return args[1]->copy_and_strip_type_assignments (ignore_zero_alt);
+      array(PikeType) a;
+      if (args && ignore_zero_alt && (string) t == "|")
+	a = strip_zero_alt();
+      else
+	a = args;
+      return PikeType(t, a && a->copy_and_strip_type_assignments (0));
     }
 
   string _sprintf(int how)
@@ -974,6 +1047,8 @@ class Argument
   string _realtype;
 
   int is_c_type() { return _is_c_type; }
+  int may_be_void_or_zero (int may_be_void, int may_be_zero)
+    { return type()->may_be_void_or_zero (may_be_void, may_be_zero); }
   int may_be_void() { return type()->may_be_void(); }
   int line() { return _line; }
   string name() { return _name; }
@@ -1001,7 +1076,7 @@ class Argument
     {
       if(_typename) return _typename;
       return _typename=
-	type()->copy_and_strip_type_assignments()->output_pike_type(0);
+	type()->copy_and_strip_type_assignments (1)->output_pike_type(0);
     }
 
   void create(array x)
@@ -2032,6 +2107,8 @@ class ParseBlock
 
 	  foreach(args, Argument arg)
 	  {
+	    int got_void_or_zero_check = 0;
+
 	    if (argnum == repeat_arg) {
 	      // Begin the argcnt loop.
 	      check_argbase = "+argcnt"+argbase;
@@ -2043,21 +2120,36 @@ class ParseBlock
 				 arg->line()) });
 	    }
 
-	    else if(arg->may_be_void())
-	    {
-	      if ((arg->basetype() == "int") || (arg->basetype() == "mixed")) {
-		ret+=({
-		  PC.Token(sprintf("if (args > %d) {",argnum)),
-		});
-	      } else {
-		ret+=({
-		  PC.Token(sprintf("if ((args > %d) && \n"
-				   "    ((Pike_sp[%d%s].type != PIKE_T_INT) ||\n"
-				   "     (Pike_sp[%d%s].u.integer))) {",
-				   argnum,
-				   argnum, check_argbase,
-				   argnum, check_argbase)),
-		});
+	    else {
+	      int void_or_zero = arg->may_be_void_or_zero (2, 1);
+	      if (void_or_zero == 2) {
+		if (!(<"int","mixed">)[arg->basetype()]) {
+		  ret+=({
+		    PC.Token(sprintf("if (args > %d &&"
+				     "    (Pike_sp[%d%s].type != PIKE_T_INT ||"
+				     "     Pike_sp[%d%s].u.integer)) {\n",
+				     argnum,
+				     argnum, check_argbase,
+				     argnum, check_argbase), arg->line()),
+		  });
+		} else {
+		  ret+=({
+		    PC.Token(sprintf("if (args > %d) {\n",argnum), arg->line()),
+		  });
+		}
+		got_void_or_zero_check = 1;
+	      }
+
+	      else if (void_or_zero == 1) {
+		if (!(<"int", "mixed">)[arg->basetype()]) {
+		  ret += ({
+		    PC.Token (sprintf ("if (Pike_sp[%d%s].type != PIKE_T_INT ||"
+				       "    Pike_sp[%d%s].u.integer) {\n",
+				       argnum, check_argbase,
+				       argnum, check_argbase), arg->line()),
+		  });
+		  got_void_or_zero_check = 1;
+		}
 	      }
 	    }
 
@@ -2147,16 +2239,17 @@ class ParseBlock
 	      {
 		case "INT_TYPE":
 		  ret+=({
-		    sprintf("%s=Pike_sp[%d%s].u.integer;\n",arg->name(),
-			    argnum,argbase)
+		    PC.Token (sprintf("%s=Pike_sp[%d%s].u.integer;\n",
+				      arg->name(), argnum,argbase),
+			      arg->line())
 		  });
 		  break;
 
 		case "FLOAT_TYPE":
 		  ret+=({
-		    sprintf("%s=Pike_sp[%d%s].u.float_number;\n",
-			    arg->name(),
-			    argnum,argbase)
+		    PC.Token (sprintf("%s=Pike_sp[%d%s].u.float_number;\n",
+				      arg->name(), argnum,argbase),
+			      arg->line())
 		  });
 		  break;
 
@@ -2232,9 +2325,17 @@ class ParseBlock
 		case "program":
 	      }
 
-	      if(arg->may_be_void())
+	      if (got_void_or_zero_check)
 	      {
-		ret+=({  PC.Token(sprintf("} else %s=0;\n", arg->name())) });
+		string zero_val;
+		switch (arg->c_type()) {
+		  case "INT_TYPE": zero_val = "0"; break;
+		  case "FLOAT_TYPE": zero_val = "0.0"; break;
+		  default: zero_val = "NULL"; break;
+		}
+		ret+=({  PC.Token(sprintf("} else %s = %s;\n",
+					  arg->name(), zero_val),
+				  arg->line()) });
 	      }
 	    }
 
