@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.424 2008/05/28 19:07:18 grubba Exp $
+// $Id: master.pike.in,v 1.425 2008/05/29 12:50:26 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -132,6 +132,12 @@ void resolv_debug (string fmt, mixed... args)
 
 // Some API compatibility stuff.
 
+//! Pike 0.6 master compatibility interface.
+//!
+//! Most of the interface is implemented via mixin. 
+//!
+//! @seealso
+//!   @[get_compat_master()], @[master()]
 static class Pike_0_6_master
 {
   int is_absolute_path(string p);
@@ -140,20 +146,20 @@ static class Pike_0_6_master
   string basename(string x);
   string describe_backtrace(array(mixed) trace);
   object low_cast_to_object(string oname, string current_file);
-  array(string) pike_include_path;
-  array(string) pike_module_path;
-  array(string) pike_program_path;
-  int want_warnings;
+  extern array(string) pike_include_path;
+  extern array(string) pike_module_path;
+  extern array(string) pike_program_path;
+  extern int want_warnings;
   program compile_string(string data, void|string name);
   program compile_file(string file);
 #ifdef GETCWD_CACHE
-  string current_path;
+  extern string current_path;
   int cd(string s);
   string getcwd();
 #endif
   string combine_path_with_cwd(string path);
 #ifdef FILE_STAT_CACHE
-  int invalidate_time;
+  extern int invalidate_time;
   mapping(string:multiset(string)) dir_cache;
   array(mixed) master_file_stat(string x);
 #endif
@@ -168,7 +174,7 @@ static class Pike_0_6_master
   void remove_program_path(string tmp);
   mapping(string:program|NoValue) programs;
 #if constant(_static_modules.Builtin.mutex)
-  object compilation_mutex;
+  extern object compilation_mutex;
 #endif
   program cast_to_program(string pname, string current_file);
   void handle_error(array(mixed) trace);
@@ -183,12 +189,12 @@ static class Pike_0_6_master
   constant master_efuns = ({});
   void create();
   program handle_inherit(string pname, string current_file);
-  mapping (program:object) objects;
+  extern mapping(program:object) objects;
   object low_cast_to_object(string oname, string current_file);
   object cast_to_object(string oname, string current_file);
   class dirnode {};
   class joinnode {};
-  mapping(string:mixed) fc;
+  extern mapping(string:mixed) fc;
   object findmodule(string fullname);
   mixed handle_import(string what, string|void current_file);
   local static object Pike_0_6_compat_handler;
@@ -199,23 +205,50 @@ static class Pike_0_6_master
     }
     return Pike_0_6_compat_handler->resolv(identifier, current_file);
   }
-  string _pike_file_name;
-  string _master_file_name;
+  extern string _pike_file_name;
+  extern string _master_file_name;
   void _main(array(string) orig_argv, array(string) env);
-  mixed inhibit_compile_errors;
-  void set_inhibit_compile_errors(mixed f);
+  extern mixed inhibit_compile_errors;
+  extern void set_inhibit_compile_errors(mixed f);
   string trim_file_name(string s);
   void compile_error(string file,int line,string err);
   void compile_warning(string file,int line,string err);
   string handle_include(string f, string current_file, int local_include);
   string read_include(string f);
-  string stupid_describe(mixed m);
+  string stupid_describe(mixed m)
+  {
+    switch(string typ=sprintf("%t",m))
+    {
+    case "int":
+    case "float":
+      return (string)m;
+
+    case "string":
+      if(sizeof(m) < BT_MAX_STRING_LEN)
+      {
+	string t = sprintf("%O", m);
+	if (sizeof(t) < (BT_MAX_STRING_LEN + 2)) {
+	  return t;
+	}
+	t = 0;
+      }
+
+    case "array":
+    case "mapping":
+    case "multiset":
+      return typ+"["+sizeof(m)+"]";
+
+    default:
+      return typ;
+    }
+  }
+
   string describe_program(program p);
   string describe_backtrace(array(mixed) trace);
   class Codec {};
 }
 
-static private inherit Pike_0_6_master;
+static inherit Pike_0_6_master;
 
 //! @appears error
 //! Throws an error. A more readable version of the code
@@ -1028,20 +1061,28 @@ static program low_findprog(string pname,
 	  if(s2->isreg && s2->mtime >= s->mtime)
 	  {
 	    mixed err=catch {
+	      object|program decoded;
 	      AUTORELOAD_CHECK_FILE(oname);
 	      resolv_debug ("low_findprog %s: decoding dumped\n", fname);
 	      INC_RESOLV_MSG_DEPTH();
-	      ret = decode_value(master_read_file(oname),
-				 (handler && handler->get_codec ||
-				  get_codec)(fname, mkobj, handler));
+	      decoded = decode_value(master_read_file(oname),
+				     (handler && handler->get_codec ||
+				      get_codec)(fname, mkobj, handler));
 	      DEC_RESOLV_MSG_DEPTH();
 	      resolv_debug ("low_findprog %s: dump decode ok\n", fname);
-	      if (ret && ret->this_program_does_not_exist) {
+	      if (decoded && decoded->this_program_does_not_exist) {
 		resolv_debug ("low_findprog %s: program claims not to exist\n",
 			      fname);
 		return programs[fname] = 0;
 	      }
 	      else {
+		if (objectp(decoded)) {
+		  resolv_debug("low_findprog %s: decoded object %O\n",
+			       fname, decoded);
+		  objects[ret = object_program(decoded)] = decoded;
+		} else {
+		  ret = decoded;
+		}
 		resolv_debug("low_findprog %s: returning %O\n", fname, ret);
 		return programs[fname]=ret;
 	      }
@@ -1142,6 +1183,7 @@ static program low_findprog(string pname,
 //
 void unregister(program p)
 {
+  // werror("Unregistering %O...\n", p);
   if(string fname=rev_programs[p] || search(programs,p)) {
     resolv_debug("unregister %s\n", fname);
     if (m_delete (rev_programs, p))
@@ -1156,12 +1198,9 @@ void unregister(program p)
 	n->delete_value (p);
   }
 
-  object o = objects[p];
+  object o = m_delete(objects, p);
   if (objectp (o)) {
-    if (m_delete (rev_objects, o))
-      m_delete (objects, p);
-    else
-      objects[p] = no_value;
+    m_delete(rev_objects, o);
   }
 
   foreach (fc; string name; mixed mod)
@@ -1664,14 +1703,19 @@ class dirnode
 	//        our cases, so we could make do with
 	//        low_findprog() and the caches.
 	mixed ret;
-	if (objectp(ret = low_cast_to_object(fname, 0, compilation_handler))) {
-	  // This assignment is needed for eg the Calendar module.
-	  if (set_module) module = ret;
-	  if(mixed tmp=ret->_module_value) ret=tmp;
-	  DEC_RESOLV_MSG_DEPTH();
-	  resolv_debug("dirnode(%O)->ind(%O) => found submodule %O:%O\n",
-		       dirname, index, fname, ret);
-	  return ret;
+	if (ret = catch {
+	    if (objectp(ret = low_cast_to_object(fname, 0, compilation_handler))) {
+	      // This assignment is needed for eg the Calendar module.
+	      if (set_module) module = ret;
+	      if(mixed tmp=ret->_module_value) ret=tmp;
+	      DEC_RESOLV_MSG_DEPTH();
+	      resolv_debug("dirnode(%O)->ind(%O) => found submodule %O:%O\n",
+			   dirname, index, fname, ret);
+	      return ret;
+	    }
+	  }) {
+	  resolv_debug("dirnode(%O)->ind(%O) ==> Cast to object failed: %s\n",
+		       dirname, index, describe_backtrace(ret));
 	}
       } else {
 	resolv_debug("dirnode(%O)->ind(%O) casting (program)%O\n",
@@ -1846,7 +1890,8 @@ class dirnode
 
   static string _sprintf(int as)
   {
-    return as=='O' && sprintf("master()->dirnode(%O)",dirname);
+    return as=='O' && sprintf("master()->dirnode(%O:%O)",
+			      dirname, module && module);
   }
 }
 
@@ -4490,8 +4535,10 @@ class Encoder
   mixed encode_object(object x)
   {
     DEC_MSG ("encode_object (%O)\n", x);
-    if(!x->_encode)
+    if(!x->_encode) {
       error ("Cannot encode object %O without _encode function.\n", x);
+      // return ({});
+    }
     DEC_RETURN (([function]x->_encode)());
   }
 
@@ -4672,13 +4719,46 @@ class Decoder (void|string fname, void|int mkobj, void|object handler)
     DEC_RETURN ([program] thingof (what));
   }
 
-  void decode_object(object o, mixed data)
+  //! Restore the state of an encoded object.
+  //!
+  //! @param o
+  //!   Object to modify.
+  //!
+  //! @param data
+  //!   State information from @[Encoder()->encode_object()].
+  //!
+  //! The default implementation calls @expr{o->_decode(data)@}
+  //! if the object has an @expr{_decode()@}, otherwise if
+  //! @[data] is an array, returns it to indicate that @[lfun::create()]
+  //! should be called.
+  //!
+  //! @note
+  //!   This function is called @b{before@} @[lfun::create()]
+  //!   in the object has been called, but after @[lfun::__INIT()]
+  //!   has been called.
+  //!
+  //! @returns
+  //!   Returns an array to indicate to the caller that
+  //!   @[lfun::create()] should be called with the elements
+  //!   of the array as arguments.
+  //!
+  //!   Returns @expr{0@} (zero) to inhibit calling of @[lfun::create()].
+  //!
+  //! @seealso
+  //!   @[Encoder()->encode_object()]
+  array(mixed) decode_object(object o, mixed data)
   {
     DEC_MSG ("decode_object (object(%O), %O)\n", object_program (o), data);
-    if(!o->_decode)
-      error ("Cannot decode object(%O) without _decode function.\n",
-	     object_program (o));
+    if(!o->_decode) {
+      if (!arrayp(data)) {
+	error ("Cannot decode object(%O) without _decode function.\n",
+	       object_program (o));
+      }
+      // Try calling lfun::create().
+      return data;
+    }
     ([function(mixed:void)]o->_decode)(data);
+    return 0;
   }
 }
 
