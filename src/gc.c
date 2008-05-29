@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.317 2008/05/16 16:34:39 mast Exp $
+|| $Id: gc.c,v 1.318 2008/05/29 21:59:45 mast Exp $
 */
 
 #include "global.h"
@@ -1349,6 +1349,7 @@ again:
 	  if (id_ref->id_flags & ID_INHERITED) strcat (prot, ",inh");
 	  if (id_ref->id_flags & ID_EXTERN)    strcat (prot, ",ext");
 	  if (id_ref->id_flags & ID_VARIANT)   strcat (prot, ",var");
+	  if (id_ref->id_flags & ID_USED)      strcat (prot, ",use");
 
 	  sprintf (descr, "%s: %s", type, prot + 1);
 	  fprintf (stderr, "%*s**%*s%-3"PRINTPTRDIFFT"d %-18s name: ",
