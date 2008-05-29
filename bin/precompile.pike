@@ -70,6 +70,10 @@ constant precompile_api_version = "2";
  *
  * The corresponding cleanup code will be inserted instead of the word EXIT.
  *
+ * Argument count checks are added both for too many (unless the last
+ * arg is varargs) and too args. The too many args check can be
+ * disabled by putting ", ..." last in the argument list.
+ *
  * Magic types in function argument lists:
  *   bignum    A native int or bignum object. The C storage type is
  *             struct svalue.
@@ -1885,14 +1889,20 @@ class ParseBlock
 	}
 
 	// werror("%O %O\n",proto,args);
-	int last_argument_repeats;
-	if(sizeof(args_tmp) && 
-	   !arrayp(args_tmp[-1][-2]) &&
-	   "..." == (string)args_tmp[-1][-2])
-	{
-	  last_argument_repeats++;
-	  args_tmp[-1]=args_tmp[-1][..sizeof(args_tmp[-1])-3]+({
-	    args_tmp[-1][-1]});
+	int last_argument_repeats, ignore_more_args;
+	if (sizeof(args_tmp)) {
+	  array last_arg = args_tmp[-1];
+	  if (sizeof (last_arg) > 1) {
+	    if (!arrayp(last_arg[-2]) && "..." == (string)last_arg[-2]) {
+	      last_argument_repeats = 1;
+	      args_tmp[-1] = last_arg[..sizeof(last_arg)-3] + ({last_arg[-1]});
+	    }
+	  }
+	  else
+	    if (!arrayp(last_arg[0]) && "..." == (string)last_arg[0]) {
+	      ignore_more_args = 1;
+	      args_tmp = args_tmp[..sizeof (args_tmp) - 2];
+	    }
 	}
 	array(Argument) args=map(args_tmp,Argument);
 	// werror("%O %O\n",proto,args);
@@ -1965,6 +1975,8 @@ class ParseBlock
 	    repeat_arg = min_args;
 	    args[-1]->_c_type = "struct svalue *";
 	  }
+	  else if (ignore_more_args)
+	    max_args = 0x7fffffff;
 
 	  while(min_args>0 && args[min_args-1]->may_be_void())
 	    min_args--;
