@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.295 2008/05/29 12:36:35 grubba Exp $
+|| $Id: object.c,v 1.296 2008/05/29 17:11:43 grubba Exp $
 */
 
 #include "global.h"
@@ -1193,7 +1193,7 @@ PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
     } else if ((i->run_time_type == PIKE_T_FREE) || !PIKE_OBJ_STORAGE(o)) {
       /* Variable storage not allocated. */
 #ifdef PIKE_DEBUG
-      if (p->flags & PROGRAM_FINISHED) {
+      if ((i->run_time_type != PIKE_T_FREE) && (p->flags & PROGRAM_FINISHED)) {
 	Pike_fatal("Object without variable storage!\n");
       }
 #endif /* PIKE_DEBUG */
