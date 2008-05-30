@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.113 2008/05/30 15:19:03 mast Exp $
+|| $Id: multiset.c,v 1.114 2008/05/30 19:27:53 mast Exp $
 */
 
 #include "global.h"
@@ -140,10 +140,7 @@ PMOD_EXPORT const char msg_multiset_no_node_refs[] =
 #endif
 
 #define SAME_CMP_LESS(MSD_A, MSD_B)					\
-  ((MSD_A)->cmp_less.type == T_INT ?					\
-   (MSD_B)->cmp_less.type == T_INT :					\
-   ((MSD_B)->cmp_less.type != T_INT &&					\
-    is_identical (&(MSD_A)->cmp_less, &(MSD_B)->cmp_less)))
+  is_identical (&(MSD_A)->cmp_less, &(MSD_B)->cmp_less)
 
 union nodeptr {
   union msnode *ms;
@@ -864,14 +861,25 @@ PMOD_EXPORT struct multiset *real_allocate_multiset (int allocsize,
   if (cmp_less) check_svalue (cmp_less);
 #endif
 
-  if (allocsize || cmp_less || (flags & ~MULTISET_INDVAL)) {
+  if (allocsize ||
+      (cmp_less && cmp_less->type != T_INT) ||
+      (flags & ~MULTISET_INDVAL)) {
     l->msd = low_alloc_multiset_data (allocsize, flags);
     add_ref (l->msd);
     fix_free_list (l->msd, 0);
-    if (cmp_less) assign_svalue_no_free (&l->msd->cmp_less, cmp_less);
+    if (cmp_less) {
+#ifdef PIKE_DEBUG
+      if (cmp_less->type == T_INT) {
+	assert (cmp_less->subtype == NUMBER_NUMBER);
+	assert (cmp_less->u.integer == 0);
+      }
+#endif
+      assign_svalue_no_free (&l->msd->cmp_less, cmp_less);
+    }
     else {
       l->msd->cmp_less.type = T_INT;
       l->msd->cmp_less.subtype = NUMBER_NUMBER;
+      l->msd->cmp_less.u.integer = 0;
     }
   }
   else {
@@ -1063,17 +1071,26 @@ PMOD_EXPORT void multiset_set_cmp_less (struct multiset *l,
 
 again:
   if (cmp_less ?
-      old->cmp_less.type != T_INT && is_identical (cmp_less, &old->cmp_less) :
+      is_identical (cmp_less, &old->cmp_less) :
       old->cmp_less.type == T_INT)
     {}
 
   else if (!old->root) {
     if (prepare_for_change (l, l->node_refs)) old = l->msd;
     free_svalue (&old->cmp_less);
-    if (cmp_less) assign_svalue_no_free (&old->cmp_less, cmp_less);
+    if (cmp_less) {
+#ifdef PIKE_DEBUG
+      if (cmp_less->type == T_INT) {
+	assert (cmp_less->subtype == NUMBER_NUMBER);
+	assert (cmp_less->u.integer == 0);
+      }
+#endif
+      assign_svalue_no_free (&old->cmp_less, cmp_less);
+    }
     else {
       old->cmp_less.type = T_INT;
       old->cmp_less.subtype = NUMBER_NUMBER;
+      old->cmp_less.u.integer = 0;
     }
   }
 
@@ -1092,10 +1109,19 @@ again:
     new.msd->root = NULL;
 
     free_svalue (&new.msd->cmp_less);
-    if (cmp_less) assign_svalue_no_free (&new.msd->cmp_less, cmp_less);
+    if (cmp_less) {
+#ifdef PIKE_DEBUG
+      if (cmp_less->type == T_INT) {
+	assert (cmp_less->subtype == NUMBER_NUMBER);
+	assert (cmp_less->u.integer == 0);
+      }
+#endif
+      assign_svalue_no_free (&new.msd->cmp_less, cmp_less);
+    }
     else {
       new.msd->cmp_less.type = T_INT;
       new.msd->cmp_less.subtype = NUMBER_NUMBER;
+      new.msd->cmp_less.u.integer = 0;
     }
 
     do {
@@ -1170,10 +1196,19 @@ PMOD_EXPORT struct multiset *mkmultiset_2 (struct array *indices,
   new.msd = low_alloc_multiset_data (ALLOC_SIZE (indices->size),
 				     values ? MULTISET_INDVAL : 0);
 
-  if (cmp_less) assign_svalue_no_free (&new.msd->cmp_less, cmp_less);
+  if (cmp_less) {
+#ifdef PIKE_DEBUG
+    if (cmp_less->type == T_INT) {
+      assert (cmp_less->subtype == NUMBER_NUMBER);
+      assert (cmp_less->u.integer == 0);
+    }
+#endif
+    assign_svalue_no_free (&new.msd->cmp_less, cmp_less);
+  }
   else {
     new.msd->cmp_less.type = T_INT;
     new.msd->cmp_less.subtype = NUMBER_NUMBER;
+    new.msd->cmp_less.u.integer = 0;
   }
 
   if (!indices->size)
@@ -2901,9 +2936,7 @@ static struct multiset *merge_special (struct multiset *a,
     SET_ONERROR (uwp, free_indirect_multiset_data, &oldmsd);		\
     add_ref ((TO)->msd = (FROM)->msd);					\
     multiset_set_flags ((TO), oldmsd->flags);				\
-    multiset_set_cmp_less ((TO),					\
-			   oldmsd->cmp_less.type != T_INT ?		\
-			   &oldmsd->cmp_less : NULL);			\
+    multiset_set_cmp_less ((TO), &oldmsd->cmp_less);			\
     UNSET_ONERROR (uwp);						\
     if (!sub_ref (oldmsd)) free_multiset_data (oldmsd);			\
   } while (0)
@@ -2919,9 +2952,7 @@ static struct multiset *merge_special (struct multiset *a,
     (RES) = copy_multiset (FROM);					\
     SET_ONERROR (uwp, do_free_multiset, (RES));				\
     multiset_set_flags ((RES), (FLAGSRC)->msd->flags);			\
-    multiset_set_cmp_less ((RES),					\
-			   (FLAGSRC)->msd->cmp_less.type != T_INT ?	\
-			   &(FLAGSRC)->msd->cmp_less : NULL);		\
+    multiset_set_cmp_less ((RES), &(FLAGSRC)->msd->cmp_less);		\
     UNSET_ONERROR (uwp);						\
   } while (0)
 
@@ -3117,9 +3148,7 @@ PMOD_EXPORT struct multiset *merge_multisets (struct multiset *a,
   }
   if (!SAME_CMP_LESS (a->msd, b->msd)) {
     if (!m.tmp) m.b = m.tmp = copy_multiset (b);
-    multiset_set_cmp_less (m.b,
-			   a->msd->cmp_less.type != T_INT ?
-			   &a->msd->cmp_less : NULL);
+    multiset_set_cmp_less (m.b, &a->msd->cmp_less);
   }
   if ((a->msd->flags & MULTISET_INDVAL) != (b->msd->flags & MULTISET_INDVAL)) {
     if (!m.tmp) m.b = m.tmp = copy_multiset (b);
@@ -3375,7 +3404,8 @@ PMOD_EXPORT struct multiset *add_multisets (struct svalue *vect, int count)
     if (!indval && l->msd->flags & MULTISET_INDVAL) indval = 1;
   }
 
-  if (!size) return allocate_multiset (0, indval && MULTISET_INDVAL, cmp_less);
+  if (!size)
+    return allocate_multiset (0, indval && MULTISET_INDVAL, cmp_less);
 
   for (idx = 0;; idx++) {
     l = vect[idx].u.multiset;
@@ -3384,7 +3414,7 @@ PMOD_EXPORT struct multiset *add_multisets (struct svalue *vect, int count)
 
   if (indval == !!(l->msd->flags & MULTISET_INDVAL) &&
       (cmp_less ?
-       l->msd->cmp_less.type != T_INT && is_identical (cmp_less, &l->msd->cmp_less) :
+       is_identical (cmp_less, &l->msd->cmp_less) :
        l->msd->cmp_less.type == T_INT)) {
     res = copy_multiset (l);
     multiset_set_flags (res, indval && MULTISET_INDVAL);
@@ -4434,6 +4464,13 @@ void check_multiset (struct multiset *l, int safe)
 
   if (inside_check_multiset) return;
   inside_check_multiset = 1;
+
+  if (msd->cmp_less.type == T_INT)
+    if (msd->cmp_less.subtype != NUMBER_NUMBER ||
+	msd->cmp_less.u.integer != 0)
+      Pike_fatal ("Multiset cmp_less is a nonzero integer: "
+		  "subtype=%d, value=%"PRINTPIKEINT"d\n",
+		  msd->cmp_less.subtype, msd->cmp_less.u.integer);
 
   /* Check refs and multiset link list. */
 

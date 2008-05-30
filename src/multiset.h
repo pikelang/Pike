@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.h,v 1.46 2008/05/30 15:19:03 mast Exp $
+|| $Id: multiset.h,v 1.47 2008/05/30 19:27:51 mast Exp $
 */
 
 #ifndef MULTISET_H
@@ -86,8 +86,8 @@ struct multiset
  *    nodes. Note that deleted nodes might still be on the free list
  *    even when there are no node references (see below).
  *
- * o  multiset_data.cmp_less.type is T_INT when the internal set order
- *    is used.
+ * o  multiset_data.cmp_less is the integer zero when the internal set
+ *    order is used. It must not have any other integer value.
  *
  * o  multset_data.refs counts the number of "independent" references
  *    to the data block. When it's greater than one, the data block
