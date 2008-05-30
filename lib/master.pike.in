@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.429 2008/05/30 21:57:59 grubba Exp $
+// $Id: master.pike.in,v 1.430 2008/05/30 22:26:56 nilsson Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -4192,7 +4192,9 @@ string describe_backtrace(mixed trace, void|int linewidth)
   }
 
   else {
+#if constant(_gdb_breakpoint)
     _gdb_breakpoint();
+#endif
     return sprintf ("<Invalid backtrace/error container: %O>\n"
 		    "%s\n", trace, describe_backtrace(backtrace()));
   }
