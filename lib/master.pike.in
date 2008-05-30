@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.428 2008/05/30 17:01:48 mast Exp $
+// $Id: master.pike.in,v 1.429 2008/05/30 21:57:59 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -3252,13 +3252,15 @@ void _main(array(string) orig_argv, array(string) env)
 	  }
 	  };
 
-	if (compile_err && compile_err->is_cpp_or_compilation_error) {
-	  // Don't clutter the output with the backtrace for
-	  // compilation errors.
-	  werror (describe_error (compile_err));
-	  exit (20);
+	if (compile_err) {
+	  if (compile_err->is_cpp_or_compilation_error) {
+	    // Don't clutter the output with the backtrace for
+	    // compilation errors.
+	    werror (describe_error (compile_err));
+	    exit (20);
+	  }
+	  else throw (compile_err);
 	}
-	else throw (compile_err);
 
 #if constant(_debug)
 	if(debug) _debug(debug);
@@ -4189,8 +4191,11 @@ string describe_backtrace(mixed trace, void|int linewidth)
       ret = "";
   }
 
-  else
-    return sprintf ("<Invalid backtrace/error container: %O>\n", trace);
+  else {
+    _gdb_breakpoint();
+    return sprintf ("<Invalid backtrace/error container: %O>\n"
+		    "%s\n", trace, describe_backtrace(backtrace()));
+  }
 
   {
     Describer desc = Describer();
