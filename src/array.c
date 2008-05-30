@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.208 2008/05/12 13:24:44 grubba Exp $
+|| $Id: array.c,v 1.209 2008/05/30 15:19:02 mast Exp $
 */
 
 #include "global.h"
@@ -38,9 +38,7 @@ PMOD_EXPORT struct array empty_array=
   0,                     /* no types */
   0,			 /* no flags */
   empty_array.real_item, /* Initialize the item pointer. */
-#ifdef HAVE_UNION_INIT
-  {{0, 0, {0}}}, /* Only to avoid warnings. */
-#endif
+  {SVALUE_INIT_FREE},
 };
 
 /** The empty weak array. */
@@ -49,9 +47,7 @@ PMOD_EXPORT struct array weak_empty_array=
   PIKE_CONSTANT_MEMOBJ_INIT(1),
   0, &empty_array, 0, 0, 0, ARRAY_WEAK_FLAG,
   weak_empty_array.real_item,
-#ifdef HAVE_UNION_INIT
-  {{0, 0, {0}}}, /* Only to avoid warnings. */
-#endif
+  {SVALUE_INIT_FREE},
 };
 
 struct array *first_array = &empty_array;

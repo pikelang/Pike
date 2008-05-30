@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.668 2008/05/29 20:08:14 nilsson Exp $
+|| $Id: builtin_functions.c,v 1.669 2008/05/30 15:19:02 mast Exp $
 */
 
 #include "global.h"
@@ -7602,10 +7602,6 @@ PMOD_EXPORT void f_object_variablep(INT32 args)
 /*! @module Array
  */
 
-#ifdef HAVE_UNION_INIT
-static const struct svalue one = {PIKE_T_INT, NUMBER_NUMBER, {1}};
-#endif
-
 /*! @decl array uniq(array a)
  *!
  *!   Remove elements that are duplicates.
@@ -7625,23 +7621,15 @@ PMOD_EXPORT void f_uniq_array(INT32 args)
 {
   struct array *a, *b;
   struct mapping *m;
-#ifndef HAVE_UNION_INIT
-  struct svalue one;
-#endif
   int i, j=0,size=0;
 
   get_all_args("uniq", args, "%a", &a);
   push_mapping(m = allocate_mapping(a->size));
   push_array(b = allocate_array(a->size));
 
-#ifndef HAVE_UNION_INIT
-  one.type = T_INT;
-  one.subtype = NUMBER_NUMBER;
-  one.u.integer = 1;
-#endif
   for(i =0; i< a->size; i++)
   {
-    mapping_insert(m, ITEM(a)+i, &one);
+    mapping_insert(m, ITEM(a)+i, &svalue_int_one);
     if(m_sizeof(m) != size)
     {
       size=m_sizeof(m);

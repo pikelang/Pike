@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.112 2008/05/11 21:30:59 mast Exp $
+|| $Id: multiset.c,v 1.113 2008/05/30 15:19:03 mast Exp $
 */
 
 #include "global.h"
@@ -210,39 +210,25 @@ static struct multiset *gc_mark_multiset_pos = NULL;
 
 static struct multiset_data empty_ind_msd = {
   1, 0, NULL, NULL,
-  {T_INT, 0,
-#ifdef HAVE_UNION_INIT
-   {0}
-#endif
-  },
+  SVALUE_INIT_INT (0),
   0, 0, 0,
   BIT_INT,
   0,
 #ifdef HAVE_UNION_INIT
-  {{{0, 0, {0, 0, {0}}}}}
+  {{{NULL, NULL, SVALUE_INIT_INT (0)}}}
 #endif
 };
 
 static struct multiset_data empty_indval_msd = {
   1, 0, NULL, NULL,
-  {T_INT, 0,
-#ifdef HAVE_UNION_INIT
-   {0}
-#endif
-  },
+  SVALUE_INIT_INT (0),
   0, 0, 0,
   0,
   MULTISET_INDVAL,
 #ifdef HAVE_UNION_INIT
-  {{{0, 0, {0, 0, {0}}}}}
+  {{{NULL, NULL, SVALUE_INIT_INT (0)}}}
 #endif
 };
-
-struct svalue svalue_int_one = {T_INT, NUMBER_NUMBER,
-#ifdef HAVE_UNION_INIT
-				{1}
-#endif
-			       };
 
 void free_multiset_data (struct multiset_data *msd);
 
@@ -2639,7 +2625,9 @@ PMOD_EXPORT struct svalue *multiset_lookup (struct multiset *l,
   check_svalue (key);
   if ((node = low_multiset_find_eq (l, key)))
     if (l->msd->flags & MULTISET_INDVAL) return &node->iv.val;
-    else return &svalue_int_one;
+    else
+      /* Caller better not try to change this. */
+      return (struct svalue *) &svalue_int_one;
   else
     return NULL;
 }
@@ -4352,21 +4340,12 @@ void init_multiset()
 	       test.i.ind.type);
 #undef msnode_check
 #endif
-#ifndef HAVE_UNION_INIT
-  svalue_int_one.u.integer = 1;
-#endif
   init_multiset_blocks();
 }
 
 /* Pike might exit without calling this. */
 void exit_multiset()
 {
-#ifdef PIKE_DEBUG
-  if (svalue_int_one.type != T_INT ||
-      svalue_int_one.subtype != NUMBER_NUMBER ||
-      svalue_int_one.u.integer != 1)
-    Pike_fatal ("svalue_int_one has been changed.\n");
-#endif
   free_all_multiset_blocks();
 }
 

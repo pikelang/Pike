@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: bignum.c,v 1.44 2008/05/01 21:14:04 mast Exp $
+|| $Id: bignum.c,v 1.45 2008/05/30 15:19:02 mast Exp $
 */
 
 #include "global.h"
@@ -17,12 +17,7 @@
 
 #define sp Pike_sp
 
-PMOD_EXPORT struct svalue auto_bignum_program = {
-  PIKE_T_FREE, 0,
-#ifdef HAVE_UNION_INIT
-  {0}, /* Only to avoid warnings. */
-#endif
-};
+PMOD_EXPORT struct svalue auto_bignum_program = SVALUE_INIT_FREE;
 
 PMOD_EXPORT struct program *get_auto_bignum_program(void)
 {

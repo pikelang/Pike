@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ia32.c,v 1.47 2008/02/28 10:35:59 grubba Exp $
+|| $Id: ia32.c,v 1.48 2008/05/30 15:19:03 mast Exp $
 */
 
 /*
@@ -570,11 +570,7 @@ static void ia32_push_int(INT32 x)
 static void ia32_push_string (INT32 x, int subtype)
 {
   size_t e;
-  struct svalue tmp = {PIKE_T_STRING, subtype,
-#ifdef HAVE_UNION_INIT
-		       {0}
-#endif
-		      };
+  struct svalue tmp = SVALUE_INIT (PIKE_T_STRING, subtype, 0);
 
   enum ia32_reg tmp_reg = alloc_reg ((1 << fp_reg) | (1 << sp_reg));
   load_fp_reg ((1 << tmp_reg) | (1 << sp_reg));

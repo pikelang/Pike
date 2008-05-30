@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.h,v 1.45 2008/05/27 22:49:23 mast Exp $
+|| $Id: multiset.h,v 1.46 2008/05/30 15:19:03 mast Exp $
 */
 
 #ifndef MULTISET_H
@@ -150,8 +150,6 @@ struct multiset
 extern struct multiset *first_multiset;
 extern struct multiset *gc_internal_multiset;
 
-PMOD_EXPORT extern struct svalue svalue_int_one;
-
 PMOD_EXPORT void multiset_clear_node_refs (struct multiset *l);
 
 #ifdef PIKE_DEBUG
@@ -198,7 +196,9 @@ union msnode *low_multiset_find_eq (struct multiset *l, struct svalue *key);
    &(VAR))
 
 #define low_get_multiset_value(MSD, NODE)				\
-  ((MSD)->flags & MULTISET_INDVAL ? &(NODE)->iv.val : &svalue_int_one)
+  ((MSD)->flags & MULTISET_INDVAL ? &(NODE)->iv.val :			\
+   /* Caller better not try to change this. */				\
+   (struct svalue *) &svalue_int_one)
 #define low_set_multiset_value(MSD, NODE, VAL) do {			\
     if ((MSD)->flags & MULTISET_INDVAL)					\
       assign_svalue (&(NODE)->iv.val, VAL);				\
@@ -354,7 +354,9 @@ PMOD_EXPORT int msnode_is_deleted (struct multiset *l, ptrdiff_t nodepos);
 
 #define get_multiset_value(L, NODEPOS)					\
   ((L)->msd->flags & MULTISET_INDVAL ?					\
-   &access_msnode ((L), (NODEPOS))->iv.val : &svalue_int_one)
+   &access_msnode ((L), (NODEPOS))->iv.val :				\
+   /* Caller better not try to change this. */				\
+   (struct svalue *) &svalue_int_one)
 #define set_multiset_value(L, NODEPOS, VAL) do {			\
     if ((L)->msd->flags & MULTISET_INDVAL)				\
       assign_svalue (&access_msnode ((L), (NODEPOS))->iv.val, VAL);	\

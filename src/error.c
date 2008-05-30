@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.162 2008/05/27 19:36:00 grubba Exp $
+|| $Id: error.c,v 1.163 2008/05/30 15:19:03 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -235,12 +235,7 @@ PMOD_EXPORT void push_error(const char *description)
   f_aggregate(2);
 }
 
-PMOD_EXPORT struct svalue throw_value = {
-  PIKE_T_INT, NUMBER_NUMBER,
-#ifdef HAVE_UNION_INIT
-  {0}, /* Only to avoid warnings. */
-#endif
-};
+PMOD_EXPORT struct svalue throw_value = SVALUE_INIT_FREE;
 int throw_severity;
 static const char *in_error;
 
