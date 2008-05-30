@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.709 2008/05/29 16:32:55 grubba Exp $
+|| $Id: program.c,v 1.710 2008/05/30 11:20:43 grubba Exp $
 */
 
 #include "global.h"
@@ -1728,9 +1728,13 @@ struct node_s *resolve_identifier(struct pike_string *ident)
 
 /* If the identifier is recognized as one of the magic identifiers,
  * like "this", "this_program" or "`->" when preceded by ::, then a
- * suitable node is returned, NULL otherwise. inherit_num is -1 when
- * accessing all inherits (i.e. when :: is used without any identifier
- * before). */
+ * suitable node is returned, NULL otherwise.
+ *
+ * inherit_num is -1 when no specific inherit has been specified; ie
+ * either when the identifier has no prefix (colon_colon_ref == 0) or
+ * when the identifier has the prefix :: without any preceding identifier
+ * (colon_colon_ref == 1).
+ */
 struct node_s *program_magic_identifier (struct program_state *state,
 					 int state_depth, int inherit_num,
 					 struct pike_string *ident,
@@ -1741,7 +1745,7 @@ struct node_s *program_magic_identifier (struct program_state *state,
 	   state_depth, inherit_num, ident->str, colon_colon_ref);
 #endif
 
-  if (!inherit_num || (!TEST_COMPAT(7,6) && (inherit_num > 0))) {
+  if ((inherit_num == -1) || (!TEST_COMPAT(7,6) && (inherit_num >= 0))) {
     if (ident == this_string) {
       /* Handle this. */
       return mkthisnode(state->new_program, inherit_num);

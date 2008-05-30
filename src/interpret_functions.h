@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.203 2008/05/15 15:13:03 grubba Exp $
+|| $Id: interpret_functions.h,v 1.204 2008/05/30 11:20:44 grubba Exp $
 */
 
 /*
@@ -2669,17 +2669,8 @@ OPCODE2(F_THIS, "this", I_UPDATE_SP, {
 	     arg1,
 	     loc.inherit->identifier_level));
     });
-    if (loc.o->prog && arg2) {
-      /* FIXME: Might want to be able refer to the non overloaded object
-       *        (ie arg2 == 0) in the future.
-       *	/grubba 2004-12-19
-       */
-      ref_push_object_inherit(loc.o,
-			      (loc.inherit - loc.o->prog->inherits) + arg2);
-    } else {
-      /* Destructed or top-level. */
-      ref_push_object(loc.o);
-    }
+    ref_push_object_inherit(loc.o,
+			    (loc.inherit - loc.o->prog->inherits) + arg2);
     print_return_value();
 });
 

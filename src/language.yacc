@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.425 2008/05/24 15:14:12 grubba Exp $
+|| $Id: language.yacc,v 1.426 2008/05/30 11:20:41 grubba Exp $
 */
 
 %pure_parser
@@ -3875,7 +3875,7 @@ low_idents: TOK_IDENTIFIER
     {
       /* done, nothing to do here */
     }else if(!($$=find_module_identifier(Pike_compiler->last_identifier,1)) &&
-	     !($$ = program_magic_identifier (Pike_compiler, 0, 0,
+	     !($$ = program_magic_identifier (Pike_compiler, 0, -1,
 					      Pike_compiler->last_identifier, 0))) {
       if((Pike_compiler->flags & COMPILATION_FORCE_RESOLVE) ||
 	 (Pike_compiler->compiler_pass==2)) {
@@ -3952,50 +3952,46 @@ low_idents: TOK_IDENTIFIER
   }
   | inherit_specifier TOK_IDENTIFIER
   {
-    if ($1 >= 0) {
-      int id;
+    int id;
 
-      if(Pike_compiler->last_identifier) free_string(Pike_compiler->last_identifier);
-      copy_shared_string(Pike_compiler->last_identifier, $2->u.sval.u.string);
+    if(Pike_compiler->last_identifier) free_string(Pike_compiler->last_identifier);
+    copy_shared_string(Pike_compiler->last_identifier, $2->u.sval.u.string);
 
-      if ($1 > 0)
-	id = low_reference_inherited_identifier(inherit_state,
-						$1,
-						Pike_compiler->last_identifier,
-						SEE_STATIC);
-      else
-	id = really_low_find_shared_string_identifier(Pike_compiler->last_identifier,
-						      inherit_state->new_program,
-						      SEE_STATIC|SEE_PRIVATE);
+    if ($1 > 0)
+      id = low_reference_inherited_identifier(inherit_state,
+					      $1,
+					      Pike_compiler->last_identifier,
+					      SEE_STATIC);
+    else
+      id = really_low_find_shared_string_identifier(Pike_compiler->last_identifier,
+						    inherit_state->new_program,
+						    SEE_STATIC|SEE_PRIVATE);
 
-      if (id != -1) {
-	if (inherit_depth > 0) {
-	  $$ = mkexternalnode(inherit_state->new_program, id);
+    if (id != -1) {
+      if (inherit_depth > 0) {
+	$$ = mkexternalnode(inherit_state->new_program, id);
+      } else {
+	$$ = mkidentifiernode(id);
+      }
+    } else if (($$ = program_magic_identifier (inherit_state, inherit_depth, $1,
+					       Pike_compiler->last_identifier, 1))) {
+      /* All done. */
+    }
+    else {
+      if ((Pike_compiler->flags & COMPILATION_FORCE_RESOLVE) ||
+	  (Pike_compiler->compiler_pass == 2)) {
+	if (($1 >= 0) && inherit_state->new_program->inherits[$1].name) {
+	  my_yyerror("Undefined identifier %S::%S.",
+		     inherit_state->new_program->inherits[$1].name,
+		     Pike_compiler->last_identifier);
 	} else {
-	  $$ = mkidentifiernode(id);
+	  my_yyerror("Undefined identifier %S.",
+		     Pike_compiler->last_identifier);
 	}
-      } else if (($$ = program_magic_identifier (inherit_state, inherit_depth, $1,
-						 Pike_compiler->last_identifier, 1))) {
-	/* All done. */
+	$$=0;
       }
-      else {
-	if ((Pike_compiler->flags & COMPILATION_FORCE_RESOLVE) ||
-	    (Pike_compiler->compiler_pass == 2)) {
-	  if (inherit_state->new_program->inherits[$1].name) {
-	    my_yyerror("Undefined identifier %S::%S.",
-		       inherit_state->new_program->inherits[$1].name,
-		       Pike_compiler->last_identifier);
-	  } else {
-	    my_yyerror("Undefined identifier %S.",
-		       Pike_compiler->last_identifier);
-	  }
-	  $$=0;
-	}
-	else
-	  $$=mknode(F_UNDEFINED,0,0);
-      }
-    } else {
-      $$=0;
+      else
+	$$=mknode(F_UNDEFINED,0,0);
     }
 
     free_node($2);

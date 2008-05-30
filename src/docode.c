@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.c,v 1.200 2008/05/15 15:13:04 grubba Exp $
+|| $Id: docode.c,v 1.201 2008/05/30 11:20:44 grubba Exp $
 */
 
 #include "global.h"
@@ -934,7 +934,7 @@ static int do_docode2(node *n, int flags)
       if (!state) {
 	my_yyerror("Program parent %d lost during compiling.", n->u.integer.a);
 	emit1(F_NUMBER,0);
-      } else if (!level && !inh) {
+      } else if (!level && (inh < 0)) {
 	emit1(F_THIS_OBJECT, 0);
       } else {
 	emit2(F_THIS, level, inh);

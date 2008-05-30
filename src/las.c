@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.414 2008/05/24 21:45:48 grubba Exp $
+|| $Id: las.c,v 1.415 2008/05/30 11:20:44 grubba Exp $
 */
 
 #include "global.h"
@@ -1215,7 +1215,7 @@ node *debug_mkthisnode(struct program *parent_prog, int inherit_num)
   node *res;
 
 #ifdef PIKE_DEBUG
-  if ((inherit_num < 0) || (inherit_num > 65535)) {
+  if ((inherit_num < -1) || (inherit_num > 65535)) {
     Pike_fatal("This is bad: %p, %d\n", parent_prog, inherit_num);
   }
 #endif /* PIKE_DEBUG */
@@ -1223,7 +1223,11 @@ node *debug_mkthisnode(struct program *parent_prog, int inherit_num)
   res = mkemptynode();
   res->token = F_THIS;
   type_stack_mark();
-  push_object_type(!!inherit_num, parent_prog->inherits[inherit_num].prog->id);
+  if (inherit_num >= 0) {
+    push_object_type(1, parent_prog->inherits[inherit_num].prog->id);
+  } else {
+    push_object_type(0, parent_prog->id);
+  }
   res->type = pop_unfinished_type();
   res->tree_info = res->node_info = OPT_NOT_CONST;
 
