@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.426 2008/05/30 11:20:41 grubba Exp $
+|| $Id: language.yacc,v 1.427 2008/05/30 17:23:44 grubba Exp $
 */
 
 %pure_parser
@@ -3832,7 +3832,7 @@ inherit_specifier: TOK_IDENTIFIER TOK_COLON_COLON
     inherit_state = Pike_compiler;
     for (inherit_depth = 0; inherit_depth < c->compilation_depth;
 	 inherit_depth++, inherit_state = inherit_state->previous) {}
-    $$ = 0;
+    $$ = -1;
   }
   | inherit_specifier TOK_IDENTIFIER TOK_COLON_COLON
   {
