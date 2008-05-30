@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.71 2006/07/07 18:20:58 mast Exp $
+|| $Id: multiset.c,v 1.72 2008/05/30 19:38:09 mast Exp $
 */
 
 #include "global.h"
@@ -14,7 +14,7 @@
  * Created by Martin Stjernholm 2001-05-07
  */
 
-RCSID("$Id: multiset.c,v 1.71 2006/07/07 18:20:58 mast Exp $");
+RCSID("$Id: multiset.c,v 1.72 2008/05/30 19:38:09 mast Exp $");
 
 #include "builtin_functions.h"
 #include "gc.h"
@@ -3326,8 +3326,20 @@ PMOD_EXPORT struct multiset *add_multisets (struct svalue *vect, int count)
 {
   struct multiset *res, *l;
   int size = 0, idx, indval = 0;
-  struct svalue *cmp_less = count ? &vect[0].u.multiset->msd->cmp_less : NULL;
+  struct svalue *cmp_less;
   ONERROR uwp;
+
+  if (count) {
+    struct svalue *first_cmp_less;
+    assert (vect[0].type == T_MULTISET);
+    first_cmp_less = &vect[0].u.multiset->msd->cmp_less;
+    if (first_cmp_less->type == T_INT)
+      cmp_less = NULL;
+    else
+      cmp_less = first_cmp_less;
+  }
+  else
+    cmp_less = NULL;
 
   for (idx = 0; idx < count; idx++) {
     struct multiset *l = vect[idx].u.multiset;
@@ -5303,7 +5315,7 @@ void test_multiset (void)
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.71 2006/07/07 18:20:58 mast Exp $");
+RCSID("$Id: multiset.c,v 1.72 2008/05/30 19:38:09 mast Exp $");
 
 struct multiset *first_multiset;
 
