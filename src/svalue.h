@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.h,v 1.159 2008/05/30 14:37:05 mast Exp $
+|| $Id: svalue.h,v 1.160 2008/05/30 15:17:13 mast Exp $
 */
 
 #ifndef SVALUE_H
@@ -322,6 +322,14 @@ struct svalue
 
 #define FUNCTION_BUILTIN USHRT_MAX
 
+PMOD_EXPORT const struct svalue svalue_int_zero;
+#ifdef HAVE_UNION_INIT
+PMOD_EXPORT const struct svalue svalue_int_one;
+#else
+/* The value 1 is initialized first thing in init_pike. */
+PMOD_EXPORT struct svalue svalue_int_one;
+#endif
+
 #define is_gt(a,b) is_lt(b,a)
 #define is_ge(a,b) is_le(b,a)
 
@@ -350,7 +358,7 @@ do{ \
 /* var MUST be a variable!!! */
 #define safe_check_destructed(var) do{ \
   if((var->type == PIKE_T_OBJECT || var->type==PIKE_T_FUNCTION) && !var->u.object->prog) \
-    var=&dest_ob_zero; \
+    var=&svalue_int_zero; \
 }while(0)
 
 #define check_short_destructed(U,T) \
@@ -1007,9 +1015,11 @@ struct ref_dummy
 /* The following macro is useful to initialize static svalues. Note
  * that the value isn't always set. */
 #ifdef HAVE_UNION_INIT
+#define SVALUE_INIT(TYPE, SUBTYPE, VAL) {TYPE, SUBTYPE, {VAL}}
 #define SVALUE_INIT_INT(VAL) {T_INT, NUMBER_NUMBER, {VAL}}
 #define SVALUE_INIT_FREE {PIKE_T_FREE, NUMBER_NUMBER, {0}}
 #else
+#define SVALUE_INIT(TYPE, SUBTYPE, VAL) {TYPE, SUBTYPE}
 #define SVALUE_INIT_INT(VAL) {T_INT, NUMBER_NUMBER}
 #define SVALUE_INIT_FREE {PIKE_T_FREE, NUMBER_NUMBER}
 #endif
