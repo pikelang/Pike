@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.428 2008/05/30 20:12:26 grubba Exp $
+|| $Id: language.yacc,v 1.429 2008/05/30 20:20:23 grubba Exp $
 */
 
 %pure_parser
@@ -3837,6 +3837,9 @@ inherit_specifier: TOK_IDENTIFIER TOK_COLON_COLON
   | inherit_specifier TOK_IDENTIFIER TOK_COLON_COLON
   {
     int e = 0;
+    if ($1 < 0) {
+      $1 = 0;
+    }
 #if 0
     /* FIXME: The inherit modifiers aren't kept. */
     if (!(inherit_state->new_program->inherits[$1].flags & ID_PRIVATE)) {
@@ -3857,11 +3860,7 @@ inherit_specifier: TOK_IDENTIFIER TOK_COLON_COLON
       $$ = -1;
     } else {
       /* We know stuff about the inherit structure... */
-      if ($1 >= 0) {
-	$$ = e + $1;
-      } else {
-	$$ = e;
-      }
+      $$ = e + $1;
     }
     free_node($2);
   }
