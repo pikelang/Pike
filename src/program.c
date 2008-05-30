@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.711 2008/05/30 16:17:07 mast Exp $
+|| $Id: program.c,v 1.712 2008/05/30 16:57:03 mast Exp $
 */
 
 #include "global.h"
@@ -1507,13 +1507,8 @@ static struct node_s *index_modules(struct pike_string *ident,
     JMP_BUF tmp;
 
     if(SETJMP(tmp))
-    {
-      if (!ident->size_shift) {
-	handle_compile_exception ("Couldn't index a module with '%s'.", ident->str);
-      } else {
-	handle_compile_exception ("Couldn't index a module.");
-      }
-    } else {
+      handle_compile_exception ("Couldn't index a module with %S.", ident);
+    else {
       int e = num_used_modules;
       struct svalue *m = modules - num_used_modules;
 
