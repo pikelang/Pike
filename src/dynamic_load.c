@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dynamic_load.c,v 1.72 2004/03/22 17:41:00 mast Exp $
+|| $Id: dynamic_load.c,v 1.73 2008/05/30 15:26:22 mast Exp $
 */
 
 #ifdef TESTING
@@ -25,7 +25,7 @@
 #  include "lex.h"
 #  include "object.h"
 
-RCSID("$Id: dynamic_load.c,v 1.72 2004/03/22 17:41:00 mast Exp $");
+RCSID("$Id: dynamic_load.c,v 1.73 2008/05/30 15:26:22 mast Exp $");
 
 #else /* TESTING */
 
@@ -550,8 +550,10 @@ void exit_dynamic_load(void)
     else
       (*tmp->exit)();
     UNSETJMP(recovery);
-    free_program(tmp->module_prog);
-    tmp->module_prog = NULL;
+    if (tmp->module_prog) {
+      free_program(tmp->module_prog);
+      tmp->module_prog = NULL;
+    }
   }
 #endif
 }
