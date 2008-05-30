@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.151 2008/05/24 21:32:14 grubba Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.152 2008/05/30 17:01:49 mast Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -2172,19 +2172,20 @@ class Evaluator {
 
     int compile_exception (object|array trace)
     {
-      if (!objectp (trace) ||
-	  !trace->is_cpp_error && !trace->is_compilation_error) {
-	// Errors thrown directly by cpp() and compile() are normally not
-	// interesting; they've already been reported to compile_error.
-	catch {
-	  trace = ({trace[0], trace[1][stack_level + 1..]});
-	  if (trace[1][0][0] == "Optimizer")
-	    // When the compiler evaluates constants there's a
-	    // somewhat odd frame "Optimizer:0 0()" at the top.
-	    trace[1] = trace[1][1..];
-	};
-	hch_errors += "Compiler Exception: " + describe_backtrace (trace);
-      }
+      if (objectp (trace) && trace->is_cpp_or_compilation_error)
+	// Backtraces for errors thrown by cpp(), compile() or a
+	// compile callback are normally not interesting. Return zero
+	// to let the caller format an error message instead.
+	return 0;
+
+      catch {
+	trace = ({trace[0], trace[1][stack_level + 1..]});
+	if (trace[1][0][0] == "Optimizer")
+	  // When the compiler evaluates constants there's a
+	  // somewhat odd frame "Optimizer:0 0()" at the top.
+	  trace[1] = trace[1][1..];
+      };
+      hch_errors += "Compiler Exception: " + describe_backtrace (trace);
       return 1;
     }
 
