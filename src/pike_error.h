@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_error.h,v 1.47 2008/05/27 19:10:33 grubba Exp $
+|| $Id: pike_error.h,v 1.48 2008/05/30 10:54:12 mast Exp $
 */
 
 #ifndef PIKE_ERROR_H
@@ -109,7 +109,7 @@ typedef struct ONERROR
 typedef struct JMP_BUF
 {
   struct JMP_BUF *previous;
-  volatile LOW_JMP_BUF recovery;
+  LOW_JMP_BUF recovery;
   struct pike_frame *frame_pointer;
   ptrdiff_t stack_pointer;
   ptrdiff_t mark_sp;
