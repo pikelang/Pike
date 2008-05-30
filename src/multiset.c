@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.91 2006/07/07 18:20:21 mast Exp $
+|| $Id: multiset.c,v 1.92 2008/05/30 19:37:45 mast Exp $
 */
 
 #include "global.h"
@@ -24,7 +24,7 @@
 #include "svalue.h"
 #include "block_alloc.h"
 
-RCSID("$Id: multiset.c,v 1.91 2006/07/07 18:20:21 mast Exp $");
+RCSID("$Id: multiset.c,v 1.92 2008/05/30 19:37:45 mast Exp $");
 
 /* FIXME: Optimize finds and searches on type fields? (But not when
  * objects are involved!) Well.. Although cheap I suspect it pays off
@@ -65,8 +65,6 @@ static INLINE struct msnode_indval *msnode_indval_check (struct msnode_indval *x
     if (!sub_ref (X)) Pike_fatal ("Got too few refs to " #X ".\n");	\
   } while (0)
 
-PMOD_EXPORT const char msg_no_multiset_flag_marker[] =
-  "Multiset index lacks MULTISET_FLAG_MARKER. It might be externally clobbered.\n";
 PMOD_EXPORT const char msg_multiset_no_node_refs[] =
   "Multiset got no node refs.\n";
 
@@ -648,22 +646,33 @@ static int prepare_for_change (struct multiset *l, int verbatim)
 #endif
 
   if (msd->refs > 1) {
+    debug_malloc_touch (msd);
     l->msd = copy_multiset_data (msd);
     MOVE_MSD_REF (l, msd);
     msd_changed = 1;
-    if (!l->node_refs)
+    if (!l->node_refs) {
       /* Look at l->node_refs and not verbatim here, since when
        * verbatim is nonzero while l->node_refs is zero, we're only
        * interested in keeping the tree structure for the allocated
        * nodes. */
+      debug_malloc_touch (l);
+      debug_malloc_touch (msd);
       CLEAR_DELETED_ON_FREE_LIST (msd);
+    }
+    else {
+      debug_malloc_touch (l);
+      debug_malloc_touch (msd);
+    }
   }
 
   if (!verbatim && DO_SHRINK (msd, 0)) {
+    debug_malloc_touch (l);
+    debug_malloc_touch (msd);
 #ifdef PIKE_DEBUG
     if (d_flag > 1) check_multiset (l, 1);
 #endif
     l->msd = resize_multiset_data (msd, ALLOC_SIZE (msd->size), 0);
+    debug_malloc_touch (l->msd);
     msd_changed = 1;
   }
 
@@ -681,27 +690,46 @@ static int prepare_for_add (struct multiset *l, int verbatim)
 #endif
 
   if (msd->refs > 1) {
+    debug_malloc_touch (msd);
     l->msd = copy_multiset_data (msd);
     MOVE_MSD_REF (l, msd);
     msd_changed = 1;
-    if (!l->node_refs) CLEAR_DELETED_ON_FREE_LIST (msd);
+    if (!l->node_refs) {
+      debug_malloc_touch (l);
+      debug_malloc_touch (msd);
+      CLEAR_DELETED_ON_FREE_LIST (msd);
+    }
+    else {
+      debug_malloc_touch (l);
+      debug_malloc_touch (msd);
+    }
   }
 
   if (msd->size == msd->allocsize) {
-    if (!l->node_refs) CLEAR_DELETED_ON_FREE_LIST (msd);
+    if (!l->node_refs) {
+      debug_malloc_touch (l);
+      debug_malloc_touch (msd);
+      CLEAR_DELETED_ON_FREE_LIST (msd);
+    }
     if (msd->size == msd->allocsize) {
       /* Can't call check_multiset here, since it might not even be a
        * proper tree in verbatim mode. */
+      debug_malloc_touch (l);
+      debug_malloc_touch (msd);
       l->msd = resize_multiset_data (msd, ENLARGE_SIZE (msd->allocsize), verbatim);
+      debug_malloc_touch (l->msd);
       return 1;
     }
   }
 
   if (!verbatim && DO_SHRINK (msd, 1)) {
+    debug_malloc_touch (l);
+    debug_malloc_touch (msd);
 #ifdef PIKE_DEBUG
     if (d_flag > 1) check_multiset (l, 1);
 #endif
     l->msd = resize_multiset_data (msd, ALLOC_SIZE (msd->size + 1), 0);
+    debug_malloc_touch (l->msd);
     return 1;
   }
 
@@ -720,17 +748,29 @@ static int prepare_for_value_change (struct multiset *l, int verbatim)
 
   /* Assume that the caller holds a value lock. */
   if (msd->refs - msd->noval_refs > 1) {
+    debug_malloc_touch (msd);
     l->msd = copy_multiset_data (msd);
     MOVE_MSD_REF (l, msd);
     msd_changed = 1;
-    if (!l->node_refs) CLEAR_DELETED_ON_FREE_LIST (msd);
+    if (!l->node_refs) {
+      debug_malloc_touch (l);
+      debug_malloc_touch (msd);
+      CLEAR_DELETED_ON_FREE_LIST (msd);
+    }
+    else {
+      debug_malloc_touch (l);
+      debug_malloc_touch (msd);
+    }
   }
 
   if (!verbatim && DO_SHRINK (msd, 0)) {
+    debug_malloc_touch (l);
+    debug_malloc_touch (msd);
 #ifdef PIKE_DEBUG
     if (d_flag > 1) check_multiset (l, 1);
 #endif
     l->msd = resize_multiset_data (msd, ALLOC_SIZE (msd->size), 0);
+    debug_malloc_touch (l->msd);
     msd_changed = 1;
   }
 
@@ -788,14 +828,19 @@ static void unlink_msnode (struct multiset *l, struct rbstack_ptr *track,
   union msnode *unlinked_node;
 
   if (prepare_for_change (l, 1)) {
+    debug_malloc_touch (l);
+    debug_malloc_touch (msd);
     rbstack_shift (rbstack, HDR (msd->nodes), HDR (l->msd->nodes));
     msd = l->msd;
+    debug_malloc_touch (msd);
   }
 
   /* Note: Similar code in gc_unlink_node_shared. */
 
   if (l->node_refs) {
     union msnode *prev, *next;
+    debug_malloc_touch (l);
+    debug_malloc_touch (msd);
     unlinked_node = RBNODE (RBSTACK_PEEK (rbstack));
     prev = low_multiset_prev (unlinked_node);
     next = low_multiset_next (unlinked_node);
@@ -818,10 +863,13 @@ static void unlink_msnode (struct multiset *l, struct rbstack_ptr *track,
     unlinked_node->i.prev = NULL;
     msd->size--;
     if (!keep_rbstack && DO_SHRINK (msd, 0)) {
+      debug_malloc_touch (l);
+      debug_malloc_touch (msd);
 #ifdef PIKE_DEBUG
       if (d_flag > 1) check_multiset (l, 1);
 #endif
       l->msd = resize_multiset_data (msd, ALLOC_SIZE (msd->size), 0);
+      debug_malloc_touch (l->msd);
     }
   }
 
@@ -3361,8 +3409,20 @@ PMOD_EXPORT struct multiset *add_multisets (struct svalue *vect, int count)
 {
   struct multiset *res, *l;
   int size = 0, idx, indval = 0;
-  struct svalue *cmp_less = count ? &vect[0].u.multiset->msd->cmp_less : NULL;
+  struct svalue *cmp_less;
   ONERROR uwp;
+
+  if (count) {
+    struct svalue *first_cmp_less;
+    assert (vect[0].type == T_MULTISET);
+    first_cmp_less = &vect[0].u.multiset->msd->cmp_less;
+    if (first_cmp_less->type == T_INT)
+      cmp_less = NULL;
+    else
+      cmp_less = first_cmp_less;
+  }
+  else
+    cmp_less = NULL;
 
   for (idx = 0; idx < count; idx++) {
     struct multiset *l = vect[idx].u.multiset;
@@ -4273,6 +4333,47 @@ void exit_multiset()
   free_all_multiset_blocks();
 }
 
+#ifdef PIKE_DEBUG
+
+static struct multiset *find_multiset_for_node (union msnode *node)
+{
+  struct multiset *l;
+  for (l = first_multiset; l; l = l->next) {
+    struct multiset_data *msd = l->msd;
+    if (node >= msd->nodes &&
+	node < (msd->flags & MULTISET_INDVAL ?
+		IVNODE (NODE_AT (msd, msnode_indval, msd->allocsize)) :
+		INODE (NODE_AT (msd, msnode_ind, msd->allocsize))))
+      return l;
+  }
+  return NULL;
+}
+
+PMOD_EXPORT void no_ms_flag_marker_fatal (
+  union msnode *node, struct multiset *l, char *file, int line)
+{
+#ifdef DEBUG_MALLOC
+  {
+    if (!l) l = find_multiset_for_node (node);
+    if (l) {
+      fprintf (stderr,
+	       "%s:%d: Multiset index at %p lacks MULTISET_FLAG_MARKER. "
+	       "It might be externally clobbered.\n", file, line, node);
+      describe_something (l->msd, T_MULTISET_DATA, 0, 0, 0, NULL);
+    }
+    else {
+      debug_fatal ("%s:%d: Multiset index at %p lacks MULTISET_FLAG_MARKER. "
+		   "It doesn't belong to any known multiset, "
+		   "so it's probably a bogus pointer.\n", file, line, node);
+    }
+  }
+#endif
+  debug_fatal ("%s:%d: Multiset index at %p lacks MULTISET_FLAG_MARKER. "
+	       "It might be externally clobbered.\n", file, line, node);
+}
+
+#endif
+
 #if defined (PIKE_DEBUG) || defined (TEST_MULTISET)
 
 union msnode *debug_check_msnode (struct multiset *l, ptrdiff_t nodepos,
@@ -4302,7 +4403,7 @@ union msnode *debug_check_msnode (struct multiset *l, ptrdiff_t nodepos,
 #ifdef PIKE_DEBUG
     default:
       if (!(node->i.ind.type & MULTISET_FLAG_MARKER))
-	Pike_fatal ("%s:%d: %s", file, line, msg_no_multiset_flag_marker);
+	no_ms_flag_marker_fatal (node, l, file, line);
 #endif
   }
 
@@ -4425,7 +4526,7 @@ void check_multiset (struct multiset *l, int safe)
 	    alloc++;
 #ifdef PIKE_DEBUG
 	    if (!(node->i.ind.type & MULTISET_FLAG_MARKER))
-	      Pike_fatal (msg_no_multiset_flag_marker);
+	      no_ms_flag_marker_fatal (node, l, __FILE__, __LINE__);
 #endif
 	    ind_types |= 1 << (node->i.ind.type & ~MULTISET_FLAG_MASK);
 	    if (indval) val_types |= 1 << node->iv.val.type;
