@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.152 2008/05/30 17:01:49 mast Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.153 2008/05/30 17:32:45 mast Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -2159,7 +2159,7 @@ class Evaluator {
 	file = master()->trim_file_name(file)+":";
       if(err[-1]!='\n') err += "\n";
       string linestr = line?(string)line:"-";
-      return sprintf(": %s%s:%s", file, linestr, err);
+      return sprintf(": %s%s: %s", file, linestr, err);
     }
 
     void compile_error(string file, int line, string err) {
