@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.242 2008/05/30 15:19:03 mast Exp $
+|| $Id: svalue.c,v 1.243 2008/05/30 18:53:50 mast Exp $
 */
 
 #include "global.h"
@@ -2012,7 +2012,7 @@ PMOD_EXPORT void debug_check_svalue(const struct svalue *s)
        s->subtype!=NUMBER_UNDEFINED && s->subtype!=NUMBER_DESTRUCTED) {
       Pike_fatal("Unknown integer subtype %d\n", s->subtype);
     }
-    if (s->u.integer && s->subtype != NUMBER_NUMBER)
+    if (s->subtype != NUMBER_NUMBER && s->u.integer)
       Pike_fatal ("Invalid subtype %d in nonzero integer.\n", s->subtype);
   }
 
