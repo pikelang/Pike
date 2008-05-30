@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.h,v 1.158 2008/05/11 14:47:57 mast Exp $
+|| $Id: svalue.h,v 1.159 2008/05/30 14:37:05 mast Exp $
 */
 
 #ifndef SVALUE_H
@@ -1003,5 +1003,15 @@ struct ref_dummy
 {
   PIKE_MEMORY_OBJECT_MEMBERS;
 };
+
+/* The following macro is useful to initialize static svalues. Note
+ * that the value isn't always set. */
+#ifdef HAVE_UNION_INIT
+#define SVALUE_INIT_INT(VAL) {T_INT, NUMBER_NUMBER, {VAL}}
+#define SVALUE_INIT_FREE {PIKE_T_FREE, NUMBER_NUMBER, {0}}
+#else
+#define SVALUE_INIT_INT(VAL) {T_INT, NUMBER_NUMBER}
+#define SVALUE_INIT_FREE {PIKE_T_FREE, NUMBER_NUMBER}
+#endif
 
 #endif /* !SVALUE_H */
