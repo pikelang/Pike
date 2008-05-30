@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.710 2008/05/30 11:20:43 grubba Exp $
+|| $Id: program.c,v 1.711 2008/05/30 16:17:07 mast Exp $
 */
 
 #include "global.h"
@@ -1653,39 +1653,8 @@ struct node_s *resolve_identifier(struct pike_string *ident)
   } else {
     push_int(0);
   }
-  if (!safe_apply_current2(PC_RESOLV_FUN_NUM, 3, NULL)) {
-    if(Pike_compiler->compiler_pass==2) {
-      if (throw_value.type == T_STRING) {
-	my_yyerror("%S", throw_value.u.string);
-	free_svalue(&throw_value);
-	mark_free_svalue (&throw_value);
-      }
-      else {
-	handle_compile_exception ("Error resolving %S.", ident);
-      }
-    } else {
-      /* FIXME: Error goes to /dev/null. Now we get a warning at
-       * least in rtldebug mode, but this borken, borken, boRKen. :P */
-      struct svalue thrown;
-      move_svalue (&thrown, &throw_value);
-      mark_free_svalue (&throw_value);
-#ifdef PIKE_DEBUG
-      {
-	struct pike_string *msg = format_exception_for_error_msg (&thrown);
-	if (msg) {
-	  yywarning("Ignoring resolv() exception in pass %d:",
-		    Pike_compiler->compiler_pass);
-	  yywarning ("%S", msg);
-	  free_string (msg);
-	}
-	else
-	  yywarning("Ignoring resolv() exception in pass %d",
-		     Pike_compiler->compiler_pass);
-      }
-#endif
-      free_svalue (&thrown);
-    }
-  }
+  if (!safe_apply_current2(PC_RESOLV_FUN_NUM, 3, NULL))
+    handle_compile_exception ("Error resolving %S.", ident);
 
   if (Pike_compiler->compiler_pass == 2 &&
       ((Pike_sp[-1].type == T_OBJECT &&
