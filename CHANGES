@@ -193,6 +193,16 @@ o Pike_fp->context
   NOTE! C-API incompatibility!
   NOTE!
 
+o Inherit level argument added to several object handling functions.
+
+  In order to implement subtyping of objects, and extra argument
+  "inherit_level" has been added to many object indexing related
+  functions.
+
+  NOTE!
+  NOTE! C-API incompatibility!
+  NOTE!
+
 Extensions and New Functions
 
 o __attribute__ and __deprecated__
@@ -200,6 +210,12 @@ o __attribute__ and __deprecated__
   It's now possible to set custom attributes on types. This is
   currently used to improve the argument checking for sprintf()
   and related functions, and for marking symbols as deprecated.
+  eg:
+
+    __deprecated__ mixed obsolete_function();
+    __deprecated__(mixed) obsolete_return_value();
+    mixed fun(__deprecated__(mixed) obsolete_arg);
+    __deprecated__(mixed) obsolete_variable;
 
 o __func__
 
@@ -210,6 +226,17 @@ o __func__
   string concatenation is supported. eg:
 
     error("Error in " __func__ ".\n");
+
+o #pragma {no_,}deprecation_warnings
+
+  Warnings for use of deprecated symbols can be turned off for a
+  segment of code with
+
+    #pragma no_deprecation_warnings
+
+  and turned on again with
+
+    #pragma deprecation_warnings
 
 o limit()
 
