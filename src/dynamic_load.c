@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dynamic_load.c,v 1.92 2008/05/27 19:36:00 grubba Exp $
+|| $Id: dynamic_load.c,v 1.93 2008/05/30 15:26:22 mast Exp $
 */
 
 #ifdef TESTING
@@ -613,8 +613,10 @@ void exit_dynamic_load(void)
     else
       (*tmp->exit)();
     UNSETJMP(recovery);
-    free_program(tmp->module_prog);
-    tmp->module_prog = NULL;
+    if (tmp->module_prog) {
+      free_program(tmp->module_prog);
+      tmp->module_prog = NULL;
+    }
     free_string(tmp->name);
     tmp->name = NULL;
   }
