@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.206 2008/05/30 19:40:04 grubba Exp $
+|| $Id: interpret_functions.h,v 1.207 2008/05/31 10:54:29 grubba Exp $
 */
 
 /*
@@ -2669,7 +2669,7 @@ OPCODE2(F_THIS, "this", I_UPDATE_SP, {
 	     arg1,
 	     loc.inherit->identifier_level));
     });
-    if (arg2 < 0) {
+    if ((arg2 < 0) || !loc.o->prog) {
       ref_push_object(loc.o);
     } else {
       ref_push_object_inherit(loc.o,
