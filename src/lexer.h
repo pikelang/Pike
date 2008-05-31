@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lexer.h,v 1.75 2008/05/31 21:16:45 grubba Exp $
+|| $Id: lexer.h,v 1.76 2008/05/31 21:17:47 grubba Exp $
 */
 
 /*
@@ -606,6 +606,7 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	  push_string(make_shared_binary_pcharp(MKPCHARP(buf, SHIFT), len));
 	  low_yyreport(REPORT_ERROR, NULL, 0, parser_system_string,
 		       1, "Unknown reserved symbol %s.");
+	  break;
 	}
       }
       {
