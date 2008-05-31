@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.249 2008/05/29 16:28:27 grubba Exp $
+|| $Id: program.h,v 1.250 2008/05/31 16:21:30 grubba Exp $
 */
 
 #ifndef PROGRAM_H
@@ -890,6 +890,8 @@ PMOD_EXPORT struct pike_string *get_line(PIKE_OPCODE_T *pc,
 					 struct program *prog, INT32 *linep);
 PMOD_EXPORT struct pike_string *low_get_function_line (struct object *o,
 						       int fun, INT32 *linep);
+PMOD_EXPORT struct pike_string *get_identifier_line(struct program *p,
+						    int fun, INT32 *linep);
 PMOD_EXPORT void va_yyreport(int severity_level,
 			     struct pike_string *file, INT32 line,
 			     struct pike_string *system, INT32 args,

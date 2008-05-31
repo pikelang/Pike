@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.713 2008/05/31 12:15:18 grubba Exp $
+|| $Id: program.c,v 1.714 2008/05/31 16:21:30 grubba Exp $
 */
 
 #include "global.h"
@@ -6319,7 +6319,10 @@ int program_index_no_free(struct svalue *to, struct svalue *what,
 }
 
 /*
- * Line number support routines, now also tells what file we are in
+ * Line number support routines, now also tells what file we are in.
+ *
+ * FIXME: Consider storing the filenames in strings (like what is now done
+ *        for identifiers).
  */
 
 /* program.linenumbers format:
@@ -6328,7 +6331,8 @@ int program_index_no_free(struct svalue *to, struct svalue *what,
  *   1. char		127 (marker).
  *   2. small number	Filename string length.
  *   3. char		Filename string size shift.
- *   4. string data	(Possibly wide) filename string without null termination.
+ *   4. string data	(Possibly wide) filename string without null
+ *                      termination.
  * 			Each character is stored in native byte order.
  * 
  * Line number entry:
@@ -6343,10 +6347,10 @@ int program_index_no_free(struct svalue *to, struct svalue *what,
  *     1. char		The number.
  *   Else if -32768 <= n < 32768:
  *     1. char		-127 (marker).
- *     2. short		The number stored in big endian order.
+ *     2. short		The 16-bit signed number stored in big endian order.
  *   Else:
  *     1. char		-128 (marker).
- *     2. int		The number stored in big endian order.
+ *     2. int		The 32-bit signed number stored in big endian order.
  *
  * Whenever the filename changes, a filename entry followed by a line
  * number entry is stored. If only the line number changes, a line
@@ -6854,6 +6858,23 @@ PMOD_EXPORT struct pike_string *low_get_function_line (struct object *o,
   }
   *linep = 0;
   return NULL;
+}
+
+/* Return the file and line where the identifier with reference number
+ * fun was defined.
+ *
+ * Note: Unlike the other get*line() functions, this one does not
+ *       add a reference to the returned string.
+ */
+PMOD_EXPORT struct pike_string *get_identifier_line(struct program *p,
+						    int fun, INT32 *linep)
+{
+  struct reference *ref = PTR_FROM_INT(p, fun);
+  struct identifier *id = ID_FROM_PTR(p, ref);
+  p = PROG_FROM_PTR(p, ref);
+  if (id->filename_strno < 0) return NULL;
+  if (linep) *linep = id->linenumber;
+  return p->strings[id->filename_strno];
 }
 
 /* Main entry point for compiler messages originating from
@@ -10537,12 +10558,18 @@ void yyexplain_not_compatible(int severity_level,
     if(((bid->run_time_type != PIKE_T_INT) ||
 	(ID_FROM_INT(a, i)->run_time_type != PIKE_T_INT)) &&
        !match_types(ID_FROM_INT(a,i)->type, bid->type)) {
+      INT32 aid_line = a_line;
+      INT32 bid_line = b_line;
+      struct pike_string *aid_file = get_identifier_line(a, i, &aid_line);
+      struct pike_string *bid_file = get_identifier_line(b, i, &bid_line);
+      if (!aid_file) aid_file = a_file;
+      if (!bid_file) bid_file = b_file;
       ref_push_string(bid->name);
       ref_push_program(a);
       ref_push_program(b);
       yytype_report(severity_level,
-		    a_file, a_line, ID_FROM_INT(a, i)->type,
-		    b_file, b_line, bid->type, 3,
+		    aid_file, aid_line, ID_FROM_INT(a, i)->type,
+		    bid_file, bid_line, bid->type, 3,
 		    "Identifier %s in %O is incompatible with the same in %O.");
     }
   }
@@ -10583,25 +10610,35 @@ void yyexplain_not_implements(int severity_level,
     if(s == bid->name) continue;	/* Skip __INIT */
     i = find_shared_string_identifier(bid->name,a);
     if (i == -1) {
+      INT32 bid_line = b_line;
+      struct pike_string *bid_file;
       if (b->identifier_references[e].id_flags & (ID_OPTIONAL))
 	continue;		/* It's ok... */
+      bid_file = get_identifier_line(b, i, &bid_line);
+      if (!bid_file) bid_file = b_file;
       yytype_report(severity_level,
-		    b_file, b_line, bid->type,
+		    bid_file, bid_line, bid->type,
 		    a_file, a_line, NULL,
 		    0, "Missing identifier %S.", bid->name);
       continue;
     }
 
     if (!pike_types_le(bid->type, ID_FROM_INT(a, i)->type)) {
+      INT32 aid_line = a_line;
+      INT32 bid_line = b_line;
+      struct pike_string *aid_file = get_identifier_line(a, i, &aid_line);
+      struct pike_string *bid_file = get_identifier_line(b, i, &bid_line);
+      if (!aid_file) aid_file = a_file;
+      if (!bid_file) bid_file = b_file;
       if(!match_types(ID_FROM_INT(a,i)->type, bid->type)) {
 	yytype_report(severity_level,
-		      b_file, b_line, bid->type,
-		      a_file, a_line, ID_FROM_INT(a, i)->type,
+		      bid_file, bid_line, bid->type,
+		      aid_file, aid_line, ID_FROM_INT(a, i)->type,
 		      0, "Type of identifier %S does not match.", bid->name);
       } else {
 	yytype_report(REPORT_WARNING,
-		      NULL, 0, bid->type,
-		      NULL, 0, ID_FROM_INT(a, i)->type,
+		      bid_file, bid_line, bid->type,
+		      aid_file, aid_line, ID_FROM_INT(a, i)->type,
 		      0, "Type of identifier %S is not strictly compatible.",
 		      bid->name);
       }
