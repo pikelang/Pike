@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sequence.cmod,v 1.19 2008/01/26 22:34:27 mast Exp $
+|| $Id: sequence.cmod,v 1.20 2008/05/31 20:36:39 nilsson Exp $
 */
 
 #include "global.h"
@@ -549,6 +549,7 @@ PIKECLASS Sequence
   }
 
   EXIT
+    gc_trivial;
   {
     free_array(THIS->a);
   }
@@ -944,11 +945,17 @@ PIKECLASS Sequence
     {
       THIS->sequence=0;
       THIS->pos=0;
+      THIS->obj = NULL;
     }
 
     EXIT
+      gc_trivial;
     {
-      free_object(THIS->obj);
+      if( THIS->obj )
+      {
+        free_object(THIS->obj);
+        THIS->obj = NULL;
+      }
     }
     
   }

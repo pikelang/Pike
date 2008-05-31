@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: circular_list.cmod,v 1.18 2008/01/26 22:34:27 mast Exp $
+|| $Id: circular_list.cmod,v 1.19 2008/05/31 20:36:39 nilsson Exp $
 */
 
 #include "global.h"
@@ -877,14 +877,19 @@ PIKECLASS CircularList
 
   INIT 
   {
-    THIS->a=0;
+    THIS->a=NULL;
     THIS->pos=0;
     THIS->size=0;
   }
 
   EXIT
+    gc_trivial;
   {
-    free_array(THIS->a);
+    if( THIS->a )
+    {
+      free_array(THIS->a);
+      THIS->a = NULL;
+    }
   }
 
    
@@ -1278,11 +1283,17 @@ PIKECLASS CircularList
     {
       THIS->list=0;
       THIS->pos=0;
+      THIS->obj = NULL;
     }
 
     EXIT
+      gc_trivial;
     {
-      free_object(THIS->obj);
+      if( THIS->obj )
+      {
+        free_object(THIS->obj);
+        THIS->obj = NULL;
+      }
     }
     
   }

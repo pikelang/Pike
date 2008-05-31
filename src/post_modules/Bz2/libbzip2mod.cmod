@@ -535,10 +535,12 @@ PIKECLASS Deflate
       s->avail_out = 0;
     }
   EXIT
+    gc_trivial;
     {
       bzCompressEnd(&(THIS->strm));
       if(THIS->internbuf != NULL){
 	toss_buffer(&(THIS->intern_buffer));
+        THIS->internbuf = NULL;
       }
     }  
 }
@@ -782,10 +784,12 @@ PIKECLASS Inflate
     }
 
   EXIT
+    gc_trivial;
     {
       bzDecompressEnd(&(THIS->strm));
       if(THIS->internbuf != NULL){
 	toss_buffer(&(THIS->intern_buffer));
+        THIS->internbuf = NULL;
       }
     }
 }
@@ -1133,6 +1137,7 @@ PIKECLASS File
     }
   
   EXIT
+    gc_trivial;
     {
       if(THIS->fp != NULL){
 	switch(THIS->mode){
@@ -1144,8 +1149,10 @@ PIKECLASS File
 	  break;
 	case NO_FILE_MODE:
 	  break;
+#ifdef PIKE_DEBUG
 	default:
 	  Pike_error("This error can never occur.\n");
+#endif
 	}
 	fclose(THIS->fp);
 	THIS->fp = NULL;
