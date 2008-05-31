@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.275 2008/05/30 15:19:02 mast Exp $
+|| $Id: encode.c,v 1.276 2008/05/31 19:41:16 grubba Exp $
 */
 
 #include "global.h"
@@ -4325,6 +4325,9 @@ static void decode_value2(struct decode_data *data)
 		struct reference ref;
 		int no;
 		int n;
+
+		id.filename_strno = store_prog_string(c->lex.current_file);
+		id.linenumber = c->lex.current_line;
 
 		id.name = Pike_sp[-2].u.string;
 		id.type = Pike_sp[-1].u.type;
