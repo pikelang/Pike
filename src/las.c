@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.415 2008/05/30 11:20:44 grubba Exp $
+|| $Id: las.c,v 1.416 2008/05/31 12:21:41 grubba Exp $
 */
 
 #include "global.h"
@@ -1669,14 +1669,9 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
 	      } else {
 		my_yyerror("Index %S not present in module.", id);
 	      }
-	      push_int(REPORT_ERROR);
-	      ref_push_string(c->lex.current_file);
-	      push_int(c->lex.current_line);
-	      push_constant_text("compiler");
-	      push_constant_text("Indexed module was: %O.");
 	      resolv_constant(n);
-	      safe_apply_current(PC_REPORT_FUN_NUM, 6);
-	      pop_stack();
+	      low_yyreport(REPORT_ERROR, NULL, 0, parser_system_string,
+			   1, "Indexed module was: %O.");
 	    }
 	  }else if (!(Pike_compiler->flags & COMPILATION_FORCE_RESOLVE)) {
 	    /* Hope it's there in pass 2 */
