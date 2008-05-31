@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lexer.h,v 1.74 2008/05/31 19:03:53 grubba Exp $
+|| $Id: lexer.h,v 1.75 2008/05/31 21:16:45 grubba Exp $
 */
 
 /*
@@ -591,6 +591,8 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	    return TOK_DEPRECATED_ID;
 	  if(ISWORD("__func__"))
 	    return TOK_FUNCTION_NAME;
+	  if(ISWORD("__OOB__"))
+	    break;
 	  /* Allow triple (or more) underscore for the user, and make sure we
 	   * don't get false matches below for wide strings.
 	   */
