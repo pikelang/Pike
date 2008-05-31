@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lexer.h,v 1.71 2008/05/29 16:29:11 grubba Exp $
+|| $Id: lexer.h,v 1.72 2008/05/31 16:51:11 mast Exp $
 */
 
 /*
@@ -487,9 +487,12 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	case TWO_CHAR('e','x'):
 	  if(ISWORD("extern")) return TOK_EXTERN;
 	  break;
+#ifdef WITH_FACETS
+#warning "facet" keyword needs compat if enabled by default
 	case TWO_CHAR('f','a'):
 	  if(ISWORD("facet")) return TOK_FACET;
 	  break;
+#endif
 	case TWO_CHAR('f','i'):
 	  if(ISWORD("final")) return TOK_FINAL_ID;
 	  break;
