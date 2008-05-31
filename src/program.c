@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.712 2008/05/30 16:57:03 mast Exp $
+|| $Id: program.c,v 1.713 2008/05/31 12:15:18 grubba Exp $
 */
 
 #include "global.h"
@@ -8611,8 +8611,7 @@ static void f_compilation_handle_inherit(INT32 args)
   }
 }
 
-/*! @decl int(0..1) pop_type_attribute(string attribute, @
- *!                                    type a, type b)
+/*! @decl int(0..1) pop_type_attribute(string attribute, type a, type b)
  *!
  *!   Type attribute handler.
  *!
@@ -8644,22 +8643,17 @@ static void f_compilation_pop_type_attribute(INT32 args)
     MAKE_CONST_STRING(deprecated_string, "deprecated");
     if ((attr == deprecated_string) &&
 	!(c->lex.pragmas & ID_NO_DEPRECATION_WARNINGS)) {
-      push_int(REPORT_WARNING);
-      ref_push_string(c->lex.current_file);
-      push_int(c->lex.current_line);
-      push_constant_text("type_check");
-      push_constant_text("Using deprecated %O value.");
       push_svalue(a);
-      apply_current(PC_REPORT_FUN_NUM, 6);
-      args++;
+      yytype_report(REPORT_WARNING, NULL, 0, NULL,
+		    NULL, 0, NULL,
+		    1, "Using deprecated %O value.");
     }
   }
   pop_n_elems(args);
   push_int(1);
 }
 
-/*! @decl int(0..1) push_type_attribute(string attribute, @
- *!                                     type a, type b)
+/*! @decl int(0..1) push_type_attribute(string attribute, type a, type b)
  *!
  *!   Type attribute handler.
  *!
@@ -8693,14 +8687,10 @@ static void f_compilation_push_type_attribute(INT32 args)
 	!(c->lex.pragmas & ID_NO_DEPRECATION_WARNINGS) &&
 	!((a->type == PIKE_T_TYPE) && (a->u.type == zero_type_string))) {
       /* Don't warn about setting deprecated values to zero. */
-      push_int(REPORT_WARNING);
-      ref_push_string(c->lex.current_file);
-      push_int(c->lex.current_line);
-      push_constant_text("type_check");
-      push_constant_text("Using deprecated %O value.");
       push_svalue(b);
-      apply_current(PC_REPORT_FUN_NUM, 6);
-      args++;
+      yytype_report(REPORT_WARNING, NULL, 0, NULL,
+		    NULL, 0, NULL,
+		    1, "Using deprecated %O value.");
     }
   }
   pop_n_elems(args);
@@ -8754,13 +8744,10 @@ static void f_compilation_apply_type_attribute(INT32 args)
 	(!b ||
 	 ((b->type == T_INT) && (b->subtype == NUMBER_UNDEFINED) &&
 	  (!b->u.integer)))) {
-      push_int(REPORT_WARNING);
-      ref_push_string(c->lex.current_file);
-      push_int(c->lex.current_line);
-      push_constant_text("type_check");
-      push_constant_text("Calling a deprecated value.");
-      apply_current(PC_REPORT_FUN_NUM, 5);
-      args++;
+      push_svalue(a);
+      yytype_report(REPORT_WARNING, NULL, 0, NULL,
+		    NULL, 0, NULL,
+		    1, "Calling a deprecated %O value.");
     }
   }
   pop_n_elems(args);
@@ -10078,14 +10065,12 @@ void low_pop_local_variables(int level)
     if ((Pike_compiler->compiler_pass == 2) &&
 	!(Pike_compiler->compiler_frame->variable[e].flags &
 	  LOCAL_VAR_IS_USED)) {
-      push_int(REPORT_WARNING);
-      ref_push_string(Pike_compiler->compiler_frame->variable[e].file);
-      push_int(Pike_compiler->compiler_frame->variable[e].line);
-      push_constant_text("parse");
-      push_constant_text("Unused local variable %s.");
       ref_push_string(Pike_compiler->compiler_frame->variable[e].name);
-      safe_apply_current(PC_REPORT_FUN_NUM, 6);
-      pop_stack();
+      low_yyreport(REPORT_WARNING,
+		   Pike_compiler->compiler_frame->variable[e].file,
+		   Pike_compiler->compiler_frame->variable[e].line,
+		   parser_system_string,
+		   1, "Unused local variable %s.");
     }
     free_string(Pike_compiler->compiler_frame->variable[e].name);
     free_type(Pike_compiler->compiler_frame->variable[e].type);
@@ -10110,14 +10095,12 @@ void pop_local_variables(int level)
       if ((Pike_compiler->compiler_pass == 2) &&
 	  !(Pike_compiler->compiler_frame->variable[level].flags &
 	    LOCAL_VAR_IS_USED)) {
-	push_int(REPORT_WARNING); /* Warning */
-	ref_push_string(Pike_compiler->compiler_frame->variable[level].file);
-	push_int(Pike_compiler->compiler_frame->variable[level].line);
-	push_constant_text("parse");
-	push_constant_text("Unused local variable %s.");
 	ref_push_string(Pike_compiler->compiler_frame->variable[level].name);
-	safe_apply_current(PC_REPORT_FUN_NUM, 6);
-	pop_stack();
+	low_yyreport(REPORT_WARNING,
+		     Pike_compiler->compiler_frame->variable[level].file,
+		     Pike_compiler->compiler_frame->variable[level].line,
+		     parser_system_string,
+		     1, "Unused local variable %s.");
 	/* Make sure we only warn once... */
 	Pike_compiler->compiler_frame->variable[level].flags |=
 	  LOCAL_VAR_IS_USED;
