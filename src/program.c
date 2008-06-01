@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.715 2008/05/31 18:06:25 grubba Exp $
+|| $Id: program.c,v 1.716 2008/06/01 11:19:58 grubba Exp $
 */
 
 #include "global.h"
@@ -7379,14 +7379,14 @@ int report_compiler_dependency(struct program *p)
   return ret;
 }
 
-/*! @module DefaultCompilationEnvironment
+/*! @module DefaultCompilerEnvironment
  *!
  *!   The @[CompilerEnvironment] object that is used
  *!   for loading C-modules and by @[predef::compile()].
  *!
  *! @note
  *!   @[predef::compile()] is essentially an alias for the
- *!   @[CompilerEnvironment::compile()] in this object.
+ *!   @[CompilerEnvironment()->compile()] in this object.
  *!
  *! @seealso
  *!   @[CompilerEnvironment], @[predef::compile()]
@@ -7395,7 +7395,7 @@ int report_compiler_dependency(struct program *p)
 /*! @endmodule
  */
 
-/*! @class CompilerEnviroment
+/*! @class CompilerEnvironment
  *!
  *!   The compiler environment.
  */
@@ -8107,7 +8107,7 @@ static void compilation_event_handler(int e)
  *!
  *!   The default implementation calls the corresponding function
  *!   in the active handlers, and otherwise falls back to
- *!   @[CompilationEnvironment::report()] in the parent object.
+ *!   @[CompilerEnvironment()->report()] in the parent object.
  */
 static void f_compilation_report(INT32 args)
 {
@@ -8410,7 +8410,7 @@ static void f_compilation_compile(INT32 args)
  *!
  *!   The default implementation calls the corresponding function
  *!   in any active handler, and otherwise falls back to
- *!   @[CompilationEnvironment::resolv()] in the parent object.
+ *!   @[CompilerEnvironment()->resolv()] in the parent object.
  */
 static void f_compilation_resolv(INT32 args)
 {
@@ -8458,7 +8458,7 @@ static void f_compilation_get_compilation_handler(INT32 args)
  *!
  *!   The default implementation calls the corresponding function
  *!   in the current handler, the current compatibility handler
- *!   or in the parent @[CompilationEnvironment] in that order.
+ *!   or in the parent @[CompilerEnvironment] in that order.
  *!
  *! @returns
  *!   @mixed

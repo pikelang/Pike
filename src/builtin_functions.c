@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.669 2008/05/30 15:19:02 mast Exp $
+|| $Id: builtin_functions.c,v 1.670 2008/06/01 11:19:45 grubba Exp $
 */
 
 #include "global.h"
@@ -4138,7 +4138,7 @@ node *optimize_replace(node *n)
  *!
  *! @seealso
  *!   @[compile_string()], @[compile_file()], @[cpp()], @[master()],
- *!   @[CompilationHandler], @[DefaultCompilationEnvironment]
+ *!   @[CompilationHandler], @[DefaultCompilerEnvironment]
  */
 PMOD_EXPORT void f_compile(INT32 args)
 {
