@@ -1247,9 +1247,10 @@ class NScopeStack
 #endif /* 0 */
       ref = ref[1..];
     }
-    if (sizeof(ref) == 1) {
+    if (sizeof(ref) <= 1) {
       // Handle some special symbols.
-      switch(ref[0]) {
+      switch(sizeof(ref) && ref[0]) {
+      case 0:
       case "this":
       case "this_program":
 	int tmp = pos;
