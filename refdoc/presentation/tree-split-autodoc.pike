@@ -1,5 +1,5 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.56 2004/03/02 12:37:45 vida Exp $
+ * $Id: tree-split-autodoc.pike,v 1.57 2008/06/01 13:26:04 grubba Exp $
  *
  */
 
@@ -544,6 +544,7 @@ class Node
     resolve_reference = my_resolve_reference;
 
     String.Buffer contents = String.Buffer(100000);
+    resolve_class_paths(n);
     contents->add( parse_children(n, "docgroup", parse_docgroup, 1) );
     contents->add( parse_children(n, "namespace", parse_namespace, 1) );
     contents->add( parse_children(n, "module", parse_module, 1) );
