@@ -196,9 +196,10 @@ string extractXML(string filename, int|void pikeMode, string|void type,
     return m->xml();
   }
   else if(stylePike && has_value(contents, "//!")) {
-    if(has_suffix(filename, ".pmod.in"))
+    if(has_suffix(filename, ".pmod.in")) {
       contents = replace(contents, "@module@",
-			 "\"___" + parentModules[1..]*"." + "\"");
+			 "\"___" + (parentModules[1..] + ({ name }))*"." +"\"");
+    }
     object m;
     switch(type) {
     case "module":
