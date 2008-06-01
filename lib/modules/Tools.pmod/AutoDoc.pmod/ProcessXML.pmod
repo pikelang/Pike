@@ -391,7 +391,8 @@ void mergeTrees(SimpleNode dest, SimpleNode source) {
     else if (isDoc(node))
       dest_has_doc = 1;
 
-  foreach(source->get_children(), SimpleNode node)
+  array(SimpleNode) children = source->get_children();
+  foreach(children; int i; SimpleNode node)
     switch(node->get_any_name()) {
       case "namespace":
       case "class":
@@ -411,6 +412,7 @@ void mergeTrees(SimpleNode dest, SimpleNode source) {
         else
           dest->add_child(node);
         }
+	children[i] = 0;
         break;
       case "inherit":
       case "import":
@@ -432,7 +434,10 @@ void mergeTrees(SimpleNode dest, SimpleNode source) {
         // fall through
       default:
         dest->add_child(node);
+	children[i] = 0;
+	break;
     }
+  source->replace_children(children - ({ 0 }));
 }
 
 static void reportError(string filename, mixed ... args) {
