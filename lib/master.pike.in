@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.431 2008/06/01 14:41:25 grubba Exp $
+// $Id: master.pike.in,v 1.432 2008/06/01 18:00:43 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -143,8 +143,10 @@ void resolv_debug (string fmt, mixed... args)
 //!
 //! Most of the interface is implemented via mixin. 
 //!
+//! @deprecated predef::MasterObject
+//!
 //! @seealso
-//!   @[get_compat_master()], @[master()]
+//!   @[get_compat_master()], @[master()], @[predef::MasterObject]
 static class Pike_0_6_master
 {
   int is_absolute_path(string p);
@@ -189,12 +191,19 @@ static class Pike_0_6_master
 #endif
   program cast_to_program(string pname, string current_file);
   void handle_error(array(mixed) trace);
+
+  //! Make a new instance of a class.
+  //!
+  //! @note
+  //!   This function should not be used. It is here for
+  //!   compatibility reasons only.
   local __deprecated__ object new(mixed prog, mixed ... args)
   {
     if(stringp(prog))
       prog=cast_to_program(prog,backtrace()[-2][0]);
     return prog(@args);
   }
+
   local constant mkmultiset = predef::mkmultiset;
   local __deprecated__(function) clone = new;
   constant master_efuns = ({});
@@ -265,8 +274,10 @@ static class Pike_0_6_master
 //!
 //! Most of the interface is implemented via mixin. 
 //!
+//! @deprecated predef::MasterObject
+//!
 //! @seealso
-//!   @[get_compat_master()], @[master()]
+//!   @[get_compat_master()], @[master()], @[predef::MasterObject]
 class Pike_7_0_master
 {
   inherit Pike_0_6_master;
@@ -485,8 +496,10 @@ class Pike_7_0_master
 //!
 //! Most of the interface is implemented via mixin. 
 //!
+//! @deprecated predef::MasterObject
+//!
 //! @seealso
-//!   @[get_compat_master()], @[master()]
+//!   @[get_compat_master()], @[master()], @[predef::MasterObject]
 static class Pike_7_2_master
 {
   inherit Pike_7_0_master;
@@ -537,8 +550,10 @@ static class Pike_7_2_master
 //!
 //! Most of the interface is implemented via mixin. 
 //!
+//! @deprecated predef::MasterObject
+//!
 //! @seealso
-//!   @[get_compat_master()], @[master()]
+//!   @[get_compat_master()], @[master()], @[predef::MasterObject]
 static class Pike_7_4_master
 {
   inherit Pike_7_2_master;
@@ -561,8 +576,10 @@ static class Pike_7_4_master
 //!
 //! Most of the interface is implemented via mixin. 
 //!
+//! @deprecated predef::MasterObject
+//!
 //! @seealso
-//!   @[get_compat_master()], @[master()]
+//!   @[get_compat_master()], @[master()], @[predef::MasterObject]
 static class Pike_7_6_master
 {
   inherit Pike_7_4_master;
@@ -2580,10 +2597,10 @@ mixed handle_import(string what, string|void current_file, object|void handler)
 
 multiset no_resolv = (<>);
 
-//!
+//! Resolver of symbols not located in the program being compiled.
 class CompatResolver
 {
-  //! Actual resolver
+  //! Join node of the root modules for this resolver.
   joinnode root_module = joinnode(({instantiate_static_modules(predef::_static_modules)}));
 
   //! Lookup from handler module to corresponding root_module.
@@ -2607,7 +2624,7 @@ class CompatResolver
   //! If we fail to resolv, try the fallback.
   //!
   //! Typical configuration:
-  //! @pre{0.6->7.0->7.2->7.4->master@}
+  //! @pre{0.6->7.0->7.2-> ... ->master@}
   CompatResolver fallback_resolver;
 
   //! The CompatResolver is initialized with a value that can be
