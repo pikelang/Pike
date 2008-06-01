@@ -826,6 +826,22 @@ string parse_type(Node n, void|string debug) {
       ret += "(.." + d->value_of_node() + ")";
     break;
 
+  case "attribute":
+    string attr = n->get_first_element("attribute")->value_of_node();
+    string subtype =
+      parse_type(n->get_first_element("subtype")->get_first_element());
+    if (n->get_first_element("prefix")) {
+      if (attr == "\"deprecated\"") {
+	ret += "<font color='#600000'>__deprecated__</font> " + subtype;
+      } else {
+	ret += sprintf("__attribute__(%s) %s", attr, subtype);
+      }
+    } else if (attr == "\"deprecated\"") {
+      ret += "<font color='#600000'>__deprecated__</font>(" + subtype + ")";
+    } else {
+      ret += sprintf("__attribute__(%s, %s)", attr, subtype);
+    }
+    break;
   case "static": // Not in XSLT
     ret += "static ";
     break;
