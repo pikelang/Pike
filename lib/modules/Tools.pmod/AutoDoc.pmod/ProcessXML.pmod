@@ -568,7 +568,14 @@ void handleAppears(SimpleNode root) {
     m_delete(n->get_attributes(), "appears");
 
     task->parent->remove_child(n);
-    belongsNode->add_child(n);
+
+    // Perform a merge in case the destination already has some doc.
+    werror("Merging <%s> node %s with <%s> %s...\n",
+	   belongsNode->get_any_name(), belongsRef*".",
+	   n->get_any_name(), newName || "");
+    SimpleNode fakeBelongsNode =
+      SimpleElementNode(belongsNode->get_any_name(), ([]))->add_child(n);
+    mergeTrees(belongsNode, fakeBelongsNode);
   }
 }
 
