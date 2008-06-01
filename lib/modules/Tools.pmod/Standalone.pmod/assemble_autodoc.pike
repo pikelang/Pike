@@ -1,4 +1,4 @@
-// $Id: assemble_autodoc.pike,v 1.32 2005/03/28 06:44:50 per Exp $
+// $Id: assemble_autodoc.pike,v 1.33 2008/06/01 14:58:30 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -459,7 +459,7 @@ int(0..1) main(int num, array(string) args) {
 
   int T = time();
   if(has_value(args, "--version"))
-     werror("$Id: assemble_autodoc.pike,v 1.32 2005/03/28 06:44:50 per Exp $\n");
+     werror("$Id: assemble_autodoc.pike,v 1.33 2008/06/01 14:58:30 grubba Exp $\n");
   if(num<3)
     error("To few arguments\n");
 
@@ -496,6 +496,10 @@ int(0..1) main(int num, array(string) args) {
 
   werror("Writing final manual source file.\n");
   write( (string)n );
+  // Zap the XML trees so that the gc doesn't have to.
+  m->zap_tree();
+  n->zap_tree();
   werror("Took %d seconds.\n\n", time()-T);
+
   return 0;
 }
