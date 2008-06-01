@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.430 2008/05/30 22:26:56 nilsson Exp $
+// $Id: master.pike.in,v 1.431 2008/06/01 14:41:25 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -16,6 +16,13 @@
 #if "¤/" != "\244/"
 #error "master.pike.in is corrupted."
 #endif
+
+//! @appears predef::MasterObject
+//!
+//! Master control program for Pike.
+//!
+//! @seealso
+//!   @[predef::master()], @[predef::replace_master()]
 
 // --- Some configurable parameters
 
@@ -254,6 +261,12 @@ static class Pike_0_6_master
   object get_compat_master(int major, int minor);
 }
 
+//! Pike 7.0 master compatibility interface.
+//!
+//! Most of the interface is implemented via mixin. 
+//!
+//! @seealso
+//!   @[get_compat_master()], @[master()]
 class Pike_7_0_master
 {
   inherit Pike_0_6_master;
@@ -468,6 +481,12 @@ class Pike_7_0_master
   }
 }
 
+//! Pike 7.2 master compatibility interface.
+//!
+//! Most of the interface is implemented via mixin. 
+//!
+//! @seealso
+//!   @[get_compat_master()], @[master()]
 static class Pike_7_2_master
 {
   inherit Pike_7_0_master;
@@ -514,6 +533,12 @@ static class Pike_7_2_master
   }
 }
 
+//! Pike 7.4 master compatibility interface.
+//!
+//! Most of the interface is implemented via mixin. 
+//!
+//! @seealso
+//!   @[get_compat_master()], @[master()]
 static class Pike_7_4_master
 {
   inherit Pike_7_2_master;
@@ -532,6 +557,12 @@ static class Pike_7_4_master
   }
 }
 
+//! Pike 7.6 master compatibility interface.
+//!
+//! Most of the interface is implemented via mixin. 
+//!
+//! @seealso
+//!   @[get_compat_master()], @[master()]
 static class Pike_7_6_master
 {
   inherit Pike_7_4_master;
@@ -550,7 +581,13 @@ static class Pike_7_6_master
   }
 }
 
-// Namespaces for compat masters.
+//! Namespaces for compat masters.
+//!
+//! This inherit is used to provide compatibility namespaces
+//! for @[get_compat_master()].
+//!
+//! @seealso
+//!   @[get_compat_master()]
 static inherit Pike_7_6_master;
 
 //! @appears error
@@ -5308,9 +5345,17 @@ string _sprintf(int t)
   }
 }
 
+//! Return a master object compatible with the specified version of Pike.
+//!
+//! This function is used to implement the various compatibility versions
+//! of @[master()].
+//!
+//! @seealso
+//!   @[get_compat_handler()], @[master()]
 local object get_compat_master(int major, int minor)
 {
   if ((major > 7) || ((major == 7) && (minor > 6))) return this;
   if ((major == 7) && (minor > 4)) return Pike_7_6_master::this;
   return Pike_7_6_master::get_compat_master(major, minor);
 }
+
