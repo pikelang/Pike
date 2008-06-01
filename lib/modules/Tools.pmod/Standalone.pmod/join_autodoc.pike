@@ -1,5 +1,5 @@
 /*
- * $Id: join_autodoc.pike,v 1.16 2004/07/08 15:33:56 grubba Exp $
+ * $Id: join_autodoc.pike,v 1.17 2008/06/01 14:58:50 grubba Exp $
  *
  * AutoDoc mk II join script.
  *
@@ -153,6 +153,7 @@ int(0..1) join_files(array(string) files, string save_to, int(0..1) post_process
       }
       fail = 1;
     }
+    src->zap_tree();
   }
 
   if(post_process) {
@@ -167,5 +168,6 @@ int(0..1) join_files(array(string) files, string save_to, int(0..1) post_process
     Stdio.write_file(save_to, dest->html_of_node());
     sub_cache[save_to] = dest;
   }
+  dest->zap_tree();
   return fail;
 }
