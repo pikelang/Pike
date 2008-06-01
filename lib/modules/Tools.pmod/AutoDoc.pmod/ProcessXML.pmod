@@ -582,6 +582,10 @@ void handleAppears(SimpleNode root) {
 // ".module.ANY" ==> ({ "", "ANY" })
 static array(string) splitRef(string ref) {
   if ((sizeof(ref)>1) && (ref[0] == '"')) {
+    if ((ref == "\".\"") || (ref == "\"module.pmod\"")) {
+      // Some special cases for referring to the current module.
+      return ({ "" });
+    }
     // Explictly named program.
     // Try to DWIM it...
     ref = ref[1..<1];
