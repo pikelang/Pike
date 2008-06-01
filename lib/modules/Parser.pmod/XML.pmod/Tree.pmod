@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.70 2007/11/28 14:33:42 grubba Exp $
+ * $Id: Tree.pmod,v 1.71 2008/06/01 14:52:59 grubba Exp $
  *
  */
 
@@ -414,7 +414,7 @@ class AbstractSimpleNode {
       // pike to recurse more heavily on the C stack than a normal
       // function call.
       foreach (mChildren, AbstractSimpleNode child)
-	child->zap_tree();
+	child && child->zap_tree();
     destruct (this);
   }
 
