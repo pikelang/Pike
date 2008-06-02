@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.416 2008/05/31 12:21:41 grubba Exp $
+|| $Id: las.c,v 1.417 2008/06/02 13:30:05 mast Exp $
 */
 
 #include "global.h"
@@ -1887,8 +1887,11 @@ node *copy_node(node *n)
   node *b;
   debug_malloc_touch(n);
   debug_malloc_touch(n->type);
+#if 0
+  /* The following needs to be node type specific. */
   debug_malloc_touch(n->u.node.a);
   debug_malloc_touch(n->u.node.b);
+#endif
   check_tree(n,0);
   if(!n) return n;
   switch(n->token)
