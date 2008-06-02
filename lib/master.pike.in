@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.432 2008/06/01 18:00:43 grubba Exp $
+// $Id: master.pike.in,v 1.433 2008/06/02 17:29:25 mast Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -945,6 +945,12 @@ Stat master_file_stat(string x)
 //!   This mapping is not compatible with @[Process.create_process()];
 //!   use the mapping returned from calling @[getenv()] without arguments
 //!   instead.
+//!
+//! @bugs
+//!   This mapping is not the real environment; it is just a copy of
+//!   the environment made at startup. When this bug is fixed this
+//!   mapping might disappear altogether, which is another good reason
+//!   to not use it directly.
 mapping(string:array(string)) environment=([]);
 
 
@@ -962,6 +968,10 @@ mapping(string:array(string)) environment=([]);
 //!
 //! On NT the environment variable name is case insensitive.
 //!
+//! @bugs
+//!   This function doesn't really query the environment, it only
+//!   accesses a pike internal mapping that is initialized from the
+//!   environment on startup and that @[putenv] updates.
 string|mapping(string:string) getenv(string|void s)
 {
   if(!s) return [mapping(string:string)]aggregate_mapping( @(values(environment)*({}) ) );
@@ -1036,6 +1046,10 @@ string getenv(string s)
 //!
 //! @note
 //!   On NT the environment variable name is case insensitive.
+//!
+//! @bugs
+//!   This function doesn't really update the environment, it just
+//!   updates a pike internal mapping that @[getenv] uses.
 //!
 //! @seealso
 //! @[getenv()]
