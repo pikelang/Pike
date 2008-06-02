@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.h,v 1.56 2008/01/29 12:02:19 per Exp $
+|| $Id: pike_memory.h,v 1.57 2008/06/02 14:15:20 mast Exp $
 */
 
 #ifndef MEMORY_H
@@ -31,10 +31,10 @@
 
 #ifdef HAVE_VALGRIND_MACROS
 
-#ifndef VALGRIND_MAKE_NOACCESS
-#define VALGRIND_MAKE_NOACCESS VALGRIND_MAKE_MEM_NOACCESS
-#define VALGRIND_MAKE_WRITABLE VALGRIND_MAKE_MEM_UNDEFINED
-#define VALGRIND_MAKE_READABLE VALGRIND_MAKE_MEM_DEFINED
+#ifndef VALGRIND_MAKE_MEM_NOACCESS
+#define VALGRIND_MAKE_MEM_NOACCESS VALGRIND_MAKE_NOACCESS
+#define VALGRIND_MAKE_MEM_UNDEFINED VALGRIND_MAKE_WRITABLE
+#define VALGRIND_MAKE_MEM_DEFINED VALGRIND_MAKE_READABLE
 #endif
 
 /* No Access */
@@ -42,7 +42,7 @@
     PIKE_MEM_NA_RANGE(&(lvalue), sizeof (lvalue));			\
   } while (0)
 #define PIKE_MEM_NA_RANGE(addr, bytes) do {				\
-    VALGRIND_DISCARD(VALGRIND_MAKE_NOACCESS(addr, bytes));		\
+    VALGRIND_DISCARD(VALGRIND_MAKE_MEM_NOACCESS(addr, bytes));		\
   } while (0)
 
 /* Write Only -- Will become RW when having been written to */
@@ -50,7 +50,7 @@
     PIKE_MEM_WO_RANGE(&(lvalue), sizeof (lvalue));			\
   } while (0)
 #define PIKE_MEM_WO_RANGE(addr, bytes) do {				\
-    VALGRIND_DISCARD(VALGRIND_MAKE_WRITABLE(addr, bytes));		\
+    VALGRIND_DISCARD(VALGRIND_MAKE_MEM_UNDEFINED(addr, bytes));		\
   } while (0)
 
 /* Read/Write */
@@ -58,7 +58,7 @@
     PIKE_MEM_RW_RANGE(&(lvalue), sizeof (lvalue));			\
   } while (0)
 #define PIKE_MEM_RW_RANGE(addr, bytes) do {				\
-    VALGRIND_DISCARD(VALGRIND_MAKE_READABLE(addr, bytes));		\
+    VALGRIND_DISCARD(VALGRIND_MAKE_MEM_DEFINED(addr, bytes));		\
   } while (0)
 
 /* Read Only -- Not currently supported by valgrind */
@@ -66,11 +66,25 @@
     PIKE_MEM_RO_RANGE(&(lvalue), sizeof (lvalue));			\
   } while (0)
 #define PIKE_MEM_RO_RANGE(addr, bytes) do {				\
-    VALGRIND_DISCARD(VALGRIND_MAKE_READABLE(addr, bytes));		\
+    VALGRIND_DISCARD(VALGRIND_MAKE_MEM_DEFINED(addr, bytes));		\
   } while (0)
 
 /* Return true if a memchecker is in use. */
 #define PIKE_MEM_CHECKER() RUNNING_ON_VALGRIND
+
+/* Return true if a memchecker reports the memory to not be
+ * addressable (might also print debug messages etc). */
+#define PIKE_MEM_NOT_ADDR(lvalue)					\
+  PIKE_MEM_NOT_ADDR_RANGE(&(lvalue), sizeof (lvalue))
+#define PIKE_MEM_NOT_ADDR_RANGE(addr, bytes)				\
+  VALGRIND_CHECK_MEM_IS_ADDRESSABLE(addr, bytes)
+
+/* Return true if a memchecker reports the memory to not be defined
+ * (might also print debug messages etc). */
+#define PIKE_MEM_NOT_DEF(lvalue)					\
+  PIKE_MEM_NOT_DEF_RANGE(&(lvalue), sizeof (lvalue))
+#define PIKE_MEM_NOT_DEF_RANGE(addr, bytes)				\
+  VALGRIND_CHECK_MEM_IS_DEFINED(addr, bytes)
 
 #else  /* !HAVE_VALGRIND_MACROS */
 
@@ -83,6 +97,10 @@
 #define PIKE_MEM_RO(lvalue)		do {} while (0)
 #define PIKE_MEM_RO_RANGE(addr, bytes)	do {} while (0)
 #define PIKE_MEM_CHECKER()		0
+#define PIKE_MEM_NOT_ADDR(lvalue)	0
+#define PIKE_MEM_NOT_ADDR_RANGE(addr, bytes) 0
+#define PIKE_MEM_NOT_DEF(lvalue)	0
+#define PIKE_MEM_NOT_DEF_RANGE(addr, bytes) 0
 
 #endif	/* !HAVE_VALGRIND_MACROS */
 
