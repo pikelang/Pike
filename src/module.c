@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: module.c,v 1.52 2008/04/14 10:14:40 grubba Exp $
+|| $Id: module.c,v 1.53 2008/06/02 21:50:55 mast Exp $
 */
 
 #include "global.h"
@@ -287,11 +287,12 @@ static void exit_builtin_modules(void)
     gc_external_refs_zapped = 1;
 #endif
 
-#if 1
-    /* It can be a good idea to disable this to leave the blocks
-     * around to be reported by an external memchecker like valgrind.
-     * Ideally we should only free the svalues inside these things but
-     * leave the blocks themselves. */
+#ifdef VALGRIND_DO_LEAK_CHECK
+    /* Let valgrind print a leak report before we free the leaked
+     * blocks. Ideally we should only free the svalues inside them
+     * below and make the report afterwards. */
+    VALGRIND_DO_LEAK_CHECK;
+#endif
 
 #define ZAP_LINKED_LIST_LEAKS(TYPE, START, STATICS) do {		\
       struct TYPE *x, *next;						\
@@ -329,8 +330,6 @@ static void exit_builtin_modules(void)
     }
 
 #undef ZAP_LINKED_LIST_LEAKS
-
-#endif	/* 1 */
 
     do_gc (NULL, 1);
 
