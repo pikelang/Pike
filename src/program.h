@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.250 2008/05/31 16:21:30 grubba Exp $
+|| $Id: program.h,v 1.251 2008/06/02 15:43:30 mast Exp $
 */
 
 #ifndef PROGRAM_H
@@ -959,7 +959,7 @@ void push_compiler_frame(int lexical_scope);
 void low_pop_local_variables(int level);
 void pop_local_variables(int level);
 void pop_compiler_frame(void);
-ptrdiff_t low_get_storage(struct program *o, struct program *p);
+PMOD_EXPORT ptrdiff_t low_get_storage(struct program *o, struct program *p);
 PMOD_EXPORT char *get_storage(struct object *o, struct program *p);
 struct program *low_program_from_function(struct object *o, INT32 i);
 PMOD_EXPORT struct program *program_from_function(const struct svalue *f);

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.716 2008/06/01 11:19:58 grubba Exp $
+|| $Id: program.c,v 1.717 2008/06/02 15:43:29 mast Exp $
 */
 
 #include "global.h"
@@ -10166,7 +10166,7 @@ static struct get_storage_cache
   ptrdiff_t offset;
 } get_storage_cache[GET_STORAGE_CACHE_SIZE];
 
-ptrdiff_t low_get_storage(struct program *o, struct program *p)
+PMOD_EXPORT ptrdiff_t low_get_storage(struct program *o, struct program *p)
 {
   INT32 oid, pid;
   ptrdiff_t offset;
