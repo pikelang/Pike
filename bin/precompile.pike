@@ -1881,7 +1881,7 @@ class ParseBlock
 		  "};\n",
 		  sprintf (#"\
 #ifdef PIKE_DEBUG
-/* Ensure the struct is used in a declaration, or else gdb might not see it. */
+/* Ensure the struct is used in a variable declaration, or else gdb might not see it. */
 struct %s *%s_gdb_dummy_ptr;
 #endif\n", structname, base),
 		    })
