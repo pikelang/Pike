@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.296 2008/05/29 17:11:43 grubba Exp $
+|| $Id: object.c,v 1.297 2008/06/03 14:52:47 mast Exp $
 */
 
 #include "global.h"
@@ -291,7 +291,7 @@ PMOD_EXPORT void call_c_initializers(struct object *o)
 }
 
 
-void call_prog_event(struct object *o, int event)
+PMOD_EXPORT void call_prog_event(struct object *o, int event)
 {
   int e;
   struct program *p=o->prog;

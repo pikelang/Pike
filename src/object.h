@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.h,v 1.97 2008/05/29 10:11:14 grubba Exp $
+|| $Id: object.h,v 1.98 2008/06/03 14:52:47 mast Exp $
 */
 
 #ifndef OBJECT_H
@@ -78,7 +78,7 @@ enum object_destruct_reason {
 BLOCK_ALLOC_FILL_PAGES(object, 2);
 PMOD_EXPORT struct object *low_clone(struct program *p);
 PMOD_EXPORT void call_c_initializers(struct object *o);
-void call_prog_event(struct object *o, int event);
+PMOD_EXPORT void call_prog_event(struct object *o, int event);
 void call_pike_initializers(struct object *o, int args);
 PMOD_EXPORT void do_free_object(struct object *o);
 PMOD_EXPORT struct object *debug_clone_object(struct program *p, int args);
