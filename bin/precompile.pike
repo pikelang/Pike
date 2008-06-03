@@ -1879,6 +1879,9 @@ class ParseBlock
 		sprintf("struct %s {\n",structname),
 		})+thestruct+({
 		  "};\n",
+		  sprintf (#"\
+/* Ensure the struct is used in a declaration, or else gdb might not see it. */
+struct {struct %s s;} %s_gdb_dummy_struct;\n", structname, base),
 		    })
 	  +declarations;
 	addfuncs = ({
