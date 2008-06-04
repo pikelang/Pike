@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.13 2008/02/01 15:04:31 grubba Exp $
+# $Id: configure.in,v 1.14 2008/06/04 12:07:21 grubba Exp $
 AC_INIT(dynamic_module_makefile.in)
 
 PIKE_RETAIN_VARIABLES()
@@ -21,7 +21,7 @@ do
 	  MODULE_SEGMENTS="$MODULE_SEGMENTS $a/modlist_segment"
   	  module_names="$module_names $a"
 	  if test "x$RECONFIGURE_BUNDLES" = "xyes"; then
-	    if test x`find "$a" -name '*.bundle' -print -exec rm \{\} \; 2>/dev/null` = x; then
+	    if test "x`find $a -name '*.bundle' -print -exec rm \{\} \; 2>/dev/null`" = x; then
 	      continue;
 	    fi
 	  fi
