@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.434 2008/06/05 14:58:28 mast Exp $
+// $Id: master.pike.in,v 1.435 2008/06/05 15:08:10 mast Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -1885,7 +1885,7 @@ static void create()
 
   system_module_path=pike_module_path;
   if (master() && master() != this_object() &&
-      (compat_major < 7 || (compat_major == 7 && compat_minor <= 6)) {
+      (compat_major < 7 || (compat_major == 7 && compat_minor <= 6))) {
     // getenv() and putenv() will get confused if we don't do this.
     // This is only for pike <= 7.6 compat.
     if (mapping e = master()->environment) environment = e;
