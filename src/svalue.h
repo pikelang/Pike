@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.h,v 1.160 2008/05/30 15:17:13 mast Exp $
+|| $Id: svalue.h,v 1.161 2008/06/05 15:16:14 mast Exp $
 */
 
 #ifndef SVALUE_H
@@ -680,8 +680,6 @@ static INLINE struct callable *pass_callable (struct callable *c) {return c;}
     *_to = *_from;							\
     assert_free_svalue (_from);						\
   } while (0)
-
-extern const struct svalue dest_ob_zero;
 
 /* Handles PIKE_T_FREE. */
 #define free_mixed_svalues(X,Y) do {		\
