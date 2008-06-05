@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.433 2008/06/02 17:29:25 mast Exp $
+// $Id: master.pike.in,v 1.434 2008/06/05 14:58:28 mast Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -558,6 +558,7 @@ static class Pike_7_4_master
 {
   inherit Pike_7_2_master;
   local static object Pike_7_4_compat_handler;
+  void error(string f, mixed ... args);
   local mixed resolv(string identifier, string|void current_file)
   {
     if (!Pike_7_4_compat_handler) {
@@ -591,10 +592,68 @@ static class Pike_7_6_master
     }
     return Pike_7_6_compat_handler->resolv(identifier, current_file);
   }
+  array get_backtrace (object|array err);
   object get_compat_master(int major, int minor)
   {
     if ((major == 7) && (minor > 2)) return Pike_7_4_master::this;
     return Pike_7_4_master::get_compat_master(major, minor);
+  }
+
+  //! Mapping containing the environment variables.
+  //!
+  //! The mapping currently has the following structure:
+  //! @mapping
+  //!   @member array(string) index
+  //!      Note that the index is @[lower_case()]'d on NT.
+  //!      @array
+  //!         @elem string varname
+  //!            Variable name with case intact.
+  //!         @elem string value
+  //!            Variable value.
+  //!      @endarray
+  //! @endmapping
+  //!
+  //! @note
+  //!   This mapping should not be accessed directly; use @[getenv()]
+  //!   and @[putenv()] instead. This mapping is not publicly
+  //!   accessible in pikes newer than 7.6.
+  //!
+  //! @note
+  //!   This mapping is not compatible with @[Process.create_process()];
+  //!   use the mapping returned from calling @[getenv()] without arguments
+  //!   instead.
+  //!
+  //! @bugs
+  //!   This mapping is not the real environment; it is just a copy of
+  //!   the environment made at startup.
+  local mapping(string:array(string)) environment;
+
+  local string|mapping(string:string) getenv(string|void s)
+  {
+    if(!s) return [mapping(string:string)]aggregate_mapping( @(values(environment)*({}) ) );
+#ifdef __NT__
+    s = lower_case(s);
+#endif
+    return environment[s] && environment[s][1];
+  }
+
+  local void putenv(string varname, string|void value)
+  {
+    // Try to update the real enviroment too, but ignore errors since
+    // the fake environment could accommodate wide strings, strings
+    // with NULs etc.
+    catch {Builtin._putenv (varname, value);};
+    string index = varname;
+#ifdef __NT__
+    index = lower_case(varname);
+    if (environment[index] && environment[index][0])
+      varname = environment[index][0];
+#endif
+    if (value) {
+      environment[index] = ({ varname, value });
+    } else {
+      m_delete(environment, index);
+    }
   }
 }
 
@@ -923,62 +982,117 @@ Stat master_file_stat(string x)
 #define master_file_stat file_stat
 #endif // FILE_STAT_CACHE
 
-//! Mapping containing the environment variables.
-//!
-//! The mapping currently has the following structure:
-//! @mapping
-//!   @member array(string) index
-//!      Note that the index is @[lower_case()]'d on NT.
-//!      @array
-//!         @elem string varname
-//!            Variable name with case intact.
-//!         @elem string value
-//!            Variable value.
-//!      @endarray
-//! @endmapping
-//!
-//! @note
-//!   This mapping should not be accessed directly; use @[getenv()]
-//!   and @[putenv()] instead.
-//!
-//! @note
-//!   This mapping is not compatible with @[Process.create_process()];
-//!   use the mapping returned from calling @[getenv()] without arguments
-//!   instead.
-//!
-//! @bugs
-//!   This mapping is not the real environment; it is just a copy of
-//!   the environment made at startup. When this bug is fixed this
-//!   mapping might disappear altogether, which is another good reason
-//!   to not use it directly.
-mapping(string:array(string)) environment=([]);
 
+static mapping(string:string) environment;
 
-//! @decl string getenv(string varname)
-//! @decl mapping(string:string) getenv()
-//! @appears getenv
-//!
-//! When called with no arguments, a mapping with all current environment
-//! variables will be returned. Destructive opreations on the mapping
-//! will not affect the internal environment representation.
-//!
-//! If the @[varname] argument has been given, the value of the environment
-//! variable with the name @[varname] will be returned. If no such
-//! environment variable exists, @expr{0@} (zero) will be returned.
-//!
-//! On NT the environment variable name is case insensitive.
-//!
-//! @bugs
-//!   This function doesn't really query the environment, it only
-//!   accesses a pike internal mapping that is initialized from the
-//!   environment on startup and that @[putenv] updates.
-string|mapping(string:string) getenv(string|void s)
-{
-  if(!s) return [mapping(string:string)]aggregate_mapping( @(values(environment)*({}) ) );
 #ifdef __NT__
-  s = lower_case(s);
+static void set_lc_env (mapping(string:string) env)
+{
+  environment = ([]);
+  foreach (env; string var; string val)
+    environment[lower_case (var)] = val;
+}
 #endif
-  return environment[s] && environment[s][1];
+
+//! @decl string getenv (string varname, void|int force_update)
+//! @decl mapping(string:string) getenv (void|int force_update)
+//!
+//! Queries the environment variables. The first variant returns the
+//! value of a specific variable or zero if it doesn't exist in the
+//! environment. The second variant returns the whole environment as a
+//! mapping. Destructive opreations on the mapping will not affect the
+//! internal environment representation.
+//!
+//! A cached copy of the real environment is kept to make this
+//! function quicker. If the optional flag @[force_update] is nonzero
+//! then the real environment is queried and the cache is updated from
+//! it. That can be necessary if the environment changes through other
+//! means than @[putenv], typically from a C-level library.
+//!
+//! Variable names and values cannot be wide strings nor contain
+//! @expr{'\0'@} characters. Variable names also cannot contain
+//! @expr{'='@} characters.
+//!
+//! @note
+//!   On NT the environment variable name is case insensitive.
+//!
+//! @seealso
+//!   @[putenv()]
+string|mapping(string:string) getenv (void|int|string var,
+				      void|int force_update)
+{
+  // Variants doesn't seem to work well yet.
+  if (stringp (var)) {
+    if (!environment || force_update) {
+#ifdef __NT__
+      set_lc_env (Builtin._getenv());
+#else
+      environment = Builtin._getenv();
+#endif
+    }
+
+#ifdef __NT__
+    return environment[lower_case (var)];
+#else
+    return environment[var];
+#endif
+  }
+
+  else {
+    force_update = var;
+
+    mapping(string:string) res;
+
+    if (force_update) {
+      res = Builtin._getenv();
+#ifdef __NT__
+      set_lc_env (res);
+#else
+      environment = res + ([]);
+#endif
+    }
+
+    else {
+#ifdef __NT__
+      // Can't use the cached environment since variable names have been
+      // lowercased there.
+      res = Builtin._getenv();
+      if (!environment) set_lc_env (res);
+#else
+      if (!environment) environment = Builtin._getenv();
+      res = environment + ([]);
+#endif
+    }
+
+    return res;
+  }
+}
+
+void putenv (string varname, void|string value)
+//! Sets the environment variable @[varname] to @[value].
+//!
+//! If @[value] is omitted or zero, the environment variable
+//! @[varname] will be removed.
+//!
+//! @[varname] and @[value] cannot be wide strings nor contain
+//! @expr{'\0'@} characters. @[varname] also cannot contain
+//! @expr{'='@} characters.
+//!
+//! @note
+//!   On NT the environment variable name is case insensitive.
+//!
+//! @seealso
+//! @[getenv()]
+//!
+{
+  Builtin._putenv (varname, value);
+  if (environment) {
+#ifdef __NT__
+    varname = lower_case (varname);
+#endif
+    if (value) environment[varname] = value;
+    else m_delete (environment, varname);
+  }
 }
 
 
@@ -1011,63 +1125,6 @@ program compile_file(string filename,
 		 o);
 }
 
-
-
-#if 0
-variant mapping(string:string) getenv()
-{
-  return environment + ([]);
-}
-
-variant string getenv(string s)
-{
-  return environment[s];
-}
-
-function(:mapping(string:string))|function(string:string) getenv(s)
-{
-  if(!s) return environment + ([]);
-  return environment[s];
-}
-
-// mapping(string:string) getenv() |
-string getenv(string s)
-{
-  if(!s) return environment + ([]);
-  return environment[s];
-}
-#endif /* 0 */
-
-//! @appears putenv
-//! Sets the environment variable @[varname] to @[value].
-//!
-//! If @[value] is omitted or zero, the environment variable
-//! @[varname] will be removed.
-//!
-//! @note
-//!   On NT the environment variable name is case insensitive.
-//!
-//! @bugs
-//!   This function doesn't really update the environment, it just
-//!   updates a pike internal mapping that @[getenv] uses.
-//!
-//! @seealso
-//! @[getenv()]
-//!
-void putenv(string varname, string|void value)
-{
-  string index = varname;
-#ifdef __NT__
-  index = lower_case(varname);
-  if (environment[index] && environment[index][0])
-    varname = environment[index][0];
-#endif
-  if (value) {
-    environment[index] = ({ varname, value });
-  } else {
-    m_delete(environment, index);
-  }
-}
 
 //! @appears normalize_path
 //! Replaces "\" with "/" if runing on MS Windows. It is
@@ -1827,9 +1884,11 @@ static void create()
 #endif
 
   system_module_path=pike_module_path;
-  if (master() && master() != this_object()) {
+  if (master() && master() != this_object() &&
+      (compat_major < 7 || (compat_major == 7 && compat_minor <= 6)) {
     // getenv() and putenv() will get confused if we don't do this.
-    environment = master()->environment || environment;
+    // This is only for pike <= 7.6 compat.
+    if (mapping e = master()->environment) environment = e;
   }
 }
 
@@ -3063,10 +3122,8 @@ static mixed main_resolv(string sym, CompatResolver|void resolver) {
 
 //! This function is called when all the driver is done with all setup
 //! of modules, efuns, tables etc. etc. and is ready to start executing
-//! _real_ programs. It receives the arguments not meant for the driver
-//! and an array containing the environment variables on the same form as
-//! a C program receives them.
-void _main(array(string) orig_argv, array(string) env)
+//! _real_ programs. It receives the arguments not meant for the driver.
+void _main(array(string) orig_argv)
 {
   array(string) argv=copy_value(orig_argv);
   int debug,trace,run_tool;
@@ -3079,19 +3136,6 @@ void _main(array(string) orig_argv, array(string) env)
 #if constant(thread_create)
   _backend_thread = this_thread();
 #endif
-
-  foreach(env, string a)
-    if( sscanf(a, "%s=%s", a, string b)==2 ) {
-#ifdef __NT__
-      if(a=="") {
-	sscanf(b, "%s=%s", a, b);
-	a="="+a;
-      }
-#endif
-      putenv(a, b);
-    }
-    else
-      werror("Broken environment var %s\n",a);
 
 #ifndef NOT_INSTALLED
   {
@@ -3119,6 +3163,8 @@ void _main(array(string) orig_argv, array(string) env)
 	     "Program path..: " + pike_program_path*"\n"
 	     "                " + "\n");
   };
+
+  Version cur_compat_ver;
 
   if(sizeof(argv)>1 && sizeof(argv[1]) && argv[1][0]=='-')
   {
@@ -3261,6 +3307,32 @@ void _main(array(string) orig_argv, array(string) env)
       }
     }
 
+    cur_compat_ver = Version (compat_major, compat_minor);
+    if (compat_major != -1) {
+      object compat_master = get_compat_master (compat_major, compat_minor);
+
+      if (cur_compat_ver <= Version (7, 6)) {
+	mapping(string:array(string)) compat_env = ([]);
+	foreach (Builtin._getenv(); string var; string val) {
+#ifdef __NT__
+	  compat_env[lower_case (var)] = ({var, val});
+#else
+	  compat_env[var] = ({var, val});
+#endif
+	}
+	compat_master->environment = compat_env;
+      }
+
+      // Kludge: Override the efuns with the right compat versions.
+      // Note that this approach is a bit simplistic since it only
+      // reflects the compat chosen with -V, not #pike etc. If that
+      // isn't good enough we'll need compat dispatchers in these
+      // functions. The right solution is to move the constants
+      // mapping from the C level to the master.
+      foreach (master_efuns + compat_master->master_efuns, string e)
+	add_constant (e, compat_master[e]);
+    }
+
     foreach(q, array opts)
     {
       switch(opts[0])
@@ -3302,7 +3374,7 @@ void _main(array(string) orig_argv, array(string) env)
 
 	program prog;
 	mixed compile_err = catch {;
-	  if(Version(compat_major,compat_minor) <= Version(7,4))
+	  if(cur_compat_ver <= Version(7,4))
 	    prog = compile_string(
 	      "mixed create(int argc, array(string) argv,array(string) env){"+
 	      opts[1]+";}");
@@ -3312,11 +3384,16 @@ void _main(array(string) orig_argv, array(string) env)
 	    string code = opts[1];
 	    while(sscanf(code, "%sCHAR(%1s)%s", code, string c, string rest)==3)
 	      code += c[0] + rest;
-	    prog = compile_string(
-	      "#define NOT(X) !(X)\n"
-	      "mixed run(int argc, array(string) argv,"
-	      "mapping(string:string) env){"+
-	      code+";}");
+	    if (cur_compat_ver <= Version (7, 6))
+	      prog = compile_string(
+		"#define NOT(X) !(X)\n"
+		"mixed run(int argc, array(string) argv,"
+		"mapping(string:string) env){"+
+		code+";}");
+	    else
+	      prog = compile_string(
+		"#define NOT(X) !(X)\n"
+		"mixed run(int argc, array(string) argv){" + code + ";}");
 	  }
 	  };
 
@@ -3340,10 +3417,12 @@ void _main(array(string) orig_argv, array(string) env)
 	    // eval_instruction in interpret.c so that the debug and
 	    // trace levels set above take effect in the bytecode
 	    // evaluator.
-	    if(Version(compat_major,compat_minor) <= Version(7,4))
-	      prog (sizeof(argv),argv,env);
-	    else
+	    if(cur_compat_ver <= Version(7,4))
+	      prog (sizeof(argv),argv,getenv());
+	    else if (cur_compat_ver <= Version (7, 6))
 	      ret = prog()->run(sizeof(argv),argv,getenv());
+	    else
+	      ret = prog()->run(sizeof(argv),argv);
 	  };
 	predef::trace(trace);
 	if (err) {
@@ -3368,6 +3447,8 @@ void _main(array(string) orig_argv, array(string) env)
 
     argv = tmp->get_args(argv,1);
   }
+  else
+    cur_compat_ver = Version (compat_major, compat_minor);
 
   switch (postparseaction)
   {
@@ -3489,7 +3570,7 @@ void _main(array(string) orig_argv, array(string) env)
       // to eval_instruction in interpret.c so that the debug and
       // trace levels set above take effect in the bytecode evaluator.
       object script;
-      if(Version(compat_major,compat_minor) <= Version(7,4)) {
+      if(cur_compat_ver <= Version(7,4)) {
 	script=prog();
       }
       else {
@@ -3497,7 +3578,10 @@ void _main(array(string) orig_argv, array(string) env)
       }
       if(!script->main)
 	error("Error: %s has no main().\n", argv[0]);
-      ret=script->main(sizeof(argv),argv,env);
+      if (cur_compat_ver <= Version (7, 6))
+	ret=script->main(sizeof(argv),argv,getenv());
+      else
+	ret=script->main(sizeof(argv),argv);
     };
   // Disable tracing.
   trace = predef::trace(trace);
@@ -5389,4 +5473,3 @@ local object get_compat_master(int major, int minor)
   if ((major == 7) && (minor > 4)) return Pike_7_6_master::this;
   return Pike_7_6_master::get_compat_master(major, minor);
 }
-
