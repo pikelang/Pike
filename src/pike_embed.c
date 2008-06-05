@@ -1,5 +1,5 @@
 /*
- * $Id: pike_embed.c,v 1.16 2008/05/01 21:25:32 mast Exp $
+ * $Id: pike_embed.c,v 1.17 2008/06/05 15:12:28 mast Exp $
  *
  * Pike embedding API.
  *
@@ -122,6 +122,10 @@ const char *master_file = NULL;
 
 void init_pike(char **argv, const char *file)
 {
+#ifndef HAVE_UNION_INIT
+  svalue_int_one.u.integer = 1;
+#endif
+
   init_pike_memory();
 
   init_rusage();
@@ -546,6 +550,17 @@ void pike_do_exit(int num)
   debug_print_rusage (stderr);
 #endif
 
+#ifdef PIKE_DEBUG
+  if (svalue_int_zero.type != T_INT ||
+      svalue_int_zero.subtype != NUMBER_NUMBER ||
+      svalue_int_zero.u.integer != 0)
+    Pike_fatal ("svalue_int_zero has been changed.\n");
+  if (svalue_int_one.type != T_INT ||
+      svalue_int_one.subtype != NUMBER_NUMBER ||
+      svalue_int_one.u.integer != 1)
+    Pike_fatal ("svalue_int_one has been changed.\n");
+#endif
+
   pike_exit_cb(num);
 }
 
@@ -595,6 +610,8 @@ static struct Hook scan_amigaos_environment_hook = {
 };
 #endif /* __amigsos4__ */
 
+#if 0
+/* This is now handled by PIKEFUN _getenv in builtin.cmod. */
 void pike_push_env(void)
 {
 #ifdef __amigaos__
@@ -626,3 +643,4 @@ void pike_push_env(void)
   push_array(a);
 #endif
 }
+#endif	/* 0 */
