@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.202 2008/05/29 21:58:44 mast Exp $
+|| $Id: builtin.cmod,v 1.203 2008/06/05 14:44:08 mast Exp $
 */
 
 #include "global.h"
@@ -1232,6 +1232,145 @@ PIKEFUN array random(mapping m)
   f_aggregate(2);
   stack_swap();
   pop_stack();
+}
+
+/* Used to hold refs to the strings that we feed to putenv. Indexed on
+ * variable names, values are the "name=value" strings. */
+static struct mapping *env_allocs = NULL;
+
+/* Works exactly like the getenv efun defined in the master, but only
+ * accesses the real environment. Everyone should use the caching
+ * version in the master instead. */
+PIKEFUN string|mapping _getenv (void|string var)
+  rawtype tOr(tFunc(tStr, tString), tFunc(tVoid, tMap (tStr, tStr)));
+{
+  /* FIXME: Perhaps add the amigaos4 stuff from pike_push_env here too. */
+
+  if (var) {
+    if (var->size_shift)
+      SIMPLE_ARG_TYPE_ERROR ("getenv", 1, "void|string(0..255)");
+
+    if (string_has_null (var)) {
+      /* Won't find a variable name like this. */
+      pop_stack();
+      push_int (0);
+    }
+
+    else {
+      char *entry = getenv (var->str);
+      pop_stack();
+      if (!entry)
+	push_int (0);
+      else {
+	char *eq = STRCHR (entry, '=');
+	/* There should always be a '=' in the entry, but you never know.. */
+	push_string (make_shared_string (eq ? eq + 1 : entry));
+      }
+    }
+  }
+
+  else {
+#ifdef DECLARE_ENVIRON
+    extern char **environ;
+#endif
+    struct mapping *m, *new_env_allocs;
+    int n;
+
+    /* Iterate the environment backwards below so that earlier
+     * variables will override later ones in case the same variable
+     * occur multiple times (which it shouldn't). That makes the
+     * result similar to what getenv(3) commonly returns (at least the
+     * one in gnu libc). */
+    for (n = 0; environ[n]; n++) {}
+
+    m = allocate_mapping (n);
+    if (env_allocs)
+      new_env_allocs = allocate_mapping (m_sizeof (env_allocs));
+
+    while (--n >= 0) {
+      char *entry = environ[n], *eq = STRCHR (entry, '=');
+      if (eq) { /* gnu libc getenv ignores variables without '='. */
+	struct pike_string *var = make_shared_binary_string (entry, eq - entry);
+	struct pike_string *val = make_shared_string (eq + 1);
+	mapping_string_insert_string (m, var, val);
+
+	/* Populate new_env_allocs with the env_allocs entries that
+	 * are still in use. */
+	if (env_allocs) {
+	  struct svalue *ea_val = low_mapping_string_lookup (env_allocs, var);
+	  if (ea_val && ea_val->u.string->str == entry)
+	    mapping_string_insert (new_env_allocs, var, ea_val);
+	}
+
+	free_string (var);
+	free_string (val);
+      }
+    }
+
+    if (env_allocs) {
+      free_mapping (env_allocs);
+      env_allocs = new_env_allocs;
+    }
+
+    push_mapping (m);
+  }
+}
+
+/* Works exactly like the putenv efun defined in the master, but only
+ * updates the real environment. Everyone should use the version in
+ * the master instead so that the cache doesn't get stale. */
+PIKEFUN void _putenv (string var, void|string val)
+{
+  struct pike_string *putenv_str, *env_alloc_var;
+
+  if (var->size_shift)
+    SIMPLE_ARG_TYPE_ERROR ("putenv", 1, "string(0..255)");
+  if (string_has_null (var) || STRCHR (var->str, '='))
+    SIMPLE_ARG_ERROR ("putenv", 1, "Variable name cannot contain '=' or NUL.");
+
+  if (val) {
+    struct string_builder sb;
+
+    if (val->size_shift)
+      SIMPLE_ARG_TYPE_ERROR ("putenv", 2, "void|string(0..255)");
+    if (string_has_null (val))
+      SIMPLE_ARG_ERROR ("putenv", 2, "Variable value cannot contain NUL.");
+
+    init_string_builder (&sb, 0);
+    string_builder_shared_strcat (&sb, var);
+    string_builder_putchar (&sb, '=');
+    string_builder_shared_strcat (&sb, val);
+    putenv_str = finish_string_builder (&sb);
+    push_string (putenv_str); /* Let mega_apply pop. */
+  }
+  else
+    putenv_str = var;
+
+  if (putenv (putenv_str->str))
+    SIMPLE_OUT_OF_MEMORY_ERROR ("putenv", 0);
+
+#ifdef __NT__
+  ref_push_string (var);
+  f_lower_case (1);
+  assert (Pike_sp[-1].type == T_STRING);
+  env_alloc_var = Pike_sp[-1].u.string;
+  /* Let mega_apply pop. */
+#else
+  env_alloc_var = var;
+#endif
+
+  if (!env_allocs) env_allocs = allocate_mapping (4);
+
+  if (val)
+    /* Must keep the string passed to putenv allocated (and we
+     * assume no other entities are naughty enough to modify it). */
+    mapping_string_insert_string (env_allocs, env_alloc_var, putenv_str);
+  else {
+    struct svalue key;
+    key.type = T_STRING;
+    key.u.string = env_alloc_var;
+    map_delete (env_allocs, &key);
+  }
 }
 
 /*
@@ -3756,11 +3895,12 @@ PIKECLASS List
 void init_builtin(void)
 {
   init_pike_list_node_blocks();
-INIT
+  INIT
 }
 
 void exit_builtin(void)
 {
-EXIT
+  EXIT
   free_all_pike_list_node_blocks();
+  if (env_allocs) free_mapping (env_allocs);
 }
