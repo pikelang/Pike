@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.228 2008/01/26 22:34:21 mast Exp $
+|| $Id: main.c,v 1.229 2008/06/05 15:10:45 mast Exp $
 */
 
 #include "global.h"
@@ -578,9 +578,7 @@ int main(int argc, char **argv)
 
       pike_push_argv(argc, argv);
 
-      pike_push_env();
-  
-      apply(m, "_main", 2);
+      apply(m, "_main", 1);
       pop_stack();
       num=0;
     } else {
