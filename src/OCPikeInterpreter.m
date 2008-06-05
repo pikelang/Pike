@@ -138,7 +138,13 @@ static void set_default_master(void)
 	    if ((m = load_pike_master())) {
 	      back.severity=THROW_EXIT;
 //	      pike_push_argv(argc, argv);
+#if 0
+	      // Ok, I've no idea how this is supposed to work since I
+	      // can't find the actual _main call anywhere, but it
+	      // does not expect to receive an environment array
+	      // anymore. /mast
 	      pike_push_env();
+#endif
 
 		}
    return YES;
