@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.216 2008/06/06 18:01:40 grubba Exp $
+ * $Id: backend.cmod,v 1.217 2008/06/06 21:31:54 grubba Exp $
  *
  * Backend object.
  */
@@ -3636,15 +3636,7 @@ PIKECLASS PollBackend
     low_backend_once_setup(pb->backend, &start_time);
 
     {
-#ifdef TIMEOUT_IS_MILLISECONDS
       int poll_timeout;
-#elif defined(TIMEOUT_IS_TIMEVAL)
-      struct timeval poll_timeout;
-#elif defined(TIMEOUT_IS_TIMESPEC)
-      struct timespec poll_timeout;
-#else
-#error Unknown timeout method.
-#endif /* TIMEOUT_IS_* */
 #ifdef PIKE_DEBUG
       struct timeval max_timeout;
 #endif
@@ -3652,7 +3644,6 @@ PIKECLASS PollBackend
 
       me->may_need_wakeup = 1;
 
-#ifdef TIMEOUT_IS_MILLISECONDS
       if (next_timeout->tv_sec >= 100000000)
 	/* Take this as waiting forever. */
 	poll_timeout = -1;
@@ -3663,14 +3654,6 @@ PIKECLASS PollBackend
       else
 	poll_timeout = (next_timeout->tv_sec*1000) +
 	  next_timeout->tv_usec/1000;
-#elif defined(TIMEOUT_IS_TIMEVAL)
-      poll_timeout = *next_timeout;
-#elif defined(TIMEOUT_IS_TIMESPEC)
-      poll_timeout.tv_sec = next_timeout->tv_sec;
-      poll_timeout.tv_nsec = next_timeout->tv_usec*1000;
-#else
-#error Unknown timeout method.
-#endif /* TIMEOUT_IS_* */
 
       pb_copy_selectors(& pb->active_set, &pb->set);
 
@@ -4882,7 +4865,11 @@ void init_backend(void)
     /* Note that creation of a poll device backend may fail. */
     JMP_BUF recovery;
     if (SETJMP(recovery)) {
+#ifdef HAVE_POLL
       default_backend_obj = clone_object(PollBackend_program, 0);
+#else
+      default_backend_obj = clone_object(SelectBackend_program, 0);
+#endif
     } else {
       default_backend_obj = clone_object(PollDeviceBackend_program, 0);
     }
@@ -4897,18 +4884,6 @@ void init_backend(void)
     add_object_constant("__backend", default_backend_obj, 0);
     add_program_constant("DefaultBackendClass", default_backend_obj->prog, 0);
   }
-#ifndef BACKEND_USES_SELECT
-  IF_PD(fprintf(stderr,
-		"MY_POLLIN:       0x%04x\n"
-		"MY_POLLOUT:      0x%04x\n"
-		"MY_POLLEXCEPT:   0x%04x\n"
-		"MY_POLLRDBAND:   0x%04x\n"
-		"MY_POLLWREXCEPT: 0x%04x\n"
-		"MY_POLLWRBAND:   0x%04x\n",
-		MY_POLLIN, MY_POLLOUT,
-		MY_POLLEXCEPT, MY_POLLRDBAND,
-		MY_POLLWREXCEPT, MY_POLLWRBAND));
-#endif /* !BACKEND_USES_SELECT */
 }
 
 #ifdef DO_PIKE_CLEANUP
