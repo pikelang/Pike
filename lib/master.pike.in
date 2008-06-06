@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.435 2008/06/05 15:08:10 mast Exp $
+// $Id: master.pike.in,v 1.436 2008/06/06 10:14:24 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -1884,11 +1884,13 @@ static void create()
 #endif
 
   system_module_path=pike_module_path;
-  if (master() && master() != this_object() &&
-      (compat_major < 7 || (compat_major == 7 && compat_minor <= 6))) {
+  if (master() && master() != this_object()) {
     // getenv() and putenv() will get confused if we don't do this.
     // This is only for pike <= 7.6 compat.
-    if (mapping e = master()->environment) environment = e;
+    if (mapping e = (master()->environment ||
+		     (master()->get_compat_master &&
+		      master()->get_compat_master(7,6)->environment)))
+      Pike_7_6_master::environment = e;
   }
 }
 
@@ -3322,15 +3324,6 @@ void _main(array(string) orig_argv)
 	}
 	compat_master->environment = compat_env;
       }
-
-      // Kludge: Override the efuns with the right compat versions.
-      // Note that this approach is a bit simplistic since it only
-      // reflects the compat chosen with -V, not #pike etc. If that
-      // isn't good enough we'll need compat dispatchers in these
-      // functions. The right solution is to move the constants
-      // mapping from the C level to the master.
-      foreach (master_efuns + compat_master->master_efuns, string e)
-	add_constant (e, compat_master[e]);
     }
 
     foreach(q, array opts)
