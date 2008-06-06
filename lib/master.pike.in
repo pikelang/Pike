@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.437 2008/06/06 21:50:14 grubba Exp $
+// $Id: master.pike.in,v 1.438 2008/06/06 22:29:46 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -176,9 +176,64 @@ static class Pike_0_6_master
     return st && (array)st;
   }
 #endif
-  mapping (string:array(string)) environment;
-  mixed getenv(string|void s);
-  void putenv(string var, string val);
+
+  //! Mapping containing the environment variables.
+  //!
+  //! The mapping currently has the following structure:
+  //! @mapping
+  //!   @member array(string) index
+  //!      Note that the index is @[lower_case()]'d on NT.
+  //!      @array
+  //!         @elem string varname
+  //!            Variable name with case intact.
+  //!         @elem string value
+  //!            Variable value.
+  //!      @endarray
+  //! @endmapping
+  //!
+  //! @note
+  //!   This mapping should not be accessed directly; use @[getenv()]
+  //!   and @[putenv()] instead. This mapping is not publicly
+  //!   accessible in pikes newer than 7.6.
+  //!
+  //! @note
+  //!   This mapping is not compatible with @[Process.create_process()];
+  //!   use the mapping returned from calling @[getenv()] without arguments
+  //!   instead.
+  //!
+  //! @bugs
+  //!   This mapping is not the real environment; it is just a copy of
+  //!   the environment made at startup.
+  local mapping(string:array(string)) environment;
+
+  local string|mapping(string:string) getenv(string|void s)
+  {
+    if(!s) return [mapping(string:string)]aggregate_mapping( @(values(environment)*({}) ) );
+#ifdef __NT__
+    s = lower_case(s);
+#endif
+    return environment[s] && environment[s][1];
+  }
+
+  local void putenv(string varname, string|void value)
+  {
+    // Try to update the real enviroment too, but ignore errors since
+    // the fake environment could accommodate wide strings, strings
+    // with NULs etc.
+    catch {Builtin._putenv (varname, value);};
+    string index = varname;
+#ifdef __NT__
+    index = lower_case(varname);
+    if (environment[index] && environment[index][0])
+      varname = environment[index][0];
+#endif
+    if (value) {
+      environment[index] = ({ varname, value });
+    } else {
+      m_delete(environment, index);
+    }
+  }
+
   void add_include_path(string tmp);
   void remove_include_path(string tmp);
   void add_module_path(string tmp);
@@ -597,63 +652,6 @@ static class Pike_7_6_master
   {
     if ((major == 7) && (minor > 2)) return Pike_7_4_master::this;
     return Pike_7_4_master::get_compat_master(major, minor);
-  }
-
-  //! Mapping containing the environment variables.
-  //!
-  //! The mapping currently has the following structure:
-  //! @mapping
-  //!   @member array(string) index
-  //!      Note that the index is @[lower_case()]'d on NT.
-  //!      @array
-  //!         @elem string varname
-  //!            Variable name with case intact.
-  //!         @elem string value
-  //!            Variable value.
-  //!      @endarray
-  //! @endmapping
-  //!
-  //! @note
-  //!   This mapping should not be accessed directly; use @[getenv()]
-  //!   and @[putenv()] instead. This mapping is not publicly
-  //!   accessible in pikes newer than 7.6.
-  //!
-  //! @note
-  //!   This mapping is not compatible with @[Process.create_process()];
-  //!   use the mapping returned from calling @[getenv()] without arguments
-  //!   instead.
-  //!
-  //! @bugs
-  //!   This mapping is not the real environment; it is just a copy of
-  //!   the environment made at startup.
-  local mapping(string:array(string)) environment;
-
-  local string|mapping(string:string) getenv(string|void s)
-  {
-    if(!s) return [mapping(string:string)]aggregate_mapping( @(values(environment)*({}) ) );
-#ifdef __NT__
-    s = lower_case(s);
-#endif
-    return environment[s] && environment[s][1];
-  }
-
-  local void putenv(string varname, string|void value)
-  {
-    // Try to update the real enviroment too, but ignore errors since
-    // the fake environment could accommodate wide strings, strings
-    // with NULs etc.
-    catch {Builtin._putenv (varname, value);};
-    string index = varname;
-#ifdef __NT__
-    index = lower_case(varname);
-    if (environment[index] && environment[index][0])
-      varname = environment[index][0];
-#endif
-    if (value) {
-      environment[index] = ({ varname, value });
-    } else {
-      m_delete(environment, index);
-    }
   }
 }
 
@@ -5459,7 +5457,7 @@ string _sprintf(int t)
 //! of @[master()].
 //!
 //! @seealso
-//!   @[get_compat_handler()], @[master()]
+//!   @[get_compilation_handler()], @[master()]
 local object get_compat_master(int major, int minor)
 {
   if ((major > 7) || ((major == 7) && (minor > 6))) return this;
