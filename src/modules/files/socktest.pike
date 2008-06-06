@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.43 2008/05/03 13:22:55 marcus Exp $ */
+/* $Id: socktest.pike,v 1.44 2008/06/06 18:02:58 grubba Exp $ */
 
 // #define OOB_DEBUG
 
@@ -8,6 +8,8 @@
 
 import Stdio;
 import String;
+
+// FIXME: Ought to test all the available backends.
 
 #if !efun(strerror)
 #define strerror(X) ("ERRNO = "+(string)(X))
