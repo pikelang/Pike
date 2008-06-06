@@ -3,7 +3,7 @@
 
 // Pike core things that don't belong anywhere else.
 //
-// $Id: module.pmod,v 1.17 2008/05/02 04:15:08 mast Exp $
+// $Id: module.pmod,v 1.18 2008/06/06 18:01:40 grubba Exp $
 
 constant WEAK_INDICES = __builtin.PIKE_WEAK_INDICES;
 constant WEAK_VALUES = __builtin.PIKE_WEAK_VALUES;
@@ -35,11 +35,18 @@ constant OPEN_BOUND = __builtin.OPEN_BOUND;
 
 constant BacktraceFrame = __builtin.backtrace_frame;
 
-#if constant(__builtin.GenericBackend)
-constant Backend = __builtin.GenericBackend;
-#else
-constant Backend = __builtin.Backend;
+constant Backend = __builtin.DefaultBackendClass;
+
+#if constant(__builtin.PollDeviceBackend)
+constant PollDeviceBackend = __builtin.PollDeviceBackend;
 #endif
+
+#if constant(__builtin.PollBackend)
+constant PollBackend = __builtin.PollBackend;
+#endif
+
+constant SelectBackend = __builtin.SelectBackend;
+
 constant DefaultBackend = __builtin.__backend;
 
 constant gc_parameters = __builtin.gc_parameters;

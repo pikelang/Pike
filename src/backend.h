@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.h,v 1.38 2007/06/26 17:10:01 grubba Exp $
+|| $Id: backend.h,v 1.39 2008/06/06 18:01:40 grubba Exp $
 */
 
 #ifndef BACKEND_H
@@ -72,7 +72,6 @@
 #endif	/* HAVE_POLL || BACKEND_USES_KQUEUE */
 
 struct Backend_struct;
-struct selectors;
 
 PMOD_EXPORT extern struct timeval current_time;
 PMOD_EXPORT extern struct Backend_struct *default_backend;
