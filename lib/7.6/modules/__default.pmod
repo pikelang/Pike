@@ -1,5 +1,5 @@
 // Compatibility namespace
-// $Id: __default.pmod,v 1.5 2008/05/29 18:13:50 grubba Exp $
+// $Id: __default.pmod,v 1.6 2008/06/06 22:23:22 grubba Exp $
 
 #pike 7.7
 
@@ -32,5 +32,7 @@ mapping(string:mixed) all_constants()
   ret->sprintf = sprintf_76;
   ret->array_sscanf = array_sscanf_76;
   ret->master = master;
+  ret->getenv = master()->getenv;
+  ret->putenv = master()->putenv;
   return ret;
 }
