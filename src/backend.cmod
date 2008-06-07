@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.217 2008/06/06 21:31:54 grubba Exp $
+ * $Id: backend.cmod,v 1.218 2008/06/07 06:46:10 grubba Exp $
  *
  * Backend object.
  */
@@ -2617,7 +2617,7 @@ int pdb_MY_FD_CLR(int *pfd, int fd, int filter)
   return kevent(*pfd, &ev, 1, NULL, 0, NULL);
 }
 
-int MY_FD_SET(int *pfd, int fd, int filter)
+int pdb_MY_FD_SET(int *pfd, int fd, int filter)
 {
   struct kevent ev[2];
 
