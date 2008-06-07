@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.440 2008/06/07 10:52:03 grubba Exp $
+// $Id: master.pike.in,v 1.441 2008/06/07 16:16:39 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -244,7 +244,10 @@ static class Pike_0_6_master
 			   new_env)
   {
     compat_environment = new_env;
-    if (!new_env) compat_environment_copy = 0;
+    if (!new_env)
+      compat_environment_copy = 0;
+    else if (!compat_environment_copy)
+      compat_environment_copy = ([]);
   }
 #pragma deprecation_warnings
 
