@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.218 2008/06/07 06:46:10 grubba Exp $
+ * $Id: backend.cmod,v 1.219 2008/06/07 08:04:34 mbaehr Exp $
  *
  * Backend object.
  */
@@ -2736,6 +2736,7 @@ static void sb_copy_selectors(struct sb_active_selectors *to,
 #if defined(BACKEND_USES_POLL_DEVICE) || defined(BACKEND_USES_KQUEUE)
 
 /*! @class PollDeviceBackend
+ *! @inherit Backend
  *!
  *! @[Backend] implemented with @tt{/dev/poll@} (Solaris, OSF/1 and IRIX),
  *! @tt{epoll(2)@} (Linux) or @tt{kqueue(2)@} (MacOS X, FreeBSD, OpenBSD, etc).
@@ -2745,8 +2746,6 @@ static void sb_copy_selectors(struct sb_active_selectors *to,
  */
 PIKECLASS PollDeviceBackend
 {
-  /* @inherit Backend
-   */
   INHERIT Backend;
 
   /* Helpers to find the above inherit. */
@@ -3447,6 +3446,7 @@ PIKECLASS PollDeviceBackend
 #ifdef HAVE_POLL
 
 /*! @class PollBackend
+ *! @inherit Backend
  *!
  *! @[Backend] implemented with @tt{poll(2)@} (SVr4, POSIX).
  *!
@@ -3455,8 +3455,6 @@ PIKECLASS PollDeviceBackend
  */
 PIKECLASS PollBackend
 {
-  /*! @inherit Backend
-   */
   INHERIT Backend;
 
   /* Helpers to find the above inherit. */
@@ -4015,13 +4013,12 @@ PIKECLASS PollBackend
 #endif /* HAVE_POLL */
 
 /*! @class SelectBackend
+ *! @inherit Backend
  *!
  *! Backend based on the classic @tt{select(2)@} system call from BSD.
  */
 PIKECLASS SelectBackend
 {
-  /*! @inherit Backend
-   */
   INHERIT Backend;
 
   /* Helpers to find the above inherit. */
