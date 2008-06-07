@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.439 2008/06/07 06:48:19 grubba Exp $
+// $Id: master.pike.in,v 1.440 2008/06/07 10:52:03 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -177,6 +177,8 @@ static class Pike_0_6_master
   }
 #endif
 
+  //! @decl mapping(string:array(string)) environment
+  //!
   //! Mapping containing the environment variables.
   //!
   //! The mapping currently has the following structure:
@@ -203,36 +205,48 @@ static class Pike_0_6_master
   //!
   //! @bugs
   //!   This mapping is not the real environment; it is just a copy of
-  //!   the environment made at startup.
-  local mapping(string:array(string)) environment;
+  //!   the environment made at startup. Pike does attempt to keep
+  //!   track of changes in the mapping and to reflect them in the
+  //!   real environment, but avoid accessing this mapping if at all
+  //!   possible.
 
-  local string|mapping(string:string) getenv(string|void s)
-  {
-    if(!s) return [mapping(string:string)]aggregate_mapping( @(values(environment)*({}) ) );
-#ifdef __NT__
-    s = lower_case(s);
-#endif
-    return environment[s] && environment[s][1];
-  }
+  string|mapping(string:string) getenv(string|void s);
+  void putenv(string|void varname, string|void value);
 
-  local void putenv(string varname, string|void value)
+  // compat_environment is the mapping returned by `environment
+  // (if any).
+  // compat_environment_copy is used to keep track of any changes
+  // performed destructively on the compat_environment mapping.
+  // Both should be zero if not in use.
+  static mapping(string:array(string)) compat_environment;
+  static mapping(string:array(string)) compat_environment_copy;
+
+#pragma no_deprecation_warnings
+  local __deprecated__(mapping(string:array(string))) `environment()
   {
-    // Try to update the real enviroment too, but ignore errors since
-    // the fake environment could accommodate wide strings, strings
-    // with NULs etc.
-    catch {Builtin._putenv (varname, value);};
-    string index = varname;
+    if (compat_environment) return compat_environment;
+    compat_environment_copy = ([]);
 #ifdef __NT__
-    index = lower_case(varname);
-    if (environment[index] && environment[index][0])
-      varname = environment[index][0];
-#endif
-    if (value) {
-      environment[index] = ({ varname, value });
-    } else {
-      m_delete(environment, index);
+    // Can't use the cached environment returned by getenv(), since
+    // variable names have been lowercased there.
+    foreach((array(array(string)))Builtin._getenv(), array(string) pair) {
+      compat_environment_copy[lower_case(pair[0])] = pair;
     }
+#else
+    foreach((array(array(string)))getenv(), array(string) pair) {
+      compat_environment_copy[pair[0]] = pair;
+    }
+#endif
+    return compat_environment = copy_value(compat_environment_copy);
   }
+
+  local void `environment=(__deprecated__(mapping(string:array(string)))
+			   new_env)
+  {
+    compat_environment = new_env;
+    if (!new_env) compat_environment_copy = 0;
+  }
+#pragma deprecation_warnings
 
   void add_include_path(string tmp);
   void remove_include_path(string tmp);
@@ -1027,13 +1041,23 @@ string|mapping(string:string) getenv (void|int|string var,
 #else
       environment = Builtin._getenv();
 #endif
+      // Kill the compat environment if forced.
+      compat_environment = compat_environment_copy = 0;
     }
 
 #ifdef __NT__
-    return environment[lower_case (var)];
-#else
-    return environment[var];
+    var = lower_case(var);
 #endif
+
+    if (compat_environment) {
+      array(string) res;
+      if (!equal(res = compat_environment[var], compat_environment_copy[var])) {
+	// Something has messed with the compat environment mapping.
+	putenv(var, res && res[1]);
+      }
+    }
+
+    return environment[var];
   }
 
   else {
@@ -1048,9 +1072,24 @@ string|mapping(string:string) getenv (void|int|string var,
 #else
       environment = res + ([]);
 #endif
+      // Kill the compat environment if forced.
+      compat_environment = compat_environment_copy = 0;
     }
 
     else {
+      if (compat_environment &&
+	  !equal(compat_environment, compat_environment_copy)) {
+	foreach(compat_environment; var; array(string) pair) {
+	  if (!equal(pair, compat_environment_copy[var])) {
+	    putenv(pair[0], pair[1]);
+	  }
+	}
+	foreach(compat_environment_copy; var; array(string) pair) {
+	  if (!compat_environment[var]) {
+	    putenv(pair[0]);
+	  }
+	}
+      }
 #ifdef __NT__
       // Can't use the cached environment since variable names have been
       // lowercased there.
@@ -1084,6 +1123,19 @@ void putenv (string varname, void|string value)
 //!
 {
   Builtin._putenv (varname, value);
+  if (compat_environment) {
+    string lvarname = varname;
+#ifdef __NT__
+    lvarname = lower_case(varname);
+#endif
+    if (value) {
+      compat_environment[lvarname] =
+	(compat_environment_copy[lvarname] = ({ varname, value })) + ({});
+    } else {
+      m_delete(compat_environment, lvarname);
+      m_delete(compat_environment_copy, lvarname);
+    }
+  }
   if (environment) {
 #ifdef __NT__
     varname = lower_case (varname);
@@ -1882,14 +1934,6 @@ static void create()
 #endif
 
   system_module_path=pike_module_path;
-  if (master() && master() != this_object()) {
-    // getenv() and putenv() will get confused if we don't do this.
-    // This is only for pike <= 7.6 compat.
-    if (mapping e = (master()->environment ||
-		     (master()->get_compat_master &&
-		      master()->get_compat_master(7,6)->environment)))
-      Pike_7_6_master::environment = e;
-  }
 }
 
 
