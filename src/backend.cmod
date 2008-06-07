@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.220 2008/06/07 10:57:55 grubba Exp $
+ * $Id: backend.cmod,v 1.221 2008/06/07 15:49:18 grubba Exp $
  *
  * Backend object.
  */
@@ -4899,9 +4899,9 @@ void exit_backend()
 static void backend_cleanup()
 {
 #ifdef CHILD_NEEDS_TO_REOPEN
-  if (backends) {
-    free(backends);
-    num_backends = 0;
+  if (pdb_backends) {
+    free(pdb_backends);
+    num_pdb_backends = 0;
   }
 #endif /* CHILD_NEEDS_TO_REOPEN */
   free_all_call_out_s_blocks();
