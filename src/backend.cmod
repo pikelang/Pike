@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.219 2008/06/07 08:04:34 mbaehr Exp $
+ * $Id: backend.cmod,v 1.220 2008/06/07 10:57:55 grubba Exp $
  *
  * Backend object.
  */
@@ -2631,6 +2631,9 @@ int pdb_MY_FD_SET(int *pfd, int fd, int filter)
   
   return kevent(*pfd, ev, 2, NULL, 0, NULL);
 }
+
+#define pdb_MY_FD_CLR_RDBAND(SET, FD)
+#define pdb_MY_FD_CLR_WRBAND(SET, FD)
 
 #endif
 
