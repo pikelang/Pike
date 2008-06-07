@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.438 2008/06/06 22:29:46 grubba Exp $
+// $Id: master.pike.in,v 1.439 2008/06/07 06:48:19 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -2888,7 +2888,7 @@ class CompatResolver
       compat_major=saved_compat_major;
       compat_minor=saved_compat_minor;
       if(err) throw(err);
-      return x || all_constants();
+      return x;
     }
 
   // _static_modules -- default for global::
