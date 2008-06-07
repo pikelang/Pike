@@ -1,5 +1,5 @@
 // Compatibility namespace
-// $Id: __default.pmod,v 1.16 2008/05/29 18:13:50 grubba Exp $
+// $Id: __default.pmod,v 1.17 2008/06/07 07:02:31 grubba Exp $
 
 #pike 7.5
 
@@ -118,6 +118,7 @@ object master()
 mapping(string:mixed) all_constants()
 {
   mapping(string:mixed) ret = predef::all_constants()+([]);
+  ret->all_constants = all_constants;
   ret->rusage = rusage;
   ret->hash = hash_7_4;
   ret->master = master;
