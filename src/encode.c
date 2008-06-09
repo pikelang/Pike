@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.276 2008/05/31 19:41:16 grubba Exp $
+|| $Id: encode.c,v 1.277 2008/06/09 13:36:04 grubba Exp $
 */
 
 #include "global.h"
@@ -2946,7 +2946,7 @@ static void decode_value2(struct decode_data *data)
 			   "Cannot decode objects without a "
 			   "\"decode_object\" function in the codec.\n");
 	    apply_low(data->codec,fun,2);
-	    if ((Pike_sp[-1].type == T_ARRAY) &&
+	    if ((Pike_sp[-1].type == T_ARRAY) && o->prog &&
 		((fun = FIND_LFUN(o->prog, LFUN_CREATE)) != -1)) {
 	      /* Call lfun::create(@args). */
 	      INT32 args;
