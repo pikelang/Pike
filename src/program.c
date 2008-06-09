@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.717 2008/06/02 15:43:29 mast Exp $
+|| $Id: program.c,v 1.718 2008/06/09 10:57:08 grubba Exp $
 */
 
 #include "global.h"
@@ -6872,7 +6872,7 @@ PMOD_EXPORT struct pike_string *get_identifier_line(struct program *p,
   struct reference *ref = PTR_FROM_INT(p, fun);
   struct identifier *id = ID_FROM_PTR(p, ref);
   p = PROG_FROM_PTR(p, ref);
-  if (id->filename_strno < 0) return NULL;
+  if (id->filename_strno >= p->num_strings) return NULL;
   if (linep) *linep = id->linenumber;
   return p->strings[id->filename_strno];
 }
@@ -9619,7 +9619,7 @@ void init_program(void)
    */
   {
     struct svalue s;
-    start_new_program();
+    debug_start_new_program(0, "__null_program");
     null_program=end_program();
     s.type=T_PROGRAM;
     s.u.program=null_program;
