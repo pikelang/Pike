@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.1 2008/06/03 14:55:04 mast Exp $
+# $Id: configure.in,v 1.2 2008/06/09 13:54:52 mast Exp $
 
 AC_INIT(gssapi.cmod)
 AC_CONFIG_HEADER(gssapi_config.h)
@@ -12,6 +12,7 @@ if test x$with_gssapi = xyes; then
 
   PIKE_FEATURE(GSSAPI, [no (gssapi.h not found)])
   AC_CHECK_HEADERS(gssapi.h gssapi/gssapi.h, break)
+  AC_CHECK_HEADERS(gssapi_krb5.h gssapi/gssapi_krb5.h, break)
 
   if test x$ac_cv_header_gssapi_h = xyes -o \
 	  x$ac_cv_header_gssapi_gssapi_h = xyes; then

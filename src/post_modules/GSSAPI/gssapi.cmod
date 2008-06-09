@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gssapi.cmod,v 1.1 2008/06/03 14:55:04 mast Exp $
+|| $Id: gssapi.cmod,v 1.2 2008/06/09 13:54:52 mast Exp $
 */
 
 /*
@@ -66,6 +66,22 @@ DECLARATIONS
 #elif defined (HAVE_GSSAPI_GSSAPI_H)
 #include <gssapi/gssapi.h>
 #endif
+
+#ifdef HAVE_GSSAPI_KRB5_H
+#include <gssapi_krb5.h>
+#elif defined (HAVE_GSSAPI_GSSAPI_KRB5_H)
+#include <gssapi/gssapi_krb5.h>
+#else
+/* Can't use #ifdef GSS_KRB5_NT_PRINCIPAL_NAME since it might not be a
+ * macro in gssapi_krb5.h. */
+static const unsigned char krb5_nt_principal_name_elements[] =
+  {0x2a, 0x86, 0x48, 0x86, 0xf7, 0x12, 0x01, 0x02, 0x02, 0x01};
+static const gss_OID_desc krb5_nt_principal_name_desc =
+  {sizeof (krb5_nt_principal_name_elements), &krb5_nt_principal_name_elements};
+static const gss_OID_desc * const GSS_KRB5_NT_PRINCIPAL_NAME =
+  &krb5_nt_principal_name_desc;
+#endif
+
 
 #ifndef GSS_C_ROUTINE_ERROR_OFFSET
 #define GSS_C_ROUTINE_ERROR_OFFSET 16
@@ -314,7 +330,7 @@ static int get_pushed_gss_oid (struct pike_string *dd_oid, gss_OID gss_oid)
     if (PIKE_CONCAT (GSS_OID, _pushed)) pop_stack();			\
   } while (0)
 
-static struct pike_string *get_dd_oid (const gss_OID gss_oid)
+static struct pike_string *get_dd_oid (const gss_OID_desc * const gss_oid)
 {
   struct pike_string *der_oid;
 
@@ -1148,9 +1164,10 @@ static void throw_missing_services_error (OM_uint32 missing)
  *! @decl constant string NT_STRING_UID_NAME
  *! @decl constant string NT_ANONYMOUS
  *! @decl constant string NT_EXPORT_NAME
+ *! @decl constant string KRB5_NT_PRINCIPAL_NAME
  *!
  *! OIDs on dotted-decimal form for the GSS-API mechanism-independent
- *! name types:
+ *! name types, and some selected mechanism-specific ones:
  *!
  *! @dl
  *! @item NT_HOSTBASED_SERVICE
@@ -1180,6 +1197,8 @@ static void throw_missing_services_error (OM_uint32 missing)
  *!   Name type for the Mechanism-Independent Exported Name Object
  *!   type, which is the type of the names returned by
  *!   @[GSSAPI.Name.export]. See RFC 2743 section 4.7.
+ *! @item KRB5_NT_PRINCIPAL_NAME
+ *!   Name type for a Kerberos principal. See RFC 1964 section 2.1.1.
  *! @enddl
  */
 
@@ -4497,7 +4516,7 @@ PIKE_MODULE_INIT
     str.type = T_STRING;
 
 #define ADD_DD_OID_CONSTANT(PIKE_SYM, GSS_SYM) do {			\
-      str.u.string = get_dd_oid (GSS_C_NT_HOSTBASED_SERVICE);		\
+      str.u.string = get_dd_oid (GSS_SYM);				\
       simple_add_constant (PIKE_SYM, &str, 0);				\
     } while (0)
 
@@ -4507,6 +4526,8 @@ PIKE_MODULE_INIT
     ADD_DD_OID_CONSTANT ("NT_STRING_UID_NAME", GSS_C_NT_STRING_UID_NAME);
     ADD_DD_OID_CONSTANT ("NT_ANONYMOUS", GSS_C_NT_ANONYMOUS);
     ADD_DD_OID_CONSTANT ("NT_EXPORT_NAME", GSS_C_NT_EXPORT_NAME);
+
+    ADD_DD_OID_CONSTANT ("KRB5_NT_PRINCIPAL_NAME", GSS_KRB5_NT_PRINCIPAL_NAME);
 
 #undef ADD_OID_CONSTANT
   }
