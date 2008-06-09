@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gssapi.cmod,v 1.2 2008/06/09 13:54:52 mast Exp $
+|| $Id: gssapi.cmod,v 1.3 2008/06/09 13:56:53 mast Exp $
 */
 
 /*
@@ -1158,7 +1158,6 @@ static void throw_missing_services_error (OM_uint32 missing)
 
 
 /*! @decl constant string NT_HOSTBASED_SERVICE
- *! @decl constant string NT_HOSTBASED_SERVICE_X
  *! @decl constant string NT_USER_NAME
  *! @decl constant string NT_MACHINE_UID_NAME
  *! @decl constant string NT_STRING_UID_NAME
@@ -1175,9 +1174,6 @@ static void throw_missing_services_error (OM_uint32 missing)
  *!   syntax is @tt{service@@hostname@} where the @tt{@@hostname@}
  *!   part may be omitted for the local host. See RFC 2743 section
  *!   4.1.
- *! @item NT_HOSTBASED_SERVICE_X
- *!   Deprecated alias for @[NT_HOSTBASED_SERVICE] for compatibility.
- *!   See RFC 2743 section 4.1.
  *! @item NT_USER_NAME
  *!   Name type for a named user on a local system. The syntax is
  *!   @tt{username@}. See RFC 2743 section 4.2.
