@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.441 2008/06/07 16:16:39 grubba Exp $
+// $Id: master.pike.in,v 1.442 2008/06/10 12:39:44 mast Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -1015,7 +1015,7 @@ static void set_lc_env (mapping(string:string) env)
 //! Queries the environment variables. The first variant returns the
 //! value of a specific variable or zero if it doesn't exist in the
 //! environment. The second variant returns the whole environment as a
-//! mapping. Destructive opreations on the mapping will not affect the
+//! mapping. Destructive operations on the mapping will not affect the
 //! internal environment representation.
 //!
 //! A cached copy of the real environment is kept to make this
@@ -1033,11 +1033,11 @@ static void set_lc_env (mapping(string:string) env)
 //!
 //! @seealso
 //!   @[putenv()]
-string|mapping(string:string) getenv (void|int|string var,
+string|mapping(string:string) getenv (void|int|string varname,
 				      void|int force_update)
 {
   // Variants doesn't seem to work well yet.
-  if (stringp (var)) {
+  if (stringp (varname)) {
     if (!environment || force_update) {
 #ifdef __NT__
       set_lc_env (Builtin._getenv());
@@ -1064,7 +1064,7 @@ string|mapping(string:string) getenv (void|int|string var,
   }
 
   else {
-    force_update = var;
+    force_update = varname;
 
     mapping(string:string) res;
 
@@ -1112,7 +1112,7 @@ void putenv (string varname, void|string value)
 //! Sets the environment variable @[varname] to @[value].
 //!
 //! If @[value] is omitted or zero, the environment variable
-//! @[varname] will be removed.
+//! @[varname] is removed.
 //!
 //! @[varname] and @[value] cannot be wide strings nor contain
 //! @expr{'\0'@} characters. @[varname] also cannot contain
@@ -3382,7 +3382,7 @@ void _main(array(string) orig_argv)
       case "version":
 	werror(version() + " Copyright © 1994-2008 Linköping University\n"
 	       "Pike comes with ABSOLUTELY NO WARRANTY; This is free software and you are\n"
-	       "welcome to redistribute it under certain conditions; Read the files\n"
+	       "welcome to redistribute it under certain conditions; read the files\n"
 	       "COPYING and COPYRIGHT in the Pike distribution for more details.\n");
 	exit(0);
 
