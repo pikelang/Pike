@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.203 2008/06/05 14:44:08 mast Exp $
+|| $Id: builtin.cmod,v 1.204 2008/06/10 12:16:17 mast Exp $
 */
 
 #include "global.h"
@@ -20,8 +20,6 @@
 #include "pike_types.h"
 #include "pike_memory.h"
 #include "threads.h"
-#include <math.h>
-#include <ctype.h>
 #include "module_support.h"
 #include "cyclic.h"
 #include "bignum.h"
@@ -33,7 +31,11 @@
 #include "gc.h"
 #include "block_alloc.h"
 #include "pikecode.h"
+
 #include <assert.h>
+#include <ctype.h>
+#include <errno.h>
+#include <math.h>
 
 /*! @decl array(array(int|string|type)) describe_program(program p)
  *! @belongs Debug
@@ -1346,8 +1348,12 @@ PIKEFUN void _putenv (string var, void|string val)
   else
     putenv_str = var;
 
-  if (putenv (putenv_str->str))
-    SIMPLE_OUT_OF_MEMORY_ERROR ("putenv", 0);
+  if (putenv (putenv_str->str)) {
+    if (errno == ENOMEM)
+      SIMPLE_OUT_OF_MEMORY_ERROR ("putenv", 0);
+    else
+      Pike_error ("Error from putenv(3): %s\n", strerror (errno));
+  }
 
 #ifdef __NT__
   ref_push_string (var);
