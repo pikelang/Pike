@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.204 2008/06/10 12:16:17 mast Exp $
+|| $Id: builtin.cmod,v 1.205 2008/06/10 20:56:26 mast Exp $
 */
 
 #include "global.h"
@@ -1345,8 +1345,19 @@ PIKEFUN void _putenv (string var, void|string val)
     putenv_str = finish_string_builder (&sb);
     push_string (putenv_str); /* Let mega_apply pop. */
   }
-  else
+  else {
+#ifdef PUTENV_ALWAYS_REQUIRES_EQUAL
+    /* Windows can never get things quite right.. :P */
+    struct string_builder sb;
+    init_string_builder (&sb, 0);
+    string_builder_shared_strcat (&sb, var);
+    string_builder_putchar (&sb, '=');
+    putenv_str = finish_string_builder (&sb);
+    push_string (putenv_str); /* Let mega_apply pop. */
+#else
     putenv_str = var;
+#endif
+  }
 
   if (putenv (putenv_str->str)) {
     if (errno == ENOMEM)
