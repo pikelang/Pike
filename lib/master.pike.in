@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.442 2008/06/10 12:39:44 mast Exp $
+// $Id: master.pike.in,v 1.443 2008/06/10 12:43:17 mast Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -1049,18 +1049,19 @@ string|mapping(string:string) getenv (void|int|string varname,
     }
 
 #ifdef __NT__
-    var = lower_case(var);
+    varname = lower_case(varname);
 #endif
 
     if (compat_environment) {
       array(string) res;
-      if (!equal(res = compat_environment[var], compat_environment_copy[var])) {
+      if (!equal(res = compat_environment[varname],
+		 compat_environment_copy[varname])) {
 	// Something has messed with the compat environment mapping.
-	putenv(var, res && res[1]);
+	putenv(varname, res && res[1]);
       }
     }
 
-    return environment[var];
+    return environment[varname];
   }
 
   else {
@@ -1082,13 +1083,13 @@ string|mapping(string:string) getenv (void|int|string varname,
     else {
       if (compat_environment &&
 	  !equal(compat_environment, compat_environment_copy)) {
-	foreach(compat_environment; var; array(string) pair) {
-	  if (!equal(pair, compat_environment_copy[var])) {
+	foreach(compat_environment; varname; array(string) pair) {
+	  if (!equal(pair, compat_environment_copy[varname])) {
 	    putenv(pair[0], pair[1]);
 	  }
 	}
-	foreach(compat_environment_copy; var; array(string) pair) {
-	  if (!compat_environment[var]) {
+	foreach(compat_environment_copy; varname; array(string) pair) {
+	  if (!compat_environment[varname]) {
 	    putenv(pair[0]);
 	  }
 	}
