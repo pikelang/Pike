@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.221 2008/06/07 15:49:18 grubba Exp $
+ * $Id: backend.cmod,v 1.222 2008/06/11 15:38:04 grubba Exp $
  *
  * Backend object.
  */
@@ -3437,7 +3437,7 @@ PIKECLASS PollDeviceBackend
 
     if (THIS->set >= 0)
       fd_close(THIS->set);
-    unregister_pdb_backend(me);
+    unregister_pdb_backend(THIS);
   }
 }
 
