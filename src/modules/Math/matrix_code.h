@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: matrix_code.h,v 1.8 2003/07/09 01:09:12 agehall Exp $
+|| $Id: matrix_code.h,v 1.9 2008/06/11 11:24:53 nilsson Exp $
 */
 
 /*
@@ -203,8 +203,8 @@ done_made:
       }
       else if (Pike_sp[-args].u.string==s_rotate)
       {
-	 float r;
-	 float x,y,z;
+	 FLOAT_TYPE r;
+	 FLOAT_TYPE x,y,z;
 	 double c,s;
 	 struct matrixX(_storage) *mx=NULL;
 
@@ -435,7 +435,7 @@ static void matrixX(_norm2)(INT32 args)
   pop_n_elems(args);
 
   if (!(THIS->xsize==1 || THIS->ysize==1))
-      math_error("Matrix->norm",Pike_sp-args,args,0,
+      math_error("Matrix->norm2",Pike_sp-args,args,0,
 		 "Cannot compute norm of non 1xn or nx1 matrices");
    
    z=0.0;
@@ -674,18 +674,18 @@ static void matrixX(_cross)(INT32 args)
    FTYPE *a,*b,*d;
 
    if (args<1)
-      SIMPLE_TOO_FEW_ARGS_ERROR("matrix->`×",1);
+      SIMPLE_TOO_FEW_ARGS_ERROR("matrix->cross",1);
 
    pop_n_elems(args-1); /* shouldn't be needed */
 
    if (Pike_sp[-1].type!=T_OBJECT ||
        !((mx=(struct matrixX(_storage)*)
 	  get_storage(Pike_sp[-1].u.object,XmatrixY(math_,_program)))))
-      SIMPLE_BAD_ARG_ERROR("matrix->`×",1,"object(Math.Matrix)");
+      SIMPLE_BAD_ARG_ERROR("matrix->cross",1,"object(Math.Matrix)");
 
    if (mx->xsize*mx->ysize != 3 ||
        THIS->ysize*THIS->xsize != 3)
-      math_error("Matrix->`×",Pike_sp-args,args,0,
+      math_error("Matrix->cross",Pike_sp-args,args,0,
 		 "Matrices must both be of size 1x3 or 3x1");
 
    dmx=matrixX(_push_new_)(THIS->xsize,THIS->ysize);
@@ -709,19 +709,19 @@ static void matrixX(_dot)(INT32 args)
   FTYPE *a,*b;
   
   if (args<1)
-     SIMPLE_TOO_FEW_ARGS_ERROR("matrix->`·",1);
+     SIMPLE_TOO_FEW_ARGS_ERROR("matrix->dot_product",1);
   
   pop_n_elems(args-1); 
   
   if (Pike_sp[-1].type!=T_OBJECT ||
       !((mx=(struct matrixX(_storage)*)
 	 get_storage(Pike_sp[-1].u.object,XmatrixY(math_,_program)))))
-    SIMPLE_BAD_ARG_ERROR("matrix->`·",1,"object(Math.Matrix)");
+    SIMPLE_BAD_ARG_ERROR("matrix->dot_product",1,"object(Math.Matrix)");
   
   if(!(mx->xsize==THIS->xsize &&
        mx->ysize==THIS->ysize &&
        (mx->xsize==1 || mx->ysize==1)))
-    math_error("Matrix->`·",Pike_sp-args,args,0,
+    math_error("Matrix->dot_product",Pike_sp-args,args,0,
 	       "Matrices must be the same sizes, and one-dimensional\n");
   
   res=(FTYPE)0;
@@ -748,16 +748,16 @@ static void matrixX(_convolve)(INT32 args)
    FTYPE *bs,*as,*d;
 
    if (args<1)
-      SIMPLE_TOO_FEW_ARGS_ERROR("matrix->`*",1);
+      SIMPLE_TOO_FEW_ARGS_ERROR("matrix->convolve",1);
 
    if (Pike_sp[-args].type!=T_OBJECT ||
        !((bmx=(struct matrixX(_storage)*)
 	  get_storage(Pike_sp[-args].u.object,XmatrixY(math_,_program)))))
-      SIMPLE_BAD_ARG_ERROR("matrix->something",1,"object(Math.Matrix)");
+      SIMPLE_BAD_ARG_ERROR("matrix->convolve",1,"object(Math.Matrix)");
 
    if (bmx->xsize==0 || bmx->ysize==0 ||
        THIS->xsize==0 || THIS->ysize==0)
-      math_error("matrix->something",Pike_sp-args,args,0,
+      math_error("matrix->convolve",Pike_sp-args,args,0,
 		 "source or argument matrix too small (zero size)");
 
    bxz=bmx->xsize;
