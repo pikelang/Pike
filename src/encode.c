@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.277 2008/06/09 13:36:04 grubba Exp $
+|| $Id: encode.c,v 1.278 2008/06/11 17:25:10 grubba Exp $
 */
 
 #include "global.h"
@@ -226,13 +226,7 @@ static void code_entry(int tag, INT64 num, struct encode_data *data)
     num -= MAX_SMALL;
   }
 
-  for(t = 0; (size_t)t <
-#if 0
-	(sizeof(INT64)-1);
-#else /* !0 */
-      (size_t)3;
-#endif /* 0 */
-      t++)
+  for(t = 0; (size_t)t < 7; t++)
   {
     if(num >= (((INT64)256) << (t<<3)))
       num -= (((INT64)256) << (t<<3));
@@ -245,12 +239,10 @@ static void code_entry(int tag, INT64 num, struct encode_data *data)
 
   switch(t)
   {
-#if 0
   case 7: addchar(DO_NOT_WARN((char)((num >> 56)&0xff)));
   case 6: addchar(DO_NOT_WARN((char)((num >> 48)&0xff)));
   case 5: addchar(DO_NOT_WARN((char)((num >> 40)&0xff)));
   case 4: addchar(DO_NOT_WARN((char)((num >> 32)&0xff)));
-#endif /* 0 */
   case 3: addchar(DO_NOT_WARN((char)((num >> 24)&0xff)));
   case 2: addchar(DO_NOT_WARN((char)((num >> 16)&0xff)));
   case 1: addchar(DO_NOT_WARN((char)((num >> 8)&0xff)));
@@ -2075,37 +2067,29 @@ static int my_extract_char(struct decode_data *data)
 	    data->depth,"",(Z),__LINE__));		\
   what=GETC();						\
   e=what>>SIZE_SHIFT;					\
-  numh=0;						\
   if(what & TAG_SMALL) {				\
      num=e;						\
   } else {						\
-     INT32 numl;					\
-     num=0;						\
-     while(e > 4) {					\
-       numh = (numh<<8) + (GETC()+1);			\
-       e--;						\
-     }							\
-     while(e-->=0) num=(num<<8) + (GETC()+1);		\
-     numl = num + MAX_SMALL - 1;			\
-     if (numl < num) numh++;				\
-     num = numl;					\
+    num = 0;						\
+    while(e-->=0) num = (num<<8) + (GETC()+1);		\
+    num += MAX_SMALL - 1;				\
   }							\
   if(what & TAG_NEG) {					\
     num = ~num;						\
-    numh = ~numh;					\
   }							\
   EDB(5,						\
-    fprintf(stderr,"type=%d (%s), num=%ld\n",	\
-	    (what & TAG_MASK),				\
-	    get_name_of_type(tag_to_type(what & TAG_MASK)),		\
-	    (long)num) ); 					\
+      fprintf(stderr,"type=%d (%s), num=%ld\n",		\
+	      (what & TAG_MASK),			\
+	      get_name_of_type(tag_to_type(what & TAG_MASK)),	\
+	    (long)num) ); 				\
 } while (0)
 
 
 
 #define decode_entry(X,Y,Z)					\
   do {								\
-    INT32 what, e, num, numh;					\
+    INT32 what, e;						\
+    INT64 num;							\
     DECODE("decode_entry");					\
     if((what & TAG_MASK) != (X))				\
       Pike_error("Failed to decode, wrong bits (%d).\n", what & TAG_MASK); \
@@ -2133,7 +2117,8 @@ static int my_extract_char(struct decode_data *data)
 #define get_string_data(STR,LEN, data) do {				    \
   if((LEN) == -1)							    \
   {									    \
-    INT32 what, e, num, numh;						    \
+    INT32 what, e;							\
+    INT64 num;								\
     ptrdiff_t sz;							\
     DECODE("get_string_data");						    \
     what &= TAG_MASK;							    \
@@ -2177,7 +2162,8 @@ static int my_extract_char(struct decode_data *data)
   }while(0)
 
 #define getdata3(X) do {						     \
-  INT32 what, e, num, numh;						     \
+  INT32 what, e;							\
+  INT64 num;								\
   DECODE("getdata3");							     \
   switch(what & TAG_MASK)						     \
   {									     \
@@ -2195,8 +2181,9 @@ static int my_extract_char(struct decode_data *data)
     }									     \
 }while(0)
 
-#define decode_number(X,data) do {	\
-   INT32 what, e, num, numh;		\
+#define decode_number(X,data) do {		\
+   INT32 what, e;				\
+   INT64 num;					\
    DECODE("decode_number");			\
    X=(what & TAG_MASK) | (num<<4);		\
    EDB(5, fprintf(stderr, "%*s  ==>%ld\n",	\
@@ -2631,7 +2618,8 @@ static void decode_value2(struct decode_data *data)
 
 
 {
-  INT32 what, e, num, numh;
+  INT32 what, e;
+  INT64 num;
   struct svalue entry_id, *tmp2;
   struct svalue *delayed_enc_val;
 
@@ -2704,10 +2692,10 @@ static void decode_value2(struct decode_data *data)
     {
       double res;
 
-      EDB(2,fprintf(stderr, "Decoding float... numh:0x%08x, num:0x%08x\n",
-		  numh, num));
+      EDB(2,fprintf(stderr, "Decoding float... num:0x%016" PRINTINT64 "x\n",
+		    num));
 
-      res = LDEXP((double)numh, 32) + (double)(unsigned INT32)num;
+      res = (double)num;
 
       EDB(2,fprintf(stderr, "Mantissa: %10g\n", res));
 
