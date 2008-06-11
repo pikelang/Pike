@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.278 2008/06/11 17:25:10 grubba Exp $
+|| $Id: encode.c,v 1.279 2008/06/11 18:18:39 grubba Exp $
 */
 
 #include "global.h"
@@ -226,7 +226,8 @@ static void code_entry(int tag, INT64 num, struct encode_data *data)
     num -= MAX_SMALL;
   }
 
-  for(t = 0; (size_t)t < 7; t++)
+  /* NB: There's only space for two bits of length info. */
+  for(t = 0; (size_t)t < 3; t++)
   {
     if(num >= (((INT64)256) << (t<<3)))
       num -= (((INT64)256) << (t<<3));
@@ -239,10 +240,12 @@ static void code_entry(int tag, INT64 num, struct encode_data *data)
 
   switch(t)
   {
+#if 0
   case 7: addchar(DO_NOT_WARN((char)((num >> 56)&0xff)));
   case 6: addchar(DO_NOT_WARN((char)((num >> 48)&0xff)));
   case 5: addchar(DO_NOT_WARN((char)((num >> 40)&0xff)));
   case 4: addchar(DO_NOT_WARN((char)((num >> 32)&0xff)));
+#endif /* 0 */
   case 3: addchar(DO_NOT_WARN((char)((num >> 24)&0xff)));
   case 2: addchar(DO_NOT_WARN((char)((num >> 16)&0xff)));
   case 1: addchar(DO_NOT_WARN((char)((num >> 8)&0xff)));
@@ -1133,7 +1136,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	    ref_push_function(p->inherits[d].parent,
 			      p->inherits[d].parent_identifier);
 	    EDB(3,fprintf(stderr,"INHERIT%x coded as func { %p, %d }\n",
-			p->id, p->inherits[d].parent, p->inherits[d].parent_identifier););
+			  p->id, p->inherits[d].parent,
+			  p->inherits[d].parent_identifier););
 	  }else if(p->inherits[d].prog){
 	    ref_push_program(p->inherits[d].prog);
 	  }else{
