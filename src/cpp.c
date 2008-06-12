@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.170 2008/05/27 19:36:00 grubba Exp $
+|| $Id: cpp.c,v 1.171 2008/06/12 14:00:06 nilsson Exp $
 */
 
 #include "global.h"
@@ -1501,6 +1501,27 @@ static void insert_current_file_as_string(struct cpp *this,
 		    this->current_file->size_shift, tmp);
 }
 
+static void insert_current_dir_as_string(struct cpp *this,
+                                         struct define *def,
+                                         struct define_argument *args,
+                                         struct string_builder *tmp)
+{
+  push_string(this->current_file);
+  push_text("..");
+#ifdef __NT__
+  f_combine_path_nt(2);
+#else
+#ifdef __amigaos__
+  f_combine_path_amigaos(2);
+#else
+  f_combine_path_unix(2);
+#endif
+#endif
+  PUSH_STRING_SHIFT(Pike_sp[-1].u.string->str, Pike_sp[-1].u.string->len,
+                    Pike_sp[-1].u.string->size_shift, tmp);
+  pop_stack();
+}
+
 static void insert_current_time_as_string(struct cpp *this,
 					  struct define *def,
 					  struct define_argument *args,
@@ -1872,6 +1893,7 @@ void f_cpp(INT32 args)
 
   do_magic_define(&this,"__LINE__",insert_current_line);
   do_magic_define(&this,"__FILE__",insert_current_file_as_string);
+  do_magic_define(&this,"__DIR__",insert_current_dir_as_string);
   do_magic_define(&this,"__DATE__",insert_current_date_as_string);
   do_magic_define(&this,"__TIME__",insert_current_time_as_string);
   do_magic_define(&this,"__VERSION__",insert_current_version);
