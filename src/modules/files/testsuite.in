@@ -308,6 +308,24 @@ run_sub_test(({"SRCDIR/socktest.pike"}))
 
 run_sub_test(({"-DIPV6", "SRCDIR/socktest.pike"}))
 
+run_sub_test(({"-DBACKEND=SelectBackend", "SRCDIR/socktest.pike"}))
+
+run_sub_test(({"-DBACKEND=SelectBackend", "-DIPV6", "SRCDIR/socktest.pike"}))
+
+cond([[ Pike["PollBackend"] ]],
+[[
+  run_sub_test(({"-DBACKEND=PollBackend", "SRCDIR/socktest.pike"}))
+
+  run_sub_test(({"-DBACKEND=PollBackend", "-DIPV6", "SRCDIR/socktest.pike"}))
+]])
+
+cond([[ Pike["PollDeviceBackend"] ]],
+[[
+  run_sub_test(({"-DBACKEND=PollDeviceBackend", "SRCDIR/socktest.pike"}))
+
+  run_sub_test(({"-DBACKEND=PollDeviceBackend", "-DIPV6", "SRCDIR/socktest.pike"}))
+]])
+
 run_sub_test(({"SRCDIR/sendfiletest.pike"}))
 
 run_sub_test(({"-DTEST_NORMAL", "SRCDIR/connecttest.pike"}))
