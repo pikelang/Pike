@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.429 2008/05/30 20:20:23 grubba Exp $
+|| $Id: language.yacc,v 1.430 2008/06/12 15:59:49 grubba Exp $
 */
 
 %pure_parser
@@ -4514,7 +4514,9 @@ int add_local_name(struct pike_string *str,
 static void mark_lvalues_as_used(node *n)
 {
   while (n && n->token == F_LVALUE_LIST) {
-    if (CAR(n)->token == F_ARRAY_LVALUE) {
+    if (!CAR(n)) {
+      /* Can happen if a variable hasn't been declared. */
+    } else if (CAR(n)->token == F_ARRAY_LVALUE) {
       mark_lvalues_as_used(CAAR(n));
     } else if ((CAR(n)->token == F_LOCAL) && !(CAR(n)->u.integer.b)) {
       Pike_compiler->compiler_frame->variable[CAR(n)->u.integer.a].flags |=
