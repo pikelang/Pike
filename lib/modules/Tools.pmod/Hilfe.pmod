@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.117 2005/01/11 08:30:08 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.118 2008/06/12 17:46:09 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -953,7 +953,9 @@ private class Expression {
     // Any sequence beginning with any of these can't be
     // a type declaration.
     if( (< "break", "continue", "class", "!", "-",
-           "(", "~", "[", "`" >)[ t ] )
+           "(", "~", "[", "`", "else", ".." >)[ t ] )
+      return -1;
+    if( t[0]>='0' && t[0]<='9' )
       return -1;
     if( notype[ t ] )
       return -1;
