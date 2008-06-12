@@ -1,5 +1,5 @@
 START_MARKER
-// $Id: testsuite.in,v 1.25 2008/05/31 11:29:47 grubba Exp $
+// $Id: testsuite.in,v 1.26 2008/06/12 16:57:43 nilsson Exp $
 
 // Tools.Hilfe
 define(test_hilfe_setup_low,[[test_do([[
@@ -185,6 +185,9 @@ test_hilfe("if(a) a=0; else a=1;", "Ok.\n");
 test_hilfe("class B { int i; void create(int x) { i=x; } }", "")
 test_hilfe("object b=B(3);", "")
 test_hilfe("b->i;", "3");
+
+test_hilfe("sscanf(\"abc\"[0..2],\"%s\",string s);", "1")
+test_hilfe("s;","\"abc\"")
 
 test_do( add_constant("testhilfe") )
 
