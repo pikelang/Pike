@@ -1,13 +1,10 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.44 2008/06/06 18:02:58 grubba Exp $ */
+/* $Id: socktest.pike,v 1.45 2008/06/12 16:51:21 grubba Exp $ */
 
 // #define OOB_DEBUG
 
 //#define SOCK_DEBUG
-
-import Stdio;
-import String;
 
 // FIXME: Ought to test all the available backends.
 
@@ -30,6 +27,13 @@ import String;
 #define ANY		0
 #define LOOPBACK	"127.0.0.1"
 #endif /* IPV6 */
+
+#define TOSTR(X)		#X
+#define DEFINETOSTRING(X)	TOSTR(X)
+
+#ifdef BACKEND
+Pike.BACKEND backend = Pike.BACKEND();
+#endif
 
 //int idnum;
 //mapping in_cleanup=([]);
@@ -66,10 +70,7 @@ void fd_fail()
 }
 
 class Socket {
-  import Stdio;
-  import String;
-
-  inherit File;
+  inherit Stdio.File;
 
 //  int id=idnum++;
 
@@ -85,6 +86,8 @@ class Socket {
 
   void cleanup()
   {
+    DEBUG_WERR("Cleanup: Input: %d, Output: %d\n",
+	       input_finished, output_finished);
     if(input_finished && output_finished)
     {
       finish();
@@ -125,6 +128,9 @@ class Socket {
 
   void write_callback()
   {
+#ifdef BACKEND
+    set_backend(backend);
+#endif
     got_callback();
     DEBUG_WERR("write_callback[%O]: output_buffer: %O\n",
 	       query_fd(), output_buffer);
@@ -170,6 +176,9 @@ class Socket {
 	fd_fail();
       }
     }
+#ifdef BACKEND
+    set_backend(backend);
+#endif
     set_id(0);
     set_nonblocking(read_callback,write_callback,close_callback);
   }
@@ -226,8 +235,13 @@ void got_callback()
   if(!quiet && !(counter & 0xf))
     predef::write(sprintf("%c\b","|/-\\" [ (counter>>4) & 3 ]));
 #endif /* OOB_DEBUG */
+#ifdef BACKEND
+  backend->remove_call_out(die);
+  backend->call_out(die,20);
+#else
   remove_call_out(die);
   call_out(die,20);
+#endif
 }
 
 int num_running;
@@ -313,9 +327,14 @@ void got_oob0(mixed ignored, string got)
 }
 
 
-inherit Port : port1;
-inherit Port : port2;
-void create() {}
+inherit Stdio.Port : port1;
+inherit Stdio.Port : port2;
+void create() {
+#ifdef BACKEND
+  port1::set_backend(backend);
+  port2::set_backend(backend);
+#endif
+}
 
 int portno1;
 int portno2;
@@ -356,6 +375,9 @@ array(object(Socket)) stdtest()
     sleep(1);
     fd_fail();
   }
+#ifdef BACKEND
+  sock2->set_backend(backend);
+#endif
   DEBUG_WERR("Socket connected: %O <==> %O\n",
 	     sock2->query_address(1),
 	     sock2->query_address());
@@ -369,7 +391,10 @@ array(object(Socket)) stdtest()
 array(object) spair(int type)
 {
   object sock1,sock2;
-  sock1=File();
+  sock1=Stdio.File();
+#ifdef BACKEND
+  sock1->set_backend(backend);
+#endif
   if(!type)
   {
     sock1->connect(LOOPBACK, portno2);
@@ -389,6 +414,9 @@ array(object) spair(int type)
       fd_fail();
     }
   }
+#ifdef BACKEND
+  sock2->set_backend(backend);
+#endif
   return ({sock1,sock2});
 }
 
@@ -549,6 +577,9 @@ void accept_callback()
   {
     write("Accept failed, errno: %d\n", port1::errno());
   }
+#ifdef BACKEND
+  o->set_backend(backend);
+#endif
   o=Socket(o);
   o->expected_data = "foobar" * 4711;
 }
@@ -562,8 +593,11 @@ int main()
     quiet=1;
 
   write("\nSocket test");
+#ifdef BACKEND
+  write(" using " DEFINETOSTRING(BACKEND));
+#endif
 #ifdef IPV6
-  write(" IPv6 mode");
+  write(" in IPv6 mode");
 #endif /* IPV6 */
 
 #if constant(System.getrlimit)
@@ -650,10 +684,16 @@ int main()
   start();
   _tests=49;
   finish();
-  return -1;
-#endif /* OOB_DEBUG */
-
+#else /* !OOB_DEBUG */
   write("Doing simple tests. ");
   stdtest();
+#endif /* OOB_DEBUG */
+
+#ifdef BACKEND
+  while(1) {
+    backend(3600.0);
+  }
+#else
   return -1;
+#endif
 }
