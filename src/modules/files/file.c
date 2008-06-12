@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.385 2008/05/12 12:38:31 mast Exp $
+|| $Id: file.c,v 1.386 2008/06/12 20:49:23 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -246,9 +246,7 @@ static int got_fd_event (struct fd_callback_box *box, int event)
 static void init_fd(int fd, int open_mode, int flags)
 {
   size_t ev;
-  FD=fd;
   ERRNO=0;
-  THIS->box.backend = NULL;
   THIS->flags=flags;
   THIS->open_mode=open_mode;
   for (ev = 0; ev < NELEM (THIS->event_cbs); ev++) {
@@ -265,6 +263,7 @@ static void init_fd(int fd, int open_mode, int flags)
   if ((fd >= 0) && !(flags & FILE_NOT_OPENED))
     debug_check_fd_not_in_use (fd);
 #endif
+  change_fd_for_box(&THIS->box, fd);
 }
 
 static void free_fd_stuff(void)
@@ -2902,7 +2901,7 @@ PMOD_EXPORT struct object *file_make_object_from_fd(int fd, int mode, int guess)
   struct object *o=low_clone(file_program);
   struct my_file *f = (struct my_file *) o->storage;
   call_c_initializers(o);
-  f->box.fd=fd;
+  change_fd_for_box(&f->box, fd);
   if (fd >= 0) {
     f->open_mode=mode | fd_query_properties(fd, guess);
 #ifdef PIKE_DEBUG
@@ -3326,6 +3325,7 @@ static void file_handle_events(int event)
   switch(event)
   {
     case PROG_EVENT_INIT:
+      f->box.backend = NULL;
       init_fd (-1, 0, 0);
       f->box.ref_obj = o;
       break;
