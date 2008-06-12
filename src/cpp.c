@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.171 2008/06/12 14:00:06 nilsson Exp $
+|| $Id: cpp.c,v 1.172 2008/06/12 17:09:11 nilsson Exp $
 */
 
 #include "global.h"
@@ -1668,6 +1668,11 @@ static void insert_current_major(struct cpp *this,
 /*! @decl constant __FILE__
  *!
  *! This define contains the file path and name of the source file.
+ */
+
+/*! @decl constant __DIR__
+ *!
+ *! This define contains the directory path of the source file.
  */
 
 /*! @decl constant __DATE__
