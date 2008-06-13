@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gssapi.cmod,v 1.4 2008/06/13 17:34:31 mast Exp $
+|| $Id: gssapi.cmod,v 1.5 2008/06/13 19:18:16 mast Exp $
 */
 
 /*
@@ -1653,6 +1653,7 @@ PIKECLASS Name
     }
   }
 
+#ifdef HAVE_GSS_INQUIRE_MECHS_FOR_NAME
   /*! @decl multiset(string) mechs()
    *!
    *! Returns the OIDs for the mechanisms that might be able to
@@ -1661,6 +1662,9 @@ PIKECLASS Name
    *!
    *! This wraps @tt{GSS_Inquire_mechs_for_name@} according to RFC
    *! 2743 section 2.4.13.
+   *!
+   *! @note
+   *!   Some older GSS-API v2 implementations lack this funcion.
    */
   PIKEFUN multiset(string) mechs()
   {
@@ -1689,6 +1693,7 @@ PIKECLASS Name
     convert_from_oid_set_and_push (mechs);
     CALL_AND_UNSET_ONERROR (uwp);
   }
+#endif
 }
 
 /*! @endclass */

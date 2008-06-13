@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.2 2008/06/09 13:54:52 mast Exp $
+# $Id: configure.in,v 1.3 2008/06/13 19:18:16 mast Exp $
 
 AC_INIT(gssapi.cmod)
 AC_CONFIG_HEADER(gssapi_config.h)
@@ -23,6 +23,8 @@ if test x$with_gssapi = xyes; then
       AC_DEFINE(HAVE_GSSAPI)
       PIKE_FEATURE(GSSAPI, [yes ($ac_cv_search_gss_wrap)])
     ])
+
+    AC_CHECK_FUNCS(gss_inquire_mechs_for_name)
   fi
 fi
 
