@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.172 2008/06/12 17:09:11 nilsson Exp $
+|| $Id: cpp.c,v 1.173 2008/06/13 07:57:52 grubba Exp $
 */
 
 #include "global.h"
@@ -1506,8 +1506,8 @@ static void insert_current_dir_as_string(struct cpp *this,
                                          struct define_argument *args,
                                          struct string_builder *tmp)
 {
-  push_string(this->current_file);
-  push_text("..");
+  ref_push_string(this->current_file);
+  push_constant_text("..");
 #ifdef __NT__
   f_combine_path_nt(2);
 #else
