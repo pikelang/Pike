@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.387 2008/06/13 10:15:48 grubba Exp $
+|| $Id: file.c,v 1.388 2008/06/13 12:28:48 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -3327,7 +3327,7 @@ static void file_handle_events(int event)
     case PROG_EVENT_INIT:
       f->box.backend = NULL;
       init_fd (-1, 0, 0);
-      f->box.ref_obj = o;
+      INIT_FD_CALLBACK_BOX(&f->box, NULL, o, f->box.fd, 0, got_fd_event);
       break;
 
     case PROG_EVENT_EXIT:
