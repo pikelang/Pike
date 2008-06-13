@@ -144,9 +144,10 @@ int main()
 
   werror ("\n");
 
-  // This doesn't work since putenv just updates some silly-dilly
-  // mapping in the master that makes no difference whatsoever. You
-  // have to set this in the environment running the script.
+  // This doesn't work in pike <= 7.6 since putenv there just updates
+  // some silly-dilly mapping in the master that makes no difference
+  // whatsoever. You have to set this in the environment running the
+  // script.
   putenv ("KRB5_KTNAME", "/home/mast/certs/http-lister.keytab");
 
   GSSAPI.Name n;
@@ -271,8 +272,12 @@ int main()
 
   werror ("\n");
 
+  TEST (a->wrap_size_limit (1000, 1));
+  TEST (a->wrap_size_limit (100, 1));
+  TEST (a->wrap_size_limit (50, 1));
   TEST (atok = a->wrap ("encrypted wrapped to initiator 1", 1));
   TEST (atok = a->wrap ("encrypted wrapped to initiator 2", 1));
+  TEST (sizeof (atok));
   TEST (i->required_services (GSSAPI.REPLAY_FLAG));
   TEST (i->unwrap (atok));
   TEST (GSSAPI.major_status_messages (i->last_major_status()));
