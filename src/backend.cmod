@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.225 2008/06/13 12:01:17 grubba Exp $
+ * $Id: backend.cmod,v 1.226 2008/06/13 12:20:53 grubba Exp $
  *
  * Backend object.
  */
@@ -1487,8 +1487,6 @@ PIKECLASS Backend
       if (box->fd >= 0) update_fd_set (new, box->fd, 0, box->events);
     }
   }
-
-  static void gdb_breakpoint(void) {}
 
   PMOD_EXPORT void change_fd_for_box (struct fd_callback_box *box, int new_fd)
   {
