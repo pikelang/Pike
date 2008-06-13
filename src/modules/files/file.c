@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.386 2008/06/12 20:49:23 grubba Exp $
+|| $Id: file.c,v 1.387 2008/06/13 10:15:48 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -3402,9 +3402,16 @@ static void low_dup(struct object *toob,
  *! the argument a reference to the same file, it creates a new file
  *! with the same properties and places it in the argument.
  *!
+ *! @returns
+ *!   Returns @expr{1@} on success and @expr{0@} (zero) on failure.
+ *!
  *! @note
  *!   In Pike 7.7 and later @[to] need not be open, in which
  *!   case a new fd is allocated.
+ *!
+ *! @note
+ *!   Note also that @[to] is also assigned to the same backend (if any)
+ *!   as this object.
  *!
  *! @seealso
  *!   @[assign()], @[dup()]
@@ -3463,6 +3470,11 @@ static void file_dup2(INT32 args)
 }
 
 /*! @decl Stdio.Fd dup()
+ *!
+ *!   Duplicate the file.
+ *!
+ *! @seealso
+ *!   [@dup2()]
  */
 static void file_dup(INT32 args)
 {
@@ -3474,7 +3486,6 @@ static void file_dup(INT32 args)
 
   if(FD < 0)
     Pike_error("File not open.\n");
-
 
   if((fd=fd_dup(FD)) < 0)
   {
