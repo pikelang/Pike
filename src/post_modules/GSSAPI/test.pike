@@ -62,6 +62,8 @@ int main()
   TEST (GSSAPI.Name ("person1")->canonicalize (mech_spnego));
   TEST (GSSAPI.Name ("person1")->export (mech_krb5));
   TEST (GSSAPI.Name ("person1")->export (mech_spnego));
+  TEST (GSSAPI.Name ("person1")->mechs());
+  TEST (GSSAPI.Name ("person1")->canonicalize (mech_krb5)->mechs());
 
   werror ("\n");
 
