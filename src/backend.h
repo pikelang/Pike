@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.h,v 1.39 2008/06/06 18:01:40 grubba Exp $
+|| $Id: backend.h,v 1.40 2008/06/13 12:11:22 grubba Exp $
 */
 
 #ifndef BACKEND_H
@@ -145,7 +145,7 @@ struct fd_callback_box
     box__->events = (EVENTS);						\
     box__->revents = 0;							\
     box__->callback = (CALLBACK);					\
-    hook_fd_callback_box (box__);					\
+    if (box__->backend) hook_fd_callback_box (box__);			\
   } while (0)
 
 /* The event types. */
