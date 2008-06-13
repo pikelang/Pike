@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.389 2008/06/13 16:57:06 mbaehr Exp $
+|| $Id: file.c,v 1.390 2008/06/13 17:55:07 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -3501,7 +3501,8 @@ static void file_dup(INT32 args)
   push_object(o);
 }
 
-/*! @decl int(0..1) open_socket(int|void port, string|void addr, int|void family)
+/*! @decl int(0..1) open_socket(int|void port, string|void addr, @
+ *!                             int|void family)
  */
 static void file_open_socket(INT32 args)
 {
