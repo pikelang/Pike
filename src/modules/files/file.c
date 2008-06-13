@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.388 2008/06/13 12:28:48 grubba Exp $
+|| $Id: file.c,v 1.389 2008/06/13 16:57:06 mbaehr Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -3474,7 +3474,7 @@ static void file_dup2(INT32 args)
  *!   Duplicate the file.
  *!
  *! @seealso
- *!   [@dup2()]
+ *!   @[dup2()]
  */
 static void file_dup(INT32 args)
 {
