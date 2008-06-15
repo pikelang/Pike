@@ -38,5 +38,5 @@ void perform()
 
 string present_n(int ntot,int nruns,float tseconds,float useconds,int memusage)
 {
-   return sprintf("%.0f /s",ntot/useconds);
+   return sprintf("%.0f tags/s",ntot*(4*1400)/useconds);
 }
