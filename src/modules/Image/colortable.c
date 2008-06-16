@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: colortable.c,v 1.130 2008/01/26 22:34:25 mast Exp $
+|| $Id: colortable.c,v 1.131 2008/06/16 21:56:24 mast Exp $
 */
 
 #include "global.h"
@@ -3750,7 +3750,7 @@ void image_colortable_index_32bit(INT32 args)
 					   (unsigned INT32 *)ps->str,
 					   src->xsize*src->ysize,src->xsize))
    {
-      free_string(end_shared_string(ps));
+      do_free_unlinked_pike_string (ps);
       SIMPLE_BAD_ARG_ERROR("Colortable.index",1,"non-empty image object");
       return;
    }
