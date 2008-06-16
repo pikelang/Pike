@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gssapi.cmod,v 1.6 2008/06/16 10:46:08 mast Exp $
+|| $Id: gssapi.cmod,v 1.7 2008/06/16 10:57:08 mast Exp $
 */
 
 /*
@@ -67,6 +67,13 @@ DECLARATIONS
 #include <gssapi/gssapi.h>
 #endif
 
+#define DEFINE_STATIC_OID(NAME, VALUE)					\
+  static const unsigned char PIKE_CONCAT (NAME, _elements)[] = VALUE;	\
+  static const gss_OID_desc PIKE_CONCAT (NAME, _desc) = {		\
+    sizeof (PIKE_CONCAT (NAME, _elements)), &PIKE_CONCAT (NAME, _elements) \
+  };									\
+  static const gss_OID_desc * const NAME = &PIKE_CONCAT (NAME, _desc)
+
 #ifdef HAVE_GSSAPI_KRB5_H
 #include <gssapi_krb5.h>
 #elif defined (HAVE_GSSAPI_GSSAPI_KRB5_H)
@@ -74,12 +81,24 @@ DECLARATIONS
 #else
 /* Can't use #ifdef GSS_KRB5_NT_PRINCIPAL_NAME since it might not be a
  * macro in gssapi_krb5.h. */
-static const unsigned char krb5_nt_principal_name_elements[] =
-  {0x2a, 0x86, 0x48, 0x86, 0xf7, 0x12, 0x01, 0x02, 0x02, 0x01};
-static const gss_OID_desc krb5_nt_principal_name_desc =
-  {sizeof (krb5_nt_principal_name_elements), &krb5_nt_principal_name_elements};
-static const gss_OID_desc * const GSS_KRB5_NT_PRINCIPAL_NAME =
-  &krb5_nt_principal_name_desc;
+DEFINE_STATIC_OID (GSS_KRB5_NT_PRINCIPAL_NAME,
+		   "\x2a\x86\x48\x86\xf7\x12\x01\x02\x02\x01");
+#endif
+
+#if defined (GSS_RFC_COMPLIANT_OIDS) && !GSS_RFC_COMPLIANT_OIDS
+/* Kerberos 1.2 compat - it doesn't define these on all platforms. */
+DEFINE_STATIC_OID (GSS_C_NT_USER_NAME,
+		   "\x2a\x86\x48\x86\xf7\x12\x01\x02\x01\x01");
+DEFINE_STATIC_OID (GSS_C_NT_MACHINE_UID_NAME,
+		   "\x2a\x86\x48\x86\xf7\x12\x01\x02\x01\x02");
+DEFINE_STATIC_OID (GSS_C_NT_STRING_UID_NAME,
+		   "\x2a\x86\x48\x86\xf7\x12\x01\x02\x01\x03");
+DEFINE_STATIC_OID (GSS_C_NT_HOSTBASED_SERVICE,
+		   "\x2a\x86\x48\x86\xf7\x12\x01\x02\x01\x04");
+DEFINE_STATIC_OID (GSS_C_NT_ANONYMOUS,
+		   "\x2b\x06\01\x05\x06\x03");
+DEFINE_STATIC_OID (GSS_C_NT_EXPORT_NAME,
+		   "\x2b\x06\x01\x05\x06\x04");
 #endif
 
 
