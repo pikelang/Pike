@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pvr.c,v 1.26 2004/10/07 22:49:57 nilsson Exp $
+|| $Id: pvr.c,v 1.27 2008/06/16 21:56:24 mast Exp $
 */
 
 #include "global.h"
@@ -648,7 +648,7 @@ void image_pvr_f_encode(INT32 args)
     if(twiddle)
       attr ^= MODE_TWIDDLE^MODE_COMPRESSED;
     else {
-      free_string(end_shared_string(res));
+      do_free_unlinked_pike_string (res);
       Pike_error("Image.PVR.encode: illegal image size for VQ compression\n");
     }
   }

@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: nt.cmod,v 1.16 2008/05/29 23:03:47 nilsson Exp $
+ * $Id: nt.cmod,v 1.17 2008/06/16 21:56:24 mast Exp $
  */
 
 #include "global.h"
@@ -112,7 +112,7 @@ PIKECLASS CryptContext
     }
     else {
       pop_n_elems(args);
-      free_string(end_shared_string(res));
+      do_free_unlinked_pike_string (res);
       push_int(0);
     }
   }
