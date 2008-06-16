@@ -82,9 +82,12 @@ int main()
   GSSAPI.Cred c = GSSAPI.Cred();
   TEST (c);
   TEST (c->acquire (GSSAPI.Name ("root"), GSSAPI.INITIATE));
+  TEST (c);
+  c = GSSAPI.Cred();
   TEST (c->acquire (0, GSSAPI.BOTH, (<mech_spnego>)));
   TEST (c);
   TEST (c->mechs());
+  c = GSSAPI.Cred();
   TEST (c->acquire (0, GSSAPI.INITIATE));
   TEST (c);
   TEST (c->mechs());
