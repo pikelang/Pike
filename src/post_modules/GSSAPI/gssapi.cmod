@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gssapi.cmod,v 1.7 2008/06/16 10:57:08 mast Exp $
+|| $Id: gssapi.cmod,v 1.8 2008/06/16 11:32:43 mast Exp $
 */
 
 /*
@@ -99,6 +99,8 @@ DEFINE_STATIC_OID (GSS_C_NT_ANONYMOUS,
 		   "\x2b\x06\01\x05\x06\x03");
 DEFINE_STATIC_OID (GSS_C_NT_EXPORT_NAME,
 		   "\x2b\x06\x01\x05\x06\x04");
+DEFINE_STATIC_OID (GSS_KRB5_NT_PRINCIPAL_NAME,
+		   "\x2a\x86\x48\x86\xf7\x12\x01\x02\x02\x01");
 #endif
 
 
