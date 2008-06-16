@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: charsetmod.c,v 1.64 2008/05/04 00:34:22 nilsson Exp $
+|| $Id: charsetmod.c,v 1.65 2008/06/16 22:18:50 mast Exp $
 */
 
 #ifdef HAVE_CONFIG_H
@@ -261,8 +261,7 @@ static void exit_stor(struct object *o)
     s->replace = NULL;
   }
 
-  reset_string_builder(&s->strbuild);
-  free_string(finish_string_builder(&s->strbuild));
+  free_string_builder(&s->strbuild);
 }
 
 static void f_std_feed(INT32 args, ptrdiff_t (*func)(const p_wchar0 *,
