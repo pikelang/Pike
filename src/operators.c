@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.233 2008/05/29 10:11:15 grubba Exp $
+|| $Id: operators.c,v 1.234 2008/06/16 21:52:24 mast Exp $
 */
 
 #include "global.h"
@@ -425,7 +425,12 @@ PMOD_EXPORT void o_cast_to_string(void)
       }
       s = begin_wide_shared_string(a->size, shift);
       switch(shift) {
+      default:
+#ifdef PIKE_DEBUG
+	Pike_fatal("cast: Bad shift: %d.\n", shift);
+	break;
       case 0:
+#endif
 	for(i = a->size; i--; ) {
 	  s->str[i] = a->item[i].u.integer;
 	}
@@ -446,12 +451,6 @@ PMOD_EXPORT void o_cast_to_string(void)
 	  }
 	}
 	break;
-#ifdef PIKE_DEBUG
-      default:
-	free_string(end_shared_string(s));
-	Pike_fatal("cast: Bad shift: %d.\n", shift);
-	break;
-#endif
       }
       s = end_shared_string(s);
       pop_stack();
