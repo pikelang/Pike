@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gssapi.cmod,v 1.5 2008/06/13 19:18:16 mast Exp $
+|| $Id: gssapi.cmod,v 1.6 2008/06/16 10:46:08 mast Exp $
 */
 
 /*
@@ -4563,10 +4563,12 @@ PIKE_MODULE_INIT
 
   INIT;
 
+#ifdef HAVE_GSSAPI
   InitContext_Context_storage_offset =
     low_get_storage (InitContext_program, Context_program);
   AcceptContext_Context_storage_offset =
     low_get_storage (AcceptContext_program, Context_program);
+#endif
 }
 
 PIKE_MODULE_EXIT
