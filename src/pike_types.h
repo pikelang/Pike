@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.h,v 1.118 2008/05/24 15:14:12 grubba Exp $
+|| $Id: pike_types.h,v 1.119 2008/06/16 22:16:53 mast Exp $
 */
 
 #ifndef PIKE_TYPES_H
@@ -224,6 +224,7 @@ void debug_push_finished_type(struct pike_type *type);
 void debug_push_finished_type_backwards(struct pike_type *type);
 void debug_push_scope_type(int level);
 struct pike_type *debug_pop_unfinished_type(void);
+void compiler_discard_type (void);
 struct pike_type *debug_pop_type(void);
 struct pike_type *debug_compiler_pop_type(void);
 struct pike_type *parse_type(const char *s);

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.338 2008/05/24 21:45:10 grubba Exp $
+|| $Id: pike_types.c,v 1.339 2008/06/16 22:16:53 mast Exp $
 */
 
 #include "global.h"
@@ -139,6 +139,16 @@ static void clear_markers(void)
   }
 }
 
+void compiler_discard_type (void)
+{
+  ptrdiff_t len = pop_stack_mark();
+  TYPE_STACK_DEBUG("paranoid_pop_type");
+  for (;len > 0; len--) {
+    /* Get rid of excess junk. */
+    free_type(*(Pike_compiler->type_stackp--));
+  }
+}
+
 struct pike_type *debug_pop_type(void)
 {
   struct pike_type *t = pop_unfinished_type();
@@ -152,19 +162,9 @@ struct pike_type *debug_compiler_pop_type(void)
   TYPE_STACK_DEBUG("compiler_pop_type");
   if(Pike_compiler->num_parse_error)
   {
-    ptrdiff_t len = pop_stack_mark();
     struct pike_type *res;
-
-    TYPE_STACK_DEBUG("paranoid_pop_type");
-    if (len > 0) {
-      for (;len > 1; len--) {
-	/* Get rid of excess junk. */
-	free_type(*(Pike_compiler->type_stackp--));
-      }
-      res = *(Pike_compiler->type_stackp--);
-    } else {
-      add_ref(res = mixed_type_string);
-    }
+    compiler_discard_type();
+    add_ref(res = mixed_type_string);
     type_stack_mark();
     return res;
   }else{

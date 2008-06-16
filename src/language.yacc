@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.430 2008/06/12 15:59:49 grubba Exp $
+|| $Id: language.yacc,v 1.431 2008/06/16 22:16:53 mast Exp $
 */
 
 %pure_parser
@@ -1104,7 +1104,7 @@ def: modifiers optional_attributes type_or_error optional_constant optional_star
   {
     if ($2)
       free_node($2);
-    free_type(compiler_pop_type());
+    compiler_discard_type();
   }
     '(' arguments ')' block_or_semi
   {
