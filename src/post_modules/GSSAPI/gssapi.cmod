@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gssapi.cmod,v 1.8 2008/06/16 11:32:43 mast Exp $
+|| $Id: gssapi.cmod,v 1.9 2008/06/16 14:30:02 mast Exp $
 */
 
 /*
@@ -70,7 +70,7 @@ DECLARATIONS
 #define DEFINE_STATIC_OID(NAME, VALUE)					\
   static const unsigned char PIKE_CONCAT (NAME, _elements)[] = VALUE;	\
   static const gss_OID_desc PIKE_CONCAT (NAME, _desc) = {		\
-    sizeof (PIKE_CONCAT (NAME, _elements)), &PIKE_CONCAT (NAME, _elements) \
+    sizeof (PIKE_CONCAT (NAME, _elements)) - 1, &PIKE_CONCAT (NAME, _elements) \
   };									\
   static const gss_OID_desc * const NAME = &PIKE_CONCAT (NAME, _desc)
 
