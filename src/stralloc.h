@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.h,v 1.105 2008/05/18 15:41:57 grubba Exp $
+|| $Id: stralloc.h,v 1.106 2008/06/16 21:46:34 mast Exp $
 */
 
 #ifndef STRALLOC_H
@@ -282,7 +282,7 @@ PMOD_EXPORT struct pike_string *debug_make_shared_string2(const p_wchar2 *str);
 PMOD_EXPORT void unlink_pike_string(struct pike_string *s);
 PMOD_EXPORT void do_free_string(struct pike_string *s);
 PMOD_EXPORT void do_really_free_string(struct pike_string *s);
-PMOD_EXPORT void do_really_free_pike_string(struct pike_string *s);
+PMOD_EXPORT void do_free_unlinked_pike_string(struct pike_string *s);
 PMOD_EXPORT void really_free_string(struct pike_string *s);
 PMOD_EXPORT void debug_free_string(struct pike_string *s);
 struct pike_string *add_string_status(int verbose);
@@ -407,6 +407,9 @@ PMOD_EXPORT p_wchar1 *require_wstring1(struct pike_string *s,
 PMOD_EXPORT p_wchar2 *require_wstring2(struct pike_string *s,
 			   char **to_free);
 /* Prototypes end here */
+
+/* Compat alias. */
+#define do_really_free_pike_string do_free_unlinked_pike_string
 
 static INLINE void string_builder_binary_strcat(struct string_builder *s,
 						const char *str, ptrdiff_t len)

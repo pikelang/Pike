@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.670 2008/06/01 11:19:45 grubba Exp $
+|| $Id: builtin_functions.c,v 1.671 2008/06/16 21:46:35 mast Exp $
 */
 
 #include "global.h"
@@ -701,7 +701,7 @@ PMOD_EXPORT void f_upper_case(INT32 args)
 	  }
 
 	/* Discard the too narrow string and use the new one instead. */
-	do_really_free_pike_string(ret);
+	do_free_unlinked_pike_string(ret);
 	ret = wret;
 	break;
       }

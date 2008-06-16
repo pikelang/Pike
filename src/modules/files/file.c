@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.390 2008/06/13 17:55:07 grubba Exp $
+|| $Id: file.c,v 1.391 2008/06/16 21:46:35 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -480,7 +480,7 @@ static struct pike_string *do_read(int fd,
 
     str=begin_shared_string(r);
 
-    SET_ONERROR(ebuf, do_really_free_pike_string, str);
+    SET_ONERROR(ebuf, do_free_unlinked_pike_string, str);
 
     do{
       int fd=FD;
@@ -507,7 +507,7 @@ static struct pike_string *do_read(int fd,
 	*err=e;
 	if(!bytes_read)
 	{
-	  do_really_free_pike_string(str);
+	  do_free_unlinked_pike_string(str);
 	  UNSET_ONERROR(ebuf);
 	  return 0;
 	}
@@ -612,7 +612,7 @@ static struct pike_string *do_read_oob(int fd,
 
     str=begin_shared_string(r);
 
-    SET_ONERROR(ebuf, do_really_free_pike_string, str);
+    SET_ONERROR(ebuf, do_free_unlinked_pike_string, str);
 
     do{
       int e;
@@ -639,7 +639,7 @@ static struct pike_string *do_read_oob(int fd,
 	*err=e;
 	if(!bytes_read)
 	{
-	  do_really_free_pike_string(str);
+	  do_free_unlinked_pike_string(str);
 	  UNSET_ONERROR(ebuf);
 	  return 0;
 	}
