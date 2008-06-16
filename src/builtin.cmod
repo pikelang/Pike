@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.205 2008/06/10 20:56:26 mast Exp $
+|| $Id: builtin.cmod,v 1.206 2008/06/16 23:22:10 mast Exp $
 */
 
 #include "global.h"
@@ -2197,9 +2197,18 @@ PIKECLASS multi_string_replace
   PIKEFUN void create(array(string)|mapping(string:string)|void from_arg,
 		      array(string)|string|void to_arg)
   {
-    if (THIS->from) free_array(THIS->from);
-    if (THIS->to) free_array(THIS->to);
-    if (THIS->ctx.v) free_replace_many_context(&THIS->ctx);
+    if (THIS->from) {
+      free_array(THIS->from);
+      THIS->from = NULL;
+    }
+    if (THIS->to) {
+      free_array(THIS->to);
+      THIS->to = NULL;
+    }
+    if (THIS->ctx.v) {
+      free_replace_many_context(&THIS->ctx);
+      THIS->ctx.v = NULL;
+    }
 
     if (!args) {
       push_int(0);
