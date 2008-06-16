@@ -1,7 +1,9 @@
 #! /usr/bin/env pike
 #pike __REAL_VERSION__
 
-/* $Id: test_pike.pike,v 1.134 2008/05/22 21:50:42 mast Exp $ */
+/* $Id: test_pike.pike,v 1.135 2008/06/16 16:15:41 nilsson Exp $ */
+
+constant description = "Executes tests according to testsuite files.";
 
 #if !constant(_verify_internals)
 #define _verify_internals()
