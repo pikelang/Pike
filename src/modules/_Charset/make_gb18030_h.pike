@@ -1,5 +1,5 @@
 //
-// $Id: make_gb18030_h.pike,v 1.4 2006/01/15 15:24:10 grubba Exp $
+// $Id: make_gb18030_h.pike,v 1.5 2008/06/16 22:05:19 mast Exp $
 //
 // Create lookup tables and code for GB18030.
 //
@@ -287,7 +287,7 @@ int main(int argc, array(string) argv)
 			"\n"
 			"#define NUM_GB18030E_INFO %d\n"
 			"\n"
-			"static const struct gb18030e_info * const\n"
+			"static const struct gb18030e_info *\n"
 			"  get_gb18030e_info(p_wchar2 u)\n"
 			"{\n"
 			"  static int last_j;\n"
@@ -344,7 +344,7 @@ int main(int argc, array(string) argv)
 			"  return gb18030e_info + last_j;\n"
 			"}\n"
 			"\n",
-			"$Id: make_gb18030_h.pike,v 1.4 2006/01/15 15:24:10 grubba Exp $",
+			"$Id: make_gb18030_h.pike,v 1.5 2008/06/16 22:05:19 mast Exp $",
 			chmap->get_attributes()->id || "UNKNOWN",
 			chmap->get_attributes()->version || "UNKNOWN",
 			dec_table,
