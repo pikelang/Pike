@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.206 2008/06/16 23:22:10 mast Exp $
+|| $Id: builtin.cmod,v 1.207 2008/06/18 20:50:59 mast Exp $
 */
 
 #include "global.h"
@@ -2226,6 +2226,9 @@ PIKECLASS multi_string_replace
       /* FIXME: Why is from declared |void, when it isn't allowed
        *        to be void?
        *        /grubba 2004-09-02
+       *
+       * It probably has to do with the "if (!args)" above: It should
+       * be possible to create an empty instance. /mast
        */
       if (!from_arg || !to_arg) {
 	Pike_error("Bad number of arguments to create().\n");
