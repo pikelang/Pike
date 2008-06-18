@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.h,v 1.119 2008/06/16 22:16:53 mast Exp $
+|| $Id: pike_types.h,v 1.120 2008/06/18 20:48:09 grubba Exp $
 */
 
 #ifndef PIKE_TYPES_H
@@ -71,13 +71,14 @@ BLOCK_ALLOC(pike_type, n/a);
 #define PT_FLAG_MARK_ASSIGN	0x3ff3ff	/* Assigns AND Markers. */
 
 /*
- * new_check_call() flags
+ * new_check_call() and check_splice_call() flags
  */
-#define CALL_STRICT	0x0001	/* Strict checking. */
-#define CALL_LAST_ARG	0x0002	/* This is the last argument. */
-#define CALL_7_6	0x0004	/* Pike 7.6 compatibility mode. */
-#define CALL_WEAK_VOID	0x0008	/* Allow promotion of void to zero. */
-#define CALL_ARG_LVALUE	0x0010	/* Argument is lvalue (sscanf). */
+#define CALL_STRICT		0x0001	/* Strict checking. */
+#define CALL_LAST_ARG		0x0002	/* This is the last argument. */
+#define CALL_7_6		0x0004	/* Pike 7.6 compatibility mode. */
+#define CALL_WEAK_VOID		0x0008	/* Allow promotion of void to zero. */
+#define CALL_ARG_LVALUE		0x0010	/* Argument is lvalue (sscanf). */
+#define CALL_INHIBIT_WARNINGS	0x0020	/* Inhibit warnings. */
 
 /*
  * soft_cast() flags
@@ -270,6 +271,12 @@ struct pike_type *new_get_return_type(struct pike_type *fun_type,
 				      INT32 flags);
 struct pike_type *get_first_arg_type(struct pike_type *fun_type,
 				     INT32 flags);
+struct pike_type *check_splice_call(struct pike_string *fun_name,
+				    struct pike_type *fun_type,
+				    INT32 argno,
+				    struct pike_type *arg_type,
+				    struct svalue *sval,
+				    INT32 flags);
 struct pike_type *new_check_call(struct pike_string *fun_name,
 				 struct pike_type *fun_type,
 				 node *args, INT32 *argno, INT32 flags);

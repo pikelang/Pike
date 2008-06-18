@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.339 2008/06/16 22:16:53 mast Exp $
+|| $Id: pike_types.c,v 1.340 2008/06/18 20:48:08 grubba Exp $
 */
 
 #include "global.h"
@@ -6662,6 +6662,73 @@ struct pike_type *get_first_arg_type(struct pike_type *fun_type,
 }
 
 /* NOTE: fun_type loses a reference. */
+struct pike_type *check_splice_call(struct pike_string *fun_name,
+				    struct pike_type *fun_type,
+				    INT32 argno,
+				    struct pike_type *arg_type,
+				    struct svalue *sval,
+				    INT32 flags)
+{
+  struct compilation *c = THIS_COMPILATION;
+  struct pike_type *tmp = NULL;
+  struct pike_type *res = NULL;
+  struct pike_type *prev = fun_type;
+  int cnt = 256;
+  /* This argument can expand to anything between zero and MAX_ARGS args. */
+
+  copy_pike_type(res, fun_type);
+
+  /* Loop until we get a stable fun_type, or it's an invalid argument. */
+  while ((fun_type = low_new_check_call(debug_malloc_pass(prev),
+					debug_malloc_pass(arg_type),
+					flags, sval)) &&
+	 (fun_type != prev) && --cnt) {
+
+#ifdef PIKE_DEBUG
+    if (l_flag>4) {
+      fprintf(stderr, "\n    sub_result_type: ");
+      simple_describe_type(fun_type);
+    }
+#endif /* PIKE_DEBUG */
+
+    res = dmalloc_touch(struct pike_type *,
+			or_pike_types(debug_malloc_pass(tmp = res),
+				      debug_malloc_pass(fun_type), 1));
+#ifdef PIKE_DEBUG
+    if (l_flag>4) {
+      fprintf(stderr, "\n    joined_type: ");
+      simple_describe_type(res);
+    }
+#endif /* PIKE_DEBUG */
+
+    if ((res == tmp) || (res == fun_type)) {
+      free_type(tmp);
+      break;
+    }
+    free_type(tmp);
+
+    free_type(prev);
+    prev = fun_type;
+  }
+  free_type(prev);
+  if (fun_type) {
+    /* Max args reached or stable type. */
+    free_type(fun_type);
+  } else if (!(flags & CALL_INHIBIT_WARNINGS)) {
+    /* The splice values are invalid for later arguments. */
+    if (cnt == 256) {
+      yywarning("In argument %d to %S: The @-operator argument must be an empty array.",
+		argno, fun_name);
+    } else if (c->lex.pragmas & ID_STRICT_TYPES) {
+      yywarning("In argument %d to %S: The @-operator argument has a max length of %d.",
+		argno, fun_name, 256-cnt);
+    }
+  }
+
+  return res;
+}
+
+/* NOTE: fun_type loses a reference. */
 struct pike_type *new_check_call(struct pike_string *fun_name,
 				 struct pike_type *fun_type,
 				 node *args, INT32 *argno, INT32 flags)
@@ -6713,64 +6780,14 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
   }
 
   if (args->token == F_PUSH_ARRAY) {
-    struct pike_type *prev = fun_type;
-    int cnt = 256;
-    /* This token can expand to anything between zero and MAX_ARGS args. */
-
 #ifdef PIKE_DEBUG
     if (l_flag>2) {
       fprintf(stderr, "\n  The argument is a splice operator.\n");
     }
 #endif /* PIKE_DEBUG */
 
-    copy_pike_type(res, fun_type);
-
-    /* Loop until we get a stable fun_type, or it's an invalid argument. */
-    while ((fun_type = low_new_check_call(debug_malloc_pass(prev),
-					  debug_malloc_pass(args->type),
-					  flags, sval)) &&
-	   (fun_type != prev) && --cnt) {
-
-#ifdef PIKE_DEBUG
-      if (l_flag>4) {
-	fprintf(stderr, "\n    sub_result_type: ");
-	simple_describe_type(fun_type);
-      }
-#endif /* PIKE_DEBUG */
-
-      res = dmalloc_touch(struct pike_type *,
-			  or_pike_types(debug_malloc_pass(tmp = res),
-					debug_malloc_pass(fun_type), 1));
-#ifdef PIKE_DEBUG
-      if (l_flag>4) {
-	fprintf(stderr, "\n    joined_type: ");
-	simple_describe_type(res);
-      }
-#endif /* PIKE_DEBUG */
-
-      if ((res == tmp) || (res == fun_type)) {
-	free_type(tmp);
-	break;
-      }
-      free_type(tmp);
-
-      free_type(prev);
-      prev = fun_type;
-    }
-    free_type(prev);
-    if (fun_type) {
-      /* Max args reached or stable type. */
-      free_type(fun_type);
-    } else {
-      /* The splice values are invalid for later arguments. */
-      if (cnt == 256) {
-	yywarning("In argument %d to %S: The @-operator argument must be an empty array.",
-		  *argno, fun_name);
-      } else if (c->lex.pragmas & ID_STRICT_TYPES) {
-	yywarning("In argument %d to %S: The @-operator argument has a max length of %d.",
-		  *argno, fun_name, 256-cnt);
-      }
-    }
+    res = check_splice_call(fun_name, fun_type, *argno,
+			    args->type, sval, flags);
 
 #ifdef PIKE_DEBUG
     if (l_flag>2) {
