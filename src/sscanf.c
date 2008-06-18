@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sscanf.c,v 1.184 2008/05/24 15:14:12 grubba Exp $
+|| $Id: sscanf.c,v 1.185 2008/06/18 08:41:30 grubba Exp $
 */
 
 #include "global.h"
@@ -1702,7 +1702,7 @@ static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
 	      push_type(PIKE_T_ZERO);
 	    } else {
 	      /* Join the argument types. */
-	      while (depth > 2) {
+	      while (depth > 1) {
 		push_type(T_OR);
 		depth--;
 	      }
@@ -1863,6 +1863,12 @@ void f___handle_sscanf_format(INT32 args)
   fmt = Pike_sp[-3].u.string;
   MAKE_CONST_STRING(attr, "sscanf_args");  
 
+#if 0
+  fprintf(stderr, "Checking sscanf format: \"%s\": ", fmt->str);
+  simple_describe_type(Pike_sp[-1].u.type);
+  fprintf(stderr, "\n");
+#endif /* 0 */
+
   type_stack_mark();
   type_stack_mark();
   for (; tmp; tmp = tmp->cdr) {
@@ -1907,13 +1913,18 @@ void f___handle_sscanf_format(INT32 args)
 	res = pop_unfinished_type();
 	pop_n_elems(args);
 	push_type_value(res);
+#if 0
+	fprintf(stderr, " ==> ");
+	simple_describe_type(res);
+	fprintf(stderr, "\n");
+#endif /* 0 */
 	return;
       } else {
 	if (!(fmt_count = pop_stack_mark())) {
 	  push_type(PIKE_T_ZERO);
 	} else {
 	  /* Join the argument types into the array. */
-	  while (fmt_count > 2) {
+	  while (fmt_count > 1) {
 	    push_type(T_OR);
 	    fmt_count--;
 	  }
@@ -1946,6 +1957,11 @@ void f___handle_sscanf_format(INT32 args)
     res = pop_unfinished_type();
     pop_n_elems(args);
     push_type_value(res);
+#if 0
+    fprintf(stderr, " ==> ");
+    simple_describe_type(res);
+    fprintf(stderr, "\n");
+#endif /* 0 */
     return;
   } else if (tmp) {
     /* Check if it's in the return type. */
@@ -1995,13 +2011,17 @@ void f___handle_sscanf_format(INT32 args)
       res = pop_unfinished_type();
       pop_n_elems(args);
       push_type_value(res);
+#if 0
+      fprintf(stderr, " ==> ");
+      simple_describe_type(res);
+      fprintf(stderr, "\n");
+#endif /* 0 */
       return;
     }
   }
 
   /* No marker found. */
 #if 0
-  simple_describe_type(Pike_sp[-1].u.type);
   fprintf(stderr, " ==> No marker found.\n");
 #endif /* 0 */
   pop_stack_mark();
