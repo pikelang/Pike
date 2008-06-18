@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.672 2008/06/18 09:35:13 grubba Exp $
+|| $Id: builtin_functions.c,v 1.673 2008/06/18 21:51:41 grubba Exp $
 */
 
 #include "global.h"
@@ -9131,14 +9131,22 @@ void init_builtin_efuns(void)
 
   ADD_EFUN("hash_value",f_hash_value,tFunc(tMix,tInt),OPT_TRY_OPTIMIZE);
 
-/* function(string|array:int*)|function(mapping(1=mixed:mixed)|multiset(1=mixed):array(1))|function(object|program:string*) */
   ADD_EFUN2("indices",f_indices,
-	    tOr3(tFunc(tArray,tArr(tIntPos)),
-		 tFunc(tOr3(tMap(tSetvar(1,tMix),tMix),
-			    tSet(tSetvar(1,tMix)),
-			    tNStr(tSetvar(1,tMix))),
-		       tArr(tVar(1))),
-		 tFunc(tOr(tObj,tPrg(tObj)),tArr(tStr))),
+#if 0
+	    tIfnot(tFuncV(tNone,tNot(tOr6(tArray, tMap(tMix, tMix), tSet(tMix),
+					  tStr, tObj, tPrg(tObj))),
+			  tNot(tArr(tMix))),
+#endif /* 0 */
+		   tOr3(tFunc(tArray,tArr(tIntPos)),
+			tFunc(tOr3(tMap(tSetvar(1,tMix),tMix),
+				   tSet(tSetvar(1,tMix)),
+				   tNStr(tSetvar(1,tInt))),
+			      tArr(tVar(1))),
+			tFunc(tOr(tObj,tPrg(tObj)),tArr(tStr)))
+#if 0
+		   )
+#endif /* 0 */
+	    ,
 	    OPT_TRY_OPTIMIZE,fix_indices_type,0);
 
   ADD_EFUN("undefinedp", f_undefinedp, tFunc(tMix,tInt01), OPT_TRY_OPTIMIZE);
