@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.671 2008/06/16 21:46:35 mast Exp $
+|| $Id: builtin_functions.c,v 1.672 2008/06/18 09:35:13 grubba Exp $
 */
 
 #include "global.h"
@@ -9133,10 +9133,12 @@ void init_builtin_efuns(void)
 
 /* function(string|array:int*)|function(mapping(1=mixed:mixed)|multiset(1=mixed):array(1))|function(object|program:string*) */
   ADD_EFUN2("indices",f_indices,
-	   tOr3(tFunc(tOr(tStr,tArray),tArr(tInt)),
-		tFunc(tOr(tMap(tSetvar(1,tMix),tMix),tSet(tSetvar(1,tMix))),
-		      tArr(tVar(1))),
-		tFunc(tOr(tObj,tPrg(tObj)),tArr(tStr))),
+	    tOr3(tFunc(tArray,tArr(tIntPos)),
+		 tFunc(tOr3(tMap(tSetvar(1,tMix),tMix),
+			    tSet(tSetvar(1,tMix)),
+			    tNStr(tSetvar(1,tMix))),
+		       tArr(tVar(1))),
+		 tFunc(tOr(tObj,tPrg(tObj)),tArr(tStr))),
 	    OPT_TRY_OPTIMIZE,fix_indices_type,0);
 
   ADD_EFUN("undefinedp", f_undefinedp, tFunc(tMix,tInt01), OPT_TRY_OPTIMIZE);
