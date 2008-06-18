@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.431 2008/06/16 22:16:53 mast Exp $
+|| $Id: language.yacc,v 1.432 2008/06/18 17:10:32 grubba Exp $
 */
 
 %pure_parser
@@ -59,6 +59,7 @@
 %token TOK_GAUGE
 %token TOK_GLOBAL
 %token TOK_IDENTIFIER
+%token TOK_RESERVED
 %token TOK_IF
 %token TOK_IMPORT
 %token TOK_INHERIT
@@ -291,6 +292,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> optional_identifier
 %type <n> implicit_identifier
 %type <n> TOK_IDENTIFIER
+%type <n> TOK_RESERVED
 %type <n> TOK_VERSION
 %type <n> attribute
 %type <n> assoc_pair
@@ -606,34 +608,36 @@ constant_name: TOK_IDENTIFIER '=' safe_expr0
 
     if(!is_const($3))
     {
-      if(Pike_compiler->compiler_pass==2) {
-	int depth = 0;
-	struct program_state *state = Pike_compiler;
-	node *n = $3;
-	while (((n->token == F_COMMA_EXPR) || (n->token == F_ARG_LIST)) &&
-	       ((!CAR(n)) ^ (!CDR(n)))) {
-	  if (CAR(n)) n = CAR(n);
-	  else n = CDR(n);
+      int depth = 0;
+      struct program_state *state = Pike_compiler;
+      node *n = $3;
+      while (((n->token == F_COMMA_EXPR) || (n->token == F_ARG_LIST)) &&
+	     ((!CAR(n)) ^ (!CDR(n)))) {
+	if (CAR(n)) n = CAR(n);
+	else n = CDR(n);
+      }
+      if (n->token == F_EXTERNAL) {
+	while (state && (state->new_program->id != n->u.integer.a)) {
+	  depth++;
+	  state = state->previous;
 	}
-	if (n->token == F_EXTERNAL) {
-	  while (state && (state->new_program->id != n->u.integer.a)) {
-	    depth++;
-	    state = state->previous;
-	  }
-	}
-	if (depth && state) {
-	  /* Alias for a symbol in a surrounding scope. */
-	  int id = really_low_reference_inherited_identifier(state, 0,
-							     n->u.integer.b);
-	  define_alias($1->u.sval.u.string, n->type,
-		       Pike_compiler->current_modifiers & ~ID_EXTERN,
-		       depth, id);
-	} else {
-	  yyerror("Constant definition is not constant.");
-	}
-      } else
-	add_constant($1->u.sval.u.string, 0,
+      }
+      if (depth && state) {
+	/* Alias for a symbol in a surrounding scope. */
+	int id = really_low_reference_inherited_identifier(state, 0,
+							   n->u.integer.b);
+	define_alias($1->u.sval.u.string, n->type,
+		     Pike_compiler->current_modifiers & ~ID_EXTERN,
+		     depth, id);
+      } else if (Pike_compiler->compiler_pass == 2) {
+	yyerror("Constant definition is not constant.");
+      } else {
+	/* Place holder. */
+	push_undefined();
+	add_constant($1->u.sval.u.string, Pike_sp-1,
 		     Pike_compiler->current_modifiers & ~ID_EXTERN);
+	pop_stack();
+      }
     } else {
       if(!Pike_compiler->num_parse_error)
       {
@@ -1297,7 +1301,7 @@ magic_identifiers3:
 
 magic_identifiers: magic_identifiers1 | magic_identifiers2 | magic_identifiers3 ;
 
-magic_identifier: TOK_IDENTIFIER 
+magic_identifier: TOK_IDENTIFIER | TOK_RESERVED
   | magic_identifiers
   {
     struct pike_string *tmp=make_shared_string($1);
@@ -3893,6 +3897,14 @@ low_idents: TOK_IDENTIFIER
     }
     free_node($1);
   }
+  | TOK_RESERVED
+  {
+    ref_push_string($1->u.sval.u.string);
+    low_yyreport(REPORT_ERROR, NULL, 0, parser_system_string,
+		 1, "Unknown reserved symbol %s.");
+    free_node($1);
+    $$ = 0;
+  }
   | TOK_PREDEF TOK_COLON_COLON TOK_IDENTIFIER
   {
     struct compilation *c = THIS_COMPILATION;
@@ -4309,6 +4321,13 @@ bad_identifier: bad_expr_ident
   { yyerror_reserved("typedef"); }
   | TOK_VOID_ID
   { yyerror_reserved("void"); }
+  | TOK_RESERVED
+  {
+    ref_push_string($1->u.sval.u.string);
+    low_yyreport(REPORT_ERROR, NULL, 0, parser_system_string,
+		 1, "Unknown reserved symbol %s.");
+    free_node($1);
+  }
   ;
 
 bad_expr_ident:
