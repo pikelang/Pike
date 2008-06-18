@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.340 2008/06/18 20:48:08 grubba Exp $
+|| $Id: pike_types.c,v 1.341 2008/06/18 21:49:51 grubba Exp $
 */
 
 #include "global.h"
@@ -1927,14 +1927,19 @@ void simple_describe_type(struct pike_type *s)
 	  } else if (s != int_type_string) {
 	    fprintf(stderr, "(");
 	    while (s->type == T_OR) {
+	      struct pike_type *char_type = s->car;
+	      while(char_type->type == T_ASSIGN) {
+		char_type = char_type->cdr;
+	      }
+
 #ifdef PIKE_DEBUG
-	      if (s->car->type != T_INT) {
+	      if (char_type->type != T_INT) {
 		Pike_fatal("Invalid node type (%d:%s) in string type.\n",
-			   s->car->type, get_name_of_type(s->car->type));
+			   char_type->type, get_name_of_type(char_type->type));
 	      }
 #endif /* PIKE_DEBUG */
-	      min = CAR_TO_INT(s->car);
-	      max = CDR_TO_INT(s->car);
+	      min = CAR_TO_INT(char_type);
+	      max = CDR_TO_INT(char_type);
 	      if (min != MIN_INT32) {
 		fprintf(stderr, "%d", min);
 	      }
@@ -1943,6 +1948,9 @@ void simple_describe_type(struct pike_type *s)
 		fprintf(stderr, "%d", max);
 	      }
 	      fprintf(stderr, " | ");
+	      s = s->cdr;
+	    }
+	    while(s->type == T_ASSIGN) {
 	      s = s->cdr;
 	    }
 #ifdef PIKE_DEBUG
@@ -2164,14 +2172,18 @@ static void low_describe_type(struct pike_type *t)
 	} else if (t != int_type_string) {
 	  my_strcat("(");
 	  while (t->type == T_OR) {
+	    struct pike_type *char_type = t->car;
+	    while(char_type->type == T_ASSIGN) {
+	      char_type = char_type->cdr;
+	    }
 #ifdef PIKE_DEBUG
-	    if (t->car->type != T_INT) {
+	    if (char_type->type != T_INT) {
 	      Pike_fatal("Invalid node type (%d:%s) in string type.\n",
-			 t->car->type, get_name_of_type(t->car->type));
+			 char_type->type, get_name_of_type(char_type->type));
 	    }
 #endif /* PIKE_DEBUG */
-	    min = CAR_TO_INT(t->car);
-	    max = CDR_TO_INT(t->car);
+	    min = CAR_TO_INT(char_type);
+	    max = CDR_TO_INT(char_type);
 	    if (min != MIN_INT32) {
 	      sprintf(buffer, "%d", min);
 	      my_strcat(buffer);
@@ -2182,6 +2194,9 @@ static void low_describe_type(struct pike_type *t)
 	      my_strcat(buffer);
 	    }
 	    my_strcat(" | ");
+	    t = t->cdr;
+	  }
+	  while(t->type == T_ASSIGN) {
 	    t = t->cdr;
 	  }
 #ifdef PIKE_DEBUG
