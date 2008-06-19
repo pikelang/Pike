@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.432 2008/06/18 17:10:32 grubba Exp $
+|| $Id: language.yacc,v 1.433 2008/06/19 07:35:58 grubba Exp $
 */
 
 %pure_parser
@@ -608,36 +608,35 @@ constant_name: TOK_IDENTIFIER '=' safe_expr0
 
     if(!is_const($3))
     {
-      int depth = 0;
-      struct program_state *state = Pike_compiler;
-      node *n = $3;
-      while (((n->token == F_COMMA_EXPR) || (n->token == F_ARG_LIST)) &&
-	     ((!CAR(n)) ^ (!CDR(n)))) {
-	if (CAR(n)) n = CAR(n);
-	else n = CDR(n);
-      }
-      if (n->token == F_EXTERNAL) {
-	while (state && (state->new_program->id != n->u.integer.a)) {
-	  depth++;
-	  state = state->previous;
+      /* FIXME: Adding symbols in the second pass is not a good idea. */
+      if(Pike_compiler->compiler_pass==2) {
+	int depth = 0;
+	struct program_state *state = Pike_compiler;
+	node *n = $3;
+	while (((n->token == F_COMMA_EXPR) || (n->token == F_ARG_LIST)) &&
+	       ((!CAR(n)) ^ (!CDR(n)))) {
+	  if (CAR(n)) n = CAR(n);
+	  else n = CDR(n);
 	}
-      }
-      if (depth && state) {
-	/* Alias for a symbol in a surrounding scope. */
-	int id = really_low_reference_inherited_identifier(state, 0,
-							   n->u.integer.b);
-	define_alias($1->u.sval.u.string, n->type,
-		     Pike_compiler->current_modifiers & ~ID_EXTERN,
-		     depth, id);
-      } else if (Pike_compiler->compiler_pass == 2) {
-	yyerror("Constant definition is not constant.");
-      } else {
-	/* Place holder. */
-	push_undefined();
-	add_constant($1->u.sval.u.string, Pike_sp-1,
+	if (n->token == F_EXTERNAL) {
+	  while (state && (state->new_program->id != n->u.integer.a)) {
+	    depth++;
+	    state = state->previous;
+	  }
+	}
+	if (depth && state) {
+	  /* Alias for a symbol in a surrounding scope. */
+	  int id = really_low_reference_inherited_identifier(state, 0,
+							     n->u.integer.b);
+	  define_alias($1->u.sval.u.string, n->type,
+		       Pike_compiler->current_modifiers & ~ID_EXTERN,
+		       depth, id);
+	} else {
+	  yyerror("Constant definition is not constant.");
+	}
+      } else
+	add_constant($1->u.sval.u.string, 0,
 		     Pike_compiler->current_modifiers & ~ID_EXTERN);
-	pop_stack();
-      }
     } else {
       if(!Pike_compiler->num_parse_error)
       {
