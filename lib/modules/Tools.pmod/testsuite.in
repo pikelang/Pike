@@ -1,5 +1,5 @@
 START_MARKER
-// $Id: testsuite.in,v 1.26 2008/06/12 16:57:43 nilsson Exp $
+// $Id: testsuite.in,v 1.27 2008/06/19 22:11:04 nilsson Exp $
 
 // Tools.Hilfe
 define(test_hilfe_setup_low,[[test_do([[
@@ -212,4 +212,17 @@ test_eval_error([[ Tools.Legal.Copyright.add( "Basun", ({ "Muckey Mice" }) ); ]]
 test_equal([[ Tools.Legal.Copyright.get_all()->Basun ]], [[ ({ "Dunald Dock" }) ]])
 
 test_true([[ stringp( Tools.Legal.License.get_text() ) ]])
+
+test_any([[
+  int ret=1;
+  foreach(indices(Tools.Standalone);; string name)
+    if( programp(Tools.Standalone[name]) &&
+        !stringp(Tools.Standalone[name]()->description) )
+    {
+      ret=0;
+      werror("Missing description for %O.\n",name);
+    }
+  return ret;
+]], 1)
+
 END_MARKER
