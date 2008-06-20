@@ -1,9 +1,10 @@
 #! /usr/bin/env pike
-// -*- pike -*- $Id: rsif.pike,v 1.7 2007/01/29 00:31:32 peter Exp $
+// -*- pike -*- $Id: rsif.pike,v 1.8 2008/06/20 19:05:37 srb Exp $
 
 #pike __REAL_VERSION__
 
-constant version = ("$Revision: 1.7 $"/" ")[1];
+constant version =
+ sprintf("%d.%d.%d",(int)__REAL_VERSION__,__REAL_MINOR__,__REAL_BUILD__);
 constant description = "Replaces strings in files.";
 int(0..1) verbosity = 1; // more output
 int(0..1) overwrite = 1; // no backups

@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 // -*- Pike -*-
-// $Id: cgrep.pike,v 1.12 2007/09/16 14:49:14 nilsson Exp $
+// $Id: cgrep.pike,v 1.13 2008/06/20 19:05:37 srb Exp $
 
 #pike __REAL_VERSION__
 
@@ -336,7 +336,7 @@ Output control:
       --summarize           print a summary of the number of matches
 ";
 
-constant version = #"cgrep $Revision: 1.12 $
+constant version = sprintf(#"cgrep %d.%d.%d
 A token based grep with UI stolen from GNU grep.
 By Martin Nilsson 2003.
-";
+",(int)__REAL_VERSION__,__REAL_MINOR__,__REAL_BUILD__);

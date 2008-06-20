@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: make_wxs.pike,v 1.3 2005/07/22 20:16:56 nilsson Exp $
+ * $Id: make_wxs.pike,v 1.4 2008/06/20 19:05:37 srb Exp $
  *
  * Make a Wix modules source XML file from an existing set of
  * directories or files.
@@ -34,7 +34,8 @@ int main(int argc, array(string) argv)
       if (stringp(opt[1])) {
 	version_str = opt[1];
       } else {
-	write("$Revision: 1.3 $\n");
+	write("%d.%d.%d\n",
+	 (int)__REAL_VERSION__,__REAL_MINOR__,__REAL_BUILD__);
 	exit(0);
       }
       break;

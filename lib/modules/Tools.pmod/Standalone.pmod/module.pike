@@ -1,10 +1,11 @@
 // -*- Pike -*-
 
-// $Id: module.pike,v 1.24 2004/04/21 14:51:42 nilsson Exp $
+// $Id: module.pike,v 1.25 2008/06/20 19:05:37 srb Exp $
 
 #pike __REAL_VERSION__
 
-constant version = ("$Revision: 1.24 $"/" ")[1];
+constant version =
+ sprintf("%d.%d.%d",(int)__REAL_VERSION__,__REAL_MINOR__,__REAL_BUILD__);
 constant description = "Pike module installer.";
 
 // Source directory
