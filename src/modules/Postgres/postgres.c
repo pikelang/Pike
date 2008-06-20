@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: postgres.c,v 1.55 2008/01/26 22:34:26 mast Exp $
+|| $Id: postgres.c,v 1.56 2008/06/20 16:59:16 srb Exp $
 */
 
 /*
@@ -243,8 +243,8 @@ static void f_create (INT32 args)
 		     &pass,
 		     &port_no);
 
-	if (port_no != -1) {
-	  if ((port_no >= 0) && (port_no < 65536)) {
+	if (port_no > 0) {
+	  if (port_no < 65536) {
 	    sprintf(port = port_buffer, "%d", port_no);
 	  } else {
 	    SIMPLE_ARG_TYPE_ERROR("create", 5, "int(0..65535)");
