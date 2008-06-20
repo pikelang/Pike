@@ -1,10 +1,11 @@
 #! /usr/bin/pike
-// -*- pike -*- $Id: process_files.pike,v 1.4 2007/03/03 21:47:13 nilsson Exp $
+// -*- pike -*- $Id: process_files.pike,v 1.5 2008/06/20 16:24:19 srb Exp $
 #pike __REAL_VERSION__
 
 #ifdef SUGGESTED_MODE_OF_USAGE
 inherit Toole.Standalone.process_files;
-string version = ("$Revision: 1.4 $"/" ")[1];
+string version =
+ sprintf("%d.%d.%d",(int)__REAL_VERSION__,__REAL_MINOR__,__REAL_BUILD__);
 string description = "One-liner tool description for plain \"pike -x\" here.";
 string usage = #"Long usage description here; see rsif.pike for inspiration";
 int want_args = 2; // rsif takes 2; how many do you want? This one wants two:
@@ -34,7 +35,8 @@ string version;
 //! suggest you set the contents of this variable to something that that will
 //! automatically expand to a number for every new revision, for instance
 //! @example
-//!   string version = ("$Revision: 1.4 $"/" ")[1];
+//!   string version =
+//!    sprintf("%d.%d.%d",(int)__REAL_VERSION__,__REAL_MINOR__,__REAL_BUILD__);
 
 string description = "Boilerplate for making rsif-like tools.";
 //! One-liner that gets shown for this tool when running @tt{pike -x@}

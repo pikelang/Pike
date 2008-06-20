@@ -3,7 +3,8 @@
 
 int DEBUG=1;
 
-constant version = ("$Revision: 1.5 $"/" ")[1];
+constant version =
+ sprintf("%d.%d.%d",(int)__REAL_VERSION__,__REAL_MINOR__,__REAL_BUILD__);
 constant description = "Pike packaged module (PMAR) installer.";
 
 int forcing;

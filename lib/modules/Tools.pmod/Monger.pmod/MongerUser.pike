@@ -1,10 +1,11 @@
 // -*- Pike -*-
 
-// $Id: MongerUser.pike,v 1.6 2008/05/07 17:50:14 bill Exp $
+// $Id: MongerUser.pike,v 1.7 2008/06/20 16:24:18 srb Exp $
 
 #pike __REAL_VERSION__
 
-constant version = ("$Revision: 1.6 $"/" ")[1];
+constant version =
+ sprintf("%d.%d.%d",(int)__REAL_VERSION__,__REAL_MINOR__,__REAL_BUILD__);
 constant description = "Monger: the Pike module manger.";
 
 string repository = "http://modules.gotpike.org:8000/xmlrpc/index.pike";

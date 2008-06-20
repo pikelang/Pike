@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.111 2008/05/23 18:14:10 grubba Exp $
+// $Id: client.pike,v 1.112 2008/06/20 16:24:18 srb Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -663,7 +663,9 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
   void create(string|mapping(string:mixed)|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.111 $"/" ")[1] ]);
+    info = ([ "code_revision" :
+      sprintf("%d.%d.%d",(int)__REAL_VERSION__,__REAL_MINOR__,__REAL_BUILD__)
+    ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
