@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.719 2008/06/10 13:56:51 grubba Exp $
+|| $Id: program.c,v 1.720 2008/06/23 16:41:02 mast Exp $
 */
 
 #include "global.h"
@@ -3770,7 +3770,7 @@ PMOD_EXPORT void set_exit_callback(void (*exit)(struct object *))
  * the C level then you should add something like this to the recurse
  * callback so that Pike.count_memory remains accurate:
  *
- *   if (mc_count_bytes (Pike_fp->current_storage))
+ *   if (mc_count_bytes (Pike_fp->current_object))
  *     mc_counted_bytes += <size of the allocated memory block(s)>
  *
  * If the allocated memory is shared between objects then it gets more

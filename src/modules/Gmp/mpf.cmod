@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpf.cmod,v 1.37 2008/05/29 21:58:44 mast Exp $
+|| $Id: mpf.cmod,v 1.38 2008/06/23 16:41:03 mast Exp $
 */
 
 #include "global.h"
@@ -903,7 +903,7 @@ PIKECLASS mpf
 
   GC_RECURSE
   {
-    if (mc_count_bytes (THIS))
+    if (mc_count_bytes (Pike_fp->current_object))
       /* FIXME: Should count the allocated size. */
       mc_counted_bytes += (mpf_get_prec (THISMPF) + 7) / 8 + sizeof (mpf_t);
   }
