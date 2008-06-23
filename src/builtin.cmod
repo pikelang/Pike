@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.208 2008/06/19 14:23:47 mast Exp $
+|| $Id: builtin.cmod,v 1.209 2008/06/23 16:03:23 mast Exp $
 */
 
 #include "global.h"
@@ -2348,10 +2348,16 @@ PIKECLASS single_string_replace
   CVAR struct pike_string *del;
   CVAR struct pike_string *to;
 
+  EXTRA
+  {
+    MAP_VARIABLE ("o", tObj, ID_STATIC|ID_PRIVATE,
+		  single_string_replace_storage_offset +
+		  OFFSETOF (single_string_replace_struct, mojt.container),
+		  T_OBJECT);
+  }
+
   INIT
   {
-    THIS->mojt.vtab = NULL;
-    THIS->mojt.data = NULL;
     THIS->del = NULL;
     THIS->to = NULL;
   }
@@ -2359,11 +2365,6 @@ PIKECLASS single_string_replace
   EXIT
     gc_trivial;
   {
-    if (THIS->mojt.vtab) {
-      THIS->mojt.vtab->freeme(THIS->mojt.data);
-      THIS->mojt.vtab = NULL;
-      THIS->mojt.data = NULL;
-    }
     if (THIS->del) {
       free_string(THIS->del);
       THIS->del = NULL;
