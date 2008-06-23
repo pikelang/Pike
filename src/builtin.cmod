@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.209 2008/06/23 16:03:23 mast Exp $
+|| $Id: builtin.cmod,v 1.210 2008/06/23 16:49:40 mast Exp $
 */
 
 #include "global.h"
@@ -2169,6 +2169,12 @@ PIKECLASS Buffer
       if( str->str.s )
 	free_string_builder( &str->str );
     }
+
+  GC_RECURSE
+  {
+    if (mc_count_bytes (Pike_fp->current_object) && THIS->str.s)
+      mc_counted_bytes += THIS->str.malloced;
+  }
 }
 
 /*! @endclass
@@ -2345,8 +2351,8 @@ PIKECLASS multi_string_replace
 PIKECLASS single_string_replace
 {
   CVAR SearchMojt mojt;
-  CVAR struct pike_string *del;
-  CVAR struct pike_string *to;
+  PIKEVAR string del flags ID_STATIC|ID_PRIVATE;
+  PIKEVAR string to flags ID_STATIC|ID_PRIVATE;
 
   EXTRA
   {
@@ -2356,14 +2362,12 @@ PIKECLASS single_string_replace
 		  T_OBJECT);
   }
 
-  INIT
-  {
-    THIS->del = NULL;
-    THIS->to = NULL;
-  }
-
-  EXIT
-    gc_trivial;
+  /*! @decl void create(string|void from, string|void to)
+   *!
+   *! @note
+   *!   May be called with either zero or two arguments.
+   */
+  PIKEFUN void create(string|void del, string|void to)
   {
     if (THIS->del) {
       free_string(THIS->del);
@@ -2373,18 +2377,7 @@ PIKECLASS single_string_replace
       free_string(THIS->to);
       THIS->to = NULL;
     }
-  }
 
-  /*! @decl void create(string|void from, string|void to)
-   *!
-   *! @note
-   *!   May be called with either zero or two arguments.
-   */
-  PIKEFUN void create(string|void del, string|void to)
-  {
-    /* Clean up... */
-    exit_single_string_replace_struct();
-    
     if (!del) return;
 
     if (!to) {
@@ -3251,6 +3244,7 @@ PIKECLASS List
    *   o _sizeof()?, _indices()??
    *   o Support for reverse(), filter() and map().
    *   o Initialization from array.
+   *   o Support for Pike.count_memory.
    */
 
   INIT
@@ -3322,6 +3316,7 @@ PIKECLASS List
       gc_recurse_svalues(&node->val, 1);
       node = next;
     }
+    /* FIXME: mc_count_bytes */
   }
 
   /*! @decl int(0..1) is_empty()
