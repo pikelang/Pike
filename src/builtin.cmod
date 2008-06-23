@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.210 2008/06/23 16:49:40 mast Exp $
+|| $Id: builtin.cmod,v 1.211 2008/06/23 19:04:35 mast Exp $
 */
 
 #include "global.h"
@@ -1866,8 +1866,6 @@ PIKEFUN array(mixed) backtrace()
   low_backtrace(& Pike_interpreter);
 }
 
-#define INITIAL_BUF_LEN 4096
-
 /*! @module String
  */
 
@@ -1921,10 +1919,7 @@ PIKECLASS Buffer
     if( args )
       str->initial = MAXIMUM( size->u.integer, 512 );
     else
-    {
       str->initial = 256;
-      push_int(0);
-    }
   }
 
   /*! @decl string _sprintf( int flag, mapping flags )
@@ -2050,9 +2045,10 @@ PIKECLASS Buffer
 	sum += a->len;
 	shift |= a->size_shift;
       }
-      if (sum < str->initial) {
-	sum = str->initial * 2;
-      }
+      if (sum < str->initial)
+	sum = str->initial;
+      else if (sum > str->initial)
+	sum <<= 1;
       shift = shift & ~(shift >> 1);
 
       if (shift == Pike_sp[-args].u.string->size_shift &&
@@ -2138,7 +2134,7 @@ PIKECLASS Buffer
     {
       struct pike_string *s = finish_string_builder( &str->str );
       str->str.malloced = 0;
-      str->str.s = 0;
+      str->str.s = NULL;
       RETURN s;
     }
     pop_n_elems(args);
