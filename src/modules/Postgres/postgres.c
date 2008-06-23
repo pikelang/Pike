@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: postgres.c,v 1.58 2008/06/23 08:37:22 srb Exp $
+|| $Id: postgres.c,v 1.59 2008/06/23 14:24:09 srb Exp $
 */
 
 /*
@@ -343,7 +343,9 @@ static void f_select_db (INT32 args)
 	THREADS_DISALLOW();
 	if (PQstatus(conn)==CONNECTION_BAD) {
 		set_error(PQerrorMessage(conn));
+		PQ_LOCK();
 		PQfinish(conn);
+		PQ_UNLOCK();
 		Pike_error("Could not connect to database.\n");
 		conn=NULL;
 	}
