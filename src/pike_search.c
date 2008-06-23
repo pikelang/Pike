@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_search.c,v 1.29 2008/05/11 22:25:31 mast Exp $
+|| $Id: pike_search.c,v 1.30 2008/06/23 16:02:25 mast Exp $
 */
 
 /* New memory searcher functions */
@@ -19,6 +19,8 @@
 #include "pike_macros.h"
 #include "pike_search.h"
 #include "bignum.h"
+
+#include <assert.h>
 
 ptrdiff_t pike_search_struct_offset;
 #define OB2MSEARCH(O) ((struct pike_mem_searcher *)((O)->storage+pike_search_struct_offset))
@@ -45,31 +47,12 @@ static PCHARP nil_searchN(void *no_data,
   return haystack;
 }
 
-static void nil_search_free(void *data) {}
-#define memchr_memcmp2_free nil_search_free
-#define memchr_memcmp3_free nil_search_free
-#define memchr_memcmp4_free nil_search_free
-#define memchr_memcmp5_free nil_search_free
-#define memchr_memcmp6_free nil_search_free
-#define memchr_search_free nil_search_free
-
-
 static const struct SearchMojtVtable nil_search_vtable = {
   (SearchMojtFunc0) nil_search,
   (SearchMojtFunc1) nil_search,
   (SearchMojtFunc2) nil_search,
   (SearchMojtFuncN) nil_searchN,
-  nil_search_free
 };
-
-
-static void free_mem_searcher(void *m)
-{
-  free_object(*(struct object **)m);
-}
-
-#define boyer_moore_hubbe_free free_mem_searcher
-#define hubbe_search_free  free_mem_searcher
 
 /* magic stuff for hubbesearch */
 /* NOTE: GENERIC_GET4_CHARS(PTR) must be compatible with

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_search_engine.c,v 1.13 2006/07/05 19:15:35 mast Exp $
+|| $Id: pike_search_engine.c,v 1.14 2008/06/23 16:02:25 mast Exp $
 */
 
 /*
@@ -47,7 +47,6 @@ static const struct SearchMojtVtable PxC3(NAME,NSHIFT,_vtable) = {	\
   (SearchMojtFunc1)PxC3(NAME,NSHIFT,1),			\
   (SearchMojtFunc2)PxC3(NAME,NSHIFT,2),			\
   (SearchMojtFuncN)PxC3(NAME,NSHIFT,N),			\
-  PxC2(NAME,_free),			\
 };
 
 
@@ -289,6 +288,7 @@ SearchMojt NameN(compile_memsearcher)(NCHAR *needle,
     NameN(init_memsearch)(&tmp,
 			  needle,len,
 			  max_haystacklen);
+    tmp.mojt.container = NULL;
     return tmp.mojt;
   }else{
     struct svalue *sval,stmp;
@@ -308,6 +308,7 @@ SearchMojt NameN(compile_memsearcher)(NCHAR *needle,
 	if(o->prog == pike_search_program)
 	{
 	  s=OB2MSEARCH(sval->u.object);
+	  assert (sval->u.object == s->mojt.container);
 	  add_ref(sval->u.object);
 	  free_string(hashkey);
 	  return s->mojt;
@@ -317,7 +318,7 @@ SearchMojt NameN(compile_memsearcher)(NCHAR *needle,
 
     o=low_clone(pike_search_program);
     s=OB2MSEARCH(o);
-    s->data.hubbe.o=o;
+    s->mojt.container = o;	/* Not refcounted self-ref. */
     s->s=hashkey;
 
     /* We use 0x7fffffff for max_haystacklen because we do
