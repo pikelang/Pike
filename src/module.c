@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: module.c,v 1.53 2008/06/02 21:50:55 mast Exp $
+|| $Id: module.c,v 1.54 2008/06/23 16:39:04 mast Exp $
 */
 
 #include "global.h"
@@ -176,9 +176,9 @@ static void exit_builtin_modules(void)
 #endif
 
     /* The use of markers below only works after a gc run where it
-     * hasn't freed anything. Since we've destructed all objects in
-     * exit_main, nothing should be left after the run above, so only
-     * one more run is necessary. */
+     * hasn't freed anything. Since we've destructed all live objects
+     * in exit_modules, nothing should be left after the run above, so
+     * only one more run is necessary. */
     gc_keep_markers = 1;
     do_gc (NULL, 1);
 
