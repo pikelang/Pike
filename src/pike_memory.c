@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.190 2008/05/11 14:54:09 mast Exp $
+|| $Id: pike_memory.c,v 1.191 2008/06/23 16:40:01 mast Exp $
 */
 
 #include "global.h"
@@ -2483,13 +2483,13 @@ void dump_memhdr_locations(struct memhdr *from,
       continue;
 
     
-    fprintf(stderr,"%*s%s %s (%d times) %s\n",
+    fprintf(stderr,"%*s%s %s (%d times)%s\n",
 	    indent,"",
 	    LOCATION_IS_DYNAMIC(l->location) ? "-->" : "***",
 	    LOCATION_NAME(l->location),
 	    l->times,
 	    find_location(&no_leak_memlocs, l->location) ? "" :
-	    ( from->flags & MEM_REFERENCED ? "*" : "!*!")
+	    ( from->flags & MEM_REFERENCED ? " *" : " !*!")
 	    );
 
     /* Allow linked memhdrs */
