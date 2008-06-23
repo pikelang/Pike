@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.222 2008/06/23 18:56:08 mast Exp $
+|| $Id: stralloc.c,v 1.223 2008/06/23 19:22:52 mast Exp $
 */
 
 #include "global.h"
@@ -1606,7 +1606,7 @@ PMOD_EXPORT struct pike_string *realloc_unlinked_string(struct pike_string *a,
 
   if (a->len <= SHORT_STRING_THRESHOLD) {
     if (size <= SHORT_STRING_THRESHOLD) {
-      /* There's already place enough. */
+      /* There's already space enough. */
       a->len = size;
       low_set_index(a, size, 0);
       return a;
@@ -3034,13 +3034,14 @@ PMOD_EXPORT void free_string_builder(struct string_builder *s)
 
 PMOD_EXPORT struct pike_string *finish_string_builder(struct string_builder *s)
 {
-  /* Ensure NUL-termination */
-  low_set_index(s->s,s->s->len,0);
-  if (s->s->len <= SHORT_STRING_THRESHOLD) {
-    ptrdiff_t len = s->s->len;
+  ptrdiff_t len = s->s->len;
+  if (len != s->malloced) {
     s->s->len = s->malloced;
     s->s = realloc_unlinked_string(s->s, len);
   }
+  else
+    /* Ensure NUL-termination */
+    low_set_index(s->s,s->s->len,0);
   if(s->known_shift == s->s->size_shift)
     return low_end_shared_string(s->s);
   return end_shared_string(s->s);
