@@ -1,5 +1,5 @@
 START_MARKER
-dnl $Id: testsuite.in,v 1.24 2008/01/05 22:06:44 grubba Exp $
+dnl $Id: testsuite.in,v 1.25 2008/06/23 19:17:47 mast Exp $
 
 test_eq([[ String.Buffer()->add("xxx") ]], 3)
 test_any([[
@@ -66,6 +66,25 @@ test_any([[
 ]], "abc\400\500\400x")
 
 test_eval_error([[ String.Buffer()->add("x",0); ]])
+
+test_do([[
+  String.Buffer b = String.Buffer();
+  b->add (Standards.UUID.make_version4()->str() + "blaj");
+  b->add ("x");
+  return (string) b;
+]])
+test_do([[
+  String.Buffer b = String.Buffer();
+  b->add (Standards.UUID.make_version4()->str() + "blaj\12345678");
+  b->add ("x");
+  return (string) b;
+]])
+test_do([[
+  String.Buffer b = String.Buffer();
+  b->add (Standards.UUID.make_version4()->str() + "blaj");
+  b->add ("x\12345678");
+  return (string) b;
+]])
 
 test_eq([[ String.count( "", "a" ) ]], 0)
 test_eq([[ String.count( "aaa", "a" ) ]], 3)
