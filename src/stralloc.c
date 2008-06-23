@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.158 2005/01/19 13:05:55 grubba Exp $
+|| $Id: stralloc.c,v 1.159 2008/06/23 18:56:56 mast Exp $
 */
 
 #include "global.h"
@@ -24,7 +24,7 @@
 #include <ctype.h>
 #include <math.h>
 
-RCSID("$Id: stralloc.c,v 1.158 2005/01/19 13:05:55 grubba Exp $");
+RCSID("$Id: stralloc.c,v 1.159 2008/06/23 18:56:56 mast Exp $");
 
 /* #define STRALLOC_USE_PRIMES */
 
@@ -1959,7 +1959,7 @@ PMOD_EXPORT void init_string_builder(struct string_builder *s, int mag)
   s->malloced=256;
   s->s=begin_wide_shared_string(256,mag);
   s->s->len=0;
-  s->s->str[0] = 0;
+  low_set_index (s->s, 0, 0);
   s->known_shift=0;
 }
 
@@ -1968,7 +1968,7 @@ PMOD_EXPORT void init_string_builder_alloc(struct string_builder *s, ptrdiff_t l
   s->malloced=length;
   s->s=begin_wide_shared_string(length,mag);
   s->s->len=0;
-  s->s->str[0] = 0;
+  low_set_index (s->s, 0, 0);
   s->known_shift=0;
 }
 
@@ -2156,7 +2156,7 @@ PMOD_EXPORT void reset_string_builder(struct string_builder *s)
   s->known_shift=0;
   s->s->len=0;
   /* Ensure NUL-termination */
-  s->s->str[0] = 0;
+  low_set_index (s->s, 0, 0);
 }
 
 PMOD_EXPORT void free_string_builder(struct string_builder *s)
