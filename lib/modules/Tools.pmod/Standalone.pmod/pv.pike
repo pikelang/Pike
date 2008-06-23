@@ -1,8 +1,8 @@
-
 #pike __REAL_VERSION__
 
-#if constant(GTK.Window)
 constant description = "Pike image viewer (diet).";
+
+#if constant(GTK.Window)
 int main(int argc, array(string) argv)
 {
   if(argc<2) { werror("Usage: pike -x pv files...\n"); return 1; }
