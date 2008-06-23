@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pg_types.h,v 1.9 2007/08/10 17:51:51 grubba Exp $
+|| $Id: pg_types.h,v 1.10 2008/06/23 14:24:25 srb Exp $
 */
 
 #ifndef _PG_TYPES_H_
@@ -21,7 +21,7 @@ struct pgres_object_data {
 	PGconn *dblink;
 	struct pike_string *last_error;
 	PGresult * last_result;
-	struct svalue * notify_callback;
+	struct svalue notify_callback;
 	int dofetch;
 	int docommit;
 	int lastcommit;

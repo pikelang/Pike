@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: postgres.c,v 1.59 2008/06/23 14:24:09 srb Exp $
+|| $Id: postgres.c,v 1.60 2008/06/23 14:24:25 srb Exp $
 */
 
 /*
@@ -85,7 +85,6 @@ static void pgres_create (struct object * o) {
 	pgdebug ("pgres_create().\n");
 	THIS->dblink=NULL;
 	THIS->last_error=NULL;
-	THIS->notify_callback=(struct svalue*)xalloc(sizeof(struct svalue));
 	mark_free_svalue (&THIS->notify_callback);
 	THIS->docommit=0;
 	THIS->dofetch=0;
@@ -115,8 +114,10 @@ static void pgres_destroy (struct object * o)
 			free_string(THIS->last_error);
 		THIS->last_error=NULL;
 	}
-	free_svalue(&THIS->notify_callback);
-	mark_free_svalue(&THIS->notify_callback);
+	if (THIS->notify_callback.type!=PIKE_T_FREE) {
+		free_svalue(&THIS->notify_callback);
+		mark_free_svalue(&THIS->notify_callback);
+	}
 #if defined(PIKE_THREADS) && defined(PQ_THREADSAFE)
 	mt_destroy(&THIS->mutex);
 #endif
@@ -488,7 +489,7 @@ yupbegin:       res=PQexec(conn,"BEGIN");
 	if (notification!=NULL) {
 		pgdebug("Incoming notification: \"%s\"\n",notification->relname);
 		push_text(notification->relname);
-		apply_svalue(THIS->notify_callback,1); 
+		apply_svalue(&THIS->notify_callback,1); 
 		/* apply_svalue simply returns if the first argument is a PIKE_T_INT */
 		free (notification);
 	}
@@ -647,7 +648,7 @@ static void f_callback(INT32 args)
 		       args, BIT_INT|BIT_FUNCTION, 0);
 
 	if (Pike_sp[-args].type==PIKE_T_INT) {
-		if (THIS->notify_callback->type!=PIKE_T_FREE) {
+		if (THIS->notify_callback.type!=PIKE_T_FREE) {
 			free_svalue(&THIS->notify_callback);
 			mark_free_svalue (&THIS->notify_callback);
 		}
@@ -655,7 +656,7 @@ static void f_callback(INT32 args)
 		return;
 	}
 	/*let's assume it's a function otherwise*/
-	assign_svalue(THIS->notify_callback,Pike_sp-args);
+	assign_svalue(&THIS->notify_callback,Pike_sp-args);
 	pop_n_elems(args);
 }
 
