@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.209 2008/05/30 15:19:02 mast Exp $
+|| $Id: array.c,v 1.210 2008/06/23 16:05:02 mast Exp $
 */
 
 #include "global.h"
@@ -2285,6 +2285,7 @@ PMOD_EXPORT struct array *explode(struct pike_string *str,
     }
   }else{
     SearchMojt mojt;
+    ONERROR uwp;
     explode_searchfunc f = (explode_searchfunc)0;
     
     s=str->str;
@@ -2297,6 +2298,7 @@ PMOD_EXPORT struct array *explode(struct pike_string *str,
 			     del->len,
 			     str->len,
 			     del);
+    SET_ONERROR (uwp, do_free_object, mojt.container);
 
     switch(str->size_shift)
     {
@@ -2343,7 +2345,8 @@ PMOD_EXPORT struct array *explode(struct pike_string *str,
 
     ITEM(ret)[ret->size].type=T_STRING;
     ret->size++;
-    mojt.vtab->freeme(mojt.data);
+
+    CALL_AND_UNSET_ONERROR (uwp);
   }
   ret->type_field=BIT_STRING;
   return ret;

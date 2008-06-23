@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.220 2008/06/16 21:46:34 mast Exp $
+|| $Id: stralloc.c,v 1.221 2008/06/23 16:05:02 mast Exp $
 */
 
 #include "global.h"
@@ -1852,7 +1852,7 @@ PMOD_EXPORT ptrdiff_t string_search(struct pike_string *haystack,
 			       ADD_PCHARP(MKPCHARP_STR(haystack), start),
 			       haystack->len - start).ptr;
 
-  mojt.vtab->freeme(mojt.data);
+  if (mojt.container) free_object (mojt.container);
 
   if(!r) return -1;
 #ifdef PIKE_DEBUG
@@ -1911,6 +1911,7 @@ PMOD_EXPORT struct pike_string *string_replace(struct pike_string *str,
   PCHARP r;
   int shift;
   SearchMojt mojt;
+  ONERROR mojt_uwp;
   replace_searchfunc f = (replace_searchfunc)0;
 
   if(!str->len)
@@ -1944,6 +1945,8 @@ PMOD_EXPORT struct pike_string *string_replace(struct pike_string *str,
 			     del->len,
 			     str->len,
 			     del);
+    SET_ONERROR (mojt_uwp, do_free_object, mojt.container);
+
     ret=begin_wide_shared_string(str->len,shift);
     switch(str->size_shift)
     {
@@ -1961,6 +1964,7 @@ PMOD_EXPORT struct pike_string *string_replace(struct pike_string *str,
 			     del->len,
 			     str->len*2,
 			     del);
+    SET_ONERROR (mojt_uwp, do_free_object, mojt.container);
 
     switch(str->size_shift)
     {
@@ -1980,7 +1984,7 @@ PMOD_EXPORT struct pike_string *string_replace(struct pike_string *str,
     
     if(!delimeters)
     {
-      mojt.vtab->freeme(mojt.data);
+      CALL_AND_UNSET_ONERROR (mojt_uwp);
       add_ref(str);
       return str;
     }
@@ -2004,7 +2008,7 @@ PMOD_EXPORT struct pike_string *string_replace(struct pike_string *str,
   }
   generic_memcpy(r,MKPCHARP(s,str->size_shift),(end-s)>>str->size_shift);
 
-  mojt.vtab->freeme(mojt.data);
+  CALL_AND_UNSET_ONERROR (mojt_uwp);
   return end_shared_string(ret);
 }
 
