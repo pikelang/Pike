@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.221 2008/06/23 16:05:02 mast Exp $
+|| $Id: stralloc.c,v 1.222 2008/06/23 18:56:08 mast Exp $
 */
 
 #include "global.h"
@@ -769,6 +769,31 @@ PMOD_EXPORT struct pike_string *low_end_shared_string(struct pike_string *s)
   size_t h=0;
   struct pike_string *s2;
 
+#ifdef PIKE_DEBUG
+  if (d_flag) {
+    switch (s->size_shift) {
+      case 0:
+	break;
+
+      case 1:
+	if(!find_magnitude1(STR1(s),s->len))
+	  Pike_fatal ("String %p that should have shift 1 really got 0.\n", s);
+	break;
+
+      case 2: {
+	int m = find_magnitude2 (STR2 (s), s->len);
+	if (m != 2)
+	  Pike_fatal ("String %p that should have shift 2 really got %d.\n",
+		      s, m);
+	break;
+      }
+
+      default:
+	Pike_fatal("ARGHEL! size_shift:%d\n", s->size_shift);
+    }
+  }
+#endif
+
   len = s->len;
   if (s->flags & STRING_NOT_HASHED) {
     h = s->hval = do_hash(s);
@@ -803,12 +828,12 @@ PMOD_EXPORT struct pike_string *end_shared_string(struct pike_string *s)
 
   switch(s->size_shift)
   {
-#ifdef PIKE_DEBUG
     default:
+#ifdef PIKE_DEBUG
       Pike_fatal("ARGHEL! size_shift:%d\n", s->size_shift);
-#endif
 
     case 2:
+#endif
       switch(find_magnitude2(STR2(s),s->len))
       {
 	case 0:
@@ -2201,7 +2226,7 @@ PMOD_EXPORT void init_string_builder(struct string_builder *s, int mag)
   s->malloced=256;
   s->s=begin_wide_shared_string(256,mag);
   s->s->len=0;
-  s->s->str[0] = 0;
+  low_set_index (s->s, 0, 0);
   s->known_shift=0;
 }
 
@@ -2210,7 +2235,7 @@ PMOD_EXPORT void init_string_builder_alloc(struct string_builder *s, ptrdiff_t l
   s->malloced=length;
   s->s=begin_wide_shared_string(length,mag);
   s->s->len=0;
-  s->s->str[0] = 0;
+  low_set_index (s->s, 0, 0);
   s->known_shift=0;
 }
 
@@ -2218,8 +2243,9 @@ PMOD_EXPORT void init_string_builder_copy(struct string_builder *to,
 					  struct string_builder *from)
 {
   to->malloced = from->malloced;
-  to->s = begin_wide_shared_string (from->s->len, from->s->size_shift);
-  MEMCPY (to->s->str, from->s->str, from->s->len << from->s->size_shift);
+  to->s = begin_wide_shared_string (from->malloced, from->s->size_shift);
+  to->s->len = from->s->len;
+  MEMCPY (to->s->str, from->s->str, (from->s->len + 1) << from->s->size_shift);
   to->known_shift = from->known_shift;
 }
 
@@ -2997,7 +3023,7 @@ PMOD_EXPORT void reset_string_builder(struct string_builder *s)
   s->known_shift=0;
   s->s->len=0;
   /* Ensure NUL-termination */
-  s->s->str[0] = 0;
+  low_set_index (s->s, 0, 0);
 }
 
 PMOD_EXPORT void free_string_builder(struct string_builder *s)
