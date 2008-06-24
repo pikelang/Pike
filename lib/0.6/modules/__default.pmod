@@ -23,11 +23,18 @@ object master()
   return __REAL_VERSION__::master()->get_compat_master(0, 6);
 }
 
+static Mapping.ShadowedMapping compat_all_constants =
+  Mapping.ShadowedMapping(predef::all_constants());
+
 mapping(string:mixed) all_constants()
 {
-  mapping(string:mixed) ret=predef::all_constants()+([]);
+  // Intentional lie in the return type.
+  mixed x = compat_all_constants;
+  return x;
+}
 
-  foreach(indices(this_object()), string id) ret[id]=::`->(id);
-
-  return ret;
+static void create()
+{
+  foreach(indices(this_object()), string id)
+    compat_all_constants[id]=::`->(id);
 }

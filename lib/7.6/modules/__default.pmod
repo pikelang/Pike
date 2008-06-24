@@ -1,5 +1,5 @@
 // Compatibility namespace
-// $Id: __default.pmod,v 1.10 2008/06/24 13:06:32 mast Exp $
+// $Id: __default.pmod,v 1.11 2008/06/24 20:14:10 grubba Exp $
 
 #pike 7.7
 
@@ -24,20 +24,31 @@ object master()
   return __REAL_VERSION__::master()->get_compat_master(7, 6);
 }
 
-mapping(string:mixed) all_constants_overrides = ([
-  "all_constants": all_constants,
-  "_describe_program": _describe_program,
-  "sprintf": sprintf_76,
-  "array_sscanf": array_sscanf_76,
-  "master": master,
-]);
+static Mapping.ShadowedMapping compat_all_constants =
+  Mapping.ShadowedMapping(predef::all_constants());
 
-static object compat_all_constants =
-  __REAL_VERSION__::master()->CompatAllConstants (all_constants_overrides);
+void add_constant(string name, mixed|void value)
+{
+  if (zero_type(value)) {
+    m_delete(compat_all_constants, name);
+  } else {
+    compat_all_constants[name] = value;
+  }
+}
 
 mapping(string:mixed) all_constants()
 {
   // Intentional lie in the return type.
   mixed x = compat_all_constants;
   return x;
+}
+
+static void create()
+{
+  // add_constant("add_constant", add_constant);
+  add_constant("all_constants", all_constants);
+  add_constant("_describe_program", _describe_program);
+  add_constant("sprintf", sprintf_76);
+  add_constant("array_sscanf", array_sscanf_76);
+  add_constant("master", master);
 }

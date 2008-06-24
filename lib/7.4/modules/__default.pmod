@@ -1,5 +1,5 @@
 // Compatibility namespace
-// $Id: __default.pmod,v 1.20 2008/06/24 13:20:33 mast Exp $
+// $Id: __default.pmod,v 1.21 2008/06/24 20:14:10 grubba Exp $
 
 #pike 7.5
 
@@ -115,57 +115,67 @@ object master()
   return __REAL_VERSION__::master()->get_compat_master(7, 4);
 }
 
-mapping(string:mixed) all_constants_overrides = ([
-  "all_constants": all_constants,
-  "rusage": rusage,
-  "hash": hash_7_4,
-  "master": master,
-#if constant(__builtin.security)
-  "call_with_creds": __builtin.security.call_with_creds,
-  "get_current_creds": __builtin.security.get_current_creds,
-  "get_object_creds": __builtin.security.get_object_creds,
-#endif
-#if constant(Pipe._pipe_debug)
-  "_pipe_debug": Pipe._pipe_debug,
-#endif /* constant(Pipe._pipe_debug) */
-#if constant(System.getpwent)
-  "getpwent": System.getpwent,
-#endif
-#if constant(System.endpwent)
-  "endpwent": System.endpwent,
-#endif
-#if constant(System.setpwent)
-  "setpwent": System.setpwent,
-#endif
-#if constant(System.getgrent)
-  "getgrent": System.getgrent,
-#endif
-#if constant(System.endgrent)
-  "endgrent": System.endgrent,
-#endif
-#if constant(System.getgrent)
-  "setgrent": System.getgrent,
-#endif
-#if constant(__builtin.security)
-  "call_with_creds": Pike.Security.call_with_creds,
-  "get_current_creds": Pike.Security.get_current_creds,
-  "get_object_creds": Pike.Security.get_object_creds,
-#endif
-#ifdef __NT__
-  "explode_path": lambda(string x) { return replace(x,"\\","/")/"/"; },
-#else
-  "explode_path": lambda(string x) { return x/"/"; },
-#endif
-]);
+static Mapping.ShadowedMapping compat_all_constants =
+  Mapping.ShadowedMapping(predef::all_constants());
 
-static object compat_all_constants =
-  __REAL_VERSION__::master()->CompatAllConstants (
-    __VERSION__::__default.all_constants_overrides |
-    all_constants_overrides);
+void add_constant(string name, mixed|void value)
+{
+  if (zero_type(value)) {
+    m_delete(compat_all_constants, name);
+  } else {
+    compat_all_constants[name] = value;
+  }
+}
 
 mapping(string:mixed) all_constants()
 {
   // Intentional lie in the return type.
   mixed x = compat_all_constants;
   return x;
+}
+
+static void create()
+{
+  // add_constant("add_constant", add_constant);
+  add_constant("all_constants", all_constants);
+  add_constant("rusage", rusage);
+  add_constant("hash", hash_7_4);
+  add_constant("master", master);
+#if constant(__builtin.security)
+  add_constant("call_with_creds", __builtin.security.call_with_creds);
+  add_constant("get_current_creds", __builtin.security.get_current_creds);
+  add_constant("get_object_creds", __builtin.security.get_object_creds);
+#endif
+#if constant(Pipe._pipe_debug)
+  add_constant("_pipe_debug", Pipe._pipe_debug);
+#endif /* constant(Pipe._pipe_debug) */
+#if constant(System.getpwent)
+  add_constant("getpwent", System.getpwent);
+#endif
+#if constant(System.endpwent)
+  add_constant("endpwent", System.endpwent);
+#endif
+#if constant(System.setpwent)
+  add_constant("setpwent", System.setpwent);
+#endif
+#if constant(System.getgrent)
+  add_constant("getgrent", System.getgrent);
+#endif
+#if constant(System.endgrent)
+  add_constant("endgrent", System.endgrent);
+#endif
+#if constant(System.getgrent)
+  add_constant("setgrent", System.getgrent);
+#endif
+#if constant(__builtin.security)
+  add_constant("call_with_creds", Pike.Security.call_with_creds);
+  add_constant("get_current_creds", Pike.Security.get_current_creds);
+  add_constant("get_object_creds", Pike.Security.get_object_creds);
+#endif
+#ifdef __NT__
+  add_constant("explode_path",
+	       lambda(string x) { return replace(x,"\\","/")/"/"; });
+#else
+  add_constant("explode_path", lambda(string x) { return x/"/"; });
+#endif
 }

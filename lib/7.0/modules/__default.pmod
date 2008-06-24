@@ -1,5 +1,5 @@
 // Compatibility namespace
-// $Id: __default.pmod,v 1.7 2008/05/29 18:13:50 grubba Exp $
+// $Id: __default.pmod,v 1.8 2008/06/24 20:14:10 grubba Exp $
 
 #pike 7.1
 
@@ -40,24 +40,12 @@
 //! @seealso
 //!   @[predef::file_stat()]
 
-static mapping(function:object(FS)) FScache = set_weak_flag(([]),1);
-
-static class FS
+array(int) file_stat(string path, void|int symlink)
 {
-  static function old;
-
-  array(int) file_stat(string path, void|int symlink)
-  {
-    if(mixed y=old(path, symlink))
-      return (array)y;
-    return 0;
-  }
-
-  static void create(function o)
-  {
-    old=o;
-    FScache[o]=file_stat;
-  }
+  // Support overloading.
+  if(mixed y=predef::all_constants()->file_stat(path, symlink))
+    return (array)y;
+  return 0;
 }
 
 //! Get the runtime type of a value (Pike 7.0 compatibility).
@@ -98,19 +86,22 @@ object master()
   return __REAL_VERSION__::master()->get_compat_master(7, 0);
 }
 
+static Mapping.ShadowedMapping compat_all_constants =
+  Mapping.ShadowedMapping(predef::all_constants());
+
 mapping(string:mixed) all_constants()
 {
-  mapping(string:mixed) ret=predef::all_constants()+([]);
+  // Intentional lie in the return type.
+  mixed x = compat_all_constants;
+  return x;
+}
 
-  /* support overloading */
-  ret->file_stat=FScache[ret->file_stat] || FS(ret->file_stat)->file_stat;
-
-  /* does not support overloading (yet) */
-  ret->all_constants=all_constants;
-  ret->_typeof=_typeof;
-  ret->m_delete=m_delete;
-  ret->hash=hash_7_0;
-  ret->master=master;
-
-  return ret;
+static void create()
+{
+  compat_all_constants->all_constants=all_constants;
+  compat_all_constants->file_stat = file_stat;
+  compat_all_constants->_typeof=_typeof;
+  compat_all_constants->m_delete=m_delete;
+  compat_all_constants->hash=hash_7_0;
+  compat_all_constants->master=master;
 }
