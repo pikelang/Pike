@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: DefaultParser.pike,v 1.11 2004/08/07 15:27:00 js Exp $
+// $Id: DefaultParser.pike,v 1.12 2008/06/24 15:04:49 wellhard Exp $
 
 static inherit .AbstractParser;
 static inherit .Lexer;
@@ -339,12 +339,15 @@ static void parseExpr6(int prefix, TextNode node) {
         case '-': node->minusWords += words; break;
         default:  node->words += words;      break;
 	}
-      else if (sizeof(words) > 1)
+      else if (sizeof(words) > 1) {
+	//  No use of globs at this point so remove them
+	words = map(words, lambda(string w) { return w - "*" - "?"; } );
 	switch (prefix) {
         case '+': node->plusPhrases += ({ words });  break;
         case '-': node->minusPhrases += ({ words }); break;
         default:  node->phrases += ({ words });      break;
 	}
+      }
     }
   }
 }
