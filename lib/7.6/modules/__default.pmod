@@ -1,5 +1,5 @@
 // Compatibility namespace
-// $Id: __default.pmod,v 1.8 2008/06/07 10:53:10 grubba Exp $
+// $Id: __default.pmod,v 1.9 2008/06/24 12:44:46 mast Exp $
 
 #pike 7.7
 
@@ -24,14 +24,18 @@ object master()
   return __REAL_VERSION__::master()->get_compat_master(7, 6);
 }
 
+static object compat_all_constants =
+  __REAL_VERSION__::master()->CompatAllConstants (
+    (["all_constants": all_constants,
+      "_describe_program": _describe_program,
+      "sprintf": sprintf_76,
+      "array_sscanf": array_sscanf_76,
+      "master": master,
+    ]));
+
 mapping(string:mixed) all_constants()
 {
-  mapping(string:mixed) ret = predef::all_constants()+([]);
-
-  ret->all_constants = all_constants;
-  ret->_describe_program = _describe_program;
-  ret->sprintf = sprintf_76;
-  ret->array_sscanf = array_sscanf_76;
-  ret->master = master;
-  return ret;
+  // Intentional lie in the return type.
+  mixed x = compat_all_constants;
+  return x;
 }
