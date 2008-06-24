@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.213 2008/06/24 19:26:55 grubba Exp $
+|| $Id: builtin.cmod,v 1.214 2008/06/24 20:07:58 grubba Exp $
 */
 
 #include "global.h"
@@ -603,7 +603,7 @@ PIKEFUN int m_generation(mapping|object m)
     int fun;
     p = p->inherits[m->subtype].prog;
     /* NOTE: Fake lfun! */
-    fun = low_find_lfun(p, LFUN__SEARCH);
+    fun = low_find_lfun(p, LFUN__M_GENERATION);
     if (fun >= 0) {
       apply_low(o, fun + id_level, 0);
       stack_pop_n_elems_keep_top(args);
