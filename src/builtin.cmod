@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.212 2008/06/24 18:49:14 grubba Exp $
+|| $Id: builtin.cmod,v 1.213 2008/06/24 19:26:55 grubba Exp $
 */
 
 #include "global.h"
@@ -607,6 +607,7 @@ PIKEFUN int m_generation(mapping|object m)
     if (fun >= 0) {
       apply_low(o, fun + id_level, 0);
       stack_pop_n_elems_keep_top(args);
+      return;
     }
   }
   SIMPLE_BAD_ARG_ERROR("m_generation", 1, "mapping");
