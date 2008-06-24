@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.h,v 1.68 2008/05/11 14:55:53 mast Exp $
+|| $Id: mapping.h,v 1.69 2008/06/24 18:45:56 grubba Exp $
 */
 
 #ifndef MAPPING_H
@@ -17,6 +17,7 @@
 #define MAPPING_WEAK_VALUES	4
 #define MAPPING_WEAK		6
 #define MAPPING_FLAG_WEAK	6 /* Compat. */
+#define MAPPING_DIRTY		0x0100	/* Bump generation_cnt. */
 
 struct keypair
 {
@@ -32,6 +33,7 @@ struct mapping_data
   INT32 hardlinks;
   INT32 size, hashsize;
   INT32 num_keypairs;
+  INT32 generation_cnt;
   TYPE_FIELD ind_types, val_types;
   INT16 flags;
   struct keypair *free_list;
@@ -368,6 +370,7 @@ PMOD_EXPORT void mapping_search_no_free(struct svalue *to,
 			    struct mapping *m,
 			    const struct svalue *look_for,
 			    const struct svalue *key );
+PMOD_EXPORT INT32 mapping_generation(struct mapping *m);
 #ifdef PIKE_DEBUG
 void check_mapping(const struct mapping *m);
 void check_all_mappings(void);

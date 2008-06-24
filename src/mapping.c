@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.201 2008/05/11 14:55:53 mast Exp $
+|| $Id: mapping.c,v 1.202 2008/06/24 18:45:56 grubba Exp $
 */
 
 #include "global.h"
@@ -205,6 +205,7 @@ static void init_mapping(struct mapping *m,
     md->valrefs=0;
     md->hardlinks=0;
     md->num_keypairs=size;
+    md->generation_cnt = 0;
   }else{
     switch (flags & MAPPING_WEAK) {
       case 0: md = &empty_data; break;
@@ -417,6 +418,7 @@ static struct mapping *rehash(struct mapping *m, int new_size)
   init_mapping(m, new_size, md->flags);
   debug_malloc_touch(m);
   new_md=m->data;
+  new_md->generation_cnt = md->generation_cnt;
 
   /* This operation is now 100% atomic - no locking required */
   if(md->refs>1)
@@ -501,6 +503,9 @@ struct mapping_data *copy_mapping_data(struct mapping_data *md)
   add_ref(nmd);	/* For DMALLOC... */
   nmd->valrefs=0;
   nmd->hardlinks=0;
+  nmd->generation_cnt = md->generation_cnt;
+
+  /* FIXME: What about nmd->flags? */
 
   if(md->hardlinks)
   {
@@ -748,6 +753,7 @@ PMOD_EXPORT void low_mapping_insert(struct mapping *m,
      * possible to tell the difference. */
     assign_svalue (&k->ind, key);
   assign_svalue(& k->val, val);
+  md->flags |= MAPPING_DIRTY;
 #ifdef PIKE_DEBUG
   if(d_flag>1)  check_mapping(m);
 #endif
@@ -795,6 +801,8 @@ PMOD_EXPORT void low_mapping_insert(struct mapping *m,
   if(m->data ==md)
     m->debug_size++;
 #endif
+
+  md->flags |= MAPPING_DIRTY;
 
 #ifdef PIKE_DEBUG
   if(d_flag>1)  check_mapping(m);
@@ -915,6 +923,7 @@ PMOD_EXPORT union anything *mapping_get_item_ptr(struct mapping *m,
   md->ind_types |= 1 << key->type;
   md->val_types |= BIT_INT;
   md->size++;
+  md->flags |= MAPPING_DIRTY;
 #ifdef MAPPING_SIZE_DEBUG
   if(m->data ==md)
     m->debug_size++;
@@ -999,9 +1008,12 @@ PMOD_EXPORT void map_delete_no_free(struct mapping *m,
   if(md->size < (md->hashsize + 1) * MIN_LINK_LENGTH)
   {
     debug_malloc_touch(m);
-    rehash(m, MAP_SLOTS(m->data->size));
+    rehash(m, MAP_SLOTS(m->data->size + !!md->generation_cnt));
   }
-  
+
+  /* Note: md may be invalid here dure to the rehash above. */
+  m->data->flags |= MAPPING_DIRTY;
+
 #ifdef PIKE_DEBUG
   if(d_flag>1)  check_mapping(m);
 #endif
@@ -1051,6 +1063,9 @@ PMOD_EXPORT void check_mapping_for_destruct(struct mapping *m)
 	  mark_free_svalue (&md->free_list->ind);
 	  mark_free_svalue (&md->free_list->val);
 	  md->size--;
+
+	  md->flags |= MAPPING_DIRTY;
+
 #ifdef MAPPING_SIZE_DEBUG
 	  if(m->data ==md)
 	  {
@@ -1070,10 +1085,11 @@ PMOD_EXPORT void check_mapping_for_destruct(struct mapping *m)
     md->val_types = val_types;
     md->ind_types = ind_types;
 
-    if(MAP_SLOTS(md->size) < md->hashsize * MIN_LINK_LENGTH)
+    if(MAP_SLOTS(md->size + !!md->generation_cnt) <
+       md->hashsize * MIN_LINK_LENGTH)
     {
       debug_malloc_touch(m);
-      rehash(m, MAP_SLOTS(md->size));
+      rehash(m, MAP_SLOTS(md->size + !!md->generation_cnt));
     }
 
 #ifdef PIKE_DEBUG
@@ -1340,6 +1356,7 @@ PMOD_EXPORT void mapping_replace(struct mapping *m,struct svalue *from, struct s
 	  PREPARE_FOR_DATA_CHANGE();
 	  assign_svalue(& k->val, to);
 	  md->val_types|=1<<to->type;
+	  md->flags |= MAPPING_DIRTY;
 	}
       }
     free_mapping_data(md);
@@ -1492,6 +1509,10 @@ static struct mapping *and_mappings(struct mapping *a, struct mapping *b)
     }
   }
   UNSET_ONERROR(err);
+  if (a_md->generation_cnt > b_md->generation_cnt)
+    res->generation_cnt = a_md->generation_cnt;
+  else
+    res->generation_cnt = b_md->generation_cnt;
   return res;
 }
 
@@ -1527,6 +1548,10 @@ static struct mapping *or_mappings(struct mapping *a, struct mapping *b)
     }
   }
   UNSET_ONERROR(err);
+  if (a_md->generation_cnt > b_md->generation_cnt)
+    res->generation_cnt = a_md->generation_cnt;
+  else
+    res->generation_cnt = b_md->generation_cnt;
   return res;
 }
 
@@ -1571,6 +1596,10 @@ static struct mapping *xor_mappings(struct mapping *a, struct mapping *b)
     }
   }
   UNSET_ONERROR(err);
+  if (a_md->generation_cnt > b_md->generation_cnt)
+    res->generation_cnt = a_md->generation_cnt;
+  else
+    res->generation_cnt = b_md->generation_cnt;
   return res;
 }
 
@@ -1647,6 +1676,10 @@ PMOD_EXPORT struct mapping *merge_mappings(struct mapping *a, struct mapping *b,
   free_array(ci);
   free_array(cv);
 
+  if (a->data->generation_cnt > b->data->generation_cnt)
+    m->generation_cnt = a->data->generation_cnt;
+  else
+    m->generation_cnt = b->data->generation_cnt;
   return m;
 }
 
@@ -1700,6 +1733,10 @@ PMOD_EXPORT struct mapping *merge_mapping_array_ordered(struct mapping *a,
   free_array(ci);
   free_array(cv);
 
+  if (a->data->generation_cnt > b->data->generation_cnt)
+    m->generation_cnt = a->data->generation_cnt;
+  else
+    m->generation_cnt = b->data->generation_cnt;
   return m;
 }
 
@@ -1731,13 +1768,15 @@ PMOD_EXPORT struct mapping *add_mappings(struct svalue *argp, INT32 args)
   INT32 e,d;
   struct mapping *ret=0;
   struct keypair *k;
+  int generation = 0;
 
   for(e=d=0;d<args;d++)
   {
+    struct mapping *m = argp[d].u.mapping;
 #ifdef PIKE_DEBUG
-    if(d_flag>1) check_mapping(argp[d].u.mapping);
+    if(d_flag>1) check_mapping(m);
 #endif
-    e+=argp[d].u.mapping->data->size;
+    e += m->data->size;
   }
 
   if(!e) return allocate_mapping(0);
@@ -1775,6 +1814,9 @@ PMOD_EXPORT struct mapping *add_mappings(struct svalue *argp, INT32 args)
     struct mapping *m=argp[d].u.mapping;
     struct mapping_data *md=m->data;
     
+    if (md->generation_cnt > generation)
+      generation = md->generation_cnt;
+
     add_ref(md);
     NEW_MAPPING_LOOP(md)
       low_mapping_insert(ret, &k->ind, &k->val, 2);
@@ -1784,6 +1826,7 @@ PMOD_EXPORT struct mapping *add_mappings(struct svalue *argp, INT32 args)
   if(!ret)
     Pike_fatal("add_mappings is confused!\n");
 #endif
+  ret->md->generation_cnt = generation;
   return ret;
 }
 
@@ -2196,6 +2239,14 @@ PMOD_EXPORT void mapping_search_no_free(struct svalue *to,
   to->u.integer=0;
 }
 
+PMOD_EXPORT INT32 mapping_generation(struct mapping *m)
+{
+  if (m->data->flags & MAPPING_DIRTY) {
+    m->data->generation_cnt++;
+    m->data->flags &= ~MAPPING_DIRTY;
+  }
+  return m->data->generation_cnt;
+}
 
 #ifdef PIKE_DEBUG
 
