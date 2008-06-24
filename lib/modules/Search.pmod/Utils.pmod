@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Utils.pmod,v 1.46 2007/05/16 07:10:12 noring Exp $
+// $Id: Utils.pmod,v 1.47 2008/06/24 09:41:06 jonasw Exp $
 
 #if !constant(report_error)
 #define report_error werror
@@ -385,10 +385,12 @@ class ProfileCache (string db_name) {
   //! Flushes profile entry @[p] from the profile cache.
   void flush_profile(int p) {
     m_delete(value_cache, p);
-    foreach(indices(db_profile_names), string name)
-      if(db_profile_names[name]==p)
+    foreach(db_profile_names; string name; int dbp)
+      if (dbp == p)
 	m_delete(db_profile_names, name);
-    m_delete(query_profile_names, p);
+    foreach(query_profile_names; string name; int qp)
+      if (qp == p)
+	m_delete(query_profile_names, name);
     foreach(indices(entry_cache), string id) {
       array ids = array_sscanf(id, "%d:%d");
       if(ids[0]==p || ids[1]==p)
