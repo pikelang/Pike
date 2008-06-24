@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.433 2008/06/19 07:35:58 grubba Exp $
+|| $Id: language.yacc,v 1.434 2008/06/24 08:24:06 grubba Exp $
 */
 
 %pure_parser
@@ -411,12 +411,20 @@ low_program_ref: string_constant
 
     ref_push_string($1->u.sval.u.string);
     if (call_handle_inherit($1->u.sval.u.string)) {
+      STACK_LEVEL_CHECK(2);
       $$=mksvaluenode(Pike_sp-1);
       pop_stack();
     }
     else
       $$=mknewintnode(0);
+    STACK_LEVEL_CHECK(1);
     if($$->name) free_string($$->name);
+#ifdef PIKE_DEBUG
+    if (Pike_sp[-1].type != T_STRING) {
+      Pike_fatal("Compiler lost track of program name.\n");
+    }
+#endif /* PIKE_DEBUG */
+    /* FIXME: Why not use $1->u.sval.u.string here? */
     add_ref( $$->name=Pike_sp[-1].u.string );
     free_node($1);
 
