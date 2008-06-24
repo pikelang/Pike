@@ -152,4 +152,10 @@ class ShadowedMapping(static mapping|ShadowedMapping parent)
     }
     return joined + ([]);
   }
+
+  static string _sprintf(int c)
+  {
+    update_joined();
+    return sprintf(sprintf("%%%c", c), joined);
+  }
 }
