@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.826 2008/06/24 14:48:45 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.827 2008/06/24 18:58:02 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -4715,6 +4715,35 @@ test_any([[
   return zero_type (m_delete (x, 17));
 ]], 1)
 ]])]])]])
+
+// m_generation
+test_do([[ add_constant("m", ([])); ]])
+test_false(m_generation(m));
+test_any([[
+	m->foo = 1;
+	m->bar = 2;
+	return m_generation(m);
+]], 1)
+test_eq(m_generation(m), 1)
+test_any([[
+	m->foo = 3;
+	return m_generation(m);
+]], 2)
+test_any([[
+	m_delete(m, "gazonk");
+	return m_generation(m);
+]], 2)
+test_any([[
+	m_delete(m, "bar");
+	return m_generation(m);
+]], 3)
+test_any([[
+	m_delete(m, "foo");
+	return m_generation(m);
+]], 4)
+test_equal(m, ([]));
+test_eq(m_generation(([])), 0)
+test_do(add_constant("m"));
 
 // multiset tests
 
