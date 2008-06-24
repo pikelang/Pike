@@ -1,5 +1,5 @@
 // Compatibility namespace
-// $Id: __default.pmod,v 1.19 2008/06/24 13:06:32 mast Exp $
+// $Id: __default.pmod,v 1.20 2008/06/24 13:20:33 mast Exp $
 
 #pike 7.5
 
@@ -160,9 +160,7 @@ mapping(string:mixed) all_constants_overrides = ([
 
 static object compat_all_constants =
   __REAL_VERSION__::master()->CompatAllConstants (
-    // 7.6::master() doesn't work here for some reason.
-    __REAL_VERSION__::master()->get_compat_master (7, 6)
-			      ->all_constants_overrides |
+    __VERSION__::__default.all_constants_overrides |
     all_constants_overrides);
 
 mapping(string:mixed) all_constants()
