@@ -22,8 +22,10 @@ class ShadowedMapping(static mapping|ShadowedMapping parent)
   // Updates the cached joined mapping if needed.
   static void update_joined()
   {
-    if (!joined || parent_generation != m_generation(parent)) {
+    if (!joined || (parent_generation != m_generation(parent))) {
       joined = [mapping](parent + shadow);
+      parent_generation = m_generation(parent);
+      dirty = 1;
     }
   }
 
@@ -54,7 +56,7 @@ class ShadowedMapping(static mapping|ShadowedMapping parent)
   static int _m_generation()
   {
     if (dirty || (parent_generation != m_generation(parent))) {
-      if (parent_generation != m_generation(parent))
+      if (!dirty && (parent_generation != m_generation(parent)))
 	update_joined();
       generation++;
       dirty = 0;
