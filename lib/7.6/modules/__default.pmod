@@ -1,5 +1,5 @@
 // Compatibility namespace
-// $Id: __default.pmod,v 1.9 2008/06/24 12:44:46 mast Exp $
+// $Id: __default.pmod,v 1.10 2008/06/24 13:06:32 mast Exp $
 
 #pike 7.7
 
@@ -24,14 +24,16 @@ object master()
   return __REAL_VERSION__::master()->get_compat_master(7, 6);
 }
 
+mapping(string:mixed) all_constants_overrides = ([
+  "all_constants": all_constants,
+  "_describe_program": _describe_program,
+  "sprintf": sprintf_76,
+  "array_sscanf": array_sscanf_76,
+  "master": master,
+]);
+
 static object compat_all_constants =
-  __REAL_VERSION__::master()->CompatAllConstants (
-    (["all_constants": all_constants,
-      "_describe_program": _describe_program,
-      "sprintf": sprintf_76,
-      "array_sscanf": array_sscanf_76,
-      "master": master,
-    ]));
+  __REAL_VERSION__::master()->CompatAllConstants (all_constants_overrides);
 
 mapping(string:mixed) all_constants()
 {

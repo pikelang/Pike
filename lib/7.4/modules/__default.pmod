@@ -1,5 +1,5 @@
 // Compatibility namespace
-// $Id: __default.pmod,v 1.18 2008/06/24 12:44:46 mast Exp $
+// $Id: __default.pmod,v 1.19 2008/06/24 13:06:32 mast Exp $
 
 #pike 7.5
 
@@ -115,49 +115,55 @@ object master()
   return __REAL_VERSION__::master()->get_compat_master(7, 4);
 }
 
-static object compat_all_constants =
-  __REAL_VERSION__::master()->CompatAllConstants (
-    (["all_constants": all_constants,
-      "rusage": rusage,
-      "hash": hash_7_4,
-      "master": master,
+mapping(string:mixed) all_constants_overrides = ([
+  "all_constants": all_constants,
+  "rusage": rusage,
+  "hash": hash_7_4,
+  "master": master,
 #if constant(__builtin.security)
-      "call_with_creds": __builtin.security.call_with_creds,
-      "get_current_creds": __builtin.security.get_current_creds,
-      "get_object_creds": __builtin.security.get_object_creds,
+  "call_with_creds": __builtin.security.call_with_creds,
+  "get_current_creds": __builtin.security.get_current_creds,
+  "get_object_creds": __builtin.security.get_object_creds,
 #endif
 #if constant(Pipe._pipe_debug)
-      "_pipe_debug": Pipe._pipe_debug,
+  "_pipe_debug": Pipe._pipe_debug,
 #endif /* constant(Pipe._pipe_debug) */
 #if constant(System.getpwent)
-      "getpwent": System.getpwent,
+  "getpwent": System.getpwent,
 #endif
 #if constant(System.endpwent)
-      "endpwent": System.endpwent,
+  "endpwent": System.endpwent,
 #endif
 #if constant(System.setpwent)
-      "setpwent": System.setpwent,
+  "setpwent": System.setpwent,
 #endif
 #if constant(System.getgrent)
-      "getgrent": System.getgrent,
+  "getgrent": System.getgrent,
 #endif
 #if constant(System.endgrent)
-      "endgrent": System.endgrent,
+  "endgrent": System.endgrent,
 #endif
 #if constant(System.getgrent)
-      "setgrent": System.getgrent,
+  "setgrent": System.getgrent,
 #endif
 #if constant(__builtin.security)
-      "call_with_creds": Pike.Security.call_with_creds,
-      "get_current_creds": Pike.Security.get_current_creds,
-      "get_object_creds": Pike.Security.get_object_creds,
+  "call_with_creds": Pike.Security.call_with_creds,
+  "get_current_creds": Pike.Security.get_current_creds,
+  "get_object_creds": Pike.Security.get_object_creds,
 #endif
 #ifdef __NT__
-      "explode_path": lambda(string x) { return replace(x,"\\","/")/"/"; },
+  "explode_path": lambda(string x) { return replace(x,"\\","/")/"/"; },
 #else
-      "explode_path": lambda(string x) { return x/"/"; },
+  "explode_path": lambda(string x) { return x/"/"; },
 #endif
-    ]));
+]);
+
+static object compat_all_constants =
+  __REAL_VERSION__::master()->CompatAllConstants (
+    // 7.6::master() doesn't work here for some reason.
+    __REAL_VERSION__::master()->get_compat_master (7, 6)
+			      ->all_constants_overrides |
+    all_constants_overrides);
 
 mapping(string:mixed) all_constants()
 {
