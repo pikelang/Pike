@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.191 2008/06/23 16:40:01 mast Exp $
+|| $Id: pike_memory.c,v 1.192 2008/06/24 01:43:47 mast Exp $
 */
 
 #include "global.h"
@@ -1105,7 +1105,7 @@ PMOD_EXPORT void *malloc(size_t x)
     char * tmp=(char *)th_getspecific(dmalloc_last_seen_location);
     if(tmp)
     {
-      if(tmp[0] == 'S' && tmp[-1]=='N')
+      if(LOCATION_TYPE (tmp) == 'S' && tmp[-1]=='N')
 	ret=debug_malloc(x,tmp-1);
       else
 	ret=debug_malloc(x,tmp);
@@ -1277,6 +1277,7 @@ void *fake_calloc(size_t x, size_t y)
 
 
 static struct memhdr *my_find_memhdr(void *, int);
+static void dump_location_bt (LOCATION l, int indent, const char *prefix);
 
 #include "block_alloc_h.h"
 
@@ -1313,6 +1314,19 @@ int debug_malloc_check_all = 0;
 #define MAX_UNFREE_MEM 1024*1024*32
 #define RNDSIZE 1777 /* A small size will help keep it in the cache */
 #define AD_HOC_CHECK_INTERVAL 620 * 10
+
+#define BT_MAX_FRAMES 10
+#define ALLOC_BT_MAX_FRAMES 15
+
+#ifdef C_STACK_TRACE
+#define GET_ALLOC_BT(BT)						\
+  c_stack_frame BT[ALLOC_BT_MAX_FRAMES];				\
+  int PIKE_CONCAT (BT, _len) = backtrace (BT, ALLOC_BT_MAX_FRAMES)
+#define BT_ARGS(BT) , BT, PIKE_CONCAT (BT, _len)
+#else
+#define GET_ALLOC_BT(BT)
+#define BT_ARGS(BT)
+#endif
 
 static void *blocks_to_free[FREE_DELAY];
 static unsigned int blocks_to_free_ptr=0;
@@ -1361,6 +1375,10 @@ struct memhdr
   int misses;
 #endif
   int gc_generation;
+#ifdef C_STACK_TRACE
+  c_stack_frame alloc_bt[ALLOC_BT_MAX_FRAMES];
+  int alloc_bt_len;
+#endif
   void *data;
   struct memloc *locations;
 };
@@ -1953,7 +1971,11 @@ static void remove_location(struct memhdr *mh, LOCATION location)
 
 LOCATION dmalloc_default_location=0;
 
-static struct memhdr *low_make_memhdr(void *p, int s, LOCATION location)
+static struct memhdr *low_make_memhdr(void *p, int s, LOCATION location
+#ifdef C_STACK_TRACE
+				      , c_stack_frame *bt, int bt_len
+#endif
+				     )
 {
   struct memhdr *mh = get_memhdr(p);
   struct memloc *ml = alloc_memloc();
@@ -1977,6 +1999,14 @@ static struct memhdr *low_make_memhdr(void *p, int s, LOCATION location)
   ml->next = mh->locations;
   mh->locations = ml;
   mh->gc_generation=gc_generation * 1000 + Pike_in_gc;
+#ifdef C_STACK_TRACE
+  if (bt_len > 0) {
+    MEMCPY (mh->alloc_bt, bt, bt_len * sizeof (c_stack_frame));
+    mh->alloc_bt_len = bt_len;
+  }
+  else
+    mh->alloc_bt_len = 0;
+#endif
   ml->location=location;
   ml->times=1;
   ml->mh=mh;
@@ -2011,8 +2041,9 @@ PMOD_EXPORT void dmalloc_trace(void *p)
 
 PMOD_EXPORT void dmalloc_register(void *p, int s, LOCATION location)
 {
+  GET_ALLOC_BT (bt);
   mt_lock(&debug_malloc_mutex);
-  low_make_memhdr(p, s, location);
+  low_make_memhdr(p, s, location BT_ARGS (bt));
   mt_unlock(&debug_malloc_mutex);
 }
 
@@ -2154,13 +2185,15 @@ PMOD_EXPORT void *debug_malloc(size_t s, LOCATION location)
   m=(char *)real_malloc(s + DEBUG_MALLOC_PAD*2);
   if(m)
   {
+    GET_ALLOC_BT (bt);
     m=do_pad(m, s);
-    low_make_memhdr(m, s, location)->flags|=MEM_PADDED;
+    low_make_memhdr(m, s, location BT_ARGS (bt))->flags|=MEM_PADDED;
   } else {
     flush_blocks_to_free();
     if ((m=(char *)real_malloc(s + DEBUG_MALLOC_PAD*2))) {
+      GET_ALLOC_BT (bt);
       m=do_pad(m, s);
-      low_make_memhdr(m, s, location)->flags|=MEM_PADDED;
+      low_make_memhdr(m, s, location BT_ARGS (bt))->flags|=MEM_PADDED;
     }
   }
 
@@ -2209,8 +2242,10 @@ PMOD_EXPORT void *debug_realloc(void *p, size_t s, LOCATION location)
       add_location(mh, location);
       move_memhdr(mh, m);
     }
-    else
-      low_make_memhdr(m, s, location)->flags|=MEM_PADDED;
+    else {
+      GET_ALLOC_BT (bt);
+      low_make_memhdr(m, s, location BT_ARGS (bt))->flags|=MEM_PADDED;
+    }
   }
   if(verbose_debug_malloc)
     fprintf(stderr, "realloc(%p, %ld) => %p  (%s)\n",
@@ -2491,6 +2526,7 @@ void dump_memhdr_locations(struct memhdr *from,
 	    find_location(&no_leak_memlocs, l->location) ? "" :
 	    ( from->flags & MEM_REFERENCED ? " *" : " !*!")
 	    );
+    dump_location_bt (l->location, indent + 4, "| ");
 
     /* Allow linked memhdrs */
 /*    dump_memhdr_locations(my_find_memhdr(l,0),notfrom,indent+2); */
@@ -2613,6 +2649,18 @@ PMOD_EXPORT void debug_malloc_dump_references(void *x, int indent, int depth, in
 {
   struct memhdr *mh=my_find_memhdr(x,0);
   if(!mh) return;
+
+#ifdef C_STACK_TRACE
+  if (mh->alloc_bt_len) {
+    int i;
+    fprintf (stderr, "%*sStack at allocation:\n", indent, "");
+    for (i = 0; i < mh->alloc_bt_len; i++) {
+      fprintf (stderr, "%*s| ", indent, "");
+      backtrace_symbols_fd (mh->alloc_bt + i, 1, 2);
+    }
+  }
+#endif
+
   dump_memhdr_locations(mh,0, indent);
   if(memheader_references_located)
   {
@@ -2990,11 +3038,22 @@ struct dmalloc_string
 
 static struct dmalloc_string *dstrhash[DSTRHSIZE];
 
-static LOCATION low_dynamic_location(char type, const char *file, int line)
+static LOCATION low_dynamic_location(char type, const char *file, int line,
+				     const char *name,
+				     const unsigned char *bin_data,
+				     unsigned int bin_data_len)
 {
   struct dmalloc_string **prev, *str;
-  int len=strlen(file);
+  size_t len=strlen(file), name_len;
   unsigned long h,hval=hashmem((const unsigned char *) file,len,64)+line;
+
+  if (name) {
+    name_len = strlen (name);
+    hval += hashmem ((const unsigned char *) name, name_len, 64);
+  }
+
+  if (bin_data) hval += hashmem (bin_data, bin_data_len, 64);
+
   h=hval % DSTRHSIZE;
 
   mt_lock(&debug_malloc_mutex);
@@ -3002,11 +3061,31 @@ static LOCATION low_dynamic_location(char type, const char *file, int line)
   for(prev = dstrhash + h; (str=*prev); prev = &str->next)
   {
     if(hval == str->hval &&
+       !STRNCMP(str->str+1, file, len) &&
        str->str[len+1]==':' &&
-       !MEMCMP(str->str+1, file, len) &&
-       str->str[0]==type &&
+       LOCATION_TYPE (str->str) == type &&
        atoi(str->str+len+2) == line)
     {
+
+      if (name) {
+	char *s = STRCHR (str->str + len + 2, ' ');
+	if (!s) continue;
+	s++;
+	if (strcmp (s, name)) continue;
+      }
+
+      if (bin_data) {
+	/* Can assume that str also carries a bin_data blob since it
+	 * has the same type. */
+	unsigned char *str_bin_base =
+	  (unsigned char *) str->str + len + strlen (str->str + len) + 1;
+	unsigned int str_bin_len = EXTRACT_UWORD (str_bin_base);
+	str_bin_base += 2;
+	if (str_bin_len != bin_data_len ||
+	    MEMCMP (bin_data, str_bin_base, str_bin_len))
+	  continue;
+      }
+
       *prev=str->next;
       str->next=dstrhash[h];
       dstrhash[h]=str;
@@ -3016,8 +3095,29 @@ static LOCATION low_dynamic_location(char type, const char *file, int line)
   
   if(!str)
   {
-    str=malloc( sizeof(struct dmalloc_string) + len + 20);
-    sprintf(str->str, "%c%s:%d", type, file, line);
+    char line_str[30];
+    size_t l;
+
+    sprintf (line_str, "%d", line);
+    l = len + strlen (line_str) + 2;
+    if (name) l += name_len + 1;
+    str=malloc (sizeof (struct dmalloc_string) + l +
+		(bin_data ? bin_data_len + 2 : 0));
+
+    if (name)
+      sprintf(str->str, "%c%s:%s %s", type, file, line_str, name);
+    else
+      sprintf(str->str, "%c%s:%s", type, file, line_str);
+
+    if (bin_data) {
+      unsigned INT16 bl = (unsigned INT16) bin_data_len;
+      if (bl != bin_data_len)
+	Pike_fatal ("Too long bin_data blob: %u\n", bin_data_len);
+      ((unsigned char *) str->str)[l + 1] = ((unsigned char *) &bl)[0];
+      ((unsigned char *) str->str)[l + 2] = ((unsigned char *) &bl)[1];
+      MEMCPY (str->str + l + 3, bin_data, bin_data_len);
+    }
+
     str->hval=hval;
     str->next=dstrhash[h];
     dstrhash[h]=str;
@@ -3030,7 +3130,7 @@ static LOCATION low_dynamic_location(char type, const char *file, int line)
 
 LOCATION dynamic_location(const char *file, int line)
 {
-  return low_dynamic_location('D',file,line);
+  return low_dynamic_location('D',file,line, NULL, NULL, 0);
 }
 
 
@@ -3052,7 +3152,7 @@ PMOD_EXPORT void * debug_malloc_name(void *p,const char *file, int line)
 }
 
 /*
- * This copies all dynamically assigned names from
+ * This copies all dynamic locations from
  * one pointer to another. Used by clone() to copy
  * the name(s) of the program.
  */
@@ -3106,6 +3206,44 @@ char *dmalloc_find_name(void *p)
     mt_unlock(&debug_malloc_mutex);
   }
   return name;
+}
+
+PMOD_EXPORT void *debug_malloc_update_location_bt (void *p, const char *file,
+						   int line, const char *name)
+{
+  LOCATION l;
+#ifdef C_STACK_TRACE
+  c_stack_frame bt[BT_MAX_FRAMES];
+  int n = backtrace (bt, BT_MAX_FRAMES);
+  if (n > 1)
+    l = low_dynamic_location ('B', file, line, name,
+			      /* Shave off one entry for our own frame. */
+			      (unsigned char *) (bt + 1),
+			      (n - 1) * sizeof (c_stack_frame));
+  else
+#endif
+    l = low_dynamic_location ('D', file, line, name, NULL, 0);
+  return debug_malloc_update_location (p, l);
+}
+
+static void dump_location_bt (LOCATION location, int indent, const char *prefix)
+{
+#ifdef C_STACK_TRACE
+  if (LOCATION_TYPE (location) == 'B') {
+    c_stack_frame bt[BT_MAX_FRAMES];
+    int i, frames;
+    unsigned char *bin_base =
+      (unsigned char *) location + strlen (location) + 1;
+    unsigned int bin_len = EXTRACT_UWORD (bin_base);
+    MEMCPY ((unsigned char *) bt, bin_base + 2, bin_len);
+    frames = bin_len / sizeof (c_stack_frame);
+
+    for (i = 0; i < frames; i++) {
+      fprintf (stderr, "%*s%s", indent, "", prefix);
+      backtrace_symbols_fd (bt + i, 1, 2);
+    }
+  }
+#endif
 }
 
 PMOD_EXPORT int debug_malloc_touch_fd(int fd, LOCATION location)
@@ -3210,7 +3348,7 @@ void dmalloc_set_mmap_from_template(void *p, void *p2)
       struct memloc *l;
       for(l=from->locations;l;l=l->next)
       {
-	if(l->location[0]=='T')
+	if(LOCATION_TYPE (l->location) == 'T')
 	{
 	  add_location(mh, l->location+1);
 	  names++;
@@ -3257,7 +3395,7 @@ static void low_dmalloc_describe_location(struct memhdr *mh, int offset, int ind
   struct memloc *l;
   for(l=mh->locations;l;l=l->next)
   {
-    if(l->location[0]=='M')
+    if(LOCATION_TYPE (l->location) == 'M')
     {
       struct memory_map *m = (struct memory_map *)(l->location - 1);
       very_low_dmalloc_describe_location(m, offset, indent);

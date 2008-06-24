@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dmalloc.h,v 1.63 2008/05/28 18:16:04 mast Exp $
+|| $Id: dmalloc.h,v 1.64 2008/06/24 01:43:46 mast Exp $
 */
 
 #ifndef DMALLOC_H
@@ -14,14 +14,30 @@ PMOD_EXPORT extern void *debug_xmalloc(size_t);
 PMOD_EXPORT extern void *debug_xcalloc(size_t,size_t);
 PMOD_EXPORT extern void *debug_xrealloc(void *,size_t);
 
+#if defined (HAVE_EXECINFO_H) && defined (HAVE_BACKTRACE)
+/* GNU libc provides some tools to inspect the stack. */
+#include <execinfo.h>
+typedef void *c_stack_frame;
+#define C_STACK_TRACE
+#endif
+
 #define DMALLOC_NAMED_LOCATION(NAME)	\
     (("NS" __FILE__ ":" DEFINETOSTR(__LINE__) NAME )+1)
 
 #define DMALLOC_LOCATION() DMALLOC_NAMED_LOCATION("")
 
+/* Location types in loc[0]:
+ * 'S': static (DMALLOC_NAMED_LOCATION)
+ * 'D': dynamic (dynamic_location)
+ * 'B': dynamic with backtrace (debug_malloc_update_location_bt)
+ * 'T': memory map template
+ * 'M': memory map
+ */
 typedef char *LOCATION;
+#define LOCATION_TYPE(X) ((X)[0])
 #define LOCATION_NAME(X) ((X)+1)
-#define LOCATION_IS_DYNAMIC(X) ((X)[0]=='D')
+#define LOCATION_IS_DYNAMIC(X)						\
+  (LOCATION_TYPE (X)=='D' || LOCATION_TYPE (X) == 'B')
 
 #ifdef DMALLOC_TRACE
 #define DMALLOC_TRACELOGSIZE 131072
@@ -81,6 +97,8 @@ PMOD_EXPORT int dmalloc_mark_as_free(void*,int);
 
 PMOD_EXPORT void *debug_malloc_update_location(void *, LOCATION);
 PMOD_EXPORT void *debug_malloc_update_location_ptr(void *, ptrdiff_t, LOCATION);
+PMOD_EXPORT void *debug_malloc_update_location_bt (void *p, const char *file,
+						   int line, const char *name);
 void search_all_memheaders_for_references(void);
 
 /* Beware! names of named memory regions are never ever freed!! /Hubbe */
@@ -106,6 +124,11 @@ char *dmalloc_find_name(void *p);
 #define debug_malloc_pass(X) debug_malloc_update_location((void *)(X),DMALLOC_LOCATION())
 #define debug_malloc_pass_named(X,NAME) debug_malloc_update_location((void *)(X),DMALLOC_NAMED_LOCATION(" " NAME))
 #define dmalloc_touch_struct_ptr(TYPE,X,MEMBER) ((TYPE)debug_malloc_update_location_ptr((void *)(X), ((ptrdiff_t)& (((TYPE)0)->MEMBER)), DMALLOC_LOCATION()))
+
+/* These also save the call stack if support for that exists. Beware
+ * that this can take a lot of extra memory - for temporary use only. */
+#define debug_malloc_touch_bt(X) debug_malloc_update_location_bt ((void *)(X), __FILE__, __LINE__, NULL)
+#define debug_malloc_touch_named_bt(X,NAME) debug_malloc_update_location_bt ((void *)(X), __FILE__, __LINE__, (NAME))
 
 #define xalloc(X) ((void *)debug_malloc_update_location((void *)debug_xalloc(X), DMALLOC_NAMED_LOCATION(" xalloc")))
 #define xfree(X) debug_xfree(debug_malloc_update_location((X), DMALLOC_NAMED_LOCATION(" free")))
@@ -213,6 +236,8 @@ PMOD_EXPORT void* dlpvalloc(size_t);
 #define debug_malloc_touch_named(X,NAME) DMALLOC_TRACE_LOG(DMALLOC_NAMED_LOCATION(" " NAME))
 #define debug_malloc_pass(X) (DMALLOC_TRACE_LOG(DMALLOC_LOCATION()),(X))
 #define debug_malloc_pass_named(X,NAME) (DMALLOC_TRACE_LOG(DMALLOC_NAMED_LOCATION(" " NAME)), (X))
+#define debug_malloc_touch_bt(X) DMALLOC_TRACE_LOG(DMALLOC_LOCATION())
+#define debug_malloc_touch_named_bt(X,NAME) DMALLOC_TRACE_LOG(DMALLOC_NAMED_LOCATION(" " NAME))
 #define dmalloc_touch(TYPE,X) debug_malloc_pass (X)
 #define dmalloc_touch_named(TYPE,X,NAME) debug_malloc_pass_named (X, NAME)
 #else /* DMALLOC_TRACE */
@@ -223,6 +248,8 @@ PMOD_EXPORT void* dlpvalloc(size_t);
 #define debug_malloc_touch_named(X,NAME)
 #define debug_malloc_pass(X) (X)
 #define debug_malloc_pass_named(X,NAME) (X)
+#define debug_malloc_touch_bt(X)
+#define debug_malloc_touch_named_bt(X,NAME)
 #define dmalloc_touch(TYPE,X) (X)
 #define dmalloc_touch_named(TYPE,X,NAME) (X)
 #endif /* !MALLOC_TRACE */
