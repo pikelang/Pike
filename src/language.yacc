@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.434 2008/06/24 08:24:06 grubba Exp $
+|| $Id: language.yacc,v 1.435 2008/06/24 15:48:02 mast Exp $
 */
 
 %pure_parser
@@ -3946,11 +3946,34 @@ low_idents: TOK_IDENTIFIER
     copy_shared_string(Pike_compiler->last_identifier, $3->u.sval.u.string);
 
     /* Check predef:: first, and then the modules. */
-    if ((c->default_module.type == T_MAPPING) &&
-	(efun = low_mapping_lookup(c->default_module.u.mapping,
-				   &($3->u.sval)))) {
-      $$ = mkconstantsvaluenode(efun);
-    } else if (!($$ = resolve_identifier(Pike_compiler->last_identifier))) {
+
+    $$ = 0;
+
+    if (c->default_module.type == T_MAPPING) {
+      if ((efun = low_mapping_lookup(c->default_module.u.mapping,
+				     &($3->u.sval))))
+	$$ = mkconstantsvaluenode(efun);
+    }
+
+    else if (c->default_module.type != T_INT) {
+      JMP_BUF tmp;
+      if (SETJMP (tmp))
+	handle_compile_exception ("Couldn't index %d.%d "
+				  "default module with %O.",
+				  $1->u.integer.a, $1->u.integer.b,
+				  &$3->u.sval);
+      else {
+	push_svalue (&c->default_module);
+	push_svalue (&$3->u.sval);
+	f_index (2);
+	if (!IS_UNDEFINED (Pike_sp - 1))
+	  $$ = mkconstantsvaluenode (Pike_sp - 1);
+	pop_stack();
+      }
+      UNSETJMP(tmp);
+    }
+
+    if (!$$ && !($$ = resolve_identifier(Pike_compiler->last_identifier))) {
       if((Pike_compiler->flags & COMPILATION_FORCE_RESOLVE) ||
 	 (Pike_compiler->compiler_pass==2)) {
 	my_yyerror("Undefined identifier %d.%d::%S.",
@@ -3961,6 +3984,7 @@ low_idents: TOK_IDENTIFIER
 	$$=mknode(F_UNDEFINED,0,0);
       }
     }
+
     change_compiler_compatibility(old_major, old_minor);
     free_node($1);
     free_node($3);
