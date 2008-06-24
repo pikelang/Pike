@@ -153,6 +153,12 @@ class ShadowedMapping(static mapping|ShadowedMapping parent)
     return joined + ([]);
   }
 
+  static mixed _search(mixed val)
+  {
+    update_joined();
+    return search(joined, val);
+  }
+
   static string _sprintf(int c)
   {
     update_joined();
