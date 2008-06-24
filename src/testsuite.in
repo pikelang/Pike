@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.825 2008/06/13 21:14:28 marcus Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.826 2008/06/24 14:48:45 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -663,6 +663,21 @@ test_compile_error([[
 test_compile_error([[
   function(string,...:int) foo;
 ]]);
+
+test_compile_any([[
+  #pragma strict_types
+  void x (void|mapping(string:string) args)
+  {
+    if (args)
+      foreach (indices (args), string a)
+	werror ("%O\n", a);
+  }
+]])
+
+// For some reason, the test above doesn't generate the warning (about
+// the type from indices (args)) if it comes after the one below.
+// Also, if it is repeated it doesn't generate the warning the second
+// time. Not very reassuring.. /mast
 
 test_any([[return class Z {
 string bonk() { return "oiff"; }
