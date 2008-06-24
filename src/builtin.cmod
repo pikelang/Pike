@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.211 2008/06/23 19:04:35 mast Exp $
+|| $Id: builtin.cmod,v 1.212 2008/06/24 18:49:14 grubba Exp $
 */
 
 #include "global.h"
@@ -584,6 +584,32 @@ PIKEFUN mapping(string:mixed) gc_parameters (void|mapping(string:mixed) params)
 #undef HANDLE_FLOAT_FACTOR
 
   REF_RETURN params;
+}
+
+/*! @decl int m_generation(mapping m)
+ *!
+ *!   Get the content generation for the mapping @[m].
+ */
+PIKEFUN int m_generation(mapping|object m)
+  efun;
+{
+  if (m->type == T_MAPPING) {
+    RETURN mapping_generation(m->u.mapping);
+  }
+  if (m->type == T_OBJECT && m->u.object->prog) {
+    struct object *o = m->u.object;
+    struct program *p = o->prog;
+    int id_level = p->inherits[m->subtype].identifier_level;
+    int fun;
+    p = p->inherits[m->subtype].prog;
+    /* NOTE: Fake lfun! */
+    fun = low_find_lfun(p, LFUN__SEARCH);
+    if (fun >= 0) {
+      apply_low(o, fun + id_level, 0);
+      stack_pop_n_elems_keep_top(args);
+    }
+  }
+  SIMPLE_BAD_ARG_ERROR("m_generation", 1, "mapping");
 }
 
 /*! @decl string ctime(int timestamp)
