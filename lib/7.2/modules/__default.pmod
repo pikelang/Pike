@@ -1,5 +1,5 @@
 // Compatibility namespace
-// $Id: __default.pmod,v 1.21 2008/06/25 16:18:17 grubba Exp $
+// $Id: __default.pmod,v 1.22 2008/06/25 19:16:28 grubba Exp $
 
 #pike 7.3
 
@@ -122,7 +122,7 @@ object master()
 static Mapping.ShadowedMapping compat_all_constants =
   Mapping.ShadowedMapping(predef::all_constants(),
 			  ([
-#define ADD(X) ##X: X
+#define ADD(X) #X: X
 
 			    ADD(all_constants),
 			    ADD(dirname),
