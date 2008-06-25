@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: DefaultParser.pike,v 1.12 2008/06/24 15:04:49 wellhard Exp $
+// $Id: DefaultParser.pike,v 1.13 2008/06/25 09:45:41 wellhard Exp $
 
 static inherit .AbstractParser;
 static inherit .Lexer;
@@ -333,6 +333,11 @@ static void parseExpr6(int prefix, TextNode node) {
       words[i]=replace(words[i], ({star, questionmark}), ({"*","?"}));
     // End of abominable kludge
     if (words) {
+      // If search phrase, remove empty globs. This might promote to
+      // ordinary search word that do support remining globs.
+      if (sizeof(words) > 1)
+	words = filter(words, lambda(string w) { return (w - "*" - "?") == "" ? 0 : 1; });
+    
       if (sizeof(words) == 1)
 	switch (prefix) {
         case '+': node->plusWords += words;  break;
