@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.204 2008/06/25 16:15:43 grubba Exp $
+|| $Id: mapping.c,v 1.205 2008/06/25 17:48:10 grubba Exp $
 */
 
 #include "global.h"
@@ -1823,7 +1823,8 @@ PMOD_EXPORT int mapping_equal_p(struct mapping *a, struct mapping *b, struct pro
 
   if (a->data == b->data) return 1;
 
-  if (a->data->flags || b->data->flags) return 0;
+  /* If either is weak, they're different. */
+  if ((a->data->flags | b->data->flags) & MAPPING_WEAK) return 0;
 
   check_mapping_for_destruct(a);
   check_mapping_for_destruct(b);
