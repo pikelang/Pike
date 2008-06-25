@@ -1,5 +1,5 @@
 // Compatibility namespace
-// $Id: __default.pmod,v 1.20 2008/06/24 20:14:10 grubba Exp $
+// $Id: __default.pmod,v 1.21 2008/06/25 16:18:17 grubba Exp $
 
 #pike 7.3
 
@@ -120,7 +120,33 @@ object master()
 }
 
 static Mapping.ShadowedMapping compat_all_constants =
-  Mapping.ShadowedMapping(predef::all_constants());
+  Mapping.ShadowedMapping(predef::all_constants(),
+			  ([
+#define ADD(X) ##X: X
+
+			    ADD(all_constants),
+			    ADD(dirname),
+#if constant(Yp.default_domain)
+			    ADD(default_yp_domain),
+#endif
+			    ADD(new),
+			    ADD(clone),
+
+			    ADD(master),
+
+  // spider
+			    ADD(_low_program_name),
+			    ADD(set_start_quote),
+			    ADD(set_end_quote),
+			    ADD(parse_accessed_database),
+			    ADD(_dump_obj_table),
+			    ADD(parse_html),
+			    ADD(parse_html_lines),
+			    ADD(discdate),
+			    ADD(stardate),
+			    ADD(get_all_active_fd),
+			    ADD(fd_info),
+			  ]), 1);
 
 mapping(string:mixed) all_constants()
 {
@@ -129,31 +155,4 @@ mapping(string:mixed) all_constants()
   return x;
 }
 
-static void create()
-{
-#define ADD(X) compat_all_constants->##X=X
-
-  ADD(all_constants);
-  ADD(dirname);
-#if constant(Yp.default_domain)
-  ADD(default_yp_domain);
-#endif
-  ADD(new);
-  ADD(clone);
-
-  ADD(master);
-
-  // spider
-  ADD(_low_program_name);
-  ADD(set_start_quote);
-  ADD(set_end_quote);
-  ADD(parse_accessed_database);
-  ADD(_dump_obj_table);
-  ADD(parse_html);
-  ADD(parse_html_lines);
-  ADD(discdate);
-  ADD(stardate);
-  ADD(get_all_active_fd);
-  ADD(fd_info);
-}
 

@@ -1,5 +1,5 @@
 // Compatibility namespace
-// $Id: __default.pmod,v 1.11 2008/06/24 20:14:10 grubba Exp $
+// $Id: __default.pmod,v 1.12 2008/06/25 16:18:17 grubba Exp $
 
 #pike 7.7
 
@@ -25,16 +25,14 @@ object master()
 }
 
 static Mapping.ShadowedMapping compat_all_constants =
-  Mapping.ShadowedMapping(predef::all_constants());
-
-void add_constant(string name, mixed|void value)
-{
-  if (zero_type(value)) {
-    m_delete(compat_all_constants, name);
-  } else {
-    compat_all_constants[name] = value;
-  }
-}
+  Mapping.ShadowedMapping(predef::all_constants(),
+			  ([
+			    "all_constants": all_constants,
+			    "_describe_program": _describe_program,
+			    "sprintf": sprintf_76,
+			    "array_sscanf": array_sscanf_76,
+			    "master": master,
+			  ]), 1);
 
 mapping(string:mixed) all_constants()
 {
@@ -45,10 +43,4 @@ mapping(string:mixed) all_constants()
 
 static void create()
 {
-  // add_constant("add_constant", add_constant);
-  add_constant("all_constants", all_constants);
-  add_constant("_describe_program", _describe_program);
-  add_constant("sprintf", sprintf_76);
-  add_constant("array_sscanf", array_sscanf_76);
-  add_constant("master", master);
 }

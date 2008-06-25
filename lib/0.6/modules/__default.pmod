@@ -24,17 +24,16 @@ object master()
 }
 
 static Mapping.ShadowedMapping compat_all_constants =
-  Mapping.ShadowedMapping(predef::all_constants());
+  Mapping.ShadowedMapping(predef::all_constants(),
+			  ([
+			    "aggregate": aggregate,
+			    "all_constants": all_constants,
+			    "master": master,
+			  ]), 1);
 
 mapping(string:mixed) all_constants()
 {
   // Intentional lie in the return type.
   mixed x = compat_all_constants;
   return x;
-}
-
-static void create()
-{
-  foreach(indices(this_object()), string id)
-    compat_all_constants[id]=::`->(id);
 }

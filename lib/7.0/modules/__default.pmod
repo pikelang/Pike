@@ -1,5 +1,5 @@
 // Compatibility namespace
-// $Id: __default.pmod,v 1.8 2008/06/24 20:14:10 grubba Exp $
+// $Id: __default.pmod,v 1.9 2008/06/25 16:18:17 grubba Exp $
 
 #pike 7.1
 
@@ -87,21 +87,19 @@ object master()
 }
 
 static Mapping.ShadowedMapping compat_all_constants =
-  Mapping.ShadowedMapping(predef::all_constants());
+  Mapping.ShadowedMapping(predef::all_constants(),
+			  ([
+			    "all_constants": all_constants,
+			    "file_stat": file_stat,
+			    "_typeof": _typeof,
+			    "m_delete": m_delete,
+			    "hash": hash_7_0,
+			    "master": master,
+			  ]), 1);
 
 mapping(string:mixed) all_constants()
 {
   // Intentional lie in the return type.
   mixed x = compat_all_constants;
   return x;
-}
-
-static void create()
-{
-  compat_all_constants->all_constants=all_constants;
-  compat_all_constants->file_stat = file_stat;
-  compat_all_constants->_typeof=_typeof;
-  compat_all_constants->m_delete=m_delete;
-  compat_all_constants->hash=hash_7_0;
-  compat_all_constants->master=master;
 }
