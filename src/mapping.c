@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.203 2008/06/24 19:35:51 grubba Exp $
+|| $Id: mapping.c,v 1.204 2008/06/25 16:15:43 grubba Exp $
 */
 
 #include "global.h"
@@ -1509,10 +1509,6 @@ static struct mapping *and_mappings(struct mapping *a, struct mapping *b)
     }
   }
   UNSET_ONERROR(err);
-  if (a_md->generation_cnt > b_md->generation_cnt)
-    res->data->generation_cnt = a_md->generation_cnt;
-  else
-    res->data->generation_cnt = b_md->generation_cnt;
   return res;
 }
 
@@ -1548,10 +1544,6 @@ static struct mapping *or_mappings(struct mapping *a, struct mapping *b)
     }
   }
   UNSET_ONERROR(err);
-  if (a_md->generation_cnt > b_md->generation_cnt)
-    res->data->generation_cnt = a_md->generation_cnt;
-  else
-    res->data->generation_cnt = b_md->generation_cnt;
   return res;
 }
 
@@ -1596,10 +1588,6 @@ static struct mapping *xor_mappings(struct mapping *a, struct mapping *b)
     }
   }
   UNSET_ONERROR(err);
-  if (a_md->generation_cnt > b_md->generation_cnt)
-    res->data->generation_cnt = a_md->generation_cnt;
-  else
-    res->data->generation_cnt = b_md->generation_cnt;
   return res;
 }
 
@@ -1676,10 +1664,6 @@ PMOD_EXPORT struct mapping *merge_mappings(struct mapping *a, struct mapping *b,
   free_array(ci);
   free_array(cv);
 
-  if (a->data->generation_cnt > b->data->generation_cnt)
-    m->data->generation_cnt = a->data->generation_cnt;
-  else
-    m->data->generation_cnt = b->data->generation_cnt;
   return m;
 }
 
@@ -1733,7 +1717,6 @@ PMOD_EXPORT struct mapping *merge_mapping_array_ordered(struct mapping *a,
   free_array(ci);
   free_array(cv);
 
-  m->data->generation_cnt = a->data->generation_cnt;
   return m;
 }
 
@@ -1765,7 +1748,6 @@ PMOD_EXPORT struct mapping *add_mappings(struct svalue *argp, INT32 args)
   INT32 e,d;
   struct mapping *ret=0;
   struct keypair *k;
-  int generation = 0;
 
   for(e=d=0;d<args;d++)
   {
@@ -1811,9 +1793,6 @@ PMOD_EXPORT struct mapping *add_mappings(struct svalue *argp, INT32 args)
     struct mapping *m=argp[d].u.mapping;
     struct mapping_data *md=m->data;
     
-    if (md->generation_cnt > generation)
-      generation = md->generation_cnt;
-
     add_ref(md);
     NEW_MAPPING_LOOP(md)
       low_mapping_insert(ret, &k->ind, &k->val, 2);
@@ -1823,7 +1802,6 @@ PMOD_EXPORT struct mapping *add_mappings(struct svalue *argp, INT32 args)
   if(!ret)
     Pike_fatal("add_mappings is confused!\n");
 #endif
-  ret->data->generation_cnt = generation;
   return ret;
 }
 
