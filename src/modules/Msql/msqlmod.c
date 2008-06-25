@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: msqlmod.c,v 1.29 2005/11/15 00:36:58 nilsson Exp $
+|| $Id: msqlmod.c,v 1.30 2008/06/25 11:53:31 srb Exp $
 */
 
 /* All this code is pretty useless if we don't have a msql library...*/
@@ -608,7 +608,7 @@ static void do_query (INT32 args)
 		row=msqlFetchRow(result);
 		for (k=0;k<num_fields;k++) {
 			if (!row[k]) {
-				push_int(0);
+				push_undefined();
 				continue;
 			}
 			push_text((char *)row[k]); break;

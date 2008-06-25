@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pgresult.c,v 1.34 2008/01/21 15:08:36 grubba Exp $
+|| $Id: pgresult.c,v 1.35 2008/06/25 11:53:32 srb Exp $
 */
 
 /*
@@ -345,14 +345,14 @@ static void f_fetch_row (INT32 args)
 	    THIS->cursor=0;
 	  } else {
 badresult:
-	    push_int(0);
+	    push_undefined();
 	    return;
 	  }
 	}
 	numfields=PQnfields(THIS->result);
 	for (j=0;j<numfields;j++) {
 	  if (PQgetisnull(THIS->result, THIS->cursor, j)) {
-	    push_int(0);
+	    push_undefined();
 	  } else {
 #if defined(HAVE_PQUNESCAPEBYTEA) && defined(BYTEAOID)
 	    void *binbuf = 0;

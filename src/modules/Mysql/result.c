@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: result.c,v 1.38 2007/07/27 02:21:51 bill Exp $
+|| $Id: result.c,v 1.39 2008/06/25 11:53:31 srb Exp $
 */
 
 /*
@@ -268,7 +268,7 @@ void mysqlmod_parse_field(MYSQL_FIELD *field, int support_default)
     /*
      * Should this be an error?
      */
-    push_int(0);
+    push_undefined();
   }
 }
 
@@ -443,7 +443,7 @@ static void f_fetch_field(INT32 args)
   pop_n_elems(args);
 
   if (!res) {
-    push_int(0);
+    push_undefined();
     return;
   }
 
@@ -600,7 +600,7 @@ static void f_fetch_row(INT32 args)
 	}
       } else {
 	/* NULL? */
-	push_int(0);
+	push_undefined();
 	if(i+1<num_fields)
 	  mysql_field_seek(PIKE_MYSQL_RES->result, i+1);
       }
@@ -609,7 +609,7 @@ static void f_fetch_row(INT32 args)
   } else {
     /* No rows left in result */
     PIKE_MYSQL_RES->eof = 1;
-    push_int(0);
+    push_undefined();
   }
 
   mysql_field_seek(PIKE_MYSQL_RES->result, 0);

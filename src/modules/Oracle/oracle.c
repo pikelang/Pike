@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: oracle.c,v 1.92 2008/04/07 15:50:20 grubba Exp $
+|| $Id: oracle.c,v 1.93 2008/06/25 11:53:32 srb Exp $
 */
 
 /*
@@ -1640,7 +1640,7 @@ static void f_fetch_row(INT32 args)
 
     if(rc==OCI_NO_DATA)
     {
-      push_int(0);
+      push_undefined();
       return;
     }
 #ifdef POLLING_FETCH
@@ -2646,6 +2646,8 @@ PIKE_MODULE_INIT
   }
   NULL_program=end_program();
   add_program_constant("NULL", NULL_program, 0);
+
+  /* FIXME: These NULL objects should be derived from push_undefined */
 
   push_empty_string();
   add_object_constant("NULLstring",nullstring_object=clone_object(NULL_program,1),0);

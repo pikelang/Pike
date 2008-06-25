@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc_result.c,v 1.57 2008/05/01 19:52:10 mast Exp $
+|| $Id: odbc_result.c,v 1.58 2008/06/25 11:53:32 srb Exp $
 */
 
 /*
@@ -546,7 +546,7 @@ static void f_fetch_row(INT32 args)
   
   if (code == SQL_NO_DATA_FOUND) {
     /* No rows left in result */
-    push_int(0);
+    push_undefined();
   } else {
     odbc_check_error("odbc->fetch_row", "Couldn't fetch row",
 		     code, NULL, NULL);
@@ -654,7 +654,7 @@ static void f_fetch_row(INT32 args)
 #endif /* ODBC_DEBUG */
 	    if (!num_strings) {
 	      /* NULL */
-	      push_int(0);
+	      push_undefined();
 	    }
 	    break;
 	  } else if (got_more_data) {
