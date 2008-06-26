@@ -482,7 +482,20 @@ o Odbc
   FIXME: Rewrite
   Now supports UnixODBC properly.
   Fixed various issues with Unicode.
+  create_dsn()
+  FreeTDS fixes
 
+o Oracle
+
+  FIXME:
+  Works with Oracle 10
+  added num_rows()
+
+o Parser.HTML
+
+  FIXME
+  Allow string and array as argument to _set_*_callback
+  
 o Parser.Pike and Parser.C
 
   Parser.Pike and Parser.C has been rewritten in C for increased
@@ -500,6 +513,13 @@ o Parser.XML.NSTree
 
   - Fixed crash bug.
 
+o Parser.XML.Simple
+
+  FIXME
+  autoconvert() moved to top level
+  Several correctness fixes.
+  Added Simple.Context
+
 o Parser.XML.Tree
 
   FIXME: Rewrite
@@ -513,6 +533,11 @@ o Parser.XML.Tree
   simple-stuff
   AbstractSimpleNode, VirtualNode, SimpleNode.
   Node.zap_tree
+
+o Postgres
+
+  FIXME
+  Added affected_rows.
 
 o Pike
 
@@ -614,8 +639,16 @@ o Protocols.XMLRPC
 
 o Regexp.PCRE.Widestring
 
-  This feature is now reported in the basic feature list (pike
-  --features).
+  - Replace matches in a string, with support for backreferences, now
+    possible from replace_positional().
+
+      > Regexp.PCRE.Plain("my name is ([a-zA-Z]+)")->
+      >> replace_positional("hello, my name is john.",
+      >> "%[0]s is my name");
+      (1) Result: "hello, john is my name."
+
+  - Regexp.PCRE.Widestring is now reported in the basic feature list
+    (pike --features).
 
 o Sql
 
@@ -678,6 +711,23 @@ o String
   - The function int2size has been rewritten to fixpoint as well as
     using the more common abbreviation of "B" for byte.
 
+o System
+
+  FIXME
+
+  resolvepath() enabled on more OSes and falls back to realpath(3C) if
+  resolvepath(2) doesn't exists.
+
+  setproctitle()
+
+  - Added support for POSIX style timers using clock_gettime(3) to
+    allow for high resolution thread local cpu time and monotonic real
+    time on reasonable modern Linux systems for gethrvtime() and
+    gauge(). Added CPU_TIME_RESOLUTION, CPU_TIME_IMPLEMENTATION,
+    REAL_TIME_IS_MONOTONIC, REAL_TIME_RESOLUTION and
+    REAL_TIME_IMPLEMENTATION constants to singal the system
+    capabilities.
+
 o Tools
 
   FIXME
@@ -695,11 +745,25 @@ o Web.RDF
 
 o sprintf
 
-  sprintf() and friends now attempt to perform compile-time argument
-  checking.
+  - sprintf() and related functions now attempt to perform
+    compile-time argument checking.
 
-  sprintf() now attempts to lookup the name of the program when
-  formatting types of objects and programs.
+  - sprintf() now attempts to lookup the name of the program when
+    formatting types of objects and programs.
+
+  - The new formatting directive %H can be used to format a string as
+    a binary holertih string.
+
+      > sprintf("%2H", "Hello");
+      (1) Result: "\0\5Hello"
+
+  - The new formatting directive %q can be used to format a atring as
+    a quoted string, quoting all control character and non-8-bit
+    characters as well as quote characters. Like %O but always on one
+    line.
+
+      > sprintf("%q", "abc \x00 \" \' \12345");
+      (1) Result: "\"abc \\0 \\\" ' \\u14e5\""
 
 o gethrtime, gethrvtime, gauge
 
