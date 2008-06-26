@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ppc32.c,v 1.42 2008/02/28 10:35:59 grubba Exp $
+|| $Id: ppc32.c,v 1.43 2008/06/26 20:35:19 marcus Exp $
 */
 
 /*
@@ -950,6 +950,9 @@ void ppc32_disassemble_code(void *addr, size_t bytes)
 	else if(opcd == 10 || opcd == 11)
 	  fprintf(stderr, "%s cr%d,%d,r%d,%s\n", instr_name,
 		  (instr>>23)&7, (instr>>21)&1, (instr>>16)&31, immtext);
+	else if(opcd >= 48 && opcd < 56)
+	  fprintf(stderr, "%s fr%d,%s(r%d)\n", instr_name,
+		  (instr>>21)&31, immtext, (instr>>16)&31);
 	else if(opcd >= 32)
 	  fprintf(stderr, "%s r%d,%s(r%d)\n", instr_name,
 		  (instr>>21)&31, immtext, (instr>>16)&31);
@@ -981,7 +984,7 @@ void ppc32_disassemble_code(void *addr, size_t bytes)
 	else
 	  fprintf(stderr, "%s crf%d,fr%d,fr%d\n", instr_name,
 		  (instr>>23)&7, (instr>>16)&31, (instr>>11)&31);
-      } else if((xo & 135)==135) {
+      } else if((xo & 543)==535) {
 	fprintf(stderr, "%s fr%d,r%d,r%d\n", instr_name,
 		(instr>>21)&31, (instr>>16)&31, (instr>>11)&31);
       } else {
@@ -1005,27 +1008,28 @@ void ppc32_disassemble_code(void *addr, size_t bytes)
 	  fprintf(stderr, "%s%s r%d,r%d\n", instr_name, ((instr&1)? ".":""),
 		  (instr>>16)&31, (instr>>21)&31);
 	else if(!(xo & 772)) {
-	  if(xo & 32)
+	  if((xo & 96)==96)
 	    fprintf(stderr, "%s r%d,r%d\n", instr_name,
 		    (instr>>21)&31, (instr>>11)&31);
 	  else if((xo & 192)==192)
-	    fprintf(stderr, "%s r%d\n", instr_name, (instr>>21)&31);
-	  else
 	    fprintf(stderr, "%s %d,r%d\n", instr_name,
 		    (instr>>16)&15, (instr>>21)&31);
-	} else if((xo & 127)==85)
+	  else
+	    fprintf(stderr, "%s r%d\n", instr_name, (instr>>21)&31);
+	} else if((xo & 639)==597)
 	  fprintf(stderr, "%s r%d,r%d,%d\n", instr_name,
 		  (instr>>21)&31, (instr>>16)&31, (instr>>11)&31);
-	else if(xo == 370 || xo == 566 || xo == 598 || xo == 854)
+	else if(xo == 370 || xo == 498 || xo == 566 || xo == 598 || xo == 854)
 	  fprintf(stderr, "%s\n", instr_name);
-	else if(!(xo & 8)) {
-	  if(xo & 128)
-	    fprintf(stderr, "%s r%d,r%d\n", instr_name,
-		    (instr>>21)%31, (instr>>11)&31);
-	  else if(xo & 512)
-	    fprintf(stderr, "%s r%d,%d\n", instr_name,
-		    (instr>>21)%31, (instr>>16)&15);
+	else if(!(xo & 4)) {
+	  if(xo & 32)
 	    fprintf(stderr, "%s r%d\n", instr_name, (instr>>11)&31);
+	  else if(xo == 595)
+	    fprintf(stderr, "%s r%d,%d\n", instr_name,
+		    (instr>>21)&31, (instr>>16)&15);
+	  else
+	    fprintf(stderr, "%s r%d,r%d\n", instr_name,
+		    (instr>>21)&31, (instr>>11)&31);
 	} else if(instr_name[0]=='d' || instr_name[0]=='i')
 	  fprintf(stderr, "%s r%d,r%d\n", instr_name,
 		  (instr>>16)&31, (instr>>11)&31);

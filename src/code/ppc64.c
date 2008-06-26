@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ppc64.c,v 1.2 2008/02/28 10:35:59 grubba Exp $
+|| $Id: ppc64.c,v 1.3 2008/06/26 20:35:20 marcus Exp $
 */
 
 /*
@@ -900,6 +900,11 @@ void ppc64_disassemble_code(void *addr, size_t bytes)
       case 4:
 	h = (xo^98)%26;
 	instr_name = (xo == opxo_31_100[h]? opname_31_100[h]:NULL);
+	if(instr & (1<<20))
+	  if(xo == 144)
+	    instr_name = "Fmtocrf";
+	  else if(xo == 19)
+	    instr_name = "Fmfocrf";
 	break;
       case 5:
 	h = (xo^67)%99;
@@ -987,6 +992,9 @@ void ppc64_disassemble_code(void *addr, size_t bytes)
 	else if(opcd == 10 || opcd == 11)
 	  fprintf(stderr, "%s cr%d,%d,r%d,%s\n", instr_name,
 		  (instr>>23)&7, (instr>>21)&1, (instr>>16)&31, immtext);
+	else if(opcd >= 48 && opcd < 56)
+	  fprintf(stderr, "%s fr%d,%s(r%d)\n", instr_name,
+		  (instr>>21)&31, immtext, (instr>>16)&31);
 	else if(opcd >= 32)
 	  fprintf(stderr, "%s r%d,%s(r%d)\n", instr_name,
 		  (instr>>21)&31, immtext, (instr>>16)&31);
@@ -1018,7 +1026,7 @@ void ppc64_disassemble_code(void *addr, size_t bytes)
 	else
 	  fprintf(stderr, "%s crf%d,fr%d,fr%d\n", instr_name,
 		  (instr>>23)&7, (instr>>16)&31, (instr>>11)&31);
-      } else if((xo & 135)==135) {
+      } else if((xo & 543)==535) {
 	fprintf(stderr, "%s fr%d,r%d,r%d\n", instr_name,
 		(instr>>21)&31, (instr>>16)&31, (instr>>11)&31);
       } else {
@@ -1028,7 +1036,7 @@ void ppc64_disassemble_code(void *addr, size_t bytes)
 	else if(!(xo & 991))
 	  fprintf(stderr, "%s crf%d,%d,r%d,r%d\n", instr_name, (instr>>23)&7,
 		  (instr>>21)&1, (instr>>16)&31, (instr>>11)&31);
-	else if((xo & 27)==24)
+	else if((xo & 27)==24 || ((xo>>8)|(xo&255))==27)
 	  fprintf(stderr, "%s%s r%d,r%d,r%d\n", instr_name,
 		  ((instr&1)? ".":""), (instr>>16)&31, (instr>>21)&31,
 		  (instr>>11)&31);
@@ -1042,32 +1050,42 @@ void ppc64_disassemble_code(void *addr, size_t bytes)
 	  fprintf(stderr, "%s%s r%d,r%d\n", instr_name, ((instr&1)? ".":""),
 		  (instr>>16)&31, (instr>>21)&31);
 	else if(!(xo & 772)) {
-	  if(xo & 32)
+	  if((xo & 96)==96)
 	    fprintf(stderr, "%s r%d,r%d\n", instr_name,
 		    (instr>>21)&31, (instr>>11)&31);
 	  else if((xo & 192)==192)
-	    fprintf(stderr, "%s r%d\n", instr_name, (instr>>21)&31);
-	  else
 	    fprintf(stderr, "%s %d,r%d\n", instr_name,
 		    (instr>>16)&15, (instr>>21)&31);
-	} else if((xo & 127)==85)
+	  else if(xo & 128)
+	    fprintf(stderr, "%s r%d,%d\n", instr_name,
+		    (instr>>21)&31, (instr>>16)&1);
+	  else
+	    fprintf(stderr, "%s r%d\n", instr_name, (instr>>21)&31);
+	} else if((xo & 639)==597)
 	  fprintf(stderr, "%s r%d,r%d,%d\n", instr_name,
 		  (instr>>21)&31, (instr>>16)&31, (instr>>11)&31);
-	else if(xo == 370 || xo == 566 || xo == 598 || xo == 854)
+	else if(xo == 370 || xo == 498 || xo == 566 || xo == 598 || xo == 854)
 	  fprintf(stderr, "%s\n", instr_name);
-	else if(!(xo & 8)) {
-	  if(xo & 128)
-	    fprintf(stderr, "%s r%d,r%d\n", instr_name,
-		    (instr>>21)%31, (instr>>11)&31);
-	  else if(xo & 512)
+	else if(!(xo & 4)) {
+	  if((xo & 479)==274)
 	    fprintf(stderr, "%s r%d,%d\n", instr_name,
-		    (instr>>21)%31, (instr>>16)&15);
-	  else
+		    (instr>>11)&31, (instr>>21)&1);
+	  else (xo & 32)
 	    fprintf(stderr, "%s r%d\n", instr_name, (instr>>11)&31);
-	} else if(instr_name[0]=='d' || instr_name[0]=='i')
-	  fprintf(stderr, "%s r%d,r%d\n", instr_name,
-		  (instr>>16)&31, (instr>>11)&31);
-	else
+	  else if(xo == 595)
+	    fprintf(stderr, "%s r%d,%d\n", instr_name,
+		    (instr>>21)&31, (instr>>16)&15);
+	  else
+	    fprintf(stderr, "%s r%d,r%d\n", instr_name,
+		    (instr>>21)&31, (instr>>11)&31);
+	} else if(instr_name[0]=='d' || instr_name[0]=='i') {
+	  if(xo == 278)
+	    fprintf(stderr, "%s r%d,r%d,%d\n", instr_name,
+		    (instr>>16)&31, (instr>>11)&31, (instr>>21)&3);
+	  else
+	    fprintf(stderr, "%s r%d,r%d\n", instr_name,
+		    (instr>>16)&31, (instr>>11)&31);
+	} else
 	  fprintf(stderr, "%s r%d,r%d,r%d\n", instr_name,
 		  (instr>>21)&31, (instr>>16)&31, (instr>>11)&31);
       }
@@ -1077,9 +1095,9 @@ void ppc64_disassemble_code(void *addr, size_t bytes)
 	fprintf(stderr, "%s cr%d,cr%d\n", instr_name,
 		(instr>>23)&7, (instr>>18)&7);
       else if((xo & 511) == 16)
-	/* Maybe pretty-print BO/BI here? */
-	fprintf(stderr, "%s%s %d,%d\n", instr_name, ((instr&1)? "l":""),
-		(instr>>21)&31, (instr>>16)&31);
+	/* Maybe pretty-print BO/BI/BH here? */
+	fprintf(stderr, "%s%s %d,%d,%d\n", instr_name, ((instr&1)? "l":""),
+		(instr>>21)&31, (instr>>16)&31, (instr>>11)&3);
       else if(xo&1) 
 	fprintf(stderr, "%s crb%d,crb%d,crb%d\n", instr_name,
 		(instr>>21)&31, (instr>>16)&31, (instr>>11)&31);
@@ -1088,7 +1106,7 @@ void ppc64_disassemble_code(void *addr, size_t bytes)
       break;
     case 'F': /* really 'XFX' */
       {
-	int arg = (xo == 144? (instr>>12)&255 :
+	int arg = (!(xo & 256)? (instr>>12)&255 :
 		   ((instr>>6)&0x3e0)|((instr>>16)&31));
 	if(xo&128)
 	  fprintf(stderr, "%s %d,r%d\n", instr_name, arg, (instr>>21)&31);
@@ -1138,12 +1156,12 @@ void ppc64_disassemble_code(void *addr, size_t bytes)
 	      instr_name, ((instr&1)? ".":""), (instr>>16)&31, (instr>>21)&31,
 	      (instr>>11)&31, (instr>>6)&31, (instr>>1)&31);
       break;
-    case 'N':
+    case 'N': /* really 'MD' */
       fprintf(stderr, "%s%s r%d,r%d,%d,%d\n",
 	      instr_name, ((instr&1)? ".":""), (instr>>16)&31, (instr>>21)&31,
 	      ((instr>>11)&31)|((instr&2)<<4), ((instr>>6)&31)|(instr&32));
       break;
-    case 'W':
+    case 'W': /* really 'MDS' */
       fprintf(stderr, "%s%s r%d,r%d,r%d,%d\n",
 	      instr_name, ((instr&1)? ".":""), (instr>>16)&31, (instr>>21)&31,
 	      (instr>>11)&31, ((instr>>6)&31)|(instr&32));
