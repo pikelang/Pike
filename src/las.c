@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.417 2008/06/02 13:30:05 mast Exp $
+|| $Id: las.c,v 1.418 2008/06/26 11:43:23 grubba Exp $
 */
 
 #include "global.h"
@@ -3490,17 +3490,6 @@ void fix_type_field(node *n)
       int old_refs;
       INT32 max_args,args;
 
-      if (!match_types(CAR(n)->type, function_type_string) &&
-	  !match_types(CAR(n)->type, array_type_string)) {
-	yytype_report(REPORT_ERROR, NULL, 0, function_type_string,
-		      NULL, 0, CAR(n)->type,
-		      0, "Calling non function value.");
-	copy_pike_type(n->type, mixed_type_string);
-
-	/* print_tree(n); */
-	break;
-      }
-
 #ifdef NEW_ARG_CHECK
 
       args = 0;
@@ -3554,6 +3543,17 @@ void fix_type_field(node *n)
       free_type(f);
       break;
 #else /* !NEW_ARG_CHECK */
+
+      if (!match_types(CAR(n)->type, function_type_string) &&
+	  !match_types(CAR(n)->type, array_type_string)) {
+	yytype_report(REPORT_ERROR, NULL, 0, function_type_string,
+		      NULL, 0, CAR(n)->type,
+		      0, "Calling non function value.");
+	copy_pike_type(n->type, mixed_type_string);
+
+	/* print_tree(n); */
+	break;
+      }
 
       push_type(T_MIXED); /* match any return type */
       push_type(T_VOID);  /* even void */
