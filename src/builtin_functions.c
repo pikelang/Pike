@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.675 2008/06/25 16:35:31 mast Exp $
+|| $Id: builtin_functions.c,v 1.676 2008/06/26 11:44:25 grubba Exp $
 */
 
 #include "global.h"
@@ -9131,7 +9131,7 @@ void init_builtin_efuns(void)
 
   ADD_EFUN("hash_value",f_hash_value,tFunc(tMix,tInt),OPT_TRY_OPTIMIZE);
 
-#if 0
+#if 1
   ADD_EFUN2("indices",f_indices,
 	    tIfnot(tFuncV(tNone,tNot(tOr6(tArray, tMap(tMix, tMix), tSet(tMix),
 					  tStr, tObj, tPrg(tObj))),
