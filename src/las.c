@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.418 2008/06/26 11:43:23 grubba Exp $
+|| $Id: las.c,v 1.419 2008/06/27 20:52:00 grubba Exp $
 */
 
 #include "global.h"
@@ -3412,11 +3412,13 @@ void fix_type_field(node *n)
       /* The optimizer converts this to an expression returning 0. */
       copy_pike_type(n->type, zero_type_string);
     } else if (CDR(n)) {
+      int valid;
       type_a=CAR(n)->type;
       type_b=CDR(n)->type;
-      if(!check_indexing(type_a, type_b, n))
+      if((valid = check_indexing(type_a, type_b, n)) <= 0)
 	if(!Pike_compiler->catch_level)
-	  yytype_report(REPORT_ERROR, NULL, 0, NULL, NULL, 0, type_b,
+	  yytype_report((!valid)?REPORT_ERROR:REPORT_WARNING,
+			NULL, 0, NULL, NULL, 0, type_b,
 			0, "Indexing on illegal type.");
       n->type = index_type(type_a, type_b, n);
     } else {
