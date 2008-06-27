@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.280 2008/06/24 19:41:52 grubba Exp $
+|| $Id: encode.c,v 1.281 2008/06/27 11:33:08 grubba Exp $
 */
 
 #include "global.h"
@@ -800,7 +800,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	encode_value2(ITEM(Pike_sp[-1].u.array)+i, data, 0); /* values */
       }
       pop_n_elems(2);
-      /* FIXME: What about flags and generation_cnt? */
+      /* FIXME: What about flags? */
       break;
 
     case T_MULTISET: {

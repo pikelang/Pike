@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.252 2008/06/24 18:47:13 grubba Exp $
+|| $Id: program.h,v 1.253 2008/06/27 11:29:50 grubba Exp $
 */
 
 #ifndef PROGRAM_H
@@ -109,7 +109,6 @@ extern struct pike_string *type_check_system_string;
  *       ie use low_find_lfun(), and NOT FIND_LFUN()!
  */
 #define LFUN__SEARCH 45
-#define LFUN__M_GENERATION 46
 
 extern const char *const lfun_names[];
 
