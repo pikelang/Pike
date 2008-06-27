@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod,v 1.23 2007/10/06 13:53:38 nilsson Exp $
+// $Id: module.pmod,v 1.24 2008/06/27 20:51:16 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -391,7 +391,7 @@ string parse_html_entities(string in,void|int noerror)
    return html_entity_parser(noerror)->finish(in)->read();
 }
 
-static mapping(string:string) rev_html_entities;
+static mapping(int:string) rev_html_entities;
 
 //! Encode characters to HTML entities, e.g. turning @expr{"<"@} into
 //! @expr{"&lt;"@}.
