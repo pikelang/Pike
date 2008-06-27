@@ -364,7 +364,7 @@ class Client
 
     for(;;) {
       if(rc == 100 || rc == 200) {
-	data->write(((h->HI_BODY||({}))+(h->HI_ENDOFBODY||({})))*"");
+	data->write(((h[HI_BODY]||({}))+(h[HI_ENDOFBODY]||({})))*"");
 	m_delete(h, HI_BODY);
 	m_delete(h, HI_ENDOFBODY);
       }
