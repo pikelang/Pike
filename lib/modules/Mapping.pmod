@@ -14,22 +14,23 @@ class ShadowedMapping(static mapping|ShadowedMapping parent)
   static mapping shadow = ([]);
 
   static mapping joined;
-  static int parent_generation = -1;
-
-  static int generation;
-  static int dirty = 1;
+  static mapping parent_copy;
 
   static int(0..1) modify_parent;
 
-  //! @param mapping|ShadowedMapping parent
+  //! @decl void create(mapping|ShadowedMapping parent, @
+  //!                   mapping|void shadow, int(0..1)|void modify_parent)
+  //!
+  //! @param parent
   //!   Mapping to be shadowed.
-  //! @param mapping|void shadow
+  //! @param shadow
   //!   Initial shadow of @[parent].
-  //! @param int(0..1) modify_parent
+  //! @param modify_parent
   //!   Modifications should be done to @[parent] rather than
   //!   to @[shadow]. If this is set, only entries that are
   //!   already present in @[shadow] can be modified by later
   //!   operations.
+
   static void create(mapping|void shadow, int(0..1)|void modify_parent)
   {
     if (shadow) this_program::shadow = shadow + ([]);
@@ -39,10 +40,9 @@ class ShadowedMapping(static mapping|ShadowedMapping parent)
   // Updates the cached joined mapping if needed.
   static void update_joined()
   {
-    if (!joined || (parent_generation != m_generation(parent))) {
+    if (!joined || !equal(parent, parent_copy)) {
       joined = [mapping](parent + shadow);
-      parent_generation = m_generation(parent);
-      dirty = 1;
+      parent_copy = [mapping](parent + ([]));
     }
   }
 
@@ -56,7 +56,6 @@ class ShadowedMapping(static mapping|ShadowedMapping parent)
   static void `[]=(mixed ind, mixed val)
   {
     joined = 0;
-    dirty = 1;
     if (modify_parent && zero_type(shadow[ind])) {
       parent[ind] = val;
     } else {
@@ -74,14 +73,10 @@ class ShadowedMapping(static mapping|ShadowedMapping parent)
     `[]=(ind, val);
   }
 
-  static int _m_generation()
+  static int(0..1) _equal(mixed other)
   {
     update_joined();
-    if (dirty) {
-      generation++;
-      dirty = 0;
-    }
-    return generation;
+    return equal(other, joined);
   }
 
   static mixed _m_delete(mixed ind)
@@ -92,7 +87,6 @@ class ShadowedMapping(static mapping|ShadowedMapping parent)
     }
     if (!zero_type(res)) {
       joined = 0;
-      dirty = 1;
     }
     return res;
   }
