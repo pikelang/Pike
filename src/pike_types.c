@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.341 2008/06/18 21:49:51 grubba Exp $
+|| $Id: pike_types.c,v 1.342 2008/06/27 16:23:10 grubba Exp $
 */
 
 #include "global.h"
@@ -1993,6 +1993,10 @@ void simple_describe_type(struct pike_type *s)
 	while(s->type == T_FUNCTION) {
 	  simple_describe_type(s->car);
 	  s = s->cdr;
+	  while(s->type == T_ASSIGN) {
+	    fprintf(stderr, "%"PRINTPTRDIFFT"d = ", CAR_TO_INT(s));
+	    s = s->cdr;
+	  }
 	  if ((s->type == T_FUNCTION) ||
 	      (s->car->type != T_VOID)) {
 	    fprintf(stderr, ", ");
@@ -2284,6 +2288,11 @@ static void low_describe_type(struct pike_type *t)
 	  if(s++) my_strcat(", ");
 	  my_describe_type(t->car);
 	  t = t->cdr;
+	  while(t->type == T_ASSIGN) {
+	    my_putchar('0' + CAR_TO_INT(t));
+	    my_putchar('=');
+	    t = t->cdr;
+	  }
 	}
 	if(t->car->type != T_VOID)
 	{
@@ -4641,31 +4650,34 @@ static struct pike_type *debug_low_index_type(struct pike_type *t,
       INT32 i;
       if(n->token == F_ARROW)
       {
-	/* FIXME: make this stricter */
 	if((i=FIND_LFUN(p,LFUN_ARROW))!=-1)
 	{
-	  /* FIXME: function_type_string should be replaced with something
-	   * derived from type_string
-	   */
-	  if(i!=-1 &&
-	     (tmp=check_call(function_type_string, ID_FROM_INT(p, i)->type,
-			     0)))
-	    return tmp;
+	  INT32 args = 0;
+	  add_ref(tmp = ID_FROM_INT(p, i)->type);
+	  if (tmp = new_check_call(lfun_strings[LFUN_ARROW], tmp, CDR(n),
+				   &args, 0)) {
+	    struct pike_type *ret = new_get_return_type(tmp, 0);
+	    free_type(tmp);
+	    if (ret) return ret;
+	  }
 
+	  /* Invalid type for lfun::`->(). */
 	  add_ref(mixed_type_string);
 	  return mixed_type_string;
 	}
       }else{
 	if((i=FIND_LFUN(p,LFUN_INDEX)) != -1)
 	{
-	  /* FIXME: function_type_string should be replaced with something
-	   * derived from type_string
-	   */
-	  if(i!=-1 &&
-	     (tmp=check_call(function_type_string, ID_FROM_INT(p, i)->type,
-			     0)))
-	    return tmp;
+	  INT32 args = 0;
+	  add_ref(tmp = ID_FROM_INT(p, i)->type);
+	  if (tmp = new_check_call(lfun_strings[LFUN_INDEX], tmp, CDR(n),
+				   &args, 0)) {
+	    struct pike_type *ret = new_get_return_type(tmp, 0);
+	    free_type(tmp);
+	    if (ret) return ret;
+	  }
 
+	  /* Invalid type for lfun::`[](). */
 	  add_ref(mixed_type_string);
 	  return mixed_type_string;
 	}
@@ -5061,12 +5073,16 @@ static struct pike_type *debug_low_key_type(struct pike_type *t, node *n)
       {
 	if(FIND_LFUN(p,LFUN_ARROW)!=-1 || FIND_LFUN(p,LFUN_ASSIGN_ARROW)!=-1)
 	{
+	  /* FIXME: Get the type of the first argument of the function.
+	   * FIXME: Probably ought to always be a string.
+	   */
 	  add_ref(mixed_type_string);
 	  return mixed_type_string;
 	}
       }else{
 	if(FIND_LFUN(p,LFUN_INDEX) != -1 || FIND_LFUN(p,LFUN_ASSIGN_INDEX) != -1)
 	{
+	  /* FIXME: Get the type of the first argument of the function. */
 	  add_ref(mixed_type_string);
 	  return mixed_type_string;
 	}
@@ -5168,6 +5184,7 @@ static int low_check_indexing(struct pike_type *type,
     struct program *p = id_to_program(CDR_TO_INT(type));
     if(p)
     {
+      /* FIXME: Ought to check against the LFUN types. */
       if(n->token == F_ARROW)
       {
 	if(FIND_LFUN(p,LFUN_ARROW)!=-1 || FIND_LFUN(p,LFUN_ASSIGN_ARROW)!=-1)
