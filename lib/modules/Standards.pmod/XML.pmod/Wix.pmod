@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Wix.pmod,v 1.25 2006/11/04 19:06:49 nilsson Exp $
+// $Id: Wix.pmod,v 1.26 2008/06/28 00:35:10 mast Exp $
 //
 // 2004-11-01 Henrik Grubbström
 
@@ -99,11 +99,13 @@ class Merge
 {
   string source;
   string id;
+  string language;
 
-  static void create(string source, string id)
+  static void create(string source, string id, void|string language)
   {
     Merge::source = source;
     Merge::id = id;
+    Merge::language = language;
   }
 
   WixNode gen_xml()
@@ -111,7 +113,7 @@ class Merge
     mapping(string:string) attrs = ([
       "Id":id,
       "src":source,
-      "Language":"1033",
+      "Language": language || "1033",
       "DiskId":"1",
     ]);
     return WixNode("Merge", attrs);
@@ -337,10 +339,10 @@ class Directory
   }
 
   void merge_module(string dest, string module, string id,
-		    string|void dir_id)
+		    string|void dir_id, void|string language)
   {
     Directory d = low_add_path(dest/"/", dir_id);
-    d->sub_dirs["/"+module] = Merge(module, id);
+    d->sub_dirs["/"+module] = Merge(module, id, language);
   }
 
   void recurse_install_directory(string dest, string src)
@@ -474,12 +476,13 @@ class Directory
 //!   Modifies @[dir] if it contains files at the root level.
 WixNode get_module_xml(Directory dir, string id, string version,
 		       string|void manufacturer, string|void description,
-		       string|void guid, string|void comments)
+		       string|void guid, string|void comments,
+		       string|void installer_version)
 {
   guid = guid || Standards.UUID.make_version1(-1)->str();
   mapping(string:string) package_attrs = ([
     "Id":guid,
-    "InstallerVersion":"200",
+    "InstallerVersion": installer_version || "200",
     "Compressed":"yes",
   ]);
   if (manufacturer) {
