@@ -1,5 +1,5 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.57 2008/06/01 13:26:04 grubba Exp $
+ * $Id: tree-split-autodoc.pike,v 1.58 2008/06/28 21:52:59 nilsson Exp $
  *
  */
 
@@ -144,7 +144,7 @@ class Node
     return children;
   }
 
-  static string parse_node(Parser.HTML p, mapping m, string c) {
+  protected string parse_node(Parser.HTML p, mapping m, string c) {
     if(!m->name) error("Unnamed %O %O\n", p->tag_name(), m);
     this_object()[p->tag_name()+"_children"] +=
       ({ Node( p->tag_name(), m->name, c, this_object() ) });
@@ -228,7 +228,7 @@ class Node
     return 0;
   }
 
-  static Parser.HTML get_parser() {
+  protected Parser.HTML get_parser() {
     Parser.HTML parser = Parser.HTML();
 
     parser->case_insensitive_tag(1);
@@ -531,7 +531,7 @@ class Node
     return tmp;
   }
 
-  static string make_content() {
+  protected string make_content() {
     PROFILE();
     string err;
     Parser.XML.Tree.Node n;
