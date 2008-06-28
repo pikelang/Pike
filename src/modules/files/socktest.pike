@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.45 2008/06/12 16:51:21 grubba Exp $ */
+/* $Id: socktest.pike,v 1.46 2008/06/28 00:09:25 nilsson Exp $ */
 
 // #define OOB_DEBUG
 
@@ -224,7 +224,7 @@ void die()
 int max_fds = 1024;
 
 int counter;
-int quiet;
+int verbose;
 
 void got_callback()
 {
@@ -232,7 +232,7 @@ void got_callback()
 #ifdef OOB_DEBUG
   predef::write(sprintf("%c\b","|/-\\" [ counter & 3 ]));
 #else /* !OOB_DEBUG */
-  if(!quiet && !(counter & 0xf))
+  if(!verbose && !(counter & 0xf))
     predef::write(sprintf("%c\b","|/-\\" [ (counter>>4) & 3 ]));
 #endif /* OOB_DEBUG */
 #ifdef BACKEND
@@ -422,13 +422,23 @@ array(object) spair(int type)
 
 mixed keeper;
 
+int testno = 0;
+void test_write(string str)
+{
+  if( verbose )
+    write(str);
+  //  else
+  //    write("Test %d\r", ++testno);
+}
+
 void finish()
 {
   gc();
   num_running--;
   if(!num_running)
   {
-    write("\n");
+    if( verbose )
+      write("\n");
 
     object sock1, sock2;
     array(object) socks;
@@ -438,13 +448,13 @@ void finish()
     switch(_tests)
     {
       case 1:
-	write("Testing dup & assign. ");
+	test_write("Testing dup & assign. ");
 	sock1=stdtest()[0];
 	sock1->assign(sock1->dup());
 	break;
 	
       case 2:
-	write("Testing accept. ");
+	test_write("Testing accept. ");
 	string data1 = "foobar" * 4711;
 	for(int e=0;e<10;e++)
 	{
@@ -455,7 +465,7 @@ void finish()
 	break;
 	
       case 3:
-	write("Testing uni-directional shutdown on socket ");
+	test_write("Testing uni-directional shutdown on socket ");
 	socks=spair(0);
 	num_running=1;
 	socks[1]->set_nonblocking(lambda() {},lambda(){},finish);
@@ -464,7 +474,7 @@ void finish()
 	break;
 
       case 4:
-	write("Testing uni-directional shutdown on pipe ");
+	test_write("Testing uni-directional shutdown on pipe ");
 	socks=spair(1);
 	num_running=1;
 	socks[1]->set_nonblocking(lambda() {},lambda(){},finish);
@@ -474,7 +484,7 @@ void finish()
 
       case 5..13:
 	tests=(_tests-2)*2;
-	write("Testing "+(tests*2)+" sockets. ");
+	test_write("Testing "+(tests*2)+" sockets. ");
 	for(int e=0;e<tests;e++) stdtest();
 	stdtest();
 	break;
@@ -483,7 +493,7 @@ void finish()
 	if (max_fds > 64) {
 	  /* These tests require mare than 64 open fds. */
 	  tests=(_tests-2)*2;
-	  write("Testing "+(tests*2)+" sockets. ");
+	  test_write("Testing "+(tests*2)+" sockets. ");
 	  for(int e=0;e<tests;e++) stdtest();
 	  stdtest();
 	  break;
@@ -494,7 +504,7 @@ void finish()
 
       case 27..48:
 	tests=_tests-25;
-	write("Copying "+((tests/2)*(2<<(tests/2))*11)+" bytes of data on "+(tests&~1)+" "+(tests&1?"pipes":"sockets")+" ");
+	test_write("Copying "+((tests/2)*(2<<(tests/2))*11)+" bytes of data on "+(tests&~1)+" "+(tests&1?"pipes":"sockets")+" ");
 	for(int e=0;e<tests/2;e++)
 	{
 	  string data1 = "foobar" * (2<<(tests/2));
@@ -519,7 +529,7 @@ void finish()
 	break;
 
       case 49: {
-	write ("Testing leak in write(). ");
+	test_write ("Testing leak in write(). ");
 	string data1="foobar" * 20;
 	string data2="fubar" * 20;
 	socks=spair(1);
@@ -544,7 +554,7 @@ void finish()
 #if constant(Stdio.__OOB__)
     case 50:
       if (Stdio.__OOB__ >= 3) {
-	write("Testing out-of-band data. ");
+	test_write("Testing out-of-band data. ");
 	start();
 	socks = spair(0);
 	oob_originator = socks[0];
@@ -588,9 +598,9 @@ int main()
 {
   string testargs=getenv()->TESTARGS;
   if(testargs &&
-     (has_value(testargs/" ", "-q") ||
-      has_value(testargs/" ", "-quiet") ) )
-    quiet=1;
+     (has_value(testargs/" ", "-v") ||
+      has_value(testargs/" ", "--verbose") ) )
+    verbose=1;
 
   write("\nSocket test");
 #ifdef BACKEND
@@ -610,8 +620,9 @@ int main()
 	max_fds = file_limit[1];
       }
     }
-    write("\n"
-	   "Available fds: %d\n", max_fds);
+    if( verbose )
+      write("\n"
+            "Available fds: %d\n", max_fds);
   }
 #endif /* constant(System.getrlimit) */
 
@@ -685,7 +696,7 @@ int main()
   _tests=49;
   finish();
 #else /* !OOB_DEBUG */
-  write("Doing simple tests. ");
+  write("\nDoing simple tests. ");
   stdtest();
 #endif /* OOB_DEBUG */
 
