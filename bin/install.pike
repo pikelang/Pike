@@ -2,7 +2,7 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.185 2008/06/28 13:53:03 mast Exp $
+// $Id: install.pike,v 1.186 2008/06/28 19:27:10 mast Exp $
 
 #define USE_GTK
 
@@ -1192,12 +1192,9 @@ void do_export()
 			])))->
       add_child(Standards.XML.Wix.line_feed)->
       add_child(WixNode("InstallExecuteSequence", ([]), "\n")->
-		// Since FinalizePike uses pike itself it needs to come after
-		// MsiPublishAssemblies, in case the MS CRTs are installed at
-		// the same time in a "side-by-side-assembly".
 		add_child(WixNode("Custom", ([
 				    "Action":"SetFinalizePike",
-				    "After":"MsiPublishAssemblies",
+				    "After":"WriteRegistryValues",
 				  ]), "REMOVE=\"\""))->
 		add_child(Standards.XML.Wix.line_feed)->
 		add_child(WixNode("Custom", ([
@@ -2269,22 +2266,6 @@ an extra CRT instance.\n");
 				  add_child(WixNode("RemoveExistingProducts", ([
 						      "After":"InstallInitialize",
 						    ])))->
-				  add_child(line_feed)->
-				  // Move MsiPublishAssemblies a little bit
-				  // earlier in the installation process, to
-				  // keep FinalizePike before RegisterProduct
-				  // in case it causes a rollback.
-				  //
-				  // This ought to be in the Pike_module wxs,
-				  // but the merge ignores the sequence number.
-				  add_child (
-				    WixNode ("MsiPublishAssemblies", ([
-					       // This sequence position should
-					       // be after WriteRegistryValues
-					       // (5000) and before
-					       // RegisterUser (6000).
-					       "Sequence": "5500",
-					     ])))->
 				  add_child(line_feed))->
 			add_child(line_feed)->
 			add_child(WixNode("FragmentRef", ([
