@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Wix.pmod,v 1.28 2008/06/28 16:49:56 nilsson Exp $
+// $Id: Wix.pmod,v 1.29 2008/06/28 19:25:13 mast Exp $
 //
 // 2004-11-01 Henrik Grubbström
 
@@ -115,6 +115,7 @@ class Merge
       "src":source,
       "Language": language || "1033",
       "DiskId":"1",
+      "FileCompression": "yes",
     ]);
     return WixNode("Merge", attrs);
   }
