@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.59 2008/05/14 15:03:23 marcus Exp $
+# $Id: configure.in,v 1.60 2008/06/28 21:43:57 marcus Exp $
 #
 # Configure script for the mysql-module
 #
@@ -346,6 +346,43 @@ fi
 	])
     ])
   ])
+
+  if test x$pike_cv_mysql = xno; then :; else
+    # Check version match
+    AC_CHECK_FUNC(mysql_get_client_version,[
+      AC_TRY_RUN([#ifdef HAVE_WINSOCK2_H
+#include <winsock2.h>
+#else
+#ifdef HAVE_WINSOCK_H
+#include <winsock.h>
+#endif
+#endif
+#ifdef HAVE_MYSQL_H
+#include <mysql.h>
+#else
+#ifdef HAVE_MYSQL_MYSQL_H
+#include <mysql/mysql.h>
+#endif
+#endif
+#include <stdio.h>
+int main(int argc, char *argv[])
+{
+#ifdef MYSQL_VERSION_ID
+  unsigned long ver = mysql_get_client_version();
+  if(ver != MYSQL_VERSION_ID) {
+    fprintf(stderr, "Version mismatch: compile=%lu, run=%lu\n",
+            (unsigned long)MYSQL_VERSION_ID, ver);
+    exit(1);
+  }
+#endif
+  return 0;
+}],[],[
+	AC_MSG_WARN([Header version does not match library version, diabling module])
+	PIKE_FEATURE(Mysql,[no (header/library mismatch)])
+	pike_cv_mysql=no
+      ],[])
+    ],[])
+  fi
 
   if test x$pike_cv_mysql = xno; then
     # Restore variables, so we don't link with unnessesary libs
