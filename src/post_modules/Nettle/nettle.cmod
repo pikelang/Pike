@@ -1,5 +1,5 @@
 /* nettle.cmod -*- c -*- */
-/* $Id: nettle.cmod,v 1.46 2008/06/28 22:53:06 nilsson Exp $ */
+/* $Id: nettle.cmod,v 1.47 2008/06/28 22:57:14 nilsson Exp $ */
 
 #include "global.h"
 #include "interpret.h"
@@ -208,7 +208,6 @@ PIKECLASS Yarrow
     if( THIS->sources )
     {
       free(THIS->sources);
-      THIS->sources = NULL;
     }
   }
 }
@@ -331,12 +330,10 @@ PIKECLASS CBC
   {
     if(THIS->object) {
       free_object(THIS->object);
-      THIS->object = NULL;
     }
     if(THIS->iv) {
       MEMSET(THIS->iv, 0, THIS->block_size);
       free(THIS->iv);
-      THIS->iv = NULL;
     }
   }
 
@@ -558,11 +555,9 @@ PIKECLASS Proxy {
     if(THIS->backlog) {
       MEMSET(THIS->backlog, 0, THIS->block_size);
       free(THIS->backlog);
-      THIS->backlog = NULL;
     }
     if(THIS->object) {
       free_object(THIS->object);
-      THIS->object = NULL;
     }
   }
 
@@ -827,7 +822,6 @@ PIKECLASS LFib
     gc_trivial;
   {
     free(THIS->ctx);
-    THIS->ctx = NULL;
   }
 
   /* @decl void create(int seed)

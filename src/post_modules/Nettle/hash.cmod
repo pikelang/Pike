@@ -1,5 +1,5 @@
 /* hash.cmod -*- c -*- */
-/* $Id: hash.cmod,v 1.29 2008/05/29 23:03:47 nilsson Exp $ */
+/* $Id: hash.cmod,v 1.30 2008/06/28 22:57:14 nilsson Exp $ */
 
 #include "global.h"
 #include "interpret.h"
@@ -327,7 +327,6 @@ PIKECLASS HashState
 	  GET_META(Pike_fp->current_object);
 	assert(meta);
 	memset(THIS->ctx, 0, meta->context_size);
-        THIS->ctx = NULL;
       }
     }
 }
