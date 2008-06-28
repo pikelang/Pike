@@ -1,6 +1,9 @@
 #!/bin/sh
 
 #set -x
+if $(pike -x 2>&1 | grep precompile > /dev/null 2>&1) ; then
+  exec pike -x precompile "$@"
+fi
 
 exec 5>&1 1>&2
 
