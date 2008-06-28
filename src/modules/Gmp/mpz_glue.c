@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.179 2008/05/11 02:38:27 mast Exp $
+|| $Id: mpz_glue.c,v 1.180 2008/06/28 17:35:35 mast Exp $
 */
 
 #include "global.h"
@@ -1102,7 +1102,6 @@ static void name(INT32 args)						\
   if(THIS_PROGRAM == bignum_program)					\
   {									\
     double ret;								\
-  tail_recurse:								\
     for(e=0; e<args; e++)						\
     {									\
       switch(sp[e-args].type)						\
@@ -1563,7 +1562,6 @@ static void mpzmod_invert(INT32 args)
 static void mpzmod_fac(INT32 args)
 {
   struct object *res;
-  unsigned long n;
   if (mpz_sgn (THIS) < 0)
     Pike_error ("Cannot calculate factorial for negative integer.\n");
   if (!mpz_fits_ulong_p (THIS))
