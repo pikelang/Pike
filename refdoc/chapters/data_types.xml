@@ -763,11 +763,11 @@ program <ref>compile_string</ref>(string p, string filename);
 <dd> Retreives the value of the named constant from a program.</dd>
 
 <dt> <tt>array(string) <ref>indices</ref>(program <i>p</i>)</tt></dt>
-<dd> Returns an array with the names of all non-static constants in the
+<dd> Returns an array with the names of all non-protected constants in the
      program.</dd>
 
 <dt> <tt>array(mixed) <ref>values</ref>(program <i>p</i>)</tt></dt>
-<dd> Returns an array with the values of all non-static constants in the
+<dd> Returns an array with the values of all non-protected constants in the
      program.</dd>
 </dl>
 

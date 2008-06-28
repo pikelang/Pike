@@ -118,7 +118,7 @@
         <r><c><ref>7.2::Gmp.pow</ref></c><c><ref>pow</ref></c></r>
         <r><c><ref>7.2::LR</ref></c><c><ref>Parser.LR</ref></c></r>
         <r><c><ref>7.2::LR.item</ref></c>
-           <c><ref>Parser.LR.Parser.Item</ref> (static)</c></r>
+           <c><ref>Parser.LR.Parser.Item</ref> (protected)</c></r>
         <r><c><ref>7.2::LR.parser</ref></c>
            <c><ref>Parser.LR.Parser</ref></c></r>
         <r><c><ref>7.2::LR.priority</ref></c>

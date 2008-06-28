@@ -99,7 +99,7 @@ the code, without intervening blank lines. Examples:
     return 4711;
   }
 
-  static int undocumented;
+  protected int undocumented;
 
   //! Error! This doc block has no destination!
 

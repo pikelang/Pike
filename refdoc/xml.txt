@@ -132,7 +132,7 @@ The names speak for themselves, except: <modifier> which is used for modifier
 ranges: 
 
   //! Some variables:
-  static nomask { 
+  protected final {
     int x, y; 
 
     string n;  

@@ -366,7 +366,7 @@ the code, without intervening blank lines. Examples:</p>
     return 4711;
   }
 
-  static int undocumented;
+  protected int undocumented;
 
   //! Error! This doc block has no destination!
 
@@ -866,7 +866,7 @@ The names speak for themselves, except: &lt;modifier&gt; which is used for modif
 ranges: 
 
   //! Some variables:
-  static nomask { 
+  protected final {
     int x, y; 
 
     string n;  
@@ -880,7 +880,7 @@ A Pike entity may also have the following properties:
   Modifiers - Given as a child element &lt;modifiers&gt;:
     &lt;variable name="i"&gt;
       &lt;modifiers&gt;
-        &lt;optional/&gt;&lt;static/&gt;&lt;private/&gt;
+        &lt;optional/&gt;&lt;protected/&gt;&lt;private/&gt;
       &lt;/modifiers&gt;
       ...
     &lt;/variable&gt;
@@ -891,7 +891,7 @@ A Pike entity may also have the following properties:
     &lt;variable name="i"&gt;
       &lt;source-position file="/home/rolf/hejhopp.pike" first-line="12"/&gt;
       &lt;modifiers&gt;
-        &lt;optional/&gt;&lt;static/&gt;&lt;private/&gt;
+        &lt;optional/&gt;&lt;protected/&gt;&lt;private/&gt;
       &lt;/modifiers&gt;
       ...
     &lt;/variable&gt;
