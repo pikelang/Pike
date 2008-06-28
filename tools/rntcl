@@ -85,7 +85,7 @@ string get_ext(string file)
 
 string remove_ext(string file)
 {
-  sscanf(file=reverse(file),"%*s.%s",file,file);
+  sscanf(file=reverse(file),"%*s.%s",file);
   return reverse(file);
 }
 
