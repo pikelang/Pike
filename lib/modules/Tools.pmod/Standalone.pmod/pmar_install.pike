@@ -49,7 +49,7 @@ int cc;
 
 void print_help(array argv)
 {
-    werror("Usage: %s [--local] [--force] [--help] pmarfile\n", argv[0]);
+    werror("Usage: pike -x pmar_install [--local] [--force] [--help] pmarfile\n");
 }
 
 int main(int argc, array(string) argv)
