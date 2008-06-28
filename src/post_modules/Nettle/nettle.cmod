@@ -1,5 +1,5 @@
 /* nettle.cmod -*- c -*- */
-/* $Id: nettle.cmod,v 1.45 2008/05/29 23:03:47 nilsson Exp $ */
+/* $Id: nettle.cmod,v 1.46 2008/06/28 22:53:06 nilsson Exp $ */
 
 #include "global.h"
 #include "interpret.h"
@@ -54,7 +54,7 @@ PIKECLASS Yarrow
    *!   @[update]
    */
   PIKEFUN void create(void|int arg)
-    flags ID_STATIC;
+    flags ID_PROTECTED;
   {
     INT32 num = 0;
 
@@ -396,7 +396,7 @@ PIKECLASS CBC
    *! that function will be called with @[args] as arguments.
    */
   PIKEFUN void create(program|object|function cipher, mixed ... more)
-    flags ID_STATIC;
+    flags ID_PROTECTED;
   {
     int old_block_size = THIS->block_size;
     THIS->object = make_cipher_object(args);
@@ -574,7 +574,7 @@ PIKECLASS Proxy {
    *! that function will be called with @[args] as arguments.
    */
   PIKEFUN void create(program|object|function cipher, mixed ... more)
-    flags ID_STATIC;
+    flags ID_PROTECTED;
   {
     THIS->object = make_cipher_object(args);
 
@@ -834,7 +834,7 @@ PIKECLASS LFib
    * The Lfib generator must be seeded with a number.
    */
   PIKEFUN void create(int seed)
-    flags ID_STATIC;
+    flags ID_PROTECTED;
   {
     knuth_lfib_init(THIS->ctx, seed);
   }

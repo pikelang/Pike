@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: udp.c,v 1.79 2008/05/29 22:00:55 mast Exp $
+|| $Id: udp.c,v 1.80 2008/06/28 23:06:02 nilsson Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -1080,7 +1080,7 @@ void init_udp(void)
   ADD_STORAGE(struct udp_storage);
 
   PIKE_MAP_VARIABLE("_read_callback", OFFSETOF(udp_storage, read_callback),
-		    tFunc(tNone, tInt_10), PIKE_T_MIXED, ID_STATIC|ID_PRIVATE);
+		    tFunc(tNone, tInt_10), PIKE_T_MIXED, ID_PROTECTED|ID_PRIVATE);
 
   ADD_FUNCTION("set_type",udp_set_type,
 	       tFunc(tInt tOr(tVoid,tInt),tObj),0);

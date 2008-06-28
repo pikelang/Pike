@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sane.c,v 1.25 2005/11/16 16:21:09 grubba Exp $
+|| $Id: sane.c,v 1.26 2008/06/28 23:06:01 nilsson Exp $
 */
 
 #include "config.h"
@@ -807,7 +807,7 @@ PIKE_MODULE_INIT
   ADD_FUNCTION( "get_parameters", f_scanner_get_parameters,
 		tFunc(tNone, tMapping), 0 );
 
-  ADD_FUNCTION( "create", f_scanner_create, tFunc(tStr, tVoid), ID_STATIC );
+  ADD_FUNCTION( "create", f_scanner_create, tFunc(tStr, tVoid), ID_PROTECTED );
 
   set_init_callback(init_scanner_struct);
   set_exit_callback(exit_scanner_struct);

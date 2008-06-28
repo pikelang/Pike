@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.180 2008/06/28 17:35:35 mast Exp $
+|| $Id: mpz_glue.c,v 1.181 2008/06/28 23:05:59 nilsson Exp $
 */
 
 #include "global.h"
@@ -2237,52 +2237,52 @@ static void pike_mp_free (void *ptr, size_t size)
   ADD_FUNCTION("create", mpzmod_create,					\
 	       tOr(tFunc(tOr5(tVoid,tStr,tInt,tFlt,			\
 			      tObj),tVoid),				\
-		   tFunc(tStr tInt,tVoid)), ID_STATIC);			\
+		   tFunc(tStr tInt,tVoid)), ID_PROTECTED);		\
 									\
-  ADD_FUNCTION("`+",mpzmod_add,tMpz_binop_type, ID_STATIC);		\
-  ADD_FUNCTION("`+=",mpzmod_add_eq,tMpz_binop_type, ID_STATIC);		\
-  ADD_FUNCTION("``+",mpzmod_add_rhs,tMpz_binop_type, ID_STATIC);	\
-  ADD_FUNCTION("`-",mpzmod_sub,tMpz_binop_type, ID_STATIC);		\
-  ADD_FUNCTION("``-",mpzmod_rsub,tMpz_binop_type, ID_STATIC);		\
-  ADD_FUNCTION("`*",mpzmod_mul,tMpz_binop_type, ID_STATIC);		\
-  ADD_FUNCTION("``*",mpzmod_mul,tMpz_binop_type, ID_STATIC);		\
-  ADD_FUNCTION("`*=",mpzmod_mul_eq,tMpz_binop_type, ID_STATIC);		\
-  ADD_FUNCTION("`/",mpzmod_div,tMpz_binop_type, ID_STATIC);		\
-  ADD_FUNCTION("``/",mpzmod_rdiv,tMpz_binop_type, ID_STATIC);		\
-  ADD_FUNCTION("`%",mpzmod_mod,tMpz_binop_type, ID_STATIC);		\
-  ADD_FUNCTION("``%",mpzmod_rmod,tMpz_binop_type, ID_STATIC);		\
-  ADD_FUNCTION("`&",mpzmod_and,tMpz_binop_type, ID_STATIC);		\
-  ADD_FUNCTION("``&",mpzmod_and,tMpz_binop_type, ID_STATIC);		\
-  ADD_FUNCTION("`|",mpzmod_or,tMpz_binop_type, ID_STATIC);		\
-  ADD_FUNCTION("``|",mpzmod_or,tMpz_binop_type, ID_STATIC);		\
-  ADD_FUNCTION("`^",mpzmod_xor,tMpz_binop_type, ID_STATIC);		\
-  ADD_FUNCTION("``^",mpzmod_xor,tMpz_binop_type, ID_STATIC);		\
-  ADD_FUNCTION("`~",mpzmod_compl,tFunc(tNone,tObj), ID_STATIC);		\
+  ADD_FUNCTION("`+",mpzmod_add,tMpz_binop_type, ID_PROTECTED);		\
+  ADD_FUNCTION("`+=",mpzmod_add_eq,tMpz_binop_type, ID_PROTECTED);	\
+  ADD_FUNCTION("``+",mpzmod_add_rhs,tMpz_binop_type, ID_PROTECTED);	\
+  ADD_FUNCTION("`-",mpzmod_sub,tMpz_binop_type, ID_PROTECTED);		\
+  ADD_FUNCTION("``-",mpzmod_rsub,tMpz_binop_type, ID_PROTECTED);	\
+  ADD_FUNCTION("`*",mpzmod_mul,tMpz_binop_type, ID_PROTECTED);		\
+  ADD_FUNCTION("``*",mpzmod_mul,tMpz_binop_type, ID_PROTECTED);		\
+  ADD_FUNCTION("`*=",mpzmod_mul_eq,tMpz_binop_type, ID_PROTECTED);	\
+  ADD_FUNCTION("`/",mpzmod_div,tMpz_binop_type, ID_PROTECTED);		\
+  ADD_FUNCTION("``/",mpzmod_rdiv,tMpz_binop_type, ID_PROTECTED);	\
+  ADD_FUNCTION("`%",mpzmod_mod,tMpz_binop_type, ID_PROTECTED);		\
+  ADD_FUNCTION("``%",mpzmod_rmod,tMpz_binop_type, ID_PROTECTED);	\
+  ADD_FUNCTION("`&",mpzmod_and,tMpz_binop_type, ID_PROTECTED);		\
+  ADD_FUNCTION("``&",mpzmod_and,tMpz_binop_type, ID_PROTECTED);		\
+  ADD_FUNCTION("`|",mpzmod_or,tMpz_binop_type, ID_PROTECTED);		\
+  ADD_FUNCTION("``|",mpzmod_or,tMpz_binop_type, ID_PROTECTED);		\
+  ADD_FUNCTION("`^",mpzmod_xor,tMpz_binop_type, ID_PROTECTED);		\
+  ADD_FUNCTION("``^",mpzmod_xor,tMpz_binop_type, ID_PROTECTED);		\
+  ADD_FUNCTION("`~",mpzmod_compl,tFunc(tNone,tObj), ID_PROTECTED);	\
 									\
-  ADD_FUNCTION("`<<",mpzmod_lsh,tMpz_shift_type, ID_STATIC);		\
-  ADD_FUNCTION("`>>",mpzmod_rsh,tMpz_shift_type, ID_STATIC);		\
-  ADD_FUNCTION("``<<",mpzmod_rlsh,tMpz_shift_type, ID_STATIC);		\
-  ADD_FUNCTION("``>>",mpzmod_rrsh,tMpz_shift_type, ID_STATIC);		\
+  ADD_FUNCTION("`<<",mpzmod_lsh,tMpz_shift_type, ID_PROTECTED);		\
+  ADD_FUNCTION("`>>",mpzmod_rsh,tMpz_shift_type, ID_PROTECTED);		\
+  ADD_FUNCTION("``<<",mpzmod_rlsh,tMpz_shift_type, ID_PROTECTED);	\
+  ADD_FUNCTION("``>>",mpzmod_rrsh,tMpz_shift_type, ID_PROTECTED);	\
 									\
-  ADD_FUNCTION("`>", mpzmod_gt,tMpz_cmpop_type, ID_STATIC);		\
-  ADD_FUNCTION("`<", mpzmod_lt,tMpz_cmpop_type, ID_STATIC);		\
-  ADD_FUNCTION("`>=",mpzmod_ge,tMpz_cmpop_type, ID_STATIC);		\
-  ADD_FUNCTION("`<=",mpzmod_le,tMpz_cmpop_type, ID_STATIC);		\
+  ADD_FUNCTION("`>", mpzmod_gt,tMpz_cmpop_type, ID_PROTECTED);		\
+  ADD_FUNCTION("`<", mpzmod_lt,tMpz_cmpop_type, ID_PROTECTED);		\
+  ADD_FUNCTION("`>=",mpzmod_ge,tMpz_cmpop_type, ID_PROTECTED);		\
+  ADD_FUNCTION("`<=",mpzmod_le,tMpz_cmpop_type, ID_PROTECTED);		\
 									\
-  ADD_FUNCTION("`==",mpzmod_eq,tMpz_cmpop_type, ID_STATIC);		\
-  ADD_FUNCTION("`!=",mpzmod_nq,tMpz_cmpop_type, ID_STATIC);		\
+  ADD_FUNCTION("`==",mpzmod_eq,tMpz_cmpop_type, ID_PROTECTED);		\
+  ADD_FUNCTION("`!=",mpzmod_nq,tMpz_cmpop_type, ID_PROTECTED);		\
 									\
-  ADD_FUNCTION("`!",mpzmod_not,tFunc(tNone,tInt01), ID_STATIC);		\
+  ADD_FUNCTION("`!",mpzmod_not,tFunc(tNone,tInt01), ID_PROTECTED);	\
 									\
-  ADD_FUNCTION("__hash",mpzmod___hash,tFunc(tNone,tInt), ID_STATIC);	\
-  ADD_FUNCTION("cast",mpzmod_cast,tFunc(tStr,tMix), ID_STATIC);		\
+  ADD_FUNCTION("__hash",mpzmod___hash,tFunc(tNone,tInt), ID_PROTECTED);	\
+  ADD_FUNCTION("cast",mpzmod_cast,tFunc(tStr,tMix), ID_PROTECTED);	\
 									\
   ADD_FUNCTION("_is_type", mpzmod__is_type, tFunc(tStr,tInt01),         \
-               ID_STATIC);                                              \
+               ID_PROTECTED);                                           \
   									\
   ADD_FUNCTION("digits", mpzmod_digits,tFunc(tOr(tVoid,tInt),tStr), 0);	\
   ADD_FUNCTION("_sprintf", mpzmod__sprintf, tFunc(tInt tMapping,tStr),  \
-               ID_STATIC);                                              \
+               ID_PROTECTED);                                           \
   ADD_FUNCTION("size", mpzmod_size,tFunc(tOr(tVoid,tInt),tInt), 0);	\
 									\
   ADD_FUNCTION("cast_to_int",mpzmod_get_int,tFunc(tNone,tInt),0);	\

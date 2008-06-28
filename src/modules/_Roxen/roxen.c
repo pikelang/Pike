@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: roxen.c,v 1.50 2006/11/10 13:35:34 per Exp $
+|| $Id: roxen.c,v 1.51 2008/06/28 23:06:02 nilsson Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -582,7 +582,7 @@ PIKE_MODULE_INIT
   set_init_callback( f_hp_init );
   set_exit_callback( f_hp_exit );
   ADD_FUNCTION( "feed", f_hp_feed, tFunc(tStr,tArr(tOr(tStr,tMapping))), 0 );
-  ADD_FUNCTION( "create", f_hp_create, tFunc(tNone,tVoid), ID_STATIC );
+  ADD_FUNCTION( "create", f_hp_create, tFunc(tNone,tVoid), ID_PROTECTED );
   end_class( "HeaderParser", 0 );
 }
 

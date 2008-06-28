@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gdbmmod.c,v 1.33 2007/04/25 15:33:22 grubba Exp $
+|| $Id: gdbmmod.c,v 1.34 2008/06/28 23:05:58 nilsson Exp $
 */
 
 #include "global.h"
@@ -526,7 +526,7 @@ PIKE_MODULE_INIT
   
   /* function(void|string,void|string:void) */
   ADD_FUNCTION("create", gdbmmod_create,
-	       tFunc(tOr(tVoid,tStr) tOr(tVoid,tStr), tVoid), 0 /*ID_STATIC*/);
+	       tFunc(tOr(tVoid,tStr) tOr(tVoid,tStr), tVoid), 0 /*ID_PROTECTED*/);
 
   /* function(:void) */
   ADD_FUNCTION("close",gdbmmod_close,tFunc(tNone,tVoid),0);

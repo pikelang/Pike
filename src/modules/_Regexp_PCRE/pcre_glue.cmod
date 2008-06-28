@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pcre_glue.cmod,v 1.19 2008/05/29 21:58:44 mast Exp $
+|| $Id: pcre_glue.cmod,v 1.20 2008/06/28 23:06:02 nilsson Exp $
 || (original author: mirar)
 */
 
@@ -145,7 +145,7 @@ PIKECLASS _pcre
 /*! @decl static string _sprintf(int c, mapping flags)
  */
    PIKEFUN string _sprintf(int c, mapping flags)
-      flags ID_STATIC;
+      flags ID_PROTECTED;
    {
       switch(c)
       {

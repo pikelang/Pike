@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: nt.cmod,v 1.18 2008/06/28 19:27:35 mast Exp $
+ * $Id: nt.cmod,v 1.19 2008/06/28 22:53:06 nilsson Exp $
  */
 
 #include "global.h"
@@ -56,7 +56,7 @@ PIKECLASS CryptContext
    *! @expr{0@} the user default CSP will be used.
    */
   PIKEFUN void create(int|string str1, int|string str2, int type, int flags)
-    flags ID_STATIC;
+    flags ID_PROTECTED;
   {
     if(THIS->handle) Pike_error("Already initialized.\n");
     if(str1->type==T_STRING && str1->u.string->size_shift)

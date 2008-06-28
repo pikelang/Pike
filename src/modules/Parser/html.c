@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: html.c,v 1.180 2008/05/24 13:34:22 mast Exp $
+|| $Id: html.c,v 1.181 2008/06/28 23:06:00 nilsson Exp $
 */
 
 #include "global.h"
@@ -5302,36 +5302,36 @@ void init_parser_html(void)
 
    PIKE_MAP_VARIABLE(" maptag", offset + OFFSETOF(parser_html_storage, maptag),
 		tMap(tStr,tTodo(tTagargs)),
-		T_MAPPING, ID_STATIC|ID_PRIVATE);
+		T_MAPPING, ID_PROTECTED|ID_PRIVATE);
    PIKE_MAP_VARIABLE(" mapcont", offset + OFFSETOF(parser_html_storage, mapcont),
 		tMap(tStr,tTodo(tTagargs tStr)),
-		T_MAPPING, ID_STATIC|ID_PRIVATE);
+		T_MAPPING, ID_PROTECTED|ID_PRIVATE);
    PIKE_MAP_VARIABLE(" mapentity", offset + OFFSETOF(parser_html_storage, mapentity),
 		tMap(tStr,tTodo(tNone)),
-		T_MAPPING, ID_STATIC|ID_PRIVATE);
+		T_MAPPING, ID_PROTECTED|ID_PRIVATE);
    PIKE_MAP_VARIABLE(" mapqtag", offset + OFFSETOF(parser_html_storage, mapqtag),
 		tMap(tStr,tTodo(tStr)),
-		T_MAPPING, ID_STATIC|ID_PRIVATE);
+		T_MAPPING, ID_PROTECTED|ID_PRIVATE);
    PIKE_MAP_VARIABLE(" callback__tag", offset + OFFSETOF(parser_html_storage, callback__tag),
 		tFuncV(tObjImpl_PARSER_HTML tStr,tMix,tCbret),
-		T_MIXED, ID_STATIC|ID_PRIVATE);
+		T_MIXED, ID_PROTECTED|ID_PRIVATE);
    PIKE_MAP_VARIABLE(" callback__data", offset + OFFSETOF(parser_html_storage, callback__data),
 		tFuncV(tObjImpl_PARSER_HTML tStr,tMix,tCbret),
-		T_MIXED, ID_STATIC|ID_PRIVATE);
+		T_MIXED, ID_PROTECTED|ID_PRIVATE);
    PIKE_MAP_VARIABLE(" callback__entity", offset + OFFSETOF(parser_html_storage, callback__entity),
 		tFuncV(tObjImpl_PARSER_HTML tStr,tMix,tCbret),
-		T_MIXED, ID_STATIC|ID_PRIVATE);
+		T_MIXED, ID_PROTECTED|ID_PRIVATE);
    PIKE_MAP_VARIABLE(" splice_arg", offset + OFFSETOF(parser_html_storage, splice_arg),
 		tString,
-		T_STRING, ID_STATIC|ID_PRIVATE);
+		T_STRING, ID_PROTECTED|ID_PRIVATE);
    PIKE_MAP_VARIABLE(" extra_args", offset + OFFSETOF(parser_html_storage, extra_args),
 		tArray,
-		T_ARRAY, ID_STATIC|ID_PRIVATE);
+		T_ARRAY, ID_PROTECTED|ID_PRIVATE);
 
    set_init_callback(init_html_struct);
    set_exit_callback(exit_html_struct);
 
-   ADD_FUNCTION("create",html_create,tFunc(tNone,tVoid),ID_STATIC);
+   ADD_FUNCTION("create",html_create,tFunc(tNone,tVoid),ID_PROTECTED);
    ADD_FUNCTION("clone",html_clone,tFuncV(tNone,tMixed,tObjImpl_PARSER_HTML),0);
 
    /* feed control */

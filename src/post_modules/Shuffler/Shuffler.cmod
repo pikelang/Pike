@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: Shuffler.cmod,v 1.45 2008/01/26 22:34:27 mast Exp $
+|| $Id: Shuffler.cmod,v 1.46 2008/06/28 22:53:07 nilsson Exp $
 */
 
 #include "global.h"
@@ -574,7 +574,7 @@ PIKECLASS Shuffle
 		       object shuffler,
 		       mixed throttler,
 		       mixed backend )
-    flags ID_STATIC;
+    flags ID_PROTECTED;
   {
     struct Backend_struct*be = default_backend;
 

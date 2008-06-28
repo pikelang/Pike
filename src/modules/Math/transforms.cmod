@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: transforms.cmod,v 1.14 2008/05/29 21:58:44 mast Exp $
+|| $Id: transforms.cmod,v 1.15 2008/06/28 23:05:59 nilsson Exp $
 */
 
 #include "global.h"
@@ -241,7 +241,7 @@ PIKECLASS FFT
    */
   PIKEFUN void create(void|int no, void|int(0..1) exact)
     type function(void|int, void|int(0..1):void);
-    flags ID_STATIC;
+    flags ID_PROTECTED;
   {
     int t = FFTW_ESTIMATE;
     int n = 0;

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpf.cmod,v 1.38 2008/06/23 16:41:03 mast Exp $
+|| $Id: mpf.cmod,v 1.39 2008/06/28 23:05:58 nilsson Exp $
 */
 
 #include "global.h"
@@ -182,7 +182,7 @@ PIKECLASS mpf
   PIKEFUN void create(void|string|int|float|object x, void|int precision,
 		      void|int base)
     type function(void|string|int|float|object,void|int(1..):void)|function(string,int(0..),int(2..36):void);
-    flags ID_STATIC;
+    flags ID_PROTECTED;
   {
     int base=0;
 	
@@ -223,7 +223,7 @@ PIKECLASS mpf
   /*! @decl static int __hash()
    */
   PIKEFUN int __hash()
-    flags ID_STATIC;
+    flags ID_PROTECTED;
     {
       /* from hash_svalue */
       RETURN 
@@ -333,7 +333,7 @@ PIKECLASS mpf
   /*! @decl static string _sprintf(int c, mapping flags)
    */
   PIKEFUN string _sprintf(int c, mapping flags)
-    flags ID_STATIC;
+    flags ID_PROTECTED;
     {
       /* We should use this code for good...
       INT_TYPE precision, width, base = 0, mask_shift = 0;
@@ -375,7 +375,7 @@ PIKECLASS mpf
    *!   Perhaps it should also return true for @expr{"object"@}?
    */
   PIKEFUN int(0..1) _is_type(string arg)
-    flags ID_STATIC;
+    flags ID_PROTECTED;
     {
       push_constant_text("float");
       f_eq(2);
@@ -384,7 +384,7 @@ PIKECLASS mpf
   /*! @decl static mixed cast(string to)
    */
   PIKEFUN mixed cast(string s)
-    flags ID_STATIC;
+    flags ID_PROTECTED;
   {
     add_ref(s);
       
@@ -557,7 +557,7 @@ PIKECLASS mpf
   /*! @decl static Gmp.mpf `+(int|float|object ... a)
    */
   PIKEFUN object `+(int|float|object ... a)
-    flags ID_STATIC;
+    flags ID_PROTECTED;
     {
       struct object *res;
 
@@ -571,7 +571,7 @@ PIKECLASS mpf
   /* @decl static Gmp.mpf ``+(int|float|object ... a)
    */
   PIKEFUN object ``+(int|float|object ... a)
-    flags ID_STATIC;
+    flags ID_PROTECTED;
     {
       struct object *res = NULL;
 
@@ -587,7 +587,7 @@ PIKECLASS mpf
   /*! @decl static Gmp.mpf `+=(int|float|object ... a)
    */
   PIKEFUN object `+=(int|float|object ... a)
-    flags ID_STATIC;
+    flags ID_PROTECTED;
   {
     unsigned long int prec;
     prec=add_convert_args(args);
@@ -638,7 +638,7 @@ PIKECLASS mpf
   /*! @decl static Gmp.mpf `*(int|float|object ... a)
    */
   PIKEFUN object `*(int|float|object ... a)
-    flags ID_STATIC;
+    flags ID_PROTECTED;
     {
       struct object *res;
       res = get_mpf_with_prec( add_convert_args(args) );
@@ -651,7 +651,7 @@ PIKECLASS mpf
   /*! @decl static Gmp.mpf ``*(int|float|object ... a)
    */
   PIKEFUN object ``*(int|float|object ... a)
-    flags ID_STATIC;
+    flags ID_PROTECTED;
     {
       struct object *res;
 
@@ -665,7 +665,7 @@ PIKECLASS mpf
   /*! @decl static Gmp.mpf `*=(int|float|object ... a)
    */
   PIKEFUN object `*=(int|float|object ... a)
-    flags ID_STATIC;
+    flags ID_PROTECTED;
   {
     unsigned long int prec;
     prec=add_convert_args(args);
@@ -693,7 +693,7 @@ PIKECLASS mpf
   /*! @decl static Gmp.mpf `-(int|float|object ... a)
    */
   PIKEFUN object `-(int|float|object ... a)
-    flags ID_STATIC;
+    flags ID_PROTECTED;
     {
       struct object *res;
       
@@ -713,7 +713,7 @@ PIKECLASS mpf
   /*! @decl static Gmp.mpf ``-(int|float|object sv)
    */
   PIKEFUN object ``-(int|float|object sv)
-    flags ID_STATIC;
+    flags ID_PROTECTED;
     {
       struct object *res;
       MP_FLT *a=get_mpf(sv,1, 0);
@@ -726,7 +726,7 @@ PIKECLASS mpf
   /*! @decl static Gmp.mpf `/(int|float|object ... a)
    */
   PIKEFUN object `/(int|float|object ... a)
-    flags ID_STATIC;
+    flags ID_PROTECTED;
     {
       INT32 e;
       struct object *res;
@@ -768,7 +768,7 @@ PIKECLASS mpf
   /*! @decl static Gmp.mpf ``/(int|float|object sv)
    */
   PIKEFUN object ``/(int|float|object sv)
-    flags ID_STATIC;
+    flags ID_PROTECTED;
     {
       MP_FLT *a;
       struct object *res = NULL;
@@ -794,7 +794,7 @@ PIKECLASS mpf
   /*! @decl static Gmp.mpf `~()
    */
   PIKEFUN object `~()
-    flags ID_STATIC;
+    flags ID_PROTECTED;
     {
       struct object *o;
       o=get_mpf_with_prec(mpf_get_prec(THISMPF));
@@ -812,7 +812,7 @@ PIKECLASS mpf
   /*! @decl static int(0..1) `>(mixed q)
    */
   PIKEFUN int(0..1) `>(mixed q)
-    flags ID_STATIC;
+    flags ID_PROTECTED;
     {
       RETURN CMPOP(>);
     }
@@ -820,7 +820,7 @@ PIKECLASS mpf
   /*! @decl static int(0..1) `<(mixed q)
    */
   PIKEFUN int(0..1) `<(mixed q)
-    flags ID_STATIC;
+    flags ID_PROTECTED;
     {
       RETURN CMPOP(<);
     }
@@ -828,7 +828,7 @@ PIKECLASS mpf
   /*! @decl static int(0..1) `>=(mixed q)
    */
   PIKEFUN int(0..1) `>=(mixed q)
-    flags ID_STATIC;
+    flags ID_PROTECTED;
   {
     RETURN CMPOP(>=);
   }
@@ -836,7 +836,7 @@ PIKECLASS mpf
   /*! @decl static int(0..1) `<=(mixed q)
    */
   PIKEFUN int(0..1) `<=(mixed q)
-    flags ID_STATIC;
+    flags ID_PROTECTED;
   {
     RETURN CMPOP(<=);
   }
@@ -845,7 +845,7 @@ PIKECLASS mpf
   /*! @decl static int(0..1) `==(mixed q)
    */
   PIKEFUN int(0..1) `==(mixed q)
-    flags ID_STATIC;
+    flags ID_PROTECTED;
   {
     MP_FLT *arg;
     /* FIXME: We need separate TOOBIGTEST for *_si and *_ui */
@@ -858,7 +858,7 @@ PIKECLASS mpf
   /*! @decl static int(0..1) `!=(mixed q)
    */
   PIKEFUN int `!=(mixed q)
-    flags ID_STATIC;
+    flags ID_PROTECTED;
   {
     MP_FLT *arg;
     if(q->type == T_INT && TOOBIGTEST(0))
@@ -877,7 +877,7 @@ PIKECLASS mpf
   /*! @decl static int(0..1) `!()
    */
   PIKEFUN int `!()
-    flags ID_STATIC;
+    flags ID_PROTECTED;
     {
       RETURN !mpf_sgn(THISMPF);
     }

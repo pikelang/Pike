@@ -1,6 +1,6 @@
 /* sqlite.cmod -*- c -*-
  *
- * $Id: sqlite.cmod,v 1.20 2008/05/29 23:06:34 nilsson Exp $
+ * $Id: sqlite.cmod,v 1.21 2008/06/28 22:53:07 nilsson Exp $
  */
 
 #include "global.h"
@@ -130,7 +130,7 @@ PIKECLASS SQLite
   CVAR sqlite3 *db;
 
 PIKECLASS ResObj
-  flags ID_PRIVATE | ID_STATIC | ID_HIDDEN;
+  flags ID_PRIVATE | ID_PROTECTED | ID_HIDDEN;
 {
   CVAR struct object *dbobj;
   CVAR struct mapping *bindings;
@@ -144,7 +144,7 @@ PIKECLASS ResObj
   }
 
   PIKEFUN void create()
-    flags ID_STATIC;
+    flags ID_PROTECTED;
   {
     THIS->columns = sqlite3_column_count(THIS->stmt);
   }
@@ -248,7 +248,7 @@ PIKECLASS ResObj
   /* @decl void create(string path)
    */
   PIKEFUN void create(string path, mixed|void a, mixed|void b, mixed|void c)
-    flags ID_STATIC;
+    flags ID_PROTECTED;
   {
     pop_n_elems(args-1);
     f_string_to_utf8(1);

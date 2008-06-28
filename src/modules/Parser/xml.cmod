@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xml.cmod,v 1.98 2008/05/29 21:58:44 mast Exp $
+|| $Id: xml.cmod,v 1.99 2008/06/28 23:06:01 nilsson Exp $
 */
 
 #include "global.h"
@@ -640,9 +640,9 @@ ISWRAP(isHexChar)
  */
 PIKECLASS Simple
 {
-  PIKEVAR mapping entities flags ID_STATIC|ID_PRIVATE;
-  PIKEVAR mapping attributes flags ID_STATIC|ID_PRIVATE;
-  PIKEVAR mapping is_cdata flags ID_STATIC|ID_PRIVATE;
+  PIKEVAR mapping entities flags ID_PROTECTED|ID_PRIVATE;
+  PIKEVAR mapping attributes flags ID_PROTECTED|ID_PRIVATE;
+  PIKEVAR mapping is_cdata flags ID_PROTECTED|ID_PRIVATE;
   CVAR int flags;
 
   DECLARE_STORAGE
@@ -941,7 +941,7 @@ PIKECLASS Simple
   /*! @class Context
    */
   PIKECLASS Context
-    flags ID_STATIC;
+    flags ID_PROTECTED;
     program_flags PROGRAM_USES_PARENT;
   {
     CVAR struct xmlinput *input;

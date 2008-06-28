@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stat.c,v 1.33 2008/05/29 10:11:16 grubba Exp $
+|| $Id: stat.c,v 1.34 2008/06/28 23:06:02 nilsson Exp $
 */
 
 #include "global.h"
@@ -983,7 +983,7 @@ void init_files_stat()
 
    ADD_FUNCTION ("create", stat_create,
 		 tFunc(tOr5(tVoid,tObjImpl_STDIO_STAT,tPrg(tObj),tMapping,tArr(tInt)),
-		       tVoid), ID_STATIC);
+		       tVoid), ID_PROTECTED);
 
    ADD_FUNCTION("`[]",stat_index,
 		tOr(tFunc(tOr(tStr,tInt06),tOr3(tStr,tInt,tFunction)),
