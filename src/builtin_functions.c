@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.677 2008/06/28 22:05:03 mast Exp $
+|| $Id: builtin_functions.c,v 1.678 2008/06/28 22:30:54 nilsson Exp $
 */
 
 #include "global.h"
@@ -9062,7 +9062,7 @@ void init_builtin_efuns(void)
 	   tFunc(tInt tOr(tVoid,tSetvar(0,tMix)),tArr(tVar(0))), 0);
   
 /* function(mixed:int) */
-  ADD_EFUN("arrayp", f_arrayp,tFunc(tMix,tInt),0);
+  ADD_EFUN("arrayp", f_arrayp,tFunc(tMix,tInt01),0);
 
 /* function(string...:string) */
   ADD_EFUN("combine_path_nt",f_combine_path_nt,tFuncV(tNone,tStr,tStr),0);
@@ -9087,13 +9087,13 @@ void init_builtin_efuns(void)
   
 /* function(string:string)|function(string,string:int) */
   ADD_EFUN("crypt",f_crypt,
-	   tOr(tFunc(tStr,tStr),tFunc(tStr tStr,tInt)),OPT_EXTERNAL_DEPEND);
+	   tOr(tFunc(tStr,tStr),tFunc(tStr tStr,tInt01)),OPT_EXTERNAL_DEPEND);
   
 /* function(object|void:void) */
   ADD_EFUN("destruct",f_destruct,tFunc(tOr(tObj,tVoid),tVoid),OPT_SIDE_EFFECT);
   
 /* function(mixed,mixed:int) */
-  ADD_EFUN("equal",f_equal,tFunc(tMix tMix,tInt),OPT_TRY_OPTIMIZE);
+  ADD_EFUN("equal",f_equal,tFunc(tMix tMix,tInt01),OPT_TRY_OPTIMIZE);
 
   /* function(array(0=mixed),int|void,int|void:array(0)) */
   ADD_FUNCTION2("everynth",f_everynth,
@@ -9108,13 +9108,13 @@ void init_builtin_efuns(void)
   ADD_EFUN("_exit",f__exit,tFunc(tInt,tVoid),OPT_SIDE_EFFECT);
   
 /* function(mixed:int) */
-  ADD_EFUN("floatp",  f_floatp,tFunc(tMix,tInt),OPT_TRY_OPTIMIZE);
+  ADD_EFUN("floatp",  f_floatp,tFunc(tMix,tInt01),OPT_TRY_OPTIMIZE);
   
 /* function(mixed:int) */
-  ADD_EFUN("functionp",  f_functionp,tFunc(tMix,tInt),OPT_TRY_OPTIMIZE);
+  ADD_EFUN("functionp",  f_functionp,tFunc(tMix,tInt01),OPT_TRY_OPTIMIZE);
 
 /* function(mixed:int) */
-  ADD_EFUN("callablep",  f_callablep,tFunc(tMix,tInt),OPT_TRY_OPTIMIZE);
+  ADD_EFUN("callablep",  f_callablep,tFunc(tMix,tInt01),OPT_TRY_OPTIMIZE);
   
 /* function(string,string:int)|function(string,string*:array(string)) */
   ADD_EFUN("glob",f_glob,
@@ -9160,17 +9160,17 @@ void init_builtin_efuns(void)
   ADD_EFUN("destructedp", f_destructedp, tFunc(tMix,tInt01), OPT_TRY_OPTIMIZE);
 
 /* function(mixed:int) */
-  ADD_EFUN("intp", f_intp,tFunc(tMix,tInt),OPT_TRY_OPTIMIZE);
+  ADD_EFUN("intp", f_intp,tFunc(tMix,tInt01),OPT_TRY_OPTIMIZE);
 
 /* function(mixed:int) */
-  ADD_EFUN("multisetp", f_multisetp,tFunc(tMix,tInt),OPT_TRY_OPTIMIZE);
+  ADD_EFUN("multisetp", f_multisetp,tFunc(tMix,tInt01),OPT_TRY_OPTIMIZE);
   
 /* function(string:string)|function(int:int) */
   ADD_EFUN("lower_case",f_lower_case,
 	   tOr(tFunc(tStr,tStr), tFunc(tInt,tInt)),OPT_TRY_OPTIMIZE);
   
 /* function(mixed:int) */
-  ADD_EFUN("mappingp",f_mappingp,tFunc(tMix,tInt),OPT_TRY_OPTIMIZE);
+  ADD_EFUN("mappingp",f_mappingp,tFunc(tMix,tInt01),OPT_TRY_OPTIMIZE);
   
 /* function(1=mixed,int:1) */
   ADD_EFUN("set_weak_flag",f_set_weak_flag,
@@ -9206,10 +9206,10 @@ void init_builtin_efuns(void)
 	    OPT_TRY_OPTIMIZE, fix_object_program_type, 0);
   
 /* function(mixed:int) */
-  ADD_EFUN("objectp", f_objectp,tFunc(tMix,tInt),0);
+  ADD_EFUN("objectp", f_objectp,tFunc(tMix,tInt01),0);
   
 /* function(mixed:int) */
-  ADD_EFUN("programp",f_programp,tFunc(tMix,tInt),0);
+  ADD_EFUN("programp",f_programp,tFunc(tMix,tInt01),0);
   
 /* function(:int) */
   ADD_EFUN("query_num_arg",f_query_num_arg,
