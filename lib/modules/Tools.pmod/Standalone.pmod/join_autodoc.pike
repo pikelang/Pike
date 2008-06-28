@@ -1,5 +1,5 @@
 /*
- * $Id: join_autodoc.pike,v 1.17 2008/06/01 14:58:50 grubba Exp $
+ * $Id: join_autodoc.pike,v 1.18 2008/06/28 15:52:10 nilsson Exp $
  *
  * AutoDoc mk II join script.
  *
@@ -31,10 +31,9 @@ int main(int n, array(string) args) {
     args -= ({ "--quiet" });
   } 
 
-  if(sizeof(args)<3) {
-    write("pike -x %s <destination.xml> <builddir>\n", args[0]);
-    write("pike -x %s --post-process <dest.xml> files_to_join.xml [...]\n",
-	  args[0]);
+  if(has_value(args, "--help") || sizeof(args)<3) {
+    write("pike -x join_autodoc <destination.xml> <builddir>\n");
+    write("pike -x join_autodoc --post-process <dest.xml> files_to_join.xml [...]\n");
     return 1;
   }
 

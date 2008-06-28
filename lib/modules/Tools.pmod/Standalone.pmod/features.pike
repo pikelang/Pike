@@ -46,7 +46,11 @@ void m(string sym) {
 #define M(X) m(#X)
 #define I(X) item(#X, !!(X))
 
-int main() {
+int main(int num, array(string) args) {
+
+  if( has_value(args, "--help") )
+    exit(0, "This tools lists different invarient points of Pike\n"
+         "and how this installation is configured.\n");
 
   write("Compilation options\n");
   f("Debug.reset_dmalloc", "DEBUG_MALLOC");
