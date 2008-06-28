@@ -1,8 +1,17 @@
 #!/bin/sh
 
 #set -x
-if $(pike -x 2>&1 | grep precompile > /dev/null 2>&1) ; then
-  exec pike -x precompile "$@"
+if [ x"$1" = x--cache ]; then
+  CACHE_OUTPUT=yes
+  shift 1
+else
+  CACHE_OUTPUT=no
+fi
+
+if [ x"$1" = xprecompile.pike ] ; then
+  if $(pike -x 2>&1 | grep precompile > /dev/null 2>&1) ; then
+    exec pike -x precompile "$@"
+  fi
 fi
 
 exec 5>&1 1>&2
@@ -36,13 +45,6 @@ fi
 old_method="${method-}"
 
 OLD_RUNPIKE="$RUNPIKE"
-
-if [ x"$1" = x--cache ]; then
-  CACHE_OUTPUT=yes
-  shift 1
-else
-  CACHE_OUTPUT=no
-fi
 
 SCRIPT="$1"
 shift 1
