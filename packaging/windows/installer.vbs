@@ -1,5 +1,5 @@
 '
-' $Id: installer.vbs,v 1.3 2006/08/04 12:23:36 mast Exp $
+' $Id: installer.vbs,v 1.4 2008/06/28 19:26:39 mast Exp $
 '
 ' Companion file to bin/install.pike for custom actions.
 '
@@ -7,10 +7,6 @@
 '
 
 ' At call time the CustomActionData property has been set to [TARGETDIR]
-'
-' First make a new master.
-'
-' Then start a pike to Finalize Pike.
 Function FinalizePike()
   Dim fso, targetdir, targetdir_unix, source, dest, re
   targetdir = Session.Property("CustomActionData")
@@ -41,17 +37,10 @@ Function FinalizePike()
   dest.Write(source)
   dest.Close
 
-  ' FIXME: Is there no support for binary files in vbs?
-
-  Dim WshShell
-
-  Set WshShell = CreateObject("WScript.Shell")
-  WshShell.CurrentDirectory = targetdir
-  WshShell.Run "bin\pike" &_
-    " -mlib\master.pike" &_
-    " bin\install.pike" &_
-    " --finalize BASEDIR=." &_
-    " TMP_BUILDDIR=bin", 0, True
+  ' Warning: It appears to be very difficult to call pike from here to do
+  ' finalizing stuff. The problem is that if the MS CRT libs are used, and
+  ' they get installed at the same time, then pike can't use them from here.
+  ' Many attempts to get around that have failed. /mast
 
   ' Extra cleanup.
   If fso.FileExists(targetdir & "bin\pike.exe.old") Then
