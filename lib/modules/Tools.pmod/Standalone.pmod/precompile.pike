@@ -1962,7 +1962,14 @@ struct %s *%s_gdb_dummy_ptr;
 	  exit(1);
 	}
 	string location=proto[p]->file+":"+proto[p]->line;
-	string name=(string)proto[p];
+
+	string name="";
+	do {
+	  name += (string)proto[p];
+	  p++;
+	} while(!arrayp(proto[p]));
+	p--; // Readjust the pointer
+
 	array args_tmp=proto[p+1];
 
 	mapping attributes=parse_attributes(proto[p+2..],location);
