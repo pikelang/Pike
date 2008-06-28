@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.722 2008/06/27 11:29:20 grubba Exp $
+|| $Id: program.c,v 1.723 2008/06/28 03:25:51 mast Exp $
 */
 
 #include "global.h"
@@ -2547,6 +2547,7 @@ void low_start_new_program(struct program *p,
       Pike_compiler->new_program->PIKE_CONCAT(num_,NAME);
 #include "program_areas.h"
 
+    Pike_compiler->malloc_size_program->total_size = 0;
 
     {
       INT32 line=0, off=0;
@@ -10705,6 +10706,33 @@ PMOD_EXPORT void change_compiler_compatibility(int major, int minor)
 #include <sys/mman.h>
 #endif
 
+#include <execinfo.h>
+
+void make_area_executable (char *start, size_t len)
+{
+#ifndef USE_MY_MEXEC_ALLOC
+  {
+    /* Perform page alignment. */
+    void *addr = (void *)(((size_t)start) & ~(page_size-1));
+    size_t l = ((start + len) - ((char *)addr) +
+		(page_size - 1)) & ~(page_size-1);
+
+    if (mprotect(addr, l, PROT_EXEC | PROT_READ | PROT_WRITE) < 0) {
+#if 0
+      fprintf(stderr, "%p:%d: mprotect(%p, %lu, 0x%04x): errno: %d\n",
+	      start, len, addr, l, PROT_EXEC | PROT_READ | PROT_WRITE, errno);
+#endif /* 0 */
+    }
+  }
+#endif /* !USE_MY_MEXEC_ALLOC */
+
+#ifdef HAVE_SYNC_INSTRUCTION_MEMORY
+  sync_instruction_memory(start, len);
+#elif defined(FLUSH_INSTRUCTION_CACHE)
+  FLUSH_INSTRUCTION_CACHE(start, len);
+#endif /* HAVE_SYNC_INSTRUCTION_MEMORY || FLUSH_INSTRUCTION_CACHE */
+}
+
 void make_program_executable(struct program *p)
 {
   if (!p->num_program) return;
@@ -10715,32 +10743,7 @@ void make_program_executable(struct program *p)
     return;
   }
 
-#ifndef USE_MY_MEXEC_ALLOC
-  {
-    /* Perform page alignment. */
-    void *addr = (void *)(((size_t)p->program) & ~(page_size-1));
-    size_t len = (((char *)(p->program + p->num_program)) - ((char *)addr) +
-		  (page_size - 1)) & ~(page_size-1);
-
-    if (mprotect(addr, len, PROT_EXEC | PROT_READ | PROT_WRITE) < 0) {
-#if 0
-      fprintf(stderr, "%p:%d: mprotect(%p, %lu, 0x%04x): errno: %d\n",
-	      (void *)p->program,
-	      (unsigned long)(p->num_program*sizeof(p->program[0])),
-	      addr, len,
-	      PROT_EXEC | PROT_READ | PROT_WRITE,
-	      errno);
-#endif /* 0 */
-    }
-  }
-#endif /* !USE_MY_MEXEC_ALLOC */
-
-#ifdef HAVE_SYNC_INSTRUCTION_MEMORY
-  sync_instruction_memory(p->program,
-			  p->num_program*sizeof(p->program[0]));
-#elif defined(FLUSH_INSTRUCTION_CACHE)
-  FLUSH_INSTRUCTION_CACHE(p->program,
-			  p->num_program*sizeof(p->program[0]));
-#endif /* HAVE_SYNC_INSTRUCTION_MEMORY || FLUSH_INSTRUCTION_CACHE */
+  make_area_executable ((char *) p->program,
+			p->num_program * sizeof (p->program[0]));
 }
 #endif
