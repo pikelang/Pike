@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.444 2008/06/24 12:44:46 mast Exp $
+// $Id: master.pike.in,v 1.445 2008/06/28 15:32:29 per Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -3560,8 +3560,8 @@ void _main(array(string) orig_argv)
 	mixed val = ts[s];
 	if (programp (val)) {
 	  object o = val();
-	  if(!o->main) continue;
-	  t[s] = o->description || "";
+	  if(!o->main || !o->description) continue;
+	  t[s] = o->description;
 	  i = max(i, sizeof(s));
 	}
       }
