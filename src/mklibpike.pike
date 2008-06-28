@@ -1,5 +1,5 @@
 /*
- * $Id: mklibpike.pike,v 1.4 2005/01/03 18:57:29 grubba Exp $
+ * $Id: mklibpike.pike,v 1.5 2008/06/28 22:05:04 mast Exp $
  *
  * Create strapping code for a list of symbols in pike.so,
  * and the pike headerfiles.
@@ -183,7 +183,7 @@ int main(int argc, array(string) argv)
     }
     string rettype = String.trim_whites(Parser.C.simple_reconstitute(info[0]));
     string params = Parser.C.simple_reconstitute(info[1]);
-    out->write("static %s (*vec_%s)%s;\n"
+    out->write("protected %s (*vec_%s)%s;\n"
 	       "%s %s%s\n"
 	       "{\n"
 	       // FIXME: Code to resolve the symbol here.

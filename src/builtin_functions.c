@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.676 2008/06/26 11:44:25 grubba Exp $
+|| $Id: builtin_functions.c,v 1.677 2008/06/28 22:05:03 mast Exp $
 */
 
 #include "global.h"
@@ -2885,12 +2885,12 @@ PMOD_EXPORT void f_destruct(INT32 args)
  *!   For strings and arrays this is simply an array of ascending
  *!   numbers.
  *!
- *!   For mappings and multisets, the array may contain any value.
+ *!   For mappings and multisets, the array might contain any value.
  *!
  *!   For objects which define @[lfun::_indices()] that return value
- *!   will be used.
+ *!   is used.
  *!
- *!   For other objects an array with all non-static symbols will be
+ *!   For other objects an array with all non-protected symbols is
  *!   returned.
  *!
  *! @seealso
@@ -3189,10 +3189,10 @@ static node *fix_aggregate_mapping_type(node *n)
  *!   For mappings the array may contain any value.
  *!
  *!   For objects which define @[lfun::_values()] that return value
- *!   will be used.
+ *!   is used.
  *!
- *!   For other objects an array with the values of all non-static
- *!   symbols will be returned.
+ *!   For other objects an array with the values of all non-protected
+ *!   symbols is returned.
  *!
  *! @seealso
  *!   @[indices()]
@@ -7568,8 +7568,9 @@ static void f_get_prof_info(INT32 args)
  *!   Find out if an object identifier is a variable.
  *!
  *! @returns
- *!   This function returns @expr{1@} if @[var] exists as a non-static variable
- *!   in @[o], and returns @expr{0@} (zero) otherwise.
+ *!   This function returns @expr{1@} if @[var] exists as a
+ *!   non-protected variable in @[o], and returns @expr{0@} (zero)
+ *!   otherwise.
  *!
  *! @seealso
  *!   @[indices()], @[values()]

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.437 2008/06/26 12:47:10 grubba Exp $
+|| $Id: language.yacc,v 1.438 2008/06/28 22:05:04 mast Exp $
 */
 
 %pure_parser
@@ -4586,10 +4586,10 @@ static void mark_lvalues_as_used(node *n)
  * 'type' and 'initializer', but not to 'name'.
  * Note also that 'initializer' may be NULL.
  */
-static node *add_static_variable(struct pike_string *name,
-				 struct pike_type *type,
-				 int depth,
-				 node *initializer)
+static node *add_protected_variable(struct pike_string *name,
+				    struct pike_type *type,
+				    int depth,
+				    node *initializer)
 {
   struct compiler_frame *f = Pike_compiler->compiler_frame;
   int i;
@@ -4610,7 +4610,7 @@ static node *add_static_variable(struct pike_string *name,
     struct pike_string *tmp_name;
     while (i--) {
       if (!p->previous) {
-	my_yyerror("Too many levels of static (%d, max:%d).",
+	my_yyerror("Too many levels of protected (%d, max:%d).",
 		   depth, depth - (i+1));
 	parent_depth -= i+1;
 	break;
@@ -4621,7 +4621,7 @@ static node *add_static_variable(struct pike_string *name,
     
     tmp_name = get_new_name();
     id = define_parent_variable(p, tmp_name, type,
-				ID_STATIC|ID_PRIVATE|ID_INLINE);
+				ID_PROTECTED|ID_PRIVATE|ID_INLINE);
     free_string(tmp_name);
     if (id >= 0) {
       if (def) {
@@ -4643,7 +4643,7 @@ static node *add_static_variable(struct pike_string *name,
       f->min_number_of_locals = id+1;
     if (initializer) {
       /* FIXME! */
-      yyerror("Initializers not yet supported for static variables with function scope.");
+      yyerror("Initializers not yet supported for protected variables with function scope.");
     }
     n = mklocalnode(id, depth);
   }

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.257 2008/06/28 01:26:37 mast Exp $
+|| $Id: threads.c,v 1.258 2008/06/28 22:05:04 mast Exp $
 */
 
 #include "global.h"
@@ -1777,7 +1777,7 @@ void f_thread_id_status(INT32 args)
   push_int(THIS_THREAD->status);
 }
 
-/*! @decl static string _sprintf(int c)
+/*! @decl protected string _sprintf(int c)
  *!
  *! Returns a string identifying the thread.
  */
@@ -1797,7 +1797,7 @@ void f_thread_id__sprintf (INT32 args)
   f_add (3);
 }
 
-/*! @decl static int id_number()
+/*! @decl protected int id_number()
  *!
  *! Returns an id number identifying the thread.
  *!

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iterators.cmod,v 1.68 2008/05/29 21:58:44 mast Exp $
+|| $Id: iterators.cmod,v 1.69 2008/06/28 22:05:03 mast Exp $
 */
 
 #include "global.h"
@@ -85,7 +85,7 @@ PIKECLASS Iterator
    *! if there is any.
    *!
    *! The iterator does not need to support being reused, so this
-   *! function is typically static.
+   *! function is typically protected.
    */
   PIKEFUN void create(void|mixed data)
     flags ID_STATIC;

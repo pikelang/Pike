@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.234 2008/06/16 21:52:24 mast Exp $
+|| $Id: operators.c,v 1.235 2008/06/28 22:05:04 mast Exp $
 */
 
 #include "global.h"
@@ -4943,8 +4943,8 @@ PMOD_EXPORT void f_range(INT32 args)
  *!
  *!   @mixed arg
  *!   	@type object
- *!   	  The non-static (i.e. public) symbol named @[index] is looked
- *!   	  up in @[arg].
+ *!   	  The non-protected (i.e. public) symbol named @[index] is
+ *!   	  looked up in @[arg].
  *!
  *!   	@type int
  *!   	  The bignum function named @[index] is looked up in @[arg].
@@ -4978,7 +4978,7 @@ PMOD_EXPORT void f_range(INT32 args)
  *!   	  Otherwise @expr{UNDEFINED@} is returned.
  *!
  *!   	@type program
- *!   	  The non-static (i.e. public) constant symbol @[index] is
+ *!   	  The non-protected (i.e. public) constant symbol @[index] is
  *!   	  looked up in @[arg].
  *!
  *!   @endmixed
@@ -5047,8 +5047,8 @@ PMOD_EXPORT void f_index(INT32 args)
  *!   Otherwise the result will be as follows:
  *!   @mixed arg
  *!   	@type object
- *!   	  The non-static (ie public) symbol named @[index] will be looked up
- *!   	  in @[arg].
+ *!   	  The non-protected (ie public) symbol named @[index] will be
+ *!   	  looked up in @[arg].
  *!   	@type int
  *!   	  The bignum function named @[index] will be looked up in @[arg].
  *!   	@type array
@@ -5061,8 +5061,8 @@ PMOD_EXPORT void f_index(INT32 args)
  *!   	  If @[index] exists in @[arg], @expr{1@} will be returned.
  *!   	  Otherwise @expr{UNDEFINED@} will be returned.
  *!   	@type program
- *!   	  The non-static (ie public) constant symbol @[index] will be
- *!   	  looked up in @[arg].
+ *!   	  The non-protected (ie public) constant symbol @[index] will
+ *!   	  be looked up in @[arg].
  *!   @endmixed
  *!
  *! @note
@@ -5113,8 +5113,8 @@ PMOD_EXPORT void f_arrow(INT32 args)
  *!
  *!   @mixed arg
  *!   	@type object
- *!   	  The non-static (ie public) variable named @[index] will be looked up
- *!   	  in @[arg], and assigned @[val].
+ *!   	  The non-protected (ie public) variable named @[index] will
+ *!   	  be looked up in @[arg], and assigned @[val].
  *!   	@type array|mapping
  *!   	  Index @[index] in @[arg] will be assigned @[val].
  *!   	@type multiset
@@ -5172,8 +5172,8 @@ PMOD_EXPORT void f_index_assign(INT32 args)
  *!
  *!   @mixed arg
  *!   	@type object
- *!   	  The non-static (ie public) variable named @[index] will be looked up
- *!   	  in @[arg], and assigned @[val].
+ *!   	  The non-protected (ie public) variable named @[index] will
+ *!   	  be looked up in @[arg], and assigned @[val].
  *!   	@type array|mapping
  *!   	  Index @[index] in @[arg] will be assigned @[val].
  *!   	@type multiset
@@ -5236,7 +5236,7 @@ PMOD_EXPORT void f_arrow_assign(INT32 args)
  *!   	  The number of key-value pairs in @[arg] will be returned.
  *!   	@type object
  *!   	  If @[arg] implements @[lfun::_sizeof()], that function will
- *!   	  be called. Otherwise the number of non-static (ie public)
+ *!   	  be called. Otherwise the number of non-protected (ie public)
  *!   	  symbols in @[arg] will be returned.
  *!   @endmixed
  *!
