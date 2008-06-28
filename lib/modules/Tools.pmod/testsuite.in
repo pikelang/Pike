@@ -1,5 +1,5 @@
 START_MARKER
-// $Id: testsuite.in,v 1.27 2008/06/19 22:11:04 nilsson Exp $
+// $Id: testsuite.in,v 1.28 2008/06/28 16:32:05 nilsson Exp $
 
 // Tools.Hilfe
 define(test_hilfe_setup_low,[[test_do([[
@@ -216,7 +216,7 @@ test_true([[ stringp( Tools.Legal.License.get_text() ) ]])
 test_any([[
   int ret=1;
   foreach(indices(Tools.Standalone);; string name)
-    if( programp(Tools.Standalone[name]) &&
+    if( name!="process_files" && programp(Tools.Standalone[name]) &&
         !stringp(Tools.Standalone[name]()->description) )
     {
       ret=0;
