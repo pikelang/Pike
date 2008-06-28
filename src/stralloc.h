@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.h,v 1.106 2008/06/16 21:46:34 mast Exp $
+|| $Id: stralloc.h,v 1.107 2008/06/28 00:05:21 mast Exp $
 */
 
 #ifndef STRALLOC_H
@@ -86,6 +86,8 @@ PMOD_EXPORT struct pike_string *debug_findstring(const struct pike_string *foo);
 
 #define my_hash_string(X) PTR_TO_INT(X)
 #define is_same_string(X,Y) ((X)==(Y))
+
+/* NB: This intentionally only works for narrow strings. */
 #define string_has_null(X) (strlen((X)->str)!=(size_t)(X)->len)
 
 #ifdef PIKE_DEBUG
