@@ -108,12 +108,24 @@ o Stricter typing of strings.
 
     string(0..255) bytes;
 
-o Stdio.*
+o Stdio
 
-  Stdio.cp can now work recursively in a directory tree.
-  Stdio.cp now keeps permissions when copying.
-  Added Stdio.recursive_mv which works on every OS and also when the
-  destination isn't on the same filesystem as the source.
+  - Stdio.cp can now work recursively in a directory tree. It will
+    also keep the permissions of files it copies.
+
+  - Added Stdio.recursive_mv which works on every OS and also when the
+    destination isn't on the same filesystem as the source.
+
+  - Added more symbolc default termcap/terminfo bindings to
+    Stdio.Readline.
+
+  - Improved support for Terminfo on NetBSD.
+
+  - read_file(), read_bytes(), write_file() and append_file() will may
+    now throw exceptions on uncommon errors such as when write_file is
+    unable to write all its data.
+
+  - Stdio.File->openat() opens a file relative to an open directory.
 
 o Prepared for having multiple different active backend implementations.
   ...
@@ -482,8 +494,7 @@ o Odbc
   FIXME: Rewrite
   Now supports UnixODBC properly.
   Fixed various issues with Unicode.
-  create_dsn()
-  FreeTDS fixes
+x  FreeTDS fixes
 
 o Oracle
 
@@ -663,6 +674,20 @@ o Sql
   - It is possible to iterate over the result object from big_query()
     queries directly in foreach.
 
+  - Support for ODBC DSN files. FIXME: Example from grubba?
+
+      Sql.Sql db = Sql.Sql("dsn://user:pass@host/database");
+
+  - Support for the TDS protocol, used by Sybase and Microsoft SQL
+    server.
+
+      Sql.Sql db = Sql.Sql("tds://user:pass@host/database");
+
+  - Support for the SQLite database added. A raw interface is
+    available throug hthe SQLite module. FIXME: Syntax?
+
+      Sql.Sql db = Sql.Sql("sqlite://path/to/file");
+
   FIXME: mysql
 
 o SSL
@@ -701,10 +726,6 @@ o Standards.UUID
 o Standards.XML.Wix
 
   FIXME
-
-o Stdio
-
-  (module.pmod, Readline, Terminfo) FIXME
 
 o String
 
@@ -877,24 +898,13 @@ o Web.CGI
   from environment variables and populates the variables in the
   Request object.
 
-New lib:
-Protocols.LDAP module.pmod
-Sql.Sql dsn
-        sqlite
-        sql_array_result
-        sql_object_result
-        tds
--x test_pike
 
-New src:
-embed/libpike
-tmodule
-Fuse
-Protocols.DNS_SD
-Charset gb18030
-        gbk
-GTK2
-SQLite
+Deprecations
+
+o The keyword nomask has been deprecated. It was functionally
+  equivivalent with the keyword final.
+
+o Stdio.File->set_peek_file_before_read_callback() is deprecated.
 
 Incompatible changes
 
@@ -988,6 +998,21 @@ __deprecated__
 
 ----
 modules/_Charset
+
+
+New lib:
+Protocols.LDAP module.pmod
+-x test_pike
+
+New src:
+embed/libpike
+tmodule
+Fuse
+Protocols.DNS_SD
+Charset gb18030
+        gbk
+GTK2
+SQLite
 
 
 src:
