@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.281 2008/06/27 11:33:08 grubba Exp $
+|| $Id: encode.c,v 1.282 2008/06/28 18:35:58 mast Exp $
 */
 
 #include "global.h"
@@ -2190,7 +2190,7 @@ static int my_extract_char(struct decode_data *data)
    INT32 what, e;				\
    INT64 num;					\
    DECODE("decode_number");			\
-   X=(what & TAG_MASK) | (num<<4);		\
+   X=(what & TAG_MASK) | ((INT32) num<<4);	\
    EDB(5, fprintf(stderr, "%*s  ==>%ld\n",	\
 		  data->depth, "", (long) X));	\
   }while(0)					\

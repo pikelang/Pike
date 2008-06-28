@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: spider.c,v 1.134 2008/01/26 22:34:27 mast Exp $
+|| $Id: spider.c,v 1.135 2008/06/28 18:35:59 mast Exp $
 */
 
 #include "global.h"
@@ -312,7 +312,7 @@ void f_set_end_quote(INT32 args)
 {
   if(args < 1 || sp[-1].type != T_INT)
     Pike_error("Wrong argument to set_end_quote(int CHAR)\n");
-  end_quote_character = sp[-1].u.integer;
+  end_quote_character = (char) sp[-1].u.integer;
 }
 
 /*! @decl void set_start_quote(int quote)
@@ -321,7 +321,7 @@ void f_set_start_quote(INT32 args)
 {
   if(args < 1 || sp[-1].type != T_INT)
     Pike_error("Wrong argument to set_start_quote(int CHAR)\n");
-  start_quote_character = sp[-1].u.integer;
+  start_quote_character = (char) sp[-1].u.integer;
 }
 
 

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_tiff.c,v 1.45 2005/10/19 16:35:53 grubba Exp $
+|| $Id: image_tiff.c,v 1.46 2008/06/28 18:35:59 mast Exp $
 */
 
 #include "global.h"
@@ -302,7 +302,7 @@ void low_image_tiff_encode( struct buffer *buf,
   n = 0;
 
  retry:
-  tif = TIFFClientOpen( "memoryfile", "w", buf,
+  tif = TIFFClientOpen( "memoryfile", "w", (thandle_t) buf,
 			read_buffer, write_buffer,
 			seek_buffer, close_buffer,
 			size_buffer, map_buffer,
@@ -391,7 +391,7 @@ void low_image_tiff_encode( struct buffer *buf,
 	 */
 	CALL_AND_UNSET_ONERROR(tmp);
 
-	seek_buffer(buf, 0, SEEK_SET);
+	seek_buffer((thandle_t) buf, 0, SEEK_SET);
 	buf->real_len = 0;	/* Truncate file. */
 	n++;
 	goto retry;
@@ -433,7 +433,7 @@ void low_image_tiff_decode( struct buffer *buf,
   unsigned int i;
   uint32 w, h, *raster,  *s;
   rgb_group *di, *da=NULL;
-  tif = TIFFClientOpen("memoryfile", "r", buf,
+  tif = TIFFClientOpen("memoryfile", "r", (thandle_t) buf,
 		       read_buffer, write_buffer,
 		       seek_buffer, close_buffer,
 		       size_buffer, map_buffer,

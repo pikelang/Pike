@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.112 2008/05/24 15:14:50 grubba Exp $
+|| $Id: mysql.c,v 1.113 2008/06/28 18:35:58 mast Exp $
 */
 
 /*
@@ -695,7 +695,6 @@ static void f_create(INT32 args)
 static void mysql__sprintf(INT32 args)
 {
   INT_TYPE type;
-  struct mapping * flags;
 
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("_sprintf",2);
