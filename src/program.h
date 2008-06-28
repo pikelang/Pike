@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.255 2008/06/28 11:01:54 mast Exp $
+|| $Id: program.h,v 1.256 2008/06/28 21:50:11 mast Exp $
 */
 
 #ifndef PROGRAM_H
@@ -350,7 +350,7 @@ struct reference
    * above. See ID_FROM_PTR and ID_FROM_INT. */
   unsigned INT16 identifier_offset;
 
-  /* ID_* flags - static, private etc.. */
+  /* ID_* flags - protected, private etc.. */
   unsigned INT16 id_flags;
 };
 

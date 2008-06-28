@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.297 2008/06/03 14:52:47 mast Exp $
+|| $Id: object.c,v 1.298 2008/06/28 21:50:10 mast Exp $
 */
 
 #include "global.h"
@@ -1304,7 +1304,7 @@ PMOD_EXPORT void object_index_no_free2(struct svalue *to,
 #define ARROW_INDEX_P(X) ((X)->type==T_STRING && (X)->subtype)
 
 /* Get a variable through external indexing, i.e. by going through
- * `-> or `[] lfuns, not seeing private and static etc. */
+ * `-> or `[] lfuns, not seeing private and protected etc. */
 PMOD_EXPORT void object_index_no_free(struct svalue *to,
 				      struct object *o,
 				      int inherit_number,
@@ -1582,7 +1582,7 @@ PMOD_EXPORT void object_set_index2(struct object *o,
 }
 
 /* Assign a variable through external indexing, i.e. by going through
- * `->= or `[]= lfuns, not seeing private and static etc. */
+ * `->= or `[]= lfuns, not seeing private and protected etc. */
 PMOD_EXPORT void object_set_index(struct object *o,
 				  int inherit_number,
 				  struct svalue *index,
@@ -2379,7 +2379,7 @@ void push_magic_index(struct program *type, int inherit_no, int parent_level)
  * argument would be explained as follows. /mast
  *
  * The indexing normally involves the externally accessable
- * identifiers (i.e. those which aren't static or private) in the
+ * identifiers (i.e. those which aren't protected or private) in the
  * current class and any inherited classes. If @[type] is 1 then
  * locally accessible identifiers are indexed too. If @[type] is 2
  * then all externally accessible identifiers in the object, i.e. also

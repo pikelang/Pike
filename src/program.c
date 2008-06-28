@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.726 2008/06/28 11:01:53 mast Exp $
+|| $Id: program.c,v 1.727 2008/06/28 21:50:10 mast Exp $
 */
 
 #include "global.h"
@@ -278,11 +278,11 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *! @endul
  *!
  *! @note
- *!   Although these functions are called from outside the object
- *!   they exist in, they will still be used even if they are
- *!   declared @expr{static@}. It is in fact recommended to declare
- *!   them @expr{static@}, since that will hinder them being used
- *!   for other purposes.
+ *!   Although these functions are called from outside the object they
+ *!   exist in, they will still be used even if they are declared
+ *!   @expr{protected@}. It is in fact recommended to declare them
+ *!   @expr{protected@}, since that will hinder them being used for
+ *!   other purposes.
  *!
  *! @seealso
  *!   @[::]
@@ -330,7 +330,7 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *! class Foo {
  *!   int foo;
  *!   int bar;
- *!   static void create(int foo)
+ *!   protected void create(int foo)
  *!   {
  *!     local::foo = foo;
  *!   }
@@ -423,13 +423,13 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *! @code
  *! class Super {
  *!   class Sub {
- *!     static void destroy() {
+ *!     protected void destroy() {
  *!       if (!Super::this)
  *!         error ("My parent has been destructed!\n");
  *!     }
  *!   }
  *!   Sub sub = Sub();
- *!   static void destroy() {
+ *!   protected void destroy() {
  *!     if (!sub)
  *!       werror ("sub already destructed.\n");
  *!   }
@@ -10344,7 +10344,7 @@ static int low_implements(struct program *a, struct program *b)
     struct identifier *bid;
     int i;
     if (b->identifier_references[e].id_flags & (ID_STATIC|ID_HIDDEN))
-      continue;		/* Skip static & hidden */
+      continue;		/* Skip protected & hidden */
     bid = ID_FROM_INT(b,e);
     if(s == bid->name) continue;	/* Skip __INIT */
     i = find_shared_string_identifier(bid->name,a);
@@ -10425,9 +10425,9 @@ static int low_is_compatible(struct program *a, struct program *b)
     struct identifier *bid;
     int i;
     if (b->identifier_references[e].id_flags & (ID_STATIC|ID_HIDDEN))
-      continue;		/* Skip static & hidden */
+      continue;		/* Skip protected & hidden */
 
-    /* FIXME: What if they aren't static & hidden in a? */
+    /* FIXME: What if they aren't protected & hidden in a? */
 
     bid = ID_FROM_INT(b,e);
     if(s == bid->name) continue;	/* Skip __INIT */
@@ -10547,9 +10547,9 @@ void yyexplain_not_compatible(int severity_level,
     struct identifier *bid;
     int i;
     if (b->identifier_references[e].id_flags & (ID_STATIC|ID_HIDDEN))
-      continue;		/* Skip static & hidden */
+      continue;		/* Skip protected & hidden */
 
-    /* FIXME: What if they aren't static & hidden in a? */
+    /* FIXME: What if they aren't protected & hidden in a? */
 
     bid = ID_FROM_INT(b,e);
     if(s == bid->name) continue;	/* Skip __INIT */
@@ -10609,7 +10609,7 @@ void yyexplain_not_implements(int severity_level,
     struct identifier *bid;
     int i;
     if (b->identifier_references[e].id_flags & (ID_STATIC|ID_HIDDEN))
-      continue;		/* Skip static & hidden */
+      continue;		/* Skip protected & hidden */
     bid = ID_FROM_INT(b,e);
     if(s == bid->name) continue;	/* Skip __INIT */
     i = find_shared_string_identifier(bid->name,a);
