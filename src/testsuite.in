@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.830 2008/06/27 23:14:38 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.831 2008/06/28 14:44:16 nilsson Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -9074,6 +9074,28 @@ test_any([[
 return 1;
 ]],1)
 
+test_compile_warning([[
+class A {
+nomask int x;
+}
+]])
+
+test_do([[
+#pragma no_deprecation_warnings
+class A {
+nomask int x;
+}
+]])
+
+test_compile_warning([[
+#pragma no_deprecation_warnings
+#pragma deprecation_warnings
+class A {
+nomask int x;
+}
+]])
+
+
 // #include
 test_compile_any([[
 #pike 7.0
@@ -11445,7 +11467,9 @@ test_compile_any(class A {public int v;} class B {inherit A; int q; void g(){q=v
 test_compile_any(class A {static int v;} class B {inherit A; int q; void g(){q=v;}})
 test_compile_error_any(class A {private int v; int q=v;} class B {inherit A; int q; void g(){q=v;}})
 test_compile_any(class A {final int v;} class B {inherit A; int q; void g(){q=v;}})
-test_compile_any(class A {nomask int v;} class B {inherit A; int q; void g(){q=v;}})
+test_compile_any(
+#pragma no_deprecation_warnings
+class A {nomask int v;} class B {inherit A; int q; void g(){q=v;}})
 test_compile_any(class A {local int v;} class B {inherit A; int q; void g(){q=v;}})
 test_compile_any(class A {inline int v;} class B {inherit A; int q; void g(){q=v;}})
 test_compile_any(class A {int f(){}} class B {inherit A; void g(){f();}})
@@ -11453,7 +11477,9 @@ test_compile_any(class A {public int f(){}} class B {inherit A; void g(){f();}})
 test_compile_any(class A {static int f(){}} class B {inherit A; void g(){f();}})
 test_compile_error_any(class A {private int f(){} int q=f();} class B {inherit A; void g(){f();}})
 test_compile_any(class A {final int f(){}} class B {inherit A; void g(){f();}})
-test_compile_any(class A {nomask int f(){}} class B {inherit A; void g(){f();}})
+test_compile_any(
+#pragma no_deprecation_warnings
+class A {nomask int f(){}} class B {inherit A; void g(){f();}})
 test_compile_any(class A {local int f(){}} class B {inherit A; void g(){f();}})
 test_compile_any(class A {inline int f(){}} class B {inherit A; void g(){f();}})
 
@@ -11461,14 +11487,18 @@ test_compile_any(class A {int v;} class B {public inherit A; int q; void g(){q=v
 test_compile_any(class A {int v;} class B {static inherit A; int q; void g(){q=v;}})
 test_compile_any(class A {int v;} class B {private inherit A; int q; void g(){q=v;}})
 test_compile_any(class A {int v;} class B {final inherit A; int q; void g(){q=v;}})
-test_compile_any(class A {int v;} class B {nomask inherit A; int q; void g(){q=v;}})
+test_compile_any(
+#pragma no_deprecation_warnings
+class A {int v;} class B {nomask inherit A; int q; void g(){q=v;}})
 test_compile_any(class A {int v;} class B {local inherit A; int q; void g(){q=v;}})
 test_compile_any(class A {int v;} class B {inline inherit A; int q; void g(){q=v;}})
 test_compile_any(class A {int f(){}} class B {public inherit A; void g(){f();}})
 test_compile_any(class A {int f(){}} class B {static inherit A; void g(){f();}})
 test_compile_any(class A {int f(){}} class B {private inherit A; void g(){f();}})
 test_compile_any(class A {int f(){}} class B {final inherit A; void g(){f();}})
-test_compile_any(class A {int f(){}} class B {nomask inherit A; void g(){f();}})
+test_compile_any(
+#pragma no_deprecation_warnings
+class A {int f(){}} class B {nomask inherit A; void g(){f();}})
 test_compile_any(class A {int f(){}} class B {local inherit A; void g(){f();}})
 test_compile_any(class A {int f(){}} class B {inline inherit A; void g(){f();}})
 
@@ -11478,7 +11508,9 @@ test_compile_any(class A {public int v;} class B {inherit A; int q; void g(){q=A
 test_compile_any(class A {static int v;} class B {inherit A; int q; void g(){q=A::v;}})
 test_compile_error_any(class A {private int v; int q=v;} class B {inherit A; int q; void g(){q=A::v;}})
 test_compile_any(class A {final int v;} class B {inherit A; int q; void g(){q=A::v;}})
-test_compile_any(class A {nomask int v;} class B {inherit A; int q; void g(){q=A::v;}})
+test_compile_any(
+#pragma no_deprecation_warnings
+class A {nomask int v;} class B {inherit A; int q; void g(){q=A::v;}})
 test_compile_any(class A {local int v;} class B {inherit A; int q; void g(){q=A::v;}})
 test_compile_any(class A {inline int v;} class B {inherit A; int q; void g(){q=A::v;}})
 test_compile_any(class A {int f(){}} class B {inherit A; void g(){A::f();}})
@@ -11486,7 +11518,9 @@ test_compile_any(class A {public int f(){}} class B {inherit A; void g(){A::f();
 test_compile_any(class A {static int f(){}} class B {inherit A; void g(){A::f();}})
 test_compile_error_any(class A {private int f(){} int q=f();} class B {inherit A; void g(){A::f();}})
 test_compile_any(class A {final int f(){}} class B {inherit A; void g(){A::f();}})
-test_compile_any(class A {nomask int f(){}} class B {inherit A; void g(){A::f();}})
+test_compile_any(
+#pragma no_deprecation_warnings
+class A {nomask int f(){}} class B {inherit A; void g(){A::f();}})
 test_compile_any(class A {local int f(){}} class B {inherit A; void g(){A::f();}})
 test_compile_any(class A {inline int f(){}} class B {inherit A; void g(){A::f();}})
 
@@ -11494,14 +11528,18 @@ test_compile_any(class A {int v;} class B {public inherit A; int q; void g(){q=A
 test_compile_any(class A {int v;} class B {static inherit A; int q; void g(){q=A::v;}})
 test_compile_any(class A {int v;} class B {private inherit A; int q; void g(){q=A::v;}})
 test_compile_any(class A {int v;} class B {final inherit A; int q; void g(){q=A::v;}})
-test_compile_any(class A {int v;} class B {nomask inherit A; int q; void g(){q=A::v;}})
+test_compile_any(
+#pragma no_deprecation_warnings
+class A {int v;} class B {nomask inherit A; int q; void g(){q=A::v;}})
 test_compile_any(class A {int v;} class B {local inherit A; int q; void g(){q=A::v;}})
 test_compile_any(class A {int v;} class B {inline inherit A; int q; void g(){q=A::v;}})
 test_compile_any(class A {int f(){}} class B {public inherit A; void g(){A::f();}})
 test_compile_any(class A {int f(){}} class B {static inherit A; void g(){A::f();}})
 test_compile_any(class A {int f(){}} class B {private inherit A; void g(){A::f();}})
 test_compile_any(class A {int f(){}} class B {final inherit A; void g(){A::f();}})
-test_compile_any(class A {int f(){}} class B {nomask inherit A; void g(){A::f();}})
+test_compile_any(
+#pragma no_deprecation_warnings
+class A {int f(){}} class B {nomask inherit A; void g(){A::f();}})
 test_compile_any(class A {int f(){}} class B {local inherit A; void g(){A::f();}})
 test_compile_any(class A {int f(){}} class B {inline inherit A; void g(){A::f();}})
 
@@ -11511,7 +11549,9 @@ test_compile_any(class A {int v;} class B {public inherit A;} class C {inherit B
 test_compile_any(class A {int v;} class B {static inherit A;} class C {inherit B; int q; void g(){q=B::v;}})
 test_compile_error_any(class A {int v;} class B {private inherit A;} class C {inherit B; int q; void g(){q=B::v;}})
 test_compile_any(class A {int v;} class B {final inherit A;} class C {inherit B; int q; void g(){q=B::v;}})
-test_compile_any(class A {int v;} class B {nomask inherit A;} class C {inherit B; int q; void g(){q=B::v;}})
+test_compile_any(
+#pragma no_deprecation_warnings
+class A {int v;} class B {nomask inherit A;} class C {inherit B; int q; void g(){q=B::v;}})
 test_compile_any(class A {int v;} class B {local inherit A;} class C {inherit B; int q; void g(){q=B::v;}})
 test_compile_any(class A {int v;} class B {inline inherit A;} class C {inherit B; int q; void g(){q=B::v;}})
 test_compile_any(class A {int f(){}} class B {inherit A;} class C {inherit B; void g(){B::f();}})
@@ -11519,7 +11559,9 @@ test_compile_any(class A {int f(){}} class B {public inherit A;} class C {inheri
 test_compile_any(class A {int f(){}} class B {static inherit A;} class C {inherit B; void g(){B::f();}})
 test_compile_error_any(class A {int f(){}} class B {private inherit A;} class C {inherit B; void g(){B::f();}})
 test_compile_any(class A {int f(){}} class B {final inherit A;} class C {inherit B; void g(){B::f();}})
-test_compile_any(class A {int f(){}} class B {nomask inherit A;} class C {inherit B; void g(){B::f();}})
+test_compile_any(
+#pragma no_deprecation_warnings
+class A {int f(){}} class B {nomask inherit A;} class C {inherit B; void g(){B::f();}})
 test_compile_any(class A {int f(){}} class B {local inherit A;} class C {inherit B; void g(){B::f();}})
 test_compile_any(class A {int f(){}} class B {inline inherit A;} class C {inherit B; void g(){B::f();}})
 
@@ -11531,7 +11573,9 @@ test_do(class {public int f(){}}()->f())
 test_eval_error(return class {static int f(){}}()->f())
 test_eval_error(return class {private int f(){} int q=f();}()->f())
 test_do(class {final int f(){}}()->f())
-test_do(class {nomask int f(){}}()->f())
+test_do(
+#pragma no_deprecation_warnings
+class {nomask int f(){}}()->f())
 test_do(class {local int f(){}}()->f())
 test_do(class {inline int f(){}}()->f())
 test_do(class {class A {}}()->A())
@@ -11539,7 +11583,9 @@ test_do(class {public class A {}}()->A())
 test_eval_error(return class {static class A {}}()->A())
 test_eval_error(return class {private class A {} object q=A();}()->A())
 test_do(class {final class A {}}()->A())
-test_do(class {nomask class A {}}()->A())
+test_do(
+#pragma no_deprecation_warnings
+class {nomask class A {}}()->A())
 test_do(class {local class A {}}()->A())
 test_do(class {inline class A {}}()->A())
 
@@ -11549,7 +11595,9 @@ test_equal(indices(class {public int v;}()), ({"v"}))
 test_equal(indices(class {static int v;}()), ({}))
 test_equal(indices(class {private int v; static int q=v;}()), ({}))
 test_equal(indices(class {final int v;}()), ({"v"}))
-test_equal(indices(class {nomask int v;}()), ({"v"}))
+test_equal(
+#pragma no_deprecation_warnings
+indices(class {nomask int v;}()), ({"v"}))
 test_equal(indices(class {local int v;}()), ({"v"}))
 test_equal(indices(class {inline int v;}()), ({"v"}))
 test_equal(indices(class {int f(){}}()), ({"f"}))
@@ -11557,7 +11605,9 @@ test_equal(indices(class {public int f(){}}()), ({"f"}))
 test_equal(indices(class {static int f(){}}()), ({}))
 test_equal(indices(class {private int f(){} static int q=f();}()), ({}))
 test_equal(indices(class {final int f(){}}()), ({"f"}))
-test_equal(indices(class {nomask int f(){}}()), ({"f"}))
+test_equal(
+#pragma no_deprecation_warnings
+indices(class {nomask int f(){}}()), ({"f"}))
 test_equal(indices(class {local int f(){}}()), ({"f"}))
 test_equal(indices(class {inline int f(){}}()), ({"f"}))
 
@@ -11567,7 +11617,9 @@ test_equal(indices(class {class A {public int v;} class B {inherit A;}}()->B()),
 test_equal(indices(class {class A {static int v;} class B {inherit A;}}()->B()), ({}))
 test_equal(indices(class {class A {private int v; static int q=v;} class B {inherit A;}}()->B()), ({}))
 test_equal(indices(class {class A {final int v;} class B {inherit A;}}()->B()), ({"v"}))
-test_equal(indices(class {class A {nomask int v;} class B {inherit A;}}()->B()), ({"v"}))
+test_equal(
+#pragma no_deprecation_warnings
+indices(class {class A {nomask int v;} class B {inherit A;}}()->B()), ({"v"}))
 test_equal(indices(class {class A {local int v;} class B {inherit A;}}()->B()), ({"v"}))
 test_equal(indices(class {class A {inline int v;} class B {inherit A;}}()->B()), ({"v"}))
 test_equal(indices(class {class A {int f(){}} class B {inherit A;}}()->B()), ({"f"}))
@@ -11575,7 +11627,9 @@ test_equal(indices(class {class A {public int f(){}} class B {inherit A;}}()->B(
 test_equal(indices(class {class A {static int f(){}} class B {inherit A;}}()->B()), ({}))
 test_equal(indices(class {class A {private int f(){} static int q=f();} class B {inherit A;}}()->B()), ({}))
 test_equal(indices(class {class A {final int f(){}} class B {inherit A;}}()->B()), ({"f"}))
-test_equal(indices(class {class A {nomask int f(){}} class B {inherit A;}}()->B()), ({"f"}))
+test_equal(
+#pragma no_deprecation_warnings
+indices(class {class A {nomask int f(){}} class B {inherit A;}}()->B()), ({"f"}))
 test_equal(indices(class {class A {local int f(){}} class B {inherit A;}}()->B()), ({"f"}))
 test_equal(indices(class {class A {inline int f(){}} class B {inherit A;}}()->B()), ({"f"}))
 
@@ -11583,14 +11637,18 @@ test_equal(indices(class {class A {int v;} class B {public inherit A;}}()->B()),
 test_equal(indices(class {class A {int v;} class B {static inherit A;}}()->B()), ({}))
 test_equal(indices(class {class A {int v;} class B {private inherit A;}}()->B()), ({}))
 test_equal(indices(class {class A {int v;} class B {final inherit A;}}()->B()), ({"v"}))
-test_equal(indices(class {class A {int v;} class B {nomask inherit A;}}()->B()), ({"v"}))
+test_equal(
+#pragma no_deprecation_warnings
+indices(class {class A {int v;} class B {nomask inherit A;}}()->B()), ({"v"}))
 test_equal(indices(class {class A {int v;} class B {local inherit A;}}()->B()), ({"v"}))
 test_equal(indices(class {class A {int v;} class B {inline inherit A;}}()->B()), ({"v"}))
 test_equal(indices(class {class A {int f(){}} class B {public inherit A;}}()->B()), ({"f"}))
 test_equal(indices(class {class A {int f(){}} class B {static inherit A;}}()->B()), ({}))
 test_equal(indices(class {class A {int f(){}} class B {private inherit A;}}()->B()), ({}))
 test_equal(indices(class {class A {int f(){}} class B {final inherit A;}}()->B()), ({"f"}))
-test_equal(indices(class {class A {int f(){}} class B {nomask inherit A;}}()->B()), ({"f"}))
+test_equal(
+#pragma no_deprecation_warnings
+indices(class {class A {int f(){}} class B {nomask inherit A;}}()->B()), ({"f"}))
 test_equal(indices(class {class A {int f(){}} class B {local inherit A;}}()->B()), ({"f"}))
 test_equal(indices(class {class A {int f(){}} class B {inline inherit A;}}()->B()), ({"f"}))
 
@@ -11600,7 +11658,9 @@ test_equal(indices(class {class A {int v;} class B {public inherit A;} class C {
 test_equal(indices(class {class A {int v;} class B {static inherit A;} class C {inherit B;}}()->C()), ({}))
 test_equal(indices(class {class A {int v;} class B {private inherit A;} class C {inherit B;}}()->C()), ({}))
 test_equal(indices(class {class A {int v;} class B {final inherit A;} class C {inherit B;}}()->C()), ({"v"}))
-test_equal(indices(class {class A {int v;} class B {nomask inherit A;} class C {inherit B;}}()->C()), ({"v"}))
+test_equal(
+#pragma no_deprecation_warnings
+indices(class {class A {int v;} class B {nomask inherit A;} class C {inherit B;}}()->C()), ({"v"}))
 test_equal(indices(class {class A {int v;} class B {local inherit A;} class C {inherit B;}}()->C()), ({"v"}))
 test_equal(indices(class {class A {int v;} class B {inline inherit A;} class C {inherit B;}}()->C()), ({"v"}))
 test_equal(indices(class {class A {int f(){}} class B {inherit A;} class C {inherit B;}}()->C()), ({"f"}))
@@ -11608,7 +11668,9 @@ test_equal(indices(class {class A {int f(){}} class B {public inherit A;} class 
 test_equal(indices(class {class A {int f(){}} class B {static inherit A;} class C {inherit B;}}()->C()), ({}))
 test_equal(indices(class {class A {int f(){}} class B {private inherit A;} class C {inherit B;}}()->C()), ({}))
 test_equal(indices(class {class A {int f(){}} class B {final inherit A;} class C {inherit B;}}()->C()), ({"f"}))
-test_equal(indices(class {class A {int f(){}} class B {nomask inherit A;} class C {inherit B;}}()->C()), ({"f"}))
+test_equal(
+#pragma no_deprecation_warnings
+indices(class {class A {int f(){}} class B {nomask inherit A;} class C {inherit B;}}()->C()), ({"f"}))
 test_equal(indices(class {class A {int f(){}} class B {local inherit A;} class C {inherit B;}}()->C()), ({"f"}))
 test_equal(indices(class {class A {int f(){}} class B {inline inherit A;} class C {inherit B;}}()->C()), ({"f"}))
 
@@ -11627,7 +11689,9 @@ test_any(class A {public int v=1;}; class B {inherit A; int v=2; int t(){return 
 test_any(class A {static int v=1;}; class B {inherit A; int v=2; int t(){return v;}}; return B()->t(), 2)
 test_any(class A {private int v=1;}; class B {inherit A; int v=2; int t(){return v;}}; return B()->t(), 2)
 test_compile_error_any(class A {final int v=1;}; class B {inherit A; int v=2;};)
-test_compile_error_any(class A {nomask int v=1;}; class B {inherit A; int v=2;};)
+test_compile_error_any(
+#pragma no_deprecation_warnings
+class A {nomask int v=1;}; class B {inherit A; int v=2;};)
 test_any(class A {local int v=1;}; class B {inherit A; int v=2; int t(){return v;}}; return B()->t(), 2)
 test_any(class A {inline int v=1;}; class B {inherit A; int v=2; int t(){return v;}}; return B()->t(), 2)
 test_any(class A {int f(){return 1;}}; class B {inherit A; int f(){return 2;} int t(){return f();}}; return B()->t(), 2)
@@ -11635,7 +11699,9 @@ test_any(class A {public int f(){return 1;}}; class B {inherit A; int f(){return
 test_any(class A {static int f(){return 1;}}; class B {inherit A; int f(){return 2;} int t(){return f();}}; return B()->t(), 2)
 test_any(class A {private int f(){return 1;} int q=f();}; class B {inherit A; int f(){return 2;} int t(){return f();}}; return B()->t(), 2)
 test_compile_error_any(class A {final int f(){return 1;}}; class B {inherit A; int f(){return 2;}};)
-test_compile_error_any(class A {nomask int f(){return 1;}}; class B {inherit A; int f(){return 2;}};)
+test_compile_error_any(
+#pragma no_deprecation_warnings
+class A {nomask int f(){return 1;}}; class B {inherit A; int f(){return 2;}};)
 test_any(class A {local int f(){return 1;}}; class B {inherit A; int f(){return 2;} int t(){return f();}}; return B()->t(), 2)
 test_any(class A {inline int f(){return 1;}}; class B {inherit A; int f(){return 2;} int t(){return f();}}; return B()->t(), 2)
 
@@ -11643,14 +11709,18 @@ test_any(class A {int v=1;}; class B {public inherit A; int v=2; int t(){return 
 test_any(class A {int v=1;}; class B {static inherit A; int v=2; int t(){return v;}}; return B()->t(), 2)
 test_any(class A {int v=1;}; class B {private inherit A; int v=2; int t(){return v;}}; return B()->t(), 2)
 test_compile_error_any(class A {int v=1;}; class B {final inherit A; int v=2;};)
-test_compile_error_any(class A {int v=1;}; class B {nomask inherit A; int v=2;};)
+test_compile_error_any(
+#pragma no_deprecation_warnings
+class A {int v=1;}; class B {nomask inherit A; int v=2;};)
 test_any(class A {int v=1;}; class B {local inherit A; int v=2; int t(){return v;}}; return B()->t(), 2)
 test_any(class A {int v=1;}; class B {inline inherit A; int v=2; int t(){return v;}}; return B()->t(), 2)
 test_any(class A {int f(){return 1;}}; class B {public inherit A; int f(){return 2;} int t(){return f();}}; return B()->t(), 2)
 test_any(class A {int f(){return 1;}}; class B {static inherit A; int f(){return 2;} int t(){return f();}}; return B()->t(), 2)
 test_any(class A {int f(){return 1;}}; class B {private inherit A; int f(){return 2;} int t(){return f();}}; return B()->t(), 2)
 test_compile_error_any(class A {int f(){return 1;}}; class B {final inherit A; int f(){return 2;}};)
-test_compile_error_any(class A {int f(){return 1;}}; class B {nomask inherit A; int f(){return 2;}};)
+test_compile_error_any(
+#pragma no_deprecation_warnings
+class A {int f(){return 1;}}; class B {nomask inherit A; int f(){return 2;}};)
 test_any(class A {int f(){return 1;}}; class B {local inherit A; int f(){return 2;} int t(){return f();}}; return B()->t(), 2)
 test_any(class A {int f(){return 1;}}; class B {inline inherit A; int f(){return 2;} int t(){return f();}}; return B()->t(), 2)
 
@@ -11659,7 +11729,9 @@ test_any(class A {int v=1;}; class B {inherit A; public int v=2; int t(){return 
 test_any(class A {int v=1;}; class B {inherit A; static int v=2; int t(){return v;}}; return B()->t(), 2)
 test_any(class A {int v=1;}; class B {inherit A; private int v=2; int t(){return v;}}; return B()->t(), 2)
 test_any(class A {int v=1;}; class B {inherit A; final int v=2; int t(){return v;}}; return B()->t(), 2)
-test_any(class A {int v=1;}; class B {inherit A; nomask int v=2; int t(){return v;}}; return B()->t(), 2)
+test_any(
+#pragma no_deprecation_warnings
+class A {int v=1;}; class B {inherit A; nomask int v=2; int t(){return v;}}; return B()->t(), 2)
 test_any(class A {int v=1;}; class B {inherit A; local int v=2; int t(){return v;}}; return B()->t(), 2)
 test_any(class A {int v=1;}; class B {inherit A; inline int v=2; int t(){return v;}}; return B()->t(), 2)
 test_any(class A {int f(){return 1;}}; class B {inherit A; int f(){return 2;} int t(){return f();}}; return B()->t(), 2)
@@ -11667,7 +11739,9 @@ test_any(class A {int f(){return 1;}}; class B {inherit A; public int f(){return
 test_any(class A {int f(){return 1;}}; class B {inherit A; static int f(){return 2;} int t(){return f();}}; return B()->t(), 2)
 test_any(class A {int f(){return 1;}}; class B {inherit A; private int f(){return 2;} int t(){return f();}}; return B()->t(), 2)
 test_any(class A {int f(){return 1;}}; class B {inherit A; final int f(){return 2;} int t(){return f();}}; return B()->t(), 2)
-test_any(class A {int f(){return 1;}}; class B {inherit A; nomask int f(){return 2;} int t(){return f();}}; return B()->t(), 2)
+test_any(
+#pragma no_deprecation_warnings
+class A {int f(){return 1;}}; class B {inherit A; nomask int f(){return 2;} int t(){return f();}}; return B()->t(), 2)
 test_any(class A {int f(){return 1;}}; class B {inherit A; local int f(){return 2;} int t(){return f();}}; return B()->t(), 2)
 test_any(class A {int f(){return 1;}}; class B {inherit A; int f(){return 2;} int t(){return local::f();}}; return B()->t(), 2)
 test_any(class A {int f(){return 1;}}; class B {inherit A; inline int f(){return 2;} int t(){return f();}}; return B()->t(), 2)
@@ -11754,14 +11828,18 @@ test_any(class A {int v=1;}; class B {inherit A; public int v=2;}; return B()->v
 test_any(class A {int v=1;}; class B {inherit A; static int v=2;}; return B()->v, 0)
 test_any(class A {int v=1;}; class B {inherit A; private int v=2;}; return B()->v, 0)
 test_any(class A {int v=1;}; class B {inherit A; final int v=2;}; return B()->v, 2)
-test_any(class A {int v=1;}; class B {inherit A; nomask int v=2;}; return B()->v, 2)
+test_any(
+#pragma no_deprecation_warnings
+class A {int v=1;}; class B {inherit A; nomask int v=2;}; return B()->v, 2)
 test_any(class A {int v=1;}; class B {inherit A; local int v=2;}; return B()->v, 2)
 test_any(class A {int v=1;}; class B {inherit A; inline int v=2;}; return B()->v, 2)
 test_any(class A {int f(){return 1;}}; class B {inherit A; public int f(){return 2;}}; return B()->f(), 2)
 test_any(class A {int f(){return 1;}}; class B {inherit A; static int f(){return 2;}}; return B()->f, 0)
 test_any(class A {int f(){return 1;}}; class B {inherit A; private int f(){return 2;} int q=f();}; return B()->f, 0)
 test_any(class A {int f(){return 1;}}; class B {inherit A; final int f(){return 2;}}; return B()->f(), 2)
-test_any(class A {int f(){return 1;}}; class B {inherit A; nomask int f(){return 2;}}; return B()->f(), 2)
+test_any(
+#pragma no_deprecation_warnings
+class A {int f(){return 1;}}; class B {inherit A; nomask int f(){return 2;}}; return B()->f(), 2)
 test_any(class A {int f(){return 1;}}; class B {inherit A; local int f(){return 2;}}; return B()->f(), 2)
 test_any(class A {int f(){return 1;}}; class B {inherit A; inline int f(){return 2;}}; return B()->f(), 2)
 
