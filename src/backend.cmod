@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.227 2008/06/28 01:26:36 mast Exp $
+ * $Id: backend.cmod,v 1.228 2008/06/28 12:06:29 per Exp $
  *
  * Backend object.
  */
@@ -2417,6 +2417,7 @@ int POLL_DEVICE_SET_EVENTS(struct Backend_struct *me,
     /* The last argument must be a proper struct pointer even
      * though it isn't used...
      */
+    PIKE_MEM_RW (dummy);
     IF_PD(fprintf(stderr, "epoll_ctl(%d, EPOLL_CTL_DEL, %d, &dummy)\n",
 		  pfd, fd));
     while (((e = epoll_ctl(pfd, EPOLL_CTL_DEL, fd, &dummy)) < 0) &&
