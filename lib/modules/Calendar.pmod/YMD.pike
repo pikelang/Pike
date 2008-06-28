@@ -2491,7 +2491,7 @@ class YMD_Time
 
 #define OVERLOAD_TIMEOFDAY						\
 									\
-   static int(0..1) create_backtry(mixed ... args)			\
+   protected int(0..1) create_backtry(mixed ... args)			\
    {									\
       if (sizeof(args)>=5 &&						\
 	  (intp(args[0])||stringp(args[0])) &&				\

@@ -157,7 +157,7 @@ class Function(Class parent,
                string file,
                int line)
 {
-  static string _sprintf(int fmt)
+  protected string _sprintf(int fmt)
   {
     return fmt=='O' && sprintf("Function( %O, %O )",name, return_type );
   }
@@ -183,7 +183,7 @@ class Function(Class parent,
     return name;
   }
 
-  int is_static()
+  int is_protected()
   {
     return (name=="create"||(name[0]=='_'));
   }
@@ -215,7 +215,7 @@ class Function(Class parent,
                      "%s,OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);\n",
                      S(name,0,1,27), sizeof(name),
 		     glue_c_name(c_name()), S(type,0,2,27),
-                     sizeof(type), (is_static()?"ID_STATIC":"0"));
+                     sizeof(type), (is_protected()?"ID_PROTECTED":"0"));
     };
     array names = ({ name });
     switch( name )
@@ -237,7 +237,7 @@ class Function(Class parent,
     return res;
   }
 
-  static string prefix( Class c )
+  protected string prefix( Class c )
   {
     if( c->c_name() == "" )
       return "pgtk";
@@ -399,7 +399,7 @@ class Signal( string name )
            S(pike_name(),1,0,27)+", 0 );\n";
   }
 
-  static string _sprintf(int fmt)
+  protected string _sprintf(int fmt)
   {
     return fmt=='O' && sprintf("Signal( %O )",name );
   }
@@ -415,7 +415,7 @@ class Member( string name, Type type, int set,
 {
   string doc = "";
 
-  int is_static(){ return 0; }
+  int is_protected(){ return 0; }
 
   string pike_type( )
   {
@@ -481,7 +481,7 @@ class Member( string name, Type type, int set,
     }
   }
 
-  static string _sprintf(int fmt)
+  protected string _sprintf(int fmt)
   {
     return fmt=='O' && sprintf("Member( %O /* %O */ )",name,type );
   }
@@ -720,11 +720,11 @@ class Type
     return _s_modifiers;
   }
   
-  static string declare, fetch, pass, free, _push;
-  static int consumed = 1;
-  static int c_inited, c_declared;
-  static string array_size;
-  static string _dpush;
+  protected string declare, fetch, pass, free, _push;
+  protected int consumed = 1;
+  protected int c_inited, c_declared;
+  protected string array_size;
+  protected string _dpush;
   string direct_push( string vv )
   {
     if(!c_inited) c_init();
@@ -809,7 +809,7 @@ class Type
   }
 
   
-  static void c_init()
+  protected void c_init()
   {
     c_inited = 1;
     if( subtypes )
@@ -1320,7 +1320,7 @@ class Class( string name, string file, int line )
   }
   
 
-  static string _sprintf(int fmt)
+  protected string _sprintf(int fmt)
   {
     return fmt=='O' && sprintf("Class( %O /* %d funcs. */ )",name,
 			       sizeof(functions)+sizeof(members)+
@@ -1407,7 +1407,7 @@ class Constant( string name, Type type, string file, int line )
     }
   }
 
-  static string _sprintf(int fmt)
+  protected string _sprintf(int fmt)
   {
     return fmt=='O' && sprintf("Constant( %O /* %O */ )",name,type );
   }

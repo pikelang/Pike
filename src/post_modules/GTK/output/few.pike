@@ -25,7 +25,7 @@ void post_class_build()
   output_current_data();
 }
 
-static void output_class( Class cls, int lvl )
+protected void output_class( Class cls, int lvl )
 {
   if( !cls->functions["_sprintf"] )
     cls->create_default_sprintf();

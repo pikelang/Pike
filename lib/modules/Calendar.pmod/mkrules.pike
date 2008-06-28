@@ -10,7 +10,7 @@
 // and zic(8) is the usual compiler.
 
 // pike mkrules.pike ../data/{africa,antarctica,asia,australasia,backward,etcetera,europe,northamerica,pacificnew,southamerica,systemv}
-// $Id: mkrules.pike,v 1.12 2008/05/18 13:15:17 grubba Exp $
+// $Id: mkrules.pike,v 1.13 2008/06/28 19:59:36 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -332,7 +332,7 @@ class MyRule
 	    FIXID(id)+"\n"
 	    "{\n"
 	    "   inherit TZRules;\n"
-	    "   static array(array(string|int)) jd_year_periods(int jd)\n"
+	    "   protected array(array(string|int)) jd_year_periods(int jd)\n"
 	    "   {\n"
 	    "      [int y,int yjd,int leap]=gregorian_yjd(jd);\n"
 	    "      switch (y)\n"
@@ -810,7 +810,7 @@ string TZrules_base=
 // this is the gregorian rule:
 // ----------------------------------------------------------------
 
-static array gregorian_yjd(int jd)
+protected array gregorian_yjd(int jd)
 {
    int d=jd-1721426;
 
@@ -837,13 +837,13 @@ class TZRules
 {
    constant is_timezone=1;
    constant is_dst_timezone=1;
-   static int offset_to_utc;  
+   protected int offset_to_utc;  
    string name;
 
-   static function(string:string) tzformat;
-   static array names;
+   protected function(string:string) tzformat;
+   protected array names;
 
-   static void create(int offset,string _name) 
+   protected void create(int offset,string _name) 
    { 
       offset_to_utc=offset; 
       name=_name;
@@ -861,7 +861,7 @@ class TZRules
 
 // the Rule:
 // which julian day does dst start and end this year?
-   static array(array(string|int)) jd_year_periods(int jd);
+   protected array(array(string|int)) jd_year_periods(int jd);
 
 // is (midnight) this julian day dst?
    array tz_jd(int jd)

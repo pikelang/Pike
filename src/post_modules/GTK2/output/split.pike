@@ -4,7 +4,7 @@ string head = "", sfhead="", dir, sdir;
 string debug = "";
 object parent;
 
-static string filename( Class c )
+protected string filename( Class c )
 {
   if( sizeof( c->c_name() ) )
     return "p"+c->c_name()+".c";
@@ -12,7 +12,7 @@ static string filename( Class c )
 }
 
 array files = ({});
-static void output_class( Class cls, int lvl )
+protected void output_class( Class cls, int lvl )
 {
   string current_data = "";
 
@@ -49,7 +49,7 @@ static void output_class( Class cls, int lvl )
 
 string protos = "";
 
-static void build_protos( Class cls, int lvl )
+protected void build_protos( Class cls, int lvl )
 {
   if( cls->name != "global" )
     protos+=("  "*lvl)+"EXTPRG struct program *"+glue_c_name(cls->c_name())+"_program;\n";
@@ -61,7 +61,7 @@ static void build_protos( Class cls, int lvl )
 
 int init_n;
 string initfun = "", exitfun="", type_switch="", toplevel ="";
-static void build_pike_fadds( Class cls, int lvl )
+protected void build_pike_fadds( Class cls, int lvl )
 {
   string res = "";
   init_n++;

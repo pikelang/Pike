@@ -6,7 +6,7 @@
 
 #pike __REAL_VERSION__
 
-constant cvs_id = "$Id: module.pmod,v 1.30 2008/06/28 16:37:03 nilsson Exp $";
+constant cvs_id = "$Id: module.pmod,v 1.31 2008/06/28 19:55:09 nilsson Exp $";
 
 #define ERR(msg) error( "(Yabu) "+msg+"\n" )
 #define IO_ERR(msg) error( "(Yabu) %s, %s (%d)\n",msg,strerror(errno()),errno() )
@@ -22,7 +22,7 @@ constant cvs_id = "$Id: module.pmod,v 1.30 2008/06/28 16:37:03 nilsson Exp $";
 #define THREAD_SAFE
 #define LOCK() do { object key___; catch(key___=mutex_lock())
 #define UNLOCK() key___=0; } while(0)
-#define INHERIT_MUTEX static inherit Thread.Mutex:mutex; function(int(0..2)|void:object) mutex_lock = mutex::lock;
+#define INHERIT_MUTEX protected inherit Thread.Mutex:mutex; function(int(0..2)|void:object) mutex_lock = mutex::lock;
 #else
 #undef  THREAD_SAFE
 #define LOCK() do {

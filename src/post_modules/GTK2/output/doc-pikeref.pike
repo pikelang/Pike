@@ -1,10 +1,10 @@
 // For the up_to_date code.
 inherit "split";
 
-static string imgfile;
-static mapping(string:int) ifcnt = ([]); // ImageFile count
-static array all_consts;
-static string imgfilename( string w )
+protected string imgfile;
+protected mapping(string:int) ifcnt = ([]); // ImageFile count
+protected array all_consts;
+protected string imgfilename( string w )
 {
   w = replace( lower_case(w), ".", "_")+"_#";
   return "images/"+w+".png";
@@ -12,7 +12,7 @@ static string imgfilename( string w )
 
 // Output pike refdoc-style documentation from the full code-tree.
 // Also generates nice readable 'source-code' as a bonus. :-)
-static string make_example_image( string data, int toplevel )
+protected string make_example_image( string data, int toplevel )
 {
   string tim = replace( imgfile, "#", (string)(++ifcnt[imgfile]));
   tim = replace( tim, "_1", "" );
@@ -34,7 +34,7 @@ static string make_example_image( string data, int toplevel )
 	  "@xml{<image>../"+tim+"</image>@}\n");
 }
 
-static string fix_images( string data )
+protected string fix_images( string data )
 {
   string res = "";
   foreach( data /"\n", string d )
@@ -49,7 +49,7 @@ static string fix_images( string data )
   return res;
 }
 
-static string fix_const( string s )
+protected string fix_const( string s )
 {
   string a, b, c;
   string const_refs( string b )
@@ -70,7 +70,7 @@ static string fix_const( string s )
   return s;
 }
 
-static string trim_xml( string what )
+protected string trim_xml( string what )
 {
   string a, b, c, d;
   what = replace(what, "@", "@@");
@@ -130,7 +130,7 @@ static string trim_xml( string what )
 }
 
 
-static string make_pike_refdoc( string pgtkdoc,
+protected string make_pike_refdoc( string pgtkdoc,
 				mapping|void signals)
 {
   string res =  "";
@@ -162,7 +162,7 @@ static string make_pike_refdoc( string pgtkdoc,
 }
 
 
-static string module_name( Class cls )
+protected string module_name( Class cls )
 {
   /*
   if( has_prefix( cls->name, "Gnome." ) ) return "Gnome";
@@ -171,7 +171,7 @@ static string module_name( Class cls )
   return "GTK2";
 }
 
-static string class_name( Class cls, int|void nmn )
+protected string class_name( Class cls, int|void nmn )
 {
   string mn="";
   if(!nmn)
@@ -183,7 +183,7 @@ static string class_name( Class cls, int|void nmn )
 }
 
 
-static string make_function_doc( Function f, Class c )
+protected string make_function_doc( Function f, Class c )
 {
   if( f->name == "_sprintf" ||
       (f->name == "destroy" && (< 0, "" >)[f->doc] ) )
@@ -207,7 +207,7 @@ static string make_function_doc( Function f, Class c )
   
   string res = "\n";
 
-  res = (f->is_static()?"static ":"")+
+  res = (f->is_protected()?"protected ":"")+
       pike_type_name( f->return_type||f->type )+
       " "+f->pike_name()+"( ";
   int i,j;
@@ -256,7 +256,7 @@ static string make_function_doc( Function f, Class c )
   return res;
 }
 
-static void output_class( Class cls, int lvl )
+protected void output_class( Class cls, int lvl )
 {
   if( mixed e = catch {
   string result = "";
@@ -306,7 +306,7 @@ static void output_class( Class cls, int lvl )
 }
 
 string constants="";
-static void output_constant( Constant c )
+protected void output_constant( Constant c )
 {
   imgfile=imgfilename("const_"+c->name);
   constants += "constant "+c->pike_name()+";\n"+

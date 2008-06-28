@@ -1,11 +1,11 @@
-// $Id: Terminfo.pmod,v 1.27 2008/06/28 16:37:00 nilsson Exp $
+// $Id: Terminfo.pmod,v 1.28 2008/06/28 19:54:42 nilsson Exp $
 #pike __REAL_VERSION__
 
 
 #if constant(thread_create)
 #define LOCK object m_key = mutex->lock()
 #define UNLOCK destruct(m_key)
-#define MUTEX static private object(Thread.Mutex) mutex = Thread.Mutex();
+#define MUTEX protected private object(Thread.Mutex) mutex = Thread.Mutex();
 #else
 #define LOCK
 #define UNLOCK
