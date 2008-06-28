@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.723 2008/06/28 03:25:51 mast Exp $
+|| $Id: program.c,v 1.724 2008/06/28 07:00:47 grubba Exp $
 */
 
 #include "global.h"
@@ -10706,7 +10706,9 @@ PMOD_EXPORT void change_compiler_compatibility(int major, int minor)
 #include <sys/mman.h>
 #endif
 
+#ifdef HAVE_EXECINFO_H
 #include <execinfo.h>
+#endif
 
 void make_area_executable (char *start, size_t len)
 {
