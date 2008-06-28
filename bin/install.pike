@@ -2,7 +2,7 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.182 2008/06/28 00:40:24 mast Exp $
+// $Id: install.pike,v 1.183 2008/06/28 02:22:13 mast Exp $
 
 #define USE_GTK
 
@@ -1180,7 +1180,10 @@ void do_export()
 			  "Id":"FinalizePike",
 			  "BinaryKey":"PikeInstaller",
 			  "VBScriptCall":"FinalizePike",
+			  // The following are necessary to allow the script to
+			  // run with elevated privileges in UAC mode.
 			  "Execute":"deferred",
+			  "Impersonate": "no",
 			])))->
       add_child(Standards.XML.Wix.line_feed)->
       add_child(WixNode("Binary", ([
