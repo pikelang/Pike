@@ -25,7 +25,9 @@ Driver options:
  -M --module-path=<p> : Add <p> to the module path.
  -P --program-path=<p>: Add <p> to the program path.
  -e --execute=<cmd>   : Run the given command instead of a script.
- -h --help            : See this message.
+ -h --help            : Show sort help message
+    --help=<section>  : Shows longer help section about
+                        options or environment.
  -v --version         : See what version of pike you have.
  --dumpversion        : Prints out only the version number.
  --features           : List Pike features.
