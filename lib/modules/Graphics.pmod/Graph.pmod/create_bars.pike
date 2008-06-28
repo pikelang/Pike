@@ -758,4 +758,3 @@ mapping(string:mixed) create_bars(mapping(string:mixed) diagram_data)
 
   return diagram_data;
 }
-

@@ -40,4 +40,3 @@ class Channel
    void	not_failed_to_join();
    void not_invite(Person who);
 }
-

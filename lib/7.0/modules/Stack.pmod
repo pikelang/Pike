@@ -76,4 +76,3 @@ class stack {
     arr = allocate(initial_size || 32);
   }
 };
-

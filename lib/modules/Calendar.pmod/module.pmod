@@ -87,4 +87,3 @@ protected mixed `-> (string what)
   return `[] (what);
 }
 #endif
-

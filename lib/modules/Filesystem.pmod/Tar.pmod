@@ -1,5 +1,5 @@
 /*
- * $Id: Tar.pmod,v 1.30 2008/06/28 16:36:54 nilsson Exp $
+ * $Id: Tar.pmod,v 1.31 2008/06/28 16:49:53 nilsson Exp $
  */
 
 #pike __REAL_VERSION__
@@ -361,5 +361,3 @@ class `()
 	      tar && tar->filename, root, wd);
   }
 }
-
-

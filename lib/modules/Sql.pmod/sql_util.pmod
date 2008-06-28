@@ -1,5 +1,5 @@
 /*
- * $Id: sql_util.pmod,v 1.21 2008/06/28 16:36:59 nilsson Exp $
+ * $Id: sql_util.pmod,v 1.22 2008/06/28 16:49:55 nilsson Exp $
  *
  * Some SQL utility functions.
  * They are kept here to avoid circular references.
@@ -205,4 +205,3 @@ class MySQLBrokenUnicodeWrapper
 }
 
 #endif
-

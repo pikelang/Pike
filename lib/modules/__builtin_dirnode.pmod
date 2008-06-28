@@ -10,4 +10,3 @@ mixed `[](string s)
   if(programp(tmp)) tmp=([program]tmp)();
   return cache[s]=tmp;
 }
-

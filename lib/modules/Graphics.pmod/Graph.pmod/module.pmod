@@ -156,5 +156,4 @@ Image.Image graph(mapping(string:mixed) diagram_data)
   diagram_data = diagram_data + ([]);
   check_mapping(diagram_data, "graph");
   return create_graph(diagram_data)->image;
-} 
-
+}

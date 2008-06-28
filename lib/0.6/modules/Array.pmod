@@ -7,5 +7,3 @@ array map(array x, int|string|function fun, mixed ... args)
 {
   return Array.map(x,fun,@args);
 }
-
-

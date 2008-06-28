@@ -2,7 +2,7 @@
  * A RAM-based storage manager.
  * by Francesco Chemolli <kinkie@roxen.com>
  *
- * $Id: Memory.pike,v 1.6 2002/01/15 22:31:24 nilsson Exp $
+ * $Id: Memory.pike,v 1.7 2008/06/28 16:49:53 nilsson Exp $
  *
  * This storage manager provides the means to save data to memory.
  * In this manager I'll add reference documentation as comments to
@@ -130,4 +130,3 @@ void delete(string key, void|int(0..1) hard) {
   }
   return 0;
 }
-

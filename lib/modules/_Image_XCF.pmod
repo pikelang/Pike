@@ -738,4 +738,3 @@ string encode(Image.Image img) {
 }
 
 #endif
-

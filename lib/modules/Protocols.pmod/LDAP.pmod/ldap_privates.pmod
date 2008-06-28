@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: ldap_privates.pmod,v 1.15 2008/06/28 16:36:58 nilsson Exp $
+// $Id: ldap_privates.pmod,v 1.16 2008/06/28 16:49:54 nilsson Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -382,5 +382,3 @@ constant this_program_does_not_exist=1;
 #endif
 
 // ------------- end of ASN.1 API hack -----------------------------
-
-

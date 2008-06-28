@@ -3223,5 +3223,3 @@ string format_day_iso_short(int|void unix_time)
 {
    return Day("unix",unix_time||time())->format_iso_short();
 }
-
-

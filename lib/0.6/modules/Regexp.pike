@@ -1,4 +1,4 @@
-// $Id: Regexp.pike,v 1.2 2007/10/12 15:48:06 grubba Exp $
+// $Id: Regexp.pike,v 1.3 2008/06/28 16:50:22 nilsson Exp $
 
 #pike 7.0
 
@@ -11,7 +11,7 @@ private string replace(string in, string|function(string:string) transform)
   replace;	// Disable warning for unused symbol...
 }
 
-static string _sprintf()
+protected string _sprintf()
 {
   return "Regexp 0.6";
 }

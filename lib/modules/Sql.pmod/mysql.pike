@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.pike,v 1.41 2008/06/28 16:36:59 nilsson Exp $
+ * $Id: mysql.pike,v 1.42 2008/06/28 16:49:55 nilsson Exp $
  *
  * Glue for the Mysql-module
  */
@@ -851,4 +851,3 @@ protected void create(string|void host, string|void database,
 #else
 constant this_program_does_not_exist=1;
 #endif /* constant(Mysql.mysql) */
-

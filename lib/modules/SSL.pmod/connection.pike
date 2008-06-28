@@ -1,5 +1,5 @@
 //
-// $Id: connection.pike,v 1.42 2008/06/28 16:36:58 nilsson Exp $
+// $Id: connection.pike,v 1.43 2008/06/28 16:49:55 nilsson Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -413,4 +413,3 @@ string|int got_data(string|int s)
 }
 
 #endif
-

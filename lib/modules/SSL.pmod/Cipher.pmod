@@ -1,5 +1,5 @@
 //
-//  $Id: Cipher.pmod,v 1.16 2008/06/28 16:36:58 nilsson Exp $
+//  $Id: Cipher.pmod,v 1.17 2008/06/28 16:49:55 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -480,4 +480,3 @@ array lookup(int suite,int version)
 #else // constant(Crypto.Hash)
 constant this_program_does_not_exist = 1;
 #endif
-

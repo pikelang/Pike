@@ -1,6 +1,6 @@
 /* KeySyms.pmod
  *
- * $Id: KeySyms.pmod,v 1.3 2003/01/20 17:44:01 nilsson Exp $
+ * $Id: KeySyms.pmod,v 1.4 2008/06/28 16:49:54 nilsson Exp $
  */
 
 /*
@@ -1558,5 +1558,3 @@
     compose_state="";
     return _LookupKeysym( keysym );
   }
-
-

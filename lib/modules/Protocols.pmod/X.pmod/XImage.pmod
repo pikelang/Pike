@@ -1,6 +1,6 @@
 /* XImage.pmod
  *
- * $Id: XImage.pmod,v 1.22 2005/11/14 22:12:08 nilsson Exp $
+ * $Id: XImage.pmod,v 1.23 2008/06/28 16:49:55 nilsson Exp $
  */
 
 /*
@@ -424,4 +424,3 @@ void ShapedWindowImage(object in, object color, object|void alpha,
     }
   }
 }
-                      

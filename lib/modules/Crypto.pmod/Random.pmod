@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 #pragma strict_types
-// $Id: Random.pmod,v 1.19 2008/06/28 16:36:54 nilsson Exp $
+// $Id: Random.pmod,v 1.20 2008/06/28 16:49:53 nilsson Exp $
 
 //! This module contains stuff to that tries to give you the
 //! best possible random generation.
@@ -212,4 +212,3 @@ void add_entropy(string data, int entropy) {
 #else
 constant this_program_does_not_exist=1;
 #endif
-

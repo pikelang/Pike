@@ -1,5 +1,5 @@
 //
-// $Id: Interface.pike,v 1.3 2008/06/28 16:36:54 nilsson Exp $
+// $Id: Interface.pike,v 1.4 2008/06/28 16:49:54 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -21,11 +21,3 @@ void swap_buffers();
 void exit();
 
 void init(void|string title, void|string icon);
-
-
-
-
-
-
-
-

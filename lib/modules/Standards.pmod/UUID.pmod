@@ -11,7 +11,7 @@
 //!                identifier components
 //!
 
-// $Id: UUID.pmod,v 1.17 2008/06/28 16:36:59 nilsson Exp $
+// $Id: UUID.pmod,v 1.18 2008/06/28 16:49:56 nilsson Exp $
 //
 // 2004-10-01 Henrik Grubbström
 // 2004-10-04 Martin Nilsson
@@ -497,4 +497,3 @@ UUID make_x500(string name) {
 }
 
 #endif
-

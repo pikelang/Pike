@@ -173,4 +173,3 @@ class signal_handling
     }
   }
 }
-

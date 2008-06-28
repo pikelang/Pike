@@ -1,4 +1,4 @@
-/* $Id: RSA.pike,v 1.11 2008/06/28 16:36:54 nilsson Exp $
+/* $Id: RSA.pike,v 1.12 2008/06/28 16:49:53 nilsson Exp $
  *
  * Follow the PKCS#1 standard for padding and encryption.
  */
@@ -379,4 +379,3 @@ string name() {
 #else
 constant this_program_does_not_exist=1;
 #endif
-

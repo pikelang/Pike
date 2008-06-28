@@ -228,4 +228,3 @@ class imap_set
       return `+( ({}), @Array.map(items, expand_item, largest));
     }
 }
-  

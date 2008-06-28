@@ -2179,6 +2179,3 @@ Calendar.Rule.Language `[](string lang)
    
    return l;
 }
-
-
-

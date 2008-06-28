@@ -414,4 +414,3 @@ Event.SuperEvent event(string s)
 }
 
 mapping made_events=([]);
-

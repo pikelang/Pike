@@ -4,4 +4,3 @@
 
 //! Give the zero-length time period of the current time.
 Calendar.TimeRanges.TimeRange now();
-

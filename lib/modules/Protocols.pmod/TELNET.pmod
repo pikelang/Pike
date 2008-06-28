@@ -1,5 +1,5 @@
 //
-// $Id: TELNET.pmod,v 1.28 2008/06/28 16:36:56 nilsson Exp $
+// $Id: TELNET.pmod,v 1.29 2008/06/28 16:49:54 nilsson Exp $
 //
 // The TELNET protocol as described by RFC 764 and others.
 //
@@ -1066,5 +1066,3 @@ class Readline
     ::close();
   }
 }
-
-

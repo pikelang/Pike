@@ -59,4 +59,3 @@ protected void new_connection()
 constant this_program_does_not_exist=1;
 
 #endif /* constant(.Torrent) */
-

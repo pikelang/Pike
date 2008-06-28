@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 #pragma strict_types
 
-// $Id: alert.pike,v 1.11 2004/04/19 23:01:03 agehall Exp $
+// $Id: alert.pike,v 1.12 2008/06/28 16:49:55 nilsson Exp $
 
 //! Alert package.
 
@@ -42,4 +42,3 @@ void create(int l, int d, int version, string|void m, mixed|void t)
   packet::protocol_version = ({ 3, version });
   packet::fragment = sprintf("%c%c", level, description);
 }
-    

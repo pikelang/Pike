@@ -1,5 +1,5 @@
 /*
- * $Id: rule.pike,v 1.2 2002/12/04 14:00:12 grubba Exp $
+ * $Id: rule.pike,v 1.3 2008/06/28 16:51:29 nilsson Exp $
  *
  * A BNF-rule.
  *
@@ -99,4 +99,3 @@ void create(int nt, array(string|int) r, function|string|void a)
 
   num_nonnullables = sizeof(r);
 }
-

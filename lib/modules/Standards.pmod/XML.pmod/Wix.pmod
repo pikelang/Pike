@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Wix.pmod,v 1.27 2008/06/28 16:37:00 nilsson Exp $
+// $Id: Wix.pmod,v 1.28 2008/06/28 16:49:56 nilsson Exp $
 //
 // 2004-11-01 Henrik Grubbström
 
@@ -566,4 +566,3 @@ Parser.XML.Tree.SimpleRootNode get_xml_node()
 }
 
 #endif /* 0 */
-

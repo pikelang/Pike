@@ -1,5 +1,5 @@
 //
-// $Id: Decode.pmod,v 1.24 2008/06/28 16:36:59 nilsson Exp $
+// $Id: Decode.pmod,v 1.25 2008/06/28 16:49:56 nilsson Exp $
 //
 
 #pike __REAL_VERSION__
@@ -221,4 +221,3 @@ constant constructed = Constructed;
 #else
 constant this_program_does_not_exist=1;
 #endif
-

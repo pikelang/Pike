@@ -1,5 +1,5 @@
 //
-// $Id: Types.pmod,v 1.45 2008/06/28 16:37:00 nilsson Exp $
+// $Id: Types.pmod,v 1.46 2008/06/28 16:49:56 nilsson Exp $
 //
 
 //! Encodes various asn.1 objects according to the Distinguished
@@ -1299,4 +1299,3 @@ constant asn1_bmp_string = BMPString;
 #else
 constant this_program_does_not_exist=1;
 #endif /* Gmp.mpz */
-

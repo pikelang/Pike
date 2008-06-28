@@ -1,5 +1,5 @@
 //
-// $Id: session.pike,v 1.37 2008/06/28 16:36:58 nilsson Exp $
+// $Id: session.pike,v 1.38 2008/06/28 16:49:55 nilsson Exp $
 
 #pike __REAL_VERSION__
 #pragma strict_types
@@ -330,4 +330,3 @@ array(.state) new_client_states(string client_random, string server_random,
 }
 
 #endif // constant(SSL.Cipher.CipherSpec)
-

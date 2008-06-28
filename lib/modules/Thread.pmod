@@ -932,4 +932,3 @@ optional class Queue
 }
 
 #endif /* !constant(thread_create) */
-

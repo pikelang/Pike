@@ -45,5 +45,3 @@ array inherit_tree(program p)
   return ({ p })+
     Array.map(inherit_list(p),inherit_tree);
 }
-
-

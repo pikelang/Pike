@@ -12,4 +12,3 @@ class FILE
   
   array(int) stat() { return (array) F::stat(); }
 }
-

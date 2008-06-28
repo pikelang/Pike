@@ -1,5 +1,5 @@
 //
-// $Id: GTK.pike,v 1.6 2008/06/28 16:36:54 nilsson Exp $
+// $Id: GTK.pike,v 1.7 2008/06/28 16:49:54 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -204,4 +204,3 @@ void show_cursor() {
 }
 
 #endif /* constant(GTK.GLArea) */
-

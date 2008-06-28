@@ -1,5 +1,5 @@
 /*
- * $Id: GLU.pmod,v 1.16 2008/06/28 16:36:53 nilsson Exp $
+ * $Id: GLU.pmod,v 1.17 2008/06/28 16:49:52 nilsson Exp $
  *
  * GL Utilities module.
  */
@@ -242,4 +242,3 @@ array(float) gluProject(float objx, float objy,
 #else /* constant(GL) */
 constant this_program_does_not_exist=1;
 #endif
-

@@ -1,4 +1,4 @@
-// $Id: RSS.pmod,v 1.7 2008/06/28 16:37:02 nilsson Exp $
+// $Id: RSS.pmod,v 1.8 2008/06/28 16:49:56 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -247,5 +247,3 @@ Index parse_xml(string|Parser.XML.Tree.Node n, void|string base) {
   .RDF rdf=.RDF()->parse_xml(n, base);
   return Index(rdf);
 }
-
-

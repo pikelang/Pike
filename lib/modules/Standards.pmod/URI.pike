@@ -4,7 +4,7 @@
 //! absolute form, as defined in RFC 2396 and RFC 3986.
 
 // Implemented by Johan Sundström and Johan Schön.
-// $Id: URI.pike,v 1.28 2008/06/28 16:36:59 nilsson Exp $
+// $Id: URI.pike,v 1.29 2008/06/28 16:49:56 nilsson Exp $
 
 #pragma strict_types
 
@@ -541,5 +541,3 @@ string quote(string s)
 		    "%98", "%99", "%9A", "%9B", "%9C", "%9D", "%9E", "%9F",
 		    "%20", "%25", "%27", "%22"}));
 }
-
-

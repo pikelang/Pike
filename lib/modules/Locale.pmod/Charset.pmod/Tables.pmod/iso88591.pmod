@@ -68,5 +68,3 @@ class encoder
     repcb = rc;
   }
 }
-
-

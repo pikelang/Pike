@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: constants.pike,v 1.1 2003/02/07 03:13:14 nilsson Exp $
+/* $Id: constants.pike,v 1.2 2008/06/28 16:52:14 nilsson Exp $
  *
  */
 
@@ -185,7 +185,3 @@ constant AUTH_dss_fixed_dh	= 4;
 constant AUTH_rsa_ephemeral_dh	= 5;
 constant AUTH_dss_ephemeral_dh	= 6;
 constant AUTH_fortezza_dms	= 20;
-
-
-
-

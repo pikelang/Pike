@@ -3,7 +3,7 @@
 // 
 // http://www.iptc.org/IIM/
 //
-// $Id: IIM.pmod,v 1.8 2008/06/28 16:36:59 nilsson Exp $
+// $Id: IIM.pmod,v 1.9 2008/06/28 16:49:56 nilsson Exp $
 //
 // Anders Johansson & Henrik Grubbström
 
@@ -368,5 +368,4 @@ mapping get_information(Stdio.File fd)
   }
 
   return res;
-}  
-
+}

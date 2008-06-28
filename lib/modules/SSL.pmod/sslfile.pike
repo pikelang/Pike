@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.110 2008/06/28 16:36:58 nilsson Exp $
+/* $Id: sslfile.pike,v 1.111 2008/06/28 16:49:55 nilsson Exp $
  */
 
 #if constant(SSL.Cipher.CipherAlgorithm)
@@ -1971,4 +1971,3 @@ protected int ssl_close_callback (int called_from_real_backend)
 #else // constant(SSL.Cipher.CipherAlgorithm)
 constant this_program_does_not_exist = 1;
 #endif
-

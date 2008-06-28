@@ -18,7 +18,7 @@
 // = american standard for countries and country division codes
 
 // Updated 2001-04-17 from ...bugger, lost url
-// $Id: FIPS10_4.pmod,v 1.4 2008/06/28 16:36:59 nilsson Exp $
+// $Id: FIPS10_4.pmod,v 1.5 2008/06/28 16:49:55 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -4422,5 +4422,3 @@ protected array(array(string)) divisions = ({
    ({"ZI","ZI07","Matabeleland South","province",}),
    ({"ZI","ZI08","Masvingo","province",}),
 });
-
-

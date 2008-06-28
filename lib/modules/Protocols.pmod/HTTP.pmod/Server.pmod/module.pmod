@@ -71,5 +71,3 @@ int http_decode_date(string data)
 // server id prefab
 
 constant http_serverid=version()+": HTTP Server module";
-
-

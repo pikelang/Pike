@@ -1442,6 +1442,3 @@ mapping timezone_expert_tree=
 			-3600:"Europe/Luxembourg",
 			0:"Europe/Brussels",]),]),]),]),]),
 	 -7200:"Europe/Warsaw",]),]),]);
-
-
-

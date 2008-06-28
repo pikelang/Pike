@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: packet.pike,v 1.16 2004/07/05 17:02:36 grubba Exp $
+/* $Id: packet.pike,v 1.17 2008/06/28 16:49:55 nilsson Exp $
  *
  * SSL Record Layer
  */
@@ -136,4 +136,3 @@ string send()
   return sprintf("%c%c%c%2c%s", content_type, @protocol_version,
 		 sizeof(fragment), fragment);
 }
-

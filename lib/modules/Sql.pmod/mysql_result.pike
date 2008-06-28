@@ -1,5 +1,5 @@
 /*
- * $Id: mysql_result.pike,v 1.6 2004/04/16 12:12:46 grubba Exp $
+ * $Id: mysql_result.pike,v 1.7 2008/06/28 16:49:55 nilsson Exp $
  *
  * Glue for the Mysql-module
  */
@@ -11,4 +11,3 @@ inherit Mysql.mysql_result;
 #else /* !constant(Mysql.mysql_result) */
 constant this_program_does_not_exist=1;
 #endif /* constant(Mysql.mysql_result) */
-

@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.113 2008/06/28 16:36:58 nilsson Exp $
+// $Id: client.pike,v 1.114 2008/06/28 16:49:54 nilsson Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -2516,4 +2516,3 @@ int main (int argc, array(string) argv)
 #else
 constant this_program_does_not_exist=1;
 #endif
-

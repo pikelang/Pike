@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: Constants.pmod,v 1.2 2003/11/08 17:22:29 grubba Exp $
+/* $Id: Constants.pmod,v 1.3 2008/06/28 16:49:55 nilsson Exp $
  *
  */
 
@@ -188,7 +188,3 @@ constant AUTH_dss_fixed_dh	= 4;
 constant AUTH_rsa_ephemeral_dh	= 5;
 constant AUTH_dss_ephemeral_dh	= 6;
 constant AUTH_fortezza_dms	= 20;
-
-
-
-

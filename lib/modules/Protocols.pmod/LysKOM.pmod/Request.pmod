@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-//  $Id: Request.pmod,v 1.11 2005/03/18 11:00:37 grubba Exp $
+//  $Id: Request.pmod,v 1.12 2008/06/28 16:49:54 nilsson Exp $
 //!	This module contains nice abstraction for calls into the
 //!	server. They are named "@tt{@i{call@}@}",
 //!	"@tt{async_@i{call@}@}" or 
@@ -2544,4 +2544,3 @@ class Set_keep_commented
    {
    }
 }
-

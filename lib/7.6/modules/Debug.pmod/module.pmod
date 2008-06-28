@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod,v 1.1 2005/01/08 20:13:09 grubba Exp $
+ * $Id: module.pmod,v 1.2 2008/06/28 16:52:49 nilsson Exp $
  *
  * Debug API changes since Pike 7.6.
  *
@@ -12,4 +12,3 @@
 //! Debug function for showing the symbol table of a program.
 
 constant describe_program = predef::_describe_program;
-

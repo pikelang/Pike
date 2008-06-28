@@ -62,7 +62,7 @@
 
 import .Bencoding;
 
-constant cvsid="$Id: Torrent.pike,v 1.36 2008/06/28 16:36:57 nilsson Exp $";
+constant cvsid="$Id: Torrent.pike,v 1.37 2008/06/28 16:49:54 nilsson Exp $";
 
 Protocols.HTTP.Session http=Protocols.HTTP.Session();
 
@@ -1380,4 +1380,3 @@ void destroy()
 constant this_program_does_not_exist=1;
 
 #endif /* constant(Crypto.SHA1) */
-

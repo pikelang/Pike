@@ -3,7 +3,7 @@
 
 // Pike core things that don't belong anywhere else.
 //
-// $Id: module.pmod,v 1.19 2008/06/28 16:36:56 nilsson Exp $
+// $Id: module.pmod,v 1.20 2008/06/28 16:49:54 nilsson Exp $
 
 constant WEAK_INDICES = __builtin.PIKE_WEAK_INDICES;
 constant WEAK_VALUES = __builtin.PIKE_WEAK_VALUES;
@@ -95,4 +95,3 @@ TYPE check_call(TYPE fun_type, TYPE ... arg_types)
   return ret;
 }
 #endif /* 0 */
-

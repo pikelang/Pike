@@ -5,7 +5,7 @@
 //!
 //! cf http://wwww.w3.org/TR/REC-xml/
 //!
-//! $Id: Validating.pike,v 1.14 2008/06/28 16:36:55 nilsson Exp $
+//! $Id: Validating.pike,v 1.15 2008/06/28 16:49:54 nilsson Exp $
 //!
 
 #pike __REAL_VERSION__
@@ -456,5 +456,3 @@ array parse_dtd(string data,
 }
 
 /* define_entity? */
-
-

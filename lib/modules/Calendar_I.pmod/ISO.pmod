@@ -244,5 +244,3 @@ class Second
       return _iso_name()-":";
    }
 }
-
-

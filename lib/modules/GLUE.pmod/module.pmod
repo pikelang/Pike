@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod,v 1.15 2008/06/28 16:36:54 nilsson Exp $
+// $Id: module.pmod,v 1.16 2008/06/28 16:49:53 nilsson Exp $
 
 #pike __REAL_VERSION__
 #if constant(GL) && constant(GL.glOrtho)
@@ -2117,4 +2117,3 @@ mapping(string:mixed) debug_stuff() {
 #else
 constant this_program_does_not_exist=1;
 #endif
-

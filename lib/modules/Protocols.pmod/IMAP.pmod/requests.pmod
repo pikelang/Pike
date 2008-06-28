@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.92 2003/09/01 16:36:05 nilsson Exp $
+ * $Id: requests.pmod,v 1.93 2008/06/28 16:49:54 nilsson Exp $
  */
 
 #pike __REAL_VERSION__
@@ -1051,4 +1051,3 @@ class find
     return ([ "action" : "finished" ]);
   }
 }
-

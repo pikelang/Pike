@@ -315,5 +315,3 @@ int untar(string source, string path, void|string cwd) {
   }
   return c;
 }
-
-
