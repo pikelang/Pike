@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: idea.c,v 1.5 2004/01/23 01:05:06 nilsson Exp $
+|| $Id: idea.c,v 1.6 2008/06/28 19:27:35 mast Exp $
 */
 
 /* The basic IDEA transformation
@@ -83,8 +83,8 @@ inv(unsigned INT16 x)
 
   if (x <= 1)
     return x;	/* 0 and 1 are self-inverse */
-  t1 = 0x10001L / x;	/* Since x >= 2, this fits into 16 bits */
-  y = 0x10001L % x;
+  t1 = (unsigned INT16) (0x10001L / x); /* Since x >= 2, this fits into 16 bits */
+  y = (unsigned INT16) (0x10001L % x);
   if (y == 1)
     return low16(1-t1);
   t0 = 1;

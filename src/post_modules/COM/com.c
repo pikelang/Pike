@@ -1,5 +1,5 @@
 /*
- * $Id: com.c,v 1.9 2006/08/02 20:19:40 mast Exp $
+ * $Id: com.c,v 1.10 2008/06/28 19:27:35 mast Exp $
  *
  * Pike interface to Common Object Model (COM)
  *
@@ -161,7 +161,6 @@ static void com_throw_error2(HRESULT hr, EXCEPINFO excep)
 
 static void set_variant_arg(VARIANT *v, struct svalue *sv)
 {
-  OLECHAR *sz;
   PCHARP pchar;
 
   VariantInit(v);
@@ -260,7 +259,7 @@ static void create_variant_arg(int args, DISPPARAMS **dpar)
 
 static void free_variant_arg(DISPPARAMS **dpar)
 {
-  int i;
+  UINT i;
 
   for (i=0; i<(*dpar)->cArgs; i++)
   {
@@ -311,7 +310,6 @@ static void low_push_safearray(SAFEARRAY *psa, UINT dims,
                                long *indices, UINT curdim)
 {
   VARTYPE vtype;
-  HRESULT hr;
   long i;
   long lbound, ubound;
   int push_count = 0;
@@ -425,7 +423,7 @@ static void push_varg(VARIANT *varg)
     case VT_DECIMAL:
       hr = VariantChangeType(&cv, varg, 0, VT_R8);
       if (SUCCEEDED(hr))
-        push_float(cv.dblVal);
+	push_float((FLOAT_TYPE) cv.dblVal);
       else
         Pike_error("Com.obj: push_varg: Failed to convert result to float\n");
       break;
@@ -827,7 +825,6 @@ static void f_cval_func(INT32 args)
 static void f_cval__sprintf(INT32 args)
 {
   struct cval_storage *cval = THIS_CVAL;
-  int n;
   char buf[80];
   char *p;
   INT_TYPE precision, precision_undecided, width, width_undecided;
@@ -1200,9 +1197,7 @@ static void f_cobj_arrow_assign(INT32 args)
 static void f_cobj__sprintf(INT32 args)
 {
   struct cobj_storage *cobj = THIS_COBJ;
-  int n;
-  char buf[80];
-  
+
   if (args < 1 || Pike_sp[-args].type != PIKE_T_INT)
     Pike_error("Bad argument 1 for Com.cobj->_sprintf().\n");
   if (args < 2 || Pike_sp[1-args].type != PIKE_T_MAPPING)
@@ -1214,8 +1209,8 @@ static void f_cobj__sprintf(INT32 args)
       {
 	struct string_builder s;
 	init_string_builder(&s, 0);
-	string_builder_vsprintf(&s, "Com.cobj(%p)",
-				cobj->pIDispatch);
+	string_builder_sprintf(&s, "Com.cobj(%p)",
+			       cobj->pIDispatch);
 	push_string(finish_string_builder(&s));
 	stack_pop_n_elems_keep_top(args);
 	return;
@@ -1526,8 +1521,7 @@ static void f_get_object(INT32 args)
         IBindCtx *pbc;
         ULONG cEaten;
         IMoniker *pmk;
-        IDispatch *pdisp;
-        
+
         hr = CreateBindCtx(0, &pbc);
         if (FAILED(hr))
           com_throw_error(hr);
@@ -1796,10 +1790,9 @@ static void f_get_constants(INT32 args)
   ITypeInfo *ptinfo;
   ITypeLib *ptlib;
   UINT tiCount;
-  TYPEATTR *ptattr;
   unsigned index;
   int count = 0;
-  int i;
+  UINT i;
   HRESULT hr;
 
   if (args != 1)
