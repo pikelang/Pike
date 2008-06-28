@@ -2,7 +2,7 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.181 2008/05/17 12:26:14 marcus Exp $
+// $Id: install.pike,v 1.182 2008/06/28 00:40:24 mast Exp $
 
 #define USE_GTK
 
@@ -1162,7 +1162,7 @@ void do_export()
     WixNode xml_root =
       Standards.XML.Wix.get_module_xml(root, "Pike", version_str,
 				       "IDA", "Pike dist", version_guid,
-				       "Merge with this");
+				       "Merge with this", "300");
 
     WixNode module_node = xml_root->
       get_first_element("Wix")->
@@ -1189,9 +1189,12 @@ void do_export()
 			])))->
       add_child(Standards.XML.Wix.line_feed)->
       add_child(WixNode("InstallExecuteSequence", ([]), "\n")->
+		// Since FinalizePike uses pike itself it needs to come after
+		// MsiPublishAssemblies, in case the MS CRTs are installed at
+		// the same time in a "side-by-side-assembly".
 		add_child(WixNode("Custom", ([
 				    "Action":"SetFinalizePike",
-				    "After":"WriteRegistryValues",
+				    "After":"MsiPublishAssemblies",
 				  ]), "REMOVE=\"\""))->
 		add_child(Standards.XML.Wix.line_feed)->
 		add_child(WixNode("Custom", ([
@@ -1284,7 +1287,7 @@ void do_export()
       add_child(WixNode("Package", ([
 			  "Manufacturer":"IDA",
 			  "Languages":"1033",
-			  "InstallerVersion":"200",
+			  "InstallerVersion":"300",
 			  "Platforms":"Intel",
 			  "Id":Standards.UUID.make_version1(-1)->str(),
 			  "Compressed":"yes",
@@ -2075,7 +2078,7 @@ int pre_install(array(string) argv)
 #ifdef SUPPORT_WIX
 
 string add_msm (Directory root, string msm_glob, string descr,
-		void|string targetdir)
+		void|string targetdir, void|string language)
 {
   if (string pike_build_root = getenv ("PIKE_BUILD_ROOT")) {
     string msm_dir = combine_path (pike_build_root, "msm");
@@ -2109,7 +2112,7 @@ string add_msm (Directory root, string msm_glob, string descr,
       has_suffix (lower_case (msm_file), ".msm") ?
       msm_file[..sizeof (msm_file) - 5] : msm_file;
     root->merge_module (".", combine_path (msm_dir, msm_file),
-			id, targetdir || "TARGETDIR");
+			id, targetdir || "TARGETDIR", language);
     return id;
   }
 
@@ -2177,22 +2180,28 @@ void make_wix()
   if (include_crt) {
     // Always include the nondebug CRT since some lib dlls might be
     // using it.
+    //
+    // NB: This ought to be in Pike_module.wxs, but merge modules cannot
+    // contain merge modules
     if (string id =
-	add_msm (root, "microsoft_*_crt_*.msm", "MS CRT"))
+	add_msm (root, "microsoft_*_crt_*.msm",
+		 "MS CRT", 0, "0"))
       feature_node->add_child (WixNode ("MergeRef", (["Id": id])))
 		  ->add_child (line_feed);
     if (string id =
-	add_msm (root, "policy_*_microsoft_*_crt_*.msm", "MS CRT policy"))
+	add_msm (root, "policy_*_microsoft_*_crt_*.msm",
+		 "MS CRT policy", 0, "0"))
       feature_node->add_child (WixNode ("MergeRef", (["Id": id])))
 		  ->add_child (line_feed);
     if (include_crt == "debug") {
       if (string id =
-	  add_msm (root, "microsoft_*_debugcrt_*.msm", "MS debug CRT"))
+	  add_msm (root, "microsoft_*_debugcrt_*.msm",
+		   "MS debug CRT", 0, "0"))
 	feature_node->add_child (WixNode ("MergeRef", (["Id": id])))
 		    ->add_child (line_feed);
       if (string id =
 	  add_msm (root, "policy_*_microsoft_*_debugcrt_*.msm",
-		   "MS debug CRT policy"))
+		   "MS debug CRT policy", 0, "0"))
 	feature_node->add_child (WixNode ("MergeRef", (["Id": id])))
 		    ->add_child (line_feed);
       error_msg ("Warning: MS debug CRT is included - "
@@ -2224,7 +2233,7 @@ an extra CRT instance.\n");
 					    "Manufacturer":"IDA",
 					    "Languages":"1033",
 					    "Compressed":"yes",
-					    "InstallerVersion":"200",
+					    "InstallerVersion":"300",
 					    "Platforms":"Intel",
 					    "SummaryCodepage":"1252",
 					    "Id":version_guid,
@@ -2257,6 +2266,22 @@ an extra CRT instance.\n");
 				  add_child(WixNode("RemoveExistingProducts", ([
 						      "After":"InstallInitialize",
 						    ])))->
+				  add_child(line_feed)->
+				  // Move MsiPublishAssemblies a little bit
+				  // earlier in the installation process, to
+				  // keep FinalizePike before RegisterProduct
+				  // in case it causes a rollback.
+				  //
+				  // This ought to be in the Pike_module wxs,
+				  // but the merge ignores the sequence number.
+				  add_child (
+				    WixNode ("MsiPublishAssemblies", ([
+					       // This sequence position should
+					       // be after WriteRegistryValues
+					       // (5000) and before
+					       // RegisterUser (6000).
+					       "Sequence": "5500",
+					     ])))->
 				  add_child(line_feed))->
 			add_child(line_feed)->
 			add_child(WixNode("FragmentRef", ([
@@ -2565,6 +2590,19 @@ the PRIVATE_CRT stuff in install.pike.\n");
     // This way of packaging the CRT dlls is currently disabled in
     // favor of the msm files. If you enable this you probably need to
     // disable the embedded MT_FIX_* stuff in configure.in.
+    //
+    // Using private assemblies would be nice since it enables
+    // installation without admin rights, but the problem is that
+    // windows only searches for a private lib in (essentially) the same
+    // directory as the .exe or .dll. This means the dll's in the
+    // modules directory won't find the MS CRT when it's in the bin dir.
+    //
+    // Putting the MS CRT in every dir where we have a dll apparently
+    // won't work either since we get strange errors about duplicate
+    // assemblies with the same name but different versions (the dll's
+    // are really identical of course). Also, if that error is resolved
+    // I'd suspect each dll would get its own runtime CRT instance then
+    // so it probably wouldn't work anyway.
     if (export) {
       if (include_crt) {
 	// Find and copy dynamic CRT dlls (and manifest files as
