@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.h,v 1.162 2008/06/18 09:34:32 grubba Exp $
+|| $Id: svalue.h,v 1.163 2008/06/28 12:06:52 per Exp $
 */
 
 #ifndef SVALUE_H
@@ -340,7 +340,7 @@ PMOD_EXPORT struct svalue svalue_int_one;
 #define UNSAFE_IS_ZERO(X) ((X)->type==PIKE_T_INT?(X)->u.integer==0:(1<<(X)->type)&(BIT_OBJECT|BIT_FUNCTION)?!svalue_is_true(X):0)
 #define SAFE_IS_ZERO(X) ((X)->type==PIKE_T_INT?(X)->u.integer==0:(1<<(X)->type)&(BIT_OBJECT|BIT_FUNCTION)?!safe_svalue_is_true(X):0)
 
-#define IS_UNDEFINED(X) (check_svalue (X), (X)->type==PIKE_T_INT&&(X)->subtype==1)
+#define IS_UNDEFINED(X) (check_svalue (X), (X)->type==PIKE_T_INT&&(X)->subtype==NUMBER_UNDEFINED)
 
 #define IS_DESTRUCTED(X) \
   (((X)->type == PIKE_T_OBJECT || (X)->type==PIKE_T_FUNCTION) && !(X)->u.object->prog)
