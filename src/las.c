@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.419 2008/06/27 20:52:00 grubba Exp $
+|| $Id: las.c,v 1.420 2008/06/28 01:26:36 mast Exp $
 */
 
 #include "global.h"
@@ -3489,8 +3489,7 @@ void fix_type_field(node *n)
 #ifndef NEW_ARG_CHECK
       char *alternate_name = NULL;
 #endif
-      int old_refs;
-      INT32 max_args,args;
+      INT32 args;
 
 #ifdef NEW_ARG_CHECK
 

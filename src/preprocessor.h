@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: preprocessor.h,v 1.93 2008/05/03 15:29:24 nilsson Exp $
+|| $Id: preprocessor.h,v 1.94 2008/06/28 01:26:36 mast Exp $
 */
 
 /*
@@ -1646,8 +1646,6 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	      } else {
 		/* Try macro expanding (Bug 2440). */
 		struct string_builder save = this->buf, tmp;
-		PCHARP ptr;
-		p_wchar2 c;
 		int save_line = this->current_line;
 		init_string_builder(&this->buf, SHIFT);
 

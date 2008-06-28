@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sscanf.c,v 1.185 2008/06/18 08:41:30 grubba Exp $
+|| $Id: sscanf.c,v 1.186 2008/06/28 01:26:36 mast Exp $
 */
 
 #include "global.h"
@@ -867,7 +867,7 @@ CHAROPT2(								 \
 	  );								\
 	  if (minus_flag)						\
 	  {								\
-	    int x, pos=0;						\
+	    int pos=0;							\
 	    pos = (eye += field_length);				\
             while(--field_length >= 0)					\
 	    {								\
