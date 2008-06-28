@@ -26,8 +26,11 @@ void test_ipv6()
   if (check) {
     // The following fails on Solaris machines which haven't
     // been configured for IPv6 (ENETUNREACH).
-    int portno = array_sscanf(port->query_address(), "%*s %d")[0];
-    check = Stdio.File()->connect("::1", portno);
+    if( port->query_address() )
+    {
+      int portno = array_sscanf(port->query_address(), "%*s %d")[0];
+      check = Stdio.File()->connect("::1", portno);
+    }
   }
   item("IPv6 connecting", check);
 }
