@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.424 2008/06/28 07:12:22 grubba Exp $
+|| $Id: las.c,v 1.425 2008/06/28 11:01:53 mast Exp $
 */
 
 #include "global.h"
@@ -5164,7 +5164,6 @@ ptrdiff_t eval_low(node *n,int print_error)
   struct svalue *save_sp = Pike_sp;
   ptrdiff_t ret;
   struct program *prog = Pike_compiler->new_program;
-  struct program *malloc_prog = Pike_compiler->malloc_size_program;
 #ifdef PIKE_USE_MACHINE_CODE
   size_t num_relocations;
 #endif /* PIKE_USE_MACHINE_CODE */
@@ -5200,15 +5199,11 @@ ptrdiff_t eval_low(node *n,int print_error)
     foo.counter=10000;
     foo.yes=0;
 
-    if (prog->num_program > malloc_prog->total_size) {
 #ifdef PIKE_USE_MACHINE_CODE
-      char *start = (char *) (prog->program + malloc_prog->total_size);
-      size_t len = (prog->num_program - malloc_prog->total_size) *
-	sizeof (prog->program[0]);
-      make_area_executable (start, len);
+    make_area_executable ((char *) (prog->program + num_program),
+			  (prog->num_program - num_program) *
+			  sizeof (prog->program[0]));
 #endif
-      malloc_prog->total_size = prog->num_program;
-    }
 
     tmp_callback=add_to_callback(&evaluator_callbacks,
 				 check_evaluation_time,
@@ -5274,7 +5269,7 @@ ptrdiff_t eval_low(node *n,int print_error)
 #endif /* VALGRIND_DISCARD_TRANSLATIONS */
 #endif /* PIKE_USE_MACHINE_CODE */
 
-  malloc_prog->total_size = prog->num_program = num_program;
+  prog->num_program = num_program;
 
   return ret;
 }

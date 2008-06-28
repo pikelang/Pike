@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.254 2008/06/28 03:25:51 mast Exp $
+|| $Id: program.h,v 1.255 2008/06/28 11:01:54 mast Exp $
 */
 
 #ifndef PROGRAM_H
@@ -605,9 +605,6 @@ struct program
   unsigned INT32 num_clones;
 #endif /* PROFILING */
 
-  /* Normally the total allocated size. In Pike_compiler->
-   * malloc_size_program this is the number of elements in
-   * Pike_compiler->program which have been made executable so far. */
   size_t total_size;
 
 #define FOO(NUMTYPE,TYPE,ARGTYPE,NAME) TYPE * NAME ;

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.725 2008/06/28 09:08:08 mast Exp $
+|| $Id: program.c,v 1.726 2008/06/28 11:01:53 mast Exp $
 */
 
 #include "global.h"
@@ -2546,8 +2546,6 @@ void low_start_new_program(struct program *p,
     Pike_compiler->malloc_size_program->PIKE_CONCAT(num_,NAME) =	\
       Pike_compiler->new_program->PIKE_CONCAT(num_,NAME);
 #include "program_areas.h"
-
-    Pike_compiler->malloc_size_program->total_size = 0;
 
     {
       INT32 line=0, off=0;
