@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.421 2008/06/28 03:25:51 mast Exp $
+|| $Id: las.c,v 1.422 2008/06/28 07:04:04 grubba Exp $
 */
 
 #include "global.h"
@@ -5201,10 +5201,12 @@ ptrdiff_t eval_low(node *n,int print_error)
     foo.yes=0;
 
     if (prog->num_program > malloc_prog->total_size) {
+#ifdef PIKE_USE_MACHINE_CODE
       char *start = (char *) (prog->program + malloc_prog->total_size);
       size_t len = (malloc_prog->num_program - malloc_prog->total_size) *
 	sizeof (prog->program[0]);
       make_area_executable (start, len);
+endif
       malloc_prog->total_size = malloc_prog->num_program;
     }
 
