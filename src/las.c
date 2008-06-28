@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.423 2008/06/28 07:11:43 grubba Exp $
+|| $Id: las.c,v 1.424 2008/06/28 07:12:22 grubba Exp $
 */
 
 #include "global.h"
@@ -5206,7 +5206,7 @@ ptrdiff_t eval_low(node *n,int print_error)
       size_t len = (prog->num_program - malloc_prog->total_size) *
 	sizeof (prog->program[0]);
       make_area_executable (start, len);
-endif
+#endif
       malloc_prog->total_size = prog->num_program;
     }
 
