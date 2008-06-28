@@ -43,7 +43,7 @@ class oracle
   // Implements the standard API.
   class big_query
   {
-    static object answer;
+    protected object answer;
 
     // Aliases.
     function(:int) num_rows;
@@ -53,7 +53,7 @@ class oracle
     function(int:void) seek;
 
     // Convert to the standard result coding. 
-    static string|int(0..0) compat_convert(mixed x)
+    protected string|int(0..0) compat_convert(mixed x)
     {
       if(!x && !intp(x)) return 0;
       if(multisetp(x)) return ((array(string))x)*",";
@@ -70,10 +70,10 @@ class oracle
       return 0;
     }
 
-    static void create(object(compile_query)|string query,
-		       void|mapping(int|string:
-				    int|float|string|multiset(string)) binds,
-		       void|int autocommit)
+    protected void create(object(compile_query)|string query,
+                          void|mapping(int|string:
+                                       int|float|string|multiset(string)) binds,
+                          void|int autocommit)
     {
       answer = big_typed_query(query, binds, autocommit);
       if (!answer) {

@@ -136,7 +136,7 @@ class String_buffer {
   array(string) buffer=allocate(BEGIN);
   int ptr=0;
   
-  static void fix()
+  protected void fix()
     {
       string tmp=buffer*"";
       buffer=allocate(strlen(tmp)/128+BEGIN);
@@ -177,7 +177,7 @@ class String_buffer {
 // Do a fuzzy matching between two different strings and return a
 // "similarity index". The higher, the closer the strings match.
 
-static int low_fuzzymatch(string str1, string str2)
+protected int low_fuzzymatch(string str1, string str2)
 {
   string tmp1, tmp2;
   int offset, length;

@@ -3,7 +3,7 @@
 
 inherit Sql.Sql;
 
-static array(mapping(string:mixed)) res_obj_to_array(object res_obj)
+protected array(mapping(string:mixed)) res_obj_to_array(object res_obj)
 {
   if (res_obj)
   {

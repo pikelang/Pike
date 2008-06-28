@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.445 2008/06/28 15:32:29 per Exp $
+// $Id: master.pike.in,v 1.446 2008/06/28 17:14:27 nilsson Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -107,13 +107,13 @@ private function werror = Files()->_stderr->write;
 #ifdef RESOLV_DEBUG
 
 #if constant (thread_local)
-static object resolv_msg_depth = thread_local();
+protected object resolv_msg_depth = thread_local();
 // NOTE: May be used before __INIT has completed.
 #define GET_RESOLV_MSG_DEPTH (resolv_msg_depth && resolv_msg_depth->get())
 #define INC_RESOLV_MSG_DEPTH() (resolv_msg_depth && resolv_msg_depth->set (resolv_msg_depth->get() + 1))
 #define DEC_RESOLV_MSG_DEPTH() (resolv_msg_depth && resolv_msg_depth->set (resolv_msg_depth->get() - 1))
 #else
-static int resolv_msg_depth;
+protected int resolv_msg_depth;
 #define GET_RESOLV_MSG_DEPTH resolv_msg_depth
 #define INC_RESOLV_MSG_DEPTH() (++resolv_msg_depth)
 #define DEC_RESOLV_MSG_DEPTH() (--resolv_msg_depth)
@@ -147,7 +147,7 @@ void resolv_debug (string fmt, mixed... args)
 //!
 //! @seealso
 //!   @[get_compat_master()], @[master()], @[predef::MasterObject]
-static class Pike_0_6_master
+protected class Pike_0_6_master
 {
   int is_absolute_path(string p);
   array(string) explode_path(string p);
@@ -218,8 +218,8 @@ static class Pike_0_6_master
   // compat_environment_copy is used to keep track of any changes
   // performed destructively on the compat_environment mapping.
   // Both should be zero if not in use.
-  static mapping(string:array(string)) compat_environment;
-  static mapping(string:array(string)) compat_environment_copy;
+  protected mapping(string:array(string)) compat_environment;
+  protected mapping(string:array(string)) compat_environment_copy;
 
 #pragma no_deprecation_warnings
   local __deprecated__(mapping(string:array(string))) `environment()
@@ -289,7 +289,7 @@ static class Pike_0_6_master
   extern mapping(string:mixed) fc;
   object findmodule(string fullname);
   mixed handle_import(string what, string|void current_file);
-  local static object Pike_0_6_compat_handler;
+  local protected object Pike_0_6_compat_handler;
   local mixed resolv(string identifier, string|void current_file)
   {
     if (!Pike_0_6_compat_handler) {
@@ -368,14 +368,14 @@ class Pike_7_0_master
   program cast_to_program(string pname, string current_file,
 			  object|void handler);
   void handle_error(array(mixed)|object trace);
-  static private constant mkmultiset = mkmultiset;
+  protected private constant mkmultiset = mkmultiset;
   program handle_inherit(string pname, string current_file, object|void handler);
   mixed handle_import(string what, string|void current_file, object|void handler);
   mixed resolv_base(string identifier, string|void current_file);
 
   // FIXME: Not in 7.7!
   extern mapping resolv_cache;
-  local static object Pike_7_0_compat_handler;
+  local protected object Pike_7_0_compat_handler;
   local mixed resolv(string identifier, string|void current_file)
   {
     if (!Pike_7_0_compat_handler) {
@@ -572,7 +572,7 @@ class Pike_7_0_master
 //!
 //! @seealso
 //!   @[get_compat_master()], @[master()], @[predef::MasterObject]
-static class Pike_7_2_master
+protected class Pike_7_2_master
 {
   inherit Pike_7_0_master;
 #ifdef PIKE_MODULE_RELOC
@@ -587,7 +587,7 @@ static class Pike_7_2_master
   object low_cast_to_object(string oname, string current_file,
 			    object|void current_handler);
   object findmodule(string fullname, object|void handler);
-  local static object Pike_7_2_compat_handler;
+  local protected object Pike_7_2_compat_handler;
   local mixed resolv(string identifier, string|void current_file)
   {
     if (!Pike_7_2_compat_handler) {
@@ -596,10 +596,10 @@ static class Pike_7_2_master
     return Pike_7_2_compat_handler->resolv(identifier, current_file);
   }
   void runtime_warning(string where, string what, mixed ... args);
-  static int clipped;
-  static int canclip;
-  static string stupid_describe(mixed m, int maxlen);
-  static string stupid_describe_comma_list(array x, int maxlen);
+  protected int clipped;
+  protected int canclip;
+  protected string stupid_describe(mixed m, int maxlen);
+  protected string stupid_describe_comma_list(array x, int maxlen);
   class Describer {};
   string describe_function(function f);
   class CompatResolver {};
@@ -626,10 +626,10 @@ static class Pike_7_2_master
 //!
 //! @seealso
 //!   @[get_compat_master()], @[master()], @[predef::MasterObject]
-static class Pike_7_4_master
+protected class Pike_7_4_master
 {
   inherit Pike_7_2_master;
-  local static object Pike_7_4_compat_handler;
+  local protected object Pike_7_4_compat_handler;
   void error(string f, mixed ... args);
   local mixed resolv(string identifier, string|void current_file)
   {
@@ -653,10 +653,10 @@ static class Pike_7_4_master
 //!
 //! @seealso
 //!   @[get_compat_master()], @[master()], @[predef::MasterObject]
-static class Pike_7_6_master
+protected class Pike_7_6_master
 {
   inherit Pike_7_4_master;
-  local static object Pike_7_6_compat_handler;
+  local protected object Pike_7_6_compat_handler;
   local mixed resolv(string identifier, string|void current_file)
   {
     if (!Pike_7_6_compat_handler) {
@@ -679,37 +679,37 @@ static class Pike_7_6_master
 //!
 //! @seealso
 //!   @[get_compat_master()]
-static inherit Pike_7_6_master;
+protected inherit Pike_7_6_master;
 
 class CompatAllConstants (mapping(string:mixed) compat_overrides)
 // Wrapper for the mapping returned by all_constants in compat mode.
 {
-  static mixed `[] (string sym)
+  protected mixed `[] (string sym)
   {
     mixed val = compat_overrides[sym];
     if (zero_type (val)) val = predef::all_constants()[sym];
     return val;
   }
-  static mixed `-> (string sym)
+  protected mixed `-> (string sym)
     {return `[] (sym);}
 
-  static mixed `[]= (string sym, mixed val)
+  protected mixed `[]= (string sym, mixed val)
     {return predef::all_constants()[sym]= val;}
-  static mixed `->= (string sym, mixed val)
+  protected mixed `->= (string sym, mixed val)
     {return `[]= (sym, val);}
 
-  static array(string) _indices()
+  protected array(string) _indices()
     {return indices (predef::all_constants() | compat_overrides);}
-  static array(mixed) _values()
+  protected array(mixed) _values()
     {return values (predef::all_constants() | compat_overrides);}
 
-  static mapping `+ (mapping other)
+  protected mapping `+ (mapping other)
     {return (predef::all_constants() | compat_overrides) + other;}
-  static mapping ``+ (mapping other)
+  protected mapping ``+ (mapping other)
     {return other + (predef::all_constants() | compat_overrides);}
-  static mapping `| (mapping other)
+  protected mapping `| (mapping other)
     {return (predef::all_constants() | compat_overrides) | other;}
-  static mapping ``| (mapping other)
+  protected mapping ``| (mapping other)
     {return other | (predef::all_constants() | compat_overrides);}
 }
 
@@ -960,7 +960,7 @@ string master_read_file(string file)
 }
 
 #ifdef GETCWD_CACHE
-static string current_path;
+protected string current_path;
 int cd(string s)
 {
   current_path=0;
@@ -1030,10 +1030,10 @@ Stat master_file_stat(string x)
 #endif // FILE_STAT_CACHE
 
 
-static mapping(string:string) environment;
+protected mapping(string:string) environment;
 
 #ifdef __NT__
-static void set_lc_env (mapping(string:string) env)
+protected void set_lc_env (mapping(string:string) env)
 {
   environment = ([]);
   foreach (env; string var; string val)
@@ -1256,9 +1256,9 @@ constant NoValue = typeof (no_value);
 
 // The reverse mapping for objects isn't only for speed; search()
 // doesn't work reliably there since it calls `==.
-static mapping(program:string) rev_programs = ([]);
-static mapping(object:program) rev_objects = ([]);
-static mapping(mixed:string) rev_fc = ([]);
+protected mapping(program:string) rev_programs = ([]);
+protected mapping(object:program) rev_objects = ([]);
+protected mapping(mixed:string) rev_fc = ([]);
 
 string programs_reverse_lookup (program prog)
 //! Returns the path for @[prog] in @[programs], if it got any.
@@ -1319,7 +1319,7 @@ array(string) query_precompiled_names(string fname)
   return ({ fname + ".o" });
 }
 
-static class CompileCallbackError
+protected class CompileCallbackError
 {
   inherit _static_modules.Builtin.GenericError;
   constant is_generic_error = 1;
@@ -1327,7 +1327,7 @@ static class CompileCallbackError
   constant is_cpp_or_compilation_error = 1;
 }
 
-static void compile_cb_error (string msg, mixed ... args)
+protected void compile_cb_error (string msg, mixed ... args)
 // Use this to throw errors that should be converted to plain compile
 // error messages, without backtraces being reported by
 // compile_exception.
@@ -1336,7 +1336,7 @@ static void compile_cb_error (string msg, mixed ... args)
   throw (CompileCallbackError (msg, backtrace()[..<1]));
 }
 
-static void compile_cb_rethrow (object|array err)
+protected void compile_cb_rethrow (object|array err)
 // Use this to rethrow errors that should be converted to plain
 // compile error messages, without backtraces being reported by
 // compile_exception.
@@ -1347,7 +1347,7 @@ static void compile_cb_rethrow (object|array err)
   throw (CompileCallbackError (describe_error (err), bt));
 }
 
-static void call_compile_warning (object handler, string file,
+protected void call_compile_warning (object handler, string file,
 				  string msg, mixed ... args)
 {
   if (sizeof (args)) msg = sprintf (msg, @args);
@@ -1369,7 +1369,7 @@ _static_modules.Builtin.mutex compilation_mutex = Builtin.mutex();
 #define FIX_CASE(X)	(X)
 #endif /* __NT__ */
 
-static string base_from_filename(string fname)
+protected string base_from_filename(string fname)
 {
   string low_name = FIX_CASE(fname);
   if (has_prefix(low_name, ".#")) return 0;
@@ -1383,7 +1383,7 @@ static string base_from_filename(string fname)
   return 0;
 }
 
-static int prio_from_filename(string fname)
+protected int prio_from_filename(string fname)
 {
   fname = FIX_CASE(fname);
   if (has_suffix(fname, ".pmod")) return 3;
@@ -1500,7 +1500,7 @@ object show_doc(program|object|function obj)
 }
 
 
-static program low_findprog(string pname,
+protected program low_findprog(string pname,
 			    string ext,
 			    object|void handler,
 			    void|int mkobj)
@@ -1727,7 +1727,7 @@ void unregister(program p)
 	fc[name] = no_value;
 }
 
-static program findprog(string pname,
+protected program findprog(string pname,
 			string ext,
 			object|void handler,
 			void|int mkobj)
@@ -1914,7 +1914,7 @@ string doc_prefix;
 
 /* Note that create is called before add_precompiled_program
  */
-static void create()
+protected void create()
 {
   foreach(master_efuns, string e)
     if (!zero_type(this[e]))
@@ -2023,9 +2023,9 @@ object cast_to_object(string oname, string current_file,
 
 // Marker used for negative caching in module caches.
 // FIXME: Won't this cause problems when inheriting "/master"?
-static class ZERO_TYPE {};
+protected class ZERO_TYPE {};
 
-static object Unicode;
+protected object Unicode;
 
 //! Module node representing a single directory.
 //!
@@ -2048,7 +2048,7 @@ class dirnode
 #define FIX_CASE(X)	(X)
 #endif /* __NT__ */
 
-  static string base_from_filename(string fname)
+  protected string base_from_filename(string fname)
   {
     string low_name = FIX_CASE(fname);
     catch {
@@ -2075,7 +2075,7 @@ class dirnode
     return 0;
   }
 
-  static int prio_from_filename(string fname)
+  protected int prio_from_filename(string fname)
   {
     fname = FIX_CASE(fname);
     if (has_suffix(fname, ".pmod")) return 3;
@@ -2086,7 +2086,7 @@ class dirnode
     return 0;
   }
 
-  static void create(string d, object|void h)
+  protected void create(string d, object|void h)
   {
     resolv_debug ("dirnode(%O,%O) created\n",d,h);
     dirname=d;
@@ -2173,7 +2173,7 @@ class dirnode
     array _values() { if(module) return values(module); }
   }
 
-  static mixed low_ind(string index, int(0..1)|void set_module)
+  protected mixed low_ind(string index, int(0..1)|void set_module)
   {
     array(string) paths;
 
@@ -2261,7 +2261,7 @@ class dirnode
     return UNDEFINED;
   }
 
-  static mixed ind(string index)
+  protected mixed ind(string index)
   {
     resolv_debug ("dirnode(%O)->ind(%O)\n", dirname, index);
     INC_RESOLV_MSG_DEPTH();
@@ -2342,7 +2342,7 @@ class dirnode
     return UNDEFINED;
   }
 
-  static int(0..1) _cache_full;
+  protected int(0..1) _cache_full;
   void fill_cache()
   {
 #if 0
@@ -2372,7 +2372,7 @@ class dirnode
 		  _cache_full?"full":"partially filled");
   }
 
-  static array(string) _indices()
+  protected array(string) _indices()
   {
     fill_cache();
     // Note: Cannot index cache at all here to filter out the
@@ -2382,7 +2382,7 @@ class dirnode
     return filter (indices (cache), map (values (cache), `!=, ZERO_TYPE));
   }
 
-  static array(mixed) _values()
+  protected array(mixed) _values()
   {
     fill_cache();
     return values(cache) - ({ZERO_TYPE});
@@ -2396,11 +2396,11 @@ class dirnode
     }
   }
 
-  static int(0..) _sizeof() {
+  protected int(0..) _sizeof() {
     return sizeof(_values());
   }
 
-  static string _sprintf(int as)
+  protected string _sprintf(int as)
   {
     return as=='O' && sprintf("master()->dirnode(%O:%O)",
 			      dirname, module && module);
@@ -2429,7 +2429,7 @@ class joinnode
     return as=='O' && sprintf("master()->joinnode(%O)",joined_modules);
   }
 
-  static void create(array(object|mapping) _joined_modules,
+  protected void create(array(object|mapping) _joined_modules,
 		     object|void _compilation_handler,
 		     joinnode|void _fallback_module)
   {
@@ -2463,7 +2463,7 @@ class joinnode
     // FIXME: Propagate!
   }
 
-  static mixed ind(string index)
+  protected mixed ind(string index)
   {
     resolv_debug ("joinnode(%O)->ind(%O)\n", joined_modules, index);
     INC_RESOLV_MSG_DEPTH();
@@ -2524,7 +2524,7 @@ class joinnode
     return ret;
   }
 
-  static int _cache_full;
+  protected int _cache_full;
 
   void fill_cache()
   {
@@ -2784,7 +2784,7 @@ class CompatResolver
   //! casted into a "%d.%d" string, e.g. a version object.
   //!
   //! It can also optionally be initialized with a fallback resolver.
-  static void create(mixed version, CompatResolver|void fallback_resolver)
+  protected void create(mixed version, CompatResolver|void fallback_resolver)
   {
     resolv_debug("CompatResolver(%O, %O)\n", version, fallback_resolver);
     ver=(string)version;
@@ -2907,7 +2907,7 @@ class CompatResolver
 
   //! Instantiate static modules in the same way that dynamic modules
   //! are instantiated.
-  static mapping(string:mixed) instantiate_static_modules(object|mapping static_modules)
+  protected mapping(string:mixed) instantiate_static_modules(object|mapping static_modules)
   {
     mapping(string:mixed) res = ([]), joins = ([]);
     foreach(indices(static_modules), string name) {
@@ -3178,7 +3178,7 @@ int(0..1) asyncp() {
 
 #if constant(thread_create)
 // this must be done in __init if someone inherits the master
-static object _backend_thread=this_thread();
+protected object _backend_thread=this_thread();
 
 //! The backend_thread() function is useful to determine if you are
 //! the backend thread - important when doing async/sync protocols.
@@ -3192,7 +3192,7 @@ object backend_thread()
 
 mapping(string:string) initial_predefines = ([]);
 
-static mixed main_resolv(string sym, CompatResolver|void resolver) {
+protected mixed main_resolv(string sym, CompatResolver|void resolver) {
   mixed v = (resolver||this)->resolv(sym);
   if(!v)
     error("Could not resolve %s. "
@@ -3706,7 +3706,7 @@ mixed get_inhibit_compile_errors()
 }
 #endif /* constant(thread_local) */
 
-static private function(string:string) _trim_file_name_cb=0;
+protected private function(string:string) _trim_file_name_cb=0;
 string trim_file_name(string s)
 {
 #ifdef PIKE_MODULE_RELOC
@@ -3831,7 +3831,7 @@ void runtime_warning (string where, string what, mixed... args)
 }
 
 
-static object Charset;
+protected object Charset;
 
 //! This function is called by cpp() when it wants to do
 //! character code conversion.
@@ -4731,10 +4731,10 @@ class Encoder
 {
   mixed encoded;
 
-  static mapping(mixed:string) rev_constants = ([]);
-  static mapping(mixed:string) rev_static_modules = ([]);
+  protected mapping(mixed:string) rev_constants = ([]);
+  protected mapping(mixed:string) rev_static_modules = ([]);
 
-  static array find_index (object|program parent, mixed child,
+  protected array find_index (object|program parent, mixed child,
 			   array(object) module_object,
 			   int|void try)
   {
@@ -4785,7 +4785,7 @@ class Encoder
     return id;
   }
 
-  static string|array compare_resolved (string name, mixed what,
+  protected string|array compare_resolved (string name, mixed what,
 					mixed resolved, array(object) module_object)
   {
     array append;
@@ -5085,7 +5085,7 @@ class Encoder
     DEC_RETURN (([function]x->_encode)());
   }
 
-  static void create (void|mixed encoded)
+  protected void create (void|mixed encoded)
   //! Creates an encoder instance. If @[encoded] is specified, it's
   //! encoded instead of being reverse resolved to a name. That's
   //! necessary to encode programs.
@@ -5122,7 +5122,7 @@ class Decoder (void|string fname, void|int mkobj, void|object handler)
 //! Codec for use with @[decode_value]. This is the decoder
 //! corresponding to @[Encoder]. See that one for more details.
 {
-  static int unregistered = 1;
+  protected int unregistered = 1;
 
   object __register_new_program(program p)
   {
@@ -5138,7 +5138,7 @@ class Decoder (void|string fname, void|int mkobj, void|object handler)
     DEC_RETURN (0);
   }
 
-  static mixed thingof (string|array what)
+  protected mixed thingof (string|array what)
   {
     mixed res;
     array sublist;
@@ -5308,7 +5308,7 @@ class Decoder (void|string fname, void|int mkobj, void|object handler)
 // Note: This mapping is not for caching but for coping with recursion
 // problems by returning the same codec for the same file. As a cache
 // it's really pointless.
-static mapping(string:Decoder) codecs = set_weak_flag (([]), 1);
+protected mapping(string:Decoder) codecs = set_weak_flag (([]), 1);
 
 Decoder get_codec(string|void fname, int|void mkobj, void|object handler)
 {
@@ -5333,7 +5333,7 @@ class Codec
   inherit Encoder;
   inherit Decoder;
 
-  static void create (void|mixed encoded)
+  protected void create (void|mixed encoded)
   //! The optional argument is the thing to encode; it's passed on to
   //! @[Encoder].
   {
@@ -5355,7 +5355,7 @@ class Version
 
   //! @decl void create(int major, int minor)
   //! Set the version in the object.
-  static void create(int maj, int min)
+  protected void create(int maj, int min)
   {
     if(maj==-1) maj = __REAL_MAJOR__;
     if(min==-1) min = __REAL_MINOR__;

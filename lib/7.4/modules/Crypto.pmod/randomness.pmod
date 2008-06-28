@@ -1,4 +1,4 @@
-// $Id: randomness.pmod,v 1.5 2004/03/10 00:43:17 nilsson Exp $
+// $Id: randomness.pmod,v 1.6 2008/06/28 16:54:21 nilsson Exp $
 
 //! Assorted stronger or weaker randomnumber generators.
 //! These devices try to collect entropy from the environment.
@@ -13,16 +13,16 @@
 
 #if constant(Crypto.SHA1.name)
 
-static constant RANDOM_DEVICE = "/dev/random";
-static constant PRANDOM_DEVICE = "/dev/urandom";
+protected constant RANDOM_DEVICE = "/dev/random";
+protected constant PRANDOM_DEVICE = "/dev/urandom";
 
 /* Collect somewhat random data from the environment. Unfortunately,
  * this is quite system dependent
  */
-static constant PATH = "/usr/sbin:/usr/etc:/usr/bin/:/sbin/:/etc:/bin";
+protected constant PATH = "/usr/sbin:/usr/etc:/usr/bin/:/sbin/:/etc:/bin";
 
 #ifndef __NT__
-static constant SYSTEM_COMMANDS = ({
+protected constant SYSTEM_COMMANDS = ({
   "last -256", "arp -a",
   "netstat -anv","netstat -mv","netstat -sv",
   "uptime","ps -fel","ps aux",
@@ -31,11 +31,11 @@ static constant SYSTEM_COMMANDS = ({
 });
 #endif
 
-static RandomSource global_arcfour;
-static int(0..1) goodseed;
+protected RandomSource global_arcfour;
+protected int(0..1) goodseed;
 
 #ifdef __NT__
-static string nt_random_string(int len) {
+protected string nt_random_string(int len) {
   object ctx = Nettle.NT.CryptContext(0, 0, Nettle.NT.PROV_RSA_FULL,
 				      Nettle.NT.CRYPT_VERIFYCONTEXT
 				      /*|Nettle.NT.CRYPT_SILENT*/);
@@ -100,7 +100,7 @@ class RandomSource {
 constant pike_random = RandomSource;
 
 #ifdef __NT__
-static class NTSource {
+protected class NTSource {
   string read(int(0..) len) { return nt_random_string(len); }
 }
 #endif

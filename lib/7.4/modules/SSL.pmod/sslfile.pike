@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.2 2008/01/05 22:17:51 grubba Exp $
+/* $Id: sslfile.pike,v 1.3 2008/06/28 16:54:21 nilsson Exp $
  *
  */
 
@@ -24,13 +24,13 @@ int _fd;
 
 #ifdef THREAD_DEBUG
 
-static Thread.Thread cur_thread;
+protected Thread.Thread cur_thread;
 
-static class MyLock
+protected class MyLock
 {
   Thread.Thread old_cur_thread;
-  static void create (Thread.Thread t) {old_cur_thread = t;}
-  static void destroy() {cur_thread = old_cur_thread;}
+  protected void create (Thread.Thread t) {old_cur_thread = t;}
+  protected void destroy() {cur_thread = old_cur_thread;}
 };
 
 #define THREAD_CHECK							\
@@ -56,7 +56,7 @@ static class MyLock
 
 #endif
 
-static string read_buffer; /* Data that is received before there is any
+protected string read_buffer; /* Data that is received before there is any
 		     * read_callback 
                      * Data is also buffered here if a blocking read from HLP
 		     * doesnt want to read a full packet of data.*/
@@ -534,7 +534,7 @@ private void ssl_close_callback(mixed id)
   }
 }
 
-static void update_callbacks()
+protected void update_callbacks()
 {
   if (CALLBACK_MODE) {
     socket->set_read_callback (ssl_read_callback);

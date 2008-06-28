@@ -1,5 +1,5 @@
 // Compatibility namespace
-// $Id: __default.pmod,v 1.12 2008/06/25 16:18:17 grubba Exp $
+// $Id: __default.pmod,v 1.13 2008/06/28 16:54:39 nilsson Exp $
 
 #pike 7.7
 
@@ -10,7 +10,7 @@
 
 //! @decl inherit predef::
 
-static array(array(int|string)) _describe_program(program p)
+protected array(array(int|string)) _describe_program(program p)
 {
   return map(predef::_describe_program(p),
 	     lambda(array(mixed) symbol_info) {
@@ -24,7 +24,7 @@ object master()
   return __REAL_VERSION__::master()->get_compat_master(7, 6);
 }
 
-static Mapping.ShadowedMapping compat_all_constants =
+protected Mapping.ShadowedMapping compat_all_constants =
   Mapping.ShadowedMapping(predef::all_constants(),
 			  ([
 			    "all_constants": all_constants,
@@ -41,6 +41,6 @@ mapping(string:mixed) all_constants()
   return x;
 }
 
-static void create()
+protected void create()
 {
 }

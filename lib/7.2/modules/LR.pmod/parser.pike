@@ -1,5 +1,5 @@
 /*
- * $Id: parser.pike,v 1.4 2008/01/13 16:59:52 nilsson Exp $
+ * $Id: parser.pike,v 1.5 2008/06/28 16:54:02 nilsson Exp $
  *
  * A BNF-grammar in Pike.
  * Compiles to a LALR(1) state-machine.
@@ -270,22 +270,22 @@ class state_queue {
 mapping(int|string : array(object(rule))) grammar = ([]);
 
 /* Priority table for terminal symbols */
-static private mapping(string : object(priority)) operator_priority = ([]);
+protected private mapping(string : object(priority)) operator_priority = ([]);
 
-static private multiset(mixed) nullable = (< >);
+protected private multiset(mixed) nullable = (< >);
 
 #if 0
-static private mapping(mixed : multiset(object(rule))) derives = ([]);
+protected private mapping(mixed : multiset(object(rule))) derives = ([]);
 
 /* Maps from symbol to which rules may start with that symbol */
-static private mapping(mixed : multiset(object(rule))) begins = ([]);
+protected private mapping(mixed : multiset(object(rule))) begins = ([]);
 #endif /* 0 */
 
 
 /* Maps from symbol to which rules use that symbol
  * (used for finding nullable symbols)
  */
-static private mapping(int : multiset(object(rule))) used_by = ([]);
+protected private mapping(int : multiset(object(rule))) used_by = ([]);
 
 //! The initial LR0 state.
 object(kernel) start_state;
@@ -304,7 +304,7 @@ int verbose=1;
 int error=0;
 
 /* Number of next rule (used only for conflict resolving) */
-static private int next_rule_number = 1;
+protected private int next_rule_number = 1;
 
 //! LR0 states that are already known to the compiler.
 mapping(string:object(kernel)) known_states = ([]);
@@ -317,7 +317,7 @@ mapping(string:object(kernel)) known_states = ([]);
 
 /* Several cast to string functions */
 
-static private string builtin_symbol_to_string(int|string symbol)
+protected private string builtin_symbol_to_string(int|string symbol)
 {
   if (intp(symbol)) {
     return("nonterminal"+symbol);
@@ -326,7 +326,7 @@ static private string builtin_symbol_to_string(int|string symbol)
   }
 }
 
-static private function(int|string : string) symbol_to_string = builtin_symbol_to_string;
+protected private function(int|string : string) symbol_to_string = builtin_symbol_to_string;
 
 //! Pretty-prints a rule to a string.
 //!
@@ -611,7 +611,7 @@ void add_rule(object(rule) r)
 
 /* Here come the functions used by the compiler */
 
-static private object(kernel) first_state()
+protected private object(kernel) first_state()
 {
   object(kernel) state = kernel();
 
@@ -644,9 +644,9 @@ static private object(kernel) first_state()
 //! In the queue-part are the states that remain to be compiled.
 object(state_queue) s_q;
 
-static private object(ADT.Stack) item_stack;
+protected private object(ADT.Stack) item_stack;
 
-static private void traverse_items(object(item) i,
+protected private void traverse_items(object(item) i,
 				   function(int:void) conflict_func)
 {
   int depth;
@@ -692,12 +692,12 @@ static private void traverse_items(object(item) i,
   }
 }
 
-static private void shift_conflict(int empty)
+protected private void shift_conflict(int empty)
 {
   /* Ignored */
 }
 
-static private void handle_shift_conflicts()
+protected private void handle_shift_conflicts()
 {
   item_stack = ADT.Stack(131072);
 
@@ -724,11 +724,11 @@ static private void handle_shift_conflicts()
   }
 }
 
-static private void follow_conflict(int empty)
+protected private void follow_conflict(int empty)
 {
 }
 
-static private void handle_follow_conflicts()
+protected private void handle_follow_conflicts()
 {
   item_stack = ADT.Stack(131072);
 
@@ -755,7 +755,7 @@ static private void handle_follow_conflicts()
   }
 }
 
-static private int go_through(object(kernel) state, int item_id,
+protected private int go_through(object(kernel) state, int item_id,
 			      object(item) current_item)
 {
   object(item) i, master;
@@ -799,7 +799,7 @@ static private int go_through(object(kernel) state, int item_id,
   }
 }
 
-static private int repair(object(kernel) state, multiset(int|string) conflicts)
+protected private int repair(object(kernel) state, multiset(int|string) conflicts)
 {
   multiset(int|string) conflict_set = (<>);
 

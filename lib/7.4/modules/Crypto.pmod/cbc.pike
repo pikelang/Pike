@@ -5,7 +5,7 @@
 #if constant(Nettle.CBC)
 inherit Nettle.CBC;
 
-static class Wrapper(object a) {
+protected class Wrapper(object a) {
   int block_size() { return a->query_block_size(); }
   int key_size() { return a->query_key_length(); }
   function(string:void) set_encrypt_key = a->set_encrypt_key;
@@ -13,7 +13,7 @@ static class Wrapper(object a) {
   string crypt(string data) { return a->crypt_block(data); }
 }
 
-static void create(program|object a) {
+protected void create(program|object a) {
   if(a->crypt)
     ::create(a);
   else
@@ -23,7 +23,7 @@ static void create(program|object a) {
 int query_key_length() { return key_size(); }
 int query_block_size() { return block_size(); }
 
-static int(0..1) mode;
+protected int(0..1) mode;
 this_program set_encrypt_key(string key) {
   mode = 0;
   return ::set_encrypt_key(key);

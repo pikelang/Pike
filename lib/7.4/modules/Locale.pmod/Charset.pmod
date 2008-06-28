@@ -5,7 +5,7 @@ inherit Locale.Charset;
 //! This class does not exist in the Locale module in Pike 7.6.
 //! @deprecated ASCIIDec
 class ascii {
-  static private string s = "";
+  protected private string s = "";
   object(this_program) feed(string ss)
   {
     s += ss;

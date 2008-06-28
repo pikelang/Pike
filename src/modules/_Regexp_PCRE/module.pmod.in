@@ -1,5 +1,5 @@
 // -*- Pike -*-
-// $Id: module.pmod.in,v 1.11 2008/04/17 03:37:46 nilsson Exp $
+// $Id: module.pmod.in,v 1.12 2008/06/28 17:07:19 nilsson Exp $
 // original author: mirar
 
 #pike __REAL_VERSION__
@@ -224,7 +224,7 @@ class Plain
     return _replace_positional(subject, replace_positional_sprintf, subst);
   }
 
-  static string replace_positional_sprintf(string m, array comp, string subst)
+  protected string replace_positional_sprintf(string m, array comp, string subst)
   {
     return sprintf(subst, m, @comp);
   }
@@ -364,14 +364,14 @@ class Widestring
 }
 
 // really slow helper functions -- FIXME! and add to String or something
-static array(int)|int 
+protected array(int)|int 
    utf8_byte_index_to_char_number(array(int)|int c,string utf8)
 {
    if (arrayp(c)) return map(c,utf8_byte_index_to_char_number,utf8);
    return c && strlen(utf8_to_string(utf8[..c-1]));
 }
 
-static array(int)|int 
+protected array(int)|int 
    char_number_to_utf8_byte_index(array(int)|int c,string wide)
 {
    if (arrayp(c)) return map(c,char_number_to_utf8_byte_index,wide);

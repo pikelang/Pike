@@ -1,5 +1,5 @@
 // Compatibility namespace
-// $Id: __default.pmod,v 1.9 2008/06/25 16:18:17 grubba Exp $
+// $Id: __default.pmod,v 1.10 2008/06/28 16:53:43 nilsson Exp $
 
 #pike 7.1
 
@@ -86,7 +86,7 @@ object master()
   return __REAL_VERSION__::master()->get_compat_master(7, 0);
 }
 
-static Mapping.ShadowedMapping compat_all_constants =
+protected Mapping.ShadowedMapping compat_all_constants =
   Mapping.ShadowedMapping(predef::all_constants(),
 			  ([
 			    "all_constants": all_constants,

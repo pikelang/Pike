@@ -12,7 +12,7 @@ string calendar_name() { return "ISO"; }
 
 #define WEEK_MAJORITY 4   
 
-private static mixed __initstuff=lambda()
+private protected mixed __initstuff=lambda()
 {
    f_week_day_shortname_from_number="week_day_shortname_from_number";
    f_week_day_name_from_number="week_day_name_from_number";
@@ -20,18 +20,18 @@ private static mixed __initstuff=lambda()
    f_week_day_number_from_name="week_day_number_from_name";
 }();
 
-static int compat_week_day(int n)
+protected int compat_week_day(int n)
 {
    return n%7;
 }
 
-static string year_name_from_number(int y)
+protected string year_name_from_number(int y)
 {
    if (y>0) return ""+y;
    else return (1-y)+" BC";
 }
 
-static array(int) week_from_julian_day(int jd)
+protected array(int) week_from_julian_day(int jd)
 {
 // [week-year,week,day-of-week,ndays,week-julian-day]
 
@@ -85,7 +85,7 @@ static array(int) week_from_julian_day(int jd)
    return ({y,w,1+(yjd+yday-1)%7,7,wjd});
 }
 
-static array(int) week_from_week(int y,int w)
+protected array(int) week_from_week(int y,int w)
 {
 // [year,week,1 (wd),ndays,week-julian-day]
 

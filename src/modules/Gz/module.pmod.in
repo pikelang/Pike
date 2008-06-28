@@ -1,4 +1,4 @@
-// $Id: module.pmod.in,v 1.16 2005/04/02 19:10:23 nilsson Exp $
+// $Id: module.pmod.in,v 1.17 2008/06/28 17:07:19 nilsson Exp $
 #pike __REAL_VERSION__
 
 inherit @module@;
@@ -8,18 +8,18 @@ inherit @module@;
 //! Low-level implementation of read/write support for GZip files
 class _file {
 
-  static private Stdio.Stream f;
-  static private inflate inf;
-  static private deflate def;
-  static private int level, strategy;
-  static private string read_buf;
-  static private int file_pos, crc, write_mode, at_eof;
+  protected private Stdio.Stream f;
+  protected private inflate inf;
+  protected private deflate def;
+  protected private int level, strategy;
+  protected private string read_buf;
+  protected private int file_pos, crc, write_mode, at_eof;
 
   constant SEEK_SET = 0;
   constant SEEK_CUR = 1;
   constant SEEK_END = 2;
 
-  static int check_header(string|void buf)
+  protected int check_header(string|void buf)
   {
     int magic1, magic2, method, flags, len;
 
@@ -72,7 +72,7 @@ class _file {
     return 1;    
   }
 
-  static int make_header()
+  protected int make_header()
   {
     return f->write(sprintf("%1c%1c%1c%1c%4c%1c%1c",
 			    0x1f, 0x8b, 8, 0, 0, 0, 3)) == 10;
@@ -123,7 +123,7 @@ class _file {
   }  
 
   //! Opens a gzip file for reading.
-  static void create(void|string|Stdio.Stream gzFile, void|string mode)
+  protected void create(void|string|Stdio.Stream gzFile, void|string mode)
   {
     if(!zero_type(gzFile) && !open(gzFile, mode))
       error("Failed to open file.\n");
@@ -149,7 +149,7 @@ class _file {
     return !oldf || oldf->close();
   }
 
-  static int fill_read_buffer(string|void data)
+  protected int fill_read_buffer(string|void data)
   {
     if(at_eof)
       return 0;
@@ -329,7 +329,7 @@ class File {
   //! mode for the file. Defaults to "rb".
   //! @seealso
   //!   @[open] @[Stdio.File]
-  static void create(mixed ... args) {
+  protected void create(mixed ... args) {
     ::create(@args);
 
     if(sizeof(args)) {
@@ -337,7 +337,7 @@ class File {
     }
   }
 
-  static string _sprintf(int t)
+  protected string _sprintf(int t)
   {
     switch(t) {
     case 'O':
@@ -355,7 +355,7 @@ class File {
     return ::close();
   }
 
-  static void destroy() {
+  protected void destroy() {
     close();
   }
 

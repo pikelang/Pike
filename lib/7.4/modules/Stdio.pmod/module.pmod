@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.5 2005/11/30 17:52:41 grubba Exp $
+// $Id: module.pmod,v 1.6 2008/06/28 16:54:21 nilsson Exp $
 #pike 7.5
 
 //! The life length of the Fd instance has changed. In newer versions
@@ -65,7 +65,7 @@ class File
       return ::pipe (required_properties);
   }
 
-  static void create(int|string... args)
+  protected void create(int|string... args)
   {
     ::create (@args);
     if (!sizeof (args)) _fd = 0;

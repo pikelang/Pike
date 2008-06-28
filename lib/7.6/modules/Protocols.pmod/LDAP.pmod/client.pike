@@ -1,4 +1,4 @@
-// $Id: client.pike,v 1.4 2007/10/08 19:11:26 grubba Exp $
+// $Id: client.pike,v 1.5 2008/06/28 16:54:40 nilsson Exp $
 
 #pike 7.7
 
@@ -8,7 +8,7 @@ class result
 {
   inherit orig_client::result;
 
-  static array decode_entries (array(object) rawres)
+  protected array decode_entries (array(object) rawres)
   {
     // The "dn" field wasn't correctly utf-8 decoded in 7.6 and
     // earlier, and older apps therefore might do that themselves.

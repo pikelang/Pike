@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.832 2008/06/28 15:07:33 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.833 2008/06/28 17:18:37 nilsson Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -948,7 +948,7 @@ test_do([[
     {
       int c;
       object foo;
-      static void create(object o)
+      protected void create(object o)
       {
 	foo = o;
 	c = count++;
@@ -988,7 +988,7 @@ test_do([[
       }) return err;
     }
 
-    static void create()
+    protected void create()
     {
       if (mixed err = eat_stack()) {
 	catch (err[1] = err[1][sizeof (err[1]) - 50..]);
@@ -1710,7 +1710,7 @@ test_any([[
 ]],17)
 
 test_compile_error([[
-  static function foo(string ...:object);
+  protected function foo(string ...:object);
   int bar()
   {
     return 17;
@@ -1892,8 +1892,8 @@ test_any([[ class X { int y; class Z { void destroy() { y++; } } }; X x=X(); des
 
 test_eval_error([[ class Z { int destroy() { return 1/y; } }(); ]])
 
-test_any([[ class X { int y; class Z { static void destroy() { y++; } } }; X x=X(); destruct(x->Z()); return x->y;]],1)
-test_any([[ class X { int y; class Z { static void create() { y++; } } }; X x=X(); destruct(x->Z()); return x->y;]],1)
+test_any([[ class X { int y; class Z { protected void destroy() { y++; } } }; X x=X(); destruct(x->Z()); return x->y;]],1)
+test_any([[ class X { int y; class Z { protected void create() { y++; } } }; X x=X(); destruct(x->Z()); return x->y;]],1)
 
 cond([[all_constants()->_debug]],
 [[
@@ -1952,7 +1952,7 @@ dnl test_backtrace_line_charset(utf-7)
 test_program([[
   class X
   {
-    static void create (int i)
+    protected void create (int i)
     {
       if (i)
 	error ("foo\n"); // Line 7
@@ -2617,7 +2617,7 @@ test_any([[
     int foo = gurka;
   };
   class B {
-    static inherit A;
+    protected inherit A;
     constant gurka = 1;
     int bar;
 
@@ -2632,7 +2632,7 @@ test_any([[
     int foo = gurka;
   };
   class B {
-    static inherit A;
+    protected inherit A;
     constant gurka = 1;
     int bar;
     int baz = 3;
@@ -2652,8 +2652,8 @@ test_any([[
     int foo = banan;
   };
   class C {
-    static inherit A;
-    static inherit B;
+    protected inherit A;
+    protected inherit B;
     constant gurka = 3;
     constant banan = 4;
     int bar;
@@ -3163,22 +3163,22 @@ test_compile_any([[
 
 
 test_compile_any([[
-  class X { static void hej() {} }
+  class X { protected void hej() {} }
   class Y { inherit X:banan; void hopp() { ::hej(); } }
 ]])
 
 test_compile_any([[
-  class X { static void hej() {} }
+  class X { protected void hej() {} }
   class Y { inherit X; void hopp() { X::hej(); } }
 ]])
 
 test_compile_any([[
-  class X { static void hej() {} }
+  class X { protected void hej() {} }
   class Y { public inherit X:banan; void hopp() { banan::hej(); } }
 ]])
 
 test_compile_any([[
-  class X { static void hej() {} }
+  class X { protected void hej() {} }
   class Y { inherit X:banan; void hopp() { banan::hej(); } }
 ]])
 
@@ -3583,16 +3583,16 @@ test_any([[
 test_any([[
   // Triggered fatal error "Getter/setter variable outside program!".
   class X {
-    static int xx;
+    protected int xx;
     int `->x() { return xx; }
     void `->x=(int xxx) { xx = xxx; }
-    static void create(int xxx) {
+    protected void create(int xxx) {
       x = xxx;
     }
   };
   class Y {
     inherit X;
-    static void create(int yyy) {
+    protected void create(int yyy) {
       X:x = yyy + 2;
     }
   };
@@ -3644,14 +3644,14 @@ cond([[ 0 ]], [[
 
 test_compile_warning([[
   class X {
-    static int `->x() { return 0; }
+    protected int `->x() { return 0; }
     private void `->x=(int x) { }
   };
 ]])
 
 test_compile_warning([[
   class X {
-    static int `->x() { return 0; }
+    protected int `->x() { return 0; }
     void `->x=(int x) { }
   };
 ]])
@@ -3704,9 +3704,9 @@ cond(0,[[
 
 test_any([[
 class X {
- static string f() { return "p"; }
- static class gazonk { void create() { f(); }};
-  static class g { object e() { return gazonk(); }};
+ protected string f() { return "p"; }
+ protected class gazonk { void create() { f(); }};
+  protected class g { object e() { return gazonk(); }};
  void create() { g()->e(); }}; return objectp(X()); ]],1)
 test_any([[class A { int x=1; }; class B { protected inherit A; int foo() { return A::x; }}; return A()->x && !B()->x && B()->foo()==A()->x;]],1)
 test_any([[class C { int q() { return p(); } int p() { return 17; }}; return C()->q();]],17)
@@ -3725,8 +3725,8 @@ test_any([[class x { inherit GURKA2.bar; }(); return GURKA2->c;]],17)
 test_any([[class x { inherit GURKA2.bar; }(); return GURKA2->c;]],34)
 test_do([[add_constant("GURKA2");]]);
 
-test_eq(class { static int foo=17; }()->foo,0)
-test_eval_error(class c { static int foo=17; }()->foo=18;)
+test_eq(class { protected int foo=17; }()->foo,0)
+test_eval_error(class c { protected int foo=17; }()->foo=18;)
 test_equal( [[ ({ (["foo":"bar"]), (<"foo">), ([]) })->foo ]], [[ ({"bar",1,0}) ]])
 test_any([[mixed a=({([]),0}); a[1]=a; return a->foo[0];]],0)
 test_eval_error([[return column(({0}),"foo");]])
@@ -4093,6 +4093,7 @@ test_true(class c { mixed `[]=(mixed a, mixed b) { if(a!=b) throw(1); }}()[1]=1)
 test_true(class c { mixed `->=(mixed a, mixed b) { if(a!=b) throw(1); }}()->i="i")
 
 test_eq((["static":42])->static,42)
+test_eq((["protected":42])->protected,42)
 
 test_compile_any(class A {}; class B { inherit A; })
 
@@ -5232,7 +5233,7 @@ test_any([[
 	class Foo
 	{
 	  object foo;
-	  static void create(object o) {foo = o;}
+	  protected void create(object o) {foo = o;}
 	};
 	Foo foo;
 	for(int i=0; i < 10000; i++)
@@ -6719,11 +6720,11 @@ test_eq(class c { program foo=class c { int i=20; }; }()->foo()->i,20)
 
 // class()
 test_true(programp(class c(){}))
-test_equal(indices(class c(string a,static int b){}("foo",0)), ({"a"}))
-test_equal(values(class c(string a,static int b){}("foo",0)), ({"foo"}))
+test_equal(indices(class c(string a,protected int b){}("foo",0)), ({"a"}))
+test_equal(values(class c(string a,protected int b){}("foo",0)), ({"foo"}))
 test_true(programp(class c(string ... a){}))
-test_equal(indices(class c(string a,static int ... b){}("foo",0)), ({"a"}))
-test_equal(values(class c(static string a, int ... b){}("foo",0)), ({({0})}))
+test_equal(indices(class c(string a,protected int ... b){}("foo",0)), ({"a"}))
+test_equal(values(class c(protected string a, int ... b){}("foo",0)), ({({0})}))
 
 test_do([[
   class A (int i) {};
@@ -11378,9 +11379,9 @@ dnl test_compile_error_any(class A {mixed v;} class B {inherit A; int v;})
 dnl test_compile_error_any(class A {public int v;} class B {inherit A; mixed v;})
 dnl test_compile_error_any(class A { public { int v; } } class B {inherit A; mixed v;})
 dnl test_compile_error_any(class A {public mixed v;} class B {inherit A; int v;})
-test_compile_error_any(class A {static int v;} class B {inherit A; float v;})
-dnl test_compile_error_any(class A {static int v;} class B {inherit A; mixed v;})
-dnl test_compile_error_any(class A {static mixed v;} class B {inherit A; int v;})
+test_compile_error_any(class A {protected int v;} class B {inherit A; float v;})
+dnl test_compile_error_any(class A {protected int v;} class B {inherit A; mixed v;})
+dnl test_compile_error_any(class A {protected mixed v;} class B {inherit A; int v;})
 test_compile_any(class A {private int v; int q=v;} class B {inherit A; float v;})
 dnl test_compile_any(class A {private int v; int q=v;} class B {inherit A; mixed v;})
 dnl test_compile_any(class A {private mixed v; mixed q=v;} class B {inherit A; int v;})
@@ -11410,7 +11411,7 @@ test_compile_error_any(class A {nomask int f(){}} class B {inherit A; nomask int
 
 test_compile_warning(class A {int v;}; class B {inherit A; int v(){}})
 test_compile_warning(class A {public int v;}; class B {inherit A; int v(){}})
-test_compile_warning(class A {static int v;}; class B {inherit A; int v(){}})
+test_compile_warning(class A {protected int v;}; class B {inherit A; int v(){}})
 test_compile_any(class A {private int v; int q=v;} class B {inherit A; int v(){}})
 test_compile_error_any(class A {final int v;} class B {inherit A; int v(){}})
 test_compile_error_any(class A {nomask int v;} class B {inherit A; int v(){}})
@@ -11419,7 +11420,7 @@ test_compile_any(class A {inline int v;} class B {inherit A; int v(){}})
 
 test_compile_error_any(class A {int f(){}} class B {inherit A; int f;})
 test_compile_error_any(class A {public int f(){}} class B {inherit A; int f;})
-test_compile_error_any(class A {static int f(){}} class B {inherit A; int f;})
+test_compile_error_any(class A {protected int f(){}} class B {inherit A; int f;})
 test_compile_any(class A {private int f(){} int q=f();} class B {inherit A; int f;})
 test_compile_error_any(class A {final int f(){}} class B {inherit A; int f;})
 test_compile_error_any(class A {nomask int f(){}} class B {inherit A; int f;})
@@ -11464,7 +11465,7 @@ test_compile_any(
 test_compile_error_any(class A {} class B {inherit A; int q; void g(){q=v;}})
 test_compile_any(class A {int v;} class B {inherit A; int q; void g(){q=v;}})
 test_compile_any(class A {public int v;} class B {inherit A; int q; void g(){q=v;}})
-test_compile_any(class A {static int v;} class B {inherit A; int q; void g(){q=v;}})
+test_compile_any(class A {protected int v;} class B {inherit A; int q; void g(){q=v;}})
 test_compile_error_any(class A {private int v; int q=v;} class B {inherit A; int q; void g(){q=v;}})
 test_compile_any(class A {final int v;} class B {inherit A; int q; void g(){q=v;}})
 test_compile_any(
@@ -11474,7 +11475,7 @@ test_compile_any(class A {local int v;} class B {inherit A; int q; void g(){q=v;
 test_compile_any(class A {inline int v;} class B {inherit A; int q; void g(){q=v;}})
 test_compile_any(class A {int f(){}} class B {inherit A; void g(){f();}})
 test_compile_any(class A {public int f(){}} class B {inherit A; void g(){f();}})
-test_compile_any(class A {static int f(){}} class B {inherit A; void g(){f();}})
+test_compile_any(class A {protected int f(){}} class B {inherit A; void g(){f();}})
 test_compile_error_any(class A {private int f(){} int q=f();} class B {inherit A; void g(){f();}})
 test_compile_any(class A {final int f(){}} class B {inherit A; void g(){f();}})
 test_compile_any(
@@ -11484,7 +11485,7 @@ test_compile_any(class A {local int f(){}} class B {inherit A; void g(){f();}})
 test_compile_any(class A {inline int f(){}} class B {inherit A; void g(){f();}})
 
 test_compile_any(class A {int v;} class B {public inherit A; int q; void g(){q=v;}})
-test_compile_any(class A {int v;} class B {static inherit A; int q; void g(){q=v;}})
+test_compile_any(class A {int v;} class B {protected inherit A; int q; void g(){q=v;}})
 test_compile_any(class A {int v;} class B {private inherit A; int q; void g(){q=v;}})
 test_compile_any(class A {int v;} class B {final inherit A; int q; void g(){q=v;}})
 test_compile_any(
@@ -11493,7 +11494,7 @@ class A {int v;} class B {nomask inherit A; int q; void g(){q=v;}})
 test_compile_any(class A {int v;} class B {local inherit A; int q; void g(){q=v;}})
 test_compile_any(class A {int v;} class B {inline inherit A; int q; void g(){q=v;}})
 test_compile_any(class A {int f(){}} class B {public inherit A; void g(){f();}})
-test_compile_any(class A {int f(){}} class B {static inherit A; void g(){f();}})
+test_compile_any(class A {int f(){}} class B {protected inherit A; void g(){f();}})
 test_compile_any(class A {int f(){}} class B {private inherit A; void g(){f();}})
 test_compile_any(class A {int f(){}} class B {final inherit A; void g(){f();}})
 test_compile_any(
@@ -11505,7 +11506,7 @@ test_compile_any(class A {int f(){}} class B {inline inherit A; void g(){f();}})
 test_compile_error_any(class A {} class B {inherit A; int q; void g(){q=A::v;}})
 test_compile_any(class A {int v;} class B {inherit A; int q; void g(){q=A::v;}})
 test_compile_any(class A {public int v;} class B {inherit A; int q; void g(){q=A::v;}})
-test_compile_any(class A {static int v;} class B {inherit A; int q; void g(){q=A::v;}})
+test_compile_any(class A {protected int v;} class B {inherit A; int q; void g(){q=A::v;}})
 test_compile_error_any(class A {private int v; int q=v;} class B {inherit A; int q; void g(){q=A::v;}})
 test_compile_any(class A {final int v;} class B {inherit A; int q; void g(){q=A::v;}})
 test_compile_any(
@@ -11515,7 +11516,7 @@ test_compile_any(class A {local int v;} class B {inherit A; int q; void g(){q=A:
 test_compile_any(class A {inline int v;} class B {inherit A; int q; void g(){q=A::v;}})
 test_compile_any(class A {int f(){}} class B {inherit A; void g(){A::f();}})
 test_compile_any(class A {public int f(){}} class B {inherit A; void g(){A::f();}})
-test_compile_any(class A {static int f(){}} class B {inherit A; void g(){A::f();}})
+test_compile_any(class A {protected int f(){}} class B {inherit A; void g(){A::f();}})
 test_compile_error_any(class A {private int f(){} int q=f();} class B {inherit A; void g(){A::f();}})
 test_compile_any(class A {final int f(){}} class B {inherit A; void g(){A::f();}})
 test_compile_any(
@@ -11525,7 +11526,7 @@ test_compile_any(class A {local int f(){}} class B {inherit A; void g(){A::f();}
 test_compile_any(class A {inline int f(){}} class B {inherit A; void g(){A::f();}})
 
 test_compile_any(class A {int v;} class B {public inherit A; int q; void g(){q=A::v;}})
-test_compile_any(class A {int v;} class B {static inherit A; int q; void g(){q=A::v;}})
+test_compile_any(class A {int v;} class B {protected inherit A; int q; void g(){q=A::v;}})
 test_compile_any(class A {int v;} class B {private inherit A; int q; void g(){q=A::v;}})
 test_compile_any(class A {int v;} class B {final inherit A; int q; void g(){q=A::v;}})
 test_compile_any(
@@ -11534,7 +11535,7 @@ class A {int v;} class B {nomask inherit A; int q; void g(){q=A::v;}})
 test_compile_any(class A {int v;} class B {local inherit A; int q; void g(){q=A::v;}})
 test_compile_any(class A {int v;} class B {inline inherit A; int q; void g(){q=A::v;}})
 test_compile_any(class A {int f(){}} class B {public inherit A; void g(){A::f();}})
-test_compile_any(class A {int f(){}} class B {static inherit A; void g(){A::f();}})
+test_compile_any(class A {int f(){}} class B {protected inherit A; void g(){A::f();}})
 test_compile_any(class A {int f(){}} class B {private inherit A; void g(){A::f();}})
 test_compile_any(class A {int f(){}} class B {final inherit A; void g(){A::f();}})
 test_compile_any(
@@ -11546,7 +11547,7 @@ test_compile_any(class A {int f(){}} class B {inline inherit A; void g(){A::f();
 test_compile_error_any(class A {} class B {inherit A;} class C {inherit B; int q; void g(){q=B::v;}})
 test_compile_any(class A {int v;} class B {inherit A;} class C {inherit B; int q; void g(){q=B::v;}})
 test_compile_any(class A {int v;} class B {public inherit A;} class C {inherit B; int q; void g(){q=B::v;}})
-test_compile_any(class A {int v;} class B {static inherit A;} class C {inherit B; int q; void g(){q=B::v;}})
+test_compile_any(class A {int v;} class B {protected inherit A;} class C {inherit B; int q; void g(){q=B::v;}})
 test_compile_error_any(class A {int v;} class B {private inherit A;} class C {inherit B; int q; void g(){q=B::v;}})
 test_compile_any(class A {int v;} class B {final inherit A;} class C {inherit B; int q; void g(){q=B::v;}})
 test_compile_any(
@@ -11556,7 +11557,7 @@ test_compile_any(class A {int v;} class B {local inherit A;} class C {inherit B;
 test_compile_any(class A {int v;} class B {inline inherit A;} class C {inherit B; int q; void g(){q=B::v;}})
 test_compile_any(class A {int f(){}} class B {inherit A;} class C {inherit B; void g(){B::f();}})
 test_compile_any(class A {int f(){}} class B {public inherit A;} class C {inherit B; void g(){B::f();}})
-test_compile_any(class A {int f(){}} class B {static inherit A;} class C {inherit B; void g(){B::f();}})
+test_compile_any(class A {int f(){}} class B {protected inherit A;} class C {inherit B; void g(){B::f();}})
 test_compile_error_any(class A {int f(){}} class B {private inherit A;} class C {inherit B; void g(){B::f();}})
 test_compile_any(class A {int f(){}} class B {final inherit A;} class C {inherit B; void g(){B::f();}})
 test_compile_any(
@@ -11570,7 +11571,7 @@ test_compile_any(class A {int f(){}} class B {inline inherit A;} class C {inheri
 test_eval_error(return class {}()->f())
 test_do(class {int f(){}}()->f())
 test_do(class {public int f(){}}()->f())
-test_eval_error(return class {static int f(){}}()->f())
+test_eval_error(return class {protected int f(){}}()->f())
 test_eval_error(return class {private int f(){} int q=f();}()->f())
 test_do(class {final int f(){}}()->f())
 test_do(
@@ -11580,7 +11581,7 @@ test_do(class {local int f(){}}()->f())
 test_do(class {inline int f(){}}()->f())
 test_do(class {class A {}}()->A())
 test_do(class {public class A {}}()->A())
-test_eval_error(return class {static class A {}}()->A())
+test_eval_error(return class {protected class A {}}()->A())
 test_eval_error(return class {private class A {} object q=A();}()->A())
 test_do(class {final class A {}}()->A())
 test_do(
@@ -11592,8 +11593,8 @@ test_do(class {inline class A {}}()->A())
 test_equal(indices(class {}()), ({}))
 test_equal(indices(class {int v;}()), ({"v"}))
 test_equal(indices(class {public int v;}()), ({"v"}))
-test_equal(indices(class {static int v;}()), ({}))
-test_equal(indices(class {private int v; static int q=v;}()), ({}))
+test_equal(indices(class {protected int v;}()), ({}))
+test_equal(indices(class {private int v; protected int q=v;}()), ({}))
 test_equal(indices(class {final int v;}()), ({"v"}))
 test_equal(
 #pragma no_deprecation_warnings
@@ -11602,8 +11603,8 @@ test_equal(indices(class {local int v;}()), ({"v"}))
 test_equal(indices(class {inline int v;}()), ({"v"}))
 test_equal(indices(class {int f(){}}()), ({"f"}))
 test_equal(indices(class {public int f(){}}()), ({"f"}))
-test_equal(indices(class {static int f(){}}()), ({}))
-test_equal(indices(class {private int f(){} static int q=f();}()), ({}))
+test_equal(indices(class {protected int f(){}}()), ({}))
+test_equal(indices(class {private int f(){} protected int q=f();}()), ({}))
 test_equal(indices(class {final int f(){}}()), ({"f"}))
 test_equal(
 #pragma no_deprecation_warnings
@@ -11614,8 +11615,8 @@ test_equal(indices(class {inline int f(){}}()), ({"f"}))
 test_equal(indices(class {class A {} class B {inherit A;}}()->B()), ({}))
 test_equal(indices(class {class A {int v;} class B {inherit A;}}()->B()), ({"v"}))
 test_equal(indices(class {class A {public int v;} class B {inherit A;}}()->B()), ({"v"}))
-test_equal(indices(class {class A {static int v;} class B {inherit A;}}()->B()), ({}))
-test_equal(indices(class {class A {private int v; static int q=v;} class B {inherit A;}}()->B()), ({}))
+test_equal(indices(class {class A {protected int v;} class B {inherit A;}}()->B()), ({}))
+test_equal(indices(class {class A {private int v; protected int q=v;} class B {inherit A;}}()->B()), ({}))
 test_equal(indices(class {class A {final int v;} class B {inherit A;}}()->B()), ({"v"}))
 test_equal(
 #pragma no_deprecation_warnings
@@ -11624,8 +11625,8 @@ test_equal(indices(class {class A {local int v;} class B {inherit A;}}()->B()), 
 test_equal(indices(class {class A {inline int v;} class B {inherit A;}}()->B()), ({"v"}))
 test_equal(indices(class {class A {int f(){}} class B {inherit A;}}()->B()), ({"f"}))
 test_equal(indices(class {class A {public int f(){}} class B {inherit A;}}()->B()), ({"f"}))
-test_equal(indices(class {class A {static int f(){}} class B {inherit A;}}()->B()), ({}))
-test_equal(indices(class {class A {private int f(){} static int q=f();} class B {inherit A;}}()->B()), ({}))
+test_equal(indices(class {class A {protected int f(){}} class B {inherit A;}}()->B()), ({}))
+test_equal(indices(class {class A {private int f(){} protected int q=f();} class B {inherit A;}}()->B()), ({}))
 test_equal(indices(class {class A {final int f(){}} class B {inherit A;}}()->B()), ({"f"}))
 test_equal(
 #pragma no_deprecation_warnings
@@ -11634,7 +11635,7 @@ test_equal(indices(class {class A {local int f(){}} class B {inherit A;}}()->B()
 test_equal(indices(class {class A {inline int f(){}} class B {inherit A;}}()->B()), ({"f"}))
 
 test_equal(indices(class {class A {int v;} class B {public inherit A;}}()->B()), ({"v"}))
-test_equal(indices(class {class A {int v;} class B {static inherit A;}}()->B()), ({}))
+test_equal(indices(class {class A {int v;} class B {protected inherit A;}}()->B()), ({}))
 test_equal(indices(class {class A {int v;} class B {private inherit A;}}()->B()), ({}))
 test_equal(indices(class {class A {int v;} class B {final inherit A;}}()->B()), ({"v"}))
 test_equal(
@@ -11643,7 +11644,7 @@ indices(class {class A {int v;} class B {nomask inherit A;}}()->B()), ({"v"}))
 test_equal(indices(class {class A {int v;} class B {local inherit A;}}()->B()), ({"v"}))
 test_equal(indices(class {class A {int v;} class B {inline inherit A;}}()->B()), ({"v"}))
 test_equal(indices(class {class A {int f(){}} class B {public inherit A;}}()->B()), ({"f"}))
-test_equal(indices(class {class A {int f(){}} class B {static inherit A;}}()->B()), ({}))
+test_equal(indices(class {class A {int f(){}} class B {protected inherit A;}}()->B()), ({}))
 test_equal(indices(class {class A {int f(){}} class B {private inherit A;}}()->B()), ({}))
 test_equal(indices(class {class A {int f(){}} class B {final inherit A;}}()->B()), ({"f"}))
 test_equal(
@@ -11655,7 +11656,7 @@ test_equal(indices(class {class A {int f(){}} class B {inline inherit A;}}()->B(
 test_equal(indices(class {class A {} class B {inherit A;} class C {inherit B;}}()->C()), ({}))
 test_equal(indices(class {class A {int v;} class B {inherit A;} class C {inherit B;}}()->C()), ({"v"}))
 test_equal(indices(class {class A {int v;} class B {public inherit A;} class C {inherit B;}}()->C()), ({"v"}))
-test_equal(indices(class {class A {int v;} class B {static inherit A;} class C {inherit B;}}()->C()), ({}))
+test_equal(indices(class {class A {int v;} class B {protected inherit A;} class C {inherit B;}}()->C()), ({}))
 test_equal(indices(class {class A {int v;} class B {private inherit A;} class C {inherit B;}}()->C()), ({}))
 test_equal(indices(class {class A {int v;} class B {final inherit A;} class C {inherit B;}}()->C()), ({"v"}))
 test_equal(
@@ -11665,7 +11666,7 @@ test_equal(indices(class {class A {int v;} class B {local inherit A;} class C {i
 test_equal(indices(class {class A {int v;} class B {inline inherit A;} class C {inherit B;}}()->C()), ({"v"}))
 test_equal(indices(class {class A {int f(){}} class B {inherit A;} class C {inherit B;}}()->C()), ({"f"}))
 test_equal(indices(class {class A {int f(){}} class B {public inherit A;} class C {inherit B;}}()->C()), ({"f"}))
-test_equal(indices(class {class A {int f(){}} class B {static inherit A;} class C {inherit B;}}()->C()), ({}))
+test_equal(indices(class {class A {int f(){}} class B {protected inherit A;} class C {inherit B;}}()->C()), ({}))
 test_equal(indices(class {class A {int f(){}} class B {private inherit A;} class C {inherit B;}}()->C()), ({}))
 test_equal(indices(class {class A {int f(){}} class B {final inherit A;} class C {inherit B;}}()->C()), ({"f"}))
 test_equal(
@@ -11677,7 +11678,7 @@ test_equal(indices(class {class A {int f(){}} class B {inline inherit A;} class 
 test_any([[
 #pike 7.6
   class Y {
-    static object x = class X {}();
+    protected object x = class X {}();
   };
   return has_index (Y(), "X");
 ]], 1)
@@ -11686,7 +11687,7 @@ test_any([[
 
 test_any(class A {int v=1;}; class B {inherit A; int v=2; int t(){return v;}}; return B()->t(), 2)
 test_any(class A {public int v=1;}; class B {inherit A; int v=2; int t(){return v;}}; return B()->t(), 2)
-test_any(class A {static int v=1;}; class B {inherit A; int v=2; int t(){return v;}}; return B()->t(), 2)
+test_any(class A {protected int v=1;}; class B {inherit A; int v=2; int t(){return v;}}; return B()->t(), 2)
 test_any(class A {private int v=1;}; class B {inherit A; int v=2; int t(){return v;}}; return B()->t(), 2)
 test_compile_error_any(class A {final int v=1;}; class B {inherit A; int v=2;};)
 test_compile_error_any(
@@ -11696,7 +11697,7 @@ test_any(class A {local int v=1;}; class B {inherit A; int v=2; int t(){return v
 test_any(class A {inline int v=1;}; class B {inherit A; int v=2; int t(){return v;}}; return B()->t(), 2)
 test_any(class A {int f(){return 1;}}; class B {inherit A; int f(){return 2;} int t(){return f();}}; return B()->t(), 2)
 test_any(class A {public int f(){return 1;}}; class B {inherit A; int f(){return 2;} int t(){return f();}}; return B()->t(), 2)
-test_any(class A {static int f(){return 1;}}; class B {inherit A; int f(){return 2;} int t(){return f();}}; return B()->t(), 2)
+test_any(class A {protected int f(){return 1;}}; class B {inherit A; int f(){return 2;} int t(){return f();}}; return B()->t(), 2)
 test_any(class A {private int f(){return 1;} int q=f();}; class B {inherit A; int f(){return 2;} int t(){return f();}}; return B()->t(), 2)
 test_compile_error_any(class A {final int f(){return 1;}}; class B {inherit A; int f(){return 2;}};)
 test_compile_error_any(
@@ -11706,7 +11707,7 @@ test_any(class A {local int f(){return 1;}}; class B {inherit A; int f(){return 
 test_any(class A {inline int f(){return 1;}}; class B {inherit A; int f(){return 2;} int t(){return f();}}; return B()->t(), 2)
 
 test_any(class A {int v=1;}; class B {public inherit A; int v=2; int t(){return v;}}; return B()->t(), 2)
-test_any(class A {int v=1;}; class B {static inherit A; int v=2; int t(){return v;}}; return B()->t(), 2)
+test_any(class A {int v=1;}; class B {protected inherit A; int v=2; int t(){return v;}}; return B()->t(), 2)
 test_any(class A {int v=1;}; class B {private inherit A; int v=2; int t(){return v;}}; return B()->t(), 2)
 test_compile_error_any(class A {int v=1;}; class B {final inherit A; int v=2;};)
 test_compile_error_any(
@@ -11715,7 +11716,7 @@ class A {int v=1;}; class B {nomask inherit A; int v=2;};)
 test_any(class A {int v=1;}; class B {local inherit A; int v=2; int t(){return v;}}; return B()->t(), 2)
 test_any(class A {int v=1;}; class B {inline inherit A; int v=2; int t(){return v;}}; return B()->t(), 2)
 test_any(class A {int f(){return 1;}}; class B {public inherit A; int f(){return 2;} int t(){return f();}}; return B()->t(), 2)
-test_any(class A {int f(){return 1;}}; class B {static inherit A; int f(){return 2;} int t(){return f();}}; return B()->t(), 2)
+test_any(class A {int f(){return 1;}}; class B {protected inherit A; int f(){return 2;} int t(){return f();}}; return B()->t(), 2)
 test_any(class A {int f(){return 1;}}; class B {private inherit A; int f(){return 2;} int t(){return f();}}; return B()->t(), 2)
 test_compile_error_any(class A {int f(){return 1;}}; class B {final inherit A; int f(){return 2;}};)
 test_compile_error_any(
@@ -11726,7 +11727,7 @@ test_any(class A {int f(){return 1;}}; class B {inline inherit A; int f(){return
 
 test_any(class A {int v=1;}; class B {inherit A; int v=2; int t(){return v;}}; return B()->t(), 2)
 test_any(class A {int v=1;}; class B {inherit A; public int v=2; int t(){return v;}}; return B()->t(), 2)
-test_any(class A {int v=1;}; class B {inherit A; static int v=2; int t(){return v;}}; return B()->t(), 2)
+test_any(class A {int v=1;}; class B {inherit A; protected int v=2; int t(){return v;}}; return B()->t(), 2)
 test_any(class A {int v=1;}; class B {inherit A; private int v=2; int t(){return v;}}; return B()->t(), 2)
 test_any(class A {int v=1;}; class B {inherit A; final int v=2; int t(){return v;}}; return B()->t(), 2)
 test_any(
@@ -11736,7 +11737,7 @@ test_any(class A {int v=1;}; class B {inherit A; local int v=2; int t(){return v
 test_any(class A {int v=1;}; class B {inherit A; inline int v=2; int t(){return v;}}; return B()->t(), 2)
 test_any(class A {int f(){return 1;}}; class B {inherit A; int f(){return 2;} int t(){return f();}}; return B()->t(), 2)
 test_any(class A {int f(){return 1;}}; class B {inherit A; public int f(){return 2;} int t(){return f();}}; return B()->t(), 2)
-test_any(class A {int f(){return 1;}}; class B {inherit A; static int f(){return 2;} int t(){return f();}}; return B()->t(), 2)
+test_any(class A {int f(){return 1;}}; class B {inherit A; protected int f(){return 2;} int t(){return f();}}; return B()->t(), 2)
 test_any(class A {int f(){return 1;}}; class B {inherit A; private int f(){return 2;} int t(){return f();}}; return B()->t(), 2)
 test_any(class A {int f(){return 1;}}; class B {inherit A; final int f(){return 2;} int t(){return f();}}; return B()->t(), 2)
 test_any(
@@ -11748,13 +11749,13 @@ test_any(class A {int f(){return 1;}}; class B {inherit A; inline int f(){return
 
 test_any(class A {int v=1; int t(){return v;}}; class B {inherit A; int v=2;}; return B()->t(), 2)
 test_any(class A {public int v=1; int t(){return v;}}; class B {inherit A; int v=2;}; return B()->t(), 2)
-test_any(class A {static int v=1; int t(){return v;}}; class B {inherit A; int v=2;}; return B()->t(), 2)
+test_any(class A {protected int v=1; int t(){return v;}}; class B {inherit A; int v=2;}; return B()->t(), 2)
 test_any(class A {private int v=1; int t(){return v;}}; class B {inherit A; int v=2;}; return B()->t(), 1)
 test_any(class A {local int v=1; int t(){return v;}}; class B {inherit A; int v=2;}; return B()->t(), 1)
 test_any(class A {inline int v=1; int t(){return v;}}; class B {inherit A; int v=2;}; return B()->t(), 1)
 test_any(class A {int f(){return 1;} int t(){return f();}}; class B {inherit A; int f(){return 2;}}; return B()->t(), 2)
 test_any(class A {public int f(){return 1;} int t(){return f();}}; class B {inherit A; int f(){return 2;}}; return B()->t(), 2)
-test_any(class A {static int f(){return 1;} int t(){return f();}}; class B {inherit A; int f(){return 2;}}; return B()->t(), 2)
+test_any(class A {protected int f(){return 1;} int t(){return f();}}; class B {inherit A; int f(){return 2;}}; return B()->t(), 2)
 test_any(class A {private int f(){return 1;} int t(){return f();}}; class B {inherit A; int f(){return 2;}}; return B()->t(), 1)
 test_any(class A {local int f(){return 1;} int t(){return f();}}; class B {inherit A; int f(){return 2;}}; return B()->t(), 1)
 test_any(class A {int f(){return 1;} int t(){return local::f();}}; class B {inherit A; int f(){return 2;}}; return B()->t(), 1)
@@ -11762,13 +11763,13 @@ test_any(class A {inline int f(){return 1;} int t(){return f();}}; class B {inhe
 
 test_any(class A {int v=1; int t(){return v;}}; class B {inherit A; int v=2; int t(){return A::t();}}; return B()->t(), 2)
 test_any(class A {int v=1; int t(){return v;}}; class B {public inherit A; int v=2; int t(){return A::t();}}; return B()->t(), 2)
-test_any(class A {int v=1; int t(){return v;}}; class B {static inherit A; int v=2; int t(){return A::t();}}; return B()->t(), 2)
+test_any(class A {int v=1; int t(){return v;}}; class B {protected inherit A; int v=2; int t(){return A::t();}}; return B()->t(), 2)
 test_any(class A {int v=1; int t(){return v;}}; class B {private inherit A; int v=2; int t(){return A::t();}}; return B()->t(), 2)
 test_any(class A {int v=1; int t(){return v;}}; class B {local inherit A; int v=2; int t(){return A::t();}}; return B()->t(), 1)
 test_any(class A {int v=1; int t(){return v;}}; class B {inline inherit A; int v=2; int t(){return A::t();}}; return B()->t(), 1)
 test_any(class A {int f(){return 1;} int t(){return f();}}; class B {inherit A; int f(){return 2;} int t(){return A::t();}}; return B()->t(), 2)
 test_any(class A {int f(){return 1;} int t(){return f();}}; class B {public inherit A; int f(){return 2;} int t(){return A::t();}}; return B()->t(), 2)
-test_any(class A {int f(){return 1;} int t(){return f();}}; class B {static inherit A; int f(){return 2;} int t(){return A::t();}}; return B()->t(), 2)
+test_any(class A {int f(){return 1;} int t(){return f();}}; class B {protected inherit A; int f(){return 2;} int t(){return A::t();}}; return B()->t(), 2)
 test_any(class A {int f(){return 1;} int t(){return f();}}; class B {private inherit A; int f(){return 2;} int t(){return A::t();}}; return B()->t(), 2)
 test_any(class A {int f(){return 1;} int t(){return f();}}; class B {local inherit A; int f(){return 2;} int t(){return A::t();}}; return B()->t(), 1)
 test_any(class A {int f(){return 1;} int t(){return f();}}; class B {inline inherit A; int f(){return 2;} int t(){return A::t();}}; return B()->t(), 1)
@@ -11786,7 +11787,7 @@ test_any([[
   object c=C(); return c->a()+c->b()+c->c();
 ]], 0x021)
 test_any([[
-  class A {int v=0x100; int a(){return v;}}; class B {inherit A; static int v=0x010; int b(){return v;}}; class C {inherit B; int v=0x001; int c(){return v;}};
+  class A {int v=0x100; int a(){return v;}}; class B {inherit A; protected int v=0x010; int b(){return v;}}; class C {inherit B; int v=0x001; int c(){return v;}};
   object c=C(); return c->a()+c->b()+c->c();
 ]], 0x003)
 test_any([[
@@ -11802,30 +11803,30 @@ test_any([[
 
 test_any(class A {int v=1;}; class B {inherit A; int v=2;}; return B()->v, 2)
 test_any(class A {public int v=1;}; class B {inherit A; int v=2;}; return B()->v, 2)
-test_any(class A {static int v=1;}; class B {inherit A; int v=2;}; return B()->v, 2)
+test_any(class A {protected int v=1;}; class B {inherit A; int v=2;}; return B()->v, 2)
 test_any(class A {private int v=1;}; class B {inherit A; int v=2;}; return B()->v, 2)
 test_any(class A {local int v=1;}; class B {inherit A; int v=2;}; return B()->v, 2)
 test_any(class A {inline int v=1;}; class B {inherit A; int v=2;}; return B()->v, 2)
 test_any(class A {int f(){return 1;}}; class B {inherit A; int f(){return 2;}}; return B()->f(), 2)
 test_any(class A {public int f(){return 1;}}; class B {inherit A; int f(){return 2;}}; return B()->f(), 2)
-test_any(class A {static int f(){return 1;}}; class B {inherit A; int f(){return 2;}}; return B()->f(), 2)
+test_any(class A {protected int f(){return 1;}}; class B {inherit A; int f(){return 2;}}; return B()->f(), 2)
 test_any(class A {private int f(){return 1;} int q=f();}; class B {inherit A; int f(){return 2;}}; return B()->f(), 2)
 test_any(class A {local int f(){return 1;}}; class B {inherit A; int f(){return 2;}}; return B()->f(), 2)
 test_any(class A {inline int f(){return 1;}}; class B {inherit A; int f(){return 2;}}; return B()->f(), 2)
 
 test_any(class A {int v=1;}; class B {public inherit A; int v=2;}; return B()->v, 2)
-test_any(class A {int v=1;}; class B {static inherit A; int v=2;}; return B()->v, 2)
+test_any(class A {int v=1;}; class B {protected inherit A; int v=2;}; return B()->v, 2)
 test_any(class A {int v=1;}; class B {private inherit A; int v=2;}; return B()->v, 2)
 test_any(class A {int v=1;}; class B {local inherit A; int v=2;}; return B()->v, 2)
 test_any(class A {int v=1;}; class B {inline inherit A; int v=2;}; return B()->v, 2)
 test_any(class A {int f(){return 1;}}; class B {public inherit A; int f(){return 2;}}; return B()->f(), 2)
-test_any(class A {int f(){return 1;}}; class B {static inherit A; int f(){return 2;}}; return B()->f(), 2)
+test_any(class A {int f(){return 1;}}; class B {protected inherit A; int f(){return 2;}}; return B()->f(), 2)
 test_any(class A {int f(){return 1;}}; class B {private inherit A; int f(){return 2;}}; return B()->f(), 2)
 test_any(class A {int f(){return 1;}}; class B {local inherit A; int f(){return 2;}}; return B()->f(), 2)
 test_any(class A {int f(){return 1;}}; class B {inline inherit A; int f(){return 2;}}; return B()->f(), 2)
 
 test_any(class A {int v=1;}; class B {inherit A; public int v=2;}; return B()->v, 2)
-test_any(class A {int v=1;}; class B {inherit A; static int v=2;}; return B()->v, 0)
+test_any(class A {int v=1;}; class B {inherit A; protected int v=2;}; return B()->v, 0)
 test_any(class A {int v=1;}; class B {inherit A; private int v=2;}; return B()->v, 0)
 test_any(class A {int v=1;}; class B {inherit A; final int v=2;}; return B()->v, 2)
 test_any(
@@ -11834,7 +11835,7 @@ class A {int v=1;}; class B {inherit A; nomask int v=2;}; return B()->v, 2)
 test_any(class A {int v=1;}; class B {inherit A; local int v=2;}; return B()->v, 2)
 test_any(class A {int v=1;}; class B {inherit A; inline int v=2;}; return B()->v, 2)
 test_any(class A {int f(){return 1;}}; class B {inherit A; public int f(){return 2;}}; return B()->f(), 2)
-test_any(class A {int f(){return 1;}}; class B {inherit A; static int f(){return 2;}}; return B()->f, 0)
+test_any(class A {int f(){return 1;}}; class B {inherit A; protected int f(){return 2;}}; return B()->f, 0)
 test_any(class A {int f(){return 1;}}; class B {inherit A; private int f(){return 2;} int q=f();}; return B()->f, 0)
 test_any(class A {int f(){return 1;}}; class B {inherit A; final int f(){return 2;}}; return B()->f(), 2)
 test_any(

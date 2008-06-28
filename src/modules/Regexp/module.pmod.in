@@ -14,8 +14,8 @@ class SimpleRegexp
 {
   inherit _SimpleRegexp; // Most autodoc in here.
 
-  static private object repreg;
-  static private string regexp_string;
+  protected private object repreg;
+  protected private string regexp_string;
 
   // Semi-optimal speed, yes, I agree, but it should work.
   //!
@@ -44,7 +44,7 @@ class SimpleRegexp
     }
   }
   
-  static void create(string|void _regexp_string)
+  protected void create(string|void _regexp_string)
   {
     regexp_string = _regexp_string;
   
@@ -54,7 +54,7 @@ class SimpleRegexp
       ::create();
   }
 
-  static string _sprintf(int t)
+  protected string _sprintf(int t)
   {
     switch(t)
     {

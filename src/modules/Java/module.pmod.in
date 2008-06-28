@@ -5,7 +5,7 @@ inherit @module@;
 
 object machine;
 
-static string make_sig(object o, mapping(string:mixed) info, object|void p)
+protected string make_sig(object o, mapping(string:mixed) info, object|void p)
 {
   if(p)
     return "("+Array.map(values(p), make_sig, info)*""+")"+make_sig(o, info);
@@ -19,7 +19,7 @@ static string make_sig(object o, mapping(string:mixed) info, object|void p)
   }
 }
 
-static void check_exception(mapping(string:mixed) info)
+protected void check_exception(mapping(string:mixed) info)
 {
   object e = info->jvm->exception_occurred();
   if(e) {
@@ -35,7 +35,7 @@ static void check_exception(mapping(string:mixed) info)
   }
 }
 
-static mixed wrap_result(mixed x, mapping(string:mixed) info)
+protected mixed wrap_result(mixed x, mapping(string:mixed) info)
 {
   check_exception(info);
   if(objectp(x)) {
@@ -49,7 +49,7 @@ static mixed wrap_result(mixed x, mapping(string:mixed) info)
     return x;
 }
 
-static array unwrap_args(array a)
+protected array unwrap_args(array a)
 {
   return Array.map(a, lambda(mixed x) {
 			return (objectp(x)? x->_obj||x:x);
@@ -162,13 +162,13 @@ jobject JArray(array a)
   return o;
 }
 
-static class jmethod {
+protected class jmethod {
 
-  static object obj;
-  static mapping(string:mixed) info;
-  static mapping(string:object) protos;
+  protected object obj;
+  protected mapping(string:mixed) info;
+  protected mapping(string:object) protos;
 
-  static int is_applicable(string sig, array(mixed) args)
+  protected int is_applicable(string sig, array(mixed) args)
   {
     int sp=0, ap=0, na=sizeof(args);
     if(sig[sp++]!='(')
@@ -218,7 +218,7 @@ static class jmethod {
     return sig[sp]==')';
   }
 
-  static object select_proto(array(mixed) args)
+  protected object select_proto(array(mixed) args)
   {
     array(string) applicable =
       Array.filter(indices(protos), is_applicable, args);
@@ -270,13 +270,13 @@ static class jmethod {
 
 };
 
-static class jobject {
+protected class jobject {
 
-  static object obj;
-  static object cls;
+  protected object obj;
+  protected object cls;
   mapping(string:mixed) info;
 
-  static mixed _wrap_result(mixed x)
+  protected mixed _wrap_result(mixed x)
   {
     return cls->_wrap_result(x);
   }
@@ -307,7 +307,7 @@ static class jobject {
     return rows(this, _indices());
   }
 
-  static object method(string n, string sig)
+  protected object method(string n, string sig)
   {
     object m = cls->_methods[n];
     if(m) {
@@ -343,9 +343,9 @@ static class jobject {
 
 };
 
-static class jarray {
+protected class jarray {
 
-  static object obj;
+  protected object obj;
   mapping(string:mixed) info;
 
   mixed cast(mixed ... args)
@@ -398,10 +398,10 @@ static class jarray {
 
 };
 
-static class jconstructor {
+protected class jconstructor {
 
-  static object cls, con;
-  static mapping(string:mixed) info;
+  protected object cls, con;
+  protected mapping(string:mixed) info;
   
   object `()(mixed ... args)
   {
@@ -421,17 +421,17 @@ static class jconstructor {
 
 }
 
-static class jclass {
+protected class jclass {
 
-  static object obj;
-  static mapping(string:object) fields = ([]);
-  static mapping(string:object) static_fields = ([]);
-  static mapping(string:object) methods = ([]);
-  static mapping(string:object) static_methods = ([]);
-  static object constructor;
-  static mapping(string:mixed) info;
+  protected object obj;
+  protected mapping(string:object) fields = ([]);
+  protected mapping(string:object) static_fields = ([]);
+  protected mapping(string:object) methods = ([]);
+  protected mapping(string:object) static_methods = ([]);
+  protected object constructor;
+  protected mapping(string:mixed) info;
 
-  static mixed _wrap_result(mixed x)
+  protected mixed _wrap_result(mixed x)
   {
     return wrap_result(x, info);
   }
@@ -500,7 +500,7 @@ static class jclass {
     return rows(this, _indices());
   }
 
-  static object method(string n, string sig)
+  protected object method(string n, string sig)
   {
     object m = static_methods[n];
     if(m) {
@@ -511,7 +511,7 @@ static class jclass {
     return 0;
   }
 
-  static object make_constructor(string sig)
+  protected object make_constructor(string sig)
   {
     if(sizeof(sig) && sig[-1]!='V')
       sig += "V";
@@ -563,12 +563,12 @@ static class jclass {
 
 };
 
-static class package {
+protected class package {
 
-  static mapping(string:mixed) info;
-  static mapping(string:object) subpackages;
-  static string name;
-  static object pkg;
+  protected mapping(string:mixed) info;
+  protected mapping(string:object) subpackages;
+  protected string name;
+  protected object pkg;
 
   object `[](string n)
   {
@@ -589,7 +589,8 @@ static class package {
     return p;
   }
 
-  static array(object|string) find_class(string name, mapping(string:mixed) i)
+  protected array(object|string) find_class(string name,
+                                            mapping(string:mixed) i)
   {
     object cls = i->jvm->find_class(name);
     object|string e = i->jvm->exception_occurred();
@@ -605,7 +606,7 @@ static class package {
     return ({name, cls});
   }
 
-  static object get_static_method(array(object|string) cls, string name,
+  protected object get_static_method(array(object|string) cls, string name,
 				  string type, mapping(string:mixed) i)
   {
     object m = cls[1]->get_static_method(name, type);
@@ -622,7 +623,7 @@ static class package {
     return m;
   }
 
-  static object get_method(array(object|string) cls, string name,
+  protected object get_method(array(object|string) cls, string name,
 			   string type, mapping(string:mixed) i)
   {
     object m = cls[1]->get_method(name, type);
@@ -639,7 +640,7 @@ static class package {
     return m;
   }
 
-  static object get_static_field(array(object|string) cls, string name,
+  protected object get_static_field(array(object|string) cls, string name,
 				 string type, mapping(string:mixed) i)
   {
     object f = cls[1]->get_static_field(name, type);
@@ -765,7 +766,7 @@ static class package {
 
 object pkg;
 
-static void create()
+protected void create()
 {
   program jvm = this->jvm;
   if(jvm)

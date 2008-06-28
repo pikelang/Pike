@@ -5,7 +5,7 @@
 #if constant(Nettle.Proxy)
 inherit Nettle.Proxy;
 
-static class Wrapper(object a) {
+protected class Wrapper(object a) {
   int _key_size;
   int block_size() {
     if(!a->query_block_size) return 1;
@@ -24,7 +24,7 @@ static class Wrapper(object a) {
   string name() { return a->name(); }
 }
 
-static void create(program|object|array(program|mixed) c) {
+protected void create(program|object|array(program|mixed) c) {
   if(programp(c))
     c = c();
   else if(arrayp(c)){

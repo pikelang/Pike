@@ -5,8 +5,8 @@
 
 inherit Crypto.HMAC;
 
-static class Wrapper {
-  static object h;
+protected class Wrapper {
+  protected object h;
   function(void:string) asn1_id;
   void create(object _h) {
     h = _h;

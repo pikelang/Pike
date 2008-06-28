@@ -3,7 +3,7 @@
 
 inherit Image;
 
-static class _Image {
+protected class _Image {
   inherit Image;
 
   array(Color) select_colors(int n) {

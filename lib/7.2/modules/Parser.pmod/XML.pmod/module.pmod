@@ -4,7 +4,7 @@ class Simple
 {
   inherit Parser.XML.Simple;
 
-  static void create()
+  protected void create()
   {
     compat_allow_errors ("7.2");
     // Got no inherited create.
@@ -15,7 +15,7 @@ class Validating
 {
   inherit Parser.XML.Validating;
 
-  static void create()
+  protected void create()
   {
     compat_allow_errors ("7.2");
     // Got no inherited create.

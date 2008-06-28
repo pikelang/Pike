@@ -1,6 +1,6 @@
 #pike 7.4
 
-/* $Id: cipher.pike,v 1.3 2003/11/30 17:05:05 nilsson Exp $
+/* $Id: cipher.pike,v 1.4 2008/06/28 16:54:21 nilsson Exp $
  *
  */
 
@@ -130,7 +130,7 @@ class mac_hmac_md5 {
 }
 
 // Hashfn is either a Crypto.md5 or Crypto.sha 
-static string P_hash(object hashfn,int hlen,string secret,string seed,int len) {
+protected string P_hash(object hashfn,int hlen,string secret,string seed,int len) {
    
   Crypto.hmac hmac=Crypto.hmac(hashfn);
   string temp=seed;
