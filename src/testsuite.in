@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.831 2008/06/28 14:44:16 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.832 2008/06/28 15:07:33 nilsson Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -9069,10 +9069,10 @@ return 0;
 
 // #pragma
 // FIXME: add tests for real pragmas
-test_any([[
+test_compile_warning([[
 #pragma whatever
 return 1;
-]],1)
+]])
 
 test_compile_warning([[
 class A {
