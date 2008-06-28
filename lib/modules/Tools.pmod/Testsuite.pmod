@@ -30,8 +30,8 @@ class WatchdogFilterStream
 // Filter out watchdog commands on the form "WD <cmd>\n", passing
 // everything else through.
 {
-  static array(string) wd_cmds = ({});
-  static string cmd_buf;
+  protected array(string) wd_cmds = ({});
+  protected string cmd_buf;
 
   string filter (string in)
   {

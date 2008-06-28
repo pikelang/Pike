@@ -33,7 +33,7 @@
 //! @enddl
 
 // Author:  Johan Schön.
-// $Id: Crawler.pmod,v 1.25 2008/01/13 17:03:29 nilsson Exp $
+// $Id: Crawler.pmod,v 1.26 2008/06/28 16:37:02 nilsson Exp $
 
 #define CRAWLER_DEBUG
 #ifdef CRAWLER_DEBUG
@@ -52,12 +52,12 @@ class Stats(int window_width,
   class FloatingAverage
   {
     // Cache
-    static private int amount;
-    static private int amount_last_calculated;
+    protected private int amount;
+    protected private int amount_last_calculated;
     
-    static private int num_slots;
+    protected private int num_slots;
     
-    static private array(int) amount_floating;
+    protected private array(int) amount_floating;
 
     void create(int _window_width,
 		int _granularity)
@@ -84,8 +84,8 @@ class Stats(int window_width,
   }
 
 
-  static private FloatingAverage bps_average = FloatingAverage(10,1);
-  static private mapping(string:FloatingAverage) host_bps_average;
+  protected private FloatingAverage bps_average = FloatingAverage(10,1);
+  protected private mapping(string:FloatingAverage) host_bps_average;
   
   int bits_per_second(string|void host)
   {
@@ -100,8 +100,8 @@ class Stats(int window_width,
       return bps_average->get();
   }
 
-  static private mapping(string:int) concurrent_fetchers_per_host = ([]);
-  static private int concurrent_fetchers_total = 0;
+  protected private mapping(string:int) concurrent_fetchers_per_host = ([]);
+  protected private int concurrent_fetchers_total = 0;
 
   int concurrent_fetchers(void|string host)
   {
@@ -244,7 +244,7 @@ class RegexpRule
 {
   inherit Rule;
 
-  static private Regexp regexp;
+  protected private Regexp regexp;
 
 //!  
 //! @param re
@@ -323,7 +323,7 @@ class MySQLQueue
     };
   }
 
-  static int done_uri( string|Standards.URI uri )
+  protected int done_uri( string|Standards.URI uri )
   {
     return sizeof(db->query("select done from "+
 			    table+" where done=2 and uri=%s",
@@ -331,7 +331,7 @@ class MySQLQueue
   }
 
   mapping hascache = ([]);
-  static int has_uri( string|Standards.URI uri )
+  protected int has_uri( string|Standards.URI uri )
   {
     uri = (string)uri;
     if( sizeof(hascache) > 100000 )
@@ -341,7 +341,7 @@ class MySQLQueue
 				     table+" where uri=%s",uri)));
   }
 
-  static void add_uri( Standards.URI uri )
+  protected void add_uri( Standards.URI uri )
   {
     if(check_link(uri, allow, deny) && !has_uri(uri))
     {
@@ -349,9 +349,9 @@ class MySQLQueue
     }
   }
 
-  static int empty_count;
+  protected int empty_count;
 
-  static array possible=({});
+  protected array possible=({});
   int p_c;
   int|Standards.URI get()
   {
@@ -512,18 +512,18 @@ class ComplexQueue(Stats stats, Policy policy)
     werror("Queue: %O\n",stats);
   }
   
-  static private ADT.Heap host_heap=ADT.Heap();
-  static private mapping(string:URIStack) hosts=([]);
+  protected private ADT.Heap host_heap=ADT.Heap();
+  protected private mapping(string:URIStack) hosts=([]);
 
   // One per host
-  static private class URIStack
+  protected private class URIStack
   {
     inherit ADT.Stack;
     int last_mod;
-    static multiset(string) uris_md5=(<>);
+    protected multiset(string) uris_md5=(<>);
     int num_active;
 
-    static string do_md5(string in)
+    protected string do_md5(string in)
     {
 #if constant(Crypto.MD5)
       return Crypto.MD5->hash(in);

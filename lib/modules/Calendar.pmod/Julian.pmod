@@ -16,13 +16,13 @@ inherit Calendar.Gregorian:Gregorian;
 
 string calendar_name() { return "Julian"; }
 
-static int year_leap_year(int y) 
+protected int year_leap_year(int y) 
 { 
    return !((y)%4);
 }
 
 // [y,yjd]
-static array year_from_julian_day(int jd)
+protected array year_from_julian_day(int jd)
 {
    int d=jd-1721058;
 
@@ -36,7 +36,7 @@ static array year_from_julian_day(int jd)
    });
 }
 
-static int julian_day_from_year(int y)
+protected int julian_day_from_year(int y)
 {
    y--;
    return 1721424+y*365+y/4;

@@ -626,7 +626,7 @@ int(-1..1) oid_sort_func(string a, string b)
     return oid_sort_func(a,b);
 }
 
-static array(array(array)) low_greedy_diff(array(array) d1, array(array) d2)
+protected array(array(array)) low_greedy_diff(array(array) d1, array(array) d2)
 {
   array r1, r2, x, y, yb, b, c;
   r1 = r2 = ({});

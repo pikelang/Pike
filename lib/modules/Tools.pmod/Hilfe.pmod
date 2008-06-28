@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.155 2008/06/12 16:57:43 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.156 2008/06/28 16:37:00 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -709,7 +709,7 @@ private class SubSysLogger {
   constant stopdoc = "logging\n\tTurns off logging to file.\n";
   int(0..1) running;
 
-  static class Logger {
+  protected class Logger {
 
     Stdio.File logfile;
     Evaluator e;
@@ -770,13 +770,13 @@ private class SubSysPhish {
     "\tStart the Pike Hilfe Shell.\n";
   constant stopdoc = "phish\n\tTurns off phish.\n";
 
-  static int(0..1) running;
-  static int(0..1) in_expr;
-  static Evaluator e;
+  protected int(0..1) running;
+  protected int(0..1) in_expr;
+  protected Evaluator e;
 
   int(0..1) runningp() { return running; }
 
-  static int(0..1) do_cmd(string cmd) {
+  protected int(0..1) do_cmd(string cmd) {
     if(in_expr) {
       return 0;
     }
@@ -949,10 +949,10 @@ string typeof_token(string|array token)
 
 //! Represents a Pike expression
 class Expression {
-  static array(string) tokens;
-  static mapping(int:int) positions;
-  static array(int) depths;
-  static multiset(int) sscanf_depths;
+  protected array(string) tokens;
+  protected mapping(int:int) positions;
+  protected array(int) depths;
+  protected multiset(int) sscanf_depths;
 
   //! @param t
   //!   An array of Pike tokens.
@@ -965,7 +965,7 @@ class Expression {
     tokens = t;
   }
 
-  static void generate_offsets(array t)
+  protected void generate_offsets(array t)
   {
     int pos = tokens && sizeof(tokens);
     int depth;
@@ -1147,7 +1147,7 @@ class Expression {
 
   //! An Expression object can be cast to an array or a string. In
   //! both forms all tokens, including white spaces will be returned.
-  static mixed cast(string to)
+  protected mixed cast(string to)
   {
     switch(to)
     {
@@ -1157,7 +1157,7 @@ class Expression {
     error("Can not cast to %O\n", to);
   }
 
-  static string _sprintf(int t) {
+  protected string _sprintf(int t) {
     return t=='O' && sprintf("%O(%O)", this_program, tokens);
   }
 }
@@ -1510,7 +1510,7 @@ class Evaluator {
     return 0;
   }
 
-  static array input_hooks = ({});
+  protected array input_hooks = ({});
 
   //! Adds a function to the input hook, making
   //! all user data be fed into the function.
@@ -2134,7 +2134,7 @@ class Evaluator {
 
   private string hch_errors = "";
   private string hch_warnings = "";
-  static class HilfeCompileHandler {
+  protected class HilfeCompileHandler {
 
     int stack_level;
     void create(int _stack_level) {

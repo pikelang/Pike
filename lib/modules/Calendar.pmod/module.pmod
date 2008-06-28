@@ -1,11 +1,11 @@
 #pike __REAL_VERSION__
 
-static private int stage=0;
-static private int booted=0;
-static private object defcal;
-static private object iso_utc;
-static private object default_rules;
-static constant magic= // magic + indices(Calendar.ISO) without YMD
+protected private int stage=0;
+protected private int booted=0;
+protected private object defcal;
+protected private object iso_utc;
+protected private object default_rules;
+protected constant magic= // magic + indices(Calendar.ISO) without YMD
 (<
    "ISO_UTC","II", "default_rules",
    "_sprintf", "set_timezone", "language", "Day", "Year", "Week",
@@ -26,7 +26,7 @@ array _indices()
 #include "localization.h"
 
 #if 1
-static mixed `[](string what)
+protected mixed `[](string what)
 {
    if (!booted)
    {
@@ -81,9 +81,10 @@ static mixed `[](string what)
    return defcal[what];
 }
 
-static mixed `-> (string what)
+protected mixed `-> (string what)
 {
   // This becomes an alias.
   return `[] (what);
 }
 #endif
+

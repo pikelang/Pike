@@ -1,5 +1,5 @@
 //
-// $Id: GTK.pike,v 1.5 2004/01/29 21:44:54 nilsson Exp $
+// $Id: GTK.pike,v 1.6 2008/06/28 16:36:54 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -8,19 +8,19 @@
 inherit .Interface;
 import GLUE.Events;
 
-static GTK.GLArea area;
-static GTK.Window window;
-static int gl_flags;
+protected GTK.GLArea area;
+protected GTK.Window window;
+protected int gl_flags;
 
-static class MEvent
+protected class MEvent
 {
   inherit Event;
   constant use_modifiers = 1;
 }
 
-static function evt, configure_event;
+protected function evt, configure_event;
 
-static void create( function event, function config )
+protected void create( function event, function config )
 {
   evt = event;
   configure_event = config;
@@ -167,7 +167,7 @@ void swap_buffers()
   area->swap_buffers();
 }
 
-static void repeat( int r )
+protected void repeat( int r )
 {
 #ifdef __NT__
   // What?
@@ -186,7 +186,7 @@ void init(void|string title, void|string icon)
   repeat(0);
 }
 
-static function(void:void) restore_res;
+protected function(void:void) restore_res;
 void exit() {
   repeat(1);
   if(restore_res) restore_res();
@@ -204,3 +204,4 @@ void show_cursor() {
 }
 
 #endif /* constant(GTK.GLArea) */
+

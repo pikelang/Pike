@@ -108,9 +108,9 @@ string encode(string|int|array|mapping data)
    }
 }
 
-private static array(string) bits=
+private protected array(string) bits=
    sprintf("%08b",Array.enumerate(256)[*]);
-private static array(string) bobs=
+private protected array(string) bobs=
    sprintf("%c",Array.enumerate(256)[*]);
 
 //! Convert an array of @expr{int(0..1)@} to a Bittorrent style
@@ -140,5 +140,5 @@ array(int) string2arr(string s)
    return last2arrarr=w[i..];
 }
 
-static private string last2arrbits=0;
-static private array(int) last2arrarr=0;
+protected private string last2arrbits=0;
+protected private array(int) last2arrarr=0;

@@ -1,15 +1,15 @@
-// $Id: RSS.pmod,v 1.6 2003/12/15 22:28:53 nilsson Exp $
+// $Id: RSS.pmod,v 1.7 2008/06/28 16:37:02 nilsson Exp $
 
 #pike __REAL_VERSION__
 
 //! Represents a RSS (RDF Site Summary) file.
 
-static constant ns = "http://purl.org/rss/1.0/";
+protected constant ns = "http://purl.org/rss/1.0/";
 
 //! The base class for the RSS resources.
-static class Thing {
-  static .RDF rdf;
-  static mapping /* (string:string|Standards.URI) */ attributes = ([]);
+protected class Thing {
+  protected .RDF rdf;
+  protected mapping /* (string:string|Standards.URI) */ attributes = ([]);
   .RDF.Resource me;
   constant thing = "";
 
@@ -46,7 +46,7 @@ static class Thing {
       create2(a);
   }
 
-  static void create1(string about, mapping _attr) {
+  protected void create1(string about, mapping _attr) {
     me = rdf->make_resource(about);
     foreach(indices(attributes), string i) {
       string|Standards.URI v = _attr[i];
@@ -62,7 +62,7 @@ static class Thing {
     }
   }
 
-  static void create2(.RDF.Resource _me) {
+  protected void create2(.RDF.Resource _me) {
     me = _me;
     foreach(rdf->find_statements(me,0,0), array r) {
       .RDF.Resource pred = r[1];
@@ -85,7 +85,7 @@ static class Thing {
   //! Returns the @[RDF.Resource] that identifies this RSS resource.
   .RDF.Resource get_id() { return me; }
 
-  static string _sprintf(int t) {
+  protected string _sprintf(int t) {
     if(t!='O') return UNDEFINED;
     mapping x = ([]);
     foreach(attributes; string index; mixed value)
@@ -98,7 +98,7 @@ static class Thing {
 class Image {
   inherit Thing;
   constant thing = "image";
-  static mapping(string:string|Standards.URI) attributes = ([
+  protected mapping(string:string|Standards.URI) attributes = ([
     "title" : 0,
     "url" : 0,
     "link" : 0
@@ -113,7 +113,7 @@ class Image {
 class Item {
   inherit Thing;
   constant thing = "item";
-  static mapping(string:string|Standards.URI) attributes = ([
+  protected mapping(string:string|Standards.URI) attributes = ([
     "title" : 0,
     "link" : 0,
     "description" : 0
@@ -128,7 +128,7 @@ class Item {
 class Textinput {
   inherit Thing;
   constant thing = "textinput";
-  static mapping(string:string|Standards.URI) attributes = ([
+  protected mapping(string:string|Standards.URI) attributes = ([
     "title" : 0,
     "description" : 0,
     "name" : 0,
@@ -144,8 +144,8 @@ class Textinput {
 //! Represents an RSS channel.
 class Channel {
   inherit Thing;
-  static constant thing = "channel";
-  static mapping attributes = ([
+  protected constant thing = "channel";
+  protected mapping attributes = ([
     "title" : 0,
     "link" : 0,
     "description" : 0,
@@ -247,4 +247,5 @@ Index parse_xml(string|Parser.XML.Tree.Node n, void|string base) {
   .RDF rdf=.RDF()->parse_xml(n, base);
   return Index(rdf);
 }
+
 

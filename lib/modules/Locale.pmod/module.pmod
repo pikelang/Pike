@@ -39,10 +39,10 @@
 //#define LOCALE_DEBUG_ALL
 
 // project_name:project_path
-static mapping(string:string) projects = ([]);
+protected mapping(string:string) projects = ([]);
 // language:(project_name:project)
-static mapping(string:mapping(string:object)) locales = ([]);
-static string default_project;
+protected mapping(string:mapping(string:object)) locales = ([]);
+protected string default_project;
 
 void register_project(string name, string path, void|string path_base)
   //! Make a connection between a project name and where its
@@ -77,11 +77,11 @@ void set_default_project_path(string path)
   default_project = path;
 }
 
-static class LanguageListObject( array(string) languages )
+protected class LanguageListObject( array(string) languages )
 {
   int timestamp  = time(1);
 
-  static string _sprintf(int t)
+  protected string _sprintf(int t)
   {
     return t=='O' && sprintf("%O(timestamp: %d, %O)", this_program,
 			     timestamp, languages);
@@ -143,13 +143,13 @@ array(string) list_languages(string project)
 class LocaleObject
 {
   // key:string
-  static mapping(string|int:string) bindings;
+  protected mapping(string|int:string) bindings;
   // key:function
   public mapping(string:function) functions;
   int timestamp = time(1);
   constant is_locale=1;
 
-  static void create(mapping(string|int:string) _bindings,
+  protected void create(mapping(string|int:string) _bindings,
 		     void|mapping(string:function) _functions)
   {
     bindings = _bindings;
@@ -198,7 +198,7 @@ class LocaleObject
     return size;
   }
 
-  static string _sprintf(int t)
+  protected string _sprintf(int t)
   {
     return t=='O' && sprintf("%O(timestamp: %d, bindings: %d, functions: %d)",
 			     this_program, timestamp, sizeof(bindings),
@@ -208,7 +208,7 @@ class LocaleObject
 
 // Used to delay lookup of the Charset module until run-time when dumped,
 // and thus resolve the circularity.
-static object(Locale) locale = Locale; 
+protected object(Locale) locale = Locale; 
 
 object get_object(string project, string lang) {
 
@@ -463,10 +463,10 @@ mapping(string:int) cache_status() {
 
 //! This class simulates a multi-language "string".
 //! The actual language to use is determined as late as possible.
-class DeferredLocale( static string project,
-		      static function(:string) get_lang,
-		      static string|int key,
-		      static string fallback ) 
+class DeferredLocale( protected string project,
+		      protected function(:string) get_lang,
+		      protected string|int key,
+		      protected string fallback ) 
 {
   array get_identifier( )
   //! Return the data nessesary to recreate this "string".
@@ -474,27 +474,27 @@ class DeferredLocale( static string project,
     return ({ project, get_lang, key, fallback });
   }
 
-  static int `<( mixed what )
+  protected int `<( mixed what )
   {
     return lookup() < what;
   }
 
-  static int `> ( mixed what )
+  protected int `> ( mixed what )
   {
     return lookup() > what;
   }
 
-  static int `==( mixed what )
+  protected int `==( mixed what )
   {
     return lookup() == what;
   }
 
-  static inline string lookup()
+  protected inline string lookup()
   {
     return translate(project, get_lang(), key, fallback);
   }
 
-  static string _sprintf(int c)
+  protected string _sprintf(int c)
   {
     switch(c)
     {
@@ -505,47 +505,47 @@ class DeferredLocale( static string project,
     }
   }
 
-  static string `+(mixed ... args)
+  protected string `+(mixed ... args)
   {
     return predef::`+(lookup(), @args);
   }
 
-  static string ``+(mixed ... args)
+  protected string ``+(mixed ... args)
   {
     return predef::`+(@args, lookup());
   }
 
-  static string `-(mixed ... args)
+  protected string `-(mixed ... args)
   {
     return predef::`-(lookup(), @args);
   }
 
-  static string ``-(mixed ... args)
+  protected string ``-(mixed ... args)
   {
     return predef::`-(@args, lookup());
   }
 
-  static string `*(mixed ... args)
+  protected string `*(mixed ... args)
   {
     return predef::`*(lookup(), @args);
   }
 
-  static string ``*(mixed arg)
+  protected string ``*(mixed arg)
   {
     return predef::`*(arg, lookup());
   }
 
-  static array(string) `/(mixed arg)
+  protected array(string) `/(mixed arg)
   {
     return predef::`/(lookup(), arg);
   }
 
-  static int _sizeof()
+  protected int _sizeof()
   {
     return sizeof(lookup());
   }
 
-  static int|string `[](int a,int|void b)
+  protected int|string `[](int a,int|void b)
   {
     if (query_num_arg() < 2) {
       return lookup()[a];
@@ -553,24 +553,24 @@ class DeferredLocale( static string project,
     return lookup()[a..b];
   }
 
-  static array(int) _indices()
+  protected array(int) _indices()
   {
     return indices(lookup());
   }
 
-  static array(int) _values()
+  protected array(int) _values()
   {
     return values(lookup());
   }
 
-  static mixed cast(string to)
+  protected mixed cast(string to)
   {
     if(to=="string") return lookup();
     if(to=="mixed" || to=="object") return this;
     error( "Cannot cast DeferredLocale to "+to+".\n" );
   }
 
-  static int _is_type(string type) {
+  protected int _is_type(string type) {
     return type=="string";
   }
 }

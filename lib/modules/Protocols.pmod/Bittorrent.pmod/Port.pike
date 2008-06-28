@@ -35,7 +35,7 @@ void create(.Torrent _parent)
 
 void destroy() { destruct(port); }
 
-static void new_connection()
+protected void new_connection()
 {
    Stdio.File fd=port->accept();
    
@@ -59,3 +59,4 @@ static void new_connection()
 constant this_program_does_not_exist=1;
 
 #endif /* constant(.Torrent) */
+

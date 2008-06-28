@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.237 2008/04/28 15:46:13 grubba Exp $
+// $Id: module.pmod,v 1.238 2008/06/28 16:37:00 nilsson Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -25,7 +25,7 @@ inherit files;
 #define register_close_file(id)
 #endif
 
-static constant LineIterator = __builtin.file_line_iterator;
+protected constant LineIterator = __builtin.file_line_iterator;
 
 //! The Stdio.Stream API.
 //!
@@ -149,9 +149,9 @@ class File
     return ::errno();
   }
 
-  static string|int debug_file;
-  static string debug_mode;
-  static int debug_bits;
+  protected string|int debug_file;
+  protected string debug_mode;
+  protected int debug_bits;
 
   optional void _setup_debug( string f, string m, int|void b )
   {
@@ -160,7 +160,7 @@ class File
     debug_bits = b;
   }
 
-  static string _sprintf( int type, mapping flags )
+  protected string _sprintf( int type, mapping flags )
   {
     if(type!='O') return 0;
     return sprintf("%O(%O, %O, %o /* fd=%d */)",
@@ -380,9 +380,9 @@ class File
   }
 #endif
 
-  static private function(int, mixed ...:void) _async_cb;
-  static private array(mixed) _async_args;
-  static private void _async_check_cb(mixed|void ignored)
+  protected private function(int, mixed ...:void) _async_cb;
+  protected private array(mixed) _async_args;
+  protected private void _async_check_cb(mixed|void ignored)
   {
     // Copy the args to avoid races.
     function(int, mixed ...:void) cb = _async_cb;
@@ -624,7 +624,7 @@ class File
   //!
   //! @seealso
   //! @[open()], @[connect()], @[Stdio.FILE],
-  static void create(int|string|void file,void|string mode,void|int bits)
+  protected void create(int|string|void file,void|string mode,void|int bits)
   {
     if (zero_type(file)) {
       _fd = Fd();
@@ -808,7 +808,7 @@ class File
   }
 
   // FIXME: No way to specify the maximum to read.
-  static int __stdio_read_callback()
+  protected int __stdio_read_callback()
   {
     BE_WERR("__stdio_read_callback()");
 
@@ -874,7 +874,7 @@ class File
     return 0;
   }
 
-  static int __stdio_close_callback()
+  protected int __stdio_close_callback()
   {
     BE_WERR ("__stdio_close_callback()");
 #if 0
@@ -910,7 +910,7 @@ class File
     return 0;
   }
 
-  static int __stdio_write_callback()
+  protected int __stdio_write_callback()
   {
     BE_WERR("__stdio_write_callback()");
 
@@ -929,7 +929,7 @@ class File
     return 0;
   }
 
-  static int __stdio_read_oob_callback()
+  protected int __stdio_read_oob_callback()
   {
     BE_WERR ("__stdio_read_oob_callback()");
 
@@ -992,7 +992,7 @@ class File
     return 0;
   }
 
-  static int __stdio_write_oob_callback()
+  protected int __stdio_write_oob_callback()
   {
     BE_WERR ("__stdio_write_oob_callback()");
     if (!___write_oob_callback) return 0;
@@ -1203,7 +1203,7 @@ class File
 
   function(mixed|void:int) query_close_callback() { return ___close_callback; }
 
-  static void fix_internal_callbacks()
+  protected void fix_internal_callbacks()
   {
     BE_WERR("fix_internal_callbacks()\n");
     ::set_read_callback ((___read_callback && __stdio_read_callback) ||
@@ -1361,7 +1361,7 @@ class File
 #endif
   }
    
-  static void destroy()
+  protected void destroy()
   {
     BE_WERR("destroy()");
     // Avoid cyclic refs.
@@ -1384,10 +1384,10 @@ class Port
 {
   inherit _port;
 
-  static int|string debug_port;
-  static string debug_ip;
+  protected int|string debug_port;
+  protected string debug_ip;
 
-  static string _sprintf( int f )
+  protected string _sprintf( int f )
   {
     return f=='O' && sprintf( "%O(%s:%O)",
 			      this_program, debug_ip||"", debug_port );
@@ -1409,7 +1409,7 @@ class Port
   //!
   //! @seealso
   //! @[bind]
-  static void create( string|int|void p,
+  protected void create( string|int|void p,
 		      void|mixed cb,
 		      string|void ip )
   {
@@ -1478,12 +1478,12 @@ class FILE
 
   private function(string:string) output_conversion, input_conversion;
   
-  static string _sprintf( int type, mapping flags )
+  protected string _sprintf( int type, mapping flags )
   {
     return ::_sprintf( type, flags );
   }
 
-  inline private static final int low_get_data()
+  inline private protected final int low_get_data()
   {
     string s = file::read(BUFSIZE,1);
     if(s && strlen(s)) {
@@ -1497,7 +1497,7 @@ class FILE
     }
   }
  
-  inline private static final int get_data()
+  inline private protected final int get_data()
   {
     if( bpos )
     {
@@ -1511,7 +1511,7 @@ class FILE
   // Return 0 at end of file, 1 otherwise.
   // At exit cached_lines contains at least one string,
   // and lp is set to zero.
-  inline private static final int get_lines()
+  inline private protected final int get_lines()
   {
     if( bpos )
     {
@@ -1529,7 +1529,7 @@ class FILE
   }
 
   // NB: Caller is responsible for clearing cached_lines and lp.
-  inline private static final string extract(int bytes, int|void skip)
+  inline private protected final string extract(int bytes, int|void skip)
   {
     string s;
     s=b[bpos..bpos+bytes-1];
@@ -1791,7 +1791,7 @@ class FILE
   //!
   //! @seealso
   //!   @[line_iterator()]
-  static object _get_iterator()
+  protected object _get_iterator()
   {
     if( input_conversion )
       return String.SplitIterator( "",'\n',1,read_function(8192));
@@ -1931,11 +1931,11 @@ FILE stdout=FILE("stdout");
 FILE stdin=FILE("stdin");
 
 #ifdef TRACK_OPEN_FILES
-static mapping(string|int:array) open_files = ([]);
-static mapping(string:int) registering_files = ([]);
-static int next_open_file_id = 1;
+protected mapping(string|int:array) open_files = ([]);
+protected mapping(string:int) registering_files = ([]);
+protected int next_open_file_id = 1;
 
-static void register_open_file (string file, int id, array backtrace)
+protected void register_open_file (string file, int id, array backtrace)
 {
   file = combine_path (getcwd(), file);
   if (!registering_files[file]) {
@@ -1952,7 +1952,7 @@ static void register_open_file (string file, int id, array backtrace)
   else open_files[file] += ({id});
 }
 
-static void register_close_file (int id)
+protected void register_close_file (int id)
 {
   if (open_files[id]) {
     string file = open_files[id][0];
@@ -2475,7 +2475,7 @@ int file_equal (string file_1, string file_2)
   return 1;
 }
 
-static void call_cp_cb(int len,
+protected void call_cp_cb(int len,
 		       function(int, mixed ...:void) cb, mixed ... args)
 {
   // FIXME: Check that the lengths are the same?
@@ -2609,30 +2609,30 @@ int recursive_mv(string from, string to)
 #define READER_HALT 32
 
 // FIXME: Support for timeouts?
-static class nb_sendfile
+protected class nb_sendfile
 {
-  static File from;
-  static int len;
-  static array(string) trailers;
-  static File to;
-  static Pike.Backend backend;
-  static function(int, mixed ...:void) callback;
-  static array(mixed) args;
+  protected File from;
+  protected int len;
+  protected array(string) trailers;
+  protected File to;
+  protected Pike.Backend backend;
+  protected function(int, mixed ...:void) callback;
+  protected array(mixed) args;
 
   // NOTE: Always modified from backend callbacks, so no need
   // for locking.
-  static array(string) to_write = ({});
-  static int sent;
+  protected array(string) to_write = ({});
+  protected int sent;
 
-  static int reader_awake;
-  static int writer_awake;
+  protected int reader_awake;
+  protected int writer_awake;
 
-  static int blocking_to;
-  static int blocking_from;
+  protected int blocking_to;
+  protected int blocking_from;
 
   /* Reader */
 
-  static string _sprintf( int f )
+  protected string _sprintf( int f )
   {
     switch( f )
     {
@@ -2643,7 +2643,7 @@ static class nb_sendfile
     }
   }
 
-  static void reader_done()
+  protected void reader_done()
   {
     SF_WERR("Reader done.");
 
@@ -2674,13 +2674,13 @@ static class nb_sendfile
     }
   }
 
-  static void close_cb(mixed ignored)
+  protected void close_cb(mixed ignored)
   {
     SF_WERR("Input EOF.");
     reader_done();
   }
 
-  static void do_read()
+  protected void do_read()
   {
     SF_WERR("Blocking read.");
     if( sizeof( to_write ) > 2)
@@ -2704,7 +2704,7 @@ static class nb_sendfile
     }
   }
 
-  static void read_cb(mixed ignored, string data)
+  protected void read_cb(mixed ignored, string data)
   {
     SF_WERR("Read callback.");
     if (len > 0) {
@@ -2742,7 +2742,7 @@ static class nb_sendfile
     }
   }
 
-  static void start_reader()
+  protected void start_reader()
   {
     SF_WERR("Starting the reader.");
     if (!reader_awake) {
@@ -2753,7 +2753,7 @@ static class nb_sendfile
 
   /* Writer */
 
-  static void writer_done()
+  protected void writer_done()
   {
     SF_WERR("Writer done.");
 
@@ -2783,7 +2783,7 @@ static class nb_sendfile
     }
   }
 
-  static int do_write()
+  protected int do_write()
   {
     SF_WERR("Blocking writer.");
 
@@ -2817,7 +2817,7 @@ static class nb_sendfile
     }
   }
 
-  static void write_cb(mixed ignored)
+  protected void write_cb(mixed ignored)
   {
     SF_WERR("Write callback.");
     if (do_write()) {
@@ -2849,7 +2849,7 @@ static class nb_sendfile
     }
   }
 
-  static void start_writer()
+  protected void start_writer()
   {
     SF_WERR("Starting the writer.");
 
@@ -2861,7 +2861,7 @@ static class nb_sendfile
   }
 
   /* Blocking */
-  static void do_blocking()
+  protected void do_blocking()
   {
     SF_WERR("Blocking I/O.");
 
@@ -2889,7 +2889,7 @@ static class nb_sendfile
 
   /* Starter */
 
-  static void create(array(string) hd,
+  protected void create(array(string) hd,
 		     File f, int off, int l,
 		     array(string) tr,
 		     File t,
@@ -3059,8 +3059,8 @@ class UDP
 {
   inherit files.UDP;
 
-  private static array extra=0;
-  private static function(mapping,mixed...:void) callback=0;
+  private protected array extra=0;
+  private protected function(mapping,mixed...:void) callback=0;
 
   //! @decl UDP set_nonblocking()
   //! @decl UDP set_nonblocking(function(mapping(string:int|string), @
@@ -3112,7 +3112,7 @@ class UDP
     return this;
   }
    
-  private static void _read_callback()
+  private protected void _read_callback()
   {
     mapping i;
     if (i=read())

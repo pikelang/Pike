@@ -8,7 +8,7 @@
 
 inherit Calendar.ISO;
 
-private static mixed __initstuff=lambda()
+private protected mixed __initstuff=lambda()
 {
    default_rules=default_rules->set_language("austrian");
 }();

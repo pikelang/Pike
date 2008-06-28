@@ -3,7 +3,7 @@
 //! Codec for the ISO-8859-1 character encoding.
 
 class decoder {
-  static private string s = "";
+  protected private string s = "";
   this_program feed(string ss)
   {
     s += ss;
@@ -24,10 +24,10 @@ class decoder {
 
 class encoder
 {
-  static string s = "";
-  static string|void replacement;
-  static function(string:string)|void repcb;
-  static string low_convert(string s, string|void r,
+  protected string s = "";
+  protected string|void replacement;
+  protected function(string:string)|void repcb;
+  protected string low_convert(string s, string|void r,
 			     function(string:string)|void rc)
   {
     int i = sizeof(s);
@@ -62,10 +62,11 @@ class encoder
   {
     repcb = rc;
   }
-  static void create(string|void r, string|void rc)
+  protected void create(string|void r, string|void rc)
   {
     replacement = r;
     repcb = rc;
   }
 }
+
 

@@ -1,4 +1,4 @@
-// $Id: Koremutake.pmod,v 1.3 2008/01/13 17:05:36 nilsson Exp $
+// $Id: Koremutake.pmod,v 1.4 2008/06/28 16:36:54 nilsson Exp $
 
 #pike __REAL_VERSION__
 #pragma strict_types
@@ -15,7 +15,7 @@
 //! pieces of information are a lot easier to remember than a sequence
 //! of digits.
 
-static constant table = ({
+protected constant table = ({
  "BA", "BE", "BI", "BO", "BU", "BY", "DA", "DE",
  "DI", "DO", "DU", "DY", "FA", "FE", "FI", "FO",
  "FU", "FY", "GA", "GE", "GI", "GO", "GU", "GY",
@@ -80,7 +80,7 @@ class `() {
   int block_size() { return 1; }
   int key_size() { return 0; }
 
-  static int mode;
+  protected int mode;
   this_program set_encrypt_key(void|mixed key) {
     key;
     mode = 0;

@@ -426,7 +426,7 @@ class Country
 //!	<dt>COM   <dd>Commercial
 //!	</dl>
 
-static private mapping _from_domain=0;
+protected private mapping _from_domain=0;
 
 Country from_domain(string domain)
 {
@@ -453,7 +453,7 @@ Country from_domain(string domain)
 //!	The search is case-insensitive but
 //!	regards whitespace and interpunctation.
 
-static private mapping _from_name=0;
+protected private mapping _from_name=0;
 
 Country from_name(string name)
 {
@@ -496,7 +496,7 @@ Country from_name(string name)
 //! @note
 //!	Some countries are considered to be on more than one continent.
 
-static private mapping _cached_continents;
+protected private mapping _cached_continents;
 
 mapping(string:array(Country)) continents()
 {

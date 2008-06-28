@@ -1,5 +1,5 @@
 //
-// $Id: LMTP.pmod,v 1.11 2004/06/04 17:13:03 vida Exp $
+// $Id: LMTP.pmod,v 1.12 2008/06/28 16:36:56 nilsson Exp $
 //
 
 #pike __REAL_VERSION__
@@ -63,10 +63,10 @@ class Connection {
 //! A LMTP server. It has been fairly well tested against Postfix client.
 //! Actually this module is only an extention to the @[SMTP] server.
 class Server {
-   static object fdport;
+   protected object fdport;
    Configuration config;
 
-   static void accept_callback()
+   protected void accept_callback()
    {
      object fd = fdport->accept();
      if(!fd)

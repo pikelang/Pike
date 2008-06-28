@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: MP3.pike,v 1.3 2008/01/05 22:16:57 grubba Exp $
+// $Id: MP3.pike,v 1.4 2008/06/28 16:36:53 nilsson Exp $
 
 // MP3 file parser/formatter
 //
@@ -54,14 +54,14 @@
     }
   }
 
-  static array(array(int)) bitrates_map =
+  protected array(array(int)) bitrates_map =
   ({
     ({0,32,64,96,128,160,192,224,256,288,320,352,384,416,448}),
     ({0,32,48,56,64,80,96,112,128,160,192,224,256,320,384}),
     ({0,32,40,48,56,64,80,96,112,128,160,192,224,256,320}),
   });
 
-  static array(string) channels_map =
+  protected array(string) channels_map =
   ({ "stereo", "joint", "dual", "single" });
 
   string|int get_data(int maxlen) {
@@ -228,4 +228,5 @@
     DEBUG("ss2int: ret=%O\n", res);
     return res;
   }
+
 

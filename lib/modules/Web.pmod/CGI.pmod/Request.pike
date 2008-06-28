@@ -6,7 +6,7 @@
 
 #pike __REAL_VERSION__
 
-static constant http_decode_string = _Roxen.http_decode_string;
+protected constant http_decode_string = _Roxen.http_decode_string;
 
 //!
 mapping(string:array(string)) variables = ([ ]);
@@ -53,14 +53,14 @@ string prot;
 //!
 string method;
 
-static void add_variable(string name, string value) {
+protected void add_variable(string name, string value) {
   if(variables[name])
     variables[name] += ({ value });
   else
     variables[name] = ({ value });
 }
 
-static void decode_query() {
+protected void decode_query() {
   if(!query) return;
   foreach(query / "&", string v) {
     string a, b;
@@ -79,7 +79,7 @@ static void decode_query() {
   rest_query=replace(rest_query, "+", "\0"); /* IDIOTIC STUPID STANDARD */
 }
 
-static void decode_cookies(string data)
+protected void decode_cookies(string data)
 {
   cookies = ([]);
   foreach(data/";", string c)
@@ -98,7 +98,7 @@ static void decode_cookies(string data)
 }
 
 
-static void decode_post()
+protected void decode_post()
 {
   string a, b;
   if(!data) data="";
@@ -148,7 +148,7 @@ static void decode_post()
 //! creates the request object. To use, create a Request object while
 //! running in a CGI environment. Environment variables will be parsed
 //! and inserted in the appropriate fields of the resulting object.
-static void create()
+protected void create()
 {
   string contents;
 

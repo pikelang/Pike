@@ -16,7 +16,7 @@
 //! @tt{-t @i{argument@}@} or @tt{-t@i{argument@}@} or
 //! @tt{--test=@i{argument@}@}.
 
-static void my_error(string err, int throw_errors) {
+protected void my_error(string err, int throw_errors) {
   if(throw_errors) error(err);
   werror([string(0..255)]err);
   exit(1);

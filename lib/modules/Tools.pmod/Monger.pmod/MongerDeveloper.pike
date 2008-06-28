@@ -1,6 +1,6 @@
 // -*- Pike -*-
 
-// $Id: MongerDeveloper.pike,v 1.7 2008/06/20 16:24:18 srb Exp $
+// $Id: MongerDeveloper.pike,v 1.8 2008/06/28 16:37:02 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -454,7 +454,7 @@ class xmlrpc_handler
   }
  
 
-  static class _caller (string n){
+  protected class _caller (string n){
 
     mixed `()(mixed ... args)
     {

@@ -1,5 +1,5 @@
 #pike __REAL_VERSION__
 
-static void create()
+protected void create()
 {
 }

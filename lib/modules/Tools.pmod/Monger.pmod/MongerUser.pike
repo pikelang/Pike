@@ -1,6 +1,6 @@
 // -*- Pike -*-
 
-// $Id: MongerUser.pike,v 1.7 2008/06/20 16:24:18 srb Exp $
+// $Id: MongerUser.pike,v 1.8 2008/06/28 16:37:02 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -139,7 +139,7 @@ int main(int argc, array(string) argv)
 int(0..0) do_help()
 {
   write(
-#       "This is Monger, the manager for Fresh Pike.
+#"This is Monger, the manager for Fresh Pike.
 
 Usage: pike -x monger [options] modulename
 
@@ -503,7 +503,7 @@ class xmlrpc_handler
   }
  
 
-  static class _caller (string n){
+  protected class _caller (string n){
 
     mixed `()(mixed ... args)
     {

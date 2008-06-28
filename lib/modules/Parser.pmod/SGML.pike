@@ -1,5 +1,5 @@
 //
-// $Id: SGML.pike,v 1.2 2003/11/07 18:40:08 nilsson Exp $
+// $Id: SGML.pike,v 1.3 2008/06/28 16:36:55 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -68,7 +68,7 @@ class SGML
       string file;
       array(SGMLatom) data=({});
 
-      static string _sprintf(int t, mapping m)
+      protected string _sprintf(int t, mapping m)
       {
 	 if (t=='O')
 	 {
@@ -89,13 +89,13 @@ class SGML
       }
    }
 
-   static array(array(SGMLatom|string)) res=({({})});
-   static array(SGMLatom) tagstack=({});
-   static array(object) errors;
+   protected array(array(SGMLatom|string)) res=({({})});
+   protected array(SGMLatom) tagstack=({});
+   protected array(object) errors;
 
    array(SGMLatom|string) data;
 
-   static private array(string) got_tag(object g)
+   protected private array(string) got_tag(object g)
    {
       string name=g->tag_name();
 
@@ -144,7 +144,7 @@ class SGML
    }
 
 
-   private static object p=.HTML();
+   private protected object p=.HTML();
 
    //! @decl void create()
    //! @decl void create(string filename)
@@ -153,7 +153,7 @@ class SGML
    //! @note
    //! 	No, it doesn't read the file itself. See @[feed()].
 
-   static int i;
+   protected int i;
 
    void create(void|string _file)
    {

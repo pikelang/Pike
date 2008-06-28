@@ -38,7 +38,7 @@ void set_max_request_size(int size)
   max_request_size = size;
 }
 
-static class Port {
+protected class Port {
   Stdio.Port port;
   int portno;
   string|int(0..0) interface;
@@ -143,7 +143,7 @@ constant singular_use_headers = ({
     "cookie2",
 });    
 
-static void flatten_headers()
+protected void flatten_headers()
 {
   foreach( singular_headers, string x )
     if( arrayp(request_headers[x]) )
@@ -159,7 +159,7 @@ static void flatten_headers()
 // are called. If parse_variables() deems the request to be finished
 // finalize() is called. If not parse_variables() has replaced the
 // read callback.
-static void read_cb(mixed dummy,string s)
+protected void read_cb(mixed dummy,string s)
 {
     if( !strlen( raw ) )
     {
@@ -188,14 +188,14 @@ static void read_cb(mixed dummy,string s)
       call_out(connection_timeout,connection_timeout_delay);
 }
 
-static void connection_timeout()
+protected void connection_timeout()
 {
    finish(0);
 }
 
 // Parses the request and populates request_type, protocol,
 // full_query, query and not_query.
-static void parse_request()
+protected void parse_request()
 {
    array v=request_raw/" ";
    switch (sizeof(v))
@@ -338,7 +338,7 @@ private void read_cb_chunked( mixed dummy, string data )
   call_out(connection_timeout,connection_timeout_delay);
 }
 
-static int parse_variables()
+protected int parse_variables()
 {
   if (query!="")
     .http_decode_urlencoded_query(query,variables);
@@ -378,7 +378,7 @@ static int parse_variables()
   return 0; // delay
 }
 
-static void parse_post()
+protected void parse_post()
 {
   if ( request_headers["content-type"] && 
        has_prefix(request_headers["content-type"], "multipart/form-data") )
@@ -404,7 +404,7 @@ static void parse_post()
   }
 }
 
-static void finalize()
+protected void finalize()
 {
   my_fd->set_blocking();
   flatten_headers();
@@ -420,7 +420,7 @@ static void finalize()
 
 // Adds incoming data to raw and buf. Once content-length or
 // max_request_size data has been received, finalize is called.
-static void read_cb_post(mixed dummy,string s)
+protected void read_cb_post(mixed dummy,string s)
 {
   raw += s;
   buf += s;
@@ -439,7 +439,7 @@ static void read_cb_post(mixed dummy,string s)
     call_out(connection_timeout,connection_timeout_delay);
 }
 
-static void close_cb()
+protected void close_cb()
 {
 // closed by peer before request read
    if (my_fd) { my_fd->close(); destruct(my_fd); my_fd=0; }

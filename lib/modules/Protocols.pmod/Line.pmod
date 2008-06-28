@@ -1,5 +1,5 @@
 /*
- * $Id: Line.pmod,v 1.22 2003/04/07 17:12:02 nilsson Exp $
+ * $Id: Line.pmod,v 1.23 2008/06/28 16:36:56 nilsson Exp $
  *
  * Line-buffered protocol handling.
  *
@@ -11,10 +11,10 @@
 //! Simple nonblocking line-oriented I/O.
 class simple
 {
-  static object con;
+  protected object con;
 
   //! The sequence separating lines from eachother. "\r\n" by default.
-  static constant line_separator = "\r\n";
+  protected constant line_separator = "\r\n";
 
   //! If this variable has been set, multiple lines will be accumulated,
   //! until a line with a single @expr{"."@} (period) is received.
@@ -46,15 +46,15 @@ class simple
   //!
   void handle_command(string line);
 
-  static int timeout;		// Idle time before timeout.
-  static int timeout_time;	// Time at which next timeout will occur.
+  protected int timeout;		// Idle time before timeout.
+  protected int timeout_time;	// Time at which next timeout will occur.
 
   //! Queue some data to send.
   //!
   //! @seealso
   //! @[handle_command()], @[handle_data()], @[disconnect()]
   //!
-  static void send(string s)
+  protected void send(string s)
   {
     send_q->put(s);
     con->set_write_callback(write_callback);
@@ -69,7 +69,7 @@ class simple
   //! @seealso
   //! @[create()], @[touch_time()]
   //!
-  static void do_timeout()
+  protected void do_timeout()
   {
     if (con) {
       catch {
@@ -85,7 +85,7 @@ class simple
     }
   }
 
-  static void _timeout_cb()
+  protected void _timeout_cb()
   {
     if (timeout > 0) {
       // Timeouts are enabled.
@@ -114,8 +114,8 @@ class simple
     }
   }
 
-  static string multi_line_buffer = "";
-  static void _handle_command(string line)
+  protected string multi_line_buffer = "";
+  protected void _handle_command(string line)
   {
     if (handle_data) {
       if (line != ".") {
@@ -132,7 +132,7 @@ class simple
     }
   }
 
-  static string read_buffer = "";
+  protected string read_buffer = "";
 
   //! Read a line from the input.
   //!
@@ -146,7 +146,7 @@ class simple
   //! @seealso
   //!   @[handle_command()], @[line_separator]
   //!
-  static string read_line()
+  protected string read_line()
   {
     // FIXME: Should probably keep track of where the search ended last time.
     int i = search(read_buffer, line_separator);
@@ -168,7 +168,7 @@ class simple
   //! @seealso
   //!   @[handle_data()], @[handle_command()], @[read_line()]
   //!
-  static void read_callback(mixed ignored, string data)
+  protected void read_callback(mixed ignored, string data)
   {
     touch_time();
 
@@ -191,8 +191,8 @@ class simple
   //!
   object(ADT.Queue) send_q = ADT.Queue();
 
-  static string write_buffer = "";
-  static void write_callback(mixed ignored)
+  protected string write_buffer = "";
+  protected void write_callback(mixed ignored)
   {
     touch_time();
 
@@ -267,7 +267,7 @@ class simple
   //! The default action is to shut down the connection on this side
   //! as well.
   //!
-  static void close_callback()
+  protected void close_callback()
   {
     if (handle_data || sizeof(read_buffer) || sizeof(multi_line_buffer)) {
       werror("close_callback(): Unexpected close!\n");
@@ -382,7 +382,7 @@ class imap_style
     handle_line(line);
   }
 
-  static void read_callback(mixed ignored, string data)
+  protected void read_callback(mixed ignored, string data)
   {
     touch_time();
 

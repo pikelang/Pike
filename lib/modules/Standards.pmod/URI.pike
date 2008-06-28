@@ -4,7 +4,7 @@
 //! absolute form, as defined in RFC 2396 and RFC 3986.
 
 // Implemented by Johan Sundström and Johan Schön.
-// $Id: URI.pike,v 1.27 2008/01/05 14:28:05 grubba Exp $
+// $Id: URI.pike,v 1.28 2008/06/28 16:36:59 nilsson Exp $
 
 #pragma strict_types
 
@@ -49,7 +49,7 @@ string raw_uri;
 
 // Parse authority component (according to RFC 1738, § 3.1)
 // Updated to RFC 3986 $ 3.2.
-static void parse_authority()
+protected void parse_authority()
 {
   // authority   = [ userinfo "@" ] host [ ":" port ]
   if(sscanf(authority, "%[^@]@%s", string userinfo, authority) == 2)
@@ -72,7 +72,7 @@ static void parse_authority()
 }
 
 // Inherit all properties except raw_uri and base_uri from the URI uri. :-)
-static void inherit_properties(this_program uri)
+protected void inherit_properties(this_program uri)
 {
   authority = uri->authority;
   scheme = uri->scheme;
@@ -446,17 +446,17 @@ void add_query_variables(mapping(string:string) vars) {
 // HTTP stuff
 
 // RFC 1738, 2.2. URL Character Encoding Issues
-static constant url_non_corresponding = enumerate(0x21) +
+protected constant url_non_corresponding = enumerate(0x21) +
   enumerate(0x81,1,0x7f);
-static constant url_unsafe = ({ '<', '>', '"', '#', '%', '{', '}',
+protected constant url_unsafe = ({ '<', '>', '"', '#', '%', '{', '}',
 				'|', '\\', '^', '~', '[', ']', '`' });
-static constant url_reserved = ({ ';', '/', '?', ':', '@', '=', '&' });
+protected constant url_reserved = ({ ';', '/', '?', ':', '@', '=', '&' });
 
 // Encode these chars
-static constant url_chars = url_non_corresponding + url_unsafe +
+protected constant url_chars = url_non_corresponding + url_unsafe +
   url_reserved + ({ '+', '\'' });
-static constant url_from = sprintf("%c", url_chars[*]);
-static constant url_to   = sprintf("%%%02x", url_chars[*]);
+protected constant url_from = sprintf("%c", url_chars[*]);
+protected constant url_to   = sprintf("%%%02x", url_chars[*]);
 
 string http_encode(string in)
 {
@@ -541,4 +541,5 @@ string quote(string s)
 		    "%98", "%99", "%9A", "%9B", "%9C", "%9D", "%9E", "%9F",
 		    "%20", "%25", "%27", "%22"}));
 }
+
 

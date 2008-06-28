@@ -1,6 +1,6 @@
 // ID3.pmod
 //
-//  $Id: ID3.pmod,v 1.23 2008/01/13 17:04:09 nilsson Exp $
+//  $Id: ID3.pmod,v 1.24 2008/06/28 16:36:59 nilsson Exp $
 //
 
 #pike __REAL_VERSION__
@@ -33,8 +33,8 @@
 //! limit capability.
 class Buffer(Stdio.File buffer) {
 
-  static string peek_data;
-  static int limit=-1;
+  protected string peek_data;
+  protected int limit=-1;
 
   //! Read @[bytes] bytes from the buffer. Throw an exception
   //! if @[bytes] is bigger than the number of bytes left in the
@@ -143,7 +143,7 @@ class TagHeader {
     tag_size = synchsafe_to_int( bytes[3..] );
   }
 
-  static void decode_flags( int byte ) {
+  protected void decode_flags( int byte ) {
     if(byte&0b1111)
       error( "Unknown flag set in tag header flag field. (%08b)\n", byte );
 
@@ -153,7 +153,7 @@ class TagHeader {
     flag_footer = TEST(byte,4);
   }
 
-  static int encode_flags() {
+  protected int encode_flags() {
     return flag_unsynchronisation<<7 + flag_extended_header<<6 +
       flag_experimental<<5 + flag_footer<<4;
   }
@@ -195,19 +195,19 @@ class ExtendedHeader {
     if(buffer) decode(buffer);
   }
 
-  static void decode_flags(string bytes) {
+  protected void decode_flags(string bytes) {
     int flags = bytes[0];
     flag_is_update = TEST(flags,6);
     flag_crc = TEST(flags,5);
     flag_restrictions = TEST(flags,4);
   }
 
-  static string encode_flags() {
+  protected string encode_flags() {
     return sprintf("%c", flag_is_update<<6 + flag_crc<<5 +
 		   flag_restrictions<<4);
   }
 
-  static string decode_restrictions(int data) {
+  protected string decode_restrictions(int data) {
     restr_size = (data & 0b11000000) >> 6;
     restr_encoding = TEST(data, 5);
     restr_field_size = (data & 0b00011000) >> 3;
@@ -215,7 +215,7 @@ class ExtendedHeader {
     restr_img_size = data & 0b00000011;
   }
 
-  static string encode_restrictions() {
+  protected string encode_restrictions() {
     return sprintf("%c", restr_size<<6 + restr_encoding<<5 +
 		   restr_field_size<<3 + restr_img_enc<<2 +
 		   restr_img_size);
@@ -504,7 +504,7 @@ class Frame {
       sprintf("%c%c", @encode_flags()) + block;
   }
 
-  static string _sprintf(int t) {
+  protected string _sprintf(int t) {
     return t=='O' && sprintf("%O(%s)", this_program, id);
   }
 }
@@ -669,7 +669,7 @@ class Frame_UFID {
     return system + "\0" + id;
   }
 
-  static string _sprintf(int t) {
+  protected string _sprintf(int t) {
     return t=='O' && sprintf("%O(%O/%O)", this_program, system, id);
   }
 }
@@ -677,7 +677,7 @@ class Frame_UFID {
 class Frame_TextPlain {
   inherit FrameData;
 
-  static array(string) texts;
+  protected array(string) texts;
 
   void decode(string data) {
     int encoding;
@@ -721,7 +721,7 @@ class Frame_TextPlain {
     return sizeof(texts*"");
   }
 
-  static string _sprintf(int t) {
+  protected string _sprintf(int t) {
     if( t!='O' || !sizeof(texts)) return UNDEFINED;
     if(sizeof(texts)==1) return sprintf("%O(%O)", this_program, texts[0]);
     return sprintf("%O(%O)", this_program, texts);
@@ -742,7 +742,7 @@ class Frame_TKEY {
     return 0;
   }
 
-  static void verify_keys() {
+  protected void verify_keys() {
     foreach(texts, string key)
       if(!verify_key(key))
 	error("Malformed key %O\n", key);
@@ -836,7 +836,7 @@ class Frame_TRCK {
     return (track ? (string)track : "") + (tracks ? "/"+tracks : "");
   }
 
-  static string _sprintf(int t) {
+  protected string _sprintf(int t) {
     if( t!='O' ) return UNDEFINED;
     if(tracks) return sprintf("%O(%O/%O)", this_program, track,tracks);
     return sprintf("%O(%O)", this_program, track);
@@ -857,7 +857,7 @@ class Frame_TPOS {
     return low_encode(part, parts);
   }
 
-  static string _sprintf(int t) {
+  protected string _sprintf(int t) {
     if( t!='O' ) return UNDEFINED;
     if(parts) return sprintf("%O(%O/%O)", this_program, part,parts);
     return sprintf("%O(%O)", this_program, part);
@@ -920,7 +920,7 @@ class Frame_TextInteger {
     return sizeof(encode());
   }
 
-  static string _sprintf(int t) {
+  protected string _sprintf(int t) {
     return t=='O' && sprintf("%O(%O)", this_program, value);
   }
 }
@@ -947,7 +947,7 @@ class Frame_TXXX {
     return sprintf("%c", ret[0]) + ret[1..]*terminator[ret[0]];
   }
 
-  static string _sprintf(int t) {
+  protected string _sprintf(int t) {
     return t=='O' && sprintf("%O(%O:%O)", this_program,descr,value);
   }
 }
@@ -965,7 +965,7 @@ class Frame_Link {
     return url;
   }
 
-  static string _sprintf(int t) {
+  protected string _sprintf(int t) {
     return t=='O' && sprintf("%O(%O)", this_program,url);
   }
 }
@@ -994,7 +994,7 @@ class Frame_WXXX {
     return sprintf("%c%s%s", ret[0], ret[1], url);
   }
 
-  static string _sprintf(int t) {
+  protected string _sprintf(int t) {
     return t=='O' && sprintf("%O(%O:%O)", this_program,descr,url);
   }
 }
@@ -1024,7 +1024,7 @@ class Frame_Dummy {
     return "";
   }
 
-  static string _sprintf(int t) {
+  protected string _sprintf(int t) {
     return t=='O' && sprintf("%O(%O)", this_program,data);
   }
 #endif
@@ -1058,7 +1058,7 @@ class Frame_COMM {
     return sprintf("%c", ret[0]) + lang + ret[1..]*terminator[ret[0]];
   }
 
-  static string _sprintf(int t) {
+  protected string _sprintf(int t) {
     return t=='O' && sprintf("%O(%O,%O:%O)", this_program,lang,short,text);
   }
 }
@@ -1085,7 +1085,7 @@ class Frame_APIC {
     return sprintf("%c%s\0%c%s%s", ret[0],mime,type,ret[1],img);
   }
 
-  static string _sprintf(int t) {
+  protected string _sprintf(int t) {
     return t=='O' && sprintf("%O(%O,%O,%O)", this_program,mime,descr,type);
   }
 }
@@ -1106,7 +1106,7 @@ class Frame_POPM {
     return sprintf("%s\0%c%s", email, rating, Gmp.mpz(count)->digits(256));
   }
 
-  static string _sprintf(int t) {
+  protected string _sprintf(int t) {
     return t=='O' && sprintf("%O(%O,%O,%O)", this_program,email,rating,count);
   }
 }
@@ -1133,7 +1133,7 @@ class Frame_GEOB {
     // FIXME
   }
 
-  static string _sprintf(int t) {
+  protected string _sprintf(int t) {
     return t=='O' && sprintf("%O(%O,%O,%O)", this_program,mime,filename,descr);
   }
 }
@@ -1152,7 +1152,7 @@ class Frame_PRIV {
     return owner + "\0" + data;
   }
 
-  static string _sprintf(int t) {
+  protected string _sprintf(int t) {
     return t=='O' && sprintf("%O(%O,%O)", this_program,owner,data);
   }
 }
@@ -1169,7 +1169,7 @@ class Tagv1 {
        "sub_version": 0
     ]);
 
-  static class Parser {
+  protected class Parser {
     inherit ADT.Struct;
     Item head = Chars(3);
     Item title = Chars(30);
@@ -1229,8 +1229,8 @@ class Framev1 {
 }
 
 class FrameDatav1 {
-  static string frame_data;
-  static string id;
+  protected string frame_data;
+  protected string id;
 
   void create(string buffer, string name) {
     frame_data = buffer;
@@ -1259,13 +1259,13 @@ class FrameDatav1 {
 //!  @[Tagv2], @[Tagv1]
 class Tag {
 
-  static Tagv2|Tagv1 tag;
+  protected Tagv2|Tagv1 tag;
 
   //! The file object @[fd] is searched for version 2 tags, and if
   //! not found, version 1 tags.
   //! @throws
   //!   If no tag was found in the file an error is thrown.
-  static void create(Stdio.File fd) {
+  protected void create(Stdio.File fd) {
 
     catch(tag = Tagv2(Buffer(fd)));
     if(tag)
@@ -1279,8 +1279,8 @@ class Tag {
 
   //! The index operators are overloaded to index the encapsulated
   //! Tagv1 or Tagv2 object.
-  static mixed `[](string index) { return `->(index); }
-  static mixed `->(string index) {
+  protected mixed `[](string index) { return `->(index); }
+  protected mixed `->(string index) {
 
     if(index == "version")
       return ""+tag->header->major_version+"."+tag->header->minor_version+
@@ -1296,12 +1296,12 @@ class Tag {
   //! The version of the encapsulated tag in the form @expr{"%d.%d.%d"@}.
 
   //! Indices will return the indices of the tag object.
-  static array _indices() {
+  protected array _indices() {
     return indices(tag);
   }
 
   //! Values will return the values of the tag object.
-  static array _values() {
+  protected array _values() {
     return values(tag);
   }
 
@@ -1366,7 +1366,7 @@ class Tag {
      return rv;
    }
 
-  static string _sprintf(int t, mapping args) {
+  protected string _sprintf(int t, mapping args) {
     return t=='O' && sprintf("Tag(%O)", tag);
   }
 

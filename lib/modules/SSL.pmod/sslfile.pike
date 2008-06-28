@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.109 2007/03/14 15:42:39 mast Exp $
+/* $Id: sslfile.pike,v 1.110 2008/06/28 16:36:58 nilsson Exp $
  */
 
 #if constant(SSL.Cipher.CipherAlgorithm)
@@ -49,7 +49,7 @@
 // #define SSL3_DEBUG_TRANSPORT
 
 #ifdef SSL3_DEBUG
-static string stream_descr;
+protected string stream_descr;
 #define SSL3_DEBUG_MSG(X...)						\
   werror ("[thr:" + this_thread()->id_number() +			\
 	  "," + (stream ? "" : "ex ") + stream_descr + "] " + X)
@@ -64,7 +64,7 @@ static string stream_descr;
 #define SSL3_DEBUG_MORE_MSG(X...) 0
 #endif
 
-static Stdio.File stream;
+protected Stdio.File stream;
 // The stream is closed by shutdown(), which is called directly or
 // indirectly from destroy() or close() but not from anywhere else.
 //
@@ -74,47 +74,47 @@ static Stdio.File stream;
 // close_state >= NORMAL_CLOSE. The stream is closed by the callbacks
 // as soon the close packets are done, or if an error occurs.
 
-static SSL.connection conn;
+protected SSL.connection conn;
 // Always set when stream is. Destructed with destroy() at shutdown
 // since it contains cyclic references. Noone else gets to it, though.
 
-static array(string) write_buffer; // Encrypted data to be written.
-static String.Buffer read_buffer; // Decrypted data that has been read.
+protected array(string) write_buffer; // Encrypted data to be written.
+protected String.Buffer read_buffer; // Decrypted data that has been read.
 
-static mixed callback_id;
-static function(void|object,void|mixed:int) accept_callback;
-static function(void|mixed,void|string:int) read_callback;
-static function(void|mixed:int) write_callback;
-static function(void|mixed:int) close_callback;
+protected mixed callback_id;
+protected function(void|object,void|mixed:int) accept_callback;
+protected function(void|mixed,void|string:int) read_callback;
+protected function(void|mixed:int) write_callback;
+protected function(void|mixed:int) close_callback;
 
-static Pike.Backend real_backend;
+protected Pike.Backend real_backend;
 // The real backend for the stream.
 
-static Pike.Backend local_backend;
+protected Pike.Backend local_backend;
 // Internally all I/O is done using callbacks. When the real backend
 // can't be used, either because we aren't in callback mode (i.e. the
 // user hasn't registered any callbacks), or because we're to do a
 // blocking operation, this local one takes its place. It's
 // created on demand.
 
-static int nonblocking_mode;
+protected int nonblocking_mode;
 
-static enum CloseState {
+protected enum CloseState {
   STREAM_OPEN = 0,
   STREAM_UNINITIALIZED = 1,
   NORMAL_CLOSE = 2,		// The caller has requested a normal close.
   CLEAN_CLOSE = 3,		// The caller has requested a clean close.
 }
-static CloseState close_state = STREAM_UNINITIALIZED;
+protected CloseState close_state = STREAM_UNINITIALIZED;
 
-static enum ClosePacketSendState {
+protected enum ClosePacketSendState {
   CLOSE_PACKET_NOT_SCHEDULED = 0,
   CLOSE_PACKET_SCHEDULED,
   CLOSE_PACKET_QUEUED_OR_DONE,
   CLOSE_PACKET_MAYBE_IGNORED_WRITE_ERROR,
   CLOSE_PACKET_WRITE_ERROR,
 }
-static ClosePacketSendState close_packet_send_state;
+protected ClosePacketSendState close_packet_send_state;
 // State for the close packet we send. The trickiness here is that if
 // there's an error writing it, that error should sometimes be
 // ignored:
@@ -128,14 +128,14 @@ static ClosePacketSendState close_packet_send_state;
 // Also, if there is an error we can't report it immediately since the
 // remote close packet might be sitting in the input buffer.
 
-static int local_errno;
+protected int local_errno;
 // If nonzero, override the errno on the stream with this.
 
-static int cb_errno;
+protected int cb_errno;
 // Stores the errno from failed I/O in a callback so that the next
 // visible I/O operation can report it properly.
 
-static int got_extra_read_call_out;
+protected int got_extra_read_call_out;
 // 1 when we have a call out to ssl_read_callback. We get this when we
 // need to call read_callback or close_callback but can't do that
 // right away from ssl_read_callback. See comments in that function
@@ -147,12 +147,12 @@ static int got_extra_read_call_out;
 // to schedule an extra read call out; update_internal_state will then
 // do the actual call out installation if possible.
 
-static int alert_cb_called;
+protected int alert_cb_called;
 // Need to know if the alert callback has been called in
 // ssl_read_callback since it can't continue in that case. This is
 // only set temporarily while ssl_read_callback runs.
 
-static constant epipe_errnos = (<
+protected constant epipe_errnos = (<
   System.EPIPE,
   System.ECONNRESET,
 #if constant(System.WSAECONNRESET)
@@ -215,7 +215,7 @@ static constant epipe_errnos = (<
 #define THREAD_T Thread.Thread
 #define THIS_THREAD() this_thread()
 
-static void thread_error (string msg, THREAD_T other_thread)
+protected void thread_error (string msg, THREAD_T other_thread)
 {
 #if 0 && constant (_locate_references)
   werror ("%s\n%O got %d refs", msg, this, _refs (this));
@@ -247,7 +247,7 @@ static void thread_error (string msg, THREAD_T other_thread)
 #define THREAD_T int
 #define THIS_THREAD() 1
 
-static void thread_error (string msg, THREAD_T other_thread)
+protected void thread_error (string msg, THREAD_T other_thread)
 {
   error ("%s"
 	 "%s\n"
@@ -267,7 +267,7 @@ static void thread_error (string msg, THREAD_T other_thread)
 
 #endif	// !constant (Thread.thread_create)
 
-static THREAD_T op_thread;
+protected THREAD_T op_thread;
 
 #define CHECK_CB_MODE(CUR_THREAD) do {					\
     if (Pike.Backend backend = stream && stream->query_backend()) {	\
@@ -441,7 +441,7 @@ static THREAD_T op_thread;
     }									\
   } while (0)
 
-static void create (Stdio.File stream, SSL.context ctx,
+protected void create (Stdio.File stream, SSL.context ctx,
 		    int|void is_client, int|void is_blocking)
 //! Create a connection over @[stream], which should be an open socket or
 //! pipe. @[ctx] is the SSL context. If @[is_client] is set then a
@@ -605,7 +605,7 @@ int close (void|string how, void|int clean_close, void|int dont_throw)
   return 1;
 }
 
-static void cleanup_on_error()
+protected void cleanup_on_error()
 // Called when any error occurs on the stream. (Doesn't handle errno
 // reporting since it might involve either local_errno and/or
 // cb_errno.)
@@ -691,7 +691,7 @@ Stdio.File shutdown()
   } LEAVE;
 }
 
-static void destroy()
+protected void destroy()
 //! Try to close down the connection properly since it's customary to
 //! close files just by dropping them. No guarantee can be made that
 //! the close packet gets sent successfully though, because we can't
@@ -1281,7 +1281,7 @@ string _sprintf(int t) {
 }
 
 
-static void update_internal_state (void|int assume_real_backend)
+protected void update_internal_state (void|int assume_real_backend)
 // Update the internal callbacks according to the current state. Does
 // nothing if the local backend is active, unless assume_real_backend
 // is set, in which case we're installing callbacks for the real
@@ -1377,7 +1377,7 @@ static void update_internal_state (void|int assume_real_backend)
 			 got_extra_read_call_out);
 }
 
-static int queue_write()
+protected int queue_write()
 // Return 0 if the connection is still alive, 1 if it was closed
 // politely, and -1 if it died unexpectedly (specifically, our side
 // has sent a fatal alert packet (not close notify) for some reason
@@ -1412,7 +1412,7 @@ static int queue_write()
   return res;
 }
 
-static int direct_write()
+protected int direct_write()
 // Do a write directly (and maybe also read if there's internal
 // reading to be done). Something to write is assumed to exist (either
 // in write_buffer or in the packet queue). Returns zero on error (as
@@ -1449,7 +1449,7 @@ static int direct_write()
   return 1;
 }
 
-static int ssl_read_callback (int called_from_real_backend, string input)
+protected int ssl_read_callback (int called_from_real_backend, string input)
 {
   SSL3_DEBUG_MSG ("ssl_read_callback (%O, %s): "
 		  "nonblocking mode=%d, callback mode=%d%s%s\n",
@@ -1673,7 +1673,7 @@ static int ssl_read_callback (int called_from_real_backend, string input)
   return 0;
 }
 
-static int ssl_write_callback (int called_from_real_backend)
+protected int ssl_write_callback (int called_from_real_backend)
 {
   SSL3_DEBUG_MSG ("ssl_write_callback (%O): "
 		  "nonblocking mode=%d, callback mode=%d%s%s\n",
@@ -1888,7 +1888,7 @@ static int ssl_write_callback (int called_from_real_backend)
   return ret;
 }
 
-static int ssl_close_callback (int called_from_real_backend)
+protected int ssl_close_callback (int called_from_real_backend)
 {
   SSL3_DEBUG_MSG ("ssl_close_callback (%O): "
 		  "nonblocking mode=%d, callback mode=%d%s%s\n",
@@ -1971,3 +1971,4 @@ static int ssl_close_callback (int called_from_real_backend)
 #else // constant(SSL.Cipher.CipherAlgorithm)
 constant this_program_does_not_exist = 1;
 #endif
+

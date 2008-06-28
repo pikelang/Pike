@@ -1,7 +1,7 @@
 #! /usr/bin/env pike
 #pike __REAL_VERSION__
 
-/* $Id: test_pike.pike,v 1.135 2008/06/16 16:15:41 nilsson Exp $ */
+/* $Id: test_pike.pike,v 1.136 2008/06/28 16:37:02 nilsson Exp $ */
 
 constant description = "Executes tests according to testsuite files.";
 
@@ -184,7 +184,7 @@ class Watchdog
   int verbose, timeout_phase;
   int start_time = time();
 
-  static inherit Tools.Testsuite.WatchdogFilterStream;
+  protected inherit Tools.Testsuite.WatchdogFilterStream;
 
   string format_timestamp()
   {

@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.112 2008/06/20 16:24:18 srb Exp $
+// $Id: client.pike,v 1.113 2008/06/28 16:36:58 nilsson Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -117,7 +117,7 @@ import ".";
   }
 
 //! @ignore
-static function(string:string) get_attr_decoder (string attr,
+protected function(string:string) get_attr_decoder (string attr,
 						 DO_IF_DEBUG (void|int nowarn))
 {
   if (mapping(string:mixed) attr_descr = get_attr_type_descr (attr)) {
@@ -139,7 +139,7 @@ static function(string:string) get_attr_decoder (string attr,
 }
 //! @endignore
 
-static function(string:string) get_attr_encoder (string attr)
+protected function(string:string) get_attr_encoder (string attr)
 {
   if (mapping(string:mixed) attr_descr = get_attr_type_descr (attr)) {
     if (function(string:string) encoder =
@@ -258,7 +258,7 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
       return res;
     }
 
-    static void decode_entry (ResultEntry ent)
+    protected void decode_entry (ResultEntry ent)
     {
       // Used in LDAPv3 only: Decode the dn and values as appropriate
       // according to the schema. Note that attributes with the
@@ -1135,7 +1135,7 @@ void reset_options()
 
   } // add
 
-static mapping(string:array(string)) simple_read (string object_name,
+protected mapping(string:array(string)) simple_read (string object_name,
 						  object filter,
 						  array attrs)
 // Makes a base object search for object_name. The result is returned
@@ -1172,7 +1172,7 @@ static mapping(string:array(string)) simple_read (string object_name,
   return res;
 }
 
-static mapping(string:array(string)) root_dse;
+protected mapping(string:array(string)) root_dse;
 
 array(string) get_root_dse_attr (string attr)
 //! Returns the value of an attribute in the root DSE (DSA-Specific
@@ -1248,7 +1248,7 @@ array(string) get_root_dse_attr (string attr)
   return root_dse[attr];
 }
 
-static object make_control (string control_type, void|string value,
+protected object make_control (string control_type, void|string value,
 			    void|int critical)
 {
   array(object) seq = ({Standards.ASN1.Types.asn1_octet_string (control_type),
@@ -1257,7 +1257,7 @@ static object make_control (string control_type, void|string value,
   return Standards.ASN1.Types.asn1_sequence (seq);
 }
 
-static multiset(string) supported_controls;
+protected multiset(string) supported_controls;
 
 multiset(string) get_supported_controls()
 //! Returns a multiset containing the controls supported by the
@@ -2032,7 +2032,7 @@ mapping(string:mixed) get_parsed_url() {return lauth;}
 
 // Schema handling.
 
-static mapping(string:array(string)) query_subschema (string dn,
+protected mapping(string:array(string)) query_subschema (string dn,
 						      array(string) attrs)
 // Queries the server for the specified attributes in the subschema
 // applicable for the specified object. The return value is on the
@@ -2083,7 +2083,7 @@ static mapping(string:array(string)) query_subschema (string dn,
   return 0;
 }
 
-static mapping(string:mixed) parse_schema_terms (
+protected mapping(string:mixed) parse_schema_terms (
   string str,
   mapping(string:string|multiset|mapping) known_terms,
   string errmsg_prefix)
@@ -2270,7 +2270,7 @@ static mapping(string:mixed) parse_schema_terms (
   return res;
 }
 
-static constant attr_type_term_syntax = ([
+protected constant attr_type_term_syntax = ([
   "NAME":			"qdescrs",
   "DESC":			"qdstring",
   "OBSOLETE":			"flag",
@@ -2295,7 +2295,7 @@ static constant attr_type_term_syntax = ([
   "":				"qdstrings"
 ]);
 
-static mapping(string:mapping(string:mixed)) attr_type_descrs;
+protected mapping(string:mapping(string:mixed)) attr_type_descrs;
 
 mapping(string:mixed) get_attr_type_descr (string attr, void|int standard_attrs)
 //! Returns the attribute type description for the given attribute,
@@ -2516,3 +2516,4 @@ int main (int argc, array(string) argv)
 #else
 constant this_program_does_not_exist=1;
 #endif
+

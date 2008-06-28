@@ -13,9 +13,9 @@
 
 inherit .polyline;
 
-static constant LITET = 1.0e-38;
-static constant STORTLITET = 1.0e-30;
-static constant STORT = 1.0e30;
+protected constant LITET = 1.0e-38;
+protected constant STORTLITET = 1.0e-30;
+protected constant STORT = 1.0e30;
 
 object tileimage(object img, int xs, int ys)
 {

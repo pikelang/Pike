@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.pike,v 1.40 2008/01/09 14:26:07 mast Exp $
+ * $Id: mysql.pike,v 1.41 2008/06/28 16:36:59 nilsson Exp $
  *
  * Glue for the Mysql-module
  */
@@ -33,15 +33,15 @@ constant unicode_decode_mode_is_broken = 1;
 // Set to the above if the connection is requested to be in one of the
 // unicode modes. latin1 unicode encode mode is enabled by default; it
 // should be compatible with earlier pike versions.
-static int utf8_mode;
+protected int utf8_mode;
 
 // The charset, either "latin1" or "utf8", currently assigned to
 // character_set_client when unicode encode mode is enabled. Zero when
 // the connection charset has been set to something else than "latin1"
 // or "unicode".
-static string send_charset;
+protected string send_charset;
 
-static void update_unicode_encode_mode_from_charset (string charset)
+protected void update_unicode_encode_mode_from_charset (string charset)
 {
   switch (charset) {		// Lowercase assumed.
     case "latin1":
@@ -803,7 +803,7 @@ int(0..1) is_keyword( string name )
   ])[ lower_case(name) ];
 }
 
-static void create(string|void host, string|void database,
+protected void create(string|void host, string|void database,
 		   string|void user, string|void _password,
 		   mapping(string:string|int)|void options)
 {
@@ -851,3 +851,4 @@ static void create(string|void host, string|void database,
 #else
 constant this_program_does_not_exist=1;
 #endif /* constant(Mysql.mysql) */
+

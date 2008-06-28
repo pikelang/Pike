@@ -1,4 +1,4 @@
-/* $Id: RSA.pike,v 1.10 2008/05/09 02:20:24 nilsson Exp $
+/* $Id: RSA.pike,v 1.11 2008/06/28 16:36:54 nilsson Exp $
  *
  * Follow the PKCS#1 standard for padding and encryption.
  */
@@ -8,15 +8,15 @@
 
 #if constant(Gmp) && constant(Gmp.mpz) && constant(Crypto.Hash)
 
-static Gmp.mpz n;  /* modulo */
-static Gmp.mpz e;  /* public exponent */
-static Gmp.mpz d;  /* private exponent (if known) */
-static int size;
+protected Gmp.mpz n;  /* modulo */
+protected Gmp.mpz e;  /* public exponent */
+protected Gmp.mpz d;  /* private exponent (if known) */
+protected int size;
 
 /* Extra info associated with a private key. Not currently used. */
    
-static Gmp.mpz p;
-static Gmp.mpz q;
+protected Gmp.mpz p;
+protected Gmp.mpz q;
 
 //! Returns the RSA modulo (n).
 Gmp.mpz get_n()
@@ -340,7 +340,7 @@ this_program generate_key(int(128..) bits, function(int:string)|void r)
  * Block cipher compatibility.
  */
 
-static int encrypt_mode; // For block cipher compatible functions
+protected int encrypt_mode; // For block cipher compatible functions
 
 //! Sets the public key to @[key] and the mode to encryption.
 //! @seealso
@@ -379,3 +379,4 @@ string name() {
 #else
 constant this_program_does_not_exist=1;
 #endif
+

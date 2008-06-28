@@ -6,30 +6,30 @@
 #include "./debug.h"
 #define TOKEN_DEBUG 0
 
-static inherit .PikeObjects;
-static inherit "module.pmod";
+protected inherit .PikeObjects;
+protected inherit "module.pmod";
 
 constant EOF = "";
 
-static mapping(string : string) quote =
+protected mapping(string : string) quote =
   (["\n" : "\\n", "\\" : "\\\\" ]);
-static string quoteString(string s) {
+protected string quoteString(string s) {
   return "\"" + (quote[s] || s) + "\"";
 }
 
-static mapping(string : string) matchTokens =
+protected mapping(string : string) matchTokens =
 ([ "(":")", "{":"}", "[":"]",
    "({" : "})", "([" : "])", "(<":">)" ]);
 
-static mapping(string : string) reverseMatchTokens =
+protected mapping(string : string) reverseMatchTokens =
   mkmapping(values(matchTokens), indices(matchTokens));
 
-static multiset(string) modifiers =
+protected multiset(string) modifiers =
 (< "nomask", "final", "static", "extern",
    "private", "local", "public", "protected",
    "inline", "optional", "variant"  >);
 
-static multiset(string) scopeModules =
+protected multiset(string) scopeModules =
 (< "predef", "top", "lfun", "efun" >);
 
 void skip(multiset(string)|string tokens) {
@@ -98,7 +98,7 @@ void skipNewlines() {
 
 SourcePosition currentPosition = 0;
 
-static int parseError(string message, mixed ... args) {
+protected int parseError(string message, mixed ... args) {
   message = sprintf(message, @args);
   // werror("parseError! \n");
   // werror("%s\n", describe_backtrace(backtrace()));
@@ -141,7 +141,7 @@ string peekToken(int | void with_newlines) {
   return tokens[at];
 }
 
-static int nReadDocComments = 0;
+protected int nReadDocComments = 0;
 int getReadDocComments() { return nReadDocComments; }
 
 string readToken(int | void with_newlines) {
@@ -813,7 +813,7 @@ void setTokens(array(string) t, array(int) p) {
 
 // create(string, filename, firstline)
 // create(array(Token))
-static void create(string|void s,
+protected void create(string|void s,
                    string|SourcePosition|void _filename,
                    int|void line)
 {

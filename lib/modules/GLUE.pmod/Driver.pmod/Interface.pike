@@ -1,11 +1,11 @@
 //
-// $Id: Interface.pike,v 1.2 2004/01/24 21:42:26 nilsson Exp $
+// $Id: Interface.pike,v 1.3 2008/06/28 16:36:54 nilsson Exp $
 
 #pike __REAL_VERSION__
 
 // Internal interface class for Drivers.
 
-static void create( function event, function config );
+protected void create( function event, function config );
 
 void set_resolution( int(0..) x, int(0..) y );
 
@@ -21,6 +21,7 @@ void swap_buffers();
 void exit();
 
 void init(void|string title, void|string icon);
+
 
 
 

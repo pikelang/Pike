@@ -4,7 +4,7 @@
 //
 // #pike __REAL_VERSION__
 //
-// $Id: Pike.pmod,v 1.40 2007/06/01 06:13:28 mbaehr Exp $
+// $Id: Pike.pmod,v 1.41 2008/06/28 16:36:55 nilsson Exp $
 
 //! This module parses and tokenizes Pike source code.
 
@@ -58,7 +58,7 @@ class UnterminatedStringError
   string err_str;
   //! The string that failed to be tokenized
 
-  static void create(string _err_str, void|array bt)
+  protected void create(string _err_str, void|array bt)
   { 
     err_str = _err_str;
     ::create(sprintf("Unterminated string: %O\n", err_str), bt);

@@ -6,7 +6,7 @@
 
 #pike __REAL_VERSION__
 
-constant cvs_id = "$Id: module.pmod,v 1.29 2007/03/06 13:05:45 mast Exp $";
+constant cvs_id = "$Id: module.pmod,v 1.30 2008/06/28 16:37:03 nilsson Exp $";
 
 #define ERR(msg) error( "(Yabu) "+msg+"\n" )
 #define IO_ERR(msg) error( "(Yabu) %s, %s (%d)\n",msg,strerror(errno()),errno() )
@@ -40,11 +40,11 @@ constant cvs_id = "$Id: module.pmod,v 1.29 2007/03/06 13:05:45 mast Exp $";
  *
  * ProcessLock will throw an error if the lock could not be obtained.
  */
-static private class ProcessLock {
-  static private string lock_file;
-  static private int have_lock = 0;
+protected private class ProcessLock {
+  protected private string lock_file;
+  protected private int have_lock = 0;
 
-  static private int get_locked_pid()
+  protected private int get_locked_pid()
   {
     return (int) (Stdio.read_file(lock_file)||"0");
   }
@@ -131,14 +131,14 @@ class YabuLog {
  * FileIO handles all basic file operations in Yabu.
  *
  */
-static private class FileIO {
+protected private class FileIO {
   INHERIT_MUTEX
-  static private inherit Stdio.File:file;
-  static private string filename, filemode;
+  protected private inherit Stdio.File:file;
+  protected private string filename, filemode;
 
-  static private int mask = 0;
+  protected private int mask = 0;
 
-  static private void seek(int offset)
+  protected private void seek(int offset)
   {
     if(offset < 0 || file::seek(offset) == -1)
       ERR("seek failed");
@@ -207,26 +207,26 @@ static private class FileIO {
  */
 class Chunk {
   INHERIT_MUTEX
-  static private inherit FileIO:file;
+  protected private inherit FileIO:file;
 
-  static private object parent;
-  static private int magic, compress, write;
-  static private string start_time, filename;
+  protected private object parent;
+  protected private int magic, compress, write;
+  protected private string start_time, filename;
 
   /* Point in file from which new chunks can be allocated. */
-  static private int eof = 0;
+  protected private int eof = 0;
   
-  static private mapping frees = ([]), keys = ([]);
+  protected private mapping frees = ([]), keys = ([]);
 
   /* Escape special characters used for synchronizing
    * the contents of Yabu files.
    */
-  static private string escape(string s)
+  protected private string escape(string s)
   {
     return replace(s, ({ "\n", "%" }), ({ "%n", "%p" }));
   }
 
-  static private string descape(string s)
+  protected private string descape(string s)
   {
     return replace(s, ({ "%n", "%p" }), ({ "\n", "%" }));
   }
@@ -234,7 +234,7 @@ class Chunk {
   /*
    * Encode/decode Yabu numbers (8 digit hex numbers).
    */
-  static private string encode_num(int x)
+  protected private string encode_num(int x)
   {
     string s = sprintf("%08x", x);
     if(sizeof(s) != 8)
@@ -242,7 +242,7 @@ class Chunk {
     return s;
   }
 
-  static private int decode_num(string s, int offset)
+  protected private int decode_num(string s, int offset)
   {
     int x;
     if(sizeof(s) < offset+8)
@@ -255,7 +255,7 @@ class Chunk {
   /*
    * Encode/decode Yabu keys.
    */
-  static private string encode_key(int offset, int type)
+  protected private string encode_key(int offset, int type)
   {
     return encode_num(offset)+":"+encode_num(type);
   }
@@ -267,7 +267,7 @@ class Chunk {
   /* This magic string of characters surrounds all chunk in order to
    * check if the same magic appears on both sides of the chunk contents.
    */
-  static private string next_magic()
+  protected private string next_magic()
   {
     return start_time + encode_num(magic++);
   }
@@ -275,14 +275,14 @@ class Chunk {
   /* The chunk block allocation policy. By using fixed chunk sizes, reuse
    * of empty chunks is encouraged.
    */
-  static private int find_nearest_2x(int num)
+  protected private int find_nearest_2x(int num)
   {
     for(int b=4;b<30;b++) if((1<<b) >= num) return (1<<b);
     ERR("Chunk too large (max 1 gigabyte)");
   }
 
   /* Generate the null chuck, which is the same as the empty chunk. */
-  static private mapping null_chunk(int t)
+  protected private mapping null_chunk(int t)
   {
     string entry = "";
     string magic = next_magic();
@@ -297,7 +297,7 @@ class Chunk {
   /*
    * Encode/decode chunks.
    */
-  static private mapping encode_chunk(mixed x)
+  protected private mapping encode_chunk(mixed x)
   {
     string entry = encode_value(x);
 #if constant(Gz.inflate)
@@ -316,7 +316,7 @@ class Chunk {
     return ([ "type":t, "entry":entry ]);
   }
 
-  static private mapping decode_chunk(string chunk)
+  protected private mapping decode_chunk(string chunk)
   {
     mapping m = ([]);
 
@@ -351,7 +351,7 @@ class Chunk {
   }
 
   /* Allocate chunks by reuse or from to the end of the file. */
-  static private int allocate_chunk(int type, mapping m)
+  protected private int allocate_chunk(int type, mapping m)
   {
     array f;
     if(f = frees[type]) {
@@ -369,7 +369,7 @@ class Chunk {
   }
 
   /* Perform consistency check. Returns 0 for failure, otherwise success. */
-  static private int consistency()
+  protected private int consistency()
   {
     multiset k = mkmultiset(indices(keys));
     foreach(indices(frees), int type)
@@ -557,8 +557,8 @@ class Chunk {
  *
  */
 class Transaction {
-  static private int id;
-  static private object table, keep_ref;
+  protected private int id;
+  protected private object table, keep_ref;
 
   void sync()
   {
@@ -639,14 +639,14 @@ class Transaction {
  */
 class Table {
   INHERIT_MUTEX
-  static private object index, db, lock_file;
+  protected private object index, db, lock_file;
 
-  static private string mode, filename;
-  static private mapping handles, changes;
-  static private mapping t_start, t_changes, t_handles, t_deleted;
-  static private int sync_timeout, write, dirty, magic, id = 0x314159;
+  protected private string mode, filename;
+  protected private mapping handles, changes;
+  protected private mapping t_start, t_changes, t_handles, t_deleted;
+  protected private int sync_timeout, write, dirty, magic, id = 0x314159;
 
-  static private void modified()
+  protected private void modified()
   {
     dirty++;
     if(sync_timeout && dirty >= sync_timeout)
@@ -728,12 +728,12 @@ class Table {
     UNLOCK();
   }
   
-  static private int next_magic()
+  protected private int next_magic()
   {
     return magic++;
   }
 
-  static private mixed _set(string handle, mixed x, mapping handles)
+  protected private mixed _set(string handle, mixed x, mapping handles)
   {
     if(!write) ERR("Cannot set in read mode");
 
@@ -742,7 +742,7 @@ class Table {
     return x;
   }
 
-  static private mixed _get(string handle, mapping handles)
+  protected private mixed _get(string handle, mapping handles)
   {
     return handles[handle]?db->get(handles[handle])->entry:0;
   }
@@ -1026,9 +1026,9 @@ class Table {
  *
  */
 class _Table {
-  static object table;
-  static string handle;
-  static function table_destroyed;
+  protected object table;
+  protected string handle;
+  protected function table_destroyed;
 
   void sync()
   {
@@ -1104,12 +1104,12 @@ class _Table {
   /*
    * Compile table statistics.
    */
-  static private string st_keys(int size, mapping m)
+  protected private string st_keys(int size, mapping m)
   {
     return sprintf("%4d", size);
   }
   
-  static private string st_size(int size, mapping m)
+  protected private string st_size(int size, mapping m)
   {
     return sprintf("%7.3f Mb", (float)size/(1024.0*1024.0));
     
@@ -1121,7 +1121,7 @@ class _Table {
     return sprintf("%s %s", r, ([ 1:"Kb", 2:"Mb", 3:"Gb" ])[e]||"b ");
   }
 
-  static private string st_used(int used, mapping m)
+  protected private string st_used(int used, mapping m)
   {
     return sprintf("%3d %%", (int) (100.0*(float)used/(float)m->size));
   }
@@ -1164,10 +1164,10 @@ class _Table {
 class db {
   INHERIT_MUTEX
 
-  static string dir, mode;
-  static mapping tables = ([]), table_refs = ([]);
-  static int write, id;
-  static object lock_file;
+  protected string dir, mode;
+  protected mapping tables = ([]), table_refs = ([]);
+  protected int write, id;
+  protected object lock_file;
 
   void sync()
   {
@@ -1178,7 +1178,7 @@ class db {
     UNLOCK();
   }
   
-  static void _table_destroyed(string handle)
+  protected void _table_destroyed(string handle)
   {
     LOCK();
     table_refs[handle]--;
@@ -1231,7 +1231,7 @@ class db {
   }
 
   /* Remove maximum one level of directories and files. */
-  static private void level2_rm(string f)
+  protected private void level2_rm(string f)
   {
     if(has_suffix(f, "/"))
       f = f[..sizeof(f)-2];
@@ -1252,7 +1252,7 @@ class db {
     UNLOCK();
   }
 
-  static void mkdirhier(string from)
+  protected void mkdirhier(string from)
   {
     string a, b;
     array f;
@@ -1331,10 +1331,10 @@ class db {
 class LookupTable {
   INHERIT_MUTEX
   
-  static private int minx;
-  static private object table;
+  protected private int minx;
+  protected private object table;
 
-  static private string h(string s)
+  protected private string h(string s)
   {
     return (string)(hash(s) & minx);
   }
@@ -1395,7 +1395,7 @@ class LookupTable {
  */
 class lookup {
   inherit db;
-  static private int minx;
+  protected private int minx;
   
   object table(string handle)
   {

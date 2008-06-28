@@ -9,12 +9,12 @@
 
 import ".";
 
-static int procfs=-1;
-static Gmp.mpz dummy; // load the Gmp module
+protected int procfs=-1;
+protected Gmp.mpz dummy; // load the Gmp module
 
 // internal to find a pike binary
 
-private static string locate_binary(array path, string name)
+private protected string locate_binary(array path, string name)
 {
    string dir;
    object info;
@@ -30,7 +30,7 @@ private static string locate_binary(array path, string name)
 
 // internal to find/make pike exec arguments
 
-static array runpike=
+protected array runpike=
 lambda()
 {
    array res=({master()->_pike_file_name});

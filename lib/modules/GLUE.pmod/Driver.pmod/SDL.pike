@@ -1,5 +1,5 @@
 //
-// $Id: SDL.pike,v 1.5 2004/04/21 08:55:49 nilsson Exp $
+// $Id: SDL.pike,v 1.6 2008/06/28 16:36:54 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -8,21 +8,21 @@
 inherit .Interface;
 import GLUE.Events;
 
-static int bpp;
-static SDL.Surface screen;
+protected int bpp;
+protected SDL.Surface screen;
 #if constant(SDL.Joystick)
-static array(SDL.Joystick) sticks = ({});
+protected array(SDL.Joystick) sticks = ({});
 #endif
-static function key_evt, configure_event;
-static int is_full;
-static SDL.Event evt = SDL.Event();
-static mapping active = ([]);
-static int nomove;
+protected function key_evt, configure_event;
+protected int is_full;
+protected SDL.Event evt = SDL.Event();
+protected mapping active = ([]);
+protected int nomove;
 
-static mapping pressed = ([]);
-static mapping(int:int) keymap = ([]);
+protected mapping pressed = ([]);
+protected mapping(int:int) keymap = ([]);
 
-static void event_handler()
+protected void event_handler()
 {
 #ifndef THREAD_EVENTS
   call_out( event_handler, 0.02 );  
@@ -198,7 +198,7 @@ void low_handle_events()
   }
 }
 
-static void create( function event, function config )
+protected void create( function event, function config )
 {
   key_evt = event;
   configure_event = config;
@@ -263,7 +263,7 @@ void init(void|string title, void|string icon)
     SDL.set_caption( title||"", icon||"" );
 }
 
-static int X_sym( SDL.Keysym sym )
+protected int X_sym( SDL.Keysym sym )
 {
   int v = sym->scancode;
 #if 0
@@ -332,3 +332,4 @@ void hide_cursor() {
 }
 
 #endif /* constant(SDL.Surface) */
+

@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 inherit Parser._RCS;
 
-// $Id: RCS.pike,v 1.38 2008/01/13 17:03:43 nilsson Exp $
+// $Id: RCS.pike,v 1.39 2008/06/28 16:36:55 nilsson Exp $
 
 //! A RCS file parser that eats a RCS *,v file and presents nice pike
 //! data structures of its contents.
@@ -60,12 +60,12 @@ mapping(string:Revision) revisions;
 //! (rcsfile(5), of course, fails to state such irrelevant information).
 array(mapping) trunk = ({});
 
-static mapping parse_mapping(array data)
+protected mapping parse_mapping(array data)
 {
      return (mapping)(data/2);
 }
 
-static string parse_string(string data, string|void leader)
+protected string parse_string(string data, string|void leader)
 {
     return replace( data, "@@", "@" );
 }
@@ -313,12 +313,12 @@ void parse_deltatext_sections(array raw,
 //!     do_something(rev);
 class DeltatextIterator
 {
-  static int finished, this_no, o;
-  static array raw;
-  static string this_rev;
+  protected int finished, this_no, o;
+  protected array raw;
+  protected string this_rev;
 
-  static function(string, mixed ...:void) callback;
-  static array callback_args;
+  protected function(string, mixed ...:void) callback;
+  protected array callback_args;
 
   //! @param deltatext_section
   //! the deltatext section of the RCS file in its entirety
@@ -329,7 +329,7 @@ class DeltatextIterator
   //!   Optional extra trailing arguments to be sent to @[progress_callback]
   //! @seealso
   //! the @tt{rcsfile(5)@} manpage outlines the sections of an RCS file
-  static void create(array deltatext_section,
+  protected void create(array deltatext_section,
 		     void|function(string, mixed ...:void) progress_callback,
 		     void|array(mixed) progress_callback_args)
   {
@@ -352,7 +352,7 @@ class DeltatextIterator
   //! Drops the leading whitespace before next revision's deltatext
   //! entry and sets this_rev to the revision number we're about to read.
     int n;
-  static int(0..1) read_next()
+  protected int(0..1) read_next()
   {
     o = parse_deltatext_section(raw,o);
     return !(finished = !o);
@@ -416,7 +416,7 @@ class DeltatextIterator
   //!   if the rcs file is truncated, this method writes a descriptive
   //!   error to stderr and then returns 0 - some nicer error handling
   //!   wouldn't hurt
-  static int parse_deltatext_section(array raw, int o)
+  protected int parse_deltatext_section(array raw, int o)
   {
       if( sizeof(raw)<=o || !symbol_is_revision( raw[o] ) )
 	  return 0;
@@ -602,7 +602,7 @@ string get_contents_for_revision( string|Revision rev )
   return rev->text = new->get();
 }
 
-static string kwchars = Array.uniq(sort("Author" "Date" "Header" "Id" "Name"
+protected string kwchars = Array.uniq(sort("Author" "Date" "Header" "Id" "Name"
 					"Locker" /*"Log"*/ "RCSfile"
 					"Revision" "Source" "State"/1)) * "";
 

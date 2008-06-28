@@ -1,4 +1,4 @@
-// $Id: Readline.pike,v 1.59 2006/11/04 19:06:50 nilsson Exp $
+// $Id: Readline.pike,v 1.60 2008/06/28 16:37:00 nilsson Exp $
 #pike __REAL_VERSION__
 
 //!
@@ -6,10 +6,10 @@
 //!   Ought to have support for charset conversion.
 class OutputController
 {
-  static private .File outfd;
-  static private .Terminfo.Termcap term;
-  static private int xpos = 0, columns = 0;
-  static private mapping oldattrs = 0;
+  protected private .File outfd;
+  protected private .Terminfo.Termcap term;
+  protected private int xpos = 0, columns = 0;
+  protected private mapping oldattrs = 0;
 
 #define BLINK     1
 #define BOLD      2
@@ -19,10 +19,10 @@ class OutputController
 #define STANDOUT  32
 #define UNDERLINE 64
 
-  static private int selected_attributes = 0, needed_attributes = 0;
-  static private int active_attributes = 0;
+  protected private int selected_attributes = 0, needed_attributes = 0;
+  protected private int active_attributes = 0;
 
-  static int low_attribute_mask(array(string) atts)
+  protected int low_attribute_mask(array(string) atts)
   {
     return `|(@rows(([
       "blink":BLINK,
@@ -35,7 +35,7 @@ class OutputController
     ]), atts));
   }
 
-  static void low_set_attributes(int mask, int val, int|void temp)
+  protected void low_set_attributes(int mask, int val, int|void temp)
   {
     int remv = mask & selected_attributes & ~val;
     string s = "";
@@ -66,12 +66,12 @@ class OutputController
     needed_attributes |= add;
   }
 
-  static void low_disable_attributes()
+  protected void low_disable_attributes()
   {
     low_set_attributes(active_attributes, 0, 1);
   }
 
-  static void low_enable_attributes()
+  protected void low_enable_attributes()
   {
     int i, add = needed_attributes;
     string s = "";
@@ -125,7 +125,7 @@ class OutputController
 				 "OFILL":1,"OFDEL":0,"ONLRET":0,"ONOCR":0]));};
   }
 
-  static void destroy()
+  protected void destroy()
   {
     disable();
   }
@@ -159,7 +159,7 @@ class OutputController
     return columns;
   }
 
-  static string escapify(string s, void|int hide)
+  protected string escapify(string s, void|int hide)
   {
 #if 1
     s=replace(s,
@@ -200,12 +200,12 @@ class OutputController
   }
 
 
-  static int width(string s)
+  protected int width(string s)
   {
     return sizeof(s);
   }
 
-  static int escapified_width(string s)
+  protected int escapified_width(string s)
   {
     return width(escapify(s));
   }
@@ -431,17 +431,17 @@ class OutputController
 //!   Ought to have support for charset conversion.
 class InputController
 {
-  static private object infd, term;
-  static private int enabled = -1;
-  static private function(:int) close_callback = 0;
-  static private string prefix="";
-  static private mapping(int:function|mapping(string:function)) bindings=([]);
-  static private function grab_binding = 0;
-  static private mapping oldattrs = 0;
+  protected private object infd, term;
+  protected private int enabled = -1;
+  protected private function(:int) close_callback = 0;
+  protected private string prefix="";
+  protected private mapping(int:function|mapping(string:function)) bindings=([]);
+  protected private function grab_binding = 0;
+  protected private mapping oldattrs = 0;
 
   int dumb=0;
 
-  static void destroy()
+  protected void destroy()
   {
     catch{ infd->set_blocking(); };
     if(dumb)
@@ -451,7 +451,7 @@ class InputController
 					  "VEOL":0,"VLNEXT":0])&oldattrs); };
   }
 
-  static private string process_input(string s)
+  protected private string process_input(string s)
   {
     int i;
 
@@ -488,7 +488,7 @@ class InputController
     return "";
   }
 
-  static private void read_cb(mixed _, string s)
+  protected private void read_cb(mixed _, string s)
   {
     if (!s || s=="")
       return;
@@ -500,14 +500,14 @@ class InputController
     prefix = process_input(s);
   }
 
-  static private void close_cb()
+  protected private void close_cb()
   {
     if (close_callback && close_callback())
       return;
     destruct(this);
   }
 
-  static private int set_enabled(int e)
+  protected private int set_enabled(int e)
   {
     if (e != enabled)
     {
@@ -796,9 +796,9 @@ class InputController
 //!
 class DefaultEditKeys
 {
-  static private multiset word_break_chars =
+  protected private multiset word_break_chars =
     mkmultiset("\t \n\r/*?_-.[]~&;\!#$%^(){}<>\"'`"/"");
-  static object _readline;
+  protected object _readline;
 
   //!
   void self_insert_command(string str)
@@ -890,7 +890,7 @@ class DefaultEditKeys
     _readline->insert(reverse(c), p-1);
   }
 
-  static array find_word_to_manipulate()
+  protected array find_word_to_manipulate()
   {
     int p = _readline->getcursorpos();
     int ep;
@@ -930,7 +930,7 @@ class DefaultEditKeys
       _readline->insert(lower_case(word), pos);
   }
 
-  static int forward_find_word()
+  protected int forward_find_word()
   {
     int p, n;
     string line = _readline->gettext();
@@ -942,7 +942,7 @@ class DefaultEditKeys
     return p;
   }
 
-  static int backward_find_word()
+  protected int backward_find_word()
   {
     int p = _readline->getcursorpos()-1;
     string line = _readline->gettext();
@@ -1043,7 +1043,7 @@ class DefaultEditKeys
     _readline->redisplay(1);
   }
 
-  static array(array(string|function)) default_bindings = ({
+  protected array(array(string|function)) default_bindings = ({
     ({ "^[[A", up_history }),
     ({ "^[[B", down_history }),
     ({ "^[[C", forward_char }),
@@ -1120,7 +1120,7 @@ class DefaultEditKeys
   });
 
   //!
-  static void set_default_bindings()
+  protected void set_default_bindings()
   {
     object ic = _readline->get_input_controller();
     ic->nullbindings();
@@ -1150,9 +1150,9 @@ class DefaultEditKeys
 //!
 class History
 {
-  static private array(string) historylist;
-  static private mapping(int:string) historykeep=([]);
-  static private int minhistory, maxhistory, historynum;
+  protected private array(string) historylist;
+  protected private mapping(int:string) historykeep=([]);
+  protected private int minhistory, maxhistory, historynum;
 
   //!
   string encode()
@@ -1224,19 +1224,19 @@ class History
 }
 
 
-static private OutputController output_controller;
-static private InputController input_controller;
-static private string prompt="";
-static private array(string) prompt_attrs=0;
-static private string text="", readtext;
-static private function(string:void) newline_func;
-static private int cursorpos = 0;
-static private int mark = 0;
+protected private OutputController output_controller;
+protected private InputController input_controller;
+protected private string prompt="";
+protected private array(string) prompt_attrs=0;
+protected private string text="", readtext;
+protected private function(string:void) newline_func;
+protected private int cursorpos = 0;
+protected private int mark = 0;
 /*static private */ History historyobj = 0;
-static private int hide = 0;
+protected private int hide = 0;
 
-static private array(string) kill_ring=({});
-static private int kill_ring_size=30;
+protected private array(string) kill_ring=({});
+protected private int kill_ring_size=30;
 
 //!  get current output control object
 //!  @returns
@@ -1489,7 +1489,7 @@ void redisplay(int clear, int|void nobackup)
   setcursorpos(p);
 }
 
-static private void initline()
+protected private void initline()
 {
   text = "";
   cursorpos = 0;
@@ -1570,7 +1570,7 @@ void list_completions(array(string) c)
 		  c*"\n"));
 }
 
-static private void read_newline(string s)
+protected private void read_newline(string s)
 {
   input_controller->disable();
   readtext = s;
@@ -1681,7 +1681,7 @@ History get_history()
   return historyobj;
 }
 
-static void destroy()
+protected void destroy()
 {
   if(input_controller)
     destruct(input_controller);

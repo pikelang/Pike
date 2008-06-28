@@ -1,4 +1,4 @@
-// $Id: HTML.pmod,v 1.6 2003/06/26 23:35:41 nilsson Exp $
+// $Id: HTML.pmod,v 1.7 2008/06/28 16:37:00 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -136,7 +136,7 @@ array(array(string)) pad_rows( array(array(string)) rows, void|string padding ) 
 //!   simple_obox
 class OBox {
 
-  static {
+  protected {
     string frame_color;
     string cell_color = "#ffffff";
     string width;

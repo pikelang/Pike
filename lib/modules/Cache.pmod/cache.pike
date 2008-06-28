@@ -2,7 +2,7 @@
  * A generic cache front-end
  * by Francesco Chemolli <kinkie@roxen.com>
  *
- * $Id: cache.pike,v 1.13 2006/03/17 15:09:56 grubba Exp $
+ * $Id: cache.pike,v 1.14 2008/06/28 16:36:53 nilsson Exp $
  *
  */
 
@@ -23,8 +23,8 @@
 
 
 private int cleanup_cycle=DEFAULT_CLEANUP_CYCLE;
-static object(Cache.Storage.Base) storage;
-static object(Cache.Policy.Base) policy;
+protected object(Cache.Storage.Base) storage;
+protected object(Cache.Policy.Base) policy;
 
 // TODO: check that Storage Managers return the appropriate zero_type
 //! Looks in the cache for an element with the given key and, if available,
@@ -146,9 +146,9 @@ private void do_cleanup(function expiry_function, object storage) {
 }
 
 #if constant(thread_create)
-static Thread.Thread cleanup_thread;
+protected Thread.Thread cleanup_thread;
 
-static void destroy()
+protected void destroy()
 {
   if (Thread.Thread t = cleanup_thread) {
     cleanup_thread = 0;

@@ -1,6 +1,6 @@
 /* Shaped windows.
  *
- * $Id: Extensions.pmod,v 1.15 2004/01/11 00:46:12 nilsson Exp $
+ * $Id: Extensions.pmod,v 1.16 2008/06/28 16:36:58 nilsson Exp $
 
 /*
  *    Protocols.X, a Pike interface to the X Window System
@@ -26,7 +26,7 @@
 
 //! an abstract class used to provide features for implimenting
 //! X11 extensions. Provides no useful functionality on its own.
-static class extension
+protected class extension
 {
   object dpy;
   int major, error, event;

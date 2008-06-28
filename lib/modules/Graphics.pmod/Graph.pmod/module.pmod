@@ -2,7 +2,7 @@
 
 #include "graph.h"
 
-static inherit .create_pie;
+protected inherit .create_pie;
 
 //! This function sets all unset elements in diagram_data to its
 //! default value as well as performing some simple sanity checks.
@@ -157,3 +157,4 @@ Image.Image graph(mapping(string:mixed) diagram_data)
   check_mapping(diagram_data, "graph");
   return create_graph(diagram_data)->image;
 } 
+

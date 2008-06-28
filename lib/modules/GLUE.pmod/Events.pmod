@@ -1,5 +1,5 @@
 //
-// $Id: Events.pmod,v 1.3 2004/04/08 21:52:24 nilsson Exp $
+// $Id: Events.pmod,v 1.4 2008/06/28 16:36:54 nilsson Exp $
 //
 
 #pike __REAL_VERSION__
@@ -17,7 +17,7 @@ constant KNOWN_MODIFIERS = _SHFT | _CTRL | _ALT;
 // @decl Event STATE(int X, int Y)
 // @decl array(Event) STATE(array(int|Event) X, int Y)
 // @decl Event STATE(Event X, int Y)
-static array(Event)|Event STATE(array|Event|int X,int Y)
+protected array(Event)|Event STATE(array|Event|int X,int Y)
 {
   if( intp( X ) )    return Event( X,1,0,Y );
   if( arrayp( X ) )   return map( X, STATE, Y );
@@ -258,21 +258,21 @@ class Event
     repeat = 0;
   }
 
-  static int(0..1) `>( Event e )
+  protected int(0..1) `>( Event e )
   {
     if( !objectp( e ) )
       return 0;
     return (e->press > press) && (e->key > key) || (e->modifiers > modifiers);
   }
 
-  static int(0..1) `==( Event|int e )
+  protected int(0..1) `==( Event|int e )
   {
     if( objectp( e ) )
       return ((e->press == press) && (e->key == key) &&
 	      (e->modifiers == modifiers) && (e->raw == raw));
   }
 
-  static int __hash( )
+  protected int __hash( )
   {
     return hash( sprintf( "%d %d %d", press, key, modifiers ) );
   }
@@ -290,7 +290,7 @@ class Event
       data = lower_case(data);
   }
 
-  static string _sprintf( int t )
+  protected string _sprintf( int t )
   {
     if( t!='O' ) return 0;
     if( !key )
@@ -304,7 +304,7 @@ class Event
   }
 
   //!
-  static void create( int|void _key, int(0..1)|void _press,
+  protected void create( int|void _key, int(0..1)|void _press,
 		      string|void _data, int|void _modifiers,
 		      float|void pressure)
   {

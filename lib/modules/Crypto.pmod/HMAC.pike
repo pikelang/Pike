@@ -6,10 +6,10 @@
 
 #if constant(Crypto.Hash)
 
-static .Hash H;  // hash object
+protected .Hash H;  // hash object
 
 // B is the size of one compression block, in octets.
-static int B;
+protected int B;
 
 //! @param h
 //!   The hash object on which the HMAC object should base its
@@ -82,3 +82,4 @@ class `()
 #else
 constant this_program_does_not_exist=1;
 #endif
+

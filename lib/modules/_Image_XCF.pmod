@@ -230,7 +230,7 @@ class GimpImage
   Channel selection;
 
 
-  static string read_point_bz1( string data, Path path )
+  protected string read_point_bz1( string data, Path path )
   {
     object p = PathPoint( );
     int x, y;
@@ -242,14 +242,14 @@ class GimpImage
     return data;
   }
 
-  static string read_point_bz2( string data, Path path )
+  protected string read_point_bz2( string data, Path path )
   {
     object p = PathPoint( );
     sscanf(data, "%4c%4F%4F%s", p->type, p->x, p->y, data);
     return data;
   }
 
-  static string decode_one_path( string data, Path path )
+  protected string decode_one_path( string data, Path path )
   {
     int nlen, version, num_points;
     sscanf(data, "%4c", nlen );
@@ -615,7 +615,7 @@ object decode( string what,mapping|void opts )
 #define UINT(X)   sprintf("%4c", (X))
 #define STRING(X) sprintf("%4c%s\0", sizeof(X)+1, (X))
 
-static string make_hiearchy(Image.Image img) {
+protected string make_hiearchy(Image.Image img) {
   string data = "";
   data += UINT(img->xsize());
   data += UINT(img->ysize());
@@ -634,7 +634,7 @@ static string make_hiearchy(Image.Image img) {
   return data;
 }
 
-static int make_mode(string mode) {
+protected int make_mode(string mode) {
   switch(mode) {
   case "normal": return NORMAL_MODE;
   }
@@ -642,7 +642,7 @@ static int make_mode(string mode) {
   return NORMAL_MODE;
 }
 
-static string make_layer(Image.Image|Image.Layer img) {
+protected string make_layer(Image.Image|Image.Layer img) {
   string data = "";
   data += UINT(img->xsize());
   data += UINT(img->ysize());
@@ -738,3 +738,4 @@ string encode(Image.Image img) {
 }
 
 #endif
+

@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod,v 1.16 2008/01/09 16:10:29 grubba Exp $
+ * $Id: module.pmod,v 1.17 2008/06/28 16:36:55 nilsson Exp $
  *
  * A BNF-grammar in Pike.
  * Compiles to a LALR(1) state-machine.
@@ -139,7 +139,7 @@ class Rule
   //!   the elements of the rule. The return value of the function will become
   //!   the value of this non-terminal. The default rule is to return the first
   //!   argument.
-  static void create(int nt, array(string|int) r, function|string|void a)
+  protected void create(int nt, array(string|int) r, function|string|void a)
   {
     mixed symbol;
 
@@ -181,7 +181,7 @@ class ErrorHandler
   //! @endint
   optional int(-1..1) verbose = 1;
 
-  static constant severity_kind = ([ NOTICE:"Notice",
+  protected constant severity_kind = ([ NOTICE:"Notice",
 				     WARNING:"Warning",
 				     ERROR:"Error" ]);
 
@@ -201,7 +201,7 @@ class ErrorHandler
   //!
   //! @seealso
   //!   @[verbose]
-  static void create(int(-1..1)|void verbosity)
+  protected void create(int(-1..1)|void verbosity)
   {
     if (!zero_type(verbosity)) {
       verbose = verbosity;
@@ -226,21 +226,21 @@ class Parser
   mapping(int : array(Rule)) grammar = ([]);
 
   /* Priority table for terminal symbols */
-  static mapping(string : Priority) operator_priority = ([]);
+  protected mapping(string : Priority) operator_priority = ([]);
 
-  static multiset(int|string) nullable = (< >);
+  protected multiset(int|string) nullable = (< >);
 
 #if 0
-  static mapping(mixed : multiset(Rule)) derives = ([]);
+  protected mapping(mixed : multiset(Rule)) derives = ([]);
 
   /* Maps from symbol to which rules may start with that symbol */
-  static mapping(mixed : multiset(Rule)) begins = ([]);
+  protected mapping(mixed : multiset(Rule)) begins = ([]);
 #endif /* 0 */
 
   /* Maps from symbol to the rules that use the symbol
    * (used for finding nullable symbols)
    */
-  static mapping(int : multiset(Rule)) used_by = ([]);
+  protected mapping(int : multiset(Rule)) used_by = ([]);
 
   //! The initial LR0 state.
   Kernel start_state;
@@ -249,7 +249,7 @@ class Parser
   int lr_error=0;
 
   /* Number of next rule (used only for conflict resolving) */
-  static int next_rule_number = 1;
+  protected int next_rule_number = 1;
 
   //! LR0 states that are already known to the compiler.
   mapping(string:Kernel) known_states = ([]);
@@ -274,7 +274,7 @@ class Parser
   //!
   //! An LR(0) item, a partially parsed rule.
   //!
-  static class Item
+  protected class Item
   {
     //! The rule
     Rule r;
@@ -307,7 +307,7 @@ class Parser
     //! Equal to r->number + offset.
     int item_id;
 
-    static string _sprintf()
+    protected string _sprintf()
     {
       array(string) res = ({ symbol_to_string(r->nonterminal), ":\t" });
 
@@ -332,7 +332,7 @@ class Parser
   }
 
   //! Implements an LR(1) state
-  static class Kernel {
+  protected class Kernel {
 
     //! Used to check if a rule already has been added when doing closures.
     multiset(Rule) rules = (<>);
@@ -502,14 +502,14 @@ class Parser
       }
     }
 
-    static string _sprintf()
+    protected string _sprintf()
     {
       return sprintf("%{%s\n%}", items);
     }
   }
 
   //! This is a queue, which keeps the elements even after they are retrieved.
-  static class StateQueue {
+  protected class StateQueue {
 
     //! Index of the head of the queue.
     int head;
@@ -553,7 +553,7 @@ class Parser
 
   /* Several cast to string functions */
 
-  static string builtin_symbol_to_string(int|string symbol)
+  protected string builtin_symbol_to_string(int|string symbol)
   {
     if (intp(symbol)) {
       return "nonterminal"+symbol;
@@ -562,7 +562,7 @@ class Parser
     }
   }
 
-  static function(int|string : string) symbol_to_string = builtin_symbol_to_string;
+  protected function(int|string : string) symbol_to_string = builtin_symbol_to_string;
 
   //! Pretty-prints a rule to a string.
   //!
@@ -601,7 +601,7 @@ class Parser
   }
 
   //! Pretty-prints the current grammar to a string.
-  static string _sprintf()
+  protected string _sprintf()
   {
     array(string) res = ({});
 
@@ -836,7 +836,7 @@ class Parser
 
   /* Here come the functions used by the compiler */
 
-  static Kernel first_state()
+  protected Kernel first_state()
   {
     Kernel state = Kernel();
 
@@ -869,9 +869,9 @@ class Parser
   //! In the queue section are the states that remain to be compiled.
   StateQueue s_q;
 
-  static ADT.Stack item_stack;
+  protected ADT.Stack item_stack;
 
-  static void traverse_items(Item i,
+  protected void traverse_items(Item i,
 			     function(int:void) conflict_func)
   {
     int depth;
@@ -915,12 +915,12 @@ class Parser
     }
   }
 
-  static void shift_conflict(int empty)
+  protected void shift_conflict(int empty)
   {
     empty; /* Ignored */
   }
 
-  static void handle_shift_conflicts()
+  protected void handle_shift_conflicts()
   {
     item_stack = ADT.Stack(131072);
 
@@ -947,12 +947,12 @@ class Parser
     }
   }
 
-  static void follow_conflict(int empty)
+  protected void follow_conflict(int empty)
   {
     empty; /* Ignored */
   }
 
-  static void handle_follow_conflicts()
+  protected void handle_follow_conflicts()
   {
     item_stack = ADT.Stack(131072);
 
@@ -979,7 +979,7 @@ class Parser
     }
   }
 
-  static int go_through(Kernel state, int item_id,
+  protected int go_through(Kernel state, int item_id,
 			Item current_item)
   {
     Item i, master;
@@ -1024,7 +1024,7 @@ class Parser
     }
   }
 
-  static int repair(Kernel state, multiset(int|string) conflicts)
+  protected int repair(Kernel state, multiset(int|string) conflicts)
   {
     multiset(int|string) conflict_set = (<>);
 

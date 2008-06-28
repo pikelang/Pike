@@ -184,14 +184,14 @@ array(string) split_headers(string h, int chunklen)
 //!
 class Client
 {
-  static Stdio.Stream con;
-  static int connected = 0;
+  protected Stdio.Stream con;
+  protected int connected = 0;
 
-  static constant obex_version = 0x10;
-  static constant connect_flags = 0;
-  static constant default_max_pkt_length = 65535;
+  protected constant obex_version = 0x10;
+  protected constant connect_flags = 0;
+  protected constant default_max_pkt_length = 65535;
 
-  static int server_version, server_connect_flags, max_pkt_length = 255;
+  protected int server_version, server_connect_flags, max_pkt_length = 255;
 
 
   //! Perform a request/response exchange with the server.
@@ -474,7 +474,7 @@ class Client
 #endif
   }
 
-  static void destroy()
+  protected void destroy()
   {
     if(connected)
       disconnect();
@@ -487,7 +487,7 @@ class Client
   //!   A stream for writing requests and reading back responses.
   //!   Typically this is some kind of serial port.
   //!
-  static void create(Stdio.Stream _con)
+  protected void create(Stdio.Stream _con)
   {
     con = _con;
     if(!connect())

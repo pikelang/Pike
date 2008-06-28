@@ -149,7 +149,7 @@ constant DAV_STORAGE_FULL	= 507; // RFC 2518 10.6: Insufficient Storage
   return con;
 }
 
-static .Query do_udp_method(string method, Standards.URI url,
+protected .Query do_udp_method(string method, Standards.URI url,
 			    void|mapping(string:int|string) query_variables,
 			    void|mapping(string:string|array(string))
 			    request_headers, void|Protocols.HTTP.Query con,
@@ -441,17 +441,17 @@ string http_encode_query(mapping(string:int|string) variables)
 }
 
 // RFC 1738, 2.2. URL Character Encoding Issues
-static constant url_non_corresponding = enumerate(0x21) +
+protected constant url_non_corresponding = enumerate(0x21) +
   enumerate(0x81,1,0x7f);
-static constant url_unsafe = ({ '<', '>', '"', '#', '%', '{', '}',
+protected constant url_unsafe = ({ '<', '>', '"', '#', '%', '{', '}',
 				'|', '\\', '^', '~', '[', ']', '`' });
-static constant url_reserved = ({ ';', '/', '?', ':', '@', '=', '&' });
+protected constant url_reserved = ({ ';', '/', '?', ':', '@', '=', '&' });
 
 // Encode these chars
-static constant url_chars = url_non_corresponding + url_unsafe +
+protected constant url_chars = url_non_corresponding + url_unsafe +
   url_reserved + ({ '+', '\'' });
-static constant url_from = sprintf("%c", url_chars[*]);
-static constant url_to   = sprintf("%%%02x", url_chars[*]);
+protected constant url_from = sprintf("%c", url_chars[*]);
+protected constant url_to   = sprintf("%%%02x", url_chars[*]);
 
 
 //!	This protects all odd - see @[http_encode_query()] - 

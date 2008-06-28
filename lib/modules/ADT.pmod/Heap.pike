@@ -6,8 +6,8 @@
 
 #define SWAP(X,Y) do{ mixed tmp=values[X]; values[X]=values[Y]; values[Y]=tmp; }while(0)
 
-static private array values=allocate(10);
-static private int num_values;
+protected private array values=allocate(10);
+protected private int num_values;
 
 #ifdef DEBUG
 void verify_heap()
@@ -21,7 +21,7 @@ void verify_heap()
 #define verify_heap()
 #endif
 
-static void adjust_down(int elem)
+protected void adjust_down(int elem)
 {
   while(1)
   {
@@ -50,7 +50,7 @@ static void adjust_down(int elem)
   }
 }
 
-static int adjust_up(int elem)
+protected int adjust_up(int elem)
 {
   int parent=(elem-1)/2;
 

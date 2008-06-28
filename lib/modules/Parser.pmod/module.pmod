@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod,v 1.24 2008/06/27 20:51:16 grubba Exp $
+// $Id: module.pmod,v 1.25 2008/06/28 16:36:55 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -8,8 +8,8 @@
 constant HTML = Parser._parser.HTML;
 constant _RCS = Parser._parser._RCS;
 
-static int(0..0) return_zero() {return 0;}
-static HTML xml_parser =
+protected int(0..0) return_zero() {return 0;}
+protected HTML xml_parser =
   lambda() {
     HTML p = HTML();
     p->lazy_entity_end (1);
@@ -346,7 +346,7 @@ string decode_numeric_xml_entity (string chref)
 //! @note
 //!	Currently using XHTML 1.0 tables.
 
-static HTML entityparser =
+protected HTML entityparser =
   lambda () {
     HTML p=HTML();
     p->add_entities (html_entities);
@@ -365,7 +365,7 @@ static HTML entityparser =
     return p;
   }();
 
-static HTML entityparser_noerror =
+protected HTML entityparser_noerror =
   lambda () {
      HTML p=entityparser->clone();
 
@@ -391,7 +391,7 @@ string parse_html_entities(string in,void|int noerror)
    return html_entity_parser(noerror)->finish(in)->read();
 }
 
-static mapping(int:string) rev_html_entities;
+protected mapping(int:string) rev_html_entities;
 
 //! Encode characters to HTML entities, e.g. turning @expr{"<"@} into
 //! @expr{"&lt;"@}.

@@ -16,10 +16,10 @@ inherit Filesystem.Base;
 //  pattern, since getcwd() is used to get the initial value of the
 //  'wd' variable unless a different path is specified.
 //
-static Filesystem.Base parent; // parent filesystem
+protected Filesystem.Base parent; // parent filesystem
 
-static string root = ""; // Note: Can now include leading "/"
-static string wd;        // never trailing "/"
+protected string root = ""; // Note: Can now include leading "/"
+protected string wd;        // never trailing "/"
 
 //! @decl void create(void|string directory, void|string root, void|int fast, void|Filesystem.Base parent)
 //! Instanciate a new object representing the filesystem.
@@ -32,7 +32,7 @@ static string wd;        // never trailing "/"
 //! Internal
 //! @param parent
 //! Internal
-static void create(void|string directory,  // default: cwd
+protected void create(void|string directory,  // default: cwd
 		   void|string _root,   // internal: root
 		   void|int fast,       // internal: fast mode (no check)
 		   void|Filesystem.Base _parent)
@@ -88,7 +88,7 @@ static void create(void|string directory,  // default: cwd
   wd = directory;
 }
 
-static string _sprintf(int t)
+protected string _sprintf(int t)
 {
   return t=='O' && sprintf("%O(/* root=%O, wd=%O */)", this_program, root, wd);
 }

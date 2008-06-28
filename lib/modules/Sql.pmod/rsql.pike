@@ -8,7 +8,7 @@
 #if constant(thread_create)
 #define LOCK object key=mutex->lock()
 #define UNLOCK destruct(key)
-static private object(Thread.Mutex) mutex = Thread.Mutex();
+protected private object(Thread.Mutex) mutex = Thread.Mutex();
 #else
 #define LOCK
 #define UNLOCK
@@ -16,13 +16,13 @@ static private object(Thread.Mutex) mutex = Thread.Mutex();
 
 #define ERROR(X ...) predef::error(X)
 
-static object(Stdio.File) sock;
-static int seqno = 0;
+protected object(Stdio.File) sock;
+protected int seqno = 0;
 
-static private string host, user, pw;
-static private int port;
+protected private string host, user, pw;
+protected private int port;
 
-static void low_reconnect()
+protected void low_reconnect()
 {
   object losock = Stdio.File();
   if(sock)
@@ -54,7 +54,7 @@ static void low_reconnect()
   }
 }
 
-static void low_connect(string the_host, int the_port, string the_user,
+protected void low_connect(string the_host, int the_port, string the_user,
 			string the_pw)
 {
   host = the_host;
@@ -64,7 +64,7 @@ static void low_connect(string the_host, int the_port, string the_user,
   low_reconnect();
 }
 
-static mixed do_request(int cmd, mixed|void arg, int|void noreconnect)
+protected mixed do_request(int cmd, mixed|void arg, int|void noreconnect)
 {
   LOCK;
   if(!sock)
@@ -172,8 +172,8 @@ int|object big_query(object|string q, mapping(string|int:mixed)|void bindings)
   mixed qid = do_request('Q', q);
   return qid && class {
 
-    static function(int,mixed:mixed) do_request;
-    static mixed qid;
+    protected function(int,mixed:mixed) do_request;
+    protected mixed qid;
 
     void destroy()
     {

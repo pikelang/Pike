@@ -4,7 +4,7 @@
 //
 // #pike __REAL_VERSION__
 //
-// $Id: C.pmod,v 1.49 2007/01/19 14:44:51 bill Exp $
+// $Id: C.pmod,v 1.50 2008/06/28 16:36:55 nilsson Exp $
 
 //! Splits the @[data] string into an array of tokens. An additional
 //! element with a newline will be added to the resulting array of
@@ -344,7 +344,7 @@ array(Token) tokenize(array(string) s, void|string file)
   return ret;
 }
 
-static constant global_groupings = ([ "{":"}", "(":")", "[":"]" ]);
+protected constant global_groupings = ([ "{":"}", "(":")", "[":"]" ]);
 
 //! Fold sub blocks of an array of tokens into sub arrays,
 //! for grouping purposes.

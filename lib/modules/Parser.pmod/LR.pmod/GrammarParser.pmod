@@ -3,7 +3,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: GrammarParser.pmod,v 1.5 2003/08/22 14:25:57 nilsson Exp $
+ * $Id: GrammarParser.pmod,v 1.6 2008/06/28 16:36:55 nilsson Exp $
  *
  * Generates a parser from a textual specification.
  *
@@ -46,13 +46,13 @@
 
 import Parser.LR;
 
-static private Parser _parser = Parser();
+protected private Parser _parser = Parser();
 
 /*
  * Scanner
  */
 
-static private class Scan {
+protected private class Scan {
   string str = "";
   int pos;
 
@@ -148,9 +148,9 @@ static private class Scan {
   }
 }
 
-static private Scan scanner = Scan();
+protected private Scan scanner = Scan();
 
-static private array(string) nonterminals = ({
+protected private array(string) nonterminals = ({
   "translation_unit",
   "directives",
   "directive",
@@ -165,18 +165,18 @@ static private array(string) nonterminals = ({
   "priority",
 });
 
-static private ADT.Stack id_stack = ADT.Stack();
+protected private ADT.Stack id_stack = ADT.Stack();
 
-static private mapping(string:int) nonterminal_lookup = ([]);
+protected private mapping(string:int) nonterminal_lookup = ([]);
 
-static private Parser g;
+protected private Parser g;
 
-static private object master;
+protected private object master;
 
 //! Error code from the parsing.
 int lr_error;
 
-static private int add_nonterminal(string id)
+protected private int add_nonterminal(string id)
 {
   int nt = nonterminal_lookup[id];
 
@@ -187,7 +187,7 @@ static private int add_nonterminal(string id)
   return nt;
 }
 
-static private void add_tokens(array(string) tokens)
+protected private void add_tokens(array(string) tokens)
 {
   /* NOOP */
 #if 0
@@ -197,7 +197,7 @@ static private void add_tokens(array(string) tokens)
 #endif /* 0 */
 }
 
-static private void set_left_tokens(string ignore, int pri_val, array(string) tokens)
+protected private void set_left_tokens(string ignore, int pri_val, array(string) tokens)
 {
   foreach (tokens, string token) {
     g->set_associativity(token, -1);	/* Left associative */
@@ -205,7 +205,7 @@ static private void set_left_tokens(string ignore, int pri_val, array(string) to
   }
 }
 
-static private string internal_symbol_to_string(int|string symbol)
+protected private string internal_symbol_to_string(int|string symbol)
 {
   if (intp(symbol))
     return nonterminals[symbol];
@@ -213,7 +213,7 @@ static private string internal_symbol_to_string(int|string symbol)
     return "\"" + symbol + "\"";
 }
 
-static private string symbol_to_string(int|string symbol)
+protected private string symbol_to_string(int|string symbol)
 {
   if (intp(symbol)) {
     if (symbol < id_stack->ptr)
@@ -225,7 +225,7 @@ static private string symbol_to_string(int|string symbol)
     return "\""+symbol+"\"";
 }
 
-static private void add_rule(int nt, string colon, array(mixed) symbols, string action)
+protected private void add_rule(int nt, string colon, array(mixed) symbols, string action)
 {
   if (action == ";") {
     action = 0;

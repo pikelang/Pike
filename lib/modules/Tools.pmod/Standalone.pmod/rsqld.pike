@@ -1,5 +1,5 @@
 #! /usr/bin/env pike
-// $Id: rsqld.pike,v 1.11 2005/08/18 17:42:34 grubba Exp $
+// $Id: rsqld.pike,v 1.12 2008/06/28 16:37:02 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -11,24 +11,24 @@ constant description = "Implements an rsql daemon.";
 
 class Connection
 {
-  static object clntsock;
-  static string got, to_write;
-  static function ecallback;
-  static array ecbextra;
-  static int expected;
-  static mapping(int:function) commandset = ([]);
-  static object sqlobj;
-  static mapping(string:object) queries = ([]);
-  static int qbase, qid;
-  static private mapping(string:string) users;
+  protected object clntsock;
+  protected string got, to_write;
+  protected function ecallback;
+  protected array ecbextra;
+  protected int expected;
+  protected mapping(int:function) commandset = ([]);
+  protected object sqlobj;
+  protected mapping(string:object) queries = ([]);
+  protected int qbase, qid;
+  protected private mapping(string:string) users;
 
-  static void timeout()
+  protected void timeout()
   {
     destruct(clntsock);
     destruct(this);
   }
 
-  static void expect(int n, function cb, mixed ... extra)
+  protected void expect(int n, function cb, mixed ... extra)
   {
     remove_call_out(timeout);
     call_out(timeout, 3600);
@@ -37,14 +37,14 @@ class Connection
     ecbextra = extra;
   }
 
-  static void close_callback()
+  protected void close_callback()
   {
     remove_call_out(timeout);
     destruct(clntsock);
     destruct(this);
   }
 
-  static void read_callback(mixed id, string s)
+  protected void read_callback(mixed id, string s)
   {
     if(s) {
       got += s;
@@ -56,7 +56,7 @@ class Connection
     }
   }
 
-  static void write_callback()
+  protected void write_callback()
   {
     if(sizeof(to_write)) {
       int n = clntsock->write(to_write);
@@ -65,7 +65,7 @@ class Connection
     }
   }
 
-  static void write(string s)
+  protected void write(string s)
   {
     if(s && sizeof(s)) {
       to_write += s;
@@ -73,7 +73,7 @@ class Connection
     }
   }
 
-  static void reply_cmd(int cmd, int seq, int err, mixed val)
+  protected void reply_cmd(int cmd, int seq, int err, mixed val)
   {
     string v;
     if(catch( v = (val? encode_value(val):"") )) {
@@ -88,7 +88,7 @@ class Connection
     write(sprintf("%c<%c>%4c%4c%s", (err? '!':'.'), cmd, seq, sizeof(v), v));
   }
 
-  static void got_cmd(string a, int cmd, int seq)
+  protected void got_cmd(string a, int cmd, int seq)
   {
     reply_cmd(cmd, seq, 1, catch {
       mixed arg = sizeof(a) && decode_value(a);
@@ -103,7 +103,7 @@ class Connection
     expect_command();
   }
 
-  static void got_cmdhead(string h)
+  protected void got_cmdhead(string h)
   {
     if(h[..1]!="?<" || h[3]!='>') {
       werror("SYNC ERROR, disconnecting client\n");
@@ -117,12 +117,12 @@ class Connection
     expect(alen, got_cmd, h[2], seq);
   }
 
-  static void expect_command()
+  protected void expect_command()
   {
     expect(12, got_cmdhead);
   }
 
-  static int cmd_login(array(string) userpw)
+  protected int cmd_login(array(string) userpw)
   {
     int authorized = 0;
 
@@ -143,63 +143,63 @@ class Connection
     return authorized;
   }
 
-  static void cmd_selectdb(string url)
+  protected void cmd_selectdb(string url)
   {
     sqlobj = 0;
     sqlobj = Sql.Sql(url);
   }
 
-  static int|string cmd_error()
+  protected int|string cmd_error()
   {
     return sqlobj->error();
   }
 
-  static void cmd_create(string db)
+  protected void cmd_create(string db)
   {
     sqlobj->create_db(db);
   }
 
-  static void cmd_drop(string db)
+  protected void cmd_drop(string db)
   {
     sqlobj->drop_db(db);
   }
 
-  static string cmd_srvinfo()
+  protected string cmd_srvinfo()
   {
     return sqlobj->server_info();
   }
 
-  static string cmd_hostinfo()
+  protected string cmd_hostinfo()
   {
     return sqlobj->host_info();
   }
 
-  static void cmd_shutdown()
+  protected void cmd_shutdown()
   {
     sqlobj->shutdown();
   }
 
-  static void cmd_reload()
+  protected void cmd_reload()
   {
     sqlobj->reload();
   }
 
-  static array(string) cmd_listdbs(string wild)
+  protected array(string) cmd_listdbs(string wild)
   {
     return sqlobj->list_dbs(wild);
   }
 
-  static array(string) cmd_listtables(string wild)
+  protected array(string) cmd_listtables(string wild)
   {
     return sqlobj->list_tables(wild);
   }
 
-  static array(mapping(string:mixed)) cmd_listflds(array(string) args)
+  protected array(mapping(string:mixed)) cmd_listflds(array(string) args)
   {
     return sqlobj->list_fields(@args);
   }
 
-  static private string make_id()
+  protected private string make_id()
   {
     if(!qid) {
       qid=1;
@@ -208,7 +208,7 @@ class Connection
     return sprintf("%4c%4c", qbase, qid++);
   }
 
-  static string cmd_bigquery(string q)
+  protected string cmd_bigquery(string q)
   {
     object res = sqlobj->big_query(q);
     if(!res)
@@ -218,63 +218,63 @@ class Connection
     return qid;
   }
 
-  static void cmd_zapquery(string qid)
+  protected void cmd_zapquery(string qid)
   {
     m_delete(queries, qid);
   }
 
-  static object get_query(string qid)
+  protected object get_query(string qid)
   {
     return queries[qid] || 
       (error("Query ID has expired.\n"),0);
   }
 
-  static array(mapping(string:mixed)) cmd_query(array args)
+  protected array(mapping(string:mixed)) cmd_query(array args)
   {
     return sqlobj->query(@args);
   }
 
-  static int|array(string|int) cmd_fetchrow(string qid)
+  protected int|array(string|int) cmd_fetchrow(string qid)
   {
     return get_query(qid)->fetch_row();
   }
 
-  static array(mapping(string:mixed)) cmd_fetchfields(string qid)
+  protected array(mapping(string:mixed)) cmd_fetchfields(string qid)
   {
     return get_query(qid)->fetch_fields();
   }
 
-  static int cmd_numrows(string qid)
+  protected int cmd_numrows(string qid)
   {
     return get_query(qid)->num_rows();
   }
 
-  static int cmd_numfields(string qid)
+  protected int cmd_numfields(string qid)
   {
     return get_query(qid)->num_fields();
   }
 
-  static int cmd_eof(string qid)
+  protected int cmd_eof(string qid)
   {
     return get_query(qid)->eof();
   }
 
-  static void cmd_seek(array(string|int) args)
+  protected void cmd_seek(array(string|int) args)
   {
     get_query(args[0])->seek(args[1]);
   }
 
-  static string cmd_quote(string s)
+  protected string cmd_quote(string s)
   {
     return sqlobj->quote(s);
   }
 
-  static void commandset_0()
+  protected void commandset_0()
   {
     commandset = ([ 'L': cmd_login ]);
   }
 
-  static void commandset_1()
+  protected void commandset_1()
   {
     commandset_0();
     commandset |= ([ 'D': cmd_selectdb, 'E': cmd_error,
@@ -287,7 +287,7 @@ class Connection
 		     'S': cmd_seek, '@': cmd_query, 'q': cmd_quote]);
   }
 
-  static void client_ident(string s)
+  protected void client_ident(string s)
   {
     int ver;
     if(s[..3]=="RSQL" && sscanf(s[4..], "%4c", ver) && ver==RSQL_VERSION) {
@@ -316,10 +316,10 @@ class Connection
 
 class Server
 {
-  static object servsock;
-  static private mapping(string:string) users;
+  protected object servsock;
+  protected private mapping(string:string) users;
 
-  static void accept_callback()
+  protected void accept_callback()
   {
     object s = servsock->accept();
     if(s)

@@ -21,7 +21,7 @@ enum AlphaMode {
 
 
 #define STEP 30
-static {
+protected {
  GDK.Pixmap pixmap;
  PVImage old_image;
  AlphaMode alpha_mode;

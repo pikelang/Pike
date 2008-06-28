@@ -1,17 +1,17 @@
 #pike __REAL_VERSION__
 
-static string flat(string s)
+protected string flat(string s)
 {
    return replace(lower_case(s),
 		  "àáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ'- "/1,
 		  "aaaaaaeceeeeiiiidnoooooouuuuyty"/1+({""})*3);
 }
 
-static class _language_base
+protected class _language_base
 {
    inherit Calendar.Rule.Language;
 
-   static mapping events_translate=0;
+   protected mapping events_translate=0;
 
    string translate_event(string name)
    {
@@ -20,7 +20,7 @@ static class _language_base
    }
 }
 
-static string roman_number(int m)
+protected string roman_number(int m)
 {
   if      (m<0)      return "["+m+"]";
   if      (m==0)     return "O";
@@ -28,16 +28,16 @@ static string roman_number(int m)
   return String.int2roman(m);
 }
 
-static class _ymd_base
+protected class _ymd_base
 {
    inherit _language_base;
 
-   static mapping(int:string) month_n2s;
-   static mapping(int:string) month_n2ss;
-   static mapping(string:int) month_s2n;
-   static mapping(int:string) week_day_n2s;
-   static mapping(int:string) week_day_n2ss;
-   static mapping(string:int) week_day_s2n;
+   protected mapping(int:string) month_n2s;
+   protected mapping(int:string) month_n2ss;
+   protected mapping(string:int) month_s2n;
+   protected mapping(int:string) week_day_n2s;
+   protected mapping(int:string) week_day_n2ss;
+   protected mapping(string:int) week_day_s2n;
 
    string month_name_from_number(int n)
    {
@@ -542,15 +542,15 @@ class cSWEDISH
 {
    inherit _ymd_base;
 
-   static private constant month_names=
+   protected private constant month_names=
    ({"januari","februari","mars","april","maj","juni","juli","augusti",
      "september","oktober","november","december"});
 
-   static private constant week_day_names=
+   protected private constant week_day_names=
    ({"måndag","tisdag","onsdag","torsdag",
      "fredag","lördag","söndag"});
 
-   static mapping events_translate=
+   protected mapping events_translate=
    ([
       "New Year's Day":		"Nyårsdagen",
       "Epiphany":		"Trettondag jul",
@@ -640,11 +640,11 @@ class cAUSTRIAN
 {
    inherit _ymd_base;
 
-   static private constant month_names=
+   protected private constant month_names=
       ({"jänner","feber","märz","april","mai","juni","juli","august",
         "september","oktober","november","dezember"});
 
-   static private constant week_day_names=
+   protected private constant week_day_names=
       ({"montag","dienstag","mittwoch","donnerstag",
         "freitag","samstag","sonntag"});
 
@@ -663,11 +663,11 @@ class cWELSH
 {
    inherit _ymd_base;
 
-   static private constant month_names=
+   protected private constant month_names=
    ({"ionawr","chwefror","mawrth","ebrill","mai","mehefin",
      "gorffenaf","awst","medi","hydref","tachwedd","rhagfyr"});
 
-   static private constant week_day_names=
+   protected private constant week_day_names=
    ({"Llun","Mawrth","Mercher","Iau","Gwener","Sadwrn","Sul"});
 
    string week_day_name_from_number(int n)
@@ -696,16 +696,16 @@ class cSPANISH
 {
    inherit _ymd_base;
 
-   static private constant month_names=
+   protected private constant month_names=
    ({"enero","febrero","marzo","abril","mayo","junio",
      "julio","agosto","setiembre","octubre","noviembre","diciembre"});
 
-   static private constant week_day_names=
+   protected private constant week_day_names=
    ({"lunes","martes","miércoles","jueves",
      "viernes","sábado","domingo"});
 
 // contains argentina for now
-   static mapping events_translate=
+   protected mapping events_translate=
    ([
       "Epiphany":"Día de Reyes", // Epifania
       "Malvinas Day":"Día de las Malvinas",
@@ -743,7 +743,7 @@ class cPORTUGESE
 {
    inherit _ymd_base;
 
-   static private constant month_names=
+   protected private constant month_names=
    ({
       "Janeiro",
       "Fevereiro",
@@ -759,7 +759,7 @@ class cPORTUGESE
       "Dezembro",
    });
 
-   static private constant week_day_names=
+   protected private constant week_day_names=
    ({
       "Segunda-feira", // -feira is removed for the short version
       "Terça-feira",   // don't know how it's used
@@ -771,7 +771,7 @@ class cPORTUGESE
    });
 
 // contains argentina for now
-   static mapping events_translate=
+   protected mapping events_translate=
    ([
       "New Year's Day":"Ano Novo",
       "Good Friday":"Sexta-Feira Santa",
@@ -802,15 +802,15 @@ class cHUNGARIAN
 {
    inherit _ymd_base;
 
-   static private constant month_names=
+   protected private constant month_names=
    ({"Január","Február","Március","Április","Május","Június",
      "Július","August","September","October","November","December"});
 
-   static private constant week_day_names=
+   protected private constant week_day_names=
    ({"Hétfo","Kedd","Szerda","Csütörtkök","Péntek","Szombat","Vasárnap"});
 
 // contains argentina for now
-   static mapping events_translate=
+   protected mapping events_translate=
    ([
       "New Year's Day":"Úb év ünnepe",
       "1848 Revolution Day":"Az 'Az 1848-as Forradalom Napja",
@@ -839,11 +839,11 @@ class cLATIN
 {
    inherit _ymd_base;
 
-   static array(string) month_names=
+   protected array(string) month_names=
    ({"Ianuarius", "Februarius", "Martius", "Aprilis", "Maius", "Iunius", 
      "Iulius", "Augustus", "September", "October", "November", "December" });
 
-   static private constant week_day_names=
+   protected private constant week_day_names=
    ({"lunae","Martis","Mercurii","Jovis","Veneris","Saturni","solis"});
 
    string week_day_name_from_number(int n)
@@ -881,7 +881,7 @@ class cROMAN
 {
    inherit cLATIN;
 
-   static array(string) month_names=
+   protected array(string) month_names=
    ({"Ianuarius", "Februarius", "Martius", "Aprilis", "Maius", "Iunius",
      "Quintilis", // Iulius
      "Sextilis",  // Augustus
@@ -918,7 +918,7 @@ class cGREENLANDIC
 {
    inherit _ymd_base;
 
-   static private constant month_names=
+   protected private constant month_names=
    ({
       "januari",
       "februari",
@@ -934,7 +934,7 @@ class cGREENLANDIC
       "decemberi",
    });
 
-   static private constant week_day_names=
+   protected private constant week_day_names=
    ({
       "ataasinngorneq",
       "marlunngorneq",
@@ -957,7 +957,7 @@ class cICELANDIC
 {
    inherit _ymd_base;
 
-   static private constant month_names=
+   protected private constant month_names=
    ({
       "Januar",
       "Februar",
@@ -973,7 +973,7 @@ class cICELANDIC
       "Desember",
    });
 
-   static private constant week_day_names=
+   protected private constant week_day_names=
    ({
       "Manudagur",
       "Tridjudagur",
@@ -996,7 +996,7 @@ class cPERSIAN
 {
    inherit _ymd_base;
 
-   static private constant month_names=
+   protected private constant month_names=
    ({
       "zanwyh",            // <zj><a+><n+><w+><yf><h+>
       "fwrwyh",            // <f+><w+><r+><w+><yf><h+>
@@ -1012,7 +1012,7 @@ class cPERSIAN
       "dsambr",
    });
 
-   static private constant week_day_names=
+   protected private constant week_day_names=
    ({
       "dwsnbh",
       "shzsnbh",
@@ -1035,7 +1035,7 @@ class cAFRIKAANS
 {
    inherit _ymd_base;
 
-   static private constant month_names=
+   protected private constant month_names=
    ({
       "Januarie",
       "Februarie",
@@ -1051,7 +1051,7 @@ class cAFRIKAANS
       "Desember",
    });
 
-   static private constant week_day_names=
+   protected private constant week_day_names=
    ({
       "Maandag",
       "Dinsdag",
@@ -1074,7 +1074,7 @@ class cIRISH
 {
    inherit _ymd_base;
 
-   static private constant month_names=
+   protected private constant month_names=
    ({
       "Eanáir",
       "Feabhra",
@@ -1090,12 +1090,12 @@ class cIRISH
       "Mí na Nollag",
    });
 
-   static private constant short_month_names=
+   protected private constant short_month_names=
    ({
       "Ean","Fea","Már","Aib","Bea","Mei","Iúi","Lún","MFó","DFó","Sam","Nol"
    });
 
-   static private constant week_day_names=
+   protected private constant week_day_names=
    ({
       "Dé Luain",
       "Dé Máirt",
@@ -1106,7 +1106,7 @@ class cIRISH
       "Dé Domhnaigh",
    });
 
-   static private constant short_week_day_names=
+   protected private constant short_week_day_names=
    ({
       "Lua","Mai","Céa","Déa","Aoi","Sat", "Dom",
    });
@@ -1123,7 +1123,7 @@ class cBASQUE
 {
    inherit _ymd_base;
 
-   static private constant month_names=
+   protected private constant month_names=
    ({
       "urtarrila",
       "otsaila",
@@ -1139,7 +1139,7 @@ class cBASQUE
       "abendua",
    });
 
-   static private constant week_day_names=
+   protected private constant week_day_names=
    ({
       "astelehena",
       "asteartea",
@@ -1162,7 +1162,7 @@ class cNORWEGIAN
 {
    inherit _ymd_base;
 
-   static private constant month_names=
+   protected private constant month_names=
    ({
       "januar",
       "februar",
@@ -1178,7 +1178,7 @@ class cNORWEGIAN
       "desember",
    });
 
-   static private constant week_day_names=
+   protected private constant week_day_names=
    ({
       "mandag",
       "tirsdag",
@@ -1203,7 +1203,7 @@ class cDUTCH
 {
    inherit _ymd_base;
 
-   static private constant month_names=
+   protected private constant month_names=
    ({
       "januari",
       "februari",
@@ -1219,7 +1219,7 @@ class cDUTCH
       "december",
    });
 
-   static private constant week_day_names=
+   protected private constant week_day_names=
    ({
       "maandag",
       "dinsdag",
@@ -1242,7 +1242,7 @@ class cPOLISH
 {
    inherit _ymd_base;
 
-   static private constant month_names=
+   protected private constant month_names=
    ({
       "styczen",           // <s><t><y><c><z><e><n'>
       "luty",
@@ -1258,7 +1258,7 @@ class cPOLISH
       "grudzien",
    });
 
-   static private constant week_day_names=
+   protected private constant week_day_names=
    ({
       "poniedzialek",      // <p><o><n><i><e><d><z><i><a><l/><e><k>
       "wtorek",
@@ -1276,7 +1276,7 @@ class cPOLISH_UNICODE
 {
    inherit _ymd_base;
 
-   static private constant month_names=
+   protected private constant month_names=
    ({
       "stycze\x0143",           // <s><t><y><c><z><e><n'>
       "luty",
@@ -1292,7 +1292,7 @@ class cPOLISH_UNICODE
       "grudzien",
    });
 
-   static private constant week_day_names=
+   protected private constant week_day_names=
    ({
       "poniedzia\x0142""ek",      // <p><o><n><i><e><d><z><i><a><l/><e><k>
       "wtorek",
@@ -1315,7 +1315,7 @@ class cTURKISH
 {
    inherit _ymd_base;
 
-   static private constant month_names=
+   protected private constant month_names=
    ({
       "Ocak",
       "Subat",
@@ -1331,7 +1331,7 @@ class cTURKISH
       "Aralik",
    });
 
-   static private constant week_day_names=
+   protected private constant week_day_names=
    ({
       "Pazartesi",
       "Sali",              // <S><a><l><i.>
@@ -1351,7 +1351,7 @@ class cTURKISH_UNICODE
 {
    inherit _ymd_base;
 
-   static private constant month_names=
+   protected private constant month_names=
    ({
       "Ocak",
       "\015e""ubat",    // S-cedilla
@@ -1367,7 +1367,7 @@ class cTURKISH_UNICODE
       "Aral\x0131""k",  // i-no-dot
    });
 
-   static private constant week_day_names=
+   protected private constant week_day_names=
    ({
       "Pazartesi",
       "Sal\x0131",      // <S><a><l><i.> i without dot
@@ -1391,7 +1391,7 @@ class cGERMAN
 {
    inherit _ymd_base;
 
-   static private constant month_names=
+   protected private constant month_names=
    ({
       "Januar",
       "Februar",
@@ -1407,7 +1407,7 @@ class cGERMAN
       "Dezember",
    });
 
-   static private constant week_day_names=
+   protected private constant week_day_names=
    ({
       "Montag",
       "Dienstag",
@@ -1430,7 +1430,7 @@ class cLATVIAN
 {
    inherit _ymd_base;
 
-   static private constant month_names=
+   protected private constant month_names=
    ({
       "janvaris",          // <j><a><n><v><a-><r><i><s>
       "februaris",
@@ -1446,7 +1446,7 @@ class cLATVIAN
       "decembris",
    });
 
-   static private constant week_day_names=
+   protected private constant week_day_names=
    ({
       "pirmdiena",
       "otrdiena",
@@ -1466,7 +1466,7 @@ class cLATVIAN_UNICODE
 {
    inherit _ymd_base;
 
-   static private constant month_names=
+   protected private constant month_names=
    ({
       "janv\x0101""ris",          // <j><a><n><v><a-><r><i><s>
       "februaris",
@@ -1482,7 +1482,7 @@ class cLATVIAN_UNICODE
       "decembris",
    });
 
-   static private constant week_day_names=
+   protected private constant week_day_names=
    ({
       "pirmdiena",
       "otrdiena",
@@ -1505,7 +1505,7 @@ class cFINNISH
 {
    inherit _ymd_base;
 
-   static private constant month_names=
+   protected private constant month_names=
    ({
       "tammikuu",
       "helmikuu",
@@ -1521,7 +1521,7 @@ class cFINNISH
       "joulukuu",
    });
 
-   static private constant week_day_names=
+   protected private constant week_day_names=
    ({
       "maanantai",
       "tiistai",
@@ -1544,7 +1544,7 @@ class cLITHUANIAN
 {
    inherit _ymd_base;
 
-   static private constant month_names=
+   protected private constant month_names=
    ({
       "sausio",
       "vasario",
@@ -1560,7 +1560,7 @@ class cLITHUANIAN
       "gruodzio",
    });
 
-   static private constant week_day_names=
+   protected private constant week_day_names=
    ({
       "Pirmadienis",
       "Antradienis",
@@ -1578,7 +1578,7 @@ class cLITHUANIAN_UNICODE
 {
    inherit _ymd_base;
 
-   static private constant month_names=
+   protected private constant month_names=
    ({
       "sausio",
       "vasario",
@@ -1594,7 +1594,7 @@ class cLITHUANIAN_UNICODE
       "gruodzio",
    });
 
-   static private constant week_day_names=
+   protected private constant week_day_names=
    ({
       "Pirmadienis",
       "Antradienis",
@@ -1617,7 +1617,7 @@ class cESTONIAN
 {
    inherit _ymd_base;
 
-   static constant month_names=
+   protected constant month_names=
    ({
       "jaanuar",
       "veebruar",
@@ -1633,7 +1633,7 @@ class cESTONIAN
       "detsember",
    });
 
-   static constant week_day_names=
+   protected constant week_day_names=
    ({
       "esmaspäev",
       "teisipäev",
@@ -1653,7 +1653,7 @@ class cGALICIAN
 {
    inherit _ymd_base;
 
-   static private constant month_names=
+   protected private constant month_names=
    ({
       "Xaneiro",
       "Febreiro",
@@ -1669,7 +1669,7 @@ class cGALICIAN
       "Decembro",
    });
 
-   static private constant week_day_names=
+   protected private constant week_day_names=
    ({
       "Luns",
       "Martes",
@@ -1688,7 +1688,7 @@ class cINDONESIAN
 {
    inherit _ymd_base;
 
-   static private constant month_names=
+   protected private constant month_names=
    ({
       "Januari",
       "Pebruari",
@@ -1704,7 +1704,7 @@ class cINDONESIAN
       "Desember",
    });
 
-   static private constant week_day_names=
+   protected private constant week_day_names=
    ({
       "Senin",
       "Selasa",
@@ -1724,7 +1724,7 @@ class cFRENCH
 {
    inherit _ymd_base;
 
-   static private constant month_names=
+   protected private constant month_names=
    ({
       "janvier",
       "février",
@@ -1740,7 +1740,7 @@ class cFRENCH
       "décembre",
    });
 
-   static private constant week_day_names=
+   protected private constant week_day_names=
    ({
       "lundi",
       "mardi",
@@ -1760,7 +1760,7 @@ class cITALIAN
 {
    inherit _ymd_base;
 
-   static private constant month_names=
+   protected private constant month_names=
    ({
       "gennaio",
       "febbraio",
@@ -1776,7 +1776,7 @@ class cITALIAN
       "dicembre",
    });
 
-   static private constant week_day_names=
+   protected private constant week_day_names=
    ({
       "lunedi",    // swizz italian: "lunedì" - should I care?
       "martedi",
@@ -1796,7 +1796,7 @@ class cCATALAN
 {
    inherit _ymd_base;
 
-   static private constant month_names=
+   protected private constant month_names=
    ({
       "gener",
       "febrer",
@@ -1812,7 +1812,7 @@ class cCATALAN
       "decembre",
    });
 
-   static private constant week_day_names=
+   protected private constant week_day_names=
    ({
       "dilluns",
       "dimarts",
@@ -1832,7 +1832,7 @@ class cSLOVENIAN
 {
    inherit _ymd_base;
 
-   static constant month_names=
+   protected constant month_names=
    ({
       "januar",
       "februar",
@@ -1848,7 +1848,7 @@ class cSLOVENIAN
       "december",
    });
 
-   static constant week_day_names=
+   protected constant week_day_names=
    ({
       "ponedeljek",
       "torek",
@@ -1866,7 +1866,7 @@ class cSLOVENIAN_UNICODE
 {
    inherit cSLOVENIAN;
 
-   static constant week_day_names=
+   protected constant week_day_names=
    ({
       "ponedeljek",
       "torek",
@@ -1886,7 +1886,7 @@ class cFAROESE
 {
    inherit _ymd_base;
 
-   static private constant month_names=
+   protected private constant month_names=
    ({
       "januar",
       "februar",
@@ -1902,7 +1902,7 @@ class cFAROESE
       "desember",
    });
 
-   static private constant week_day_names=
+   protected private constant week_day_names=
    ({
       "manadagur",
       "týsdagur",
@@ -1922,7 +1922,7 @@ class cROMANIAN
 {
    inherit _ymd_base;
 
-   static constant month_names=
+   protected constant month_names=
    ({
       "Ianuarie",
       "Februarie",
@@ -1938,7 +1938,7 @@ class cROMANIAN
       "Decembrie",
    });
 
-   static constant week_day_names=
+   protected constant week_day_names=
    ({
       "Luni",
       "Marti",             // <M><A><R><T,><I>
@@ -1956,7 +1956,7 @@ class cROMANIAN_UNICODE
 {
    inherit cROMANIAN;
 
-   static constant week_day_names=
+   protected constant week_day_names=
    ({
       "Luni",
       "Mar\x0163""i",             // <M><A><R><T,><I>
@@ -1976,7 +1976,7 @@ class cCROATIAN
 {
    inherit _ymd_base;
 
-   static private constant month_names=
+   protected private constant month_names=
    ({
       "Sijecanj",          // <S><i><j><e><c<><a><n><j>
       "Veljaca",           // <V><e><l><j><a><c<><a>
@@ -1992,7 +1992,7 @@ class cCROATIAN
       "Prosinac",
    });
 
-   static private constant week_day_names=
+   protected private constant week_day_names=
    ({
       "Ponedjeljak",
       "Utorak",
@@ -2010,7 +2010,7 @@ class cCROATIAN_UNICODE
 {
    inherit _ymd_base;
 
-   static private constant month_names=
+   protected private constant month_names=
    ({
       "Sije\415anj",
       "Velja\415a",
@@ -2026,7 +2026,7 @@ class cCROATIAN_UNICODE
       "Prosinac",
    });
 
-   static private constant week_day_names=
+   protected private constant week_day_names=
    ({
       "Ponedjeljak",
       "Utorak",
@@ -2046,7 +2046,7 @@ class cDANISH
 {
    inherit _ymd_base;
 
-   static private constant month_names=
+   protected private constant month_names=
    ({
       "januar",
       "februar",
@@ -2062,7 +2062,7 @@ class cDANISH
       "december",
    });
 
-   static private constant week_day_names=
+   protected private constant week_day_names=
    ({
       "mandag",
       "tirsdag",
@@ -2073,7 +2073,7 @@ class cDANISH
       "søndag",
    });
 
-   static mapping events_translate=
+   protected mapping events_translate=
    ([
       "2nd day of Christmas"		    :"2. juledag",			      
       "Ascension"			    :"Kristi himmelfart",		      
@@ -2107,7 +2107,7 @@ class cSERBIAN
 {
    inherit _ymd_base;
 
-   static constant month_names=
+   protected constant month_names=
    ({
       "januar",
       "februar",
@@ -2123,7 +2123,7 @@ class cSERBIAN
       "decembar",
    });
 
-   static constant week_day_names=
+   protected constant week_day_names=
    ({
       "ponedeljak",
       "utorak",
@@ -2142,7 +2142,7 @@ class cSERBIAN_UNICODE
 {
    inherit cSERBIAN;
 
-   static constant week_day_names=
+   protected constant week_day_names=
    ({
       "ponedeljak",
       "utorak",
@@ -2160,7 +2160,7 @@ class cSERBIAN_UNICODE
 
 // find & compile language
 
-static mapping _cache=([]);
+protected mapping _cache=([]);
 
 Calendar.Rule.Language `[](string lang)
 {
@@ -2179,5 +2179,6 @@ Calendar.Rule.Language `[](string lang)
    
    return l;
 }
+
 
 

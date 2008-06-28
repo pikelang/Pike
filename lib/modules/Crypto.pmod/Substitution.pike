@@ -5,16 +5,16 @@
 #pike __REAL_VERSION__
 // #pragma strict_types
 
-static mapping(string:string|array(string)) enc_key = ([]);
-static mapping(string:string) dec_key = ([]);
-static int(0..1) is_expandable;
-static array(string) null_chars = ({});
-static int null_fq;
+protected mapping(string:string|array(string)) enc_key = ([]);
+protected mapping(string:string) dec_key = ([]);
+protected int(0..1) is_expandable;
+protected array(string) null_chars = ({});
+protected int null_fq;
 
-static constant AZ = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"/1;
-static constant az = "abcdefghijklmnopqrstuvwxyz"/1;
+protected constant AZ = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"/1;
+protected constant az = "abcdefghijklmnopqrstuvwxyz"/1;
 
-static array(int) charify(array(string) x) {
+protected array(int) charify(array(string) x) {
   return map(x, lambda(string y) { return y[0]; });
 }
 
@@ -82,7 +82,7 @@ this_program set_null_chars(int|float p, array(string) chars) {
   return this;
 }
 
-static mapping(string:string) make_rot_map(int steps, array(string) alphabet) {
+protected mapping(string:string) make_rot_map(int steps, array(string) alphabet) {
   mapping(string:string) key = ([]);
   foreach(alphabet; int pos; string char)
     key[char] = alphabet[ (pos+steps)%sizeof(alphabet) ];
@@ -104,7 +104,7 @@ this_program set_rot_key(void|int steps, void|array(string) alphabet) {
   return this;
 }
 
-static string reduce_word(string|array(int) w, array(string) alpha) {
+protected string reduce_word(string|array(int) w, array(string) alpha) {
   w = Array.uniq( (array(int))w );
   multiset a = (multiset)charify(alpha);
   foreach(w;; int char)
@@ -112,7 +112,7 @@ static string reduce_word(string|array(int) w, array(string) alpha) {
   return (string)w;
 }
 
-static array(string) scramble_alpha(string pwd, array(string) alpha, int off) {
+protected array(string) scramble_alpha(string pwd, array(string) alpha, int off) {
   array(string) out = pwd/1;
   alpha -= out;
   out += alpha;
@@ -216,7 +216,7 @@ string name() { return "substitution"; }
 int block_size() { return 1; }
 int key_size() { return sizeof(enc_key); }
 
-static int mode;
+protected int mode;
 this_program set_encrypt_key(mapping(string:string|array(string)) key) {
   mode = 0;
   return set_key(key);

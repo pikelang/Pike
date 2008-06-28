@@ -1,5 +1,5 @@
 //
-//  $Id: Cipher.pmod,v 1.15 2005/05/26 12:07:02 mast Exp $
+//  $Id: Cipher.pmod,v 1.16 2008/06/28 16:36:58 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -56,12 +56,12 @@ class mac_none
 //! MAC using SHA.
 class MACsha
 {
-  static constant pad_1 =  "6666666666666666666666666666666666666666";
-  static constant pad_2 = ("\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"
+  protected constant pad_1 =  "6666666666666666666666666666666666666666";
+  protected constant pad_2 = ("\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"
 			   "\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\");
 
-  static Crypto.Hash algorithm = Crypto.SHA1;
-  static string secret;
+  protected Crypto.Hash algorithm = Crypto.SHA1;
+  protected string secret;
 
   //!
   string hash_raw(string data)
@@ -101,7 +101,7 @@ class MACsha
   }
 
   //!
-  static void create (string|void s)
+  protected void create (string|void s)
   {
     secret = s || "";
   }
@@ -111,18 +111,18 @@ class MACsha
 class MACmd5 {
   inherit MACsha;
 
-  static constant pad_1 =  "666666666666666666666666666666666666666666666666";
-  static constant pad_2 = ("\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"
+  protected constant pad_1 =  "666666666666666666666666666666666666666666666666";
+  protected constant pad_2 = ("\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"
 			   "\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\");
   
-  static Crypto.Hash algorithm = Crypto.MD5;
+  protected Crypto.Hash algorithm = Crypto.MD5;
 }
 
 //!
 class MAChmac_sha {
 
-  static string secret;
-  static Crypto.HMAC hmac;
+  protected string secret;
+  protected Crypto.HMAC hmac;
 
   //!
   string hash(object packet, Gmp.mpz seq_num) {
@@ -138,7 +138,7 @@ class MAChmac_sha {
   }
 
   //!
-  static void create(string|void s) {
+  protected void create(string|void s) {
     secret = s || "";
     hmac=Crypto.HMAC(Crypto.SHA1);
   }
@@ -149,14 +149,14 @@ class MAChmac_md5 {
   inherit MAChmac_sha;
 
   //!
-  static void create(string|void s) {
+  protected void create(string|void s) {
     secret = s || "";
     hmac=Crypto.HMAC(Crypto.MD5);
   }
 }
 
 // Hashfn is either a Crypto.MD5 or Crypto.SHA
-static string P_hash(Crypto.Hash hashfn, int hlen, string secret,
+protected string P_hash(Crypto.Hash hashfn, int hlen, string secret,
 		     string seed, int len) {
    
   Crypto.HMAC hmac=Crypto.HMAC(hashfn);
@@ -297,7 +297,7 @@ class DHParameters
 
   /* p = 2^1024 - 2^960 - 1 + 2^64 * floor( 2^894 Pi + 129093 ) */
 
-  static Gmp.mpz orm96() {
+  protected Gmp.mpz orm96() {
     p = Gmp.mpz("FFFFFFFF FFFFFFFF C90FDAA2 2168C234 C4C6628B 80DC1CD1"
 		"29024E08 8A67CC74 020BBEA6 3B139B22 514A0879 8E3404DD"
 		"EF9519B3 CD3A431B 302B0A6D F25F1437 4FE1356D 6D51C245"
@@ -311,7 +311,7 @@ class DHParameters
     return this;
   }
 
-  static void create(object ... args) {
+  protected void create(object ... args) {
     switch (sizeof(args))
     {
     case 0:
@@ -480,3 +480,4 @@ array lookup(int suite,int version)
 #else // constant(Crypto.Hash)
 constant this_program_does_not_exist = 1;
 #endif
+

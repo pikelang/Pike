@@ -206,7 +206,7 @@ class Readline
     signal(signum("SIGINT"));
   }
 
-  static private string low_edit(string data, string|void local_prompt,
+  protected private string low_edit(string data, string|void local_prompt,
 				 array(string)|void attrs)
   {
     string r = ::edit(data, local_prompt, (attrs || ({})) | ({ "bold" }));
@@ -250,7 +250,7 @@ class Readline
     return s;
   }
 
-  static private string file_completion(string tab)
+  protected private string file_completion(string tab)
   {
     string text = gettext();
     int pos = getcursorpos();

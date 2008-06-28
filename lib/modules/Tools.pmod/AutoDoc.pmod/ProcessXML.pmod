@@ -6,11 +6,11 @@
 
 #include "./debug.h"
 
-static inherit Parser.XML.Tree;
-static inherit "module.pmod";
+protected inherit Parser.XML.Tree;
+protected inherit "module.pmod";
 
 #define DEB werror("###%s:%d\n", __FILE__, __LINE__);
-static private void processError(string message, mixed ... args) {
+protected private void processError(string message, mixed ... args) {
   throw ( ({ sprintf("ProcessXML: "+message+"\n", @args),
 	     backtrace() }) );
 }
@@ -112,7 +112,7 @@ static private void processError(string message, mixed ... args) {
 //========================================================================
 
 // Wrap child in the proper modules and namespace.
-static object makeWrapper(array(string) modules, object|void child)
+protected object makeWrapper(array(string) modules, object|void child)
 {
   object m;
   if (child->objtype != "autodoc") {
@@ -358,13 +358,13 @@ string moveImages(string docXMLFile,
 // BUILDING OF THE BIG TREE
 //========================================================================
 
-static int isAutoDoc(SimpleNode node) { return node->get_any_name() == "autodoc"; }
-static int isNameSpace(SimpleNode node) { return node->get_any_name() == "namespace"; }
-static int isClass(SimpleNode node) { return node->get_any_name() == "class"; }
-static int isModule(SimpleNode node) { return node->get_any_name() == "module"; }
-static int isDoc(SimpleNode node) { return node->get_any_name() == "doc"; }
+protected int isAutoDoc(SimpleNode node) { return node->get_any_name() == "autodoc"; }
+protected int isNameSpace(SimpleNode node) { return node->get_any_name() == "namespace"; }
+protected int isClass(SimpleNode node) { return node->get_any_name() == "class"; }
+protected int isModule(SimpleNode node) { return node->get_any_name() == "module"; }
+protected int isDoc(SimpleNode node) { return node->get_any_name() == "doc"; }
 
-static string getName(SimpleNode node) { return node->get_attributes()["name"]; }
+protected string getName(SimpleNode node) { return node->get_attributes()["name"]; }
 
 //!   Puts all children of @[source] into the tree @[dest], in their right
 //!   place module-hierarchically.
@@ -440,7 +440,7 @@ void mergeTrees(SimpleNode dest, SimpleNode source) {
   source->replace_children(children - ({ 0 }));
 }
 
-static void reportError(string filename, mixed ... args) {
+protected void reportError(string filename, mixed ... args) {
   werror("[%s]\t%s\n", filename, sprintf(@args));
 }
 
@@ -448,7 +448,7 @@ static void reportError(string filename, mixed ... args) {
 // HANDLING @appears directives
 //========================================================================
 
-static SimpleNode findNode(SimpleNode root, array(string) ref) {
+protected SimpleNode findNode(SimpleNode root, array(string) ref) {
   SimpleNode n = root;
   // top:: is an anchor to the root of the current namespace.
   if (sizeof(ref) && ref[0] == "top::")
@@ -476,15 +476,15 @@ static SimpleNode findNode(SimpleNode root, array(string) ref) {
   return n;
 }
 
-static class ReOrganizeTask(SimpleNode n, SimpleNode parent) {
+protected class ReOrganizeTask(SimpleNode n, SimpleNode parent) {
   array(string) belongsRef;
   string newName;
 }
 
-static array(ReOrganizeTask) tasks;
+protected array(ReOrganizeTask) tasks;
 
 // current is a <module>, <class> or <docgroup> node
-static void recurseAppears(string namespace,
+protected void recurseAppears(string namespace,
 			   SimpleNode current,
 			   SimpleNode parent) {
   mapping attr = current->get_attributes() || ([]);
@@ -593,7 +593,7 @@ void handleAppears(SimpleNode root) {
 // "\"foo.pike\"" ==> ({ "\"foo.pike\"" })
 // ".protocol" ==> ({ "", "protocol" })
 // ".module.ANY" ==> ({ "", "ANY" })
-static array(string) splitRef(string ref) {
+protected array(string) splitRef(string ref) {
   if ((sizeof(ref)>1) && (ref[0] == '"')) {
     if ((ref == "\".\"") || (ref == "\"module.pmod\"")) {
       // Some special cases for referring to the current module.
@@ -658,7 +658,7 @@ static array(string) splitRef(string ref) {
   }
 }
 
-static string mergeRef(array(string) ref) {
+protected string mergeRef(array(string) ref) {
   string s = "";
   if (sizeof(ref) && has_suffix(ref[0], "::")) {
     s = ref[0];
@@ -668,7 +668,7 @@ static string mergeRef(array(string) ref) {
   return s;
 }
 
-static class Scope(string|void type, string|void name) {
+protected class Scope(string|void type, string|void name) {
   multiset(string) idents = (<>);
 
   multiset(string) failures = (<>);
@@ -679,7 +679,7 @@ static class Scope(string|void type, string|void name) {
   }
 }
 
-static class ScopeStack {
+protected class ScopeStack {
   mapping(string:array(Scope)) scopes = ([]);
   mapping(string:multiset(string)) namespace_extends = ([]);
   string namespace = "predef";
@@ -813,7 +813,7 @@ static class ScopeStack {
   }
 }
 
-static void fixupRefs(ScopeStack scopes, SimpleNode node) {
+protected void fixupRefs(ScopeStack scopes, SimpleNode node) {
   node->walk_preorder(
     lambda(SimpleNode n) {
       if (n->get_node_type() == XML_ELEMENT) {
@@ -835,7 +835,7 @@ static void fixupRefs(ScopeStack scopes, SimpleNode node) {
 }
 
 // expects a <autodoc>, <namespace>, <module> or <class> node
-static void resolveFun(ScopeStack scopes, SimpleNode node) {
+protected void resolveFun(ScopeStack scopes, SimpleNode node) {
   if (node->get_any_name() == "namespace") {
     // Create the namespace.
     scopes->enter("namespace", node->get_attributes()["name"]);
@@ -974,7 +974,7 @@ class NScope
 
   // @[tree] is a node of type autodoc, namespace, module, class, enum,
   // or docgroup.
-  static void create(SimpleNode tree, string|void path)
+  protected void create(SimpleNode tree, string|void path)
   {
     type = tree->get_any_name();
     name = tree->get_attributes()->name;
@@ -1085,7 +1085,7 @@ class NScope
       }
     }
   }
-  static string _sprintf(int c)
+  protected string _sprintf(int c)
   {
     return sprintf("NScope(type:%O, name:%O, symbols:%d, inherits:%d)",
 		   type, name, sizeof(symbols), sizeof(inherits||([])));
@@ -1131,11 +1131,11 @@ class NScopeStack
   array(NScope) stack = ({});
   mapping(string:mapping(string:int(1..))) failures = ([]);
 
-  static void create(NScope scopes)
+  protected void create(NScope scopes)
   {
     this_program::scopes = scopes;
   }
-  static void destroy()
+  protected void destroy()
   {
     if (sizeof(failures)) {
       werror("Resolution failed for %d symbols. Logging to resolution.log\n",

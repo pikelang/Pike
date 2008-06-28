@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: protocol.pike,v 1.20 2008/01/13 17:02:43 nilsson Exp $
+// $Id: protocol.pike,v 1.21 2008/06/28 16:36:58 nilsson Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -45,7 +45,7 @@ import Protocols.LDAP;
   object low_fd = Stdio.File();			// helper fd
   object ldapfd;			// helper fd
 
-static int last_io_time; // Timestamp when I/O on the fd was made last.
+protected int last_io_time; // Timestamp when I/O on the fd was made last.
 
   int seterr(int errno, void|string errstr) {
   // Sets ldap_err* variables and returns errno
@@ -87,7 +87,7 @@ string server_error_string() {return ldap_rem_errstr;}
 //! time.
 int get_last_io_time() {return last_io_time;}
 
-  static void read_answer() {
+  protected void read_answer() {
   // ----------------------
   // Reads LDAP PDU (with defined msgid) from the server
 
@@ -158,7 +158,7 @@ int get_last_io_time() {return last_io_time;}
       con_ok(this, @extra_args);
   }
 
-  static int is_whole_pdu() {
+  protected int is_whole_pdu() {
   // ----------------------
   // Check if LDAP PDU is complete in 'readbuf'
 
@@ -339,3 +339,4 @@ int get_last_io_time() {return last_io_time;}
 #else
 constant this_program_does_not_exist=1;
 #endif
+

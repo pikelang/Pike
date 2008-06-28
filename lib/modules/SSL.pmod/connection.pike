@@ -1,5 +1,5 @@
 //
-// $Id: connection.pike,v 1.41 2005/04/28 19:56:47 mast Exp $
+// $Id: connection.pike,v 1.42 2008/06/28 16:36:58 nilsson Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -54,7 +54,7 @@ void create(int is_server, void|SSL.context ctx)
 }
 
 #if 0
-static void destroy()
+protected void destroy()
 {
   werror("Connection destructed:\n%s\n", describe_backtrace(backtrace()));
 }
@@ -71,7 +71,7 @@ void set_alert_callback(function(object,int|object,string:void) callback)
 
 //! Low-level receive handler. Returns a packet, an alert, or zero if
 //! more data is needed to get a complete packet.
-static object recv_packet(string data)
+protected object recv_packet(string data)
 {
   mixed res;
 
@@ -413,3 +413,4 @@ string|int got_data(string|int s)
 }
 
 #endif
+

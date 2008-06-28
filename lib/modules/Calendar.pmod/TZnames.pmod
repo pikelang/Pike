@@ -27,7 +27,7 @@
 //!	To convert the position to a Geography.Position, simply
 //!	feed it to the constructor.
 
-static string raw_zone_tab=0;
+protected string raw_zone_tab=0;
 string _zone_tab()
 {
    return raw_zone_tab ||
@@ -35,7 +35,7 @@ string _zone_tab()
          combine_path(__FILE__,"..","tzdata/zone.tab")) - "\r"));
 }
 
-static array(array(string)) parsed_zone_tab=0;
+protected array(array(string)) parsed_zone_tab=0;
 array(array(string)) zone_tab()
 {
    return parsed_zone_tab ||
@@ -59,7 +59,7 @@ array(array(string)) zone_tab()
 //!	This reads the zone.tab file and returns name of all
 //!	standard timezones, like "Europe/Belgrade".
 
-static array(string) zone_names=0;
+protected array(string) zone_names=0;
 array(string) zonenames()
 {
    return zone_names || (zone_names=column(zone_tab(),2));
@@ -1442,5 +1442,6 @@ mapping timezone_expert_tree=
 			-3600:"Europe/Luxembourg",
 			0:"Europe/Brussels",]),]),]),]),]),
 	 -7200:"Europe/Warsaw",]),]),]);
+
 
 

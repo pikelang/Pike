@@ -3,7 +3,7 @@
 
 // Pike core things that don't belong anywhere else.
 //
-// $Id: module.pmod,v 1.18 2008/06/06 18:01:40 grubba Exp $
+// $Id: module.pmod,v 1.19 2008/06/28 16:36:56 nilsson Exp $
 
 constant WEAK_INDICES = __builtin.PIKE_WEAK_INDICES;
 constant WEAK_VALUES = __builtin.PIKE_WEAK_VALUES;
@@ -64,7 +64,7 @@ program Decoder = [program] master()->Decoder;
 program Codec = [program] master()->Codec;
 
 #if 0
-static constant TYPE = typeof(typeof([mixed]0));
+protected constant TYPE = typeof(typeof([mixed]0));
 
 TYPE check_call(TYPE fun_type, TYPE ... arg_types)
 {
@@ -95,3 +95,4 @@ TYPE check_call(TYPE fun_type, TYPE ... arg_types)
   return ret;
 }
 #endif /* 0 */
+

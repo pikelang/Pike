@@ -272,7 +272,7 @@ mapping get_package_metadata(string s, string fsroot)
   return metadata;
 }
 
-static Filesystem.System getfs(string source, string cwd) {
+protected Filesystem.System getfs(string source, string cwd) {
   return Filesystem.Tar(sprintf("%s.tar", "d"), 0, Stdio.FakeFile(source))->cd(cwd);
 }
 
@@ -315,4 +315,5 @@ int untar(string source, string path, void|string cwd) {
   }
   return c;
 }
+
 

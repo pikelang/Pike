@@ -26,7 +26,7 @@ inherit Calendar.YMD:YMD;
 
 string calendar_name() { return "Islamic"; }
 
-private static mixed __initstuff=lambda()
+private protected mixed __initstuff=lambda()
 {
    f_week_day_shortname_from_number="islamic_week_day_shortname_from_number";
    f_week_day_name_from_number="islamic_week_day_name_from_number";
@@ -63,7 +63,7 @@ array(int) year_from_julian_day(int jd)
 	    (y-1)*354 + (11*y+3)/30 + 1948440});
 }
 
-static array(int) year_month_from_month(int y,int m)
+protected array(int) year_month_from_month(int y,int m)
 {
 // [y,m,ndays,myd]
 
@@ -89,7 +89,7 @@ static array(int) year_month_from_month(int y,int m)
    error("Month out of range.\n");
 }
 
-static array(int) month_from_yday(int y,int yd)
+protected array(int) month_from_yday(int y,int yd)
 {
 // [month,day-of-month,ndays,month-year-day]
    int l=year_leap_year(y);
@@ -113,7 +113,7 @@ static array(int) month_from_yday(int y,int yd)
    error("yday out of range.\n");
 }
 
-static array(int) week_from_julian_day(int jd)
+protected array(int) week_from_julian_day(int jd)
 {
 // [year,week,day-of-week,ndays,week-julian-day]
 
@@ -129,7 +129,7 @@ static array(int) week_from_julian_day(int jd)
    return ({y,w,1+(yjd+yday)%7,7,wjd});
 }
 
-static array(int) week_from_week(int y,int w)
+protected array(int) week_from_week(int y,int w)
 {
 // [year,week,1 (wd),ndays,week-julian-day]
 
@@ -141,12 +141,12 @@ static array(int) week_from_week(int y,int w)
    return ({y,w,1,7,wjd+w*7});
 }
 
-static int compat_week_day(int n)
+protected int compat_week_day(int n)
 {
    return n%7;
 }
 
-static int year_remaining_days(int y,int yday)
+protected int year_remaining_days(int y,int yday)
 {
    return 354+year_leap_year(y)-yday;
 }
@@ -214,7 +214,7 @@ class cMonth
 {
    inherit YMD::cMonth;
 
-   static int months_to_month(int y2,int m2)
+   protected int months_to_month(int y2,int m2)
    {
       return (y2-y)*12+(m2-m);
    }
@@ -224,7 +224,7 @@ class cWeek
 {
    inherit YMD::cWeek;
 
-   static int weeks_to_week(int y2,int w2)
+   protected int weeks_to_week(int y2,int w2)
    {
       [int y3,int w3,int wd2,int nd2,int jd2]=week_from_week(y2,w2);
       return (jd2-jd)/7;

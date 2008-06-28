@@ -1,5 +1,5 @@
 /*
- * $Id: tds.pike,v 1.23 2007/04/13 11:48:17 grubba Exp $
+ * $Id: tds.pike,v 1.24 2008/06/28 16:36:59 nilsson Exp $
  *
  * A Pike implementation of the TDS protocol.
  *
@@ -33,12 +33,12 @@
 //! @seealso
 //!   @[Sql.Sql()]
 
-static int filter_noprint(int char)
+protected int filter_noprint(int char)
 {
   return ((char == 32) || ((char != 0x7f) && (char & 0x60)))?char:'.';
 }
 
-static string hex_dump(string data) {
+protected string hex_dump(string data) {
   array(string) lines = data/16.0;
   int off;
   foreach(lines; int i; string line) {
@@ -55,7 +55,7 @@ static string hex_dump(string data) {
 #if (__REAL_MAJOR__ > 7) || ((__REAL_MAJOR__ == 7) && (__REAL_MINOR__ >= 6))
 // Static blocks affect nested classes in Pike 7.4.
 // We don't want that...
-static {
+protected {
 #endif /* Pike 7.6 or later */
   constant DEF_MAJOR = 8;
   constant DEF_MINOR = 0;
@@ -186,13 +186,13 @@ static {
     predef::error(last_error = msg);
   }
 
-  static object utf16enc = Locale.Charset.encoder("UTF16LE");
-  static string string_to_utf16(string s)
+  protected object utf16enc = Locale.Charset.encoder("UTF16LE");
+  protected string string_to_utf16(string s)
   {
     return utf16enc->feed(s)->drain();
   }
-  static object utf16dec = Locale.Charset.decoder("UTF16LE");
-  static string utf16_to_string(string s)
+  protected object utf16dec = Locale.Charset.decoder("UTF16LE");
+  protected string utf16_to_string(string s)
   {
     return utf16dec->feed(s)->drain();
   }
@@ -228,7 +228,7 @@ static {
       string inbuf = "";
       int done;
 
-      static void fill_buf()
+      protected void fill_buf()
       {
 	if (done) {
 	  TDS_WERROR("Filling buffer on finished packet!\n"
@@ -265,7 +265,7 @@ static {
 	inpos = 0;
       }
 
-      static void destroy()
+      protected void destroy()
       {
 	// Return the connection to the idle state.
 	while (!done) {
@@ -335,7 +335,7 @@ static {
 	}
       }
 
-      static void create()
+      protected void create()
       {
 	if (busy) {
 	  tds_error("Creating InPacket on busy connection!\n");
@@ -353,7 +353,7 @@ static {
       array(string) strings = ({});
       int flags;
 
-      static void create(int|void flags)
+      protected void create(int|void flags)
       {
 	this_program::flags = flags;
       }
@@ -490,7 +490,7 @@ static {
       return 0;
     }
 
-    static string crypt_pass(string password)
+    protected string crypt_pass(string password)
     {
       password = string_to_utf16(password);
       password ^= "\x5a"*sizeof(password);
@@ -500,7 +500,7 @@ static {
 			 });
     }
 
-    static InPacket send_login()
+    protected InPacket send_login()
     {
       password = password[..127];
 
@@ -594,7 +594,7 @@ static {
       return encrypt_answer(md4->digest() + "\0"*16, nonce);
     }
 
-    static void send_auth(string nonce)
+    protected void send_auth(string nonce)
     {
       int out_flag = 0x11;
       Packet p = Packet();
@@ -612,7 +612,7 @@ static {
       send_packet(p, 0x11);
     }
 
-    static void process_auth(InPacket inp)
+    protected void process_auth(InPacket inp)
     {
       int pdu_size = inp->get_smallint();
       if (pdu_size < 32) tds_error("Bad pdu size: %d\n", pdu_size);
@@ -628,7 +628,7 @@ static {
       send_auth(nonce);
     }
 
-    static void process_msg(InPacket inp, int token_type)
+    protected void process_msg(InPacket inp, int token_type)
     {
       TDS_WERROR("TDS_ERROR_TOKEN | TDS_INFO_TOKEN | TDS_EED_TOKEN\n");
       int len = inp->get_smallint();
@@ -685,7 +685,7 @@ static {
       }
     }
 
-    static void process_env_chg(InPacket inp)
+    protected void process_env_chg(InPacket inp)
     {
       int size = inp->get_smallint();
       int env_type = inp->get_byte();
@@ -894,7 +894,7 @@ static {
       return res;
     }
 
-    static array(mapping(string:mixed)) tds7_process_result(InPacket inp)
+    protected array(mapping(string:mixed)) tds7_process_result(InPacket inp)
     {
       int num_cols = inp->get_smallint();
       if (num_cols == 0xffff) {
@@ -909,7 +909,7 @@ static {
       return column_info;
     }
 
-    static void process_default_tokens(InPacket inp, int token_type)
+    protected void process_default_tokens(InPacket inp, int token_type)
     {
       if (token_type == TDS_DONE_TOKEN) return;
       switch(token_type) {
@@ -1046,7 +1046,7 @@ static {
       }
     }
 
-    static string|int get_data(InPacket inp,
+    protected string|int get_data(InPacket inp,
 			       mapping(string:mixed) info, int col)
     {
       TDS_WERROR("get_data for column %d info:%O\n", col, info);
@@ -1138,7 +1138,7 @@ static {
       }
     }
 
-    static string|int convert(string|int raw, mapping(string:mixed) info)
+    protected string|int convert(string|int raw, mapping(string:mixed) info)
     {
       if (!raw) {
 	TDS_CONV_WERROR("%O ==> NULL\n", raw);
@@ -1277,7 +1277,7 @@ static {
       }
     }
 
-    static array(string|int) process_row(InPacket inp,
+    protected array(string|int) process_row(InPacket inp,
 					 array(mapping(string:mixed)) col_info)
     {
       if (!col_info) return 0;
@@ -1318,7 +1318,7 @@ static {
       }
     }
 
-    static void process_login_tokens(InPacket inp)
+    protected void process_login_tokens(InPacket inp)
     {
       int ok = 0;
       int token_type;
@@ -1422,7 +1422,7 @@ static {
       destruct();
     }
 
-    static void create(string server, int port, string database,
+    protected void create(string server, int port, string database,
 		       string username, string auth)
     {
       string domain;
@@ -1493,7 +1493,7 @@ class compile_query
     // FIXME:
   }
 
-  static array(string) split_query_on_placeholders(string query)
+  protected array(string) split_query_on_placeholders(string query)
   {
     array(string) res = ({});
     int i;
@@ -1553,7 +1553,7 @@ class compile_query
   //!
   //! @seealso
   //!   @[big_query()]
-  static void create(string query)
+  protected void create(string query)
   {
     TDS_WERROR("Compiling query: %O\n", query);
     splitted_query = split_query_on_placeholders(query);
@@ -1575,11 +1575,11 @@ class compile_query
 //! A query result set.
 class big_query
 {
-  static int row_no;
-  static int eot;
+  protected int row_no;
+  protected int eot;
 
-  static Connection.InPacket result_packet;
-  static array(mapping(string:mixed)) column_info;
+  protected Connection.InPacket result_packet;
+  protected array(mapping(string:mixed)) column_info;
 
   //! Fetch the next row from the result set.
   //!
@@ -1656,7 +1656,7 @@ class big_query
   //!
   //! @seealso
   //!   @[compile_query()]
-  static void create(string|compile_query query)
+  protected void create(string|compile_query query)
   {
     if (stringp(query)) {
       query = compile_query(query);
@@ -1676,7 +1676,7 @@ class big_query
   }
 }
 
-static compile_query compiled_insert_id =
+protected compile_query compiled_insert_id =
   compile_query("SELECT @@identity AS insert_id");
 
 //! Fetch the identity of the last insert (if available).
@@ -1734,7 +1734,7 @@ string error()
 //!
 //! @seealso
 //!   @[Sql.Sql()]
-static void create(string|void server, string|void database,
+protected void create(string|void server, string|void database,
 		   string|void user, string|void password)
 {
   if (con) {

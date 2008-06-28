@@ -394,7 +394,7 @@ class PikeType
   PC.Token t;
   array(PikeType|string|int) args=({});
 
-  static string fiddle(string name, array(string) tmp)
+  protected string fiddle(string name, array(string) tmp)
     {
       while(sizeof(tmp) > 7)
       {
@@ -413,7 +413,7 @@ class PikeType
       }
     }
 
-  static array(PikeType) strip_zero_alt()
+  protected array(PikeType) strip_zero_alt()
   /* Assumes this is an '|' node. Returns args without any 'zero'
    * alternatives. */
   {

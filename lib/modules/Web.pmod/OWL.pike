@@ -1,4 +1,4 @@
-// $Id: OWL.pike,v 1.6 2004/03/09 14:12:30 nilsson Exp $
+// $Id: OWL.pike,v 1.7 2008/06/28 16:37:02 nilsson Exp $
 
 #pike __REAL_VERSION__
 #define Node Parser.XML.NSTree.NSNode
@@ -52,7 +52,7 @@ void add_Thing(Resource c)
   add_statement(c, rdf_type, owl_Thing);
 }
 
-static Resource _add_list(Resource ... list_members)
+protected Resource _add_list(Resource ... list_members)
 {
   Resource list = rdf_nil;
 

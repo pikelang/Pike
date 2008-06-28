@@ -1,4 +1,4 @@
-// $Id: Subject.pike,v 1.8 2006/11/04 19:06:48 nilsson Exp $
+// $Id: Subject.pike,v 1.9 2008/06/28 16:36:54 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -36,7 +36,7 @@
 
 #define PROXY(X,Y) X(mixed ... args) { ENTER(X); return Y; }
 
-static string id = "";
+protected string id = "";
 
 void create(mixed ... args)
 {

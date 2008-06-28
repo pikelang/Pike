@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.92 2008/01/05 14:46:38 grubba Exp $
+// $Id: Query.pike,v 1.93 2008/06/28 16:36:57 nilsson Exp $
 
 //! Open and execute an HTTP query.
 //!
@@ -63,7 +63,7 @@ int(0..1) https = 0;
 
 object con;
 string request;
-static string send_buffer;
+protected string send_buffer;
 
 string buf="",headerbuf="";
 int datapos, discarded_bytes;
@@ -77,7 +77,7 @@ array extra_args;
 
 /****** internal stuff *********************************************/
 
-static int ponder_answer( int|void start_position )
+protected int ponder_answer( int|void start_position )
 {
    // read until we have all headers
 
@@ -155,7 +155,7 @@ static int ponder_answer( int|void start_position )
    return 1;
 }
 
-static void connect(string server,int port,int blocking)
+protected void connect(string server,int port,int blocking)
 {
 #ifdef HTTP_QUERY_DEBUG
    werror("<- (connect %O:%d)\n",server,port);
@@ -231,7 +231,7 @@ static void connect(string server,int port,int blocking)
      ponder_answer();
 }
 
-static void async_close()
+protected void async_close()
 {
   con->set_blocking();
   if (ponder_answer() <= 0) {
@@ -239,7 +239,7 @@ static void async_close()
   }
 }
 
-static void async_read(mixed dummy,string s)
+protected void async_read(mixed dummy,string s)
 {
 #ifdef HTTP_QUERY_DEBUG
    werror("-> %d bytes of data\n",sizeof(s));
@@ -253,7 +253,7 @@ static void async_read(mixed dummy,string s)
    }
 }
 
-static void async_write()
+protected void async_write()
 {
 #ifdef HTTP_QUERY_DEBUG
    werror("<- %O\n", send_buffer);
@@ -273,7 +273,7 @@ static void async_write()
    con->set_nonblocking(async_read,0,async_close);
 }
 
-static void async_connected()
+protected void async_connected()
 {
    con->set_nonblocking(async_read,async_write,async_close);
 #ifdef HTTP_QUERY_DEBUG
@@ -282,7 +282,7 @@ static void async_connected()
    con->write("");
 }
 
-static void low_async_failed(int errno)
+protected void low_async_failed(int errno)
 {
 #ifdef HTTP_QUERY_DEBUG
    werror("** calling failed cb %O", request_fail);
@@ -293,12 +293,12 @@ static void low_async_failed(int errno)
    remove_call_out(async_timeout);
 }
 
-static void async_failed()
+protected void async_failed()
 {
   low_async_failed(con?con->errno():113);	// EHOSTUNREACH/Linux-i386
 }
 
-static void async_timeout()
+protected void async_timeout()
 {
 #ifdef HTTP_QUERY_DEBUG
    werror("** TIMEOUT\n");
@@ -433,16 +433,16 @@ string headers_encode(mapping(string:array(string)|string) h)
 //!
 mapping hostname_cache=([]);
 
-static Protocols.DNS.async_client async_dns;
-static int last_async_dns;
-static mixed async_id;
+protected Protocols.DNS.async_client async_dns;
+protected int last_async_dns;
+protected mixed async_id;
 
 #ifndef PROTOCOLS_HTTP_DNS_OBJECT_TIMEOUT
 #define PROTOCOLS_HTTP_DNS_OBJECT_TIMEOUT	60
 #endif
 
 // Check if it's time to clean up the async dns object.
-static void clean_async_dns()
+protected void clean_async_dns()
 {
 #ifdef HTTP_QUERY_NOISE
   werror("clean_async_dns\n");
@@ -928,7 +928,7 @@ string data(int|void max_length)
    return buf[datapos..datapos+len];
 }
 
-static Locale.Charset.Decoder charset_decoder;
+protected Locale.Charset.Decoder charset_decoder;
 
 //! Gives back data, but decoded according to the content-type
 //! character set.
@@ -1139,7 +1139,7 @@ object datafile()
    return PseudoFile(con,buf[datapos..],(int)headers["content-length"]);
 }
 
-static void destroy()
+protected void destroy()
 {
    if (async_id) {
      remove_call_out(async_id);
@@ -1212,7 +1212,7 @@ void timed_async_fetch(function(object, mixed ...:void) ok_callback,
   con->set_nonblocking(async_fetch_read,0, async_fetch_close);
 }
 
-static string _sprintf(int t)
+protected string _sprintf(int t)
 {
   return t=='O' && status && sprintf("%O(%d %s)", this_program,
 				     status, status_desc);

@@ -108,7 +108,7 @@ class TimeofDay
       ::create(@args);
    }
 
-   static int(0..1) create_backtry(mixed ...args) 
+   protected int(0..1) create_backtry(mixed ...args) 
    {
       if (sizeof(args)>1 && objectp(args[0])) 
       {
@@ -146,7 +146,7 @@ class TimeofDay
       ls=CALUNKNOWN;
    }
 
-   static void create_now();
+   protected void create_now();
 
    void create_julian_day(int|float jd)
    {
@@ -168,7 +168,7 @@ class TimeofDay
    }
 
 // make local second 
-   static void make_local()
+   protected void make_local()
    {
       if (!base) make_base();
 
@@ -296,7 +296,7 @@ class TimeofDay
       return ::range(to);
    }
 
-   static void convert_from(TimeRange other)
+   protected void convert_from(TimeRange other)
    {
       ::convert_from(other);
       if (other->is_timeofday)
@@ -479,7 +479,7 @@ class TimeofDay
       return Second("timeofday",rules,ux+n,1)->autopromote();
    }
 
-   static array(TimeRange) get_timeofday(string unit,
+   protected array(TimeRange) get_timeofday(string unit,
 					 int start,int step,program p,
 					 int ... range)
    {
@@ -1118,7 +1118,7 @@ class cSuperTimeRange
 
 // wrapper methods to calculate units in a supertimerange
 
-   static array(TimeRange) get_units(string unit,int ... range)
+   protected array(TimeRange) get_units(string unit,int ... range)
    {
       int from=0,to=0x7fffffff,pos=0;
       array res=({});
@@ -1155,7 +1155,7 @@ class cSuperTimeRange
       return res;
    }
 
-   static int num_units(string unit)
+   protected int num_units(string unit)
    {
       int pos=0;
       TimeRange last=0;
@@ -1172,7 +1172,7 @@ class cSuperTimeRange
       return pos;
    }
 
-   static TimeRange get_unit(string unit,int n)
+   protected TimeRange get_unit(string unit,int n)
    {
       array(TimeRange) res=get_units(unit,n,n);
       if (sizeof(res)==1) return res[0];
@@ -1271,25 +1271,25 @@ class cHour
       create_unixtime(unixtime,3600);
    }
 
-   static void create_now()
+   protected void create_now()
    {
       create_unixtime(time(),3600);
    }
 
-   static void create_unixtime(int _ux,int _len)
+   protected void create_unixtime(int _ux,int _len)
    {
       ::create_unixtime(_ux,_len);
       if (ls==CALUNKNOWN) make_local();
       if (ls%3600) ux-=ls%3600,ls=CALUNKNOWN;
    }
 
-   static void create_julian_day(int|float jd)
+   protected void create_julian_day(int|float jd)
    {
       ::create_julian_day(jd);
       len=3600;
    }
 
-   static void convert_from(TimeRange other)
+   protected void convert_from(TimeRange other)
    {
       ::convert_from(other);
       len-=len%3600;
@@ -1378,7 +1378,7 @@ class cMinute
 
    int __hash() { return ux/60; }
 
-   static void create_unixtime(int _ux,int _len)
+   protected void create_unixtime(int _ux,int _len)
    {
       ::create_unixtime(_ux,_len);
       if (ls==CALUNKNOWN) make_local();
@@ -1390,7 +1390,7 @@ class cMinute
       create_unixtime(unixtime,60);
    }
 
-   static void create_now()
+   protected void create_now()
    {
       create_unixtime(time()/60*60,60);
    }
@@ -1403,7 +1403,7 @@ class cMinute
       return ::autopromote();
    }
 
-   static void convert_from(TimeRange other)
+   protected void convert_from(TimeRange other)
    {
       ::convert_from(other);
       len-=len%60;
@@ -1490,12 +1490,12 @@ class cSecond
       create_unixtime(unixtime,1);
    }
 
-   static void create_now()
+   protected void create_now()
    {
       create_unixtime(time(),1);
    }
 
-   static void create_julian_day(int|float jd)
+   protected void create_julian_day(int|float jd)
    {
       ::create_julian_day(jd);
       len=1;
@@ -1730,7 +1730,7 @@ class cFraction
       return ::create_backtry(@args);
    }
 
-   static void create_now()
+   protected void create_now()
    {
       ux=time();
       ns=(int)(inano*time(ux));
@@ -1742,7 +1742,7 @@ class cFraction
    int unix_time() { return ux; }
    float f_unix_time() { return ux+ns*(1.0/inano); }
 
-   static void create_unixtime(int|float unixtime,
+   protected void create_unixtime(int|float unixtime,
 			       void|int|float _len)
    {
       ux=(int)unixtime;
@@ -1752,7 +1752,7 @@ class cFraction
       ls=CALUNKNOWN;
    }
 
-   static void create_unixtime_default(int|float unixtime)
+   protected void create_unixtime_default(int|float unixtime)
    {
       create_unixtime(unixtime);
    }
@@ -1762,7 +1762,7 @@ class cFraction
       return 2440588+(ux+ns*(1.0/inano))*(1/86400.0)+0.5;
    }
 
-   static void create_julian_day(int|float jd)
+   protected void create_julian_day(int|float jd)
    {
 // 1970-01-01 is julian day 2440588
       jd-=2440588;
@@ -1842,7 +1842,7 @@ class cFraction
       return ::_add(n,step);
    }
 
-   static void convert_from(TimeRange other)
+   protected void convert_from(TimeRange other)
    {
       ::convert_from(other);
       if (other->is_timeofday_f)
@@ -1853,7 +1853,7 @@ class cFraction
       }
    }
 
-   static TimeRange _set_size(int n,TimeRange t)
+   protected TimeRange _set_size(int n,TimeRange t)
    {
       if (t->is_timeofday_f)
 	 return Fraction("timeofday_f",rules,ux,ns,

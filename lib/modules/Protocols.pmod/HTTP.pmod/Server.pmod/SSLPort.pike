@@ -62,7 +62,7 @@ void close()
 void destroy() { close(); }
 
 //! The port accept callback
-static void new_connection()
+protected void new_connection()
 {
    SSL.sslfile fd=port->accept();
    Request r=request_program();
@@ -148,3 +148,4 @@ string _sprintf(int t) {
 }
 
 #endif
+

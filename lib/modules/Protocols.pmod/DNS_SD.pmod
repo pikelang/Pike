@@ -1,4 +1,4 @@
-//  $Id: DNS_SD.pmod,v 1.1 2005/04/09 21:07:21 jonasw Exp $
+//  $Id: DNS_SD.pmod,v 1.2 2008/06/28 16:36:56 nilsson Exp $
 //  Interface to DNS Service Discovery. Written by Jonas Walldén.
 
 
@@ -26,7 +26,7 @@
 class Service {
   inherit _Protocols_DNS_SD.Service;
 
-  private static string clip_utf8_str(string s, int maxlen)
+  private protected string clip_utf8_str(string s, int maxlen)
   {
     //  Clip before UTF-8 encoding to limit loop to a few iterations at most
     s = s[..maxlen - 1];
@@ -40,7 +40,7 @@ class Service {
   }
 
 
-  private static string get_flat_txt_record(void|string|array(string) txt)
+  private protected string get_flat_txt_record(void|string|array(string) txt)
   {
     string txt_flat;
     
@@ -117,3 +117,4 @@ class Service {
 
 };
 #endif
+

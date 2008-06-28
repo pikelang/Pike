@@ -3,7 +3,7 @@
 
 //! Dutch language locale by Stephen R. van den Berg
 
-// $Id: nld.pmod,v 1.1 2002/10/01 10:57:57 nilsson Exp $
+// $Id: nld.pmod,v 1.2 2008/06/28 16:36:55 nilsson Exp $
 
 inherit "abstract";
 
@@ -74,7 +74,7 @@ string date(int timestamp, string|void m)
     return snumber(num/(unit))+(name)+snumber(num%(unit))
  
 
-static string snumber(int num)
+protected string snumber(int num)
 {
   if(num<0)
     return "min "+snumber(-num);

@@ -151,7 +151,7 @@ class Day
    }
 }
 
-static private class _Day
+protected private class _Day
 {
    // FIXME: Kludge because the day object does not exist in
    // Minute and Second. This function will be shadowed in Hour.
@@ -161,7 +161,7 @@ static private class _Day
    }
 }
 
-static private class Name
+protected private class Name
 {
    string iso_name()
    {
@@ -244,4 +244,5 @@ class Second
       return _iso_name()-":";
    }
 }
+
 

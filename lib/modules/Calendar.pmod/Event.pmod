@@ -1,15 +1,15 @@
 #pike __REAL_VERSION__
 
-static constant M_YD=({0,0,31,59,90,120,151,181,212,243,273,304,334});
-static constant M_ED=({({0,31,59,90,120,151,181,212,243,273,304,334,365}),
+protected constant M_YD=({0,0,31,59,90,120,151,181,212,243,273,304,334});
+protected constant M_ED=({({0,31,59,90,120,151,181,212,243,273,304,334,365}),
 		       ({0,31,60,91,121,152,182,213,244,274,305,335,366}),
 		       ({0,31,60,90,120,151,181,212,243,273,304,334,365}) });
-static constant M_NAME="---JanFebMarAprMayJunJulAugSepOctNovDec"/3;
-static constant WD_NAME="---MonTueWedThuFriSatSun"/3;
+protected constant M_NAME="---JanFebMarAprMayJunJulAugSepOctNovDec"/3;
+protected constant WD_NAME="---MonTueWedThuFriSatSun"/3;
 
-static function(mixed...:Calendar.TimeRanges.TimeRange) std_day=
+protected function(mixed...:Calendar.TimeRanges.TimeRange) std_day=
   Calendar.Day;
-static function(mixed...:Calendar.TimeRanges.TimeRange) std_second=
+protected function(mixed...:Calendar.TimeRanges.TimeRange) std_second=
   Calendar.Second;
 
 // ----------------------------------------------------------------
@@ -322,7 +322,7 @@ class Namedays
       return indices(namedays(in));
    }
 
-   static Calendar.TimeRanges.TimeRange _find(Calendar.TimeRanges.TimeRange t,
+   protected Calendar.TimeRanges.TimeRange _find(Calendar.TimeRanges.TimeRange t,
 					      int including, int direction)
    {
       int jd=(int)t->julian_day();
@@ -498,7 +498,7 @@ class SuperNamedays
 // simple Gregorian date events
 // ----------------------------------------------------------------
 
-static array gregorian_yjd(int jd)
+protected array gregorian_yjd(int jd)
 {
    int d=jd-1721426;
 
@@ -517,7 +517,7 @@ static array gregorian_yjd(int jd)
    });
 }
 
-static array gregorian_year(int y)
+protected array gregorian_year(int y)
 {
    return
    ({
@@ -527,7 +527,7 @@ static array gregorian_year(int y)
    });
 }
 
-static array julian_yjd(int jd)
+protected array julian_yjd(int jd)
 {
    int d=jd-1721058;
 
@@ -544,7 +544,7 @@ static array julian_yjd(int jd)
    });
 }
 
-static array julian_year(int y)
+protected array julian_year(int y)
 {
    return
    ({
@@ -871,7 +871,7 @@ class Easter
       if (_shift) shift=_shift;
    }
 
-   static int new_style(int y)
+   protected int new_style(int y)
    {
       int century=y/100;
       int solar=century-century/4;
@@ -891,7 +891,7 @@ class Easter
       return full_moon+7-week_day;
    }
 
-   static int old_style(int y)
+   protected int old_style(int y)
    {
 #if 1
       int new_moon=23-11*(y%19);
@@ -918,7 +918,7 @@ class Easter
       return `+(yjd,z,58,leap);
    }
 
-   static array(int) my_year(int y)
+   protected array(int) my_year(int y)
    {
       if (y<shift) return julian_year(y);
       return gregorian_year(y);
@@ -1093,7 +1093,7 @@ class SuperEvent
    array(Event) other_events=({});
 
 
-   static void create(array(Event) _events,
+   protected void create(array(Event) _events,
 		      void|mapping(Event:multiset(string)) _flags,
 		      void|string _id)
    {
@@ -1274,7 +1274,7 @@ class TZShift_Event
    }
 
   //!
-   static Calendar.TimeRanges.TimeRange
+   protected Calendar.TimeRanges.TimeRange
      scan_shift(Calendar.Rule.Timezone tz,
 		Calendar.TimeRanges.TimeRange from,
 		int direction,int including)
@@ -1285,7 +1285,7 @@ class TZShift_Event
    }
 
   //!
-   static Calendar.TimeRanges.TimeRange
+   protected Calendar.TimeRanges.TimeRange
      scan_history(Calendar.Rule.Timezone tz,
 		  Calendar.TimeRanges.TimeRange from,
 		  int direction,int(0..1) including)
@@ -1334,7 +1334,7 @@ class TZShift_Event
    }
 
   //!
-   static Calendar.TimeRanges.TimeRange
+   protected Calendar.TimeRanges.TimeRange
      scan_rule(Calendar.Rule.Timezone tz,
 	       Calendar.TimeRanges.TimeRange from,
 	       int direction,int including)

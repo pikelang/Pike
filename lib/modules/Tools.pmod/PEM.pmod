@@ -8,7 +8,7 @@
 
 // Regexp used to decide if an encapsulated message includes headers
 // (conforming to rfc 934).
-static Regexp.SimpleRegexp rfc822_start_re = Regexp(
+protected Regexp.SimpleRegexp rfc822_start_re = Regexp(
   "^([-a-zA-Z][a-zA-Z0-9]*[ \t]*:|[ \t]*\n\n)");
 
 
@@ -17,7 +17,7 @@ static Regexp.SimpleRegexp rfc822_start_re = Regexp(
 // middle between ---foo  --- is at least two characters long. Also
 // allow a trailing \r or other white space characters.
 
-static Regexp.SimpleRegexp rfc934_eb_re = Regexp(
+protected Regexp.SimpleRegexp rfc934_eb_re = Regexp(
   "^-*[ \r\t]*([^- \r\t]"	// First non dash-or-space character
   ".*[^- \r\t])"		// Last non dash-or-space character
   "[ \r\t]*-*[ \r\t]*$");	// Trailing space, dashes and space
@@ -28,11 +28,11 @@ static Regexp.SimpleRegexp rfc934_eb_re = Regexp(
 // A string of at least two charecters, possibly surrounded by whitespace
 #define RE "[ \t]*([^ \t].*[^ \t])[ \t]*"
 
-static Regexp.SimpleRegexp begin_pem_re = Regexp("^BEGIN" RE "$");
-static Regexp.SimpleRegexp end_pem_re = Regexp("^END" RE "$");
+protected Regexp.SimpleRegexp begin_pem_re = Regexp("^BEGIN" RE "$");
+protected Regexp.SimpleRegexp end_pem_re = Regexp("^END" RE "$");
 
 // Strip dashes
-static string extract_boundary(string s)
+protected string extract_boundary(string s)
 {
   array(string) a = rfc934_eb_re->split(s);
   return a && a[0];
@@ -124,7 +124,7 @@ class RFC934 {
 //!
   array(EncapsulatedMsg) encapsulated;
   
-  static array(string) dash_split(string data)
+  protected array(string) dash_split(string data)
   {
     // Find suspected encapsulation boundaries
     array(string) parts = data / "\n-";
@@ -135,7 +135,7 @@ class RFC934 {
     return parts;
   }
 
-  static string dash_stuff(string msg)
+  protected string dash_stuff(string msg)
   {
     array(string) parts = dash_split(msg);
     
@@ -252,7 +252,7 @@ class Msg
   //!
   //! @param s
   //!   a string containing a PEM encoded message to be decoded.
-  static void create(string s)
+  protected void create(string s)
    {
 #ifdef PEM_DEBUG
       werror("Msg->create(%O)\n", s);
@@ -297,7 +297,7 @@ class Msg
       }
    }
 
-  static string _sprintf(int t)
+  protected string _sprintf(int t)
   {
     return t=='O' && sprintf("%O(%O)", this_program, parts);
   }

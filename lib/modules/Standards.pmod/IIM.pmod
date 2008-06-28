@@ -3,7 +3,7 @@
 // 
 // http://www.iptc.org/IIM/
 //
-// $Id: IIM.pmod,v 1.7 2007/03/01 14:49:53 grubba Exp $
+// $Id: IIM.pmod,v 1.8 2008/06/28 16:36:59 nilsson Exp $
 //
 // Anders Johansson & Henrik Grubbström
 
@@ -113,13 +113,13 @@ mapping(int:multiset(int)) binary_fields = ([
   2: (<0>),
 ]);
 
-static int short_value(string str)
+protected int short_value(string str)
 {
   return (str[0]<<8)|str[1];
   //return (str[1]<<8)|str[0];
 }
 
-static mapping(string:string|array(string)) decode_photoshop_data(string data)
+protected mapping(string:string|array(string)) decode_photoshop_data(string data)
 {
   mapping(string:string|array(string)) res = ([]);
 
@@ -369,3 +369,4 @@ mapping get_information(Stdio.File fd)
 
   return res;
 }  
+

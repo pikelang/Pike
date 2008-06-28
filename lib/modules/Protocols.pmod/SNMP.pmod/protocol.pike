@@ -17,7 +17,7 @@
 //!      2570   : v3 description
 //!
 
-// $Id: protocol.pike,v 1.18 2008/05/01 10:41:11 nilsson Exp $
+// $Id: protocol.pike,v 1.19 2008/06/28 16:36:58 nilsson Exp $
 
 
 #include "snmp_globals.h"
@@ -116,7 +116,7 @@ object|mapping der_decode(object data, mapping types)
   }
 }
 
-static mapping snmp_type_proc =
+protected mapping snmp_type_proc =
                     ([ 1 : Standards.ASN1.Types.asn1_boolean,
                        2 : Standards.ASN1.Types.asn1_integer,
                        3 : Standards.ASN1.Types.asn1_bit_string,

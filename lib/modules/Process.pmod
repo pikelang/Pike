@@ -12,8 +12,8 @@ constant TraceProcess = __builtin.TraceProcess;
 class Process
 {
   inherit create_process;
-  static function(Process:void) read_cb;
-  static function(Process:void) timeout_cb;
+  protected function(Process:void) read_cb;
+  protected function(Process:void) timeout_cb;
 
   //! @param args
   //!   Either a command line array, as the command_args
@@ -36,7 +36,7 @@ class Process
   //!   @endmapping
   //! @seealso
   //!   @[create_process], @[split_quoted_string]
-  static void create( string|array(string) args, void|mapping(string:mixed) m )
+  protected void create( string|array(string) args, void|mapping(string:mixed) m )
   {
     if( stringp( args ) ) {
       args = split_quoted_string( [string]args
@@ -58,12 +58,12 @@ class Process
     }
   }
 
-  static void destroy() {
+  protected void destroy() {
     remove_call_out(watcher);
     remove_call_out(killer);
   }
 
-  static void watcher() {
+  protected void watcher() {
     // It was another sigchld, but not one from our process.
     if(::status()==0)
       call_out(watcher, 0.1);
@@ -73,7 +73,7 @@ class Process
     }
   }
 
-  static void killer() {
+  protected void killer() {
     remove_call_out(watcher);
 #if constant(kill)
     ::kill(signum("SIGKILL"));
@@ -97,7 +97,7 @@ string locate_binary(array(string) path, string name)
   return 0;
 }
 
-static array(string) runpike;
+protected array(string) runpike;
 
 //! Spawn a new pike process similar to the current.
 //!
@@ -251,7 +251,7 @@ int exec(string file,string ... foo)
 }
 #endif
 
-static array(string) search_path_entries=0;
+protected array(string) search_path_entries=0;
 
 //!
 string search_path(string command)
@@ -456,7 +456,7 @@ Stdio.FILE|string popen(string s, string|void mode) {
     return fpopen(s)->read();
 }
 
-static Stdio.FILE fpopen(string s, string|void mode)
+protected Stdio.FILE fpopen(string s, string|void mode)
 {
   Stdio.FILE f = Stdio.FILE();
   if (!f) error("Popen failed. (couldn't create file)\n");
@@ -621,3 +621,4 @@ class Spawn
 }
 #endif
 #endif
+

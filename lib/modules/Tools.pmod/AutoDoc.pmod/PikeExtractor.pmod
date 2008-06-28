@@ -6,8 +6,8 @@
 
 // #pragma strict_types
 
-static inherit .PikeObjects;
-static inherit .DocParser;
+protected inherit .PikeObjects;
+protected inherit .DocParser;
 
 #include "./debug.h"
 
@@ -15,13 +15,13 @@ static inherit .DocParser;
 // DOC EXTRACTION
 //========================================================================
 
-static private class Extractor {
-  static constant WITH_NL = .PikeParser.WITH_NL;
+protected private class Extractor {
+  protected constant WITH_NL = .PikeParser.WITH_NL;
 
   //  static private string filename;
-  static private .PikeParser parser;
+  protected private .PikeParser parser;
 
-  static void create(string s, string filename) {
+  protected void create(string s, string filename) {
     parser = .PikeParser(0, filename);
 
     array(string) tokens;
@@ -61,23 +61,23 @@ static private class Extractor {
     parser->setTokens(new_tokens, new_positions);
   }
 
-  static void extractorError(string message, mixed ... args) {
+  protected void extractorError(string message, mixed ... args) {
     message = sprintf(message, @args);
     error("PikeExtractor: %s (%O)\n", message, parser->currentPosition);
   }
 
-  static int isDocComment(string s) {
+  protected int isDocComment(string s) {
     return (sizeof(s) >= 3 && s[0..2] == DOC_COMMENT);
   }
 
-  static string stripDocMarker(string s) {
+  protected string stripDocMarker(string s) {
     if (isDocComment(s))
       return s[3..];
     throw("OOPS");
   }
 
   // readAdjacentDocLines consumes the doc lines AND the "\n" after the last one
-  static Documentation readAdjacentDocLines() {
+  protected Documentation readAdjacentDocLines() {
     Documentation res = Documentation();
     string s = parser->peekToken();
     string text = "";
@@ -99,12 +99,12 @@ static private class Extractor {
 
   // check if the token is one that can not start a declaration
   // adjacent to the last one
-  static int isDelimiter(string token) {
+  protected int isDelimiter(string token) {
     return (< "\n", "}", "EOF" >) [token];
   }
 
   // consumes the "\n" after the last constant too...
-  static array(array(EnumConstant)|int(0..1)) parseAdjacentEnumConstants() {
+  protected array(array(EnumConstant)|int(0..1)) parseAdjacentEnumConstants() {
     array(EnumConstant) result = ({ });
     parser->skipNewlines();
     int terminating_nl;
@@ -127,7 +127,7 @@ static private class Extractor {
 
   // Returns nothing, instead adds the enumconstants as children to
   // the Enum parent
-  static void parseEnumBody(Enum parent) {
+  protected void parseEnumBody(Enum parent) {
     for (;;) {
       parser->skipNewlines();
       Documentation doc = 0;
@@ -183,7 +183,7 @@ static private class Extractor {
   }
 
   // parseAdjacentDecls consumes the "\n" that may follow the last decl
-  static array(array(PikeObject)|int(0..1)) parseAdjacentDecls(Class|Module c)
+  protected array(array(PikeObject)|int(0..1)) parseAdjacentDecls(Class|Module c)
   {
     array(PikeObject) res = ({ });
     for (;;) {

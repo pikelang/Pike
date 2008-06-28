@@ -1,9 +1,9 @@
 #pike __REAL_VERSION__
 
-// $Id: GPL.pmod,v 1.2 2002/05/31 22:24:42 nilsson Exp $
+// $Id: GPL.pmod,v 1.3 2008/06/28 16:37:01 nilsson Exp $
 
-static constant name = "GNU General Public License 2";
-static constant text = #string "gpl.txt";
+protected constant name = "GNU General Public License 2";
+protected constant text = #string "gpl.txt";
 
 string get_name() {
   return name;

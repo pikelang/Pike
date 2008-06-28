@@ -1,4 +1,4 @@
-// $Id: assemble_autodoc.pike,v 1.34 2008/06/28 15:50:53 nilsson Exp $
+// $Id: assemble_autodoc.pike,v 1.35 2008/06/28 16:37:02 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -25,7 +25,7 @@ class TocNode {
   string path;
   int(1..3) depth;
 
-  static void make_children() {
+  protected void make_children() {
     if(sizeof(mChildren)) return;
     foreach(toc, array ent) {
       string file = ent[1][sizeof(String.common_prefix( ({ path, ent[1] }) ))..];
@@ -131,9 +131,9 @@ class mvEntry {
   inherit Entry;
   constant type = "mv";
 
-  static Node parent;
+  protected Node parent;
 
-  static void create(Node target, Node parent)
+  protected void create(Node target, Node parent)
   {
     ::create(target);
     mvEntry::parent = parent;
@@ -153,9 +153,9 @@ class mvPeelEntry {
   inherit Entry;
   constant type = "mvPeel";
 
-  static Node parent;
+  protected Node parent;
 
-  static void create(Node target, Node parent)
+  protected void create(Node target, Node parent)
   {
     ::create(target);
     mvPeelEntry::parent = parent;
@@ -357,7 +357,7 @@ Node wrap(Node n, Node wrapper) {
   return wrapper;
 }
 
-static void move_items_low(Node n, mapping jobs, void|Node wrapper) {
+protected void move_items_low(Node n, mapping jobs, void|Node wrapper) {
   if(jobs[0]) {
     if(wrapper)
       jobs[0]( wrap(n, wrapper->clone()) );
@@ -459,7 +459,7 @@ int(0..1) main(int num, array(string) args) {
 
   int T = time();
   if(has_value(args, "--version"))
-    exit(0, "$Id: assemble_autodoc.pike,v 1.34 2008/06/28 15:50:53 nilsson Exp $\n");
+    exit(0, "$Id: assemble_autodoc.pike,v 1.35 2008/06/28 16:37:02 nilsson Exp $\n");
 
   if(has_value(args, "--help"))
     exit(0, "pike -x assemble_autodoc <structure file> <autodoc file>\n");

@@ -1,5 +1,5 @@
 /*
- * $Id: join_autodoc.pike,v 1.18 2008/06/28 15:52:10 nilsson Exp $
+ * $Id: join_autodoc.pike,v 1.19 2008/06/28 16:37:02 nilsson Exp $
  *
  * AutoDoc mk II join script.
  *
@@ -14,7 +14,7 @@ mapping sub_cache = ([]);
 
 int verbosity = 2;
 
-static constant Node = Parser.XML.Tree.SimpleNode;
+protected constant Node = Parser.XML.Tree.SimpleNode;
 
 int main(int n, array(string) args) {
 

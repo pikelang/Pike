@@ -71,7 +71,7 @@ Calendar.Rule.Timezone UTC=Calendar.Rule.Timezone(0,"UTC");
 
 Calendar.Rule.Timezone locale=0;
 
-static function(:Calendar.Rule.Timezone) _locale()
+protected function(:Calendar.Rule.Timezone) _locale()
 {
    Calendar.Rule.Timezone tz;
 
@@ -160,7 +160,7 @@ Calendar.Rule.Timezone tz_from_tzfile(string tzfile)
 // ----------------------------------------------------------------
 // expert system to pick out the correct timezone
 
-static Calendar.Rule.Timezone timezone_expert_rec(Calendar.Rule.Timezone try,
+protected Calendar.Rule.Timezone timezone_expert_rec(Calendar.Rule.Timezone try,
 						  mapping|array|string tree,
 						  object cal)
 {
@@ -187,7 +187,7 @@ static Calendar.Rule.Timezone timezone_expert_rec(Calendar.Rule.Timezone try,
    return `[](tree);
 }
 
-static Calendar.Rule.Timezone timezone_select(Calendar.Rule.Timezone try,
+protected Calendar.Rule.Timezone timezone_select(Calendar.Rule.Timezone try,
 					      array tree,
 					      object cal)
 {
@@ -204,14 +204,14 @@ static Calendar.Rule.Timezone timezone_select(Calendar.Rule.Timezone try,
    return `[](tree[0]);
 }
 
-static array timezone_collect(string|mapping|array tree)
+protected array timezone_collect(string|mapping|array tree)
 {
    if (arrayp(tree)) return tree;
    else if (stringp(tree)) return ({tree});
    else return `+(@map(values(tree-({"test"})),timezone_collect));
 }
 
-static object expert_cal, expert_tzn;
+protected object expert_cal, expert_tzn;
 
 Calendar.Rule.Timezone expert(Calendar.Rule.Timezone try)
 {
@@ -231,7 +231,7 @@ class localtime
    constant is_dst_timezone=1;
 
 #if constant(tzname)
-   static array(string) names=tzname();
+   protected array(string) names=tzname();
 #endif
 
    string name="local";
@@ -245,7 +245,7 @@ class localtime
    // Workaround for predef::localtime() on WIN32 and others
    // throwing errors for times before 1970. This interferes
    // with the timezone expert system.
-   static mapping(string:int) paranoia_localtime(int ux)
+   protected mapping(string:int) paranoia_localtime(int ux)
    {
       if (ux<-0x80000000 || ux>0x7fffffff)
 	 error("Time is out of range for Timezone.localtime()\n");
@@ -313,11 +313,11 @@ class Timezone_Encapsule
    constant is_timezone=1;
    constant is_dst_timezone=1; // ask me
   
-   static string extra_name;
-   static int extra_offset;
+   protected string extra_name;
+   protected int extra_offset;
    string name;
 
-   static void create(Calendar.Rule.Timezone enc,string name,int off)
+   protected void create(Calendar.Rule.Timezone enc,string name,int off)
    {
       what=enc;
       extra_name=name;
@@ -345,7 +345,7 @@ class Timezone_Encapsule
    int raw_utc_offset() { return what->raw_utc_offset()+extra_offset; }
 }
 
-static private Calendar.Rule.Timezone _make_new_timezone_i(string tz,
+protected private Calendar.Rule.Timezone _make_new_timezone_i(string tz,
 							   int plusminus)
 {
    Calendar.Rule.Timezone z=`[](tz);
@@ -371,7 +371,7 @@ Calendar.Rule.Timezone make_new_timezone(Calendar.Rule.Timezone z,int plusminus)
    return Timezone_Encapsule(z,s,-plusminus);
 }
 
-static private constant _military_tz=
+protected private constant _military_tz=
 ([ "Y":"UTC-12", "X":"UTC-11", "W":"UTC-10", "V":"UTC-9", "U":"UTC-8", 
    "T":"UTC-7", "S":"UTC-6", "R":"UTC-5", "Q":"UTC-4", "P":"UTC-3", 
    "O":"UTC-2", "N":"UTC-1", "Z":"UTC", "A":"UTC+1", "B":"UTC+2", 
@@ -379,7 +379,7 @@ static private constant _military_tz=
    "H":"UTC+8", "I":"UTC+9", "K":"UTC+10", "L":"UTC+11", "M":"UTC+12",
    "J":"locale" ]);
 
-static object runtime_timezone_compiler=0;
+protected object runtime_timezone_compiler=0;
 
 // internal, don't use this outside calendar module
 int decode_timeskew(string w)
@@ -400,7 +400,7 @@ int decode_timeskew(string w)
    return neg*a*3600; // ignore litter
 }
 
-static private Calendar.Rule.Timezone _magic_timezone(string tz)
+protected private Calendar.Rule.Timezone _magic_timezone(string tz)
 {
    string z,w;
 
@@ -1239,8 +1239,8 @@ class Runtime_timezone_compiler
    mapping zone_cache;
    mapping rule_cache;
    string all_rules;
-   static mapping(string:Zone) zones = ([]);
-   static mapping(string:Rule) rules = ([]);
+   protected mapping(string:Zone) zones = ([]);
+   protected mapping(string:Rule) rules = ([]);
 
    string get_all_rules()
    {
@@ -1397,11 +1397,11 @@ class Runtime_timezone_compiler
    {
       constant is_timezone=1;
       constant is_dst_timezone=1;
-      static int offset_to_utc;  
+      protected int offset_to_utc;  
       string name;
 
-      static function(string:string) tzformat;
-      static array names;
+      protected function(string:string) tzformat;
+      protected array names;
 
 
 // ----------------------------------------------------------------
@@ -1409,7 +1409,7 @@ class Runtime_timezone_compiler
 // this is the needed gregorian rule:
 // ----------------------------------------------------------------
 
-      static array gregorian_yjd(int jd)
+      protected array gregorian_yjd(int jd)
       {
 	 int d=jd-1721426;
 
@@ -1428,7 +1428,7 @@ class Runtime_timezone_compiler
 	    });
       }
 
-      static void create(int offset,string _name) 
+      protected void create(int offset,string _name) 
       { 
 	 offset_to_utc=offset; 
 	 name=_name;
@@ -1446,7 +1446,7 @@ class Runtime_timezone_compiler
 
 // the Rule:
 // which julian day does dst start and end this year?
-      static array(array(string|int)) jd_year_periods(int jd);
+      protected array(array(string|int)) jd_year_periods(int jd);
 
 // is (midnight) this julian day dst?
       array tz_jd(int jd)

@@ -6,12 +6,12 @@
 
 #if constant(Gmp) && constant(Gmp.mpz) && constant(Crypto.Random)
 
-static Gmp.mpz p; // Modulo
-static Gmp.mpz q; // Group order
-static Gmp.mpz g; // Generator
+protected Gmp.mpz p; // Modulo
+protected Gmp.mpz q; // Group order
+protected Gmp.mpz g; // Generator
 
-static Gmp.mpz y; // Public key
-static Gmp.mpz x; // Private key
+protected Gmp.mpz y; // Public key
+protected Gmp.mpz x; // Private key
 
 function(int:string) random = .Random.random_string;
 
@@ -64,12 +64,12 @@ Gmp.mpz hash(string msg)
   return [object(Gmp.mpz)](Gmp.mpz(.SHA1.hash(msg), 256) % q);
 }
   
-static Gmp.mpz random_number(Gmp.mpz n)
+protected Gmp.mpz random_number(Gmp.mpz n)
 {
   return [object(Gmp.mpz)](Gmp.mpz(random( (q->size() + 10 / 8)), 256) % n);
 }
 
-static Gmp.mpz random_exponent()
+protected Gmp.mpz random_exponent()
 {
   return [object(Gmp.mpz)](random_number([object(Gmp.mpz)](q - 1)) + 1);
 }
@@ -152,7 +152,7 @@ int(0..1) verify_ssl(string msg, string s)
 
 #define SEED_LENGTH 20
 
-static string nist_hash(Gmp.mpz x)
+protected string nist_hash(Gmp.mpz x)
 {
   string s = x->digits(256);
   return .SHA1.hash(s[sizeof(s) - SEED_LENGTH..]);
@@ -213,7 +213,7 @@ array(Gmp.mpz) nist_primes(int l)
   }
 }
 
-static Gmp.mpz find_generator(Gmp.mpz p, Gmp.mpz q)
+protected Gmp.mpz find_generator(Gmp.mpz p, Gmp.mpz q)
 {
   Gmp.mpz e = [object(Gmp.mpz)]((p - 1) / q);
   Gmp.mpz g;
@@ -279,3 +279,4 @@ string name() { return "DSA"; }
 #else
 constant this_program_does_not_exist=1;
 #endif
+

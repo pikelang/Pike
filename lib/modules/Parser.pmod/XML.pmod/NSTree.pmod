@@ -13,9 +13,9 @@ class NSNode {
   // New stuff
 
   /* static */ string default_ns;
-  static mapping(string:string) nss;
-  static string element_ns;
-  static mapping(string:mapping(string:string)) ns_attrs = ([]);
+  protected mapping(string:string) nss;
+  protected string element_ns;
+  protected mapping(string:mapping(string:string)) ns_attrs = ([]);
 
   //! Returns the namespace in which the current element is defined in.
   string get_ns() { return element_ns; }
@@ -74,7 +74,7 @@ class NSNode {
 	res[sym]=nss[sym];
   }
 
-  static string make_prefix(string ns) {
+  protected string make_prefix(string ns) {
     // FIXME: Cache?
 #if constant(Crypto.MD5)
     return String.string2hex(Crypto.MD5->hash(ns))[..10];
@@ -298,7 +298,7 @@ class NSNode {
   }
 }
 
-static NSNode|int(0..0) parse_xml_callback(string type, string name,
+protected NSNode|int(0..0) parse_xml_callback(string type, string name,
 					   mapping attr, string|array contents,
 					   mixed location, mixed ...extra)
 {

@@ -1,4 +1,4 @@
-// $Id: Queue.pike,v 1.13 2005/05/25 12:20:38 mast Exp $
+// $Id: Queue.pike,v 1.14 2008/06/28 16:36:53 nilsson Exp $
 
 //! A simple FIFO queue.
 
@@ -10,19 +10,19 @@ int head;
 int tail;
 
 //! Creates a queue with the initial items @[args] in it.
-static void create(mixed ...args)
+protected void create(mixed ...args)
 {
   l = args + allocate(QUEUE_SIZE);
   head = sizeof(args);
   tail = 0;
 }
 
-static int _sizeof()
+protected int _sizeof()
 {
   return head - tail;
 }
 
-static array _values()
+protected array _values()
 {
   return l[tail..head-1];
 }
@@ -90,7 +90,7 @@ void flush()
 }
 
 //! It is possible to cast ADT.Queue to an array.
-static mixed cast(string to) {
+protected mixed cast(string to) {
   switch(to) {
   case "object": return this;
   case "array": return l[tail..head-1];
@@ -98,6 +98,6 @@ static mixed cast(string to) {
   error("Can not cast ADT.Queue to %s.\n", to);
 }
 
-static string _sprintf(int t) {
+protected string _sprintf(int t) {
   return t=='O' && l && sprintf("%O%O", this_program, cast("array"));
 }

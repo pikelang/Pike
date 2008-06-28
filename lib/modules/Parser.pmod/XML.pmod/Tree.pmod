@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.71 2008/06/01 14:52:59 grubba Exp $
+ * $Id: Tree.pmod,v 1.72 2008/06/28 16:36:55 nilsson Exp $
  *
  */
 
@@ -309,7 +309,7 @@ class AbstractSimpleNode {
   //! @note
   //!   The [] operator will select a node from all the nodes children,
   //!   not just its element children.
-  static AbstractSimpleNode `[](int pos)
+  protected AbstractSimpleNode `[](int pos)
   {
     //  Treat pos as index into array
     if ((pos < 0) || (pos > sizeof(mChildren) - 1))
@@ -528,7 +528,7 @@ class AbstractNode {
   AbstractNode get_parent()          { return (mParent); }
 
 #if 0
-  static void create()
+  protected void create()
   {
     error("Creating a plain AbstractNode.\n");
   }
@@ -796,24 +796,24 @@ class AbstractNode {
 }
 
 //!  Node in XML tree
-static class VirtualNode {
+protected class VirtualNode {
   //  Member variables for this node type
-  static int            mNodeType;
-  static string		mShortNamespace = "";	// Namespace prefix
-  static string		mNamespace;	// Resolved namespace
-  static string         mTagName;
-  static mapping(string:string) mAttributes;		// Resolved attributes
-  static mapping(string:string)	mShortAttributes;	// Shortened attributes
-  static array(Node) mAttrNodes;   //  created on demand
-  static string         mText;
-  static int            mDocOrder;
+  protected int            mNodeType;
+  protected string		mShortNamespace = "";	// Namespace prefix
+  protected string		mNamespace;	// Resolved namespace
+  protected string         mTagName;
+  protected mapping(string:string) mAttributes;		// Resolved attributes
+  protected mapping(string:string)	mShortAttributes;	// Shortened attributes
+  protected array(Node) mAttrNodes;   //  created on demand
+  protected string         mText;
+  protected int            mDocOrder;
 
   // Functions implemented via multiple inheritance.
   array(AbstractNode) get_children();
   int walk_preorder(function(AbstractSimpleNode, mixed ...:int|void) callback,
 		    mixed ... args);
 
-  static VirtualNode low_clone()
+  protected VirtualNode low_clone()
   {
     return this_program(get_node_type(), get_full_name(),
 			get_attributes(), get_text());
@@ -887,7 +887,7 @@ static class VirtualNode {
   }
 
   //!
-  static void create(int type, string name, mapping attr, string text)
+  protected void create(int type, string name, mapping attr, string text)
   {
     if (name) {
       if (has_value(name, ":") && sscanf (name, "%*[^/:]%*c") == 2) {
@@ -1011,7 +1011,7 @@ static class VirtualNode {
   }
 
   // FIXME: Consider moving this to the corresponding base node classes?
-  static void low_render_xml(String.Buffer data, Node n,
+  protected void low_render_xml(String.Buffer data, Node n,
 			     function(string:string) textq,
 			     function(string:string) attrq,
 			     void|mapping(string:string) namespace_lookup)
@@ -1134,7 +1134,7 @@ static class VirtualNode {
   // Create a new XML-header if there's none.
   //
   // Add an encoding attribute if there is none.
-  static string get_encoding()
+  protected string get_encoding()
   {
     Node xml_header;
     if (sizeof(get_children()) &&
@@ -1376,7 +1376,7 @@ class Node
   }  
 
   //  Override AbstractNode::`[]
-  static Node `[](string|int pos)
+  protected Node `[](string|int pos)
   {
     //  If string indexing we find attributes which match the string
     if (stringp(pos)) {
@@ -1490,10 +1490,10 @@ class XMLParser
     }
   }
 
-  static this_program node_factory(int type, string name,
+  protected this_program node_factory(int type, string name,
 				   mapping attr, string text);
 
-  static this_program|int(0..0)
+  protected this_program|int(0..0)
     parse_xml_callback(string type, string name,
                        mapping attr, string|array contents,
                        mixed location, mixed ...extra)
@@ -1699,7 +1699,7 @@ Node parse_file(string path, int(0..1)|void parse_namespaces)
     return parse_input(data, 0, 0, 0, parse_namespaces);
 }
 
-static class DTDElementHelper
+protected class DTDElementHelper
 {
   array expression;
   array get_expression()
@@ -1751,7 +1751,7 @@ class SimpleRootNode
   inherit SimpleNode;
   inherit XMLParser;
 
-  static mapping(string:SimpleElementNode) node_ids;
+  protected mapping(string:SimpleElementNode) node_ids;
 
   //! Find the element with the specified id.
   //!
@@ -1788,12 +1788,12 @@ class SimpleRootNode
     return node_ids[id];
   }
 
-  static SimpleNode low_clone()
+  protected SimpleNode low_clone()
   {
     return SimpleRootNode();
   }
 
-  static SimpleNode node_factory(int type, string name,
+  protected SimpleNode node_factory(int type, string name,
 				 mapping attr, string|array text)
   {
     switch(type) {
@@ -1811,7 +1811,7 @@ class SimpleRootNode
     }
   }
 
-  static void create(string|void data,
+  protected void create(string|void data,
 		     mapping|void predefined_entities,
 		     ParseFlags|void flags,
 		     string|void default_namespace)
@@ -1826,11 +1826,11 @@ class SimpleRootNode
 class SimpleTextNode
 {
   inherit SimpleNode;
-  static SimpleNode low_clone()
+  protected SimpleNode low_clone()
   {
     return SimpleTextNode(get_text());
   }
-  static void create(string text)
+  protected void create(string text)
   {
     ::create(XML_TEXT, "", 0, text);
   }
@@ -1839,11 +1839,11 @@ class SimpleTextNode
 class SimpleCommentNode
 {
   inherit SimpleNode;
-  static SimpleNode low_clone()
+  protected SimpleNode low_clone()
   {
     return SimpleCommentNode(get_text());
   }
-  static void create(string text)
+  protected void create(string text)
   {
     ::create(XML_COMMENT, "", 0, text);
   }
@@ -1852,11 +1852,11 @@ class SimpleCommentNode
 class SimpleHeaderNode
 {
   inherit SimpleNode;
-  static SimpleNode low_clone()
+  protected SimpleNode low_clone()
   {
     return SimpleHeaderNode(get_attributes());
   }
-  static void create(mapping(string:string) attrs)
+  protected void create(mapping(string:string) attrs)
   {
     ::create(XML_HEADER, "", attrs, "");
   }
@@ -1865,11 +1865,11 @@ class SimpleHeaderNode
 class SimplePINode
 {
   inherit SimpleNode;
-  static SimpleNode low_clone()
+  protected SimpleNode low_clone()
   {
     return SimplePINode(get_full_name(), get_attributes(), get_text());
   }
-  static void create(string name, mapping(string:string) attrs,
+  protected void create(string name, mapping(string:string) attrs,
 		     string contents)
   {
     ::create(XML_PI, name, attrs, contents);
@@ -1879,11 +1879,11 @@ class SimplePINode
 class SimpleDoctypeNode
 {
   inherit SimpleNode;
-  static SimpleNode low_clone()
+  protected SimpleNode low_clone()
   {
     return SimpleDoctypeNode(get_full_name(), get_attributes(), 0);
   }
-  static void create(string name, mapping(string:string) attrs,
+  protected void create(string name, mapping(string:string) attrs,
 		     array contents)
   {
     ::create(XML_DOCTYPE, name, attrs, "");
@@ -1896,11 +1896,11 @@ class SimpleDoctypeNode
 class SimpleDTDEntityNode
 {
   inherit SimpleNode;
-  static SimpleNode low_clone()
+  protected SimpleNode low_clone()
   {
     return SimpleDTDEntityNode(get_full_name(), get_attributes(), get_text());
   }
-  static void create(string name, mapping(string:string) attrs,
+  protected void create(string name, mapping(string:string) attrs,
 		     string contents)
   {
     ::create(DTD_ENTITY, name, attrs, contents);
@@ -1912,11 +1912,11 @@ class SimpleDTDElementNode
   inherit SimpleNode;
   inherit DTDElementHelper;
 
-  static SimpleNode low_clone()
+  protected SimpleNode low_clone()
   {
     return SimpleDTDElementNode(get_full_name(), get_expression());
   }
-  static void create(string name, array expression)
+  protected void create(string name, array expression)
   {
     this_program::expression = expression;
     ::create(DTD_ELEMENT, name, 0, "");
@@ -1926,11 +1926,11 @@ class SimpleDTDElementNode
 class SimpleDTDAttlistNode
 {
   inherit SimpleNode;
-  static SimpleNode low_clone()
+  protected SimpleNode low_clone()
   {
     return SimpleDTDAttlistNode(get_full_name(), get_attributes(), get_text());
   }
-  static void create(string name, mapping(string:string) attrs,
+  protected void create(string name, mapping(string:string) attrs,
 		     string contents)
   {
     ::create(DTD_ATTLIST, name, attrs, contents);
@@ -1940,11 +1940,11 @@ class SimpleDTDAttlistNode
 class SimpleDTDNotationNode
 {
   inherit SimpleNode;
-  static SimpleNode low_clone()
+  protected SimpleNode low_clone()
   {
     return SimpleDTDNotationNode(get_full_name(), get_attributes(), get_text());
   }
-  static void create(string name, mapping(string:string) attrs,
+  protected void create(string name, mapping(string:string) attrs,
 		     string contents)
   {
     ::create(DTD_NOTATION, name, attrs, contents);
@@ -1954,11 +1954,11 @@ class SimpleDTDNotationNode
 class SimpleElementNode
 {
   inherit SimpleNode;
-  static SimpleNode low_clone()
+  protected SimpleNode low_clone()
   {
     return SimpleElementNode(get_full_name(), get_attributes());
   }
-  static void create(string name, mapping(string:string) attrs)
+  protected void create(string name, mapping(string:string) attrs)
   {
     ::create(XML_ELEMENT, name, attrs, "");
   }
@@ -1972,7 +1972,7 @@ class RootNode
   inherit Node;
   inherit XMLParser;
 
-  static mapping(string:ElementNode) node_ids;
+  protected mapping(string:ElementNode) node_ids;
 
   //! Find the element with the specified id.
   //!
@@ -2009,12 +2009,12 @@ class RootNode
     return node_ids[id];
   }
 
-  static Node low_clone()
+  protected Node low_clone()
   {
     return RootNode();
   }
 
-  static Node node_factory(int type, string name,
+  protected Node node_factory(int type, string name,
 			   mapping attr, string|array text)
   {
     switch(type) {
@@ -2032,7 +2032,7 @@ class RootNode
     }
   }
 
-  static void create(string|void data,
+  protected void create(string|void data,
 		     mapping|void predefined_entities,
 		     ParseFlags|void flags)
   {
@@ -2046,11 +2046,11 @@ class RootNode
 class TextNode
 {
   inherit Node;
-  static Node low_clone()
+  protected Node low_clone()
   {
     return TextNode(get_text());
   }
-  static void create(string text)
+  protected void create(string text)
   {
     ::create(XML_TEXT, "", 0, text);
   }
@@ -2059,11 +2059,11 @@ class TextNode
 class CommentNode
 {
   inherit Node;
-  static Node low_clone()
+  protected Node low_clone()
   {
     return CommentNode(get_text());
   }
-  static void create(string text)
+  protected void create(string text)
   {
     ::create(XML_COMMENT, "", 0, text);
   }
@@ -2072,11 +2072,11 @@ class CommentNode
 class HeaderNode
 {
   inherit Node;
-  static Node low_clone()
+  protected Node low_clone()
   {
     return HeaderNode(get_attributes());
   }
-  static void create(mapping(string:string) attrs)
+  protected void create(mapping(string:string) attrs)
   {
     ::create(XML_HEADER, "", attrs, "");
   }
@@ -2085,11 +2085,11 @@ class HeaderNode
 class PINode
 {
   inherit Node;
-  static Node low_clone()
+  protected Node low_clone()
   {
     return PINode(get_full_name(), get_attributes(), get_text());
   }
-  static void create(string name, mapping(string:string) attrs,
+  protected void create(string name, mapping(string:string) attrs,
 		     string contents)
   {
     ::create(XML_PI, name, attrs, contents);
@@ -2099,11 +2099,11 @@ class PINode
 class DoctypeNode
 {
   inherit Node;
-  static Node low_clone()
+  protected Node low_clone()
   {
     return DoctypeNode(get_full_name(), get_attributes(), 0);
   }
-  static void create(string name, mapping(string:string) attrs,
+  protected void create(string name, mapping(string:string) attrs,
 		     array contents)
   {
     ::create(XML_DOCTYPE, name, attrs, "");
@@ -2116,11 +2116,11 @@ class DoctypeNode
 class DTDEntityNode
 {
   inherit Node;
-  static Node low_clone()
+  protected Node low_clone()
   {
     return DTDEntityNode(get_full_name(), get_attributes(), get_text());
   }
-  static void create(string name, mapping(string:string) attrs,
+  protected void create(string name, mapping(string:string) attrs,
 		     string contents)
   {
     ::create(DTD_ENTITY, name, attrs, contents);
@@ -2132,11 +2132,11 @@ class DTDElementNode
   inherit Node;
   inherit DTDElementHelper;
 
-  static Node low_clone()
+  protected Node low_clone()
   {
     return DTDElementNode(get_full_name(), get_expression());
   }
-  static void create(string name, array expression)
+  protected void create(string name, array expression)
   {
     this_program::expression = expression;
     ::create(DTD_ELEMENT, name, 0, "");
@@ -2146,11 +2146,11 @@ class DTDElementNode
 class DTDAttlistNode
 {
   inherit Node;
-  static Node low_clone()
+  protected Node low_clone()
   {
     return DTDAttlistNode(get_full_name(), get_attributes(), get_text());
   }
-  static void create(string name, mapping(string:string) attrs,
+  protected void create(string name, mapping(string:string) attrs,
 		     string contents)
   {
     ::create(DTD_ATTLIST, name, attrs, contents);
@@ -2160,11 +2160,11 @@ class DTDAttlistNode
 class DTDNotationNode
 {
   inherit Node;
-  static Node low_clone()
+  protected Node low_clone()
   {
     return DTDNotationNode(get_full_name(), get_attributes(), get_text());
   }
-  static void create(string name, mapping(string:string) attrs,
+  protected void create(string name, mapping(string:string) attrs,
 		     string contents)
   {
     ::create(DTD_NOTATION, name, attrs, contents);
@@ -2174,11 +2174,11 @@ class DTDNotationNode
 class ElementNode
 {
   inherit Node;
-  static Node low_clone()
+  protected Node low_clone()
   {
     return ElementNode(get_full_name(), get_attributes());
   }
-  static void create(string name, mapping(string:string) attrs)
+  protected void create(string name, mapping(string:string) attrs)
   {
     ::create(XML_ELEMENT, name, attrs, "");
   }
@@ -2187,11 +2187,11 @@ class ElementNode
 class AttributeNode
 {
   inherit Node;
-  static Node low_clone()
+  protected Node low_clone()
   {
     return AttributeNode(get_full_name(), get_text());
   }
-  static void create(string name, string value)
+  protected void create(string name, string value)
   {
     ::create(XML_ATTR, name, 0, value);
   }

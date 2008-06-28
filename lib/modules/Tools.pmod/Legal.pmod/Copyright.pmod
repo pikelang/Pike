@@ -1,11 +1,11 @@
 #pike __REAL_VERSION__
 
-// $Id: Copyright.pmod,v 1.11 2008/01/04 20:40:57 nilsson Exp $
+// $Id: Copyright.pmod,v 1.12 2008/06/28 16:37:01 nilsson Exp $
 
 //! Contains functions and information to store and present
 //! copyright information about Pike and it's components.
 
-static mapping(string:array(string)) copyrights = ([
+protected mapping(string:array(string)) copyrights = ([
 
   "Pike":
   ({

@@ -6,7 +6,7 @@ class Timezone
    constant is_timezone=1;
 
   // seconds to utc, not counting DST
-  static int offset_to_utc;
+  protected int offset_to_utc;
    
   // timezone name
   string name;
@@ -16,7 +16,7 @@ class Timezone
   //!   Offset to UTC, not counting DST.
   //! @param name
   //!   The name of the time zone.
-  static void create(int offset, string _name)
+  protected void create(int offset, string _name)
   {
     offset_to_utc=offset;
     name=_name;

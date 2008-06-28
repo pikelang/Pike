@@ -303,7 +303,7 @@ class Traversion {
     if(sizeof(files)) set_current();
   }
 
-  static void set_current() {
+  protected void set_current() {
     current = file_stat(path + files[pos]);
     if(!current) return;
     if(!current->isdir) return;

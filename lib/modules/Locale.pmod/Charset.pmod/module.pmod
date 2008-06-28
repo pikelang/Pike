@@ -2,7 +2,7 @@
 
 #pike __REAL_VERSION__
 //! @ignore
-static private inherit _Charset;
+protected private inherit _Charset;
 //! @endignore
 
 //! The Charset module supports a wide variety of different character sets, and
@@ -145,7 +145,7 @@ class Encoder
 }
 
 private class ASCIIDec {
-  static private string s = "";
+  protected private string s = "";
   this_program feed(string ss)
   {
     s += ss;
@@ -166,7 +166,7 @@ private class ASCIIDec {
 
 private class UTF16dec {
   inherit ASCIIDec;
-  static int check_bom=1, le=0;
+  protected int check_bom=1, le=0;
   string drain() {
     string s = ::drain();
     if(sizeof(s)&1) {
@@ -190,12 +190,12 @@ private class UTF16dec {
 
 private class UTF16LEdec {
   inherit UTF16dec;
-  static void create() { le=1; }
+  protected void create() { le=1; }
 }
 
 private class ISO6937dec {
-  static Decoder decoder = rfc1345("iso6937");
-  static string trailer = "";
+  protected Decoder decoder = rfc1345("iso6937");
+  protected string trailer = "";
   string drain()
   {
     string res = trailer + decoder->drain();
@@ -342,10 +342,10 @@ Decoder decoder(string name)
 
 private class ASCIIEnc
 {
-  static string s = "";
-  static string|void replacement;
-  static function(string:string)|void repcb;
-  static string low_convert(string s, string|void r,
+  protected string s = "";
+  protected string|void replacement;
+  protected function(string:string)|void repcb;
+  protected string low_convert(string s, string|void r,
 			     function(string:string)|void rc)
   {
     int i = sizeof(s);
@@ -380,7 +380,7 @@ private class ASCIIEnc
   {
     repcb = rc;
   }
-  static void create(string|void r, string|void rc)
+  protected void create(string|void r, string|void rc)
   {
     replacement = r;
     repcb = rc;
@@ -389,7 +389,7 @@ private class ASCIIEnc
 
 private class UTF16enc {
   inherit ASCIIEnc;
-  static private string low_convert(string s, string|void r,
+  protected private string low_convert(string s, string|void r,
 				    function(string:string)|void rc)
   {
     int i = sizeof(s);
@@ -427,8 +427,8 @@ private class UTF16LEenc {
 }
 
 private class ISO6937enc {
-  static Encoder encoder;
-  static void create(string|void replacement,
+  protected Encoder encoder;
+  protected void create(string|void replacement,
 		     function(string:string)|void repcb)
   {
     encoder = rfc1345("iso6937", 1, replacement, repcb);
@@ -557,7 +557,7 @@ Encoder encoder(string name, string|void replacement,
 }
 
 
-static constant MIBenum = ([
+protected constant MIBenum = ([
   3:"ANSI_X3.4-1968",
   4:"ISO_8859-1:1987",
   5:"ISO_8859-2:1987",
@@ -819,7 +819,7 @@ Encoder encoder_from_mib(int mib,  string|void replacement,
   return e;
 }
 
-static string format_err_msg (
+protected string format_err_msg (
   string intro, string err_str, int err_pos, string charset, string reason)
 {
   string pre_context = err_pos > 23 ?
@@ -861,7 +861,7 @@ class DecodeError
   string charset;
   //! The decoding charset.
 
-  static void create (string err_str, int err_pos, string charset,
+  protected void create (string err_str, int err_pos, string charset,
 		      void|string reason, void|array bt)
   {
     this_program::err_str = err_str;
@@ -895,7 +895,7 @@ class EncodeError
   string charset;
   //! The encoding charset.
 
-  static void create (string err_str, int err_pos, string charset,
+  protected void create (string err_str, int err_pos, string charset,
 		      void|string reason, void|array bt)
   {
     this_program::err_str = err_str;

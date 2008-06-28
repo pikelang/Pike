@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: module.pmod,v 1.31 2007/05/23 16:31:42 mast Exp $
+// $Id: module.pmod,v 1.32 2008/06/28 16:36:58 nilsson Exp $
 
 #include "ldap_globals.h"
 
@@ -1165,7 +1165,7 @@ constant GUID_NTDS_QUOTAS_CONTAINER        = "6227f0af1fc2410d8e3bb10615bb5b0f";
 
 // Misc stuff
 
-static mapping(mixed:string) constant_val_lookup;
+protected mapping(mixed:string) constant_val_lookup;
 
 string get_constant_name (mixed val)
 //! If @[val] matches any non-integer constant in this module, its
@@ -1191,7 +1191,7 @@ string get_constant_name (mixed val)
   return constant_val_lookup[val];
 }
 
-static void create()
+protected void create()
 // Fill in various calculated constants.
 {
   // syntax_encode_fns
@@ -1248,7 +1248,7 @@ static void create()
 #endif
 }
 
-static constant supported_extensions = (<"bindname">);
+protected constant supported_extensions = (<"bindname">);
 
 //! Parses an LDAP URL and returns its fields in a mapping.
 //!
@@ -1339,7 +1339,7 @@ class FilterError
   string error_message;
   array error_backtrace;
   string|array `[] (int i) {return i ? error_backtrace : error_message;}
-  static void create (string msg, mixed... args)
+  protected void create (string msg, mixed... args)
   {
     if (sizeof (args)) msg = sprintf (msg, @args);
     error_message = msg;
@@ -1590,7 +1590,7 @@ object make_filter (string filter, void|int ldap_version)
 #undef EXCERPT
 }
 
-static mapping(string:array(object)) cached_filters = ([]);
+protected mapping(string:array(object)) cached_filters = ([]);
 
 object get_cached_filter (string filter, void|int ldap_version)
 //! Like @[make_filter] but saves the generated objects for reuse.
@@ -1623,11 +1623,11 @@ constant connection_rebind_threshold = 4;
 constant connection_idle_garb_interval = 60;
 // Garb idle connections once every minute.
 
-static mapping(string:array(object/*(client)*/)) idle_conns = ([]);
-static Thread.Mutex idle_conns_mutex = Thread.Mutex();
-static mixed periodic_idle_conns_garb_call_out;
+protected mapping(string:array(object/*(client)*/)) idle_conns = ([]);
+protected Thread.Mutex idle_conns_mutex = Thread.Mutex();
+protected mixed periodic_idle_conns_garb_call_out;
 
-static void periodic_idle_conns_garb()
+protected void periodic_idle_conns_garb()
 {
   Thread.MutexKey lock = idle_conns_mutex->lock();
   DWRITE ("Periodic connection garb. Got %d urls.\n", sizeof (idle_conns));

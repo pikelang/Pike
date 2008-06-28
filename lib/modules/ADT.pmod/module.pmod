@@ -10,7 +10,7 @@ inherit _ADT;
 constant List = __builtin.List;
 
 // Internal stuff for ADT.Struct
-static int item_counter;
+protected int item_counter;
 int get_item_id() { return item_counter++; }
 
 //! String buffer with the possibility to read and write data

@@ -1,5 +1,5 @@
 //
-// $Id: TELNET.pmod,v 1.27 2008/01/13 17:02:43 nilsson Exp $
+// $Id: TELNET.pmod,v 1.28 2008/06/28 16:36:56 nilsson Exp $
 //
 // The TELNET protocol as described by RFC 764 and others.
 //
@@ -230,48 +230,48 @@ constant ENCTYPE_CNT=		3;
 class protocol
 {
   //! The connection.
-  static object fd;
+  protected object fd;
 
   //! Mapping containing extra callbacks.
-  static mapping cb;
+  protected mapping cb;
 
   //! Value to send to the callbacks.
-  static mixed id;
+  protected mixed id;
 
   //! Write callback.
-  static function(mixed|void:string) write_cb;
+  protected function(mixed|void:string) write_cb;
 
   //! Read callback.
-  static function(mixed,string:void) read_cb;
+  protected function(mixed,string:void) read_cb;
 
   //! Close callback.
-  static function(mixed|void:void) close_cb;
+  protected function(mixed|void:void) close_cb;
 
   // See RFC 1143 for the use and meaning of these.
 
-  static constant UNKNOWN = 0;
-  static constant YES = 1;
-  static constant NO = 2;
-  static constant WANT = 4;
-  static constant OPPOSITE = 8;
+  protected constant UNKNOWN = 0;
+  protected constant YES = 1;
+  protected constant NO = 2;
+  protected constant WANT = 4;
+  protected constant OPPOSITE = 8;
 
   //! Negotiation states of all WILL/WON'T options.
   //! See RFC 1143 for a description of the states.
-  static array(int) remote_options = allocate(256,NO);
-  static array(int) local_options = allocate(256,NO);
+  protected array(int) remote_options = allocate(256,NO);
+  protected array(int) local_options = allocate(256,NO);
 
 
   //! Data queued to be sent.
-  static string to_send = "";
+  protected string to_send = "";
 
   //! Indicates that connection should be closed
-  static int done;
+  protected int done;
 
   //! Tells if we have set the nonblocking write callback or not.
-  static int nonblocking_write;
+  protected int nonblocking_write;
 
   //! Turns on the write callback if apropriate.
-  static void enable_write()
+  protected void enable_write()
   {
     DWRITE("TELNET: enable_write()\n");
     if (!nonblocking_write && (write_cb || sizeof(to_send) || done)) {
@@ -285,7 +285,7 @@ class protocol
   }
 
   //! Turns off the write callback if apropriate.
-  static void disable_write()
+  protected void disable_write()
   {
     DWRITE("TELNET: disable_write()\n");
     if (!write_cb && !sizeof(to_send) && !done && nonblocking_write) {
@@ -325,7 +325,7 @@ class protocol
 
   //! Callback called when it is clear to send data over the connection.
   //! This function does the actual sending.
-  static void send_data()
+  protected void send_data()
   {
     DWRITE("TELNET: Entering send_data()\n");
     if (!sizeof(to_send)) {
@@ -493,9 +493,9 @@ class protocol
   
 
   //! Indicates whether we are in synch-mode or not.
-  static int synch = 0;
+  protected int synch = 0;
 
-  static mixed call_callback(mixed what, mixed ... args)
+  protected mixed call_callback(mixed what, mixed ... args)
   {
     if(mixed cb=cb[what])
     {
@@ -532,7 +532,7 @@ class protocol
   //! @param s
   //!   The Out-Of-Band data received.
   //!
-  static void got_oob(mixed ignored, string s)
+  protected void got_oob(mixed ignored, string s)
   {
 #ifdef TELNET_DEBUG
   werror("TELNET: got_oob(\"%s\")\n",Array.map(values(s),lambda(int s) { 
@@ -554,7 +554,7 @@ class protocol
   //!
   //! Specifically provided for overloading
   //!
-  static void call_read_cb(string data)
+  protected void call_read_cb(string data)
   {
     DWRITE("TELNET: Fnurgel!\n");
     if(read_cb && sizeof(data)) read_cb(id,data);
@@ -568,7 +568,7 @@ class protocol
   //! @param s
   //!   The received data.
   //!
-  static void got_data(mixed ignored, string line)
+  protected void got_data(mixed ignored, string line)
   {
 #ifdef TELNET_DEBUG
   werror("TELNET: got_data(\"%s\")\n",Array.map(values(line),lambda(int s) { 
@@ -854,9 +854,9 @@ class protocol
 class LineMode
 {
   inherit protocol;
-  static string line_buffer="";
+  protected string line_buffer="";
 
-  static void call_read_cb(string data)
+  protected void call_read_cb(string data)
   {
     if(read_cb)
     {
@@ -902,7 +902,7 @@ class Readline
       ]);
   }
   
-  static void call_read_cb(string data)
+  protected void call_read_cb(string data)
   {
     if(read_cb)
     {
@@ -948,15 +948,15 @@ class Readline
 
   }
   
-  static function(mixed,string:void) read_cb2;
+  protected function(mixed,string:void) read_cb2;
   
-  static void readline_callback(string data)
+  protected void readline_callback(string data)
   {
     read_cb2(id,data+"\n");
   }
   
-  static string prompt="";
-  static mixed call_callback(mixed what, mixed ... args)
+  protected string prompt="";
+  protected mixed call_callback(mixed what, mixed ... args)
   {
     switch(what)
     {
@@ -1066,4 +1066,5 @@ class Readline
     ::close();
   }
 }
+
 

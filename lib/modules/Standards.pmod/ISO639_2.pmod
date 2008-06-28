@@ -5,7 +5,7 @@
 #pike __REAL_VERSION__
 
 // Mapping from ISO 639-2/T code to language name.
-static constant languages = ([
+protected constant languages = ([
   "aar":"Afar",
   "abk":"Abkhazian",
   "ace":"Achinese",
@@ -490,7 +490,7 @@ static constant languages = ([
 ]);
 
 // Mapping from ISO 639-2/B to ISO 639-2/T
-static constant b_to_t = ([
+protected constant b_to_t = ([
   "alb":"sqi",
   "arm":"hye",
   "baq":"eus",
@@ -573,7 +573,7 @@ string convert_t_to_b(string code) {
 }
 
 // Mapping from ISO 639-1 code to ISO 639-2/T code.
-static constant conversion = ([
+protected constant conversion = ([
   "aa":"aar",
   "ab":"abk",
   "ae":"ave",

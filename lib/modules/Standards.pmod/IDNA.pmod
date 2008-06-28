@@ -19,7 +19,7 @@ object Punycode = class {
       return ::decode(x*"-");
     }
 
-    static void create() { ::create(36, 1, 26, 38, 700, 72, 128, '-',
+    protected void create() { ::create(36, 1, 26, 38, 700, 72, 128, '-',
 				    "abcdefghijklmnopqrstuvwxyz0123456789"); }
   }();
 
@@ -27,7 +27,7 @@ object Punycode = class {
 // stringprep tables...
 
 // Table B.2: Case folding for use with NFKC
-static constant stringprep_casefold_src =
+protected constant stringprep_casefold_src =
 // 1 to 1
 "\x0041\x0042\x0043\x0044\x0045\x0046\x0047\x0048\x0049\x004A\x004B\x004C"
 "\x004D\x004E\x004F\x0050\x0051\x0052\x0053\x0054\x0055\x0056\x0057\x0058"
@@ -158,7 +158,7 @@ static constant stringprep_casefold_src =
 // 1 to 4
 "\x33C6"/1;
 
-static constant stringprep_casefold_dest =
+protected constant stringprep_casefold_dest =
 // 1 to 1
 "\x0061\x0062\x0063\x0064\x0065\x0066\x0067\x0068\x0069\x006A\x006B\x006C"
 "\x006D\x006E\x006F\x0070\x0071\x0072\x0073\x0074\x0075\x0076\x0077\x0078"

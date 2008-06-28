@@ -18,31 +18,31 @@ inherit Calendar.Time:Time;
 // virtual methods to tell how this calendar works
 // ----------------
 
-static array(int) year_from_julian_day(int jd);
-static int julian_day_from_year(int year);
-static int year_remaining_days(int y,int yday);
+protected array(int) year_from_julian_day(int jd);
+protected int julian_day_from_year(int year);
+protected int year_remaining_days(int y,int yday);
 
-static array(int) year_month_from_month(int y,int m); // [y,m,ndays,myd]
-static array(int) month_from_yday(int y,int yday); // [m,day-of-month,ndays,myd]
+protected array(int) year_month_from_month(int y,int m); // [y,m,ndays,myd]
+protected array(int) month_from_yday(int y,int yday); // [m,day-of-month,ndays,myd]
 
-static array(int) week_from_week(int y,int w);   // [wy,w,wd,ndays,wjd]
-static array(int) week_from_julian_day(int jd);  // [wy,w,wd,ndays,wjd]
+protected array(int) week_from_week(int y,int w);   // [wy,w,wd,ndays,wjd]
+protected array(int) week_from_julian_day(int jd);  // [wy,w,wd,ndays,wjd]
 
-static string f_month_name_from_number;
-static string f_month_shortname_from_number;
-static string f_month_number_from_name;
-static string f_month_day_name_from_number;
-static string f_week_name_from_number;
-static string f_week_day_number_from_name;
-static string f_week_day_shortname_from_number;
-static string f_week_day_name_from_number;
-static string f_year_name_from_number;
-static string f_year_number_from_name;
+protected string f_month_name_from_number;
+protected string f_month_shortname_from_number;
+protected string f_month_number_from_name;
+protected string f_month_day_name_from_number;
+protected string f_week_name_from_number;
+protected string f_week_day_number_from_name;
+protected string f_week_day_shortname_from_number;
+protected string f_week_day_name_from_number;
+protected string f_year_name_from_number;
+protected string f_year_number_from_name;
 
 
-static int(0..1) year_leap_year(int y);
+protected int(0..1) year_leap_year(int y);
 
-static int compat_week_day(int n);
+protected int compat_week_day(int n);
 
 //------------------------------------------------------------------------
 //! class YMD
@@ -626,7 +626,7 @@ class YMD
 
 // --- size and move ---
 
-   static TimeRange _set_size(int n,TimeRange t)
+   protected TimeRange _set_size(int n,TimeRange t)
    {
       if (t->is_timeofday)
 	 return second()->set_size(n,t);
@@ -661,7 +661,7 @@ class YMD
 	    object_program(t));
    }
 
-   static TimeRange _add(int _n,TimeRange step)
+   protected TimeRange _add(int _n,TimeRange step)
    {
       if (step->is_ymd)
 	 return _move(_n,step);
@@ -913,7 +913,7 @@ class YMD
 
 // --- functions to conform to Time.*
 
-   static TimeRange get_unit(string unit,int m)
+   protected TimeRange get_unit(string unit,int m)
    {
       if (!n) return day()[unit]();
       if (m<0) m+=::`[]("number_of_"+unit+"s")();
@@ -923,7 +923,7 @@ class YMD
 	    ::`[]("number_of_"+unit+"s")()-1);
    }
 
-   static array(TimeRange) get_timeofday(string unit,
+   protected array(TimeRange) get_timeofday(string unit,
 					 int start,int step,program p,
 					 int ... range)
    {
@@ -1106,7 +1106,7 @@ class YMD
    }
 
    void create_julian_day(int|float jd);
-   static TimeRange _move(int n,YMD step);
+   protected TimeRange _move(int n,YMD step);
    TimeRange place(TimeRange what,void|int force);
 
 // not needed
@@ -1280,7 +1280,7 @@ class cYear
       error("_move: Incompatible type %O\n",step);
    }
 
-   static void convert_from(TimeRange other)
+   protected void convert_from(TimeRange other)
    {
 #if 0
       // The following is disabled since it leads to inconsistent
@@ -1611,7 +1611,7 @@ class cMonth
       error("distance: Incompatible type %O\n",to);
    }
 
-   static void convert_from(TimeRange other)
+   protected void convert_from(TimeRange other)
    {
       ::convert_from(other);
       if (other->number_of_months)
@@ -1702,7 +1702,7 @@ class cMonth
 
 // --- needs to be defined
 
-   static int months_to_month(int y,int m);
+   protected int months_to_month(int y,int m);
 }
 
 // ----------------------------------------------------------------
@@ -1934,7 +1934,7 @@ class cWeek
       error("distance: Incompatible type %O\n",to);
    }
 
-   static void convert_from(TimeRange other)
+   protected void convert_from(TimeRange other)
    {
       ::convert_from(other);
       if (other->number_of_weeks)
@@ -2064,7 +2064,7 @@ class cWeek
 
 // --- needs to be defined
 
-   static int weeks_to_week(int y,int m);
+   protected int weeks_to_week(int y,int m);
 }
 
 // ----------------------------------------------------------------
@@ -2272,7 +2272,7 @@ class cDay
 	 ->autopromote();
    }
 
-   static void convert_from(TimeRange other)
+   protected void convert_from(TimeRange other)
    {
       ::convert_from(other);
       if (other->number_of_days)
@@ -2283,7 +2283,7 @@ class cDay
 
 // --- Day _move
 
-   static TimeRange _move(int x,YMD step)
+   protected TimeRange _move(int x,YMD step)
    {
       if (step->is_year) {
 	TimeRange stepped = year()->add(x,step);
@@ -2647,7 +2647,7 @@ class cSuperTimeRange
 
 // dwim time of day; needed to correct timezones
 // this API may change without further notice
-static TimeRange dwim_tod(TimeRange origin,string whut,int h,int m,int s)
+protected TimeRange dwim_tod(TimeRange origin,string whut,int h,int m,int s)
 {
    TimeRange tr;
    if (catch {
@@ -2681,11 +2681,11 @@ static TimeRange dwim_tod(TimeRange origin,string whut,int h,int m,int s)
    return tr;
 }
 
-static mapping abbr2zones;
+protected mapping abbr2zones;
 
 // dwim timezone and call dwim time of day above
 // this API may change without further notice
-static TimeRange dwim_zone(TimeRange origin,string zonename,
+protected TimeRange dwim_zone(TimeRange origin,string zonename,
 			   string whut,int ...args)
 {
    if (zonename=="") return 0;
@@ -2731,9 +2731,9 @@ static TimeRange dwim_zone(TimeRange origin,string zonename,
       return dwim_tod(origin->set_timezone(zone),whut,@args);
 }
 
-static mapping(string:array) parse_format_cache=([]);
+protected mapping(string:array) parse_format_cache=([]);
 
-static mapping dwim_year=([ "past_lower":70, "past_upper":100, 
+protected mapping dwim_year=([ "past_lower":70, "past_upper":100, 
                             "current_century":2000, "past_century":1900 ]);
 
 TimeRange parse(string fmt,string arg,void|TimeRange context)
@@ -3015,7 +3015,7 @@ Calendar.dwim_day("Sat Jun  2");
 
 */
 
-static constant dwim_day_strings=
+protected constant dwim_day_strings=
 ({
   "%y-%M-%D (%*s) -W%W-%e (%e)",
   "%y-%M-%D",
@@ -3223,4 +3223,5 @@ string format_day_iso_short(int|void unix_time)
 {
    return Day("unix",unix_time||time())->format_iso_short();
 }
+
 

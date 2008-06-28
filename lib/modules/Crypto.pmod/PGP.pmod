@@ -1,5 +1,5 @@
 //
-// $Id: PGP.pmod,v 1.13 2006/11/04 19:06:48 nilsson Exp $
+// $Id: PGP.pmod,v 1.14 2008/06/28 16:36:54 nilsson Exp $
 
 //! PGP stuff. See RFC 2440.
 
@@ -15,7 +15,7 @@
 //     @member int validity
 //     @member object key
 //   @endmapping
-static mapping decode_public_key(string s) {
+protected mapping decode_public_key(string s) {
 
   mapping r = ([]);
   string key;
@@ -102,7 +102,7 @@ static mapping decode_public_key(string s) {
 //     @member Gmp.mpz digest_r
 //     @member Gmp.mpz digest_s
 //   @endmapping
-static mapping decode_signature(string s) {
+protected mapping decode_signature(string s) {
 
   mapping r = ([]);
   int l5, l;
@@ -123,7 +123,7 @@ static mapping decode_signature(string s) {
   return r;
 }
 
-static mapping decode_compressed(string s) {
+protected mapping decode_compressed(string s) {
   error("Can't decompress.\n");
   int type = s[0];
   s = s[1..];
@@ -143,7 +143,7 @@ static mapping decode_compressed(string s) {
   }
 }
 
-static constant pgp_id = ([
+protected constant pgp_id = ([
   0b100001:"public_key_encrypted",
   0b100010:"signature",
   0b100011:"symmetric_key",
@@ -163,7 +163,7 @@ static constant pgp_id = ([
   0b110001:"modification_detection",
 ]);
 
-static mapping(string:function) pgp_decoder = ([
+protected mapping(string:function) pgp_decoder = ([
   "public_key":decode_public_key,
   "public_subkey":decode_public_key,
   "signature":decode_signature,
@@ -216,7 +216,7 @@ string encode(int type, string data) {
   return sprintf("%c%c%s", type, sizeof(data), data);
 }
 
-static int(0..1) verify(Crypto.HashState hash, mapping sig, mapping key) {
+protected int(0..1) verify(Crypto.HashState hash, mapping sig, mapping key) {
 
   if(!objectp(hash) || !mappingp(sig) || !mappingp(key) || !key->key)
     return 0;
@@ -279,7 +279,7 @@ string sha_sign(string text, mixed key) {
 }
 
 
-static int crc24(string data) {
+protected int crc24(string data) {
   int crc = 0xb704ce;
   foreach(data; int pos; int char) {
     crc ^= char<<16;
@@ -357,3 +357,4 @@ mapping(string:mixed) decode_radix64(string data) {
 #else
 constant this_program_does_not_exist=1;
 #endif
+

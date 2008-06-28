@@ -31,7 +31,7 @@
 //!
 //! where line is numeral, first 'line'==0
 
-static array sedreplace(string s,object re,string with,
+protected array sedreplace(string s,object re,string with,
 			array whatin,int first,int lastmod,
 			multiset flags)
 {
@@ -83,7 +83,7 @@ static array sedreplace(string s,object re,string with,
    return ({pr,s});
 };
 
-static array scan_for_linenumber(string cmd,
+protected array scan_for_linenumber(string cmd,
 				 array(string) in,
 				 int n)
 {

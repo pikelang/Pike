@@ -1,5 +1,5 @@
 //
-// $Id: session.pike,v 1.36 2005/10/28 19:49:40 bill Exp $
+// $Id: session.pike,v 1.37 2008/06/28 16:36:58 nilsson Exp $
 
 #pike __REAL_VERSION__
 #pragma strict_types
@@ -18,7 +18,7 @@
 #if constant(SSL.Cipher.CipherSpec)
 
 import .Constants;
-static constant Struct = ADT.struct;
+protected constant Struct = ADT.struct;
 
 //! Identifies the session to the server
 string identity;
@@ -75,7 +75,7 @@ void set_compression_method(int compr)
   compression_algorithm = compr;
 }
 
-static string generate_key_block(string client_random, string server_random,
+protected string generate_key_block(string client_random, string server_random,
 			  array(int) version)
 {
   int required = 2 * (
@@ -120,7 +120,7 @@ static string generate_key_block(string client_random, string server_random,
 }
 
 #ifdef SSL3_DEBUG
-static void printKey(string name, string key) {
+protected void printKey(string name, string key) {
 
   string res="";
   res+=sprintf("%s:  len:%d type:%d \t\t",name,sizeof(key),0); 
@@ -330,3 +330,4 @@ array(.state) new_client_states(string client_random, string server_random,
 }
 
 #endif // constant(SSL.Cipher.CipherSpec)
+

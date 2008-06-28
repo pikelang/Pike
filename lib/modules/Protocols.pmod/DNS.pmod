@@ -1,4 +1,4 @@
-// $Id: DNS.pmod,v 1.95 2008/03/10 13:41:11 grubba Exp $
+// $Id: DNS.pmod,v 1.96 2008/06/28 16:36:56 nilsson Exp $
 // Not yet finished -- Fredrik Hubinette
 
 //! Domain Name System
@@ -111,7 +111,7 @@ class protocol
     return sprintf("%c%s",sizeof(s),s);
   }
 
-  static private string mkname(string|array(string) labels, int pos,
+  protected private string mkname(string|array(string) labels, int pos,
 			       mapping(string:int) comp)
   {
     if(stringp(labels))
@@ -129,7 +129,7 @@ class protocol
     }
   }
 
-  static string make_raw_addr6(string addr6)
+  protected string make_raw_addr6(string addr6)
   {
     if(!addr6) return "\0"*16;
     if(has_value(addr6, "::")) {
@@ -146,7 +146,7 @@ class protocol
 		     array_sscanf(addr6, "%x:%x:%x:%x:%x:%x:%x:%x"));
   }
 
-  static private string mkrdata(mapping entry, int pos, mapping(string:int) c)
+  protected private string mkrdata(mapping entry, int pos, mapping(string:int) c)
   {
     switch(entry->type) {
      case T_CNAME:
@@ -206,7 +206,7 @@ class protocol
     }
   }
 
-  static private string encode_entries(array(mapping) entries, int pos,
+  protected private string encode_entries(array(mapping) entries, int pos,
 				       mapping(string:int) comp)
   {
     string res="";
@@ -495,7 +495,7 @@ class server
   inherit protocol;
   inherit Stdio.UDP : udp;
 
-  static void send_reply(mapping r, mapping q, mapping m)
+  protected void send_reply(mapping r, mapping q, mapping m)
   {
     // FIXME: Needs to handle truncation somehow.
     if(!r)
@@ -536,7 +536,7 @@ class server
   //!     @member array|void "ns"
   //!     @member array|void "ar"
   //!   @endmapping
-  static mapping reply_query(mapping query, mapping udp_data)
+  protected mapping reply_query(mapping query, mapping udp_data)
   {
     // Override this function.
     //
@@ -546,18 +546,18 @@ class server
     return 0;
   }
 
-  static void handle_query(mapping q, mapping m)
+  protected void handle_query(mapping q, mapping m)
   {
     mapping r = reply_query(q, m);
     send_reply(r, q, m);
   }
 
-  static void handle_response(mapping r, mapping m)
+  protected void handle_response(mapping r, mapping m)
   {
     // This is a stub intended to simplify servers which allow recursion
   }
 
-  static private void rec_data(mapping m)
+  protected private void rec_data(mapping m)
   {
     mixed err;
     mapping q;
@@ -636,15 +636,15 @@ class client
 
 #else /* !__NT__ */
 
-  static private mapping(string:string) etc_hosts;
+  protected private mapping(string:string) etc_hosts;
 
-  static private int is_ip(string ip)
+  protected private int is_ip(string ip)
   {
     // FIXME: Doesn't work with IPv6
     return (replace(ip, "0123456789."/1, allocate(11,"")) == "");
   }
 
-  static private string read_etc_file(string fname)
+  protected private string read_etc_file(string fname)
   {
     array(string) paths;
     string res;
@@ -670,7 +670,7 @@ class client
     return res;
   }
 
-  static private string match_etc_hosts(string host)
+  protected private string match_etc_hosts(string host)
   {
     if (!etc_hosts) {
       etc_hosts = ([ "localhost":"127.0.0.1" ]);
@@ -884,7 +884,7 @@ class client
     return 0;
   }
 
-  static mapping low_gethostbyname(string s, int type)
+  protected mapping low_gethostbyname(string s, int type)
   {
     mapping m;
     if(sizeof(domains) && s[-1] != '.' && sizeof(s/".") < 3) {
@@ -1187,7 +1187,7 @@ class async_client
 
   mapping requests=([]);
 
-  static private void remove(object(Request) r)
+  protected private void remove(object(Request) r)
   {
     if(!r) return;
     sscanf(r->req,"%2c",int id);
@@ -1247,7 +1247,7 @@ class async_client
     next_client->do_query(domain, cl, type, callback, @args);
   }
 
-  static private void rec_data(mapping m)
+  protected private void rec_data(mapping m)
   {
     mixed err;
     if (err = catch {
@@ -1264,7 +1264,7 @@ class async_client
     }
   }
 
-  static private void generic_get(string d,
+  protected private void generic_get(string d,
 				  mapping answer,
 				  int multi, 
 				  int all,

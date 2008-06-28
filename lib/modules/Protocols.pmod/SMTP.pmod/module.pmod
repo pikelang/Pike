@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod,v 1.45 2008/02/21 14:01:00 agehall Exp $
+// $Id: module.pmod,v 1.46 2008/06/28 16:36:58 nilsson Exp $
 //
 
 #pike __REAL_VERSION__
@@ -48,7 +48,7 @@ class Client
 {
   inherit Protocol;
 
-  static private int cmd(string c, string|void comment)
+  protected private int cmd(string c, string|void comment)
   {
     int r = command(c);
     switch(r) {
@@ -155,7 +155,7 @@ class Client
     cmd("QUIT");
   }
 
-  static string parse_addr(string addr)
+  protected string parse_addr(string addr)
   {
     array(string|int) tokens = replace(MIME.tokenize(addr), '@', "@");
 
@@ -265,7 +265,7 @@ class Configuration {
 //! The low-level class for the SMTP server
 class Connection {
 
-  static Configuration cfg;
+  protected Configuration cfg;
 
   // The commands this module supports
   mapping(string:function) commands = ([
@@ -284,25 +284,25 @@ class Connection {
   constant internal_error_name = ". Problem due to the internal error: ";
 
   // the fd of the socket
-  static Stdio.File fd = Stdio.File();
+  protected Stdio.File fd = Stdio.File();
   // the input buffer for read_cb
-  static string inputbuffer = "";
+  protected string inputbuffer = "";
   // the size of the old data string in read_cb
-  static int sizeofpreviousdata = 0;
+  protected int sizeofpreviousdata = 0;
   // the from address
-  static string mailfrom = "";
+  protected string mailfrom = "";
   // to the address(es)
-  static array(string) mailto = ({ });
+  protected array(string) mailto = ({ });
   // the ident we get from ehlo/helo
-  static string ident = "";
+  protected string ident = "";
   // these are obvious
-  static string remoteaddr, localaddr;
-  static int localport;
+  protected string remoteaddr, localaddr;
+  protected int localport;
   // my name
-  static string localhost = gethostname();
+  protected string localhost = gethostname();
 
   // the sequence of commands the client send
-  static array(string) sequence = ({ });
+  protected array(string) sequence = ({ });
   // the message id of the current mail
   private string|int messageid;
   
@@ -312,7 +312,7 @@ class Connection {
   // the features this module support (fetched from Configuration - get_features()
    private array(string) features = ({ });
 
-   static void handle_timeout(string cmd)
+   protected void handle_timeout(string cmd)
    {
      string errmsg = "421 Error: timeout exceeded after command " +
        cmd || "unknown command!" + "\r\n";
@@ -323,13 +323,13 @@ class Connection {
 
    // return true if the given return code from the call back function
    // is a success one or not
-   static int is_success(array|int check)
+   protected int is_success(array|int check)
    {
      return (getretcode(check)/100 == 2);
    }
 
    // get the return code from the callback function
-   static int getretcode(array|int check)
+   protected int getretcode(array|int check)
    {
      int smtpretcode;
      if(arrayp(check))
@@ -344,14 +344,14 @@ class Connection {
 
    // get optionnal error string from the callback function
    // 0 is no error string were returned
-   static int|string geterrorstring(array|int check)
+   protected int|string geterrorstring(array|int check)
    {
      if(arrayp(check) && stringp(check[1]))
        return check[1];
      return 0;
    }
    
-   static void outcode(int code, void|string internal_error)
+   protected void outcode(int code, void|string internal_error)
    {
      string msg = (string) code + " ";
      if(internal_error)
@@ -369,7 +369,7 @@ class Connection {
   //! By default the log function is @[werror].
    function(string:mixed) logfunction = werror;
 
-   static void log(string fmt, mixed ... args)
+   protected void log(string fmt, mixed ... args)
    {
      string errmsg = Calendar.now()->format_time() + 
        " Pike "+protocol+" server : ";
@@ -383,7 +383,7 @@ class Connection {
    }
   
    // make the received header
-   static string received()
+   protected string received()
    {
      string remotehost =
         Protocols.DNS.client()->gethostbyaddr(remoteaddr)[0]
@@ -612,7 +612,7 @@ class Connection {
      return message;
    }
    
-   static MIME.Message low_message(string content)
+   protected MIME.Message low_message(string content)
    {
      datamode = 0;
      MIME.Message message;
@@ -694,7 +694,7 @@ class Connection {
      shutdown_fd();
    }
    
-   static int launch_functions(string line)
+   protected int launch_functions(string line)
    {
      array(string) command = line / " ";
      // success
@@ -726,7 +726,7 @@ class Connection {
      }
    }
   
-   static void read_cb(mixed id, string data)
+   protected void read_cb(mixed id, string data)
    {
      string pattern;
      int bufferposition;
@@ -780,14 +780,14 @@ class Connection {
      }
    }
    
-   static void write_cb()
+   protected void write_cb()
    {
      fd->write("220 " + replace(replycodes[220], "<host>", localhost)
 	       + "\r\n");
      fd->set_write_callback(0);
    }
 
-   static void shutdown_fd()
+   protected void shutdown_fd()
    {
      remove_call_out(handle_timeout);
 #if constant(thread_create)
@@ -805,7 +805,7 @@ class Connection {
 #endif
    }
    
-   static void close_cb(int i_close_the_stream)
+   protected void close_cb(int i_close_the_stream)
    {
      if(!i_close_the_stream)
      {
@@ -858,10 +858,10 @@ class Connection {
 //! So it is your job to provide mail storage and relay mails to other servers
 class Server {
 
-   static object fdport;
+   protected object fdport;
    Configuration config;
 
-   static void accept_callback()
+   protected void accept_callback()
    {
      object fd = fdport->accept();
      if(!fd)

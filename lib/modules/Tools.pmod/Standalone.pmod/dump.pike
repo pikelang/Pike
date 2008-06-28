@@ -6,7 +6,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dump.pike,v 1.9 2008/04/03 14:54:31 grubba Exp $
+|| $Id: dump.pike,v 1.10 2008/06/28 16:37:02 nilsson Exp $
 */
 
 constant description = "Dumps Pike files into object files.";
@@ -105,7 +105,7 @@ class MyMaster
     logmsg_long (describe_backtrace (trace));
   }
 
-  static void create()
+  protected void create()
   {
     object old_master = master();
     ::create();

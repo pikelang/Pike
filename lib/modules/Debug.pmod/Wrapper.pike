@@ -13,8 +13,8 @@
 //!  !___Nettle.MD5_State()
 //!  (2) Result: 0
 
-static object wrappee;
-static object compile_handler;
+protected object wrappee;
+protected object compile_handler;
 
 //!
 void create(object x) {

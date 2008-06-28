@@ -1,8 +1,8 @@
-// $Id: ext_to_media_type.pmod,v 1.6 2003/12/03 10:22:52 nilsson Exp $
+// $Id: ext_to_media_type.pmod,v 1.7 2008/06/28 16:36:55 nilsson Exp $
 
 #pike __REAL_VERSION__
 
-static constant small_ext2type = ([
+protected constant small_ext2type = ([
   "html" : "text/html",
   "txt"  : "text/plain",
   "css"  : "text/css",
@@ -12,7 +12,7 @@ static constant small_ext2type = ([
   "png"  : "image/png",
 ]);
 
-static mapping ext2type = ([
+protected mapping ext2type = ([
 
 // Last synchronized with IANA media types list: 2002-02-05 (except
 // applications)

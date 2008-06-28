@@ -1,7 +1,7 @@
 //
 // Argument parser
 // By Martin Nilsson
-// $Id: Arg.pmod,v 1.5 2008/05/03 17:14:50 nilsson Exp $
+// $Id: Arg.pmod,v 1.6 2008/06/28 16:36:52 nilsson Exp $
 //
 
 #pike __REAL_VERSION__
@@ -14,7 +14,7 @@ class OptLibrary
   class Opt
   {
     constant is_opt = 1;
-    static Opt next;
+    protected Opt next;
 
     //! Should return 1 for set options or a string containing the
     //! value of the option. Returning 0 means the option was not set
@@ -36,7 +36,7 @@ class OptLibrary
       return next->get_opts();
     }
 
-    static this_program `|(mixed thing)
+    protected this_program `|(mixed thing)
     {
       if( !objectp(thing) || !thing->is_opt )
         error("Can only or %O with another %O.\n",
@@ -54,12 +54,12 @@ class OptLibrary
 
     //! This function will be called by @expr{_sprintf@}, which
     //! handles formatting of chaining between objects.
-    static string __sprintf()
+    protected string __sprintf()
     {
       return sprintf("%O()", this_program);
     }
 
-    static string _sprintf(int t)
+    protected string _sprintf(int t)
     {
       if( t!='O' ) return UNDEFINED;
       if( !next )
@@ -77,10 +77,10 @@ class OptLibrary
   class NoOpt
   {
     inherit Opt;
-    static string opt;
-    static int double;
+    protected string opt;
+    protected int double;
 
-    static void create(string _opt)
+    protected void create(string _opt)
     {
       if( sizeof(_opt)>2 && has_prefix(_opt, "--") )
         double = 1;
@@ -123,7 +123,7 @@ class OptLibrary
       return ({ opt }) + ::get_opts();
     }
 
-    static string __sprintf()
+    protected string __sprintf()
     {
       return sprintf("Arg.NoOpt(%O)", opt);
     }
@@ -137,9 +137,9 @@ class OptLibrary
   class Env
   {
     inherit Opt;
-    static string name;
+    protected string name;
 
-    static void create(string _name)
+    protected void create(string _name)
     {
       name = _name;
     }
@@ -150,7 +150,7 @@ class OptLibrary
       return ::get_value(argv, env);
     }
 
-    static string __sprintf()
+    protected string __sprintf()
     {
       return sprintf("Arg.Env(%O)", name);
     }
@@ -163,9 +163,9 @@ class OptLibrary
   class Default
   {
     inherit Opt;
-    static string value;
+    protected string value;
 
-    static void create(string _value)
+    protected void create(string _value)
     {
       value = _value;
     }
@@ -175,7 +175,7 @@ class OptLibrary
       return value;
     }
 
-    static string __sprintf()
+    protected string __sprintf()
     {
       return sprintf("Arg.Default(%O)", value);
     }
@@ -247,7 +247,7 @@ class OptLibrary
       return ::get_value(argv, env);
     }
 
-    static string __sprintf()
+    protected string __sprintf()
     {
       return sprintf("Arg.MaybeOpt(%O)", opt);
     }
@@ -329,7 +329,7 @@ class OptLibrary
       return ::get_value(argv, env);
     }
 
-    static string __sprintf()
+    protected string __sprintf()
     {
       return sprintf("Arg.HasOpt(%O)", opt);
     }
@@ -338,7 +338,7 @@ class OptLibrary
 } // -- OptLibrary
 
 object REST = class {
-    static string _sprintf(int t)
+    protected string _sprintf(int t)
     {
       return "Arg.REST";
     }
@@ -349,14 +349,14 @@ object REST = class {
 
 class LowOptions
 {
-  static inherit OptLibrary;
+  protected inherit OptLibrary;
 
-  static mapping(string:Opt) opts = ([]);
-  static mapping(string:int(1..1)|string) values = ([]);
-  static array(string) argv;
-  static string application;
+  protected mapping(string:Opt) opts = ([]);
+  protected mapping(string:int(1..1)|string) values = ([]);
+  protected array(string) argv;
+  protected string application;
 
-  static void create(array(string) _argv, void|mapping(string:string) env)
+  protected void create(array(string) _argv, void|mapping(string:string) env)
   {
     if(!env)
       env = getenv();
@@ -414,13 +414,13 @@ class LowOptions
 
   }
 
-  static int(0..1) unhandled_argument(array(string) argv,
+  protected int(0..1) unhandled_argument(array(string) argv,
                                       mapping(string:string) env)
   {
     return 0;
   }
 
-  static mixed cast(string to)
+  protected mixed cast(string to)
   {
     switch( to )
     {
@@ -439,16 +439,16 @@ class Options
 {
   inherit LowOptions;
 
-  static string|int `[](string id)
+  protected string|int `[](string id)
   {
     return values[id];
   }
-  static string|int `->(string id)
+  protected string|int `->(string id)
   {
     return values[id];
   }
 
-  static int(0..1)|string unhandled_argument(array(string) argv,
+  protected int(0..1)|string unhandled_argument(array(string) argv,
                                              mapping(string:string) env)
   {
     if( !sizeof(argv) || argv[0]!="--help" ) return 0;
@@ -470,7 +470,7 @@ class Options
       write( "\n"+s );
   }
 
-  static string index(string i)
+  protected string index(string i)
   {
     string s = ::`[](i, 2);
     if( !s ) return 0;

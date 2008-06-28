@@ -2,10 +2,10 @@
 
 //! This implements TNG stardates. 
 
-static constant TNGSTARPERJULIAN=1000.0/365.2425;
-static constant TNGSTARPERSECOND=TNGSTARPERJULIAN/86400;
-static constant TNG0JULIAN=2569518.5;
-static constant TNG0UNIX=11139552000;
+protected constant TNGSTARPERJULIAN=1000.0/365.2425;
+protected constant TNGSTARPERSECOND=TNGSTARPERJULIAN/86400;
+protected constant TNG0JULIAN=2569518.5;
+protected constant TNG0UNIX=11139552000;
 
 string calendar_name() { return "Stardate"; }
 
@@ -73,19 +73,19 @@ class cTick
       ::create(@args);
    }
 
-   static void create_unixtime(int unixtime,int seconds)
+   protected void create_unixtime(int unixtime,int seconds)
    {
       t=(unixtime-TNG0UNIX)*TNGSTARPERSECOND;
       len=seconds*TNGSTARPERSECOND;
    }
 
-   static void create_unixtime_default(int unixtime)
+   protected void create_unixtime_default(int unixtime)
    {
       t=(unixtime-TNG0UNIX)*TNGSTARPERSECOND;
       len=0.0;
    }
 
-   static void create_julian_day(int|float jd)
+   protected void create_julian_day(int|float jd)
    {
       t=(jd-TNG0JULIAN)*TNGSTARPERJULIAN;
       len=0.0;
@@ -129,7 +129,7 @@ class cTick
       return ((int)(t/TNGSTARPERJULIAN))+TNG0JULIAN;
    }
 
-   static Calendar.TimeRange _add(int n,void|this_program step)
+   protected Calendar.TimeRange _add(int n,void|this_program step)
    {
       float x;
       if (!step) 
@@ -147,7 +147,7 @@ class cTick
       return this;
    }
 
-   static void convert_from(Calendar.TimeRange other)
+   protected void convert_from(Calendar.TimeRange other)
    {
       if (other->unix_time)
 	 create_unixtime_default(other->unix_time());
@@ -166,7 +166,7 @@ class cTick
 	 len=0.0;
    }
 
-   static Calendar.TimeRange _set_size(int n, Calendar.TimeRange x)
+   protected Calendar.TimeRange _set_size(int n, Calendar.TimeRange x)
    {
       if (!x->is_stardate)
 	 error("distance: Incompatible type %O\n",x);

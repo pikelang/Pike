@@ -1,4 +1,4 @@
-// $Id: Terminfo.pmod,v 1.26 2008/01/04 11:33:18 grubba Exp $
+// $Id: Terminfo.pmod,v 1.27 2008/06/28 16:37:00 nilsson Exp $
 #pike __REAL_VERSION__
 
 
@@ -14,19 +14,19 @@
 
 MUTEX
 
-static private array ctrlcharsfrom =
+protected private array ctrlcharsfrom =
    map(indices(allocate(32)),
        lambda(int z) { return sprintf("^%c",z+64); })+
    map(indices(allocate(32)),
        lambda(int z) { return sprintf("^%c",z+96); });
-static private array ctrlcharsto =
+protected private array ctrlcharsto =
    map(indices(allocate(32)),
        lambda(int z) { return sprintf("%c",z); })+
    map(indices(allocate(32)),
        lambda(int z) { return sprintf("%c",z); });
 
 
-static private class TermMachine {
+protected private class TermMachine {
 
   mapping(string:string|int) map = ([]);
 
@@ -151,7 +151,7 @@ class Termcap {
   //!
   array(string) aliases;
 
-  static Termcap parent;
+  protected Termcap parent;
 
   //! Put termcap string
   string tputs(string s)
@@ -161,7 +161,7 @@ class Termcap {
     return s;
   }
 
-  private static multiset(string) load_cap(string en)
+  private protected multiset(string) load_cap(string en)
   {
     string br=":";
     int i=search(en,":");
@@ -282,15 +282,15 @@ class Terminfo {
   //!
   array(string) aliases;
 
-  static private constant boolnames =
+  protected private constant boolnames =
   ({ "bw","am","xb","xs","xn","eo","gn","hc","km","hs","in","da","db","mi",
      "ms","os","es","xt","hz","ul","xo","nx","5i","HC","NR","NP","ND","cc",
      "ut","hl","YA","YB","YC","YD","YE","YF","YG" });
-  static private constant numnames =
+  protected private constant numnames =
   ({ "co","it","li","lm","sg","pb","vt","ws","Nl","lh","lw","ma","MW","Co",
      "pa","NC","Ya","Yb","Yc","Yd","Ye","Yf","Yg","Yh","Yi","Yj","Yk","Yl",
      "Ym","Yn","BT","Yo","Yp" });
-  static private constant strnames =
+  protected private constant strnames =
   ({ "bt","bl","cr","cs","ct","cl","ce","cd","ch","CC","cm","do","ho","vi",
      "le","CM","ve","nd","ll","up","vs","dc","dl","ds","hd","as","mb","md",
      "ti","dm","mh","im","mk","mp","mr","so","us","ec","ae","me","te","ed",
@@ -332,12 +332,12 @@ class Terminfo {
     return s;
   }
 
-  static private string swab(string s)
+  protected private string swab(string s)
   {
     return predef::map(s/2, reverse)*"";
   }
 
-  static private int load_cap(.File f, int|void bug_compat)
+  protected private int load_cap(.File f, int|void bug_compat)
   {
     int magic, sname, nbool, nnum, nstr, sstr;
 
@@ -412,11 +412,11 @@ class TermcapDB {
 
   MUTEX
 
-  static private inherit .File;
+  protected private inherit .File;
 
-  static private string buf="";
-  static private mapping(string:int|Termcap) cache=([]);
-  static private int complete_index=0;
+  protected private string buf="";
+  protected private mapping(string:int|Termcap) cache=([]);
+  protected private int complete_index=0;
 
   void create(string|void filename)
   {
@@ -448,13 +448,13 @@ class TermcapDB {
     }
   }
 
-  static private void rewind(int|void pos)
+  protected private void rewind(int|void pos)
   {
     ::seek(pos);
     buf="";
   }
 
-  static private int more_data()
+  protected private int more_data()
   {
     string q;
     q=::read(8192);
@@ -463,14 +463,14 @@ class TermcapDB {
     return 1;
   }
 
-  static private array(string) get_names(string cap)
+  protected private array(string) get_names(string cap)
   {
     sscanf(cap, "%s:", cap);
     sscanf(cap, "%s,", cap);
     return cap/"|";
   }
 
-  static private string read()
+  protected private string read()
   {
     int i, st;
     string res="";
@@ -528,7 +528,7 @@ class TermcapDB {
     return res;
   }
 
-  static private string readat(int pos)
+  protected private string readat(int pos)
   {
     rewind(pos);
     return read();
@@ -589,7 +589,7 @@ class TermcapDB {
                                         Termcap, this)));
   }
 
-  static private string read_next(string find) // quick search
+  protected private string read_next(string find) // quick search
   {
     for (;;)
     {
@@ -667,9 +667,9 @@ class TerminfoDB {
 
   MUTEX
 
-  static private string dir;
-  static private mapping(string:Terminfo) cache = ([]);
-  static private int complete_index=0;
+  protected private string dir;
+  protected private mapping(string:Terminfo) cache = ([]);
+  protected private int complete_index=0;
 
   void create(string|void dirname)
   {
@@ -753,9 +753,9 @@ class TerminfoDB {
   }
 }
 
-static private Termcap defterm;
-static private TermcapDB deftermcap;
-static private TerminfoDB defterminfo;
+protected private Termcap defterm;
+protected private TermcapDB deftermcap;
+protected private TerminfoDB defterminfo;
 
 TermcapDB defaultTermcapDB()
 {
@@ -834,13 +834,13 @@ Termcap getTerm(string|void term)
 //!
 //! @seealso
 //!  Stdio.Terminfo.getTerm
-static Termcap getFallbackTerm(string term)
+protected Termcap getFallbackTerm(string term)
 {
   return (term=="dumb"? Termcap("dumb:\\\n\t:am:co#80:do=^J:") :
 	  getTerm("dumb"));
 }
 
-static int is_tty_cache;
+protected int is_tty_cache;
 
 int is_tty()
 //! Returns 1 if @[Stdio.stdin] is connected to an interactive

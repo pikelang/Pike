@@ -1,5 +1,5 @@
 // AutoCAD R13/R14/R2000 DWG file decoder
-// $Id: _Image_DWG.pmod,v 1.4 2004/03/01 22:28:23 nilsson Exp $
+// $Id: _Image_DWG.pmod,v 1.5 2008/06/28 16:36:53 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -9,9 +9,9 @@
 //! equals to file version 12, 14 and 15). Implemented according to
 //! specifications from @url{http://www.opendwg.org/@}.
 
-static constant start = "\x1F\x25\x6D\x07\xD4\x36\x28\x28\x9D\x57\xCA\x3F\x9D\x44\x10\x2B";
+protected constant start = "\x1F\x25\x6D\x07\xD4\x36\x28\x28\x9D\x57\xCA\x3F\x9D\x44\x10\x2B";
 
-static inline int read_RL(string data, int pos) {
+protected inline int read_RL(string data, int pos) {
   int r;
   sscanf(data[pos..pos+3], "%-4c", r);
   return r;
@@ -97,7 +97,7 @@ mapping __decode(string data) {
 	    "wmf" : wmfs ]);
 }
 
-static Image.Image get_first_image( mapping data ) {
+protected Image.Image get_first_image( mapping data ) {
   if( !sizeof(data->bmp) )
     error("No bitmap previews available.\n");
   foreach(data->bmp, string bmp) {

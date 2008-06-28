@@ -1,7 +1,7 @@
 //
 // Struct ADT
 // By Martin Nilsson
-// $Id: Struct.pike,v 1.19 2008/05/02 23:06:58 nilsson Exp $
+// $Id: Struct.pike,v 1.20 2008/06/28 16:36:53 nilsson Exp $
 //
 
 #pike __REAL_VERSION__
@@ -37,8 +37,8 @@
 //!     Item str = Chars(strlen);
 //!   }
 
-static local array(Item) items = ({});
-static local mapping(string:Item) names = ([]);
+protected local array(Item) items = ({});
+protected local mapping(string:Item) names = ([]);
 
 constant is_struct = 1;
 constant is_item = 1;
@@ -48,7 +48,7 @@ int id = ADT.get_item_id();
 //! @param data
 //!   Data to be decoded and populate the struct. Can
 //!   either be a file object or a string.
-optional static void create(void|string|object file) {
+optional protected void create(void|string|object file) {
   foreach(::_indices(2), string index) {
     mixed val = ::`[](index, 2);
     if(objectp(val) && val->is_item) names[index]=val;
@@ -88,36 +88,36 @@ string encode() {
 //! It is possible to assign a new value to a struct
 //! item by indexing it by name and assign a value.
 
-static mixed `[](string id) {
+protected mixed `[](string id) {
   if(names[id]) return names[id]->get();
   return ::`[](id, 2);
 }
 
 this_program get() { return this; }
 
-static mixed `[]=(string id, mixed value) {
+protected mixed `[]=(string id, mixed value) {
   if(names[id]) names[id]->set(value);
   return id;
 }
 
-static function `-> = `[];
-static function `->= = `[]=;
+protected function `-> = `[];
+protected function `->= = `[]=;
 
 //! The indices of a struct is the name of the struct items.
-static array(string) _indices() {
+protected array(string) _indices() {
   array ret = indices(names);
   sort(values(names)->id, ret);
   return ret;
 }
 
 //! The values of a struct is the values of the struct items.
-static array _values() {
+protected array _values() {
   return items->get();
 }
 
 //! The size of the struct object is the number of bytes
 //! allocated for the struct.
-static int _sizeof() {
+protected int _sizeof() {
   if(!sizeof(items)) return 0;
   return `+( @sizeof(items[*]) );
 }
@@ -126,7 +126,7 @@ static int _sizeof() {
 //! to running @[encode], or into an array. When casted into an
 //! array each array element is the encoded value of that struct
 //! item.
-static mixed cast(string to) {
+protected mixed cast(string to) {
   switch(to) {
   case "string": return encode();
   case "array": return items->encode();
@@ -141,7 +141,7 @@ class Item {
   int id = ADT.get_item_id();
   constant is_item=1;
 
-  static mixed value;
+  protected mixed value;
   int size;
 
   //! @ignore
@@ -154,7 +154,7 @@ class Item {
 
   int _sizeof() { return size; }
 
-  static string _sprintf(int t) {
+  protected string _sprintf(int t) {
     return t=='O' && sprintf("%O(%O)", this_program, value);
   }
 }
@@ -166,10 +166,10 @@ class Item {
 class Byte {
   inherit Item;
   int size = 1;
-  static int(0..255) value;
+  protected int(0..255) value;
 
   //! The byte can be initialized with an optional value.
-  static void create(void|int(0..255) initial_value) {
+  protected void create(void|int(0..255) initial_value) {
     set(initial_value);
   }
 
@@ -184,7 +184,7 @@ class Byte {
     return sprintf("%c", value);
   }
 
-  static string _sprintf(int t) {
+  protected string _sprintf(int t) {
     return t=='O' && sprintf("%O(%d/%O)", this_program, value,
 			     (string)({value}));
   }
@@ -194,10 +194,10 @@ class Byte {
 class SByte {
   inherit Item;
   int size = 1;
-  static int(-128..127) value;
+  protected int(-128..127) value;
 
   //! The byte can be initialized with an optional value.
-  static void create(void|int(-128..127) initial_value) {
+  protected void create(void|int(-128..127) initial_value) {
     set(initial_value);
   }
 
@@ -212,7 +212,7 @@ class SByte {
     return sprintf("%1c", value);
   }
 
-  static string _sprintf(int t) {
+  protected string _sprintf(int t) {
     return t=='O' && sprintf("%O(%d/%O)", this_program, value,
 			     (string)({value}));
   }
@@ -224,10 +224,10 @@ class SByte {
 class Word {
   inherit Item;
   int size = 2;
-  static int(0..) value;
+  protected int(0..) value;
 
   //! The word can be initialized with an optional value.
-  static void create(void|int(0..65535) initial_value) {
+  protected void create(void|int(0..65535) initial_value) {
     set(initial_value);
   }
 
@@ -240,7 +240,7 @@ class Word {
   void decode(object f) { sscanf(f->read(size), "%"+size+"c", value); }
   string encode() { return sprintf("%"+size+"c", value); }
 
-  static string _sprintf(int t) {
+  protected string _sprintf(int t) {
     return t=='O' && sprintf("%O(%d)", this_program, value);
   }
 }
@@ -250,10 +250,10 @@ class Word {
 class SWord {
   inherit Item;
   int size = 2;
-  static int value;
+  protected int value;
 
   //! The word can be initialized with an optional value.
-  static void create(void|int(-32768..32767) initial_value) {
+  protected void create(void|int(-32768..32767) initial_value) {
     set(initial_value);
   }
 
@@ -266,7 +266,7 @@ class SWord {
   void decode(object f) { sscanf(f->read(size), "%+"+size+"c", value); }
   string encode() { return sprintf("%+"+size+"c", value); }
 
-  static string _sprintf(int t) {
+  protected string _sprintf(int t) {
     return t=='O' && sprintf("%O(%d)", this_program, value);
   }
 }
@@ -288,7 +288,7 @@ class Long {
   int size = 4;
 
   //! The longword can be initialized with an optional value.
-  static void create(void|int(0..) initial_value) {
+  protected void create(void|int(0..) initial_value) {
     set(initial_value);
   }
 }
@@ -300,7 +300,7 @@ class SLong {
   int size = 4;
 
   //! The longword can be initialized with an optional value.
-  static void create(void|int initial_value) {
+  protected void create(void|int initial_value) {
     set(initial_value);
   }
 }
@@ -313,7 +313,7 @@ class Gnol {
   int size = 4;
 
   //! The longword can be initialized with an optional value.
-  static void create(void|int(0..) initial_value) {
+  protected void create(void|int(0..) initial_value) {
     set(initial_value);
   }
 }
@@ -322,8 +322,8 @@ class Gnol {
 //! A string of bytes.
 class Chars {
   inherit Item;
-  static Item dynsize;
-  static string value;
+  protected Item dynsize;
+  protected string value;
 
   //! @decl static void create(int|Item size, void|string value)
   //! @[size] is the number of bytes that are part of this struct
@@ -331,7 +331,7 @@ class Chars {
   //! runtime.
   //! The initial value of the char string is @[value] or,
   //! if not provided, a string of zero bytes.
-  static void create(int|Item _size, void|string _value) {
+  protected void create(int|Item _size, void|string _value) {
     if(intp(_size))
       size = _size;
     else
@@ -362,16 +362,16 @@ class Chars {
   }
   string encode() { return value; }
 
-  static string _sprintf(int t) {
+  protected string _sprintf(int t) {
     return t=='O' && sprintf("%O(%O)", this_program, value);
   }
 }
 
 class Varchars {
   inherit Chars;
-  static int min,max;
+  protected int min,max;
 
-  static void create(void|int _min, void|int _max, void|string _value) {
+  protected void create(void|int _min, void|int _max, void|string _value) {
     min = _min;
     max = _max;
     set(_value || " "*min);
@@ -434,7 +434,7 @@ class uint64 {
   }
 }
 
-static string _sprintf(int t) {
+protected string _sprintf(int t) {
   if(t!='O') return UNDEFINED;
   string ret = sprintf("%O(\n", this_program);
   foreach(items, Item item) {

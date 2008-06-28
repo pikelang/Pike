@@ -24,9 +24,9 @@ class FTFont
 
   Thread.Mutex lock = Thread.Mutex();
   Image.FreeType.Face face;
-  static int size;
-  static int xspacing;
-  static int line_height;
+  protected int size;
+  protected int xspacing;
+  protected int line_height;
 
   mapping(string:mixed) info()
   {
@@ -52,7 +52,7 @@ class FTFont
     return line_height;
   }
 
-  static mixed do_write_char( int c )
+  protected mixed do_write_char( int c )
   {
     catch{
       return face->write_char( c );
@@ -60,7 +60,7 @@ class FTFont
     return 0;
   }
 
-  static Image.Image write_row( string text )
+  protected Image.Image write_row( string text )
   {
     Image.Image res;
     int xp, ys;
@@ -164,10 +164,10 @@ class TTFont
 {
   constant driver = "FreeType 1";
 
-  static object real;
-  static int size;
+  protected object real;
+  protected int size;
 
-  static int translate_ttf_style( string style )
+  protected int translate_ttf_style( string style )
   {
     switch( lower_case( (style-"-")-" " ) )
     {
@@ -238,25 +238,25 @@ class TTFont
 #endif
 
 
-class Font( static string file,
-	    static int size )
+class Font( protected string file,
+	    protected int size )
 //! The abstract Font class. The @[file] is a valid font-file, @[size]
 //! is in pixels, but the size of the characters to be rendered, not
 //! the height of the finished image (the image is generally speaking
 //! bigger then the size of the characters).
 {
   object font;
-  static object codec;
+  protected object codec;
 
-  static int fake_bold;
-  static int fake_italic;
+  protected int fake_bold;
+  protected int fake_italic;
 
   string _sprintf(int t)
   {
     return t=='O' && sprintf("%O(%O, %d)", this_program, file, size);
   }
 
-  static void open_font( )
+  protected void open_font( )
   {
     switch( file )
     {
@@ -294,7 +294,7 @@ class Font( static string file,
     }
   }
 
-  static Image.Image post_process( Image.Image rr )
+  protected Image.Image post_process( Image.Image rr )
   {
     if( fake_bold > 0 )
     {
@@ -373,10 +373,10 @@ class Font( static string file,
   }
 }
 
-static mapping fontlist = ([]);
-static array font_dirs = ({});
+protected mapping fontlist = ([]);
+protected array font_dirs = ({});
 
-static void rescan_fontlist()
+protected void rescan_fontlist()
 {
   fontlist = ([]);
   foreach( font_dirs, string f )

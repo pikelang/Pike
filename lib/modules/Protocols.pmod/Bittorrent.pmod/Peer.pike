@@ -114,7 +114,7 @@ void create(.Torrent _parent,mapping m)
    }
 }
 
-private static inline void _status(string type,void|string|int data)
+private protected inline void _status(string type,void|string|int data)
 {
 #ifdef BT_PEER_DEBUG
    werror("%O: %O(%O)\n",ip,type,data);
@@ -318,7 +318,7 @@ void disconnect()
 }
 
 // initialize the connection
-static void peer_connected()
+protected void peer_connected()
 {
    fd->set_nonblocking(peer_read,0,peer_close);
    transmit("\23BitTorrent protocol%-8c%20s%20s",
@@ -327,8 +327,8 @@ static void peer_connected()
 	    parent->my_peer_id);
 }
 
-static private string sendbuf="";
-static private void transmit(string fmt,mixed ...args)
+protected private string sendbuf="";
+protected private void transmit(string fmt,mixed ...args)
 {
    if (sizeof(args)) fmt=sprintf(fmt,@args);
 
@@ -373,7 +373,7 @@ void send_message(message_id n,string fmt,mixed ...args)
    call_out(keepalive,KEEPALIVE_DELAY);
 }
 
-static private void peer_write()
+protected private void peer_write()
 {
    for (;;)
    {
@@ -449,8 +449,8 @@ static private void peer_write()
    }
 }
 
-static private string readbuf="";
-static private void peer_read(mixed dummy,string s)
+protected private string readbuf="";
+protected private void peer_read(mixed dummy,string s)
 {
    remove_call_out(peer_read_timeout);
    call_out(peer_read_timeout,300);
@@ -761,7 +761,7 @@ void peer_close()
    }
 }
 
-static private void keepalive()
+protected private void keepalive()
 {
    call_out(keepalive,KEEPALIVE_DELAY);
 #ifdef BT_PEER_DEBUG
@@ -851,7 +851,7 @@ void cancel_requests(int real)
 
 array(array(int|string)) queued_pieces=({});
 
-static void queue_piece(int piece,int offset,int length)
+protected void queue_piece(int piece,int offset,int length)
 {
    if (were_choking)
    {
@@ -899,7 +899,7 @@ static void queue_piece(int piece,int offset,int length)
       fd->set_write_callback(peer_write);
 }
 
-static void fill_queue()
+protected void fill_queue()
 {
    if (!sizeof(queued_pieces) ||
 	  queued_pieces[0][3]!=0) 
@@ -951,7 +951,7 @@ void choke()
 #endif
 }
 
-static int last_strangle;
+protected int last_strangle;
 
 void strangle()
 {
@@ -1032,10 +1032,10 @@ void destroy()
 
 // ----------------------------------------------------------------
 
-static private int bandwidth_in_count=0;
-static private int bandwidth_out_count=0;
-static private int bandwidth_t0=time(1);
-static private float bandwidth_t=time(bandwidth_t0);
+protected private int bandwidth_in_count=0;
+protected private int bandwidth_out_count=0;
+protected private int bandwidth_t0=time(1);
+protected private float bandwidth_t=time(bandwidth_t0);
 
 void bandwidth_o_meter()
 {
@@ -1065,3 +1065,4 @@ void bandwidth_o_meter()
 constant this_program_does_not_exist=1;
 
 #endif /* constant(.Torrent) */
+

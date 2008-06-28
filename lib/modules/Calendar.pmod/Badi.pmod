@@ -9,7 +9,7 @@ inherit Calendar.YMD:YMD;
 
 string calendar_name() { return "Badi"; }
 
-private static mixed __initstuff=lambda()
+private protected mixed __initstuff=lambda()
 {
    f_week_day_shortname_from_number="badi_week_day_shortname_from_number";
    f_week_day_name_from_number="badi_week_day_name_from_number";
@@ -26,7 +26,7 @@ private static mixed __initstuff=lambda()
                 "current_century":0, "past_century":0 ]);
 }();
 
-static int year_leap_year(int y) 
+protected int year_leap_year(int y) 
 { 
    // the beginning of the year is the day of the spring equinox
    // leap years are those where an extra day is needed to get up to the next
@@ -39,7 +39,7 @@ static int year_leap_year(int y)
 }
 
 // [y,yjd]
-static array year_from_julian_day(int jd)
+protected array year_from_julian_day(int jd)
 {
    // in order to avoid coming up with a formula for leapyears in the bahai
    // calendar we add the necessary offsets to the data so we can use the take
@@ -59,7 +59,7 @@ static array year_from_julian_day(int jd)
    });
 }
 
-static int julian_day_from_year(int y)
+protected int julian_day_from_year(int y)
 {
    // FIXME: verify for leapyears (esp: 56 (1900) and 100, ...)
    // same as above
@@ -68,14 +68,14 @@ static int julian_day_from_year(int y)
    return 1721426-286+y*365+y/4-y/100+y/400;
 }
 
-static int compat_week_day(int n)
+protected int compat_week_day(int n)
 {
    // this is specific to the gregorian calendar.
    // we just stick with the value as it is
    return n;
 }
 
-static array(int) year_month_from_month(int y,int m)
+protected array(int) year_month_from_month(int y,int m)
 {
 // [y,m,ndays,myd]
 
@@ -92,7 +92,7 @@ static array(int) year_month_from_month(int y,int m)
    error("Month out of range.\n");
 }
 
-static array(int) month_from_yday(int y,int yd)
+protected array(int) month_from_yday(int y,int yd)
 {
 // [month,day-of-month,ndays,month-year-day]
    if (yd<1) 
@@ -110,7 +110,7 @@ static array(int) month_from_yday(int y,int yd)
    error("yday out of range.\n");
 }
 
-static array(int) week_from_julian_day(int jd)
+protected array(int) week_from_julian_day(int jd)
 {
 // [year,week,day-of-week,ndays,week-julian-day]
 
@@ -143,7 +143,7 @@ static array(int) week_from_julian_day(int jd)
    return ({y,w,1+(1+yjd+yday)%7,7,wjd});
 }
 
-static array(int) week_from_week(int y,int w)
+protected array(int) week_from_week(int y,int w)
 {
 // [year,week,1 (wd),ndays,week-julian-day]
 
@@ -160,7 +160,7 @@ static array(int) week_from_week(int y,int w)
 }
 
 // identical to gregorian
-static int year_remaining_days(int y,int yday)
+protected int year_remaining_days(int y,int yday)
 {
    return 365+year_leap_year(y)-yday;
 }
@@ -184,7 +184,7 @@ class cFraction
       return base;
    }
 
-   static void make_local()
+   protected void make_local()
    {
       ::make_local();
       ls+=daystart_offset();
@@ -202,7 +202,7 @@ class cSecond
       return base;
    }
 
-   static void make_local()
+   protected void make_local()
    {
       ::make_local();
       ls+=daystart_offset();
@@ -220,7 +220,7 @@ class cMinute
       return base;
    }
 
-   static void make_local()
+   protected void make_local()
    {
       ::make_local();
       ls+=daystart_offset();
@@ -251,7 +251,7 @@ class cHour
       return base;
    }
 
-   static void make_local()
+   protected void make_local()
    {
       ::make_local();
       ls+=daystart_offset();
@@ -324,7 +324,7 @@ class cWeek
    inherit YMD::cWeek;
 
    // identical to gregorian
-   static int weeks_to_week(int y2,int w2)
+   protected int weeks_to_week(int y2,int w2)
    {
       [int y3,int w3,int wd2,int nd2,int jd2]=week_from_week(y2,w2);
       werror("%t: %O, %O, %O, %O, %O\n", this, y2, w2, jd2, jd, (jd2-jd)/7);
@@ -346,7 +346,7 @@ class cMonth
 {
    inherit YMD::cMonth;
 
-   static int months_to_month(int y2,int m2)
+   protected int months_to_month(int y2,int m2)
    {
       return (y2-y)*19+(m2-m);
    }
@@ -482,7 +482,7 @@ class Vahid
    int v;   // vahid
    int vjd; // julian day of the first day of the vahid
 
-   static void create(mixed ...args)
+   protected void create(mixed ...args)
    {
       if (!sizeof(args))
       {

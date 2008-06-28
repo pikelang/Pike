@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: ldap_privates.pmod,v 1.14 2008/05/01 10:40:49 nilsson Exp $
+// $Id: ldap_privates.pmod,v 1.15 2008/06/28 16:36:58 nilsson Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -87,7 +87,7 @@ class asn1_application_sequence
     tagx = tagid;
   }
 
-  static string _sprintf(mixed ... args)
+  protected string _sprintf(mixed ... args)
   {
     return sprintf("[%d]%s", tagx, ::_sprintf(@args));
   }
@@ -107,7 +107,7 @@ class asn1_application_octet_string
     tagx = tagid;
   }
 
-  static string _sprintf(mixed ... args)
+  protected string _sprintf(mixed ... args)
   {
     return sprintf("[%d]%s", tagx, ::_sprintf(@args));
   }
@@ -127,7 +127,7 @@ class asn1_context_boolean
     tagx = tagid;
   }
 
-  static string _sprintf(mixed ... args)
+  protected string _sprintf(mixed ... args)
   {
     return sprintf("[%d]%s", tagx, ::_sprintf(@args));
   }
@@ -147,7 +147,7 @@ class asn1_context_integer
     tagx = tagid;
   }
 
-  static string _sprintf(mixed ... args)
+  protected string _sprintf(mixed ... args)
   {
     return sprintf("[%d]%s", tagx, ::_sprintf(@args));
   }
@@ -167,7 +167,7 @@ class asn1_context_octet_string
     tagx = tagid;
   }
 
-  static string _sprintf(mixed ... args)
+  protected string _sprintf(mixed ... args)
   {
     return sprintf("[%d]%s", tagx, ::_sprintf(@args));
   }
@@ -187,7 +187,7 @@ class asn1_context_sequence
     tagx = tagid;
   }
 
-  static string _sprintf(mixed ... args)
+  protected string _sprintf(mixed ... args)
   {
     return sprintf("[%d]%s", tagx, ::_sprintf(@args));
   }
@@ -207,7 +207,7 @@ class asn1_context_set
     tagx = tagid;
   }
 
-  static string _sprintf(mixed ... args)
+  protected string _sprintf(mixed ... args)
   {
     return sprintf("[%d]%s", tagx, ::_sprintf(@args));
   }
@@ -334,7 +334,7 @@ object|mapping der_decode(object data,
 // Mapping from class to mapping from tag to program.
 // NOTE: Will probably change to the same layout as in
 //       Standards.ASN1.Decode.universal_types.
-static mapping(int(0..3):mapping(int:program|function)) ldap_type_proc = ([
+protected mapping(int(0..3):mapping(int:program|function)) ldap_type_proc = ([
   0:([
     1 : asn1_boolean,
     2 : Standards.ASN1.Types.Integer,
@@ -382,4 +382,5 @@ constant this_program_does_not_exist=1;
 #endif
 
 // ------------- end of ASN.1 API hack -----------------------------
+
 

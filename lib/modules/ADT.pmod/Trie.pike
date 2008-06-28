@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Trie.pike,v 1.5 2008/01/04 20:48:40 nilsson Exp $
+ * $Id: Trie.pike,v 1.6 2008/06/28 16:36:53 nilsson Exp $
  *
  * An implementation of a trie.
  *
@@ -14,16 +14,16 @@ mixed value = UNDEFINED;
 string|array(int) path = ({});
 mapping(int:this_program) trie;
 
-static array(int) index;
+protected array(int) index;
 
-static void create(string|array(int)|void key, int|void offset)
+protected void create(string|array(int)|void key, int|void offset)
 {
   path = key || ({});
   this_program::offset = offset || sizeof(path);
   path = path[..this_program::offset-1];
 }
 
-static void low_merge(int key, this_program o)
+protected void low_merge(int key, this_program o)
 {
   if (!trie) {
     trie = ([ key : o ]);
@@ -67,7 +67,7 @@ static void low_merge(int key, this_program o)
   trie[new->path[offset]] = new;
 }
 
-static void merge_trie(mapping(int:this_program) other_trie)
+protected void merge_trie(mapping(int:this_program) other_trie)
 {
   if (!other_trie) return;
   foreach(other_trie; int key; this_program o) {
@@ -179,7 +179,7 @@ mixed lookup(string|array(int) key)
   return o->lookup(key);
 }
 
-static void update_index()
+protected void update_index()
 {
   if (!index) {
     index = sort(indices(trie));
@@ -224,7 +224,7 @@ string|array(int) next(string|array(int) base)
   return UNDEFINED;
 }
 
-static string render_path()
+protected string render_path()
 {
   if (arrayp(path)) {
     return sprintf("({%s})",
@@ -235,7 +235,7 @@ static string render_path()
   return sprintf("%O", path);
 }
 
-static string _sprintf(int c, mapping|void attrs)
+protected string _sprintf(int c, mapping|void attrs)
 {
   if (c == 'O') {
     string res = sprintf("ADT.Trie(%s, ([", render_path());

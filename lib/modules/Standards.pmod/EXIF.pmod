@@ -3,7 +3,7 @@
 //! This module implements EXIF (Exchangeable image file format for
 //! Digital Still Cameras) 2.2 parsing.
 
-// $Id: EXIF.pmod,v 1.28 2008/01/13 17:04:00 nilsson Exp $
+// $Id: EXIF.pmod,v 1.29 2008/06/28 16:36:59 nilsson Exp $
 //  Johan Schön <js@roxen.com>, July 2001.
 //  Based on Exiftool by Robert F. Tobler <rft@cg.tuwien.ac.at>.
 //
@@ -13,7 +13,7 @@
 // http://www.dalibor.cz/minolta/
 
 
-static void add_field(mapping m, string field,
+protected void add_field(mapping m, string field,
 		      mapping|array alts,
 		      array(int) from, int index)
 {
@@ -50,7 +50,7 @@ string components_config(string data)
 }
 
 #define SIZETEST(X) if(sizeof(data)<(X)+1) return res
-static mapping canon_multi0(array(int) data)
+protected mapping canon_multi0(array(int) data)
 {
   mapping res=([]);
 
@@ -180,7 +180,7 @@ static mapping canon_multi0(array(int) data)
   return res;
 }
 
-static mapping canon_multi1(array(int) data) {
+protected mapping canon_multi1(array(int) data) {
   mapping res = ([]);
 
   SIZETEST(1);
@@ -188,7 +188,7 @@ static mapping canon_multi1(array(int) data) {
   return res;
 }
 
-static mapping canon_multi3(array(int) data)
+protected mapping canon_multi3(array(int) data)
 {
   mapping res=([]);
 
@@ -247,7 +247,7 @@ static mapping canon_multi3(array(int) data)
   return res;
 }
 
-static mapping canon_multi4(array(int) data) {
+protected mapping canon_multi4(array(int) data) {
   mapping res = ([]);
   add_field(res, "CanonStichDirection",
 	    ({ "Left to right", "Right to left", "Bottom to top", "Top to bottom" }),
@@ -255,7 +255,7 @@ static mapping canon_multi4(array(int) data) {
   return res;
 }
 
-static mapping CANON_D30_MAKERNOTE = ([
+protected mapping CANON_D30_MAKERNOTE = ([
   0x0001:       ({"MN_Multi0",                  "CUSTOM", canon_multi0 }),
   0x0002:       ({"MN_Multi1",                  "CUSTOM", canon_multi1 }),
   0x0004:       ({"MN_Multi3",                  "CUSTOM", canon_multi3 }),
@@ -268,7 +268,7 @@ static mapping CANON_D30_MAKERNOTE = ([
   //  0x000F:       ({"MN_CustomFunctions",         "CUSTOM", canon_custom }),
 ]);
 
-static mapping NIKON_D_MAKERNOTE = ([
+protected mapping NIKON_D_MAKERNOTE = ([
   0x0001: ({ "MN_FirmwareVersion" }),
   0x0002: ({ "MN_ISO" }),
   0x0004: ({ "MN_Quality" }),
@@ -303,7 +303,7 @@ static mapping NIKON_D_MAKERNOTE = ([
   0x0e01: ({ "MN_CaptureEditorData" }),
 ]);
 
-static mapping|string nikon_D70_makernote(string data, mapping real_tags) {
+protected mapping|string nikon_D70_makernote(string data, mapping real_tags) {
   object f = Stdio.FakeFile(data);
   if(f->read(10)!="Nikon\0\2\20\0\0") return data;
   string order = f->read(2);
@@ -337,7 +337,7 @@ static mapping|string nikon_D70_makernote(string data, mapping real_tags) {
   return UNDEFINED;
 }
 
-static mapping nikon_iso(array(int) data) {
+protected mapping nikon_iso(array(int) data) {
   mapping res=([]);
 
   SIZETEST(1);
@@ -346,7 +346,7 @@ static mapping nikon_iso(array(int) data) {
 }
 
 // NIKON 990, D1 (more?)
-static mapping NIKON_990_MAKERNOTE = ([
+protected mapping NIKON_990_MAKERNOTE = ([
   0x0001:	({"MN_0x0001",	    	    	}),
   0x0002:	({"MN_ISOSetting",   	    	"CUSTOM", nikon_iso }),
   0x0003:	({"MN_ColorMode",    	    	}),
@@ -380,7 +380,7 @@ static mapping NIKON_990_MAKERNOTE = ([
   0x0010:	({"MN_DataDump",     	    	}),
 ]);
 
-static mapping sanyo_specialmode(array(int) data) {
+protected mapping sanyo_specialmode(array(int) data) {
   mapping res = ([]);
 
   add_field(res, "SanyoSpecialMode",
@@ -400,7 +400,7 @@ static mapping sanyo_specialmode(array(int) data) {
   return res;
 }
 
-static mapping sanyo_jpegquality(array(int) data) {
+protected mapping sanyo_jpegquality(array(int) data) {
   mapping res=([]);
 
   int r = data[0]&0xff;
@@ -414,7 +414,7 @@ static mapping sanyo_jpegquality(array(int) data) {
   return res;
 }
 
-static mapping SANYO_MAKERNOTE = ([
+protected mapping SANYO_MAKERNOTE = ([
   0x00ff:       ({"MN_StartOffset",             }),
   0x0100:       ({"MN_JPEGThumbnail",           }),
   0x0200:       ({"MN_SpecialMode",             "CUSTOM", sanyo_specialmode }),
@@ -468,7 +468,7 @@ static mapping SANYO_MAKERNOTE = ([
   0x0f00:       ({"MN_DataDump",                }),
 ]);
 
-static mapping OLYMPUS_MAKERNOTE = ([
+protected mapping OLYMPUS_MAKERNOTE = ([
   0x0100:       ({"MN_JPEGThumbnail"            }),
   0x0200:       ({"MN_SpecialMode",             "CUSTOM", sanyo_specialmode }),
   0x0201:       ({"MN_JPEGQuality",             "MAP",
@@ -484,7 +484,7 @@ static mapping OLYMPUS_MAKERNOTE = ([
 ]);
 
 // Nikon E700/E800/E900/E900S/E910/E950
-static mapping NIKON_MAKERNOTE = ([
+protected mapping NIKON_MAKERNOTE = ([
   0x0002:       ({"MN_0x0002",                   }),
   0x0003:       ({"MN_Quality",                 "MAP",
 		  ([ 1:"VGA Basic",
@@ -520,7 +520,7 @@ static mapping NIKON_MAKERNOTE = ([
   0x0f00:       ({"MN_0x0f00",                  }),
 ]);
 
-static mapping CASIO_MAKERNOTE = ([
+protected mapping CASIO_MAKERNOTE = ([
   0x0001:       ({"MN_RecordingMode",           "MAP",
 		  ([ 1:"Single Shutter",
 		     2:"Panorama",
@@ -581,7 +581,7 @@ static mapping CASIO_MAKERNOTE = ([
 		     100:"High", ]) }),
 ]);
 
-static mapping FUJIFILM_MAKERNOTE = ([
+protected mapping FUJIFILM_MAKERNOTE = ([
   0x0000:       ({"MN_Version",                 }),
   0x1000:       ({"MN_Quality",                 }),
   0x1001:       ({"MN_Sharpness",               "MAP",
@@ -631,7 +631,7 @@ static mapping FUJIFILM_MAKERNOTE = ([
   0x1302:       ({"MN_AEWarning",               "MAP", ([ 0:"No", 1:"Yes" ]) }),
 ]);
 
-static mapping GPS_TAGS = ([
+protected mapping GPS_TAGS = ([
   0x0000: ({"GPSVersionID"}),
   0x0001: ({"GPSLatitudeRef"}),
   0x0002: ({"GPSLatitude"}),
@@ -661,7 +661,7 @@ static mapping GPS_TAGS = ([
   0x001A: ({"GPSDestDistance"}),
 ]);
 
-static mapping TAG_INFO = ([
+protected mapping TAG_INFO = ([
   0x0001:       ({"InteroperabilityIndex",      }),
   0x0002:       ({"InteroperabilityVersion",    }),
   0x00fe:	({"NewSubFileType",  	    	}),
@@ -894,7 +894,7 @@ static mapping TAG_INFO = ([
   0xa420:       ({"ImageUniqueID",              "ASCII" }),
 ]);
 
-static mapping TAG_TYPE_INFO =
+protected mapping TAG_TYPE_INFO =
              ([1:	({"BYTE",	1}),
 	       2:	({"ASCII",	1}),
 	       3:	({"SHORT",	2}),
@@ -909,7 +909,7 @@ static mapping TAG_TYPE_INFO =
 	       12:	({"DOUBLE",	8}),
 	     ]);
 
-static int short_value(string str, string order)
+protected int short_value(string str, string order)
 {
   if(order=="MM")
     return (str[0]<<8)|str[1];
@@ -917,7 +917,7 @@ static int short_value(string str, string order)
     return (str[1]<<8)|str[0];
 }
 
-static int long_value(string str, string order)
+protected int long_value(string str, string order)
 {
   if(order=="MM")
     return (str[0]<<24)|(str[1]<<16)|(str[2]<<8)|str[3];
@@ -925,17 +925,17 @@ static int long_value(string str, string order)
     return (str[3]<<24)|(str[2]<<16)|(str[1]<<8)|str[0];
 }
 
-static void exif_seek(Stdio.File file, int offset, int exif_offset)
+protected void exif_seek(Stdio.File file, int offset, int exif_offset)
 {
   file->seek(offset+exif_offset);
 }
 
-static string format_bytes(string str)
+protected string format_bytes(string str)
 {
   return str;
 }
 
-static mapping parse_tag(Stdio.File file, mapping tags, mapping exif_info,
+protected mapping parse_tag(Stdio.File file, mapping tags, mapping exif_info,
 		  int exif_offset, string order)
 {
   int tag_id=short_value(file->read(2), order);

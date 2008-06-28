@@ -7,8 +7,8 @@
 // #pragma strict_types
 #include "./debug.h"
 
-static inherit "module.pmod";
-static inherit Parser.XML.Tree;
+protected inherit "module.pmod";
+protected inherit Parser.XML.Tree;
 
 
 //========================================================================
@@ -269,13 +269,13 @@ class Documentation(string|void text, string|void xml,
 		    SourcePosition|void position)
 {}
 
-static Documentation EmptyDoc =
+protected Documentation EmptyDoc =
   Documentation("", "\n", SourcePosition(__FILE__, __LINE__, __LINE__));
 
 class DocGroup {
   array(PikeObject) objects = ({ });
   Documentation documentation = 0;
-  static void create(array(PikeObject) objs, Documentation doc) {
+  protected void create(array(PikeObject) objs, Documentation doc) {
     documentation = doc;
     objects = objs;
   }
@@ -325,7 +325,7 @@ class PikeObject {
 
   Documentation squeezedInDoc;
 
-  static string standardTags() {
+  protected string standardTags() {
     string s = "";
     if (position)
       s += position->xml();
@@ -338,7 +338,7 @@ class PikeObject {
     return standardStart() + standardEnd();
   }
 
-  static mapping(string:string) standardAttributes() {
+  protected mapping(string:string) standardAttributes() {
     mapping(string:string) m = ([]);
     if (name)    m->name = name;
     if (appears) m->appears = appears;
@@ -346,10 +346,10 @@ class PikeObject {
     return m;
   }
 
-  static string standardStart() { return opentag(objtype, standardAttributes()); }
-  static string standardEnd() { return closetag(objtype); }
+  protected string standardStart() { return opentag(objtype, standardAttributes()); }
+  protected string standardEnd() { return closetag(objtype); }
 
-  static string printModifiers() {
+  protected string printModifiers() {
     return modifiers * " " + (sizeof(modifiers) ? " " : "");
   }
   string print() { return printModifiers() + objtype; }
@@ -465,7 +465,7 @@ class _Class_or_Module {
     return s + "\n}";
   }
 
-  static string _sprintf(int c)
+  protected string _sprintf(int c)
   {
     switch(c) {
     case 's': return xml();

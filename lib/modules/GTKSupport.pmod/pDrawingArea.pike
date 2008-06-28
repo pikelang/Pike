@@ -11,8 +11,8 @@
 //!   @[GTK.DrawingArea]
 
 inherit GTK.DrawingArea;
-static object backing_store, bgc;
-static int _xsize, _ysize, is_realized;
+protected object backing_store, bgc;
+protected int _xsize, _ysize, is_realized;
 
 //! @ignore
 
@@ -71,7 +71,7 @@ this_program size(int x, int y)
 //  call_out(size,0.01, x,y);
 //}
 
-static void rrefresh()
+protected void rrefresh()
 {
   if(!is_realized) return;
   if(xsize() != _xsize || ysize() != _ysize)
@@ -83,7 +83,7 @@ static void rrefresh()
   }
 }
 
-static void refresh()
+protected void refresh()
 {
   remove_call_out(rrefresh);
   call_out(rrefresh,0.01);

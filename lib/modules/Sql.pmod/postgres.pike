@@ -1,7 +1,7 @@
 /*
  * This is part of the Postgres module for Pike.
  *
- * $Id: postgres.pike,v 1.27 2008/01/09 14:26:07 mast Exp $
+ * $Id: postgres.pike,v 1.28 2008/06/28 16:36:59 nilsson Exp $
  *
  */
 
@@ -55,7 +55,7 @@
 #define ERROR(X) throw (({X,backtrace()}))
 
 inherit Postgres.postgres: mo;
-private static mixed  callout;
+private protected mixed  callout;
 private string has_relexpires = "unknown";
 
 //! @decl void select_db(string dbname)
@@ -101,13 +101,13 @@ private string has_relexpires = "unknown";
 //! Should you need to report a bug to the author, please submit along with
 //! the report the driver version number, as returned by this call.
 
-private static string glob_to_regexp (string glob) {
+private protected string glob_to_regexp (string glob) {
 	if (!glob||!sizeof(glob))
 		return 0;
 	return "^"+replace(glob,({"*","?","'","\\"}),({".*",".","\\'","\\\\"}))+"$";
 }
 
-static private int mkbool(string s) {
+protected private int mkbool(string s) {
 	if (s=="f")
 		return 0;
 	return 1;
@@ -166,7 +166,7 @@ void create(void|string host, void|string database, void|string user,
 	mo::create(real_host||"",real_db||"",user||"",pass||"",port);
 }
 
-static void poll (int delay)
+protected void poll (int delay)
 {
 	callout=call_out(poll,delay,delay);
 	big_query("");
@@ -392,3 +392,4 @@ int|object big_query(object|string q, mapping(string|int:mixed)|void bindings)
 #else
 constant this_program_does_not_exist=1;
 #endif /* constant(Postgres.postgres) */
+

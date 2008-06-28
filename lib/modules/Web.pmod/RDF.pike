@@ -1,4 +1,4 @@
-// $Id: RDF.pike,v 1.46 2005/07/11 18:33:01 nilsson Exp $
+// $Id: RDF.pike,v 1.47 2008/06/28 16:37:02 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -14,11 +14,11 @@ constant default_ns = ([
   "http://www.w3.org/2001/XMLSchema#" : "xsd",
 ]);
 
-static int(1..) node_counter = 1;
-static mapping(string:Resource) uris = ([]);
+protected int(1..) node_counter = 1;
+protected mapping(string:Resource) uris = ([]);
 
 // Returns ({ namespace, object })
-static array(string) uri_parts(string uri) {
+protected array(string) uri_parts(string uri) {
   string obj,ns;
   if(sscanf(uri, "%s#%s", ns,obj)==2)
     return ({ ns+"#", obj });
@@ -47,10 +47,10 @@ static array(string) uri_parts(string uri) {
 //! @seealso
 //!   @[URIResource], @[LiteralResource]
 class Resource {
-  static int(1..) number;
+  protected int(1..) number;
   constant is_resource = 1;
 
-  static void create() {
+  protected void create() {
     number = node_counter++;
   }
 
@@ -64,27 +64,27 @@ class Resource {
     return "RDF:_"+number;
   }
 
-  static string __sprintf(string c, int t) {
+  protected string __sprintf(string c, int t) {
     if(t=='t') return "RDF."+c;
     if(t=='O') return "RDF."+c+"(" + get_n_triple_name() + ")";
   }
 
   string _sprintf(int t) { return __sprintf("Resource", t); }
 
-  static int __hash() { return number; }
+  protected int __hash() { return number; }
 }
 
 //! Resource identified by literal.
 class LiteralResource {
   inherit Resource;
   constant is_literal_resource = 1;
-  static string id;
+  protected string id;
 
   //! Used to contain rdf:datatype value.
   string datatype;
 
   //! The resource will be identified by @[literal].
-  static void create(string literal) {
+  protected void create(string literal) {
     id = literal;
     ::create();
   }
@@ -121,13 +121,13 @@ class LiteralResource {
 class URIResource {
   inherit Resource;
   constant is_uri_resource = 1;
-  static string id;
+  protected string id;
 
   //! Creates an URI resource with the @[uri] as identifier.
   //! @throws
   //!   Throws an error if another resource with the
   //!   same URI already exists in the RDF domain.
-  static void create(string uri) {
+  protected void create(string uri) {
     if(uris[uri])
       error("A resource with URI %s already exists in the RDF domain.\n", uri);
     uris[uri] = this;
@@ -177,7 +177,7 @@ class RDFResource {
   inherit URIResource;
 
   //! The resource will be identified by the identifier @[rdf_id]
-  static void create(string rdf_id) {
+  protected void create(string rdf_id) {
     ::create(rdf_ns + rdf_id);
   }
 
@@ -203,7 +203,7 @@ RDFResource rdf_first     = RDFResource("first"); //! first resource.
 RDFResource rdf_rest      = RDFResource("rest"); //! rest resource.
 RDFResource rdf_nil       = RDFResource("nil"); //! nil resource.
 
-static int(0..1) is_resource(mixed res) {
+protected int(0..1) is_resource(mixed res) {
   if(!objectp(res)) return 0;
   return res->is_resource;
 }
@@ -214,7 +214,7 @@ static int(0..1) is_resource(mixed res) {
 //
 
 // predicate : Relation( subject, object )
-static mapping(Resource:ADT.Relation.Binary) statements = ([]);
+protected mapping(Resource:ADT.Relation.Binary) statements = ([]);
 
 //! Adds a statement to the RDF set. If any argument is a string, it
 //! will be converted into a @[LiteralResource]. If any argument is a
@@ -709,12 +709,12 @@ string encode_n_triple_string(string in) {
 
 #define Node Parser.XML.NSTree.NSNode
 
-static int dirty_namespaces = 1;
-static mapping(string:string) namespaces = ([]); // url-prefix:name
-static string common_ns = ""; // The most common namespace
+protected int dirty_namespaces = 1;
+protected mapping(string:string) namespaces = ([]); // url-prefix:name
+protected string common_ns = ""; // The most common namespace
 
 // W3C must die!
-static Node add_xml_children(Node p, string base) {
+protected Node add_xml_children(Node p, string base) {
   mapping rdf_m = p->get_ns_attributes(rdf_ns);
   base = p->get_ns_attributes("xml")->base || base;
   if(rdf_m->about && rdf_m->ID)
@@ -877,7 +877,7 @@ this_program parse_xml(string|Node in, void|string base) {
   return this;
 }
 
-static void fix_namespaces() {
+protected void fix_namespaces() {
   if(!dirty_namespaces) return;
   mapping(string:string) new = ([]);
   mapping(string:int) stat = ([]);
@@ -910,7 +910,7 @@ static void fix_namespaces() {
   dirty_namespaces = 0;
 }
 
-static class XML {
+protected class XML {
 
   String.Buffer buf = String.Buffer();
   mapping subjects = get_subject_map();
@@ -1097,19 +1097,19 @@ string get_xml(void|int no_optimize) {
 //
 
 //! Returns the number of statements in the RDF domain.
-static int _sizeof() {
+protected int _sizeof() {
   if(!sizeof(statements)) return 0;
   return `+( @sizeof(values(statements)[*]) );
 }
 
-static string _sprintf(int t) {
+protected string _sprintf(int t) {
   return t=='O' && sprintf("%O(%d)", this_program, _sizeof());
 }
 
 //! @decl Web.RDF `|(Web.RDF x)
 //! Modifies the current object to create a union of the current object
 //! and the object @[x].
-static this_program `|(mixed data) {
+protected this_program `|(mixed data) {
   if(sprintf("%t", data)!="object" ||
      !functionp(data->find_statements))
     error("Can only OR an RDF object with another RDF object.\n");

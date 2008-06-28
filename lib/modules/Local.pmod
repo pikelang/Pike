@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Local.pmod,v 1.10 2007/09/03 13:05:08 grubba Exp $
+// $Id: Local.pmod,v 1.11 2008/06/28 16:36:53 nilsson Exp $
 
 //! @[Local] gives a local module namespace used for locally
 //! installed pike modules. Modules are searched for in
@@ -18,9 +18,9 @@
 
 inherit __joinnode;
 
-static array(string) local_path;
+protected array(string) local_path;
 
-static void create()
+protected void create()
 {
   ::create(({}));
 

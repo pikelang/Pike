@@ -34,7 +34,7 @@ constant Thread=__builtin.thread_id;
 inherit Thread;
 
 // We don't want to create a thread of the module...
-static void create(mixed ... args)
+protected void create(mixed ... args)
 {
 }
 
@@ -83,7 +83,7 @@ optional class Fifo {
   //!
   int size() {  return num; }
 
-  static final mixed read_unlocked()
+  protected final mixed read_unlocked()
   {
     mixed tmp=buffer[ptr];
     buffer[ptr++] = 0;	// Throw away any references.
@@ -134,7 +134,7 @@ optional class Fifo {
     return res;
   }
 
-  static final array read_all_unlocked()
+  protected final array read_all_unlocked()
   {
     array ret;
 
@@ -199,7 +199,7 @@ optional class Fifo {
     return ret;
   }
 
-  static final void write_unlocked (mixed value)
+  protected final void write_unlocked (mixed value)
   {
     buffer[(ptr + num) % sizeof(buffer)] = value;
     if(write_tres)
@@ -255,13 +255,13 @@ optional class Fifo {
   //! sets how many values can be written to the fifo without blocking.
   //! The default @[size] is 128.
   //!
-  static void create(int|void size)
+  protected void create(int|void size)
   {
     write_tres=0;
     buffer=allocate(read_tres=size || 128);
   }
 
-  static string _sprintf( int f )
+  protected string _sprintf( int f )
   {
     return f=='O' && sprintf( "%O(%d / %d)", this_program,
 			      size(), read_tres );
@@ -327,7 +327,7 @@ optional class Queue {
     return tmp;
   }
 
-  static final array read_all_unlocked()
+  protected final array read_all_unlocked()
   {
     array ret;
 
@@ -409,7 +409,7 @@ optional class Queue {
     return items;
   }
 
-  static string _sprintf( int f )
+  protected string _sprintf( int f )
   {
     return f=='O' && sprintf( "%O(%d)", this_program, size() );
   }
@@ -419,9 +419,9 @@ optional class Queue {
 
 optional class Farm
 {
-  static Mutex mutex = Mutex();
-  static Condition ft_cond = Condition();
-  static Queue job_queue = Queue();
+  protected Mutex mutex = Mutex();
+  protected Condition ft_cond = Condition();
+  protected Queue job_queue = Queue();
 
   class Result
   {
@@ -473,7 +473,7 @@ optional class Farm
     }
 
 
-    static string _sprintf( int f )
+    protected string _sprintf( int f )
     {
       switch( f )
       {
@@ -485,7 +485,7 @@ optional class Farm
     }
   }
 
-  static class Handler
+  protected class Handler
   {
     Mutex job_mutex = Mutex();
     Condition cond = Condition();
@@ -495,7 +495,7 @@ optional class Farm
     float total_time;
     int handled, max_time;
 
-    static int ready;
+    protected int ready;
 
     void handler()
     {
@@ -559,13 +559,13 @@ optional class Farm
               +"\n\n");
     }
 
-    static void create()
+    protected void create()
     {
       thread = thread_create( handler );
     }
 
 
-    static string _sprintf( int f )
+    protected string _sprintf( int f )
     {
       switch( f )
       {
@@ -578,11 +578,11 @@ optional class Farm
     }
   }
 
-  static array(Handler) threads = ({});
-  static array(Handler) free_threads = ({});
-  static int max_num_threads = 20;
+  protected array(Handler) threads = ({});
+  protected array(Handler) free_threads = ({});
+  protected int max_num_threads = 20;
 
-  static Handler aquire_thread()
+  protected Handler aquire_thread()
   {
     object lock = mutex->lock();
     while( !sizeof(free_threads) )
@@ -601,13 +601,13 @@ optional class Farm
   }
         
 
-  static void dispatcher()
+  protected void dispatcher()
   {
     while( array q = [array]job_queue->read() )
       aquire_thread()->run( q[1], q[0] );
   }
 
-  static class ValueAdjuster( object r, object r2, int i, mapping v )
+  protected class ValueAdjuster( object r, object r2, int i, mapping v )
   {
     void go(mixed vn, int err)
     {
@@ -690,12 +690,12 @@ optional class Farm
     return res;
   }
 
-  static string _sprintf( int f )
+  protected string _sprintf( int f )
   {
     return f=='O' && sprintf( "%O(/* %s */)", this_program, debug_status() );
   }
 
-  static void create()
+  protected void create()
   {
     thread_create( dispatcher );
   }
@@ -708,13 +708,13 @@ optional class Farm
 /* Fallback implementation of Thread.Local */
 optional class Local
 {
-  static mixed data;
+  protected mixed data;
   mixed get() {return data;}
   mixed set (mixed val) {return data = val;}
 }
 
 /* Fallback implementation of Thread.MutexKey */
-optional class MutexKey (static function(:void) dec_locks)
+optional class MutexKey (protected function(:void) dec_locks)
 {
   int `!()
   {
@@ -725,7 +725,7 @@ optional class MutexKey (static function(:void) dec_locks)
     return 1;
   }
 
-  static void destroy()
+  protected void destroy()
   {
     if (dec_locks) dec_locks();
   }
@@ -734,8 +734,8 @@ optional class MutexKey (static function(:void) dec_locks)
 /* Fallback implementation of Thread.Mutex */
 optional class Mutex
 {
-  static int locks = 0;
-  static void dec_locks() {locks--;}
+  protected int locks = 0;
+  protected void dec_locks() {locks--;}
 
   MutexKey lock (int|void type)
   {
@@ -847,13 +847,13 @@ optional class Fifo
     return num;
   }
 
-  static void create(int|void size)
+  protected void create(int|void size)
   {
     write_tres=0;
     buffer=allocate(read_tres=size || 128);
   }
 
-  static string _sprintf( int f )
+  protected string _sprintf( int f )
   {
     return f=='O' && sprintf( "%O(%d / %d)", this_program,
 			      size(), read_tres );
@@ -925,10 +925,11 @@ optional class Queue
     return w_ptr - r_ptr;
   }
 
-  static string _sprintf( int f )
+  protected string _sprintf( int f )
   {
     return f=='O' && sprintf( "%O(%d)", this_program, size() );
   }
 }
 
 #endif /* !constant(thread_create) */
+

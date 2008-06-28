@@ -1,5 +1,5 @@
 /*
- * $Id: sql_result.pike,v 1.17 2007/07/28 18:27:32 jhs Exp $
+ * $Id: sql_result.pike,v 1.18 2008/06/28 16:36:59 nilsson Exp $
  *
  * Implements the generic result module of the SQL-interface
  *
@@ -22,9 +22,9 @@ int index;
 //!
 //! @param res
 //!   Result to use as base.
-static void create(mixed res);
+protected void create(mixed res);
 
-static string _sprintf(int type, mapping|void flags)
+protected string _sprintf(int type, mapping|void flags)
 {
   int f = num_fields();
   catch( int r = num_rows() );
@@ -70,8 +70,8 @@ int|array(string|int) fetch_row();
 
 class _get_iterator
 {
-  static int|array(string|int) row = fetch_row();
-  static int pos = 0;
+  protected int|array(string|int) row = fetch_row();
+  protected int pos = 0;
 
   int index()
   {

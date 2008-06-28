@@ -5,7 +5,7 @@
 //!
 //! cf http://wwww.w3.org/TR/REC-xml/
 //!
-//! $Id: Validating.pike,v 1.13 2006/11/04 19:06:49 nilsson Exp $
+//! $Id: Validating.pike,v 1.14 2008/06/28 16:36:55 nilsson Exp $
 //!
 
 #pike __REAL_VERSION__
@@ -13,16 +13,16 @@
 //! Extends the Simple XML parser.
 inherit .Simple;
 
-static private mapping(string:array(function)) __element_content = ([]);
-static private mapping(string:mapping(string:array)) __element_attrs = ([]);
+protected private mapping(string:array(function)) __element_content = ([]);
+protected private mapping(string:mapping(string:array)) __element_attrs = ([]);
 mapping(string:string) __entity_sysid = ([]);
 mapping(string:string) __entity_pubid = ([]);
 mapping(string:string) __entity_ndata = ([]);
 mapping(string:string) __notation_sysid = ([]);
 mapping(string:string) __notation_pubid = ([]);
-static private multiset(string) __ids_used = (<>);
-static private multiset(string) __idrefs_used = (<>);
-static private multiset(string) __notations_used = (<>);
+protected private multiset(string) __ids_used = (<>);
+protected private multiset(string) __idrefs_used = (<>);
+protected private multiset(string) __notations_used = (<>);
 
 //! Check if @[s] is a valid @tt{Name@}.
 int isname(string s)
@@ -56,7 +56,7 @@ int isnmtokens(string s)
     search(map(nmtokens-({""}), isnmtoken), 0) < 0;
 }
 
-static private int islegalattribute(string val, array spec)
+protected private int islegalattribute(string val, array spec)
 {
   switch(spec[0][0]) {
    case "":
@@ -79,7 +79,7 @@ static private int islegalattribute(string val, array spec)
 }
 
 //! XML Element node.
-static class Element {
+protected class Element {
 
   string name;
   array(function) content_matcher;
@@ -168,8 +168,8 @@ static class Element {
   }
 }
 
-static private array(object) __element_stack = ({});
-static private string __root_element_name;
+protected private array(object) __element_stack = ({});
+protected private string __root_element_name;
 
 //! Get an external entity.
 //!
@@ -208,17 +208,17 @@ string get_external_entity(string sysid, string|void pubid, int|void unparsed,
   return 0;
 }
 
-static private array(function) accept_terminate(string x)
+protected private array(function) accept_terminate(string x)
 {
   return !x && ({ accept_terminate });
 }
 
-static private array(function) accept_any(string x)
+protected private array(function) accept_any(string x)
 {
   return ({ accept_any });
 }
 
-static private array(function) compile_language(string|array l,
+protected private array(function) compile_language(string|array l,
 						array(function) c)
 {
   if(stringp(l))
@@ -248,7 +248,7 @@ static private array(function) compile_language(string|array l,
 //!
 //! @seealso
 //!   @[::parse()]
-static private mixed validate(string kind, string name, mapping attributes,
+protected private mixed validate(string kind, string name, mapping attributes,
 			      array|string contents,
 			      mapping(string:mixed) info,
 			      function(string,string,mapping,array|string,
@@ -414,7 +414,7 @@ static private mixed validate(string kind, string name, mapping attributes,
   return callback(kind, name, attributes, contents, info, @extra);
 }
 
-static private mixed cleanup_parse(function(string,string,mapping
+protected private mixed cleanup_parse(function(string,string,mapping
 					    ,array|string,
 					    mapping(string:mixed),
 					    mixed ...:mixed) callback,
@@ -456,4 +456,5 @@ array parse_dtd(string data,
 }
 
 /* define_entity? */
+
 

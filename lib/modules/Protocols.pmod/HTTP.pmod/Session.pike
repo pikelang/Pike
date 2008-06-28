@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Session.pike,v 1.21 2007/11/25 19:17:52 srb Exp $
+// $Id: Session.pike,v 1.22 2008/06/28 16:36:57 nilsson Exp $
 
 import Protocols.HTTP;
 
@@ -207,10 +207,10 @@ class Request
 
 // ---------------- async
 
-   static function(mixed...:mixed) headers_callback;
-   static function(mixed...:mixed) data_callback;
-   static function(mixed...:mixed) fail_callback;
-   static array(mixed) extra_callback_arguments;
+   protected function(mixed...:mixed) headers_callback;
+   protected function(mixed...:mixed) data_callback;
+   protected function(mixed...:mixed) fail_callback;
+   protected array(mixed) extra_callback_arguments;
 
 //!	Setup callbacks for async mode,
 //!	@[headers] will be called when the request got connected,
@@ -259,7 +259,7 @@ class Request
       return this;
    }
    
-   static void async_ok(object q)
+   protected void async_ok(object q)
    {
       check_for_cookies();
 
@@ -291,7 +291,7 @@ class Request
 	 extra_callback_arguments=0; // to allow garb
    }
 
-   static void async_fail(object q)
+   protected void async_fail(object q)
    {
       // clear callbacks for possible garbation of this Request object
       con->set_callbacks(0,0);
@@ -303,7 +303,7 @@ class Request
       if (fc) fc(@eca); // note that we may be destructed here
    }
 
-   static void async_data()
+   protected void async_data()
    {
       // clear callbacks for possible garbation of this Request object
       con->set_callbacks(0,0);
@@ -604,7 +604,7 @@ int connections_kept_n=0;
 int connections_inuse_n=0;
 mapping(string:int) connections_host_n=([]);
 
-static class KeptConnection
+protected class KeptConnection
 {
    string lookup;
    Query q;
@@ -647,7 +647,7 @@ static class KeptConnection
    }
 }
 
-static inline string connection_lookup(Standards.URI url)
+protected inline string connection_lookup(Standards.URI url)
 {
    return url->scheme+"://"+url->host+":"+url->port;
 }
@@ -695,7 +695,7 @@ Query give_me_connection(Standards.URI url)
 array(array) freed_connection_callbacks=({});
                     // ({lookup,callback,args})
 
-static inline void freed_connection(string lookup_freed)
+protected inline void freed_connection(string lookup_freed)
 {
    if (connections_inuse_n>=maximum_total_connections)
       return;

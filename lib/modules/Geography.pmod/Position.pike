@@ -439,15 +439,15 @@ string GEOREF() {
 #define DEG2RAD(DEG) ((Math.pi/180.0)*(DEG))
 #define RAD2DEG(RAD) ((RAD)*(180.0/Math.pi))
 
-static constant rt38_y0 = 1500000;
-static constant rt38_lng0 = DEG2RAD(15.80827778);
-static constant rt38_k0a = 6366742.5194;
-static constant rt38_beta1 = 0.00083522527;
-static constant rt38_beta2 = 0.000000756302;
-static constant rt38_beta3 = 0.000000001193;
-static constant rt38_delta1 = 0.000835225613;
-static constant rt38_delta2 = 0.000000058706;
-static constant rt38_delta3 = 0.000000000166;
+protected constant rt38_y0 = 1500000;
+protected constant rt38_lng0 = DEG2RAD(15.80827778);
+protected constant rt38_k0a = 6366742.5194;
+protected constant rt38_beta1 = 0.00083522527;
+protected constant rt38_beta2 = 0.000000756302;
+protected constant rt38_beta3 = 0.000000001193;
+protected constant rt38_delta1 = 0.000835225613;
+protected constant rt38_delta2 = 0.000000058706;
+protected constant rt38_delta3 = 0.000000000166;
 
 //!
 array(float) RT38()

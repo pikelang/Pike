@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-//   $Id: Dims.pmod,v 1.9 2006/09/13 16:05:43 tor Exp $
+//   $Id: Dims.pmod,v 1.10 2008/06/28 16:37:03 nilsson Exp $
 //
 //   Imagedimensionreadermodule for Pike.
 //   Created by Johan Sch�n, <js@roxen.com>.
@@ -29,19 +29,19 @@
 #define M_SOS   0xDA		/* Start Of Scan (begins compressed data) */
 #define M_COM   0xFE		/* COMment */
 
-static int(0..255) read_1_byte(Stdio.File f)
+protected int(0..255) read_1_byte(Stdio.File f)
 {
   return f->read(1)[0];
 }
 
-static int(0..65535) read_2_bytes(Stdio.File f)
+protected int(0..65535) read_2_bytes(Stdio.File f)
 {
   int c;
   sscanf( f->read(2), "%2c", c );
   return c;
 }
 
-static int(0..65535) read_2_bytes_intel(Stdio.File f)
+protected int(0..65535) read_2_bytes_intel(Stdio.File f)
 {
   int c;
   sscanf( f->read(2), "%-2c", c);
@@ -57,7 +57,7 @@ static int(0..65535) read_2_bytes_intel(Stdio.File f)
  * file and then return a misleading error message...
  */
 
-static int first_marker(Stdio.File f)
+protected int first_marker(Stdio.File f)
 {
   int c1, c2;
     
@@ -76,7 +76,7 @@ static int first_marker(Stdio.File f)
  * not deal correctly with FF/00 sequences in the compressed image data...
  */
 
-static int next_marker(Stdio.File f)
+protected int next_marker(Stdio.File f)
 {
   // Find 0xFF byte; count and skip any non-FFs.
   int c = read_1_byte(f);
@@ -92,7 +92,7 @@ static int next_marker(Stdio.File f)
 }
 
 /* Skip over an unknown or uninteresting variable-length marker */
-static int skip_variable(Stdio.File f)
+protected int skip_variable(Stdio.File f)
 {
   int length = read_2_bytes(f);
   if (length < 2) return 0;  // Length includes itself, so must be at least 2.

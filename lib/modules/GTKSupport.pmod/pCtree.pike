@@ -4,9 +4,9 @@ inherit GTK.Ctree:ctree;
 
 class Node
 {
-   private static program Prog=object_program(this_object());
+   private protected program Prog=object_program(this_object());
 
-   private static GTK.CTreeNode node;
+   private protected GTK.CTreeNode node;
 
    void create(object _node)
    {
@@ -321,45 +321,45 @@ Node node_nth(int i)
    return Node(ctree::node_nth(i));
 }
 
-static void collapse() {} /* (node); */
-static void collapse_recursive() {} /* (node); */
-static void collapse_to_depth() {} /* (node,depth); */
-static void expand() {} /* (node); */
-static void expand_recursive() {} /* (node); */
-static void expand_to_depth() {} /* (node,depth); */
-static void insert_node() {} /* (0,node,columns,is_leaf,expanded)); */
-static void is_ancestor() {} /* (node,what); */
-static void is_viewable() {} /* (node); */
-static void node_is_visable() {} /* (node); */
-static void last() {} /* (node)); */
-static void move() {} /* (node,parent,0); */
-static void node_get_cell_style() {} /* (node,cell); */
-static void node_get_row_style() {} /* (node); */
-static void node_set_row_style() {} /* (node,style); */
-static void node_get_cell_type() {} /* (node,cell); */
-static void set_background() {} /* (node,color); */
-static void node_set_foreground() {} /* (node, color); */
-static void node_set_cell_style() {} /* (node, style); */
-static void node_get_selectable() {} /* (node); */
-static void node_set_selectable() {} /* (node,yes); */
-static void node_moveto() {} /* (node,column,row_align||0.0,col_align||0.0); */
-static void node_get_text() {} /* (node,column); */
-static void node_set_text() {} /* (node,column,text); */
-static void columns() {} /* ())),get_text); */
-static void node_set_pixmap() {} /* (node,column,pixmap,mask); */
-static void node_set_pixtext() {} /* (node,column,text,spacing,pixmap,mask); */
-static void node_set_row_data() {} /* (node,z); */
-static void node_get_row_data() {} /* (node); */
-static void set_node_info() {} /* (node,text,spacing,pixmap_closed, */
-static void set_node_shift() {} /* (node,column,vertical,horizontal); */
-static void remove_node() {} /* (node); */
-static void select() {} /* (node); */
-static void select_recursive() {} /* (node); */
-static void sort_node() {} /* (node); */
-static void sort_recursive() {} /* (node); */
-static void toggle_expansion() {} /* (node); */
-static void toggle_expansion_recursive() {} /* (node); */
-static void unselect_expansion() {} /* (node); */
-static void unselect_expansion_recursive() {} /* (node); */
-static void find() {} /* (what->get_node(),node); */
-static void find_by_row_data() {} /* (what->get_node(),node)); */
+protected void collapse() {} /* (node); */
+protected void collapse_recursive() {} /* (node); */
+protected void collapse_to_depth() {} /* (node,depth); */
+protected void expand() {} /* (node); */
+protected void expand_recursive() {} /* (node); */
+protected void expand_to_depth() {} /* (node,depth); */
+protected void insert_node() {} /* (0,node,columns,is_leaf,expanded)); */
+protected void is_ancestor() {} /* (node,what); */
+protected void is_viewable() {} /* (node); */
+protected void node_is_visable() {} /* (node); */
+protected void last() {} /* (node)); */
+protected void move() {} /* (node,parent,0); */
+protected void node_get_cell_style() {} /* (node,cell); */
+protected void node_get_row_style() {} /* (node); */
+protected void node_set_row_style() {} /* (node,style); */
+protected void node_get_cell_type() {} /* (node,cell); */
+protected void set_background() {} /* (node,color); */
+protected void node_set_foreground() {} /* (node, color); */
+protected void node_set_cell_style() {} /* (node, style); */
+protected void node_get_selectable() {} /* (node); */
+protected void node_set_selectable() {} /* (node,yes); */
+protected void node_moveto() {} /* (node,column,row_align||0.0,col_align||0.0); */
+protected void node_get_text() {} /* (node,column); */
+protected void node_set_text() {} /* (node,column,text); */
+protected void columns() {} /* ())),get_text); */
+protected void node_set_pixmap() {} /* (node,column,pixmap,mask); */
+protected void node_set_pixtext() {} /* (node,column,text,spacing,pixmap,mask); */
+protected void node_set_row_data() {} /* (node,z); */
+protected void node_get_row_data() {} /* (node); */
+protected void set_node_info() {} /* (node,text,spacing,pixmap_closed, */
+protected void set_node_shift() {} /* (node,column,vertical,horizontal); */
+protected void remove_node() {} /* (node); */
+protected void select() {} /* (node); */
+protected void select_recursive() {} /* (node); */
+protected void sort_node() {} /* (node); */
+protected void sort_recursive() {} /* (node); */
+protected void toggle_expansion() {} /* (node); */
+protected void toggle_expansion_recursive() {} /* (node); */
+protected void unselect_expansion() {} /* (node); */
+protected void unselect_expansion_recursive() {} /* (node); */
+protected void find() {} /* (what->get_node(),node); */
+protected void find_by_row_data() {} /* (what->get_node(),node)); */

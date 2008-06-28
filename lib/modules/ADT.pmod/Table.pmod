@@ -1,5 +1,5 @@
 // Table.pmod by Fredrik Noring, 1998
-// $Id: Table.pmod,v 1.28 2004/09/25 02:51:20 nilsson Exp $
+// $Id: Table.pmod,v 1.29 2008/06/28 16:36:53 nilsson Exp $
 
 #pike __REAL_VERSION__
 #define TABLE_ERR(msg) error("(Table) "+msg+"\n")
@@ -18,10 +18,10 @@
 
 //! The table base-class.
 class table {
-  static private mapping fieldmap;
-  static private array table, fields, types;
+  protected private mapping fieldmap;
+  protected private array table, fields, types;
   
-  static private array|int remap(array|string|int cs, int|void forgive)
+  protected private array|int remap(array|string|int cs, int|void forgive)
   {
     array v = ({});
     int ap = arrayp(cs);
@@ -144,7 +144,7 @@ class table {
     return copy(v, fields+indices(table), types+table->all_types());
   }
 
-  static private mixed op_col(function f, int|string c, mixed ... args)
+  protected private mixed op_col(function f, int|string c, mixed ... args)
   {
     c = remap(c);
     mixed x = table[0][c];
@@ -280,7 +280,7 @@ class table {
     return copy(t, fields, types);
   }
 
-  static private this_program _sort(int is_reversed, int|string ... cs)
+  protected private this_program _sort(int is_reversed, int|string ... cs)
   {
     if(!sizeof(cs))
       return this;
@@ -418,7 +418,7 @@ class table {
 }
 
 object Separated = class {
-  static private string _string(mixed x) { return (string)x; }
+  protected private string _string(mixed x) { return (string)x; }
   
   object decode(string s, void|mapping options)
   {

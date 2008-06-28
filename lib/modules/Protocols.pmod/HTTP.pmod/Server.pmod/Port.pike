@@ -41,7 +41,7 @@ void destroy() { close(); }
 
 // the port accept callback
 
-static void new_connection()
+protected void new_connection()
 {
     while( Stdio.File fd=port->accept() )
     {

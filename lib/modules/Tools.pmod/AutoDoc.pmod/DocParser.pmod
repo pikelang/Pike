@@ -108,7 +108,7 @@ mapping(string:array(string)) required_attributes =
   "param" : ({ "name" }),
 ]);  
 
-static constant standard = (<
+protected constant standard = (<
   "note", "bugs", "example", "seealso", "deprecated", "fixme", "code"
 >);
 
@@ -151,7 +151,7 @@ multiset(string) allowOnlyOne =
    "deprecated",
 >);
 
-static int getKeywordType(string keyword) {
+protected int getKeywordType(string keyword) {
   if (keywordtype[keyword])
     return keywordtype[keyword];
   if (sizeof(keyword) > 3 && keyword[0..2] == "end")
@@ -159,7 +159,7 @@ static int getKeywordType(string keyword) {
   return ERRORKEYWORD;
 }
 
-static int getTokenType(array(string) | string token) {
+protected int getTokenType(array(string) | string token) {
   if (arrayp(token))
     return getKeywordType(token[0]);
   if (!token)
@@ -167,15 +167,15 @@ static int getTokenType(array(string) | string token) {
   return TEXTTOKEN;
 }
 
-static int isSpaceChar(int char) {
+protected int isSpaceChar(int char) {
   return (< '\t', '\n', ' ' >) [char];
 }
 
-static int isKeywordChar(int char) {
+protected int isKeywordChar(int char) {
   return char >= 'a' && char <= 'z';
 }
 
-static array(string) extractKeyword(string line) {
+protected array(string) extractKeyword(string line) {
   line += "\0";
   int i = 0;
   while (i < sizeof(line) && isSpaceChar(line[i]))
@@ -192,14 +192,14 @@ static array(string) extractKeyword(string line) {
   return ({ keyword, line[i .. sizeof(line) - 2] });  // skippa "\0" ...
 }
 
-static int allSpaces(string s) {
+protected int allSpaces(string s) {
   for (int i = sizeof(s) - 1; i >= 0; --i)
     if (s[i] != ' ' && s[i] != '\t')
       return 0;
   return 1;
 }
 
-static private class Token (
+protected private class Token (
   int type,
   string keyword,
   string arg,   // the rest of the line, after the keyword
@@ -212,7 +212,7 @@ static private class Token (
   }
 }
 
-static array(Token) split(string s, SourcePosition pos) {
+protected array(Token) split(string s, SourcePosition pos) {
   s = s - "\r";
   s = replace(s, "@\n", "@\r");
   array(string) lines = s / "\n";
@@ -267,23 +267,23 @@ static array(Token) split(string s, SourcePosition pos) {
   return res;
 }
 
-static class DocParserClass {
+protected class DocParserClass {
 
   SourcePosition currentPosition = 0;
 
-  static void parseError(string s, mixed ... args) {
+  protected void parseError(string s, mixed ... args) {
     s = sprintf(s, @args);
     werror("DocParser error: %O\n", s);
     throw (AutoDocError(currentPosition, "DocParser", s));
   }
 
-  static array(Token) tokenArr = 0;
-  static Token peekToken() {
+  protected array(Token) tokenArr = 0;
+  protected Token peekToken() {
     Token t = tokenArr[0];
     currentPosition = t->position || currentPosition;
     return t;
   }
-  static Token readToken() {
+  protected Token readToken() {
     Token t = peekToken();
     tokenArr = tokenArr[1..];
     return t;
@@ -310,7 +310,7 @@ static class DocParserClass {
     "value" : valueArgHandler,
   ]);
 
-  static string memberArgHandler(string keyword, string arg) {
+  protected string memberArgHandler(string keyword, string arg) {
     //  werror("This is the @member arg handler ");
     .PikeParser parser = .PikeParser(arg, currentPosition);
     //  werror("&&& %O\n", arg);
@@ -326,7 +326,7 @@ static class DocParserClass {
       + xmltag("index", xmlquote(s));
   }
 
-  static string elemArgHandler(string keyword, string arg) {
+  protected string elemArgHandler(string keyword, string arg) {
     //  werror("This is the @elem arg handler\n");
     .PikeParser parser = .PikeParser(arg, currentPosition);
     Type t = parser->parseOrType();
@@ -359,7 +359,7 @@ static class DocParserClass {
         parseError("@elem: expected identifier or literal");
   }
 
-  static string indexArgHandler(string keyword, string arg) {
+  protected string indexArgHandler(string keyword, string arg) {
     //  werror("indexArgHandler\n");
     .PikeParser parser = .PikeParser(arg, currentPosition);
     string s = parser->parseLiteral();
@@ -369,7 +369,7 @@ static class DocParserClass {
     return xmltag("value", xmlquote(s));
   }
 
-  static string deprArgHandler(string keyword, string arg) {
+  protected string deprArgHandler(string keyword, string arg) {
     .PikeParser parser = .PikeParser(arg, currentPosition);
     if (parser->peekToken() == EOF)
       return "";
@@ -385,11 +385,11 @@ static class DocParserClass {
     }
   }
 
-  static mapping(string : string) sectionArgHandler(string keyword, string arg) {
+  protected mapping(string : string) sectionArgHandler(string keyword, string arg) {
     return ([ "name" : arg ]);
   }
 
-  static string typeArgHandler(string keyword, string arg) {
+  protected string typeArgHandler(string keyword, string arg) {
     //  werror("This is the @type arg handler ");
     .PikeParser parser = .PikeParser(arg, currentPosition);
     //  werror("&&& %O\n", arg);
@@ -401,7 +401,7 @@ static class DocParserClass {
     return t->xml();
   }
 
-  static string valueArgHandler(string keyword, string arg) {
+  protected string valueArgHandler(string keyword, string arg) {
     //  werror("This is the @value arg handler ");
     .PikeParser parser = .PikeParser(arg, currentPosition);
     //  werror("&&& %O\n", arg);
@@ -427,7 +427,7 @@ static class DocParserClass {
         parseError("@value: expected indentifier or literal constant, got %O", arg);
   }
 
-  static mapping(string : string) standardArgHandler(string keyword, string arg)
+  protected mapping(string : string) standardArgHandler(string keyword, string arg)
   {
     array(string) args = ({});
     arg += "\0";
@@ -515,11 +515,11 @@ static class DocParserClass {
     return res;
   }
 
-  static string|mapping(string:string) getArgs(string keyword, string arg) {
+  protected string|mapping(string:string) getArgs(string keyword, string arg) {
     return (argHandlers[keyword] || standardArgHandler)(keyword, arg);
   }
 
-  static string xmlNode(string s) {  /* now, @xml works like @i & @tt */
+  protected string xmlNode(string s) {  /* now, @xml works like @i & @tt */
     s += "\0";
     string res = "";
     int i = 0;
@@ -616,7 +616,7 @@ static class DocParserClass {
 
   // Read until the next delimiter token on the same level, or to
   // the end.
-  static string xmlText() {
+  protected string xmlText() {
     string res = "";
     for (;;) {
       Token token = peekToken();
@@ -653,7 +653,7 @@ static class DocParserClass {
     }
   }
 
-  static string xmlContainerContents(string container) {
+  protected string xmlContainerContents(string container) {
     string res = "";
     Token token = peekToken();
     switch(token->type) {
@@ -742,7 +742,7 @@ static class DocParserClass {
     }
   }
 
-  static void create(string | array(Token) s,
+  protected void create(string | array(Token) s,
                      SourcePosition|void position)
   {
     if (arrayp(s)) {
@@ -959,10 +959,10 @@ array(array(Token)) splitDocBlock(string block, SourcePosition position) {
 // actual doc lines in.
 class Parse {
   inherit DocParserClass;
-  static int state;
-  static MetaData mMetaData = 0;
-  static string mDoc = 0;
-  static string mContext = 0;
+  protected int state;
+  protected MetaData mMetaData = 0;
+  protected string mDoc = 0;
+  protected string mContext = 0;
   void create(string | array(Token) s, SourcePosition|void sp) {
     ::create(s, sp);
     state = 0;

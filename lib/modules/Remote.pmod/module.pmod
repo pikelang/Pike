@@ -71,7 +71,7 @@ class Call {
 //!
 class Connection {
 #ifdef REMOTE_DEBUG
-  private static int _debug_conn_nr;
+  private protected int _debug_conn_nr;
 #undef DEBUGMSG
 #define DEBUGMSG(X) werror("<" + _debug_conn_nr + "> " + (X))
 #endif
@@ -81,11 +81,11 @@ class Connection {
   object ctx;
   array(function) close_callbacks = ({ });
 
-  static string|int last_error;
+  protected string|int last_error;
 
   int nice; // don't throw from call_sync
 
-  static void enable_async()
+  protected void enable_async()
   {
     // This function is installed as a call out. This way async mode
     // is enabled only if and when a backend is started (provided

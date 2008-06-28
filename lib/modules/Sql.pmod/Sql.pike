@@ -1,5 +1,5 @@
 /*
- * $Id: Sql.pike,v 1.91 2008/01/09 16:32:13 grubba Exp $
+ * $Id: Sql.pike,v 1.92 2008/06/28 16:36:58 nilsson Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -104,7 +104,7 @@ function(int:string) encode_datetime;
 
 function(string:int) decode_datetime;
 
-static program find_dbm(string program_name) {
+protected program find_dbm(string program_name) {
   program p;
   // we look in Sql.type and Sql.Provider.type.type for a valid sql class.
   p = Sql[program_name];
@@ -333,13 +333,13 @@ string get_charset()
   return master_sql->get_charset && master_sql->get_charset();
 }
 
-static string _sprintf(int type, mapping|void flags)
+protected string _sprintf(int type, mapping|void flags)
 {
   if(type=='O' && master_sql && master_sql->_sprintf)
     return sprintf("Sql.%O", master_sql);
 }
 
-static array(mapping(string:mixed)) res_obj_to_array(object res_obj)
+protected array(mapping(string:mixed)) res_obj_to_array(object res_obj)
 {
   if (res_obj) 
   {
@@ -406,7 +406,7 @@ string|object compile_query(string q)
 }
 
 //! Handle sprintf-based quoted arguments
-static array(string|mapping(string|int:mixed))
+protected array(string|mapping(string|int:mixed))
   handle_extraargs(string query, array(mixed) extraargs) {
 
   array(mixed) args=allocate(sizeof(extraargs));

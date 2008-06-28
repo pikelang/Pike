@@ -1,6 +1,6 @@
 //! module Calendar
 
-// $Id: TimeRanges.pmod,v 1.34 2008/02/07 01:39:53 mast Exp $
+// $Id: TimeRanges.pmod,v 1.35 2008/06/28 16:36:54 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -65,9 +65,9 @@ class TimeRange
 //!	The size of the new object may be inexact;
 //!	a Month object can't comprehend seconds, for instance.
 
-   static void create_unixtime(int unixtime,int len);
-   static void create_unixtime_default(int unixtime);
-   static void create_julian_day(int jd);
+   protected void create_unixtime(int unixtime,int len);
+   protected void create_unixtime_default(int unixtime);
+   protected void create_julian_day(int jd);
 
    void create(mixed ...args)
    {
@@ -123,7 +123,7 @@ class TimeRange
 	    this_program,@args,0,0,0);
    }
 
-   static void convert_from(TimeRange other)
+   protected void convert_from(TimeRange other)
    {
 // inheriting class must take care of size
       if (other->unix_time) {
@@ -147,7 +147,7 @@ class TimeRange
 //!	A negative size is not permitted; a zero one are.
 
 // virtual
-   static TimeRange _set_size(int n,TimeRange x);
+   protected TimeRange _set_size(int n,TimeRange x);
 
    TimeRange set_size(function|TimeRange|int(0..0x7fffffff) a,
 		      void|function|TimeRange b)
@@ -191,7 +191,7 @@ class TimeRange
 //!	</pre>
 
 // virtual
-   static this_program _add(int n,this_program step);
+   protected this_program _add(int n,this_program step);
 
    this_program add(function|this_program|int a,
 		 void|function|this_program b)
@@ -1164,7 +1164,7 @@ class cSuperTimeRange
 
 
 program NullTimeRange=cNullTimeRange;
-static class cNullTimeRange
+protected class cNullTimeRange
 {
    inherit TimeRange;
 
@@ -1265,9 +1265,9 @@ cNullTimeRange nulltimerange=NullTimeRange();
 
 // helper functions
 
-static mapping(function:TimeRange) program2stuff=([]);
+protected mapping(function:TimeRange) program2stuff=([]);
 
-static TimeRange promote_program(function p)
+protected TimeRange promote_program(function p)
 {
    TimeRange x;
    if ( (x=program2stuff[p]) ) return x;

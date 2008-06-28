@@ -8,33 +8,33 @@
 
 // #pragma strict_types
 
-static inherit .PikeObjects;
-static inherit .DocParser;
+protected inherit .PikeObjects;
+protected inherit .DocParser;
 
 #include "./debug.h"
 
 constant EOF = .PikeParser.EOF;
 
-static string stripDocMarker(string s) {
+protected string stripDocMarker(string s) {
   string res;
   if (sscanf(s, "%*[ \t]*!%s", res) == 2)
     return res;
   return "";
 }
 
-static void extractorErrorAt(SourcePosition sp, string message, mixed ... args)
+protected void extractorErrorAt(SourcePosition sp, string message, mixed ... args)
 {
   message = sprintf(message, @args);
   werror("CExtractor error! %O  %O\n", message, sp);
   throw (AutoDocError(sp, "CExtractor", message));
 }
 
-static private class Extractor {
-  static constant EOF = .PikeParser.EOF;
-  static string filename;
-  static array(.DocParser.Parse) tokens = ({});
+protected private class Extractor {
+  protected constant EOF = .PikeParser.EOF;
+  protected string filename;
+  protected array(.DocParser.Parse) tokens = ({});
 
-  static void create(string s, string filename) {
+  protected void create(string s, string filename) {
     this_program::filename = filename;
 
     array(string) ctokens = Parser.C.split(s);
@@ -69,7 +69,7 @@ static private class Extractor {
   // or ({"docgroup", DocGroup })
   // or ({"namespace", NameSpace })
   // or 0 if no objects to parse.
-  static array(string|Class|Module|NameSpace|DocGroup)
+  protected array(string|Class|Module|NameSpace|DocGroup)
     parseObject(Class|Module|NameSpace|AutoDoc parent, AutoDoc root)
   {
     Parse token = tokens[0];

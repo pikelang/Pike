@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod,v 1.14 2007/08/10 14:21:52 grubba Exp $
+// $Id: module.pmod,v 1.15 2008/06/28 16:36:54 nilsson Exp $
 
 #pike __REAL_VERSION__
 #if constant(GL) && constant(GL.glOrtho)
@@ -11,13 +11,13 @@ import GL;
 
 // --- Driver related code
 
-static .Driver.Interface driver;
+protected .Driver.Interface driver;
 
 #if !constant(GL.GL_TEXTURE_RECTANGLE_NV)
 # define GL_TEXTURE_RECTANGLE_NV 0x864E
 #endif
 
-static constant drivers = ({ "SDL", "GTK" });
+protected constant drivers = ({ "SDL", "GTK" });
 
 //! Returns the name of the available drivers.
 //! @seealso
@@ -29,10 +29,10 @@ array(string) get_drivers() {
 
 // --- Callback handling
 
-static function(.Events.Event:void) event_callback;
-static function(float,int(0..1),float:void) resize_callback;
+protected function(.Events.Event:void) event_callback;
+protected function(float,int(0..1),float:void) resize_callback;
 
-static array reinit_callbacks = ({});
+protected array reinit_callbacks = ({});
 
 //! Add a callback that will be called every time the resolution
 //! is about to change.
@@ -51,7 +51,7 @@ void remove_reinit_callback( function(void:void) f ) {
 }
 
 // --- GL extension related code
-static multiset(string) extensions;
+protected multiset(string) extensions;
 
 //! Checks if the GL extension @[ext] is currently supported.
 int(0..1) has_extension( string ext )
@@ -65,19 +65,19 @@ int(0..1) has_extension( string ext )
 
 // --- Drawing area related code
 
-static int(0..1) fullscreen = 1;
-static array(int) resolution = ({ 800, 600 });
-static float aspect = 4/3.0;
-static int gl_flags = 0;
-static int depth = 32;
-static float global_z_rotation;
-static int(0..1) mirrorx, mirrory;
+protected int(0..1) fullscreen = 1;
+protected array(int) resolution = ({ 800, 600 });
+protected float aspect = 4/3.0;
+protected int gl_flags = 0;
+protected int depth = 32;
+protected float global_z_rotation;
+protected int(0..1) mirrorx, mirrory;
 
-static void pre_modeswitch() {
+protected void pre_modeswitch() {
   reinit_callbacks();
 }
 
-static void modeswitch()
+protected void modeswitch()
 {
   glEnable( GL_TEXTURE_2D );
   glEnable( GL_BLEND );
@@ -189,7 +189,7 @@ void set_depth(int _depth) {
   set_mode();
 }
 
-static void set_mode() {
+protected void set_mode() {
   // FIXME: Run pre_modeswitch here?
   call_out( lambda() {
     driver->set_mode( fullscreen, depth, @resolution, gl_flags );
@@ -371,7 +371,7 @@ void init(void|mapping(string:mixed) options) {
   light_ids   = IDGenerator(0,glGet( GL_MAX_LIGHTS )-1);
 }
 
-static void start_driver(string|array(string)|
+protected void start_driver(string|array(string)|
 			 object(.Driver.Interface) driver_names,
 			 string title, string icon_title) {
   if (objectp(driver_names)) {
@@ -426,12 +426,12 @@ void hide_cursor() {
 
 // --- ID generation
 
-static class IDGenerator {
-  static int next;
-  static array(int) reuse = ({});
-  static int max_id;
+protected class IDGenerator {
+  protected int next;
+  protected array(int) reuse = ({});
+  protected int max_id;
 
-  static void create(void|int start_id, void|int max) {
+  protected void create(void|int start_id, void|int max) {
     next = start_id;
     max_id = max;
     if (max>start_id)
@@ -474,15 +474,15 @@ class TextureIDGenerator
 #define TextureIDGenerator IDGenerator
 #endif
 
-static class ErrorIDGenerator
+protected class ErrorIDGenerator
 {
   int get() { error("GLUE driver not initialized.\n"); }
   void free(int id) { error("GLUE driver not initialized.\n"); }
 }
 
-static IDGenerator texture_ids = ErrorIDGenerator();
-static IDGenerator list_ids    = ErrorIDGenerator();
-static IDGenerator light_ids   = ErrorIDGenerator();
+protected IDGenerator texture_ids = ErrorIDGenerator();
+protected IDGenerator list_ids    = ErrorIDGenerator();
+protected IDGenerator light_ids   = ErrorIDGenerator();
 
 //! Allocate a hardwareaccelerated lightsource from OpenGL.
 //! @returns
@@ -505,7 +505,7 @@ void free_light(int l) {
 
 // --- GL PushPop
 
-static int(0..) push_depth;
+protected int(0..) push_depth;
 
 //! Returns the PushPop depth, i.e. the number of pushes awaiting
 //! corresponding pops.
@@ -535,7 +535,7 @@ void PushPop( function f ) {
 // --- GL Lists
 
 #ifdef __NT__
-static multiset(List) all_lists = set_weak_flag( (<>), Pike.WEAK );
+protected multiset(List) all_lists = set_weak_flag( (<>), Pike.WEAK );
 #endif
 
 //! A display list abstraction. Automatically allocates a display list
@@ -543,7 +543,7 @@ static multiset(List) all_lists = set_weak_flag( (<>), Pike.WEAK );
 //! @seealso
 //!   @[DynList]
 class List {
-  static int id;
+  protected int id;
 
   //! When creating a new list, the list code can be compiled upon
   //! creation by supplying a function @[f] that performs the GL
@@ -554,7 +554,7 @@ class List {
   //! List list = List() {
   //!   // GL code
   //! };
-  static void create( void|function f ) {
+  protected void create( void|function f ) {
     id = list_ids->get();
 #ifdef __NT__
     all_lists[this] = 1;
@@ -563,7 +563,7 @@ class List {
   }
 
   //! Deletes this list and frees the list id from the id pool.
-  static void destroy() {
+  protected void destroy() {
 #ifdef __NT__
     all_lists[this] = 0;
 #endif
@@ -574,12 +574,12 @@ class List {
   //! Returns this lists' id.
   int get_id() { return id; }
 
-  static int __hash() { return id; }
+  protected int __hash() { return id; }
 
   //! @[List] objects can be sorted according to list id.
   //! @seealso
   //!   @[get_id]
-  static int(0..1) `>(mixed x) {
+  protected int(0..1) `>(mixed x) {
     if(!objectp(x) || !x->get_id) return 1;
     return (int)id > (int)x->get_id();
   }
@@ -618,13 +618,13 @@ class List {
     GL.glCallList( id );
   }
 
-  static string _sprintf(int t) {
+  protected string _sprintf(int t) {
     return t=='O' && sprintf("%O(%O)", this_program, id);
   }
 }
 
 // Debug code 
-static int global_list_begin;
+protected int global_list_begin;
 
 //! A displaylist that is generated on demand.
 //! @note
@@ -704,15 +704,15 @@ int(0..1) only_dynlists() {
 
 // --- Textures
 
-static int fast_mipmap;
-static int texture_mem;
-static multiset(BaseTexture) all_textures = set_weak_flag( (<>), Pike.WEAK );
+protected int fast_mipmap;
+protected int texture_mem;
+protected multiset(BaseTexture) all_textures = set_weak_flag( (<>), Pike.WEAK );
 
 //! The texture base class. Using e.g. @[Texture] might be more
 //! convenient.
 class BaseTexture {
 
-  static int id;
+  protected int id;
 
   int t_width, t_height; //! Texture dimensions
 
@@ -723,13 +723,13 @@ class BaseTexture {
   //! The texture type, e.g. @[GL.GL_TEXTURE_2D].
   int texture_type = GL_TEXTURE_2D;
 
-  static int alpha, mode;
-  static int(0..1) is_mipmapped;
+  protected int alpha, mode;
+  protected int(0..1) is_mipmapped;
 
   string debug; //! A string to identify the texture.
 
 #ifdef __NT__
-  static mapping(string:mixed) backingstore;
+  protected mapping(string:mixed) backingstore;
 #endif;
 
   //! Construct a new texture. Processes @[_alpha], @[_mode] and
@@ -767,12 +767,12 @@ class BaseTexture {
   }
 
   //! Calls @[construct] with @[args].
-  static void create(mixed ... args ) {
+  protected void create(mixed ... args ) {
     construct( @args );
   }
 
   //! Properly deallocates the texture.
-  static void destroy()
+  protected void destroy()
   {
     all_textures[this] = 0;
     texture_ids->free(id);
@@ -1090,10 +1090,10 @@ class BaseTexture {
   //! Returns the id of this texture.
   int get_id() { return id; }
 
-  static int __hash() { return id; }
+  protected int __hash() { return id; }
 
   //! Textures can be sorted according to texture id.
-  static int(0..1) `>(mixed x) {
+  protected int(0..1) `>(mixed x) {
     if(!objectp(x) || !x->get_id) return 1;
     return (int)id > (int)x->get_id();
   }
@@ -1141,7 +1141,7 @@ class BaseTexture {
   }
 #endif
 
-  static string _sprintf( int f ) {
+  protected string _sprintf( int f ) {
     if(f!='O') return 0;
 
     string ms;
@@ -1487,7 +1487,7 @@ class Region( float x, float y, float w, float h ) {
     y += ys;
   }
 
-  static string _sprintf( int c ) {
+  protected string _sprintf( int c ) {
     return c=='O' && sprintf("%O( %f,%f - %f,%f )", this_program, x, y, w, h );
   }
 
@@ -1540,20 +1540,20 @@ class Font
 {
   // The width of a space character. Used for all nonprintables except
   // '\n'.
-  static float spacew;
+  protected float spacew;
 
   // The hight of a character in the font, in pixels, +1. 1 is added
   // to give some spacing between characters in the texture.
-  static int character_height;
+  protected int character_height;
 
   // The actual font.
-  static Image.Fonts.Font font;
+  protected Image.Fonts.Font font;
 
   // Scale factor for the character width.
-  static float scale_width;
+  protected float scale_width;
 
   // Scale factor for the horizontal character spacing.
-  static float scale_spacing;
+  protected float scale_spacing;
 
   //!
   void create( Image.Fonts.Font f, float|void _scale_width,
@@ -1578,18 +1578,18 @@ class Font
   //
   // It's generated by get_character, which allocates a suitable slot
   // in a texture for the character.
-  static mapping(int:array(int|Region|BaseTexture)) letters = ([]);
+  protected mapping(int:array(int|Region|BaseTexture)) letters = ([]);
 
   //  The slot in the texture to use. Initially set so large that a
   //  new texture will be generated for the first character, to avoid
   //  code duplication of the texture allocation below.
-  static int robin = 10000;
+  protected int robin = 10000;
 
   // The current texture. 
-  static BaseTexture current_txt;
+  protected BaseTexture current_txt;
 
   // FIXME: Include all nonprintables here. 
-  static constant nonprint = (multiset)enumerate( 33 ) +
+  protected constant nonprint = (multiset)enumerate( 33 ) +
   (multiset)enumerate( 33, 1, 0x80 ) + (< 0x7f, 0xad >);
 
   //! Returns the advance (in pixels), the texture and the texture
@@ -1716,7 +1716,7 @@ class Font
     return ret[..1];
   }
 
-  static array get_characters( string text, float h, float|Region roi,
+  protected array get_characters( string text, float h, float|Region roi,
 			       string|void align )
   {
     map( (array)text, get_character );
@@ -1887,7 +1887,7 @@ void draw_line( float|int a, float|int b, float|int c, float|int d,
   glEnable( GL_TEXTURE_2D );
 }
 
-static void low_draw_box( int mode,
+protected void low_draw_box( int mode,
 			  float x0, float y0, float x1, float y1,
 			  array(Image.Color.Color)|Image.Color.Color c,
 			  array|float a )
@@ -1975,15 +1975,15 @@ void draw_polygon( array(float) coords, Image.Color.Color c, float a )
 //! A mesh of squares.
 class SquareMesh
 {
-  static int xsize;
-  static int ysize;
-  static int(0..1) light;
-  static int(0..1) need_recalc;
-  static function(float,float:Math.Matrix) corner_func;
-  static array(array(Math.Matrix)) vertices;
-  static array(array(Math.Matrix)) surface_normals;
-  static array(array(array(float))) vertex_normals;
-  static BaseTexture texture;
+  protected int xsize;
+  protected int ysize;
+  protected int(0..1) light;
+  protected int(0..1) need_recalc;
+  protected function(float,float:Math.Matrix) corner_func;
+  protected array(array(Math.Matrix)) vertices;
+  protected array(array(Math.Matrix)) surface_normals;
+  protected array(array(array(float))) vertex_normals;
+  protected BaseTexture texture;
 
   //! Recalculate the mesh.
   void recalculate()
@@ -2025,7 +2025,7 @@ class SquareMesh
 
   // FIXME: Once the GL module accepts Math.Matrix objects we should
   // definately change this code to use them.
-  static array vertex_normal( int x, int y )
+  protected array vertex_normal( int x, int y )
   {
     return vertex_normals[x][y]  ||
       (vertex_normals[x][y] =
@@ -2117,3 +2117,4 @@ mapping(string:mixed) debug_stuff() {
 #else
 constant this_program_does_not_exist=1;
 #endif
+

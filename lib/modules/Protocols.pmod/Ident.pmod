@@ -1,5 +1,5 @@
 //
-// $Id: Ident.pmod,v 1.11 2003/03/08 23:01:58 nilsson Exp $
+// $Id: Ident.pmod,v 1.12 2008/06/28 16:36:56 nilsson Exp $
 
 //! An implementation of the IDENT protocol, specified in RFC 931.
 
@@ -20,7 +20,7 @@ class AsyncLookup
   string query;
   string read_buf = "";
 
-  static void do_callback(array(string) reply)
+  protected void do_callback(array(string) reply)
   {
 #ifdef IDENT_DEBUG
     werror("Protocols.Ident: calling callback\n");
@@ -46,7 +46,7 @@ class AsyncLookup
     }
   }
 
-  static void write_cb()
+  protected void write_cb()
   {
 #ifdef IDENT_DEBUG
     werror("Protocols.Ident: sending query\n");
@@ -64,7 +64,7 @@ class AsyncLookup
     }
   }
 
-  static void read_cb(mixed ignored, string data)
+  protected void read_cb(mixed ignored, string data)
   {
 #ifdef IDENT_DEBUG
     werror("Protocols.Ident: reading data\n");
@@ -87,7 +87,7 @@ class AsyncLookup
     }
   }
 
-  static void close_cb()
+  protected void close_cb()
   {
 #ifdef IDENT_DEBUG
     werror("Protocols.Ident: Connection closed\n");
@@ -96,7 +96,7 @@ class AsyncLookup
     do_callback(({ "ERROR", "CONNECTION CLOSED" }));
   }
 
-  static void timeout()
+  protected void timeout()
   {
 #ifdef IDENT_DEBUG
     werror("Protocols.Ident: Timeout\n");
@@ -105,7 +105,7 @@ class AsyncLookup
     do_callback(({ "ERROR", "TIMEOUT" }));
   }
 
-  static void connected(int dummy)
+  protected void connected(int dummy)
   {
 #ifdef IDENT_DEBUG
     werror("Protocols.Ident: Connection OK, query:%O\n", query);

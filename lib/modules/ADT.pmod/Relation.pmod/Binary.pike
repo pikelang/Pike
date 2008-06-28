@@ -1,4 +1,4 @@
-// $Id: Binary.pike,v 1.14 2005/01/14 09:59:58 nilsson Exp $
+// $Id: Binary.pike,v 1.15 2008/06/28 16:36:53 nilsson Exp $
 // An abstract data type for binary relations.
 
 #pike __REAL_VERSION__
@@ -259,14 +259,14 @@ void create(void|mixed _id, void|mapping|object _initial)
 
 //! An iterator which makes all the left/right entities in the relation
 //! available as index/value pairs.
-static class _get_iterator {
+protected class _get_iterator {
 
-  static int(0..) ipos;
-  static int(0..) vpos;
-  static int(0..1) finished = 1;
+  protected int(0..) ipos;
+  protected int(0..) vpos;
+  protected int(0..1) finished = 1;
 
-  static array lefts;
-  static array rights;
+  protected array lefts;
+  protected array rights;
 
   void create() {
     first();

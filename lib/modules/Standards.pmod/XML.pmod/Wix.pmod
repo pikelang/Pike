@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Wix.pmod,v 1.26 2008/06/28 00:35:10 mast Exp $
+// $Id: Wix.pmod,v 1.27 2008/06/28 16:37:00 nilsson Exp $
 //
 // 2004-11-01 Henrik Grubbström
 
@@ -27,7 +27,7 @@ class WixNode
 {
   inherit Parser.XML.Tree.SimpleElementNode;
 
-  static void create(string name, mapping(string:string) attrs,
+  protected void create(string name, mapping(string:string) attrs,
 		     string|void text)
   {
     ::create(wix_ns + name, attrs);
@@ -44,7 +44,7 @@ class UninstallFile
   string id;
   string name;
 
-  static void create(string name, string id)
+  protected void create(string name, string id)
   {
     UninstallFile::name = name;
     UninstallFile::id = id;
@@ -70,7 +70,7 @@ class RegistryEntry
   string value;
   string id;
 
-  static void create(string root, string key, string name, string value,
+  protected void create(string root, string key, string name, string value,
 		     string id)
   {
     RegistryEntry::root = root;
@@ -101,7 +101,7 @@ class Merge
   string id;
   string language;
 
-  static void create(string source, string id, void|string language)
+  protected void create(string source, string id, void|string language)
   {
     Merge::source = source;
     Merge::id = id;
@@ -134,7 +134,7 @@ class Directory
   mapping(string:RegistryEntry) other_entries = ([]);
   mapping(string:Directory|Merge) sub_dirs = ([]);
 
-  static void create(string name, string parent_guid,
+  protected void create(string name, string parent_guid,
 		     string|void id, string|void short_name)
   {
     guid = MK_UUID(name, parent_guid);
@@ -199,7 +199,7 @@ class Directory
     string source;
     string id;
 
-    static void create(string name, string source, string id)
+    protected void create(string name, string source, string id)
     {
       File::name = name;
       File::source = source;
@@ -239,7 +239,7 @@ class Directory
     string target;
     string arguments;
 
-    static void create(string name, string directory, string id,
+    protected void create(string name, string directory, string id,
 		       string|void target, string|void arguments,
 		       string|void working_dir, string|void show)
     {
@@ -280,7 +280,7 @@ class Directory
     string name;
     mapping(string:mapping(string:string)) contents;
 
-    static void create(string name, string id,
+    protected void create(string name, string id,
 		       mapping(string:mapping(string:string)) contents)
     {
       IniFile::id = id;
@@ -566,3 +566,4 @@ Parser.XML.Tree.SimpleRootNode get_xml_node()
 }
 
 #endif /* 0 */
+

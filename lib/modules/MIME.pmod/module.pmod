@@ -3,7 +3,7 @@
 // RFC1521 functionality for Pike
 //
 // Marcus Comstedt 1996-1999
-// $Id: module.pmod,v 1.19 2008/01/25 22:26:29 grubba Exp $
+// $Id: module.pmod,v 1.20 2008/06/28 16:36:55 nilsson Exp $
 
 
 //! RFC1521, the @b{Multipurpose Internet Mail Extensions@} memo, defines a
@@ -225,7 +225,7 @@ string encode_word( string|array(string) word, string encoding )
   return "=?"+word[1]+"?"+encoding[0..0]+"?"+ enc +"?=";
 }
 
-static string remap(array(string) item)
+protected string remap(array(string) item)
 {
   if (sizeof(item)>1 && item[1])
     return master()->resolv("Locale")["Charset"]
@@ -234,7 +234,7 @@ static string remap(array(string) item)
     return item[0];
 }
 
-static array(string) reremap(string word, string|function(string:string) selector,
+protected array(string) reremap(string word, string|function(string:string) selector,
 			     string|void replacement,function(string:string)|void repcb)
 {
   if(max(@values(word))<128)
@@ -684,8 +684,8 @@ class Message {
 
   import Array;
 
-  static string encoded_data;
-  static string decoded_data;
+  protected string encoded_data;
+  protected string decoded_data;
 
   //! This mapping contains all the headers of the message.
   //!

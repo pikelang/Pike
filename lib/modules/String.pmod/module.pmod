@@ -98,7 +98,7 @@ string common_prefix(array(string) strs)
 
 // Do a fuzzy matching between two different strings and return a
 // "similarity index". The higher, the closer the strings match.
-static int low_fuzzymatch(string str1, string str2)
+protected int low_fuzzymatch(string str1, string str2)
 {
   string tmp1, tmp2;
   int offset, length;
@@ -204,7 +204,7 @@ string int2roman(int m)
   return res;
 }
 
-static constant prefix = ({ "bytes", "kB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB" });
+protected constant prefix = ({ "bytes", "kB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB" });
 
 //! Returns the size as a memory size string with suffix,
 //! e.g. 43210 is converted into "42.2 kB". To be correct
@@ -259,7 +259,7 @@ string expand_tabs(string s, int|void tab_width,
 }
 
 // the \n splitting is done in our caller for speed improvement
-static string line_expand_tab(string line, int tab_width,
+protected string line_expand_tab(string line, int tab_width,
 			      string space, string tab)
 {
   string ws, chunk, result = "";

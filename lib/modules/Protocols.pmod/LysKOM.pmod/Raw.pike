@@ -48,7 +48,7 @@ int out_req;
 
 /*--- send/recv ------------------------ */
 
-static inline int conwrite(string what)
+protected inline int conwrite(string what)
 {
 #ifdef LYSKOM_DEBUG
    werror("-> %O\n",what);

@@ -1,4 +1,4 @@
-// $Id: FakeFile.pike,v 1.15 2004/12/28 13:43:07 agehall Exp $
+// $Id: FakeFile.pike,v 1.16 2008/06/28 16:37:00 nilsson Exp $
 #pike __REAL_VERSION__
 
 //! A string wrapper that pretends to be a @[Stdio.File] object.
@@ -8,17 +8,17 @@
 //! from a real @[Stdio.File] object.
 constant is_fake_file = 1;
 
-static string data;
-static int ptr;
-static int(0..1) r;
-static int(0..1) w;
-static int mtime;
+protected string data;
+protected int ptr;
+protected int(0..1) r;
+protected int(0..1) w;
+protected int mtime;
 
-static function read_cb;
-static function read_oob_cb;
-static function write_cb;
-static function write_oob_cb;
-static function close_cb;
+protected function read_cb;
+protected function read_oob_cb;
+protected function write_cb;
+protected function write_oob_cb;
+protected function close_cb;
 
 //! @seealso
 //!   @[Stdio.File()->close()]
@@ -58,7 +58,7 @@ void create(string _data, void|string type, int|void _ptr) {
     r = w = 1;
 }
 
-static string make_type_str() {
+protected string make_type_str() {
   string type = "";
   if(r) type += "r";
   if(w) type += "w";
@@ -93,7 +93,7 @@ String.SplitIterator line_iterator(int|void trim) {
   return String.SplitIterator( data, '\n' );
 }
 
-static mixed id;
+protected mixed id;
 
 //! @seealso
 //!   @[Stdio.File()->query_id()]

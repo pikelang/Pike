@@ -136,7 +136,7 @@ string encode_response_fault(int fault_code, string fault_string)
 
 // Internal stuff below.
 
-static constant common_dtd_fragment = #"
+protected constant common_dtd_fragment = #"
   <!ELEMENT params  (param*)>
   <!ELEMENT param   (value)>
 
@@ -159,14 +159,14 @@ static constant common_dtd_fragment = #"
   <!ELEMENT name    (#PCDATA)>
 ";
 
-static constant call_dtd = #"
+protected constant call_dtd = #"
 <!DOCTYPE methodCall [
   <!ELEMENT methodCall (methodName, params)>
   <!ELEMENT methodName (#PCDATA)>
 "+common_dtd_fragment+#"]>
 ";
 
-static constant response_dtd = #"
+protected constant response_dtd = #"
 <!DOCTYPE methodResponse [
   <!ELEMENT methodResponse (params|fault)>
   <!ELEMENT fault          (value)>
@@ -176,9 +176,9 @@ static constant response_dtd = #"
 // One more fix because some people found the specs too easy and 
 // decided that you can have <value>test</value>
 // (that is omitting string inside a value).
-static class StringWrap(string s){};
+protected class StringWrap(string s){};
 
-static mixed decode(string xml_input, string dtd_input)
+protected mixed decode(string xml_input, string dtd_input)
 {
   // We cannot insert 0 integers directly into the parse tree, so
   // we'll use magic_zero as a placeholder and destruct it afterwards.
@@ -266,14 +266,14 @@ static mixed decode(string xml_input, string dtd_input)
   return tree[0];
 }
 
-static string xml_encode_string(string s)
+protected string xml_encode_string(string s)
 {
   return replace(s,
 		 ({ "&", "<", ">", "\"", "\'", "\000" }),
 		 ({ "&amp;", "&lt;", "&gt;", "&#34;", "&#39;", "&#0;" }));
 }
 
-static string encode(int|float|string|mapping|array value)
+protected string encode(int|float|string|mapping|array value)
 {
   string r = "<value>";
   if(intp(value))
@@ -307,7 +307,7 @@ static string encode(int|float|string|mapping|array value)
   return r+"</value>\n";
 }
 
-static string encode_params(array params)
+protected string encode_params(array params)
 {
   string r = "<params>\n";
   foreach(params, mixed param)
@@ -383,16 +383,16 @@ class Client(string|Standards.URI url)
 //!@}
 class AsyncClient
 {
-  static object request;
-  static function user_data_ok;
-  static string _url;
+  protected object request;
+  protected function user_data_ok;
+  protected string _url;
 
   void create(string|Standards.URI|Protocols.HTTP.Session.SessionURL url)
   {
     _url = url;
   }
   
-  static void _data_ok()
+  protected void _data_ok()
   {
     mixed result;
     if(request) {

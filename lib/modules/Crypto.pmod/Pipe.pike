@@ -8,16 +8,16 @@
 //! algorithm. E.g. triple DES can be emulated with
 //! @expr{Crypto.Pipe(Crypto.DES, Crypto.DES, Crypto.DES)@}.
 
-static array(.CipherState) ciphers = ({});
-static int _block_size = 1;
-static int(0..1) reversed;
+protected array(.CipherState) ciphers = ({});
+protected int _block_size = 1;
+protected int(0..1) reversed;
 
-static int(0..1) is_crypto(object c) {
+protected int(0..1) is_crypto(object c) {
   return c->block_size && c->key_size && c->set_encrypt_key &&
     c->set_decrypt_key && c->crypt && 1;
 }
 
-static void create(program|object|array(program|mixed) ... c) {
+protected void create(program|object|array(program|mixed) ... c) {
   if(!sizeof(c)) error("Too few arguments.\n");
   foreach(c, program|object|array cc) {
     if(objectp(cc)) {
