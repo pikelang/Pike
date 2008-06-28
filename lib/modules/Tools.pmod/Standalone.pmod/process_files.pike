@@ -1,5 +1,5 @@
 #! /usr/bin/pike
-// -*- pike -*- $Id: process_files.pike,v 1.5 2008/06/20 16:24:19 srb Exp $
+// -*- pike -*- $Id: process_files.pike,v 1.6 2008/06/28 15:32:55 per Exp $
 #pike __REAL_VERSION__
 
 #ifdef SUGGESTED_MODE_OF_USAGE
@@ -38,7 +38,7 @@ string version;
 //!   string version =
 //!    sprintf("%d.%d.%d",(int)__REAL_VERSION__,__REAL_MINOR__,__REAL_BUILD__);
 
-string description = "Boilerplate for making rsif-like tools.";
+string description;
 //! One-liner that gets shown for this tool when running @tt{pike -x@}
 //! without additional options. (Assuming your tool resides in
 //! @tt{Standalone.pmod@}.) Does not include the name of the tool
