@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.343 2008/06/28 01:26:36 mast Exp $
+|| $Id: pike_types.c,v 1.344 2008/06/29 10:51:47 mast Exp $
 */
 
 #include "global.h"
@@ -3585,7 +3585,7 @@ static struct pike_type *low_match_types2(struct pike_type *a,
 	return 0;
     }
     if(!(flags & NO_MAX_ARGS))
-       max_correct_args=0x7fffffff;
+       max_correct_args=MAX_INT32;
     /* check the returntype */
     a = a->cdr;
     b = b->cdr;
@@ -5254,7 +5254,7 @@ static int low_count_arguments(struct pike_type *q)
     case PIKE_T_ATTRIBUTE:
       return low_count_arguments(q->cdr);
 
-    default: return 0x7fffffff;
+    default: return MAX_INT32;
 
     case T_FUNCTION:
       while(q->type == T_FUNCTION)
@@ -7444,7 +7444,7 @@ static void low_make_pike_type(unsigned char *type_string,
 
   case PIKE_T_INT_UNTYPED:
     *cont = type_string + 1;
-    push_int_type((INT32)-0x80000000, 0x7fffffff);
+    push_int_type(MIN_INT32, MAX_INT32);
     break;
 
   case T_OBJECT:
