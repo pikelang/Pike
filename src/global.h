@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: global.h,v 1.111 2008/03/29 16:20:16 mast Exp $
+|| $Id: global.h,v 1.112 2008/06/29 11:45:54 mast Exp $
 */
 
 #ifndef GLOBAL_H
@@ -402,9 +402,11 @@ struct b16_t_s { B8_T x,y; };
 #error Unsupported type chosen for pike floats.
 #endif
 
+/* Conceptually a char is a 32 bit signed value. Implementationwise
+ * that means that the shorter ones don't have space for the sign bit. */
 typedef unsigned char p_wchar0;
 typedef unsigned INT16 p_wchar1;
-typedef unsigned INT32 p_wchar2;
+typedef signed INT32 p_wchar2;
 
 typedef struct p_wchar_p
 {
