@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xml.cmod,v 1.99 2008/06/28 23:06:01 nilsson Exp $
+|| $Id: xml.cmod,v 1.100 2008/06/29 20:48:57 marcus Exp $
 */
 
 #include "global.h"
@@ -1100,7 +1100,7 @@ static int gobble(char *s)
   int e;
   for(e=0;s[e];e++)
   {
-    if(((unsigned int)(EXTRACT_UCHAR(s+e)))!=PEEK(e))
+    if(((p_wchar2)(EXTRACT_UCHAR(s+e)))!=PEEK(e))
       return 0;
   }
   if(isNameChar(PEEK(e))) return 0;
@@ -1866,7 +1866,7 @@ void read_choice_seq_or_name(int maybe_pcdata)
 #ifdef PIKE_DEBUG
   struct svalue * save_sp2=sp;
 #endif
-  unsigned int seq=0;
+  p_wchar2 seq=0;
   int num=0;
 
   SKIPSPACE();
