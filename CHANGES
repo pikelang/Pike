@@ -128,6 +128,7 @@ o Stdio
   - Stdio.File->openat() opens a file relative to an open directory.
 
 o Support for having multiple different active backend implementations.
+  FIXME: example?
   ...
   The global variable next_timeout is no more. It has been replaced by
   a backend-specific variable. Added backend_lower_timeout() for accessing
@@ -232,6 +233,8 @@ o __attribute__ and __deprecated__
     __deprecated__(mixed) obsolete_return_value();
     mixed fun(__deprecated__(mixed) obsolete_arg);
     __deprecated__(mixed) obsolete_variable;
+
+ FIXME: syntax for __attribute__
 
 o __func__
 
@@ -740,6 +743,9 @@ o String
   - The function int2size has been rewritten to fixpoint as well as
     using the more common abbreviation of "B" for byte.
 
+  - String.secure marks a string as "secure" which currently only
+    means that the memory is cleared before it is freed.
+
 o System
 
   FIXME
@@ -864,6 +870,14 @@ o Arg
       mapping opts = Arg.parse(argv);
       argv = opts[Arg.REST];
     }
+
+o Fuse
+
+  FIXME
+
+o GTK2
+
+  FIXME
 
 o Kerberos
 
@@ -1007,21 +1021,6 @@ New external module utilities
 
 2004/04/26 00:13:30
 
-backport:
-
-Calendar.pmod/events/regional
-Calendar.pmod/TZnames.pmod
-Protocols.HTTP.Query
-
-update(?):
-
-Geography.pmod/Countries.pmod
-MIME.pmod/ext...
-
-fixme:
-Process.locate_binary
-
-__deprecated__
 
 ----
 modules/_Charset
@@ -1035,10 +1034,6 @@ New src:
 embed/libpike
 tmodule
 Protocols.DNS_SD
-Charset gb18030
-        gbk
-GTK2
-SQLite
 
 
 src:
@@ -1048,3 +1043,34 @@ Gettext: lots of build fixes
 gmp: FIXME
 java: FIXME
 mysql: FIXME
+
+
+Machine code backend for PPC64
+
+Objectiv-C embedding framwork
+
+DLL for Windows?
+
+MinGW build possible.
+
+libpike.so
+
+Wix
+
+valgrind_hilfe and valgrind_just_verify
+
+New malloc on Windows.
+
+supports calling of aliases.
+
+poll/epoll
+
+getenv() and putenv() are now accessing and modifying the real
+environment.
+
+undefinedp() and destructedp() have been added as more readable
+alternatives to zero_type().
+
+exit w/ werror
+
+T_SCOPE nodes
