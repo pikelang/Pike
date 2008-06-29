@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lexer.h,v 1.80 2008/06/28 15:07:33 nilsson Exp $
+|| $Id: lexer.h,v 1.81 2008/06/29 11:04:49 nilsson Exp $
 */
 
 /*
@@ -539,11 +539,7 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	  if(ISWORD("multiset")) return TOK_MULTISET_ID;
 	  break;
 	case TWO_CHAR('n','o'):
-	  if(ISWORD("nomask")) {
-            if( !(lex->pragmas & ID_NO_DEPRECATION_WARNINGS) )
-              yywarning("Keyword nomask is deprecated in favor for 'final'.");
-            return TOK_NO_MASK;
-          }
+	  if(ISWORD("nomask")) return TOK_NO_MASK;
 	  break;
 	case TWO_CHAR('o','b'):
 	  if(ISWORD("object")) return TOK_OBJECT_ID;

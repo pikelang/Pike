@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.438 2008/06/28 22:05:04 mast Exp $
+|| $Id: language.yacc,v 1.439 2008/06/29 11:04:49 nilsson Exp $
 */
 
 %pure_parser
@@ -1237,7 +1237,14 @@ arguments2: new_arg_name { $$ = 1; }
   ;
 
 modifier:
-    TOK_NO_MASK    { $$ = ID_FINAL | ID_INLINE; }
+    TOK_NO_MASK
+    {
+      $$ = ID_FINAL | ID_INLINE;
+      if( !(THIS_COMPILATION->lex.pragmas & ID_NO_DEPRECATION_WARNINGS) &&
+          !TEST_COMPAT(7, 6) && Pike_compiler->compiler_pass==1 )
+        yywarning("Keyword nomask is deprecated in favor for 'final'.");
+
+    }
   | TOK_FINAL_ID   { $$ = ID_FINAL | ID_INLINE; }
   | TOK_STATIC     { $$ = ID_STATIC; }
   | TOK_EXTERN     { $$ = ID_EXTERN; }
