@@ -1,6 +1,6 @@
 // -*- Pike -*-
 
-// $Id: module.pike,v 1.28 2008/06/20 16:24:19 srb Exp $
+// $Id: module.pike,v 1.29 2008/06/29 12:01:44 per Exp $
 
 #pike __REAL_VERSION__
 
@@ -13,7 +13,6 @@ string srcdir;
 string make=getenv("MAKE")||"make";
 string make_flags="";
 string include_path=master()->include_prefix;
-string configure_command="configure";
 string config_args="";
 #ifdef NOT_INSTALLED
 string src_path=combine_path(__FILE__,"../../../../../src");
@@ -25,7 +24,7 @@ string bin_path=include_path;
 
 // this is not the ideal location for all systems, but it's a start.
 string local_module_path="$$HOME/lib/pike/modules";
-
+bool old_style_module = false;
 // we prefer the last element, because if there are more than one
 // master() puts the lib/modules path last.
 string system_module_path=master()->system_module_path[-1];
@@ -97,7 +96,7 @@ string fix(string path)
     {
       sscanf(s,"%*s\nSRCDIR=%s\n",srcdir);
     }
-    if(!srcdir && file_stat("configure.in"))
+    if(!srcdir)
     {
       srcdir=".";
     }
@@ -158,25 +157,33 @@ void do_make(array(string) cmd)
   if(srcdir !=".") full_srcdir=srcdir + "/";
   else full_srcdir=getcwd() + "/";
 
-  array(string) makecmd=(
-    ({make})+
-    do_split_quoted_string(make_flags)+
-    ({"PIKE_INCLUDES=-I"+include_path,
-      "PIKE_SRC_DIR="+src_path,
-      "BUILD_BASE="+include_path,
-      "MODULE_BASE="+include_path+"/modules",
-      "TMP_BINDIR="+bin_path,
-      "SRCDIR="+fix("$src"),
-      "FULL_SRCDIR=" + full_srcdir,
-      "TMP_MODULE_BASE=.",
-      "PIKE_EXTERNAL_MODULE=pike_external_module",
-      "CORE_AUTODOC_PATH=" + combine_path(system_doc_path, "src/core_autodoc.xml"),
-      "SYSTEM_DOC_PATH=" + system_doc_path + "/",
-      "SYSTEM_MODULE_PATH=" + system_module_path,
-      "LOCAL_MODULE_PATH=" + lmp,
-      "RUNPIKE="+run_pike,
-    })+
-    cmd);
+  array extra_args = ({});
+  
+  if( old_style_module )
+  {
+    extra_args =
+      ({"PIKE_INCLUDES=-I"+include_path,
+	"PIKE_SRC_DIR="+src_path,
+	"BUILD_BASE="+include_path,
+	"MODULE_BASE="+include_path+"/modules",
+	"TMP_BINDIR="+bin_path,
+	"SRCDIR="+fix("$src"),
+	"FULL_SRCDIR=" + full_srcdir,
+	"TMP_MODULE_BASE=.",
+	"PIKE_EXTERNAL_MODULE=pike_external_module",
+	"CORE_AUTODOC_PATH=" + combine_path(system_doc_path, "src/core_autodoc.xml"),
+	"SYSTEM_DOC_PATH=" + system_doc_path + "/",
+	"SYSTEM_MODULE_PATH=" + system_module_path,
+	"LOCAL_MODULE_PATH=" + lmp,
+	"RUNPIKE="+run_pike,
+      });
+  }
+  else
+  {
+    extra_args = ({"PIKE="+run_pike,});
+  }
+  
+  array(string) makecmd=({make})+do_split_quoted_string(make_flags)+extra_args+cmd;
 
   if(tmp1=max_time_of_files("Makefile"))
   {
@@ -268,12 +275,22 @@ int main(int argc, array(string) argv)
     }
 
   argv=Getopt.get_args(argv);
+  string configure_args="";
+  
+  foreach( argv, string arg )
+    if( sscanf( arg, "CONFIGUREARGS=%s", configure_args ) )
+      argv-=({arg});
 
+  string configure_in = "$src/configure.in";
+  if( max_time_of_files( configure_in ) <  max_time_of_files( "$src/configure.ac" ) )
+    configure_in = "$src/configure.ac" ;
   int tmp1;
+
   if(run->automake)
   {
-    if(tmp1=max_time_of_files("$src/Makefile.am","$src/configure.in"))
+    if(tmp1=max_time_of_files("$src/Makefile.am",configure_in))
     {
+      write("** Running automake\n"); 
       if(run->automake == ALWAYS ||
 	 max_time_of_files("$src/Makefile.in") < tmp1)
       {
@@ -283,85 +300,109 @@ int main(int argc, array(string) argv)
       }
     }
   }
+  
+  
+  if( max_time_of_files( configure_in ) <  max_time_of_files( "$src/configure.ac" ) )
+    configure_in = "$src/configure.ac" ;
 
+  string configure_content = Stdio.read_file(fix(configure_in))||"";
+  old_style_module = has_value(configure_content, "AC_MODULE_INIT" );
+  if( old_style_module )
+  {
+    write("** Old style module\n");
+  }
+
+  string stamp_file = "$src/stamp-h.in";
+
+  if( sscanf( configure_content, "%*sAC_CONFIG_HEADER(%[^)])", stamp_file ) == 2 )
+    stamp_file="$src/"+stamp_file+".in";
+  
   if(run->autoheader)
   {
-    if(tmp1=max_time_of_files("$src/acconfig.h","$src/configure.in"))
+    if(tmp1=max_time_of_files("$src/acconfig.h",configure_in))
     {
-      if(run->autoheader==ALWAYS ||
-	 max_time_of_files("$src/stamp-h.in") <= tmp1)
+      if(run->autoheader==ALWAYS || max_time_of_files(stamp_file) <= tmp1)
       {
 	run_or_fail((["dir":srcdir]),"autoheader");
-	rm(fix("$src/stamp-h.in"));
-	Stdio.write_file(fix("$src/stamp-h.in"),"foo\n");
+	if( stamp_file == "$src/stamp-h.in" )
+	  Stdio.write_file(fix(stamp_file),"foo\n");
       }
     }
   }
 
   if(run->autoconf)
   {
-    if(tmp1=max_time_of_files("$src/configure.in"))
+    if(tmp1=max_time_of_files(configure_in))
     {
-      if(run->autoconf==ALWAYS ||
-	 max_time_of_files("$src/configure") <= tmp1)
+      if(run->autoconf==ALWAYS || max_time_of_files("$src/configure") <= tmp1)
       {
-	string data = Process.popen("autoconf --version");
-	data = (data/"\n")[0];
-	float v;
-	sscanf(data, "%*s%f", v);
+	if( old_style_module )
+	{
+	  write("** Running autoconf (with extra compat macros)\n");
+	  string data = Process.popen("autoconf --version");
+	  data = (data/"\n")[0];
+	  float v;
+	  sscanf(data, "%*s%f", v);
 
-	// If we fail to determine the autoconf version we assume
-	// yet another incompatble autoconf change.
-	if(!v || v>2.52)
-	  run_or_fail((["dir":srcdir]),"autoconf","--include="+src_path);
+	  // If we fail to determine the autoconf version we assume
+	  // yet another incompatble autoconf change.
+	  if(!v || v>2.52)
+	    run_or_fail((["dir":srcdir]),"autoconf","--include="+src_path);
+	  else
+	    run_or_fail((["dir":srcdir]),"autoconf","--localdir="+src_path);
+	}
 	else
-	  run_or_fail((["dir":srcdir]),"autoconf","--localdir="+src_path);
+	{
+	  write("** Running autoconf\n");
+	  run_or_fail( (["dir":srcdir]), "autoconf" );
+	}
       }
     }
   }
 
   if(run->configure)
   {
-    // If there is a makefile, we can use the auto-run-configure
-    // feature...
-    if(run->configure == ALWAYS || !max_time_of_files("Makefile"))
+    if( tmp1=max_time_of_files("$src/configure") )
     {
-      if(max_time_of_files("$src/configure"))
+      if(run->configure == ALWAYS || (max_time_of_files("Makefile") <= tmp1))
       {
-	if(!max_time_of_files("config.cache"))
-	  if(max_time_of_files(include_path+"/config.cache"))
+	if( old_style_module )
+	{
+	  write("** Running configure (with extra compat args)\n");
+	  array(string) cfa = do_split_quoted_string(specs->configure_args||"");
+	  mapping(string:string) cfa_env = ([]);
+	  foreach(cfa; int i; string arg)
 	  {
-	    Stdio.cp(include_path+"/config.cache","config.cache");
+	    string key, val;
+	    if(2==sscanf(arg, "%[a-zA-Z0-9_]=%s", key, val))
+	    {
+	      cfa_env[key] = val;
+	      cfa[i] = 0;
+	    }
 	  }
-	  else
-	  {
-	    Stdio.append_file("config.cache", "");
-	  }
-	array(string) cfa = do_split_quoted_string(specs->configure_args||"");
-	mapping(string:string) cfa_env = ([]);
-	foreach(cfa; int i; string arg) {
-	  string key, val;
-	  if(2==sscanf(arg, "%[a-zA-Z0-9_]=%s", key, val)) {
-	    cfa_env[key] = val;
-	    cfa[i] = 0;
-	  }
+	  run_or_fail((["env":getenv()|cfa_env|
+			(specs & ({"CC","CFLAGS","CPPFLAGS","CPP",
+				   "LDFLAGS","LDSHARED"}))|
+			(["PIKE_SRC_DIR":src_path,
+			  "BUILD_BASE":include_path])]),
+		      fix("$src/configure"),
+		      "--cache-file=./config.cache",
+		      @(cfa-({0})), @do_split_quoted_string(config_args));
 	}
-	run_or_fail((["env":getenv()|cfa_env|
-		      (specs & ({"CC","CFLAGS","CPPFLAGS","CPP",
-				 "LDFLAGS","LDSHARED"}))|
-		      (["PIKE_SRC_DIR":src_path,
-			"BUILD_BASE":include_path])]),
-		    srcdir+"/"+configure_command,
-		    "--cache-file=./config.cache",
-		    @(cfa-({0})), @do_split_quoted_string(config_args));
+	else
+	{
+	  write("** Running configure\n");
+	  run_or_fail( ([ ]), fix("$src/configure"), @do_split_quoted_string(configure_args));
+	}
       }
     }
   }
 
-  if(run->depend)
+  if( old_style_module && run->depend )
   {
     if(!max_time_of_files("$src/dependencies") || run->depend == ALWAYS)
     {
+      write("** Running make depend\n");
       // Create an empty file first..
       Stdio.write_file(srcdir+"/dependencies","");
       do_make( ({"depend"}) );
@@ -371,6 +412,7 @@ int main(int argc, array(string) argv)
 
   if(run->make)
   {
+    write("** Running "+argv[1..]*" ");
     do_make(argv[1..]);
   }
 }
