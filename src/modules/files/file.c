@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.391 2008/06/16 21:46:35 mast Exp $
+|| $Id: file.c,v 1.392 2008/06/29 12:16:14 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -4036,7 +4036,7 @@ void file_proxy(INT32 args)
     Pike_error("Failed to dup proxy fd. (errno=%d)\n",errno);
   }
   to=fd_dup(FD);
-  if(from<0)
+  if(to<0)
   {
     ERRNO=errno;
     while (fd_close(from) && errno == EINTR) {}
@@ -4052,6 +4052,8 @@ void file_proxy(INT32 args)
   if(th_create_small(&id,proxy_thread,p))
   {
     free((char *)p);
+    while (fd_close(from) && errno == EINTR) {}
+    while (fd_close(to) && errno == EINTR) {}
     Pike_error("Failed to create thread.\n");
   }
 
