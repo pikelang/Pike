@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.h,v 1.35 2008/03/09 20:46:47 grubba Exp $
+|| $Id: builtin_functions.h,v 1.36 2008/06/29 20:36:59 marcus Exp $
 */
 
 #ifndef BUILTIN_EFUNS_H
@@ -70,7 +70,7 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args);
 PMOD_EXPORT void f_all_constants(INT32 args);
 PMOD_EXPORT void f_allocate(INT32 args);
 void f_this_object(INT32 args);
-PMOD_EXPORT void f_throw(INT32 args);
+PMOD_EXPORT DECLSPEC(noreturn) void f_throw(INT32 args) ATTRIBUTE((noreturn));
 PMOD_EXPORT void f_exit(INT32 args);
 void f__exit(INT32 args);
 PMOD_EXPORT void f_time(INT32 args);
