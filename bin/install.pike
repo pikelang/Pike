@@ -2,7 +2,7 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.186 2008/06/28 19:27:10 mast Exp $
+// $Id: install.pike,v 1.187 2008/06/29 11:20:06 agehall Exp $
 
 #define USE_GTK
 
@@ -1841,6 +1841,8 @@ string lib_prefix;
 string include_prefix;
 string doc_prefix;
 string man_prefix;
+string cflags;
+string ldflags;
 string lnk;
 string old_exec_prefix;
 object interactive;
@@ -1865,6 +1867,9 @@ int pre_install(array(string) argv)
     vars->TMP_BINDIR=combine_path(vars->SRCDIR,"../bin");
 
   if(!vars->TMP_BUILDDIR) vars->TMP_BUILDDIR=".";
+
+  cflags = vars->cflags;
+  ldflags = vars->ldflags;
 
   while(1)
   {
@@ -2035,7 +2040,7 @@ int pre_install(array(string) argv)
       exec_prefix=combine_path(prefix,"bin");
       lib_prefix=combine_path(prefix,"lib");
       doc_prefix=combine_path(prefix,"doc");
-      include_prefix=combine_path(prefix,"include","pike");
+      include_prefix=vars->include_prefix||combine_path(prefix,"include","pike");
       man_prefix=combine_path(prefix,"man");
       if (export) {
 	low_install_file(combine_path(vars->TMP_BINDIR,"install.pike"),
@@ -2056,7 +2061,7 @@ int pre_install(array(string) argv)
     lib_prefix = combine_path(prefix, "lib");
     include_prefix = combine_path(prefix,"include","pike");
     make_master("lib/master.pike", "lib/master.pike.in",
-		lib_prefix, include_prefix);
+		lib_prefix, include_prefix, UNDEFINED, cflags, ldflags);
     status1("Installing master done.");
     return 0;
   case "--wix":
@@ -2282,7 +2287,8 @@ an extra CRT instance.\n");
 
 // Create a master.pike with the correct lib_prefix
 void make_master(string dest, string master, string lib_prefix,
-		 string include_prefix, string|void share_prefix)
+		 string include_prefix, string|void share_prefix,
+		 string|void cflags, string|void ldflags)
 {
   status("Finalizing",master);
   string master_data=Stdio.read_file(master);
@@ -2294,11 +2300,15 @@ void make_master(string dest, string master, string lib_prefix,
 			"¤include_prefix¤",
 			"¤share_prefix¤",
 			"¤doc_prefix¤",
+			"¤cflags¤",
+			"¤ldflags¤",
 		      }), ({
 			replace(lib_prefix,"\\","\\\\"),
 			replace(include_prefix,"\\","\\\\"),
 			replace(share_prefix||"¤share_prefix¤", "\\", "\\\\"),
 			replace(doc_prefix||"¤doc_prefix¤", "\\", "\\\\"),
+			replace(cflags||"", "\\", "\\\\"),
+			replace(ldflags||"", "\\", "\\\\"),
 		      }));
   if((vars->PIKE_MODULE_RELOC||"") != "")
     master_data = replace(master_data, "#undef PIKE_MODULE_RELOC",
@@ -2700,15 +2710,18 @@ the PRIVATE_CRT stuff in install.pike.\n");
 	// This is undone by the translator.
 	unpack_master = "unpack_master.pike";
 	make_master(unpack_master, master_src,
-		    tmpdir+"/build/lib", tmpdir+"/build", tmpdir+"/lib");
+		    tmpdir+"/build/lib", tmpdir+"/build", tmpdir+"/lib",
+		    cflags, ldflags);
 #else
-	make_master(unpack_master, master_src, "build/lib", "build", "lib");
+	make_master(unpack_master, master_src, "build/lib", "build", "lib",
+		    cflags, ldflags);
 #endif
 	low_install_file(unpack_master,
 			 combine_path(prefix, "build/master.pike"));
       } else {
 	unpack_master = "unpack_master.pike";
-	make_master(unpack_master, master_src, "lib", "include/pike");
+	make_master(unpack_master, master_src, "lib", "include/pike",
+		    UNDEFINED, cflags, ldflags);
 	low_install_file(unpack_master,
 			 combine_path(prefix, "lib/master.pike"));
 	low_install_file(combine_path(vars->SRCDIR,
@@ -2745,7 +2758,7 @@ the PRIVATE_CRT stuff in install.pike.\n");
     }
     else
       make_master(combine_path(vars->TMP_LIBDIR,"master.pike"), master_src,
-		  lib_prefix, include_prefix);
+		  lib_prefix, include_prefix, UNDEFINED, cflags, ldflags);
 
     install_dir(vars->TMP_LIBDIR,lib_prefix,1);
     install_dir(vars->LIBDIR_SRC,lib_prefix,1);

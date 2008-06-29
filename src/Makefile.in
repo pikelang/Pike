@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.465 2008/06/28 10:06:32 marcus Exp $
+# $Id: Makefile.in,v 1.466 2008/06/29 11:20:05 agehall Exp $
 #
 
 # This line is needed on some machines.
@@ -51,6 +51,7 @@ lib_prefix = $(prefix)/lib/pike
 data_prefix = @datadir@
 share_prefix = $(data_prefix)/pike
 man_prefix = $(prefix)/man
+include_prefix = @includedir@
 
 # Arguments for test_pike.pike used by the verify targets.
 # TESTARGS = -F -a
@@ -113,7 +114,8 @@ FALLBACK_CC=@FALLBACK_CC@
 AR=@AR@
 
 LD=@LD@
-LDFLAGS=@LDFLAGS@ @LINKFORSHARED@ $(EXTRALDFLAGS)
+LINKFORSHARED=@LINKFORSHARED@
+LDFLAGS=@LDFLAGS@ $(LINKFORSHARED) $(EXTRALDFLAGS)
 LDSHARED=@LDSHARED@
 
 DEFAULT_RUNPIKE=$(TMP_BUILDDIR)/pike -DNOT_INSTALLED -DPRECOMPILED_SEARCH_MORE -m$(TMP_BUILDDIR)/master.pike $(PIKEOPTS)
@@ -613,6 +615,7 @@ Pike_module.wxs: pike-complete-stamp $(TMP_BINDIR)/install.pike Makefile
 	SRCDIR="$(SRCDIR)" prefix="$(prefix)" DOCDIR_SRC="$(DOCDIR_SRC)" \
 	MANDIR_SRC="$(MANDIR_SRC)" \
 	BASEDIR="$(BASEDIR)" man_prefix="$(man_prefix)" \
+	cflags="@DYNAMIC_MODULE_FLAGS@ -I$(include_prefix)" ldflags="" \
 	pike_name=$(pike_name) PIKE_MODULE_RELOC="$(PIKE_MODULE_RELOC)"
 
 Pike.wxs: $(TMP_BINDIR)/install.pike Makefile
@@ -625,6 +628,7 @@ Pike.wxs: $(TMP_BINDIR)/install.pike Makefile
 	SRCDIR="$(SRCDIR)" prefix="$(prefix)" DOCDIR_SRC="$(DOCDIR_SRC)" \
 	MANDIR_SRC="$(MANDIR_SRC)" \
 	BASEDIR="$(BASEDIR)" man_prefix="$(man_prefix)" \
+	cflags="@DYNAMIC_MODULE_FLAGS@ -I$(include_prefix)" ldflags="" \
 	pike_name=$(pike_name) PIKE_MODULE_RELOC="$(PIKE_MODULE_RELOC)"
 
 Pike.msi: Pike.wixobj Pike_ui.wixobj Pike_module.msm Pike_banner.bmp UpFldrBtn.ibd NewFldrBtn.ibd
@@ -653,14 +657,17 @@ install: pike-complete-stamp tools
 	MANDIR_SRC="$(MANDIR_SRC)" \
 	man_prefix="$(man_prefix)" pike_name=$(pike_name) \
 	fakeroot="$(buildroot)" PIKE_MODULE_RELOC="$(PIKE_MODULE_RELOC)" \
+	cflags="@DYNAMIC_MODULE_FLAGS@ -I$(include_prefix)" ldflags="" \
 	$(INSTALLARGS)
 
 install_interactive: pike-complete-stamp tools
 	@$(RUNPIKE) $(TMP_BINDIR)/install.pike --interactive \
 	exec_prefix="$(exec_prefix)"  prefix=$(prefix) \
+	include_prefix="$(include_prefix)" \
 	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
 	SRCDIR="$(SRCDIR)" DOCDIR_SRC="$(DOCDIR_SRC)" \
 	MANDIR_SRC="$(MANDIR_SRC)" \
+	cflags="@DYNAMIC_MODULE_FLAGS@ -I$(include_prefix)" ldflags="" \
 	fakeroot="$(buildroot)" PIKE_MODULE_RELOC="$(PIKE_MODULE_RELOC)"
 
 # tidy up a bit
@@ -775,6 +782,7 @@ tinstall: master-stamp
 	  MANDIR_SRC="$(MANDIR_SRC)" \
 	  man_prefix="$(man_prefix)" fakeroot="$(buildroot)" \
 	  PIKE_MODULE_RELOC="$(PIKE_MODULE_RELOC)" pike_name="test-pike" \
+	  cflags="@DYNAMIC_MODULE_FLAGS@ -I$(include_prefix)" ldflags="" \
 	  prefix="./test-install" $(INSTALLARGS)
 
 just-tinstall: master-stamp
@@ -786,6 +794,7 @@ just-tinstall: master-stamp
 	  MANDIR_SRC="$(MANDIR_SRC)" \
 	  man_prefix="$(man_prefix)" fakeroot="$(buildroot)" \
 	  PIKE_MODULE_RELOC="$(PIKE_MODULE_RELOC)" pike_name="test-pike" \
+	  cflags="@DYNAMIC_MODULE_FLAGS@ -I$(include_prefix)" ldflags="" \
 	  prefix="./test-install" $(INSTALLARGS)
 
 
@@ -1047,6 +1056,7 @@ bin_export:
 	SRCDIR="$(SRCDIR)" prefix="$(prefix)" DOCDIR_SRC="$(DOCDIR_SRC)" \
 	MANDIR_SRC="$(MANDIR_SRC)" \
 	BASEDIR="$(BASEDIR)" man_prefix="$(man_prefix)" \
+	cflags="@DYNAMIC_MODULE_FLAGS@ -I$(include_prefix)" ldflags="" \
 	pike_name=$(pike_name) PIKE_MODULE_RELOC="$(PIKE_MODULE_RELOC)"
 	@case " $(CC)" in \
 	  *\ rnt*) \
