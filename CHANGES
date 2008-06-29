@@ -198,10 +198,21 @@ o #pragma {no_,}deprecation_warnings
 Extensions and New Functions
 ----------------------------
 
+o getenv() and putenv() are now accessing and modifying the real
+  environment.
+
+o undefinedp() and destructedp() have been added as more readable
+  alternatives to zero_type().
+
 o limit()
 
   The new toplevel function limit(a, x, b) is a convenience function
   that works like min(max(a,x),b).
+
+o exit() now takes optional extra arguments for easier error reporting.
+
+  Example: 
+   exit(1, "Error while opening file %s: %s\n", path, strerror(errno()));
 
 o sprintf() and sscanf()
 
@@ -1018,6 +1029,14 @@ o .cmod:
 o Support for class symbols with storage in parent scope.
   Also added support for aliased symbols.
 
+o Added %c and %C to get_all_args to get char * without
+  NUL characters (no 0 valued characters inside the string).
+
+  %c: char *	      Only narrow (8 bit) strings without NUL.
+      This is identical to %s.
+
+  %C: char * or NULL  Only narrow (8 bit) strings without NUL, or 0
+
 
 Building and installing
 -----------------------
@@ -1114,21 +1133,10 @@ New malloc on Windows.
 
 poll/epoll
 
-getenv() and putenv() are now accessing and modifying the real
-environment.
-
-undefinedp() and destructedp() have been added as more readable
-alternatives to zero_type().
-
-exit w/ werror
-
 Iterator->next() no longer optional.
 
-sscanf %O %H %[^-X] (!= %[^X-]) %[X-X]
+sscanf %[^-X] (!= %[^X-]) %[X-X]
 
 env argument to main()
-
-c-api: Added %c and %C to get_all_args to get char * with/without
-NULL. (%c is an alias for %s but %C is new.)
 
 7.4::blaha
