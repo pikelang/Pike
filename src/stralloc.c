@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.224 2008/06/29 17:56:06 nilsson Exp $
+|| $Id: stralloc.c,v 1.225 2008/06/29 21:08:14 grubba Exp $
 */
 
 #include "global.h"
@@ -1196,7 +1196,7 @@ PMOD_EXPORT void check_string(struct pike_string *s)
 	ptrdiff_t i;
 	p_wchar2 *str = STR2 (s);
 	for (i = 0; i < s->len; i++)
-	  if (str[i] > 0xffff)
+	  if ((str[i] > 0xffff) || (str[i] < 0))
 	    goto size_shift_check_done;
 	Pike_fatal ("Shared string is too wide.\n");
       }
