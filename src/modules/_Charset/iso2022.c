@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iso2022.c,v 1.50 2008/06/29 13:54:59 mast Exp $
+|| $Id: iso2022.c,v 1.51 2008/06/29 15:01:11 mast Exp $
 */
 
 #ifdef HAVE_CONFIG_H
@@ -46,7 +46,7 @@ struct iso2022enc_stor {
   struct gdesc g[2];
   struct {
     p_wchar1 *map;
-    unsigned lo, hi;
+    int lo, hi;
   } r[2];
   int variant;
   struct pike_string *replace;

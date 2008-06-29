@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: charsetmod.c,v 1.68 2008/06/29 13:54:59 mast Exp $
+|| $Id: charsetmod.c,v 1.69 2008/06/29 15:01:10 mast Exp $
 */
 
 #ifdef HAVE_CONFIG_H
@@ -88,13 +88,15 @@ static size_t multichar_stor_offs = 0;
 
 struct std8e_stor {
   p_wchar0 *revtab;
-  unsigned int lowtrans, lo, hi;
+  unsigned lowtrans;
+  int lo, hi;
 };
 static size_t std8e_stor_offs = 0;
 
 struct std16e_stor {
   p_wchar1 *revtab;
-  unsigned int lowtrans, lo, hi;
+  unsigned lowtrans;
+  int lo, hi;
   int sshift;
 };
 static size_t std16e_stor_offs = 0;
@@ -1382,8 +1384,8 @@ static void f_rfc1345(INT32 args)
       struct program *p = NULL;
 
       if(args>1 && sp[1-args].type == T_INT && sp[1-args].u.integer != 0) {
-	int lowtrans = 0, i, j, lo2=0, hi2=0, z;
-	unsigned int c;
+	unsigned lowtrans = 0;
+	int i, j, lo2=0, hi2=0, z, c;
 
 	switch(charset_map[mid].mode) {
 	case MODE_94: lowtrans=lo=33; hi=126; break;
@@ -1461,8 +1463,7 @@ static void f_rfc1345(INT32 args)
 
     if(args>1 && sp[1-args].type == T_INT && sp[1-args].u.integer != 0) {
       struct std8e_stor *s8;
-      int i;
-      unsigned int c;
+      int i, c;
 
       s8 = push_std_8bite((args>2? args-2:0), args, lo, 65536);
       s8->lowtrans = lo;
@@ -2156,7 +2157,8 @@ static void feed_std8e(struct std8e_stor *s8, struct string_builder *sb,
 {
   ptrdiff_t l = str->len;
   p_wchar0 *tab = s8->revtab;
-  unsigned int lowtrans = s8->lowtrans, lo = s8->lo, hi = s8->hi;
+  unsigned lowtrans = s8->lowtrans;
+  int lo = s8->lo, hi = s8->hi;
   p_wchar0 ch;
 
   switch(str->size_shift) {
@@ -2188,7 +2190,7 @@ static void feed_std8e(struct std8e_stor *s8, struct string_builder *sb,
     {
       p_wchar2 c, *p = STR2(str);
       while(l--)
-	if((c=*p++)<lowtrans)
+	if((unsigned) (c=*p++)<lowtrans)
 	  string_builder_putchar(sb, c);
 	else if(c>=lo && c<hi && (ch=tab[c-lo])!=0)
 	  string_builder_putchar(sb, ch);
@@ -2245,7 +2247,8 @@ static void feed_std16e(struct std16e_stor *s16, struct string_builder *sb,
 {
   ptrdiff_t l = str->len;
   p_wchar1 *tab = s16->revtab;
-  unsigned int lowtrans = s16->lowtrans, lo = s16->lo, hi = s16->hi;
+  unsigned lowtrans = s16->lowtrans;
+  int lo = s16->lo, hi = s16->hi;
   int sshift = s16->sshift;
   p_wchar1 ch;
 
@@ -2290,7 +2293,7 @@ static void feed_std16e(struct std16e_stor *s16, struct string_builder *sb,
     {
       p_wchar2 c, *p = STR2(str);
       while(l--)
-	if((c=*p++)<lowtrans)
+	if((unsigned) (c=*p++)<lowtrans)
 	  string_builder_putchar(sb, c);
 	else if(c>=lo && c<hi && (ch=tab[c-lo])!=0) {
 	  if(sshift && !(ch & 0x80)) {
