@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.208 2008/06/28 21:37:34 grubba Exp $
+|| $Id: mapping.c,v 1.209 2008/06/29 08:57:03 grubba Exp $
 */
 
 #include "global.h"
@@ -1421,6 +1421,20 @@ PMOD_EXPORT struct mapping *copy_mapping(struct mapping *m)
 
 #endif
 
+static struct mapping *destructive_copy_mapping(struct mapping *m)
+{
+  if ((m->refs == 1) && !m->data->hardlinks &&
+      !(m->data->flags & MAPPING_WEAK)) {
+    /* We may perform destructive operations on the mapping. */
+    add_ref(m);
+    return m;
+  }
+  return copy_mapping(m);
+}
+
+/* NOTE: May perform destructive operations on either of the arguments
+ *       if it has only a single reference.
+ */
 static struct mapping *subtract_mappings(struct mapping *a, struct mapping *b)
 {
   struct mapping *res;
@@ -1432,7 +1446,7 @@ static struct mapping *subtract_mappings(struct mapping *a, struct mapping *b)
 
   /* First some special cases. */
   if (!a_md->size || !b_md->size || !a_md->hashsize || !b_md->hashsize) {
-    return copy_mapping(a);
+    return destructive_copy_mapping(a);
   }
   if (a_md == b_md) {
     return allocate_mapping(0);
@@ -1456,7 +1470,7 @@ static struct mapping *subtract_mappings(struct mapping *a, struct mapping *b)
     }
   } else {
     /* Remove the elements in a that are in b. */
-    res = copy_mapping(a);
+    res = destructive_copy_mapping(a);
     SET_ONERROR(err, do_free_mapping, res);
     NEW_MAPPING_LOOP(b_md) {
       map_delete(res, &k->ind);
@@ -1466,6 +1480,9 @@ static struct mapping *subtract_mappings(struct mapping *a, struct mapping *b)
   return res;
 }
 
+/* NOTE: May perform destructive operations on either of the arguments
+ *       if it has only a single reference.
+ */
 static struct mapping *and_mappings(struct mapping *a, struct mapping *b)
 {
   struct mapping *res;
@@ -1477,10 +1494,10 @@ static struct mapping *and_mappings(struct mapping *a, struct mapping *b)
 
   /* First some special cases. */
   if (!a_md->size || !b_md->size) return allocate_mapping(0);
-  if (a_md == b_md) return copy_mapping(a);
+  if (a_md == b_md) return destructive_copy_mapping(a);
 
   /* Copy the second mapping. */
-  res = copy_mapping(b);
+  res = destructive_copy_mapping(b);
   SET_ONERROR(err, do_free_mapping, res);
 
   /* Remove elements in res that aren't in a. */
@@ -1500,6 +1517,9 @@ static struct mapping *and_mappings(struct mapping *a, struct mapping *b)
   return res;
 }
 
+/* NOTE: May perform destructive operations on either of the arguments
+ *       if it has only a single reference.
+ */
 static struct mapping *or_mappings(struct mapping *a, struct mapping *b)
 {
   struct mapping *res;
@@ -1510,13 +1530,13 @@ static struct mapping *or_mappings(struct mapping *a, struct mapping *b)
   ONERROR err;
 
   /* First some special cases. */
-  if (!a_md->size) return copy_mapping(b);
-  if (!b_md->size) return copy_mapping(a);
-  if (a_md == b_md) return copy_mapping(a);
+  if (!a_md->size) return destructive_copy_mapping(b);
+  if (!b_md->size) return destructive_copy_mapping(a);
+  if (a_md == b_md) return destructive_copy_mapping(a);
 
   if (a_md->size <= b_md->size) {
     /* Copy the second mapping. */
-    res = copy_mapping(b);
+    res = destructive_copy_mapping(b);
     SET_ONERROR(err, do_free_mapping, res);
 
     /* Add elements in a that aren't in b. */
@@ -1535,7 +1555,7 @@ static struct mapping *or_mappings(struct mapping *a, struct mapping *b)
     UNSET_ONERROR(err);
   } else {
     /* Copy the first mapping. */
-    res = copy_mapping(a);
+    res = destructive_copy_mapping(a);
     SET_ONERROR(err, do_free_mapping, res);
 
     /* Add all elements in b. */
@@ -1547,6 +1567,9 @@ static struct mapping *or_mappings(struct mapping *a, struct mapping *b)
   return res;
 }
 
+/* NOTE: May perform destructive operations on either of the arguments
+ *       if it has only a single reference.
+ */
 static struct mapping *xor_mappings(struct mapping *a, struct mapping *b)
 {
   struct mapping *res;
@@ -1557,8 +1580,8 @@ static struct mapping *xor_mappings(struct mapping *a, struct mapping *b)
   ONERROR err;
 
   /* First some special cases. */
-  if (!a_md->size) return copy_mapping(b);
-  if (!b_md->size) return copy_mapping(a);
+  if (!a_md->size) return destructive_copy_mapping(b);
+  if (!b_md->size) return destructive_copy_mapping(a);
   if (a_md == b_md) return allocate_mapping(0);
 
   /* Copy the largest mapping. */
@@ -1569,7 +1592,7 @@ static struct mapping *xor_mappings(struct mapping *a, struct mapping *b)
     a_md = b_md;
     b_md = b->data;
   }    
-  res = copy_mapping(b);
+  res = destructive_copy_mapping(b);
   SET_ONERROR(err, do_free_mapping, res);
 
   /* Add elements in a that aren't in b, and remove those that are. */
@@ -1591,6 +1614,9 @@ static struct mapping *xor_mappings(struct mapping *a, struct mapping *b)
   return res;
 }
 
+/* NOTE: May perform destructive operations on either of the arguments
+ *       if it has only a single reference.
+ */
 PMOD_EXPORT struct mapping *merge_mappings(struct mapping *a, struct mapping *b, INT32 op)
 {
   ONERROR r1,r2,r3,r4;
@@ -1743,6 +1769,9 @@ PMOD_EXPORT struct mapping *merge_mapping_array_unordered(struct mapping *a,
   return m;
 }
 
+/* NOTE: May perform destructive operations on either of the arguments
+ *       if it has only a single reference.
+ */
 PMOD_EXPORT struct mapping *add_mappings(struct svalue *argp, INT32 args)
 {
   INT32 e,d;
