@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.181 2008/06/28 23:05:59 nilsson Exp $
+|| $Id: mpz_glue.c,v 1.182 2008/06/29 14:06:45 grubba Exp $
 */
 
 #include "global.h"
@@ -1653,7 +1653,9 @@ static void name(INT32 args)				\
   INT32 i;						\
   MP_INT *arg;						\
   if(!args) SIMPLE_TOO_FEW_ARGS_ERROR (errmsg_name, 1);	\
-  if (!(arg = get_mpz(sp-args, 0, NULL, 0, 0)))		\
+  if (((sp[-args].type != PIKE_T_INT) &&		\
+       (sp[-args].type != PIKE_T_OBJECT)) ||		\
+      !(arg = get_mpz(sp-args, 0, NULL, 0, 0)))		\
     default;						\
   else							\
     i=mpz_cmp(THIS, arg) cmp 0;				\
