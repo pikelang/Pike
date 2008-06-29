@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.448 2008/06/29 11:20:05 agehall Exp $
+// $Id: master.pike.in,v 1.449 2008/06/29 12:21:52 agehall Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -1890,7 +1890,7 @@ constant master_efuns = ({
 
 enum bool { false=0, true=1 };
 
-//! Prefix for Pike-related Pike header files.
+//! Prefix for Pike-related C header files.
 string include_prefix;
 
 //! Prefix for autodoc files.
@@ -1900,7 +1900,7 @@ string doc_prefix;
 string cflags;
 
 //! Flags suitable for use when linking Pike C modules
-string ldflags;
+string ldflags; // Not yet used
 
 //! @decl int strlen(string|multiset|array|mapping|object thing)
 //! @appears strlen
@@ -1958,15 +1958,22 @@ protected void create()
   add_module_path("¤lib_prefix¤/modules");
 #endif
 
+#if "¤cflags¤ "[0]!='¤'
+  cflags = "¤cflags¤";
+#endif
+
+#if "¤ldflags¤ "[0]!='¤'
+  ldflags = "¤ldflags¤";
+#endif
+
 #if "¤include_prefix¤"[0]!='¤'
   include_prefix = "¤include_prefix¤";
+  cflags = (cflags || "") + " -I" + include_prefix;
 #endif
+
 #if "¤doc_prefix¤"[0]!='¤'
   doc_prefix = "¤doc_prefix¤";
 #endif
-
-  cflags = "¤cflags¤";
-  ldflags = "¤ldflags¤";
 
 #if constant(__embedded_resource_directory)
   // for use with embedded interpreters
