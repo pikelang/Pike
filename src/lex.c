@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lex.c,v 1.122 2008/06/29 21:14:00 marcus Exp $
+|| $Id: lex.c,v 1.123 2008/06/29 21:33:25 marcus Exp $
 */
 
 #include "global.h"
@@ -18,7 +18,7 @@
 
 /* Must do like this since at least gcc is a little too keen on
  * optimizing INT_TYPE_MUL_OVERFLOW otherwise. */
-static p_wchar2 eight = 8, sixteen = 16, ten = 10;
+static unsigned INT32 eight = 8, sixteen = 16, ten = 10;
 
 /* Make lexers for shifts 0, 1 and 2. */
 
