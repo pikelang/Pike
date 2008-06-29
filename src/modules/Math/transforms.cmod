@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: transforms.cmod,v 1.15 2008/06/28 23:05:59 nilsson Exp $
+|| $Id: transforms.cmod,v 1.16 2008/06/29 12:19:08 mast Exp $
 */
 
 #include "global.h"
@@ -188,12 +188,12 @@ PIKECLASS FFT
 	  else Pike_error("Invalid type in array!\n");
 	}
 
-      for(;i<n;i++)
+      for(;i<n;i++, j++)
 	{
 	  if (p->item[j].type == PIKE_T_INT)
-	    THIS->r_in[n-j] = (fftw_real)p->item[j++].u.integer;
+	    THIS->r_in[n-j] = (fftw_real)p->item[j].u.integer;
 	  else if (p->item[j].type == PIKE_T_FLOAT)
-	    THIS->r_in[n-j] = (fftw_real)p->item[j++].u.float_number;
+	    THIS->r_in[n-j] = (fftw_real)p->item[j].u.float_number;
 	  else Pike_error("Invalid type in array!\n");
 	}
 
