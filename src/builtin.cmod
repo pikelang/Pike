@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.219 2008/06/29 18:01:39 nilsson Exp $
+|| $Id: builtin.cmod,v 1.220 2008/06/29 23:14:18 grubba Exp $
 */
 
 #include "global.h"
@@ -651,8 +651,9 @@ PIKEFUN mapping(1:2) mkmapping(array(1=mixed) ind, array(2=mixed) val)
  *! Marks the string as secure, which will clear the memory area
  *! before freeing the string.
  */
-PIKEFUN string secure(string str)
-     optflags OPT_SIDE_EFFECT;
+PIKEFUN string string_secure(string str)
+  optflags OPT_SIDE_EFFECT;
+  rawtype tFunc(tSetvar(0, tStr), tVar(0));
 {
   str->flags |= STRING_CLEAR_ON_EXIT;
   RETURN str;
@@ -3705,7 +3706,8 @@ PIKECLASS List
 
     /*! @decl int(0..1) first()
      *!
-     *!   Reset the iterator.
+     *!   Reset the iterator to point to the first element in
+     *!   the list.
      *!
      *! @returns
      *!   Returns @expr{1@} if there are elements in the list,
