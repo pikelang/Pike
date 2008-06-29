@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.h,v 1.133 2008/05/11 02:31:57 mast Exp $
+|| $Id: gc.h,v 1.134 2008/06/29 12:07:04 nilsson Exp $
 */
 
 #ifndef GC_H
@@ -320,7 +320,7 @@ int gc_do_weak_free(void *a);
 void gc_delayed_free(void *a, int type);
 void debug_gc_mark_enqueue(queue_call call, void *data);
 int gc_mark(void *a);
-void gc_move_marker (void *old, void *new);
+void gc_move_marker (void *old_thing, void *new_thing);
 PMOD_EXPORT void gc_cycle_enqueue(gc_cycle_check_cb *checkfn, void *data, int weak);
 void gc_cycle_run_queue(void);
 int gc_cycle_push(void *x, struct marker *m, int weak);

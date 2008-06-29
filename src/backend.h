@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.h,v 1.40 2008/06/13 12:11:22 grubba Exp $
+|| $Id: backend.h,v 1.41 2008/06/29 12:07:04 nilsson Exp $
 */
 
 #ifndef BACKEND_H
@@ -83,7 +83,7 @@ PMOD_EXPORT void debug_check_fd_not_in_use (int fd);
 #if 1
 struct Backend_struct *get_backend_for_fd(int fd);
 PMOD_EXPORT struct object *get_backend_obj_for_fd (int fd);
-PMOD_EXPORT void set_backend_for_fd (int fd, struct Backend_struct *new);
+PMOD_EXPORT void set_backend_for_fd (int fd, struct Backend_struct *new_be);
 #endif
 
 PMOD_EXPORT struct object *get_backend_obj (struct Backend_struct *b);
@@ -173,7 +173,7 @@ PMOD_EXPORT void hook_fd_callback_box (struct fd_callback_box *box);
 PMOD_EXPORT void unhook_fd_callback_box (struct fd_callback_box *box);
 PMOD_EXPORT void set_fd_callback_events (struct fd_callback_box *box, int events);
 PMOD_EXPORT void change_backend_for_box (struct fd_callback_box *box,
-					 struct Backend_struct *new);
+					 struct Backend_struct *new_be);
 PMOD_EXPORT void change_fd_for_box (struct fd_callback_box *box, int new_fd);
 
 /* Old style callback interface. This only accesses the default backend. It

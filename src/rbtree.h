@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rbtree.h,v 1.10 2003/04/02 19:22:44 mast Exp $
+|| $Id: rbtree.h,v 1.11 2008/06/29 12:07:04 nilsson Exp $
 */
 
 /* An implementation of a threaded red/black balanced binary tree.
@@ -154,13 +154,13 @@ typedef void rb_free_fn (struct rb_node_hdr *node, void *extra);
 
 struct rb_node_hdr *rb_insert (struct rb_node_hdr **root,
 			       rb_find_fn *find_fn, void *key,
-			       struct rb_node_hdr *new);
+			       struct rb_node_hdr *new_node);
 void rb_add (struct rb_node_hdr **root,
 	     rb_find_fn *find_fn, void *key,
-	     struct rb_node_hdr *new);
+	     struct rb_node_hdr *new_node);
 void rb_add_after (struct rb_node_hdr **root,
 		   rb_find_fn *find_fn, void *key,
-		   struct rb_node_hdr *new,
+		   struct rb_node_hdr *new_node,
 		   struct rb_node_hdr *existing);
 struct rb_node_hdr *rb_remove (struct rb_node_hdr **root,
 			       rb_find_fn *find_fn, void *key);
