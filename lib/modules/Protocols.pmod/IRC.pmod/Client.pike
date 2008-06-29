@@ -383,7 +383,8 @@ void got_notify(string from,string type,
    }
 //    werror("got notify: %O, %O, %O, %O\n",from,type,to,message);
    if (options->generic_notify)
-      options->generic_notify(from,type,to,message,extra[0]);
+      options->generic_notify(from,type,to,message,
+                              (extra&&sizeof(extra))?extra[0]:0);
 }
 
 object cmd=class
