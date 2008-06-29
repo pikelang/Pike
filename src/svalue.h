@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.h,v 1.165 2008/06/29 17:49:58 nilsson Exp $
+|| $Id: svalue.h,v 1.166 2008/06/29 17:55:03 nilsson Exp $
 */
 
 #ifndef SVALUE_H
@@ -322,10 +322,6 @@ struct svalue
 #define NUMBER_DESTRUCTED 2
 
 #define FUNCTION_BUILTIN USHRT_MAX
-
-#define STRING_STRING 0
-#define STRING_ARROWINDEX 1
-#define STRING_SECURE 2
 
 PMOD_EXPORT const struct svalue svalue_int_zero;
 #ifdef HAVE_UNION_INIT
