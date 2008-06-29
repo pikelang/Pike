@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lexer.h,v 1.81 2008/06/29 11:04:49 nilsson Exp $
+|| $Id: lexer.h,v 1.82 2008/06/29 11:07:04 nilsson Exp $
 */
 
 /*
@@ -333,14 +333,17 @@ static unsigned char_const(struct lex *lex)
       lex->pos -= (1<<SHIFT);
       return 0;
     case 4: case 5: case 6:
-      yywarning ("Too large character value in escape.");
+      if( Pike_compiler->compiler_pass == 1 )
+        yywarning ("Too large character value in escape.");
       c = MAX_UINT32;
       break;
     case 7:
-      yywarning ("Too few hex digits in \\u escape.");
+      if( Pike_compiler->compiler_pass == 1 )
+        yywarning ("Too few hex digits in \\u escape.");
       return '\\';
     case 8:
-      yywarning ("Too few hex digits in \\U escape.");
+      if( Pike_compiler->compiler_pass == 1 )
+        yywarning ("Too few hex digits in \\U escape.");
       return '\\';
   }
   SKIPN (l);
@@ -738,7 +741,8 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	  }
           else
           {
-            yywarning("Unknown #pragma directive.");
+            if( Pike_compiler->compiler_pass == 1 )
+              yywarning("Unknown #pragma directive.");
           }
 	  break;
 	}
