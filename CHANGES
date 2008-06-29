@@ -268,7 +268,7 @@ o ADT.BitBuffer
 
 o ADT.Queue
 
-  It is now possible to use sizeof() and value() on a Queue object.
+  It is now possible to use sizeof() and values() on a Queue object.
 
 o ADT.Stack
 
@@ -280,7 +280,7 @@ o ADT.Struct
     word and longword respectively.
 
   - The Item classes int8, uint8, int16, uint16, int32, uint32, int64
-    and uint 64 are aliases for already existing Item classes.
+    and uint64 are aliases for already existing Item classes.
 
   - sizeof() now works for empty Struct objects.
 
@@ -288,7 +288,20 @@ o ADT.Struct
 
   - Struct objects can now be used as Items in other Structs.
 
-    FIXME: Example
+    class Pair
+    {
+      inherit ADT.Struct;
+      Item id = uint8();
+      Item val = uint64();
+    }
+
+    class File
+    {
+      inherit ADT.Struct;
+      Item magic = Chars(4);
+      Item one = Pair();
+      Item two = Pair();
+    }
 
 o Array
 
@@ -370,8 +383,6 @@ o GLUE
 
   - BaseTexture and BaseDWIM now supports clamped textures.
 
-  - Several bug fixes.
-
 o Gz
 
   - Added compress() and uncompress() functions as an simpler and more
@@ -384,10 +395,11 @@ o Gz
 
 o Image.Colortable
 
-  FIXME
+  - The new method greyp() can be used to query if the color in the
+    color object is grey.
 
-  greyp()
-  partial encode/decode (dithering, lookup mode not saved)
+  - Partial support for serializing color objects. Dithering type and
+    lookup mode is not currently saved.
 
 o Image.Dims
 
@@ -395,41 +407,33 @@ o Image.Dims
 
 o Image.FreeType
 
-  FIXME
-
-  supports monochrome fonts
-
-o Image.GIF
-
-  FIXME
-
-  fixed image leaks
-  fixed some decoding errors 
+  - Added support for handling monochrome (bitmap) fonts.
 
 o Image.Image
 
-  FIXME
+  - Image object can now be serialized and deserialized with
+    encode_value() and decode_value().
 
-  adjusted_cmyk()
-  encode/decode
-  conversion to/from YUV
+  - It is possible to convert the colors in an image object to and
+    from YUV (YCrCb) with the new rgb_to_yuv() and yuv_to_rgb()
+    methods.
 
 o Image.Layer
 
-  FIXME
-
-  (string)Image.Layer
+  - It is now possible to get the raw bitmap data of a layer by
+    casting the layer object to a string.
 
 o Image.PNG
 
-  FIXME
-
-  - Many speed improvements and bug fixes.
-
   - Properly decode cHRM (chrome), sBIT (sbit), gAMA (gamma), pHYs
-    (physical), oFFs (offset), tIME (time)
+    (physical), oFFs (offset), tIME (time) chunks.
 
-  - zlevel and zstrategy
+  - The compression level and strategy when compressing PNG images can
+    be controlled by passing "zlevel" and "zstrategy" options to the
+    encode() method. Available strategies are filtered, huffman, rle
+    and fixed.
+
+      Image.PNG.encode( img, ([ "zlevel":9, "zstrategy":Gz.RLE ]) );
 
 o Image.TIFF
 
@@ -457,8 +461,7 @@ o Locale.Charset
 
   Added typed encode and decode error objects
   (Locale.Charset.EncodeError and Locale.Charset.DecodeError) to make
-  it possible to catch such errors in a better way. FIXME: Not
-  finished.
+  it possible to catch such errors in a better way.
 
 o Math
 
@@ -486,21 +489,22 @@ o MIME
 
 o Mysql
 
-  Unicode support. FIXME: Document in more detail. C.f. check-in 1.25
-  of lib/modules/Sql.pmod/mysql.pike.
+  Unicode support. FIXME: mast Document in more detail. C.f. check-in
+  1.25 of lib/modules/Sql.pmod/mysql.pike.
 
 o Odbc
 
   FIXME: Rewrite
   Now supports UnixODBC properly.
   Fixed various issues with Unicode.
-x  FreeTDS fixes
+  FreeTDS fixes
 
 o Oracle
 
-  FIXME:
-  Works with Oracle 10
-  added num_rows()
+  - The module has been updated to work with Oracle 10.
+
+  - The number of rows in a result object can be queried from the new
+    function num_rows().
 
 o Parser.HTML
 
@@ -509,13 +513,15 @@ o Parser.HTML
   
 o Parser.Pike and Parser.C
 
-  Parser.Pike and Parser.C has been rewritten in C for increased
-  performance. The #string directives should be handled correctly now.
+  - Parser.Pike and Parser.C has been rewritten in C for increased
+    performance.
+
+  - The #string directives should be handled correctly now.
 
 o Parser.RCS
 
-  FIXME: Rewrite
-  Handle broken RCS files better.
+  - The RCS parser has been rewritten to handle broken RCS data
+    better.
 
 o Parser.XML.NSTree
 
