@@ -807,7 +807,21 @@ o gethrtime, gethrvtime, gauge
 
 New Modules
 
+o Fuse
+
+  FUSE (Filesystem in USErspace) provides a simple interface for
+  userspace programs to export a virtual filesystem to the Linux
+  kernel (and some other OS:es). FUSE also aims to provide a secure
+  method for non privileged users to create and mount their own
+  filesystem implementations.
+
+  This module implements the needed interfaces to make it possible to
+  write a FUSE filesystem in Pike.
+
+
 o ADT.List
+
+  A simple linked list of values.
 
 o ADT.Trie
 
@@ -986,6 +1000,11 @@ o The modules Mird, Perl and Ssleay have been removed.
 
 -------------------- NOTES------------
 
+New external module utilities
+-x cflags
+-x precompile
+
+
 2004/04/26 00:13:30
 
 backport:
@@ -1015,7 +1034,6 @@ Protocols.LDAP module.pmod
 New src:
 embed/libpike
 tmodule
-Fuse
 Protocols.DNS_SD
 Charset gb18030
         gbk
