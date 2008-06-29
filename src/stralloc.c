@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.225 2008/06/29 21:08:14 grubba Exp $
+|| $Id: stralloc.c,v 1.226 2008/06/29 21:21:46 marcus Exp $
 */
 
 #include "global.h"
@@ -117,7 +117,7 @@ static INLINE size_t do_hash(struct pike_string *s)
 }
 
 
-static INLINE int find_magnitude1(const unsigned INT16 *s, ptrdiff_t len)
+static INLINE int find_magnitude1(const p_wchar1 *s, ptrdiff_t len)
 {
   while(--len>=0)
     if(s[len]>=256)
@@ -125,15 +125,15 @@ static INLINE int find_magnitude1(const unsigned INT16 *s, ptrdiff_t len)
   return 0;
 }
 
-static INLINE int find_magnitude2(const unsigned INT32 *s, ptrdiff_t len)
+static INLINE int find_magnitude2(const p_wchar2 *s, ptrdiff_t len)
 {
   while(--len>=0)
-  {
-    if(s[len]>=256)
+  {    
+    if((unsigned INT32)s[len]>=256)
     {
       do
       {
-	if(s[len]>=65536)
+	if((unsigned INT32)s[len]>=65536)
 	  return 2;
       }while(--len>=0);
       return 1;
@@ -142,8 +142,9 @@ static INLINE int find_magnitude2(const unsigned INT32 *s, ptrdiff_t len)
   return 0;
 }
 
-static INLINE int min_magnitude(const unsigned INT32 c)
+static INLINE int min_magnitude(p_wchar2 c)
 {
+  if(c<0) return 2;
   if(c<256) return 0;
   if(c<65536) return 1;
   return 2;
@@ -2534,7 +2535,7 @@ PMOD_EXPORT ptrdiff_t string_builder_quote_string(struct string_builder *buf,
 
   for (; i < str->len; i++) {
     p_wchar2 ch = index_shared_string(str, i);
-    if (ch > 0xffff) {
+    if (ch < 0 || ch > 0xffff) {
       /* Huge character. */
       string_builder_binary_strcat(buf, "\\U", 2);
       string_builder_append_integer(buf, ch, 16, APPEND_ZERO_PAD, 8, 8);
