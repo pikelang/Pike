@@ -2,12 +2,19 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.188 2008/06/29 15:37:12 marcus Exp $
+// $Id: install.pike,v 1.189 2008/06/29 16:13:05 marcus Exp $
 
 #define USE_GTK
 
+#ifdef USE_GTK
+#if constant(GTK2.parse_rc)
+#define USE_GTK2
+#define GTK GTK2
+#else
 #if !constant(GTK.parse_rc)
 #undef USE_GTK
+#endif
+#endif
 #endif
 
 // #define GENERATE_WIX_UI
@@ -1709,23 +1716,39 @@ void update_entry2()
   entry2->set_text( combine_path( entry1 -> get_text(), "bin/pike") );
 }
 
+#ifdef USE_GTK2
+void close_fileselector(object button, object selector)
+#else
 void close_fileselector(object selector, object button)
+#endif
 {
   selector->hide();
   destruct(selector);  
 }
 
+#ifdef USE_GTK2
+void set_filename(object button, array ob)
+#else
 void set_filename(array ob, object button)
+#endif
 {
   object selector=ob[0];
   object entry=ob[1];
   entry->set_text(selector->get_filename());
   if(entry == entry1)
     update_entry2();
+#ifdef USE_GTK2
+  close_fileselector(button,selector);
+#else
   close_fileselector(selector,button);
+#endif
 }
 
+#ifdef USE_GTK2
+void selectfile(object button, object entry)
+#else
 void selectfile(object entry, object button)
+#endif
 {
   object selector;
   selector=GTK.FileSelection("Pike installation prefix");
@@ -1793,8 +1816,12 @@ void begin_wizard(array(string) argv)
 	       ->set_shadow_type(GTK.SHADOW_IN)
 	       ->set_border_width(11)
 	       ->add(hbox1=GTK.Hbox(0,0)
+#ifdef USE_GTK2
+		     ->PS(GTK.Image(combine_path(vars->SRCDIR, "install-welcome")),0,0,0)
+#else
 		     ->PS(GTK.Pixmap(GTK.Util.load_image(combine_path(vars->SRCDIR,
 								      "install-welcome"))->img),0,0,0)
+#endif
 		     ->PS(vbox2=GTK.Vbox(0,0),1,1,0)
 		       ),1,1,0)
 	  ->PS(hbuttonbox1=GTK.HbuttonBox()
