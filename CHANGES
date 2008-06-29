@@ -1012,12 +1012,48 @@ o Stdio
 o The modules Mird, Perl and Ssleay have been removed.
 
 
+New simplified method to write external C/C++ modules
+
+  It's now suggested that you do not use the fairly complex 'pike
+  internal' style of external modules (configure.in with
+  AC_MODULE_INIT etc).
+
+  It's also no longer required that you have a configure script to use
+  pike -x module.
+
+  Instead simply locate the includefiles using 'pike -x cflags', and
+  convert .cmod to .c files using 'pike -x precompile'.
+
+  An example rather minimal 'pike -x module' compatible Makefile,
+  without a configure script, using .cmod format files for a simple
+  local module:
+
+  | CC=gcc
+  | CFLAGS := -O9 -fweb -shared -Wall $(CFLAGS) $(shell $(PIKE) -x cflags) -g
+  | LD=$(CC) -shared -lGL
+  | 
+  | all: Spike.so
+  |
+  | install: Spike.so
+  | 	cp $< $(MODULE_INSTALL_DIR)
+  | 
+  | Spike.so: Spike.o
+  | 	$(LD) -o Spike.so Spike.o $(LDFLAGS)
+  | 
+  | Spike.o: Spike.c
+  | 
+  | Spike.c: Spike.cmod
+  | 	$(PIKE) -x precompile $< > $@
+
+  It's usually OK not to use pike -x module at all, but it will pass
+  on a few extra variables to your make (and configure script):
+
+   PIKE: How to start the pike interpreter used running pike -x module
+   MODULE_INSTALL_DIR: Where modules goes
+   LOCAL_MODULE_PATH: Alternative (user local) module location
+
+
 -------------------- NOTES------------
-
-New external module utilities
--x cflags
--x precompile
-
 
 2004/04/26 00:13:30
 
