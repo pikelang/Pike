@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.299 2008/06/29 12:37:10 nilsson Exp $
+|| $Id: object.c,v 1.300 2008/06/29 12:50:04 nilsson Exp $
 */
 
 #include "global.h"
@@ -2433,7 +2433,7 @@ static void f_magic_index(INT32 args)
       break;
     case 1:
       inherit = MAGIC_THIS->inherit;
-      f = really_low_find_shared_string_identifier (s, inherit->prog, SEE_STATIC);
+      f = really_low_find_shared_string_identifier (s, inherit->prog, SEE_PROTECTED);
       break;
     case 2:
       inherit = o->prog->inherits + 0;
@@ -2441,7 +2441,7 @@ static void f_magic_index(INT32 args)
       break;
     case 3:
       inherit = o->prog->inherits + 0;
-      f = really_low_find_shared_string_identifier (s, inherit->prog, SEE_STATIC);
+      f = really_low_find_shared_string_identifier (s, inherit->prog, SEE_PROTECTED);
       break;
     default:
       Pike_error("Unknown indexing type: %d.\n", type);
@@ -2510,7 +2510,7 @@ static void f_magic_set_index(INT32 args)
       break;
     case 1:
       inherit = MAGIC_THIS->inherit;
-      f = really_low_find_shared_string_identifier (s, inherit->prog, SEE_STATIC);
+      f = really_low_find_shared_string_identifier (s, inherit->prog, SEE_PROTECTED);
       break;
     case 2:
       inherit = o->prog->inherits + 0;
@@ -2518,7 +2518,7 @@ static void f_magic_set_index(INT32 args)
       break;
     case 3:
       inherit = o->prog->inherits + 0;
-      f = really_low_find_shared_string_identifier (s, inherit->prog, SEE_STATIC);
+      f = really_low_find_shared_string_identifier (s, inherit->prog, SEE_PROTECTED);
       break;
     default:
       Pike_error("Unknown indexing type.\n");

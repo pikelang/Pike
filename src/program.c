@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.728 2008/06/29 12:37:10 nilsson Exp $
+|| $Id: program.c,v 1.729 2008/06/29 12:50:04 nilsson Exp $
 */
 
 #include "global.h"
@@ -1574,7 +1574,7 @@ struct node_s *find_module_identifier(struct pike_string *ident,
       {
 	i=really_low_find_shared_string_identifier(ident,
 						   p->new_program,
-						   SEE_STATIC|SEE_PRIVATE);
+						   SEE_PROTECTED|SEE_PRIVATE);
 	if(i!=-1)
 	{
 	  if ((p->flags & COMPILATION_FORCE_RESOLVE) &&
@@ -2264,7 +2264,7 @@ void fixate_program(void)
 	e=find_shared_string_identifier(name,p);
 	if(e == -1)
 	  e=really_low_find_shared_string_identifier(name, p,
-						     SEE_STATIC|SEE_PRIVATE);
+						     SEE_PROTECTED|SEE_PRIVATE);
 
 	if((e != i) && (e != -1))
 	{
@@ -3437,7 +3437,7 @@ struct program *end_first_pass(int finish)
     {
       int id;
       if(Pike_compiler->new_program->inherits[e].inherit_level!=1) continue;
-      id=low_reference_inherited_identifier(0, e, s, SEE_STATIC);
+      id=low_reference_inherited_identifier(0, e, s, SEE_PROTECTED);
       if(id!=-1)
       {
 	Pike_compiler->init_node=mknode(F_COMMA_EXPR,
@@ -3979,7 +3979,7 @@ node *reference_inherited_identifier(struct pike_string *super_name,
     id=low_reference_inherited_identifier(0,
 					  e,
 					  function_name,
-					  SEE_STATIC);
+					  SEE_PROTECTED);
 
     if(id!=-1)
       return mkidentifiernode(id);
@@ -4021,7 +4021,7 @@ node *reference_inherited_identifier(struct pike_string *super_name,
 	if(super_name != p->inherits[e].name)
 	  continue;
 
-      id=low_reference_inherited_identifier(state,e,function_name,SEE_STATIC);
+      id=low_reference_inherited_identifier(state,e,function_name,SEE_PROTECTED);
 
       if(id!=-1)
 	return mkexternalnode(p, id);
@@ -4580,7 +4580,7 @@ int isidentifier(struct pike_string *s)
 {
   return really_low_find_shared_string_identifier(s,
 						  Pike_compiler->new_program,
-						  SEE_STATIC|SEE_PRIVATE);
+						  SEE_PROTECTED|SEE_PRIVATE);
 }
 
 /* Define an alias for a (possibly extern) identifier.
@@ -5896,7 +5896,7 @@ int really_low_find_shared_string_identifier(struct pike_string *name,
     funp = prog->identifier_references + i;
     if(funp->id_flags & ID_HIDDEN) continue;
     if(funp->id_flags & ID_PROTECTED)
-      if(!(flags & SEE_STATIC))
+      if(!(flags & SEE_PROTECTED))
 	continue;
     fun = ID_FROM_PTR(prog, funp);
     /* if(fun->func.offset == -1) continue; * Prototype */
@@ -5944,7 +5944,7 @@ PMOD_EXPORT int low_find_lfun(struct program *p, ptrdiff_t lfun)
     really_low_find_shared_string_identifier(lfun_name,
 					     dmalloc_touch(struct program *,
 							   p),
-					     SEE_STATIC);
+					     SEE_PROTECTED);
 #if 0
   if (i < 0 || !(p->flags & PROGRAM_FIXED)) return i;
   id = ID_FROM_INT(p, i);

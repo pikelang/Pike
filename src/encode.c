@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.282 2008/06/28 18:35:58 mast Exp $
+|| $Id: encode.c,v 1.283 2008/06/29 12:50:03 nilsson Exp $
 */
 
 #include "global.h"
@@ -959,7 +959,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	  if(really_low_find_shared_string_identifier(
 	       ID_FROM_INT(val->u.object->prog, val->subtype)->name,
 	       val->u.object->prog,
-	       SEE_STATIC|SEE_PRIVATE)==val->subtype)
+	       SEE_PROTECTED|SEE_PRIVATE)==val->subtype)
 	  {
 	    /* We have to remove ourself from the cache for now */
 	    struct svalue tmp = entry_id;
@@ -1449,7 +1449,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		  }
 		  if (symbol) {
 		    int i = really_low_find_shared_string_identifier(symbol, p,
-						  SEE_STATIC|SEE_PRIVATE);
+						  SEE_PROTECTED|SEE_PRIVATE);
 		    if (i >= 0) {
 		      /* Found the symbol. */
 		      gs_flags = PTR_FROM_INT(p, i)->id_flags;
@@ -1472,7 +1472,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		  }
 		  if (symbol) {
 		    int i = really_low_find_shared_string_identifier(symbol, p,
-						  SEE_STATIC|SEE_PRIVATE);
+						  SEE_PROTECTED|SEE_PRIVATE);
 		    if (i >= 0) {
 		      /* Found the symbol. */
 		      gs_flags = PTR_FROM_INT(p, i)->id_flags;
@@ -3041,7 +3041,7 @@ static void decode_value2(struct decode_data *data)
 	    int f = really_low_find_shared_string_identifier(
 	      Pike_sp[-1].u.string,
 	      p->inherits[Pike_sp[-2].subtype].prog,
-	      SEE_STATIC|SEE_PRIVATE);
+	      SEE_PROTECTED|SEE_PRIVATE);
 	    debug_malloc_touch(p);
 	    if (f >= 0) {
 	      struct svalue func;
