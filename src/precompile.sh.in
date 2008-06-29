@@ -10,6 +10,7 @@ fi
 
 if [ x"$1" = xprecompile.pike ] ; then
   if pike -x 2>&1 | grep precompile > /dev/null 2>&1 ; then
+    shift
     exec pike -x precompile "$@"
   fi
 fi
