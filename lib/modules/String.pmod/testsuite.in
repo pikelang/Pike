@@ -1,5 +1,5 @@
 START_MARKER
-dnl $Id: testsuite.in,v 1.25 2008/06/23 19:17:47 mast Exp $
+dnl $Id: testsuite.in,v 1.26 2008/06/29 18:03:03 nilsson Exp $
 
 test_eq([[ String.Buffer()->add("xxx") ]], 3)
 test_any([[
@@ -293,6 +293,8 @@ test_eq([[
 test_eq([[
   String.HTML.select("language", ({ "eng", "swe", "nor" }))
 ]],[[ "<select name=\"language\">\n<option value=\"eng\">eng</option>\n<option value=\"swe\">swe</option>\n<option value=\"nor\">nor</option>\n</select>" ]])
+
+test_equal(String.secure("foo"),"foo")
 
 dnl MISSING TEST: String.HTML.simple_obox
 dnl MISSING TEST: String.HTML.Obox
