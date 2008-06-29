@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.680 2008/06/29 20:21:41 grubba Exp $
+|| $Id: builtin_functions.c,v 1.681 2008/06/29 20:42:59 grubba Exp $
 */
 
 #include "global.h"
@@ -198,6 +198,24 @@ static node *optimize_f_aggregate(node *n)
   CDR(n)->parent = n;
   return mkefuncallnode("`+", add_args);
 }
+
+/*! @decl __deprecated__ int hash_7_4(string s)
+ *! @decl __deprecated__ int hash_7_4(string s, int max)
+ *!
+ *! @deprecated 7.4::hash
+ *!
+ *! @seealso
+ *!   @[7.4::hash()]
+ */
+
+/*! @decl __deprecated__ int hash_7_0(string s)
+ *! @decl __deprecated__ int hash_7_0(string s, int max)
+ *!
+ *! @deprecated 7.0::hash
+ *!
+ *! @seealso
+ *!   @[7.0::hash()]
+ */
 
 /*! @namespace 7.4::
  */
