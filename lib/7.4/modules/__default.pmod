@@ -1,5 +1,5 @@
 // Compatibility namespace
-// $Id: __default.pmod,v 1.23 2008/06/28 16:54:21 nilsson Exp $
+// $Id: __default.pmod,v 1.24 2008/06/29 20:21:41 grubba Exp $
 
 #pike 7.5
 
@@ -115,12 +115,19 @@ object master()
   return __REAL_VERSION__::master()->get_compat_master(7, 4);
 }
 
+#pragma no_deprecation_warnings
+int hash(string s, int|void modulo)
+{
+  return predef::hash_7_4(s, modulo);
+}
+#pragma deprecation_warnings
+
 protected Mapping.ShadowedMapping compat_all_constants =
   Mapping.ShadowedMapping(predef::all_constants(),
 			  ([
 			    "all_constants": all_constants,
 			    "rusage": rusage,
-			    "hash": hash_7_4,
+			    "hash": hash,
 			    "master": master,
 #if constant(__builtin.security)
 			    "call_with_creds":

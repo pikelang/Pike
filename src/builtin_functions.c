@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.679 2008/06/29 12:05:54 mast Exp $
+|| $Id: builtin_functions.c,v 1.680 2008/06/29 20:21:41 grubba Exp $
 */
 
 #include "global.h"
@@ -199,8 +199,11 @@ static node *optimize_f_aggregate(node *n)
   return mkefuncallnode("`+", add_args);
 }
 
-/*! @decl int hash_7_4(string s)
- *! @decl int hash_7_4(string s, int max)
+/*! @namespace 7.4::
+ */
+
+/*! @decl int hash(string s)
+ *! @decl int hash(string s, int max)
  *!
  *!   Return an integer derived from the string @[s]. The same string
  *!   will always hash to the same value, also between processes.
@@ -214,7 +217,7 @@ static node *optimize_f_aggregate(node *n)
  *!   This function is byte-order dependant for wide strings.
  *!
  *! @seealso
- *!   @[hash()], @[hash_7_0()]
+ *!   @[hash()], @[7.0::hash()]
  */
 static void f_hash_7_4(INT32 args)
 {
@@ -222,10 +225,10 @@ static void f_hash_7_4(INT32 args)
   struct pike_string *s = Pike_sp[-args].u.string;
 
   if(!args)
-    SIMPLE_TOO_FEW_ARGS_ERROR("hash_7_4",1);
+    SIMPLE_TOO_FEW_ARGS_ERROR("7.4::hash",1);
 
   if(Pike_sp[-args].type != T_STRING)
-    SIMPLE_BAD_ARG_ERROR("hash_7_4", 1, "string");
+    SIMPLE_BAD_ARG_ERROR("7.4::hash", 1, "string");
 
   i = simple_hashmem((unsigned char *)s->str, s->len<<s->size_shift,
 		     100<<s->size_shift);
@@ -233,10 +236,10 @@ static void f_hash_7_4(INT32 args)
   if(args > 1)
   {
     if(Pike_sp[1-args].type != T_INT)
-      SIMPLE_BAD_ARG_ERROR("hash_7_4",2,"int");
+      SIMPLE_BAD_ARG_ERROR("7.4::hash",2,"int");
     
     if(!Pike_sp[1-args].u.integer)
-      PIKE_ERROR("hash_7_4", "Modulo by zero.\n", Pike_sp, args);
+      PIKE_ERROR("7.4::hash", "Modulo by zero.\n", Pike_sp, args);
 
     i%=(unsigned INT32)Pike_sp[1-args].u.integer;
   }
@@ -244,8 +247,14 @@ static void f_hash_7_4(INT32 args)
   push_int64(i);
 }
 
-/*! @decl int hash_7_0(string s)
- *! @decl int hash_7_0(string s, int max)
+/*! @endnamespace
+ */
+
+/*! @namespace 7.0::
+ */
+
+/*! @decl int hash(string s)
+ *! @decl int hash(string s, int max)
  *!
  *!   Return an integer derived from the string @[s]. The same string
  *!   always hashes to the same value, also between processes.
@@ -259,16 +268,16 @@ static void f_hash_7_4(INT32 args)
  *!   This function is not NUL-safe, and is byte-order dependant.
  *!
  *! @seealso
- *!   @[hash()], @[hash_7_4()]
+ *!   @[hash()], @[7.4::hash()]
  */
 static void f_hash_7_0( INT32 args )
 {
   struct pike_string *s = Pike_sp[-args].u.string;
   unsigned int i;
   if(!args)
-    SIMPLE_TOO_FEW_ARGS_ERROR("hash_7_0",1);
+    SIMPLE_TOO_FEW_ARGS_ERROR("7.0::hash",1);
   if(Pike_sp[-args].type != T_STRING)
-    SIMPLE_BAD_ARG_ERROR("hash_7_0", 1, "string");
+    SIMPLE_BAD_ARG_ERROR("7.0::hash", 1, "string");
 
   if( s->size_shift )
   {
@@ -281,16 +290,19 @@ static void f_hash_7_0( INT32 args )
   if(args > 1)
   {
     if(Pike_sp[1-args].type != T_INT)
-      SIMPLE_BAD_ARG_ERROR("hash_7_0",2,"int");
+      SIMPLE_BAD_ARG_ERROR("7.0::hash",2,"int");
     
     if(!Pike_sp[1-args].u.integer)
-      PIKE_ERROR("hash_7_0", "Modulo by zero.\n", Pike_sp, args);
+      PIKE_ERROR("7.0::hash", "Modulo by zero.\n", Pike_sp, args);
 
     i%=(unsigned INT32)Pike_sp[1-args].u.integer;
   }
   pop_n_elems(args);
   push_int( i );
 }
+
+/*! @endnamespace
+ */
 
 /*! @decl int hash(string s)
  *! @decl int hash(string s, int max)
@@ -305,14 +317,14 @@ static void f_hash_7_0( INT32 args )
  *!
  *! @note
  *!   The hash algorithm was changed in Pike 7.5. If you want a hash
- *!   that is compatible with Pike 7.4 and earlier, use @[hash_7_4()].
+ *!   that is compatible with Pike 7.4 and earlier, use @[7.4::hash()].
  *!   The difference only affects wide strings.
  *!
  *!   The hash algorithm was also changed in Pike 7.1. If you want a hash
- *!   that is compatible with Pike 7.0 and earlier, use @[hash_7_0()].
+ *!   that is compatible with Pike 7.0 and earlier, use @[7.0::hash()].
  *!
  *! @seealso
- *!   @[hash_7_0()], @[hash_7_4()], @[hash_value]
+ *!   @[7.0::hash()], @[7.4::hash()], @[hash_value]
  */
 PMOD_EXPORT void f_hash(INT32 args)
 {
@@ -9125,10 +9137,10 @@ void init_builtin_efuns(void)
   ADD_EFUN("hash",f_hash,tFunc(tStr tOr(tInt,tVoid),tInt),OPT_TRY_OPTIMIZE);
 
   ADD_EFUN("hash_7_0",f_hash_7_0,
-           tFunc(tStr tOr(tInt,tVoid),tInt),OPT_TRY_OPTIMIZE);
+           tDeprecated(tFunc(tStr tOr(tInt,tVoid),tInt)),OPT_TRY_OPTIMIZE);
 
   ADD_EFUN("hash_7_4",f_hash_7_4,
-           tFunc(tStr tOr(tInt,tVoid),tInt),OPT_TRY_OPTIMIZE);
+           tDeprecated(tFunc(tStr tOr(tInt,tVoid),tInt)),OPT_TRY_OPTIMIZE);
 
   ADD_EFUN("hash_value",f_hash_value,tFunc(tMix,tInt),OPT_TRY_OPTIMIZE);
 
