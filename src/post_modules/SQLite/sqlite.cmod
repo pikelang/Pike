@@ -1,6 +1,6 @@
 /* sqlite.cmod -*- c -*-
  *
- * $Id: sqlite.cmod,v 1.21 2008/06/28 22:53:07 nilsson Exp $
+ * $Id: sqlite.cmod,v 1.22 2008/06/29 11:10:55 nilsson Exp $
  */
 
 #include "global.h"
@@ -493,7 +493,6 @@ PIKECLASS ResObj
 	  THREADS_DISALLOW();
 	} else break;
       }
-      THIS->db = NULL;
     }
   }
 
