@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.174 2008/06/13 21:14:28 marcus Exp $
+|| $Id: cpp.c,v 1.175 2008/06/29 12:40:47 marcus Exp $
 */
 
 #include "global.h"
@@ -1507,18 +1507,7 @@ static void insert_current_dir_as_string(struct cpp *this,
                                          struct string_builder *tmp)
 {
   ref_push_string(this->current_file);
-#ifdef __NT__
-  push_constant_text("..");
-  f_combine_path_nt(2);
-#else
-#ifdef __amigaos__
-  push_constant_text("/");
-  f_combine_path_amigaos(2);
-#else
-  push_constant_text("..");
-  f_combine_path_unix(2);
-#endif
-#endif
+  SAFE_APPLY_MASTER("dirname",1);
   PUSH_STRING_SHIFT(Pike_sp[-1].u.string->str, Pike_sp[-1].u.string->len,
                     Pike_sp[-1].u.string->size_shift, tmp);
   pop_stack();

@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.833 2008/06/28 17:18:37 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.834 2008/06/29 12:40:47 marcus Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -8500,13 +8500,7 @@ test_true( rm("conftest.h") )
 
 test_true(intp(__LINE__))
 test_true(stringp(__FILE__))
-test_eq(combine_path(__FILE__,
-#ifdef __amigaos__
-"/"
-#else
-".."
-#endif
-),__DIR__)
+test_eq(dirname(__FILE__),__DIR__)
 test_true(stringp(__DATE__))
 test_true([[ sscanf(__DATE__, "%3s %d %d", string m, int d, int y) == 3 &&
 	     search(({"Jan", "Feb", "Mar", "Apr", "May", "Jun",
