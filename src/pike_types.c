@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.344 2008/06/29 10:51:47 mast Exp $
+|| $Id: pike_types.c,v 1.345 2008/06/29 11:04:52 grubba Exp $
 */
 
 #include "global.h"
@@ -4654,8 +4654,8 @@ static struct pike_type *debug_low_index_type(struct pike_type *t,
 	{
 	  INT32 args = 0;
 	  add_ref(tmp = ID_FROM_INT(p, i)->type);
-	  if (tmp = new_check_call(lfun_strings[LFUN_ARROW], tmp, CDR(n),
-				   &args, 0)) {
+	  if ((tmp = new_check_call(lfun_strings[LFUN_ARROW], tmp, CDR(n),
+				    &args, 0))) {
 	    struct pike_type *ret = new_get_return_type(tmp, 0);
 	    free_type(tmp);
 	    if (ret) return ret;
@@ -4670,8 +4670,8 @@ static struct pike_type *debug_low_index_type(struct pike_type *t,
 	{
 	  INT32 args = 0;
 	  add_ref(tmp = ID_FROM_INT(p, i)->type);
-	  if (tmp = new_check_call(lfun_strings[LFUN_INDEX], tmp, CDR(n),
-				   &args, 0)) {
+	  if ((tmp = new_check_call(lfun_strings[LFUN_INDEX], tmp, CDR(n),
+				    &args, 0))) {
 	    struct pike_type *ret = new_get_return_type(tmp, 0);
 	    free_type(tmp);
 	    if (ret) return ret;
@@ -5149,7 +5149,11 @@ struct pike_type *key_type(struct pike_type *type, node *n)
 }
 
 
-
+/* Returns whether a value of type 'type' may be indexed with a value
+ * of type 'index_type'. Returns -1 if the indexing operation is valid,
+ * but will always fail.
+ * The node 'n' is the node with the indexing operator.
+ */
 static int low_check_indexing(struct pike_type *type,
 			      struct pike_type *index_type,
 			      node *n)
@@ -5201,7 +5205,11 @@ static int low_check_indexing(struct pike_type *type,
 
   case T_MULTISET:
   case T_MAPPING:
-    /* FIXME: Why -1 and not 0? */
+    /* FIXME: Why -1 and not 0?
+     *
+     * There were complaints when people got compilation errors
+     * for indexing operations that would always fail.
+     */
     return low_match_types(type->car, index_type, 0) ? 1 : -1;
 
 #ifdef AUTO_BIGNUM
