@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.345 2008/06/29 11:04:52 grubba Exp $
+|| $Id: pike_types.c,v 1.346 2008/06/29 11:27:41 grubba Exp $
 */
 
 #include "global.h"
@@ -5071,18 +5071,28 @@ static struct pike_type *debug_low_key_type(struct pike_type *t, node *n)
     {
       if(n->token == F_ARROW)
       {
-	if(FIND_LFUN(p,LFUN_ARROW)!=-1 || FIND_LFUN(p,LFUN_ASSIGN_ARROW)!=-1)
+	int i;
+	if((i = FIND_LFUN(p,LFUN_ARROW))!=-1 ||
+	   (i = FIND_LFUN(p,LFUN_ASSIGN_ARROW))!=-1)
 	{
-	  /* FIXME: Get the type of the first argument of the function.
-	   * FIXME: Probably ought to always be a string.
-	   */
-	  add_ref(mixed_type_string);
-	  return mixed_type_string;
+	  /* Get the type of the first argument of the function. */
+	  struct pike_type *res =
+	    get_first_arg_type(ID_FROM_INT(p, i)->type, 0);
+	  if (res) return res;
+	  /* FIXME: Warn? */
+	  add_ref(string_type_string);
+	  return string_type_string;
 	}
       }else{
-	if(FIND_LFUN(p,LFUN_INDEX) != -1 || FIND_LFUN(p,LFUN_ASSIGN_INDEX) != -1)
+	int i;
+	if((i = FIND_LFUN(p,LFUN_INDEX)) != -1 ||
+	   (i = FIND_LFUN(p,LFUN_ASSIGN_INDEX)) != -1)
 	{
-	  /* FIXME: Get the type of the first argument of the function. */
+	  /* Get the type of the first argument of the function. */
+	  struct pike_type *res =
+	    get_first_arg_type(ID_FROM_INT(p, i)->type, 0);
+	  if (res) return res;
+	  /* FIXME: Warn? */
 	  add_ref(mixed_type_string);
 	  return mixed_type_string;
 	}
@@ -5188,14 +5198,23 @@ static int low_check_indexing(struct pike_type *type,
     struct program *p = id_to_program(CDR_TO_INT(type));
     if(p)
     {
-      /* FIXME: Ought to check against the LFUN types. */
+      int i = -1;
+      /* Check against the LFUN types. */
       if(n->token == F_ARROW)
       {
-	if(FIND_LFUN(p,LFUN_ARROW)!=-1 || FIND_LFUN(p,LFUN_ASSIGN_ARROW)!=-1)
-	  return 1;
+	(i = FIND_LFUN(p,LFUN_ARROW))!=-1 ||
+	  (i = FIND_LFUN(p,LFUN_ASSIGN_ARROW));
       }else{
-	if(FIND_LFUN(p,LFUN_INDEX)!=-1 || FIND_LFUN(p,LFUN_ASSIGN_INDEX)!=-1)
+	(i = FIND_LFUN(p,LFUN_INDEX))!=-1 ||
+	  (i = FIND_LFUN(p,LFUN_ASSIGN_INDEX));
+      }
+      if (i != -1) {
+	if ((type = low_new_check_call(ID_FROM_INT(p, i)->type, index_type,
+				       0, NULL))) {
+	  free_type(type);
 	  return 1;
+	}
+	return 0;
       }
       return !!low_match_types(string_type_string, index_type,0);
     }else{
@@ -5207,8 +5226,8 @@ static int low_check_indexing(struct pike_type *type,
   case T_MAPPING:
     /* FIXME: Why -1 and not 0?
      *
-     * There were complaints when people got compilation errors
-     * for indexing operations that would always fail.
+     *  - There were complaints when people got compilation errors
+     *    for indexing operations that would always fail.
      */
     return low_match_types(type->car, index_type, 0) ? 1 : -1;
 
