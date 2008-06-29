@@ -6,14 +6,14 @@
 
 #pike __REAL_VERSION__
 
-constant cvs_id = "$Id: module.pmod,v 1.31 2008/06/28 19:55:09 nilsson Exp $";
+constant cvs_id = "$Id: module.pmod,v 1.32 2008/06/29 21:25:11 grubba Exp $";
 
 #define ERR(msg) error( "(Yabu) "+msg+"\n" )
 #define IO_ERR(msg) error( "(Yabu) %s, %s (%d)\n",msg,strerror(errno()),errno() )
 #define WARN(msg) werror(msg)
 #define DEB(msg) /* werror(msg) */
 #if constant(hash_7_0)
-#define hash hash_7_0
+#define hash 7.0::hash
 #endif
 
 #define CHECKSUM(s) (hash(s) & 0xffffffff)
@@ -407,7 +407,7 @@ class Chunk {
       if(attributes)
 	return 0;
       else
-	ERR(sprintf("Unknown key '%O'", key));
+	ERR(sprintf("Unknown key '%O', keys: %O", key, keys));
     }
 
     int offset, type;
