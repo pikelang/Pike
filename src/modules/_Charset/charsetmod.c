@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: charsetmod.c,v 1.67 2008/06/29 12:52:02 mast Exp $
+|| $Id: charsetmod.c,v 1.68 2008/06/29 13:54:59 mast Exp $
 */
 
 #ifdef HAVE_CONFIG_H
@@ -19,7 +19,6 @@
 #include "builtin_functions.h"
 
 #include "charsetmod.h"
-#include "iso2022.h"
 
 
 #define sp Pike_sp
@@ -30,8 +29,6 @@
 #else
 #define SIGNED
 #endif
-
-p_wchar1 *misc_charset_lookup(const char *name, int *rlo, int *rhi);
 
 static struct program *std_cs_program = NULL;
 static struct program *utf1_program = NULL, *utf1e_program = NULL;
@@ -709,8 +706,6 @@ static void f_feed_utf7(INT32 args)
 
 static ptrdiff_t feed_sjis(struct pike_string *str, struct std_cs_stor *s)
 {
-  extern UNICHAR map_JIS_C6226_1983[];
-
   const p_wchar0 *p = STR0(str);
   ptrdiff_t l = str->len;
   while(l>0) {
@@ -820,8 +815,6 @@ static void f_feed_euc(INT32 args)
 static void f_create_euc(INT32 args)
 {
   struct euc_stor *s = (struct euc_stor *)(fp->current_storage + euc_stor_offs);
-  extern struct charset_def charset_map[];
-  extern int num_charset_def;
   struct pike_string *str;
   int lo=0, hi=num_charset_def-1;
 
@@ -864,9 +857,8 @@ static void f_create_euc(INT32 args)
 
 static void f_create_multichar(INT32 args)
 {
-  extern struct multichar_def multichar_map[];
   char *name;
-  struct multichar_def *def = multichar_map;
+  const struct multichar_def *def = multichar_map;
   struct multichar_stor *s = (struct multichar_stor *)(fp->current_storage + multichar_stor_offs);
 
   get_all_args("create()", args, "%s", &name);
@@ -1210,7 +1202,6 @@ static void f_create_sjise(INT32 args)
 {
   struct std16e_stor *s = (struct std16e_stor *)(fp->current_storage + std16e_stor_offs);
   int i, j, z;
-  extern UNICHAR map_JIS_C6226_1983[];
 
   s->lowtrans = 0x5c;
   s->lo = 0x5c;
@@ -1252,8 +1243,6 @@ static void f_create_sjise(INT32 args)
 static void f_create_euce(INT32 args)
 {
   struct std16e_stor *s = (struct std16e_stor *)(fp->current_storage + std16e_stor_offs);
-  extern struct charset_def charset_map[];
-  extern int num_charset_def;
   struct pike_string *str;
   int i, j, z, lo=0, hi=num_charset_def-1;
   UNICHAR const *table=NULL;
@@ -1374,11 +1363,9 @@ static struct std16e_stor *push_std_16bite(int args, int allargs, int lo, int hi
 
 static void f_rfc1345(INT32 args)
 {
-  extern struct charset_def charset_map[];
-  extern int num_charset_def;
   struct pike_string *str;
   int lo=0, hi=num_charset_def-1;
-  p_wchar1 *tabl;
+  p_wchar1 const *tabl;
 
   check_all_args("rfc1345()", args, BIT_STRING, BIT_INT|BIT_VOID,
 		 BIT_STRING|BIT_VOID|BIT_INT, BIT_FUNCTION|BIT_VOID|BIT_INT,
@@ -2344,7 +2331,6 @@ PIKE_MODULE_INIT
 {
   int i;
   struct svalue prog;
-  extern void iso2022_init(void);
 
   iso2022_init();
 
@@ -2572,8 +2558,6 @@ PIKE_MODULE_INIT
 
 PIKE_MODULE_EXIT
 {
-  extern void iso2022_exit(void);
-
   if(utf7e_program != NULL)
     free_program(utf7e_program);
 

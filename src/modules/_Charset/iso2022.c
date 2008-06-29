@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iso2022.c,v 1.49 2008/06/29 12:52:03 mast Exp $
+|| $Id: iso2022.c,v 1.50 2008/06/29 13:54:59 mast Exp $
 */
 
 #ifdef HAVE_CONFIG_H
@@ -18,7 +18,6 @@
 #include "pike_error.h"
 
 #include "charsetmod.h"
-#include "iso2022.h"
 
 
 #define sp Pike_sp
@@ -57,10 +56,6 @@ struct iso2022enc_stor {
 };
 
 #define EMIT(X) string_builder_putchar(&s->strbuild,(X))
-
-
-extern struct charset_def charset_map[];
-extern int num_charset_def;
 
 static const UNICHAR * const *transltab[4] = { iso2022_94, iso2022_96,
 					       iso2022_9494, iso2022_9696 };
@@ -717,8 +712,6 @@ static const unsigned INT32 jp2_tab[] = {
 static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 			   struct pike_string *rep, struct svalue *repcb)
 {
-  extern UNICHAR map_ANSI_X3_4_1968[];
-  extern UNICHAR map_ISO_8859_1_1998[];
   ptrdiff_t l = str->len;
   int s1 = 0;
 
@@ -1283,8 +1276,6 @@ static void f_drain(INT32 args)
 
 static void f_clear(INT32 args)
 {
-  extern UNICHAR map_ANSI_X3_4_1968[];
-  extern UNICHAR map_ISO_8859_1_1998[];
   struct iso2022_stor *s = (struct iso2022_stor *)fp->current_storage;
   int i;
 
@@ -1343,7 +1334,6 @@ static void f_enc_drain(INT32 args)
 
 static void f_enc_clear(INT32 args)
 {
-  extern UNICHAR map_ANSI_X3_4_1968[];
   struct iso2022enc_stor *s = (struct iso2022enc_stor *)fp->current_storage;
   int i;
 

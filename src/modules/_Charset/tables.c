@@ -2,18 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: tables.c,v 1.36 2007/06/25 17:48:59 grubba Exp $
+|| $Id: tables.c,v 1.37 2008/06/29 13:54:59 mast Exp $
 */
 
-#include "iso2022.h"
+#include "charsetmod.h"
 
 /* Updates can be found at http://www.itscj.ipsj.or.jp/ISO-IR/ */
-
-extern UNICHAR map_ANSI_X3_110_1983[];
-extern UNICHAR map_T_61_8bit[];
-extern UNICHAR map_T_101_G2[];
-extern UNICHAR map_iso_ir_90[];
-extern UNICHAR map_videotex_suppl[];
 
 /*
  * The private characters used by RFC1345 have been mapped as follows:

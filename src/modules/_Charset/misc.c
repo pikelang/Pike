@@ -2,10 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: misc.c,v 1.21 2008/01/25 16:44:39 grubba Exp $
+|| $Id: misc.c,v 1.22 2008/06/29 13:54:59 mast Exp $
 */
 
 #include "global.h"
+#include "charsetmod.h"
 
 /* Note: See tables.c for how the private space is used. */
 
@@ -1935,7 +1936,7 @@ static const struct {
   const char *name;
   p_wchar1 const * table;
   const int lo, hi;
-} charset_map[] = {
+} misc_charset_map[] = {
   { "1026", map_IBM1026, 32, 255 },                                   /* :: ibm1026 */
   { "1250", map_windows_1250, 128, 255 },                             /* :: cp1250 */
   { "1251", map_windows_1251, 128, 255 },                             /* :: cp1251 */
@@ -2101,17 +2102,17 @@ static const struct {
   { "windows874", map_windows_874, 128, 255 },			      /* :: windows-874 */
   { "x0201", map_JIS_X0201, 92, 255 },                                /* :: x0201 */
 };
-#define NUM_CHARSETS (sizeof(charset_map)/sizeof(charset_map[0]))
+#define NUM_CHARSETS (sizeof(misc_charset_map)/sizeof(misc_charset_map[0]))
 
 p_wchar1 const *misc_charset_lookup(const char *name, int *rlo, int *rhi)
 {
   int lo=0, hi=NUM_CHARSETS-1;
   while(lo<=hi) {
     int c, mid = (lo+hi)>>1;
-    if((c = strcmp(name, charset_map[mid].name))==0) {
-      *rlo = charset_map[mid].lo;
-      *rhi = charset_map[mid].hi;
-      return charset_map[mid].table;
+    if((c = strcmp(name, misc_charset_map[mid].name))==0) {
+      *rlo = misc_charset_map[mid].lo;
+      *rhi = misc_charset_map[mid].hi;
+      return misc_charset_map[mid].table;
     }
     if(c<0)
       hi=mid-1;
