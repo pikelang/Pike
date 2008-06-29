@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: preprocessor.h,v 1.94 2008/06/28 01:26:36 mast Exp $
+|| $Id: preprocessor.h,v 1.95 2008/06/29 21:14:00 marcus Exp $
 */
 
 /*
@@ -494,7 +494,7 @@ static ptrdiff_t calcC(struct cpp *this, WCHAR *data, ptrdiff_t len,
 
   case '\'':
   {
-    unsigned tmp = data[++pos];
+    p_wchar2 tmp = data[++pos];
     if (tmp == '\\') READCHAR(tmp);
     pos++;
     if(!GOBBLE('\''))

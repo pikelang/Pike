@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lexer.h,v 1.82 2008/06/29 11:07:04 nilsson Exp $
+|| $Id: lexer.h,v 1.83 2008/06/29 21:14:00 marcus Exp $
 */
 
 /*
@@ -181,7 +181,7 @@ static double lex_strtod(char *buf, char **end)
  * is removed and the escape remains otherwise intact.
  */
 
-int parse_esc_seq (WCHAR *buf, unsigned *chr, ptrdiff_t *len)
+int parse_esc_seq (WCHAR *buf, p_wchar2 *chr, ptrdiff_t *len)
 /* buf is assumed to be after the backslash. Return codes:
  * 0: All ok. The char's in *chr, consumed length in *len.
  * 1: Found a literal \r at *buf.
@@ -194,7 +194,7 @@ int parse_esc_seq (WCHAR *buf, unsigned *chr, ptrdiff_t *len)
  * 8: Not 8 digits in \U escape. *len is up to the last found digit. */
 {
   ptrdiff_t l = 1;
-  unsigned c;
+  p_wchar2 c;
 
   switch ((c = *buf))
   {
@@ -314,9 +314,9 @@ int parse_esc_seq (WCHAR *buf, unsigned *chr, ptrdiff_t *len)
   return 0;
 }
 
-static unsigned char_const(struct lex *lex)
+static p_wchar2 char_const(struct lex *lex)
 {
-  unsigned c;
+  p_wchar2 c;
   ptrdiff_t l;
   switch (parse_esc_seq ((WCHAR *)lex->pos, &c, &l)) {
     case 0:
@@ -335,7 +335,7 @@ static unsigned char_const(struct lex *lex)
     case 4: case 5: case 6:
       if( Pike_compiler->compiler_pass == 1 )
         yywarning ("Too large character value in escape.");
-      c = MAX_UINT32;
+      c = -1;
       break;
     case 7:
       if( Pike_compiler->compiler_pass == 1 )
