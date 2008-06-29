@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.8 2006/07/01 23:53:19 mast Exp $
+# $Id: configure.in,v 1.9 2008/06/29 12:00:49 per Exp $
 AC_INIT(accept_and_parse.c)
 AC_CONFIG_HEADER(config.h)
 
@@ -22,7 +22,6 @@ AC_SUBST(RANLIB)
 # NOTE: The test for sendfile is a duplicate of the test in the files module.
 # It should probably be moved to the main configure-script.
 # Note also that the test in the files module is more complete than this one.
-# Note also that the Linux sendfile syscall test is not present there.
 #	/grubba 2000-03-26
 #
 if test "$ac_cv_func_sendfile" = "yes"; then
@@ -91,100 +90,6 @@ if test "$ac_cv_func_sendfile" = "yes"; then
     fi
   else
     AC_MSG_RESULT([4 - Linux style])
-  fi
-else
-  if test "${pike_cv_sys_os}" = "Linux"; then
-    if test "$pike_cv_sys_ccshared" != ""; then
-      AC_MSG_CHECKING(sendfile on linux without sendfile in header files with shared code)
-      AC_CACHE_VAL(pike_cv_sendfile_for_early_linux_with_new_gcc_shared, [
-	OLD_CFLAGS="$CFLAGS"
-	CFLAGS="$CFLAGS $pike_cv_sys_ccshared"
-	AC_TRY_COMPILE([
-#include <sys/types.h>
-#include <sys/errno.h>
-#include <asm/unistd.h>
-#ifndef __NR_sendfile
-# define __NR_sendfile 187
-#endif
-_syscall4(ssize_t,sendfile,int,out,int,in,off_t*,off,size_t,size);
-	], [], [pike_cv_sendfile_for_early_linux_with_new_gcc_shared=yes], 
-	     [pike_cv_sendfile_for_early_linux_with_new_gcc_shared=no])
-	CFLAGS="$OLD_CFLAGS"
-      ])
-
-      if test "$pike_cv_sendfile_for_early_linux_with_new_gcc_shared" = "yes" ; then
-	AC_DEFINE(CAN_HAVE_LINUX_SYSCALL4)
-	AC_MSG_RESULT(perhaps)
-      else
-	AC_MSG_RESULT(no)
-      fi
-    else
-      pike_cv_sendfile_for_early_linux_with_new_gcc_shared=no
-    fi
-
-    if test "$pike_cv_sendfile_for_early_linux_with_new_gcc_shared" = "no" ; then
-      AC_MSG_CHECKING(sendfile on linux without sendfile in header files with nonshared code)
-      AC_CACHE_VAL(pike_cv_sendfile_for_early_linux_with_new_gcc_nonshared, [
-	AC_TRY_COMPILE([
-#include <sys/types.h>
-#include <sys/errno.h>
-#include <asm/unistd.h>
-#ifndef __NR_sendfile
-# define __NR_sendfile 187
-#endif
-_syscall4(ssize_t,sendfile,int,out,int,in,off_t*,off,size_t,size);
-	], [], [pike_cv_sendfile_for_early_linux_with_new_gcc_nonshared=yes], 
-	     [pike_cv_sendfile_for_early_linux_with_new_gcc_nonshared=no])
-      ])
-
-      if test "$pike_cv_sendfile_for_early_linux_with_new_gcc_nonshared" = "yes" ; then
-	AC_DEFINE(CAN_HAVE_NONSHARED_LINUX_SYSCALL4)
-	AC_MSG_RESULT(perhaps)
-      else
-	AC_MSG_RESULT(no)
-      fi
-    fi
-
-    if test "$pike_cv_sendfile_for_early_linux_with_new_gcc_shared" = "no" -o \
-            "$pike_cv_sendfile_for_early_linux_with_new_gcc_nonshared" = "no"; then
-      AC_MSG_CHECKING(sendfile on linux without sendfile in header files with new gcc)
-  
-      AC_CACHE_VAL(pike_cv_sendfile_for_early_linux, [
-        AC_TRY_COMPILE([
-#include <sys/types.h>
-#include <sys/errno.h>
-
-int sendfile(int out, int in, int *off, int size)
-{
-  int retval;
-  asm volatile("pushl %%ebx\n\t"
-               "movl %%edi,%%ebx\n\t"
-               "int $0x80\n\t"
-               "popl %%ebx"
-               :"=a" (retval)
-               :"0" (187),
-               "D" (out), /* pseudo-ebx */
-               "c" (in),
-               "d" (off),
-               "S" (size)
-               );
-  if ((unsigned long) retval > (unsigned long)-1000) 
-  {
-    errno = -retval;
-    retval = -1;
-  }
-  return retval;
-}
-        ],[],[pike_cv_sendfile_for_early_linux=yes],
-          [pike_cv_sendfile_for_early_linux=no])])
-
-      if test "$pike_cv_sendfile_for_early_linux" = "yes" ; then
-	AC_DEFINE(CAN_HAVE_SENDFILE)
-	AC_MSG_RESULT(perhaps)
-      else
-	AC_MSG_RESULT(no)
-      fi
-    fi
   fi
 fi
 
