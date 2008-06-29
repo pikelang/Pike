@@ -1,6 +1,6 @@
 // -*- Pike -*-
 
-// $Id: module.pike,v 1.31 2008/06/29 12:47:17 per Exp $
+// $Id: module.pike,v 1.32 2008/06/29 14:59:13 marcus Exp $
 
 #pike __REAL_VERSION__
 
@@ -373,6 +373,11 @@ int main(int argc, array(string) argv)
       {
 	if( old_style_module )
 	{
+	  if(!max_time_of_files("propagated_variables")) {
+	    write("** Copying propagated_variables\n");
+	    Stdio.write_file("propagated_variables", Stdio.read_file(combine_path(include_path, "propagated_variables")));
+	  }
+
 	  write("** Running configure (with extra compat args)\n");
 	  array(string) cfa = do_split_quoted_string(specs->configure_args||"");
 	  mapping(string:string) cfa_env = ([]);
