@@ -1,6 +1,6 @@
 // -*- Pike -*-
 
-// $Id: module.pike,v 1.30 2008/06/29 12:33:58 agehall Exp $
+// $Id: module.pike,v 1.31 2008/06/29 12:47:17 per Exp $
 
 #pike __REAL_VERSION__
 
@@ -23,7 +23,7 @@ string bin_path=include_path;
 #endif
 
 // this is not the ideal location for all systems, but it's a start.
-string local_module_path="$$HOME/lib/pike/modules";
+string local_module_path=combine_path(getenv("HOME"),"lib/pike/modules");
 bool old_style_module = false;
 // we prefer the last element, because if there are more than one
 // master() puts the lib/modules path last.
@@ -180,7 +180,12 @@ void do_make(array(string) cmd)
   }
   else
   {
-    extra_args = ({"PIKE="+run_pike,});
+    extra_args = ({
+      "PIKE="+run_pike,
+      "SRCDIR="+fix("$src"),
+      "MODULE_INSTALL_DIR="+combine_path(__FILE__,"../../.."),
+      "LOCAL_MODULE_PATH=" + lmp,
+    });
   }
   
   array(string) makecmd=({make})+do_split_quoted_string(make_flags)+extra_args+cmd;
@@ -392,7 +397,15 @@ int main(int argc, array(string) argv)
 	else
 	{
 	  write("** Running configure\n");
-	  run_or_fail( ([ ]), fix("$src/configure"), @do_split_quoted_string(configure_args));
+	  run_or_fail( ([ "env":getenv()|
+			  ([
+			    "PIKE":run_pike,
+			    "MODULE_INSTALL_DIR":combine_path(__FILE__,"../../.."),
+			    "LOCAL_MODULE_PATH":local_module_path,
+			  ])
+		       ]),
+		       fix("$src/configure"),
+		       @do_split_quoted_string(configure_args));
 	}
       }
     }
