@@ -127,7 +127,7 @@ o Stdio
 
   - Stdio.File->openat() opens a file relative to an open directory.
 
-o Prepared for having multiple different active backend implementations.
+o Support for having multiple different active backend implementations.
   ...
   The global variable next_timeout is no more. It has been replaced by
   a backend-specific variable. Added backend_lower_timeout() for accessing
@@ -186,6 +186,10 @@ o Warnings for unused private symbols.
   The compiler now checks that all symbols that have been declared
   private actually are used.
 
+o Warnings for unused local variables.
+
+  The compiler now checks that all local variables are used.
+
 o Unicode
 
   Case information and the Unicode module are updated to Unicode
@@ -207,7 +211,7 @@ o Pike_fp->context
 
 o Inherit level argument added to several object handling functions.
 
-  In order to implement subtyping of objects, and extra argument
+  In order to implement subtyping of objects, an extra argument
   "inherit_level" has been added to many object indexing related
   functions.
 
@@ -582,7 +586,6 @@ o Process
   - The new function run() is an easy interface that will run a
     process and return a mapping with all the outputs and exit code.
 
-
   - Process.popen is now able to run in nonblocking mode. If a second
     argument is provided a file object will be opened with that mode
     and return, enabling two way communication with the new process.
@@ -616,7 +619,7 @@ o Protocols.HTTP
   - A new function, do_async_method(), has been added to allow access
     to low level asynchronous HTTP calls.
 
-  - The http_encode_string() function now know how to encode UCS-2
+  - The http_encode_string() function now knows how to encode UCS-2
     characters.
 
 o Protocols.HTTP.Server
@@ -632,7 +635,6 @@ o Protocols.HTTP.Query
   - Many fixes for bugs in asynchronous mode.
 
   - A query will not silently downgrade to http from https anymore if
-
     there is no crypto support.
 
   - Fixes for keep alive.
