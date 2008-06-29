@@ -8,7 +8,9 @@ Array.diff3_old(({"a"}),({"a","b"}),({"b","a"})) ]],
 
 test_true(arrayp( rusage() ))
 
-test_eq(hash("hello\12345"), hash_7_4("hello\12345"))
+ignore_warning("Calling a deprecated value.", [[
+  test_eq(hash("hello\12345"), hash_7_4("hello\12345"))
+]])
 
 test_compile_error( String.String_buffer x; )
 test_eval_error( String.strmult("foo",4); )
