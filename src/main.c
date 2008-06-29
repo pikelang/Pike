@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.230 2008/06/28 19:23:06 mast Exp $
+|| $Id: main.c,v 1.231 2008/06/29 10:40:55 mast Exp $
 */
 
 #include "global.h"
@@ -137,24 +137,22 @@ static void get_master_key(HKEY cat)
 
 static void set_default_master(void)
 {
+  char *mp = master_location + CONSTANT_STRLEN (MASTER_COOKIE);
+
 #ifdef HAVE_GETENV
-  if(!master_location[CONSTANT_STRLEN(MASTER_COOKIE)] &&
-     getenv("PIKE_MASTER")) {
+  if(!*mp && getenv("PIKE_MASTER")) {
     set_master(getenv("PIKE_MASTER"));
   }
 #endif
 
 #ifdef __NT__
-  if(!master_location[CONSTANT_STRLEN(MASTER_COOKIE)])
-    get_master_key(HKEY_CURRENT_USER);
-  if(!master_location[CONSTANT_STRLEN(MASTER_COOKIE)])
-    get_master_key(HKEY_LOCAL_MACHINE);
+  if(!*mp) get_master_key(HKEY_CURRENT_USER);
+  if(!*mp) get_master_key(HKEY_LOCAL_MACHINE);
 #endif
 
-  if(!master_location[CONSTANT_STRLEN(MASTER_COOKIE)])
+  if(!*mp)
   {
-    SNPRINTF (master_location + CONSTANT_STRLEN(MASTER_COOKIE),
-	      sizeof (master_location) - CONSTANT_STRLEN (MASTER_COOKIE),
+    SNPRINTF (mp, sizeof (master_location) - CONSTANT_STRLEN (MASTER_COOKIE),
 	      DEFAULT_MASTER,
 	      PIKE_MAJOR_VERSION,
 	      PIKE_MINOR_VERSION,
@@ -162,8 +160,7 @@ static void set_default_master(void)
   }
 
 #ifdef __NT__
-  if (master_location[CONSTANT_STRLEN (MASTER_COOKIE)] != '/' &&
-      master_location[CONSTANT_STRLEN (MASTER_COOKIE)] != '\\') {
+  if (!(*mp == '/' || *mp == '\\' || (isalpha (*mp) && mp[1] == ':'))) {
     char exepath[MAXPATHLEN];
     if (!GetModuleFileName (NULL, exepath, _MAX_PATH))
       fprintf (stderr, "Failed to get path to exe file: %d\n",
@@ -172,16 +169,14 @@ static void set_default_master(void)
       char tmp[MAXPATHLEN * 2];
       char *p = strrchr (exepath, '\\');
       if (p) *p = 0;
-      SNPRINTF (tmp, sizeof (tmp), "%s/%s", exepath,
-		master_location + CONSTANT_STRLEN (MASTER_COOKIE));
-      strncpy (master_location + CONSTANT_STRLEN (MASTER_COOKIE), tmp,
+      SNPRINTF (tmp, sizeof (tmp), "%s/%s", exepath, mp);
+      strncpy (mp, tmp,
 	       sizeof (master_location) - CONSTANT_STRLEN (MASTER_COOKIE));
     }
   }
 #endif
 
-  TRACE((stderr, "Default master at \"%s\"...\n",
-	 master_location + CONSTANT_STRLEN(MASTER_COOKIE)));
+  TRACE((stderr, "Default master at \"%s\"...\n", mp));
 }
 
 #ifdef LIBPIKE
