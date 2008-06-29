@@ -199,6 +199,7 @@ o Unicode
 o protected
 
   The modifier protected is now an alias for the modifier static.
+  NOTE: In next release static will be deprecated.
 
 o Pike_fp->context
 
@@ -1073,9 +1074,7 @@ Protocols.DNS_SD
 
 
 src:
-CommonLog: fixed sign bug
 files: FIXME
-Gettext: lots of build fixes
 gmp: FIXME
 java: FIXME
 mysql: FIXME
@@ -1097,8 +1096,6 @@ valgrind_hilfe and valgrind_just_verify
 
 New malloc on Windows.
 
-supports calling of aliases.
-
 poll/epoll
 
 getenv() and putenv() are now accessing and modifying the real
@@ -1109,4 +1106,20 @@ alternatives to zero_type().
 
 exit w/ werror
 
-T_SCOPE nodes
+Iterator->next() no longer optional.
+
+sscanf %O %H %[^-X] (!= %[^X-]) %[X-X]
+
+env argument to main()
+
+c-api: Added %c and %C to get_all_args to get char * with/without
+NULL. (%c is an alias for %s but %C is new.)
+
+extern variables.
+
+7.4::blaha
+
+now supports micin for static symbols.
+
+Inherit::this and Inherit::this_program now works.
+
