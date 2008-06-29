@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.223 2008/06/23 19:22:52 mast Exp $
+|| $Id: stralloc.c,v 1.224 2008/06/29 17:56:06 nilsson Exp $
 */
 
 #include "global.h"
@@ -1092,6 +1092,8 @@ PMOD_EXPORT void really_free_string(struct pike_string *s)
 #endif
   if (!(s->flags & STRING_NOT_SHARED))
     unlink_pike_string(s);
+  if (s->flags & STRING_CLEAR_ON_EXIT)
+    MEMSET(s->str, 0, s->len);
   free_unlinked_pike_string(s);
   GC_FREE_SIMPLE_BLOCK(s);
 }

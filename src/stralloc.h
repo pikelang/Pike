@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.h,v 1.107 2008/06/28 00:05:21 mast Exp $
+|| $Id: stralloc.h,v 1.108 2008/06/29 17:56:06 nilsson Exp $
 */
 
 #ifndef STRALLOC_H
@@ -45,6 +45,7 @@ struct string_builder
 #define STRING_NOT_HASHED	1	/* Hash value is invalid. */
 #define STRING_NOT_SHARED	2	/* String not shared. */
 #define STRING_IS_SHORT		4	/* String is blockalloced. */
+#define STRING_CLEAR_ON_EXIT    8       /* Overwrite before free. */
 
 /* Flags used by string_builder_append_integer() */
 #define APPEND_SIGNED		1	/* Value is signed */
