@@ -517,7 +517,7 @@ o Parser.HTML
   
 o Parser.Pike and Parser.C
 
-  - Parser.Pike and Parser.C has been rewritten in C for increased
+  - Parser.Pike and Parser.C have been rewritten in C for increased
     performance.
 
   - The #string directives should be handled correctly now.
