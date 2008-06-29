@@ -1,6 +1,6 @@
 // -*- Pike -*-
 
-// $Id: module.pike,v 1.29 2008/06/29 12:01:44 per Exp $
+// $Id: module.pike,v 1.30 2008/06/29 12:33:58 agehall Exp $
 
 #pike __REAL_VERSION__
 
@@ -165,7 +165,7 @@ void do_make(array(string) cmd)
       ({"PIKE_INCLUDES=-I"+include_path,
 	"PIKE_SRC_DIR="+src_path,
 	"BUILD_BASE="+include_path,
-	"MODULE_BASE="+include_path+"/modules",
+	"MODULE_BASE="+combine_path(include_path, "modules"),
 	"TMP_BINDIR="+bin_path,
 	"SRCDIR="+fix("$src"),
 	"FULL_SRCDIR=" + full_srcdir,
@@ -205,7 +205,7 @@ void do_make(array(string) cmd)
 
 int main(int argc, array(string) argv)
 {
-  string specspath=include_path+"/specs";
+  string specspath=combine_path(include_path, "specs");
 
   if(!Stdio.is_file(specspath))
   {
