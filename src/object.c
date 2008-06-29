@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.298 2008/06/28 21:50:10 mast Exp $
+|| $Id: object.c,v 1.299 2008/06/29 12:37:10 nilsson Exp $
 */
 
 #include "global.h"
@@ -2703,14 +2703,14 @@ void init_object(void)
 
   start_new_program();
   offset=ADD_STORAGE(struct magic_index_struct);
-  MAP_VARIABLE("__obj", tObj, ID_STATIC,
+  MAP_VARIABLE("__obj", tObj, ID_PROTECTED,
 	       offset + OFFSETOF(magic_index_struct, o), T_OBJECT);
   ADD_FUNCTION("`()",f_magic_index,tFunc(tStr tOr(tVoid,tInt),tMix),0);
   magic_index_program=end_program();
 
   start_new_program();
   offset=ADD_STORAGE(struct magic_index_struct);
-  MAP_VARIABLE("__obj", tObj, ID_STATIC,
+  MAP_VARIABLE("__obj", tObj, ID_PROTECTED,
 	       offset + OFFSETOF(magic_index_struct, o), T_OBJECT);
   ADD_FUNCTION("`()",f_magic_set_index,
 	       tFunc(tStr tMix tOr(tVoid,tInt),tVoid),0);
@@ -2718,14 +2718,14 @@ void init_object(void)
 
   start_new_program();
   offset=ADD_STORAGE(struct magic_index_struct);
-  MAP_VARIABLE("__obj", tObj, ID_STATIC,
+  MAP_VARIABLE("__obj", tObj, ID_PROTECTED,
 	       offset + OFFSETOF(magic_index_struct, o), T_OBJECT);
   ADD_FUNCTION("`()",f_magic_indices,tFunc(tOr(tVoid,tInt),tArr(tStr)),0);
   magic_indices_program=end_program();
 
   start_new_program();
   offset=ADD_STORAGE(struct magic_index_struct);
-  MAP_VARIABLE("__obj", tObj, ID_STATIC,
+  MAP_VARIABLE("__obj", tObj, ID_PROTECTED,
 	       offset + OFFSETOF(magic_index_struct, o), T_OBJECT);
   ADD_FUNCTION("`()",f_magic_values,tFunc(tOr(tVoid,tInt),tArray),0);
   magic_values_program=end_program();

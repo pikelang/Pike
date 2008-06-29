@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.727 2008/06/28 21:50:10 mast Exp $
+|| $Id: program.c,v 1.728 2008/06/29 12:37:10 nilsson Exp $
 */
 
 #include "global.h"
@@ -2211,7 +2211,7 @@ void fixate_program(void)
       my_yyerror("Missing definition for local function %S.",
 		 fun->name);
     }
-    if (funp->id_flags & ID_STATIC) continue;
+    if (funp->id_flags & ID_PROTECTED) continue;
     add_to_identifier_index(i);
   }
   fsort_program_identifier_index(p->identifier_index,
@@ -3461,7 +3461,7 @@ struct program *end_first_pass(int finish)
 		       Pike_compiler->init_node,
 		       mknode(F_RETURN,mkintnode(0),0)),
 		function_type_string,
-		ID_STATIC);
+		ID_PROTECTED);
     Pike_compiler->init_node=0;
   } else if (finish == 2) {
     /* Called from decode_value(). */
@@ -5548,7 +5548,7 @@ INT32 define_function(struct pike_string *name,
        *
        * FIXME: Force PRIVATE?
        */
-      flags |= ID_STATIC;
+      flags |= ID_PROTECTED;
       free_type(symbol_type);
       free_string(symbol);
     }
@@ -5795,14 +5795,14 @@ int add_ext_ref(struct program_state *state, struct program *target, int i)
   for (r = state->new_program->identifier_references, j = 0;
        j < state->new_program->num_identifier_references;
        j++, r++) {
-    if (((r->id_flags & (ID_PARENT_REF|ID_STATIC|ID_PRIVATE|ID_HIDDEN)) ==
-	 ID_PARENT_REF|ID_STATIC|ID_PRIVATE|ID_HIDDEN) &&
+    if (((r->id_flags & (ID_PARENT_REF|ID_PROTECTED|ID_PRIVATE|ID_HIDDEN)) ==
+	 ID_PARENT_REF|ID_PROTECTED|ID_PRIVATE|ID_HIDDEN) &&
 	(r->identifier_offset == i) &&
 	(!(r->inherit_offset))) {
       return j;
     }
   }
-  ref.id_flags = ID_PARENT_REF|ID_STATIC|ID_PRIVATE|ID_HIDDEN;
+  ref.id_flags = ID_PARENT_REF|ID_PROTECTED|ID_PRIVATE|ID_HIDDEN;
   ref.identifier_offset = i;
   ref.inherit_offset = 0;
   add_to_identifier_references(ref);
@@ -5895,7 +5895,7 @@ int really_low_find_shared_string_identifier(struct pike_string *name,
   {
     funp = prog->identifier_references + i;
     if(funp->id_flags & ID_HIDDEN) continue;
-    if(funp->id_flags & ID_STATIC)
+    if(funp->id_flags & ID_PROTECTED)
       if(!(flags & SEE_STATIC))
 	continue;
     fun = ID_FROM_PTR(prog, funp);
@@ -6154,7 +6154,7 @@ struct array *program_indices(struct program *p)
   for (e = p->num_identifier_references; e--; ) {
     struct identifier *id;
     if (p->identifier_references[e].id_flags &
-	(ID_HIDDEN|ID_STATIC|ID_PRIVATE)) {
+	(ID_HIDDEN|ID_PROTECTED|ID_PRIVATE)) {
       continue;
     }
     id = ID_FROM_INT(p, e);
@@ -6193,7 +6193,7 @@ struct array *program_values(struct program *p)
   for(e = p->num_identifier_references; e--; ) {
     struct identifier *id;
     if (p->identifier_references[e].id_flags &
-	(ID_HIDDEN|ID_STATIC|ID_PRIVATE)) {
+	(ID_HIDDEN|ID_PROTECTED|ID_PRIVATE)) {
       continue;
     }
     id = ID_FROM_INT(p, e);
@@ -9102,7 +9102,7 @@ static void compile_compiler(void)
 	       tFunc(tOr(tStr, tVoid) tOr(tObj, tVoid)
 		     tOr(tInt, tVoid) tOr(tInt, tVoid)
 		     tOr(tPrg(tObj), tVoid) tOr(tObj, tVoid), tVoid),
-	       ID_STATIC);
+	       ID_PROTECTED);
 
   ADD_FUNCTION("get_compilation_handler",
 	       f_compilation_get_compilation_handler,
@@ -9133,7 +9133,7 @@ static void compile_compiler(void)
 		     tType(tFunction)), 0);
 
   ADD_FUNCTION("_sprintf", f_compilation__sprintf,
-	       tFunc(tInt tOr(tMap(tStr, tMix), tVoid), tStr), ID_STATIC);
+	       tFunc(tInt tOr(tMap(tStr, tMix), tVoid), tStr), ID_PROTECTED);
 
   start_new_program();
 
@@ -10343,7 +10343,7 @@ static int low_implements(struct program *a, struct program *b)
   {
     struct identifier *bid;
     int i;
-    if (b->identifier_references[e].id_flags & (ID_STATIC|ID_HIDDEN))
+    if (b->identifier_references[e].id_flags & (ID_PROTECTED|ID_HIDDEN))
       continue;		/* Skip protected & hidden */
     bid = ID_FROM_INT(b,e);
     if(s == bid->name) continue;	/* Skip __INIT */
@@ -10424,7 +10424,7 @@ static int low_is_compatible(struct program *a, struct program *b)
   {
     struct identifier *bid;
     int i;
-    if (b->identifier_references[e].id_flags & (ID_STATIC|ID_HIDDEN))
+    if (b->identifier_references[e].id_flags & (ID_PROTECTED|ID_HIDDEN))
       continue;		/* Skip protected & hidden */
 
     /* FIXME: What if they aren't protected & hidden in a? */
@@ -10546,7 +10546,7 @@ void yyexplain_not_compatible(int severity_level,
   {
     struct identifier *bid;
     int i;
-    if (b->identifier_references[e].id_flags & (ID_STATIC|ID_HIDDEN))
+    if (b->identifier_references[e].id_flags & (ID_PROTECTED|ID_HIDDEN))
       continue;		/* Skip protected & hidden */
 
     /* FIXME: What if they aren't protected & hidden in a? */
@@ -10608,7 +10608,7 @@ void yyexplain_not_implements(int severity_level,
   {
     struct identifier *bid;
     int i;
-    if (b->identifier_references[e].id_flags & (ID_STATIC|ID_HIDDEN))
+    if (b->identifier_references[e].id_flags & (ID_PROTECTED|ID_HIDDEN))
       continue;		/* Skip protected & hidden */
     bid = ID_FROM_INT(b,e);
     if(s == bid->name) continue;	/* Skip __INIT */

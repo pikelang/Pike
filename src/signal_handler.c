@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.332 2008/05/01 21:27:51 mast Exp $
+|| $Id: signal_handler.c,v 1.333 2008/06/29 12:37:11 nilsson Exp $
 */
 
 #include "global.h"
@@ -4843,7 +4843,7 @@ void init_signals(void)
 #ifndef __NT__
   PIKE_MAP_VARIABLE("__callback", OFFSETOF(pid_status, callback),
 		    tFunc(tObjIs_PROCESS,tVoid), T_MIXED,
-		    ID_STATIC|ID_PRIVATE);
+		    ID_PROTECTED|ID_PRIVATE);
 #endif /* !__NT__ */
   set_init_callback(init_pid_status);
   set_exit_callback(exit_pid_status);
@@ -4889,7 +4889,7 @@ void init_signals(void)
 
   start_new_program();
   Pike_compiler->new_program->flags |= PROGRAM_USES_PARENT;
-  ADD_FUNCTION("`[]", f_proc_reg_index, tFunc(tMix, tInt), ID_STATIC);
+  ADD_FUNCTION("`[]", f_proc_reg_index, tFunc(tMix, tInt), ID_PROTECTED);
   end_class("Registers", 0);
 
 #endif /* 0 */

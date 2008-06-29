@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.439 2008/06/29 11:04:49 nilsson Exp $
+|| $Id: language.yacc,v 1.440 2008/06/29 12:37:10 nilsson Exp $
 */
 
 %pure_parser
@@ -1246,10 +1246,10 @@ modifier:
 
     }
   | TOK_FINAL_ID   { $$ = ID_FINAL | ID_INLINE; }
-  | TOK_STATIC     { $$ = ID_STATIC; }
+  | TOK_STATIC     { $$ = ID_PROTECTED; }
   | TOK_EXTERN     { $$ = ID_EXTERN; }
   | TOK_OPTIONAL   { $$ = ID_OPTIONAL; }
-  | TOK_PRIVATE    { $$ = ID_PRIVATE | ID_STATIC; }
+  | TOK_PRIVATE    { $$ = ID_PRIVATE | ID_PROTECTED; }
   | TOK_LOCAL_ID   { $$ = ID_INLINE; }
   | TOK_PUBLIC     { $$ = ID_PUBLIC; }
   | TOK_PROTECTED  { $$ = ID_PROTECTED; }
@@ -2195,7 +2195,7 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier push_compiler_frame1
       type=compiler_pop_type();
       Pike_compiler->compiler_frame->current_function_number =
 	define_function(name, type,
-			ID_STATIC | ID_PRIVATE | ID_INLINE | ID_USED,
+			ID_PROTECTED | ID_PRIVATE | ID_INLINE | ID_USED,
 			IDENTIFIER_PIKE_FUNCTION, NULL,
 			(unsigned INT16)
 			(Pike_compiler->compiler_frame->opt_flags));
@@ -2268,7 +2268,7 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier push_compiler_frame1
     f=dooptcode(name,
 		$8,
 		type,
-		ID_STATIC | ID_PRIVATE | ID_INLINE | ID_USED);
+		ID_PROTECTED | ID_PRIVATE | ID_INLINE | ID_USED);
 
 #ifdef PIKE_DEBUG
     if (f != Pike_compiler->compiler_frame->current_function_number) {
@@ -2396,7 +2396,7 @@ local_function: TOK_IDENTIFIER push_compiler_frame1 func_args
     dooptcode(i->name,
 	      $5,
 	      i->type,
-	      ID_STATIC | ID_PRIVATE | ID_INLINE);
+	      ID_PROTECTED | ID_PRIVATE | ID_INLINE);
 
     i->opt_flags = Pike_compiler->compiler_frame->opt_flags;
 
@@ -2530,7 +2530,7 @@ local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
     dooptcode(i->name,
 	      $6,
 	      i->type,
-	      ID_STATIC | ID_PRIVATE | ID_INLINE);
+	      ID_PROTECTED | ID_PRIVATE | ID_INLINE);
 
     i->opt_flags = Pike_compiler->compiler_frame->opt_flags;
 
@@ -2660,7 +2660,7 @@ class: TOK_CLASS line_number_info optional_identifier
       s=make_shared_string(buffer);
       $3=mkstrnode(s);
       free_string(s);
-      $<number>0|=ID_STATIC | ID_PRIVATE | ID_INLINE;
+      $<number>0|=ID_PROTECTED | ID_PRIVATE | ID_INLINE;
     }
     /* fprintf(stderr, "LANGUAGE.YACC: CLASS start\n"); */
     if(Pike_compiler->compiler_pass==1)
@@ -2797,7 +2797,7 @@ class: TOK_CLASS line_number_info optional_identifier
 
 	Pike_compiler->compiler_frame->current_function_number=
 	  define_function(create_string, type,
-			  ID_INLINE | ID_STATIC,
+			  ID_INLINE | ID_PROTECTED,
 			  IDENTIFIER_PIKE_FUNCTION |
 			  (Pike_compiler->num_create_args < 0?IDENTIFIER_VARARGS:0),
 			  0,
@@ -2849,7 +2849,7 @@ class: TOK_CLASS line_number_info optional_identifier
 
 	/* Fifth: Define the function. */
 
-	f=dooptcode(create_string, create_code, type, ID_STATIC);
+	f=dooptcode(create_string, create_code, type, ID_PROTECTED);
 
 #ifdef PIKE_DEBUG
 	if(Pike_interpreter.recoveries &&
@@ -3519,7 +3519,7 @@ optional_block: /* EMPTY */ { $$=0; }
     f=dooptcode(name,
 		$5,
 		type,
-		ID_STATIC | ID_PRIVATE | ID_INLINE | ID_USED);
+		ID_PROTECTED | ID_PRIVATE | ID_INLINE | ID_USED);
 
     if(Pike_compiler->compiler_frame->lexical_scope & SCOPE_SCOPED) {
       $$ = mktrampolinenode(f,Pike_compiler->compiler_frame->previous);
@@ -3576,7 +3576,7 @@ implicit_modifiers:
       $$ = Pike_compiler->current_modifiers =
 	(THIS_COMPILATION->lex.pragmas & ID_MODIFIER_MASK);
     } else {
-      $$ = Pike_compiler->current_modifiers = ID_STATIC|ID_INLINE|ID_PRIVATE |
+      $$ = Pike_compiler->current_modifiers = ID_PROTECTED|ID_INLINE|ID_PRIVATE |
 	(THIS_COMPILATION->lex.pragmas & ID_MODIFIER_MASK);
     }
   }

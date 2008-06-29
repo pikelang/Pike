@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iterators.cmod,v 1.69 2008/06/28 22:05:03 mast Exp $
+|| $Id: iterators.cmod,v 1.70 2008/06/29 12:37:10 nilsson Exp $
 */
 
 #include "global.h"
@@ -88,7 +88,7 @@ PIKECLASS Iterator
    *! function is typically protected.
    */
   PIKEFUN void create(void|mixed data)
-    flags ID_STATIC;
+    flags ID_PROTECTED;
     prototype;
   {}
 
@@ -98,7 +98,7 @@ PIKECLASS Iterator
    *! @expr{1@} otherwise.
    */
   PIKEFUN int(0..1) `!()
-    flags ID_STATIC;
+    flags ID_PROTECTED;
     prototype;
   {}
 
@@ -110,7 +110,7 @@ PIKECLASS Iterator
    *! throw an exception in that case.
    */
   PIKEFUN Iterator `+(int steps)
-    flags ID_STATIC|ID_OPTIONAL;
+    flags ID_PROTECTED|ID_OPTIONAL;
     prototype;
   {}
 
@@ -147,7 +147,7 @@ PIKECLASS Iterator
    */
   PIKEFUN Iterator `+=(int steps)
     prototype;
-    flags ID_STATIC|ID_OPTIONAL;
+    flags ID_PROTECTED|ID_OPTIONAL;
   {}
 
   /*! @decl optional Iterator `- (int steps)
@@ -158,7 +158,7 @@ PIKECLASS Iterator
    *! forward.
    */
   PIKEFUN int(0..1) `-(int steps)
-    flags ID_STATIC|ID_OPTIONAL;
+    flags ID_PROTECTED|ID_OPTIONAL;
     prototype;
   {}
 
@@ -887,7 +887,7 @@ PIKECLASS string_iterator
     }
 
   PIKEFUN int _search(string|int needle, int|void start)
-    flags ID_STATIC;
+    flags ID_PROTECTED;
     {
       if (!THIS->s)
 	Pike_error("No data to search.\n");

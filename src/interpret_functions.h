@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.207 2008/05/31 10:54:29 grubba Exp $
+|| $Id: interpret_functions.h,v 1.208 2008/06/29 12:37:10 nilsson Exp $
 */
 
 /*
@@ -314,7 +314,7 @@ OPCODE1(F_LOOKUP_LFUN, "->lfun", 0, {
     int id = FIND_LFUN(p, arg1);
     if ((id != -1) &&
 	(!(p->identifier_references[id].id_flags &
-	   (ID_STATIC|ID_PRIVATE|ID_HIDDEN)))) {
+	   (ID_PROTECTED|ID_PRIVATE|ID_HIDDEN)))) {
       id += o->prog->inherits[Pike_sp[-1].subtype].identifier_level;
       low_object_index_no_free(&tmp, o, id);
     } else {

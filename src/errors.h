@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: errors.h,v 1.39 2008/05/27 01:39:44 mast Exp $
+|| $Id: errors.h,v 1.40 2008/06/29 12:37:10 nilsson Exp $
 */
 
 #ifdef ERR_DECLARE
@@ -113,17 +113,17 @@
 DECLARE_ERROR(generic, Generic, EMPTY ,
   ERR_VAR(struct pike_string *,tStr,PIKE_T_STRING,error_message)
   ERR_VAR(struct array *,tArray,PIKE_T_ARRAY,error_backtrace)
-  ERR_FUNC("cast",f_error_cast,tFunc(tString,tArray),ID_STATIC)
-  ERR_FUNC("`[]",f_error_index,tFunc(tInt01,tMixed),ID_STATIC)
+  ERR_FUNC("cast",f_error_cast,tFunc(tString,tArray),ID_PROTECTED)
+  ERR_FUNC("`[]",f_error_index,tFunc(tInt01,tMixed),ID_PROTECTED)
   ERR_FUNC("describe",f_error_describe,tFunc(tVoid,tString),0)
   ERR_FUNC_SAVE_ID (generic_err_message_fun, "message", f_error_message,
 		    tFunc(tVoid,tString), 0)
   ERR_FUNC_SAVE_ID (generic_err_backtrace_fun, "backtrace", f_error_backtrace,
 		    tFunc(tVoid,tArr(tMixed)),0)
   ERR_FUNC("_sprintf", f_error__sprintf,
-	   tFunc(tOr(tInt,tVoid) tOr(tMapping,tVoid),tString), ID_STATIC)
-  ERR_FUNC("_is_type", f_error__is_type, tFunc(tString, tInt01), ID_STATIC)
-  ERR_FUNC("create",f_error_create,tFunc(tStr tOr(tVoid,tArr(tMixed)),tVoid),ID_STATIC)
+	   tFunc(tOr(tInt,tVoid) tOr(tMapping,tVoid),tString), ID_PROTECTED)
+  ERR_FUNC("_is_type", f_error__is_type, tFunc(tString, tInt01), ID_PROTECTED)
+  ERR_FUNC("create",f_error_create,tFunc(tStr tOr(tVoid,tArr(tMixed)),tVoid),ID_PROTECTED)
 )
 
 DECLARE_ERROR(index, Index,

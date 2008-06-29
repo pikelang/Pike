@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.258 2008/06/28 22:05:04 mast Exp $
+|| $Id: threads.c,v 1.259 2008/06/29 12:37:11 nilsson Exp $
 */
 
 #include "global.h"
@@ -2282,7 +2282,7 @@ void th_init(void)
 		    mutex_key_offset + OFFSETOF(key_storage, owner_obj),
 		    tObjIs_THREAD_ID, T_OBJECT, 0);
   PIKE_MAP_VARIABLE("_mutex", mutex_key_offset + OFFSETOF(key_storage, mutex_obj),
-		    tObjIs_THREAD_MUTEX, T_OBJECT, ID_STATIC|ID_PRIVATE);
+		    tObjIs_THREAD_MUTEX, T_OBJECT, ID_PROTECTED|ID_PRIVATE);
   set_init_callback(init_mutex_key_obj);
   set_exit_callback(exit_mutex_key_obj);
   mutex_key=Pike_compiler->new_program;
@@ -2346,7 +2346,7 @@ void th_init(void)
   ADD_FUNCTION("get",f_thread_local_get,tFunc(tNone,tMix),0);
   ADD_FUNCTION("set",f_thread_local_set,tFunc(tSetvar(1,tMix),tVar(1)),0);
   ADD_FUNCTION("create", f_thread_local_create,
-	       tFunc(tVoid,tVoid), ID_STATIC);
+	       tFunc(tVoid,tVoid), ID_PROTECTED);
 #ifdef PIKE_DEBUG
   set_gc_check_callback(gc_check_thread_local);
 #endif
@@ -2363,7 +2363,7 @@ void th_init(void)
 		    tMix, T_MIXED, 0);
   ADD_FUNCTION("create",f_thread_create,
 	       tFuncV(tNone,tMixed,tVoid),
-	       ID_STATIC);
+	       ID_PROTECTED);
   ADD_FUNCTION("backtrace",f_thread_backtrace,tFunc(tNone,tArray),0);
   ADD_FUNCTION("wait",f_thread_id_result,tFunc(tNone,tMix),0);
   ADD_FUNCTION("status",f_thread_id_status,tFunc(tNone,tInt),0);

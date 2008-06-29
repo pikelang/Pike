@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.216 2008/06/28 22:05:01 mast Exp $
+|| $Id: builtin.cmod,v 1.217 2008/06/29 12:37:10 nilsson Exp $
 */
 
 #include "global.h"
@@ -1407,7 +1407,7 @@ PIKECLASS backtrace_frame
 
   /* These are cleared when filename and lineno has been initialized
    * from them. */
-  PIKEVAR program prog flags ID_STATIC|ID_PRIVATE;
+  PIKEVAR program prog flags ID_PROTECTED|ID_PRIVATE;
   CVAR PIKE_OPCODE_T *pc;
 
   /* These two are considered to be uninitialized from prog, pc and
@@ -2190,8 +2190,8 @@ PIKECLASS multi_string_replace
 {
   CVAR struct replace_many_context ctx;
   /* NOTE: from and to are only kept for _encode()'s use. */
-  PIKEVAR array from flags ID_STATIC;
-  PIKEVAR array to flags ID_STATIC;
+  PIKEVAR array from flags ID_PROTECTED;
+  PIKEVAR array to flags ID_PROTECTED;
 
   /*! @decl void create(array(string)|mapping(string:string)|void from, @
    *!                   array(string)|string|void to)
@@ -2347,12 +2347,12 @@ PIKECLASS multi_string_replace
 PIKECLASS single_string_replace
 {
   CVAR SearchMojt mojt;
-  PIKEVAR string del flags ID_STATIC|ID_PRIVATE;
-  PIKEVAR string to flags ID_STATIC|ID_PRIVATE;
+  PIKEVAR string del flags ID_PROTECTED|ID_PRIVATE;
+  PIKEVAR string to flags ID_PROTECTED|ID_PRIVATE;
 
   EXTRA
   {
-    MAP_VARIABLE ("o", tObj, ID_STATIC|ID_PRIVATE,
+    MAP_VARIABLE ("o", tObj, ID_PROTECTED|ID_PRIVATE,
 		  single_string_replace_storage_offset +
 		  OFFSETOF (single_string_replace_struct, mojt.container),
 		  T_OBJECT);
@@ -2529,7 +2529,7 @@ PIKECLASS bootstring
   CVAR INT_TYPE base, tmin, tmax, skew, damp;
   CVAR INT_TYPE initial_bias, initial_n;
   CVAR p_wchar2 delim;
-  PIKEVAR string digits flags ID_STATIC|ID_PRIVATE;
+  PIKEVAR string digits flags ID_PROTECTED|ID_PRIVATE;
 
   static INT_TYPE bootstring_cp_to_digit(p_wchar2 ch)
   {
@@ -2754,7 +2754,7 @@ PIKECLASS bootstring
 		       int skew, int damp, 
 		       int initial_bias, int initial_n,
 		       int delim, string digits )
-    flags ID_STATIC;
+    flags ID_PROTECTED;
   {
     struct bootstring_struct *bs = THIS;
     if (base<2)
@@ -3333,7 +3333,7 @@ PIKECLASS List
    *!   Returns the number of elements in the list.
    */
   PIKEFUN int(0..) _sizeof()
-    flags ID_STATIC;
+    flags ID_PROTECTED;
   {
     push_int(THIS->num_elems);
   }
@@ -3346,7 +3346,7 @@ PIKECLASS List
    *!   @[sprintf()], @[lfun::_sprintf()]
    */
   PIKEFUN string _sprintf(int c, mapping(string:mixed)|void attr)
-    flags ID_STATIC;
+    flags ID_PROTECTED;
   {
     if (!THIS->num_elems) {
       push_constant_text("ADT.List(/* empty */)");
@@ -3494,7 +3494,7 @@ PIKECLASS List
    *!   Ought to reset the @[List] if called multiple times.
    */
   PIKEFUN void create(mixed ... values)
-    flags ID_STATIC;
+    flags ID_PROTECTED;
   {
     /* FIXME: Reset the list? */
     apply_current(f_List_append_fun_num, args);
@@ -3506,7 +3506,7 @@ PIKECLASS List
    */
   PIKECLASS _get_iterator
     program_flags PROGRAM_USES_PARENT;
-    flags ID_STATIC;
+    flags ID_PROTECTED;
   {
     CVAR struct pike_list_node *cur;
     CVAR INT32 ind;		/* Not meaningful, but requred by the API. */
@@ -3659,7 +3659,7 @@ PIKECLASS List
     }
 
     PIKEFUN int(0..1) `!()
-      flags ID_STATIC;
+      flags ID_PROTECTED;
     {
       pop_n_elems(args);
       push_int(!THIS->cur->next || !THIS->cur->prev);

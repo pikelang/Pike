@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.228 2008/06/28 12:06:29 per Exp $
+ * $Id: backend.cmod,v 1.229 2008/06/29 12:37:10 nilsson Exp $
  *
  * Backend object.
  */
@@ -2112,7 +2112,7 @@ PIKECLASS Backend
   }
 
   PIKEFUN void create()
-    flags ID_STATIC;
+    flags ID_PROTECTED;
   {
     struct Backend_struct *me = THIS;
 
