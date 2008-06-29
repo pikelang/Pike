@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.217 2008/06/29 12:37:10 nilsson Exp $
+|| $Id: builtin.cmod,v 1.218 2008/06/29 17:57:01 nilsson Exp $
 */
 
 #include "global.h"
@@ -643,6 +643,18 @@ PIKEFUN mapping(1:2) mkmapping(array(1=mixed) ind, array(2=mixed) val)
 		  ind->size, val->size);
 
   RETURN mkmapping(ind, val);
+}
+
+/*! @decl void secure(string str)
+ *! @belongs String
+ *!
+ *! Marks the string as secure, which will clear the memory area
+ *! before freeing the string.
+ */
+PIKEFUN void secure(string str)
+     optflags OPT_SIDE_EFFECT;
+{
+  str->flags |= STRING_CLEAR_ON_EXIT;
 }
 
 /*! @decl int count(string haystack, string needle)
