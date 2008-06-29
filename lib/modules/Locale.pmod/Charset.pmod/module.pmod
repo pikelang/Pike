@@ -106,6 +106,15 @@ protected private inherit _Charset;
 //!   }
 class Decoder
 {
+  //! @decl string charset;
+  //!
+  //! Name of the charset - giving this name to @[decoder] returns an
+  //! instance of the same class as this object.
+  //!
+  //! @note
+  //! This is not necessarily the same name that was actually given to
+  //! @[decoder] to produce this object.
+
   //! Feeds a string to the decoder.
   //!
   //! @param s
@@ -115,6 +124,13 @@ class Decoder
   //!   Returns the current object, to allow for chaining
   //!   of calls.
   this_program feed(string s);
+
+  // FIXME: There ought to be a finish(string s) function. Now it's
+  // possible that certain kinds of coding errors are simply ignored
+  // if they occur last in a string. E.g.
+  // Locale.Charset.decoder("utf8")->feed("\345")->drain() returns ""
+  // instead of throwing an error about the incomplete UTF8 sequence,
+  // and there's no good way to get this error.
 
   //! Get the decoded data, and reset buffers.
   //!
@@ -136,6 +152,15 @@ class Encoder
   //! An encoder only differs from a decoder in that it has an extra function.
   inherit Decoder;
 
+  //! @decl string charset;
+  //!
+  //! Name of the charset - giving this name to @[encoder] returns
+  //! an instance of the same class as this one.
+  //!
+  //! @note
+  //! This is not necessarily the same name that was actually given to
+  //! @[encoder] to produce this object.
+
   //! Change the replacement callback function.
   //!
   //! @param rc
@@ -145,6 +170,7 @@ class Encoder
 }
 
 private class ASCIIDec {
+  constant charset = "iso88591";
   protected private string s = "";
   this_program feed(string ss)
   {
@@ -166,6 +192,7 @@ private class ASCIIDec {
 
 private class UTF16dec {
   inherit ASCIIDec;
+  constant charset = "utf16";
   protected int check_bom=1, le=0;
   string drain() {
     string s = ::drain();
@@ -190,6 +217,7 @@ private class UTF16dec {
 
 private class UTF16LEdec {
   inherit UTF16dec;
+  constant charset = "utf16le";
   protected void create() { le=1; }
 }
 
@@ -316,12 +344,12 @@ Decoder decoder(string name)
     ])[name[3..]];
 
     if(sub)
-      return EUCDec(sub);
+      return EUCDec(sub, name);
   }
 
   if( (< "extendedunixcodepackedformatforjapanese",
 	 "eucpkdfmtjapanese" >)[ name ] )
-    return EUCDec("x0208");
+    return EUCDec("x0208", "eucpkdfmtjapanese");
 
 
   if( (< "gb18030", "gbk", "936", "949" >)[ name ] )
@@ -342,11 +370,12 @@ Decoder decoder(string name)
 
 private class ASCIIEnc
 {
+  constant charset = "iso88591";
   protected string s = "";
   protected string|void replacement;
   protected function(string:string)|void repcb;
   protected string low_convert(string s, string|void r,
-			     function(string:string)|void rc)
+			       function(string:string)|void rc)
   {
     int i = sizeof(s);
     string rr;
@@ -357,7 +386,7 @@ private class ASCIIEnc
 	else if(r)
 	  s=s[..i-1]+low_convert(r)+s[i+1..];
 	else
-	  error("Character unsupported by encoding.\n");
+	  encode_error (s, i, charset, "Character unsupported by encoding.\n");
     return s;
   }
   this_program feed(string ss)
@@ -389,8 +418,9 @@ private class ASCIIEnc
 
 private class UTF16enc {
   inherit ASCIIEnc;
+  constant charset = "utf16";
   protected private string low_convert(string s, string|void r,
-				    function(string:string)|void rc)
+				       function(string:string)|void rc)
   {
     int i = sizeof(s);
     string rr;
@@ -401,7 +431,7 @@ private class UTF16enc {
 	else if(r)
 	  s=s[..i-1]+low_convert(r)+s[i+1..];
 	else
-	  error("Character unsupported by encoding.\n");
+	  encode_error (s, i, charset, "Character unsupported by encoding.\n");
     return s;
   }
   this_program feed(string ss) {
@@ -421,6 +451,7 @@ private class UTF16enc {
 
 private class UTF16LEenc {
   inherit UTF16enc;
+  constant charset = "utf16le";
   string drain() {
     return map(::drain()/2, reverse)*"";
   }
@@ -501,6 +532,8 @@ Encoder encoder(string name, string|void replacement,
     "latin1", "l1", "ansix341968", "iso646irv1991", "iso646us",
     "isoir6", "us", "usascii", "ascii", "367", "819",
     "isolatin1">)[name])
+    // FIXME: This doesn't accurately check the range of valid
+    // characters according to the chosen charset.
     return ASCIIEnc(replacement, repcb);
 
   if(has_prefix(name, "iso2022"))
@@ -536,12 +569,12 @@ Encoder encoder(string name, string|void replacement,
     ])[name[3..]];
 
     if(sub)
-      return EUCEnc(sub, replacement, repcb);
+      return EUCEnc(sub, name, replacement, repcb);
   }
 
   if( (< "extendedunixcodepackedformatforjapanese",
 	 "eucpkdfmtjapanese" >)[ name ] )
-    return EUCEnc("x0208", replacement, repcb);
+    return EUCEnc("x0208", "eucpkdfmtjapanese", replacement, repcb);
 
   Encoder o = rfc1345(name, 1, replacement, repcb);
 
@@ -859,7 +892,16 @@ class DecodeError
   //! The failing position in @[err_str].
 
   string charset;
-  //! The decoding charset.
+  //! The decoding charset, typically as known to
+  //! @[Locale.Charset.decoder].
+  //!
+  //! @note
+  //! Other code may produce errors of this type. In that case this
+  //! name is something that @[Locale.Charset.decoder] does not accept
+  //! (unless it implements exactly the same charset), and it should
+  //! be reasonably certain that @[Locale.Charset.decoder] never
+  //! accepts that name in the future (unless it is extended to
+  //! implement exactly the same charset).
 
   protected void create (string err_str, int err_pos, string charset,
 		      void|string reason, void|array bt)
@@ -871,6 +913,16 @@ class DecodeError
 			      err_str, err_pos, charset, reason),
 	      bt);
   }
+}
+
+void decode_error (string err_str, int err_pos, string charset,
+		   void|string reason, void|mixed... args)
+//! Throws a @[DecodeError] exception. See @[DecodeError.create] for
+//! details about the arguments. If @[args] is given then the error
+//! reason is formatted using @expr{sprintf(@[reason], @@@[args])@}.
+{
+  if (sizeof (args)) reason = sprintf (reason, @args);
+  throw (DecodeError (err_str, err_pos, charset, reason, backtrace()[..<1]));
 }
 
 class EncodeError
@@ -893,7 +945,16 @@ class EncodeError
   //! The failing position in @[err_str].
 
   string charset;
-  //! The encoding charset.
+  //! The encoding charset, typically as known to
+  //! @[Locale.Charset.encoder].
+  //!
+  //! @note
+  //! Other code may produce errors of this type. In that case this
+  //! name is something that @[Locale.Charset.encoder] does not accept
+  //! (unless it implements exactly the same charset), and it should
+  //! be reasonably certain that @[Locale.Charset.encoder] never
+  //! accepts that name in the future (unless it is extended to
+  //! implement exactly the same charset).
 
   protected void create (string err_str, int err_pos, string charset,
 		      void|string reason, void|array bt)
@@ -905,4 +966,14 @@ class EncodeError
 			      err_str, err_pos, charset, reason),
 	      bt);
   }
+}
+
+void encode_error (string err_str, int err_pos, string charset,
+		   void|string reason, void|mixed... args)
+//! Throws an @[EncodeError] exception. See @[EncodeError.create] for
+//! details about the arguments. If @[args] is given then the error
+//! reason is formatted using @expr{sprintf(@[reason], @@@[args])@}.
+{
+  if (sizeof (args)) reason = sprintf (reason, @args);
+  throw (EncodeError (err_str, err_pos, charset, reason, backtrace()[..<1]));
 }
