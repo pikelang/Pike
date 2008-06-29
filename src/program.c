@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.729 2008/06/29 12:50:04 nilsson Exp $
+|| $Id: program.c,v 1.730 2008/06/29 21:00:42 grubba Exp $
 */
 
 #include "global.h"
@@ -8769,10 +8769,10 @@ static void f_compilation_apply_type_attribute(INT32 args)
 	(!b ||
 	 ((b->type == T_INT) && (b->subtype == NUMBER_UNDEFINED) &&
 	  (!b->u.integer)))) {
-      push_svalue(a);
+      /* push_svalue(a); */
       yytype_report(REPORT_WARNING, NULL, 0, NULL,
 		    NULL, 0, NULL,
-		    1, "Calling a deprecated %O value.");
+		    0, "Calling a deprecated value.");
     }
   }
   pop_n_elems(args);
