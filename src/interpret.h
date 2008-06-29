@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.h,v 1.174 2008/04/20 13:00:16 grubba Exp $
+|| $Id: interpret.h,v 1.175 2008/06/29 12:06:03 nilsson Exp $
 */
 
 #ifndef INTERPRET_H
@@ -124,7 +124,6 @@ extern struct op_2_f {
 PMOD_EXPORT extern const char msg_stack_error[];
 #define debug_check_stack() do{if(Pike_sp<Pike_interpreter.evaluator_stack)Pike_fatal(msg_stack_error);}while(0)
 #define check__positive(X,Y) if((X)<0) Pike_fatal Y
-#include "pike_error.h"
 #else
 #define check__positive(X,Y)
 #define debug_check_stack() 
