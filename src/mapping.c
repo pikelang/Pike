@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.209 2008/06/29 08:57:03 grubba Exp $
+|| $Id: mapping.c,v 1.210 2008/06/29 08:58:30 grubba Exp $
 */
 
 #include "global.h"
@@ -1421,6 +1421,7 @@ PMOD_EXPORT struct mapping *copy_mapping(struct mapping *m)
 
 #endif
 
+/* copy_mapping() for when destructive operations are ok. */
 static struct mapping *destructive_copy_mapping(struct mapping *m)
 {
   if ((m->refs == 1) && !m->data->hardlinks &&
