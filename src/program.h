@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.256 2008/06/28 21:50:11 mast Exp $
+|| $Id: program.h,v 1.257 2008/06/29 12:49:51 nilsson Exp $
 */
 
 #ifndef PROGRAM_H
@@ -685,6 +685,7 @@ extern struct object *placeholder_object;
 
 /* Flags for identifier finding... */
 #define SEE_STATIC 1
+#define SEE_PROTECTED 1
 #define SEE_PRIVATE 2
 
 /* Report levels */
