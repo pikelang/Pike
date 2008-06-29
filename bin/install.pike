@@ -2,7 +2,7 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.187 2008/06/29 11:20:06 agehall Exp $
+// $Id: install.pike,v 1.188 2008/06/29 15:37:12 marcus Exp $
 
 #define USE_GTK
 
@@ -1709,6 +1709,12 @@ void update_entry2()
   entry2->set_text( combine_path( entry1 -> get_text(), "bin/pike") );
 }
 
+void close_fileselector(object selector, object button)
+{
+  selector->hide();
+  destruct(selector);  
+}
+
 void set_filename(array ob, object button)
 {
   object selector=ob[0];
@@ -1716,7 +1722,7 @@ void set_filename(array ob, object button)
   entry->set_text(selector->get_filename());
   if(entry == entry1)
     update_entry2();
-  destruct(selector);
+  close_fileselector(selector,button);
 }
 
 void selectfile(object entry, object button)
@@ -1726,7 +1732,7 @@ void selectfile(object entry, object button)
   selector->set_filename(entry->get_text());
   selector->ok_button()->signal_connect("clicked", set_filename,
 					({ selector, entry }) );
-  selector->cancel_button()->signal_connect("clicked",destruct,selector);
+  selector->cancel_button()->signal_connect("clicked",close_fileselector,selector);
   selector->show();
 }
 
