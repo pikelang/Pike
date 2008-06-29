@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.446 2008/06/28 17:14:27 nilsson Exp $
+// $Id: master.pike.in,v 1.447 2008/06/29 10:49:16 nilsson Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -3268,7 +3268,7 @@ void _main(array(string) orig_argv)
       ({"modpath",        HAS_ARG, ({"-M", "--module-path"}), 0, 0}),
       ({"ipath",          HAS_ARG, ({"-I", "--include-path"}), 0, 0}),
       ({"ppath",          HAS_ARG, ({"-P", "--program-path"}), 0, 0}),
-      ({"showpaths",      NO_ARG,  ({"--show-paths"}), 0, 0}),
+      ({"showpaths",      MAY_HAVE_ARG, ({"--show-paths"}), 0, 0}),
       ({"warnings",       NO_ARG,  ({"-w", "--warnings"}), 0, 0}),
       ({"nowarnings",     NO_ARG,  ({"-W", "--woff", "--no-warnings"}), 0, 0}),
       ({"autoreload",     NO_ARG,  ({"--autoreload"}), 0, 0}),
@@ -3410,18 +3410,16 @@ void _main(array(string) orig_argv)
       {
       case "dumpversion":
 	write("%d.%d.%d\n", __REAL_MAJOR__, __REAL_MINOR__, __REAL_BUILD__);
-	exit(0);
+        exit(0);
 
       case "version":
-	werror(version() + " Copyright © 1994-2008 Linköping University\n"
-	       "Pike comes with ABSOLUTELY NO WARRANTY; This is free software and you are\n"
-	       "welcome to redistribute it under certain conditions; read the files\n"
-	       "COPYING and COPYRIGHT in the Pike distribution for more details.\n");
-	exit(0);
+	exit(0, version() + " Copyright © 1994-2008 Linköping University\n"
+             "Pike comes with ABSOLUTELY NO WARRANTY; This is free software and you are\n"
+             "welcome to redistribute it under certain conditions; read the files\n"
+             "COPYING and COPYRIGHT in the Pike distribution for more details.\n");
 
       case "help":
-	werror( main_resolv("Tools.MasterHelp")->do_help(opts[1]) );
-	exit(0);
+	exit( 0, main_resolv("Tools.MasterHelp")->do_help(opts[1]) );
 
       case "features":
 	postparseaction="features";
@@ -3432,8 +3430,33 @@ void _main(array(string) orig_argv)
 	break;
 
       case "showpaths":
-	werror(format_paths());
-	exit(0);
+        if( stringp(opts[1]) )
+        {
+          switch(opts[1])
+          {
+          case "master":
+            write( (_master_file_name || __FILE__)+"\n" );
+            break;
+
+          case "module":
+            write( (pike_module_path * ":")+"\n" );
+            break;
+
+          case "include":
+            write( (pike_include_path * ":")+"\n" );
+            break;
+
+          case "program":
+            write( (pike_program_path * ":")+"\n" );
+            break;
+
+          default:
+            exit(1, "Unknown path type %s\n", opts[1]);
+          }
+          exit(0);
+        }
+
+	exit(0, format_paths());
 
       case "execute":
 #ifdef __AUTO_BIGNUM__
@@ -3472,8 +3495,7 @@ void _main(array(string) orig_argv)
 	  if (compile_err->is_cpp_or_compilation_error) {
 	    // Don't clutter the output with the backtrace for
 	    // compilation errors.
-	    werror (describe_error (compile_err));
-	    exit (20);
+	    exit (20, describe_error (compile_err));
 	  }
 	  else throw (compile_err);
 	}
@@ -3660,10 +3682,9 @@ void _main(array(string) orig_argv)
     handle_error (err);
     ret = 10;
   }
-  if(!intp(ret)) {
-    werror("Error: Non-integer value %O returned from main.\n", ret);
-    exit(10);
-  }
+  if(!intp(ret))
+    exit(10, "Error: Non-integer value %O returned from main.\n", ret);
+
   if(ret >=0) exit([int]ret);
   _async=1;
 
