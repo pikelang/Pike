@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.210 2008/06/29 08:58:30 grubba Exp $
+|| $Id: mapping.c,v 1.211 2008/06/29 15:05:16 grubba Exp $
 */
 
 #include "global.h"
@@ -1540,6 +1540,10 @@ static struct mapping *or_mappings(struct mapping *a, struct mapping *b)
     res = destructive_copy_mapping(b);
     SET_ONERROR(err, do_free_mapping, res);
 
+    if (!b_md->hashsize) {
+      Pike_fatal("Invalid hashsize.\n");
+    }
+
     /* Add elements in a that aren't in b. */
     NEW_MAPPING_LOOP(a_md) {
       size_t h = k->hval % b_md->hashsize;
@@ -1551,6 +1555,7 @@ static struct mapping *or_mappings(struct mapping *a, struct mapping *b)
       }
       if (!k2) {
 	mapping_insert(res, &k->ind, &k->val);
+	b_md = b->data;
       }
     }
     UNSET_ONERROR(err);
@@ -1610,6 +1615,7 @@ static struct mapping *xor_mappings(struct mapping *a, struct mapping *b)
     } else {
       map_delete(res, &k2->ind);
     }
+    b_md = b->data;
   }
   UNSET_ONERROR(err);
   return res;
