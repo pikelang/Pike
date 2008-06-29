@@ -2,11 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.182 2008/06/29 14:06:45 grubba Exp $
+|| $Id: mpz_glue.c,v 1.183 2008/06/29 17:20:35 grubba Exp $
 */
 
 #include "global.h"
 #include "gmp_machine.h"
+#include "pike_float.h"
 #include "module.h"
 
 /* Disable this for now to check that the fallbacks work correctly. */
@@ -469,7 +470,11 @@ int get_new_mpz(MP_INT *tmp, struct svalue *s,
     break;
     
   case T_FLOAT:
-    mpz_set_d(tmp, (double) s->u.float_number);
+    {
+      double val = (double)s->u.float_number;
+      if (PIKE_ISNAN(val) || PIKE_ISINF(val)) return 0;
+      mpz_set_d(tmp, val);
+    }
     break;
 
   case T_OBJECT:
@@ -1653,9 +1658,7 @@ static void name(INT32 args)				\
   INT32 i;						\
   MP_INT *arg;						\
   if(!args) SIMPLE_TOO_FEW_ARGS_ERROR (errmsg_name, 1);	\
-  if (((sp[-args].type != PIKE_T_INT) &&		\
-       (sp[-args].type != PIKE_T_OBJECT)) ||		\
-      !(arg = get_mpz(sp-args, 0, NULL, 0, 0)))		\
+  if (!(arg = get_mpz(sp-args, 0, NULL, 0, 0)))		\
     default;						\
   else							\
     i=mpz_cmp(THIS, arg) cmp 0;				\
