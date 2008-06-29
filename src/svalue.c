@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.243 2008/05/30 18:53:50 mast Exp $
+|| $Id: svalue.c,v 1.244 2008/06/29 11:11:38 nilsson Exp $
 */
 
 #include "global.h"
@@ -815,6 +815,7 @@ PMOD_EXPORT int is_eq(const struct svalue *a, const struct svalue *b)
   }
 }
 
+/* Returns 0 or 1. */
 PMOD_EXPORT int low_is_equal(const struct svalue *a,
 			     const struct svalue *b,
 			     struct processing *p)
