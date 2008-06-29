@@ -1,5 +1,5 @@
 // Compatibility namespace
-// $Id: __default.pmod,v 1.11 2008/06/29 20:21:41 grubba Exp $
+// $Id: __default.pmod,v 1.12 2008/06/29 21:18:46 grubba Exp $
 
 #pike 7.1
 
@@ -89,7 +89,11 @@ object master()
 #pragma no_deprecation_warnings
 int hash(string s, int|void modulo)
 {
-  return predef::hash_7_0(s, modulo);
+  if (query_num_arg() > 1) {
+    return predef::hash_7_0(s, modulo);
+  } else {
+    return predef::hash_7_0(s);
+  }
 }
 #pragma deprecation_warnings
 
