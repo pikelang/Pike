@@ -79,7 +79,7 @@ o Unicode escapes.
   they contain characters that can't be represented raw in the source
   code charset.
 
-o New (stricter) type checker for function calls.
+o Stricter type checker for function calls.
 
   The type checker for function calls is now based on the concept of
   currification. This should provide for error messages that are more
@@ -95,7 +95,7 @@ o Added generic attributes for types.
 
 o Stricter typing of strings.
 
-  The string type may now have an (optional) value range. Example:
+  The string type may now have an optional value range.
 
     string(0..255) bytes;
 
@@ -106,6 +106,8 @@ o cpp
 
   The preprocessor now supports macro expansion in the #include and #string
   directives.
+
+    #include USER_SETTINGS
 
 o Destruct reason passed to lfun::destroy.
 
@@ -131,6 +133,15 @@ o Warnings for unused private symbols.
 
   The compiler now checks that all symbols that have been declared
   private actually are used.
+
+    class A (int i)
+    {
+      protected string j;
+      protected void create(string j)
+      {
+        A::j = reverse(j);
+      }
+    }
 
 o Warnings for unused local variables.
 
@@ -194,14 +205,29 @@ o #pragma {no_,}deprecation_warnings
 
     #pragma deprecation_warnings
 
+o 7.4::blaha FIXME
+
+o Iterator->next() no longer optional. FIXME
+
 
 Extensions and New Functions
 ----------------------------
 
-o getenv() and putenv() are now accessing and modifying the real
+o exit()
+
+  Exit now takes optional arguments to act as a werror in addition to
+  exiting the process.
+
+    exit(1, "Error while opening file %s: %s\n", path, strerror(errno()));
+
+o getenv()/putenv()
+
+  getenv() and putenv() are now accessing and modifying the real
   environment.
 
-o undefinedp() and destructedp() have been added as more readable
+o undefinedp()/destructedp()
+
+  undefinedp() and destructedp() have been added as more readable
   alternatives to zero_type().
 
 o limit()
@@ -209,15 +235,7 @@ o limit()
   The new toplevel function limit(a, x, b) is a convenience function
   that works like min(max(a,x),b).
 
-o exit() now takes optional extra arguments for easier error reporting.
-
-  Example: 
-   exit(1, "Error while opening file %s: %s\n", path, strerror(errno()));
-
 o sprintf() and sscanf()
-
-  - sprintf() and related functions now attempt to perform
-    compile-time argument checking.
 
   - sprintf() now attempts to lookup the name of the program when
     formatting types of objects and programs.
@@ -241,6 +259,18 @@ o encode/decode value and programs
    --with-portable-bytecode is now the default. Pike programs that have
    been dumped on one architecture now can be decoded on another.
 
+o sscanf %H %[^-X] (!= %[^X-]) %[X-X]  FIXME
+
+o gethrtime, gethrvtime, gauge
+
+  Added support for POSIX style timers using clock_gettime(3). Notably
+  this fixes nice high resolution thread local cpu time and monotonic
+  real time on reasonably modern Linux systems.
+
+  There are new constants CPU_TIME_* and REAL_TIME_* in the System
+  module to allow pike code to query various properties of the CPU and
+  real time clocks in use.
+
 o ADT.BitBuffer
  
   Added read() method that reads whole bytes from the buffer and
@@ -248,11 +278,13 @@ o ADT.BitBuffer
 
 o ADT.Queue
 
-  It is now possible to use sizeof() and values() on a Queue object.
+  It is now possible to use sizeof() and values() on a Queue object to
+  get the size of the queue and all elements in the queue as an array.
 
 o ADT.Stack
 
-  Stack objects can now be cast to arrays.
+  Stack objects can now be cast to arrays to get all elements on the
+  stack.
 
 o ADT.Struct
 
@@ -770,16 +802,6 @@ o Web.RDF
   - Added add_statement() method which allows new relations to be
     added to an RDF set.
 
-o gethrtime, gethrvtime, gauge
-
-  Added support for POSIX style timers using clock_gettime(3). Notably
-  this fixes nice high resolution thread local cpu time and monotonic
-  real time on reasonably modern Linux systems.
-
-  There are new constants CPU_TIME_* and REAL_TIME_* in the System
-  module to allow pike code to query various properties of the CPU and
-  real time clocks in use.
-
 
 New modules / classes / methods added
 -------------------------------------
@@ -917,6 +939,11 @@ Incompatible changes
   These incompatible changes can be solved by adding #pike 7.6 to your
   source file or starting Pike with -V7.6.
 
+o main() environment
+
+  The main() method will no longer be given the environment as a
+  mapping as third argument. Use an explicit call to getenv() instead.
+
 o Array.transpose_old
 
   This function has been removed.
@@ -1029,6 +1056,10 @@ o .cmod:
 o Support for class symbols with storage in parent scope.
   Also added support for aliased symbols.
 
+o Machine code backend for PPC64 FIXME
+
+o Objectiv-C embedding framwork FIXME
+
 o Added %c and %C to get_all_args to get char * without
   NUL characters (no 0 valued characters inside the string).
 
@@ -1045,6 +1076,8 @@ o Added ABI selection.
 
   It's now possible to select whether to compile in 32bit or 64bit
   mode at configure time by using the --with-abi option.
+
+o MinGW build possible. FIXME
 
 
 New simplified method to write external C/C++ modules
@@ -1102,11 +1135,6 @@ New lib:
 Protocols.LDAP module.pmod
 -x test_pike
 
-New src:
-embed/libpike
-tmodule
-Protocols.DNS_SD
-
 
 src:
 files: FIXME
@@ -1115,13 +1143,9 @@ java: FIXME
 mysql: FIXME
 
 
-Machine code backend for PPC64
-
-Objectiv-C embedding framwork
 
 DLL for Windows?
 
-MinGW build possible.
 
 libpike.so
 
@@ -1132,11 +1156,3 @@ valgrind_hilfe and valgrind_just_verify
 New malloc on Windows.
 
 poll/epoll
-
-Iterator->next() no longer optional.
-
-sscanf %[^-X] (!= %[^X-]) %[X-X]
-
-env argument to main()
-
-7.4::blaha
