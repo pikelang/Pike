@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iso2022.c,v 1.48 2008/06/28 23:06:02 nilsson Exp $
+|| $Id: iso2022.c,v 1.49 2008/06/29 12:52:03 mast Exp $
 */
 
 #ifdef HAVE_CONFIG_H
@@ -17,6 +17,7 @@
 #include "module_support.h"
 #include "pike_error.h"
 
+#include "charsetmod.h"
 #include "iso2022.h"
 
 
@@ -52,6 +53,7 @@ struct iso2022enc_stor {
   struct pike_string *replace;
   struct string_builder strbuild;
   struct svalue repcb;
+  struct pike_string *name;
 };
 
 #define EMIT(X) string_builder_putchar(&s->strbuild,(X))
@@ -359,16 +361,14 @@ static int call_repcb(struct svalue *repcb, p_wchar2 ch)
   return 0;
 }
 
-#define REPLACE_CHAR(ch, pos)			       \
+#define REPLACE_CHAR(ch, str, pos)		       \
           if(repcb != NULL && call_repcb(repcb, ch)) { \
 	    eat_enc_string(sp[-1].u.string, s, rep, NULL); \
             pop_stack(); \
 	  } else if(rep != NULL) \
             eat_enc_string(rep, s, NULL, NULL); \
 	  else \
-	    Pike_error("Character %lu at position %"PRINTPTRDIFFT"d "	\
-		       "unsupported by encoding.\n",			\
-		       (unsigned long) ch, (pos));
+	    transcoder_error (str, pos, 1, "Unsupported character.\n");
 
 static const unsigned INT32 jp2_tab[] = {
   0x000003c0,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,
@@ -857,7 +857,7 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 	  string_builder_putchar(&s->strbuild,c);
 	} else if(c==0xfffd) {
 	  /* Substitution character... */
-	  REPLACE_CHAR(0xfffd,
+	  REPLACE_CHAR(0xfffd, str,
 		       s1 ? (p_wchar1 *) p - STR1(str) - 1 :
 		       (p_wchar2 *) p - STR2(str) - 1);
 	} else if(s->r[0].map != NULL && c >= s->r[0].lo && c < s->r[0].hi &&
@@ -1193,7 +1193,7 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 	  if(ttab == NULL) {
 	    if(rmap != NULL)
 	      free(rmap);
-	    REPLACE_CHAR(c,
+	    REPLACE_CHAR(c, str,
 			 s1 ? (p_wchar1 *) p - STR1(str) - 1 :
 			 (p_wchar2 *) p - STR2(str) - 1);
 	  }
@@ -1375,16 +1375,26 @@ static void select_encoding_parameters(struct iso2022enc_stor *s,
   if(str == NULL || str->size_shift)
     Pike_error("Invalid ISO2022 encoding variant\n");
   var = (char *)STR0(str);
-  if(!*var)
+  if(!*var) {
     s->variant = 0;
-  else if(!strcmp(var, "jp"))
+    REF_MAKE_CONST_STRING (s->name, "iso2022");
+  }
+  else if(!strcmp(var, "jp")) {
     s->variant = VARIANT_JP;
-  else if(!strcmp(var, "cn") || !strcmp(var, "cnext"))
+    REF_MAKE_CONST_STRING (s->name, "iso2022jp");
+  }
+  else if(!strcmp(var, "cn") || !strcmp(var, "cnext")) {
     s->variant = VARIANT_CN;
-  else if(!strcmp(var, "kr"))
+    REF_MAKE_CONST_STRING (s->name, "iso2022cn");
+  }
+  else if(!strcmp(var, "kr")) {
     s->variant = VARIANT_KR;
-  else if(!strcmp(var, "jp2"))
+    REF_MAKE_CONST_STRING (s->name, "iso2022kr");
+  }
+  else if(!strcmp(var, "jp2")) {
     s->variant = VARIANT_JP2;
+    REF_MAKE_CONST_STRING (s->name, "iso2022jp2");
+  }
   else
     Pike_error("Invalid ISO2022 encoding variant\n");
 }
@@ -1485,6 +1495,7 @@ void iso2022_init(void)
 {
   start_new_program();
   ADD_STORAGE(struct iso2022_stor);
+  add_string_constant ("charset", "iso2022", 0);
   /* function(string:object) */
   ADD_FUNCTION("feed", f_feed,tFunc(tStr,tObj), 0);
   /* function(:string) */
@@ -1498,13 +1509,15 @@ void iso2022_init(void)
 
   start_new_program();
   ADD_STORAGE(struct iso2022enc_stor);
+  PIKE_MAP_VARIABLE ("charset", OFFSETOF (iso2022enc_stor, name),
+		     tStr, T_STRING, 0);
   /* function(string:object) */
   ADD_FUNCTION("feed", f_enc_feed,tFunc(tStr,tObj), 0);
   /* function(:string) */
   ADD_FUNCTION("drain", f_enc_drain,tFunc(tNone,tStr), 0);
   /* function(:object) */
   ADD_FUNCTION("clear", f_enc_clear,tFunc(tNone,tObj), 0);
-  /* function(string|void,function(string:string)|void:void) */
+  /* function(string,string|void,function(string:string)|void:void) */
   ADD_FUNCTION("create", f_create,tFunc(tStr tOr(tStr,tVoid) tOr(tFunc(tStr,tStr),tVoid),tVoid), 0);
   /* function(function(string:string):void) */
   ADD_FUNCTION("set_replacement_callback", f_set_repcb,tFunc(tFunc(tStr,tStr),tVoid), 0);

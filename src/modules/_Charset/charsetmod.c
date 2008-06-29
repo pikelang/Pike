@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: charsetmod.c,v 1.66 2008/06/28 23:06:01 nilsson Exp $
+|| $Id: charsetmod.c,v 1.67 2008/06/29 12:52:02 mast Exp $
 */
 
 #ifdef HAVE_CONFIG_H
@@ -16,7 +16,9 @@
 #include "object.h"
 #include "module_support.h"
 #include "pike_error.h"
+#include "builtin_functions.h"
 
+#include "charsetmod.h"
 #include "iso2022.h"
 
 
@@ -31,21 +33,26 @@
 
 p_wchar1 *misc_charset_lookup(const char *name, int *rlo, int *rhi);
 
-static struct program *std_cs_program = NULL, *std_rfc_program = NULL;
+static struct program *std_cs_program = NULL;
 static struct program *utf1_program = NULL, *utf1e_program = NULL;
 static struct program *utf7_program = NULL, *utf8_program = NULL;
 static struct program *utf7e_program = NULL, *utf8e_program = NULL;
 static struct program *utf_ebcdic_program = NULL, *utf_ebcdice_program = NULL;
 static struct program *utf7_5_program = NULL, *utf7_5e_program = NULL;
 static struct program *euc_program = NULL, *sjis_program = NULL;
+static struct program *gbke_program = NULL;
+static struct program *multichar_program = NULL, *gb18030e_program = NULL;
+static struct program *rfc_base_program = NULL;
+/* The following inherit rfc_base_program. */
+static struct program *std_rfc_program = NULL;
 static struct program *euce_program = NULL, *sjise_program = NULL;
 static struct program *std_94_program = NULL, *std_96_program = NULL;
 static struct program *std_9494_program = NULL, *std_9696_program = NULL;
 static struct program *std_big5_program = NULL;
 static struct program *std_8bit_program = NULL, *std_8bite_program = NULL;
 static struct program *std_16bite_program = NULL;
-static struct program *multichar_program = NULL, *gb18030e_program = NULL;
-static struct program *gbke_program = NULL;
+
+static size_t rfc_charset_name_offs = 0;
 
 struct std_cs_stor { 
   struct string_builder strbuild;
@@ -71,12 +78,14 @@ static size_t utf7_stor_offs = 0;
 
 struct euc_stor {
   UNICHAR const *table, *table2, *table3;
+  struct pike_string *name;
 };
 static size_t euc_stor_offs = 0;
 
 struct multichar_stor {
   const struct multichar_table *table;
   int is_gb18030;
+  struct pike_string *name;
 };
 static size_t multichar_stor_offs = 0;
 
@@ -140,16 +149,91 @@ static int call_repcb(struct svalue *repcb, p_wchar2 ch)
   return 0;
 }
 
-#define REPLACE_CHAR(ch, func, ctx, pos) do {				\
+static struct svalue decode_err_prog = SVALUE_INIT_INT (0);
+static struct svalue encode_err_prog = SVALUE_INIT_INT (0);
+static void DECLSPEC(noreturn) transcode_error_va (
+  struct pike_string *str, ptrdiff_t pos, struct pike_string *charset,
+  int encode, const char *reason, va_list args) ATTRIBUTE((noreturn));
+
+static void DECLSPEC(noreturn) transcode_error_va (
+  struct pike_string *str, ptrdiff_t pos, struct pike_string *charset,
+  int encode, const char *reason, va_list args)
+/* Note: Consumes a ref to charset. */
+{
+  struct svalue *err_prog;
+
+  if (encode) {
+    if (encode_err_prog.type == T_INT) {
+      push_text ("Locale.Charset.EncodeError");
+      SAFE_APPLY_MASTER ("resolv", 1);
+      if (sp[-1].type != T_PROGRAM && sp[-1].type != T_FUNCTION)
+	Pike_error ("Failed to resolve Locale.Charset.EncodeError "
+		    "to a program - unable to throw an encode error.\n");
+      move_svalue (&encode_err_prog, --sp);
+    }
+    err_prog = &encode_err_prog;
+  }
+
+  else {
+    if (decode_err_prog.type == T_INT) {
+      push_text ("Locale.Charset.DecodeError");
+      SAFE_APPLY_MASTER ("resolv", 1);
+      if (sp[-1].type != T_PROGRAM && sp[-1].type != T_FUNCTION)
+	Pike_error ("Failed to resolve Locale.Charset.DecodeError "
+		    "to a program - unable to throw an decode error.\n");
+      move_svalue (&decode_err_prog, --sp);
+    }
+    err_prog = &decode_err_prog;
+  }
+
+  ref_push_string (str);
+  push_int (pos);
+  push_string (charset);
+  if (reason) {
+    struct string_builder s;
+    init_string_builder (&s, 0);
+    string_builder_vsprintf (&s, reason, args);
+    push_string (finish_string_builder (&s));
+  }
+  else
+    push_int (0);
+  f_backtrace (0);
+  apply_svalue (err_prog, 5);
+  f_throw (1);
+}
+
+void DECLSPEC(noreturn) transcode_error (
+  struct pike_string *str, ptrdiff_t pos, struct pike_string *charset,
+  int encode, const char *reason, ...)
+{
+  va_list args;
+  va_start (args, reason);
+  transcode_error_va (str, pos, charset, encode, reason, args);
+  va_end (args);
+}
+
+void DECLSPEC(noreturn) transcoder_error (
+  struct pike_string *str, ptrdiff_t pos, int encode, const char *reason, ...)
+{
+  struct svalue charset_str, charset;
+  va_list args;
+  va_start (args, reason);
+  charset_str.subtype = 0;
+  MAKE_CONST_STRING (charset_str.u.string, "charset");
+  charset_str.type = T_STRING;
+  object_index_no_free (&charset, fp->current_object, 0, &charset_str);
+  transcode_error_va (str, pos, charset.u.string, encode, reason, args);
+  va_end (args);
+}
+
+#define REPLACE_CHAR(ch, func, ctx, str, pos) do {			\
     if(repcb != NULL && call_repcb(repcb, ch)) {			\
       func(ctx, sb, sp[-1].u.string, rep, NULL);			\
       pop_stack();							\
     } else if(rep != NULL)						\
       func(ctx, sb, rep, NULL, NULL);					\
     else								\
-      Pike_error("Character 0x%x at position %"PRINTPTRDIFFT"d "	\
-		 "unsupported by encoding.\n",				\
-		 ch, (pos));						\
+      transcoder_error (str, pos, 1, "Unsupported character.\n");	\
   } while (0)
 
 #define MKREPCB(c) ((c).type == T_FUNCTION? &(c):NULL)
@@ -264,8 +348,7 @@ static void exit_stor(struct object *o)
   free_string_builder(&s->strbuild);
 }
 
-static void f_std_feed(INT32 args, ptrdiff_t (*func)(const p_wchar0 *,
-						     ptrdiff_t n,
+static void f_std_feed(INT32 args, ptrdiff_t (*func)(struct pike_string *,
 						     struct std_cs_stor *))
 {
   struct std_cs_stor *s = (struct std_cs_stor *)fp->current_storage;
@@ -283,7 +366,7 @@ static void f_std_feed(INT32 args, ptrdiff_t (*func)(const p_wchar0 *,
     args++;
   }
 
-  l = func(STR0(str), str->len, s);
+  l = func(str, s);
 
   if (s->retain) {
     free_string(s->retain);
@@ -297,8 +380,7 @@ static void f_std_feed(INT32 args, ptrdiff_t (*func)(const p_wchar0 *,
 }
 
 
-static ptrdiff_t feed_utf8(const p_wchar0 *p, ptrdiff_t l,
-			   struct std_cs_stor *s)
+static ptrdiff_t feed_utf8(struct pike_string *str, struct std_cs_stor *s)
 {
   static const int utf8cont[] = { 0, 0, 0, 0, 0, 0, 0, 0,
 				  0, 0, 0, 0, 0, 0, 0, 0,
@@ -310,24 +392,26 @@ static ptrdiff_t feed_utf8(const p_wchar0 *p, ptrdiff_t l,
 				  3, 3, 3, 3, 0, 0, 0, 0 };
   static const unsigned int first_char_mask[] = {0x1f, 0x0f, 0x07, 0x03, 0x01};
 
-  const p_wchar0 *start = p;
+  const p_wchar0 *p = STR0(str);
+  ptrdiff_t l = str->len;
   for (; l > 0; l--) {
     unsigned int ch = *p++;
 
     if (ch & 0x80) {
       int cl = utf8cont[(ch>>1) - 64], i;
       if (!cl)
-	Pike_error ("Got invalid byte 0x%x at position %"PRINTPTRDIFFT"d.\n",
-		    ch, p - start - 1 - (s->retain ? s->retain->len : 0));
+	transcoder_error (str, p - STR0(str) - 1, 0, "Invalid byte.\n");
 
       ch &= first_char_mask[cl - 1];
 
       for (i = cl >= l ? l - 1 : cl; i--;) {
 	unsigned int c = *p++;
 	if ((c & 0xc0) != 0x80)
-	  Pike_error ("Got invalid UTF-8 sequence continuation byte 0x%x "
-		      "at position %"PRINTPTRDIFFT"d.\n",
-		      c, p - start - 1 - (s->retain ? s->retain->len : 0));
+	  /* Report the start of the invalid sequence to make things
+	   * easier for code that tries to recover from invalid UTF-8. */
+	  transcoder_error (str, p - STR0(str) -
+			    ((cl >= l ? l - 1 : cl) - i) - 1,
+			    0, "Truncated UTF-8 sequence.\n");
 	ch = (ch << 6) | (c & 0x3f);
       }
 
@@ -339,23 +423,13 @@ static ptrdiff_t feed_utf8(const p_wchar0 *p, ptrdiff_t l,
 	case 1: if (ch >= (1 << 7)) break;
 	case 2: if (ch >= (1 << 11)) break;
 	case 3: if (ch >= (1 << 16)) break;
-	  {
-	    ptrdiff_t errpos =
-	      p - start - cl - 1 - (s->retain ? s->retain->len : 0);
-	    if (errpos < 0) errpos = 0;
-	    Pike_error ("Got non-shortest form of char 0x%x "
-			"at position %"PRINTPTRDIFFT"d.\n",
-			ch, errpos);
-	  }
+	  transcoder_error (str, p - STR0(str) - cl - 1, 0,
+			    "Non-shortest form of character U+%04X.\n", ch);
       }
 
-      if ((ch >= 0xd800 && ch <= 0xdfff) || ch > 0x10ffff) {
-	ptrdiff_t errpos =
-	  p - start - cl - 1 - (s->retain ? s->retain->len : 0);
-	if (errpos < 0) errpos = 0;
-	Pike_error ("Char 0x%x at position %"PRINTPTRDIFFT"d "
-		    "is outside the valid range.\n", ch, errpos);
-      }
+      if ((ch >= 0xd800 && ch <= 0xdfff) || ch > 0x10ffff)
+	transcoder_error (str, p - STR0(str) - cl - 1, 0,
+			  "Character U+%04X is outside the valid range.\n", ch);
     }
 
     string_builder_putchar(&s->strbuild, ch);
@@ -407,7 +481,7 @@ static const unsigned char utf_ebcdic_to_i8_conv[] = {
   0x38, 0x39, 0xfb, 0xfc, 0xfd, 0xfe, 0xff, 0x9f,
 };
 
-static ptrdiff_t feed_utf_ebcdic(const p_wchar0 *p, ptrdiff_t l,
+static ptrdiff_t feed_utf_ebcdic(struct pike_string *str,
 				 struct std_cs_stor *s)
 {
   static const int cont[] = { 0, 0, 0, 0, 0, 0, 0, 0,
@@ -418,7 +492,8 @@ static ptrdiff_t feed_utf_ebcdic(const p_wchar0 *p, ptrdiff_t l,
 			      3, 3, 3, 3, 4, 4, 0, 0, };
   static const unsigned int first_char_mask[] = {0x1f, 0x0f, 0x07, 0x03, 0x01};
 
-  const p_wchar0 *start = p;
+  const p_wchar0 *p = STR0(str);
+  ptrdiff_t l = str->len;
   for (; l > 0; l--) {
     unsigned int ch = utf_ebcdic_to_i8_conv[*p++];
 
@@ -426,17 +501,18 @@ static ptrdiff_t feed_utf_ebcdic(const p_wchar0 *p, ptrdiff_t l,
       int cl = cont[(ch>>1) - 80];
       int i;
       if (!cl)
-	Pike_error ("Got invalid byte 0x%x at position %"PRINTPTRDIFFT"d.\n",
-		    ch, p - start - 1 - (s->retain ? s->retain->len : 0));
+	transcoder_error (str, p - STR0(str) - 1, 0, "Invalid byte.\n");
 
       ch &= first_char_mask[cl - 1];
 
       for (i = cl >= l ? l - 1 : cl; i--;) {
 	unsigned int c = utf_ebcdic_to_i8_conv[*p++];
 	if ((c & 0xe0) != 0xa0)
-	  Pike_error ("Got invalid UTF-EBCDIC I8-sequence continuation "
-		      "byte 0x%x at position %"PRINTPTRDIFFT"d.\n",
-		      c, p - start - 1 - (s->retain ? s->retain->len : 0));
+	  /* Report the start of the invalid sequence to make things
+	   * easier for code that tries to recover from invalid UTF-EBCDIC. */
+	  transcoder_error (str, p - STR0(str) -
+			    ((cl >= l ? l - 1 : cl) - i) - 1,
+			    0, "Truncated UTF-EBCDIC I8-sequence.\n");
 	ch = (ch << 5) | (c & 0x1f);
       }
 
@@ -451,23 +527,13 @@ static ptrdiff_t feed_utf_ebcdic(const p_wchar0 *p, ptrdiff_t l,
 	case 1: if (ch >= (1 << 7)) break;
 	case 2: if (ch >= (1 << 11)) break;
 	case 3: if (ch >= (1 << 16)) break;
-	  {
-	    ptrdiff_t errpos =
-	      p - start - cl - 1 - (s->retain ? s->retain->len : 0);
-	    if (errpos < 0) errpos = 0;
-	    Pike_error ("Got non-shortest form of char 0x%x "
-			"at position %"PRINTPTRDIFFT"d.\n",
-			ch, errpos);
-	  }
+	  transcoder_error (str, p - STR0(str) - cl - 1, 0,
+			    "Non-shortest form of character U+%04X.\n", ch);
       }
 
-      if ((ch >= 0xd800 && ch <= 0xdfff) || ch > 0x10ffff) {
-	ptrdiff_t errpos =
-	  p - start - cl - 1 - (s->retain ? s->retain->len : 0);
-	if (errpos < 0) errpos = 0;
-	Pike_error ("Char 0x%x at position %"PRINTPTRDIFFT"d "
-		    "is outside the valid range.\n", ch, errpos);
-      }
+      if ((ch >= 0xd800 && ch <= 0xdfff) || ch > 0x10ffff)
+	transcoder_error (str, p - STR0(str) - cl - 1, 0,
+			  "Character U+%04X is outside the valid range.\n", ch);
 #endif /* 0 */
     }
 
@@ -482,12 +548,14 @@ static void f_feed_utf_ebcdic(INT32 args)
   f_std_feed(args, feed_utf_ebcdic);
 }
 
-static ptrdiff_t feed_utf7_5(const p_wchar0 *p, ptrdiff_t l,
-			     struct std_cs_stor *s)
+static ptrdiff_t feed_utf7_5(struct pike_string *str, struct std_cs_stor *s)
 {
   static int utf7_5len[] = { 0, 0, 0, 0, 0, 0, 0, 0,
 			    -1,-1, 1, 2,-1,-1,-1,-1, };
   static const unsigned INT32 utf7_5of[] = { 0ul, 0x28c0ul, 0xb30c0ul };
+
+  const p_wchar0 *p = STR0(str);
+  ptrdiff_t l = str->len;
   while(l>0) {
     unsigned INT32 ch = 0;
     int cl = utf7_5len[(*p)>>4];
@@ -514,13 +582,14 @@ static void f_feed_utf7_5(INT32 args)
   f_std_feed(args, feed_utf7_5);
 }
 
-static ptrdiff_t feed_utf7(const p_wchar0 *p, ptrdiff_t l,
-			   struct std_cs_stor *s)
+static ptrdiff_t feed_utf7(struct pike_string *str, struct std_cs_stor *s)
 {
   struct utf7_stor *u7 = (struct utf7_stor *)(((char*)s)+utf7_stor_offs);
   INT32 dat = u7->dat, surro = u7->surro;
   int shift = u7->shift, datbit = u7->datbit;
 
+  const p_wchar0 *p = STR0(str);
+  ptrdiff_t l = str->len;
   if(l<=0)
     return l;
 
@@ -638,10 +707,12 @@ static void f_feed_utf7(INT32 args)
   f_std_feed(args, feed_utf7);
 }
 
-static ptrdiff_t feed_sjis(const p_wchar0 *p, ptrdiff_t l,
-			   struct std_cs_stor *s)
+static ptrdiff_t feed_sjis(struct pike_string *str, struct std_cs_stor *s)
 {
   extern UNICHAR map_JIS_C6226_1983[];
+
+  const p_wchar0 *p = STR0(str);
+  ptrdiff_t l = str->len;
   while(l>0) {
     unsigned INT32 ch = *p++;
     if(ch < 0x80) {
@@ -686,14 +757,15 @@ static void f_feed_sjis(INT32 args)
   f_std_feed(args, feed_sjis);
 }
 
-static ptrdiff_t feed_euc(const p_wchar0 *p, ptrdiff_t l,
-			  struct std_cs_stor *s)
+static ptrdiff_t feed_euc(struct pike_string *str, struct std_cs_stor *s)
 {
   struct euc_stor *euc = (struct euc_stor *)(((char*)s)+euc_stor_offs);
   UNICHAR const *map = euc->table;
   UNICHAR const *map2 = euc->table2;
   UNICHAR const *map3 = euc->table3;
 
+  const p_wchar0 *p = STR0(str);
+  ptrdiff_t l = str->len;
   while(l>0) {
     unsigned INT32 ch = *p++;
     if(ch < 0x80) {
@@ -753,7 +825,7 @@ static void f_create_euc(INT32 args)
   struct pike_string *str;
   int lo=0, hi=num_charset_def-1;
 
-  check_all_args("create()", args, BIT_STRING, 0);
+  check_all_args("create()", args, BIT_STRING, BIT_STRING, 0);
 
   str = sp[-args].u.string;
 
@@ -784,6 +856,8 @@ static void f_create_euc(INT32 args)
     s->table3 = NULL;
   }
 
+  copy_shared_string (s->name, sp[1-args].u.string);
+
   pop_n_elems(args);
   push_int(0);
 }
@@ -808,6 +882,11 @@ static void f_create_multichar(INT32 args)
   s->table = def->table;
   /* NOTE: gb18030 is the first in the multichar map! */
   s->is_gb18030 = (def == multichar_map);
+
+  copy_shared_string (s->name, sp[-args].u.string);
+
+  pop_n_elems(args);
+  push_int(0);
 }
 
 #include "gb18030.h"
@@ -869,12 +948,14 @@ static ptrdiff_t feed_gb18030(const p_wchar0 *p, ptrdiff_t l,
   return -4;
 }
 
-static ptrdiff_t feed_multichar(const p_wchar0 *p, ptrdiff_t l,
+static ptrdiff_t feed_multichar(struct pike_string *str,
 				struct std_cs_stor *s)
 {
   struct multichar_stor *m = (struct multichar_stor *)(fp->current_storage + multichar_stor_offs);
   const struct multichar_table *table = m->table;
 
+  const p_wchar0 *p = STR0(str);
+  ptrdiff_t l = str->len;
   while(l>0) {
     unsigned INT32 ch = *p++;
     if(ch < 0x81) {
@@ -888,7 +969,7 @@ static ptrdiff_t feed_multichar(const p_wchar0 *p, ptrdiff_t l,
       const struct multichar_table page = table[ ch-0x81 ];
       if(l==1) return 1;
       if(ch==0xff) {
-	Pike_error("Illegal character: 0xff.\n");
+	transcoder_error (str, p - STR0(str) - 1, 0, "Illegal character.\n");
       }
       ch = *p++;
       if( ch<page.lo || ch>page.hi ) {
@@ -902,10 +983,11 @@ static ptrdiff_t feed_multichar(const p_wchar0 *p, ptrdiff_t l,
 	    /* More characters needed. */
 	    return delta;
 	  }
-	} 
-	Pike_error("Illegal character pair: 0x%02x 0x%02x "
-		   "(expected 0x%02x 0x%02x..0x%02x).\n",
-		   p[-2], ch, p[-2], page.lo, page.hi);
+	}
+	transcoder_error (str, p - STR0(str) - 2,
+			  0, "Illegal character pair: 0x%02x 0x%02x "
+			  "(expected 0x%02x 0x%02x..0x%02x).\n",
+			  p[-2], ch, p[-2], page.lo, page.hi);
       }
       else
 	string_builder_putchar(&s->strbuild, page.table[ch-page.lo]);
@@ -955,7 +1037,7 @@ static void feed_gb18030e(struct std_cs_stor *cs, struct string_builder *sb,
 	    string_builder_putchar(sb, 0x30 + index);
 	  }
 	} else {
-	  REPLACE_CHAR(c, feed_gb18030e, cs, p - STR0(str) - 1);
+	  REPLACE_CHAR(c, feed_gb18030e, cs, str, p - STR0(str) - 1);
 	}
     }
     break;
@@ -986,7 +1068,7 @@ static void feed_gb18030e(struct std_cs_stor *cs, struct string_builder *sb,
 	    string_builder_putchar(sb, 0x30 + index);
 	  }
 	} else {
-	  REPLACE_CHAR(c, feed_gb18030e, cs, p - STR1(str) - 1);
+	  REPLACE_CHAR(c, feed_gb18030e, cs, str, p - STR1(str) - 1);
 	}
     }
     break;
@@ -1018,7 +1100,7 @@ static void feed_gb18030e(struct std_cs_stor *cs, struct string_builder *sb,
 	    string_builder_putchar(sb, 0x30 + index);
 	  }
 	} else {
-	  REPLACE_CHAR(c, feed_gb18030e, cs, p - STR2(str) - 1);
+	  REPLACE_CHAR(c, feed_gb18030e, cs, str, p - STR2(str) - 1);
 	}
       }
     }
@@ -1064,7 +1146,7 @@ static void feed_gbke(struct std_cs_stor *cs, struct string_builder *sb,
 	  string_builder_putchar(sb, gb18030e_bytes[off]);
 	  string_builder_putchar(sb, gb18030e_bytes[off+1]);
 	} else {
-	  REPLACE_CHAR(c, feed_gbke, cs, p - STR0(str) - 1);
+	  REPLACE_CHAR(c, feed_gbke, cs, str, p - STR0(str) - 1);
 	}
     }
     break;
@@ -1081,7 +1163,7 @@ static void feed_gbke(struct std_cs_stor *cs, struct string_builder *sb,
 	  string_builder_putchar(sb, gb18030e_bytes[off]);
 	  string_builder_putchar(sb, gb18030e_bytes[off+1]);
 	} else {
-	  REPLACE_CHAR(c, feed_gbke, cs, p - STR1(str) - 1);
+	  REPLACE_CHAR(c, feed_gbke, cs, str, p - STR1(str) - 1);
 	}
     }
     break;
@@ -1099,7 +1181,7 @@ static void feed_gbke(struct std_cs_stor *cs, struct string_builder *sb,
 	  string_builder_putchar(sb, gb18030e_bytes[off]);
 	  string_builder_putchar(sb, gb18030e_bytes[off+1]);
 	} else {
-	  REPLACE_CHAR(c, feed_gbke, cs, p - STR2(str) - 1);
+	  REPLACE_CHAR(c, feed_gbke, cs, str, p - STR2(str) - 1);
 	}
       }
     }
@@ -1157,6 +1239,12 @@ static void f_create_sjise(INT32 args)
   s->revtab[0xa5 - s->lo] = 0x5c;
   s->revtab[0x203e - s->lo] = 0x7e;
 
+  /* Could use a program constant in this case, but that'd require a
+   * quirky inherit structure. /mast */
+  REF_MAKE_CONST_STRING (*(struct pike_string **) (fp->current_storage +
+						   rfc_charset_name_offs),
+			 "shiftjis");
+
   f_create(args);
   push_int(0);
 }
@@ -1170,7 +1258,8 @@ static void f_create_euce(INT32 args)
   int i, j, z, lo=0, hi=num_charset_def-1;
   UNICHAR const *table=NULL;
 
-  check_all_args("create()", args, BIT_STRING, BIT_STRING|BIT_VOID|BIT_INT,
+  check_all_args("create()", args, BIT_STRING, BIT_STRING,
+		 BIT_STRING|BIT_VOID|BIT_INT,
 		 BIT_FUNCTION|BIT_VOID|BIT_INT, 0);
 
   str = sp[-args].u.string;
@@ -1236,7 +1325,11 @@ static void f_create_euce(INT32 args)
       }
   }
 
-  f_create(args-1);
+  copy_shared_string (*(struct pike_string **) (fp->current_storage +
+						rfc_charset_name_offs),
+		      sp[1-args].u.string);
+
+  f_create(args-2);
   pop_stack();
   push_int(0);
 }
@@ -1244,13 +1337,13 @@ static void f_create_euce(INT32 args)
 static struct std8e_stor *push_std_8bite(int args, int allargs, int lo, int hi)
 {
   struct std8e_stor *s8;
-  push_object(clone_object(std_8bite_program, args));
-  if((allargs-=args)>0) {
-    struct object *o = sp[-1].u.object;
-    add_ref(o);
-    pop_n_elems(allargs+1);
-    push_object(o);
-  }
+  struct object *o = clone_object(std_8bite_program, args);
+  allargs -= args;
+  copy_shared_string (*(struct pike_string **) (o->storage +
+						rfc_charset_name_offs),
+		      sp[-allargs].u.string);
+  pop_n_elems(allargs);
+  push_object(o);
   s8 = (struct std8e_stor *)(sp[-1].u.object->storage+std8e_stor_offs);
   memset((s8->revtab = (p_wchar0 *)xalloc((hi-lo)*sizeof(p_wchar0))), 0,
 	 (hi-lo)*sizeof(p_wchar0));
@@ -1263,13 +1356,13 @@ static struct std8e_stor *push_std_8bite(int args, int allargs, int lo, int hi)
 static struct std16e_stor *push_std_16bite(int args, int allargs, int lo, int hi)
 {
   struct std16e_stor *s16;
-  push_object(clone_object(std_16bite_program, args));
-  if((allargs-=args)>0) {
-    struct object *o = sp[-1].u.object;
-    add_ref(o);
-    pop_n_elems(allargs+1);
-    push_object(o);
-  }
+  struct object *o = clone_object(std_16bite_program, args);
+  allargs -= args;
+  copy_shared_string (*(struct pike_string **) (o->storage +
+						rfc_charset_name_offs),
+		      sp[-allargs].u.string);
+  pop_n_elems(allargs);
+  push_object(o);
   s16 = (struct std16e_stor *)(sp[-1].u.object->storage+std16e_stor_offs);
   memset((s16->revtab = (p_wchar1 *)xalloc((hi-lo)*sizeof(p_wchar1))), 0,
 	 (hi-lo)*sizeof(p_wchar1));
@@ -1348,7 +1441,6 @@ static void f_rfc1345(INT32 args)
 	return;
       }
 
-      pop_n_elems(args);
       switch(charset_map[mid].mode) {
       case MODE_94: p = std_94_program; break;
       case MODE_96: p = std_96_program; break;
@@ -1358,9 +1450,17 @@ static void f_rfc1345(INT32 args)
       default:
 	Pike_fatal("Internal error in rfc1345\n");
       }
-      push_object(clone_object(p, 0));
-      ((struct std_rfc_stor *)(sp[-1].u.object->storage+std_rfc_stor_offs))
-	->table = charset_map[mid].table;
+
+      {
+	struct object *o = clone_object(p, 0);
+	((struct std_rfc_stor *)(o->storage+std_rfc_stor_offs))
+	  ->table = charset_map[mid].table;
+	copy_shared_string (*(struct pike_string **) (o->storage +
+						      rfc_charset_name_offs),
+			    sp[-args].u.string);
+	pop_n_elems(args);
+	push_object (o);
+      }
       return;
     }
     if(c<0)
@@ -1390,25 +1490,33 @@ static void f_rfc1345(INT32 args)
       return;
     }
 
-    pop_n_elems(args);
-    push_object(clone_object(std_8bit_program, 0));
-    ((struct std_rfc_stor *)(sp[-1].u.object->storage+std_rfc_stor_offs))
-      ->table = (UNICHAR *)tabl;
-    ((struct std_misc_stor *)(sp[-1].u.object->storage+std_misc_stor_offs))
-      ->lo = lo;
-    ((struct std_misc_stor *)(sp[-1].u.object->storage+std_misc_stor_offs))
-      ->hi = hi;
-    return;    
+    {
+      struct object *o = clone_object(std_8bit_program, 0);
+      ((struct std_rfc_stor *)(o->storage+std_rfc_stor_offs))
+	->table = (UNICHAR *)tabl;
+      ((struct std_misc_stor *)(o->storage+std_misc_stor_offs))
+	->lo = lo;
+      ((struct std_misc_stor *)(o->storage+std_misc_stor_offs))
+	->hi = hi;
+      copy_shared_string (*(struct pike_string **) (o->storage +
+						    rfc_charset_name_offs),
+			  sp[-args].u.string);
+      pop_n_elems(args);
+      push_object(o);
+    }
+    return;
   }
 
   pop_n_elems(args);
   push_int(0);
 }
 
-static ptrdiff_t feed_94(const p_wchar0 *p, ptrdiff_t l, struct std_cs_stor *s)
+static ptrdiff_t feed_94(struct pike_string *str, struct std_cs_stor *s)
 {
   UNICHAR const *table =
     ((struct std_rfc_stor *)(((char*)s)+std_rfc_stor_offs))->table;
+  const p_wchar0 *p = STR0(str);
+  ptrdiff_t l = str->len;
   while(l--) {
     p_wchar0 x = *p++;
     if(x<=0x20 || x>=0x7f)
@@ -1424,10 +1532,12 @@ static void f_feed_94(INT32 args)
   f_std_feed(args, feed_94);
 }
 
-static ptrdiff_t feed_96(const p_wchar0 *p, ptrdiff_t l, struct std_cs_stor *s)
+static ptrdiff_t feed_96(struct pike_string *str, struct std_cs_stor *s)
 {
   UNICHAR const *table =
     ((struct std_rfc_stor *)(((char*)s)+std_rfc_stor_offs))->table;
+  const p_wchar0 *p = STR0(str);
+  ptrdiff_t l = str->len;
   while(l--) {
     p_wchar0 x = *p++;
     if(x<0xa0)
@@ -1443,11 +1553,12 @@ static void f_feed_96(INT32 args)
   f_std_feed(args, feed_96);
 }
 
-static ptrdiff_t feed_9494(const p_wchar0 *p, ptrdiff_t l,
-			   struct std_cs_stor *s)
+static ptrdiff_t feed_9494(struct pike_string *str, struct std_cs_stor *s)
 {
   UNICHAR const *table =
     ((struct std_rfc_stor *)(((char*)s)+std_rfc_stor_offs))->table;
+  const p_wchar0 *p = STR0(str);
+  ptrdiff_t l = str->len;
   while(l--) {
     p_wchar0 y, x = (*p++)&0x7f;
     if(x<=0x20 || x>=0x7f)
@@ -1472,11 +1583,12 @@ static void f_feed_9494(INT32 args)
   f_std_feed(args, feed_9494);
 }
 
-static ptrdiff_t feed_9696(const p_wchar0 *p, ptrdiff_t l,
-			   struct std_cs_stor *s)
+static ptrdiff_t feed_9696(struct pike_string *str, struct std_cs_stor *s)
 {
   UNICHAR const *table =
     ((struct std_rfc_stor *)(((char*)s)+std_rfc_stor_offs))->table;
+  const p_wchar0 *p = STR0(str);
+  ptrdiff_t l = str->len;
   while(l--) {
     p_wchar0 y, x = (*p++)&0x7f;
     if(x<0x20)
@@ -1501,10 +1613,12 @@ static void f_feed_9696(INT32 args)
   f_std_feed(args, feed_9696);
 }
 
-static ptrdiff_t feed_big5(const p_wchar0 *p, ptrdiff_t l, struct std_cs_stor *s)
+static ptrdiff_t feed_big5(struct pike_string *str, struct std_cs_stor *s)
 {
   UNICHAR const *table =
     ((struct std_rfc_stor *)(((char*)s)+std_rfc_stor_offs))->table;
+  const p_wchar0 *p = STR0(str);
+  ptrdiff_t l = str->len;
   while(l--) {
     p_wchar0 y, x = (*p++);
     if(x<0xa1 || x>0xf9 )
@@ -1527,8 +1641,7 @@ static void f_feed_big5(INT32 args)
   f_std_feed(args, feed_big5);
 }
 
-static ptrdiff_t feed_8bit(const p_wchar0 *p, ptrdiff_t l,
-			   struct std_cs_stor *s)
+static ptrdiff_t feed_8bit(struct pike_string *str, struct std_cs_stor *s)
 {
   UNICHAR const *table =
     ((struct std_rfc_stor *)(((char*)s)+std_rfc_stor_offs))->table;
@@ -1536,6 +1649,8 @@ static ptrdiff_t feed_8bit(const p_wchar0 *p, ptrdiff_t l,
     ((struct std_misc_stor *)(((char*)s)+std_misc_stor_offs));
   int lo = misc->lo, hi = misc->hi;
 
+  const p_wchar0 *p = STR0(str);
+  ptrdiff_t l = str->len;
   while(l--) {
     p_wchar0 x = *p++;
     if(x<lo || (x>0x7f && hi<=0x7f))
@@ -1587,7 +1702,7 @@ static void feed_utf8e(struct std_cs_stor *cs, struct string_builder *sb,
 	  string_builder_putchar(sb, 0x80|((c>>6)&0x3f));
 	  string_builder_putchar(sb, 0x80|(c&0x3f));	
 	} else
-	  REPLACE_CHAR(c, feed_utf8e, cs, p - STR1(str) - 1);
+	  REPLACE_CHAR(c, feed_utf8e, cs, str, p - STR1(str) - 1);
     }
     break;
   case 2:
@@ -1616,7 +1731,7 @@ static void feed_utf8e(struct std_cs_stor *cs, struct string_builder *sb,
 	  string_builder_putchar(sb, 0x80|(c&0x3f));	
 	  continue;
 	}
-	REPLACE_CHAR(c, feed_utf8e, cs, p - STR2(str) - 1);
+	REPLACE_CHAR(c, feed_utf8e, cs, str, p - STR2(str) - 1);
       }
     }
     break;
@@ -1716,7 +1831,7 @@ static void feed_utf_ebcdice(struct std_cs_stor *cs, struct string_builder *sb,
 	  string_builder_putchar(sb, i8_to_utf_ebcdic_conv[0xa0|((c>>5)&0x1f)]);
 	  string_builder_putchar(sb, i8_to_utf_ebcdic_conv[0xa0|(c&0x1f)]);
 	} else
-	  REPLACE_CHAR(c, feed_utf_ebcdice, cs, p - STR1(str) - 1);
+	  REPLACE_CHAR(c, feed_utf_ebcdice, cs, str, p - STR1(str) - 1);
     }
     break;
   case 2:
@@ -1752,7 +1867,7 @@ static void feed_utf_ebcdice(struct std_cs_stor *cs, struct string_builder *sb,
 	  string_builder_putchar(sb, i8_to_utf_ebcdic_conv[0xa0|(c&0x1f)]);
 	  continue;
 	}
-	REPLACE_CHAR(c, feed_utf_ebcdice, cs, p - STR2(str) - 1);
+	REPLACE_CHAR(c, feed_utf_ebcdice, cs, str, p - STR2(str) - 1);
       }
     }
     break;
@@ -1825,7 +1940,7 @@ static void feed_utf7_5e(struct std_cs_stor *cs, struct string_builder *sb,
 	  string_builder_putchar(sb, 0xc0|((c>>6)&0x3f));
 	  string_builder_putchar(sb, 0xc0|(c&0x3f));	
 	} else
-	  REPLACE_CHAR(c, feed_utf7_5e, cs, p - STR2(str) - 1);
+	  REPLACE_CHAR(c, feed_utf7_5e, cs, str, p - STR2(str) - 1);
       /* FIXME: Encode using surrogates? */
     }
     break;
@@ -1954,7 +2069,7 @@ static void feed_utf7e(struct utf7_stor *u7, struct string_builder *sb,
 	  u7->dat = dat;
 	  u7->shift = shift;
 	  u7->datbit = datbit;
-	  REPLACE_CHAR(c, feed_utf7e, u7, p - STR2(str) - 1);
+	  REPLACE_CHAR(c, feed_utf7e, u7, str, p - STR2(str) - 1);
 	  dat = u7->dat;
 	  shift = u7->shift;
 	  datbit = u7->datbit;
@@ -2067,7 +2182,7 @@ static void feed_std8e(struct std8e_stor *s8, struct string_builder *sb,
 	else if(c>=lo && c<hi && (ch=tab[c-lo])!=0)
 	  string_builder_putchar(sb, ch);
 	else
-	  REPLACE_CHAR(c, feed_std8e, s8, p - STR0(str) - 1);
+	  REPLACE_CHAR(c, feed_std8e, s8, str, p - STR0(str) - 1);
     }
     break;
   case 1:
@@ -2079,7 +2194,7 @@ static void feed_std8e(struct std8e_stor *s8, struct string_builder *sb,
 	else if(c>=lo && c<hi && (ch=tab[c-lo])!=0)
 	  string_builder_putchar(sb, ch);
 	else
-	  REPLACE_CHAR(c, feed_std8e, s8, p - STR1(str) - 1);
+	  REPLACE_CHAR(c, feed_std8e, s8, str, p - STR1(str) - 1);
     }
     break;
   case 2:
@@ -2091,7 +2206,7 @@ static void feed_std8e(struct std8e_stor *s8, struct string_builder *sb,
 	else if(c>=lo && c<hi && (ch=tab[c-lo])!=0)
 	  string_builder_putchar(sb, ch);
 	else
-	  REPLACE_CHAR(c, feed_std8e, s8, p - STR2(str) - 1);
+	  REPLACE_CHAR(c, feed_std8e, s8, str, p - STR2(str) - 1);
     }
     break;
 #ifdef PIKE_DEBUG
@@ -2163,7 +2278,7 @@ static void feed_std16e(struct std16e_stor *s16, struct string_builder *sb,
 	    string_builder_putchar(sb, (ch>>8)&0xff);
 	  string_builder_putchar(sb, ch&0xff);
 	} else
-	  REPLACE_CHAR(c, feed_std16e, s16, p - STR0(str) - 1);
+	  REPLACE_CHAR(c, feed_std16e, s16, str, p - STR0(str) - 1);
     }
     break;
   case 1:
@@ -2181,7 +2296,7 @@ static void feed_std16e(struct std16e_stor *s16, struct string_builder *sb,
 	    string_builder_putchar(sb, (ch>>8)&0xff);
 	  string_builder_putchar(sb, ch&0xff);
 	} else
-	  REPLACE_CHAR(c, feed_std16e, s16, p - STR1(str) - 1);
+	  REPLACE_CHAR(c, feed_std16e, s16, str, p - STR1(str) - 1);
     }
     break;
   case 2:
@@ -2199,7 +2314,7 @@ static void feed_std16e(struct std16e_stor *s16, struct string_builder *sb,
 	    string_builder_putchar(sb, (ch>>8)&0xff);
 	  string_builder_putchar(sb, ch&0xff);
 	} else
-	  REPLACE_CHAR(c, feed_std16e, s16, p - STR2(str) - 1);
+	  REPLACE_CHAR(c, feed_std16e, s16, str, p - STR2(str) - 1);
     }
     break;
 #ifdef PIKE_DEBUG
@@ -2260,6 +2375,7 @@ PIKE_MODULE_INIT
   start_new_program();
   do_inherit(&prog, 0, NULL);
   utf7_stor_offs = ADD_STORAGE(struct utf7_stor);
+  add_string_constant ("charset", "utf7", 0);
   /* function(string:object) */
   ADD_FUNCTION("feed", f_feed_utf7,tFunc(tStr,tObj), 0);
   /* function(:object) */
@@ -2269,6 +2385,7 @@ PIKE_MODULE_INIT
 
   start_new_program();
   do_inherit(&prog, 0, NULL);
+  add_string_constant ("charset", "utf8", 0);
   /* function(string:object) */
   ADD_FUNCTION("feed", f_feed_utf8,tFunc(tStr,tObj), 0);
   add_program_constant("UTF8dec", utf8_program = end_program(), ID_PROTECTED|ID_FINAL);
@@ -2276,6 +2393,7 @@ PIKE_MODULE_INIT
   prog.u.program = utf7_program;
   start_new_program();
   do_inherit(&prog, 0, NULL);
+  add_string_constant ("charset", "utf7", 0);
   /* function(string:object) */
   ADD_FUNCTION("feed", f_feed_utf7e,tFunc(tStr,tObj), 0);
   /* function(:string) */
@@ -2285,18 +2403,21 @@ PIKE_MODULE_INIT
 
   start_new_program();
   do_inherit(&prog, 0, NULL);
+  add_string_constant ("charset", "utf8", 0);
   /* function(string:object) */
   ADD_FUNCTION("feed", f_feed_utf8e,tFunc(tStr,tObj), 0);
   add_program_constant("UTF8enc", utf8e_program = end_program(), ID_PROTECTED|ID_FINAL);
 
   start_new_program();
   do_inherit(&prog, 0, NULL);
+  add_string_constant ("charset", "utfebcdic", 0);
   /* function(string:object) */
   ADD_FUNCTION("feed", f_feed_utf_ebcdic,tFunc(tStr,tObj), 0);
   add_program_constant("UTF_EBCDICdec", utf_ebcdic_program = end_program(), ID_PROTECTED|ID_FINAL);
 
   start_new_program();
   do_inherit(&prog, 0, NULL);
+  add_string_constant ("charset", "utfebcdic", 0);
   /* function(string:object) */
   ADD_FUNCTION("feed", f_feed_utf_ebcdice,tFunc(tStr,tObj), 0);
   add_program_constant("UTF_EBCDICenc", utf_ebcdice_program = end_program(), ID_PROTECTED|ID_FINAL);
@@ -2304,11 +2425,13 @@ PIKE_MODULE_INIT
   start_new_program();
   do_inherit(&prog, 0, NULL);
   /* function(string:object) */
+  add_string_constant ("charset", "utf75", 0);
   ADD_FUNCTION("feed", f_feed_utf7_5,tFunc(tStr,tObj), 0);
   add_program_constant("UTF7_5dec", utf7_5_program = end_program(), ID_PROTECTED|ID_FINAL);
 
   start_new_program();
   do_inherit(&prog, 0, NULL);
+  add_string_constant ("charset", "utf75", 0);
   /* function(string:object) */
   ADD_FUNCTION("feed", f_feed_utf7_5e,tFunc(tStr,tObj), 0);
   add_program_constant("UTF7_5enc", utf7_5e_program = end_program(), ID_PROTECTED|ID_FINAL);
@@ -2316,36 +2439,52 @@ PIKE_MODULE_INIT
   start_new_program();
   do_inherit(&prog, 0, NULL);
   euc_stor_offs = ADD_STORAGE(struct euc_stor);
+  PIKE_MAP_VARIABLE ("charset", euc_stor_offs + OFFSETOF (euc_stor, name),
+		     tStr, T_STRING, 0);
   /* function(string:object) */
   ADD_FUNCTION("feed", f_feed_euc,tFunc(tStr,tObj), 0);
-  /* function(string:) */
-  ADD_FUNCTION("create", f_create_euc,tFunc(tStr,tVoid), ID_PROTECTED);
+  /* function(string,string:) */
+  ADD_FUNCTION("create", f_create_euc,tFunc(tStr tStr,tVoid), ID_PROTECTED);
   add_program_constant("EUCDec", euc_program = end_program(), ID_PROTECTED|ID_FINAL);
 
   start_new_program();
   do_inherit(&prog, 0, NULL);
   multichar_stor_offs = ADD_STORAGE(struct multichar_stor);
+  PIKE_MAP_VARIABLE ("charset",
+		     multichar_stor_offs + OFFSETOF (multichar_stor, name),
+		     tStr, T_STRING, 0);
   ADD_FUNCTION("create", f_create_multichar,tFunc(tStr,tVoid), ID_PROTECTED);
   ADD_FUNCTION("feed", f_feed_multichar,tFunc(tStr,tObj), 0);
   add_program_constant("MulticharDec", multichar_program = end_program(), ID_PROTECTED|ID_FINAL);
 
   start_new_program();
   do_inherit(&prog, 0, NULL);
+  add_string_constant ("charset", "gb18030", 0);
   /* function(string:object) */
   ADD_FUNCTION("feed", f_feed_gb18030e,tFunc(tStr,tObj), 0);
   add_program_constant("GB18030Enc", gb18030e_program = end_program(), ID_PROTECTED|ID_FINAL);
 
   start_new_program();
   do_inherit(&prog, 0, NULL);
+  add_string_constant ("charset", "gbk", 0);
   /* function(string:object) */
   ADD_FUNCTION("feed", f_feed_gbke,tFunc(tStr,tObj), 0);
   add_program_constant("GBKenc", gbke_program = end_program(), ID_PROTECTED|ID_FINAL);
 
   start_new_program();
   do_inherit(&prog, 0, NULL);
+  add_string_constant ("charset", "shiftjis", 0);
   /* function(string:object) */
   ADD_FUNCTION("feed", f_feed_sjis,tFunc(tStr,tObj), 0);
   add_program_constant("ShiftJisDec", sjis_program = end_program(), ID_PROTECTED|ID_FINAL);
+
+  start_new_program();
+  do_inherit (&prog, 0, NULL);
+  rfc_charset_name_offs = ADD_STORAGE (struct pike_string *);
+  PIKE_MAP_VARIABLE ("charset", rfc_charset_name_offs, tStr, T_STRING, 0);
+  rfc_base_program = end_program();
+
+  prog.u.program = rfc_base_program;
 
   start_new_program();
   do_inherit(&prog, 0, NULL);
@@ -2375,8 +2514,8 @@ PIKE_MODULE_INIT
 
   start_new_program();
   do_inherit(&prog, 0, NULL);
-  /* function(string,string|void,function(string:string)|void:void) */
-  ADD_FUNCTION("create", f_create_euce,tFunc(tStr tOr(tStr,tVoid) tOr(tFunc(tStr,tStr),tVoid),tVoid), 0);
+  /* function(string,string,string|void,function(string:string)|void:void) */
+  ADD_FUNCTION("create", f_create_euce,tFunc(tStr tStr tOr(tStr,tVoid) tOr(tFunc(tStr,tStr),tVoid),tVoid), 0);
   add_program_constant("EUCEnc", euce_program = end_program(), ID_PROTECTED|ID_FINAL);
 
   start_new_program();
@@ -2427,6 +2566,8 @@ PIKE_MODULE_INIT
   add_function_constant("rfc1345", f_rfc1345,
 			"function(string,int|void,string|void,"
 			"function(string:string)|void:object)", 0);
+
+  PIKE_MODULE_EXPORT (_Charset, transcode_error_va);
 }
 
 PIKE_MODULE_EXIT
@@ -2493,6 +2634,9 @@ PIKE_MODULE_EXIT
   if(std_16bite_program != NULL)
     free_program(std_16bite_program);
 
+  if(rfc_base_program != NULL)
+    free_program(rfc_base_program);
+
   if(std_rfc_program != NULL)
     free_program(std_rfc_program);
 
@@ -2509,4 +2653,7 @@ PIKE_MODULE_EXIT
     free_program(multichar_program);
 
   iso2022_exit();
+
+  if (encode_err_prog.type != T_INT) free_svalue (&encode_err_prog);
+  if (decode_err_prog.type != T_INT) free_svalue (&decode_err_prog);
 }
