@@ -146,6 +146,19 @@ o The keyword protected
   The modifier protected is now an alias for the modifier static.
   NOTE: In next release static will be deprecated.
 
+o extern declared variables
+  
+  Variables can now be declared as 'extern'. This means that
+  inheriting classes must have them. They can be used like normal
+  variables in the base class.
+
+  Example: 
+    class A
+    {
+	extern int a;
+	int dummy() { return ++a; }
+    }
+
 o __attribute__ and __deprecated__
 
   It's now possible to set custom attributes on types. This is
@@ -192,9 +205,30 @@ o limit()
 
 o sprintf() and sscanf()
 
-  The format string for sprintf() and sscanf() et al is now
-  syntax checked at compile-time, and the arguments after it
-  are matched against it.
+  - sprintf() and related functions now attempt to perform
+    compile-time argument checking.
+
+  - sprintf() now attempts to lookup the name of the program when
+    formatting types of objects and programs.
+
+  - The new formatting directive %H can be used to format a string as
+    a binary holertih string.
+
+      > sprintf("%2H", "Hello");
+      (1) Result: "\0\5Hello"
+
+  - The new formatting directive %q can be used to format a atring as
+    a quoted string, quoting all control character and non-8-bit
+    characters as well as quote characters. Like %O but always on one
+    line.
+
+      > sprintf("%q", "abc \x00 \" \' \12345");
+      (1) Result: "\"abc \\0 \\\" ' \\u14e5\""
+
+o encode/decode value and programs
+
+   --with-portable-bytecode is now the default. Pike programs that have
+   been dumped on one architecture now can be decoded on another.
 
 o ADT.BitBuffer
  
@@ -725,28 +759,6 @@ o Web.RDF
   - Added add_statement() method which allows new relations to be
     added to an RDF set.
 
-o sprintf
-
-  - sprintf() and related functions now attempt to perform
-    compile-time argument checking.
-
-  - sprintf() now attempts to lookup the name of the program when
-    formatting types of objects and programs.
-
-  - The new formatting directive %H can be used to format a string as
-    a binary holertih string.
-
-      > sprintf("%2H", "Hello");
-      (1) Result: "\0\5Hello"
-
-  - The new formatting directive %q can be used to format a atring as
-    a quoted string, quoting all control character and non-8-bit
-    characters as well as quote characters. Like %O but always on one
-    line.
-
-      > sprintf("%q", "abc \x00 \" \' \12345");
-      (1) Result: "\"abc \\0 \\\" ' \\u14e5\""
-
 o gethrtime, gethrvtime, gauge
 
   Added support for POSIX style timers using clock_gettime(3). Notably
@@ -821,7 +833,7 @@ o Arg
 
 o GTK2
 
-  FIXME
+  Wrapper for the GTK2 library. Not yet 100% completed, but usable.
 
 o Kerberos
 
@@ -980,15 +992,12 @@ o The global variable next_timeout is no more. It has been replaced by
   the new variable. This fixes issues GTK, GTK2 and sendfile had with the
   new backend implementation.
 
-  NOTE!
   NOTE! C-API incompatibility!
-  NOTE!
   NOTE! Changed the argument for backend callbacks!
-  NOTE!
-  NOTE! The argument is now a struct Backend_struct * when called
-  NOTE! at entry (was NULL).
-  NOTE! The argument is now NULL when called at exit (was 1).
-  NOTE!
+
+  The argument is now a struct Backend_struct * when called
+  at entry (was NULL).
+  The argument is now NULL when called at exit (was 1).
 
 o Pike_fp->context
 
@@ -996,21 +1005,13 @@ o Pike_fp->context
   rather than a copy of it. This allows for easier access to
   inherited symbols in C-code.
 
-  NOTE!
-  NOTE! C-API incompatibility!
-  NOTE!
-
 o Inherit level argument added to several object handling functions.
 
   In order to implement subtyping of objects, an extra argument
   "inherit_level" has been added to many object indexing related
   functions.
 
-  NOTE!
-  NOTE! C-API incompatibility!
-  NOTE!
-
-o bin/precompile.pike
+o .cmod:
 
   Voidable pointer types are no longer promoted to mixed.
 
@@ -1018,18 +1019,13 @@ o Support for class symbols with storage in parent scope.
   Also added support for aliased symbols.
 
 
-Building and installin
-----------------------
+Building and installing
+-----------------------
 
 o Added ABI selection.
 
   It's now possible to select whether to compile in 32bit or 64bit
   mode at configure time by using the --with-abi option.
-
-o PIKE_PORTABLE_BYTECODE
-
-   --with-portable-bytecode is now the default. Pike programs that have
-   been dumped on one architecture now can be decoded on another.
 
 
 New simplified method to write external C/C++ modules
@@ -1135,9 +1131,4 @@ env argument to main()
 c-api: Added %c and %C to get_all_args to get char * with/without
 NULL. (%c is an alias for %s but %C is new.)
 
-extern variables.
-
 7.4::blaha
-
-Inherit::this and Inherit::this_program now works.
-
