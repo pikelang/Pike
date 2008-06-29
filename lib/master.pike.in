@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.449 2008/06/29 12:21:52 agehall Exp $
+// $Id: master.pike.in,v 1.450 2008/06/29 12:33:23 agehall Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -1968,7 +1968,7 @@ protected void create()
 
 #if "¤include_prefix¤"[0]!='¤'
   include_prefix = "¤include_prefix¤";
-  cflags = (cflags || "") + " -I" + include_prefix;
+  cflags = (cflags || "") + " -I" + dirname(include_prefix);
 #endif
 
 #if "¤doc_prefix¤"[0]!='¤'
