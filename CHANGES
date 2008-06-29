@@ -1,29 +1,20 @@
 Changes since Pike 7.6:
 ----------------------------------------------------------------------
 
-o Added ABI selection.
+This is a high level list of changes between Pike 7.6 and Pike 7.8.
+General bug fixes, build fixes and optimizations are not mentioned
+here. For a complete list of changes, please consult the CVS changelog
+either directly or through Code Librarian.
 
-  It's now possible to select whether to compile in 32bit or 64bit
-  mode at configure time by using the --with-abi option.
+
+New / improved language functionality
+-------------------------------------
 
 o New syntax to index from the end in range operations.
 
   A "<" can be added before an index in the [..] operator to count
   from the end instead. This is convenient to e.g. chop off the last
   element in an array: a[..<1].
-
-o Improved support for embedding.
-
-  Several declarations and definitions (most notably the debug and
-  runtime flags) have moved from main.h to pike_embed.h, in an attempt
-  to add support for embedding.
-
-o Major compiler API cleanups.
-
-  The Pike compiler is now executing in a pike function context
-  (rather than in an efun context), and it is possible to customize
-  some of its behaviour via inherit (rather than via handler objects).
-  As a consequence the compiler is now much closer to being thread-safe.
 
 o New `[..] operator function.
 
@@ -90,12 +81,12 @@ o Unicode escapes.
 
 o New (stricter) type checker for function calls.
 
-  The type checker for function calls is now based on the concept
-  of currification. This should provide for error messages that
-  are more easily understood. It also is much better att typechecking
-  function calls utilizing the splice (@) operator.
-  The mechanisms used by the typechecker are also made available as
-  Pike.get_first_arg_type(), Pike.low_check_call() and Pike.get_return_type().
+  The type checker for function calls is now based on the concept of
+  currification. This should provide for error messages that are more
+  easily understood. It also is much better att typechecking function
+  calls utilizing the splice (@) operator. The mechanisms used by the
+  typechecker are also made available as Pike.get_first_arg_type(),
+  Pike.low_check_call() and Pike.get_return_type().
 
 o Added generic attributes for types.
 
@@ -108,56 +99,13 @@ o Stricter typing of strings.
 
     string(0..255) bytes;
 
-o Stdio
-
-  - Stdio.cp can now work recursively in a directory tree. It will
-    also keep the permissions of files it copies.
-
-  - Added Stdio.recursive_mv which works on every OS and also when the
-    destination isn't on the same filesystem as the source.
-
-  - Added more symbolc default termcap/terminfo bindings to
-    Stdio.Readline.
-
-  - Improved support for Terminfo on NetBSD.
-
-  - read_file(), read_bytes(), write_file() and append_file() will may
-    now throw exceptions on uncommon errors such as when write_file is
-    unable to write all its data.
-
-  - Stdio.File->openat() opens a file relative to an open directory.
-
 o Support for having multiple different active backend implementations.
   FIXME: example?
-  ...
-  The global variable next_timeout is no more. It has been replaced by
-  a backend-specific variable. Added backend_lower_timeout() for accessing
-  the new variable. This fixes issues GTK, GTK2 and sendfile had with the
-  new backend implementation.
-
-  NOTE!
-  NOTE! C-API incompatibility!
-  NOTE!
-  NOTE! Changed the argument for backend callbacks!
-  NOTE!
-  NOTE! The argument is now a struct Backend_struct * when called
-  NOTE! at entry (was NULL).
-  NOTE! The argument is now NULL when called at exit (was 1).
-  NOTE!
-
-o bin/precompile.pike
-
-  Voidable pointer types are no longer promoted to mixed.
 
 o cpp
 
   The preprocessor now supports macro expansion in the #include and #string
   directives.
-
-o PIKE_PORTABLE_BYTECODE
-
-   --with-portable-bytecode is now the default. Pike programs that have
-   been dumped on one architecture now can be decoded on another.
 
 o Destruct reason passed to lfun::destroy.
 
@@ -168,9 +116,6 @@ o Destruct reason passed to lfun::destroy.
   These integers are defined in the new Object module as
   DESCTRUCT_EXPLICIT, DESTRUCT_NO_REFS, DESTRUCT_GC and
   DESTRUCT_CLEANUP.
-
-o Support for class symbols with storage in parent scope.
-  Also added support for aliased symbols.
 
 o Improved support for mixin.
 
@@ -196,32 +141,10 @@ o Unicode
   Case information and the Unicode module are updated to Unicode
   5.1.0.
 
-o protected
+o The keyword protected
 
   The modifier protected is now an alias for the modifier static.
   NOTE: In next release static will be deprecated.
-
-o Pike_fp->context
-
-  Pike_fp->context is now a pointer to the current struct inherit
-  rather than a copy of it. This allows for easier access to
-  inherited symbols in C-code.
-
-  NOTE!
-  NOTE! C-API incompatibility!
-  NOTE!
-
-o Inherit level argument added to several object handling functions.
-
-  In order to implement subtyping of objects, an extra argument
-  "inherit_level" has been added to many object indexing related
-  functions.
-
-  NOTE!
-  NOTE! C-API incompatibility!
-  NOTE!
-
-Extensions and New Functions
 
 o __attribute__ and __deprecated__
 
@@ -257,6 +180,10 @@ o #pragma {no_,}deprecation_warnings
   and turned on again with
 
     #pragma deprecation_warnings
+
+
+Extensions and New Functions
+----------------------------
 
 o limit()
 
@@ -739,6 +666,25 @@ o Standards.XML.Wix
 
   FIXME
 
+o Stdio
+
+  - Stdio.cp can now work recursively in a directory tree. It will
+    also keep the permissions of files it copies.
+
+  - Added Stdio.recursive_mv which works on every OS and also when the
+    destination isn't on the same filesystem as the source.
+
+  - Added more symbolc default termcap/terminfo bindings to
+    Stdio.Readline.
+
+  - Improved support for Terminfo on NetBSD.
+
+  - read_file(), read_bytes(), write_file() and append_file() will may
+    now throw exceptions on uncommon errors such as when write_file is
+    unable to write all its data.
+
+  - Stdio.File->openat() opens a file relative to an open directory.
+
 o String
 
   - The function int2size has been rewritten to fixpoint as well as
@@ -812,7 +758,8 @@ o gethrtime, gethrvtime, gauge
   real time clocks in use.
 
 
-New Modules
+New modules / classes / methods added
+-------------------------------------
 
 o Fuse
 
@@ -871,10 +818,6 @@ o Arg
       mapping opts = Arg.parse(argv);
       argv = opts[Arg.REST];
     }
-
-o Fuse
-
-  FIXME
 
 o GTK2
 
@@ -937,13 +880,16 @@ o Web.CGI
 
 
 Deprecations
+------------
 
 o The keyword nomask has been deprecated. It was functionally
   equivivalent with the keyword final.
 
 o Stdio.File->set_peek_file_before_read_callback() is deprecated.
 
+
 Incompatible changes
+--------------------
 
   These incompatible changes can be solved by adding #pike 7.6 to your
   source file or starting Pike with -V7.6.
@@ -1013,7 +959,81 @@ o Stdio
 o The modules Mird, Perl and Ssleay have been removed.
 
 
+C level module API
+------------------
+
+o Improved support for embedding.
+
+  Several declarations and definitions (most notably the debug and
+  runtime flags) have moved from main.h to pike_embed.h, in an attempt
+  to add support for embedding.
+
+o Major compiler API cleanups.
+
+  The Pike compiler is now executing in a pike function context
+  (rather than in an efun context), and it is possible to customize
+  some of its behaviour via inherit (rather than via handler objects).
+  As a consequence the compiler is now much closer to being thread-safe.
+
+o The global variable next_timeout is no more. It has been replaced by
+  a backend-specific variable. Added backend_lower_timeout() for accessing
+  the new variable. This fixes issues GTK, GTK2 and sendfile had with the
+  new backend implementation.
+
+  NOTE!
+  NOTE! C-API incompatibility!
+  NOTE!
+  NOTE! Changed the argument for backend callbacks!
+  NOTE!
+  NOTE! The argument is now a struct Backend_struct * when called
+  NOTE! at entry (was NULL).
+  NOTE! The argument is now NULL when called at exit (was 1).
+  NOTE!
+
+o Pike_fp->context
+
+  Pike_fp->context is now a pointer to the current struct inherit
+  rather than a copy of it. This allows for easier access to
+  inherited symbols in C-code.
+
+  NOTE!
+  NOTE! C-API incompatibility!
+  NOTE!
+
+o Inherit level argument added to several object handling functions.
+
+  In order to implement subtyping of objects, an extra argument
+  "inherit_level" has been added to many object indexing related
+  functions.
+
+  NOTE!
+  NOTE! C-API incompatibility!
+  NOTE!
+
+o bin/precompile.pike
+
+  Voidable pointer types are no longer promoted to mixed.
+
+o Support for class symbols with storage in parent scope.
+  Also added support for aliased symbols.
+
+
+Building and installin
+----------------------
+
+o Added ABI selection.
+
+  It's now possible to select whether to compile in 32bit or 64bit
+  mode at configure time by using the --with-abi option.
+
+o PIKE_PORTABLE_BYTECODE
+
+   --with-portable-bytecode is now the default. Pike programs that have
+   been dumped on one architecture now can be decoded on another.
+
+
 New simplified method to write external C/C++ modules
+-----------------------------------------------------
 
   It's now suggested that you do not use the fairly complex 'pike
   internal' style of external modules (configure.in with
@@ -1118,8 +1138,6 @@ NULL. (%c is an alias for %s but %C is new.)
 extern variables.
 
 7.4::blaha
-
-now supports micin for static symbols.
 
 Inherit::this and Inherit::this_program now works.
 
