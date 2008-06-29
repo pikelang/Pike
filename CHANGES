@@ -507,8 +507,8 @@ o Oracle
 
   - The module has been updated to work with Oracle 10.
 
-  - The number of rows in a result object can be queried from the new
-    function num_rows().
+  - An approximation of the number of rows in a result object can be
+    queried from the new function num_rows().
 
 o Parser.HTML
 
