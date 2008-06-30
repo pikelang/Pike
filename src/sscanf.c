@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sscanf.c,v 1.186 2008/06/28 01:26:36 mast Exp $
+|| $Id: sscanf.c,v 1.187 2008/06/30 22:33:52 marcus Exp $
 */
 
 #include "global.h"
@@ -286,7 +286,7 @@ static ptrdiff_t PIKE_CONCAT(read_set,SIZE) (			\
   struct sscanf_set *set,					\
   ptrdiff_t match_len, INT32 flags)				\
 {								\
-  size_t e, last = 0;						\
+  p_wchar2 e, last = 0;						\
   CHAROPT( int set_size=0; )					\
 								\
   if(cnt>=match_len)						\
@@ -333,15 +333,15 @@ static ptrdiff_t PIKE_CONCAT(read_set,SIZE) (			\
 	Pike_error("Error in sscanf format string.\n");		\
 								\
 CHAROPT(							\
-      if(last < (size_t)sizeof(set->c))				\
+      if(last < (p_wchar2)sizeof(set->c) && last >= 0)		\
       {								\
-	if(match[cnt] < (size_t)sizeof(set->c))			\
+	if(match[cnt] < (p_wchar2)sizeof(set->c))		\
 	{							\
 )								\
 	  for(e=last;e<=match[cnt];e++) set->c[e]=1;		\
 CHAROPT(							\
 	}else{							\
-	  for(e=last;e<(size_t)sizeof(set->c);e++)		\
+	  for(e=last;e<(p_wchar2)sizeof(set->c);e++)		\
             set->c[e]=1;					\
 								\
 	  check_stack(2);					\
@@ -357,18 +357,20 @@ CHAROPT(							\
 )								\
     } else {							\
       last=match[cnt];						\
-      if(last < (size_t)sizeof(set->c))				\
+CHAROPT(							\
+      if(last < (p_wchar2)sizeof(set->c) && last >= 0)		\
+)								\
         set->c[last]=1;						\
 CHAROPT(							\
       else{							\
         if(set_size &&						\
-	   ((size_t)sp[-1].u.integer) == last-1)		\
+	   ((p_wchar2)sp[-1].u.integer) == last-1)		\
         {							\
 	  sp[-1].u.integer++;					\
         }else{							\
 	  check_stack(2);					\
-	  push_int64(last);					\
-	  push_int64(last);					\
+	  push_int(last);					\
+	  push_int(last);					\
 	  set_size++;						\
         }							\
       }								\
@@ -385,7 +387,7 @@ CHAROPT(							\
     INT32 *order;						\
     set->a=aggregate_array(set_size*2);				\
     order=get_switch_order(set->a);				\
-    for(e=0;e<(size_t)set->a->size;e+=2)			\
+    for(e=0;e<(p_wchar2)set->a->size;e+=2)			\
     {								\
       if(order[e]+1 != order[e+1] &&				\
          order[e+1]+1 != order[e]) {				\
@@ -1199,7 +1201,7 @@ CHAROPT2(								 \
 	    for(e=eye;eye<len;eye++)					 \
 	    {								 \
 CHAROPT2(								 \
-	      if(input[eye]<sizeof(set.c))				 \
+	      if(input[eye]<(p_wchar2)sizeof(set.c) && input[eye]>=0)	 \
 	      {								 \
 )									 \
 	        if(set.c[input[eye]] == set.neg)			 \
