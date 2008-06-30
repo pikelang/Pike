@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.c,v 1.201 2008/05/30 11:20:44 grubba Exp $
+|| $Id: docode.c,v 1.202 2008/06/30 13:47:23 mast Exp $
 */
 
 #include "global.h"
@@ -274,12 +274,14 @@ static void do_pop_to_mark(void *ignored)
   emit0(F_POP_TO_MARK);
 }
 
+#ifdef PIKE_DEBUG
 static void do_cleanup_synch_mark(void)
 {
   struct compilation *c = THIS_COMPILATION;
   if (d_flag > 2)
     emit0(F_CLEANUP_SYNCH_MARK);
 }
+#endif
 
 static void do_escape_catch(void)
 {
@@ -2320,11 +2322,24 @@ static int do_docode2(node *n, int flags)
      * then allow tail recursion of these kind of returns too. */
     for (p = current_label; p; p = p->prev) {
       struct cleanup_frame *q;
-      for (q = p->cleanups; q; q = q->prev)
+      for (q = p->cleanups; q; q = q->prev) {
 	if (q->cleanup == (cleanup_func) do_escape_catch) {
 	  in_catch = 1;
 	  do_escape_catch();
 	}
+#ifdef PIKE_DEBUG
+	/* Have to pop marks from F_SYNCH_MARK too if the debug level
+	 * is high enough to get them inserted, otherwise we'll get
+	 * false alarms from debug checks in e.g. POP_CATCH_CONTEXT. */
+	else if (d_flag > 2 &&
+		 q->cleanup == (cleanup_func) do_cleanup_synch_mark) {
+	  /* Use the ordinary pop mark instruction here since we know
+	   * the stack isn't in synch and we don't want debug checks
+	   * for that. */
+	  do_pop_mark (NULL);
+	}
+#endif
+      }
     }
 
     emit0(in_catch ? F_VOLATILE_RETURN : F_RETURN);
