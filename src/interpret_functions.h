@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.208 2008/06/29 12:37:10 nilsson Exp $
+|| $Id: interpret_functions.h,v 1.209 2008/06/30 13:46:05 mast Exp $
 */
 
 /*
@@ -1086,8 +1086,9 @@ OPCODE0_TAIL(F_CLEANUP_SYNCH_MARK, "cleanup synch mark", I_UPDATE_SP|I_UPDATE_M_
 	if (Pike_sp - *Pike_mark_sp > 0) /* not always same as Pike_sp > *Pike_mark_sp */
 	/* Some attempt to recover, just to be able to report the backtrace. */
 	  pop_n_elems(Pike_sp - *Pike_mark_sp);
-	Pike_fatal("Stack out of synch - should be %ld, is %ld.\n",
-	      DO_NOT_WARN((long)should), DO_NOT_WARN((long)is));
+	Pike_fatal("Stack out of synch - "
+		   "should be %"PRINTPTRDIFFT"d, is %"PRINTPTRDIFFT"d.\n",
+		   should, is);
       }
     }
   });
