@@ -1,5 +1,5 @@
 /*
- * $Id: sql_util.pmod,v 1.22 2008/06/28 16:49:55 nilsson Exp $
+ * $Id: sql_util.pmod,v 1.23 2008/06/30 12:09:15 srb Exp $
  *
  * Some SQL utility functions.
  * They are kept here to avoid circular references.
@@ -49,9 +49,10 @@ string emulate_bindings(string query, mapping(string|int:mixed)|void bindings,
   function my_quote=(driver&&driver->quote?driver->quote:quote);
   v=map(values(bindings),
 	lambda(mixed m) {
+	  if(zero_type(m))
+	    return "NULL";
 	  if(multisetp(m)) m = indices(m)[0];
-	  return (stringp(m)? "'"+my_quote(m)+"'" :
-	   zero_type(m)?"NULL":(string)m);
+	  return "'"+(intp(m)?(string)m:my_quote((string)m))+"'";
 	});
   // Throws if mapping key is empty string.
   k=map(indices(bindings),lambda(string s){
