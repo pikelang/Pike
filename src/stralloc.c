@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.227 2008/06/29 23:08:08 grubba Exp $
+|| $Id: stralloc.c,v 1.228 2008/06/30 22:13:28 marcus Exp $
 */
 
 #include "global.h"
@@ -150,13 +150,13 @@ static INLINE int min_magnitude(p_wchar2 c)
   return 2;
 }
 
-static INLINE unsigned INT32 generic_extract (const void *str, int size, ptrdiff_t pos)
+static INLINE p_wchar2 generic_extract (const void *str, int size, ptrdiff_t pos)
 {
   switch(size)
   {
-    case 0: return ((unsigned char *)str)[pos];
-    case 1: return ((unsigned INT16 *)str)[pos];
-    case 2: return ((unsigned INT32 *)str)[pos];
+    case 0: return ((p_wchar0 *)str)[pos];
+    case 1: return ((p_wchar1 *)str)[pos];
+    case 2: return ((p_wchar2 *)str)[pos];
   }
 #ifdef PIKE_DEBUG
   Pike_fatal("Illegal shift size!\n");
@@ -164,8 +164,8 @@ static INLINE unsigned INT32 generic_extract (const void *str, int size, ptrdiff
   return 0;
 }
 
-PMOD_EXPORT unsigned INT32 index_shared_string(struct pike_string *s,
-					       ptrdiff_t pos)
+PMOD_EXPORT p_wchar2 index_shared_string(struct pike_string *s,
+					 ptrdiff_t pos)
 {
 #ifdef PIKE_DEBUG
   if(pos > s->len || pos<0) {

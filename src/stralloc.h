@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.h,v 1.108 2008/06/29 17:56:06 nilsson Exp $
+|| $Id: stralloc.h,v 1.109 2008/06/30 22:13:29 marcus Exp $
 */
 
 #ifndef STRALLOC_H
@@ -238,8 +238,8 @@ INT32 PIKE_CONCAT4(compare_,FROM,_to_,TO)(const PIKE_CONCAT(p_wchar,TO) *to, con
 PMOD_EXPORT extern struct pike_string *empty_pike_string;
 
 /* Prototypes begin here */
-PMOD_EXPORT unsigned INT32 index_shared_string(struct pike_string *s,
-					       ptrdiff_t pos);
+PMOD_EXPORT p_wchar2 index_shared_string(struct pike_string *s,
+					 ptrdiff_t pos);
 PMOD_EXPORT void low_set_index(struct pike_string *s, ptrdiff_t pos,
 			       int value);
 PMOD_EXPORT struct pike_string *debug_check_size_shift(struct pike_string *a,int shift);
