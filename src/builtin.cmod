@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.220 2008/06/29 23:14:18 grubba Exp $
+|| $Id: builtin.cmod,v 1.221 2008/06/30 10:01:54 grubba Exp $
 */
 
 #include "global.h"
@@ -656,7 +656,7 @@ PIKEFUN string string_secure(string str)
   rawtype tFunc(tSetvar(0, tStr), tVar(0));
 {
   str->flags |= STRING_CLEAR_ON_EXIT;
-  RETURN str;
+  REF_RETURN str;
 }
 
 /*! @decl int count(string haystack, string needle)
