@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.319 2008/06/29 12:36:20 nilsson Exp $
+|| $Id: gc.c,v 1.320 2008/06/30 07:42:32 grubba Exp $
 */
 
 #include "global.h"
@@ -3852,7 +3852,14 @@ size_t do_gc(void *ignored, int explicit_call)
 
     if (!explicit_call && last_gc_time != (cpu_time_t) -1) {
 #ifdef CPU_TIME_MIGHT_BE_THREAD_LOCAL
-      if (cpu_time_is_thread_local)
+      if (cpu_time_is_thread_local
+#ifdef PIKE_DEBUG
+	  /* At high debug levels, the gc may get called before
+	   * the threads are initialized.
+	   */
+	  && Pike_interpreter.thread_state
+#endif
+	  )
 	Pike_interpreter.thread_state->auto_gc_time += last_gc_time;
       else
 #endif
