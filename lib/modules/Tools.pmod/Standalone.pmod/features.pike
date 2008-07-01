@@ -184,6 +184,9 @@ int main(int num, array(string) args) {
   F(GTK.GLArea);
   F(GTK.HandleBox);
 
+  write("\nGTK2\n");
+  M(GTK2.gtk_init);
+
   write("\nGz\n");
   M(Gz.crc32);
 
