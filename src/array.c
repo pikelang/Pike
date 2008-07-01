@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.210 2008/06/23 16:05:02 mast Exp $
+|| $Id: array.c,v 1.211 2008/07/01 09:36:28 mast Exp $
 */
 
 #include "global.h"
@@ -529,15 +529,19 @@ PMOD_EXPORT struct array *array_shrink(struct array *v, ptrdiff_t size)
     Pike_fatal("Illegal argument to array_shrink.\n");
 #endif
 
-  if (size == v->size) return v;
-
+  /* Ensure that one of the empty arrays are returned if size is zero. */
   if( !size )
   {
-    free_array(v);
-    /* FIXME: What about weak markers etc? */
-    add_ref(&empty_array);
-    return &empty_array;
+    struct array *e = (v->flags & ARRAY_WEAK_FLAG ?
+		       &weak_empty_array : &empty_array);
+    if (e != v) {
+      free_array (v);
+      add_ref (e);
+    }
+    return e;
   }
+
+  if (size == v->size) return v;
 
   /* Free items outside the new array. */
   free_svalues(ITEM(v) + size, v->size - size, v->type_field);
@@ -567,6 +571,9 @@ PMOD_EXPORT struct array *resize_array(struct array *a, INT32 size)
 #ifdef PIKE_DEBUG
   if(d_flag > 1)  array_check_type_field(a);
 #endif
+
+  /* Ensure that one of the empty arrays are returned if size is zero. */
+  if (!size) return array_shrink (a, size);
 
   if(a->size == size) return a;
   if(size > a->size)

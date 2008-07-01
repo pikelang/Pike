@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.h,v 1.75 2008/05/11 14:55:53 mast Exp $
+|| $Id: array.h,v 1.76 2008/07/01 09:36:29 mast Exp $
 */
 
 #ifndef ARRAY_H
@@ -242,7 +242,7 @@ PMOD_EXPORT struct array *implode_array(struct array *a, struct array *b);
 #define DO_AGGREGATE_ARRAY(max_keep_on_stack)				\
   do {									\
     ptrdiff_t diff__ = Pike_sp - base__;				\
-    if (diff__ > (max_keep_on_stack)) {					\
+    if (!(max_keep_on_stack) || diff__ > (max_keep_on_stack)) {		\
       INT32 oldsize__ = base__[-1].u.array->size;			\
       ACCEPT_UNFINISHED_TYPE_FIELDS {					\
 	base__[-1].u.array =						\
