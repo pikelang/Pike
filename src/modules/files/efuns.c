@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.151 2007/10/23 09:38:08 grubba Exp $
+|| $Id: efuns.c,v 1.152 2008/07/02 16:47:40 jonasw Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.151 2007/10/23 09:38:08 grubba Exp $");
+RCSID("$Id: efuns.c,v 1.152 2008/07/02 16:47:40 jonasw Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -564,7 +564,7 @@ void f_filesystem_stat(INT32 args)
     push_text("bfree");      push_int(st.f_tfree);
     push_text("ffree");      push_int(st.f_tinode);
     push_text("fsname");     push_text(st.f_fname);
-    num_feilds += 3;
+    num_fields += 3;
 #else
     /* Should not be reached */
 #error No stat function for filesystems.
