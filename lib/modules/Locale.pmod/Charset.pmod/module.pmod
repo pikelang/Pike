@@ -263,6 +263,35 @@ private class ISO6937dec {
   }
 }
 
+// Decode GSM 03.38.
+private class GSM03_38dec {
+  static Decoder decoder = rfc1345("gsm0338");
+  static string trailer = "";
+  string drain()
+  {
+    // Escape sequences for GSM 03.38.
+    // cf http://en.wikipedia.org/wiki/Short_message_service
+    string res =
+      replace(trailer + decoder->drain(),
+	      "\eÿ\e\u039b\e(\e)\e/\e<\e=\e>\e°\ee"/2,
+	      "\f^{}\\[~]|\u20ac"/1);
+    trailer = "";
+    if (sizeof(res) && res[-1] == '\e') trailer = "\e";
+    return replace(res, "\e", "");
+  }
+  this_program feed(string s)
+  {
+    decoder->feed(s);
+    return this;
+  }  
+  this_program clear()
+  {
+    decoder->clear();
+    trailer = "";
+    return this;
+  }
+}
+
 private string normalize(string in) {
   if(!in) return 0;
   string out = replace(lower_case(in),
@@ -331,6 +360,8 @@ Decoder decoder(string name)
     "isoir156": ISO6937dec,
     "iso6937": ISO6937dec,
     "iso69372001": ISO6937dec,
+    "gsm": GSM03_38dec,
+    "gsm0338": GSM03_38dec,
   ])[name];
 
   if(p)
@@ -496,6 +527,35 @@ private class ISO6937enc {
   }
 }
 
+// Encode GSM 03.38.
+private class GSM03_38enc {
+  static Encoder encoder;
+  static void create(string|void replacement,
+		     function(string:string)|void repcb)
+  {
+    encoder = rfc1345("gsm0338", 1, replacement, repcb);
+  }
+  string drain()
+  {
+    return encoder->drain();
+  }
+  this_program feed(string s)
+  {
+    // Escape sequences for GSM 03.38.
+    // cf http://en.wikipedia.org/wiki/Short_message_service
+    s = replace(s,
+		"\f^{}\\[~]|\u20ac"/1,
+		"\eÿ\e\u039b\e(\e)\e/\e<\e=\e>\e°\ee"/2);
+    encoder->feed(s);
+    return this;
+  }  
+  this_program clear()
+  {
+    encoder->clear();
+    return this;
+  }
+}
+
 //! Returns a charset encoder object.
 //!
 //! @param name
@@ -550,6 +610,8 @@ Encoder encoder(string name, string|void replacement,
     "utf7Ω": UTF7_5enc,
     "gb18030": GB18030Enc,
     "gbk": GBKenc,
+    "gsm": GSM03_38enc,
+    "gsm0338": GSM03_38enc,
     "936": GBKenc,
     "shiftjis": ShiftJisEnc,
     "mskanji": ShiftJisEnc,
