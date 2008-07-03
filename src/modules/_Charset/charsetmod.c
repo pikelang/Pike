@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: charsetmod.c,v 1.70 2008/06/29 20:23:00 marcus Exp $
+|| $Id: charsetmod.c,v 1.71 2008/07/03 19:14:45 grubba Exp $
 */
 
 #ifdef HAVE_CONFIG_H
@@ -90,6 +90,7 @@ struct std8e_stor {
   p_wchar0 *revtab;
   unsigned lowtrans;
   int lo, hi;
+  p_wchar2 zero_char;	/* Character at code point 0x00 */
 };
 static size_t std8e_stor_offs = 0;
 
@@ -1469,12 +1470,24 @@ static void f_rfc1345(INT32 args)
       s8->lowtrans = lo;
       s8->lo = lo;
       s8->hi = lo;
-      for(i=lo; i<=hi; i++)
+      s8->zero_char = 0xfffd;
+      for(i=lo; i<=hi; i++) {
 	if((c=tabl[i-lo])!=0xfffd && c>=s8->lo) {
 	  s8->revtab[c-lo]=i;
 	  if(c>=s8->hi)
 	    s8->hi = c+1;
 	}
+      }
+      if (!lo && (c=tabl[0])!=0xfffd && c>=s8->lo) {
+	/* Character 0x00 is a valid character in the encoding
+	 * for this character set (eg GSM 03.38).
+	 *
+	 * Note: We need to encode this character separately
+	 *       due to 0x00 being used in revtab for the replacement
+	 *       character.
+	 */
+	s8->zero_char = c;
+      }
       return;
     }
 
@@ -2140,6 +2153,7 @@ static void std_8bite_init_stor(struct object *o)
   s8->lowtrans = 32;
   s8->lo = 0;
   s8->hi = 0;
+  s8->zero_char = 0xfffd;
 }
 
 static void std_8bite_exit_stor(struct object *o)
@@ -2170,6 +2184,8 @@ static void feed_std8e(struct std8e_stor *s8, struct string_builder *sb,
 	  string_builder_putchar(sb, c);
 	else if(c>=lo && c<hi && (ch=tab[c-lo])!=0)
 	  string_builder_putchar(sb, ch);
+	else if (!lo && (c == s8->zero_char))
+	  string_builder_putchar(sb, 0);
 	else
 	  REPLACE_CHAR(c, feed_std8e, s8, str, p - STR0(str) - 1);
     }
@@ -2182,6 +2198,8 @@ static void feed_std8e(struct std8e_stor *s8, struct string_builder *sb,
 	  string_builder_putchar(sb, c);
 	else if(c>=lo && c<hi && (ch=tab[c-lo])!=0)
 	  string_builder_putchar(sb, ch);
+	else if (!lo && (c == s8->zero_char) && (c != 0xfffd))
+	  string_builder_putchar(sb, 0);
 	else
 	  REPLACE_CHAR(c, feed_std8e, s8, str, p - STR1(str) - 1);
     }
@@ -2194,6 +2212,8 @@ static void feed_std8e(struct std8e_stor *s8, struct string_builder *sb,
 	  string_builder_putchar(sb, c);
 	else if(c>=lo && c<hi && (ch=tab[c-lo])!=0)
 	  string_builder_putchar(sb, ch);
+	else if (!lo && (c == s8->zero_char) && (c != 0xfffd))
+	  string_builder_putchar(sb, 0);
 	else
 	  REPLACE_CHAR(c, feed_std8e, s8, str, p - STR2(str) - 1);
     }
