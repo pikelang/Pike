@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.837 2008/06/29 21:24:20 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.838 2008/07/04 15:53:53 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -9842,6 +9842,7 @@ test_eval_error([[
   array a=({"a","b",3});
   return glob("*", a);
 ]])
+test_equal([[glob("foo", ({}))]], ({}))
 
 // - gmtime
 cond([[all_constants()->localtime && all_constants()->mktime]],[[
