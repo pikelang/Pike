@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: postgres.c,v 1.62 2008/07/04 08:25:39 srb Exp $
+|| $Id: postgres.c,v 1.63 2008/07/04 09:38:40 srb Exp $
 */
 
 /*
@@ -420,35 +420,46 @@ static void f_big_query(INT32 args)
           int i;
 	  struct svalue *item;
 
-	  if(cnt & 1)
-	    Pike_error ("Uneven number of arrayelements.\n");
-
-	  nParams=cnt=cnt/2;
+	  nParams=cnt;
 	  
-	  paramValues = xalloc(cnt*sizeof*paramValues);
-	  paramLengths = xalloc(cnt*sizeof*paramLengths);
-	  paramFormats = xalloc(cnt*sizeof*paramFormats);
+	  paramValues = xalloc(nParams*sizeof*paramValues);
+	  paramLengths = xalloc(nParams*sizeof*paramLengths);
+	  paramFormats = xalloc(nParams*sizeof*paramFormats);
 
 	  for (i=0,item=bnds->item; cnt--; item++,i++) {
-
-	    if (item->type != PIKE_T_INT)
-	      Pike_error ("Expected integer element.\n");
-	    paramFormats[i] = item->u.integer ? 1 : 0;
-	    switch((++item)->type)
-	    { case PIKE_T_STRING:
-	          paramValues[i] = item->u.string->str;
-		  paramLengths[i] = item->u.string->len;
+	    int sendbin=0;
+	    switch(item->type)
+	    { case PIKE_T_STRING: {
+	          long len;
+		  const char*p;
+		  paramLengths[i] = len = item->u.string->len;
+	          paramValues[i] = p = item->u.string->str;
+	          if( len >= BINARYCUTOFF)
+	            sendbin = 1;
+	          else {
+	            while(len--) {
+		      switch(*p++) {
+			default:
+			  continue;
+			case '\0':case '\\':
+			  sendbin = 1;
+		      }
+		      break;
+		    }
+	          }
 	        break;
+	      }
 	      case PIKE_T_INT:
 	      case T_VOID:
 	          paramValues[i] = 0;	     /* NULL */
 		  paramLengths[i] = 0;
 	        break;
 	      default:
-                  Pike_error ("Expected string or UNDEFINED element, Got %d.\n",
- item->type);
+                  Pike_error("Expected string or UNDEFINED element, Got %d.\n",
+		   item->type);
 	        break;
 	    }
+	    paramFormats[i] = sendbin;
 	  }
         }
 

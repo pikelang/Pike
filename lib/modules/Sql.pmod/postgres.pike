@@ -1,7 +1,7 @@
 /*
  * This is part of the Postgres module for Pike.
  *
- * $Id: postgres.pike,v 1.30 2008/07/04 08:25:39 srb Exp $
+ * $Id: postgres.pike,v 1.31 2008/07/04 09:38:40 srb Exp $
  *
  */
 
@@ -389,7 +389,7 @@ int|object big_query(object|string q, mapping(string|int:mixed)|void bindings)
   if (!bindings)
     return ::big_query(q);
   int pi=0,rep=0;
-  array(string|int) paramValues=allocate(sizeof(bindings)*2);
+  array(string|int) paramValues=allocate(sizeof(bindings));
   array(string) from=allocate(sizeof(bindings));
   array(string) to=allocate(sizeof(bindings));
   foreach(bindings; mixed name; mixed value) {
@@ -408,15 +408,14 @@ int|object big_query(object|string q, mapping(string|int:mixed)|void bindings)
       rval=sizeof(value) ? indices(value)[0] : "";
     }
     else {
-      paramValues[pi++]=name[sizeof(name)-1]=='_'; // Force binary mode
-      if(zero_type(value))			   // when name ends in _
+      if(zero_type(value))
         paramValues[pi++]=UNDEFINED;
       else {
         if(stringp(value) && String.width(value)>8)
           value=string_to_utf8(value);
         paramValues[pi++]=(string)value;
       }
-      rval="$"+(string)(pi/2);
+      rval="$"+(string)pi;
     }
     to[rep++]=rval;
   }

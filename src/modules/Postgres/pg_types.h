@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pg_types.h,v 1.10 2008/06/23 14:24:25 srb Exp $
+|| $Id: pg_types.h,v 1.11 2008/07/04 09:38:40 srb Exp $
 */
 
 #ifndef _PG_TYPES_H_
@@ -38,4 +38,6 @@ extern struct program *postgres_program, *pgresult_program;
 #define CURSORNAME	"_pikecursor"
 #define FETCHCMD	"FETCH " FETCHSIZESTR " IN " CURSORNAME
 
+#define BINARYCUTOFF	32	 /* binding parameters at least this size
+				    are presumed to be in binary format */
 #endif
