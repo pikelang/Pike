@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.682 2008/07/04 15:52:08 mast Exp $
+|| $Id: builtin_functions.c,v 1.683 2008/07/04 16:06:47 mast Exp $
 */
 
 #include "global.h"
@@ -5830,7 +5830,9 @@ PMOD_EXPORT void f_glob(INT32 args)
     push_int(i);
     break;
     
-  case T_ARRAY:
+  case T_ARRAY: {
+    unsigned matches = 0;
+    struct svalue *res;
     a=Pike_sp[1-args].u.array;
 
     if( (a->type_field & ~BIT_STRING) &&
@@ -5839,23 +5841,24 @@ PMOD_EXPORT void f_glob(INT32 args)
 
     check_stack(120);
     BEGIN_AGGREGATE_ARRAY (MINIMUM (a->size, 120)) {
+      res = Pike_sp - 1;
+
       for(i=0;i<a->size;i++)
 	if(does_match(ITEM(a)[i].u.string,0,glob,0))
 	{
+	  matches++;
 	  ref_push_string(ITEM(a)[i].u.string);
 	  DO_AGGREGATE_ARRAY (120);
 	}
 
       /* We know what this array contains - avoid array_fix_type_field
        * in END_AGGREGATE_ARRAY. */
-      if (Pike_sp[-1].u.array->size)
-	Pike_sp[-1].u.array->type_field = BIT_STRING;
-      else
-	Pike_sp[-1].u.array->type_field = 0;
+      res->u.array->type_field = matches ? BIT_STRING : 0;
     } END_AGGREGATE_ARRAY;
 
     stack_pop_n_elems_keep_top (2);
     break;
+  }
 
   default:
     SIMPLE_BAD_ARG_ERROR("glob", 2, "string|array(string)");
