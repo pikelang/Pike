@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.h,v 1.77 2008/07/04 15:53:14 mast Exp $
+|| $Id: array.h,v 1.78 2008/07/04 16:06:19 mast Exp $
 */
 
 #ifndef ARRAY_H
@@ -258,9 +258,6 @@ PMOD_EXPORT struct array *implode_array(struct array *a, struct array *b);
   } while (0)
 
 #define END_AGGREGATE_ARRAY						\
-  DO_IF_DEBUG(if (Pike_sp[-1].type != T_ARRAY) {			\
-		Pike_fatal("Lost track of aggregated array.\n");	\
-	      });							\
   {									\
     ptrdiff_t diff__ = Pike_sp - base__;				\
     if (!diff__) {							\
@@ -274,6 +271,9 @@ PMOD_EXPORT struct array *implode_array(struct array *a, struct array *b);
     if (base__[-1].u.array->type_field & BIT_UNFINISHED)		\
       array_fix_type_field(Pike_sp[-1].u.array);			\
   }									\
+  DO_IF_DEBUG(if (Pike_sp[-1].type != T_ARRAY) {			\
+		Pike_fatal("Lost track of aggregated array.\n");	\
+	      });							\
 } while (0)
 
 
