@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.12 2008/03/13 15:10:06 grubba Exp $
+|| $Id: acconfig.h,v 1.13 2008/07/04 20:11:00 srb Exp $
 */
 
 #ifndef PIKE_POSTGRES_H
@@ -61,6 +61,7 @@
 /* postgres_fe.h should be used in preference to postgres.h in
  * client code.
  */
+#include "override.h"
 #ifdef HAVE_POSTGRESQL_SERVER_POSTGRES_FE_H
 #include <server/postgres_fe.h>
 #elif defined(HAVE_SERVER_POSTGRES_FE_H)
