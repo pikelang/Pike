@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: postgres.c,v 1.61 2008/06/30 12:10:48 srb Exp $
+|| $Id: postgres.c,v 1.62 2008/07/04 08:25:39 srb Exp $
 */
 
 /*
@@ -29,6 +29,7 @@
 #include <string.h>
 
 /* Pike includes */
+#include "svalue.h"
 #include "las.h"
 #include "machine.h"
 #include "pike_memory.h"
@@ -381,21 +382,75 @@ static void f_big_query(INT32 args)
 	PGconn *conn = THIS->dblink;
 	PGresult * res;
 	PGnotify * notification;
-	char *query;
+        struct array *bnds = 0;
+	char *query = 0;
 	int lastcommit,docommit,dofetch;
+        int cnt;
+        int nParams = 0;
+        const char** paramValues = 0;
+        int* paramLengths = 0;
+        int* paramFormats = 0;
+        int resultFormat = 0;
+        
 	PQ_FETCH();
 	docommit=dofetch=0;
 	lastcommit=THIS->lastcommit;
 
-	check_all_args("Postgres->big_query",args,BIT_STRING,0);
+	check_all_args("Postgres->big_query",args,
+	  BIT_STRING,
+	  BIT_VOID | BIT_ARRAY,
+	  0);
 
 	if (!conn)
 		Pike_error ("Not connected.\n");
 
-	if (Pike_sp[-args].u.string->len)
+        switch(args)
+        {
+          default:
+            if(Pike_sp[1-args].type == PIKE_T_ARRAY)
+              bnds=Pike_sp[1-args].u.array;
+      
+          case 1:
+	    query=" ";
+	    if(Pike_sp[-args].u.string->len)
 		query=Pike_sp[-args].u.string->str;
-	else
-		query=" ";
+        }
+
+        if(bnds && (cnt=bnds->size)) {
+          int i;
+	  struct svalue *item;
+
+	  if(cnt & 1)
+	    Pike_error ("Uneven number of arrayelements.\n");
+
+	  nParams=cnt=cnt/2;
+	  
+	  paramValues = xalloc(cnt*sizeof*paramValues);
+	  paramLengths = xalloc(cnt*sizeof*paramLengths);
+	  paramFormats = xalloc(cnt*sizeof*paramFormats);
+
+	  for (i=0,item=bnds->item; cnt--; item++,i++) {
+
+	    if (item->type != PIKE_T_INT)
+	      Pike_error ("Expected integer element.\n");
+	    paramFormats[i] = item->u.integer ? 1 : 0;
+	    switch((++item)->type)
+	    { case PIKE_T_STRING:
+	          paramValues[i] = item->u.string->str;
+		  paramLengths[i] = item->u.string->len;
+	        break;
+	      case PIKE_T_INT:
+	      case T_VOID:
+	          paramValues[i] = 0;	     /* NULL */
+		  paramLengths[i] = 0;
+	        break;
+	      default:
+                  Pike_error ("Expected string or UNDEFINED element, Got %d.\n",
+ item->type);
+	        break;
+	    }
+	  }
+        }
 
 	THREADS_ALLOW();
 	PQ_LOCK();
@@ -431,11 +486,13 @@ static void f_big_query(INT32 args)
 	    strcpy(nquery+CPREFLEN-1,query);
 	    if(lastcommit)
 	      goto yupbegin;
-	    res=PQexec(conn,nquery);
+	    res=PQexecParams(conn,nquery,
+             nParams,0,paramValues,paramLengths,paramFormats,resultFormat);
 	    if(PQstatus(conn) != CONNECTION_OK) {
 	      PQclear(res);
 	      PQreset(conn);
-	      res=PQexec(conn,nquery);
+	      res=PQexecParams(conn,nquery,
+               nParams,0,paramValues,paramLengths,paramFormats,resultFormat);
 	    }
 	    if(res)
 	      switch(PQresultStatus(res)) {
@@ -444,7 +501,8 @@ static void f_big_query(INT32 args)
 yupbegin:       res=PQexec(conn,"BEGIN");
 		if(res && PQresultStatus(res)==PGRES_COMMAND_OK) {
 		  PQclear(res);
-		  res=PQexec(conn,nquery);
+	          res=PQexecParams(conn,nquery,nParams,0,
+		   paramValues,paramLengths,paramFormats,resultFormat);
 		  if(res && PQresultStatus(res)==PGRES_COMMAND_OK)
 		    docommit=1;
 		  else {
@@ -470,7 +528,8 @@ yupbegin:       res=PQexec(conn,"BEGIN");
 	}
 	lastcommit=0;
 	if(!res)
-	  res=PQexec(conn,query);
+	  res=PQexecParams(conn,query,
+           nParams,0,paramValues,paramLengths,paramFormats,resultFormat);
 	/* A dirty hack to fix the reconnect bug.
 	 * we don't need to store the host/user/pass/db... etc..
 	 * PQreset() does all the job.
@@ -481,7 +540,8 @@ yupbegin:       res=PQexec(conn,"BEGIN");
 	   (PQresultStatus(res) == PGRES_BAD_RESPONSE)) {
 	  PQclear(res);
 	  PQreset(conn);
-	  res=PQexec(conn,query);
+	  res=PQexecParams(conn,query,
+           nParams,0,paramValues,paramLengths,paramFormats,resultFormat);
 	}
 
 	notification=PQnotifies(conn);
@@ -490,6 +550,10 @@ yupbegin:       res=PQexec(conn,"BEGIN");
 	THIS->docommit=docommit;
 	THIS->dofetch=dofetch;
 	THIS->lastcommit=lastcommit;
+
+        if (bnds) {
+	  xfree(paramValues); xfree(paramLengths); xfree(paramFormats);
+        }
 
 	pop_n_elems(args);
 	if (notification!=NULL) {
@@ -764,7 +828,8 @@ PIKE_MODULE_INIT
   ADD_FUNCTION("select_db", f_select_db, tFunc(tStr,tVoid), 0);
 
   /* function(string:int|object) */
-  ADD_FUNCTION("big_query", f_big_query, tFunc(tStr,tOr(tInt,tObj)), 0);
+  ADD_FUNCTION("big_query", f_big_query,
+       tFunc(tStr tOr(tVoid,tArr(tOr3(tInt,tStr,tVoid))), tOr(tInt,tObj)), 0);
 
   /* function(void:string) */
   ADD_FUNCTION("error", f_error, tFunc(tVoid,tStr), 0);

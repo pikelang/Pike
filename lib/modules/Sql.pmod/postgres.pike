@@ -1,7 +1,7 @@
 /*
  * This is part of the Postgres module for Pike.
  *
- * $Id: postgres.pike,v 1.29 2008/06/28 16:49:55 nilsson Exp $
+ * $Id: postgres.pike,v 1.30 2008/07/04 08:25:39 srb Exp $
  *
  */
 
@@ -384,9 +384,47 @@ array(mapping(string:mixed)) list_fields (string table, void|string wild)
 //!   @[Sql.Sql], @[Sql.sql_result]
 int|object big_query(object|string q, mapping(string|int:mixed)|void bindings)
 {  
+  if(stringp(q) && String.width(q)>8)
+    q=string_to_utf8(q);
   if (!bindings)
     return ::big_query(q);
-  return ::big_query(.sql_util.emulate_bindings(q, bindings, this));
+  int pi=0,rep=0;
+  array(string|int) paramValues=allocate(sizeof(bindings)*2);
+  array(string) from=allocate(sizeof(bindings));
+  array(string) to=allocate(sizeof(bindings));
+  foreach(bindings; mixed name; mixed value) {
+    // Throws if mapping key is empty string.
+    if(stringp(name)) {
+      if(name[0]!=':')
+        name=":"+name;
+      if(name[1]=='_') {
+        // Special parameter
+        continue;
+      }
+    }
+    from[rep]=name;
+    string rval;
+    if(multisetp(value)) {
+      rval=sizeof(value) ? indices(value)[0] : "";
+    }
+    else {
+      paramValues[pi++]=name[sizeof(name)-1]=='_'; // Force binary mode
+      if(zero_type(value))			   // when name ends in _
+        paramValues[pi++]=UNDEFINED;
+      else {
+        if(stringp(value) && String.width(value)>8)
+          value=string_to_utf8(value);
+        paramValues[pi++]=(string)value;
+      }
+      rval="$"+(string)(pi/2);
+    }
+    to[rep++]=rval;
+  }
+  paramValues= pi ? paramValues[..pi-1] : UNDEFINED;
+  if(rep--) {
+    q=replace(q,from[..rep],to[..rep]);
+  }
+  return ::big_query(q, paramValues);
 }
 
 #else
