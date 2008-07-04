@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.681 2008/06/29 20:42:59 grubba Exp $
+|| $Id: builtin_functions.c,v 1.682 2008/07/04 15:52:08 mast Exp $
 */
 
 #include "global.h"
@@ -3572,7 +3572,7 @@ int find_longest_prefix(char *str,
 			INT32 a,
 			INT32 b)
 {
-  INT32 c, match=-1, match_len=-1, d;
+  INT32 c, match=-1, match_len=-1;
   ptrdiff_t tmp;
 
   check_c_stack(2048);
@@ -5806,7 +5806,7 @@ static int does_match(struct pike_string *s,int j,
  */
 PMOD_EXPORT void f_glob(INT32 args)
 {
-  INT32 i,matches;
+  INT32 i;
   struct array *a;
   struct pike_string *glob;
 
@@ -5837,18 +5837,23 @@ PMOD_EXPORT void f_glob(INT32 args)
 	(array_fix_type_field(a) & ~BIT_STRING) )
       SIMPLE_BAD_ARG_ERROR("glob", 2, "string|array(string)");
 
-    matches=0;
     check_stack(120);
     BEGIN_AGGREGATE_ARRAY (MINIMUM (a->size, 120)) {
       for(i=0;i<a->size;i++)
 	if(does_match(ITEM(a)[i].u.string,0,glob,0))
 	{
 	  ref_push_string(ITEM(a)[i].u.string);
-	  matches++;
 	  DO_AGGREGATE_ARRAY (120);
 	}
+
+      /* We know what this array contains - avoid array_fix_type_field
+       * in END_AGGREGATE_ARRAY. */
+      if (Pike_sp[-1].u.array->size)
+	Pike_sp[-1].u.array->type_field = BIT_STRING;
+      else
+	Pike_sp[-1].u.array->type_field = 0;
     } END_AGGREGATE_ARRAY;
-    Pike_sp[-1].u.array->type_field = BIT_STRING;
+
     stack_pop_n_elems_keep_top (2);
     break;
 
