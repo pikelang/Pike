@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.h,v 1.76 2008/07/01 09:36:29 mast Exp $
+|| $Id: array.h,v 1.77 2008/07/04 15:53:14 mast Exp $
 */
 
 #ifndef ARRAY_H
@@ -237,12 +237,13 @@ PMOD_EXPORT struct array *implode_array(struct array *a, struct array *b);
   struct svalue *base__;						\
   push_array(allocate_array_no_init(0, (estimated_size)));		\
   base__ = Pike_sp;							\
-  base__[-1].u.array->type_field = (BIT_MIXED | BIT_UNFINISHED);
+  if (base__[-1].u.array->malloced_size)				\
+    base__[-1].u.array->type_field = (BIT_MIXED | BIT_UNFINISHED);
 
 #define DO_AGGREGATE_ARRAY(max_keep_on_stack)				\
   do {									\
     ptrdiff_t diff__ = Pike_sp - base__;				\
-    if (!(max_keep_on_stack) || diff__ > (max_keep_on_stack)) {		\
+    if (diff__ > (max_keep_on_stack)) {					\
       INT32 oldsize__ = base__[-1].u.array->size;			\
       ACCEPT_UNFINISHED_TYPE_FIELDS {					\
 	base__[-1].u.array =						\
@@ -257,11 +258,22 @@ PMOD_EXPORT struct array *implode_array(struct array *a, struct array *b);
   } while (0)
 
 #define END_AGGREGATE_ARRAY						\
-  DO_AGGREGATE_ARRAY(0);						\
   DO_IF_DEBUG(if (Pike_sp[-1].type != T_ARRAY) {			\
 		Pike_fatal("Lost track of aggregated array.\n");	\
 	      });							\
-  array_fix_type_field(Pike_sp[-1].u.array);				\
+  {									\
+    ptrdiff_t diff__ = Pike_sp - base__;				\
+    if (!diff__) {							\
+      if (base__[-1].u.array->size) {					\
+	free_array (base__[-1].u.array);				\
+	add_ref (base__[-1].u.array = &empty_array);			\
+      }									\
+    }									\
+    else								\
+      DO_AGGREGATE_ARRAY (0);						\
+    if (base__[-1].u.array->type_field & BIT_UNFINISHED)		\
+      array_fix_type_field(Pike_sp[-1].u.array);			\
+  }									\
 } while (0)
 
 
