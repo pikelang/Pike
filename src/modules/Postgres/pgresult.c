@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pgresult.c,v 1.36 2008/07/05 11:17:45 srb Exp $
+|| $Id: pgresult.c,v 1.37 2008/07/05 11:41:38 srb Exp $
 */
 
 /*
@@ -266,10 +266,10 @@ static void f_fetch_fields (INT32 args)
 		push_text("type");
 		push_int(PQftype(res,j));
 		/* ARGH! I'd kill 'em! How am I supposed to know how types are
-  	         * coded internally!?!?!?!?
-  	         *
-  	         * The internal encoding is well defined for the standard
-  	         * types (big endian).  The problem are the extended types.
+ 	         * coded internally!?!?!?!?
+ 	         *
+ 	         * The internal encoding is well defined for the standard
+ 	         * types (big endian).  The problem are the extended types.
 		 */
 		push_text("length");
 		tmp=PQfsize(res,j);
