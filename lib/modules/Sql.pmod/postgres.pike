@@ -1,7 +1,7 @@
 /*
  * This is part of the Postgres module for Pike.
  *
- * $Id: postgres.pike,v 1.31 2008/07/04 09:38:40 srb Exp $
+ * $Id: postgres.pike,v 1.32 2008/07/05 11:17:45 srb Exp $
  *
  */
 
@@ -375,7 +375,7 @@ array(mapping(string:mixed)) list_fields (string table, void|string wild)
 //! recommend using @[query()] for simpler queries (because it is
 //! easier to handle, but stores all the result in memory), and
 //! @[big_query()] for queries you expect to return huge amounts of
-//! data (it's harder to handle, but fectches results on demand).
+//! data (it's harder to handle, but fetches results on demand).
 //!
 //! @note
 //! This function @b{can@} raise exceptions.

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: postgres.c,v 1.63 2008/07/04 09:38:40 srb Exp $
+|| $Id: postgres.c,v 1.64 2008/07/05 11:17:45 srb Exp $
 */
 
 /*
@@ -370,8 +370,9 @@ static void f_select_db (INT32 args)
  *! @note
  *! This function @b{can@} raise exceptions.
  *!
- *! The program @[Sql.postgres_result] is exactly
- *! the same as @[Postgres.postgres_result].
+ *! The program @[Sql.postgres_result] is a superset of
+ *! the raw @[Postgres.postgres_result] which does not do chunking to
+ *! avoid excessive memory usage in case of large resultsets.
  *!
  *! @seealso
  *!  @[Sql.Sql], @[Sql.sql_result]
