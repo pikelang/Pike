@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.236 2008/07/08 13:34:53 grubba Exp $
+|| $Id: operators.c,v 1.237 2008/07/08 16:08:21 grubba Exp $
 */
 
 #include "global.h"
@@ -38,6 +38,15 @@
      math_error(FUNC, sp-2, 2, 0, "Division by zero.\n")
 #define OP_MODULO_BY_ZERO_ERROR(FUNC) \
      math_error(FUNC, sp-2, 2, 0, "Modulo by zero.\n")
+
+/* The destructive multiset merge code is broken.
+ * l->msd gets -1 refs.
+ *
+ * Disable it for now.
+ *	/grubba 2008-07-08
+ */
+#undef PIKE_MERGE_DESTR_A
+#define PIKE_MERGE_DESTR_A	0
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
