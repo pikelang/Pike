@@ -1,6 +1,6 @@
 // -*- Pike -*-
 
-// $Id: module.pike,v 1.32 2008/06/29 14:59:13 marcus Exp $
+// $Id: module.pike,v 1.33 2008/07/08 12:59:17 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -23,7 +23,7 @@ string bin_path=include_path;
 #endif
 
 // this is not the ideal location for all systems, but it's a start.
-string local_module_path=combine_path(getenv("HOME"),"lib/pike/modules");
+string local_module_path=combine_path(getenv("HOME")||"","lib/pike/modules");
 bool old_style_module = false;
 // we prefer the last element, because if there are more than one
 // master() puts the lib/modules path last.
