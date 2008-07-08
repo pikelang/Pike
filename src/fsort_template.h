@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fsort_template.h,v 1.18 2003/08/29 16:34:27 nilsson Exp $
+|| $Id: fsort_template.h,v 1.19 2008/07/08 17:21:29 grubba Exp $
 */
 
 #ifdef SORT_BY_INDEX
@@ -117,43 +117,33 @@ static void MKNAME(_do_sort)(register PTYPE bas,
       while(a < b)
       {
 #if 1
-	while(a<b)
+	while(1)
 	{
-	  while(1)
-	  {
-	    if(a<=b && CMP(a,bas) <= 0)
-	      INC(a);
-	    else
-	    {
-	      while(a< b && CMP(bas,b) <= 0) DEC(b);
-	      break;
-	    }
-	    if(a< b && CMP(bas,b) <= 0)
-	      DEC(b);
-	    else
-	    {
-	      while(a<=b && CMP(a,bas) <= 0) INC(a);
-	      break;
-	    }
-	  }
-	  
-	  if(a<b)
-	  {
-	    SWAP(a,b);
+	  if(a<=b && CMP(a,bas) <= 0)
 	    INC(a);
-	    if(b > STEP(a,1)) DEC(b);
+	  else
+	  {
+	    while(a< b && CMP(bas,b) <= 0) DEC(b);
+	    break;
+	  }
+	  if(a< b && CMP(bas,b) <= 0)
+	    DEC(b);
+	  else
+	  {
+	    while(a<=b && CMP(a,bas) <= 0) INC(a);
+	    break;
 	  }
 	}
 #else
 	while(a<=b && CMP(a,bas) < 0) INC(a);
 	while(a< b && CMP(bas,b) < 0) DEC(b);
+#endif
 	if(a<b)
 	{
 	  SWAP(a,b);
 	  INC(a);
 	  if(b > STEP(a,1)) DEC(b);
 	}
-#endif
       }
 
       DEC(a);
