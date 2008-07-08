@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.221 2008/06/30 10:01:54 grubba Exp $
+|| $Id: builtin.cmod,v 1.222 2008/07/08 12:27:05 grubba Exp $
 */
 
 #include "global.h"
@@ -1250,9 +1250,16 @@ PIKEFUN array random(mapping m)
   pop_stack();
 }
 
+#if defined(HAVE_SETENV) && defined(HAVE_UNSETENV)
+#define USE_SETENV
+#else
 /* Used to hold refs to the strings that we feed to putenv. Indexed on
- * variable names, values are the "name=value" strings. */
+ * variable names, values are the "name=value" strings.
+ *
+ * This is not needed when using {,un}setenv(), since they maintain
+ * their own corresponding table. */
 static struct mapping *env_allocs = NULL;
+#endif
 
 /* Works exactly like the getenv efun defined in the master, but only
  * accesses the real environment. Everyone should use the caching
@@ -1300,8 +1307,10 @@ PIKEFUN string|mapping _getenv (void|string var)
     for (n = 0; environ[n]; n++) {}
 
     m = allocate_mapping (n);
+#ifndef USE_SETENV
     if (env_allocs)
       new_env_allocs = allocate_mapping (m_sizeof (env_allocs));
+#endif /* !USE_SETENV */
 
     while (--n >= 0) {
       char *entry = environ[n], *eq = STRCHR (entry, '=');
@@ -1310,6 +1319,7 @@ PIKEFUN string|mapping _getenv (void|string var)
 	struct pike_string *val = make_shared_string (eq + 1);
 	mapping_string_insert_string (m, var, val);
 
+#ifndef USE_SETENV
 	/* Populate new_env_allocs with the env_allocs entries that
 	 * are still in use. */
 	if (env_allocs) {
@@ -1317,16 +1327,19 @@ PIKEFUN string|mapping _getenv (void|string var)
 	  if (ea_val && ea_val->u.string->str == entry)
 	    mapping_string_insert (new_env_allocs, var, ea_val);
 	}
+#endif /* !USE_SETENV */
 
 	free_string (var);
 	free_string (val);
       }
     }
 
+#ifndef USE_SETENV
     if (env_allocs) {
       free_mapping (env_allocs);
       env_allocs = new_env_allocs;
     }
+#endif /* !USE_SETENV */
 
     push_mapping (m);
   }
@@ -1337,7 +1350,9 @@ PIKEFUN string|mapping _getenv (void|string var)
  * the master instead so that the cache doesn't get stale. */
 PIKEFUN void _putenv (string var, void|string val)
 {
+#ifndef USE_SETENV
   struct pike_string *putenv_str, *env_alloc_var;
+#endif
 
   if (var->size_shift)
     SIMPLE_ARG_TYPE_ERROR ("putenv", 1, "string(0..255)");
@@ -1345,21 +1360,38 @@ PIKEFUN void _putenv (string var, void|string val)
     SIMPLE_ARG_ERROR ("putenv", 1, "Variable name cannot contain '=' or NUL.");
 
   if (val) {
+#ifndef USE_SETENV
     struct string_builder sb;
+#endif
 
     if (val->size_shift)
       SIMPLE_ARG_TYPE_ERROR ("putenv", 2, "void|string(0..255)");
     if (string_has_null (val))
       SIMPLE_ARG_ERROR ("putenv", 2, "Variable value cannot contain NUL.");
 
+#ifdef USE_SETENV
+    if (setenv(var->str, val->str, 1)) {
+      if (errno == ENOMEM)
+	SIMPLE_OUT_OF_MEMORY_ERROR ("putenv", 0);
+      else
+	Pike_error ("Error from setenv(3): %s\n", strerror (errno));
+    }
+#else /* !USE_SETENV */
     init_string_builder (&sb, 0);
     string_builder_shared_strcat (&sb, var);
     string_builder_putchar (&sb, '=');
     string_builder_shared_strcat (&sb, val);
     putenv_str = finish_string_builder (&sb);
     push_string (putenv_str); /* Let mega_apply pop. */
+#endif /* USE_SETENV */
   }
   else {
+#ifdef USE_SETENV
+    /* Note: Some versions of glibc have a unsetenv(3) that returns void,
+     *       thus no checking of the return value here.
+     */
+    unsetenv(var->str);
+#else /* !USE_SETENV */
 #ifdef PUTENV_ALWAYS_REQUIRES_EQUAL
     /* Windows can never get things quite right.. :P */
     struct string_builder sb;
@@ -1371,8 +1403,10 @@ PIKEFUN void _putenv (string var, void|string val)
 #else
     putenv_str = var;
 #endif
+#endif  /* USE_SETENV */
   }
 
+#ifndef USE_SETENV
   if (putenv (putenv_str->str)) {
     if (errno == ENOMEM)
       SIMPLE_OUT_OF_MEMORY_ERROR ("putenv", 0);
@@ -1402,6 +1436,7 @@ PIKEFUN void _putenv (string var, void|string val)
     key.u.string = env_alloc_var;
     map_delete (env_allocs, &key);
   }
+#endif /* !USE_SETENV */
 }
 
 /*
@@ -3932,5 +3967,7 @@ void exit_builtin(void)
 {
   EXIT
   free_all_pike_list_node_blocks();
+#ifndef USE_SETENV
   if (env_allocs) free_mapping (env_allocs);
+#endif
 }
