@@ -51,7 +51,7 @@ array(string) features()
   foreach(({ "Nettle", "Dbm", "DVB", "_Ffmpeg", "GL", "GLUT", "GTK", "Gdbm",
 	     "Gmp", "Gz", "_Image_FreeType", "_Image_GIF", "_Image_JPEG",
              "_Image_TIFF", "_Image_TTF", "_Image_XFace", "Image.PNG",
-	     "Java.jvm", "Mird", "Msql", "Mysql", "Odbc", "Oracle", "PDF", "Perl",
+	     "Java.machine", "Mird", "Msql", "Mysql", "Odbc", "Oracle", "PDF", "Perl",
              "Postgres", "SANE", "SDL", "Ssleay", "Yp", "sybase", "_WhiteFish",
 	     "X", "Bz2", "COM", "Fuse", "GTK2", "Gettext", "HTTPAccept",
 	     "Kerberos", "SQLite", "_Image_SVG", "_Regexp_PCRE",
@@ -65,7 +65,7 @@ array(string) features()
       {
 	if(modname[0] == '_')
 	  modname = replace(modname[1..], "_", ".");
-	m += ({ (["Java.jvm":"Java"])[modname] || modname });
+	m += ({ (["Java.machine":"Java"])[modname] || modname });
       }
     };
   }
