@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.212 2008/07/04 15:50:46 mast Exp $
+|| $Id: array.c,v 1.213 2008/07/08 17:16:41 grubba Exp $
 */
 
 #include "global.h"
@@ -2529,7 +2529,7 @@ PMOD_EXPORT struct array *reverse_array(struct array *a, int start, int end)
     return a;
   }
 
-  // fprintf(stderr, "R");
+  /* fprintf(stderr, "R"); */
   
   ret=allocate_array_no_init(a->size,0);
   for(e=0;e<start;e++)
