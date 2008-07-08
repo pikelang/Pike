@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.441 2008/06/29 12:50:04 nilsson Exp $
+|| $Id: language.yacc,v 1.442 2008/07/08 19:19:33 grubba Exp $
 */
 
 %pure_parser
@@ -157,7 +157,7 @@
 /* #define LAMBDA_DEBUG	1 */
 
 static void yyerror_reserved(const char *keyword);
-static struct pike_string *get_new_name();
+static struct pike_string *get_new_name(struct pike_string *prefix);
 int add_local_name(struct pike_string *, struct pike_type *, node *);
 int low_add_local_name(struct compiler_frame *,
 		       struct pike_string *, struct pike_type *, node *);
@@ -1281,7 +1281,7 @@ magic_identifiers2:
   | TOK_MULTISET_ID   { $$ = "multiset"; }
   | TOK_OBJECT_ID     { $$ = "object"; }
   | TOK_FUNCTION_ID   { $$ = "function"; }
-  | TOK_FUNCTION_NAME { $$ = "__FUNCTION__"; }
+  | TOK_FUNCTION_NAME { $$ = "__func__"; }
   | TOK_PROGRAM_ID    { $$ = "program"; }
   | TOK_STRING_ID     { $$ = "string"; }
   | TOK_FLOAT_ID      { $$ = "float"; }
@@ -2152,7 +2152,7 @@ push_compiler_frame1: /* empty */
 implicit_identifier: /* empty */
   {
     struct pike_string *name;
-    $$=mkstrnode(name = get_new_name());
+    $$=mkstrnode(name = get_new_name(NULL));
     free_string(name);
   }
   ;
@@ -2340,7 +2340,7 @@ local_function: TOK_IDENTIFIER push_compiler_frame1 func_args
     type=compiler_pop_type();
     /***/
 
-    name = get_new_name();
+    name = get_new_name($1->u.sval.u.string);
 
 #ifdef LAMBDA_DEBUG
     fprintf(stderr, "%d: LAMBDA: %s 0x%08lx 0x%08lx\n",
@@ -2473,7 +2473,7 @@ local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
     type=compiler_pop_type();
     /***/
 
-    name = get_new_name();
+    name = get_new_name($2->u.sval.u.string);
 
 #ifdef LAMBDA_DEBUG
     fprintf(stderr, "%d: LAMBDA: %s 0x%08lx 0x%08lx\n",
@@ -3507,7 +3507,7 @@ optional_block: /* EMPTY */ { $$=0; }
     
     type=compiler_pop_type();
 
-    name = get_new_name();
+    name = get_new_name(NULL);
 
 #ifdef LAMBDA_DEBUG
     fprintf(stderr, "%d: IMPLICIT LAMBDA: %s 0x%08lx 0x%08lx\n",
@@ -4305,7 +4305,25 @@ string_segment: TOK_STRING
     } else {
       struct identifier *id =
 	ID_FROM_INT(Pike_compiler->new_program, f->current_function_number);
-      $$ = mkstrnode(id->name);
+      if (!id->name->size_shift) {
+	int len;
+	if ((len = strlen(id->name->str)) == id->name->len) {
+	  /* Most common case. */
+	  $$ = mkstrnode(id->name);
+	} else {
+	  struct pike_string *str =
+	    make_shared_binary_string(id->name->str, len);
+	  $$ = mkstrnode(str);
+	  free_string(str);
+	}
+      } else {
+	struct pike_string *str;
+	struct array *split;
+	MAKE_CONST_STRING(str, "\0");
+	split = explode(id->name, str);
+	$$ = mkstrnode(split->item->u.string);
+	free_array(split);
+      }
     }
   }
   ;
@@ -4455,7 +4473,7 @@ static void yyerror_reserved(const char *keyword)
   my_yyerror("%s is a reserved word.", keyword);
 }
 
-static struct pike_string *get_new_name()
+static struct pike_string *get_new_name(struct pike_string *prefix)
 {
   char buf[40];
   /* Generate a name for a global symbol... */
@@ -4463,6 +4481,15 @@ static struct pike_string *get_new_name()
 	  (long)Pike_compiler->new_program->id,
 	  (long)(Pike_compiler->local_class_counter++ & 0xffffffff), /* OSF/1 cc bug. */
 	  (int) THIS_COMPILATION->lex.current_line);
+  if (prefix) {
+    struct string_builder sb;
+    init_string_builder_alloc(&sb, prefix->len + strlen(buf) + 1,
+			      prefix->size_shift);
+    string_builder_shared_strcat(&sb, prefix);
+    string_builder_putchar(&sb, 0);
+    string_builder_strcat(&sb, buf);
+    return finish_string_builder(&sb);
+  }
   return make_shared_string(buf);
 }
 
@@ -4626,7 +4653,7 @@ static node *add_protected_variable(struct pike_string *name,
       p = p->previous;
     }
     
-    tmp_name = get_new_name();
+    tmp_name = get_new_name(name);
     id = define_parent_variable(p, tmp_name, type,
 				ID_PROTECTED|ID_PRIVATE|ID_INLINE);
     free_string(tmp_name);
@@ -4643,7 +4670,7 @@ static node *add_protected_variable(struct pike_string *name,
     }
   } else if (depth) {
     f->lexical_scope|=SCOPE_SCOPE_USED;
-    tmp_name = get_new_name();
+    tmp_name = get_new_name(name);
     id = low_add_local_name(f, tmp_name, type, NULL);
     free_string(tmp_name);
     if(f->min_number_of_locals < id+1)
