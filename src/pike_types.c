@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.346 2008/06/29 11:27:41 grubba Exp $
+|| $Id: pike_types.c,v 1.347 2008/07/09 20:26:34 mast Exp $
 */
 
 #include "global.h"
@@ -3719,10 +3719,7 @@ static int low_pike_types_le(struct pike_type *a, struct pike_type *b,
 			     int array_cnt, unsigned int flags)
 #ifdef PIKE_TYPE_DEBUG
 {
-  int e;
-  char *s;
   int res;
-  char buf[50];
 
   if (l_flag>2) {
     fprintf(stderr, "%*slow_pike_types_le(", indent*2, "");
