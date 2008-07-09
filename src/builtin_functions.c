@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.683 2008/07/04 16:06:47 mast Exp $
+|| $Id: builtin_functions.c,v 1.684 2008/07/09 13:29:00 grubba Exp $
 */
 
 #include "global.h"
@@ -2681,6 +2681,8 @@ PMOD_EXPORT void f_throw(INT32 args)
   pike_throw();
 }
 
+int in_forked_child = 0;
+
 /*! @decl void exit(int returncode, void|string fmt, mixed ... extra)
  *!
  *!   Exit the whole Pike program with the given @[returncode].
@@ -2722,6 +2724,11 @@ PMOD_EXPORT void f_exit(INT32 args)
     args=1;
   }
 
+  if (in_forked_child) {
+    /* Don't bother to clean up if we're running in a forked child. */
+    f__exit(args);
+  }
+
   assign_svalue(&throw_value, Pike_sp-args);
   throw_severity=THROW_EXIT;
   pike_throw();
@@ -2753,6 +2760,7 @@ void f__exit(INT32 args)
   }
 #endif
 
+  /* FIXME: Shouldn't _exit(2) be called here? */
   exit(code);
 }
 

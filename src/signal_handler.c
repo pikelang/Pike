@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.333 2008/06/29 12:37:11 nilsson Exp $
+|| $Id: signal_handler.c,v 1.334 2008/07/09 13:29:01 grubba Exp $
 */
 
 #include "global.h"
@@ -4206,6 +4206,7 @@ void Pike_f_fork(INT32 args)
 	  frame = frame->next;
 	}
       });
+    in_forked_child = 1;
   }
   
   if(pid==-1) {
