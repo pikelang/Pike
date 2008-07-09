@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.730 2008/06/29 21:00:42 grubba Exp $
+|| $Id: program.c,v 1.731 2008/07/09 20:32:48 mast Exp $
 */
 
 #include "global.h"
@@ -7681,6 +7681,7 @@ static void free_compilation(struct compilation *c)
   }
   free_svalue(& c->default_module);
   c->default_module.type = T_INT;
+  c->default_module.subtype = NUMBER_NUMBER;
   free_supporter(&c->supporter);
   verify_supporters();
 }
