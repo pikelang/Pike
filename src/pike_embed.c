@@ -1,5 +1,5 @@
 /*
- * $Id: pike_embed.c,v 1.17 2008/06/05 15:12:28 mast Exp $
+ * $Id: pike_embed.c,v 1.18 2008/07/09 20:41:30 mast Exp $
  *
  * Pike embedding API.
  *
@@ -555,6 +555,10 @@ void pike_do_exit(int num)
       svalue_int_zero.subtype != NUMBER_NUMBER ||
       svalue_int_zero.u.integer != 0)
     Pike_fatal ("svalue_int_zero has been changed.\n");
+  if (svalue_undefined.type != T_INT ||
+      svalue_undefined.subtype != NUMBER_UNDEFINED ||
+      svalue_undefined.u.integer != 0)
+    Pike_fatal ("svalue_undefined has been changed.\n");
   if (svalue_int_one.type != T_INT ||
       svalue_int_one.subtype != NUMBER_NUMBER ||
       svalue_int_one.u.integer != 1)
