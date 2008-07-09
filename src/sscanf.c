@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sscanf.c,v 1.187 2008/06/30 22:33:52 marcus Exp $
+|| $Id: sscanf.c,v 1.188 2008/07/09 21:07:12 mast Exp $
 */
 
 #include "global.h"
@@ -287,10 +287,10 @@ static ptrdiff_t PIKE_CONCAT(read_set,SIZE) (			\
   ptrdiff_t match_len, INT32 flags)				\
 {								\
   p_wchar2 e, last = 0;						\
-  CHAROPT( int set_size=0; )					\
+  MATCH_IS_WIDE( int set_size=0; )				\
 								\
   if(cnt>=match_len)						\
-    Pike_error("Error in sscanf format string.\n");			\
+    Pike_error("Error in sscanf format string.\n");		\
 								\
   MEMSET(set->c, 0, sizeof(set->c));				\
   set->a=0;							\
@@ -332,14 +332,14 @@ static ptrdiff_t PIKE_CONCAT(read_set,SIZE) (			\
       if(last > match[cnt])					\
 	Pike_error("Error in sscanf format string.\n");		\
 								\
-CHAROPT(							\
+MATCH_IS_WIDE(							\
       if(last < (p_wchar2)sizeof(set->c) && last >= 0)		\
       {								\
 	if(match[cnt] < (p_wchar2)sizeof(set->c))		\
 	{							\
 )								\
 	  for(e=last;e<=match[cnt];e++) set->c[e]=1;		\
-CHAROPT(							\
+MATCH_IS_WIDE(							\
 	}else{							\
 	  for(e=last;e<(p_wchar2)sizeof(set->c);e++)		\
             set->c[e]=1;					\
@@ -357,11 +357,11 @@ CHAROPT(							\
 )								\
     } else {							\
       last=match[cnt];						\
-CHAROPT(							\
+MATCH_IS_WIDE(							\
       if(last < (p_wchar2)sizeof(set->c) && last >= 0)		\
 )								\
         set->c[last]=1;						\
-CHAROPT(							\
+MATCH_IS_WIDE(							\
       else{							\
         if(set_size &&						\
 	   ((p_wchar2)sp[-1].u.integer) == last-1)		\
@@ -381,7 +381,7 @@ CHAROPT(							\
       Pike_error("Error in sscanf format string.\n");		\
   }								\
 								\
-CHAROPT(							\
+MATCH_IS_WIDE(							\
   if(set_size)							\
   {								\
     INT32 *order;						\
@@ -394,7 +394,7 @@ CHAROPT(							\
         free_array(set->a);					\
         set->a=0;						\
         free((char *)order);					\
-        Pike_error("Overlapping ranges in sscanf not supported.\n");	\
+	Pike_error("Overlapping ranges in sscanf not supported.\n"); \
       }								\
     }								\
 								\
@@ -748,7 +748,7 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
 									 \
 	case 'c':							 \
         {								 \
-CHAROPT2(								 \
+INPUT_IS_WIDE(								 \
           int e;							 \
 )									 \
 	  sval.type=T_INT;						 \
@@ -769,7 +769,7 @@ CHAROPT2(								 \
 	    chars_matched[0]=eye;					 \
 	    return matches;						 \
 	  }								 \
-CHAROPT2(								 \
+INPUT_IS_WIDE(								 \
           for(e=0;e<field_length;e++)					 \
           {								 \
              if(input[eye+e]>255)					 \
@@ -857,7 +857,7 @@ CHAROPT2(								 \
 	    chars_matched[0]=eye;					\
 	    return matches;						\
 	  }								\
-	  CHAROPT2 (							\
+	  INPUT_IS_WIDE (						\
 	    for(e=0;e<field_length;e++)					\
 	    {								\
 	      if(input[eye+e]>255)					\
@@ -1200,13 +1200,13 @@ CHAROPT2(								 \
 	    }								 \
 	    for(e=eye;eye<len;eye++)					 \
 	    {								 \
-CHAROPT2(								 \
-	      if(input[eye]<(p_wchar2)sizeof(set.c) && input[eye]>=0)	 \
+INPUT_IS_WIDE(								 \
+	      if((unsigned INT32) input[eye] < sizeof(set.c))		\
 	      {								 \
 )									 \
 	        if(set.c[input[eye]] == set.neg)			 \
 		  break;						 \
-CHAROPT2(								 \
+INPUT_IS_WIDE(								 \
 	      }else{							 \
 	        if(set.a)						 \
 	        {							 \
@@ -1298,36 +1298,37 @@ CHAROPT2(								 \
 
 
 /* Confusing? Yes - Hubbe */
+/* Now slightly less confusing macro names, at least. /mast */
 
-/* CHAROPT(X) is X if the match set is wide.
- * CHAROPT2(X) is X if the input is wide.
+/* MATCH_IS_WIDE(X) is X if the match set is wide.
+ * INPUT_IS_WIDE(X) is X if the input is wide.
  */
-#define CHAROPT(X)
-#define CHAROPT2(X)
+#define MATCH_IS_WIDE(X)
+#define INPUT_IS_WIDE(X)
 
 MKREADSET(0)
 MK_VERY_LOW_SSCANF(0,0)
 
-#undef CHAROPT2
-#define CHAROPT2(X) X
+#undef INPUT_IS_WIDE
+#define INPUT_IS_WIDE(X) X
 
 MK_VERY_LOW_SSCANF(1,0)
 MK_VERY_LOW_SSCANF(2,0)
 
-#undef CHAROPT
-#define CHAROPT(X) X
+#undef MATCH_IS_WIDE
+#define MATCH_IS_WIDE(X) X
 
 MKREADSET(1)
 MKREADSET(2)
 
-#undef CHAROPT2
-#define CHAROPT2(X)
+#undef INPUT_IS_WIDE
+#define INPUT_IS_WIDE(X)
 
 MK_VERY_LOW_SSCANF(0,1)
 MK_VERY_LOW_SSCANF(0,2)
 
-#undef CHAROPT2
-#define CHAROPT2(X) X
+#undef INPUT_IS_WIDE
+#define INPUT_IS_WIDE(X) X
 
 MK_VERY_LOW_SSCANF(1,1)
 MK_VERY_LOW_SSCANF(2,1)
