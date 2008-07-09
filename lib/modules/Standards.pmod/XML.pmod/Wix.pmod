@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Wix.pmod,v 1.29 2008/06/28 19:25:13 mast Exp $
+// $Id: Wix.pmod,v 1.30 2008/07/09 11:19:51 grubba Exp $
 //
 // 2004-11-01 Henrik Grubbström
 
@@ -150,7 +150,10 @@ class Directory
     string extension;
     int truncated;
     string base;
-    if (long_name != (base = replace(long_name, " ", "_"))) {
+    long_name = upper_case(long_name);
+    if (long_name != (base = replace(long_name,
+				     " +,;=[]"/"",
+				     ({"", @("______"/"")})))) {
       truncated = 1;
     }
     array(string) segs = base/".";
@@ -158,7 +161,7 @@ class Directory
     if (sizeof(segs) > 1) {
       extension = segs[-1];
       if (sizeof(segs) > 2) {
-	base = segs[..<1] * "_";
+	base = segs[..<1] * "";
 	truncated = 1;
       } else {
 	base = segs[0];
@@ -169,7 +172,6 @@ class Directory
       }
     }
     if ((sizeof(base) > 8) || truncated) {
-      base = replace(base, " ", "_");
       int cnt;
       for (cnt = 0; cnt < 1000; cnt++) {
 	if (cnt < 10) {
