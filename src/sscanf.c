@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sscanf.c,v 1.188 2008/07/09 21:07:12 mast Exp $
+|| $Id: sscanf.c,v 1.189 2008/07/09 21:21:57 mast Exp $
 */
 
 #include "global.h"
@@ -772,7 +772,7 @@ INPUT_IS_WIDE(								 \
 INPUT_IS_WIDE(								 \
           for(e=0;e<field_length;e++)					 \
           {								 \
-             if(input[eye+e]>255)					 \
+	    if((unsigned INT32) input[eye+e] > 255)			\
              {								 \
                chars_matched[0]=eye;					 \
                return matches;						 \
@@ -860,7 +860,7 @@ INPUT_IS_WIDE(								 \
 	  INPUT_IS_WIDE (						\
 	    for(e=0;e<field_length;e++)					\
 	    {								\
-	      if(input[eye+e]>255)					\
+	      if((unsigned INT32) input[eye+e] > 255)			\
 	      {								\
 		chars_matched[0]=eye;					\
 		return matches;						\
