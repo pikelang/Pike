@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.731 2008/07/09 20:32:48 mast Exp $
+|| $Id: program.c,v 1.732 2008/07/09 20:42:25 mast Exp $
 */
 
 #include "global.h"
@@ -1620,11 +1620,7 @@ struct node_s *resolve_identifier(struct pike_string *ident)
 
   /* Handle UNDEFINED */
   if (ident == UNDEFINED_string) {
-    struct svalue s;
-    s.type = T_INT;
-    s.subtype = NUMBER_UNDEFINED;
-    s.u.integer = 0;
-    return mkconstantsvaluenode(&s);
+    return mkconstantsvaluenode(&svalue_undefined);
   }
 
   if(resolve_cache)
@@ -5021,7 +5017,6 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
   struct compilation *cc = THIS_COMPILATION;
   struct identifier dummy;
   struct reference ref;
-  struct svalue zero;
 
 #ifdef PROGRAM_BUILD_DEBUG
   {
@@ -5051,10 +5046,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
 
 #if 0
   if (!c) {
-    zero.type = T_INT;
-    zero.subtype = 0;
-    zero.u.integer = 0;
-    c = &zero;
+    c = &svalue_int_zero;
   }
 #endif
 
@@ -6308,7 +6300,7 @@ int program_index_no_free(struct svalue *to, struct svalue *what,
       } else {
 	/* Prototype constant. */
 	to->type = T_INT;
-	to->subtype = 0;
+	to->subtype = NUMBER_NUMBER;
 	to->u.integer = 0;
       }
       return 1;
@@ -9270,9 +9262,7 @@ struct program *compile(struct pike_string *aprog,
     ref_push_mapping(get_builtin_constants());
   }
   free_svalue(& c->default_module);
-  c->default_module=Pike_sp[-1];
-  dmalloc_touch_svalue(Pike_sp-1);
-  Pike_sp--;
+  move_svalue (&c->default_module, --Pike_sp);
 
 #ifdef PIKE_DEBUG
   SET_ONERROR(tmp, fatal_on_error,"Compiler exited with longjump!\n");
