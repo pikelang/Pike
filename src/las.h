@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.h,v 1.79 2008/05/24 15:14:12 grubba Exp $
+|| $Id: las.h,v 1.80 2008/07/09 20:43:46 mast Exp $
 */
 
 #ifndef LAS_H
@@ -186,8 +186,8 @@ void resolv_class(node *n);
 node *index_node(node *n, char *node_name, struct pike_string *id);
 int node_is_eq(node *a,node *b);
 node *debug_mktypenode(struct pike_type *t);
-node *debug_mkconstantsvaluenode(struct svalue *s);
-node *debug_mkliteralsvaluenode(struct svalue *s);
+node *debug_mkconstantsvaluenode(const struct svalue *s);
+node *debug_mkliteralsvaluenode(const struct svalue *s);
 node *debug_mksvaluenode(struct svalue *s);
 node *copy_node(node *n);
 node *defrost_node(node *n);

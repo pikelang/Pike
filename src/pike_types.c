@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.347 2008/07/09 20:26:34 mast Exp $
+|| $Id: pike_types.c,v 1.348 2008/07/09 20:43:45 mast Exp $
 */
 
 #include "global.h"
@@ -7012,7 +7012,7 @@ struct pike_type *zzap_function_return(struct pike_type *a,
   return NULL;
 }
 
-struct pike_type *get_type_of_svalue(struct svalue *s)
+struct pike_type *get_type_of_svalue(const struct svalue *s)
 {
   struct pike_type *ret;
   switch(s->type)

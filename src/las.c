@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.425 2008/06/28 11:01:53 mast Exp $
+|| $Id: las.c,v 1.426 2008/07/09 20:43:46 mast Exp $
 */
 
 #include "global.h"
@@ -1776,7 +1776,7 @@ node *debug_mktypenode(struct pike_type *t)
   return res;
 }
 
-node *low_mkconstantsvaluenode(struct svalue *s)
+node *low_mkconstantsvaluenode(const struct svalue *s)
 {
   node *res = mkemptynode();
   res->token = F_CONSTANT;
@@ -1791,12 +1791,12 @@ node *low_mkconstantsvaluenode(struct svalue *s)
   return res;
 }
 
-node *debug_mkconstantsvaluenode(struct svalue *s)
+node *debug_mkconstantsvaluenode(const struct svalue *s)
 {
   return low_mkconstantsvaluenode(s);
 }
 
-node *debug_mkliteralsvaluenode(struct svalue *s)
+node *debug_mkliteralsvaluenode(const struct svalue *s)
 {
   node *res = low_mkconstantsvaluenode(s);
 
