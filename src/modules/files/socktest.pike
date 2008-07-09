@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.46 2008/06/28 00:09:25 nilsson Exp $ */
+/* $Id: socktest.pike,v 1.47 2008/07/09 16:24:05 grubba Exp $ */
 
 // #define OOB_DEBUG
 
@@ -232,7 +232,7 @@ void got_callback()
 #ifdef OOB_DEBUG
   predef::write(sprintf("%c\b","|/-\\" [ counter & 3 ]));
 #else /* !OOB_DEBUG */
-  if(!verbose && !(counter & 0xf))
+  if(verbose && !(counter & 0xf))
     predef::write(sprintf("%c\b","|/-\\" [ (counter>>4) & 3 ]));
 #endif /* OOB_DEBUG */
 #ifdef BACKEND
@@ -277,7 +277,7 @@ void got_oob1(mixed ignored, string got)
 #endif
   got_callback();
   if (got != expected) {
-    write(sprintf("loopback: Received unexpected oob data "
+    write(sprintf("\nloopback: Received unexpected oob data "
 		   "(0x%02x != 0x%02x)\n",
 		   got[0], expected[0]));
     exit(1);
@@ -303,7 +303,7 @@ void got_oob0(mixed ignored, string got)
 #endif
   got_callback();
   if (got != expected) {
-    write(sprintf("loopback: Received unexpected oob data "
+    write(sprintf("\nloopback: Received unexpected oob data "
 		   "(0x%02x != 0x%02x)\n",
 		   got[0], expected[0]));
     exit(1);
@@ -422,13 +422,14 @@ array(object) spair(int type)
 
 mixed keeper;
 
-int testno = 0;
 void test_write(string str)
 {
   if( verbose )
-    write(str);
+    write("\n" + str);
+  else
+    write("\r                                                       \r" + str);
   //  else
-  //    write("Test %d\r", ++testno);
+  //    write("Test %d\r", _tests);
 }
 
 void finish()
@@ -437,14 +438,16 @@ void finish()
   num_running--;
   if(!num_running)
   {
-    if( verbose )
-      write("\n");
-
     object sock1, sock2;
     array(object) socks;
     int tests;
 
     _tests++;
+#ifdef IPV6
+    // Linux 2.6.x seems to hang when running out of IPV6 ports
+    // on the loopback. Give it some time to clean up its act...
+    sleep(!(_tests&3));
+#endif
     switch(_tests)
     {
       case 1:
@@ -573,6 +576,7 @@ void finish()
 #endif /* constant(Stdio.__OOB__) */
 
     default:
+      write("\n");
       exit(delayed_failure);
       break;
     }
@@ -594,12 +598,11 @@ void accept_callback()
   o->expected_data = "foobar" * 4711;
 }
 
-int main()
+int main(int argc, array(string) argv)
 {
   string testargs=getenv()->TESTARGS;
-  if(testargs &&
-     (has_value(testargs/" ", "-v") ||
-      has_value(testargs/" ", "--verbose") ) )
+  argv += testargs?(testargs/" "):({});
+  if(has_value(argv[1..], "-v") || has_value(argv[1..], "--verbose"))
     verbose=1;
 
   write("\nSocket test");
@@ -696,7 +699,7 @@ int main()
   _tests=49;
   finish();
 #else /* !OOB_DEBUG */
-  write("\nDoing simple tests. ");
+  test_write("\nDoing simple tests. ");
   stdtest();
 #endif /* OOB_DEBUG */
 
