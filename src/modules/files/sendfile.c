@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sendfile.c,v 1.80 2008/03/29 16:22:30 mbaehr Exp $
+|| $Id: sendfile.c,v 1.81 2008/07/10 12:09:38 grubba Exp $
 */
 
 /*
@@ -135,6 +135,7 @@
 #undef HAVE_SENDFILE
 #undef HAVE_FREEBSD_SENDFILE
 #undef HAVE_HPUX_SENDFILE
+#undef HAVE_MACOSX_SENDFILE
 #endif /* HAVE_BROKEN_SENDFILE */
 
 /*
@@ -401,14 +402,18 @@ void low_do_sendfile(struct pike_sendfile *this)
   SF_DFPRINTF((stderr, "sendfile: Worker started\n"));
 
   if ((this->from_file) && (this->len)) {
-#if defined(HAVE_FREEBSD_SENDFILE) || defined(HAVE_HPUX_SENDFILE)
+#if defined(HAVE_FREEBSD_SENDFILE) || defined(HAVE_HPUX_SENDFILE) || defined(HAVE_MACOSX_SENDFILE)
     off_t sent = 0;
     int len = this->len;
     int res;
 
-#ifdef HAVE_FREEBSD_SENDFILE
+#if defined(HAVE_FREEBSD_SENDFILE) || defined(HAVE_MACOSX_SENDFILE)
     struct sf_hdtr hdtr = { NULL, 0, NULL, 0 };
+#ifdef HAVE_FREEBSD_SENDFILE
     SF_DFPRINTF((stderr, "sendfile: Using FreeBSD-style sendfile()\n"));
+#else
+    SF_DFPRINTF((stderr, "sendfile: Using MacOS X-style sendfile()\n"));
+#endif
 
     if (this->hd_cnt) {
       hdtr.headers = this->hd_iov;
@@ -419,7 +424,7 @@ void low_do_sendfile(struct pike_sendfile *this)
       hdtr.trl_cnt = this->tr_cnt;
     }
 
-#else /* !HAVE_FREEBSD_SENDFILE */
+#else /* !(HAVE_FREEBSD_SENDFILE || HAVE_MACOSX_SENDFILE) */
     /* HPUX_SENDFILE */
     struct iovec hdtr[2] = { NULL, 0, NULL, 0 };
     SF_DFPRINTF((stderr, "sendfile: Using HP/UX-style sendfile()\n"));
@@ -445,6 +450,21 @@ void low_do_sendfile(struct pike_sendfile *this)
        *   The nbytes argument specifies how many bytes of the file
        *   should be sent, with 0 having the special meaning of send
        *   until the end of file has been reached.
+       *
+       * From HPUX:
+       *   nbytes is the number of bytes to be sent from the file. If
+       *   this parameter is set to zero, data from the offset to the
+       *   end of the file will be sent.
+       *
+       * From MacOS X:
+       *   The len argument is a value-result parameter, that
+       *   specifies how many bytes of the file should be sent and/or
+       *   how many bytes have been sent. Initially the value pointed
+       *   to by the len argument specifies how many bytes should be
+       *   sent with 0 having the special meaning to send until the
+       *   end of file has been reached. On return the value pointed
+       *   to by the len argument indicates how many bytes have been
+       *   sent. The len pointer may not be NULL.
        */
       len = 0;
     }
@@ -453,9 +473,15 @@ void low_do_sendfile(struct pike_sendfile *this)
     res = sendfile(this->from_fd, this->to_fd, this->offset, len,
 		   &hdtr, &sent, 0);
 #else /* !HAVE_FREEBSD_SENDFILE */
+#ifdef HAVE_MACOSX_SENDFILE
+    sent = len;
+    res = sendfile(this->from_fd, this->to_fd, this->offset, &sent,
+		   &hdtr, 0);
+#else
     /* HPUX_SENDFILE */
     res = sendfile(this->to_fd, this->from_fd, this->offset, len,
 		   hdtr, 0);
+#endif /* HAVE_MACOSX_SENDFILE */
 #endif /* HAVE_FREEBSD_SENDFILE */
 
     SF_DFPRINTF((stderr, "sendfile: sendfile() returned %d\n", res));
@@ -485,18 +511,18 @@ void low_do_sendfile(struct pike_sendfile *this)
 	/* Bad fd's or socket has been closed at other end. */
 	break;
       }
-#ifndef HAVE_FREEBSD_SENDFILE
+#ifdef HAVE_HPUX_SENDFILE
       /* HPUX_SENDFILE */
     } else {
       sent = res;
-#endif /* !HAVE_FREEBSD_SENDFILE */
+#endif /* HAVE_HPUX_SENDFILE */
     }
     this->sent += sent;
 
     goto done;
 
   fallback:
-#endif /* HAVE_FREEBSD_SENDFILE || HAVE_HPUX_SENDFILE */
+#endif /* HAVE_FREEBSD_SENDFILE || HAVE_HPUX_SENDFILE || HAVE_MACOSX_SENDFILE */
 
     SF_DFPRINTF((stderr, "sendfile: Sending headers\n"));
 
@@ -508,7 +534,7 @@ void low_do_sendfile(struct pike_sendfile *this)
     SF_DFPRINTF((stderr, "sendfile: Sent %ld bytes so far.\n",
 		 DO_NOT_WARN((long)this->sent)));
     
-#if defined(HAVE_SENDFILE) && !defined(HAVE_FREEBSD_SENDFILE) && !defined(HAVE_HPUX_SENDFILE)
+#if defined(HAVE_SENDFILE) && !defined(HAVE_FREEBSD_SENDFILE) && !defined(HAVE_HPUX_SENDFILE) && !defined(HAVE_MACOSX_SENDFILE)
     SF_DFPRINTF((stderr, "sendfile: Sending file with sendfile()\n"));
 
     {
@@ -523,7 +549,7 @@ void low_do_sendfile(struct pike_sendfile *this)
       goto send_trailers;
     }
   normal:
-#endif /* HAVE_SENDFILE && !HAVE_FREEBSD_SENDFILE && !HAVE_HPUX_SENDFILE */
+#endif /* HAVE_SENDFILE && !HAVE_FREEBSD_SENDFILE && !HAVE_HPUX_SENDFILE && !HAVE_MACOSX_SENDFILE */
     SF_DFPRINTF((stderr, "sendfile: Sending file by hand\n"));
 
 #if 0 /* mmap is slower than read/write on most if not all systems */
@@ -670,9 +696,9 @@ void low_do_sendfile(struct pike_sendfile *this)
     this->sent += send_iov(this->to_fd, iov, iovcnt);
   }
 
-#if defined(HAVE_FREEBSD_SENDFILE) || defined(HAVE_HPUX_SENDFILE)
+#if defined(HAVE_FREEBSD_SENDFILE) || defined(HAVE_HPUX_SENDFILE) || defined(HAVE_MACOSX_SENDFILE)
  done:
-#endif /* HAVE_FREEBSD_SENDFILE || HAVE_HPUX_SENDFILE */
+#endif /* HAVE_FREEBSD_SENDFILE || HAVE_HPUX_SENDFILE || HAVE_MACOSX_SENDFILE */
 
 #ifdef SOL_TCP
 #ifdef TCP_CORK
