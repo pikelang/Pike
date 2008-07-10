@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.110 2008/02/18 18:42:49 grubba Exp $
+# $Id: configure.in,v 1.111 2008/07/10 11:57:46 grubba Exp $
 AC_INIT(file.c)
 AC_CONFIG_HEADER(file_machine.h)
 
@@ -12,7 +12,7 @@ AC_HAVE_HEADERS(sys/types.h sys/socket.h arpa/inet.h sys/socketvar.h \
   sys/stream.h sys/protosw.h netdb.h sys/sysproto.h winsock.h \
   direct.h sys/wait.h process.h sys/file.h net/netdb.h limits.h unistd.h \
   termios.h poll.h sys/poll.h sys/select.h sys/un.h netinet/tcp.h \
-  sys/sendfile.h sys/ioctl.h linux/if.h sys/xattr.h,,,[
+  sys/sendfile.h sys/ioctl.h linux/if.h sys/xattr.h libzfs.h,,,[
 /* Needed for <sys/socket.h> on FreeBSD 4.9. */
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -56,12 +56,35 @@ AC_CHECK_LIB(bind, __inet_ntoa)
 AC_CHECK_LIB(socket, socket)
 AC_CHECK_LIB(nsl, gethostbyname)
 AC_CHECK_LIB(net, __get_socket_descriptor)
+AC_CHECK_LIB(zfs, libzfs_init)
 
 AC_HAVE_FUNCS(getwd perror readdir_r statvfs statfs ustat lseek64 lstat fsync \
  grantpt unlockpt ptsname posix_openpt socketpair writev sendfile munmap \
  madvise poll setsockopt getprotobyname truncate64 ftruncate64 inet_ntoa \
  inet_ntop execve listxattr flistxattr getxattr fgetxattr setxattr fsetxattr \
- fdopendir pathconf fpathconf dirfd fstatat openat unlinkat)
+ fdopendir pathconf fpathconf dirfd fstatat openat unlinkat libzfs_init \
+ zfs_path_to_zhandle)
+
+define(PIKE_CHECK_ZFS_ENUM, [
+  AC_MSG_CHECKING([if the $1 value $2 exists])
+  AC_CACHE_VAL(pike_cv_have_$2, [
+    AC_TRY_COMPILE([
+#ifdef HAVE_LIBZFS_H
+#include <libzfs.h>
+#endif /* HAVE_LIBZFS_H */
+    ], [
+      $1 val = $2;
+    ], [ pike_cv_have_$2=yes ], [ pike_cv_have_$2=no ])
+  ])
+  if test "x$pike_cv_have_$2" = "xyes"; then
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(HAVE_$2)
+  else
+    AC_MSG_RESULT(no)
+  fi
+])
+# Solaris 10 127112-05 doesn't have this value.
+PIKE_CHECK_ZFS_ENUM(zfs_prop_t, ZFS_PROP_UTF8ONLY)
 
 AC_FUNC_MMAP
 
@@ -108,7 +131,7 @@ else
 fi
 
 if test "$ac_cv_func_sendfile" = "yes"; then
-  AC_MSG_CHECKING(if sendfile takes 4(Linux) or 6(HP/UX) or 7(FreeBSD) arguments)
+  AC_MSG_CHECKING(if sendfile takes 4(Linux) or 6(HP/UX or MacOS X) or 7(FreeBSD) arguments)
   AC_CACHE_VAL(pike_cv_sendfile_args, [
     AC_TRY_COMPILE([
 #ifdef HAVE_SYS_TYPES_H
@@ -137,7 +160,7 @@ if test "$ac_cv_func_sendfile" = "yes"; then
 #endif /* HAVE_SYS_UIO_H */
       ], [
         /* This should fail on FreeBSD and HPUX.
-         * If it succeeds, we don't have a prototype,
+         * If it succeeds, we do not have a prototype,
          * which would indicate Linux.
          */
         return sendfile(0,0,(void *)0,0);
@@ -188,8 +211,41 @@ if test "$ac_cv_func_sendfile" = "yes"; then
     fi
   else
     if test "$pike_cv_sendfile_args" = "6"; then
-      AC_MSG_RESULT([6 - HP/UX style])
-      AC_DEFINE(HAVE_HPUX_SENDFILE)
+      AC_MSG_RESULT([6 - HP/UX or MacOS X style])
+      # FIXME: Detect whether HPUX:
+      #   sbsize_t sendfile(int from, int to, off_t off, bsize_t bytes,
+      #                     struct iovec *hdtrl, int flags)
+      # or MacOS X:
+      #   int sendfile(int to, int from, off_t off, off_t *bytes,
+      #                struct sf_hdtrl *hdtrl, int flags)
+
+      AC_MSG_CHECKING(struct sf_hdtr)
+      AC_CACHE_VAL(pike_cv_has_struct_sf_hdtr, [
+        AC_TRY_LINK([
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+#ifdef HAVE_SYS_UIO_H
+#include <sys/uio.h>
+#endif
+	], [
+	  struct sf_hdtr foo;
+	], [
+          pike_cv_has_struct_sf_hdtr=yes
+        ], [
+          pike_cv_has_struct_sf_hdtr=no
+        ])
+      ])
+      if test "$pike_cv_has_struct_sf_hdtr" = "yes"; then
+        AC_MSG_RESULT(yes - MacOS X)
+        AC_DEFINE(HAVE_MACOSX_SENDFILE)
+      else
+        AC_MSG_RESULT(no - HPUX)
+        AC_DEFINE(HAVE_HPUX_SENDFILE)
+      fi
     else
       AC_MSG_RESULT([4 - Linux style])
     fi
