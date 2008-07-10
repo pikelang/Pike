@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sendfile.c,v 1.82 2008/07/10 15:55:33 grubba Exp $
+|| $Id: sendfile.c,v 1.83 2008/07/10 15:57:34 grubba Exp $
 */
 
 /*
@@ -469,22 +469,24 @@ void low_do_sendfile(struct pike_sendfile *this)
       len = 0;
     }
 
+    do {
 #ifdef HAVE_FREEBSD_SENDFILE
-    res = sendfile(this->from_fd, this->to_fd, this->offset, len,
-		   &hdtr, &sent, 0);
+      res = sendfile(this->from_fd, this->to_fd, this->offset, len,
+		     &hdtr, &sent, 0);
 #else /* !HAVE_FREEBSD_SENDFILE */
 #ifdef HAVE_MACOSX_SENDFILE
-    sent = len;
-    res = sendfile(this->from_fd, this->to_fd, this->offset, &sent,
-		   &hdtr, 0);
+      sent = len;
+      res = sendfile(this->from_fd, this->to_fd, this->offset, &sent,
+		     &hdtr, 0);
 #else
     /* HPUX_SENDFILE */
-    res = sendfile(this->to_fd, this->from_fd, this->offset, len,
-		   hdtr, 0);
+      res = sendfile(this->to_fd, this->from_fd, this->offset, len,
+		     hdtr, 0);
 #endif /* HAVE_MACOSX_SENDFILE */
 #endif /* HAVE_FREEBSD_SENDFILE */
 
-    SF_DFPRINTF((stderr, "sendfile: sendfile() returned %d\n", res));
+      SF_DFPRINTF((stderr, "sendfile: sendfile() returned %d\n", res));
+    } while ((res < 0) && (errno == EINTR));
 
     if (res < 0) {
       switch(errno) {
