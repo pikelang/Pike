@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.25 2005/06/01 03:02:22 bill Exp $
+|| $Id: acconfig.h,v 1.26 2008/07/10 11:56:41 grubba Exp $
 */
 
 #ifndef FILE_MACHINE_H
@@ -14,10 +14,18 @@
 /* Define this if your <sys/sendfile.h> is broken. */
 #undef HAVE_BROKEN_SYS_SENDFILE_H
 
+/* Define this if you have ZFS_PROP_UTF8ONLY. */
+#undef HAVE_ZFS_PROP_UTF8ONLY
+
 /* Define this if you have a FreeBSD-style (7 args) sendfile(). */
 #undef HAVE_FREEBSD_SENDFILE
 
-/* Define this if you have a HP/UX-style (6 args) sendfile(). */
+/* Define this if you have a HP/UX-style (6 args) sendfile()
+ * with no struct sf_hdtr. */
+#undef HAVE_HPUX_SENDFILE
+
+/* Define this if you have a MacOS X-style (6 args) sendfile()
+ * with struct sf_hdtr. */
 #undef HAVE_HPUX_SENDFILE
 
 /* Define this if you want to disable the use of sendfile(2). */
