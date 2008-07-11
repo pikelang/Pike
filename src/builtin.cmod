@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.222 2008/07/08 12:27:05 grubba Exp $
+|| $Id: builtin.cmod,v 1.223 2008/07/11 14:35:13 mast Exp $
 */
 
 #include "global.h"
@@ -2939,7 +2939,7 @@ PIKECLASS Timer
     if( THIS->hard_update )
       GETTIMEOFDAY( &current_time );
     res = current_time.tv_sec-THIS->last_time.tv_sec +
-      (current_time.tv_usec-THIS->last_time.tv_usec)/1000000.0;
+      (current_time.tv_usec-THIS->last_time.tv_usec)/(FLOAT_TYPE) 1000000.0;
     RETURN res;
   }
 
