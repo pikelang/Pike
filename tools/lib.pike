@@ -93,19 +93,64 @@ string follow_symlinks(string s)
 }
 
 // Allow several mappings of unix paths to NT drives using
-// NTMOUNT/NTDRIVE, NTMOUNT2/NTDRIVE2, etc. The replace code is naive,
-// so you better have the longest NTMOUNTn prefix first.
+// NTMOUNT/NTDRIVE, NTMOUNT1/NTDRIVE1, NTMOUNT2/NTDRIVE2, etc. The
+// replace code is naive, so you better have the longest NTMOUNTn
+// prefix first.
+
+// Note: Windows handles "/" as path separators but we take care to
+// replace them with "\" anyway since a path starting with "/" can be
+// mistaken as a command option by some Windows programs.
+
+array(array(string)) pathmap;
+
+array(array(string)) get_pathmap()
+{
+  if (!pathmap) {
+    pathmap = ({});
+    string mnt;
+    for (int i = 0; (mnt = getenv("NTMOUNT" + (i || ""))) || i < 2; i++)
+      if (mnt && mnt != "") {
+	string drv = getenv ("NTDRIVE" + (i || ""));
+	if (drv && drv != "") {
+	  if (has_suffix (mnt, "/")) mnt = mnt[..sizeof (mnt) - 2];
+	  drv = replace (drv, "/", "\\");
+	  if (has_suffix (drv, "\\")) drv = drv[..sizeof (drv) - 2];
+	  pathmap += ({({mnt, drv})});
+	}
+	else
+	  werror ("Got NTMOUNT" + (i || "") + "=%O "
+		  "without corresponding NTDRIVE" + (i || "") + ".\n",
+		  mnt);
+      }
+  }
+  return pathmap;
+}
 
 string fixpath(string s)
 {
   s=follow_symlinks(s);
-  string mnt=getenv("NTMOUNT");
-  if(mnt && strlen(mnt)) s=replace(s,mnt,getenv("NTDRIVE"));
-  for (int i = 2; (mnt = getenv("NTMOUNT" + i)); i++)
-    if(strlen(mnt)) s=replace(s,mnt,getenv("NTDRIVE" + i));
-  return replace(s,"/","\\");
+  foreach (get_pathmap(), [string mnt, string drv])
+    if (s == mnt || has_prefix (s, mnt) && s[sizeof (mnt)] == '/') {
+      s = drv + replace (s[sizeof (mnt)..], "/", "\\");
+      break;
+    }
+  return s;
 }
 
+void fix_paths_in_arglist (array(string) args)
+{
+  get_pathmap();
+  foreach (args; int e; string arg)
+    foreach (pathmap, [string mnt, string drv]) {
+      int i = search (arg, mnt);
+      if (i >= 0 && (sizeof (arg) == i + sizeof (mnt) ||
+		     arg[i + sizeof (mnt)] == '/')) {
+	args[e] = arg[..i - 1] + drv +
+	  replace (arg[i + sizeof (mnt)..], "/", "\\");
+	break;
+      }
+    }
+}
 
 string fixabspath(string s)
 {
@@ -216,22 +261,7 @@ int silent_do_cmd(array(string) cmd, mixed|void filter, int|void silent)
 
 #if 1
       /* Experimental */
-      {
-	string mnt=getenv("NTMOUNT");
-	if(mnt && strlen(mnt))
-	{
-	  for(int e=1;e<sizeof(cmd);e++)
-	    cmd[e]=replace(cmd[e],mnt,getenv("NTDRIVE"));
-	}
-
-	for (int i = 2; (mnt = getenv("NTMOUNT" + i)); i++) {
-	  if(strlen(mnt))
-	  {
-	    for(int e=1;e<sizeof(cmd);e++)
-	      cmd[e]=replace(cmd[e],mnt,getenv("NTDRIVE" + i));
-	  }
-	}
-      }
+      fix_paths_in_arglist (cmd);
 #endif
       
 	object o=f->pipe(Stdio.PROP_IPC);
@@ -275,40 +305,9 @@ int silent_do_cmd(array(string) cmd, mixed|void filter, int|void silent)
 	    vars+=({var});
 	cmd=vars+cmd;
       }
-      string tmp=getcwd();
-      string mnt=getenv("NTMOUNT");
-      if(mnt && strlen(mnt))
-	tmp=replace(tmp,mnt,getenv("NTDRIVE"));
-      else
-	tmp=getenv("NTDRIVE")+tmp;
 
-      {
-	string mnt2;
-	for (int i = 2; (mnt2 = getenv ("NTMOUNT" + i)); i++)
-	  if(strlen(mnt2))
-	    tmp=replace(tmp,mnt2,getenv("NTDRIVE" + i));
-      }
-
-      tmp=replace(tmp,"/","\\");
-
-      cmd=({ tmp })+cmd;
-
-#if 1
-      /* Experimental */
-      if(mnt && strlen(mnt)>1)
-      {
-	for(int e=1;e<sizeof(cmd);e++)
-	  cmd[e]=replace(cmd[e],mnt,getenv("NTDRIVE"));
-      }
-
-      {
-	string mnt2;
-	for (int i = 2; (mnt2 = getenv ("NTMOUNT" + i)); i++)
-	  if(strlen(mnt2))
-	    for(int e=1;e<sizeof(cmd);e++)
-	      cmd[e]=replace(cmd[e],mnt2,getenv("NTDRIVE" + i));
-      }
-#endif
+      fix_paths_in_arglist (cmd);
+      cmd = ({fixpath (getcwd())}) + cmd;
 
       if(!f->connect(getenv("NTHOST"),(int)getenv("NTPORT")))
       {
