@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.403 2008/05/31 19:41:16 grubba Exp $
+|| $Id: interpret.c,v 1.404 2008/07/11 14:43:20 mast Exp $
 */
 
 #include "global.h"
@@ -3001,10 +3001,6 @@ PMOD_EXPORT void low_cleanup_interpret(struct Pike_interpreter *interpreter)
 
 PMOD_EXPORT void cleanup_interpret(void)
 {
-#ifdef PIKE_DEBUG
-  int e;
-#endif
-
   while(Pike_fp)
     POP_PIKE_FRAME();
 
