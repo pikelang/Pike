@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: auto.c.in,v 1.54 2006/09/27 19:03:12 marcus Exp $
+|| $Id: auto.c.in,v 1.55 2008/07/11 14:16:57 mast Exp $
 */
 
 #include "global.h"
@@ -546,7 +546,6 @@ static void my_glGenTextures( INT32 args )
 {
   GLint *res;
   struct array *a;
-  struct svalue tmp;
   int ntexts;
   int i;
   if( args != 1 || Pike_sp[-1].type != PIKE_T_INT )
