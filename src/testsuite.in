@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.838 2008/07/04 15:53:53 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.839 2008/07/11 13:54:23 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -592,6 +592,20 @@ test_compile_error([[ float b=17.0; string a; a=b*42; ]])
 test_compile_error([[ float b=17.0; string a; a=b*42.0; ]])
 
 test_compile_error([[class F {inherit master()->dirnode;};]]);
+
+test_any([[
+  class A {
+    constant i = -1;
+    string f() {
+      return ([1: "foo"])[i] || "bar"; // No warning here. C.f. lyslys 16630665.
+    }
+  };
+  class B {
+    inherit A;
+    constant i = 1;
+  };
+  return B()->f();
+]], "foo")
 
 ignore_warning("Wrong return type.", [[
 ignore_warning("Expected: string.", [[
