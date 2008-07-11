@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.246 2008/07/09 20:41:30 mast Exp $
+|| $Id: svalue.c,v 1.247 2008/07/11 20:35:35 mast Exp $
 */
 
 #include "global.h"
@@ -1325,7 +1325,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	      break;
 
             default:
-	      if(j<256) {
+	      if((unsigned INT32) j < 256) {
 		if (isprint(j))
 		  my_putchar(j);
 
