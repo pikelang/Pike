@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.237 2008/07/08 16:08:21 grubba Exp $
+|| $Id: operators.c,v 1.238 2008/07/11 20:39:45 mast Exp $
 */
 
 #include "global.h"
@@ -357,7 +357,6 @@ PMOD_EXPORT void o_cast_to_string(void)
     } else {
       {
 	struct object *o = sp[-1].u.object;
-	struct pike_string *s;
 	int f = FIND_LFUN(o->prog->inherits[sp[-1].subtype].prog, LFUN_CAST);
 	if(f == -1)
 	  Pike_error("No cast method in object.\n");
@@ -402,36 +401,34 @@ PMOD_EXPORT void o_cast_to_string(void)
       int shift = 0;
 
       for(i = a->size; i--; ) {
-	unsigned INT32 val;
+	INT_TYPE val;
 	if (a->item[i].type != T_INT) {
-	  Pike_error("cast: Item %d is not an integer.\n", i);
+	  Pike_error("cast: Item %d is not an integer: %O\n", i, a->item + i);
 	}
-	val = (unsigned INT32)a->item[i].u.integer;
-	if (val > 0xff) {
-	  shift = 1;
-	  if (val > 0xffff) {
-	    shift = 2;
-	    while(i--)
-	      if (a->item[i].type != T_INT)
-		Pike_error("cast: Item %d is not an integer.\n", i);
-	    break;
-	  }
-	  while(i--) {
-	    if (a->item[i].type != T_INT) {
-	      Pike_error("cast: Item %d is not an integer.\n", i);
-	    }
-	    val = (unsigned INT32)a->item[i].u.integer;
-	    if (val > 0xffff) {
-	      shift = 2;
-	      while(i--)
-		if (a->item[i].type != T_INT)
-		  Pike_error("cast: Item %d is not an integer.\n", i);
+	val = a->item[i].u.integer;
+	switch (shift) { /* Trust the compiler to strength reduce this. */
+	  case 0:
+	    if ((unsigned INT32) val <= 0xff)
 	      break;
-	    }
-	  }
-	  break;
+	    shift = 1;
+	    /* FALL THROUGH */
+
+	  case 1:
+	    if ((unsigned INT32) val <= 0xffff)
+	      break;
+	    shift = 2;
+	    /* FALL THROUGH */
+
+	  case 2:
+#if SIZEOF_INT_TYPE > 4
+	    if (val < MIN_INT32 || val > MAX_INT32)
+	      Pike_error ("cast: Item %d is too large: %"PRINTPIKEINT"x.\n",
+			  i, val);
+#endif
+	    break;
 	}
       }
+
       s = begin_wide_shared_string(a->size, shift);
       switch(shift) {
       default:
@@ -441,14 +438,14 @@ PMOD_EXPORT void o_cast_to_string(void)
       case 0:
 #endif
 	for(i = a->size; i--; ) {
-	  s->str[i] = a->item[i].u.integer;
+	  s->str[i] = (p_wchar0) a->item[i].u.integer;
 	}
 	break;
       case 1:
 	{
 	  p_wchar1 *str1 = STR1(s);
 	  for(i = a->size; i--; ) {
-	    str1[i] = a->item[i].u.integer;
+	    str1[i] = (p_wchar1) a->item[i].u.integer;
 	  }
 	}
 	break;
@@ -456,7 +453,7 @@ PMOD_EXPORT void o_cast_to_string(void)
 	{
 	  p_wchar2 *str2 = STR2(s);
 	  for(i = a->size; i--; ) {
-	    str2[i] = a->item[i].u.integer;
+	    str2[i] = (p_wchar2) a->item[i].u.integer;
 	  }
 	}
 	break;
@@ -495,7 +492,6 @@ PMOD_EXPORT void o_cast(struct pike_type *type, INT32 run_time_type)
     if(sp[-1].type == T_OBJECT)
     {
       struct object *o = sp[-1].u.object;
-      struct pike_string *s;
       int f = FIND_LFUN(o->prog->inherits[sp[-1].subtype].prog, LFUN_CAST);
       if(f == -1)
 	Pike_error("No cast method in object.\n");
@@ -1682,7 +1678,7 @@ PMOD_EXPORT void f_add(INT32 args)
     sum=0.0;
     for(e=-args; e<0; e++) sum+=sp[e].u.float_number;
     sp-=args-1;
-    sp[-1].u.float_number=sum;
+    sp[-1].u.float_number = (FLOAT_TYPE) sum;
     break;
   }
 
@@ -1701,7 +1697,7 @@ PMOD_EXPORT void f_add(INT32 args)
     }
     sp-=args-1;
     sp[-1].type=T_FLOAT;
-    sp[-1].u.float_number=sum;
+    sp[-1].u.float_number = (FLOAT_TYPE) sum;
     break;
   }
 
@@ -1770,7 +1766,6 @@ static int generate_sum(node *n)
 {
   struct compilation *c = THIS_COMPILATION;
   node **first_arg, **second_arg, **third_arg;
-  int num_args;
   switch(count_args(CDR(n)))
   {
   case 0: return 0;
@@ -4340,7 +4335,7 @@ PMOD_EXPORT void o_compl(void)
     break;
 
   case T_FLOAT:
-    sp[-1].u.float_number = -1.0 - sp[-1].u.float_number;
+    sp[-1].u.float_number = (FLOAT_TYPE) -1.0 - sp[-1].u.float_number;
     break;
 
   case T_TYPE:
@@ -5178,8 +5173,7 @@ PMOD_EXPORT void f_index_assign(INT32 args)
     case 3:
       if(sp[-2].type==T_STRING) sp[-2].subtype=0;
       assign_lvalue (sp-3, sp-1);
-      assign_svalue (sp-3, sp-1);
-      pop_n_elems (args-1);
+      stack_pop_n_elems_keep_top (2);
       break;
     default:
       PIKE_ERROR("`[]=", "Too many arguments.\n", sp, args);
