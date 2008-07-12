@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.213 2008/07/08 17:16:41 grubba Exp $
+|| $Id: array.c,v 1.214 2008/07/12 10:21:12 grubba Exp $
 */
 
 #include "global.h"
@@ -2449,14 +2449,15 @@ PMOD_EXPORT struct array *copy_array_recursively(struct array *a,
 /** Apply the elements of an array. Arguments the array should be
  *  applied with should be on the stack before the call and the
  *  resulting array will be on the stack after the call.
+ *
+ *  Note that the array a may be modified destructively if it has
+ *  only a single reference.
  */
 PMOD_EXPORT void apply_array(struct array *a, INT32 args)
 {
   INT32 e, hash = 0;
   struct svalue *argp = Pike_sp-args;
-  struct array *aa;
   struct array *cycl;
-  TYPE_FIELD new_types = 0;
   DECLARE_CYCLIC();
 
   check_stack(args);
@@ -2465,22 +2466,45 @@ PMOD_EXPORT void apply_array(struct array *a, INT32 args)
     hash = hash * 33 + DO_NOT_WARN ((INT32) PTR_TO_INT (Pike_sp[-e-1].u.ptr));
 
   if (!(cycl = (struct array *)BEGIN_CYCLIC(a, (ptrdiff_t)hash))) {
-    push_array(aa = allocate_array_no_init(0, a->size));
-    for (e=0; (e<a->size) && (e < aa->malloced_size); e++)
-    {
-      assign_svalues_no_free(Pike_sp, argp, args, BIT_MIXED);
-      Pike_sp+=args;
-      /* FIXME: Don't throw apply errors from apply_svalue here. */
-      apply_svalue(ITEM(a)+e,args);
-      new_types |= 1 << Pike_sp[-1].type;
-      assign_svalue_no_free(ITEM(aa)+e, &Pike_sp[-1]);
-      aa->size = e+1;
-      pop_stack();
-    }
-    aa->type_field = new_types;
+    TYPE_FIELD new_types = 0;
+    if (a->refs == 1) {
+      /* Destructive operation possible. */
+      ref_push_array(a);
+      a->type_field |= BIT_UNFINISHED;
+      for (e=0; e < a->size; e++)
+      {
+	assign_svalues_no_free(Pike_sp, argp, args, BIT_MIXED);
+	Pike_sp+=args;
+	/* FIXME: Don't throw apply errors from apply_svalue here. */
+	apply_svalue(ITEM(a)+e,args);
+	new_types |= 1 << Pike_sp[-1].type;
+	assign_svalue(ITEM(a)+e, &Pike_sp[-1]);
+	pop_stack();
+      }
+      a->type_field = new_types;
 #ifdef PIKE_DEBUG
-    array_check_type_field(aa);
+      array_check_type_field(a);
 #endif
+      stack_pop_n_elems_keep_top(args);
+    } else {
+      struct array *aa;
+      push_array(aa = allocate_array_no_init(0, a->size));
+      for (e=0; (e<a->size) && (e < aa->malloced_size); e++)
+      {
+	assign_svalues_no_free(Pike_sp, argp, args, BIT_MIXED);
+	Pike_sp+=args;
+	/* FIXME: Don't throw apply errors from apply_svalue here. */
+	apply_svalue(ITEM(a)+e,args);
+	new_types |= 1 << Pike_sp[-1].type;
+	assign_svalue_no_free(ITEM(aa)+e, &Pike_sp[-1]);
+	aa->size = e+1;
+	pop_stack();
+      }
+      aa->type_field = new_types;
+#ifdef PIKE_DEBUG
+      array_check_type_field(aa);
+#endif
+    }
     stack_pop_n_elems_keep_top(args);
   }
   else {
