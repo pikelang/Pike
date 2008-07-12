@@ -1,12 +1,12 @@
 /*
  * This is part of the Postgres module for Pike.
  *
- * $Id: postgres.pike,v 1.32 2008/07/05 11:17:45 srb Exp $
+ * $Id: postgres.pike,v 1.33 2008/07/12 11:17:16 srb Exp $
  *
  */
 
 //! This is an interface to the Postgres (Postgres95, pgsql) database
-//! server. This module may or may not be availible on your Pike,
+//! server. This module may or may not be available on your Pike,
 //! depending whether the appropriate include and library files could
 //! be found at compile-time. Note that you @b{do not@} need to have a
 //! Postgres server running on your host to use this module: you can
@@ -93,7 +93,7 @@ private string has_relexpires = "unknown";
 //! a variety of reasons, for example to detect the status of a connection.
 //!
 //! @note
-//! This function is Postgres-specific, and thus it is not availible
+//! This function is Postgres-specific, and thus it is not available
 //! through the generic SQL-interface.
 
 //! @decl string version
@@ -204,7 +204,7 @@ protected void poll (int delay)
 //! The polling cycle can be run only if your process is in "event-driven mode"
 //! (that is, if 'main' has returned a negative number).
 //!
-//! This function is Postgres-specific, and thus it is not availible
+//! This function is Postgres-specific, and thus it is not available
 //! through the generic SQL-interface.
 //!
 //! @fixme
