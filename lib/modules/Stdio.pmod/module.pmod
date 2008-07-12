@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.238 2008/06/28 16:37:00 nilsson Exp $
+// $Id: module.pmod,v 1.239 2008/07/12 11:17:47 srb Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -1619,6 +1619,12 @@ class FILE
   {
     bpos=0;  b=""; cached_lines = ({});
     return file::seek(pos);
+  }
+
+  int(-1..1) peek(void|int|float timeout)
+  {
+    if(sizeof(b)-bpos) return 1;
+    return file::peek(timeout);
   }
 
   int tell()
