@@ -1,5 +1,5 @@
 /*
- * $Id: sql_result.pike,v 1.18 2008/06/28 16:36:59 nilsson Exp $
+ * $Id: sql_result.pike,v 1.19 2008/07/12 11:17:30 srb Exp $
  *
  * Implements the generic result module of the SQL-interface
  *
@@ -56,7 +56,8 @@ array(mapping(string:mixed)) fetch_fields();
 //! @param skip
 //!   Number of rows to skip.
 void seek(int skip) {
-  if(skip<0) error("Skip argument not positive\n");
+  if(skip<0)
+    error("Cannot seek to negative result indices\n");
   while(skip--) {
     index++;
     master_res->fetch_row();
