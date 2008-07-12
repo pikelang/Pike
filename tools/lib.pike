@@ -163,7 +163,8 @@ string opt_path(string p1, string p2)
 }
 
 
-int silent_do_cmd(array(string) cmd, mixed|void filter, int|void silent)
+int silent_do_cmd(array(string) cmd, mixed|void filter, int|void silent,
+		  void|int no_fixpath)
 {
 //  werror("%O\n",cmd);
 
@@ -259,11 +260,8 @@ int silent_do_cmd(array(string) cmd, mixed|void filter, int|void silent)
 	  }
       }
 
-#if 1
-      /* Experimental */
-      fix_paths_in_arglist (cmd);
-#endif
-      
+      if (!no_fixpath) fix_paths_in_arglist (cmd);
+
 	object o=f->pipe(Stdio.PROP_IPC);
 	object proc=Process.create_process(cmd,
 					   (["stdout":o,"env":env]));
@@ -306,7 +304,7 @@ int silent_do_cmd(array(string) cmd, mixed|void filter, int|void silent)
 	cmd=vars+cmd;
       }
 
-      fix_paths_in_arglist (cmd);
+      if (!no_fixpath) fix_paths_in_arglist (cmd);
       cmd = ({fixpath (getcwd())}) + cmd;
 
       if(!f->connect(getenv("NTHOST"),(int)getenv("NTPORT")))
@@ -536,9 +534,9 @@ string getntenv(string var)
 }
 
 
-int do_cmd(array(string) cmd, mixed|void filter)
+int do_cmd(array(string) cmd, mixed|void filter, void|int no_fixpath)
 {
-  return silent_do_cmd(cmd,filter);
+  return silent_do_cmd(cmd,filter, 0, no_fixpath);
 }
 
 string find_lib_location()
