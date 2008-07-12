@@ -428,6 +428,7 @@ int main(int argc, array(string) argv)
 
   if(output) rm(output);
 
+  foreach (libs; int i; string lib) libs[i] = fixpath (lib);
   array(string) cmd = ({ compiler }) + cflags + libs;
 
   switch(target)
@@ -506,7 +507,7 @@ int main(int argc, array(string) argv)
   if(verbose && target!="-")
   { 
     werror("   %s\n",cmd*" ");
-    ret=do_cmd(cmd);
+    ret=do_cmd(cmd, 0, 1);
   }else{
     int first_line=1;
     int forced_error=0;
@@ -570,7 +571,7 @@ int main(int argc, array(string) argv)
 			  if (channel == 2) werror (lines * "\n" + "\n");
 			  else write(lines*"\n" + "\n");
 			}
-		      },1);
+		      }, 1, 1);
     if (sizeof(trailer[0])) {
       // Shouldn't happen, but...
       write(trailer[0]);
