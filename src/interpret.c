@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.405 2008/07/13 15:18:28 grubba Exp $
+|| $Id: interpret.c,v 1.406 2008/07/13 15:23:16 grubba Exp $
 */
 
 #include "global.h"
@@ -1887,7 +1887,7 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 	safe_describe_svalue(s,0,0);
 	do_trace_call(args, &save_buf);
       }
-      apply_array(s->u.array, args, (type == APPLY_SVALUE_STRICT));
+      apply_array(s->u.array, args, (type == APPLY_STACK));
       break;
 
     case PIKE_T_TYPE:
