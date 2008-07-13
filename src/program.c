@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.733 2008/07/13 16:26:53 grubba Exp $
+|| $Id: program.c,v 1.734 2008/07/13 19:06:23 grubba Exp $
 */
 
 #include "global.h"
@@ -5120,34 +5120,23 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
     }else{
       struct identifier *id;
       id=ID_FROM_INT(Pike_compiler->new_program,n);
-      if(id->func.offset>=0)
-      {
-	struct pike_type *s;
-	/* I don't know why this function preferred to retain the
-	 * previously stored constant rather than using the one we get
-	 * now, but in combination with storing zeroes in pass 1, we
-	 * will be better off if we replace it. /mast */
-#if 0
-	struct svalue *c=&PROG_FROM_INT(Pike_compiler->new_program,n)->
-	  constants[id->func.offset].sval;
-#else
+      if(id->func.offset>=0) {
+	/* Update the stored constant. */
 	assign_svalue (&PROG_FROM_INT(Pike_compiler->new_program,n)->
 		       constants[id->func.offset].sval, c);
-#endif
-	s=get_type_of_svalue(c);
-	free_type(id->type);
-	id->type=s;
-      }
-      else {
-#if 1
-#ifdef PIKE_DEBUG
-	if (!c) Pike_fatal("Can't declare constant during second compiler pass\n");
-#endif
-#endif
-	free_type(id->type);
-	id->type = get_type_of_svalue(c);
+      } else {
 	id->run_time_type = c->type;
 	id->func.offset = store_constant(c, 0, 0);
+      }
+      free_type(id->type);
+      if ((c->type == T_INT) && !(flags & ID_INLINE)) {
+	if (c->u.integer) {
+	  copy_pike_type(id->type, int_type_string);
+	} else {
+	  copy_pike_type(id->type, zero_type_string);
+	}
+      } else {
+	id->type = get_type_of_svalue(c);
       }
 #ifdef PROGRAM_BUILD_DEBUG
       fprintf (stderr, "%.*sstored constant #%d at %d\n",
@@ -5178,7 +5167,15 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
 #if 1
   if (c) {
 #endif
-    dummy.type = get_type_of_svalue(c);
+    if ((c->type == T_INT) && !(flags & ID_INLINE)) {
+      if (c->u.integer) {
+	copy_pike_type(dummy.type, int_type_string);
+      } else {
+	copy_pike_type(dummy.type, zero_type_string);
+      }
+    } else {
+      dummy.type = get_type_of_svalue(c);
+    }
     dummy.run_time_type=c->type;
     dummy.func.offset=store_constant(c, 0, 0);
     dummy.opt_flags=OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND;
