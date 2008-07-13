@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.426 2008/07/09 20:43:46 mast Exp $
+|| $Id: las.c,v 1.427 2008/07/13 14:43:28 grubba Exp $
 */
 
 #include "global.h"
@@ -3815,7 +3815,7 @@ void fix_type_field(node *n)
       push_finished_type(CAR(n)->type);
       push_type(T_VOID);
       push_type(T_MANY);
-      push_finished_type(CDR(n)->type);
+      push_finished_type(CDR(n)?CDR(n)->type:mixed_type_string);
       push_type(T_FUNCTION);
       push_finished_type(CAR(n)->type);
       push_type(T_FUNCTION);
