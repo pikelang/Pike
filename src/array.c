@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.215 2008/07/13 15:18:29 grubba Exp $
+|| $Id: array.c,v 1.216 2008/07/13 15:55:37 grubba Exp $
 */
 
 #include "global.h"
@@ -2485,7 +2485,6 @@ PMOD_EXPORT void apply_array(struct array *a, INT32 args, int flags)
 #ifdef PIKE_DEBUG
       array_check_type_field(a);
 #endif
-      stack_pop_n_elems_keep_top(args);
     } else {
       struct array *aa;
       push_array(aa = allocate_array_no_init(0, a->size));
