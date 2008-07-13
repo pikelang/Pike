@@ -48,11 +48,11 @@ enum HeaderIdentifier {
 
 //! A flag for the @[REQ_SETPATH] command indicating that the
 //! parent directory should be selected
-constant SETPATH_BACKUP = 1;
+final constant SETPATH_BACKUP = 1;
 
 //! A flag for the @[REQ_SETPATH] command indicating that the
 //! selected directory should not be created if it doesn't exist
-constant SETPATH_NOCREATE = 2;
+final constant SETPATH_NOCREATE = 2;
 
 //! A set of request or response headers.  Each HI can be associated
 //! with either a single value (int or string, depending on the HI in
