@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.443 2008/07/13 10:49:36 grubba Exp $
+|| $Id: language.yacc,v 1.444 2008/07/13 10:50:22 grubba Exp $
 */
 
 %pure_parser
@@ -640,7 +640,7 @@ constant_name: TOK_IDENTIFIER '=' safe_expr0
       if (TEST_COMPAT(7, 6) &&
 	  (Pike_compiler->current_modifiers & ID_EXTERN) &&
 	  (Pike_compiler->compiler_pass == 1)) {
-	yyerror("Extern declared constant.");
+	yywarning("Extern declared constant.");
       }
       if(!is_const($3)) {
 	yyerror("Constant definition is not constant.");
