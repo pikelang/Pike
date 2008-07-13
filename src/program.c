@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.732 2008/07/09 20:42:25 mast Exp $
+|| $Id: program.c,v 1.733 2008/07/13 16:26:53 grubba Exp $
 */
 
 #include "global.h"
@@ -5154,16 +5154,20 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
 	       cc->compilation_depth, "",
 	       n, id->func.offset);
 #endif
-      return n;
     }
+    return n;
   }
 
 #ifdef PIKE_DEBUG
   if(Pike_compiler->new_program->flags & (PROGRAM_FIXED | PROGRAM_OPTIMIZED))
     Pike_fatal("Attempting to add constant to fixed program\n");
 
-  if(Pike_compiler->compiler_pass==2)
-    Pike_fatal("Internal error: Not allowed to add more identifiers during second compiler pass.\n");
+  if(Pike_compiler->compiler_pass==2) {
+    dump_program_tables(Pike_compiler->new_program, 2);
+    Pike_fatal("Internal error: Not allowed to add more identifiers during second compiler pass.\n"
+	       "                Attempted to add the identifier \"%s\"\n",
+	       name->str);
+  }
 #endif
 
   copy_shared_string(dummy.name, name);
