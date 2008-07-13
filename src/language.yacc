@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.442 2008/07/08 19:19:33 grubba Exp $
+|| $Id: language.yacc,v 1.443 2008/07/13 10:49:36 grubba Exp $
 */
 
 %pure_parser
@@ -609,60 +609,63 @@ constant_name: TOK_IDENTIFIER '=' safe_expr0
       Pike_compiler->compiler_pass=tmp;
     }
 
-    if ((Pike_compiler->current_modifiers & ID_EXTERN) &&
-	(Pike_compiler->compiler_pass == 1)) {
-      yywarning("Extern declared constant.");
-    }
-
-    if(!is_const($3))
-    {
-      /* FIXME: Adding symbols in the second pass is not a good idea. */
-      if(Pike_compiler->compiler_pass==2) {
-	int depth = 0;
-	struct program_state *state = Pike_compiler;
-	node *n = $3;
-	while (((n->token == F_COMMA_EXPR) || (n->token == F_ARG_LIST)) &&
-	       ((!CAR(n)) ^ (!CDR(n)))) {
-	  if (CAR(n)) n = CAR(n);
-	  else n = CDR(n);
-	}
-	if (n->token == F_EXTERNAL) {
-	  while (state && (state->new_program->id != n->u.integer.a)) {
-	    depth++;
-	    state = state->previous;
-	  }
-	}
-	if (depth && state) {
-	  /* Alias for a symbol in a surrounding scope. */
-	  int id = really_low_reference_inherited_identifier(state, 0,
-							     n->u.integer.b);
-	  define_alias($1->u.sval.u.string, n->type,
-		       Pike_compiler->current_modifiers & ~ID_EXTERN,
-		       depth, id);
-	} else {
-	  yyerror("Constant definition is not constant.");
-	}
-      } else
-	add_constant($1->u.sval.u.string, 0,
-		     Pike_compiler->current_modifiers & ~ID_EXTERN);
-    } else {
-      if(!Pike_compiler->num_parse_error)
-      {
-	ptrdiff_t tmp=eval_low($3,1);
-	if(tmp < 1)
-	{
-	  yyerror("Error in constant definition.");
-	  push_undefined();
-	}else{
-	  pop_n_elems(DO_NOT_WARN((INT32)(tmp - 1)));
-	}
-      } else {
-	push_undefined();
+    if (!TEST_COMPAT(7, 6) && (Pike_compiler->current_modifiers & ID_EXTERN)) {
+      int depth = 0;
+      struct program_state *state = Pike_compiler;
+      node *n = $3;
+      while (((n->token == F_COMMA_EXPR) || (n->token == F_ARG_LIST)) &&
+	     ((!CAR(n)) ^ (!CDR(n)))) {
+	if (CAR(n)) n = CAR(n);
+	else n = CDR(n);
       }
-      add_constant($1->u.sval.u.string, Pike_sp-1,
-		   Pike_compiler->current_modifiers & ~ID_EXTERN);
-      pop_stack();
+      if (n->token == F_EXTERNAL) {
+	while (state && (state->new_program->id != n->u.integer.a)) {
+	  depth++;
+	  state = state->previous;
+	}
+      }
+      if (depth && state) {
+	/* Alias for a symbol in a surrounding scope. */
+	int id = really_low_reference_inherited_identifier(state, 0,
+							   n->u.integer.b);
+	define_alias($1->u.sval.u.string, n->type,
+		     Pike_compiler->current_modifiers & ~ID_EXTERN,
+		     depth, id);
+      } else if (Pike_compiler->compiler_pass == 1) {
+	yyerror("Invalid extern declared constant.");
+	add_constant($1->u.sval.u.string, &svalue_undefined,
+		     Pike_compiler->current_modifiers & ~ID_EXTERN);
+      }
+    } else {
+      if (TEST_COMPAT(7, 6) &&
+	  (Pike_compiler->current_modifiers & ID_EXTERN) &&
+	  (Pike_compiler->compiler_pass == 1)) {
+	yyerror("Extern declared constant.");
+      }
+      if(!is_const($3)) {
+	yyerror("Constant definition is not constant.");
+	add_constant($1->u.sval.u.string, &svalue_undefined,
+		     Pike_compiler->current_modifiers & ~ID_EXTERN);
+      } else {
+	if(!Pike_compiler->num_parse_error)
+	{
+	  ptrdiff_t tmp=eval_low($3,1);
+	  if(tmp < 1)
+	  {
+	    yyerror("Error in constant definition.");
+	    push_undefined();
+	  }else{
+	    pop_n_elems(DO_NOT_WARN((INT32)(tmp - 1)));
+	  }
+	} else {
+	  push_undefined();
+	}
+	add_constant($1->u.sval.u.string, Pike_sp-1,
+		     Pike_compiler->current_modifiers & ~ID_EXTERN);
+	pop_stack();
+      }
     }
+  const_def_ok:
     if($3) free_node($3);
     free_node($1);
   }
