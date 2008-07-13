@@ -396,7 +396,7 @@ class Signal( string name )
   string pike_add( )
   {
     return "  add_string_constant( "+S("s_"+pike_name(),1,0,27)+", "+
-           S(pike_name(),1,0,27)+", 0 );\n";
+           S(pike_name(),1,0,27)+", ID_FINAL );\n";
   }
 
   protected string _sprintf(int fmt)
@@ -1396,11 +1396,11 @@ class Constant( string name, Type type, string file, int line )
     switch( type->name )
     {
      case "string":
-       return "  add_string_constant( "+S(pike_name(),1,0,30)+", "+name+", 0 );\n";
+       return "  add_string_constant( "+S(pike_name(),1,0,30)+", "+name+", ID_FINAL );\n";
      case "int":
-       return "  add_integer_constant( "+S(pike_name(),1,0,30)+", "+name+", 0 );\n";
+       return "  add_integer_constant( "+S(pike_name(),1,0,30)+", "+name+", ID_FINAL );\n";
      case "float":
-       return "  add_float_constant( "+S(pike_name(),1,0,30)+", "+name+", 0 );\n";
+       return "  add_float_constant( "+S(pike_name(),1,0,30)+", "+name+", ID_FINAL );\n";
      default:
        werror(file+":"+line+":\tCannot add constant of type %O\n",type);
        exit(1);

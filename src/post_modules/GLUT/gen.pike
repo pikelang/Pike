@@ -448,7 +448,7 @@ string gen()
       prot[f]+")\", OPT_SIDE_EFFECT);\n"
       "#endif\n";
   foreach(sort(indices(constants)), string co)
-    res += "  add_integer_constant(\""+co+"\", "+constants[co]+", 0);\n";
+    res += "  add_integer_constant(\""+co+"\", "+constants[co]+", ID_FINAL);\n";
   res += "  post_init();\n";
   res += "}\n";
   return res;

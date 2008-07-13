@@ -494,7 +494,7 @@ string gen()
 	    co, val, val & ~0x7fffffff);
     else
       res += "  add_integer_constant(\""+co+"\", "+
-	(string)val+", 0);\n";
+	(string)val+", ID_FINAL);\n";
   }
   res += "  post_init();\n";
   res += "}\n";

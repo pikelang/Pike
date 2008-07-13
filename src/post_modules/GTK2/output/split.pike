@@ -112,7 +112,7 @@ protected void build_pike_fadds( Class cls, int lvl )
       res += ("  "+glue_c_name(cls->c_name())+"_program = end_program();\n"
 	      "  "+glue_c_name(cls->c_name())+"_program->id = "+cls->class_id()+";\n");
       res += ("  add_program_constant("+S(cls->pike_name(),1,0,26)+",\n"
-	      "                       "+glue_c_name(cls->c_name())+"_program, 0);\n");
+	      "                       "+glue_c_name(cls->c_name())+"_program, ID_FINAL);\n");
 //      predef::write("pike_name==%s\n",cls->pike_name());
 /*
       string str=S(cls->pike_name(),1,0,26);

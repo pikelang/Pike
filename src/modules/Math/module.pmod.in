@@ -4,10 +4,10 @@
 
 inherit @module@;
 
-constant deg_turn = 360;
-constant rad_turn = 2.0*pi;
-constant gon_turn = 400;
-constant str_turn = 6300;
+final constant deg_turn = 360;
+final constant rad_turn = 2.0*pi;
+final constant gon_turn = 400;
+final constant str_turn = 6300;
 
 //! This function converts between degrees, radians and gons. The
 //! @[from] and @[to] arguments may be any of the follwoing

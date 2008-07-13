@@ -1,5 +1,5 @@
 /*
- * $Id: rijndaeltest.pike,v 1.4 2008/01/04 11:53:12 grubba Exp $
+ * $Id: rijndaeltest.pike,v 1.5 2008/07/13 13:53:47 marcus Exp $
  *
  * Test Crypto.aes against the official test-vectors.
  *
@@ -7,14 +7,14 @@
  */
 
 // Read the raw vectors.
-constant raw_cbc_d_m = #string "rijndael_cbc_d_m.txt";
-constant raw_cbc_e_m = #string "rijndael_cbc_e_m.txt";
-// constant raw_ecb_d_m = #string "rijndael_ecb_d_m.txt";
-constant raw_ecb_e_m = #string "rijndael_ecb_e_m.txt";
-// constant raw_ecb_iv = #string "rijndael_ecb_iv.txt";
-constant raw_ecb_tbl = #string "rijndael_ecb_tbl.txt";
-// constant raw_ecb_vk = #string "rijndael_ecb_vk.txt";
-// constant raw_ecb_vt = #string "rijndael_ecb_vt.txt";
+final constant raw_cbc_d_m = #string "rijndael_cbc_d_m.txt";
+final constant raw_cbc_e_m = #string "rijndael_cbc_e_m.txt";
+// final constant raw_ecb_d_m = #string "rijndael_ecb_d_m.txt";
+final constant raw_ecb_e_m = #string "rijndael_ecb_e_m.txt";
+// final constant raw_ecb_iv = #string "rijndael_ecb_iv.txt";
+final constant raw_ecb_tbl = #string "rijndael_ecb_tbl.txt";
+// final constant raw_ecb_vk = #string "rijndael_ecb_vk.txt";
+// final constant raw_ecb_vt = #string "rijndael_ecb_vt.txt";
 
 int tests;
 

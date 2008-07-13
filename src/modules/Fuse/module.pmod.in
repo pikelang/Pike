@@ -29,43 +29,43 @@ class Operations
 //! functions have a default implementation that returns -ENOIMPL.
 {
     //! Unkown directory entry type
-    constant DT_UNKNOWN = 0;
+    final constant DT_UNKNOWN = 0;
 
     //! FIFO directory entry
-    constant DT_FIFO = 1;
+    final constant DT_FIFO = 1;
 
     //! Character special directory entry
-    constant DT_CHR = 2;
+    final constant DT_CHR = 2;
     
     //! Directory directory entry
-    constant DT_DIR = 4;
+    final constant DT_DIR = 4;
 
     //! Block special directory entry
-    constant DT_BLK = 6;
+    final constant DT_BLK = 6;
 
     //! Normal file directory entry
-    constant DT_REG = 8;
+    final constant DT_REG = 8;
 
     //! Symlink directory entry
-    constant DT_LNK = 10;
+    final constant DT_LNK = 10;
 
     //! Socket directory entry
-    constant DT_SOCK = 12;
+    final constant DT_SOCK = 12;
 
     //! Open for append 
-    constant O_APPEND=02000;
+    final constant O_APPEND=02000;
 
     //! Mask for read/write/rdwr
-    constant O_ACCMODE=3;
+    final constant O_ACCMODE=3;
 
     //! Open read only
-    constant O_RDONLY=0;
+    final constant O_RDONLY=0;
 
     //! Open write only
-    constant O_WRONLY=1;
+    final constant O_WRONLY=1;
 
     //! Open read/write only
-    constant O_RDWR=2;
+    final constant O_RDWR=2;
 
     //! Stat a file.
     //! @note 

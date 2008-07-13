@@ -1,8 +1,8 @@
 #!/usr/local/bin/pike
 
-/* $Id: sendfiletest.pike,v 1.11 2007/06/19 18:52:41 mast Exp $ */
+/* $Id: sendfiletest.pike,v 1.12 2008/07/13 13:53:46 marcus Exp $ */
 
-constant TEST_SIZE = 16384;
+final constant TEST_SIZE = 16384;
 
 string testdata = random_string(TEST_SIZE);
 

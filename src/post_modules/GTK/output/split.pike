@@ -103,7 +103,7 @@ protected void build_pike_fadds( Class cls, int lvl )
       res += ("  p"+cls->c_name()+"_program = end_program();\n"
 	      "  p"+cls->c_name()+"_program->id = "+cls->class_id()+";\n");
       res += ("  add_program_constant("+S(cls->pike_name(),1,0,26)+",\n"
-              "                       p"+cls->c_name()+"_program, 0);\n");
+              "                       p"+cls->c_name()+"_program, ID_FINAL);\n");
     }
     res += "}\n\n";
     toplevel += res;

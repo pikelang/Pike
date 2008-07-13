@@ -4,7 +4,7 @@
 #include <regexp.h>
 
 #if constant(_Regexp_PCRE._pcre)
-constant PCRE=_Regexp_PCRE; // Regexp.PCRE
+final constant PCRE=_Regexp_PCRE; // Regexp.PCRE
 #endif
 
 inherit @module@;

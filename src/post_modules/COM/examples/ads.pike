@@ -1,4 +1,4 @@
-constant ADSTYPE_CASE_IGNORE_STRING = 3;
+final constant ADSTYPE_CASE_IGNORE_STRING = 3;
 
 int main(int argc, array(string) argv)
 {

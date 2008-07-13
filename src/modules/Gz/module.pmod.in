@@ -1,4 +1,4 @@
-// $Id: module.pmod.in,v 1.17 2008/06/28 17:07:19 nilsson Exp $
+// $Id: module.pmod.in,v 1.18 2008/07/13 13:53:46 marcus Exp $
 #pike __REAL_VERSION__
 
 inherit @module@;
@@ -15,9 +15,9 @@ class _file {
   protected private string read_buf;
   protected private int file_pos, crc, write_mode, at_eof;
 
-  constant SEEK_SET = 0;
-  constant SEEK_CUR = 1;
-  constant SEEK_END = 2;
+  final constant SEEK_SET = 0;
+  final constant SEEK_CUR = 1;
+  final constant SEEK_END = 2;
 
   protected int check_header(string|void buf)
   {
