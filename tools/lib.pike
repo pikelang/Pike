@@ -2,6 +2,12 @@
 #define strerror(X) X
 #endif
 
+#if 0
+#define PATH_MAP_MSG(X...) werror (X)
+#else
+#define PATH_MAP_MSG(X...)
+#endif
+
 #ifdef __NT__
 void exece(string cmd, array(string) args)
 {
@@ -115,6 +121,7 @@ array(array(string)) get_pathmap()
 	  if (has_suffix (mnt, "/")) mnt = mnt[..sizeof (mnt) - 2];
 	  drv = replace (drv, "/", "\\");
 	  if (has_suffix (drv, "\\")) drv = drv[..sizeof (drv) - 2];
+	  PATH_MAP_MSG ("Path map: %O -> %O\n", mnt, drv);
 	  pathmap += ({({mnt, drv})});
 	}
 	else
@@ -128,12 +135,15 @@ array(array(string)) get_pathmap()
 
 string fixpath(string s)
 {
+  PATH_MAP_MSG ("fixpath: %O -> ", s);
   s=follow_symlinks(s);
+  PATH_MAP_MSG ("%O -> ", s);
   foreach (get_pathmap(), [string mnt, string drv])
     if (s == mnt || has_prefix (s, mnt) && s[sizeof (mnt)] == '/') {
       s = drv + replace (s[sizeof (mnt)..], "/", "\\");
       break;
     }
+  PATH_MAP_MSG ("%O\n", s);
   return s;
 }
 
@@ -147,6 +157,7 @@ void fix_paths_in_arglist (array(string) args)
 		     arg[i + sizeof (mnt)] == '/')) {
 	args[e] = arg[..i - 1] + drv +
 	  replace (arg[i + sizeof (mnt)..], "/", "\\");
+	PATH_MAP_MSG ("Fixed path in arg: %O -> %O\n", arg, args[e]);
 	break;
       }
     }
@@ -282,9 +293,7 @@ int silent_do_cmd(array(string) cmd, mixed|void filter, int|void silent,
     case 0:
     case "sprsh":
     case "SPRSH":
-      if(string tmp=getenv("REMOTE_VARIABLES"))
-      {
-	array vars=({"__handles_stderr=1"});
+      array vars=({"__handles_stderr=1"});
 
 	/* This is somewhat experimental - Hubbe */
 	if(!silent &&
@@ -298,11 +307,13 @@ int silent_do_cmd(array(string) cmd, mixed|void filter, int|void silent,
 	  vars+=({ "TERM=dumb" });
 	}
 
+      if(string tmp=getenv("REMOTE_VARIABLES"))
+      {
 	foreach(tmp/"\n",string var)
 	  if(search(var,"=")!=-1)
 	    vars+=({var});
-	cmd=vars+cmd;
       }
+      cmd=vars+cmd;
 
       if (!no_fixpath) fix_paths_in_arglist (cmd);
       cmd = ({fixpath (getcwd())}) + cmd;
