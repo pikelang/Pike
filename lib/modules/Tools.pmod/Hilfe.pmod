@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.161 2008/07/14 23:47:39 mbaehr Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.162 2008/07/14 23:50:39 mbaehr Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -2563,8 +2563,7 @@ class StdinHilfe
     string input = readline->gettext()[..readline->getcursorpos()-1];
     mixed error = catch
     {
-      tokens = Parser.Pike.group(Parser.Pike.split(input)[..<1]);
-                // drop the linebreak token that split appends 
+      tokens = tokenize(input);
     };
     if (error || !tokens || !sizeof(tokens))
       return;
@@ -2586,8 +2585,7 @@ class StdinHilfe
 
     mixed error = catch
     {
-      tokens = Parser.Pike.group(Parser.Pike.split(input)[..<1]);
-                // drop the linebreak token that split appends 
+      tokens = tokenize(input);
     };
 
     if(error)
@@ -2677,6 +2675,21 @@ class StdinHilfe
       else
         readline->list_completions(completions);
     }
+  }
+
+  array tokenize(string input)
+  {
+      array tokens = Parser.Pike.split(input);
+      if (variables->DEBUG_COMPLETIONS)
+          readline->message(sprintf("\n\ntokenize(%O): %O\n\n", input, tokens));
+      // drop the linebreak that split appends 
+      if (tokens[-1] == "\n")
+        tokens = tokens[..<1];
+      else if (tokens[-1][-1] == '\n')
+        tokens[-1] = tokens[-1][..<1];
+
+      tokens = Parser.Pike.group(tokens);
+      return tokens;
   }
 
   array|string get_file_completions(string path)
@@ -2779,6 +2792,8 @@ class StdinHilfe
 
       if (base && !sizeof(completable))
       {
+        if (space)
+          return (array)infix;
         if (type == "autodoc")
             return ({ reftypes[base->objtype||base->objects[0]->objtype]||"" });
         if (objectp(base))
@@ -2848,7 +2863,10 @@ class StdinHilfe
       {
           if (type == "autodoc" 
               && typeof_token(completable[0]) == "argumentgroup")
-            return ({ reftypes->object });
+            if (space)
+              return (array)infix;
+            else
+              return ({ reftypes->object });
           if (reference[completable[0]])
             return modules;
           // FIXME: handle non-string indices better
