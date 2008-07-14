@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.160 2008/07/14 23:44:43 mbaehr Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.161 2008/07/14 23:47:39 mbaehr Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -2418,7 +2418,7 @@ array(object|array(string)) resolv(Evaluator e, array completable, void|object b
   {
     object newbase;
     if (reference[completable[0]] && sizeof(completable) > 1)
-      return resolv(e, completable[1..], base, type);
+      return resolv(e, completable[1..], base);
     if (type == "autodoc")
     {
       if (typeof_token(completable[0]) == "symbol"
@@ -2551,6 +2551,9 @@ class StdinHilfe
         break;
     }
 
+    // keep the last whitespace
+    if (typeof_token(tokens[-1]) == "whitespace")
+      completable = ({ " " }) + completable;
     return reverse(completable);
   }
 
@@ -2560,7 +2563,8 @@ class StdinHilfe
     string input = readline->gettext()[..readline->getcursorpos()-1];
     mixed error = catch
     {
-      tokens = Parser.Pike.group(Parser.Pike.split(input));
+      tokens = Parser.Pike.group(Parser.Pike.split(input)[..<1]);
+                // drop the linebreak token that split appends 
     };
     if (error || !tokens || !sizeof(tokens))
       return;
@@ -2582,7 +2586,8 @@ class StdinHilfe
 
     mixed error = catch
     {
-      tokens = Parser.Pike.group(Parser.Pike.split(input));
+      tokens = Parser.Pike.group(Parser.Pike.split(input)[..<1]);
+                // drop the linebreak token that split appends 
     };
 
     if(error)
@@ -2619,7 +2624,8 @@ class StdinHilfe
       else if (!tokens || !sizeof(tokens))
         completions = sort(indices(master()->root_module)) + sort(indices(base_objects(this)));
         // FIXME: base_objects should not be sorted like this
-      else
+
+      if (!completions)
       {
         string token = tokens[-1];
         if( sizeof(tokens) >= 2 && typeof_token(token) == "whitespace" )
@@ -2727,12 +2733,23 @@ class StdinHilfe
     array rest = completable;
     object base; 
     string type;
+    int(0..1) space;
+
+    if (!completable)
+      completable = ({});
+
+    if (completable[-1]==' ')
+    {
+      space = true;
+      completable = completable[..<1];
+    }
+    
     if (sizeof(completable) > 1)
       [base, rest, type] = resolv(this, completable);
 
     if (variables->DEBUG_COMPLETIONS)
       safe_write(sprintf("get_module_completions(%O): %O, %O, %O\n", completable, base, rest, type));
-    array completions = low_get_module_completions(rest, base, type);
+    array completions = low_get_module_completions(rest, base, type, space);
     if (sizeof(completions) == 1)
       return completions[0];
     else
@@ -2747,10 +2764,14 @@ class StdinHilfe
                      "method":"(",
                      "class":"(",
                    ]);
-  array low_get_module_completions(array completable, object base, void|string type)
+
+  array low_get_module_completions(array completable, object base, void|string type, void|int(0..1) space)
   {
       if (variables->DEBUG_COMPLETIONS)
-        safe_write(sprintf("low_get_module_completions(%O\n, %O, %O)\n", completable, base, type));
+        safe_write(sprintf("low_get_module_completions(%O\n, %O, %O, %O)\n", completable, base, type, space));
+
+      if (!completable)
+        completable = ({});
 
       mapping other = ([]);
       array modules = ({});
@@ -2769,7 +2790,7 @@ class StdinHilfe
         else if (programp(base))
           return ({ reftypes->program });
         else
-          return ({ " " });
+          return (array)infix;
       }
 
       if (!base && sizeof(completable) && completable[0] == ".")
@@ -2837,7 +2858,7 @@ class StdinHilfe
           string module;
 
           if (prefix == completable[0] && sizeof(modules)>1 && (base[prefix]||other[prefix]))
-            return modules + low_get_module_completions(({}), base[prefix]||other[prefix], type);
+            return modules + low_get_module_completions(({}), base[prefix]||other[prefix], type, space);
 
           prefix = prefix[sizeof(completable[0])..];
           if (sizeof(prefix))
@@ -2865,14 +2886,14 @@ class StdinHilfe
                 type = "module";
             }
 
-            return low_get_module_completions(({}), thismodule, type);
+            return low_get_module_completions(({}), thismodule, type, space);
           }
       }
 
-      if (sizeof(completable))
+      if (completable && sizeof(completable))
       {
           if ( (< "reference", "argumentgroup" >)[typeof_token(completable[0])])
-            return low_get_module_completions(completable[1..], base, type||reference[completable[0]]);
+            return low_get_module_completions(completable[1..], base, type||reference[completable[0]], space);
           else
             safe_write(sprintf("UNHANDLED CASE: completable: %O\nbase: %O\n", completable, base));
       }
