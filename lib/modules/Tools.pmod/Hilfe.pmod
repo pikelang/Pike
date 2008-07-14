@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.157 2008/07/14 23:39:18 mbaehr Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.158 2008/07/14 23:41:03 mbaehr Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -2731,7 +2731,11 @@ class StdinHilfe
 
     if (variables->DEBUG_COMPLETIONS)
       safe_write(sprintf("get_module_completions(%O): %O, %O, %O\n", completable, base, rest, type));
-    return low_get_module_completions(rest, base, type);
+    array completions = low_get_module_completions(rest, base, type);
+    if (sizeof(completions) == 1)
+      return completions[0];
+    else
+      return completions;
   }
 
   mapping reftypes = ([ "module":".", 
@@ -2742,8 +2746,7 @@ class StdinHilfe
                      "method":"(",
                      "class":"(",
                    ]);
-
-  array|string|object low_get_module_completions(array completable, object base, void|string type)
+  array low_get_module_completions(array completable, object base, void|string type)
   {
       if (variables->DEBUG_COMPLETIONS)
         safe_write(sprintf("low_get_module_completions(%O\n, %O, %O)\n", completable, base, type));
@@ -2754,17 +2757,17 @@ class StdinHilfe
       if (base && !sizeof(completable))
       {
         if (type == "autodoc")
-            return reftypes[base->objtype||base->objects[0]->objtype]||"";
+            return ({ reftypes[base->objtype||base->objects[0]->objtype]||"" });
         if (objectp(base))
-          return reftypes[type||"object"];
+          return ({ reftypes[type||"object"] });
         if (mappingp(base))
-          return reftypes->object;
+          return ({ reftypes->object });
         else if(functionp(base))
-          return reftypes->function;
+          return ({ reftypes->function });
         else if (programp(base))
-          return reftypes->program;
+          return ({ reftypes->program });
         else
-          return " ";
+          return ({ " " });
       }
 
       if (!base && sizeof(completable) && completable[0] == ".")
@@ -2777,7 +2780,7 @@ class StdinHilfe
               return (modules[0]/".")[0][sizeof(completable[1])..];
             string prefix = String.common_prefix(modules)[sizeof(completable[1])..];
             if (prefix)
-              return prefix;
+              return ({ prefix });
 
             if (sizeof(completable) == 2)
               return modules;
@@ -2822,17 +2825,21 @@ class StdinHilfe
       {
           if (type == "autodoc" 
               && typeof_token(completable[0]) == "argumentgroup")
-            return reftypes->object;
+            return ({ reftypes->object });
           if (reference[completable[0]])
             return modules;
           // FIXME: handle non-string indices better
           modules = sort((array(string))modules);
           modules = Array.filter(modules, has_prefix, completable[0]);
-          string prefix = String.common_prefix(modules)[sizeof(completable[0])..];
+          string prefix = String.common_prefix(modules);
           string module;
 
+          if (prefix == completable[0] && sizeof(modules)>1 && base[prefix])
+            return modules - completable + low_get_module_completions(({}), base[prefix], type);
+
+          prefix = prefix[sizeof(completable[0])..];
           if (sizeof(prefix))
-            return prefix;
+            return ({ prefix });
 
           if (sizeof(modules)>1)
             return modules;
