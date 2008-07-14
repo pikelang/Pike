@@ -25,12 +25,14 @@
 //#define DEBUGMORE  1
 
 #ifdef DEBUG
-#define PD(X ...)    werror(X)
+#define PD(X ...)     werror(X)
 #define UNBUFFEREDIO  1		    // Make all IO unbuffered
 #else
 #undef DEBUGMORE
 #define PD(X ...)
 #endif
+//#define NO_LOCKING  1		    // This breaks the driver, do not enable,
+				    // only for benchmarking mutex performance
 
 #define FETCHLIMIT           1024   // Initial upper limit on the
 				    // number of rows to fetch across the
@@ -52,7 +54,7 @@
 #define MARKERROR            ">>>>"	      // foldeditors from recognising
 #define MARKEND              "\n}""}""}""}"   // it as a fold
 
-#define ERROR(X ...)	     predef::error
+#define ERROR(X ...)	     predef::error(X)
 
 pgsql_result _portal;
 int _nextportal;
@@ -1397,7 +1399,11 @@ private int copyinprogress;
 int _fetchlimit;
 
 private mapping tprepared;
+#ifdef NO_LOCKING
+int _qmtxkey;
+#else
 Thread.MutexKey _qmtxkey;
+#endif
 
 string query;
 string _portalname;
@@ -1512,6 +1518,7 @@ inline private array(mixed) getdatarow() {
 }
 
 private void steallock() {
+#ifndef NO_LOCKING
   PD("Going to steal oldportal %d\n",!!pgsqlsession._portal);
   Thread.MutexKey stealmtxkey = stealmutex.lock();
   do
@@ -1536,6 +1543,10 @@ private void steallock() {
       break;
     }
   while(!(_qmtxkey=querymutex.trylock()));
+#else
+  PD("Skipping lock\n");
+  _qmtxkey=1;
+#endif
   pgsqlsession._portal=this;
   PD("Stealing successful\n");
 }
@@ -1550,7 +1561,9 @@ int|array(string|int) fetch_row(void|int|string buffer) {
       releasesession();
     return UNDEFINED;
   }
+#ifndef NO_LOCKING
   Thread.MutexKey fetchmtxkey = fetchmutex.lock();
+#endif
   if(!buffer && sizeof(_datarows))
     return getdatarow();
   mixed err;
