@@ -565,8 +565,13 @@ o Parser.XML.Tree
 
 o Postgres
 
-  FIXME
   Added affected_rows.
+  Made big_query() streaming.
+  Added streaming_query() alias to indicate support.
+  Support bindings natively on big_query().
+  Automatic binary or text transfer for queryarguments and resultrows.
+  Return correct UNDEFINED instead of 0 values for NULL values in resultsets.
+  Fix raceconditions.
 
 o Pike
 
