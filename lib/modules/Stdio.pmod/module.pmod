@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.240 2008/07/12 11:18:07 srb Exp $
+// $Id: module.pmod,v 1.241 2008/07/14 08:49:02 srb Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -1617,7 +1617,7 @@ class FILE
 
   int seek(int pos)
   {
-    bpos=0;  b=""; cached_lines = ({});
+    bpos=0;  b=""; cached_lines = ({}); lp=0;
     return file::seek(pos);
   }
 
