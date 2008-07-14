@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.163 2008/07/14 23:55:27 mbaehr Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.164 2008/07/14 23:59:13 mbaehr Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -881,6 +881,9 @@ private constant modifier = (< "extern", "final", "inline", "local", "nomask",
 			       "optional", "private", "protected", "public",
 			       "static", "variant" >);
 
+private constant types = (< "string", "int", "float", "array", "mapping",
+                            "multiset", "mixed", "object", "program" >);
+
 // infix token may appear between two literals
 private constant infix = (< "!=", "%", "%=", "&", "&=", "*", "*=", 
                             "+", "+=", ",", "-", "-=", 
@@ -888,13 +891,13 @@ private constant infix = (< "!=", "%", "%=", "&", "&=", "*", "*=",
                             "<", "<<", "<<=", "<=", "==", 
                             ">", ">=", ">>", ">>=", 
                             "^", "^=", "|", "|=", "~", "~=", 
-                            "&&", "||", "=", "(", "[" >);
+                            "&&", "||", "=", ".." >);
 
 // before literal but not after 
-private constant prefix = (< "!", "@", "(", "({", "([", "(<", "[" >);
+private constant prefix = (< "!", "@", "(", "({", "([", "(<", "[", "{", "<", ">" >);
 
 // after literal but not before
-private constant postfix = (< ")", "})", "])", ">)", "]" >);
+private constant postfix = (< ")", "})", "])", ">)", "]", "}" >);
 
 // before or after literal but not between
 private constant prepostfix = (< "--", "++" >);
@@ -902,9 +905,9 @@ private constant prepostfix = (< "--", "++" >);
 // between two expressions
 private constant seperator = (< "?", ":", ",", ";" >);
 
-private constant reference = ([ ".":"module", "->":"object" ]);
+private constant reference = ([ ".":"module", "->":"object", "[":"array" ]);
 
-private constant group = ([ "(":")", "({":"})", "([":"])", "(<":">)", "[":"]" ]);
+private constant group = ([ "(":")", "({":"})", "([":"])", "(<":">)", "[":"]", "{":"}" ]);
 
 // Symbols not valid in type expressions.
 // All of the above except ".", "|", "&" and "~".
