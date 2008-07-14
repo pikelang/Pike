@@ -123,6 +123,9 @@ o Improved support for mixin.
 
   The Pike compiler now supports mixin for symbols that have been
   declared static.
+  
+  FIXME: Explain in one or two sentences what a mixin is and what it's
+  good for.
 
 o Implicit and explicit create().
 
@@ -194,6 +197,10 @@ o __func__
 
     error("Error in " __func__ ".\n");
 
+o __dir__
+
+  FIXME
+
 o #pragma {no_,}deprecation_warnings
 
   Warnings for use of deprecated symbols can be turned off for a
@@ -241,7 +248,7 @@ o sprintf() and sscanf()
     formatting types of objects and programs.
 
   - The new formatting directive %H can be used to format a string as
-    a binary holertih string.
+    a binary hollerith string.
 
       > sprintf("%2H", "Hello");
       (1) Result: "\0\5Hello"
