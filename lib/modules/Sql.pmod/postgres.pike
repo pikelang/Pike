@@ -1,7 +1,7 @@
 /*
  * This is part of the Postgres module for Pike.
  *
- * $Id: postgres.pike,v 1.33 2008/07/12 11:17:16 srb Exp $
+ * $Id: postgres.pike,v 1.34 2008/07/14 11:36:00 srb Exp $
  *
  */
 
@@ -424,6 +424,17 @@ int|object big_query(object|string q, mapping(string|int:mixed)|void bindings)
     q=replace(q,from[..rep],to[..rep]);
   }
   return ::big_query(q, paramValues);
+}
+
+//! This is an alias for @[big_query()], since @[big_query()] already supports
+//! streaming.
+//!
+//! @seealso
+//!   @[big_query], @[Sql.Sql], @[Sql.sql_result]
+int|object streaming_query(object|string q,
+ mapping(string|int:mixed)|void bindings)
+{
+  return big_query(q, bindings);
 }
 
 #else
