@@ -2,7 +2,7 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.190 2008/07/14 19:14:31 mast Exp $
+// $Id: install.pike,v 1.191 2008/07/14 19:20:56 mast Exp $
 
 #define USE_GTK
 
@@ -2038,7 +2038,9 @@ int pre_install(array(string) argv)
 				   u->release,
 				   u->machine);
       }
-      export_base_name = replace(export_base_name, ([ "/":"-", " ":"-" ]));
+      export_base_name = (replace(export_base_name, (["/": "-", "?": ""]))
+			  / " " - ({""})
+			 ) * "-";
 #else
       export_base_name = ver;
 #endif
