@@ -709,6 +709,16 @@ o Sql
 
       Sql.Sql db = Sql.Sql("sqlite://path/to/file");
 
+  - Sql.pgsql.  New driver for native PostgreSQL network protocol support.
+    It implements a superset of the existing Postgres driver.
+    Current features: no library dependencies (no libpq), native binding
+    support, streaming support, NOTIFY/LISTEN support (fully eventdriven,
+    no polling), binary support for integer, float and string datatypes,
+    COPY FROM/TO STDIN/STDOUT support, multiple simultaneous streaming queries
+    on the same connection (i.e. multiple PostgreSQL-portal-support),
+    automatic precompilation and caching of often-used
+    long-compile-time-needing queries, extended columndescriptions.
+
   FIXME: mysql
 
 o SSL
