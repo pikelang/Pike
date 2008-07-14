@@ -1,1 +1,19 @@
+START_MARKER
+dnl tests for Shuffler module
 
+cond([[ Shuffler.Shuffle ]],
+[[
+
+test_any([[
+    Stdio.File f = Stdio.File()->pipe();
+    Shuffler.Shuffle sf = Shuffler.Shuffler()->shuffle( f );
+    sf->set_done_callback( lambda() { sf->stop(); } );
+    sf->start();
+
+    Pike.DefaultBackend( 1.0 );
+    return "nosegfault";
+]],"nosegfault")
+
+]])
+
+END_MARKER
