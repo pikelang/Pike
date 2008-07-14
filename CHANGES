@@ -762,6 +762,9 @@ o Stdio
 
   - Stdio.File->openat() opens a file relative to an open directory.
 
+  - Stdio.FILE->unread() allows pushing back binary strings into the
+    input stream, as opposed to ungets() which pushes back lines.
+
 o String
 
   - The function int2size has been rewritten to fixpoint as well as

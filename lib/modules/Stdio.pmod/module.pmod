@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.241 2008/07/14 08:49:02 srb Exp $
+// $Id: module.pmod,v 1.242 2008/07/14 09:12:13 srb Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -1830,7 +1830,7 @@ class FILE
   //! input conversion.
   //!
   //! @seealso
-  //!   @[Stdio.File()->read()], @[set_charset()]
+  //!   @[Stdio.File()->read()], @[set_charset()], @[unread()]
   string read(int|void bytes,void|int(0..1) now)
   {
     if (!query_num_arg()) {
@@ -1867,9 +1867,9 @@ class FILE
   //! can then be read with eg @[read()], @[gets()] or @[getchar()].
   //!
   //! @seealso
-  //! @[read()], @[gets()], @[getchar()]
+  //! @[read()], @[gets()], @[getchar()], @[ungets()]
   //!
-  void unget(string s)
+  void unread(string s)
   {
     cached_lines = ({});
     lp = 0;
@@ -1884,7 +1884,7 @@ class FILE
   //!   The string is autoterminated by an extra line-feed.
   //!
   //! @seealso
-  //! @[read()], @[gets()], @[getchar()]
+  //! @[read()], @[gets()], @[getchar()], @[unread()]
   //!
   void ungets(string s)
   {
