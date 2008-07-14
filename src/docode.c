@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.c,v 1.202 2008/06/30 13:47:23 mast Exp $
+|| $Id: docode.c,v 1.203 2008/07/14 21:39:20 grubba Exp $
 */
 
 #include "global.h"
@@ -458,7 +458,9 @@ static int do_lfun_call(int id, node *args)
    *
    * * Check if id is an alternate reference to the current function.
    *
-   * * Check that the function isn't varargs.
+   * * Check that the function isn't varargs or contains scoped functions.
+   *
+   * * Check that the current function doesn't contain scoped functions.
    */
   if((Pike_compiler->compiler_frame->current_function_number >= 0) &&
      ((id == Pike_compiler->compiler_frame->current_function_number) ||
@@ -467,9 +469,10 @@ static int do_lfun_call(int id, node *args)
 	Pike_compiler->new_program->
 	identifier_references[Pike_compiler->compiler_frame->
 			      current_function_number].identifier_offset))) &&
-     (!(Pike_compiler->new_program->
-	identifiers[ref->identifier_offset].identifier_flags &
-	IDENTIFIER_VARARGS)))
+     !(Pike_compiler->new_program->
+       identifiers[ref->identifier_offset].identifier_flags &
+       (IDENTIFIER_VARARGS|IDENTIFIER_SCOPE_USED)) &&
+     !(Pike_compiler->compiler_frame->lexical_scope & SCOPE_SCOPE_USED))
   {
     int n=count_args(args);
     if(n == Pike_compiler->compiler_frame->num_args)
