@@ -175,11 +175,12 @@ Process spawn_pike(array(string) argv, void|mapping(string:mixed) options)
 //!
 //! @example
 //!   Process.run( ({ "ls", "-l" }) );
-//!   Process.run( ({ "ls -l" }) );
 //!   Process.run( ({ "ls", "-l" }), ([ "cwd":"/etc" ]) );
+//!   Process.run( "ls -l" );
+//!   Process.run( "awk -F: '{print $2}'", ([ "stdin":"foo:2\nbar:17\n" ]) );
 mapping run(string|array(string) cmd, void|mapping modifiers)
 {
-  string gotstdout="", gotstderr="";
+  string gotstdout="", gotstderr="", stdin_str;
   int exitcode;
 
   if(!modifiers)
@@ -192,10 +193,25 @@ mapping run(string|array(string) cmd, void|mapping modifiers)
   Stdio.File mystdout = Stdio.File(); 
   Stdio.File mystderr = Stdio.File();
 
-  object p = Process(cmd, modifiers + ([ 
-                       "stdout":mystdout->pipe(),
-                       "stderr":mystderr->pipe(),
-                     ]));
+  object p;
+  if(modifiers->stdin && stringp(modifiers->stdin))
+  {
+    Stdio.File mystdin = Stdio.File();
+    stdin_str = modifiers->stdin;
+    p = Process(cmd, modifiers + ([ 
+                  "stdout":mystdout->pipe(),
+                  "stderr":mystderr->pipe(),
+                  "stdin":mystdin->pipe(Stdio.PROP_IPC|Stdio.PROP_REVERSE)
+                ]));
+    Shuffler.Shuffle sf = Shuffler.Shuffler()->shuffle( mystdin );
+    sf->add_source(stdin_str);
+    sf->start();
+  }
+  else
+    p = Process(cmd, modifiers + ([ 
+                  "stdout":mystdout->pipe(),
+                  "stderr":mystderr->pipe(),
+                ]));
 
 #if constant(Thread.Thread)
   array readthreads = ({
@@ -203,6 +219,10 @@ mapping run(string|array(string) cmd, void|mapping modifiers)
       thread_create( lambda() { gotstderr = mystderr->read(); } )
     });
   
+  
+  if(stdin_str)
+    while( !p->status() || p->status() == 1 )
+      Pike.DefaultBackend( 1.0 );
   exitcode = p->wait();
   readthreads->wait();
 #else //No threads, use callbacks
@@ -213,7 +233,7 @@ mapping run(string|array(string) cmd, void|mapping modifiers)
                                  gotstderr += data;
                                } );
 
-  while( !p->status() ) // FIXME: What about "1" as in stopped?
+  while( !p->status() || p->status() == 1 )
     Pike.DefaultBackend( 1.0 );
 
   mystdout->set_read_callback(0);
