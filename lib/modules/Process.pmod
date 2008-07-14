@@ -154,6 +154,9 @@ Process spawn_pike(array(string) argv, void|mapping(string:mixed) options)
 //!   the exception of stdout and stderr. Since the point of this 
 //!   function is to handle those you can not supply your own.
 //!
+//!   If modifiers->stdin is set to a string it will automaticly be
+//!   converted to a pipe that is fed to stdin of the started process.
+//!
 //! @seealso
 //!   @[Process.Process] @[create_process]
 //!
