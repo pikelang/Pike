@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.158 2008/07/14 23:41:03 mbaehr Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.159 2008/07/14 23:42:44 mbaehr Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -2398,7 +2398,7 @@ array(object|array(string)) resolv(Evaluator e, array completable, void|object b
     }
   }
 
-  if (!base)
+  if (!base && sizeof(completable) > 1)
   {
     if (completable[0] == "master" && sizeof(completable) >=2
         && typeof_token(completable[1]) == "argumentgroup")
@@ -2724,10 +2724,11 @@ class StdinHilfe
 
   array|string get_module_completions(array completable)
   {
+    array rest = completable;
     object base; 
-    array rest;
     string type;
-    [base, rest, type] = resolv(this, completable);
+    if (sizeof(completable) > 1)
+      [base, rest, type] = resolv(this, completable);
 
     if (variables->DEBUG_COMPLETIONS)
       safe_write(sprintf("get_module_completions(%O): %O, %O, %O\n", completable, base, rest, type));
@@ -2750,7 +2751,8 @@ class StdinHilfe
   {
       if (variables->DEBUG_COMPLETIONS)
         safe_write(sprintf("low_get_module_completions(%O\n, %O, %O)\n", completable, base, type));
-      mapping other;
+
+      mapping other = ([]);
       array modules = ({});
       mixed error;
 
@@ -2818,7 +2820,7 @@ class StdinHilfe
         error = Error.mkerror(error);
       }
 
-      if (other)
+      if (sizeof(other))
         modules += indices(other);
 
       if (sizeof(completable) == 1)
@@ -2834,8 +2836,8 @@ class StdinHilfe
           string prefix = String.common_prefix(modules);
           string module;
 
-          if (prefix == completable[0] && sizeof(modules)>1 && base[prefix])
-            return modules - completable + low_get_module_completions(({}), base[prefix], type);
+          if (prefix == completable[0] && sizeof(modules)>1 && (base[prefix]||other[prefix]))
+            return modules + low_get_module_completions(({}), base[prefix]||other[prefix], type);
 
           prefix = prefix[sizeof(completable[0])..];
           if (sizeof(prefix))
