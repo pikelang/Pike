@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.162 2008/07/14 23:50:39 mbaehr Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.163 2008/07/14 23:55:27 mbaehr Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -2897,8 +2897,11 @@ class StdinHilfe
               thismodule = other[module];
               type = "object";
             }
-            else if (base[module])
+            else if (intp(base[module]) || floatp(base[module]) || stringp(base[module]) )
+              return (array)infix;
+            else 
             {
+              // FIXME: need to check if thismodule is something indexable
               thismodule = base[module];
               if (!type)
                 type = "module";
