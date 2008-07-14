@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.445 2008/07/13 15:44:31 grubba Exp $
+|| $Id: language.yacc,v 1.446 2008/07/14 08:13:31 grubba Exp $
 */
 
 %pure_parser
@@ -1254,7 +1254,7 @@ modifier:
   | TOK_STATIC     { $$ = ID_PROTECTED; }
   | TOK_EXTERN     { $$ = ID_EXTERN; }
   | TOK_OPTIONAL   { $$ = ID_OPTIONAL; }
-  | TOK_PRIVATE    { $$ = ID_PRIVATE | ID_PROTECTED; }
+  | TOK_PRIVATE    { $$ = ID_PRIVATE | ID_PROTECTED | ID_INLINE; }
   | TOK_LOCAL_ID   { $$ = ID_INLINE; }
   | TOK_PUBLIC     { $$ = ID_PUBLIC; }
   | TOK_PROTECTED  { $$ = ID_PROTECTED; }
