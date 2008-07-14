@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.156 2008/06/28 16:37:00 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.157 2008/07/14 23:39:18 mbaehr Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -2414,7 +2414,7 @@ array(object|array(string)) resolv(Evaluator e, array completable, void|object b
     return ({ 0, completable, type });
   }
 
-  if (sizeof(completable))
+  if (sizeof(completable) > 1)
   {
     object newbase;
     if (reference[completable[0]] && sizeof(completable) > 1)
@@ -2657,7 +2657,7 @@ class StdinHilfe
         readline->message(sprintf("%s\nAn error occured, attempting to complete your input!\nPlease include the backtrace above and the lines below in your report:\ninput: %s\ntokens: %O\ncompletable: %O\n", error->describe(), input, tokens, completable, ));
       }
       else if (variables->DEBUG_COMPLETIONS)
-        readline->message(sprintf("input: %s\ntokens: %O\ncompletable: %O\n", input, tokens, completable, ));
+        readline->message(sprintf("input: %s\ntokens: %O\ncompletable: %O\ncompletions: %O\n", input, tokens, completable, completions));
     }
 
     handler->show_errors();
