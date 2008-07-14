@@ -2115,6 +2115,22 @@ class FILE
     bpos=0;
   }
 
+  private protected final int getchar_get_data()
+  {
+    b = "";
+    bpos=0;
+    return low_get_data();
+  }
+
+  private protected final void getchar_updatelinecache()
+  {
+    if(sizeof(cached_lines)>lp+1 && sizeof(cached_lines[lp]))
+      cached_lines = ({cached_lines[lp][1..]}) + cached_lines[lp+1..];
+    else
+      cached_lines = ({});
+    lp=0;
+  }
+
   //! This function returns one character from the input stream.
   //!
   //! @returns
@@ -2123,16 +2139,13 @@ class FILE
   //! @note
   //!   Returns an @expr{int@} and not a @expr{string@} of length 1.
   //!
-  int getchar()
+  inline int getchar()
   {
-    if(sizeof(b) - bpos <= 0 && !get_data())
+    if(sizeof(b) - bpos <= 0 && !getchar_get_data())
       return -1;
 
-    if(sizeof(cached_lines)>lp+1 && sizeof(cached_lines[lp]))
-      cached_lines = ({cached_lines[lp][1..]}) + cached_lines[lp+1..];
-    else
-      cached_lines = ({});
-    lp=0;
+    if(sizeof(cached_lines))
+      getchar_updatelinecache();
 
     return b[bpos++];
   }
