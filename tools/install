@@ -1,4 +1,5 @@
-#!/usr/local/bin/pike
+#!/usr/bin/env pike
+// -*- pike -*-
 
 inherit "lib.pike";
 

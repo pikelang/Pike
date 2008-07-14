@@ -1,4 +1,4 @@
-#!/usr/local/bin/pike
+#!/usr/bin/env pike
 // -*- Pike -*-
 
 // RNTCC, a front-end to WatCOM C/C++ with options similar to GCC
@@ -346,7 +346,7 @@ int main(int argc, array(string) argv)
   {
     rm(output);
     Stdio.write_file(output,
-		     "#!/usr/local/bin/pike\n"
+		     "#!/usr/bin/env pike\n"
 		     "inherit \""+find_lib_location()+"\";\n"
 		     "int main(int argc, array(string) argv) {\n"
 		     "  argv[0]=fixpath(combine_path(getcwd(),argv[0])+\".exe\");\n"

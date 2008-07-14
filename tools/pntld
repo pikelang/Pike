@@ -1,4 +1,4 @@
-#!/usr/local/bin/pike
+#!/usr/bin/env pike
 // -*- Pike -*-
 
 // Partial linker for COFF files, written by Fredrik Hubinette 2000 - 2001
@@ -1094,7 +1094,7 @@ int main(int argc, array(string) argv)
   string output="a.out";
 //  werror("%O\n",argv);
   werror("Pike Win32 partial linker.\n"
-	 "$Id: pntld,v 1.23 2003/11/21 16:04:22 grubba Exp $\n"
+	 "$Id: pntld,v 1.24 2008/07/14 14:03:26 mast Exp $\n"
 	 "Written by Fredrik Hubinette 2000 - 2001\n");
 
   foreach(Getopt.find_all_options(argv,aggregate(

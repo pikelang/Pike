@@ -602,7 +602,7 @@ int main(int argc, array(string) argv)
   {
     rm(output);
     Stdio.write_file(output,
-		     "#!/usr/local/bin/pike\n"
+		     "#!/usr/bin/env pike\n"
 		     "inherit \""+find_lib_location()+"\";\n"
 		     "int main(int argc, array(string) argv) {\n"
 		     "  if (lower_case(getenv(\"CROSSCOMPILING\")||\"no\") != \"no\")\n"
