@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.159 2008/07/14 23:42:44 mbaehr Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.160 2008/07/14 23:44:43 mbaehr Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -2642,10 +2642,10 @@ class StdinHilfe
             if (group[token])
               completions += ({ group[token] }) ;
             break;
-          case "infix":
           case "postfix":
             completions += (array)postfix;
             break;
+          case "infix":
           case "seperator":
           default:
             completions += (array)prefix;
