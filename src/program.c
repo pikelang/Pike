@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.734 2008/07/13 19:06:23 grubba Exp $
+|| $Id: program.c,v 1.735 2008/07/14 11:49:10 grubba Exp $
 */
 
 #include "global.h"
@@ -4643,6 +4643,8 @@ int low_define_alias(struct pike_string *name, struct pike_type *type,
   dummy.total_time=0;
 #endif
 
+  if (flags & ID_PRIVATE) flags |= ID_INLINE;
+
   ref.id_flags=flags;
   ref.identifier_offset=Pike_compiler->new_program->num_identifiers;
   ref.inherit_offset=0;
@@ -4771,6 +4773,8 @@ int low_define_variable(struct pike_string *name,
 #endif
 
   if (run_time_type == PIKE_T_FREE) dummy.func.offset = -1;
+
+  if (flags & ID_PRIVATE) flags |= ID_INLINE;
 
   ref.id_flags=flags;
   ref.identifier_offset=Pike_compiler->new_program->num_identifiers;
@@ -5190,6 +5194,8 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
     dummy.opt_flags=0;
   }
 #endif
+
+  if (flags & ID_PRIVATE) flags |= ID_INLINE;
 
   ref.id_flags=flags;
   ref.identifier_offset=Pike_compiler->new_program->num_identifiers;
@@ -5677,6 +5683,8 @@ INT32 define_function(struct pike_string *name,
       debug_add_to_identifiers(fun);
     }
 
+    if (flags & ID_PRIVATE) flags |= ID_INLINE;
+
     ref.inherit_offset = 0;
     ref.id_flags = flags;
     if ((overridden = override_identifier (&ref, name)) >= 0) {
@@ -5751,6 +5759,8 @@ INT32 define_function(struct pike_string *name,
 
     debug_add_to_identifiers(fun);
 
+    if (flags & ID_PRIVATE) flags |= ID_INLINE;
+
     ref.id_flags = flags;
     ref.identifier_offset = i;
     ref.inherit_offset = 0;
@@ -5795,7 +5805,7 @@ int add_ext_ref(struct program_state *state, struct program *target, int i)
       return j;
     }
   }
-  ref.id_flags = ID_PARENT_REF|ID_PROTECTED|ID_PRIVATE|ID_HIDDEN;
+  ref.id_flags = ID_PARENT_REF|ID_PROTECTED|ID_PRIVATE|ID_HIDDEN|ID_INLINE;
   ref.identifier_offset = i;
   ref.inherit_offset = 0;
   add_to_identifier_references(ref);
@@ -7719,6 +7729,11 @@ static void run_init(struct compilation *c)
 
 static void run_init2(struct compilation *c)
 {
+#if 0
+  int i;
+  struct program *p;
+  struct reference *refs;
+#endif /* 0 */
   debug_malloc_touch(c);
   Pike_compiler->compiler = c;
 
@@ -7739,6 +7754,18 @@ static void run_init2(struct compilation *c)
 
   if(c->major>=0)
     change_compiler_compatibility(c->major, c->minor);
+
+#if 0
+  /* Make all inherited private symbols that weren't overloaded
+   * in the first pass local.
+   */
+  p = c->new_program;
+  i = p->num_identifier_references;
+  refs = p->identifier_references;
+  while (i--) {
+    if (refs[i].id_flags & ID_PRIVATE) refs[i].id_flags |= ID_INLINE;
+  }
+#endif /* 0 */
 }
 
 static void run_exit(struct compilation *c)
