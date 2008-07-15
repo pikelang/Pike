@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.428 2008/07/14 21:44:25 grubba Exp $
+|| $Id: las.c,v 1.429 2008/07/15 09:05:07 grubba Exp $
 */
 
 #include "global.h"
@@ -53,6 +53,7 @@ extern char *get_type_name(int);
 
 int car_is_node(node *n)
 {
+  if (!_CAR(n)) return 0;
   switch(n->token)
   {
   case F_EXTERNAL:
@@ -66,12 +67,13 @@ int car_is_node(node *n)
     return 0;
 
   default:
-    return !!_CAR(n);
+    return 1;
   }
 }
 
 int cdr_is_node(node *n)
 {
+  if (!_CDR(n)) return 0;
   switch(n->token)
   {
   case F_EXTERNAL:
@@ -85,7 +87,7 @@ int cdr_is_node(node *n)
     return 0;
 
   default:
-    return !!_CDR(n);
+    return 1;
   }
 }
 
@@ -359,7 +361,7 @@ struct pike_type *find_return_type(node *n)
 int check_tailrecursion(void)
 {
   int e;
-  if (Pike_compiler->compiler_frame->lexical_scope & SCOPE_SCOPE_USED)) {
+  if (Pike_compiler->compiler_frame->lexical_scope & SCOPE_SCOPE_USED) {
     /* There might be a lambda around that has references to the old context
      * in which case we can't reuse it with a tail-recursive call.
      */
