@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.164 2008/07/14 23:59:13 mbaehr Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.165 2008/07/15 00:03:04 mbaehr Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -2626,7 +2626,7 @@ class StdinHilfe
         completions = sort(indices(master()->root_module)) + sort(indices(base_objects(this)));
         // FIXME: base_objects should not be sorted like this
 
-      if (!completions)
+      if (!completions || !sizeof(completions))
       {
         string token = tokens[-1];
         if( sizeof(tokens) >= 2 && typeof_token(token) == "whitespace" )
@@ -2642,20 +2642,22 @@ class StdinHilfe
         {
           case "symbol":
           case "literal":
-            completions = (array)(infix+postfix+seperator);
+          case "postfix":
+            completions = (array)(infix+seperator);
             break;
           case "prefix":
-            completions += (array)prefix;
-            if (group[token])
-              completions += ({ group[token] }) ;
-            break;
-          case "postfix":
-            completions += (array)postfix;
-            break;
           case "infix":
           case "seperator":
           default:
             completions += (array)prefix;
+        }
+        foreach(reverse(tokens);; string token)
+        {
+            if (group[token])
+            {
+              completions += ({ group[token] }) ;
+              break;
+            }
         }
       }
 
@@ -2872,6 +2874,9 @@ class StdinHilfe
               return ({ reftypes->object });
           if (reference[completable[0]])
             return modules;
+          if (!stringp(completable[0]))
+            return ({});
+
           // FIXME: handle non-string indices better
           modules = sort((array(string))modules);
           modules = Array.filter(modules, has_prefix, completable[0]);
