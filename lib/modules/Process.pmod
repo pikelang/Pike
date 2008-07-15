@@ -154,7 +154,7 @@ Process spawn_pike(array(string) argv, void|mapping(string:mixed) options)
 //!   the exception of stdout and stderr. Since the point of this 
 //!   function is to handle those you can not supply your own.
 //!
-//!   If modifiers->stdin is set to a string it will automaticly be
+//!   If @expr{modifiers->stdin@} is set to a string it will automaticly be
 //!   converted to a pipe that is fed to stdin of the started process.
 //!
 //! @seealso
@@ -195,20 +195,18 @@ mapping run(string|array(string) cmd, void|mapping modifiers)
 
   Stdio.File mystdout = Stdio.File(); 
   Stdio.File mystderr = Stdio.File();
+  Stdio.File mystdin;
 
   object p;
-  if(modifiers->stdin && stringp(modifiers->stdin))
+  if(stringp(modifiers->stdin))
   {
-    Stdio.File mystdin = Stdio.File();
+    mystdin = Stdio.File();
     stdin_str = modifiers->stdin;
     p = Process(cmd, modifiers + ([ 
                   "stdout":mystdout->pipe(),
                   "stderr":mystderr->pipe(),
                   "stdin":mystdin->pipe(Stdio.PROP_IPC|Stdio.PROP_REVERSE)
                 ]));
-    Shuffler.Shuffle sf = Shuffler.Shuffler()->shuffle( mystdin );
-    sf->add_source(stdin_str);
-    sf->start();
   }
   else
     p = Process(cmd, modifiers + ([ 
@@ -217,17 +215,19 @@ mapping run(string|array(string) cmd, void|mapping modifiers)
                 ]));
 
 #if constant(Thread.Thread)
-  array readthreads = ({
+  array threads = ({
       thread_create( lambda() { gotstdout = mystdout->read(); } ),
       thread_create( lambda() { gotstderr = mystderr->read(); } )
     });
-  
-  
-  if(stdin_str)
-    while( !p->status() || p->status() == 1 )
-      Pike.DefaultBackend( 1.0 );
+
+  if (mystdin) {
+    threads += ({
+      thread_create(lambda() { mystdin->write(stdin_str); } )
+    });
+  }
+
   exitcode = p->wait();
-  readthreads->wait();
+  threads->wait();
 #else //No threads, use callbacks
   mystdout->set_read_callback( lambda( mixed i, string data) { 
                                  gotstdout += data; 
@@ -235,6 +235,12 @@ mapping run(string|array(string) cmd, void|mapping modifiers)
   mystderr->set_read_callback( lambda( mixed i, string data) {
                                  gotstderr += data;
                                } );
+
+  if (mystdin) {
+    Shuffler.Shuffle sf = Shuffler.Shuffler()->shuffle( mystdin );
+    sf->add_source(stdin_str);
+    sf->start();
+  }
 
   while( !p->status() || p->status() == 1 )
     Pike.DefaultBackend( 1.0 );
