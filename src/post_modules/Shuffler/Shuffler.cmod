@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: Shuffler.cmod,v 1.46 2008/06/28 22:53:07 nilsson Exp $
+|| $Id: Shuffler.cmod,v 1.47 2008/07/15 09:23:30 grubba Exp $
 */
 
 #include "global.h"
@@ -332,10 +332,10 @@ PIKECLASS Shuffle
     if(t->box.fd >= 0) {
       push_int( t->box.fd );
       unhook_fd_callback_box(&t->box);
+      t->box.fd = -1;
       if(t->file_obj)
         safe_apply(t->file_obj, "take_fd", 1 );
       pop_stack();
-      THIS->box.fd = -1;
     }
     
     debug_malloc_touch( t->box.ref_obj );
@@ -349,6 +349,10 @@ PIKECLASS Shuffle
       SHUFFLE_DEBUG3("_all_done(%d): Calling done callback: %p\n", t,
 		    reason, t->done_callback.u.object);
       push_svalue( &t->done_callback );
+
+      /* Ensure us only calling the callback once. */
+      free_svalue(&t->done_callback);
+      mark_free_svalue(&t->done_callback);
       
       ref_push_object( t->box.ref_obj );
       push_int( reason );
