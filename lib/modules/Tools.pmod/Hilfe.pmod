@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.165 2008/07/15 00:03:04 mbaehr Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.166 2008/07/15 00:06:46 mbaehr Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -18,6 +18,7 @@ constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
   method to Readline.History and calling it from StdinHilfe's
   destroy.
 - Add some better multiline edit support.
+- Improve doc command to get documentation from c-code.
 ";
 
 // The Big To Do:
@@ -309,7 +310,12 @@ private class CommandExit {
 
 private class CommandDoc {
   inherit Command;
-  string help(string what) { return "Show documentation for pike modules and classes."; }
+  string help(string what) 
+  { 
+    return #"Show documentation for pike modules and classes.
+Documentation for the symbol before the cursor is also accessible 
+by pressing F1."; 
+  }
 
   void exec(Evaluator e, string line, array(string) words,
 	    array(string) tokens) 
@@ -400,8 +406,8 @@ Rewritten by Martin Nilsson 2002
     e->print_version();
     write( #"Hilfe is a tool to evaluate Pike code interactively and
 incrementally. Any Pike function, expression or variable declaration
-can be entered at the command line. There are also a few extra
-commands:
+can be entered at the command line. Tab completion is also available.
+There are also a few extra commands:
 
 ");
 
@@ -3101,6 +3107,9 @@ constant documentation_help_me_more =
 typing help followed by the name of the command, e.g. \"help dump\".
 Commands clobbered by e.g. variable declarations can be reached by
 prefixing a dot to the command, e.g. \".exit\".
+
+Tab completion works on modules, global and local symbols and operators.
+Within quotes completion is offered for files and directories.
 
 A history of the last returned results is kept and can be accessed
 from your hilfe expressions with the variable __. You can either

@@ -812,6 +812,14 @@ o System
     REAL_TIME_IMPLEMENTATION constants to singal the system
     capabilities.
 
+o Tools.Hilfe
+
+  - Added support for tab-completion on modules, global and local symbols and
+    operators.
+  - Added support for file/directory completion within strings
+  - Added doc command and F1 key to print documentation on anitem if available
+    (currently only works for modules and classes written in pike)
+
 o Tools
 
   FIXME
