@@ -2,7 +2,7 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.191 2008/07/14 19:20:56 mast Exp $
+// $Id: install.pike,v 1.192 2008/07/15 22:39:27 mast Exp $
 
 #define USE_GTK
 
@@ -2765,11 +2765,13 @@ the PRIVATE_CRT stuff in install.pike.\n");
 	low_install_file(unpack_master,
 			 combine_path(prefix, "build/master.pike"));
       } else {
+#if 0
 	unpack_master = "unpack_master.pike";
 	make_master(unpack_master, master_src, "lib", "include/pike",
 		    UNDEFINED, cflags, ldflags);
 	low_install_file(unpack_master,
 			 combine_path(prefix, "lib/master.pike"));
+#endif
 	low_install_file(combine_path(vars->SRCDIR,
 				      "../packaging/windows/pike.ico"),
 			 combine_path(prefix, "lib/pike.ico"));
