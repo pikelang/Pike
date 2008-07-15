@@ -2,7 +2,17 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.193 2008/07/15 22:42:56 mast Exp $
+// $Id: install.pike,v 1.194 2008/07/15 23:24:46 mast Exp $
+
+// Windows installer FIXMEs:
+//
+// o  Want version in the title that gets entered into the Windows
+//    installed programs list (but not e.g. for the install dir).
+// o  Add cleanup rule for the generated master.pike for uninstall.
+// o  Pike icon for the .msi file and in the installed programs list.
+// o  Remove "IDA" from the install path.
+// o  Remove meaningless "please click next" dialog.
+// o  Include dumped files.
 
 #define USE_GTK
 
@@ -24,6 +34,8 @@
 constant pike_upgrade_guid = "6e40542b-dcfc-49fc-ad8a-b0f978e2935e";
 
 constant line_feed = Standards.XML.Wix.line_feed;
+constant WixNode = Standards.XML.Wix.WixNode;
+constant Directory = Standards.XML.Wix.Directory;
 
 string version_str = sprintf("%d.%d.%d",
 			     __REAL_MAJOR__,
@@ -211,9 +223,6 @@ void status_clear(void|int all)
     status(0,"");
     status(0,"");
 }
-
-constant WixNode = Standards.XML.Wix.WixNode;
-constant Directory = Standards.XML.Wix.Directory;
 
 #ifdef GENERATE_WIX_UI
 
@@ -1201,7 +1210,7 @@ void do_export()
 			  "Value":"[PIKE_TARGETDIR]",
 			  "Execute":"immediate",
 			])))->
-      add_child(Standards.XML.Wix.line_feed)->
+      add_child(line_feed)->
       add_child(WixNode("CustomAction", ([
 			  "Id":"FinalizePike",
 			  "BinaryKey":"PikeInstaller",
@@ -1211,24 +1220,24 @@ void do_export()
 			  "Execute":"deferred",
 			  "Impersonate": "no",
 			])))->
-      add_child(Standards.XML.Wix.line_feed)->
+      add_child(line_feed)->
       add_child(WixNode("Binary", ([
 			  "Id":"PikeInstaller",
 			  "src":"PikeWin32Installer.vbs",
 			])))->
-      add_child(Standards.XML.Wix.line_feed)->
+      add_child(line_feed)->
       add_child(WixNode("InstallExecuteSequence", ([]), "\n")->
 		add_child(WixNode("Custom", ([
 				    "Action":"SetFinalizePike",
 				    "After":"WriteRegistryValues",
 				  ]), "REMOVE=\"\""))->
-		add_child(Standards.XML.Wix.line_feed)->
+		add_child(line_feed)->
 		add_child(WixNode("Custom", ([
 				    "Action":"FinalizePike",
 				    "After":"SetFinalizePike",
 				  ]), "REMOVE=\"\""))->
-		add_child(Standards.XML.Wix.line_feed))->
-      add_child(Standards.XML.Wix.line_feed);
+		add_child(line_feed))->
+      add_child(line_feed);
 
     create_file("Pike_module.wxs", xml_root->render_xml());
 
@@ -2118,6 +2127,7 @@ int pre_install(array(string) argv)
 		lib_prefix, include_prefix, UNDEFINED, cflags, ldflags);
     status1("Installing master done.");
     return 0;
+
   case "--wix":
 #ifdef SUPPORT_WIX
     export = 1; // Only to get plain messages from status() etc.
@@ -2139,8 +2149,7 @@ int pre_install(array(string) argv)
 string add_msm (Directory root, string msm_glob, string descr,
 		void|string targetdir, void|string language)
 {
-  if (string pike_build_root = getenv ("PIKE_BUILD_ROOT")) {
-    string msm_dir = combine_path (pike_build_root, "msm");
+  if (string msm_dir = getenv ("CRT_MSM_PATH")) {
     string msm_file;
 
     if (Stdio.is_dir (msm_dir)) {
@@ -2150,20 +2159,24 @@ string add_msm (Directory root, string msm_glob, string descr,
 	if (glob (msm_glob, lower_case (file)))
 	  files += ({file});
       switch (sizeof (files)) {
-	case 1: msm_file = files[0]; break;
-	case 2..: error_msg ("Warning: More than one msm for %s found:\n"
-			     "%{  %s\n%}",
-			     descr, map (files,
-					 lambda (string file) {
-					   return combine_path (msm_dir, file);
-					 }));
+	case 1:
+	  msm_file = files[0];
+	  break;
+	case 2..:
+	  error_msg ("Warning: More than one msm for %s found:\n"
+		     "%{  %s\n%}",
+		     descr, map (files,
+				 lambda (string file) {
+				   return combine_path (msm_dir, file);
+				 }));
+	  return 0;
       }
     }
 
     if (!msm_file) {
       error_msg ("Warning: No file found matching %s - "
 		 "the msm for %s won't be included.\n",
-		 combine_path (pike_build_root, msm_glob), descr);
+		 combine_path (msm_dir, msm_glob), descr);
       return 0;
     }
 
@@ -2172,11 +2185,12 @@ string add_msm (Directory root, string msm_glob, string descr,
       msm_file[..sizeof (msm_file) - 5] : msm_file;
     root->merge_module (".", combine_path (msm_dir, msm_file),
 			id, targetdir || "TARGETDIR", language);
+    status ("Adding merge module", combine_path (msm_dir, msm_file));
     return id;
   }
 
   else {
-    error_msg ("Warning: PIKE_BUILD_ROOT not set - can't find msm for %s.\n",
+    error_msg ("Warning: CRT_MSM_PATH not set - can't find msm for %s.\n",
 	       descr);
     return 0;
   }
@@ -2185,8 +2199,6 @@ string add_msm (Directory root, string msm_glob, string descr,
 // Create a versioned root wix file that installs Pike_module.msm.
 void make_wix()
 {
-  status("Creating", "Pike.wxs");
-
   Directory root = Directory("SourceDir",
 			     Standards.UUID.UUID(version_guid)->encode(),
 			     "TARGETDIR");
@@ -2242,24 +2254,37 @@ void make_wix()
     //
     // NB: This ought to be in Pike_module.wxs, but merge modules cannot
     // contain merge modules
+
+    string crt_arch;
+    mapping(string:mixed) u = uname();
+    if (u->sysname && has_prefix (u->sysname, "Win"))
+      // We're running on windows (presumably we're using the pike
+      // which is being packaged) so we can look up the arch from
+      // the uname data.
+      crt_arch = (["i86pc": "x86", "amd64": "x86_x64"])[uname()->machine];
+    if (!crt_arch)
+      // Probably not running on windows. Use a "*" glob to pick up
+      // whatever the build environment has got in $CRT_MSM_PATH.
+      crt_arch = "*";
+
     if (string id =
-	add_msm (root, "microsoft_*_crt_*.msm",
+	add_msm (root, "microsoft_*_crt_" + crt_arch + ".msm",
 		 "MS CRT", 0, "0"))
       feature_node->add_child (WixNode ("MergeRef", (["Id": id])))
 		  ->add_child (line_feed);
     if (string id =
-	add_msm (root, "policy_*_microsoft_*_crt_*.msm",
+	add_msm (root, "policy_*_microsoft_*_crt_" + crt_arch + ".msm",
 		 "MS CRT policy", 0, "0"))
       feature_node->add_child (WixNode ("MergeRef", (["Id": id])))
 		  ->add_child (line_feed);
     if (include_crt == "debug") {
       if (string id =
-	  add_msm (root, "microsoft_*_debugcrt_*.msm",
+	  add_msm (root, "microsoft_*_debugcrt_" + crt_arch + ".msm",
 		   "MS debug CRT", 0, "0"))
 	feature_node->add_child (WixNode ("MergeRef", (["Id": id])))
 		    ->add_child (line_feed);
       if (string id =
-	  add_msm (root, "policy_*_microsoft_*_debugcrt_*.msm",
+	  add_msm (root, "policy_*_microsoft_*_debugcrt_" + crt_arch + ".msm",
 		   "MS debug CRT policy", 0, "0"))
 	feature_node->add_child (WixNode ("MergeRef", (["Id": id])))
 		    ->add_child (line_feed);
