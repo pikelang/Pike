@@ -2,7 +2,7 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.192 2008/07/15 22:39:27 mast Exp $
+// $Id: install.pike,v 1.193 2008/07/15 22:42:56 mast Exp $
 
 #define USE_GTK
 
@@ -93,19 +93,21 @@ int istty()
 
 void status1(string fmt, mixed ... args)
 {
-  status_clear();
+  if (!export) {
+    status_clear();
 #ifdef USE_GTK
-  if(label1)
-  {
-    label7->set_text(sprintf(fmt,@args)-"\n");
-    GTK.flush();
-    return;
-  }
+    if(label1)
+    {
+      label7->set_text(sprintf(fmt,@args)-"\n");
+      GTK.flush();
+      return;
+    }
 #endif
 
-  // Ugly thing, but status_clear does not indent in non-tty mode...
-  if(!istty())
-    write("   ");
+    // Ugly thing, but status_clear does not indent in non-tty mode...
+    if(!istty())
+      write("   ");
+  }
 
   write(fmt+"\n", @args);
 }
@@ -158,6 +160,14 @@ void fail(string fmt, mixed ... args)
 void status(string doing, void|string file, string|void msg)
 {
   if(!file) file="";
+
+  if (export) {
+    if(msg) file+=" "+msg;
+    if(doing) file=doing+": "+file;
+    if (file != "") write (file + "\n");
+    return;
+  }
+
 #ifdef USE_GTK
   if(label1)
   {
@@ -990,7 +1000,7 @@ void create_file(string dest, string content)
     return;
   }
   Stdio.write_file(dest, content);
-  status("Creating", dest, "done");
+  if (!export) status("Creating", dest, "done");
 }
 
 string stripslash(string s)
@@ -1155,8 +1165,6 @@ void do_export()
 {
   if (export == 2) {
 #ifdef SUPPORT_WIX
-    status("Creating", "Pike_module.wxs");
-
     // Minimize the number of src directives.
     root->set_sources();
 
@@ -1682,9 +1690,9 @@ done
 			     parts[0],
   }) ) ->wait();
 
+  status1("Export done");
 #endif
   }
-  status1("Export done");
 
   exit(0);
 }
@@ -2045,7 +2053,7 @@ int pre_install(array(string) argv)
       export_base_name = ver;
 #endif
 
-      status1("Building export %s\n", export_base_name);
+      status1("Building export %s", export_base_name);
 
 #ifndef __NT__
       if (export == 1) {
@@ -2112,8 +2120,8 @@ int pre_install(array(string) argv)
     return 0;
   case "--wix":
 #ifdef SUPPORT_WIX
+    export = 1; // Only to get plain messages from status() etc.
     make_wix();
-    status1("Creating wix done.");
 #else /* !SUPPORT_WIX */
     error("Wix mode not supported with this pike.\n");
 #endif /* SUPPORT_WIX */
@@ -2360,7 +2368,7 @@ void make_master(string dest, string master, string lib_prefix,
     master_data = replace(master_data, "#undef PIKE_MODULE_RELOC",
 			  "#define PIKE_MODULE_RELOC 1");
   if(compare_to_file(master_data, dest)) {
-    status("Finalizing",dest,"Already finalized");
+    status("Finalizing",dest,"- already finalized");
     return;
   }
   Stdio.write_file(dest,master_data);
@@ -2380,7 +2388,7 @@ void fix_smartlink(string src, string dest, string include_prefix)
 			    return s;
 			})*"\n";
   if(compare_to_file(data, dest)) {
-    status("Finalizing",dest,"Already finalized");
+    status("Finalizing",dest,"- already finalized");
     return;
   }
   Stdio.write_file(fakeroot(dest),data);
