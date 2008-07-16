@@ -137,7 +137,7 @@ protected string _sprintf(int type, void|mapping flags) {
 #define PG_PROTOCOL(m,n)   (((m)<<16)|(n))
 #define FLUSH		"H\0\0\0\4"
 
-//! @decl void ereate()
+//! @decl void create()
 //! @decl void create(string host, void|string database, void|string user,@
 //!                   void|string password)
 //!
