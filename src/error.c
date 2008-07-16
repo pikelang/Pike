@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.163 2008/05/30 15:19:03 mast Exp $
+|| $Id: error.c,v 1.164 2008/07/16 00:33:59 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -73,7 +73,6 @@ PMOD_EXPORT void check_recovery_context(void)
   if(Pike_interpreter.recoveries &&
      Pike_interpreter.recoveries->on_stack &&
      TESTILITEST > 0) {
-    struct svalue *s;
     fprintf(stderr, "Recoveries is out biking (Pike_interpreter.recoveries=%p, Pike_sp=%p, %ld)!\n",
 	    Pike_interpreter.recoveries, &foo,
 	    DO_NOT_WARN((long)TESTILITEST));

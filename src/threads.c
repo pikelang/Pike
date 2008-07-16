@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.259 2008/06/29 12:37:11 nilsson Exp $
+|| $Id: threads.c,v 1.260 2008/07/16 00:34:22 mast Exp $
 */
 
 #include "global.h"
@@ -2085,7 +2085,6 @@ void gc_check_thread_local (struct object *o)
   /* Only used by with locate_references. */
   if (Pike_in_gc == GC_PASS_LOCATE) {
     struct svalue key, *val;
-    INT32 x;
     struct thread_state *s;
 
     key.u.integer = ((struct thread_local *)CURRENT_STORAGE)->id;
