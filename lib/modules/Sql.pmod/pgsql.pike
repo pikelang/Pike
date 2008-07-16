@@ -862,7 +862,7 @@ void select_db(string dbname) {
 //!    Function to be called on receiving a notification-event of
 //!    condition @[condition].
 //!    The callback function is invoked with
-//!     @expr{void notify_cb(pid,condition,extrainfo,@args);@}
+//!     @expr{void notify_cb(pid,condition,extrainfo, .. args);@}
 //!    @[pid] is the process id of the database session that originated
 //!    the event.  @[condition] contains the current condition.
 //!    @[extrainfo] contains optional extra information specified by
