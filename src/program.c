@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.736 2008/07/16 01:00:19 mast Exp $
+|| $Id: program.c,v 1.737 2008/07/16 01:08:05 mast Exp $
 */
 
 #include "global.h"
@@ -1469,7 +1469,8 @@ void unuse_modules(INT32 howmany)
 #endif
   c->num_used_modules -= howmany;
   Pike_compiler->num_used_modules-=howmany;
-  low_make_buf_space(-sizeof(struct svalue)*howmany, &c->used_modules);
+  low_make_buf_space((ptrdiff_t) sizeof(struct svalue) * -howmany,
+		     &c->used_modules);
   free_svalues((struct svalue *)low_make_buf_space(0, &c->used_modules),
 	       howmany,
 	       BIT_MAPPING | BIT_OBJECT | BIT_PROGRAM);

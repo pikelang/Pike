@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dynamic_buffer.c,v 1.26 2006/07/05 02:17:09 mast Exp $
+|| $Id: dynamic_buffer.c,v 1.27 2008/07/16 01:08:05 mast Exp $
 */
 
 #include "global.h"
@@ -13,7 +13,7 @@
 
 PMOD_EXPORT dynamic_buffer pike_global_buffer;
 
-PMOD_EXPORT char *low_make_buf_space(size_t space, dynamic_buffer *buf)
+PMOD_EXPORT char *low_make_buf_space(ptrdiff_t space, dynamic_buffer *buf)
 {
   char *ret;
 #ifdef PIKE_DEBUG
