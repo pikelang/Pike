@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.429 2008/07/15 09:05:07 grubba Exp $
+|| $Id: las.c,v 1.430 2008/07/16 01:17:50 mast Exp $
 */
 
 #include "global.h"
@@ -2949,7 +2949,6 @@ static int depend_p3(node *a,node *b)
 #ifdef PIKE_DEBUG
 static int depend_p(node *a,node *b)
 {
-  int ret;
   if(l_flag > 3)
   {
     fputs("Checking if: ", stderr);
