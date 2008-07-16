@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.211 2008/06/29 15:05:16 grubba Exp $
+|| $Id: mapping.c,v 1.212 2008/07/16 15:47:08 grubba Exp $
 */
 
 #include "global.h"
@@ -14,6 +14,7 @@
 #include "pike_macros.h"
 #include "pike_error.h"
 #include "pike_memory.h"
+#include "pike_types.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
 #include "las.h"
@@ -129,7 +130,13 @@ static void check_mapping_type_fields(const struct mapping *m)
   md = m->data;
   NEW_MAPPING_LOOP(md)
     {
+      if (k->val.type > MAX_TYPE)
+	Pike_fatal("Invalid mapping keypair value type: %s\n",
+		   get_name_of_type(k->val.type));
       val_types |= 1 << k->val.type;
+      if (k->ind.type > MAX_TYPE)
+	Pike_fatal("Invalid maping keypair index type: %s\n",
+		   get_name_of_type(k->ind.type));
       ind_types |= 1 << k->ind.type;
     }
 
@@ -1421,7 +1428,11 @@ PMOD_EXPORT struct mapping *copy_mapping(struct mapping *m)
 
 #endif
 
-/* copy_mapping() for when destructive operations are ok. */
+/* copy_mapping() for when destructive operations are ok.
+ *
+ * Note: It destructive operations on the resulting mapping *will*
+ *       affect eg NEW_MAPPING_LOOP() on the original mapping.
+ */
 static struct mapping *destructive_copy_mapping(struct mapping *m)
 {
   if ((m->refs == 1) && !m->data->hardlinks &&
@@ -1498,7 +1509,7 @@ static struct mapping *and_mappings(struct mapping *a, struct mapping *b)
   if (a_md == b_md) return destructive_copy_mapping(a);
 
   /* Copy the second mapping. */
-  res = destructive_copy_mapping(b);
+  res = copy_mapping(b);
   SET_ONERROR(err, do_free_mapping, res);
 
   /* Remove elements in res that aren't in a. */
@@ -2341,9 +2352,15 @@ void check_mapping(const struct mapping *m)
     {
       num++;
 
+      if (k->ind.type > MAX_TYPE)
+	Pike_fatal("Invalid maping keypair index type: %s\n",
+		   get_name_of_type(k->ind.type));
       if(! ( (1 << k->ind.type) & (md->ind_types) ))
 	Pike_fatal("Mapping indices type field lies.\n");
 
+      if (k->val.type > MAX_TYPE)
+	Pike_fatal("Invalid mapping keypair value type: %s\n",
+		   get_name_of_type(k->val.type));
       if(! ( (1 << k->val.type) & (md->val_types) ))
 	Pike_fatal("Mapping values type field lies.\n");
 
