@@ -157,14 +157,16 @@ NTTOOLS=$NT_TOOL_PATH/lib
 
 num=
 MNTREPLACE=""
-while [ x"$num" = x -o x"$num" = x1 -o x`eval echo \\$NTMOUNT$num` != x ]; do
-  mount=`eval echo \\$NTMOUNT$num`
-  drive=`eval echo \\$NTDRIVE$num`
-  eval export NTMOUNT$num
-  eval export NTDRIVE$num
-  MNTREPLACE="${MNTREPLACE}s@$mount@@g
-"
-  PIKE_PATH_TRANSLATE="$PIKE_PATH_TRANSLATE${PIKE_PATH_TRANSLATE+;}s!^$mount!$drive!"
+while [ x"$num" = x -o x"$num" = x1 -o x"`eval echo \\$NTMOUNT$num`" != x ]; do
+  if [ x"`eval echo \\$NTMOUNT$num`" != x ]; then
+    mount="`eval echo \\$NTMOUNT$num`"
+    drive="`eval echo \\$NTDRIVE$num`"
+    eval export NTMOUNT$num
+    eval export NTDRIVE$num
+    MNTREPLACE="${MNTREPLACE}s@$mount@@g
+  "
+    PIKE_PATH_TRANSLATE="$PIKE_PATH_TRANSLATE${PIKE_PATH_TRANSLATE+;}s!^$mount!$drive!"
+  fi
   if [ x$num = x ]; then num=1; else num=`expr $num + 1`; fi
 done
 IFS='
