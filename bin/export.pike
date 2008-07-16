@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: export.pike,v 1.67 2005/12/01 00:49:14 nilsson Exp $ */
+/* $Id: export.pike,v 1.68 2008/07/16 11:29:16 mast Exp $ */
 
 multiset except_modules = (<>);
 string vpath;
@@ -105,6 +105,10 @@ void bump_version(int|void is_release)
 			     "version.h" }),
 			  ([ "cwd":pike_base_name+"/src" ]) )->wait();
 
+#if 0
+  // This causes a lot of noise in the Debian changelog for all test
+  // builds. It should only be done for a real release build. Besides,
+  // the maintainer address is out of date. /mast
   s = Stdio.read_file(pike_base_name+"/packaging/debian/changelog");
   if (s) {
     werror("Bumping Debian changelog.\n");
@@ -131,6 +135,7 @@ void bump_version(int|void is_release)
 			     )->wait();
 
   }
+#endif
 }
 
 array(string) build_file_list(string vpath, string list_file)
