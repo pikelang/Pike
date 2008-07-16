@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.735 2008/07/14 11:49:10 grubba Exp $
+|| $Id: program.c,v 1.736 2008/07/16 01:00:19 mast Exp $
 */
 
 #include "global.h"
@@ -3136,8 +3136,7 @@ void dump_program_tables (struct program *p, int indent)
 
 void check_program(struct program *p)
 {
-  INT32 size;
-  unsigned INT32 checksum, e;
+  unsigned INT32 e;
   int variable_positions[1024];
 
   if(p->flags & PROGRAM_AVOID_CHECK) return;
@@ -3904,9 +3903,8 @@ int low_reference_inherited_identifier(struct program_state *q,
 				       int flags)
 {
   struct program *np=(q?q:Pike_compiler)->new_program;
-  struct reference funp;
   struct program *p;
-  int i,d,refs;
+  int i;
 
   p=np->inherits[e].prog;
   i=find_shared_string_identifier(name,p);
@@ -4527,7 +4525,6 @@ void compiler_do_inherit(node *n,
 int call_handle_inherit(struct pike_string *s)
 {
   struct compilation *c = THIS_COMPILATION;
-  int args;
 
   CHECK_COMPILER();
 
@@ -5057,6 +5054,12 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
 #ifdef PIKE_DEBUG
   if(name!=debug_findstring(name))
     Pike_fatal("define_constant on nonshared string.\n");
+  if (c) {
+    check_svalue (c);
+    if (c->type > MAX_TYPE)
+      /* check_svalue allows some things like T_SVALUE_PTR. */
+      Pike_fatal ("Invalid type in svalue: %d\n", c->type);
+  }
 #endif
 
   n = isidentifier(name);
@@ -5129,7 +5132,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
 	assign_svalue (&PROG_FROM_INT(Pike_compiler->new_program,n)->
 		       constants[id->func.offset].sval, c);
       } else {
-	id->run_time_type = c->type;
+	id->run_time_type = (unsigned char) c->type;
 	id->func.offset = store_constant(c, 0, 0);
       }
       free_type(id->type);
@@ -5180,7 +5183,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
     } else {
       dummy.type = get_type_of_svalue(c);
     }
-    dummy.run_time_type=c->type;
+    dummy.run_time_type = (unsigned char) c->type;
     dummy.func.offset=store_constant(c, 0, 0);
     dummy.opt_flags=OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND;
     if(c->type == PIKE_T_PROGRAM && (c->u.program->flags & PROGRAM_CONSTANT))
@@ -5297,7 +5300,7 @@ PMOD_EXPORT int add_float_constant(const char *name,
 {
   struct svalue tmp;
   tmp.type=T_FLOAT;
-  tmp.u.float_number = f;
+  tmp.u.float_number = (FLOAT_TYPE) f;
   tmp.subtype=0;
   return simple_add_constant(name, &tmp, flags);
 }
@@ -5311,7 +5314,7 @@ PMOD_EXPORT int quick_add_float_constant(const char *name,
   struct pike_string *id;
   INT32 ret;
 
-  tmp.u.float_number=f;
+  tmp.u.float_number = (FLOAT_TYPE) f;
   tmp.type=T_FLOAT;
   tmp.subtype=0;
   id=make_shared_binary_string(name,name_length);
@@ -5942,7 +5945,9 @@ PMOD_EXPORT int low_find_lfun(struct program *p, ptrdiff_t lfun)
 {
   struct pike_string *lfun_name = lfun_strings[lfun];
   unsigned int flags = 0;
+#if 0
   struct identifier *id;
+#endif
   int i =
     really_low_find_shared_string_identifier(lfun_name,
 					     dmalloc_touch(struct program *,
@@ -6472,7 +6477,7 @@ void ext_store_program_line (struct program *prog, INT32 line, struct pike_strin
   ptr = prog->linenumbers = xalloc (1 + 5 + 1 + (file->len << file->size_shift) + 5 + 5);
   *ptr++ = 127;
   ext_insert_small_number (&ptr, file->len);
-  *ptr++ = file->size_shift;
+  *ptr++ = (char) file->size_shift;
   MEMCPY (ptr, file->str, file->len << file->size_shift);
   ptr += file->len << file->size_shift;
   *ptr++ = 0;			/* PC */
@@ -6900,7 +6905,6 @@ PMOD_EXPORT void va_yyreport(int severity_level,
 {
   struct compilation *c = MAYBE_THIS_COMPILATION;
   struct string_builder s;
-  struct pike_string *msg;
 
   if (!c) {
     /* No compiler context. */
@@ -7246,7 +7250,6 @@ void verify_supporters()
 #ifdef DO_PIKE_CLEANUP
     {
       size_t e=0;
-      struct supporter_marker *h;
       for(e=0;e<supporter_marker_hash_table_size;e++)
 	while(supporter_marker_hash_table[e])
 	  remove_supporter_marker(supporter_marker_hash_table[e]->data);
@@ -8251,11 +8254,7 @@ static void f_compilation_create(INT32 args)
   int aminor = -1;
   struct program *atarget = NULL;
   struct object *aplaceholder = NULL;
-  int delay, dependants_ok = 1;
-  struct program *ret;
-#ifdef PIKE_DEBUG
-  ONERROR tmp;
-#endif
+  int dependants_ok = 1;
   struct compilation *c = THIS_COMPILATION;
 
   if (c->flags & COMPILER_BUSY) {
@@ -9013,7 +9012,6 @@ static void compile_compiler(void)
   struct program *p2 = compilation_program = low_allocate_program();
   struct object *co;
   struct inherit *inh;
-  struct pike_string *pike_compiler_string;
 
   p->parent_info_storage = -1;
   /* p->event_handler = compilation_env_event_handler; */
@@ -9209,7 +9207,6 @@ static void compile_compiler(void)
 	       tFunc(tStr tStr tOr(tObj, tVoid), tPrg(tObj)), 0);
 
   {
-    struct pike_string *type_name;
     struct svalue type_value;
 
     /* enum SeverityLevel { NOTICE, WARNING, ERROR, FATAL } */
@@ -9951,7 +9948,6 @@ unsigned gc_touch_all_programs(void)
 {
   unsigned n = 0;
   struct program *p;
-  struct program_state *ps;
   if (first_program && first_program->prev)
     Pike_fatal("Error in program link list.\n");
   for (p = first_program; p; p = p->next) {
@@ -10284,7 +10280,9 @@ PMOD_EXPORT struct program *program_from_svalue(const struct svalue *s)
     case T_OBJECT:
     {
       struct program *p = s->u.object->prog;
+#if 0
       int call_fun;
+#endif
 
       if (!p) return 0;
 
