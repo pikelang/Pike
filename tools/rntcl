@@ -514,7 +514,8 @@ int main(int argc, array(string) argv)
     array(string) trailer = ({"", "", ""});
     // cl.exe and ecl.exe echo the file name of the file we are compiling
     // first, we need to get rid of that to make configure behave.
-    // CL: We also convert warning D4002 into an error.
+    // CL: We also convert warnings D4002 and D9002 (both are "ignoring
+    //     unknown option") into errors.
     // ECL: We also convert warning 147 into an error, and command line
     //      remark "option not supported" into an error.
     ret=silent_do_cmd(cmd, lambda(string line, void|int channel)
@@ -545,25 +546,24 @@ int main(int argc, array(string) argv)
 			  // We make it an error...
 			  if (search(lines[i], "warning #147:") != -1) {
 			    forced_error = 1;
-			    lines[i] = replace(lines[i],
-					       "warning #147:",
-					       "error #147:");
+			    lines[i] += " (rntcl: converted to error)";
 			  } else {
 			    // Make it possible to test if flags are supported.
 			    if (search(lines[i],
 				       "Command line remark: option '") != -1){
 			      if (search(lines[i], "' not supported") != -1) {
 				forced_error = 1;
+				lines[i] += " (rntcl: converted to error)";
 			      }
 			    }
 			  }
 #else /* !ECL */
-			  if (search(lines[i],
-				     "Command line warning D4002") != -1) {
-			    forced_error=1;
-			    lines[i] = replace(lines[i],
-					       "Command line warning D4002",
-					       "Command line error D4002");
+			  foreach (({"D4002", "D9002"}), string warn_num) {
+			    if (has_value (lines[i], "Command line warning " +
+					   warn_num)) {
+			      forced_error=1;
+			      lines[i] += " (rntcl: converted to error)";
+			    }
 			  }
 #endif /* ECL */
 			}
