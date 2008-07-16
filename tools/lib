@@ -1,6 +1,3 @@
-# FIXME: This file isn't updated to handle multiple NTMOUNT/NTDRIVE.
-# It doesn't appear to be used anywhere.
-
 CLEANUP=yes
 NT_DEBUG=no
 
