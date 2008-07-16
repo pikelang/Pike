@@ -1,6 +1,8 @@
 #!/usr/bin/env pike
 /* -*- Pike -*- */
 
+//#define DEBUG
+
 #if !constant(Stdio.PROP_IPC)
 #define NO_IPC
 #endif
@@ -298,6 +300,10 @@ void handle_incoming_connection(object(Stdio.File) io)
       destruct(pe2);
       if(!err)
       {
+#ifdef DEBUG
+	werror ("Forked process: %O\n", p->pid());
+#endif
+
 #ifdef NO_IPC
 	thread_create(monitor,p2,p);
 #endif
@@ -311,14 +317,24 @@ void handle_incoming_connection(object(Stdio.File) io)
 	  proxythread=thread_create(myproxy,pe,io,0);
 	  myproxy(pi,io,0);
 	}
+#ifdef DEBUG
+	werror ("Waiting for stderr on %O to close.\n", pe);
+#endif
 	proxythread->wait();
-	
+
 	io->write(sprintf("%4c",0));
+
+#ifdef DEBUG
+	werror ("Waiting for process %O to exit.\n", p->pid());
+#endif
 	int code;
 	if (mixed err = catch { code = p->wait(); }) {
 	  werror ("Wait on %O failed: %s", p, describe_error (err));
 	  io->write(sprintf("%4c", -1));
 	} else {
+#ifdef DEBUG
+	  werror ("Process exited with code %d.\n", p->pid(), code);
+#endif
 	  io->write(sprintf("%4c", code));
 	}
       }else{
