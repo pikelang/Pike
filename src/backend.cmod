@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.229 2008/06/29 12:37:10 nilsson Exp $
+ * $Id: backend.cmod,v 1.230 2008/07/16 00:35:44 mast Exp $
  *
  * Backend object.
  */
@@ -1539,9 +1539,6 @@ PIKECLASS Backend
 
   static void backend_do_debug(struct Backend_struct *me)
   {
-    int e;
-    PIKE_STAT_T tmp;
-
     backend_verify_call_outs(me);
 
     if (me->debug_handler) {
@@ -3094,9 +3091,6 @@ PIKECLASS PollDeviceBackend
 #else
 #error Unknown timeout method.
 #endif /* TIMEOUT_IS_* */
-#ifdef PIKE_DEBUG
-      struct timeval max_timeout;
-#endif
       struct timeval *next_timeout = &pdb->backend->next_timeout;
 
       me->may_need_wakeup = 1;
@@ -3642,9 +3636,6 @@ PIKECLASS PollBackend
 
     {
       int poll_timeout;
-#ifdef PIKE_DEBUG
-      struct timeval max_timeout;
-#endif
       struct timeval *next_timeout = &pb->backend->next_timeout;
 
       me->may_need_wakeup = 1;
@@ -4217,9 +4208,6 @@ PIKECLASS SelectBackend
 
     {
       struct timeval poll_timeout;
-#ifdef PIKE_DEBUG
-      struct timeval max_timeout;
-#endif
       struct timeval *next_timeout = &sb->backend->next_timeout;
 
       me->may_need_wakeup = 1;
