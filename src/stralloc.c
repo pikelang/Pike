@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.228 2008/06/30 22:13:28 marcus Exp $
+|| $Id: stralloc.c,v 1.229 2008/07/16 00:33:28 mast Exp $
 */
 
 #include "global.h"
@@ -228,7 +228,7 @@ PMOD_EXPORT struct pike_string *debug_check_size_shift(struct pike_string *a,
 					    const PIKE_CONCAT(p_wchar,FROM) *from, \
 					    ptrdiff_t len)		\
   {									\
-    while(--len>=0) *(to++)=*(from++);					\
+    while(--len>=0) *(to++)= (PIKE_CONCAT (p_wchar, TO)) *(from++);	\
   }									\
   INT32 PIKE_CONCAT4(compare_,FROM,_to_,TO) (const PIKE_CONCAT(p_wchar,TO) *to,	\
 					     const PIKE_CONCAT(p_wchar,FROM) *from, \
