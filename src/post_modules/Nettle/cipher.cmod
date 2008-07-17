@@ -1,5 +1,5 @@
 /* cipher.cmod -*- c -*- */
-/* $Id: cipher.cmod,v 1.38 2008/06/28 22:57:14 nilsson Exp $ */
+/* $Id: cipher.cmod,v 1.39 2008/07/17 10:53:20 mast Exp $ */
 
 #include "global.h"
 #include "interpret.h"
@@ -20,10 +20,14 @@
 
 #include <nettle/aes.h>
 #include <nettle/arcfour.h>
+#ifdef HAVE_BLOWFISH_DECRYPT
 #include <nettle/blowfish.h>
+#endif
 #include <nettle/des.h>
 #include <nettle/cast128.h>
+#ifdef HAVE_SERPENT_DECRYPT
 #include <nettle/serpent.h>
+#endif
 #include <nettle/twofish.h>
 #include "idea.h"
 #include <nettle/nettle-meta.h>
@@ -431,6 +435,8 @@ PIKECLASS ARCFOUR_State
 }
 /*! @endclass ARCFOUR_State */
 
+#ifdef HAVE_BLOWFISH_DECRYPT
+
 static void
 pike_blowfish_set_key(void *ctx,
 		      ptrdiff_t length, const char *key,
@@ -485,6 +491,8 @@ PIKECLASS BLOWFISH_State
     }
 }
 /*! @endclass BLOWFISH_State */
+
+#endif	/* HAVE_BLOWFISH_DECRYPT */
 
 static void
 pike_cast128_set_key(void *ctx,
@@ -845,6 +853,8 @@ PIKECLASS DES3_State
 }
 /*! @endclass DES3_State */
 
+#ifdef HAVE_SERPENT_DECRYPT
+
 static void
 pike_serpent_set_key(void *ctx,
 		     ptrdiff_t length, const char *key,
@@ -898,6 +908,8 @@ PIKECLASS Serpent_State
     }
 }
 /*! @endclass Serpent_State */
+
+#endif	/* HAVE_SERPENT_DECRYPT */
 
 static void
 pike_twofish_set_key(void *ctx,
