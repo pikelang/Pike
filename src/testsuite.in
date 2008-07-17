@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.839 2008/07/11 13:54:23 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.840 2008/07/17 11:05:27 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -169,6 +169,19 @@ test_any([[
 
   return Y()->Ack(2,2);
 ]],7)
+
+test_any([[
+  // Test that F_RECUR et al are not used for inlined functions
+  // where the scope is in use.
+  class X {
+    inline function(int:int) foo(int x, int y)
+    {
+      if (y) return foo(x+y, y-1);
+      return lambda(int z) { return x+z; };
+    }
+  };
+  return X()->foo(10, 3)(5);
+]], 21)
 
 test_any([[
   // Test that loop optimizer isn't too aggressive.
