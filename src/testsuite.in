@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.840 2008/07/17 11:05:27 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.841 2008/07/17 16:49:00 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -7689,6 +7689,17 @@ test_any([[
   return (string) x;
 ]], "0")
 
+test_eq([[(string) ({0,1,2})]], "\0\1\2")
+test_eq([[(string) ({'z', 0xff, '.'})]], "z\xff.")
+test_eq([[(string) ({'z', 0x100, '.'})]], "z\x100.")
+test_eq([[(string) ({'z', 0xffff, '.'})]], "z\xffff.")
+test_eq([[(string) ({'z', 0x10000, '.'})]], "z\x10000.")
+test_eq([[(string) ({'z', -1, '.'})]], "z\xffffffff.")
+test_eq([[(string) ({'z', 0x7fffffff, '.'})]], "z\x7fffffff.")
+test_eval_error([[(string) ({0x80000000})]])
+test_eq([[(string) ({'z', -0x80000000, '.'})]], "z\x80000000.")
+test_eval_error([[(string) ({-0x80000001})]])
+
 // testing @
 test_equal(({1,2,3}),lambda(mixed ... x) { return x; }(@a()))
 test_equal("foo"/"",lambda(mixed ... x) { return x; }(@a()))
@@ -11412,6 +11423,10 @@ array a()
   return Tools.Testsuite.run_script ("]]SRCDIR[[/test_resolve.pike");
 }
 ]])
+
+// enum and typedef
+
+test_compile_error_any([[enum X {A, B}; enum(X) x;]])
 
 // - modifiers, compile time type checks
 
