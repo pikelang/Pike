@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.449 2008/07/18 20:00:50 grubba Exp $
+|| $Id: language.yacc,v 1.450 2008/07/18 20:14:15 grubba Exp $
 */
 
 %pure_parser
@@ -2967,6 +2967,8 @@ enum_def: /* EMPTY */
       }
       pop_stack();
       free_node($1);
+    } else if ($2) {
+      free_node($2);
     }
   }
   ;
