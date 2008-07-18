@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.447 2008/07/14 11:38:30 grubba Exp $
+|| $Id: language.yacc,v 1.448 2008/07/18 18:06:22 grubba Exp $
 */
 
 %pure_parser
@@ -163,7 +163,7 @@ int low_add_local_name(struct compiler_frame *,
 		       struct pike_string *, struct pike_type *, node *);
 static void mark_lvalues_as_used(node *n);
 static node *lexical_islocal(struct pike_string *);
-static void safe_inc_enum(void);
+static node *safe_inc_enum(node *n);
 static int call_handle_import(struct pike_string *s);
 
 static int inherit_depth;
@@ -310,6 +310,8 @@ int yylex(YYSTYPE *yylval);
 %type <n> catch_arg
 %type <n> class
 %type <n> enum
+%type <n> enum_def
+%type <n> enum_value
 %type <n> safe_comma_expr
 %type <n> comma_expr
 %type <n> comma_expr2
@@ -350,6 +352,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> normal_label_statement
 %type <n> optional_else_part
 %type <n> optional_label
+%type <n> propagated_enum_value
 %type <n> propagated_type
 %type <n> return
 %type <n> sscanf
@@ -2360,7 +2363,7 @@ local_function: TOK_IDENTIFIER push_compiler_frame1 func_args
     }else{
       id=define_function(name,
 			 type,
-			 ID_INLINE|ID_USED,
+			 ID_PROTECTED | ID_PRIVATE | ID_INLINE | ID_USED,
 			 IDENTIFIER_PIKE_FUNCTION |
 			 (Pike_compiler->varargs?IDENTIFIER_VARARGS:0),
 			 0,
@@ -2493,7 +2496,7 @@ local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
     }else{
       id=define_function(name,
 			 type,
-			 ID_INLINE|ID_USED,
+			 ID_PROTECTED | ID_PRIVATE | ID_INLINE | ID_USED,
 			 IDENTIFIER_PIKE_FUNCTION|
 			 (Pike_compiler->varargs?IDENTIFIER_VARARGS:0),
 			 0,
@@ -2901,71 +2904,84 @@ simple_identifier: TOK_IDENTIFIER
   | bad_identifier { $$ = 0; }
   ;
 
-enum_value: /* EMPTY */
-  {
-    safe_inc_enum();
-  }
-  | '=' safe_expr0
-  {
-    pop_stack();
-
-    /* This can be made more lenient in the future */
-
-    /* Ugly hack to make sure that $2 is optimized */
-    {
-      int tmp=Pike_compiler->compiler_pass;
-      $2=mknode(F_COMMA_EXPR,$2,0);
-      Pike_compiler->compiler_pass=tmp;
-    }
-
-    if(!is_const($2))
-    {
-      if(Pike_compiler->compiler_pass==2)
-	yyerror("Enum definition is not constant.");
-      push_int(0);
-    } else {
-      if(!Pike_compiler->num_parse_error)
-      {
-	ptrdiff_t tmp=eval_low($2,1);
-	if(tmp < 1)
-	{
-	  yyerror("Error in enum definition.");
-	  push_int(0);
-	}else{
-	  pop_n_elems(DO_NOT_WARN((INT32)(tmp - 1)));
-	}
-      } else {
-	push_int(0);
-      }
-    }
-    if($2) free_node($2);
-  }
+enum_value: /* EMPTY */ { $$ = 0; }
+  | '=' safe_expr0 { $$ = $2; }
   ;
 
+/* Previous enum value at $0. */
 enum_def: /* EMPTY */
   | simple_identifier enum_value
   {
     if ($1) {
+      if ($2) {
+	/* Explicit enum value. */
+
+	/* This can be made more lenient in the future */
+
+	/* Ugly hack to make sure that $2 is optimized */
+	{
+	  int tmp=Pike_compiler->compiler_pass;
+	  $2=mknode(F_COMMA_EXPR,$2,0);
+	  Pike_compiler->compiler_pass=tmp;
+	}
+
+	if(!is_const($2))
+	{
+	  if(Pike_compiler->compiler_pass==2)
+	    yyerror("Enum definition is not constant.");
+	  push_int(0);
+	} else {
+	  if(!Pike_compiler->num_parse_error)
+	  {
+	    ptrdiff_t tmp=eval_low($2,1);
+	    if(tmp < 1)
+	    {
+	      yyerror("Error in enum definition.");
+	      push_int(0);
+	    }else{
+	      pop_n_elems(DO_NOT_WARN((INT32)(tmp - 1)));
+	    }
+	  } else {
+	    push_int(0);
+	  }
+	}
+	free_node($2);
+	free_node($<n>0);
+	$<n>0 = mkconstantsvaluenode(Pike_sp-1);
+      } else {
+	/* Implicit enum value. */
+	$<n>0 = safe_inc_enum($<n>0);
+	push_svalue(&$<n>0->u.sval);
+      }
       add_constant($1->u.sval.u.string, Pike_sp-1,
 		   (Pike_compiler->current_modifiers & ~ID_EXTERN) | ID_INLINE);
-    }
-    free_node($1);
-    /* Update the type. */
-    {
-      struct pike_type *current = pop_unfinished_type();
-      struct pike_type *new = get_type_of_svalue(Pike_sp-1);
-      struct pike_type *res = or_pike_types(new, current, 1);
-      free_type(current);
-      free_type(new);
-      type_stack_mark();
-      push_finished_type(res);
-      free_type(res);
+      /* Update the type. */
+      {
+	struct pike_type *current = pop_unfinished_type();
+	struct pike_type *new = get_type_of_svalue(Pike_sp-1);
+	struct pike_type *res = or_pike_types(new, current, 1);
+	free_type(current);
+	free_type(new);
+	type_stack_mark();
+	push_finished_type(res);
+	free_type(res);
+      }
+      pop_stack();
+      free_node($1);
     }
   }
   ;
 
+/* Previous enum value at $-2 */
+propagated_enum_value:
+  {
+    $$ = $<n>-2;
+  }
+  ;
+
+/* Previous enum value at $0. */
 enum_list: enum_def
-  | enum_list ',' enum_def
+  | enum_list ',' propagated_enum_value enum_def { $<n>0 = $3; }
   | error
   ;
 
@@ -2977,14 +2993,19 @@ enum: TOK_ENUM
       yywarning("Extern declared enum.");
     }
 
-    push_int(-1);	/* Last enum-value. */
     type_stack_mark();
     push_type(T_ZERO);	/* Joined type so far. */
   }
-  optional_identifier '{' enum_list end_block
+  optional_identifier '{' 
+  {
+    push_int(-1);	/* Previous value. */
+    $<n>$ = mkconstantsvaluenode(Pike_sp-1);
+    pop_stack();
+  }
+  enum_list end_block
   {
     struct pike_type *t = pop_unfinished_type();
-    pop_stack();
+    free_node($<n>5);
     if ($3) {
       ref_push_type_value(t);
       add_constant($3->u.sval.u.string, Pike_sp-1,
@@ -4748,20 +4769,26 @@ static node *lexical_islocal(struct pike_string *str)
   }
 }
 
-static void safe_inc_enum(void)
+static node *safe_inc_enum(node *n)
 {
   JMP_BUF recovery;
-  STACK_LEVEL_START(1);
+  STACK_LEVEL_START(0);
 
-  if (SETJMP_SP(recovery, 1)) {
+  if (SETJMP(recovery)) {
     handle_compile_exception ("Bad implicit enum value (failed to add 1).");
     push_int(0);
   } else {
+    if (n->token != F_CONSTANT) Pike_fatal("Bad node to safe_inc_enum().\n");
+    push_svalue(&n->u.sval);
     push_int(1);
     f_add(2);
   }
   UNSETJMP(recovery);
   STACK_LEVEL_DONE(1);
+  free_node(n);
+  n = mkconstantsvaluenode(Pike_sp-1);
+  pop_stack();
+  return n;
 }
 
 
