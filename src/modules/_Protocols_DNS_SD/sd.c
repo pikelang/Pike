@@ -2,19 +2,19 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sd.c,v 1.4 2005/10/22 03:22:06 bill Exp $
+|| $Id: sd.c,v 1.5 2008/07/18 15:17:03 bill Exp $
 */
 
 
 /* Glue for DNS Service Discovery, which is built on top of e.g. Multicast
-   DNS (ZeroConf/Rendezvous). Using this API a Pike program can register a
-   service (e.g. a web server) and have other applications on the local
-   network detect it without additional configuration.
+   DNS (ZeroConf/Rendezvous/Bonjour). Using this API a Pike program can 
+   register a service (e.g. a web server) and have other applications on 
+   the local network detect it without additional configuration.
 
    The specification can be found at <http://www.dns-sd.org/>.
    
-   The implementation requires either the dns_ds.h (found in Mac OS X)
-   or howl.h (part of libhowl on Linux).
+   The implementation requires either the dns_ds.h (found in Mac OS X
+   and SunOS 5.11+) or howl.h (part of libhowl on Linux).
 */
 
 
@@ -148,7 +148,10 @@ static DNSServiceErrorType start_service(struct service *svc,
     domain = NULL;
   if (txt && !txtlen)
     txt = NULL;
-  
+
+  // port must be provided in network byte-order.
+  port = htons(port);  
+
   svc->service_ref = NULL;
   err = DNSServiceRegister(&ref, 0, 0, name, service, domain, NULL, port,
                            txtlen, txt, start_service_callback, NULL);
