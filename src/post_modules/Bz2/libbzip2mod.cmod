@@ -648,7 +648,7 @@ PIKECLASS Inflate
       if(tmp_internbuf == NULL){
 	Pike_error("Failed to allocate memory in Bz2.Inflate->inflate().\n");
       }
-      bcopy(s->next_in, tmp_internbuf, s->avail_in);
+      MEMCPY (tmp_internbuf, s->next_in, s->avail_in);
     }
     /* free buf space*/
     if(THIS->internbuf != NULL){
