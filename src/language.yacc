@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.448 2008/07/18 18:06:22 grubba Exp $
+|| $Id: language.yacc,v 1.449 2008/07/18 20:00:50 grubba Exp $
 */
 
 %pure_parser
@@ -310,7 +310,6 @@ int yylex(YYSTYPE *yylval);
 %type <n> catch_arg
 %type <n> class
 %type <n> enum
-%type <n> enum_def
 %type <n> enum_value
 %type <n> safe_comma_expr
 %type <n> comma_expr
