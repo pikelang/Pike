@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.216 2008/07/13 15:55:37 grubba Exp $
+|| $Id: array.c,v 1.217 2008/07/18 09:37:09 grubba Exp $
 */
 
 #include "global.h"
@@ -706,7 +706,7 @@ PMOD_EXPORT ptrdiff_t array_search(struct array *v, struct svalue *s,
 }
 
 /**
- * Slice a piece of an array (nondestructively)
+ * Slice a piece of an array (conditionally destructively)
  * @param v the array to slice
  * @param start the beginning element to be included
  * @param end the element beyond the end of the slice
@@ -724,18 +724,14 @@ PMOD_EXPORT struct array *slice_array(struct array *v, ptrdiff_t start,
   if(d_flag > 1)  array_check_type_field(v);
 #endif
 
-#if 1
   if(v->refs==1)	/* Can we use the same array? */
   {
-    if((end-start) &&
-       (end-start)*2 >
-       v->malloced_size+4+(v->item-v->real_item) ) /* don't waste too much memory */
+    if((end-start)*2 > v->malloced_size) /* don't waste too much memory */
     {
       add_ref(v);
       free_svalues(ITEM(v) + end, v->size - end, v->type_field);
       free_svalues(ITEM(v), start, v->type_field);
       v->item+=start;
-      v->malloced_size-=start;
       v->size=end-start;
 #ifdef PIKE_DEBUG
       if(d_flag>1)
@@ -744,7 +740,6 @@ PMOD_EXPORT struct array *slice_array(struct array *v, ptrdiff_t start,
       return v;
     }
   }
-#endif
 
   a=allocate_array_no_init(end-start,0);
   if (end-start) {
