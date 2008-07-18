@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.25 2003/04/14 17:10:57 marcus Exp $
+# $Id: configure.in,v 1.26 2008/07/18 17:25:19 mast Exp $
 AC_INIT(zlibmod.c)
 AC_CONFIG_HEADER(zlib_machine.h)
 AC_ARG_WITH(zlib,     [  --with(out)-zlib       Support gzip compression],[],[with_zlib=yes])
@@ -66,8 +66,10 @@ int foo = (int)(Z_NO_COMPRESSION | Z_VERSION_ERROR);
 	AC_HAVE_FUNCS(__T_9__nothrow)
       fi
 
-      AC_CHECK_GZ(z,[AC_CHECK_GZ(gz,[ ac_cv_lib_z_main=no ] ) ])
-
+      AC_CHECK_GZ(z,[
+	AC_CHECK_GZ(gz,[
+	  # The lib is called zlib.lib in GnuWin32.
+	  AC_CHECK_GZ(zlib, [ ac_cv_lib_z_main=no ] ) ])])
     fi
   fi
 fi
