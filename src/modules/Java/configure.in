@@ -128,6 +128,10 @@ if test "x$with_java" = xyes; then
     AC_MSG_WARN([If you are unsure, please unset \$THREADS_FLAG and rerun configure.])
   fi
 
+  # Ugly hack to cut out all the library search stuff if we're
+  # remote compiling.
+  if test x"$CC" != xrntcl; then
+
   AC_MSG_CHECKING(for working ls)
   AC_CACHE_VAL(pike_cv_ls, [
     pike_cv_ls=no
@@ -301,6 +305,10 @@ if test "x$with_java" = xyes; then
     CPPFLAGS="-D_REENTRANT $CPPFLAGS"
   else
     :
+  fi
+
+  else # if test x"$CC" = xrntcl
+    pike_cv_java_javavm=no
   fi
 
   PIKE_PKG_CONFIG(libffi)
