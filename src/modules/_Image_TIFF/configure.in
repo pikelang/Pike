@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.13 2004/11/03 18:52:03 grubba Exp $
+# $Id: configure.in,v 1.14 2008/07/18 17:38:17 mast Exp $
 #
 AC_INIT(image_tiff.c)
 AC_CONFIG_HEADER(config.h)
@@ -16,9 +16,8 @@ if test x$with_tifflib = xyes ; then
   if test $ac_cv_header_tiff_h = yes ; then
     AC_CHECK_LIB(m, floor)
     AC_CHECK_LIB(jpeg, jpeg_CreateCompress)
-    AC_CHECK_LIB(z, inflate)
-    AC_CHECK_LIB(gz, inflate)
-    AC_CHECK_LIB(tiff, main)
+    AC_SEARCH_LIBS(inflate, z gz zlib)
+    AC_SEARCH_LIBS(TIFFOpen, tiff libtiff)
 
     AC_MSG_CHECKING([if this tifflib is working])
     AC_CACHE_VAL(pike_cv_working_tiff, [
@@ -116,12 +115,6 @@ int main(int argc, char **argv)
       AC_MSG_RESULT([yes])
       AC_DEFINE(HAVE_WORKING_LIBTIFF) 
       PIKE_FEATURE_OK(Image.TIFF)
-      AC_CHECK_LIB(jpeg, main, [
-  	LIBS="${LIBS-} -ljpeg"
-       ],[])
-      AC_CHECK_LIB(z, main, [
-  	LIBS="${LIBS-} -lz"
-       ],[])
       AC_MSG_CHECKING(for version of tifflib)
       if test "x$ac_cv_header_tiffvers_h" = "xyes"; then
         cat >conftest.$ac_ext <<EOF
