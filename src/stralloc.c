@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.229 2008/07/16 00:33:28 mast Exp $
+|| $Id: stralloc.c,v 1.230 2008/07/18 01:42:49 mast Exp $
 */
 
 #include "global.h"
@@ -645,6 +645,9 @@ static void link_pike_string(struct pike_string *s, size_t hval)
     debug_dump_pike_string(s, 70);
     Pike_fatal("String already linked.\n");
   }
+
+  if (PIKE_MEM_NOT_DEF_RANGE (s->str, (s->len + 1) << s->size_shift))
+    Pike_fatal ("Got undefined contents in pike string %p.\n", s);
 #endif
 
   LOCK_BUCKET(hval);
@@ -2694,7 +2697,7 @@ PMOD_EXPORT void string_builder_append_integer(struct string_builder *s,
     else shift = delta;
 
     /* Calculate actual number of digits and initial shift. */
-    for (; tmp >> shift; shift += delta, len++)
+    for (; tmp >> shift && shift < SIZEOF_LONGEST * 8; shift += delta, len++)
       ;
 
     if ((len < min_width) && !(flags & APPEND_LEFT)) {
