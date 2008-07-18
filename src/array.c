@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.217 2008/07/18 09:37:09 grubba Exp $
+|| $Id: array.c,v 1.218 2008/07/18 10:46:30 grubba Exp $
 */
 
 #include "global.h"
@@ -726,7 +726,7 @@ PMOD_EXPORT struct array *slice_array(struct array *v, ptrdiff_t start,
 
   if(v->refs==1)	/* Can we use the same array? */
   {
-    if((end-start)*2 > v->malloced_size) /* don't waste too much memory */
+    if((end-start)*4 > v->malloced_size) /* don't waste too much memory */
     {
       add_ref(v);
       free_svalues(ITEM(v) + end, v->size - end, v->type_field);
