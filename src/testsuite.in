@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.842 2008/07/18 09:18:21 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.843 2008/07/18 11:29:21 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -7696,9 +7696,9 @@ test_eq([[(string) ({'z', 0xffff, '.'})]], "z\xffff.")
 test_eq([[(string) ({'z', 0x10000, '.'})]], "z\x10000.")
 test_eq([[(string) ({'z', -1, '.'})]], "z\xffffffff.")
 test_eq([[(string) ({'z', 0x7fffffff, '.'})]], "z\x7fffffff.")
-test_eval_error([[return (string) ({0x80000000})]])
+test_eval_error([[(string) ({0x80000000})]])
 test_eq([[(string) ({'z', -0x80000000, '.'})]], "z\x80000000.")
-test_eval_error([[return (string) ({-0x80000001})]])
+test_eval_error([[(string) ({-0x80000001})]])
 
 // testing @
 test_equal(({1,2,3}),lambda(mixed ... x) { return x; }(@a()))
