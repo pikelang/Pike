@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.60 2008/06/28 21:43:57 marcus Exp $
+# $Id: configure.in,v 1.61 2008/07/18 18:20:15 mast Exp $
 #
 # Configure script for the mysql-module
 #
@@ -27,7 +27,6 @@ PIKE_FEATURE_WITHOUT(Mysql)
 OLD_LIBS=$LIBS
 OLD_LDFLAGS=$LDFLAGS
 OLD_CPPFLAGS=$CPPFLAGS
-MYSQL_LIBS=""
 
 AC_ARG_WITH(mysql,  [  --without-mysql       no support for the Mysql database],[],[with_mysql=yes])
 
@@ -125,6 +124,7 @@ else
 define([AC_CHECK_MYSQL_OPTIONS],
 [
 AC_MSG_CHECKING(for $1)
+AC_CACHE_VAL(ac_cv_pike_mysql_opt_$1, [
 AC_TRY_COMPILE([
 #if HAVE_WINSOCK2_H
 #include <winsock2.h>
@@ -141,12 +141,16 @@ AC_TRY_COMPILE([
 ], [
 int tmp;
 tmp = $1;
-], [
-AC_MSG_RESULT(yes)
-AC_DEFINE(HAVE_$1)
-], [
-AC_MSG_RESULT(no)
-])])
+], ac_cv_pike_mysql_opt_$1=yes,
+   ac_cv_pike_mysql_opt_$1=no)
+])
+if test "x$ac_cv_pike_mysql_opt_$1" = xyes; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE(HAVE_$1)
+else
+  AC_MSG_RESULT(no)
+fi
+])
 
 
   AC_CHECK_MYSQL_OPTIONS(MYSQL_READ_DEFAULT_FILE)
@@ -165,60 +169,17 @@ AC_MSG_RESULT(no)
 
   # Mysql libs
 
-  pike_cv_mysql="unknown"
+dnl   if test x"$pike_cv_sys_os" = xWindows_NT ; then
+dnl     LIBS="-lshell32 -lkernel32 -lws2_32 -ladvapi32 -luser32 ${LIBS}"
+dnl   fi
 
-  if test x"$pike_cv_sys_os" = xWindows_NT ; then
-    LIBS="-lshell32 -lkernel32 -lws2_32 -ladvapi32 -luser32 ${LIBS}"
-  fi
-
-  AC_CHECK_LIB(mysqlclient, bchange, [
-    LIBS="-lmysqlclient $LIBS"
-    MYSQL_LIBS="-lmysqlclient"
-    pike_cv_mysql="post3.20"
-  ], [
-    AC_CHECK_LIB(mystrings, bchange, [
-    LIBS="-lmystrings $LIBS"
-    MYSQL_LIBS="-lmystrings ${MYSQL_LIBS}"
-    pike_cv_mysql="post3.20"
-  ], [
-    AC_CHECK_LIB(strings, bchange, [
-      LIBS="-lstrings $LIBS"
-      MYSQL_LIBS="-lstrings ${MYSQL_LIBS}"
-      pike_cv_mysql="pre3.20"
-    ], [])
-  ])
-])
-
-  AC_MSG_CHECKING(Mysql version)
-
-  AC_MSG_RESULT($pike_cv_mysql)
+  old_LIBS="$LIBS"
 
   # System libs which might be needed
 
-  if echo $LIBS|grep -- -lsocket >&5 2>&5; then
-    :
-  else
-    AC_CHECK_LIB(socket, socket, [
-      LIBS="-lsocket $LIBS"
-      MYSQL_LIBS="-lsocket ${MYSQL_LIBS}"
-    ], [])
-  fi
-  if echo $LIBS|grep -- -lnsl >&5 2>&5; then
-    :
-  else
-    AC_CHECK_LIB(nsl, gethostbyname, [
-      LIBS="-lnsl $LIBS"
-      MYSQL_LIBS="-lnsl ${MYSQL_LIBS}"
-    ], [])
-  fi
-  if echo $LIBS|grep -- -lm >&5 2>&5; then
-    :
-  else
-    AC_CHECK_LIB(m, floor, [
-      LIBS="-lm $LIBS"
-      MYSQL_LIBS="-lm ${MYSQL_LIBS}"
-    ], [])
-  fi
+  AC_SEARCH_LIBS(socket, socket)
+  AC_SEARCH_LIBS(gethostbyname, nsl)
+  AC_SEARCH_LIBS(floor, m)
 
   # Header check necessary for PIKE_FUNCS_NEED_DECLS.
   AC_CHECK_HEADERS(pthread.h)
@@ -236,21 +197,11 @@ AC_MSG_RESULT(no)
     ])
   ])
 
-  AC_CHECK_LIB(dbug, _db_doprnt_, [
-    LIBS="-ldbug $LIBS"
-    MYSQL_LIBS="-ldbug ${MYSQL_LIBS}"
-  ], [])
-
-  AC_CHECK_LIB(mysys, my_init, [
-    LIBS="-lmysys $LIBS"
-    MYSQL_LIBS="-lmysys ${MYSQL_LIBS}"
-  ], [])
+  AC_SEARCH_LIBS(_db_doprnt_, dbug)
+  AC_SEARCH_LIBS(my_init, mysys)
 
   # mysql 3.23.x libmysqlclient requires zlib...
-  AC_CHECK_LIB(z, compress, [
-    LIBS="-lz $LIBS"
-    MYSQL_LIBS="-lz ${MYSQL_LIBS}"
-  ], [])
+  AC_SEARCH_LIBS(compress, z)
 
   # Try a couple of mysqlclient libs
   # in order of age, newest first.
@@ -329,21 +280,25 @@ else
 fi
 ])
 
-  AC_CHECK_SQLLIB(mysqlclient, [
-    LIBS="-lmysqlclient $LIBS"
-    MYSQL_LIBS="-lmysqlclient ${MYSQL_LIBS}"
-  ], [ 
-    AC_CHECK_SQLLIB(mysqllib, [
-      LIBS="-lmysqllib $LIBS"
-      MYSQL_LIBS="-lmysqllib ${MYSQL_LIBS}"
+  # libmysql.lib is the name for the libmysql.dll wrapper in the
+  # windows releases. There's also a mysqlclient.lib which contain the
+  # static version. We prefer the dynamic one so check libmysql first.
+  AC_CHECK_SQLLIB(libmysql, [
+    LIBS="-llibmysql $LIBS"
+  ], [
+    AC_CHECK_SQLLIB(mysqlclient, [
+      LIBS="-lmysqlclient $LIBS"
     ], [
-      AC_CHECK_SQLLIB(mysql, [
-	LIBS="-lmysql $LIBS"
-	MYSQL_LIBS="-lmysql ${MYSQL_LIBS}"
-      ], [ 
-        PIKE_FEATURE_NODEP(Mysql)
-	pike_cv_mysql="no" 
-	])
+      AC_CHECK_SQLLIB(mysqllib, [
+	LIBS="-lmysqllib $LIBS"
+      ], [
+	AC_CHECK_SQLLIB(mysql, [
+	  LIBS="-lmysql $LIBS"
+	], [
+	  PIKE_FEATURE_NODEP(Mysql)
+	  pike_cv_mysql="no" 
+	  ])
+      ])
     ])
   ])
 
@@ -390,7 +345,6 @@ int main(int argc, char *argv[])
     LIBS=$OLD_LIBS
     CPPFLAGS=$OLD_CPPFLAGS
     LDFLAGS=$OLD_LDFLAGS
-    MYSQL_LIBS=""
   else
     AC_DEFINE(HAVE_MYSQL)
 
@@ -422,7 +376,7 @@ int main(int argc, char *argv[])
         ], [AC_CV_NAME="yes"], [AC_CV_NAME="no"])
       ])
       if test "$AC_CV_NAME" = "yes"; then
-        AC_DEFINE(translit(HAVE_$1,[a-z],[A-Z]))
+	AC_DEFINE(translit(HAVE_$1,[a-z],[A-Z]), [], [Defined if $1 exists.])
       fi
       AC_MSG_RESULT($AC_CV_NAME)
     ])
@@ -431,10 +385,7 @@ int main(int argc, char *argv[])
     PIKE_CHECK_MYSQL_FUNC(mysql_fetch_lengths)
     PIKE_CHECK_MYSQL_FUNC(mysql_options)
     PIKE_CHECK_MYSQL_FUNC(mysql_set_character_set)
-
-    AC_CHECK_LIB(mysqlclient, mysql_ssl_set, [
-      AC_DEFINE(HAVE_MYSQL_SSL)
-    ])
+    PIKE_CHECK_MYSQL_FUNC(mysql_ssl_set)
 
     # This function should exist even in ancient versions, but it
     # appear to exist only in header files sometimes.
@@ -491,10 +442,6 @@ $ret_type * STDCALL mysql_fetch_lengths(MYSQL_RES *mysql)
       fi
     else :; fi
 
-    if test x"$pike_cv_sys_os" = xWindows_NT ; then
-      MYSQL_LIBS="-lshell32 -lkernel32 -lws2_32 -ladvapi32 -luser32 ${MYSQL_LIBS}"
-    fi
-
     # Header checks necessary for PIKE_FUNCS_NEED_DECLS.
     AC_CHECK_HEADERS(stdio.h io.h)
 
@@ -531,7 +478,5 @@ $ret_type * STDCALL mysql_fetch_lengths(MYSQL_RES *mysql)
 
   fi
 fi
-
-AC_SUBST(MYSQL_LIBS)
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
