@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.430 2008/07/16 01:17:50 mast Exp $
+|| $Id: las.c,v 1.431 2008/07/18 13:02:29 mast Exp $
 */
 
 #include "global.h"
@@ -947,6 +947,7 @@ node *debug_mkstrnode(struct pike_string *str)
 #endif
   copy_shared_string(res->u.sval.u.string, str);
   res->type = get_type_of_svalue(&res->u.sval);
+  res->tree_info = OPT_SAFE;
   return res;
 }
 
@@ -958,6 +959,7 @@ node *debug_mkintnode(INT_TYPE nr)
   res->u.sval.subtype = NUMBER_NUMBER;
   res->u.sval.u.integer = nr;
   res->type=get_type_of_svalue( & res->u.sval);
+  res->tree_info = OPT_SAFE;
 
   return res;
 }
@@ -970,6 +972,7 @@ node *debug_mknewintnode(INT_TYPE nr)
   res->u.sval.subtype = NUMBER_NUMBER;
   res->u.sval.u.integer = nr;
   res->type=get_type_of_svalue( & res->u.sval);
+  res->tree_info = OPT_SAFE;
   return res;
 }
 
@@ -983,6 +986,7 @@ node *debug_mkfloatnode(FLOAT_TYPE foo)
   res->u.sval.subtype = 0;
 #endif
   res->u.sval.u.float_number = foo;
+  res->tree_info = OPT_SAFE;
 
   return res;
 }
@@ -1796,6 +1800,7 @@ node *low_mkconstantsvaluenode(const struct svalue *s)
       res->node_info|=OPT_EXTERNAL_DEPEND;
   }
   res->type = get_type_of_svalue(s);
+  res->tree_info |= OPT_SAFE;
   return res;
 }
 
@@ -1946,13 +1951,28 @@ int is_const(node *n)
 
 int node_is_tossable(node *n)
 {
-  return !(n->tree_info & (OPT_SIDE_EFFECT |
-			   OPT_ASSIGNMENT |
-			   OPT_CASE |
-			   OPT_CONTINUE |
-			   OPT_BREAK |
-			   OPT_RETURN
-			   ));
+  if (!(n->tree_info & (OPT_SIDE_EFFECT |
+			OPT_ASSIGNMENT |
+			OPT_CASE |
+			OPT_CONTINUE |
+			OPT_BREAK |
+			OPT_RETURN
+		       ))) {
+    ptrdiff_t args;
+    if (n->tree_info & (OPT_NOT_CONST|OPT_SAFE))
+      return 1;
+    args = eval_low (n, 0);
+    if (args == -1) {
+      n->tree_info |= OPT_SIDE_EFFECT; /* A constant that throws. */
+      return 0;
+    }
+    else {
+      pop_n_elems (args);
+      n->tree_info |= OPT_SAFE;
+      return 1;
+    }
+  }
+  return 0;
 }
 
 /* this one supposes that the value is optimized */
@@ -5218,6 +5238,9 @@ ptrdiff_t eval_low(node *n,int print_error)
 				 
     if(apply_low_safe_and_stupid(Pike_compiler->fake_object, jump))
     {
+      /* Assume the node will throw errors at runtime too. */
+      n->tree_info |= OPT_SIDE_EFFECT;
+      n->node_info |= OPT_SIDE_EFFECT;
       if(print_error)
 	/* Generate error message */
 	if(!Pike_compiler->catch_level)
@@ -5229,15 +5252,13 @@ ptrdiff_t eval_low(node *n,int print_error)
       else {
 	free_svalue(&throw_value);
 	mark_free_svalue (&throw_value);
-	/* Assume the node will throw errors at runtime too. */
-	n->tree_info |= OPT_SIDE_EFFECT;
-	n->node_info |= OPT_SIDE_EFFECT;
       }
     }else{
       if(foo.yes)
 	pop_n_elems(Pike_sp-save_sp);
       else
 	ret=Pike_sp-save_sp;
+      n->tree_info |= OPT_SAFE;
     }
 
     remove_callback(tmp_callback);

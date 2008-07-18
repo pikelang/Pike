@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.h,v 1.80 2008/07/09 20:43:46 mast Exp $
+|| $Id: las.h,v 1.81 2008/07/18 13:02:29 mast Exp $
 */
 
 #ifndef LAS_H
@@ -141,6 +141,9 @@ struct node_s
 #define OPT_APPLY           0x1000 /* contains apply */
 #define OPT_FLAG_NODE	    0x2000 /* don't optimize away unless the
 				    * parent also is optimized away */
+#define OPT_SAFE            0x4000 /* Known to not throw error (which normally
+				    * isn't counted as side effect). Only used
+				    * in tree_info. */
 
 
 /* This is a statement which got custom break/continue label handling.
