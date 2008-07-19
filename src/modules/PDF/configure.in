@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.8 2005/12/02 22:53:10 nilsson Exp $
+# $Id: configure.in,v 1.9 2008/07/19 01:53:29 mast Exp $
 #
 AC_INIT(pdflib_glue.c)
 AC_CONFIG_HEADER(pdf_machine.h)
@@ -17,17 +17,16 @@ if test x$with_libpdf = xyes ; then
   if test x$ac_cv_header_pdflib_h = xyes ; then
 
 # PDFlib might need these
-    AC_CHECK_LIB(z,   deflate,        [ LIBS="${LIBS-} -lz" ])
-    AC_CHECK_LIB(jpeg,jpeg_CreateCompress, [ LIBS="${LIBS-} -ljpeg" ])
-    AC_CHECK_LIB(png, png_read_image, [ LIBS="${LIBS-} -lpng" ])
-    AC_CHECK_LIB(tiff,TIFFOpen,       [ LIBS="${LIBS-} -ltiff" ])
+    AC_SEARCH_LIBS(deflate, z zlib)
+    AC_SEARCH_LIBS(jpeg_CreateCompress, jpeg)
+    AC_SEARCH_LIBS(png_read_image, png libpng)
+    AC_SEARCH_LIBS(TIFFOpen, tiff libtiff)
 
 # now check
-    AC_CHECK_LIB(pdf, PDF_boot, [
+    AC_SEARCH_LIBS(PDF_boot, pdf pdflib, [
       AC_DEFINE(HAVE_LIBPDF) 
-      LIBS="${LIBS-} -lpdf"
       PIKE_FEATURE_OK(PDF.PDFlib)
-      ])
+    ])
 
   fi
 fi
@@ -42,7 +41,7 @@ if test x$with_libpanda = xyes ; then
   if test x$ac_cv_header_panda_functions_h = xyes ; then
 
 # libpanda might need these
-    AC_CHECK_LIB(tiff,TIFFOpen,       [ LIBS="${LIBS-} -ltiff" ])
+    AC_SEARCH_LIBS(TIFFOpen, tiff libtiff)
 
 # now check
     AC_CHECK_LIB(panda, settitle, [
