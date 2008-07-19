@@ -6,7 +6,7 @@ inherit G.Object;
 #ifndef __NT__
 #include <gdk/gdkx.h>
 #else
-#include <gdk/win32/gdkwin32.h>
+#include <gdk/gdkwin32.h>
 #endif
 %}
 //! The GDK2.Bitmap, GDK2.Window and GDK2.Pixmap classes are all GDK drawables.

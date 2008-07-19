@@ -6,7 +6,7 @@ inherit GDK2.Drawable;
 #ifndef __NT__
 #include <gdk/gdkx.h>
 #else
-#include <gdk/win32/gdkwin32.h>
+#include <gdk/gdkwin32.h>
 #endif
 %}
 //! a GDK2.Window object.
@@ -370,7 +370,7 @@ mapping get_property(GDK2.Atom atom, int|void offset, int|void delete_when_done)
 #ifdef AnyPropertyType
                        AnyPropertyType,
 #else
-		       None,
+		       GDK_NONE,
 #endif
                        offset,
                        1024*1024*1024,

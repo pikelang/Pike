@@ -6,7 +6,7 @@ inherit GTK2.Container;
 #ifndef __NT__
 #include <gdk/gdkx.h>
 #else
-#include <gdk/win32/gdkwin32.h>
+#include <gdk/gdkwin32.h>
 #endif
 %}
 

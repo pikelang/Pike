@@ -3,11 +3,7 @@ class GDK2.Pixbuf;
 inherit G.Object;
 
 %{
-#ifdef __NT__
-#include <gdk/win32/gdkwin32.h>
-#else
 #include <gdk-pixbuf/gdk-pixbuf.h>
-#endif
 %}
 
 //! Properties:
