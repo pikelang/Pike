@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.9 2007/07/17 14:41:28 grubba Exp $
+# $Id: configure.in,v 1.10 2008/07/19 13:49:05 mast Exp $
 AC_INIT(libbzip2mod.cmod)
 AC_CONFIG_HEADER(libbzip2mod_config.h)
 AC_ARG_WITH(bz2,     [  --without-bz2       Disable Bz2],[],[with_bz2=yes])
@@ -8,16 +8,19 @@ AC_MODULE_INIT()
 PIKE_FEATURE_WITHOUT(Bz2)
 
 if test x$with_bz2 = xyes ; then
-  PIKE_FEATURE(Bz2,[no (missing libbz2)])
+  PIKE_FEATURE(Bz2,[no (missing lib)])
 
   # NB: bzCompressInit always exists in bz2.
   # no, it doesn't. /Mirar
+  # Or the lib might be called bzip2.lib in GnuWin32. /mast
 
-  AC_CHECK_LIB(bz2, bzCompressInit)
-  AC_CHECK_LIB(bz2, BZ2_bzCompressInit)
+  AC_SEARCH_LIBS(BZ2_bzCompressInit, bz2 bzip2,
+    bz2_lib_found=yes, [
+    AC_SEARCH_LIBS(bzCompressInit, bz2 bzip2,
+      bz2_lib_found=yes)
+    ])
 
-  if test "x$ac_cv_lib_bz2_BZ2_bzCompressInit" = xyes \
-       -o "x$ac_cv_lib_bz2_bzCompressInit" = xyes; then
+  if test "x$bz2_lib_found" = xyes; then
 
     # Must be before AC_CHECK_FUNCS for PIKE_FUNCS_NEED_DECLS to work.
     AC_CHECK_HEADERS(bzlib.h string.h strings.h)
