@@ -149,10 +149,11 @@ void signal_emit(string signal_name, string|void detail)
 		 g_type_name(G_OBJECT_TYPE(THIS->obj)),opts->n_params,args-1);
     }
     {
-      int i;
-      GValue params[opts->n_params+1];
+      unsigned i;
+      GValue *params;
       GValue rvalue={0};
 
+      params = alloca (opts->n_params+1);
       memset(params,0,sizeof(GValue)*(opts->n_params+1)); 
       g_value_init(params+0,G_TYPE_FROM_INSTANCE(THIS->obj));
       g_value_set_object(params+0,G_OBJECT(THIS->obj));
@@ -190,13 +191,11 @@ int new_signal(string name, array types, string return_type)
     struct pike_string *t;
     struct pike_string *ret_type_name;
     struct array *a;
-    GObject *go;
     gchar *name;
     guint id;
     GType *param_types;
     guint n_params;
     GType return_type;
-    struct signal_data *b;
     int i;
 
     get_all_args("new_signal",args,"%t%A%t",&t,&a,&ret_type_name);
