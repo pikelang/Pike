@@ -2,7 +2,7 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.194 2008/07/15 23:24:46 mast Exp $
+// $Id: install.pike,v 1.195 2008/07/19 01:16:49 mast Exp $
 
 // Windows installer FIXMEs:
 //
@@ -2626,28 +2626,27 @@ void do_install()
 
 #ifdef __NT__
     if (export) {
-      if (string pike_build_root = getenv ("PIKE_BUILD_ROOT")) {
-	// Copy dlls by first looking in ../dll relative to every path
-	// in $LIB that is under $PIKE_BUILD_ROOT. If there's no
-	// ../dll then look in ../bin.
-	string pike_build_root =
-	  lower_case (combine_path (pike_build_root)) + "/";
-	foreach (getenv ("LIB") / ";", string lib_dir) {
-	  string dir;
-	  if ((has_prefix (lower_case (dir = combine_path (lib_dir, "../dll")),
-			   pike_build_root) &&
-	       Stdio.is_dir (dir)) ||
-	      // It's intentional that we don't search ../bin if a
-	      // ../dll has been found.
-	      (has_prefix (lower_case (dir = combine_path (lib_dir, "../bin")),
-			   pike_build_root) &&
-	       Stdio.is_dir (dir)))
-	    foreach (glob ("*.dll", get_dir (dir)), string dll_name)
-	      export_file (combine_path (dir, dll_name),
-			   combine_path (vars->TMP_BUILDDIR, dll_name),
-			   combine_path (exec_prefix, dll_name));
+      if (string pike_build_root = getenv ("PIKE_BUILD_ROOT"))
+	if (array(string) dlls =
+	    get_dir (combine_path (pike_build_root, "dll"))) {
+	dll_loop:
+	  foreach (dlls, string dll) {
+	    dll = lower_case (dll);
+	    foreach (getenv ("PATH") / ";", string path) {
+	      string dll_path = combine_path (path, dll);
+	      if (Stdio.exist (dll_path)) {
+		dll_path = normalize_path (dll_path);
+		status ("Including dll", dll_path);
+		dll = basename (dll_path);
+		export_file (dll_path,
+			     combine_path (vars->TMP_BUILDDIR, dll),
+			     combine_path (exec_prefix, dll));
+		continue dll_loop;
+	      }
+	    }
+	    error_msg ("Warning: Could not find dll %s to include.\n", dll);
+	  }
 	}
-      }
     }
 
 #ifndef PRIVATE_CRT
