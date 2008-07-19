@@ -74,14 +74,14 @@ pgtk_has_gtksourceview=nogtksourceview
 AC_SUBST(pgtk_has_gtksourceview11)
 pgtk_has_gtksourceview11=nogtksourceview11
 
-# lib, symbol, ok, fail, feature
+# lib, header, symbol, ok, fail, feature
 AC_DEFUN([AC_CHECK_PKG],
 [
   AC_MSG_CHECKING([for $1])
   if ${ac_tool_prefix}pkg-config $1 2>/dev/null; then
     AC_MSG_RESULT(yes)
 
-    ifelse([$5],,,[PIKE_FEATURE_NODEP([$5])])dnl
+    ifelse([$6],,,[PIKE_FEATURE_NODEP([$6])])dnl
 
     # Note: ORBit-2.0.pc on Solaris 10/x86 adds -mt to cflags,
     #       which gcc doesn't like...
@@ -92,19 +92,23 @@ AC_DEFUN([AC_CHECK_PKG],
     OLD_LIBS="$LIBS"
     LIBS="`${ac_tool_prefix}pkg-config --libs $gtk_final_libs $1 | sed -e 's/\(.*\)/ \1 /' | sed -e 's/ -mt / /g'` $LIBS"
     CFLAGS="`${ac_tool_prefix}pkg-config --cflags $gtk_final_libs $1 | sed -e 's/\(.*\)/ \1 /' | sed -e 's/ -mt / /g'` $CFLAGS"
-    AC_CHECK_FUNCS($2)
+
+    # Header check necessary for PIKE_FUNCS_NEED_DECLS.
+    ifelse([$2],,,[AC_CHECK_HEADERS($2)])
+
+    AC_CHECK_FUNCS($3)
     LIBS="$OLD_LIBS"
     CFLAGS="$OLD_CFLAGS"
-    if test "x$ac_cv_func_$2" = "xyes"; then
+    if test "x$ac_cv_func_$3" = "xyes"; then
       gtk_final_libs="$gtk_final_libs $1"
-      ifelse([$3],,ifelse([$5],,,[PIKE_FEATURE_OK([$5])]),[$3])dnl
+      ifelse([$4],,ifelse([$6],,,[PIKE_FEATURE_OK([$6])]),[$4])dnl
     else
       echo "Disabled use of $1."
-      ifelse([$4],,,[$4])dnl
+      ifelse([$5],,,[$5])dnl
     fi
   else
     AC_MSG_RESULT(no)
-    ifelse([$4],,,[$4])dnl
+    ifelse([$5],,,[$5])dnl
   fi
 ])
 
@@ -114,7 +118,7 @@ if test "$PKG_CONFIG" = "no" ; then
 else
   gtk_test_libs="gtk+-2.0 libgnome-2.0 libglade-2.0 libgnomeui-2.0 libpanelapplet-2.0"
   gtk_final_libs=""
-  AC_CHECK_PKG(gtk+-2.0, gtk_init, [
+  AC_CHECK_PKG(gtk+-2.0, gtk/gtk.h, gtk_init, [
     PIKE_FEATURE_OK(GTK2)
     WITH_GTK=1
 
@@ -163,7 +167,7 @@ else
     fi
   ],,GTK2)
   if test "x$WITH_GTK" = "x1"; then
-    AC_CHECK_PKG(pango, pango_context_new, [
+    AC_CHECK_PKG(pango,, pango_context_new, [
       pgtk_has_pango=pango
       AC_DEFINE(HAVE_PANGO)
 
@@ -204,7 +208,7 @@ else
       fi
       AC_MSG_RESULT($pangovers)
     ])
-    AC_CHECK_PKG(atk, atk_relation_new, [
+    AC_CHECK_PKG(atk,, atk_relation_new, [
       pgtk_has_atk=atk
       AC_DEFINE(HAVE_ATK)
 
@@ -223,32 +227,34 @@ else
       fi
       AC_MSG_RESULT($atkvers)
     ])
-    AC_CHECK_PKG(libgnome-2.0, gnome_program_init, [
+    AC_CHECK_PKG(libgnome-2.0, libgnomeui/libgnomeui.h, gnome_program_init, [
       AC_DEFINE(HAVE_GNOME)
       pgtk_has_gnome=gnome
     ])
-    AC_CHECK_PKG(cairo, cairo_create, [
+    AC_CHECK_PKG(cairo,, cairo_create, [
       AC_DEFINE(HAVE_CAIRO)
       pgtk_has_cairo=cairo
     ])
-    AC_CHECK_PKG(libglade-2.0, glade_init, [
+    AC_CHECK_PKG(libglade-2.0, glade/glade-init.h, glade_init, [
       AC_DEFINE(HAVE_GLADE)
       pgtk_has_libglade=libglade
     ])
-    AC_CHECK_PKG(libgnomeui-2.0, gnome_window_icon_init, [
+    AC_CHECK_PKG(libgnomeui-2.0,, gnome_window_icon_init, [
       AC_DEFINE(HAVE_GNOMEUI)
       pgtk_has_gnomeui=gnomeui
     ])
-    AC_CHECK_PKG(libpanelapplet-2.0, panel_applet_factory_main)
-    AC_CHECK_PKG(libgnomecanvas-2.0, gnome_canvas_new, [
+    AC_CHECK_PKG(libpanelapplet-2.0, panel-applet.h, panel_applet_factory_main)
+    AC_CHECK_PKG(libgnomecanvas-2.0,
+		 libgnomecanvas/libgnomecanvas.h, gnome_canvas_new, [
       AC_DEFINE(HAVE_GNOMECANVAS)
       pgtk_has_gnomecanvas=gnomecanvas
     ])
-    AC_CHECK_PKG(gtkdatabox, gtk_databox_data_add, [
+    AC_CHECK_PKG(gtkdatabox, gtkdatabox.h, gtk_databox_data_add, [
       AC_DEFINE(HAVE_GTKDATABOX)
       pgtk_has_gtkdatabox=gtkdatabox
     ])
-    AC_CHECK_PKG(gtksourceview-1.0, gtk_source_view_new, [
+    AC_CHECK_PKG(gtksourceview-1.0, gtksourceview/gtksourceview.h,
+		 gtk_source_view_new, [
       AC_DEFINE(HAVE_GTKSOURCEVIEW)
       pgtk_has_gtksourceview=gtksourceview
 
