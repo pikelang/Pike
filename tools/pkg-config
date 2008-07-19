@@ -1,0 +1,67 @@
+#!/usr/bin/env pike
+// -*- pike -*-
+
+inherit "lib.pike";
+
+int main(int argc, array(string) argv)
+{
+  array(string) newargs = ({});
+
+  foreach (Getopt.find_all_options (
+    argv, ({
+      // Map --libs/--cflags to --libs-only-l/--cflags-only-I since
+      // rntcl probably won't understand the other ones anyway
+      // (they're normally completely gcc-centric).
+      ({"--libs-only-l", Getopt.NO_ARG, ({"--libs", "--libs-only-l"})}),
+      ({"--cflags-only-I", Getopt.NO_ARG, ({"--cflags", "--cflags-only-I"})}),
+      ({"--libs-only-other", Getopt.NO_ARG, ({"--libs-only-other"})}),
+      ({"--cflags-only-other", Getopt.NO_ARG, ({"--cflags-only-other"})}),
+      ({"--version", Getopt.NO_ARG, ({"--version"})}),
+      ({"--modversion", Getopt.NO_ARG, ({"--modversion"})}),
+      ({"--atleast-pkgconfig-version", Getopt.HAS_ARG,
+	({"--atleast-pkgconfig-version"})}),
+      ({"--static", Getopt.NO_ARG, ({"--static"})}),
+      ({"--short-errors", Getopt.NO_ARG, ({"--short-errors"})}),
+      ({"--variable", Getopt.HAS_ARG, ({"--variable"})}),
+      ({"--define-variable", Getopt.HAS_ARG, ({"--define-variable"})}),
+      ({"--exists", Getopt.NO_ARG, ({"--exists"})}),
+      ({"--uninstalled", Getopt.NO_ARG, ({"--uninstalled"})}),
+      ({"--atleast-version", Getopt.HAS_ARG, ({"--atleast-version"})}),
+      ({"--exact-version", Getopt.HAS_ARG, ({"--exact-version"})}),
+      ({"--max-version", Getopt.HAS_ARG, ({"--max-version"})}),
+      ({"--list-all", Getopt.NO_ARG, ({"--list-all"})}),
+      ({"--debug", Getopt.NO_ARG, ({"--debug"})}),
+      ({"--print-errors", Getopt.NO_ARG, ({"--print-errors"})}),
+      ({"--silence-errors", Getopt.NO_ARG, ({"--silence-errors"})}),
+      ({"--errors-to-stdout", Getopt.NO_ARG, ({"--errors-to-stdout"})}),
+      ({"--dont-define-prefix", Getopt.NO_ARG, ({"--dont-define-prefix"})}),
+      ({"--prefix-variable", Getopt.HAS_ARG, ({"--prefix-variable"})}),
+      ({"--msvc-syntax", Getopt.NO_ARG, ({"--msvc-syntax"})}),
+      ({"--usage", Getopt.NO_ARG, ({"--usage"})}),
+      ({"--help", Getopt.NO_ARG, ({"-?", "--help"})}),
+    })), array opt)
+    switch (opt[0]) {
+      case "--libs-only-other":
+      case "--cflags-only-other":
+	werror ("Ignored %s.\n", opt[0]);
+	break;
+      case "--atleast-pkgconfig-version":
+      case "--variable":
+      case "--define-variable":
+      case "--atleast-version":
+      case "--exact-version":
+      case "--max-version":
+	newargs += ({opt[0] + "=" + opt[1]}); break;
+      default:
+	newargs += ({opt[0]}); break;
+    }
+
+  newargs = ({"pkg-config"}) + newargs+ Getopt.get_args (argv[1..]);
+
+  int ret = silent_do_cmd (newargs);
+
+  if(ret)
+    werror("The command returned error code %d.\n",ret);
+
+  exit(ret);
+}
