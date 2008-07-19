@@ -40,8 +40,10 @@ inherit G.Object;
 int xid()
 //! Return the xwindow id.
 {
+#ifdef GDK_WINDOW_XWINDOW
   pgtk2_pop_n_elems(args);
   push_int((INT_TYPE)GDK_WINDOW_XWINDOW(GDK_DRAWABLE(THIS->obj)));
+#endif
 }
 
 int xsize()
