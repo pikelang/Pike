@@ -111,10 +111,8 @@ void draw_arc(GDK2.GC gc, int filledp, int x1, int y1, int x2, int y2,
 void draw_text(GDK2.GC gc, int x, int y, string text)
 //! y is used as the baseline for the text.<br />
 {
-  struct object *g,*f;
+  struct object *g;
   INT_TYPE x,y;
-  struct svalue *sv;
-  char *swapped;
   PangoContext *pc;
   PangoLayout *pl;
   struct pike_string *text;
