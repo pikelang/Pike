@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pgtk.h,v 1.18 2008/01/30 13:29:54 per Exp $
+|| $Id: pgtk.h,v 1.19 2008/07/19 10:50:35 mast Exp $
 */
 
 /* Sort of unnessesary, and decreases code-size with 140Kb */
@@ -38,11 +38,6 @@
 
 #ifdef HAVE_GNOMECANVAS
 #include <libgnomecanvas/libgnomecanvas.h>
-#endif
-
-#ifdef __NT__
-/* Sockets are unimplemented on NT */
-#undef GTK_TYPE_SOCKET
 #endif
 
 #ifdef HAVE_GTKEXTRA_GTKEXTRA_H
