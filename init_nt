@@ -1,5 +1,30 @@
 #!/bin/sh
 
+case /$0 in
+  */init_nt)
+    # We were executed we can find the path!
+    this=$0
+    old_cwd=`pwd`
+    while :; do
+      NT_TOOL_BASE=`dirname "$this"`
+      this=`basename "$this"`
+      test "x$NT_TOOL_BASE" != "x" && cd "$NT_TOOL_BASE"
+      NT_TOOL_BASE=`pwd -P`
+      if [ -h "$this" ]; then
+	this=`find $this -printf %l`
+      else
+	break
+      fi
+    done
+    cd "$old_cwd"
+  ;;
+
+  *)
+    # We were sourced, we cannot find the path...
+    NT_TOOL_BASE=`pwd`
+  ;;
+esac
+
 # Support local settings.
 INIT_NTRC=${INIT_NTRC-"$HOME/.init_ntrc"}
 if [ -f "$INIT_NTRC" ]; then
@@ -95,48 +120,23 @@ esac
 
 # Don't edit anything below this point..
 
-case /$0 in
-  */init_nt)
-    # We were executed we can find the path!
-    this=$0
-    old_cwd=`pwd`
-    while :; do
-      base=`dirname "$this"`
-      this=`basename "$this"`
-      test "x$base" != "x" && cd "$base"
-      base=`pwd`
-      if [ -h "$this" ]; then
-	this=`find $this -printf %l`
-      else
-	break
-      fi
-    done
-    cd "$old_cwd"
-  ;;
-
-  *)
-    # We were sourced, we cannot find the path...
-    base=`pwd`
-  ;;
-esac
-
 if [ "x$OSTYPE" = xcygwin32 ]; then
   REMOTE_METHOD=cygwin
-  driveletter=`echo $base | sed -e 's@^//\(.\)/.*@\1@'`
+  driveletter=`echo $NT_TOOL_BASE | sed -e 's@^//\(.\)/.*@\1@'`
   if [ "x$driveletter" != "x" ]; then
     NTDRIVE=${driveletter}:
     NTMOUNT="//$driveletter"
   fi
-  mkdir $base/cygtools 2>/dev/null || :
+  mkdir $NT_TOOL_BASE/cygtools 2>/dev/null || :
   (
-    cd $base/tools
-    cp rntcc rntcl ar nm ranlib uname bash-fixup sprsh lib lib.pike $base/cygtools || :
+    cd $NT_TOOL_BASE/tools
+    cp rntcc rntcl ar nm ranlib uname bash-fixup sprsh lib lib.pike $NT_TOOL_BASE/cygtools || :
   )
   SHELL=bash
   
-  NT_TOOL_PATH=$base/cygtools
+  NT_TOOL_PATH=$NT_TOOL_BASE/cygtools
 else
-  NT_TOOL_PATH=$base/tools
+  NT_TOOL_PATH=$NT_TOOL_BASE/tools
 fi
 
 
