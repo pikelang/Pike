@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.9 2008/07/18 19:01:58 mast Exp $
+# $Id: configure.in,v 1.10 2008/07/20 09:14:25 grubba Exp $
 AC_INIT(gettext.c)
 AC_CONFIG_HEADER(config.h)
 
@@ -10,6 +10,7 @@ AC_HAVE_HEADERS(locale.h libintl.h iconv.h)
 #   gettext checking (localization)
 ########################################################################
 
+AC_CHECK_LIB(iconv, libiconv)
 AC_SEARCH_LIBS(iconv, iconv)
 AC_SEARCH_LIBS(gettext, intl libintl)
 AC_CHECK_FUNCS(setlocale gettext iconv)
