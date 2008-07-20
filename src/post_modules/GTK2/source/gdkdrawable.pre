@@ -37,14 +37,14 @@ inherit G.Object;
 
 #include "common_draw.inc"
 
+require x11;
 int xid()
 //! Return the xwindow id.
 {
-#ifdef GDK_WINDOW_XWINDOW
   pgtk2_pop_n_elems(args);
   push_int((INT_TYPE)GDK_WINDOW_XWINDOW(GDK_DRAWABLE(THIS->obj)));
-#endif
 }
+endrequire;
 
 int xsize()
 //! Returns the width of the drawable specified in pixels

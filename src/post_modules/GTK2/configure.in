@@ -29,6 +29,7 @@ AC_CHECK_FUNCS( gethrtime signal sigaction )
 AC_PATH_PROG(PKG_CONFIG,${ac_tool_prefix}pkg-config,no)
 
 AC_SUBST(have_x11)
+have_x11=nox11
 AC_SUBST(pgtk_has_gtk_beta)
 pgtk_has_gtk_beta=nogtk_beta
 AC_SUBST(pgtk_has_gtk212)
@@ -308,6 +309,25 @@ if test "x$pgtk_cv_g_signal_connect_has_six_args" = "xyes"; then
   AC_DEFINE(HAVE_G_SIGNAL_CONNECT_DATA_WITH_SIX_ARGS)
 else
   AC_MSG_RESULT(no -- old glib assumed)
+fi
+
+AC_MSG_CHECKING([if we are using X11])
+AC_CACHE_VAL(pkgt_have_x11, [
+   AC_TRY_COMPILE([
+#include <gdk/gdk.h> 
+#include <gdk/gdkx.h> 
+ ], 
+ [
+     GdkWindow *w = (GdkWindow *)0;
+     Window window = GDK_WINDOW_XWINDOW (w);
+ ], 
+ [have_x11=x11],
+ [have_x11=nox11])
+])
+if test "x$have_x11" = "xx11"; then
+  AC_MSG_RESULT(yes)
+else
+  AC_MSG_RESULT(no)
 fi
 
 LIBS="$OLD_LIBS"
