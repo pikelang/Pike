@@ -247,6 +247,15 @@ void handle_incoming_connection(object(Stdio.File) io)
       break;
     }
 
+    case "sprshd-ping": {
+      // This doesn't require that the paths are mapped.
+      string s = "sprshd is alive.\n";
+      io->write(sprintf("%4c%s", sizeof (s), s));
+      io->write(sprintf("%4c",0));
+      io->write(sprintf("%4c",0));
+      break;
+    }
+
     default:
 #ifdef WINE
       void my_proxy(Stdio.File from, Stdio.File to)
