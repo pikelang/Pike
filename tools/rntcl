@@ -471,7 +471,7 @@ int main(int argc, array(string) argv)
       }
 
       // Libs to ignore. C.f.
-      // http://msdn.microsoft.com/library/en-us/vccore/html/LNK4098.asp
+      // http://msdn.microsoft.com/en-us/library/aa267384.aspx
       ldopts += map (({"libc.lib", "libcmt.lib", "msvcrt.lib",
 		       "libcd.lib", "libcmtd.lib", "msvcrtd.lib",
 		     }) - ({crt_lib}),
