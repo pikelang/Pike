@@ -477,11 +477,11 @@ void grab_input_focus( )
 //! Useful for override-redirect windows in games. Note that the only
 //! way to get rid of the focus is to close the window, be careful.
 {
-  GdkWindowPrivate *pr=(GdkWindowPrivate*)THIS->obj;
+  GdkWindow *w=GDK_WINDOW(THIS->obj);
 
-  XSetInputFocus(pr->xdisplay,pr->xwindow,RevertToParent,CurrentTime);
-  XGrabPointer(pr->xdisplay,pr->xwindow,1,0,GrabModeAsync,GrabModeAsync,
-	       pr->xwindow,None,CurrentTime);
+  XSetInputFocus(GDK_WINDOW_XDISPLAY(w),GDK_WINDOW_XWINDOW(w),RevertToParent,CurrentTime);
+  XGrabPointer(GDK_WINDOW_XDISPLAY(w),GDK_WINDOW_XWINDOW(w),1,0,GrabModeAsync,GrabModeAsync,
+	       GDK_WINDOW_XWINDOW(w),None,CurrentTime);
   RETURN_THIS();
 }
 
