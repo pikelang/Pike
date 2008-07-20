@@ -31,7 +31,7 @@ docs:  doc@WITH_GTK@
 
 doc0:
 
-doc1:
+doc1: options
 	$(RUNPIKE) $(SRCDIR)/build_pgtk.pike --source='$(SRCDIR)/source/'\
 	           --destination="$(SRCDIR)/refdoc/" \
 	           $(SRCDIR)/output/doc-pikeref.pike
@@ -42,7 +42,7 @@ compile0:
 	@echo "Pike-GTK2 disabled."
 	$(MAKE) all
 
-compile1:
+compile1: options
 	$(RUNPIKE) $(SRCDIR)/build_pgtk.pike --source='$(SRCDIR)/source/' \
 		   $(SRCDIR)/output/few.pike
 #	if $(RUNPIKE) $(SRCDIR)/build_pgtk.pike --source='$(SRCDIR)/source/' \
