@@ -447,12 +447,12 @@ void move_cursor_abs( GDK2.Window w, int dx, int dy )
 {
   INT_TYPE x, y;
   struct object *o;
-  GdkWindowPrivate *priv;
+  GdkWindow *w;
   get_all_args("move_cursor_abs",args,"%o%i%i",&o,&x,&y);
-  priv = (GdkWindowPrivate *)get_gdkobject( o, window );
-  if( !priv )
+  w = GDK_WINDOW(get_gdkobject( o, window ));
+  if( !w )
     Pike_error("No window specified!\n");
-  XWarpPointer(GDK_DISPLAY(),None,priv->xwindow,0,0,0,0,x,y);
+  XWarpPointer(GDK_DISPLAY(),None,GDK_WINDOW_XWINDOW(w),0,0,0,0,x,y);
   pgtk2_pop_n_elems(args);
 }
 
