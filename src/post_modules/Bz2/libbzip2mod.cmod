@@ -796,8 +796,16 @@ PIKECLASS Inflate
 /*! @endclass
 */
 
+#ifndef __NT__
+/* We currentlu have to disable this on Windows since we typically
+ * have a different CRT in the bz2 lib than in pike. That makes it
+ * impossible to pass fd's between them. */
+
 /*! @class File
  *! Low-level implementation of read/write support for Bzip2 files
+ *!
+ *! @note
+ *! This class is currently not available on Windows.
  */
 
 
@@ -815,6 +823,7 @@ PIKECLASS File
 
   PIKEFUN int close(){
     if(args == 0){
+      if (!THIS->fp) RETURN (1);
       switch(THIS->mode){
       case READ_MODE:
 	bzReadClose(&(THIS->bzerror),THIS->file);
@@ -951,16 +960,16 @@ PIKECLASS File
       tmp = fopen(file_name->str,"wb");
     }
     if(tmp != NULL){
-      THIS->fp = tmp;
       THIS->file = bzWriteOpen(&(THIS->bzerror),tmp,compression_rate,0,work_factor);
-      
+
       switch(THIS->bzerror){
       case BZ_OK:
 	break;
       default:
 	fclose(tmp);
-	Pike_error("Error in Bz2.File()->write_open().\n");
+	Pike_error("Error in Bz2.File()->write_open(): %d\n", THIS->bzerror);
       }
+      THIS->fp = tmp;
       THIS->mode = WRITE_MODE;
     }
     
@@ -1160,6 +1169,9 @@ PIKECLASS File
       }
     }
 }
+
+#endif	/* !__NT__ */
+
 #endif
 #endif  /* end HAVE_LIBLIBZIP2 */
 
