@@ -2,7 +2,6 @@ START_MARKER
 cond([[ master()->resolv("Bz2")->Deflate ]], [[
 
 test_true([[Bz2.Inflate();]])
-test_true([[Bz2.File();]])
 define(test_codec,[[
   test_eq([[Bz2.Deflate()->finish($1)]],[[$2]])
   test_eq([[Bz2.Inflate()->inflate($2)]],[[$1]])
@@ -52,12 +51,12 @@ MIME.decode_base64("QlpoOTFBWSZTWe3ga8wAAAF/////////////////////////////////////
 MIME.decode_base64("QlpoOTFBWSZTWe3ga8yAAAF/////////////////////////////////////////////wAFgAS//9VVIAAAAAAAAAAAAAAAAAAAAEwmAAAAAAAAAAAAAAAAAABMAiTAATAAEwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASYACYAAmAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACTAATAAEwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/qAQNBEFQZB0IQlCkLQxDUOQ9EERRJE0URVFkXRhGUaRtHEdR5H0gSFIkjSRJUmSdKEpSpK0sS1LkvTBMUyTNNE1TZN04TlOk7TxPU+T9QFBUJQ1EUVRlHUhSVKUtTFNU5T1QVFUlTVRVVWVdWFZVpW1cV1XlfWBYViWNZFlWZZ1oWlalrgUBbFtW5b1wXFclzXRdV2XdeF5Xpe18X1fl/f4wDAsEwb/WEYVhmHYhiWKYtjGNY5j2QZFkmTZRlWWZdmGZZpm2cZ1nmfaBoWiaNpGlaZp2oalqmraxrWua9sGxbJs20bVtm3bhuW6btvG9b5v3AcFwnDcRxXGcdyHJcpy3Mc1znPdB0XSdN1HVdZ13Ydl2nbdx3Xed94HheJ43keV5nneh6Xqet7Hte573wfF8nzfR9X/Ps+78Py/T9v4/r/xdyRThQkO3ga8wA=")
 })]])
 
-]])
-cond([[ master()->resolv("Bz2")->Deflate ]], [[
-
 test_eq([[Bz2.BZ_RUN]],0)
 test_eq([[Bz2.BZ_FLUSH]],1)
 test_eq([[Bz2.BZ_FINISH]],2)
+
+]])
+cond([[ master()->resolv("Bz2")->Deflate ]], [[
 
 test_any([[
 
@@ -101,6 +100,9 @@ test_any([[
   return(out_data == in_data);
  
 ]],1)
+
+]])
+cond([[ master()->resolv("Bz2")->File ]], [[
 
 test_any([[
 
