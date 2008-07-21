@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.218 2008/07/18 10:46:30 grubba Exp $
+|| $Id: array.c,v 1.219 2008/07/21 14:02:12 grubba Exp $
 */
 
 #include "global.h"
@@ -1579,10 +1579,11 @@ PMOD_EXPORT struct array *array_zip(struct array *a, struct array *b,INT32 *zipp
   return ret;
 }
 
-/** add an arbitrary number of arrays together
-* @param argp an array of svalues containing the arrays to be concatenated
-* @param args the number of elements in argp
-* @returns the resulting struct array.
+/** Add an arbitrary number of arrays together (destructively).
+* @param argp An array of svalues containing the arrays to be concatenated
+*             Note that the svalues may get modified by this function.
+* @param args The number of elements in argp
+* @returns The resulting struct array.
 */
 PMOD_EXPORT struct array *add_arrays(struct svalue *argp, INT32 args)
 {
@@ -1595,41 +1596,37 @@ PMOD_EXPORT struct array *add_arrays(struct svalue *argp, INT32 args)
 
 #if 1
   {
-    INT32 tmp=0;
-    INT32 tmp2 = size + 1;
+    INT32 tmp=0;	/* Svalues needed so far. */
+    INT32 tmp2 = 0;
     INT32 e2 = -1;
 
     for(e=0;e<args;e++)
     {
       v=argp[e].u.array;
-      if(v->refs == 1 &&
-	 v->malloced_size >= size)
+      if(v->refs == 1 && v->malloced_size >= size)
       {
 	if ((v->item - v->real_item) >= tmp) {
 	  debug_malloc_touch(v);
-	  argp[e].type=T_INT;
-	  argp[e].subtype = NUMBER_NUMBER;
+	  mark_free_svalue(argp + e);
 	  for(tmp=e-1;tmp>=0;tmp--)
 	  {
-	    debug_malloc_touch(argp[tmp].u.array);
-	    v->type_field|=argp[tmp].u.array->type_field;
-	    assign_svalues_no_free(ITEM(v) - argp[tmp].u.array->size,
-				   ITEM(argp[tmp].u.array),
-				   argp[tmp].u.array->size,
-				   argp[tmp].u.array->type_field);
-	    v->item-=argp[tmp].u.array->size;
-	    v->size+=argp[tmp].u.array->size;
+	    v2 = argp[tmp].u.array;
+	    debug_malloc_touch(v2);
+	    v->type_field |= v2->type_field;
+	    assign_svalues_no_free(ITEM(v) - v2->size, ITEM(v2),
+				   v2->size, v2->type_field);
+	    v->item -= v2->size;
+	    v->size += v2->size;
 	  }
 
 	  for(tmp=e+1;tmp<args;tmp++)
 	  {
-	    debug_malloc_touch(argp[tmp].u.array);
-	    v->type_field|=argp[tmp].u.array->type_field;
-	    assign_svalues_no_free(ITEM(v) + v->size,
-				   ITEM(argp[tmp].u.array),
-				   argp[tmp].u.array->size,
-				   argp[tmp].u.array->type_field);
-	    v->size+=argp[tmp].u.array->size;
+	    v2 = argp[tmp].u.array;
+	    debug_malloc_touch(v2);
+	    v->type_field |= v2->type_field;
+	    assign_svalues_no_free(ITEM(v) + v->size, ITEM(v2),
+				   v2->size, v2->type_field);
+	    v->size += v2->size;
 	  }
 #ifdef PIKE_DEBUG
 	  if(d_flag>1)
@@ -1637,9 +1634,13 @@ PMOD_EXPORT struct array *add_arrays(struct svalue *argp, INT32 args)
 #endif
 	  return v;
 	}
-	if (tmp - (v->item - v->real_item) < tmp2) {
-	  /* Got a potential candidate. */
-	  tmp2 = tmp - (v->item - v->real_item);
+	if (!v2 || (v->size > v2->size)) {
+	  /* Got a potential candidate.
+	   *
+	   * Optimize for maximum MEMMOVE()
+	   * (ie minimum assign_svalues_no_free()).
+	   */
+	  tmp2 = tmp;
 	  v2 = v;
 	  e2 = e;
 	}
@@ -1648,31 +1649,28 @@ PMOD_EXPORT struct array *add_arrays(struct svalue *argp, INT32 args)
     }
     if (v2) {
       debug_malloc_touch(v2);
-      argp[e2].type=T_INT;
-      argp[e2].subtype = NUMBER_NUMBER;
-      MEMMOVE((char *)(ITEM(v2)+tmp2), (char *)ITEM(v2),
+      mark_free_svalue(argp + e2);
+      MEMMOVE((char *)(v2->real_item + tmp2), (char *)ITEM(v2),
 	      v2->size * sizeof(struct svalue));
-      v2->item += tmp2;
+      v2->item = v2->real_item + tmp2;
       for(tmp=e2-1;tmp>=0;tmp--)
       {
-	debug_malloc_touch(argp[tmp].u.array);
-	v2->type_field|=argp[tmp].u.array->type_field;
-	assign_svalues_no_free(ITEM(v2) - argp[tmp].u.array->size,
-			       ITEM(argp[tmp].u.array),
-			       argp[tmp].u.array->size,
-			       argp[tmp].u.array->type_field);
-	v2->item-=argp[tmp].u.array->size;
-	v2->size+=argp[tmp].u.array->size;
+	v = argp[tmp].u.array;
+	debug_malloc_touch(v);
+	v2->type_field |= v->type_field;
+	assign_svalues_no_free(ITEM(v2) - v->size, ITEM(v),
+			       v->size, v->type_field);
+	v2->item -= v->size;
+	v2->size += v->size;
       }
       for(tmp=e2+1;tmp<args;tmp++)
       {
-	debug_malloc_touch(argp[tmp].u.array);
-	v2->type_field|=argp[tmp].u.array->type_field;
-	assign_svalues_no_free(ITEM(v2) + v2->size,
-			       ITEM(argp[tmp].u.array),
-			       argp[tmp].u.array->size,
-			       argp[tmp].u.array->type_field);
-	v2->size+=argp[tmp].u.array->size;
+	v = argp[tmp].u.array;
+	debug_malloc_touch(v);
+	v2->type_field |= v->type_field;
+	assign_svalues_no_free(ITEM(v2) + v2->size, ITEM(v),
+			       v->size, v->type_field);
+	v2->size += v->size;
       }
 #ifdef PIKE_DEBUG
       if(d_flag>1)
@@ -1683,12 +1681,11 @@ PMOD_EXPORT struct array *add_arrays(struct svalue *argp, INT32 args)
   }
 #endif
 
-  if(args && argp[0].u.array->refs==1)
+  if(args && (v2 = argp[0].u.array)->refs==1)
   {
-    e=argp[0].u.array->size;
-    v=resize_array(argp[0].u.array, size);
-    argp[0].type=T_INT;
-    argp[0].subtype = NUMBER_NUMBER;
+    e = v2->size;
+    v = resize_array(v2, size);
+    mark_free_svalue(argp);
     size=e;
     e=1;
   }else{
@@ -1699,12 +1696,10 @@ PMOD_EXPORT struct array *add_arrays(struct svalue *argp, INT32 args)
 
   for(; e<args; e++)
   {
-    v->type_field|=argp[e].u.array->type_field;
-    assign_svalues_no_free(ITEM(v)+size,
-			   ITEM(argp[e].u.array),
-			   argp[e].u.array->size,
-			   argp[e].u.array->type_field);
-    size+=argp[e].u.array->size;
+    v2 = argp[e].u.array;
+    v->type_field |= v2->type_field;
+    assign_svalues_no_free(ITEM(v)+size, ITEM(v2), v2->size, v2->type_field);
+    size += v2->size;
   }
 
   return v;
