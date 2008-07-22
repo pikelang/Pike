@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.168 2008/07/21 23:36:58 marcus Exp $
+dnl $Id: aclocal.m4,v 1.169 2008/07/22 19:31:48 mast Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -377,6 +377,55 @@ ifelse([$3], , , [$3
 fi
 ])
 
+dnl PIKE_SEARCH_LIBS(FUNCTION, CALL-CODE, SEARCH-LIBS,
+dnl                  [ACTION-IF-FOUND], [ACTION-IF-NOT-FOUND],
+dnl                  [OTHER-LIBRARIES])
+dnl
+dnl This is like AC_SEARCH_LIBS except that the added argument
+dnl CALL-CODE is a complete code snippet that should make a typewise
+dnl correct call to the function. It can be necessary in some cases
+dnl where we have name mangling, e.g. in Windows libs that use
+dnl __stdcall.
+dnl
+dnl Only applicable if PIKE_FUNCS_NEED_DECLS is enabled, otherwise it
+dnl just wraps AC_SEARCH_LIBS.
+define([PIKE_SEARCH_LIBS], [
+  if test x$pike_cv_funcs_need_decls = xyes; then
+    dnl FIXME: Should use AC_LANG_CONFTEST and AC_LINK_IFELSE available
+    dnl in more modern autoconfs.
+    AC_MSG_CHECKING([for library containing $1])
+    AC_CACHE_VAL(pike_cv_search_$1, [
+      pike_lib_search_save_LIBS=$LIBS
+      test -f hdrlist.h || echo > hdrlist.h
+      for pike_lib in '' $3; do
+	if test -z "$pike_lib"; then
+	  pike_cv_search_$1="none required"
+	else
+	  pike_cv_search_$1=-l$pike_lib
+	  LIBS="-l$pike_lib $6 $pike_lib_search_save_LIBS"
+	fi
+	AC_TRY_LINK([
+#include "hdrlist.h"], [
+$2], break, pike_cv_search_$1=no)
+      done
+      LIBS=$pike_lib_search_save_LIBS
+    ])
+    if test "$pike_cv_search_$1" = no; then
+      AC_MSG_RESULT(no)
+      $5
+    else
+      AC_MSG_RESULT($pike_cv_search_$1)
+      test "$pike_cv_search_$1" = "none required" || LIBS="$pike_cv_search_$1 $LIBS"
+      $4
+    fi
+  else
+    AC_SEARCH_LIBS([$1],[$3],[
+      dnl In case ACTION-IF-FOUND refers to the pike_cv_search_* variable.
+      pike_cv_search_$1=$ac_cv_search_$1
+      $4],[$5],[$6])
+  fi
+])
+
 define([ORIG_AC_CHECK_SIZEOF], defn([AC_CHECK_SIZEOF]))
 pushdef([AC_CHECK_SIZEOF],
 [
@@ -594,7 +643,7 @@ define([PIKE_RETAIN_VARIABLES],
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.168 2008/07/21 23:36:58 marcus Exp $
+  # $Id: aclocal.m4,v 1.169 2008/07/22 19:31:48 mast Exp $
 
   MY_AC_PROG_CC
 
