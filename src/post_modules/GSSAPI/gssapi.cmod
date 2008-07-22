@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gssapi.cmod,v 1.9 2008/06/16 14:30:02 mast Exp $
+|| $Id: gssapi.cmod,v 1.10 2008/07/22 21:28:02 mast Exp $
 */
 
 /*
@@ -1012,10 +1012,9 @@ static DECLSPEC(noreturn) void handle_error (
 )
 /* Assumed to be called only if GSS_ERROR (maj) is true. */
 {
-  OM_uint32 msg_ctx;
-
   if (GSS_CALLING_ERROR (major)) {
 #ifdef PIKE_DEBUG
+    OM_uint32 msg_ctx;
     fprintf (stderr, "Unexpected error in call to %s "
 	     "from gssapi.cmod:%d: %x/%x\n", gss_func, line, major, minor);
 
@@ -2592,10 +2591,10 @@ PIKECLASS Context
       CHECK_UNEXPECTED_ERROR (gss_inquire_context, MAJ, MIN);		\
   } while (0)
 
-#define CHECK_GOT_CONTEXT(FN) do {					\
+#define CHECK_GOT_CONTEXT() do {					\
     if (THIS_CONTEXT->ctx == GSS_C_NO_CONTEXT) {			\
       SAVE_STATUS (GSS_S_NO_CONTEXT, 0);				\
-      handle_context_error (__LINE__, #FN, GSS_S_NO_CONTEXT, 0);	\
+      throw_gssapi_error (GSS_S_NO_CONTEXT, 0, GSS_C_NO_OID, NULL);	\
     }									\
   } while (0)
 
@@ -4269,7 +4268,6 @@ PIKECLASS AcceptContext
 	GSS_C_NO_CREDENTIAL;
       OM_uint32 ret_flags;
       gss_cred_id_t delegated_cred;
-      ONERROR uwp;
       OM_uint32 maj, min;
 
       THREADS_ALLOW();
