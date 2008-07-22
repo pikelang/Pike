@@ -897,6 +897,20 @@ o Arg
       argv = opts[Arg.REST];
     }
 
+o GSSAPI
+
+  Implements Pike access to GSS-API v2 as specified in RFC 2743. This
+  API is used to authenticate users and servers, and optionally also
+  to encrypt communication between them. The API is generic and can be
+  used without any knowledge of the actual implementation of these
+  security services, which is typically provided by the operating
+  system.
+
+  The most common implementation is Kerberos, which means that the
+  main benefit of this API is to allow clients and servers to
+  authenticate each other using Kerberos, thereby making single
+  sign-on possible in a Kerberized environment.
+
 o GTK2
 
   Wrapper for the GTK2 library. Not yet 100% completed, but usable.
