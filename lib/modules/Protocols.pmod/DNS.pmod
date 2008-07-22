@@ -1,4 +1,4 @@
-// $Id: DNS.pmod,v 1.97 2008/07/13 14:04:02 marcus Exp $
+// $Id: DNS.pmod,v 1.98 2008/07/22 15:34:15 grubba Exp $
 // Not yet finished -- Fredrik Hubinette
 
 //! Domain Name System
@@ -850,15 +850,19 @@ class client
 //! mapping r=d->do_sync_query(d->mkquery("pike.ida.liu.se", C_IN, T_A));
   mapping do_sync_query(string s)
   {
+    int i;
     object udp = Stdio.UDP();
-    udp->bind(0);
+    // Attempt to randomize the source port.
+    for (i = 0; i < RETRIES; i++) {
+      if (!catch { udp->bind(1024 + random(65536-1024)); }) continue;
+    }
+    if (i >= RETRIES) udp->bind(0);
 #if 0
     werror("Protocols.DNS.client()->do_sync_query(%O)\n"
 	   "UDP Address: %s\n"
 	   "%s\n", s, udp->query_address(), describe_backtrace(backtrace()));
 #endif /* 0 */
     mapping m;
-    int i;
     for (i=0; i < RETRIES; i++) {
       udp->send(nameservers[i % sizeof(nameservers)], 53, s);
 
@@ -1169,6 +1173,7 @@ class client
 #define REMOVE_DELAY 120
 #define GIVE_UP_DELAY (RETRIES * RETRY_DELAY + REMOVE_DELAY)*2
 
+// FIXME: Randomized source port!
 class async_client
 {
   inherit client;
