@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lexer.h,v 1.84 2008/06/29 21:33:25 marcus Exp $
+|| $Id: lexer.h,v 1.85 2008/07/22 23:35:13 mast Exp $
 */
 
 /*
@@ -878,12 +878,12 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	sval.type = PIKE_T_INT;
 	sval.subtype = NUMBER_NUMBER;
 	sval.u.integer = 0;
-	wide_string_to_svalue_inumber(&sval,
-				      lex->pos,
-				      &lex->pos,
-				      base,
-				      0,
-				      SHIFT);
+	safe_wide_string_to_svalue_inumber(&sval,
+					   lex->pos,
+					   &lex->pos,
+					   base,
+					   0,
+					   SHIFT);
 	dmalloc_touch_svalue(&sval);
 	yylval->n = mksvaluenode(&sval);
 	free_svalue(&sval);
@@ -914,12 +914,12 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
       sval.subtype = NUMBER_NUMBER;
       sval.u.integer = 0;      
 
-      wide_string_to_svalue_inumber(&sval,
-				    lex->pos,
-				    &p2,
-				    0,
-				    0,
-				    SHIFT);
+      safe_wide_string_to_svalue_inumber(&sval,
+					 lex->pos,
+					 &p2,
+					 0,
+					 0,
+					 SHIFT);
       if(p1>p2)
       {
 	/* Floating point or version. */
@@ -931,12 +931,12 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	  dmalloc_touch_svalue(&sval);
 
 	  sval.u.integer = 0;
-	  wide_string_to_svalue_inumber(&sval,
-					p2,
-					&p3,
-					0,
-					0,
-					SHIFT);
+	  safe_wide_string_to_svalue_inumber(&sval,
+					     p2,
+					     &p3,
+					     0,
+					     0,
+					     SHIFT);
 	  dmalloc_touch_svalue(&sval);
 	  if ((sval.type == PIKE_T_INT) && (p3 > p2)) {
 	    for (l=0; ISSPACE(INDEX_CHARP(p3, l, SHIFT)); l++)
