@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod,v 1.46 2008/06/28 16:36:58 nilsson Exp $
+// $Id: module.pmod,v 1.47 2008/07/22 14:19:38 bill Exp $
 //
 
 #pike __REAL_VERSION__
@@ -457,8 +457,13 @@ class Connection {
       if(validating_mail == "")
         validating_mail = "MAILER-DAEMON@" + cfg->domains[0];
       array emailparts = validating_mail / "@";
-      array(string) temp = lower_case(emailparts[1]) / ".";
-      string domain = temp[sizeof(temp)-2..] * ".";
+      array(string) hostparts = lower_case(emailparts[1]) / ".";
+      array(string) domains = ({});
+      for(int i = sizeof(hostparts); i >= 2; i--)
+      {
+        domains += ({ (hostparts[sizeof(hostparts) - i ..] * ".") });
+      }
+
       if(cfg->checkemail && sizeof(emailparts) != 2)
       {
         log("invalid mail address '%O', command=%O\n", emailparts, what);
@@ -466,19 +471,35 @@ class Connection {
       }
       if(cfg->checkdns)
       {
-        write("checking dns\n");
-        if(what == "from" && !Protocols.DNS.client()->get_primary_mx(domain))
+        if(what == "from")
         {
-          log("check dns failed, command=%O, domain=%O\n", what, domain);
-          return 553;
+          int dnsok = 0;
+          foreach(domains;; string domain)
+          {
+            if(Protocols.DNS.client()->get_primary_mx(domain))
+              dnsok = 1;
+          }
+          if(!dnsok)
+          {
+           log("check dns failed, command=%O, domain=%O\n", what, domains);
+            return 553;
+          }
         }
       }
-      if(what == "to" && !has_value(cfg->domains, domain) &&
-	 !has_value(cfg->domains, "*") )
-      {
-        log("relaying denied, command=%O, cfg->domains=%O, domain=%O\n",
-	    what, cfg->domains, domain);
-        return 553;
+      if(what == "to")
+      { 
+        int relayok = 0;
+        foreach(domains;; string domain)
+        {
+          if(has_value(cfg->domains, domain))
+            relayok = 1;
+        }
+        if(!relayok && !has_value(cfg->domains, "*"))
+        {
+          log("relaying denied, command=%O, cfg->domains=%O, domain=%O\n",
+	      what, cfg->domains, domain);
+          return 553;
+        }
       }
       return validating_mail;
    }
