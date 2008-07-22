@@ -1,5 +1,5 @@
 //
-// $Id: LMTP.pmod,v 1.13 2008/07/21 21:58:52 bill Exp $
+// $Id: LMTP.pmod,v 1.14 2008/07/22 14:10:36 bill Exp $
 //
 
 #pike __REAL_VERSION__
@@ -51,7 +51,7 @@ class Connection {
 	err = catch(check = cfg->cb_data(copy_value(message), mailfrom, recipient));
       if(err)
       {
-	outcode(554, internal_error_name + err[0]);
+	outcode(554, err[0]);
 	log(describe_backtrace(err));
 	continue;
       }
@@ -63,10 +63,10 @@ class Connection {
 //! A LMTP server. It has been fairly well tested against Postfix client.
 //! Actually this module is only an extention to the @[SMTP] server.
 class Server {
-   protected object fdport;
+   static object fdport;
    Configuration config;
 
-   protected void accept_callback()
+   static void accept_callback()
    {
      object fd = fdport->accept();
      if(!fd)
@@ -103,8 +103,7 @@ class Server {
    //!  This function is called for each recipient in the "rcpt to" command
    //!  after the client sends the "data" command
    //!  It must have the following synopsis:
-   //!  int|array cb_data(object mime, string sender, string recipient,@
-   //!  void|string rawdata)
+   //!  int|array cb_data(object mime, string sender, string recipient, void|string rawdata)
    //!  object mime : the mime data object
    //!  string sender : sender of the mail (from the mailfrom command)
    //!  string recipient : one recipient given by one rcpt 
@@ -159,5 +158,4 @@ class Server {
        error("Cannot bind to socket, already bound ?\n");
      }
    }
-
 }
