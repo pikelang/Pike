@@ -1,6 +1,6 @@
 #! /bin/sh
 
-# $Id: xenofarm.sh,v 1.31 2008/05/09 16:51:57 grubba Exp $
+# $Id: xenofarm.sh,v 1.32 2008/07/22 21:18:38 grubba Exp $
 # This file scripts the xenofarm actions and creates a result package
 # to send back.
 
@@ -45,7 +45,7 @@ xenofarm_post_build() {
   log_start verify
   # Note: verify and valgrind_verify perform the same actions
   #       if not compiled --with-valgrind.
-  $MAKE METATARGET=valgrind_verify TESTARGS="-a -T -F" > \
+  $MAKE METATARGET=valgrind_verify TESTARGS="-a -T -F -v -v" > \
     xenofarm_result/verifylog.txt 2>&1
   log_end $?
   [ $LASTERR = 0 ] || return 1
