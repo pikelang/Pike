@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.114 2008/05/30 19:27:53 mast Exp $
+|| $Id: multiset.c,v 1.115 2008/07/22 20:03:19 mast Exp $
 */
 
 #include "global.h"
@@ -1967,7 +1967,7 @@ static enum find_types low_multiset_track_le_gt (
   }
 }
 
-void multiset_fix_type_field (struct multiset *l)
+PMOD_EXPORT void multiset_fix_type_field (struct multiset *l)
 {
   struct multiset_data *msd = l->msd;
   union msnode *node;
@@ -4381,30 +4381,31 @@ void exit_multiset()
 
 #if defined (PIKE_DEBUG) || defined (TEST_MULTISET)
 
-union msnode *debug_check_msnode (struct multiset *l, ptrdiff_t nodepos,
-				  int allow_deleted, char *file, int line)
+PMOD_EXPORT union msnode *debug_check_msnode (
+  struct multiset *l, ptrdiff_t nodepos,
+  int allow_deleted, char *file, int line)
 {
   struct multiset_data *msd = l->msd;
   union msnode *node;
 
   if (l->node_refs <= 0)
     Pike_fatal ("%s:%d: Got a node reference to a multiset without any.\n",
-	   file, line);
+		file, line);
   if (nodepos < 0 || nodepos >= msd->allocsize)
     Pike_fatal ("%s:%d: Node offset %"PRINTPTRDIFFT"d "
-	   "outside storage for multiset (size %d).\n",
-	   file, line, nodepos, msd->allocsize);
+		"outside storage for multiset (size %d).\n",
+		file, line, nodepos, msd->allocsize);
 
   node = OFF2MSNODE (msd, nodepos);
   switch (node->i.ind.type) {
     case T_DELETED:
       if (!allow_deleted)
 	Pike_fatal ("%s:%d: Node at offset %"PRINTPTRDIFFT"d is deleted.\n",
-	       file, line, nodepos);
+		    file, line, nodepos);
       break;
     case PIKE_T_UNKNOWN:
       Pike_fatal ("%s:%d: Invalid node offset %"PRINTPTRDIFFT"d.\n",
-	     file, line, nodepos);
+		  file, line, nodepos);
 #ifdef PIKE_DEBUG
     default:
       if (!(node->i.ind.type & MULTISET_FLAG_MARKER)) {
