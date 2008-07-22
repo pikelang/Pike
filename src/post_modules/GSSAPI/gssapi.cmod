@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gssapi.cmod,v 1.1 2008/07/22 15:44:17 mast Exp $
+|| $Id: gssapi.cmod,v 1.2 2008/07/22 15:44:49 mast Exp $
 */
 
 /*
@@ -28,10 +28,6 @@
  *
  * /mast
  */
-
-/* This module has compat goo to work in 7.4. Let's keep it for the
- * time being until the module has stabilized a bit, so that there are
- * less source differences between the 7.4 and current versions. */
 
 /* #define GSSAPI_DEBUG */
 /* #define GSSAPI_DEBUG_MORE */
