@@ -1,0 +1,4604 @@
+/* -*- c -*-
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: gssapi.cmod,v 1.1 2008/07/22 15:44:17 mast Exp $
+*/
+
+/*
+ * Support for GSS-API v2
+ *
+ * Created March 17 2008 by Martin Stjernholm, Roxen IS
+ *
+ * RFC 2743 (obsoletes 2078, which obsoletes 1508):
+ *   Generic Security Service Application Program Interface Version 2, Update 1
+ * RFC 2744 (obsoletes 1509):
+ *   Generic Security Service API Version 2 : C-bindings
+ *
+ * RFC 2743 leaves it unspecified whether a number of GSS-API
+ * functions might do potentially blocking network operations. Some of
+ * those functions are very trivial and unlikely to block in practice,
+ * so I haven't put THREADS_ALLOW/THREADS_DISALLOW around them anyway.
+ * Those functions are:
+ *
+ *   gss_add_oid_set_member, gss_compare_name,
+ *   gss_create_empty_oid_set, gss_display_name, gss_display_status,
+ *   gss_duplicate_name, gss_export_name, gss_release_buffer,
+ *   gss_release_name, gss_release_oid_set, gss_test_oid_set_member
+ *
+ * /mast
+ */
+
+/* This module has compat goo to work in 7.4. Let's keep it for the
+ * time being until the module has stabilized a bit, so that there are
+ * less source differences between the 7.4 and current versions. */
+
+/* #define GSSAPI_DEBUG */
+/* #define GSSAPI_DEBUG_MORE */
+
+
+#include "global.h"
+#include "gssapi_config.h"
+
+#include <assert.h>
+
+#include "bignum.h"
+#include "builtin_functions.h"
+#include "dmalloc.h"
+#include "interpret.h"
+#include "mapping.h"
+#include "module.h"
+#include "multiset.h"
+#include "object.h"
+#include "operators.h"
+#include "pike_error.h"
+#include "pike_threadlib.h"
+#include "port.h"
+#include "threads.h"
+#include "version.h"
+
+DECLARATIONS
+
+#ifdef HAVE_GSSAPI
+
+#ifdef HAVE_GSSAPI_H
+#include <gssapi.h>
+#elif defined (HAVE_GSSAPI_GSSAPI_H)
+#include <gssapi/gssapi.h>
+#endif
+
+#define DEFINE_STATIC_OID(NAME, VALUE)					\
+  static const unsigned char PIKE_CONCAT (NAME, _elements)[] = VALUE;	\
+  static const gss_OID_desc PIKE_CONCAT (NAME, _desc) = {		\
+    sizeof (PIKE_CONCAT (NAME, _elements)) - 1, &PIKE_CONCAT (NAME, _elements) \
+  };									\
+  static const gss_OID_desc * const NAME = &PIKE_CONCAT (NAME, _desc)
+
+#ifdef HAVE_GSSAPI_KRB5_H
+#include <gssapi_krb5.h>
+#elif defined (HAVE_GSSAPI_GSSAPI_KRB5_H)
+#include <gssapi/gssapi_krb5.h>
+#else
+/* Can't use #ifdef GSS_KRB5_NT_PRINCIPAL_NAME since it might not be a
+ * macro in gssapi_krb5.h. */
+DEFINE_STATIC_OID (GSS_KRB5_NT_PRINCIPAL_NAME,
+		   "\x2a\x86\x48\x86\xf7\x12\x01\x02\x02\x01");
+#endif
+
+#if defined (GSS_RFC_COMPLIANT_OIDS) && !GSS_RFC_COMPLIANT_OIDS
+/* Kerberos 1.2 compat - it doesn't define these on all platforms. */
+DEFINE_STATIC_OID (GSS_C_NT_USER_NAME,
+		   "\x2a\x86\x48\x86\xf7\x12\x01\x02\x01\x01");
+DEFINE_STATIC_OID (GSS_C_NT_MACHINE_UID_NAME,
+		   "\x2a\x86\x48\x86\xf7\x12\x01\x02\x01\x02");
+DEFINE_STATIC_OID (GSS_C_NT_STRING_UID_NAME,
+		   "\x2a\x86\x48\x86\xf7\x12\x01\x02\x01\x03");
+DEFINE_STATIC_OID (GSS_C_NT_HOSTBASED_SERVICE,
+		   "\x2a\x86\x48\x86\xf7\x12\x01\x02\x01\x04");
+DEFINE_STATIC_OID (GSS_C_NT_ANONYMOUS,
+		   "\x2b\x06\01\x05\x06\x03");
+DEFINE_STATIC_OID (GSS_C_NT_EXPORT_NAME,
+		   "\x2b\x06\x01\x05\x06\x04");
+DEFINE_STATIC_OID (GSS_KRB5_NT_PRINCIPAL_NAME,
+		   "\x2a\x86\x48\x86\xf7\x12\x01\x02\x02\x01");
+#endif
+
+
+#ifndef GSS_C_ROUTINE_ERROR_OFFSET
+#define GSS_C_ROUTINE_ERROR_OFFSET 16
+#endif
+#ifndef GSS_C_SUPPLEMENTARY_OFFSET
+#define GSS_C_SUPPLEMENTARY_OFFSET 0
+#endif
+#ifndef GSS_C_ROUTINE_ERROR_MASK
+#define GSS_C_ROUTINE_ERROR_MASK ((OM_uint32) 0377ul)
+#endif
+#ifndef GSS_C_SUPPLEMENTARY_MASK
+#define GSS_C_SUPPLEMENTARY_MASK ((OM_uint32) 0177777ul)
+#endif
+#ifndef GSS_S_BAD_MIC
+#define GSS_S_BAD_MIC GSS_S_BAD_SIG
+#endif
+
+
+#if defined (GSSAPI_DEBUG) || defined (GSSAPI_DEBUG_MORE)
+#define STATUS_MSG(FN, MAJ, MIN) do {					\
+    fprintf (stderr, "gssapi.cmod:%d: %s returned %x/%x\n",		\
+	     __LINE__, #FN, MAJ, MIN);					\
+  } while (0)
+#define DEBUG_MSG(FPRINTF_ARGS) do {					\
+    fprintf FPRINTF_ARGS;						\
+  } while (0)
+#else
+#define STATUS_MSG(FN, MAJ, MIN) do {} while (0)
+#define DEBUG_MSG(FPRINTF_ARGS) do {} while (0)
+#endif
+
+#ifdef GSSAPI_DEBUG_MORE
+#define MORE_STATUS_MSG STATUS_MSG
+#else
+#define MORE_STATUS_MSG(FN, MAJ, MIN) do {} while (0)
+#endif
+
+#ifdef DEBUG_MALLOC
+#define DMALLOC_REGISTER(X) do {					\
+    void *x_ = (X);							\
+    if (x_) dmalloc_register (x_, 0, DMALLOC_LOCATION());		\
+  } while (0)
+#define DMALLOC_UNREGISTER(X) do {					\
+    void *x_ = (X);							\
+    /* This is something that imho should be built into dmalloc_unregister. */ \
+    if (!dmalloc_unregister (x_, 0))					\
+      Pike_fatal ("Unregistered unknown block %p.\n", x_);		\
+  } while (0)
+#else
+#define DMALLOC_REGISTER(X) do {} while (0)
+#define DMALLOC_UNREGISTER(X) do {} while (0)
+#endif
+
+
+/* To live with 7.4.. */
+
+#ifndef PTR_TO_INT
+#define PTR_TO_INT(PTR) ((size_t) ((char *) (PTR) - (char *) NULL))
+#endif
+
+#ifndef SIMPLE_ARG_ERROR
+#define SIMPLE_ARG_ERROR(FUNC, ARG, PROBLEM)				\
+  Pike_error ("Bad argument %d to %s: %s\n", (ARG), (FUNC), (PROBLEM))
+#endif
+
+#ifndef SIMPLE_ARG_TYPE_ERROR
+#define SIMPLE_ARG_TYPE_ERROR SIMPLE_BAD_ARG_ERROR
+#endif
+
+#ifndef PRECOMPILE_API_VERSION
+#define CHECK_OPT_ARG(SVAL, VAR, RTTYPE, TYPEMEM, TYPESTR, FN, ARG) do { \
+    if (SVAL && (SVAL->type != T_INT || SVAL->u.integer)) {		\
+      if (SVAL->type != RTTYPE)						\
+	SIMPLE_BAD_ARG_ERROR (FN, ARG, "void|" TYPESTR);		\
+      VAR = SVAL->u.TYPEMEM;					\
+    }									\
+    else VAR = 0;							\
+  } while (0)
+#endif
+
+#if PIKE_MAJOR_VERSION == 7 && PIKE_MINOR_VERSION <= 4
+#define FAST_CLONE_OBJECT(PROG)						\
+  debug_malloc_pass (fast_clone_object ((PROG), 0))
+#else
+#define FAST_CLONE_OBJECT(PROG)						\
+  debug_malloc_pass (fast_clone_object (PROG))
+#endif
+
+#ifndef SVALUE_INIT_FREE
+#ifdef HAVE_UNION_INIT
+#define SVALUE_INIT_FREE {T_INT, NUMBER_NUMBER, {0}}
+#else
+#define SVALUE_INIT_FREE {T_INT, NUMBER_NUMBER}
+#endif
+#endif
+
+
+#define CHECK_NARROW_STRING(PIKESTR, FN, ARG) do {			\
+    if ((PIKESTR)->size_shift)						\
+      SIMPLE_ARG_ERROR (FN, ARG, "String cannot be wide.");		\
+  } while (0)
+
+static struct svalue int_pos_inf = SVALUE_INIT_FREE;
+
+#if PIKE_MAJOR_VERSION == 7 && PIKE_MINOR_VERSION <= 6
+#define PUSH_UINT(UINT) push_int64 (UINT)
+#else
+#define PUSH_UINT(UINT) push_ulongest (UINT)
+#endif
+
+#define PUSH_TIME(TIME) do {						\
+    if (TIME == GSS_C_INDEFINITE)					\
+      push_svalue (&int_pos_inf);					\
+    else								\
+      PUSH_UINT (TIME);							\
+  } while (0)
+
+static DECLSPEC(noreturn) void throw_gssapi_error (
+  OM_uint32 major, OM_uint32 minor, const gss_OID mech, const char *msg, ...)
+  ATTRIBUTE ((noreturn, format (printf, 4, 5)));
+
+static DECLSPEC(noreturn) void handle_error (
+  int line, const char *gss_func,
+  OM_uint32 major, OM_uint32 minor, const gss_OID mech
+)
+  ATTRIBUTE ((noreturn));
+
+#define CHECK_ERROR(FN, MAJ, MIN) do {					\
+    if (GSS_ERROR (MAJ))						\
+      handle_error (__LINE__, #FN, MAJ, MIN, GSS_C_NO_OID);		\
+  } while (0)
+#define CHECK_ERROR_WITH_MECH(FN, MAJ, MIN, MECH) do {			\
+    if (GSS_ERROR (MAJ))						\
+      handle_error (__LINE__, #FN, MAJ, MIN, MECH);			\
+  } while (0)
+
+#define CHECK_UNEXPECTED_ERROR(FN, MAJ, MIN) do {			\
+    if (GSS_ROUTINE_ERROR (MAJ) == GSS_S_FAILURE)			\
+      handle_error (__LINE__, #FN, MAJ, MIN, GSS_C_NO_OID);		\
+    DO_IF_DEBUG (							\
+      else if (GSS_ERROR (MAJ))						\
+	Pike_fatal ("Unexpected error from %s: %x/%x\n", #FN, MAJ, MIN); \
+    );									\
+  } while (0)
+
+static void cleanup_buffer (gss_buffer_t buf)
+{
+  DMALLOC_UNREGISTER (buf);
+  if (buf->value) {
+    OM_uint32 maj, min;
+    maj = gss_release_buffer (&min, buf);
+    MORE_STATUS_MSG (gss_release_buffer, maj, min);
+    CHECK_UNEXPECTED_ERROR (gss_release_buffer, maj, min);
+    buf->value = NULL;
+  }
+}
+
+#define WITH_GSS_BUFFER(BUF) do {					\
+    gss_buffer_desc BUF;						\
+    ONERROR PIKE_CONCAT (BUF, _uwp);					\
+    BUF.value = NULL;							\
+    SET_ONERROR (PIKE_CONCAT (BUF, _uwp), cleanup_buffer, &BUF);	\
+    DMALLOC_REGISTER (&BUF);						\
+    do
+
+#define END_GSS_BUFFER(BUF)						\
+    while (0);								\
+    CALL_AND_UNSET_ONERROR (PIKE_CONCAT (BUF, _uwp));			\
+  } while (0)
+
+static void cleanup_oid_set (gss_OID_set *oid_set)
+{
+  if (*oid_set != GSS_C_NO_OID_SET) {
+    OM_uint32 maj, min;
+    DMALLOC_UNREGISTER (*oid_set);
+    maj = gss_release_oid_set (&min, oid_set);
+    MORE_STATUS_MSG (gss_release_oid_set, maj, min);
+    CHECK_UNEXPECTED_ERROR (gss_release_oid_set, maj, min);
+    *oid_set = GSS_C_NO_OID_SET;
+  }
+}
+
+#define IS_SAME_OID(A, B)						\
+  (A == B || (A->length == B->length &&					\
+	      !MEMCMP (A->elements, B->elements, A->length)))
+
+#define COPY_OID(DST, SRC) do {						\
+    gss_OID dst_ = (DST), src_ = (SRC);					\
+    size_t l_ = src_->length;						\
+    dst_->length = l_;							\
+    dst_->elements = xalloc (l_);					\
+    MEMCPY (dst_->elements, src_->elements, l_);			\
+  } while (0)
+
+/* Support code to map between gss_OID's and the dotted-decimal
+ * strings we prefer to use in pike. */
+
+static struct svalue encode_der_oid = SVALUE_INIT_FREE;
+static struct svalue decode_der_oid = SVALUE_INIT_FREE;
+
+/* Cache mapping between DER encoded OIDs and dotted-decimal strings,
+ * both ways. */
+static struct mapping *der_dd_map = NULL;
+
+static int get_pushed_gss_oid (struct pike_string *dd_oid, gss_OID gss_oid)
+{
+  struct svalue *v = low_mapping_string_lookup (der_dd_map, dd_oid);
+  if (v) {
+    assert (v->type == T_STRING && !v->u.string->size_shift);
+    gss_oid->length = v->u.string->str[1];
+    gss_oid->elements = v->u.string->str + 2;
+    return 0;
+  }
+
+  ref_push_string (dd_oid);
+  apply_svalue (&encode_der_oid, 1);
+  if (Pike_sp[-1].type != T_STRING ||
+      Pike_sp[-1].u.string->size_shift ||
+      Pike_sp[-1].u.string->len < 3 ||
+      Pike_sp[-1].u.string->str[0] != 0x6) {
+#if PIKE_MAJOR_VERSION == 7 && PIKE_MINOR_VERSION <= 6
+    Pike_error ("encode_der_oid function returned a bogus value.\n");
+#else
+    Pike_error ("encode_der_oid function returned a bogus value: %O\n",
+		Pike_sp - 1);
+#endif
+  }
+
+  /* We don't cache the oid here since we're not sure that dd_oid is
+   * really kosher, nor that the oid is one that is useful to keep. */
+
+  /* Keep the string on the stack to avoid ONERROR stuff. */
+  gss_oid->length = Pike_sp[-1].u.string->str[1];
+  gss_oid->elements = Pike_sp[-1].u.string->str + 2;
+  return 1;
+}
+
+#define WITH_PUSHED_GSS_OID(GSS_OID, DD_OID) do {			\
+    gss_OID_desc GSS_OID;						\
+    int PIKE_CONCAT (GSS_OID, _pushed) =				\
+      get_pushed_gss_oid ((DD_OID), &GSS_OID);				\
+    do
+
+#define END_GSS_OID(GSS_OID)						\
+    while (0);								\
+    if (PIKE_CONCAT (GSS_OID, _pushed)) pop_stack();			\
+  } while (0)
+
+static struct pike_string *get_dd_oid (const gss_OID_desc * const gss_oid)
+{
+  struct pike_string *der_oid;
+
+  {
+    struct string_builder sb;
+    size_t l = gss_oid->length;
+    init_string_builder (&sb, 0);
+    string_builder_putchar (&sb, 0x06); /* BER/DER type for OIDs. */
+    string_builder_putchar (&sb, l);
+    string_builder_binary_strcat (&sb, gss_oid->elements, l);
+    der_oid = finish_string_builder (&sb);
+  }
+
+  {
+    struct svalue *v = low_mapping_string_lookup (der_dd_map, der_oid);
+    if (v) {
+      free_string (der_oid);
+      assert (v->type == T_STRING);
+      return v->u.string;
+    }
+  }
+
+  ref_push_string (der_oid);	/* Save extra ref for use afterwards. */
+  push_string (der_oid);
+  apply_svalue (&decode_der_oid, 1);
+  if (Pike_sp[-1].type != T_STRING ||
+      Pike_sp[-1].u.string->size_shift) {
+#if PIKE_MAJOR_VERSION == 7 && PIKE_MINOR_VERSION <= 6
+    Pike_error ("encode_der_oid function returned a bogus value.\n");
+#else
+    Pike_error ("decode_der_oid function returned a bogus value: %O.\n",
+		Pike_sp - 1);
+#endif
+  }
+
+  {
+    struct pike_string *dd_oid = Pike_sp[-1].u.string;
+
+    /* Update cache both ways. */
+    mapping_string_insert_string (der_dd_map, der_oid, dd_oid);
+    mapping_string_insert_string (der_dd_map, dd_oid, der_oid);
+
+    /* dd_oid got refs from the cache now. */
+    free_string ((--Pike_sp)->u.string);
+    free_string ((--Pike_sp)->u.string);
+    return dd_oid;
+  }
+}
+
+/* Conversion between gss_OID_set and multiset(string). */
+
+static void convert_to_oid_set (struct multiset *oid_strs, gss_OID_set *set)
+/* Caller needs to install an ONERROR handler for *set. It is assumed
+ * that the multiset contains only strings. */
+{
+  OM_uint32 maj, min;
+  maj = gss_create_empty_oid_set (&min, set);
+  MORE_STATUS_MSG (gss_create_empty_oid_set, maj, min);
+  DMALLOC_REGISTER (*set);
+  CHECK_UNEXPECTED_ERROR (gss_create_empty_oid_set, maj, min);
+
+#ifdef PIKE_NEW_MULTISETS
+  {
+    ptrdiff_t p = multiset_first (oid_strs);
+    struct svalue oid_str;
+    ONERROR uwp;
+    SET_ONERROR (uwp, do_sub_msnode_ref, oid_strs);
+    for (; p >= 0; p = multiset_next (oid_strs, p)) {
+      use_multiset_index (oid_strs, p, oid_str);
+      assert (oid_str.type == T_STRING);
+      WITH_PUSHED_GSS_OID (oid, oid_str.u.string) {
+	/* The storage for oid might disappear in each round, but
+	 * gss_add_oid_set_member makes a copy. */
+	maj = gss_add_oid_set_member (&min, &oid, set);
+	MORE_STATUS_MSG (gss_add_oid_set_member, maj, min);
+	CHECK_UNEXPECTED_ERROR (gss_add_oid_set_member, maj, min);
+      } END_GSS_OID (oid);
+    }
+    CALL_AND_UNSET_ONERROR (uwp);
+  }
+#else
+  {
+    int e;
+    struct array *a = oid_strs->ind;
+    for (e = a->size - 1; e >= 0; e--) {
+      assert (ITEM (a)[e].type == T_STRING);
+      WITH_PUSHED_GSS_OID (oid, ITEM (a)[e].u.string) {
+	maj = gss_add_oid_set_member (&min, &oid, set);
+	MORE_STATUS_MSG (gss_add_oid_set_member, maj, min);
+	CHECK_UNEXPECTED_ERROR (gss_add_oid_set_member, maj, min);
+      } END_GSS_OID (oid);
+    }
+  }
+#endif
+}
+
+static void convert_from_oid_set_and_push (gss_OID_set set)
+{
+  size_t i, n = set->count;
+  struct multiset *l;
+  struct svalue oid_str;
+  oid_str.type = T_STRING;
+
+#ifdef PIKE_NEW_MULTISETS
+  l = allocate_multiset (n, 0, NULL);
+#else
+  add_ref (&empty_array);
+  l = allocate_multiset (&empty_array);
+#endif
+  push_multiset (l);
+
+  for (i = 0; i < n; i++) {
+    oid_str.u.string = get_dd_oid (set->elements + i);
+    multiset_insert (l, &oid_str);
+  }
+}
+
+
+/*! @module GSSAPI
+ *!
+ *! This is pike glue for GSS-API ver 2 as specified in RFC 2743.
+ *!
+ *! All functions in this module that wraps GSS-API routines might throw
+ *! @[GSSAPI.Error], and by default they do for all such errors. Only in
+ *! some special cases do they return when a GSS-API error has happened,
+ *! and that is noted in the documentation.
+ */
+
+
+/*! @decl constant int ERROR_MASK
+ *!
+ *! Bitfield mask for the routine error part of major status codes
+ *! like @[GSSAPI.Error.major_status]. After applying this mask, the
+ *! status values may be compared to any of the routine error
+ *! constants.
+ */
+
+/*! @decl constant int BAD_MECH
+ *! @decl constant int BAD_NAME
+ *! @decl constant int BAD_NAMETYPE
+ *! @decl constant int BAD_BINDINGS
+ *! @decl constant int BAD_STATUS
+ *! @decl constant int BAD_SIG
+ *! @decl constant int NO_CRED
+ *! @decl constant int NO_CONTEXT
+ *! @decl constant int DEFECTIVE_TOKEN
+ *! @decl constant int DEFECTIVE_CREDENTIAL
+ *! @decl constant int CREDENTIALS_EXPIRED
+ *! @decl constant int CONTEXT_EXPIRED
+ *! @decl constant int FAILURE
+ *! @decl constant int BAD_QOP
+ *! @decl constant int UNAUTHORIZED
+ *! @decl constant int UNAVAILABLE
+ *! @decl constant int DUPLICATE_ELEMENT
+ *! @decl constant int NAME_NOT_MN
+ *!
+ *! Constants for routine errors in major status codes like
+ *! @[GSSAPI.Error.major_status]. See RFC 2743 section 1.2.1.1. Note
+ *! that major status codes have to be masked with
+ *! @[GSSAPI.ERROR_MASK] before comparison with these.
+ *!
+ *! Brief descriptions of the flags:
+ *!
+ *! @dl
+ *! @item GSSAPI.BAD_BINDINGS
+ *!   Channel binding mismatch.
+ *! @item GSSAPI.BAD_MECH
+ *!   Unsupported mechanism requested.
+ *! @item GSSAPI.BAD_NAME
+ *!   Invalid name provided.
+ *! @item GSSAPI.BAD_NAMETYPE
+ *!   Name of unsupported type provided.
+ *! @item GSSAPI.BAD_STATUS
+ *!   Invalid input status selector.
+ *! @item GSSAPI.BAD_MIC
+ *!   Token had invalid integrity check.
+ *! @item GSSAPI.CONTEXT_EXPIRED
+ *!   Specified security context expired.
+ *! @item GSSAPI.CREDENTIALS_EXPIRED
+ *!   Expired credentials detected.
+ *! @item GSSAPI.DEFECTIVE_CREDENTIAL
+ *!   Defective credential detected.
+ *! @item GSSAPI.DEFECTIVE_TOKEN
+ *!   Defective token detected.
+ *! @item GSSAPI.FAILURE
+ *!   Failure, unspecified at GSS-API level.
+ *!   @[GSSAPI.Error.minor_status] should provide further details.
+ *! @item GSSAPI.NO_CONTEXT
+ *!   No valid security context specified.
+ *! @item GSSAPI.NO_CRED
+ *!   No valid credentials provided.
+ *! @item GSSAPI.BAD_QOP
+ *!   Unsupported QOP value.
+ *! @item GSSAPI.UNAUTHORIZED
+ *!   Operation unauthorized.
+ *! @item GSSAPI.UNAVAILABLE
+ *!   Operation unavailable.
+ *! @item GSSAPI.DUPLICATE_ELEMENT
+ *!   Duplicate credential element requested.
+ *! @item GSSAPI.NAME_NOT_MN
+ *!   Name contains multi-mechanism elements.
+ *! @enddl
+ */
+
+/*! @decl constant int INFO_MASK
+ *!
+ *! Bitfield mask for the informatory part of major status codes like
+ *! @[GSSAPI.Error.major_status].
+ */
+
+/*! @decl constant int CONTINUE_NEEDED
+ *! @decl constant int DUPLICATE_TOKEN
+ *! @decl constant int OLD_TOKEN
+ *! @decl constant int UNSEQ_TOKEN
+ *! @decl constant int GAP_TOKEN
+ *!
+ *! Bitfield flags for informatory codes in major status codes like
+ *! @[GSSAPI.Error.major_status]. See RFC 2743 section 1.2.1.1. Any
+ *! combination of these might optionally be combined with one routine
+ *! error constant to form a major status code.
+ *!
+ *! Brief descriptions of the flags:
+ *!
+ *! @dl
+ *! @item GSSAPI.CONTINUE_NEEDED
+ *!   Continuation call to routine required.
+ *! @item GSSAPI.DUPLICATE_TOKEN
+ *!   Duplicate per-message token detected.
+ *! @item GSSAPI.OLD_TOKEN
+ *!   Timed-out per-message token detected.
+ *! @item GSSAPI.UNSEQ_TOKEN
+ *!   Reordered (early) per-message token detected.
+ *! @item GSSAPI.GAP_TOKEN
+ *!   Skipped predecessor token(s) detected.
+ *! @enddl
+ */
+
+/*! @decl array(string) major_status_messages (int major_status)
+ *!
+ *! Given a major status code like @[GSSAPI.Error.major_status] (or
+ *! more commonly @[GSSAPI.Context.last_major_status] in this case),
+ *! returns an array containing messages for all the status values in
+ *! it. The returned string(s) presumably don't end with linefeeds.
+ *!
+ *! This wraps @tt{GSS_Display_status@} according to RFC 2743 section
+ *! 2.4.1.
+ */
+PIKEFUN array(string) major_status_messages (int major_status)
+{
+  OM_uint32 msg_ctx = 0;
+  int n = 0;
+
+  pop_n_elems (args);
+
+  do {
+    WITH_GSS_BUFFER (msg) {
+      OM_uint32 maj, min;
+      maj = gss_display_status (&min, major_status, GSS_C_GSS_CODE,
+				GSS_C_NO_OID, &msg_ctx, &msg);
+      MORE_STATUS_MSG (gss_display_status, maj, min);
+      CHECK_ERROR (gss_display_status, maj, min);
+      /* NB: The RFC is unspecified on the character encoding in the
+       * returned string. */
+      push_string (make_shared_binary_string (msg.value, msg.length));
+      n++;
+    } END_GSS_BUFFER (msg);
+  } while (msg_ctx);
+
+  f_aggregate (n);
+}
+
+/*! @decl array(string) minor_status_messages (int minor_status, @
+ *!                                            void|string mech)
+ *!
+ *! Given a mechanism-specific minor status code like
+ *! @[GSSAPI.Error.minor_status], returns an array containing messages
+ *! for all the status values in it. The returned string(s) presumably
+ *! don't end with linefeeds.
+ *!
+ *! This wraps @tt{GSS_Display_status@} according to RFC 2743 section
+ *! 2.4.1.
+ *!
+ *! @param minor_status
+ *!   The mechanism-specific minor status.
+ *!
+ *! @param mech
+ *!   The mechanism that produced the status code. If this is zero or
+ *!   left out, a system default mechanism is used.
+ */
+PIKEFUN array(string) minor_status_messages (int minor_status, void|string mech)
+{
+  gss_OID_desc mech_oid_desc;
+  gss_OID mech_oid;
+
+#ifndef PRECOMPILE_API_VERSION
+  /* Live with the pessimal precompile.pike in 7.4.. :P */
+  struct pike_string *_mech;
+  CHECK_OPT_ARG (mech, _mech, T_STRING, string, "string",
+		 "minor_status_messages", 2);
+#define mech _mech
+#endif
+
+  if (mech) {
+    if (get_pushed_gss_oid (mech, mech_oid = &mech_oid_desc))
+      /* Make the pop code below handle the extra stack item. */
+      args++;
+  }
+  else
+    mech_oid = GSS_C_NO_OID;
+
+  {
+    OM_uint32 msg_ctx = 0;
+    int n = 0;
+
+    do {
+      WITH_GSS_BUFFER (msg) {
+	OM_uint32 maj, min;
+	maj = gss_display_status (&min, minor_status, GSS_C_MECH_CODE,
+				  mech_oid, &msg_ctx, &msg);
+	MORE_STATUS_MSG (gss_display_status, maj, min);
+	CHECK_ERROR_WITH_MECH (gss_display_status, maj, min, mech_oid);
+	/* NB: The RFC is unspecified on the character encoding in the
+	 * returned string. */
+	push_string (make_shared_binary_string (msg.value, msg.length));
+	n++;
+      } END_GSS_BUFFER (msg);
+    } while (msg_ctx);
+
+    f_aggregate (n);
+  }
+
+  stack_pop_n_elems_keep_top (args);
+
+#undef mech
+}
+
+/*! @class Error
+ *! @inherit Error.Generic
+ *!
+ *! Error object used for GSS-API errors.
+ */
+
+/*! @decl constant is_gssapi_error = 1
+ *! @decl constant error_type = "gssapi_error"
+ *!
+ *! Object recognition constants.
+ */
+
+/* Can't use PIKECLASS since precompile.pike doesn't support constants
+ * (at least not in 7.4). */
+
+struct gssapi_err_struct {
+  INT_TYPE major_status, minor_status;
+  gss_OID_desc mech;
+};
+
+static struct program *gssapi_err_program = NULL;
+static ptrdiff_t gssapi_err_struct_offset;
+
+#undef THIS
+#define THIS ((struct gssapi_err_struct *)				\
+	      (Pike_fp->current_storage + gssapi_err_struct_offset))
+
+/* Assume gssapi_err_program begins with the generic_error_program inherit. */
+#define GEN_ERR_THIS ((struct generic_error_struct *)			\
+		      (Pike_fp->current_storage + 0))
+
+#if PIKE_MAJOR_VERSION == 7 && PIKE_MINOR_VERSION <= 4
+#define GEN_ERR_MSG desc
+#define GEN_ERR_BT backtrace
+#else
+#define GEN_ERR_MSG error_message
+#define GEN_ERR_BT error_backtrace
+#endif
+
+static void gssapi_err_events (int event)
+{
+  switch (event) {
+    case PROG_EVENT_INIT:
+      THIS->major_status = THIS->minor_status = 0;
+      THIS->mech.elements = NULL;
+      break;
+    case PROG_EVENT_EXIT:
+      if (THIS->mech.elements) free (THIS->mech.elements);
+      break;
+  }
+}
+
+/*! @decl int major_status
+ *!
+ *! The major status code. This is a bitwise OR of one routine error
+ *! code and zero or more supplementary error info bits.
+ *!
+ *! See RFC 2743 section 1.2.1.1 and RFC 2744 section 3.9.1. Note that
+ *! the calling errors mentioned in RFC 2744 are never thrown.
+ *!
+ *! @seealso
+ *!   @[major_status_messages]
+ */
+
+/*! @decl int minor_status
+ *!
+ *! The minor status code specific for the mechanism.
+ *!
+ *! @seealso
+ *!   @[minor_status_messages], @[minor_status_mech]
+ */
+
+static struct pike_string *make_gss_err_message (
+  OM_uint32 major, OM_uint32 minor, const gss_OID mech,
+  const char *msg, va_list *args)
+{
+  struct string_builder sb;
+  ONERROR uwp;
+  init_string_builder (&sb, 0);
+  SET_ONERROR (uwp, free_string_builder, &sb);
+
+  if (msg) {
+    /* args is a pointer to va_list only to be able to pass a dummy
+     * value there when msg is NULL. */
+#if PIKE_MAJOR_VERSION == 7 && PIKE_MINOR_VERSION <= 6
+    char buf[4096];
+#ifdef HAVE_VSNPRINTF
+    vsnprintf (buf, sizeof (buf), msg, *args);
+#else
+    VSPRINTF (buf, msg, *args);
+#endif
+    string_builder_strcat (&sb, buf);
+#else
+    string_builder_vsprintf (&sb, msg, *args);
+#endif
+
+    string_builder_strcat (&sb, ": ");
+  }
+
+  if (GSS_ROUTINE_ERROR (major) != GSS_S_FAILURE) {
+    WITH_GSS_BUFFER (msg) {
+      OM_uint32 maj, min, msg_ctx = 0;
+      string_builder_strcat (&sb, "GSSAPI: ");
+      maj = gss_display_status (&min, GSS_ROUTINE_ERROR (major), GSS_C_GSS_CODE,
+				GSS_C_NO_OID, &msg_ctx, &msg);
+      MORE_STATUS_MSG (gss_display_status, maj, min);
+      if (!GSS_ERROR (maj))
+	/* NB: The RFC is unspecified on the character encoding in the
+	 * returned string. */
+	string_builder_binary_strcat (&sb, msg.value, msg.length);
+    } END_GSS_BUFFER (msg);
+
+    /* FIXME: Check minor for selected errors? */
+  }
+
+  else {
+    /* NB: If mech is GSS_C_NO_OID here then gss_display_status can
+     * display the minor message with the wrong mechanism. Not much we
+     * can do about that, but trying to use the system default
+     * mechanism is still better than nothing. E.g. gss_acquire_cred
+     * can fail with a mechanism-specific error when building the
+     * default creds, and we have no way of querying the mechanism in
+     * which it failed. */
+    WITH_GSS_BUFFER (msg) {
+      OM_uint32 maj, min, msg_ctx = 0;
+      string_builder_strcat (&sb, "Mech: ");
+      maj = gss_display_status (&min, minor, GSS_C_MECH_CODE,
+				mech, &msg_ctx, &msg);
+      MORE_STATUS_MSG (gss_display_status, maj, min);
+      if (!GSS_ERROR (maj))
+	string_builder_binary_strcat (&sb, msg.value, msg.length);
+    } END_GSS_BUFFER (msg);
+  }
+
+  string_builder_putchar (&sb, '\n');
+
+  UNSET_ONERROR (uwp);
+  return finish_string_builder (&sb);
+}
+
+/*! @decl static void create (void|int major, @
+ *!                           void|int minor, void|string mech, @
+ *!                           void|string message, void|array backtrace)
+ *!
+ *! @param major
+ *!   Initial value for @[major_status].
+ *!
+ *! @param minor
+ *!   Initial value for @[minor_status].
+ *!
+ *! @param mech
+ *!   Object identifier on dotted-decimal form for the mechanism that
+ *!   @[minor] applies to.
+ *!
+ *! @param message
+ *!   Error message. This is prepended to the message generated from
+ *!   @[major_status] and/or @[minor_status]. @expr{": "@} is inserted
+ *!   in between.
+ *!
+ *! @param backtrace
+ *!   Backtrace. The current backtrace for the calling function is
+ *!   used if left out.
+ */
+static void gssapi_err_create (INT32 args)
+{
+  /* get_all_args doesn't handle optional args in 7.4.. :P */
+  if(args > 5) wrong_number_of_args_error("create",args,5);
+
+  if(args > 0) {
+    if(Pike_sp[0-args].type != T_INT)
+      SIMPLE_ARG_TYPE_ERROR ("create",1,"void|int");
+    THIS->major_status = Pike_sp[-args].u.integer;
+  }
+
+  if(args > 1) {
+    if(Pike_sp[1-args].type != T_INT)
+      SIMPLE_ARG_TYPE_ERROR ("create",2,"void|int");
+    THIS->minor_status = Pike_sp[-args].u.integer;
+  }
+
+  if(args > 2 &&
+     (Pike_sp[2-args].type != T_INT || Pike_sp[2-args].u.integer)) {
+    if(Pike_sp[2-args].type != T_STRING)
+      SIMPLE_ARG_TYPE_ERROR ("create",3,"void|string");
+    WITH_PUSHED_GSS_OID (mech_oid, Pike_sp[2-args].u.string) {
+      if (THIS->mech.elements) free (THIS->mech.elements);
+      COPY_OID (&THIS->mech, &mech_oid);
+    } END_GSS_OID (mech_oid);
+  }
+
+  {
+    gss_OID mech = THIS->mech.elements ? &THIS->mech : GSS_C_NO_OID;
+
+    if(args > 3 &&
+       (Pike_sp[3-args].type != T_INT || Pike_sp[3-args].u.integer)) {
+      if(Pike_sp[3-args].type != T_STRING)
+	SIMPLE_ARG_TYPE_ERROR ("create",4,"void|string");
+      ref_push_string (Pike_sp[3-args].u.string);
+      push_constant_text (": ");
+      push_string (make_gss_err_message (THIS->major_status, THIS->minor_status,
+					 mech, NULL, NULL));
+      f_add (3);
+      do_free_string (GEN_ERR_THIS->GEN_ERR_MSG);
+      GEN_ERR_THIS->GEN_ERR_MSG = (--Pike_sp)->u.string;
+    }
+    else {
+      struct pike_string *msg =
+	make_gss_err_message (THIS->major_status, THIS->minor_status,
+			      mech, NULL, NULL);
+      do_free_string (GEN_ERR_THIS->GEN_ERR_MSG);
+      GEN_ERR_THIS->GEN_ERR_MSG = msg;
+    }
+  }
+
+  if (GEN_ERR_THIS->GEN_ERR_BT)
+    free_array (GEN_ERR_THIS->GEN_ERR_BT);
+  if(args > 4 &&
+     (Pike_sp[4-args].type != T_INT || Pike_sp[4-args].u.integer)) {
+    if(Pike_sp[4-args].type != T_ARRAY)
+      SIMPLE_ARG_TYPE_ERROR ("create",5,"void|array");
+    add_ref (GEN_ERR_THIS->GEN_ERR_BT = Pike_sp[4-args].u.array);
+  }
+  else {
+    f_backtrace (0);
+    GEN_ERR_THIS->GEN_ERR_BT =
+      slice_array (Pike_sp[-1].u.array, 0, Pike_sp[-1].u.array->size - 1);
+    pop_stack();
+  }
+}
+
+/*! @decl array(string) major_status_messages()
+ *!
+ *! Returns an array containing messages for all the status values in
+ *! @[major_status]. See @[GSSAPI.major_status_messages] for further
+ *! details.
+ */
+static void gssapi_err_major_msgs (INT32 args)
+{
+  if (args) wrong_number_of_args_error ("major_status_messages", args, 0);
+  push_int (THIS->major_status);
+  f_major_status_messages (1);
+}
+
+/*! @decl array(string) minor_status_messages()
+ *!
+ *! Returns an array containing messages for all the status values in
+ *! @[minor_status]. See @[GSSAPI.minor_status_messages] for further
+ *! details.
+ */
+static void gssapi_err_minor_msgs (INT32 args)
+{
+  if (args) wrong_number_of_args_error ("major_status_messages", args, 0);
+  push_int (THIS->minor_status);
+  if (THIS->mech.elements) {
+    ref_push_string (get_dd_oid (&THIS->mech));
+    f_minor_status_messages (2);
+  }
+  else
+    f_minor_status_messages (1);
+}
+
+/*! @decl string minor_status_mech()
+ *!
+ *! Returns the OID for the mechanism that is used to interpret the
+ *! minor status, or zero if no mechanism has been set. It is returned
+ *! on dotted-decimal form.
+ */
+static void gssapi_err_minor_mech (INT32 args)
+{
+  pop_n_elems (args);
+  if (!THIS->mech.elements)
+    push_int (0);
+  else
+    ref_push_string (get_dd_oid (&THIS->mech));
+}
+
+/*! @endclass */
+
+static DECLSPEC(noreturn) void throw_gssapi_error (
+  OM_uint32 major, OM_uint32 minor, const gss_OID mech, const char *msg, ...)
+{
+  struct object *o = FAST_CLONE_OBJECT (gssapi_err_program);
+  struct gssapi_err_struct *gssapi_err =
+    (struct gssapi_err_struct *) (o->storage + gssapi_err_struct_offset);
+  /* Assume gssapi_err_program begins with the generic_error_program inherit. */
+  struct generic_error_struct *gen_err =
+    (struct generic_error_struct *) (o->storage + 0);
+  struct pike_string *errmsg;
+
+  gssapi_err->major_status = major;
+  gssapi_err->minor_status = minor;
+  if (mech) COPY_OID (&gssapi_err->mech, mech);
+
+  if (msg) {
+    va_list args;
+    va_start (args, msg);
+    errmsg = make_gss_err_message (major, minor, mech, msg, &args);
+    va_end (args);
+  }
+  else
+    errmsg = make_gss_err_message (major, minor, mech, NULL, NULL);
+
+  gen_err->GEN_ERR_MSG = errmsg;
+
+#if PIKE_MAJOR_VERSION == 7 && PIKE_MINOR_VERSION <= 6
+  f_backtrace (0);
+  gen_err->GEN_ERR_BT = (--Pike_sp)->u.array;
+
+  free_svalue (&throw_value);
+  throw_value.type = T_OBJECT;
+  throw_value.u.object = o;
+  throw_severity = THROW_ERROR;
+  pike_throw();
+#else
+  generic_error_va (o, NULL, NULL, 0, NULL, NULL);
+#endif
+}
+
+static DECLSPEC(noreturn) void handle_error (
+  int line, const char *gss_func,
+  OM_uint32 major, OM_uint32 minor, const gss_OID mech
+)
+/* Assumed to be called only if GSS_ERROR (maj) is true. */
+{
+  OM_uint32 msg_ctx;
+
+  if (GSS_CALLING_ERROR (major)) {
+#ifdef PIKE_DEBUG
+    fprintf (stderr, "Unexpected error in call to %s "
+	     "from gssapi.cmod:%d: %x/%x\n", gss_func, line, major, minor);
+
+    msg_ctx = 0;
+    do {
+      OM_uint32 maj, min;
+      /* Can't use WITH_GSS_BUFFER here due to risk for recursion. */
+      gss_buffer_desc msg;
+      maj = gss_display_status (&min, major, GSS_C_GSS_CODE,
+				GSS_C_NO_OID, &msg_ctx, &msg);
+      /* MORE_STATUS_MSG (gss_display_status, maj, min); */
+      if (GSS_ERROR (maj)) {
+	fprintf (stderr, "  Got error from gss_display_status "
+		 "when trying to format major status: %x/%x\n", maj, min);
+	msg_ctx = 0;
+      }
+      else
+	fprintf (stderr, "  Major status: %.*s\n",
+		 (int) msg.length, (char *) msg.value);
+      maj = gss_release_buffer (&min, &msg); /* Ignore errors from this one.. */
+      /* MORE_STATUS_MSG (gss_release_buffer, maj, min); */
+    } while (msg_ctx);
+
+    msg_ctx = 0;
+    do {
+      OM_uint32 maj, min;
+      /* Can't use WITH_GSS_BUFFER here due to risk for recursion. */
+      gss_buffer_desc msg;
+      maj = gss_display_status (&min, minor, GSS_C_MECH_CODE,
+				mech, &msg_ctx, &msg);
+      /* MORE_STATUS_MSG (gss_display_status, maj, min); */
+      if (GSS_ERROR (maj)) {
+	fprintf (stderr, "  Got error from gss_display_status "
+		 "when trying to format minor status: %x/%x\n", maj, min);
+	msg_ctx = 0;
+      }
+      else
+	fprintf (stderr, "  Minor status: %.*s\n",
+		 (int) msg.length, (char *) msg.value);
+      maj = gss_release_buffer (&min, &msg); /* Ignore errors from this one.. */
+      /* MORE_STATUS_MSG (gss_release_buffer, maj, min); */
+    } while (msg_ctx);
+
+    Pike_fatal ("Unexpected error in call to %s "
+		"from gssapi.cmod:%d: %x/%x\n", gss_func, line, major, minor);
+
+#else  /* !PIKE_DEBUG */
+    Pike_fatal ("Unexpected error in call to GSS-API function: %x/%x\n",
+		major, minor);
+#endif
+  }
+
+  throw_gssapi_error (major, minor, mech, NULL);
+}
+
+
+/*! @class MissingServicesError
+ *! @inherit Error.Generic
+ *!
+ *! Error object used when one or more required services are missing
+ *! in a @[GSSAPI.Context] object.
+ */
+
+/*! @decl constant is_gssapi_missing_services_error = 1
+ *! @decl constant error_type = "gssapi_missing_services_error"
+ *!
+ *! Object recognition constants.
+ */
+
+struct missing_err_struct {
+  INT_TYPE services;
+};
+
+static struct program *missing_err_program = NULL;
+static ptrdiff_t missing_err_struct_offset;
+
+#undef THIS
+#define THIS ((struct missing_err_struct *)				\
+	      (Pike_fp->current_storage + missing_err_struct_offset))
+
+/* We can reuse the same GEN_ERR_THIS as in gssapi_err_program. */
+
+static void missing_err_events (int event)
+{
+  switch (event) {
+    case PROG_EVENT_INIT:
+      THIS->services = 0;
+      break;
+  }
+}
+
+/*! @decl int services
+ *!
+ *! Bitfield of @tt{GSSAPI.*_FLAG@} flags for the missing services
+ *! that caused the error.
+ *!
+ *! @seealso
+ *!   @[GSSAPI.describe_services]
+ */
+
+static void describe_services_and_push (OM_uint32 services)
+{
+  int n = 0;
+  if (services & GSS_C_DELEG_FLAG)	{push_constant_text ("DEL"); n++;}
+  if (services & GSS_C_MUTUAL_FLAG)	{push_constant_text ("MUT"); n++;}
+  if (services & GSS_C_REPLAY_FLAG)	{push_constant_text ("REPL"); n++;}
+  if (services & GSS_C_SEQUENCE_FLAG)	{push_constant_text ("SEQ"); n++;}
+  if (services & GSS_C_CONF_FLAG)	{push_constant_text ("CONF"); n++;}
+  if (services & GSS_C_INTEG_FLAG)	{push_constant_text ("INTEG"); n++;}
+  if (services & GSS_C_ANON_FLAG)	{push_constant_text ("ANON"); n++;}
+  if (services & GSS_C_PROT_READY_FLAG)	{push_constant_text ("READY"); n++;}
+  if (services & GSS_C_TRANS_FLAG)	{push_constant_text ("TRANS"); n++;}
+  f_aggregate (n);
+  push_constant_text ("|");
+  o_multiply();
+}
+
+static struct pike_string *make_missing_err_message (OM_uint32 missing)
+{
+  int n = 0;
+  push_text ("Required service(s) missing: ");
+  describe_services_and_push (missing);
+  push_text ("\n");
+  f_add (3);
+  assert (Pike_sp[-1].type == T_STRING);
+  return (--Pike_sp)->u.string;
+}
+
+/*! @decl static void create (void|int missing_services)
+ *!
+ *! @param missing_services
+ *!   Initial value for @[services].
+ */
+static void missing_err_create (INT32 args)
+{
+  if (args > 1) wrong_number_of_args_error ("create", args, 1);
+
+  if (args) {
+    if (Pike_sp[-1].type != T_INT)
+      SIMPLE_ARG_TYPE_ERROR ("create", 1, "void|int");
+    THIS->services = Pike_sp[-1].u.integer;
+  }
+}
+
+/*! @endclass */
+
+static void throw_missing_services_error (OM_uint32 missing)
+{
+  struct object *o = FAST_CLONE_OBJECT (missing_err_program);
+  struct missing_err_struct *missing_err =
+    (struct missing_err_struct *) (o->storage + missing_err_struct_offset);
+  /* Assume missing_err_program begins with the generic_error_program
+   * inherit. */
+  struct generic_error_struct *gen_err =
+    (struct generic_error_struct *) (o->storage + 0);
+
+  missing_err->services = missing;
+  gen_err->GEN_ERR_MSG = make_missing_err_message (missing);
+
+#if PIKE_MAJOR_VERSION == 7 && PIKE_MINOR_VERSION <= 6
+  f_backtrace (0);
+  gen_err->GEN_ERR_BT = (--Pike_sp)->u.array;
+
+  free_svalue (&throw_value);
+  throw_value.type = T_OBJECT;
+  throw_value.u.object = o;
+  throw_severity = THROW_ERROR;
+  pike_throw();
+#else
+  generic_error_va (o, NULL, NULL, 0, NULL, NULL);
+#endif
+}
+
+
+/*! @decl constant string NT_HOSTBASED_SERVICE
+ *! @decl constant string NT_USER_NAME
+ *! @decl constant string NT_MACHINE_UID_NAME
+ *! @decl constant string NT_STRING_UID_NAME
+ *! @decl constant string NT_ANONYMOUS
+ *! @decl constant string NT_EXPORT_NAME
+ *! @decl constant string KRB5_NT_PRINCIPAL_NAME
+ *!
+ *! OIDs on dotted-decimal form for the GSS-API mechanism-independent
+ *! name types, and some selected mechanism-specific ones:
+ *!
+ *! @dl
+ *! @item NT_HOSTBASED_SERVICE
+ *!   Name type for a service associated with a host computer. The
+ *!   syntax is @tt{service@@hostname@} where the @tt{@@hostname@}
+ *!   part may be omitted for the local host. See RFC 2743 section
+ *!   4.1.
+ *! @item NT_USER_NAME
+ *!   Name type for a named user on a local system. The syntax is
+ *!   @tt{username@}. See RFC 2743 section 4.2.
+ *! @item NT_MACHINE_UID_NAME
+ *!   Name type for a numeric user identifier corresponding to a user
+ *!   on a local system. The string representing a name of this type
+ *!   should contain a locally-significant user ID, represented in
+ *!   host byte order. See RFC 2743 section 4.3.
+ *! @item NT_STRING_UID_NAME
+ *!   Name type for a string of digits representing the numeric user
+ *!   identifier of a user on a local system. This name type is
+ *!   similar to the Machine UID Form, except that the buffer contains
+ *!   a string representing the user ID. See RFC 2743 section 4.4.
+ *! @item NT_ANONYMOUS
+ *!   Name type to identify anonymous names. See RFC 2743 section 4.5.
+ *! @item NT_EXPORT_NAME
+ *!   Name type for the Mechanism-Independent Exported Name Object
+ *!   type, which is the type of the names returned by
+ *!   @[GSSAPI.Name.export]. See RFC 2743 section 4.7.
+ *! @item KRB5_NT_PRINCIPAL_NAME
+ *!   Name type for a Kerberos principal. See RFC 1964 section 2.1.1.
+ *! @enddl
+ */
+
+/*! @class Name
+ *!
+ *! An object of this class contains a name on the internal form which
+ *! is required by the GSS-API functions. See RFC 2743, section 1.1.5.
+ */
+PIKECLASS Name
+{
+  CVAR gss_name_t name;
+
+  static void cleanup_name (gss_name_t *name)
+  {
+    if (*name != GSS_C_NO_NAME) {
+      OM_uint32 maj, min;
+      DMALLOC_UNREGISTER (*name);
+      maj = gss_release_name (&min, name);
+      MORE_STATUS_MSG (gss_release_name, maj, min);
+      CHECK_UNEXPECTED_ERROR (gss_release_name, maj, min);
+      *name = GSS_C_NO_NAME;
+    }
+  }
+
+#define GET_GSS_NAME_FROM_OBJ_ARG(GSS_NAME, OBJ, FN, ARG) do {		\
+    struct Name_struct *ns_ =						\
+      (struct Name_struct *) get_storage (OBJ, Name_program);		\
+    if (!ns_)								\
+      SIMPLE_ARG_TYPE_ERROR (FN, ARG, "GSSAPI.Name");			\
+    GSS_NAME = ns_->name;						\
+  } while (0)
+
+#define PUSH_GSS_NAME_AS_OBJ(NAME) do {					\
+    struct object *o = FAST_CLONE_OBJECT (Name_program);		\
+    OBJ2_NAME (o)->name = NAME;						\
+    debug_malloc_touch (NAME);						\
+    push_object (o);							\
+  } while (0)
+
+  INIT
+  {
+    THIS->name = GSS_C_NO_NAME;
+  }
+
+  EXIT
+    gc_trivial;
+  {
+    cleanup_name (&THIS->name);
+  }
+
+  static void import_name_from_string (struct pike_string *name_str,
+				       gss_name_t *name,
+				       const gss_OID type)
+  {
+    gss_buffer_desc buf;
+    gss_name_t name_tmp = GSS_C_NO_NAME;
+    OM_uint32 maj, min;
+
+    assert (!name_str->size_shift);
+
+    buf.length = name_str->len;
+    buf.value = name_str->str;
+
+    THREADS_ALLOW();
+    /* RFC 2743 doesn't rule out that this might block. */
+    maj = gss_import_name (&min, &buf, type, &name_tmp);
+    THREADS_DISALLOW();
+
+    STATUS_MSG (gss_import_name, maj, min);
+
+    DMALLOC_REGISTER (name_tmp);
+    if (*name != GSS_C_NO_NAME)
+      cleanup_name (name);   /* Cope with race after THREADS_ALLOW. */
+    *name = name_tmp;
+
+    CHECK_ERROR (gss_import_name, maj, min);
+  }
+
+  /*! @decl static void create (string name, void|string name_type)
+   *!
+   *! This wraps @tt{GSS_Import_name@} according to RFC 2743 section
+   *! 2.4.5.
+   *!
+   *! @param name
+   *!   A name on string form (a contiguous string name in GSS-API
+   *!   parlance).
+   *!
+   *! @param name_type
+   *!   The OID on dotted-decimal form for the type of the name in
+   *!   @[name]. If left out, @[name] is parsed according to a
+   *!   mechanism-specific default printable syntax.
+   *!
+   *! @note
+   *!   If @[name] is the result of @[export] or a similar function
+   *!   then @[name_type] should be @[GSSAPI.NT_EXPORT_NAME].
+   */
+  PIKEFUN void create (string name, void|string name_type)
+    flags ID_STATIC;
+  {
+    gss_OID_desc type_desc;
+    gss_OID type;
+
+#ifndef PRECOMPILE_API_VERSION
+    /* Live with the pessimal precompile.pike in 7.4.. :P */
+    struct pike_string *_name_type;
+    CHECK_OPT_ARG (name_type, _name_type,
+		   T_STRING, string, "string", "create", 2);
+#define name_type _name_type
+#endif
+
+    CHECK_NARROW_STRING (name, "create", 1);
+
+    if (name_type)
+      /* mega_apply pops for us if get_pushed_gss_oid pushes. */
+      get_pushed_gss_oid (name_type, type = &type_desc);
+    else
+      type = GSS_C_NO_OID;
+
+    import_name_from_string (name, &THIS->name, type);
+
+#undef name_type
+  }
+
+  /*! @decl string display_name()
+   *! @decl string display_name_type()
+   *!
+   *! @[display_name] returns a representation of the name for display
+   *! purposes, and @[display_name_type] returns an OID on
+   *! dotted-decimal form for the type of that name.
+   *!
+   *! If no type was given to @[create] then @[display_name_type]
+   *! might return zero.
+   *!
+   *! This wraps @tt{GSS_Display_name@} according to RFC 2743 section
+   *! 2.4.4.
+   *!
+   *! @seealso
+   *!   The @tt{GSSAPI.NT_*@} constants.
+   */
+
+  PIKEFUN string display_name()
+  {
+    WITH_GSS_BUFFER (d_name) {
+      OM_uint32 maj, min;
+      maj = gss_display_name (&min, THIS->name, &d_name, NULL);
+      STATUS_MSG (gss_display_name, maj, min);
+      CHECK_ERROR (gss_display_name, maj, min);
+
+      push_string (make_shared_binary_string (d_name.value, d_name.length));
+    } END_GSS_BUFFER (d_name);
+  }
+
+  PIKEFUN string display_name_type()
+  {
+    WITH_GSS_BUFFER (d_name) {
+      gss_OID type;
+      OM_uint32 maj, min;
+      /* Can't leave out the name buffer. */
+      maj = gss_display_name (&min, THIS->name, &d_name, &type);
+      STATUS_MSG (gss_display_name, maj, min);
+      CHECK_ERROR (gss_display_name, maj, min);
+
+      if (type == GSS_C_NO_OID)
+	push_int (0);
+      else
+	ref_push_string (get_dd_oid (type));
+    } END_GSS_BUFFER (d_name);
+  }
+
+  static void describe_name (struct string_builder *sb,
+			     gss_name_t name, int with_type)
+  {
+    WITH_GSS_BUFFER (d_name) {
+      gss_OID type;
+      OM_uint32 maj, min;
+      maj = gss_display_name (&min, name, &d_name, &type);
+      MORE_STATUS_MSG (gss_display_name, maj, min);
+
+#ifdef PIKE_DEBUG
+      if (GSS_CALLING_ERROR (maj))
+	handle_error (__LINE__, "gss_display_name", maj, min, GSS_C_NO_OID);
+#endif
+      switch (GSS_ROUTINE_ERROR (maj)) {
+	default:
+#if PIKE_MAJOR_VERSION == 7 && PIKE_MINOR_VERSION <= 6
+	  {
+	    char buf[100];
+	    sprintf (buf, "unexpected gss_display_name error: %x/%x",
+		     maj, min);
+	    string_builder_strcat (sb, buf);
+	  }
+#else
+	  string_builder_sprintf (
+	    sb, "unexpected gss_display_name error: %x/%x", maj, min);
+#endif
+	  break;
+
+	case GSS_S_BAD_NAME:
+	  string_builder_strcat (sb, "ill-formed");
+	  break;
+
+	case GSS_S_COMPLETE: {
+	  if (with_type && type != GSS_C_NO_OID) {
+	    if (IS_SAME_OID (type, GSS_C_NT_HOSTBASED_SERVICE))
+	      string_builder_strcat (sb, "service: ");
+	    else if (IS_SAME_OID (type, GSS_C_NT_USER_NAME))
+	      string_builder_strcat (sb, "user: ");
+	    else if (IS_SAME_OID (type, GSS_C_NT_MACHINE_UID_NAME))
+	      string_builder_strcat (sb, "binary uid: ");
+	    else if (IS_SAME_OID (type, GSS_C_NT_STRING_UID_NAME))
+	      string_builder_strcat (sb, "decimal uid: ");
+	    else if (IS_SAME_OID (type, GSS_C_NT_ANONYMOUS))
+	      string_builder_strcat (sb, "anonymous: ");
+	    else if (IS_SAME_OID (type, GSS_C_NT_EXPORT_NAME))
+	      string_builder_strcat (sb, "export name: ");
+	    else {
+	      string_builder_shared_strcat (sb, get_dd_oid (type));
+	      string_builder_strcat (sb, ": ");
+	    }
+	  }
+
+	  push_text ("%O");
+	  push_string (make_shared_binary_string (d_name.value, d_name.length));
+	  f_sprintf (2);
+	  string_builder_shared_strcat (sb, Pike_sp[-1].u.string);
+	  pop_stack();
+	  break;
+	}
+      }
+    } END_GSS_BUFFER (d_name);
+  }
+
+  PIKEFUN string _sprintf (int flag, ...)
+    flags ID_STATIC;
+  {
+    pop_n_elems (args);
+
+    if (flag != 'O')
+      push_int (0);
+
+    else {
+      struct string_builder sb;
+      ONERROR uwp;
+      init_string_builder (&sb, 0);
+      SET_ONERROR (uwp, free_string_builder, &sb);
+
+      string_builder_strcat (&sb, "GSSAPI.Name(");
+      if (THIS->name != GSS_C_NO_NAME)
+	describe_name (&sb, THIS->name, 1);
+      string_builder_putchar (&sb, ')');
+
+      UNSET_ONERROR (uwp);
+      push_string (finish_string_builder (&sb));
+    }
+  }
+
+  /*! @decl Name canonicalize (string mech)
+   *!
+   *! Returns a @[GSSAPI.Name] containing the canonical mechanism name
+   *! (MN) of this name. The mechanism is given as a dotted-decimal
+   *! OID in @[mech].
+   *!
+   *! This wraps @tt{GSS_Canonicalize_name@} according to RFC 2743
+   *! section 2.4.14.
+   *!
+   *! @note
+   *!   This function might block on network connections to remote
+   *!   authentication servers.
+   */
+  PIKEFUN object(Name) canonicalize (string mech)
+  {
+    gss_name_t mn = GSS_C_NO_NAME;
+    ONERROR uwp;
+
+    if (THIS->name == GSS_C_NO_NAME)
+      Pike_error ("Name object not initialized.\n");
+
+    WITH_PUSHED_GSS_OID (mech_oid, mech) {
+      gss_name_t n = THIS->name;
+      OM_uint32 maj, min;
+
+      SET_ONERROR (uwp, cleanup_name, &mn);
+
+      THREADS_ALLOW();
+      /* RFC 2743 doesn't rule out that this might block. */
+      maj = gss_canonicalize_name (&min, n, &mech_oid, &mn);
+      THREADS_DISALLOW();
+
+      STATUS_MSG (gss_canonicalize_name, maj, min);
+      DMALLOC_REGISTER (mn);
+      CHECK_ERROR_WITH_MECH (gss_canonicalize_name, maj, min, &mech_oid);
+    } END_GSS_OID (mech_oid);
+
+    pop_n_elems (args);
+    PUSH_GSS_NAME_AS_OBJ (mn);
+    UNSET_ONERROR (uwp);
+  }
+
+  /*! @decl string export (void|string mech)
+   *!
+   *! Returns the name on the exported format. If @[mech] isn't given
+   *! then the name has to be a mechanism name (MN). If @[mech] is
+   *! given then the name is canonicalized according to that mechanism
+   *! before being exported (see @[canonicalize]).
+   *!
+   *! This wraps @tt{GSS_Export_name@} according to RFC 2743 section
+   *! 2.4.15.
+   *!
+   *! @note
+   *!   This function might block on network connections to remote
+   *!   authentication servers if @[mech] is specified.
+   */
+  PIKEFUN string export (void|string mech)
+  {
+    gss_OID_desc mech_oid_desc;
+    gss_OID mech_oid;
+    gss_name_t mn = GSS_C_NO_NAME;
+    ONERROR uwp;
+
+#ifndef PRECOMPILE_API_VERSION
+    /* Live with the pessimal precompile.pike in 7.4.. :P */
+    struct pike_string *_mech;
+    CHECK_OPT_ARG (mech, _mech, T_STRING, string, "string", "export", 1);
+#define mech _mech
+#endif
+
+    if (THIS->name == GSS_C_NO_NAME)
+      Pike_error ("Name object not initialized.\n");
+
+    if (mech) {
+      gss_name_t n = THIS->name;
+      OM_uint32 maj, min;
+
+      if (get_pushed_gss_oid (mech, mech_oid = &mech_oid_desc))
+	/* Make the pop code below handle the extra stack item. */
+	args++;
+
+      SET_ONERROR (uwp, cleanup_name, &mn);
+
+      THREADS_ALLOW();
+      /* RFC 2743 doesn't rule out that this might block. */
+      maj = gss_canonicalize_name (&min, n, mech_oid, &mn);
+      THREADS_DISALLOW();
+
+      STATUS_MSG (gss_canonicalize_name, maj, min);
+      DMALLOC_REGISTER (mn);
+      CHECK_ERROR_WITH_MECH (gss_canonicalize_name, maj, min, mech_oid);
+    }
+    else {
+      mech_oid = GSS_C_NO_OID;
+      mn = THIS->name;
+    }
+
+    WITH_GSS_BUFFER (exp) {
+      OM_uint32 maj, min;
+      maj = gss_export_name (&min, mn, &exp);
+      STATUS_MSG (gss_export_name, maj, min);
+      CHECK_ERROR_WITH_MECH (gss_export_name, maj, min, mech_oid);
+      push_string (make_shared_binary_string (exp.value, exp.length));
+    } END_GSS_BUFFER (exp);
+
+    if (mech)
+      CALL_AND_UNSET_ONERROR (uwp);
+
+    stack_pop_n_elems_keep_top (args);
+#undef mech
+  }
+
+  /*! @decl static int `== (mixed other)
+   *!
+   *! Returns true if @[other] is a @[GSSAPI.Name] which contains a
+   *! name that refers to the same identity as this one.
+   *!
+   *! This wraps @tt{GSS_Compare_name@} according to RFC 2743 section
+   *! 2.4.3.
+   *!
+   *! If either @[GSSAPI.Name] object is uninitialized or contains an
+   *! anonymous identity then they are considered different, unless it
+   *! is the very same @[GSSAPI.Name] object (that is an inherent pike
+   *! behavior).
+   *!
+   *! @throws
+   *!   An error is thrown if the names are incomparable, or if either
+   *!   of them are ill-formed.
+   */
+  PIKEFUN int `== (mixed other)
+    flags ID_STATIC;
+  {
+    if (THIS->name != GSS_C_NO_NAME &&
+	other->type == T_OBJECT) {
+      struct Name_struct *other_stor =
+	(struct Name_struct *) get_storage (other->u.object, Name_program);
+
+      if (other_stor && other_stor->name != GSS_C_NO_NAME) {
+	int equal;
+	OM_uint32 maj, min;
+	maj = gss_compare_name (&min, THIS->name, other_stor->name, &equal);
+	STATUS_MSG (gss_compare_name, maj, min);
+	CHECK_ERROR (gss_compare_name, maj, min);
+	RETURN equal;
+      }
+    }
+
+    RETURN 0;
+  }
+
+  /*! @decl static int __hash()
+   *!
+   *! Tries to export the name (see @[export]) and if that succeeds
+   *! returns a hash made from the exported name string. Otherwise a
+   *! normal hash based on this object is returned.
+   *!
+   *! This means that mechanism names (MNs) can be used as indices in
+   *! mappings without getting duplicate entries for the same
+   *! identity.
+   */
+  PIKEFUN int __hash()
+    flags ID_STATIC;
+  {
+    int got_hash = 0;
+
+    if (THIS->name != GSS_C_NO_NAME)
+      WITH_GSS_BUFFER (exp) {
+	OM_uint32 maj, min;
+	maj = gss_export_name (&min, THIS->name, &exp);
+	STATUS_MSG (gss_export_name, maj, min);
+
+	if (!GSS_ERROR (maj)) {
+	  push_string (make_shared_binary_string (exp.value, exp.length));
+	  f_hash (1);
+	  got_hash = 1;
+	}
+      } END_GSS_BUFFER (exp);
+
+    if (!got_hash) {
+      unsigned INT32 h;
+#if SIZEOF_CHAR_P > 4
+      h=DO_NOT_WARN((unsigned INT32)(PTR_TO_INT(Pike_fp->current_object) >> 2));
+#else
+      h=DO_NOT_WARN((unsigned INT32)(PTR_TO_INT(Pike_fp->current_object)));
+#endif
+      RETURN h;
+    }
+  }
+
+#ifdef HAVE_GSS_INQUIRE_MECHS_FOR_NAME
+  /*! @decl multiset(string) mechs()
+   *!
+   *! Returns the OIDs for the mechanisms that might be able to
+   *! process this name. The returned OID strings are on
+   *! dotted-decimal form.
+   *!
+   *! This wraps @tt{GSS_Inquire_mechs_for_name@} according to RFC
+   *! 2743 section 2.4.13.
+   *!
+   *! @note
+   *!   Some older GSS-API v2 implementations lack this funcion.
+   */
+  PIKEFUN multiset(string) mechs()
+  {
+    gss_OID_set mechs = GSS_C_NO_OID_SET;
+    ONERROR uwp;
+
+    if (THIS->name == GSS_C_NO_NAME)
+      throw_gssapi_error (GSS_S_BAD_NAMETYPE, 0, GSS_C_NO_OID, NULL);
+
+    SET_ONERROR (uwp, cleanup_oid_set, &mechs);
+
+    {
+      gss_name_t n = THIS->name;
+      OM_uint32 maj, min;
+
+      THREADS_ALLOW();
+      /* RFC 2743 doesn't rule out that this might block. */
+      maj = gss_inquire_mechs_for_name (&min, n, &mechs);
+      THREADS_DISALLOW();
+
+      STATUS_MSG (gss_inquire_mechs_for_name, maj, min);
+      DMALLOC_REGISTER (mechs);
+      CHECK_ERROR (gss_inquire_mechs_for_name, maj, min);
+    }
+
+    convert_from_oid_set_and_push (mechs);
+    CALL_AND_UNSET_ONERROR (uwp);
+  }
+#endif
+}
+
+/*! @endclass */
+
+
+/*! @decl constant int INITIATE
+ *! @decl constant int ACCEPT
+ *! @decl constant int BOTH
+ *!
+ *! Flags for indicating how a @[GSSAPI.Cred] object may be used:
+ *!
+ *! @dl
+ *! @item INITIATE
+ *!   The credential can only be used to initiate security contexts
+ *!   (i.e. using @[GSSAPI.InitContext]).
+ *! @item ACCEPT
+ *!   The credential can only be used to accept security contexts
+ *!   (i.e. using @[GSSAPI.AcceptContext]).
+ *! @item BOTH
+ *!   The credential may be used both to initiate or accept security
+ *!   contexts.
+ *! @enddl
+ */
+
+/*! @class Cred
+ *!
+ *! Objects of this class hold one or more credentials that the
+ *! current process can use to assert identities; see RFC 2743 section
+ *! 1.1.1.
+ *!
+ *! @note
+ *!   If a @[Cred] object is destructed, @tt{GSS_Release_cred@}
+ *!   (RFC 2743, section 2.1.2) is called. The RFC doesn't preclude
+ *!   that that function might do blocking network I/O, which due to
+ *!   pike's object management might occur essentially anytime in any
+ *!   thread if the object isn't explicitly destructed. To avoid that,
+ *!   it's recommended to call @[release] in credential objects that
+ *!   are no longer used.
+ */
+PIKECLASS Cred
+{
+  CVAR gss_cred_id_t cred;
+
+  static void cleanup_cred (gss_cred_id_t *cred)
+  /* Warning: This function uses THREADS_ALLOW/THREADS_DISALLOW. */
+  {
+    if (*cred != GSS_C_NO_CREDENTIAL) {
+      OM_uint32 maj, min;
+      DMALLOC_UNREGISTER (*cred);
+      THREADS_ALLOW();
+      maj = gss_release_cred (&min, cred);
+      STATUS_MSG (gss_release_cred, maj, min);
+      THREADS_DISALLOW();
+      CHECK_UNEXPECTED_ERROR (gss_release_cred, maj, min);
+      *cred = GSS_C_NO_CREDENTIAL;
+    }
+  }
+
+  INIT
+  {
+    THIS->cred = GSS_C_NO_CREDENTIAL;
+  }
+
+  EXIT
+    gc_trivial;
+  {
+    if (THIS->cred != GSS_C_NO_CREDENTIAL) cleanup_cred (&THIS->cred);
+  }
+
+  /*! @decl void acquire (Name|string name, @
+   *!                     int cred_usage, @
+   *!                     void|multiset(string) desired_mechs, @
+   *!                     void|int(0..) desired_time)
+   *!
+   *! Acquire initial credentials for this object. It is an error if
+   *! it already has some credentials.
+   *!
+   *! This wraps @tt{GSS_Acquire_cred@} according to RFC 2743 section
+   *! 2.1.1.
+   *!
+   *! @param name
+   *!   The name of the identity for which credentials should be
+   *!   acquired. It is up to the GSS-API implementation to check
+   *!   whether the running process is authorized to act on behalf of
+   *!   this identity.
+   *!
+   *!   This can be either a @[GSSAPI.Name] object or a string. In the
+   *!   latter case, the string is converted to a GSS-API name
+   *!   according to a mechanism-specific default printable syntax,
+   *!   i.e. just like if it would be given as the sole argument to
+   *!   @[GSSAPI.Name.create].
+   *!
+   *!   If this is zero then credentials for the default principal (if
+   *!   any) are retrieved.
+   *!
+   *! @param cred_usage
+   *!   Specifies how the credential will be used. One of
+   *!   @[GSSAPI.INITIATE], @[GSSAPI.ACCEPT] or @[GSSAPI.BOTH].
+   *!
+   *! @param desired_mechs
+   *!   The mechanisms that the credentials should cover, as a
+   *!   multiset containing their OIDs on dotted-decimal form. If zero
+   *!   or left out then a default set provided by the GSS-API
+   *!   implementation is used.
+   *!
+   *!   It is an error to pass an empty multiset.
+   *!
+   *! @param desired_time
+   *!   Number of seconds the credentials should remain valid. The
+   *!   GSS-API implementation may return credentials that are valid
+   *!   both longer and shorter than this. Zero or left out means use
+   *!   the maximum permitted time.
+   *!
+   *! @note
+   *!   This function might block on network connections to remote
+   *!   authentication servers.
+   */
+  PIKEFUN void acquire (zero|object(Name)|string name,
+			int cred_usage,
+			void|multiset(string) desired_mechs,
+			void|zero|int(0..) desired_time)
+  {
+    gss_name_t gss_name = GSS_C_NO_NAME;
+    OM_uint32 time;
+    gss_OID_set mechs = GSS_C_NO_OID_SET;
+    ONERROR uwp1, uwp2;
+
+#ifndef PRECOMPILE_API_VERSION
+    /* Live with the pessimal precompile.pike in 7.4.. :P */
+    struct multiset *_desired_mechs;
+    INT_TYPE _desired_time;
+    CHECK_OPT_ARG (desired_mechs, _desired_mechs,
+		   T_MULTISET, multiset, "multiset(string)", "create", 3);
+    CHECK_OPT_ARG (desired_time, _desired_time,
+		   T_INT, integer, "int(0..)", "create", 4);
+#define desired_mechs _desired_mechs
+#define desired_time _desired_time
+#endif
+
+    switch (name->type) {
+      case T_OBJECT:
+	GET_GSS_NAME_FROM_OBJ_ARG (gss_name, name->u.object, "acquire", 1);
+	break;
+      case T_STRING: {
+	struct pike_string *name_str = name->u.string;
+	CHECK_NARROW_STRING (name_str, "acquire", 1);
+	SET_ONERROR (uwp1, cleanup_name, &gss_name);
+	import_name_from_string (name_str, &gss_name, GSS_C_NO_OID);
+	break;
+      }
+      case T_INT:
+	if (!name->u.integer) break;
+	/* Fall through */
+      default:
+	SIMPLE_ARG_TYPE_ERROR ("acquire", 1, "GSSAPI.Name|string");
+    }
+
+    if (THIS->cred != GSS_C_NO_CREDENTIAL)
+      Pike_error ("The object already contain credentials.\n");
+
+    if (desired_mechs) {
+      if (!multiset_sizeof (desired_mechs))
+	SIMPLE_ARG_ERROR ("acquire", 3, "Multiset must not be empty.");
+      if (multiset_ind_types (desired_mechs) & ~BIT_STRING)
+	multiset_fix_type_field (desired_mechs);
+      if (multiset_ind_types (desired_mechs) != BIT_STRING)
+	SIMPLE_ARG_TYPE_ERROR ("acquire", 3, "multiset(string)");
+      SET_ONERROR (uwp2, cleanup_oid_set, &mechs);
+      convert_to_oid_set (desired_mechs, &mechs);
+    }
+
+    if (desired_time < 0)
+      SIMPLE_ARG_TYPE_ERROR ("acquire", 4, "int(0..)");
+    time = desired_time;
+    if (!time) time = GSS_C_INDEFINITE;
+
+    {
+      gss_cred_id_t cred = GSS_C_NO_CREDENTIAL;
+      OM_uint32 maj, min;
+
+      THREADS_ALLOW();
+      maj = gss_acquire_cred (&min, gss_name, time, mechs, cred_usage, &cred,
+			      NULL, NULL);
+      THREADS_DISALLOW();
+
+      STATUS_MSG (gss_acquire_cred, maj, min);
+
+      DMALLOC_REGISTER (cred);
+      if (THIS->cred != GSS_C_NO_CREDENTIAL)
+	Pike_error ("The object already contain credentials.\n");
+      THIS->cred = cred;
+
+      CHECK_ERROR (gss_acquire_cred, maj, min);
+    }
+
+    if (desired_mechs)
+      CALL_AND_UNSET_ONERROR (uwp2);
+    if (name->type == T_STRING)
+      CALL_AND_UNSET_ONERROR (uwp1);
+
+#undef desired_mechs
+#undef desired_time
+  }
+
+  /*! @decl void add (Name|string name, @
+   *!                 int cred_usage, @
+   *!                 string desired_mech, @
+   *!                 void|int(0..)|array(int(0..)) desired_time)
+   *!
+   *! Adds another credential element to this object. If this object
+   *! has no credentials already then it will get the default
+   *! credentials in addition to this specified one.
+   *!
+   *! This wraps @tt{GSS_Add_cred@} according to RFC 2743 section
+   *! 2.1.4.
+   *!
+   *! @param name
+   *!   The name of the identity for which a credential should be
+   *!   acquired. It is up to the GSS-API implementation to check
+   *!   whether the running process has sufficient privileges to act
+   *!   on behalf of this identity.
+   *!
+   *!   This can be either a @[GSSAPI.Name] object or a string. In the
+   *!   latter case, the string is converted to a GSS-API name
+   *!   according to a mechanism-specific default printable syntax,
+   *!   i.e. just like if it would be given as the sole argument to
+   *!   @[GSSAPI.Name.create].
+   *!
+   *!   If this is zero then a credential for the default principal
+   *!   (if any) are retrieved.
+   *!
+   *! @param cred_usage
+   *!   Specifies how the credential will be used. One of
+   *!   @[GSSAPI.INITIATE], @[GSSAPI.ACCEPT] or @[GSSAPI.BOTH].
+   *!
+   *! @param desired_mech
+   *!   The mechanism that the credential should cover, as an OID on
+   *!   dotted-decimal form.
+   *!
+   *! @param desired_time
+   *!   Number of seconds the credential should remain valid. The
+   *!   GSS-API implementation may return a credential that is valid
+   *!   both longer and shorter than this. Zero or left out means use
+   *!   the maximum permitted time.
+   *!
+   *!   This can also be an array containing two elements. In that
+   *!   case the first element applies to the credential when it is
+   *!   used to initiate contexts, and the second element applies to
+   *!   use for acceptor contexts.
+   *!
+   *! @note
+   *!   This function might block on network connections to remote
+   *!   authentication servers.
+   */
+  PIKEFUN void add (zero|object(Name)|string name,
+		    int cred_usage,
+		    string desired_mech,
+		    void|int(0..)|array(int(0..)) desired_time)
+  {
+    gss_name_t gss_name = GSS_C_NO_NAME;
+    OM_uint32 init_time, acc_time;
+    ONERROR uwp;
+
+    switch (name->type) {
+      case T_OBJECT:
+	GET_GSS_NAME_FROM_OBJ_ARG (gss_name, name->u.object, "add", 1);
+	break;
+      case T_STRING: {
+	struct pike_string *name_str = name->u.string;
+	CHECK_NARROW_STRING (name_str, "add", 1);
+	SET_ONERROR (uwp, cleanup_name, &gss_name);
+	import_name_from_string (name_str, &gss_name, GSS_C_NO_OID);
+	break;
+      }
+      case T_INT:
+	if (!name->u.integer) break;
+	/* Fall through */
+      default:
+	SIMPLE_ARG_TYPE_ERROR ("add", 1, "GSSAPI.Name|string");
+    }
+
+    if (!desired_time)
+      init_time = acc_time = 0;
+    else
+      switch (desired_time->type) {
+	case T_INT:
+	  if (desired_time->u.integer < 0)
+	    SIMPLE_ARG_ERROR ("add", 4, "Expected positive integer.");
+	  init_time = acc_time = desired_time->u.integer;
+	  break;
+
+	case T_ARRAY: {
+	  struct array *times = desired_time->u.array;
+	  int e;
+	  if (times->size != 2)
+	    SIMPLE_ARG_ERROR ("add", 4, "Array should have two elements.");
+	  for (e = 0; e < 2; e++)
+	    if (times->item[e].type != T_INT || times->item[e].u.integer < 0)
+	      SIMPLE_ARG_ERROR ("add", 4,
+				"Array element is not a positive integer.");
+	  init_time = times->item[0].u.integer;
+	  acc_time = times->item[1].u.integer;
+	  break;
+	}
+
+	default:
+	  SIMPLE_ARG_TYPE_ERROR ("add", 4, "void|int(0..)|array(int(0..))");
+      }
+    if (!init_time) init_time = GSS_C_INDEFINITE;
+    if (!acc_time) acc_time = GSS_C_INDEFINITE;
+
+    WITH_PUSHED_GSS_OID (mech_oid, desired_mech) {
+      gss_cred_id_t cred = THIS->cred;
+      OM_uint32 maj, min;
+
+      THREADS_ALLOW();
+      maj = gss_add_cred (&min, cred, gss_name, &mech_oid, cred_usage,
+			  init_time, acc_time,
+			  cred == GSS_C_NO_CREDENTIAL ? &cred : NULL,
+			  NULL, NULL, NULL);
+      THREADS_DISALLOW();
+
+      STATUS_MSG (gss_add_cred, maj, min);
+
+      if (THIS->cred == GSS_C_NO_CREDENTIAL) {
+	DMALLOC_REGISTER (cred);
+	THIS->cred = cred;
+      }
+      else if (THIS->cred != cred) {
+	cleanup_cred (&cred);
+	Pike_error ("Contained credentials changed asynchronously.\n");
+      }
+
+      CHECK_ERROR_WITH_MECH (gss_add_cred, maj, min, &mech_oid);
+    } END_GSS_OID (mech_oid);
+
+#undef name
+  }
+
+  /*! @decl GSSAPI.Name name (void|string mech)
+   *! @decl int cred_usage (void|string mech)
+   *! @decl multiset(string) mechs()
+   *! @decl int(0..)|Int.inf lifetime()
+   *! @decl int(0..)|Int.inf init_lifetime (string mech)
+   *! @decl int(0..)|Int.inf accept_lifetime (string mech)
+   *!
+   *! Functions to query various properties about the credentials.
+   *!
+   *! These wrap @tt{GSS_Inquire_cred@} according to RFC 2743 section
+   *! 2.1.3 if @[mech] is not given, and
+   *! @tt{GSS_Inquire_cred_by_mech@} according to section 2.1.5
+   *! otherwise.
+   *!
+   *! @param mech
+   *!   If this is given then the credential for that specific
+   *!   mechanism is queried. @[mech] contains the OID of the
+   *!   mechanism on dotted-decimal form.
+   *!
+   *!   Some of the query functions can only be used for a specific
+   *!   mechanism, in which case @[mech] is required. Some can only be
+   *!   used on the credentials in general, and the @[mech] argument
+   *!   is not applicable. Some can be used both ways, and then
+   *!   @[mech] is optional.
+   *!
+   *! @dl
+   *! @item name (void|string mech)
+   *!   Returns the name of the identity that the credential(s)
+   *!   assert. If @[mech] is given then the returned name is a
+   *!   Mechanism Name (MN).
+   *!
+   *!   The returned @[GSSAPI.Name] object is always a newly created
+   *!   one, even though it typically compares as equal with the ones
+   *!   given to @[acquire] or @[add].
+   *!
+   *! @item cred_usage (void|string mech)
+   *!   Returns how the credential(s) may be used, one of
+   *!   @[GSSAPI.INITIATE], @[GSSAPI.ACCEPT] or @[GSSAPI.BOTH].
+   *!
+   *!   If @[mech] is not given then the returned usage value reflects
+   *!   the union of the capabilities in all credentials.
+   *!
+   *! @item mechs()
+   *!   Returns the set of mechanisms supported by the credential. The
+   *!   returned value is a multiset of strings with OIDs on
+   *!   dotted-decimal form.
+   *!
+   *! @item lifetime()
+   *!   Returns the shortest validity lifetime left in any of the
+   *!   mechanisms that are part of the credentials, for either
+   *!   initiator or acceptor use.
+   *!
+   *!   Returns zero if some part of the credentials has expired.
+   *!
+   *!   Returns @[Int.inf] if there is no time limit (in older pikes
+   *!   without @[Int.inf] a large positive integer is returned
+   *!   instead).
+   *!
+   *! @item init_lifetime (string mech)
+   *!   Returns the validity lifetime left for initiator use.
+   *!
+   *!   Returns zero if the credential has expired for this use or if
+   *!   its usage is @[GSSAPI.ACCEPT].
+   *!
+   *!   Returns @[Int.inf] if there is no time limit (in older pikes
+   *!   without @[Int.inf] a large positive integer is returned
+   *!   instead).
+   *!
+   *! @item accept_lifetime (string mech)
+   *!   Returns the validity lifetime left for acceptor use.
+   *!
+   *!   Returns zero if the credential has expired for this use or if
+   *!   its usage is @[GSSAPI.INITIATE].
+   *!
+   *!   Returns @[Int.inf] if there is no time limit (in older pikes
+   *!   without @[Int.inf] a large positive integer is returned
+   *!   instead).
+   *! @enddl
+   *!
+   *! @note
+   *!   RFC 2743 doesn't preclude that these functions might block on
+   *!   network connections to remote authentication servers.
+   */
+
+  /* Perhaps we should hoard this data locally to reduce the number of
+   * calls (except the time values)? */
+
+  PIKEFUN object(Name) name (void|string mech)
+  {
+    gss_name_t name = GSS_C_NO_NAME;
+    ONERROR uwp;
+
+#ifndef PRECOMPILE_API_VERSION
+    /* Live with the pessimal precompile.pike in 7.4.. :P */
+    struct pike_string *_mech;
+    CHECK_OPT_ARG (mech, _mech, T_STRING, string, "string", "name", 1);
+#define mech _mech
+#endif
+
+    if (THIS->cred == GSS_C_NO_CREDENTIAL)
+      throw_gssapi_error (GSS_S_NO_CRED, 0, GSS_C_NO_OID, NULL);
+
+    SET_ONERROR (uwp, cleanup_name, &name);
+
+    if (mech)
+      WITH_PUSHED_GSS_OID (mech_oid, mech) {
+	gss_cred_id_t cred = THIS->cred;
+	OM_uint32 maj, min;
+
+	THREADS_ALLOW();
+	/* RFC 2743 doesn't rule out that this might block. */
+	maj = gss_inquire_cred_by_mech (&min, cred, &mech_oid,
+					&name, NULL, NULL, NULL);
+	THREADS_DISALLOW();
+
+	STATUS_MSG (gss_inquire_cred_by_mech, maj, min);
+	DMALLOC_REGISTER (name);
+	CHECK_ERROR_WITH_MECH (gss_inquire_cred_by_mech, maj, min, &mech_oid);
+      } END_GSS_OID (mech_oid);
+
+    else {
+      gss_cred_id_t cred = THIS->cred;
+      OM_uint32 maj, min;
+
+      THREADS_ALLOW();
+      /* RFC 2743 doesn't rule out that this might block. */
+      maj = gss_inquire_cred (&min, cred, &name, NULL, NULL, NULL);
+      THREADS_DISALLOW();
+
+      STATUS_MSG (gss_inquire_cred, maj, min);
+      DMALLOC_REGISTER (name);
+      CHECK_ERROR (gss_inquire_cred, maj, min);
+    }
+
+    pop_n_elems (args);
+    PUSH_GSS_NAME_AS_OBJ (name);
+    UNSET_ONERROR (uwp);
+#undef mech
+  }
+
+  PIKEFUN int cred_usage (void|string mech)
+  {
+    gss_cred_usage_t usage;
+
+#ifndef PRECOMPILE_API_VERSION
+    /* Live with the pessimal precompile.pike in 7.4.. :P */
+    struct pike_string *_mech;
+    CHECK_OPT_ARG (mech, _mech, T_STRING, string, "string", "cred_usage", 1);
+#define mech _mech
+#endif
+
+    if (THIS->cred == GSS_C_NO_CREDENTIAL)
+      throw_gssapi_error (GSS_S_NO_CRED, 0, GSS_C_NO_OID, NULL);
+
+    if (mech)
+      WITH_PUSHED_GSS_OID (mech_oid, mech) {
+	gss_cred_id_t cred = THIS->cred;
+	OM_uint32 maj, min;
+
+	THREADS_ALLOW();
+	/* RFC 2743 doesn't rule out that this might block. */
+	maj = gss_inquire_cred_by_mech (&min, cred, &mech_oid,
+					NULL, NULL, NULL, &usage);
+	THREADS_DISALLOW();
+
+	STATUS_MSG (gss_inquire_cred_by_mech, maj, min);
+	CHECK_ERROR_WITH_MECH (gss_inquire_cred_by_mech, maj, min, &mech_oid);
+      } END_GSS_OID (mech_oid);
+
+    else {
+      gss_cred_id_t cred = THIS->cred;
+      OM_uint32 maj, min;
+
+      THREADS_ALLOW();
+      /* RFC 2743 doesn't rule out that this might block. */
+      maj = gss_inquire_cred (&min, cred, NULL, NULL, &usage, NULL);
+      THREADS_DISALLOW();
+
+      STATUS_MSG (gss_inquire_cred, maj, min);
+      CHECK_ERROR (gss_inquire_cred, maj, min);
+    }
+
+    RETURN usage;
+#undef mech
+  }
+
+  PIKEFUN multiset(string) mechs()
+  {
+    gss_OID_set mechs = GSS_C_NO_OID_SET;
+    ONERROR uwp;
+
+    if (THIS->cred == GSS_C_NO_CREDENTIAL)
+      throw_gssapi_error (GSS_S_NO_CRED, 0, GSS_C_NO_OID, NULL);
+
+    SET_ONERROR (uwp, cleanup_oid_set, &mechs);
+
+    {
+      gss_cred_id_t cred = THIS->cred;
+      OM_uint32 maj, min;
+
+      THREADS_ALLOW();
+      /* RFC 2743 doesn't rule out that this might block. */
+      maj = gss_inquire_cred (&min, cred, NULL, NULL, NULL, &mechs);
+      THREADS_DISALLOW();
+
+      STATUS_MSG (gss_inquire_cred, maj, min);
+      DMALLOC_REGISTER (mechs);
+      CHECK_ERROR (gss_inquire_cred, maj, min);
+    }
+
+    convert_from_oid_set_and_push (mechs);
+    CALL_AND_UNSET_ONERROR (uwp);
+  }
+
+  /* Lying a little in the return type here for the sake of pike compat. */
+  PIKEFUN int(0..) lifetime()
+  {
+    /* GSS-API implementations should always set this according to RFC
+     * 2744 section 5.21, but they might not do that in reality (see
+     * init/accept_lifetime below). */
+    OM_uint32 time = 0;
+
+    if (THIS->cred == GSS_C_NO_CREDENTIAL)
+      throw_gssapi_error (GSS_S_NO_CRED, 0, GSS_C_NO_OID, NULL);
+
+    {
+      gss_cred_id_t cred = THIS->cred;
+      OM_uint32 maj, min;
+
+      THREADS_ALLOW();
+      /* RFC 2743 doesn't rule out that this might block. */
+      maj = gss_inquire_cred (&min, cred, NULL, &time, NULL, NULL);
+      THREADS_DISALLOW();
+
+      STATUS_MSG (gss_inquire_cred, maj, min);
+      CHECK_ERROR (gss_inquire_cred, maj, min);
+    }
+
+    PUSH_TIME (time);
+  }
+
+  /* Lying a little in the return type here for the sake of pike compat. */
+  PIKEFUN int(0..) init_lifetime (string mech)
+  {
+    /* GSS-API implementations should always set this according to RFC
+     * 2744 section 5.22, but they might not do that in reality (e.g.
+     * krb5-1.6). */
+    OM_uint32 time = 0;
+
+    if (THIS->cred == GSS_C_NO_CREDENTIAL)
+      throw_gssapi_error (GSS_S_NO_CRED, 0, GSS_C_NO_OID, NULL);
+
+    WITH_PUSHED_GSS_OID (mech_oid, mech) {
+      gss_cred_id_t cred = THIS->cred;
+      OM_uint32 maj, min;
+
+      THREADS_ALLOW();
+      /* RFC 2743 doesn't rule out that this might block. */
+      maj = gss_inquire_cred_by_mech (&min, cred, &mech_oid,
+				      NULL, &time, NULL, NULL);
+      THREADS_DISALLOW();
+
+      STATUS_MSG (gss_inquire_cred_by_mech, maj, min);
+      CHECK_ERROR_WITH_MECH (gss_inquire_cred_by_mech, maj, min, &mech_oid);
+    } END_GSS_OID (mech_oid);
+
+    PUSH_TIME (time);
+  }
+
+  /* Lying a little in the return type here for the sake of pike compat. */
+  PIKEFUN int(0..) accept_lifetime (string mech)
+  {
+    /* GSS-API implementations should always set this according to RFC
+     * 2744 section 5.22, but they might not do that in reality (e.g.
+     * krb5-1.6). */
+    OM_uint32 time = 0;
+
+    if (THIS->cred == GSS_C_NO_CREDENTIAL)
+      throw_gssapi_error (GSS_S_NO_CRED, 0, GSS_C_NO_OID, NULL);
+
+    WITH_PUSHED_GSS_OID (mech_oid, mech) {
+      gss_cred_id_t cred = THIS->cred;
+      OM_uint32 maj, min;
+
+      THREADS_ALLOW();
+      /* RFC 2743 doesn't rule out that this might block. */
+      maj = gss_inquire_cred_by_mech (&min, cred, &mech_oid,
+				      NULL, NULL, &time, NULL);
+      THREADS_DISALLOW();
+
+      STATUS_MSG (gss_inquire_cred_by_mech, maj, min);
+      CHECK_ERROR_WITH_MECH (gss_inquire_cred_by_mech, maj, min, &mech_oid);
+    } END_GSS_OID (mech_oid);
+
+    PUSH_TIME (time);
+  }
+
+  PIKEFUN string _sprintf (int flag, ...)
+    flags ID_STATIC;
+  {
+    pop_n_elems (args);
+
+    if (flag != 'O')
+      push_int (0);
+
+    else {
+      struct string_builder sb;
+      ONERROR uwp;
+      init_string_builder (&sb, 0);
+      SET_ONERROR (uwp, free_string_builder, &sb);
+
+      string_builder_strcat (&sb, "GSSAPI.Cred(");
+
+      if (THIS->cred != GSS_C_NO_CREDENTIAL) {
+	gss_cred_id_t cred = THIS->cred;
+	gss_name_t name = GSS_C_NO_NAME;
+	OM_uint32 time;
+	OM_uint32 maj, min;
+	ONERROR uwp2;
+	SET_ONERROR (uwp2, cleanup_name, &name);
+
+	THREADS_ALLOW();
+	/* RFC 2743 doesn't rule out that this might block. */
+	maj = gss_inquire_cred (&min, cred, &name, &time, NULL, NULL);
+	THREADS_DISALLOW();
+
+	MORE_STATUS_MSG (gss_inquire_cred, maj, min);
+	DMALLOC_REGISTER (name);
+
+#ifdef PIKE_DEBUG
+      if (GSS_CALLING_ERROR (maj))
+	handle_error (__LINE__, "gss_inquire_cred", maj, min, GSS_C_NO_OID);
+#endif
+	switch (GSS_ROUTINE_ERROR (maj)) {
+	  default:
+#if PIKE_MAJOR_VERSION == 7 && PIKE_MINOR_VERSION <= 6
+	  {
+	    char buf[100];
+	    sprintf (buf, "unexpected gss_inquire_cred error: %x/%x",
+		     maj, min);
+	    string_builder_strcat (&sb, buf);
+	  }
+#else
+	  string_builder_sprintf (
+	    &sb, "unexpected gss_inquire_cred error: %x/%x", maj, min);
+#endif
+	  break;
+
+	  case GSS_S_NO_CRED:
+	    string_builder_strcat (&sb, "inaccessible");
+	    break;
+
+	  case GSS_S_DEFECTIVE_CREDENTIAL:
+	    string_builder_strcat (&sb, "defective");
+	    break;
+
+	  case GSS_S_COMPLETE:
+	  case GSS_S_CREDENTIALS_EXPIRED:
+	    if (name != GSS_C_NO_NAME)
+	      describe_name (&sb, name, 0);
+	    if (!time) {
+	      if (name != GSS_C_NO_NAME) string_builder_strcat (&sb, ", ");
+	      string_builder_strcat (&sb, "expired");
+	    }
+	    break;
+	}
+
+	CALL_AND_UNSET_ONERROR (uwp2);
+      }
+
+      string_builder_putchar (&sb, ')');
+
+      UNSET_ONERROR (uwp);
+      push_string (finish_string_builder (&sb));
+    }
+  }
+
+  /*! @decl void release()
+   *!
+   *! Frees the resources for the credential.
+   *!
+   *! This wraps @tt{GSS_Release_cred@} according to RFC 2743 section
+   *! 2.1.2.
+   *!
+   *! @note
+   *!   This function might block on network connections to remote
+   *!   authentication servers.
+   */
+  PIKEFUN void release()
+  {
+    cleanup_cred (&THIS->cred);
+    THIS->cred = GSS_C_NO_CREDENTIAL;
+  }
+}
+
+/*! @endclass */
+
+
+/*! @decl constant int DELEG_FLAG
+ *! @decl constant int MUTUAL_FLAG
+ *! @decl constant int REPLAY_FLAG
+ *! @decl constant int SEQUENCE_FLAG
+ *! @decl constant int CONF_FLAG
+ *! @decl constant int INTEG_FLAG
+ *! @decl constant int ANON_FLAG
+ *! @decl constant int PROT_READY_FLAG
+ *! @decl constant int TRANS_FLAG
+ *!
+ *! Bitfield flags returned by e.g. @[GSSAPI.Context.services] to
+ *! denote various services that are available in the context.
+ *!
+ *! Brief descriptions of the flags:
+ *!
+ *! @dl
+ *! @item GSSAPI.DELEG_FLAG
+ *!   Delegation. See RFC 2743 section 1.2.9.
+ *! @item GSSAPI.MUTUAL_FLAG
+ *!   Mutual authentication (actually, acceptor authentication). See
+ *!   RFC 2743 sections 1.1.1.3 and 1.2.5.
+ *! @item GSSAPI.REPLAY_FLAG
+ *!   Per-message replay detection. See RFC 2743 section 1.2.3.
+ *! @item GSSAPI.SEQUENCE_FLAG
+ *!   Per-message sequencing. See RFC 2743 section 1.2.3.
+ *! @item GSSAPI.CONF_FLAG
+ *!   Per-message confidentiality. See RFC 2743 section 1.2.2.
+ *! @item GSSAPI.INTEG_FLAG
+ *!   Per-message integrity. See RFC 2743 section 1.2.2.
+ *! @item GSSAPI.ANON_FLAG
+ *!   Anonymous authentication. See RFC 2743 section 1.2.5.
+ *! @item GSSAPI.PROT_READY_FLAG
+ *!   Might be set before the context establishment has finished, to
+ *!   denote that per-message protection already is available. See RFC
+ *!   2743 section 1.2.7. Is always set in @[GSSAPI.Context] and derived
+ *!   classes when the context is established.
+ *! @item GSSAPI.TRANS_FLAG
+ *!   The context can be transferred between processes using
+ *!   @[GSSAPI.Context.export] and @[GSSAPI.Context.import]. See RFC
+ *!   2743 section 1.2.10.
+ *! @enddl
+ */
+
+/*! @decl string describe_services (int services)
+ *!
+ *! Returns a string that compactly describes the given @[services],
+ *! which is taken as a bitfield of @tt{GSSAPI.*_FLAG@} flags.
+ *!
+ *! The returned string contains capitalized names for the flags
+ *! reminiscent of the @[GSSAPI.*_FLAG] constants, separated by
+ *! @expr{"|"@}.
+ */
+PIKEFUN string describe_services (int services)
+{
+  pop_stack();
+  describe_services_and_push (services);
+}
+
+/*! @class Context
+ *!
+ *! Class representing a security context; see RFC 2743 section 1.1.3.
+ *! The user usually instantiates one of the two inheriting classes
+ *! @[GSSAPI.InitContext] or @[GSSAPI.AcceptContext], based on whether
+ *! the context should act as initiator or acceptor for the
+ *! connection. This class is instantiated directly for imported
+ *! contexts.
+ *!
+ *! @note
+ *!   If a @[Context] object for a partly or completely established
+ *!   context is destructed, @tt{GSS_Delete_sec_context@} (RFC 2743,
+ *!   section 2.2.3) is called. That function might do blocking
+ *!   network I/O, which due to pike's object management might occur
+ *!   essentially anytime in any thread if the object isn't explicitly
+ *!   destructed. To avoid that, it's strongly recommended to call
+ *!   @[delete] in contexts that are no longer used.
+ */
+PIKECLASS Context
+{
+  CVAR gss_ctx_id_t ctx;
+  CVAR OM_uint32 required_services, current_services;
+  CVAR OM_uint32 last_major, last_minor;
+  CVAR gss_qop_t last_qop;
+  CVAR int last_confidential;
+
+#define SAVE_STATUS(MAJ, MIN) do {					\
+    THIS_CONTEXT->last_major = (MAJ);					\
+    THIS_CONTEXT->last_minor = (MIN);					\
+  } while (0)
+
+  static DECLSPEC(noreturn) void handle_context_error (
+    int line, const char *gss_func, OM_uint32 major, OM_uint32 minor)
+    ATTRIBUTE ((noreturn));
+
+  static DECLSPEC(noreturn) void handle_context_error (
+    int line, const char *gss_func, OM_uint32 major, OM_uint32 minor)
+  /* This function can be used directly in inheriting classes too. */
+  {
+    gss_OID mech = GSS_C_NO_OID;
+    char *ctx_stor =
+      Pike_fp->current_object ?
+      get_storage (Pike_fp->current_object, Context_program) : NULL;
+    if (!ctx_stor) {
+#ifdef PIKE_DEBUG
+      fprintf (stderr, "Failed to get object storage - are we being called "
+	       "from a Context method?\n"
+	       "Anyway, can't get the context mech - minor status messages "
+	       "might be wrong below.\n");
+#endif
+    }
+    else if (((struct Context_struct *) ctx_stor)->ctx != GSS_C_NO_CONTEXT) {
+      OM_uint32 maj, min;
+      maj = gss_inquire_context (&min,
+				 ((struct Context_struct *) ctx_stor)->ctx,
+				 NULL, NULL, NULL, &mech, NULL, NULL, NULL);
+#ifdef PIKE_DEBUG
+      if (GSS_ERROR (maj) && mech == GSS_C_NO_OID)
+	fprintf (stderr, "Failed to get mech for context - "
+		 "gss_inquire_context returned %x/%x.\n"
+		 "Minor status messages might be wrong below.\n",
+		 maj, min);
+#endif
+    }
+
+    handle_error (line, gss_func, major, minor, mech);
+  }
+
+#define CHECK_CONTEXT_ERROR(FN, MAJ, MIN) do {				\
+    if (GSS_ERROR (MAJ)) handle_context_error (__LINE__, #FN, MAJ, MIN); \
+  } while (0)
+
+  /* Implementations are known to return GSS_S_NO_CONTEXT for
+   * contexts during establishment. */
+#define CHECK_INQUIRE_CONTEXT_ERROR(MAJ, MIN) do {			\
+    if (GSS_ERROR (maj) &&						\
+	(GSS_CALLING_ERROR (maj) ||					\
+	 GSS_ROUTINE_ERROR (maj) != GSS_S_NO_CONTEXT))			\
+      CHECK_UNEXPECTED_ERROR (gss_inquire_context, MAJ, MIN);		\
+  } while (0)
+
+#define CHECK_GOT_CONTEXT(FN) do {					\
+    if (THIS_CONTEXT->ctx == GSS_C_NO_CONTEXT) {			\
+      SAVE_STATUS (GSS_S_NO_CONTEXT, 0);				\
+      handle_context_error (__LINE__, #FN, GSS_S_NO_CONTEXT, 0);	\
+    }									\
+  } while (0)
+
+  static void cleanup_context (gss_ctx_id_t *ctx)
+  /* Warning: This function uses THREADS_ALLOW/THREADS_DISALLOW. */
+  {
+    if (*ctx != GSS_C_NO_CONTEXT) {
+      OM_uint32 maj, min;
+      DMALLOC_UNREGISTER (*ctx);
+      THREADS_ALLOW();
+      maj = gss_delete_sec_context (&min, ctx, GSS_C_NO_BUFFER);
+      STATUS_MSG (gss_delete_sec_context, maj, min);
+      THREADS_DISALLOW();
+      CHECK_UNEXPECTED_ERROR (gss_delete_sec_context, maj, min);
+      *ctx = GSS_C_NO_CONTEXT;	/* Paranoia; gssapi lib should do this. */
+    }
+  }
+
+#define REINIT_THIS() do {						\
+    call_prog_event (Pike_fp->current_object, PROG_EVENT_EXIT);		\
+    call_prog_event (Pike_fp->current_object, PROG_EVENT_INIT);		\
+  } while (0)
+
+  INIT
+  {
+    THIS->ctx = GSS_C_NO_CONTEXT;
+    THIS->required_services = THIS->current_services = 0;
+    THIS->last_major = THIS->last_minor = 0;
+    THIS->last_qop = 0;
+    THIS->last_confidential = 0;
+  }
+
+  EXIT
+    gc_trivial;
+  {
+    if (THIS->ctx != GSS_C_NO_CONTEXT)
+      cleanup_context (&THIS->ctx);
+  }
+
+  /*! @decl static void create (string interprocess_token, @
+   *!                           void|int required_services)
+   *!
+   *! Creates a context by importing an inter-process token.
+   *!
+   *! This wraps @tt{GSS_Import_sec_context@} according to RFC 2743
+   *! section 2.2.9.
+   *!
+   *! @param interprocess_token
+   *!   The inter-process token which has been created by @[export] or
+   *!   some other @tt{GSS_Export_sec_context@} wrapper.
+   *!
+   *! @param required_services
+   *!   Bitfield of @tt{GSSAPI.*_FLAG@} flags specifying all services
+   *!   that must be provided in the context. If the context fail to
+   *!   provide any of them then it is closed and a
+   *!   @[GSSAPI.MissingServicesError] is thrown.
+   *!
+   *!   @[GSSAPI.PROT_READY_FLAG] is ignored in this parameter. The fact
+   *!   that a user calls a per-message function indicates that this
+   *!   service is required at that point, and a
+   *!   @[GSSAPI.MissingServicesError] is thrown if it isn't.
+   *!
+   *! @note
+   *!   It is not possible to retrieve delegated credentials from an
+   *!   imported context. That is a GSS-API limitation.
+   */
+  PIKEFUN void create (string interprocess_token,
+		       void|zero|int required_services)
+    flags ID_STATIC;
+  {
+    gss_buffer_desc input_token;
+
+#ifndef PRECOMPILE_API_VERSION
+    /* Live with the pessimal precompile.pike in 7.4.. :P */
+    INT_TYPE _required_services;
+    CHECK_OPT_ARG (required_services, _required_services,
+		   T_INT, integer, "int", "create", 4);
+#define REQUIRED_SERVICES _required_services
+#else
+#define REQUIRED_SERVICES required_services
+#endif
+
+    CHECK_NARROW_STRING (interprocess_token, "create", 1);
+    input_token.length = interprocess_token->len;
+    input_token.value = interprocess_token->str;
+
+    THIS_CONTEXT->required_services =
+      (REQUIRED_SERVICES & ~GSS_C_PROT_READY_FLAG);
+
+    {
+      gss_ctx_id_t ctx = GSS_C_NO_CONTEXT;
+      OM_uint32 ctx_flags;
+      OM_uint32 maj, min;
+
+      THREADS_ALLOW();
+      /* RFC 2743 doesn't say clearly whether this might block on
+       * network I/O, but it doesn't seem entirely unreasonable that
+       * it might, so let's play safe. */
+      maj = gss_import_sec_context (&min, &input_token, &ctx);
+      THREADS_DISALLOW();
+
+      STATUS_MSG (gss_import_sec_context, maj, min);
+      SAVE_STATUS (maj, min);
+
+      if (THIS->ctx == GSS_C_NO_CONTEXT) {
+	DMALLOC_REGISTER (ctx);
+	THIS->ctx = ctx;
+      }
+      else {
+	cleanup_context (&ctx);
+	Pike_error ("Contained context changed asynchronously.\n");
+      }
+
+      CHECK_CONTEXT_ERROR (gss_import_sec_context, maj, min);
+
+      /* Have to update the cached current_services value. */
+      maj = gss_inquire_context (&min, ctx, NULL, NULL, NULL,
+				 NULL, &ctx_flags, NULL, NULL);
+      STATUS_MSG (gss_inquire_context, maj, min);
+
+      /* Don't use CHECK_INQUIRE_CONTEXT_ERROR here - the context
+       * should always be established. */
+      CHECK_UNEXPECTED_ERROR (gss_inquire_context, maj, min);
+
+      /* Set the prot ready flag since the context is established by
+       * definition here. */
+      THIS->current_services = ctx_flags | GSS_C_PROT_READY_FLAG;
+
+      {
+	OM_uint32 missing = ~THIS->current_services & REQUIRED_SERVICES;
+	if (missing) {
+	  REINIT_THIS();
+	  throw_missing_services_error (missing);
+	}
+      }
+    }
+
+#undef REQUIRED_SERVICES
+  }
+
+  static void f_Context_is_established (INT32 args);
+
+  /*! @decl int required_services (void|int services)
+   *!
+   *! Gets and optionally sets the set of services that must be provided
+   *! in the context. The returned and given value is a bitfield of the
+   *! @tt{GSSAPI.*_FLAG@} constants.
+   *!
+   *! This is mainly useful to change the per-message service flags that
+   *! @[verify_mic] and @[unwrap] use to decide whether a condition is
+   *! an error or not.
+   *!
+   *! @param services
+   *!   New set of required services. If this is not given then the set
+   *!   is not changed.
+   *!
+   *!   If the context is established and @[services] contain a service
+   *!   which isn't currently provided then the context is closed and a
+   *!   @[GSSAPI.MissingServicesError] is thrown immediately.
+   *!
+   *!   @[GSSAPI.PROT_READY_FLAG] is ignored in this parameter.
+   *!
+   *! @returns
+   *!   Returns the current set of required services (after setting them
+   *!   to @[services], if provided).
+   *!
+   *! @seealso
+   *!   @[GSSAPI.describe_services]
+   */
+  PIKEFUN int required_services (void|int services)
+  {
+    if (services) {
+      OM_uint32 srv;
+
+#ifndef PRECOMPILE_API_VERSION
+      /* Live with the pessimal precompile.pike in 7.4.. :P */
+      if (services->type != T_INT)
+	SIMPLE_ARG_TYPE_ERROR ("required_services", 1, "void|int");
+#endif
+
+      srv = services->u.integer & ~GSS_C_PROT_READY_FLAG;
+
+      f_Context_is_established (0);
+      assert (Pike_sp[-1].type == T_INT);
+      if ((--Pike_sp)->u.integer) {
+	OM_uint32 missing = ~THIS->current_services & srv;
+	if (missing) {
+	  REINIT_THIS();
+	  throw_missing_services_error (missing);
+	}
+      }
+
+      THIS->required_services = srv;
+    }
+
+    RETURN THIS->required_services;
+  }
+
+  /*! @decl int is_established()
+   *! @decl int services()
+   *! @decl int locally_initiated()
+   *! @decl Name source_name()
+   *! @decl Name target_name()
+   *! @decl int(0..) lifetime()
+   *! @decl string mech()
+   *!
+   *! Functions to query various properties about the context.
+   *!
+   *! These wrap @tt{GSS_Inquire_context@} according to RFC 2743
+   *! section 2.2.6.
+   *!
+   *! @dl
+   *! @item is_established()
+   *!   Returns nonzero as soon as the context has been established.
+   *!   That means no further rounds through
+   *!   @[GSSAPI.InitContext.init] or @[GSSAPI.AcceptContext.accept],
+   *!   that the remote peer is authenticated as required, and that
+   *!   the set of available services is complete (see @[services]).
+   *!
+   *! @item services()
+   *!   Returns a bitfield of @tt{GSSAPI.*_FLAG@} flags for the
+   *!   services that the context (currently) provides. This field is
+   *!   complete only when the context establishment has finished,
+   *!   i.e. when @[is_established] returns nonzero.
+   *!
+   *!   See also @[GSSAPI.describe_services].
+   *!
+   *! @item locally_initiated()
+   *!   Returns nonzero if the context is an initiator, zero if it is
+   *!   an acceptor. (This is mainly useful in imported contexts.)
+   *!
+   *! @item source_name()
+   *!   Returns the name of the context initiator. The name is always
+   *!   an MN. Returns an anonymous name if used on the acceptor side
+   *!   and the anonymous authentication service (c.f.
+   *!   @[GSSAPI.ANON_FLAG]) was used.
+   *!
+   *! @item target_name()
+   *!   Returns the name of the context acceptor. If a name is
+   *!   returned then it is always an MN.
+   *!
+   *!   Zero is returned on the initiator side if the initiator didn't
+   *!   specify a target name and the acceptor did not authenticate
+   *!   itself (should never happen if mutual authentication (c.f.
+   *!   @[GSSAPI.MUTUAL_FLAG]) is a required service).
+   *!
+   *!   The returned object is not necessarily the same one as was
+   *!   passed to @[GSSAPI.InitContext.create], even though they are
+   *!   likely to compare as equal (they might not be equal if the
+   *!   passed name wasn't an MN).
+   *!
+   *! @item lifetime()
+   *!   Returns the validity lifetime left for the context. Returns
+   *!   zero if the context has expired, or @[Int.inf] if there is no
+   *!   time limit (in older pikes without @[Int.inf] a large positive
+   *!   integer is returned instead).
+   *!
+   *! @item mech()
+   *!   Returns the mechanism that provides the context. The returned
+   *!   value is its OID on dotted-decimal form.
+   *! @enddl
+   *!
+   *! These functions don't throw errors if the context is missing or
+   *! not completely established, even though they might not be able
+   *! to query the proper values then (GSS-API implementations are
+   *! known to not be completely reliable in handling these queries
+   *! for partly established contexts). The functions instead return
+   *! zero.
+   */
+
+  PIKEFUN int is_established()
+  {
+    if (THIS->ctx != GSS_C_NO_CONTEXT) {
+      int is_open = 0;
+      OM_uint32 maj, min;
+      maj = gss_inquire_context (&min, THIS->ctx, NULL, NULL, NULL,
+				 NULL, NULL, NULL, &is_open);
+      STATUS_MSG (gss_inquire_context, maj, min);
+      CHECK_INQUIRE_CONTEXT_ERROR (maj, min);
+      RETURN is_open;
+    }
+
+    RETURN 0;
+  }
+
+  PIKEFUN int services()
+  {
+    RETURN THIS->current_services;
+  }
+
+  PIKEFUN int locally_initiated()
+  {
+    /* Init this in case gss_inquire_context doesn't set it afterall
+     * (perhaps due to nonestablished context, who knows..) */
+    int locally_initiated = 0;
+
+    if (THIS->ctx != GSS_C_NO_CONTEXT) {
+      OM_uint32 maj, min;
+      maj = gss_inquire_context (&min, THIS->ctx, NULL, NULL, NULL,
+				 NULL, NULL, &locally_initiated, NULL);
+      STATUS_MSG (gss_inquire_context, maj, min);
+      CHECK_INQUIRE_CONTEXT_ERROR (maj, min);
+    }
+
+    RETURN locally_initiated;
+  }
+
+  PIKEFUN object(Name) source_name()
+  {
+    gss_name_t name = GSS_C_NO_NAME;
+    ONERROR uwp;
+
+    SET_ONERROR (uwp, cleanup_name, &name);
+
+    if (THIS->ctx != GSS_C_NO_CONTEXT) {
+      OM_uint32 maj, min;
+      maj = gss_inquire_context (&min, THIS->ctx, &name, NULL, NULL,
+				 NULL, NULL, NULL, NULL);
+      STATUS_MSG (gss_inquire_context, maj, min);
+      DMALLOC_REGISTER (name);
+      CHECK_INQUIRE_CONTEXT_ERROR (maj, min);
+    }
+
+    if (name == GSS_C_NO_NAME)
+      push_int (0); /* Might de-facto happen for nonestablished contexts. */
+    else
+      PUSH_GSS_NAME_AS_OBJ (name);
+    UNSET_ONERROR (uwp);
+  }
+
+  PIKEFUN object(Name) target_name()
+  {
+    gss_name_t name = GSS_C_NO_NAME;
+    ONERROR uwp;
+
+    SET_ONERROR (uwp, cleanup_name, &name);
+
+    if (THIS->ctx != GSS_C_NO_CONTEXT) {
+      OM_uint32 maj, min;
+      maj = gss_inquire_context (&min, THIS->ctx, NULL, &name, NULL,
+				 NULL, NULL, NULL, NULL);
+      STATUS_MSG (gss_inquire_context, maj, min);
+      DMALLOC_REGISTER (name);
+      CHECK_INQUIRE_CONTEXT_ERROR (maj, min);
+    }
+
+    if (name == GSS_C_NO_NAME)
+      push_int (0);
+    else
+      PUSH_GSS_NAME_AS_OBJ (name);
+    UNSET_ONERROR (uwp);
+  }
+
+  /* Lying a little in the return type here for the sake of pike compat. */
+  PIKEFUN int(0..) lifetime()
+  {
+    /* Init this in case gss_inquire_context doesn't set it afterall
+     * (perhaps due to nonestablished context, who knows..) */
+    OM_uint32 time = 0;
+
+    if (THIS->ctx != GSS_C_NO_CONTEXT) {
+      OM_uint32 maj, min;
+      maj = gss_inquire_context (&min, THIS->ctx, NULL, NULL, &time,
+				 NULL, NULL, NULL, NULL);
+      STATUS_MSG (gss_inquire_context, maj, min);
+      CHECK_INQUIRE_CONTEXT_ERROR (maj, min);
+    }
+
+    PUSH_TIME (time);
+  }
+
+  PIKEFUN string mech()
+  {
+    /* Init this in case gss_inquire_context doesn't set it afterall
+     * (perhaps due to nonestablished context, who knows..) */
+    gss_OID mech = GSS_C_NO_OID;
+
+    if (THIS->ctx != GSS_C_NO_CONTEXT) {
+      OM_uint32 maj, min;
+      maj = gss_inquire_context (&min, THIS->ctx, NULL, NULL, NULL,
+				 &mech, NULL, NULL, NULL);
+      STATUS_MSG (gss_inquire_context, maj, min);
+      CHECK_INQUIRE_CONTEXT_ERROR (maj, min);
+    }
+
+    if (mech == GSS_C_NO_OID)
+      push_int (0);
+    else
+      ref_push_string (get_dd_oid (mech));
+  }
+
+  /*! @decl int last_major_status()
+   *! @decl int last_minor_status()
+   *!
+   *! Returns the major and minor status codes from the last operation
+   *! that called a GSS-API routine, with the exception of those that
+   *! wrap @tt{GSS_Inquire_context@}.
+   */
+  PIKEFUN int last_major_status()
+  {
+    RETURN THIS->last_major;
+  }
+  PIKEFUN int last_minor_status()
+  {
+    RETURN THIS->last_minor;
+  }
+
+  /*! @decl int last_qop()
+   *!
+   *! Returns the quality of protection provided by the last call to
+   *! @[verify_mic] or @[unwrap].
+   */
+  PIKEFUN int last_qop()
+  {
+    RETURN THIS->last_qop;
+  }
+
+  /*! @decl int last_confidential()
+   *!
+   *! Returns nonzero if the last call to @[wrap] or @[unwrap] provided
+   *! confidentiality for the message, i.e. if @[wrap] encrypted it or
+   *! if @[unwrap] decrypted it. Zero is returned otherwise.
+   */
+  PIKEFUN int last_confidential()
+  {
+    RETURN THIS->last_confidential;
+  }
+
+  extern struct program *InitContext_program, *AcceptContext_program;
+
+  PIKEFUN string _sprintf (int flag, ...)
+    flags ID_STATIC;
+  {
+    pop_n_elems (args);
+
+    if (flag != 'O')
+      push_int (0);
+
+    else {
+      struct string_builder sb;
+      ONERROR uwp;
+      init_string_builder (&sb, 0);
+      SET_ONERROR (uwp, free_string_builder, &sb);
+
+      {
+	/* A bit ugly to look at the program here, but that'll have to
+	 * do since we can't add program constants in 7.4. */
+	struct program *prog = Pike_fp->current_object->prog;
+	if (prog == InitContext_program)
+	  string_builder_strcat (&sb, "GSSAPI.InitContext(");
+	else if (prog == AcceptContext_program)
+	  string_builder_strcat (&sb, "GSSAPI.AcceptContext(");
+	else
+	  string_builder_strcat (&sb, "GSSAPI.Context(");
+      }
+
+      if (THIS->ctx != GSS_C_NO_CONTEXT) {
+	gss_name_t src_name = GSS_C_NO_NAME;
+	gss_name_t tgt_name = GSS_C_NO_NAME;
+	OM_uint32 time = 0;
+	int loc_init, is_open, first = 1;
+	ONERROR uwp1, uwp2;
+	OM_uint32 maj, min;
+
+	SET_ONERROR (uwp1, cleanup_name, &src_name);
+	SET_ONERROR (uwp2, cleanup_name, &tgt_name);
+
+	maj = gss_inquire_context (&min, THIS->ctx, &src_name, &tgt_name,
+				   &time, NULL, NULL, &loc_init, &is_open);
+	MORE_STATUS_MSG (gss_inquire_context, maj, min);
+	DMALLOC_REGISTER (src_name);
+	DMALLOC_REGISTER (tgt_name);
+
+#ifdef PIKE_DEBUG
+      if (GSS_CALLING_ERROR (maj))
+	handle_context_error (__LINE__, "gss_inquire_context", maj, min);
+#endif
+	switch (GSS_ROUTINE_ERROR (maj)) {
+	  default:
+#if PIKE_MAJOR_VERSION == 7 && PIKE_MINOR_VERSION <= 6
+	    {
+	      char buf[100];
+	      sprintf (buf, "unexpected gss_inquire_cred error: %x/%x",
+		       maj, min);
+	      string_builder_strcat (&sb, buf);
+	    }
+#else
+	    string_builder_sprintf (
+	      &sb, "unexpected gss_inquire_cred error: %x/%x", maj, min);
+#endif
+	    break;
+
+	  case GSS_S_NO_CONTEXT:
+	    /* This is de-facto returned for nonestablished contexts
+	     * (krb5-1.6). */
+
+	  case GSS_S_COMPLETE:
+	    if (src_name != GSS_C_NO_NAME || tgt_name != GSS_C_NO_NAME) {
+	      /* Be defensive about the names: They might both be
+	       * unset e.g. if the context isn't established yet. */
+	      if (src_name != GSS_C_NO_NAME)
+		describe_name (&sb, src_name, 0);
+	      else
+		string_builder_strcat (&sb, "unknown");
+	      if (loc_init)
+		string_builder_strcat (&sb, " -> ");
+	      else
+		string_builder_strcat (&sb, " <- ");
+	      if (tgt_name != GSS_C_NO_NAME)
+		describe_name (&sb, tgt_name, 0);
+	      else
+		string_builder_strcat (&sb, "unknown");
+	      first = 0;
+	    }
+
+	    if (THIS->current_services) {
+	      /* Intentionally use the local cached value since the debug
+	       * printout might hide errors otherwise. */
+	      if (first) first = 0; else string_builder_strcat (&sb, ", ");
+	      describe_services_and_push (THIS->current_services);
+	      string_builder_shared_strcat (&sb, Pike_sp[-1].u.string);
+	      pop_stack();
+	    }
+
+	    if (!is_open) {
+	      if (first) first = 0; else string_builder_strcat (&sb, ", ");
+	      string_builder_strcat (&sb, "establishing");
+	    }
+
+	    else if (!time) {
+	      if (first) first = 0; else string_builder_strcat (&sb, ", ");
+	      string_builder_strcat (&sb, "expired");
+	    }
+
+	    break;
+	}
+
+	CALL_AND_UNSET_ONERROR (uwp2);
+	CALL_AND_UNSET_ONERROR (uwp1);
+      }
+
+      string_builder_putchar (&sb, ')');
+
+      UNSET_ONERROR (uwp);
+      push_string (finish_string_builder (&sb));
+    }
+  }
+
+  /*! @decl void process_token (string remote_token)
+   *!
+   *! Passes the given @[remote_token] to the mechanism.
+   *!
+   *! This wraps @tt{GSS_Process_context_token@} according to RFC 2743
+   *! section 2.2.4.
+   *!
+   *! This is used for tokens that are received outside the
+   *! handshaking between @tt{GSS_Init_sec_context@}
+   *! (@[GSSAPI.InitContext.init]) and @tt{GSS_Accept_sec_context@}
+   *! (@[GSSAPI.AcceptContext.accept]).
+   *!
+   *! An example is when @[GSSAPI.InitContext.init] returns a final
+   *! token and flags the context as established, but the acceptor
+   *! context detects an error and sends a failure token back. That
+   *! token is processed using this function since
+   *! @[GSSAPI.InitContext.init] doesn't handle any more tokens by
+   *! then.
+   *!
+   *! @note
+   *!   This function might change context state.
+   *!
+   *! @note
+   *!   This function might block on network connections to remote
+   *!   authentication servers. However, if the remote token is the
+   *!   result of @tt{GSS_Delete_sec_context@} on the remote side then
+   *!   it will not block.
+   */
+  PIKEFUN void process_token (string remote_token)
+  {
+    gss_buffer_desc input_token;
+
+    CHECK_GOT_CONTEXT();
+
+    CHECK_NARROW_STRING (remote_token, "process_token", 1);
+    input_token.length = remote_token->len;
+    input_token.value = remote_token->str;
+
+    {
+      gss_ctx_id_t ctx = THIS->ctx;
+      /* Init ctx_flags to the old flags in case gss_inquire_context
+       * doesn't set it afterall (perhaps due to nonestablished
+       * context, who knows..) */
+      OM_uint32 ctx_flags = THIS->current_services;
+      OM_uint32 maj, min;
+
+      THREADS_ALLOW();
+      maj = gss_process_context_token (&min, ctx, &input_token);
+      THREADS_DISALLOW();
+
+      STATUS_MSG (gss_process_context_token, maj, min);
+      SAVE_STATUS (maj, min);
+      CHECK_CONTEXT_ERROR (gss_process_context_token, maj, min);
+
+      /* Have to update the cached current_services value. */
+      maj = gss_inquire_context (&min, ctx, NULL, NULL, NULL,
+				 NULL, &ctx_flags, NULL, NULL);
+      STATUS_MSG (gss_inquire_context, maj, min);
+      CHECK_INQUIRE_CONTEXT_ERROR (maj, min);
+      THIS->current_services = ctx_flags;
+    }
+  }
+
+  /*! @decl string export()
+   *!
+   *! Exports this context so that it can be imported in another
+   *! process, providing the inter-process context transfer service is
+   *! available (c.f. @[GSSAPI.TRANS_FLAG]).
+   *!
+   *! This wraps @tt{GSS_Export_sec_context@} according to RFC 2743
+   *! section 2.2.8.
+   *!
+   *! The returned string is intended to be fed to
+   *! @[GSSAPI.Context.create] (or some other
+   *! @tt{GSS_Import_sec_context@} wrapper) in the receiving process.
+   *!
+   *! This operation frees the context in this object.
+   */
+  PIKEFUN string export()
+  {
+    CHECK_GOT_CONTEXT();
+
+    WITH_GSS_BUFFER (interprocess_token) {
+      OM_uint32 maj, min;
+      DMALLOC_UNREGISTER (THIS->ctx);
+      maj = gss_export_sec_context (&min, &THIS->ctx, &interprocess_token);
+      STATUS_MSG (gss_export_sec_context, maj, min);
+      SAVE_STATUS (maj, min);
+      CHECK_CONTEXT_ERROR (gss_export_sec_context, maj, min);
+
+      if (THIS->ctx == GSS_C_NO_CONTEXT)
+	THIS->required_services = THIS->current_services = 0;
+
+      push_string (make_shared_binary_string (interprocess_token.value,
+					      interprocess_token.length));
+    } END_GSS_BUFFER (interprocess_token);
+  }
+
+  /*! @decl string get_mic (string message, void|int qop)
+   *!
+   *! Calculates and returns a MIC (message integrity checksum) for
+   *! the given message that allows the receiver to verify its origin
+   *! and integrity through @[verify_mic] or some other
+   *! @tt{GSS_VerifyMIC@} wrapper.
+   *!
+   *! This wraps @tt{GSS_GetMIC@} according to RFC 2743 section 2.3.1.
+   *!
+   *! This function requires that the context is established, or that
+   *! the early per-message protection service is available (c.f.
+   *! @[GSSAPI.PROT_READY_FLAG]. If not, a
+   *! @[GSSAPI.MissingServicesError] is thrown (but the context is not
+   *! closed).
+   *!
+   *! @param message
+   *!   The message for which the MIC is to be calculated. It may be
+   *!   of zero length.
+   *!
+   *! @param qop
+   *!   The quality of protection. This is a mechanism-specific value
+   *!   that lets the user direct how the underlying mechanism
+   *!   calculates the MIC. See RFC 2743, section 1.2.4.
+   *!
+   *!   Zero or left out means use the default method.
+   */
+  PIKEFUN string get_mic (string message, void|zero|int qop)
+  {
+    gss_buffer_desc msg;
+
+#ifndef PRECOMPILE_API_VERSION
+    /* Live with the pessimal precompile.pike in 7.4.. :P */
+    INT_TYPE _qop;
+    CHECK_OPT_ARG (qop, _qop, T_INT, integer, "int", "get_mic", 2);
+#define qop _qop
+#endif
+
+    CHECK_GOT_CONTEXT();
+
+    if (!(THIS->current_services & GSS_C_PROT_READY_FLAG))
+      throw_missing_services_error (GSS_C_PROT_READY_FLAG);
+
+    /* Can assume that all the required per-message services are
+     * available here. Otherwise the context establishment functions
+     * would have closed the context. */
+    assert (!(~THIS->current_services & THIS->required_services));
+
+    CHECK_NARROW_STRING (message, "get_mic", 1);
+    msg.length = message->len;
+    msg.value = message->str;
+
+    WITH_GSS_BUFFER (mic) {
+      OM_uint32 maj, min;
+      maj = gss_get_mic (&min, THIS->ctx, qop, &msg, &mic);
+      STATUS_MSG (gss_get_mic, maj, min);
+      SAVE_STATUS (maj, min);
+      CHECK_CONTEXT_ERROR (gss_get_mic, maj, min);
+
+      pop_n_elems (args);
+      push_string (make_shared_binary_string (mic.value, mic.length));
+    } END_GSS_BUFFER (mic);
+
+#undef qop
+  }
+
+  /*! @decl int verify_mic (string message, string mic)
+   *!
+   *! Verifies the origin and integrity of the given @[message] using
+   *! the given @[mic], which has been calculated by the sender using
+   *! @[get_mic] or some other @tt{GSS_GetMIC@} wrapper.
+   *!
+   *! This wraps @tt{GSS_VerifyMIC@} according to RFC 2743 section
+   *! 2.3.2.
+   *!
+   *! This function requires that the context is established, or that
+   *! the early per-message protection service is available (c.f.
+   *! @[GSSAPI.PROT_READY_FLAG]. If not, a
+   *! @[GSSAPI.MissingServicesError] is thrown (but the context is not
+   *! closed).
+   *!
+   *! @returns
+   *!   Zero is returned if the verification fails with
+   *!   @[GSSAPI.DEFECTIVE_TOKEN] or @[GSSAPI.BAD_MIC].
+   *!
+   *!   Otherwise the message origin and integrity checks out, but it
+   *!   might still be considered wrong depending on whether the replay
+   *!   detection or sequencing services are required (see
+   *!   @[required_services]):
+   *!
+   *!   If replay detection (c.f. @[GSSAPI.REPLAY_FLAG]) is required
+   *!   then zero is returned if the message is duplicated
+   *!   (@[GSSAPI.DUPLICATE_TOKEN]) or old (@[GSSAPI.OLD_TOKEN]).
+   *!
+   *!   If sequencing (c.f. @[GSSAPI.SEQUENCE_FLAG]) is required then in
+   *!   addition to the replay detection conditions, zero is also
+   *!   returned if the message is out of sequence
+   *!   (@[GSSAPI.UNSEQ_TOKEN] or @[GSSAPI.GAP_TOKEN]).
+   *!
+   *!   Otherwise nonzero is returned to indicate that the message is
+   *!   valid according to the currently required services.
+   *!
+   *! @throws
+   *!   Any GSS-API errors except @[GSSAPI.DEFECTIVE_TOKEN] and
+   *!   @[GSSAPI.BAD_MIC] are thrown.
+   *!
+   *! @note
+   *!   This function sets the value returned by @[last_qop].
+   *!
+   *! @note
+   *!   Regardless whether the message is considered valid or not by the
+   *!   return value, @[last_major_status] may be called to check for
+   *!   routine errors or the informatory codes mentioned above.
+   */
+  PIKEFUN int verify_mic (string message, string mic)
+  {
+    gss_buffer_desc msg, token;
+
+    CHECK_GOT_CONTEXT();
+
+    if (!(THIS->current_services & GSS_C_PROT_READY_FLAG))
+      throw_missing_services_error (GSS_C_PROT_READY_FLAG);
+
+    /* Can assume that all the required per-message services are
+     * available here. Otherwise the context establishment functions
+     * would have closed the context. */
+    assert (!(~THIS->current_services & THIS->required_services));
+
+    CHECK_NARROW_STRING (message, "verify_mic", 1);
+    msg.length = message->len;
+    msg.value = message->str;
+
+    CHECK_NARROW_STRING (mic, "verify_mic", 2);
+    token.length = mic->len;
+    token.value = mic->str;
+
+    {
+      OM_uint32 maj, min;
+      maj = gss_verify_mic (&min, THIS->ctx, &msg, &token, &THIS->last_qop);
+      STATUS_MSG (gss_verify_mic, maj, min);
+      SAVE_STATUS (maj, min);
+
+#ifdef PIKE_DEBUG
+      if (GSS_CALLING_ERROR (maj))
+	handle_context_error (__LINE__, "gss_verify_mic", maj, min);
+#endif
+      switch (GSS_ROUTINE_ERROR (maj)) {
+	case 0:
+	  if ((maj & (GSS_S_DUPLICATE_TOKEN|GSS_S_OLD_TOKEN)) &&
+	      (THIS->required_services & (GSS_C_REPLAY_FLAG|
+					  GSS_C_SEQUENCE_FLAG)))
+	    RETURN 0;
+	  if ((maj & (GSS_S_UNSEQ_TOKEN|GSS_S_GAP_TOKEN)) &&
+	      (THIS->required_services & GSS_C_SEQUENCE_FLAG))
+	    RETURN 0;
+	  RETURN 1;
+
+	case GSS_S_DEFECTIVE_TOKEN:
+	case GSS_S_BAD_SIG:
+	  RETURN 0;
+
+	default:
+	  handle_context_error (__LINE__, "gss_verify_mic", maj, min);
+      }
+    }
+  }
+
+  /*! @decl int(0..) wrap_size_limit (int(0..) output_size, int encrypt, @
+   *!                                 void|int qop)
+   *!
+   *! Returns the maximum size of an input string to @[wrap] that
+   *! would produce no more than @[output_size] bytes in the resulting
+   *! output.
+   *!
+   *! This wraps @tt{GSS_Wrap_size_limit@} according to RFC 2743
+   *! section 2.2.7.
+   *!
+   *! @[with_confidentiality] and @[qop] are the same as in the call
+   *! to @[wrap].
+   */
+  PIKEFUN int(0..) wrap_size_limit (int(0..) output_size,
+				    void|int encrypt,
+				    void|zero|int qop)
+  {
+    OM_uint32 max_input_size = 0;
+    int conf;
+
+#ifndef PRECOMPILE_API_VERSION
+    /* Live with the pessimal precompile.pike in 7.4.. :P */
+    INT_TYPE _qop;
+    CHECK_OPT_ARG (qop, _qop, T_INT, integer, "int", "wrap_size_limit", 3);
+#define qop _qop
+#endif
+
+    if (output_size < 0)
+      SIMPLE_ARG_TYPE_ERROR ("wrap_size_limit", 1, "int(0..)");
+
+    if (encrypt && encrypt->u.integer >= 0)
+      conf = encrypt->u.integer;
+    else
+      conf = THIS->current_services & GSS_C_CONF_FLAG;
+
+    if (THIS->ctx != GSS_C_NO_CONTEXT) {
+      OM_uint32 maj, min;
+      maj = gss_wrap_size_limit (&min, THIS->ctx, conf, qop,
+				 output_size, &max_input_size);
+      STATUS_MSG (gss_wrap_size_limit, maj, min);
+      SAVE_STATUS (maj, min);
+      CHECK_CONTEXT_ERROR (gss_wrap_size_limit, maj, min);
+    }
+
+    PUSH_UINT (max_input_size);
+
+#undef qop
+  }
+
+  /*! @decl string wrap (string message, void|int encrypt, void|int qop)
+   *!
+   *! Calculates a MIC (message integrity checksum) for the given
+   *! message, and returns it together with the message, which is
+   *! optionally encrypted. The returned value can be verified and (if
+   *! applicable) decrypted by the receiver using @[unwrap] or some
+   *! other @tt{GSS_Unwrap@} wrapper.
+   *!
+   *! This wraps @tt{GSS_Wrap@} according to RFC 2743 section 2.3.3.
+   *!
+   *! This function requires that the context is established, or that
+   *! the early per-message protection service is available (c.f.
+   *! @[GSSAPI.PROT_READY_FLAG]. If not, a
+   *! @[GSSAPI.MissingServicesError] is thrown (but the context is not
+   *! closed).
+   *!
+   *! @param message
+   *!   The message to be wrapped. It may be of zero length.
+   *!
+   *! @param encrypt
+   *!   Set to nonzero to request that the message is encrypted.
+   *!   Otherwise only a MIC is calculated and the returned value
+   *!   contains the unencrypted message.
+   *!
+   *!   If this is set and the confidentiality service (c.f.
+   *!   @[GSSAPI.CONF_FLAG]) is required then the returned value is
+   *!   always encrypted. Otherwise it might not be encrypted anyway,
+   *!   and a call to @[last_confidential] will tell if it is or not.
+   *!
+   *! @param qop
+   *!   The quality of protection. This is a mechanism-specific value
+   *!   that lets the user direct how the underlying mechanism
+   *!   calculates the MIC. See RFC 2743, section 1.2.4.
+   *!
+   *!   Zero or left out means use the default method.
+   *!
+   *! @note
+   *!   This function sets the value returned by @[last_confidential].
+   *!
+   *! @seealso
+   *!   @[wrap_size_limit]
+   */
+  PIKEFUN string wrap (string message, void|zero|int encrypt, void|zero|int qop)
+  {
+    gss_buffer_desc msg;
+
+#ifndef PRECOMPILE_API_VERSION
+    /* Live with the pessimal precompile.pike in 7.4.. :P */
+    INT_TYPE _encrypt, _qop;
+    CHECK_OPT_ARG (encrypt, _encrypt, T_INT, integer, "int", "wrap", 2);
+    CHECK_OPT_ARG (qop, _qop, T_INT, integer, "int", "wrap", 3);
+#define encrypt _encrypt
+#define qop _qop
+#endif
+
+    CHECK_GOT_CONTEXT();
+
+    if (!(THIS->current_services & GSS_C_PROT_READY_FLAG))
+      throw_missing_services_error (GSS_C_PROT_READY_FLAG);
+
+    /* Can assume that all the required per-message services are
+     * available here. Otherwise the context establishment functions
+     * would have closed the context. */
+    assert (!(~THIS->current_services & THIS->required_services));
+
+    CHECK_NARROW_STRING (message, "wrap", 1);
+    msg.length = message->len;
+    msg.value = message->str;
+
+    WITH_GSS_BUFFER (output_msg) {
+      OM_uint32 maj, min;
+      maj = gss_wrap (&min, THIS->ctx, encrypt, qop, &msg,
+		      &THIS->last_confidential, &output_msg);
+      STATUS_MSG (gss_wrap, maj, min);
+      SAVE_STATUS (maj, min);
+      CHECK_CONTEXT_ERROR (gss_wrap, maj, min);
+
+      /* Paranoia check so we don't let an unencrypted message slip out
+       * when it really shouldn't happen. */
+      if (encrypt && !THIS->last_confidential &&
+	  (THIS->required_services & GSS_C_CONF_FLAG))
+	Pike_fatal ("GSS-API implementation didn't encrypt message "
+		    "even when able and told to (%x/%x, %d, %d).\n",
+		    maj, min, !!(THIS->current_services & GSS_C_CONF_FLAG),
+		    !!(THIS->required_services & GSS_C_CONF_FLAG));
+
+      pop_n_elems (args);
+      push_string (make_shared_binary_string (output_msg.value,
+					      output_msg.length));
+    } END_GSS_BUFFER (output_msg);
+
+#undef encrypt
+#undef qop
+  }
+
+  /*! @decl string unwrap (string message, void|int accept_encrypted_only)
+   *!
+   *! Verifies the origin and integrity of the given message using the
+   *! MIC included in it, and also decrypts the message if it was
+   *! encrypted. The message has been calculated by the sender using
+   *! @[wrap] or some other @tt{GSS_Wrap@} wrapper.
+   *!
+   *! This wraps @tt{GSS_Unwrap@} according to RFC 2743 section
+   *! 2.3.4.
+   *!
+   *! This function requires that the context is established, or that
+   *! the early per-message protection service is available (c.f.
+   *! @[GSSAPI.PROT_READY_FLAG]. If not, a
+   *! @[GSSAPI.MissingServicesError] is thrown (but the context is not
+   *! closed).
+   *!
+   *! @param message
+   *!   The message to be unwrapped.
+   *!
+   *! @param accept_encrypted_only
+   *!   If this is nonzero then it is an error if @[message] isn't
+   *!   encrypted, and zero is returned in that case (the status
+   *!   returned by @[last_major_status] will still indicate success,
+   *!   though).
+   *!
+   *! @returns
+   *!   Zero is returned if the verification fails with
+   *!   @[GSSAPI.DEFECTIVE_TOKEN] or @[GSSAPI.BAD_MIC].
+   *!
+   *!   Zero is also returned if @[message] isn't encrypted and
+   *!   @[accept_encrypted_only] is set.
+   *!
+   *!   Otherwise the message is successfully decrypted (provided it was
+   *!   encrypted to begin with), and its origin and integrity checks
+   *!   out, but it might still be considered wrong depending on whether
+   *!   the replay detection or sequencing services are required (see
+   *!   @[required_services]):
+   *!
+   *!   If replay detection (c.f. @[GSSAPI.REPLAY_FLAG]) is required
+   *!   then zero is returned if the message is duplicated
+   *!   (@[GSSAPI.DUPLICATE_TOKEN]) or old (@[GSSAPI.OLD_TOKEN]).
+   *!
+   *!   If sequencing (c.f. @[GSSAPI.SEQUENCE_FLAG]) is required then in
+   *!   addition to the replay detection conditions, zero is also
+   *!   returned if the message is out of sequence
+   *!   (@[GSSAPI.UNSEQ_TOKEN] or @[GSSAPI.GAP_TOKEN]).
+   *!
+   *!   Otherwise the unwrapped message is returned, which is valid
+   *!   according to the currently required services (note however that
+   *!   requiring the confidentiality service does not imply that an
+   *!   error is signalled whenever an unencrypted message is received -
+   *!   see instead @[accept_encrypted_only] above).
+   *!
+   *! @throws
+   *!   Any GSS-API errors except @[GSSAPI.DEFECTIVE_TOKEN] and
+   *!   @[GSSAPI.BAD_MIC] are thrown.
+   *!
+   *! @note
+   *!   This function sets the value returned by @[last_confidential]
+   *!   and @[last_qop].
+   *!
+   *! @note
+   *!   Even if the message is considered valid by the return value,
+   *!   @[last_major_status] may be called to check for the informatory
+   *!   codes mentioned above.
+   */
+  PIKEFUN string unwrap (string message, void|zero|int accept_encrypted_only)
+  {
+    gss_buffer_desc msg;
+
+#ifndef PRECOMPILE_API_VERSION
+    /* Live with the pessimal precompile.pike in 7.4.. :P */
+    INT_TYPE _accept_encrypted_only;
+    CHECK_OPT_ARG (accept_encrypted_only, _accept_encrypted_only,
+		   T_INT, integer, "int", "unwrap", 2);
+#define accept_encrypted_only _accept_encrypted_only
+#endif
+
+    CHECK_GOT_CONTEXT();
+
+    if (!(THIS->current_services & GSS_C_PROT_READY_FLAG))
+      throw_missing_services_error (GSS_C_PROT_READY_FLAG);
+
+    /* Can assume that all the required per-message services are
+     * available here. Otherwise the context establishment functions
+     * would have closed the context. */
+    assert (!(~THIS->current_services & THIS->required_services));
+
+    CHECK_NARROW_STRING (message, "unwrap", 1);
+    msg.length = message->len;
+    msg.value = message->str;
+
+    WITH_GSS_BUFFER (output_msg) {
+      int res;
+      OM_uint32 maj, min;
+      maj = gss_unwrap (&min, THIS->ctx, &msg, &output_msg,
+			&THIS->last_confidential, &THIS->last_qop);
+      STATUS_MSG (gss_unwrap, maj, min);
+      SAVE_STATUS (maj, min);
+
+#ifdef PIKE_DEBUG
+      if (GSS_CALLING_ERROR (maj))
+	handle_context_error (__LINE__, "gss_unwrap", maj, min);
+#endif
+      switch (GSS_ROUTINE_ERROR (maj)) {
+	case 0:
+	  if ((maj & (GSS_S_DUPLICATE_TOKEN|GSS_S_OLD_TOKEN)) &&
+	      (THIS->required_services & (GSS_C_REPLAY_FLAG|
+					  GSS_C_SEQUENCE_FLAG)))
+	    res = 0;
+	  else if ((maj & (GSS_S_UNSEQ_TOKEN|GSS_S_GAP_TOKEN)) &&
+	      (THIS->required_services & GSS_C_SEQUENCE_FLAG))
+	    res = 0;
+	  else if (accept_encrypted_only && !THIS->last_confidential)
+	    res = 0;
+	  else
+	    res = 1;
+	  break;
+
+	case GSS_S_DEFECTIVE_TOKEN:
+	case GSS_S_BAD_SIG:
+	  res = 0;
+	  break;
+
+	default:
+	  handle_context_error (__LINE__, "gss_unwrap", maj, min);
+      }
+
+      pop_n_elems (args);
+      if (res)
+	push_string (make_shared_binary_string (output_msg.value,
+						output_msg.length));
+      else
+	push_int (0);
+    } END_GSS_BUFFER (output_msg);
+
+#undef accept_encrypted_only
+  }
+
+  /*! @decl void delete()
+   *!
+   *! Frees the resources for the context, provided it is in use. Does
+   *! nothing otherwise.
+   *!
+   *! This wraps @tt{GSS_Delete_sec_context@} according to RFC 2743
+   *! section 2.2.3.
+   *!
+   *! @note
+   *!   This function might block on network connections to remote
+   *!   authentication servers.
+   *!
+   *! @note
+   *!   In compliance with recommendations in GSS-API v2, the optional
+   *!   output token is never used in the call to
+   *!   @tt{GSS_Delete_sec_context@}.
+   */
+  PIKEFUN void delete()
+  {
+    cleanup_context (&THIS->ctx);
+  }
+}
+
+/*! @endclass */
+
+
+/*! @class InitContext
+ *! @inherit Context
+ *!
+ *! Variant of @[Context] which is used on the initiator side.
+ */
+PIKECLASS InitContext
+{
+  INHERIT Context;
+
+  /* The following are only used during context establishment since
+   * GSS-API doesn't allow us to leave them out in subsequent
+   * gss_init_sec_context calls (at least not explicitly). */
+  CVAR struct object *cred;
+  CVAR struct object *target_name;
+  CVAR gss_OID_desc mech;
+  CVAR OM_uint32 desired_services;
+  CVAR OM_uint32 desired_time;
+
+  /* Isn't there a neater method to access the inherited objects? */
+  static ptrdiff_t InitContext_Context_storage_offset;
+#undef THIS_CONTEXT
+#define THIS_CONTEXT ((struct Context_struct *)				\
+		      (Pike_fp->current_object->storage +		\
+		       InitContext_Context_storage_offset))
+
+  INIT
+  {
+    THIS->cred = THIS->target_name = NULL;
+    THIS->mech.elements = NULL;
+    THIS->desired_services = 0;
+    THIS->desired_time = 0;
+  }
+
+  EXIT
+    gc_trivial;
+  {
+    if (THIS->cred)
+      free_object (THIS->cred);
+    if (THIS->target_name)
+      free_object (debug_malloc_pass (THIS->target_name));
+    if (THIS->mech.elements)
+      free (THIS->mech.elements);
+  }
+
+  /*! @decl static void create (void|Cred cred, @
+   *!				void|Name|string target_name, @
+   *!				void|string mech, @
+   *!				void|int required_services, @
+   *!				void|int desired_services, @
+   *!				void|int(0..) desired_time)
+   *!
+   *! Creates a context for initiator use. This function only accepts
+   *! parameters to be used later during the @[init] call. If there
+   *! are semantic problems with them, such as if the credentials are
+   *! stale or the mechanism isn't supported, then they will be
+   *! signalled later by @[init].
+   *!
+   *! @param cred
+   *!   Credentials for the identity this context claims. The
+   *!   credentials for the default principal (if any) is used if zero
+   *!   or left out.
+   *!
+   *! @param target_name
+   *!   The name of the target.
+   *!
+   *!   This can be either a @[GSSAPI.Name] object or a string. In the
+   *!   latter case, the string is converted to a GSS-API name
+   *!   according to a mechanism-specific default printable syntax,
+   *!   i.e. just like if it would be given as the sole argument to
+   *!   @[GSSAPI.Name.create].
+   *!
+   *!   Some mechanisms support unnamed targets (as allowed in GSS-API
+   *!   v2, update 1) and in such cases this may be zero or left out.
+   *!
+   *! @param mech
+   *!   The mechanism to use. It is given as an OID on dotted-decimal
+   *!   form. The GSS-API implementation chooses this using system
+   *!   settings if it's zero or left out, which is the recommended way.
+   *!
+   *! @param required_services
+   *!   Bitfield of @tt{GSSAPI.*_FLAG@} flags specifying all services
+   *!   that must be provided in the context. If the context fail to
+   *!   provide any of them then it is closed and a
+   *!   @[GSSAPI.MissingServicesError] is thrown.
+   *!
+   *!   @[GSSAPI.PROT_READY_FLAG] is ignored in this parameter. The fact
+   *!   that a user calls a per-message function indicates that this
+   *!   service is required at that point, and a
+   *!   @[GSSAPI.MissingServicesError] is thrown if it isn't.
+   *!
+   *! @param desired_services
+   *!   Bitfield of @tt{GSSAPI.*_FLAG@} flags specifying the context
+   *!   services that are wanted but not required. I.e. errors won't
+   *!   be thrown if any of these aren't provided. The services
+   *!   specified in @[required_services] are implicit, so they need
+   *!   not be repeated here.
+   *!
+   *!   @[GSSAPI.PROT_READY_FLAG] is ignored in this parameter.
+   *!
+   *! @param desired_time
+   *!   The desired context validity time in seconds. Zero or left out
+   *!   means use the default.
+   *!
+   *! @note
+   *!   Channel bindings (RFC 2743, section 1.1.6) are not yet
+   *!   implemented since that feature appear to not be in much active
+   *!   use, and its format is not completely specified (RFC 2744,
+   *!   section 3.11).
+   */
+  PIKEFUN void create (void|object(Cred) cred,
+		       void|object(Name)|string target_name,
+		       void|string mech,
+		       void|zero|int required_services,
+		       void|zero|int desired_services,
+		       void|zero|int(0..) desired_time)
+    flags ID_STATIC;
+  {
+#ifndef PRECOMPILE_API_VERSION
+    /* Live with the pessimal precompile.pike in 7.4.. :P */
+    struct object *_cred;
+    struct pike_string *_mech;
+    INT_TYPE _required_services;
+    INT_TYPE _desired_services;
+    INT_TYPE _desired_time;
+    CHECK_OPT_ARG (cred, _cred, T_OBJECT, object, "Cred", "create", 1);
+    CHECK_OPT_ARG (mech, _mech, T_STRING, string, "string", "create", 3);
+    CHECK_OPT_ARG (required_services, _required_services,
+		   T_INT, integer, "int", "create", 4);
+    CHECK_OPT_ARG (desired_services, _desired_services,
+		   T_INT, integer, "int", "create", 5);
+    CHECK_OPT_ARG (desired_time, _desired_time,
+		   T_INT, integer, "int(0..)", "create", 6);
+#define CRED _cred
+#define MECH _mech
+#define REQUIRED_SERVICES _required_services
+#define DESIRED_SERVICES _desired_services
+#define DESIRED_TIME _desired_time
+#else
+#define CRED cred
+#define MECH mech
+#define REQUIRED_SERVICES required_services
+#define DESIRED_SERVICES desired_services
+#define DESIRED_TIME desired_time
+#endif
+
+    if (CRED) {
+      if (!get_storage (CRED, Cred_program))
+	SIMPLE_ARG_TYPE_ERROR ("create", 1, "GSSAPI.Cred");
+      if (THIS->cred) free_object (THIS->cred);
+      add_ref (THIS->cred = CRED);
+    }
+    else
+      if (THIS->cred) {
+	free_object (THIS->cred);
+	THIS->cred = NULL;
+      }
+
+    if (!target_name)
+      goto free_target_name;
+    switch (target_name->type) {
+      case T_OBJECT:
+	if (!get_storage (target_name->u.object, Name_program))
+	  SIMPLE_ARG_TYPE_ERROR ("create", 2, "GSSAPI.Name|string");
+	if (THIS->target_name) free_object (THIS->target_name);
+	add_ref (THIS->target_name = target_name->u.object);
+	break;
+      case T_STRING: {
+	gss_name_t gss_name = GSS_C_NO_NAME;
+	struct pike_string *name_str = target_name->u.string;
+	ONERROR uwp;
+	CHECK_NARROW_STRING (name_str, "create", 2);
+	SET_ONERROR (uwp, cleanup_name, &gss_name);
+	import_name_from_string (name_str, &gss_name, GSS_C_NO_OID);
+	if (THIS->target_name) free_object (THIS->target_name);
+	THIS->target_name = FAST_CLONE_OBJECT (Name_program);
+	OBJ2_NAME (THIS->target_name)->name = gss_name;
+	UNSET_ONERROR (uwp);
+	break;
+      }
+      case T_INT:
+	if (!target_name->u.integer) {
+	free_target_name:
+	  if (THIS->target_name) free_object (THIS->target_name);
+	  THIS->target_name = NULL;
+	  break;
+	}
+	/* Fall through */
+      default:
+	SIMPLE_ARG_TYPE_ERROR ("create", 2, "void|GSSAPI.Name|string");
+    }
+
+    if (MECH)
+      WITH_PUSHED_GSS_OID (mech_oid, MECH) {
+	if (THIS->mech.elements) free (THIS->mech.elements);
+	COPY_OID (&THIS->mech, &mech_oid);
+      } END_GSS_OID (mech_oid);
+    else
+      if (THIS->mech.elements) {
+	free (THIS->mech.elements);
+	THIS->mech.elements = NULL;
+      }
+
+    THIS_CONTEXT->required_services =
+      (REQUIRED_SERVICES & ~GSS_C_PROT_READY_FLAG);
+
+    THIS->desired_services =
+      ((DESIRED_SERVICES | REQUIRED_SERVICES) & ~GSS_C_PROT_READY_FLAG);
+
+    if (DESIRED_TIME < 0)
+      SIMPLE_ARG_TYPE_ERROR ("create", 6, "int(0..)");
+    THIS->desired_time = DESIRED_TIME;
+
+#undef CRED
+#undef MECH
+#undef REQUIRED_SERVICES
+#undef DESIRED_SERVICES
+#undef DESIRED_TIME
+  }
+
+  /*! @decl string init (void|string remote_token)
+   *!
+   *! Initiates a security context to send to a remote peer.
+   *!
+   *! This wraps @tt{GSS_Init_sec_context@} according to RFC 2743
+   *! section 2.2.1.
+   *!
+   *! The underlying mechanism might require several tokens to be
+   *! passed back and forth to establish the context. If
+   *! @[is_established] returns zero after a call to this function
+   *! then the caller must wait for a token from the remote peer to
+   *! feed as @[remote_token] in another call to this function.
+   *!
+   *! @param remote_token
+   *!   A token from the remote peer, as returned by a call to
+   *!   @[GSSAPI.AcceptContext.accept] (or some other
+   *!   @tt{GSS_Accept_sec_context@} wrapper) in it. This is zero or
+   *!   left out on the initial call, but used later if the remote
+   *!   peer sends back tokens to process as part of the context
+   *!   establishment.
+   *!
+   *! @returns
+   *!   If a string is returned then it must be passed to the remote
+   *!   peer which will feed it to @[GSSAPI.AcceptContext.accept] or
+   *!   some other @tt{GSS_Accept_sec_context@} wrapper. An empty
+   *!   string is never returned.
+   *!
+   *!   Zero is returned if there is no token to send to the remote
+   *!   peer. Note that @[is_established] might still return zero in
+   *!   that case, meaning more remote tokens are necessary.
+   *!
+   *! @note
+   *!   This function might block on network connections to remote
+   *!   authentication servers.
+   */
+  PIKEFUN string init (void|string remote_token)
+  {
+    gss_buffer_desc input_token;
+
+#ifndef PRECOMPILE_API_VERSION
+    /* Live with the pessimal precompile.pike in 7.4.. :P */
+    struct pike_string *_remote_token;
+    CHECK_OPT_ARG (remote_token, _remote_token,
+		   T_STRING, string, "string", "init", 1);
+#define remote_token _remote_token
+#endif
+
+    if (THIS_CONTEXT->ctx == GSS_C_NO_CONTEXT) {
+      if (remote_token)
+	SIMPLE_ARG_ERROR ("init", 1, "Remote token passed in initial call.");
+      input_token.length = 0;
+      input_token.value = NULL;
+    }
+    else {
+      if (!remote_token)
+	SIMPLE_ARG_ERROR ("init", 1,
+			  "Remote token required in subsequent call.");
+      CHECK_NARROW_STRING (remote_token, "init", 1);
+      input_token.length = remote_token->len;
+      input_token.value = remote_token->str;
+    }
+
+    WITH_GSS_BUFFER (output_token) {
+      gss_ctx_id_t ctx = THIS_CONTEXT->ctx;
+      const gss_cred_id_t cred = THIS->cred ?
+	((struct Cred_struct *) get_storage (THIS->cred, Cred_program))->cred :
+	GSS_C_NO_CREDENTIAL;
+      const gss_name_t target_name = THIS->target_name ?
+	((struct Name_struct *)
+	 get_storage (THIS->target_name, Name_program))->name :
+	GSS_C_NO_NAME;
+      const gss_OID mech = THIS->mech.elements ? &THIS->mech : GSS_C_NO_OID;
+      OM_uint32 req_flags = THIS->desired_services;
+      OM_uint32 time_req = THIS->desired_time;
+      OM_uint32 ret_flags;
+      OM_uint32 maj, min;
+
+      THREADS_ALLOW();
+      maj = gss_init_sec_context (&min, cred, &ctx, target_name, mech,
+				  req_flags, time_req,
+				  GSS_C_NO_CHANNEL_BINDINGS, &input_token,
+				  NULL, &output_token, &ret_flags, NULL);
+      THREADS_DISALLOW();
+
+      STATUS_MSG (gss_init_sec_context, maj, min);
+
+      if (GSS_CALLING_ERROR (maj) == GSS_S_CALL_INACCESSIBLE_READ &&
+	  target_name == GSS_C_NO_NAME) {
+	/* RFC 2743, section 2.2.1: "In addition to support for other name
+	 * types, it is recommended (newly as of GSS-V2, Update 1) that
+	 * mechanisms be able to accept GSS_C_NO_NAME as an input type for
+	 * targ_name. While recommended, such support is not required, and it
+	 * is recognized that not all mechanisms can construct tokens without
+	 * explicitly naming the context target, even when mutual
+	 * authentication of the target is not obtained. Callers wishing to
+	 * make use of this facility and concerned with portability should be
+	 * aware that support for GSS_C_NO_NAME as input targ_name type is
+	 * unlikely to be provided within mechanism definitions specified prior
+	 * to GSS-V2, Update 1."
+	 *
+	 * If support is lacking then the gssapi lib considers the target name
+	 * a required argument, and it should therefore signal the lack of it
+	 * as an GSS_S_CALL_INACCESSIBLE_READ error, so we assume this is the
+	 * case if target_name contains no name. */
+	if (GSS_ROUTINE_ERROR (maj))
+	  maj = GSS_ROUTINE_ERROR (maj) | GSS_SUPPLEMENTARY_INFO (maj);
+	else
+	  maj = GSS_S_BAD_NAME | GSS_SUPPLEMENTARY_INFO (maj);
+      }
+
+      else if (maj & (GSS_S_OLD_TOKEN|GSS_S_DUPLICATE_TOKEN))
+	/* RFC 2744, section 5.19: "During context establishment, the
+	 * informational status bits GSS_S_OLD_TOKEN and GSS_S_DUPLICATE_TOKEN
+	 * indicate fatal errors, and GSS-API mechanisms should always return
+	 * them in association with a routine error of GSS_S_FAILURE. This
+	 * requirement for pairing did not exist in version 1 of the GSS-API
+	 * specification, so applications that wish to run over version 1
+	 * implementations must special-case these codes." */
+	maj = GSS_CALLING_ERROR (maj) |
+	  GSS_S_FAILURE | GSS_SUPPLEMENTARY_INFO (maj);
+
+      DEBUG_MSG ((stderr, "gssapi.pmod:%d: gss_init_sec_context "
+		  "status is %x/%x after adjustments\n", __LINE__, maj, min));
+
+      SAVE_STATUS (maj, min);
+
+      if (THIS_CONTEXT->ctx == GSS_C_NO_CONTEXT) {
+	DMALLOC_REGISTER (ctx);
+	THIS_CONTEXT->ctx = ctx;
+      }
+      else if (THIS_CONTEXT->ctx != ctx) {
+	cleanup_context (&ctx);
+	Pike_error ("Contained context changed asynchronously.\n");
+      }
+
+      CHECK_CONTEXT_ERROR (gss_init_sec_context, maj, min);
+
+      THIS_CONTEXT->current_services = ret_flags;
+
+      if (!(maj & GSS_S_CONTINUE_NEEDED)) {
+	/* GSSAPIv1 implementations won't set the prot ready flag, so
+	 * let's do it here to avoid special cases later. */
+	THIS_CONTEXT->current_services |= GSS_C_PROT_READY_FLAG;
+
+	/* Clear variables that are of no use after context establishment. */
+	exit_InitContext_struct();
+	init_InitContext_struct();
+
+	{
+	  OM_uint32 missing = ~ret_flags & THIS_CONTEXT->required_services;
+	  if (missing) {
+	    REINIT_THIS();
+	    throw_missing_services_error (missing);
+	  }
+	}
+      }
+
+      pop_n_elems (args);
+      if (output_token.length) {
+	if ((THIS_CONTEXT->required_services & GSS_C_ANON_FLAG) &&
+	    !(ret_flags & GSS_C_ANON_FLAG))
+	  /* RFC 2743, section 2.2.1: "Callers wishing to perform context
+	   * establishment only if anonymity support is provided should
+	   * transfer a returned token from GSS_Init_sec_context() to the peer
+	   * only if it is accompanied by a TRUE anon_state indicator." */
+	  throw_missing_services_error (GSS_C_ANON_FLAG);
+	push_string (make_shared_binary_string (output_token.value,
+						output_token.length));
+      }
+      else
+	push_int (0);
+    } END_GSS_BUFFER (output_token);
+
+#undef remote_token
+  }
+}
+
+/*! @endclass */
+
+
+/*! @class AcceptContext
+ *! @inherit Context
+ *!
+ *! Variant of @[Context] which is used on the acceptor side.
+ */
+PIKECLASS AcceptContext
+{
+  INHERIT Context;
+
+  CVAR struct object *delegated_cred;
+
+  /* The following is only used during context establishment since
+   * GSS-API doesn't allow us to leave it out in subsequent
+   * gss_accept_sec_context calls. */
+  CVAR struct object *cred;
+
+  /* Isn't there a neater method to access the inherited objects? */
+  static ptrdiff_t AcceptContext_Context_storage_offset;
+#undef THIS_CONTEXT
+#define THIS_CONTEXT ((struct Context_struct *)				\
+		      (Pike_fp->current_object->storage +		\
+		       AcceptContext_Context_storage_offset))
+
+  INIT
+  {
+    THIS->delegated_cred = NULL;
+    THIS->cred = NULL;
+  }
+
+  EXIT
+    gc_trivial;
+  {
+    if (THIS->delegated_cred)
+      free_object (THIS->delegated_cred);
+    if (THIS->cred)
+      free_object (THIS->cred);
+  }
+
+  /*! @decl static void create (void|Cred cred, @
+   *!				void|int required_services)
+   *!
+   *! Creates a context for acceptor use. This function only accepts
+   *! parameters to be used later during the @[accept] call. If there
+   *! are semantic problems with them, such as if the credentials are
+   *! stale, then they will be signalled later by @[accept].
+   *!
+   *! @param cred
+   *!   Credentials for the identity this context claims. The
+   *!   credentials for the default principal (if any) is used if zero
+   *!   or left out.
+   *!
+   *! @param required_services
+   *!   Bitfield of @tt{GSSAPI.*_FLAG@} flags specifying all services
+   *!   that must be provided in the context. If the context fail to
+   *!   provide any of them then it is closed and a
+   *!   @[GSSAPI.MissingServicesError] is thrown.
+   *!
+   *!   @[GSSAPI.PROT_READY_FLAG] is ignored in this parameter. The fact
+   *!   that a user calls a per-message function indicates that this
+   *!   service is required at that point, and a
+   *!   @[GSSAPI.MissingServicesError] is thrown if it isn't.
+   *!
+   *! @note
+   *!   Channel bindings (RFC 2743, section 1.1.6) are not yet
+   *!   implemented since that feature appear to not be in much active
+   *!   use, and its format is not completely specified (RFC 2744,
+   *!   section 3.11).
+   */
+  PIKEFUN void create (void|object(Cred) cred,
+		       void|zero|int required_services)
+    flags ID_STATIC;
+  {
+#ifndef PRECOMPILE_API_VERSION
+    /* Live with the pessimal precompile.pike in 7.4.. :P */
+    struct object *_cred;
+    INT_TYPE _required_services;
+    CHECK_OPT_ARG (cred, _cred, T_OBJECT, object, "Cred", "create", 1);
+    CHECK_OPT_ARG (required_services, _required_services,
+		   T_INT, integer, "int", "create", 2);
+#define CRED _cred
+#define REQUIRED_SERVICES _required_services
+#else
+#define CRED cred
+#define REQUIRED_SERVICES required_services
+#endif
+
+    if (CRED) {
+      if (!get_storage (CRED, Cred_program))
+	SIMPLE_ARG_TYPE_ERROR ("create", 1, "GSSAPI.Cred");
+      if (THIS->cred) free_object (THIS->cred);
+      add_ref (THIS->cred = CRED);
+    }
+    else
+      if (THIS->cred) {
+	free_object (THIS->cred);
+	THIS->cred = NULL;
+      }
+
+    THIS_CONTEXT->required_services =
+      (REQUIRED_SERVICES & ~GSS_C_PROT_READY_FLAG);
+
+#undef CRED
+#undef REQUIRED_SERVICES
+  }
+
+  /*! @decl string accept (string remote_token)
+   *!
+   *! Accepts a remotely initiated security context.
+   *!
+   *! This wraps @tt{GSS_Accept_sec_context@} according to RFC 2743
+   *! section 2.2.2.
+   *!
+   *! The underlying mechanism might require several tokens to be
+   *! passed back and forth to establish the context. If
+   *! @[is_established] returns zero after a call to this function
+   *! then the caller must wait for a token from the remote peer to
+   *! feed as @[remote_token] in another call to this function.
+   *!
+   *! @param remote_token
+   *!   A token from the remote peer, as returned by a call to
+   *!   @[GSSAPI.InitContext.init] or some other
+   *!   @tt{GSS_Init_sec_context@} wrapper.
+   *!
+   *! @returns
+   *!   If a string is returned then it must be passed to the remote
+   *!   peer which will feed it to @[GSSAPI.InitContext.init] or some
+   *!   other @tt{GSS_Init_sec_context@} wrapper. An empty string is
+   *!   never returned.
+   *!
+   *!   Zero is returned if there is no token to send to the remote
+   *!   peer. Note that @[is_established] might still return zero in
+   *!   that case, meaning more remote tokens are necessary.
+   *!
+   *! @note
+   *!   This function might block on network connections to remote
+   *!   authentication servers.
+   */
+  PIKEFUN string accept (string remote_token)
+  {
+    gss_buffer_desc input_token;
+
+    CHECK_NARROW_STRING (remote_token, "init", 1);
+    input_token.length = remote_token->len;
+    input_token.value = remote_token->str;
+
+    WITH_GSS_BUFFER (output_token) {
+      gss_ctx_id_t ctx = THIS_CONTEXT->ctx;
+      const gss_cred_id_t cred = THIS->cred ?
+	((struct Cred_struct *) get_storage (THIS->cred, Cred_program))->cred :
+	GSS_C_NO_CREDENTIAL;
+      OM_uint32 ret_flags;
+      gss_cred_id_t delegated_cred;
+      ONERROR uwp;
+      OM_uint32 maj, min;
+
+      THREADS_ALLOW();
+      maj = gss_accept_sec_context (&min, &ctx, cred, &input_token,
+				    GSS_C_NO_CHANNEL_BINDINGS, NULL,
+				    NULL, &output_token, &ret_flags, NULL,
+				    &delegated_cred);
+      THREADS_DISALLOW();
+
+      STATUS_MSG (gss_accept_sec_context, maj, min);
+
+      if (maj & (GSS_S_OLD_TOKEN|GSS_S_DUPLICATE_TOKEN))
+	/* RFC 2744, section 5.1: "During context establishment, the
+	 * informational status bits GSS_S_OLD_TOKEN and GSS_S_DUPLICATE_TOKEN
+	 * indicate fatal errors, and GSS-API mechanisms should always return
+	 * them in association with a routine error of GSS_S_FAILURE. This
+	 * requirement for pairing did not exist in version 1 of the GSS-API
+	 * specification, so applications that wish to run over version 1
+	 * implementations must special-case these codes." */
+	maj =
+	  (maj & ~(GSS_C_ROUTINE_ERROR_MASK << GSS_C_ROUTINE_ERROR_OFFSET)) |
+	  GSS_S_FAILURE;
+
+      DEBUG_MSG ((stderr, "gssapi.pmod:%d: gss_accept_sec_context "
+		  "status is %x/%x after adjustments\n", __LINE__, maj, min));
+
+      SAVE_STATUS (maj, min);
+
+      if (THIS_CONTEXT->ctx == GSS_C_NO_CONTEXT) {
+	DMALLOC_REGISTER (ctx);
+	THIS_CONTEXT->ctx = ctx;
+      }
+      else if (THIS_CONTEXT->ctx != ctx) {
+	cleanup_context (&ctx);
+	Pike_error ("Contained context changed asynchronously.\n");
+      }
+
+      if (delegated_cred != GSS_C_NO_CREDENTIAL) {
+	DMALLOC_REGISTER (delegated_cred);
+	if (THIS->delegated_cred) {
+	  /* Ensure that the cred handle in the object is released
+	   * synchronously since it might block. */
+	  assert (THIS->delegated_cred->prog == Cred_program);
+	  cleanup_cred (&((struct Cred_struct *)
+			  THIS->delegated_cred->storage)->cred);
+	  free_object (THIS->delegated_cred);
+	}
+	THIS->delegated_cred = FAST_CLONE_OBJECT (Cred_program);
+	OBJ2_CRED (THIS->delegated_cred)->cred = delegated_cred;
+      }
+
+      CHECK_CONTEXT_ERROR (gss_accept_sec_context, maj, min);
+
+      THIS_CONTEXT->current_services = ret_flags;
+
+      if (!(maj & GSS_S_CONTINUE_NEEDED)) {
+	/* GSSAPIv1 implementations won't set the prot ready flag, so
+	 * let's do it here to avoid special cases later. */
+	THIS_CONTEXT->current_services |= GSS_C_PROT_READY_FLAG;
+
+	/* Clear variables that are of no use after context establishment. */
+	if (THIS->cred) {
+	  free_object (THIS->cred);
+	  THIS->cred = NULL;
+	}
+
+	{
+	  OM_uint32 missing = ~ret_flags & THIS_CONTEXT->required_services;
+	  if (missing) {
+	    REINIT_THIS();
+	    throw_missing_services_error (missing);
+	  }
+	}
+      }
+
+      pop_n_elems (args);
+      if (output_token.length)
+	push_string (make_shared_binary_string (output_token.value,
+						output_token.length));
+      else
+	push_int (0);
+    } END_GSS_BUFFER (output_token);
+  }
+
+  /*! @decl Cred delegated_cred()
+   *!
+   *! Returns the delegated credentials from the initiator if the
+   *! delegation (c.f. @[GSSAPI.DELEG_FLAG]) service is in use.
+   */
+  PIKEFUN object(Cred) delegated_cred()
+  {
+    if (THIS->delegated_cred)
+      ref_push_object (THIS->delegated_cred);
+    else
+      push_int (0);
+  }
+}
+
+/*! @endclass */
+
+
+/*! @decl multiset(string) indicate_mechs()
+ *!
+ *! Returns the OIDs for the available mechanism in the GSS-API
+ *! implementation. The OIDs are returned on dotted-decimal form.
+ *!
+ *! This wraps @tt{GSS_Indicate_mechs@} according to RFC 2743 section
+ *! 2.4.2.
+ */
+PIKEFUN multiset(string) indicate_mechs()
+{
+  gss_OID_set mechs = GSS_C_NO_OID_SET;
+  OM_uint32 maj, min;
+  ONERROR uwp;
+
+  SET_ONERROR (uwp, cleanup_oid_set, &mechs);
+
+  THREADS_ALLOW();
+  /* RFC 2743 doesn't rule out that this might block. */
+  maj = gss_indicate_mechs (&min, &mechs);
+  THREADS_DISALLOW();
+
+  MORE_STATUS_MSG (gss_indicate_mechs, maj, min);
+  DMALLOC_REGISTER (mechs);
+  CHECK_UNEXPECTED_ERROR (gss_indicate_mechs, maj, min);
+
+  convert_from_oid_set_and_push (mechs);
+
+  CALL_AND_UNSET_ONERROR (uwp);
+}
+
+/*! @decl multiset(string) names_for_mech (string mech)
+ *!
+ *! Returns the OIDs for the name types that the given @[mech]
+ *! supports. Both @[mech] and the returned OID strings are on
+ *! dotted-decimal form.
+ *!
+ *! This wraps @tt{GSS_Inquire_names_for_mech@} according to RFC 2743
+ *! section 2.4.12.
+ */
+PIKEFUN multiset(string) names_for_mech (string mech)
+{
+  gss_OID_set name_types = GSS_C_NO_OID_SET;
+  ONERROR uwp;
+
+  SET_ONERROR (uwp, cleanup_oid_set, &name_types);
+
+  WITH_PUSHED_GSS_OID (mech_oid, mech) {
+    OM_uint32 maj, min;
+
+    THREADS_ALLOW();
+    /* RFC 2743 doesn't rule out that this might block. */
+    maj = gss_inquire_names_for_mech (&min, &mech_oid, &name_types);
+    THREADS_DISALLOW();
+
+    STATUS_MSG (gss_inquire_names_for_mech, maj, min);
+    DMALLOC_REGISTER (name_types);
+    CHECK_ERROR_WITH_MECH (gss_inquire_names_for_mech, maj, min, &mech_oid);
+  } END_GSS_OID (mech_oid);
+
+  convert_from_oid_set_and_push (name_types);
+  CALL_AND_UNSET_ONERROR (uwp);
+}
+
+/*! @endmodule */
+
+#endif	/* HAVE_GSSAPI */
+
+#define RESOLVE_AND_SET(IDENT, SVALUE) do {				\
+    push_text (IDENT);							\
+    SAFE_APPLY_MASTER ("resolv", 1);					\
+    if (SAFE_IS_ZERO (Pike_sp - 1))					\
+      Pike_error ("GSSAPI: Failed to resolve %s.\n", IDENT);		\
+    move_svalue (&SVALUE, --Pike_sp);					\
+  } while (0)
+
+PIKE_MODULE_INIT
+{
+#ifdef HAVE_GSSAPI
+  der_dd_map = allocate_mapping (10);
+
+#if PIKE_MAJOR_VERSION == 7 && PIKE_MINOR_VERSION <= 6
+  int_pos_inf.type = T_INT;
+  int_pos_inf.subtype = NUMBER_NUMBER;
+  int_pos_inf.u.integer = MAX_INT_TYPE;
+#else
+  RESOLVE_AND_SET ("Int.inf", int_pos_inf);
+#endif
+
+  RESOLVE_AND_SET ("Standards.ASN1.encode_der_oid", encode_der_oid);
+  RESOLVE_AND_SET ("Standards.ASN1.decode_der_oid", decode_der_oid);
+
+  start_new_program();
+  low_inherit (generic_error_program, NULL, 0, 0, 0, NULL);
+  gssapi_err_struct_offset = ADD_STORAGE (struct gssapi_err_struct);
+  add_string_constant ("error_type", "gssapi_error", 0);
+  add_integer_constant ("is_gssapi_error", 1, 0);
+  PIKE_MAP_VARIABLE ("major_status",
+		     (gssapi_err_struct_offset +
+		      OFFSETOF (gssapi_err_struct, major_status)),
+		     tInt, T_INT, 0);
+  PIKE_MAP_VARIABLE ("minor_status",
+		     (gssapi_err_struct_offset +
+		      OFFSETOF (gssapi_err_struct, minor_status)),
+		     tInt, T_INT, 0);
+  pike_set_prog_event_callback (gssapi_err_events);
+#ifdef PROGRAM_LIVE_OBJ
+  Pike_compiler->new_program->flags &= ~PROGRAM_LIVE_OBJ;
+#endif
+  ADD_FUNCTION ("create", gssapi_err_create,
+		tFunc(tOr(tVoid,tInt) tOr(tVoid,tInt) tOr(tVoid,tString)
+		      tOr(tVoid,tString) tOr(tVoid,tArray),
+		      tVoid), ID_STATIC);
+  ADD_FUNCTION ("major_status_messages", gssapi_err_major_msgs,
+		tFunc(tVoid,tArr(tString)), 0);
+  ADD_FUNCTION ("minor_status_messages", gssapi_err_minor_msgs,
+		tFunc(tVoid,tArr(tString)), 0);
+  ADD_FUNCTION ("minor_status_mech", gssapi_err_minor_mech,
+		tFunc(tVoid,tString), 0);
+  gssapi_err_program = end_program();
+  add_program_constant ("Error", gssapi_err_program, 0);
+
+  start_new_program();
+  low_inherit (generic_error_program, NULL, 0, 0, 0, NULL);
+  missing_err_struct_offset = ADD_STORAGE (struct missing_err_struct);
+  add_string_constant ("error_type", "gssapi_missing_services_error", 0);
+  add_integer_constant ("is_gssapi_missing_services_error", 1, 0);
+  PIKE_MAP_VARIABLE ("services",
+		     (missing_err_struct_offset +
+		      OFFSETOF (missing_err_struct, services)),
+		     tInt, T_INT, 0);
+  pike_set_prog_event_callback (missing_err_events);
+#ifdef PROGRAM_LIVE_OBJ
+  Pike_compiler->new_program->flags &= ~PROGRAM_LIVE_OBJ;
+#endif
+  ADD_FUNCTION ("create", missing_err_create,
+		tFunc(tOr(tVoid,tInt), tVoid), ID_STATIC);
+  missing_err_program = end_program();
+  add_program_constant ("MissingServicesError", missing_err_program, 0);
+
+  /* As it happens, none of the currently defined errors and flags in
+   * the GSS-API spec conflicts with the sign bit if INT_TYPE is 32
+   * bits, so we can assume native ints for all of the following. */
+
+  add_integer_constant ("ERROR_MASK",
+			GSS_C_ROUTINE_ERROR_MASK << GSS_C_ROUTINE_ERROR_OFFSET,
+			0);
+  add_integer_constant ("BAD_MECH", GSS_S_BAD_MECH, 0);
+  add_integer_constant ("BAD_NAME", GSS_S_BAD_NAME, 0);
+  add_integer_constant ("BAD_NAMETYPE", GSS_S_BAD_NAMETYPE, 0);
+  add_integer_constant ("BAD_BINDINGS", GSS_S_BAD_BINDINGS, 0);
+  add_integer_constant ("BAD_STATUS", GSS_S_BAD_STATUS, 0);
+  add_integer_constant ("BAD_MIC", GSS_S_BAD_MIC, 0);
+  add_integer_constant ("NO_CRED", GSS_S_NO_CRED, 0);
+  add_integer_constant ("NO_CONTEXT", GSS_S_NO_CONTEXT, 0);
+  add_integer_constant ("DEFECTIVE_TOKEN", GSS_S_DEFECTIVE_TOKEN, 0);
+  add_integer_constant ("DEFECTIVE_CREDENTIAL", GSS_S_DEFECTIVE_CREDENTIAL, 0);
+  add_integer_constant ("CREDENTIALS_EXPIRED", GSS_S_CREDENTIALS_EXPIRED, 0);
+  add_integer_constant ("CONTEXT_EXPIRED", GSS_S_CONTEXT_EXPIRED, 0);
+  add_integer_constant ("FAILURE", GSS_S_FAILURE, 0);
+  add_integer_constant ("BAD_QOP", GSS_S_BAD_QOP, 0);
+  add_integer_constant ("UNAUTHORIZED", GSS_S_UNAUTHORIZED, 0);
+  add_integer_constant ("UNAVAILABLE", GSS_S_UNAVAILABLE, 0);
+  add_integer_constant ("DUPLICATE_ELEMENT", GSS_S_DUPLICATE_ELEMENT, 0);
+  add_integer_constant ("NAME_NOT_MN", GSS_S_NAME_NOT_MN, 0);
+
+  add_integer_constant ("INFO_MASK",
+			GSS_C_SUPPLEMENTARY_MASK << GSS_C_SUPPLEMENTARY_OFFSET,
+			0);
+  add_integer_constant ("CONTINUE_NEEDED", GSS_S_CONTINUE_NEEDED, 0);
+  add_integer_constant ("DUPLICATE_TOKEN", GSS_S_DUPLICATE_TOKEN, 0);
+  add_integer_constant ("OLD_TOKEN", GSS_S_OLD_TOKEN, 0);
+  add_integer_constant ("UNSEQ_TOKEN", GSS_S_UNSEQ_TOKEN, 0);
+  add_integer_constant ("GAP_TOKEN", GSS_S_GAP_TOKEN, 0);
+
+  {
+    struct svalue str;
+    str.type = T_STRING;
+
+#define ADD_DD_OID_CONSTANT(PIKE_SYM, GSS_SYM) do {			\
+      str.u.string = get_dd_oid (GSS_SYM);				\
+      simple_add_constant (PIKE_SYM, &str, 0);				\
+    } while (0)
+
+    ADD_DD_OID_CONSTANT ("NT_HOSTBASED_SERVICE", GSS_C_NT_HOSTBASED_SERVICE);
+    ADD_DD_OID_CONSTANT ("NT_USER_NAME", GSS_C_NT_USER_NAME);
+    ADD_DD_OID_CONSTANT ("NT_MACHINE_UID_NAME", GSS_C_NT_MACHINE_UID_NAME);
+    ADD_DD_OID_CONSTANT ("NT_STRING_UID_NAME", GSS_C_NT_STRING_UID_NAME);
+    ADD_DD_OID_CONSTANT ("NT_ANONYMOUS", GSS_C_NT_ANONYMOUS);
+    ADD_DD_OID_CONSTANT ("NT_EXPORT_NAME", GSS_C_NT_EXPORT_NAME);
+
+    ADD_DD_OID_CONSTANT ("KRB5_NT_PRINCIPAL_NAME", GSS_KRB5_NT_PRINCIPAL_NAME);
+
+#undef ADD_OID_CONSTANT
+  }
+
+  add_integer_constant ("INITIATE", GSS_C_INITIATE, 0);
+  add_integer_constant ("ACCEPT", GSS_C_ACCEPT, 0);
+  add_integer_constant ("BOTH", GSS_C_BOTH, 0);
+
+  add_integer_constant ("DELEG_FLAG", GSS_C_DELEG_FLAG, 0);
+  add_integer_constant ("MUTUAL_FLAG", GSS_C_MUTUAL_FLAG, 0);
+  add_integer_constant ("REPLAY_FLAG", GSS_C_REPLAY_FLAG, 0);
+  add_integer_constant ("SEQUENCE_FLAG", GSS_C_SEQUENCE_FLAG, 0);
+  add_integer_constant ("CONF_FLAG", GSS_C_CONF_FLAG, 0);
+  add_integer_constant ("INTEG_FLAG", GSS_C_INTEG_FLAG, 0);
+  add_integer_constant ("ANON_FLAG", GSS_C_ANON_FLAG, 0);
+  add_integer_constant ("PROT_READY_FLAG", GSS_C_PROT_READY_FLAG, 0);
+  add_integer_constant ("TRANS_FLAG", GSS_C_TRANS_FLAG, 0);
+
+#endif	/* HAVE_GSSAPI */
+
+  INIT;
+
+#ifdef HAVE_GSSAPI
+  InitContext_Context_storage_offset =
+    low_get_storage (InitContext_program, Context_program);
+  AcceptContext_Context_storage_offset =
+    low_get_storage (AcceptContext_program, Context_program);
+#endif
+}
+
+PIKE_MODULE_EXIT
+{
+#ifdef HAVE_GSSAPI
+  if (der_dd_map) free_mapping (der_dd_map);
+  free_svalue (&int_pos_inf);
+  free_svalue (&encode_der_oid);
+  free_svalue (&decode_der_oid);
+  if (gssapi_err_program) free_program (gssapi_err_program);
+  if (missing_err_program) free_program (missing_err_program);
+#endif
+
+  EXIT;
+}

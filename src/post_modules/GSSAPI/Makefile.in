@@ -1,0 +1,13 @@
+# $Id: Makefile.in,v 1.1 2008/07/22 15:44:17 mast Exp $
+
+@make_variables@
+VPATH=@srcdir@
+
+OBJS=gssapi.o
+MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
+
+@dynamic_module_makefile@
+
+gssapi.o: $(SRCDIR)/gssapi.c
+
+@dependencies@

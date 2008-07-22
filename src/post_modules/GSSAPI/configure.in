@@ -1,0 +1,31 @@
+# $Id: configure.in,v 1.1 2008/07/22 15:44:17 mast Exp $
+
+AC_INIT(gssapi.cmod)
+AC_CONFIG_HEADER(gssapi_config.h)
+AC_ARG_WITH(gssapi, MY_DESCR([--without-gssapi], [Disable support for GSS-API]),
+	    [], [with_gssapi=yes])
+
+AC_MODULE_INIT()
+PIKE_FEATURE_WITHOUT(GSSAPI)
+
+if test x$with_gssapi = xyes; then
+
+  PIKE_FEATURE(GSSAPI, [no (gssapi.h not found)])
+  AC_CHECK_HEADERS(gssapi.h gssapi/gssapi.h, break)
+  AC_CHECK_HEADERS(gssapi_krb5.h gssapi/gssapi_krb5.h, break)
+
+  if test x$ac_cv_header_gssapi_h = xyes -o \
+	  x$ac_cv_header_gssapi_gssapi_h = xyes; then
+    PIKE_FEATURE(GSSAPI, [no (GSS-API v2 library not found)])
+
+    # Check for gss_wrap since it only exists in GSS-API version 2.
+    AC_SEARCH_LIBS(gss_wrap, gssapi gssapiv2 gssapi_krb5, [
+      AC_DEFINE(HAVE_GSSAPI)
+      PIKE_FEATURE(GSSAPI, [yes ($ac_cv_search_gss_wrap)])
+    ])
+
+    AC_CHECK_FUNCS(gss_inquire_mechs_for_name)
+  fi
+fi
+
+AC_OUTPUT(Makefile)
