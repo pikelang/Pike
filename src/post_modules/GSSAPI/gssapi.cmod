@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gssapi.cmod,v 1.2 2008/07/22 15:44:49 mast Exp $
+|| $Id: gssapi.cmod,v 1.3 2008/07/22 15:50:38 mast Exp $
 */
 
 /*
@@ -153,49 +153,6 @@ DEFINE_STATIC_OID (GSS_KRB5_NT_PRINCIPAL_NAME,
 #endif
 
 
-/* To live with 7.4.. */
-
-#ifndef PTR_TO_INT
-#define PTR_TO_INT(PTR) ((size_t) ((char *) (PTR) - (char *) NULL))
-#endif
-
-#ifndef SIMPLE_ARG_ERROR
-#define SIMPLE_ARG_ERROR(FUNC, ARG, PROBLEM)				\
-  Pike_error ("Bad argument %d to %s: %s\n", (ARG), (FUNC), (PROBLEM))
-#endif
-
-#ifndef SIMPLE_ARG_TYPE_ERROR
-#define SIMPLE_ARG_TYPE_ERROR SIMPLE_BAD_ARG_ERROR
-#endif
-
-#ifndef PRECOMPILE_API_VERSION
-#define CHECK_OPT_ARG(SVAL, VAR, RTTYPE, TYPEMEM, TYPESTR, FN, ARG) do { \
-    if (SVAL && (SVAL->type != T_INT || SVAL->u.integer)) {		\
-      if (SVAL->type != RTTYPE)						\
-	SIMPLE_BAD_ARG_ERROR (FN, ARG, "void|" TYPESTR);		\
-      VAR = SVAL->u.TYPEMEM;					\
-    }									\
-    else VAR = 0;							\
-  } while (0)
-#endif
-
-#if PIKE_MAJOR_VERSION == 7 && PIKE_MINOR_VERSION <= 4
-#define FAST_CLONE_OBJECT(PROG)						\
-  debug_malloc_pass (fast_clone_object ((PROG), 0))
-#else
-#define FAST_CLONE_OBJECT(PROG)						\
-  debug_malloc_pass (fast_clone_object (PROG))
-#endif
-
-#ifndef SVALUE_INIT_FREE
-#ifdef HAVE_UNION_INIT
-#define SVALUE_INIT_FREE {T_INT, NUMBER_NUMBER, {0}}
-#else
-#define SVALUE_INIT_FREE {T_INT, NUMBER_NUMBER}
-#endif
-#endif
-
-
 #define CHECK_NARROW_STRING(PIKESTR, FN, ARG) do {			\
     if ((PIKESTR)->size_shift)						\
       SIMPLE_ARG_ERROR (FN, ARG, "String cannot be wide.");		\
@@ -203,17 +160,11 @@ DEFINE_STATIC_OID (GSS_KRB5_NT_PRINCIPAL_NAME,
 
 static struct svalue int_pos_inf = SVALUE_INIT_FREE;
 
-#if PIKE_MAJOR_VERSION == 7 && PIKE_MINOR_VERSION <= 6
-#define PUSH_UINT(UINT) push_int64 (UINT)
-#else
-#define PUSH_UINT(UINT) push_ulongest (UINT)
-#endif
-
 #define PUSH_TIME(TIME) do {						\
     if (TIME == GSS_C_INDEFINITE)					\
       push_svalue (&int_pos_inf);					\
     else								\
-      PUSH_UINT (TIME);							\
+      push_ulongest (TIME);							\
   } while (0)
 
 static DECLSPEC(noreturn) void throw_gssapi_error (
@@ -319,12 +270,8 @@ static int get_pushed_gss_oid (struct pike_string *dd_oid, gss_OID gss_oid)
       Pike_sp[-1].u.string->size_shift ||
       Pike_sp[-1].u.string->len < 3 ||
       Pike_sp[-1].u.string->str[0] != 0x6) {
-#if PIKE_MAJOR_VERSION == 7 && PIKE_MINOR_VERSION <= 6
-    Pike_error ("encode_der_oid function returned a bogus value.\n");
-#else
     Pike_error ("encode_der_oid function returned a bogus value: %O\n",
 		Pike_sp - 1);
-#endif
   }
 
   /* We don't cache the oid here since we're not sure that dd_oid is
@@ -375,12 +322,8 @@ static struct pike_string *get_dd_oid (const gss_OID_desc * const gss_oid)
   apply_svalue (&decode_der_oid, 1);
   if (Pike_sp[-1].type != T_STRING ||
       Pike_sp[-1].u.string->size_shift) {
-#if PIKE_MAJOR_VERSION == 7 && PIKE_MINOR_VERSION <= 6
-    Pike_error ("encode_der_oid function returned a bogus value.\n");
-#else
     Pike_error ("decode_der_oid function returned a bogus value: %O.\n",
 		Pike_sp - 1);
-#endif
   }
 
   {
@@ -715,14 +658,6 @@ static ptrdiff_t gssapi_err_struct_offset;
 #define GEN_ERR_THIS ((struct generic_error_struct *)			\
 		      (Pike_fp->current_storage + 0))
 
-#if PIKE_MAJOR_VERSION == 7 && PIKE_MINOR_VERSION <= 4
-#define GEN_ERR_MSG desc
-#define GEN_ERR_BT backtrace
-#else
-#define GEN_ERR_MSG error_message
-#define GEN_ERR_BT error_backtrace
-#endif
-
 static void gssapi_err_events (int event)
 {
   switch (event) {
@@ -768,18 +703,7 @@ static struct pike_string *make_gss_err_message (
   if (msg) {
     /* args is a pointer to va_list only to be able to pass a dummy
      * value there when msg is NULL. */
-#if PIKE_MAJOR_VERSION == 7 && PIKE_MINOR_VERSION <= 6
-    char buf[4096];
-#ifdef HAVE_VSNPRINTF
-    vsnprintf (buf, sizeof (buf), msg, *args);
-#else
-    VSPRINTF (buf, msg, *args);
-#endif
-    string_builder_strcat (&sb, buf);
-#else
     string_builder_vsprintf (&sb, msg, *args);
-#endif
-
     string_builder_strcat (&sb, ": ");
   }
 
@@ -886,29 +810,29 @@ static void gssapi_err_create (INT32 args)
       push_string (make_gss_err_message (THIS->major_status, THIS->minor_status,
 					 mech, NULL, NULL));
       f_add (3);
-      do_free_string (GEN_ERR_THIS->GEN_ERR_MSG);
-      GEN_ERR_THIS->GEN_ERR_MSG = (--Pike_sp)->u.string;
+      do_free_string (GEN_ERR_THIS->error_message);
+      GEN_ERR_THIS->error_message = (--Pike_sp)->u.string;
     }
     else {
       struct pike_string *msg =
 	make_gss_err_message (THIS->major_status, THIS->minor_status,
 			      mech, NULL, NULL);
-      do_free_string (GEN_ERR_THIS->GEN_ERR_MSG);
-      GEN_ERR_THIS->GEN_ERR_MSG = msg;
+      do_free_string (GEN_ERR_THIS->error_message);
+      GEN_ERR_THIS->error_message = msg;
     }
   }
 
-  if (GEN_ERR_THIS->GEN_ERR_BT)
-    free_array (GEN_ERR_THIS->GEN_ERR_BT);
+  if (GEN_ERR_THIS->error_backtrace)
+    free_array (GEN_ERR_THIS->error_backtrace);
   if(args > 4 &&
      (Pike_sp[4-args].type != T_INT || Pike_sp[4-args].u.integer)) {
     if(Pike_sp[4-args].type != T_ARRAY)
       SIMPLE_ARG_TYPE_ERROR ("create",5,"void|array");
-    add_ref (GEN_ERR_THIS->GEN_ERR_BT = Pike_sp[4-args].u.array);
+    add_ref (GEN_ERR_THIS->error_backtrace = Pike_sp[4-args].u.array);
   }
   else {
     f_backtrace (0);
-    GEN_ERR_THIS->GEN_ERR_BT =
+    GEN_ERR_THIS->error_backtrace =
       slice_array (Pike_sp[-1].u.array, 0, Pike_sp[-1].u.array->size - 1);
     pop_stack();
   }
@@ -965,7 +889,7 @@ static void gssapi_err_minor_mech (INT32 args)
 static DECLSPEC(noreturn) void throw_gssapi_error (
   OM_uint32 major, OM_uint32 minor, const gss_OID mech, const char *msg, ...)
 {
-  struct object *o = FAST_CLONE_OBJECT (gssapi_err_program);
+  struct object *o = fast_clone_object (gssapi_err_program);
   struct gssapi_err_struct *gssapi_err =
     (struct gssapi_err_struct *) (o->storage + gssapi_err_struct_offset);
   /* Assume gssapi_err_program begins with the generic_error_program inherit. */
@@ -986,20 +910,9 @@ static DECLSPEC(noreturn) void throw_gssapi_error (
   else
     errmsg = make_gss_err_message (major, minor, mech, NULL, NULL);
 
-  gen_err->GEN_ERR_MSG = errmsg;
+  gen_err->error_message = errmsg;
 
-#if PIKE_MAJOR_VERSION == 7 && PIKE_MINOR_VERSION <= 6
-  f_backtrace (0);
-  gen_err->GEN_ERR_BT = (--Pike_sp)->u.array;
-
-  free_svalue (&throw_value);
-  throw_value.type = T_OBJECT;
-  throw_value.u.object = o;
-  throw_severity = THROW_ERROR;
-  pike_throw();
-#else
   generic_error_va (o, NULL, NULL, 0, NULL, NULL);
-#endif
 }
 
 static DECLSPEC(noreturn) void handle_error (
@@ -1160,7 +1073,7 @@ static void missing_err_create (INT32 args)
 
 static void throw_missing_services_error (OM_uint32 missing)
 {
-  struct object *o = FAST_CLONE_OBJECT (missing_err_program);
+  struct object *o = fast_clone_object (missing_err_program);
   struct missing_err_struct *missing_err =
     (struct missing_err_struct *) (o->storage + missing_err_struct_offset);
   /* Assume missing_err_program begins with the generic_error_program
@@ -1169,20 +1082,9 @@ static void throw_missing_services_error (OM_uint32 missing)
     (struct generic_error_struct *) (o->storage + 0);
 
   missing_err->services = missing;
-  gen_err->GEN_ERR_MSG = make_missing_err_message (missing);
+  gen_err->error_message = make_missing_err_message (missing);
 
-#if PIKE_MAJOR_VERSION == 7 && PIKE_MINOR_VERSION <= 6
-  f_backtrace (0);
-  gen_err->GEN_ERR_BT = (--Pike_sp)->u.array;
-
-  free_svalue (&throw_value);
-  throw_value.type = T_OBJECT;
-  throw_value.u.object = o;
-  throw_severity = THROW_ERROR;
-  pike_throw();
-#else
   generic_error_va (o, NULL, NULL, 0, NULL, NULL);
-#endif
 }
 
 
@@ -1257,7 +1159,7 @@ PIKECLASS Name
   } while (0)
 
 #define PUSH_GSS_NAME_AS_OBJ(NAME) do {					\
-    struct object *o = FAST_CLONE_OBJECT (Name_program);		\
+    struct object *o = fast_clone_object (Name_program);		\
     OBJ2_NAME (o)->name = NAME;						\
     debug_malloc_touch (NAME);						\
     push_object (o);							\
@@ -1408,17 +1310,8 @@ PIKECLASS Name
 #endif
       switch (GSS_ROUTINE_ERROR (maj)) {
 	default:
-#if PIKE_MAJOR_VERSION == 7 && PIKE_MINOR_VERSION <= 6
-	  {
-	    char buf[100];
-	    sprintf (buf, "unexpected gss_display_name error: %x/%x",
-		     maj, min);
-	    string_builder_strcat (sb, buf);
-	  }
-#else
 	  string_builder_sprintf (
 	    sb, "unexpected gss_display_name error: %x/%x", maj, min);
-#endif
 	  break;
 
 	case GSS_S_BAD_NAME:
@@ -2384,17 +2277,8 @@ PIKECLASS Cred
 #endif
 	switch (GSS_ROUTINE_ERROR (maj)) {
 	  default:
-#if PIKE_MAJOR_VERSION == 7 && PIKE_MINOR_VERSION <= 6
-	  {
-	    char buf[100];
-	    sprintf (buf, "unexpected gss_inquire_cred error: %x/%x",
-		     maj, min);
-	    string_builder_strcat (&sb, buf);
-	  }
-#else
 	  string_builder_sprintf (
 	    &sb, "unexpected gss_inquire_cred error: %x/%x", maj, min);
-#endif
 	  break;
 
 	  case GSS_S_NO_CRED:
@@ -3069,17 +2953,8 @@ PIKECLASS Context
 #endif
 	switch (GSS_ROUTINE_ERROR (maj)) {
 	  default:
-#if PIKE_MAJOR_VERSION == 7 && PIKE_MINOR_VERSION <= 6
-	    {
-	      char buf[100];
-	      sprintf (buf, "unexpected gss_inquire_cred error: %x/%x",
-		       maj, min);
-	      string_builder_strcat (&sb, buf);
-	    }
-#else
 	    string_builder_sprintf (
 	      &sb, "unexpected gss_inquire_cred error: %x/%x", maj, min);
-#endif
 	    break;
 
 	  case GSS_S_NO_CONTEXT:
@@ -3446,7 +3321,7 @@ PIKECLASS Context
       CHECK_CONTEXT_ERROR (gss_wrap_size_limit, maj, min);
     }
 
-    PUSH_UINT (max_input_size);
+    push_ulongest (max_input_size);
 
 #undef qop
   }
@@ -3885,7 +3760,7 @@ PIKECLASS InitContext
 	SET_ONERROR (uwp, cleanup_name, &gss_name);
 	import_name_from_string (name_str, &gss_name, GSS_C_NO_OID);
 	if (THIS->target_name) free_object (THIS->target_name);
-	THIS->target_name = FAST_CLONE_OBJECT (Name_program);
+	THIS->target_name = fast_clone_object (Name_program);
 	OBJ2_NAME (THIS->target_name)->name = gss_name;
 	UNSET_ONERROR (uwp);
 	break;
@@ -4310,7 +4185,7 @@ PIKECLASS AcceptContext
 			  THIS->delegated_cred->storage)->cred);
 	  free_object (THIS->delegated_cred);
 	}
-	THIS->delegated_cred = FAST_CLONE_OBJECT (Cred_program);
+	THIS->delegated_cred = fast_clone_object (Cred_program);
 	OBJ2_CRED (THIS->delegated_cred)->cred = delegated_cred;
       }
 
@@ -4444,14 +4319,7 @@ PIKE_MODULE_INIT
 #ifdef HAVE_GSSAPI
   der_dd_map = allocate_mapping (10);
 
-#if PIKE_MAJOR_VERSION == 7 && PIKE_MINOR_VERSION <= 6
-  int_pos_inf.type = T_INT;
-  int_pos_inf.subtype = NUMBER_NUMBER;
-  int_pos_inf.u.integer = MAX_INT_TYPE;
-#else
   RESOLVE_AND_SET ("Int.inf", int_pos_inf);
-#endif
-
   RESOLVE_AND_SET ("Standards.ASN1.encode_der_oid", encode_der_oid);
   RESOLVE_AND_SET ("Standards.ASN1.decode_der_oid", decode_der_oid);
 
