@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gssapi.cmod,v 1.4 2008/07/22 16:07:00 mast Exp $
+|| $Id: gssapi.cmod,v 1.5 2008/07/22 21:29:20 mast Exp $
 */
 
 /*
@@ -352,7 +352,6 @@ static void convert_to_oid_set (struct multiset *oid_strs, gss_OID_set *set)
   DMALLOC_REGISTER (*set);
   CHECK_UNEXPECTED_ERROR (gss_create_empty_oid_set, maj, min);
 
-#ifdef PIKE_NEW_MULTISETS
   {
     ptrdiff_t p = multiset_first (oid_strs);
     struct svalue oid_str;
@@ -371,20 +370,6 @@ static void convert_to_oid_set (struct multiset *oid_strs, gss_OID_set *set)
     }
     CALL_AND_UNSET_ONERROR (uwp);
   }
-#else
-  {
-    int e;
-    struct array *a = oid_strs->ind;
-    for (e = a->size - 1; e >= 0; e--) {
-      assert (ITEM (a)[e].type == T_STRING);
-      WITH_PUSHED_GSS_OID (oid, ITEM (a)[e].u.string) {
-	maj = gss_add_oid_set_member (&min, &oid, set);
-	MORE_STATUS_MSG (gss_add_oid_set_member, maj, min);
-	CHECK_UNEXPECTED_ERROR (gss_add_oid_set_member, maj, min);
-      } END_GSS_OID (oid);
-    }
-  }
-#endif
 }
 
 static void convert_from_oid_set_and_push (gss_OID_set set)
@@ -394,12 +379,7 @@ static void convert_from_oid_set_and_push (gss_OID_set set)
   struct svalue oid_str;
   oid_str.type = T_STRING;
 
-#ifdef PIKE_NEW_MULTISETS
   l = allocate_multiset (n, 0, NULL);
-#else
-  add_ref (&empty_array);
-  l = allocate_multiset (&empty_array);
-#endif
   push_multiset (l);
 
   for (i = 0; i < n; i++) {
@@ -932,10 +912,9 @@ static DECLSPEC(noreturn) void handle_error (
 )
 /* Assumed to be called only if GSS_ERROR (maj) is true. */
 {
-  OM_uint32 msg_ctx;
-
   if (GSS_CALLING_ERROR (major)) {
 #ifdef PIKE_DEBUG
+    OM_uint32 msg_ctx;
     fprintf (stderr, "Unexpected error in call to %s "
 	     "from gssapi.cmod:%d: %x/%x\n", gss_func, line, major, minor);
 
@@ -2481,10 +2460,10 @@ PIKECLASS Context
       CHECK_UNEXPECTED_ERROR (gss_inquire_context, MAJ, MIN);		\
   } while (0)
 
-#define CHECK_GOT_CONTEXT(FN) do {					\
+#define CHECK_GOT_CONTEXT() do {					\
     if (THIS_CONTEXT->ctx == GSS_C_NO_CONTEXT) {			\
       SAVE_STATUS (GSS_S_NO_CONTEXT, 0);				\
-      handle_context_error (__LINE__, #FN, GSS_S_NO_CONTEXT, 0);	\
+      throw_gssapi_error (GSS_S_NO_CONTEXT, 0, GSS_C_NO_OID, NULL);	\
     }									\
   } while (0)
 
@@ -4148,7 +4127,6 @@ PIKECLASS AcceptContext
 	GSS_C_NO_CREDENTIAL;
       OM_uint32 ret_flags;
       gss_cred_id_t delegated_cred;
-      ONERROR uwp;
       OM_uint32 maj, min;
 
       THREADS_ALLOW();
