@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod,v 1.48 2008/07/23 11:23:52 grubba Exp $
+// $Id: module.pmod,v 1.49 2008/07/23 23:36:39 bill Exp $
 //
 
 #pike __REAL_VERSION__
@@ -48,7 +48,7 @@ class Client
 {
   inherit Protocol;
 
-  protected private int cmd(string c, string|void comment)
+  protected int cmd(string c, string|void comment)
   {
     int r = command(c);
     switch(r) {
