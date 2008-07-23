@@ -24,6 +24,7 @@ class CompileErrorHandler
   {
     werror ("test: Compilation error: %s:%s: %s\n",
 	    master()->trim_file_name (file), line ? (string) line : "-", err);
+    got_warnings_in_last_test = 1;
   }
 }
 
@@ -38,10 +39,9 @@ void test_resolv(string file, int base_size, object|void handler)
     prg = prg[..sizeof(prg)-8];
   // write("Resolving %O...\n", prg);
   mixed err;
-  mixed val;
   got_warnings_in_last_test = 0;
-  if(err = catch( val = (handler||master())->resolv(prg) ) ||
-     got_warnings_in_last_test || (!objectp(val) && !val)) {
+  if(err = catch( (handler||master())->resolv(prg) ) ||
+     got_warnings_in_last_test) {
     if (err && (!objectp (err) || !err->is_compilation_error))
       werror("test: Error during compilation of %s: %s\n",
 	     prg, describe_backtrace(err));
