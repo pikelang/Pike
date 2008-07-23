@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gssapi.cmod,v 1.5 2008/07/22 21:29:20 mast Exp $
+|| $Id: gssapi.cmod,v 1.6 2008/07/23 15:07:37 grubba Exp $
 */
 
 /*
@@ -1958,7 +1958,8 @@ PIKECLASS Cred
    *!   @[mech] is optional.
    *!
    *! @dl
-   *! @item name (void|string mech)
+   *! @item
+   *!   @tt{name (void|string mech)@}
    *!   Returns the name of the identity that the credential(s)
    *!   assert. If @[mech] is given then the returned name is a
    *!   Mechanism Name (MN).
@@ -1967,19 +1968,22 @@ PIKECLASS Cred
    *!   one, even though it typically compares as equal with the ones
    *!   given to @[acquire] or @[add].
    *!
-   *! @item cred_usage (void|string mech)
+   *! @item
+   *!   @{cred_usage (void|string mech)@}
    *!   Returns how the credential(s) may be used, one of
    *!   @[GSSAPI.INITIATE], @[GSSAPI.ACCEPT] or @[GSSAPI.BOTH].
    *!
    *!   If @[mech] is not given then the returned usage value reflects
    *!   the union of the capabilities in all credentials.
    *!
-   *! @item mechs()
+   *! @item
+   *!   @{mechs()@}
    *!   Returns the set of mechanisms supported by the credential. The
    *!   returned value is a multiset of strings with OIDs on
    *!   dotted-decimal form.
    *!
-   *! @item lifetime()
+   *! @item
+   *!   @{lifetime()@}
    *!   Returns the shortest validity lifetime left in any of the
    *!   mechanisms that are part of the credentials, for either
    *!   initiator or acceptor use.
@@ -1990,7 +1994,8 @@ PIKECLASS Cred
    *!   without @[Int.inf] a large positive integer is returned
    *!   instead).
    *!
-   *! @item init_lifetime (string mech)
+   *! @item
+   *!   @{init_lifetime (string mech)@}
    *!   Returns the validity lifetime left for initiator use.
    *!
    *!   Returns zero if the credential has expired for this use or if
@@ -2000,7 +2005,8 @@ PIKECLASS Cred
    *!   without @[Int.inf] a large positive integer is returned
    *!   instead).
    *!
-   *! @item accept_lifetime (string mech)
+   *! @item
+   *!   @{accept_lifetime (string mech)@}
    *!   Returns the validity lifetime left for acceptor use.
    *!
    *!   Returns zero if the credential has expired for this use or if
