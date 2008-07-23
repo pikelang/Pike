@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gssapi.cmod,v 1.7 2008/07/23 18:50:17 grubba Exp $
+|| $Id: gssapi.cmod,v 1.8 2008/07/23 21:46:48 grubba Exp $
 */
 
 /*
@@ -61,6 +61,8 @@ DECLARATIONS
 #include <gssapi.h>
 #elif defined (HAVE_GSSAPI_GSSAPI_H)
 #include <gssapi/gssapi.h>
+#elif defined (HAVE_GSSGLUE_GSSAPI_GSSAPI_H)
+#include <gssglue/gssapi/gssapi.h>
 #endif
 
 #define DEFINE_STATIC_OID(NAME, VALUE)					\
@@ -74,29 +76,46 @@ DECLARATIONS
 #include <gssapi_krb5.h>
 #elif defined (HAVE_GSSAPI_GSSAPI_KRB5_H)
 #include <gssapi/gssapi_krb5.h>
-#else
+#elif defined (HAVE_GSSGLUE_GSSAPI_GSSAPI_KRB5_H)
+#include <gssglue/gssapi/gssapi_krb5.h>
+#elif !defined(HAVE_GSS_KRB5_NT_PRINCIPAL_NAME)
 /* Can't use #ifdef GSS_KRB5_NT_PRINCIPAL_NAME since it might not be a
- * macro in gssapi_krb5.h. */
+ * macro in gssapi_krb5.h or gssapi.h. */
 DEFINE_STATIC_OID (GSS_KRB5_NT_PRINCIPAL_NAME,
 		   "\x2a\x86\x48\x86\xf7\x12\x01\x02\x02\x01");
+#define HAVE_GSS_KRB5_NT_PRINCIPAL_NAME
 #endif
 
 #if defined (GSS_RFC_COMPLIANT_OIDS) && !GSS_RFC_COMPLIANT_OIDS
 /* Kerberos 1.2 compat - it doesn't define these on all platforms. */
+#ifndef HAVE_GSS_C_NT_USER_NAME
 DEFINE_STATIC_OID (GSS_C_NT_USER_NAME,
 		   "\x2a\x86\x48\x86\xf7\x12\x01\x02\x01\x01");
+#endif
+#ifndef HAVE_GSS_C_NT_MACHINE_UID_NAME
 DEFINE_STATIC_OID (GSS_C_NT_MACHINE_UID_NAME,
 		   "\x2a\x86\x48\x86\xf7\x12\x01\x02\x01\x02");
+#endif
+#ifndef HAVE_GSS_C_NT_STRING_UID_NAME
 DEFINE_STATIC_OID (GSS_C_NT_STRING_UID_NAME,
 		   "\x2a\x86\x48\x86\xf7\x12\x01\x02\x01\x03");
+#endif
+#ifndef HAVE_GSS_C_NT_HOSTBASED_SERVICE
 DEFINE_STATIC_OID (GSS_C_NT_HOSTBASED_SERVICE,
 		   "\x2a\x86\x48\x86\xf7\x12\x01\x02\x01\x04");
+#endif
+#ifndef HAVE_GSS_C_NT_ANONYMOUS
 DEFINE_STATIC_OID (GSS_C_NT_ANONYMOUS,
 		   "\x2b\x06\01\x05\x06\x03");
+#endif
+#ifndef HAVE_GSS_C_NT_EXPORT_NAME
 DEFINE_STATIC_OID (GSS_C_NT_EXPORT_NAME,
 		   "\x2b\x06\x01\x05\x06\x04");
+#endif
+#ifndef HAVE_GSS_KRB5_NT_PRINCIPAL_NAME
 DEFINE_STATIC_OID (GSS_KRB5_NT_PRINCIPAL_NAME,
 		   "\x2a\x86\x48\x86\xf7\x12\x01\x02\x02\x01");
+#endif
 #endif
 
 
