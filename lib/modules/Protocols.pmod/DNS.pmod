@@ -1,8 +1,9 @@
-// $Id: DNS.pmod,v 1.98 2008/07/22 15:34:15 grubba Exp $
+// $Id: DNS.pmod,v 1.99 2008/07/23 15:11:21 grubba Exp $
 // Not yet finished -- Fredrik Hubinette
 
 //! Domain Name System
-//! RFC 1035
+//! RFC 1034, RFC 1035 and RFC 2308
+//!
 
 #pike __REAL_VERSION__
 
@@ -11,6 +12,7 @@ final constant FORMERR=1;
 final constant SERVFAIL=2;
 final constant NXDOMAIN=3;
 final constant NOTIMPL=4;
+final constant REFUSED=5;
 final constant NXRRSET=8;
 
 final constant QUERY=0;
@@ -337,7 +339,123 @@ class protocol
     next[0]+=4;
     return ret;
   }
-  
+
+  //! Decode a set of entries from an answer.
+  //!
+  //! @param s
+  //!   Encoded entries.
+  //!
+  //! @param num
+  //!   Number of entires in @[s].
+  //!
+  //! @param next
+  //!   Array with a single element containing the start position in @[s]
+  //!   on entry and the continuation position on return.
+  //!
+  //! @returns
+  //!   Returns an array of mappings describing the decoded entires:
+  //!   @array
+  //!     @elem mapping 0..
+  //!       Mapping describing a single entry:
+  //!       @mapping
+  //!         @member string "name"
+  //!           Name the entry concerns.
+  //!         @member EntryType "type"
+  //!           Type of entry.
+  //!         @member ResourceClass "cl"
+  //!           Resource class. Typically @[C_IN].
+  //!         @member int "ttl"
+  //!           Time to live for the entry in seconds.
+  //!         @member int "len"
+  //!           Length in bytes of the encoded data section.
+  //!       @endmapping
+  //!       Depending on the type of entry the mapping may contain
+  //!       different additional fields:
+  //!       @int
+  //!         @value T_CNAME
+  //!           @mapping
+  //!             @member string "cname"
+  //!           @endmapping
+  //!         @value T_PTR
+  //!           @mapping
+  //!             @member string "ptr"
+  //!           @endmapping
+  //!         @value T_NS
+  //!           @mapping
+  //!             @member string "ns"
+  //!           @endmapping
+  //!         @value T_MX
+  //!           @mapping
+  //!             @member int "preference"
+  //!             @member string "mx"
+  //!           @endmapping
+  //!         @value T_HINFO
+  //!           @mapping
+  //!             @member string "cpu"
+  //!             @member string "os"
+  //!           @endmapping
+  //!         @value T_SRV
+  //!           RFC 2052 and RFC 2782.
+  //!           @mapping
+  //!             @member int "priority"
+  //!             @member int "weight"
+  //!             @member int "port"
+  //!             @member string "target"
+  //!             @member string "service"
+  //!             @member string "proto"
+  //!             @member string "name"
+  //!           @endmapping
+  //!         @value T_A
+  //!           @mapping
+  //!             @member string "a"
+  //!               IPv4-address in dotted-decimal format.
+  //!           @endmapping
+  //!         @value T_AAAA
+  //!           @mapping
+  //!             @member string "aaaa"
+  //!               IPv6-address in colon-separated hexadecimal format.
+  //!           @endmapping
+  //!         @value T_LOC
+  //!           @mapping
+  //!             @member int "version"
+  //!               Version, currently only version @expr{0@} (zero) is
+  //!               supported.
+  //!             @member int "size"
+  //!             @member int "h_perc"
+  //!             @member int "v_perc"
+  //!             @member int "lat"
+  //!             @member int "long"
+  //!             @member int "alt"
+  //!           @endmapping
+  //!         @value T_SOA
+  //!           @mapping
+  //!             @member string "mname"
+  //!             @member string "rname"
+  //!             @member int "serial"
+  //!             @member int "refresh"
+  //!             @member int "retry"
+  //!             @member int "expire"
+  //!
+  //!             @member int "minimum"
+  //!               Note: For historical reasons this entry is named
+  //!               @expr{"minimum"@}, but it contains the TTL for
+  //!               negative answers (RFC 2308).
+  //!           @endmapping
+  //!         @value T_NAPTR
+  //!           @mapping
+  //!             @member int "order"
+  //!             @member int "preference"
+  //!             @member string "flags"
+  //!             @member string "service"
+  //!             @member string "regexp"
+  //!             @member string "replacement"
+  //!           @endmapping
+  //!         @value T_TXT
+  //!           @mapping
+  //!             @member string "txt"
+  //!           @endmapping
+  //!       @endint
+  //!   @endarray
   array decode_entries(string s,int num, array(int) next)
   {
     array(string) ret=({});
@@ -371,32 +489,27 @@ class protocol
 	m->os=decode_string(s,next);
 	break;
       case T_SRV:
+	// RFC 2052 and RFC 2782.
         m->priority=decode_short(s,next);
         m->weight=decode_short(s,next);
         m->port=decode_short(s,next);
         m->target=decode_domain(s,next);
         array x=m->name/".";
-        if(x[0]) 
-        {
-          if(x[0][0..0]=="_")
-            m->service=x[0][1..];
-          else
-            m->service=x[0];
-        }        
-        if(x[1])
+
+	if(x[0][0..0]=="_")
+	  m->service=x[0][1..];
+	else
+	  m->service=x[0];
+
+        if(sizeof(x) > 1)
         {
           if(x[1][0..0]=="_")
             m->proto=x[1][1..];
           else
             m->proto=x[1];
         }
-        if(x[2])
-        {
-          if(x[2][0..0]=="_")
-            x[2]=x[2][1..];
-          m->name=x[2..]*".";
-        }
 
+	m->name=x[2..]*".";
         break;
       case T_A:
 	m->a=sprintf("%{.%d%}",values(s[next[0]..next[0]+m->len-1]))[1..];
@@ -492,7 +605,9 @@ class protocol
 //! Implements a Domain Name Service (DNS) server.
 class server
 {
+  //!
   inherit protocol;
+
   inherit Stdio.UDP : udp;
 
   protected void send_reply(mapping r, mapping q, mapping m)
@@ -523,7 +638,7 @@ class server
   //!   Returns @expr{0@} (zero) on failure, or a result mapping on success:
   //!   @mapping
   //!     @member int "rcode"
-  //!     @member array(mapping(string:string|int))|void "qd"
+  //!     @member array(mapping(string:string|int))|void "an"
   //!       @array
   //!         @elem mapping(string:string|int) entry
   //!           @mapping
@@ -532,7 +647,7 @@ class server
   //!             @member int "cl"
   //!           @endmapping
   //!       @endarray
-  //!     @member array|void "an"
+  //!     @member array|void "qd"
   //!     @member array|void "ns"
   //!     @member array|void "ar"
   //!   @endmapping
