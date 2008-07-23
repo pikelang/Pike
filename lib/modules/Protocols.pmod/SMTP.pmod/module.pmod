@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod,v 1.47 2008/07/22 14:19:38 bill Exp $
+// $Id: module.pmod,v 1.48 2008/07/23 11:23:52 grubba Exp $
 //
 
 #pike __REAL_VERSION__
@@ -496,8 +496,8 @@ class Connection {
         }
         if(!relayok && !has_value(cfg->domains, "*"))
         {
-          log("relaying denied, command=%O, cfg->domains=%O, domain=%O\n",
-	      what, cfg->domains, domain);
+          log("relaying denied, command=%O, cfg->domains=%O, domains=%O\n",
+	      what, cfg->domains, domains);
           return 553;
         }
       }
