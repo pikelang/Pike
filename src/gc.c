@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.320 2008/06/30 07:42:32 grubba Exp $
+|| $Id: gc.c,v 1.321 2008/07/24 17:51:23 mast Exp $
 */
 
 #include "global.h"
@@ -3421,7 +3421,7 @@ size_t do_gc(void *ignored, int explicit_call)
 #ifdef PIKE_DEBUG
     gc_touch_all_strings();
 #endif
-    if (n != (unsigned) num_objects)
+    if (n != (unsigned) num_objects && !got_unlinked_things)
       Pike_fatal("Object count wrong before gc; expected %d, got %d.\n", num_objects, n);
     GC_VERBOSE_DO(fprintf(stderr, "| pretouch: %u things\n", n));
   }
@@ -3576,7 +3576,7 @@ size_t do_gc(void *ignored, int explicit_call)
 #ifdef PIKE_DEBUG
     gc_touch_all_strings();
 #endif
-    if (n != (unsigned) num_objects)
+    if (n != (unsigned) num_objects && !got_unlinked_things)
       Pike_fatal("Object count wrong in gc; expected %d, got %d.\n", num_objects, n);
 #if 0 /* Temporarily disabled - Hubbe */
 #ifdef PIKE_DEBUG

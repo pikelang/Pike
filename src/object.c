@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.300 2008/06/29 12:50:04 nilsson Exp $
+|| $Id: object.c,v 1.301 2008/07/24 17:51:23 mast Exp $
 */
 
 #include "global.h"
@@ -930,8 +930,8 @@ PMOD_EXPORT void destruct_object (struct object *o, enum object_destruct_reason 
 }
 
 
-struct object *objects_to_destruct = 0;
-static struct callback *destruct_object_evaluator_callback =0;
+struct object *objects_to_destruct = NULL;
+static struct callback *destruct_object_evaluator_callback = NULL;
 
 /* This function destructs the objects that are scheduled to be
  * destructed by schedule_really_free_object. It links the object back into the
@@ -953,6 +953,14 @@ void low_destruct_objects_to_destruct(void)
    * the objects arbitrarily late. */
   while (objects_to_destruct) {
     o = objects_to_destruct, objects_to_destruct = 0;
+
+    /* When we remove the object list from objects_to_destruct, it
+     * becomes invisible to gc_touch_all_objects (and other list walk
+     * functions), so the object count it returns would be wrong. We
+     * therefore use this hack to avoid complaining about it in the
+     * gc. */
+    got_unlinked_things++;
+
     do {
 #ifdef GC_VERBOSE
       if (Pike_in_gc > GC_PASS_PREPARE)
@@ -971,6 +979,8 @@ void low_destruct_objects_to_destruct(void)
       destruct_object (o, DESTRUCT_NO_REFS);
       free_object(o);
     } while ((o = next));
+
+    got_unlinked_things--;
   }
 }
 
