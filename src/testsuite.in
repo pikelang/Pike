@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.843 2008/07/18 11:29:21 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.844 2008/07/24 09:54:00 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -4574,6 +4574,25 @@ cond([[all_constants()->thread_create]],
 
   test_true(objectp(Thread.Fifo()))
   test_true(objectp(Thread.Queue()))
+
+  // Check that Thread.Queue works on the basic level.
+  test_any([[
+    Thread.Queue q = Thread.Queue();
+    int to_write = 100000;
+    int to_read = 0;
+    int expect = to_write;
+    while (to_write + to_read) {
+      if (random(to_write + to_read) < to_read) {
+        int val = q->read();
+        if (val != expect) return val + " != " + expect;
+        to_read--;
+        expect--;
+      } else {
+        q->write(to_write--);
+      }
+    }
+    return 0;
+  ]], 0)
 
   test_any([[object o=Thread.Queue(); thread_create(lambda(object f) { for(int e=0;e<10000;e++) f->write(random(4711)); f->write(-1); },o); int tmp=0; while(o->read() != -1) tmp++; return tmp;]],10000)
   test_any([[object o=Thread.Fifo(); thread_create(lambda(object f) { for(int e=0;e<10000;e++) f->write(random(4711)); f->write(-1); },o); int tmp=0; while(o->read() != -1) tmp++; return tmp;]],10000)
@@ -11427,6 +11446,7 @@ array a()
 // enum and typedef
 
 test_compile_error_any([[enum X {A, B}; enum(X) x;]])
+test_compile_error_any([[enum {intern : extern};]])
 
 // - modifiers, compile time type checks
 
