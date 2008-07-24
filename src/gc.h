@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.h,v 1.135 2008/07/24 17:51:23 mast Exp $
+|| $Id: gc.h,v 1.136 2008/07/24 20:02:53 mast Exp $
 */
 
 #ifndef GC_H
@@ -67,8 +67,7 @@ extern double gc_average_slowness;
 #define PRINT_ALLOC_COUNT_TYPE "%lu"
 #endif
 
-extern INT32 num_objects;
-extern int got_unlinked_things;
+extern int num_objects, got_unlinked_things;
 extern ALLOC_COUNT_TYPE num_allocs, alloc_threshold;
 PMOD_EXPORT extern int Pike_in_gc;
 extern int gc_generation;
