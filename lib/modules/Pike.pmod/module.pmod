@@ -3,7 +3,7 @@
 
 // Pike core things that don't belong anywhere else.
 //
-// $Id: module.pmod,v 1.20 2008/06/28 16:49:54 nilsson Exp $
+// $Id: module.pmod,v 1.21 2008/07/24 16:07:05 grubba Exp $
 
 constant WEAK_INDICES = __builtin.PIKE_WEAK_INDICES;
 constant WEAK_VALUES = __builtin.PIKE_WEAK_VALUES;
@@ -35,6 +35,14 @@ constant OPEN_BOUND = __builtin.OPEN_BOUND;
 
 constant BacktraceFrame = __builtin.backtrace_frame;
 
+constant __Backend = __builtin.Backend;
+
+//! The class of the @[DefaultBackend].
+//!
+//! Typically something that has inherited @[__Backend].
+//!
+//! @seealso
+//!   @[__Backend], @[DefaultBackend]
 constant Backend = __builtin.DefaultBackendClass;
 
 #if constant(__builtin.PollDeviceBackend)
