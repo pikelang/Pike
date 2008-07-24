@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.220 2008/07/24 14:47:47 grubba Exp $
+|| $Id: array.c,v 1.221 2008/07/24 15:30:56 grubba Exp $
 */
 
 #include "global.h"
@@ -1606,7 +1606,7 @@ PMOD_EXPORT struct array *add_arrays(struct svalue *argp, INT32 args)
       if(v->refs == 1 && v->malloced_size >= size)
       {
 	if (((v->item - v->real_item) >= tmp) &&
-	    ((v->item + size) <= (v->real_item + v->malloced_size))) {
+	    ((v->item + size - tmp) <= (v->real_item + v->malloced_size))) {
 	  /* There's enough space before and after. */
 	  debug_malloc_touch(v);
 	  mark_free_svalue(argp + e);
