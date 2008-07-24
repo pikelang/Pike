@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.230 2008/07/16 00:35:44 mast Exp $
+ * $Id: backend.cmod,v 1.231 2008/07/24 16:08:49 grubba Exp $
  *
  * Backend object.
  */
@@ -261,7 +261,7 @@ struct Backend_struct *really_get_backend_for_fd(int fd)
 /*! @module Pike
  */
 
-/*! @class Backend
+/*! @class __Backend
  *!   Base class for the various backend implementations.
  *!
  *!   Implements callback registration functions and defines the
@@ -1464,7 +1464,8 @@ PIKECLASS Backend
 #endif
 
     IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: change_backend_for_box: "
-		  "fd %d, new backend %d\n", THR_NO, old->id, box->fd, new->id));
+		  "fd %d, new backend %d\n",
+		  THR_NO, old?old->id:-1, box->fd, new->id));
 
     if (old != new) {
       if (old) {
@@ -2740,7 +2741,7 @@ static void sb_copy_selectors(struct sb_active_selectors *to,
 #if defined(BACKEND_USES_POLL_DEVICE) || defined(BACKEND_USES_KQUEUE)
 
 /*! @class PollDeviceBackend
- *! @inherit Backend
+ *! @inherit __Backend
  *!
  *! @[Backend] implemented with @tt{/dev/poll@} (Solaris, OSF/1 and IRIX),
  *! @tt{epoll(2)@} (Linux) or @tt{kqueue(2)@} (MacOS X, FreeBSD, OpenBSD, etc).
@@ -3123,7 +3124,7 @@ PIKECLASS PollDeviceBackend
       /* Note: The arguments to MY_POLL may be evaluated multiple times. */
       i = PDB_POLL(pdb->set, poll_timeout);
 
-      IF_PD(fprintf(stderr, " => %d\n", i));
+      IF_PD(fprintf(stderr, " => %d (timeout was: %d)\n", i, poll_timeout));
 
       THREADS_DISALLOW();
       me->may_need_wakeup = 0;
@@ -3447,7 +3448,7 @@ PIKECLASS PollDeviceBackend
 #ifdef HAVE_POLL
 
 /*! @class PollBackend
- *! @inherit Backend
+ *! @inherit __Backend
  *!
  *! @[Backend] implemented with @tt{poll(2)@} (SVr4, POSIX).
  *!
@@ -4011,7 +4012,7 @@ PIKECLASS PollBackend
 #endif /* HAVE_POLL */
 
 /*! @class SelectBackend
- *! @inherit Backend
+ *! @inherit __Backend
  *!
  *! Backend based on the classic @tt{select(2)@} system call from BSD.
  */
@@ -4767,10 +4768,10 @@ static int compat_box_dispatcher (struct fd_callback_box *box, int event)
     return cbox->PIKE_CONCAT (CB, _data);				\
   }
 
-WRAP(read, PIKE_BIT_FD_READ);
-WRAP(write, PIKE_BIT_FD_WRITE);
-WRAP(read_oob, PIKE_BIT_FD_READ_OOB);
-WRAP(write_oob, PIKE_BIT_FD_WRITE_OOB);
+WRAP(read, PIKE_BIT_FD_READ)
+WRAP(write, PIKE_BIT_FD_WRITE)
+WRAP(read_oob, PIKE_BIT_FD_READ_OOB)
+WRAP(write_oob, PIKE_BIT_FD_WRITE_OOB)
 
 PMOD_EXPORT struct callback *debug_add_backend_callback(callback_func call,
 							void *arg,
