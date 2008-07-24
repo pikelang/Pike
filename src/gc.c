@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.321 2008/07/24 17:51:23 mast Exp $
+|| $Id: gc.c,v 1.322 2008/07/24 20:02:43 mast Exp $
 */
 
 #include "global.h"
@@ -105,6 +105,7 @@ double gc_average_slowness = 0.9;
 #endif
 
 int num_objects = 2;		/* Account for *_empty_array. */
+int got_unlinked_things;
 ALLOC_COUNT_TYPE num_allocs =0;
 ALLOC_COUNT_TYPE alloc_threshold = GC_MIN_ALLOC_THRESHOLD;
 PMOD_EXPORT int Pike_in_gc = 0;
