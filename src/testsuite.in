@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.844 2008/07/24 09:54:00 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.845 2008/07/24 11:56:20 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -4580,15 +4580,15 @@ cond([[all_constants()->thread_create]],
     Thread.Queue q = Thread.Queue();
     int to_write = 100000;
     int to_read = 0;
-    int expect = to_write;
     while (to_write + to_read) {
-      if (random(to_write + to_read) < to_read) {
+      if (!to_write || random(4 * to_read)) {
         int val = q->read();
-        if (val != expect) return val + " != " + expect;
+        if (val != (to_write + to_read))
+	  return val + " != " + (to_write + to_read);
         to_read--;
-        expect--;
       } else {
         q->write(to_write--);
+	to_read++;
       }
     }
     return 0;
