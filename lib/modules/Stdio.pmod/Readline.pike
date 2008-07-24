@@ -1,4 +1,4 @@
-// $Id: Readline.pike,v 1.60 2008/06/28 16:37:00 nilsson Exp $
+// $Id: Readline.pike,v 1.61 2008/07/24 03:16:45 mbaehr Exp $
 #pike __REAL_VERSION__
 
 //!
@@ -1544,11 +1544,6 @@ void message(string msg)
 void write(string msg,void|int word_wrap)
 {
   int p = cursorpos;
-  setcursorpos(0);
-  if(!input_controller->dumb) {
-    output_controller->bol();
-    output_controller->clear(1);
-  }
   array(string) tmp=msg/"\n";
   foreach(tmp[..<1],string l)
   {
