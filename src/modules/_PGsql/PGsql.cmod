@@ -1,0 +1,344 @@
+/* -*- c -*-
+ * $Id: PGsql.cmod,v 1.1 2008/07/24 20:26:52 srb Exp $
+ *
+ * PGsql, accelerator functions for Sql.pgsql for Pike.
+ *
+ */
+
+#include "global.h"
+#include "config.h"
+
+#include "svalue.h"
+#include "mapping.h"
+#include "module.h"
+#include "interpret.h"
+#include "threads.h"
+#include "builtin_functions.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <errno.h>
+#include <poll.h>
+
+DECLARATIONS
+
+/*#define PGSQL_DEBUG /**/
+
+#ifdef PGSQL_DEBUG
+#define PD(X)	fprintf X
+#else /* !PGSQL_DEBUG */
+#define PD(X)
+#endif /* PGSQL_DEBUG */
+
+#if 1
+
+#define BUFSIZE	     4096
+
+typedef unsigned char uchar;
+#define RETURN_VOID  {if(args) pop_n_elems(args);}
+#define STRLEN(x)    (sizeof(x)-1)
+
+#define BOOLOID         16
+#define BYTEAOID        17
+#define CHAROID         18
+#define INT8OID         20
+#define INT2OID         21
+#define INT4OID         23
+#define TEXTOID         25
+#define OIDOID          26
+#define XMLOID          142
+#define FLOAT4OID       700
+#define MACADDROID      829
+#define INETOID         869	    /* TODO: binary support */
+#define BPCHAROID       1042
+#define VARCHAROID      1043
+#define CTIDOID         1247
+#define UUIDOID         2950
+
+static uchar flush[]="H\0\0\0\4";
+						      /* a SysV secure read */
+PIKECLASS PGsql
+{
+  CVAR int fd;
+  CVAR uchar buf[BUFSIZE];
+  CVAR uchar*plow,*phigh;
+  CVAR uchar*extrabuf;
+  CVAR unsigned extrafilled;
+  CVAR struct pike_string*flush,*_type;
+  PIKEVAR int flushed;
+
+  INIT {
+    THIS->phigh=THIS->plow=THIS->buf;
+    THIS->extrabuf=xalloc(1);
+    THIS->extrafilled=0;
+    THIS->flushed=-1;
+    MAKE_CONST_STRING(THIS->flush,flush);
+    MAKE_CONST_STRING(THIS->_type,"type");
+  }
+
+  EXIT {
+    xfree(THIS->extrabuf);
+  }
+
+  static int rread(void*const a,const int len) {
+    int i;
+    int fd=THIS->fd;
+    THREADS_ALLOW();
+    while(0>(i=read(fd,a,(size_t)len))&&errno==EINTR);
+    THREADS_DISALLOW();
+    return i;
+  }
+  
+  static int low_peek(const int timeout) {
+    struct pollfd fds;
+    int fd=THIS->fd;
+    if(timeout)
+      THREADS_ALLOW();
+    fds.fd=fd;
+    fds.events=POLLIN;
+    poll(&fds,1,timeout*1000);
+    if(timeout)
+      THREADS_DISALLOW();
+    return fds.revents&POLLIN?1:-!!fds.revents;
+  }
+
+  static void sendflush(void) {
+    int fd=THIS->fd;
+    THREADS_ALLOW();
+    write(fd, flush, STRLEN(flush));
+    THREADS_DISALLOW();
+    THIS->flushed=1;
+  }
+
+  static void flushifneeded(void) {
+    if(!THIS->flushed && low_peek(0))
+      sendflush();
+    if(THIS->extrafilled) {
+      if(THIS->extrafilled>BUFSIZE)
+        THIS->extrabuf=xrealloc(THIS->extrabuf,1);
+      THIS->extrafilled=0;
+    }
+  }
+
+  static int low_getbyte(void) {
+    int retval;
+    if(THIS->phigh!=THIS->plow) {
+ret:  retval=*THIS->plow++;
+ret2: PD((stderr,"PGsql getbyte 0x%02x=%c\n",retval,retval));
+      return retval;
+    }
+    flushifneeded();
+    retval = rread(THIS->buf, BUFSIZE);
+    if(retval>0) {
+      THIS->phigh=(THIS->plow=THIS->buf)+retval;
+      goto ret;
+    }
+    retval=-1;
+    goto ret2;
+  }
+
+  static int low_getint16(void) {
+    int s0=low_getbyte();
+    int r=(s0&0x7f)<<8|low_getbyte();
+    return s0&0x80 ? r-(1<<15) : r ;
+  }
+
+  static int low_getint32(void) {
+    int r=low_getint16();
+    r=r<<8|low_getbyte();
+    return r<<8|low_getbyte();
+  }
+  
+  static struct pike_string*low_getstring(int length) {
+    struct pike_string*retval;
+    struct string_builder sb,*psb=0;
+    int len,left;
+    uchar*p;
+    if(length) {
+      len=length;
+      retval=begin_shared_string(len);
+      p=retval->str;
+    }
+    do {
+      left=THIS->phigh-THIS->plow;
+      if(length) {
+        if(left>=len) {
+ret:      memcpy(p,THIS->plow,len);
+          THIS->plow+=len;
+ret2:     PD((stderr,"PGsql getstring %d\n",length));
+          return low_end_shared_string(retval);
+        }
+        memcpy(p,THIS->plow,left);
+        len-=left;p+=left;
+      }
+      else {
+        p=memchr(THIS->plow,0,left);
+        if(p) {
+          len=p-THIS->plow;
+	  if(!psb) {
+            retval=begin_shared_string(len++);      /* nul terminated anyway */
+	    p=retval->str;
+            goto ret;
+	  }
+          PD((stderr,"PGsql getstring %s\n",psb->s->str));
+          return finish_string_builder(&sb);
+        }
+        else if(!psb)
+          init_string_builder(psb=&sb,0);
+        string_builder_binary_strcat0(psb,THIS->plow,left);
+      }
+      flushifneeded();
+      for(;len>BUFSIZE;len-=left,p+=left)
+        if((left=rread(p,len))<=0)
+          goto bad;
+      if(!len)
+        goto ret2;
+      left=rread(THIS->buf,BUFSIZE);
+      THIS->phigh=(THIS->plow=THIS->buf)+left;
+    } while(left>0);
+bad:
+    Pike_error("Missing %d bytes from network\n",len);
+  }
+
+  PIKEFUN void create(int _fd) {
+    THIS->fd = _fd;
+    RETURN_VOID;
+  }
+
+  PIKEFUN int peek(void|int timeoutp) {
+    int retval=1;
+    if(THIS->phigh==THIS->plow && !THIS->extrafilled) {
+      int timeout=0;
+      if(timeoutp)
+         timeout=timeoutp->u.integer;
+      PD((stderr,"PGsql peek %d\n",timeout));
+      retval=low_peek(timeout);
+    }
+    RETURN retval;
+  }
+
+  PIKEFUN int getbyte() {
+    RETURN low_getbyte();
+  }
+
+  PIKEFUN int getint16() {
+    RETURN low_getint16();
+  }
+
+  PIKEFUN int getint32() {
+    RETURN low_getint32();
+  }
+
+  PIKEFUN string getstring(void|int length) {
+    RETURN low_getstring(length ? length->u.integer : 0);
+  }
+
+  PIKEFUN void unread(string oldbuf) {
+    int len;
+    if(len=oldbuf->len) {
+      uchar*q;
+      int left=THIS->phigh-THIS->plow;
+      PD((stderr,"PGsql unread %d\n",len));
+      if(THIS->extrafilled) {
+        memmove(THIS->extrabuf,THIS->plow,left);
+        q=xrealloc(THIS->extrabuf,left+len);
+      }
+      else {
+        q=xrealloc(THIS->extrabuf,left+len);
+        memcpy(q,THIS->plow,left);
+      }
+      THIS->phigh=(THIS->plow=THIS->extrabuf=q)+left+len;
+      memcpy(q+left,oldbuf->str,len);
+      THIS->extrafilled=left+len;
+    }
+    RETURN_VOID;
+  }
+
+  PIKEFUN array decodedatarow(int msglen,
+   array(mapping(string:mixed)) datarowdesc) {
+    int cols;
+    int i;
+    pop_n_elems(2);
+    cols=low_getint16();
+    if(cols != datarowdesc->size)
+      Pike_error("Mismatching dataset and description sizes\n");
+    msglen-=2+4*cols;
+    for(i=0; i<cols; i++) {
+      int collen=low_getint32();
+      if(collen>0) {
+        struct svalue drd,*svp;
+	msglen-=collen;
+        array_index_no_free(&drd,datarowdesc,i);
+        svp = low_mapping_string_lookup(drd.u.mapping, THIS->_type);
+        switch(svp->u.integer) {
+          default:push_string(low_getstring(collen));
+            break;
+          case CHAROID:
+          case BOOLOID:push_int(low_getbyte());
+            break;
+          case FLOAT4OID: {
+	    char*tb=xalloc(collen+1);
+	    char*p=tb;
+	    do
+	      *p++=low_getbyte();
+	    while(--collen);
+	    *p=0; push_float(atof(tb)); xfree(tb);
+            break;
+	  }
+          case INT2OID:push_int(low_getint16());
+            break;
+          case INT8OID: {
+	    int firstword = low_getint32();
+	    int nextword = low_getint32();
+	    switch(firstword) {
+	      default:
+	        push_int(firstword);push_int(32);f_lsh();
+	        if(nextword>=0)
+		  goto nextor;
+                push_int((nextword>>1)&0x7fffffff); push_int(1); f_lsh();
+                f_or();
+	        goto tor;
+	      case -1:
+		if(nextword<0)
+		  goto simple;
+	        push_int(firstword);push_int(32);f_lsh();
+	        goto nextor;
+	      case 0:
+	        if(nextword<0) {
+                  push_int((nextword>>1)&0x7fffffff); push_int(1); f_lsh();
+tor:		  if(nextword&1) {
+		    nextword=1;
+nextor:             push_int(nextword);
+	            f_or();
+		  }
+	        }
+	        else
+simple:           push_int(nextword);
+	    }
+	    break;
+	  }
+          case OIDOID:
+          case INT4OID:push_int(low_getint32());
+        }
+      }
+      else if(!collen)
+        ref_push_string(empty_pike_string);
+      else
+        push_undefined();
+    }
+    if(msglen)
+      Pike_error("Protocol error\n");
+    f_aggregate(cols);
+  }
+}
+
+#endif /* 1 */
+
+PIKE_MODULE_INIT {
+  INIT;
+}
+
+PIKE_MODULE_EXIT {
+  EXIT;
+}

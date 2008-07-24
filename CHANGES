@@ -726,6 +726,11 @@ o Sql
     automatic precompilation and caching of often-used
     long-compile-time-needing queries, extended columndescriptions.
 
+    Performance tuned, with the helperclass _PGsql.PGsql it currently
+    reaches around 66% of the performance of the libpq based driver
+    for smaller queries; for large bytea blobs and large texts, it
+    surpasses the libpq based driver.
+
   FIXME: mysql
 
 o SSL

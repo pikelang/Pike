@@ -1,0 +1,11 @@
+# $Id: configure.in,v 1.1 2008/07/24 20:26:52 srb Exp $
+#
+
+AC_INIT(PGsql.cmod)
+AC_CONFIG_HEADER(config.h)
+
+AC_MODULE_INIT()
+
+PIKE_FEATURE(PGsql,[yes])
+
+AC_OUTPUT(Makefile,echo FOO >stamp-h )

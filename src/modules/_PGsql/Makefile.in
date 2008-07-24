@@ -1,0 +1,12 @@
+# $Id: Makefile.in,v 1.1 2008/07/24 20:26:52 srb Exp $
+@make_variables@
+VPATH=@srcdir@
+OBJS=PGsql.o
+MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
+
+CONFIG_HEADERS=@CONFIG_HEADERS@
+
+@dynamic_module_makefile@
+PGsql.o: $(SRCDIR)/PGsql.c
+
+@dependencies@
