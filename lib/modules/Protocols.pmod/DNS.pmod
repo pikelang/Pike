@@ -1,4 +1,4 @@
-// $Id: DNS.pmod,v 1.99 2008/07/23 15:11:21 grubba Exp $
+// $Id: DNS.pmod,v 1.100 2008/07/24 16:04:20 grubba Exp $
 // Not yet finished -- Fredrik Hubinette
 
 //! Domain Name System
@@ -101,6 +101,9 @@ enum EntryType
 
   //! Type - IPv6 address record (RFC 2874, incomplete support)
   T_A6=38,
+
+  //! Type - SPF - Sender Policy Framework (RFC 4408)
+  T_SPF=99,
 };
 
 //! Low level DNS protocol
@@ -198,6 +201,11 @@ class protocol
 
      case T_TXT:
        return Array.map(stringp(entry->txt)? ({entry->txt}):(entry->txt||({})),
+			lambda(string t) {
+			  return sprintf("%1c%s", sizeof(t), t);
+			})*"";
+     case T_SPF:
+       return Array.map(stringp(entry->spf)? ({entry->spf}):(entry->spf||({})),
 			lambda(string t) {
 			  return sprintf("%1c%s", sizeof(t), t);
 			})*"";
@@ -454,6 +462,10 @@ class protocol
   //!           @mapping
   //!             @member string "txt"
   //!           @endmapping
+  //!         @value T_SPF
+  //!           @mapping
+  //!             @member string "spf"
+  //!           @endmapping
   //!       @endint
   //!   @endarray
   array decode_entries(string s,int num, array(int) next)
@@ -553,6 +565,9 @@ class protocol
         break;
       case T_TXT:
 	m->txt = decode_string(s, next);
+	break;
+      case T_SPF:
+	m->spf = decode_string(s, next);
 	break;
     }
     
