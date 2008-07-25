@@ -801,12 +801,14 @@ final private int decodemsg(void|state waitforstate) {
   return mstate;
 }
 
+#ifndef UNBUFFEREDIO
 private int read_cb(mixed foo, string d) {
   conn.unread(d);
   do decodemsg();
   while(conn.peek(0)==1);
   return 0;
 }
+#endif
 
 final private void sendterminate() {
   PD("Terminate\n");
