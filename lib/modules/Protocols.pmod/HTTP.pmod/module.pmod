@@ -422,76 +422,275 @@ string post_url_data(string|Standards.URI url,
 //!     > Protocols.HTTP.http_encode_query( (["&amp;":"&","'=\"":"\0\0\0"]) );  
 //!     Result: "%26amp%3b=%26&%27%3d%22=%00%00%00"
 //!	@}
-string http_encode_query(mapping(string:int|string) variables)
+string http_encode_query(mapping(string:int|string|array(string)) variables)
 {
    return Array.map((array)variables,
 		    lambda(array(string|int|array(string)) v)
 		    {
 		       if (intp(v[1]))
-			  return http_encode_string(v[0]);
+			  return uri_encode(v[0]);
 		       if (arrayp(v[1]))
 			 return map(v[1], lambda (string val) {
 					    return 
-					      http_encode_string(v[0])+"="+
-					      http_encode_string(val);
+					      uri_encode(v[0])+"="+
+					      uri_encode(val);
 					  })*"&";
-		       return http_encode_string(v[0])+"="+
-			 http_encode_string(v[1]);
+		       return uri_encode(v[0])+"="+ uri_encode(v[1]);
 		    })*"&";
 }
 
-// RFC 1738, 2.2. URL Character Encoding Issues
-protected constant url_non_corresponding = enumerate(0x21) +
-  enumerate(0x81,1,0x7f);
-protected constant url_unsafe = ({ '<', '>', '"', '#', '%', '{', '}',
-				'|', '\\', '^', '~', '[', ']', '`' });
-protected constant url_reserved = ({ ';', '/', '?', ':', '@', '=', '&' });
+protected local constant gen_delims = ":/?#[]@" // RFC 3986, section 2.2
+  // % is not part of the gen-delims set, but it effectively must be
+  // treated as a reserved character wrt encoding and decoding.
+  "%";
 
-// Encode these chars
-protected constant url_chars = url_non_corresponding + url_unsafe +
-  url_reserved + ({ '+', '\'' });
-protected constant url_from = sprintf("%c", url_chars[*]);
-protected constant url_to   = sprintf("%%%02x", url_chars[*]);
+protected local constant sub_delims = "!$&'()*+,;="; // RFC 3986, section 2.2
 
+// US-ASCII chars that are neither reserved nor unreserved in RFC 3986.
+protected local constant other_chars =
+  (string) enumerate (0x20) + "\x7f" // Control chars
+  " \"<>\\^`{|}";
 
-//!	This protects all odd - see @[http_encode_query()] - 
-//!	characters for transfer in HTTP.
+protected local constant eight_bit_chars = (string) enumerate (0x80, 1, 0x80);
+
+string percent_encode (string s)
+//! Encodes the given string using @tt{%XX@} encoding, except that URI
+//! unreserved chars are not encoded. The unreserved chars are
+//! @tt{A-Z@}, @tt{a-z@}, @tt{0-9@}, @tt{-@}, @tt{.@}, @tt{_@}, and
+//! @tt{~@} (see RFC 2396 section 2.3).
 //!
-//!	Do not use this function to protect URLs, since
-//!	it will protect URL characters like @expr{'/'@} and @expr{'?'@}.
-//! @param in
-//!     The string to encode
-//! @returns
-//!     The HTTP encoded string
-string http_encode_string(string in)
+//! 8-bit chars are encoded straight, and wider chars are not allowed.
+//! That means this encoding is applicable if @[s] is a binary octet
+//! string. If it is a character string then @[uri_encode] should be
+//! used instead.
+//!
+//! It is also slightly faster than @[uri_encode] if @[s] is known to
+//! contain only US-ASCII.
 {
-  string res = replace(in, url_from, url_to);
-  if (String.width(res) == 8) return res;
-
-  // Wide string handling.
-  // FIXME: Could be more efficient...
-  mapping(string:string) wide = ([]);
-  foreach(res/"", string char) {
-    if (char[0] & ~255) {
-      // Wide character.
-      if (!wide[char] && !(char[0] & ~65535)) {
-	// UCS-2 character.
-	// This encoding is used by eg Safari.
-	wide[char] = sprintf("%%u%04x", char[0]);
-      } else {
-	// FIXME: UCS-4 character.
-      }
-    }
-  }
-  return replace(res, wide);
+  constant replace_chars = (gen_delims + sub_delims +
+			    other_chars + eight_bit_chars);
+  return replace (s,
+		  // The [*] syntax is hideous, but lambdas currently
+		  // don't work in constant expressions. :P
+		  sprintf ("%c", ((array(int)) replace_chars)[*]),
+		  // RFC 3986, 2.1: "For consistency, URI producers
+		  // and normalizers should use uppercase hexadecimal
+		  // digits for all percent- encodings."
+		  sprintf ("%%%02X", ((array(int)) replace_chars)[*]));
 }
 
-//!    Encode the specified string in as to the HTTP cookie standard.
-//! @param f
-//!    The string to encode.
-//! @returns
-//!    The HTTP cookie encoded string.
-string http_encode_cookie(string f)
+string percent_decode (string s)
+//! Decodes URI-style @tt{%XX@} encoded chars in the given string.
+//!
+//! @seealso
+//! @[percent_encode], @[uri_decode]
+//!
+//! @bugs
+//! This function currently does not accept wide string input, which
+//! is necessary to work as the reverse of @[iri_encode].
+{
+  return _Roxen.http_decode_string (s);
+}
+
+string uri_encode (string s)
+//! Encodes the given string using @tt{%XX@} encoding to be used as a
+//! component part in a URI. This means that all URI reserved and
+//! excluded characters are encoded, i.e. everything except @tt{A-Z@},
+//! @tt{a-z@}, @tt{0-9@}, @tt{-@}, @tt{.@}, @tt{_@}, and @tt{~@} (see
+//! RFC 2396 section 2.3).
+//!
+//! 8-bit chars and wider are encoded using UTF-8 followed by
+//! percent-encoding. This follows RFC 3986 section 2.5, the
+//! IRI-to-URI conversion method in the IRI standard (RFC 3987) and
+//! appendix B.2 in the HTML 4.01 standard. It should work regardless
+//! of the charset used in the XML document the URI might be inserted
+//! into.
+//!
+//! @seealso
+//! @[uri_decode], @[uri_encode_invalids], @[iri_encode]
+{
+  return percent_encode (string_to_utf8 (s));
+}
+
+string uri_encode_invalids (string s)
+//! Encodes all "dangerous" chars in the given string using @tt{%XX@}
+//! encoding, so that it can be included as a URI in an HTTP message
+//! or header field. This includes control chars, space and various
+//! delimiter chars except those in the URI @tt{reserved@} set (RFC
+//! 2396 section 2.2).
+//!
+//! Since this function doesn't touch the URI @tt{reserved@} chars nor
+//! the escape char @tt{%@}, it can be used on a complete formatted
+//! URI or IRI.
+//!
+//! 8-bit chars and wider are encoded using UTF-8 followed by
+//! percent-encoding. This follows RFC 3986 section 2.5, the IRI
+//! standard (RFC 3987) and appendix B.2 in the HTML 4.01 standard.
+//!
+//! @note
+//! The characters in the URI @tt{reserved@} set are: @tt{:@},
+//! @tt{/@}, @tt{?@}, @tt{#@}, @tt{[@}, @tt{]@}, @tt{@@@}, @tt{!@},
+//! @tt{$@}, @tt{&@}, @tt{'@}, @tt{(@}, @tt{)@}, @tt{*@}, @tt{+@},
+//! @tt{,@}, @tt{;@}, @tt{=@}. In addition, this function doesn't
+//! touch the escape char @tt{%@}.
+//!
+//! @seealso
+//! @[uri_decode], @[uri_encode]
+{
+  constant replace_chars = other_chars + eight_bit_chars;
+  return replace (string_to_utf8 (s),
+		  sprintf ("%c", ((array(int)) replace_chars)[*]),
+		  sprintf ("%%%02X", ((array(int)) replace_chars)[*]));
+}
+
+string uri_decode (string s)
+//! Decodes URI-style @tt{%XX@} encoded chars in the given string, and
+//! then UTF-8 decodes the result. This is the reverse of
+//! @[uri_encode] and @[uri_encode_invalids].
+//!
+//! @seealso
+//! @[uri_encode], @[uri_encode_invalids]
+{
+  // Note: This currently does not quite work for URI-to-IRI
+  // conversion according to RFC 3987 section 3.2. Most importantly
+  // any invalid utf8-sequences should be left percent-encoded in the
+  // result.
+  return utf8_to_string (_Roxen.http_decode_string (s));
+}
+
+string iri_encode (string s)
+//! Encodes the given string using @tt{%XX@} encoding to be used as a
+//! component part in an IRI (Internationalized Resource Identifier,
+//! see RFC 3987). This means that all chars outside the IRI
+//! @tt{iunreserved@} set are encoded, i.e. this function encodes
+//! equivalently to @[uri_encode] except that all 8-bit and wider
+//! characters are left as-is.
+//!
+//! @bugs
+//! This function currently does not encode chars in the Unicode
+//! private ranges, although that is strictly speaking required in
+//! some but not all IRI components. That could change if it turns out
+//! to be a problem.
+//!
+//! @seealso
+//! @[percent_decode], @[uri_encode]
+{
+  constant replace_chars = gen_delims + sub_delims + other_chars;
+  return replace (s,
+		  sprintf ("%c", ((array(int)) replace_chars)[*]),
+		  sprintf ("%%%02X", ((array(int)) replace_chars)[*]));
+}
+
+#if 0
+// These functions are disabled since I haven't found a way to
+// implement them even remotely efficiently using pike only. /mast
+
+string uri_normalize (string s)
+//! Normalizes the URI-style @tt{%XX@} encoded string @[s] by decoding
+//! all URI @tt{unreserved@} chars, i.e. US-ASCII digits, letters,
+//! @tt{-@}, @tt{.@}, @tt{_@}, and @tt{~@}.
+//!
+//! Since only unreserved chars are decoded, the result is always
+//! semantically equivalent to the input. It's therefore safe to use
+//! this on a complete formatted URI.
+//!
+//! @seealso
+//! @[uri_decode], @[uri_encode], @[iri_normalize]
+{
+  // FIXME
+}
+
+string iri_normalize (string s)
+//! Normalizes the IRI-style UTF-8 and @tt{%XX@} encoded string @[s]
+//! by decoding all IRI @tt{unreserved@} chars, i.e. everything except
+//! the URI @tt{reserved@} chars and control chars.
+//!
+//! Since only unreserved chars are decoded, the result is always
+//! semantically equivalent to the input. It's therefore safe to use
+//! this on a complete formatted IRI.
+//!
+//! @seealso
+//! @[iri_decode], @[uri_normalize]
+{
+  // FIXME
+}
+
+#endif
+
+string quoted_string_encode (string s)
+//! Encodes the given string quoted to be used as content inside a
+//! @tt{quoted-string@} according to RFC 2616 section 2.2. The
+//! returned string does not include the surrounding @tt{"@} chars.
+//!
+//! @note
+//! The @tt{quoted-string@} quoting rules in RFC 2616 have several
+//! problems:
+//!
+//! @ul
+//! @item
+//!   Quoting is inconsistent since @tt{"@} is quoted as @tt{\"@}, but
+//!   @tt{\@} does not need to be quoted. This is resolved in the HTTP
+//!   bis update to mandate quoting of @tt{\@} too, which this
+//!   function performs.
+//!
+//! @item
+//!   Many characters are not quoted sufficiently to make the result
+//!   safe to use in an HTTP header, so this quoting is not enough if
+//!   @[s] contains NUL, CR, LF, or any 8-bit or wider character.
+//! @endul
+//!
+//! @seealso
+//! @[quoted_string_decode]
+{
+  return replace (s, (["\"": "\\\"", "\\": "\\\\"]));
+}
+
+string quoted_string_decode (string s)
+//! Decodes the given string which has been encoded as a
+//! @tt{quoted-string@} according to RFC 2616 section 2.2. @[s] is
+//! assumed to not include the surrounding @tt{"@} chars.
+//!
+//! @seealso
+//! @[quoted_string_encode]
+{
+  return map (s / "\\\\", replace, "\\", "") * "\\";
+}
+
+// --- Compatibility code
+
+__deprecated__ string http_encode_string(string in)
+//! This is a deprecated alias for @[uri_encode], for compatibility
+//! with Pike 7.6 and earlier.
+//!
+//! In 7.6 this function didn't handle 8-bit and wider chars
+//! correctly. It encoded 8-bit chars directly to @tt{%XX@} escapes,
+//! and it used nonstandard @tt{%uXXXX@} escapes for 16-bit chars.
+//!
+//! That is considered a bug, and hence the function is changed. If
+//! you need the old buggy encoding then use the 7.6 compatibility
+//! version (@expr{#pike 7.6@}).
+//!
+//! @deprecated uri_encode
+{
+  return uri_encode (in);
+}
+
+//! This function used to claim that it encodes the specified string
+//! according to the HTTP cookie standard. If fact it does not - it
+//! applies URI-style (i.e. @expr{%XX@}) encoding on some of the
+//! characters that cannot occur literally in cookie values. There
+//! exist some web servers (read Roxen and forks) that usually perform
+//! a corresponding nonstandard decoding of %-style escapes in cookie
+//! values in received requests.
+//!
+//! This function is deprecated. The function @[quoted_string_encode]
+//! performs encoding according to the standard, but it is not safe to
+//! use with arbitrary chars. Thus URI-style encoding using
+//! @[uri_encode] or @[percent_encode] is normally a good choice, if
+//! you can use @[uri_decode]/@[percent_decode] at the decoding end.
+//!
+//! @deprecated
+__deprecated__ string http_encode_cookie(string f)
 {
    return replace(
       f,
@@ -518,12 +717,10 @@ string http_encode_cookie(string f)
 	 "%20", "%25", "%27", "%22", "%2c", "%3b", "%3d", "%3a" }));
 }
 
-// --- Compatibility code
-
 //! Helper function for replacing HTML entities with the corresponding
 //! unicode characters.
 //! @deprecated Parser.parse_html_entities
-string unentity(string s)
+__deprecated__ string unentity(string s)
 {
   return master()->resolv("Parser.parse_html_entities")(s,1);
 }
