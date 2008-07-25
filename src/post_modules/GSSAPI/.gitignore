@@ -1,0 +1,16 @@
+/gssapi.c
+/gssapi.cmod.compiled
+/gssapi_config.h
+/gssapi_config.h.in
+/*.feature
+/Makefile
+/build_type
+/config.log
+/config.status
+/configure
+/dependencies
+/make_variables
+/propagated_variables
+/stamp-h
+/stamp-h.in
+/testsuite
