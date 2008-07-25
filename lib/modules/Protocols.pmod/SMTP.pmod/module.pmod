@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod,v 1.49 2008/07/23 23:36:39 bill Exp $
+// $Id: module.pmod,v 1.50 2008/07/25 14:38:21 bill Exp $
 //
 
 #pike __REAL_VERSION__
@@ -304,7 +304,7 @@ class Connection {
   // the sequence of commands the client send
   protected array(string) sequence = ({ });
   // the message id of the current mail
-  private string|int messageid;
+  protected string|int messageid;
   
   // whether you are in data mode or not...
   int datamode = 0;
