@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.3 2008/07/23 21:47:02 grubba Exp $
+# $Id: configure.in,v 1.4 2008/07/25 14:25:07 mast Exp $
 
 AC_INIT(gssapi.cmod)
 AC_CONFIG_HEADER(gssapi_config.h)
@@ -26,7 +26,7 @@ if test x$with_gssapi = xyes; then
       gss_wrap (NULL, GSS_C_NO_CONTEXT, 0, GSS_C_QOP_DEFAULT,
 		GSS_C_NO_BUFFER, NULL, GSS_C_NO_BUFFER);
     ], gssapi gssapiv2 gssapi_krb5 gssapi32 gssglue, [
-      AC_DEFINE(HAVE_GSSAPI)
+      AC_DEFINE(HAVE_GSSAPI,, [Defined if GSSAPI works.])
       PIKE_FEATURE(GSSAPI, [yes ($pike_cv_search_gss_wrap)])
     ])
 
