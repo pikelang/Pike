@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.167 2008/07/15 11:59:55 grubba Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.168 2008/07/25 17:10:02 mbaehr Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -2560,7 +2560,8 @@ class StdinHilfe
     }
 
     // keep the last whitespace
-    if (typeof_token(tokens[-1]) == "whitespace")
+    if (arrayp(tokens) && sizeof(tokens) && 
+        typeof_token(tokens[-1]) == "whitespace")
       completable = ({ " " }) + completable;
     return reverse(completable);
   }
