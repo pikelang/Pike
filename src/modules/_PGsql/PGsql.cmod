@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: PGsql.cmod,v 1.3 2008/07/25 15:37:03 mast Exp $
+ * $Id: PGsql.cmod,v 1.4 2008/07/25 21:46:13 srb Exp $
  *
  * PGsql, accelerator functions for Sql.pgsql for Pike.
  *
@@ -11,18 +11,34 @@
 #include "svalue.h"
 #include "mapping.h"
 #include "module.h"
+#include "operators.h"
 #include "interpret.h"
 #include "threads.h"
 #include "builtin_functions.h"
 
 #include <stdio.h>
 #include <stdlib.h>
+
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+
 #include <errno.h>
+
+#ifdef HAVE_AND_USE_POLL
 #ifdef HAVE_POLL_H
 #include <poll.h>
+#else /* !HAVE_POLL_H */
+#ifdef HAVE_SYS_POLL_H
+#include <sys/poll.h>
+#else /* !HAVE_SYS_POLL_H */
+#undef HAVE_AND_USE_POLL
+#endif /* HAVE_SYS_POLL_H */
+#endif /* HAVE_POLL_H */
+#else /* HAVE_AND_USE_POLL */
+#ifdef HAVE_SYS_SELECT_H
+#include <sys/select.h>
+#endif
 #endif
 
 DECLARATIONS
@@ -60,7 +76,9 @@ typedef unsigned char uchar;
 #define CTIDOID         1247
 #define UUIDOID         2950
 
-static uchar flush[]="H\0\0\0\4";
+#define PGMSG_DATAROW	'D'
+
+static char flush[]="H\0\0\0\4";
 						      /* a SysV secure read */
 PIKECLASS PGsql
 {
@@ -69,7 +87,6 @@ PIKECLASS PGsql
   CVAR uchar*plow,*phigh;
   CVAR uchar*extrabuf;
   CVAR unsigned extrafilled;
-  CVAR struct pike_string*flush,*_type;
   PIKEVAR int flushed;
 
   INIT {
@@ -77,8 +94,6 @@ PIKECLASS PGsql
     THIS->extrabuf=xalloc(1);
     THIS->extrafilled=0;
     THIS->flushed=-1;
-    MAKE_CONST_STRING(THIS->flush,flush);
-    MAKE_CONST_STRING(THIS->_type,"type");
   }
 
   EXIT {
@@ -95,16 +110,47 @@ PIKECLASS PGsql
   }
   
   static int low_peek(const int timeout) {
-    struct pollfd fds;
     int fd=THIS->fd;
-    if(timeout)
-      THREADS_ALLOW();
+#ifdef HAVE_AND_USE_POLL
+    struct pollfd fds;
     fds.fd=fd;
     fds.events=POLLIN;
-    poll(&fds,1,timeout*1000);
-    if(timeout)
+    if(timeout) {
+      THREADS_ALLOW();
+      poll(&fds,1,timeout*1000);
       THREADS_DISALLOW();
+    }
+    else
+      poll(&fds,1,0);
     return fds.revents&POLLIN?1:-!!fds.revents;
+#else
+    fd_set rfds;
+    struct timeval tv;
+
+    fd_FD_ZERO(&rfds);
+    fd_FD_SET(fd, &rfds);
+    tv.tv_usec=0;
+    tv.tv_sec=timeout;
+
+    if(timeout) {
+      THREADS_ALLOW();
+      fd = fd_select(fd+1,&rfds,0,0,&tv);
+      THREADS_DISALLOW();
+    }
+    else
+      fd = fd_select(fd+1,&rfds,0,0,&tv);
+
+    return fd;
+#endif
+  }
+
+  static int medium_peek(const int timeout) {
+    int retval=1;
+    if(THIS->phigh==THIS->plow && !THIS->extrafilled) {
+      PD((stderr,"PGsql peek %d\n",timeout));
+      retval=low_peek(timeout);
+    }
+    return retval;
   }
 
   static void sendflush(void) {
@@ -159,10 +205,13 @@ ret2: PD((stderr,"PGsql getbyte 0x%02x=%c\n",retval,retval));
     struct string_builder sb,*psb=0;
     int len,left;
     uchar*p;
+#ifdef PIKE_DEBUG                                  /* placate silly warnings */
+    len=0;retval=0;p=0;		        /* these initialisations are useless */
+#endif
     if(length) {
       len=length;
       retval=begin_shared_string(len);
-      p=retval->str;
+      p=(uchar*)retval->str;
     }
     do {
       left=THIS->phigh-THIS->plow;
@@ -182,7 +231,7 @@ ret2:     PD((stderr,"PGsql getstring %d\n",length));
           len=p-THIS->plow;
 	  if(!psb) {
             retval=begin_shared_string(len++);      /* nul terminated anyway */
-	    p=retval->str;
+	    p=(uchar*)retval->str;
             goto ret;
 	  }
           PD((stderr,"PGsql getstring %s\n",psb->s->str));
@@ -211,15 +260,10 @@ bad:
   }
 
   PIKEFUN int peek(void|int timeoutp) {
-    int retval=1;
-    if(THIS->phigh==THIS->plow && !THIS->extrafilled) {
-      int timeout=0;
-      if(timeoutp)
-         timeout=timeoutp->u.integer;
-      PD((stderr,"PGsql peek %d\n",timeout));
-      retval=low_peek(timeout);
-    }
-    RETURN retval;
+    int timeout=0;
+    if(timeoutp)
+      timeout=timeoutp->u.integer;
+    RETURN medium_peek(timeout);
   }
 
   PIKEFUN int getbyte() {
@@ -239,8 +283,8 @@ bad:
   }
 
   PIKEFUN void unread(string oldbuf) {
-    int len;
-    if(len=oldbuf->len) {
+    int len = oldbuf->len;
+    if(len) {
       uchar*q;
       int left=THIS->phigh-THIS->plow;
       PD((stderr,"PGsql unread %d\n",len));
@@ -259,81 +303,223 @@ bad:
     RETURN_VOID;
   }
 
-  PIKEFUN array decodedatarow(int msglen,
-   array(mapping(string:mixed)) datarowdesc) {
-    int cols;
+  PIKEFUN void decodedatarow(int msglen, object portal) {
     int i;
+    int totalrecvd=0, nrows=0, buffer=0;
+    int rowsreceived,inflight,fetchlimit,parentfetchlimit,portalbuffersize;
+    struct svalue bytesreceived,sendexecute;
+    struct object*pgsqlsess;
+    struct array*datarowdesc;
     pop_n_elems(2);
-    cols=low_getint16();
-    if(cols != datarowdesc->size)
-      Pike_error("Mismatching dataset and description sizes\n");
-    msglen-=2+4*cols;
-    for(i=0; i<cols; i++) {
-      int collen=low_getint32();
-      if(collen>0) {
-        struct svalue drd,*svp;
-	msglen-=collen;
-        array_index_no_free(&drd,datarowdesc,i);
-        svp = low_mapping_string_lookup(drd.u.mapping, THIS->_type);
-        switch(svp->u.integer) {
-          default:push_string(low_getstring(collen));
-            break;
-          case CHAROID:
-          case BOOLOID:push_int(low_getbyte());
-            break;
-          case FLOAT4OID: {
-	    char*tb=xalloc(collen+1);
-	    char*p=tb;
-	    do
-	      *p++=low_getbyte();
-	    while(--collen);
-	    *p=0; push_float(atof(tb)); xfree(tb);
-            break;
-	  }
-          case INT2OID:push_int(low_getint16());
-            break;
-          case INT8OID: {
-	    int firstword = low_getint32();
-	    int nextword = low_getint32();
-	    switch(firstword) {
-	      default:
-	        push_int(firstword);push_int(32);f_lsh();
-	        if(nextword>=0)
-		  goto nextor;
-                push_int((nextword>>1)&0x7fffffff); push_int(1); f_lsh();
-                f_or();
-	        goto tor;
-	      case -1:
-		if(nextword<0)
-		  goto simple;
-	        push_int(firstword);push_int(32);f_lsh();
-	        goto nextor;
-	      case 0:
-	        if(nextword<0) {
-                  push_int((nextword>>1)&0x7fffffff); push_int(1); f_lsh();
-tor:		  if(nextword&1) {
-		    nextword=1;
-nextor:             push_int(nextword);
-	            f_or();
-		  }
-	        }
-	        else
-simple:           push_int(nextword);
-	    }
-	    break;
-	  }
-          case OIDOID:
-          case INT4OID:push_int(low_getint32());
+
+    object_index_no_free2(&bytesreceived, portal,0,
+     MK_STRING_SVALUE("_datarowdesc"));
+    datarowdesc=bytesreceived.u.array;
+    free_svalue(&bytesreceived);
+
+    object_index_no_free2(&bytesreceived, portal,0,
+     MK_STRING_SVALUE("_inflight"));
+    inflight=bytesreceived.u.integer;
+    free_svalue(&bytesreceived);
+
+    object_index_no_free2(&bytesreceived, portal,0,
+     MK_STRING_SVALUE("_fetchlimit"));
+    fetchlimit=bytesreceived.u.integer;
+    free_svalue(&bytesreceived);
+
+    object_index_no_free2(&bytesreceived, portal,0,
+     MK_STRING_SVALUE("_portalbuffersize"));
+    portalbuffersize=bytesreceived.u.integer;
+    free_svalue(&bytesreceived);
+
+    object_index_no_free2(&bytesreceived, portal,0,
+     MK_STRING_SVALUE("_buffer"));
+    if(bytesreceived.type == PIKE_T_INT)
+      buffer=bytesreceived.u.integer;
+    free_svalue(&bytesreceived);
+
+    object_index_no_free2(&bytesreceived, portal,0,
+     MK_STRING_SVALUE("_pgsqlsess"));
+    pgsqlsess=bytesreceived.u.object;
+    free_svalue(&bytesreceived);
+    object_index_no_free2(&sendexecute, pgsqlsess,0,
+     MK_STRING_SVALUE("_sendexecute"));
+    object_index_no_free2(&bytesreceived, pgsqlsess,0,
+     MK_STRING_SVALUE("_fetchlimit"));
+    parentfetchlimit=bytesreceived.u.integer;
+    free_svalue(&bytesreceived);
+
+    object_index_no_free2(&bytesreceived, portal,0,
+     MK_STRING_SVALUE("_rowsreceived"));
+    if(bytesreceived.type != PIKE_T_INT)
+      Pike_error("Driver needs to be fixed to support more than 2^31 rows\n");
+    rowsreceived=bytesreceived.u.integer;
+    free_svalue(&bytesreceived);
+
+    object_index_no_free2(&bytesreceived, portal,0,
+     MK_STRING_SVALUE("_bytesreceived"));
+
+    push_int(1234);
+    for(;;) {
+      int cols=low_getint16();
+      if(cols != datarowdesc->size)
+        Pike_error("Mismatching dataset and description sizes\n");
+      totalrecvd+=msglen;
+      msglen-=2+4*cols;
+      for(i=0; i<cols; i++) {
+        int collen=low_getint32();
+        if(collen>0) {
+          struct svalue drd,*svp;
+          msglen-=collen;
+          array_index_no_free(&drd,datarowdesc,i);
+          svp = low_mapping_string_lookup(drd.u.mapping, MK_STRING("type"));
+	  free_svalue(&drd);
+          switch(svp->u.integer) {
+            default:push_string(low_getstring(collen));
+              break;
+            case CHAROID:
+            case BOOLOID:push_int(low_getbyte());
+              break;
+            case FLOAT4OID: {
+              char*tb=xalloc(collen+1);
+              char*p=tb;
+              do
+                *p++=low_getbyte();
+              while(--collen);
+              *p=0; push_float(atof(tb)); xfree(tb);
+              break;
+            }
+            case INT2OID:push_int(low_getint16());
+              break;
+            case INT8OID: {
+              int firstword = low_getint32();
+              int nextword = low_getint32();
+              switch(firstword) {
+                default:
+                  push_int(firstword);push_int(32);f_lsh(2);
+                  if(nextword>=0)
+		    goto nextor;
+                  push_int((nextword>>1)&0x7fffffff); push_int(1); f_lsh(2);
+                  f_or(2);
+                  goto tor;
+                case -1:
+		  if(nextword<0)
+		    goto simple;
+                  push_int(firstword);push_int(32);f_lsh(2);
+                  goto nextor;
+                case 0:
+                  if(nextword<0) {
+                    push_int((nextword>>1)&0x7fffffff); push_int(1); f_lsh(2);
+tor:		    if(nextword&1) {
+		      nextword=1;
+nextor:               push_int(nextword);
+                      f_or(2);
+		    }
+                  }
+                  else
+simple:             push_int(nextword);
+              }
+              break;
+            }
+            case OIDOID:
+            case INT4OID:push_int(low_getint32());
+          }
         }
+        else if(!collen)
+          push_empty_string();
+        else
+          push_undefined();
       }
-      else if(!collen)
-        ref_push_string(empty_pike_string);
-      else
-        push_undefined();
+      if(msglen)
+        Pike_error("Protocol error\n");
+      f_aggregate(cols);
+      rowsreceived++;
+      nrows++;
+      if(medium_peek(0)>0)
+        switch(low_getbyte()) {
+	  case PGMSG_DATAROW:
+
+	    switch(buffer) {
+	      case 0:
+	      case 1:
+	        if(fetchlimit) {
+	          if(parentfetchlimit) {
+	            push_int(portalbuffersize/2);
+	            push_int(rowsreceived);
+	            f_multiply(2);
+	            push_svalue(&bytesreceived);
+	            f_divide(2);
+	            fetchlimit=Pike_sp[-1].u.integer;
+	            if(fetchlimit>parentfetchlimit)
+	              fetchlimit=parentfetchlimit;
+	            else if(!fetchlimit)
+	              fetchlimit=1;
+	            pop_stack();
+	          }
+	          else
+	            fetchlimit=0;
+	          switch(buffer) {
+	            case 1: {
+                      struct svalue nextportal;
+                      object_index_no_free2(&nextportal, pgsqlsess,0,
+                       MK_STRING_SVALUE("_nextportal"));
+                      i=nextportal.u.integer;
+		      free_svalue(&nextportal);
+                      if(i)
+		        break;
+	            }
+	            case 0:
+	              if(fetchlimit && inflight<=fetchlimit-1) {
+			struct svalue*oldstack=Pike_sp;
+			push_int(fetchlimit);
+	                apply_svalue(&sendexecute,1);
+			inflight+=fetchlimit;
+			/*
+			 * FIXME:
+			 * sendexecute is declared void, yet it leaves
+			 * one value on the stack; I do not understand this
+			 */
+			pop_n_elems(Pike_sp-oldstack);
+		      }
+	          }
+	        }
+	    }
+
+	    PD((stderr,"PGsql DataRow fast fetch\n"));
+	    msglen=low_getint32()-4;
+	    continue;
+	  default:THIS->plow--;	    /* ungetc() */
+	  case -1:;
+        }
+      break;
     }
-    if(msglen)
-      Pike_error("Protocol error\n");
-    f_aggregate(cols);
+
+    f_aggregate(nrows);
+    Pike_sp++;
+    object_index_no_free2(Pike_sp-1, portal,0, MK_STRING_SVALUE("_datarows"));
+    stack_swap();
+    f_add(2);
+    object_set_index2(portal,0, MK_STRING_SVALUE("_datarows"), Pike_sp-1);
+    pop_stack();
+    pop_stack();
+    push_int(inflight);
+    object_set_index2(portal,0, MK_STRING_SVALUE("_inflight"), Pike_sp-1);
+    pop_stack();
+    push_svalue(&bytesreceived);
+    free_svalue(&bytesreceived);
+    push_int(totalrecvd);
+    f_add(2);
+    object_set_index2(portal,0, MK_STRING_SVALUE("_bytesreceived"), Pike_sp-1);
+    pop_stack();
+    push_int(fetchlimit);
+    object_set_index2(portal,0, MK_STRING_SVALUE("_fetchlimit"), Pike_sp-1);
+    pop_stack();
+    if(nrows>1) {
+      push_int(rowsreceived-1);
+      object_set_index2(portal,0, MK_STRING_SVALUE("_rowsreceived"),
+       Pike_sp-1);
+      pop_stack();
+    }
   }
 }
 

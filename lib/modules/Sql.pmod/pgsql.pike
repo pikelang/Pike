@@ -430,7 +430,7 @@ final private string pinpointerror(void|string query,void|string offset) {
   return MARKSTART+(k>1?query[..k-2]:"")+MARKERROR+query[k-1..]+MARKEND;
 }
 
-final private int decodemsg(void|state waitforstate) {
+final int _decodemsg(void|state waitforstate) {
 #ifdef DEBUG
   { array line;
 #ifdef DEBUGMORE
@@ -637,12 +637,12 @@ final private int decodemsg(void|state waitforstate) {
       case 'D':PD("DataRow\n");
         msglen-=4;
         if(_portal) {
+#ifdef USEPGsql
+          conn.decodedatarow(msglen,_portal);msglen=0;
+#else
           array a, datarowdesc;
 	  _portal->_bytesreceived+=msglen;
 	  datarowdesc=_portal->_datarowdesc;
-#ifdef USEPGsql
-          a=conn.decodedatarow(msglen,datarowdesc);msglen=0;
-#else     
           int cols=GETINT16();
 	  a=allocate(cols,UNDEFINED);
           msglen-=2+4*cols;
@@ -671,9 +671,10 @@ final private int decodemsg(void|state waitforstate) {
             else if(!collen)
               a[i]="";
           }
+	  a=({a});
+	  _portal->_datarows+=a;
+	  _portal->_inflight-=sizeof(a);
 #endif    
-	  _portal->_datarows+=({a});
-	  _portal->_inflight--;
         }
         else
 	  GETSTRING(msglen),msglen=0;
@@ -804,7 +805,7 @@ final private int decodemsg(void|state waitforstate) {
 #ifndef UNBUFFEREDIO
 private int read_cb(mixed foo, string d) {
   conn.unread(d);
-  do decodemsg();
+  do _decodemsg();
   while(conn.peek(0)==1);
   return 0;
 }
@@ -852,7 +853,7 @@ private void reconnect(void|int force) {
   plugbuf[0]=plugint32(len);
   SENDCMD(plugbuf);
   PD("%O\n",plugbuf);
-  decodemsg(readyforquery);
+  _decodemsg(readyforquery);
   PD("%O\n",runtimeparameter);
 }
 
@@ -871,7 +872,7 @@ void reload(void|int special) {
         SENDCMD(({"S",plugint32(4)}),1);
         didsync=1;
         if(!special) {
-          decodemsg(readyforquery);
+          _decodemsg(readyforquery);
           foreach(prepareds;;mapping tprepared) {
             m_delete(tprepared,"datatypeoid");
             m_delete(tprepared,"datarowdesc");
@@ -883,7 +884,7 @@ void reload(void|int special) {
     reconnect(1);
   }
   else if(didsync && special==2)
-    decodemsg(readyforquery);
+    _decodemsg(readyforquery);
 #ifndef UNBUFFEREDIO
   conn.set_read_callback(read_cb);
 #endif
@@ -1172,7 +1173,7 @@ private int oidformat(int oid) {
   return 0; // text
 }
 
-final private void sendexecute(int fetchlimit) {
+final void _sendexecute(int fetchlimit) {
   string portalname=_portal->_portalname;
   PD("Execute portal %s fetchlimit %d\n",portalname,fetchlimit);
   SENDCMD(({"E",plugint32(4+sizeof(portalname)+1+4),portalname,
@@ -1345,7 +1346,7 @@ object big_query(string q,void|mapping(string|int:mixed) bindings) {
         plugbuf+=({portalname,"\0",preparedname,"\0",
          plugint16(sizeof(paramValues))});
         if(!tprepared || !tprepared->datatypeoid) {
-          decodemsg(gotparameterdescription);
+          _decodemsg(gotparameterdescription);
 	  if(tprepared)
 	    tprepared->datatypeoid=_portal->_datatypeoid;
         }
@@ -1401,7 +1402,7 @@ object big_query(string q,void|mapping(string|int:mixed) bindings) {
             }
         }
         if(!tprepared || !tprepared->datarowdesc) {
-          decodemsg(gotrowdescription);
+          _decodemsg(gotrowdescription);
 	  if(tprepared)
 	    tprepared->datarowdesc=_portal->_datarowdesc;
         }
@@ -1419,9 +1420,9 @@ object big_query(string q,void|mapping(string|int:mixed) bindings) {
 #endif
       }
       _portal->_statuscmdcomplete=UNDEFINED;
-      sendexecute(_fetchlimit && FETCHLIMITLONGRUN);
+      _sendexecute(_fetchlimit && FETCHLIMITLONGRUN);
       if(tprepared) {
-        decodemsg(bindcomplete);
+        _decodemsg(bindcomplete);
         int tend=gethrtime();
         if(tend==tstart)
 	  m_delete(prepareds,q);
@@ -1463,7 +1464,7 @@ object streaming_query(string q,void|mapping(string|int:mixed) bindings) {
 
 class pgsql_result {
 
-private object pgsqlsession;
+object _pgsqlsess;
 private int numrows;
 private int eoffound;
 private mixed delayederror;
@@ -1481,13 +1482,17 @@ string query;
 string _portalname;
 
 int _bytesreceived;
-private int rowsreceived;
+int _rowsreceived;
 int _interruptable;
 int _inflight;
+int _portalbuffersize;
 string _statuscmdcomplete;
 array(array(mixed)) _datarows;
 array(mapping(string:mixed)) _datarowdesc;
 array(int) _datatypeoid;
+#ifdef USEPGsql
+int _buffer;
+#endif
 
 private object fetchmutex;;
 
@@ -1505,20 +1510,20 @@ protected string _sprintf(int type, void|mapping flags) {
        query,
        _statuscmdcomplete||"",
        _datarowdesc,
-       pgsqlsession);
+       _pgsqlsess);
       break;
   }
   return res;
 }
 
-void create(object _pgsqlsession,mapping(string:mixed) _tprepared,
- string _query,int fetchlimit,int _portalbuffersize) {
-  pgsqlsession = _pgsqlsession;
+void create(object pgsqlsess,mapping(string:mixed) _tprepared,
+ string _query,int fetchlimit,int portalbuffersize) {
+  _pgsqlsess = pgsqlsess;
   tprepared = _tprepared; query = _query;
   _datarows = ({ }); numrows = UNDEFINED;
   fetchmutex = Thread.Mutex();
   _fetchlimit=fetchlimit;
-  portalbuffersize=_portalbuffersize;
+  _portalbuffersize=portalbuffersize;
   steallock();
 }
 
@@ -1566,15 +1571,15 @@ array(mapping(string:mixed)) fetch_fields() {
 }
 
 private void releasesession() {
-  if(pgsqlsession) {
+  if(_pgsqlsess) {
     if(copyinprogress) {
       PD("CopyDone\n");
-      pgsqlsession.SENDCMD("c\0\0\0\4");
+      _pgsqlsess.SENDCMD("c\0\0\0\4");
     }
-    pgsqlsession->reload(2);
+    _pgsqlsess.reload(2);
   }
   _qmtxkey=UNDEFINED;
-  pgsqlsession=UNDEFINED;
+  _pgsqlsess=UNDEFINED;
 }
 
 void destroy() {
@@ -1591,13 +1596,13 @@ inline private array(mixed) getdatarow() {
 
 private void steallock() {
 #ifndef NO_LOCKING
-  PD("Going to steal oldportal %d\n",!!pgsqlsession._portal);
+  PD("Going to steal oldportal %d\n",!!_pgsqlsess._portal);
   Thread.MutexKey stealmtxkey = stealmutex.lock();
   do
     if(_qmtxkey = querymutex.current_locking_key()) {
       pgsql_result portalb;
-      if(portalb=pgsqlsession._portal) {
-        pgsqlsession._nextportal++;
+      if(portalb=_pgsqlsess._portal) {
+        _pgsqlsess._nextportal++;
         if(portalb->_interruptable)
           portalb->fetch_row(2);
         else {
@@ -1610,7 +1615,7 @@ private void steallock() {
 	  }
           PD("Got the querymutex\n");
         }
-        pgsqlsession._nextportal--;
+        _pgsqlsess._nextportal--;
       }
       break;
     }
@@ -1619,25 +1624,26 @@ private void steallock() {
   PD("Skipping lock\n");
   _qmtxkey=1;
 #endif
-  pgsqlsession._portal=this;
+  _pgsqlsess._portal=this;
   PD("Stealing successful\n");
 }
 
 int|array(string|int) fetch_row(void|int|string buffer) {
-  if(copyinprogress) {
-    if(stringp(buffer)) {
-      PD("CopyData\n");
-      pgsqlsession.SENDCMD(({"d",plugint32(4+sizeof(buffer)),buffer}));
-    }
-    else
-      releasesession();
-    return UNDEFINED;
-  }
 #ifndef NO_LOCKING
   Thread.MutexKey fetchmtxkey = fetchmutex.lock();
 #endif
   if(!buffer && sizeof(_datarows))
     return getdatarow();
+  if(copyinprogress) {
+    fetchmtxkey = UNDEFINED;
+    if(stringp(buffer)) {
+      PD("CopyData\n");
+      _pgsqlsess.SENDCMD(({"d",plugint32(4+sizeof(buffer)),buffer}));
+    }
+    else
+      releasesession();
+    return UNDEFINED;
+  }
   mixed err;
   if(buffer!=2 && (err=delayederror)) {
     delayederror=UNDEFINED;
@@ -1647,16 +1653,19 @@ int|array(string|int) fetch_row(void|int|string buffer) {
     if(_portalname) {
       if(buffer!=2 && !_qmtxkey) {
         steallock();
-        sendexecute(_fetchlimit);
+        _pgsqlsess._sendexecute(_fetchlimit);
       }
-      while(pgsqlsession->_closesent)
-        decodemsg();		    // Flush previous portal sequence
+      while(_pgsqlsess._closesent)
+        _pgsqlsess._decodemsg();	   // Flush previous portal sequence
       for(;;) {
 #ifdef DEBUGMORE
         PD("buffer: %d  nextportal: %d  lock: %d\n",
-	 buffer,pgsqlsession._nextportal,!!_qmtxkey);
+	 buffer,_pgsqlsess._nextportal,!!_qmtxkey);
 #endif
-        switch(decodemsg()) {
+#ifdef USEPGsql
+        _buffer=buffer;
+#endif
+        switch(_pgsqlsess._decodemsg()) {
           case copyinresponse:
             copyinprogress=1;
 	    return UNDEFINED;
@@ -1667,14 +1676,14 @@ int|array(string|int) fetch_row(void|int|string buffer) {
               tprepared = UNDEFINED;
             }
             mstate=dataprocessed;
-            rowsreceived++;
+            _rowsreceived++;
 	    switch(buffer) {
 	      case 0:
 	      case 1:
 	        if(_fetchlimit)
 	          _fetchlimit=
-		   min(portalbuffersize/2*rowsreceived/_bytesreceived || 1,
-	           pgsqlsession->_fetchlimit);
+		   min(_portalbuffersize/2*_rowsreceived/_bytesreceived || 1,
+	           _pgsqlsess._fetchlimit);
 	    }
             switch(buffer) {
               case 2:
@@ -1682,13 +1691,17 @@ int|array(string|int) fetch_row(void|int|string buffer) {
                 continue;
               case 1:
 	        _interruptable=1;
-	        if(pgsqlsession._nextportal)
+	        if(_pgsqlsess._nextportal)
 		  continue;
+#if STREAMEXECUTES
+	        if(_fetchlimit && _inflight<=_fetchlimit-1)
+                  _pgsqlsess._sendexecute(_fetchlimit);
+#endif
                 return UNDEFINED;
             }
 #if STREAMEXECUTES
 	    if(_fetchlimit && _inflight<=_fetchlimit-1)
-              sendexecute(_fetchlimit);	  // Overlap Executes
+              _pgsqlsess._sendexecute(_fetchlimit);	  // Overlap Executes
 #endif
             return getdatarow();
           case commandcomplete:
@@ -1705,7 +1718,7 @@ int|array(string|int) fetch_row(void|int|string buffer) {
           case portalsuspended:
 	    if(_inflight)
 	      continue;
-	    if(pgsqlsession._nextportal) {
+	    if(_pgsqlsess._nextportal) {
 	      switch(buffer) {
 	        case 1:
 	        case 2:
@@ -1722,7 +1735,7 @@ int|array(string|int) fetch_row(void|int|string buffer) {
 	      }
 	      buffer=3;
 	    }
-            sendexecute(_fetchlimit);
+            _pgsqlsess._sendexecute(_fetchlimit);
           default:
             continue;
         }
@@ -1733,7 +1746,7 @@ int|array(string|int) fetch_row(void|int|string buffer) {
     return UNDEFINED;
   };
   PD("Exception %O\n",err);
-  pgsqlsession->reload();
+  _pgsqlsess.reload();
   if(buffer!=2)
     throw(err);
   if(!delayederror)
