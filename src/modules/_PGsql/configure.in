@@ -1,10 +1,12 @@
-# $Id: configure.in,v 1.1 2008/07/24 20:26:52 srb Exp $
+# $Id: configure.in,v 1.2 2008/07/25 11:42:09 grubba Exp $
 #
 
 AC_INIT(PGsql.cmod)
 AC_CONFIG_HEADER(config.h)
 
 AC_MODULE_INIT()
+
+AC_CHECK_HEADERS([unistd.h])
 
 PIKE_FEATURE(PGsql,[yes])
 

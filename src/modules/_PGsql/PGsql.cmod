@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: PGsql.cmod,v 1.1 2008/07/24 20:26:52 srb Exp $
+ * $Id: PGsql.cmod,v 1.2 2008/07/25 11:42:34 grubba Exp $
  *
  * PGsql, accelerator functions for Sql.pgsql for Pike.
  *
@@ -17,7 +17,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <errno.h>
 #include <poll.h>
 
