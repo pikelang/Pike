@@ -40,7 +40,7 @@ void test_resolv(string file, int base_size, object|void handler)
   // write("Resolving %O...\n", prg);
   mixed err;
   got_warnings_in_last_test = 0;
-  if(err = catch( (handler||master())->resolv(prg) ) ||
+  if((err = catch( (handler||master())->resolv(prg) )) ||
      got_warnings_in_last_test) {
     if (err && (!objectp (err) || !err->is_compilation_error))
       werror("test: Error during compilation of %s: %s\n",
