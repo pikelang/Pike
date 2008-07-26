@@ -326,7 +326,7 @@ class PGassist {
   }
 #endif
 
-  final protected void sendflush() {
+  final void sendflush() {
     sendcmd(({}),1);
   }
   

@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: PGsql.cmod,v 1.9 2008/07/26 10:53:54 srb Exp $
+ * $Id: PGsql.cmod,v 1.10 2008/07/26 11:04:44 srb Exp $
  *
  * PGsql, accelerator functions for Sql.pgsql for Pike.
  *
@@ -58,8 +58,6 @@ typedef unsigned char uchar;
 
 #define PGMSG_DATAROW	'D'
 
-static char flush[]="H\0\0\0\4";
-						      /* a SysV secure read */
 PIKECLASS PGsql
 {
   CVAR int fd;
@@ -114,17 +112,10 @@ PIKECLASS PGsql
     return retval;
   }
 
-  static void sendflush(void) {
-    int fd=THIS->fd;
-    THREADS_ALLOW();
-    write(fd, flush, STRLEN(flush));
-    THREADS_DISALLOW();
-    THIS->flushed=1;
-  }
-
   static void flushifneeded(void) {
     if(!THIS->flushed && low_peek(0)) {
-      sendflush();
+      apply(THISOBJ,"sendflush",0);
+      pop_stack();				/* void function, pop anyway */
     }
     if(THIS->extrafilled) {
       if(THIS->extrafilled>BUFSIZE)
@@ -435,12 +426,7 @@ simple:             push_int(nextword);
 			push_int(fetchlimit);
 			apply(THIS->pgsqlsess, "_sendexecute", 1);
 			inflight+=fetchlimit;
-			/*
-			 * FIXME:
-			 * sendexecute is declared void, yet it leaves
-			 * one value on the stack; I do not understand this
-			 */
-			pop_stack();
+			pop_stack();	  /* void function, pop anyway */
 		      }
 	          }
 	        }
