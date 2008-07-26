@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: PGsql.cmod,v 1.8 2008/07/26 08:04:32 srb Exp $
+ * $Id: PGsql.cmod,v 1.9 2008/07/26 10:53:54 srb Exp $
  *
  * PGsql, accelerator functions for Sql.pgsql for Pike.
  *
@@ -22,28 +22,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-
-#include <errno.h>
-
-#ifdef HAVE_AND_USE_POLL
-#ifdef HAVE_POLL_H
-#include <poll.h>
-#else /* !HAVE_POLL_H */
-#ifdef HAVE_SYS_POLL_H
-#include <sys/poll.h>
-#else /* !HAVE_SYS_POLL_H */
-#undef HAVE_AND_USE_POLL
-#endif /* HAVE_SYS_POLL_H */
-#endif /* HAVE_POLL_H */
-#else /* HAVE_AND_USE_POLL */
-#ifdef HAVE_SYS_SELECT_H
-#include <sys/select.h>
-#endif
-#endif
-
 DECLARATIONS
 
 /*#define PGSQL_DEBUG /**/
@@ -59,6 +37,7 @@ DECLARATIONS
 typedef unsigned char uchar;
 #define RETURN_VOID  {if(args) pop_n_elems(args);}
 #define STRLEN(x)    (sizeof(x)-1)
+#define THISOBJ (Pike_fp->current_object)
 
 #define BOOLOID         16
 #define BYTEAOID        17
@@ -89,7 +68,6 @@ PIKECLASS PGsql
   CVAR uchar*extrabuf;
   CVAR unsigned extrafilled;
   CVAR struct object*pgsqlsess;
-  CVAR struct svalue sendexecute;
   PIKEVAR int flushed;
 
   INIT {
@@ -97,56 +75,34 @@ PIKECLASS PGsql
     THIS->extrabuf=xalloc(1);
     THIS->extrafilled=0;
     THIS->flushed=-1;
-    mark_free_svalue(&THIS->sendexecute);
   }
 
   EXIT {
     xfree(THIS->extrabuf);
-    free_svalue(&THIS->sendexecute);
   }
 
   static int rread(void*const a,const int len) {
     int i;
-    int fd=THIS->fd;
-    THREADS_ALLOW();
-    while(0>(i=read(fd,a,(size_t)len))&&errno==EINTR);
-    THREADS_DISALLOW();
+    push_int(len);
+    push_int(1);
+    apply(THISOBJ,"read",2);
+    if(Pike_sp[-1].type == PIKE_T_STRING) {
+      i=Pike_sp[-1].u.string->len;
+      memcpy(a,Pike_sp[-1].u.string->str,i);
+    }
+    else
+      i=-1;
+    pop_n_elems(1);
     return i;
   }
   
   static int low_peek(const int timeout) {
-    int fd=THIS->fd;
-#ifdef HAVE_AND_USE_POLL
-    struct pollfd fds;
-    fds.fd=fd;
-    fds.events=POLLIN;
-    if(timeout) {
-      THREADS_ALLOW();
-      poll(&fds,1,timeout*1000);
-      THREADS_DISALLOW();
-    }
-    else
-      poll(&fds,1,0);
-    return fds.revents&POLLIN?1:-!!fds.revents;
-#else
-    fd_set rfds;
-    struct timeval tv;
-
-    fd_FD_ZERO(&rfds);
-    fd_FD_SET(fd, &rfds);
-    tv.tv_usec=0;
-    tv.tv_sec=timeout;
-
-    if(timeout) {
-      THREADS_ALLOW();
-      fd = fd_select(fd+1,&rfds,0,0,&tv);
-      THREADS_DISALLOW();
-    }
-    else
-      fd = fd_select(fd+1,&rfds,0,0,&tv);
-
-    return fd;
-#endif
+    int retval;
+    push_int(timeout);
+    apply(THISOBJ, "peek", 1);
+    retval = Pike_sp[-1].u.integer;
+    pop_stack();
+    return retval;
   }
 
   static int medium_peek(const int timeout) {
@@ -167,8 +123,9 @@ PIKECLASS PGsql
   }
 
   static void flushifneeded(void) {
-    if(!THIS->flushed && low_peek(0))
+    if(!THIS->flushed && low_peek(0)) {
       sendflush();
+    }
     if(THIS->extrafilled) {
       if(THIS->extrafilled>BUFSIZE)
         THIS->extrabuf=xrealloc(THIS->extrabuf,1);
@@ -266,12 +223,10 @@ bad:
 
   PIKEFUN void setpgsqlsess(object pgsqlsess) {
     THIS->pgsqlsess = pgsqlsess;
-    object_index_no_free2(&THIS->sendexecute, pgsqlsess,0,
-     MK_STRING_SVALUE("_sendexecute"));
     RETURN_VOID;
   }
 
-  PIKEFUN int peek(void|int timeoutp) {
+  PIKEFUN int bpeek(void|int timeoutp) {
     int timeout=0;
     if(timeoutp)
       timeout=timeoutp->u.integer;
@@ -477,16 +432,15 @@ simple:             push_int(nextword);
 	            }
 	            case 0:
 	              if(fetchlimit && inflight<=fetchlimit-1) {
-			struct svalue*oldstack=Pike_sp;
 			push_int(fetchlimit);
-	                apply_svalue(&THIS->sendexecute,1);
+			apply(THIS->pgsqlsess, "_sendexecute", 1);
 			inflight+=fetchlimit;
 			/*
 			 * FIXME:
 			 * sendexecute is declared void, yet it leaves
 			 * one value on the stack; I do not understand this
 			 */
-			pop_n_elems(Pike_sp-oldstack);
+			pop_stack();
 		      }
 	          }
 	        }

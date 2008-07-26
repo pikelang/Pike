@@ -72,6 +72,7 @@ private object conn;
 private string SSauthdata,cancelsecret;
 private int backendpid;
 private int backendstatus;
+private mapping(string:mixed) options;
 private string lastmessage;
 private mapping(string:array(mixed)) notifylist=([]);
 private mapping(string:string) msgresponse;
@@ -93,9 +94,6 @@ private int timeout=4096;    // Queries running longer than this number of
 			     // seconds are canceled automatically
 private int portalbuffersize=32*1024;  // Approximate buffer per portal
 private int reconnected;     // Number of times the connection was reset
-#ifndef USEPGsql
-private int flushed;
-#endif
 
 private string host, database, user, pass;
 private int port;
@@ -146,7 +144,7 @@ protected string _sprintf(int type, void|mapping flags) {
 
 //! @decl void create()
 //! @decl void create(string host, void|string database, void|string user,@
-//!                   void|string password)
+//!                   void|string password, void|mapping(string:mixed) options)
 //!
 //! With no arguments, this function initializes (reinitializes if a
 //! connection had been previously set up) a connection to the
@@ -176,9 +174,10 @@ protected string _sprintf(int type, void|mapping flags) {
 //! @seealso
 //!   @[Postgres.postgres], @[Sql.Sql], @[postgres->select_db]
 protected void create(void|string _host, void|string _database,
- void|string _user, void|string _pass) {
+ void|string _user, void|string _pass, void|mapping(string:mixed) _options) {
   pass = _pass; _pass = "CENSORED";
   user = _user; database = _database; host = _host || PGSQL_DEFAULT_HOST;
+  options = _options;
   if(search(host,":")>=0 && sscanf(_host,"%s:%d",host,port)!=2)
     ERROR("Error in parsing the hostname argument\n");
   if(!port)
@@ -215,89 +214,19 @@ string host_info() {
   return sprintf("Via fd:%d over TCP/IP to %s:%d",conn->query_fd(),host,port);
 }
 
-#ifdef USEPGsql
+#define SENDCMD(x ...)	conn.sendcmd(x)
 #define GETBYTE()    conn.getbyte()
 #define GETSTRING(x) conn.getstring(x)
 #define GETINT16()   conn.getint16()
 #define GETINT32()   conn.getint32()
 #define FLUSHED	     conn.flushed
+
+#ifdef USEPGsql
+#define PEEK(x)	     conn.bpeek(x)
 #else
-#define GETBYTE()    getbyte()
-#define GETSTRING(x) getstring(x)
-#define GETINT16()   getint16()
-#define GETINT32()   getint32()
-#define FLUSHED	     flushed
+#define PEEK(x)	     conn.peek(x)
 
-final private void sendflush() {
-  SENDCMD(({}),1);
-}
-
-inline final private int getbyte() {
-  if(!FLUSHED && !conn.peek(0))
-    sendflush();
-#ifdef UNBUFFEREDIO
-  return conn.read(1)[0];
-#else
-  return conn.getchar();
 #endif
-}
-
-final private string getstring(void|int len) {
-  if(!zero_type(len)) {
-    string acc="",res;
-    do {
-      if(!FLUSHED && !conn.peek(0))
-        sendflush();
-      res=conn.read(len,!FLUSHED);
-      if(res) {
-        if(!sizeof(res))
-          return acc;
-        acc+=res;
-      }
-    }
-    while(sizeof(acc)<len&&res);
-    return sizeof(acc)?acc:res;
-  }
-  array(int) acc=({});
-  int c;
-  while((c=GETBYTE())>0)
-    acc+=({c});
-  return `+("",@map(acc,String.int2char));
-}
-
-inline final private int getint16() {
-  int s0=GETBYTE();
-  int r=(s0&0x7f)<<8|GETBYTE();
-  return s0&0x80 ? r-(1<<15) : r ;
-}
-
-inline final private int getint32() {
-  int r=GETINT16();
-  r=r<<8|GETBYTE();
-  return r<<8|GETBYTE();
-}
-
-inline final private int getint64() {
-  int r=GETINT32();
-  return r<<32|GETINT32()&0xffffffff;
-}
-#endif
-
-#define SENDCMD(x ...)	sendcmd(x)
-
-final private int sendcmd(string|array(string) data,void|int flush) {
-  if(flush) {
-    if(stringp(data))
-      data=({data,FLUSH});
-    else
-      data+=({FLUSH});
-    PD("Flush\n");
-    FLUSHED=1;
-  }
-  else if(FLUSHED!=-1)
-    FLUSHED=0;
-  return conn.write(data);
-}
 
 #define plugstring(x)  (sprintf x)
 
@@ -316,35 +245,139 @@ inline final private string plugint64(int x) {
    x>>56&255,x>>48&255,x>>40&255,x>>32&255,x>>24&255,x>>16&255,x>>8&255,x&255);
 }
 
-#ifdef USEPGsql
 class PGassist {
+#ifdef UNBUFFEREDIO
   inherit Stdio.File:std;
+#else
+  inherit Stdio.FILE:std;
+#endif
+#ifdef USEPGsql
   inherit _PGsql.PGsql:pg;
+#else
+  int flushed;
+#endif
   void create(object pgsqlsess) {
     std::create();
+#ifdef USEPGsql
     pg::setpgsqlsess(pgsqlsess);
+#else
+    flushed=-1;
+#endif
   }
   int connect(string host,int port) {
     int res=std::connect(host,port);
+#ifdef USEPGsql
     if(res)
       pg::create(std::query_fd());
+#endif
     return res;
   }
-}
+
+#ifndef USEPGsql
+
+  inline final int getbyte() {
+    if(!FLUSHED && !PEEK(0))
+      sendflush();
+#ifdef UNBUFFEREDIO
+    return read(1)[0];
+#else
+    return getchar();
+#endif
+  }
+  
+  final string getstring(void|int len) {
+    if(!zero_type(len)) {
+      string acc="",res;
+      do {
+        if(!FLUSHED && !PEEK(0))
+          sendflush();
+        res=conn.read(len,!FLUSHED);
+        if(res) {
+          if(!sizeof(res))
+            return acc;
+          acc+=res;
+        }
+      }
+      while(sizeof(acc)<len&&res);
+      return sizeof(acc)?acc:res;
+    }
+    array(int) acc=({});
+    int c;
+    while((c=GETBYTE())>0)
+      acc+=({c});
+    return `+("",@map(acc,String.int2char));
+  }
+  
+  inline final int getint16() {
+    int s0=GETBYTE();
+    int r=(s0&0x7f)<<8|GETBYTE();
+    return s0&0x80 ? r-(1<<15) : r ;
+  }
+  
+  inline final int getint32() {
+    int r=GETINT16();
+    r=r<<8|GETBYTE();
+    return r<<8|GETBYTE();
+  }
+  
+  inline final int getint64() {
+    int r=GETINT32();
+    return r<<32|GETINT32()&0xffffffff;
+  }
 #endif
 
+  final protected void sendflush() {
+    sendcmd(({}),1);
+  }
+  
+  final int sendcmd(string|array(string) data,void|int flush) {
+    if(flush) {
+      if(stringp(data))
+        data=({data,FLUSH});
+      else
+        data+=({FLUSH});
+      PD("Flush\n");
+      FLUSHED=1;
+    }
+    else if(FLUSHED!=-1)
+      FLUSHED=0;
+    return write(data);
+  }
+}
+
 final private object getsocket() {
-#ifdef USEPGsql
   object lcon = PGassist(this);
-#else
-#ifdef UNBUFFEREDIO
-  object lcon = Stdio.File();
-#else
-  object lcon = Stdio.FILE();
+  if(!lcon.connect(host,port))
+    return UNDEFINED;
+#if constant(SSL.sslfile)
+#if 0
+     SSL.context context = SSL.context();
+#if 1
+     context->preferred_suites = ({
+       SSL_rsa_with_idea_cbc_sha,
+       SSL_rsa_with_rc4_128_sha,
+       SSL_rsa_with_rc4_128_md5,
+       SSL_rsa_with_3des_ede_cbc_sha,
+       SSL_rsa_export_with_rc4_40_md5,
+       SSL_rsa_export_with_rc2_cbc_40_md5,
+       SSL_rsa_export_with_des40_cbc_sha,
+     });
 #endif
-  flushed=-1;
+     context->random = Crypto.Random.random_string;
+     object read_callback=con->query_read_callback();
+     object write_callback=con->query_write_callback();
+     object close_callback=con->query_close_callback();
+     
+     ssl = SSL.sslfile(con, context, 1,blocking);
+     if(!blocking) {
+       ssl->set_read_callback(read_callback);
+       ssl->set_write_callback(write_callback);
+       ssl->set_close_callback(close_callback);
+     }
+     con=ssl;
 #endif
-  return lcon.connect(host,port) && lcon;
+#endif
+  return lcon;
 }
 
 //! Cancels the currently running query.
@@ -444,10 +477,10 @@ final int _decodemsg(void|state waitforstate) {
     if(mstate!=unauthenticated) {
       if(qstate==cancelpending)
         qstate=canceled,sendclose();
-      if(FLUSHED && qstate==inquery && !conn.peek(0)) {
+      if(FLUSHED && qstate==inquery && !PEEK(0)) {
         int tcurr=time();
         int told=tcurr+timeout;
-        while(!conn.peek(told-tcurr))
+        while(!PEEK(told-tcurr))
           if((tcurr=time())-told>=timeout) {
             sendclose();cancelquery();
             break;
@@ -658,7 +691,7 @@ final int _decodemsg(void|state waitforstate) {
                 case CHAROID:
                 case BOOLOID:value=GETBYTE();
                   break;
-                case INT8OID:value=getint64();
+                case INT8OID:value=conn.getint64();
                   break;
                 case FLOAT4OID:value=(float)GETSTRING(collen);
                   break;
@@ -807,7 +840,7 @@ final int _decodemsg(void|state waitforstate) {
 private int read_cb(mixed foo, string d) {
   conn.unread(d);
   do _decodemsg();
-  while(conn.peek(0)==1);
+  while(PEEK(0)==1);
   return 0;
 }
 #endif
@@ -1327,6 +1360,10 @@ object big_query(string q,void|mapping(string|int:mixed) bindings) {
   if(err = catch {
       if(!sizeof(preparedname) || !tprepared || !tprepared->preparedname) {
         PD("Parse statement %s\n",preparedname);
+        // Even though the protocol doesn't require the Parse command to be
+        // followed by a flush, it makes a VERY noticeable difference in
+        // performance if it is omitted; seems like a flaw in the PostgreSQL
+        // server
         SENDCMD(({"P",plugint32(4+sizeof(preparedname)+1+sizeof(q)+1+2),
          preparedname,"\0",q,"\0",plugint16(0)}),1);
         PD("Query: %O\n",q);
