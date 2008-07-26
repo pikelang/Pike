@@ -33,7 +33,7 @@
 #endif
 //#define NO_LOCKING  1		    // This breaks the driver, do not enable,
 				    // only for benchmarking mutex performance
-#define USEPGsql     1		    // Doesn't use Stdio.FILE, but PG assist
+#define USEPGsql     1		    // Doesn't use Stdio.FILE, but PGassist
 
 #ifdef USEPGsql
 #define UNBUFFEREDIO 1
@@ -320,8 +320,9 @@ inline final private string plugint64(int x) {
 class PGassist {
   inherit Stdio.File:std;
   inherit _PGsql.PGsql:pg;
-  void create() {
+  void create(object pgsqlsess) {
     std::create();
+    pg::setpgsqlsess(pgsqlsess);
   }
   int connect(string host,int port) {
     int res=std::connect(host,port);
@@ -334,7 +335,7 @@ class PGassist {
 
 final private object getsocket() {
 #ifdef USEPGsql
-  object lcon = PGassist();
+  object lcon = PGassist(this);
 #else
 #ifdef UNBUFFEREDIO
   object lcon = Stdio.File();
@@ -547,7 +548,7 @@ final int _decodemsg(void|state waitforstate) {
           case noerror:
             if(mstate==unauthenticated)
               SENDCMD(({"p",plugint32(4+sizeof(sendpass)+1),
-               sendpass,"\0"}));
+               sendpass,"\0"}),1);
             break;
           default:
           case protocolunsupported:
@@ -869,7 +870,7 @@ void reload(void|int special) {
       PD("Portalsinflight: %d\n",portalsinflight);
       if(!portalsinflight) {
         PD("Sync\n");
-        SENDCMD(({"S",plugint32(4)}),1);
+        SENDCMD(({"S",plugint32(4)}));
         didsync=1;
         if(!special) {
           _decodemsg(readyforquery);
@@ -1185,17 +1186,20 @@ final private void sendclose() {
   string portalname;
   portalsinflight--;
   if(_portal && (portalname=_portal->_portalname)) {
+    int inflight=_portal->_inflight;
     _portal->_portalname = UNDEFINED;
     _portal = UNDEFINED;
-    if(!sizeof(portalname))
-      unnamedportalinuse--;
 #ifdef DEBUGMORE
     PD("Closetrace %O\n",backtrace());
 #endif
-    PD("Close portal %s\n",portalname);
-    SENDCMD(({"C",plugint32(4+1+sizeof(portalname)+1),
-     "P",portalname,"\0"}));
-    _closesent=1;
+    if(!sizeof(portalname))
+      unnamedportalinuse--;
+    if(/*sizeof(portalname)||inflight*/ 1) {
+      PD("Close portal %s\n",portalname);
+      SENDCMD(({"C",plugint32(4+1+sizeof(portalname)+1),
+       "P",portalname,"\0"}),1);
+      _closesent=1;
+    }
   }
 }
 
@@ -1307,7 +1311,7 @@ object big_query(string q,void|mapping(string|int:mixed) bindings) {
 	  }
         }
         if(sizeof(plugbuf))
-	  SENDCMD(plugbuf);	    // close expireds
+	  SENDCMD(plugbuf,1);	    // close expireds
         PD("%O\n",plugbuf);
       }
       prepareds[q]=tprepared=([]);
@@ -1327,7 +1331,7 @@ object big_query(string q,void|mapping(string|int:mixed) bindings) {
       if(!sizeof(preparedname) || !tprepared || !tprepared->preparedname) {
         PD("Parse statement %s\n",preparedname);
         SENDCMD(({"P",plugint32(4+sizeof(preparedname)+1+sizeof(q)+1+2),
-         preparedname,"\0",q,"\0",plugint16(0)}));
+         preparedname,"\0",q,"\0",plugint16(0)}),1);
         PD("Query: %O\n",q);
       }				 // sends Parameter- and RowDescription for 'S'
       conn.set_read_callback(0);
@@ -1574,7 +1578,7 @@ private void releasesession() {
   if(_pgsqlsess) {
     if(copyinprogress) {
       PD("CopyDone\n");
-      _pgsqlsess.SENDCMD("c\0\0\0\4");
+      _pgsqlsess.SENDCMD("c\0\0\0\4",1);
     }
     _pgsqlsess.reload(2);
   }
@@ -1705,6 +1709,7 @@ int|array(string|int) fetch_row(void|int|string buffer) {
 #endif
             return getdatarow();
           case commandcomplete:
+            _inflight=0;
             releasesession();
 	    switch(buffer) {
 	      case 1:

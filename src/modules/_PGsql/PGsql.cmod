@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: PGsql.cmod,v 1.4 2008/07/25 21:46:13 srb Exp $
+ * $Id: PGsql.cmod,v 1.5 2008/07/26 01:04:24 srb Exp $
  *
  * PGsql, accelerator functions for Sql.pgsql for Pike.
  *
@@ -87,6 +87,8 @@ PIKECLASS PGsql
   CVAR uchar*plow,*phigh;
   CVAR uchar*extrabuf;
   CVAR unsigned extrafilled;
+  CVAR struct object*pgsqlsess;
+  CVAR struct svalue sendexecute;
   PIKEVAR int flushed;
 
   INIT {
@@ -94,10 +96,12 @@ PIKECLASS PGsql
     THIS->extrabuf=xalloc(1);
     THIS->extrafilled=0;
     THIS->flushed=-1;
+    mark_free_svalue(&THIS->sendexecute);
   }
 
   EXIT {
     xfree(THIS->extrabuf);
+    free_svalue(&THIS->sendexecute);
   }
 
   static int rread(void*const a,const int len) {
@@ -259,6 +263,13 @@ bad:
     RETURN_VOID;
   }
 
+  PIKEFUN void setpgsqlsess(object pgsqlsess) {
+    THIS->pgsqlsess = pgsqlsess;
+    object_index_no_free2(&THIS->sendexecute, pgsqlsess,0,
+     MK_STRING_SVALUE("_sendexecute"));
+    RETURN_VOID;
+  }
+
   PIKEFUN int peek(void|int timeoutp) {
     int timeout=0;
     if(timeoutp)
@@ -307,8 +318,7 @@ bad:
     int i;
     int totalrecvd=0, nrows=0, buffer=0;
     int rowsreceived,inflight,fetchlimit,parentfetchlimit,portalbuffersize;
-    struct svalue bytesreceived,sendexecute;
-    struct object*pgsqlsess;
+    struct svalue bytesreceived;
     struct array*datarowdesc;
     pop_n_elems(2);
 
@@ -338,13 +348,8 @@ bad:
       buffer=bytesreceived.u.integer;
     free_svalue(&bytesreceived);
 
-    object_index_no_free2(&bytesreceived, portal,0,
-     MK_STRING_SVALUE("_pgsqlsess"));
-    pgsqlsess=bytesreceived.u.object;
     free_svalue(&bytesreceived);
-    object_index_no_free2(&sendexecute, pgsqlsess,0,
-     MK_STRING_SVALUE("_sendexecute"));
-    object_index_no_free2(&bytesreceived, pgsqlsess,0,
+    object_index_no_free2(&bytesreceived, THIS->pgsqlsess,0,
      MK_STRING_SVALUE("_fetchlimit"));
     parentfetchlimit=bytesreceived.u.integer;
     free_svalue(&bytesreceived);
@@ -461,7 +466,7 @@ simple:             push_int(nextword);
 	          switch(buffer) {
 	            case 1: {
                       struct svalue nextportal;
-                      object_index_no_free2(&nextportal, pgsqlsess,0,
+                      object_index_no_free2(&nextportal, THIS->pgsqlsess,0,
                        MK_STRING_SVALUE("_nextportal"));
                       i=nextportal.u.integer;
 		      free_svalue(&nextportal);
@@ -472,7 +477,7 @@ simple:             push_int(nextword);
 	              if(fetchlimit && inflight<=fetchlimit-1) {
 			struct svalue*oldstack=Pike_sp;
 			push_int(fetchlimit);
-	                apply_svalue(&sendexecute,1);
+	                apply_svalue(&THIS->sendexecute,1);
 			inflight+=fetchlimit;
 			/*
 			 * FIXME:
@@ -497,10 +502,16 @@ simple:             push_int(nextword);
     f_aggregate(nrows);
     Pike_sp++;
     object_index_no_free2(Pike_sp-1, portal,0, MK_STRING_SVALUE("_datarows"));
-    stack_swap();
-    f_add(2);
+    if(Pike_sp[-1].u.array->size) {
+      push_undefined();
+      object_set_index2(portal,0, MK_STRING_SVALUE("_datarows"), Pike_sp-1);
+      pop_stack();
+      stack_swap();
+      f_add(2);
+    }
+    else
+      pop_stack();
     object_set_index2(portal,0, MK_STRING_SVALUE("_datarows"), Pike_sp-1);
-    pop_stack();
     pop_stack();
     push_int(inflight);
     object_set_index2(portal,0, MK_STRING_SVALUE("_inflight"), Pike_sp-1);
