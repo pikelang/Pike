@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: PGsql.cmod,v 1.7 2008/07/26 07:36:49 srb Exp $
+ * $Id: PGsql.cmod,v 1.8 2008/07/26 08:04:32 srb Exp $
  *
  * PGsql, accelerator functions for Sql.pgsql for Pike.
  *
@@ -441,6 +441,7 @@ simple:             push_int(nextword);
       f_aggregate(cols);
       rowsreceived++;
       nrows++;
+      inflight--;
       if(medium_peek(0)>0)
         switch(low_getbyte()) {
 	  case PGMSG_DATAROW:

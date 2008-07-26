@@ -91,7 +91,7 @@ private int cachedepth=1024; // Maximum cachecountsum for prepared statements,
 			     // may be tuned by the application
 private int timeout=4096;    // Queries running longer than this number of
 			     // seconds are canceled automatically
-private int portalbuffersize=64*1024;  // Approximate buffer per portal
+private int portalbuffersize=32*1024;  // Approximate buffer per portal
 private int reconnected;     // Number of times the connection was reset
 #ifndef USEPGsql
 private int flushed;
@@ -1186,7 +1186,6 @@ final private void sendclose() {
   string portalname;
   portalsinflight--;
   if(_portal && (portalname=_portal->_portalname)) {
-    int inflight=_portal->_inflight;
     _portal->_portalname = UNDEFINED;
     _portal = UNDEFINED;
 #ifdef DEBUGMORE
@@ -1194,12 +1193,10 @@ final private void sendclose() {
 #endif
     if(!sizeof(portalname))
       unnamedportalinuse--;
-    if(/*sizeof(portalname)||inflight*/ 1) {
-      PD("Close portal %s\n",portalname);
-      SENDCMD(({"C",plugint32(4+1+sizeof(portalname)+1),
-       "P",portalname,"\0"}),1);
-      _closesent=1;
-    }
+    PD("Close portal %s\n",portalname);
+    SENDCMD(({"C",plugint32(4+1+sizeof(portalname)+1),
+     "P",portalname,"\0"}),1);
+    _closesent=1;
   }
 }
 
