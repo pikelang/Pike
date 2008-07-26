@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: PGsql.cmod,v 1.11 2008/07/26 18:31:21 srb Exp $
+ * $Id: PGsql.cmod,v 1.12 2008/07/26 19:50:08 srb Exp $
  *
  * PGsql, accelerator functions for Sql.pgsql for Pike.
  *
@@ -264,44 +264,38 @@ bad:
     struct array*datarowdesc;
     pop_n_elems(2);
 
-    object_index_no_free2(&bytesreceived, portal,0,
-     MK_STRING_SVALUE("_datarowdesc"));
-    datarowdesc=bytesreceived.u.array;
-    free_svalue(&bytesreceived);
+    ref_push_object(portal); ref_push_string(MK_STRING("_datarowdesc"));
+    f_arrow(2); datarowdesc=Pike_sp[-1].u.array;
+    pop_stack();
 
-    object_index_no_free2(&bytesreceived, portal,0,
-     MK_STRING_SVALUE("_inflight"));
-    inflight=bytesreceived.u.integer;
-    free_svalue(&bytesreceived);
+    ref_push_object(portal); ref_push_string(MK_STRING("_inflight"));
+    f_arrow(2); inflight=Pike_sp[-1].u.integer;
+    pop_stack();
 
-    object_index_no_free2(&bytesreceived, portal,0,
-     MK_STRING_SVALUE("_fetchlimit"));
-    fetchlimit=bytesreceived.u.integer;
-    free_svalue(&bytesreceived);
+    ref_push_object(portal); ref_push_string(MK_STRING("_fetchlimit"));
+    f_arrow(2); fetchlimit=Pike_sp[-1].u.integer;
+    pop_stack();
 
-    object_index_no_free2(&bytesreceived, portal,0,
-     MK_STRING_SVALUE("_portalbuffersize"));
-    portalbuffersize=bytesreceived.u.integer;
-    free_svalue(&bytesreceived);
+    ref_push_object(portal); ref_push_string(MK_STRING("_portalbuffersize"));
+    f_arrow(2); portalbuffersize=Pike_sp[-1].u.integer;
+    pop_stack();
 
-    object_index_no_free2(&bytesreceived, portal,0,
-     MK_STRING_SVALUE("_buffer"));
-    if(bytesreceived.type == PIKE_T_INT)
-      buffer=bytesreceived.u.integer;
-    free_svalue(&bytesreceived);
+    ref_push_object(portal); ref_push_string(MK_STRING("_buffer"));
+    f_arrow(2);
+    if(Pike_sp[-1].type == PIKE_T_INT)
+      buffer=Pike_sp[-1].u.integer;
+    pop_stack();
 
-    free_svalue(&bytesreceived);
-    object_index_no_free2(&bytesreceived, THIS->pgsqlsess,0,
-     MK_STRING_SVALUE("_fetchlimit"));
-    parentfetchlimit=bytesreceived.u.integer;
-    free_svalue(&bytesreceived);
+    ref_push_object(THIS->pgsqlsess); ref_push_string(MK_STRING("_fetchlimit"));
+    f_arrow(2); parentfetchlimit=Pike_sp[-1].u.integer;
+    pop_stack();
 
-    object_index_no_free2(&bytesreceived, portal,0,
-     MK_STRING_SVALUE("_rowsreceived"));
-    if(bytesreceived.type != PIKE_T_INT)
+    ref_push_object(portal); ref_push_string(MK_STRING("_rowsreceived"));
+    f_arrow(2);
+    if(Pike_sp[-1].type != PIKE_T_INT)
       Pike_error("Driver needs to be fixed to support more than 2^31 rows\n");
-    rowsreceived=bytesreceived.u.integer;
-    free_svalue(&bytesreceived);
+    rowsreceived=Pike_sp[-1].u.integer;
+    pop_stack();
 
     object_index_no_free2(&bytesreceived, portal,0,
      MK_STRING_SVALUE("_bytesreceived"));
@@ -407,11 +401,11 @@ simple:             push_int(nextword);
 	            fetchlimit=0;
 	          switch(buffer) {
 	            case 1: {
-                      struct svalue nextportal;
-                      object_index_no_free2(&nextportal, THIS->pgsqlsess,0,
-                       MK_STRING_SVALUE("_nextportal"));
-                      i=nextportal.u.integer;
-		      free_svalue(&nextportal);
+		      ref_push_object(THIS->pgsqlsess);
+		      ref_push_string(MK_STRING("_nextportal"));
+		      f_arrow(2); i=Pike_sp[-1].u.integer;
+		      pop_stack();
+
                       if(i)
 		        break;
 	            }
@@ -436,8 +430,9 @@ simple:             push_int(nextword);
     }
 
     f_aggregate(nrows);
-    Pike_sp++;
-    object_index_no_free2(Pike_sp-1, portal,0, MK_STRING_SVALUE("_datarows"));
+    ref_push_object(portal); ref_push_string(MK_STRING("_datarows"));
+    f_arrow(2);
+
     if(Pike_sp[-1].u.array->size) {
       push_undefined();
       object_set_index2(portal,0, MK_STRING_SVALUE("_datarows"), Pike_sp-1);
