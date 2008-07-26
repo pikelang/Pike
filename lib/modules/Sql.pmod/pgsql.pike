@@ -1,7 +1,5 @@
 /*
  * This is the PostgreSQL direct network module for Pike.
- *
- * TODO: support SSL connections
  */
 
 //! This is an interface to the PostgreSQL database
@@ -164,6 +162,8 @@ protected string _sprintf(int type, void|mapping flags) {
 //! @expr{0@} or @expr{""@}, it will try to connect to the specified
 //! database.
 //!
+//! The options argument currently supports two options: use_ssl and force_ssl
+//!
 //! @note
 //! You need to have a database selected before using the sql-object,
 //! otherwise you'll get exceptions when you try to query it. Also
@@ -177,7 +177,7 @@ protected void create(void|string _host, void|string _database,
  void|string _user, void|string _pass, void|mapping(string:mixed) _options) {
   pass = _pass; _pass = "CENSORED";
   user = _user; database = _database; host = _host || PGSQL_DEFAULT_HOST;
-  options = _options;
+  options = _options || ([]);
   if(search(host,":")>=0 && sscanf(_host,"%s:%d",host,port)!=2)
     ERROR("Error in parsing the hostname argument\n");
   if(!port)
@@ -225,12 +225,11 @@ string host_info() {
 #define PEEK(x)	     conn.bpeek(x)
 #else
 #define PEEK(x)	     conn.peek(x)
-
 #endif
 
 #define plugstring(x)  (sprintf x)
 
-#define plugbyte(x)    sprintf("%c",x)
+#define plugbyte(x)    String.int2char(x)
 
 inline final private string plugint16(int x) {
   return sprintf("%c%c",x>>8&255,x&255);
@@ -246,43 +245,41 @@ inline final private string plugint64(int x) {
 }
 
 class PGassist {
-#ifdef UNBUFFEREDIO
-  inherit Stdio.File:std;
-#else
-  inherit Stdio.FILE:std;
-#endif
+
+  int(-1..1) peek(int timeout) {
+  }
+
+  string read(int len,void|int(0..1) not_all) {
+  }
+
+  int write(string|array(string) data) {
+  }
+
+  int getchar() {
+  }
+
+  int close() {
+  }
+
 #ifdef USEPGsql
-  inherit _PGsql.PGsql:pg;
+  inherit _PGsql.PGsql;
 #else
   int flushed;
 #endif
+
   void create(object pgsqlsess) {
-    std::create();
 #ifdef USEPGsql
-    pg::setpgsqlsess(pgsqlsess);
+    ::create(pgsqlsess);
 #else
     flushed=-1;
 #endif
   }
-  int connect(string host,int port) {
-    int res=std::connect(host,port);
-#ifdef USEPGsql
-    if(res)
-      pg::create(std::query_fd());
-#endif
-    return res;
-  }
 
 #ifndef USEPGsql
-
   inline final int getbyte() {
     if(!FLUSHED && !PEEK(0))
       sendflush();
-#ifdef UNBUFFEREDIO
-    return read(1)[0];
-#else
     return getchar();
-#endif
   }
   
   final string getstring(void|int len) {
@@ -329,7 +326,7 @@ class PGassist {
   final void sendflush() {
     sendcmd(({}),1);
   }
-  
+
   final int sendcmd(string|array(string) data,void|int flush) {
     if(flush) {
       if(stringp(data))
@@ -343,41 +340,114 @@ class PGassist {
       FLUSHED=0;
     return write(data);
   }
+ 
+  final void sendterminate() {
+    PD("Terminate\n");
+    SENDCMD(({"X",plugint32(4)}));
+    close();
+  }
 }
 
+class PGconn {
+
+  inherit PGassist:pg;
+#ifdef UNBUFFEREDIO
+  inherit Stdio.File:std;
+
+  inline int getchar() {
+    return std::read(1)[0];
+  }
+#else
+  inherit Stdio.FILE:std;
+
+  inline int getchar() {
+    return std::getchar();
+  }
+#endif
+
+  inline int(-1..1) peek(int timeout) {
+    return std::peek(timeout);
+  }
+
+  inline string read(int len,void|int(0..1) not_all) {
+    return std::read(len,not_all);
+  }
+
+  inline int write(string|array(string) data) {
+    return std::write(data);
+  }
+
+  int close() {
+    return std::close();
+  }
+
+  void create(Stdio.File stream,object pgsqlsess) {
+    std::create();
+    std::assign(stream);
+    pg::create(pgsqlsess);
+  }
+}
+
+#if constant(SSL.sslfile)
+class PGconnS {
+  inherit SSL.sslfile:std;
+  inherit PGassist:pg;
+
+  Stdio.File rawstream;
+
+  inline int(-1..1) peek(int timeout) {
+    return rawstream.peek(timeout);
+  }
+
+  inline string read(int len,void|int(0..1) not_all) {
+    return std::read(len,not_all);
+  }
+
+  inline int write(string|array(string) data) {
+    return std::write(data);
+  }
+
+  void create(Stdio.File stream, SSL.context ctx,object pgsqlsess) {
+    rawstream=stream;
+    std::create(stream,ctx,1,1);
+    pg::create(pgsqlsess);
+  }
+}
+#endif
+
 final private object getsocket() {
-  object lcon = PGassist(this);
+  object lcon = Stdio.File();
   if(!lcon.connect(host,port))
     return UNDEFINED;
+  
+  object fcon;
 #if constant(SSL.sslfile)
-#if 0
-     SSL.context context = SSL.context();
-#if 1
-     context->preferred_suites = ({
-       SSL_rsa_with_idea_cbc_sha,
-       SSL_rsa_with_rc4_128_sha,
-       SSL_rsa_with_rc4_128_md5,
-       SSL_rsa_with_3des_ede_cbc_sha,
-       SSL_rsa_export_with_rc4_40_md5,
-       SSL_rsa_export_with_rc2_cbc_40_md5,
-       SSL_rsa_export_with_des40_cbc_sha,
-     });
-#endif
-     context->random = Crypto.Random.random_string;
-     object read_callback=con->query_read_callback();
-     object write_callback=con->query_write_callback();
-     object close_callback=con->query_close_callback();
-     
-     ssl = SSL.sslfile(con, context, 1,blocking);
-     if(!blocking) {
-       ssl->set_read_callback(read_callback);
-       ssl->set_write_callback(write_callback);
-       ssl->set_close_callback(close_callback);
+  if(options->use_ssl || options->force_ssl) {
+     PD("SSLRequest\n");
+     lcon.write(({plugint32(8),plugint32(PG_PROTOCOL(1234,5679))}));
+     switch(lcon.read(1)) {
+       case "S":
+         SSL.context context = SSL.context();
+         context->random = Crypto.Random.random_string;
+         fcon=PGconnS(lcon, context, this);
+	 if(fcon)
+	   return fcon;
+       default:lcon.close();
+	 if(!lcon.connect(host,port))
+	   return UNDEFINED;
+       case "N":
+	 if(options->force_ssl)
+	   ERROR("Encryption not supported on connection to %s:%d\n",
+	    host,port);
      }
-     con=ssl;
+  }
+#else
+  if(options->force_ssl)
+    ERROR("Encryption library missing, cannot establish connection to %s:%d\n",
+     host,port);
 #endif
-#endif
-  return lcon;
+  fcon=PGconn(lcon, this);
+  return fcon;
 }
 
 //! Cancels the currently running query.
@@ -391,7 +461,7 @@ void cancelquery() {
     PD("CancelRequest\n");
     if(!(lcon=getsocket()))
       ERROR("Cancel connect failed\n");
-    lcon.write(({plugint32(16),plugint32(PG_PROTOCOL(1234,4567)),
+    lcon.write(({plugint32(16),plugint32(PG_PROTOCOL(1234,5678)),
      plugint32(backendpid),cancelsecret}));
     lcon.close();
   }
@@ -845,14 +915,8 @@ private int read_cb(mixed foo, string d) {
 }
 #endif
 
-final private void sendterminate() {
-  PD("Terminate\n");
-  SENDCMD(({"X",plugint32(4)}));
-  conn.close();
-}
-
 void destroy() {
-  sendterminate();
+  conn.sendterminate();
 }
 
 private void reconnect(void|int force) {
@@ -863,7 +927,7 @@ private void reconnect(void|int force) {
     exit(1);
 #endif
     if(!force)
-      sendterminate();
+      conn.sendterminate();
     foreach(prepareds;;mapping tprepared)
       m_delete(tprepared,"preparedname");
   }

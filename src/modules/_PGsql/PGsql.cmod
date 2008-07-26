@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: PGsql.cmod,v 1.10 2008/07/26 11:04:44 srb Exp $
+ * $Id: PGsql.cmod,v 1.11 2008/07/26 18:31:21 srb Exp $
  *
  * PGsql, accelerator functions for Sql.pgsql for Pike.
  *
@@ -18,6 +18,7 @@
 #include "threads.h"
 #include "builtin_functions.h"
 #include "fdlib.h"
+#include "dmalloc.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -60,7 +61,6 @@ typedef unsigned char uchar;
 
 PIKECLASS PGsql
 {
-  CVAR int fd;
   CVAR uchar buf[BUFSIZE];
   CVAR uchar*plow,*phigh;
   CVAR uchar*extrabuf;
@@ -119,7 +119,7 @@ PIKECLASS PGsql
     }
     if(THIS->extrafilled) {
       if(THIS->extrafilled>BUFSIZE)
-        THIS->extrabuf=xrealloc(THIS->extrabuf,1);
+        THIS->extrabuf=realloc(THIS->extrabuf,1);
       THIS->extrafilled=0;
     }
   }
@@ -207,12 +207,7 @@ bad:
     Pike_error("Missing %d bytes from network\n",len);
   }
 
-  PIKEFUN void create(int _fd) {
-    THIS->fd = _fd;
-    RETURN_VOID;
-  }
-
-  PIKEFUN void setpgsqlsess(object pgsqlsess) {
+  PIKEFUN void create(object pgsqlsess) {
     THIS->pgsqlsess = pgsqlsess;
     RETURN_VOID;
   }
@@ -248,10 +243,10 @@ bad:
       PD((stderr,"PGsql unread %d\n",len));
       if(THIS->extrafilled) {
         memmove(THIS->extrabuf,THIS->plow,left);
-        q=xrealloc(THIS->extrabuf,left+len);
+        q=realloc(THIS->extrabuf,left+len);
       }
       else {
-        q=xrealloc(THIS->extrabuf,left+len);
+        q=realloc(THIS->extrabuf,left+len);
         memcpy(q,THIS->plow,left);
       }
       THIS->phigh=(THIS->plow=THIS->extrabuf=q)+left+len;
@@ -311,7 +306,6 @@ bad:
     object_index_no_free2(&bytesreceived, portal,0,
      MK_STRING_SVALUE("_bytesreceived"));
 
-    push_int(1234);
     for(;;) {
       int cols=low_getint16();
       if(cols != datarowdesc->size)
@@ -455,18 +449,22 @@ simple:             push_int(nextword);
       pop_stack();
     object_set_index2(portal,0, MK_STRING_SVALUE("_datarows"), Pike_sp-1);
     pop_stack();
+
     push_int(inflight);
     object_set_index2(portal,0, MK_STRING_SVALUE("_inflight"), Pike_sp-1);
     pop_stack();
+
     push_svalue(&bytesreceived);
     free_svalue(&bytesreceived);
     push_int(totalrecvd);
     f_add(2);
     object_set_index2(portal,0, MK_STRING_SVALUE("_bytesreceived"), Pike_sp-1);
     pop_stack();
+
     push_int(fetchlimit);
     object_set_index2(portal,0, MK_STRING_SVALUE("_fetchlimit"), Pike_sp-1);
     pop_stack();
+
     if(nrows>1) {
       push_int(rowsreceived-1);
       object_set_index2(portal,0, MK_STRING_SVALUE("_rowsreceived"),
