@@ -1,9 +1,11 @@
 /* -*- c -*-
- * $Id: PGsql.cmod,v 1.5 2008/07/26 01:04:24 srb Exp $
+ * $Id: PGsql.cmod,v 1.6 2008/07/26 01:26:03 srb Exp $
  *
  * PGsql, accelerator functions for Sql.pgsql for Pike.
  *
  */
+
+#if 0	 /* set to 1 to enable this module  */
 
 #include "global.h"
 #include "config.h"
@@ -50,8 +52,6 @@ DECLARATIONS
 #else /* !PGSQL_DEBUG */
 #define PD(X)
 #endif /* PGSQL_DEBUG */
-
-#if 1
 
 #define BUFSIZE	     4096
 
@@ -534,8 +534,6 @@ simple:             push_int(nextword);
   }
 }
 
-#endif /* 1 */
-
 PIKE_MODULE_INIT {
   INIT;
 }
@@ -543,3 +541,5 @@ PIKE_MODULE_INIT {
 PIKE_MODULE_EXIT {
   EXIT;
 }
+
+#endif /* 1 */
