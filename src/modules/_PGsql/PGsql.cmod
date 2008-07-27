@@ -1,16 +1,15 @@
 /* -*- c -*-
- * $Id: PGsql.cmod,v 1.12 2008/07/26 19:50:08 srb Exp $
+ * $Id: PGsql.cmod,v 1.13 2008/07/27 15:18:21 srb Exp $
  *
  * PGsql, accelerator functions for Sql.pgsql for Pike.
  *
  */
 
-#if 1	 /* set to 1 to enable this module  */
-
 #include "global.h"
 #include "config.h"
 
 #include "svalue.h"
+#include "object.h"
 #include "mapping.h"
 #include "module.h"
 #include "operators.h"
@@ -36,7 +35,7 @@ DECLARATIONS
 #define BUFSIZE	     4096
 
 typedef unsigned char uchar;
-#define RETURN_VOID  {if(args) pop_n_elems(args);}
+#define RETURN_VOID  do {pop_n_elems(args); push_int(0);} while(0)
 #define STRLEN(x)    (sizeof(x)-1)
 #define THISOBJ (Pike_fp->current_object)
 
@@ -67,6 +66,7 @@ PIKECLASS PGsql
   CVAR unsigned extrafilled;
   CVAR struct object*pgsqlsess;
   PIKEVAR int flushed;
+  PIKEVAR object portal;
 
   INIT {
     THIS->phigh=THIS->plow=THIS->buf;
@@ -77,6 +77,7 @@ PIKECLASS PGsql
 
   EXIT {
     xfree(THIS->extrabuf);
+    /* THIS->portal=0; necessary if we had faked the refs count */
   }
 
   static int rread(void*const a,const int len) {
@@ -93,7 +94,7 @@ PIKECLASS PGsql
     pop_n_elems(1);
     return i;
   }
-  
+
   static int low_peek(const int timeout) {
     int retval;
     push_int(timeout);
@@ -115,7 +116,7 @@ PIKECLASS PGsql
   static void flushifneeded(void) {
     if(!THIS->flushed && low_peek(0)) {
       apply(THISOBJ,"sendflush",0);
-      pop_stack();				/* void function, pop anyway */
+      pop_stack();				  /* void function returns 0 */
     }
     if(THIS->extrafilled) {
       if(THIS->extrafilled>BUFSIZE)
@@ -152,7 +153,7 @@ ret2: PD((stderr,"PGsql getbyte 0x%02x=%c\n",retval,retval));
     r=r<<8|low_getbyte();
     return r<<8|low_getbyte();
   }
-  
+
   static struct pike_string*low_getstring(int length) {
     struct pike_string*retval;
     struct string_builder sb,*psb=0;
@@ -209,6 +210,16 @@ bad:
 
   PIKEFUN void create(object pgsqlsess) {
     THIS->pgsqlsess = pgsqlsess;
+    RETURN_VOID;				  /* void functions return 0 */
+  }
+
+  PIKEFUN void setportal(void|object portal) {
+    if(THIS->portal)
+      free_object(THIS->portal);
+    THIS->portal=portal;
+    debug_malloc_touch(THIS->portal);
+    Pike_sp--;
+    args=0;
     RETURN_VOID;
   }
 
@@ -256,17 +267,22 @@ bad:
     RETURN_VOID;
   }
 
-  PIKEFUN void decodedatarow(int msglen, object portal) {
+  PIKEFUN void decodedatarow(int msglen) {
     int i;
     int totalrecvd=0, nrows=0, buffer=0;
     int rowsreceived,inflight,fetchlimit,parentfetchlimit,portalbuffersize;
-    struct svalue bytesreceived;
+    struct svalue*bytesreceived;
     struct array*datarowdesc;
-    pop_n_elems(2);
+    struct object*portal;
+    pop_stack();					      /* drop msglen */
+    ref_push_object(portal=THIS->portal);	  /* increase refs on portal */
 
     ref_push_object(portal); ref_push_string(MK_STRING("_datarowdesc"));
     f_arrow(2); datarowdesc=Pike_sp[-1].u.array;
-    pop_stack();
+						    /* preserve _datarowdesc */
+    object_index_no_free2(bytesreceived=Pike_sp, portal,0,
+     MK_STRING_SVALUE("_bytesreceived"));
+    Pike_sp++;					   /* preserve _bytesreceived */
 
     ref_push_object(portal); ref_push_string(MK_STRING("_inflight"));
     f_arrow(2); inflight=Pike_sp[-1].u.integer;
@@ -296,9 +312,6 @@ bad:
       Pike_error("Driver needs to be fixed to support more than 2^31 rows\n");
     rowsreceived=Pike_sp[-1].u.integer;
     pop_stack();
-
-    object_index_no_free2(&bytesreceived, portal,0,
-     MK_STRING_SVALUE("_bytesreceived"));
 
     for(;;) {
       int cols=low_getint16();
@@ -373,7 +386,6 @@ simple:             push_int(nextword);
       if(msglen)
         Pike_error("Protocol error\n");
       f_aggregate(cols);
-      rowsreceived++;
       nrows++;
       inflight--;
       if(medium_peek(0)>0)
@@ -386,9 +398,11 @@ simple:             push_int(nextword);
 	        if(fetchlimit) {
 	          if(parentfetchlimit) {
 	            push_int(portalbuffersize/2);
-	            push_int(rowsreceived);
+	            push_int(rowsreceived+nrows);
 	            f_multiply(2);
-	            push_svalue(&bytesreceived);
+	            push_svalue(bytesreceived);
+		    push_int(totalrecvd);
+		    f_add(2);
 	            f_divide(2);
 	            fetchlimit=Pike_sp[-1].u.integer;
 	            if(fetchlimit>parentfetchlimit)
@@ -414,7 +428,7 @@ simple:             push_int(nextword);
 			push_int(fetchlimit);
 			apply(THIS->pgsqlsess, "_sendexecute", 1);
 			inflight+=fetchlimit;
-			pop_stack();	  /* void function, pop anyway */
+			pop_stack();		  /* void function returns 0 */
 		      }
 	          }
 	        }
@@ -423,7 +437,7 @@ simple:             push_int(nextword);
 	    PD((stderr,"PGsql DataRow fast fetch\n"));
 	    msglen=low_getint32()-4;
 	    continue;
-	  default:THIS->plow--;	    /* ungetc() */
+	  default:THIS->plow--;				         /* ungetc() */
 	  case -1:;
         }
       break;
@@ -444,28 +458,29 @@ simple:             push_int(nextword);
       pop_stack();
     object_set_index2(portal,0, MK_STRING_SVALUE("_datarows"), Pike_sp-1);
     pop_stack();
-
-    push_int(inflight);
-    object_set_index2(portal,0, MK_STRING_SVALUE("_inflight"), Pike_sp-1);
-    pop_stack();
-
-    push_svalue(&bytesreceived);
-    free_svalue(&bytesreceived);
+				      /* bytesreceived is still on the stack */
     push_int(totalrecvd);
     f_add(2);
     object_set_index2(portal,0, MK_STRING_SVALUE("_bytesreceived"), Pike_sp-1);
+    pop_stack();
+
+    push_int(inflight);
+    object_set_index2(portal,0, MK_STRING_SVALUE("_inflight"), Pike_sp-1);
     pop_stack();
 
     push_int(fetchlimit);
     object_set_index2(portal,0, MK_STRING_SVALUE("_fetchlimit"), Pike_sp-1);
     pop_stack();
 
-    if(nrows>1) {
-      push_int(rowsreceived-1);
+    if(--nrows) {
+      push_int(rowsreceived+nrows);
       object_set_index2(portal,0, MK_STRING_SVALUE("_rowsreceived"),
        Pike_sp-1);
       pop_stack();
     }
+
+    args = 2;				      /* pop _datarowdesc and portal */
+    RETURN_VOID;
   }
 }
 
@@ -476,5 +491,3 @@ PIKE_MODULE_INIT {
 PIKE_MODULE_EXIT {
   EXIT;
 }
-
-#endif /* 1 */

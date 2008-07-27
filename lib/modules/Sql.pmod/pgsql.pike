@@ -7,7 +7,7 @@
 //! Note that you @b{do not@} need to have a
 //! PostgreSQL server running on your host to use this module: you can
 //! connect to the database over a TCP/IP socket.
-//! 
+//!
 //! This module replaces the functionality of the older @[Sql.postgres]
 //! and @[Postgres.postgres] modules.
 //!
@@ -31,7 +31,7 @@
 #endif
 //#define NO_LOCKING  1		    // This breaks the driver, do not enable,
 				    // only for benchmarking mutex performance
-#define USEPGsql     1		    // Doesn't use Stdio.FILE, but PGassist
+#define USEPGsql     1		    // Doesn't use Stdio.FILE, but _PGsql
 
 #ifdef USEPGsql
 #define UNBUFFEREDIO 1
@@ -59,14 +59,13 @@
 
 #define ERROR(X ...)	     predef::error(X)
 
-pgsql_result _portal;
 int _nextportal;
 int _closesent;
 int _fetchlimit=FETCHLIMIT;
 private int unnamedportalinuse;
 private int portalsinflight;
 
-private object conn;
+object _c;
 private string SSauthdata,cancelsecret;
 private int backendpid;
 private int backendstatus;
@@ -111,10 +110,10 @@ protected string _sprintf(int type, void|mapping flags) {
        "portal %d %O\n%O\n",
        user,host,port,database,backendpid,status_commit(),reconnected,
        mstate,qstate,pstmtcount,pportalcount,
-       _portal&&_portal->query||"",
+       _c.portal&&_c.portal->query||"",
        lastmessage||"",
        msgresponse,
-       !!_portal,runtimeparameter,prepareds);
+       !!_c.portal,runtimeparameter,prepareds);
       break;
   }
   return res;
@@ -211,37 +210,7 @@ string error(void|int clear) {
 //! and how (TCP/IP or UNIX sockets).
 
 string host_info() {
-  return sprintf("Via fd:%d over TCP/IP to %s:%d",conn->query_fd(),host,port);
-}
-
-#define SENDCMD(x ...)	conn.sendcmd(x)
-#define GETBYTE()    conn.getbyte()
-#define GETSTRING(x) conn.getstring(x)
-#define GETINT16()   conn.getint16()
-#define GETINT32()   conn.getint32()
-#define FLUSHED	     conn.flushed
-
-#ifdef USEPGsql
-#define PEEK(x)	     conn.bpeek(x)
-#else
-#define PEEK(x)	     conn.peek(x)
-#endif
-
-#define plugstring(x)  (sprintf x)
-
-#define plugbyte(x)    String.int2char(x)
-
-inline final private string plugint16(int x) {
-  return sprintf("%c%c",x>>8&255,x&255);
-}
-
-inline final private string plugint32(int x) {
-  return sprintf("%c%c%c%c",x>>24&255,x>>16&255,x>>8&255,x&255);
-}
-
-inline final private string plugint64(int x) {
-  return sprintf("%c%c%c%c%c%c%c%c",
-   x>>56&255,x>>48&255,x>>40&255,x>>32&255,x>>24&255,x>>16&255,x>>8&255,x&255);
+  return sprintf("Via fd:%d over TCP/IP to %s:%d",_c.query_fd(),host,port);
 }
 
 class PGassist {
@@ -264,12 +233,23 @@ class PGassist {
 #ifdef USEPGsql
   inherit _PGsql.PGsql;
 #else
+  object portal;
+
+  void setportal(void|object newportal) {
+    portal=newportal;
+  }
+
+  inline int(-1..1) bpeek(int timeout) {
+    return peek(timeout);
+  }
+
   int flushed;
 #endif
 
-  void create(object pgsqlsess) {
+  void create(void|object pgsqlsess) {
 #ifdef USEPGsql
-    ::create(pgsqlsess);
+    if(pgsqlsess)
+      ::create(pgsqlsess);
 #else
     flushed=-1;
 #endif
@@ -277,18 +257,18 @@ class PGassist {
 
 #ifndef USEPGsql
   inline final int getbyte() {
-    if(!FLUSHED && !PEEK(0))
+    if(!flushed && !bpeek(0))
       sendflush();
     return getchar();
   }
-  
+
   final string getstring(void|int len) {
     if(!zero_type(len)) {
       string acc="",res;
       do {
-        if(!FLUSHED && !PEEK(0))
+        if(!flushed && !bpeek(0))
           sendflush();
-        res=conn.read(len,!FLUSHED);
+        res=read(len,!flushed);
         if(res) {
           if(!sizeof(res))
             return acc;
@@ -300,28 +280,45 @@ class PGassist {
     }
     array(int) acc=({});
     int c;
-    while((c=GETBYTE())>0)
+    while((c=getbyte())>0)
       acc+=({c});
     return `+("",@map(acc,String.int2char));
   }
-  
+
   inline final int getint16() {
-    int s0=GETBYTE();
-    int r=(s0&0x7f)<<8|GETBYTE();
+    int s0=getbyte();
+    int r=(s0&0x7f)<<8|getbyte();
     return s0&0x80 ? r-(1<<15) : r ;
   }
-  
+
   inline final int getint32() {
-    int r=GETINT16();
-    r=r<<8|GETBYTE();
-    return r<<8|GETBYTE();
+    int r=getint16();
+    r=r<<8|getbyte();
+    return r<<8|getbyte();
   }
-  
+
   inline final int getint64() {
-    int r=GETINT32();
-    return r<<32|GETINT32()&0xffffffff;
+    int r=getint32();
+    return r<<32|getint32()&0xffffffff;
   }
 #endif
+
+  inline final string plugbyte(int x) {
+    return String.int2char(x);
+  }
+
+  inline final string plugint16(int x) {
+    return sprintf("%c%c",x>>8&255,x&255);
+  }
+
+  inline final string plugint32(int x) {
+    return sprintf("%c%c%c%c",x>>24&255,x>>16&255,x>>8&255,x&255);
+  }
+
+  inline final string plugint64(int x) {
+    return sprintf("%c%c%c%c%c%c%c%c",x>>56&255,x>>48&255,x>>40&255,x>>32&255,
+     x>>24&255,x>>16&255,x>>8&255,x&255);
+  }
 
   final void sendflush() {
     sendcmd(({}),1);
@@ -334,16 +331,16 @@ class PGassist {
       else
         data+=({FLUSH});
       PD("Flush\n");
-      FLUSHED=1;
+      flushed=1;
     }
-    else if(FLUSHED!=-1)
-      FLUSHED=0;
+    else if(flushed!=-1)
+      flushed=0;
     return write(data);
   }
- 
+
   final void sendterminate() {
     PD("Terminate\n");
-    SENDCMD(({"X",plugint32(4)}));
+    sendcmd(({"X",plugint32(4)}));
     close();
   }
 }
@@ -415,16 +412,18 @@ class PGconnS {
 }
 #endif
 
-final private object getsocket() {
+final private object getsocket(void|int nossl) {
   object lcon = Stdio.File();
   if(!lcon.connect(host,port))
     return UNDEFINED;
-  
+
   object fcon;
 #if constant(SSL.sslfile)
-  if(options->use_ssl || options->force_ssl) {
+  if(!nossl && (options->use_ssl || options->force_ssl)) {
      PD("SSLRequest\n");
-     lcon.write(({plugint32(8),plugint32(PG_PROTOCOL(1234,5679))}));
+     { object c=PGassist();
+       lcon.write(({c.plugint32(8),c.plugint32(PG_PROTOCOL(1234,5679))}));
+     }
      switch(lcon.read(1)) {
        case "S":
          SSL.context context = SSL.context();
@@ -459,10 +458,10 @@ void cancelquery() {
     qstate=cancelpending;
     object lcon;
     PD("CancelRequest\n");
-    if(!(lcon=getsocket()))
+    if(!(lcon=getsocket(1)))
       ERROR("Cancel connect failed\n");
-    lcon.write(({plugint32(16),plugint32(PG_PROTOCOL(1234,5678)),
-     plugint32(backendpid),cancelsecret}));
+    lcon.write(({_c.plugint32(16),_c.plugint32(PG_PROTOCOL(1234,5678)),
+     _c.plugint32(backendpid),cancelsecret}));
     lcon.close();
   }
 }
@@ -547,31 +546,31 @@ final int _decodemsg(void|state waitforstate) {
     if(mstate!=unauthenticated) {
       if(qstate==cancelpending)
         qstate=canceled,sendclose();
-      if(FLUSHED && qstate==inquery && !PEEK(0)) {
+      if(_c.flushed && qstate==inquery && !_c.bpeek(0)) {
         int tcurr=time();
         int told=tcurr+timeout;
-        while(!PEEK(told-tcurr))
+        while(!_c.bpeek(told-tcurr))
           if((tcurr=time())-told>=timeout) {
             sendclose();cancelquery();
             break;
           }
       }
     }
-    int msgtype=GETBYTE();
-    int msglen=GETINT32();
+    int msgtype=_c.getbyte();
+    int msglen=_c.getint32();
     enum errortype { noerror=0, protocolerror, protocolunsupported };
     errortype errtype=noerror;
     switch(msgtype) {
       void getcols() {
-        int bintext=GETBYTE();
+        int bintext=_c.getbyte();
         array a;
-        int cols=GETINT16();
+        int cols=_c.getint16();
         msglen-=4+1+2+2*cols;
         foreach(a=allocate(cols,([]));;mapping m)
-          m->type=GETINT16();
-        if(_portal) {
+          m->type=_c.getint16();
+        if(_c.portal) {	      // Discard column info, and make it line oriented
 	  a=({(["type":bintext?BYTEAOID:TEXTOID,"name":"line"])});
-	  _portal->_datarowdesc=a;
+	  _c.portal->_datarowdesc=a;
         }
         mstate=gotrowdescription;
       };
@@ -579,7 +578,7 @@ final int _decodemsg(void|state waitforstate) {
         string s;
         if(msglen<1)
           errtype=protocolerror;
-        s=GETSTRING(msglen);
+        s=_c.getstring(msglen);
         if(s[--msglen])
           errtype=protocolerror;
         if(!msglen)
@@ -599,7 +598,7 @@ final int _decodemsg(void|state waitforstate) {
       { string sendpass;
         int authtype;
         msglen-=4+4;
-        switch(authtype=GETINT32()) {
+        switch(authtype=_c.getint32()) {
           case 0:PD("Ok\n");
 	    mstate=authenticated;
             break;
@@ -612,7 +611,7 @@ final int _decodemsg(void|state waitforstate) {
           case 4:PD("CryptPassword\n");
             if(msglen<2)
               errtype=protocolerror;
-            sendpass=GETSTRING(msglen);msglen=0;
+            sendpass=_c.getstring(msglen);msglen=0;
             errtype=protocolunsupported;
             break;
           case 5:PD("MD5Password\n");
@@ -621,9 +620,9 @@ final int _decodemsg(void|state waitforstate) {
 #if constant(Crypto.MD5.hash)
 #define md5hex(x) String.string2hex(Crypto.MD5.hash(x))
             sendpass=md5hex(pass+user);
-            sendpass="md5"+md5hex(sendpass+GETSTRING(msglen));
+            sendpass="md5"+md5hex(sendpass+_c.getstring(msglen));
 #else
-            GETSTRING(msglen);
+            _c.getstring(msglen);
             errtype=protocolunsupported;
 #endif
             msglen=0;
@@ -641,7 +640,7 @@ final int _decodemsg(void|state waitforstate) {
             errtype=protocolunsupported;
             if(msglen<1)
               errtype=protocolerror;
-            SSauthdata=GETSTRING(msglen);msglen=0;
+            SSauthdata=_c.getstring(msglen);msglen=0;
             break;
           default:PD("Unknown Authentication Method %c\n",authtype);
             errtype=protocolunsupported;
@@ -650,7 +649,7 @@ final int _decodemsg(void|state waitforstate) {
         switch(errtype) {
           case noerror:
             if(mstate==unauthenticated)
-              SENDCMD(({"p",plugint32(4+sizeof(sendpass)+1),
+              _c.sendcmd(({"p",_c.plugint32(4+sizeof(sendpass)+1),
                sendpass,"\0"}),1);
             break;
           default:
@@ -661,7 +660,7 @@ final int _decodemsg(void|state waitforstate) {
         break;
       }
       case 'K':PD("BackendKeyData\n");
-        msglen-=4+4;backendpid=GETINT32();cancelsecret=GETSTRING(msglen);
+        msglen-=4+4;backendpid=_c.getint32();cancelsecret=_c.getstring(msglen);
         msglen=0;
         break;
       case 'S':PD("ParameterStatus\n");
@@ -677,7 +676,7 @@ final int _decodemsg(void|state waitforstate) {
         break;
       case 'Z':PD("ReadyForQuery\n");
         msglen-=4+1;
-        backendstatus=GETBYTE();
+        backendstatus=_c.getbyte();
         mstate=readyforquery;
         qstate=queryidle;
         _closesent=0;
@@ -688,50 +687,50 @@ final int _decodemsg(void|state waitforstate) {
         break;
       case 't':
         PD("ParameterDescription (for %s)\n",
-	 _portal?_portal->_portalname:"DISCARDED");
+	 _c.portal?_c.portal->_portalname:"DISCARDED");
       { array a;
-        int cols=GETINT16();
+        int cols=_c.getint16();
         msglen-=4+2+4*cols;
         foreach(a=allocate(cols);int i;)
-	  a[i]=GETINT32();
+	  a[i]=_c.getint32();
 #ifdef DEBUGMORE
         PD("%O\n",a);
 #endif
-        if(_portal)
-	  _portal->_datatypeoid=a;
+        if(_c.portal)
+	  _c.portal->_datatypeoid=a;
         mstate=gotparameterdescription;
         break;
       }
       case 'T':
         PD("RowDescription (for %s)\n",
-	 _portal?_portal->_portalname:"DISCARDED");
+	 _c.portal?_c.portal->_portalname:"DISCARDED");
         msglen-=4+2;
       { array a;
-        foreach(a=allocate(GETINT16());int i;) {
+        foreach(a=allocate(_c.getint16());int i;) {
           string s;
-	  msglen-=sizeof(s=GETSTRING())+1;
+	  msglen-=sizeof(s=_c.getstring())+1;
           mapping(string:mixed) res=(["name":s]);
           msglen-=4+2+4+2+4+2;
-          res->tableoid=GETINT32()||UNDEFINED;
-	  res->tablecolattr=GETINT16()||UNDEFINED;
-          res->type=GETINT32();
-	  { int len=GETINT16();
+          res->tableoid=_c.getint32()||UNDEFINED;
+	  res->tablecolattr=_c.getint16()||UNDEFINED;
+          res->type=_c.getint32();
+	  { int len=_c.getint16();
             res->length=len>=0?len:"variable";
 	  }
-          res->atttypmod=GETINT32();res->formatcode=GETINT16();
+          res->atttypmod=_c.getint32();res->formatcode=_c.getint16();
           a[i]=res;
         }
 #ifdef DEBUGMORE
         PD("%O\n",a);
 #endif
-	if(_portal)
-	  _portal->_datarowdesc=a;
+	if(_c.portal)
+	  _c.portal->_datarowdesc=a;
         mstate=gotrowdescription;
         break;
       }
       case 'n':PD("NoData\n");
         msglen-=4;
-        _portal->_datarowdesc=({});
+        _c.portal->_datarowdesc=({});
         mstate=gotrowdescription;
         break;
       case '2':PD("BindComplete\n");
@@ -740,35 +739,35 @@ final int _decodemsg(void|state waitforstate) {
         break;
       case 'D':PD("DataRow\n");
         msglen-=4;
-        if(_portal) {
+        if(_c.portal) {
 #ifdef USEPGsql
-          conn.decodedatarow(msglen,_portal);msglen=0;
+          _c.decodedatarow(msglen);msglen=0;
 #else
           array a, datarowdesc;
-	  _portal->_bytesreceived+=msglen;
-	  datarowdesc=_portal->_datarowdesc;
-          int cols=GETINT16();
+	  _c.portal->_bytesreceived+=msglen;
+	  datarowdesc=_c.portal->_datarowdesc;
+          int cols=_c.getint16();
 	  a=allocate(cols,UNDEFINED);
           msglen-=2+4*cols;
           foreach(a;int i;) {
-            int collen=GETINT32();
+            int collen=_c.getint32();
             if(collen>0) {
               msglen-=collen;
               mixed value;
               switch(datarowdesc[i]->type) {
-	        default:value=GETSTRING(collen);
+	        default:value=_c.getstring(collen);
                   break;
                 case CHAROID:
-                case BOOLOID:value=GETBYTE();
+                case BOOLOID:value=_c.getbyte();
                   break;
-                case INT8OID:value=conn.getint64();
+                case INT8OID:value=_c.getint64();
                   break;
-                case FLOAT4OID:value=(float)GETSTRING(collen);
+                case FLOAT4OID:value=(float)_c.getstring(collen);
                   break;
-                case INT2OID:value=GETINT16();
+                case INT2OID:value=_c.getint16();
                   break;
 	        case OIDOID:
-                case INT4OID:value=GETINT32();
+                case INT4OID:value=_c.getint32();
               }
 	      a[i]=value;
             }
@@ -776,12 +775,12 @@ final int _decodemsg(void|state waitforstate) {
               a[i]="";
           }
 	  a=({a});
-	  _portal->_datarows+=a;
-	  _portal->_inflight-=sizeof(a);
-#endif    
+	  _c.portal->_datarows+=a;
+	  _c.portal->_inflight-=sizeof(a);
+#endif
         }
         else
-	  GETSTRING(msglen),msglen=0;
+	  _c.getstring(msglen),msglen=0;
         mstate=dataready;
         break;
       case 's':PD("PortalSuspended\n");
@@ -792,11 +791,11 @@ final int _decodemsg(void|state waitforstate) {
       { msglen-=4;
         if(msglen<1)
           errtype=protocolerror;
-        string s=GETSTRING(msglen-1);
-        if(_portal)
-          _portal->_statuscmdcomplete=s;
+        string s=_c.getstring(msglen-1);
+        if(_c.portal)
+          _c.portal->_statuscmdcomplete=s;
         PD("%s\n",s);
-        if(GETBYTE())
+        if(_c.getbyte())
           errtype=protocolerror;
         msglen=0;
         mstate=commandcomplete;
@@ -814,17 +813,17 @@ final int _decodemsg(void|state waitforstate) {
         msglen-=4;
         if(msglen<0)
           errtype=protocolerror;
-        if(_portal) {
-	  _portal->_bytesreceived+=msglen;
-          _portal->_datarows+=({({GETSTRING(msglen)})});
+        if(_c.portal) {
+	  _c.portal->_bytesreceived+=msglen;
+          _c.portal->_datarows+=({({_c.getstring(msglen)})});
         }
 	msglen=0;
         mstate=dataready;
         break;
       case 'H':PD("CopyOutResponse\n");
         getcols();
-        if(_portal)
-	  _portal->_fetchlimit=0;	  // disables further Executes
+        if(_c.portal)
+	  _c.portal->_fetchlimit=0;		   // disables further Executes
         break;
       case 'G':PD("CopyInResponse\n");
         getcols();
@@ -839,14 +838,14 @@ final int _decodemsg(void|state waitforstate) {
           case "P0001":
             lastmessage=sprintf("%s: %s",msgresponse->S,msgresponse->M);
 	    ERROR(lastmessage
-	     +"\n"+pinpointerror(_portal->query,msgresponse->P));
+	     +"\n"+pinpointerror(_c.portal->query,msgresponse->P));
 	    break;
 	  default:
             lastmessage=sprintf("%s %s:%s %s\n (%s:%s:%s)\n%s%s%s%s\n%s",
 	     msgresponse->S,msgresponse->C,msgresponse->P||"",msgresponse->M,
 	     msgresponse->F||"",msgresponse->R||"",msgresponse->L||"",
 	     addnlifpresent(msgresponse->D),addnlifpresent(msgresponse->H),
-	     pinpointerror(_portal&&_portal->query,msgresponse->P),
+	     pinpointerror(_c.portal&&_c.portal->query,msgresponse->P),
 	     pinpointerror(msgresponse->q,msgresponse->p),
 	     addnlifpresent(msgresponse->W));
             switch(msgresponse->S) {
@@ -862,7 +861,7 @@ final int _decodemsg(void|state waitforstate) {
         break;
       case 'A':PD("NotificationResponse\n");
       { msglen-=4+4;
-        int pid=GETINT32();
+        int pid=_c.getint32();
         string condition,extrainfo=UNDEFINED;
         { array(string) ts=getstrings();
           switch(sizeof(ts)) {
@@ -881,7 +880,7 @@ final int _decodemsg(void|state waitforstate) {
         break;
       }
       default:PD("Unknown message received %c\n",msgtype);
-        msglen-=4;PD("%O\n",GETSTRING(msglen));msglen=0;
+        msglen-=4;PD("%O\n",_c.getstring(msglen));msglen=0;
         errtype=protocolunsupported;
         break;
     }
@@ -908,36 +907,37 @@ final int _decodemsg(void|state waitforstate) {
 
 #ifndef UNBUFFEREDIO
 private int read_cb(mixed foo, string d) {
-  conn.unread(d);
+  _c.unread(d);
   do _decodemsg();
-  while(PEEK(0)==1);
+  while(_c.bpeek(0)==1);
   return 0;
 }
 #endif
 
 void destroy() {
-  conn.sendterminate();
+  if(_c)
+    _c.sendterminate();
 }
 
 private void reconnect(void|int force) {
-  if(conn) {
+  if(_c) {
     reconnected++;
 #ifdef DEBUG
     ERROR("While debugging, reconnects are forbidden\n");
     exit(1);
 #endif
     if(!force)
-      conn.sendterminate();
+      _c.sendterminate();
     foreach(prepareds;;mapping tprepared)
       m_delete(tprepared,"preparedname");
   }
-  if(!(conn=getsocket()))
+  if(!(_c=getsocket()))
     ERROR("Couldn't connect to database on %s:%d\n",host,port);
   _closesent=0;
   mstate=unauthenticated;
   qstate=queryidle;
   runtimeparameter=([]);
-  array(string) plugbuf=({"",plugint32(PG_PROTOCOL(3,0))});
+  array(string) plugbuf=({"",_c.plugint32(PG_PROTOCOL(3,0))});
   if(user)
     plugbuf+=({"user\0",user,"\0"});
   if(database)
@@ -948,8 +948,8 @@ private void reconnect(void|int force) {
   int len=4;
   foreach(plugbuf;;string s)
     len+=sizeof(s);
-  plugbuf[0]=plugint32(len);
-  SENDCMD(plugbuf);
+  plugbuf[0]=_c.plugint32(len);
+  _c.sendcmd(plugbuf);
   PD("%O\n",plugbuf);
   _decodemsg(readyforquery);
   PD("%O\n",runtimeparameter);
@@ -967,7 +967,7 @@ void reload(void|int special) {
       PD("Portalsinflight: %d\n",portalsinflight);
       if(!portalsinflight) {
         PD("Sync\n");
-        SENDCMD(({"S",plugint32(4)}));
+        _c.sendcmd(({"S",_c.plugint32(4)}));
         didsync=1;
         if(!special) {
           _decodemsg(readyforquery);
@@ -984,7 +984,7 @@ void reload(void|int special) {
   else if(didsync && special==2)
     _decodemsg(readyforquery);
 #ifndef UNBUFFEREDIO
-  conn.set_read_callback(read_cb);
+  _c.set_read_callback(read_cb);
 #endif
 }
 
@@ -1027,14 +1027,14 @@ void select_db(string dbname) {
 //!    The rest of the arguments to @[notify_cb] are passed
 //!    verbatim from @[args].
 //!    The callback function must return no value.
-//! 
+//!
 //! @param selfnotify
 //!    Normally notify events generated by your own session are ignored.
 //!    If you want to receive those as well, set @[selfnotify] to one.
-//! 
+//!
 //! @param args
 //!    Extra arguments to pass to @[notify_cb].
-//! 
+//!
 //! This function is PostgreSQL-specific, and thus it is not available
 //! through the generic SQL-interface.
 void set_notify_callback(string condition,
@@ -1112,14 +1112,14 @@ array(string) list_dbs (void|string glob) {
 //! If a glob is specified, it will return only those tables with matching
 //! names.
 array(string) list_tables (void|string glob) {
- array row,ret=({});  // This query might not work on PostgreSQL 7.4
- object res=big_query( // due to missing schemasupport
+ array row,ret=({});	         // This query might not work on PostgreSQL 7.4
+ object res=big_query(		 // due to missing schemasupport
   "SELECT CASE WHEN 'public'=n.nspname THEN '' ELSE n.nspname||'.' END "
   "  ||c.relname AS name "
-  "FROM pg_catalog.pg_class c "
-  "  LEFT JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace "
-  "WHERE c.relkind IN ('r','v') AND n.nspname<>'pg_catalog' "
-  "  AND n.nspname !~ '^pg_toast' AND pg_catalog.pg_table_is_visible(c.oid) "
+  "FROM pgcatalog.pgclass c "
+  "  LEFT JOIN pgcatalog.pg_namespace n ON n.oid=c.relnamespace "
+  "WHERE c.relkind IN ('r','v') AND n.nspname<>'pgcatalog' "
+  "  AND n.nspname !~ '^pg_toast' AND pgcatalog.pg_table_is_visible(c.oid) "
   "  AND c.relname ILIKE :glob "
   "  ORDER BY 1",
   ([":glob":glob2reg(glob)]));
@@ -1192,19 +1192,19 @@ array(mapping(string:mixed)) list_fields(void|string table, void|string wild) {
   "  WHEN 'i' THEN 'index' "
   "  WHEN 'S' THEN 'sequence' "
   "  WHEN 's' THEN 'special' "
-  "  WHEN 't' THEN 'toastable' "    // pun intended :-)
+  "  WHEN 't' THEN 'toastable' "			    // pun intended :-)
   "  WHEN 'c' THEN 'composite' "
   "  ELSE c.relkind::TEXT END AS relkind, "
   " r.rolname "
-  "FROM pg_catalog.pg_class c "
-  "  LEFT JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace "
-  "  JOIN pg_catalog.pg_roles r ON r.oid=c.relowner "
-  "  JOIN pg_catalog.pg_attribute a ON c.oid=a.attrelid "
-  "  JOIN pg_catalog.pg_type t ON a.atttypid=t.oid "
+  "FROM pgcatalog.pgclass c "
+  "  LEFT JOIN pgcatalog.pg_namespace n ON n.oid=c.relnamespace "
+  "  JOIN pgcatalog.pg_roles r ON r.oid=c.relowner "
+  "  JOIN pgcatalog.pg_attribute a ON c.oid=a.attrelid "
+  "  JOIN pgcatalog.pg_type t ON a.atttypid=t.oid "
   "WHERE c.relname ILIKE :table AND "
   "  (n.nspname ILIKE :schema OR "
   "   :schema IS NULL "
-  "   AND n.nspname<>'pg_catalog' AND n.nspname !~ '^pg_toast') "
+  "   AND n.nspname<>'pgcatalog' AND n.nspname !~ '^pg_toast') "
   "   AND a.attname ILIKE :wild "
   "   AND (a.attnum>0 OR '*'=:realwild) "
   "ORDER BY n.nspname,c.relname,a.attnum,a.attname",
@@ -1268,30 +1268,30 @@ private int oidformat(int oid) {
     case UUIDOID:
       return 1; //binary
   }
-  return 0; // text
+  return 0;     // text
 }
 
 final void _sendexecute(int fetchlimit) {
-  string portalname=_portal->_portalname;
+  string portalname=_c.portal->_portalname;
   PD("Execute portal %s fetchlimit %d\n",portalname,fetchlimit);
-  SENDCMD(({"E",plugint32(4+sizeof(portalname)+1+4),portalname,
-   "\0",plugint32(fetchlimit)}),1);
-  _portal->_inflight+=fetchlimit;
+  _c.sendcmd(({"E",_c.plugint32(4+sizeof(portalname)+1+4),portalname,
+   "\0",_c.plugint32(fetchlimit)}),1);
+  _c.portal->_inflight+=fetchlimit;
 }
 
 final private void sendclose() {
   string portalname;
   portalsinflight--;
-  if(_portal && (portalname=_portal->_portalname)) {
-    _portal->_portalname = UNDEFINED;
-    _portal = UNDEFINED;
+  if(_c.portal && (portalname=_c.portal->_portalname)) {
+    _c.portal->_portalname = UNDEFINED;
+    _c.setportal();
 #ifdef DEBUGMORE
     PD("Closetrace %O\n",backtrace());
 #endif
     if(!sizeof(portalname))
       unnamedportalinuse--;
     PD("Close portal %s\n",portalname);
-    SENDCMD(({"C",plugint32(4+1+sizeof(portalname)+1),
+    _c.sendcmd(({"C",_c.plugint32(4+1+sizeof(portalname)+1),
      "P",portalname,"\0"}),1);
     _closesent=1;
   }
@@ -1346,12 +1346,11 @@ object big_query(string q,void|mapping(string|int:mixed) bindings) {
     array(string) from=allocate(sizeof(bindings));
     array(string) to=allocate(sizeof(bindings));
     foreach(bindings; mixed name; mixed value) {
-      // Throws if mapping key is empty string.
-      if(stringp(name)) {
+      if(stringp(name)) {	       // Throws if mapping key is empty string
         if(name[0]!=':')
           name=":"+name;
-        if(name[1]=='_') {
-          // Special parameter
+        if(name[1]=='_') {	       // Special option parameter
+				       // No options supported at the moment
           continue;
         }
       }
@@ -1362,7 +1361,7 @@ object big_query(string q,void|mapping(string|int:mixed) bindings) {
       }
       else {
         if(zero_type(value))
-          paramValues[pi++]=UNDEFINED;	     // NULL
+          paramValues[pi++]=UNDEFINED; // NULL
         else {
           if(stringp(value) && String.width(value)>8)
             value=string_to_utf8(value);
@@ -1398,26 +1397,26 @@ object big_query(string q,void|mapping(string|int:mixed) bindings) {
 	    string oldprep=tprepared->preparedname;
 	    if(oldprep) {
 	      PD("Close statement %s\n",oldprep);
-              plugbuf+=({"C",plugint32(4+1+sizeof(oldprep)+1),
+              plugbuf+=({"C",_c.plugint32(4+1+sizeof(oldprep)+1),
                "S",oldprep,"\0"});
 	    }
 	    m_delete(prepareds,ind);
 	  }
         }
         if(sizeof(plugbuf))
-	  SENDCMD(plugbuf,1);	    // close expireds
+	  _c.sendcmd(plugbuf,1);			      // close expireds
         PD("%O\n",plugbuf);
       }
       prepareds[q]=tprepared=([]);
     }
     tstart=gethrtime();
-  }  // pgsql_result autoassigns to portal
+  }					  // pgsql_result autoassigns to portal
   pgsql_result(this,tprepared,q,_fetchlimit,portalbuffersize);
   if(unnamedportalinuse)
     portalname=PORTALPREFIX+(string)pportalcount++;
   else
     unnamedportalinuse++;
-  _portal->_portalname=portalname;
+  _c.portal->_portalname=portalname;
   qstate=inquery;
   portalsinflight++;
   mixed err;
@@ -1428,62 +1427,62 @@ object big_query(string q,void|mapping(string|int:mixed) bindings) {
         // followed by a flush, it makes a VERY noticeable difference in
         // performance if it is omitted; seems like a flaw in the PostgreSQL
         // server
-        SENDCMD(({"P",plugint32(4+sizeof(preparedname)+1+sizeof(q)+1+2),
-         preparedname,"\0",q,"\0",plugint16(0)}),1);
+        _c.sendcmd(({"P",_c.plugint32(4+sizeof(preparedname)+1+sizeof(q)+1+2),
+         preparedname,"\0",q,"\0",_c.plugint16(0)}),1);
         PD("Query: %O\n",q);
       }				 // sends Parameter- and RowDescription for 'S'
-      conn.set_read_callback(0);
+      _c.set_read_callback(0);
       if(!tprepared || !tprepared->datatypeoid) {
         PD("Describe statement %s\n",preparedname);
-        SENDCMD(({"D",plugint32(4+1+sizeof(preparedname)+1),
+        _c.sendcmd(({"D",_c.plugint32(4+1+sizeof(preparedname)+1),
          "S",preparedname,"\0"}),1);
       }
       else {
-        _portal->_datatypeoid=tprepared->datatypeoid;
-        _portal->_datarowdesc=tprepared->datarowdesc;
+        _c.portal->_datatypeoid=tprepared->datatypeoid;
+        _c.portal->_datarowdesc=tprepared->datarowdesc;
       }
       { array(string) plugbuf=({"B",UNDEFINED});
         int len=4+sizeof(portalname)+1+sizeof(preparedname)+1
          +2+sizeof(paramValues)*(2+4)+2+2;
         plugbuf+=({portalname,"\0",preparedname,"\0",
-         plugint16(sizeof(paramValues))});
+         _c.plugint16(sizeof(paramValues))});
         if(!tprepared || !tprepared->datatypeoid) {
           _decodemsg(gotparameterdescription);
 	  if(tprepared)
-	    tprepared->datatypeoid=_portal->_datatypeoid;
+	    tprepared->datatypeoid=_c.portal->_datatypeoid;
         }
-        array dtoid=_portal->_datatypeoid;
+        array dtoid=_c.portal->_datatypeoid;
         foreach(dtoid;;int textbin)
-          plugbuf+=({plugint16(oidformat(textbin))});
-        plugbuf+=({plugint16(sizeof(paramValues))});
+          plugbuf+=({_c.plugint16(oidformat(textbin))});
+        plugbuf+=({_c.plugint16(sizeof(paramValues))});
         foreach(paramValues;int i;mixed value) {
           if(zero_type(value))
-            plugbuf+=({plugint32(-1)});	     // NULL
+            plugbuf+=({_c.plugint32(-1)});				// NULL
           else
             switch(dtoid[i]) {
               default:
               { int k;
                 len+=k=sizeof(value=(string)value);
-	        plugbuf+=({plugint32(k),value});
+	        plugbuf+=({_c.plugint32(k),value});
 	        break;
               }
-              case BOOLOID:plugbuf+=({plugint32(1)});len++;
+              case BOOLOID:plugbuf+=({_c.plugint32(1)});len++;
                 switch(stringp(value)?value[0]:value) {
 		  case 'o':case 'O':
-		    plugbyte(stringp(value)&&sizeof(value)>1
+		    _c.plugbyte(stringp(value)&&sizeof(value)>1
                      &&(value[1]=='n'||value[1]=='N'));
 		    break;
                   case 0:case 'f':case 'F':case 'n':case 'N':
-                    plugbuf+=({plugbyte(0)});
+                    plugbuf+=({_c.plugbyte(0)});
                     break;
                   default:
-                    plugbuf+=({plugbyte(1)});
+                    plugbuf+=({_c.plugbyte(1)});
                     break;
                 }
                 break;
-              case CHAROID:plugbuf+=({plugint32(1)});len++;
+              case CHAROID:plugbuf+=({_c.plugint32(1)});len++;
 	        if(intp(value))
-	          plugbuf+=({plugbyte(value)});
+	          plugbuf+=({_c.plugbyte(value)});
 	        else {
 		  value=(string)value;
 		  if(sizeof(value)!=1)
@@ -1493,35 +1492,35 @@ object big_query(string q,void|mapping(string|int:mixed) bindings) {
 	        }
                 break;
               case INT8OID:len+=8;
-                plugbuf+=({plugint32(8),plugint64((int)value)});
+                plugbuf+=({_c.plugint32(8),_c.plugint64((int)value)});
                 break;
               case INT4OID:len+=4;
-                plugbuf+=({plugint32(4),plugint32((int)value)});
+                plugbuf+=({_c.plugint32(4),_c.plugint32((int)value)});
                 break;
               case INT2OID:len+=2;
-                plugbuf+=({plugint32(2),plugint16((int)value)});
+                plugbuf+=({_c.plugint32(2),_c.plugint16((int)value)});
                 break;
             }
         }
         if(!tprepared || !tprepared->datarowdesc) {
           _decodemsg(gotrowdescription);
 	  if(tprepared)
-	    tprepared->datarowdesc=_portal->_datarowdesc;
+	    tprepared->datarowdesc=_c.portal->_datarowdesc;
         }
         { array a;int i;
-          len+=(i=sizeof(a=_portal->_datarowdesc))*2;
-          plugbuf+=({plugint16(i)});
+          len+=(i=sizeof(a=_c.portal->_datarowdesc))*2;
+          plugbuf+=({_c.plugint16(i)});
           foreach(a;;mapping col)
-            plugbuf+=({plugint16(oidformat(col->type))});
+            plugbuf+=({_c.plugint16(oidformat(col->type))});
         }
-        plugbuf[1]=plugint32(len);
+        plugbuf[1]=_c.plugint32(len);
         PD("Bind portal %s statement %s\n",portalname,preparedname);
-        SENDCMD(plugbuf);
+        _c.sendcmd(plugbuf);
 #ifdef DEBUGMORE
         PD("%O\n",plugbuf);
 #endif
       }
-      _portal->_statuscmdcomplete=UNDEFINED;
+      _c.portal->_statuscmdcomplete=UNDEFINED;
       _sendexecute(_fetchlimit && FETCHLIMITLONGRUN);
       if(tprepared) {
         _decodemsg(bindcomplete);
@@ -1549,8 +1548,8 @@ object big_query(string q,void|mapping(string|int:mixed) bindings) {
     backendstatus=UNDEFINED;
     throw(err);
   }
-  { pgsql_result tportal=_portal;   // Make copy, because it might dislodge
-    tportal->fetch_row(1);	    // upon initial fetch_row()
+  { pgsql_result tportal=_c.portal;     // Make copy, because it might dislodge
+    tportal->fetch_row(1);	        // upon initial fetch_row()
     return tportal;
   }
 }
@@ -1655,7 +1654,7 @@ int affected_rows() {
 }
 
 int num_fields() {
-  return sizeof(_portal->datarowdesc);
+  return sizeof(_c.portal->datarowdesc);
 }
 
 int num_rows() {
@@ -1676,7 +1675,7 @@ private void releasesession() {
   if(_pgsqlsess) {
     if(copyinprogress) {
       PD("CopyDone\n");
-      _pgsqlsess.SENDCMD("c\0\0\0\4",1);
+      _pgsqlsess._c.sendcmd("c\0\0\0\4",1);
     }
     _pgsqlsess.reload(2);
   }
@@ -1685,7 +1684,7 @@ private void releasesession() {
 }
 
 void destroy() {
-  catch {			 // inside destructors, exceptions don't work
+  catch {			   // inside destructors, exceptions don't work
     releasesession();
   };
 }
@@ -1698,12 +1697,12 @@ inline private array(mixed) getdatarow() {
 
 private void steallock() {
 #ifndef NO_LOCKING
-  PD("Going to steal oldportal %d\n",!!_pgsqlsess._portal);
+  PD("Going to steal oldportal %d\n",!!_pgsqlsess._c.portal);
   Thread.MutexKey stealmtxkey = stealmutex.lock();
   do
     if(_qmtxkey = querymutex.current_locking_key()) {
       pgsql_result portalb;
-      if(portalb=_pgsqlsess._portal) {
+      if(portalb=_pgsqlsess._c.portal) {
         _pgsqlsess._nextportal++;
         if(portalb->_interruptable)
           portalb->fetch_row(2);
@@ -1726,7 +1725,7 @@ private void steallock() {
   PD("Skipping lock\n");
   _qmtxkey=1;
 #endif
-  _pgsqlsess._portal=this;
+  _pgsqlsess._c.setportal(this);
   PD("Stealing successful\n");
 }
 
@@ -1740,7 +1739,8 @@ int|array(string|int) fetch_row(void|int|string buffer) {
     fetchmtxkey = UNDEFINED;
     if(stringp(buffer)) {
       PD("CopyData\n");
-      _pgsqlsess.SENDCMD(({"d",plugint32(4+sizeof(buffer)),buffer}));
+      _pgsqlsess._c.sendcmd(({"d",_pgsqlsess._c.plugint32(4+sizeof(buffer)),
+       buffer}));
     }
     else
       releasesession();
@@ -1758,7 +1758,7 @@ int|array(string|int) fetch_row(void|int|string buffer) {
         _pgsqlsess._sendexecute(_fetchlimit);
       }
       while(_pgsqlsess._closesent)
-        _pgsqlsess._decodemsg();	   // Flush previous portal sequence
+        _pgsqlsess._decodemsg();	      // Flush previous portal sequence
       for(;;) {
 #ifdef DEBUGMORE
         PD("buffer: %d  nextportal: %d  lock: %d\n",
@@ -1803,7 +1803,7 @@ int|array(string|int) fetch_row(void|int|string buffer) {
             }
 #if STREAMEXECUTES
 	    if(_fetchlimit && _inflight<=_fetchlimit-1)
-              _pgsqlsess._sendexecute(_fetchlimit);	  // Overlap Executes
+              _pgsqlsess._sendexecute(_fetchlimit);	    // Overlap Executes
 #endif
             return getdatarow();
           case commandcomplete:

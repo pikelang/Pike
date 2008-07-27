@@ -12,8 +12,7 @@
 inherit Sql.pgsql;
 
 protected void create(void|string _host, void|string _db,
- void|string _user, void|string _pass, void|mapping(string:mixed) _options)
-{
+ void|string _user, void|string _pass, void|mapping(string:mixed) _options) {
   if(!_options)
     _options = ([]);
 
