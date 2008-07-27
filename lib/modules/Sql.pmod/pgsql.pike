@@ -673,7 +673,6 @@ private int read_cb(mixed foo, string d) {
 #endif
 
 void destroy() {
-  werror("SRB DESTROYING pgsql\n");
   if(_c)
     _c.sendterminate();
 }

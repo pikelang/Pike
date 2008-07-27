@@ -43,13 +43,7 @@ class PGassist {
   }
 
   int flushed=-1;
-#endif
 
-void destroy() {
-  werror("SRB DESTROYING PGassist\n");
-}
-
-#ifndef USEPGsql
   inline final int getbyte() {
     if(!flushed && !bpeek(0))
       sendflush();
@@ -176,10 +170,6 @@ class PGconn {
     std::create();
     std::assign(stream);
   }
-
-void destroy() {
-  werror("SRB DESTROYING PGconn\n");
-}
 }
 
 #if constant(SSL.sslfile)
@@ -329,7 +319,6 @@ private void releasesession() {
 }
 
 void destroy() {
-  werror("SRB DESTROYING pgsql_result\n");
   catch {			   // inside destructors, exceptions don't work
     releasesession();
   };
