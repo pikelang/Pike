@@ -19,43 +19,7 @@
 
 #pike __REAL_VERSION__
 
-//#define DEBUG  1
-//#define DEBUGMORE  1
-
-#ifdef DEBUG
-#define PD(X ...)     werror(X)
-#define UNBUFFEREDIO  1		    // Make all IO unbuffered
-#else
-#undef DEBUGMORE
-#define PD(X ...)
-#endif
-//#define NO_LOCKING  1		    // This breaks the driver, do not enable,
-				    // only for benchmarking mutex performance
-#define USEPGsql     1		    // Doesn't use Stdio.FILE, but _PGsql
-
-#ifdef USEPGsql
-#define UNBUFFEREDIO 1
-#endif
-
-#define FETCHLIMIT           1024   // Initial upper limit on the
-				    // number of rows to fetch across the
-				    // network at a time
-				    // 0 for no chunking
-				    // Needs to be >0 for interleaved
-				    // portals
-#define FETCHLIMITLONGRUN    1      // for long running background queries
-#define STREAMEXECUTES	     1	    // streams executes if defined
-#define MINPREPARELENGTH     16	    // statements shorter than this will not
-				    // be cached
-#define PGSQL_DEFAULT_PORT   5432
-#define PGSQL_DEFAULT_HOST   "localhost"
-#define PREPSTMTPREFIX	     "pike_prep_"
-#define PORTALPREFIX	     "pike_portal_"
-#define FACTORPLAN	     8
-#define DRIVERNAME	     "pgsql"
-#define MARKSTART            "{""{""{""{\n"   // split string to avoid
-#define MARKERROR            ">>>>"	      // foldeditors from recognising
-#define MARKEND              "\n}""}""}""}"   // it as a fold
+#include "pgsql.h"
 
 #define ERROR(X ...)	     predef::error(X)
 
@@ -74,29 +38,23 @@ private string lastmessage;
 private mapping(string:array(mixed)) notifylist=([]);
 private mapping(string:string) msgresponse;
 private mapping(string:string) runtimeparameter;
-private enum state {unauthenticated,authenticated,readyforquery,
- parsecomplete,bindcomplete,commandcomplete,gotrowdescription,
- gotparameterdescription,dataready,dataprocessed,portalsuspended,
- copyinresponse};
-private state mstate;
+state _mstate;
 private enum querystate {queryidle,inquery,cancelpending,canceled};
 private querystate qstate;
 private mapping(string:mapping(string:mixed)) prepareds=([]);
 private int pstmtcount;
 private int pportalcount;
 private int totalhits;
-private int cachedepth=1024; // Maximum cachecountsum for prepared statements,
-			     // may be tuned by the application
-private int timeout=4096;    // Queries running longer than this number of
-			     // seconds are canceled automatically
-private int portalbuffersize=32*1024;  // Approximate buffer per portal
+private int cachedepth=STATEMENTCACHEDEPTH;
+private int timeout=QUERYTIMEOUT;
+private int portalbuffersize=PORTALBUFFERSIZE;
 private int reconnected;     // Number of times the connection was reset
 
 private string host, database, user, pass;
 private int port;
 private mapping(string:string) sessiondefaults=([]); // runtime parameters
-private Thread.Mutex querymutex;
-private Thread.Mutex stealmutex;
+Thread.Mutex _querymutex;
+Thread.Mutex _stealmutex;
 
 protected string _sprintf(int type, void|mapping flags) {
   string res=UNDEFINED;
@@ -109,7 +67,7 @@ protected string _sprintf(int type, void|mapping flags) {
        "Last error: %O\n"
        "portal %d %O\n%O\n",
        user,host,port,database,backendpid,status_commit(),reconnected,
-       mstate,qstate,pstmtcount,pportalcount,
+       _mstate,qstate,pstmtcount,pportalcount,
        _c.portal&&_c.portal->query||"",
        lastmessage||"",
        msgresponse,
@@ -137,7 +95,6 @@ protected string _sprintf(int type, void|mapping flags) {
 #define UUIDOID		2950
 
 #define PG_PROTOCOL(m,n)   (((m)<<16)|(n))
-#define FLUSH		"H\0\0\0\4"
 
 //! @decl void create()
 //! @decl void create(string host, void|string database, void|string user,@
@@ -181,8 +138,8 @@ protected void create(void|string _host, void|string _database,
     ERROR("Error in parsing the hostname argument\n");
   if(!port)
     port = PGSQL_DEFAULT_PORT;
-  querymutex=Thread.Mutex();
-  stealmutex=Thread.Mutex();
+  _querymutex=Thread.Mutex();
+  _stealmutex=Thread.Mutex();
   reconnect();
 }
 
@@ -213,205 +170,6 @@ string host_info() {
   return sprintf("Via fd:%d over TCP/IP to %s:%d",_c.query_fd(),host,port);
 }
 
-class PGassist {
-
-  int(-1..1) peek(int timeout) {
-  }
-
-  string read(int len,void|int(0..1) not_all) {
-  }
-
-  int write(string|array(string) data) {
-  }
-
-  int getchar() {
-  }
-
-  int close() {
-  }
-
-#ifdef USEPGsql
-  inherit _PGsql.PGsql;
-#else
-  object portal;
-
-  void setportal(void|object newportal) {
-    portal=newportal;
-  }
-
-  inline int(-1..1) bpeek(int timeout) {
-    return peek(timeout);
-  }
-
-  int flushed;
-#endif
-
-  void create(void|object pgsqlsess) {
-#ifdef USEPGsql
-    if(pgsqlsess)
-      ::create(pgsqlsess);
-#else
-    flushed=-1;
-#endif
-  }
-
-#ifndef USEPGsql
-  inline final int getbyte() {
-    if(!flushed && !bpeek(0))
-      sendflush();
-    return getchar();
-  }
-
-  final string getstring(void|int len) {
-    if(!zero_type(len)) {
-      string acc="",res;
-      do {
-        if(!flushed && !bpeek(0))
-          sendflush();
-        res=read(len,!flushed);
-        if(res) {
-          if(!sizeof(res))
-            return acc;
-          acc+=res;
-        }
-      }
-      while(sizeof(acc)<len&&res);
-      return sizeof(acc)?acc:res;
-    }
-    array(int) acc=({});
-    int c;
-    while((c=getbyte())>0)
-      acc+=({c});
-    return `+("",@map(acc,String.int2char));
-  }
-
-  inline final int getint16() {
-    int s0=getbyte();
-    int r=(s0&0x7f)<<8|getbyte();
-    return s0&0x80 ? r-(1<<15) : r ;
-  }
-
-  inline final int getint32() {
-    int r=getint16();
-    r=r<<8|getbyte();
-    return r<<8|getbyte();
-  }
-
-  inline final int getint64() {
-    int r=getint32();
-    return r<<32|getint32()&0xffffffff;
-  }
-#endif
-
-  inline final string plugbyte(int x) {
-    return String.int2char(x);
-  }
-
-  inline final string plugint16(int x) {
-    return sprintf("%c%c",x>>8&255,x&255);
-  }
-
-  inline final string plugint32(int x) {
-    return sprintf("%c%c%c%c",x>>24&255,x>>16&255,x>>8&255,x&255);
-  }
-
-  inline final string plugint64(int x) {
-    return sprintf("%c%c%c%c%c%c%c%c",x>>56&255,x>>48&255,x>>40&255,x>>32&255,
-     x>>24&255,x>>16&255,x>>8&255,x&255);
-  }
-
-  final void sendflush() {
-    sendcmd(({}),1);
-  }
-
-  final int sendcmd(string|array(string) data,void|int flush) {
-    if(flush) {
-      if(stringp(data))
-        data=({data,FLUSH});
-      else
-        data+=({FLUSH});
-      PD("Flush\n");
-      flushed=1;
-    }
-    else if(flushed!=-1)
-      flushed=0;
-    return write(data);
-  }
-
-  final void sendterminate() {
-    PD("Terminate\n");
-    sendcmd(({"X",plugint32(4)}));
-    close();
-  }
-}
-
-class PGconn {
-
-  inherit PGassist:pg;
-#ifdef UNBUFFEREDIO
-  inherit Stdio.File:std;
-
-  inline int getchar() {
-    return std::read(1)[0];
-  }
-#else
-  inherit Stdio.FILE:std;
-
-  inline int getchar() {
-    return std::getchar();
-  }
-#endif
-
-  inline int(-1..1) peek(int timeout) {
-    return std::peek(timeout);
-  }
-
-  inline string read(int len,void|int(0..1) not_all) {
-    return std::read(len,not_all);
-  }
-
-  inline int write(string|array(string) data) {
-    return std::write(data);
-  }
-
-  int close() {
-    return std::close();
-  }
-
-  void create(Stdio.File stream,object pgsqlsess) {
-    std::create();
-    std::assign(stream);
-    pg::create(pgsqlsess);
-  }
-}
-
-#if constant(SSL.sslfile)
-class PGconnS {
-  inherit SSL.sslfile:std;
-  inherit PGassist:pg;
-
-  Stdio.File rawstream;
-
-  inline int(-1..1) peek(int timeout) {
-    return rawstream.peek(timeout);
-  }
-
-  inline string read(int len,void|int(0..1) not_all) {
-    return std::read(len,not_all);
-  }
-
-  inline int write(string|array(string) data) {
-    return std::write(data);
-  }
-
-  void create(Stdio.File stream, SSL.context ctx,object pgsqlsess) {
-    rawstream=stream;
-    std::create(stream,ctx,1,1);
-    pg::create(pgsqlsess);
-  }
-}
-#endif
-
 final private object getsocket(void|int nossl) {
   object lcon = Stdio.File();
   if(!lcon.connect(host,port))
@@ -421,14 +179,14 @@ final private object getsocket(void|int nossl) {
 #if constant(SSL.sslfile)
   if(!nossl && (options->use_ssl || options->force_ssl)) {
      PD("SSLRequest\n");
-     { object c=PGassist();
+     { object c=.pgsql_util.PGassist();
        lcon.write(({c.plugint32(8),c.plugint32(PG_PROTOCOL(1234,5679))}));
      }
      switch(lcon.read(1)) {
        case "S":
          SSL.context context = SSL.context();
          context->random = Crypto.Random.random_string;
-         fcon=PGconnS(lcon, context, this);
+         fcon=.pgsql_util.PGconnS(lcon, context);
 	 if(fcon)
 	   return fcon;
        default:lcon.close();
@@ -445,7 +203,7 @@ final private object getsocket(void|int nossl) {
     ERROR("Encryption library missing, cannot establish connection to %s:%d\n",
      host,port);
 #endif
-  fcon=PGconn(lcon, this);
+  fcon=.pgsql_util.PGconn(lcon,this);
   return fcon;
 }
 
@@ -542,8 +300,8 @@ final int _decodemsg(void|state waitforstate) {
     PD("Waiting for state %O %O\n",waitforstate,line&&line[sizeof(line)-2]);
   }
 #endif
-  while(mstate!=waitforstate) {
-    if(mstate!=unauthenticated) {
+  while(_mstate!=waitforstate) {
+    if(_mstate!=unauthenticated) {
       if(qstate==cancelpending)
         qstate=canceled,sendclose();
       if(_c.flushed && qstate==inquery && !_c.bpeek(0)) {
@@ -572,7 +330,7 @@ final int _decodemsg(void|state waitforstate) {
 	  a=({(["type":bintext?BYTEAOID:TEXTOID,"name":"line"])});
 	  _c.portal->_datarowdesc=a;
         }
-        mstate=gotrowdescription;
+        _mstate=gotrowdescription;
       };
       array(string) getstrings() {
         string s;
@@ -600,7 +358,7 @@ final int _decodemsg(void|state waitforstate) {
         msglen-=4+4;
         switch(authtype=_c.getint32()) {
           case 0:PD("Ok\n");
-	    mstate=authenticated;
+	    _mstate=authenticated;
             break;
           case 2:PD("KerberosV5\n");
             errtype=protocolunsupported;
@@ -648,7 +406,7 @@ final int _decodemsg(void|state waitforstate) {
         }
         switch(errtype) {
           case noerror:
-            if(mstate==unauthenticated)
+            if(_mstate==unauthenticated)
               _c.sendcmd(({"p",_c.plugint32(4+sizeof(sendpass)+1),
                sendpass,"\0"}),1);
             break;
@@ -677,13 +435,13 @@ final int _decodemsg(void|state waitforstate) {
       case 'Z':PD("ReadyForQuery\n");
         msglen-=4+1;
         backendstatus=_c.getbyte();
-        mstate=readyforquery;
+        _mstate=readyforquery;
         qstate=queryidle;
         _closesent=0;
         break;
       case '1':PD("ParseComplete\n");
         msglen-=4;
-        mstate=parsecomplete;
+        _mstate=parsecomplete;
         break;
       case 't':
         PD("ParameterDescription (for %s)\n",
@@ -698,7 +456,7 @@ final int _decodemsg(void|state waitforstate) {
 #endif
         if(_c.portal)
 	  _c.portal->_datatypeoid=a;
-        mstate=gotparameterdescription;
+        _mstate=gotparameterdescription;
         break;
       }
       case 'T':
@@ -725,17 +483,17 @@ final int _decodemsg(void|state waitforstate) {
 #endif
 	if(_c.portal)
 	  _c.portal->_datarowdesc=a;
-        mstate=gotrowdescription;
+        _mstate=gotrowdescription;
         break;
       }
       case 'n':PD("NoData\n");
         msglen-=4;
         _c.portal->_datarowdesc=({});
-        mstate=gotrowdescription;
+        _mstate=gotrowdescription;
         break;
       case '2':PD("BindComplete\n");
         msglen-=4;
-        mstate=bindcomplete;
+        _mstate=bindcomplete;
         break;
       case 'D':PD("DataRow\n");
         msglen-=4;
@@ -781,11 +539,11 @@ final int _decodemsg(void|state waitforstate) {
         }
         else
 	  _c.getstring(msglen),msglen=0;
-        mstate=dataready;
+        _mstate=dataready;
         break;
       case 's':PD("PortalSuspended\n");
         msglen-=4;
-        mstate=portalsuspended;
+        _mstate=portalsuspended;
         break;
       case 'C':PD("CommandComplete\n");
       { msglen-=4;
@@ -798,12 +556,12 @@ final int _decodemsg(void|state waitforstate) {
         if(_c.getbyte())
           errtype=protocolerror;
         msglen=0;
-        mstate=commandcomplete;
+        _mstate=commandcomplete;
         break;
       }
       case 'I':PD("EmptyQueryResponse\n");
         msglen-=4;
-        mstate=commandcomplete;
+        _mstate=commandcomplete;
         break;
       case '3':PD("CloseComplete\n");
         msglen-=4;
@@ -818,7 +576,7 @@ final int _decodemsg(void|state waitforstate) {
           _c.portal->_datarows+=({({_c.getstring(msglen)})});
         }
 	msglen=0;
-        mstate=dataready;
+        _mstate=dataready;
         break;
       case 'H':PD("CopyOutResponse\n");
         getcols();
@@ -827,7 +585,7 @@ final int _decodemsg(void|state waitforstate) {
         break;
       case 'G':PD("CopyInResponse\n");
         getcols();
-        mstate=copyinresponse;
+        _mstate=copyinresponse;
         break;
       case 'c':PD("CopyDone\n");
         msglen-=4;
@@ -901,8 +659,8 @@ final int _decodemsg(void|state waitforstate) {
     if(zero_type(waitforstate))
       break;
   }
-  PD("Found state %O\n",mstate);
-  return mstate;
+  PD("Found state %O\n",_mstate);
+  return _mstate;
 }
 
 #ifndef UNBUFFEREDIO
@@ -915,6 +673,7 @@ private int read_cb(mixed foo, string d) {
 #endif
 
 void destroy() {
+  werror("SRB DESTROYING pgsql\n");
   if(_c)
     _c.sendterminate();
 }
@@ -934,7 +693,7 @@ private void reconnect(void|int force) {
   if(!(_c=getsocket()))
     ERROR("Couldn't connect to database on %s:%d\n",host,port);
   _closesent=0;
-  mstate=unauthenticated;
+  _mstate=unauthenticated;
   qstate=queryidle;
   runtimeparameter=([]);
   array(string) plugbuf=({"",_c.plugint32(PG_PROTOCOL(3,0))});
@@ -1411,7 +1170,7 @@ object big_query(string q,void|mapping(string|int:mixed) bindings) {
     }
     tstart=gethrtime();
   }					  // pgsql_result autoassigns to portal
-  pgsql_result(this,tprepared,q,_fetchlimit,portalbuffersize);
+  .pgsql_util.pgsql_result(this,tprepared,q,_fetchlimit,portalbuffersize);
   if(unnamedportalinuse)
     portalname=PORTALPREFIX+(string)pportalcount++;
   else
@@ -1548,7 +1307,7 @@ object big_query(string q,void|mapping(string|int:mixed) bindings) {
     backendstatus=UNDEFINED;
     throw(err);
   }
-  { pgsql_result tportal=_c.portal;     // Make copy, because it might dislodge
+  { object tportal=_c.portal;	        // Make copy, because it might dislodge
     tportal->fetch_row(1);	        // upon initial fetch_row()
     return tportal;
   }
@@ -1562,299 +1321,3 @@ object big_query(string q,void|mapping(string|int:mixed) bindings) {
 object streaming_query(string q,void|mapping(string|int:mixed) bindings) {
   return big_query(q,bindings);
 }
-
-class pgsql_result {
-
-object _pgsqlsess;
-private int numrows;
-private int eoffound;
-private mixed delayederror;
-private int copyinprogress;
-int _fetchlimit;
-
-private mapping tprepared;
-#ifdef NO_LOCKING
-int _qmtxkey;
-#else
-Thread.MutexKey _qmtxkey;
-#endif
-
-string query;
-string _portalname;
-
-int _bytesreceived;
-int _rowsreceived;
-int _interruptable;
-int _inflight;
-int _portalbuffersize;
-string _statuscmdcomplete;
-array(array(mixed)) _datarows;
-array(mapping(string:mixed)) _datarowdesc;
-array(int) _datatypeoid;
-#ifdef USEPGsql
-int _buffer;
-#endif
-
-private object fetchmutex;;
-
-protected string _sprintf(int type, void|mapping flags) {
-  string res=UNDEFINED;
-  switch(type) {
-    case 'O':
-      res=sprintf(DRIVERNAME"_result  numrows: %d  eof: %d  querylock: %d"
-       " inflight: %d  portalname: %O\n"
-       "query: %O\n"
-       "laststatus: %s\n"
-       "%O\n"
-       "%O\n",
-       numrows,eoffound,!!_qmtxkey,_inflight,_portalname,
-       query,
-       _statuscmdcomplete||"",
-       _datarowdesc,
-       _pgsqlsess);
-      break;
-  }
-  return res;
-}
-
-void create(object pgsqlsess,mapping(string:mixed) _tprepared,
- string _query,int fetchlimit,int portalbuffersize) {
-  _pgsqlsess = pgsqlsess;
-  tprepared = _tprepared; query = _query;
-  _datarows = ({ }); numrows = UNDEFINED;
-  fetchmutex = Thread.Mutex();
-  _fetchlimit=fetchlimit;
-  _portalbuffersize=portalbuffersize;
-  steallock();
-}
-
-//! Returns the command-complete status for this query.
-//!
-//! This function is PostgreSQL-specific, and thus it is not available
-//! through the generic SQL-interface.
-//!
-//! @seealso
-//!  @[affected_rows]
-string status_command_complete() {
-  return _statuscmdcomplete;
-}
-
-//! Returns the number of affected rows by this query.
-//!
-//! This function is PostgreSQL-specific, and thus it is not available
-//! through the generic SQL-interface.
-//!
-//! @seealso
-//!  @[status_command_complete]
-int affected_rows() {
-  int rows;
-  if(_statuscmdcomplete)
-    sscanf(_statuscmdcomplete,"%*s %d",rows);
-  return rows;
-}
-
-int num_fields() {
-  return sizeof(_c.portal->datarowdesc);
-}
-
-int num_rows() {
-  int numrows;
-  sscanf(_statuscmdcomplete,"%*s %d",numrows);
-  return numrows;
-}
-
-int eof() {
-  return eoffound;
-}
-
-array(mapping(string:mixed)) fetch_fields() {
-  return _datarowdesc+({});
-}
-
-private void releasesession() {
-  if(_pgsqlsess) {
-    if(copyinprogress) {
-      PD("CopyDone\n");
-      _pgsqlsess._c.sendcmd("c\0\0\0\4",1);
-    }
-    _pgsqlsess.reload(2);
-  }
-  _qmtxkey=UNDEFINED;
-  _pgsqlsess=UNDEFINED;
-}
-
-void destroy() {
-  catch {			   // inside destructors, exceptions don't work
-    releasesession();
-  };
-}
-
-inline private array(mixed) getdatarow() {
-  array(mixed) datarow=_datarows[0];
-  _datarows=_datarows[1..];
-  return datarow;
-}
-
-private void steallock() {
-#ifndef NO_LOCKING
-  PD("Going to steal oldportal %d\n",!!_pgsqlsess._c.portal);
-  Thread.MutexKey stealmtxkey = stealmutex.lock();
-  do
-    if(_qmtxkey = querymutex.current_locking_key()) {
-      pgsql_result portalb;
-      if(portalb=_pgsqlsess._c.portal) {
-        _pgsqlsess._nextportal++;
-        if(portalb->_interruptable)
-          portalb->fetch_row(2);
-        else {
-          PD("Waiting for the querymutex\n");
-          if((_qmtxkey=querymutex.lock(2))) {
-	    if(copyinprogress)
-	      ERROR("COPY needs to be finished first\n");
-	    ERROR("Driver bug, please report, "
-             "conflict while interleaving SQL-operations\n");
-	  }
-          PD("Got the querymutex\n");
-        }
-        _pgsqlsess._nextportal--;
-      }
-      break;
-    }
-  while(!(_qmtxkey=querymutex.trylock()));
-#else
-  PD("Skipping lock\n");
-  _qmtxkey=1;
-#endif
-  _pgsqlsess._c.setportal(this);
-  PD("Stealing successful\n");
-}
-
-int|array(string|int) fetch_row(void|int|string buffer) {
-#ifndef NO_LOCKING
-  Thread.MutexKey fetchmtxkey = fetchmutex.lock();
-#endif
-  if(!buffer && sizeof(_datarows))
-    return getdatarow();
-  if(copyinprogress) {
-    fetchmtxkey = UNDEFINED;
-    if(stringp(buffer)) {
-      PD("CopyData\n");
-      _pgsqlsess._c.sendcmd(({"d",_pgsqlsess._c.plugint32(4+sizeof(buffer)),
-       buffer}));
-    }
-    else
-      releasesession();
-    return UNDEFINED;
-  }
-  mixed err;
-  if(buffer!=2 && (err=delayederror)) {
-    delayederror=UNDEFINED;
-    throw(err);
-  }
-  err = catch {
-    if(_portalname) {
-      if(buffer!=2 && !_qmtxkey) {
-        steallock();
-        _pgsqlsess._sendexecute(_fetchlimit);
-      }
-      while(_pgsqlsess._closesent)
-        _pgsqlsess._decodemsg();	      // Flush previous portal sequence
-      for(;;) {
-#ifdef DEBUGMORE
-        PD("buffer: %d  nextportal: %d  lock: %d\n",
-	 buffer,_pgsqlsess._nextportal,!!_qmtxkey);
-#endif
-#ifdef USEPGsql
-        _buffer=buffer;
-#endif
-        switch(_pgsqlsess._decodemsg()) {
-          case copyinresponse:
-            copyinprogress=1;
-	    return UNDEFINED;
-          case dataready:
-            if(tprepared) {
-              tprepared->trun=gethrtime()-tprepared->trunstart;
-              m_delete(tprepared,"trunstart");
-              tprepared = UNDEFINED;
-            }
-            mstate=dataprocessed;
-            _rowsreceived++;
-	    switch(buffer) {
-	      case 0:
-	      case 1:
-	        if(_fetchlimit)
-	          _fetchlimit=
-		   min(_portalbuffersize/2*_rowsreceived/_bytesreceived || 1,
-	           _pgsqlsess._fetchlimit);
-	    }
-            switch(buffer) {
-              case 2:
-              case 3:
-                continue;
-              case 1:
-	        _interruptable=1;
-	        if(_pgsqlsess._nextportal)
-		  continue;
-#if STREAMEXECUTES
-	        if(_fetchlimit && _inflight<=_fetchlimit-1)
-                  _pgsqlsess._sendexecute(_fetchlimit);
-#endif
-                return UNDEFINED;
-            }
-#if STREAMEXECUTES
-	    if(_fetchlimit && _inflight<=_fetchlimit-1)
-              _pgsqlsess._sendexecute(_fetchlimit);	    // Overlap Executes
-#endif
-            return getdatarow();
-          case commandcomplete:
-            _inflight=0;
-            releasesession();
-	    switch(buffer) {
-	      case 1:
-	      case 2:
-	        return UNDEFINED;
-	      case 3:
-	        if(sizeof(_datarows))
-                  return getdatarow();
-	    }
-            break;
-          case portalsuspended:
-	    if(_inflight)
-	      continue;
-	    if(_pgsqlsess._nextportal) {
-	      switch(buffer) {
-	        case 1:
-	        case 2:
-	          _qmtxkey = UNDEFINED;
-                  return UNDEFINED;
-	        case 3:
-	          _qmtxkey = UNDEFINED;
-                  return getdatarow();
-	      }
-              _fetchlimit=FETCHLIMITLONGRUN;
-	      if(sizeof(_datarows)) {
-	        _qmtxkey = UNDEFINED;
-	        return getdatarow();
-	      }
-	      buffer=3;
-	    }
-            _pgsqlsess._sendexecute(_fetchlimit);
-          default:
-            continue;
-        }
-        break;
-      }
-    }
-    eoffound=1;
-    return UNDEFINED;
-  };
-  PD("Exception %O\n",err);
-  _pgsqlsess.reload();
-  if(buffer!=2)
-    throw(err);
-  if(!delayederror)
-    delayederror=err;
-  return UNDEFINED;
-}
-
-};

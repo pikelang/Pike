@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: PGsql.cmod,v 1.13 2008/07/27 15:18:21 srb Exp $
+ * $Id: PGsql.cmod,v 1.14 2008/07/27 18:11:14 srb Exp $
  *
  * PGsql, accelerator functions for Sql.pgsql for Pike.
  *
@@ -64,7 +64,6 @@ PIKECLASS PGsql
   CVAR uchar*plow,*phigh;
   CVAR uchar*extrabuf;
   CVAR unsigned extrafilled;
-  CVAR struct object*pgsqlsess;
   PIKEVAR int flushed;
   PIKEVAR object portal;
 
@@ -77,7 +76,6 @@ PIKECLASS PGsql
 
   EXIT {
     xfree(THIS->extrabuf);
-    /* THIS->portal=0; necessary if we had faked the refs count */
   }
 
   static int rread(void*const a,const int len) {
@@ -208,8 +206,7 @@ bad:
     Pike_error("Missing %d bytes from network\n",len);
   }
 
-  PIKEFUN void create(object pgsqlsess) {
-    THIS->pgsqlsess = pgsqlsess;
+  PIKEFUN void create() {
     RETURN_VOID;				  /* void functions return 0 */
   }
 
@@ -273,10 +270,13 @@ bad:
     int rowsreceived,inflight,fetchlimit,parentfetchlimit,portalbuffersize;
     struct svalue*bytesreceived;
     struct array*datarowdesc;
-    struct object*portal;
+    struct object*portal,*pgsqlsess;
     pop_stack();					      /* drop msglen */
     ref_push_object(portal=THIS->portal);	  /* increase refs on portal */
 
+    ref_push_object(portal); ref_push_string(MK_STRING("_pgsqlsess"));
+    f_arrow(2); pgsqlsess=Pike_sp[-1].u.object;
+						      /* preserve _pgsqlsess */
     ref_push_object(portal); ref_push_string(MK_STRING("_datarowdesc"));
     f_arrow(2); datarowdesc=Pike_sp[-1].u.array;
 						    /* preserve _datarowdesc */
@@ -302,7 +302,7 @@ bad:
       buffer=Pike_sp[-1].u.integer;
     pop_stack();
 
-    ref_push_object(THIS->pgsqlsess); ref_push_string(MK_STRING("_fetchlimit"));
+    ref_push_object(pgsqlsess); ref_push_string(MK_STRING("_fetchlimit"));
     f_arrow(2); parentfetchlimit=Pike_sp[-1].u.integer;
     pop_stack();
 
@@ -415,7 +415,7 @@ simple:             push_int(nextword);
 	            fetchlimit=0;
 	          switch(buffer) {
 	            case 1: {
-		      ref_push_object(THIS->pgsqlsess);
+		      ref_push_object(pgsqlsess);
 		      ref_push_string(MK_STRING("_nextportal"));
 		      f_arrow(2); i=Pike_sp[-1].u.integer;
 		      pop_stack();
@@ -426,7 +426,7 @@ simple:             push_int(nextword);
 	            case 0:
 	              if(fetchlimit && inflight<=fetchlimit-1) {
 			push_int(fetchlimit);
-			apply(THIS->pgsqlsess, "_sendexecute", 1);
+			apply(pgsqlsess, "_sendexecute", 1);
 			inflight+=fetchlimit;
 			pop_stack();		  /* void function returns 0 */
 		      }
@@ -479,7 +479,7 @@ simple:             push_int(nextword);
       pop_stack();
     }
 
-    args = 2;				      /* pop _datarowdesc and portal */
+    args = 3;			  /* pop _datarowdesc, _pgsqlsess and portal */
     RETURN_VOID;
   }
 }
