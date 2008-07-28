@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: PGsql.cmod,v 1.14 2008/07/27 18:11:14 srb Exp $
+ * $Id: PGsql.cmod,v 1.15 2008/07/28 11:13:30 srb Exp $
  *
  * PGsql, accelerator functions for Sql.pgsql for Pike.
  *
@@ -35,9 +35,9 @@ DECLARATIONS
 #define BUFSIZE	     4096
 
 typedef unsigned char uchar;
-#define RETURN_VOID  do {pop_n_elems(args); push_int(0);} while(0)
+#define RETURN_VOID  pop_n_elems(args)	 /* apply() pushes a zero for return */
 #define STRLEN(x)    (sizeof(x)-1)
-#define THISOBJ (Pike_fp->current_object)
+#define THISOBJ	     (Pike_fp->current_object)
 
 #define BOOLOID         16
 #define BYTEAOID        17
@@ -89,7 +89,7 @@ PIKECLASS PGsql
     }
     else
       i=-1;
-    pop_n_elems(1);
+    pop_stack();
     return i;
   }
 
