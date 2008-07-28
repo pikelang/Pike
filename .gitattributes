@@ -552,7 +552,6 @@ testfont binary
 /src/modules/Odbc/acconfig.h foreign_ident
 /src/modules/Odbc/configure.in foreign_ident
 /src/modules/Odbc/odbc.c foreign_ident
-/src/modules/Odbc/odbc_result.c foreign_ident
 /src/modules/Odbc/precompiled_odbc.h foreign_ident
 /src/modules/Oracle/Makefile.in foreign_ident
 /src/modules/Oracle/acconfig.h foreign_ident

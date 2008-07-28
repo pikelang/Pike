@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc_result.c,v 1.67 2010/08/26 09:47:35 grubba Exp $
+|| $Id$
 */
 
 /*
@@ -413,62 +413,54 @@ static void f_execute(INT32 args)
   SQLLEN num_rows;
 
 #ifdef SQL_WCHAR
+  char *to_free = NULL;
+  SQLWCHAR *wq = NULL;
   get_all_args("odbc_result->execute", args, "%W", &q);
   if ((q->size_shift > 1) && (sizeof(SQLWCHAR) == 2)) {
     SIMPLE_ARG_TYPE_ERROR("execute", 1, "string(16bit)");
+  }
+  if (q->size_shift) {
+    if ((sizeof(SQLWCHAR) == 4) && (q->size_shift == 1)) {
+      wq = (SQLWCHAR *)require_wstring2(q, &to_free);
+    } else {
+      wq = (SQLWCHAR *)q->str;
+    }
   }
 #else
   get_all_args("odbc_result->execute", args, "%S", &q);
 #endif
 
+  ODBC_ALLOW();
+
 #ifdef SQL_WCHAR
-  if (q->size_shift) {
-    char *to_free = NULL;
-    SQLWCHAR *p;
-    if ((sizeof(SQLWCHAR) == 4) && (q->size_shift == 1)) {
-      p = (SQLWCHAR *)require_wstring2(q, &to_free);
-    } else {
-      p = (SQLWCHAR *)q->str;
-    }
-    ODBC_ALLOW();
-    code = SQLExecDirectW(hstmt, p, DO_NOT_WARN((SQLINTEGER)(q->len)));
-    if (code != SQL_SUCCESS && code != SQL_SUCCESS_WITH_INFO)
-      err_msg = "Query failed";
-    else {
-      code = SQLNumResultCols(hstmt, &num_fields);
-      if (code != SQL_SUCCESS && code != SQL_SUCCESS_WITH_INFO)
-	err_msg = "Couldn't get the number of fields";
-      else {
-	code = SQLRowCount(hstmt, &num_rows);
-	if (code != SQL_SUCCESS && code != SQL_SUCCESS_WITH_INFO)
-	  err_msg = "Couldn't get the number of rows";
-      }
-    }
-    ODBC_DISALLOW();
-    if (to_free) free (to_free);
-  } else
+  if (wq)
+    code = SQLExecDirectW(hstmt, wq, DO_NOT_WARN((SQLINTEGER)(q->len)));
+  else
 #endif
-  {
-    ODBC_ALLOW();
     code = SQLExecDirect(hstmt, STR0(q), DO_NOT_WARN((SQLINTEGER)(q->len)));
+
+  if (code != SQL_SUCCESS && code != SQL_SUCCESS_WITH_INFO)
+    err_msg = "Query failed";
+  else {
+    code = SQLNumResultCols(hstmt, &num_fields);
     if (code != SQL_SUCCESS && code != SQL_SUCCESS_WITH_INFO)
-      err_msg = "Query failed";
+      err_msg = "Couldn't get the number of fields";
     else {
-      code = SQLNumResultCols(hstmt, &num_fields);
+      code = SQLRowCount(hstmt, &num_rows);
       if (code != SQL_SUCCESS && code != SQL_SUCCESS_WITH_INFO)
-	err_msg = "Couldn't get the number of fields";
-      else {
-	code = SQLRowCount(hstmt, &num_rows);
-	if (code != SQL_SUCCESS && code != SQL_SUCCESS_WITH_INFO)
-	  err_msg = "Couldn't get the number of rows";
-      }
+	err_msg = "Couldn't get the number of rows";
     }
-    ODBC_DISALLOW();
   }
+
+  ODBC_DISALLOW();
+
+#ifdef SQL_WCHAR
+  if (to_free) free (to_free);
+#endif
 
 #ifdef ODBC_DEBUG
   fprintf (stderr, "ODBC:execute: SQLExecDirect returned %d, "
-	   "cols %d, rows %d\n", code, num_fields, num_rows);
+	   "cols %d, rows %ld\n", code, num_fields, (long) num_rows);
 #endif
 
   if (err_msg)
