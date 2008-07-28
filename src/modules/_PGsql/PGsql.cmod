@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: PGsql.cmod,v 1.15 2008/07/28 11:13:30 srb Exp $
+ * $Id: PGsql.cmod,v 1.16 2008/07/28 11:47:53 srb Exp $
  *
  * PGsql, accelerator functions for Sql.pgsql for Pike.
  *
@@ -35,7 +35,6 @@ DECLARATIONS
 #define BUFSIZE	     4096
 
 typedef unsigned char uchar;
-#define RETURN_VOID  pop_n_elems(args)	 /* apply() pushes a zero for return */
 #define STRLEN(x)    (sizeof(x)-1)
 #define THISOBJ	     (Pike_fp->current_object)
 
@@ -207,7 +206,6 @@ bad:
   }
 
   PIKEFUN void create() {
-    RETURN_VOID;				  /* void functions return 0 */
   }
 
   PIKEFUN void setportal(void|object portal) {
@@ -215,9 +213,7 @@ bad:
       free_object(THIS->portal);
     THIS->portal=portal;
     debug_malloc_touch(THIS->portal);
-    Pike_sp--;
-    args=0;
-    RETURN_VOID;
+    Pike_sp--;					/* don't decrease references */
   }
 
   PIKEFUN int bpeek(void|int timeoutp) {
@@ -252,16 +248,19 @@ bad:
       if(THIS->extrafilled) {
         memmove(THIS->extrabuf,THIS->plow,left);
         q=realloc(THIS->extrabuf,left+len);
+        if(!q)
+outofmem: Pike_fatal("Out of memory\n");
       }
       else {
         q=realloc(THIS->extrabuf,left+len);
+        if(!q)
+	  goto outofmem;
         memcpy(q,THIS->plow,left);
       }
       THIS->phigh=(THIS->plow=THIS->extrabuf=q)+left+len;
       memcpy(q+left,oldbuf->str,len);
       THIS->extrafilled=left+len;
     }
-    RETURN_VOID;
   }
 
   PIKEFUN void decodedatarow(int msglen) {
@@ -479,8 +478,7 @@ simple:             push_int(nextword);
       pop_stack();
     }
 
-    args = 3;			  /* pop _datarowdesc, _pgsqlsess and portal */
-    RETURN_VOID;
+    pop_n_elems(3);		  /* pop _datarowdesc, _pgsqlsess and portal */
   }
 }
 
