@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: export.pike,v 1.25 2001/04/06 15:37:52 grubba Exp $ */
+/* $Id: export.pike,v 1.26 2008/07/29 12:53:43 grubba Exp $ */
 
 #include <simulate.h>
 
@@ -133,7 +133,7 @@ int main(int argc, string *argv)
     if(file_size("pike/src/modules/"+tmp) == -2)
       fix_configure("modules/"+tmp);
 
-    werror("vpath = %s\n",vpath);
+  werror("vpath = %s\n",vpath);
   system("ln -s pike "+vpath);
 
   files=sum(({ vpath+"/README", vpath+"/ANNOUNCE" }),
