@@ -35,6 +35,7 @@ private int backendpid;
 private int backendstatus;
 private mapping(string:mixed) options;
 private string lastmessage;
+private int clearmessage;
 private mapping(string:array(mixed)) notifylist=([]);
 private mapping(string:string) msgresponse;
 private mapping(string:string) runtimeparameter;
@@ -609,7 +610,10 @@ final int _decodemsg(void|state waitforstate) {
         break;
       case 'N':PD("NoticeResponse\n");
         getresponse();
-        lastmessage=sprintf("%s %s: %s",
+        if(clearmessage)
+	  clearmessage=0,lastmessage=UNDEFINED;
+        lastmessage=sprintf("%s%s %s: %s",
+	 lastmessage?lastmessage+"\n":"",
 	 msgresponse->S,msgresponse->C,msgresponse->M);
         break;
       case 'A':PD("NotificationResponse\n");
@@ -1178,6 +1182,7 @@ object big_query(string q,void|mapping(string|int:mixed) bindings) {
   _c.portal->_portalname=portalname;
   qstate=inquery;
   portalsinflight++;
+  clearmessage=1;
   mixed err;
   if(err = catch {
       if(!sizeof(preparedname) || !tprepared || !tprepared->preparedname) {
