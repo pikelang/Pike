@@ -14,6 +14,11 @@
 //! CipherState. Also conforming to the API are the helper programs
 //! @[Buffer], @[CBC] and @[Pipe].
 //!
+//! As the cryptographic services offered from this module isn't
+//! necessarily used for security applications, none of the strings
+//! inputted or outputted are marked as secure. This is up to the
+//! caller.
+//!
 //! @note
 //!   This module is only available if Pike has been compiled with
 //!   @[Nettle] enabled (this is the default).
