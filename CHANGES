@@ -725,10 +725,12 @@ o Sql
     on the same connection (i.e. multiple PostgreSQL-portal-support),
     automatic precompilation and caching of often-used
     long-compile-time-needing queries, extended columndescriptions,
-    accurate error messages under all circumstances, SSL-support.
+    accurate error messages under all circumstances, SSL-support,
+    SQL-injection protection since it will ignore everything after the
+    first semicolon terminating the first command in the query.
 
     Performance tuned, with the helperclass _PGsql.PGsql it currently
-    is around 62% faster than the old libpq based Postgres driver
+    is around 21% faster than the old libpq based Postgres driver
     for smaller queries; for large bytea blobs and large texts, it
     speeds up even more.
 

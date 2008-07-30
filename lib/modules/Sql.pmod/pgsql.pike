@@ -61,17 +61,11 @@ protected string _sprintf(int type, void|mapping flags) {
   switch(type) {
     case 'O':
       res=sprintf(DRIVERNAME"://%s@%s:%d/%s pid:%d %s reconnected:%d\n"
-       "mstate: %O  qstate: %O  pstmtcount: %d  pportalcount: %d\n"
-       "Last query: %O\n"
-       "Last message: %s\n"
-       "Last error: %O\n"
-       "portal %d %O\n%O\n",
+    "mstate: %O  qstate: %O  pstmtcount: %d  pportalcount: %d  prepcache: %d\n"
+       "Last message: %s",
        user,host,port,database,backendpid,status_commit(),reconnected,
-       _mstate,qstate,pstmtcount,pportalcount,
-       _c.portal&&_c.portal->query||"",
-       lastmessage||"",
-       msgresponse,
-       !!_c.portal,runtimeparameter,prepareds);
+       _mstate,qstate,pstmtcount,pportalcount,sizeof(prepareds),
+       lastmessage||"");
       break;
   }
   return res;
@@ -131,7 +125,7 @@ protected string _sprintf(int type, void|mapping flags) {
 //!   @[Postgres.postgres], @[Sql.Sql], @[postgres->select_db]
 protected void create(void|string _host, void|string _database,
  void|string _user, void|string _pass, void|mapping(string:mixed) _options) {
-  pass = _pass; _pass = "CENSORED";
+  pass = _pass; _pass = "CENSORED"; String.secure(pass);
   user = _user; database = _database; host = _host || PGSQL_DEFAULT_HOST;
   options = _options || ([]);
   if(search(host,":")>=0 && sscanf(_host,"%s:%d",host,port)!=2)
@@ -593,9 +587,10 @@ final int _decodemsg(void|state waitforstate) {
       case 'E':PD("ErrorResponse\n");
         getresponse();
         switch(msgresponse->C) {
+#define USERERROR(msg)	throw(({msg, backtrace()[..<1]}))
           case "P0001":
             lastmessage=sprintf("%s: %s",msgresponse->S,msgresponse->M);
-	    ERROR(lastmessage
+	    USERERROR(lastmessage
 	     +"\n"+pinpointerror(_c.portal->query,msgresponse->P));
 	    break;
 	  default:
@@ -609,7 +604,7 @@ final int _decodemsg(void|state waitforstate) {
             switch(msgresponse->S) {
 	      case "PANIC":werror(lastmessage);
             }
-	    ERROR(lastmessage);
+	    USERERROR(lastmessage);
         }
         break;
       case 'N':PD("NoticeResponse\n");
@@ -1089,6 +1084,12 @@ final string status_commit() {
 //!
 //! @note
 //! This function @b{can@} raise exceptions.
+//!
+//! @note
+//! This function does not support multiple queries in one querystring.
+//! I.e. it allows for but does not require a trailing semicolon, but it
+//! simply ignores any commands after the first semicolon.  This can be
+//! viewed as a limited protection against SQL-injection attacks.
 //!
 //! @seealso
 //!   @[Sql.Sql], @[Sql.sql_result]

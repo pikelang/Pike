@@ -13,10 +13,12 @@ inherit Sql.pgsql;
 
 protected void create(void|string _host, void|string _db,
  void|string _user, void|string _pass, void|mapping(string:mixed) _options) {
+  string pass;
+  pass = _pass; _pass = "CENSORED"; String.secure(pass);
   if(!_options)
     _options = ([]);
 
   _options->use_ssl=1;
 
-  ::create(_host, _db, _user, _pass, _options);
+  ::create(_host, _db, _user, pass, _options);
 }

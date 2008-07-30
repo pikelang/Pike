@@ -180,8 +180,8 @@ class PGconnS {
   Stdio.File rawstream;
 
   inline int(-1..1) peek(int timeout) {
-    return rawstream.peek(timeout);
-  }
+    return rawstream.peek(timeout);			    // This is a kludge
+  }			 // Actually SSL.sslfile should provide a peek() method
 
   inline string read(int len,void|int(0..1) not_all) {
     return std::read(len,not_all);
@@ -237,16 +237,13 @@ protected string _sprintf(int type, void|mapping flags) {
   switch(type) {
     case 'O':
       res=sprintf("pgsql_result  numrows: %d  eof: %d  querylock: %d"
-       " inflight: %d  portalname: %O\n"
+       " inflight: %d\nportalname: %O  datarows: %d\n"
        "query: %O\n"
-       "laststatus: %s\n"
-       "%O\n"
-       "%O\n",
-       numrows,eoffound,!!_qmtxkey,_inflight,_portalname,
+       "laststatus: %s\n",
+       numrows,eoffound,!!_qmtxkey,_inflight,
+       _portalname,sizeof(_datarowdesc),
        query,
-       _statuscmdcomplete||"",
-       _datarowdesc,
-       _pgsqlsess);
+       _statuscmdcomplete||"");
       break;
   }
   return res;
