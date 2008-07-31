@@ -1,5 +1,5 @@
 /*
- * $Id: pike_embed.h,v 1.10 2008/06/05 15:12:44 mast Exp $
+ * $Id: pike_embed.h,v 1.11 2008/07/31 18:01:49 mast Exp $
  *
  * Pike embedding API.
  *
@@ -33,8 +33,9 @@ extern int yydebug;
 int set_pike_debug_options(int bits, int mask);
 
 /* Runtime options */
-#define RUNTIME_CHECK_TYPES  1
-#define RUNTIME_STRICT_TYPES 2
+#define RUNTIME_CHECK_TYPES	1
+#define RUNTIME_STRICT_TYPES	2
+#define RUNTIME_ERROR_DIALOGS	4
 
 int set_pike_runtime_options(int bits, int mask);
 

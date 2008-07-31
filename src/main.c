@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.231 2008/06/29 10:40:55 mast Exp $
+|| $Id: main.c,v 1.232 2008/07/31 18:01:48 mast Exp $
 */
 
 #include "global.h"
@@ -468,6 +468,12 @@ int main(int argc, char **argv)
 	    p++;
 	    goto more_r_flags;
 
+	  case 'l':
+	    set_pike_runtime_options (RUNTIME_ERROR_DIALOGS,
+				      RUNTIME_ERROR_DIALOGS);
+	    p++;
+	    goto more_d_flags;
+
          default:
             p++;
 	    break;
@@ -538,6 +544,24 @@ int main(int argc, char **argv)
 #endif
   if (d_flag)
     set_pike_debug_options(ERRORCHECK_MUTEXES, ERRORCHECK_MUTEXES);
+
+#ifdef HAVE_SETERRORMODE
+  if (!(runtime_options & RUNTIME_ERROR_DIALOGS)) {
+    /* This avoids popups when LoadLibrary fails to find a dll.
+     *
+     * Note that the popup is the _only_ way to see which dll (loaded
+     * indirectly by dependencies from the one in the LoadLibrary
+     * call) that Windows didn't find. :( Hence the -rl runtime option
+     * to turn it on.
+     *
+     * Note: This setting is process global. */
+    SetErrorMode (SEM_FAILCRITICALERRORS |
+		  /* Maybe set this too? Don't know exactly when it
+		   * has effect. /mast */
+		  /*SEM_NOOPENFILEERRORBOX | */
+		  GetErrorMode());
+  }
+#endif
 
   init_pike_runtime(exit);
 
