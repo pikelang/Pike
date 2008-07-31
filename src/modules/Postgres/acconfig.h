@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.13 2008/07/04 20:11:00 srb Exp $
+|| $Id: acconfig.h,v 1.14 2008/07/31 23:38:43 mast Exp $
 */
 
 #ifndef PIKE_POSTGRES_H
@@ -27,16 +27,7 @@
 #endif
 
 /* End of autoconfigurable section */
-#if defined(HAVE_LIBPQ) && \
-    (defined(HAVE_POSTGRES_H) || \
-     defined(HAVE_POSTGRES_FE_H) || \
-     defined(HAVE_SERVER_POSTGRES_H) || \
-     defined(HAVE_SERVER_POSTGRES_FE_H) || \
-     defined(HAVE_POSTGRESQL_SERVER_POSTGRES_H) || \
-     defined(HAVE_POSTGRESQL_SERVER_POSTGRES_FE_H) || \
-     defined(HAVE_PG72)) && \
-    defined(HAVE_LIBPQ_FE_H) && \
-     defined(HAVE_WORKING_POSTGRES)
+#ifdef HAVE_WORKING_POSTGRES
 #define HAVE_POSTGRES
 
 /* This is needed to avoid broken <openssl/kssl.h> headerfiles. */
