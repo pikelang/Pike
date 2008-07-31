@@ -1,42 +1,37 @@
-# $Id: configure.in,v 1.4 2008/07/25 14:25:07 mast Exp $
+# $Id: configure.in,v 1.5 2008/07/31 21:18:07 mast Exp $
 
 AC_INIT(gssapi.cmod)
 AC_CONFIG_HEADER(gssapi_config.h)
-AC_ARG_WITH(gssapi, MY_DESCR([--without-gssapi], [Disable support for GSS-API]),
-	    [], [with_gssapi=yes])
 
 AC_MODULE_INIT()
-PIKE_FEATURE_WITHOUT(GSSAPI)
 
-if test x$with_gssapi = xyes; then
+PIKE_FEATURE(GSSAPI, [no (gssapi.h not found)])
+AC_CHECK_HEADERS(gssapi.h gssapi/gssapi.h gssglue/gssapi/gssapi.h, break)
+AC_CHECK_HEADERS(gssapi_krb5.h gssapi/gssapi_krb5.h gssglue/gssapi/gssapi_krb5.h, break)
 
-  PIKE_FEATURE(GSSAPI, [no (gssapi.h not found)])
-  AC_CHECK_HEADERS(gssapi.h gssapi/gssapi.h gssglue/gssapi/gssapi.h, break)
-  AC_CHECK_HEADERS(gssapi_krb5.h gssapi/gssapi_krb5.h gssglue/gssapi/gssapi_krb5.h, break)
+if test x$ac_cv_header_gssapi_h = xyes -o \
+	x$ac_cv_header_gssapi_gssapi_h = xyes -o \
+	x$ac_cv_header_gssglue_gssapi_gssapi_h = xyes; then
+  PIKE_FEATURE(GSSAPI, [no (GSS-API v2 library not found)])
 
-  if test x$ac_cv_header_gssapi_h = xyes -o \
-	  x$ac_cv_header_gssapi_gssapi_h = xyes -o \
-	  x$ac_cv_header_gssglue_gssapi_gssapi_h = xyes; then
-    PIKE_FEATURE(GSSAPI, [no (GSS-API v2 library not found)])
+  # Check for gss_wrap since it only exists in GSS-API version 2.
+  # Must use PIKE_SEARCH_LIBS since the lib in the Windows dist
+  # (KfW) uses __stdcall.
+  PIKE_SEARCH_LIBS(gss_wrap, [
+    gss_wrap (NULL, GSS_C_NO_CONTEXT, 0, GSS_C_QOP_DEFAULT,
+	      GSS_C_NO_BUFFER, NULL, GSS_C_NO_BUFFER);
+  ], gssapi gssapiv2 gssapi_krb5 gssapi32 gssglue, [
+    AC_DEFINE(HAVE_GSSAPI,, [Defined if GSSAPI works.])
+    PIKE_FEATURE(GSSAPI, [yes ($pike_cv_search_gss_wrap)])
+  ])
 
-    # Check for gss_wrap since it only exists in GSS-API version 2.
-    # Must use PIKE_SEARCH_LIBS since the lib in the Windows dist
-    # (KfW) uses __stdcall.
-    PIKE_SEARCH_LIBS(gss_wrap, [
-      gss_wrap (NULL, GSS_C_NO_CONTEXT, 0, GSS_C_QOP_DEFAULT,
-		GSS_C_NO_BUFFER, NULL, GSS_C_NO_BUFFER);
-    ], gssapi gssapiv2 gssapi_krb5 gssapi32 gssglue, [
-      AC_DEFINE(HAVE_GSSAPI,, [Defined if GSSAPI works.])
-      PIKE_FEATURE(GSSAPI, [yes ($pike_cv_search_gss_wrap)])
-    ])
+  AC_CHECK_FUNCS(gss_inquire_mechs_for_name)
 
-    AC_CHECK_FUNCS(gss_inquire_mechs_for_name)
-
-    dnl PIKE_CHECK_GSS_OID(OID)
-    AC_DEFUN([PIKE_CHECK_GSS_OID], [
-      AC_MSG_CHECKING([for OID $1])
-      AC_CACHE_VAL(pike_cv_have_oid_$1, [
-	AC_TRY_LINK([
+  dnl PIKE_CHECK_GSS_OID(OID)
+  AC_DEFUN([PIKE_CHECK_GSS_OID], [
+    AC_MSG_CHECKING([for OID $1])
+    AC_CACHE_VAL(pike_cv_have_oid_$1, [
+      AC_TRY_LINK([
 #ifdef HAVE_GSSAPI_H
 #include <gssapi.h>
 #elif defined(HAVE_GSSAPI_GSSAPI_H)
@@ -51,33 +46,32 @@ if test x$with_gssapi = xyes; then
 #elif defined(HAVE_GSSGLUE_GSSAPI_GSSAPI_KRB5_H)
 #include <gssglue/gssapi/gssapi_krb5.h>
 #endif
-	], [
-	  const gss_OID_desc *desc = $1;
-	  return 0;
-        ], [
-	  pike_cv_have_oid_$1=yes
-        ], [
-	  pike_cv_have_oid_$1=no
-	])
+      ], [
+	const gss_OID_desc *desc = $1;
+	return 0;
+      ], [
+	pike_cv_have_oid_$1=yes
+      ], [
+	pike_cv_have_oid_$1=no
       ])
-      if test "$pike_cv_have_oid_$1" = "yes"; then
-	AC_MSG_RESULT(yes)
-	AC_DEFINE(HAVE_$1,, [Define if you have the OID $1.])
-      else
-	AC_MSG_RESULT(no)
-      fi
     ])
-
-    if test "$ac_cv_header_gssapi_krb5_h:$ac_cv_header_gssapi_gssapi_krb5_h:$ac_cv_header_gssglue_gssapi_gssapi_krb5_h" = "no:no:no"; then
-      PIKE_CHECK_GSS_OID(GSS_KRB5_NT_PRINCIPAL_NAME)
+    if test "$pike_cv_have_oid_$1" = "yes"; then
+      AC_MSG_RESULT(yes)
+      AC_DEFINE(HAVE_$1,, [Define if you have the OID $1.])
+    else
+      AC_MSG_RESULT(no)
     fi
-    PIKE_CHECK_GSS_OID(GSS_C_NT_USER_NAME)
-    PIKE_CHECK_GSS_OID(GSS_C_NT_MACHINE_UID_NAME)
-    PIKE_CHECK_GSS_OID(GSS_C_NT_STRING_UID_NAME)
-    PIKE_CHECK_GSS_OID(GSS_C_NT_HOSTBASED_SERVICE)
-    PIKE_CHECK_GSS_OID(GSS_C_NT_ANONYMOUS)
-    PIKE_CHECK_GSS_OID(GSS_C_NT_EXPORT_NAME)
+  ])
+
+  if test "$ac_cv_header_gssapi_krb5_h:$ac_cv_header_gssapi_gssapi_krb5_h:$ac_cv_header_gssglue_gssapi_gssapi_krb5_h" = "no:no:no"; then
+    PIKE_CHECK_GSS_OID(GSS_KRB5_NT_PRINCIPAL_NAME)
   fi
+  PIKE_CHECK_GSS_OID(GSS_C_NT_USER_NAME)
+  PIKE_CHECK_GSS_OID(GSS_C_NT_MACHINE_UID_NAME)
+  PIKE_CHECK_GSS_OID(GSS_C_NT_STRING_UID_NAME)
+  PIKE_CHECK_GSS_OID(GSS_C_NT_HOSTBASED_SERVICE)
+  PIKE_CHECK_GSS_OID(GSS_C_NT_ANONYMOUS)
+  PIKE_CHECK_GSS_OID(GSS_C_NT_EXPORT_NAME)
 fi
 
 AC_OUTPUT(Makefile, test -z "$CONFIG_HEADERS" || echo FOO >stamp-h)
