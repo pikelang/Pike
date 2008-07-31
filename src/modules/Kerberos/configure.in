@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.2 2004/05/13 12:44:47 grubba Exp $
+# $Id: configure.in,v 1.3 2008/07/31 21:16:05 mast Exp $
 #
 # Support for Kerberos
 #
@@ -28,11 +28,14 @@ if test x$with_krb5 = xyes ; then
 
     PIKE_FEATURE(Kerberos,[no (krb5 libraries not found)])
 
-    AC_CHECK_LIB(krb5, krb5_init_context)
-
-    if test "$ac_cv_lib_krb5_krb5_init_context" = "yes"; then
-      PIKE_FEATURE(Kerberos,[yes])
-    fi
+    # Must use PIKE_SEARCH_LIBS since the lib in the Windows dist
+    # (KfW) uses __stdcall.
+    PIKE_SEARCH_LIBS(krb5_init_context, [
+      krb5_init_context (NULL);
+    ], krb5 krb5_32, [
+      AC_DEFINE(HAVE_KRB5,, [Defined if Kerberos 5 works.])
+      PIKE_FEATURE(Kerberos,[yes ($pike_cv_search_krb5_init_context)])
+    ])
   fi
 fi
 
