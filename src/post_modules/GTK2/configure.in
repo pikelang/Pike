@@ -79,14 +79,14 @@ pgtk_has_gtksourceview11=nogtksourceview11
 AC_DEFUN([AC_CHECK_PKG],
 [
   AC_MSG_CHECKING([for $1])
-  AC_CACHE_VAL([cv_pkg_]translit([$1], [-+.], [___]), [
+  AC_CACHE_VAL([pgtk2_cv_pkg_]translit([$1], [-+.], [___]), [
     if ${ac_tool_prefix}pkg-config $1 2>/dev/null; then
-      [cv_pkg_]translit([$1], [-+.], [___])=yes
+      [pgtk2_cv_pkg_]translit([$1], [-+.], [___])=yes
     else
-      [cv_pkg_]translit([$1], [-+.], [___])=no
+      [pgtk2_cv_pkg_]translit([$1], [-+.], [___])=no
     fi
   ])
-  if test x"$[cv_pkg_]translit([$1], [-+.], [___])" = xyes; then
+  if test x"$[pgtk2_cv_pkg_]translit([$1], [-+.], [___])" = xyes; then
     AC_MSG_RESULT(yes)
 
     ifelse([$6],,,[PIKE_FEATURE_NODEP([$6])])dnl
@@ -123,10 +123,10 @@ AC_DEFUN([AC_CHECK_PKG],
 dnl package
 AC_DEFUN(PGTK_CHECK_VERSION, [
   AC_MSG_CHECKING(for $1 version)
-  AC_CACHE_VAL([cv_ver_]translit([$1], [-+.], [___]), [
-    [cv_ver_]translit([$1], [-+.], [___])=`${ac_tool_prefix}pkg-config --modversion $1 2>/dev/null`
+  AC_CACHE_VAL([pgtk2_cv_ver_]translit([$1], [-+.], [___]), [
+    [pgtk2_cv_ver_]translit([$1], [-+.], [___])=`${ac_tool_prefix}pkg-config --modversion $1 2>/dev/null`
   ])
-  AC_MSG_RESULT($[cv_ver_]translit([$1], [-+.], [___]))
+  AC_MSG_RESULT($[pgtk2_cv_ver_]translit([$1], [-+.], [___]))
 ])
 
 WITH_GTK=0
@@ -143,7 +143,7 @@ else
     PGTK_CHECK_VERSION(gtk+-2.0)
     OIFS="$IFS"
     IFS="."
-    set $cv_ver_gtk__2_0
+    set $pgtk2_cv_ver_gtk__2_0
     IFS="$OIFS"
     gtkmajorvers=$1
     gtkminorvers=$2
@@ -189,7 +189,7 @@ else
       PGTK_CHECK_VERSION(pango)
       OIFS="$IFS"
       IFS="."
-      set $cv_ver_pango
+      set $pgtk2_cv_ver_pango
       IFS="$OIFS"
       pangomajorvers=$1
       pangominorvers=$2
@@ -228,7 +228,7 @@ else
       PGTK_CHECK_VERSION(atk)
       OIFS="$IFS"
       IFS="."
-      set $cv_ver_atk
+      set $pgtk2_cv_ver_atk
       IFS="$OIFS"
       atkmajorvers=$1
       atkminorvers=$2
@@ -272,7 +272,7 @@ else
       PGTK_CHECK_VERSION(gtksourceview-1.0)
       OIFS="$IFS"
       IFS="."
-      set $cv_ver_gtksourceview_1_0
+      set $pgtk2_cv_ver_gtksourceview_1_0
       IFS="$OIFS"
       gtksourceviewversmajorvers=$1
       gtksourceviewversminorvers=$2
