@@ -1,0 +1,16 @@
+PGsql.c
+PGsql.cmod.compiled
+config.h
+config.h.in
+*.feature
+Makefile
+build_type
+config.log
+config.status
+configure
+dependencies
+make_variables
+propagated_variables
+stamp-h
+stamp-h.in
+testsuite
