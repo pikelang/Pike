@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: SDL.cmod,v 1.31 2008/05/29 23:05:59 nilsson Exp $
+|| $Id: SDL.cmod,v 1.32 2008/07/31 14:52:27 mast Exp $
 */
 
 #include "global.h"
@@ -22,6 +22,8 @@
 #include "mapping.h"
 
 #include "sdl_config.h"
+
+DECLARATIONS
 
 #ifdef HAVE_SDL
 

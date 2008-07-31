@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.223 2008/07/11 14:35:13 mast Exp $
+|| $Id: builtin.cmod,v 1.224 2008/07/31 14:52:26 mast Exp $
 */
 
 #include "global.h"
@@ -36,6 +36,8 @@
 #include <ctype.h>
 #include <errno.h>
 #include <math.h>
+
+DECLARATIONS
 
 /*! @decl array(array(int|string|type)) describe_program(program p)
  *! @belongs Debug

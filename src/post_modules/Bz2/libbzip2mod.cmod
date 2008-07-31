@@ -1,4 +1,9 @@
-/* -*- c -*- */
+/* -*- c -*-
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: libbzip2mod.cmod,v 1.24 2008/07/31 14:52:26 mast Exp $
+*/
 
 #include "global.h"
 #include "interpret.h"
@@ -27,6 +32,8 @@
 #ifdef HAVE_BZLIB_H
 #include <bzlib.h>
 #endif
+
+DECLARATIONS
 
 /* These constants are the default values that
    are sent to a Bz2 stream when it is initialized */

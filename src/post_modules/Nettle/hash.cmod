@@ -1,5 +1,9 @@
-/* hash.cmod -*- c -*- */
-/* $Id: hash.cmod,v 1.30 2008/06/28 22:57:14 nilsson Exp $ */
+/* -*- c -*-
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: hash.cmod,v 1.31 2008/07/31 14:52:27 mast Exp $
+*/
 
 #include "global.h"
 #include "interpret.h"
@@ -13,6 +17,8 @@
 #include "nettle_config.h"
 
 #ifdef HAVE_LIBNETTLE
+
+DECLARATIONS
 
 #include "nettle.h"
 

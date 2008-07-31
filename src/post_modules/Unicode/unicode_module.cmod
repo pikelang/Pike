@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: unicode_module.cmod,v 1.17 2007/12/28 15:32:42 nilsson Exp $
+|| $Id: unicode_module.cmod,v 1.18 2008/07/31 14:52:27 mast Exp $
 */
 
 #include "global.h"
@@ -21,6 +21,8 @@
 #include "split.h"
 #include "buffer.h"
 #include "uversion.h"
+
+DECLARATIONS
 
 /*! @module Unicode
  */

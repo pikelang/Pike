@@ -1,5 +1,9 @@
-/* cipher.cmod -*- c -*- */
-/* $Id: cipher.cmod,v 1.39 2008/07/17 10:53:20 mast Exp $ */
+/* -*- c -*-
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: cipher.cmod,v 1.40 2008/07/31 14:52:27 mast Exp $
+*/
 
 #include "global.h"
 #include "interpret.h"
@@ -15,6 +19,8 @@
 #include "nettle_config.h"
 
 #ifdef HAVE_LIBNETTLE
+
+DECLARATIONS
 
 #include "nettle.h"
 

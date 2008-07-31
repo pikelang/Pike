@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpq.cmod,v 1.31 2008/06/28 23:05:59 nilsson Exp $
+|| $Id: mpq.cmod,v 1.32 2008/07/31 14:52:26 mast Exp $
 */
 
 #include "global.h"
@@ -43,6 +43,8 @@
 
 #define sp Pike_sp
 #define fp Pike_fp
+
+DECLARATIONS
 
 #define THISMPQ (&(THIS->n))
 
