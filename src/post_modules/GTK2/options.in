@@ -1,4 +1,4 @@
-@have_x11@
+@pgtk2_have_x11@
 @pgtk_has_libglade@
 @pgtk_has_gnome@
 @pgtk_has_gtk210@

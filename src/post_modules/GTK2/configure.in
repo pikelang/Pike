@@ -28,8 +28,8 @@ AC_CHECK_FUNCS( gethrtime signal sigaction )
 
 AC_PATH_PROG(PKG_CONFIG,${ac_tool_prefix}pkg-config,no)
 
-AC_SUBST(have_x11)
-have_x11=nox11
+AC_SUBST(pgtk2_have_x11)
+pgtk2_have_x11=nox11
 AC_SUBST(pgtk_has_gtk_beta)
 pgtk_has_gtk_beta=nogtk_beta
 AC_SUBST(pgtk_has_gtk212)
@@ -79,7 +79,14 @@ pgtk_has_gtksourceview11=nogtksourceview11
 AC_DEFUN([AC_CHECK_PKG],
 [
   AC_MSG_CHECKING([for $1])
-  if ${ac_tool_prefix}pkg-config $1 2>/dev/null; then
+  AC_CACHE_VAL([cv_pkg_]translit([$1], [-+.], [___]), [
+    if ${ac_tool_prefix}pkg-config $1 2>/dev/null; then
+      [cv_pkg_]translit([$1], [-+.], [___])=yes
+    else
+      [cv_pkg_]translit([$1], [-+.], [___])=no
+    fi
+  ])
+  if test x"$[cv_pkg_]translit([$1], [-+.], [___])" = xyes; then
     AC_MSG_RESULT(yes)
 
     ifelse([$6],,,[PIKE_FEATURE_NODEP([$6])])dnl
@@ -113,21 +120,30 @@ AC_DEFUN([AC_CHECK_PKG],
   fi
 ])
 
+dnl package
+AC_DEFUN(PGTK_CHECK_VERSION, [
+  AC_MSG_CHECKING(for $1 version)
+  AC_CACHE_VAL([cv_ver_]translit([$1], [-+.], [___]), [
+    [cv_ver_]translit([$1], [-+.], [___])=`${ac_tool_prefix}pkg-config --modversion $1 2>/dev/null`
+  ])
+  AC_MSG_RESULT($[cv_ver_]translit([$1], [-+.], [___]))
+])
+
 WITH_GTK=0
 if test "$PKG_CONFIG" = "no" ; then
   echo "*** pkg-config must be in your path!!!"
 else
   gtk_test_libs="gtk+-2.0 libgnome-2.0 libglade-2.0 libgnomeui-2.0 libpanelapplet-2.0"
   gtk_final_libs=""
+
   AC_CHECK_PKG(gtk+-2.0, gtk/gtk.h, gtk_init, [
     PIKE_FEATURE_OK(GTK2)
     WITH_GTK=1
 
-    AC_MSG_CHECKING([for gtk+ version])
-    gtkvers=`${ac_tool_prefix}pkg-config --modversion gtk+-2.0 2>/dev/null`
+    PGTK_CHECK_VERSION(gtk+-2.0)
     OIFS="$IFS"
     IFS="."
-    set $gtkvers
+    set $cv_ver_gtk__2_0
     IFS="$OIFS"
     gtkmajorvers=$1
     gtkminorvers=$2
@@ -137,10 +153,8 @@ else
       # We don't support the betas, since they are more compatible with
       # Gtk 1.2 than with Gtk 2.
       WITH_GTK=0
-      AC_MSG_RESULT($gtkvers - obsolete)
       PIKE_FEATURE(GTK2, [no (too old)])
     else
-      AC_MSG_RESULT($gtkvers)
       if test $gtkminorvers -ge 2 ; then
 	pgtk_has_gtk22=gtk22
 	AC_DEFINE(HAVE_GTK22)
@@ -172,11 +186,10 @@ else
       pgtk_has_pango=pango
       AC_DEFINE(HAVE_PANGO)
 
-      AC_MSG_CHECKING([for pango version])
-      pangovers=`${ac_tool_prefix}pkg-config --modversion pango 2>/dev/null`
+      PGTK_CHECK_VERSION(pango)
       OIFS="$IFS"
       IFS="."
-      set $pangovers
+      set $cv_ver_pango
       IFS="$OIFS"
       pangomajorvers=$1
       pangominorvers=$2
@@ -207,17 +220,15 @@ else
 	  AC_DEFINE(HAVE_PANGO12)
 	fi
       fi
-      AC_MSG_RESULT($pangovers)
     ])
     AC_CHECK_PKG(atk,, atk_relation_new, [
       pgtk_has_atk=atk
       AC_DEFINE(HAVE_ATK)
 
-      AC_MSG_CHECKING([for atk version])
-      atkvers=`${ac_tool_prefix}pkg-config --modversion atk 2>/dev/null`
+      PGTK_CHECK_VERSION(atk)
       OIFS="$IFS"
       IFS="."
-      set $atkvers
+      set $cv_ver_atk
       IFS="$OIFS"
       atkmajorvers=$1
       atkminorvers=$2
@@ -226,7 +237,6 @@ else
 	pgtk_has_atk18=atk18
 	AC_DEFINE(HAVE_ATK18)
       fi
-      AC_MSG_RESULT($atkvers)
     ])
     AC_CHECK_PKG(libgnome-2.0, libgnomeui/libgnomeui.h, gnome_program_init, [
       AC_DEFINE(HAVE_GNOME)
@@ -259,11 +269,10 @@ else
       AC_DEFINE(HAVE_GTKSOURCEVIEW)
       pgtk_has_gtksourceview=gtksourceview
 
-      AC_MSG_CHECKING([for gtksourceview version])
-      gtksourceviewvers=`${ac_tool_prefix}pkg-config --modversion gtksourceview-1.0 2>/dev/null`
+      PGTK_CHECK_VERSION(gtksourceview-1.0)
       OIFS="$IFS"
       IFS="."
-      set $gtksourceviewvers
+      set $cv_ver_gtksourceview_1_0
       IFS="$OIFS"
       gtksourceviewversmajorvers=$1
       gtksourceviewversminorvers=$2
@@ -272,7 +281,6 @@ else
 	pgtk_has_gtksourceview11=gtksourceview11
 	AC_DEFINE(HAVE_GTKSOURCEVIEW11)
       fi
-      AC_MSG_RESULT($gtksourceviewvers)
     ])
 
     # Note: ORBit-2.0.pc on Solaris 10/x86 adds -mt to cflags,
@@ -296,15 +304,15 @@ LIBS="$LIBS $GTK_LIBS"
 AC_CHECK_FUNCS(gtk_tree_selection_unselect_range)
 
 AC_MSG_CHECKING([if g_signal_connect_data takes six args])
-AC_CACHE_VAL(pgtk_cv_g_signal_connect_has_six_args, [
+AC_CACHE_VAL(pgtk2_cv_g_signal_connect_has_six_args, [
   AC_TRY_COMPILE([
 #include <glib-object.h>
   ],[
     g_signal_connect_data(0,0,0,0,0,0);
-  ], [ pgtk_cv_g_signal_connect_has_six_args="yes"
-  ], [ pgtk_cv_g_signal_connect_has_six_args="no" ])
+  ], [ pgtk2_cv_g_signal_connect_has_six_args="yes"
+  ], [ pgtk2_cv_g_signal_connect_has_six_args="no" ])
 ])
-if test "x$pgtk_cv_g_signal_connect_has_six_args" = "xyes"; then
+if test "x$pgtk2_cv_g_signal_connect_has_six_args" = "xyes"; then
   AC_MSG_RESULT(yes)
   AC_DEFINE(HAVE_G_SIGNAL_CONNECT_DATA_WITH_SIX_ARGS)
 else
@@ -312,7 +320,7 @@ else
 fi
 
 AC_MSG_CHECKING([if we are using X11])
-AC_CACHE_VAL(pkgt_have_x11, [
+AC_CACHE_VAL(pgtk2_have_x11, [
    AC_TRY_COMPILE([
 #include <gdk/gdk.h> 
 #include <gdk/gdkx.h> 
@@ -321,10 +329,10 @@ AC_CACHE_VAL(pkgt_have_x11, [
      GdkWindow *w = (GdkWindow *)0;
      Window window = GDK_WINDOW_XWINDOW (w);
  ], 
- [have_x11=x11],
- [have_x11=nox11])
+ [pgtk2_have_x11=x11],
+ [pgtk2_have_x11=nox11])
 ])
-if test "x$have_x11" = "xx11"; then
+if test "x$pgtk2_have_x11" = "xx11"; then
   AC_MSG_RESULT(yes)
 else
   AC_MSG_RESULT(no)
