@@ -18,6 +18,8 @@ string usage = #"[options] <from> > <to>
 
  The input can look something like this:
 
+ DECLARATIONS
+
  PIKECLASS fnord 
   attributes;
  {
