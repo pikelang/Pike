@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.233 2008/07/31 18:03:01 mast Exp $
+|| $Id: main.c,v 1.234 2008/07/31 18:13:17 mast Exp $
 */
 
 #include "global.h"
@@ -447,6 +447,12 @@ int main(int argc, char **argv)
 	      p++;
 	      goto more_d_flags;
 
+	    case 'L':
+	      set_pike_debug_options (WINDOWS_ERROR_DIALOGS,
+				      WINDOWS_ERROR_DIALOGS);
+	      p++;
+	      goto more_d_flags;
+
 	    default:
 	      d_flag += (p[0] == 'd');
 	      p++;
@@ -465,12 +471,6 @@ int main(int argc, char **argv)
 	  case 'T':
 	    set_pike_runtime_options(RUNTIME_STRICT_TYPES,
 				     RUNTIME_STRICT_TYPES);
-	    p++;
-	    goto more_r_flags;
-
-	  case 'l':
-	    set_pike_runtime_options (RUNTIME_ERROR_DIALOGS,
-				      RUNTIME_ERROR_DIALOGS);
 	    p++;
 	    goto more_r_flags;
 
@@ -546,7 +546,7 @@ int main(int argc, char **argv)
     set_pike_debug_options(ERRORCHECK_MUTEXES, ERRORCHECK_MUTEXES);
 
 #ifdef HAVE_SETERRORMODE
-  if (!(runtime_options & RUNTIME_ERROR_DIALOGS)) {
+  if (!(debug_options & WINDOWS_ERROR_DIALOGS)) {
     /* This avoids popups when LoadLibrary fails to find a dll.
      *
      * Note that the popup is the _only_ way to see which dll (loaded

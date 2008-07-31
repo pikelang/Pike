@@ -1,11 +1,11 @@
-.\" $Id: pike.1,v 1.26 2008/07/31 18:02:28 mast Exp $
+.\" $Id: pike.1,v 1.27 2008/07/31 18:13:17 mast Exp $
 .\" name section last-modified title section-name product/status architecture
 .ds ]L Pike
-.TH pike 1 "$Date: 2008/07/31 18:02:28 $" Pike "Pike Manual" Pike
-.\" On Solaris ]L will contain "Last modified $Date: 2008/07/31 18:02:28 $"
+.TH pike 1 "$Date: 2008/07/31 18:13:17 $" Pike "Pike Manual" Pike
+.\" On Solaris ]L will contain "Last modified $Date: 2008/07/31 18:13:17 $"
 .\" while HPUX uses ]L to contain "Pike".
 .\" On OSF/1 ]L will already contain the wanted string.
-.if !\*(]LPike .ds ]L $Date: 2008/07/31 18:02:28 $ \" Solaris nroff
+.if !\*(]LPike .ds ]L $Date: 2008/07/31 18:13:17 $ \" Solaris nroff
 .\" Major (mj) and minor (mn) version of Pike
 .nr mj 7
 .nr mn 7
@@ -70,6 +70,19 @@ Turn off tail recursion optimization (debug).
 .B \-dT
 Enable extra checks in the thread library, e.g. mutex sanity checks (debug).
 .TP
+.B \-dL
+.B Windows only:
+Enable Windows error dialogs when dll files cannot be loaded.
+
+It is common that Pike has modules which are linked to dll files that
+are not available in all installations. Therefore these error dialogs
+are disabled by default so that Pike does not hang on them when
+attempting to load certain modules.
+
+However, the error dialogs are the only way to see which dll's that
+could not be loaded, so this option may be necessary to find out why a
+certain module does not load.
+.TP
 .B \-l
 Increase the debug level of the global optimizer with 1 (debug).
 .TP
@@ -119,19 +132,6 @@ Turn on runtime checking of arguments to function calls, and soft casts.
 Turn on
 .B #pragma strict_types
 for all files.
-.TP
-.B \-rl
-.B Windows only:
-Enable Windows error dialogs when dll files cannot be loaded.
-
-It is common that Pike has modules which are linked to dll files that
-are not available in all installations. Therefore these error dialogs
-are disabled by default so that Pike does not hang on them when
-attempting to load certain modules.
-
-However, the error dialogs are the only way to see which dll's that
-could not be loaded, so this option may be necessary to find out why a
-certain module does not load.
 .LP
 The following options are supported by the default master program:
 .TP

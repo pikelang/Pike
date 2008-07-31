@@ -1,5 +1,5 @@
 /*
- * $Id: pike_embed.h,v 1.11 2008/07/31 18:01:49 mast Exp $
+ * $Id: pike_embed.h,v 1.12 2008/07/31 18:13:17 mast Exp $
  *
  * Pike embedding API.
  *
@@ -24,18 +24,18 @@ extern int yydebug;
 #endif /* YYDEBUG || PIKE_DEBUG */
 
 /* Debug options */
-#define DEBUG_SIGNALS 1
-#define NO_TAILRECURSION 2
-#define NO_PEEP_OPTIMIZING 4
-#define GC_RESET_DMALLOC 8
-#define ERRORCHECK_MUTEXES 16
+#define DEBUG_SIGNALS		0x0001
+#define NO_TAILRECURSION	0x0002
+#define NO_PEEP_OPTIMIZING	0x0004
+#define GC_RESET_DMALLOC	0x0008
+#define ERRORCHECK_MUTEXES	0x0010
+#define WINDOWS_ERROR_DIALOGS	0x0020
 
 int set_pike_debug_options(int bits, int mask);
 
 /* Runtime options */
 #define RUNTIME_CHECK_TYPES	1
 #define RUNTIME_STRICT_TYPES	2
-#define RUNTIME_ERROR_DIALOGS	4
 
 int set_pike_runtime_options(int bits, int mask);
 
