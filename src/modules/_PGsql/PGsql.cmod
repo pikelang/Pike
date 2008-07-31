@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: PGsql.cmod,v 1.17 2008/07/31 10:32:36 srb Exp $
+ * $Id: PGsql.cmod,v 1.18 2008/07/31 11:50:01 srb Exp $
  *
  * PGsql, accelerator functions for Sql.pgsql for Pike.
  *
@@ -24,6 +24,9 @@
 #include <sys/types.h>
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
+#endif
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
 #endif
 #ifdef HAVE_NETINET_TCP_H
 #include <netinet/tcp.h>
@@ -218,7 +221,7 @@ bad:
     if(Pike_sp[-1].type == PIKE_T_INT) {
       int fd=Pike_sp[-1].u.integer;
       int newval = 1;
-      setsockopt(fd, SOL_TCP, TCP_NODELAY, &newval, sizeof(newval));
+      setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &newval, sizeof(newval));
     }
     pop_stack();
 #endif
