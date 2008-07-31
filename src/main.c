@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.232 2008/07/31 18:01:48 mast Exp $
+|| $Id: main.c,v 1.233 2008/07/31 18:03:01 mast Exp $
 */
 
 #include "global.h"
@@ -472,7 +472,7 @@ int main(int argc, char **argv)
 	    set_pike_runtime_options (RUNTIME_ERROR_DIALOGS,
 				      RUNTIME_ERROR_DIALOGS);
 	    p++;
-	    goto more_d_flags;
+	    goto more_r_flags;
 
          default:
             p++;
