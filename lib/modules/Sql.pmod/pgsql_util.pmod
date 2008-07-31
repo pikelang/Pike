@@ -142,6 +142,12 @@ class PGassist {
     sendcmd(({"X",plugint32(4)}),2);
     close();
   }
+
+  void create() {
+#ifdef USEPGsql
+    ::create();
+#endif
+  }
 }
 
 class PGconn {
@@ -180,6 +186,7 @@ class PGconn {
   void create(Stdio.File stream,object t) {
     std::create();
     std::assign(stream);
+    pg::create();
   }
 }
 
@@ -205,6 +212,7 @@ class PGconnS {
   void create(Stdio.File stream, SSL.context ctx) {
     rawstream=stream;
     std::create(stream,ctx,1,1);
+    pg::create();
   }
 }
 #endif

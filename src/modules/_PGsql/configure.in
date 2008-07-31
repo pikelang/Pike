@@ -1,9 +1,11 @@
-# $Id: configure.in,v 1.6 2008/07/27 15:18:21 srb Exp $
+# $Id: configure.in,v 1.7 2008/07/31 10:32:36 srb Exp $
 #
 
 AC_INIT(PGsql.cmod)
 AC_CONFIG_HEADER(config.h)
 
 AC_MODULE_INIT()
+
+AC_CHECK_HEADERS(sys/socket.h netinet/tcp.h)
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )

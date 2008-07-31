@@ -673,6 +673,7 @@ private int read_cb(mixed foo, string d) {
 #endif
 
 void destroy() {
+  cancelquery();
   if(_c)
     _c.sendterminate();
 }
