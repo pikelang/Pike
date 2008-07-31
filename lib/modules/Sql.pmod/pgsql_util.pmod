@@ -29,6 +29,8 @@ class PGassist {
   int close() {
   }
 
+  private final array(string) cmdbuf=({});
+
 #ifdef USEPGsql
   inherit _PGsql.PGsql;
 #else
@@ -112,23 +114,32 @@ class PGassist {
     sendcmd(({}),1);
   }
 
-  final int sendcmd(string|array(string) data,void|int flush) {
-    if(flush) {
-      if(stringp(data))
-        data=({data,FLUSH});
-      else
-        data+=({FLUSH});
-      PD("Flush\n");
-      flushed=1;
+  final void sendcmd(string|array(string) data,void|int flush) {
+    if(arrayp(data))
+      cmdbuf+=data;
+    else
+      cmdbuf+=({data});
+    switch(flush) {
+      case 3:
+        cmdbuf+=({FLUSH});
+        flushed=1;
+        break;
+      default:
+	flushed=0;
+        break;
+      case 1:
+        cmdbuf+=({FLUSH});
+        PD("Flush\n");
+      case 2:
+        flushed=1;
+        write(cmdbuf);
+        cmdbuf=({});
     }
-    else if(flushed!=-1)
-      flushed=0;
-    return write(data);
   }
 
   final void sendterminate() {
     PD("Terminate\n");
-    sendcmd(({"X",plugint32(4)}));
+    sendcmd(({"X",plugint32(4)}),2);
     close();
   }
 }
@@ -372,7 +383,7 @@ int|array(string|int) fetch_row(void|int|string buffer) {
     if(stringp(buffer)) {
       PD("CopyData\n");
       _pgsqlsess._c.sendcmd(({"d",_pgsqlsess._c.plugint32(4+sizeof(buffer)),
-       buffer}));
+       buffer}),2);
     }
     else
       releasesession();
