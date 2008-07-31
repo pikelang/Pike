@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.284 2008/07/31 10:29:56 grubba Exp $
+|| $Id: encode.c,v 1.285 2008/07/31 11:06:39 grubba Exp $
 */
 
 #include "global.h"
@@ -2495,7 +2495,7 @@ static DECLSPEC(noreturn) void decode_error (struct svalue *decoding,
   }
   push_text (buf); n++;
   if (other) {
-    push_constant_text ("%O (%t)\n");
+    push_constant_text ("%O (%s)\n");
     push_svalue (other);
     push_text(get_name_of_type(other->type));
     f_sprintf (3); n++;
