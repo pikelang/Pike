@@ -2,6 +2,9 @@
 
 #define FUNC_OVERLOAD
 
+#define TOSTR(X) #X
+#define DEFINETOSTR(X) TOSTR(X)
+
 constant precompile_api_version = "2";
 
 constant want_args = 1;
@@ -105,7 +108,7 @@ string usage = #"[options] <from> > <to>
 
  Note: If a function argument accepts more than one runtime type, e.g.
  \"int|string\", then no type checking at all is performed on the svalue. That
- is not a bug - the user code have to do a type check later anyway, and it's
+ is not a bug - the user code has to do a type check later anyway, and it's
  more efficient to add the error handling there.
 
  Currently, the following attributes are understood:
@@ -127,9 +130,9 @@ string usage = #"[options] <from> > <to>
                   is an EXIT function, the gc has to take the same care as if
                   there is a destroy function. But if the EXIT function
                   doesn't mind that arbitrary referenced pike objects gets
-                  destructed before this one (which is very common), then
-                  this attribute can be added to make the gc work a little
-                  easier.
+                  destructed before this one (a very common trait since most
+                  EXIT functions only do simple cleanup), then this attribute
+                  can be added to make the gc work a little easier.
 
  POLYMORPHIC FUNCTION OVERLOADING
    You can define the same function several times with different
@@ -145,7 +148,6 @@ string usage = #"[options] <from> > <to>
  BUGS/LIMITATIONS
   o Parenthesis must match, even within #if 0
   o Not all Pike types are supported yet.
-  o No support for functions that take a variable number of arguments yet.
   o RETURN; (void) doesn't work yet
   o need a RETURN_NULL; or something.. RETURN 0; might work but may
     be confusing as RETURN x; will not work if x is zero.
@@ -1661,10 +1663,7 @@ class ParseBlock
 	    string define = make_unique_name("class", base, name, "defined");
 
 	    ret+=DEFINE(define);
-	    // FIXME: The struct program variable should probably default
-	    //        to being static.
-	    //	/grubba 2004-10-23
-	    ret+=({sprintf("struct program *%s=NULL;\n"
+	    ret+=({sprintf("DEFAULT_CMOD_STORAGE struct program *%s=NULL;\n"
 			   "static int %s_fun_num=-1;\n",
 			   program_var, program_var)});
 	    ret+=subclass->declarations;
@@ -1885,7 +1884,7 @@ class ParseBlock
 		  sprintf (#"\
 #ifdef PIKE_DEBUG
 /* Ensure the struct is used in a variable declaration, or else gdb might not see it. */
-struct %s *%s_gdb_dummy_ptr;
+static struct %s *%s_gdb_dummy_ptr;
 #endif\n", structname, base),
 		    })
 	  +declarations;
@@ -2005,7 +2004,7 @@ struct %s *%s_gdb_dummy_ptr;
 
 	if (!attributes->efun) {
 	  ret += ({
-	    sprintf("ptrdiff_t %s = 0;\n", func_num),
+	    sprintf("DEFAULT_CMOD_STORAGE ptrdiff_t %s = 0;\n", func_num),
 	  });
 	}
 
@@ -2081,7 +2080,7 @@ struct %s *%s_gdb_dummy_ptr;
 	  funcname = "NULL";
 	} else {
 	  ret+=({
-	    sprintf("void %s(INT32 args) ",funcname),
+	    sprintf("DEFAULT_CMOD_STORAGE void %s(INT32 args) ",funcname),
 	    "{","\n",
 	  });
 
@@ -2440,8 +2439,8 @@ struct %s *%s_gdb_dummy_ptr;
 	     */
 	    ret+=IFDEF(tmp->define, ({
 	      sprintf("#define %s\n",define),
-	      sprintf("ptrdiff_t %s = 0;\n", func_num),
-	      sprintf("void %s(INT32 args) ",funcname),
+	      sprintf("DEFAULT_CMOD_STORAGE ptrdiff_t %s = 0;\n", func_num),
+	      sprintf("DEFAULT_CMOD_STORAGE void %s(INT32 args) ",funcname),
 	      "{\n",
 	    })+out+({
 	      "}\n",
@@ -2588,6 +2587,13 @@ int main(int argc, array(string) argv)
 
   ParseBlock tmp=ParseBlock(x,"");
 
+  tmp->declarations += ({
+    // FIXME: Ought to default to static in 7.9.
+    "#ifndef DEFAULT_CMOD_STORAGE\n"
+    "#define DEFAULT_CMOD_STORAGE\n"
+    "#endif\n"
+  });
+
   if (last_str_id) {
     // Add code for allocation and deallocation of the strings.
     tmp->addfuncs = stradd + tmp->addfuncs;
@@ -2601,7 +2607,7 @@ int main(int argc, array(string) argv)
 	      "}\n",
 	      last_str_id),
     });
-    tmp->declarations = ({
+    tmp->declarations += ({
       sprintf("static struct pike_string *module_strings[%d] = {\n"
 	      "%s};\n",
 	      last_str_id, "  NULL,\n"*last_str_id),
