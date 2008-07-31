@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.30 2007/01/28 03:59:26 peter Exp $
+dnl $Id: configure.in,v 1.31 2008/07/31 23:37:24 mast Exp $
 
 AC_INIT(postgres.c)
 AC_CONFIG_HEADER(pgres_config.h)
@@ -111,6 +111,7 @@ dnl FIXME: This test ought to use EGREP_CPP.
 #ifdef HAVE_POSTGRESQL_SERVER_PG_CONFIG_H
 #include <postgresql/server/pg_config.h>
 #elif defined(HAVE_SERVER_PG_CONFIG_H)
+#include <server/pg_config.h>
 #elif defined(HAVE_PG_CONFIG_H)
 #include <pg_config.h>
 #endif
@@ -123,6 +124,7 @@ PG_VERSION
 #ifdef HAVE_POSTGRESQL_SERVER_PG_CONFIG_H
 #include <postgresql/server/pg_config.h>
 #elif defined(HAVE_SERVER_PG_CONFIG_H)
+#include <server/pg_config.h>
 #elif defined(HAVE_PG_CONFIG_H)
 #include <pg_config.h>
 #endif
@@ -139,7 +141,9 @@ PG_VERSION
       # that, but does not include openssl/ssl.h in the dist.
       AC_MSG_CHECKING(if libpq-fe.h works)
       AC_TRY_COMPILE([
-#ifdef HAVE_PG_SERVER_CONFIG_H
+#ifdef HAVE_POSTGRESQL_SERVER_PG_CONFIG_H
+#include <postgresql/server/pg_config.h>
+#elif HAVE_SERVER_PG_CONFIG_H
 #include <server/pg_config.h>
 #elif defined(HAVE_PG_CONFIG_H)
 #include <pg_config.h>
@@ -196,7 +200,7 @@ dnl last check, just to be sure
       LDFLAGS="$LDFLAGS -L$pike_cv_pgres_lib_dir -R$pike_cv_pgres_lib_dir"
     fi
     AC_CHECK_LIB(crypt, crypt)
-    AC_CHECK_LIB(pq,PQclear)
+    AC_SEARCH_LIBS(PQclear, pq libpq)
   fi
   AC_CHECK_FUNCS(PQsetdbLogin PQsetnonblocking PQunescapeBytea PQescapeStringConn PQescapeString)
   if test x$ac_cv_func_PQsetdbLogin = xno; then
@@ -207,7 +211,7 @@ dnl last check, just to be sure
   fi
 fi
 
-if test x$ac_cv_lib_pq_PQclear != xyes -o x$ac_pike_postgres_works != xyes;then
+if test "x$ac_cv_search_PQclear" = xno -o x$ac_pike_postgres_works != xyes;then
   CPPFLAGS=$OLD_CPPFLAGS
   LDFLAGS=$OLD_LDFLAGS
   LIBS=$OLD_LIBS
