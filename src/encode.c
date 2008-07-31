@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.285 2008/07/31 11:06:39 grubba Exp $
+|| $Id: encode.c,v 1.286 2008/07/31 14:09:04 grubba Exp $
 */
 
 #include "global.h"
@@ -3076,7 +3076,8 @@ static void decode_value2(struct decode_data *data)
 	  break;
       }
 
-      if(Pike_sp[-1].type != T_FUNCTION && data->pickyness)
+      if((Pike_sp[-1].type != T_FUNCTION) && (Pike_sp[-1].type != T_PROGRAM) &&
+	 data->pickyness)
 	decode_error(Pike_sp - 2, Pike_sp - 1,
 		     "Failed to decode function. Got: ");
 
