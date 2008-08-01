@@ -1,14 +1,15 @@
+
 START_MARKER
 cond_resolv( SQLite.SQLite, [[
 
   test_do( rm("testdb"); )
-  test_do( add_constant("db", SQLite.SQLite("testdb")); )
+  test_do( add_constant("db", Sql.Sql("sqlite://testdb")); )
 
-  test_eq( db->changes(), 0 )
-  test_eq( db->total_changes(), 0 )
-  test_do( db->interrupt() )
+  test_eq( db->master_sql->changes(), 0 )
+  test_eq( db->master_sql->total_changes(), 0 )
+  test_do( db->master_sql->interrupt() )
   test_true( stringp(db->server_info()); )
-  test_eq( db->last_insert_rowid(), 0 )
+  test_eq( db->master_sql->last_insert_rowid(), 0 )
   test_eq( db->error(), "not an error" )
   test_eval_error( db->select_db() )
   test_eval_error( db->create_db() )
@@ -21,7 +22,8 @@ cond_resolv( SQLite.SQLite, [[
 
   test_equal( db->list_tables(), ({ "test" }) )
   test_equal( db->list_fields("test"),[[
-#define P(X,Y) (["name":#X,"type":#Y])
+#define P(X,Y) (["name":#X,"type":#Y,"table":"test", \
+	"default":"","flags":(<>),"length":0])
  ({ P(aa,INTEGER), P(bb,FLOAT), P(cc,TEXT), P(dd,BLOB) })
 ]])
 
