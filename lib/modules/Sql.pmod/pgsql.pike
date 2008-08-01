@@ -262,6 +262,15 @@ void cancelquery() {
   }
 }
 
+//! Returns the set of currently active runtimeparameters for
+//! the open session.
+//!
+//! This function is PostgreSQL-specific, and thus it is not available
+//! through the generic SQL-interface.
+mapping(string:string) getruntimeparameters() {
+  return runtimeparameter+([]);
+}
+
 //! Returns the old cachedepth, sets the new cachedepth for prepared
 //! statements automatic caching.
 //!
