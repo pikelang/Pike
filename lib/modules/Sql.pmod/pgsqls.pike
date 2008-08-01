@@ -6,6 +6,9 @@
 //!   @tt{pgsqls://[user[:password]@@][hostname][:port][/database]@}
 //!
 //! Sets the connection to SSL-mode.
+//!
+//! @seealso
+//!   @[Sql.pgsql], @[Sql.Sql]
 
 #pike __REAL_VERSION__
 

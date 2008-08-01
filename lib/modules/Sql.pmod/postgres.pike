@@ -1,7 +1,7 @@
 /*
  * This is part of the Postgres module for Pike.
  *
- * $Id: postgres.pike,v 1.34 2008/07/14 11:36:00 srb Exp $
+ * $Id: postgres.pike,v 1.35 2008/08/01 11:11:17 srb Exp $
  *
  */
 
@@ -13,14 +13,18 @@
 //! connect to the database over a TCP/IP socket.
 //!
 //! @note
-//! Also note that @b{this module uses blocking I/O@} I/O to connect
-//! to the server. Postgres is quite slow, and so you might want to
-//! consider this particular aspect. It is (at least should be)
-//! thread-safe, and so it can be used in a multithread environment.
+//! Please note that there is a more advanced driver to access PostgreSQL
+//! databases: @[Sql.pgsql].
+//!
+//! @note
+//! Also note that @b{this module uses blocking I/O@} to connect
+//! to the server. It is thread-safe, and so it can be used in a
+//! multithread environment.
 //!
 //! The behavior of the Postgres C API also depends on certain
 //! environment variables defined in the environment of the Pike
-//! interpreter.
+//! interpreter; some notice and warning notifications might are dumped
+//! on stderr.
 //!
 //! @string
 //!   @value "PGHOST"
@@ -46,7 +50,7 @@
 //! Refer to the Postgres documentation for further details.
 //!
 //! @seealso
-//!  @[Sql.Sql], @[Postgres.postgres], @[Sql.postgres_result]
+//!  @[Sql.pgsql], @[Sql.Sql], @[Postgres.postgres], @[Sql.postgres_result]
 
 #pike __REAL_VERSION__
 
@@ -151,7 +155,7 @@ protected private int mkbool(string s) {
 //! object is destroyed.
 //!
 //! @seealso
-//!   @[Postgres.postgres], @[Sql.Sql], @[postgres->select_db]
+//!   @[Sql.pgsql], @[Postgres.postgres], @[Sql.Sql], @[postgres->select_db]
 void create(void|string host, void|string database, void|string user,
 		void|string _pass) {
 	string pass = _pass;
@@ -438,5 +442,22 @@ int|object streaming_query(object|string q,
 }
 
 #else
-constant this_program_does_not_exist=1;
+/*
+ * If libpq wasn't available at compile time, the pgsql-module can provide
+ * near the same functionality as the postgres module.
+ */
+
+//! Maps SQL-urls for
+//!   @tt{postgres://[user[:password]@@][hostname][:port][/database]@}
+//! onto
+//!   @tt{pgsql://[user[:password]@@][hostname][:port][/database]@}
+//!
+//! The reason this happens, is because Pike was compiled without libpq
+//! support, therefore Pike falls back to the faster, smaller memory
+//! footprint, more advanced and native PostgreSQL driver called @[Sql.pgsql].
+//!
+//! @seealso
+//!   @[Sql.pgsql], @[Sql.Sql]
+
+inherit Sql.pgsql;
 #endif /* constant(Postgres.postgres) */

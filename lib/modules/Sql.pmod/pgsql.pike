@@ -11,8 +11,40 @@
 //! This module replaces the functionality of the older @[Sql.postgres]
 //! and @[Postgres.postgres] modules.
 //!
-//! This module implements the PostgreSQL network protocol version 3.
+//! This module supports the following features:
+//!
+//! - PostgreSQL network protocol version 3, authentication methods
+//!   currently supported are: cleartext and MD5 (recommended).
+//!
+//! - Streaming queries which do not buffer the whole resulset in memory.
+//!
+//! - Automatic binary transfers to and from the database for most common
+//!   datatypes (amongst others: integer, text and bytea types).
+//!
+//! - SQL-injection protection by allowing just one statement per query
+//!   and ignoring anything after the first (unquoted) semicolon in the query.
+//!
+//! - COPY support for streaming up- and download.
+//!
+//! - Accurate error messages.
+//!
+//! - Automatic precompilation of complex queries (session cache).
+//!
+//! - Multiple simultaneous queries on the same database connection.
+//!
+//! - Cancelling of long running queries by force or by timeout.
+//!
+//! - Event driven NOTIFY.
+//!
+//! - SSL encrypted connections (optional or forced).
+//!
 //! Refer to the PostgreSQL documentation for further details.
+//!
+//! @note
+//!   Multiple simultaneous queries on the same database connection is a
+//!   feature that none of the other database drivers for Pike support.
+//!   So, although it's efficient, its use will make switching database drivers
+//!   difficult.
 //!
 //! @seealso
 //!  @[Sql.Sql], @[Sql.postgres]
