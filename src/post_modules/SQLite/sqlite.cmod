@@ -1,6 +1,6 @@
 /* sqlite.cmod -*- c -*-
  *
- * $Id: sqlite.cmod,v 1.24 2008/08/01 03:06:47 bill Exp $
+ * $Id: sqlite.cmod,v 1.25 2008/08/01 06:38:47 nilsson Exp $
  */
 
 #include "global.h"
@@ -168,25 +168,28 @@ PIKECLASS ResObj
       push_text(sqlite3_column_name(THIS->stmt, i));
       f_utf8_to_string(1);
       push_constant_text("type");
-	  t = sqlite3_column_type(THIS->stmt, i);
-	  switch(t)
-	  {
-		case SQLITE_INTEGER:
-		  push_text("integer");
-		  break;
-		case SQLITE_FLOAT:
-		  push_text("float");
-		  break;
-		case SQLITE_BLOB:
-		  push_text("blob");
-		  break;
-		case SQLITE_NULL:
-		  push_text("null");
-		  break;
-		case SQLITE_TEXT:
-		  push_text("text");
-		  break;
-	  }
+      t = sqlite3_column_type(THIS->stmt, i);
+      switch(t)
+      {
+      case SQLITE_INTEGER:
+        push_constant_text("integer");
+        break;
+      case SQLITE_FLOAT:
+        push_constant_text("float");
+        break;
+      case SQLITE_BLOB:
+        push_constant_text("blob");
+        break;
+      case SQLITE_NULL:
+        push_constant_text("null");
+        break;
+      case SQLITE_TEXT:
+        push_constant_text("text");
+        break;
+      default:
+        push_constant_text("unknown");
+        break;
+      }
       f_aggregate_mapping(4);
     }
     f_aggregate(THIS->columns);
