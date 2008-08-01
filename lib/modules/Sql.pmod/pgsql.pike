@@ -178,6 +178,11 @@ protected void create(void|string _host, void|string _database,
 //! yet. It is not cleared upon reading (can be invoked multiple
 //! times, will return the same result until a new error occurs).
 //!
+//! During the execution of a statement, this function accumulates all
+//! non-error messages (notices, warnings, etc.).  If a statement does not
+//! generate any errors, this function will return all collected messages
+//! from the last statement.
+//!
 //! To clear the error, pass 1 as argument.
 //!
 //! @seealso
@@ -193,7 +198,9 @@ string error(void|int clear) {
 //!
 //! This function returns a string describing what host are we talking to,
 //! and how (TCP/IP or UNIX sockets).
-
+//!
+//! @seealso
+//!   server_info
 string host_info() {
   return sprintf("Via fd:%d over TCP/IP to %s:%d",_c.query_fd(),host,port);
 }
@@ -239,6 +246,9 @@ final private object getsocket(void|int nossl) {
 //!
 //! This function is PostgreSQL-specific, and thus it is not available
 //! through the generic SQL-interface.
+//!
+//! @seealso
+//!   reload
 void cancelquery() {
   if(qstate==inquery) {
     qstate=cancelpending;
@@ -397,8 +407,8 @@ final int _decodemsg(void|state waitforstate) {
           case 4:PD("CryptPassword\n");
             if(msglen<2)
               errtype=protocolerror;
-            sendpass=_c.getstring(msglen);msglen=0;
-            errtype=protocolunsupported;
+            sendpass=_c.getstring(msglen);msglen=0;			// salt
+            errtype=protocolunsupported; // Pike lacks function that takes salt
             break;
           case 5:PD("MD5Password\n");
             if(msglen<4)
@@ -750,6 +760,9 @@ private void reconnect(void|int force) {
 //!
 //! Resets the connection to the database. Can be used for
 //! a variety of reasons, for example to detect the status of a connection.
+//!
+//! @seealso
+//!   cancelquery
 void reload(void|int special) {
   mixed err;
   int didsync;
@@ -884,6 +897,9 @@ void drop_db(string db) {
 //! talking to. It has the form @expr{"servername/serverversion"@}
 //! (like the HTTP protocol description) and is most useful in
 //! conjunction with the generic SQL-server module.
+//!
+//! @seealso
+//!   host_info
 string server_info () {
   return DRIVERNAME"/"+(runtimeparameter->server_version||"unknown");
 }
@@ -1147,7 +1163,7 @@ final string status_commit() {
 //! viewed as a limited protection against SQL-injection attacks.
 //!
 //! @seealso
-//!   @[Sql.Sql], @[Sql.sql_result]
+//!   @[Sql.Sql], @[Sql.sql_result], @[Sql.pgsql_util.pgsql_result]
 object big_query(string q,void|mapping(string|int:mixed) bindings) {
   string preparedname="";
   string portalname="";
