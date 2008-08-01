@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gssapi.cmod,v 1.9 2008/07/31 13:47:24 mast Exp $
+|| $Id: gssapi.cmod,v 1.10 2008/08/01 10:57:46 srb Exp $
 */
 
 /*
@@ -2919,7 +2919,7 @@ PIKECLASS Context
     RETURN THIS->last_confidential;
   }
 
-  static struct program *InitContext_program, *AcceptContext_program;
+  struct program *InitContext_program, *AcceptContext_program;
 
   PIKEFUN string _sprintf (int flag, ...)
     flags ID_STATIC;
