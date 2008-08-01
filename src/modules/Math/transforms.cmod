@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: transforms.cmod,v 1.16 2008/06/29 12:19:08 mast Exp $
+|| $Id: transforms.cmod,v 1.17 2008/08/01 10:15:20 srb Exp $
 */
 
 #include "global.h"
@@ -33,6 +33,8 @@
 #ifdef HAVE_RFFTW_H
 #include <rfftw.h>
 #endif
+
+DECLARATIONS
 
 /*! @module Math
  */
