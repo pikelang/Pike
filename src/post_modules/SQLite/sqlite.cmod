@@ -1,6 +1,6 @@
 /* sqlite.cmod -*- c -*-
  *
- * $Id: sqlite.cmod,v 1.22 2008/06/29 11:10:55 nilsson Exp $
+ * $Id: sqlite.cmod,v 1.23 2008/08/01 03:02:36 bill Exp $
  */
 
 #include "global.h"
@@ -162,12 +162,32 @@ PIKECLASS ResObj
   }
 
   PIKEFUN array(mapping(string:mixed)) fetch_fields() {
-    int i;
+    int i,t;
     for(i=0; i<THIS->columns; i++) {
       push_constant_text("name");
       push_text(sqlite3_column_name(THIS->stmt, i));
       f_utf8_to_string(1);
-      f_aggregate_mapping(2);
+      push_constant_text("type");
+	  t = sqlite3_column_type(THIS->stmt, i);
+	  switch(t)
+	  {
+		case SQLITE_INTEGER:
+		  push_text("integer");
+		  break;
+		case SQLITE_FLOAT:
+		  push_text("float");
+		  break;
+		case SQLITE_BLOB:
+		  push_text("blob");
+		  break;
+		case SQLITE_NULL:
+		  push_text("null");
+		  break;
+		case SQLITE_TEXT:
+		  push_text("text");
+		  break;
+	  }
+      f_aggregate_mapping(4);
     }
     f_aggregate(THIS->columns);
   }
@@ -304,13 +324,15 @@ PIKECLASS ResObj
 	  if (columns == 0)
 	    columns = sqlite3_column_count(stmt);
 	  for(i=0; i<columns; i++) {
+		push_text(sqlite3_column_name(stmt, i));
+		f_utf8_to_string(1);
 	    push_string( make_shared_binary_string
 			 ( sqlite3_column_blob(stmt, i),
 			   sqlite3_column_bytes(stmt, i) ) );
 	    if( sqlite3_column_type(stmt, i)==SQLITE_TEXT )
 	      f_utf8_to_string(1);
 	  }
-	  f_aggregate(columns);
+	  f_aggregate_mapping(columns*2);
 	  DO_AGGREGATE_ARRAY(100);
 	  break;
 
@@ -323,7 +345,7 @@ PIKECLASS ResObj
       }
     } END_AGGREGATE_ARRAY;
 
-    if (Pike_sp[0].u.array->size == 0) {
+    if (Pike_sp[-1].u.array->size == 0) {
       pop_stack();
       push_int(0);
     }
