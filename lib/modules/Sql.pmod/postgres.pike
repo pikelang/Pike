@@ -1,9 +1,13 @@
 /*
  * This is part of the Postgres module for Pike.
  *
- * $Id: postgres.pike,v 1.35 2008/08/01 11:11:17 srb Exp $
+ * $Id: postgres.pike,v 1.36 2008/08/01 12:09:38 srb Exp $
  *
  */
+
+#pike __REAL_VERSION__
+
+#if constant(Postgres.postgres)
 
 //! This is an interface to the Postgres (Postgres95, pgsql) database
 //! server. This module may or may not be available on your Pike,
@@ -51,10 +55,6 @@
 //!
 //! @seealso
 //!  @[Sql.pgsql], @[Sql.Sql], @[Postgres.postgres], @[Sql.postgres_result]
-
-#pike __REAL_VERSION__
-
-#if constant(Postgres.postgres)
 
 #define ERROR(X) throw (({X,backtrace()}))
 
@@ -458,6 +458,5 @@ int|object streaming_query(object|string q,
 //!
 //! @seealso
 //!   @[Sql.pgsql], @[Sql.Sql]
-
 inherit Sql.pgsql;
 #endif /* constant(Postgres.postgres) */
