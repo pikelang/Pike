@@ -1,6 +1,6 @@
 /* sqlite.cmod -*- c -*-
  *
- * $Id: sqlite.cmod,v 1.25 2008/08/01 06:38:47 nilsson Exp $
+ * $Id: sqlite.cmod,v 1.26 2008/08/03 10:33:24 grubba Exp $
  */
 
 #include "global.h"
@@ -287,7 +287,7 @@ PIKECLASS ResObj
     const char *tail;
     struct pike_string *q;
     INT32 res_count = 0;
-    INT32 columns = 0;
+    INT32 columns;
     INT32 i;
 
     if(args==2) stack_swap();
@@ -309,6 +309,8 @@ PIKECLASS ResObj
       bind_arguments(THIS->db, stmt, bindings);
     }
 
+    columns = sqlite3_column_count(stmt);
+
     check_stack(128);
 
     BEGIN_AGGREGATE_ARRAY(100) {
@@ -324,8 +326,6 @@ PIKECLASS ResObj
 	  break;
 
 	case SQLITE_ROW:
-	  if (columns == 0)
-	    columns = sqlite3_column_count(stmt);
 	  for(i=0; i<columns; i++) {
 		push_text(sqlite3_column_name(stmt, i));
 		f_utf8_to_string(1);
@@ -348,7 +348,8 @@ PIKECLASS ResObj
       }
     } END_AGGREGATE_ARRAY;
 
-    if (Pike_sp[-1].u.array->size == 0) {
+    if (!Pike_sp[-1].u.array->size && !columns) {
+      /* No rows and no columns. */
       pop_stack();
       push_int(0);
     }
