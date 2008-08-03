@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.231 2008/07/24 16:08:49 grubba Exp $
+ * $Id: backend.cmod,v 1.232 2008/08/03 21:35:55 mast Exp $
  *
  * Backend object.
  */
@@ -1303,7 +1303,8 @@ PIKECLASS Backend
 #ifdef PIKE_DEBUG
 	   {
 	     struct fd_callback_box **p, **boxes = me->inactive_boxes;
-	     int i, max = me->inactive_boxes_size;
+	     int i;
+	     int max = pos; /* me->inactive_boxes_size before enlargement. */
 	     for (i = 0; i < max; i++)
 	       if ((p = (struct fd_callback_box **) boxes[i]) &&
 		   p >= boxes && p < boxes + max)
