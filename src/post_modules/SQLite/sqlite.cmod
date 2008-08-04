@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sqlite.cmod,v 1.27 2008/08/04 22:12:36 mast Exp $
+|| $Id: sqlite.cmod,v 1.28 2008/08/04 22:16:31 mast Exp $
 */
 
 #include "global.h"
@@ -14,6 +14,7 @@
 #include "builtin_functions.h"
 #include "mapping.h"
 #include "threads.h"
+#include "bignum.h"
 
 #if defined(HAVE_SQLITE3_H) && defined(HAVE_LIBSQLITE3)
 
@@ -299,7 +300,6 @@ PIKECLASS ResObj
   PIKEFUN array|int query(string query,
 			  mapping(string|int:mixed)|void bindings) {
 
-    struct object *res;
     sqlite3_stmt *stmt;
     const char *tail;
     struct pike_string *q;
@@ -440,7 +440,7 @@ PIKECLASS ResObj
   PIKEFUN int last_insert_rowid()
     optflags OPT_EXTERNAL_DEPEND;
   {
-    RETURN sqlite3_last_insert_rowid(THIS->db);
+    push_longest (sqlite3_last_insert_rowid(THIS->db));
   }
 
   PIKEFUN string error()
