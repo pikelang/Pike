@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.393 2008/07/28 08:37:31 grubba Exp $
+|| $Id: file.c,v 1.394 2008/08/04 11:27:26 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -324,6 +324,8 @@ static void close_fd_quietly(void)
 	}
 
 	case EBADF:
+	  break;
+
 #ifdef SOLARIS
 	  /* It's actually OK. This is a bug in Solaris 8. */
        case EAGAIN:
