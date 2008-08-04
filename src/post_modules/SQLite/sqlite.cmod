@@ -1,7 +1,9 @@
-/* sqlite.cmod -*- c -*-
- *
- * $Id: sqlite.cmod,v 1.26 2008/08/03 10:33:24 grubba Exp $
- */
+/* -*- c -*-
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: sqlite.cmod,v 1.27 2008/08/04 22:12:36 mast Exp $
+*/
 
 #include "global.h"
 #include "interpret.h"
@@ -23,10 +25,16 @@
 #include <stdint.h>
 #endif
 
+#ifdef HAVE_WINDOWS_H
+#include <windows.h>
+#endif
+
 #include <sqlite3.h>
 #include <time.h>
 
-#ifdef HAVE_USLEEP
+#ifdef __NT__
+#define SLEEP() Sleep (0) /* Sleeps for the remainder of the time slice. */
+#elif defined (HAVE_USLEEP)
 #define SLEEP() usleep(100)
 #else
 #define SLEEP() sleep(1)
@@ -53,6 +61,15 @@ static void SQLite_handle_error(sqlite3 *db)
 
 static int step(sqlite3_stmt *stmt) {
   int ret;
+  /* FIXME: This is not always a good way to handle SQLITE_BUSY:
+   *
+   *   SQLITE_BUSY means that the database engine was unable to
+   *   acquire the database locks it needs to do its job. If the
+   *   statement is a COMMIT or occurs outside of an explicit
+   *   transaction, then you can retry the statement. If the statement
+   *   is not a COMMIT and occurs within a explicit transaction then
+   *   you should rollback the transaction before continuing.
+   */
   while( (ret=sqlite3_step(stmt))==SQLITE_BUSY ) {
     THREADS_ALLOW();
     SLEEP();
