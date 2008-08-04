@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.263 2006/03/05 22:22:16 marcus Exp $
+|| $Id: file.c,v 1.264 2008/08/04 11:38:56 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.263 2006/03/05 22:22:16 marcus Exp $");
+RCSID("$Id: file.c,v 1.264 2008/08/04 11:38:56 mast Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -313,6 +313,8 @@ static void close_fd_quietly(void)
 	}
 
 	case EBADF:
+	  break;
+
 #ifdef SOLARIS
 	  /* It's actually OK. This is a bug in Solaris 8. */
        case EAGAIN:
