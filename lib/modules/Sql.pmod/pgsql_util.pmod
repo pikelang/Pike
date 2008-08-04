@@ -132,7 +132,12 @@ class PGassist {
         PD("Flush\n");
       case 2:
         flushed=1;
-        write(cmdbuf);
+        { int i=write(cmdbuf);
+	  if(portal && portal._pgsqlsess) {
+	    portal._pgsqlsess._packetssent++;
+	    portal._pgsqlsess._bytessent+=i;
+	  }
+        }
         cmdbuf=({});
     }
   }
@@ -226,7 +231,6 @@ private mixed delayederror;
 private int copyinprogress;
 int _fetchlimit;
 
-private mapping tprepared;
 #ifdef NO_LOCKING
 int _qmtxkey;
 #else
@@ -268,10 +272,10 @@ protected string _sprintf(int type, void|mapping flags) {
   return res;
 }
 
-void create(object pgsqlsess,mapping(string:mixed) _tprepared,
- string _query,int fetchlimit,int portalbuffersize) {
+void create(object pgsqlsess,string _query,int fetchlimit,
+ int portalbuffersize) {
   _pgsqlsess = pgsqlsess;
-  tprepared = _tprepared; query = _query;
+  query = _query;
   _datarows = ({ }); numrows = UNDEFINED;
   fetchmutex = Thread.Mutex();
   _fetchlimit=fetchlimit;
@@ -423,11 +427,6 @@ int|array(string|int) fetch_row(void|int|string buffer) {
             copyinprogress=1;
 	    return UNDEFINED;
           case dataready:
-            if(tprepared) {
-              tprepared->trun=gethrtime()-tprepared->trunstart;
-              m_delete(tprepared,"trunstart");
-              tprepared = UNDEFINED;
-            }
             _pgsqlsess._mstate=dataprocessed;
             _rowsreceived++;
 	    switch(buffer) {

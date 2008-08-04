@@ -8,7 +8,7 @@
 //#define DEBUG  1
 //#define DEBUGMORE  1
 
-//#define NO_LOCKING  1		    // This breaks the driver, do not enable,
+//#define NO_LOCKING 1		    // This breaks the driver, do not enable,
 				    // only for benchmarking mutex performance
 #define USEPGsql     1		    // Doesn't use Stdio.FILE, but _PGsql
 
@@ -32,7 +32,9 @@
 #define PGSQL_DEFAULT_HOST   "localhost"
 #define PREPSTMTPREFIX	     "pike_prep_"
 #define PORTALPREFIX	     "pike_portal_"
-#define FACTORPLAN	     8
+#define FACTORPLAN	     8	    // Determines criterium when caching plan
+				    // -> if parsingtime*FACTORPLAN >= runtime
+				    // cache the statement
 #define DRIVERNAME	     "pgsql"
 #define MARKSTART            "{""{""{""{\n"   // split string to avoid
 #define MARKERROR            ">>>>"	      // foldeditors from recognising

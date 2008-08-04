@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: PGsql.cmod,v 1.18 2008/07/31 11:50:01 srb Exp $
+ * $Id: PGsql.cmod,v 1.19 2008/08/04 09:18:30 srb Exp $
  *
  * PGsql, accelerator functions for Sql.pgsql for Pike.
  *
@@ -284,7 +284,8 @@ outofmem: Pike_fatal("Out of memory\n");
 
   PIKEFUN void decodedatarow(int msglen) {
     int i;
-    int totalrecvd=0, nrows=0, buffer=0;
+    long totalrecvd=0, recvdbstats=0;
+    int nrows=0, buffer=0;
     int rowsreceived,inflight,fetchlimit,parentfetchlimit,portalbuffersize;
     struct svalue*bytesreceived;
     struct array*datarowdesc;
@@ -300,7 +301,7 @@ outofmem: Pike_fatal("Out of memory\n");
 						    /* preserve _datarowdesc */
     object_index_no_free2(bytesreceived=Pike_sp, portal,0,
      MK_STRING_SVALUE("_bytesreceived"));
-    Pike_sp++;					   /* preserve _bytesreceived */
+    Pike_sp++;					  /* preserve _bytesreceived */
 
     ref_push_object(portal); ref_push_string(MK_STRING("_inflight"));
     f_arrow(2); inflight=Pike_sp[-1].u.integer;
@@ -453,7 +454,9 @@ simple:             push_int(nextword);
 	    }
 
 	    PD((stderr,"PGsql DataRow fast fetch\n"));
-	    msglen=low_getint32()-4;
+	    msglen=low_getint32();
+	    recvdbstats+=1+msglen;
+	    msglen-=4;
 	    continue;
 	  default:THIS->plow--;				         /* ungetc() */
 	  case -1:;
@@ -493,6 +496,23 @@ simple:             push_int(nextword);
     if(--nrows) {
       push_int(rowsreceived+nrows);
       object_set_index2(portal,0, MK_STRING_SVALUE("_rowsreceived"),
+       Pike_sp-1);
+      pop_stack();
+
+      ref_push_object(pgsqlsess);
+      ref_push_string(MK_STRING("_msgsreceived"));
+      f_arrow(2);
+      Pike_sp[-1].u.integer+=nrows;
+      object_set_index2(pgsqlsess,0, MK_STRING_SVALUE("_msgsreceived"),
+       Pike_sp-1);
+      pop_stack();
+
+      ref_push_object(pgsqlsess);
+      ref_push_string(MK_STRING("_bytesreceived"));
+      f_arrow(2);
+      push_int(recvdbstats);
+      f_add(2);
+      object_set_index2(pgsqlsess,0, MK_STRING_SVALUE("_bytesreceived"),
        Pike_sp-1);
       pop_stack();
     }
