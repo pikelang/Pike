@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.260 2008/07/16 00:34:22 mast Exp $
+|| $Id: threads.c,v 1.261 2008/08/05 20:43:25 mast Exp $
 */
 
 #include "global.h"
@@ -252,6 +252,8 @@ static void really_low_th_init(void)
   pthread_attr_setdetachstate(&small_pattr, PTHREAD_CREATE_DETACHED);
 #endif
 }
+
+static void cleanup_thread_state (struct thread_state *th);
 
 #ifndef CONFIGURE_TEST
 
@@ -957,6 +959,10 @@ TH_RETURN_TYPE new_thread_func(void *data)
   reset_evaluator();
 
   low_cleanup_interpret(&thread_state->state);
+
+  if (!thread_state->thread_obj)
+    /* Do this only if exit_thread_obj already has run. */
+    cleanup_thread_state (thread_state);
 
   thread_table_delete(thread_state);
   EXIT_THREAD_STATE(thread_state);
@@ -1823,6 +1829,8 @@ static void f_thread_id_result(INT32 args)
     Pike_error("Cannot wait for threads when threads are disabled!\n");
   }
 
+  th->waiting++;
+
   THREADS_FPRINTF(0, (stderr,
 		      "Thread->wait(): Waiting for thread %p (state:%d).\n",
 		      th, th->status));
@@ -1840,6 +1848,12 @@ static void f_thread_id_result(INT32 args)
   assign_svalue_no_free(Pike_sp, &th->result);
   Pike_sp++;
   dmalloc_touch_svalue(Pike_sp-1);
+
+  th->waiting--;
+
+  if (!th->thread_obj)
+    /* Do this only if exit_thread_obj already has run. */
+    cleanup_thread_state (th);
 }
 
 static int num_pending_interrupts = 0;
@@ -1927,6 +1941,7 @@ void init_thread_obj(struct object *o)
   THIS_THREAD->swapped = 0;
   THIS_THREAD->status=THREAD_NOT_STARTED;
   THIS_THREAD->flags = 0;
+  THIS_THREAD->waiting = 0;
   THIS_THREAD->result.type = T_INT;
   THIS_THREAD->result.subtype = NUMBER_UNDEFINED;
   THIS_THREAD->result.u.integer = 0;
@@ -1937,9 +1952,17 @@ void init_thread_obj(struct object *o)
 #endif
 }
 
-
-void exit_thread_obj(struct object *o)
+static void cleanup_thread_state (struct thread_state *th)
 {
+#ifdef PIKE_DEBUG
+  if (th->thread_obj) Pike_fatal ("Thread state still active.\n");
+#endif
+
+  /* Don't clean up if the thread is running or if someone is waiting
+   * on status_change. They should call cleanup_thread_state later. */
+  if (th->status == THREAD_RUNNING || th->waiting)
+    return;
+
   if (THIS_THREAD->flags & THREAD_FLAG_SIGNAL_MASK) {
     Pike_interpreter.thread_state->flags &= ~THREAD_FLAG_SIGNAL_MASK;
     if (!--num_pending_interrupts) {
@@ -1947,13 +1970,21 @@ void exit_thread_obj(struct object *o)
       thread_interrupt_callback = NULL;
     }    
   }
+
+  co_destroy(& THIS_THREAD->status_change);
+  th_destroy(& THIS_THREAD->id);
+}
+
+void exit_thread_obj(struct object *o)
+{
+  THIS_THREAD->thread_obj = NULL;
+
+  cleanup_thread_state (THIS_THREAD);
+
   if(THIS_THREAD->thread_local != NULL) {
     free_mapping(THIS_THREAD->thread_local);
     THIS_THREAD->thread_local = NULL;
   }
-  co_destroy(& THIS_THREAD->status_change);
-  th_destroy(& THIS_THREAD->id);
-  THIS_THREAD->thread_obj = NULL;
 }
 
 /*! @endclass

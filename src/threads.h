@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.h,v 1.133 2007/10/06 13:10:12 marcus Exp $
+|| $Id: threads.h,v 1.134 2008/08/05 20:43:25 mast Exp $
 */
 
 #ifndef THREADS_H
@@ -46,6 +46,7 @@ struct thread_state {
   char status;
 #endif
   unsigned short flags;
+  unsigned short waiting;	/* Threads waiting on status_change. */
   COND_T status_change;
   THREAD_T id;
   struct mapping *thread_local;
