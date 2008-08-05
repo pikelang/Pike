@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.406 2008/07/13 15:23:16 grubba Exp $
+|| $Id: interpret.c,v 1.407 2008/08/05 13:20:10 mast Exp $
 */
 
 #include "global.h"
@@ -112,11 +112,6 @@ PMOD_EXPORT int Pike_stack_size = EVALUATOR_STACK_SIZE;
 static void do_trace_call(INT32 args, dynamic_buffer *old_buf);
 static void do_trace_func_return (int got_retval, struct object *o, int fun);
 static void do_trace_return (int got_retval, dynamic_buffer *old_buf);
-
-void gdb_stop_here(void)
-{
-  ;
-}
 
 
 void push_sp_mark(void)
