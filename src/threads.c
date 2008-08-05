@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.262 2008/08/05 21:23:46 mast Exp $
+|| $Id: threads.c,v 1.263 2008/08/05 21:36:34 mast Exp $
 */
 
 #include "global.h"
@@ -2466,12 +2466,15 @@ void cleanup_all_other_threads (void)
     THREADS_DISALLOW();
   }
 
+#if 0
   if (num_kills) {
-    fprintf (stderr, "Killed %d thread(s)", num_kills - num_pending_interrupts);
+    fprintf (stderr, "Killed %d thread(s) in exit cleanup",
+	     num_kills - num_pending_interrupts);
     if (num_pending_interrupts)
-      fprintf (stderr, ", %d haven't responded", num_pending_interrupts);
+      fprintf (stderr, ", %d more haven't responded", num_pending_interrupts);
     fputs (".\n", stderr);
   }
+#endif
 }
 #endif
 
