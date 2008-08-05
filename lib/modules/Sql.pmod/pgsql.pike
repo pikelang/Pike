@@ -70,7 +70,6 @@ private string lastmessage;
 private int clearmessage;
 private int earlyclose;
 private mapping(string:array(mixed)) notifylist=([]);
-private mapping(string:string) msgresponse;
 private mapping(string:string) runtimeparameter;
 state _mstate;
 private enum querystate {queryidle,inquery,cancelpending,canceled};
@@ -540,13 +539,14 @@ final int _decodemsg(void|state waitforstate) {
         s=s[..msglen-1];msglen=0;
         return s/"\0";
       };
-      void getresponse() {
+      mapping(string:string) getresponse() {
+        mapping(string:string) msgresponse=([]);
         msglen-=4;
-        msgresponse=([]);
         foreach(getstrings();;string f)
 	  if(sizeof(f))
             msgresponse[f[..0]]=f[1..];
         PD("%O\n",msgresponse);
+        return msgresponse;
       };
       case 'R':PD("Authentication\n");
       { string sendpass;
@@ -794,7 +794,8 @@ final int _decodemsg(void|state waitforstate) {
         msglen-=4;
         break;
       case 'E':PD("ErrorResponse\n");
-        getresponse();
+      { mapping(string:string) msgresponse;
+        msgresponse=getresponse();
 	warningsdropcount+=warningscollected;
 	warningscollected=0;
         switch(msgresponse->C) {
@@ -818,8 +819,10 @@ final int _decodemsg(void|state waitforstate) {
 	    USERERROR(lastmessage);
         }
         break;
+      }
       case 'N':PD("NoticeResponse\n");
-        getresponse();
+      { mapping(string:string) msgresponse;
+        msgresponse=getresponse();
         if(clearmessage) {
 	  warningsdropcount+=warningscollected;
 	  clearmessage=warningscollected=0;
@@ -830,6 +833,7 @@ final int _decodemsg(void|state waitforstate) {
 	 lastmessage?lastmessage+"\n":"",
 	 msgresponse->S,msgresponse->C,msgresponse->M);
         break;
+      }
       case 'A':PD("NotificationResponse\n");
       { msglen-=4+4;
         int pid=_c.getint32();
@@ -844,10 +848,7 @@ final int _decodemsg(void|state waitforstate) {
           }
         }
         PD("%d %s\n%s\n",pid,condition,extrainfo);
-        array cb;
-        if((cb=notifylist[condition]||notifylist[""])
-         && (pid!=backendpid || sizeof(cb)>1 && cb[1]))
-	  cb[0](pid,condition,extrainfo,@cb[2..]);
+        runcallback(pid,condition,extrainfo);
         break;
       }
       default:PD("Unknown message received %c\n",msgtype);
@@ -935,6 +936,8 @@ private void reconnect(void|int force) {
   PD("%O\n",plugbuf);
   _decodemsg(readyforquery);
   PD("%O\n",runtimeparameter);
+  if(force)
+    runcallback(backendpid,"_reconnect","");
 }
 
 //! @decl void reload()
@@ -993,6 +996,7 @@ void reload(void|int special) {
 void select_db(string dbname) {
   database=dbname;
   reconnect();
+  reconnected=0;
 }
 
 //! With PostgreSQL you can LISTEN to NOTIFY events.
@@ -1002,7 +1006,9 @@ void select_db(string dbname) {
 //!    Name of the notification event we're listening
 //!    to.  A special case is the empty string, which matches all events,
 //!    and can be used as fallback function which is called only when the
-//!    specific condition is not handled..
+//!    specific condition is not handled.  Another special case is
+//!    @[_reconnect] which gets called whenever the connection unexpectedly
+//!    drops and reconnects to the database.
 //!
 //! @param notify_cb
 //!    Function to be called on receiving a notification-event of
@@ -1041,6 +1047,13 @@ void set_notify_callback(string condition,
       old+=args;
     notifylist[condition]=old;
   }
+}
+
+final private void runcallback(int pid,string condition,string extrainfo) {
+  array cb;
+  if((cb=notifylist[condition]||notifylist[""])
+   && (pid!=backendpid || sizeof(cb)>1 && cb[1]))
+    cb[0](pid,condition,extrainfo,@cb[2..]);
 }
 
 //! This function quotes magic characters inside strings embedded in a
@@ -1297,10 +1310,10 @@ final void _sendexecute(int fetchlimit) {
 
 final private void sendclose(void|int hold) {
   string portalname;
-  portalsinflight--;
   if(_c.portal && (portalname=_c.portal->_portalname)) {
     _c.portal->_portalname = UNDEFINED;
     _c.setportal();
+    portalsinflight--;
 #ifdef DEBUGMORE
     PD("Closetrace %O\n",backtrace());
 #endif
@@ -1450,7 +1463,6 @@ object big_query(string q,void|mapping(string|int:mixed) bindings) {
   clearmessage=1;
   mixed err;
   if(err = catch {
-      _c.set_read_callback(0);
       if(!sizeof(preparedname) || !tp || !tp->preparedname) {
         PD("Parse statement %s\n",preparedname);
         // Even though the protocol doesn't require the Parse command to be
