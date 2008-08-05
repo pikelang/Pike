@@ -9,7 +9,7 @@ cond_resolv( SQLite.SQLite, [[
   test_eq( db->master_sql->total_changes(), 0 )
   test_do( db->master_sql->interrupt() )
   test_true( stringp(db->server_info()); )
-  test_eq( db->master_sql->last_insert_rowid(), 0 )
+  test_eq( db->master_sql->insert_id(), 0 )
   test_eq( db->error(), "not an error" )
   test_eval_error( db->select_db() )
   test_eval_error( db->create_db() )
