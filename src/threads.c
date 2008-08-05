@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.261 2008/08/05 20:43:25 mast Exp $
+|| $Id: threads.c,v 1.262 2008/08/05 21:23:46 mast Exp $
 */
 
 #include "global.h"
@@ -1911,6 +1911,19 @@ static void f_thread_id_interrupt(INT32 args)
   push_int(0);
 }
 
+static void low_thread_kill (struct thread_state *th)
+{
+  if (!(th->flags & THREAD_FLAG_SIGNAL_MASK)) {
+    num_pending_interrupts++;
+    if (!thread_interrupt_callback) {
+      thread_interrupt_callback =
+	add_to_callback(&evaluator_callbacks, check_thread_interrupt, 0, 0);
+    }
+    /* FIXME: Actually interrupt the thread. */
+  }
+  th->flags |= THREAD_FLAG_TERM;
+}
+
 /*! @decl void kill()
  *!
  *! Interrupt the thread, and terminate it.
@@ -1921,16 +1934,7 @@ static void f_thread_id_interrupt(INT32 args)
 static void f_thread_id_kill(INT32 args)
 {
   pop_n_elems(args);
-
-  if (!(THIS_THREAD->flags & THREAD_FLAG_SIGNAL_MASK)) {
-    num_pending_interrupts++;
-    if (!thread_interrupt_callback) {
-      thread_interrupt_callback =
-	add_to_callback(&evaluator_callbacks, check_thread_interrupt, 0, 0);
-    }
-    /* FIXME: Actually interrupt the thread. */
-  }
-  THIS_THREAD->flags |= THREAD_FLAG_TERM;
+  low_thread_kill (THIS_THREAD);
   push_int(0);
 }
 
@@ -2432,6 +2436,44 @@ void th_init(void)
 					    thread_storage_offset));
   thread_table_insert(Pike_interpreter.thread_state);
 }
+
+#ifdef DO_PIKE_CLEANUP
+void cleanup_all_other_threads (void)
+{
+  int i, num_kills = num_pending_interrupts;
+  time_t timeout = time (NULL) + 2;
+
+  mt_lock (&thread_table_lock);
+  for (i = 0; i < THREAD_TABLE_SIZE; i++) {
+    struct thread_state *th;
+    for (th = thread_table_chains[i]; th; th = th->hashlink)
+      if (th != Pike_interpreter.thread_state) {
+	low_thread_kill (th);
+	num_kills++;
+      }
+  }
+  mt_unlock (&thread_table_lock);
+
+  while (num_pending_interrupts && time (NULL) < timeout) {
+    THREADS_ALLOW();
+#ifdef __NT__
+    Sleep (1);
+#elif defined (HAVE_USLEEP)
+    usleep (1000);
+#else
+    sleep (1);
+#endif
+    THREADS_DISALLOW();
+  }
+
+  if (num_kills) {
+    fprintf (stderr, "Killed %d thread(s)", num_kills - num_pending_interrupts);
+    if (num_pending_interrupts)
+      fprintf (stderr, ", %d haven't responded", num_pending_interrupts);
+    fputs (".\n", stderr);
+  }
+}
+#endif
 
 void th_cleanup(void)
 {

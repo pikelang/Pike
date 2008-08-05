@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: module.c,v 1.56 2008/08/05 21:10:17 mast Exp $
+|| $Id: module.c,v 1.57 2008/08/05 21:23:46 mast Exp $
 */
 
 #include "global.h"
@@ -148,9 +148,11 @@ static void exit_builtin_modules(void)
   cleanup_gc();
   cleanup_pike_types();
 
+#ifdef PIKE_THREADS
   /* This zaps Pike_interpreter.thread_state among other things, so
    * THREADS_ALLOW/DISALLOW are NOPs beyond this point. */
   th_cleanup();
+#endif
 
   exit_pike_security();
   free_svalue(& throw_value);
@@ -162,7 +164,7 @@ static void exit_builtin_modules(void)
   {
     int leak_found = 0;
 
-#ifdef _REENTRANT
+#ifdef PIKE_THREADS
     if(count_pike_threads())
     {
       fprintf(stderr,"Byte counting aborted, because all threads have not exited properly.\n");
@@ -437,10 +439,14 @@ void exit_modules(void)
   size_t count;
 
   if (exit_with_cleanup) {
-    /* Destruct all remaining objects while we have a proper execution
-     * environment. The downside is that the leak report below will
-     * always report destructed objects. We use the gc in a special mode
-     * for this to get a reasonably sane destruct order. */
+    /* Kill the threads and destruct all remaining objects while we
+     * have a proper execution environment. The downside is that the
+     * leak report below will always report destructed objects. We use
+     * the gc in a special mode for this to get a reasonably sane
+     * destruct order. */
+#ifdef PIKE_THREADS
+    cleanup_all_other_threads();
+#endif
     gc_destruct_everything = 1;
     count = do_gc (NULL, 1);
     while (count) {

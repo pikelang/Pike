@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.h,v 1.135 2008/08/05 20:47:27 mast Exp $
+|| $Id: threads.h,v 1.136 2008/08/05 21:23:46 mast Exp $
 */
 
 #ifndef THREADS_H
@@ -103,6 +103,7 @@ void f_thread_local_get(INT32 args);
 void f_thread_local_set(INT32 args);
 void low_th_init(void);
 void th_init(void);
+void cleanup_all_other_threads (void);
 void th_cleanup(void);
 int th_num_idle_farmers(void);
 int th_num_farmers(void);
