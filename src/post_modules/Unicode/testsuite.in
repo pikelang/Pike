@@ -1,4 +1,8 @@
 START_MARKER
+
+test_eq(Unicode.normalize ("\u00bd", "NFKD"), "1\u20442")
+test_equal(Unicode.split_words_and_normalize ("\u00bd"), ({"1", "2"}))
+
 test_tests([[inherit "]]SRCDIR[[/test.pike";]])
 
 test_eq( Unicode.is_wordchar(0), 0 )
