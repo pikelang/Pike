@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: PGsql.cmod,v 1.19 2008/08/04 09:18:30 srb Exp $
+ * $Id: PGsql.cmod,v 1.20 2008/08/05 18:56:01 srb Exp $
  *
  * PGsql, accelerator functions for Sql.pgsql for Pike.
  *
@@ -230,9 +230,12 @@ bad:
   PIKEFUN void setportal(void|object portal) {
     if(THIS->portal)
       free_object(THIS->portal);
-    THIS->portal=portal;
-    debug_malloc_touch(THIS->portal);
-    Pike_sp--;					/* don't decrease references */
+    if(THIS->portal=portal) {
+      debug_malloc_touch(THIS->portal);
+      Pike_sp--;				/* don't decrease references */
+    }
+    else
+      pop_stack();
   }
 
   PIKEFUN int bpeek(void|int timeoutp) {

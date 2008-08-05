@@ -253,7 +253,7 @@ array(int) _datatypeoid;
 int _buffer;
 #endif
 
-private object fetchmutex;;
+private object fetchmutex;
 
 protected string _sprintf(int type, void|mapping flags) {
   string res=UNDEFINED;
