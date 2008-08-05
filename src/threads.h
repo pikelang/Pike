@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.h,v 1.134 2008/08/05 20:43:25 mast Exp $
+|| $Id: threads.h,v 1.135 2008/08/05 20:47:27 mast Exp $
 */
 
 #ifndef THREADS_H
@@ -39,22 +39,18 @@ extern PIKE_MUTEX_T interleave_lock;
 struct thread_state {
   struct Pike_interpreter state;
   struct object *thread_obj;	/* NOTE: Not ref-counted! */
-  char swapped;			/* Set if thread has been swapped out. */
-#ifdef __CHAR_UNSIGNED__
-  signed char status;
-#else
-  char status;
-#endif
-  unsigned short flags;
-  unsigned short waiting;	/* Threads waiting on status_change. */
-  COND_T status_change;
-  THREAD_T id;
   struct mapping *thread_local;
   struct thread_state *hashlink, **backlink;
   struct svalue result;
+  COND_T status_change;
+  THREAD_T id;
 #ifdef CPU_TIME_MIGHT_BE_THREAD_LOCAL
   cpu_time_t auto_gc_time;
 #endif
+  unsigned short waiting;	/* Threads waiting on status_change. */
+  unsigned short flags;
+  char swapped;			/* Set if thread has been swapped out. */
+  signed char status;
 #ifdef PIKE_DEBUG
   char debug_flags;
 #endif
