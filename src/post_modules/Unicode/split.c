@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: split.c,v 1.7 2007/11/10 21:40:15 nilsson Exp $
+|| $Id: split.c,v 1.8 2008/08/05 12:18:07 mast Exp $
 */
 
 #include "global.h"
@@ -79,7 +79,7 @@ struct words *unicode_split_words_pikestr0( struct pike_string *data )
   unsigned int in_word = 0;
   unsigned int last_start = 0;
   struct words *res = uc_words_new();
-  unsigned char *ptr = (unsigned char *)data->str;
+  p_wchar0 *ptr = STR0 (data);
   unsigned int sz = data->len;
   
   for( i=0; i<sz; i++, ptr++ )
@@ -119,7 +119,7 @@ struct words *unicode_split_words_buffer( struct buffer *data )
   unsigned int in_word = 0;
   unsigned int last_start = 0;
   struct words *res = uc_words_new();
-  unsigned int *ptr = data->data;
+  p_wchar2 *ptr = data->data;
   unsigned int sz = data->size;
   for( i=0; i<sz; i++ )
   {
