@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: unicode_module.cmod,v 1.18 2008/07/31 14:52:27 mast Exp $
+|| $Id: unicode_module.cmod,v 1.19 2008/08/05 11:26:24 mast Exp $
 */
 
 #include "global.h"
@@ -83,17 +83,22 @@ PIKEFUN array(string) split_words( string input )
 }
 
 /*! @decl array(string) split_words_and_normalize(string input)
- *! A less wasteful equivalent of @[split_words](@[normalize](@[input])).
+ *!
+ *! A less wasteful equivalent of
+ *! @expr{@[split_words](@[normalize](@[input], "NFKD"))@}.
  */
 PIKEFUN array(string) split_words_and_normalize( string input )
      optflags OPT_TRY_OPTIMIZE;
 {
   struct words *res;
+#if 0
+  /* Invalid optimization. See testsuite. */
   if( !input->size_shift && (res = unicode_split_words_pikestr0( input )) )
   {
     push_words0( input, res );
     return;
   }
+#endif
 
   {
     struct buffer *data;
@@ -170,8 +175,8 @@ PIKEFUN string normalize( string s, string flags )
   for( i = 0; i<flags->len; i++ )
     switch( flags->str[ i ] )
     {
-      case 'K': _flags|=1; break;
-      case 'C': _flags|=2; break;
+      case 'K': _flags |= COMPAT_BIT; break;
+      case 'C': _flags |= COMPOSE_BIT; break;
     }
 
   RETURN unicode_normalize( s, _flags );
