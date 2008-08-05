@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: module.c,v 1.55 2008/06/29 17:56:36 nilsson Exp $
+|| $Id: module.c,v 1.56 2008/08/05 21:10:17 mast Exp $
 */
 
 #include "global.h"
@@ -163,7 +163,7 @@ static void exit_builtin_modules(void)
     int leak_found = 0;
 
 #ifdef _REENTRANT
-    if(count_pike_threads()>1)
+    if(count_pike_threads())
     {
       fprintf(stderr,"Byte counting aborted, because all threads have not exited properly.\n");
       exit_with_cleanup = 0;
