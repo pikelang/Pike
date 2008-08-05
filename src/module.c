@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: module.c,v 1.57 2008/08/05 21:23:46 mast Exp $
+|| $Id: module.c,v 1.58 2008/08/05 21:43:26 mast Exp $
 */
 
 #include "global.h"
@@ -167,7 +167,9 @@ static void exit_builtin_modules(void)
 #ifdef PIKE_THREADS
     if(count_pike_threads())
     {
-      fprintf(stderr,"Byte counting aborted, because all threads have not exited properly.\n");
+      fprintf(stderr,"Cleanup-on-exit aborted "
+	      "because %d thread(s) still are running.\n",
+	      count_pike_threads());
       exit_with_cleanup = 0;
       return;
     }
