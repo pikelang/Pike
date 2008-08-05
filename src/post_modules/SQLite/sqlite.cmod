@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sqlite.cmod,v 1.28 2008/08/04 22:16:31 mast Exp $
+|| $Id: sqlite.cmod,v 1.29 2008/08/05 11:02:38 grubba Exp $
 */
 
 #include "global.h"
@@ -143,9 +143,23 @@ static void bind_arguments(sqlite3 *db,
   }
 }
 
+/*! @class SQLite
+ *! @appears predef::Sql.sqlite
+ *!
+ *! Low-level interface to SQLite3 databases.
+ *!
+ *! This class should typically not be accessed directly, but instead
+ *! via @[Sql.Sql()] with the scheme @expr{"sqlite://"@}.
+ */
+
 PIKECLASS SQLite
 {
   CVAR sqlite3 *db;
+
+/*! @class ResObj
+ *!
+ *! Result object from @[big_query()].
+ */
 
 PIKECLASS ResObj
   flags ID_PRIVATE | ID_PROTECTED | ID_HIDDEN;
@@ -282,6 +296,9 @@ PIKECLASS ResObj
     }
   }
 }
+
+/*! @endclass
+ */
 
 #undef THIS
 #define THIS THIS_SQLITE
@@ -437,7 +454,14 @@ PIKECLASS ResObj
     push_constant_text(sqlite3_libversion());
   }
 
-  PIKEFUN int last_insert_rowid()
+  /*! @decl int insert_id()
+   *!
+   *! Returns the value of the @tt{ROWID@} (aka @tt{OID@}, aka @tt{_ROWID_@},
+   *! or declared @tt{INTEGER PRIMARY KEY@}) column for the most recent
+   *! successful @tt{INSERT@} operation, or @expr{0@} (zero) if no @tt{INSERT@}
+   *! operations have been performed on the connection yet.
+   */
+  PIKEFUN int insert_id()
     optflags OPT_EXTERNAL_DEPEND;
   {
     push_longest (sqlite3_last_insert_rowid(THIS->db));
@@ -488,6 +512,8 @@ PIKECLASS ResObj
 
 }
 
+/*! @endclass
+ */
 
 #endif /* HAVE_SQLITE3_H && HAVE_LIBSQLITE3 */
 
