@@ -728,7 +728,7 @@ o Sql
     accurate error messages under all circumstances, SSL-support,
     SQL-injection protection since it will ignore everything after the
     first semicolon terminating the first command in the query, integrated
-    statistics.
+    statistics, _reconnect callback for sessions that use temptables.
 
     Performance tuned, with the helperclass _PGsql.PGsql it currently
     is around 21% faster than the old libpq based Postgres driver
