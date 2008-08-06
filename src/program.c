@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.737 2008/07/16 01:08:05 mast Exp $
+|| $Id: program.c,v 1.738 2008/08/06 12:25:59 grubba Exp $
 */
 
 #include "global.h"
@@ -4541,12 +4541,12 @@ int call_handle_inherit(struct pike_string *s)
     if (Pike_sp[-1].type != T_INT)
       return 1;
     else {
-      pop_stack();
       my_yyerror("Couldn't find program %S", s);
     }
   else {
     handle_compile_exception ("Error finding program");
   }
+  pop_stack();
 
   return 0;
 }
