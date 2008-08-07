@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: HTML.pmod,v 1.42 2007/03/16 14:45:38 jonasw Exp $
+// $Id: HTML.pmod,v 1.43 2008/08/07 11:01:35 agehall Exp $
 
 // Filter for text/html
 
@@ -109,7 +109,13 @@ static string clean(string data) {
     string n = m->name||m["http-equiv"];
     switch(lower_case(n || ""))
     {
-      case "description": 
+      case "robots":
+	res->fields->robots = (stringp(res->fields->robots)?
+			       res->fields->robots+",": "") +
+			      (m->contents||m->content||m->data||"");
+	break;
+
+      case "description":
       case "keywords":
       case "modified":
       case "author":
@@ -117,12 +123,8 @@ static string clean(string data) {
       case "intrawise.folderid":
       case "intrawise.type":
 #endif
+      default:
 	res->fields[lower_case(n)] = m->contents||m->content||m->data||"";
-	break;
-      case "robots":
-	res->fields->robots = (stringp(res->fields->robots)?
-			       res->fields->robots+",": "") +
-			      (m->contents||m->content||m->data||"");
 	break;
     }
     return ({});
