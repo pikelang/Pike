@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.845 2008/07/24 11:56:20 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.846 2008/08/07 14:05:47 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -878,6 +878,12 @@ test_compile_warning([[
   // NB: This case used to leak the type function(:string).
   string x (string s) {return s;};
   void y (string|int s) {x (s);};
+]])
+
+test_compile_any([[
+  #pragma strict_types
+  array(string) x = ({"A", "B"});
+  mixed a() {return map (x, lower_case);}
 ]])
 
 cond( [[ master()->resolv("Pike")->Security ]],[[
