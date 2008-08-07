@@ -98,6 +98,8 @@ private string host, database, user, pass;
 private int port;
 private object fetchprefix
  =Regexp("^[ \t\f\r\n]*[Ff][Ee][Tt][Cc][Hh][ \t\f\r\n]");
+private object limitpostfix
+ =Regexp("[ \t\f\r\n][Ll][Ii][Mm][Ii][Tt][ \t\f\r\n]+[12][; \t\f\r\n]*$");
 Thread.Mutex _querymutex;
 Thread.Mutex _stealmutex;
 
@@ -1296,8 +1298,8 @@ final void _sendexecute(int fetchlimit) {
   PD("Execute portal %s fetchlimit %d\n",portalname,fetchlimit);
   _c.sendcmd(({"E",_c.plugint32(4+sizeof(portalname)+1+4),portalname,
    "\0",_c.plugint32(fetchlimit)}),!!fetchlimit);
-  _c.portal->_inflight+=fetchlimit;
   if(!fetchlimit) {
+    _c.portal->_fetchlimit=0;			   // disables further Executes
     earlyclose=1;
     if(sizeof(portalname)) {
       PD("Close portal %s & Sync\n",portalname);
@@ -1306,6 +1308,8 @@ final void _sendexecute(int fetchlimit) {
     }
     _c.sendcmd(({"S",_c.plugint32(4)}),2);
   }
+  else
+    _c.portal->_inflight+=fetchlimit;
 }
 
 final private void sendclose(void|int hold) {
@@ -1362,6 +1366,10 @@ final string status_commit() {
 //! @[big_query()] for queries you expect to return huge amounts of
 //! data (it's harder to handle, but fetches results on demand).
 //!
+//! Bindings are supported natively straight through the network.
+//! Special bindings supported are: ":_cache", to force caching or
+//! not caching for the query at hand depending on the mappingvalue.
+//!
 //! @note
 //! This function @b{can@} raise exceptions.
 //!
@@ -1376,6 +1384,7 @@ final string status_commit() {
 object big_query(string q,void|mapping(string|int:mixed) bindings) {
   string preparedname="";
   string portalname="";
+  int forcecache=-1;
   if(stringp(q) && String.width(q)>8)
     q=string_to_utf8(q);
   array(string|int) paramValues;
@@ -1389,7 +1398,10 @@ object big_query(string q,void|mapping(string|int:mixed) bindings) {
         if(name[0]!=':')
           name=":"+name;
         if(name[1]=='_') {	       // Special option parameter
-				       // No options supported at the moment
+	  switch(name) {
+	    case ":_cache":forcecache=(int)value;
+	      break;
+	  }
           continue;
         }
       }
@@ -1418,7 +1430,7 @@ object big_query(string q,void|mapping(string|int:mixed) bindings) {
     paramValues = ({});
   mapping(string:mixed) tp;
   int tstart;
-  if(sizeof(q)>=MINPREPARELENGTH) {
+  if(forcecache==1 || forcecache!=0 && sizeof(q)>=MINPREPARELENGTH) {
     if(tp=prepareds[q]) {
       if(tp->preparedname)
         prepstmtused++, preparedname=tp->preparedname;
@@ -1536,6 +1548,7 @@ object big_query(string q,void|mapping(string|int:mixed) bindings) {
               case INT8OID:len+=8;
                 plugbuf+=({_c.plugint32(8),_c.plugint64((int)value)});
                 break;
+	      case OIDOID:
               case INT4OID:len+=4;
                 plugbuf+=({_c.plugint32(4),_c.plugint32((int)value)});
                 break;
@@ -1565,7 +1578,9 @@ object big_query(string q,void|mapping(string|int:mixed) bindings) {
 #endif
       }
       _c.portal->_statuscmdcomplete=UNDEFINED;
-      _sendexecute(_fetchlimit && FETCHLIMITLONGRUN);
+      _sendexecute(_fetchlimit
+       && !limitpostfix->match(q)		    // Optimisation for LIMIT 1
+       && FETCHLIMITLONGRUN);
       if(tp) {
         _decodemsg(bindcomplete);
         int tend=gethrtime();
