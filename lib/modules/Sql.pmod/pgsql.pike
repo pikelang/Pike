@@ -129,7 +129,7 @@ protected string _sprintf(int type, void|mapping flags) {
 #define XMLOID		142
 #define FLOAT4OID	700
 #define MACADDROID	829
-#define INETOID		869
+#define INETOID		869	    /* Force textmode */
 #define BPCHAROID	1042
 #define VARCHAROID	1043
 #define CTIDOID		1247
@@ -1283,7 +1283,6 @@ private int oidformat(int oid) {
     case OIDOID:
     case XMLOID:
     case MACADDROID:
-    case INETOID:
     case BPCHAROID:
     case VARCHAROID:
     case CTIDOID:

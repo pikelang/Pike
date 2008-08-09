@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: PGsql.cmod,v 1.20 2008/08/05 18:56:01 srb Exp $
+ * $Id: PGsql.cmod,v 1.21 2008/08/09 16:20:56 srb Exp $
  *
  * PGsql, accelerator functions for Sql.pgsql for Pike.
  *
@@ -59,7 +59,7 @@ typedef unsigned char uchar;
 #define XMLOID          142
 #define FLOAT4OID       700
 #define MACADDROID      829
-#define INETOID         869	    /* TODO: binary support */
+#define INETOID         869
 #define BPCHAROID       1042
 #define VARCHAROID      1043
 #define CTIDOID         1247
