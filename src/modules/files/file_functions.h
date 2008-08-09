@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file_functions.h,v 1.45 2008/07/14 15:37:08 mast Exp $
+|| $Id: file_functions.h,v 1.46 2008/08/09 21:24:01 mast Exp $
 */
 
 #define CB_FUNC tFunc(tNone,tOr(tVoid,tMixed))
@@ -16,22 +16,22 @@ FILE_FUNC("openat",file_openat, tFunc(tStr tStr tOr(tVoid,tInt),tObjImpl_STDIO_F
 /* function(string|void:int) */
 FILE_FUNC("close",file_close, tFunc(tOr(tStr,tVoid),tInt))
 /* function(int|void,int|void:string) */
-FILE_FUNC("read",file_read, tFunc(tOr(tInt,tVoid) tOr(tInt01,tVoid),tStr))
+FILE_FUNC("read",file_read, tFunc(tOr(tInt,tVoid) tOr(tInt01,tVoid),tStr8))
 /* function(float|int|void:int) */
 FILE_FUNC("peek",file_peek, tFunc(tOr3(tFlt,tInt,tVoid) tOr(tInt,tVoid), tInt))
 /* function(string|array(string),mixed...:int) */
 FILE_FUNC("write",file_write,
-	  tOr3(tFunc(tStr8, tInt),
-	       tFuncV(tArr(tStr8), tMixed, tInt),
-	       tFuncV(tAttr("sprintf_format", tStr8),
+	  tOr3(tFunc(tStr, tInt),
+	       tFuncV(tArr(tStr), tMixed, tInt),
+	       tFuncV(tAttr("sprintf_format", tStr),
 		      tAttr("sprintf_args", tMixed),tInt)))
 /* function(int|void,int|void:string) */
-FILE_FUNC("read_oob",file_read_oob, tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid),tStr))
+FILE_FUNC("read_oob",file_read_oob, tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid),tStr8))
 /* function(string,mixed...:int) */
 FILE_FUNC("write_oob",file_write_oob,
-	  tOr3(tFunc(tStr8, tInt),
-	       tFuncV(tArr(tStr8), tMixed, tInt),
-	       tFuncV(tAttr("sprintf_format", tStr8),
+	  tOr3(tFunc(tStr, tInt),
+	       tFuncV(tArr(tStr), tMixed, tInt),
+	       tFuncV(tAttr("sprintf_format", tStr),
 		      tAttr("sprintf_args", tMixed),tInt)))
 
 #ifdef HAVE_FSYNC
