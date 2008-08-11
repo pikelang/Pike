@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.348 2008/07/09 20:43:45 mast Exp $
+|| $Id: pike_types.c,v 1.349 2008/08/11 13:36:58 grubba Exp $
 */
 
 #include "global.h"
@@ -42,6 +42,8 @@
 #define NO_MAX_ARGS 4
 #define NO_SHORTCUTS 8
 
+#define TYPE_GROUPING
+
 /*
  * Flags used by pike_types_le()
  */
@@ -50,11 +52,11 @@
 				 * Relevant for markers.
 				 */
 #ifdef TYPE_GROUPING
-#define LE_A_GROUPED	0/*4*/	/* Argument A has been grouped.
+#define LE_A_GROUPED	4	/* Argument A has been grouped.
 				 * Perform weaker checking for OR-nodes. */
-#define LE_B_GROUPED	0/*8*/	/* Argument B has been grouped.
+#define LE_B_GROUPED	8	/* Argument B has been grouped.
 				 * Perform weaker checking for OR-nodes. */
-#define LE_A_B_GROUPED	0/*12*/	/* Both the above two flags. */
+#define LE_A_B_GROUPED	12	/* Both the above two flags. */
 #endif
 #define LE_USE_HANDLERS	16	/* Call handlers if appropriate. */
 
@@ -3756,15 +3758,27 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
 
   if(a == b) return 1;
 
+#ifdef TYPE_GROUPING
+  if (a->type != T_OR) {
+    flags &= ~LE_A_GROUPED;
+  }
+#endif
+
   switch(a->type)
   {
   case T_AND:
     /* OK if either of the parts is a subset. */
     /* FIXME: What if b also contains an AND? */
     ret = low_pike_types_le(a->car, b, array_cnt, flags);
-    if(ret) return ret;
-    a = a->cdr;
-    goto recurse;
+    if(!ret) {
+      a = a->cdr;
+      goto recurse;
+    }
+    /* Note that we need to recurse, since there may be T_ASSIGN nodes
+     * in the cdr that need to be executed.
+     */
+    low_pike_types_le(a->cdr, b, array_cnt, flags);
+    return 1;
 
   case T_OR:
     /* OK, if both of the parts are a subset,
@@ -3839,11 +3853,18 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
       a = b->car;
       b = tmp;
       array_cnt = -array_cnt;
-      flags ^= LE_A_B_SWAPPED
+      flags ^= LE_A_B_SWAPPED;
+#if 0
 #ifdef TYPE_GROUPING
-	|LE_A_B_GROUPED
+      if (flags & LE_A_B_GROUPED) {
+	if ((flags & LE_A_B_GROUPED) == LE_A_B_GROUPED) {
+	  flags ^= LE_A_B_GROUPED;
+	}
+      } else {
+	flags |= LE_A_B_GROUPED;
+      }
 #endif
-	;
+#endif
       goto recurse;
     }
     /* Some common cases. */
@@ -3862,13 +3883,20 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
     if (low_pike_types_le(a->car, b, array_cnt, flags)) {
       return 0;
     }
-    /* FIXME: This is wrong... */
-    return !low_pike_types_le(b, a->car, -array_cnt,
-			      flags ^ (LE_A_B_SWAPPED
+    flags ^= LE_A_B_SWAPPED;
+#if 0
 #ifdef TYPE_GROUPING
-				       |LE_A_B_GROUPED
+    if (flags & LE_A_B_GROUPED) {
+      if ((flags & LE_A_B_GROUPED) == LE_A_B_GROUPED) {
+	flags ^= LE_A_B_GROUPED;
+      }
+    } else {
+      flags |= LE_A_B_GROUPED;
+    }
 #endif
-				       ));
+#endif
+    /* FIXME: This is wrong... */
+    return !low_pike_types_le(b, a->car, -array_cnt, flags);
 
   case T_ASSIGN:
     ret = low_pike_types_le(a->cdr, b, array_cnt, flags);
@@ -3937,6 +3965,12 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
       goto recurse;
     }
   }
+
+#ifdef TYPE_GROUPING
+  if (b->type != T_OR) {
+    flags &= ~LE_B_GROUPED;
+  }
+#endif
 
   switch(b->type)
   {
@@ -4010,13 +4044,18 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
     if (low_pike_types_le(a, b->car, array_cnt, flags)) {
       return 0;
     }
-    /* FIXME: This is wrong... */
-    return !low_pike_types_le(b->car, a, -array_cnt,
-			      flags ^ (LE_A_B_SWAPPED
+    flags ^= LE_A_B_SWAPPED;
 #ifdef TYPE_GROUPING
-				       |LE_A_B_GROUPED
+    if (flags & LE_A_B_GROUPED) {
+      if ((flags & LE_A_B_GROUPED) == LE_A_B_GROUPED) {
+	flags ^= LE_A_B_GROUPED;
+      }
+    } else {
+      flags |= LE_A_B_GROUPED;
+    }
 #endif
-				       ));
+    /* FIXME: This is wrong... */
+    return !low_pike_types_le(b->car, a, -array_cnt, flags);
 
   case T_ASSIGN:
     ret = low_pike_types_le(a, b->cdr, array_cnt, flags);
@@ -4268,12 +4307,8 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
       }
 
       if (a_tmp->type != T_VOID) {
-	if (!low_pike_types_le(b_tmp, a_tmp, 0,
-			       flags ^ (LE_A_B_SWAPPED
-#ifdef TYPE_GROUPING
-					|LE_A_B_GROUPED
-#endif
-					))) {
+	/* Note: flags never has grouping at this point. */
+	if (!low_pike_types_le(b_tmp, a_tmp, 0, flags ^ LE_A_B_SWAPPED)) {
 	  return 0;
 	}
       }
@@ -4282,12 +4317,8 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
   case TWOT(T_MANY, T_MANY):
     /* check the 'many' type */
     if ((a->car->type != T_VOID) && (b->car->type != T_VOID)) {
-      if (!low_pike_types_le(b->car, a->car, 0,
-			     flags ^ (LE_A_B_SWAPPED
-#ifdef TYPE_GROUPING
-				      |LE_A_B_GROUPED
-#endif
-				      ))) {
+      /* Note: flags never has grouping at this point. */
+      if (!low_pike_types_le(b->car, a->car, 0, flags ^ LE_A_B_SWAPPED)) {
 	return 0;
       }
     }
@@ -7119,8 +7150,7 @@ struct pike_type *get_type_of_svalue(const struct svalue *s)
     return pop_unfinished_type();
 
   case T_INT:
-    if(s->u.integer)
-    {
+    if(s->u.integer) {
       type_stack_mark();
       /* Fixme, check that the integer is in range of MIN_INT32 .. MAX_INT32!
        */
@@ -7577,8 +7607,9 @@ struct pike_type *debug_make_pike_type(const char *serialized_type)
 #if 1
   if ((Pike_compiler->type_stackp[0]->flags &
        (PT_FLAG_MARKER|PT_FLAG_ASSIGN)) ||
-      (Pike_compiler->type_stackp[0]->type == T_OR) ||
-      (Pike_compiler->type_stackp[0]->type == T_AND)) {
+      (((Pike_compiler->type_stackp[0]->type == T_OR) ||
+	(Pike_compiler->type_stackp[0]->type == T_AND)) &&
+       (Pike_compiler->type_stackp[0]->car->type == PIKE_T_FUNCTION))) {
     push_scope_type(0);
   }
 #endif /* 1 */
