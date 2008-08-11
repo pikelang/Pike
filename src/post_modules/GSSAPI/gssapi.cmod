@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gssapi.cmod,v 1.11 2008/08/01 13:25:09 mast Exp $
+|| $Id: gssapi.cmod,v 1.12 2008/08/11 17:37:34 mast Exp $
 */
 
 /*
@@ -181,11 +181,19 @@ DEFINE_STATIC_OID (GSS_KRB5_NT_PRINCIPAL_NAME,
 
 static struct svalue int_pos_inf = SVALUE_INIT_FREE;
 
+static void resolve_syms();
+
+#define RESOLVE_SYMS() do {						\
+    if (int_pos_inf.type == PIKE_T_FREE) resolve_syms();		\
+  } while (0)
+
 #define PUSH_TIME(TIME) do {						\
-    if (TIME == GSS_C_INDEFINITE)					\
+    if (TIME == GSS_C_INDEFINITE) {					\
+      RESOLVE_SYMS();							\
       push_svalue (&int_pos_inf);					\
+    }									\
     else								\
-      push_ulongest (TIME);							\
+      push_ulongest (TIME);						\
   } while (0)
 
 static DECLSPEC(noreturn) void throw_gssapi_error (
@@ -285,6 +293,8 @@ static int get_pushed_gss_oid (struct pike_string *dd_oid, gss_OID gss_oid)
     return 0;
   }
 
+  RESOLVE_SYMS();
+
   ref_push_string (dd_oid);
   apply_svalue (&encode_der_oid, 1);
   if (Pike_sp[-1].type != T_STRING ||
@@ -337,6 +347,8 @@ static struct pike_string *get_dd_oid (const gss_OID_desc * const gss_oid)
       return v->u.string;
     }
   }
+
+  RESOLVE_SYMS();
 
   ref_push_string (der_oid);	/* Save extra ref for use afterwards. */
   push_string (der_oid);
@@ -407,6 +419,21 @@ static void convert_from_oid_set_and_push (gss_OID_set set)
     oid_str.u.string = get_dd_oid (set->elements + i);
     multiset_insert (l, &oid_str);
   }
+}
+
+#define RESOLVE_AND_SET(IDENT, SVALUE) do {				\
+    push_text (IDENT);							\
+    SAFE_APPLY_MASTER ("resolv", 1);					\
+    if (SAFE_IS_ZERO (Pike_sp - 1))					\
+      Pike_error ("GSSAPI: Failed to resolve %s.\n", IDENT);		\
+    move_svalue (&SVALUE, --Pike_sp);					\
+  } while (0)
+
+static void resolve_syms()
+{
+  RESOLVE_AND_SET ("Int.inf", int_pos_inf);
+  RESOLVE_AND_SET ("Standards.ASN1.encode_der_oid", encode_der_oid);
+  RESOLVE_AND_SET ("Standards.ASN1.decode_der_oid", decode_der_oid);
 }
 
 
@@ -4322,22 +4349,10 @@ PIKEFUN multiset(string) names_for_mech (string mech)
 
 #endif	/* HAVE_GSSAPI */
 
-#define RESOLVE_AND_SET(IDENT, SVALUE) do {				\
-    push_text (IDENT);							\
-    SAFE_APPLY_MASTER ("resolv", 1);					\
-    if (SAFE_IS_ZERO (Pike_sp - 1))					\
-      Pike_error ("GSSAPI: Failed to resolve %s.\n", IDENT);		\
-    move_svalue (&SVALUE, --Pike_sp);					\
-  } while (0)
-
 PIKE_MODULE_INIT
 {
 #ifdef HAVE_GSSAPI
   der_dd_map = allocate_mapping (10);
-
-  RESOLVE_AND_SET ("Int.inf", int_pos_inf);
-  RESOLVE_AND_SET ("Standards.ASN1.encode_der_oid", encode_der_oid);
-  RESOLVE_AND_SET ("Standards.ASN1.decode_der_oid", decode_der_oid);
 
   start_new_program();
   low_inherit (generic_error_program, NULL, 0, 0, 0, NULL);
