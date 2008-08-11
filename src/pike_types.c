@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.349 2008/08/11 13:36:58 grubba Exp $
+|| $Id: pike_types.c,v 1.350 2008/08/11 15:15:43 grubba Exp $
 */
 
 #include "global.h"
@@ -3796,7 +3796,11 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
     } else {
       ret = low_pike_types_le(a->car, b, array_cnt, flags);
 #ifdef TYPE_GROUPING
-      if (!ret == !(flags & LE_A_GROUPED)) return ret;
+      if (!ret == !(flags & LE_A_GROUPED)) {
+	/* Note: Needed for side effects... */
+	low_pike_types_le(a->cdr, b, array_cnt, flags);
+	return ret;
+      }
 #else
       if (!ret) return 0;
 #endif
@@ -3988,7 +3992,10 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
      */
     ret = low_pike_types_le(a, b->car, array_cnt, flags);
 #ifdef TYPE_GROUPING
-    if (!ret != !(flags & LE_B_GROUPED)) return ret;
+    if (!ret != !(flags & LE_B_GROUPED)) {
+      low_pike_types_le(a, b->cdr, array_cnt, flags);
+      return ret;
+    }
 #else
     if (ret) return ret;
 #endif
@@ -6098,7 +6105,7 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
       fprintf(stderr, ".\n");
     }
 #endif /* PIKE_DEBUG */
-    /* No need to parform advanced checking in the trivial case... */
+    /* No need to perform advanced checking in the trivial case... */
     if (arg_type != (tmp2 = fun_type->car)) {
       if ((flags & CALL_7_6) && (arg_type == void_type_string)) {
 	/* Compat with Pike 7.6 and earlier. */
