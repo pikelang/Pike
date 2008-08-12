@@ -1,14 +1,14 @@
-.\" $Id: pike.1,v 1.27 2008/07/31 18:13:17 mast Exp $
+.\" $Id: pike.1,v 1.28 2008/08/12 20:18:50 grubba Exp $
 .\" name section last-modified title section-name product/status architecture
 .ds ]L Pike
-.TH pike 1 "$Date: 2008/07/31 18:13:17 $" Pike "Pike Manual" Pike
-.\" On Solaris ]L will contain "Last modified $Date: 2008/07/31 18:13:17 $"
+.TH pike 1 "$Date: 2008/08/12 20:18:50 $" Pike "Pike Manual" Pike
+.\" On Solaris ]L will contain "Last modified $Date: 2008/08/12 20:18:50 $"
 .\" while HPUX uses ]L to contain "Pike".
 .\" On OSF/1 ]L will already contain the wanted string.
-.if !\*(]LPike .ds ]L $Date: 2008/07/31 18:13:17 $ \" Solaris nroff
+.if !\*(]LPike .ds ]L $Date: 2008/08/12 20:18:50 $ \" Solaris nroff
 .\" Major (mj) and minor (mn) version of Pike
 .nr mj 7
-.nr mn 7
+.nr mn 8
 .SH NAME
 pike \- pike compiler and interpreter
 .SH SYNOPSIS
@@ -58,18 +58,6 @@ Increase the debug level of the Pike compiler (debug).
 .B \-dg
 Resets the debug malloc at every garbage collection (debug).
 .TP
-.B \-dp
-Turns off the peep hole optimization (debug).
-.TP
-.B \-ds
-Debug signals (debug).
-.TP
-.B \-dt
-Turn off tail recursion optimization (debug).
-.TP
-.B \-dT
-Enable extra checks in the thread library, e.g. mutex sanity checks (debug).
-.TP
 .B \-dL
 .B Windows only:
 Enable Windows error dialogs when dll files cannot be loaded.
@@ -82,6 +70,18 @@ attempting to load certain modules.
 However, the error dialogs are the only way to see which dll's that
 could not be loaded, so this option may be necessary to find out why a
 certain module does not load.
+.TP
+.B \-dp
+Turns off the peep hole optimization (debug).
+.TP
+.B \-ds
+Debug signals (debug).
+.TP
+.B \-dt
+Turn off tail recursion optimization (debug).
+.TP
+.B \-dT
+Enable extra checks in the thread library, e.g. mutex sanity checks (debug).
 .TP
 .B \-l
 Increase the debug level of the global optimizer with 1 (debug).
@@ -146,7 +146,9 @@ and exit.
 .BI \-x toolname
 Execute internal tool
 .I toolname
-from Tools.Standalone. Omit
+from
+.B Tools.Standalone.
+Omit
 .I toolname
 for a list of available tools.
 .TP
@@ -184,6 +186,11 @@ Disable warnings.
 .B \-\-assembler\-debug
 Set the peephole optimizer debug level (debug).
 .TP
+.B \-\-autoreload
+Turn on the
+.I autoreload
+mode of the master.
+.TP
 .B \-\-compiler\-trace
 Turn on tracing of the Pike compiler (debug).
 .TP
@@ -196,7 +203,7 @@ Hide
 from the resolver (debug).
 .TP
 .B \-\-dumpversion
-Print the Pike version number to stderr, e.g. "7.8.10\\n"
+Print the Pike version number to stderr, e.g. "\n(mj.\n(mn.10\\n"
 .TP
 .B \-\-features
 List some of the features that are enabled in this Pike binary
@@ -207,6 +214,11 @@ Show various information about this Pike installation and exit (debug).
 .TP
 .B \-\-optimizer\-debug
 Set the global optimizer debug level (debug).
+.TP
+.B \-\-show\-all\-cpp\-warnings, \-\-picky\-cpp
+Enable warnings for failing
+.B #if constant()
+expressions.
 .TP
 .B \-\-show\-paths
 Show the paths pike will use and exit (debug).
@@ -224,7 +236,9 @@ The following operand is supported:
 .I script
 A path to a script written in Pike to be compiled and then executed.
 Everything on the commandline after the script is passed as arguments
-to the script.
+to the
+.I main()
+function in the script.
 .LP
 If no script is specified, pike will start in interactive- (Hilfe) mode.
 .SH REGISTRY KEYS
@@ -331,9 +345,17 @@ manual pages for pike
 .SH SEE ALSO
 .BR hilfe (1),
 .BR Getopt (3P),
-.BR environ (5)
+.BR environ (5).
 .\" Force a linebreak
 .sp 0vu
+
 .I Pike Programming Tutorial
 .sp 0vu
 .I Pike Reference Manual
+.sp 0vu
+.I Pike: an Introduction
+by H. William Welliver III and Martin Bähr, 2007.
+.sp 0vu
+
+.I http://pike.ida.liu.se/
+.sp 0vu
