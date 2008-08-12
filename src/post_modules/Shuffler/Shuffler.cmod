@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: Shuffler.cmod,v 1.49 2008/08/07 12:47:22 srb Exp $
+|| $Id: Shuffler.cmod,v 1.50 2008/08/12 15:19:31 mast Exp $
 */
 
 #include "global.h"
@@ -170,7 +170,7 @@ PIKECLASS Shuffle
     SHUFFLE_DEBUG2("set_throttler(%p)\n", THIS, t );
     if( THIS->throttler )
       free_object( THIS->throttler );
-    if( THIS->throttler = t ) {
+    if( (THIS->throttler = t) ) {
       debug_malloc_touch(THIS->throttler);
       Pike_sp--;
     }
