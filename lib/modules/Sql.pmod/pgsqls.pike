@@ -17,7 +17,9 @@ inherit Sql.pgsql;
 protected void create(void|string _host, void|string _db,
  void|string _user, void|string _pass, void|mapping(string:mixed) _options) {
   string pass;
-  pass = _pass; _pass = "CENSORED"; String.secure(pass);
+  pass = _pass; _pass = "CENSORED";
+  if(pass)
+    String.secure(pass);
   if(!_options)
     _options = ([]);
 

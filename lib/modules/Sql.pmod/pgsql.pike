@@ -192,7 +192,9 @@ protected string _sprintf(int type, void|mapping flags) {
 //!   @[Postgres.postgres], @[Sql.Sql], @[postgres->select_db]
 protected void create(void|string _host, void|string _database,
  void|string _user, void|string _pass, void|mapping(string:mixed) _options) {
-  pass = _pass; _pass = "CENSORED"; String.secure(pass);
+  pass = _pass; _pass = "CENSORED";
+  if(pass)
+    String.secure(pass);
   user = _user; database = _database; host = _host || PGSQL_DEFAULT_HOST;
   options = _options || ([]);
   if(search(host,":")>=0 && sscanf(_host,"%s:%d",host,port)!=2)
