@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: PGsql.cmod,v 1.21 2008/08/09 16:20:56 srb Exp $
+ * $Id: PGsql.cmod,v 1.22 2008/08/12 15:18:55 mast Exp $
  *
  * PGsql, accelerator functions for Sql.pgsql for Pike.
  *
@@ -34,7 +34,7 @@
 
 DECLARATIONS
 
-/*#define PGSQL_DEBUG /**/
+/*#define PGSQL_DEBUG */
 
 #ifdef PGSQL_DEBUG
 #define PD(X)	fprintf X
@@ -230,7 +230,7 @@ bad:
   PIKEFUN void setportal(void|object portal) {
     if(THIS->portal)
       free_object(THIS->portal);
-    if(THIS->portal=portal) {
+    if((THIS->portal=portal)) {
       debug_malloc_touch(THIS->portal);
       Pike_sp--;				/* don't decrease references */
     }
