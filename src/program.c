@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.741 2008/08/13 18:02:02 mast Exp $
+|| $Id: program.c,v 1.742 2008/08/13 21:11:58 mast Exp $
 */
 
 #include "global.h"
@@ -8010,6 +8010,11 @@ static void run_cleanup(struct compilation *c, int delayed)
       /* FIXME: Shouldn't the compilation handler be used here? */
       SAFE_APPLY_MASTER("unregister",1);
       pop_stack();
+
+      /* Free the target here to avoid false alarms in the debug check
+       * below. */
+      free_program (c->target);
+      c->target = NULL;
 
 #ifdef PIKE_DEBUG
       if (p->refs > 1) {
