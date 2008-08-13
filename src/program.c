@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.738 2008/08/06 12:25:59 grubba Exp $
+|| $Id: program.c,v 1.739 2008/08/13 14:27:36 mast Exp $
 */
 
 #include "global.h"
@@ -3471,8 +3471,9 @@ struct program *end_first_pass(int finish)
 
   if(Pike_compiler->num_parse_error > 0)
   {
-    CDFPRINTF((stderr, "th(%ld) Compilation errors (%d).\n",
-	       (long)th_self(), Pike_compiler->num_parse_error));
+    CDFPRINTF((stderr, "th(%ld) %p Compilation errors (%d).\n",
+	       (long)th_self(), Pike_compiler->new_program,
+	       Pike_compiler->num_parse_error));
     prog=0;
   }else{
     prog=Pike_compiler->new_program;
@@ -3524,8 +3525,8 @@ struct program *end_first_pass(int finish)
 #if 0
   CDFPRINTF((stderr,
 	     "th(%ld) end_first_pass(): "
-	     "compilation_depth:%d, Pike_compiler->compiler_pass:%d\n",
-	     (long)th_self(),
+	     "%p compilation_depth:%d, Pike_compiler->compiler_pass:%d\n",
+	     (long)th_self(), prog,
 	     c->compilation_depth, Pike_compiler->compiler_pass));
 #endif
 
@@ -5883,8 +5884,8 @@ int really_low_find_shared_string_identifier(struct pike_string *name,
   int id, i, depth, last_inh;
 
 #if 0
-  CDFPRINTF((stderr,"th(%ld) Trying to find %s flags=%d\n",
-	     (long)th_self(),name->str, flags));
+  CDFPRINTF((stderr,"th(%ld) %p Trying to find %s flags=%d\n",
+	     (long)th_self(), prog, name->str, flags));
 #endif
 
 #ifdef PIKE_DEBUG
@@ -7831,7 +7832,7 @@ static int run_pass1(struct compilation *c)
 
 #if 0
   CDFPRINTF((stderr, "th(%ld) compile() starting compilation_depth=%d\n",
-	     (long)th_self(),c->compilation_depth));
+	     (long)th_self(), c->compilation_depth));
 #endif
 
   if(c->placeholder && c->placeholder->prog != null_program) {
@@ -7871,8 +7872,8 @@ static int run_pass1(struct compilation *c)
   }
 
 #if 0
-  CDFPRINTF((stderr, "th(%ld)   compile(): First pass\n",
-	     (long)th_self()));
+  CDFPRINTF((stderr, "th(%ld) %p compile(): First pass\n",
+	     (long)th_self(), Pike_compiler->new_program));
 #endif
 
   do_yyparse();  /* Parse da program */
@@ -7968,6 +7969,15 @@ static void run_cleanup(struct compilation *c, int delayed)
 	  threads_disabled, c->saved_threads_disabled);
   }
 #endif /* PIKE_DEBUG */
+
+  if (c->flags & COMPILER_CLEANUP) {
+    CDFPRINTF((stderr,
+	       "th(%ld) %p run_cleanup() - already cleaned up.\n",
+	       (long)th_self(), c->target));
+    return;
+  }
+
+  c->flags |= COMPILER_CLEANUP;
 
   exit_threads_disable(NULL);
 
@@ -8103,8 +8113,8 @@ static void compilation_event_handler(int e)
 
   switch (e) {
   case PROG_EVENT_INIT:
-    CDFPRINTF((stderr, "th(%ld) compilation: INIT(%p).\n",
-	       (long) th_self(), c));
+    CDFPRINTF((stderr, "th(%ld) %p compilation: INIT(%p).\n",
+	       (long) th_self(), Pike_fp->current_object->prog, c));
     MEMSET(c, 0, sizeof(*c));
     c->supporter.self = Pike_fp->current_object; /* NOTE: Not ref-counted! */
     c->compilation_inherit =
@@ -8119,8 +8129,8 @@ static void compilation_event_handler(int e)
     c->compilation_depth = -1;
     break;
   case PROG_EVENT_EXIT:
-    CDFPRINTF((stderr, "th(%ld) compilation: EXIT(%p).\n",
-	       (long) th_self(), c));
+    CDFPRINTF((stderr, "th(%ld) %p compilation: EXIT(%p).\n",
+	       (long) th_self(), c->supporter.self->prog, c));
     toss_buffer(&c->used_modules);
     free_compilation(c);
     break;
@@ -8336,8 +8346,8 @@ static void f_compilation_compile(INT32 args)
 
   check_c_stack(65536);
 
-  CDFPRINTF((stderr, "th(%ld) %p compile() enter, placeholder=%p\n",
-	     (long) th_self(), c->target, c->placeholder));
+  CDFPRINTF((stderr, "th(%ld) %p f_compilation_compile() enter, "
+	     "placeholder=%p\n", (long) th_self(), c->target, c->placeholder));
 
   debug_malloc_touch(c);
 
@@ -8383,13 +8393,16 @@ static void f_compilation_compile(INT32 args)
 
   if(delay)
   {
-    CDFPRINTF((stderr, "th(%ld) %p compile() finish later, placeholder=%p.\n",
+    CDFPRINTF((stderr, "th(%ld) %p f_compilation_compile() finish later, "
+	       "placeholder=%p.\n",
 	       (long) th_self(), c->target, c->placeholder));
     /* finish later */
     verify_supporters();
     /* We're hanging in the supporter. */
     ret = debug_malloc_pass(c->p);
   }else{
+    CDFPRINTF((stderr, "th(%ld) %p f_compilation_compile() finish now.\n",
+	       (long) th_self(), c->target));
     /* finish now */
     run_pass2(c);
     debug_malloc_touch(c);
@@ -8400,7 +8413,7 @@ static void f_compilation_compile(INT32 args)
     debug_malloc_touch(c);
 
     if (!dependants_ok) {
-      CDFPRINTF((stderr, "th(%ld) %p compile() reporting failure "
+      CDFPRINTF((stderr, "th(%ld) %p f_compilation_compile() reporting failure "
 		 "since a dependant failed.\n",
 		 (long) th_self(), c->target));
       if (ret) free_program(ret);
@@ -8408,7 +8421,7 @@ static void f_compilation_compile(INT32 args)
 			 "Compilation failed.\n");
     }
     if(!ret) {
-      CDFPRINTF((stderr, "th(%ld) %p compile() failed.\n",
+      CDFPRINTF((stderr, "th(%ld) %p f_compilation_compile() failed.\n",
 		 (long) th_self(), c->target));
       throw_error_object(fast_clone_object(compilation_error_program), 0, 0, 0,
 			 "Compilation failed.\n");
@@ -9317,6 +9330,8 @@ struct program *compile(struct pike_string *aprog,
     verify_supporters();
     return c->p; /* freed later */
   }else{
+    CDFPRINTF((stderr, "th(%ld) %p compile() finish now\n",
+	       (long) th_self(), c->target));
     /* finish now */
     if(c->p) run_pass2(c);
     debug_malloc_touch(c);
