@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_compiler.h,v 1.15 2008/08/13 14:27:36 mast Exp $
+|| $Id: pike_compiler.h,v 1.16 2008/08/13 18:02:03 mast Exp $
 */
 
 #ifndef PIKE_COMPILER_H
@@ -55,7 +55,6 @@ struct compilation
 /* Flags. */
 #define COMPILER_BUSY	1	/* The compiler is busy compiling. */
 #define COMPILER_DONE	2	/* The compiler is finished compiling. */
-#define COMPILER_CLEANUP 4	/* run_cleanup has cleaned up the program. */
 
 /* CompilerEnvironment function numbers. */
 #define CE_REPORT_FUN_NUM				0

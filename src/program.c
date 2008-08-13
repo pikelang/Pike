@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.740 2008/08/13 14:45:08 mast Exp $
+|| $Id: program.c,v 1.741 2008/08/13 18:02:02 mast Exp $
 */
 
 #include "global.h"
@@ -7970,20 +7970,6 @@ static void run_cleanup(struct compilation *c, int delayed)
   }
 #endif /* PIKE_DEBUG */
 
-  /* We can get called several times when a compilation registered as
-   * delayed has failed and is cleaned up right away regardless (see
-   * the lines with the run_pass1() calls in f_compilation_compile and
-   * compile). It's not at all certain that this is the correct way to
-   * deal with it, though.. /mast */
-  if (c->flags & COMPILER_CLEANUP) {
-    CDFPRINTF((stderr,
-	       "th(%ld) %p run_cleanup() - already cleaned up.\n",
-	       (long)th_self(), c->target));
-    return;
-  }
-
-  c->flags |= COMPILER_CLEANUP;
-
   exit_threads_disable(NULL);
 
   CDFPRINTF((stderr,
@@ -8389,7 +8375,7 @@ static void f_compilation_compile(INT32 args)
 		 (supporter_callback *) call_delayed_pass2,
 		 (void *)c);
 
-  delay=run_pass1(c) && c->p;
+  delay=run_pass1(c);
   dependants_ok = call_dependants(& c->supporter, !!c->p );
 #ifdef PIKE_DEBUG
   /* FIXME */
@@ -9319,7 +9305,7 @@ struct program *compile(struct pike_string *aprog,
 		 (supporter_callback *) call_delayed_pass2,
 		 (void *)c);
 
-  delay=run_pass1(c) && c->p;
+  delay=run_pass1(c);
   dependants_ok = call_dependants(& c->supporter, !!c->p );
 #ifdef PIKE_DEBUG
   /* FIXME */
