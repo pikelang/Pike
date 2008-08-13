@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.165 2008/02/06 21:57:54 mast Exp $
+# $Id: Makefile,v 1.166 2008/08/13 21:59:27 peter Exp $
 #
 # Meta Makefile
 #
@@ -295,6 +295,10 @@ export:
 	fi ; \
 	if ls bundles/nettle-*.tar.gz > /dev/null 2>&1; then : ; else \
 	  echo 'Missing Nettle bundle.'; \
+	  EXPORT_PREREQ=FAIL ; \
+	fi ; \
+	if ls bundles/libffi-*.tar.gz > /dev/null 2>&1; then : ; else \
+	  echo 'Missing libffi bundle.'; \
 	  EXPORT_PREREQ=FAIL ; \
 	fi ; \
 	if [ "$$EXPORT_PREREQ" = "FAIL" ]; then : \
