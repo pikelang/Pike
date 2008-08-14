@@ -7,7 +7,9 @@ static string pike_binary = replace( getenv("PIKE"), "\\", "/");
 int index_log_count;
 #endif
 
-class Indexer(Variable wa_var, void|function get_sb_workarea_view_url, Configuration conf)
+class Indexer(Variable.Variable wa_var,
+	      void|function get_sb_workarea_view_url,
+	      Configuration conf)
 {
   // Provided API
   public function done_cb;
