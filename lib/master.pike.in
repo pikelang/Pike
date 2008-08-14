@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.450 2008/06/29 12:33:23 agehall Exp $
+// $Id: master.pike.in,v 1.451 2008/08/14 13:14:10 mast Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -681,38 +681,6 @@ protected class Pike_7_6_master
 //!   @[get_compat_master()]
 protected inherit Pike_7_6_master;
 
-class CompatAllConstants (mapping(string:mixed) compat_overrides)
-// Wrapper for the mapping returned by all_constants in compat mode.
-{
-  protected mixed `[] (string sym)
-  {
-    mixed val = compat_overrides[sym];
-    if (zero_type (val)) val = predef::all_constants()[sym];
-    return val;
-  }
-  protected mixed `-> (string sym)
-    {return `[] (sym);}
-
-  protected mixed `[]= (string sym, mixed val)
-    {return predef::all_constants()[sym]= val;}
-  protected mixed `->= (string sym, mixed val)
-    {return `[]= (sym, val);}
-
-  protected array(string) _indices()
-    {return indices (predef::all_constants() | compat_overrides);}
-  protected array(mixed) _values()
-    {return values (predef::all_constants() | compat_overrides);}
-
-  protected mapping `+ (mapping other)
-    {return (predef::all_constants() | compat_overrides) + other;}
-  protected mapping ``+ (mapping other)
-    {return other + (predef::all_constants() | compat_overrides);}
-  protected mapping `| (mapping other)
-    {return (predef::all_constants() | compat_overrides) | other;}
-  protected mapping ``| (mapping other)
-    {return other | (predef::all_constants() | compat_overrides);}
-}
-
 //! @appears error
 //! Throws an error. A more readable version of the code
 //! @expr{throw( ({ sprintf(f, @@args), backtrace() }) )@}.
@@ -1348,7 +1316,7 @@ protected void compile_cb_rethrow (object|array err)
 }
 
 protected void call_compile_warning (object handler, string file,
-				  string msg, mixed ... args)
+				     string msg, mixed ... args)
 {
   if (sizeof (args)) msg = sprintf (msg, @args);
   msg = trim_all_whites (msg);
@@ -1501,9 +1469,9 @@ object show_doc(program|object|function obj)
 
 
 protected program low_findprog(string pname,
-			    string ext,
-			    object|void handler,
-			    void|int mkobj)
+			       string ext,
+			       object|void handler,
+			       void|int mkobj)
 {
   program ret;
   Stat s;
@@ -1725,12 +1693,14 @@ void unregister(program p)
 	m_delete (fc, name);
       else
 	fc[name] = no_value;
+
+  // FIXME: Delete from caches in dirnodes and joinnodes.
 }
 
 protected program findprog(string pname,
-			string ext,
-			object|void handler,
-			void|int mkobj)
+			   string ext,
+			   object|void handler,
+			   void|int mkobj)
 {
   switch(ext)
   {
@@ -2445,8 +2415,8 @@ class joinnode
   }
 
   protected void create(array(object|mapping) _joined_modules,
-		     object|void _compilation_handler,
-		     joinnode|void _fallback_module)
+			object|void _compilation_handler,
+			joinnode|void _fallback_module)
   {
     joined_modules = _joined_modules;
     compilation_handler = _compilation_handler;
@@ -2611,10 +2581,10 @@ class joinnode
   {
     this_program::joined_modules = joined_modules;
   }
-};
+}
 
 joinnode handle_import(string path, string|void current_file,
-			object|void current_handler)
+		       object|void current_handler)
 {
 #ifdef __amigaos__
   if(path == ".")
@@ -4771,8 +4741,8 @@ class Encoder
   protected mapping(mixed:string) rev_static_modules = ([]);
 
   protected array find_index (object|program parent, mixed child,
-			   array(object) module_object,
-			   int|void try)
+			      array(object) module_object,
+			      int|void try)
   {
     array id;
 
@@ -4822,7 +4792,8 @@ class Encoder
   }
 
   protected string|array compare_resolved (string name, mixed what,
-					mixed resolved, array(object) module_object)
+					   mixed resolved,
+					   array(object) module_object)
   {
     array append;
 
