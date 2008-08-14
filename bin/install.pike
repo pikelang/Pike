@@ -2,7 +2,7 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.195 2008/07/19 01:16:49 mast Exp $
+// $Id: install.pike,v 1.196 2008/08/14 23:54:10 peter Exp $
 
 // Windows installer FIXMEs:
 //
@@ -2855,7 +2855,7 @@ the PRIVATE_CRT stuff in install.pike.\n");
     install_file(combine_path(vars->SRCDIR,"run_autoconfig"),
 		 combine_path(include_prefix,"run_autoconfig"));
     install_file(combine_path(vars->SRCDIR,"precompile2.sh"),
-		 combine_path(include_prefix,"precompile.sh"));
+		 combine_path(include_prefix,"precompile.sh"), 0755);
 
     if (!no_autodoc) {
       // install the core extracted autodocs
