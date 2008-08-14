@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.742 2008/08/13 21:11:58 mast Exp $
+|| $Id: program.c,v 1.743 2008/08/14 22:12:39 mast Exp $
 */
 
 #include "global.h"
@@ -4217,9 +4217,34 @@ PMOD_EXPORT void low_inherit(struct program *p,
     struct program *old_p =
       Pike_compiler->new_program->inherits[Pike_compiler->num_inherits+1].prog;
     Pike_compiler->num_inherits += old_p->num_inherits;
+
     if (old_p != p) {
-      yyerror("Got different program for inherit in second pass.");
+      yyerror("Got different program for inherit in second pass "
+	      "(resolver problem).");
     }
+
+    if (!(p->flags & PROGRAM_FINISHED)) {
+      /* Require that the inherited program really is finished in pass
+       * 2. Otherwise we might not have all definitions when we
+       * fixate our program.
+       *
+       * FIXME: Maybe this can be relaxed by registering a dependency
+       * and delaying compilation here?
+       */
+      yyerror ("Cannot inherit program in pass 2 "
+	       "which is not fully compiled yet.");
+      yyerror ("(You probably have a cyclic symbol dependency that the "
+	       "compiler cannot handle.)");
+    }
+
+    return;
+  }
+
+  if (!(p->flags & (PROGRAM_FINISHED | PROGRAM_PASS_1_DONE))) {
+    yyerror ("Cannot inherit program in pass 1 "
+	     "which is only a placeholder.");
+    yyerror ("(You probably have a cyclic symbol dependency that the "
+	     "compiler cannot handle.)");
     return;
   }
 
@@ -4256,13 +4281,6 @@ PMOD_EXPORT void low_inherit(struct program *p,
  /* parent offset was increased by 42 for above test.. */
   if(parent_offset)
     parent_offset-=42;
-
-
-  if(!(p->flags & (PROGRAM_FINISHED | PROGRAM_PASS_1_DONE)))
-  {
-    yyerror("Cannot inherit program which is not fully compiled yet.");
-    return;
-  }
 
   inherit_offset = Pike_compiler->new_program->num_inherits;
 
