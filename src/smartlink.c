@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: smartlink.c,v 1.17 2006/08/08 13:07:02 grubba Exp $
+|| $Id: smartlink.c,v 1.18 2008/08/15 18:56:08 grubba Exp $
 */
 
 /*
@@ -97,7 +97,7 @@ int main(int argc, char **argv)
 
   if (!strcmp(argv[1], "-v")) {
     fprintf(stdout,
-	    "$Id: smartlink.c,v 1.17 2006/08/08 13:07:02 grubba Exp $\n"
+	    "$Id: smartlink.c,v 1.18 2008/08/15 18:56:08 grubba Exp $\n"
 	    "Usage:\n"
 	    "\t%s binary [args]\n",
 	    argv[0]);
@@ -210,8 +210,15 @@ int main(int argc, char **argv)
       }
     } else {
       int len = strlen(argv[i]);
-      if ((len > 2) && ((argv[i][len-1] == 's') || (argv[i][len-1] == 'S')) &&
-	  (argv[i][len-2] == '.')) {
+      if (((len > 2) &&
+	   (((argv[i][len-1] == 's') ||
+	     (argv[i][len-1] == 'S')) &&
+	    (argv[i][len-2] == '.'))) ||
+	  ((len > 4) &&
+	   (argv[i][len-4] == '.') &&
+	   (argv[i][len-3] == 'a') &&
+	   (argv[i][len-2] == 's') &&
+	   (argv[i][len-1] == 'm'))) {
 	/* Assembler files involved.
 	 * gcc 3.4/sparc/Solaris 10 generates unlinkable object files
 	 * when assembling handcoded assembler files with debug.
@@ -226,15 +233,16 @@ int main(int argc, char **argv)
     /* Filter -g and -ggdb3 from the options. */
     int not_so_new_argc = new_argc;
     new_argc = 0;
-    for (i=0; i < not_so_new_argc; i++) {
+    /* Note: Skip the name of the binary at new_argv[0]. */
+    for (i=1; i < not_so_new_argc; i++) {
       if ((new_argv[i][0] == '-') &&
 	  (new_argv[i][1] == 'g') &&
 	  (!new_argv[i][2] ||
-	   (new_argv[i][2] == 'g') &&
-	   (new_argv[i][3] == 'd') &&
-	   (new_argv[i][4] == 'b') &&
-	   (new_argv[i][5] == '3') &&
-	   (new_argv[i][6] == '0'))) {
+	   ((new_argv[i][2] == 'g') &&
+	    (new_argv[i][3] == 'd') &&
+	    (new_argv[i][4] == 'b') &&
+	    (new_argv[i][5] == '3') &&
+	    !new_argv[i][6]))) {
 	/* Skip. */
 	continue;
       }
