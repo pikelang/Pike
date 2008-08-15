@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.31 2008/07/31 23:37:24 mast Exp $
+dnl $Id: configure.in,v 1.32 2008/08/15 14:28:21 srb Exp $
 
 AC_INIT(postgres.c)
 AC_CONFIG_HEADER(pgres_config.h)
@@ -20,7 +20,7 @@ AC_ARG_WITH(libpq-dir,
 	[pike_postgres_user_lib_directory=$withval])
 
 ac_pike_postgres_skip=no
-ac_pike_postgres_works=yes
+ac_pike_postgres_works=no
 
 dnl set up search paths
 
@@ -44,6 +44,8 @@ fi
 
 dnl start actual work
 if test x$with_postgres = xyes; then
+  ac_pike_postgres_works=yes
+
   PIKE_FEATURE_NODEP(Postgres)
 
   OLD_CPPFLAGS=$CPPFLAGS
