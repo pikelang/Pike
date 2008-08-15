@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.743 2008/08/14 22:12:39 mast Exp $
+|| $Id: program.c,v 1.744 2008/08/15 17:26:15 mast Exp $
 */
 
 #include "global.h"
@@ -9204,7 +9204,7 @@ static void compile_compiler(void)
   PIKE_MAP_VARIABLE("target", OFFSETOF(compilation, target),
 		    tPrg(tObj), PIKE_T_PROGRAM, ID_HIDDEN);
   PIKE_MAP_VARIABLE("placeholder", OFFSETOF(compilation, placeholder),
-		    tObj, PIKE_T_PROGRAM, ID_HIDDEN);
+		    tObj, PIKE_T_OBJECT, ID_HIDDEN);
   PIKE_MAP_VARIABLE("p", OFFSETOF(compilation, p),
 		    tPrg(tObj), PIKE_T_PROGRAM, ID_HIDDEN);
   PIKE_MAP_VARIABLE("current_file", OFFSETOF(compilation, lex.current_file),
