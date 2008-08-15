@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: MySQL.pike,v 1.87 2008/03/26 18:09:13 jonasw Exp $
+// $Id: MySQL.pike,v 1.88 2008/08/15 14:54:40 mast Exp $
 
 inherit .Base;
 
@@ -9,19 +9,12 @@ inherit .Base;
 
 //#define SEARCH_DEBUG
 
-#if constant (Sql.Sql)
-// 7.6 and later.
-#define SQL Sql.Sql
-#else
-#define SQL Sql.sql
-#endif
-
 #define DB_MAX_WORD_SIZE 64
 
 static
 {
 // This is the database object that all queries will be made to.
-  SQL db;
+  Sql.Sql db;
   string host;
   mapping options;
   string mergefile_path;
@@ -31,7 +24,7 @@ static
 
 void create(string db_url, void|mapping _options)
 {
-  db=SQL(host=db_url);
+  db=Sql.Sql(host=db_url);
   options = _options || ([]);
   mergefile_path = options->mergefiles;
   

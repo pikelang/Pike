@@ -1,12 +1,5 @@
 inherit .Base;
 
-#if constant (String.string2hex)
-// Pike >= 7.6
-#define STRING2HEX String.string2hex
-#else
-#define STRING2HEX Crypto.string_to_hex
-#endif
-
 Sql.Sql db;
 string url, table;
 
@@ -18,9 +11,9 @@ inherit Web.Crawler.Queue;
 
 static string to_md5(string url)
 {
-  object md5 = Crypto.md5();
+  Crypto.MD5 md5 = Crypto.MD5();
   md5->update(string_to_utf8(url));
-  return STRING2HEX(md5->digest());
+  return String.string2hex(md5->digest());
 }
 
 void create( Web.Crawler.Stats _stats,
