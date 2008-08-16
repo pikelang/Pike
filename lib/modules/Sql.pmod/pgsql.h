@@ -36,9 +36,9 @@
 				    // -> if parsingtime*FACTORPLAN >= runtime
 				    // cache the statement
 #define DRIVERNAME	     "pgsql"
-#define MARKSTART            "{""{""{""{\n"   // split string to avoid
-#define MARKERROR            ">>>>"	      // foldeditors from recognising
-#define MARKEND              "\n}""}""}""}"   // it as a fold
+#define MARKSTART            "{""{\n"	      // split string to avoid
+#define MARKERROR            ">"">"">"">"     // foldeditors from recognising
+#define MARKEND              "\n}""}"	      // it as a fold
 
 #ifdef DEBUG
 #define PD(X ...)     werror(X)
