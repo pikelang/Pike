@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pgresult.c,v 1.38 2008/07/05 11:43:55 srb Exp $
+|| $Id: pgresult.c,v 1.39 2008/08/16 20:55:18 srb Exp $
 */
 
 /*
@@ -102,7 +102,7 @@
 #  define PQ_LOCK() mt_lock(pg_mutex)
 #  define PQ_UNLOCK() mt_unlock(pg_mutex)
 # else
-PIKE_MUTEX_T pike_postgres_mutex STATIC_MUTEX_INIT;
+extern PIKE_MUTEX_T pike_postgres_mutex STATIC_MUTEX_INIT;
 #  define PQ_FETCH()
 #define PQ_LOCK() mt_lock(&pike_postgres_mutex)
 #define PQ_UNLOCK() mt_unlock(&pike_postgres_mutex)
