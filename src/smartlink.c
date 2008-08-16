@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: smartlink.c,v 1.18 2008/08/15 18:56:08 grubba Exp $
+|| $Id: smartlink.c,v 1.19 2008/08/16 17:10:29 srb Exp $
 */
 
 /*
@@ -70,6 +70,14 @@ int add_path(char *buffer, char *path)
   return 1;
 }
 
+static int isexecutable(char *file)
+{
+  struct stat stbuf;
+
+  return !stat(file, &stbuf) && !S_ISDIR(stbuf)
+   && stbuf.st_mode&(S_IXUSR|S_IXGRP|S_IXOTH);
+}
+
 int main(int argc, char **argv)
 {
   int i;
@@ -97,7 +105,7 @@ int main(int argc, char **argv)
 
   if (!strcmp(argv[1], "-v")) {
     fprintf(stdout,
-	    "$Id: smartlink.c,v 1.18 2008/08/15 18:56:08 grubba Exp $\n"
+	    "$Id: smartlink.c,v 1.19 2008/08/16 17:10:29 srb Exp $\n"
 	    "Usage:\n"
 	    "\t%s binary [args]\n",
 	    argv[0]);
@@ -353,7 +361,6 @@ int main(int argc, char **argv)
 
   if ((argv[1][0] != '/') && path) {
     /* Perform a search in $PATH */
-    struct stat stat_buf;
     char *p;
     while ((p = strchr(path, ':'))) {
       *p = 0;
@@ -362,7 +369,7 @@ int main(int argc, char **argv)
       strcat(buffer, "/");
       strcat(buffer, argv[1]);
       /* fprintf(stderr, "Trying %s...\n", buffer); */
-      if (!stat(buffer, &stat_buf)) {
+      if (isexecutable(buffer)) {
 	/* Found. */
 	argv[1] = buffer;
 	break;
@@ -374,7 +381,7 @@ int main(int argc, char **argv)
       strcat(buffer, "/");
       strcat(buffer, argv[1]);
       /* fprintf(stderr, "Trying %s...\n", buffer); */
-      if (!stat(buffer, &stat_buf)) {
+      if (isexecutable(buffer)) {
 	/* Found */
 	argv[1] = buffer;
       }
