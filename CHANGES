@@ -735,6 +735,10 @@ o Sql
     for smaller queries; for large bytea blobs and large texts, it
     speeds up even more.
 
+    Support for this driver is indicated by PostgresNative appearing
+    in the featurelist, and since it has no library or OS dependencies,
+    it will always be available.
+
   FIXME: mysql
 
 o SSL
