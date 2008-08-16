@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.431 2008/07/18 13:02:29 mast Exp $
+|| $Id: las.c,v 1.432 2008/08/16 21:52:42 grubba Exp $
 */
 
 #include "global.h"
@@ -1421,7 +1421,7 @@ void resolv_constant(node *n)
 	}
 	if(!state)
 	{
-	  yyerror("Failed to resolve external constant");
+	  yyerror("Failed to resolve external constant.");
 	  push_int(0);
 	  return;
 	}
@@ -1437,20 +1437,20 @@ void resolv_constant(node *n)
 
     case F_LOCAL:
       /* FIXME: Ought to have the name of the identifier in the message. */
-      yyerror("Expected constant, got local variable");
+      yyerror("Expected constant, got local variable.");
       push_int(0);
       return;
 
     case F_GLOBAL:
       /* FIXME: Ought to have the name of the identifier in the message. */
-      yyerror("Expected constant, got global variable");
+      yyerror("Expected constant, got global variable.");
       push_int(0);
       return;
 
     case F_UNDEFINED:
       if(Pike_compiler->compiler_pass==2) {
 	/* FIXME: Ought to have the name of the identifier in the message. */
-	yyerror("Expected constant, got undefined identifier");
+	yyerror("Expected constant, got undefined identifier.");
       }
       push_int(0);
       return;
@@ -1466,16 +1466,18 @@ void resolv_constant(node *n)
 	{
 	  if(!args)
 	  {
-	    yyerror("Expected constant, got void expression");
+	    yyerror("Expected constant, got void expression.");
 	  }else{
 	    yyerror("Possible internal error!!!");
 	    pop_n_elems(DO_NOT_WARN(args-1));
 	    return;
 	  }
+	} else {
+	  yyerror("Failed to evaluate constant expression.");
 	}
+      } else {
+	yyerror("Expected constant expression.");
       }
-
-      my_yyerror("Expected constant, got something else (%d)",n->token);
       push_int(0);
       return;
     }
