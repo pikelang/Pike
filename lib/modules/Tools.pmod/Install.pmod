@@ -48,6 +48,8 @@ array(string) features()
   a += ({ "profiling" });
 #endif
 
+  m += ({ "PostgresNative" });
+
   foreach(({ "Nettle", "Dbm", "DVB", "_Ffmpeg", "GL", "GLUT", "GTK", "Gdbm",
 	     "Gmp", "Gz", "_Image_FreeType", "_Image_GIF", "_Image_JPEG",
              "_Image_TIFF", "_Image_TTF", "_Image_XFace", "Image.PNG",

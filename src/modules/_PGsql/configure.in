@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.9 2008/08/16 17:10:10 srb Exp $
+# $Id: configure.in,v 1.10 2008/08/16 19:57:56 srb Exp $
 #
 
 AC_INIT(PGsql.cmod)
@@ -7,7 +7,5 @@ AC_CONFIG_HEADER(config.h)
 AC_MODULE_INIT()
 
 AC_CHECK_HEADERS(sys/socket.h netinet/in.h netinet/tcp.h)
-
-PIKE_FEATURE_OK(PostgresNative)
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
