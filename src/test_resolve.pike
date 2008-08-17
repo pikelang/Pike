@@ -151,10 +151,11 @@ int main()
 
   // Note: Get at all versions (including the main version)
   //       by going via the handler cache.
-  foreach(Array.uniq(values(master()->compat_handler_cache)), object handler) {
-    Array.map(handler->pike_module_path, test_dir, 0,
-	      (handler != master())?handler:UNDEFINED);
-  }
+  foreach(Array.uniq(values(master()->compat_handler_cache)), object handler)
+    if (handler) {
+      Array.map(handler->pike_module_path, test_dir, 0,
+		(handler != master())?handler:UNDEFINED);
+    }
   write ("%*s\r", 75, "");
   Tools.Testsuite.report_result (num_ok, num_failed);
 #if constant(alarm)
