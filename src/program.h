@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.257 2008/06/29 12:49:51 nilsson Exp $
+|| $Id: program.h,v 1.258 2008/08/17 11:00:07 mast Exp $
 */
 
 #ifndef PROGRAM_H
@@ -670,6 +670,15 @@ PMOD_EXPORT void gc_check_zapped (void *a, TYPE_T type, const char *file, int li
   }while(0)
 #endif
 
+/* FIXME: Maybe try to replace free_program with this in the future to
+ * catch more bugs, but there's code that requires the current one. */
+/* FIXME: Cleanup all the misguided "<foo> = NULL" in exit functions. */
+#define free_program_ptr(P) do {					\
+    struct program **pp_ = &(P);					\
+    free_program (*pp_);						\
+    MARK_INVALID_PTR (*pp_);						\
+  } while (0)
+
 BLOCK_ALLOC_FILL_PAGES(program, n/a);
 
 
@@ -705,19 +714,38 @@ extern struct object *placeholder_object;
 #include "program_areas.h"
 
 typedef int supporter_callback (void *, int);
+
 struct Supporter
 {
 #ifdef PIKE_DEBUG
   int magic;
 #endif
+
   struct Supporter *previous;
+  /* Makes up a linked list of supporters with the first one in
+   * current_supporter. Supporters are linked onto this list during
+   * the (recursive) compilation of each compilation unit (i.e.
+   * compiled string). Thus nested programs and programs built from C
+   * don't have supporters. */
+
   struct Supporter *depends_on;
-  struct Supporter *dependants;
-  struct Supporter *next_dependant;
+  /* The supporter furthest in on the current_supporter linked list
+   * that this one depends on. When it gets unlinked from that list,
+   * this becomes a back pointer for the dependants linked list
+   * below. */
+
+  struct Supporter *dependants, *next_dependant;
+  /* dependants points to a linked list of supporters that depends on
+   * this one, and next_dependant makes up the links between those
+   * supporters. A supporter is linked onto this list when it is
+   * unlinked from the current_supporter list. */
+
   struct object *self;
   supporter_callback *fun;
   void *data;
+
   struct program *prog;
+  /* The top level program in the compilation unit. */
 };
 
 /* Prototypes begin here */
