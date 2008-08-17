@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.322 2008/07/24 20:02:43 mast Exp $
+|| $Id: gc.c,v 1.323 2008/08/17 15:59:59 mast Exp $
 */
 
 #include "global.h"
@@ -1822,8 +1822,10 @@ static INLINE struct marker *gc_check_debug(void *a, int weak)
   if (m->refs + m->xrefs >= *(INT32 *) a)
     /* m->refs will be incremented by the caller. */
     gc_fatal (a, 1, "Thing is getting more internal refs (%d + %d) "
-	      "than refs (%d) (a pointer has probably been checked "
-	      "more than once).\n", m->refs, m->xrefs, *(INT32 *) a);
+	      "than refs (%d).\n"
+	      "(Could be an extra free somewhere, or "
+	      "a pointer might have been checked more than once.)\n",
+	      m->refs, m->xrefs, *(INT32 *) a);
   checked++;
 
   return m;
