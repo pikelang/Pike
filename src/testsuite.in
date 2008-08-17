@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.846 2008/08/07 14:05:47 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.847 2008/08/17 16:23:11 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -2463,6 +2463,33 @@ test_do([[
   if (err) throw (err);
   Stdio.recursive_rm("testsuite_test_dir.pmod");
 ]]);
+
+test_do([[
+  Stdio.write_file ("testsuite_test_a.pmod", #"
+    class a {}
+    testsuite_test_b.b2 foo() {return testsuite_test_b.b2 (17);}");
+
+  Stdio.recursive_rm ("testsuite_test_b.pmod");
+  mkdir ("testsuite_test_b.pmod");
+  Stdio.write_file ("testsuite_test_b.pmod/b1.pike", #"
+    protected void create() {}");
+  Stdio.write_file ("testsuite_test_b.pmod/b2.pike", #"
+    inherit testsuite_test_b.b1;
+    constant a = testsuite_test_a.a;
+    protected void create (int i) {}");
+
+  object orig_master = master();
+  replace_master (object_program (orig_master)());
+  master()->add_module_path (getcwd());
+  mixed err = catch {
+      compile_string ("inherit testsuite_test_b.b2;");
+    };
+  replace_master (orig_master);
+  if (err) throw (err);
+
+  Stdio.recursive_rm ("testsuite_test_a.pmod");
+  Stdio.recursive_rm ("testsuite_test_b.pmod");
+]])
 
 cond(0,[[
 test_do([[
