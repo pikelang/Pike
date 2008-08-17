@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.258 2008/08/17 11:00:07 mast Exp $
+|| $Id: program.h,v 1.259 2008/08/17 15:30:35 mast Exp $
 */
 
 #ifndef PROGRAM_H
@@ -669,15 +669,6 @@ PMOD_EXPORT void gc_check_zapped (void *a, TYPE_T type, const char *file, int li
       really_free_program(_);						\
   }while(0)
 #endif
-
-/* FIXME: Maybe try to replace free_program with this in the future to
- * catch more bugs, but there's code that requires the current one. */
-/* FIXME: Cleanup all the misguided "<foo> = NULL" in exit functions. */
-#define free_program_ptr(P) do {					\
-    struct program **pp_ = &(P);					\
-    free_program (*pp_);						\
-    MARK_INVALID_PTR (*pp_);						\
-  } while (0)
 
 BLOCK_ALLOC_FILL_PAGES(program, n/a);
 
