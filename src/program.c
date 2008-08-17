@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.745 2008/08/17 11:01:40 mast Exp $
+|| $Id: program.c,v 1.746 2008/08/17 15:50:53 mast Exp $
 */
 
 #include "global.h"
@@ -8446,7 +8446,6 @@ static void f_compilation_compile(INT32 args)
       CDFPRINTF((stderr, "th(%ld) %p f_compilation_compile() reporting failure "
 		 "since a dependant failed.\n",
 		 (long) th_self(), c->target));
-      if (ret) free_program(ret);
       throw_error_object(fast_clone_object(compilation_error_program), 0, 0, 0,
 			 "Compilation failed.\n");
     }
@@ -9376,7 +9375,6 @@ struct program *compile(struct pike_string *aprog,
       CDFPRINTF((stderr, "th(%ld) %p compile() reporting failure "
 		 "since a dependant failed.\n",
 		 (long) th_self(), c->target));
-      if (ret) free_program(ret);
       throw_error_object(fast_clone_object(compilation_error_program), 0, 0, 0,
 			 "Compilation failed.\n");
     }
