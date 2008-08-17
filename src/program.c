@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.747 2008/08/17 15:59:07 mast Exp $
+|| $Id: program.c,v 1.748 2008/08/17 16:22:41 mast Exp $
 */
 
 #include "global.h"
@@ -1552,7 +1552,9 @@ static struct node_s *index_modules(struct pike_string *ident,
     UNSETJMP(tmp);
   }
 
-/*  fprintf(stderr,"***Undefined.\n"); */
+#if 0 && defined (COMPILER_DEBUG)
+  safe_pike_fprintf (stderr, "Index %S: undefined\n", ident);
+#endif
 
   return 0;
 }
@@ -1649,7 +1651,23 @@ struct node_s *resolve_identifier(struct pike_string *ident)
     push_int(0);
   }
   if (!safe_apply_current2(PC_RESOLV_FUN_NUM, 3, NULL))
-    handle_compile_exception ("Error resolving %S.", ident);
+    handle_compile_exception ("Error resolving '%S'.", ident);
+
+  if (Pike_compiler->compiler_pass != 2) {
+    /* If we get a program that hasn't gone through pass 1 yet then we
+     * have to register a dependency now in our pass 1 so that our
+     * pass 2 gets delayed. Otherwise the other program might still be
+     * just as unfinished when we come back here in pass 2. */
+    struct program *p = NULL;
+    if (Pike_sp[-1].type == T_PROGRAM)
+      p = Pike_sp[-1].u.program;
+    else if (Pike_sp[-1].type == T_OBJECT ||
+	     (Pike_sp[-1].type == T_FUNCTION &&
+	      Pike_sp[-1].subtype != FUNCTION_BUILTIN))
+      p = Pike_sp[-1].u.object->prog;
+    if (p && !(p->flags & PROGRAM_PASS_1_DONE))
+      report_compiler_dependency (p);
+  }
 
   if (Pike_compiler->compiler_pass == 2 &&
       ((Pike_sp[-1].type == T_OBJECT &&
@@ -1657,8 +1675,8 @@ struct node_s *resolve_identifier(struct pike_string *ident)
        (Pike_sp[-1].type == T_PROGRAM &&
 	Pike_sp[-1].u.program == placeholder_program))) {
     my_yyerror("Got placeholder %s (resolver problem) "
-	       "when resolving %S.",
-	       get_name_of_type (Pike_sp[-1].type), ident->str);
+	       "when resolving '%S'.",
+	       get_name_of_type (Pike_sp[-1].type), ident);
   } else {
     if(!resolve_cache)
       resolve_cache=dmalloc_touch(struct mapping *, allocate_mapping(10));
@@ -2424,8 +2442,10 @@ void low_start_new_program(struct program *p,
     }
   }
   if (pass == 1) {
-    if(c->compilation_depth >= 1)
+    if(c->compilation_depth >= 1) {
       add_ref(p->parent = Pike_compiler->new_program);
+      debug_malloc_touch (p);
+    }
   }
   p->flags &=~ PROGRAM_VIRGIN;
   if(idp) *idp=id;
@@ -2491,7 +2511,7 @@ void low_start_new_program(struct program *p,
   if (Pike_compiler->fake_object->storage) {
     if(name)
     {
-      /* Fake objects have parents regardless of PROGRAM_USE_PARENT  */
+      /* Fake objects have parents regardless of PROGRAM_USES_PARENT */
       if((((struct parent_info *)Pike_compiler->fake_object->storage)->parent=Pike_compiler->previous->fake_object))
 	add_ref(Pike_compiler->previous->fake_object);
       ((struct parent_info *)Pike_compiler->fake_object->storage)->parent_identifier=id;

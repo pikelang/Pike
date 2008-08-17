@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.433 2008/08/17 10:56:18 mast Exp $
+|| $Id: las.c,v 1.434 2008/08/17 16:22:41 mast Exp $
 */
 
 #include "global.h"
@@ -1575,7 +1575,7 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
   if(SETJMP(tmp))
   {
     if (node_name) {
-      handle_compile_exception ("Couldn't index module '%s'.", node_name);
+      handle_compile_exception ("Couldn't index module %s.", node_name);
     } else {
       handle_compile_exception ("Couldn't index module.");
     }
@@ -1584,27 +1584,31 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
     switch(Pike_sp[-1].type)
     {
     case T_INT:
-      if(!Pike_compiler->num_parse_error) {
-	if (node_name) {
-	  my_yyerror("Failed to index module \"%s\" with %S "
-		     "(module doesn't exist?)",
-		     node_name, id);
-	} else {
-	  my_yyerror("Failed to index module with %S "
-		     "(module doesn't exist?)",
-		     id);
+      if (!Pike_sp[-1].u.integer) {
+	if(!Pike_compiler->num_parse_error) {
+	  if (node_name) {
+	    my_yyerror("Failed to index module %s with '%S'. "
+		       "(Module doesn't exist?)",
+		       node_name, id);
+	  } else {
+	    my_yyerror("Failed to index module with '%S'. "
+		       "(Module doesn't exist?)",
+		       id);
+	  }
 	}
+	break;
       }
-      break;
+      /* Fall through. */
 
     case T_FLOAT:
     case T_STRING:
     case T_ARRAY:
       if (node_name) {
-	my_yyerror("Failed to index module '%s' (Not a module?)",
-		   node_name);
+	my_yyerror("Failed to index module %s, got %s. (Not a module?)",
+		   node_name, get_name_of_type (Pike_sp[-1].type));
       } else {
-	yyerror("Failed to index module (Not a module?)");
+	my_yyerror("Failed to index a module, got %s. (Not a module?)",
+		   get_name_of_type (Pike_sp[-1].type));
       }
       pop_stack();
       push_int(0);
@@ -1643,7 +1647,7 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
       c = PTR_TO_INT(BEGIN_CYCLIC(Pike_sp[-1].u.refs, id));
       if(c>1)
       {
-	my_yyerror("Recursive module dependency in %S.", id);
+	my_yyerror("Recursive module dependency when indexing with '%S'.", id);
 	pop_stack();
 	push_int(0);
       }else{
@@ -1655,10 +1659,11 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
 	  STACK_LEVEL_START(2);
 	  if (SETJMP_SP(recovery, 2)) {
 	    if (node_name) {
-	      handle_compile_exception ("Error looking up '%s' in module '%s'.",
-					id->str, node_name);
+	      handle_compile_exception ("Error looking up '%S' in module %s.",
+					id, node_name);
 	    } else {
-	      handle_compile_exception ("Error looking up '%s' in module.", id->str);
+	      handle_compile_exception ("Error looking up '%S' in module.",
+					id);
 	    }
 	    push_undefined();
 	    exception = 1;
@@ -1678,10 +1683,10 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
 	    if (!exception) {
 	      struct compilation *c = THIS_COMPILATION;
 	      if (node_name) {
-		my_yyerror("Index %S not present in module \"%s\".",
+		my_yyerror("Index '%S' not present in module %s.",
 			   id, node_name);
 	      } else {
-		my_yyerror("Index %S not present in module.", id);
+		my_yyerror("Index '%S' not present in module.", id);
 	      }
 	      resolv_constant(n);
 	      low_yyreport(REPORT_ERROR, NULL, 0, parser_system_string,
@@ -1699,24 +1704,42 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
 	  }
 	}
 
-	else if ((Pike_compiler->new_program->flags & PROGRAM_PASS_1_DONE) &&
-		 ((Pike_sp[-1].type == T_OBJECT &&
-		   Pike_sp[-1].u.object == placeholder_object) ||
-		  (Pike_sp[-1].type == T_PROGRAM &&
-		   Pike_sp[-1].u.program == placeholder_program)) &&
-		 /* Ugly special case: We must be able to get
-		  * predef::__placeholder_object. */
-		 (!node_name || strcmp (node_name, "predef"))) {
-	  if (node_name)
-	    my_yyerror("Got placeholder %s (resolver problem) "
-		       "when indexing module \"%s\" with %S.",
-		       get_name_of_type (Pike_sp[-1].type),
-		       node_name, id);
-	  else
-	    my_yyerror("Got placeholder %s (resolver problem) "
-		       "when indexing a module with %S.",
-		       get_name_of_type (Pike_sp[-1].type),
-		       id);
+	else if (Pike_compiler->new_program->flags & PROGRAM_PASS_1_DONE) {
+	  if (((Pike_sp[-1].type == T_OBJECT &&
+		Pike_sp[-1].u.object == placeholder_object) ||
+	       (Pike_sp[-1].type == T_PROGRAM &&
+		Pike_sp[-1].u.program == placeholder_program)) &&
+	      /* Ugly special case: We must be able to get
+	       * predef::__placeholder_object. */
+	      (!node_name || strcmp (node_name, "predef"))) {
+	    if (node_name)
+	      my_yyerror("Got placeholder %s when indexing "
+			 "module %s with '%S'. (Resolver problem.)",
+			 get_name_of_type (Pike_sp[-1].type),
+			 node_name, id);
+	    else
+	      my_yyerror("Got placeholder %s when indexing "
+			 "module with '%S'. (Resolver problem.)",
+			 get_name_of_type (Pike_sp[-1].type),
+			 id);
+	  }
+	}
+
+	else {
+	  /* If we get a program that hasn't gone through pass 1 yet
+	   * then we have to register a dependency now in our pass 1
+	   * so that our pass 2 gets delayed. Otherwise the other
+	   * program might still be just as unfinished when we come
+	   * back here in pass 2. */
+	  struct program *p = NULL;
+	  if (Pike_sp[-1].type == T_PROGRAM)
+	    p = Pike_sp[-1].u.program;
+	  else if (Pike_sp[-1].type == T_OBJECT ||
+		   (Pike_sp[-1].type == T_FUNCTION &&
+		    Pike_sp[-1].subtype != FUNCTION_BUILTIN))
+	    p = Pike_sp[-1].u.object->prog;
+	  if (p && !(p->flags & PROGRAM_PASS_1_DONE))
+	    report_compiler_dependency (p);
 	}
       }
       END_CYCLIC();
