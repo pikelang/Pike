@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.744 2008/08/15 17:26:15 mast Exp $
+|| $Id: program.c,v 1.745 2008/08/17 11:01:40 mast Exp $
 */
 
 #include "global.h"
@@ -1539,6 +1539,9 @@ static struct node_s *index_modules(struct pike_string *ident,
 	      *module_index_cache = allocate_mapping(10);
 	    mapping_string_insert(*module_index_cache, ident, Pike_sp-1);
 	    ret = mksvaluenode(Pike_sp-1);
+#if 0 && defined (COMPILER_DEBUG)
+	    safe_pike_fprintf (stderr, "Index %S: %O\n", ident, Pike_sp - 1);
+#endif
 	  }
 	  pop_stack();
 	  return ret;
@@ -6324,6 +6327,10 @@ int program_index_no_free(struct svalue *to, struct svalue *what,
 
       if (loc.o != &fake_object) {
 	low_object_index_no_free(to, loc.o, refid);
+#if 0 && defined (COMPILER_DEBUG)
+	safe_pike_fprintf (stderr, "program_index_no_free1 %O->%S: %O\n",
+			   what, s, to);
+#endif
 	return 1;
       }
     }
@@ -6339,6 +6346,10 @@ int program_index_no_free(struct svalue *to, struct svalue *what,
 	to->subtype = NUMBER_NUMBER;
 	to->u.integer = 0;
       }
+#if 0 && defined (COMPILER_DEBUG)
+      safe_pike_fprintf (stderr, "program_index_no_free2 %O->%S: %O\n",
+			 what, s, to);
+#endif
       return 1;
     }
   }
@@ -7328,8 +7339,10 @@ int unlink_current_supporter(struct Supporter *c)
     c->next_dependant = c->depends_on->dependants;
     c->depends_on->dependants=c;
     add_ref(c->self);
-    CDFPRINTF((stderr, "th(%ld) unlink_current_supporter() supporter=%p depends on %p.\n",
-	       (long) th_self(), c, c->depends_on));
+    CDFPRINTF((stderr, "th(%ld) unlink_current_supporter() "
+	       "supporter=%p (prog %p) depends on %p (prog %p).\n",
+	       (long) th_self(), c, c->prog,
+	       c->depends_on, c->depends_on->prog));
   }
   current_supporter=c->previous;
   verify_supporters();
@@ -7352,13 +7365,13 @@ int call_dependants(struct Supporter *s, int finish)
 {
   int ok = 1;
   struct Supporter *tmp;
-  CDFPRINTF((stderr, "th(%ld) call_dependants() supporter=%p finish=%d.\n",
-	     (long) th_self(), s, finish));
+  CDFPRINTF((stderr, "th(%ld) call_dependants() supporter=%p (prog %p) "
+	     "finish=%d.\n", (long) th_self(), s, s->prog, finish));
   verify_supporters();
   while((tmp=s->dependants))
   {
-    CDFPRINTF((stderr, "th(%ld) dependant: %p (data:%p).\n",
-	       (long) th_self(), tmp, tmp->data));
+    CDFPRINTF((stderr, "th(%ld) dependant: %p (prog %p) (data:%p).\n",
+	       (long) th_self(), tmp, tmp->prog, tmp->data));
     s->dependants=tmp->next_dependant;
 #ifdef PIKE_DEBUG
     tmp->next_dependant=0;
@@ -7381,8 +7394,8 @@ int report_compiler_dependency(struct program *p)
     return 0;
   }
 
-  CDFPRINTF((stderr, "th(%ld) %p depends on %p\n",
-	     (long)th_self(), Pike_compiler->new_program, p));
+  CDFPRINTF((stderr, "th(%ld) compiler dependency on %p from %p\n",
+	     (long)th_self(), p, Pike_compiler->new_program));
 
   verify_supporters();
   if (Pike_compiler->flags & COMPILATION_FORCE_RESOLVE)
@@ -7399,6 +7412,9 @@ int report_compiler_dependency(struct program *p)
 	if(c->prog == p)
 	{
 	  cc->depends_on=c;
+	  CDFPRINTF ((stderr, "th(%ld) supporter %p (prog %p) "
+		      "now depends on %p (prog %p)\n",
+		      (long) th_self(), cc, cc->prog, c, c->prog));
 	  verify_supporters();
 	  ret++; /* dependency registred */
 	}
@@ -8127,8 +8143,8 @@ static void compilation_event_handler(int e)
 
   switch (e) {
   case PROG_EVENT_INIT:
-    CDFPRINTF((stderr, "th(%ld) %p compilation: INIT(%p).\n",
-	       (long) th_self(), Pike_fp->current_object->prog, c));
+    CDFPRINTF((stderr, "th(%ld) compilation: INIT(%p).\n",
+	       (long) th_self(), c));
     MEMSET(c, 0, sizeof(*c));
     c->supporter.self = Pike_fp->current_object; /* NOTE: Not ref-counted! */
     c->compilation_inherit =
@@ -8143,8 +8159,8 @@ static void compilation_event_handler(int e)
     c->compilation_depth = -1;
     break;
   case PROG_EVENT_EXIT:
-    CDFPRINTF((stderr, "th(%ld) %p compilation: EXIT(%p).\n",
-	       (long) th_self(), c->supporter.self->prog, c));
+    CDFPRINTF((stderr, "th(%ld) compilation: EXIT(%p).\n",
+	       (long) th_self(), c));
     toss_buffer(&c->used_modules);
     free_compilation(c);
     break;
