@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.432 2008/08/16 21:52:42 grubba Exp $
+|| $Id: las.c,v 1.433 2008/08/17 10:56:18 mast Exp $
 */
 
 #include "global.h"
@@ -3525,6 +3525,12 @@ void fix_type_field(node *n)
       args = 0;
 
       name = get_name_of_function(CAR(n));
+
+#ifdef PIKE_DEBUG
+      if (l_flag>2)
+	safe_pike_fprintf (stderr, "Checking call to %S at %S:%d.\n", name,
+			   n->current_file, n->line_number);
+#endif /* PIKE_DEBUG */
 
       /* NOTE: new_check_call() steals a reference from f! */
       copy_pike_type(f, CAR(n)->type);
