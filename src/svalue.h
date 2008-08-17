@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.h,v 1.167 2008/07/09 20:41:30 mast Exp $
+|| $Id: svalue.h,v 1.168 2008/08/17 10:54:29 mast Exp $
 */
 
 #ifndef SVALUE_H
@@ -774,6 +774,10 @@ PMOD_EXPORT void print_svalue_compact (FILE *out, const struct svalue *s);
 PMOD_EXPORT void safe_print_svalue_compact (FILE *out, const struct svalue *s);
 PMOD_EXPORT void print_short_svalue_compact (FILE *out, const union anything *a, TYPE_T type);
 PMOD_EXPORT void safe_print_short_svalue_compact (FILE *out, const union anything *a, TYPE_T type);
+#ifdef PIKE_DEBUG
+PMOD_EXPORT void safe_pike_vfprintf (FILE *out, const char *fmt, va_list args);
+PMOD_EXPORT void safe_pike_fprintf (FILE *out, const char *fmt, ...);
+#endif
 PMOD_EXPORT void copy_svalues_recursively_no_free(struct svalue *to,
 						  const struct svalue *from,
 						  size_t num,
