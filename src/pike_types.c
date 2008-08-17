@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.350 2008/08/11 15:15:43 grubba Exp $
+|| $Id: pike_types.c,v 1.351 2008/08/17 10:10:28 mast Exp $
 */
 
 #include "global.h"
@@ -6865,6 +6865,7 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
     }
     fprintf(stderr, "\n  fun_type: ");
     simple_describe_type(fun_type);
+    fputc ('\n', stderr);
   }
 #endif /* PIKE_DEBUG */
 
