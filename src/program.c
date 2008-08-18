@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.748 2008/08/17 16:22:41 mast Exp $
+|| $Id: program.c,v 1.749 2008/08/18 15:18:18 mast Exp $
 */
 
 #include "global.h"
@@ -6758,16 +6758,6 @@ PMOD_EXPORT struct pike_string *get_program_line(struct program *prog,
   return res;
 }
 
-#ifdef PIKE_DEBUG
-/* Variant for convenient use from a debugger. */
-void gdb_program_line (struct program *prog)
-{
-  INT32 line;
-  char *file = low_get_program_line_plain (prog, &line, 0);
-  fprintf (stderr, "%s:%d\n", file, line);
-}
-#endif
-
 PMOD_EXPORT struct pike_string *low_get_line (PIKE_OPCODE_T *pc,
 					      struct program *prog, INT32 *linep)
 {
@@ -6868,6 +6858,24 @@ PMOD_EXPORT char *low_get_line_plain (PIKE_OPCODE_T *pc, struct program *prog,
   return NULL;
 }
 
+#ifdef PIKE_DEBUG
+/* Variants for convenient use from a debugger. */
+
+void gdb_program_line (struct program *prog)
+{
+  INT32 line;
+  char *file = low_get_program_line_plain (prog, &line, 0);
+  fprintf (stderr, "%s:%d\n", file, line);
+}
+
+void gdb_get_line (PIKE_OPCODE_T *pc, struct program *prog)
+{
+  INT32 line;
+  char *file = low_get_line_plain (pc, prog, &line, 0);
+  fprintf (stderr, "%s:%d\n", file, line);
+}
+
+#endif
 
 /*
  * return the file in which we were executing. pc should be the
