@@ -1,9 +1,17 @@
-# $Id: configure.in,v 1.5 2008/07/31 21:18:07 mast Exp $
+# $Id: configure.in,v 1.6 2008/08/18 10:11:39 srb Exp $
 
 AC_INIT(gssapi.cmod)
 AC_CONFIG_HEADER(gssapi_config.h)
 
 AC_MODULE_INIT()
+
+PIKE_FEATURE_WITHOUT(GSSAPI)
+
+AC_ARG_WITH(gssapi,
+        [  --with(out)-gssapi                 GSS-API support],
+        [],[with_gssapi=yes])
+
+if test x$with_gssapi = xyes; then
 
 PIKE_FEATURE(GSSAPI, [no (gssapi.h not found)])
 AC_CHECK_HEADERS(gssapi.h gssapi/gssapi.h gssglue/gssapi/gssapi.h, break)
@@ -72,6 +80,8 @@ if test x$ac_cv_header_gssapi_h = xyes -o \
   PIKE_CHECK_GSS_OID(GSS_C_NT_HOSTBASED_SERVICE)
   PIKE_CHECK_GSS_OID(GSS_C_NT_ANONYMOUS)
   PIKE_CHECK_GSS_OID(GSS_C_NT_EXPORT_NAME)
+fi
+
 fi
 
 AC_OUTPUT(Makefile, test -z "$CONFIG_HEADERS" || echo FOO >stamp-h)
