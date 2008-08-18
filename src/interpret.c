@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.407 2008/08/05 13:20:10 mast Exp $
+|| $Id: interpret.c,v 1.408 2008/08/18 15:16:47 mast Exp $
 */
 
 #include "global.h"
@@ -160,7 +160,13 @@ void gc_mark_stack_external (struct pike_frame *f,
 
 static void gc_check_stack_callback(struct callback *foo, void *bar, void *gazonk)
 {
-  if (Pike_interpreter.evaluator_stack)
+  if (Pike_interpreter.evaluator_stack
+#ifdef PIKE_DEBUG
+      /* Avoid this if the thread is swapped out. Useful when calling
+       * locate_references from gdb. */
+      && Pike_sp != (void *) -1
+#endif
+     )
     gc_mark_stack_external (Pike_fp, Pike_sp, Pike_interpreter.evaluator_stack);
 }
 #endif
