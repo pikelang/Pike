@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: PGsql.cmod,v 1.22 2008/08/12 15:18:55 mast Exp $
+ * $Id: PGsql.cmod,v 1.23 2008/08/18 23:54:22 srb Exp $
  *
  * PGsql, accelerator functions for Sql.pgsql for Pike.
  *
@@ -184,7 +184,7 @@ ret2:     PD((stderr,"PGsql getstring %d\n",length));
           return low_end_shared_string(retval);
         }
         memcpy(p,THIS->plow,left);
-        len-=left;p+=left;
+        len-=left;p+=left;THIS->plow+=left;
       }
       else {
         p=memchr(THIS->plow,0,left);
