@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: smartlink.c,v 1.19 2008/08/16 17:10:29 srb Exp $
+|| $Id: smartlink.c,v 1.20 2008/08/18 14:31:33 srb Exp $
 */
 
 /*
@@ -74,8 +74,9 @@ static int isexecutable(char *file)
 {
   struct stat stbuf;
 
-  return !stat(file, &stbuf) && !S_ISDIR(stbuf)
-   && stbuf.st_mode&(S_IXUSR|S_IXGRP|S_IXOTH);
+  return !stat(file, &stbuf)
+   && !S_ISDIR(stbuf.st_mode)
+   && stbuf.st_mode & (S_IXUSR | S_IXGRP | S_IXOTH);
 }
 
 int main(int argc, char **argv)
@@ -105,7 +106,7 @@ int main(int argc, char **argv)
 
   if (!strcmp(argv[1], "-v")) {
     fprintf(stdout,
-	    "$Id: smartlink.c,v 1.19 2008/08/16 17:10:29 srb Exp $\n"
+	    "$Id: smartlink.c,v 1.20 2008/08/18 14:31:33 srb Exp $\n"
 	    "Usage:\n"
 	    "\t%s binary [args]\n",
 	    argv[0]);
