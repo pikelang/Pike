@@ -506,10 +506,15 @@ o MIME
   - Fixed a bug that could occur when casting MIME.Message objects to
     strings.
 
+o Msql
+
+  Return correct UNDEFINED instead of 0 values for NULL values in resultsets.
+
 o Mysql
 
   Unicode support. FIXME: mast Document in more detail. C.f. check-in
   1.25 of lib/modules/Sql.pmod/mysql.pike.
+  Return correct UNDEFINED instead of 0 values for NULL values in resultsets.
 
 o Odbc
 
@@ -517,6 +522,7 @@ o Odbc
   Now supports UnixODBC properly.
   Fixed various issues with Unicode.
   FreeTDS fixes
+  Return correct UNDEFINED instead of 0 values for NULL values in resultsets.
 
 o Oracle
 
@@ -524,6 +530,8 @@ o Oracle
 
   - An approximation of the number of rows in a result object can be
     queried from the new function num_rows().
+
+  - Return correct UNDEFINED instead of 0 values for NULL values in resultsets.
 
 o Parser.HTML
 
@@ -702,6 +710,8 @@ o Sql
   - It is possible to iterate over the result object from big_query()
     queries directly in foreach.
 
+  - Support UNDEFINED to designate NULL in emulated bindings.
+
   - Support for ODBC DSN files. FIXME: Example from grubba?
 
       Sql.Sql db = Sql.Sql("dsn://user:pass@host/database");
@@ -721,13 +731,13 @@ o Sql
     Current features: no library dependencies (no libpq), native binding
     support, streaming support, NOTIFY/LISTEN support (fully eventdriven,
     no polling), binary support for integer, float and string datatypes,
-    COPY FROM/TO STDIN/STDOUT support, multiple simultaneous streaming queries
-    on the same connection (i.e. multiple PostgreSQL-portal-support),
-    automatic precompilation and caching of often-used
+    COPY FROM/TO STDIN/STDOUT support, multiple simultaneous streaming
+    queries on the same connection (i.e. multiple PostgreSQL-portal-
+    support), automatic precompilation and caching of often-used
     long-compile-time-needing queries, extended columndescriptions,
     accurate error messages under all circumstances, SSL-support,
     SQL-injection protection since it will ignore everything after the
-    first semicolon terminating the first command in the query, integrated
+    first semicolon delimiting the first command in the query, integrated
     statistics, _reconnect callback for sessions that use temptables.
 
     Performance tuned, with the helperclass _PGsql.PGsql it currently
@@ -738,6 +748,11 @@ o Sql
     Support for this driver is indicated by PostgresNative appearing
     in the featurelist, and since it has no library or OS dependencies,
     it will always be available.
+
+    This driver serves URLs of the form:
+				    pgsql:// (plain) and pgsqls:// (SSL).
+    In case the old Postgres driver is disabled, this driver takes
+    over postgres:// transparently as well.
 
   FIXME: mysql
 
