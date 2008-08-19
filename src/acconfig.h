@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.158 2008/03/29 11:50:55 mast Exp $
+|| $Id: acconfig.h,v 1.159 2008/08/19 11:51:08 jonasw Exp $
 */
 
 #ifndef MACHINE_H
@@ -123,6 +123,9 @@
 
 /* Define this if your ld doesn't have an option to set the run path */
 #undef USE_LD_LIBRARY_PATH
+
+/* Define this on OS X to get two-level namespace support in ld */
+#undef USE_OSX_TWOLEVEL_NAMESPACE
 
 /* Define if your tcc supports #pragma TenDRA longlong type allow. */
 #undef HAVE_PRAGMA_TENDRA_LONGLONG

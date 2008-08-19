@@ -192,6 +192,15 @@ fi
 #  ;;
 #esac
 
+case "$UNAME" in
+  Darwin\ [7-9]*|Darwin\ [1-9][0-9]*)
+    # Needs to be 10.3 or better for ld to accept "-undefined dynamic_lookup"
+    export MACOSX_DEPLOYMENT_TARGET=10.3
+  ;;
+  *)
+  ;;
+esac
+
 #echo $LINKER $LDOPTS
 
 # exec $LINKER $LDOPTS
