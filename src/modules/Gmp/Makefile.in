@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.24 2003/05/04 13:32:20 mast Exp $
+# $Id: Makefile.in,v 1.25 2008/08/19 11:57:35 jonasw Exp $
 @make_variables@
 VPATH=@srcdir@
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
@@ -9,7 +9,7 @@ PRIME_LIMIT=1024
 
 CONFIG_HEADERS=@CONFIG_HEADERS@
 
-@dynamic_module_makefile@
+@static_module_makefile@
 
 # UnixWare make needs help to find the source file...
 mpq.o: $(SRCDIR)/mpq.c
