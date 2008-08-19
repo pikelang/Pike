@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: smartlink.c,v 1.21 2008/08/19 11:51:08 jonasw Exp $
+|| $Id: smartlink.c,v 1.22 2008/08/19 15:57:34 marcus Exp $
 */
 
 /*
@@ -106,7 +106,7 @@ int main(int argc, char **argv)
 
   if (!strcmp(argv[1], "-v")) {
     fprintf(stdout,
-	    "$Id: smartlink.c,v 1.21 2008/08/19 11:51:08 jonasw Exp $\n"
+	    "$Id: smartlink.c,v 1.22 2008/08/19 15:57:34 marcus Exp $\n"
 	    "Usage:\n"
 	    "\t%s binary [args]\n",
 	    argv[0]);
@@ -241,7 +241,7 @@ int main(int argc, char **argv)
   if (!compiling) {
     /* Filter -g and -ggdb3 from the options. */
     int not_so_new_argc = new_argc;
-    new_argc = 0;
+    new_argc = 1;
     /* Note: Skip the name of the binary at new_argv[0]. */
     for (i=1; i < not_so_new_argc; i++) {
       if ((new_argv[i][0] == '-') &&
