@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Utils.pmod,v 1.47 2008/06/24 09:41:06 jonasw Exp $
+// $Id: Utils.pmod,v 1.48 2008/08/20 17:03:54 jonasw Exp $
 
 #if !constant(report_error)
 #define report_error werror
@@ -453,7 +453,9 @@ class Scheduler {
   private mapping(int:int) compact_queue = ([]);
   private array(int) priority_queue = ({});
   private mapping db_profiles;
+#if constant(roxen)
   private object schedule_process;
+#endif
 
   void create(mapping _db_profiles) {
     db_profiles = _db_profiles;
