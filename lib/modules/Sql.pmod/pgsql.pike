@@ -299,6 +299,28 @@ void cancelquery() {
   }
 }
 
+//! Changes the connection charset.
+//!
+//! @[charset] is a PostgreSQL charset name.
+//!
+//! @seealso
+//!   @[get_charset], @[create]
+void set_charset(string charset)
+{
+#if 0
+    // FIXME Do we want to support the "unicode" setting?  (see mysql.pike)
+#endif
+  big_query("SET CLIENT_ENCODING TO :charset",([":charset":charset]));
+}
+
+//! Returns the PostgreSQL name for the current connection charset.
+//!
+//! @seealso
+//!   @[set_charset], @[getruntimeparameters]
+string get_charset()
+{ return runtimeparameter->client_encoding;
+}
+
 //! Returns the set of currently active runtimeparameters for
 //! the open session; these are initialised by the options parameter
 //! during session creation, and then processed and returned by the server.
