@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: PGsql.cmod,v 1.25 2008/08/21 03:14:04 srb Exp $
+ * $Id: PGsql.cmod,v 1.26 2008/08/21 03:17:53 srb Exp $
  *
  * PGsql, accelerator functions for Sql.pgsql for Pike.
  *
@@ -87,11 +87,12 @@ PIKECLASS PGsql
     xfree(THIS->extrabuf);
   }
 
-  static int rread(void*const a,const int len) {
+  static int rread(void*const a,const int len,const int not_all) {
     int i;
     push_int(len);
-    push_int(1);
-    apply(THISOBJ,"read",2);
+    if(not_all)
+      push_int(1);
+    apply(THISOBJ,"read",1+!!not_all);
     if(Pike_sp[-1].type == PIKE_T_STRING) {
       i=Pike_sp[-1].u.string->len;
       memcpy(a,Pike_sp[-1].u.string->str,i);
@@ -140,7 +141,7 @@ ret2: PD((stderr,"PGsql getbyte 0x%02x=%c\n",retval,retval));
       return retval;
     }
     flushifneeded();
-    retval = rread(THIS->buf, BUFSIZE);
+    retval = rread(THIS->buf, BUFSIZE, 1);
     if(retval>0) {
       THIS->phigh=(THIS->plow=THIS->buf)+retval;
       goto ret;
@@ -204,11 +205,11 @@ ret2:     PD((stderr,"PGsql getstring %d\n",length));
       }
       flushifneeded();
       for(;len>BUFSIZE;len-=left,p+=left)
-        if((left=rread(p,len))<=0)
+        if((left=rread(p,len,0))<=0)
           goto bad;
       if(!len)
         goto ret2;
-      left=rread(THIS->buf,BUFSIZE);
+      left=rread(THIS->buf,BUFSIZE,1);
       THIS->phigh=(THIS->plow=THIS->buf)+left;
     } while(left>0);
 bad:
