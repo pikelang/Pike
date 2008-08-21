@@ -55,6 +55,8 @@
 
 #define ERROR(X ...)	     predef::error(X)
 
+int _alltext;
+int _booltext;
 int _nextportal;
 int _closesent;
 int _fetchlimit=FETCHLIMIT;
@@ -168,6 +170,14 @@ protected string _sprintf(int type, void|mapping flags) {
 //!   @value "force_ssl"
 //!     If the database supports and allows SSL connections, the session
 //!     will be SSL encrypted, if not, the connection will abort
+//!   @value "bool_results_as_text"
+//!     Make boolean values retrieved from the database backward compatible
+//!     with the old Postgres driver which returned all values as text.
+//!     When off, boolean values are represented by 0 and 1, when set,
+//!     boolean values are represented by "f" and "t".
+//!   @value "all_results_as_text"
+//!     Make all values backward compatible with the old Postgres driver
+//!     which returned all values as text.  Implies boolresults_as_text.
 //!   @value "client_encoding"
 //!     Character encoding for the client side, it defaults to use
 //!     database encoding, e.g.: "SQL_ASCII"
@@ -197,6 +207,8 @@ protected void create(void|string _host, void|string _database,
     String.secure(pass);
   user = _user; database = _database; host = _host || PGSQL_DEFAULT_HOST;
   options = _options || ([]);
+  _alltext = !!options->all_results_as_text;
+  _booltext = _alltext || !!options->bool_results_as_text;
   if(search(host,":")>=0 && sscanf(_host,"%s:%d",host,port)!=2)
     ERROR("Error in parsing the hostname argument\n");
   if(!port)
@@ -729,6 +741,8 @@ final int _decodemsg(void|state waitforstate) {
 	  _c.portal->_bytesreceived+=msglen;
 	  datarowdesc=_c.portal->_datarowdesc;
           int cols=_c.getint16();
+	  int atext = _alltext;		  // cache locally for speed ?
+	  int btext = _booltext;	  // cache locally for speed ?
 	  a=allocate(cols,UNDEFINED);
           msglen-=2+4*cols;
           foreach(a;int i;) {
@@ -739,8 +753,11 @@ final int _decodemsg(void|state waitforstate) {
               switch(datarowdesc[i]->type) {
 	        default:value=_c.getstring(collen);
                   break;
-                case CHAROID:
+                case CHAROID:value=_c.getbyte();
+                  break;
                 case BOOLOID:value=_c.getbyte();
+		  if(btext)
+		    value=value?"t":"f";
                   break;
                 case INT8OID:value=_c.getint64();
                   break;
@@ -751,6 +768,8 @@ final int _decodemsg(void|state waitforstate) {
 	        case OIDOID:
                 case INT4OID:value=_c.getint32();
               }
+	      if(atext&&!stringp(value))
+	        value=(string)value;
 	      a[i]=value;
             }
             else if(!collen)
@@ -951,7 +970,9 @@ private void reconnect(void|int force) {
     plugbuf+=({"user\0",user,"\0"});
   if(database)
     plugbuf+=({"database\0",database,"\0"});
-  foreach(options-(<"use_ssl","force_ssl">);string name;mixed value)
+  foreach(options-(<"use_ssl","force_ssl","bool_results_as_text",
+   "all_results_as_text">);
+   string name;mixed value)
     plugbuf+=({name,"\0",(string)value,"\0"});
   plugbuf+=({"\0"});
   int len=4;

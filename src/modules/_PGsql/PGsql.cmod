@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: PGsql.cmod,v 1.24 2008/08/21 03:13:46 srb Exp $
+ * $Id: PGsql.cmod,v 1.25 2008/08/21 03:14:04 srb Exp $
  *
  * PGsql, accelerator functions for Sql.pgsql for Pike.
  *
@@ -290,6 +290,7 @@ outofmem: Pike_fatal("Out of memory\n");
     long totalrecvd=0, recvdbstats=0;
     int nrows=0, buffer=0;
     int rowsreceived,inflight,fetchlimit,parentfetchlimit,portalbuffersize;
+    int booltext, alltext;
     struct svalue*bytesreceived;
     struct array*datarowdesc;
     struct object*portal,*pgsqlsess;
@@ -324,6 +325,14 @@ outofmem: Pike_fatal("Out of memory\n");
       buffer=Pike_sp[-1].u.integer;
     pop_stack();
 
+    ref_push_object(pgsqlsess); ref_push_string(MK_STRING("_booltext"));
+    f_arrow(2); booltext=Pike_sp[-1].u.integer;
+    pop_stack();
+
+    ref_push_object(pgsqlsess); ref_push_string(MK_STRING("_alltext"));
+    f_arrow(2); alltext=Pike_sp[-1].u.integer;
+    pop_stack();
+
     ref_push_object(pgsqlsess); ref_push_string(MK_STRING("_fetchlimit"));
     f_arrow(2); parentfetchlimit=Pike_sp[-1].u.integer;
     pop_stack();
@@ -352,9 +361,21 @@ outofmem: Pike_fatal("Out of memory\n");
           switch(svp->u.integer) {
             default:push_string(low_getstring(collen));
               break;
-            case CHAROID:
-            case BOOLOID:push_int(low_getbyte());
+            case CHAROID:push_int(low_getbyte());
               break;
+            case BOOLOID: {
+	      int val=low_getbyte();
+	      if(booltext) {
+	        struct pike_string*s;
+	        s = MK_STRING("f");
+	        if(val)
+	          s = MK_STRING("t");
+		ref_push_string(s);
+	      }
+	      else
+	        push_int(val);
+              break;
+	    }
             case FLOAT4OID: {
               char*tb=xalloc(collen+1);
               char*p=tb;
@@ -399,6 +420,8 @@ simple:             push_int(nextword);
             case OIDOID:
             case INT4OID:push_int(low_getint32());
           }
+	  if(alltext && Pike_sp[-1].type != PIKE_T_STRING)
+	    o_cast_to_string();
         }
         else if(!collen)
           push_empty_string();
