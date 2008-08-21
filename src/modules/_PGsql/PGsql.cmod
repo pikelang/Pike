@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: PGsql.cmod,v 1.23 2008/08/18 23:54:22 srb Exp $
+ * $Id: PGsql.cmod,v 1.24 2008/08/21 03:13:46 srb Exp $
  *
  * PGsql, accelerator functions for Sql.pgsql for Pike.
  *
@@ -246,15 +246,15 @@ bad:
   }
 
   PIKEFUN int getbyte() {
-    RETURN low_getbyte();
+    push_int(low_getbyte());
   }
 
   PIKEFUN int getint16() {
-    RETURN low_getint16();
+    push_int(low_getint16());
   }
 
   PIKEFUN int getint32() {
-    RETURN low_getint32();
+    push_int(low_getint32());
   }
 
   PIKEFUN string getstring(void|int length) {
