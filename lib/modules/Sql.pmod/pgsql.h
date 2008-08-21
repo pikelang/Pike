@@ -32,6 +32,8 @@
 #define PGSQL_DEFAULT_HOST   "localhost"
 #define PREPSTMTPREFIX	     "pike_prep_"
 #define PORTALPREFIX	     "pike_portal_"
+#define RECONNECTDELAY	     1	    // Initial delay for reconnects
+#define RECONNECTBACKOFF     4	    // Secondary delay for reconnect
 #define FACTORPLAN	     8	    // Determines criterium when caching plan
 				    // -> if parsingtime*FACTORPLAN >= runtime
 				    // cache the statement

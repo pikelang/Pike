@@ -250,8 +250,8 @@ string error(void|int clear) {
 //! @seealso
 //!   server_info
 string host_info() {
-  return sprintf("Via fd:%d over TCP/IP to %s:%d PID %d",
-   _c.query_fd(),host,port,backendpid);
+  return sprintf("fd:%d TCP/IP %s:%d PID %d",
+   _c?_c.query_fd():-1,host,port,backendpid);
 }
 
 final private object getsocket(void|int nossl) {
@@ -514,6 +514,10 @@ final private string pinpointerror(void|string query,void|string offset) {
   if(k<=0)
     return MARKSTART+query+MARKEND;
   return MARKSTART+(k>1?query[..k-2]:"")+MARKERROR+query[k-1..]+MARKEND;
+}
+
+final private string lastmsgnl() {
+  return lastmessage?lastmessage+"\n":"",
 }
 
 final int _decodemsg(void|state waitforstate) {
@@ -875,8 +879,7 @@ final int _decodemsg(void|state waitforstate) {
         }
         warningscollected++;
         lastmessage=sprintf("%s%s %s: %s",
-	 lastmessage?lastmessage+"\n":"",
-	 msgresponse->S,msgresponse->C,msgresponse->M);
+	 lastmsgnl(),msgresponse->S,msgresponse->C,msgresponse->M);
         break;
       }
       case 'A':PD("NotificationResponse\n");
@@ -903,10 +906,16 @@ final int _decodemsg(void|state waitforstate) {
           errtype=protocolunsupported;
 	}
 	else {
-	  string msg=lastmessage?lastmessage+"\n":"";
-          reconnect(1);
-          ERROR("%sConnection lost to database %s@%s:%d/%s %d\n",
-           msg,user,host,port,database,backendpid);
+	  string msg=lastmsgnl();
+	  if(!reconnect(1)) {
+	    sleep(RECONNECTDELAY);
+            if(!reconnect(1)) {
+	      sleep(RECONNECTBACKOFF);
+              reconnect(1);
+	    }
+	  }
+          ERROR("%s%sConnection lost to database %s@%s:%d/%s %d\n",
+           msg,lastmsgnl(),user,host,port,database,backendpid);
 	}
         break;
     }
@@ -917,9 +926,11 @@ final int _decodemsg(void|state waitforstate) {
         ERROR("Unsupported servermessage received %c\n",msgtype);
         break;
       case protocolerror:
+	string msg=lastmsgnl();
+	lastmessage=UNDEFINED;
         reconnect(1);
-        ERROR("Protocol error with database %s@%s:%d/%s PID %d\n",
-         user,host,port,database,backendpid);
+        ERROR("%s%sProtocol error with database %s\n",
+	 msg,lastmsgnl(),host_info());
         break;
       case noerror:
         break;
@@ -955,7 +966,7 @@ void destroy() {
   close();
 }
 
-private void reconnect(void|int force) {
+private int reconnect(void|int force) {
   Thread.MutexKey connectmtxkey;
   if(_c) {
     reconnected++;
@@ -966,13 +977,21 @@ private void reconnect(void|int force) {
 #endif
     if(!force)
       _c.sendterminate();
+    _c.close(); _c=0;
     foreach(prepareds;;mapping tp)
       m_delete(tp,"preparedname");
     if(!(connectmtxkey = _stealmutex.trylock(2)))
-      ERROR("Recursive reconnect, bailing out\n");
+      return 0;				    // Recursive reconnect, bailing out
   }
-  if(!(_c=getsocket()))
-    ERROR("Couldn't connect to database on %s:%d\n",host,port);
+  if(!(_c=getsocket())) {
+    string msg=sprintf("Couldn't connect to database on %s:%d\n",host,port);
+    if(force) {
+      lastmessage=lastmsgnl()+msg;
+      return 0;
+    }
+    else
+      ERROR(msg);
+  }
   _closesent=0;
   _mstate=unauthenticated;
   qstate=queryidle;
@@ -993,10 +1012,19 @@ private void reconnect(void|int force) {
   plugbuf[0]=_c.plugint32(len);
   _c.write(plugbuf);
   PD("%O\n",plugbuf);
-  _decodemsg(readyforquery);
+  { mixed err=catch(_decodemsg(readyforquery));
+    if(err)
+      if(force)
+	throw(err);
+      else
+	return 0;
+  }
   PD("%O\n",runtimeparameter);
-  if(force)
+  if(force) {
+    lastmessage=lastmsgnl()+"Reconnected to database "+host_info();
     runcallback(backendpid,"_reconnect","");
+  }
+  return 1;
 }
 
 //! @decl void reload()
@@ -1030,7 +1058,8 @@ void reload(void|int special) {
     }) {
     earlyclose=0;
     PD("%O\n",err);
-    reconnect(1);
+    if(!reconnect(1))
+      ERROR(lastmessage);
   }
   else if(didsync && special==2)
     _decodemsg(readyforquery);
