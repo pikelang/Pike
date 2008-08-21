@@ -896,9 +896,18 @@ final int _decodemsg(void|state waitforstate) {
         runcallback(pid,condition,extrainfo);
         break;
       }
-      default:PD("Unknown message received %c\n",msgtype);
-        msglen-=4;PD("%O\n",_c.getstring(msglen));msglen=0;
-        errtype=protocolunsupported;
+      default:
+	if(msgtype!=-1) {
+	  PD("Unknown message received %c\n",msgtype);
+          msglen-=4;PD("%O\n",_c.getstring(msglen));msglen=0;
+          errtype=protocolunsupported;
+	}
+	else {
+	  string msg=lastmessage?lastmessage+"\n":"";
+          reconnect(1);
+          ERROR("%sConnection lost to database %s@%s:%d/%s %d\n",
+           msg,user,host,port,database,backendpid);
+	}
         break;
     }
     if(msglen)
@@ -909,8 +918,8 @@ final int _decodemsg(void|state waitforstate) {
         break;
       case protocolerror:
         reconnect(1);
-        ERROR("Protocol error with databasel %s@%s:%d/%s\n",
-         user,host,port,database);
+        ERROR("Protocol error with database %s@%s:%d/%s PID %d\n",
+         user,host,port,database,backendpid);
         break;
       case noerror:
         break;
@@ -947,6 +956,7 @@ void destroy() {
 }
 
 private void reconnect(void|int force) {
+  Thread.MutexKey connectmtxkey;
   if(_c) {
     reconnected++;
     prepstmtused=0;
@@ -958,6 +968,8 @@ private void reconnect(void|int force) {
       _c.sendterminate();
     foreach(prepareds;;mapping tp)
       m_delete(tp,"preparedname");
+    if(!(connectmtxkey = _stealmutex.trylock(2)))
+      ERROR("Recursive reconnect, bailing out\n");
   }
   if(!(_c=getsocket()))
     ERROR("Couldn't connect to database on %s:%d\n",host,port);
