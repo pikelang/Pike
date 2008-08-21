@@ -177,7 +177,7 @@ protected string _sprintf(int type, void|mapping flags) {
 //!     boolean values are represented by "f" and "t".
 //!   @value "all_results_as_text"
 //!     Make all values backward compatible with the old Postgres driver
-//!     which returned all values as text.  Implies boolresults_as_text.
+//!     which returned all values as text.  Implies bool_results_as_text.
 //!   @value "client_encoding"
 //!     Character encoding for the client side, it defaults to use
 //!     database encoding, e.g.: "SQL_ASCII"

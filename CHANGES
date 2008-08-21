@@ -731,6 +731,7 @@ o Sql
     Current features: no library dependencies (no libpq), native binding
     support, streaming support, NOTIFY/LISTEN support (fully eventdriven,
     no polling), binary support for integer, float and string datatypes,
+    compatibility options to support old return-everything-as-test mode,
     COPY FROM/TO STDIN/STDOUT support, multiple simultaneous streaming
     queries on the same connection (i.e. multiple PostgreSQL-portal-
     support), automatic precompilation and caching of often-used
