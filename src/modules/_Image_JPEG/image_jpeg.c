@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_jpeg.c,v 1.74 2008/08/22 14:12:30 jonasw Exp $
+|| $Id: image_jpeg.c,v 1.75 2008/08/22 14:17:16 jonasw Exp $
 */
 
 #include "global.h"
@@ -221,10 +221,8 @@ struct my_destination_mgr
    size_t len;
 };
 
-//#define DEFAULT_BUF_SIZE 8192
-//#define BUF_INCREMENT 8192
-#define DEFAULT_BUF_SIZE 256
-#define BUF_INCREMENT 256
+#define DEFAULT_BUF_SIZE 8192
+#define BUF_INCREMENT 8192
 
 static void my_init_destination(struct jpeg_compress_struct *cinfo)
 {
