@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.684 2008/07/09 13:29:00 grubba Exp $
+|| $Id: builtin_functions.c,v 1.685 2008/08/22 15:33:50 grubba Exp $
 */
 
 #include "global.h"
@@ -3480,15 +3480,16 @@ PMOD_EXPORT void f_reverse(INT32 args)
   {
     INT32 e;
     struct pike_string *s;
+    struct pike_string *orig = sv->u.string;;
     if (start < 0) {
       start = 0;
-    } else if (start >= sv->u.string->len) {
+    } else if (start >= orig->len) {
       /* Noop. */
       pop_n_elems(args-1);
       break;
     }
-    if ((end < 0) || (end >= sv->u.string->len)) {
-      end = sv->u.string->len;
+    if ((end < 0) || (end >= orig->len)) {
+      end = orig->len;
     } else if (end <= start) {
       /* Noop. */
       pop_n_elems(args-1);
@@ -3496,35 +3497,70 @@ PMOD_EXPORT void f_reverse(INT32 args)
     } else {
       end++;
     }
-    s=begin_wide_shared_string(sv->u.string->len, sv->u.string->size_shift);
-    switch(sv->u.string->size_shift)
-    {
+    s=begin_wide_shared_string(orig->len, orig->size_shift);
+    if ((orig->len << orig->size_shift) >= 524288) {
+      /* More than 512KB. Release the interpreter lock. */
+      THREADS_ALLOW();
+      switch(orig->size_shift)
+      {
       case 0:
 	for(e=0;e<start;e++)
-	  STR0(s)[e]=STR0(sv->u.string)[e];
+	  STR0(s)[e]=STR0(orig)[e];
 	for(;e<end;e++)
-	  STR0(s)[e]=STR0(sv->u.string)[end-1-e-start];
-	for(;e<sv->u.string->len;e++)
-	  STR0(s)[e]=STR0(sv->u.string)[e];
+	  STR0(s)[e]=STR0(orig)[end-1-e-start];
+	for(;e<orig->len;e++)
+	  STR0(s)[e]=STR0(orig)[e];
 	break;
 
       case 1:
 	for(e=0;e<start;e++)
-	  STR1(s)[e]=STR1(sv->u.string)[e];
+	  STR1(s)[e]=STR1(orig)[e];
 	for(;e<end;e++)
-	  STR1(s)[e]=STR1(sv->u.string)[end-1-e-start];
-	for(;e<sv->u.string->len;e++)
-	  STR1(s)[e]=STR1(sv->u.string)[e];
+	  STR1(s)[e]=STR1(orig)[end-1-e-start];
+	for(;e<orig->len;e++)
+	  STR1(s)[e]=STR1(orig)[e];
 	break;
 
       case 2:
 	for(e=0;e<start;e++)
-	  STR2(s)[e]=STR2(sv->u.string)[e];
+	  STR2(s)[e]=STR2(orig)[e];
 	for(;e<end;e++)
-	  STR2(s)[e]=STR2(sv->u.string)[end-1-e-start];
-	for(;e<sv->u.string->len;e++)
-	  STR2(s)[e]=STR2(sv->u.string)[e];
+	  STR2(s)[e]=STR2(orig)[end-1-e-start];
+	for(;e<orig->len;e++)
+	  STR2(s)[e]=STR2(orig)[e];
 	break;
+      }
+      THREADS_DISALLOW();
+    } else {
+      switch(orig->size_shift)
+      {
+      case 0:
+	for(e=0;e<start;e++)
+	  STR0(s)[e]=STR0(orig)[e];
+	for(;e<end;e++)
+	  STR0(s)[e]=STR0(orig)[end-1-e-start];
+	for(;e<orig->len;e++)
+	  STR0(s)[e]=STR0(orig)[e];
+	break;
+
+      case 1:
+	for(e=0;e<start;e++)
+	  STR1(s)[e]=STR1(orig)[e];
+	for(;e<end;e++)
+	  STR1(s)[e]=STR1(orig)[end-1-e-start];
+	for(;e<orig->len;e++)
+	  STR1(s)[e]=STR1(orig)[e];
+	break;
+
+      case 2:
+	for(e=0;e<start;e++)
+	  STR2(s)[e]=STR2(orig)[e];
+	for(;e<end;e++)
+	  STR2(s)[e]=STR2(orig)[end-1-e-start];
+	for(;e<orig->len;e++)
+	  STR2(s)[e]=STR2(orig)[e];
+	break;
+      }
     }
     s=low_end_shared_string(s);
     pop_n_elems(args);
