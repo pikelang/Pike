@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_gif.c,v 1.21 2007/11/01 09:51:56 agehall Exp $
+|| $Id: image_gif.c,v 1.22 2008/08/22 16:22:47 jonasw Exp $
 */
 
 /*
@@ -39,7 +39,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: image_gif.c,v 1.21 2007/11/01 09:51:56 agehall Exp $");
+RCSID("$Id: image_gif.c,v 1.22 2008/08/22 16:22:47 jonasw Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -282,7 +282,8 @@ void image_gif_header_block(INT32 args)
    {
       ps=begin_shared_string((1<<bpp)*3);
       image_colortable_write_rgb(nct,(unsigned char *)ps->str);
-      MEMSET(ps->str+(numcolors+alphaentry)*3,0,((1<<bpp)-numcolors)*3);
+      MEMSET(ps->str + (numcolors + alphaentry) * 3, 0,
+	     ((1 << bpp) - numcolors - alphaentry) * 3);
 
       if (alphaentry) 
       {
