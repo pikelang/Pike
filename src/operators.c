@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.238 2008/07/11 20:39:45 mast Exp $
+|| $Id: operators.c,v 1.239 2008/08/22 14:13:20 srb Exp $
 */
 
 #include "global.h"
@@ -38,6 +38,14 @@
      math_error(FUNC, sp-2, 2, 0, "Division by zero.\n")
 #define OP_MODULO_BY_ZERO_ERROR(FUNC) \
      math_error(FUNC, sp-2, 2, 0, "Modulo by zero.\n")
+
+    /* These calculations should always give some margin based on the size. */
+    /* One extra char for the sign. */
+#define MAX_INT_SPRINTF_LEN (1 + (SIZEOF_INT_TYPE * 5 + 1) / 2)
+    /* Six extra chars: Mantissa sign, decimal point, zero before the
+     * decimal point, the 'e', exponent sign, and an extra digit due
+     * to the mantissa/exponent split. */
+#define MAX_FLOAT_SPRINTF_LEN (6 + (SIZEOF_FLOAT_TYPE * 5 + 1) / 2)
 
 /* The destructive multiset merge code is broken.
  * l->msd gets -1 refs.
@@ -343,11 +351,10 @@ PMOD_EXPORT void o_cast_to_int(void)
 /* Special case for casting to string. */
 PMOD_EXPORT void o_cast_to_string(void)
 {
-  char buf[200];
   switch(sp[-1].type)
   {
   case PIKE_T_STRING:
-    return;
+    break;
 
   case T_OBJECT:
     if(!sp[-1].u.object->prog) {
@@ -387,10 +394,35 @@ PMOD_EXPORT void o_cast_to_string(void)
 		   get_name_of_type(sp[-1].type));
       }
     }
-    return;
+    break;
 	    
   case T_INT:
-    sprintf(buf, "%"PRINTPIKEINT"d", sp[-1].u.integer);
+    {
+      INT_TYPE org;
+      char buf[MAX_INT_SPRINTF_LEN];
+      register char*b = buf+sizeof buf-1;
+      register unsigned INT_TYPE i;
+      org = sp[-1].u.integer;
+      pop_stack();
+      *b-- = '\0';
+      i = org;
+
+      if( org < 0 )
+        i = -i;
+
+      goto jin;				       /* C as a macro assembler :-) */
+      do {
+        i /= 10;
+jin:    *b-- = '0'+(i%10);
+      }
+      while( i >= 10 );
+
+      if( org<0 )
+	*b = '-';
+      else
+        b++;
+      push_text( b );
+    }
     break;
 
   case T_ARRAY:
@@ -462,18 +494,20 @@ PMOD_EXPORT void o_cast_to_string(void)
       pop_stack();
       push_string(s);
     }
-    return;
-
-  case T_FLOAT:
-    sprintf(buf, "%f", (double)sp[-1].u.float_number);
     break;
+
+  case T_FLOAT: {
+    char buf[MAX_FLOAT_SPRINTF_LEN+1+1+1+1+7+1];
+    snprintf(buf, sizeof buf, "%.*g",
+     MAX_FLOAT_SPRINTF_LEN, (double)sp[-1].u.float_number);
+    pop_stack();
+    push_text(buf);
+    break;
+  }
 
   default:
     Pike_error("Cannot cast %s to string.\n", get_name_of_type(sp[-1].type));
   }
-	
-  sp[-1].type = PIKE_T_STRING;
-  sp[-1].u.string = make_shared_string(buf);
 }
 
 PMOD_EXPORT void o_cast(struct pike_type *type, INT32 run_time_type)
@@ -1555,14 +1589,6 @@ PMOD_EXPORT void f_add(INT32 args)
     } else {
       e = -args;
     }
-
-    /* These calculations should always give some margin based on the size. */
-    /* One extra char for the sign. */
-#define MAX_INT_SPRINTF_LEN (1 + (SIZEOF_INT_TYPE * 5 + 1) / 2)
-    /* Six extra chars: Mantissa sign, decimal point, zero before the
-     * decimal point, the 'e', exponent sign, and an extra digit due
-     * to the mantissa/exponent split. */
-#define MAX_FLOAT_SPRINTF_LEN (6 + (SIZEOF_FLOAT_TYPE * 5 + 1) / 2)
 
     size=0;
     for(e=-args;e<0;e++)

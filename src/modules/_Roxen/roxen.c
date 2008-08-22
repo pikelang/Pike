@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: roxen.c,v 1.51 2008/06/28 23:06:02 nilsson Exp $
+|| $Id: roxen.c,v 1.52 2008/08/22 14:13:20 srb Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -456,33 +456,6 @@ static void f_html_encode_string( INT32 args )
     void o_cast_to_string();
 
     case PIKE_T_INT:
-      /* Optimization, this is basically a inlined cast_int_to_string */
-      {
-	char buf[21], *b = buf+19;
-	int neg, i, j=0;
-	i = Pike_sp[-1].u.integer;
-	pop_stack();
-	if( i < 0 )
-	{
-	  neg = 1;
-	  i = -i;
-	}
-	else
-	  neg = 0;
-
-	buf[20] = 0;
-
-	while( i >= 10 )
-	{
-	  b[ -j++ ] = '0'+(i%10);
-	  i /= 10;
-	}
-	b[ -j++ ] = '0'+(i%10);
-	if( neg )  b[ -j++ ] = '-';
-	push_text( b-j+1 );
-      }
-      return;
-
     case PIKE_T_FLOAT:
       /* Optimization, no need to check the resultstring for
        * unsafe characters. 
