@@ -517,7 +517,7 @@ final private string pinpointerror(void|string query,void|string offset) {
 }
 
 final private string lastmsgnl() {
-  return lastmessage?lastmessage+"\n":"",
+  return lastmessage?lastmessage+"\n":"";
 }
 
 final int _decodemsg(void|state waitforstate) {
