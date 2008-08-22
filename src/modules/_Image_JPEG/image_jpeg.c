@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_jpeg.c,v 1.73 2005/11/09 12:36:21 nilsson Exp $
+|| $Id: image_jpeg.c,v 1.74 2008/08/22 14:12:30 jonasw Exp $
 */
 
 #include "global.h"
@@ -15,18 +15,9 @@
 
 #ifdef HAVE_JPEGLIB_H
 
-#define FILE void
-#define size_t unsigned int
-/* NOTE: INT32 and INT16 are redefined by <jmorecfg.h>. */
-#if 0
-#ifdef INT16
-#undef INT16
-#endif /* INT16 */
-#ifdef INT32
-#undef INT32
-#endif
-#endif /* 0 */
+#include <stdio.h>
 
+/* NOTE: INT32 and INT16 are redefined by <jmorecfg.h>. */
 #define XMD_H /* Avoid INT16 / INT32 being redefined */
 
 /* FAR is defined by windef.h and jmorecfg.h */
@@ -49,16 +40,7 @@
 #include <jpeglib.h>
 #include "transupp.h" /* Support routines for jpeg transformations */
 
-#undef size_t
-#undef FILE
-#undef _SIZE_T_DEFINED
-#undef _FILE_DEFINED
-
 #endif /* HAVE_JPEGLIB_H */
-
-#ifdef HAVE_STDLIB_H
-#undef HAVE_STDLIB_H
-#endif
 
 /* jpeglib defines EXTERN for some reason.
  * This is not good, since it confuses compilation.h.
@@ -239,8 +221,10 @@ struct my_destination_mgr
    size_t len;
 };
 
-#define DEFAULT_BUF_SIZE 8192
-#define BUF_INCREMENT 8192
+//#define DEFAULT_BUF_SIZE 8192
+//#define BUF_INCREMENT 8192
+#define DEFAULT_BUF_SIZE 256
+#define BUF_INCREMENT 256
 
 static void my_init_destination(struct jpeg_compress_struct *cinfo)
 {
