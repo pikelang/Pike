@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.847 2008/08/17 16:23:11 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.848 2008/08/22 12:36:14 mirar Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -7701,6 +7701,10 @@ test_eq([[(float)1]],[[1.0]])
 test_eq([[(float)-1]],[[-1.0]])
 test_eq([[(string)1]],[["1"]])
 test_eq([[(string)-1]],[["-1"]])
+test_do(return (string)1e308)
+test_do(return (string)1e200)
+test_do(return (string)1e-200)
+test_do(return (string)1e-307)
 test_any([[
   array foo=({ 1 });
   return (string)sizeof(foo);
