@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_threadlib.h,v 1.61 2007/06/09 18:02:14 mast Exp $
+|| $Id: pike_threadlib.h,v 1.62 2008/08/22 14:55:48 jonasw Exp $
 */
 
 #ifndef PIKE_THREADLIB_H
@@ -626,9 +626,9 @@ PMOD_EXPORT extern const char msg_thr_swapped_over[];
     DO_IF_DEBUG (							\
       if (Pike_sp != (struct svalue *) (ptrdiff_t) -1)			\
 	Pike_fatal (msg_thr_swapped_over,				\
-		    (unsigned int) _th_state->id,			\
+		    (unsigned long int) _th_state->id,			\
 		    Pike_interpreter.thread_state ?			\
-		    (unsigned int) Pike_interpreter.thread_state->id : 0); \
+		    (unsigned long int) Pike_interpreter.thread_state->id : 0); \
     );									\
     DO_IF_PROFILING({							\
 	if (_th_state->swapped) {					\
@@ -657,8 +657,8 @@ PMOD_EXPORT extern const char msg_thr_swapped_over[];
   do {\
      struct thread_state *_tmp = Pike_interpreter.thread_state; \
      SWAP_OUT_THREAD(_tmp); \
-     THREADS_FPRINTF(1, (stderr, "SWAP_OUT_CURRENT_THREAD() %s:%d t:%08x\n", \
-			 __FILE__, __LINE__, (unsigned int)_tmp->id))
+     THREADS_FPRINTF(1, (stderr, "SWAP_OUT_CURRENT_THREAD() %s:%d t:%08lx\n", \
+			 __FILE__, __LINE__, (unsigned long int)_tmp->id))
 
 PMOD_EXPORT extern void debug_list_all_threads(void);
 extern void dumpmem(const char *desc, void *x, int size);
@@ -667,8 +667,8 @@ PMOD_EXPORT extern const char msg_saved_thread_id[];
 PMOD_EXPORT extern const char msg_swap_in_cur_thr_failed[];
 
 #define SWAP_IN_CURRENT_THREAD()					      \
-   THREADS_FPRINTF(1, (stderr, "SWAP_IN_CURRENT_THREAD() %s:%d ... t:%08x\n", \
-		       __FILE__, __LINE__, (unsigned int)_tmp->id));	      \
+   THREADS_FPRINTF(1, (stderr, "SWAP_IN_CURRENT_THREAD() %s:%d ... t:%08lx\n", \
+		       __FILE__, __LINE__, (unsigned long int)_tmp->id));	      \
    SWAP_IN_THREAD(_tmp);						      \
    DO_IF_DEBUG(								      \
    {									      \
@@ -783,9 +783,9 @@ PMOD_EXPORT extern int Pike_in_gc;
      }) \
      if(num_threads > 1 && !threads_disabled) { \
        SWAP_OUT_THREAD(_tmp); \
-       THREADS_FPRINTF(1, (stderr, "THREADS_ALLOW() %s:%d t:%08x(#%d)\n", \
+       THREADS_FPRINTF(1, (stderr, "THREADS_ALLOW() %s:%d t:%08lx(#%d)\n", \
 			   __FILE__, __LINE__, \
-			   (unsigned int)_tmp->id, live_threads)); \
+			   (unsigned long int)_tmp->id, live_threads)); \
        mt_unlock_interpreter(); \
      } else {								\
        DO_IF_DEBUG(							\
@@ -806,9 +806,9 @@ PMOD_EXPORT extern int Pike_in_gc;
      DO_IF_PIKE_CLEANUP (if (_tmp) {) \
      if(_tmp->swapped) { \
        low_mt_lock_interpreter(); \
-       THREADS_FPRINTF(1, (stderr, "THREADS_DISALLOW() %s:%d t:%08x(#%d)\n", \
+       THREADS_FPRINTF(1, (stderr, "THREADS_DISALLOW() %s:%d t:%08lx(#%d)\n", \
 			   __FILE__, __LINE__, \
-			   (unsigned int)_tmp->id, live_threads)); \
+			   (unsigned long int)_tmp->id, live_threads)); \
        if (threads_disabled) threads_disabled_wait(); \
        SWAP_IN_THREAD(_tmp);\
      } \
@@ -833,16 +833,16 @@ PMOD_EXPORT extern int Pike_in_gc;
      if(num_threads > 1 && !threads_disabled) { \
        SWAP_OUT_THREAD(_tmp_uid); \
        while (disallow_live_threads) {					\
-	 THREADS_FPRINTF(1, (stderr, "THREADS_ALLOW_UID() %s:%d t:%08x(#%d) " \
+	 THREADS_FPRINTF(1, (stderr, "THREADS_ALLOW_UID() %s:%d t:%08lx(#%d) " \
 			     "live threads disallowed\n",		\
 			     __FILE__, __LINE__,			\
-			     (unsigned int)_tmp_uid->id, live_threads)); \
+			     (unsigned long int)_tmp_uid->id, live_threads)); \
 	 co_wait_interpreter(&threads_disabled_change);			\
        }								\
        live_threads++; \
-       THREADS_FPRINTF(1, (stderr, "THREADS_ALLOW_UID() %s:%d t:%08x(#%d)\n", \
+       THREADS_FPRINTF(1, (stderr, "THREADS_ALLOW_UID() %s:%d t:%08lx(#%d)\n", \
 			   __FILE__, __LINE__, \
-			   (unsigned int)_tmp_uid->id, live_threads)); \
+			   (unsigned long int)_tmp_uid->id, live_threads)); \
        mt_unlock_interpreter(); \
      } else {								\
        DO_IF_DEBUG(							\
@@ -865,9 +865,9 @@ PMOD_EXPORT extern int Pike_in_gc;
        low_mt_lock_interpreter(); \
        live_threads--; \
        THREADS_FPRINTF(1, (stderr, \
-                           "THREADS_DISALLOW_UID() %s:%d t:%08x(#%d)\n", \
+                           "THREADS_DISALLOW_UID() %s:%d t:%08lx(#%d)\n", \
 			   __FILE__, __LINE__, \
-			   (unsigned int)_tmp_uid->id, live_threads)); \
+			   (unsigned long int)_tmp_uid->id, live_threads)); \
        co_broadcast(&live_threads_change); \
        if (threads_disabled) threads_disabled_wait(); \
        SWAP_IN_THREAD(_tmp_uid);\
