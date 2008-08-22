@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_gif.c,v 1.30 2008/01/20 20:09:12 grubba Exp $
+|| $Id: image_gif.c,v 1.31 2008/08/22 16:22:20 jonasw Exp $
 */
 
 /*
@@ -281,7 +281,8 @@ void image_gif_header_block(INT32 args)
    {
       ps=begin_shared_string((1<<bpp)*3);
       image_colortable_write_rgb(nct,(unsigned char *)ps->str);
-      MEMSET(ps->str+(numcolors+alphaentry)*3,0,((1<<bpp)-numcolors)*3);
+      MEMSET(ps->str + (numcolors + alphaentry) * 3, 0,
+	     ((1 << bpp) - numcolors - alphaentry) * 3);
 
       if (alphaentry) 
       {
