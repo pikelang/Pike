@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.848 2008/08/22 12:36:14 mirar Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.849 2008/08/23 03:57:12 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -5210,6 +5210,7 @@ test_any([[{
 // gc
 
   test_true(intp(gc()));
+  test_true(mappingp (((function) Debug.gc_status)()))
   test_any([[ array a=({0}); a[0]=a; gc(); a=0; return gc() > 0; ]],1);
   test_any([[mapping m=([]); m[m]=m; gc(); m=0; return gc() > 0; ]],1);
   test_any([[multiset m=(<>); m[m]=1; gc(); m=0; return gc() > 0; ]],1);
@@ -9308,7 +9309,6 @@ return 0;
 // - _disable_threads
 // - _do_call_outs
 // - _exit
-// - _gc_status
 // - _leak
 // - _memory_usage
 // - _next
