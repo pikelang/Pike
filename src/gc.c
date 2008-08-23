@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.323 2008/08/17 15:59:59 mast Exp $
+|| $Id: gc.c,v 1.324 2008/08/23 03:58:33 mast Exp $
 */
 
 #include "global.h"
@@ -4025,12 +4025,15 @@ void f__gc_status(INT32 args)
 #ifdef PIKE_DEBUG
   push_constant_text ("max_rec_frames");
   push_int64 (DO_NOT_WARN ((INT64) tot_max_rec_frames));
+  size++;
 
   push_constant_text ("max_link_frames");
   push_int64 (DO_NOT_WARN ((INT64) tot_max_link_frames));
+  size++;
 
   push_constant_text ("max_free_extra_frames");
   push_int64 (DO_NOT_WARN ((INT64) tot_max_free_extra_frames));
+  size++;
 #endif
 
   f_aggregate_mapping(size * 2);
