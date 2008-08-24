@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: html.c,v 1.181 2008/06/28 23:06:00 nilsson Exp $
+|| $Id: html.c,v 1.182 2008/08/24 15:36:42 mirar Exp $
 */
 
 #include "global.h"
@@ -41,8 +41,8 @@ extern struct program *parser_html_program;
 #define DEBUG_MARK_SPOT debug_mark_spot
 #define HTML_DEBUG
 #else
-#define DEBUG(X) do; while(0)
-#define DEBUG_MARK_SPOT(TEXT,FEED,C) do; while(0)
+#define DEBUG(X) do {} while(0)
+#define DEBUG_MARK_SPOT(TEXT,FEED,C) do {} while(0)
 #endif
 
 #if 0
