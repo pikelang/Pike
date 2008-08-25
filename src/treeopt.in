@@ -2,7 +2,7 @@
 // This file is part of Pike. For copyright information see COPYRIGHT.
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
-// $Id: treeopt.in,v 1.97 2008/07/18 13:33:21 mast Exp $
+// $Id: treeopt.in,v 1.98 2008/08/25 16:22:51 grubba Exp $
 //
 // The tree optimizer
 //
@@ -231,7 +231,10 @@ F_APPLY(0 = F_CONSTANT
 	[$$->u.sval.type == T_FUNCTION]
 	[$$->u.sval.subtype == FUNCTION_BUILTIN]
 	[$$->u.sval.u.efun->function == f_add],
-	2 = F_ARG_LIST(F_APPLY($0, 1), 3)):
+	2 = F_ARG_LIST(F_APPLY(F_CONSTANT
+			       [$$->u.sval.type == T_FUNCTION]
+			       [$$->u.sval.subtype == FUNCTION_BUILTIN]
+			       [$$->u.sval.u.efun->function == f_add], 1), 3)):
   {
     node *arglist = $2;
     ADD_NODE_REF2($1,
@@ -257,8 +260,11 @@ F_APPLY(0 = F_CONSTANT
 	[$$->u.sval.type == T_FUNCTION]
 	[$$->u.sval.subtype == FUNCTION_BUILTIN]
 	[$$->u.sval.u.efun->function == f_minus],
-	2 = F_ARG_LIST(F_APPLY($0, 1 = F_ARG_LIST(+, +)), 3)):
-  {
+	2 = F_ARG_LIST(F_APPLY(F_CONSTANT
+			       [$$->u.sval.type == T_FUNCTION]
+			       [$$->u.sval.subtype == FUNCTION_BUILTIN]
+			       [$$->u.sval.u.efun->function == f_minus], 1 = F_ARG_LIST(+, +)), 3)):
+{
     node *arglist = $2;
     ADD_NODE_REF2($1,
     ADD_NODE_REF2($3,
@@ -285,7 +291,10 @@ F_APPLY(0 = F_CONSTANT
 	[$$->u.sval.type == T_FUNCTION]
 	[$$->u.sval.subtype == FUNCTION_BUILTIN]
 	[$$->u.sval.u.efun->function == f_multiply],
-	2 = F_ARG_LIST(F_APPLY($0, 1), 3)):
+	2 = F_ARG_LIST(F_APPLY(F_CONSTANT
+			       [$$->u.sval.type == T_FUNCTION]
+			       [$$->u.sval.subtype == FUNCTION_BUILTIN]
+			       [$$->u.sval.u.efun->function == f_multiply], 1), 3)):
   {
     node *arglist = $2;
     ADD_NODE_REF2($1,
@@ -801,7 +810,10 @@ F_LOR(F_APPLY(0 = F_CONSTANT
 	      [$$->u.sval.type == T_FUNCTION]
 	      [$$->u.sval.subtype == FUNCTION_BUILTIN]
 	      [$$->u.sval.u.efun->function == f_not], 1),
-      F_APPLY($0, 2)):
+      F_APPLY(F_CONSTANT
+	      [$$->u.sval.type == T_FUNCTION]
+	      [$$->u.sval.subtype == FUNCTION_BUILTIN]
+	      [$$->u.sval.u.efun->function == f_not], 2)):
   F_APPLY($0, F_LAND($1, $2));
 
 F_LOR(0, F_LOR(1, 2)):
@@ -845,7 +857,10 @@ F_LAND(F_APPLY(0 = F_CONSTANT
 	       [$$->u.sval.type == T_FUNCTION]
 	       [$$->u.sval.subtype == FUNCTION_BUILTIN]
 	       [$$->u.sval.u.efun->function == f_not], 1),
-       F_APPLY($0, 2)):
+       F_APPLY(F_CONSTANT
+	       [$$->u.sval.type == T_FUNCTION]
+	       [$$->u.sval.subtype == FUNCTION_BUILTIN]
+	       [$$->u.sval.u.efun->function == f_not], 2)):
   F_APPLY($0, F_LOR($1, $2));
 
 F_LAND(0, F_LAND(1, 2)):
@@ -1570,6 +1585,9 @@ F_LOOP(0 = +[ !depend_p($$, $$)]
 	  
 
 // Prepare for the return if true optimization.
+//
+// FIXME: Currently broken for many cases, since the SHARED_NODES
+//        mode is gone.
 '?'(0 = +[ node_is_tossable($$) ], ':'( F_RETURN($0, *), 1)) :
 {
   struct pike_type *type = $0->type;
