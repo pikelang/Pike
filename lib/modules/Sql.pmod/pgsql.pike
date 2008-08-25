@@ -128,6 +128,7 @@ protected string _sprintf(int type, void|mapping flags) {
 #define OIDOID		26
 #define XMLOID		142
 #define FLOAT4OID	700
+#define FLOAT8OID	701
 #define MACADDROID	829
 #define INETOID		869	    /* Force textmode */
 #define BPCHAROID	1042
@@ -752,6 +753,9 @@ final int _decodemsg(void|state waitforstate) {
                   break;
                 case INT8OID:value=_c.getint64();
                   break;
+#if SIZEOF_FLOAT>=8
+	        case FLOAT8OID:
+#endif
                 case FLOAT4OID:
 		  value=_c.getstring(collen);
 		  if(!atext)

@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: PGsql.cmod,v 1.28 2008/08/25 23:39:00 srb Exp $
+ * $Id: PGsql.cmod,v 1.29 2008/08/25 23:39:16 srb Exp $
  *
  * PGsql, accelerator functions for Sql.pgsql for Pike.
  *
@@ -58,6 +58,7 @@ typedef unsigned char uchar;
 #define OIDOID          26
 #define XMLOID          142
 #define FLOAT4OID       700
+#define FLOAT8OID       701
 #define MACADDROID      829
 #define INETOID         869
 #define BPCHAROID       1042
@@ -356,10 +357,15 @@ outofmem: Pike_fatal("Out of memory\n");
           svp = low_mapping_string_lookup(drd.u.mapping, MK_STRING("type"));
 	  free_svalue(&drd);
           switch(svp->u.integer) {
+#if SIZEOF_FLOAT_TYPE>=8
+            case FLOAT8OID:
+#endif
             case FLOAT4OID:
 	      if(!alltext) {
                 char*tb=xalloc(collen+1);
                 char*p=tb;
+	        if(!tb)
+		  Pike_fatal("Out of memory\n");
                 do
                   *p++=low_getbyte();
                 while(--collen);
@@ -389,7 +395,10 @@ outofmem: Pike_fatal("Out of memory\n");
             case INT2OID:push_int(low_getint16());
               break;
             case INT8OID: {
-              int firstword = low_getint32();
+              INT_TYPE firstword = low_getint32();
+#if SIZEOF_INT_TYPE>=8
+	      push_int(firstword<<32|low_getint32()&0xffffffffU);
+#else
               int nextword = low_getint32();
               switch(firstword) {
                 default:
@@ -416,6 +425,7 @@ nextor:               push_int(nextword);
                   else
 simple:             push_int(nextword);
               }
+#endif
               break;
             }
             case OIDOID:
