@@ -230,6 +230,7 @@ private int eoffound;
 private mixed delayederror;
 private int copyinprogress;
 int _fetchlimit;
+int _alltext;
 
 #ifdef NO_LOCKING
 int _qmtxkey;
@@ -273,13 +274,14 @@ protected string _sprintf(int type, void|mapping flags) {
 }
 
 void create(object pgsqlsess,string _query,int fetchlimit,
- int portalbuffersize) {
+ int portalbuffersize,int alltyped) {
   _pgsqlsess = pgsqlsess;
   query = _query;
   _datarows = ({ }); numrows = UNDEFINED;
   fetchmutex = Thread.Mutex();
   _fetchlimit=fetchlimit;
   _portalbuffersize=portalbuffersize;
+  _alltext = !alltyped;
   steallock();
 }
 

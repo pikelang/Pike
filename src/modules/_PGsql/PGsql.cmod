@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: PGsql.cmod,v 1.26 2008/08/21 03:17:53 srb Exp $
+ * $Id: PGsql.cmod,v 1.27 2008/08/25 12:04:53 srb Exp $
  *
  * PGsql, accelerator functions for Sql.pgsql for Pike.
  *
@@ -291,7 +291,7 @@ outofmem: Pike_fatal("Out of memory\n");
     long totalrecvd=0, recvdbstats=0;
     int nrows=0, buffer=0;
     int rowsreceived,inflight,fetchlimit,parentfetchlimit,portalbuffersize;
-    int booltext, alltext;
+    int alltext;
     struct svalue*bytesreceived;
     struct array*datarowdesc;
     struct object*portal,*pgsqlsess;
@@ -320,18 +320,14 @@ outofmem: Pike_fatal("Out of memory\n");
     f_arrow(2); portalbuffersize=Pike_sp[-1].u.integer;
     pop_stack();
 
+    ref_push_object(portal); ref_push_string(MK_STRING("_alltext"));
+    f_arrow(2); alltext=Pike_sp[-1].u.integer;
+    pop_stack();
+
     ref_push_object(portal); ref_push_string(MK_STRING("_buffer"));
     f_arrow(2);
     if(Pike_sp[-1].type == PIKE_T_INT)
       buffer=Pike_sp[-1].u.integer;
-    pop_stack();
-
-    ref_push_object(pgsqlsess); ref_push_string(MK_STRING("_booltext"));
-    f_arrow(2); booltext=Pike_sp[-1].u.integer;
-    pop_stack();
-
-    ref_push_object(pgsqlsess); ref_push_string(MK_STRING("_alltext"));
-    f_arrow(2); alltext=Pike_sp[-1].u.integer;
     pop_stack();
 
     ref_push_object(pgsqlsess); ref_push_string(MK_STRING("_fetchlimit"));
@@ -366,7 +362,7 @@ outofmem: Pike_fatal("Out of memory\n");
               break;
             case BOOLOID: {
 	      int val=low_getbyte();
-	      if(booltext) {
+	      if(alltext) {
 	        struct pike_string*s;
 	        s = MK_STRING("f");
 	        if(val)
@@ -377,15 +373,18 @@ outofmem: Pike_fatal("Out of memory\n");
 	        push_int(val);
               break;
 	    }
-            case FLOAT4OID: {
-              char*tb=xalloc(collen+1);
-              char*p=tb;
-              do
-                *p++=low_getbyte();
-              while(--collen);
-              *p=0; push_float(atof(tb)); xfree(tb);
+            case FLOAT4OID:
+	      if(alltext)
+                push_string(low_getstring(collen));
+	      else {
+                char*tb=xalloc(collen+1);
+                char*p=tb;
+                do
+                  *p++=low_getbyte();
+                while(--collen);
+                *p=0; push_float(atof(tb)); xfree(tb);
+	      }
               break;
-            }
             case INT2OID:push_int(low_getint16());
               break;
             case INT8OID: {
