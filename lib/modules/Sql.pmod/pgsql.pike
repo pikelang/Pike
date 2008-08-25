@@ -744,7 +744,7 @@ final int _decodemsg(void|state waitforstate) {
               switch(datarowdesc[i]->type) {
 	        default:value=_c.getstring(collen);
                   break;
-                case CHAROID:value=_c.getbyte();
+                case CHAROID:value=atext?_c.getstring(1):_c.getbyte();
                   break;
                 case BOOLOID:value=_c.getbyte();
 		  if(atext)

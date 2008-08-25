@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: PGsql.cmod,v 1.27 2008/08/25 12:04:53 srb Exp $
+ * $Id: PGsql.cmod,v 1.28 2008/08/25 23:39:00 srb Exp $
  *
  * PGsql, accelerator functions for Sql.pgsql for Pike.
  *
@@ -356,9 +356,22 @@ outofmem: Pike_fatal("Out of memory\n");
           svp = low_mapping_string_lookup(drd.u.mapping, MK_STRING("type"));
 	  free_svalue(&drd);
           switch(svp->u.integer) {
-            default:push_string(low_getstring(collen));
-              break;
-            case CHAROID:push_int(low_getbyte());
+            case FLOAT4OID:
+	      if(!alltext) {
+                char*tb=xalloc(collen+1);
+                char*p=tb;
+                do
+                  *p++=low_getbyte();
+                while(--collen);
+                *p=0; push_float(atof(tb)); xfree(tb);
+                break;
+            case CHAROID:
+	        if(!alltext) {
+	          push_int(low_getbyte());
+	          break;
+	        }
+	      }
+	    default:push_string(low_getstring(collen));
               break;
             case BOOLOID: {
 	      int val=low_getbyte();
@@ -373,18 +386,6 @@ outofmem: Pike_fatal("Out of memory\n");
 	        push_int(val);
               break;
 	    }
-            case FLOAT4OID:
-	      if(alltext)
-                push_string(low_getstring(collen));
-	      else {
-                char*tb=xalloc(collen+1);
-                char*p=tb;
-                do
-                  *p++=low_getbyte();
-                while(--collen);
-                *p=0; push_float(atof(tb)); xfree(tb);
-	      }
-              break;
             case INT2OID:push_int(low_getint16());
               break;
             case INT8OID: {
