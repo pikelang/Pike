@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: module.pmod,v 1.14 2008/03/27 12:57:39 jonasw Exp $
+// $Id: module.pmod,v 1.15 2008/08/26 13:39:07 jonasw Exp $
 
 //! Abstract parse tree node.
 class ParseNode {
@@ -157,6 +157,7 @@ ParseNode optimize(ParseNode node, string|void parentOp) {
 	//  document IDs in the execution pass to compute the negation.
 	int(0..1) is_minus_only(ParseNode n) {
 	  return
+	    n->op == "text" &&
 	    !sizeof(n->plusWords) &&
 	    !sizeof(n->plusPhrases) &&
 	    (!sizeof(n->words) || has_value(n->words, "*"))&&
