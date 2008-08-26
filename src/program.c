@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.749 2008/08/18 15:18:18 mast Exp $
+|| $Id: program.c,v 1.750 2008/08/26 16:13:05 mast Exp $
 */
 
 #include "global.h"
@@ -8050,6 +8050,7 @@ static void run_cleanup(struct compilation *c, int delayed)
     if(delayed && c->target)
     {
       struct program *p = c->target;
+
       /* Free the constants in the failed program, to untangle the
        * cyclic references we might have to this program, typically
        * in parent pointers in nested classes. */
@@ -8073,24 +8074,32 @@ static void run_cleanup(struct compilation *c, int delayed)
       SAFE_APPLY_MASTER("unregister",1);
       pop_stack();
 
-      /* Free the target here to avoid false alarms in the debug check
-       * below. */
-      free_program (c->target);
-      c->target = NULL;
+      {
+#ifdef PIKE_DEBUG
+	int refs = p->refs;
+#endif
+
+	/* Free the target here to avoid false alarms in the debug
+	 * check below. */
+	free_program (c->target);
+	c->target = NULL;
 
 #ifdef PIKE_DEBUG
-      if (p->refs > 1) {
-	/* Other programs can have indexed out constants from p, which
-	 * might be broken themselves and/or keep references to p
-	 * through the parent pointer. We should find all those other
-	 * programs and invalidate them too, but how can that be done?
-	 * The whole delayed compilation thingie is icky icky icky... :P
-	 * /mast */
-	fprintf(stderr, "Warning: Program still got %d "
-		"external refs after unregister:\n", p->refs - 1);
-	locate_references(p);
-      }
+	if (refs > 1) {
+	  /* Other programs can have indexed out constants from p, which
+	   * might be broken themselves and/or keep references to p
+	   * through the parent pointer. We should find all those other
+	   * programs and invalidate them too, but how can that be done?
+	   * The whole delayed compilation thingie is icky icky icky... :P
+	   * /mast */
+	  fprintf(stderr, "Warning: Program %p still got %d "
+		  "external refs after unregister:\n", p, p->refs);
+	  locate_references(p);
+	  fprintf (stderr, "Describing program:\n", p);
+	  describe_something (p, T_PROGRAM, 0, 0, 0, NULL);
+	}
 #endif
+      }
     }
   }
   else
