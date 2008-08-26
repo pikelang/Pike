@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.240 2008/08/24 21:32:00 srb Exp $
+|| $Id: operators.c,v 1.241 2008/08/26 18:34:44 srb Exp $
 */
 
 #include "global.h"
@@ -47,6 +47,22 @@
  */
 #undef PIKE_MERGE_DESTR_A
 #define PIKE_MERGE_DESTR_A	0
+
+    /* These calculations should always give some margin based on the size. */
+    /* One extra char for the sign. */
+#define MAX_INT_SPRINTF_LEN (1 + (SIZEOF_INT_TYPE * 5 + 1) / 2)
+
+#define MAX_FLOAT_PREC_LEN ((SIZEOF_FLOAT_TYPE * 5 + 1) / 2)
+    /* Six extra chars: Mantissa sign, decimal point, zero before the
+     * decimal point, the 'e', exponent sign, and an extra digit due
+     * to the mantissa/exponent split. */
+#define MAX_FLOAT_SPRINTF_LEN (6 + MAX_FLOAT_PREC_LEN)
+
+#define MAX(a,b)  ((a)>(b)?(a):(b))
+
+    /* Enough to hold a Pike float or int in textform including a trailing \0
+     */
+#define MAX_NUM_BUF  (MAX(MAX_INT_SPRINTF_LEN,MAX_FLOAT_SPRINTF_LEN)+1)
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -343,12 +359,9 @@ PMOD_EXPORT void o_cast_to_int(void)
 /* Special case for casting to string. */
 PMOD_EXPORT void o_cast_to_string(void)
 {
-  char buf[200];
+  char buf[MAX_NUM_BUF];
   switch(sp[-1].type)
   {
-  case PIKE_T_STRING:
-    return;
-
   case T_OBJECT:
     if(!sp[-1].u.object->prog) {
       /* Casting a destructed object should be like casting a zero. */
@@ -389,10 +402,6 @@ PMOD_EXPORT void o_cast_to_string(void)
     }
     return;
 	    
-  case T_INT:
-    sprintf(buf, "%"PRINTPIKEINT"d", sp[-1].u.integer);
-    break;
-
   case T_ARRAY:
     {
       int i;
@@ -464,12 +473,20 @@ PMOD_EXPORT void o_cast_to_string(void)
     }
     return;
 
-  case T_FLOAT:
-    sprintf(buf, "%f", (double)sp[-1].u.float_number);
-    break;
-
   default:
     Pike_error("Cannot cast %s to string.\n", get_name_of_type(sp[-1].type));
+
+  case PIKE_T_STRING:
+    return;
+
+  case T_FLOAT:
+    sprintf(buf,"%.*"PRINTPIKEFLOAT"g",
+     MAX_FLOAT_PREC_LEN, sp[-1].u.float_number);
+    break;
+
+  case T_INT:
+    sprintf(buf, "%"PRINTPIKEINT"d", sp[-1].u.integer);
+    break;
   }
 	
   sp[-1].type = PIKE_T_STRING;
@@ -1518,7 +1535,7 @@ PMOD_EXPORT void f_add(INT32 args)
   {
     struct pike_string *r;
     PCHARP buf;
-    char buffer[50];
+    char buffer[MAX_NUM_BUF];
     int max_shift=0;
 
     if ((sp[-args].type != T_STRING) && (sp[1-args].type != T_STRING)) {
@@ -1555,14 +1572,6 @@ PMOD_EXPORT void f_add(INT32 args)
     } else {
       e = -args;
     }
-
-    /* These calculations should always give some margin based on the size. */
-    /* One extra char for the sign. */
-#define MAX_INT_SPRINTF_LEN (1 + (SIZEOF_INT_TYPE * 5 + 1) / 2)
-    /* Six extra chars: Mantissa sign, decimal point, zero before the
-     * decimal point, the 'e', exponent sign, and an extra digit due
-     * to the mantissa/exponent split. */
-#define MAX_FLOAT_SPRINTF_LEN (6 + (SIZEOF_FLOAT_TYPE * 5 + 1) / 2)
 
     size=0;
     for(e=-args;e<0;e++)
@@ -1609,7 +1618,8 @@ PMOD_EXPORT void f_add(INT32 args)
 	goto append_buffer;
 
       case T_FLOAT:
-	sprintf(buffer,"%"PRINTPIKEFLOAT"f",sp[e].u.float_number);
+	sprintf(buffer,"%.*"PRINTPIKEFLOAT"g",
+         MAX_FLOAT_PREC_LEN, sp[e].u.float_number);
 #ifdef PIKE_DEBUG
 	if (strlen (buffer) > MAX_FLOAT_SPRINTF_LEN)
 	  Pike_fatal ("Formatted float %s is %"PRINTSIZET"u, "
