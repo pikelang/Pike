@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: block_alloc.h,v 1.87 2008/05/24 12:18:50 mast Exp $
+|| $Id: block_alloc.h,v 1.88 2008/08/26 16:18:03 grubba Exp $
 */
 
 #undef PRE_INIT_BLOCK
@@ -97,7 +97,8 @@
  * the payload data (i.e. that aren't x). This can be used in BSIZE to
  * make the block fit within a page. */
 #ifndef BLOCK_HEADER_SIZE
-#define BLOCK_HEADER_SIZE (3 * sizeof (void *) + sizeof (INT32))
+#define BLOCK_HEADER_SIZE (3 * sizeof (void *) + sizeof (INT32) \
+			   DO_IF_DMALLOC( + sizeof(INT32)))
 #endif
 
 #define BLOCK_ALLOC(DATA,BSIZE)						\
