@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.241 2008/08/26 18:34:44 srb Exp $
+|| $Id: operators.c,v 1.242 2008/08/26 20:33:14 nilsson Exp $
 */
 
 #include "global.h"
@@ -58,11 +58,9 @@
      * to the mantissa/exponent split. */
 #define MAX_FLOAT_SPRINTF_LEN (6 + MAX_FLOAT_PREC_LEN)
 
-#define MAX(a,b)  ((a)>(b)?(a):(b))
-
     /* Enough to hold a Pike float or int in textform including a trailing \0
      */
-#define MAX_NUM_BUF  (MAX(MAX_INT_SPRINTF_LEN,MAX_FLOAT_SPRINTF_LEN)+1)
+#define MAX_NUM_BUF  (MAXIMUM(MAX_INT_SPRINTF_LEN,MAX_FLOAT_SPRINTF_LEN)+1)
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
