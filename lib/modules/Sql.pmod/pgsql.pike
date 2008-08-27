@@ -93,6 +93,7 @@ int _bytessent;		     // Number of bytes sent
 private int warningsdropcount; // Number of uncollected warnings
 private int prepstmtused;    // Number of times prepared statements were used
 private int warningscollected;
+private int invalidatecache;
 
 private string host, database, user, pass;
 private int port;
@@ -850,6 +851,10 @@ final int _decodemsg(void|state waitforstate) {
 	    USERERROR(lastmessage
 	     +"\n"+pinpointerror(_c.portal->query,msgresponse->P));
 	    break;
+          case "08P01":case "42P05":
+	    errtype=protocolerror;
+	  case "XX000":case "42883":case "42P01":
+	    invalidatecache=1;
 	  default:
             lastmessage=sprintf("%s %s:%s %s\n (%s:%s:%s)\n%s%s%s%s\n%s",
 	     msgresponse->S,msgresponse->C,msgresponse->P||"",msgresponse->M,
@@ -1435,6 +1440,15 @@ final string status_commit() {
   return trbackendst(backendstatus);
 }
 
+final private void closestatement(array(string) plugbuf,mapping tp) {
+  string oldprep=tp->preparedname;
+  if(oldprep) {
+    PD("Close statement %s\n",oldprep);
+    plugbuf+=({"C",_c.plugint32(4+1+sizeof(oldprep)+1),
+     "S",oldprep,"\0"});
+  }
+}
+
 //! This is the only provided interface which allows you to query the
 //! database. If you wish to use the simpler "query" function, you need to
 //! use the @[Sql.Sql] generic SQL-object.
@@ -1514,6 +1528,7 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
   mapping(string:mixed) tp;
   int tstart;
   if(forcecache==1 || forcecache!=0 && sizeof(q)>=MINPREPARELENGTH) {
+    array(string) plugbuf=({});
     if(tp=prepareds[q]) {
       if(tp->preparedname)
         prepstmtused++, preparedname=tp->preparedname;
@@ -1522,30 +1537,31 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
 	preparedname=PREPSTMTPREFIX+(string)pstmtcount++;
     }
     else {
-      int flushcache=0;
-      if(forcecache!=1 && createprefix->match(q))      // Flush cache on CREATE
-        flushcache=1;
-      if(totalhits>=cachedepth || flushcache) {
-        array(string) plugbuf=({});
+      if(totalhits>=cachedepth) {
         foreach(prepareds;string ind;tp) {
 	  int oldhits=tp->hits;
 	  totalhits-=oldhits-(tp->hits=oldhits>>1);
-	  if(oldhits<=1 || flushcache) {
-	    string oldprep=tp->preparedname;
-	    if(oldprep) {
-	      PD("Close statement %s\n",oldprep);
-              plugbuf+=({"C",_c.plugint32(4+1+sizeof(oldprep)+1),
-               "S",oldprep,"\0"});
-	    }
+	  if(oldhits<=1) {
+	    closestatement(plugbuf,tp);
 	    m_delete(prepareds,ind);
 	  }
         }
-        if(sizeof(plugbuf))
-	  _c.sendcmd(plugbuf,1);			      // close expireds
-        PD("%O\n",plugbuf);
       }
-      if(!flushcache)
+      if(forcecache!=1 && createprefix->match(q))      // Flush cache on CREATE
+        invalidatecache=1;
+      else
         prepareds[q]=tp=([]);
+    }
+    if(invalidatecache) {
+      invalidatecache=0;
+      foreach(prepareds;;mapping np) {
+	closestatement(plugbuf,np);
+        m_delete(np,"preparedname");
+      }
+    }
+    if(sizeof(plugbuf)) {
+      _c.sendcmd(plugbuf,1);	 			      // close expireds
+      PD("%O\n",plugbuf);
     }
     tstart=gethrtime();
   }					  // pgsql_result autoassigns to portal
