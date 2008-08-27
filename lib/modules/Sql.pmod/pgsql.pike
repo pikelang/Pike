@@ -96,6 +96,8 @@ private int warningscollected;
 
 private string host, database, user, pass;
 private int port;
+private object createprefix
+ =Regexp("^[ \t\f\r\n]*[Cc][Rr][Ee][Aa][Tt][Ee][ \t\f\r\n]");
 private object fetchprefix
  =Regexp("^[ \t\f\r\n]*[Ff][Ee][Tt][Cc][Hh][ \t\f\r\n]");
 private object limitpostfix
@@ -1518,12 +1520,15 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
 	preparedname=PREPSTMTPREFIX+(string)pstmtcount++;
     }
     else {
-      if(totalhits>=cachedepth) {
+      int flushcache=0;
+      if(forcecache!=1 && createprefix->match(q))      // Flush cache on CREATE
+        flushcache=1;
+      if(totalhits>=cachedepth || flushcache) {
         array(string) plugbuf=({});
         foreach(prepareds;string ind;tp) {
 	  int oldhits=tp->hits;
 	  totalhits-=oldhits-(tp->hits=oldhits>>1);
-	  if(oldhits<=1) {
+	  if(oldhits<=1 || flushcache) {
 	    string oldprep=tp->preparedname;
 	    if(oldprep) {
 	      PD("Close statement %s\n",oldprep);
@@ -1537,7 +1542,8 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
 	  _c.sendcmd(plugbuf,1);			      // close expireds
         PD("%O\n",plugbuf);
       }
-      prepareds[q]=tp=([]);
+      if(!flushcache)
+        prepareds[q]=tp=([]);
     }
     tstart=gethrtime();
   }					  // pgsql_result autoassigns to portal
