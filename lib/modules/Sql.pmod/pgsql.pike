@@ -1485,6 +1485,8 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
 	  }
           continue;
         }
+	if(search(q,name)<0)
+	  continue;
       }
       from[rep]=name;
       string rval;
