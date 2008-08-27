@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: block_alloc.h,v 1.88 2008/08/26 16:18:03 grubba Exp $
+|| $Id: block_alloc.h,v 1.89 2008/08/27 20:52:35 grubba Exp $
 */
 
 #undef PRE_INIT_BLOCK
@@ -277,13 +277,12 @@ static void PIKE_CONCAT3(dmalloc_free_,DATA,_block) (			\
 }									\
 )									\
 									\
-void PIKE_CONCAT(really_free_,DATA)(struct DATA *d)			\
+BA_STATIC BA_INLINE							\
+void BA_UL(PIKE_CONCAT(really_free_,DATA))(struct DATA *d)		\
 {									\
   struct PIKE_CONCAT(DATA,_block) *blk;					\
 									\
   EXIT_BLOCK(d);							\
-									\
-  DO_IF_RUN_UNLOCKED(mt_lock(&PIKE_CONCAT(DATA,_mutex)));               \
 									\
   DO_IF_DMALLOC({							\
       blk = PIKE_CONCAT(DATA,_free_blocks);				\
@@ -410,9 +409,15 @@ void PIKE_CONCAT(really_free_,DATA)(struct DATA *d)			\
 									\
     --PIKE_CONCAT3(num_empty_,DATA,_blocks);				\
   }									\
-									\
-  DO_IF_RUN_UNLOCKED(mt_unlock(&PIKE_CONCAT(DATA,_mutex)));             \
 }									\
+									\
+DO_IF_RUN_UNLOCKED(                                                     \
+		   void PIKE_CONCAT(really_free_,DATA)(struct DATA *d)	\
+{									\
+  DO_IF_RUN_UNLOCKED(mt_lock(&PIKE_CONCAT(DATA,_mutex)));		\
+  BA_UL(PIKE_CONCAT(really_free_,DATA))(d);				\
+  DO_IF_RUN_UNLOCKED(mt_unlock(&PIKE_CONCAT(DATA,_mutex)));             \
+})									\
 									\
 static void PIKE_CONCAT3(free_all_,DATA,_blocks_unlocked)(void)		\
 {									\
