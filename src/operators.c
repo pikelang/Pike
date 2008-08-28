@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.243 2008/08/28 15:15:42 grubba Exp $
+|| $Id: operators.c,v 1.244 2008/08/28 20:11:47 grubba Exp $
 */
 
 #include "global.h"
@@ -2114,6 +2114,7 @@ static int generate_comparison(node *n)
 		 "f_ge: %p\n",
 		 CAR(n)->u.sval.u.efun->function,
 		 f_eq, f_ne, f_lt, f_le, f_gt, f_ge);
+    modify_stack_depth(-1);
     return 1;
   }
   return 0;
@@ -2425,6 +2426,7 @@ static int generate_minus(node *n)
   case 2:
     do_docode(CDR(n),DO_NOT_COPY_TOPLEVEL);
     emit0(F_SUBTRACT);
+    modify_stack_depth(-1);
     return 1;
   }
   return 0;
@@ -2768,6 +2770,7 @@ static int generate_and(node *n)
   case 2:
     do_docode(CDR(n),0);
     emit0(F_AND);
+    modify_stack_depth(-1);
     return 1;
 
   default:
@@ -3009,6 +3012,7 @@ static int generate_or(node *n)
   case 2:
     do_docode(CDR(n),0);
     emit0(F_OR);
+    modify_stack_depth(-1);
     return 1;
 
   default:
@@ -3255,6 +3259,7 @@ static int generate_xor(node *n)
   case 2:
     do_docode(CDR(n),0);
     emit0(F_XOR);
+    modify_stack_depth(-1);
     return 1;
 
   default:
@@ -3334,6 +3339,7 @@ static int generate_lsh(node *n)
   {
     do_docode(CDR(n),DO_NOT_COPY_TOPLEVEL);
     emit0(F_LSH);
+    modify_stack_depth(-1);
     return 1;
   }
   return 0;
@@ -3416,6 +3422,7 @@ static int generate_rsh(node *n)
     struct compilation *c = THIS_COMPILATION;
     do_docode(CDR(n),DO_NOT_COPY);
     emit0(F_RSH);
+    modify_stack_depth(-1);
     return 1;
   }
   return 0;
@@ -3705,6 +3712,7 @@ static int generate_multiply(node *n)
   case 2:
     do_docode(CDR(n),0);
     emit0(F_MULTIPLY);
+    modify_stack_depth(-1);
     return 1;
 
   default:
@@ -4069,6 +4077,7 @@ static int generate_divide(node *n)
     struct compilation *c = THIS_COMPILATION;
     do_docode(CDR(n),DO_NOT_COPY_TOPLEVEL);
     emit0(F_DIVIDE);
+    modify_stack_depth(-1);
     return 1;
   }
   return 0;
@@ -4250,6 +4259,7 @@ static int generate_mod(node *n)
     struct compilation *c = THIS_COMPILATION;
     do_docode(CDR(n),DO_NOT_COPY_TOPLEVEL);
     emit0(F_MOD);
+    modify_stack_depth(-1);
     return 1;
   }
   return 0;

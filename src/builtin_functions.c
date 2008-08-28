@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.685 2008/08/22 15:33:50 grubba Exp $
+|| $Id: builtin_functions.c,v 1.686 2008/08/28 20:11:47 grubba Exp $
 */
 
 #include "global.h"
@@ -2653,6 +2653,7 @@ static int generate_this_object(node *n)
   else level = 0;
 
   emit1(F_THIS_OBJECT, level);
+  modify_stack_depth(1);
   return 1;
 }
 
@@ -9582,8 +9583,9 @@ void init_builtin_efuns(void)
 		tFunc(tArray,tArr(tInt)), 0, OPT_TRY_OPTIMIZE);
 
 #define tMapStuff(IN,SUB,OUTFUN,OUTSET,OUTPROG,OUTMIX,OUTARR,OUTMAP) \
-  tOr6( tFuncV(IN tFuncV(SUB,tSetvar(0,tAnd(tMix,tZero)),tSetvar(2,tAny)),tVar(0), \
-	       OUTFUN),							\
+  tOr6( tFuncV(IN tFuncV(SUB,tSetvar(0,tAnd(tMix,tZero)),	     \
+			 tSetvar(2,tAny)),tVar(0),		     \
+	       OUTFUN),						     \
 	tFuncV(IN tSet(tMix),tMix,OUTSET), \
 	tFuncV(IN tMap(tMix, tSetvar(2,tMix)), tMix, OUTMAP), \
         tFuncV(IN tArray, tMix, OUTARR), \
