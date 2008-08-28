@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: jvm.c,v 1.91 2008/05/13 16:00:07 marcus Exp $
+|| $Id: jvm.c,v 1.92 2008/08/28 13:48:50 jonasw Exp $
 */
 
 /*
@@ -50,6 +50,10 @@
 
 #ifdef HAVE_FFI_H
 #include <ffi.h>
+#else
+#ifdef HAVE_FFI_FFI_H
+#include <ffi/ffi.h>
+#endif /* HAVE_FFI_FFI_H */
 #endif /* HAVE_FFI_H */
 
 #ifdef _REENTRANT

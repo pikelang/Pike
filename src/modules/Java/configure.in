@@ -313,9 +313,19 @@ if test "x$with_java" = xyes; then
 
   PIKE_PKG_CONFIG(libffi)
 
-  AC_CHECK_HEADERS(jni.h winbase.h setjmp.h ffi.h)
+  # FFI on OS X (10.5 or newer) expects MACOSX defined
+  DO_IF_OS(Darwin,
+  [
+    AC_SYS_COMPILER_FLAG(-DMACOSX, define_macosx, CPPFLAGS)
+  ])
+
+  AC_CHECK_HEADERS(jni.h winbase.h setjmp.h ffi.h ffi/ffi.h)
   AC_CHECK_TYPES([ffi_arg, ffi_sarg],,,[#ifdef HAVE_FFI_H
 #include <ffi.h>
+#else
+#ifdef HAVE_FFI_FFI_H
+#include <ffi/ffi.h>
+#endif
 #endif])
 
   pike_cv_java=no
@@ -413,7 +423,7 @@ if test "x$with_java" = xyes; then
 
       pike_java_ffi=no
       AC_CHECK_LIB(ffi, ffi_prep_closure, [
-	if test "$ac_cv_header_ffi_h" = yes; then
+	if test "$ac_cv_header_ffi_h" = yes -o "$ac_cv_header_ffi_ffi_h" = yes; then
 	  LIBS="-lffi $LIBS"
 	  JAVA_LIBS="-lffi ${JAVA_LIBS}"
 	  AC_DEFINE(HAVE_FFI)
