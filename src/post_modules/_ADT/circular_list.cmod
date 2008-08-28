@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: circular_list.cmod,v 1.19 2008/05/31 20:36:39 nilsson Exp $
+|| $Id: circular_list.cmod,v 1.20 2008/08/28 12:11:14 grubba Exp $
 */
 
 #include "global.h"
@@ -125,84 +125,85 @@ PIKECLASS CircularList
   } 
 
  
-/*! @decl CircularList `+(CircularList coll)
+/*! @decl CircularList `+(CircularList ... coll)
  *! Addition operator
- *! Append the content of this CircularList and @[coll] and return the results 
- *! as a new @[CircularList].
+ *!
+ *! Append the content of this CircularList and @@@[coll] and
+ *! return the results as a new @[CircularList].
  *! 
  *! @param coll 
- *!   The list to append to his list
+ *!   The lists to append to this list
  *!
  *! @returns
  *!   The result of the append as a new @[CircularList]. 
  */
 
 
-  PIKEFUN object `+(object coll)
+  PIKEFUN object `+(object ... coll)
   {
     struct array *a;
     struct CircularList_struct *tmpList;
-    struct CircularList_struct *l;
     int start=0;
-    int end;
-    int tmp;
-    int n;
-    //Should work  om collection classes too
-    if (coll->prog == CircularList_program)
-    {
-      l = OBJ2_CIRCULARLIST(coll);
+    int i;
+    ptrdiff_t sz = THIS->size;
 
-      a=allocate_array_no_init(THIS->a->size+l->a->size, 0);
-      a->type_field = THIS->a->type_field | l->a->type_field;
-      tmpList=THIS;
-      
-      for(n=0; n<2; n++)
+    for (i=0; i < args; i++) {
+      // FIXME: Ought to work on collection classes too
+      if (coll[i].u.object->prog == CircularList_program)
       {
-	end = circ2array(tmpList->size);
-	
-	if (end < tmpList->pos)
-	{
-	  //if the list pass the end of the array do it in two parts
-	  tmp = tmpList->a->size - tmpList->pos;
-	  
-	  assign_svalues_no_free(ITEM(a)+start, 
-				 ITEM(tmpList->a) + tmpList->pos, 
-				 tmp, 
-				 tmpList->a->type_field);
-	  
-	  assign_svalues_no_free(ITEM(a)+(tmp+start), 
-				 ITEM(tmpList->a), 
-				 tmpList->size-tmp, 
-				 tmpList->a->type_field);
-	}
-	else
-	{
-	  //just do it direct
-	  
-	  assign_svalues_no_free(ITEM(a)+start, 
-				 ITEM(tmpList->a) + tmpList->pos, 
-				 tmpList->size, 
-				 tmpList->a->type_field);
-	}
-	 
-	start = tmpList->size;
-	tmpList =l;
+	tmpList = OBJ2_CIRCULARLIST(coll[i].u.object);
+	sz += tmpList->size;
       }
-          
-      //put the added array in a CircularList and return it
-      push_array(a);
+      else
       {
-	struct object *o=clone_object(CircularList_program, 1);
-	OBJ2_CIRCULARLIST(o)->size = THIS->size+l->size;
-      
-	push_object(o);
+	SIMPLE_BAD_ARG_ERROR("`+",i+1,"ADT.CircularList");
       }
     }
-    else
+
+    /* Allocate double the space, so that we can grow. */
+    push_array(a = allocate_array_no_init(sz*2, 0));
+
+    a->type_field = 0;
+
+    for (i = -1; i < args; i++) {
+      if (i >= 0) {
+	tmpList = OBJ2_CIRCULARLIST(coll[i].u.object);
+      } else {
+	tmpList = THIS;
+      }
+      a->type_field |= tmpList->a->type_field;
+
+      if (tmpList->pos + tmpList->size > tmpList->a->size) {
+	//if the list pass the end of the array do it in two parts
+	int tmp = tmpList->a->size - tmpList->pos;
+	  
+	assign_svalues_no_free(ITEM(a)+start, 
+			       ITEM(tmpList->a) + tmpList->pos, 
+			       tmp, 
+			       tmpList->a->type_field);
+	  
+	assign_svalues_no_free(ITEM(a)+(tmp+start), 
+			       ITEM(tmpList->a), 
+			       tmpList->size-tmp, 
+			       tmpList->a->type_field);
+      } else {
+	//just do it direct
+	  
+	assign_svalues_no_free(ITEM(a)+start, 
+			       ITEM(tmpList->a) + tmpList->pos, 
+			       tmpList->size, 
+			       tmpList->a->type_field);
+      }
+      start += tmpList->size;
+    }
+      
+    //put the added array in a CircularList and return it
     {
-      SIMPLE_BAD_ARG_ERROR("`+",1,"ADT.CircularList");
+      struct object *o=clone_object(CircularList_program, 1);
+      OBJ2_CIRCULARLIST(o)->size = sz;
+      
+      push_object(o);
     }
-    
   }
 
   
