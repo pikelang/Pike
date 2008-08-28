@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.242 2008/08/26 20:33:14 nilsson Exp $
+|| $Id: operators.c,v 1.243 2008/08/28 15:15:42 grubba Exp $
 */
 
 #include "global.h"
@@ -1802,6 +1802,7 @@ static int generate_sum(node *n)
     {
       emit0(F_ADD);
     }
+    modify_stack_depth(-1);
     return 1;
 
   case 3:
@@ -1815,9 +1816,11 @@ static int generate_sum(node *n)
       do_docode(*first_arg, 0);
       do_docode(*second_arg, 0);
       emit0(F_ADD_FLOATS);
+      modify_stack_depth(-1);
       if (third_arg[0]->type == float_type_string) {
 	do_docode(*third_arg, 0);
 	emit0(F_ADD_FLOATS);
+	modify_stack_depth(-1);
 	return 1;
       }
     }
@@ -1828,10 +1831,12 @@ static int generate_sum(node *n)
       do_docode(*first_arg, 0);
       do_docode(*second_arg, 0);
       emit0(F_ADD_INTS);
+      modify_stack_depth(-1);
       if (third_arg[0]->type &&
 	  pike_types_le(third_arg[0]->type, int_type_string)) {
 	do_docode(*third_arg, 0);
 	emit0(F_ADD_INTS);
+	modify_stack_depth(-1);
 	return 1;
       }
     }
@@ -1841,6 +1846,7 @@ static int generate_sum(node *n)
     }
     do_docode(*third_arg, 0);
     emit0(F_ADD);
+    modify_stack_depth(-1);
     
     return 1;
 
