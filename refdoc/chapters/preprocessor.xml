@@ -202,7 +202,9 @@ source file by using double quotes, or searched for in the include
 paths. To include a file with absolute or relative path, use double
 quotes, e.g. <tt>#include "constants.pike"</tt> or <tt>#include
 "../debug.h"</tt>. To include from the include paths, use less than
-and greater than, e.g. <tt>#include &lt;profiling.h&gt;</tt>.</p>
+and greater than, e.g. <tt>#include &lt;profiling.h&gt;</tt>. It is
+also possible to include a file whose path is defined in a
+preprocessor define, e.g. <tt>#include USER_SETTINGS</tt>.</p>
 </subsection>
 
 <subsection title="#if">
