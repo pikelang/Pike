@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sequence.cmod,v 1.20 2008/05/31 20:36:39 nilsson Exp $
+|| $Id: sequence.cmod,v 1.21 2008/08/28 11:37:32 grubba Exp $
 */
 
 #include "global.h"
@@ -14,6 +14,7 @@
 #include "interpret.h"
 #include "stralloc.h"
 #include "program.h"
+#include "operators.h"
 
 #include "program_id.h"
 
@@ -93,39 +94,46 @@ PIKECLASS Sequence
   } 
 
 
-/*! @decl Sequence `+(Sequence coll)
+/*! @decl Sequence `+(Sequence ... coll)
  *! Addition operator
- *! Append the content of @[coll] to thies sequence and return the results 
+ *!
+ *! Append the content of @@@[coll] to this sequence and return the results 
  *! as a new @[Sequence].
  *! 
  *! @param coll 
- *!   The sequence to append to his sequence.
+ *!   The sequences to append to this sequence.
  *!
  *! @returns
  *!   The result of the append as a new @[Sequence]. 
  */
 
-  PIKEFUN object `+(object coll)
+  PIKEFUN object `+(object ... coll)
   {
-    //Should work  om collection classes too
-    if (coll->prog == Sequence_program)
-    {
-      ref_push_array(THIS->a);
-      ref_push_array(OBJ2_SEQUENCE(coll)->a);
-      push_array(add_arrays(Pike_sp-2, 2));
-  
-      push_object(clone_object(Sequence_program, 1));
+    int i;
+
+    ref_push_array(THIS->a);
+
+    for(i=0; i < args; i++) {
+      //FIXME: Ought to work on collection classes too
+      if (coll[i].u.object->prog == Sequence_program)
+      {
+	ref_push_array(OBJ2_SEQUENCE(coll[i].u.object)->a);
+      }
+      else
+      {
+	SIMPLE_BAD_ARG_ERROR("`+",i+1,"ADT.Sequence");
+      }
     }
-    else
-    {
-      SIMPLE_BAD_ARG_ERROR("`+",1,"ADT.Sequence");
-    }
+    f_add(args+1);
+    push_object(clone_object(Sequence_program, 1));
+    stack_pop_n_elems_keep_top(args);
   }
 
   
-/*! @decl Sequence `-(Sequence coll)
+/*! @decl Sequence `-(Sequence ... coll)
  *! Subtraction operator
- *! Removes those values in this sequence that also are present in @[coll] 
+ *!
+ *! Removes those values in this sequence that also are present in @@@[coll] 
  *! and return the results as a new @[Sequence].
  *! 
  *! @param coll 
@@ -135,19 +143,26 @@ PIKECLASS Sequence
  *!   The result of the subtraction as a new @[Sequence]. 
  */
 
-  PIKEFUN object `-(object coll)
+  PIKEFUN object `-(object ... coll)
   {
-    //Should work on collection classes too
-    if (coll->prog == Sequence_program)
-    {
-      push_array(subtract_arrays(THIS->a, OBJ2_SEQUENCE(coll)->a));
-  
-      push_object(clone_object(Sequence_program, 1));
+    int i;
+
+    ref_push_array(THIS->a);
+
+    for (i = 0; i < args; i++) {
+      //FIXME: Ought to work on collection classes too
+      if (coll[i].u.object->prog == Sequence_program)
+      {
+	ref_push_array(OBJ2_SEQUENCE(coll[i].u.object)->a);
+      }
+      else
+      {
+	SIMPLE_BAD_ARG_ERROR("`-",i+1,"ADT.Sequence");
+      }
     }
-    else
-    {
-      SIMPLE_BAD_ARG_ERROR("`-",1,"ADT.Sequence");
-    }
+    f_minus(args+1);
+    push_object(clone_object(Sequence_program, 1));
+    stack_pop_n_elems_keep_top(args);
   }
     
   
