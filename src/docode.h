@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.h,v 1.20 2008/04/14 10:14:38 grubba Exp $
+|| $Id: docode.h,v 1.21 2008/08/28 15:13:19 grubba Exp $
 */
 
 #ifndef DOCODE_H
@@ -29,6 +29,7 @@ void push_explicit(INT32 address);
 INT32 pop_address(void);
 int alloc_label(void);
 int do_jump(int token,INT32 lbl);
+void modify_stack_depth(int delta);
 void do_pop(int x);
 int do_docode(node *n, int flags);
 void do_cond_jump(node *n, int label, int iftrue, int flags);

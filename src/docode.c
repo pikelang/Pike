@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.c,v 1.203 2008/07/14 21:39:20 grubba Exp $
+|| $Id: docode.c,v 1.204 2008/08/28 15:13:19 grubba Exp $
 */
 
 #include "global.h"
@@ -245,6 +245,16 @@ static int ins_label(int lbl)
   if(lbl==-1) lbl=alloc_label();
   low_insert_label(lbl);
   return lbl;
+}
+
+void modify_stack_depth(int delta)
+{
+  current_stack_depth += delta;
+#ifdef PIKE_DEBUG
+  if (current_stack_depth < 0) {
+    Pike_fatal("Popped out of virtual stack.\n");
+  }
+#endif
 }
 
 void do_pop(int x)
