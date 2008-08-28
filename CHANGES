@@ -23,7 +23,18 @@ o New `[..] operator function.
   for how the range bounds are specified. For compatibility, if there
   is no `[..] then `[] is still called for range operations.
 
-  FIXME: Describe relation with Pike.INDEX_FROM_BEG/END & OPEN_BOUND.
+  The `[..] callback will get four arguments, start value, start type,
+  end value and end type. The type arguments is any of
+  Pike.INDEX_FROM_BEG, Pike.INDEX_FROM_END or Pike.OPEN_BOUND. Here
+  are a few examples of what input arguments different calls would
+  generate.
+
+    [..]      0   OPEN_BOUND       0   OPEN_BOUND
+    [1..]     1   INDEX_FROM_BEG   0   OPEN_BOUND
+    [..2]     0   OPEN_BOUND       2   INDEX_FROM_BEG
+    [3..4]    3   INDEX_FROM_BEG   4   INDEX_FROM_BEG
+    [<5..]    5   INDEX_FROM_END   0   OPEN_BOUND
+    [6..<7]   6   INDEX_FROM_BEG   7   INDEX_FROM_END
 
 o Generalized this and this_program.
 
@@ -158,7 +169,7 @@ o Unicode
 o The keyword protected
 
   The modifier protected is now an alias for the modifier static.
-  NOTE: In next release static will be deprecated.
+  NOTE: In the next release static will be deprecated.
 
 o extern declared variables
   
@@ -185,6 +196,8 @@ o __attribute__ and __deprecated__
     mixed fun(__deprecated__(mixed) obsolete_arg);
     __deprecated__(mixed) obsolete_variable;
 
+
+    __attribute__(deprecated)
  FIXME: syntax for __attribute__
 
 o __func__
@@ -197,9 +210,11 @@ o __func__
 
     error("Error in " __func__ ".\n");
 
-o __dir__
+o __DIR__
 
-  FIXME
+  __DIR__ is a new preprocessor symbol that resolves to the directory
+  that the current file is placed in. Similar to how __FILE__ points
+  out the file the code is placed in.
 
 o #pragma {no_,}deprecation_warnings
 
@@ -212,9 +227,16 @@ o #pragma {no_,}deprecation_warnings
 
     #pragma deprecation_warnings
 
-o 7.4::blaha FIXME
+o Compatibility name spaces
 
-o Iterator->next() no longer optional. FIXME
+  Older versions of a function can be reached through its version name
+  space. For example the 7.4 version of the hash function can be
+  called through 7.4::hash().
+
+o Iterator API
+
+  The iterator API method Iterator->next() is no longer optional.
+  FIXME: Compatibility implications?
 
 
 Extensions and New Functions
@@ -266,7 +288,7 @@ o encode/decode value and programs
    --with-portable-bytecode is now the default. Pike programs that have
    been dumped on one architecture now can be decoded on another.
 
-o sscanf %H %[^-X] (!= %[^X-]) %[X-X]  FIXME
+o sscanf %[^-X] (!= %[^X-]) %[X-X]  FIXME
 
 o gethrtime, gethrvtime, gauge
 
@@ -347,19 +369,17 @@ o Calendar
 
 o CompilerEnvironment & CompilerEnvironment()->PikeCompiler
 
-  The Pike compiler has been refactored to be more object-oriented
-  and more transparent. It is now possible to customize the compiler
-  by overloading functions in the above two classes.
+  The Pike compiler has been refactored to be more object-oriented and
+  more transparent. It is now possible to customize the compiler by
+  overloading functions in the above two classes. The compiler object
+  used by Pike internally is available through
+  DefaultCompilerEnvironment.
 
 o Debug
 
   The new function count_objects() will return the different kinds of
   objects existing within the Pike process. Useful when trying to
   pinpoint a leak of Pike objects.
-
-o DefaultCompilerEnvironment
-
-  The CompilerEnvironment object used by Pike internally.
 
 o Error
 
