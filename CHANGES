@@ -196,9 +196,19 @@ o __attribute__ and __deprecated__
     mixed fun(__deprecated__(mixed) obsolete_arg);
     __deprecated__(mixed) obsolete_variable;
 
+  The deprecated type flag using __deprecated__ is a convenience
+  syntax to use instead of e.g.
 
-    __attribute__(deprecated)
- FIXME: syntax for __attribute__
+    void f(void|__attribute__("deprecated",int) timeout)
+
+  Other uses of __attribute__ in type declarations can be seen in e.g.
+  the type for werror():
+
+    > typeof(werror);
+    (1) Result: scope(0,function(string : int) |
+        function(__attribute__("sprintf_format", string),
+                 __attribute__("sprintf_args", mixed) ... : int) |
+        function(array(string), mixed ... : int))
 
 o __func__
 
@@ -236,7 +246,6 @@ o Compatibility name spaces
 o Iterator API
 
   The iterator API method Iterator->next() is no longer optional.
-  FIXME: Compatibility implications?
 
 
 Extensions and New Functions
@@ -283,12 +292,15 @@ o sprintf() and sscanf()
       > sprintf("%q", "abc \x00 \" \' \12345");
       (1) Result: "\"abc \\0 \\\" ' \\u14e5\""
 
+  - Ranges in sscanf sets can now start with ^, even at the beginning
+    of the set specifier. Example: %[^-^] matches a set with only ^ in
+    it. To negate a set with - in it, the - character must now be the
+    last character in the set specifier.
+
 o encode/decode value and programs
 
    --with-portable-bytecode is now the default. Pike programs that have
    been dumped on one architecture now can be decoded on another.
-
-o sscanf %[^-X] (!= %[^X-]) %[X-X]  FIXME
 
 o gethrtime, gethrvtime, gauge
 
