@@ -1,7 +1,7 @@
 /*
  * This is part of the Postgres module for Pike.
  *
- * $Id: postgres.pike,v 1.38 2008/08/25 12:04:53 srb Exp $
+ * $Id: postgres.pike,v 1.39 2008/08/29 11:54:40 srb Exp $
  *
  */
 
@@ -405,6 +405,8 @@ int|object big_query(object|string q, mapping(string|int:mixed)|void bindings)
         // Special parameter
         continue;
       }
+      if(search(q,name)<0)
+	continue;			     // Omit unused references
     }
     from[rep]=name;
     string rval;
@@ -427,7 +429,7 @@ int|object big_query(object|string q, mapping(string|int:mixed)|void bindings)
   if(rep--) {
     q=replace(q,from[..rep],to[..rep]);
   }
-  return ::big_query(q, paramValues);
+  return paramValues ? ::big_query(q, paramValues): ::big_query(q);
 }
 
 //! This is an alias for @[big_query()], since @[big_query()] already supports
