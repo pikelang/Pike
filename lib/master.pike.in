@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.451 2008/08/14 13:14:10 mast Exp $
+// $Id: master.pike.in,v 1.452 2008/08/30 21:50:32 marcus Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -631,6 +631,9 @@ protected class Pike_7_4_master
   inherit Pike_7_2_master;
   local protected object Pike_7_4_compat_handler;
   void error(string f, mixed ... args);
+  void add_predefine (string name, string value);
+  void remove_predefine (string name);
+  mapping get_predefines();
   local mixed resolv(string identifier, string|void current_file)
   {
     if (!Pike_7_4_compat_handler) {
