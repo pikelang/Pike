@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.242 2008/07/14 09:12:13 srb Exp $
+// $Id: module.pmod,v 1.243 2008/08/31 20:17:06 grubba Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -2133,7 +2133,7 @@ string read_bytes(string filename, void|int start,void|int len)
   case 3:
     if(start)
       if (f->seek(start) < 0)
-	error ("Failed to seek in %O: %s\n", filename, f->errno());
+	error ("Failed to seek in %O: %s\n", filename, strerror(f->errno()));
   }
   ret=f->read(len);
   if (!ret)
