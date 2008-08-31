@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.452 2008/08/30 21:50:32 marcus Exp $
+// $Id: master.pike.in,v 1.453 2008/08/31 20:19:14 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -119,7 +119,7 @@ protected int resolv_msg_depth;
 #define DEC_RESOLV_MSG_DEPTH() (--resolv_msg_depth)
 #endif
 
-void resolv_debug (string fmt, mixed... args)
+void resolv_debug (sprintf_format fmt, sprintf_args... args)
 {
   string pad = "  " * GET_RESOLV_MSG_DEPTH;
   if (sizeof (args)) fmt = sprintf (fmt, @args);
@@ -136,6 +136,9 @@ void resolv_debug (string fmt, mixed... args)
 #define DEC_RESOLV_MSG_DEPTH() 0
 #define resolv_debug(X...) do {} while (0)
 #endif	// !RESOLV_DEBUG
+
+constant no_value = (<>);
+constant NoValue = typeof (no_value);
 
 // Some API compatibility stuff.
 
@@ -603,10 +606,12 @@ protected class Pike_7_2_master
   class Describer {};
   string describe_function(function f);
   class CompatResolver {};
+  int(0..1) asyncp();
   class Version {};
   extern object currentversion;
   extern mapping(object:object) compat_handler_cache;
   object get_compilation_handler(int major, int minor);
+  string _sprintf();
   local string _sprintf(int|void t)
   {
     return UNDEFINED;
@@ -630,10 +635,41 @@ protected class Pike_7_4_master
 {
   inherit Pike_7_2_master;
   local protected object Pike_7_4_compat_handler;
-  void error(string f, mixed ... args);
+#ifdef RESOLV_DEBUG
+  void resolv_debug (sprintf_format fmt, sprintf_args... args);
+#endif
+  void error(sprintf_format f, sprintf_args ... args);
+  constant no_value = (<>);
+  constant NoValue = typeof (no_value);
+  string programs_reverse_lookup (program prog);
+  program objects_reverse_lookup (object obj);
+  string fc_reverse_lookup (object obj);
+  // Hide clone() and new().
+  private local __deprecated__ object new(mixed prog, mixed ... args);
+  private local __deprecated__(function) clone = new;
+  void unregister(program p);
+  program low_cast_to_program(string pname,
+			      string current_file,
+			      object|void handler,
+			      void|int mkobj);
+  extern string include_prefix;
   void add_predefine (string name, string value);
   void remove_predefine (string name);
   mapping get_predefines();
+#if constant(thread_create)
+  object backend_thread();
+#endif
+  function(string:string) set_trim_file_name_callback(function(string:string) s);
+  int compile_exception (array|object trace);
+  string program_path_to_name ( string path,
+				void|string module_prefix,
+				void|string module_suffix,
+				void|string object_suffix );
+  string describe_module(object|program mod, array(object)|void ret_obj);
+  string describe_program(program|function p);
+  class Encoder {};
+  class Decoder {};
+  string _sprintf(int t);
   local mixed resolv(string identifier, string|void current_file)
   {
     if (!Pike_7_4_compat_handler) {
@@ -687,7 +723,7 @@ protected inherit Pike_7_6_master;
 //! @appears error
 //! Throws an error. A more readable version of the code
 //! @expr{throw( ({ sprintf(f, @@args), backtrace() }) )@}.
-void error(string f, mixed ... args) {
+void error(sprintf_format f, sprintf_args ... args) {
   if (sizeof(args)) f = sprintf(f, @args);
   throw( ({ f, backtrace()[..<1] }) );
 }
@@ -1221,9 +1257,6 @@ mapping(string:object|NoValue) fc=([]);
 // Note: It's assumed that the mappings above never decrease in size
 // unless the reverse mappings above also are updated. no_value should
 // otherwise be used for entries that should be considered removed.
-
-constant no_value = (<>);
-constant NoValue = typeof (no_value);
 
 // The reverse mapping for objects isn't only for speed; search()
 // doesn't work reliably there since it calls `==.
@@ -4076,7 +4109,8 @@ class Describer
 
 
 string program_path_to_name ( string path,
-			      void|string module_prefix, void|string module_suffix,
+			      void|string module_prefix,
+			      void|string module_suffix,
 			      void|string object_suffix )
 //! Converts a module path on the form @expr{"Foo.pmod/Bar.pmod"@} or
 //! @expr{"/path/to/pike/lib/modules/Foo.pmod/Bar.pmod"@} to a module
@@ -5535,7 +5569,8 @@ CompatResolver get_compilation_handler(int major, int minor)
 
 string _sprintf(int t)
 {
-  switch(t) {
+  // NOTE: The ||'O' is for Pike 7.2 compat only.
+  switch(t||'O') {
   case 't': return "master";
   case 'O': return "master()";
   }
