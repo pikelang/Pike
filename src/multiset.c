@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.92 2008/05/30 19:37:45 mast Exp $
+|| $Id: multiset.c,v 1.93 2008/08/31 14:59:52 grubba Exp $
 */
 
 #include "global.h"
@@ -24,7 +24,7 @@
 #include "svalue.h"
 #include "block_alloc.h"
 
-RCSID("$Id: multiset.c,v 1.92 2008/05/30 19:37:45 mast Exp $");
+RCSID("$Id: multiset.c,v 1.93 2008/08/31 14:59:52 grubba Exp $");
 
 /* FIXME: Optimize finds and searches on type fields? (But not when
  * objects are involved!) Well.. Although cheap I suspect it pays off
@@ -65,6 +65,8 @@ static INLINE struct msnode_indval *msnode_indval_check (struct msnode_indval *x
     if (!sub_ref (X)) Pike_fatal ("Got too few refs to " #X ".\n");	\
   } while (0)
 
+PMOD_EXPORT const char msg_no_multiset_flag_marker[] =
+  "Multiset index lacks MULTISET_FLAG_MARKER. It might be externally clobbered.\n";
 PMOD_EXPORT const char msg_multiset_no_node_refs[] =
   "Multiset got no node refs.\n";
 
