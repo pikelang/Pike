@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.114 2008/06/28 16:49:54 nilsson Exp $
+// $Id: client.pike,v 1.115 2008/09/01 18:10:51 grubba Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -2189,7 +2189,7 @@ protected mapping(string:mixed) parse_schema_terms (
 	  }
 	  if (catch (qstr = utf8_to_string (qstr)))
 	    ERROR ("%sMalformed UTF-8 in %s after term %O at pos %d: %O\n",
-		   term_id, what, sizeof (orig_str) - pos, orig_str);
+		   errmsg_prefix, what, term_id, sizeof (orig_str) - pos, orig_str);
 	  return ldap_decode_string (qstr);
 	};
 	res[term_id] = parse_qdstring ("quoted string");

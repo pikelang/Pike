@@ -1,4 +1,4 @@
-// $Id: RSS.pmod,v 1.8 2008/06/28 16:49:56 nilsson Exp $
+// $Id: RSS.pmod,v 1.9 2008/09/01 18:10:51 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -21,7 +21,7 @@ protected class Thing {
   void `[]=(string i, mixed v) {
     if(!zero_type(attributes[i])) {
       if(!stringp(v) && !objectp(v))
-	error("%s is string|Standards.URI.\n");
+	error("Variable %O is string|Standards.URI.\n", i);
 
       attributes[i] = v;
       .RDF.Resource attr = rdf->make_resource(ns+thing);

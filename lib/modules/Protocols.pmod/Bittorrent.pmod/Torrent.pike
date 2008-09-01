@@ -62,7 +62,7 @@
 
 import .Bencoding;
 
-constant cvsid="$Id: Torrent.pike,v 1.37 2008/06/28 16:49:54 nilsson Exp $";
+constant cvsid="$Id: Torrent.pike,v 1.38 2008/09/01 18:10:51 grubba Exp $";
 
 Protocols.HTTP.Session http=Protocols.HTTP.Session();
 
@@ -258,7 +258,7 @@ class Target(string base,int length,int offset,void|array path)
       fd->seek(off-offset);
       if (fd->write(data)<strlen(data))
 	 error("failed to write %d bytes to %O: %s\n",
-	       filename,strerror(fd->errno()));
+	       strlen(data),filename,strerror(fd->errno()));
    }
 
    string pread(int off,int bytes)

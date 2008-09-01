@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod,v 1.16 2008/06/28 16:49:53 nilsson Exp $
+// $Id: module.pmod,v 1.17 2008/09/01 18:10:51 grubba Exp $
 
 #pike __REAL_VERSION__
 #if constant(GL) && constant(GL.glOrtho)
@@ -392,7 +392,7 @@ protected void start_driver(string|array(string)|
 
   foreach(driver_names, string name) {
     if(!has_value(drivers, name))
-      error("Driver %O is not available.\n");
+      error("Driver %O is not available.\n", name);
     catch {
       driver = .Driver[name](event_callback, configure_event);
       if(driver->init)

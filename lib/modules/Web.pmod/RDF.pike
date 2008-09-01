@@ -1,4 +1,4 @@
-// $Id: RDF.pike,v 1.47 2008/06/28 16:37:02 nilsson Exp $
+// $Id: RDF.pike,v 1.48 2008/09/01 18:10:51 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -587,7 +587,7 @@ int parse_n_triples(string in) {
     case '_':
       // nodeID
       if(in[pos+1]!=':')
-	error("No ':' in nodeID (position %s).\n", pos);
+	error("No ':' in nodeID (position %d).\n", pos);
       while( !(< ' ', '\t', '\r', '\n' >)[in[++pos]] );
       tokens += ({ TempNode( in[start+2..pos-1] ) });
       continue;
