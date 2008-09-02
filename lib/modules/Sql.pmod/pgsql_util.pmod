@@ -386,7 +386,22 @@ private void steallock() {
   PD("Stealing successful\n");
 }
 
-int|array(string|int) fetch_row(void|int|string buffer) {
+//! Returns one result row at a time.
+//!
+//! When using COPY FROM STDOUT, this method returns one row at a time
+//! as a single string containing the entire row.
+//! When using COPY FROM STDIN, this method accepts a string or an
+//! array of strings to be processed by the COPY command; when sending
+//! the amount of data sent per call does not have to hit row or column
+//! boundaries.
+//!
+//! The COPY FROM STDIN sequence needs to be completed by either
+//! explicitly or implicitly destroying the result object, or by passing a
+//! zero argument to this method.
+//!
+//! @seealso
+//!  @[eof]
+int|array(mixed) fetch_row(void|int|string|array(string) buffer) {
 #ifndef NO_LOCKING
   Thread.MutexKey fetchmtxkey = fetchmutex.lock();
 #endif
@@ -394,10 +409,16 @@ int|array(string|int) fetch_row(void|int|string buffer) {
     return getdatarow();
   if(copyinprogress) {
     fetchmtxkey = UNDEFINED;
-    if(stringp(buffer)) {
+    if(stringp(buffer) || arrayp(buffer)) {
+      int totalsize=4;
+      if(arrayp(buffer))
+        foreach(buffer;;string value)
+          totalsize+=sizeof(value);
+      else
+        totalsize+=sizeof(buffer),buffer=({buffer});
       PD("CopyData\n");
-      _pgsqlsess._c.sendcmd(({"d",_pgsqlsess._c.plugint32(4+sizeof(buffer)),
-       buffer}),2);
+      _pgsqlsess._c.sendcmd(
+       ({"d",_pgsqlsess._c.plugint32(totalsize)})+buffer,2);
     }
     else
       releasesession();
@@ -412,7 +433,8 @@ int|array(string|int) fetch_row(void|int|string buffer) {
     if(_portalname) {
       if(buffer!=2 && !_qmtxkey) {
         steallock();
-        _pgsqlsess._sendexecute(_fetchlimit);
+        if(_fetchlimit)
+          _pgsqlsess._sendexecute(_fetchlimit);
       }
       while(_pgsqlsess._closesent)
         _pgsqlsess._decodemsg();	      // Flush previous portal sequence
