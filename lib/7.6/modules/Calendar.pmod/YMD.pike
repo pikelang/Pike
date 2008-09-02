@@ -2272,7 +2272,7 @@ class cDay
 	    {
 	       if (res->hour_no()!=what->hour_no())
 		  error("place: no such time of "
-			"day (DST shift)\n",what,this);
+			"day (DST shift)\n");
 	    }
 	 }
 	 else
