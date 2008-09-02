@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.849 2008/08/23 03:57:12 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.850 2008/09/02 11:58:57 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -7596,6 +7596,10 @@ test_eq("foobargazonk"[1..],"oobargazonk")
 test_eq("foobargazonk"[5..],"rgazonk")
 test_eq("foobargazonk"[..2],"foo")
 test_eq("foobargazonk"[..5],"foobar")
+test_eq("1234"[..Int.NATIVE_MAX], "1234")
+test_eq("1234"[..Int.NATIVE_MAX - 1], "1234")
+test_eq("1234"[Int.NATIVE_MIN..], "1234")
+test_eq("1234"[Int.NATIVE_MIN + 1..], "1234")
 
 test_eq("f\7777\7777bargaz\7777nk"[0..],"f\7777\7777bargaz\7777nk")
 test_eq("f\7777\7777bargaz\7777nk"[1..],"\7777\7777bargaz\7777nk")
