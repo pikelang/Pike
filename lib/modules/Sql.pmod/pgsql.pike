@@ -172,6 +172,11 @@ protected string _sprintf(int type, void|mapping flags) {
 //!   @value "force_ssl"
 //!     If the database supports and allows SSL connections, the session
 //!     will be SSL encrypted, if not, the connection will abort
+//!   @value "cache_autoprepared_statements"
+//!     If set to zero, it disables the automatic statement prepare and
+//!     cache logic; caching prepared statements can be problematic
+//!     when stored procedures and tables are redefined which leave stale
+//!     references in the already cached prepared statements
 //!   @value "client_encoding"
 //!     Character encoding for the client side, it defaults to use
 //!     database encoding, e.g.: "SQL_ASCII"
@@ -1533,7 +1538,9 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
       if(tp->preparedname)
         prepstmtused++, preparedname=tp->preparedname;
       else if((tstart=tp->trun)
-       && tp->tparse*FACTORPLAN>=tstart)
+       && tp->tparse*FACTORPLAN>=tstart
+       && (zero_type(options->cache_autoprepared_statements)
+        || options->cache_autoprepared_statements))
 	preparedname=PREPSTMTPREFIX+(string)pstmtcount++;
     }
     else {
