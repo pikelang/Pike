@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.470 2008/07/18 01:03:12 mast Exp $
+# $Id: Makefile.in,v 1.471 2008/09/02 18:42:40 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -184,8 +184,8 @@ CORE_OBJ= \
  svalue.o \
  las.o \
  builtin_functions.o \
- peep.o \
- @DLOPEN_O@ @EXTRA_OBJS@
+ peep.o @DLOPEN_O@ @EXTRA_OBJS@
+
 OBJ=$(CORE_OBJ) @MODULE_O@
 
 MODULE_REQUIREMENTS= \
@@ -547,7 +547,7 @@ undump_modules: delete_dumped_modules
 
 # The same applies to this.
 .symlist.c: precompile.sh-stamp $(SRCDIR)/mklibpike.pike
-	./precompile.sh --cache $(SRCDIR)/mklibpike.pike -I. -I "$(SRCDIR)" -S "$<" -o "$@"
+	./precompile.sh --cache $(SRCDIR)/mklibpike.pike -I. -I "$(SRCDIR)" -S "$<" -o "$@" || { rm "$@"; exit 1; }
 
 # This rule is used for some header files that are generated from the
 # source, to avoid excessive rebuilding when the source change in ways
@@ -574,17 +574,17 @@ undump_modules: delete_dumped_modules
 
 .wxs.wixobj:
 	@if test -f "$@"; then rm -f "$@"; else :; fi # Paranoia
-	$(CANDLE) "$<" -out "$@"
+	$(CANDLE) "$<" -out "$@" || { rm -f "$@"; exit 1; }
 
 .wixobj.msm:
 	@test -d cab_cache || mkdir cab_cache
 	@if test -f "$@"; then rm -f "$@"; else :; fi # Paranoia
-	$(LIGHT) "$<" -cc cab_cache -o "$@"
+	$(LIGHT) "$<" -cc cab_cache -o "$@" || { rm -f "$@"; exit 1; }
 
 .wixobj.msi:
 	@test -d cab_cache || mkdir cab_cache
 	@if test -f "$@"; then rm -f "$@"; else :; fi # Paranoia
-	$(LIGHT) "$<" -cc cab_cache -o "$@"
+	$(LIGHT) "$<" -cc cab_cache -o "$@" || { rm -f "$@"; exit 1; }
 
 Pike_banner.bmp: $(SRCDIR)/make_banner.pike $(SRCDIR)/../refdoc/src_images/pike_logo.gif
 	$(RUNPIKE) $(SRCDIR)/make_banner.pike $(SRCDIR)/../refdoc/src_images/pike_logo.gif >Pike_banner.bmp || rm Pike_banner.bmp
@@ -914,6 +914,10 @@ lib: Makefile
 	@echo "Done."
 	-@touch ./lib 2>/dev/null || (touch lib/.broken_gnu_touch && rm lib/.broken_gnu_touch)
 
+$(SRCDIR)/type_checker.c: type_checker-stamp
+$(SRCDIR)/type_checker.h: type_checker-stamp
+type_checker-stamp: $(SRCDIR)/type_checker.in $(SRCDIR)/make_type_checker.pike
+	$(RUNPIKE) $(SRCDIR)/make_type_checker.pike "$<" && touch "$@"
 
 master.pike: $(LIBDIR_SRC)/master.pike.in Makefile
 	@if test "x$(PIKE_MODULE_RELOC)" = "x"; \
@@ -926,7 +930,7 @@ master.pike: $(LIBDIR_SRC)/master.pike.in Makefile
 	  -e 's![^ -~]include_prefix[^ -~]!`echo '$(TMP_BUILDDIR)/bundles/include/pike' | ./posix_to_native.sh`!' \
 	  -e '$$u'"; \
 	echo "$$cmd <$(LIBDIR_SRC)/master.pike.in >master.pike"; \
-	eval $$cmd <$(LIBDIR_SRC)/master.pike.in >master.pike
+	eval $$cmd <$(LIBDIR_SRC)/master.pike.in >master.pike || { rm "master.pike"; exit 1; }
 
 # Want master.pike up-to-date, but yet there's no dependency on the
 # that file. Works like the .h_src.h target.
@@ -940,17 +944,17 @@ master-stamp: master.pike
 onepage.xml: autodoc.xml $(DOCDIR)/structure/onepage.xml
 	(cd "$(DOCDIR)" && \
 	  $(RUNPIKE) -x assemble_autodoc structure/onepage.xml \
-	    $(TMP_BUILDDIR)/autodoc.xml) >onepage.xml
+	    $(TMP_BUILDDIR)/autodoc.xml) >onepage.xml || { rm "$@"; exit 1; }
 
 traditional.xml: autodoc.xml $(DOCDIR)/structure/traditional.xml
 	( cd "$(DOCDIR)" && \
 	  $(RUNPIKE) -x assemble_autodoc structure/traditional.xml \
-	    $(TMP_BUILDDIR)/autodoc.xml) >traditional.xml
+	    $(TMP_BUILDDIR)/autodoc.xml) >traditional.xml || { rm "$@"; exit 1; }
 
 modref.xml: autodoc.xml $(DOCDIR)/structure/modref.xml
 	(cd "$(DOCDIR)" && \
 	  $(RUNPIKE) -x assemble_autodoc structure/modref.xml \
-	    $(TMP_BUILDDIR)/autodoc.xml) >modref.xml
+	    $(TMP_BUILDDIR)/autodoc.xml) >modref.xml || { rm "$@"; exit 1; }
 
 autodoc.xml: pike-complete-stamp doc_build/src doc_build/lib doc_build/images images1 images2 force
 	$(RUNPIKE) -x extract_autodoc -q --srcdir=$(SRCDIR) \
