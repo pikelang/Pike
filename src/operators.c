@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.244 2008/08/28 20:11:47 grubba Exp $
+|| $Id: operators.c,v 1.245 2008/09/03 22:25:10 marcus Exp $
 */
 
 #include "global.h"
@@ -4518,20 +4518,29 @@ static void string_or_array_range (int bound_types,
   if (bound_types & RANGE_LOW_OPEN)
     from = 0;
   else {
-    if (bound_types & RANGE_LOW_FROM_END) low = len - 1 - low;
-    if (low < 0) from = 0;
-    else if (low > len) from = len;
-    else from = low;
+    if (bound_types & RANGE_LOW_FROM_END) {
+      if (low >= len) from = 0;
+      else if (low < 0) from = len;
+      else from = len - 1 - low;
+    } else {
+      if (low < 0) from = 0;
+      else if (low > len) from = len;
+      else from = low;
+    }
   }
 
   if (bound_types & RANGE_HIGH_OPEN)
     to = len;
   else {
-    if (bound_types & RANGE_HIGH_FROM_END) high = len - high;
-    else high++;
-    if (high < from) to = from;
-    else if (high > len) to = len;
-    else to = high;
+    if (bound_types & RANGE_HIGH_FROM_END) {
+      if (high > len - from) to = from;
+      else if (high <= 0) to = len;
+      else to = len - high;
+    } else {
+      if (high < from) to = from;
+      else if (high >= len) to = len;
+      else to = high + 1;
+    }
   }
 
   if (ind->type == T_STRING) {
