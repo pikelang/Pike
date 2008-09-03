@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.159 2008/08/19 11:51:08 jonasw Exp $
+|| $Id: acconfig.h,v 1.160 2008/09/03 19:47:20 grubba Exp $
 */
 
 #ifndef MACHINE_H
@@ -52,6 +52,9 @@
 
 /* Define this if you want checkpoints */
 #undef DMALLOC_TRACE
+
+/* Define this if you want backtraces for C code in your dmalloc output. */
+#undef DMALLOC_C_STACK_TRACE
 
 /* Define this if you want dmalloc to keep track of freed memory. */
 #undef DMALLOC_TRACK_FREE

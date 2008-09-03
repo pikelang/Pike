@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dmalloc.h,v 1.66 2008/08/05 13:34:32 mast Exp $
+|| $Id: dmalloc.h,v 1.67 2008/09/03 19:47:20 grubba Exp $
 */
 
 #ifndef DMALLOC_H
@@ -15,7 +15,7 @@ PMOD_EXPORT extern void *debug_xcalloc(size_t,size_t);
 PMOD_EXPORT extern void *debug_xrealloc(void *,size_t);
 PMOD_EXPORT char *debug_xstrdup(const char *src);
 
-#if defined (HAVE_EXECINFO_H) && defined (HAVE_BACKTRACE)
+#if defined (HAVE_EXECINFO_H) && defined (HAVE_BACKTRACE) && defined(DMALLOC_C_STACK_TRACE)
 /* GNU libc provides some tools to inspect the stack. */
 #include <execinfo.h>
 typedef void *c_stack_frame;
