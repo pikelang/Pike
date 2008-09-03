@@ -724,8 +724,7 @@ final int _decodemsg(void|state waitforstate) {
       case 'n':PD("NoData\n");
         msglen-=4;
         _c.portal->_datarowdesc=({});
-        if(_c.portal)
-	  _c.portal->_fetchlimit=0;		// disables subsequent Executes
+	_c.portal->_fetchlimit=0;		// disables subsequent Executes
         _mstate=gotrowdescription;
         break;
       case '2':PD("BindComplete\n");
