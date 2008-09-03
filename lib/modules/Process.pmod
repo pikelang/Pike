@@ -222,7 +222,7 @@ mapping run(string|array(string) cmd, void|mapping modifiers)
 
   if (mystdin) {
     threads += ({
-      thread_create(lambda() { mystdin->write(stdin_str); } )
+      thread_create(lambda(Stdio.File f) { f->write(stdin_str); }, mystdin )
     });
     mystdin = 0;
   }
