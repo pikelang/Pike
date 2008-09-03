@@ -66,7 +66,7 @@ private string SSauthdata,cancelsecret;
 private int backendpid;
 private int backendstatus;
 private mapping(string:mixed) options;
-private string lastmessage;
+private string lastmessage="";
 private int clearmessage;
 private int earlyclose;
 private mapping(string:array(mixed)) notifylist=([]);
@@ -99,23 +99,21 @@ private string host, database, user, pass;
 private int port;
 private object createprefix
  =Regexp("^[ \t\f\r\n]*[Cc][Rr][Ee][Aa][Tt][Ee][ \t\f\r\n]");
-private object fetchprefix
- =Regexp("^[ \t\f\r\n]*[Ff][Ee][Tt][Cc][Hh][ \t\f\r\n]");
+private object dontcacheprefix
+ =Regexp("^[ \t\f\r\n]*([Ff][Ee][Tt][Cc][Hh]|[Cc][Oo][Pp][Yy])[ \t\f\r\n]");
 private object limitpostfix
  =Regexp("[ \t\f\r\n][Ll][Ii][Mm][Ii][Tt][ \t\f\r\n]+[12][; \t\f\r\n]*$");
 Thread.Mutex _querymutex;
 Thread.Mutex _stealmutex;
 
+#define USERERROR(msg)	throw(({msg, backtrace()[..<1]}))
+
 protected string _sprintf(int type, void|mapping flags) {
   string res=UNDEFINED;
   switch(type) {
     case 'O':
-      res=sprintf(DRIVERNAME"://%s@%s:%d/%s pid:%d %s reconnected:%d\n"
-    "mstate: %O  qstate: %O  pstmtcount: %d  pportalcount: %d  prepcache: %d\n"
-       "Last message: %s",
-       user,host,port,database,backendpid,status_commit(),reconnected,
-       _mstate,qstate,pstmtcount,pportalcount,sizeof(prepareds),
-       lastmessage||"");
+      res=sprintf(DRIVERNAME"(%s@%s:%d/%s,%d)",
+       user,host,port,database,backendpid);
       break;
   }
   return res;
@@ -234,7 +232,7 @@ protected void create(void|string _host, void|string _database,
 string error(void|int clear) {
   string s=lastmessage;
   if(clear)
-    lastmessage=UNDEFINED;
+    lastmessage="";
   warningscollected=0;
   return s;
 }
@@ -511,10 +509,6 @@ final private string pinpointerror(void|string query,void|string offset) {
   if(k<=0)
     return MARKSTART+query+MARKEND;
   return MARKSTART+(k>1?query[..k-2]:"")+MARKERROR+query[k-1..]+MARKEND;
-}
-
-final private string lastmsgnl() {
-  return lastmessage?lastmessage+"\n":"";
 }
 
 final int _decodemsg(void|state waitforstate) {
@@ -849,11 +843,10 @@ final int _decodemsg(void|state waitforstate) {
 	warningsdropcount+=warningscollected;
 	warningscollected=0;
         switch(msgresponse->C) {
-#define USERERROR(msg)	throw(({msg, backtrace()[..<1]}))
           case "P0001":
-            lastmessage=sprintf("%s: %s",msgresponse->S,msgresponse->M);
-	    USERERROR(lastmessage
-	     +"\n"+pinpointerror(_c.portal->query,msgresponse->P));
+            lastmessage=sprintf("%s: %s\n",msgresponse->S,msgresponse->M);
+	    USERERROR(sprintf("%s%s\n",
+	     lastmessage,pinpointerror(_c.portal->query,msgresponse->P)));
 	    break;
           case "08P01":case "42P05":
 	    errtype=protocolerror;
@@ -880,11 +873,11 @@ final int _decodemsg(void|state waitforstate) {
         if(clearmessage) {
 	  warningsdropcount+=warningscollected;
 	  clearmessage=warningscollected=0;
-          lastmessage=UNDEFINED;
+          lastmessage="";
         }
         warningscollected++;
-        lastmessage=sprintf("%s%s %s: %s",
-	 lastmsgnl(),msgresponse->S,msgresponse->C,msgresponse->M);
+        lastmessage=sprintf("%s%s %s: %s\n",
+	 lastmessage,msgresponse->S,msgresponse->C,msgresponse->M);
         break;
       }
       case 'A':PD("NotificationResponse\n");
@@ -911,7 +904,7 @@ final int _decodemsg(void|state waitforstate) {
           errtype=protocolunsupported;
 	}
 	else {
-	  string msg=lastmsgnl();
+	  string msg=lastmessage;
 	  if(!reconnect(1)) {
 	    sleep(RECONNECTDELAY);
             if(!reconnect(1)) {
@@ -920,7 +913,7 @@ final int _decodemsg(void|state waitforstate) {
 	    }
 	  }
           ERROR("%s%sConnection lost to database %s@%s:%d/%s %d\n",
-           msg,lastmsgnl(),user,host,port,database,backendpid);
+           msg,lastmessage,user,host,port,database,backendpid);
 	}
         break;
     }
@@ -931,11 +924,11 @@ final int _decodemsg(void|state waitforstate) {
         ERROR("Unsupported servermessage received %c\n",msgtype);
         break;
       case protocolerror:
-	string msg=lastmsgnl();
-	lastmessage=UNDEFINED;
+	string msg=lastmessage;
+	lastmessage="";
         reconnect(1);
         ERROR("%s%sProtocol error with database %s\n",
-	 msg,lastmsgnl(),host_info());
+	 msg,lastmessage,host_info());
         break;
       case noerror:
         break;
@@ -991,7 +984,7 @@ private int reconnect(void|int force) {
   if(!(_c=getsocket())) {
     string msg=sprintf("Couldn't connect to database on %s:%d\n",host,port);
     if(force) {
-      lastmessage=lastmsgnl()+msg;
+      lastmessage+=msg;
       return 0;
     }
     else
@@ -1025,7 +1018,8 @@ private int reconnect(void|int force) {
   }
   PD("%O\n",runtimeparameter);
   if(force) {
-    lastmessage=lastmsgnl()+"Reconnected to database "+host_info();
+    lastmessage=sprintf("%sReconnected to database %s\n",
+     lastmessage,host_info());
     runcallback(backendpid,"_reconnect","");
   }
   return 1;
@@ -1429,11 +1423,10 @@ final private string trbackendst(int c) {
     case 'T':return "intransaction";
     case 'E':return "infailedtransaction";
   }
-  return "unknown";
+  return "";
 }
 
 //! Returns the current commitstatus of the connection.  Returns either one of:
-//!  unknown
 //!  idle
 //!  intransaction
 //!  infailedtransaction
@@ -1615,6 +1608,9 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
             tp->datatypeoid=_c.portal->_datatypeoid;
         }
         array dtoid=_c.portal->_datatypeoid;
+        if(sizeof(dtoid)!=sizeof(paramValues))
+	  USERERROR(sprintf("Invalid number of bindings, wanted %d, got %d\n",
+	   sizeof(dtoid),sizeof(paramValues)));
         foreach(dtoid;;int textbin)
           plugbuf+=({_c.plugint16(oidformat(textbin))});
         plugbuf+=({_c.plugint16(sizeof(paramValues))});
@@ -1667,7 +1663,7 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
             }
         }
         if(!tp || !tp->datarowdesc) {
-	  if(tp && fetchprefix->match(q))	   // Don't cache FETCH
+	  if(tp && dontcacheprefix->match(q))	      // Don't cache FETCH/COPY
 	    m_delete(prepareds,q),tp=0;
           _decodemsg(gotrowdescription);
           if(tp)
