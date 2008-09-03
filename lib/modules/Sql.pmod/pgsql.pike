@@ -1006,7 +1006,7 @@ private int reconnect(void|int force) {
     plugbuf+=({"user\0",user,"\0"});
   if(database)
     plugbuf+=({"database\0",database,"\0"});
-  foreach(options-(<"use_ssl","force_ssl">);
+  foreach(options-(<"use_ssl","force_ssl","cache_autoprepared_statements">);
    string name;mixed value)
     plugbuf+=({name,"\0",(string)value,"\0"});
   plugbuf+=({"\0"});
