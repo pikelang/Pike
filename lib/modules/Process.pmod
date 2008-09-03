@@ -224,6 +224,7 @@ mapping run(string|array(string) cmd, void|mapping modifiers)
     threads += ({
       thread_create(lambda() { mystdin->write(stdin_str); } )
     });
+    mystdin = 0;
   }
 
   exitcode = p->wait();
@@ -240,6 +241,7 @@ mapping run(string|array(string) cmd, void|mapping modifiers)
     Shuffler.Shuffle sf = Shuffler.Shuffler()->shuffle( mystdin );
     sf->add_source(stdin_str);
     sf->start();
+    mystdin = 0;
   }
 
   while( !p->status() || p->status() == 1 )
