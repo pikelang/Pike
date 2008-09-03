@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.751 2008/08/27 15:45:19 jonasw Exp $
+|| $Id: program.c,v 1.752 2008/09/03 14:46:13 mast Exp $
 */
 
 #include "global.h"
@@ -8095,7 +8095,7 @@ static void run_cleanup(struct compilation *c, int delayed)
 	  fprintf(stderr, "Warning: Program %p still got %d "
 		  "external refs after unregister:\n", p, p->refs);
 	  locate_references(p);
-	  fprintf (stderr, "Describing program: %p\n", p);
+	  fprintf (stderr, "Describing program:\n");
 	  describe_something (p, T_PROGRAM, 0, 0, 0, NULL);
 	}
 #endif
