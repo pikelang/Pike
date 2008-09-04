@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.752 2008/09/03 14:46:13 mast Exp $
+|| $Id: program.c,v 1.753 2008/09/04 11:36:45 grubba Exp $
 */
 
 #include "global.h"
@@ -1952,7 +1952,7 @@ static int program_identifier_index_compare(int a, int b,
 {
   size_t val_a = PTR_TO_INT (ID_FROM_INT(p, a)->name);
   size_t val_b = PTR_TO_INT (ID_FROM_INT(p, b)->name);
-  return val_a < val_b ? -1 : (val_a == val_b ? 0 : 1);
+  return val_a < val_b ? -1 : (val_a == val_b ? (a < b? -1:(a != b)) : 1);
 }
 
 #define CMP(X,Y)	program_identifier_index_compare(*(X), *(Y), prog)
@@ -2237,6 +2237,24 @@ void fixate_program(void)
 				 p->num_identifier_index - 1,
 				 p);
 
+  /* Take care of duplicates in the identifier index table;
+   * this can happen eg when the overloading definition is
+   * before an inherit being overloaded. This happens for
+   * eg the default master object.
+   */
+  if (p->num_identifier_index) {
+    struct identifier *id = ID_FROM_INT(p, p->identifier_index[0]);
+    for (e = i = 1; e < p->num_identifier_index; e++) {
+      struct identifier *probe = ID_FROM_INT(p, p->identifier_index[e]);
+      if (probe == id) {
+	/* Duplicate. */
+	continue;
+      }
+      p->identifier_index[i++] = p->identifier_index[e];
+      id = probe;
+    }
+    p->num_identifier_index = i;
+  }
 
   p->flags |= PROGRAM_FIXED;
 
@@ -3036,12 +3054,14 @@ void dump_program_tables (struct program *p, int indent)
 
   fprintf(stderr, "\n"
 	  "%*sIdentifier index table:\n"
-	  "%*s  ####: Index\n",
+	  "%*s  ####: Index\tName\n",
 	  indent, "", indent, "");
   for (d = 0; d < p->num_identifier_index; d++) {
-    fprintf(stderr, "%*s  %4d: %5d\n",
+    struct identifier *id = ID_FROM_INT(p, p->identifier_index[d]);
+    fprintf(stderr, "%*s  %4d: %5d\t%s\n",
 	    indent, "",
-	    d, p->identifier_index[d]);
+	    d, p->identifier_index[d],
+	    id->name->size_shift ? "(wide)" : id->name->str);
   }
 
   fprintf(stderr, "\n"
@@ -5593,7 +5613,7 @@ INT32 define_function(struct pike_string *name,
        *
        * FIXME: Force PRIVATE?
        */
-      flags |= ID_PROTECTED;
+      flags |= ID_PROTECTED /* | ID_PRIVATE | ID_INLINE | ID_USED */;
       free_type(symbol_type);
       free_string(symbol);
     }
