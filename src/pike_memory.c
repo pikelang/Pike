@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.192 2008/06/24 01:43:47 mast Exp $
+|| $Id: pike_memory.c,v 1.193 2008/09/04 20:31:07 mast Exp $
 */
 
 #include "global.h"
@@ -1318,7 +1318,7 @@ int debug_malloc_check_all = 0;
 #define BT_MAX_FRAMES 10
 #define ALLOC_BT_MAX_FRAMES 15
 
-#ifdef C_STACK_TRACE
+#ifdef DMALLOC_C_STACK_TRACE
 #define GET_ALLOC_BT(BT)						\
   c_stack_frame BT[ALLOC_BT_MAX_FRAMES];				\
   int PIKE_CONCAT (BT, _len) = backtrace (BT, ALLOC_BT_MAX_FRAMES)
@@ -1375,7 +1375,7 @@ struct memhdr
   int misses;
 #endif
   int gc_generation;
-#ifdef C_STACK_TRACE
+#ifdef DMALLOC_C_STACK_TRACE
   c_stack_frame alloc_bt[ALLOC_BT_MAX_FRAMES];
   int alloc_bt_len;
 #endif
@@ -1972,7 +1972,7 @@ static void remove_location(struct memhdr *mh, LOCATION location)
 LOCATION dmalloc_default_location=0;
 
 static struct memhdr *low_make_memhdr(void *p, int s, LOCATION location
-#ifdef C_STACK_TRACE
+#ifdef DMALLOC_C_STACK_TRACE
 				      , c_stack_frame *bt, int bt_len
 #endif
 				     )
@@ -1999,7 +1999,7 @@ static struct memhdr *low_make_memhdr(void *p, int s, LOCATION location
   ml->next = mh->locations;
   mh->locations = ml;
   mh->gc_generation=gc_generation * 1000 + Pike_in_gc;
-#ifdef C_STACK_TRACE
+#ifdef DMALLOC_C_STACK_TRACE
   if (bt_len > 0) {
     MEMCPY (mh->alloc_bt, bt, bt_len * sizeof (c_stack_frame));
     mh->alloc_bt_len = bt_len;
@@ -2650,7 +2650,7 @@ PMOD_EXPORT void debug_malloc_dump_references(void *x, int indent, int depth, in
   struct memhdr *mh=my_find_memhdr(x,0);
   if(!mh) return;
 
-#ifdef C_STACK_TRACE
+#ifdef DMALLOC_C_STACK_TRACE
   if (mh->alloc_bt_len) {
     int i;
     fprintf (stderr, "%*sStack at allocation:\n", indent, "");
@@ -3212,7 +3212,7 @@ PMOD_EXPORT void *debug_malloc_update_location_bt (void *p, const char *file,
 						   int line, const char *name)
 {
   LOCATION l;
-#ifdef C_STACK_TRACE
+#ifdef DMALLOC_C_STACK_TRACE
   c_stack_frame bt[BT_MAX_FRAMES];
   int n = backtrace (bt, BT_MAX_FRAMES);
   if (n > 1)
@@ -3228,7 +3228,7 @@ PMOD_EXPORT void *debug_malloc_update_location_bt (void *p, const char *file,
 
 static void dump_location_bt (LOCATION location, int indent, const char *prefix)
 {
-#ifdef C_STACK_TRACE
+#ifdef DMALLOC_C_STACK_TRACE
   if (LOCATION_TYPE (location) == 'B') {
     c_stack_frame bt[BT_MAX_FRAMES];
     int i, frames;
