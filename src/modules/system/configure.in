@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.80 2008/07/19 14:59:21 mast Exp $
+# $Id: configure.in,v 1.81 2008/09/04 12:49:29 mast Exp $
 AC_INIT(system.c)
 AC_CONFIG_HEADER(system_machine.h)
 
@@ -15,7 +15,7 @@ AC_CHECK_LIB(cygipc, shmget)
 if test x"$pike_cv_sys_os" = xWindows_NT ; then
   # FIXME: These look suspiciouly much like 32bit versions.
   #        We probably want to use 64bit versions on IA64.
-  LIBS="-lshell32 -lkernel32 -lws2_32 -ladvapi32 $LIBS"
+  LIBS="-lshell32 -lkernel32 -lws2_32 -ladvapi32 -lole32 $LIBS"
 fi
 
 AC_CHECK_HEADERS(syslog.h sys/syslog.h sys/types.h errno.h unistd.h pwd.h \
