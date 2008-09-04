@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: nt.c,v 1.79 2008/09/04 12:49:29 mast Exp $
+|| $Id: nt.c,v 1.80 2008/09/04 12:52:29 mast Exp $
 */
 
 /*
@@ -2485,7 +2485,7 @@ static void f_NetWkstaUserEnum(INT32 args)
 
 /*! @decl string normalize_path(string path)
  *!
- *!   Normalize an NT filesystem path.
+ *!   Normalize an existing Windows file system path.
  *!
  *!   The following transformations are currently done:
  *!   @ul
@@ -2511,8 +2511,8 @@ static void f_NetWkstaUserEnum(INT32 args)
  *!     @item
  *!       Drive letters are returned in uppercase.
  *!     @item
- *!       The host and share parts are returned in lowercase for UNC
- *!       paths.
+ *!       The host and share parts of UNC paths are returned in
+ *!       lowercase.
  *!   @endul
  *!
  *! @returns
