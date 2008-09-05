@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.394 2008/08/04 11:27:26 mast Exp $
+|| $Id: file.c,v 1.395 2008/09/05 13:23:26 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -1697,6 +1697,10 @@ static void file_close(INT32 args)
  *! heeded. If @[access] is not specified, it defaults to
  *! @expr{00666@}, but note that on UNIX systems it's masked with the
  *! process umask before use.
+ *!
+ *! @returns
+ *!   Returns nonzero on success and @expr{0@} (zero) on failure. If
+ *!   there is a failure then @[errno] returns the error code.
  *!
  *! @seealso
  *!   @[close()]
