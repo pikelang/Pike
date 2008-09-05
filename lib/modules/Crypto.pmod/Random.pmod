@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 #pragma strict_types
-// $Id: Random.pmod,v 1.20 2008/06/28 16:49:53 nilsson Exp $
+// $Id: Random.pmod,v 1.21 2008/09/05 14:00:47 mast Exp $
 
 //! This module contains stuff to that tries to give you the
 //! best possible random generation.
@@ -31,17 +31,20 @@ class Source {
   protected int factor = 2; // Assume 50% entropy
 
   protected void create(int(0..1) no_block) {
+    Stdio.File tmp = Stdio.File();
     if(no_block) {
-      if(file_stat("/dev/urandom"))
-	f = Stdio.File("/dev/urandom");
+      if (tmp->open ("/dev/urandom", "r") && tmp->stat()->ischr)
+	f = tmp;
     }
     else {
-      if(file_stat("/dev/random")) {
-	if(file_stat("/dev/urandom")) factor = 1;
-	f = Stdio.File("/dev/random");
+      if (tmp->open ("/dev/random", "r") && tmp->stat()->ischr) {
+	if (Stdio.Stat s = file_stat("/dev/urandom"))
+	  if (s->ischr)
+	    factor = 1;
+	f = tmp;
       }
-      else if(file_stat("/dev/urandom"))
-	f = Stdio.File("/dev/urandom");
+      else if (tmp->open ("/dev/urandom", "r") && tmp->stat()->ischr)
+	f = tmp;
     }
   }
 
