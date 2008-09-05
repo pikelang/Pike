@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.193 2008/09/04 20:31:07 mast Exp $
+|| $Id: pike_memory.c,v 1.194 2008/09/05 10:12:04 grubba Exp $
 */
 
 #include "global.h"
@@ -1675,11 +1675,78 @@ static int find_location(struct memhdr *mh, LOCATION location)
 }
 
 #ifdef DMALLOC_AD_HOC
+/* The first argument is pointer to pointer to first element.
+ *
+ * The second argument is a hint of where to start searching for
+ * a pivot (all elements prior to (and including) this are known
+ * to be in order). This argument may be NULL.
+ *
+ * Returns pointer to next pointer field of last element. The field
+ * will always contain NULL at return time.
+ */
+static struct memloc **quick_sort_locations(struct memloc **start,
+					    struct memloc *pos)
+{
+  struct memloc *pivot_loc;
+  struct memloc *pivot_next;
+  struct memloc **lt_tail;
+  struct memloc **gt_tail;
+  struct memloc *lt_piv_start = NULL;
+  struct memloc *gt_piv_start = NULL;
+  LOCATION pivot;
+
+  if (!*start) return start;	/* Empty list */
+  /* Select the first element out of order as the pivot. */
+  if (!pos) pos = *start;
+  do {
+    pivot_loc = pos;
+    pivot = pos->location;
+    pos = pos->next;
+  } while (pos && pos->location > pivot);
+  if (!pos) return &pivot_loc->next;	/* Sorted list */
+  /* Partition according to the pivot. */
+  lt_tail = start;
+  gt_tail = &pivot_loc->next;
+  pivot_next = pivot_loc->next;
+  for (pos = *start; pos != pivot_loc; pos = pos->next) {
+    if (pos->location > pivot) {
+      *gt_tail = gt_piv_start = pos;
+      gt_tail = &pos->next;
+    } else {
+      *lt_tail = lt_piv_start = pos;
+      lt_tail = &pos->next;
+    }
+  }
+  *lt_tail = pivot_next;
+  lt_tail = &pivot_next->next;
+  for (pos = pivot_next->next; pos; pos = pos->next) {
+    if (pos->location > pivot) {
+      *gt_tail = pos;
+      gt_tail = &pos->next;
+    } else {
+      *lt_tail = pos;
+      lt_tail = &pos->next;
+    }
+  }
+  *gt_tail = NULL;
+  *lt_tail = NULL;
+  /* Sort the partitions and rejoin them with the pivot inbetween. */
+  lt_tail = quick_sort_locations(start, lt_piv_start);
+  *lt_tail = pivot_loc;
+  return quick_sort_locations(&pivot_loc->next, gt_piv_start);
+}
+
 void merge_location_list(struct memhdr *mh)
 {
-  struct memloc *ml,*ml2,**prev;
+  struct memloc *ml;
+
+  /* Sort the locations, so that we don't have to do a full scan
+   * for every memloc. */
+  quick_sort_locations(&mh->locations, NULL);
+
   for(ml=mh->locations;ml;ml=ml->next)
   {
+    struct memloc *ml2;
     /* Make sure only live memloc's are left in the cache. */
     unsigned long l = lhash(mh, ml->location);
     mlhash[l] = ml;
@@ -1697,48 +1764,43 @@ void merge_location_list(struct memhdr *mh)
     }
 #endif
 
-    prev=&ml->next;
-    while((ml2=*prev))
+    while((ml2=ml->next) && (ml2->location == ml->location))
     {
-      if(ml->location == ml2->location)
-      {
-	ml->times+=ml2->times;
-	*prev=ml2->next;
+      ml->times+=ml2->times;
+      ml->next=ml2->next;
 #ifdef DMALLOC_TRACE_MEMLOC
-	if (ml2 == DMALLOC_TRACE_MEMLOC) {
-	  fprintf(stderr, "merge_loc: Freeing memloc %p location %s memhdr: %p data: %p\n",
-		  ml2, ml2->location, ml2->mh, ml2->mh->data);
-	}
-#endif /* DMALLOC_TRACE_MEMLOC */
-	really_free_memloc(ml2);
-#ifdef DMALLOC_PROFILE
-	add_location_duplicate++;
-#endif
-      }else{
-	prev=&ml2->next;
+      if (ml2 == DMALLOC_TRACE_MEMLOC) {
+	fprintf(stderr, "merge_loc: Freeing memloc %p location %s memhdr: %p data: %p\n",
+		ml2, ml2->location, ml2->mh, ml2->mh->data);
       }
+#endif /* DMALLOC_TRACE_MEMLOC */
+#ifdef DMALLOC_PROFILE
+      add_location_duplicate++;
+#endif
 #ifdef DMALLOC_VERIFY_INTERNALS
       if (ml2->mh != mh) {
 	Pike_fatal("Non-owned memloc in location list!\n");
       }
 #endif
+      really_free_memloc(ml2);
     }
   }
 }
-#endif
 
-#ifdef DMALLOC_AD_HOC
 static int add_location_cleanup(struct memhdr *mh,
 				LOCATION location,
 				unsigned long l)
 {
   struct memloc *ml;
   unsigned long l2;
-  struct memloc **prev=&mh->locations;
+
+  merge_location_list(mh);
 
   mh->misses=0;
 
-  while((ml=*prev))
+  ml = mh->locations;
+
+  while(ml && (ml->location <= location))
   {
 #ifdef DMALLOC_PROFILE
     add_location_seek++;
@@ -1753,65 +1815,14 @@ static int add_location_cleanup(struct memhdr *mh,
     {
       /* Found. */
       ml->times++;
-      mlhash[l]=ml;
-      prev=&ml->next;
-      
-      while((ml=*prev))
-      {
-	l2=lhash(mh, ml->location);
-
-#ifdef DMALLOC_VERIFY_INTERNALS
-	if (ml->mh != mh) {
-	  Pike_fatal("Non-owned memloc in location list!\n");
-	}
-#endif
-
-	if(mlhash[l2] && mlhash[l2]!=ml &&
-	   mlhash[l2]->mh == mh && mlhash[l2]->location == ml->location)
-	{
-	  /* We found a duplicate */
-#ifdef DMALLOC_PROFILE
-	  add_location_duplicate++;
-#endif
-	  mlhash[l2]->times+=ml->times;
-	  *prev=ml->next;
-#ifdef DMALLOC_TRACE_MEMLOC
-	  if (ml == DMALLOC_TRACE_MEMLOC) {
-	    fprintf(stderr, "add_loc: Freeing memloc %p location %s memhdr: %p data: %p\n",
-		    ml, ml->location, ml->mh, ml->mh->data);
-	  }
-#endif /* DMALLOC_TRACE_MEMLOC */
-	  really_free_memloc(ml);
-	}else{
-	  if (!mlhash[l2]) mlhash[l2] = ml;
-	  prev=&ml->next;
-	}
-      }
+      mlhash[l]=ml;      
       return 1;
     }
 
     l2=lhash(mh, ml->location);
         
-    if(mlhash[l2] && mlhash[l2]!=ml &&
-       mlhash[l2]->mh == mh && mlhash[l2]->location == ml->location)
-    {
-      /* We found a duplicate */
-#ifdef DMALLOC_PROFILE
-      add_location_duplicate++;
-#endif
-      mlhash[l2]->times+=ml->times;
-      *prev=ml->next;
-#ifdef DMALLOC_TRACE_MEMLOC
-      if (ml == DMALLOC_TRACE_MEMLOC) {
-        fprintf(stderr, "add_loc: 2 Freeing memloc %p location %s memhdr: %p data: %p\n",
-		ml, ml->location, ml->mh, ml->mh->data);
-      }
-#endif /* DMALLOC_TRACE_MEMLOC */
-      really_free_memloc(ml);
-    }else{
-      if (!mlhash[l2]) mlhash[l2] = ml;
-      prev=&ml->next;
-    }
+    if (!mlhash[l2]) mlhash[l2] = ml;
+    ml = ml->next;
   }
 
   return 0;
