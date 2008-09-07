@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.194 2008/09/05 10:12:04 grubba Exp $
+|| $Id: pike_memory.c,v 1.195 2008/09/07 11:52:08 grubba Exp $
 */
 
 #include "global.h"
@@ -1337,6 +1337,8 @@ struct memloc
 {
   struct memloc *next;
   struct memhdr *mh;
+  struct memloc *hash_next;
+  struct memloc **hash_prev;
   LOCATION location;
   int times;
 };
@@ -1370,9 +1372,6 @@ struct memhdr
 #endif /* DMALLOC_USE_HASHBASE */
 #ifdef DMALLOC_VERIFY_INTERNALS
   int times;		/* Should be equal to `+(@(locations->times))... */
-#endif
-#ifdef DMALLOC_AD_HOC
-  int misses;
 #endif
   int gc_generation;
 #ifdef DMALLOC_C_STACK_TRACE
@@ -1585,8 +1584,11 @@ static INLINE unsigned long lhash(struct memhdr *m, LOCATION location)
   );							\
   while((ml=X->locations))				\
   {							\
-    unsigned long l = lhash(X, ml->location);		\
-    if(mlhash[l]==ml) mlhash[l] = NULL;			\
+    /* Unlink from the hash-table. */			\
+    ml->hash_prev[0] = ml->hash_next;			\
+    if (ml->hash_next) {				\
+      ml->hash_next->hash_prev = ml->hash_prev;		\
+    }							\
 							\
     X->locations=ml->next;				\
     DO_IF_TRACE_MEMLOC(					\
@@ -1647,187 +1649,36 @@ static struct memhdr *my_find_memhdr(void *p, int already_gone)
 }
 
 
-static int find_location(struct memhdr *mh, LOCATION location)
+static struct memloc *find_location(struct memhdr *mh, LOCATION location)
 {
   struct memloc *ml;
   unsigned long l=lhash(mh,location);
 
-  if(mlhash[l] &&
-     mlhash[l]->mh==mh &&
-     mlhash[l]->location==location)
-    return 1;
-
-  for(ml=mh->locations;ml;ml=ml->next)
-  {
-    if(ml->location==location)
-    {
+  for (ml = mlhash[l]; ml; ml = ml->hash_next) {
+    if (ml->mh==mh && ml->location==location) {
+      if (ml != mlhash[l]) {
 #ifdef DMALLOC_TRACE_MEMLOC
-      if (ml == DMALLOC_TRACE_MEMLOC) {
-        fprintf(stderr, "find_loc: Found memloc %p location %s memhdr: %p data: %p\n",
-		ml, ml->location, ml->mh, ml->mh->data);
-      }
+	if (ml == DMALLOC_TRACE_MEMLOC) {
+	  fprintf(stderr,
+		  "find_loc: Found memloc %p location %s memhdr: %p data: %p\n",
+		  ml, ml->location, ml->mh, ml->mh->data);
+	}
 #endif /* DMALLOC_TRACE_MEMLOC */
-      mlhash[l]=ml;
-      return 1;
-    }
-  }
-  return 0;
-}
-
-#ifdef DMALLOC_AD_HOC
-/* The first argument is pointer to pointer to first element.
- *
- * The second argument is a hint of where to start searching for
- * a pivot (all elements prior to (and including) this are known
- * to be in order). This argument may be NULL.
- *
- * Returns pointer to next pointer field of last element. The field
- * will always contain NULL at return time.
- */
-static struct memloc **quick_sort_locations(struct memloc **start,
-					    struct memloc *pos)
-{
-  struct memloc *pivot_loc;
-  struct memloc *pivot_next;
-  struct memloc **lt_tail;
-  struct memloc **gt_tail;
-  struct memloc *lt_piv_start = NULL;
-  struct memloc *gt_piv_start = NULL;
-  LOCATION pivot;
-
-  if (!*start) return start;	/* Empty list */
-  /* Select the first element out of order as the pivot. */
-  if (!pos) pos = *start;
-  do {
-    pivot_loc = pos;
-    pivot = pos->location;
-    pos = pos->next;
-  } while (pos && pos->location > pivot);
-  if (!pos) return &pivot_loc->next;	/* Sorted list */
-  /* Partition according to the pivot. */
-  lt_tail = start;
-  gt_tail = &pivot_loc->next;
-  pivot_next = pivot_loc->next;
-  for (pos = *start; pos != pivot_loc; pos = pos->next) {
-    if (pos->location > pivot) {
-      *gt_tail = gt_piv_start = pos;
-      gt_tail = &pos->next;
-    } else {
-      *lt_tail = lt_piv_start = pos;
-      lt_tail = &pos->next;
-    }
-  }
-  *lt_tail = pivot_next;
-  lt_tail = &pivot_next->next;
-  for (pos = pivot_next->next; pos; pos = pos->next) {
-    if (pos->location > pivot) {
-      *gt_tail = pos;
-      gt_tail = &pos->next;
-    } else {
-      *lt_tail = pos;
-      lt_tail = &pos->next;
-    }
-  }
-  *gt_tail = NULL;
-  *lt_tail = NULL;
-  /* Sort the partitions and rejoin them with the pivot inbetween. */
-  lt_tail = quick_sort_locations(start, lt_piv_start);
-  *lt_tail = pivot_loc;
-  return quick_sort_locations(&pivot_loc->next, gt_piv_start);
-}
-
-void merge_location_list(struct memhdr *mh)
-{
-  struct memloc *ml;
-
-  /* Sort the locations, so that we don't have to do a full scan
-   * for every memloc. */
-  quick_sort_locations(&mh->locations, NULL);
-
-  for(ml=mh->locations;ml;ml=ml->next)
-  {
-    struct memloc *ml2;
-    /* Make sure only live memloc's are left in the cache. */
-    unsigned long l = lhash(mh, ml->location);
-    mlhash[l] = ml;
-
-#ifdef DMALLOC_TRACE_MEMLOC
-    if (ml == DMALLOC_TRACE_MEMLOC) {
-      fprintf(stderr, "merge_loc: Found memloc %p location %s memhdr: %p data: %p\n",
-	      ml, ml->location, ml->mh, ml->mh->data);
-    }
-#endif /* DMALLOC_TRACE_MEMLOC */
-
-#ifdef DMALLOC_VERIFY_INTERNALS
-    if (ml->mh != mh) {
-      Pike_fatal("Non-owned memloc in location list!\n");
-    }
-#endif
-
-    while((ml2=ml->next) && (ml2->location == ml->location))
-    {
-      ml->times+=ml2->times;
-      ml->next=ml2->next;
-#ifdef DMALLOC_TRACE_MEMLOC
-      if (ml2 == DMALLOC_TRACE_MEMLOC) {
-	fprintf(stderr, "merge_loc: Freeing memloc %p location %s memhdr: %p data: %p\n",
-		ml2, ml2->location, ml2->mh, ml2->mh->data);
+	/* Relink the hash bucket. */
+	if ((ml->hash_prev[0] = ml->hash_next)) {
+	  ml->hash_next->hash_prev = ml->hash_prev;
+	}
+	ml->hash_prev = &mlhash[l];
+	ml->hash_next = mlhash[l];
+	mlhash[l]->hash_prev = &ml->hash_next;
+	mlhash[l]=ml;
       }
-#endif /* DMALLOC_TRACE_MEMLOC */
-#ifdef DMALLOC_PROFILE
-      add_location_duplicate++;
-#endif
-#ifdef DMALLOC_VERIFY_INTERNALS
-      if (ml2->mh != mh) {
-	Pike_fatal("Non-owned memloc in location list!\n");
-      }
-#endif
-      really_free_memloc(ml2);
+      return ml;
     }
   }
+
+  return NULL;
 }
-
-static int add_location_cleanup(struct memhdr *mh,
-				LOCATION location,
-				unsigned long l)
-{
-  struct memloc *ml;
-  unsigned long l2;
-
-  merge_location_list(mh);
-
-  mh->misses=0;
-
-  ml = mh->locations;
-
-  while(ml && (ml->location <= location))
-  {
-#ifdef DMALLOC_PROFILE
-    add_location_seek++;
-#endif
-#ifdef DMALLOC_VERIFY_INTERNALS
-    if (ml->mh != mh) {
-      Pike_fatal("Non-owned memloc in location list!\n");
-    }
-#endif
-
-    if(ml->location == location)
-    {
-      /* Found. */
-      ml->times++;
-      mlhash[l]=ml;      
-      return 1;
-    }
-
-    l2=lhash(mh, ml->location);
-        
-    if (!mlhash[l2]) mlhash[l2] = ml;
-    ml = ml->next;
-  }
-
-  return 0;
-}
-#endif
 				 
 static void add_location(struct memhdr *mh,
 			 LOCATION location)
@@ -1857,50 +1708,10 @@ static void add_location(struct memhdr *mh,
   add_location_calls++;
 #endif
 
-  if(mlhash[l] && (mlhash[l]->mh==mh) && (mlhash[l]->location==location))
-  {
-    if (mh->flags & MEM_TRACE) {
-      fprintf(stderr, "Found in cache.\n");
-      for (ml = mh->locations; ml; ml = ml->next) {
-	if (ml == mlhash[l]) break;
-      }
-#ifdef DMALLOC_VERIFY_INTERNALS
-      if (!ml) {
-	dump_memhdr_locations(mh, 0, 0);
-	Pike_fatal("Memloc 0x%p in mlhash, but not in mh->locations!\n"
-		   "data:0x%p, location:%s\n",
-		   mlhash[l], mh->data, location);
-      }
-#endif
-    }
-    mlhash[l]->times++;
-#ifdef DMALLOC_PROFILE
-    add_location_cache_hits++;
-#endif
+  if ((ml = find_location(mh, location))) {
+    ml->times++;
     return;
   }
-
-#ifdef DMALLOC_AD_HOC
-  if(mh->misses > AD_HOC_CHECK_INTERVAL)
-    if(add_location_cleanup(mh, location, l)) {
-      if (mh->flags & MEM_TRACE) {
-	fprintf(stderr, "Adjusted by add_location_cleanup().\n");
-      }
-      return;
-    }
-#else
-  for(ml=mh->locations;ml;ml=ml->next)
-  {
-#ifdef DMALLOC_PROFILE
-    add_location_seek++;
-#endif
-    if(ml->location==location) {
-      ml->times++;
-      mlhash[l]=ml;
-      return;
-    }
-  }
-#endif
 
   if (mh->flags & MEM_TRACE) {
     fprintf(stderr, "Creating a new entry.\n");
@@ -1916,9 +1727,10 @@ static void add_location(struct memhdr *mh,
   ml->mh=mh;
   mh->locations=ml;
 
-#ifdef DMALLOC_AD_HOC
-  mh->misses++;
-#endif
+  ml->hash_prev = &mlhash[l];
+  if ((ml->hash_next = mlhash[l])) {
+    mlhash[l]->hash_prev = &ml->hash_next;
+  }
   mlhash[l]=ml;
 #ifdef DMALLOC_TRACE_MEMLOC
   if (ml == DMALLOC_TRACE_MEMLOC) {
@@ -1943,12 +1755,15 @@ static void remove_location(struct memhdr *mh, LOCATION location)
   if(find_location(&no_leak_memlocs, location)) return;
 #endif
 
-  l=lhash(mh,location);
+  if (!(ml = find_location(mh, location))) {
+    return;
+  }
 
-  if(mlhash[l] && mlhash[l]->mh==mh && mlhash[l]->location==location)
-    mlhash[l]=NULL;
+  /* Unlink from the hashtable. */
+  if ((ml->hash_prev[0] = ml->hash_next)) {
+    ml->hash_next->hash_prev = ml->hash_prev;
+  }
 
-  
   prev=&mh->locations;
   while((ml=*prev))
   {
@@ -1971,9 +1786,7 @@ static void remove_location(struct memhdr *mh, LOCATION location)
       }
 #endif /* DMALLOC_TRACE_MEMLOC */
       really_free_memloc(ml);
-#ifndef DMALLOC_AD_HOC
-      break;
-#endif
+      return;
     }else{
       prev=&ml->next;
     }
@@ -2004,9 +1817,6 @@ static struct memhdr *low_make_memhdr(void *p, int s, LOCATION location
 #ifdef DMALLOC_VERIFY_INTERNALS
   mh->times=1;
 #endif
-#ifdef DMALLOC_AD_HOC
-  mh->misses=0;
-#endif
   ml->next = mh->locations;
   mh->locations = ml;
   mh->gc_generation=gc_generation * 1000 + Pike_in_gc;
@@ -2021,6 +1831,10 @@ static struct memhdr *low_make_memhdr(void *p, int s, LOCATION location
   ml->location=location;
   ml->times=1;
   ml->mh=mh;
+  ml->hash_prev = &mlhash[l];
+  if ((ml->hash_next = mlhash[l])) {
+    mlhash[l]->hash_prev = &ml->hash_next;
+  }
   mlhash[l]=ml;
 
 #ifdef DMALLOC_TRACE_MEMHDR
@@ -2505,9 +2319,6 @@ void dump_memhdr_locations(struct memhdr *from,
 {
   struct memloc *l;
   if(!from) return;
-#ifdef DMALLOC_AD_HOC
-  merge_location_list(from);
-#endif
 
   fprintf(stderr,"%*sLocations that handled %p: (gc generation: %d/%d  gc pass: %d/%d)\n",
 	  indent,"",
@@ -2974,6 +2785,7 @@ static void initialize_dmalloc(void)
     init_memory_map_blocks();
     init_memory_map_entry_blocks();
     init_memhdr_hash();
+    MEMSET(mlhash, 0, sizeof(mlhash));
 
     for(e=0;e<(long)NELEM(rndbuf);e++) rndbuf[e]= (rand() % 511) | 1;
     
