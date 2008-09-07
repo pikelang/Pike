@@ -379,6 +379,29 @@ o Calendar
 
   - Timezones are now read from /etc/localtime, if available.
 
+  - Cleaned up year-day (yd) handling so that it never goes below 1.
+    Instead be careful to use either year (y) or week-year (wy)
+    depending on context.
+
+  - Fixed inconsistent range handling in year() and years() that made
+    them almost but not quite zero-based. Now they are one-based just
+    like day()/days(), month()/months() etc.
+
+  - Cleaned up conversion between weeks and years: E.g. if a week has
+    days in two years then converting it to years will produce a range
+    of both years. The attempt to always map a week to a single year
+    is gone since it's inconsistent with how other overlapping time
+    ranges are handled. If the user wants to convert a week to the
+    year it "unambiguously" belongs to, (s)he can do
+    Calendar.ISO.Year(week->year_no()).
+
+  - Did away with the attempt to map leap days between February 24th
+    and 29th before and after year 2000, since doing so break date
+    arithmetic.
+
+  - The last four changes above are not entirely compatible.
+    Compatibility with 7.6 and older is retained with #pike 7.6.
+
 o CompilerEnvironment & CompilerEnvironment()->PikeCompiler
 
   The Pike compiler has been refactored to be more object-oriented and
@@ -544,8 +567,17 @@ o Msql
 
 o Mysql
 
-  Unicode support. FIXME: mast Document in more detail. C.f. check-in
-  1.25 of lib/modules/Sql.pmod/mysql.pike.
+  - Two functions set_charset() and get_charset() have been added to
+    set and query the connection charset. The create() function also
+    takes a "charset" setting in the options mapping.
+
+  - Improved Unicode support. The MySQL driver now supports
+    (possibly wide) Unicode queries and text return values, handling
+    the connection charset and all encoding/decoding internally. This
+    is enabled by setting the charset to "unicode", or through the new
+    functions set_unicode_encode_mode() and set_unicode_decode_mode().
+    See their documentation for further details.
+
   Return correct UNDEFINED instead of 0 values for NULL values in resultsets.
 
 o Odbc
