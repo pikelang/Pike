@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.115 2008/09/01 18:10:51 grubba Exp $
+// $Id: client.pike,v 1.116 2008/09/07 22:48:58 mast Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -1405,7 +1405,7 @@ object get_default_filter()
   //!
   //! @seealso
   //!  @[result], @[result.fetch], @[read], @[get_supported_controls],
-  //!  @[Protocols.LDAP.quote_filter_value], @[Protocols.LDAP.make_filter]
+  //!  @[Protocols.LDAP.ldap_encode_string], @[Protocols.LDAP.make_filter]
   result|int search (string|object|void filter, array(string)|void attrs,
 		     int|void attrsonly,
 		     void|mapping(string:array(int|string)) controls,
