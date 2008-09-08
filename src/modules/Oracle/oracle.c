@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: oracle.c,v 1.84 2008/04/07 15:50:35 grubba Exp $
+|| $Id: oracle.c,v 1.85 2008/09/08 16:05:17 grubba Exp $
 */
 
 /*
@@ -54,7 +54,7 @@
 
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.84 2008/04/07 15:50:35 grubba Exp $");
+RCSID("$Id: oracle.c,v 1.85 2008/09/08 16:05:17 grubba Exp $");
 
 
 /* User-changable defines: */
@@ -1223,13 +1223,21 @@ static void f_fetch_fields(INT32 args)
 	case SQLT_LNG: /* long */
 	case SQLT_LVC: /* long varchar */
 	  type_name="char";
-	  data_size = size;
-	  type = SQLT_CHR;
-	  addr = info->data.u.buf = xalloc(size);
+
+	  if (size > 0) {
+	    data_size = size;
+	    type = SQLT_CHR;
+	    addr = info->data.u.buf = xalloc(size);
 #ifdef ORACLE_DEBUG
-	  fprintf(stderr, "Allocated %ld bytes at %p for field.\n",
-		  (long)size, addr);
+	    fprintf(stderr, "Allocated %ld bytes at %p for field.\n",
+		    (long)size, addr);
 #endif
+	  } else {
+	    /* Unknown size. */
+	    type = SQLT_LNG;
+	    data_size = -1;
+	    addr = NULL;
+	  }
 	  break;
 	  
       case SQLT_CLOB:
