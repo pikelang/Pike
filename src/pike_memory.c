@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.195 2008/09/07 11:52:08 grubba Exp $
+|| $Id: pike_memory.c,v 1.196 2008/09/08 11:31:16 grubba Exp $
 */
 
 #include "global.h"
@@ -31,6 +31,7 @@ int page_size;
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
+#undef strdup
 char *strdup(const char *str)
 {
   char *res = NULL;
@@ -42,7 +43,7 @@ char *strdup(const char *str)
   }
   return(res);
 }
-#endif /* !HAVE_STRDUP */
+#endif /* !HAVE_STRDUP && !strdup */
 
 ptrdiff_t pcharp_memcmp(PCHARP a, PCHARP b, int sz)
 {
