@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: oracle.c,v 1.93 2008/06/25 11:53:32 srb Exp $
+|| $Id: oracle.c,v 1.94 2008/09/08 16:04:52 grubba Exp $
 */
 
 /*
@@ -1186,13 +1186,21 @@ static void f_fetch_fields(INT32 args)
 	case SQLT_LNG: /* long */
 	case SQLT_LVC: /* long varchar */
 	  type_name="char";
-	  data_size = size;
-	  type = SQLT_CHR;
-	  addr = info->data.u.buf = xalloc(size);
+
+	  if (size > 0) {
+	    type = SQLT_CHR;
+	    data_size = size?size:-1;
+	    addr = info->data.u.buf = xalloc(size);
 #ifdef ORACLE_DEBUG
-	  fprintf(stderr, "Allocated %ld bytes at %p for field.\n",
-		  (long)size, addr);
+	    fprintf(stderr, "Allocated %ld bytes at %p for field.\n",
+		    (long)size, addr);
 #endif
+	  } else {
+	    /* Unknown size. */
+	    type = SQLT_LNG;
+	    data_size = -1;
+	    addr = NULL;
+	  }
 	  break;
 	  
       case SQLT_CLOB:
