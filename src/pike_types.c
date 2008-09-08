@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.352 2008/08/17 10:14:55 mast Exp $
+|| $Id: pike_types.c,v 1.353 2008/09/08 21:07:54 grubba Exp $
 */
 
 #include "global.h"
@@ -1924,9 +1924,7 @@ void simple_describe_type(struct pike_type *s)
 	  INT32 max;
 	  s = s->car;
 	  fprintf(stderr, "string");
-	  if (s->type == T_ZERO) {
-	    fprintf(stderr, "(zero)");
-	  } else if (s != int_type_string) {
+	  if (s != int_type_string) {
 	    fprintf(stderr, "(");
 	    while (s->type == T_OR) {
 	      struct pike_type *char_type = s->car;
@@ -1934,6 +1932,11 @@ void simple_describe_type(struct pike_type *s)
 		char_type = char_type->cdr;
 	      }
 
+	      if (char_type->type == T_ZERO) {
+		fprintf(stderr, "zero | ");
+		s = s->cdr;
+		continue;
+	      }
 #ifdef PIKE_DEBUG
 	      if (char_type->type != T_INT) {
 		Pike_fatal("Invalid node type (%d:%s) in string type.\n",
@@ -1955,20 +1958,24 @@ void simple_describe_type(struct pike_type *s)
 	    while(s->type == T_ASSIGN) {
 	      s = s->cdr;
 	    }
+	    if (s->type == T_ZERO) {
+	      fprintf(stderr, "zero");
+	    } else {
 #ifdef PIKE_DEBUG
-	    if (s->type != T_INT) {
-	      Pike_fatal("Invalid node type (%d:%s) in string type.\n",
-			 s->type, get_name_of_type(s->type));
-	    }
+	      if (s->type != T_INT) {
+		Pike_fatal("Invalid node type (%d:%s) in string type.\n",
+			   s->type, get_name_of_type(s->type));
+	      }
 #endif /* PIKE_DEBUG */
-	    min = CAR_TO_INT(s);
-	    max = CDR_TO_INT(s);
-	    if (min != MIN_INT32) {
-	      fprintf(stderr, "%d", min);
-	    }
-	    fprintf(stderr, "..");
-	    if (max != MAX_INT32) {
-	      fprintf(stderr, "%d", max);
+	      min = CAR_TO_INT(s);
+	      max = CDR_TO_INT(s);
+	      if (min != MIN_INT32) {
+		fprintf(stderr, "%d", min);
+	      }
+	      fprintf(stderr, "..");
+	      if (max != MAX_INT32) {
+		fprintf(stderr, "%d", max);
+	      }
 	    }
 	    fprintf(stderr, ")");
 	  }
