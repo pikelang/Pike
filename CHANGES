@@ -688,7 +688,7 @@ o Process
 
 o Protocols.DNS
 
-  - Added support for NAPTR (RFC 3403) records.
+  - Added support for NAPTR (RFC 3403) and SPF (RFC 4408) records.
 
   - The gethostbyname() function now returns IPv6 addresses too, if
     available.
