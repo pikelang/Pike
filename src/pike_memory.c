@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.147 2006/08/06 16:58:06 mast Exp $
+|| $Id: pike_memory.c,v 1.148 2008/09/08 11:31:26 grubba Exp $
 */
 
 #include "global.h"
@@ -27,10 +27,11 @@
 
 #include <errno.h>
 
-RCSID("$Id: pike_memory.c,v 1.147 2006/08/06 16:58:06 mast Exp $");
+RCSID("$Id: pike_memory.c,v 1.148 2008/09/08 11:31:26 grubba Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
+#undef strdup
 char *strdup(const char *str)
 {
   char *res = NULL;
