@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_threadlib.h,v 1.62 2008/08/22 14:55:48 jonasw Exp $
+|| $Id: pike_threadlib.h,v 1.63 2008/09/08 13:41:41 mast Exp $
 */
 
 #ifndef PIKE_THREADLIB_H
@@ -947,11 +947,13 @@ PMOD_EXPORT HANDLE CheckValidHandle(HANDLE h);
 
 /* Initializer macros for static mutex and condition variables */
 #ifdef PTHREAD_MUTEX_INITIALIZER
+#define HAS_STATIC_MUTEX_INIT
 #define STATIC_MUTEX_INIT  = PTHREAD_MUTEX_INITIALIZER
 #else
 #define STATIC_MUTEX_INIT
 #endif
 #ifdef PTHREAD_COND_INITIALIZER
+#define HAS_STATIC_COND_INIT
 #define STATIC_COND_INIT   = PTHREAD_COND_INITIALIZER
 #else
 #define STATIC_COND_INIT
