@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.265 2008/09/09 16:48:50 mast Exp $
+|| $Id: threads.c,v 1.266 2008/09/09 16:53:13 mast Exp $
 */
 
 #include "global.h"
@@ -884,8 +884,11 @@ TH_RETURN_TYPE new_thread_func(void *data)
 #endif
   }
 #endif /* HAVE_BROKEN_LINUX_THREAD_EUID */
-  
-  mt_lock_interpreter();
+
+  /* Lock the interpreter now, but don't wait on
+   * threads_disabled_change since the spawning thread might be
+   * holding it. */
+  low_mt_lock_interpreter();
 
 #if defined(PIKE_DEBUG)
   if(d_flag) {
@@ -910,6 +913,14 @@ TH_RETURN_TYPE new_thread_func(void *data)
 
   /* Inform the spawning thread that we are now running. */
   co_broadcast(&thread_state->status_change);
+
+  /* After signalling the status change to the spawning thread we may
+   * now wait if threads are disabled. */
+  if (threads_disabled) {
+    SWAP_OUT_CURRENT_THREAD();
+    threads_disabled_wait();
+    SWAP_IN_CURRENT_THREAD();
+  }
 
   DEBUG_CHECK_THREAD();
 
