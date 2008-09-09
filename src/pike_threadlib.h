@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_threadlib.h,v 1.63 2008/09/08 13:41:41 mast Exp $
+|| $Id: pike_threadlib.h,v 1.64 2008/09/09 16:45:14 mast Exp $
 */
 
 #ifndef PIKE_THREADLIB_H
@@ -545,11 +545,11 @@ PMOD_EXPORT extern const char msg_ip_not_locked_this_thr[];
 static INLINE int threads_disabled_wait(void)
 {
   do {
-    THREADS_FPRINTF(1, (stderr, "Thread %d: Wait on threads_disabled\n",
+    THREADS_FPRINTF(1, (stderr, "Thread 0x%x: Wait on threads_disabled\n",
 			(int) th_self()));
     low_co_wait_interpreter(&threads_disabled_change);
   } while (threads_disabled);
-  THREADS_FPRINTF(1, (stderr, "Thread %d: Continue after threads_disabled\n",
+  THREADS_FPRINTF(1, (stderr, "Thread 0x%x: Continue after threads_disabled\n",
 		      (int) th_self()));
   return 0;
 }
