@@ -1,4 +1,4 @@
-// $Id: SloppyDOM.pmod,v 1.1 2008/06/29 11:11:43 agehall Exp $
+// $Id: SloppyDOM.pmod,v 1.2 2008/09/09 22:03:02 mast Exp $
 
 //! A somewhat DOM-like library that implements lazy generation of the
 //! node tree, i.e. it's generated from the data upon lookup. There's
@@ -18,10 +18,6 @@
 //! compliant, and it currently doesn't handle DTD elements, like
 //! @tt{"<!DOCTYPE"@}, or the XML declaration (i.e. @tt{"<?xml
 //! version='1.0'?>"@}.
-//!
-//! @note
-//! This belongs in @[Parser.XML] in Pike, but it's here for the time
-//! being until it has stabilized a bit.
 
 // Created 2002-02-14 by Martin Stjernholm
 
