@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.354 2008/09/09 13:03:02 mast Exp $
+|| $Id: pike_types.c,v 1.355 2008/09/11 11:46:13 grubba Exp $
 */
 
 #include "global.h"
@@ -3787,10 +3787,12 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
       a = a->cdr;
       goto recurse;
     }
-    /* Note that we need to recurse, since there may be T_ASSIGN nodes
-     * in the cdr that need to be executed.
-     */
-    low_pike_types_le(a->cdr, b, array_cnt, flags);
+    if ((a->flags | b->flags) & PT_FLAG_ASSIGN) {
+      /* Note that we need to recurse, since there are T_ASSIGN nodes
+       * in the cdr that need to be executed.
+       */
+      low_pike_types_le(a->cdr, b, array_cnt, flags);
+    }
     return 1;
 
   case T_OR:
@@ -3810,8 +3812,10 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
       ret = low_pike_types_le(a->car, b, array_cnt, flags);
 #ifdef TYPE_GROUPING
       if (!ret == !(flags & LE_A_GROUPED)) {
-	/* Note: Needed for side effects... */
-	low_pike_types_le(a->cdr, b, array_cnt, flags);
+	if ((a->flags | b->flags) & PT_FLAG_ASSIGN) {
+	  /* Note: Needed for side effects... */
+	  low_pike_types_le(a->cdr, b, array_cnt, flags);
+	}
 	return ret;
       }
 #else
@@ -4006,7 +4010,9 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
     ret = low_pike_types_le(a, b->car, array_cnt, flags);
 #ifdef TYPE_GROUPING
     if (!ret != !(flags & LE_B_GROUPED)) {
-      low_pike_types_le(a, b->cdr, array_cnt, flags);
+      if ((a->flags | b->flags) & PT_FLAG_ASSIGN) {
+	low_pike_types_le(a, b->cdr, array_cnt, flags);
+      }
       return ret;
     }
 #else
