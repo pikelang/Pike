@@ -1,7 +1,7 @@
 #! /usr/bin/env pike
 #pike __REAL_VERSION__
 
-/* $Id: test_pike.pike,v 1.136 2008/06/28 16:37:02 nilsson Exp $ */
+/* $Id: test_pike.pike,v 1.137 2008/09/12 18:45:43 grubba Exp $ */
 
 constant description = "Executes tests according to testsuite files.";
 
@@ -102,6 +102,7 @@ class WarningFlag {
 
   void compile_warning(string file, int line, string text) {
     if (pushed_warnings[text]) return;
+    if (sizeof(filter(indices(pushed_warnings), glob, text))) return;
     warnings += ({ sprintf("%s:%d: %s", file, line, text) });
     warning = 1;
   }
