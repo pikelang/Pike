@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.355 2008/09/11 11:46:13 grubba Exp $
+|| $Id: pike_types.c,v 1.356 2008/09/12 11:15:07 grubba Exp $
 */
 
 #include "global.h"
@@ -2497,25 +2497,6 @@ static int low_find_exact_type_match(struct pike_type *needle,
   return low_is_same_type(needle, haystack);
 }
 
-static void very_low_or_pike_types(struct pike_type *to_push,
-				   struct pike_type *not_push)
-{
-  while(to_push->type == T_OR)
-  {
-    very_low_or_pike_types(to_push->car, not_push);
-    to_push = to_push->cdr;
-  }
-  /* FIXME:
-   * this might use the 'le' operator
-   */
-
-  if(!low_find_exact_type_match(to_push, not_push, T_OR))
-  {
-    push_finished_type(to_push);
-    push_type(T_OR);
-  }
-}
-
 static void low_or_pike_types(struct pike_type *t1,
 			      struct pike_type *t2,
 			      int zero_implied);
@@ -2868,21 +2849,6 @@ struct pike_type *or_pike_types(struct pike_type *a,
   fprintf(stderr, "\n");
 #endif
   return res;
-}
-
-static void very_low_and_pike_types(struct pike_type *to_push,
-				    struct pike_type *not_push)
-{
-  while(to_push->type == T_AND)
-  {
-    very_low_and_pike_types(to_push->car, not_push);
-    to_push = to_push->cdr;
-  }
-  if(!low_find_exact_type_match(to_push, not_push, T_AND))
-  {
-    push_finished_type(to_push);
-    push_type(T_AND);
-  }
 }
 
 static void even_lower_and_pike_types(struct pike_type *t1,
