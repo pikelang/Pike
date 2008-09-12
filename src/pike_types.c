@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.356 2008/09/12 11:15:07 grubba Exp $
+|| $Id: pike_types.c,v 1.357 2008/09/12 13:30:44 grubba Exp $
 */
 
 #include "global.h"
@@ -5554,6 +5554,14 @@ struct pike_type *soft_cast(struct pike_type *soft_type,
 			   tmp2 = soft_cast(soft_type, orig_type->cdr, flags));
       break;
     case T_SCOPE:
+      if ((res = soft_cast(soft_type, orig_type->cdr, flags))) {
+	type_stack_mark();
+	push_finished_type(res);
+	push_scope_type(CAR_TO_INT(orig_type));
+	free_type(res);
+	res = pop_unfinished_type();
+      }
+      return res;
     case T_ASSIGN:
     case PIKE_T_NAME:
       orig_type = orig_type->cdr;
