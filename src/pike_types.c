@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.357 2008/09/12 13:30:44 grubba Exp $
+|| $Id: pike_types.c,v 1.358 2008/09/12 15:21:41 grubba Exp $
 */
 
 #include "global.h"
@@ -5549,9 +5549,32 @@ struct pike_type *soft_cast(struct pike_type *soft_type,
       }
       break;
     case T_AND:
-      /* FIXME: Make stricter analogous to OR above. */
-      res = and_pike_types(tmp = soft_cast(soft_type, orig_type->car, flags),
-			   tmp2 = soft_cast(soft_type, orig_type->cdr, flags));
+      /* Note: We need to handle T_NOT here. */
+      if (orig_type->car->type != T_NOT) {
+	tmp = soft_cast(soft_type, orig_type->car, flags);
+	if (!tmp) return NULL;
+	if (tmp == orig_type->car) {
+	  /* The original type is stricter than the soft type. */
+	  free_type(tmp);
+	  add_ref(orig_type);
+	  return orig_type;
+	}
+      }
+      if (orig_type->cdr->type != T_NOT) {
+	tmp2 = soft_cast(soft_type, orig_type->cdr, flags);
+	if (!tmp2) {
+	  if (tmp) free_type(tmp);
+	  return NULL;
+	}
+	if (tmp2 == orig_type->cdr) {
+	  /* The original type is stricter than the soft type. */
+	  if (tmp) free_type(tmp);
+	  free_type(tmp2);
+	  add_ref(orig_type);
+	  return orig_type;
+	}
+      }
+      res = and_pike_types(tmp?tmp:orig_type->car, tmp2?tmp2:orig_type->cdr);
       break;
     case T_SCOPE:
       if ((res = soft_cast(soft_type, orig_type->cdr, flags))) {
@@ -5731,6 +5754,7 @@ struct pike_type *soft_cast(struct pike_type *soft_type,
     function_cast_fail:
       type_stack_pop_to_mark();
       break;
+    case T_NOT:	/* FIXME. */
     default:
       if (soft_type->type != orig_type->type) break;
       switch(soft_type->type) {
