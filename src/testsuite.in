@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.852 2008/09/12 15:57:02 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.853 2008/09/12 18:46:59 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -568,8 +568,7 @@ test_type_error(object,mapping,([1:2,3:4]))
 test_type_error(object,multiset,(<1,2,3>))
 
 // Check that complex function types survive soft casting to function.
-// FIXME: Globbing in ignoring warnings.
-ignore_warning("Soft cast of scope(0,function((0=multiset), (1=multiset) ... : 0 | 1) | function((0=mapping), (1=mapping) ... : 0 | 1) | function((0=array), (1=array) ... : 0 | 1) | function(int, int ... : int) | !function(!string ... : mixed) & function(string | int | float, string | int | float ... : string) | !function(!(object | mixed) ... : mixed) & function(mixed ... : mixed) | !function(!float ... : mixed) & function(int | float, int | float ... : float)) to function is a noop.", [[
+ignore_warning("Soft cast of scope(0,function(*)) to function is a noop.", [[
   test_eq(typeof([function]`+), typeof(`+))
 ]])
 
