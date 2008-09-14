@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.455 2008/09/14 07:23:33 grubba Exp $
+// $Id: master.pike.in,v 1.456 2008/09/14 07:37:15 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -368,8 +368,8 @@ protected class Pike_0_6_master
   string basename(string x);
   object low_cast_to_object(string oname, string current_file);
 #pragma no_deprecation_warnings
-  private __deprecated__ string pike_library_path =
-    Pike_0_5_master::pike_library_path;
+  private __deprecated__(string) pike_library_path =
+    (__deprecated__(string))Pike_0_5_master::pike_library_path;
 #pragma deprecation_warnings
   extern int want_warnings;
   program compile_string(string data, void|string name);
@@ -441,9 +441,11 @@ class Pike_7_0_master
 #ifdef PIKE_AUTORELOAD
   extern int autoreload_on;
   extern int newest;
+  extern mapping(string:int) load_time;
 #endif
   string master_read_file();
   string normalize_path(string X);
+  array(string) query_precompiled_names(string fname);
   program cast_to_program(string pname, string current_file,
 			  object|void handler);
   void handle_error(array(mixed)|object trace);
@@ -646,6 +648,8 @@ class Pike_7_0_master
       return this_program::this;
     return get_compat_master(major, minor);
   }
+
+  /* No missing symbols. */
 }
 
 //! Pike 7.2 master compatibility interface.
