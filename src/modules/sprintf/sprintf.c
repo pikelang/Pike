@@ -99,7 +99,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.32 2003/10/16 16:23:21 grubba Exp $");
+RCSID("$Id: sprintf.c,v 1.33 2008/09/14 07:17:49 grubba Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -840,8 +840,8 @@ static void low_pike_sprintf(struct string_builder *r,
 	struct pike_string *s;
 	GET_STRING(s);
 	if (s->len) {
-	  fs->fsp->pad_string=MKPCHARP_STR(s);
-	  fs->fsp->pad_length=s->len;
+	  fsp->pad_string=MKPCHARP_STR(s);
+	  fsp->pad_length=s->len;
 	}
 	continue;
       }
