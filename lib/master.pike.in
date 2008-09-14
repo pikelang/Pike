@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.456 2008/09/14 07:37:15 grubba Exp $
+// $Id: master.pike.in,v 1.457 2008/09/14 11:18:30 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -679,6 +679,9 @@ protected class Pike_7_2_master
   object low_cast_to_object(string oname, string current_file,
 			    object|void current_handler);
   object findmodule(string fullname, object|void handler);
+  extern multiset no_resolv;
+  extern string ver;
+  mapping get_default_module();
   local protected object Pike_7_2_compat_handler;
   local mixed resolv(string identifier, string|void current_file)
   {
@@ -710,6 +713,8 @@ protected class Pike_7_2_master
       return this_program::this;
     return get_compat_master(major, minor);
   }
+
+  /* No missing symbols. */
 }
 
 //! Pike 7.4 master compatibility interface.
@@ -738,7 +743,7 @@ protected class Pike_7_4_master
   program objects_reverse_lookup (object obj);
   string fc_reverse_lookup (object obj);
   // Hide clone() and new().
-  private local __deprecated__ object new(mixed prog, mixed ... args);
+  private local __deprecated__ object new(mixed prog, mixed ... args){}
   private local __deprecated__(function) clone = new;
   void unregister(program p);
   program low_cast_to_program(string pname,
