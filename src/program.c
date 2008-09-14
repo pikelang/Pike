@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.753 2008/09/04 11:36:45 grubba Exp $
+|| $Id: program.c,v 1.754 2008/09/14 11:16:23 grubba Exp $
 */
 
 #include "global.h"
@@ -2025,13 +2025,16 @@ int override_identifier (struct reference *new_ref, struct pike_string *name)
     /* Do not zapp hidden identifiers */
     if(ref->id_flags & ID_HIDDEN) continue;
 
-    /* Do not zapp inherited inline ('local') identifiers */
-    if((ref->id_flags & (ID_INLINE|ID_INHERITED)) == (ID_INLINE|ID_INHERITED))
-      continue;
-
     /* Do not zapp functions with the wrong name... */
     if((i = ID_FROM_PTR(Pike_compiler->new_program, ref))->name != name)
       continue;
+
+    /* Do not zapp inherited inline ('local') identifiers */
+    if((ref->id_flags & (ID_INLINE|ID_INHERITED)) == (ID_INLINE|ID_INHERITED)) {
+      /* But we still need to hide them, since we shadow them... */
+      ref->id_flags |= ID_HIDDEN;
+      continue;
+    }
 
 #ifdef PROGRAM_BUILD_DEBUG
     fprintf(stderr, "%.*soverloaded reference %d (id_flags:0x%04x)\n",
