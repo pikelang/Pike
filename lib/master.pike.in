@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.457 2008/09/14 11:18:30 grubba Exp $
+// $Id: master.pike.in,v 1.458 2008/09/14 12:19:36 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -732,11 +732,13 @@ protected class Pike_7_2_master
 protected class Pike_7_4_master
 {
   inherit Pike_7_2_master;
-  local protected object Pike_7_4_compat_handler;
 #ifdef RESOLV_DEBUG
   void resolv_debug (sprintf_format fmt, sprintf_args... args);
 #endif
   void error(sprintf_format f, sprintf_args ... args);
+#ifdef GETCWD_CACHE
+  protected extern string current_path;
+#endif
   constant no_value = (<>);
   constant NoValue = typeof (no_value);
   string programs_reverse_lookup (program prog);
@@ -751,6 +753,8 @@ protected class Pike_7_4_master
 			      object|void handler,
 			      void|int mkobj);
   extern string include_prefix;
+  extern mapping(string:string) predefines;
+  extern CompatResolver parent_resolver;
   void add_predefine (string name, string value);
   void remove_predefine (string name);
   mapping get_predefines();
@@ -767,7 +771,25 @@ protected class Pike_7_4_master
   string describe_program(program|function p);
   class Encoder {};
   class Decoder {};
+  extern mapping(string:Codec) codecs;
+  Codec get_codec(string|void fname, int|void mkobj);
+
+  // The following come from the inherit of Codec. */
+  // Codec::Encoder:
+  extern mixed encoded;
+  string|array nameof (mixed what, void|array(object) module_object);
+  mixed encode_object(object x);
+  // Codec::Decoder:
+  extern string fname;
+  extern int mkobj;
+  object __register_new_program(program p);
+  object objectof (string|array what);
+  function functionof (string|array what);
+  program programof (string|array what);
+  void decode_object(object o, mixed data);
+
   string _sprintf(int t);
+  local protected object Pike_7_4_compat_handler;
   local mixed resolv(string identifier, string|void current_file)
   {
     if (!Pike_7_4_compat_handler) {
@@ -784,6 +806,8 @@ protected class Pike_7_4_master
       return this_program::this;
     return get_compat_master(major, minor);
   }
+
+  /* No missing symbols. */
 }
 
 //! Pike 7.6 master compatibility interface.
