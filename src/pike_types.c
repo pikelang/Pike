@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.50 2001/04/06 14:18:35 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.51 2008/09/14 07:13:32 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -531,7 +531,7 @@ static void internal_parse_typeA(char **_s)
 
 static void internal_parse_typeB(char **s)
 {
-  while(ISSPACE(**((unsigned char **)s))) ++*s;
+  while(ISSPACE(*((unsigned char *)*s))) ++*s;
   switch(**s)
   {
   case '!':
@@ -543,7 +543,7 @@ static void internal_parse_typeB(char **s)
   case '(':
     ++*s;
     internal_parse_type(s);
-    while(ISSPACE(**((unsigned char **)s))) ++*s;
+    while(ISSPACE(*((unsigned char *)*s))) ++*s;
     if(**s != ')') error("Expecting ')'.\n");
     break;
     
@@ -557,12 +557,12 @@ static void internal_parse_typeCC(char **s)
 {
   internal_parse_typeB(s);
 
-  while(ISSPACE(**((unsigned char **)s))) ++*s;
+  while(ISSPACE(*((unsigned char *)*s))) ++*s;
   
   while(**s == '*')
   {
     ++*s;
-    while(ISSPACE(**((unsigned char **)s))) ++*s;
+    while(ISSPACE(*((unsigned char *)*s))) ++*s;
     push_type(T_ARRAY);
   }
 }
@@ -575,7 +575,7 @@ static void internal_parse_typeC(char **s)
   internal_parse_typeCC(s);
   type_stack_reverse();
 
-  while(ISSPACE(**((unsigned char **)s))) ++*s;
+  while(ISSPACE(*((unsigned char *)*s))) ++*s;
   
   if(**s == '&')
   {
@@ -594,7 +594,7 @@ static void internal_parse_type(char **s)
 {
   internal_parse_typeC(s);
 
-  while(ISSPACE(**((unsigned char **)s))) ++*s;
+  while(ISSPACE(*((unsigned char *)*s))) ++*s;
   
   while(**s == '|')
   {
