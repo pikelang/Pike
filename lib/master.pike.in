@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.454 2008/09/13 15:31:58 grubba Exp $
+// $Id: master.pike.in,v 1.455 2008/09/14 07:23:33 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -142,32 +142,32 @@ constant NoValue = typeof (no_value);
 
 // Some API compatibility stuff.
 
-//! Pike 0.6 master compatibility interface.
+//! Pike 0.5 master compatibility interface.
 //!
 //! Most of the interface is implemented via mixin,
 //! or overloading by more recent masters.
 //!
 //! This interface is used for compatibility with
-//! all pikes until Pike 0.6.
+//! all pikes until Pike 0.5.
 //!
 //! @deprecated predef::MasterObject
 //!
 //! @seealso
 //!   @[get_compat_master()], @[master()], @[predef::MasterObject]
-protected class Pike_0_6_master
+protected class Pike_0_5_master
 {
-  int is_absolute_path(string p);
-  array(string) explode_path(string p);
-  string dirname(string x);
-  string basename(string x);
   string describe_backtrace(array(mixed) trace);
   object low_cast_to_object(string oname, string current_file);
   extern array(string) pike_include_path;
+  string pike_library_path =
+#if "¤lib_prefix¤"[0]!='¤'
+    "¤lib_prefix¤"
+#else
+    __DIR__
+#endif
+    ;
   extern array(string) pike_module_path;
   extern array(string) pike_program_path;
-  extern int want_warnings;
-  program compile_string(string data, void|string name);
-  program compile_file(string file);
 #ifdef GETCWD_CACHE
   extern string current_path;
   int cd(string s);
@@ -265,9 +265,6 @@ protected class Pike_0_6_master
   void add_program_path(string tmp);
   void remove_program_path(string tmp);
   mapping(string:program|NoValue) programs;
-#if constant(_static_modules.Builtin.mutex)
-  extern object compilation_mutex;
-#endif
   program cast_to_program(string pname, string current_file);
   void handle_error(array(mixed) trace);
 
@@ -283,37 +280,28 @@ protected class Pike_0_6_master
     return prog(@args);
   }
 
-  local constant mkmultiset = predef::mkmultiset;
-  local __deprecated__(function) clone = new;
-  constant master_efuns = ({});
   void create();
   program handle_inherit(string pname, string current_file);
   extern mapping(program:object) objects;
   object low_cast_to_object(string oname, string current_file);
   object cast_to_object(string oname, string current_file);
   class dirnode {};
-  class joinnode {};
-  extern mapping(string:mixed) fc;
   object findmodule(string fullname);
-  mixed handle_import(string what, string|void current_file);
-  local protected object Pike_0_6_compat_handler;
+  local protected object Pike_0_5_compat_handler;
   local mixed resolv(string identifier, string|void current_file)
   {
-    if (!Pike_0_6_compat_handler) {
-      Pike_0_6_compat_handler = global::get_compilation_handler(0, 6);
+    if (!Pike_0_5_compat_handler) {
+      Pike_0_5_compat_handler = global::get_compilation_handler(0, 5);
     }
-    return Pike_0_6_compat_handler->resolv(identifier, current_file);
+    return Pike_0_5_compat_handler->resolv(identifier, current_file);
   }
-  extern string _pike_file_name;
   extern string _master_file_name;
   void _main(array(string) orig_argv, array(string) env);
   extern mixed inhibit_compile_errors;
   void set_inhibit_compile_errors(mixed f);
   string trim_file_name(string s);
   void compile_error(string file,int line,string err);
-  void compile_warning(string file,int line,string err);
   string handle_include(string f, string current_file, int local_include);
-  string read_include(string f);
   local __deprecated__ string stupid_describe(mixed m)
   {
     switch(string typ=sprintf("%t",m))
@@ -342,17 +330,91 @@ protected class Pike_0_6_master
     }
   }
 
+  string describe_backtrace(array(mixed) trace);
+
+  object get_compat_master(int major, int minor)
+  {
+    // 0.0 - 0.5
+    if (!major && (minor < 6))
+      return this_program::this;
+    return get_compat_master(major, minor);
+  }
+
+  /* Missing symbols:
+   *
+   * __INIT
+   * __lambda_30	(Alias for mkmapping().)
+   */
+}
+
+//! Pike 0.6 master compatibility interface.
+//!
+//! Most of the interface is implemented via mixin,
+//! or overloading by more recent masters.
+//!
+//! This interface is used for compatibility with
+//! Pike 0.6.
+//!
+//! @deprecated predef::MasterObject
+//!
+//! @seealso
+//!   @[get_compat_master()], @[master()], @[predef::MasterObject]
+protected class Pike_0_6_master
+{
+  inherit Pike_0_5_master;
+  int is_absolute_path(string p);
+  array(string) explode_path(string p);
+  string dirname(string x);
+  string basename(string x);
+  object low_cast_to_object(string oname, string current_file);
+#pragma no_deprecation_warnings
+  private __deprecated__ string pike_library_path =
+    Pike_0_5_master::pike_library_path;
+#pragma deprecation_warnings
+  extern int want_warnings;
+  program compile_string(string data, void|string name);
+  program compile_file(string file);
+
+#if constant(_static_modules.Builtin.mutex)
+  extern object compilation_mutex;
+#endif
+
+  local constant mkmultiset = predef::mkmultiset;
+  local __deprecated__(function) clone = new;
+  constant master_efuns = ({});
+  class joinnode {};
+  extern mapping(string:mixed) fc;
+  mixed handle_import(string what, string|void current_file);
+  local protected object Pike_0_6_compat_handler;
+  local mixed resolv(string identifier, string|void current_file)
+  {
+    if (!Pike_0_6_compat_handler) {
+      Pike_0_6_compat_handler = global::get_compilation_handler(0, 6);
+    }
+    return Pike_0_6_compat_handler->resolv(identifier, current_file);
+  }
+  extern string _pike_file_name;
+  void compile_warning(string file,int line,string err);
+  string read_include(string f);
+
   string describe_program(program p);
   string describe_backtrace(array(mixed) trace);
   class Codec {};
 
   object get_compat_master(int major, int minor)
   {
-    // 0.0 - 0.6
+    if (!major && (minor < 6))
+      return Pike_0_5_master::get_compat_master(major, minor);
+    // 0.6
     if (!major && (minor < 7))
       return this_program::this;
     return get_compat_master(major, minor);
   }
+
+  /* Missing symbols:
+   *
+   * __INIT
+   */
 }
 
 //! Pike 7.0 master compatibility interface.
