@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.32 2008/08/15 14:28:21 srb Exp $
+dnl $Id: configure.in,v 1.33 2008/09/15 14:10:44 grubba Exp $
 
 AC_INIT(postgres.c)
 AC_CONFIG_HEADER(pgres_config.h)
@@ -107,7 +107,6 @@ dnl final ckeck, just to be sure we did not mess up
 		   pg_config.h libpq-fe.h)
   
 dnl check whether we have Postgres 7.2 or newer.
-dnl FIXME: This test ought to use EGREP_CPP.
   HAVE_PG72=no
   AC_EGREP_CPP([\"7\.[2-9].*], [
 #ifdef HAVE_POSTGRESQL_SERVER_PG_CONFIG_H
