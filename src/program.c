@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.755 2008/09/14 17:01:18 grubba Exp $
+|| $Id: program.c,v 1.756 2008/09/15 14:46:54 grubba Exp $
 */
 
 #include "global.h"
@@ -5036,7 +5036,7 @@ int define_variable(struct pike_string *name,
     } else if ((IDENTIFIERP(n)->id_flags & (ID_EXTERN|ID_INHERITED)) ==
 	       (ID_EXTERN|ID_INHERITED)) {
       /* Hide the overloaded inherited symbol. */
-      IDENTIFIERP(n)->id_flags |= ID_HIDDEN;
+      IDENTIFIERP(n)->id_flags |= ID_STATIC|ID_PRIVATE|ID_USED;
     }
   }
 
