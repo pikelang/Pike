@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.48 2008/05/02 04:15:18 mast Exp $
+# $Id: configure.in,v 1.49 2008/09/15 14:13:48 grubba Exp $
 AC_INIT(mpz_glue.c)
 AC_CONFIG_HEADER(gmp_machine.h)
 AC_ARG_WITH(gmp,     [  --with(out)-gmp        Support bignums],[],[with_gmp=yes])
@@ -250,8 +250,9 @@ if test x$with_gmp = xyes ; then
   AC_MSG_CHECKING(if GMP_NUMB_BITS is valid and lacks nails)
   AC_CACHE_VAL([pike_cv_gmp_numb_bits_valid], [
     AC_TRY_COMPILE([
-#if GMP_NUMB_BITS != SIZEOF_MP_LIMB_T * CHAR_BIT
+#if GMP_NUMB_BITS != (SIZEOF_MP_LIMB_T * CHAR_BIT)
 #error Cannot cope with GMP using nail bits.
+#error GMP_NUMB_BITS != (SIZEOF_MP_LIMB_T * CHAR_BIT)
 #endif
     ], [], [pike_cv_gmp_numb_bits_valid=yes], [pike_cv_gmp_numb_bits_valid=no])
   ])
