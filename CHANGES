@@ -99,11 +99,6 @@ o Stricter type checker for function calls.
   typechecker are also made available as Pike.get_first_arg_type(),
   Pike.low_check_call() and Pike.get_return_type().
 
-o Added generic attributes for types.
-
-  Provides a method to hook into the type checker, so that it is
-  possible to make custom type checking.
-
 o Stricter typing of strings.
 
   The string type may now have an optional value range.
@@ -186,9 +181,10 @@ o extern declared variables
 
 o __attribute__ and __deprecated__
 
-  It's now possible to set custom attributes on types. This is
-  currently used to improve the argument checking for sprintf()
-  and related functions, and for marking symbols as deprecated.
+  It's now possible to set custom attributes on types, so that
+  it is possible to make custom type checking. This is currently
+  used to improve the argument checking for sprintf() and related
+  functions, and for marking symbols as deprecated.
   eg:
 
     __deprecated__ mixed obsolete_function();
