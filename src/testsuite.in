@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.854 2008/09/14 16:18:25 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.855 2008/09/15 14:53:57 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -805,6 +805,27 @@ test_any_equal([[
        "B", ({ "get_a", "get_b" }),
        "C", ({ "get_a", "get_b", "get_c" }),
        "D", ({ "get_a", "get_b", "get_c", "get_d" }) }))
+
+test_any_equal([[
+  // Test that extern works as intended.
+  class A { extern mixed foo; };
+  class B { inherit A; mixed foo; object get_a() { return A::this; } };
+  object(B) b = B();
+  b->foo = 17;
+  array res = ({ b->foo, b->get_a()->foo });
+  b->get_a()->foo = 10;
+  return res + ({ b->foo, b->get_a()->foo });
+]], ({ 17, 17, 10, 10 }))
+
+test_eval_error([[
+  // Test that extern works as intended.
+  class A { extern mixed foo; };
+  class B { inherit A; mixed bar; };
+  object(B) b = B();
+  b->bar = 17;
+  b->foo = 10;
+  return b->foo;
+]])
 
 test_compile_error([[
  class A { constant q = "x"; }
