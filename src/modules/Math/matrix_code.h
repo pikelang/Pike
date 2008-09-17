@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: matrix_code.h,v 1.20 2008/06/28 23:05:59 nilsson Exp $
+|| $Id: matrix_code.h,v 1.21 2008/09/17 12:05:13 mast Exp $
 */
 
 /*
@@ -441,7 +441,7 @@ static void matrixX(_norm)(INT32 args)
 
    if (!(THIS->xsize==1 || THIS->ysize==1))
       math_error("norm",Pike_sp-args,args,0,
-		 "Cannot compute norm of non 1xn or nx1 matrices");
+		 "Cannot compute norm of non 1xn or nx1 matrices.\n");
    
    z=0.0;
    s=THIS->m;
@@ -461,7 +461,7 @@ static void matrixX(_norm2)(INT32 args)
 
   if (!(THIS->xsize==1 || THIS->ysize==1))
       math_error("norm2",Pike_sp-args,args,0,
-		 "Cannot compute norm of non 1xn or nx1 matrices");
+		 "Cannot compute norm of non 1xn or nx1 matrices.\n");
    
    z=0.0;
    s=THIS->m;
@@ -506,7 +506,7 @@ static void matrixX(_add)(INT32 args)
 
    if (mx->xsize != THIS->xsize || mx->ysize != THIS->ysize)
       math_error("`+",Pike_sp-args,args,0,
-		 "Can't add matrices of different size");
+		 "Cannot add matrices of different size.\n");
 
    pop_n_elems(args-1); /* shouldn't be needed */
    
@@ -541,7 +541,7 @@ static void matrixX(_sub)(INT32 args)
       if (mx->xsize != THIS->xsize ||
 	  mx->ysize != THIS->ysize)
 	 math_error("`-",Pike_sp-args,args,0,
-		    "Can't add matrices of different size");
+		    "Cannot add matrices of different size.\n");
 
       pop_n_elems(args-1); /* shouldn't be needed */
 
@@ -595,7 +595,7 @@ static void matrixX(_max)(INT32 args)
    n=THIS->xsize*THIS->ysize;
    s=THIS->m;
    if (!n) math_error("max", Pike_sp-args, args, 0,
-		      "Cannot do max() from a zero-sized matrix");
+		      "Cannot do max() from a zero-sized matrix.\n");
    max=*(s++);
    while (--n) { if (*s>max) max=*s; s++; }
    
@@ -614,7 +614,7 @@ static void matrixX(_min)(INT32 args)
    n=THIS->xsize*THIS->ysize;
    s=THIS->m;
    if (!n) math_error("min", Pike_sp-args, args, 0,
-		      "Cannot do min() from a zero-sized matrix");
+		      "Cannot do min() from a zero-sized matrix.\n");
    min=*(s++);
    while (--n) { if (*s<min) min=*s; s++; }
    
@@ -666,7 +666,7 @@ scalar_mult:
 
    if (mx->xsize != THIS->ysize)
       math_error("`*",Pike_sp-args,args,0,
-		 "Incompatible matrices");
+		 "Incompatible matrices.\n");
 
    m=THIS->xsize;
    n=THIS->ysize; /* == mx->xsize */
@@ -711,7 +711,7 @@ static void matrixX(_cross)(INT32 args)
    if (mx->xsize*mx->ysize != 3 ||
        THIS->ysize*THIS->xsize != 3)
       math_error("cross",Pike_sp-args,args,0,
-		 "Matrices must both be of size 1x3 or 3x1");
+		 "Matrices must both be of size 1x3 or 3x1.\n");
 
    dmx=matrixX(_push_new_)(THIS->xsize,THIS->ysize);
    a=THIS->m;
@@ -747,7 +747,7 @@ static void matrixX(_dot)(INT32 args)
        mx->ysize==THIS->ysize &&
        (mx->xsize==1 || mx->ysize==1)))
     math_error("dot_product",Pike_sp-args,args,0,
-	       "Matrices must be the same sizes, and one-dimensional\n");
+	       "Matrices must be the same sizes, and one-dimensional.\n");
   
   res=(FTYPE)0;
   num=THIS->xsize+THIS->ysize;
@@ -783,7 +783,7 @@ static void matrixX(_convolve)(INT32 args)
    if (bmx->xsize==0 || bmx->ysize==0 ||
        THIS->xsize==0 || THIS->ysize==0)
       math_error("convolve",Pike_sp-args,args,0,
-		 "source or argument matrix too small (zero size)");
+		 "Source or argument matrix too small (zero size).\n");
 
    bxz=bmx->xsize;
    byz=bmx->ysize;
