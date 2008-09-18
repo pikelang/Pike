@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.168 2008/07/25 17:10:02 mbaehr Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.169 2008/09/18 15:51:41 mast Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -1873,8 +1873,8 @@ class Evaluator {
 
 	    if(symbols[t]) {
 	      if(types[t])
-		expr[i] = "(([mapping(string:"+types[expr[i]]+")]___hilfe)->"+
-		  t+")";
+		expr[i] = "(([mapping(string:"+types[expr[i]]+")]"
+		  "(mixed)___hilfe)->" + t + ")";
 	      else
 		expr[i] = "(___hilfe->"+t+")";
 	    }
@@ -1949,8 +1949,8 @@ class Evaluator {
       // Rewrite variable
       if(symbols[t]) {
 	if(types[expr[p]])
-	  expr[p] = "(([mapping(string:"+types[expr[p]]+")]___hilfe)->"+
-	    expr[p]+")";
+	  expr[p] = "(([mapping(string:"+types[expr[p]]+")]"
+	    "(mixed)___hilfe)->" + expr[p] + ")";
 	else
 	  expr[p] = "(___hilfe->"+expr[p]+")";
 	continue;
