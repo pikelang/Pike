@@ -108,6 +108,9 @@ o Stricter typing of strings.
 o Support for having multiple different active backend implementations.
   FIXME: example?
 
+  FIXME: poll/epoll, PollDeviceBackend, PollBackend, SelectBackend,
+  DefaultBackend, SmallBackend
+
 o cpp
 
   The preprocessor now supports macro expansion in the #include and #string
@@ -1333,5 +1336,3 @@ Wix
 valgrind_hilfe and valgrind_just_verify
 
 New malloc on Windows.
-
-poll/epoll
