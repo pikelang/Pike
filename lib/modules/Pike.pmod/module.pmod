@@ -3,7 +3,7 @@
 
 // Pike core things that don't belong anywhere else.
 //
-// $Id: module.pmod,v 1.21 2008/07/24 16:07:05 grubba Exp $
+// $Id: module.pmod,v 1.22 2008/09/19 15:10:09 mast Exp $
 
 constant WEAK_INDICES = __builtin.PIKE_WEAK_INDICES;
 constant WEAK_VALUES = __builtin.PIKE_WEAK_VALUES;
@@ -52,6 +52,19 @@ constant PollDeviceBackend = __builtin.PollDeviceBackend;
 #if constant(__builtin.PollBackend)
 constant PollBackend = __builtin.PollBackend;
 #endif
+
+#if constant(__builtin.PollBackend)
+constant SmallBackend = __builtin.PollBackend;
+#elif constant(__builtin.PollDeviceBackend)
+constant SmallBackend = __builtin.PollDeviceBackend;
+#else
+constant SmallBackend = __builtin.SelectBackend;
+#endif
+
+//! @decl program(Pike.Backend) SmallBackend
+//!
+//! This is the most suitable backend implementation if you only want
+//! to monitor a small number of @[Stdio.File] objects.
 
 constant SelectBackend = __builtin.SelectBackend;
 
