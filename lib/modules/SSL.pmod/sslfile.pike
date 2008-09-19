@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.111 2008/06/28 16:49:55 nilsson Exp $
+/* $Id: sslfile.pike,v 1.112 2008/09/19 15:10:42 mast Exp $
  */
 
 #if constant(SSL.Cipher.CipherAlgorithm)
@@ -345,7 +345,7 @@ protected THREAD_T op_thread;
 			   ENABLE_READS, ERROR_CODE) do {		\
   run_local_backend: {							\
       CHECK_CB_MODE (THIS_THREAD());					\
-      if (!local_backend) local_backend = Pike.Backend();		\
+      if (!local_backend) local_backend = Pike.SmallBackend();		\
       stream->set_backend (local_backend);				\
       stream->set_id (0);						\
 									\
