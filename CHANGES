@@ -262,6 +262,11 @@ o getenv()/putenv()
   getenv() and putenv() are now accessing and modifying the real
   environment.
 
+o get_dir()
+
+  Calling get_dir() with no arguments will now return the directory
+  listing for the current directory.
+
 o undefinedp()/destructedp()
 
   undefinedp() and destructedp() have been added as more readable
@@ -271,6 +276,12 @@ o limit()
 
   The new toplevel function limit(a, x, b) is a convenience function
   that works like min(max(a,x),b).
+
+o listxattr(), getxattr(), setxattr(), removexattr()
+
+  The new xattr functions listxattr(), getxattr(), setxattr and
+  removexattr() allows extended file attributes to be modified from
+  within Pike.
 
 o sprintf() and sscanf()
 
@@ -456,15 +467,24 @@ o GLUE
 
   - BaseTexture and BaseDWIM now supports clamped textures.
 
+o Gmp
+
+  Many small changes to fixed Gmp build issues on different platforms.
+  The most visible being that the Gmp module now is statically linked
+  to work around Mac OS X 10.5 linker issues.
+
 o Gz
 
   - Added compress() and uncompress() functions as an simpler and more
     efficient but non-streaming interface.
 
   - Support for RLE And FIXED compression method, if supported by
-    zlib.
+    zlib. Give Gz.RLE or Gz.FIXED to the strategy argument of
+    compress() or the deflate constructor.
 
-  - Added support for configurable compression window size.
+  - Added support for configurable compression window size. This is
+    the last argument to compress() and the constructor for
+    inflate/deflate.
 
 o Image.Colortable
 
@@ -515,6 +535,11 @@ o Image.TIFF
 o Int
 
   Int.inf is an object that can be used as an infinitly large integer.
+
+o Java
+
+  If possible, Pike now uses libffi instead of creating our own
+  tramplines. Adding libffi as a bundle is supported.
 
 o Locale.Charset
 
@@ -577,7 +602,8 @@ o Mysql
     functions set_unicode_encode_mode() and set_unicode_decode_mode().
     See their documentation for further details.
 
-  Return correct UNDEFINED instead of 0 values for NULL values in resultsets.
+  - Return correct UNDEFINED instead of 0 values for NULL values in
+    resultsets.
 
 o Odbc
 
@@ -644,6 +670,7 @@ o Parser.XML.Tree
 
 o Postgres
 
+  FIXME: Rewrite
   Added affected_rows.
   Made big_query() streaming.
   Added streaming_query() alias to indicate support.
@@ -698,9 +725,8 @@ o Protocols.Bittorrent
 
   - Support for gzipped and compact tracker responses.
 
-  - 30% faster hashing of files.
-
-  - Many performance and bug fixes.
+  - Many perfomance and bug fixes, such as 30% faster hashing of
+    files.
 
 o Protocols.HTTP
 
@@ -917,10 +943,15 @@ o Stdio
     now throw exceptions on uncommon errors such as when write_file is
     unable to write all its data.
 
-  - Stdio.File->openat() opens a file relative to an open directory.
+  - Stdio.File->openat(), statat() and unlinkat() opens, stats and
+    removes a file or directory relative to an open directory.
 
   - Stdio.FILE->unread() allows pushing back binary strings into the
     input stream, as opposed to ungets() which pushes back lines.
+
+  - Stdo.UDP has had enable_multicast(), set_multicast_ttl(),
+    add_membership() and drop_membership() added to make real
+    multicast use possible.
 
 o String
 
@@ -932,12 +963,11 @@ o String
 
 o System
 
-  FIXME
+  - resolvepath() is now enabled on more OSes and falls back to
+    realpath(3C) if resolvepath(2) doesn't exists.
 
-  resolvepath() enabled on more OSes and falls back to realpath(3C) if
-  resolvepath(2) doesn't exists.
-
-  setproctitle()
+  - On systems that support it, setproctitle() can be used to set the
+    title of the running application.
 
   - Added support for POSIX style timers using clock_gettime(3) to
     allow for high resolution thread local cpu time and monotonic real
@@ -949,11 +979,14 @@ o System
 
 o Tools.Hilfe
 
-  - Added support for tab-completion on modules, global and local symbols and
-    operators.
+  - Added support for tab-completion on modules, global and local
+    symbols and operators.
+
   - Added support for file/directory completion within strings
-  - Added doc command and F1 key to print documentation on anitem if available
-    (currently only works for modules and classes written in pike)
+
+  - Added doc command and F1 key to print documentation on anitem if
+    available (currently only works for modules and classes written in
+    pike)
 
 o Tools
 
@@ -985,12 +1018,14 @@ o Fuse
   This module implements the needed interfaces to make it possible to
   write a FUSE filesystem in Pike.
 
-
 o ADT.List
 
   A simple linked list of values.
+  FIXME: Example
 
 o ADT.Trie
+
+  FIXME
 
 o ADT.Set
 
@@ -1000,12 +1035,12 @@ o ADT.Set
 
   From a performance viewpoint, it is probably more efficient for a
   Pike program to use mappings to serve as sets, rather than using an
-  ADT.Set,so ADT.Set is mainly provided for the sake of completeness
+  ADT.Set, so ADT.Set is mainly provided for the sake of completeness
   and code readability.
 
 o Arg
 
-  The new argument parser module allows for Getopt style arugment
+  The new argument parser module allows for Getopt style argument
   parsing, but with a much simpler and object oriented API.
 
     class Parser
@@ -1259,7 +1294,10 @@ o Added ABI selection.
   It's now possible to select whether to compile in 32bit or 64bit
   mode at configure time by using the --with-abi option.
 
-o MinGW build possible. FIXME
+o MinGW builds.
+
+  It's now possible to build Pike in MinGW on windows computers from
+  source distributions.
 
 
 New simplified method to write external C/C++ modules
@@ -1310,28 +1348,12 @@ New simplified method to write external C/C++ modules
 
 
 ----
-modules/_Charset
 
-
-New lib:
-Protocols.LDAP module.pmod
 -x test_pike
-
-
-src:
-files: FIXME
-gmp: FIXME
-java: FIXME
-mysql: FIXME
-
-
 
 DLL for Windows?
 
-
 libpike.so
-
-Wix
 
 valgrind_hilfe and valgrind_just_verify
 
