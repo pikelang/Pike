@@ -175,6 +175,11 @@ o Improved support for mixin.
   FIXME: Explain in one or two sentences what a mixin is and what it's
   good for.
 
+  FIXME: Should that be protected instead of static?
+
+  FIXME: Is this really a change, and why are we talking about mixins
+  instead of multiple inheritance variables?
+
 o Implicit and explicit create().
 
   The compiler now supports defining classes with both an implicit
