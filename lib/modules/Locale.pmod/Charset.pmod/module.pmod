@@ -77,6 +77,8 @@ protected private inherit _Charset;
 //!   @item 904
 //!   @item 905
 //!   @item 918
+//!   @item 932
+//!   @item 936
 //!   @item 950
 //!   @item 1026
 //!     These may be prefixed with @expr{"cp"@}, @expr{"ibm"@} or
