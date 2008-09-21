@@ -13,8 +13,8 @@ New / improved language functionality
 o New syntax to index from the end in range operations.
 
   A "<" can be added before an index in the [..] operator to count
-  from the end instead. This is convenient to e.g. chop off the last
-  element in an array: a[..<1].
+  from the end instead, beginning with 0 for the last element. This is
+  convenient to e.g. chop off the last element in an array: a[..<1].
 
 o New `[..] operator function.
 
@@ -252,7 +252,7 @@ o __func__
 
   The symbol __func__ now evaluates to the name of the current
   function. Note that this name currently can differ from the
-  declared name in case of local functions (ie lambdas). Note
+  declared name in case of local functions (i.e. lambdas). Note
   also that __func__ behaves like a literal string, so implicit
   string concatenation is supported. eg:
 
@@ -1350,6 +1350,20 @@ o Added %c and %C to get_all_args to get char * without
 Building and installing
 -----------------------
 
+o Dynamic modules now become DLLs on Windows.
+
+  This means the homegrown module loader is no longer used, but it
+  also means some DLL limitations:
+
+  - PMOD_EXPORT is now required to allow access to an identifier in
+    the pike core.
+
+  - DLLs have to be recompiled too if pike.exe is recompiled.
+
+  The primary motivation for this change is to work with the new
+  library tracking (so-called "side-by-side assemblies") in Visual C++
+  2005 and later.
+
 o Added ABI selection.
 
   It's now possible to select whether to compile in 32bit or 64bit
@@ -1412,13 +1426,12 @@ New simplified method to write external C/C++ modules
 
 -x test_pike
 
-DLL for Windows?
-
 libpike.so
 
 valgrind_hilfe and valgrind_just_verify
 
-New malloc on Windows.
+New malloc on Windows. (Optimization, hence should not be mentioned
+according to the first paragraph in this file. /mast)
 
 FIXME: Multiple INVALID above: Return correct UNDEFINED instead of 0
 values for NULL values in result sets. (Yes, it's dubious that it
