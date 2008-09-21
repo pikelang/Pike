@@ -538,8 +538,17 @@ o Int
 
 o Java
 
-  If possible, Pike now uses libffi instead of creating our own
-  tramplines. Adding libffi as a bundle is supported.
+  - If possible, Pike now uses libffi instead of creating our own
+    trampolines. Adding libffi as a bundle is supported.
+
+  - Added built-in support for SPARC64 trampolines.
+
+  - The method signature fuzzy-matcher now only considers Pike strings
+    to match formal parameters of type String, Object, Comparable,
+    CharSequence or java.io.Serializable.
+
+  - When the fuzzy-matcher can not decide on a single method
+    signature, all candidates are now listed in the error message.
 
 o Locale.Charset
 
