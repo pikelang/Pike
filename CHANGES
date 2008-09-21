@@ -421,7 +421,8 @@ o Calendar
     now() was off 5 month per year.
 
   - Time objects now handle * and / with floats. A split() method has
-    been added for more advanced splitting. FIXME: Example
+    been added for more advanced splitting where the preferred time
+    quanta can be given as an argument.
 
   - A new formatting method format_ext_time_short() has been added to
     Time objects.
@@ -703,8 +704,12 @@ o Parser.XML.NSTree
 
 o Parser.XML.Simple
 
+  - The autoconvert() function, used to autodetect the character
+    encoding of an XML file and decode it, has been moved from being a
+    method of the Parser.XML.Simple object to being a function in the
+    Parser.XML module.
+
   FIXME
-  autoconvert() moved to top level
   Several correctness fixes.
   Added Simple.Context
 
@@ -749,7 +754,8 @@ o Pike
     been added for use with the `[..] operator API.
 
   - The functions low_check_call(), get_return_type() and
-    get_first_arg_type(). FIXME!
+    get_first_arg_type() allows for inspection of attributes and
+    return values of functions.
 
 o Process
 
@@ -909,7 +915,7 @@ o Sql
       Sql.Sql db = Sql.Sql("tds://user:pass@host/database");
 
   - Support for the SQLite database added. A raw interface is
-    available throug hthe SQLite module. FIXME: Syntax?
+    available through the SQLite module. FIXME: Syntax?
 
       Sql.Sql db = Sql.Sql("sqlite://path/to/file");
 
