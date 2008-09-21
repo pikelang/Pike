@@ -635,7 +635,8 @@ o MIME
 
 o Msql
 
-  Return correct UNDEFINED instead of 0 values for NULL values in resultsets.
+  Return correct UNDEFINED instead of 0 values for NULL values in
+  result sets.
 
 o Mysql
 
@@ -651,7 +652,7 @@ o Mysql
     See their documentation for further details.
 
   - Return correct UNDEFINED instead of 0 values for NULL values in
-    resultsets.
+    result sets.
 
 o Odbc
 
@@ -659,7 +660,8 @@ o Odbc
   Now supports UnixODBC properly.
   Fixed various issues with Unicode.
   FreeTDS fixes
-  Return correct UNDEFINED instead of 0 values for NULL values in resultsets.
+  Return correct UNDEFINED instead of 0 values for NULL values in
+  result sets.
 
 o Oracle
 
@@ -668,7 +670,8 @@ o Oracle
   - An approximation of the number of rows in a result object can be
     queried from the new function num_rows().
 
-  - Return correct UNDEFINED instead of 0 values for NULL values in resultsets.
+  - Return correct UNDEFINED instead of 0 values for NULL values in
+    result sets.
 
 o Parser.HTML
 
@@ -724,8 +727,9 @@ o Postgres
   Added streaming_query() alias to indicate support.
   Support bindings natively on big_query().
   Automatic binary or text transfer for queryarguments and resultrows.
-  Return correct UNDEFINED instead of 0 values for NULL values in resultsets.
-  Fix raceconditions.
+  Return correct UNDEFINED instead of 0 values for NULL values in
+  result sets.
+  Fix race conditions.
 
 o Pike
 
@@ -773,7 +777,7 @@ o Protocols.Bittorrent
 
   - Support for gzipped and compact tracker responses.
 
-  - Many perfomance and bug fixes, such as 30% faster hashing of
+  - Many performance and bug fixes, such as 30% faster hashing of
     files.
 
 o Protocols.HTTP
@@ -997,7 +1001,7 @@ o Stdio
   - Stdio.FILE->unread() allows pushing back binary strings into the
     input stream, as opposed to ungets() which pushes back lines.
 
-  - Stdo.UDP has had enable_multicast(), set_multicast_ttl(),
+  - Stdio.UDP has had enable_multicast(), set_multicast_ttl(),
     add_membership() and drop_membership() added to make real
     multicast use possible.
 
@@ -1022,7 +1026,7 @@ o System
     time on reasonable modern Linux systems for gethrvtime() and
     gauge(). Added CPU_TIME_RESOLUTION, CPU_TIME_IMPLEMENTATION,
     REAL_TIME_IS_MONOTONIC, REAL_TIME_RESOLUTION and
-    REAL_TIME_IMPLEMENTATION constants to singal the system
+    REAL_TIME_IMPLEMENTATION constants to tell the system
     capabilities.
 
 o Tools.Hilfe
@@ -1034,7 +1038,7 @@ o Tools.Hilfe
 
   - Added doc command and F1 key to print documentation on an item if
     available (currently only works for modules and classes written in
-    pike)
+    pike).
 
 o Tools
 
@@ -1407,5 +1411,8 @@ valgrind_hilfe and valgrind_just_verify
 
 New malloc on Windows.
 
-FIXME: Multiple INVALID above: Return correct UNDEFINED instead of 0 values for NULL values in resultsets.
-
+FIXME: Multiple INVALID above: Return correct UNDEFINED instead of 0
+values for NULL values in result sets. (Yes, it's dubious that it
+really is correct since a zero (of any kind) means NULL according to
+the Sql api, even though there are some db drivers that unfortunately
+behave differently. /mast)
