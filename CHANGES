@@ -106,10 +106,49 @@ o Stricter typing of strings.
     string(0..255) bytes;
 
 o Support for having multiple different active backend implementations.
-  FIXME: example?
 
-  FIXME: poll/epoll, PollDeviceBackend, PollBackend, SelectBackend,
-  DefaultBackend, SmallBackend
+  In Pike 7.6 and earlier, there could only be one active backend
+  implementation at a time, which was the one selected for best
+  performance with lots of files (cf Pike.Backend below). This led
+  to problems when pike attempted to run poll device based backends
+  on older versions of operating systems where poll devices aren't
+  available, and with extra overhead when the backend was only used
+  with a very small set of files.
+
+  Basic backend implementations:
+
+  - Pike.PollDeviceBackend
+    This is a backend that is implemented based on keeping the state in
+    the operating system kernel and thus eliminating the need to send the
+    state in every system call. This is however not available on all
+    operating systems. Currently supported are /dev/poll (Solaris, etc),
+    epoll(2) (Linux) and kqueue(2) (FreeBSD, MacOS X).
+
+  - Pike.PollBackend
+    This is a backend that is implemented based on the poll(2) system call.
+    This is typically available on all System V or Linux based systems.
+
+  - Pike.SelectBackend
+    This is a backend that is implmented based on the BSD select(2) system
+    call. This is supported on all operating systems.
+
+  Derived backend implementations:
+
+  - Pike.Backend
+    This is the backend selected among the basic backend implementations,
+    which is likely to have the best performance when there are lots of
+    files in the backend.
+
+  - Pike.SmallBackend
+    This is the backend selected among the basic backend implementations,
+    which is likely to have the best performance when there are very few
+    files in the backend.
+
+  Note that there is also a default backend object:
+
+  - Pike.DefaultBackend
+    This is the Pike.Backend object that is used if no other backend
+    object has been specified.
 
 o cpp
 
@@ -125,7 +164,7 @@ o Destruct reason passed to lfun::destroy.
   running out of references, or reaped by the garbage collector.
 
   These integers are defined in the new Object module as
-  DESCTRUCT_EXPLICIT, DESTRUCT_NO_REFS, DESTRUCT_GC and
+  DESTRUCT_EXPLICIT, DESTRUCT_NO_REFS, DESTRUCT_GC and
   DESTRUCT_CLEANUP.
 
 o Improved support for mixin.
@@ -214,7 +253,7 @@ o __func__
   The symbol __func__ now evaluates to the name of the current
   function. Note that this name currently can differ from the
   declared name in case of local functions (ie lambdas). Note
-  also that __func__ behaves like a litteral string, so implicit
+  also that __func__ behaves like a literal string, so implicit
   string concatenation is supported. eg:
 
     error("Error in " __func__ ".\n");
@@ -993,7 +1032,7 @@ o Tools.Hilfe
 
   - Added support for file/directory completion within strings
 
-  - Added doc command and F1 key to print documentation on anitem if
+  - Added doc command and F1 key to print documentation on an item if
     available (currently only works for modules and classes written in
     pike)
 
@@ -1367,3 +1406,6 @@ libpike.so
 valgrind_hilfe and valgrind_just_verify
 
 New malloc on Windows.
+
+FIXME: Multiple INVALID above: Return correct UNDEFINED instead of 0 values for NULL values in resultsets.
+
