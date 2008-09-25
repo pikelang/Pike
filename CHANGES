@@ -110,7 +110,7 @@ o Support for having multiple different active backend implementations.
   In Pike 7.6 and earlier, there could only be one active backend
   implementation at a time, which was the one selected for best
   performance with lots of files (cf Pike.Backend below). This led
-  to problems when pike attempted to run poll device based backends
+  to problems when Pike attempted to run poll-device based backends
   on older versions of operating systems where poll devices aren't
   available, and with extra overhead when the backend was only used
   with a very small set of files.
@@ -130,7 +130,8 @@ o Support for having multiple different active backend implementations.
 
   - Pike.SelectBackend
     This is a backend that is implmented based on the BSD select(2) system
-    call. This is supported on all operating systems.
+    call. This backend is available on all operating systems supported by
+    Pike.
 
   Derived backend implementations:
 
@@ -147,8 +148,8 @@ o Support for having multiple different active backend implementations.
   Note that there is also a default backend object:
 
   - Pike.DefaultBackend
-    This is the Pike.Backend object that is used if no other backend
-    object has been specified.
+    This is the Pike.Backend object that is used for file callbacks and
+    call_outs if no other backend object has been specified.
 
 o cpp
 
@@ -170,15 +171,10 @@ o Destruct reason passed to lfun::destroy.
 o Improved support for mixin.
 
   The Pike compiler now supports mixin for symbols that have been
-  declared static.
-  
-  FIXME: Explain in one or two sentences what a mixin is and what it's
-  good for.
-
-  FIXME: Should that be protected instead of static?
-
-  FIXME: Is this really a change, and why are we talking about mixins
-  instead of multiple inheritance variables?
+  declared protected. Mixin is the concept of overloading symbols
+  via multiple inheritance. In previous versions of Pike the mixin
+  paradigm was only supported for public symbols. For more information
+  about mixin see eg http://en.wikipedia.org/wiki/Mixin .
 
 o Implicit and explicit create().
 
@@ -642,11 +638,6 @@ o MIME
   - Fixed a bug that could occur when casting MIME.Message objects to
     strings.
 
-o Msql
-
-  Return correct UNDEFINED instead of 0 values for NULL values in
-  result sets.
-
 o Mysql
 
   - Two functions set_charset() and get_charset() have been added to
@@ -660,17 +651,10 @@ o Mysql
     functions set_unicode_encode_mode() and set_unicode_decode_mode().
     See their documentation for further details.
 
-  - Return correct UNDEFINED instead of 0 values for NULL values in
-    result sets.
-
 o Odbc
 
-  FIXME: Rewrite
-  Now supports UnixODBC properly.
-  Fixed various issues with Unicode.
-  FreeTDS fixes
-  Return correct UNDEFINED instead of 0 values for NULL values in
-  result sets.
+  The Odbc module has been updated to support the UnixODBC library, and
+  several issues with Unicode and FreeTDS handling have been fixed.
 
 o Oracle
 
@@ -678,9 +662,6 @@ o Oracle
 
   - An approximation of the number of rows in a result object can be
     queried from the new function num_rows().
-
-  - Return correct UNDEFINED instead of 0 values for NULL values in
-    result sets.
 
 o Parser.HTML
 
@@ -720,15 +701,30 @@ o Parser.XML.Simple
 
 o Parser.XML.Tree
 
+  The module code has been refactored and a second "simple" interface
+  has been added. The (new) SimpleNode interface implements a node tree
+  interface similar to the (old) Node interface, with two major
+  differences:
+
+  - The SimpleNodes do not have parent pointers, this means that they
+    do not generate cyclic data structures (and thus less garbage, and
+    no need for zap_tree()), but also that it is not possible to find
+    the root of a tree from any node in the tree.
+
+  - Some methods in SimpleNode return different values than the
+    corresponding method in Node; notably SimpleNode()->add_child(),
+    which returns the current node rather than the argument.
+
+  The refactoring also added individual classes for all of the XML node
+  types (both for Nodes and for SimpleNodes). This allows for stricter
+  typing of code involving XML tree manipulation.
+
+  The module now also has a much better knowledge of DTDs and DOCTYPEs.
+
   FIXME: Rewrite
-  Added rendering of DTD ENTITY nodes.
-  The renderer now knows about the internal_subset attribute for the
-    DOCTYPE tag.
-  Added rendering of DTD ELEMENT nodes.
-  Added functions to inser new childe node.
+  Added functions to insert new child nodes.
   Moved parser code into the nodes allowing for extendability.
   set_tag_name()
-  simple-stuff
   AbstractSimpleNode, VirtualNode, SimpleNode.
   Node.zap_tree
 
@@ -740,8 +736,6 @@ o Postgres
   Added streaming_query() alias to indicate support.
   Support bindings natively on big_query().
   Automatic binary or text transfer for queryarguments and resultrows.
-  Return correct UNDEFINED instead of 0 values for NULL values in
-  result sets.
   Fix race conditions.
 
 o Pike
@@ -1437,9 +1431,3 @@ valgrind_hilfe and valgrind_just_verify
 
 New malloc on Windows. (Optimization, hence should not be mentioned
 according to the first paragraph in this file. /mast)
-
-FIXME: Multiple INVALID above: Return correct UNDEFINED instead of 0
-values for NULL values in result sets. (Yes, it's dubious that it
-really is correct since a zero (of any kind) means NULL according to
-the Sql api, even though there are some db drivers that unfortunately
-behave differently. /mast)
