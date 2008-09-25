@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.458 2008/09/14 12:19:36 grubba Exp $
+// $Id: master.pike.in,v 1.459 2008/09/25 11:42:42 mast Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -4069,14 +4069,14 @@ class Describer
     canclip++;
     if(sizeof(m) < maxlen)
     {
-      string t = sprintf("%O", m);
+      string t = sprintf("%q", m);
       if (sizeof(t) < (maxlen + 2))
 	return t;
       t = 0;
     }
     clipped++;
     if(maxlen>10)
-      return sprintf("%O+[%d]",m[..maxlen-5],sizeof(m)-(maxlen-5));
+      return sprintf("%q+[%d]",m[..maxlen-5],sizeof(m)-(maxlen-5));
 
     return "string["+sizeof(m)+"]";
   }
