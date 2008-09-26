@@ -447,7 +447,7 @@ o Calendar
     Calendar.ISO.Year(week->year_no()).
 
   - Did away with the attempt to map leap days between February 24th
-    and 29th before and after year 2000, since doing so break date
+    and 29th before and after year 2000, since doing so breaks date
     arithmetic.
 
   - The last four changes above are not entirely compatible.
@@ -458,7 +458,7 @@ o CompilerEnvironment & CompilerEnvironment()->PikeCompiler
   The Pike compiler has been refactored to be more object-oriented and
   more transparent. It is now possible to customize the compiler by
   overloading functions in the above two classes. The compiler object
-  used by Pike internally is available through
+  used by Pike internally is available through the global constant
   DefaultCompilerEnvironment.
 
 o Debug
@@ -678,8 +678,8 @@ o Parser.Pike and Parser.C
 
 o Parser.RCS
 
-  - The RCS parser has been rewritten to handle broken RCS data
-    better.
+  - The RCS parser has been rewritten to be more robust with regards
+    to broken RCS data.
 
 o Parser.XML.NSTree
 
