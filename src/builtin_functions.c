@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.686 2008/08/28 20:11:47 grubba Exp $
+|| $Id: builtin_functions.c,v 1.687 2008/09/26 21:29:02 nilsson Exp $
 */
 
 #include "global.h"
@@ -2283,12 +2283,12 @@ static void f_parse_pike_type( INT32 args )
 static void f___soft_cast(INT32 args)
 {
   struct pike_type *res;
-  if (args < 2) Pike_error("Bad number of arguments to __low_check_call().\n");
+  if (args < 2) Pike_error("Bad number of arguments to __soft_cast().\n");
   if (Pike_sp[-args].type != PIKE_T_TYPE) {
-    Pike_error("Bad argument 1 to __low_check_call() expected type.\n");
+    Pike_error("Bad argument 1 to __soft_cast() expected type.\n");
   }
   if (Pike_sp[1-args].type != PIKE_T_TYPE) {
-    Pike_error("Bad argument 2 to __low_check_call() expected type.\n");
+    Pike_error("Bad argument 2 to __soft_cast() expected type.\n");
   }
   if (!(res = soft_cast(Pike_sp[-args].u.type,
 			Pike_sp[1-args].u.type, 0))) {
@@ -2856,7 +2856,7 @@ PMOD_EXPORT void f_crypt(INT32 args)
 #ifdef HAVE__CRYPT
   ret = (char *)_crypt(pwd, saltp);
 #else
-  ret = pwd;
+#error No crypt function found and fallback failed.
 #endif
 #endif
   if(args < 2)
