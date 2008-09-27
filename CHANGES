@@ -699,6 +699,14 @@ o Parser.XML.Simple
   Several correctness fixes.
   Added Simple.Context
 
+o Parser.XML.SloppyDOM
+
+  Yet another DOM-like module aimed at quickly and conveniently parse
+  an xml snippet (or whole document) to access its parts. Nodes can be
+  selected using a subset of XPath.
+
+  Footnote: This module was previously part of Roxen WebServer.
+
 o Parser.XML.Tree
 
   The module code has been refactored and a second "simple" interface
