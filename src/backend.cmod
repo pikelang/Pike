@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.232 2008/08/03 21:35:55 mast Exp $
+ * $Id: backend.cmod,v 1.233 2008/09/29 14:44:09 mast Exp $
  *
  * Backend object.
  */
@@ -280,6 +280,21 @@ PIKECLASS Backend
    */
   CVAR struct callback_list backend_callbacks;
 
+  /*! @decl function(Backend:void) before_callback, after_callback;
+   *!
+   *! If set, these are called just before and after the backend waits
+   *! for an event.
+   *!
+   *! If an error is thrown from these callbacks then it is reported
+   *! using @expr{master()->handle_error()@} - it doesn't interrupt
+   *! the operation of the backend.
+   */
+  /* before_callback is not strictly necessary since one can just as
+   * well run it before `(), but it's convenient to have a standard
+   * place to hook in a function. */
+  PIKEVAR function(Backend:void) before_callback;
+  PIKEVAR function(Backend:void) after_callback;
+
   /* Thread currently executing in the backend. */
 #ifdef PIKE_THREADS
   CVAR struct thread_state *exec_thread;
@@ -415,6 +430,13 @@ PIKECLASS Backend
     callback_func free_func)
   {
     return add_to_callback(& me->backend_callbacks, call, arg, free_func);
+  }
+
+  void call_backend_monitor_cb (struct Backend_struct *me, struct svalue *cb)
+  {
+    ref_push_object (me->backend_obj);
+    safe_apply_svalue (cb, 1, 1);
+    pop_stack();
   }
 
   /*
@@ -3083,6 +3105,9 @@ PIKECLASS PollDeviceBackend
     SET_ONERROR(uwp, low_backend_cleanup, THIS->backend);
     low_backend_once_setup(pdb->backend, &start_time);
 
+    if (me->before_callback.type != T_INT)
+      call_backend_monitor_cb (me, &me->before_callback);
+
     {
 #ifdef TIMEOUT_IS_MILLISECONDS
       int poll_timeout;
@@ -3131,6 +3156,9 @@ PIKECLASS PollDeviceBackend
       me->may_need_wakeup = 0;
       GETTIMEOFDAY(&current_time);
     }
+
+    if (me->after_callback.type != T_INT)
+      call_backend_monitor_cb (me, &me->after_callback);
 
     if (!i) {
       /* Timeout */
@@ -3636,6 +3664,9 @@ PIKECLASS PollBackend
     SET_ONERROR(uwp, low_backend_cleanup, THIS->backend);
     low_backend_once_setup(pb->backend, &start_time);
 
+    if (me->before_callback.type != T_INT)
+      call_backend_monitor_cb (me, &me->before_callback);
+
     {
       int poll_timeout;
       struct timeval *next_timeout = &pb->backend->next_timeout;
@@ -3689,6 +3720,9 @@ PIKECLASS PollBackend
       me->may_need_wakeup = 0;
       GETTIMEOFDAY(&current_time);
     }
+
+    if (me->after_callback.type != T_INT)
+      call_backend_monitor_cb (me, &me->after_callback);
 
     if (!i) {
       /* Timeout */
@@ -4208,6 +4242,9 @@ PIKECLASS SelectBackend
     SET_ONERROR(uwp, low_backend_cleanup, THIS->backend);
     low_backend_once_setup(sb->backend, &start_time);
 
+    if (me->before_callback.type != T_INT)
+      call_backend_monitor_cb (me, &me->before_callback);
+
     {
       struct timeval poll_timeout;
       struct timeval *next_timeout = &sb->backend->next_timeout;
@@ -4232,6 +4269,9 @@ PIKECLASS SelectBackend
       me->may_need_wakeup = 0;
       GETTIMEOFDAY(&current_time);
     }
+
+    if (me->after_callback.type != T_INT)
+      call_backend_monitor_cb (me, &me->after_callback);
 
     if (!i) {
       /* Timeout */
