@@ -149,7 +149,7 @@ o Support for having multiple different active backend implementations.
 
   - Pike.DefaultBackend
     This is the Pike.Backend object that is used for file callbacks and
-    call_outs if no other backend object has been specified.
+    call outs if no other backend object has been specified.
 
 o cpp
 
@@ -763,6 +763,14 @@ o Pike
   - The functions low_check_call(), get_return_type() and
     get_first_arg_type() allows for inspection of attributes and
     return values of functions.
+
+o Pike.Backend
+
+  Besides the new multiple backend implementations described earlier,
+  backends now support two new callbacks: before_callback and
+  after_callback are two new variables in the backend objects. They
+  can be set to functions that gets called just before and after a
+  backend is waiting for events.
 
 o Process
 
