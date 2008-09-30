@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.324 2008/08/23 03:58:33 mast Exp $
+|| $Id: gc.c,v 1.325 2008/09/30 19:25:16 mast Exp $
 */
 
 #include "global.h"
@@ -4373,12 +4373,26 @@ static INLINE void mc_wl_enqueue_first (struct mc_marker *m)
 {
   if (m->wl_next) WL_REMOVE (m);
   WL_ADD_FIRST (m);
+  assert (mc_pass != MC_PASS_LOOKAHEAD ||
+	  m->wl_next == &mc_work_list ||
+	  m->dist == m->wl_next->dist ||
+	  m->dist == m->wl_next->dist - 1);
+  assert (mc_pass != MC_PASS_LOOKAHEAD ||
+	  m->dist == mc_work_list.wl_prev->dist ||
+	  m->dist == mc_work_list.wl_prev->dist - 1);
 }
 
 static INLINE void mc_wl_enqueue_last (struct mc_marker *m)
 {
   /* Note: Does not try to remove from the queue first. */
   WL_ADD_LAST (m);
+  assert (mc_pass != MC_PASS_LOOKAHEAD ||
+	  m->wl_prev == &mc_work_list ||
+	  m->dist == m->wl_prev->dist ||
+	  m->dist == m->wl_prev->dist + 1);
+  assert (mc_pass != MC_PASS_LOOKAHEAD ||
+	  m->dist == mc_work_list.wl_next->dist ||
+	  m->dist == mc_work_list.wl_next->dist + 1);
 }
 
 static INLINE struct mc_marker *mc_wl_dequeue()
@@ -4537,6 +4551,7 @@ static void pass_lookahead_visit_ref (void *thing, int ref_type,
 
     if (ref_to->int_refs == *(INT32 *) thing) {
       /* Found a new internal thing. */
+      assert (cur_dist == 0);
       ref_to->flags |= MC_FLAG_INTERNAL;
       ref_to->dist = 0;
       if (!ref_to_is_new) DL_REMOVE (ref_to);
@@ -4632,6 +4647,9 @@ PMOD_EXPORT int mc_count_bytes (void *thing)
 {
   if (mc_pass == MC_PASS_LOOKAHEAD) {
     struct mc_marker *m = find_mc_marker (thing);
+#ifdef PIKE_DEBUG
+    if (!m) Pike_fatal ("mc_marker not found for %p.\n", thing);
+#endif
     if ((m->flags & (MC_FLAG_INTERNAL|MC_FLAG_MEMCOUNTED)) == MC_FLAG_INTERNAL)
       return 1;
   }
@@ -4789,7 +4807,7 @@ void f_count_memory (INT32 args)
     if ((val = low_mapping_string_lookup (m, ind))) {
       if (val->type != T_INT || val->u.integer < 0)
 	SIMPLE_ARG_ERROR ("count_memory", 1,
-			  "\"lookahead\" is not a non-negative integer.");
+			  "\"lookahead\" is a negative integer.");
 #if MAX_INT_TYPE > MAX_UINT32
       if (val->u.integer > MAX_UINT32)
 	mc_lookahead = MAX_UINT32;
