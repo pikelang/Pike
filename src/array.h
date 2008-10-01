@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.h,v 1.79 2008/07/13 15:18:29 grubba Exp $
+|| $Id: array.h,v 1.80 2008/10/01 23:21:40 mast Exp $
 */
 
 #ifndef ARRAY_H
@@ -90,6 +90,14 @@ extern struct array *gc_internal_array;
     if(!sub_ref(v_))							\
       really_free_array(v_);						\
   }while(0)
+
+/* FIXME: Maybe try to replace free_array with this in the future to
+ * catch more bugs, but there's code that requires the current one. */
+#define free_array_ptr(V) do {						\
+    struct array **vp_ = &(V);						\
+    free_array (*vp_);							\
+    MARK_INVALID_PTR (*vp_);						\
+  } while (0)
 
 #define allocate_array(X) low_allocate_array((X),0)
 #define allocate_array_no_init(X,Y) low_allocate_array((X),(Y))
@@ -233,48 +241,58 @@ PMOD_EXPORT struct array *implode_array(struct array *a, struct array *b);
  *
  * The array is left on top of the stack.
  */
-#define BEGIN_AGGREGATE_ARRAY(estimated_size) do {			\
-  struct svalue *base__;						\
-  push_array(allocate_array_no_init(0, (estimated_size)));		\
-  base__ = Pike_sp;							\
-  if (base__[-1].u.array->malloced_size)				\
-    base__[-1].u.array->type_field = (BIT_MIXED | BIT_UNFINISHED);
 
-#define DO_AGGREGATE_ARRAY(max_keep_on_stack)				\
+#define AGGR_ARR_PROLOGUE(base_sval, estimated_size) do {		\
+    push_array(allocate_array_no_init(0, (estimated_size)));		\
+    base_sval = Pike_sp;						\
+    if (base_sval[-1].u.array->malloced_size)				\
+      base_sval[-1].u.array->type_field = (BIT_MIXED | BIT_UNFINISHED);	\
+  } while (0)
+
+#define AGGR_ARR_CHECK(base_sval, max_keep_on_stack)			\
   do {									\
-    ptrdiff_t diff__ = Pike_sp - base__;				\
+    ptrdiff_t diff__ = Pike_sp - base_sval;				\
     if (diff__ > (max_keep_on_stack)) {					\
-      INT32 oldsize__ = base__[-1].u.array->size;			\
+      INT32 oldsize__ = base_sval[-1].u.array->size;			\
       ACCEPT_UNFINISHED_TYPE_FIELDS {					\
-	base__[-1].u.array =						\
-	  resize_array(base__[-1].u.array, oldsize__ + diff__);		\
+	base_sval[-1].u.array =						\
+	  resize_array(base_sval[-1].u.array, oldsize__ + diff__);	\
       } END_ACCEPT_UNFINISHED_TYPE_FIELDS;				\
       /* Unless the user does something, the type field will contain */	\
       /* BIT_MIXED|BIT_UNFINISHED from the allocation above. */		\
-      MEMCPY((char *) (ITEM(base__[-1].u.array) + oldsize__),		\
-	     (char *) base__, diff__ * sizeof(struct svalue));		\
-      Pike_sp = base__;							\
+      MEMCPY((char *) (ITEM(base_sval[-1].u.array) + oldsize__),	\
+	     (char *) base_sval, diff__ * sizeof(struct svalue));	\
+      Pike_sp = base_sval;						\
     }									\
   } while (0)
 
-#define END_AGGREGATE_ARRAY						\
-  {									\
-    ptrdiff_t diff__ = Pike_sp - base__;				\
+#define AGGR_ARR_EPILOGUE(base_sval) do {				\
+    ptrdiff_t diff__ = Pike_sp - base_sval;				\
     if (!diff__) {							\
-      if (base__[-1].u.array->size) {					\
-	free_array (base__[-1].u.array);				\
-	add_ref (base__[-1].u.array = &empty_array);			\
+      if (base_sval[-1].u.array->size) {				\
+	free_array (base_sval[-1].u.array);				\
+	add_ref (base_sval[-1].u.array = &empty_array);			\
       }									\
     }									\
     else								\
       DO_AGGREGATE_ARRAY (0);						\
-    if (base__[-1].u.array->type_field & BIT_UNFINISHED)		\
+    if (base_sval[-1].u.array->type_field & BIT_UNFINISHED)		\
       array_fix_type_field(Pike_sp[-1].u.array);			\
-  }									\
-  DO_IF_DEBUG(if (Pike_sp[-1].type != T_ARRAY) {			\
-		Pike_fatal("Lost track of aggregated array.\n");	\
-	      });							\
-} while (0)
+    DO_IF_DEBUG(if (Pike_sp[-1].type != T_ARRAY) {			\
+	Pike_fatal("Lost track of aggregated array.\n");		\
+      });								\
+  } while (0)
+
+#define BEGIN_AGGREGATE_ARRAY(estimated_size) do {			\
+    struct svalue *base__;						\
+    AGGR_ARR_PROLOGUE (base__, estimated_size);
+
+#define DO_AGGREGATE_ARRAY(max_keep_on_stack)				\
+    AGGR_ARR_CHECK (base__, max_keep_on_stack)
+
+#define END_AGGREGATE_ARRAY						\
+    AGGR_ARR_EPILOGUE (base__);						\
+  } while (0)
 
 
 /**
