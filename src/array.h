@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.h,v 1.80 2008/10/01 23:21:40 mast Exp $
+|| $Id: array.h,v 1.81 2008/10/01 23:43:45 mast Exp $
 */
 
 #ifndef ARRAY_H
@@ -90,14 +90,6 @@ extern struct array *gc_internal_array;
     if(!sub_ref(v_))							\
       really_free_array(v_);						\
   }while(0)
-
-/* FIXME: Maybe try to replace free_array with this in the future to
- * catch more bugs, but there's code that requires the current one. */
-#define free_array_ptr(V) do {						\
-    struct array **vp_ = &(V);						\
-    free_array (*vp_);							\
-    MARK_INVALID_PTR (*vp_);						\
-  } while (0)
 
 #define allocate_array(X) low_allocate_array((X),0)
 #define allocate_array_no_init(X,Y) low_allocate_array((X),(Y))
