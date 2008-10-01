@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.72 2008/06/28 16:36:55 nilsson Exp $
+ * $Id: Tree.pmod,v 1.73 2008/10/01 22:58:53 mast Exp $
  *
  */
 
@@ -1774,13 +1774,14 @@ class SimpleRootNode
       walk_preorder(lambda(SimpleNode node,
 			   mapping(string:SimpleElementNode) new_lookup) {
 		      if (node->get_node_type() != XML_ELEMENT) return 0;
-		      string id = node->get_attributes()->id;
-		      if (new_lookup[id]) {
-			error("Multiple nodes with the same id "
-			      "(id: %O, nodes: %O, %O)\n",
-			      id, new_lookup[id], node);
+		      if (string id = node->get_attributes()->id) {
+			if (new_lookup[id]) {
+			  error("Multiple nodes with the same id "
+				"(id: %O, nodes: %O, %O)\n",
+				id, new_lookup[id], node);
+			}
+			new_lookup[id] = node;
 		      }
-		      new_lookup[id] = node;
 		      return 0;
 		    }, new_lookup);
       node_ids = new_lookup;
@@ -1995,13 +1996,14 @@ class RootNode
       walk_preorder(lambda(SimpleNode node,
 			   mapping(string:ElementNode) new_lookup) {
 		      if (node->get_node_type() != XML_ELEMENT) return 0;
-		      string id = node->get_attributes()->id;
-		      if (new_lookup[id]) {
-			error("Multiple nodes with the same id "
-			      "(id: %O, nodes: %O, %O)\n",
-			      id, new_lookup[id], node);
+		      if (string id = node->get_attributes()->id) {
+			if (new_lookup[id]) {
+			  error("Multiple nodes with the same id "
+				"(id: %O, nodes: %O, %O)\n",
+				id, new_lookup[id], node);
+			}
+			new_lookup[id] = node;
 		      }
-		      new_lookup[id] = node;
 		      return 0;
 		    }, new_lookup);
       node_ids = new_lookup;
