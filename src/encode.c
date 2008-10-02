@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.286 2008/07/31 14:09:04 grubba Exp $
+|| $Id: encode.c,v 1.287 2008/10/02 15:49:02 mast Exp $
 */
 
 #include "global.h"
@@ -1837,13 +1837,13 @@ static void free_encode_data(struct encode_data *data)
  *! Almost any value can be coded, mappings, floats, arrays, circular
  *! structures etc.
  *!
- *! To encode objects, programs and functions, a codec object must be
- *! provided.
+ *! If @[codec] is specified, it's used as the codec for the decode.
+ *! If no codec is specified, the current master object will be used.
  *!
- *! If @expr{codec->nameof(o)@} returns @tt{UNDEFINED@} for an object,
- *! @expr{val = o->encode_object(o)@} will be called. The returned value
- *! will be passed to @expr{o->decode_object(o, val)@} when the object is
- *! decoded.
+ *! If @expr{@[codec]->nameof(o)@} returns @tt{UNDEFINED@} for an
+ *! object, @expr{val = o->encode_object(o)@} will be called. The
+ *! returned value will be passed to @expr{o->decode_object(o, val)@}
+ *! when the object is decoded.
  *!
  *! @note
  *!
@@ -5155,7 +5155,7 @@ static void rec_restore_value(char **v, ptrdiff_t *l)
 
   case TAG_STRING:
     if(t<0) Pike_error("Format error: length of string is negative.\n");
-    if(*l < t) Pike_error("Format error: string to short\n");
+    if(*l < t) Pike_error("Format error: string too short\n");
     push_string(make_shared_binary_string(*v, t));
     (*l)-= t;
     (*v)+= t;
@@ -5188,7 +5188,7 @@ static void rec_restore_value(char **v, ptrdiff_t *l)
 
   case TAG_OBJECT:
     if(t<0) Pike_error("Format error: length of object is negative.\n");
-    if(*l < t) Pike_error("Format error: string to short\n");
+    if(*l < t) Pike_error("Format error: string too short\n");
     push_string(make_shared_binary_string(*v, t));
     (*l) -= t; (*v) += t;
     APPLY_MASTER("objectof", 1);
@@ -5196,7 +5196,7 @@ static void rec_restore_value(char **v, ptrdiff_t *l)
 
   case TAG_FUNCTION:
     if(t<0) Pike_error("Format error: length of function is negative.\n");
-    if(*l < t) Pike_error("Format error: string to short\n");
+    if(*l < t) Pike_error("Format error: string too short\n");
     push_string(make_shared_binary_string(*v, t));
     (*l) -= t; (*v) += t;
     APPLY_MASTER("functionof", 1);
@@ -5204,7 +5204,7 @@ static void rec_restore_value(char **v, ptrdiff_t *l)
 
   case TAG_PROGRAM:
     if(t<0) Pike_error("Format error: length of program is negative.\n");
-    if(*l < t) Pike_error("Format error: string to short\n");
+    if(*l < t) Pike_error("Format error: string too short\n");
     push_string(make_shared_binary_string(*v, t));
     (*l) -= t; (*v) += t;
     APPLY_MASTER("programof", 1);
