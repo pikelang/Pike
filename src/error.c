@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.165 2008/10/04 17:17:14 mast Exp $
+|| $Id: error.c,v 1.166 2008/10/04 17:19:05 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -388,12 +388,12 @@ PMOD_EXPORT void DECLSPEC(noreturn) va_error(const char *fmt, va_list args)
     /* FIXME: Why not use Pike_fatal() here? */
 #ifdef PIKE_DEBUG
     if (d_flag) {
-      fprintf(stderr,"No error recovery context!\n%s",s.s->str);
+      fprintf(stderr,"No error recovery context!\n%s", fmt);
       dump_backlog();
     }
 #endif
 
-    fprintf(stderr,"No error recovery context!\n%s",s.s->str);
+    fprintf(stderr,"No error recovery context!\n%s", fmt);
     exit(99);
   }
 
