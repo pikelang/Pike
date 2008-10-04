@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.164 2008/07/16 00:33:59 mast Exp $
+|| $Id: error.c,v 1.165 2008/10/04 17:17:14 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -359,23 +359,29 @@ PMOD_EXPORT void Pike_vsnprintf(char *str, size_t size,
 }
 
 
-void DECLSPEC(noreturn) va_error(const char *fmt, va_list args)
-     ATTRIBUTE((noreturn))
+PMOD_EXPORT void va_make_error (const char *fmt, va_list args)
 {
   struct string_builder s;
+  init_string_builder(&s, 0);
+  string_builder_vsprintf(&s, fmt, args);
+  push_string(finish_string_builder(&s));
+  f_backtrace(0);
+  f_aggregate(2);
+}
 
+PMOD_EXPORT void DECLSPEC(noreturn) va_error(const char *fmt, va_list args)
+  ATTRIBUTE((noreturn))
+{
   SWAP_IN_THREAD_IF_REQUIRED();
   if(in_error)
   {
     const char *tmp=in_error;
     in_error = NULL;
-    Pike_fatal("Recursive error() calls, original error: %s, new error: %s",
-	       tmp, fmt);
+    Pike_fatal("Recursive Pike_error() calls, "
+	       "original error: %s, new error: %s", tmp, fmt);
   }
 
   in_error=fmt;
-  init_string_builder(&s, 0);
-  string_builder_vsprintf(&s, fmt, args);
 
   if(!Pike_interpreter.recoveries)
   {
@@ -391,14 +397,30 @@ void DECLSPEC(noreturn) va_error(const char *fmt, va_list args)
     exit(99);
   }
 
-  push_string(finish_string_builder(&s));
-  f_backtrace(0);
-  f_aggregate(2);
+  va_make_error (fmt, args);
   free_svalue(&throw_value);
   move_svalue(&throw_value, --Pike_sp);
   throw_severity = THROW_ERROR;
   in_error = NULL;
   pike_throw();	/* Hope someone is catching, or we will be out of balls. */
+}
+
+PMOD_EXPORT void make_error (const char *fmt, ...)
+/* Creates a general error container like Pike_error but doesn't throw
+ * it, instead it is left on the stack. */
+{
+  va_list args;
+  va_start (args,fmt);
+  va_make_error (fmt,args);
+  va_end (args);
+}
+
+PMOD_EXPORT DECLSPEC(noreturn) void Pike_error(const char *fmt,...) ATTRIBUTE((noreturn))
+{
+  va_list args;
+  va_start(args,fmt);
+  va_error(fmt,args);
+  va_end(args);
 }
 
 PMOD_EXPORT DECLSPEC(noreturn) void new_error(const char *name,
@@ -554,14 +576,6 @@ PMOD_EXPORT void fatal_on_error(const void *msg)
 #endif
   fprintf(stderr,"%s\n",(char *)msg);
   do_abort();
-}
-
-PMOD_EXPORT DECLSPEC(noreturn) void Pike_error(const char *fmt,...) ATTRIBUTE((noreturn))
-{
-  va_list args;
-  va_start(args,fmt);
-  va_error(fmt,args);
-  va_end(args);
 }
 
 PMOD_EXPORT DECLSPEC(noreturn) void debug_va_fatal(const char *fmt, va_list args) ATTRIBUTE((noreturn))
