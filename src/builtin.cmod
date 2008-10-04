@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.224 2008/07/31 14:52:26 mast Exp $
+|| $Id: builtin.cmod,v 1.225 2008/10/04 18:31:12 mast Exp $
 */
 
 #include "global.h"
@@ -941,6 +941,12 @@ PIKEFUN program __empty_program(int|zero|void line, string|void file)
 {
   struct program *prog = low_allocate_program();
   if (file) ext_store_program_line (prog, line, file);
+#if 0
+  push_program (prog);
+  safe_pike_fprintf (stderr, "Creating empty program %O (%x)\n",
+		     Pike_sp - 1, Pike_sp[-1].u.program);
+  Pike_sp--;
+#endif
   RETURN prog;
 }
 
@@ -2873,13 +2879,16 @@ PIKECLASS Time
   {
     extern struct timeval current_time;
     struct pike_string *usec;
-    struct pike_string *sec;
+    struct pike_string *sec, *usec_full;
 
     MAKE_CONST_STRING( sec, "sec" );
     MAKE_CONST_STRING( usec, "usec" );
+    MAKE_CONST_STRING (usec_full, "usec_full");
 
-    if( !x )
-      RETURN 0;
+    if( !x ) {
+      push_undefined();
+      return;
+    }
 
     if( THIS->hard_update )
       GETTIMEOFDAY( &current_time );
@@ -2888,6 +2897,10 @@ PIKECLASS Time
       RETURN current_time.tv_usec;
     if( x == sec )
       RETURN current_time.tv_sec;
+    if (x != usec_full) {
+      push_undefined();
+      return;
+    }
 
 #ifdef AUTO_BIGNUM
     pop_stack();
