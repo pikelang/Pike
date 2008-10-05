@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.326 2008/10/04 19:51:32 mast Exp $
+|| $Id: gc.c,v 1.327 2008/10/05 00:23:24 mast Exp $
 */
 
 #include "global.h"
@@ -4628,7 +4628,7 @@ static void pass_lookahead_visit_ref (void *thing, int ref_type,
   int ref_from_flags;
   int old_la_count;		/* -1 flags new ref_to. */
   int new_cand_ref, enqueue = 0;
-  unsigned type;
+  TYPE_T type;
 
   assert (mc_pass == MC_PASS_LOOKAHEAD);
 #ifdef PIKE_DEBUG
@@ -5203,7 +5203,7 @@ void f_count_memory (INT32 args)
 	MC_DEBUG_MSG (NULL, "enter with byte counting");
 
 	if (return_count || collect_stats || collect_internal) {
-	  int type = type_from_visit_fn (mc_ref_from->visit_fn);
+	  TYPE_T type = type_from_visit_fn (mc_ref_from->visit_fn);
 	  if (type <= MAX_TYPE) {
 	    count_internal++;
 	    if (collect_internal) {
@@ -5271,7 +5271,7 @@ void f_count_memory (INT32 args)
 	 * then the indirectly incomplete list where all the new
 	 * indirect externals appear. */
 	for (m = list->dl_next; m != list; m = m->dl_next) {
-	  int type = type_from_visit_fn (m->visit_fn);
+	  TYPE_T type = type_from_visit_fn (m->visit_fn);
 	  if (mc_block_lookahead & (1 << type))
 	    MC_DEBUG_MSG (m, "type blocked - not visiting");
 	  else {
@@ -5381,20 +5381,25 @@ void f_count_memory (INT32 args)
     if ((val = low_mapping_string_lookup (opts, ind)) &&
 	!UNSAFE_IS_ZERO (val)) {
       BEGIN_AGGREGATE_ARRAY (count_visited - count_internal) {
-	struct mc_marker *m;
-	for (m = mc_incomplete.dl_next; m != &mc_incomplete; m = m->dl_next)
-	  if (m->flags & MC_FLAG_REFCOUNTED) {
-	    int type = type_from_visit_fn (m->visit_fn);
-	    if (type <= MAX_TYPE) {
-	      Pike_sp->type = type;
-	      Pike_sp->subtype = 0;
-	      Pike_sp->u.ptr = m->thing;
-	      add_ref ((struct ref_dummy *) m->thing);
-	      dmalloc_touch_svalue (Pike_sp);
-	      Pike_sp++;
-	      DO_AGGREGATE_ARRAY (120);
+	struct mc_marker *m, *list = &mc_incomplete;
+	while (1) {
+	  /* Collect things from the mc_incomplete and mc_indirect lists. */
+	  for (m = list->dl_next; m != list; m = m->dl_next)
+	    if (m->flags & MC_FLAG_REFCOUNTED) {
+	      TYPE_T type = type_from_visit_fn (m->visit_fn);
+	      if (type <= MAX_TYPE) {
+		Pike_sp->type = type;
+		Pike_sp->subtype = 0;
+		Pike_sp->u.ptr = m->thing;
+		add_ref ((struct ref_dummy *) m->thing);
+		dmalloc_touch_svalue (Pike_sp);
+		Pike_sp++;
+		DO_AGGREGATE_ARRAY (120);
+	      }
 	    }
-	  }
+	  if (list == &mc_incomplete) list = &mc_indirect;
+	  else break;
+	}
       } END_AGGREGATE_ARRAY;
       args++;
       mapping_string_insert (opts, ind, Pike_sp - 1);
