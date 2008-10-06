@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: requestobject.c,v 1.33 2008/06/29 12:00:49 per Exp $
+|| $Id: requestobject.c,v 1.34 2008/10/06 15:52:31 nilsson Exp $
 */
 
 #include "global.h"
@@ -298,9 +298,11 @@ static void parse_query(void)
   struct svalue *q;
   struct mapping *v = allocate_mapping(10); /* variables */
   push_string(s_query);
-  if(!(q = low_mapping_lookup(THIS->misc_variables, sp-1))) 
+  if(!(q = low_mapping_lookup(THIS->misc_variables, sp-1))) {
     f_aap_scan_for_query(0);
-  q = low_mapping_lookup(THIS->misc_variables, sp-1);
+    /* q will not be 0 below, as we have inserted the value now */
+    q = low_mapping_lookup(THIS->misc_variables, sp-1);
+  }
   sp--;
 
   if(q->type == T_STRING) 
