@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: port.h,v 1.64 2007/12/31 12:39:16 grubba Exp $
+|| $Id: port.h,v 1.65 2008/10/06 17:00:00 mast Exp $
 */
 
 #ifndef PORT_H
@@ -229,10 +229,6 @@ PMOD_EXPORT char *STRCHR(char *s,int c);
 #  ifdef STRCHR_DECL_MISSING
 char *STRCHR(char *s,int c);
 #  endif
-#endif
-
-#if !defined(HAVE_VFPRINTF) || !defined(HAVE_VSPRINTF) || !defined(HAVE_VSNPRINTF)
-#  include <stdarg.h>
 #endif
 
 #ifndef HAVE_VFPRINTF

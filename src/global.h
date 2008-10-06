@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: global.h,v 1.112 2008/06/29 11:45:54 mast Exp $
+|| $Id: global.h,v 1.113 2008/10/06 17:00:00 mast Exp $
 */
 
 #ifndef GLOBAL_H
@@ -214,6 +214,7 @@ void *alloca();
 #endif
 
 #include <stdio.h>
+#include <stdarg.h>
 
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>

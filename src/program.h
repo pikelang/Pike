@@ -2,13 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.259 2008/08/17 15:30:35 mast Exp $
+|| $Id: program.h,v 1.260 2008/10/06 17:00:00 mast Exp $
 */
 
 #ifndef PROGRAM_H
 #define PROGRAM_H
 
-#include <stdarg.h>
 #include "global.h"
 #include "pike_macros.h"
 #include "pike_error.h"

@@ -2,14 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.h,v 1.110 2008/07/22 23:35:11 mast Exp $
+|| $Id: stralloc.h,v 1.111 2008/10/06 17:00:00 mast Exp $
 */
 
 #ifndef STRALLOC_H
 #define STRALLOC_H
 #include "global.h"
-
-#include <stdarg.h>
 
 #include "pike_macros.h"
 #include "block_alloc_h.h"

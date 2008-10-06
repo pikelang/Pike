@@ -2,13 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_error.h,v 1.49 2008/10/04 17:17:14 mast Exp $
+|| $Id: pike_error.h,v 1.50 2008/10/06 17:00:00 mast Exp $
 */
 
 #ifndef PIKE_ERROR_H
 #define PIKE_ERROR_H
-
-#include <stdarg.h>
 
 #ifdef CONFIGURE_TEST
 
