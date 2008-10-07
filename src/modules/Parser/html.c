@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: html.c,v 1.182 2008/08/24 15:36:42 mirar Exp $
+|| $Id: html.c,v 1.183 2008/10/07 19:06:05 mast Exp $
 */
 
 #include "global.h"
@@ -1584,7 +1584,7 @@ static INLINE void skip_piece_range(struct location *loc,
    {
 #define LOOP(TYPE)							\
      {									\
-       TYPE *s=(TYPE *)p->s->str;					\
+       TYPE *s=(TYPE *)p->s->str + start;				\
        for (;start<stop;start++)					\
        {								\
 	 if (*(s++)=='\n')						\
