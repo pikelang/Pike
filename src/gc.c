@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.328 2008/10/11 17:18:38 grubba Exp $
+|| $Id: gc.c,v 1.329 2008/10/11 18:44:11 grubba Exp $
 */
 
 #include "global.h"
@@ -4244,7 +4244,7 @@ PMOD_EXPORT TYPE_T type_from_visit_fn (visit_thing_fn *fn)
 
 /* #define MEMORY_COUNT_DEBUG */
 
-#define MC_WQ_START_SIZE 8 /*1024*/
+#define MC_WQ_START_SIZE 1024
 
 PMOD_EXPORT int mc_pass;
 PMOD_EXPORT size_t mc_counted_bytes;
