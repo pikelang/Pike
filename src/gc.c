@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.327 2008/10/05 00:23:24 mast Exp $
+|| $Id: gc.c,v 1.328 2008/10/11 17:18:38 grubba Exp $
 */
 
 #include "global.h"
@@ -4244,7 +4244,7 @@ PMOD_EXPORT TYPE_T type_from_visit_fn (visit_thing_fn *fn)
 
 /* #define MEMORY_COUNT_DEBUG */
 
-#define MC_WQ_START_SIZE 1024
+#define MC_WQ_START_SIZE 8 /*1024*/
 
 PMOD_EXPORT int mc_pass;
 PMOD_EXPORT size_t mc_counted_bytes;
@@ -4551,7 +4551,7 @@ static void mc_wq_enqueue (struct mc_marker *m)
   }
 
   else {
-    if (mc_wq_used > mc_wq_size + 1) {
+    if (mc_wq_used > mc_wq_size) {
       struct mc_marker **p;
       mc_wq_size *= 2;
       p = realloc (mc_work_queue + 1, mc_wq_size * sizeof (mc_work_queue[0]));
