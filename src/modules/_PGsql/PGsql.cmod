@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: PGsql.cmod,v 1.30 2008/10/12 15:26:44 grubba Exp $
+ * $Id: PGsql.cmod,v 1.31 2008/10/12 22:57:20 mast Exp $
  *
  * PGsql, accelerator functions for Sql.pgsql for Pike.
  *
@@ -18,6 +18,7 @@
 #include "builtin_functions.h"
 #include "fdlib.h"
 #include "dmalloc.h"
+#include "bignum.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -395,38 +396,9 @@ outofmem: Pike_fatal("Out of memory\n");
             case INT2OID:push_int(low_getint16());
               break;
             case INT8OID: {
-              INT_TYPE firstword = low_getint32();
-#if SIZEOF_INT_TYPE>=8
-	      push_int(firstword<<32|low_getint32()&0xffffffffU);
-#else
-              int nextword = low_getint32();
-              switch(firstword) {
-                default:
-                  push_int(firstword);push_int(32);f_lsh(2);
-                  if(nextword>=0)
-		    goto nextor;
-                  push_int((nextword>>1)&0x7fffffff); push_int(1); f_lsh(2);
-                  f_or(2);
-                  goto tor;
-                case -1:
-		  if(nextword<0)
-		    goto simple;
-                  push_int(firstword);push_int(32);f_lsh(2);
-                  goto nextor;
-                case 0:
-                  if(nextword<0) {
-                    push_int((nextword>>1)&0x7fffffff); push_int(1); f_lsh(2);
-tor:		    if(nextword&1) {
-		      nextword=1;
-nextor:               push_int(nextword);
-                      f_or(2);
-		    }
-                  }
-                  else
-simple:             push_int(nextword);
-              }
-#endif
-              break;
+	      LONGEST firstword = low_getint32();
+	      push_longest ((firstword<<32)|(low_getint32()&0xffffffffU));
+	      break;
             }
             case OIDOID:
             case INT4OID:push_int(low_getint32());
