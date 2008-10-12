@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.856 2008/10/04 19:52:09 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.857 2008/10/12 21:52:02 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -6199,128 +6199,153 @@ test_do(add_constant("blatinka");)
   ]], 1)
 
 // Pike.count_memory
+test_do([[
+  add_constant ("count_memory_stats",
+    lambda (int|mapping opts, mixed... things) {
+      if (intp (opts))
+	opts = (["lookahead": opts, "collect_stats": 1]);
+      else
+	opts += (["collect_stats": 1]);
+      Pike.count_memory (opts, @things);
+      return sprintf ("i:%d,c:%d,e:%d,v:%d,r:%d,rnd:%d",
+		      opts->internal, opts->cyclic, opts->external,
+		      opts->visits, opts->revisits, opts->rounds);
+    })
+]])
 // time(1) is used below to avoid constants with extra refs.
-test_true([[Pike.count_memory (0) == 0]])
-test_true([[Pike.count_memory (0, ({})) > 0]])
-test_true([[Pike.count_memory (0, ({time(1)})) > 0]])
-test_true([[Pike.count_memory (0, (<>)) > 0]])
-test_true([[Pike.count_memory (0, (<time(1)>)) >
-	    Pike.count_memory (0, (<>))]])
-test_true([[Pike.count_memory (0, (<time(1)>)) >
-	    Pike.count_memory (0, (<1>))]])
-test_true([[Pike.count_memory (0, ([])) > 0]])
-test_true([[Pike.count_memory (0, ([1: time(1)])) >
-	    Pike.count_memory (0, ([]))]])
-test_true([[Pike.count_memory (0, ([1: time(1)])) >
-	    Pike.count_memory (0, ([1: 2]))]])
-test_true([[Pike.count_memory (0, class {}) > 0]])
-test_true([[Pike.count_memory (0, class {float f;}) >
-	    Pike.count_memory (0, class {})]])
-test_true([[Pike.count_memory (0, class {constant f = 0.0;}) >
-	    Pike.count_memory (0, class {})]])
-test_true([[Pike.count_memory (0, class {}()) > 0]])
-test_true([[Pike.count_memory (0, class {float f;}()) >
-	    Pike.count_memory (0, class {}())]])
-test_true([[Pike.count_memory (0, class {constant f = 0.0;}()) ==
-	    Pike.count_memory (0, class {}())]])
-test_true([[Pike.count_memory (0, "foo") > 0]])
-test_true([[Pike.count_memory (0, typeof (map)) > 0]])
-test_true([[Pike.count_memory (0, 17) == 0]])
-test_true([[Pike.count_memory (0, ({"some string with no other ref in memory "+
-				    Standards.UUID.make_version4()->str()})) ==
-	    Pike.count_memory (0, ({""}))]])
-test_true([[Pike.count_memory (1, ({"some string with no other ref in memory " +
+test_true([[Pike.count_memory (-1) == 0]])
+test_true([[Pike.count_memory (-1, ({})) > 0]])
+test_true([[Pike.count_memory (-1, ({time(1)})) > 0]])
+test_true([[Pike.count_memory (-1, (<>)) > 0]])
+test_true([[Pike.count_memory (-1, (<time(1)>)) >
+	    Pike.count_memory (-1, (<>))]])
+test_true([[Pike.count_memory (-1, (<time(1)>)) >
+	    Pike.count_memory (-1, (<1>))]])
+test_true([[Pike.count_memory (-1, ([])) > 0]])
+test_true([[Pike.count_memory (-1, ([1: time(1)])) >
+	    Pike.count_memory (-1, ([]))]])
+test_true([[Pike.count_memory (-1, ([1: time(1)])) >
+	    Pike.count_memory (-1, ([1: 2]))]])
+test_true([[Pike.count_memory (-1, class {}) > 0]])
+test_true([[Pike.count_memory (-1, class {float f;}) >
+	    Pike.count_memory (-1, class {})]])
+test_true([[Pike.count_memory (-1, class {constant f = 0.0;}) >
+	    Pike.count_memory (-1, class {})]])
+test_true([[Pike.count_memory (-1, class {}()) > 0]])
+test_true([[Pike.count_memory (-1, class {float f;}()) >
+	    Pike.count_memory (-1, class {}())]])
+test_true([[Pike.count_memory (-1, class {constant f = 0.0;}()) ==
+	    Pike.count_memory (-1, class {}())]])
+test_true([[Pike.count_memory (-1, "foo") > 0]])
+test_true([[Pike.count_memory (-1, typeof (map)) > 0]])
+test_true([[Pike.count_memory (-1, 17) == 0]])
+test_true([[Pike.count_memory (-1, ({"some string with no other ref in memory "+
+				     Standards.UUID.make_version4()->str()})) ==
+	    Pike.count_memory (-1, ({""}))]])
+test_true([[Pike.count_memory (0, ({"some string with no other ref in memory " +
 				    Standards.UUID.make_version4()->str()})) >
-	    Pike.count_memory (1, ({""}))]])
-test_true([[Pike.count_memory (0, ({time(1)})) +
-	    Pike.count_memory (0, ([1: time(1)])) ==
-	    Pike.count_memory (1, ({([1: time(1)])}))]])
-test_true([[Pike.count_memory (1, class X {mapping(X:array(int)) x;}) >
-	    Pike.count_memory (1, class Y {int x;})]])
-test_true([[Pike.count_memory (1, ({compile (
+	    Pike.count_memory (0, ({""}))]])
+test_true([[Pike.count_memory (-1, ({time(1)})) +
+	    Pike.count_memory (-1, ([1: time(1)])) ==
+	    Pike.count_memory (0, ({([1: time(1)])}))]])
+test_true([[Pike.count_memory (0, class X {mapping(X:array(int)) x;}) >
+	    Pike.count_memory (0, class Y {int x;})]])
+test_true([[Pike.count_memory (0, ({compile (
 				      "constant x = ([1: time(1)]);")})) >
-	    Pike.count_memory (1, ({([1: time(1)])}))]])
+	    Pike.count_memory (0, ({([1: time(1)])}))]])
+test_eq([[count_memory_stats (-1, ({time(1)}))]],
+	[["i:1,c:0,e:0,v:1,r:0,rnd:1"]])
+test_eq([[count_memory_stats (-1, (<time(1)>))]],
+	[["i:1,c:0,e:0,v:2,r:0,rnd:1"]])
+test_eq([[count_memory_stats (-1, ([1: time(1)]))]],
+	[["i:1,c:0,e:0,v:2,r:0,rnd:1"]])
+test_eq([[count_memory_stats (-1, class {float f;})]],
+	[["i:1,c:0,e:0,v:1,r:0,rnd:1"]])
+test_eq([[count_memory_stats (-1, class {float f;}())]],
+	[["i:1,c:0,e:0,v:1,r:0,rnd:1"]])
+test_eq([[count_memory_stats (-1, "foo")]],
+	[["i:1,c:0,e:0,v:1,r:0,rnd:1"]])
+test_eq([[count_memory_stats (-1, typeof(all_constants()))]],
+	[["i:1,c:0,e:0,v:1,r:0,rnd:1"]])
 test_any([[
   array a1 = ({({time(1)})}), a2 = ({a1[0]});
-  return Pike.count_memory (1, a1, a2) >
-    Pike.count_memory (1, a1) + Pike.count_memory (1, a2);
+  return Pike.count_memory (0, a1, a2) >
+    Pike.count_memory (0, a1) + Pike.count_memory (0, a2);
 ]], 1)
 test_any([[
   mapping m = ([1: time(1)]);
-  return Pike.count_memory (1, ({m})) == Pike.count_memory (1, ({0}));
+  return Pike.count_memory (0, ({m})) == Pike.count_memory (0, ({0}));
 ]], 1)
 test_any([[
   array a = ({([1: time(1)])});
-  return Pike.count_memory (1, a) > Pike.count_memory (1, ({([])}));
+  return Pike.count_memory (0, a) > Pike.count_memory (0, ({([])}));
 ]], 1)
 test_any([[
   program p = class {};
-  return Pike.count_memory (1, p) > Pike.count_memory (1, p());
+  return Pike.count_memory (0, p) > Pike.count_memory (0, p());
 ]], 1)
 test_any([[
   class X (void|object a) {};
   X o = X (X());
-  return Pike.count_memory (1, o) == Pike.count_memory (0, o) * 2;
-]], 1)
+  return count_memory_stats (0, o);
+]], [["i:2,c:0,e:0,v:2,r:0,rnd:1"]])
+test_any([[
+  class X (void|object a) {};
+  X o = X (X (X()));
+  o->a->a->a = o;
+  return count_memory_stats (0, o);
+]], [["i:3,c:0,e:0,v:3,r:0,rnd:1"]])
 test_any([[
   class X (void|object a) {};
   X o = X (X (X()));
   o->a->a->a = o->a;
-  return Pike.count_memory (3, o) == Pike.count_memory (0, o) * 3;
-]], 1)
+  return count_memory_stats (2, o);
+]], [["i:3,c:2,e:0,v:7,r:4,rnd:2"]])
 test_any([[
   class X (void|object a) {};
   X o = X (X (X()));
   o->a->a->a = o->a;
-  return Pike.count_memory (2, o) == Pike.count_memory (0, o);
-]], 1)
+  return count_memory_stats (1, o);
+]], [["i:1,c:0,e:1,v:3,r:1,rnd:1"]])
 test_any([[
   class X (void|object a) {};
   X o = X (X (X()));
-  int size = Pike.count_memory (1, o);
+  int size = Pike.count_memory (0, o);
   o->a->a->a = o->a;
-  return Pike.count_memory ((["lookahead": 3]), o) == size;
+  return Pike.count_memory ((["lookahead": 2]), o) == size;
 ]], 1)
 test_any([[
   class X (void|object a) {};
   X o = X (X (X()));
-  int size = Pike.count_memory (1, o);
-  return Pike.count_memory ((["lookahead": 3, "block_objects": 1]), o) == size;
-]], 1)
-test_any([[
-  class X (void|object a) {};
-  X o = X (X (X()));
-  return Pike.count_memory ((["block_objects": 1]), o) ==
-         Pike.count_memory (1, o);
-]], 1)
+  return count_memory_stats ((["block_objects": 1]), o);
+]], [["i:3,c:0,e:0,v:3,r:0,rnd:1"]])
 test_any([[
   class X (void|object a) {};
   X o = X (X (X()));
   o->a->a->a = o->a;
-  return Pike.count_memory ((["lookahead": 3, "block_objects": 1]), o) ==
-         Pike.count_memory (0, o);
-]], 1)
+  return count_memory_stats ((["lookahead": 2, "block_objects": 1]), o);
+]], [["i:1,c:0,e:0,v:1,r:0,rnd:1"]])
 test_any([[
   class X (void|object a) {};
   X o = X (X (X()));
   o->a->a->a = o->a;
   X r = o->a->a;
-  return Pike.count_memory (10, o) == Pike.count_memory (0, o);
-]], 1)
+  return count_memory_stats (10, o);
+]], [["i:1,c:0,e:2,v:7,r:4,rnd:1"]])
+test_any([[
+  class X (void|object a) {};
+  X o = X (X (X()));
+  o->a->a->a = o->a;
+  X r = o->a->a;
+  return count_memory_stats (2, o);
+]], [["i:1,c:0,e:2,v:7,r:4,rnd:1"]])
 test_any([[
   class X (void|object a) {};
   X o = X (X (X()));
   o->a->a->a = o->a;
   X r = o->a;
-  return Pike.count_memory (3, o) == Pike.count_memory (0, o);
-]], 1)
-test_any([[
-  class X (void|object a) {};
-  X o = X (X (X()));
-  o->a->a->a = o->a;
-  X r = o->a->a;
-  return Pike.count_memory (3, o) == Pike.count_memory (0, o);
-]], 1)
+  return count_memory_stats (2, o);
+]], [["i:1,c:0,e:2,v:5,r:2,rnd:1"]])
 test_any([[
   class X (void|object a, void|object b) {};
   X o = X (X (X (X (X (X ())))));
@@ -6329,8 +6354,8 @@ test_any([[
   o->a->a->a->b = o->a->a;
   o->a->a->a->a->b = o->a->a->a;
   o->a->a->a->a->a->b = o->a->a->a->a;
-  return Pike.count_memory (2, o) == Pike.count_memory (0, o);
-]], 1)
+  return count_memory_stats (1, o);
+]], [["i:1,c:0,e:1,v:3,r:1,rnd:1"]])
 test_any([[
   class X (void|object a, void|object b) {};
   X o = X (X (X (X (X (X ())))));
@@ -6339,8 +6364,8 @@ test_any([[
   o->a->a->a->b = o->a->a;
   o->a->a->a->a->b = o->a->a->a;
   o->a->a->a->a->a->b = o->a->a->a->a;
-  return Pike.count_memory (3, o) == 6 * Pike.count_memory (0, o);
-]], 1)
+  return count_memory_stats (2, o);
+]], [["i:6,c:5,e:0,v:19,r:13,rnd:2"]])
 test_any([[
   class X (void|object a, void|object b) {};
   X o = X (X (X (X (X (X ())))));
@@ -6350,8 +6375,8 @@ test_any([[
   o->a->a->a->a->b = o->a->a->a;
   o->a->a->a->a->a->b = o->a->a->a->a;
   X p = o->a->a->a->a;
-  return Pike.count_memory (3, o) == Pike.count_memory (0, o);
-]], 1)
+  return count_memory_stats (2, o);
+]], [["i:1,c:0,e:5,v:17,r:11,rnd:1"]])
 test_any([[
   class X (void|object a, void|object b) {constant pike_cycle_depth = 2;};
   X o = X (X (X (X (X (X ())))));
@@ -6360,8 +6385,8 @@ test_any([[
   o->a->a->a->b = o->a->a;
   o->a->a->a->a->b = o->a->a->a;
   o->a->a->a->a->a->b = o->a->a->a->a;
-  return Pike.count_memory (1, o) == 6 * Pike.count_memory (0, o);
-]], 1)
+  return count_memory_stats (0, o);
+]], [["i:6,c:5,e:0,v:19,r:13,rnd:2"]])
 test_any([[
   class X (void|object a, void|object b) {constant pike_cycle_depth = 1;};
   X o = X (X (X (X (X (X ())))));
@@ -6370,8 +6395,8 @@ test_any([[
   o->a->a->a->b = o->a->a;
   o->a->a->a->a->b = o->a->a->a;
   o->a->a->a->a->a->b = o->a->a->a->a;
-  return Pike.count_memory (1, o) == Pike.count_memory (0, o);
-]], 1)
+  return count_memory_stats (0, o);
+]], [["i:1,c:0,e:1,v:3,r:1,rnd:1"]])
 test_any([[
   class X (void|object a, void|object b) {constant pike_cycle_depth = 0;};
   X o = X (X (X (X (X (X ())))));
@@ -6380,8 +6405,8 @@ test_any([[
   o->a->a->a->b = o->a->a;
   o->a->a->a->a->b = o->a->a->a;
   o->a->a->a->a->a->b = o->a->a->a->a;
-  return Pike.count_memory (3, o) == Pike.count_memory (0, o);
-]], 1)
+  return count_memory_stats (2, o);
+]], [["i:1,c:0,e:0,v:1,r:0,rnd:1"]])
 test_any([[
   class X (void|object a, void|object b) {constant pike_cycle_depth = 2;};
   X o = X (X (X (X (X (X ())))));
@@ -6390,9 +6415,27 @@ test_any([[
   o->a->a->a->b = o->a->a;
   o->a->a->a->a->b = o->a->a->a;
   o->a->a->a->a->a->b = o->a->a->a->a;
-  return Pike.count_memory ((["block_pike_cycle_depth": 1]), o) ==
-	 Pike.count_memory (0, o);
-]], 1)
+  return count_memory_stats ((["block_pike_cycle_depth": 1]), o);
+]], [["i:1,c:0,e:0,v:1,r:0,rnd:1"]])
+test_any([[
+  class X (void|object a, void|object b) {constant pike_cycle_depth = 4;};
+  class Y (void|object a) {constant pike_cycle_depth = 0;};
+  X o = X (X(), X());
+  o->a->a = o->b;
+  o->b->a = o->a;
+  o->a->b = o->b->b = Y (Y());
+  return count_memory_stats (0, o);
+]], [["i:5,c:2,e:0,v:8,r:3,rnd:2"]])
+test_any([[
+  class X (void|object a, void|object b) {constant pike_cycle_depth = 4;};
+  class Y (void|object a) {constant pike_cycle_depth = 0;};
+  X o = X (X(), X());
+  o->a->a = o->b;
+  o->b->a = o->a;
+  o->a->b = o->b->b = Y (Y());
+  o->a->b->a->a = o->a->b;
+  return count_memory_stats (0, o);
+]], [["i:3,c:2,e:0,v:6,r:3,rnd:2"]])
 test_any([[
   class X (void|object a, void|object b) {};
   X o = X (X (X()));
@@ -6401,8 +6444,8 @@ test_any([[
   o->b = o2;
   o2->a = o->a->a;
   o2 = 0;
-  return Pike.count_memory (3, o) == 4 * Pike.count_memory (0, o);
-]], 1)
+  return count_memory_stats (2, o);
+]], [["i:4,c:2,e:0,v:7,r:3,rnd:2"]])
 test_any([[
   class X (void|object a, void|object b) {};
   X o = X (X (X()));
@@ -6410,16 +6453,16 @@ test_any([[
   X o2 = X();
   o->b = o2;
   o2->a = o->a->a;
-  return Pike.count_memory (3, o) == Pike.count_memory (0, o);
-]], 1)
+  return count_memory_stats (2, o);
+]], [["i:1,c:0,e:3,v:9,r:5,rnd:1"]])
 test_any([[
   class X (void|object a, void|object b) {};
   X o = X (X(), X());
   o->a->b = o->b;
   o->b->a = o->a;
   o->a->a = o->b->b = X();
-  return Pike.count_memory (3, o) == 4 * Pike.count_memory (0, o);
-]], 1)
+  return count_memory_stats (2, o);
+]], [["i:4,c:3,e:0,v:8,r:4,rnd:2"]])
 test_any([[
   class X (void|object a, void|object b) {};
   X o = X (X(), X());
@@ -6431,9 +6474,26 @@ test_any([[
   o2->a->a = o2->b->b = X();
   o->a->a = o->b->b = o2;
   o2 = 0;
-  mapping m = (["lookahead": 2, "collect_stats": 1]);
+  return count_memory_stats (1, o);
+]], [["i:7,c:6,e:0,v:15,r:8,rnd:2"]])
+test_any([[
+  class X (void|object a, void|object b) {};
+  X o = X (X(), X());
+  o->a->b = o->b;
+  o->b->a = o->a;
+  X o2 = X (X(), X());
+  o2->a->b = o2->b;
+  o2->b->a = o2->a;
+  o2->a->a = o2->b->b = X();
+  o->a->a = o->b->b = o2;
+  o2 = o2->b;
+  mapping m = (["lookahead": 1,
+		"collect_stats": 1,
+		"collect_direct_externals": 1]);
   Pike.count_memory (m, o);
-  return m->rounds == 2 && m->internal == 7;
+  //werror ("%O\n", m);
+  return m->internal == 4 && m->cyclic == 3 && m->external == 3 &&
+	 equal (m->collect_direct_externals, ({o2}));
 ]], 1)
 test_any([[
   mixed r = ([]), p = r;
@@ -6443,8 +6503,8 @@ test_any([[
   p = p->next; p->next = ([]); p->next->prev = p;
   p = p->next; p->next = ([]); p->next->prev = p;
   p = 0;
-  return Pike.count_memory (2, r) == Pike.count_memory (0, r);
-]], 1)
+  return count_memory_stats (1, r);
+]], [["i:1,c:0,e:1,v:6,r:2,rnd:1"]])
 test_any([[
   mixed r = ([]), p = r;
   p->next = ([]); p->next->prev = p;
@@ -6453,8 +6513,8 @@ test_any([[
   p = p->next; p->next = ([]); p->next->prev = p;
   p = p->next; p->next = ([]); p->next->prev = p;
   p = 0;
-  return Pike.count_memory (3, r) == 6 * Pike.count_memory (0, r);
-]], 1)
+  return count_memory_stats (2, r);
+]], [["i:6,c:5,e:0,v:38,r:26,rnd:2"]])
 test_any([[
   mixed r = ([]), p = r;
   p->next = ([]); p->next->prev = p;
@@ -6463,22 +6523,46 @@ test_any([[
   p = p->next; p->next = ([]); p->next->prev = p;
   p = p->next; p->next = ([]); p->next->prev = p;
   p = 0;
-  return Pike.count_memory ((["lookahead": 3, "return_count": 1]), r);
+  return Pike.count_memory ((["lookahead": 2, "return_count": 1]), r);
 ]], 6)
+test_any([[
+  class X (void|array|object a, void|array|object b) {};
+  array a = ({X (X())});
+  object o = a[0];
+  o->a->a = o; o->b = ({X (X())}); o = o->b[0];
+  o->a->a = o; o->b = ({X (X())}); o = o->b[0];
+  o->a->a = o; o->b = ({X (X())}); o = o->b[0];
+  o->a->a = o; o->b = ({X (X())}); o = o->b[0];
+  o->a->a = o; o = 0;
+  return count_memory_stats ((["lookahead": 2, "block_arrays": 1]), a);
+]], [["i:15,c:10,e:0,v:35,r:20,rnd:6"]])
+test_any([[
+  class X (void|array|object a, void|array|object b) {};
+  array a = ({X (X())});
+  object o = a[0];
+  o->a->a = o; o->a->b = ({X (X())}); o = o->a->b[0];
+  o->a->a = o; o->a->b = ({X (X())}); o = o->a->b[0];
+  o->a->a = o; o->a->b = ({X (X())}); o = o->a->b[0];
+  o->a->a = o; o->a->b = ({X (X())}); o = o->a->b[0];
+  o->a->a = o; o = 0;
+  return count_memory_stats ((["lookahead": 2, "block_arrays": 1]), a);
+]], [["i:15,c:10,e:0,v:35,r:20,rnd:6"]])
 test_true([[Pike.count_memory (Int.NATIVE_MAX, ({master()})) ==
-	    Pike.count_memory (0, ({0}))]])
-test_do([[
+	    Pike.count_memory (-1, ({0}))]])
+test_any([[
   mapping m = (["lookahead": Int.NATIVE_MAX,
 		"block_programs": 0,
 		"collect_stats": 1]);
   Pike.count_memory (m, master());
-]])
+  return m->rounds;
+]], 2)
 cond([[has_value (cpp ("__AUTO_BIGNUM__"), "1")]], [[
-  test_true([[Pike.count_memory (0, Int.NATIVE_MAX + 1) >
-	      Pike.count_memory (0, 17)]])
-  test_true([[Pike.count_memory (0, Int.NATIVE_MAX << 100) >
-	      Pike.count_memory (0, Int.NATIVE_MAX + 1)]])
+  test_true([[Pike.count_memory (-1, Int.NATIVE_MAX + 1) >
+	      Pike.count_memory (-1, 17)]])
+  test_true([[Pike.count_memory (-1, Int.NATIVE_MAX << 100) >
+	      Pike.count_memory (-1, Int.NATIVE_MAX + 1)]])
 ]])
+test_do([[add_constant("count_memory_stats")]])
 
 // Numerical limits.
 test_true([[Int.NATIVE_MIN <= -2147483648]])
