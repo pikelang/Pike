@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.687 2008/09/26 21:29:02 nilsson Exp $
+|| $Id: builtin_functions.c,v 1.688 2008/10/12 21:51:12 mast Exp $
 */
 
 #include "global.h"
@@ -9016,6 +9016,8 @@ PMOD_EXPORT void f_function_defined(INT32 args)
 /*! @endmodule Function
  */
 
+/* FIXME: Document catch and gauge. */
+
 void init_builtin_efuns(void)
 {
   struct program *pike___master_program;
@@ -9705,7 +9707,7 @@ void init_builtin_efuns(void)
 	   tFunc(tNone,tMap(tString,tOr(tInt,tFloat))),
 	   OPT_EXTERNAL_DEPEND);
   ADD_FUNCTION ("count_memory", f_count_memory,
-		tFuncV(tOr(tIntPos,tMap(tString,tInt)),
+		tFuncV(tOr(tInt,tMap(tString,tInt)),
 		       tOr8(tArray,tMultiset,tMapping,tObj,tPrg(tObj),
 			    tString,tType(tMix),tInt),
 		       tInt), 0);
