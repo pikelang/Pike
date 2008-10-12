@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.330 2008/10/12 21:49:56 mast Exp $
+|| $Id: gc.c,v 1.331 2008/10/12 22:41:16 mast Exp $
 */
 
 #include "global.h"
@@ -4954,6 +4954,11 @@ PMOD_EXPORT int mc_count_bytes (void *thing)
  *!         array|multiset|mapping|object|program|string|type|int... things)
  *! @appears Pike.count_memory
  *!
+ *! In brief, if you call @expr{Pike.count_memory(0,x)@} you get back
+ *! the number of bytes @expr{x@} occupies in memory.
+ *!
+ *! The detailed story is a bit longer:
+ *!
  *! This function calculates the number of bytes that all @[things]
  *! occupy. Or put another way, it calculates the number of bytes that
  *! would be freed if all those things would lose their references at
@@ -5009,9 +5014,9 @@ PMOD_EXPORT int mc_count_bytes (void *thing)
  *! @param options
  *!   If this is an integer, it specifies the maximum lookahead
  *!   distance. -1 counts only the memory of the given @[things],
- *!   without following any references, 0 extends the count to all
+ *!   without following any references. 0 extends the count to all
  *!   their referenced things as long as there are no cycles (except
- *!   if @expr{pike_cycle_depth@} is found in objects - see above), 1
+ *!   if @expr{pike_cycle_depth@} is found in objects - see above). 1
  *!   makes it cover cycles of length 1 (e.g. a thing points to
  *!   itself), 2 handles cycles of length 2 (e.g. where two things
  *!   point at each other), and so on.
@@ -5029,6 +5034,7 @@ PMOD_EXPORT int mc_count_bytes (void *thing)
  *!     @member int lookahead
  *!       The maximum lookahead distance, as described above. Defaults
  *!       to 0 if missing.
+ *!
  *!     @member int block_arrays
  *!     @member int block_mappings
  *!     @member int block_multisets
@@ -5038,20 +5044,29 @@ PMOD_EXPORT int mc_count_bytes (void *thing)
  *!       corresponding type is blocked when lookahead references are
  *!       followed. They are unblocked if the flag is given with a
  *!       zero value. Only programs are blocked by default.
+ *!
+ *!       These blocks are only active during the lookahead, so
+ *!       blocked things are still recursed and memory counted if they
+ *!       are given as arguments or only got internal references.
+ *!
  *!     @member int block_pike_cycle_depth
  *!       Do not heed @expr{pike_cycle_depth@} values found in
  *!       objects. This is implicit if the lookahead is negative.
+ *!
  *!     @member int return_count
  *!       Return the number of things that memory was counted for,
  *!       instead of the byte count. (This is the same number
  *!       @expr{internal@} contains if @expr{collect_stats@} is set.)
+ *!
  *!     @member int collect_internals
  *!       If this is nonzero then its value is replaced with an array
  *!       that contains the things that memory was counted for.
+ *!
  *!     @member int collect_externals
  *!       If set then the value is replaced with an array containing
  *!       the things that were visited but turned out to have external
  *!       references (within the limited lookahead).
+ *!
  *!     @member int collect_direct_externals
  *!       If set then the value is replaced with an array containing
  *!       the things found during the lookahead that (appears to) have
@@ -5059,6 +5074,7 @@ PMOD_EXPORT int mc_count_bytes (void *thing)
  *!       @expr{collect_externals@} list. It is useful if you get
  *!       unexpected global references to your data structure which
  *!       you want to track down.
+ *!
  *!     @member int collect_stats
  *!       If this is nonzero then the mapping is extended with more
  *!       elements containing statistics from the search; see below.
@@ -5071,33 +5087,40 @@ PMOD_EXPORT int mc_count_bytes (void *thing)
  *!     @member int internal
  *!       Number of things that were marked internal and hence memory
  *!       counted. It includes the things given as arguments.
+ *!
  *!     @member int cyclic
  *!       Number of things that were marked internal only after
  *!       resolving cycles.
+ *!
  *!     @member int external
  *!       Number of things that were visited through the lookahead but
  *!       were found to be external.
+ *!
  *!     @member int visits
  *!       Number of times things were visited in total. This figure
  *!       includes visits to various internal things that aren't
  *!       visible from the pike level, so it might be larger than what
  *!       is apparently motivated by the numbers above.
+ *!
  *!     @member int revisits
  *!       Number of times the same things were revisited. This can
  *!       occur in the lookahead when a thing is encountered through a
  *!       shorter path than the one it first got visited through. It
  *!       also occurs in resolved cycles. Like @expr{visits@}, this
  *!       count can include things that aren't visible from pike.
+ *!
  *!     @member int rounds
  *!       Number of search rounds. This is usually 1 or 2. More rounds
  *!       are necessary only when blocked types turn out to be
  *!       (acyclic) internal, so that they need to be counted and
  *!       recursed anyway.
+ *!
  *!     @member int work_queue_alloc
  *!       The number of elements that was allocated to store the work
  *!       queue which is used to keep track of the things to visit
  *!       during the lookahead. This is usually bigger than the
  *!       maximum number of things the queue actually held.
+ *!
  *!     @member int size
  *!       The memory occupied by the internal things. This is the same
  *!       as the normal return value, but it's put here too for
@@ -5131,11 +5154,6 @@ PMOD_EXPORT int mc_count_bytes (void *thing)
  *! It's possible that a string that is referenced still isn't
  *! counted, because strings are always shared in Pike and the same
  *! string might be in use in some unrelated part of the program.
- *!
- *! @note
- *! Things (normally programs) that are blocked in the lookahead
- *! search are still recursed and memory counted properly if they are
- *! given as arguments or only got internal references.
  */
 void f_count_memory (INT32 args)
 {
