@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: PGsql.cmod,v 1.29 2008/08/25 23:39:16 srb Exp $
+ * $Id: PGsql.cmod,v 1.30 2008/10/12 15:26:44 grubba Exp $
  *
  * PGsql, accelerator functions for Sql.pgsql for Pike.
  *
@@ -166,10 +166,10 @@ ret2: PD((stderr,"PGsql getbyte 0x%02x=%c\n",retval,retval));
   static struct pike_string*low_getstring(int length) {
     struct pike_string*retval;
     struct string_builder sb,*psb=0;
-    int len,left;
+    int len = 0,left;
     uchar*p;
 #ifdef PIKE_DEBUG                                  /* placate silly warnings */
-    len=0;retval=0;p=0;		        /* these initialisations are useless */
+    retval=0;p=0;		        /* these initialisations are useless */
 #endif
     if(length) {
       len=length;
