@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.434 2008/08/17 16:22:41 mast Exp $
+|| $Id: las.c,v 1.435 2008/10/12 09:36:16 mast Exp $
 */
 
 #include "global.h"
@@ -53,7 +53,6 @@ extern char *get_type_name(int);
 
 int car_is_node(node *n)
 {
-  if (!_CAR(n)) return 0;
   switch(n->token)
   {
   case F_EXTERNAL:
@@ -67,13 +66,12 @@ int car_is_node(node *n)
     return 0;
 
   default:
-    return 1;
+    return !!_CAR(n);
   }
 }
 
 int cdr_is_node(node *n)
 {
-  if (!_CDR(n)) return 0;
   switch(n->token)
   {
   case F_EXTERNAL:
@@ -87,7 +85,7 @@ int cdr_is_node(node *n)
     return 0;
 
   default:
-    return 1;
+    return !!_CDR(n);
   }
 }
 
