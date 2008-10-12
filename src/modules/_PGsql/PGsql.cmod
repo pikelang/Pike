@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: PGsql.cmod,v 1.31 2008/10/12 22:57:20 mast Exp $
+ * $Id: PGsql.cmod,v 1.32 2008/10/12 23:07:38 mast Exp $
  *
  * PGsql, accelerator functions for Sql.pgsql for Pike.
  *
@@ -397,8 +397,37 @@ outofmem: Pike_fatal("Out of memory\n");
               break;
             case INT8OID: {
 	      LONGEST firstword = low_getint32();
-	      push_longest ((firstword<<32)|(low_getint32()&0xffffffffU));
-	      break;
+#if SIZEOF_LONGEST>=8
+	      push_longest((firstword<<32)|(low_getint32()&0xffffffffU));
+#else
+              int nextword = low_getint32();
+              switch(firstword) {
+                default:
+                  push_int(firstword);push_int(32);f_lsh(2);
+                  if(nextword>=0)
+		    goto nextor;
+                  push_int((nextword>>1)&0x7fffffff); push_int(1); f_lsh(2);
+                  f_or(2);
+                  goto tor;
+                case -1:
+		  if(nextword<0)
+		    goto simple;
+                  push_int(firstword);push_int(32);f_lsh(2);
+                  goto nextor;
+                case 0:
+                  if(nextword<0) {
+                    push_int((nextword>>1)&0x7fffffff); push_int(1); f_lsh(2);
+tor:		    if(nextword&1) {
+		      nextword=1;
+nextor:               push_int(nextword);
+                      f_or(2);
+		    }
+                  }
+                  else
+simple:             push_int(nextword);
+              }
+#endif
+              break;
             }
             case OIDOID:
             case INT4OID:push_int(low_getint32());
