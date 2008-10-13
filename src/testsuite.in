@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.857 2008/10/12 21:52:02 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.858 2008/10/13 10:56:58 mirar Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -361,6 +361,30 @@ test_any([[
   fiddle(a);
   return sizeof(a);
 ]], 1)
+
+dnl bug in for loop optimization in combination with +=
+
+test_any([[
+array v=({1,2,3}); 
+  for (int i=0; i<sizeof(v); i++) 
+    for (int j=0; j<i; j++) 
+    { 
+       v+=({1+i}); 
+       if (i==17) { i=10000; break; } 
+    } 
+    return sizeof(v); // if buggy, will be 6 and not 140
+]], 140);
+
+test_any([[
+array v=({1,2,3}); 
+  for (int i=0; i<sizeof(v); i++) 
+    for (int j=0; j<i; j++) 
+    { 
+       v=v+({1+i}); 
+       if (i==17) { i=10000; break; } 
+    } 
+    return sizeof(v); // not buggy, will be 140
+]], 140);
 
 test_any([[int a=0xffffffff; return a+17]], 0x100000010);
 test_any([[int a=0xffffffff; return a-17]], 0xffffffee);
