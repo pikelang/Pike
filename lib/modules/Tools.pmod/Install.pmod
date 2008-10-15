@@ -48,12 +48,19 @@ array(string) features()
   a += ({ "profiling" });
 #endif
 
+#if constant (Java.machine)
+  a += ({"Java"});
+#if constant (Java.NATIVE_METHODS)
+  a += ({"Java.NATIVE_METHODS"});
+#endif
+#endif
+
   m += ({ "PostgresNative" });
 
   foreach(({ "Nettle", "Dbm", "DVB", "_Ffmpeg", "GL", "GLUT", "GTK", "Gdbm",
 	     "Gmp", "Gz", "_Image_FreeType", "_Image_GIF", "_Image_JPEG",
              "_Image_TIFF", "_Image_TTF", "_Image_XFace", "Image.PNG",
-	     "Java.machine", "Mird", "Msql", "Mysql", "Odbc", "Oracle",
+	     "Mird", "Msql", "Mysql", "Odbc", "Oracle",
 	     "PDF.PDFlib", "Perl",
              "Postgres", "SANE", "SDL", "Ssleay", "Yp", "sybase", "_WhiteFish",
 	     "X", "Bz2", "COM", "Fuse", "GTK2", "Gettext", "HTTPAccept",
@@ -68,7 +75,7 @@ array(string) features()
       {
 	if(modname[0] == '_')
 	  modname = replace(modname[1..], "_", ".");
-	m += ({ (["Java.machine":"Java"])[modname] || modname });
+	m += ({ modname });
       }
     };
   }
