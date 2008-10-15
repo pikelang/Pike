@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.435 2008/10/12 09:36:16 mast Exp $
+|| $Id: las.c,v 1.436 2008/10/15 16:08:22 grubba Exp $
 */
 
 #include "global.h"
@@ -2775,10 +2775,12 @@ static void find_written_vars(node *n,
     break;
 
   case F_ASSIGN:
+  case F_MULTI_ASSIGN:
     find_written_vars(CAR(n), p, 0);
     find_written_vars(CDR(n), p, 1);
     break;
 
+    case F_APPEND_ARRAY:
     case F_AND_EQ:
     case F_OR_EQ:
     case F_XOR_EQ:
