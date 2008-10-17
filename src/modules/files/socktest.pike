@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.48 2008/08/30 12:36:29 grubba Exp $ */
+/* $Id: socktest.pike,v 1.49 2008/10/17 17:17:03 mast Exp $ */
 
 // #define OOB_DEBUG
 
@@ -677,7 +677,7 @@ int main(int argc, array(string) argv)
     throw(err);
   }
 
-  if(!code)
+  if(!code || !port1::query_address())
   {
 #ifdef IPV6
 #if constant(System.EAFNOSUPPORT)
@@ -695,7 +695,7 @@ int main(int argc, array(string) argv)
   DEBUG_WERR("port1: %O\n", port1::query_address());
   sscanf(port1::query_address(),"%*s %d",portno1);
 
-  if(!port2::bind(0, 0, ANY))
+  if(!port2::bind(0, 0, ANY) || !port2::query_address())
   {
     write("Bind failed(2). (%d)\n",port2::errno());
     fd_fail();
