@@ -30,6 +30,21 @@ test_any([[
 dnl - file->open
 dnl - file->close
 test_any(object o=Stdio.File(); return o->open(testfile,"wct") && o->close(),1)
+test_any([[
+  Stdio.File o = Stdio.File();
+  o->open ("file_that_doesnt_exist", "r");
+  return o->errno();
+]], System.ENOENT)
+test_any([[
+  Stdio.File o = Stdio.File();
+  o->open ("file_in_dir/that_doesnt_exist", "r");
+  return o->errno();
+]], System.ENOENT)
+test_any([[
+  Stdio.File o = Stdio.File();
+  o->open ("file_with_\fu\n\ny_cha\rs", "r");
+  return o->errno();
+]], System.ENOENT)
 
 dnl - file_stat
 test_eq(file_stat(testfile)[1],0)
