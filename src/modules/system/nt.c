@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: nt.c,v 1.80 2008/09/04 12:52:29 mast Exp $
+|| $Id: nt.c,v 1.81 2008/10/17 17:12:38 mast Exp $
 */
 
 /*
@@ -16,6 +16,8 @@
 #include "system_machine.h"
 #include "system.h"
 #include "port.h"
+
+#include <errno.h>
 
 #ifdef __NT__
 #ifdef HAVE_WINSOCK2_H
@@ -66,6 +68,7 @@
 #include "operators.h"
 #include "stuff.h"
 #include "pike_security.h"
+#include "fdlib.h"
 
 #define sp Pike_sp
 
@@ -192,7 +195,7 @@ static void f_cp(INT32 args)
   VALID_FILE_IO("cp","write");
   get_all_args("cp",args,"%s%s",&from,&to);
   ret=CopyFile(from, to, 0);
-  if(!ret) errno=GetLastError();
+  if(!ret) set_errno_from_win32_error (GetLastError());
   pop_n_elems(args);
   push_int(ret);
 }
@@ -2567,8 +2570,11 @@ static void f_normalize_path(INT32 args)
      * components of the path.
      */
     ret = Emulate_GetLongPathName(file, res.s->str, res.malloced);
-    if (!ret)
-      throw_nt_error("normalize_path", errno = GetLastError());
+    if (!ret) {
+      unsigned long err = GetLastError();
+      set_errno_from_win32_error (err);
+      throw_nt_error("normalize_path", err);
+    }
   } while (ret > (size_t) res.malloced);
 
   if (file != str->str) {
@@ -2589,10 +2595,15 @@ static void f_normalize_path(INT32 args)
   file = xalloc (MAX_PATH);
   SET_ONERROR (file_uwp, free, file);
   ret = GetFullPathName (str->str, MAX_PATH, file, NULL);
-  if (ret > MAX_PATH)
-    throw_nt_error ("normalize_path", errno = ERROR_BUFFER_OVERFLOW);
-  if (!ret)
-    throw_nt_error ("normalize_path", errno = GetLastError());
+  if (ret > MAX_PATH) {
+    errno = ENAMETOOLONG;
+    throw_nt_error ("normalize_path", ERROR_BUFFER_OVERFLOW);
+  }
+  if (!ret) {
+    unsigned int err = GetLastError();
+    set_errno_from_win32_error (err);
+    throw_nt_error ("normalize_path", err);
+  }
 
   {
     LPSHELLFOLDER isf;

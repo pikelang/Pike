@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.c,v 1.85 2007/04/20 15:16:43 mast Exp $
+|| $Id: fdlib.c,v 1.86 2008/10/17 17:12:37 mast Exp $
 */
 
 #include "global.h"
@@ -26,11 +26,6 @@
 
 #include "threads.h"
 
-#ifdef _MSC_VER
-/* _dosmaperr is internal but still exported in the dll interface. */
-__declspec(dllimport) void __cdecl _dosmaperr(unsigned long);
-#endif
-
 static MUTEX_T fd_mutex;
 
 HANDLE da_handle[MAX_OPEN_FILEDESCRIPTORS];
@@ -44,6 +39,39 @@ int first_free_handle;
 #else
 #define FDDEBUG(X)
 #endif
+
+/* _dosmaperr is internal but still exported in the dll interface. */
+__declspec(dllimport) void __cdecl _dosmaperr(unsigned long);
+
+PMOD_EXPORT void set_errno_from_win32_error (unsigned long err)
+{
+  /* _dosmaperr handles the common I/O errors from GetLastError, but
+   * not the winsock codes. */
+  _dosmaperr (err);
+
+  /* Let through any error that _dosmaperr didn't map, and which
+   * doesn't conflict with the errno range in msvcrt. */
+  if (errno == EINVAL && err > STRUNCATE /* 80 */) {
+    switch (err) {
+      /* Special cases for the error codes above STRUNCATE that
+       * _dosmaperr actively map to EINVAL. */
+      case ERROR_INVALID_PARAMETER: /* 87 */
+      case ERROR_INVALID_HANDLE: /* 124 */
+      case ERROR_NEGATIVE_SEEK:	/* 131 */
+	return;
+    }
+
+    /* FIXME: This lets most winsock codes through as-is, e.g.
+     * WSAEWOULDBLOCK (10035) instead of EAGAIN. There are symbolic
+     * constants for all of them in the System module, but the
+     * duplicate values still complicates code on the Windows
+     * platform, so they ought to be mapped to the basic codes where
+     * possible, I think. That wouldn't be compatible, though.
+     * /mast */
+
+    errno = err;
+  }
+}
 
 #define ISSEPARATOR(a) ((a) == '\\' || (a) == '/')
 
@@ -276,7 +304,7 @@ static time_t fat_filetime_to_time_t (FILETIME *in)
 {
   FILETIME local_ft;
   if (!FileTimeToLocalFileTime (in, &local_ft)) {
-    _dosmaperr (GetLastError());
+    set_errno_from_win32_error (GetLastError());
     return -1;
   }
   else {
@@ -494,7 +522,7 @@ int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
       res = GetVolumeInformation (NULL, NULL, 0, NULL, NULL,NULL,
 				  (LPSTR)&fstype, sizeof (fstype));
     if (!res) {
-      _dosmaperr (GetLastError());
+      set_errno_from_win32_error (GetLastError());
       FindClose (hFind);
       return -1;
     }
@@ -643,7 +671,13 @@ PMOD_EXPORT FD debug_fd_open(const char *file, int open_mode, int create_mode)
   
   if(x == DO_NOT_WARN(INVALID_HANDLE_VALUE))
   {
-    errno=GetLastError();
+    unsigned long err = GetLastError();
+    if (err == ERROR_INVALID_NAME)
+      /* An invalid name means the file doesn't exist. This is
+       * consistent with fd_stat, opendir, and unix. */
+      errno = ENOENT;
+    else
+      set_errno_from_win32_error (err);
     return -1;
   }
 
@@ -683,7 +717,7 @@ PMOD_EXPORT FD debug_fd_socket(int domain, int type, int proto)
 
   if(s==INVALID_SOCKET)
   {
-    errno=WSAGetLastError();
+    set_errno_from_win32_error (WSAGetLastError());
     return -1;
   }
   
@@ -714,7 +748,7 @@ PMOD_EXPORT int debug_fd_pipe(int fds[2] DMALLOC_LINE_ARGS)
   mt_unlock(&fd_mutex);
   if(!CreatePipe(&files[0], &files[1], NULL, 0))
   {
-    errno=GetLastError();
+    set_errno_from_win32_error (GetLastError());
     return -1;
   }
   
@@ -769,7 +803,7 @@ PMOD_EXPORT FD debug_fd_accept(FD fd, struct sockaddr *addr,
   s=accept(s, addr, addrlen);
   if(s==INVALID_SOCKET)
   {
-    errno=WSAGetLastError();
+    set_errno_from_win32_error (WSAGetLastError());
     FDDEBUG(fprintf(stderr,"Accept failed with errno %d\n",errno));
     return -1;
   }
@@ -808,7 +842,7 @@ PMOD_EXPORT int PIKE_CONCAT(debug_fd_,NAME) X1 { \
   mt_unlock(&fd_mutex); \
   ret = NAME X2; \
   if(ret == SOCKET_ERROR) { \
-    errno = WSAGetLastError(); \
+    set_errno_from_win32_error (WSAGetLastError()); \
     ret = -1; \
   } \
   FDDEBUG(fprintf(stderr, #NAME " returned %d (%d)\n", ret, errno)); \
@@ -862,7 +896,7 @@ PMOD_EXPORT int debug_fd_connect (FD fd, struct sockaddr *a, int len)
   ret=(SOCKET)da_handle[fd];
   mt_unlock(&fd_mutex);
   ret=connect(ret,a,len); 
-  if(ret == SOCKET_ERROR) errno=WSAGetLastError(); 
+  if(ret == SOCKET_ERROR) set_errno_from_win32_error (WSAGetLastError());
   FDDEBUG(fprintf(stderr, "connect returned %d (%d)\n",ret,errno)); 
   return DO_NOT_WARN((int)ret);
 }
@@ -882,7 +916,7 @@ PMOD_EXPORT int debug_fd_close(FD fd)
     case FD_SOCKET:
       if(closesocket((SOCKET)h))
       {
-	errno=GetLastError();
+	set_errno_from_win32_error (GetLastError());
 	FDDEBUG(fprintf(stderr,"Closing %d (%ld) failed with errno=%d\n",
 			fd, PTRDIFF_T_TO_LONG((ptrdiff_t)da_handle[fd]),
 			errno));
@@ -893,7 +927,7 @@ PMOD_EXPORT int debug_fd_close(FD fd)
     default:
       if(!CloseHandle(h))
       {
-	errno=GetLastError();
+	set_errno_from_win32_error (GetLastError());
 	return -1;
       }
   }
@@ -931,7 +965,7 @@ PMOD_EXPORT ptrdiff_t debug_fd_write(FD fd, void *buf, ptrdiff_t len)
 			     0);
 	if(ret<0)
 	{
-	  errno = WSAGetLastError();
+	  set_errno_from_win32_error (WSAGetLastError());
 	  FDDEBUG(fprintf(stderr, "Write on %d failed (%d)\n", fd, errno));
 	  if (errno == 1) {
 	    /* UGLY kludge */
@@ -952,7 +986,7 @@ PMOD_EXPORT ptrdiff_t debug_fd_write(FD fd, void *buf, ptrdiff_t len)
 		      DO_NOT_WARN((DWORD)len),
 		      &ret,0) && ret<=0)
 	{
-	  errno = GetLastError();
+	  set_errno_from_win32_error (GetLastError());
 	  FDDEBUG(fprintf(stderr, "Write on %d failed (%d)\n", fd, errno));
 	  return -1;
 	}
@@ -988,7 +1022,7 @@ PMOD_EXPORT ptrdiff_t debug_fd_read(FD fd, void *to, ptrdiff_t len)
 		0);
       if(rret<0)
       {
-	errno=WSAGetLastError();
+	set_errno_from_win32_error (WSAGetLastError());
 	FDDEBUG(fprintf(stderr,"Read on %d failed %ld\n",fd,errno));
 	return -1;
       }
@@ -1003,8 +1037,9 @@ PMOD_EXPORT ptrdiff_t debug_fd_read(FD fd, void *to, ptrdiff_t len)
 			  DO_NOT_WARN((DWORD)len),
 			  &ret,0) && ret<=0)
       {
-	errno=GetLastError();
-	switch(errno)
+	unsigned int err = GetLastError();
+	set_errno_from_win32_error (err);
+	switch(err)
 	{
 	  /* Pretend we reached the end of the file */
 	  case ERROR_BROKEN_PIPE:
@@ -1054,7 +1089,7 @@ PMOD_EXPORT PIKE_OFF_T debug_fd_lseek(FD fd, PIKE_OFF_T pos, int where)
     li_pos.QuadPart = pos;
     li_ret.QuadPart = 0;
     if(!SetFilePointerEx(h, li_pos, &li_ret, where)) {
-      errno = GetLastError();
+      set_errno_from_win32_error (GetLastError());
       return -1;
     }
     ret = li_ret.QuadPart;
@@ -1066,7 +1101,7 @@ PMOD_EXPORT PIKE_OFF_T debug_fd_lseek(FD fd, PIKE_OFF_T pos, int where)
     ret = SetFilePointer(h, DO_NOT_WARN((LONG)pos), &high, where);
     if (ret == INVALID_SET_FILE_POINTER &&
 	(err = GetLastError()) != NO_ERROR) {
-      errno = err;
+      set_errno_from_win32_error (err);
       return -1;
     }
     ret += (INT64) high << 32;
@@ -1075,7 +1110,7 @@ PMOD_EXPORT PIKE_OFF_T debug_fd_lseek(FD fd, PIKE_OFF_T pos, int where)
     ret = SetFilePointer(h, (LONG)pos, NULL, where);
     if(ret == INVALID_SET_FILE_POINTER)
     {
-      errno = GetLastError();
+      set_errno_from_win32_error (GetLastError());
       return -1;
     }
 #endif /* INT64 */
@@ -1105,7 +1140,7 @@ PMOD_EXPORT int debug_fd_ftruncate(FD fd, PIKE_OFF_T len)
   if(!~oldfp_lo) {
     err = GetLastError();
     if(err != NO_ERROR) {
-      errno = err;
+      set_errno_from_win32_error (err);
       return -1;
     }
   }
@@ -1121,12 +1156,12 @@ PMOD_EXPORT int debug_fd_ftruncate(FD fd, PIKE_OFF_T len)
       INVALID_SET_FILE_POINTER &&
       (err = GetLastError()) != NO_ERROR) {
     SetFilePointer(h, oldfp_lo, &oldfp_hi, FILE_BEGIN);
-    errno = err;
+    set_errno_from_win32_error (err);
     return -1;
   }
 
   if(!SetEndOfFile(h)) {
-    errno=GetLastError();
+    set_errno_from_win32_error (GetLastError());
     SetFilePointer(h, oldfp_lo, &oldfp_hi, FILE_BEGIN);
     return -1;
   }
@@ -1135,7 +1170,7 @@ PMOD_EXPORT int debug_fd_ftruncate(FD fd, PIKE_OFF_T len)
     if(!~SetFilePointer(h, oldfp_lo, &oldfp_hi, FILE_BEGIN)) {
       err = GetLastError();
       if(err != NO_ERROR) {
-	errno = err;
+	set_errno_from_win32_error (err);
 	return -1;
       }
     }
@@ -1186,7 +1221,7 @@ PMOD_EXPORT int debug_fd_flock(FD fd, int oper)
   }
   if(ret<0)
   {
-    errno=GetLastError();
+    set_errno_from_win32_error (GetLastError());
     return -1;
   }
   
@@ -1233,7 +1268,7 @@ PMOD_EXPORT int debug_fd_fstat(FD fd, PIKE_STAT_T *s)
 	    s->st_size=GetFileSize(da_handle[fd],&high);
 	    if (s->st_size == INVALID_FILE_SIZE &&
 		(err = GetLastError()) != NO_ERROR) {
-	      errno = err;
+	      set_errno_from_win32_error (err);
 	      mt_unlock(&fd_mutex);
 	      return -1;
 	    }
@@ -1245,7 +1280,7 @@ PMOD_EXPORT int debug_fd_fstat(FD fd, PIKE_STAT_T *s)
 	  }
 	  if(!GetFileTime(da_handle[fd], &c, &a, &m))
 	  {
-	    _dosmaperr (GetLastError());
+	    set_errno_from_win32_error (GetLastError());
 	    mt_unlock(&fd_mutex);
 	    return -1;
 	  }
@@ -1310,7 +1345,7 @@ PMOD_EXPORT int debug_fd_select(int fds, FD_SET *a, FD_SET *b, FD_SET *c, struct
   ret=select(fds,a,b,c,t);
   if(ret==SOCKET_ERROR)
   {
-    errno=WSAGetLastError();
+    set_errno_from_win32_error (WSAGetLastError());
     FDDEBUG(fprintf(stderr,"select->%d, errno=%d\n",ret,errno));
     return -1;
   }
@@ -1339,7 +1374,7 @@ PMOD_EXPORT int debug_fd_ioctl(FD fd, int cmd, void *data)
       FDDEBUG(fprintf(stderr,"ioctlsocket returned %ld (%d)\n",ret,errno));
       if(ret==SOCKET_ERROR)
       {
-	errno=WSAGetLastError();
+	set_errno_from_win32_error (WSAGetLastError());
 	return -1;
       }
       return ret;
@@ -1363,7 +1398,7 @@ PMOD_EXPORT FD debug_fd_dup(FD from)
 #endif
   if(!DuplicateHandle(p,da_handle[from],p,&x,0,0,DUPLICATE_SAME_ACCESS))
   {
-    errno=GetLastError();
+    set_errno_from_win32_error (GetLastError());
     mt_unlock(&fd_mutex);
     return -1;
   }
@@ -1386,7 +1421,7 @@ PMOD_EXPORT FD debug_fd_dup2(FD from, FD to)
   mt_lock(&fd_mutex);
   if(!DuplicateHandle(p,da_handle[from],p,&x,0,0,DUPLICATE_SAME_ACCESS))
   {
-    errno=GetLastError();
+    set_errno_from_win32_error (GetLastError());
     mt_unlock(&fd_mutex);
     return -1;
   }
@@ -1395,7 +1430,7 @@ PMOD_EXPORT FD debug_fd_dup2(FD from, FD to)
   {
     if(!CloseHandle(da_handle[to]))
     {
-      errno=GetLastError();
+      set_errno_from_win32_error (GetLastError());
       mt_unlock(&fd_mutex);
       return -1;
     }

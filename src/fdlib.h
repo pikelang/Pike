@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.h,v 1.59 2006/07/05 20:13:56 mast Exp $
+|| $Id: fdlib.h,v 1.60 2008/10/17 17:12:37 mast Exp $
 */
 
 #ifndef FDLIB_H
@@ -117,6 +117,7 @@ typedef off_t PIKE_OFF_T;
 
 
 /* Prototypes begin here */
+PMOD_EXPORT void set_errno_from_win32_error (unsigned long err);
 PMOD_EXPORT char *debug_fd_info(int fd);
 PMOD_EXPORT int debug_fd_query_properties(int fd, int guess);
 void fd_init();
