@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.233 2008/09/29 14:44:09 mast Exp $
+ * $Id: backend.cmod,v 1.234 2008/10/24 17:13:53 grubba Exp $
  *
  * Backend object.
  */
@@ -2282,8 +2282,7 @@ int POLL_DEVICE_SET_EVENTS(struct Backend_struct *me,
   }
 
 #ifdef _REENTRANT
-  /* FIXME: set_busy ought to be backend-specific.
-   * FIXME: Ought to check if we're the backend.
+  /* FIXME: Ought to check if we're the backend.
    */
   if(num_threads>1)
   {
@@ -3292,6 +3291,23 @@ PIKECLASS PollDeviceBackend
 #endif /* PIKE_DEBUG */
 	}
 	if (box->revents) {
+	  if ((box->revents & (PIKE_BIT_FD_READ|PIKE_BIT_FD_WRITE)) &
+	      ~(box->events)) {
+	    /* Robustness paranoia; we've received events that we
+	     * aren't interested in. Unregister the unwanted events
+	     * in case we are out of sync with the poll device.
+	     * Otherwise we risk entering a busy loop.
+	     * Note that the test above may get triggered when the user
+	     * is only interested in out of band info.
+	     */
+	    IF_PD(fprintf(stderr,
+			  "[%d]BACKEND[%d]: Backend is out of sync for fd %d\n"
+			  "[%d]BACKEND[%d]: Wanted: 0x%04x Received: 0x%04x\n",
+			  THR_NO, me->id, fd,
+			  THR_NO, me->id, box->events, box->revents));
+	    pdb_update_fd_set(me, pdb, fd, box->revents|box->events,
+			      box->events);
+	  }
 	next_fd:
 	  /* Hook in the box on the fd_list. */
 	  if (!box->next) {
