@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: oracle.c,v 1.85 2008/09/08 16:05:17 grubba Exp $
+|| $Id: oracle.c,v 1.86 2008/10/28 10:12:43 stewa Exp $
 */
 
 /*
@@ -54,7 +54,7 @@
 
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.85 2008/09/08 16:05:17 grubba Exp $");
+RCSID("$Id: oracle.c,v 1.86 2008/10/28 10:12:43 stewa Exp $");
 
 
 /* User-changable defines: */
@@ -1464,47 +1464,58 @@ static void push_inout_value(struct inout *inout,
     case SQLT_BLOB:
     {
       if((ret = OCILobGetLength(dbcon->context, dbcon->error_handle,
-				inout->u.lob, &loblen)) != OCI_SUCCESS) {
+				inout->u.lob, &loblen)) 
+	 != OCI_SUCCESS) {
 #ifdef ORACLE_DEBUG
 	fprintf(stderr,"OCILobGetLength failed.\n");
 #endif
 	errfunc = "OCILobGetLength";
       } else {
-	amtp = loblen;
-	if((bufp = malloc(loblen))) {
-	  if((ret = OCILobRead(dbcon->context,
-			       dbcon->error_handle,
-			       inout->u.lob, 
-			       &amtp, 
-			       1, 
-			       (dvoid *) bufp,
-			       loblen, 
-			       (dvoid *)0, 
-			       (sb4 (*)(dvoid *, CONST dvoid *, ub4, ub1)) 0,
-			       (ub2) 0, 
-			       (ub1) SQLCS_IMPLICIT)) != OCI_SUCCESS) 
-	    {
 #ifdef ORACLE_DEBUG
-	      fprintf(stderr,"OCILobRead failed\n");
+	fprintf(stderr,"LOB length: %d\n",loblen);
 #endif
-	      errfunc = "OCILobRead";
-	    }
-	}
-	else {
-	  ret = 1;
-	  errfunc = "malloc";
+	amtp = loblen;
+	if(loblen != 0) {
+	  if((bufp = malloc(loblen))) {
+	    if((ret = OCILobRead(dbcon->context,
+				 dbcon->error_handle,
+				 inout->u.lob, 
+				 &amtp, 
+				 1, 
+				 (dvoid *) bufp,
+				 loblen, 
+				 (dvoid *)0, 
+				 (sb4 (*)(dvoid *, CONST dvoid *, ub4, ub1)) 0,
+				 (ub2) 0, 
+				 (ub1) SQLCS_IMPLICIT)) 
+	       != OCI_SUCCESS) 
+	      {
+#ifdef ORACLE_DEBUG
+		fprintf(stderr,"OCILobRead failed\n");
+#endif
+		errfunc = "OCILobRead";
+	      }
+	  }
+	  else {
+	    ret = OCI_SUCCESS + 1;
+	    errfunc = "malloc";
+	  }
 	}
       }
-#ifdef ORACLE_DEBUG
-      fprintf(stderr,"LOB length: %d\n",loblen);
-#endif
-      if(ret == OCI_SUCCESS)
-	push_string(make_shared_binary_string(bufp, loblen));
-      else
-	ora_error_handler(dbcon->error_handle, ret, errfunc);
+
+      if(ret == OCI_SUCCESS) {
+	if(loblen == 0)
+	  push_constant_text("");
+	else
+	  push_string(make_shared_binary_string(bufp, loblen));
+      }
       
       if(bufp)
 	free(bufp);
+      
+      if(ret != OCI_SUCCESS)
+	ora_error_handler(dbcon->error_handle, ret, errfunc);
+      
 #if 0
       /*  Handle automatically freed when environment handle is deallocated.
 	  Not needed according according to doc.*/
@@ -1512,8 +1523,8 @@ static void push_inout_value(struct inout *inout,
       if(inout->u.lob)
 	OCIDescriptorFree((dvoid *) inout->u.lob, (ub4) OCI_DTYPE_LOB);
 #endif
-      }
-      break;
+    }
+    break;
 	
     case SQLT_ODT:
     case SQLT_DAT:
