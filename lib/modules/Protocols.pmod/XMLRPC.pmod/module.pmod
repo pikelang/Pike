@@ -350,8 +350,8 @@ class Client(string|Standards.URI url)
 	     if (c->status != 200)
 	       // The xml-rpc spec says "Unless there's a lower-level
 	       // error, always return 200 OK."
-	       error ("Got invalid return code %d from %O: %O\n", c->status,
-		      url, c->status_desc);
+	       error ("Got invalid return code %d from %O: %O\n%O", c->status,
+		      url, c->status_desc, c->data());
 	     return decode_response(c->data());
 	   };
   }
