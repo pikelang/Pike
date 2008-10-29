@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc_result.c,v 1.58 2008/06/25 11:53:32 srb Exp $
+|| $Id: odbc_result.c,v 1.59 2008/10/29 14:44:38 grubba Exp $
 */
 
 /*
@@ -207,11 +207,12 @@ static void odbc_fix_fields(void)
 #endif
 	    "", buf);
     fprintf(stderr,
+	    "name_len:%d\n"
 	    "sql_type:%d\n"
 	    "precision:%ld\n"
 	    "scale:%d\n"
 	    "nullable:%d\n",
-	    sql_type, precision, scale, nullable);
+	    name_len, sql_type, precision, scale, nullable);
 #endif /* ODBC_DEBUG */
     /* Create the mapping */
     push_text("name");
@@ -574,6 +575,8 @@ static void f_fetch_row(INT32 args)
 	  } else if (field_type == SQL_C_WCHAR) {
 	    fprintf(stderr, "SQL_C_WCHAR\n");
 #endif /* SQL_WCHAR */
+	  } else if (field_type == SQL_C_BINARY) {
+	    fprintf(stderr, "SQL_C_BINARY\n");
 	  } else {
 	    fprintf(stderr, "%d\n", field_type);
 	  }
@@ -604,15 +607,24 @@ static void f_fetch_row(INT32 args)
 
 	  if (code == SQL_SUCCESS_WITH_INFO) {
 	    /* Might be more data to get. We need to look at the SQLSTATE. */
-	    do {
-	      unsigned char sqlstate[256];
-	      SDWORD native_error; /* Ignored. */
-	      unsigned char errmsg[1]; /* Ignored. */
-	      SWORD errmsg_len;	/* Ignored. */
-	      RETCODE code2 = SQLError (SQL_NULL_HENV, SQL_NULL_HDBC, hstmt,
-					sqlstate, &native_error,
-					errmsg, 1, &errmsg_len);
-	      if (code2 == SQL_SUCCESS || code2 == SQL_SUCCESS_WITH_INFO) {
+	    unsigned char sqlstate[256];
+	    SQLINTEGER native_error; /* Ignored. */
+	    unsigned char errmsg[1]; /* Ignored. */
+	    SQLSMALLINT errmsg_len;	/* Ignored. */
+	    int i;
+	    for (i = 1; i < 100; i++) {
+#ifdef SQL_HANDLE_STMT
+	      RETCODE code2 =
+		SQLGetDiagRec(SQL_HANDLE_STMT, hstmt, i, sqlstate,
+			      &native_error, errmsg, 1, &errmsg_len);
+#else
+	      RETCODE code2 =
+		SQLError (SQL_NULL_HENV, SQL_NULL_HDBC, hstmt,
+			  sqlstate, &native_error,
+			  errmsg, 1, &errmsg_len);
+#endif
+	      if ((code2 == SQL_SUCCESS) ||
+		  (code2 == SQL_SUCCESS_WITH_INFO)) {
 #ifdef ODBC_DEBUG
 		fprintf (stderr, "ODBC:fetch_row(): Got SQL_SUCCESS_WITH_INFO "
 			 "- SQLSTATE is: %s\n", sqlstate);
@@ -622,11 +634,26 @@ static void f_fetch_row(INT32 args)
 		  got_more_data = 1;
 		  break;
 		}
-	      }
-	      else
-		/* FIXME: Proper error reporting. */
+		continue;
+#ifdef SQL_NO_DATA
+	      } else if (code2 == SQL_NO_DATA) {
+#ifdef ODBC_DEBUG
+		fprintf(stderr, "ODBC:fetch_row(): Got SQL_SUCCESS_WITH_INFO, "
+			"but no SQLSTATE for field %d.\n", i);
+#endif
+		got_more_data = (i == 1);
 		break;
-	    } while (1);
+#endif
+	      } else {
+		/* FIXME: Proper error reporting. */
+#ifdef ODBC_DEBUG
+		fprintf(stderr, "ODBC:fetch_row(): Got SQL_SUCCESS_WITH_INFO, "
+			"but failed to retrieve SQLSTATE.\n"
+			"code: %d\n", code2);
+#endif
+		break;
+	      }
+	    }
 	  }
 
 	  ODBC_DISALLOW();
@@ -657,43 +684,86 @@ static void f_fetch_row(INT32 args)
 	      push_undefined();
 	    }
 	    break;
-	  } else if (got_more_data) {
-	    /* Data truncated. */
-	    num_strings++;
-#ifdef ODBC_DEBUG
-	    fprintf(stderr, "ODBC:fetch_row(): [%d] got truncated\n",
-		    num_strings);
-#endif /* ODBC_DEBUG */
-	    if (field_type == SQL_C_BINARY) {
-	      push_string(make_shared_binary_string(blob_buf, BLOB_BUFSIZ));
-	    } else {
-	      /* SQL_C_CHAR and SQL_C_WCHAR's are NUL-terminated... */
-#ifdef SQL_WCHAR
-	      if (field_type == SQL_C_WCHAR) {
-		push_sqlwchar((SQLWCHAR *)blob_buf, BLOB_BUFSIZ - 1);
-	      } else {
-#endif
-		push_string(make_shared_binary_string(blob_buf, BLOB_BUFSIZ - 1));
-#ifdef SQL_WCHAR
-	      }
-#endif
-	    }
 	  } else {
-	    num_strings++;
 #ifdef ODBC_DEBUG
 	    fprintf(stderr, "ODBC:fetch_row(): [%d] got data, length %d\n",
 		    num_strings, (int) len);
 #endif /* ODBC_DEBUG */
-	    if (len < (BLOB_BUFSIZ
+	    if (got_more_data ||
+		(len >= (BLOB_BUFSIZ
 #ifdef SQL_WCHAR
-		       * ((field_type == SQL_C_WCHAR) ?
-			  (int) sizeof(SQLWCHAR):1)
+			 * ((field_type == SQL_C_WCHAR) ?
+			    (int) sizeof(SQLWCHAR):1)
 #endif
-		      )
+			 ))
 #ifdef SQL_NO_TOTAL
-                && (len != SQL_NO_TOTAL)
+		  || (len == SQL_NO_TOTAL)
 #endif /* SQL_NO_TOTAL */
-                ) {
+		) {
+	      /* Data truncated. */
+	      num_strings++;
+#ifdef ODBC_DEBUG
+	      fprintf(stderr, "ODBC:fetch_row(): [%d] got truncated\n",
+		      num_strings);
+#endif /* ODBC_DEBUG */
+	      if (field_type == SQL_C_BINARY) {
+		push_string(make_shared_binary_string(blob_buf, BLOB_BUFSIZ));
+	      } else {
+		/* SQL_C_CHAR and SQL_C_WCHAR's are NUL-terminated... */
+#ifdef SQL_WCHAR
+		if (field_type == SQL_C_WCHAR) {
+		  push_sqlwchar((SQLWCHAR *)blob_buf, BLOB_BUFSIZ - 1);
+		} else {
+#endif
+		  push_string(make_shared_binary_string(blob_buf, BLOB_BUFSIZ - 1));
+#ifdef SQL_WCHAR
+		}
+#endif
+	      }
+	      if (!got_more_data
+#ifdef SQL_NO_TOTAL
+		  && (len != SQL_NO_TOTAL)
+#endif /* SQL_NO_TOTAL */
+		  ) {
+		/* Truncated, but possibly no support for chained SQLGetData
+		 * calls. */
+		/* NB: len is always in bytes - no wide char specials
+		 * necessary. */
+		char *buf = xalloc(len+2);
+		SQLLEN newlen = 0;
+
+		ODBC_ALLOW();
+		code = SQLGetData(hstmt, (SQLUSMALLINT)(i+1),
+				  field_type, buf, len+1, &newlen);
+		ODBC_DISALLOW();
+
+		odbc_check_error("odbc->fetch_row", "SQLGetData() failed to "
+				 "fetch long field\n", code, NULL, NULL);
+		if (len == newlen) {
+		  /* Got the entire result in one go.
+		   * ==> Chained SQLGetData calls not supported.
+		   * Pop the truncated string pushed above. */
+		  pop_stack();
+		} else if ((newlen + BLOB_BUFSIZ) != len) {
+		  Pike_error("odbc->fetch_row(): "
+			     "Unexpected length from SQLGetData(): "
+			     "%d (expected %d or %d)\n",
+			     (int) newlen, (int) len, (int) len - BLOB_BUFSIZ);
+		} else num_strings++;
+#ifdef SQL_WCHAR
+		if (field_type == SQL_C_WCHAR) {
+		  push_sqlwchar((SQLWCHAR *)buf, len / sizeof(SQLWCHAR));
+		} else {
+#endif
+		  push_string(make_shared_binary_string(buf, len));
+#ifdef SQL_WCHAR
+		}
+#endif
+		free(buf);
+		break;
+	      }
+	    } else {
+	      num_strings++;
 #ifdef SQL_WCHAR
 	      if (field_type == SQL_C_WCHAR) {
 		push_sqlwchar((SQLWCHAR *)blob_buf, len / sizeof(SQLWCHAR));
@@ -703,37 +773,8 @@ static void f_fetch_row(INT32 args)
 #ifdef SQL_WCHAR
 	      }
 #endif
-	    } else {
-	      /* Truncated, but no support for chained SQLGetData calls. */
-	      /* NB: len is always in bytes - no wide char specials
-	       * necessary. */
-	      char *buf = xalloc(len+2);
-	      SQLLEN newlen = 0;
-
-	      ODBC_ALLOW();
-	      code = SQLGetData(hstmt, (SQLUSMALLINT)(i+1),
-				field_type, buf, len+1, &newlen);
-	      ODBC_DISALLOW();
-
-	      odbc_check_error("odbc->fetch_row", "SQLGetData() failed to "
-			       "fetch long field\n", code, NULL, NULL);
-	      if (len != newlen) {
-		Pike_error("odbc->fetch_row(): "
-			   "Unexpected length from SQLGetData(): "
-			   "%d (expected %d)\n", (int) newlen, (int) len);
-	      }
-#ifdef SQL_WCHAR
-	      if (field_type == SQL_C_WCHAR) {
-		push_sqlwchar((SQLWCHAR *)buf, len / sizeof(SQLWCHAR));
-	      } else {
-#endif
-		push_string(make_shared_binary_string(buf, len));
-#ifdef SQL_WCHAR
-	      }
-#endif
-	      free(buf);
+	      break;
 	    }
-	    break;
 	  }
 	}
 	if (num_strings > 1) {
