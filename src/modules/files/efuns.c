@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.186 2008/07/02 16:47:58 jonasw Exp $
+|| $Id: efuns.c,v 1.187 2008/10/30 15:51:06 jonasw Exp $
 */
 
 #include "global.h"
@@ -925,7 +925,8 @@ void f_mkdir(INT32 args)
   struct pike_string *str;
   int mode;
   int i;
-
+  char *s, *s_dup;
+  
   VALID_FILE_IO("mkdir","write");
 
   if(!args)
@@ -954,26 +955,21 @@ void f_mkdir(INT32 args)
     return;
   }
 
-#if MKDIR_ARGS == 2
-  {
-    /* Remove trailing / which is not accepted by all mkdir()
-       implementations (e.g. Mac OS X) */
-    char *s = str->str;
-    char *s_dup = NULL;
-    if (str->len && s[str->len - 1] == '/') {
-      if ((s_dup = strdup(s))) {
-	s = s_dup;
-	s[str->len - 1] = '\0';
-      }
+  /* Remove trailing / or \ which is not accepted by all mkdir()
+     implementations (e.g. Mac OS X and Windows) */
+  s = str->str;
+  s_dup = NULL;
+  if (str->len && (s[str->len - 1] == '/' || s[str->len - 1] == '\\')) {
+    if ((s_dup = strdup(s))) {
+      s = s_dup;
+      s[str->len - 1] = '\0';
     }
-  
-    THREADS_ALLOW_UID();
-    i = mkdir(s, mode) != -1;
-    THREADS_DISALLOW_UID();
-  
-    if (s_dup)
-      free(s_dup);
   }
+  
+#if MKDIR_ARGS == 2
+  THREADS_ALLOW_UID();
+  i = mkdir(s, mode) != -1;
+  THREADS_DISALLOW_UID();
 #else
 
 #ifdef HAVE_LSTAT
@@ -986,7 +982,7 @@ void f_mkdir(INT32 args)
     /* Most OS's should have MKDIR_ARGS == 2 nowadays fortunately. */
     int mask = umask(0);
     THREADS_ALLOW_UID();
-    i = mkdir(str->str) != -1;
+    i = mkdir(s) != -1;
     umask(mask);
     REVEAL_GLOBAL_VARIABLES();
     if (i) {
@@ -996,14 +992,14 @@ void f_mkdir(INT32 args)
        */
       struct stat statbuf1;
       struct stat statbuf2;
-      i = LSTAT(str->str, &statbuf1) != -1;
+      i = LSTAT(s, &statbuf1) != -1;
       if (i) {
 	i = ((statbuf1.st_mode & S_IFMT) == S_IFDIR);
       }
       if (i) {
 	mode = ((mode & 0777) | (statbuf1.st_mode & ~0777)) & ~mask;
 	do {
-	  i = chmod(str->str, mode) != -1;
+	  i = chmod(s, mode) != -1;
 	  if (i || errno != EINTR) break;
 	  /* Must have do { ... } while(0) around these since
 	   * THREADS_DISALLOW_UID contains "} while (0)" and
@@ -1021,7 +1017,7 @@ void f_mkdir(INT32 args)
 	} while (1);
       }
       if (i) {
-	i = LSTAT(str->str, &statbuf2) != -1;
+	i = LSTAT(s, &statbuf2) != -1;
       }
       if (i) {
 	i = (statbuf2.st_mode == mode) && (statbuf1.st_ino == statbuf2.st_ino);
@@ -1030,13 +1026,17 @@ void f_mkdir(INT32 args)
 	}
       }
       if (!i) {
-	rmdir(str->str);
+	rmdir(s);
       }
     }
     HIDE_GLOBAL_VARIABLES();
     THREADS_DISALLOW_UID();
   }
 #endif
+  
+  if (s_dup)
+    free(s_dup);
+  
   pop_n_elems(args);
   push_int(i);
 }
