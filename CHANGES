@@ -716,8 +716,8 @@ o Parser.XML.Tree
 
   - The SimpleNodes do not have parent pointers, this means that they
     do not generate cyclic data structures (and thus less garbage, and
-    no need for zap_tree()), but also that it is not possible to find
-    the root of a tree from any node in the tree.
+    no need for zap_tree()), but also that it is no longer possible to
+    find the root of a tree from any node in the tree.
 
   - Some methods in SimpleNode return different values than the
     corresponding method in Node; notably SimpleNode()->add_child(),
@@ -920,19 +920,20 @@ o Sql
 
   - Support UNDEFINED to designate NULL in emulated bindings.
 
-  - Support for ODBC DSN files. FIXME: Example from grubba?
+  - Support for ODBC DSN files.
 
       Sql.Sql db = Sql.Sql("dsn://user:pass@host/database");
 
-  - Support for the TDS protocol, used by Sybase and Microsoft SQL
-    server.
+  - Some native support for the TDS protocol, used by Sybase and
+    Microsoft SQL server.
 
       Sql.Sql db = Sql.Sql("tds://user:pass@host/database");
 
   - Support for the SQLite database added. A raw interface is
-    available through the SQLite module. FIXME: Syntax?
+    available through the SQLite module.
 
-      Sql.Sql db = Sql.Sql("sqlite://path/to/file");
+      Sql.Sql db = Sql.Sql("sqlite://relative/path/to/file");
+      Sql.Sql db = Sql.Sql("sqlite:///absolute/path/to/file");
 
   - Sql.pgsql.  New driver for native PostgreSQL network protocol support.
     It implements a superset of the existing Postgres driver.
@@ -1000,7 +1001,15 @@ o Standards.UUID
 
 o Standards.XML.Wix
 
-  FIXME
+  - Updated to support a more recent version of the Wix tool chain.
+
+  - Improved generation of 8.3-style filenames.
+
+  - Added support for Shortcut and IniFile-nodes.
+
+  - Added support for overriding the language and installer version.
+
+  - Improved support for TTF-files.
 
 o Stdio
 
