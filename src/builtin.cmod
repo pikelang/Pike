@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.225 2008/10/04 18:31:12 mast Exp $
+|| $Id: builtin.cmod,v 1.226 2008/11/02 19:57:58 grubba Exp $
 */
 
 #include "global.h"
@@ -1019,10 +1019,15 @@ PIKEFUN string function_name(program|function func)
       {
 	struct pike_trampoline *t;
 	t=((struct pike_trampoline *)func->u.object->storage);
+
+	/* FIXME: Adjust lambda names. */
+      
 	if(t->frame->current_object->prog)
 	  REF_RETURN ID_FROM_INT(t->frame->current_object->prog,
 				 t->func)->name;
       }
+
+      /* FIXME: Adjust lambda names. */
       
       REF_RETURN ID_FROM_INT(func->u.object->prog, func->subtype)->name;
   }
@@ -3981,7 +3986,13 @@ void init_builtin(void)
 void exit_builtin(void)
 {
   EXIT
+#ifndef DO_PIKE_CLEANUP
+  /* This is performed by exit_builtin_modules() at a later point
+   * in this case, so that the pike_list_node's are valid at cleanup
+   * time, thus avoiding "got invalid pointer" fatals at exit.
+   */
   free_all_pike_list_node_blocks();
+#endif
 #ifndef USE_SETENV
   if (env_allocs) free_mapping (env_allocs);
 #endif
