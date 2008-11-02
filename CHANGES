@@ -1105,8 +1105,14 @@ o Fuse
 
 o ADT.List
 
-  A simple linked list of values.
-  FIXME: Example
+  A simple doubly linked list of values.
+
+    ADT.List l = ADT.List(1, 2, 3);
+    l->insert(-1, 0);
+    l->append(4, 5);
+    foreach(l; int index; int value) {
+      werror("  %d: value: %d\n", index, value);
+    }
 
 o ADT.Trie
 
