@@ -1,4 +1,4 @@
-// $Id: Terminfo.pmod,v 1.15 2006/06/20 17:13:46 grubba Exp $
+// $Id: Terminfo.pmod,v 1.16 2008/11/03 08:44:09 stewa Exp $
 #pike __REAL_VERSION__
 
 
@@ -348,7 +348,7 @@ class Terminfo {
     aliases = (f->read(sname)-"\0")/"|";
     {
       int blen = nbool;
-      if((nbool&1) && !bug_compat)
+      if(((nbool+sname)&1) && !bug_compat)
 	blen++;
       array(int) bools = values(f->read(blen)[..nbool-1]);
       if (sizeof(bools)>sizeof(boolnames))
