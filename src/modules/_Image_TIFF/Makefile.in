@@ -1,8 +1,11 @@
-# $Id: Makefile.in,v 1.4 2003/05/04 13:32:21 mast Exp $
+# $Id: Makefile.in,v 1.5 2008/11/03 12:54:19 grubba Exp $
 @make_variables@
 VPATH=@srcdir@
 OBJS=image_tiff.o
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
+
+DUMMY=dummy.o
+LINKER_OPTIONS=modules/_Image_TIFF/dummy.o
 
 CONFIG_HEADERS=@CONFIG_HEADERS@
 

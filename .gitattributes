@@ -656,6 +656,7 @@ testfont binary
 /src/modules/_Image_TIFF/Makefile.in foreign_ident
 /src/modules/_Image_TIFF/acconfig.h foreign_ident
 /src/modules/_Image_TIFF/configure.in foreign_ident
+/src/modules/_Image_TIFF/dummy.c foreign_ident
 /src/modules/_Image_TIFF/image_tiff.c foreign_ident
 /src/modules/_Image_TTF/Makefile.in foreign_ident
 /src/modules/_Image_TTF/acconfig.h foreign_ident
