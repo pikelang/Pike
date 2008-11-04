@@ -1221,7 +1221,7 @@ class SuperEvent
 		    ","));
    }
 
-   function(string:Event) `-> = `[];
+   Event `-> (string s) {return `[] (s);}
    Event `[](string s)
    {
       if (!id2event) id2event=mkmapping(events->id,events);

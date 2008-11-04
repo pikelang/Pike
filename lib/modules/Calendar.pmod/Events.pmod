@@ -375,7 +375,7 @@ program|Event.Event `[](string s)
 {
    return ::`[](s) || magic_event(s);
 }
-function `-> = `[];
+program|Event.Event `-> (string s) {return `[] (s);}
 
 // Don't load Geogrphy.Countries unless we have to
 object country_lookup=0;
