@@ -509,7 +509,7 @@ class Runtime_timezone_compiler
 		  offset==other->offset &&
 		  s==other->s );
       }
-      function(Shift:int) __equal=`==;
+      int __equal (Shift other) {return `== (other);}
 
       constant wday=(["Mon":1,"Tue":2,"Wed":3,"Thu":4,"Fri":5,"Sat":6,"Sun":7]);
       constant vmonth=(<"Jan","Feb","Mar","Apr","May","Jun",
@@ -1285,7 +1285,6 @@ class Runtime_timezone_compiler
       static int offset_to_utc;  
       string name;
 
-      static function(string:string) tzformat;
       static array names;
 
 
@@ -1313,6 +1312,16 @@ class Runtime_timezone_compiler
 	    });
       }
 
+      static string tzformat (string s)
+      {
+	 if (names)
+	 {
+	    if (s=="") return names[0]; else return names[1];
+	 }
+	 else
+	    return sprintf(name,s);
+      }
+
       static void create(int offset,string _name) 
       { 
 	 offset_to_utc=offset; 
@@ -1320,13 +1329,7 @@ class Runtime_timezone_compiler
 	 if (search(name,"/")!=-1)
 	 {
 	    names=name/"/";
-	    tzformat=lambda(string s)
-		     {
-			if (s=="") return names[0]; else return names[1];
-		     };
 	 }
-	 else
-	    tzformat=lambda(string s) { return sprintf(name,s); };
       }
 
 // the Rule:
