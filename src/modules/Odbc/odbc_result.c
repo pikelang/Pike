@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc_result.c,v 1.59 2008/10/29 14:44:38 grubba Exp $
+|| $Id: odbc_result.c,v 1.60 2008/11/04 13:54:43 grubba Exp $
 */
 
 /*
@@ -553,237 +553,135 @@ static void f_fetch_row(INT32 args)
 		     code, NULL, NULL);
  
     for (i=0; i < PIKE_ODBC_RES->num_fields; i++) {
-        /* BLOB */
-        char
-	  blob_buf[(BLOB_BUFSIZ+1)
+      SQLLEN len = 0;
+      SWORD field_type = PIKE_ODBC_RES->field_info[i].type;
+      static char dummy_buf[4];
+
+      /* First get the size of the data. */
+
+      ODBC_ALLOW();
+
+      code = SQLGetData(hstmt, (SQLUSMALLINT)(i+1),
+			field_type, dummy_buf, 0, &len);
 #ifdef SQL_WCHAR
-		   * sizeof(SQLWCHAR)
-#endif
-		   ];
-	int num_strings = 0;
-	SQLLEN len = 0;
-	SWORD field_type = PIKE_ODBC_RES->field_info[i].type;
-
-	while(1) {
-	  int got_more_data = 0;
-
+      if (code == SQL_NULL_DATA && (field_type == SQL_C_WCHAR)) {
+	/* Kludge for FreeTDS which doesn't support WCHAR.
+	 * Refetch as a normal char.
+	 */
 #ifdef ODBC_DEBUG
-	  fprintf(stderr, "ODBC:fetch_row(): field_info[%d].type: ", i);
-	  if (field_type == SQL_C_CHAR) {
-	    fprintf(stderr, "SQL_C_CHAR\n");
-#ifdef SQL_WCHAR
-	  } else if (field_type == SQL_C_WCHAR) {
-	    fprintf(stderr, "SQL_C_WCHAR\n");
-#endif /* SQL_WCHAR */
-	  } else if (field_type == SQL_C_BINARY) {
-	    fprintf(stderr, "SQL_C_BINARY\n");
-	  } else {
-	    fprintf(stderr, "%d\n", field_type);
-	  }
+	fprintf(stderr, "ODBC:fetch_row(): Field %d: WCHAR not supported.\n",
+		i + 1);
 #endif /* ODBC_DEBUG */
+	field_type = SQL_C_CHAR;
+	code = SQLGetData(hstmt, (SQLUSMALLINT)(i+1),
+			  field_type, dummy_buf, 0, &len);
+      }
+#endif
+
+      ODBC_DISALLOW();
+
+#ifdef SQL_WCHAR
+      /* In case the type got changed in the kludge above. */
+      PIKE_ODBC_RES->field_info[i].type = field_type;
+#endif
+
+      if (code == SQL_NO_DATA_FOUND) {
+	/* All data already returned. */
+#ifdef ODBC_DEBUG
+	fprintf(stderr, "ODBC:fetch_row(): NO DATA FOUND\n");
+#endif /* ODBC_DEBUG */
+	push_empty_string();
+	continue;
+      }
+      odbc_check_error("odbc->fetch_row", "SQLGetData() failed",
+		       code, NULL, NULL);
+      if (len == SQL_NULL_DATA) {
+#ifdef ODBC_DEBUG
+	fprintf(stderr, "ODBC:fetch_row(): NULL\n");
+#endif /* ODBC_DEBUG */
+	/* NULL */
+	push_undefined();
+      } else if (len == 0) {
+	push_empty_string();
+      } else {
+	struct pike_string *s;
+	SQLLEN bytes;
+	int num_strings = 0;
+
+	while((bytes = len)) {
+#ifdef SQL_NO_TOTAL
+	  if (len == SQL_NO_TOTAL) {
+	    bytes = BLOB_BUFSIZ;
+	  }
+#endif /* SQL_NO_TOTAL */
+	  switch(field_type) {
+	  case SQL_C_CHAR:
+	  default:
+	  case SQL_C_BINARY:
+	    s = begin_shared_string(bytes);
+	    break;
+#ifdef SQL_WCHAR
+	  case SQL_C_WCHAR:
+	    s = begin_wide_shared_string(bytes/sizeof(SQLWCHAR),
+					 sizeof(SQLWCHAR)>2?2:1);
+	    break;
+#endif /* SQL_WCHAR */
+	  }
 
 	  ODBC_ALLOW();
 
 	  code = SQLGetData(hstmt, (SQLUSMALLINT)(i+1),
-			    field_type,
-			    blob_buf, BLOB_BUFSIZ
-#ifdef SQL_WCHAR
-			    * ((field_type == SQL_C_WCHAR) ? sizeof(SQLWCHAR):1)
-#endif
-			    , &len);
-#ifdef SQL_WCHAR
-	  if (code == SQL_NULL_DATA && (field_type == SQL_C_WCHAR)) {
-	    /* Kludge for FreeTDS which doesn't support WCHAR.
-	     * Refetch as a normal char.
-	     */
-#ifdef ODBC_DEBUG
-	    fprintf(stderr, "ODBC:fetch_row(): WCHAR not supported.\n");
-#endif /* ODBC_DEBUG */
-	    field_type = SQL_C_CHAR;
-	    code = SQLGetData(hstmt, (SQLUSMALLINT)(i+1),
-			      field_type, blob_buf, BLOB_BUFSIZ, &len);
-	  }
-#endif
-
-	  if (code == SQL_SUCCESS_WITH_INFO) {
-	    /* Might be more data to get. We need to look at the SQLSTATE. */
-	    unsigned char sqlstate[256];
-	    SQLINTEGER native_error; /* Ignored. */
-	    unsigned char errmsg[1]; /* Ignored. */
-	    SQLSMALLINT errmsg_len;	/* Ignored. */
-	    int i;
-	    for (i = 1; i < 100; i++) {
-#ifdef SQL_HANDLE_STMT
-	      RETCODE code2 =
-		SQLGetDiagRec(SQL_HANDLE_STMT, hstmt, i, sqlstate,
-			      &native_error, errmsg, 1, &errmsg_len);
-#else
-	      RETCODE code2 =
-		SQLError (SQL_NULL_HENV, SQL_NULL_HDBC, hstmt,
-			  sqlstate, &native_error,
-			  errmsg, 1, &errmsg_len);
-#endif
-	      if ((code2 == SQL_SUCCESS) ||
-		  (code2 == SQL_SUCCESS_WITH_INFO)) {
-#ifdef ODBC_DEBUG
-		fprintf (stderr, "ODBC:fetch_row(): Got SQL_SUCCESS_WITH_INFO "
-			 "- SQLSTATE is: %s\n", sqlstate);
-#endif
-		if (!strcmp ((char *) sqlstate, "01004")) {
-		  /* SQLSTATE 01004: String data, right truncated */
-		  got_more_data = 1;
-		  break;
-		}
-		continue;
-#ifdef SQL_NO_DATA
-	      } else if (code2 == SQL_NO_DATA) {
-#ifdef ODBC_DEBUG
-		fprintf(stderr, "ODBC:fetch_row(): Got SQL_SUCCESS_WITH_INFO, "
-			"but no SQLSTATE for field %d.\n", i);
-#endif
-		got_more_data = (i == 1);
-		break;
-#endif
-	      } else {
-		/* FIXME: Proper error reporting. */
-#ifdef ODBC_DEBUG
-		fprintf(stderr, "ODBC:fetch_row(): Got SQL_SUCCESS_WITH_INFO, "
-			"but failed to retrieve SQLSTATE.\n"
-			"code: %d\n", code2);
-#endif
-		break;
-	      }
-	    }
-	  }
+			    field_type, s->str, bytes, &len);
 
 	  ODBC_DISALLOW();
 
-#ifdef SQL_WCHAR
-	  /* In case the type got changed in the kludge above. */
-	  PIKE_ODBC_RES->field_info[i].type = field_type;
-#endif
-
+	  num_strings++;
+#ifdef ODBC_DEBUG
+	  fprintf(stderr, "ODBC:fetch_row(): %d:%d: Got %d/%d bytes.\n",
+		  i+1, num_strings, bytes, len);
+#endif /* ODBC_DEBUG */
 	  if (code == SQL_NO_DATA_FOUND) {
-#ifdef ODBC_DEBUG
-	    fprintf(stderr, "ODBC:fetch_row(): NO DATA FOUND\n");
-#endif /* ODBC_DEBUG */
-	    if (!num_strings) {
-	      num_strings++;
-	      push_empty_string();
-	    }
-	    break;
-	  }
-	  odbc_check_error("odbc->fetch_row", "SQLGetData() failed",
-			   code, NULL, NULL);
-	  if (len == SQL_NULL_DATA) {
-#ifdef ODBC_DEBUG
-	    fprintf(stderr, "ODBC:fetch_row(): NULL\n");
-#endif /* ODBC_DEBUG */
-	    if (!num_strings) {
-	      /* NULL */
-	      push_undefined();
-	    }
-	    break;
+	    /* No data or end marker. */
+	    free_string(s);
+	    push_empty_string();
 	  } else {
-#ifdef ODBC_DEBUG
-	    fprintf(stderr, "ODBC:fetch_row(): [%d] got data, length %d\n",
-		    num_strings, (int) len);
-#endif /* ODBC_DEBUG */
-	    if (got_more_data ||
-		(len >= (BLOB_BUFSIZ
-#ifdef SQL_WCHAR
-			 * ((field_type == SQL_C_WCHAR) ?
-			    (int) sizeof(SQLWCHAR):1)
-#endif
-			 ))
+	    odbc_check_error("odbc->fetch_row", "SQLGetData() failed",
+			     code, NULL, NULL);
+	    if (len == bytes) {
+	      push_string(end_shared_string(s));
+	    } else if (!len) {
+	      free_string(s);
+	      push_empty_string();
 #ifdef SQL_NO_TOTAL
-		  || (len == SQL_NO_TOTAL)
-#endif /* SQL_NO_TOTAL */
-		) {
-	      /* Data truncated. */
-	      num_strings++;
+	    } else if (len == SQL_NO_TOTAL) {
+	      push_string(end_shared_string(s));
 #ifdef ODBC_DEBUG
-	      fprintf(stderr, "ODBC:fetch_row(): [%d] got truncated\n",
-		      num_strings);
+	      fprintf(stderr, "ODBC:fetch_row(): More data remaining.\n");
 #endif /* ODBC_DEBUG */
-	      if (field_type == SQL_C_BINARY) {
-		push_string(make_shared_binary_string(blob_buf, BLOB_BUFSIZ));
-	      } else {
-		/* SQL_C_CHAR and SQL_C_WCHAR's are NUL-terminated... */
-#ifdef SQL_WCHAR
-		if (field_type == SQL_C_WCHAR) {
-		  push_sqlwchar((SQLWCHAR *)blob_buf, BLOB_BUFSIZ - 1);
-		} else {
-#endif
-		  push_string(make_shared_binary_string(blob_buf, BLOB_BUFSIZ - 1));
-#ifdef SQL_WCHAR
-		}
-#endif
-	      }
-	      if (!got_more_data
-#ifdef SQL_NO_TOTAL
-		  && (len != SQL_NO_TOTAL)
+	      continue;
 #endif /* SQL_NO_TOTAL */
-		  ) {
-		/* Truncated, but possibly no support for chained SQLGetData
-		 * calls. */
-		/* NB: len is always in bytes - no wide char specials
-		 * necessary. */
-		char *buf = xalloc(len+2);
-		SQLLEN newlen = 0;
-
-		ODBC_ALLOW();
-		code = SQLGetData(hstmt, (SQLUSMALLINT)(i+1),
-				  field_type, buf, len+1, &newlen);
-		ODBC_DISALLOW();
-
-		odbc_check_error("odbc->fetch_row", "SQLGetData() failed to "
-				 "fetch long field\n", code, NULL, NULL);
-		if (len == newlen) {
-		  /* Got the entire result in one go.
-		   * ==> Chained SQLGetData calls not supported.
-		   * Pop the truncated string pushed above. */
-		  pop_stack();
-		} else if ((newlen + BLOB_BUFSIZ) != len) {
-		  Pike_error("odbc->fetch_row(): "
-			     "Unexpected length from SQLGetData(): "
-			     "%d (expected %d or %d)\n",
-			     (int) newlen, (int) len, (int) len - BLOB_BUFSIZ);
-		} else num_strings++;
-#ifdef SQL_WCHAR
-		if (field_type == SQL_C_WCHAR) {
-		  push_sqlwchar((SQLWCHAR *)buf, len / sizeof(SQLWCHAR));
-		} else {
-#endif
-		  push_string(make_shared_binary_string(buf, len));
-#ifdef SQL_WCHAR
-		}
-#endif
-		free(buf);
-		break;
-	      }
+	    } else if (len < bytes) {
+	      push_string(end_and_resize_shared_string(s, len));
 	    } else {
-	      num_strings++;
-#ifdef SQL_WCHAR
-	      if (field_type == SQL_C_WCHAR) {
-		push_sqlwchar((SQLWCHAR *)blob_buf, len / sizeof(SQLWCHAR));
-	      } else {
-#endif
-		push_string(make_shared_binary_string(blob_buf, len));
-#ifdef SQL_WCHAR
+	      push_string(end_shared_string(s));
+	      if (len > bytes) {
+		len = len-bytes;
+#ifdef ODBC_DEBUG
+		fprintf(stderr, "ODBC:fetch_row(): %d bytes remaining.\n",
+			len);
+#endif /* ODBC_DEBUG */
+		continue;
 	      }
-#endif
-	      break;
 	    }
 	  }
+	  break;
 	}
-	if (num_strings > 1) {
-#ifdef ODBC_DEBUG
-	  fprintf(stderr, "ODBC:fetch_row(): Joining %d strings\n",
-		  num_strings);
-#endif /* ODBC_DEBUG */
+	if (!num_strings) {
+	  push_empty_string();
+	} else if (num_strings > 1) {
 	  f_add(num_strings);
 	}
+      }
     }
     f_aggregate(PIKE_ODBC_RES->num_fields);
   }
