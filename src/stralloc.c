@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.159 2008/06/23 18:56:56 mast Exp $
+|| $Id: stralloc.c,v 1.160 2008/11/05 12:10:06 grubba Exp $
 */
 
 #include "global.h"
@@ -24,7 +24,7 @@
 #include <ctype.h>
 #include <math.h>
 
-RCSID("$Id: stralloc.c,v 1.159 2008/06/23 18:56:56 mast Exp $");
+RCSID("$Id: stralloc.c,v 1.160 2008/11/05 12:10:06 grubba Exp $");
 
 /* #define STRALLOC_USE_PRIMES */
 
@@ -755,9 +755,8 @@ PMOD_EXPORT struct pike_string *end_and_resize_shared_string(struct pike_string 
   if(len > str->len)
     Pike_fatal("Cannot extend string here!\n");
 #endif
-  if( str->len <= SHORT_STRING_THRESHOLD ?
-      (len <= SHORT_STRING_THRESHOLD) :
-      (len >  SHORT_STRING_THRESHOLD) && str->len  > len/2 )
+  if( (str->len <= SHORT_STRING_THRESHOLD) ||
+      ((len > SHORT_STRING_THRESHOLD) && (str->len <= (len<<1))) )
   {
     str->len=len;
     str->str[len]=0;
