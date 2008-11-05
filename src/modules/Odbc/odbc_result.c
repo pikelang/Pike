@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc_result.c,v 1.60 2008/11/04 13:54:43 grubba Exp $
+|| $Id: odbc_result.c,v 1.61 2008/11/05 11:52:26 grubba Exp $
 */
 
 /*
@@ -606,11 +606,28 @@ static void f_fetch_row(INT32 args)
       } else {
 	struct pike_string *s;
 	SQLLEN bytes;
+	SQLLEN pad = 0;
 	int num_strings = 0;
+
+	switch(field_type) {
+	case SQL_C_CHAR:
+	  /* Adjust for NUL. */
+	  pad = 1;
+	  break;
+	default:
+	case SQL_C_BINARY:
+	  break;
+#ifdef SQL_WCHAR
+	case SQL_C_WCHAR:
+	  /* Adjust for NUL. */
+	  pad = sizeof(SQLWCHAR);
+	  break;
+#endif /* SQL_WCHAR */
+	}
 
 	while((bytes = len)) {
 #ifdef SQL_NO_TOTAL
-	  if (len == SQL_NO_TOTAL) {
+	  if (bytes == SQL_NO_TOTAL) {
 	    bytes = BLOB_BUFSIZ;
 	  }
 #endif /* SQL_NO_TOTAL */
@@ -631,50 +648,53 @@ static void f_fetch_row(INT32 args)
 	  ODBC_ALLOW();
 
 	  code = SQLGetData(hstmt, (SQLUSMALLINT)(i+1),
-			    field_type, s->str, bytes, &len);
+			    field_type, s->str, bytes + pad, &len);
 
 	  ODBC_DISALLOW();
 
 	  num_strings++;
 #ifdef ODBC_DEBUG
-	  fprintf(stderr, "ODBC:fetch_row(): %d:%d: Got %d/%d bytes.\n",
-		  i+1, num_strings, bytes, len);
+	  fprintf(stderr,
+		  "ODBC:fetch_row(): %d:%d: Got %ld/%ld bytes (pad: %ld).\n",
+		  i+1, num_strings, (long)bytes, (long)len, (long)pad);
 #endif /* ODBC_DEBUG */
 	  if (code == SQL_NO_DATA_FOUND) {
 	    /* No data or end marker. */
 	    free_string(s);
 	    push_empty_string();
+	    break;
 	  } else {
 	    odbc_check_error("odbc->fetch_row", "SQLGetData() failed",
 			     code, NULL, NULL);
-	    if (len == bytes) {
-	      push_string(end_shared_string(s));
-	    } else if (!len) {
+	    if (!len) {
 	      free_string(s);
 	      push_empty_string();
+	      break;
 #ifdef SQL_NO_TOTAL
 	    } else if (len == SQL_NO_TOTAL) {
+	      /* More data remaining... */
 	      push_string(end_shared_string(s));
 #ifdef ODBC_DEBUG
 	      fprintf(stderr, "ODBC:fetch_row(): More data remaining.\n");
 #endif /* ODBC_DEBUG */
-	      continue;
 #endif /* SQL_NO_TOTAL */
-	    } else if (len < bytes) {
-	      push_string(end_and_resize_shared_string(s, len));
 	    } else {
-	      push_string(end_shared_string(s));
+	      SQLLEN str_len = len;
 	      if (len > bytes) {
-		len = len-bytes;
+		/* Possibly truncated result. */
+		str_len = bytes;
+		len -= bytes;
 #ifdef ODBC_DEBUG
-		fprintf(stderr, "ODBC:fetch_row(): %d bytes remaining.\n",
-			len);
+		fprintf(stderr, "ODBC:fetch_row(): %ld bytes remaining.\n",
+			(long)len);
 #endif /* ODBC_DEBUG */
-		continue;
-	      }
+	      } else len = 0;
+#ifdef SQL_WCHAR
+	      str_len = str_len>>s->size_shift;
+#endif
+	      push_string(end_and_resize_shared_string(s, str_len));
 	    }
 	  }
-	  break;
 	}
 	if (!num_strings) {
 	  push_empty_string();
