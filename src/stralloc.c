@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.231 2008/07/22 23:35:12 mast Exp $
+|| $Id: stralloc.c,v 1.232 2008/11/05 12:09:36 grubba Exp $
 */
 
 #include "global.h"
@@ -628,7 +628,8 @@ PMOD_EXPORT struct pike_string *debug_begin_shared_string(size_t len)
     t=(struct pike_string *)xalloc(len + 1 + sizeof(struct pike_string_hdr));
     t->flags = STRING_NOT_HASHED | STRING_NOT_SHARED;
   }
-  t->refs = 1;
+  t->refs = 0;
+  add_ref(t);	/* For DMALLOC */
   t->str[len]=0;
   t->len=len;
   t->size_shift=0;
@@ -889,10 +890,17 @@ PMOD_EXPORT struct pike_string *end_and_resize_shared_string(struct pike_string 
   if(len > str->len)
     Pike_fatal("Cannot extend string here!\n");
 #endif
-  if( str->len <= SHORT_STRING_THRESHOLD ?
-      (len <= SHORT_STRING_THRESHOLD) :
-      (len >  SHORT_STRING_THRESHOLD) && str->len  > len/2 )
+  if( (str->len <= SHORT_STRING_THRESHOLD) ||
+      ((len > SHORT_STRING_THRESHOLD) && (str->len <= (len<<1))) )
   {
+    /* Short string before and after or
+     * long string and at least half the length of the buffer.
+     *
+     * NOTE: We lose track of the actual buffer length here, so don't
+     *       use this function to shorten a string in decrements.
+     *
+     * FIXME: Wide strings get only a partial NUL-termination.
+     */
     str->len=len;
     str->str[len]=0;
     return end_shared_string(str);
