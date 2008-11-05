@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.173 2008/11/05 12:09:54 grubba Exp $
+|| $Id: stralloc.c,v 1.174 2008/11/05 15:03:53 grubba Exp $
 */
 
 #include "global.h"
@@ -24,7 +24,7 @@
 #include <ctype.h>
 #include <math.h>
 
-RCSID("$Id: stralloc.c,v 1.173 2008/11/05 12:09:54 grubba Exp $");
+RCSID("$Id: stralloc.c,v 1.174 2008/11/05 15:03:53 grubba Exp $");
 
 /* #define STRALLOC_USE_PRIMES */
 
@@ -776,7 +776,7 @@ PMOD_EXPORT struct pike_string *end_and_resize_shared_string(struct pike_string 
       ((len > SHORT_STRING_THRESHOLD) && (str->len <= (len<<1))) )
   {
     str->len=len;
-    str->str[len]=0;
+    SET_INDEX_PCHARP(MKPCHARP_STR(str), len, 0);
     return end_shared_string(str);
   }
   tmp = make_shared_binary_pcharp(MKPCHARP_STR(str),len);
