@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rusage.c,v 1.49 2008/03/31 22:16:10 mast Exp $
+|| $Id: rusage.c,v 1.50 2008/11/07 00:36:24 mast Exp $
 */
 
 #include "global.h"
@@ -57,6 +57,47 @@ LARGE_INTEGER perf_freq;
  */
 #define CONVERT_TIME(TIME, TICKS, BASE) \
   (((TIME) / (TICKS)) * (BASE) + ((TIME) % (TICKS)) * (BASE) / (TICKS))
+
+#if CPU_TIME_TICKS_LOW > 1000000000L
+# if !(CPU_TIME_TICKS_LOW % 1000000000L)
+#  define NSEC_TO_CPU_TIME_T(TIME) ((TIME) * (CPU_TIME_TICKS / 1000000000L))
+# endif
+#elif CPU_TIME_TICKS_LOW < 1000000000L
+# if !(1000000000L % CPU_TIME_TICKS_LOW)
+#  define NSEC_TO_CPU_TIME_T(TIME) ((TIME) / (1000000000L / CPU_TIME_TICKS))
+# endif
+#elif CPU_TIME_TICKS_LOW == 1000000000L
+# define NSEC_TO_CPU_TIME_T(TIME) (TIME)
+#else
+# error cpp evaluation problem
+#endif
+
+#if CPU_TIME_TICKS_LOW > 1000000
+# if !(CPU_TIME_TICKS_LOW % 1000000)
+#  define USEC_TO_CPU_TIME_T(TIME) ((TIME) * (CPU_TIME_TICKS / 1000000))
+# endif
+#elif CPU_TIME_TICKS_LOW < 1000000
+# if !(1000000 % CPU_TIME_TICKS_LOW)
+#  define USEC_TO_CPU_TIME_T(TIME) ((TIME) / (1000000 / CPU_TIME_TICKS))
+# endif
+#elif CPU_TIME_TICKS_LOW == 1000000
+# define USEC_TO_CPU_TIME_T(TIME) (TIME)
+#else
+# error cpp evaluation problem
+#endif
+
+#if 0
+/* Enable this if it ever becomes necessary to have another strange
+ * CPU_TIME_TICKS value. */
+# ifndef NSEC_TO_CPU_TIME_T
+#  define NSEC_TO_CPU_TIME_T(TIME) CONVERT_TIME ((TIME), 1000000000L,	\
+						 CPU_TIME_TICKS)
+# endif
+# ifndef USEC_TO_CPU_TIME_T
+#  define USEC_TO_CPU_TIME_T(TIME) CONVERT_TIME ((TIME), 1000000,	\
+						 CPU_TIME_TICKS)
+# endif
+#endif
 
 #ifdef __NT__
 PMOD_EXPORT int pike_get_rusage(pike_rusage_t rusage_values)
@@ -320,8 +361,7 @@ PMOD_EXPORT cpu_time_t posix_thread_gct (void)
   struct timespec res;
   if (clock_gettime (CLOCK_THREAD_CPUTIME_ID, &res))
     return (cpu_time_t) -1;
-  return res.tv_sec * CPU_TIME_TICKS +
-    res.tv_nsec / (1000000000 / CPU_TIME_TICKS);
+  return res.tv_sec * CPU_TIME_TICKS + NSEC_TO_CPU_TIME_T (res.tv_nsec);
 }
 
 PMOD_EXPORT cpu_time_t posix_thread_gct_res (void)
@@ -330,8 +370,7 @@ PMOD_EXPORT cpu_time_t posix_thread_gct_res (void)
   cpu_time_t t;
   if (clock_getres (CLOCK_THREAD_CPUTIME_ID, &res))
     return (cpu_time_t) -1;
-  t = res.tv_sec * CPU_TIME_TICKS +
-    res.tv_nsec / (1000000000 / CPU_TIME_TICKS);
+  t = res.tv_sec * CPU_TIME_TICKS + NSEC_TO_CPU_TIME_T (res.tv_nsec);
   return t ? t : 1;
 }
 
@@ -348,8 +387,7 @@ PMOD_EXPORT cpu_time_t posix_process_gct (void)
   struct timespec res;
   if (clock_gettime (CLOCK_PROCESS_CPUTIME_ID, &res))
     return (cpu_time_t) -1;
-  return res.tv_sec * CPU_TIME_TICKS +
-    res.tv_nsec / (1000000000 / CPU_TIME_TICKS);
+  return res.tv_sec * CPU_TIME_TICKS + NSEC_TO_CPU_TIME_T (res.tv_nsec);
 }
 
 PMOD_EXPORT cpu_time_t posix_process_gct_res (void)
@@ -358,8 +396,7 @@ PMOD_EXPORT cpu_time_t posix_process_gct_res (void)
   cpu_time_t t;
   if (clock_getres (CLOCK_PROCESS_CPUTIME_ID, &res))
     return (cpu_time_t) -1;
-  t = res.tv_sec * CPU_TIME_TICKS +
-    res.tv_nsec / (1000000000 / CPU_TIME_TICKS);
+  t = res.tv_sec * CPU_TIME_TICKS + NSEC_TO_CPU_TIME_T (res.tv_nsec);
   return t ? t : 1;
 }
 
@@ -375,7 +412,7 @@ PMOD_EXPORT cpu_time_t posix_process_gct_res (void)
  *       return bogus results if a process is migrated to another CPU.
  *
  *       If the CPUs in an SMP system have different clock sources
- *       then there is no way to maintain a corre‐lation between the
+ *       then there is no way to maintain a correlation between the
  *       timer registers since each CPU will run at a slightly
  *       different frequency. If that is the case then
  *       clock_getcpuclockid(0) will return ENOENT to signify this
@@ -402,8 +439,7 @@ PMOD_EXPORT cpu_time_t posix_monotonic_grt (void)
   struct timespec res;
   if (clock_gettime (CLOCK_MONOTONIC, &res))
     return (cpu_time_t) -1;
-  return res.tv_sec * CPU_TIME_TICKS +
-    res.tv_nsec / (1000000000 / CPU_TIME_TICKS);
+  return res.tv_sec * CPU_TIME_TICKS + NSEC_TO_CPU_TIME_T (res.tv_nsec);
 }
 
 PMOD_EXPORT cpu_time_t posix_monotonic_grt_res (void)
@@ -412,8 +448,7 @@ PMOD_EXPORT cpu_time_t posix_monotonic_grt_res (void)
   cpu_time_t t;
   if (clock_getres (CLOCK_MONOTONIC, &res))
     return (cpu_time_t) -1;
-  t = res.tv_sec * CPU_TIME_TICKS +
-    res.tv_nsec / (1000000000 / CPU_TIME_TICKS);
+  t = res.tv_sec * CPU_TIME_TICKS + NSEC_TO_CPU_TIME_T (res.tv_nsec);
   return t ? t : 1;
 }
 
@@ -432,8 +467,7 @@ PMOD_EXPORT cpu_time_t posix_realtime_grt (void)
     Pike_fatal ("CLOCK_REALTIME should always work! errno=%d\n", errno);
 #endif
   }
-  return res.tv_sec * CPU_TIME_TICKS +
-    res.tv_nsec / (1000000000 / CPU_TIME_TICKS);
+  return res.tv_sec * CPU_TIME_TICKS + NSEC_TO_CPU_TIME_T (res.tv_nsec);
 }
 
 PMOD_EXPORT cpu_time_t posix_realtime_grt_res (void)
@@ -445,8 +479,7 @@ PMOD_EXPORT cpu_time_t posix_realtime_grt_res (void)
     Pike_fatal ("CLOCK_REALTIME should always work! errno=%d\n", errno);
 #endif
   }
-  t = res.tv_sec * CPU_TIME_TICKS +
-    res.tv_nsec / (1000000000 / CPU_TIME_TICKS);
+  t = res.tv_sec * CPU_TIME_TICKS + NSEC_TO_CPU_TIME_T (res.tv_nsec);
   return t ? t : 1;
 }
 
@@ -493,7 +526,7 @@ PMOD_EXPORT cpu_time_t fallback_gct (void)
 PMOD_EXPORT cpu_time_t fallback_gct_res (void)
 {
   /* Got 100 ns resolution according to docs. */
-  return 100; /* = CPU_TIME_TICKS / 10000000 */
+  return NSEC_TO_CPU_TIME_T (100);
 }
 
 #endif
@@ -538,10 +571,7 @@ PMOD_EXPORT cpu_time_t fallback_grt_res (void)
 PMOD_EXPORT const char fallback_gct_impl[] = "gethrvtime()";
 PMOD_EXPORT cpu_time_t fallback_gct (void)
 {
-  /* Faster than CONVERT_TIME(gethrvtime(), 1000000000, CPU_TIME_TICKS)
-   * It works under the assumtion that CPU_TIME_TICKS <= 1000000000
-   * and that 1000000000 % CPU_TIME_TICKS == 0. */
-  return gethrvtime() / (1000000000 / CPU_TIME_TICKS);
+  return NSEC_TO_CPU_TIME_T (gethrvtime());
 }
 #endif
 
@@ -550,7 +580,7 @@ PMOD_EXPORT const char fallback_grt_impl[] = "gethrtime()";
 PMOD_EXPORT int fallback_grt_is_monotonic = 1;
 PMOD_EXPORT cpu_time_t fallback_grt (void)
 {
-  return gethrtime() * (CPU_TIME_TICKS / 1000000000);
+  return NSEC_TO_CPU_TIME_T (gethrtime());
 }
 #endif
 
@@ -576,9 +606,9 @@ PMOD_EXPORT cpu_time_t fallback_gct (void)
 
   return
     prs.pr_utime.tv_sec * CPU_TIME_TICKS +
-    prs.pr_utime.tv_nsec / (1000000000 / CPU_TIME_TICKS) +
+    NSEC_TO_CPU_TIME_T (prs.pr_utime.tv_nsec) +
     prs.pr_stime.tv_sec * CPU_TIME_TICKS +
-    prs.pr_stime.tv_nsec / (1000000000 / CPU_TIME_TICKS);
+    NSEC_TO_CPU_TIME_T (prs.pr_stime.tv_nsec);
 }
 
 #elif defined (HAVE_TIMES)
@@ -634,19 +664,11 @@ PMOD_EXPORT cpu_time_t fallback_gct (void)
 {
   struct rusage rus;
   if (getrusage(RUSAGE_SELF, &rus) < 0) return (cpu_time_t) -1;
-  if (CPU_TIME_TICKS > 1000000) {
-    return
-      rus.ru_utime.tv_sec * CPU_TIME_TICKS +
-      rus.ru_utime.tv_usec * (CPU_TIME_TICKS / 1000000) +
-      rus.ru_stime.tv_sec * CPU_TIME_TICKS +
-      rus.ru_stime.tv_usec * (CPU_TIME_TICKS / 1000000);
-  } else {
-    return
-      rus.ru_utime.tv_sec * CPU_TIME_TICKS +
-      rus.ru_utime.tv_usec / (1000000 / CPU_TIME_TICKS) +
-      rus.ru_stime.tv_sec * CPU_TIME_TICKS +
-      rus.ru_stime.tv_usec * (1000000 / CPU_TIME_TICKS);
-  }
+  return
+    rus.ru_utime.tv_sec * CPU_TIME_TICKS +
+    USEC_TO_CPU_TIME_T (rus.ru_utime.tv_usec) +
+    rus.ru_stime.tv_sec * CPU_TIME_TICKS +
+    USEC_TO_CPU_TIME_T (rus.ru_stime.tv_usec);
 }
 
 #define HAVE_FALLBACK_GCT_RES
@@ -675,15 +697,8 @@ PMOD_EXPORT int fallback_grt_is_monotonic = 0;
 PMOD_EXPORT cpu_time_t fallback_grt(void)
 {
   struct timeval tv;
-
   if (GETTIMEOFDAY(&tv) < 0) return -1;
-#ifdef LONG_CPU_TIME
-    return tv.tv_sec * CPU_TIME_TICKS +
-      tv.tv_usec * (CPU_TIME_TICKS / 1000000);
-#else
-    return tv.tv_sec * CPU_TIME_TICKS +
-      tv.tv_usec / (1000000 / CPU_TIME_TICKS);
-#endif
+  return tv.tv_sec * CPU_TIME_TICKS + USEC_TO_CPU_TIME_T (tv.tv_usec);
 }
 
 #define HAVE_FALLBACK_GRT_RES
