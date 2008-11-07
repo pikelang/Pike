@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rusage.c,v 1.50 2008/11/07 00:36:24 mast Exp $
+|| $Id: rusage.c,v 1.51 2008/11/07 01:08:36 mast Exp $
 */
 
 #include "global.h"
@@ -30,6 +30,15 @@
 #endif
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+#ifdef HAVE_MACH_MACH_H
+#include <mach/mach.h>
+#endif
+#ifdef HAVE_MACH_THREAD_ACT_H
+#include <mach/thread_act.h>
+#endif
+#ifdef HAVE_MACH_CLOCK_H
+#include <mach/clock.h>
 #endif
 
 #ifndef CONFIGURE_TEST
@@ -340,7 +349,7 @@ PMOD_EXPORT cpu_time_t (*get_cpu_time_res) (void);
 
 #ifdef GRT_RUNTIME_CHOICE
 PMOD_EXPORT int real_time_is_monotonic;
-PMOD_EXPORT const char *get_real_time_impl;
+PMOD_EXPORT const char *get_real_time_impl = NULL;
 PMOD_EXPORT cpu_time_t (*get_real_time) (void);
 PMOD_EXPORT cpu_time_t (*get_real_time_res) (void);
 #endif
@@ -611,6 +620,34 @@ PMOD_EXPORT cpu_time_t fallback_gct (void)
     NSEC_TO_CPU_TIME_T (prs.pr_stime.tv_nsec);
 }
 
+#elif defined (HAVE_THREAD_INFO)
+
+/* Mach */
+
+PMOD_EXPORT const char fallback_gct_impl[] = "thread_info()";
+
+PMOD_EXPORT cpu_time_t fallback_gct (void)
+{
+  thread_basic_info_data_t tbid;
+  mach_msg_type_number_t tbid_len = THREAD_BASIC_INFO_COUNT;
+  if (thread_info (mach_thread_self(), THREAD_BASIC_INFO,
+		   (thread_info_t) &tbid, &tbid_len))
+    return (cpu_time_t) -1;
+  return
+    tbid.user_time.seconds * CPU_TIME_TICKS +
+    USEC_TO_CPU_TIME_T (tbid.user_time.microseconds) +
+    tbid.system_time.seconds * CPU_TIME_TICKS +
+    USEC_TO_CPU_TIME_T (tbid.system_time.microseconds);
+}
+
+#define HAVE_FALLBACK_GCT_RES
+PMOD_EXPORT cpu_time_t fallback_gct_res (void)
+{
+  /* Docs aren't clear on the resolution, so assume it's accurate to
+   * the extent of time_value_t. */
+  return MAXIMUM (CPU_TIME_TICKS / 1000000, 1);
+}
+
 #elif defined (HAVE_TIMES)
 
 /* Prefer times() over clock() since the ticks per second isn't
@@ -624,7 +661,7 @@ PMOD_EXPORT cpu_time_t fallback_gct (void)
 {
   struct tms tms;
 #if defined (PIKE_DEBUG)
-  if (!pike_clk_tck) Pike_error ("Called before init_pike.\n");
+  if (!pike_clk_tck) Pike_fatal ("Called before init_pike.\n");
 #endif
   if (times (&tms) == (clock_t) -1)
     return (cpu_time_t) -1;
@@ -692,6 +729,69 @@ PMOD_EXPORT cpu_time_t fallback_gct (void)
 #endif	/* DEFINE_FALLBACK_GCT */
 
 #ifdef DEFINE_FALLBACK_GRT
+#ifdef HAVE_HOST_GET_CLOCK_SERVICE
+
+/* Mach */
+
+/* NB: clock_map_time looks like an interesting alternative. */
+
+static clock_serv_t mach_clock_port;
+
+static cpu_time_t mach_clock_get_time (void)
+{
+  mach_timespec_t ts;
+#ifdef PIKE_DEBUG
+  if (!get_real_time_impl) Pike_fatal ("Called before init_pike.\n");
+#endif
+  if (clock_get_time (mach_clock_port, &ts)) return (cpu_time_t) -1;
+  return ts.tv_sec * CPU_TIME_TICKS + NSEC_TO_CPU_TIME_T (ts.tv_nsec);
+}
+
+static cpu_time_t mach_clock_get_time_res (void)
+{
+  natural_t res;
+  mach_msg_type_number_t res_size = 1;
+#ifdef PIKE_DEBUG
+  if (!get_real_time_impl) Pike_fatal ("Called before init_pike.\n");
+#endif
+  if (clock_get_attributes (mach_clock_port, CLOCK_GET_TIME_RES,
+			    (clock_attr_t) &res, &res_size) ||
+      res_size < 1)
+    return (cpu_time_t) -1;
+  return MAXIMUM (NSEC_TO_CPU_TIME_T (res), 1);
+}
+
+/* Defined since init_mach_clock always succeeds. */
+#define HAVE_FALLBACK_GRT_RES
+
+static void init_mach_clock (void)
+{
+  /* We assume noone messes with clock_set_time. */
+  real_time_is_monotonic = 1;
+
+  get_real_time = mach_clock_get_time;
+  get_real_time_res = mach_clock_get_time_res;
+
+#ifdef HIGHRES_CLOCK
+  if (!host_get_clock_service (mach_host_self(), HIGHRES_CLOCK,
+			       &mach_clock_port)) {
+    get_real_time_impl = "host_get_clock_service(HIGHRES_CLOCK)";
+    return;
+  }
+#endif
+
+  /* SYSTEM_CLOCK should always exist. */
+  if (host_get_clock_service (mach_host_self(), SYSTEM_CLOCK,
+			      &mach_clock_port)) {
+#ifdef PIKE_DEBUG
+    Pike_fatal ("Unexpected failure in host_get_clock_service().\n");
+#endif
+  }
+  get_real_time_impl = "host_get_clock_service(SYSTEM_CLOCK)";
+}
+
+#else
+
 PMOD_EXPORT const char fallback_grt_impl[] = "gettimeofday()";
 PMOD_EXPORT int fallback_grt_is_monotonic = 0;
 PMOD_EXPORT cpu_time_t fallback_grt(void)
@@ -708,7 +808,9 @@ PMOD_EXPORT cpu_time_t fallback_grt_res (void)
    * that level. */
   return MAXIMUM (CPU_TIME_TICKS / 1000000, 1);
 }
+
 #endif
+#endif	/* DEFINE_FALLBACK_GRT */
 
 #endif	/* !__NT__ && !HAVE_WORKING_GETHRVTIME */
 
@@ -835,7 +937,9 @@ void init_rusage (void)
 #endif
 
   {
-#ifdef MIGHT_HAVE_POSIX_REALTIME_GRT
+#ifdef HAVE_HOST_GET_CLOCK_SERVICE
+    init_mach_clock();
+#elif defined (MIGHT_HAVE_POSIX_REALTIME_GRT)
     /* Always exists according to POSIX - no need to check with sysconf. */
     get_real_time_impl = posix_realtime_grt_impl;
     real_time_is_monotonic = 0;
