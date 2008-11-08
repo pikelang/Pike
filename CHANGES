@@ -1161,10 +1161,6 @@ o GTK2
 
   Wrapper for the GTK2 library. Not yet 100% completed, but usable.
 
-o Kerberos
-
-  FIXME
-
 o Protocols.DNS_SD
 
   This module provides an interface to DNS Service Discovery. The
