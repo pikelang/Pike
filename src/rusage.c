@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rusage.c,v 1.51 2008/11/07 01:08:36 mast Exp $
+|| $Id: rusage.c,v 1.52 2008/11/08 08:58:21 mast Exp $
 */
 
 #include "global.h"
@@ -68,11 +68,11 @@ LARGE_INTEGER perf_freq;
   (((TIME) / (TICKS)) * (BASE) + ((TIME) % (TICKS)) * (BASE) / (TICKS))
 
 #if CPU_TIME_TICKS_LOW > 1000000000L
-# if !(CPU_TIME_TICKS_LOW % 1000000000L)
+# if CPU_TIME_TICKS_LOW % 1000000000L == 0
 #  define NSEC_TO_CPU_TIME_T(TIME) ((TIME) * (CPU_TIME_TICKS / 1000000000L))
 # endif
 #elif CPU_TIME_TICKS_LOW < 1000000000L
-# if !(1000000000L % CPU_TIME_TICKS_LOW)
+# if 1000000000L % CPU_TIME_TICKS_LOW == 0
 #  define NSEC_TO_CPU_TIME_T(TIME) ((TIME) / (1000000000L / CPU_TIME_TICKS))
 # endif
 #elif CPU_TIME_TICKS_LOW == 1000000000L
@@ -82,11 +82,11 @@ LARGE_INTEGER perf_freq;
 #endif
 
 #if CPU_TIME_TICKS_LOW > 1000000
-# if !(CPU_TIME_TICKS_LOW % 1000000)
+# if CPU_TIME_TICKS_LOW % 1000000 == 0
 #  define USEC_TO_CPU_TIME_T(TIME) ((TIME) * (CPU_TIME_TICKS / 1000000))
 # endif
 #elif CPU_TIME_TICKS_LOW < 1000000
-# if !(1000000 % CPU_TIME_TICKS_LOW)
+# if 1000000 % CPU_TIME_TICKS_LOW == 0
 #  define USEC_TO_CPU_TIME_T(TIME) ((TIME) / (1000000 / CPU_TIME_TICKS))
 # endif
 #elif CPU_TIME_TICKS_LOW == 1000000
@@ -729,7 +729,7 @@ PMOD_EXPORT cpu_time_t fallback_gct (void)
 #endif	/* DEFINE_FALLBACK_GCT */
 
 #ifdef DEFINE_FALLBACK_GRT
-#ifdef HAVE_HOST_GET_CLOCK_SERVICE
+#if defined (HAVE_HOST_GET_CLOCK_SERVICE) && defined (GRT_RUNTIME_CHOICE)
 
 /* Mach */
 
