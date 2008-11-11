@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.169 2008/09/18 15:51:41 mast Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.170 2008/11/11 19:17:41 mbaehr Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -2200,11 +2200,13 @@ class Evaluator {
     }
 
     void show_errors() {
-      safe_write(hch_errors);
+      if (sizeof(hch_errors))
+        safe_write(hch_errors);
     }
 
     void show_warnings() {
-      safe_write(hch_warnings);
+      if (sizeof(hch_warnings))
+        safe_write(hch_warnings);
     }
   };
 
