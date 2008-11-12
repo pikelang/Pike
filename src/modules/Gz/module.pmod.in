@@ -1,9 +1,10 @@
-// $Id: module.pmod.in,v 1.18 2008/07/13 13:53:46 marcus Exp $
+// -*- pike -*-
+// $Id: module.pmod.in,v 1.19 2008/11/12 14:57:44 mast Exp $
 #pike __REAL_VERSION__
 
-inherit @module@;
+#if constant(@module@)
 
-#if constant(@module@.inflate)
+inherit @module@;
 
 //! Low-level implementation of read/write support for GZip files
 class _file {
@@ -411,4 +412,6 @@ class File {
   }
 }
 
-#endif // constant(@module@.inflate)
+#else
+constant this_program_does_not_exist = 1;
+#endif // constant(@module@)
