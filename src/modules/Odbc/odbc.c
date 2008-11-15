@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc.c,v 1.50 2008/09/08 13:44:14 mast Exp $
+|| $Id: odbc.c,v 1.51 2008/11/15 13:06:00 grubba Exp $
 */
 
 /*
@@ -707,7 +707,9 @@ PIKE_MODULE_INIT
   /* function(void|string:array(string)) */
   ADD_FUNCTION("list_dbs", f_list_dbs,tFunc(tOr(tVoid,tStr),tArr(tStr)), ID_PUBLIC);
 
+#ifdef PIKE_THREADS
   ADD_FUNCTION ("connect_lock", f_connect_lock, tFunc(tOr(tVoid,tInt),tInt01), ID_PUBLIC);
+#endif
 
   init_odbc_res_programs();
 
