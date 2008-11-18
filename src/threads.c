@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.266 2008/09/09 16:53:13 mast Exp $
+|| $Id: threads.c,v 1.267 2008/11/18 19:10:30 mast Exp $
 */
 
 #include "global.h"
@@ -778,15 +778,19 @@ PMOD_EXPORT int count_pike_threads(void)
   return num_pike_threads;
 }
 
+/* #define PROFILE_CHECK_THREADS */
+
 static void check_threads(struct callback *cb, void *arg, void * arg2)
 {
+#ifdef PROFILE_CHECK_THREADS
+  static unsigned long calls = 0;
+  calls++;
+#endif
+
 #ifndef HAVE_NO_YIELD
   /* If we have no yield we can't cut calls here since it's possible
    * that a thread switch will take place only occasionally in the
    * window below. */
-  static int div_;
-  if(div_++ & 255)
-    return;
 #ifdef HAVE_GETHRTIME
   {
     static hrtime_t last_ = 0;
@@ -818,7 +822,25 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
 #elif defined (USE_CLOCK_FOR_SLICES)
   if (clock() - thread_start_clock < (clock_t) (CLOCKS_PER_SEC / 20))
     return;
+#else
+  static int div_;
+  if(div_++ & 255)
+    return;
 #endif
+#endif
+
+#ifdef PROFILE_CHECK_THREADS
+  {
+    static long last_time;
+    struct timeval now;
+    gettimeofday (&now, NULL);
+    if (now.tv_sec > last_time) {
+      fprintf (stderr, "check_threads calls in %ld sec(s): %lu\n",
+	       (long) (now.tv_sec - last_time), calls);
+      last_time = (unsigned long) now.tv_sec;
+      calls = 0;
+    }
+  }
 #endif
 
   DEBUG_CHECK_THREAD();
