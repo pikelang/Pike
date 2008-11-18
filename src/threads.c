@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.267 2008/11/18 19:10:30 mast Exp $
+|| $Id: threads.c,v 1.268 2008/11/18 20:13:12 mast Exp $
 */
 
 #include "global.h"
@@ -791,6 +791,13 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
   /* If we have no yield we can't cut calls here since it's possible
    * that a thread switch will take place only occasionally in the
    * window below. */
+
+  /* Could consider using get_cpu_time here to get more accurate
+   * measurements on more platforms. But otoh we don't really need
+   * very high accuracy - the fallback to clock(3) should be good
+   * enough in most cases. So let's avoid as much overhead as
+   * possible. */
+
 #ifdef HAVE_GETHRTIME
   {
     static hrtime_t last_ = 0;
@@ -805,18 +812,34 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
     task_thread_times_info_data_t info;
     mach_msg_type_number_t        info_size = TASK_THREAD_TIMES_INFO_COUNT;
     
-    /* Get user time and test if 50usec has passed since last check. */
+    /* Get user time and test if 50 ms has passed since last check. */
     if (task_info(mach_task_self(), TASK_THREAD_TIMES_INFO,
 		  (task_info_t) &info, &info_size) == 0) {
+#ifdef INT64
+      static INT64 last_check = 0;
+      INT64 now =
+	info.user_time.seconds * 1000000 +
+	info.user_time.microseconds +
+	info.system_time.seconds * 1000000 +
+	info.system_time.microseconds;
+      if (now - last_check < 50000)
+	return;
+      last_check = now;
+#else
       /* Compute difference by converting kernel time_info_t to timeval. */
-      struct timeval now;
+      static struct timeval last_check = { 0, 0 };
+      struct timeval user, sys, now;
       struct timeval diff;
-      now.tv_sec = info.user_time.seconds;
-      now.tv_usec = info.user_time.microseconds;
+      user.tv_sec = info.user_time.seconds;
+      user.tv_usec = info.user_time.microseconds;
+      sys.tv_sec = info.system_time.seconds;
+      sys.tv_usec = info.system_time.microseconds;
+      timeradd (&user, &sys, &now);
       timersub(&now, &last_check, &diff);
       if (diff.tv_usec < 50000 && diff.tv_sec == 0)
 	return;
       last_check = now;
+#endif
     }
   }
 #elif defined (USE_CLOCK_FOR_SLICES)
