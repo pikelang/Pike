@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.408 2008/08/18 15:16:47 mast Exp $
+|| $Id: interpret.c,v 1.409 2008/11/18 19:06:23 mast Exp $
 */
 
 #include "global.h"
@@ -102,6 +102,8 @@ static char trace_buffer[2000];
 PMOD_EXPORT unsigned long evaluator_callback_calls = 0;
 #endif
 
+
+int fast_check_threads_counter = 0;
 
 /* Pike_sp points to first unused value on stack
  * (much simpler than letting it point at the last used value.)
@@ -1133,7 +1135,7 @@ void *dummy_label = NULL;
  * to ensure thread switching. */
 void branch_check_threads_etc()
 {
-  fast_check_threads_etc (6);
+  FAST_CHECK_THREADS_ON_BRANCH();
 }
 #endif
 
@@ -1841,7 +1843,7 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 	    my_strcat (s->u.efun->name->str);
 	  do_trace_call(args, &save_buf);
 	}
-	check_threads_etc();
+	FAST_CHECK_THREADS_ON_CALL();
 	(*(s->u.efun->function))(args);
 
 #ifdef PIKE_DEBUG

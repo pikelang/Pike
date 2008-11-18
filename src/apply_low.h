@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: apply_low.h,v 1.34 2008/03/29 01:35:01 mast Exp $
+|| $Id: apply_low.h,v 1.35 2008/11/18 19:06:23 mast Exp $
 */
 
     {
@@ -221,7 +221,7 @@
 	Pike_fp->num_args=args;
 	new_frame->current_storage = o->storage+new_frame->context->storage_offset;
 	new_frame->num_locals=args;
-	check_threads_etc();
+	FAST_CHECK_THREADS_ON_CALL();
 	(*function->func.c_fun)(args);
 	break;
 	
@@ -233,7 +233,7 @@
 	if(s->type == T_PROGRAM)
 	{
 	  struct object *tmp;
-	  check_threads_etc();
+	  FAST_CHECK_THREADS_ON_CALL();
 	  Pike_fp->num_args=args;
 	  tmp=parent_clone_object(s->u.program,
 				  o,
@@ -292,7 +292,7 @@
 	int num_args;
 	int num_locals;
 	PIKE_OPCODE_T *pc;
-	fast_check_threads_etc(6);
+	FAST_CHECK_THREADS_ON_CALL();
 
 #ifdef PIKE_DEBUG
 	if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE)

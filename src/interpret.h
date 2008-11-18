@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.h,v 1.175 2008/06/29 12:06:03 nilsson Exp $
+|| $Id: interpret.h,v 1.176 2008/11/18 19:06:23 mast Exp $
 */
 
 #ifndef INTERPRET_H
@@ -690,14 +690,26 @@ PMOD_EXPORT extern unsigned long evaluator_callback_calls;
   call_callback(& evaluator_callbacks, NULL); \
 }while(0) 
 
-#ifdef PIKE_DEBUG
-#define fast_check_threads_etc(X) do { \
-  static int div_; if(d_flag || !(div_++& ((1<<(X))-1))) check_threads_etc(); } while(0)
+extern int fast_check_threads_counter;
 
-#else
-#define fast_check_threads_etc(X) do { \
-  static int div_; if(!(div_++& ((1<<(X))-1))) check_threads_etc(); } while(0)
-#endif
+#define fast_check_threads_etc(X) do {					\
+    if (++fast_check_threads_counter >= (1 << (X))) {			\
+      fast_check_threads_counter = 0;					\
+      check_threads_etc();						\
+    }									\
+  } while(0)
+
+/* Used before any sort of pike level function call. This covers most
+ * code paths. An interval with magnitude 6 on a 2 GHz AMD 64 averages
+ * on 1000-3000 check_threads_etc calls per second in mixed code, but
+ * it can vary greatly - from 0 to 30000+ calls/sec. In a test case
+ * with about 22000 calls/sec, it took 0.042% of the cpu. */
+#define FAST_CHECK_THREADS_ON_CALL() fast_check_threads_etc (6)
+
+/* Used before any sort of backward branch. This is only a safeguard
+ * for some corner cases with loops without calls - not relevant in
+ * ordinary code. */
+#define FAST_CHECK_THREADS_ON_BRANCH() fast_check_threads_etc (8)
 
 #include "block_alloc_h.h"
 /* Prototypes begin here */

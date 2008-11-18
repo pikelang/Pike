@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.209 2008/06/30 13:46:05 mast Exp $
+|| $Id: interpret_functions.h,v 1.210 2008/11/18 19:06:23 mast Exp $
 */
 
 /*
@@ -136,7 +136,7 @@
     SET_PROG_COUNTER(addr + tmp); \
     FETCH; \
     if(tmp < 0) \
-      fast_check_threads_etc(6); \
+      FAST_CHECK_THREADS_ON_BRANCH();					\
   } while(0)
 
 #endif /* OVERRIDE_JUMPS */
@@ -1384,7 +1384,7 @@ OPCODE0_PTRJUMP(F_CATCH, "catch", I_UPDATE_ALL, {
 	low_destruct_objects_to_destruct();
 
 	if (cc->continue_reladdr < 0)
-	  fast_check_threads_etc(6);
+	  FAST_CHECK_THREADS_ON_BRANCH();
 	addr = cc->next_addr + cc->continue_reladdr;
 
 	DO_IF_DEBUG({
@@ -1421,7 +1421,7 @@ OPCODE1_JUMP(F_SWITCH, "switch", I_UPDATE_ALL, {
 				  DO_ALIGN(PTR_TO_INT(addr),
 					   ((ptrdiff_t)sizeof(INT32))));
   addr = (PIKE_OPCODE_T *)(((INT32 *)addr) + (tmp>=0 ? 1+tmp*2 : 2*~tmp));
-  if(*(INT32*)addr < 0) fast_check_threads_etc(7);
+  if(*(INT32*)addr < 0) FAST_CHECK_THREADS_ON_BRANCH();
   pop_stack();
   DO_JUMP_TO(addr + *(INT32*)addr);
 });
@@ -1441,7 +1441,7 @@ OPCODE1_JUMP(F_SWITCH_ON_INDEX, "switch on index", I_UPDATE_ALL, {
 				  DO_ALIGN(PTR_TO_INT(addr),
 					   ((ptrdiff_t)sizeof(INT32))));
   addr = (PIKE_OPCODE_T *)(((INT32 *)addr) + (tmp>=0 ? 1+tmp*2 : 2*~tmp));
-  if(*(INT32*)addr < 0) fast_check_threads_etc(7);
+  if(*(INT32*)addr < 0) FAST_CHECK_THREADS_ON_BRANCH();
   DO_JUMP_TO(addr + *(INT32*)addr);
 });
 
@@ -1455,7 +1455,7 @@ OPCODE2_JUMP(F_SWITCH_ON_LOCAL, "switch on local", 0, {
 				  DO_ALIGN(PTR_TO_INT(addr),
 					   ((ptrdiff_t)sizeof(INT32))));
   addr = (PIKE_OPCODE_T *)(((INT32 *)addr) + (tmp>=0 ? 1+tmp*2 : 2*~tmp));
-  if(*(INT32*)addr < 0) fast_check_threads_etc(7);
+  if(*(INT32*)addr < 0) FAST_CHECK_THREADS_ON_BRANCH();
   DO_JUMP_TO(addr + *(INT32*)addr);
 });
 
@@ -2252,6 +2252,7 @@ OPCODE1_JUMP(F_CALL_OTHER_AND_RETURN,"call other & return", I_UPDATE_ALL, {
   int args_=(ARGS);							 \
   struct svalue *expected_stack=Pike_sp-args_;				 \
   LOCAL_VAR(struct svalue *s);						 \
+  FAST_CHECK_THREADS_ON_CALL();						 \
   s = &Pike_fp->context->prog->constants[arg1].sval;			 \
   if(Pike_interpreter.trace_level)					 \
   {									 \
@@ -2294,8 +2295,10 @@ OPCODE1_JUMP(F_CALL_OTHER_AND_RETURN,"call other & return", I_UPDATE_ALL, {
   }									 \
 }while(0)
 #else
-#define DO_CALL_BUILTIN(ARGS) \
-(*(Pike_fp->context->prog->constants[arg1].sval.u.efun->function))(ARGS)
+#define DO_CALL_BUILTIN(ARGS) do {					\
+    FAST_CHECK_THREADS_ON_CALL();					\
+    (*(Pike_fp->context->prog->constants[arg1].sval.u.efun->function))(ARGS); \
+  } while (0)
 #endif
 
 OPCODE1(F_CALL_BUILTIN, "call builtin", I_UPDATE_ALL, {
@@ -2434,7 +2437,7 @@ OPCODE1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN_POP,
 					      SECURITY_BIT_CALL,	   \
 				("Function call permission denied.\n")));  \
 									   \
-  fast_check_threads_etc(6);						   \
+  FAST_CHECK_THREADS_ON_CALL();						   \
   check_stack(256);							   \
 									   \
   new_frame=alloc_pike_frame();						   \
@@ -2572,7 +2575,7 @@ OPCODE0_PTRJUMP(F_TAIL_RECUR, "tail recursion", I_UPDATE_ALL, {
   PIKE_OPCODE_T *addr;
   INT32 args;
 
-  fast_check_threads_etc(6);
+  FAST_CHECK_THREADS_ON_CALL();
 
   JUMP_SET_TO_PC_AT_NEXT (addr);
   addr += GET_JUMP();
