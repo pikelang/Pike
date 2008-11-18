@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.234 2008/10/24 17:13:53 grubba Exp $
+ * $Id: backend.cmod,v 1.235 2008/11/18 09:16:13 nilsson Exp $
  *
  * Backend object.
  */
@@ -280,7 +280,8 @@ PIKECLASS Backend
    */
   CVAR struct callback_list backend_callbacks;
 
-  /*! @decl function(Backend:void) before_callback, after_callback;
+  /*! @decl function(Backend:void) before_callback
+   *! @decl function(Backend:void) after_callback
    *!
    *! If set, these are called just before and after the backend waits
    *! for an event.
@@ -1018,7 +1019,7 @@ PIKECLASS Backend
      }
 
 /*! @decl int remove_call_out(function f)
- *! @decl int remove_call_out(function id)
+ *! @decl int remove_call_out(int id)
  *!
  *! Remove a call out from the call out queue.
  *!
