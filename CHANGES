@@ -955,7 +955,20 @@ o Sql
 
 o SSL
 
-  FIXME: client certificates: examples?
+   It is now possible to set certificates to SSL connections. Example:
+
+   SSL.sslfile ssl_connection(Stdio.File conn, string my_key,
+                              string my_certificate)
+   {
+     ctx->client_rsa = Standards.PKCS.RSA.parse_private_key(my_key);
+
+     // client_certificates is an array holding arrays of certificate
+     // chains. since we've got a self-signed cert, our cert array has
+     // only 1 element.
+     ctx->client_certificates += ({ ({ my_certificate }) });
+
+     return SSL.sslfile(conn, ctx, 1, 1);
+   }
 
 o Standards.IIM
 
