@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.409 2008/11/18 19:06:23 mast Exp $
+|| $Id: interpret.c,v 1.410 2008/11/19 21:36:39 mast Exp $
 */
 
 #include "global.h"
@@ -1128,6 +1128,11 @@ void *dummy_label = NULL;
 #ifndef EXIT_MACHINE_CODE
 #define EXIT_MACHINE_CODE()
 #endif
+
+void call_check_threads_etc()
+{
+  FAST_CHECK_THREADS_ON_CALL();
+}
 
 #if defined(OPCODE_INLINE_BRANCH) || defined(INS_F_JUMP) || \
     defined(INS_F_JUMP_WITH_ARG) || defined(INS_F_JUMP_WITH_TWO_ARGS)
