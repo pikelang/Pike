@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.410 2008/11/19 21:36:39 mast Exp $
+|| $Id: interpret.c,v 1.411 2008/11/19 21:47:09 mast Exp $
 */
 
 #include "global.h"
@@ -1129,6 +1129,9 @@ void *dummy_label = NULL;
 #define EXIT_MACHINE_CODE()
 #endif
 
+/* Intended to be called from machine code before inlined function
+ * calls (primarily the CALL_BUILTIN opcodes), to ensure thread
+ * switching. */
 void call_check_threads_etc()
 {
   FAST_CHECK_THREADS_ON_CALL();
