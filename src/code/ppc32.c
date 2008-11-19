@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ppc32.c,v 1.43 2008/06/26 20:35:19 marcus Exp $
+|| $Id: ppc32.c,v 1.44 2008/11/19 21:38:15 mast Exp $
 */
 
 /*
@@ -540,6 +540,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
    case F_CALL_BUILTIN1:
      if(Pike_compiler->new_program->constants[b].sval.u.efun->internal_flags & CALLABLE_DYNAMIC)
        break;
+     /* FIXME: Add call to call_check_threads_etc. */
      if(a == F_CALL_BUILTIN1)
        SET_REG(PPC_REG_ARG1, 1);
      else
