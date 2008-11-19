@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ia32.c,v 1.49 2008/06/28 09:35:40 mast Exp $
+|| $Id: ia32.c,v 1.50 2008/11/19 21:37:34 mast Exp $
 */
 
 /*
@@ -856,6 +856,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       if(Pike_compiler->new_program->constants[b].sval.u.efun->internal_flags & CALLABLE_DYNAMIC)
 	break;
       ins_debug_instr_prologue (a - F_OFFSET, b, 0);
+      ia32_call_c_function (call_check_threads_etc);
       update_arg1(0);
       ia32_call_c_function(Pike_compiler->new_program->constants[b].sval.u.efun->function);
       return;
@@ -864,6 +865,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       if(Pike_compiler->new_program->constants[b].sval.u.efun->internal_flags & CALLABLE_DYNAMIC)
 	break;
       ins_debug_instr_prologue (a - F_OFFSET, b, 0);
+      ia32_call_c_function (call_check_threads_etc);
       update_arg1(1);
       ia32_call_c_function(Pike_compiler->new_program->constants[b].sval.u.efun->function);
       return;
