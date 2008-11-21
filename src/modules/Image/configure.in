@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.32 2007/01/29 23:13:32 marcus Exp $
+# $Id: configure.in,v 1.33 2008/11/21 09:22:02 grubba Exp $
 AC_INIT(image.c)
 AC_CONFIG_HEADER(image_machine.h)
 
@@ -27,7 +27,7 @@ else
       # Darwin x86 can output ELF even though we can't use it
       # FIXME: Investigate using nasm -f macho for Mach-O output
       AC_MSG_RESULT([no, Mach-O not yet supported])
-    elif test x"$pike_cv_machine_code_arch" != "ia32"; then
+    elif test x"$pike_cv_machine_code_arch" != x"ia32"; then
       # target is not ia32...
       AC_MSG_RESULT([yes, but we are not on an IA32 machine])
     elif test x"$pike_cv_sys_os" = x"OpenBSD"; then
