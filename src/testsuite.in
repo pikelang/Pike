@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.858 2008/10/13 10:56:58 mirar Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.859 2008/11/21 12:25:52 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -981,6 +981,16 @@ test_compile_error( [[
   // This triggs a compiler bug on old Pike 7.3.
   non_existant(17) {
     return 0;
+  }
+]])
+
+test_compile_error( [[
+  // This triggs a segfault on Pike 7.4.
+  void f()
+  {
+    constant days = 
+      ([ "1" : "Sunday"
+	 "2" : "Monday" ]);
   }
 ]])
 
