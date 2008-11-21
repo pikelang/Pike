@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xml.cmod,v 1.102 2008/11/18 12:51:46 grubba Exp $
+|| $Id: xml.cmod,v 1.103 2008/11/21 20:36:58 grubba Exp $
 */
 
 #include "global.h"
@@ -687,11 +687,29 @@ PIKECLASS Simple
 #define COMPAT_ALLOW_7_6_ERRORS	0x04
 #define ALLOW_PESMEG_EVERYWHERE	0x08
 
-#define PARSETYPE \
-  tFuncV(tStr tOr(CALLBACKTYPE, tVoid), tMix, tArr(tVar(0)))
+  /* callback:
+   *   string type
+   *   string name
+   *   mapping args
+   *   array|string data
+   *   mixed ... xtra
+   */
+#define CALLBACKTYPE							\
+  tFuncV(tStr tStr tMapping tOr(tArray,tStr) tMap(tStr,tMix), tMix,	\
+	 tSetvar(0, tMix))
+  /*"function(string,string,mapping,array|string,mapping(string:mixed),mixed...:0=mixed)"*/
+
+#define PARSETYPE							\
+  tOr(tFuncV(tStr tStr tOr(CALLBACKTYPE, tVoid), tMix, tArr(tVar(0))),	\
+      tFuncV(tStr tOr(CALLBACKTYPE, tVoid), tMix, tArr(tVar(0))))
   /* "function(string," CALLBACKTYPE ",mixed...:array(0))" */
 
-  /*! @decl array parse(string xml, function cb, mixed ... extra_args)
+  /*! @decl array parse(string xml, string context, @
+   *!                   function cb, mixed ... extra_args)
+   *! @decl array parse(string xml, function cb, mixed ... extra_args)
+   *!
+   *! @note
+   *!   The @[context] argument was introduced in Pike 7.8.
    */
   PIKEFUN array parse(string s, function cb, mixed ... extra_args)
     rawtype PARSETYPE;
@@ -702,9 +720,17 @@ PIKECLASS Simple
     for (d = 1; d < args; d++) {
       sp[1-d] = sp[-d];
     }
-    sp[1-args].type = T_INT;
-    sp[1-args].subtype = NUMBER_NUMBER;
-    sp[1-args].u.integer = THIS->flags;
+    d = 1-args;
+    if (cb->type == T_STRING) {
+      /* We have a context. Keep it in place.
+       * NOTE: We have copied one element too much in this case,
+       *       but it doesn't matter, since we overwrite the copy.
+       */
+      d++;
+    }
+    sp[d].type = T_INT;
+    sp[d].subtype = NUMBER_NUMBER;
+    sp[d].u.integer = THIS->flags;
     args++;
     sp++;
 
@@ -718,20 +744,33 @@ PIKECLASS Simple
     pop_stack();
   }
 
-  /*! @decl mixed parse_dtd(string dtd, function cb, mixed ... extras)
+  /*! @decl mixed parse_dtd(string dtd, string context, @
+   *!                       function cb, mixed ... extras)
+   *! @decl mixed parse_dtd(string dtd, function cb, mixed ... extras)
+   *!
+   *! @note
+   *!   The @[context] argument was introduced in Pike 7.8.
    */
-  PIKEFUN mixed parse_dtd(string s, function cb, mixed ... extras)
+  PIKEFUN mixed parse_dtd(string s, string|function cb, mixed ... extras)
     rawtype PARSETYPE;
   {
     int d;
 
     /* Move cb and extras one step to make place for flags. */
-    for (d = 1; d < args; d++) {
+    for (d=1; d < args; d++) {
       sp[1-d] = sp[-d];
     }
-    sp[1-args].type = T_INT;
-    sp[1-args].subtype = NUMBER_NUMBER;
-    sp[1-args].u.integer = THIS->flags | ALLOW_PESMEG_EVERYWHERE;
+    d = 1-args;
+    if (cb->type == T_STRING) {
+      /* We have a context. Keep it in place.
+       * NOTE: We have copied one element too much in this case,
+       *       but it doesn't matter, since we overwrite the copy.
+       */
+      d++;
+    }
+    sp[d].type = T_INT;
+    sp[d].subtype = NUMBER_NUMBER;
+    sp[d].u.integer = THIS->flags | ALLOW_PESMEG_EVERYWHERE;
     args++;
     sp++;
 
@@ -790,6 +829,9 @@ PIKECLASS Simple
 
   /*! @decl string lookup_entity(string entity)
    *!
+   *! @returns
+   *!   Returns the verbatim expansion of the entity.
+   *!
    *! @note
    *!   Added in Pike 7.7.
    */
@@ -808,6 +850,17 @@ PIKECLASS Simple
   }
 
   /*! @decl void define_entity_raw(string entity, string raw)
+   *!
+   *! Define an entity or an SMEG.
+   *!
+   *! @param entity
+   *!   Entity name, or SMEG name (if preceeded by a @expr{"%"@}).
+   *!
+   *! @param raw
+   *!   Verbatim expansion of the entity.
+   *!
+   *! @seealso
+   *!   @[define_entity()]
    */
   PIKEFUN void define_entity_raw(string entity, string raw)
   {
@@ -823,8 +876,19 @@ PIKECLASS Simple
     push_undefined();
   }
 
-  /*! @decl void define_entity(string entity, string raw, @
+  /*! @decl void define_entity(string entity, string s, @
    *!                          function cb, mixed ... extras)
+   *!
+   *! Define an entity or an SMEG.
+   *!
+   *! @param entity
+   *!   Entity name, or SMEG name (if preceeded by a @expr{"%"@}).
+   *!
+   *! @param s
+   *!   Expansion of the entity. Entity evaluation will be performed.
+   *!
+   *! @seealso
+   *!   @[define_entity_raw()]
    */
   PIKEFUN void define_entity(string entity, string s,
 			     function cb, mixed ... extras)
@@ -840,6 +904,8 @@ PIKECLASS Simple
     sp[2-args].u.integer = THIS->flags;
     args++;
     sp++;
+
+    /* FIXME: Add a proper context argument generated from entity. */
 
     apply_current(Simple_Context_program_fun_num, args-1);
     args = 2;
@@ -945,17 +1011,6 @@ PIKECLASS Simple
     program_flags PROGRAM_USES_PARENT;
   {
     CVAR struct xmlinput *input;
-
-    /* callback:
-     *   string type
-     *   string name
-     *   mapping args
-     *   array|string data
-     *   mixed ... xtra
-     */
-#define CALLBACKTYPE							\
-    tFuncV(tStr tStr tMapping tOr(tArray,tStr) tMap(tStr,tMix), tMix, tSetvar(0, tMix))
-    /*"function(string,string,mapping,array|string,mapping(string:mixed),mixed...:0=mixed)"*/
 
     CVAR struct svalue func;
     CVAR struct array *extra_args;
@@ -1456,6 +1511,7 @@ static int gobble(char *s)
     pop_stack();				\
   }while(0)
 
+/* FIXME: The argument is ignored! Looks like a bug! */
 static inline void very_low_sys(struct mapping *callbackinfo)
 {
   struct xmlinput *i = THIS->input;
@@ -1542,7 +1598,9 @@ static void xmlerror(char *desc, struct pike_string *tag_name)
       ref_push_mapping(THIS->input->callbackinfo);
       mapping_insert(callbackinfo, sp-2, sp-1);
       pop_n_elems(2);
-    
+      mapping_string_insert_string(callbackinfo, MK_STRING("context"),
+				   full_name);
+
       if(UNSAFE_IS_ZERO(sp-1))
       {
 	pop_stack();
@@ -3088,8 +3146,28 @@ static int low_parse_xml(struct pike_string *end)
     }
 
     /*! @decl void push_string(string s)
+     *! @decl void push_string(string s, string context)
+     *!
+     *! Add a string to parse at the current position.
+     *!
+     *! @param s
+     *!   String to insert at the current parsing position.
+     *!
+     *! @param context
+     *!   Optional context used to refer to the inserted string.
+     *!   This is typically an URL, but may also be an entity
+     *!   (preceeded by an @expr{"&"@}) or a SMEG reference
+     *!   (preceeded by a @expr{"%"@}).
+     *!   Not used by the XML parser as such, but is simply
+     *!   passed into the callbackinfo mapping as
+     *!   the field @expr{"context"@} where it can be useful
+     *!   for eg resolving relative URLs when parsing DTDs,
+     *!   or for determining where errors occur.
+     *!
+     *! @note
+     *!   The @[context] argument was introduced in Pike 7.8.
      */
-    PIKEFUN void push_string(string s)
+    PIKEFUN void push_string(string s, string|void context)
     {
       struct xmlinput *i = new_string_xmlinput(s);
 
@@ -3106,28 +3184,72 @@ static int low_parse_xml(struct pike_string *end)
       } else {
 	THIS->input->callbackinfo = allocate_mapping(0);
       }
+      if (context) {
+	mapping_string_insert_string(THIS->input->callbackinfo,
+				     MK_STRING("context"), context);
+      }
       CHECK_INPUT(THIS->input);
 
       pop_n_elems(args);
       push_undefined();
     }
 
-    PIKEFUN void create(string s, int flags, function cb, mixed ... extra_args)
+    /*! @decl void create(string s, string context, int flags, @
+     *!                   function cb, mixed ... extra_args)
+     *! @decl void create(string s, int flags, @
+     *!                   function cb, mixed ... extra_args)
+     *!
+     *! @param s
+     *! @param context
+     *!   These two arguments are passed along to @[push_string()].
+     *!
+     *! @param flags
+     *!   Parser flags.
+     *!
+     *! @param cb
+     *!   Callback function. This function gets called at various
+     *!   stages during the parsing.
+     *!
+     *! @note
+     *!   The @[context] argument was introduced in Pike 7.8.
+     */
+    PIKEFUN void create(string s, string|int flags, int|function cb,
+			mixed ... extra_args)
+      rawtype tOr(tFuncV(tString tInt CALLBACKTYPE, tMix, tVoid),
+		  tFuncV(tString tString tInt CALLBACKTYPE, tMix, tVoid));
     {
-      THIS->flags = flags;
+      if (flags->type == T_STRING) {
+	/* We have a context argument.
+	 * Advance the other parameters, and type check.
+	 */
+	flags++;
+	if (flags->type != T_INT) {
+	  SIMPLE_BAD_ARG_ERROR("create", 3, "int");
+	}
+	if (args < 4) {
+	  wrong_number_of_args_error("create", args, 4);
+	}
+	cb++;
+	f_aggregate(args-4);
+	args = 5;
+      } else {
+	f_aggregate(args-3);
+	args = 4;
+      }
+
+      THIS->flags = flags->u.integer;
 
       assign_svalue(&THIS->func, cb);
 
-      f_aggregate(args-3);
-      args = 4;
       if (THIS->extra_args) {
 	free_array(THIS->extra_args);
       }
       add_ref(THIS->extra_args = sp[-1].u.array);
 
-      pop_n_elems(args-1);
+      pop_n_elems(3);	/* flags, cb, extra_args */
+      args -= 3;
 
-      apply_current(f_Simple_Context_push_string_fun_num, 1);
+      apply_current(f_Simple_Context_push_string_fun_num, args);
     }
   }
   /*! @endclass
