@@ -5,7 +5,7 @@
 //!
 //! cf http://wwww.w3.org/TR/REC-xml/
 //!
-//! $Id: Validating.pike,v 1.15 2008/06/28 16:49:54 nilsson Exp $
+//! $Id: Validating.pike,v 1.16 2008/11/21 21:01:12 grubba Exp $
 //!
 
 #pike __REAL_VERSION__
@@ -182,8 +182,8 @@ protected private string __root_element_name;
 //! @param pubid
 //!   The @tt{PUBLIC@} identifier (if any).
 //!
-//! @param unparsed
-//!   Always @expr{0@} (zero).
+//! @param info
+//!   The callbackinfo mapping containing the current parser state.
 //!
 //! @param extra
 //!   The @tt{extra@} arguments as passed to @[parse()] or @[parse_dtd()].
@@ -196,12 +196,16 @@ protected private string __root_element_name;
 //!   Returning zero will cause the validator to report an error.
 //!
 //! @note
+//!   In Pike 7.7 and earlier @[info] had the value @expr{0@} (zero).
+//!
+//! @note
 //!   The default implementation always returns @expr{0@} (zero).
 //!   Override this function to provide other behaviour.
 //!
 //! @seealso
 //!   @[parse()], @[parse_dtd()]
-string get_external_entity(string sysid, string|void pubid, int|void unparsed,
+string get_external_entity(string sysid, string|void pubid,
+			   mapping|__deprecated__(int)|void info,
 			   mixed ... extra)
 {
   // Override this function
@@ -266,7 +270,7 @@ protected private mixed validate(string kind, string name, mapping attributes,
      __root_element_name = name;
      if(attributes->SYSTEM) {
        string dtd=get_external_entity(attributes->SYSTEM, attributes->PUBLIC,
-				      0, @extra);
+				      info, @extra);
        if(dtd)
 	 parse_dtd(dtd, callback, @extra);
        else
@@ -408,7 +412,7 @@ protected private mixed validate(string kind, string name, mapping attributes,
        xmlerror("Reference to External entity %s%s; in attribute.",
 		kind, name);
      return get_external_entity(__entity_sysid[name], __entity_pubid[name],
-				0, @extra) ||
+				info, @extra) ||
        xmlerror("External entity %s not found.", name);
   }
   return callback(kind, name, attributes, contents, info, @extra);
@@ -438,21 +442,41 @@ protected private mixed cleanup_parse(function(string,string,mapping
 //! @fixme
 //!   Document this function
 array parse(string data,
-	    function(string,string,mapping,array|string,mapping(string:mixed),
-		     mixed ...:mixed) callback, mixed ... extra)
+	    string|function(string, string, mapping, array|string,
+			    mapping(string:mixed), mixed ...:mixed) callback,
+	    mixed ... extra)
 {
-  return ::parse(data, validate, callback, extra) +
-    (({cleanup_parse(callback, extra)}) - ({0}));
+  // Note: No need for advanced argument checks here;
+  //       ::parse() will check the arguments for us.
+  if (stringp(callback) && sizeof(extra)) {
+    string context = [string]callback;
+    callback = [function]extra[0];
+    extra = extra[1..];
+    return ::parse(data, context, validate, callback, extra) +
+      (({cleanup_parse(callback, extra)}) - ({0}));
+  } else {
+    return ::parse(data, validate, callback, extra) +
+      (({cleanup_parse(callback, extra)}) - ({0}));
+  }
 }
 
 //! @fixme
 //!   Document this function
 array parse_dtd(string data,
-		function(string,string,mapping,array|string,
-			 mapping(string:mixed),mixed ...:mixed) callback,
+		string|function(string,string,mapping,array|string,
+				mapping(string:mixed),mixed ...:mixed) callback,
 		mixed ... extra)
 {
-  return ::parse_dtd(data, validate, callback, extra);
+  // Note: No need for advanced argument checks here;
+  //       ::parse_dtd() will check the arguments for us.
+  if (stringp(callback) && sizeof(extra)) {
+    string context = [string]callback;
+    callback = [function]extra[0];
+    extra = extra[1..];
+    return ::parse_dtd(data, context, validate, callback, extra);
+  } else {
+    return ::parse_dtd(data, validate, callback, extra);
+  }
 }
 
 /* define_entity? */
