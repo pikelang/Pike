@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xml.cmod,v 1.104 2008/11/22 12:16:58 grubba Exp $
+|| $Id: xml.cmod,v 1.105 2008/11/22 13:05:03 grubba Exp $
 */
 
 #include "global.h"
@@ -1078,11 +1078,11 @@ PIKECLASS Simple
 			       PTRDIFF_T_TO_LONG(THIS->input->len)), 0):) \
       INDEX_PCHARP(THIS->input->datap, X) )
 
-#define SAFE_PEEK(X) ((X)>=THIS->input->len ? 0 : PEEK(X))
+#define SAFE_PEEK(X) ((THIS->input && ((X)>=THIS->input->len)) ? 0 : PEEK(X))
 
 #define POKE(X,Y) string_builder_putchar(&X,Y)
 
-#define XMLEOF() (THIS->input->len <= 0)
+#define XMLEOF() (!THIS->input || (THIS->input->len <= 0))
 
 #ifdef PIKE_DEBUG
 #define CHECK_INPUT(INPUT) do {					\
@@ -1482,14 +1482,18 @@ static int gobble(char *s)
       }while(0)
 
 
-#define READ_COMMENT() do { BEGIN_STRING(com);			\
-    while(!XMLEOF() && !(PEEK(0)=='-' && PEEK(1)=='-' && PEEK(2)=='>'))\
+#define READ_COMMENT() do {					\
+    BEGIN_STRING(com);						\
+    while(!XMLEOF() &&						\
+	  !(PEEK(0)=='-' && PEEK(1)=='-' && PEEK(2)=='>'))	\
     {								\
       POKE(com, PEEK(0));					\
       READ(1);							\
     }								\
-    READ(3);	END_STRING(com);				\
-      }while(0);
+    if (!XMLEOF())						\
+      READ(3);							\
+    END_STRING(com);						\
+  }while(0)
 
 
 #define INTERMISSION(X) do {			\
@@ -1511,12 +1515,13 @@ static int gobble(char *s)
     pop_stack();				\
   }while(0)
 
-/* FIXME: The argument is ignored! Looks like a bug! */
 static inline void very_low_sys(struct mapping *callbackinfo)
 {
-  struct xmlinput *i = THIS->input;
   check_stack(1 + THIS->extra_args->size);
-  ref_push_mapping(i->callbackinfo);
+  if (callbackinfo)
+    ref_push_mapping(callbackinfo);
+  else
+    f_aggregate_mapping(0);
   assign_svalues_no_free(sp, THIS->extra_args->item,
 			 THIS->extra_args->size, THIS->extra_args->type_field);
   sp += THIS->extra_args->size;
@@ -1526,8 +1531,12 @@ static inline void very_low_sys(struct mapping *callbackinfo)
 static inline void low_sys(void)
 {
   struct xmlinput *i = THIS->input;
-  UPDATE_LOCATION(i->pos, i->callbackinfo);
-  very_low_sys(i->callbackinfo);
+  if (i) {
+    UPDATE_LOCATION(i->pos, i->callbackinfo);
+    very_low_sys(i->callbackinfo);
+  } else {
+    very_low_sys(NULL);
+  }
 }
 
 static void sys(void)
@@ -1681,7 +1690,7 @@ static void read_attvalue(struct string_builder *X,
 	READ(1);
     }
   }
-  XMLERROR("End of file while looking for end of attribute value.");
+  XMLERROR_STAY("End of file while looking for end of attribute value.");
 }
 
 static void read_pubid(struct string_builder *X,
@@ -1692,7 +1701,7 @@ static void read_pubid(struct string_builder *X,
     if(XMLEOF())
     {
       if(Y)
-	XMLERROR("End of file while looking for end of pubid.");
+	XMLERROR_STAY("End of file while looking for end of pubid.");
       break;
     }
     if(PEEK(0)==Y)
@@ -1769,7 +1778,7 @@ static void read_entityvalue(struct string_builder *X,
     }
   }
   if (Y)
-    XMLERROR("End of file while looking for end of entity value.");
+    XMLERROR_STAY("End of file while looking for end of entity value.");
 }
 
 static void simple_read_system_literal(void)
@@ -1973,7 +1982,7 @@ void read_choice_seq_or_name(int maybe_pcdata)
 	switch(PEEK(0))
 	{
 	  case 0:
-	    XMLERROR("End of xml while reading ELEMENT declaration.");
+	    XMLERROR_STAY("End of xml while reading ELEMENT declaration.");
 	    
 	  default:
 	    XMLERROR("Expected | or ,");
@@ -2293,7 +2302,7 @@ static int really_low_parse_dtd(void)
 		    struct svalue *save;
 		    if(XMLEOF())
 		    {
-		      XMLERROR("End of file while parsing ATTLIST.");
+		      XMLERROR_STAY("End of file while parsing ATTLIST.");
 		      break;
 		    }
 		    SKIPSPACE();
@@ -2581,14 +2590,19 @@ static int really_low_parse_dtd(void)
 		  push_int(0);
 		  push_int(0);
 		  SKIPSPACE();
-		  if(PEEK(0)!='[')
-		    XMLERROR("Missing '[' in <![INCLUDE.");
-		  READ(1);
+		  if(XMLEOF() || PEEK(0)!='[')
+		    XMLERROR_STAY("Missing '[' in <![INCLUDE.");
+		  else
+		    READ(1);
 		  
 		  low_parse_dtd();
 
-		  if(PEEK(0) != ']' || PEEK(1)!= ']' || PEEK(2)!='>')
-		    XMLERROR("Missing ]]> in INCLUDE tag.");
+		  if(XMLEOF() ||
+		     PEEK(0) != ']' || PEEK(1)!= ']' || PEEK(2)!='>') {
+		    XMLERROR_STAY("Missing ]]> in INCLUDE tag.");
+		    SYS();
+		    break;
+		  }
 		  READ(3);
 		  SYS();
 		  break;
