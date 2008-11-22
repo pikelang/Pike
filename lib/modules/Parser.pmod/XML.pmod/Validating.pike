@@ -5,7 +5,7 @@
 //!
 //! cf http://wwww.w3.org/TR/REC-xml/
 //!
-//! $Id: Validating.pike,v 1.16 2008/11/21 21:01:12 grubba Exp $
+//! $Id: Validating.pike,v 1.17 2008/11/22 12:19:07 grubba Exp $
 //!
 
 #pike __REAL_VERSION__
@@ -253,12 +253,12 @@ protected private array(function) compile_language(string|array l,
 //! @seealso
 //!   @[::parse()]
 protected private mixed validate(string kind, string name, mapping attributes,
-			      array|string contents,
-			      mapping(string:mixed) info,
-			      function(string,string,mapping,array|string,
-				       mapping(string:mixed),
-				       mixed ...:mixed) callback,
-			      array(mixed) extra)
+				 array|string contents,
+				 mapping(string:mixed) info,
+				 function(string,string,mapping,array|string,
+					  mapping(string:mixed),
+					  mixed ...:mixed) callback,
+				 array(mixed) extra)
 {
   // Helper...
   function(string, mixed ...:mixed) xmlerror =
@@ -272,7 +272,7 @@ protected private mixed validate(string kind, string name, mapping attributes,
        string dtd=get_external_entity(attributes->SYSTEM, attributes->PUBLIC,
 				      info, @extra);
        if(dtd)
-	 parse_dtd(dtd, callback, @extra);
+	 parse_dtd(dtd, attributes->SYSTEM, callback, @extra);
        else
 	 return xmlerror("External subset of DTD %O not found.",
 			 attributes->SYSTEM);
