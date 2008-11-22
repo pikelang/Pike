@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xml.cmod,v 1.103 2008/11/21 20:36:58 grubba Exp $
+|| $Id: xml.cmod,v 1.104 2008/11/22 12:16:58 grubba Exp $
 */
 
 #include "global.h"
@@ -711,7 +711,7 @@ PIKECLASS Simple
    *! @note
    *!   The @[context] argument was introduced in Pike 7.8.
    */
-  PIKEFUN array parse(string s, function cb, mixed ... extra_args)
+  PIKEFUN array parse(string s, string|function cb, mixed ... extra_args)
     rawtype PARSETYPE;
   {
     int d;
