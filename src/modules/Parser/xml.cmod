@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xml.cmod,v 1.105 2008/11/22 13:05:03 grubba Exp $
+|| $Id: xml.cmod,v 1.106 2008/11/26 00:02:15 marcus Exp $
 */
 
 #include "global.h"
@@ -2564,6 +2564,11 @@ static int really_low_parse_dtd(void)
 		  push_constant_text("<![IGNORE[");
 		  push_int(0);
 		  push_int(0);
+		  SKIPSPACE();
+		  if(XMLEOF() || PEEK(0)!='[')
+		    XMLERROR_STAY("Missing '[' in <![IGNORE.");
+		  else
+		    READ(1);
 		  while(1)
 		  {
 		    if(XMLEOF())
