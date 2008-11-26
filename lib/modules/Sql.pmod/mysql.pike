@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.pike,v 1.28 2008/01/09 14:26:07 mast Exp $
+ * $Id: mysql.pike,v 1.29 2008/11/26 01:02:57 mast Exp $
  *
  * Glue for the Mysql-module
  */
@@ -186,7 +186,7 @@ void set_unicode_decode_mode (int enable)
   }
   else {
     CH_DEBUG("Disabling unicode decode mode.\n");
-    ::big_query ("SET character_set_results = " + get_charset());
+    ::big_query ("SET character_set_results = " + ::get_charset());
     utf8_mode &= ~UNICODE_DECODE_MODE;
   }
 }
