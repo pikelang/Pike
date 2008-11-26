@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.pike,v 1.42 2008/06/28 16:49:55 nilsson Exp $
+ * $Id: mysql.pike,v 1.43 2008/11/26 01:02:57 mast Exp $
  *
  * Glue for the Mysql-module
  */
@@ -186,7 +186,7 @@ void set_unicode_decode_mode (int enable)
   }
   else {
     CH_DEBUG("Disabling unicode decode mode.\n");
-    ::big_query ("SET character_set_results = " + get_charset());
+    ::big_query ("SET character_set_results = " + ::get_charset());
     utf8_mode &= ~UNICODE_DECODE_MODE;
   }
 }
@@ -804,8 +804,8 @@ int(0..1) is_keyword( string name )
 }
 
 protected void create(string|void host, string|void database,
-		   string|void user, string|void _password,
-		   mapping(string:string|int)|void options)
+		      string|void user, string|void _password,
+		      mapping(string:string|int)|void options)
 {
   string password = _password;
   _password = "CENSORED";
