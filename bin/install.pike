@@ -2,7 +2,7 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.196 2008/08/14 23:54:10 peter Exp $
+// $Id: install.pike,v 1.197 2008/11/27 20:17:30 peter Exp $
 
 // Windows installer FIXMEs:
 //
@@ -10,7 +10,6 @@
 //    installed programs list (but not e.g. for the install dir).
 // o  Add cleanup rule for the generated master.pike for uninstall.
 // o  Pike icon for the .msi file and in the installed programs list.
-// o  Remove "IDA" from the install path.
 // o  Remove meaningless "please click next" dialog.
 // o  Include dumped files.
 
