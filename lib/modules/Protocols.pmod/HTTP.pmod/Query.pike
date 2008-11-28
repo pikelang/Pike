@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.93 2008/06/28 16:36:57 nilsson Exp $
+// $Id: Query.pike,v 1.94 2008/11/28 14:58:08 jonasw Exp $
 
 //! Open and execute an HTTP query.
 //!
@@ -507,9 +507,15 @@ string dns_lookup(string hostname)
        (id=hostname_cache[hostname]))
       return id;
 
-   array hosts = (Protocols.DNS.client()->gethostbyname( hostname )||
-		  ({ 0, 0 }))[1];
-   return sizeof(hosts) && hosts[random(sizeof( hosts ))];
+   array hosts = Protocols.DNS.client()->gethostbyname( hostname );
+   if (array ip = hosts && hosts[1])
+     if (sizeof(ip)) {
+       //  Prefer IPv4 addresses
+       array(string) v6 = filter(ip, has_value, ":");
+       array(string) v4 = ip - v6;
+       return sizeof(v6) && v6[random(sizeof(v6))];
+     }
+   return 0;
 }
 
 
