@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.94 2008/11/28 14:58:08 jonasw Exp $
+// $Id: Query.pike,v 1.95 2008/11/28 15:01:27 jonasw Exp $
 
 //! Open and execute an HTTP query.
 //!
@@ -513,6 +513,8 @@ string dns_lookup(string hostname)
        //  Prefer IPv4 addresses
        array(string) v6 = filter(ip, has_value, ":");
        array(string) v4 = ip - v6;
+       if (sizeof(v4))
+	 return v4[random(sizeof(v4))];
        return sizeof(v6) && v6[random(sizeof(v6))];
      }
    return 0;
