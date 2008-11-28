@@ -2,7 +2,7 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.197 2008/11/27 20:17:30 peter Exp $
+// $Id: install.pike,v 1.198 2008/11/28 17:49:36 grubba Exp $
 
 // Windows installer FIXMEs:
 //
@@ -1367,7 +1367,7 @@ void do_export()
       add_child(WixNode("CustomAction", ([
 			  "Id":"QueryTarget",
 			  "Property":"TARGETDIR",
-			  "Value":"[ProgramFilesFolder][Manufacturer]\[ProductName]",
+			  "Value":"[ProgramFilesFolder][ProductName]",
 			  "Execute":"firstSequence",
 			])))
 ->
@@ -1463,7 +1463,7 @@ void do_export()
     TRANSLATE(vars->LIBDIR_SRC,tmpdir+"/lib"),
     TRANSLATE(vars->SRCDIR,tmpdir+"/src"),
     TRANSLATE(vars->TMP_BINDIR,tmpdir+"/bin"),
-    TRANSLATE(vars->MANDIR_SRC,tmpdir+"/man"),
+    TRANSLATE(vars->MANDIR_SRC,tmpdir+"/share/man"),
     TRANSLATE(vars->DOCDIR_SRC,tmpdir+"/refdoc"),
     TRANSLATE(vars->TMP_LIBDIR,tmpdir+"/build/lib"),
     "unpack_master.pike" : tmpdir+"/build/master.pike",
@@ -1614,7 +1614,7 @@ done
 		   "  SRCDIR=\\\"src\\\"\\\n"
 		   "  TMP_BINDIR=\\\"bin\\\"\\\n"
 		   "  TMP_BUILDDIR=\\\"build\\\"\\\n"
-		   "  MANDIR_SRC=\\\"man\\\"\\\n"
+		   "  MANDIR_SRC=\\\"share/man\\\"\\\n"
 		   "  DOCDIR_SRC=\\\"refdoc\\\"\\\n"
 		   "  PIKE_MODULE_RELOC=\\\"" + vars->PIKE_MODULE_RELOC +
 		                       "\\\"\\\n"
@@ -1943,7 +1943,7 @@ int pre_install(array(string) argv)
 	vars->include_prefix || combine_path(prefix,"include","pike");
       doc_prefix =
 	vars->doc_prefix || combine_path(prefix, "doc", "pike");
-      man_prefix=vars->man_prefix||(prefix+"/man/");
+      man_prefix=vars->man_prefix||(prefix+"/share/man/");
       break;
 
     case "--interactive":
@@ -2074,7 +2074,7 @@ int pre_install(array(string) argv)
 	mklink(vars->SRCDIR,export_base_name+".dir/src");
 	mklink(getcwd(),export_base_name+".dir/build");
 	mklink(vars->TMP_BINDIR,export_base_name+".dir/bin");
-	mklink(vars->MANDIR_SRC,export_base_name+".dir/man");
+	mklink(vars->MANDIR_SRC,export_base_name+".dir/share/man");
 	mklink(vars->DOCDIR_SRC,export_base_name+".dir/refdoc");
 
 	cd(export_base_name+".dir");
@@ -2083,7 +2083,7 @@ int pre_install(array(string) argv)
 	vars->LIBDIR_SRC="lib";
 	vars->SRCDIR="src";
 	vars->TMP_BINDIR="bin";
-	vars->MANDIR_SRC="man";
+	vars->MANDIR_SRC="share/man";
 	vars->DOCDIR_SRC="refdoc";
 	vars->TMP_BUILDDIR="build";
       }
@@ -2103,7 +2103,7 @@ int pre_install(array(string) argv)
       lib_prefix=combine_path(prefix,"lib");
       doc_prefix=combine_path(prefix,"doc");
       include_prefix=vars->include_prefix||combine_path(prefix,"include","pike");
-      man_prefix=combine_path(prefix,"man");
+      man_prefix=combine_path(prefix,"share/man");
       if (export) {
 	low_install_file(combine_path(vars->TMP_BINDIR,"install.pike"),
 			 combine_path(prefix, "bin/install.pike"));
@@ -3029,7 +3029,7 @@ int main(int argc, array(string) argv)
   if(vars->BASEDIR) {
     if(vars->BASEDIR[-1]!='/') vars->BASEDIR += "/";
     if(!vars->LIBDIR_SRC) vars->LIBDIR_SRC=vars->BASEDIR+"lib";
-    if(!vars->MANDIR_SRC) vars->MANDIR_SRC=vars->BASEDIR+"man";
+    if(!vars->MANDIR_SRC) vars->MANDIR_SRC=vars->BASEDIR+"share/man";
     if(!vars->DOCDIR_SRC) vars->DOCDIR_SRC=vars->BASEDIR+"refdoc";
     if(!vars->SRCDIR) vars->SRCDIR=vars->BASEDIR+"src";
   }
