@@ -294,7 +294,9 @@ private class GSM03_38dec {
   }
 }
 
-private string normalize(string in) {
+//! All character set names are normalized through this function
+//! before compared.
+string normalize(string in) {
   if(!in) return 0;
   string out = replace(lower_case(in),
 		      ({ "_",".",":","-","(",")" }),
@@ -324,6 +326,15 @@ private string normalize(string in) {
   return out;
 }
 
+private mapping(string:Decoder) custom_decoders = ([]);
+
+//! Adds a custom defined character set decoder. The name is
+//! normalized through the use of @[normalize].
+void set_decoder(string name, Decoder decoder)
+{
+  custom_decoders[normalize(name)]=decoder;
+}
+
 //! Returns a charset decoder object.
 //! @param name
 //!   The name of the character set to decode from. Supported charsets
@@ -338,6 +349,10 @@ private string normalize(string in) {
 Decoder decoder(string name)
 {
   name = normalize(name);
+
+  if( custom_decoders[name] )
+    return custom_decoders[name]();
+
   if(!name || (<
     "iso885911987", "iso885911998", "iso88591", "isoir100",
     "latin1", "l1", "ansix341968", "iso646irv1991", "iso646us",
@@ -558,6 +573,15 @@ private class GSM03_38enc {
   }
 }
 
+private mapping(string:Encoder) custom_encoders = ([]);
+
+//! Adds a custom defined character set encoder. The name is
+//! normalized through the use of @[normalize].
+void set_encoder(string name, Encoder encoder)
+{
+  custom_encoders[normalize(name)]=encoder;
+}
+
 //! Returns a charset encoder object.
 //!
 //! @param name
@@ -589,6 +613,10 @@ Encoder encoder(string name, string|void replacement,
 		function(string:string)|void repcb)
 {
   name = normalize(name);
+
+  if( custom_encoders[name] )
+    return custom_encoders[name](replacement, repcb);
+
   if(!name || (<
     "iso885911987", "iso885911998", "iso88591", "isoir100",
     "latin1", "l1", "ansix341968", "iso646irv1991", "iso646us",
