@@ -5,7 +5,7 @@
 //!
 //! cf http://wwww.w3.org/TR/REC-xml/
 //!
-//! $Id: Validating.pike,v 1.17 2008/11/22 12:19:07 grubba Exp $
+//! $Id: Validating.pike,v 1.18 2008/11/29 15:20:09 grubba Exp $
 //!
 
 #pike __REAL_VERSION__
@@ -248,6 +248,28 @@ protected private array(function) compile_language(string|array l,
   }
 }
 
+protected private string normalize_uri(string uri, mapping info)
+{  
+  catch {
+    // NB: We don't care about this error.
+    //     If it's relevant, it will be thrown again below.
+    return (string)Standards.URI(uri);
+  };
+  while (info && !info->context) {
+    info = info->previous;
+  }
+  string base_uri;
+  if (info) {
+    if (has_prefix(info->context, "%")) {
+      base_uri = __entity_sysid[info->context];
+    } else {
+      base_uri = info->context;
+    }
+  }
+  uri = (string)Standards.URI(uri, base_uri);
+  return uri;
+}
+
 //! The validation callback function.
 //!
 //! @seealso
@@ -269,6 +291,7 @@ protected private mixed validate(string kind, string name, mapping attributes,
    case "<!DOCTYPE":
      __root_element_name = name;
      if(attributes->SYSTEM) {
+       attributes->SYSTEM = normalize_uri(attributes->SYSTEM, info);
        string dtd=get_external_entity(attributes->SYSTEM, attributes->PUBLIC,
 				      info, @extra);
        if(dtd)
@@ -305,7 +328,7 @@ protected private mixed validate(string kind, string name, mapping attributes,
        return xmlerror("More than one notation declaration for name %O.",
 		       name);
      if(attributes->SYSTEM)
-       __notation_sysid[name] = attributes->SYSTEM;
+       __notation_sysid[name] = normalize_uri(attributes->SYSTEM, info);
      if(attributes->PUBLIC)
        __notation_pubid[name] = attributes->PUBLIC;
      break;
@@ -317,7 +340,7 @@ protected private mixed validate(string kind, string name, mapping attributes,
 	 __entity_ndata[name] = attributes->NDATA;
        }
        if(attributes->SYSTEM)
-	 __entity_sysid[name] = attributes->SYSTEM;
+	 __entity_sysid[name] = normalize_uri(attributes->SYSTEM, info);
        if(attributes->PUBLIC)
 	 __entity_pubid[name] = attributes->PUBLIC;
      }
@@ -413,7 +436,8 @@ protected private mixed validate(string kind, string name, mapping attributes,
 		kind, name);
      return get_external_entity(__entity_sysid[name], __entity_pubid[name],
 				info, @extra) ||
-       xmlerror("External entity %s not found.", name);
+       xmlerror("External entity %s (%O) not found.",
+		name, __entity_sysid[name]);
   }
   return callback(kind, name, attributes, contents, info, @extra);
 }
