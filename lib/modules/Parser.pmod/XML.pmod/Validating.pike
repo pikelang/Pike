@@ -5,7 +5,7 @@
 //!
 //! cf http://wwww.w3.org/TR/REC-xml/
 //!
-//! $Id: Validating.pike,v 1.18 2008/11/29 15:20:09 grubba Exp $
+//! $Id: Validating.pike,v 1.19 2008/11/30 18:56:26 grubba Exp $
 //!
 
 #pike __REAL_VERSION__
@@ -101,21 +101,24 @@ protected class Element {
   }
 
   void check_attributes(mapping(string:string) c_attrs,
-			function(string, mixed ...:mixed) xmlerror)
+			function(string, string, mixed ...:mixed) xmlerror)
   {
     foreach(indices(c_attrs), string name) {
       array spec = attributes[name];
       if(spec) {
 	if(!islegalattribute(c_attrs[name], spec)) {
-	  xmlerror("Invalid value for attribute %s: %O.", name, c_attrs[name]);
+	  xmlerror(this_program::name,
+		   "Invalid value for attribute %s: %O.", name, c_attrs[name]);
 	}
 	if(spec[1][0]=="#FIXED" && c_attrs[name]!=spec[1][1]) {
-	  xmlerror("Attribute %s must have the value %s.", name, spec[1][1]);
+	  xmlerror(this_program::name,
+		   "Attribute %s must have the value %s.", name, spec[1][1]);
 	}
 	switch(spec[0][0]) {
 	 case "ID":
 	   if(__ids_used[c_attrs[name]]) {
-	     xmlerror("Id %O (sttribute %s) has already been used.",
+	     xmlerror(this_program::name,
+		      "Id %O (sttribute %s) has already been used.",
 		      c_attrs[name], name);
 	   }
 	   __ids_used[c_attrs[name]] = 1;
@@ -131,7 +134,8 @@ protected class Element {
 	   break;
 	 case "ENTITY":
 	   if(!__entity_ndata[c_attrs[name]]) {
-	     xmlerror("Invalid value for attribute %s: %O.",
+	     xmlerror(this_program::name,
+		      "Invalid value for attribute %s: %O.",
 		      name, c_attrs[name]);
 	   }
 	   break;
@@ -140,7 +144,8 @@ protected class Element {
 						  ({"\t", "\r", "\n"}),
 						  ({" ", " ", " "}) )/" "-
 			  ({""})), 0)>=0) {
-	     xmlerror("Invalid value for attribute %s: %O.",
+	     xmlerror(this_program::name,
+		      "Invalid value for attribute %s: %O.",
 		      name, c_attrs[name]);
 	   }
 	   break;
@@ -149,7 +154,7 @@ protected class Element {
 	   break;
 	}
       } else if(name[..3]!="xml:") {
-	xmlerror("Undeclared attribute: %s.", name);
+	xmlerror(this_program::name, "Undeclared attribute: %s.", name);
       }
     }
     foreach (filter(indices(attributes)-indices(c_attrs),
@@ -157,7 +162,8 @@ protected class Element {
 		      return attributes[a][1][0] ==
 			"#REQUIRED";
 		    }), string attr) {
-      xmlerror("Node %s is missing required attribute: %s.", name, attr);
+      xmlerror(this_program::name,
+	       "Node %s is missing required attribute: %s.", name, attr);
     };
   }
 
@@ -283,9 +289,9 @@ protected private mixed validate(string kind, string name, mapping attributes,
 				 array(mixed) extra)
 {
   // Helper...
-  function(string, mixed ...:mixed) xmlerror =
-    lambda(string msg, mixed ... args) {
-      return callback("error", 0, 0, sprintf(msg, @args), info, @extra);
+  function(string, string, mixed ...:mixed) xmlerror =
+    lambda(string tag, string msg, mixed ... args) {
+      return callback("error", tag, 0, sprintf(msg, @args), info, @extra);
     };
   switch(kind) {
    case "<!DOCTYPE":
@@ -297,23 +303,25 @@ protected private mixed validate(string kind, string name, mapping attributes,
        if(dtd)
 	 parse_dtd(dtd, attributes->SYSTEM, callback, @extra);
        else
-	 return xmlerror("External subset of DTD %O not found.",
+	 return xmlerror("!DOCTYPE", "External subset of DTD %O not found.",
 			 attributes->SYSTEM);
      }
      break;
    case "<!ELEMENT":
      if(__element_content[name])
-       return xmlerror("Element type %O declared more than once.", name);
+       return xmlerror("!ELEMENT",
+		       "Element type %O declared more than once.", name);
      if(contents == "EMPTY")
        __element_content[name] = ({accept_terminate});
      else if(contents == "ANY")
        __element_content[name] = ({accept_any});
      else if (!contents) {
        __element_content[name] = ({accept_any});
-       xmlerror("Invalid element declatation for %O.", name);
+       xmlerror("!ELEMENT", "Invalid element declatation for %O.", name);
      } else if(contents[0] == "#PCDATA") {
        if(sizeof(Array.uniq(contents)) != sizeof(contents))
-	 return xmlerror("The same name must not appear more "
+	 return xmlerror("!ELEMENT",
+			 "The same name must not appear more "
 			 "than once in a mixed-content declaration (%s).",
 			 name);
        __element_content[name] =
@@ -325,7 +333,8 @@ protected private mixed validate(string kind, string name, mapping attributes,
      break;
    case "<!NOTATION":
      if(__notation_sysid[name] || __notation_pubid[name])
-       return xmlerror("More than one notation declaration for name %O.",
+       return xmlerror("!NOTATION",
+		       "More than one notation declaration for name %O.",
 		       name);
      if(attributes->SYSTEM)
        __notation_sysid[name] = normalize_uri(attributes->SYSTEM, info);
@@ -353,16 +362,19 @@ protected private mixed validate(string kind, string name, mapping attributes,
 	 if(attributes[attr][0][0] == "ID") {
 	   if(search(column(column(values(__element_attrs[name]), 0), 0),
 		     "ID")>=0)
-	     xmlerror("Element %O has more than one ID attribute.", name);
+	     xmlerror("!ATTLIST",
+		      "Element %O has more than one ID attribute.", name);
 	   if(attributes[attr][1][0] != "#IMPLIED" &&
 	      attributes[attr][1][0] != "#REQUIRED") {
-	     xmlerror("ID attribute must be #IMPLIED or #REQUIRED.");
+	     xmlerror("!ATTLIST",
+		      "ID attribute must be #IMPLIED or #REQUIRED.");
 	     attributes[attr][1][0] = "#REQUIRED";
 	   }
 	 }
 	 if(sizeof(attributes[attr][1]) == 2 &&
 	    !islegalattribute(attributes[attr][1][1], attributes[attr]))
-	   xmlerror("Illegal default attribute value for %s:%s: %O.",
+	   xmlerror("!ATTLIST",
+		    "Illegal default attribute value for %s:%s: %O.",
 		    name, attr, attributes[attr][1][1]);
 	 if(attributes[attr][0][0] == "NOTATION")
 	   __notations_used |= mkmultiset(attributes[attr][0][1..]);
@@ -372,17 +384,32 @@ protected private mixed validate(string kind, string name, mapping attributes,
    case "<":
    case "<>":
      if(!__element_content[name]) {
-       xmlerror("Undeclared element: %O.", name);
+       xmlerror(name, "Undeclared element: %O.", name);
        __element_content[name] = ({accept_any});
      }
      if(!sizeof(__element_stack)) {
        if(name != __root_element_name)
-	 xmlerror("Root element type mismatch: %s (expected %s).",
+	 xmlerror(name, "Root element type mismatch: %s (expected %s).",
 		  name, __root_element_name);
      } else {
-       if(!__element_stack[-1]->accept_element(name))
-	 xmlerror("Invalid content for element %s: %s.",
-		  __element_stack[-1]->name, name);
+       if(!__element_stack[-1]->accept_element(name)) {
+	 int i;
+	 for (i=2; i <= sizeof(__element_stack); i++) {
+	   if (__element_stack[-i]->accept_element(name)) break;
+	 }
+	 if (i <= sizeof(__element_stack)) {
+	   int j;
+	   for (j = 1; j < i; j++) {
+	     xmlerror(name, "Missing end tag: </%s>.",
+		      __element_stack[-j]->name);
+	     // FIXME: Ought to signal the xml parser to pop contexts here.
+	   }
+	   __element_stack = __element_stack[..i];
+	 } else {
+	   xmlerror(name, "Invalid content for element <%s>: <%s>.",
+		    __element_stack[-1]->name, name);
+	 }
+       }
      }
 
      Element e = Element(name);
@@ -395,27 +422,28 @@ protected private mixed validate(string kind, string name, mapping attributes,
        return 0;
      } else
        if(!e->accept_element(0)) {
-	 xmlerror("Element %s may not be empty.", name);
+	 xmlerror(name, "Element %s may not be empty.", name);
        }
      break;
    case ">":
      if (!sizeof(__element_stack)) {
-       return xmlerror("Unmatched end tag at the top level: </%s>.", name);
+       return xmlerror(name,
+		       "Unmatched end tag at the top level: </%s>.", name);
      } else if (__element_stack[-1]->name != name) {
-       return xmlerror("Unmatched end tag: </%s> (expected </%s>).",
+       return xmlerror(name, "Unmatched end tag: </%s> (expected </%s>).",
 		       name, __element_stack[-1]->name);
      }
      if(!__element_stack[-1]->accept_element(0))
-       xmlerror("Invalid content for element %s.", name);
+       xmlerror(name, "Invalid content for element %s.", name);
      __element_stack = __element_stack[..<1];
      break;
    case "":
    case "<![CDATA[":
      if(!sizeof(__element_stack))
-       return xmlerror("All data must be inside tags");
+       return xmlerror(0, "All data must be inside tags");
      if(!__element_stack[-1]->accept_element("")) {
        if ((kind != "") || (contents-" "-"\t"-"\r"-"\n" != ""))
-	 xmlerror("Invalid content for element %s.", name);
+	 xmlerror(name, "Invalid content for element %s.", name);
        return 0;
      }
      break;
@@ -426,17 +454,17 @@ protected private mixed validate(string kind, string name, mapping attributes,
        return 0;
      if(__entity_ndata[name]) {
        if (kind == "%") {
-	 xmlerror("Reference to unparsed entity: %s;.", name);
+	 xmlerror(0, "Reference to unparsed entity: %s;.", name);
        } else {
-	 xmlerror("Reference to unparsed entity: %s%s;.", kind, name);
+	 xmlerror(0, "Reference to unparsed entity: %s%s;.", kind, name);
        }
      }
      if(attributes->in_attribute && kind!="%")
-       xmlerror("Reference to External entity %s%s; in attribute.",
+       xmlerror(0, "Reference to External entity %s%s; in attribute.",
 		kind, name);
      return get_external_entity(__entity_sysid[name], __entity_pubid[name],
 				info, @extra) ||
-       xmlerror("External entity %s (%O) not found.",
+       xmlerror(0, "External entity %s (%O) not found.",
 		name, __entity_sysid[name]);
   }
   return callback(kind, name, attributes, contents, info, @extra);
