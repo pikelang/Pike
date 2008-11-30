@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xml.cmod,v 1.106 2008/11/26 00:02:15 marcus Exp $
+|| $Id: xml.cmod,v 1.107 2008/11/30 16:45:29 grubba Exp $
 */
 
 #include "global.h"
@@ -2366,6 +2366,7 @@ static int really_low_parse_dtd(void)
 			while(PEEK(0)=='|')
 			{
 			  READ(1);
+			  SKIPSPACE();
 			  SIMPLE_READNMTOKEN();
 			  SKIPSPACE();
 			  check_stack(1);
