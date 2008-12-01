@@ -970,6 +970,8 @@ To install in this folder, click "Next". To install to a different folder, enter
     <Property Id="FolderForm_AllUsers"><![CDATA[ME]]></Property>
     <Property Id="AdminWelcomeForm_NextArgs"><![CDATA[AdminFolderForm]]></Property>
     <Property Id="ARPCONTACT"><![CDATA[Roxen Internet Software AB]]></Property>
+    <Icon Id="pikeicon" SourceFile="pike.ico" />
+    <Property Id="ARPPRODUCTICON" Value="pikeicon" />
     <Property Id="FolderForm_NextArgs"><![CDATA[ConfirmInstallForm]]></Property>
     <Property Id="MaintenanceForm_Action"><![CDATA[Repair]]></Property>
     <Property Id="AdminFolderForm_NextArgs"><![CDATA[AdminConfirmInstallForm]]></Property>
