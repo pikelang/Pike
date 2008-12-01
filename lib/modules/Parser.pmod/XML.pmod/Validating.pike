@@ -5,7 +5,7 @@
 //!
 //! cf http://wwww.w3.org/TR/REC-xml/
 //!
-//! $Id: Validating.pike,v 1.19 2008/11/30 18:56:26 grubba Exp $
+//! $Id: Validating.pike,v 1.20 2008/12/01 10:03:42 grubba Exp $
 //!
 
 #pike __REAL_VERSION__
@@ -394,6 +394,7 @@ protected private mixed validate(string kind, string name, mapping attributes,
      } else {
        if(!__element_stack[-1]->accept_element(name)) {
 	 int i;
+	 // FIXME: What about the sequence mismatch case?
 	 for (i=2; i <= sizeof(__element_stack); i++) {
 	   if (__element_stack[-i]->accept_element(name)) break;
 	 }
@@ -404,7 +405,7 @@ protected private mixed validate(string kind, string name, mapping attributes,
 		      __element_stack[-j]->name);
 	     // FIXME: Ought to signal the xml parser to pop contexts here.
 	   }
-	   __element_stack = __element_stack[..i];
+	   __element_stack = __element_stack[..sizeof(__element_stack)-i];
 	 } else {
 	   xmlerror(name, "Invalid content for element <%s>: <%s>.",
 		    __element_stack[-1]->name, name);
