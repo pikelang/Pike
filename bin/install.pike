@@ -2,16 +2,21 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.198 2008/11/28 17:49:36 grubba Exp $
+// $Id: install.pike,v 1.199 2008/12/02 05:45:40 peter Exp $
 
 // Windows installer FIXMEs:
 //
 // o  Want version in the title that gets entered into the Windows
 //    installed programs list (but not e.g. for the install dir).
 // o  Add cleanup rule for the generated master.pike for uninstall.
-// o  Pike icon for the .msi file and in the installed programs list.
 // o  Remove meaningless "please click next" dialog.
 // o  Include dumped files.
+// o  Start menu entries.
+// o  Make sure old installer regstry keys are removed.
+// o  Separate shell icon for .pmod
+// o  Refresh shell when icons. Now a explorer restart is needed to see them.
+//
+// Note: It's not possible to change the .msi icon.
 
 #define USE_GTK
 
@@ -2222,6 +2227,14 @@ void make_wix()
 		       "RE__COMMAND");
   root->install_regkey("bin", "HKCR", "pike_file\\DefaultIcon", "",
 		       "[TARGETDIR]bin\\pike.exe", "RE__ICON");
+
+  root->install_regkey("bin", "HKCR", ".pmod", "", "pike_module",
+		       "RE__PM");
+  root->install_regkey("bin", "HKCR", "pike_module", "", "Pike Module File",
+		       "RE__PMF");
+  //FIXME: Should have a diffrent icon. Traditionally "pike_blue.ico".
+  root->install_regkey("bin", "HKCR", "pike_module\\DefaultIcon", "",
+		       "[TARGETDIR]bin\\pike.exe", "RE__PMICON");
 
   string title = 
 #if 1
