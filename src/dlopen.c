@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dlopen.c,v 1.70 2003/08/18 12:46:03 tomas Exp $
+|| $Id: dlopen.c,v 1.71 2008/12/02 19:19:07 mast Exp $
 */
 
 #include <global.h>
@@ -199,7 +199,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.70 2003/08/18 12:46:03 tomas Exp $");
+RCSID("$Id: dlopen.c,v 1.71 2008/12/02 19:19:07 mast Exp $");
 
 #endif
 
@@ -2344,7 +2344,15 @@ static void init_dlopen(void)
 
       data->peaout=(union PEAOUT *)(data->coff + 1);
 
+#if 1
+      /* Workaround for "fatal error C1001: INTERNAL COMPILER ERROR" in vc98. */
+      if (data->peaout->pe32.aout.magic == 0x20b)
+	global_imagebase = data->peaout->pe32plus.image_base;
+      else
+	global_imagebase = data->peaout->pe32.image_base;
+#else
       global_imagebase = PEAOUT_GET(*data->peaout, image_base);
+#endif
 
     } else
 
