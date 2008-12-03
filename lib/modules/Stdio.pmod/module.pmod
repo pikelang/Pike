@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.243 2008/08/31 20:17:06 grubba Exp $
+// $Id: module.pmod,v 1.244 2008/12/03 12:02:25 tor Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -2230,28 +2230,50 @@ int file_size(string filename)
   return [int]stat[1];
 }
 
-//! Append @[relative] paths to an @[absolute] path and remove any
-//! @expr{"//"@}, @expr{"../"@} or @expr{"/."@} to produce a
-//! straightforward absolute path as a result.
+//! @decl string append_path(string absolute, string ... relative)
+//! @decl string append_path_unix(string absolute, string ... relative)
+//! @decl string append_path_nt(string absolute, string ... relative)
+//! 
+//!   Append @[relative] paths to an @[absolute] path and remove any
+//!   @expr{"//"@}, @expr{"../"@} or @expr{"/."@} to produce a
+//!   straightforward absolute path as a result.
 //!
-//! @expr{"../"@} is ignorded in the relative paths if it makes the
-//! created path begin with something else than the absolute path
-//! (or so far created path).
+//!   @expr{"../"@} is ignorded in the relative paths if it makes the
+//!   created path begin with something else than the absolute path
+//!   (or so far created path).
 //!
-//! @note
-//! Warning: This does not work on NT.
-//! (Consider paths like: k:/fnord)
+//!   @[append_path()] is equivalent to @[append_path_unix()] on UNIX-like
+//!   operating systems, and equivalent to @[append_path_nt()] on NT-like
+//!   operating systems.
 //!
-//! @seealso
-//! @[combine_path()]
+//!   @seealso
+//!   @[combine_path()]
 //!
-string append_path(string absolute, string ... relative)
+
+string append_path_unix(string absolute, string ... relative)
 {
   return combine_path(absolute,
 		      @map(relative, lambda(string s) {
 				       return combine_path("/", s)[1..];
 				     }));
 }
+
+string append_path_nt(string absolute, string ... relative)
+{
+  return combine_path(absolute,
+		      @map(relative, lambda(string s) {
+				       if(s[1..1] == ":") {
+					 s = s[0..0] + s[2..];
+				       }
+				       return combine_path("/", s)[1..];
+				     }));
+}
+
+#ifdef __NT__
+function(string, string ... : string) append_path = append_path_nt;
+#else
+function(string, string ... : string) append_path = append_path_unix;
+#endif
 
 //! Returns a canonic representation of @[path] (without /./, /../, //
 //! and similar path segments).
