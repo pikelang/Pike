@@ -1,5 +1,5 @@
 //
-// $Id: TELNET.pmod,v 1.30 2008/12/06 16:50:43 grubba Exp $
+// $Id: TELNET.pmod,v 1.31 2008/12/06 17:07:31 grubba Exp $
 //
 // The TELNET protocol as described by RFC 764 and others.
 //
@@ -422,7 +422,8 @@ class protocol
 
     if (sizeof(to_send))
     {
-      DWRITE(sprintf("TELNET: We now have data to send! (%d bytes)\n", sizeof(to_send)));
+      DWRITE(sprintf("TELNET: We now have data to send! (%d bytes)\n",
+		     sizeof(to_send)));
       if (to_send[0] == 242) {
 	// DataMark needs extra quoting... Stupid.
 	DWRITE("TELNET: Found datamark @ offset 0!\n");
@@ -472,39 +473,41 @@ class protocol
   //! @param option
   //!   The option to disable.
 
-
-#define CONTROL(OPTIONS,DO,DONT,WILL,WONT,YES,NO)					\
-  void send_##DO(int option)								\
-  {											\
-    if ((option < 0) || (option > 255)) {						\
-      error( "Bad TELNET option #%d\n", option);					\
-    }											\
-     DWRITE(sprintf("TELNET: send_" #DO "(%s) state is %d\n",lookup_telopt[option] || (string)option,OPTIONS##_options[option])); \
-    switch(OPTIONS##_options[option])							\
-    {											\
-      case NO:										\
-      case UNKNOWN:									\
-	OPTIONS##_options[option]= WANT | YES;						\
-        DWRITE(sprintf("TELNET: => " #DO " %s\n",lookup_telopt[option] || (string)option)); \
-	to_send += sprintf("%c%c%c",IAC,DO,option); 					\
-	break;										\
-											\
-      case YES: /* Already enabled */							\
-      case WANT | YES: /* Will be enabled soon */					\
-      case WANT | NO | OPPOSITE: /* Already queued an enable request. */		\
-	break;										\
-											\
-      case WANT | NO:									\
-      case WANT | YES | OPPOSITE:							\
-	OPTIONS##_options[option]^=OPPOSITE;						\
-	break;										\
-											\
-      default:										\
-	error("TELNET: Strange remote_options[%d]=%d\n",option,remote_options[option]);	\
-	/* ERROR: weird state! */							\
-	break;										\
-    }											\
-    enable_write();									\
+#define CONTROL(OPTIONS,DO,DONT,WILL,WONT,YES,NO)			\
+  void send_##DO(int option)						\
+  {									\
+    if ((option < 0) || (option > 255)) {				\
+      error( "Bad TELNET option #%d\n", option);			\
+    }									\
+    DWRITE(sprintf("TELNET: send_" #DO "(%s) state is %d\n",		\
+		    lookup_telopt[option] || (string)option,		\
+		    OPTIONS##_options[option]));			\
+    switch(OPTIONS##_options[option]) {					\
+    case NO:								\
+    case UNKNOWN:							\
+	OPTIONS##_options[option]= WANT | YES;				\
+        DWRITE(sprintf("TELNET: => " #DO " %s\n",			\
+		       lookup_telopt[option] || (string)option));	\
+	to_send += sprintf("%c%c%c",IAC,DO,option);			\
+	break;								\
+									\
+    case YES: /* Already enabled */					\
+    case WANT | YES: /* Will be enabled soon */				\
+    case WANT | NO | OPPOSITE: /* Already queued an enable request. */	\
+      break;								\
+      									\
+    case WANT | NO:							\
+    case WANT | YES | OPPOSITE:						\
+      OPTIONS##_options[option]^=OPPOSITE;				\
+      break;								\
+      									\
+    default:								\
+      error("TELNET: Strange remote_options[%d]=%d\n",			\
+	    option, remote_options[option]);				\
+      /* ERROR: weird state! */						\
+      break;								\
+    }									\
+    enable_write();							\
   }
 
   //! @ignore
@@ -651,16 +654,7 @@ class protocol
   protected void got_data(mixed ignored, string line)
   {
 #ifdef TELNET_DEBUG
-  werror("TELNET: got_data(\"%s\")\n",Array.map(values(line),lambda(int s) { 
-    switch(s)
-    {
-      case ' '..'z':
-	return sprintf("%c",s);
-	
-      default:
-	return sprintf("\\0x%02x",s);
-    }
-  })*"");
+    werror("TELNET: got_data(%O)\n",line);
 #endif
 
     if (sizeof(line) && (line[0] == DM)) {
@@ -670,181 +664,178 @@ class protocol
       synch = 0;
     }
 
-      if (has_value(line, C(IAC))) {
-	array a = line / C(IAC);
+    if (has_value(line, C(IAC))) {
+      array a = line / C(IAC);
 
-	string parsed_line = a[0];
-	int i;
-	for (i=1; i < sizeof(a); i++) {
-	  string part = a[i];
-	  if (sizeof(part)) {
+      string parsed_line = a[0];
+      int i;
+      for (i=1; i < sizeof(a); i++) {
+	string part = a[i];
+	if (sizeof(part)) {
 
-	    DWRITE(sprintf("TELNET: Code %s\n", lookup_telnetcodes[part[0]] || (string)part[0]));
+	  DWRITE(sprintf("TELNET: Code %s\n",
+			 lookup_telnetcodes[part[0]] || (string)part[0]));
 
-	    switch (part[0]) {
-	    default:
-	      call_callback(part[0]);
-	      a[i] = a[i][1..];
-	      break;
+	  switch (part[0]) {
+	  default:
+	    call_callback(part[0]);
+	    a[i] = a[i][1..];
+	    break;
 
-	      // FIXME, find true end of subnegotiation!
-	    case SB:
-	      call_callback(SB,part[1..]);
-	      a[i] = "";
-	      break;
+	    // FIXME, find true end of subnegotiation!
+	  case SB:
+	    call_callback(SB,part[1..]);
+	    a[i] = "";
+	    break;
 
-	    case EC:	// Erase Character
-	      for (int j=i; j--;) {
-		if (sizeof(a[j])) {
-		  a[j] = a[j][..<1];
-		  break;
-		}
+	  case EC:	// Erase Character
+	    for (int j=i; j--;) {
+	      if (sizeof(a[j])) {
+		a[j] = a[j][..<1];
+		break;
 	      }
-	      a[i] = a[i][1..];
-	      break;
+	    }
+	    a[i] = a[i][1..];
+	    break;
 
 #if 0
-	    case EL:	// Erase Line
+	  case EL:	// Erase Line
+	    for (int j=0; j < i; j++) {
+	      a[j] = "";
+	    }
+	    a[i] = a[i][1..];
+	    break;
+#endif
+
+#define HANDLE(OPTIONS,WILL,WONT,DO,DONT)				\
+	  case WILL:							\
+	  {								\
+	    int option = a[i][1];					\
+	    int state = OPTIONS##_options[option];			\
+	    a[i] = a[i][2..];						\
+	  								\
+	    DWRITE(sprintf(#WILL " %s, state 0x%04x\n",			\
+	  		     lookup_telopt[option], state));		\
+	    								\
+	    switch(state) {						\
+	    case NO:							\
+	    case UNKNOWN:						\
+	  	if (WILL##_callback(option))				\
+	  	{							\
+	  	  /* Agree about enabling */				\
+	  	  state=YES;						\
+	  	  send_##DO(option);					\
+	  	} else {						\
+	  	  state=NO;						\
+	  	  send_##DONT(option);					\
+	  	}							\
+	  	break;							\
+	  	  							\
+	    case YES:							\
+	  	/* Ignore */						\
+	  	break;							\
+	  								\
+	    case WANT | NO:						\
+	  	state=NO;						\
+	  	break;							\
+	  								\
+	    case WANT | YES:						\
+	    case WANT | NO | OPPOSITE:					\
+	  	state=YES;						\
+	  	break;							\
+	  								\
+	    case WANT | YES | OPPOSITE:					\
+	  	state=WANT | NO;					\
+	  	send_##DONT(option);					\
+	  	break;							\
+	  								\
+	    default:							\
+	  	error("TELNET: Strange remote_options[%d]=%d\n",	\
+	  	      option,remote_options[option]);			\
+	  	/* Weird state ! */					\
+	    }								\
+	    DWRITE(sprintf("TELNET: => " #WILL " %s, state 0x%04x\n",	\
+	  		     lookup_telopt[option], state));		\
+	    set_##OPTIONS##_option(option,state);			\
+	    break;							\
+	  }								\
+	  								\
+	  case WONT:							\
+	  {								\
+	    int option = a[i][1];					\
+	    int state = OPTIONS##_options[option];			\
+	    a[i] = a[i][2..];						\
+	    								\
+	    DWRITE(sprintf(#WONT " %s, state 0x%04x\n",			\
+	  		     lookup_telopt[option], state));		\
+	    								\
+	    switch(state)						\
+	    {								\
+	    case UNKNOWN:						\
+	    case NO:							\
+	  	state=NO;						\
+	  	break;							\
+	  								\
+	    case YES:							\
+	  	state=NO;						\
+	  	send_##DONT(option);					\
+	  	break;							\
+	  								\
+	    case WANT | NO:						\
+	  	state=NO;						\
+	  	break;							\
+	  								\
+	    case WANT | NO | OPPOSITE:					\
+	  	state=WANT | YES;					\
+	  	send_##DO(option);					\
+	  	break;							\
+	  								\
+	    case WANT | YES:						\
+	    case WANT | YES | OPPOSITE:					\
+	  	state=NO;						\
+	  	break;							\
+	  								\
+	    default:							\
+	  	error("TELNET: Strange remote_options[%d]=%d\n",	\
+	  	      option, remote_options[option]);			\
+	  	/* Weird state */					\
+	    }								\
+	    								\
+	    DWRITE(sprintf("TELNET: => " #WONT " %s, state 0x%04x\n",	\
+	  		     lookup_telopt[option], state));		\
+	    set_##OPTIONS##_option(option,state);			\
+	  }								\
+	  break
+
+	  HANDLE(remote,WILL,WONT,DO,DONT);
+	  HANDLE(local,DO,DONT,WILL,WONT);
+
+	  case DM:	// Data Mark
+	    if (synch) {
 	      for (int j=0; j < i; j++) {
 		a[j] = "";
 	      }
-	      a[i] = a[i][1..];
-	      break;
-#endif
-
-#define HANDLE(OPTIONS,WILL,WONT,DO,DONT)						\
-	    case WILL:{									\
-	      int option = a[i][1];							\
-	      int state = OPTIONS##_options[option];				       	\
-	      a[i] = a[i][2..];								\
-											\
-	      DWRITE(sprintf(#WILL " %s, state 0x%04x\n", lookup_telopt[option], state));		\
-											\
-	      switch(state)								\
-	      {										\
-		case NO:								\
-		case UNKNOWN:								\
-		  if (WILL##_callback(option))						\
-		  {									\
-		    /* Agree about enabling */						\
-		  state=YES;								\
-		    send_##DO(option);							\
-		  } else {								\
-		    state=NO;								\
-		    send_##DONT(option);						\
-		  }									\
-		  break;								\
-											\
-		case YES:								\
-		  /* Ignore */								\
-		  break;								\
-											\
-		case WANT | NO:								\
-		  state=NO;								\
-		  break;								\
-											\
-		case WANT | YES:							\
-		case WANT | NO | OPPOSITE:						\
-		  state=YES;								\
-		  break;								\
-											\
-		case WANT | YES | OPPOSITE:						\
-		  state=WANT | NO;							\
-		  send_##DONT(option);							\
-		  break;								\
-											\
-		default:								\
-		  error("TELNET: Strange remote_options[%d]=%d\n",			\
-			option,remote_options[option]);					\
-		  /* Weird state ! */							\
-	      }										\
-	      DWRITE(sprintf("TELNET: => " #WILL " %s, state 0x%04x\n", lookup_telopt[option], state));	\
-	      set_##OPTIONS##_option(option,state);					\
-	      break;}									\
-											\
-	    case WONT:{									\
-	      int option = a[i][1];							\
-	      int state = OPTIONS##_options[option];					\
-	      a[i] = a[i][2..];								\
-											\
-	      DWRITE(sprintf(#WONT " %s, state 0x%04x\n", lookup_telopt[option], state));		\
-											\
-	      switch(state)								\
-	      {										\
-		case UNKNOWN:								\
-		case NO:								\
-		  state=NO;								\
-		  break;								\
-											\
-		case YES:								\
-		  state=NO;								\
-		  send_##DONT(option);							\
-		  break;								\
-											\
-		case WANT | NO:								\
-		  state=NO;								\
-		  break;								\
-											\
-		case WANT | NO | OPPOSITE:						\
-		  state=WANT | YES;							\
-		  send_##DO(option);							\
-		  break;								\
-											\
-		case WANT | YES:							\
-		case WANT | YES | OPPOSITE:						\
-		  state=NO;								\
-		  break;								\
-											\
-		default:								\
-		  error("TELNET: Strange remote_options[%d]=%d\n",			\
-			option,remote_options[option]);					\
-		  /* Weird state */							\
-	      }										\
-											\
-	      DWRITE(sprintf("TELNET: => " #WONT " %s, state 0x%04x\n", lookup_telopt[option], state));	\
-	      set_##OPTIONS##_option(option,state);					\
-	      }break
-
-
-
-	      HANDLE(remote,WILL,WONT,DO,DONT);
-	      HANDLE(local,DO,DONT,WILL,WONT);
-
-	    case DM:	// Data Mark
-	      if (synch) {
-		for (int j=0; j < i; j++) {
-		  a[j] = "";
-		}
-	      }
-	      a[i] = a[i][1..];
-	      synch = 0;
-	      break;
 	    }
-	  } else {
-	    // IAC IAC => IAC
-	    a[i] = C(IAC);
-	    i++;
+	    a[i] = a[i][1..];
+	    synch = 0;
+	    break;
 	  }
+	} else {
+	  // IAC IAC => IAC
+	  a[i] = C(IAC);
+	  i++;
 	}
-//	werror("%O\n",a);
-	line = a * "";
       }
+//      werror("%O\n",a);
+      line = a * "";
+    }
 
-      if ((!synch)) {
+    if ((!synch)) {
 #ifdef TELNET_DEBUG
-	werror("TELNET: calling read_callback(X,\"%s\")\n",Array.map(values(line),lambda(int s) { 
-	  switch(s)
-	  {
-	    case ' '..'z':
-	      return sprintf("%c",s);
-	      
-	    default:
-	      return sprintf("\\0x%02x",s);
-	  }
-	})*"");
+      werror("TELNET: calling read_callback(X,%O)\n", line);
 #endif
-	call_read_cb(line);
-      }
+      call_read_cb(line);
+    }
     enable_write();
   }
 
@@ -878,7 +869,7 @@ class protocol
   //! @param r_cb
   //!   Function to call when data has arrived.
   //! @param w_cb
-  //!   Function to call when data can be sent.
+  //!   Function to call when the send buffer is empty.
   //! @param c_cb
   //!   Function to call when the connection is closed.
   //! @param callbacks
@@ -910,8 +901,9 @@ class protocol
     read_cb = r_cb;
     write_cb = w_cb;
     close_cb = c_cb;
-    DWRITE(sprintf("TELNET: set_nonblocking(): Calling fd->set_nonblocking() %O %O\n",
-	   w_cb, w_cb || send_data));
+    DWRITE(sprintf("TELNET: set_nonblocking(): "
+		   "Calling fd->set_nonblocking() %O %O\n",
+		   w_cb, w_cb || send_data));
     fd->set_nonblocking(got_data, w_cb && send_data, close_cb, got_oob);
     nonblocking_write = !!w_cb;
   }
