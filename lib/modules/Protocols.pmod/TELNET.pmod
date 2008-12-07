@@ -1,5 +1,5 @@
 //
-// $Id: TELNET.pmod,v 1.31 2008/12/06 17:07:31 grubba Exp $
+// $Id: TELNET.pmod,v 1.32 2008/12/07 15:54:30 mast Exp $
 //
 // The TELNET protocol as described by RFC 764 and others.
 //
@@ -1026,10 +1026,16 @@ class Readline
   }
   
   protected function(mixed,string:void) read_cb2;
+  protected function(mixed:void) close_cb2;
   
   protected void readline_callback(string data)
   {
     read_cb2(id,data+"\n");
+  }
+
+  protected void readline_close_callback(string data)
+  {
+    close_cb2(id);
   }
   
   protected string prompt="";
@@ -1048,6 +1054,7 @@ class Readline
 	      if(!read_cb2)
 	      {
 		read_cb2=read_cb;
+		close_cb2=close_cb;
 		term=data[2..];
  		DWRITE(sprintf("TELNET.Readline: Enabling READLINE, term=%s\n",
 			       term));
@@ -1058,6 +1065,7 @@ class Readline
 		set_secret(0);
 		readline=Stdio.Readline(this,lower_case(term));
 		set_secret(secret_mode);
+		readline->get_input_controller()->set_close_callback(readline_close_callback);
 		DWRITE("TELNET.Readline: calling readline->set_nonblocking()\n");
 		readline->set_nonblocking(readline_callback);
 		DWRITE(sprintf("TELNET: Setting the readline prompt to %O\n", prompt));
