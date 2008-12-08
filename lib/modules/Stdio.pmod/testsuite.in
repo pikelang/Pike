@@ -4,6 +4,8 @@ START_MARKER
 test_eq([[ Stdio.append_path("../foo/", "../bar") ]], "../foo/bar")
 test_eq([[ Stdio.append_path("../foo/", "../bar", "../baz") ]], "../foo/bar/baz")
 test_eq([[ Stdio.append_path("../foo/", "../bar", "../baz", "../fie/../faz") ]], "../foo/bar/baz/faz")
+test_eq([[ Stdio.append_path_nt("c:/foo", "z:/bar") ]], "c:/foo/z/bar")
+test_eq([[ Stdio.append_path_nt("c:/foo", "//bar") ]], "c:/foo/bar")
 
 // Peek is missing on windows. When it exists, turn on peek-dependent
 // code in module.pmod
