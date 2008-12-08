@@ -1237,7 +1237,7 @@ Incompatible changes
 --------------------
 
   These incompatible changes can be solved by adding #pike 7.6 to your
-  source file or starting Pike with -V7.6.
+  source file or starting Pike with -V7.6 unless otherwise noted.
 
 o main() environment
 
@@ -1313,6 +1313,9 @@ o Stdio
   does not exist.
 
 o The modules Mird, Perl and Ssleay have been removed.
+
+  Note that these modules are not avilable via the backwards
+  compatibility layer.
 
 
 C level module API
