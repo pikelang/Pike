@@ -1,4 +1,4 @@
-// $Id: Readline.pike,v 1.61 2008/07/24 03:16:45 mbaehr Exp $
+// $Id: Readline.pike,v 1.62 2008/12/08 19:33:13 grubba Exp $
 #pike __REAL_VERSION__
 
 //!
@@ -209,6 +209,9 @@ class OutputController
   {
     return width(escapify(s));
   }
+
+  // FIXME: Ought to buffer output.
+  // FIXME: Ought to support nonblocking output.
 
   //!
   void low_write(string s, void|int word_break)
@@ -517,15 +520,23 @@ class InputController
 	string oldprefix = prefix;
 	prefix = "";
 	prefix = process_input(oldprefix);
-	if ((!infd->set_read_callback || !infd->set_close_callback) && infd->set_nonblocking)
+	if ((!infd->set_read_callback || !infd->set_close_callback) &&
+	    infd->set_nonblocking)
 	  infd->set_nonblocking( read_cb, 0, close_cb );
 	else {
+	  // Avoid messing with the write callback if possible.
 	  infd->set_read_callback( read_cb );
 	  infd->set_close_callback( close_cb );
 	}
       }
-      else
+      else if ((!infd->set_read_callback || !infd->set_close_callback) &&
+	       infd->set_blocking)
 	infd->set_blocking();
+      else {
+	// Avoid messing with the write callback if possible.
+	infd->set_read_callback(0);
+	infd->set_close_callback(0);
+      }
       return !enabled;
     }
     else
