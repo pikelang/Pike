@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.244 2008/12/03 12:02:25 tor Exp $
+// $Id: module.pmod,v 1.245 2008/12/08 13:23:24 tor Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -2242,6 +2242,13 @@ int file_size(string filename)
 //!   created path begin with something else than the absolute path
 //!   (or so far created path).
 //!
+//!   @[append_path_nt()] fixes drive letter issues in @[relative]
+//!   by removing the colon separator @expr{":"@} if it exists (k:/fnord appends 
+//!   as k/fnord)
+//!
+//!   @[append_path_nt()] also makes sure that UNC path(s) in @[relative] is appended 
+//!   correctly by removing any @expr{"\\"@} or @expr{"//"@} from the beginning.
+//!
 //!   @[append_path()] is equivalent to @[append_path_unix()] on UNIX-like
 //!   operating systems, and equivalent to @[append_path_nt()] on NT-like
 //!   operating systems.
@@ -2252,28 +2259,34 @@ int file_size(string filename)
 
 string append_path_unix(string absolute, string ... relative)
 {
-  return combine_path(absolute,
-		      @map(relative, lambda(string s) {
-				       return combine_path("/", s)[1..];
-				     }));
+  return combine_path_unix(absolute,
+			   @map(relative, lambda(string s) {
+					    return combine_path_unix("/", s)[1..];
+					  }));
 }
 
 string append_path_nt(string absolute, string ... relative)
 {
-  return combine_path(absolute,
-		      @map(relative, lambda(string s) {
-				       if(s[1..1] == ":") {
-					 s = s[0..0] + s[2..];
-				       }
-				       return combine_path("/", s)[1..];
-				     }));
+  return combine_path_nt(absolute,
+			 @map(relative, lambda(string s) {
+					  if(s[1..1] == ":") {
+					    s = s[0..0] + s[2..];
+					  }
+					  else if(s[0..1] == "\\\\" || s[0..1] == "//") {
+					    s = s[2..];
+					  }
+					  return combine_path_nt("/", s)[1..];
+					}));
 }
 
+string append_path(string absolute, string ... relative)
+{
 #ifdef __NT__
-function(string, string ... : string) append_path = append_path_nt;
+  return append_path_nt (absolute, @relative);
 #else
-function(string, string ... : string) append_path = append_path_unix;
+  return append_path_unix (absolute, @relative);
 #endif
+}
 
 //! Returns a canonic representation of @[path] (without /./, /../, //
 //! and similar path segments).
