@@ -686,8 +686,6 @@ o Parser.XML.NSTree
   - Added add_child_before() and add_child_after() methods to the
     NSNode object.
 
-  - Fixed crash bug.
-
 o Parser.XML.Simple
 
   - The autoconvert() function, used to autodetect the character
