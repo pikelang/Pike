@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: version.h,v 1.930 2008/12/03 15:27:06 distmaker Exp $
+|| $Id: version.h,v 1.931 2008/12/08 16:33:32 distmaker Exp $
 */
 
 #define PIKE_MAJOR_VERSION 7
 #define PIKE_MINOR_VERSION 4
-#define PIKE_BUILD_VERSION 599
+#define PIKE_BUILD_VERSION 600
 
 /* Prototypes begin here */
 void f_version(INT32 args);
