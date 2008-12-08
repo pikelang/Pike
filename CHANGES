@@ -1248,6 +1248,12 @@ o Array.transpose_old
 
   This function has been removed.
 
+o Calendar
+
+  Changes made to fix inconsistensies has created som unavoidable
+  incompatibilities. See the entry for Calendar in the functional
+  changes section for details.
+
 o _Charset
 
   The parts of this internal module that were written in Pike
