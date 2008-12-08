@@ -1,5 +1,5 @@
 //
-// $Id: TELNET.pmod,v 1.32 2008/12/07 15:54:30 mast Exp $
+// $Id: TELNET.pmod,v 1.33 2008/12/08 19:52:15 grubba Exp $
 //
 // The TELNET protocol as described by RFC 764 and others.
 //
@@ -839,6 +839,18 @@ class protocol
     enable_write();
   }
 
+  void set_read_callback(function(mixed,string:void) r_cb)
+  {
+    read_cb = r_cb;
+    fd->set_read_callback(got_data);
+    fd->set_read_oob_callback(got_oob);
+  }
+
+  function(mixed,string:void) query_read_callback()
+  {
+    return read_cb;
+  }
+
   //! Sets the callback to be called when it is clear to send.
   //!
   //! @param w_cb
@@ -852,6 +864,22 @@ class protocol
     } else {
       disable_write();
     }
+  }
+
+  function(mixed|void:string) query_write_callback()
+  {
+    return write_cb;
+  }
+
+  void set_close_callback(function(mixed|void:void) c_cb)
+  {
+    close_cb = c_cb;
+    fd->set_close_callback(close_cb);
+  }
+
+  function(mixed|void:void) query_close_callback()
+  {
+    return close_cb;
   }
 
   //! Called when the initial setup is done.
@@ -896,7 +924,20 @@ class protocol
     setup();
   }
 
-  void set_nonblocking(function r_cb, function w_cb, function c_cb)
+  //! Change the asynchronous I/O callbacks.
+  //!
+  //! @param r_cb
+  //!   Function to call when data has arrived.
+  //! @param w_cb
+  //!   Function to call when the send buffer is empty.
+  //! @param c_cb
+  //!   Function to call when the connection is closed.
+  //!
+  //! @seealso
+  //!   @[create()]
+  void set_nonblocking(function(mixed,string:void) r_cb,
+		       function(mixed|void:string) w_cb,
+		       function(mixed|void:void) c_cb)
   {
     read_cb = r_cb;
     write_cb = w_cb;
@@ -956,9 +997,17 @@ class LineMode
   }
 }
 
+// Note: We hide the implementation detail that Protocols.TELNET.Readline
+//       is implemented in two classes from the documentation.
+
+//! @class Readline
 //! Line-oriented TELNET protocol handler with @[Stdio.Readline] support.
-class Readline
+
+//! @ignore
+static class Low_Readline
 {
+  //! @endignore
+
   //! Based on the Line-oriented TELNET protocol handler.
   inherit LineMode;
 
@@ -1026,6 +1075,7 @@ class Readline
   }
   
   protected function(mixed,string:void) read_cb2;
+  protected function(mixed|void:string) write_cb2;
   protected function(mixed:void) close_cb2;
   
   protected void readline_callback(string data)
@@ -1033,6 +1083,16 @@ class Readline
     read_cb2(id,data+"\n");
   }
 
+  protected void readline_write_callback()
+  {
+    string data = write_cb2(id);
+    if (!data) {
+      close();
+    } else if (sizeof(data)) {
+      readline->write(data);
+    }
+  }
+  
   protected void readline_close_callback(string data)
   {
     close_cb2(id);
@@ -1051,10 +1111,8 @@ class Readline
 	  case TELOPT_TTYPE:
 	    if(data[1]==TELQUAL_IS)
 	    {
-	      if(!read_cb2)
+	      if(!readline)
 	      {
-		read_cb2=read_cb;
-		close_cb2=close_cb;
 		term=data[2..];
  		DWRITE(sprintf("TELNET.Readline: Enabling READLINE, term=%s\n",
 			       term));
@@ -1063,7 +1121,7 @@ class Readline
 		// work.
 		int secret_mode = local_options[TELOPT_ECHO] != NO;
 		set_secret(0);
-		readline=Stdio.Readline(this,lower_case(term));
+		readline=Stdio.Readline(this_program::this, lower_case(term));
 		set_secret(secret_mode);
 		readline->get_input_controller()->set_close_callback(readline_close_callback);
 		DWRITE("TELNET.Readline: calling readline->set_nonblocking()\n");
@@ -1159,4 +1217,99 @@ class Readline
     readline=0;
     ::close();
   }
+
+  //! @ignore
 }
+
+class Readline
+{
+  // Local inherit, so that we won't disturb the low-level functions
+  // used by Stdio.Readline, when we define the same for high-level use.
+  local inherit Low_Readline;
+
+  //! @endignore
+
+  //! Change the asynchronous I/O callbacks.
+  //!
+  //! @param r_cb
+  //!   Function to call when data has arrived.
+  //! @param w_cb
+  //!   Function to call when the send buffer is empty.
+  //! @param c_cb
+  //!   Function to call when the connection is closed.
+  //!
+  //! @seealso
+  //!   @[create()]
+  void set_nonblocking(function(mixed,string:void) r_cb,
+		       function(mixed|void:string) w_cb,
+		       function(mixed|void:void) c_cb)
+  {
+    read_cb2 = r_cb;
+    write_cb2 = w_cb;
+    close_cb2 = c_cb;
+    if (!readline) {
+      ::set_nonblocking(r_cb, w_cb, c_cb);
+    } else {
+      ::set_write_callback(w_cb);
+    }
+  }
+
+  void set_read_callback(function(mixed,string:void) r_cb)
+  {
+    read_cb2 = r_cb;
+    if (!readline) ::set_read_callback(read_cb2);
+  }
+
+  function(mixed,string:void) query_read_callback()
+  {
+    return read_cb2;
+  }
+
+  void set_write_callback(function(mixed|void:string) w_cb)
+  {
+    write_cb2 = w_cb;
+    ::set_write_callback(write_cb2);
+  }
+
+  function(mixed|void:string) query_write_callback()
+  {
+    return write_cb2;
+  }
+
+  void set_close_callback(function(mixed|void:void) c_cb)
+  {
+    close_cb2 = c_cb;
+    if (!readline) ::set_close_callback(close_cb2);
+  }
+
+  function(mixed|void:void) query_close_callback()
+  {
+    return close_cb2;
+  }
+
+  void set_blocking()
+  {
+    read_cb2 = 0;
+    write_cb2 = 0;
+    close_cb2 = 0;
+    if (!readline) {
+      ::set_blocking();
+    }
+  }
+
+  //! Queues data to be sent to the other end of the connection.
+  //!
+  //! @param s
+  //!   String to send.
+  void write(string s)
+  {
+    if (readline) readline->write(s);
+    else ::write(s);
+  }
+
+  //! @ignore
+}
+
+//! @endignore
+
+//! @endclass
