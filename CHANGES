@@ -1314,7 +1314,7 @@ o Stdio
 
 o The modules Mird, Perl and Ssleay have been removed.
 
-  Note that these modules are not avilable via the backwards
+  Note that these modules are not available via the backwards
   compatibility layer.
 
 
