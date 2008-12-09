@@ -170,8 +170,12 @@ void assert_version() {
   if( v[0]!=__REAL_MAJOR__ || v[1]!=__REAL_MINOR__ ||
       v[2]!=__REAL_BUILD__ ) {
     write("You must be running the Pike you want to test.\n");
+    write("%d %d\n%d %d\n%d %d\n", v[0], __REAL_MAJOR__,
+          v[1], __REAL_MINOR__, v[2], __REAL_BUILD__);
     exit(1);
   }
+
+  write("\nRelease checks for "+version()+"\n\n");
 }
 
 int test_version() {
