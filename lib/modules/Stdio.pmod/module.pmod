@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.245 2008/12/08 13:23:24 tor Exp $
+// $Id: module.pmod,v 1.246 2008/12/09 18:30:53 grubba Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -44,7 +44,25 @@ class Stream
   void close();
   optional string read_oob(int nbytes);
   optional int write_oob(string data);
+  optional mapping(string:int) tcgetattr();
+  optional int tcsetattr(mapping(string:int) attr, string|void when);
 }
+
+//! Argument to @[Stdio.File()->tcsetattr()].
+//!
+//! Change immediately.
+constant TCSANOW = "TCSANOW";
+
+//! Argument to @[Stdio.File()->tcsetattr()].
+//!
+//! Change after all output has been written.
+constant TCSADRAIN = "TCSADRAIN";
+
+//! Argument to @[Stdio.File()->tcsetattr()].
+//!
+//! Change after all output has been written,
+//! and empty the input buffers.
+constant TCSAFLUSH = "TCSAFLUSH";
 
 //! The Stdio.NonblockingStream API.
 //!
@@ -63,11 +81,11 @@ class NonblockingStream
   NonblockingStream set_write_callback( function f, mixed ... rest );
   NonblockingStream set_close_callback( function f, mixed ... rest );
 
-  NonblockingStream set_read_oob_callback(function f, mixed ... rest)
+  optional NonblockingStream set_read_oob_callback(function f, mixed ... rest)
   {
     error("OOB not implemented for this stream type\n");
   }
-  NonblockingStream set_write_oob_callback(function f, mixed ... rest)
+  optional NonblockingStream set_write_oob_callback(function f, mixed ... rest)
   {
     error("OOB not implemented for this stream type\n");
   }
@@ -1588,6 +1606,10 @@ class FILE
 
   //! Read one line of input with support for input conversion.
   //!
+  //! @param not_all
+  //!   Set this parameter to ignore partial lines at EOF. This
+  //!   is useful for eg monitoring a growing logfile.
+  //!
   //! @returns
   //! This function returns the line read if successful, and @expr{0@} if
   //! no more lines are available.
@@ -1595,7 +1617,7 @@ class FILE
   //! @seealso
   //!   @[ngets()], @[read()], @[line_iterator()], @[set_charset()]
   //!
-  string gets()
+  string gets(int(0..1)|void not_all)
   {
     string r;
     if( (sizeof(cached_lines) <= lp+1) &&
@@ -1603,7 +1625,7 @@ class FILE
       // EOF
 
       // NB: lp is always zero here.
-      if (sizeof(r = cached_lines[0])) {
+      if (sizeof(r = cached_lines[0]) && !not_all) {
 	cached_lines = ({});
 	b = "";
 	bpos = 0;
@@ -1658,13 +1680,17 @@ class FILE
   //!
   //! @param n
   //!   Number of lines to get, or all remaining if zero.
-  array(string) ngets(void|int(1..) n)
+  //!
+  //! @param not_all
+  //!   Set this parameter to ignore partial lines at EOF. This
+  //!   is useful for eg monitoring a growing logfile.
+  array(string) ngets(void|int(1..) n, int(0..1)|void not_all)
   {
     array(string) res;
     if (!n) 
     {
        res=read()/"\n";
-       if (res[-1]=="") return res[..<1];
+       if (res[-1]=="" || not_all) return res[..<1];
        return res;
     }
     if (n < 0) return ({});
@@ -1686,13 +1712,13 @@ class FILE
 
     // NB: At this point lp is always zero, and
     //     cached_lines contains a single string.
-    if (sizeof(cached_lines[0])) {
+    if (sizeof(cached_lines[0]) && !not_all) {
       // Return the partial line too.
       res += cached_lines;
+      b = "";
+      bpos = 0;
+      cached_lines = ({});
     }
-    b = "";
-    bpos = 0;
-    cached_lines = ({});
     if (!sizeof(res)) return 0;
     return res;
   }
@@ -1877,7 +1903,7 @@ class FILE
     bpos=0;
   }
 
-  //! This function puts a line back in the input buffer. The string
+  //! This function puts a line back in the input buffer. The line
   //! can then be read with eg @[read()], @[gets()] or @[getchar()].
   //!
   //! @note
@@ -1911,7 +1937,7 @@ class FILE
       return -1;
 
     if(sizeof(cached_lines)>lp+1 && sizeof(cached_lines[lp]))
-      cached_lines = ({cached_lines[lp][1..]})+({cached_lines[lp+1]});
+      cached_lines = ({cached_lines[lp][1..]}) + cached_lines[lp+1..];
     else
       cached_lines = ({});
     lp=0;
