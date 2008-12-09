@@ -1,5 +1,5 @@
 //
-// $Id: TELNET.pmod,v 1.33 2008/12/08 19:52:15 grubba Exp $
+// $Id: TELNET.pmod,v 1.34 2008/12/09 18:19:46 grubba Exp $
 //
 // The TELNET protocol as described by RFC 764 and others.
 //
@@ -839,6 +839,7 @@ class protocol
     enable_write();
   }
 
+  //!
   void set_read_callback(function(mixed,string:void) r_cb)
   {
     read_cb = r_cb;
@@ -846,6 +847,7 @@ class protocol
     fd->set_read_oob_callback(got_oob);
   }
 
+  //!
   function(mixed,string:void) query_read_callback()
   {
     return read_cb;
@@ -866,17 +868,20 @@ class protocol
     }
   }
 
+  //!
   function(mixed|void:string) query_write_callback()
   {
     return write_cb;
   }
 
+  //!
   void set_close_callback(function(mixed|void:void) c_cb)
   {
     close_cb = c_cb;
     fd->set_close_callback(close_cb);
   }
 
+  //!
   function(mixed|void:void) query_close_callback()
   {
     return close_cb;
@@ -1002,6 +1007,8 @@ class LineMode
 
 //! @class Readline
 //! Line-oriented TELNET protocol handler with @[Stdio.Readline] support.
+//!
+//! Implements the @[Stdio.NonblockingStream] API.
 
 //! @ignore
 static class Low_Readline
@@ -1011,19 +1018,41 @@ static class Low_Readline
   //! Based on the Line-oriented TELNET protocol handler.
   inherit LineMode;
 
-  object readline;
-  
+  //! @[Stdio.Readline] object handling the connection.
+  object(Stdio.Readline) readline;
+
+  // These probably ought to be protected.
+  // 	/grubba 2008-12-09
   string term;
   int width=80;
   int height=24;
   int icanon;
-  
-  mapping tcgetattr()
+
+  //! Get current terminal attributes.
+  //!
+  //! Currently only the following attributes are supported:
+  //! @string
+  //!   @value "columns"
+  //!     Number of columns.
+  //!   @value "rows"
+  //!     Number of rows.
+  //!   @value "ECHO"
+  //!     Local character echo on (@expr{1@}) or off (@expr{0@} (zero)).
+  //!   @value "ICANON"
+  //!     Canonical input on (@expr{1@}) or off (@expr{0@} (zero)).
+  //! @endstring
+  //!
+  //! @note
+  //!   Using this function currently bypasses the Readline layer.
+  //!
+  //! @seealso
+  //!   @[Stdio.File()->tcgetattr()]
+  mapping(string:int) tcgetattr()
   {
     return ([
       "rows":height,
       "columns":width,
-      "ECHO":local_options[TELOPT_ECHO],
+      "ECHO":local_options[TELOPT_ECHO] == YES,
       "ICANON": icanon,
       ]);
   }
@@ -1052,12 +1081,28 @@ static class Low_Readline
     }
   }
   
-  int tcsetattr(mapping options)
+  //! Set terminal attributes.
+  //!
+  //! Currently only the following attributes are supported:
+  //! @string
+  //!   @value "ECHO"
+  //!     Local character echo on (@expr{1@}) or off (@expr{0@} (zero)).
+  //!   @value "ICANON"
+  //!     Canonical input on (@expr{1@}) or off (@expr{0@} (zero)).
+  //! @endstring
+  //!
+  //! @note
+  //!   Using this function currently bypasses the Readline layer.
+  //!
+  //! @seealso
+  //!   @[Stdio.File()->tcsetattr()]
+  int tcsetattr(mapping(string:int) options, string|void when)
   {
     ( options->ECHO ? send_WONT : send_WILL )(TELOPT_ECHO);
     ( (icanon=options->ICANON) ? send_DONT : send_DO )(TELOPT_LINEMODE);
   }
 
+  //! Turn on/off echo mode.
   void set_secret(int onoff)
   {
     DWRITE(sprintf("TELNET: set_secret(%d)\n", onoff));
@@ -1073,6 +1118,15 @@ static class Low_Readline
     DWRITE(sprintf("TELNET: REMOTE TELNET ECHO STATE IS %O\n", remote_options[TELOPT_ECHO]));
 
   }
+
+  // NB: Ought to have an id2 as well, but since Stdio.Readline
+  //     doesn't use the id argument, there's no need.
+  //
+  // NB: The same argument could be made regarding write_cb2,
+  //     but there there's a potential that Stdio.Readline
+  //     might start using the write callback in the future.
+  //
+  //	/grubba 2008-12-09
   
   protected function(mixed,string:void) read_cb2;
   protected function(mixed|void:string) write_cb2;
@@ -1119,7 +1173,7 @@ static class Low_Readline
 		// This fix for the secret mode might not
 		// be the best way to do things, but it seems to
 		// work.
-		int secret_mode = local_options[TELOPT_ECHO] != NO;
+		int secret_mode = (local_options[TELOPT_ECHO] == YES);
 		set_secret(0);
 		readline=Stdio.Readline(this_program::this, lower_case(term));
 		set_secret(secret_mode);
@@ -1229,6 +1283,33 @@ class Readline
 
   //! @endignore
 
+  //! Creates a TELNET protocol handler, and sets its callbacks.
+  //!
+  //! @param f
+  //!   File to use for the connection.
+  //! @param r_cb
+  //!   Function to call when data has arrived.
+  //! @param w_cb
+  //!   Function to call when the send buffer is empty.
+  //! @param c_cb
+  //!   Function to call when the connection is closed.
+  //! @param callbacks
+  //!   Mapping with callbacks for the various TELNET commands.
+  //! @param new_id
+  //!   Value to send to the various callbacks.
+  //!
+  void create(object f,
+	      function(mixed,string:void) r_cb,
+	      function(mixed|void:string) w_cb,
+	      function(mixed|void:void) c_cb,
+	      mapping callbacks, mixed|void new_id)
+  {
+    read_cb2 = r_cb;
+    write_cb2 = w_cb;
+    close_cb2 = c_cb;
+    ::create(f, r_cb, w_cb, c_cb, callbacks, new_id);
+  }
+
   //! Change the asynchronous I/O callbacks.
   //!
   //! @param r_cb
@@ -1254,39 +1335,46 @@ class Readline
     }
   }
 
+  //!
   void set_read_callback(function(mixed,string:void) r_cb)
   {
     read_cb2 = r_cb;
     if (!readline) ::set_read_callback(read_cb2);
   }
 
+  //!
   function(mixed,string:void) query_read_callback()
   {
     return read_cb2;
   }
 
+  //!
   void set_write_callback(function(mixed|void:string) w_cb)
   {
     write_cb2 = w_cb;
     ::set_write_callback(write_cb2);
   }
 
+  //!
   function(mixed|void:string) query_write_callback()
   {
     return write_cb2;
   }
 
+  //!
   void set_close_callback(function(mixed|void:void) c_cb)
   {
     close_cb2 = c_cb;
     if (!readline) ::set_close_callback(close_cb2);
   }
 
+  //!
   function(mixed|void:void) query_close_callback()
   {
     return close_cb2;
   }
 
+  //!
   void set_blocking()
   {
     read_cb2 = 0;
