@@ -1,4 +1,6 @@
-// $Id: SloppyDOM.pmod,v 1.2 2008/09/09 22:03:02 mast Exp $
+// $Id: SloppyDOM.pmod,v 1.3 2008/12/09 18:56:23 nilsson Exp $
+
+#pike __REAL_VERSION__
 
 //! A somewhat DOM-like library that implements lazy generation of the
 //! node tree, i.e. it's generated from the data upon lookup. There's

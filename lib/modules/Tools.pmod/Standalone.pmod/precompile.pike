@@ -1,5 +1,7 @@
 #! /usr/bin/env pike
 
+#pike __REAL_VERSION__
+
 #define FUNC_OVERLOAD
 
 #define TOSTR(X) #X

@@ -1,4 +1,6 @@
-// $Id: module.pmod,v 1.1 2008/07/22 20:14:36 mast Exp $
+// $Id: module.pmod,v 1.2 2008/12/09 18:56:56 nilsson Exp $
+
+#pike __REAL_VERSION__
 
 string encode_der_oid (string dotted_decimal)
 //! Convenience function to convert an oid (object identifier) on
