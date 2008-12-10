@@ -2,6 +2,8 @@
 #import <Foundation/NSString.h>
 #import <Foundation/NSBundle.h>
 
+static OCPikeInterpreter * si = NULL;
+ 
 static void set_master(const char *file)
 {
   if (strlen(file) >= MAXPATHLEN*2 ) {
@@ -20,89 +22,87 @@ static void set_default_master(void)
 
 
 @implementation OCPikeInterpreter
-- (id) init {
-	
-    static OCPikeInterpreter *sharedInstance = nil;
-	
-    if (sharedInstance) {
-        [self autorelease];
-        self = [sharedInstance retain];
-    } else {
-        self = [super init];
-        if (self) {
-            sharedInstance = [self retain];
-			master_location = NULL;
-        }
-    }
+- (id) init 
+{	
+  self = [super init];
+  if(self) 
+  {
+    [self retain];
+    master_location = NULL;
+  }
 
-    return self;
+  return self;
 }
 
 +(OCPikeInterpreter *)sharedInterpreter
 {
-	static OCPikeInterpreter * sharedInstance = nil;
+  if ( si == nil )
+    si = [[self alloc] init];
 	
-	if ( sharedInstance == nil )
-		sharedInstance = [[self alloc] init];
-	
-	return sharedInstance;
+  return si;
 }
 
 
 - (void)setMaster:(id) master
 {
-	  if ([master length] >= MAXPATHLEN*2 ) {
-	    fprintf(stderr, "Too long path to master: \"%s\" (limit:%"PRINTPTRDIFFT"d)\n",
-	            [master UTF8String], MAXPATHLEN*2 );
+  if ([master length] >= MAXPATHLEN*2 ) 
+  {
+    fprintf(stderr, "Too long path to master: \"%s\" (limit:%"PRINTPTRDIFFT"d)\n",
+            [master UTF8String], MAXPATHLEN*2 );
 	    exit(1);
-	  }
-	master_location = [master copy];
+   }
+   master_location = [master copy];
+}
+
+void shared_interpreter_cleanup(int exitcode)
+{
+  printf("exiting interpreter.\n");	
 }
 
 - (BOOL)startInterpreter
 {
-  	JMP_BUF back;
-	int num = 0;
-	struct object *m;
-    char ** argv = NULL;
+   JMP_BUF back;
+   int num = 0;
+   struct object *m;
+   char ** argv = NULL;
 	
-	id ml;
-	id this_bundle;
-	this_bundle = [NSBundle bundleForClass: [self class]];
+   id ml;
+   id this_bundle;
+   this_bundle = [NSBundle bundleForClass: [self class]];
 
-	if(!this_bundle || this_bundle == nil)
-	{
-		NSException * exception = [NSException exceptionWithName:@"Error finding bundle!" reason:@"bundleForClass: returned nil." userInfo: nil];
-		@throw exception;
-	}
-	if(!master_location)
-	{
- 	  ml = [[NSMutableString alloc] initWithCapacity: 200];
-	  [ml setString: [this_bundle resourcePath]];
-	  [ml appendString: @"/lib/master.pike"];
+   if(!this_bundle || this_bundle == nil)
+   {
+	NSException * exception = [NSException exceptionWithName:@"Error finding bundle!" reason:@"bundleForClass: returned nil." userInfo: nil];
+	@throw exception;
+   }
+   if(!master_location)
+   {
+     ml = [[NSMutableString alloc] initWithCapacity: 200];
+     [ml setString: [this_bundle resourcePath]];
+     [ml appendString: @"/lib/master.pike"];
 
-	  [self setMaster: ml];
+     [self setMaster: ml];
 		
-	  [ml release];
+     [ml release];
     }
 
-	init_pike(argv, [master_location UTF8String]);
-	init_pike_runtime(exit);
+    init_pike(argv, [master_location UTF8String]);
+    init_pike_runtime(shared_interpreter_cleanup);
 
-	add_pike_string_constant("__embedded_resource_directory",
-								[[this_bundle resourcePath] UTF8String],
-								strlen([[this_bundle resourcePath] UTF8String]));
+    add_pike_string_constant("__embedded_resource_directory",
+				[[this_bundle resourcePath] UTF8String],
+				strlen([[this_bundle resourcePath] UTF8String]));
 								
-	add_pike_string_constant("__master_cookie",
+    add_pike_string_constant("__master_cookie",
 	                           [master_location UTF8String], 
 				strlen([master_location UTF8String]));
 
-	  if(SETJMP(jmploc))
-	  {
-	    if(throw_severity == THROW_EXIT)
-	    {
-	      num=throw_value.u.integer;
-	    }else{
+    if(SETJMP(jmploc))
+    {
+      if(throw_severity == THROW_EXIT)
+      {
+        num=throw_value.u.integer;
+      }else{
 	      if (throw_value.type == T_OBJECT &&
 	          throw_value.u.object->prog == master_load_error_program &&
 	          !get_master()) {  
@@ -154,24 +154,24 @@ static void set_default_master(void)
 
 - (BOOL)stopInterpreter
 {
-	UNSETJMP(jmploc);
-	pike_do_exit(0);	
-    return YES;	
+  UNSETJMP(jmploc);
+  pike_do_exit(0);	
+  return YES;	
 }
 
 - (struct program *)compileString: (id)code
 {
-	struct program * p = NULL;
-	push_text([code UTF8String]);
-    f_utf8_to_string(1);
-	f_compile(1);
-	if(Pike_sp[-1].type==T_PROGRAM)
-	{
-  	  p = Pike_sp[-1].u.program;
-	  add_ref(p);
-    }
-	pop_n_elems(1);
-	return p;	
+  struct program * p = NULL;
+  push_text([code UTF8String]);
+  f_utf8_to_string(1);
+  f_compile(1);
+  if(Pike_sp[-1].type==T_PROGRAM)
+  {
+    p = Pike_sp[-1].u.program;
+    add_ref(p);
+  }
+  pop_n_elems(1);
+  return p;	
 }
 
 - (struct svalue *)evalString: (id)expression
@@ -180,12 +180,14 @@ static void set_default_master(void)
     struct object * o;
     struct program * p;
     struct svalue * s;
+    struct svalue * res;
+    id desc;
 
-	id c = [[NSMutableString alloc] initWithCapacity: 200];
-	[c retain];
-	[c setString: @"mixed foo(){ return("];
-	[c appendString: expression];
-	[c appendString: @");}"];
+    id c = [[NSMutableString alloc] initWithCapacity: 200];
+
+    [c setString: @"mixed foo(){ return("];
+    [c appendString: expression];
+    [c appendString: @");}"];
 
     p = [self compileString: c];
 
@@ -200,10 +202,19 @@ static void set_default_master(void)
     apply_low(o, i, 0);
 
     s = malloc(sizeof(struct svalue));
-    assign_svalue(s, Pike_sp-1);    
+
+    if(!s) 
+    {
+      printf("unable to allocate svalue!\n");
+    }
+
+    res = Pike_sp-1;
+
+    assign_svalue_no_free(s, res); 
     if(o)
       free_object(o);
-    free_program(p);
+    if(p)
+      free_program(p);
     pop_stack();
 
     return s;
@@ -211,7 +222,7 @@ static void set_default_master(void)
 
 - (BOOL)isStarted
 {
-	return (is_started?YES:NO);
+  return (is_started?YES:NO);
 }
 
 @end /* OCPikeInterpreter */

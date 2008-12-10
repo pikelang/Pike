@@ -21,8 +21,6 @@
 #import <Foundation/NSObject.h>
 #import <Foundation/NSException.h>
 
-
-
 @interface OCPikeInterpreter : NSObject
 {
   int is_started;
