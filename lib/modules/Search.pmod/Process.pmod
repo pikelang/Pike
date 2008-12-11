@@ -73,7 +73,10 @@ class Indexer(Variable.Variable wa_var,
       headers["Request-Metadata"]="";
       headers["Request-Invisible"]="";
       sb_url = get_sb_workarea_view_url(url);
-      headers["host"]=sprintf("%s:%d", sb_url->host, sb_url->port);
+      string host = sb_url->host;
+      if (has_value(host, ":"))
+	host = "[" + host + "]";
+      headers["host"]=sprintf("%s:%d", host, sb_url->port);
       string ip;
       if(!sscanf(sb_url->fragment, "ip=%s", ip))
 	error("Error: No ip number found in fragment of url %O\n.", sb_url);
