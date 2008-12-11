@@ -70,6 +70,7 @@ testfont binary
 /lib/7.6/modules/Debug.pmod/module.pmod foreign_ident
 /lib/7.6/modules/Locale.pmod/Charset.pmod foreign_ident
 /lib/7.6/modules/Protocols.pmod/LDAP.pmod/client.pike foreign_ident
+/lib/7.6/modules/Protocols.pmod/TELNET.pmod foreign_ident
 /lib/7.6/modules/Standards.pmod/UUID.pmod/module.pmod foreign_ident
 /lib/7.6/modules/Stdio.pmod/module.pmod foreign_ident
 /lib/7.6/modules/_Charset.pmod foreign_ident
