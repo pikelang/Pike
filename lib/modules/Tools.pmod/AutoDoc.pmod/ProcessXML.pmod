@@ -963,6 +963,14 @@ void oldResolveRefs(SimpleNode tree) {
   scopes->leave();
 }
 
+protected class DummyNScope(string name)
+{
+  string lookup(array(string) ref)
+  {
+    return 0;
+  }
+}
+
 class NScope
 {
   string name;
@@ -1226,8 +1234,10 @@ class NScopeStack
 	while(pos) {
 	  if (current->inherits) {
 	    foreach(current->inherits; ; NScope scope) {
-	      string res = scope->lookup(ref[1..]);
-	      if (res) return res;
+	      if (objectp(scope)) {
+		string res = scope->lookup(ref[1..]);
+		if (res) return res;
+	      }
 	    }
 	  }
 	  pos--;
@@ -1298,6 +1308,7 @@ class NScopeStack
 	if (sizeof(scope) && scope[0] == '"') {
 	  // Inherit of files not supported yet.
 	} else {
+	  top->inherits[inh] = DummyNScope(scope);
 	  string path = resolve(splitRef(scope));
 	  if (path) {
 	    top->inherits[inh] = path;
