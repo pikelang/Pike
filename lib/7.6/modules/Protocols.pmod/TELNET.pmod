@@ -1,5 +1,5 @@
 //
-// $Id: TELNET.pmod,v 1.1 2008/12/11 18:16:17 grubba Exp $
+// $Id: TELNET.pmod,v 1.2 2008/12/11 18:21:04 grubba Exp $
 //
 
 #pike 7.7
@@ -9,8 +9,10 @@
 //! Some symbols in Protocols.TELNET that now are protected
 //! used to be visible in Pike 7.6 and earlier.
 
+//! @decl inherit predef::Protocols.TELNET;
 //! Based on the current Protocols.TELNET.
-inherit predef::Protocols.TELNET;
+
+inherit Protocols.TELNET;
 
 // create() and setup() used to be visible in Pike 7.6 and earlier.
 
@@ -18,7 +20,7 @@ inherit predef::Protocols.TELNET;
 class protocol
 {
   //! Based on the current Protocols.TELNET.protocol.
-  inherit ::protocol;
+  inherit TELNET::protocol;
 
   //! create() used to be visible.
   //!
@@ -47,7 +49,7 @@ class protocol
 class LineMode
 {
   //! Based on the current Protocols.TELNET.LineMode.
-  inherit ::LineMode;
+  inherit TELNET::LineMode;
 
   //! create() used to be visible.
   //!
@@ -76,7 +78,7 @@ class LineMode
 class Readline
 {
   //! Based on the current Protocols.TELNET.Readline.
-  inherit ::Readline;
+  inherit TELNET::Readline;
 
   //! create() used to be visible.
   //!
