@@ -1245,9 +1245,11 @@ class NScopeStack
 	}
 	break;
       default:
+	// Strip the trailing "::".
+	string inh = ref[0][..sizeof(ref[0])-3];
 	while(pos) {
-	  if (current->inherits && current->inherits[ref[0]]) {
-	    string res = current->inherits[ref[0]]->lookup(ref[1..]);
+	  if (current->inherits && current->inherits[inh]) {
+	    string res = current->inherits[inh]->lookup(ref[1..]);
 	    if (res) return res;
 	  }
 	  pos--;
@@ -1317,8 +1319,9 @@ class NScopeStack
 	    werror("Failed to resolve inherit %O.\n"
 		   "  Top: %O\n"
 		   "  Scope: %O\n"
-		   "  Stack: %O\n",
-		   inh, top, scope, stack);
+		   "  Stack: %O\n"
+		   "  Ref: %O\n",
+		   inh, top, scope, stack, splitRef(scope));
 	  }
 	}
 	m_delete(top->inherits, inh);
