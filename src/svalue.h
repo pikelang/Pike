@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.h,v 1.168 2008/08/17 10:54:29 mast Exp $
+|| $Id: svalue.h,v 1.169 2008/12/12 15:07:42 mast Exp $
 */
 
 #ifndef SVALUE_H
@@ -445,9 +445,9 @@ PMOD_EXPORT void real_gc_mark_external_svalues(const struct svalue *s, ptrdiff_t
 PMOD_EXPORT extern const char msg_sval_obj_wo_refs[];
 #define check_refs(S) do {\
  if((S)->type <= MAX_REF_TYPE && (!(S)->u.refs || (S)->u.refs[0] < 0)) { \
-   fprintf (stderr, msg_sval_obj_wo_refs);				\
+   fprintf (stderr, "%s", msg_sval_obj_wo_refs);			\
    describe((S)->u.refs);						\
-   Pike_fatal(msg_sval_obj_wo_refs);					\
+   Pike_fatal("%s", msg_sval_obj_wo_refs);				\
  } }while(0)
 
 PMOD_EXPORT extern const char msg_ssval_obj_wo_refs[];
