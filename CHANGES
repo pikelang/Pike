@@ -733,6 +733,9 @@ o Postgres
 
   - Automatic binary or text transfer for queryarguments and resultrows.
 
+  Note: A new native Postgres driver has also been added; see
+  Sql.pgsql.
+
 o Pike
 
   - A new function count_memory() has been added which can calculate
@@ -941,10 +944,6 @@ o Sql
     is around 21% faster than the old libpq based Postgres driver
     for smaller queries; for large bytea blobs and large texts, it
     speeds up even more.
-
-    Support for this driver is indicated by PostgresNative appearing
-    in the featurelist, and since it has no library or OS dependencies,
-    it will always be available.
 
     This driver serves URLs of the form:
 				    pgsql:// (plain) and pgsqls:// (SSL).
