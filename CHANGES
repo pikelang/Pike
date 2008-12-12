@@ -181,11 +181,6 @@ o Implicit and explicit create().
   The compiler now supports defining classes with both an implicit
   and an explicit create().
 
-o Warnings for unused private symbols.
-
-  The compiler now checks that all symbols that have been declared
-  private actually are used.
-
     class A (int i)
     {
       protected string j;
@@ -194,6 +189,11 @@ o Warnings for unused private symbols.
         A::j = reverse(j);
       }
     }
+
+o Warnings for unused private symbols.
+
+  The compiler now checks that all symbols that have been declared
+  private actually are used.
 
 o Warnings for unused local variables.
 
@@ -285,6 +285,10 @@ o Compatibility name spaces
 o Iterator API
 
   The iterator API method Iterator->next() is no longer optional.
+
+o IPv6
+
+  Support for IPv6 has been improved.
 
 
 Extensions and New Functions
@@ -726,6 +730,20 @@ o Parser.XML.Tree
 
   The module now also has a much better knowledge of DTDs and DOCTYPEs.
 
+o Parser.XML.Validating
+
+  - get_external_entity() now gets the callback info mapping as
+    the third argument rather than a constant zero.
+
+  - SYSTEM URIs are now normalized during parsing if possible.
+
+  - parse() and parse_dtd() now accept getting the base URI for the
+    parsed data as the second argument.
+
+  - Improved error reporting.
+
+  - Several issues with the parsing of DTDs have been fixed.
+
 o Postgres
 
   - Extended the SQL query interface to include affected_rows() and
@@ -877,6 +895,10 @@ o Protocols.SNMP
 
   The readmsg() method in the protocol object now takes an optional
   timout argument.
+
+o Protocols.TELNET.Readline
+
+  Several issues where callback functions could be lost have been fixed.
 
 o Protocols.XMLRPC
 
@@ -1285,6 +1307,10 @@ o Protocols.LDAP.client
   The "dn" field wasn't properly utf-8 decoded in 7.6 and earlier. If
   your application does it yourself, you need to use the compatibility
   version of this class.
+
+o Protocols.TELNET
+
+  The interface functions create() and setup() are now protected symbols.
 
 o spider.XML
 
