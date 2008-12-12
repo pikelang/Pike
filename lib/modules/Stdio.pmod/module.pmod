@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.246 2008/12/09 18:30:53 grubba Exp $
+// $Id: module.pmod,v 1.247 2008/12/12 10:36:52 jonasw Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -277,18 +277,23 @@ class File
   //! for this function is so that you can set the socket to nonblocking
   //! or blocking (default is blocking) before you call @[connect()].
   //!
-  //! If you give a @[port] number to this function, the socket will be
-  //! bound to this @[port] locally before connecting anywhere. This is
-  //! only useful for some silly protocols like @b{FTP@}. You may also
-  //! specify an @[address] to bind to if your machine has many IP numbers.
+  //! @param port
+  //!   If you give a port number to this function, the socket will be
+  //!   bound to this port locally before connecting anywhere. This is
+  //!   only useful for some silly protocols like @b{FTP@}. The port can
+  //!   also be specified as a string, giving the name of the service
+  //!   associated with the port.
   //!
-  //! @[port] can also be specified as a string, giving the name of the
-  //! service associated with the port.
+  //! @param address
+  //!   You may specify an address to bind to if your machine has many IP
+  //!   numbers.
   //!
-  //! Finally, a protocol @[family] for the socket can be specified.
-  //! If no @[family] is specified, one which is appropriate for the
-  //! @[address] is automatically selected.  Thus, there is normally
-  //! no need to specify it.
+  //! @param protocol
+  //!   A protocol family for the socket can be specified. If no family is
+  //!   specified, one which is appropriate for the address is automatically
+  //!   selected. Thus, there is normally no need to specify it. You can
+  //!   find system-dependent constants for IPv4 and IPv6 in @[Stdio.AF_INET]
+  //!   and @[Stdio.AF_INET6].
   //!
   //! @returns
   //! This function returns 1 for success, 0 otherwise.
@@ -494,9 +499,15 @@ class File
       //   o The fd isn't a socket.
       //   o query_address() returns non zero (ie connected).
       //   o query_address() throws an error (eg delayed UDP error) [bug 2691].
+      //
       // This code is here to support the socket being opened (and locally
       // bound) by the calling code, to support eg FTP.
-      if (!open_socket()) {
+      //
+      // Since we cannot pass the destination address to open_socket() we
+      // need to determine IPv4/v6 mode and force the proper address family
+      // manually.
+      int family = has_value(host, ":") ? AF_INET6 : AF_INET;
+      if (!open_socket(-1, 0, family)) {
 	// Out of sockets?
 	return 0;
       }

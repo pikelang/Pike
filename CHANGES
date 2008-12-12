@@ -841,6 +841,8 @@ o Protocols.HTTP.Query
 
   - Fixes for keep alive.
 
+  - IPv6 fixes in DNS handling.
+
 o Protocols.LDAP
 
   - Enabled support for paged queries.
@@ -1056,6 +1058,9 @@ o Stdio
   - Stdio.UDP has had enable_multicast(), set_multicast_ttl(),
     add_membership() and drop_membership() added to make real
     multicast use possible.
+
+  - Expose system-dependent constants for AF_UNIX, AF_INET and AF_INET6
+    so that callers of open_socket() can force IPv6 mode.
 
 o String
 

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.395 2008/09/05 13:23:26 mast Exp $
+|| $Id: file.c,v 1.396 2008/12/12 10:36:50 jonasw Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -4838,6 +4838,31 @@ PIKE_MODULE_INIT
   add_integer_constant("__HAVE_UNLINKAT__",1,0);
 #endif
 #endif /* 0 */
+
+#ifdef AF_UNIX
+  /*! @decl constant AF_UNIX
+  /*! @decl constant AF_LOCAL
+  /*! @decl constant AF_FILE
+   *! Address family identifier for local pipes. Note that this
+   *! is system-dependent. AF_LOCAL and AF_FILE are aliases for
+   *! AF_UNIX.
+   */
+  add_integer_constant("AF_UNIX",  AF_UNIX, 0);
+  add_integer_constant("AF_LOCAL", AF_UNIX, 0);
+  add_integer_constant("AF_FILE",  AF_UNIX, 0);
+#endif
+#ifdef AF_INET
+  /*! @decl constant AF_INET
+   *! Address family identifier for IPv4. Note that this is system-dependent.
+   */
+  add_integer_constant("AF_INET",  AF_INET, 0);
+#endif
+#ifdef AF_INET6
+  /*! @decl constant AF_INET6
+   *! Address family identifier for IPv6. Note that this is system-dependent.
+   */
+  add_integer_constant("AF_INET6", AF_INET6, 0);
+#endif
 
   /* function(:array(int)) */
   ADD_FUNCTION2("get_all_active_fd", f_get_all_active_fd,
