@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.97 2008/12/12 10:36:52 jonasw Exp $
+// $Id: Query.pike,v 1.98 2008/12/12 11:31:47 jonasw Exp $
 
 //! Open and execute an HTTP query.
 //!
@@ -483,7 +483,7 @@ void dns_lookup_async(string hostname,function callback,mixed ...extra)
    }
    if (has_value(hostname, ":")) {
      //  IPv6
-     sscanf(hostname, "%[0-9a-fA-F:]", id);
+     sscanf(hostname, "%[0-9a-fA-F:.]", id);
    } else {
      sscanf(hostname,"%[0-9.]",id);
    }
@@ -509,7 +509,7 @@ string dns_lookup(string hostname)
    string id;
    if (has_value(hostname, ":")) {
      //  IPv6
-     sscanf(hostname, "%[0-9a-fA-F:]", id);
+     sscanf(hostname, "%[0-9a-fA-F:.]", id);
    } else {
      sscanf(hostname,"%[0-9.]",id);
    }
