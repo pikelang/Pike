@@ -1043,7 +1043,7 @@ o Stdio
   - Added more symbolc default termcap/terminfo bindings to
     Stdio.Readline.
 
-  - Improved support for Terminfo on NetBSD.
+  - Improved support for Stdio.Terminfo on NetBSD.
 
   - read_file(), read_bytes(), write_file() and append_file() will may
     now throw exceptions on uncommon errors such as when write_file is
