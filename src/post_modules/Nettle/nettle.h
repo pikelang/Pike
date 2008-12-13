@@ -12,7 +12,8 @@ extern struct program *nettle_hash_program;
        Pike_error("Bad argument. Must be 8-bit string.\n");	\
   } while(0)
 
-char *pike_crypt_md5(int pl, const char *pw, int sl, const char *salt);
+char *pike_crypt_md5(int pl, const char *const pw,
+                     int sl, const char *const salt);
 
 void hash_init(void);
 
