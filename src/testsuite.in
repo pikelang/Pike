@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.859 2008/11/21 12:25:52 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.860 2008/12/13 07:19:05 nilsson Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -4289,6 +4289,22 @@ test_true(class c { constant i=0; mixed `[](string s) { if(s=="i") return 1; }}(
 test_true(class c { optional constant i=0; mixed `[](string s) { if(s=="i") return 1; }}()["i"])
 test_true(class c { mixed `[]=(mixed a, mixed b) { if(a!=b) throw(1); }}()[1]=1)
 test_true(class c { mixed `->=(mixed a, mixed b) { if(a!=b) throw(1); }}()->i="i")
+
+test_do([[
+#pragma strict_types
+class A { int a; optional int x; };
+class B { int a; };
+A a = B();
+return a;
+]])
+
+test_compile_error_any([[
+#pragma strict_types
+class A { int a; optional int x; };
+class B { int b; };
+A a = B();
+return a;
+]])
 
 test_eq((["static":42])->static,42)
 test_eq((["protected":42])->protected,42)
