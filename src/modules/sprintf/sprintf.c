@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.153 2008/05/24 15:14:13 grubba Exp $
+|| $Id: sprintf.c,v 1.154 2008/12/13 08:24:32 nilsson Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -1863,7 +1863,7 @@ void f_sprintf_76(INT32 args)
 static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
 				       int num_arg)
 {
-  int tmp,setwhat,d,e;
+  int tmp,setwhat,e;
   struct svalue *arg=0;	/* pushback argument */
   struct svalue *lastarg=0;
 
@@ -2167,8 +2167,6 @@ static node *optimize_sprintf(node *n)
   {
     /* First argument is a constant string. */
     struct pike_string *fmt = (*arg0)->u.sval.u.string;
-    int fmt_count;
-    struct pike_type *new_type;
 
     if(arg1 && num_args == 2 && 
        fmt->size_shift == 0 && fmt->len == 2 && STR0(fmt)[0]=='%')

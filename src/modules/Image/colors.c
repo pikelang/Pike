@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: colors.c,v 1.76 2008/05/29 10:11:15 grubba Exp $
+|| $Id: colors.c,v 1.77 2008/12/13 08:23:45 nilsson Exp $
 */
 
 /*
@@ -1519,7 +1519,6 @@ static void image_color__encode( INT32 args )
 static void image_color__decode( INT32 args )
 {
     struct svalue *a;
-    int r, g, b;
     if( Pike_sp[-1].type != PIKE_T_ARRAY || Pike_sp[-1].u.array->size != 3 )
 	Pike_error("Illegal argument to _decode\n");
     a=Pike_sp[-1].u.array->item;

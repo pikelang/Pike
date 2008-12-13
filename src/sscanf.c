@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sscanf.c,v 1.189 2008/07/09 21:21:57 mast Exp $
+|| $Id: sscanf.c,v 1.190 2008/12/13 08:22:22 nilsson Exp $
 */
 
 #include "global.h"
@@ -782,7 +782,7 @@ INPUT_IS_WIDE(								 \
 	  sval.u.integer=0;						 \
 	  if (minus_flag)						 \
 	  {								 \
-	     int x, pos=0;						 \
+	     int pos=0;						 \
 	     if (field_length >= 0) {					 \
 	       pos = (eye += field_length);				 \
 	     }								 \
@@ -847,7 +847,7 @@ INPUT_IS_WIDE(								 \
  								         \
       case 'H':								\
 	{								\
-          int e,len=0;							\
+          int len=0;							\
           if(field_length == -1)					\
 	    field_length=1;						\
           if(field_length == 0)                                         \
