@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.247 2008/12/12 10:36:52 jonasw Exp $
+// $Id: module.pmod,v 1.248 2008/12/13 11:55:39 jonasw Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -288,7 +288,7 @@ class File
   //!   You may specify an address to bind to if your machine has many IP
   //!   numbers.
   //!
-  //! @param protocol
+  //! @param family
   //!   A protocol family for the socket can be specified. If no family is
   //!   specified, one which is appropriate for the address is automatically
   //!   selected. Thus, there is normally no need to specify it. You can
