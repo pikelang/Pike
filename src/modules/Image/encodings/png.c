@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.89 2007/05/01 22:08:49 nilsson Exp $
+|| $Id: png.c,v 1.90 2008/12/13 08:24:00 nilsson Exp $
 */
 
 #include "global.h"
@@ -1156,7 +1156,7 @@ static void img_png_decode(INT32 args,int header_only)
 	    int i;
 	    if(b->item[1].u.string->len!=32) break;
 	    for(i=0; i<32; i+=4)
-	      push_float(int_from_32bit((unsigned char*)b->
+	      push_float((float)int_from_32bit((unsigned char*)b->
                                         item[1].u.string->str+i)/100000.0);
 	    f_aggregate(8);
 	    push_text("chroma");
@@ -1180,7 +1180,7 @@ static void img_png_decode(INT32 args,int header_only)
           case 0x67414d41: /* gAMA */
 	    if(b->item[1].u.string->len!=4) break;
 	    push_constant_text("gamma");
-	    push_float(int_from_32bit((unsigned char*)b->
+	    push_float((float)int_from_32bit((unsigned char*)b->
                                       item[1].u.string->str)/100000.0);
 	    mapping_insert(m,sp-2,sp-1);
 	    pop_n_elems(2);
