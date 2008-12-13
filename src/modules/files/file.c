@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.396 2008/12/12 10:36:50 jonasw Exp $
+|| $Id: file.c,v 1.397 2008/12/13 07:11:09 nilsson Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -4841,8 +4841,8 @@ PIKE_MODULE_INIT
 
 #ifdef AF_UNIX
   /*! @decl constant AF_UNIX
-  /*! @decl constant AF_LOCAL
-  /*! @decl constant AF_FILE
+   *! @decl constant AF_LOCAL
+   *! @decl constant AF_FILE
    *! Address family identifier for local pipes. Note that this
    *! is system-dependent. AF_LOCAL and AF_FILE are aliases for
    *! AF_UNIX.
