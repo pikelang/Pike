@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_error.h,v 1.50 2008/10/06 17:00:00 mast Exp $
+|| $Id: pike_error.h,v 1.51 2008/12/13 23:56:45 mast Exp $
 */
 
 #ifndef PIKE_ERROR_H
@@ -135,7 +135,7 @@ PMOD_EXPORT extern const char msg_unsetjmp_nosync_2[];
 	Pike_fatal(msg_unsetjmp_nosync_1,			\
 		   Pike_interpreter.recoveries->file);		\
       else							\
-	Pike_fatal(msg_unsetjmp_nosync_2);			\
+	Pike_fatal("%s", msg_unsetjmp_nosync_2);		\
     }								\
     Pike_interpreter.recoveries=X.previous;			\
     check_recovery_context();					\
@@ -193,7 +193,7 @@ PMOD_EXPORT extern const char msg_unset_onerr_nosync_2[];
 	           Pike_interpreter.recoveries->onerror, &(X),	\
                    Pike_interpreter.recoveries->onerror->file); \
       } else {							\
-        Pike_fatal(msg_unset_onerr_nosync_2);			\
+	Pike_fatal("%s", msg_unset_onerr_nosync_2);		\
       }								\
     }								\
     Pike_interpreter.recoveries->onerror=(X).previous;		\
