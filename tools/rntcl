@@ -113,7 +113,7 @@ void safe_hardlink (string from, string to)
 {
   if(!paranoia_stat(from))
   {
-    werror("RNTCL: output file not generated (%s).\n", from);
+    werror("RNTCL: output file not generated (%s in %s).\n", from, getcwd());
     exit(1);
   }
   rm(to);
@@ -122,11 +122,11 @@ void safe_hardlink (string from, string to)
     }) {
     string s = Stdio.read_bytes(from);
     if (!s) {
-      werror("RNTCL: Failed to read output file (%s).\n", from);
+      werror("RNTCL: Failed to read output file (%s in %s).\n", from, getcwd());
       exit(1);
     }
     if (Stdio.write_file(to, s) != sizeof(s)) {
-      werror("RNTCL: Failed to write all of output file (%s).\n", to);
+      werror("RNTCL: Failed to write all of output file (%s in %s).\n", to, getcwd());
       exit(1);
     }
   }
@@ -595,7 +595,7 @@ int main(int argc, array(string) argv)
       safe_hardlink (wantfile + "bj", wantfile);
     else if(!paranoia_stat(wantfile))
     {
-      werror("RNTCL: output file not generated (%s).\n",wantfile);
+      werror("RNTCL: output file not generated (%s in %s).\n",wantfile, getcwd());
       exit(1);
     }
   }
