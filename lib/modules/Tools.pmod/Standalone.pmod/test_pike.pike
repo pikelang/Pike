@@ -1,7 +1,7 @@
 #! /usr/bin/env pike
 #pike __REAL_VERSION__
 
-/* $Id: test_pike.pike,v 1.137 2008/09/12 18:45:43 grubba Exp $ */
+/* $Id: test_pike.pike,v 1.138 2008/12/14 22:51:14 mast Exp $ */
 
 constant description = "Executes tests according to testsuite files.";
 
@@ -594,7 +594,7 @@ int main(int argc, array(string) argv)
 	(["stdin": pipe_1, "stdout": orig_stdout]));
       pipe_1->close();
       orig_stdout->close();
-      WATCHDOG_DEBUG_MSG ("Forked watchdog %d.\n", watchdog->pid());
+      werror ("Forked watchdog pid %d.\n", watchdog->pid());
     }
   }
 
