@@ -1059,9 +1059,6 @@ o Stdio
     add_membership() and drop_membership() added to make real
     multicast use possible.
 
-  - Expose system-dependent constants for AF_UNIX, AF_INET and AF_INET6
-    so that callers of open_socket() can force IPv6 mode.
-
 o String
 
   - The function int2size has been rewritten to fixpoint as well as

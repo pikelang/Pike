@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.397 2008/12/13 07:11:09 nilsson Exp $
+|| $Id: file.c,v 1.398 2008/12/14 15:11:23 marcus Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -3511,7 +3511,7 @@ static void file_dup(INT32 args)
 }
 
 /*! @decl int(0..1) open_socket(int|void port, string|void addr, @
- *!                             int|void family)
+ *!                             int|string|void family_hint)
  */
 static void file_open_socket(INT32 args)
 {
@@ -3523,6 +3523,14 @@ static void file_open_socket(INT32 args)
   if (args > 2 && Pike_sp[2-args].type == PIKE_T_INT &&
       Pike_sp[2-args].u.integer != 0)
     family = Pike_sp[2-args].u.integer;
+  else if (args > 2 && Pike_sp[2-args].type == PIKE_T_STRING &&
+	   !Pike_sp[2-args].u.string->size_shift) {
+    PIKE_SOCKADDR addr;
+    int addr_len;
+    addr_len = get_inet_addr(&addr, STR0(Pike_sp[2-args].u.string),
+			     NULL, -1, 0);
+    family = SOCKADDR_FAMILY(addr);
+  }
 
   if (args && Pike_sp[-args].type == PIKE_T_INT &&
       Pike_sp[-args].u.integer < 0) {
@@ -4838,31 +4846,6 @@ PIKE_MODULE_INIT
   add_integer_constant("__HAVE_UNLINKAT__",1,0);
 #endif
 #endif /* 0 */
-
-#ifdef AF_UNIX
-  /*! @decl constant AF_UNIX
-   *! @decl constant AF_LOCAL
-   *! @decl constant AF_FILE
-   *! Address family identifier for local pipes. Note that this
-   *! is system-dependent. AF_LOCAL and AF_FILE are aliases for
-   *! AF_UNIX.
-   */
-  add_integer_constant("AF_UNIX",  AF_UNIX, 0);
-  add_integer_constant("AF_LOCAL", AF_UNIX, 0);
-  add_integer_constant("AF_FILE",  AF_UNIX, 0);
-#endif
-#ifdef AF_INET
-  /*! @decl constant AF_INET
-   *! Address family identifier for IPv4. Note that this is system-dependent.
-   */
-  add_integer_constant("AF_INET",  AF_INET, 0);
-#endif
-#ifdef AF_INET6
-  /*! @decl constant AF_INET6
-   *! Address family identifier for IPv6. Note that this is system-dependent.
-   */
-  add_integer_constant("AF_INET6", AF_INET6, 0);
-#endif
 
   /* function(:array(int)) */
   ADD_FUNCTION2("get_all_active_fd", f_get_all_active_fd,

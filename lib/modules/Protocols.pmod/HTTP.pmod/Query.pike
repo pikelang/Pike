@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.99 2008/12/13 11:51:25 jonasw Exp $
+// $Id: Query.pike,v 1.100 2008/12/14 15:11:23 marcus Exp $
 
 //! Open and execute an HTTP query.
 //!
@@ -596,12 +596,8 @@ this_program thread_request(string server, int port, string query,
 
    if (server1) server=server1; // cheaty, if host doesn't exist
 
-   // Since we cannot pass the destination address to open_socket() we
-   // need to determine IPv4/v6 mode and force the proper address family
-   // manually.
-   int family = has_value(server, ":") ? Stdio.AF_INET6 : Stdio.AF_INET;
    con=Stdio.File();
-   if (!con->open_socket(-1, 0, family))
+   if (!con->open_socket(-1, 0, server))
      error("HTTP.Query(): can't open socket; "+strerror(con->errno())+"\n");
 
    // prepare the request
@@ -656,12 +652,8 @@ this_program sync_request(string server, int port, string query,
   }
   else
   {
-    // Since we cannot pass the destination address to open_socket() we
-    // need to determine IPv4/v6 mode and force the proper address family
-    // manually.
-    int family = has_value(server, ":") ? Stdio.AF_INET6 : Stdio.AF_INET;
     con = Stdio.File();
-    if(!con->open_socket(-1, 0, family))
+    if(!con->open_socket(-1, 0, server))
       error("HTTP.Query(): can't open socket; "+strerror(con->errno)+"\n");
   }
 

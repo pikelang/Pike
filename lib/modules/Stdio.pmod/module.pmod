@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.248 2008/12/13 11:55:39 jonasw Exp $
+// $Id: module.pmod,v 1.249 2008/12/14 15:11:23 marcus Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -288,12 +288,13 @@ class File
   //!   You may specify an address to bind to if your machine has many IP
   //!   numbers.
   //!
-  //! @param family
+  //! @param family_hint
   //!   A protocol family for the socket can be specified. If no family is
   //!   specified, one which is appropriate for the address is automatically
-  //!   selected. Thus, there is normally no need to specify it. You can
-  //!   find system-dependent constants for IPv4 and IPv6 in @[Stdio.AF_INET]
-  //!   and @[Stdio.AF_INET6].
+  //!   selected. Thus, there is normally no need to specify it.  If you
+  //!   do not want to specify a bind address, you can provide the address
+  //!   as a hint here instead, to allow the automatic selection to work
+  //!   anyway.
   //!
   //! @returns
   //! This function returns 1 for success, 0 otherwise.
@@ -301,7 +302,8 @@ class File
   //! @seealso
   //! @[connect()], @[set_nonblocking()], @[set_blocking()]
   //!
-  int open_socket(int|string|void port, string|void address, int|void family)
+  int open_socket(int|string|void port, string|void address,
+		  int|string|void family_hint)
   {
     is_file = 0;
 #ifdef __STDIO_DEBUG
@@ -321,7 +323,7 @@ class File
       ok = ::open_socket(port, address);
       break;
     default:
-      ok = ::open_socket(port, address, family);
+      ok = ::open_socket(port, address, family_hint);
       break;
     }
     if (ok) {
@@ -502,12 +504,7 @@ class File
       //
       // This code is here to support the socket being opened (and locally
       // bound) by the calling code, to support eg FTP.
-      //
-      // Since we cannot pass the destination address to open_socket() we
-      // need to determine IPv4/v6 mode and force the proper address family
-      // manually.
-      int family = has_value(host, ":") ? AF_INET6 : AF_INET;
-      if (!open_socket(-1, 0, family)) {
+      if (!open_socket(-1, 0, host)) {
 	// Out of sockets?
 	return 0;
       }
@@ -1679,12 +1676,12 @@ class FILE
     return file::open(file,mode);
   }
 
-  int open_socket(int|string|void port, string|void address, int|void family)
+  int open_socket(int|string|void port, string|void address, int|string|void family_hint)
   {
     bpos=0;  b="";
     if(zero_type(port))
       return file::open_socket();
-    return file::open_socket(port, address, family);
+    return file::open_socket(port, address, family_hint);
   }
 
   //! Get @[n] lines.
