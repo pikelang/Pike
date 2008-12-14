@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.860 2008/12/13 07:19:05 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.861 2008/12/14 22:50:25 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -10012,8 +10012,10 @@ int main(int argc, array(string) argv)
     int i;
     for(i = 0; i < 1000; i++) {
       compile_string(file);
-      if (!(i%10))
-        __signal_watchdog();
+      //if (!(i%10))
+      //  __signal_watchdog();
+      if (!(i % 100))
+        write ("%s: %O at %d\n", ctime (time())[..<1], this_thread(), i);
     }
   } )->wait();
 
