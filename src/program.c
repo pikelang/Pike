@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.756 2008/09/15 14:46:54 grubba Exp $
+|| $Id: program.c,v 1.757 2008/12/15 21:46:09 mast Exp $
 */
 
 #include "global.h"
@@ -6708,22 +6708,34 @@ PMOD_EXPORT struct pike_string *low_get_program_line (struct program *prog,
 
 static char *make_plain_file (char *file, size_t len, INT32 shift, int malloced)
 {
+  static char buf[1000];
   if(shift)
   {
-    static char buf[1000];
-    char *buffer = malloced ?
-      malloc (len + 1) : (len = NELEM(buf) - 1, buf);
+    size_t bufsize;
+    char *buffer;
     PCHARP from=MKPCHARP(file, shift);
-    int chr;
     size_t ptr=0;
 
-    for (; (chr = EXTRACT_PCHARP(from)); INC_PCHARP(from, 1))
-    {
-      size_t space = chr > 255 ? 20 : 1;
+    if (malloced) {
+      bufsize = len + 1;
+      buffer = malloc (bufsize);
+    }
+    else {
+      bufsize = NELEM(buf) - 1;
+      buffer = buf;
+    }
 
-      if (ptr + space > len) {
-	if (malloced)
-	  buffer = realloc (buffer, (len = (len << 1) + space) + 1);
+    for (; len--; INC_PCHARP(from, 1))
+    {
+      size_t space;
+      int chr = EXTRACT_PCHARP(from);
+      space = chr > 255 ? 20 : 1;
+
+      if (ptr + space > bufsize) {
+	if (malloced) {
+	  bufsize = (bufsize << 1) + space + 1;
+	  buffer = realloc (buffer, bufsize);
+	}
 	else
 	  break;
       }
@@ -6742,7 +6754,14 @@ static char *make_plain_file (char *file, size_t len, INT32 shift, int malloced)
   }
 
   else{
-    char *buffer = malloc (len + 1);
+    char *buffer;
+    if (malloced)
+      buffer = malloc (len + 1);
+    else {
+      buffer = buf;
+      if (len > NELEM (buf) - 1)
+	len = NELEM (buf) - 1;
+    }
     MEMCPY (buffer, file, len);
     buffer[len] = 0;
     return buffer;
