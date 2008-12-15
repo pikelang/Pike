@@ -1,7 +1,7 @@
 #! /usr/bin/env pike
 #pike __REAL_VERSION__
 
-/* $Id: test_pike.pike,v 1.138 2008/12/14 22:51:14 mast Exp $ */
+/* $Id: test_pike.pike,v 1.139 2008/12/15 09:01:46 mast Exp $ */
 
 constant description = "Executes tests according to testsuite files.";
 
@@ -624,8 +624,8 @@ int main(int argc, array(string) argv)
   add_constant("__send_watchdog_command", send_watchdog_command);
   add_constant("_verbose", verbose);
 
-  if(verbose && !subprocess)
-    werror("Begin tests at "+ctime(time()));
+  if(!subprocess)
+    werror("Begin tests at %s (pid %d)\n", ctime(time())[..<1], getpid());
 
   testsuites += Getopt.get_args(argv, 1)[1..];
   foreach(testsuites; int pos; string ts) {
@@ -684,9 +684,10 @@ int main(int argc, array(string) argv)
     {
       [string pike_compat, tests] = read_tests( testsuite );
 
-      werror("Doing tests in %s%s (%d tests)\n", testsuite,
+      werror("Doing tests in %s%s (%s)\n", testsuite,
 	     pike_compat ? " in " + pike_compat + " compat mode" : "",
-	     sizeof(tests));
+	     ({sizeof(tests) + " tests",
+	       subprocess && ("pid " + getpid())}) * ", ");
       int qmade, qskipped, qmadep, qskipp;
 
       int testno, testline;
