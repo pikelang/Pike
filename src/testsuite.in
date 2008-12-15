@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.861 2008/12/14 22:50:25 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.862 2008/12/15 21:43:54 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -10012,10 +10012,14 @@ int main(int argc, array(string) argv)
     int i;
     for(i = 0; i < 1000; i++) {
       compile_string(file);
+      // These watchdog calls shouldn't be necessary - the timeframe
+      // is at least 20 minutes between two calls, so doing these can
+      // extend the test time to up to 20000 minutes before the
+      // watchdog kicks in.. /mast
       //if (!(i%10))
       //  __signal_watchdog();
-      if (!(i % 100))
-        write ("%s: %O at %d\n", ctime (time())[..<1], this_thread(), i);
+      //if (!(i % 100))
+      //  write ("%s: %O at %d\n", ctime (time())[..<1], this_thread(), i);
     }
   } )->wait();
 
