@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.100 2008/12/14 15:11:23 marcus Exp $
+// $Id: Query.pike,v 1.101 2008/12/16 15:36:08 per Exp $
 
 //! Open and execute an HTTP query.
 //!
@@ -943,7 +943,7 @@ string data(int|void max_length)
    werror("buf[..datapos+len] : %O\n", buf[max(0, datapos+len-19)
 				       ..min(sizeof(buf), datapos+len)]);
 #endif
-   return buf[datapos..datapos+len];
+   return buf[datapos..datapos+len-1];
 }
 
 protected Locale.Charset.Decoder charset_decoder;
