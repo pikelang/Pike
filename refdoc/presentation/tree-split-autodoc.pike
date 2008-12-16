@@ -1,5 +1,5 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.58 2008/06/28 21:52:59 nilsson Exp $
+ * $Id: tree-split-autodoc.pike,v 1.59 2008/12/16 04:05:14 nilsson Exp $
  *
  */
 
@@ -614,6 +614,7 @@ class TopNode {
 
     _data = parser->finish(_data)->read();
     ::create("autodoc", "", _data);
+    sort(namespace_children->name, namespace_children);
     foreach(namespace_children, Node x)
       if(x->type=="namespace" && x->name==default_namespace) {
 	//	namespace_children -= ({ x });
