@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.27 2008/07/10 11:57:03 grubba Exp $
+|| $Id: acconfig.h,v 1.28 2008/12/17 15:18:22 grubba Exp $
 */
 
 #ifndef FILE_MACHINE_H
@@ -27,6 +27,11 @@
 /* Define this if you have a MacOS X-style (6 args) sendfile()
  * with struct sf_hdtr. */
 #undef HAVE_MACOSX_SENDFILE
+
+/* Define this if you have a sendfile(2) where the length of the headers
+ * are counted towards the file length argument.
+ * This is the case for MacOS X and FreeBSD before FreeBSD 5.0. */
+#undef HAVE_SENDFILE_HEADER_LEN_PROBLEM
 
 /* Define this if you want to disable the use of sendfile(2). */
 #undef HAVE_BROKEN_SENDFILE

@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.111 2008/07/10 11:57:46 grubba Exp $
+# $Id: configure.in,v 1.112 2008/12/17 15:18:22 grubba Exp $
 AC_INIT(file.c)
 AC_CONFIG_HEADER(file_machine.h)
 
@@ -205,6 +205,26 @@ if test "$ac_cv_func_sendfile" = "yes"; then
 
     if test "$pike_cv_freebsd_sendfile_threadsafe" = "yes"; then
       AC_MSG_RESULT(yes)
+
+      AC_MSG_CHECKING([whether headers count to the filelength])
+      AC_CACHE_VAL(pike_cv_new_freebsd_sendfile, [
+        # FIXME: Ought to do a proper test of whether
+        #        headers affect the file length or not.
+	pike_cv_new_freebsd_sendfile="unknown"
+        case "x$pike_cv_sys_os" in
+	  xFreeBSD*)
+	    pike_cv_new_freebsd_sendfile="yes"
+            # The behaviour was fixed in FreeBSD 5.0.        
+            if test `uname -r | awk -F. '{print $1}'` -lt 5; then
+	      pike_cv_new_freebsd_sendfile="no"
+	    fi
+	  ;;
+	esac
+      ])
+      AC_MSG_RESULT($pike_cv_new_freebsd_sendfile)
+      if test "x$pike_cv_new_freebsd_sendfile" = "xno"; then
+        AC_DEFINE(HAVE_SENDFILE_HEADER_LEN_PROBLEM)
+      fi
     else
       AC_MSG_RESULT(no - disabling use of sendfile)
       AC_DEFINE(HAVE_BROKEN_SENDFILE)
@@ -242,6 +262,10 @@ if test "$ac_cv_func_sendfile" = "yes"; then
       if test "$pike_cv_has_struct_sf_hdtr" = "yes"; then
         AC_MSG_RESULT(yes - MacOS X)
         AC_DEFINE(HAVE_MACOSX_SENDFILE)
+	# MacOS X sendfile() has the bug from FreeBSD 4.x and earlier.
+        # FIXME: Ought to do a proper test of whether
+        #        headers affect the file length or not.
+        AC_DEFINE(HAVE_SENDFILE_HEADER_LEN_PROBLEM)
       else
         AC_MSG_RESULT(no - HPUX)
         AC_DEFINE(HAVE_HPUX_SENDFILE)
