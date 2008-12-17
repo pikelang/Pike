@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.249 2008/12/14 15:11:23 marcus Exp $
+// $Id: module.pmod,v 1.250 2008/12/17 12:37:54 jonasw Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -3134,7 +3134,7 @@ object sendfile(array(string) headers,
   };
 
 #ifdef SENDFILE_DEBUG
-  werror("files.sendfile() failed:\n%s\n", describe_backtrace(err)));
+  werror("files.sendfile() failed:\n%s\n", describe_backtrace(err));
 #endif /* SENDFILE_DEBUG */
 
 #endif /* !DISABLE_FILES_SENDFILE && files.sendfile */
