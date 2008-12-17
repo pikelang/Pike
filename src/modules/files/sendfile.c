@@ -475,6 +475,26 @@ void low_do_sendfile(struct pike_sendfile *this)
        */
       len = 0;
     }
+#ifdef HAVE_SENDFILE_HEADER_LEN_PROBLEM
+    if (len) {
+      /* Adjust the length to account for the length of the headers. */
+      /* From FreeBSD 7.x src/sys/kern/uipc_syscalls.c:kern_sendfile():
+       *
+       * In FBSD < 5.0 the nbytes to send also included
+       * the header.  If compat is specified subtract the
+       * header size from nbytes.
+       */
+      /* From MacOS X 10.5.6 xnu/bsd/kern/uipc_syscalls.c:sendfile():
+       *
+       * Get number of bytes to send
+       * Should it applies to size of header and trailer?
+       * JMM - error handling?
+       */
+      for (res = 0; res < this->hd_cnt; res ++) {
+	len += this->hd_iov[res].iov_len;
+      }
+    }
+#endif
 
     do {
 #ifdef HAVE_FREEBSD_SENDFILE
@@ -977,6 +997,7 @@ static void sf_create(INT32 args)
 #ifdef HAVE_HPUX_SENDFILE
       if (sf.hd_cnt) {
 	f_add(sf.hd_cnt);
+	sf.hd_cnt = 1;
 	free_string(sf.headers->item->u.string);
 	sf.headers->item->u.string = sp[-1].u.string;
 	sp--;
