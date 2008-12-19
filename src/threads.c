@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.268 2008/11/18 20:13:12 mast Exp $
+|| $Id: threads.c,v 1.269 2008/12/19 15:22:32 mast Exp $
 */
 
 #include "global.h"
@@ -985,8 +985,10 @@ TH_RETURN_TYPE new_thread_func(void *data)
     arg.args=0;
     f_call_function(args);
 
-    /* copy return value to the arg.thread_state here */
-    assign_svalue(&arg.thread_state->result, Pike_sp-1);
+    /* Copy return value to the thread_state here, if the thread
+     * object hasn't been destructed. */
+    if (thread_state->thread_obj)
+      assign_svalue(&thread_state->result, Pike_sp-1);
     pop_stack();
 
     throw_severity = THROW_N_A;
