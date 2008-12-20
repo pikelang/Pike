@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_macros.h,v 1.42 2006/08/02 15:03:14 mast Exp $
+|| $Id: pike_macros.h,v 1.43 2008/12/20 15:49:19 grubba Exp $
 */
 
 #ifndef MACROS_H
@@ -29,7 +29,7 @@ extern "C++" {
 	struct { char x; T y;} *bar = NULL;
 	return PTR_TO_INT(&bar->y);
     }
-};
+}
 #define ALIGNOF(X) low_alignof_((X*)NULL)
 #else
 #define ALIGNOF(X) OFFSETOF({ char ignored_; X fooo_;}, fooo_)

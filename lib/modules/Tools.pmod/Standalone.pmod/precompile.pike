@@ -1620,6 +1620,18 @@ class ParseBlock
 	default:
 	  ret += ({ t });
 	  break;
+	case "extern":
+	  ret += ({ t });
+
+	  if ((e+2 < sizeof(x)) && (((string)x[e+1])[0] == '\"') &&
+	      arrayp(x[e+2])) {
+	    // C++ syntax support...
+	    create(x[e+2], base);
+	    ret += ({ x[e+1], code });
+	    code = ({});
+	    e += 2;
+	  }
+	  break;
 	case "INHERIT":
 	  {
 	    int pos=search(x,PC.Token(";",0),e);

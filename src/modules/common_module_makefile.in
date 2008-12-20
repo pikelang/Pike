@@ -1,5 +1,5 @@
 #
-# $Id: common_module_makefile.in,v 1.51 2008/07/24 09:30:46 grubba Exp $
+# $Id: common_module_makefile.in,v 1.52 2008/12/20 15:49:19 grubba Exp $
 #
 # Contains stuff common to both dynamic_module_makefile and
 # static_module_makefile.
@@ -111,27 +111,27 @@ $(MODULE_ARCHIVES) ThisIsAPhonyTargetBlaBlaBla: force
 .cc.o:
 	@echo "Compiling `echo '$<' | sed -e 's|^$(PIKE_SRC_DIR)/||'`" ; \
 	rm -f $@.fail >/dev/null 2>&1; \
-	if $(CC) $(PREFLAGS) $(CFLAGS) -c $< -o $@ ; then : ; else \
+	if $(CXX) $(PREFLAGS) $(CFLAGS) -c $< -o $@ ; then : ; else \
 	  status=$$?; \
 	  if test x"@noopt_retry@" = xyes ; then \
 	    echo "WARNING: Compiler failure! Trying without optimization!" >&2;\
-	    echo "$(CC) $(PREFLAGS) $(CFLAGS) -c $< -o $@" >$@.fail ;\
+	    echo "$(CXX) $(PREFLAGS) $(CFLAGS) -c $< -o $@" >$@.fail ;\
 	    if NO_ULIMIT=yes $(CC) $(PREFLAGS) $(NOOPT_CFLAGS) -c $< -o $@ ; then : ; else \
 	      status=$$?; \
 	      echo "Compilation command was:" >&2;\
-	      echo "$(CC) $(PREFLAGS) $(NOOPT_CFLAGS) -c $< -o $@" >&2 ;\
+	      echo "$(CXX) $(PREFLAGS) $(NOOPT_CFLAGS) -c $< -o $@" >&2 ;\
 	      exit $$status; \
 	    fi; \
 	  else \
 	    echo "Compilation command was:" >&2;\
-	    echo "$(CC) $(PREFLAGS) $(CFLAGS) -c $< -o $@" >&2 ;\
+	    echo "$(CXX) $(PREFLAGS) $(CFLAGS) -c $< -o $@" >&2 ;\
 	    exit $$status; \
 	  fi; \
 	fi
 
 .cc.protos: $(BUILD_BASE)/precompile.sh-stamp
 	./precompile.sh --cache fake_dynamic_load.pike >"$@" --cpp --protos \
-	  $(CPP) $(PREFLAGS) -DPMOD_EXPORT=PMOD_EXPORT \
+	  $(CXXCPP) $(PREFLAGS) -DPMOD_EXPORT=PMOD_EXPORT \
 	    -DPMOD_PROTO=PMOD_PROTO -DPIKE_PRECOMPILER=1 "$<" || \
 	  { rm "$@"; exit 1; }
 
