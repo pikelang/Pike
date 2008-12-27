@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.269 2008/12/19 15:22:32 mast Exp $
+|| $Id: threads.c,v 1.270 2008/12/27 20:01:37 grubba Exp $
 */
 
 #include "global.h"
@@ -654,15 +654,28 @@ PMOD_EXPORT void call_with_interpreter(void (*func)(void *ctx), void *ctx)
     /* This is a pike thread.  Do we have the interpreter lock? */
     if(!state->swapped) {
       /* Yes.  Go for it... */
+#ifdef PIKE_DEBUG
+      /* Ensure that the thread isn't loose. */
+      int is_loose = state->debug_flags & THREAD_DEBUG_LOOSE;
+      state->debug_flags &= ~THREAD_DEBUG_LOOSE;
+#endif
+
       func(ctx);
+
+#ifdef PIKE_DEBUG
+      /* Restore the looseness property of the thread. */
+      state->debug_flags |= is_loose;
+#endif
     } else {
       /* Nope, let's get it... */
       mt_lock_interpreter();
       SWAP_IN_THREAD(state);
+      DO_IF_DEBUG(state->debug_flags &= ~THREAD_DEBUG_LOOSE;)
 
       func(ctx);
 
       /* Restore */
+      DO_IF_DEBUG(state->debug_flags |= THREAD_DEBUG_LOOSE;)
       SWAP_OUT_THREAD(state);
       mt_unlock_interpreter();
     }
