@@ -1,6 +1,6 @@
 // By Martin Nilsson
 
-// Updated 2006-06-09 from http://lcweb.loc.gov/standards/iso639-2/
+// Updated 2008-12-28 from http://lcweb.loc.gov/standards/iso639-2/
 
 #pike __REAL_VERSION__
 
@@ -41,7 +41,7 @@ protected constant languages = ([
   "awa":"Awadhi",
   "aym":"Aymara",
   "aze":"Azerbaijani",
-  "bad":"Banda",
+  "bad":"Banda languages",
   "bai":"Bamileke languages",
   "bak":"Bashkir",
   "bal":"Baluchi",
@@ -65,7 +65,7 @@ protected constant languages = ([
   "bos":"Bosnian",
   "bra":"Braj",
   "bre":"Breton",
-  "btk":"Batak (Indonesia)",
+  "btk":"Batak languages",
   "bua":"Buriat",
   "bug":"Buginese",
   "bul":"Bulgarian",
@@ -107,7 +107,7 @@ protected constant languages = ([
   "dak":"Dakota",
   "dan":"Danish",
   "dar":"Dargwa",
-  "day":"Dayak",
+  "day":"Dayak languages",
   "del":"Delaware",
   "den":"Slave (Athapascan)",
   "deu":"German",
@@ -191,7 +191,7 @@ protected constant languages = ([
   "ibo":"Igbo",
   "ido":"Ido",
   "iii":"Sichuan Yi",
-  "ijo":"Ijo",
+  "ijo":"Ijo languages",
   "iku":"Inuktitut",
   "ile":"Interlingue",
   "ilo":"Iloko",
@@ -215,7 +215,7 @@ protected constant languages = ([
   "kal":"Kalaallisut",
   "kam":"Kamba",
   "kan":"Kannada",
-  "kar":"Karen",
+  "kar":"Karen languages",
   "kas":"Kashmiri",
   "kat":"Georgian",
   "kau":"Kanuri",
@@ -238,7 +238,7 @@ protected constant languages = ([
   "kpe":"Kpelle",
   "krc":"Karachay-Balkar",
   "krl":"Karelian",
-  "kro":"Kru",
+  "kro":"Kru languages",
   "kru":"Kurukh",
   "kum":"Kumyk",
   "kur":"Kurdish",
@@ -279,7 +279,7 @@ protected constant languages = ([
   "mga":"Irish, Middle (900-1200)",
   "mic":"Micmac",
   "min":"Minangkabau",
-  "mis":"Miscellaneous languages",
+  "mis":"Uncoded languages",
   "mkd":"Macedonian",
   "mkh":"Mon-Khmer (Other)",
   "mlg":"Malagasy",
@@ -288,7 +288,7 @@ protected constant languages = ([
   "mni":"Manipuri",
   "mno":"Manobo languages",
   "moh":"Mohawk",
-  "mol":"Moldavian",
+  "mol":"Moldavian", // Deprecated 2008-11-03
   "mon":"Mongolian",
   "mos":"Mossi",
   "mri":"Maori",
@@ -301,7 +301,7 @@ protected constant languages = ([
   "mya":"Burmese",
   "myn":"Mayan languages",
   "myv":"Erzya",
-  "nah":"Nahuatl",
+  "nah":"Nahuatl languages",
   "nai":"North American Indian",
   "nap":"Neapolitan",
   "nau":"Nauru",
@@ -401,7 +401,7 @@ protected constant languages = ([
   "snk":"Soninke",
   "sog":"Sogdian",
   "som":"Somali",
-  "son":"Songhai",
+  "son":"Songhai languages",
   "sot":"Sotho, Southern",
   "spa":"Spanish",
   "sqi":"Albanian",
@@ -465,7 +465,7 @@ protected constant languages = ([
   "vol":"Volapük",
   "vot":"Votic",
   "wak":"Wakashan languages",
-  "wal":"Walamo",
+  "wal":"Wolaitta",
   "war":"Waray",
   "was":"Washo",
   "wen":"Sorbian languages",
@@ -483,10 +483,11 @@ protected constant languages = ([
   "zen":"Zenaga",
   "zha":"Zhuang",
   "zho":"Chinese",
-  "znd":"Zande",
+  "znd":"Zande languages",
   "zul":"Zulu",
   "zun":"Zuni",
   "zxx":"No linguistic content",
+  "zza":"Zaza",
 ]);
 
 // Mapping from ISO 639-2/B to ISO 639-2/T
@@ -508,8 +509,8 @@ protected constant b_to_t = ([
   "may":"msa",
   "per":"fas",
   "rum":"ron",
-  "scc":"srp",
-  "scr":"hrv",
+  "scc":"srp", // Deprecated 2008-06-28
+  "scr":"hrv", // Deprecated 2008-06-28
   "slo":"slk",
   "tib":"bod",
   "wel":"cym",
@@ -666,7 +667,7 @@ protected constant conversion = ([
   "mk":"mkd",
   "ml":"mal",
   "mn":"mon",
-  "mo":"mol",
+  "mo":"mol", // Deprecated 2008-11-03
   "mr":"mar",
   "ms":"msa",
   "mt":"mlt",
