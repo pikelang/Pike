@@ -1,6 +1,6 @@
 // By Martin Nilsson
 
-// Updated 2006-06-09 from http://www.iana.org/cctld/cctld-whois.htm
+// Updated 2008-12-28 from http://www.iana.org/domains/root/db/
 
 #pike __REAL_VERSION__
 
@@ -33,6 +33,7 @@ constant cc = ([
   "bh": "Bahrain",
   "bi": "Burundi",
   "bj": "Benin",
+  "bl": "Saint Barthelemy",
   "bm": "Bermuda",
   "bn": "Brunei Darussalam",
   "bo": "Bolivia",
@@ -56,7 +57,7 @@ constant cc = ([
   "cn": "China",
   "co": "Colombia",
   "cr": "Costa Rica",
-  "cs": "Serbia and Montenegro",
+  "cs": "Serbia and Montenegro", // Deprecated
   "cu": "Cuba",
   "cv": "Cape Verde",
   "cx": "Christmas Island",
@@ -146,6 +147,8 @@ constant cc = ([
   "ma": "Morocco",
   "mc": "Monaco",
   "md": "Moldova, Republic of",
+  "me": "Montenegro",
+  "mf": "Saint Martin",
   "mg": "Madagascar",
   "mh": "Marshall Islands",
   "mk": "Macedonia, The Former Yugoslav Republic of",
@@ -194,6 +197,7 @@ constant cc = ([
   "qa": "Qatar",
   "re": "Reunion Island",
   "ro": "Romania",
+  "rs": "Serbia",
   "ru": "Russian Federation",
   "rw": "Rwanda",
   "sa": "Saudi Arabia",
@@ -212,6 +216,7 @@ constant cc = ([
   "so": "Somalia",
   "sr": "Suriname",
   "st": "Sao Tome and Principe",
+  "su": "Soviet Union", // Deprecated
   "sv": "El Salvador",
   "sy": "Syrian Arab Republic",
   "sz": "Swaziland",
@@ -259,22 +264,23 @@ constant cc = ([
 //! A multiset containing the generic TLDs, such as "com" and "info".
 multiset generic = (<
   "aero",
+  "arpa",
+  "asia",
   "biz",
   "cat",
   "com",
   "coop",
+  "edu",
   "info",
+  "int",
   "jobs",
+  "mil",
   "mobi",
   "museum",
   "name",
   "net",
   "org",
   "pro",
+  "tel",
   "travel",
-
-  "gov",
-  "edu",
-  "mil",
-  "int",
   >);
