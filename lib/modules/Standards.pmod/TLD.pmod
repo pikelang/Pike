@@ -271,6 +271,7 @@ multiset generic = (<
   "com",
   "coop",
   "edu",
+  "gov",
   "info",
   "int",
   "jobs",
@@ -283,4 +284,4 @@ multiset generic = (<
   "pro",
   "tel",
   "travel",
-  >);
+>);
