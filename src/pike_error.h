@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_error.h,v 1.51 2008/12/13 23:56:45 mast Exp $
+|| $Id: pike_error.h,v 1.52 2008/12/29 10:55:20 grubba Exp $
 */
 
 #ifndef PIKE_ERROR_H
@@ -147,7 +147,7 @@ PMOD_EXPORT extern const char msg_unsetjmp_nosync_2[];
 #define PERR_LOCATION() ( __FILE__ ":" DEFINETOSTR(__LINE__) )
 #endif
 
-#define DEBUG_INIT_REC_ARGS , int on_stack, char *location
+#define DEBUG_INIT_REC_ARGS , int on_stack, const char *location
 #define SETJMP(X) LOW_SETJMP((init_recovery(&X, 0, 1, PERR_LOCATION())->recovery))
 #define SETJMP_SP(jmp, stack_pop_levels)				\
   LOW_SETJMP((init_recovery(&jmp, stack_pop_levels, 1, PERR_LOCATION())->recovery))
