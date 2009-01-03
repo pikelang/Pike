@@ -22,11 +22,11 @@ signal close;
 signal prepare;
 
 %{
-int pgtk2_assistant_callback(gint cur_page, struct signal_data *d) {
-  int res;
+gint pgtk2_assistant_callback(gint cur_page, struct signal_data *d) {
+  gint res;
   push_svalue(&d->args);
   apply_svalue(&d->cb,2);
-  res=Pike_sp[-1].u.integer;
+  res=(gint)Pike_sp[-1].u.integer;
   pop_stack();
   return res;
 }
@@ -139,7 +139,7 @@ void set_forward_page_func(function f, mixed data)
     SIMPLE_OUT_OF_MEMORY_ERROR("set_forward_page_func",sizeof(struct signal_data));
   assign_svalue_no_free(&sd->cb,sv1);
   assign_svalue_no_free(&sd->args,sv2);
-  gtk_assistant_set_forward_page_func(GTK_ASSISTANT(THIS->obj),pgtk2_assistant_callback,sd,(GtkDestroyNotify)pgtk2_free_signal_data);
+  gtk_assistant_set_forward_page_func(GTK_ASSISTANT(THIS->obj),(GtkAssistantPageFunc)pgtk2_assistant_callback,sd,(GtkDestroyNotify)pgtk2_free_signal_data);
   RETURN_THIS();
 }
 
