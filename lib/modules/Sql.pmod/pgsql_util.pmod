@@ -248,7 +248,7 @@ int _inflight;
 int _portalbuffersize;
 string _statuscmdcomplete;
 array(array(mixed)) _datarows;
-array(mapping(string:mixed)) _datarowdesc;
+array(mapping(string:mixed)) _datarowdesc=({});
 array(int) _datatypeoid;
 #ifdef USEPGsql
 int _buffer;
