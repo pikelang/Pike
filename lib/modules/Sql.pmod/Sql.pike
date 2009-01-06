@@ -1,5 +1,5 @@
 /*
- * $Id: Sql.pike,v 1.92 2008/06/28 16:36:58 nilsson Exp $
+ * $Id: Sql.pike,v 1.93 2009/01/06 10:05:03 srb Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -380,7 +380,7 @@ protected array(mapping(string:mixed)) res_obj_to_array(object res_obj)
 //! Return last error message.
 int|string error()
 {
-  if (functionp (master_sql->error))
+  if (master_sql && functionp (master_sql->error))
     return master_sql->error();
   return "Unknown error";
 }
