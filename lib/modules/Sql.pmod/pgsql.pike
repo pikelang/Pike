@@ -1609,8 +1609,9 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
         }
         array dtoid=_c.portal->_datatypeoid;
         if(sizeof(dtoid)!=sizeof(paramValues))
-	  USERERROR(sprintf("Invalid number of bindings, wanted %d, got %d\n",
-	   sizeof(dtoid),sizeof(paramValues)));
+	  USERERROR(
+	   sprintf("Invalid number of bindings, expected %d, got %d\n",
+	    sizeof(dtoid),sizeof(paramValues)));
         foreach(dtoid;;int textbin)
           plugbuf+=({_c.plugint16(oidformat(textbin))});
         plugbuf+=({_c.plugint16(sizeof(paramValues))});
