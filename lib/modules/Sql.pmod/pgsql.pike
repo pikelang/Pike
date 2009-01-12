@@ -204,7 +204,7 @@ protected void create(void|string _host, void|string _database,
     String.secure(pass);
   user = _user; database = _database; host = _host || PGSQL_DEFAULT_HOST;
   options = _options || ([]);
-  if(search(host,":")>=0 && sscanf(_host,"%s:%d",host,port)!=2)
+  if(has_value(host,":") && sscanf(_host,"%s:%d",host,port)!=2)
     ERROR("Error in parsing the hostname argument\n");
   if(!port)
     port = PGSQL_DEFAULT_PORT;
@@ -1496,7 +1496,7 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
 	  }
           continue;
         }
-	if(search(q,name)<0)
+	if(!has_value(q,name))
 	  continue;
       }
       from[rep]=name;
