@@ -1,3 +1,17 @@
+Changes since Pike 7.8.116
+----------------------------------------------------------------------
+
+
+New modules / classes / methods added
+-------------------------------------
+
+o Protocols.IPv6
+
+  Support for the IPv6 protocol. This currently only contains tools to
+  parse and normalize addresses. (Not much more is necessary since the
+  usual I/O interfaces support IPv6 as-is.)
+
+
 Changes since Pike 7.6:
 ----------------------------------------------------------------------
 
