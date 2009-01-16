@@ -84,7 +84,7 @@ array(int(0..65535)) parse_addr (string addr)
 //! is incorrectly formatted.
 //!
 //! @seealso
-//! @[format_addr]
+//! @[format_addr_short]
 {
   sscanf (addr, "%s::%s", string part1, string part2);
   array(int) sections;
@@ -111,7 +111,7 @@ array(int(0..65535)) parse_addr (string addr)
   return sizeof (sections) == 8 && sections;
 }
 
-string format_addr (array(int(0..65535)) bin_addr)
+string format_addr_short (array(int(0..65535)) bin_addr)
 //! Formats an IPv6 address to the colon-separated hexadecimal form as
 //! defined in RFC 2373, section 2.2. @[bin_addr] must be an 8-element
 //! array containing the 16-bit fields.
@@ -217,5 +217,5 @@ string normalize_addr_short (string addr)
   array(int(0..65535)) bin_addr = parse_addr (addr);
   if (!bin_addr) return 0;
 
-  return format_addr (bin_addr);
+  return format_addr_short (bin_addr);
 }
