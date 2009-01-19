@@ -3,7 +3,7 @@
  */
 
 //! This is an interface to the PostgreSQL database
-//! server. This module is independent of external libraries.
+//! server. This module is independent of any external libraries.
 //! Note that you @b{do not@} need to have a
 //! PostgreSQL server running on your host to use this module: you can
 //! connect to the database over a TCP/IP socket.
@@ -16,7 +16,7 @@
 //! - PostgreSQL network protocol version 3, authentication methods
 //!   currently supported are: cleartext and MD5 (recommended).
 //!
-//! - Streaming queries which do not buffer the whole resulset in memory.
+//! - Streaming queries which do not buffer the whole resultset in memory.
 //!
 //! - Automatic binary transfers to and from the database for most common
 //!   datatypes (amongst others: integer, text and bytea types).
@@ -38,7 +38,7 @@
 //!
 //! - SSL encrypted connections (optional or forced).
 //!
-//! Refer to the PostgreSQL documentation for further details.
+//! Check the PostgreSQL documentation for further details.
 //!
 //! @note
 //!   Multiple simultaneous queries on the same database connection is a
@@ -176,11 +176,11 @@ protected string _sprintf(int type, void|mapping flags) {
 //!     when stored procedures and tables are redefined which leave stale
 //!     references in the already cached prepared statements
 //!   @value "client_encoding"
-//!     Character encoding for the client side, it defaults to use
-//!     database encoding, e.g.: "SQL_ASCII"
+//!     Character encoding for the client side, it defaults to using
+//!     the default encoding specified by the database, e.g.: "SQL_ASCII"
 //!   @value "standard_conforming_strings"
 //!     When on, backslashes in strings must not be escaped any longer,
-//!     @[quote] automatically adjusts quoting strategy accordingly
+//!     @[quote()] automatically adjusts quoting strategy accordingly
 //!   @value "escape_string_warning"
 //!     When on, a warning is issued if a backslash (\) appears in an
 //!     ordinary string literal and @[standard_conforming_strings] is off,
@@ -213,8 +213,6 @@ protected void create(void|string _host, void|string _database,
   reconnect();
 }
 
-//! @decl string error()
-//!
 //! This function returns the textual description of the last
 //! server-related error. Returns @expr{0@} if no error has occurred
 //! yet. It is not cleared upon reading (can be invoked multiple
@@ -228,7 +226,7 @@ protected void create(void|string _host, void|string _database,
 //! To clear the error, pass 1 as argument.
 //!
 //! @seealso
-//!   big_query
+//!   @[big_query]
 string error(void|int clear) {
   string s=lastmessage;
   if(clear)
@@ -237,13 +235,11 @@ string error(void|int clear) {
   return s;
 }
 
-//! @decl string host_info()
-//!
 //! This function returns a string describing what host are we talking to,
 //! and how (TCP/IP or UNIX sockets).
 //!
 //! @seealso
-//!   server_info
+//!   @[server_info]
 string host_info() {
   return sprintf("fd:%d TCP/IP %s:%d PID %d",
    _c?_c.query_fd():-1,host,port,backendpid);
@@ -292,7 +288,7 @@ final private object getsocket(void|int nossl) {
 //! through the generic SQL-interface.
 //!
 //! @seealso
-//!   reload
+//!   @[reload]
 void cancelquery() {
   if(qstate==inquery) {
     qstate=cancelpending;
@@ -1031,7 +1027,7 @@ private int reconnect(void|int force) {
 //! a variety of reasons, for example to detect the status of a connection.
 //!
 //! @seealso
-//!   cancelquery
+//!   @[cancelquery]
 void reload(void|int special) {
   mixed err;
   int didsync;
@@ -1066,8 +1062,6 @@ void reload(void|int special) {
 #endif
 }
 
-//! @decl void select_db(string dbname)
-//!
 //! This function allows you to connect to a database. Due to
 //! restrictions of the Postgres frontend-backend protocol, you always
 //! have to be connected to a database, so in fact this function just
@@ -1078,7 +1072,7 @@ void reload(void|int special) {
 //! (backend process not running, not enough permissions..)
 //!
 //! @seealso
-//!   create
+//!   @[create]
 void select_db(string dbname) {
   database=dbname;
   reconnect();
@@ -1147,7 +1141,7 @@ final private void runcallback(int pid,string condition,string extrainfo) {
 //! bindings.
 //!
 //! @seealso
-//!   big_query, quotebinary, create
+//!   @[big_query], @[quotebinary], @[create]
 string quote(string s) {
   string r=runtimeparameter->standard_conforming_strings;
   if(r && r=="on")
@@ -1160,7 +1154,7 @@ string quote(string s) {
 //! bindings.
 //!
 //! @seealso
-//!   big_query, quote
+//!   @[big_query], @[quote]
 //!
 //! This function is PostgreSQL-specific, and thus it is not available
 //! through the generic SQL-interface.
@@ -1172,7 +1166,7 @@ string quotebinary(string s) {
 //! have enough permissions to do this).
 //!
 //! @seealso
-//!   drop_db
+//!   @[drop_db]
 void create_db(string db) {
   big_query("CREATE DATABASE :db",([":db":db]));
 }
@@ -1183,7 +1177,7 @@ void create_db(string db) {
 //! @[template1] to avoid connecting to any live database.
 //!
 //! @seealso
-//!   create_db
+//!   @[create_db]
 void drop_db(string db) {
   big_query("DROP DATABASE :db",([":db":db]));
 }
@@ -1194,7 +1188,7 @@ void drop_db(string db) {
 //! conjunction with the generic SQL-server module.
 //!
 //! @seealso
-//!   host_info
+//!   @[host_info]
 string server_info () {
   return DRIVERNAME"/"+(runtimeparameter->server_version||"unknown");
 }
@@ -1446,6 +1440,9 @@ final private void closestatement(array(string) plugbuf,mapping tp) {
   }
 }
 
+//! @decl Sql.pgsql_util.pgsql_result big_query(string query)
+//! @decl Sql.pgsql_util.pgsql_result big_query(string query, mapping bindings)
+//!
 //! This is the only provided interface which allows you to query the
 //! database. If you wish to use the simpler "query" function, you need to
 //! use the @[Sql.Sql] generic SQL-object.

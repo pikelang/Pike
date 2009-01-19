@@ -5,7 +5,7 @@
 //! Implements SQL-urls for
 //!   @tt{pgsqls://[user[:password]@@][hostname][:port][/database]@}
 //!
-//! Sets the connection to SSL-mode.
+//! Sets the connection to SSL-mode, otherwise identical to @[Sql.pgsql].
 //!
 //! @seealso
 //!   @[Sql.pgsql], @[Sql.Sql]
