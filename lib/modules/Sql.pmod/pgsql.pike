@@ -1615,6 +1615,19 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
         foreach(paramValues;int i;mixed value) {
           if(zero_type(value))
             plugbuf+=({_c.plugint32(-1)});				// NULL
+          else if(stringp(value) && !sizeof(value)) {
+	    int k=0;
+	    switch(dtoid[i]) {
+	      default:
+	        k=-1;	     // cast empty strings to NULL for non-string types
+	      case BYTEAOID:
+	      case TEXTOID:
+	      case XMLOID:
+	      case BPCHAROID:
+	      case VARCHAROID:;
+	    }
+            plugbuf+=({_c.plugint32(k)});
+	  }
           else
             switch(dtoid[i]) {
               default:
