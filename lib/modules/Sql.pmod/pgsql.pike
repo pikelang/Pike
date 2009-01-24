@@ -1519,6 +1519,8 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
   }
   else
     paramValues = ({});
+  if(has_value(q,"\0"))
+    ERROR("Querystring %O contains invalid literal nul-characters\n",q);
   mapping(string:mixed) tp;
   int tstart;
   if(forcecache==1 || forcecache!=0 && sizeof(q)>=MINPREPARELENGTH) {
