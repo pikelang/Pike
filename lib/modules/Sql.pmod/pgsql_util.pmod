@@ -222,14 +222,11 @@ class PGconnS {
 }
 #endif
 
-//! @decl Sql.pgsql_util.pgsql_result
-//!
 //! The result object returned by @[Sql.pgsql.big_query()], except for
 //! the noted differences it behaves the same as @[Sql.sql_result].
 //!
 //! @seealso
 //!   @[Sql.sql_result], @[Sql.pgsql], @[Sql.Sql]
-
 class pgsql_result {
 
 object _pgsqlsess;
