@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.272 2009/01/25 18:05:34 grubba Exp $
+|| $Id: threads.c,v 1.273 2009/01/25 19:28:47 grubba Exp $
 */
 
 #include "global.h"
@@ -272,7 +272,7 @@ PMOD_EXPORT int co_wait_timeout(COND_T *c, PIKE_MUTEX_T *m, int s, int nanos)
   return pthread_cond_timedwait(c, m, &timeout);
 #endif /* HAVE_PTHREAD_COND_RELTIMEDWAIT_NP */
 #else /* !POSIX_THREADS */
-#error co_wait_timeout doesn't support this thread model.
+#error co_wait_timeout does not support this thread model.
 #endif /* POSIX_THREADS */
 }
 #endif /* !CONFIGURE_TEST */
