@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_threadlib.h,v 1.64 2008/09/09 16:45:14 mast Exp $
+|| $Id: pike_threadlib.h,v 1.65 2009/01/25 15:56:54 grubba Exp $
 */
 
 #ifndef PIKE_THREADLIB_H
@@ -408,6 +408,8 @@ PMOD_EXPORT int co_destroy(COND_T *c);
 #define th_hash(X) hashmem((unsigned char *)&(X),sizeof(THREAD_T), 16)
 #endif
 
+PMOD_EXPORT int co_wait_timeout(COND_T *c, PIKE_MUTEX_T *m, int s, int nanos);
+
 #ifndef CONFIGURE_TEST
 
 struct interleave_mutex
@@ -519,6 +521,10 @@ extern THREAD_T debug_locking_thread;
   (mt_trylock(&interpreter_lock) || SET_LOCKING_THREAD)
 #define low_co_wait_interpreter(COND) \
   do {co_wait((COND), &interpreter_lock); SET_LOCKING_THREAD;} while (0)
+#define low_co_wait_interpreter_timeout(COND, SECS, NANOS) do {		\
+    co_wait_timeout((COND), &interpreter_lock, (SECS), (NANOS));	\
+    SET_LOCKING_THREAD;							\
+  } while (0)
 
 PMOD_EXPORT extern const char msg_ip_not_locked[];
 PMOD_EXPORT extern const char msg_ip_not_locked_this_thr[];
@@ -539,6 +545,9 @@ PMOD_EXPORT extern const char msg_ip_not_locked_this_thr[];
 #define low_mt_lock_interpreter() do {mt_lock(&interpreter_lock);} while (0)
 #define low_mt_trylock_interpreter() (mt_trylock(&interpreter_lock))
 #define low_co_wait_interpreter(COND) do {co_wait((COND), &interpreter_lock);} while (0)
+#define low_co_wait_interpreter_timeout(COND, SECS, NANOS) do {		\
+    co_wait_timeout((COND), &interpreter_lock, (SECS), (NANOS));	\
+  } while (0)
 
 #endif
 
@@ -565,6 +574,10 @@ static INLINE int threads_disabled_wait(void)
   } while (0)
 #define co_wait_interpreter(COND) do {					\
     low_co_wait_interpreter(COND);					\
+    if (threads_disabled) threads_disabled_wait();			\
+  } while (0)
+#define co_wait_interpreter_timeout(COND, SECS, NANOS) do {		\
+    low_co_wait_interpreter_timeout(COND, SECS, NANOS);			\
     if (threads_disabled) threads_disabled_wait();			\
   } while (0)
 
@@ -917,6 +930,7 @@ PMOD_EXPORT extern int Pike_in_gc;
 #define th_init_programs()
 #define th_self() NULL
 #define co_wait(X,Y)
+#define co_wait_timeout(X,Y,S,N)
 #define co_signal(X)
 #define co_broadcast(X)
 #define co_destroy(X)

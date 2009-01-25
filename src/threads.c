@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.270 2008/12/27 20:01:37 grubba Exp $
+|| $Id: threads.c,v 1.271 2009/01/25 15:56:54 grubba Exp $
 */
 
 #include "global.h"
@@ -37,6 +37,7 @@ PMOD_EXPORT int threads_disabled = 0;
 #include "operators.h"
 #include "bignum.h"
 #include "signal_handler.h"
+#include "backend.h"
 #include "pike_rusage.h"
 
 #include <errno.h>
@@ -171,6 +172,41 @@ PMOD_EXPORT int co_wait(COND_T *c, MUTEX_T *m)
   return 0;
 }
 
+PMOD_EXPORT int co_wait_timeout(COND_T *c, MUTEX_T *m, int s, int nanos)
+{
+  struct cond_t_queue me;
+  event_init(&me.event);
+  me.next=0;
+  mt_lock(& c->lock);
+
+  if(c->tail)
+  {
+    c->tail->next=&me;
+    c->tail=&me;
+  }else{
+    c->head=c->tail=&me;
+  }
+
+  mt_unlock(& c->lock);
+  mt_unlock(m);
+  if (s || nanos) {
+    event_wait_timeout(&me.event, s, nanos);
+  } else {
+    event_wait(&me.event);
+  }
+  mt_lock(m);
+
+  event_destroy(& me.event);
+  /* Cancellation point?? */
+
+#ifdef PIKE_DEBUG
+  if(me.next)
+    Pike_fatal("Wait on event return prematurely!!\n");
+#endif
+
+  return 0;
+}
+
 PMOD_EXPORT int co_signal(COND_T *c)
 {
   struct cond_t_queue *t;
@@ -216,7 +252,30 @@ PMOD_EXPORT int co_destroy(COND_T *c)
   return 0;
 }
 
-#endif
+#else /* !SIMULATE_COND_WITH_EVENT */
+
+PMOD_EXPORT int co_wait_timeout(COND_T *c, PIKE_MUTEX_T *m, int s, int nanos)
+{
+#ifdef POSIX_THREADS
+  struct timespec timeout;
+#ifdef HAVE_PTHREAD_COND_RELTIMEDWAIT_NP
+  /* Solaris extension: relative timeout. */
+  timeout.tv_sec = s;
+  timeout.tv_nsec = nanos;
+  return pthread_cond_reltimedwait_np(c, m, &timeout);
+#else /* !HAVE_PTHREAD_COND_RELTIMEDWAIT_NP */
+  /* Absolute timeout. */
+  GETTIMEOFDAY(&current_time);
+  timeout.tv_sec = current_time.tv_sec + s;
+  timeout.tv_nsec = current_time.tv_usec * 1000 + nanos;
+  return pthread_cond_timedwait(c, m, &timeout);
+#endif /* HAVE_PTHREAD_COND_RELTIMEDWAIT_NP */
+#else /* !POSIX_THREADS */
+#error co_wait_timeout doesn't support this thread model.
+#endif /* POSIX_THREADS */
+}
+
+#endif /* SIMULATE_COND_WITH_EVENT */
 
 #ifdef POSIX_THREADS
 pthread_attr_t pattr;
@@ -1648,19 +1707,42 @@ struct pike_cond {
 #define THIS_COND ((struct pike_cond *)(CURRENT_STORAGE))
 
 /*! @decl void wait(Thread.MutexKey mutex_key)
+ *! @decl void wait(Thread.MutexKey mutex_key, int(0..)|float seconds)
+ *! @decl void wait(Thread.MutexKey mutex_key, int(0..) seconds, @
+ *!                 int(0..999999999) nanos)
  *!
  *! Wait for condition.
  *!
  *! This function makes the current thread sleep until the condition
- *! variable is signalled. The argument should be a @[Thread.MutexKey]
- *! object for a @[Thread.Mutex]. It will be unlocked atomically
- *! before waiting for the signal and then relocked atomically when
- *! the signal is received.
+ *! variable is signalled or the timeout is reached.
+ *!
+ *! @param mutex_key
+ *!   A @[Thread.MutexKey] object for a @[Thread.Mutex]. It will be
+ *!   unlocked atomically before waiting for the signal and then
+ *!   relocked atomically when the signal is received or the timeout
+ *!   is reached.
+ *!
+ *! @param seconds
+ *!   Seconds to wait before the timeout is reached.
+ *!
+ *! @param nanos
+ *!   Nano (1/1000000000) seconds to wait before the timeout is reached.
+ *!   This value is added to the number of seconds specified by @[seconds].
+ *!
+ *! A timeout of zero seconds disables the timeout.
  *!
  *! The thread that sends the signal should have the mutex locked
  *! while sending it. Otherwise it's impossible to avoid races where
  *! signals are sent while the listener(s) haven't arrived to the
  *! @[wait] calls yet.
+ *!
+ *! @note
+ *!   The support for timeouts was added in Pike 7.8.121, which was
+ *!   after the first public release of Pike 7.8.
+ *!
+ *! @note
+ *!   Note that the timeout is approximate (best effort), and may
+ *!   be exceeded if eg the mutex is busy after the timeout.
  *!
  *! @note
  *!   In Pike 7.2 and earlier it was possible to call @[wait()]
@@ -1670,7 +1752,7 @@ struct pike_cond {
  *!
  *! @note
  *!   Note also that any threads waiting on the condition will be
- *!   waken up when it gets destructed.
+ *!   woken up when it gets destructed.
  *!
  *! @seealso
  *!   @[Mutex->lock()]
@@ -1680,11 +1762,19 @@ void f_cond_wait(INT32 args)
   struct object *key, *mutex_obj;
   struct mutex_storage *mut;
   struct pike_cond *c;
+  INT_TYPE seconds = 0, nanos = 0;
 
   if(threads_disabled)
     Pike_error("Cannot wait for conditions when threads are disabled!\n");
 
-  get_all_args("condition->wait", args, "%o", &key);
+  if (args <= 2) {
+    FLOAT_TYPE fsecs = 0.0;
+    get_all_args("condition->wait", args, "%o.%F", &key, &fsecs);
+    seconds = (INT_TYPE) fsecs;
+    nanos = (INT_TYPE)((fsecs - seconds)*1000000000);
+  } else {
+    get_all_args("condition->wait", args, "%o%i%i", &key, &seconds, &nanos);
+  }
       
   if ((key->prog != mutex_key) ||
       (!(OB2KEY(key)->initialized)) ||
@@ -1709,7 +1799,11 @@ void f_cond_wait(INT32 args)
   /* Wait and allow mutex operations */
   SWAP_OUT_CURRENT_THREAD();
   c->wait_count++;
-  co_wait_interpreter(&(c->cond));
+  if (seconds || nanos) {
+    co_wait_interpreter_timeout(&(c->cond), seconds, nanos);
+  } else {
+    co_wait_interpreter(&(c->cond));
+  }
   c->wait_count--;
   SWAP_IN_CURRENT_THREAD();
     
@@ -2426,7 +2520,9 @@ void th_init(void)
   START_NEW_PROGRAM_ID(THREAD_CONDITION);
   ADD_STORAGE(struct pike_cond);
   ADD_FUNCTION("wait",f_cond_wait,
-	       tFunc(tObjIs_THREAD_MUTEX_KEY,tVoid),0);
+	       tOr(tFunc(tObjIs_THREAD_MUTEX_KEY tOr3(tVoid, tIntPos, tFloat),
+			 tVoid),
+		   tFunc(tObjIs_THREAD_MUTEX_KEY tIntPos tIntPos, tVoid)),0);
   ADD_FUNCTION("signal",f_cond_signal,tFunc(tNone,tVoid),0);
   ADD_FUNCTION("broadcast",f_cond_broadcast,tFunc(tNone,tVoid),0);
   set_init_callback(init_cond_obj);
