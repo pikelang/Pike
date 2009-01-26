@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.273 2009/01/25 19:28:47 grubba Exp $
+|| $Id: threads.c,v 1.274 2009/01/26 10:15:06 grubba Exp $
 */
 
 #include "global.h"
@@ -190,7 +190,15 @@ PMOD_EXPORT int co_wait_timeout(COND_T *c, MUTEX_T *m, int s, int nanos)
   mt_unlock(& c->lock);
   mt_unlock(m);
   if (s || nanos) {
-    event_wait_timeout(&me.event, s, nanos);
+    DWORD msec;
+    /* Check for overflow (0xffffffff/1000). */
+    if (s >= 4294967) {
+      msec = INFINITE;
+    } else {
+      msec = s*1000 + nanos/1000000;
+      if (!msec) msec = 1;	/* Underflow. */
+    }
+    event_wait_msec(&me.event, msec);
   } else {
     event_wait(&me.event);
   }

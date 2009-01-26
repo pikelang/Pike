@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_threadlib.h,v 1.65 2009/01/25 15:56:54 grubba Exp $
+|| $Id: pike_threadlib.h,v 1.66 2009/01/26 10:15:06 grubba Exp $
 */
 
 #ifndef PIKE_THREADLIB_H
@@ -342,6 +342,8 @@ extern pthread_attr_t small_pattr;
 #define event_wait(X)							\
   LOW_THREAD_CHECK_ZERO_ERROR (						\
     WaitForSingleObject(CheckValidHandle(*(X)), INFINITE) == WAIT_OBJECT_0)
+#define event_wait_msec(X, MSEC)					\
+  WaitForSingleObject(CheckValidHandle(*(X)), (MSEC))
 
 /* No fork -- no atfork */
 #define th_atfork(X,Y,Z)
