@@ -1,4 +1,4 @@
-// $Id: module.pmod.in,v 1.15 2003/04/23 11:41:22 nilsson Exp $
+// $Id: module.pmod.in,v 1.16 2009/01/28 03:05:04 mast Exp $
 #pike __REAL_VERSION__
 
 inherit @module@;
@@ -248,6 +248,7 @@ class _file {
 	  return -1;
 	at_eof = 0;
 	file_pos = 0;
+	inf = 0;
 	read_buf = "";
 	crc = crc32("");
 	if(!check_header())
