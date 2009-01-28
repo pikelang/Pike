@@ -1,5 +1,5 @@
 /*
- * $Id: Tar.pmod,v 1.32 2009/01/28 09:23:39 mast Exp $
+ * $Id: Tar.pmod,v 1.33 2009/01/28 18:19:22 grubba Exp $
  */
 
 #pike __REAL_VERSION__
@@ -44,8 +44,9 @@ class _Tar  // filesystem
 	error ("Failed to seek to position %d in %O.\n", start, fd);
       string data = fd->read(len);
       if (sizeof (data) != len)
-	error ("Failed to read %d bytes from position %d in %O.\n", len, start);
-      ::create();
+	error ("Failed to read %d bytes from position %d in %O.\n",
+	       len, start, fd);
+      ::create(data);
       seek(0);
     }
   }
