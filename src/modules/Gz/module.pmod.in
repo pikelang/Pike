@@ -1,5 +1,5 @@
 // -*- pike -*-
-// $Id: module.pmod.in,v 1.19 2008/11/12 14:57:44 mast Exp $
+// $Id: module.pmod.in,v 1.20 2009/01/28 03:05:04 mast Exp $
 #pike __REAL_VERSION__
 
 #if constant(@module@)
@@ -249,6 +249,7 @@ class _file {
 	  return -1;
 	at_eof = 0;
 	file_pos = 0;
+	inf = 0;
 	read_buf = "";
 	crc = crc32("");
 	if(!check_header())
