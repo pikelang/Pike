@@ -84,7 +84,7 @@ constant DAV_STORAGE_FULL	= 507; // RFC 2518 10.6: Insufficient Storage
 //!   @[do_sync_method()]
 .Query do_method(string method,
 		 string|Standards.URI url,
-		 void|mapping(string:int|string) query_variables,
+		 void|mapping(string:int|string|array(string)) query_variables,
 		 void|mapping(string:string|array(string)) request_headers,
 		 void|Protocols.HTTP.Query con, void|string data)
 {
@@ -150,7 +150,7 @@ constant DAV_STORAGE_FULL	= 507; // RFC 2518 10.6: Insufficient Storage
 }
 
 protected .Query do_udp_method(string method, Standards.URI url,
-			    void|mapping(string:int|string) query_variables,
+			    void|mapping(string:int|string|array(string)) query_variables,
 			    void|mapping(string:string|array(string))
 			    request_headers, void|Protocols.HTTP.Query con,
 			    void|string data)
@@ -219,7 +219,7 @@ protected .Query do_udp_method(string method, Standards.URI url,
 //!   @[do_method()], @[Query.set_callbacks()]
 void do_async_method(string method,
 		     string|Standards.URI url,
-		     void|mapping(string:int|string) query_variables,
+		     void|mapping(string:int|string|array(string)) query_variables,
 		     void|mapping(string:string|array(string)) request_headers,
 		     Protocols.HTTP.Query con, void|string data)
 {
@@ -300,7 +300,7 @@ void do_async_method(string method,
 //! can be used for the next request, you may gain some performance.
 //!
 .Query get_url(string|Standards.URI url,
-	       void|mapping(string:int|string) query_variables,
+	       void|mapping(string:int|string|array(string)) query_variables,
 	       void|mapping(string:string|array(string)) request_headers,
 	       void|Protocols.HTTP.Query con)
 {
@@ -316,7 +316,7 @@ void do_async_method(string method,
 //!
 .Query put_url(string|Standards.URI url,
 	       void|string file,
-	       void|mapping(string:int|string) query_variables,
+	       void|mapping(string:int|string|array(string)) query_variables,
 	       void|mapping(string:string|array(string)) request_headers,
 	       void|Protocols.HTTP.Query con)
 {
@@ -331,7 +331,7 @@ void do_async_method(string method,
 //! can be used for the next request, you may gain some performance.
 //!
 .Query delete_url(string|Standards.URI url,
-		  void|mapping(string:int|string) query_variables,
+		  void|mapping(string:int|string|array(string)) query_variables,
 		  void|mapping(string:string|array(string)) request_headers,
 		  void|Protocols.HTTP.Query con)
 {
@@ -343,7 +343,7 @@ void do_async_method(string method,
 //! upon failure. Redirects (HTTP 302) are automatically followed.
 //!
 array(string) get_url_nice(string|Standards.URI url,
-			   void|mapping(string:int|string) query_variables,
+			   void|mapping(string:int|string|array(string)) query_variables,
 			   void|mapping(string:string|array(string)) request_headers,
 			   void|Protocols.HTTP.Query con)
 {
@@ -365,7 +365,7 @@ array(string) get_url_nice(string|Standards.URI url,
 //! Redirects (HTTP 302) are automatically followed.
 //!
 string get_url_data(string|Standards.URI url,
-		    void|mapping(string:int|string) query_variables,
+		    void|mapping(string:int|string|array(string)) query_variables,
 		    void|mapping(string:string|array(string)) request_headers,
 		    void|Protocols.HTTP.Query con)
 {
@@ -376,7 +376,7 @@ string get_url_data(string|Standards.URI url,
 //! Similar to @[get_url], except that query variables is sent as a
 //! POST request instead of a GET request.
 .Query post_url(string|Standards.URI url,
-		mapping(string:int|string) query_variables,
+		mapping(string:int|string|array(string)) query_variables,
 		void|mapping(string:string|array(string)) request_headers,
 		void|Protocols.HTTP.Query con)
 {
@@ -391,7 +391,7 @@ string get_url_data(string|Standards.URI url,
 //! Similar to @[get_url_nice], except that query variables is sent as
 //! a POST request instead of a GET request.
 array(string) post_url_nice(string|Standards.URI url,
-			    mapping(string:int|string) query_variables,
+			    mapping(string:int|string|array(string)) query_variables,
 			    void|mapping(string:string|array(string)) request_headers,
 			    void|Protocols.HTTP.Query con)
 {
@@ -402,7 +402,7 @@ array(string) post_url_nice(string|Standards.URI url,
 //! Similar to @[get_url_data], except that query variables is sent as
 //! a POST request instead of a GET request.
 string post_url_data(string|Standards.URI url,
-		     mapping(string:int|string) query_variables,
+		     mapping(string:int|string|array(string)) query_variables,
 		     void|mapping(string:string|array(string)) request_headers,
 		     void|Protocols.HTTP.Query con)
 {
