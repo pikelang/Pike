@@ -66,7 +66,7 @@ private string SSauthdata,cancelsecret;
 private int backendpid;
 private int backendstatus;
 private mapping(string:mixed) options;
-private string lastmessage="";
+private array(string) lastmessage=({});
 private int clearmessage;
 private int earlyclose;
 private mapping(string:array(mixed)) notifylist=([]);
@@ -106,7 +106,7 @@ private object limitpostfix
 Thread.Mutex _querymutex;
 Thread.Mutex _stealmutex;
 
-#define USERERROR(msg)	throw(({msg, backtrace()[..<1]}))
+#define USERERROR(msg)	throw(({(msg), backtrace()[..<1]}))
 
 protected string _sprintf(int type, void|mapping flags) {
   string res=UNDEFINED;
@@ -223,14 +223,16 @@ protected void create(void|string _host, void|string _database,
 //! generate any errors, this function will return all collected messages
 //! from the last statement.
 //!
+//! The string returned is not newline-terminated.
+//!
 //! To clear the error, pass 1 as argument.
 //!
 //! @seealso
 //!   @[big_query]
 string error(void|int clear) {
-  string s=lastmessage;
+  string s=lastmessage*"\n";
   if(clear)
-    lastmessage="";
+    lastmessage=({});
   warningscollected=0;
   return sizeof(s) && s;
 }
@@ -494,8 +496,8 @@ final private string glob2reg(string glob) {
   return replace(glob,({"*","?","\\","%","_"}),({"%","_","\\\\","\\%","\\_"}));
 }
 
-final private string addnlifpresent(void|string msg) {
-  return msg?msg+"\n":"";
+final private string a2nls(array(string) msg) {
+  return msg*"\n"+"\n";
 }
 
 final private string pinpointerror(void|string query,void|string offset) {
@@ -840,26 +842,31 @@ final int _decodemsg(void|state waitforstate) {
 	warningscollected=0;
         switch(msgresponse->C) {
           case "P0001":
-            lastmessage=sprintf("%s: %s\n",msgresponse->S,msgresponse->M);
-	    USERERROR(sprintf("%s%s\n",
-	     lastmessage,pinpointerror(_c.portal->query,msgresponse->P)));
+            lastmessage=({sprintf("%s: %s",msgresponse->S,msgresponse->M)});
+	    USERERROR(a2nls(lastmessage
+	     +({pinpointerror(_c.portal->query,msgresponse->P)})));
 	    break;
           case "08P01":case "42P05":
 	    errtype=protocolerror;
 	  case "XX000":case "42883":case "42P01":
 	    invalidatecache=1;
 	  default:
-            lastmessage=sprintf("%s %s:%s %s\n (%s:%s:%s)\n%s%s%s%s\n%s",
+            lastmessage=({sprintf("%s %s:%s %s\n (%s:%s:%s)",
 	     msgresponse->S,msgresponse->C,msgresponse->P||"",msgresponse->M,
-	     msgresponse->F||"",msgresponse->R||"",msgresponse->L||"",
-	     addnlifpresent(msgresponse->D),addnlifpresent(msgresponse->H),
-	     pinpointerror(_c.portal&&_c.portal->query,msgresponse->P),
-	     pinpointerror(msgresponse->q,msgresponse->p),
-	     addnlifpresent(msgresponse->W));
+	     msgresponse->F||"",msgresponse->R||"",msgresponse->L||"")});
+	    if(msgresponse->D)
+	      lastmessage+=({msgresponse->D});
+	    if(msgresponse->H)
+	      lastmessage+=({msgresponse->H});
+	    lastmessage+=({
+	     pinpointerror(_c.portal&&_c.portal->query,msgresponse->P)+
+	     pinpointerror(msgresponse->q,msgresponse->p)});
+	    if(msgresponse->W)
+	      lastmessage+=({msgresponse->W});
             switch(msgresponse->S) {
-	      case "PANIC":werror(lastmessage);
+	      case "PANIC":werror(a2nls(lastmessage));
             }
-	    USERERROR(lastmessage);
+	    USERERROR(a2nls(lastmessage));
         }
         break;
       }
@@ -869,11 +876,11 @@ final int _decodemsg(void|state waitforstate) {
         if(clearmessage) {
 	  warningsdropcount+=warningscollected;
 	  clearmessage=warningscollected=0;
-          lastmessage="";
+          lastmessage=({});
         }
         warningscollected++;
-        lastmessage=sprintf("%s%s %s: %s\n",
-	 lastmessage,msgresponse->S,msgresponse->C,msgresponse->M);
+        lastmessage=({sprintf("%s %s: %s",
+	 msgresponse->S,msgresponse->C,msgresponse->M)});
         break;
       }
       case 'A':PD("NotificationResponse\n");
@@ -900,7 +907,7 @@ final int _decodemsg(void|state waitforstate) {
           errtype=protocolunsupported;
 	}
 	else {
-	  string msg=lastmessage;
+	  array(string) msg=lastmessage;
 	  if(!reconnect(1)) {
 	    sleep(RECONNECTDELAY);
             if(!reconnect(1)) {
@@ -908,8 +915,10 @@ final int _decodemsg(void|state waitforstate) {
               reconnect(1);
 	    }
 	  }
-          ERROR("%s%sConnection lost to database %s@%s:%d/%s %d\n",
-           msg,lastmessage,user,host,port,database,backendpid);
+	  msg+=lastmessage;
+	  string s=sizeof(msg)?a2nls(msg):"";
+          ERROR("%sConnection lost to database %s@%s:%d/%s %d\n",
+           s,user,host,port,database,backendpid);
 	}
         break;
     }
@@ -920,11 +929,12 @@ final int _decodemsg(void|state waitforstate) {
         ERROR("Unsupported servermessage received %c\n",msgtype);
         break;
       case protocolerror:
-	string msg=lastmessage;
-	lastmessage="";
+	array(string) msg=lastmessage;
+	lastmessage=({});
         reconnect(1);
-        ERROR("%s%sProtocol error with database %s\n",
-	 msg,lastmessage,host_info());
+	msg+=lastmessage;
+	string s=sizeof(msg)?a2nls(msg):"";
+        ERROR("%sProtocol error with database %s\n",s,host_info());
         break;
       case noerror:
         break;
@@ -978,13 +988,13 @@ private int reconnect(void|int force) {
       return 0;				    // Recursive reconnect, bailing out
   }
   if(!(_c=getsocket())) {
-    string msg=sprintf("Couldn't connect to database on %s:%d\n",host,port);
+    string msg=sprintf("Couldn't connect to database on %s:%d",host,port);
     if(force) {
-      lastmessage+=msg;
+      lastmessage+=({msg});
       return 0;
     }
     else
-      ERROR(msg);
+      ERROR(msg+"\n");
   }
   _closesent=0;
   _mstate=unauthenticated;
@@ -1014,8 +1024,7 @@ private int reconnect(void|int force) {
   }
   PD("%O\n",runtimeparameter);
   if(force) {
-    lastmessage=sprintf("%sReconnected to database %s\n",
-     lastmessage,host_info());
+    lastmessage+=({sprintf("Reconnected to database %s",host_info())});
     runcallback(backendpid,"_reconnect","");
   }
   return 1;
@@ -1053,7 +1062,7 @@ void reload(void|int special) {
     earlyclose=0;
     PD("%O\n",err);
     if(!reconnect(1))
-      ERROR(lastmessage);
+      ERROR(a2nls(lastmessage));
   }
   else if(didsync && special==2)
     _decodemsg(readyforquery);
