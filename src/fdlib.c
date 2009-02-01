@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.c,v 1.87 2009/02/01 03:47:13 mast Exp $
+|| $Id: fdlib.c,v 1.88 2009/02/01 03:49:53 mast Exp $
 */
 
 #include "global.h"
@@ -530,7 +530,7 @@ int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
       return -1;
     }
 
-    if (!strcmp (fstype, "FAT")) {
+    if (res && !strcmp (fstype, "FAT")) {
       if (!fat_filetimes_to_stattimes (&findbuf.ftCreationTime,
 				       &findbuf.ftLastAccessTime,
 				       &findbuf.ftLastWriteTime,
