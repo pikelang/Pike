@@ -232,7 +232,7 @@ string error(void|int clear) {
   if(clear)
     lastmessage="";
   warningscollected=0;
-  return s;
+  return sizeof(s) && s;
 }
 
 //! This function returns a string describing what host are we talking to,
