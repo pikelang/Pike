@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.c,v 1.86 2008/10/17 17:12:37 mast Exp $
+|| $Id: fdlib.c,v 1.87 2009/02/01 03:47:13 mast Exp $
 */
 
 #include "global.h"
@@ -521,7 +521,10 @@ int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
     else
       res = GetVolumeInformation (NULL, NULL, 0, NULL, NULL,NULL,
 				  (LPSTR)&fstype, sizeof (fstype));
-    if (!res) {
+    if (!res &&
+	/* Get ERROR_MORE_DATA if the fstype buffer wasn't long
+	 * enough, so let's ignore it. */
+	GetLastError() != ERROR_MORE_DATA) {
       set_errno_from_win32_error (GetLastError());
       FindClose (hFind);
       return -1;
