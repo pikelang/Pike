@@ -290,7 +290,7 @@ final private object getsocket(void|int nossl) {
 //! through the generic SQL-interface.
 //!
 //! @seealso
-//!   @[reload]
+//!   @[reload], @[resync]
 void cancelquery() {
   if(qstate==inquery) {
     qstate=cancelpending;
@@ -1032,12 +1032,36 @@ private int reconnect(void|int force) {
 
 //! @decl void reload()
 //!
-//! Resets the connection to the database. Can be used for
-//! a variety of reasons, for example to detect the status of a connection.
+//! For PostgreSQL this function performs the same function as @[resync()].
 //!
 //! @seealso
-//!   @[cancelquery]
-void reload(void|int special) {
+//!   @[resync], @[cancelquery]
+void reload() {
+  resync();
+}
+
+//! @decl void resync()
+//!
+//! Resyncs the database session; typically used to make sure the session is
+//! not still in a dangling transaction.
+//!
+//! If called while queries/portals are still in-flight, this function
+//! is a no-op.
+//!
+//! If called while the connection is in idle state, the function is
+//! lightweight and briefly touches base with the database server to
+//! make sure client and server are in sync.
+//!
+//! If issued while inside a transaction, it will rollback the transaction,
+//! close all open cursors, drop all temporary tables and reset all
+//! session variables to their default values.
+//!
+//! This function is PostgreSQL-specific, and thus it is not available
+//! through the generic SQL-interface.
+//!
+//! @seealso
+//!   @[cancelquery], @[reload]
+void resync(void|int special) {
   mixed err;
   int didsync;
   if(err = catch {
@@ -1051,10 +1075,17 @@ void reload(void|int special) {
         didsync=1;
         if(!special) {
           _decodemsg(readyforquery);
-          foreach(prepareds;;mapping tp) {
-            m_delete(tp,"datatypeoid");
-            m_delete(tp,"datarowdesc");
-          }
+	  switch(backendstatus) {
+	    case 'T':case 'E':
+              foreach(prepareds;;mapping tp) {
+                m_delete(tp,"datatypeoid");
+                m_delete(tp,"datarowdesc");
+              }
+	      big_query("ROLLBACK");
+	      big_query("RESET ALL");
+	      big_query("CLOSE ALL");
+	      big_query("DISCARD TEMP");
+	  }
         }
       }
       earlyclose=0;
@@ -1729,7 +1760,7 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
       }
     }) {
     PD("%O\n",err);
-    reload(1);
+    resync(1);
     backendstatus=UNDEFINED;
     throw(err);
   }

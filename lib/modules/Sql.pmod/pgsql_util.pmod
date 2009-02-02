@@ -339,7 +339,7 @@ private void releasesession() {
       PD("CopyDone\n");
       _pgsqlsess._c.sendcmd("c\0\0\0\4",1);
     }
-    _pgsqlsess.reload(2);
+    _pgsqlsess.resync(2);
   }
   _qmtxkey=UNDEFINED;
   _pgsqlsess=UNDEFINED;
@@ -528,7 +528,7 @@ int|array(mixed) fetch_row(void|int|string|array(string) buffer) {
     return UNDEFINED;
   };
   PD("Exception %O\n",err);
-  _pgsqlsess.reload();
+  _pgsqlsess.resync();
   if(buffer!=2)
     throw(err);
   if(!delayederror)
