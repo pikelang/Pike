@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.398 2008/12/14 15:11:23 marcus Exp $
+|| $Id: file.c,v 1.399 2009/02/06 18:53:43 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -632,8 +632,9 @@ static struct pike_string *do_read_oob(int fd,
 	bytes_read+=i;
 	if(!all) break;
       }
-      else if(i==0)
+      else if ((i==0) || (e == EINVAL))
       {
+	/* No out of band data available. */
 	break;
       }
       else if(e != EINTR)
