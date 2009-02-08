@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.49 2008/10/17 17:17:03 mast Exp $ */
+/* $Id: socktest.pike,v 1.50 2009/02/08 14:27:10 grubba Exp $ */
 
 // #define OOB_DEBUG
 
@@ -169,6 +169,13 @@ class Socket {
     input_buffer+=foo;
   }
 
+  void read_oob_callback(mixed id, string foo)
+  {
+    got_callback();
+    predef::write("Got unexpected out of band data on %O: %O", query_fd(), foo);
+    fd_fail();
+  }
+
   void create(object|void o)
   {
     got_callback();
@@ -189,7 +196,8 @@ class Socket {
     set_backend(backend);
 #endif
     set_id(0);
-    set_nonblocking(read_callback,write_callback,close_callback);
+    set_nonblocking(read_callback,write_callback,close_callback,
+		    read_oob_callback, UNDEFINED);
   }
 };
 
