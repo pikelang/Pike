@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.221 2008/07/24 15:30:56 grubba Exp $
+|| $Id: array.c,v 1.222 2009/02/09 14:03:02 srb Exp $
 */
 
 #include "global.h"
@@ -2363,43 +2363,128 @@ PMOD_EXPORT struct array *explode(struct pike_string *str,
 PMOD_EXPORT struct pike_string *implode(struct array *a,
                                         struct pike_string *del)
 {
-  INT32 len, e, inited;
+  INT32 len, e;
   PCHARP r;
-  struct pike_string *ret, *tmp;
+  struct pike_string *ret;
+  struct svalue *ae;
   int max_shift = del->size_shift;
 
   len=0;
 
-  for(e=0;e<a->size;e++)
-  {
-    if(ITEM(a)[e].type==T_STRING)
+  for(e=a->size, ae=a->item; e--; ae++)
+    switch(ae->type)
     {
-      len+=ITEM(a)[e].u.string->len + del->len;
-      if(ITEM(a)[e].u.string->size_shift > max_shift)
-	max_shift=ITEM(a)[e].u.string->size_shift;
+      case T_INT:
+	 if(!ae->u.integer)
+	   continue;		    /* skip zero (strings) */
+	 /* FALLTHROUGH */
+      default:
+	Pike_error("Arrayelement %d is not string|array(int)\n", ae-a->item);
+      case T_STRING:
+        len+=ae->u.string->len + del->len;
+        if(ae->u.string->size_shift > max_shift)
+	  max_shift=ae->u.string->size_shift;
+	break;
+      case T_ARRAY:
+	{
+	  int blen;
+	  struct svalue *ai;
+	  struct array *b = ae->u.array;
+	  blen = b->size;
+          len += blen + del->len;
+	  for(ai = b->item; blen--; ai++)
+	  {
+	    unsigned INT32 val;
+	    if (ai->type != T_INT)
+	      Pike_error("Can only convert array(int) to string, "
+		  "arrayelement %d is not an integer\n",
+		 ai-b->item);
+	    val = ai->u.integer;
+	    switch(max_shift) {
+	      case 0:
+	        if (val <= 0xff)
+	          break;
+	        max_shift = 1;
+	        /* FALL THROUGH */
+	      case 1:
+	        if (val <= 0xffff)
+	          break;
+	        max_shift = 2;
+	        /* FALL THROUGH */
+	    }
+	  }
+	}
+	break;
     }
-  }
   if(len) len-=del->len;
   
   ret=begin_wide_shared_string(len,max_shift);
   r=MKPCHARP_STR(ret);
-  inited=0;
-  for(e=0;e<a->size;e++)
-  {
-    if(ITEM(a)[e].type==T_STRING)
+  len = del->len;
+  if(e = a->size)
+    for(ae=a->item;;ae++)
     {
-      if(inited)
+      switch(ae->type)
       {
-	pike_string_cpy(r,del);
-	INC_PCHARP(r,del->len);
+        case T_STRING:
+        {
+          struct pike_string *tmp = ae->u.string;
+          pike_string_cpy(r,tmp);
+          INC_PCHARP(r,tmp->len);
+          break;
+        }
+        case T_ARRAY:
+        {
+          int blen;
+          struct array *b = ae->u.array;
+          if(blen = b->size)
+          {
+            void*rp;
+            struct svalue *ai = b->item;
+            rp = r.ptr;
+            INC_PCHARP(r,blen);
+            switch(max_shift)
+            {
+              default:
+              {
+                p_wchar0 *str0 = rp;
+                do *str0++ = ai++->u.integer;
+                while(blen--);
+                break;
+              }
+              case 1:
+              {
+                p_wchar1 *str1 = rp;
+                do *str1++ = ai++->u.integer;
+                while(blen--);
+                break;
+              }
+              case 2:
+              {
+                p_wchar2 *str2 = rp;
+                do *str2++ = ai++->u.integer;
+                while(blen--);
+                break;
+              }
+            }
+          }
+          break;
+        }
+        default:
+        case T_INT:
+          if(!--e)
+	    goto ret;
+          continue;
       }
-      inited=1;
-      tmp=ITEM(a)[e].u.string;
-      pike_string_cpy(r,tmp);
-      INC_PCHARP(r,tmp->len);
-      len++;
+      if(!--e)
+        break;
+      if(len)
+      {
+        pike_string_cpy(r,del);
+        INC_PCHARP(r,len);
+      }
     }
-  }
+ret:
   return low_end_shared_string(ret);
 }
 
