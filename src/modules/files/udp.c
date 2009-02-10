@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: udp.c,v 1.80 2008/06/28 23:06:02 nilsson Exp $
+|| $Id: udp.c,v 1.81 2009/02/10 09:50:35 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -559,7 +559,7 @@ void udp_wait(INT32 args)
  *!	])
  *!
  *! @seealso
- *!   @[set_read_callback()]
+ *!   @[set_read_callback()], @[MSG_OOB], @[MSG_PEEK]
  */
 void udp_read(INT32 args)
 {
@@ -627,6 +627,11 @@ void udp_read(INT32 args)
        case ENOTSOCK:
 	  Pike_fatal("reading from non-socket fd!!!\n");
 #endif
+       case EINVAL:
+	 if (!(flags & MSG_OOB)) {
+	   Pike_error("Socket read failed with EINVAL.\n");
+	 }
+	 /* FALL_THROUGH */
        case EWOULDBLOCK:
 	  push_int( 0 );
 	  return;
