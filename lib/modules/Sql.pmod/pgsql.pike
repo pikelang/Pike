@@ -143,7 +143,7 @@ protected string _sprintf(int type, void|mapping flags) {
 //! @decl void create(string host, void|string database, void|string user,@
 //!                   void|string password, void|mapping(string:mixed) options)
 //!
-//! With no arguments, this function initializes (reinitializes if a
+//! With no arguments, this function initialises (reinitialises if a
 //! connection had been previously set up) a connection to the
 //! PostgreSQL backend. Since PostgreSQL requires a database to be
 //! selected, it will try to connect to the default database. The
