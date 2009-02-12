@@ -53,26 +53,26 @@ class PGassist {
   }
 
   final string getstring(void|int len) {
+    String.Buffer acc=String.Buffer();
     if(!zero_type(len)) {
-      string acc="",res;
+      string res;
       do {
         if(!flushed && !bpeek(0))
           sendflush();
         res=read(len,!flushed);
         if(res) {
           if(!sizeof(res))
-            return acc;
-          acc+=res;
+            return acc->get();
+          acc->add(res);
         }
       }
       while(sizeof(acc)<len&&res);
-      return sizeof(acc)?acc:res;
+      return sizeof(acc)?acc->get():res;
     }
-    array(int) acc=({});
     int c;
     while((c=getbyte())>0)
-      acc+=({c});
-    return `+("",@map(acc,String.int2char));
+      acc->putchar(c);
+    return acc->get();
   }
 
   inline final int getint16() {
