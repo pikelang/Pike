@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.863 2009/02/09 14:11:09 srb Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.864 2009/02/12 21:06:27 srb Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -7655,9 +7655,6 @@ test_eq(2.0*2*2.0*2*2.0,32.0)
 
 test_eq([[({})*""]],"")
 test_eq([[({"foo",0,"bar"})*"-"]],"foo-bar")
-test_eq([[({"foo",0,({65,66}),"bar"})*"-"]],"foo-AB-bar")
-test_eq([[({"foo",0,({65,66}),0,"bar"})*"-"]],"foo-AB-bar")
-test_eq([[({"foo",({65,66}),0,"bar"})*"-"]],"foo-AB-bar")
 test_eq([[({"f","o","o"})*""]],"foo")
 
 test_eq(({"foo","bar","gazonk"})*"-","foo-bar-gazonk")

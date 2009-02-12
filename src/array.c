@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.222 2009/02/09 14:03:02 srb Exp $
+|| $Id: array.c,v 1.223 2009/02/12 21:06:27 srb Exp $
 */
 
 #include "global.h"
@@ -2379,41 +2379,11 @@ PMOD_EXPORT struct pike_string *implode(struct array *a,
 	   continue;		    /* skip zero (strings) */
 	 /* FALLTHROUGH */
       default:
-	Pike_error("Arrayelement %d is not string|array(int)\n", ae-a->item);
+	Pike_error("Arrayelement %d is not a string\n", ae-a->item);
       case T_STRING:
         len+=ae->u.string->len + del->len;
         if(ae->u.string->size_shift > max_shift)
 	  max_shift=ae->u.string->size_shift;
-	break;
-      case T_ARRAY:
-	{
-	  int blen;
-	  struct svalue *ai;
-	  struct array *b = ae->u.array;
-	  blen = b->size;
-          len += blen + del->len;
-	  for(ai = b->item; blen--; ai++)
-	  {
-	    unsigned INT32 val;
-	    if (ai->type != T_INT)
-	      Pike_error("Can only convert array(int) to string, "
-		  "arrayelement %d is not an integer\n",
-		 ai-b->item);
-	    val = ai->u.integer;
-	    switch(max_shift) {
-	      case 0:
-	        if (val <= 0xff)
-	          break;
-	        max_shift = 1;
-	        /* FALL THROUGH */
-	      case 1:
-	        if (val <= 0xffff)
-	          break;
-	        max_shift = 2;
-	        /* FALL THROUGH */
-	    }
-	  }
-	}
 	break;
     }
   if(len) len-=del->len;
@@ -2431,43 +2401,6 @@ PMOD_EXPORT struct pike_string *implode(struct array *a,
           struct pike_string *tmp = ae->u.string;
           pike_string_cpy(r,tmp);
           INC_PCHARP(r,tmp->len);
-          break;
-        }
-        case T_ARRAY:
-        {
-          int blen;
-          struct array *b = ae->u.array;
-          if(blen = b->size)
-          {
-            void*rp;
-            struct svalue *ai = b->item;
-            rp = r.ptr;
-            INC_PCHARP(r,blen);
-            switch(max_shift)
-            {
-              default:
-              {
-                p_wchar0 *str0 = rp;
-                do *str0++ = ai++->u.integer;
-                while(blen--);
-                break;
-              }
-              case 1:
-              {
-                p_wchar1 *str1 = rp;
-                do *str1++ = ai++->u.integer;
-                while(blen--);
-                break;
-              }
-              case 2:
-              {
-                p_wchar2 *str2 = rp;
-                do *str2++ = ai++->u.integer;
-                while(blen--);
-                break;
-              }
-            }
-          }
           break;
         }
         default:
