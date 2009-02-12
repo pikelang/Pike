@@ -1,4 +1,4 @@
-// $Id: FakeFile.pike,v 1.17 2009/02/12 21:05:32 srb Exp $
+// $Id: FakeFile.pike,v 1.18 2009/02/12 21:05:47 srb Exp $
 #pike __REAL_VERSION__
 
 //! A string wrapper that pretends to be a @[Stdio.File] object
@@ -134,6 +134,54 @@ string read(void|int(0..) len, void|int(0..1) not_all) {
 
   // FIXME: read callback
   return data[start..ptr-1];
+}
+
+//! @seealso
+//!   @[Stdio.FILE()->gets()]
+string gets() {
+  if(!r) return 0;
+  string ret;
+  sscanf(data,"%*"+(string)ptr+"s%[^\n]",ret);
+  if(ret)
+  {
+    ptr+=sizeof(ret)+1;
+    if(ptr>sizeof(data))
+    {
+      ptr=sizeof(data);
+      if(!sizeof(ret))
+	ret = 0;
+    }
+  }
+
+  // FIXME: read callback
+  return ret;
+}
+
+//! @seealso
+//!   @[Stdio.FILE()->getchar()]
+int getchar() {
+  if(!r) return 0;
+  int c;
+  if(catch(c=data[ptr]))
+    c=-1;
+  else
+    ptr++;
+
+  // FIXME: read callback
+  return c;
+}
+
+//! @seealso
+//!   @[Stdio.FILE()->unread()]
+void unread(string s) {
+  if(!r) return;
+  if(data[ptr-sizeof(s)..ptr-1]==s)
+    ptr-=sizeof(s);
+  else
+  {
+    data=s+data[ptr..];
+    ptr=0;
+  }
 }
 
 //! @seealso
