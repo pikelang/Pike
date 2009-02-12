@@ -1,5 +1,5 @@
 /*
- * $Id: Tar.pmod,v 1.33 2009/01/28 18:19:22 grubba Exp $
+ * $Id: Tar.pmod,v 1.34 2009/02/12 15:14:38 mast Exp $
  */
 
 #pike __REAL_VERSION__
@@ -23,31 +23,66 @@ class _Tar  // filesystem
   object fd;
   string filename;
 
+  protected int fd_in_use;
+
   class ReadFile
   {
-    inherit Stdio.FakeFile;
+    inherit Stdio.BlockFile;
 
-    protected private int start, pos, len;
+    protected private int start, len;
 
     protected string _sprintf(int t)
     {
-      return t=='O' && sprintf("Filesystem.Tar.ReadFile(%d, %d /* pos = %d */)",
-		     start, len, pos);
+      return t=='O' && sprintf("Filesystem.Tar.ReadFile(%d, %d)", start, len);
     }
 
-    void create(int p, int l)
+    protected void create(int p, int l)
     {
-//      assign(fd/*->dup()*/);
+      if (fd_in_use)
+	error ("Cannot open another file inside %O.\n", _Tar::this);
+      fd_in_use = 1;
+
       start = p;
       len = l;
       if (fd->seek(start) < 0)
 	error ("Failed to seek to position %d in %O.\n", start, fd);
-      string data = fd->read(len);
-      if (sizeof (data) != len)
-	error ("Failed to read %d bytes from position %d in %O.\n",
-	       len, start, fd);
-      ::create(data);
-      seek(0);
+    }
+
+    protected void destroy()
+    {
+      fd_in_use = 0;
+    }
+
+    string read (void|int read_len)
+    {
+      if (start < 0) error ("File not open.\n");
+      int max_len = len - (fd->tell() - start);
+      return fd->read (read_len ? min (read_len, max_len) : max_len);
+    }
+
+    void close()
+    {
+      start = -1;
+      fd_in_use = 0;
+    }
+
+    int seek (int to)
+    {
+      if (start < 0) error ("File not open.\n");
+      if (to < 0) to += len;
+      if (to < 0 || to > len) return -1;
+      return fd->seek (start + to);
+    }
+
+    int tell()
+    {
+      if (start < 0) error ("File not open.\n");
+      return fd->tell() - start;
+    }
+
+    int errno()
+    {
+      return fd->errno();
     }
   }
 
