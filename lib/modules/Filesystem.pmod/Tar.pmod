@@ -1,5 +1,5 @@
 /*
- * $Id: Tar.pmod,v 1.36 2009/02/12 16:20:42 mast Exp $
+ * $Id: Tar.pmod,v 1.37 2009/02/12 17:26:10 mast Exp $
  */
 
 #pike __REAL_VERSION__
@@ -28,7 +28,9 @@ class _Tar  // filesystem
   object fd;
   string filename;
 
-  protected int fd_in_use;
+  protected int fd_in_use = -1;
+  // If >= 0 then some ReadFile is in use. The value is the start
+  // position of that file.
 
   class ReadFile
   {
@@ -36,44 +38,68 @@ class _Tar  // filesystem
 
     protected private int start, len;
 
+    protected int cached_pos, cached_errno;
+    // Used only when the fd has been released.
+
     protected string _sprintf(int t)
     {
       return t=='O' && sprintf("Filesystem.Tar.ReadFile(%d, %d)", start, len);
     }
 
+    protected void allocate_fd()
+    {
+      if (fd_in_use >= 0 && fd_in_use != start)
+	error ("Concurrent file use in %O.\n", _Tar::this);
+      fd_in_use = start;
+    }
+
+    protected void release_fd()
+    {
+      if (fd_in_use == start) {
+	if (fd->tell) cached_pos = fd->tell();
+	if (fd->errno) cached_errno = fd->errno();
+	fd_in_use = -1;
+      }
+    }
+
     protected void create(int p, int l)
     {
-      if (fd_in_use)
-	error ("Cannot open another file inside %O.\n", _Tar::this);
-      fd_in_use = 1;
-
       start = p;
       len = l;
+      allocate_fd();
       if (fd->seek(start) < 0)
 	error ("Failed to seek to position %d in %O.\n", start, fd);
     }
 
     protected void destroy()
     {
-      fd_in_use = 0;
+      fd_in_use = -1;
     }
 
     string read (void|int read_len)
     {
       if (start < 0) error ("File not open.\n");
+      allocate_fd();
       int max_len = len - (fd->tell() - start);
-      return fd->read (read_len ? min (read_len, max_len) : max_len);
+      string res = fd->read (read_len ? min (read_len, max_len) : max_len);
+      if (sizeof (res) == max_len)
+	// For compatibility: If we read to the end then release the
+	// fd for use from another ReadFile, so that it works if this
+	// one isn't properly closed or destructed first.
+	release_fd();
+      return res;
     }
 
     void close()
     {
+      release_fd();
       start = -1;
-      fd_in_use = 0;
     }
 
     int seek (int to)
     {
       if (start < 0) error ("File not open.\n");
+      allocate_fd();
       if (to < 0) to += len;
       if (to < 0 || to > len) return -1;
       return fd->seek (start + to);
@@ -82,12 +108,18 @@ class _Tar  // filesystem
     int tell()
     {
       if (start < 0) error ("File not open.\n");
-      return fd->tell() - start;
+      if (fd_in_use != start)
+	return cached_pos - start;
+      else
+	return fd->tell() - start;
     }
 
     int errno()
     {
-      return fd->errno();
+      if (start < 0 || fd_in_use != start)
+	return cached_errno;
+      else
+	return fd->errno();
     }
   }
 
