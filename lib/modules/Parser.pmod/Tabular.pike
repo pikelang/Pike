@@ -8,11 +8,11 @@
 #pike __REAL_VERSION__
 
 private Stdio.FILE in;
-private array alread=({});
-private mapping|array fms;
-private int eol;
 private int prefetch=1024;	 // TODO: Document and make this available
 				 // through compile().
+private String.Buffer alread=String.Buffer(prefetch);
+private mapping|array fms;
+private int eol;
 private Regexp simple=Regexp("^[^[\\](){}<>^$|+*?\\\\]+$");
 private Regexp emptyline=Regexp("^[ \t\v\r\x1a]*$");
 private mixed severity=1;
@@ -69,8 +69,7 @@ private int getchar()
 { int c=in->getchar();
   if(c<0)
     throw(severity);
-  if(catch(alread[sizeof(alread)-1]+=({c})))
-    alread+=({({c})});
+  alread->putchar(c);
   return c;
 }
 #endif
@@ -78,7 +77,7 @@ private int getchar()
 private string read(int n)
 { string s;
   s=in->read(n);
-  alread+=({s});
+  alread->add(s);
   if(sizeof(s)!=n)
     throw(severity);
   return s;
@@ -95,7 +94,7 @@ private string gets(int n)
   { s=in->gets();
     if(!s)
        throw(severity);
-    alread+=({s,"\n"});
+    alread->add(s);alread->putchar('\n');
     if(has_suffix(s,"\r"))
       s=s[..<1];
     eol=1;
@@ -104,21 +103,22 @@ private string gets(int n)
 }
 
 private class checkpoint
-{ private array oldalread;
+{ private string oldalread;
 
   void create()
-  { oldalread=alread;
-    alread=({});
+  { oldalread=alread->get();
   }
 
   final void release()
-  { alread=oldalread+alread;
+  { string s=alread->get();
+    alread->add(oldalread);
+    alread->add(s);
     oldalread=0;
   }
 
   protected void destroy()
   { if(oldalread)
-    { string back=alread*"";
+    { string back=alread->get();
       if(sizeof(back))
       { in->unread(back);
         if(verb<0)
@@ -127,7 +127,7 @@ private class checkpoint
             werror("Backtracking %O\n",back);
         }
       }
-      alread=oldalread;
+      alread->add(oldalread);
     }
   }
 }
@@ -157,14 +157,14 @@ private mapping getrecord(array fmt,int found)
   foreach(fmt;int fi;array|mapping m)
   { if(fi<2)
       continue;
-    string|array|mapping value;
+    string value;
     if(arrayp(m))
     { array field=m;
       fmt[fi]=m=(["name":field[0]]);
       mixed nm=field[1];
       if(!mappingp(nm))
       { if(arrayp(nm))
-          value=getrecord(nm,found);
+          ret+=getrecord(nm,found);
         else
           m+=([(intp(nm)?"width":(stringp(nm)?"match":"delim")):nm]);
         if(sizeof(field)>2)
@@ -178,16 +178,15 @@ private mapping getrecord(array fmt,int found)
       value=gets(m->width);
     if(m->delim)
     { multiset delim=m->delim;
+      int i,pref=m->prefetch || prefetch;
+      String.Buffer word=String.Buffer(pref);
+      string buf,skipclass;
+      skipclass="%[^"+(string)indices(delim)+"\"\r\x1a\n]";
       if(sizeof(delim-(<',',';','\t',' '>)))
-      { array word;
-        int i;
-        string buf,skipclass;
-        skipclass="%[^"+(string)indices(delim)+"\r\x1a\n]";
-        value=word=({});
 delimready:
         for(;;)
         { i=0;
-          buf=in->read(m->prefetch || prefetch);
+          buf=in->read(pref);
           int c;
           FETCHAR(c,buf,i);
           while(c>=0)
@@ -197,8 +196,7 @@ delimready:
             { default:
               { string s;
                 sscanf(buf[--i..],skipclass,s);
-                value+=({word,s});
-                word=({});
+                word->add(s);
                 i+=sizeof(s);
                 break;
               }
@@ -210,40 +208,29 @@ delimready:
             FETCHAR(c,buf,i);
           }
           if(!sizeof(buf))
-          { value+=({word});
             throw(severity);
-          }
-          alread+=({buf});
+          alread->add(buf);
         }
-        value+=({word});
-        alread+=({buf[..i-1]});
-        in->unread(buf[i..]);
-        value=value*"";
-      }
       else
-      { array word;
-        int leadspace=1,inquotes=0,i;
-        string buf,skipclass;
-        skipclass="%[^"+(string)indices(delim)+"\"\r\x1a\n]";
-        value=word=({});
+      { int leadspace=1,inquotes=0;
 csvready:
         for(;;)
         { i=0;
-          buf=in->read(m->prefetch || prefetch);
+          buf=in->read(pref);
           int c;
           FETCHAR(c,buf,i);
           while(c>=0)
           { if(delim[c])
             { if(!inquotes)
                 break csvready;
-              word+=({c});
+              word->putchar(c);
             }
             else switch(c)
             { case '"':leadspace=0;
                 if(!inquotes)
                   inquotes=1;
                 else if(FETCHAR(c,buf,i)=='"')
-                  word+=({c});
+                  word->putchar(c);
                 else
                 { inquotes=0;
                   continue;
@@ -254,8 +241,7 @@ csvready:
                 if(!leadspace)
                 { string s;
                   sscanf(buf[--i..],skipclass,s);
-                  value+=({word,s});
-                  word=({});
+                  word->add(s);
                   i+=sizeof(s);
                 }
                 break;
@@ -264,22 +250,19 @@ csvready:
                 { eol=1;
                   break csvready;
                 }
-                word+=({c});
+                word->putchar('\n');
               case '\r':case '\x1a':;
             }
             FETCHAR(c,buf,i);
           }
           if(!sizeof(buf))
-          { value+=({word});
             throw(severity);
-          }
-          alread+=({buf});
+          alread->add(buf);
         }
-        value+=({word});
-        alread+=({buf[..i-1]});
-        in->unread(buf[i..]);
-        value=value*"";
       }
+      alread->add(buf[..i-1]);
+      in->unread(buf[i..]);
+      value=word->get();
     }
     if(m->match)
     { Regexp rgx;
@@ -301,15 +284,17 @@ csvready:
       }
       else
       { string buf=in->read(m->prefetch || prefetch);
-        if(!buf || !(value=rgx->split(buf)))
-        { alread+=({buf});
-          if(verb<-3)
-            werror(sprintf("Mismatch %O!=%O\n",buf[..32],rgx)
-             -"Regexp.SimpleRegexp");
-          throw(severity);
+        { array spr;
+          if(!buf || !(spr=rgx->split(buf)))
+          { alread->add(buf);
+            if(verb<-3)
+              werror(sprintf("Mismatch %O!=%O\n",buf[..32],rgx)
+               -"Regexp.SimpleRegexp");
+            throw(severity);
+          }
+          in->unread(buf[sizeof(value=spr[0])..]);
         }
-        in->unread(buf[sizeof(value=value[0])..]);
-        alread+=({value});
+        alread->add(value);
         value-="\r";
         if(has_suffix(value,"\n"))
           value=value[..<1];
