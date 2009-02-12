@@ -1,8 +1,13 @@
 /*
- * $Id: Tar.pmod,v 1.34 2009/02/12 15:14:38 mast Exp $
+ * $Id: Tar.pmod,v 1.35 2009/02/12 15:16:19 mast Exp $
  */
 
 #pike __REAL_VERSION__
+
+constant EXTRACT_SKIP_MODE = 1;
+constant EXTRACT_SKIP_MTIME = 2;
+constant EXTRACT_CHOWN = 4;
+constant EXTRACT_ERR_ON_UNKNOWN = 8;
 
 //! @decl void create(string filename, void|Filesystem.Base parent,@
 //!                   void|object file)
@@ -284,6 +289,174 @@ class _Tar  // filesystem
     }
 
     filenames = indices(filename_to_entry);
+  }
+
+  protected void extract_bits (string dest, Record r, int which_bits)
+  {
+    // FIXME: Partial support for symlinks.
+
+#if constant (chown)
+    if (which_bits & EXTRACT_CHOWN) {
+      int uid;
+      if (!r->uname)
+	uid = r->uid;
+      else if (array pwent = getpwnam (r->uname))
+	uid = pwent[2];
+
+      int gid;
+      if (!r->gname)
+	gid = r->gid;
+      else if (array grent = getgrnam (r->gname))
+	gid = grent[2];
+
+      chown (dest, uid, gid);
+    }
+#endif
+
+#if constant (chmod)
+    if (!(which_bits & EXTRACT_SKIP_MODE))
+      chmod (dest, r->mode & 07777);
+#endif
+
+#if constant (utime)
+    if (!(which_bits & EXTRACT_SKIP_MTIME))
+      utime (dest, r->mtime, r->mtime);
+#endif
+  }
+
+  void extract (string src_dir, string dest_dir,
+		void|string|function(string,Filesystem.Stat:int|string) filter,
+		void|int flags)
+  //! Extracts files from the tar file in sequential order.
+  //!
+  //! @param src_dir
+  //!   The root directory in the tar file system to extract.
+  //!
+  //! @param dest_dir
+  //!   The root directory in the real file system that will receive
+  //!   the contents of @[src_dir]. It is assumed to exist and be
+  //!   writable.
+  //!
+  //! @param filter
+  //!   A filter for the entries under @[src_dir] to extract. If it's
+  //!   a string then it's taken as a glob pattern which is matched
+  //!   against the path below @[src_dir]. That path always begins
+  //!   with a @expr{/@}. For directory entries it ends with a
+  //!   @expr{/@} too, otherwise not.
+  //!
+  //!   If it's a function then it's called for every entry under
+  //!   @[src_dir], and those where it returns nonzero are extracted.
+  //!   The function receives the path part below @[src_dir] as the
+  //!   first argument, which is the same as in the glob case above,
+  //!   and the stat struct as the second. If the function returns a
+  //!   string, it's taken as the path below @[dest_dir] where this
+  //!   entry should be extracted (any missing directories are created
+  //!   automatically).
+  //!
+  //!   If @[filter] is zero, then everything below @[src_dir] is
+  //!   extracted.
+  //!
+  //! @param flags
+  //!   Bitfield of flags to control the extraction:
+  //!   @int
+  //!     @value Filesystem.Tar.EXTRACT_SKIP_MODE
+  //!       Don't set permission bits from tar record.
+  //!     @value Filesystem.Tar.EXTRACT_SKIP_MTIME
+  //!       Don't Set mtime from tar record.
+  //!     @value Filesystem.Tar.EXTRACT_CHOWN
+  //!       Set owning user and group.
+  //!     @value Filesystem.Tar.EXTRACT_ERR_ON_UNKNOWN
+  //!       Throw an error if an entry of an unsupported type is
+  //!       encountered. This is ignored otherwise.
+  //!   @endint
+  //!
+  //! Files and directories are supported on all platforms, and
+  //! symlinks are supported whereever @[symlink] exists. Other record
+  //! types are currently not supported.
+  //!
+  //! @throws
+  //! I/O errors are thrown.
+  {
+    if (!has_suffix (src_dir, "/")) src_dir += "/";
+    if (has_suffix (dest_dir, "/")) dest_dir = dest_dir[..<1];
+
+    mapping(string:Record) dirs = ([]);
+
+    foreach (entries, Record r) {
+      string fullpath = r->fullpath;
+      if (has_prefix (fullpath, src_dir)) {
+	string subpath = fullpath[sizeof (src_dir) - 1..];
+	string|int filter_res;
+
+	if (!filter ||
+	    (stringp (filter) ? glob (filter, subpath) :
+	     (filter_res = filter (subpath, r)))) {
+	  string destpath = dest_dir +
+	    (stringp (filter_res) ? filter_res : subpath);
+
+	  if (r->isdir()) {
+	    if (!Stdio.mkdirhier (destpath))
+	      error ("Failed to create directory %q: %s\n",
+		     destpath, strerror (errno()));
+
+	    // Set bits etc afterwards on dirs.
+	    if (flags != (EXTRACT_SKIP_MODE|EXTRACT_SKIP_MTIME))
+	      dirs[destpath] = r;
+	  }
+
+	  else {
+	    string dest_dir = (destpath / "/")[..<1] * "/";
+	    if (!Stdio.is_dir (dest_dir))
+	      if (!Stdio.mkdirhier (dest_dir))
+		error ("Failed to create directory %q: %s\n",
+		       destpath, strerror (errno()));
+
+	    if (r->isreg()) {
+	      Stdio.File o = Stdio.File();
+	      if (!o->open (destpath, "wc"))
+		error ("Failed to create %q: %s\n",
+		       destpath, strerror (o->errno()));
+
+	      Stdio.BlockFile i = open_record (r, "r");
+	      do {
+		string data = i->read (1024 * 1024);
+		if (data == "") break;
+		if (o->write (data) != sizeof (data))
+		  error ("Failed to write %q: %s\n",
+			 destpath, strerror (o->errno()));
+	      } while (1);
+
+	      i->close();
+	      o->close();
+
+	      if (flags != (EXTRACT_SKIP_MODE|EXTRACT_SKIP_MTIME))
+		extract_bits (destpath, r, flags);
+	    }
+
+#if constant (symlink)
+	    else if (r->islnk()) {
+	      symlink (r->arch_linkname, destpath);
+
+	      // FIXME: Call extract_bits when utime and chown can
+	      // work on symlinks.
+	    }
+#endif
+
+	    else if (flags & EXTRACT_ERR_ON_UNKNOWN)
+	      error ("Failed to extract entry of unsupported type %x: %O\n",
+		     r->mode & 0xf000, r);
+	  }
+	}
+      }
+    }
+
+    if (flags != (EXTRACT_SKIP_MODE|EXTRACT_SKIP_MTIME)) {
+      array(string) dirpaths = indices (dirs);
+      sort (map (dirpaths, sizeof), dirpaths);
+      dirpaths = reverse (dirpaths);
+      foreach (dirpaths, string destpath)
+	extract_bits (destpath, dirs[destpath], flags);
+    }
   }
 
   string _sprintf(int t)
