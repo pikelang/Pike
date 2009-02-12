@@ -1,5 +1,5 @@
 /*
- * $Id: Tar.pmod,v 1.35 2009/02/12 15:16:19 mast Exp $
+ * $Id: Tar.pmod,v 1.36 2009/02/12 16:20:42 mast Exp $
  */
 
 #pike __REAL_VERSION__
@@ -417,7 +417,7 @@ class _Tar  // filesystem
 		error ("Failed to create %q: %s\n",
 		       destpath, strerror (o->errno()));
 
-	      Stdio.BlockFile i = open_record (r, "r");
+	      Stdio.BlockFile i = r->open ("r");
 	      do {
 		string data = i->read (1024 * 1024);
 		if (data == "") break;
