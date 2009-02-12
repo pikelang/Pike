@@ -1471,13 +1471,15 @@ final string status_commit() {
   return trbackendst(backendstatus);
 }
 
-final private void closestatement(array(string) plugbuf,mapping tp) {
+final private array(string) closestatement(mapping tp) {
   string oldprep=tp->preparedname;
+  array(string) ret=({});
   if(oldprep) {
     PD("Close statement %s\n",oldprep);
-    plugbuf+=({"C",_c.plugint32(4+1+sizeof(oldprep)+1),
+    ret=({"C",_c.plugint32(4+1+sizeof(oldprep)+1),
      "S",oldprep,"\0"});
   }
+  return ret;
 }
 
 //! @decl Sql.pgsql_util.pgsql_result big_query(string query)
@@ -1580,7 +1582,7 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
 	  int oldhits=tp->hits;
 	  totalhits-=oldhits-(tp->hits=oldhits>>1);
 	  if(oldhits<=1) {
-	    closestatement(plugbuf,tp);
+	    plugbuf+=closestatement(tp);
 	    m_delete(prepareds,ind);
 	  }
         }
@@ -1593,7 +1595,7 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
     if(invalidatecache) {
       invalidatecache=0;
       foreach(prepareds;;mapping np) {
-	closestatement(plugbuf,np);
+	plugbuf+=closestatement(np);
         m_delete(np,"preparedname");
       }
     }
