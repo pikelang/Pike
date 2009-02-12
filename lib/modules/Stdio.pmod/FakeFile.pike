@@ -1,7 +1,8 @@
-// $Id: FakeFile.pike,v 1.16 2008/06/28 16:37:00 nilsson Exp $
+// $Id: FakeFile.pike,v 1.17 2009/02/12 21:05:32 srb Exp $
 #pike __REAL_VERSION__
 
-//! A string wrapper that pretends to be a @[Stdio.File] object.
+//! A string wrapper that pretends to be a @[Stdio.File] object
+//! in addition to some features of a @[Stdio.FILE] object.
 
 
 //! This constant can be used to distinguish a FakeFile object
@@ -126,18 +127,13 @@ string query_address(void|int(0..1) is_local) { return 0; }
 //!   @[Stdio.File()->read()]
 string read(void|int(0..) len, void|int(0..1) not_all) {
   if(!r) return 0;
-  int start = ptr;
-  int end;
-
-  if(len>sizeof(data)) len=sizeof(data);
-  if(zero_type(len))
-    end = sizeof(data)-1;
-  else
-    end = start+len-1;
-  ptr = end+1;
+  int start=ptr;
+  ptr += len;
+  if(zero_type(len) || ptr>sizeof(data))
+    ptr = sizeof(data);
 
   // FIXME: read callback
-  return data[start..end];
+  return data[start..ptr-1];
 }
 
 //! @seealso
