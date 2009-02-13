@@ -1519,11 +1519,12 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
   if(stringp(q) && String.width(q)>8)
     q=string_to_utf8(q);
   array(string|int) paramValues;
+  array(string) from,to;
   if(bindings) {
     int pi=0,rep=0;
     paramValues=allocate(sizeof(bindings));
-    array(string) from=allocate(sizeof(bindings));
-    array(string) to=allocate(sizeof(bindings));
+    from=allocate(sizeof(bindings));
+    to=allocate(sizeof(bindings));
     foreach(bindings; mixed name; mixed value) {
       if(stringp(name)) {	       // Throws if mapping key is empty string
         if(name[0]!=':')
@@ -1540,9 +1541,8 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
       }
       from[rep]=name;
       string rval;
-      if(multisetp(value)) {
+      if(multisetp(value))
         rval=sizeof(value) ? indices(value)[0] : "";
-      }
       else {
         if(zero_type(value))
           paramValues[pi++]=UNDEFINED; // NULL
@@ -1556,7 +1556,7 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
       to[rep++]=rval;
     }
     if(rep--)
-      q=replace(q,from[..rep],to[..rep]);
+      q=replace(q,from=from[..rep],to=to[..rep]);
     paramValues= pi ? paramValues[..pi-1] : ({});
   }
   else
@@ -1764,6 +1764,14 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
     PD("%O\n",err);
     resync(1);
     backendstatus=UNDEFINED;
+    if(sizeof(to)) {
+      string val;
+      int i;
+      lastmessage+=({"Parameter bindings:"});
+      foreach(to;i;val)
+         lastmessage+=({sprintf("%16s %3s %.61s",
+          from[i],val,sprintf("%O",paramValues[i]))});
+    }
     throw(err);
   }
   { object tportal=_c.portal;	        // Make copy, because it might dislodge
