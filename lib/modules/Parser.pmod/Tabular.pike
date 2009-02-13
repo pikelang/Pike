@@ -36,7 +36,7 @@ private int recordcount=1;
 //!	    Turns off verbosity. Default.
 //!	 @value 1
 //!	    Is the same as verbose set to 70.
-//!	 @value >1
+//!	 @value ">1"
 //!	    Specifies the number of characters to display of the beginning
 //!	    of each record as a progress indicator.
 //! @endint
