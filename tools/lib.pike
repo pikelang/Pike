@@ -173,11 +173,22 @@ string opt_path(string p1, string p2)
   return  ( ( ((p1||"") + ";" + (p2||"")) / ";" ) - ({""}) ) * ";";
 }
 
+static void watchdog(int|void sig)
+{
+  // Reinstate the alarm.
+  alarm(1);
+}
 
 int silent_do_cmd(array(string) cmd, mixed|void filter, int|void silent,
 		  void|int no_fixpath)
 {
 //  werror("%O\n",cmd);
+
+  // It seems __read_nocancel() in libpthread on Linux sometimes can hang
+  // if the socket enters FIN_WAIT2. Getting a signal releases the syscall
+  // and the process comes alive again.
+  signal(signum("SIGALRM"), watchdog);
+  alarm(1);
 
   if(!sizeof(cmd)) cmd=({"cmd.exe"});
 
