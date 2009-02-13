@@ -1,5 +1,5 @@
 /*
- * $Id: Tar.pmod,v 1.38 2009/02/13 15:27:20 mast Exp $
+ * $Id: Tar.pmod,v 1.39 2009/02/13 15:29:24 mast Exp $
  */
 
 #pike __REAL_VERSION__
@@ -11,7 +11,7 @@ constant EXTRACT_CHOWN = 8;
 constant EXTRACT_ERR_ON_UNKNOWN = 16;
 
 //! @decl void create(string filename, void|Filesystem.Base parent,@
-//!                   void|Stdio.BlockFile file)
+//!                   void|object file)
 //! Filesystem which can be used to mount a Tar file.
 //!
 //! @param filename
@@ -26,7 +26,7 @@ constant EXTRACT_ERR_ON_UNKNOWN = 16;
 
 class _Tar  // filesystem
 {
-  Stdio.BlockFile fd;
+  object fd;
   string filename;
 
   protected int fd_in_use = -1;
@@ -126,8 +126,6 @@ class _Tar  // filesystem
 
   class Record
   {
-    // Note: Avoid parent references in here since that will cause cycles.
-
     inherit Filesystem.Stat;
 
     constant RECORDSIZE = 512;
@@ -237,14 +235,14 @@ class _Tar  // filesystem
 		  '7':0 // contigous
       ])[linkflag] || "reg" );
     }
-  };
 
-  Stdio.BlockFile open_record (Record r, string mode)
-  {
-    if(mode!="r")
-      error("Can only read right now.\n");
-    return ReadFile(r->pos, r->size);
-  }
+    object open(string mode)
+    {
+      if(mode!="r")
+	error("Can only read right now.\n");
+      return ReadFile(pos, size);
+    }
+  };
 
   array(Record) entries = ({});
   array filenames;
@@ -270,7 +268,7 @@ class _Tar  // filesystem
     filename_to_entry[what] = r;
   }
 
-  void create(Stdio.BlockFile fd, string filename, object parent)
+  void create(object fd, string filename, object parent)
   {
     this_program::filename = filename;
     // read all entries
@@ -298,7 +296,7 @@ class _Tar  // filesystem
 	entries += ({ r });
       }
       if(r->pseudo==2)
-	next_name = combine_path("/", open_record (r, "r")->read(r->size-1));
+	next_name = combine_path("/", r->open("r")->read(r->size-1));
 
       pos += 512 + r->size;
       if(pos%512)
@@ -439,8 +437,6 @@ class _Tar  // filesystem
 	     (filter_res = filter (subpath, r)))) {
 	  string destpath = dest_dir +
 	    (stringp (filter_res) ? filter_res : subpath);
-	  if (has_suffix (destpath, "/"))
-	    destpath = destpath[..<1];
 
 	  if (r->isdir()) {
 	    if (!Stdio.mkdirhier (destpath))
@@ -465,7 +461,7 @@ class _Tar  // filesystem
 		error ("Failed to create %q: %s\n",
 		       destpath, strerror (o->errno()));
 
-	      Stdio.BlockFile i = open_record (r, "r");
+	      Stdio.BlockFile i = r->open ("r");
 	      do {
 		string data = i->read (1024 * 1024);
 		if (data == "") break;
@@ -571,7 +567,7 @@ class _TarFS
   {
     filename = combine_path_unix(wd, filename);
     return tar->filename_to_entry[root+filename] &&
-	   tar->open_record (tar->filename_to_entry[root+filename], mode);
+	   tar->filename_to_entry[root+filename]->open(mode);
   }
 
   int access(string filename, string mode)
@@ -601,7 +597,7 @@ class `()
   {
     if(!parent) parent = Filesystem.System();
 
-    Stdio.BlockFile fd;
+    object fd;
 
     if(f)
       fd = f;
