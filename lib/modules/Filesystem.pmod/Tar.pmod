@@ -1,16 +1,17 @@
 /*
- * $Id: Tar.pmod,v 1.37 2009/02/12 17:26:10 mast Exp $
+ * $Id: Tar.pmod,v 1.38 2009/02/13 15:27:20 mast Exp $
  */
 
 #pike __REAL_VERSION__
 
 constant EXTRACT_SKIP_MODE = 1;
-constant EXTRACT_SKIP_MTIME = 2;
-constant EXTRACT_CHOWN = 4;
-constant EXTRACT_ERR_ON_UNKNOWN = 8;
+constant EXTRACT_SKIP_EXT_MODE = 2;
+constant EXTRACT_SKIP_MTIME = 4;
+constant EXTRACT_CHOWN = 8;
+constant EXTRACT_ERR_ON_UNKNOWN = 16;
 
 //! @decl void create(string filename, void|Filesystem.Base parent,@
-//!                   void|object file)
+//!                   void|Stdio.BlockFile file)
 //! Filesystem which can be used to mount a Tar file.
 //!
 //! @param filename
@@ -25,7 +26,7 @@ constant EXTRACT_ERR_ON_UNKNOWN = 8;
 
 class _Tar  // filesystem
 {
-  object fd;
+  Stdio.BlockFile fd;
   string filename;
 
   protected int fd_in_use = -1;
@@ -125,6 +126,8 @@ class _Tar  // filesystem
 
   class Record
   {
+    // Note: Avoid parent references in here since that will cause cycles.
+
     inherit Filesystem.Stat;
 
     constant RECORDSIZE = 512;
@@ -234,14 +237,14 @@ class _Tar  // filesystem
 		  '7':0 // contigous
       ])[linkflag] || "reg" );
     }
-
-    object open(string mode)
-    {
-      if(mode!="r")
-	error("Can only read right now.\n");
-      return ReadFile(pos, size);
-    }
   };
+
+  Stdio.BlockFile open_record (Record r, string mode)
+  {
+    if(mode!="r")
+      error("Can only read right now.\n");
+    return ReadFile(r->pos, r->size);
+  }
 
   array(Record) entries = ({});
   array filenames;
@@ -267,7 +270,7 @@ class _Tar  // filesystem
     filename_to_entry[what] = r;
   }
 
-  void create(object fd, string filename, object parent)
+  void create(Stdio.BlockFile fd, string filename, object parent)
   {
     this_program::filename = filename;
     // read all entries
@@ -295,7 +298,7 @@ class _Tar  // filesystem
 	entries += ({ r });
       }
       if(r->pseudo==2)
-	next_name = combine_path("/", r->open("r")->read(r->size-1));
+	next_name = combine_path("/", open_record (r, "r")->read(r->size-1));
 
       pos += 512 + r->size;
       if(pos%512)
@@ -346,8 +349,12 @@ class _Tar  // filesystem
 #endif
 
 #if constant (chmod)
-    if (!(which_bits & EXTRACT_SKIP_MODE))
-      chmod (dest, r->mode & 07777);
+    if (!(which_bits & EXTRACT_SKIP_MODE)) {
+      if (which_bits & EXTRACT_SKIP_EXT_MODE)
+	chmod (dest, r->mode & 0777);
+      else
+	chmod (dest, r->mode & 07777);
+    }
 #endif
 
 #if constant (utime)
@@ -392,11 +399,14 @@ class _Tar  // filesystem
   //!   Bitfield of flags to control the extraction:
   //!   @int
   //!     @value Filesystem.Tar.EXTRACT_SKIP_MODE
-  //!       Don't set permission bits from tar record.
+  //!       Don't set any permission bits from the tar records.
+  //!     @value Filesystem.Tar.EXTRACT_SKIP_EXT_MODE
+  //!       Don't set set-user-ID, set-group-ID, or sticky bits from
+  //!       the tar records.
   //!     @value Filesystem.Tar.EXTRACT_SKIP_MTIME
-  //!       Don't Set mtime from tar record.
+  //!       Don't set mtime from the tar records.
   //!     @value Filesystem.Tar.EXTRACT_CHOWN
-  //!       Set owning user and group.
+  //!       Set owning user and group from the tar records.
   //!     @value Filesystem.Tar.EXTRACT_ERR_ON_UNKNOWN
   //!       Throw an error if an entry of an unsupported type is
   //!       encountered. This is ignored otherwise.
@@ -412,6 +422,10 @@ class _Tar  // filesystem
     if (!has_suffix (src_dir, "/")) src_dir += "/";
     if (has_suffix (dest_dir, "/")) dest_dir = dest_dir[..<1];
 
+    int do_extract_bits =
+      (flags & (EXTRACT_SKIP_MODE|EXTRACT_SKIP_MTIME|EXTRACT_CHOWN)) !=
+      (EXTRACT_SKIP_MODE|EXTRACT_SKIP_MTIME);
+
     mapping(string:Record) dirs = ([]);
 
     foreach (entries, Record r) {
@@ -425,6 +439,8 @@ class _Tar  // filesystem
 	     (filter_res = filter (subpath, r)))) {
 	  string destpath = dest_dir +
 	    (stringp (filter_res) ? filter_res : subpath);
+	  if (has_suffix (destpath, "/"))
+	    destpath = destpath[..<1];
 
 	  if (r->isdir()) {
 	    if (!Stdio.mkdirhier (destpath))
@@ -432,7 +448,7 @@ class _Tar  // filesystem
 		     destpath, strerror (errno()));
 
 	    // Set bits etc afterwards on dirs.
-	    if (flags != (EXTRACT_SKIP_MODE|EXTRACT_SKIP_MTIME))
+	    if (do_extract_bits)
 	      dirs[destpath] = r;
 	  }
 
@@ -449,7 +465,7 @@ class _Tar  // filesystem
 		error ("Failed to create %q: %s\n",
 		       destpath, strerror (o->errno()));
 
-	      Stdio.BlockFile i = r->open ("r");
+	      Stdio.BlockFile i = open_record (r, "r");
 	      do {
 		string data = i->read (1024 * 1024);
 		if (data == "") break;
@@ -461,7 +477,7 @@ class _Tar  // filesystem
 	      i->close();
 	      o->close();
 
-	      if (flags != (EXTRACT_SKIP_MODE|EXTRACT_SKIP_MTIME))
+	      if (do_extract_bits)
 		extract_bits (destpath, r, flags);
 	    }
 
@@ -482,7 +498,7 @@ class _Tar  // filesystem
       }
     }
 
-    if (flags != (EXTRACT_SKIP_MODE|EXTRACT_SKIP_MTIME)) {
+    if (do_extract_bits) {
       array(string) dirpaths = indices (dirs);
       sort (map (dirpaths, sizeof), dirpaths);
       dirpaths = reverse (dirpaths);
@@ -555,7 +571,7 @@ class _TarFS
   {
     filename = combine_path_unix(wd, filename);
     return tar->filename_to_entry[root+filename] &&
-	   tar->filename_to_entry[root+filename]->open(mode);
+	   tar->open_record (tar->filename_to_entry[root+filename], mode);
   }
 
   int access(string filename, string mode)
@@ -585,7 +601,7 @@ class `()
   {
     if(!parent) parent = Filesystem.System();
 
-    object fd;
+    Stdio.BlockFile fd;
 
     if(f)
       fd = f;
