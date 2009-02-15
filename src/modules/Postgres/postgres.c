@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: postgres.c,v 1.64 2008/07/05 11:17:45 srb Exp $
+|| $Id: postgres.c,v 1.65 2009/02/15 16:15:41 srb Exp $
 */
 
 /*
@@ -128,8 +128,8 @@ static void pgres_destroy (struct object * o)
  *!
  *! @class postgres
  *!
- *! This is an interface to the Postgres (Postgres95, pgsql) database server.
- *! This module may or may not be availible on your Pike, depending
+ *! This is an interface to the Postgres database server using libpq.
+ *! This module may or may not be available on your Pike, depending
  *! whether the appropriate include and library files 
  *! could be found at compile-time. Note that you @b{do not@}
  *! need to have a Postgres server running on your host to use this module:
@@ -143,21 +143,21 @@ static void pgres_destroy (struct object * o)
  *! a single line of code, at least for most common (and simple) operations.
  *!
  *! The program @[Postgres.postgres] provides the @b{raw@} interface
- *! to the database. Many functions are @b{not@} availible
+ *! to the database. Many functions are @b{not@} available
  *! for this program. Therefore, its use is DEPRECATED.
  *! It is included in this documentation only for completeness' sake.
  *! Use @[Sql.postgres] instead, or even better @[Sql.Sql]
+ *!
+ *! @note
+ *! This driver is based on libpq and is DEPRECATED.  There is a newer driver
+ *! called @ref{Sql.pgsql@} which is faster and more robust than this driver
+ *! and does not depend on any libraries.
  *!
  *! @note
  *! There is no testsuite for this module, since to test anything would
  *! require a working Postgres server. You can try to use the included scripts
  *! in the "pike/src/modules/Postgres/extras" directory but you'll probably
  *! have to patch them to reflect your site's settings.
- *!
- *! Also note that @b{this module uses blocking I/O@} I/O to connect to the server.
- *! Postgres is quite slow, and so you might want to consider this
- *! particular aspect. It is (at least should be) thread-safe, and so it can be used
- *! in a multithread environment.
  *!
  *! The behavior of the Postgres C API also depends on certain environment variables
  *! defined in the environment of the pike interpreter.
@@ -183,7 +183,7 @@ static void pgres_destroy (struct object * o)
  *!   	this, so I can't help you.
  *! @endstring
  *!
- *! Refer to the Postgres documentation for further details.
+ *! Refer to the libpq documentation for further details.
  *!
  *! @seealso
  *!   @[Sql.Sql], @[Sql.postgres], @[Sql.postgres_result]
@@ -649,7 +649,7 @@ static void f_error (INT32 args)
  *! a variety of reasons, for example to detect the status of a connection.
  *!
  *! @note
- *! This function is Postgres-specific, and thus it is not availible
+ *! This function is Postgres-specific, and thus it is not available
  *! through the generic SQL-interface.
  */
 
@@ -717,7 +717,7 @@ static void f_trace (INT32 args)
  *! The @[Sql.postgres] program adds support for automatic delivery of
  *! messages (see it for explanation on the inner workings of this feature).
  *!
- *! This function is Postgres-specific, and thus it is not availible
+ *! This function is Postgres-specific, and thus it is not available
  *! through the generic SQL-interface
  *!
  *! @seealso

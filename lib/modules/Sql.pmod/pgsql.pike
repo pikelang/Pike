@@ -12,32 +12,33 @@
 //! and @[Postgres.postgres] modules.
 //!
 //! This module supports the following features:
-//!
-//! - PostgreSQL network protocol version 3, authentication methods
+//! @ul
+//! @item
+//!  PostgreSQL network protocol version 3, authentication methods
 //!   currently supported are: cleartext and MD5 (recommended).
-//!
-//! - Streaming queries which do not buffer the whole resultset in memory.
-//!
-//! - Automatic binary transfers to and from the database for most common
+//! @item
+//!  Streaming queries which do not buffer the whole resultset in memory.
+//! @item
+//!  Automatic binary transfers to and from the database for most common
 //!   datatypes (amongst others: integer, text and bytea types).
-//!
-//! - SQL-injection protection by allowing just one statement per query
+//! @item
+//!  SQL-injection protection by allowing just one statement per query
 //!   and ignoring anything after the first (unquoted) semicolon in the query.
-//!
-//! - COPY support for streaming up- and download.
-//!
-//! - Accurate error messages.
-//!
-//! - Automatic precompilation of complex queries (session cache).
-//!
-//! - Multiple simultaneous queries on the same database connection.
-//!
-//! - Cancelling of long running queries by force or by timeout.
-//!
-//! - Event driven NOTIFY.
-//!
-//! - SSL encrypted connections (optional or forced).
-//!
+//! @item
+//!  COPY support for streaming up- and download.
+//! @item
+//!  Accurate error messages.
+//! @item
+//!  Automatic precompilation of complex queries (session cache).
+//! @item
+//!  Multiple simultaneous queries on the same database connection.
+//! @item
+//!  Cancelling of long running queries by force or by timeout.
+//! @item
+//!  Event driven NOTIFY.
+//! @item
+//!  SSL encrypted connections (optional or forced).
+//! @endul
 //! Check the PostgreSQL documentation for further details.
 //!
 //! @note
@@ -47,7 +48,7 @@
 //!   difficult.
 //!
 //! @seealso
-//!  @[Sql.Sql], @[Sql.postgres]
+//!  @[Sql.Sql], @[Sql.postgres], @url{http://www.postgresql.org/docs/@}
 
 #pike __REAL_VERSION__
 
@@ -144,48 +145,52 @@ protected string _sprintf(int type, void|mapping flags) {
 //!                   void|string password, void|mapping(string:mixed) options)
 //!
 //! With no arguments, this function initialises (reinitialises if a
-//! connection had been previously set up) a connection to the
+//! connection has been set up previously) a connection to the
 //! PostgreSQL backend. Since PostgreSQL requires a database to be
 //! selected, it will try to connect to the default database. The
-//! connection may fail however for a variety of reasons, in this case
-//! the most likely of all is because you don't have enough authority
+//! connection may fail however, for a variety of reasons; in this case
+//! the most likely reason is because you don't have enough privileges
 //! to connect to that database. So use of this particular syntax is
 //! discouraged.
 //!
-//! The host argument can have the syntax @expr{"hostname"@} or
-//! @expr{"hostname:portname"@}. This allows to specify the TCP/IP
-//! port to connect to. If it is @expr{0@} or @expr{""@}, it will try
-//! to connect to localhost, default port.
+//! @param host
+//! Should either contain @expr{"hostname"@} or
+//! @expr{"hostname:portname"@}. This allows you to specify the TCP/IP
+//! port to connect to. If the parameter is @expr{0@} or @expr{""@},
+//! it will try to connect to localhost, default port.
 //!
-//! The database argument specifies the database to connect to. If
-//! @expr{0@} or @expr{""@}, it will try to connect to the specified
-//! database.
+//! @param database
+//! Specifies the database to connect to.  Not specifying this is
+//! only supported if the PostgreSQL backend has a default database
+//! configured.  If you do not want to connect to any live database,
+//! you can use @ref{template1@}.
 //!
-//! The options argument currently supports at least the following:
-//! @string
-//!   @value "use_ssl"
+//! @param options
+//! Currently supports at least the following:
+//! @mapping
+//!   @member int "use_ssl"
 //!     If the database supports and allows SSL connections, the session
 //!     will be SSL encrypted, if not, the connection will fallback
 //!     to plain unencrypted
-//!   @value "force_ssl"
+//!   @member int "force_ssl"
 //!     If the database supports and allows SSL connections, the session
 //!     will be SSL encrypted, if not, the connection will abort
-//!   @value "cache_autoprepared_statements"
+//!   @member int "cache_autoprepared_statements"
 //!     If set to zero, it disables the automatic statement prepare and
 //!     cache logic; caching prepared statements can be problematic
 //!     when stored procedures and tables are redefined which leave stale
 //!     references in the already cached prepared statements
-//!   @value "client_encoding"
+//!   @member string "client_encoding"
 //!     Character encoding for the client side, it defaults to using
 //!     the default encoding specified by the database, e.g.: "SQL_ASCII"
-//!   @value "standard_conforming_strings"
+//!   @member string "standard_conforming_strings"
 //!     When on, backslashes in strings must not be escaped any longer,
 //!     @[quote()] automatically adjusts quoting strategy accordingly
-//!   @value "escape_string_warning"
+//!   @member string "escape_string_warning"
 //!     When on, a warning is issued if a backslash (\) appears in an
 //!     ordinary string literal and @[standard_conforming_strings] is off,
 //!     defaults to on
-//! @endstring
+//! @endmapping
 //! For the numerous other options please check the PostgreSQL manual.
 //!
 //! @note
@@ -196,7 +201,8 @@ protected string _sprintf(int type, void|mapping flags) {
 //! accessible by you.
 //!
 //! @seealso
-//!   @[Postgres.postgres], @[Sql.Sql], @[postgres->select_db]
+//!   @[Postgres.postgres], @[Sql.Sql], @[select_db()],
+//!   @url{http://search.postgresql.org/search?u=%2Fdocs%2F&q=client+connection+defaults@}
 protected void create(void|string _host, void|string _database,
  void|string _user, void|string _pass, void|mapping(string:mixed) _options) {
   pass = _pass; _pass = "CENSORED";
@@ -213,7 +219,8 @@ protected void create(void|string _host, void|string _database,
   reconnect();
 }
 
-//! This function returns the textual description of the last
+//! @returns
+//! The textual description of the last
 //! server-related error. Returns @expr{0@} if no error has occurred
 //! yet. It is not cleared upon reading (can be invoked multiple
 //! times, will return the same result until a new error occurs).
@@ -223,12 +230,14 @@ protected void create(void|string _host, void|string _database,
 //! generate any errors, this function will return all collected messages
 //! from the last statement.
 //!
+//! @note
 //! The string returned is not newline-terminated.
 //!
-//! To clear the error, pass 1 as argument.
+//! @param clear
+//! To clear the error, set it to @expr{1@}.
 //!
 //! @seealso
-//!   @[big_query]
+//!   @[big_query()]
 string error(void|int clear) {
   string s=lastmessage*"\n";
   if(clear)
@@ -241,7 +250,7 @@ string error(void|int clear) {
 //! and how (TCP/IP or UNIX sockets).
 //!
 //! @seealso
-//!   @[server_info]
+//!   @[server_info()]
 string host_info() {
   return sprintf("fd:%d TCP/IP %s:%d PID %d",
    _c?_c.query_fd():-1,host,port,backendpid);
@@ -286,11 +295,12 @@ final private object getsocket(void|int nossl) {
 
 //! Cancels the currently running query.
 //!
+//! @seealso
+//!   @[reload()], @[resync()]
+//!
+//! @note
 //! This function is PostgreSQL-specific, and thus it is not available
 //! through the generic SQL-interface.
-//!
-//! @seealso
-//!   @[reload], @[resync]
 void cancelquery() {
   if(qstate==inquery) {
     qstate=cancelpending;
@@ -306,10 +316,12 @@ void cancelquery() {
 
 //! Changes the connection charset.
 //!
-//! @[charset] is a PostgreSQL charset name.
+//! @param charset
+//! A PostgreSQL charset name.
 //!
 //! @seealso
-//!   @[get_charset], @[create]
+//!   @[get_charset()], @[create()],
+//!   @url{http://search.postgresql.org/search?u=%2Fdocs%2F&q=character+sets@}
 void set_charset(string charset)
 {
 #if 0
@@ -318,107 +330,102 @@ void set_charset(string charset)
   big_query("SET CLIENT_ENCODING TO :charset",([":charset":charset]));
 }
 
-//! Returns the PostgreSQL name for the current connection charset.
+//! @returns
+//! The PostgreSQL name for the current connection charset.
 //!
 //! @seealso
-//!   @[set_charset], @[getruntimeparameters]
+//!   @[set_charset()], @[getruntimeparameters()],
+//!   @url{http://search.postgresql.org/search?u=%2Fdocs%2F&q=character+sets@}
 string get_charset()
 { return runtimeparameter->client_encoding;
 }
 
-//! Returns the set of currently active runtimeparameters for
-//! the open session; these are initialised by the options parameter
+//! @returns
+//! Currently active runtimeparameters for
+//! the open session; these are initialised by the @ref{options@} parameter
 //! during session creation, and then processed and returned by the server.
-//!
 //! Common values are:
-//! @string
-//!   @value "client_encoding"
+//! @mapping
+//!   @member string "client_encoding"
 //!     Character encoding for the client side, e.g.: "SQL_ASCII"
-//!   @value "server_encoding"
+//!   @member string "server_encoding"
 //!     Character encoding for the server side as determined when the
 //!     database was created, e.g.: "SQL_ASCII"
-//!   @value "DateStyle"
+//!   @member string "DateStyle"
 //!     Date parsing/display, e.g.: "ISO, DMY"
-//!   @value "TimeZone"
+//!   @member string "TimeZone"
 //!     Default timezone used by the database, e.g.: "localtime"
-//!   @value "standard_conforming_strings"
+//!   @member string "standard_conforming_strings"
 //!     When on, backslashes in strings must not be escaped any longer
-//!   @value "session_authorization"
+//!   @member string "session_authorization"
 //!     Displays the authorisationrole which the current session runs under
-//!   @value "is_superuser"
+//!   @member string "is_superuser"
 //!     Indicates if the current authorisationrole has database-superuser
 //!     privileges
-//!   @value "integer_datetimes"
+//!   @member string "integer_datetimes"
 //!     Reports wether the database supports 64-bit-integer dates and times
-//!   @value "server_version"
+//!   @member string "server_version"
 //!     Shows the server version, e.g.: "8.3.3"
-//! @endstring
+//! @endmapping
 //!
 //! The values can be changed during a session using SET commands to the
 //! database.
 //! For other runtimeparameters check the PostgreSQL documentation.
 //!
+//! @seealso
+//!   @url{http://search.postgresql.org/search?u=%2Fdocs%2F&q=client+connection+defaults@}
+//!
+//! @note
 //! This function is PostgreSQL-specific, and thus it is not available
 //! through the generic SQL-interface.
 mapping(string:string) getruntimeparameters() {
   return runtimeparameter+([]);
 }
 
-//! Returns a mapping with a set of statistics for the current session.
-//!
-//! @param warnings_dropped
+//! @returns
+//! A set of statistics for the current session:
+//! @mapping
+//!  @member int "warnings_dropped"
 //!    Number of warnings/notices generated by the database but not
 //!    collected by the application by using @[error] after the statements
 //!    that generated them.
-//!
-//! @param skipped_describe_count
+//!  @member int "skipped_describe_count"
 //!    Number of times the driver skipped asking the database to
 //!    describe the statement parameters because it was already cached.
-//!
-//! @param used_prepared_statements
+//!  @member int "used_prepared_statements"
 //!    Numer of times prepared statements were used from cache instead of
 //!    reparsing in the current session.
-//!
-//! @param current_prepared_statements
+//!  @member int "current_prepared_statements"
 //!    Cache size of currently prepared statements.
-//!
-//! @param current_prepared_statement_hits
+//!  @member int "current_prepared_statement_hits"
 //!    Sum of the number hits on statements in the current statement cache.
-//!
-//! @param prepared_portal_count
+//!  @member int "prepared_portal_count"
 //!    Total number of prepared portals generated.
-//!
-//! @param prepared_statement_count
+//!  @member int "prepared_statement_count"
 //!    Total number of prepared statements generated.
-//!
-//! @param portals_opened_count
+//!  @member int "portals_opened_count"
 //!    Total number of portals opened, i.e. number of statements issued
 //!    to the database.
-//!
-//! @param blocked_count
+//!  @member int "blocked_count"
 //!    Number of times the driver had to (briefly) wait for the database to
 //!    send additional data.
-//!
-//! @param bytes_received
+//!  @member int "bytes_received"
 //!    Total number of bytes received from the database so far.
-//!
-//! @param messages_received
+//!  @member int "messages_received"
 //!    Total number of messages received from the database (one SQL-statement
 //!    requires multiple messages to be exchanged).
-//!
-//! @param bytes_sent
+//!  @member int "bytes_sent"
 //!    Total number of bytes sent to the database so far.
-//!
-//! @param packets_sent
+//!  @member int "packets_sent"
 //!    Total number of packets sent to the database (one packet usually
 //!    contains multiple messages).
-//!
-//! @param reconnect_count
+//!  @member int "reconnect_count"
 //!    Number of times the connection to the database has been lost.
-//!
-//! @param portals_in_flight
+//!  @member int "portals_in_flight"
 //!    Currently still open portals, i.e. running statements.
+//! @endmapping
 //!
+//! @note
 //! This function is PostgreSQL-specific, and thus it is not available
 //! through the generic SQL-interface.
 mapping(string:mixed) getstatistics() {
@@ -442,9 +449,13 @@ mapping(string:mixed) getstatistics() {
   return stats;
 }
 
-//! Returns the old cachedepth, sets the new cachedepth for prepared
-//! statements automatic caching.
+//! @param newdepth
+//! Sets the new cachedepth for automatic caching of prepared statements.
 //!
+//! @returns
+//! The previous cachedepth.
+//!
+//! @note
 //! This function is PostgreSQL-specific, and thus it is not available
 //! through the generic SQL-interface.
 int setcachedepth(void|int newdepth) {
@@ -454,9 +465,13 @@ int setcachedepth(void|int newdepth) {
   return olddepth;
 }
 
-//! Returns the old timeout, sets the new timeout for long running
-//! queries.
+//! @param newtimeout
+//! Sets the new timeout for long running queries.
 //!
+//! @returns
+//! The previous timeout.
+//!
+//! @note
 //! This function is PostgreSQL-specific, and thus it is not available
 //! through the generic SQL-interface.
 int settimeout(void|int newtimeout) {
@@ -469,6 +484,7 @@ int settimeout(void|int newtimeout) {
 //! Returns the old portalbuffersize, sets the new portalbuffersize
 //! for buffering partially concurrent queries.
 //!
+//! @note
 //! This function is PostgreSQL-specific, and thus it is not available
 //! through the generic SQL-interface.
 int setportalbuffersize(void|int newportalbuffersize) {
@@ -481,6 +497,7 @@ int setportalbuffersize(void|int newportalbuffersize) {
 //! Returns the old fetchlimit, sets the new fetchlimit to interleave
 //! queries.
 //!
+//! @note
 //! This function is PostgreSQL-specific, and thus it is not available
 //! through the generic SQL-interface.
 int setfetchlimit(void|int newfetchlimit) {
@@ -958,6 +975,7 @@ private int read_cb(mixed foo, string d) {
 //! Closes the connection to the database, any running queries are
 //! terminated instantly.
 //!
+//! @note
 //! This function is PostgreSQL-specific, and thus it is not available
 //! through the generic SQL-interface.
 void close() {
@@ -1035,7 +1053,7 @@ private int reconnect(void|int force) {
 //! For PostgreSQL this function performs the same function as @[resync()].
 //!
 //! @seealso
-//!   @[resync], @[cancelquery]
+//!   @[resync()], @[cancelquery()]
 void reload() {
   resync();
 }
@@ -1056,11 +1074,12 @@ void reload() {
 //! close all open cursors, drop all temporary tables and reset all
 //! session variables to their default values.
 //!
+//! @seealso
+//!   @[cancelquery()], @[reload()]
+//!
+//! @note
 //! This function is PostgreSQL-specific, and thus it is not available
 //! through the generic SQL-interface.
-//!
-//! @seealso
-//!   @[cancelquery], @[reload]
 void resync(void|int special) {
   mixed err;
   int didsync;
@@ -1112,7 +1131,7 @@ void resync(void|int special) {
 //! (backend process not running, not enough permissions..)
 //!
 //! @seealso
-//!   @[create]
+//!   @[create()]
 void select_db(string dbname) {
   database=dbname;
   reconnect();
@@ -1150,6 +1169,7 @@ void select_db(string dbname) {
 //! @param args
 //!    Extra arguments to pass to @[notify_cb].
 //!
+//! @note
 //! This function is PostgreSQL-specific, and thus it is not available
 //! through the generic SQL-interface.
 void set_notify_callback(string condition,
@@ -1176,12 +1196,16 @@ final private void runcallback(int pid,string condition,string extrainfo) {
     cb[0](pid,condition,extrainfo,@cb[2..]);
 }
 
-//! This function quotes magic characters inside strings embedded in a
-//! textual query.  Quoting must not be done for parameters passed in
-//! bindings.
+//! @returns
+//! The given string, but escapes/quotes all contained magic characters
+//! according to the quoting rules of the current session for non-binary
+//! arguments in textual SQL-queries.
+//!
+//! @note
+//! Quoting must not be done for parameters passed in bindings.
 //!
 //! @seealso
-//!   @[big_query], @[quotebinary], @[create]
+//!   @[big_query()], @[quotebinary()], @[create()]
 string quote(string s) {
   string r=runtimeparameter->standard_conforming_strings;
   if(r && r=="on")
@@ -1189,52 +1213,67 @@ string quote(string s) {
   return replace(s, ({ "'", "\\" }), ({ "''", "\\\\" }) );
 }
 
-//! This function quotes magic characters inside binaries (bytea) embedded in a
-//! textual query.  Quoting must not be done for parameters passed in
-//! bindings.
+//! @returns
+//! The given string, but escapes/quotes all contained magic characters
+//! according to the quoting rules of the current session for binary (bytea)
+//! arguments in textual SQL-queries.
+//!
+//! @note
+//! Quoting must not be done for parameters passed in bindings.
 //!
 //! @seealso
-//!   @[big_query], @[quote]
+//!   @[big_query()], @[quote()]
 //!
+//! @note
 //! This function is PostgreSQL-specific, and thus it is not available
 //! through the generic SQL-interface.
 string quotebinary(string s) {
   return replace(s, ({ "'", "\\", "\0" }), ({ "''", "\\\\", "\\000" }) );
 }
 
-//! This function creates a new database with the given name (assuming we
-//! have enough permissions to do this).
+//! This function creates a new database (assuming we
+//! have enough privileges to do this).
+//!
+//! @param db
+//! Name of the new database.
 //!
 //! @seealso
-//!   @[drop_db]
+//!   @[drop_db()]
 void create_db(string db) {
   big_query("CREATE DATABASE :db",([":db":db]));
 }
 
 //! This function destroys a database and all the data it contains (assuming
-//! we have enough permissions to do so).  It is not possible to delete
+//! we have enough privileges to do so).  It is not possible to delete
 //! the database you're currently connected to.  You can connect to database
-//! @[template1] to avoid connecting to any live database.
+//! @ref{template1@} to avoid connecting to any live database.
+//!
+//! @param db
+//! Name of the database to be deleted.
 //!
 //! @seealso
-//!   @[create_db]
+//!   @[create_db()]
 void drop_db(string db) {
   big_query("DROP DATABASE :db",([":db":db]));
 }
 
-//! This function returns a string describing the server we are
+//! @returns
+//! A string describing the server we are
 //! talking to. It has the form @expr{"servername/serverversion"@}
 //! (like the HTTP protocol description) and is most useful in
 //! conjunction with the generic SQL-server module.
 //!
 //! @seealso
-//!   @[host_info]
+//!   @[host_info()]
 string server_info () {
   return DRIVERNAME"/"+(runtimeparameter->server_version||"unknown");
 }
 
-//! Lists all the databases available on the server.
-//! If glob is specified, lists only those databases matching it.
+//! @returns
+//! An array of the databases available on the server.
+//!
+//! @param glob
+//! If specified, list only those databases matching it.
 array(string) list_dbs (void|string glob) {
  array row,ret=({});
  object res=big_query("SELECT d.datname "
@@ -1247,10 +1286,12 @@ array(string) list_dbs (void|string glob) {
  return ret;
 }
 
-//! Returns an array containing the names of all the tables and views in the
+//! @returns
+//! An array containing the names of all the tables and views in the
 //! path in the currently selected database.
-//! If a glob is specified, it will return only those tables with matching
-//! names.
+//!
+//! @param glob
+//! If specified, list only the tables with matching names.
 array(string) list_tables (void|string glob) {
  array row,ret=({});	         // This query might not work on PostgreSQL 7.4
  object res=big_query(		 // due to missing schemasupport
@@ -1268,54 +1309,41 @@ array(string) list_tables (void|string glob) {
  return ret;
 }
 
-//! Returns a mapping, indexed on the column name, of mappings describing
+//! @returns
+//! A mapping, indexed on the column name, of mappings describing
 //! the attributes of a table of the current database.
-//! If a glob is specified, will return descriptions only of the columns
-//! matching it.
-//!
 //! The currently defined fields are:
 //!
 //! @mapping
 //!   @member int "is_shared"
-//!
 //!   @member string "owner"
 //!     Tableowner
-//!
 //!   @member string "length"
 //!     Size of the columndatatype
-//!
 //!   @member string "text"
 //!     A textual description of the internal (to the server) type-name
-//!
 //!   @member mixed "default"
 //!     Default value for the column
-//!
 //!   @member mixed "schema"
 //!     Schema the table belongs to
-//!
 //!   @member mixed "table"
 //!     Name of the table
-//!
 //!   @member mixed "kind"
 //!     Type of table
-//!
 //!   @member mixed "has_index"
 //!     If the table has any indices
-//!
 //!   @member mixed "has_primarykey"
 //!     If the table has a primary key
-//!
 //!   @member mixed "rowcount"
 //!     Estimated rowcount of the table
-//!
 //!   @member mixed "pagecount"
 //!     Estimated pagecount of the table
-//!
 //! @endmapping
 //!
-//! Setting wild to * will include system columns in the list.
-//!
-array(mapping(string:mixed)) list_fields(void|string table, void|string wild) {
+//! @param glob
+//! If specified, list only the tables with matching names.
+//! Setting it to @expr{*@} will include system columns in the list.
+array(mapping(string:mixed)) list_fields(void|string table, void|string glob) {
   array row, ret=({});
   string schema=UNDEFINED;
 
@@ -1345,11 +1373,11 @@ array(mapping(string:mixed)) list_fields(void|string table, void|string wild) {
   "  (n.nspname ILIKE :schema OR "
   "   :schema IS NULL "
   "   AND n.nspname<>'pgcatalog' AND n.nspname !~ '^pg_toast') "
-  "   AND a.attname ILIKE :wild "
-  "   AND (a.attnum>0 OR '*'=:realwild) "
+  "   AND a.attname ILIKE :glob "
+  "   AND (a.attnum>0 OR '*'=:realglob) "
   "ORDER BY n.nspname,c.relname,a.attnum,a.attname",
   ([":schema":glob2reg(schema),":table":glob2reg(table),
-   ":wild":glob2reg(wild),":realwild":wild]));
+   ":glob":glob2reg(glob),":realglob":glob]));
 
   array colnames=res->fetch_fields();
   { mapping(string:string) renames=([
@@ -1460,11 +1488,15 @@ final private string trbackendst(int c) {
   return "";
 }
 
-//! Returns the current commitstatus of the connection.  Returns either one of:
-//!  idle
-//!  intransaction
-//!  infailedtransaction
+//! @returns
+//! The current commitstatus of the connection.  Returns either one of:
+//! @string
+//!  @value "idle"
+//!  @value "intransaction"
+//!  @value "infailedtransaction"
+//! @endstring
 //!
+//! @note
 //! This function is PostgreSQL-specific, and thus it is not available
 //! through the generic SQL-interface.
 final string status_commit() {
@@ -1489,19 +1521,28 @@ final private array(string) closestatement(mapping tp) {
 //! database. If you wish to use the simpler "query" function, you need to
 //! use the @[Sql.Sql] generic SQL-object.
 //!
-//! It returns a pgsql_result object (which conforms to the
+//! Bindings are supported natively straight through the network.
+//! Special bindings supported are:
+//! @mapping
+//!  @member int ":_cache"
+//!   Forces caching or no caching for the query at hand.
+//! @endmapping
+//!
+//! @returns
+//! A @[Sql.pgsql_util.pgsql_result] object (which conforms to the
 //! @[Sql.sql_result] standard interface for accessing data). I
 //! recommend using @[query()] for simpler queries (because it is
 //! easier to handle, but stores all the result in memory), and
 //! @[big_query()] for queries you expect to return huge amounts of
 //! data (it's harder to handle, but fetches results on demand).
 //!
-//! Bindings are supported natively straight through the network.
-//! Special bindings supported are: ":_cache", to force caching or
-//! not caching for the query at hand depending on the mappingvalue.
-//!
 //! @note
 //! This function @b{can@} raise exceptions.
+//!
+//! @note
+//! This function supports multiple simultaneous queries (portals) on a single
+//! database connection.  This is a feature not commonly supported by other
+//! database backends.
 //!
 //! @note
 //! This function does not support multiple queries in one querystring.
@@ -1784,7 +1825,7 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
 //! streaming of multiple simultaneous queries through the same connection.
 //!
 //! @seealso
-//!   @[big_query], @[Sql.Sql], @[Sql.sql_result]
+//!   @[big_query()], @[Sql.Sql], @[Sql.sql_result]
 object streaming_query(string q,void|mapping(string|int:mixed) bindings) {
   return big_query(q,bindings);
 }
@@ -1793,7 +1834,7 @@ object streaming_query(string q,void|mapping(string|int:mixed) bindings) {
 //! results.
 //!
 //! @seealso
-//!   @[big_query], @[Sql.Sql], @[Sql.sql_result]
+//!   @[big_query()], @[Sql.Sql], @[Sql.sql_result]
 object big_typed_query(string q,void|mapping(string|int:mixed) bindings) {
   return big_query(q,bindings,1);
 }

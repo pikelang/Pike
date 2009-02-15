@@ -292,22 +292,24 @@ void create(object pgsqlsess,string _query,int fetchlimit,
 
 //! Returns the command-complete status for this query.
 //!
+//! @seealso
+//!  @[affected_rows()]
+//!
+//! @note
 //! This function is PostgreSQL-specific, and thus it is not available
 //! through the generic SQL-interface.
-//!
-//! @seealso
-//!  @[affected_rows]
 string status_command_complete() {
   return _statuscmdcomplete;
 }
 
 //! Returns the number of affected rows by this query.
 //!
+//! @seealso
+//!  @[status_command_complete()]
+//!
+//! @note
 //! This function is PostgreSQL-specific, and thus it is not available
 //! through the generic SQL-interface.
-//!
-//! @seealso
-//!  @[status_command_complete]
 int affected_rows() {
   int rows;
   if(_statuscmdcomplete)
@@ -405,7 +407,7 @@ private void steallock() {
 //! zero argument to this method.
 //!
 //! @seealso
-//!  @[eof]
+//!  @[eof()]
 int|array(mixed) fetch_row(void|int|string|array(string) buffer) {
 #ifndef NO_LOCKING
   Thread.MutexKey fetchmtxkey = fetchmutex.lock();

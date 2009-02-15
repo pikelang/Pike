@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: msqlmod.c,v 1.30 2008/06/25 11:53:31 srb Exp $
+|| $Id: msqlmod.c,v 1.31 2009/02/15 16:15:41 srb Exp $
 */
 
 /* All this code is pretty useless if we don't have a msql library...*/
@@ -56,7 +56,7 @@ MUTEX_T pike_msql_mutex STATIC_MUTEX_INIT;
 
 /*! @module Msql
  *! This is an interface to the mSQL database server.
- *! This module may or may not be availible on your Pike, depending
+ *! This module may or may not be available on your Pike, depending
  *! whether the appropriate include and library files (msql.h and libmsql.a
  *! respectively) could be found at compile-time. Note that you @b{do not@}
  *! need to have a mSQL server running on your host to use this module:
@@ -218,7 +218,7 @@ static void do_shutdown (INT32 args)
  *!
  *! @note
  *!  This function is @b{not@} part of the standard interface, so it is
- *!  @b{not@} availible through the @[Sql.Sql] interface, but only through
+ *!  @b{not@} available through the @[Sql.Sql] interface, but only through
  *!  @[Sql.msql] and @[Msql.msql] programs.
  *!
  *! @seealso
@@ -341,7 +341,7 @@ static void msql_mod_create (INT32 args)
 
 /*! @decl array list_dbs(void|string wild)
  *!
- *! Returns an array containing the names of all databases availible on
+ *! Returns an array containing the names of all databases available on
  *! the system. Will throw an exception if there is no server connected.
  *! If an argument is specified, it will return only those databases
  *! whose name matches the given glob.
@@ -876,12 +876,12 @@ static void do_list_fields (INT32 args)
  *! our last SQL query.
  *!
  *! @note
- *!  This function is availible only if you're using mSQL version 2
+ *!  This function is available only if you're using mSQL version 2
  *!  or later. (That means: if the includes and library of version 2 of mSQL
- *!  were availible when the module was compiled).
+ *!  were available when the module was compiled).
  *!
  *!  This function is @b{not@} part of the standard interface, so it is @b{not@}
- *!  availible through the @[Sql.Sql] interface, but only through @[Sql.msql] and
+ *!  available through the @[Sql.Sql] interface, but only through @[Sql.msql] and
  *!  @[Msql.msql] programs
  */
 
@@ -903,11 +903,11 @@ static void do_affected_rows (INT32 args)
  *! the mSQL API).
  *!
  *! @note
- *!  This function is availible if you're using mSQL version 2
+ *!  This function is available if you're using mSQL version 2
  *!  or later.
  *!
  *!  This function is @b{not@} part of the standard interface, so it is @b{not@}
- *!  availible through the @[Sql.Sql] interface, but only through @[Sql.msql] and
+ *!  available through the @[Sql.Sql] interface, but only through @[Sql.msql] and
  *!  @[Msql.msql] programs.
  */
 

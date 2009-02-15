@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pgresult.c,v 1.39 2008/08/16 20:55:18 srb Exp $
+|| $Id: pgresult.c,v 1.40 2009/02/15 16:15:41 srb Exp $
 */
 
 /*
@@ -261,8 +261,8 @@ static void f_fetch_fields (INT32 args)
 	{
 		push_text("name");
 		push_text(PQfname(res,j));
-		/* no table information is availible */
-		/* no default value information is availible */
+		/* no table information is available */
+		/* no default value information is available */
 		push_text("type");
 		push_int(PQftype(res,j));
 		/* ARGH! I'd kill 'em! How am I supposed to know how types are

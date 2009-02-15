@@ -19,10 +19,19 @@ private mixed severity=1;
 private int verb=0;
 private int recordcount=1;
 
-//! This function initialises the parser specifying the input stream or
-//! string, the format to be used (either precompiled or not),
-//! and the verbosity level.
+//! This function initialises the parser.
 //!
+//! @param input
+//! The input stream or string.
+//!
+//! @param format
+//! The format to be used (either precompiled or not).
+//! The format description language is documented under @[compile()].
+//!
+//! @param verbose
+//!    If @expr{>1@}, it specifies the number of characters to display
+//!    of the beginning of each record as a progress indicator.  Special
+//!    values are:
 //! @int
 //!	 @value -4
 //!	    Turns on format debugging with visible mismatches.
@@ -35,16 +44,11 @@ private int recordcount=1;
 //!	 @value 0
 //!	    Turns off verbosity. Default.
 //!	 @value 1
-//!	    Is the same as verbose set to 70.
-//!	 @value ">1"
-//!	    Specifies the number of characters to display of the beginning
-//!	    of each record as a progress indicator.
+//!	    Is the same as setting it to @expr{70@}.
 //! @endint
 //!
-//! The format description language is documented under @[compile()].
-//!
 //! @seealso
-//!  @[compile], @[setformat], @[fetch]
+//!  @[compile()], @[setformat()], @[fetch()]
 void
  create(void|string|Stdio.File|Stdio.FILE input,
   void|array|mapping|string|Stdio.File|Stdio.FILE format,
@@ -341,12 +345,13 @@ private void add2map(mapping res,string name,mixed entry)
 
 //! This function can be used to manually skip empty lines in
 //! the input.  This is unnecessary if no argument is
-//! specified for the fetch() function.
+//! specified for @[fetch()].
 //!
+//! @returns
 //! It returns true if EOF has been reached.
 //!
 //! @seealso
-//!  @[fetch]
+//!  @[fetch()]
 int skipemptylines()
 { string line; int eof=1;
   while((line=in->gets()) && emptyline->match(line))
@@ -356,21 +361,25 @@ int skipemptylines()
   return eof;
 }
 
-//! This function consumes as much input as possible and returns
-//! a nested mapping that contains the complete structure as
-//! described in the specified format.  If no format is specified,
-//! the format specified on create() is used, and empty lines are
+//! This function consumes as much input as needed to parse
+//! the full tabular structures at once.
+//!
+//! @param format
+//! Describes (precompiled only) formats to be parsed.
+//! If no format is specified,
+//! the format specified on @[create()] is used, and empty lines are
 //! automatically skipped.
+//!
+//! @returns
+//! A nested mapping that contains the complete structure as
+//! described in the specified format.
 //!
 //! If nothing matches the specified format, no input is consumed
 //! (except empty lines, if the default format is used), and
 //! zero is returned.
 //!
-//! @note
-//!	 This function only accepts precompiled formats.
-//!
 //! @seealso
-//!  @[compile], @[create], @[setformat], @[skipemptylines]
+//!  @[compile()], @[create()], @[setformat()], @[skipemptylines()]
 mapping fetch(void|array|mapping format)
 { mapping ret=([]);
   int skipempty=0;
@@ -442,21 +451,27 @@ ret:
   return sizeof(ret) && ret;
 }
 
-//! Inserts the specified content into the input stream, returns
-//! this object.
+//! @param content
+//! Is injected into the input stream.
+//!
+//! @returns
+//! This object.
 //!
 //! @seealso
-//!  @[fetch]
+//!  @[fetch()]
 object feed(string content)
 { in->unread(content);
   return this;
 }
 
-//! Changes the default format and returns the previous default format.
-//! Only operates on precompiled formats.
+//! @param format
+//! Replaces the default (precompiled only) format.
+//!
+//! @returns
+//! The previous default format.
 //!
 //! @seealso
-//!   @[compile], @[fetch]
+//!   @[compile()], @[fetch()]
 array|mapping setformat(array|mapping format)
 { array|mapping oldfms=fms;
   fms=format;
@@ -472,116 +487,148 @@ private Regexp tokenise=Regexp("^[ \t]*([^ \t]+)[ \t]*(.*)$");
 //! Compiles the format description language into a compiled structure
 //! that can be fed to @[setformat], @[fetch], or @[create].
 //!
-//! The format description is case sensitive.
-//! The format description starts with a single line containing:
-//! [Tabular description begin]
-//! The format description ends with a single line containing:
-//! [Tabular description end]
-//! Any lines before the startline are skipped.
-//! Any lines after the endline not consumed.
-//! Empty lines are skipped.
-//! Comments start after a # or ;.
-//! The depth level of a field is indicated by the number of
+//! @ul
+//! @item
+//!  The format description is case sensitive.
+//! @item
+//!  The format description starts with a single line containing:
+//! @expr{[Tabular description begin]@}
+//! @item
+//!  The format description ends with a single line containing:
+//! @expr{[Tabular description end]@}
+//! @item
+//!  Any lines before the startline are skipped.
+//! @item
+//!  Any lines after the endline are not consumed.
+//! @item
+//!  Empty lines are skipped.
+//! @item
+//!  Comments start after a @expr{#@} or @expr{;@}.
+//! @item
+//!  The depth level of a field is indicated by the number of
 //! leading spaces or colons at the beginning of the line.
-//! The fieldname must not contain any whitespace.
-//! An arbitrary number of single character field delimiters can be specified
-//! between brackets, e.g. [,;] or [,] would be for CSV.
-//! When field delimiters are being used: in case of CSV type delimiters
-//! [\t,; ] the standard CSV quoting rules apply, in case other delimiters
+//! @item
+//!  The fieldname must not contain any whitespace.
+//! @item
+//!  An arbitrary number of single character field delimiters can be
+//! specified between brackets, e.g. @expr{[,;]@} or @expr{[,]@} would be
+//! for CSV.
+//! @item
+//!  When field delimiters are being used: in case of CSV type delimiters
+//! @expr{[\t,; ]@} the standard CSV quoting rules apply, in case other
+//! delimiters
 //! are used, no quoting is supported and the last field on a line should
 //! not specify a delimiter, but should specify a 0 fieldwidth instead.
-//! A fixed field width can be specified by a plain decimal integer,
+//! @item
+//!  A fixed field width can be specified by a plain decimal integer,
 //! a value of 0 indicates a field with arbitrary length that extends
 //! till the end of the line.
-//! A matching regular expression can be enclosed in "", it has to match
-//! the complete field content and uses [SimpleRegexp()] syntax.
-//! On records the following options are supported:
-//!  mandatory: this record is required.
-//!  fold: fold this record's contents in the enclosing record.
-//!  single: this record is present at most once.
-//! On fields the following options are supported:
-//!  drop: after reading and matching this field, drop the field content
+//! @item
+//!  A matching regular expression can be enclosed in @expr{""@}, it has
+//! to match
+//! the complete field content and uses @[Regexp.SimpleRegexp] syntax.
+//! @item
+//!  On records the following options are supported:
+//! @dl
+//!  @item mandatory
+//!   This record is required.
+//!  @item fold
+//!   Fold this record's contents in the enclosing record.
+//!  @item single
+//!   This record is present at most once.
+//! @enddl
+//! @item
+//!  On fields the following options are supported:
+//! @dl
+//!  @item drop
+//!   After reading and matching this field, drop the field content
 //!   from the resulting mappingstructure.
-//!
-//! Example of the description language:
-//!
-//! [Tabular description begin]
-//! csv
-//! :gtz
-//! ::mybankno		     [,]
-//! ::transferdate	     [,]
-//! ::mutatiesoort	     [,]
-//! ::volgnummer	     [,]
-//! ::bankno		     [,]
-//! ::name		     [,]
-//! ::kostenplaats	     [,]	    drop
-//! ::amount		     [,]
-//! ::afbij		     [,]
-//! ::mutatie		     [,]
-//! ::reference		     [,]
-//! ::valutacode	     [,]
-//! mt940
-//! :messageheader1			 mandatory
-//! ::exporttime	     "0000"	    drop
-//! ::CS1		     " "	    drop
-//! ::exportday		     "01"	    drop
-//! ::exportaddress	     12
-//! ::exportnumber	     5 "[0-9]+"
-//! :messageheader3			 mandatory   fold  single
-//! ::messagetype	     "940"	    drop
-//! ::CS1		     " "	    drop
-//! ::messagepriority        "00"	    drop
-//! :TRN				 fold
-//! ::tag		     ":20:"	    drop
-//! ::reference		     "GTZPB|MPBZ|INGEB"
-//! :accountid			 fold
-//! ::tag		     ":25:"	    drop
-//! ::accountno		     10
-//! :statementno			 fold
-//! ::tag		     ":28C:"	    drop
-//! ::settlementno	     0		    drop
-//! :openingbalance			 mandatory   single
-//! ::tag		     ":60F:"	    drop
-//! ::creditdebit	     1
-//! ::date		     6
-//! ::currency		     "EUR"
-//! ::amount		     0 "[0-9]+,[0-9][0-9]"
-//! :statements
-//! ::statementline			 mandatory   fold  single
-//! :::tag		     ":61:"	    drop
-//! :::valuedate	     6
-//! :::creditdebit	     1
-//! :::amount		     "[0-9]+,[0-9][0-9]"
-//! :::CS1		     "N"	    drop
-//! :::transactiontype      3			    # 3 for Postbank, 4 for ING
-//! :::paymentreference     0
-//! ::informationtoaccountowner	 fold  single
-//! :::tag		     ":86:"	    drop
-//! :::description	     "[^\n]+(\n[^:][^\n]*)*"
-//! :closingbalance			 mandatory   single
-//! ::tag		     ":62[FM]:"	    drop
-//! ::creditdebit	     1
-//! ::date		     6
-//! ::currency		     "EUR"
-//! ::amount		     0 "[0-9]+,[0-9][0-9]"
-//! :informationtoaccountowner	 fold single
-//! ::tag		     ":86:"	    drop
-//! ::debit		     "D"	    drop
-//! ::debitentries	     6
-//! ::credit		     "C"	    drop
-//! ::creditentries	     6
-//! ::debit		     "D"	    drop
-//! ::debitamount	     "[0-9]+,[0-9][0-9]"
-//! ::credit		     "C"	    drop
-//! ::creditamount	     "[0-9]+,[0-9][0-9]"  drop
-//! ::accountname	     "(\n[^-:][^\n]*)*"	  drop
-//! :messagetrailer			 mandatory   single
-//! ::start		     "-"
-//! ::end		     "XXX"
-//! [Tabular description end]
+//! @enddl
+//! @endul
 //!
 //! @seealso
-//!   @[setformat], @[create], @[fetch]
+//!   @[setformat()], @[create()], @[fetch()]
+//!
+//! @example
+//! Example of the description language:
+//!
+//![Tabular description begin]
+//!csv
+//!:gtz
+//!::mybankno           [,]
+//!::transferdate       [,]
+//!::mutatiesoort       [,]
+//!::volgnummer         [,]
+//!::bankno             [,]
+//!::name               [,]
+//!::kostenplaats       [,]                     drop
+//!::amount             [,]
+//!::afbij              [,]
+//!::mutatie            [,]
+//!::reference          [,]
+//!::valutacode         [,]
+//!mt940
+//!:messageheader1                     mandatory
+//!::exporttime            "0000"               drop
+//!::CS1                   " "                  drop
+//!::exportday             "01"                 drop
+//!::exportaddress      12
+//!::exportnumber       5  "[0-9]+"
+//!:messageheader3                     mandatory fold single
+//!::messagetype           "940"                drop
+//!::CS1                   " "                  drop
+//!::messagepriority       "00"                 drop
+//!:TRN                             fold
+//!::tag                   ":20:"               drop
+//!::reference             "GTZPB|MPBZ|INGEB"
+//!:accountid                     fold
+//!::tag                   ":25:"               drop
+//!::accountno          10
+//!:statementno                     fold
+//!::tag                   ":28C:"              drop
+//!::settlementno       0                       drop
+//!:openingbalance                     mandatory      single
+//!::tag                   ":60F:"              drop
+//!::creditdebit        1
+//!::date               6
+//!::currency              "EUR"
+//!::amount             0  "[0-9]+,[0-9][0-9]"
+//!:statements
+//!::statementline                     mandatory fold single
+//!:::tag                  ":61:"               drop
+//!:::valuedate         6
+//!:::creditdebit       1
+//!:::amount               "[0-9]+,[0-9][0-9]"
+//!:::CS1                  "N"                  drop
+//!:::transactiontype   3                          # 3 for Postbank, 4 for ING
+//!:::paymentreference  0
+//!::informationtoaccountowner                   fold single
+//!:::tag                  ":86:"               drop
+//!:::accountno            "[0-9]*( |)"
+//!:::accountname       0
+//!::description         fold
+//!:::description       0  "|[^:].*"
+//!:closingbalance                     mandatory      single
+//!::tag                   ":62[FM]:"           drop
+//!::creditdebit        1
+//!::date               6
+//!::currency              "EUR"
+//!::amount             0  "[0-9]+,[0-9][0-9]"
+//!:informationtoaccountowner                    fold single
+//!::tag                   ":86:"               drop
+//!::debit                 "D"                  drop
+//!::debitentries       6
+//!::credit                "C"                  drop
+//!::creditentries      6
+//!::debit                 "D"                  drop
+//!::debitamount           "[0-9]+,[0-9][0-9]"
+//!::credit                "C"                  drop
+//!::creditamount          "[0-9]+,[0-9][0-9]"  drop
+//!::accountname           "(\n[^-:][^\n]*)*"   drop
+//!:messagetrailer                     mandatory      single
+//!::start                 "-"
+//!::end                   "XXX"
+//![Tabular description end]
 array|mapping compile(string|Stdio.File|Stdio.FILE input)
 { if(!input)
     input="";
@@ -705,114 +752,3 @@ array|mapping compile(string|Stdio.File|Stdio.FILE input)
 private string parsecstring(string s)
 { return compile_string("string s=\""+s+"\";")()->s;
 }
-
-#if 0
-// Sample format and standalone usage
-array|mapping allformats=
-([
- "csv":
- ({
-  ({"gtz",0,
-   ({"mybankno",(<','>)}),
-   ({"transferdate",(<','>)}),
-   ({"mutatiesoort",(<','>)}),
-   ({"volgnummer",(<','>)}),
-   ({"bankno",(<','>)}),
-   ({"name",(<','>)}),
-   ({"kostenplaats",(<','>),(["drop":1])}),
-   ({"amount",(<','>)}),
-   ({"afbij",(<','>)}),
-   ({"mutatie",(<','>)}),
-   ({"reference",(<','>)}),
-   ({"valutacode",(<','>)}),
-  }),
- }),
- "mt940":
- ({
-  ({"messageheader1",(["mandatory":1]),
-   ({"exporttime","0000",(["drop":1])}),
-   ({"CS1"," ",(["drop":1])}),
-   ({"exportday","01",(["drop":1])}),
-   ({"exportaddress",12}),
-   ({"exportnumber",5,(["match":"[0-9]+"])}),
-  }),
-  ({"messageheader3",(["fold":1,"mandatory":1,"single":1]),
-   ({"messagetype","940",(["drop":1])}),
-   ({"CS1"," ",(["drop":1])}),
-   ({"messagepriority","00",(["drop":1])}),
-  }),
-  ({"TRN",(["fold":1]),
-   ({"tag",":20:",(["drop":1])}),
-   ({"reference","GTZPB|MPBZ|INGEB"}),
-  }),
-  ({"accountid",(["fold":1]),
-   ({"tag",":25:",(["drop":1])}),
-   ({"accountno",10}),
-  }),
-  ({"statementno",(["fold":1]),
-   ({"tag",":28C:",(["drop":1])}),
-   ({"settlementno",0,(["drop":1])}),
-  }),
-  ({"openingbalance",(["single":1,"mandatory":1]),
-   ({"tag",":60F:",(["drop":1])}),
-   ({"creditdebit",1}),
-   ({"date",6}),
-   ({"currency","EUR"}),
-   ({"amount",0,(["match":"[0-9]+,[0-9][0-9]"])}),
-  }),
-  (["statements":
-   ({
-    ({"statementline",(["fold":1,"single":1,"mandatory":1]),
-     ({"tag",":61:",(["drop":1])}),
-     ({"valuedate",6}),
-     ({"creditdebit",1}),
-     ({"amount","[0-9]+,[0-9][0-9]"}),
-     ({"CS1","N",(["drop":1])}),
-     ({"transactiontype",3}),    // 3 for Postbank, 4 for ING
-     ({"paymentreference",0}),
-    }),
-    ({"informationtoaccountowner",(["fold":1,"single":1]),
-     ({"tag",":86:",(["drop":1])}),
-     ({"description","[^\n]+(\n[^:][^\n]*)*"}),
-    }),
-   }),
-  ]),
-  ({"closingbalance",(["mandatory":1,"single":1]),
-   ({"tag",":62[FM]:",(["drop":1])}),
-   ({"creditdebit",1}),
-   ({"date",6}),
-   ({"currency","EUR"}),
-   ({"amount",0,(["match":"[0-9]+,[0-9][0-9]"])}),
-  }),
-  ({"informationtoaccountowner",(["fold":1,"single":1]),
-   ({"tag",":86:",(["drop":1])}),
-   ({"debit","D",(["drop":1])}),
-   ({"debitentries",6}),
-   ({"credit","C",(["drop":1])}),
-   ({"creditentries",6}),
-   ({"debit","D",(["drop":1])}),
-   ({"debitamount","[0-9]+,[0-9][0-9]"}),
-   ({"credit","C",(["drop":1])}),
-   ({"creditamount","[0-9]+,[0-9][0-9]"}),
-   ({"accountname","(\n[^-:][^\n]*)*",(["drop":1])}),
-  }),
-  ({"messagetrailer",(["mandatory":1,"single":1]),
-   ({"start","-"}),
-   ({"end","XXX"}),
-  }),
- }),
-]);
-
-int main(int argc, array(string) argv)
-{ object in=Stdio.stdin;
-  object rf=Parse.Tabular(in,allformats,-4);
-  array|mapping format;
-  write("Compiled: %O\n",format=rf->compile(in));
-  rf->setformat(format);
-   { mapping m;
-     while(m=rf->fetch())
-        write("Found record: %O\n",m);
-   }
-  return 0;
-}
-#endif
