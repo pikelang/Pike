@@ -222,11 +222,11 @@ class PGconnS {
 }
 #endif
 
-//! The result object returned by @[Sql.pgsql.big_query()], except for
+//! The result object returned by @[Sql.pgsql()->big_query()], except for
 //! the noted differences it behaves the same as @[Sql.sql_result].
 //!
 //! @seealso
-//!   @[Sql.sql_result], @[Sql.pgsql], @[Sql.Sql]
+//!   @[Sql.sql_result], @[Sql.pgsql], @[Sql.Sql], @[Sql.pgsql()->big_query()]
 class pgsql_result {
 
 object _pgsqlsess;
@@ -317,20 +317,28 @@ int affected_rows() {
   return rows;
 }
 
+//! @seealso
+//!  @[Sql.sql_result()->num_fields()]
 int num_fields() {
   return sizeof(_datarowdesc);
 }
 
+//! @seealso
+//!  @[Sql.sql_result()->num_rows()]
 int num_rows() {
   int numrows;
   sscanf(_statuscmdcomplete,"%*s %d",numrows);
   return numrows;
 }
 
+//! @seealso
+//!  @[Sql.sql_result()->eof()]
 int eof() {
   return eoffound;
 }
 
+//! @seealso
+//!  @[Sql.sql_result()->fetch_fields()]
 array(mapping(string:mixed)) fetch_fields() {
   return _datarowdesc+({});
 }
@@ -393,10 +401,16 @@ private void steallock() {
   PD("Stealing successful\n");
 }
 
-//! Returns one result row at a time.
+//! @decl array(mixed) fetch_row()
+//! @decl void fetch_row(string|array(string) copydatasend)
+//!
+//! @returns
+//!  One result row at a time.
 //!
 //! When using COPY FROM STDOUT, this method returns one row at a time
 //! as a single string containing the entire row.
+//!
+//! @param copydatasend
 //! When using COPY FROM STDIN, this method accepts a string or an
 //! array of strings to be processed by the COPY command; when sending
 //! the amount of data sent per call does not have to hit row or column
@@ -408,7 +422,7 @@ private void steallock() {
 //!
 //! @seealso
 //!  @[eof()]
-int|array(mixed) fetch_row(void|int|string|array(string) buffer) {
+array(mixed) fetch_row(void|int|string|array(string) buffer) {
 #ifndef NO_LOCKING
   Thread.MutexKey fetchmtxkey = fetchmutex.lock();
 #endif
