@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.250 2008/12/17 12:37:54 jonasw Exp $
+// $Id: module.pmod,v 1.251 2009/02/15 20:42:08 grubba Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -800,7 +800,7 @@ class File
   }
 
 #ifdef STDIO_CALLBACK_TEST_MODE
-  // Test mode where we are nasty and never returns a string longer
+  // Test mode where we are nasty and never return a string longer
   // than one byte in the read callbacks and never let nonblocking
   // writes write more than one byte. Useful to test that the callback
   // stuff really handles packets cut at odd positions.
@@ -828,9 +828,9 @@ class File
   __deprecated__ this_program set_peek_file_before_read_callback(int(0..1) ignored)
   {
     // This hack is not necessary anymore - the backend now properly
-    // ignores events if other callbacks/threads has managed to read
+    // ignores events if other callbacks/threads have managed to read
     // the data before the read callback.
-     return this;
+    return this;
   }
 
   // FIXME: No way to specify the maximum to read.
@@ -960,9 +960,11 @@ class File
     BE_WERR ("__stdio_read_oob_callback()");
 
     string s;
-    if (!___read_oob_callback)
+    if (!___read_oob_callback) {
+      // The out of band callback was probably removed after the backend
+      // was started. Propagate the event to __stdio_read_callback().
       s = "";
-    else {
+    } else {
 #ifdef STDIO_CALLBACK_TEST_MODE
       s = ::read_oob (1, 1);
 #else
@@ -983,16 +985,8 @@ class File
       // both read events, it won't call __stdio_read_callback or
       // __stdio_close_callback afterwards. Therefore we need to try a
       // normal read here.
-      if (___read_callback) {
-	BE_WERR ("  no oob data - trying __stdio_read_callback");
-	return __stdio_read_callback();
-      }
-      else if (___close_callback) {
-	BE_WERR ("  no oob data - trying __stdio_close_callback");
-	return __stdio_close_callback();
-      }
-
-      BE_WERR ("  WARNING: got no oob data to read");
+      BE_WERR ("  no oob data - trying __stdio_read_callback");
+      return __stdio_read_callback();
     }
 
     else {
