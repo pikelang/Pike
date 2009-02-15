@@ -329,10 +329,10 @@ csvready:
 private void add2map(mapping res,string name,mixed entry)
 { mapping|array tm = res[name];
   if(tm)
-  { if(mappingp(tm))
-      tm=({tm,entry});
-    else
+  { if(arrayp(tm))
       tm+=({entry});
+    else
+      tm=({tm,entry});
     res[name]=tm;
   }
   else
