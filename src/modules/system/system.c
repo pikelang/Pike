@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.184 2008/04/21 09:06:54 grubba Exp $
+|| $Id: system.c,v 1.185 2009/02/21 12:38:20 mast Exp $
 */
 
 /*
@@ -490,20 +490,27 @@ void f_chmod(INT32 args)
 }
 
 #ifdef HAVE_CHOWN
-/*! @decl void chown(string path, int uid, int gid)
+/*! @decl void chown(string path, int uid, int gid, void|int symlink)
  *!
  *! Sets the owner and group of the specified path.
+ *!
+ *! If @[symlink] is set and @[path] refers to a symlink, then the
+ *! owner and group for the symlink are set. Symlinks are dereferenced
+ *! otherwise.
  *!
  *! @note
  *!   Throws errors on failure.
  *!
- *!   This function is not available on all platforms.
+ *!   This function is not available on all platforms. On some
+ *!   platforms the @[symlink] flag isn't supported. It has no effect
+ *!   in that case.
  */
 void f_chown(INT32 args)
 {
   char *path;
   INT_TYPE uid;
   INT_TYPE gid;
+  int symlink = 0;
   int err;
 
 #ifdef PIKE_SECURITY
@@ -511,10 +518,16 @@ void f_chown(INT32 args)
     Pike_error("chown: permission denied.\n");
 #endif
 
-  get_all_args("chown", args, "%s%i%i", &path, &uid, &gid);
+  get_all_args("chown", args, "%s%i%i.%d", &path, &uid, &gid, &symlink);
+
   do {
     THREADS_ALLOW_UID();
-    err = chown(path, uid, gid);
+#ifdef HAVE_LCHOWN
+    if (symlink)
+      err = lchown (path, uid, gid);
+    else
+#endif
+      err = chown(path, uid, gid);
     THREADS_DISALLOW_UID();
     if (err >= 0 || errno != EINTR) break;
     check_threads_etc();
@@ -527,47 +540,81 @@ void f_chown(INT32 args)
 #endif
 
 #if defined (HAVE_UTIME) || defined (HAVE__UTIME)
-/*! @decl void utime(string path, int atime, int mtime)
+/*! @decl void utime(string path, int atime, int mtime, void|int symlink)
  *!
- *! Set the last access time and last modification time for the
- *! path @[path] to @[atime] and @[mtime] repectively.
+ *! Set the last access time and last modification time for the path
+ *! @[path] to @[atime] and @[mtime] repectively. They are specified
+ *! as unix timestamps with 1 second resolution.
+ *!
+ *! If @[symlink] is set and @[path] refers to a symlink, then the
+ *! timestamps for the symlink are set. Symlinks are dereferenced
+ *! otherwise.
  *!
  *! @note
  *!   Throws errors on failure.
  *!
- *!   This function is not available on all platforms.
+ *!   This function is not available on all platforms. On some
+ *!   platforms the @[symlink] flag isn't supported. It has no effect
+ *!   in that case.
+ *!
+ *! @seealso
+ *! @[System.set_file_atime], @[System.set_file_mtime]
  */
 void f_utime(INT32 args)
 {
   char *path;
   INT_TYPE atime, mtime;
+  int symlink = 0;
   int err;
-  /*&#()&@(*#&$ NT ()*&#)(&*@$#*/
-#ifdef _UTIMBUF_DEFINED
-  struct _utimbuf b;
-#else
-  struct utimbuf b;
-#endif
 
 #ifdef PIKE_SECURITY
   if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
     Pike_error("utime: permission denied.\n");
 #endif
 
-  get_all_args("utime", args, "%s%i%i", &path, &atime, &mtime);
-  b.actime=atime;
-  b.modtime=mtime;
-  do {
-    THREADS_ALLOW_UID();
-#ifdef HAVE__UTIME
-    err = _utime (path, &b);
-#else
-    err = utime(path, &b);
+  get_all_args("utime", args, "%s%i%i.%d", &path, &atime, &mtime, &symlink);
+
+#ifdef HAVE_LUTIMES
+  if (symlink) {
+    struct timeval tv[2];
+    tv[0].tv_sec = atime;
+    tv[0].tv_usec = 0;
+    tv[1].tv_sec = mtime;
+    tv[1].tv_usec = 0;
+    do {
+      THREADS_ALLOW_UID();
+      err = lutimes (path, tv);
+      THREADS_DISALLOW_UID();
+      if (err >= 0 || errno != EINTR) break;
+      check_threads_etc();
+    } while (1);
+  }
+
+  else
 #endif
-    THREADS_DISALLOW_UID();
-    if (err >= 0 || errno != EINTR) break;
-    check_threads_etc();
-  } while (1);
+  {
+    /*&#()&@(*#&$ NT ()*&#)(&*@$#*/
+#ifdef _UTIMBUF_DEFINED
+    struct _utimbuf b;
+#else
+    struct utimbuf b;
+#endif
+
+    b.actime=atime;
+    b.modtime=mtime;
+    do {
+      THREADS_ALLOW_UID();
+#ifdef HAVE__UTIME
+      err = _utime (path, &b);
+#else
+      err = utime(path, &b);
+#endif
+      THREADS_DISALLOW_UID();
+      if (err >= 0 || errno != EINTR) break;
+      check_threads_etc();
+    } while (1);
+  }
+
   if (err < 0) {
     report_error("utime");
   }
@@ -3052,18 +3099,19 @@ PIKE_MODULE_INIT
 /* function(string, int:void) */
   ADD_EFUN("chmod", f_chmod,tFunc(tStr tInt,tVoid), OPT_SIDE_EFFECT);
   ADD_FUNCTION2("chmod", f_chmod,tFunc(tStr tInt,tVoid), 0, OPT_SIDE_EFFECT);
+
 #ifdef HAVE_CHOWN
-  
-/* function(string, int, int:void) */
-  ADD_EFUN("chown", f_chown,tFunc(tStr tInt tInt,tVoid), OPT_SIDE_EFFECT);
-  ADD_FUNCTION2("chown", f_chown,tFunc(tStr tInt tInt,tVoid), 0, OPT_SIDE_EFFECT);
+  ADD_EFUN("chown", f_chown, tFunc(tStr tInt tInt tOr(tVoid, tInt),tVoid),
+	   OPT_SIDE_EFFECT);
+  ADD_FUNCTION2("chown", f_chown, tFunc(tStr tInt tInt tOr(tVoid, tInt),tVoid),
+		0, OPT_SIDE_EFFECT);
 #endif
 
-#ifdef HAVE_UTIME
-  
-/* function(string, int, int:void) */
-  ADD_EFUN("utime", f_utime,tFunc(tStr tInt tInt,tVoid), OPT_SIDE_EFFECT);
-  ADD_FUNCTION2("utime", f_utime,tFunc(tStr tInt tInt,tVoid), 0, OPT_SIDE_EFFECT);
+#if defined (HAVE_UTIME) || defined (HAVE__UTIME)
+  ADD_EFUN("utime", f_utime,tFunc(tStr tInt tInt tOr(tVoid, tInt),tVoid),
+	   OPT_SIDE_EFFECT);
+  ADD_FUNCTION2("utime", f_utime,tFunc(tStr tInt tInt tOr(tVoid, tInt),tVoid),
+		0, OPT_SIDE_EFFECT);
 #endif
 
 #ifdef HAVE_INITGROUPS

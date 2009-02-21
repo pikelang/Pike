@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.81 2008/09/04 12:49:29 mast Exp $
+# $Id: configure.in,v 1.82 2009/02/21 12:38:20 mast Exp $
 AC_INIT(system.c)
 AC_CONFIG_HEADER(system_machine.h)
 
@@ -86,7 +86,7 @@ Disabling use of getaddrinfo.])
   esac
 fi
      
-AC_HAVE_FUNCS(syslog link symlink readlink resolvepath realpath chown \
+AC_HAVE_FUNCS(syslog link symlink readlink resolvepath realpath chown lchown \
 	initgroups setgroups getgroups seteuid setresuid setegid setresgid \
         geteuid getpgrp getpgid getppid getuid getgid setuid setgid setpgrp \
         setpgid getsid setsid \
@@ -96,7 +96,7 @@ AC_HAVE_FUNCS(syslog link symlink readlink resolvepath realpath chown \
 	chroot fchroot uname sysinfo \
         getgrnam_r getgrent_r getgrgid_r \
         getpwnam_r getpwent_r getpwuid_r \
-	getspnam_r innetgr utime _utime sleep usleep nanosleep \
+	getspnam_r innetgr utime _utime lutimes sleep usleep nanosleep \
         getrlimit setrlimit setproctitle \
         setitimer getitimer mmap munmap \
 	gettimeofday settimeofday prctl inet_ntoa inet_ntop getaddrinfo)
