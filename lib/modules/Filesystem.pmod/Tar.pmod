@@ -1,5 +1,5 @@
 /*
- * $Id: Tar.pmod,v 1.39 2009/02/13 15:29:24 mast Exp $
+ * $Id: Tar.pmod,v 1.40 2009/02/21 12:54:21 mast Exp $
  */
 
 #pike __REAL_VERSION__
@@ -326,28 +326,26 @@ class _Tar  // filesystem
 
   protected void extract_bits (string dest, Record r, int which_bits)
   {
-    // FIXME: Partial support for symlinks.
-
 #if constant (chown)
     if (which_bits & EXTRACT_CHOWN) {
       int uid;
-      if (!r->uname)
-	uid = r->uid;
-      else if (array pwent = getpwnam (r->uname))
+      if (array pwent = r->uname && getpwnam (r->uname))
 	uid = pwent[2];
+      else
+	uid = r->uid;
 
       int gid;
-      if (!r->gname)
-	gid = r->gid;
-      else if (array grent = getgrnam (r->gname))
+      if (array grent = r->gname && getgrnam (r->gname))
 	gid = grent[2];
+      else
+	gid = r->gid;
 
-      chown (dest, uid, gid);
+      chown (dest, uid, gid, 1);
     }
 #endif
 
 #if constant (chmod)
-    if (!(which_bits & EXTRACT_SKIP_MODE)) {
+    if (!(which_bits & EXTRACT_SKIP_MODE) && !r->islnk()) {
       if (which_bits & EXTRACT_SKIP_EXT_MODE)
 	chmod (dest, r->mode & 0777);
       else
@@ -357,7 +355,7 @@ class _Tar  // filesystem
 
 #if constant (utime)
     if (!(which_bits & EXTRACT_SKIP_MTIME))
-      utime (dest, r->mtime, r->mtime);
+      utime (dest, r->mtime, r->mtime, 1);
 #endif
   }
 
@@ -481,8 +479,8 @@ class _Tar  // filesystem
 	    else if (r->islnk()) {
 	      symlink (r->arch_linkname, destpath);
 
-	      // FIXME: Call extract_bits when utime and chown can
-	      // work on symlinks.
+	      if (do_extract_bits)
+		extract_bits (destpath, r, flags);
 	    }
 #endif
 
