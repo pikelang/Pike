@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.864 2009/02/12 21:06:27 srb Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.865 2009/02/21 12:55:26 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -4643,13 +4643,26 @@ test_any([[
 
 test_any([[
   class Foo {  };
-  return  function_name(object_program(Foo()));
+  return function_name(object_program(Foo()));
 ]], "Foo")
 
 test_any([[
   int q;
   return stringp(function_name( lambda() { return q; }));
 ]],1)
+
+test_any([[
+  // Named lambda.
+  int foo(){};
+  return function_name(foo);
+]], "foo")
+
+test_any([[
+  // Named trampoline.
+  int q;
+  int foo() { return q; };
+  return function_name(foo);
+]], "foo")
 
 test_any([[
   int q;
