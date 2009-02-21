@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.226 2008/11/02 19:57:58 grubba Exp $
+|| $Id: builtin.cmod,v 1.227 2009/02/21 12:54:38 grubba Exp $
 */
 
 #include "global.h"
@@ -950,6 +950,19 @@ PIKEFUN program __empty_program(int|zero|void line, string|void file)
   RETURN prog;
 }
 
+/* Cut the string at the first NUL. */
+static struct pike_string *delambda(struct pike_string *str)
+{
+  PCHARP pcharp = MKPCHARP_STR(str);
+  ptrdiff_t len = pcharp_strlen(pcharp);
+  if (len == str->len) {
+    /* Common case. */
+    add_ref(str);
+    return str;
+  }
+  return make_shared_binary_pcharp(pcharp, len);
+}
+
 /*! @decl string function_name(function f)
  *!
  *! Return the name of the function @[f].
@@ -1020,16 +1033,12 @@ PIKEFUN string function_name(program|function func)
 	struct pike_trampoline *t;
 	t=((struct pike_trampoline *)func->u.object->storage);
 
-	/* FIXME: Adjust lambda names. */
-      
 	if(t->frame->current_object->prog)
-	  REF_RETURN ID_FROM_INT(t->frame->current_object->prog,
-				 t->func)->name;
+	  RETURN delambda(ID_FROM_INT(t->frame->current_object->prog,
+				      t->func)->name);
       }
 
-      /* FIXME: Adjust lambda names. */
-      
-      REF_RETURN ID_FROM_INT(func->u.object->prog, func->subtype)->name;
+      RETURN delambda(ID_FROM_INT(func->u.object->prog, func->subtype)->name);
   }
   pop_n_elems(args);
   push_int(0);
