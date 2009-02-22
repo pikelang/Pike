@@ -1302,10 +1302,10 @@ array(string) list_tables (void|string glob) {
  object res=big_query(		 // due to missing schemasupport
   "SELECT CASE WHEN 'public'=n.nspname THEN '' ELSE n.nspname||'.' END "
   "  ||c.relname AS name "
-  "FROM pgcatalog.pgclass c "
-  "  LEFT JOIN pgcatalog.pg_namespace n ON n.oid=c.relnamespace "
-  "WHERE c.relkind IN ('r','v') AND n.nspname<>'pgcatalog' "
-  "  AND n.nspname !~ '^pg_toast' AND pgcatalog.pg_table_is_visible(c.oid) "
+  "FROM pg_catalog.pg_class c "
+  "  LEFT JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace "
+  "WHERE c.relkind IN ('r','v') AND n.nspname<>'pg_catalog' "
+  "  AND n.nspname !~ '^pg_toast' AND pg_catalog.pg_table_is_visible(c.oid) "
   "  AND c.relname ILIKE :glob "
   "  ORDER BY 1",
   ([":glob":glob2reg(glob)]));
@@ -1320,29 +1320,35 @@ array(string) list_tables (void|string glob) {
 //! The currently defined fields are:
 //!
 //! @mapping
-//!   @member int is_shared
+//!   @member string schema
+//!     Schema the table belongs to
+//!   @member string table
+//!     Name of the table
+//!   @member string kind
+//!     Type of table
 //!   @member string owner
 //!     Tableowner
+//!   @member int rowcount
+//!     Estimated rowcount of the table
+//!   @member int datasize
+//!     Estimated total datasize of the table in bytes
+//!   @member int indexsize
+//!     Estimated total indexsize of the table in bytes
+//!   @member string name
+//!     Name of the column
+//!   @member string type
+//!     A textual description of the internal (to the server) column type-name
+//!   @member int typeoid
+//!     The OID of the internal (to the server) column type
 //!   @member string length
 //!     Size of the columndatatype
-//!   @member string text
-//!     A textual description of the internal (to the server) type-name
 //!   @member mixed default
 //!     Default value for the column
-//!   @member mixed schema
-//!     Schema the table belongs to
-//!   @member mixed table
-//!     Name of the table
-//!   @member mixed kind
-//!     Type of table
-//!   @member mixed has_index
+//!   @member int is_shared
+//!   @member int has_index
 //!     If the table has any indices
-//!   @member mixed has_primarykey
+//!   @member int has_primarykey
 //!     If the table has a primary key
-//!   @member mixed rowcount
-//!     Estimated rowcount of the table
-//!   @member mixed pagecount
-//!     Estimated pagecount of the table
 //! @endmapping
 //!
 //! @param glob
@@ -1354,9 +1360,23 @@ array(mapping(string:mixed)) list_fields(void|string table, void|string glob) {
 
   sscanf(table||"*", "%s.%s", schema, table);
 
-  object res = big_query(
+  object res = big_typed_query(
   "SELECT a.attname, a.atttypid, t.typname, a.attlen, "
-  " c.relhasindex, c.relhaspkey, c.reltuples, c.relpages, "
+  " c.relhasindex, c.relhaspkey, CAST(c.reltuples AS BIGINT) AS reltuples, "
+  " (c.relpages "
+  " +COALESCE( "
+  "  (SELECT SUM(tst.relpages) "
+  "    FROM pg_catalog.pg_class tst "
+  "    WHERE tst.relfilenode=c.reltoastrelid) "
+  "  ,0) "
+  " )*8192::BIGINT AS datasize, "
+  " (COALESCE( "
+  "  (SELECT SUM(pin.relpages) "
+  "   FROM pg_catalog.pg_index pi "
+  "    JOIN pg_catalog.pg_class pin ON pin.relfilenode=pi.indexrelid "
+  "   WHERE pi.indrelid IN (c.relfilenode,c.reltoastrelid)) "
+  "  ,0) "
+  " )*8192::BIGINT AS indexsize, "
   " c.relisshared, t.typdefault, "
   " n.nspname, c.relname, "
   " CASE c.relkind "
@@ -1369,15 +1389,15 @@ array(mapping(string:mixed)) list_fields(void|string table, void|string glob) {
   "  WHEN 'c' THEN 'composite' "
   "  ELSE c.relkind::TEXT END AS relkind, "
   " r.rolname "
-  "FROM pgcatalog.pgclass c "
-  "  LEFT JOIN pgcatalog.pg_namespace n ON n.oid=c.relnamespace "
-  "  JOIN pgcatalog.pg_roles r ON r.oid=c.relowner "
-  "  JOIN pgcatalog.pg_attribute a ON c.oid=a.attrelid "
-  "  JOIN pgcatalog.pg_type t ON a.atttypid=t.oid "
+  "FROM pg_catalog.pg_class c "
+  "  LEFT JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace "
+  "  JOIN pg_catalog.pg_roles r ON r.oid=c.relowner "
+  "  JOIN pg_catalog.pg_attribute a ON c.oid=a.attrelid "
+  "  JOIN pg_catalog.pg_type t ON a.atttypid=t.oid "
   "WHERE c.relname ILIKE :table AND "
   "  (n.nspname ILIKE :schema OR "
   "   :schema IS NULL "
-  "   AND n.nspname<>'pgcatalog' AND n.nspname !~ '^pg_toast') "
+  "   AND n.nspname<>'pg_catalog' AND n.nspname !~ '^pg_toast') "
   "   AND a.attname ILIKE :glob "
   "   AND (a.attnum>0 OR '*'=:realglob) "
   "ORDER BY n.nspname,c.relname,a.attnum,a.attname",
@@ -1399,7 +1419,6 @@ array(mapping(string:mixed)) list_fields(void|string table, void|string glob) {
       "relhasindex":"has_index",
       "relhaspkey":"has_primarykey",
       "reltuples":"rowcount",
-      "relpages":"pagecount",
      ]);
     foreach(colnames;int i;mapping m) {
       string nf,field=m->name;
