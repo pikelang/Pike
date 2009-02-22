@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.399 2009/02/06 18:53:43 grubba Exp $
+|| $Id: file.c,v 1.400 2009/02/22 13:41:34 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -2906,11 +2906,35 @@ static void file_take_fd(INT32 args)
   pop_n_elems(args);
 }
 
+static void do_close_fd(int fd)
+{
+  int ret;
+  if (fd < 0) return;
+  do {
+    ret = fd_close(fd);
+  } while ((ret == -1) && (errno == EINTR));
+}
+
 PMOD_EXPORT struct object *file_make_object_from_fd(int fd, int mode, int guess)
 {
-  struct object *o=low_clone(file_program);
-  struct my_file *f = (struct my_file *) o->storage;
-  call_c_initializers(o);
+  struct object *o;
+  struct my_file *f;
+  if (Pike_fp->context->prog == file_program) {
+    /* Called from within the file (aka Fd) object.
+     * Attempt to clone ourselves.
+     */
+    ONERROR err;
+    SET_ONERROR(err, do_close_fd, fd);
+    o = clone_object_from_object(Pike_fp->current_object, 0);
+    UNSET_ONERROR(err);
+    if (!o->prog) return NULL;	/* Destructed in create() or __INIT(). */
+    f = (struct my_file *)(o->storage + Pike_fp->context->storage_offset);
+  } else {
+    /* Clone a plain Fd object. */
+    o = low_clone(file_program);
+    f = (struct my_file *) o->storage;
+    call_c_initializers(o);
+  }
   change_fd_for_box(&f->box, fd);
   if (fd >= 0) {
     f->open_mode=mode | fd_query_properties(fd, guess);
