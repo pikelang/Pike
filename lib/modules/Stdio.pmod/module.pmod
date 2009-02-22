@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.251 2009/02/15 20:42:08 grubba Exp $
+// $Id: module.pmod,v 1.252 2009/02/22 21:21:05 grubba Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -15,6 +15,10 @@ inherit files;
 #else
 #define BE_WERR(X)
 #endif
+
+// STDIO_DIRECT_FD is a work in progress to get rid of Stdio.Fd_ref, where
+// Stdio.File et al instead inherit Stdio.Fd directly.
+// #define STDIO_DIRECT_FD
 
 // TRACK_OPEN_FILES is a debug tool to track down where a file is
 // currently opened from (see report_file_open_places). It's used
@@ -128,7 +132,12 @@ class BlockFile
 //! @[Stdio.FILE]
 class File
 {
+#ifndef STDIO_DIRECT_FD
   optional inherit Fd_ref;
+#else
+  optional inherit Fd;
+#define _fd this
+#endif
   
 #ifdef TRACK_OPEN_FILES
   /*static*/ int open_file_id = next_open_file_id++;
@@ -577,10 +586,20 @@ class File
     is_file = 0;
     if(query_num_arg()==0)
       required_properties=PROP_NONBLOCK | PROP_BIDIRECTIONAL;
-    if(Fd fd=[object(Fd)]::pipe(required_properties))
+    if(
+#ifndef STDIO_DIRECT_FD
+       Fd
+#else
+       File
+#endif
+       fd = /*[object(Fd)]*/(object)::pipe(required_properties))
     {
+#ifndef STDIO_DIRECT_FD
       File o=File();
       o->_fd=fd;
+#else
+      File o = fd;
+#endif
       o->_setup_debug( "pipe", 0 );
       register_open_file ("pipe", open_file_id, backtrace());
       register_open_file ("pipe", o->open_file_id, backtrace());
@@ -603,10 +622,20 @@ class File
   {
     if(query_num_arg()<3)
       mask = 0777;
-    if(Fd fd=[object(Fd)]::openat(filename, mode, mask))
+    if(
+#ifndef STDIO_DIRECT_FD
+       Fd
+#else
+       File
+#endif
+       fd =/*[object(Fd)]*/(object)::openat(filename, mode, mask))
     {
+#ifndef STDIO_DIRECT_FD
       File o=File();
       o->_fd=fd;
+#else
+      File o = fd;
+#endif
       string path = combine_path(debug_file||"", filename);
       o->_setup_debug(path, mode, mask);
       register_open_file(path, o->open_file_id, backtrace());
@@ -653,7 +682,9 @@ class File
   protected void create(int|string|void file,void|string mode,void|int bits)
   {
     if (zero_type(file)) {
+#ifndef STDIO_DIRECT_FD
       _fd = Fd();
+#endif
       return;
     }
 
@@ -663,29 +694,48 @@ class File
     switch(file)
     {
       case "stdin":
+#ifndef STDIO_DIRECT_FD
 	_fd=_stdin;
 #ifdef __STDIO_DEBUG
 	__closed_backtrace=0;
 #endif
+#else
+	create(0, mode, bits);
+	return;
+#endif
 	break; /* ARGH, this missing break took 6 hours to find! /Hubbe */
 
       case "stdout":
+#ifndef STDIO_DIRECT_FD
 	_fd=_stdout;
 #ifdef __STDIO_DEBUG
 	__closed_backtrace=0;
 #endif
+#else
+	create(1, mode, bits);
+	return;
+#endif
 	break;
 	
       case "stderr":
+#ifndef STDIO_DIRECT_FD
 	_fd=_stderr;
 #ifdef __STDIO_DEBUG
 	__closed_backtrace=0;
+#endif
+#else
+	create(2, mode, bits);
+	return;
 #endif
 	break;
 
       case 0..0x7fffffff:
 	 if (!mode) mode="rw";
+#ifndef STDIO_DIRECT_FD
 	_fd=Fd(file,mode);
+#else
+	::create(file, mode);
+#endif
 	register_open_file ("fd " + file, open_file_id, backtrace());
 #ifdef __STDIO_DEBUG
 	__closed_backtrace=0;
@@ -693,7 +743,9 @@ class File
 	break;
 
       default:
+#ifndef STDIO_DIRECT_FD
 	_fd=Fd();
+#endif
 	is_file = 1;
 #ifdef __STDIO_DEBUG
 	__closed_backtrace=0;
@@ -718,6 +770,7 @@ class File
   {
     BE_WERR("assign()\n");
     is_file = o->is_file;
+#ifndef STDIO_DIRECT_FD
     if((program)Fd == (program)object_program(o))
     {
       _fd = o->dup();
@@ -731,6 +784,9 @@ class File
       set_write_oob_callback(_o->query_write_oob_callback());
       set_id(_o->query_id());
     }
+#else
+    error("FIXME!\n");
+#endif
     return 0;
   }
 
@@ -1749,6 +1805,7 @@ class FILE
   {
     if(query_num_arg()<3)
       mask = 0777;
+#ifndef STDIO_DIRECT_FD
     if(Fd fd=[object(Fd)]_fd->openat(filename, mode, mask))
     {
       FILE o=FILE();
@@ -1760,6 +1817,16 @@ class FILE
     }else{
       return 0;
     }
+#else
+    if (FILE o = (object)::openat(filename, mode, mask)) {
+      string path = combine_path(debug_file||"", filename);
+      o->_setup_debug(path, mode, mask);
+      register_open_file(path, o->open_file_id, backtrace());
+      return o;
+    } else {
+      return 0;
+    }
+#endif
   }
 #endif
   
