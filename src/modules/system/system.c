@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.185 2009/02/21 12:38:20 mast Exp $
+|| $Id: system.c,v 1.186 2009/02/23 22:36:08 mast Exp $
 */
 
 /*
@@ -502,8 +502,8 @@ void f_chmod(INT32 args)
  *!   Throws errors on failure.
  *!
  *!   This function is not available on all platforms. On some
- *!   platforms the @[symlink] flag isn't supported. It has no effect
- *!   in that case.
+ *!   platforms the @[symlink] flag isn't supported. In that case, the
+ *!   function does nothing if @[path] is a symlink.
  */
 void f_chown(INT32 args)
 {
@@ -520,6 +520,33 @@ void f_chown(INT32 args)
 
   get_all_args("chown", args, "%s%i%i.%d", &path, &uid, &gid, &symlink);
 
+#ifndef HAVE_LCHOWN
+#ifdef HAVE_LSTAT
+  {
+    PIKE_STAT_T st;
+    int orig_errno = errno;
+    do {
+      THREADS_ALLOW_UID();
+      err = fd_lstat (path, &st);
+      THREADS_DISALLOW_UID();
+      if (err >= 0 || errno != EINTR) break;
+    } while (1);
+    errno = orig_errno;
+
+    if (!err && ((st.st_mode & S_IFMT) == S_IFLNK)) {
+      pop_n_elems (args);
+      return;
+    }
+  }
+
+#else
+  /* Awkward situation if there's no lstat. Best we can do is just to
+   * go ahead, except we don't complain for ENOENT, to avoid throwing
+   * errors on dangling symlinks. */
+#define CHOWN_IGNORE_ENOENT
+#endif
+#endif	/* !HAVE_LCHOWN */
+
   do {
     THREADS_ALLOW_UID();
 #ifdef HAVE_LCHOWN
@@ -532,6 +559,12 @@ void f_chown(INT32 args)
     if (err >= 0 || errno != EINTR) break;
     check_threads_etc();
   } while (1);
+
+#ifdef CHOWN_IGNORE_ENOENT
+  if (err < 0 && symlink && errno == ENOENT)
+    err = 0;
+#endif
+
   if (err < 0) {
     report_error("chown");
   }
@@ -554,8 +587,8 @@ void f_chown(INT32 args)
  *!   Throws errors on failure.
  *!
  *!   This function is not available on all platforms. On some
- *!   platforms the @[symlink] flag isn't supported. It has no effect
- *!   in that case.
+ *!   platforms the @[symlink] flag isn't supported. In that case, the
+ *!   function does nothing if @[path] is a symlink.
  *!
  *! @seealso
  *! @[System.set_file_atime], @[System.set_file_mtime]
@@ -574,8 +607,8 @@ void f_utime(INT32 args)
 
   get_all_args("utime", args, "%s%i%i.%d", &path, &atime, &mtime, &symlink);
 
-#ifdef HAVE_LUTIMES
   if (symlink) {
+#ifdef HAVE_LUTIMES
     struct timeval tv[2];
     tv[0].tv_sec = atime;
     tv[0].tv_usec = 0;
@@ -588,10 +621,35 @@ void f_utime(INT32 args)
       if (err >= 0 || errno != EINTR) break;
       check_threads_etc();
     } while (1);
+    if (err < 0)
+      report_error("utime");
+    pop_n_elems(args);
+    return;
+
+#elif defined (HAVE_LSTAT)
+    PIKE_STAT_T st;
+    int orig_errno = errno;
+    do {
+      THREADS_ALLOW_UID();
+      err = fd_lstat (path, &st);
+      THREADS_DISALLOW_UID();
+      if (err >= 0 || errno != EINTR) break;
+    } while (1);
+    errno = orig_errno;
+
+    if (!err && ((st.st_mode & S_IFMT) == S_IFLNK)) {
+      pop_n_elems (args);
+      return;
+    }
+
+#else
+    /* Awkward situation if there's no lstat. Best we can do is just
+     * to go ahead, except we don't complain for ENOENT, to avoid
+     * throwing errors on dangling symlinks. */
+#define UTIME_IGNORE_ENOENT
+#endif
   }
 
-  else
-#endif
   {
     /*&#()&@(*#&$ NT ()*&#)(&*@$#*/
 #ifdef _UTIMBUF_DEFINED
@@ -614,6 +672,11 @@ void f_utime(INT32 args)
       check_threads_etc();
     } while (1);
   }
+
+#ifdef UTIME_IGNORE_ENOENT
+  if (err < 0 && symlink && errno == ENOENT)
+    err = 0;
+#endif
 
   if (err < 0) {
     report_error("utime");
