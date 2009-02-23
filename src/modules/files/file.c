@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.401 2009/02/23 18:15:03 grubba Exp $
+|| $Id: file.c,v 1.402 2009/02/23 21:45:42 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -156,6 +156,42 @@ struct program *file_ref_program;
  *!
  *! Low level I/O operations. Use @[File] instead.
  */
+
+/*! @decl Fd fd_factory()
+ *!
+ *! Factory creating @[Stdio.Fd] objects.
+ *!
+ *! This function is called by @[openat()], @[pipe()], @[dup()]
+ *! and other functions creating new file objects.
+ *!
+ *! The default implementation calls @expr{object_program(this_object())()@}
+ *! to create the new object, and returns the @[Fd] inherit in it.
+ *!
+ *! @note
+ *!   Note that this function must return the @[Fd] inherit in the object.
+ *!
+ *! @seealso
+ *!   @[Stdio.Port()->fd_factory()], @[openat()], @[pipe()]
+ */
+static int fd_fd_factory_fun_num = -1;
+static void fd_fd_factory(INT32 args)
+{
+  pop_n_elems(args);
+  push_object_inherit(clone_object_from_object(Pike_fp->current_object, 0),
+		      Pike_fp->context - Pike_fp->current_program->inherits);
+}
+
+/* @decl object(Fd) `_fd()
+ *
+ * Getter for the Fd object.
+ */
+static void fd_backtick__fd(INT32 args)
+{
+  pop_n_elems(args);
+  ref_push_object_inherit(Pike_fp->current_object,
+			  Pike_fp->context -
+			  Pike_fp->current_program->inherits);
+}
 
 /*! @endclass
  */
@@ -1977,7 +2013,7 @@ static void file_openat(INT32 args)
   }
   else
   {
-    push_object(file_make_object_from_fd(fd, flags, FILE_CAPABILITIES));
+    push_new_fd_object(fd_fd_factory_fun_num, fd, flags, FILE_CAPABILITIES);
     set_close_on_exec(fd, 1);
     stack_pop_n_elems_keep_top(args);
   }
@@ -2947,6 +2983,39 @@ PMOD_EXPORT struct object *file_make_object_from_fd(int fd, int mode, int guess)
   return o;
 }
 
+PMOD_EXPORT void push_new_fd_object(int factory_fun_num,
+				    int fd, int mode, int guess)
+{
+  struct object *o = NULL;
+  struct my_file *f;
+  ONERROR err;
+
+  SET_ONERROR(err, do_close_fd, fd);
+  apply_current(factory_fun_num, 0);
+  if ((Pike_sp[-1].type != PIKE_T_OBJECT) ||
+      !(o = Pike_sp[-1].u.object)->prog ||
+      (o->prog->inherits[Pike_sp[-1].subtype].prog != file_program)) {
+    Pike_error("Invalid return value from fd_factory(). "
+	       "Expected object(is Stdio.Fd).\n");
+  }
+  f = (struct my_file *)
+    (o->storage + o->prog->inherits[Pike_sp[-1].subtype].storage_offset);
+  if (f->box.fd != -1) {
+    Pike_error("Invalid return value from fd_factory(). "
+	       "Expected unopened object(is Stdio.Fd).\n");
+  }
+  UNSET_ONERROR(err);
+  change_fd_for_box(&f->box, fd);
+  if (fd >= 0) {
+    f->open_mode=mode | fd_query_properties(fd, guess);
+#ifdef PIKE_DEBUG
+    debug_check_fd_not_in_use (fd);
+#endif
+  } else {
+    f->open_mode = 0;
+  }
+}
+
 /*! @decl void set_buffer(int bufsize, string mode)
  *! @decl void set_buffer(int bufsize)
  *!
@@ -3338,7 +3407,8 @@ static void file_pipe(INT32 args)
     change_fd_for_box (&THIS->box, inout[1]);
 
     ERRNO=0;
-    push_object(file_make_object_from_fd(inout[0], (type&fd_BIDIRECTIONAL?FILE_WRITE:0)| FILE_READ,type));
+    push_new_fd_object(fd_fd_factory_fun_num, inout[0],
+		       (type&fd_BIDIRECTIONAL?FILE_WRITE:0)| FILE_READ, type);
   } else {
     init_fd(inout[0], FILE_READ | (type&fd_BIDIRECTIONAL?FILE_WRITE:0) |
 	    fd_query_properties(inout[0], type), 0);
@@ -3348,7 +3418,8 @@ static void file_pipe(INT32 args)
     change_fd_for_box (&THIS->box, inout[0]);
 
     ERRNO=0;
-    push_object(file_make_object_from_fd(inout[1], (type&fd_BIDIRECTIONAL?FILE_READ:0)| FILE_WRITE,type));
+    push_new_fd_object(fd_fd_factory_fun_num, inout[1],
+		       (type&fd_BIDIRECTIONAL?FILE_READ:0)| FILE_WRITE, type);
   }
 }
 
@@ -3524,15 +3595,16 @@ static void file_dup(INT32 args)
   if((fd=fd_dup(FD)) < 0)
   {
     ERRNO=errno;
-    pop_n_elems(args);
     push_int(0);
     return;
   }
-  o=file_make_object_from_fd(fd, THIS->open_mode, THIS->open_mode);
-  f=((struct my_file *)(o->storage));
+  push_new_fd_object(fd_fd_factory_fun_num,
+		     fd, THIS->open_mode, THIS->open_mode);
+  o = Pike_sp[-1].u.object;
+  f = ((struct my_file *)
+       (o->storage + o->prog->inherits[Pike_sp[-1].subtype].storage_offset));
   ERRNO=0;
   low_dup(o, f, THIS);
-  push_object(o);
 }
 
 /*! @decl int(0..1) open_socket(int|void port, string|void addr, @
@@ -3999,18 +4071,6 @@ static void file_create(INT32 args)
 
   close_fd();
   file_open(args);
-}
-
-/* @decl object(Fd) `_fd()
- *
- * Getter for the Fd object.
- */
-static void fd_backtick__fd(INT32 args)
-{
-  pop_n_elems(args);
-  ref_push_object_inherit(Pike_fp->current_object,
-			  Pike_fp->context -
-			  Pike_fp->current_program->inherits);
 }
 
 #ifdef _REENTRANT
@@ -4725,6 +4785,10 @@ PIKE_MODULE_INIT
 	       OFFSETOF(my_file, event_cbs[PIKE_FD_READ_OOB]),PIKE_T_MIXED);
   MAP_VARIABLE("_write_oob_callback",tMix,0,
 	       OFFSETOF(my_file, event_cbs[PIKE_FD_WRITE_OOB]),PIKE_T_MIXED);
+
+  fd_fd_factory_fun_num =
+    ADD_FUNCTION("fd_factory", fd_fd_factory,
+		 tFunc(tNone, tObjIs_STDIO_FD), ID_PROTECTED);
 
   ADD_FUNCTION("`_fd", fd_backtick__fd, tFunc(tNone, tObjIs_STDIO_FD), 0);
 
