@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: socket.c,v 1.101 2009/02/23 21:39:55 grubba Exp $
+|| $Id: socket.c,v 1.102 2009/02/23 21:46:56 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -510,10 +510,8 @@ static void port_accept(INT32 args)
   PIKE_SOCKADDR addr;
   struct port *this=THIS;
   int fd, err;
-  struct object *o;
   ACCEPT_SIZE_T len=0;
   int one = 1;
-  ONERROR err;
 
   if(this->box.fd < 0)
     Pike_error("port->accept(): Port not open.\n");
@@ -544,23 +542,17 @@ static void port_accept(INT32 args)
     one = 1;
 
   my_set_close_on_exec(fd,1);
-  SET_ONERROR(err, do_close_fd, fd);
-  apply_current(port_fd_factory_fun_num, 0);
-  if ((Pike_sp[-1].type != T_OBJECT) || !(o = Pike_sp[-1].u.object)->prog ||
-      (o->prog->inherits[Pike_sp[-1].subtype].prog != file_program)) {
-    Pike_error("Invalid object returned from fd_factory(), expected "
-	       "object(is Stdio.Fd).\n");
-  }
-  UNSET_ONERROR(err);
-  o=file_make_object_from_fd(fd,FILE_READ | FILE_WRITE, SOCKET_CAPABILITIES);
+  push_new_fd_object(port_fd_factory_fun_num,
+		     fd, FILE_READ | FILE_WRITE, SOCKET_CAPABILITIES);
 
   if (this->box.backend) {
-    struct my_file *f = (struct my_file *)o->storage;
+    struct object *o = Pike_sp[-1].u.object;
+    struct my_file *f = (struct my_file *)
+      (o->storage + o->prog->inherits[Pike_sp[-1].subtype].storage_offset);
     change_backend_for_box(&f->box, this->box.backend);
   }
 
-  pop_n_elems(args);
-  push_object(o);
+  stack_pop_n_elems_keep_top(args);
 }
 
 /*! @decl string query_address()
