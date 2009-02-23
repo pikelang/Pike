@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.h,v 1.38 2006/07/05 02:14:11 mast Exp $
+|| $Id: file.h,v 1.39 2009/02/23 21:46:03 grubba Exp $
 */
 
 #ifndef FILE_H
@@ -117,6 +117,8 @@ CBFUNCS(write_oob_callback)
 
 static void file_write(INT32 args);
 PMOD_EXPORT struct object *file_make_object_from_fd(int fd, int mode, int guess);
+PMOD_EXPORT void push_new_fd_object(int factory_fun_num,
+				    int fd, int mode, int guess);
 int my_socketpair(int family, int type, int protocol, int sv[2]);
 int socketpair_ultra(int family, int type, int protocol, int sv[2]);
 struct new_thread_data;
