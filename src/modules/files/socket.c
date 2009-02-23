@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: socket.c,v 1.100 2008/06/13 10:13:03 grubba Exp $
+|| $Id: socket.c,v 1.101 2009/02/23 21:39:55 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -482,6 +482,13 @@ static void port_create(INT32 args)
 
 extern struct program *file_program;
 
+static int port_fd_factory_fun_num = -1;
+static void port_fd_factory(INT32 args)
+{
+  pop_n_elems(args);
+  push_object(clone_object(file_program, 0));
+}
+
 /*! @decl Stdio.File accept()
  *!
  *! Get the first connection request waiting for this port and return
@@ -490,6 +497,8 @@ extern struct program *file_program;
  *! If no connection request is waiting and the port is in nonblocking
  *! mode (i.e. an accept callback is installed) then zero is returned.
  *! Otherwise this function waits until a connection has arrived.
+ *!
+ *! In Pike 7.8 and later the returned object is created via @[fd_factory()].
  *!
  *! @note
  *!   In Pike 7.7 and later the resulting file object will be assigned
@@ -504,6 +513,7 @@ static void port_accept(INT32 args)
   struct object *o;
   ACCEPT_SIZE_T len=0;
   int one = 1;
+  ONERROR err;
 
   if(this->box.fd < 0)
     Pike_error("port->accept(): Port not open.\n");
@@ -534,6 +544,14 @@ static void port_accept(INT32 args)
     one = 1;
 
   my_set_close_on_exec(fd,1);
+  SET_ONERROR(err, do_close_fd, fd);
+  apply_current(port_fd_factory_fun_num, 0);
+  if ((Pike_sp[-1].type != T_OBJECT) || !(o = Pike_sp[-1].u.object)->prog ||
+      (o->prog->inherits[Pike_sp[-1].subtype].prog != file_program)) {
+    Pike_error("Invalid object returned from fd_factory(), expected "
+	       "object(is Stdio.Fd).\n");
+  }
+  UNSET_ONERROR(err);
   o=file_make_object_from_fd(fd,FILE_READ | FILE_WRITE, SOCKET_CAPABILITIES);
 
   if (this->box.backend) {
@@ -718,6 +736,9 @@ void port_setup_program(void)
   /* function(:int) */
   ADD_FUNCTION("errno",port_errno,tFunc(tNone,tInt),0);
   /* function(:object) */
+  port_fd_factory_fun_num =
+    ADD_FUNCTION("fd_factory", port_fd_factory, tFunc(tNone,tObjIs_STDIO_FD),
+		 ID_STATIC);
   ADD_FUNCTION("accept",port_accept,tFunc(tNone,tObjIs_STDIO_FD),0);
   /* function(void|string|int,void|mixed,void|string:void) */
   ADD_FUNCTION("create", port_create,
