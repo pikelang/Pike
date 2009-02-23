@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.400 2009/02/22 13:41:34 grubba Exp $
+|| $Id: file.c,v 1.401 2009/02/23 18:15:03 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -4001,6 +4001,18 @@ static void file_create(INT32 args)
   file_open(args);
 }
 
+/* @decl object(Fd) `_fd()
+ *
+ * Getter for the Fd object.
+ */
+static void fd_backtick__fd(INT32 args)
+{
+  pop_n_elems(args);
+  ref_push_object_inherit(Pike_fp->current_object,
+			  Pike_fp->context -
+			  Pike_fp->current_program->inherits);
+}
+
 #ifdef _REENTRANT
 
 struct new_thread_data
@@ -4713,6 +4725,8 @@ PIKE_MODULE_INIT
 	       OFFSETOF(my_file, event_cbs[PIKE_FD_READ_OOB]),PIKE_T_MIXED);
   MAP_VARIABLE("_write_oob_callback",tMix,0,
 	       OFFSETOF(my_file, event_cbs[PIKE_FD_WRITE_OOB]),PIKE_T_MIXED);
+
+  ADD_FUNCTION("`_fd", fd_backtick__fd, tFunc(tNone, tObjIs_STDIO_FD), 0);
 
   /* function(int, void|mapping:string) */
   ADD_FUNCTION("_sprintf",fd__sprintf,
