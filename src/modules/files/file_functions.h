@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file_functions.h,v 1.46 2008/08/09 21:24:01 mast Exp $
+|| $Id: file_functions.h,v 1.47 2009/02/24 20:53:12 grubba Exp $
 */
 
 #define CB_FUNC tFunc(tNone,tOr(tVoid,tMixed))
@@ -101,7 +101,7 @@ FILE_FUNC("take_fd",file_take_fd, tFunc(tInt,tVoid))
 /* Note: We have no way of specifying "object that inherits Fd or Fd_ref". */
 FILE_FUNC("dup2",file_dup2, tFunc(tObj,tInt))
 /* function(void:object) */
-FILE_FUNC("dup",file_dup, tFunc(tInt,tObjImpl_STDIO_FD))
+FILE_FUNC("dup",file_dup, tFunc(tNone,tObjImpl_STDIO_FD))
 /* function(void|int:object) */
 FILE_FUNC("pipe",file_pipe, tFunc(tOr(tVoid,tInt),tObjImpl_STDIO_FD))
 
