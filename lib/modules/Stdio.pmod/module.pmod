@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.252 2009/02/22 21:21:05 grubba Exp $
+// $Id: module.pmod,v 1.253 2009/02/24 20:49:32 grubba Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -136,7 +136,14 @@ class File
   optional inherit Fd_ref;
 #else
   optional inherit Fd;
-#define _fd this
+
+  // This is needed in case we get overloaded by strange code
+  // (socktest.pike).
+  protected Fd fd_factory()
+  {
+    return File()->_fd;
+  }
+
 #endif
   
 #ifdef TRACK_OPEN_FILES
@@ -586,19 +593,13 @@ class File
     is_file = 0;
     if(query_num_arg()==0)
       required_properties=PROP_NONBLOCK | PROP_BIDIRECTIONAL;
-    if(
-#ifndef STDIO_DIRECT_FD
-       Fd
-#else
-       File
-#endif
-       fd = /*[object(Fd)]*/(object)::pipe(required_properties))
+    if(Fd fd = ::pipe(required_properties))
     {
 #ifndef STDIO_DIRECT_FD
       File o=File();
       o->_fd=fd;
 #else
-      File o = fd;
+      File o = function_object(fd->read);
 #endif
       o->_setup_debug( "pipe", 0 );
       register_open_file ("pipe", open_file_id, backtrace());
@@ -622,19 +623,13 @@ class File
   {
     if(query_num_arg()<3)
       mask = 0777;
-    if(
-#ifndef STDIO_DIRECT_FD
-       Fd
-#else
-       File
-#endif
-       fd =/*[object(Fd)]*/(object)::openat(filename, mode, mask))
+    if(Fd fd = ::openat(filename, mode, mask))
     {
 #ifndef STDIO_DIRECT_FD
       File o=File();
       o->_fd=fd;
 #else
-      File o = fd;
+      File o = function_object(fd->read);
 #endif
       string path = combine_path(debug_file||"", filename);
       o->_setup_debug(path, mode, mask);
@@ -785,7 +780,8 @@ class File
       set_id(_o->query_id());
     }
 #else
-    error("FIXME!\n");
+    o->dup2(_fd);
+    //error("FIXME!\n");
 #endif
     return 0;
   }
@@ -801,6 +797,7 @@ class File
   File dup()
   {
     BE_WERR("dup()\n");
+#ifndef STDIO_DIRECT_FD
     File to = File();
     to->is_file = is_file;
     to->_fd = _fd;
@@ -813,6 +810,9 @@ class File
     to->_setup_debug( debug_file, debug_mode, debug_bits );
     to->set_id(query_id());
     return to;
+#else
+    return function_object(::dup()->read);
+#endif
   }
 
 
@@ -1469,6 +1469,17 @@ class Port
 			      this_program, debug_ip||"", debug_port );
   }
 
+#ifdef STDIO_DIRECT_FD
+  //! Factory creating empty @[Fd] objects.
+  //!
+  //! This function is called by @[accept()] when it needs to create
+  //! a new file.
+  protected Fd fd_factory()
+  {
+    return File()->_fd;
+  }
+#endif
+
   //! @decl void create()
   //! @decl void create(int|string port)
   //! @decl void create(int|string port, function accept_callback)
@@ -1517,10 +1528,14 @@ class Port
   //!
   File accept()
   {
-    if(object x=::accept())
+    if(object(Fd) x=::accept())
     {
+#ifndef STDIO_DIRECT_FD
       File y=File();
       y->_fd=x;
+#else
+      File y = function_object(x->read);
+#endif
       y->_setup_debug( "socket", x->query_address() );
       return y;
     }
@@ -1805,11 +1820,14 @@ class FILE
   {
     if(query_num_arg()<3)
       mask = 0777;
-#ifndef STDIO_DIRECT_FD
     if(Fd fd=[object(Fd)]_fd->openat(filename, mode, mask))
     {
+#ifndef STDIO_DIRECT_FD
       FILE o=FILE();
       o->_fd=fd;
+#else
+      FILE o = function_object(fd->read);
+#endif
       string path = combine_path(debug_file||"", filename);
       o->_setup_debug(path, mode, mask);
       register_open_file(path, o->open_file_id, backtrace());
@@ -1817,16 +1835,6 @@ class FILE
     }else{
       return 0;
     }
-#else
-    if (FILE o = (object)::openat(filename, mode, mask)) {
-      string path = combine_path(debug_file||"", filename);
-      o->_setup_debug(path, mode, mask);
-      register_open_file(path, o->open_file_id, backtrace());
-      return o;
-    } else {
-      return 0;
-    }
-#endif
   }
 #endif
   
