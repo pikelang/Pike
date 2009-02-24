@@ -1830,7 +1830,7 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
     PD("%O\n",err);
     resync(1);
     backendstatus=UNDEFINED;
-    if(sizeof(to)) {
+    if(to && sizeof(to)) {
       string val;
       int i;
       lastmessage+=({"Parameter bindings:"});
