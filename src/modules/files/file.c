@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.402 2009/02/23 21:45:42 grubba Exp $
+|| $Id: file.c,v 1.403 2009/02/24 20:52:18 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -211,7 +211,8 @@ static struct my_file *get_file_storage(struct object *o)
   struct my_file *f;
   struct object **ob;
   if(o->prog == file_program)
-    return ((struct my_file *)(o->storage));
+    return ((struct my_file *)
+	    (o->storage + file_program->inherits->storage_offset));
 
   if((f=(struct my_file *)get_storage(o,file_program)))
     return f;
@@ -2968,7 +2969,7 @@ PMOD_EXPORT struct object *file_make_object_from_fd(int fd, int mode, int guess)
   } else {
     /* Clone a plain Fd object. */
     o = low_clone(file_program);
-    f = (struct my_file *) o->storage;
+    f = (struct my_file *) o->storage + file_program->inherits->storage_offset;
     call_c_initializers(o);
   }
   change_fd_for_box(&f->box, fd);
@@ -3002,7 +3003,8 @@ PMOD_EXPORT void push_new_fd_object(int factory_fun_num,
     (o->storage + o->prog->inherits[Pike_sp[-1].subtype].storage_offset);
   if (f->box.fd != -1) {
     Pike_error("Invalid return value from fd_factory(). "
-	       "Expected unopened object(is Stdio.Fd).\n");
+	       "Expected unopened object(is Stdio.Fd). fd:%d\n",
+	       f->box.fd);
   }
   UNSET_ONERROR(err);
   change_fd_for_box(&f->box, fd);
@@ -3427,6 +3429,7 @@ static void file_handle_events(int event)
 {
   struct object *o=Pike_fp->current_object;
   struct my_file *f = THIS;
+
   switch(event)
   {
     case PROG_EVENT_INIT:
@@ -4803,21 +4806,21 @@ PIKE_MODULE_INIT
   add_program_constant("Fd",file_program,0);
 
   o=file_make_object_from_fd(0, FILE_READ , fd_CAN_NONBLOCK);
-  ((struct my_file *)(o->storage))->flags |= FILE_NO_CLOSE_ON_DESTRUCT;
+  ((struct my_file *)(o->storage + file_program->inherits->storage_offset))->flags |= FILE_NO_CLOSE_ON_DESTRUCT;
   (void) dmalloc_register_fd(0);
   dmalloc_accept_leak_fd(0);
   add_object_constant("_stdin",o,0);
   free_object(o);
 
   o=file_make_object_from_fd(1, FILE_WRITE, fd_CAN_NONBLOCK);
-  ((struct my_file *)(o->storage))->flags |= FILE_NO_CLOSE_ON_DESTRUCT;
+  ((struct my_file *)(o->storage + file_program->inherits->storage_offset))->flags |= FILE_NO_CLOSE_ON_DESTRUCT;
   (void) dmalloc_register_fd(1);
   dmalloc_accept_leak_fd(1);
   add_object_constant("_stdout",o,0);
   free_object(o);
 
   o=file_make_object_from_fd(2, FILE_WRITE, fd_CAN_NONBLOCK);
-  ((struct my_file *)(o->storage))->flags |= FILE_NO_CLOSE_ON_DESTRUCT;
+  ((struct my_file *)(o->storage + file_program->inherits->storage_offset))->flags |= FILE_NO_CLOSE_ON_DESTRUCT;
   (void) dmalloc_register_fd(2);
   dmalloc_accept_leak_fd(2);
   add_object_constant("_stderr",o,0);
