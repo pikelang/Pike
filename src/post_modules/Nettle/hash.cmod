@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: hash.cmod,v 1.31 2008/07/31 14:52:27 mast Exp $
+|| $Id: hash.cmod,v 1.32 2009/02/24 22:52:48 grubba Exp $
 */
 
 #include "global.h"
@@ -50,6 +50,7 @@ werror(const char *format, ...)
 #endif
 
 static struct program *Fd_ref_program = NULL;
+static struct program *Fd_program = NULL;
 
 /*! @module Nettle */
 
@@ -166,7 +167,20 @@ PIKECLASS HashInfo
     if (!meta)
       Pike_error("HashInfo not properly initialized.\n");
 
-    /* Verify that the input is a Stdio.Fd_ref */
+    /* Verify that the input is a Stdio.Fd or Stdio.Fd_ref */
+    if (!Fd_program)
+      {
+	push_text("files.Fd");
+	SAFE_APPLY_MASTER("resolv",1);
+	Fd_program = program_from_svalue(Pike_sp-1);
+	if (!Fd_program) {
+	  pop_stack();
+	  Pike_error("Unable to resolv files.Fd.\n");
+	}
+	add_ref(Fd_program);
+	pop_stack( );
+      }
+
     if (!Fd_ref_program)
       {
 	push_text("files.Fd_ref");
@@ -180,8 +194,8 @@ PIKECLASS HashInfo
 	pop_stack( );
       }
 
-    if (!get_storage(in, Fd_ref_program ) )
-      Pike_error("Object not Fd_ref or subclass.\n");
+    if (!get_storage(in, Fd_program) && !get_storage(in, Fd_ref_program) )
+      Pike_error("Object not Fd or Fd_ref or subclass.\n");
 
     safe_apply(in, "query_fd", 0);
     fd = Pike_sp[-1].u.integer;
@@ -618,6 +632,9 @@ void
 hash_exit(void)
 {
   werror("Nettle, hash exit\n");
+  if (Fd_program) {
+    free_program( Fd_program );
+  }
   if (Fd_ref_program) {
     free_program( Fd_ref_program );
   }
