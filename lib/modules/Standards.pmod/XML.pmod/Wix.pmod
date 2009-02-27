@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Wix.pmod,v 1.30 2008/07/09 11:19:51 grubba Exp $
+// $Id: Wix.pmod,v 1.31 2009/02/27 14:11:35 grubba Exp $
 //
 // 2004-11-01 Henrik Grubbström
 
@@ -134,6 +134,7 @@ class Directory
   mapping(string:File) files = ([]);
   mapping(string:RegistryEntry) other_entries = ([]);
   mapping(string:Directory|Merge) sub_dirs = ([]);
+  int contains_dlls;
 
   protected void create(string name, string parent_guid,
 		     string|void id, string|void short_name)
@@ -320,6 +321,7 @@ class Directory
     if (has_suffix(src, "/"+dest)) {
       sub_sources[combine_path(src, "..")]++;
     }
+    if (has_suffix(lower_case(dest), ".dll")) contains_dlls = 1;
   }
 
   void low_add_shortcut(string dest, string directory, string|void id,
@@ -462,7 +464,10 @@ class Directory
       WixNode component = WixNode("Component", ([
 				    "Id": get_component_id(),
 				    "Guid":guid->str(),
-				  ]), "\n");
+				  ]) +
+				  (contains_dlls ? ([
+				    "SharedDllRefCount":"yes"
+				  ]):([])), "\n");
       foreach(files;; File f) {
 	component->add_child(f->gen_xml())->add_child(line_feed);
       }
