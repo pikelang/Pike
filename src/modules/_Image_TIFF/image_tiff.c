@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_tiff.c,v 1.46 2008/06/28 18:35:59 mast Exp $
+|| $Id: image_tiff.c,v 1.47 2009/02/27 16:27:22 mast Exp $
 */
 
 #include "global.h"
@@ -444,12 +444,17 @@ void low_image_tiff_decode( struct buffer *buf,
   TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &w);
   TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &h);
   s = raster = (uint32 *)_TIFFmalloc(w*h*sizeof(uint32));
-  if (raster == NULL)
+  if (raster == NULL) {
+    TIFFClose (tif);
     Pike_error("Malloc failed to allocate buffer for %ldx%ld image\n",
 	  (long)w, (long)h);
+  }
 
-  if(!TIFFReadRGBAImage(tif, w, h, raster, 0))
+  if(!TIFFReadRGBAImage(tif, w, h, raster, 0)) {
+    TIFFClose (tif);
+    _TIFFfree (raster);
     Pike_error("Failed to read TIFF data: %s\n", last_tiff_error);
+  }
 
 
   push_int(w);
