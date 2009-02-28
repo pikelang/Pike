@@ -144,220 +144,229 @@ test_pike_token("\"\\\"\"")
 test_equal( Parser.Pike.split("\n// x\n"), ({ "\n", "// x", "\n\n" }) )
 test_equal( Parser.Pike.split("\n// x"), ({ "\n", "// x", "\n" }) )
 
-test_equal(
-  Parser.Tabular(
-"1234563,\"20081128\",\"IC\",00000,8689839,\"KN: ARNL-1034758710-\",\"\",19.90,\"A\",\"M\",\"BETREFT:25399280                ACCESS INTERNET BV\",\"EUR\"\n"
-"2348165,\"20081128\",\"DV\",00000,0,\"DEBETRENTE GIROKWARTAALKREDIET\",\"\",10.04,\"A\",\"M\",\"PER. 21/10-20/11 (1,15% PER MND)\",\"EUR\"\n"
-"2341864,\"20081128\",\"DV\",00000,0,\"DEBETRENTE 1,39% PER MAAND,\",\"\",0.35,\"A\",\"M\",\"PERIODE 21/10 - 20/11\",\"EUR\"\n"
-"\n"
-"0000 01PSTBNL21XXXX00001\n"
-"0000 01PSTBNL21XXXX00001\n"
-"940 00\n"
-":20:MPBZ\n"
-":25:0003890413\n"
-":28C:000\n"
-":60F:C071205EUR2085,93\n"
-":61:071206C11,90NGT NONREF\n"
-":86:0001239968 Hr X Colijn LANDGRAAF\n"
-"Hr X Colijn LANDGRAAF 1700.163221231474\n"
-"TRANSACTIEDATUM: 06-12-2007\n"
-":61:071206D109,10NIC 004952732340412\n"
-":86:0002243510 KN: 004952739440412\n"
-"049-8223343 BETREFT FACTUUR D.D. 28-11-2007\n"
-"INCL. 17,42 BTW KPN Telefonie\n"
-":61:071206D34,95NDV 4700134832333684\n"
-":86:0998234454 KN: 4702162821344484\n"
-"4700124821134444 R.2003-13224 K.122368\n"
-"PEDESCO/KLONSSEN.ORG\n"
-":62F:C081119EUR289,33\n"
-":86:D000004C000009D9961,90C60315,92\n"
-"-XXX\n"
-,
-"[Tabular description begin]\n"
-"csv\n"
-":gtz\n"
-"::mybankno	     [,]\n"
-"::transferdate	     [,]\n"
-"::mutatiesoort	     [,]\n"
-"::volgnummer	     [,]\n"
-"::bankno	     [,]\n"
-"::name		     [,]\n"
-"::kostenplaats	     [,]	    drop\n"
-"::amount	     [,]\n"
-"::afbij	     [,]\n"
-"::mutatie	     [,]\n"
-"::reference	     [,]\n"
-"::valutacode	     [,]\n"
-"mt940\n"
-":messageheader1		 mandatory\n"
-"::exporttime	     \"0000\"	    drop\n"
-"::CS1		     \" \"	    drop\n"
-"::exportday	     \"01\"	    drop\n"
-"::exportaddress     12\n"
-"::exportnumber	     5 \"[0-9]+\"\n"
-":messageheader3		 mandatory   fold  single\n"
-"::messagetype	     \"940\"	    drop\n"
-"::CS1		     \" \"	    drop\n"
-"::messagepriority   \"00\"	    drop\n"
-":TRN				 fold\n"
-"::tag		     \":20:\"	    drop\n"
-"::reference	     \"GTZPB|MPBZ|INGEB\"\n"
-":accountid			 fold\n"
-"::tag		     \":25:\"	    drop\n"
-"::accountno	     10\n"
-":statementno			 fold\n"
-"::tag		     \":28C:\"	    drop\n"
-"::settlementno	     0		    drop\n"
-":openingbalance		 mandatory   single\n"
-"::tag		     \":60F:\"	    drop\n"
-"::creditdebit	     1\n"
-"::date		     6\n"
-"::currency	     \"EUR\"\n"
-"::amount	     0 \"[0-9]+,[0-9][0-9]\"\n"
-":statements\n"
-"::statementline		 mandatory   fold  single\n"
-":::tag		     \":61:\"	    drop\n"
-":::valuedate	     6\n"
-":::creditdebit	     1\n"
-":::amount	     \"[0-9]+,[0-9][0-9]\"\n"
-":::CS1		     \"N\"	    drop\n"
-":::transactiontype      3		    # 3 for Postbank, 4 for ING\n"
-":::paymentreference     0\n"
-"::informationtoaccountowner	 fold  single\n"
-":::tag		     \":86:\"	    drop\n"
-":::description	     \"[^\\n]+(\\n[^:][^\\n]*)*\"\n"
-":closingbalance		 mandatory   single\n"
-"::tag		     \":62[FM]:\"   drop\n"
-"::creditdebit	     1\n"
-"::date		     6\n"
-"::currency	     \"EUR\"\n"
-"::amount	     0 \"[0-9]+,[0-9][0-9]\"\n"
-":informationtoaccountowner	 fold single\n"
-"::tag		     \":86:\"	    drop\n"
-"::debit	     \"D\"	    drop\n"
-"::debitentries	     6\n"
-"::credit	     \"C\"	    drop\n"
-"::creditentries     6\n"
-"::debit	     \"D\"	    drop\n"
-"::debitamount	     \"[0-9]+,[0-9][0-9]\"\n"
-"::credit	     \"C\"	    drop\n"
-"::creditamount	     \"[0-9]+,[0-9][0-9]\"  drop\n"
-"::accountname	     \"(\\n[^-:][^\\n]*)*\"	  drop\n"
-":messagetrailer		 mandatory   single\n"
-"::start	     \"-\"\n"
-"::end		     \"XXX\"\n"
-"[Tabular description end]\n"
- ),
-([ /* 2 elements */
-  "csv": ([ /* 1 element */
-      "gtz": ({ /* 3 elements */
-            ([ /* 11 elements */
-              "afbij": "A",
-              "amount": "19.90",
-              "bankno": "8689839",
-              "mutatie": "M",
-              "mutatiesoort": "IC",
-              "mybankno": "1234563",
-              "name": "KN: ARNL-1034758710-",
-              "reference": "BETREFT:25399280                ACCESS INTERNET BV",
-              "transferdate": "20081128",
-              "valutacode": "EUR",
-              "volgnummer": "00000"
-            ]),
-            ([ /* 11 elements */
-              "afbij": "A",
-              "amount": "10.04",
-              "bankno": "0",
-              "mutatie": "M",
-              "mutatiesoort": "DV",
-              "mybankno": "2348165",
-              "name": "DEBETRENTE GIROKWARTAALKREDIET",
-              "reference": "PER. 21/10-20/11 (1,15% PER MND)",
-              "transferdate": "20081128",
-              "valutacode": "EUR",
-              "volgnummer": "00000"
-            ]),
-            ([ /* 11 elements */
-              "afbij": "A",
-              "amount": "0.35",
-              "bankno": "0",
-              "mutatie": "M",
-              "mutatiesoort": "DV",
-              "mybankno": "2341864",
-              "name": "DEBETRENTE 1,39% PER MAAND,",
-              "reference": "PERIODE 21/10 - 20/11",
-              "transferdate": "20081128",
-              "valutacode": "EUR",
-              "volgnummer": "00000"
-            ])
-        })
-    ]),
-  "mt940": ([ /* 10 elements */
-      "accountno": "0003890413",
-      "closingbalance": ([ /* 4 elements */
-          "amount": "289,33",
-          "creditdebit": "C",
-          "currency": "EUR",
-          "date": "081119"
-        ]),
-      "creditentries": "000009",
-      "debitamount": "9961,90",
-      "debitentries": "000004",
-      "messageheader1": ({ /* 2 elements */
-            ([ /* 2 elements */
-              "exportaddress": "PSTBNL21XXXX",
-              "exportnumber": "00001"
-            ]),
-            ([ /* 2 elements */
-              "exportaddress": "PSTBNL21XXXX",
-              "exportnumber": "00001"
-            ])
-        }),
-      "messagetrailer": ([ /* 2 elements */
-          "end": "XXX",
-          "start": "-"
-        ]),
-      "openingbalance": ([ /* 4 elements */
-          "amount": "2085,93",
-          "creditdebit": "C",
-          "currency": "EUR",
-          "date": "071205"
-        ]),
-      "reference": "MPBZ",
-      "statements": ({ /* 3 elements */
-            ([ /* 6 elements */
-              "amount": "11,90",
-              "creditdebit": "C",
-              "description": "0001239968 Hr X Colijn LANDGRAAF\n"
-                "Hr X Colijn LANDGRAAF 1700.163221231474\n"
-                "TRANSACTIEDATUM: 06-12-2007",
-              "paymentreference": "NONREF",
-              "transactiontype": "GT ",
-              "valuedate": "071206"
-            ]),
-            ([ /* 6 elements */
-              "amount": "109,10",
-              "creditdebit": "D",
-              "description": "0002243510 KN: 004952739440412\n"
-                "049-8223343 BETREFT FACTUUR D.D. 28-11-2007\n"
-                "INCL. 17,42 BTW KPN Telefonie",
-              "paymentreference": "004952732340412",
-              "transactiontype": "IC ",
-              "valuedate": "071206"
-            ]),
-            ([ /* 6 elements */
-              "amount": "34,95",
-              "creditdebit": "D",
-              "description": "0998234454 KN: 4702162821344484\n"
-                "4700124821134444 R.2003-13224 K.122368\n"
-                "PEDESCO/KLONSSEN.ORG",
-              "paymentreference": "4700134832333684",
-              "transactiontype": "DV ",
-              "valuedate": "071206"
-            ])
-        })
-    ])
+test_equal([[
+  Parser.Tabular(#"\
+1234563,\"20081128\",\"IC\",00000,8689839,\"KN: ARNL-1034758710-\",\"\",19.90,\"A\",\"M\",\"BETREFT:25399280                ACCESS INTERNET BV\",\"EUR\"
+2348165,\"20081128\",\"DV\",00000,0,\"DEBETRENTE GIROKWARTAALKREDIET\",\"\",10.04,\"A\",\"M\",\"PER. 21/10-20/11 (1,15% PER MND)\",\"EUR\"
+2341864,\"20081128\",\"DV\",00000,0,\"DEBETRENTE 1,39% PER MAAND,\",\"\",0.35,\"A\",\"M\",\"PERIODE 21/10 - 20/11\",\"EUR\"
+", #"\
+[Tabular description begin]
+csv
+:gtz
+::mybankno	     [,]
+::transferdate	     [,]
+::mutatiesoort	     [,]
+::volgnummer	     [,]
+::bankno	     [,]
+::name		     [,]
+::kostenplaats	     [,]	    drop
+::amount	     [,]
+::afbij	     [,]
+::mutatie	     [,]
+::reference	     [,]
+::valutacode	     [,]
+[Tabular description end]
+")->fetch()]], [[
+([
+  "csv": ([
+    "gtz": ({
+      ([
+	"afbij": "A",
+	"amount": "19.90",
+	"bankno": "8689839",
+	"mutatie": "M",
+	"mutatiesoort": "IC",
+	"mybankno": "1234563",
+	"name": "KN: ARNL-1034758710-",
+	"reference": "BETREFT:25399280                ACCESS INTERNET BV",
+	"transferdate": "20081128",
+	"valutacode": "EUR",
+	"volgnummer": "00000"
+      ]),
+      ([
+	"afbij": "A",
+	"amount": "10.04",
+	"bankno": "0",
+	"mutatie": "M",
+	"mutatiesoort": "DV",
+	"mybankno": "2348165",
+	"name": "DEBETRENTE GIROKWARTAALKREDIET",
+	"reference": "PER. 21/10-20/11 (1,15% PER MND)",
+	"transferdate": "20081128",
+	"valutacode": "EUR",
+	"volgnummer": "00000"
+      ]),
+      ([
+	"afbij": "A",
+	"amount": "0.35",
+	"bankno": "0",
+	"mutatie": "M",
+	"mutatiesoort": "DV",
+	"mybankno": "2341864",
+	"name": "DEBETRENTE 1,39% PER MAAND,",
+	"reference": "PERIODE 21/10 - 20/11",
+	"transferdate": "20081128",
+	"valutacode": "EUR",
+	"volgnummer": "00000"
+      ])
+    })
+  ]),
 ])
-);
+]])
+
+test_equal([[
+  Parser.Tabular(#"\
+0000 01PSTBNL21XXXX00001
+0000 01PSTBNL21XXXX00001
+940 00
+:20:MPBZ
+:25:0003890413
+:28C:000
+:60F:C071205EUR2085,93
+:61:071206C11,90NGT NONREF
+:86:0001239968 Hr X Colijn LANDGRAAF
+Hr X Colijn LANDGRAAF 1700.163221231474
+TRANSACTIEDATUM: 06-12-2007
+:61:071206D109,10NIC 004952732340412
+:86:0002243510 KN: 004952739440412
+049-8223343 BETREFT FACTUUR D.D. 28-11-2007
+INCL. 17,42 BTW KPN Telefonie
+:61:071206D34,95NDV 4700134832333684
+:86:0998234454 KN: 4702162821344484
+4700124821134444 R.2003-13224 K.122368
+PEDESCO/KLONSSEN.ORG
+:62F:C081119EUR289,33
+:86:D000004C000009D9961,90C60315,92
+-XXX
+", #"\
+[Tabular description begin]
+mt940
+:messageheader1		 mandatory
+::exporttime	     \"0000\"	    drop
+::CS1		     \" \"	    drop
+::exportday	     \"01\"	    drop
+::exportaddress     12
+::exportnumber	     5 \"[0-9]+\"
+:messageheader3		 mandatory   fold  single
+::messagetype	     \"940\"	    drop
+::CS1		     \" \"	    drop
+::messagepriority   \"00\"	    drop
+:TRN				 fold
+::tag		     \":20:\"	    drop
+::reference	     \"GTZPB|MPBZ|INGEB\"
+:accountid			 fold
+::tag		     \":25:\"	    drop
+::accountno	     10
+:statementno			 fold
+::tag		     \":28C:\"	    drop
+::settlementno	     0		    drop
+:openingbalance		 mandatory   single
+::tag		     \":60F:\"	    drop
+::creditdebit	     1
+::date		     6
+::currency	     \"EUR\"
+::amount	     0 \"[0-9]+,[0-9][0-9]\"
+:statements
+::statementline		 mandatory   fold  single
+:::tag		     \":61:\"	    drop
+:::valuedate	     6
+:::creditdebit	     1
+:::amount	     \"[0-9]+,[0-9][0-9]\"
+:::CS1		     \"N\"	    drop
+:::transactiontype      3		    # 3 for Postbank, 4 for ING
+:::paymentreference     0
+::informationtoaccountowner	 fold  single
+:::tag		     \":86:\"	    drop
+:::description	     \"[^\\n]+(\\n[^:][^\\n]*)*\"
+:closingbalance		 mandatory   single
+::tag		     \":62[FM]:\"   drop
+::creditdebit	     1
+::date		     6
+::currency	     \"EUR\"
+::amount	     0 \"[0-9]+,[0-9][0-9]\"
+:informationtoaccountowner	 fold single
+::tag		     \":86:\"	    drop
+::debit	     \"D\"	    drop
+::debitentries	     6
+::credit	     \"C\"	    drop
+::creditentries     6
+::debit	     \"D\"	    drop
+::debitamount	     \"[0-9]+,[0-9][0-9]\"
+::credit	     \"C\"	    drop
+::creditamount	     \"[0-9]+,[0-9][0-9]\"  drop
+::accountname	     \"(\\n[^-:][^\\n]*)*\"	  drop
+:messagetrailer		 mandatory   single
+::start	     \"-\"
+::end		     \"XXX\"
+[Tabular description end]
+")->fetch()]], [[
+([
+  "mt940": ([
+    "accountno": "0003890413",
+    "closingbalance": ([
+      "amount": "289,33",
+      "creditdebit": "C",
+      "currency": "EUR",
+      "date": "081119"
+    ]),
+    "creditentries": "000009",
+    "debitamount": "9961,90",
+    "debitentries": "000004",
+    "messageheader1": ({
+      ([
+	"exportaddress": "PSTBNL21XXXX",
+	"exportnumber": "00001"
+      ]),
+      ([
+	"exportaddress": "PSTBNL21XXXX",
+	"exportnumber": "00001"
+      ])
+    }),
+    "messagetrailer": ([
+      "end": "XXX",
+      "start": "-"
+    ]),
+    "openingbalance": ([
+      "amount": "2085,93",
+      "creditdebit": "C",
+      "currency": "EUR",
+      "date": "071205"
+    ]),
+    "reference": "MPBZ",
+    "statements": ({
+      ([
+	"amount": "11,90",
+	"creditdebit": "C",
+	"description": "0001239968 Hr X Colijn LANDGRAAF\n"
+	"Hr X Colijn LANDGRAAF 1700.163221231474\n"
+	"TRANSACTIEDATUM: 06-12-2007",
+	"paymentreference": "NONREF",
+	"transactiontype": "GT ",
+	"valuedate": "071206"
+      ]),
+      ([
+	"amount": "109,10",
+	"creditdebit": "D",
+	"description": "0002243510 KN: 004952739440412\n"
+	"049-8223343 BETREFT FACTUUR D.D. 28-11-2007\n"
+	"INCL. 17,42 BTW KPN Telefonie",
+	"paymentreference": "004952732340412",
+	"transactiontype": "IC ",
+	"valuedate": "071206"
+      ]),
+      ([
+	"amount": "34,95",
+	"creditdebit": "D",
+	"description": "0998234454 KN: 4702162821344484\n"
+	"4700124821134444 R.2003-13224 K.122368\n"
+	"PEDESCO/KLONSSEN.ORG",
+	"paymentreference": "4700134832333684",
+	"transactiontype": "DV ",
+	"valuedate": "071206"
+      ])
+    })
+  ])
+])
+]])
 
 END_MARKER
