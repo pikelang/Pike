@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.29 2009/02/28 17:23:57 grubba Exp $
+|| $Id: acconfig.h,v 1.30 2009/02/28 17:29:38 grubba Exp $
 */
 
 #ifndef FILE_MACHINE_H
@@ -43,10 +43,10 @@
 #undef HAVE_STRUCT_MSGHDR
 
 /* Define this if you have a struct msghdr with 'msg_control' member */
-#undef HAVE_STRUCT_MSGHDR_CONTROL
+#undef HAVE_STRUCT_MSGHDR_MSG_CONTROL
 
 /* Define this if you have a struct msghdr with 'msg_accrights' member */
-#undef HAVE_STRUCT_MSGHDR_ACCRIGHTS
+#undef HAVE_STRUCT_MSGHDR_MSG_ACCRIGHTS
 
 /* Define this if you have a struct stat with 'blocks' member */
 #undef HAVE_STRUCT_STAT_BLOCKS
