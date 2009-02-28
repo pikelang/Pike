@@ -22,6 +22,10 @@
 //!  Automatic binary transfers to and from the database for most common
 //!   datatypes (amongst others: integer, text and bytea types).
 //! @item
+//!  Automatic character set conversion and native wide string support.
+//!  Supports UTF8/Unicode for multibyte characters, and all single-byte
+//!  character sets supported by the database.
+//! @item
 //!  SQL-injection protection by allowing just one statement per query
 //!   and ignoring anything after the first (unquoted) semicolon in the query.
 //! @item
@@ -71,7 +75,7 @@ private array(string) lastmessage=({});
 private int clearmessage;
 private int earlyclose;
 private mapping(string:array(mixed)) notifylist=([]);
-private mapping(string:string) runtimeparameter;
+mapping(string:string) _runtimeparameter;
 state _mstate;
 private enum querystate {queryidle,inquery,cancelpending,canceled};
 private querystate qstate;
@@ -137,6 +141,9 @@ protected string _sprintf(int type, void|mapping flags) {
 #define VARCHAROID	1043
 #define CTIDOID		1247
 #define UUIDOID		2950
+
+#define UTF8CHARSET	"UTF8"
+#define CLIENT_ENCODING	"client_encoding"
 
 #define PG_PROTOCOL(m,n)   (((m)<<16)|(n))
 
@@ -314,7 +321,8 @@ void cancelquery() {
   }
 }
 
-//! Changes the connection charset.
+//! Changes the connection charset.  When set to @ref{UTF8@}, the query,
+//! parameters and results can be Pike-native wide strings.
 //!
 //! @param charset
 //! A PostgreSQL charset name.
@@ -323,11 +331,7 @@ void cancelquery() {
 //!   @[get_charset()], @[create()],
 //!   @url{http://search.postgresql.org/search?u=%2Fdocs%2F&q=character+sets@}
 void set_charset(string charset)
-{
-#if 0
-    // FIXME Do we want to support the "unicode" setting?  (see mysql.pike)
-#endif
-  big_query("SET CLIENT_ENCODING TO :charset",([":charset":charset]));
+{ big_query("SET CLIENT_ENCODING TO :charset",([":charset":charset]));
 }
 
 //! @returns
@@ -337,7 +341,7 @@ void set_charset(string charset)
 //!   @[set_charset()], @[getruntimeparameters()],
 //!   @url{http://search.postgresql.org/search?u=%2Fdocs%2F&q=character+sets@}
 string get_charset()
-{ return runtimeparameter->client_encoding;
+{ return _runtimeparameter[CLIENT_ENCODING];
 }
 
 //! @returns
@@ -378,8 +382,8 @@ string get_charset()
 //! @note
 //! This function is PostgreSQL-specific, and thus it is not available
 //! through the generic SQL-interface.
-mapping(string:string) getruntimeparameters() {
-  return runtimeparameter+([]);
+mapping(string:string) getruntimeparameters()
+{ return _runtimeparameter+([]);
 }
 
 //! @returns
@@ -675,7 +679,7 @@ final int _decodemsg(void|state waitforstate) {
         msglen-=4;
       { array(string) ts=getstrings();
         if(sizeof(ts)==2) {
-          runtimeparameter[ts[0]]=ts[1];
+          _runtimeparameter[ts[0]]=ts[1];
           PD("%s=%s\n",ts[0],ts[1]);
         }
         else
@@ -759,6 +763,7 @@ final int _decodemsg(void|state waitforstate) {
 	  datarowdesc=_c.portal->_datarowdesc;
           int cols=_c.getint16();
 	  int atext = _c.portal->_alltext;	  // cache locally for speed
+	  string cenc=_runtimeparameter[CLIENT_ENCODING];
 	  a=allocate(cols,UNDEFINED);
           msglen-=2+4*cols;
           foreach(a;int i;) {
@@ -766,8 +771,16 @@ final int _decodemsg(void|state waitforstate) {
             if(collen>0) {
               msglen-=collen;
               mixed value;
-              switch(datarowdesc[i]->type) {
-	        default:value=_c.getstring(collen);
+              switch(datarowdesc[i]->type)
+              { default:value=_c.getstring(collen);
+                  break;
+		case TEXTOID:
+		case XMLOID:
+		case BPCHAROID:
+		case VARCHAROID:
+	          value=_c.getstring(collen);
+		  if(cenc==UTF8CHARSET)
+		    value=utf8_to_string(value);
                   break;
                 case CHAROID:value=atext?_c.getstring(1):_c.getbyte();
                   break;
@@ -1023,7 +1036,7 @@ private int reconnect(void|int force) {
   _closesent=0;
   _mstate=unauthenticated;
   qstate=queryidle;
-  runtimeparameter=([]);
+  _runtimeparameter=([]);
   array(string) plugbuf=({"",_c.plugint32(PG_PROTOCOL(3,0))});
   if(user)
     plugbuf+=({"user\0",user,"\0"});
@@ -1046,7 +1059,7 @@ private int reconnect(void|int force) {
       else
 	return 0;
   }
-  PD("%O\n",runtimeparameter);
+  PD("%O\n",_runtimeparameter);
   if(force) {
     lastmessage+=({sprintf("Reconnected to database %s",host_info())});
     runcallback(backendpid,"_reconnect","");
@@ -1212,8 +1225,8 @@ final private void runcallback(int pid,string condition,string extrainfo) {
 //!
 //! @seealso
 //!   @[big_query()], @[quotebinary()], @[create()]
-string quote(string s) {
-  string r=runtimeparameter->standard_conforming_strings;
+string quote(string s)
+{ string r=_runtimeparameter->standard_conforming_strings;
   if(r && r=="on")
     return replace(s, "'", "''");
   return replace(s, ({ "'", "\\" }), ({ "''", "\\\\" }) );
@@ -1270,8 +1283,8 @@ void drop_db(string db) {
 //!
 //! @seealso
 //!   @[host_info()]
-string server_info () {
-  return DRIVERNAME"/"+(runtimeparameter->server_version||"unknown");
+string server_info ()
+{ return DRIVERNAME"/"+(_runtimeparameter->server_version||"unknown");
 }
 
 //! @returns
@@ -1582,8 +1595,15 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
   string preparedname="";
   string portalname="";
   int forcecache=-1;
-  if(stringp(q) && String.width(q)>8)
-    q=string_to_utf8(q);
+  string cenc=_runtimeparameter[CLIENT_ENCODING];
+  switch(cenc)
+  { case UTF8CHARSET:
+      q=string_to_utf8(q);
+      break;
+    default:
+      if(String.width(q)>8)
+        ERROR("Don't know how to convert %O to %s encoding\n",q,cenc);
+  }
   array(string|int) paramValues;
   array(string) from,to;
   if(bindings) {
@@ -1607,17 +1627,11 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
       }
       from[rep]=name;
       string rval;
-      if(multisetp(value))
-        rval=sizeof(value) ? indices(value)[0] : "";
-      else {
-        if(zero_type(value))
-          paramValues[pi++]=UNDEFINED; // NULL
-        else {
-          if(stringp(value) && String.width(value)>8)
-            value=string_to_utf8(value);
-          paramValues[pi++]=value;
-        }
-        rval="$"+(string)pi;
+      if(multisetp(value))		// multisets are taken literally
+        rval=indices(value)*",";	// and bypass the encoding logic
+      else
+      { paramValues[pi++]=value;
+        rval=sprintf("$%d",pi);
       }
       to[rep++]=rval;
     }
@@ -1627,6 +1641,8 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
   }
   else
     paramValues = ({});
+  if(String.width(q)>8)
+    ERROR("Wide string literals in %O not supported\n",q);
   if(has_value(q,"\0"))
     ERROR("Querystring %O contains invalid literal nul-characters\n",q);
   mapping(string:mixed) tp;
@@ -1739,36 +1755,79 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
             plugbuf+=({_c.plugint32(k)});
 	  }
           else
-            switch(dtoid[i]) {
+            switch(dtoid[i])
+	    { case TEXTOID:
+	      case XMLOID:
+	      case BPCHAROID:
+	      case VARCHAROID:
+              { value=(string)value;
+		switch(cenc)
+		{ case UTF8CHARSET:
+		    value=string_to_utf8(value);
+		    break;
+		  default:
+		    if(String.width(value)>8)
+		      ERROR("Don't know how to convert %O to %s encoding\n",
+		       value,cenc);
+		}
+		int k;
+                len+=k=sizeof(value);
+                plugbuf+=({_c.plugint32(k),value});
+                break;
+              }
               default:
               { int k;
-                len+=k=sizeof(value=(string)value);
+                value=(string)value;
+		if(String.width(value)>8)
+		  ERROR("Wide string %O cannot be converted to BYTEA\n",value);
+                len+=k=sizeof(value);
                 plugbuf+=({_c.plugint32(k),value});
                 break;
               }
               case BOOLOID:plugbuf+=({_c.plugint32(1)});len++;
-                switch(stringp(value)?value[0]:value) {
-        	  case 'o':case 'O':
-        	    _c.plugbyte(stringp(value)&&sizeof(value)>1
-                     &&(value[1]=='n'||value[1]=='N'));
-        	    break;
-                  case 0:case 'f':case 'F':case 'n':case 'N':
-                    plugbuf+=({_c.plugbyte(0)});
-                    break;
-                  default:
-                    plugbuf+=({_c.plugbyte(1)});
-                    break;
+	        do
+		{ int tval;
+		  if(stringp(value))
+		    tval=value[0];
+		  else if(!intp(value))
+		  { value=!!value;			// cast to boolean
+		    break;
+		  }
+		  else
+		     tval=value;
+                  switch(tval)
+        	  { case 'o':case 'O':
+        	      catch
+		      { tval=value[1];
+        	        value=tval=='n'||tval=='N';
+			break;
+		      };
+                    default:
+                      value=1;
+                      break;
+                    case 0:case 'f':case 'F':case 'n':case 'N':
+		      value=0;
+                      break;
+                  }
                 }
+		while(0);
+                plugbuf+=({_c.plugbyte(value)});
                 break;
-              case CHAROID:plugbuf+=({_c.plugint32(1)});len++;
+              case CHAROID:
                 if(intp(value))
-                  plugbuf+=({_c.plugbyte(value)});
+		  len++,plugbuf+=({_c.plugint32(1),_c.plugbyte(value)});
                 else {
         	  value=(string)value;
-        	  if(sizeof(value)!=1)
-        	    ERROR("\"char\" types must be 1 byte wide, got %d\n",
-        	     sizeof(value));
-                  plugbuf+=({value});
+		  switch(sizeof(value))
+		  { default:
+        	      ERROR("\"char\" types must be 1 byte wide, got %O\n",
+        	       value);
+		    case 0:
+		      plugbuf+=({_c.plugint32(-1)});		// NULL
+		      break;
+		    case 1:len++;
+		      plugbuf+=({_c.plugint32(1),_c.plugbyte(value[0])});
+		  }
                 }
                 break;
               case INT8OID:len+=8;

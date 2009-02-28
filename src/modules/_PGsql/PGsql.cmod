@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: PGsql.cmod,v 1.32 2008/10/12 23:07:38 mast Exp $
+ * $Id: PGsql.cmod,v 1.33 2009/02/28 20:29:20 srb Exp $
  *
  * PGsql, accelerator functions for Sql.pgsql for Pike.
  *
@@ -68,6 +68,9 @@ typedef unsigned char uchar;
 #define UUIDOID         2950
 
 #define PGMSG_DATAROW	'D'
+
+#define UTF8CHARSET	"UTF8"
+#define CLIENT_ENCODING	"client_encoding"
 
 PIKECLASS PGsql
 {
@@ -293,7 +296,7 @@ outofmem: Pike_fatal("Out of memory\n");
     long totalrecvd=0, recvdbstats=0;
     int nrows=0, buffer=0;
     int rowsreceived,inflight,fetchlimit,parentfetchlimit,portalbuffersize;
-    int alltext;
+    int alltext, isutf8=0;
     struct svalue*bytesreceived;
     struct array*datarowdesc;
     struct object*portal,*pgsqlsess;
@@ -334,6 +337,17 @@ outofmem: Pike_fatal("Out of memory\n");
 
     ref_push_object(pgsqlsess); ref_push_string(MK_STRING("_fetchlimit"));
     f_arrow(2); parentfetchlimit=Pike_sp[-1].u.integer;
+    pop_stack();
+
+    ref_push_object(pgsqlsess);
+    ref_push_string(MK_STRING("_runtimeparameter")); f_arrow(2);
+    { struct mapping*runtimeparameter = Pike_sp[-1].u.mapping;
+      struct svalue *svp = low_mapping_string_lookup(runtimeparameter,
+	MK_STRING(CLIENT_ENCODING));
+      if(svp && STRLEN(UTF8CHARSET)==svp->u.string->len
+       && !memcmp(UTF8CHARSET,svp->u.string->str,STRLEN(UTF8CHARSET)))
+	isutf8 = 1;
+    }
     pop_stack();
 
     ref_push_object(portal); ref_push_string(MK_STRING("_rowsreceived"));
@@ -378,8 +392,17 @@ outofmem: Pike_fatal("Out of memory\n");
 	          break;
 	        }
 	      }
-	    default:push_string(low_getstring(collen));
-              break;
+	    default:
+	      push_string(low_getstring(collen));
+	      break;
+            case TEXTOID:
+            case XMLOID:
+            case BPCHAROID:
+            case VARCHAROID:
+	      push_string(low_getstring(collen));
+	      if(isutf8)
+		f_utf8_to_string(1);
+	      break;
             case BOOLOID: {
 	      int val=low_getbyte();
 	      if(alltext) {

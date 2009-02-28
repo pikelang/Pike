@@ -94,7 +94,7 @@ class PGassist {
 #endif
 
   inline final string plugbyte(int x) {
-    return String.int2char(x);
+    return String.int2char(x&255);
   }
 
   inline final string plugint16(int x) {
