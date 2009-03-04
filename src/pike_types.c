@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.358 2008/09/12 15:21:41 grubba Exp $
+|| $Id: pike_types.c,v 1.359 2009/03/04 14:28:42 grubba Exp $
 */
 
 #include "global.h"
@@ -3204,11 +3204,12 @@ static struct pike_type *low_match_types2(struct pike_type *a,
       return 0;
     return a;
 
-    case T_ASSIGN:
+  case T_ASSIGN:
+    {
+      int m = CAR_TO_INT(a);
       ret = low_match_types(a->cdr, b, flags);
-      if(ret && (b->type != T_VOID))
+      if(ret && (!a_markers[m] || b->type != T_VOID))
       {
-	int m = CAR_TO_INT(a);
 	struct pike_type *tmp;
 
 #ifdef PIKE_DEBUG
@@ -3249,7 +3250,7 @@ static struct pike_type *low_match_types2(struct pike_type *a,
 #endif
       }
       return ret;
-
+    }
     case '0': case '1': case '2': case '3': case '4':
     case '5': case '6': case '7': case '8': case '9':
     {
@@ -3313,11 +3314,12 @@ static struct pike_type *low_match_types2(struct pike_type *a,
       return 0;
     return a;
 
-    case T_ASSIGN:
+  case T_ASSIGN:
+    {
+      int m = CAR_TO_INT(b);
       ret = low_match_types(a, b->cdr, flags);
-      if(ret && (a->type != T_VOID))
+      if(ret && (!b_markers[m] || a->type != T_VOID))
       {
-	int m = CAR_TO_INT(b);
 	struct pike_type *tmp;
 
 	type_stack_mark();
@@ -3351,7 +3353,7 @@ static struct pike_type *low_match_types2(struct pike_type *a,
 #endif
       }
       return ret;
-
+    }
     case '0': case '1': case '2': case '3': case '4':
     case '5': case '6': case '7': case '8': case '9':
     {
@@ -3885,36 +3887,33 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
     /* FIXME: This is wrong... */
     return !low_pike_types_le(b, a->car, -array_cnt, flags);
 
-  case T_ASSIGN:
+  case T_ASSIGN: {
+    struct pike_type **aa_markers = a_markers;
+    struct pike_type **bb_markers = b_markers;
+    int m = CAR_TO_INT(a);
     ret = low_pike_types_le(a->cdr, b, array_cnt, flags);
-    if(ret && (b->type != T_VOID))
+
+    if (flags & LE_A_B_SWAPPED) {
+      aa_markers = b_markers;
+      bb_markers = a_markers;
+    }
+
+    if(ret && (!aa_markers[m] || (b->type != T_VOID)))
     {
-      int m = CAR_TO_INT(a);
       struct pike_type *tmp;
       int i;
 
       type_stack_mark();
-      if (flags & LE_A_B_SWAPPED) {
-	push_finished_type_with_markers(b, a_markers, 0);
-      } else {
-	push_finished_type_with_markers(b, b_markers, 0);
-      }
+      push_finished_type_with_markers(b, bb_markers, 0);
       for(i=array_cnt; i > 0; i--)
 	push_type(T_ARRAY);
       tmp=pop_unfinished_type();
       
       type_stack_mark();
-      if (flags & LE_A_B_SWAPPED) {
-	low_or_pike_types(b_markers[m], tmp, 0);
-	if(b_markers[m]) free_type(b_markers[m]);
-	free_type(tmp);
-	b_markers[m] = pop_unfinished_type();
-      } else {
-	low_or_pike_types(a_markers[m], tmp, 0);
-	if(a_markers[m]) free_type(a_markers[m]);
-	free_type(tmp);
-	a_markers[m] = pop_unfinished_type();
-      }
+      low_or_pike_types(aa_markers[m], tmp, 0);
+      if(aa_markers[m]) free_type(aa_markers[m]);
+      free_type(tmp);
+      aa_markers[m] = pop_unfinished_type();
 #ifdef PIKE_TYPE_DEBUG
       if (l_flag>2) {
 	if (flags & LE_A_B_SWAPPED) {
@@ -3931,7 +3930,7 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
 #endif
     }
     return ret;
-
+  }
     case '0': case '1': case '2': case '3': case '4':
     case '5': case '6': case '7': case '8': case '9':
     {
@@ -4049,36 +4048,34 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
     /* FIXME: This is wrong... */
     return !low_pike_types_le(b->car, a, -array_cnt, flags);
 
-  case T_ASSIGN:
+  case T_ASSIGN: {
+    struct pike_type **aa_markers = a_markers;
+    struct pike_type **bb_markers = b_markers;
+    int m = CAR_TO_INT(b);
     ret = low_pike_types_le(a, b->cdr, array_cnt, flags);
-    if(ret && (a->type != T_VOID))
+
+    if (flags & LE_A_B_SWAPPED) {
+      aa_markers = b_markers;
+      bb_markers = a_markers;
+    }
+
+    if(ret && (!bb_markers[m] || a->type != T_VOID))
     {
       int m = CAR_TO_INT(b);
       struct pike_type *tmp;
       int i;
 
       type_stack_mark();
-      if (flags & LE_A_B_SWAPPED) {
-	push_finished_type_with_markers(a, b_markers, 0);
-      } else {
-	push_finished_type_with_markers(a, a_markers, 0);
-      }
+      push_finished_type_with_markers(a, aa_markers, 0);
       for(i = array_cnt; i < 0; i++)
 	push_type(T_ARRAY);
       tmp=pop_unfinished_type();
       
       type_stack_mark();
-      if (flags & LE_A_B_SWAPPED) {
-	low_or_pike_types(a_markers[m], tmp, 0);
-	if(a_markers[m]) free_type(a_markers[m]);
-	free_type(tmp);
-	a_markers[m] = pop_unfinished_type();
-      } else {
-	low_or_pike_types(b_markers[m], tmp, 0);
-	if(b_markers[m]) free_type(b_markers[m]);
-	free_type(tmp);
-	b_markers[m] = pop_unfinished_type();
-      }
+      low_or_pike_types(bb_markers[m], tmp, 0);
+      if(bb_markers[m]) free_type(bb_markers[m]);
+      free_type(tmp);
+      bb_markers[m] = pop_unfinished_type();
 #ifdef PIKE_TYPE_DEBUG
       if (l_flag>2) {
 	if (flags & LE_A_B_SWAPPED) {
@@ -4095,7 +4092,7 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
 #endif
     }
     return ret;
-
+  }
   case '0': case '1': case '2': case '3': case '4':
   case '5': case '6': case '7': case '8': case '9':
     {
@@ -7386,7 +7383,8 @@ void yyexplain_nonmatching_types(int severity_level,
   implements_b=0;
   implements_mode=0;
 
-  match_types(type_a, type_b);
+  /* Note the argument order. */
+  pike_types_le(type_b, type_a);
 
 #if 0
   if(!(implements_a && implements_b &&
