@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.758 2009/03/04 14:17:10 grubba Exp $
+|| $Id: program.c,v 1.759 2009/03/04 16:21:50 grubba Exp $
 */
 
 #include "global.h"
@@ -10792,7 +10792,8 @@ void yyexplain_not_implements(int severity_level,
 		      aid_file, aid_line, ID_FROM_INT(a, i)->type,
 		      0, "Type of identifier %S does not match.", bid->name);
       } else {
-	yytype_report(REPORT_WARNING,
+	yytype_report((severity_level < REPORT_WARNING)?
+		      severity_level : REPORT_WARNING,
 		      bid_file, bid_line, bid->type,
 		      aid_file, aid_line, ID_FROM_INT(a, i)->type,
 		      0, "Type of identifier %S is not strictly compatible.",
