@@ -1,23 +1,28 @@
 '
-' $Id: installer.vbs,v 1.4 2008/06/28 19:26:39 mast Exp $
+' $Id: installer.vbs,v 1.5 2009/03/05 11:36:24 grubba Exp $
 '
 ' Companion file to bin/install.pike for custom actions.
 '
 ' 2004-12-01 Henrik Grubbström
 '
 
+Option Compare Binary
+
 ' At call time the CustomActionData property has been set to [TARGETDIR]
 Function FinalizePike()
-  Dim fso, targetdir, targetdir_unix, source, dest, re
+  Dim fso, targetdir, targetdir_unix, source, source_txt, dest, re
   targetdir = Session.Property("CustomActionData")
 
   Set fso = CreateObject("Scripting.FileSystemObject")
 
+  ' Note: Opening the files in ASCII-mode, there doesn't seem to be any
+  '       binary mode. This means that 8-bit characters might get mangled.
   Set source = fso.OpenTextFile(targetdir & "lib\master.pike.in", 1, False, 0)
+  Set dest = fso.CreateTextFile(targetdir & "lib\master.pike", 2, True, 0)
 
-  Set dest = fso.CreateTextFile(targetdir & "lib\master.pike", True)
+  source_txt = source.ReadAll
 
-  source = source.ReadAll
+  source.Close
 
   Set re = New RegExp
   re.Global = True
@@ -25,16 +30,16 @@ Function FinalizePike()
   re.Pattern = "\\"
   targetdir_unix = re.Replace(targetdir, "/")
 
-  re.Pattern = "¤lib_prefix¤"
-  source = re.Replace(source, targetdir_unix & "lib")
+  re.Pattern = "#lib_prefix#"
+  source_txt = re.Replace(source_txt, targetdir_unix & "lib")
 
-  re.Pattern = "¤include_prefix¤"
-  source = re.Replace(source, targetdir_unix & "include/pike")
+  re.Pattern = "#include_prefix#"
+  source_txt = re.Replace(source_txt, targetdir_unix & "include/pike")
 
-  're.Pattern = "¤share_prefix¤"
-  'source = re.Replace(source, "¤share_prefix¤")
+  're.Pattern = "#share_prefix#"
+  'source_txt = re.Replace(source_txt, "#share_prefix#")
 
-  dest.Write(source)
+  dest.Write(source_txt)
   dest.Close
 
   ' Warning: It appears to be very difficult to call pike from here to do

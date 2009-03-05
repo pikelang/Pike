@@ -2,7 +2,7 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.199 2008/12/02 05:45:40 peter Exp $
+// $Id: install.pike,v 1.200 2009/03/05 11:36:24 grubba Exp $
 
 // Windows installer FIXMEs:
 //
@@ -2387,17 +2387,17 @@ void make_master(string dest, string master, string lib_prefix,
     error("Failed to read master template file %O\n", master);
   }
   master_data=replace(master_data, ({
-			"¤lib_prefix¤",
-			"¤include_prefix¤",
-			"¤share_prefix¤",
-			"¤doc_prefix¤",
-			"¤cflags¤",
-			"¤ldflags¤",
+			"#lib_prefix#",
+			"#include_prefix#",
+			"#share_prefix#",
+			"#doc_prefix#",
+			"#cflags#",
+			"#ldflags#",
 		      }), ({
 			replace(lib_prefix,"\\","\\\\"),
 			replace(include_prefix,"\\","\\\\"),
-			replace(share_prefix||"¤share_prefix¤", "\\", "\\\\"),
-			replace(doc_prefix||"¤doc_prefix¤", "\\", "\\\\"),
+			replace(share_prefix||"#share_prefix#", "\\", "\\\\"),
+			replace(doc_prefix||"#doc_prefix#", "\\", "\\\\"),
 			replace(cflags||"", "\\", "\\\\"),
 			replace(ldflags||"", "\\", "\\\\"),
 		      }));

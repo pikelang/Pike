@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.472 2009/01/28 16:28:42 agehall Exp $
+# $Id: Makefile.in,v 1.473 2009/03/05 11:36:25 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -925,9 +925,9 @@ master.pike: $(LIBDIR_SRC)/master.pike.in Makefile
           else u='s/^#undef PIKE_MODULE_RELOC/#define PIKE_MODULE_RELOC 1/'; \
         fi; \
 	LC_ALL=C; export LC_ALL; \
-	cmd="sed -e 's![^ -~]lib_prefix[^ -~]!`echo '$(TMP_LIBDIR)' | ./posix_to_native.sh`!' \
-	  -e 's![^ -~]share_prefix[^ -~]!`echo '$(LIBDIR_SRC)' | ./posix_to_native.sh`!' \
-	  -e 's![^ -~]include_prefix[^ -~]!`echo '$(TMP_BUILDDIR)/bundles/include/pike' | ./posix_to_native.sh`!' \
+	cmd="sed -e 's!#lib_prefix#!`echo '$(TMP_LIBDIR)' | ./posix_to_native.sh`!' \
+	  -e 's!#share_prefix#!`echo '$(LIBDIR_SRC)' | ./posix_to_native.sh`!' \
+	  -e 's!#include_prefix#!`echo '$(TMP_BUILDDIR)/bundles/include/pike' | ./posix_to_native.sh`!' \
 	  -e '$$u'"; \
 	echo "$$cmd <$(LIBDIR_SRC)/master.pike.in >master.pike"; \
 	eval $$cmd <$(LIBDIR_SRC)/master.pike.in >master.pike || { rm "master.pike"; exit 1; }
