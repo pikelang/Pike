@@ -1,5 +1,5 @@
 '
-' $Id: installer.vbs,v 1.1 2004/12/04 16:28:59 grubba Exp $
+' $Id: installer.vbs,v 1.2 2009/03/05 11:48:00 grubba Exp $
 '
 ' Companion file to bin/install.pike for custom actions.
 '
@@ -29,14 +29,14 @@ Function FinalizePike()
   re.Pattern = "\"
   targetdir_unix = re.Replace(targetdir, "/")
 
-  re.Pattern = "¤lib_prefix¤"
+  re.Pattern = "#lib_prefix#"
   source = re.Replace(source, targetdir_unix & "lib")
 
-  re.Pattern = "¤include_prefix¤"
+  re.Pattern = "#include_prefix#"
   source = re.Replace(source, targetdir_unix & "include/pike")
 
-  're.Pattern = "¤share_prefix¤"
-  'source = re.Replace(source, "¤share_prefix¤")
+  're.Pattern = "#share_prefix#"
+  'source = re.Replace(source, "#share_prefix#")
 
   dest.Write(source)
   dest.Close
