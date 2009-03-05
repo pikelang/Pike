@@ -2,7 +2,7 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.126 2006/01/20 16:37:16 grubba Exp $
+// $Id: install.pike,v 1.127 2009/03/05 11:44:43 grubba Exp $
 
 #define USE_GTK
 
@@ -1317,10 +1317,10 @@ void make_master(string dest, string master, string lib_prefix,
     error("Failed to read master template file %O\n", master);
   }
   master_data=replace(master_data,
-		      ({"¤lib_prefix¤","¤include_prefix¤","¤share_prefix¤"}),
+		      ({"#lib_prefix#","#include_prefix#","#share_prefix#"}),
 		      ({replace(lib_prefix,"\\","\\\\"),
 			replace(include_prefix,"\\","\\\\"),
-			replace(share_prefix||"¤share_prefix¤", "\\", "\\\\"),
+			replace(share_prefix||"#share_prefix#", "\\", "\\\\"),
 		      }));
   if((vars->PIKE_MODULE_RELOC||"") != "")
     master_data = replace(master_data, "#undef PIKE_MODULE_RELOC",

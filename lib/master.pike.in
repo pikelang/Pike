@@ -6,15 +6,9 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.261 2006/12/07 09:42:27 grubba Exp $
+// $Id: master.pike.in,v 1.262 2009/03/05 11:44:43 grubba Exp $
 
 #pike __REAL_VERSION__
-
-// Some programs destroys character pairs beginning with the currency
-// symbol when running in chinese locale.
-#if "¤/" != "\244/"
-#error "master.pike.in is corrupted."
-#endif
 
 // --- Some configurable parameters
 
@@ -989,20 +983,20 @@ void create()
   CO(remove_call_out);
   CO(call_out_info);
 
-#if "¤share_prefix¤"[0]!='¤'
+#if "#share_prefix#"[0]!='#'
   // add path for architecture-independant files
-  add_include_path("¤share_prefix¤/include");
-  add_module_path("¤share_prefix¤/modules");
+  add_include_path("#share_prefix#/include");
+  add_module_path("#share_prefix#/modules");
 #endif
 
-#if "¤lib_prefix¤"[0]!='¤'
+#if "#lib_prefix#"[0]!='#'
   // add path for architecture-dependant files
-  add_include_path("¤lib_prefix¤/include");
-  add_module_path("¤lib_prefix¤/modules");
+  add_include_path("#lib_prefix#/include");
+  add_module_path("#lib_prefix#/modules");
 #endif
 
-#if "¤include_prefix¤"[0]!='¤'
-  include_prefix = "¤include_prefix¤";
+#if "#include_prefix#"[0]!='#'
+  include_prefix = "#include_prefix#";
 #endif
 }
 
@@ -3859,10 +3853,10 @@ CompatResolver get_compilation_handler(int major, int minor)
   array(string) files;
   array(Version) available=({});
 
-#if "¤share_prefix¤"[0]!='¤'
-  if (!(files = get_dir("¤share_prefix¤"))) {
+#if "#share_prefix#"[0]!='#'
+  if (!(files = get_dir("#share_prefix#"))) {
     werror ("Error listing directory %O: %s\n",
-	    "¤share_prefix¤", strerror (errno()));
+	    "#share_prefix#", strerror (errno()));
     files = ({});
   }
   foreach(files, string ver)
@@ -3876,10 +3870,10 @@ CompatResolver get_compilation_handler(int major, int minor)
     }
 #endif
 
-#if "¤lib_prefix¤"[0]!='¤'
-  if (!(files = get_dir("¤lib_prefix¤"))) {
+#if "#lib_prefix#"[0]!='#'
+  if (!(files = get_dir("#lib_prefix#"))) {
     werror ("Error listing directory %O: %s\n",
-	    "¤lib_prefix¤", strerror (errno()));
+	    "#lib_prefix#", strerror (errno()));
     files = ({});
   }
   foreach(files, string ver)
@@ -3927,14 +3921,14 @@ CompatResolver get_compilation_handler(int major, int minor)
 	compat_handler->parent_resolver = ret;
 
 	string base;
-#if "¤lib_prefix¤"[0]!='¤'
-	base=combine_path("¤lib_prefix¤",sprintf("%s",tmp));
+#if "#lib_prefix#"[0]!='#'
+	base=combine_path("#lib_prefix#",sprintf("%s",tmp));
 	compat_handler->add_module_path(combine_path(base,"modules"));
 	compat_handler->add_include_path(combine_path(base,"include"));
 #endif
 
-#if "¤share_prefix¤"[0]!='¤'
-	base=combine_path("¤share_prefix¤",sprintf("%s",tmp));
+#if "#share_prefix#"[0]!='#'
+	base=combine_path("#share_prefix#",sprintf("%s",tmp));
 	compat_handler->add_module_path(combine_path(base,"modules"));
 	compat_handler->add_include_path(combine_path(base,"include"));
 #endif

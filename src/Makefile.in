@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.350 2009/01/28 16:21:32 agehall Exp $
+# $Id: Makefile.in,v 1.351 2009/03/05 11:44:43 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -650,9 +650,9 @@ master.pike: $(LIBDIR_SRC)/master.pike.in Makefile
 	t="$$PIKE_PATH_TRANSLATE"; if test "x$$t" = "x"; then t=s,x,x,; else :; fi; \
 	if test "x$(PIKE_MODULE_RELOC)" = "x"; then u=s,x,x,; else u='s/^#undef PIKE_MODULE_RELOC/#define PIKE_MODULE_RELOC 1/'; fi; \
 	LC_ALL=C; export LC_ALL; \
-	sed -e 's!¤lib_prefix¤!'"`echo "$(TMP_LIBDIR)" | sed -e "$$t"`"'!' <$(LIBDIR_SRC)/master.pike.in \
-	  | sed -e 's!¤share_prefix¤!'"`echo "$(LIBDIR_SRC)" | sed -e "$$t"`"'!' \
-	  | sed -e 's!¤include_prefix¤!'"`echo "$(TMP_BUILDDIR)" | sed -e "$$t"`"'!' \
+	sed -e 's!#lib_prefix#!'"`echo "$(TMP_LIBDIR)" | sed -e "$$t"`"'!' <$(LIBDIR_SRC)/master.pike.in \
+	  | sed -e 's!#share_prefix#!'"`echo "$(LIBDIR_SRC)" | sed -e "$$t"`"'!' \
+	  | sed -e 's!#include_prefix#!'"`echo "$(TMP_BUILDDIR)" | sed -e "$$t"`"'!' \
 	  | sed -e "$$u" >master.pike
 
 # Want master.pike up-to-date, but yet there's no dependency on the
