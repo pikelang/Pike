@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.h,v 1.60 2008/10/17 17:12:37 mast Exp $
+|| $Id: fdlib.h,v 1.61 2009/03/08 22:09:48 grubba Exp $
 */
 
 #ifndef FDLIB_H
@@ -45,6 +45,7 @@
 #define fd_BUFFERED           8
 #define fd_BIDIRECTIONAL     16
 #define fd_REVERSE	     32
+#define fd_SEND_FD           64
 
 
 #if defined(HAVE_WINSOCK_H)
@@ -173,6 +174,7 @@ PMOD_EXPORT FD debug_fd_dup2(FD from, FD to);
 #define fd_RDONLY 1
 #define fd_WRONLY 2
 #define fd_RDWR 3
+#define fd_ACCMODE 3
 #define fd_APPEND 4
 #define fd_CREAT 8
 #define fd_TRUNC 16
@@ -306,6 +308,11 @@ typedef off_t PIKE_OFF_T;
 #define fd_RDONLY O_RDONLY
 #define fd_WRONLY O_WRONLY
 #define fd_RDWR O_RDWR
+#ifdef O_ACCMODE
+#define fd_ACCMODE O_ACCMODE
+#else
+#define fd_ACCMODE (fd_RDONLY|fd_WRONLY|fd_RDWR)
+#endif
 #define fd_APPEND O_APPEND
 #define fd_CREAT O_CREAT
 #define fd_TRUNC O_TRUNC
@@ -410,7 +417,7 @@ typedef struct my_fd_set_s my_fd_set;
 #ifndef __amigaos__
 #define PIPE_CAPABILITIES (fd_INTERPROCESSABLE | fd_BUFFERED | fd_CAN_NONBLOCK)
 #endif
-#define UNIX_SOCKET_CAPABILITIES (fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK)
+#define UNIX_SOCKET_CAPABILITIES (fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK | fd_SEND_FD)
 #define SOCKET_CAPABILITIES (fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK | fd_CAN_SHUTDOWN)
 
 #endif /* Don't HAVE_WINSOCK */
@@ -434,6 +441,13 @@ typedef struct my_fd_set_s my_fd_set;
 #define S_ISREG(mode)   (((mode) & (_S_IFMT)) == (_S_IFREG))
 #endif /* S_IFREG */
 #endif /* !S_ISREG */
+
+#ifndef S_IFIFO
+#define S_IFIFO  0x1000
+#endif
+#ifndef S_IFSOCK
+#define S_IFSOCK 0xc000
+#endif
 
 PMOD_EXPORT int pike_make_pipe(int *fds);
 PMOD_EXPORT int fd_from_object(struct object *o);
