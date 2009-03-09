@@ -1,12 +1,12 @@
 '
-' $Id: installer.vbs,v 1.5 2009/03/05 11:36:24 grubba Exp $
+' $Id: installer.vbs,v 1.6 2009/03/09 11:42:49 grubba Exp $
 '
 ' Companion file to bin/install.pike for custom actions.
 '
 ' 2004-12-01 Henrik Grubbström
 '
 
-Option Compare Binary
+'Option Compare Binary
 
 ' At call time the CustomActionData property has been set to [TARGETDIR]
 Function FinalizePike()
