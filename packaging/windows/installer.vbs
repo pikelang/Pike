@@ -1,5 +1,5 @@
 '
-' $Id: installer.vbs,v 1.6 2009/03/09 11:42:49 grubba Exp $
+' $Id: installer.vbs,v 1.7 2009/03/09 13:15:36 grubba Exp $
 '
 ' Companion file to bin/install.pike for custom actions.
 '
@@ -18,7 +18,7 @@ Function FinalizePike()
   ' Note: Opening the files in ASCII-mode, there doesn't seem to be any
   '       binary mode. This means that 8-bit characters might get mangled.
   Set source = fso.OpenTextFile(targetdir & "lib\master.pike.in", 1, False, 0)
-  Set dest = fso.CreateTextFile(targetdir & "lib\master.pike", 2, True, 0)
+  Set dest = fso.CreateTextFile(targetdir & "lib\master.pike", True, False)
 
   source_txt = source.ReadAll
 
