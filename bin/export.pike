@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: export.pike,v 1.69 2009/03/06 15:22:38 grubba Exp $ */
+/* $Id: export.pike,v 1.70 2009/03/09 23:29:18 marcus Exp $ */
 
 multiset except_modules = (<>);
 string vpath;
@@ -19,7 +19,7 @@ array(string) get_files(string path)
   array(string) files = get_dir(path);
 
   if(!getenv("PIKE_EXPORT_CVS_DIRS"))
-    files -= ({ "CVS", "RCS", ".git", ".cvsignore", ".gitignore" });
+    files -= ({ "CVS", "RCS", ".git", ".svn", ".cvsignore", ".gitignore" });
 
   array(string) ret = ({});
   foreach(files, string fn)
@@ -143,6 +143,46 @@ void cvs_bump_version(int|void is_release)
 
   }
 #endif
+}
+
+string svn_cmd(string ... args)
+{
+  mapping r =
+    Process.run( ({ "svn", "--non-interactive" }) + args,
+		 ([ "cwd":pike_base_name ]) );
+  if (r->exitcode) exit(r->exitcode);
+
+  return r->stdout;
+}
+
+int svn_bump_version(int|void is_release)
+{
+  werror("Bumping release number.\n");
+
+  int rel = low_bump_version(is_release);
+
+  string s = svn_cmd("commit", "-m",
+		     "release number bumped to "+rel+" by export.pike",
+		     "src/version.h");
+
+  return array_sscanf(s, "%*sCommitted revision %d.")[0];
+}
+
+Parser.XML.Tree.SimpleRootNode svn_get_info()
+{
+  return Parser.XML.Tree.simple_parse_input(svn_cmd("info", "--xml"));
+}
+
+string svn_get_url()
+{
+  return svn_get_info()->get_elements("info")[0]->get_elements("entry")[0]->
+    get_elements("url")[0]->value_of_node();
+}
+
+string svn_get_repos()
+{
+  return svn_get_info()->get_elements("info")[0]->get_elements("entry")[0]->
+    get_elements("repository")[0]->get_elements("root")[0]->value_of_node();
 }
 
 void git_cmd(string ... args)
@@ -304,7 +344,24 @@ int main(int argc, array(string) argv)
   }
 
   if (tag) {
-    if (file_stat(pike_base_name + "/.git")) {
+    if (file_stat(pike_base_name + "/.svn")) {
+      /* Tagging in svn is fast, so there's no need to
+       * do it asynchronously. We also want to perform
+       * the version bumps back-to-back, to avoid
+       * ambiguities regarding the stable version. */
+      
+      int r = svn_bump_version(1);
+      array(int) version = getversion();
+      vpath = sprintf("Pike-v%d.%d.%d", @version);
+      string tag = sprintf("v%d_%d_%d", @version);
+
+      svn_bump_version();
+
+      svn_cmd("cp", "-r"+r, "-m",
+	      "This commit was manufactured by export.pike "
+	      "to create tag '"+tag+"'.", svn_get_url(),
+	      svn_get_repos()+"/tags/"+tag);
+    } else if (file_stat(pike_base_name + "/.git")) {
       /* Save the local edits for later. */
       git_cmd("stash");
       git = cleanup_git;	/* Restore state when we're done. */
