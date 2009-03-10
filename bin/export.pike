@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: export.pike,v 1.70 2009/03/09 23:29:18 marcus Exp $ */
+/* $Id: export.pike,v 1.71 2009/03/10 14:22:07 marcus Exp $ */
 
 multiset except_modules = (<>);
 string vpath;
@@ -150,8 +150,10 @@ string svn_cmd(string ... args)
   mapping r =
     Process.run( ({ "svn", "--non-interactive" }) + args,
 		 ([ "cwd":pike_base_name ]) );
-  if (r->exitcode) exit(r->exitcode);
-
+  if (r->exitcode) {
+    werror(r->stderr||"");
+    exit(r->exitcode);
+  }
   return r->stdout;
 }
 
@@ -264,7 +266,7 @@ int main(int argc, array(string) argv)
 {
   array(string) files;
   string export_list, filename;
-  function(:void) git;
+  function(:void) git, svn;
   object cvs;
   int tag, snapshot, t;
 
@@ -357,10 +359,18 @@ int main(int argc, array(string) argv)
 
       svn_bump_version();
 
+      string old_url, new_url;
       svn_cmd("cp", "-r"+r, "-m",
 	      "This commit was manufactured by export.pike "
-	      "to create tag '"+tag+"'.", svn_get_url(),
-	      svn_get_repos()+"/tags/"+tag);
+	      "to create tag '"+tag+"'.", (old_url = svn_get_url()),
+	      (new_url = svn_get_repos()+"/tags/"+tag));
+
+      /* Use the tagged version to build the dist from */
+      svn_cmd("switch", new_url);
+      svn = lambda() {
+	      /* Switch back when we are done */
+	      svn_cmd("switch", old_url);
+	    };
     } else if (file_stat(pike_base_name + "/.git")) {
       /* Save the local edits for later. */
       git_cmd("stash");
@@ -507,7 +517,10 @@ int main(int argc, array(string) argv)
   rm("buildid.txt");
   werror("Done.\n");
 
-  if (git) {
+  if (svn) {
+    // NB: In the svn case, we have already bumped the version.
+    svn();
+  } else if (git) {
     // NB: In the git case, we have already bumped the version.
     git();
   } else if(cvs) {
