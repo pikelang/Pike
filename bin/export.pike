@@ -1,100 +1,9 @@
 #! /usr/bin/env pike
 
-/* $Id: export.pike,v 1.72 2009/03/10 15:41:55 grubba Exp $ */
-
-//
-// Note: This script is often run with a system pike rather than
-//       the pike being exported. It should therefore attempt
-//       to support older pikes than bleeding edge.
-//
+/* $Id: export.pike,v 1.73 2009/03/10 17:27:43 marcus Exp $ */
 
 multiset except_modules = (<>);
 string vpath;
-
-#if constant(Process.run)
-constant run = Process.run;
-#else
-// Provide a compatibility implementation.
-mapping run(string|array(string) cmd, void|mapping modifiers)
-{
-  string gotstdout="", gotstderr="", stdin_str;
-  int exitcode;
-
-  if(!modifiers)
-    modifiers = ([]);
-
-  if(modifiers->stdout || modifiers->stderr)
-    throw( ({ "Can not redirect stdout or stderr in run_process, "
-              "please use Process.Process instead.", backtrace() }) );
-
-  Stdio.File mystdout = Stdio.File(); 
-  Stdio.File mystderr = Stdio.File();
-  Stdio.File mystdin;
-
-  object p;
-  if(stringp(modifiers->stdin))
-  {
-    mystdin = Stdio.File();
-    stdin_str = modifiers->stdin;
-    p = Process.Process(cmd, modifiers + ([ 
-			  "stdout":mystdout->pipe(),
-			  "stderr":mystderr->pipe(),
-			  "stdin":mystdin->pipe(Stdio.PROP_IPC|Stdio.PROP_REVERSE)
-			]));
-  }
-  else
-    p = Process.Process(cmd, modifiers + ([ 
-			  "stdout":mystdout->pipe(),
-			  "stderr":mystderr->pipe(),
-			]));
-
-#if constant(Thread.Thread)
-  array threads = ({
-      thread_create( lambda() { gotstdout = mystdout->read(); } ),
-      thread_create( lambda() { gotstderr = mystderr->read(); } )
-    });
-
-  if (mystdin) {
-    threads += ({
-      thread_create(lambda(Stdio.File f) { f->write(stdin_str); }, mystdin )
-    });
-    mystdin = 0;
-  }
-
-  exitcode = p->wait();
-  threads->wait();
-#else //No threads, use callbacks
-  mystdout->set_read_callback( lambda( mixed i, string data) { 
-                                 gotstdout += data; 
-                               } );
-  mystderr->set_read_callback( lambda( mixed i, string data) {
-                                 gotstderr += data;
-                               } );
-
-  if (mystdin) {
-    Shuffler.Shuffle sf = Shuffler.Shuffler()->shuffle( mystdin );
-    sf->add_source(stdin_str);
-    sf->start();
-    mystdin = 0;
-  }
-
-  while( !p->status() || p->status() == 1 )
-    Pike.DefaultBackend( 1.0 );
-
-  mystdout->set_read_callback(0);
-  mystderr->set_read_callback(0);
-  
-  gotstdout += mystdout->read();
-  gotstderr += mystderr->read();
-
-  exitcode = p->wait();
-#endif
-
-  return ([ "stdout"  : gotstdout,
-            "stderr"  : gotstderr,
-            "exitcode": exitcode   ]);
-}
-#endif
 
 string dirname(string dir)
 {
@@ -238,8 +147,9 @@ void cvs_bump_version(int|void is_release)
 
 string svn_cmd(string ... args)
 {
-  mapping r = run( ({ "svn", "--non-interactive" }) + args,
-		   ([ "cwd":pike_base_name ]) );
+  mapping r =
+    Process.run( ({ "svn", "--non-interactive" }) + args,
+		 ([ "cwd":pike_base_name ]) );
   if (r->exitcode) {
     werror(r->stderr||"");
     exit(r->exitcode);
