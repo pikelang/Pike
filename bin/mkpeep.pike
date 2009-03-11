@@ -1,8 +1,10 @@
 #! /usr/bin/env pike
 
+#pike 7.6
+
 #pragma strict_types
 
-// $Id: mkpeep.pike,v 1.38 2003/10/17 04:34:08 nilsson Exp $
+// $Id: mkpeep.pike,v 1.39 2009/03/11 16:54:15 grubba Exp $
 
 #define SKIPWHITE(X) sscanf(X, "%*[ \t\n]%s", X)
 
@@ -438,7 +440,7 @@ array(Switch|Breakable) make_switches(array(Rule) data)
 
       buf->add_line( sprintf("%*nreturn;", ind) );
       ind -= 2;
-      buf->add_line( sprintf("%*n}", ind, test) );
+      buf->add_line( sprintf("%*n}", ind) );
     }
     ret += ({ buf });
   }
