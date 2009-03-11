@@ -141,7 +141,7 @@ class LocalToGlobalBlock
     if(densep)
       dense=TextList(@args[1..]);
     else
-      sparse=Array.map(args[2..]/2,               // ARRAY Text-Number-Pair
+      sparse=Array.map(args[2]/2,               // ARRAY Text-Number-Pair
 		       lambda(array z) { return TextNumberPair(@z); });
   }
 }
