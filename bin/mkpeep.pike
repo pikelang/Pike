@@ -1,8 +1,10 @@
 #!/usr/local/bin/pike
 
+#pike 7.4
+
 #pragma strict_types
 
-/* $Id: mkpeep.pike,v 1.25 2002/11/01 16:58:38 grubba Exp $ */
+/* $Id: mkpeep.pike,v 1.26 2009/03/11 16:54:24 grubba Exp $ */
 
 #define JUMPBACK 3
 
@@ -261,8 +263,8 @@ string treat(string expr)
   tmp=expr/"$";
   for(e=1;e<sizeof(tmp);e++)
   {
-    string num, rest;
-    int type;
+    string rest;
+    int num, type;
     if(sscanf(tmp[e],"%d%c%s",num,type,rest)!=3)
     {
       werror("Syntax error (3).\n");
@@ -403,7 +405,7 @@ void dump2(array(array(array(string))) data,int ind)
 
       write(sprintf("%*ncontinue;\n",ind));
       ind-=2;
-      write(sprintf("%*n}\n",ind,test));
+      write(sprintf("%*n}\n",ind));
     }
   }
 }
