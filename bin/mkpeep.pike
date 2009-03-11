@@ -4,7 +4,7 @@
 
 #pragma strict_types
 
-/* $Id: mkpeep.pike,v 1.27 2009/03/11 18:00:27 grubba Exp $ */
+/* $Id: mkpeep.pike,v 1.28 2009/03/11 21:34:30 grubba Exp $ */
 
 #define JUMPBACK 3
 
@@ -461,7 +461,7 @@ int main(int argc, array(string) argv)
 	"      fprintf(stderr,\"\\n\");\n"
 	"    }\n"
 	"#endif\n\n",
-	"%ld,%d:");
+	"#%ld,%d:");
 
   dump2(data,4);
 
