@@ -3089,6 +3089,8 @@ TimeofDay dwim_time(string what,void|TimeRange cx)
 
    what = String.trim_all_whites(what);
 
+   if (sizeof(what)>22 &&
+       (t=http_time(what,cx))) return t;
    if (sizeof(what)>12 &&
        (t=parse(SPACED("%e %M %D %h:%m:%s %Y"),what,cx))) return t; // ctime
    if (sizeof(what)>15 &&
@@ -3141,6 +3143,35 @@ TimeofDay dwim_time(string what,void|TimeRange cx)
       }
 
    error("Failed to dwim time from %O\n",what);
+}
+
+// Parses time according to HTTP 1.1 (RFC 2616) HTTP-date token.
+TimeofDay http_time(string what, void|TimeRange cx)
+{
+  TimeofDay t;
+
+  string date1 = "%D %M %Y"; // 2+1+3+1+4=11
+  string date2 = "%D-%M-%y"; // 2+1+3+1+2=9
+  string date3 = "%M %*[ ]%D"; // 2+1+2=5
+  string time = "%h:%m:%s"; // 2+1+2+1+2=8
+
+  // 3+2+ 11 +1+ 8 +4 = 29
+  string rfc1123_date = "%e, "+date1+" "+time+" %z";
+
+  // 6+2+ 9 +1+ 8 +4 = 33
+  string rfc850_date = "%e, "+date2+" "+time+" %z";
+
+  // 3+1+ 5 +1+ 8 +1+4 = 23
+  string asctime_date = "%e "+date3+" "+time+" %Y";
+
+  if( sizeof(what)<23 ) return 0;
+
+  if( (t=parse(rfc1123_date, what, cx)) ||
+      (t=parse(rfc850_date, what, cx)) ||
+      (t=parse(asctime_date+" %z", what+" GMT", cx)) )
+    return t;
+
+  return 0;
 }
 
 //-- auxillary functions------------------------------------------------

@@ -1,5 +1,5 @@
 START_MARKER
-dnl $Id: testsuite.in,v 1.22 2008/05/23 00:34:20 mast Exp $
+dnl $Id: testsuite.in,v 1.23 2009/03/11 16:02:53 nilsson Exp $
 
 dnl NOTE:
 dnl   *every* time the Calendar tests have failed, it's not the 
@@ -39,6 +39,17 @@ test_dwim("Tue Nov 19 07:04:03 NFT 2002","NFT")
 dnl test_dwim("Tue Nov 19 07:04:03 DFT 2002","DFT")
 test_dwim("Tue Nov 19 07:04:03 MET DST 2002","MET")
 test_dwim("Tue Nov 19 07:04:03 METDST 2002","MET")
+test_dwim([["Tue, 19 Nov 2002 07:04:03 GMT"]],"GMT")
+test_dwim([["Tuesday, 19-Nov-02 07:04:03 GMT"]],"GMT")
+test_dwim("Tue Nov 19 07:04:03 2002","GMT")
+
+define(test_http,[[
+  test_eq(Calendar.ISO.http_time($1)->format_time(),$2)
+]])
+test_http([["Tue, 19 Nov 2002 07:04:03 GMT"]],"2002-11-19 07:04:03")
+test_http([["Tuesday, 19-Nov-02 07:04:03 GMT"]],"2002-11-19 07:04:03")
+test_http("Tue Nov  1 07:04:03 2002","2002-11-01 07:04:03")
+test_http("Tue Nov 19 07:04:03 2002","2002-11-19 07:04:03")
 
 test_eq(arrayp(Calendar.TZnames.zonenames()), 1)
 test_do([[
