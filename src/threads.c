@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.243 2008/09/09 16:55:40 mast Exp $
+|| $Id: threads.c,v 1.244 2009/03/12 23:44:39 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: threads.c,v 1.243 2008/09/09 16:55:40 mast Exp $");
+RCSID("$Id: threads.c,v 1.244 2009/03/12 23:44:39 mast Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -54,7 +54,7 @@ PMOD_EXPORT int threads_disabled = 0;
 #define PIKE_THREAD_C_STACK_SIZE (256 * 1024)
 #endif
 
-PMOD_EXPORT int live_threads = 0, disallow_live_threads = 0;
+PMOD_EXPORT int live_threads = 0;
 PMOD_EXPORT COND_T live_threads_change;
 PMOD_EXPORT COND_T threads_disabled_change;
 PMOD_EXPORT size_t thread_stack_size=PIKE_THREAD_C_STACK_SIZE;
@@ -305,9 +305,6 @@ struct thread_local
 
 static volatile IMUTEX_T *interleave_list = NULL;
 
-/* This is a variant of init_threads_disable that blocks all other
- * threads that might run pike code, but still doesn't block the
- * THREADS_ALLOW_UID threads. */
 void low_init_threads_disable(void)
 {
   /* Serious black magic to avoid dead-locks */
@@ -390,7 +387,7 @@ void low_init_threads_disable(void)
  */
 void init_threads_disable(struct object *o)
 {
-  disallow_live_threads = 1;
+  low_init_threads_disable();
 
   if(live_threads) {
     SWAP_OUT_CURRENT_THREAD();
@@ -403,8 +400,6 @@ void init_threads_disable(struct object *o)
     }
     SWAP_IN_CURRENT_THREAD();
   }
-
-  low_init_threads_disable();
 }
 
 void exit_threads_disable(struct object *o)
@@ -427,7 +422,6 @@ void exit_threads_disable(struct object *o)
       mt_unlock(&interleave_lock);
 
       THREADS_FPRINTF(0, (stderr, "_exit_threads_disable(): Wake up!\n"));
-      disallow_live_threads = 0;
       co_broadcast(&threads_disabled_change);
 #ifdef PIKE_DEBUG
       threads_disabled_thread = 0;
