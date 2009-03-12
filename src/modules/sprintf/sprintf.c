@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.156 2009/03/12 23:35:03 grubba Exp $
+|| $Id: sprintf.c,v 1.157 2009/03/12 23:53:15 grubba Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -115,7 +115,9 @@
  *!       Set width to the length of data.
  *!     @value '[n]'
  *!       Select argument number @tt{@i{n@}@}. Use @tt{*@} to use the next
- *!       argument as selector.
+ *!       argument as selector. The arguments are numbered starting from
+ *!       @expr{0@} (zero) for the first argument after the @[format].
+ *!       Note that this only affects where the current operand is fetched.
  *!   @endint
  *!
  *!   The following operators are supported:
@@ -185,6 +187,16 @@
  *!   the current modifiers as the second. The callback is expected to return
  *!   a string.
  *!
+ *! @note
+ *!   sprintf-style formatting is applied by many formatting functions, such
+ *!   @[write()] and @[werror]. It is also possible to get sprintf-style
+ *!   compile-time argument checking by using the type-attributes
+ *!   @[sprintf_format] or @[strict_sprintf_format] in combination
+ *!   with @[sprintf_args].
+ *!
+ *! @note
+ *!   The 'q' operator was added in Pike 7.7.
+ *!
  *! @example
  *! Pike v7.4 release 13 running Hilfe v3.5 (Incremental Pike Frontend)
  *! > sprintf("The unicode character %c has character code %04X.", 'A', 'A');
@@ -194,15 +206,6 @@
  *! > int n=4711;
  *! > sprintf("%d = hexadecimal %x = octal %o = %b binary", n, n, n, n);
  *! (3) Result: "4711 = hexadecimal 1267 = octal 11147 = 1001001100111 binary"
- *!
- *! @note
- *!   sprintf style formatting is applied by many formatting functions, such
- *!   @[write()] and @[werror].
- *!
- *! @note
- *!   The 'q' operator was added in Pike 7.7.
- *!
- *! @example
  *! > write(#"Formatting examples:
  *! Left adjusted  [%-10d]
  *! Centered       [%|10d]
@@ -289,7 +292,8 @@
  *! (14) Result: 71
  *!
  *! @seealso
- *!   @[lfun::_sprintf()]
+ *!   @[lfun::_sprintf()], @[strict_sprintf_format], @[sprintf_format],
+ *!   @[sprintf_args]
  */
 #include "global.h"
 #include "pike_error.h"
