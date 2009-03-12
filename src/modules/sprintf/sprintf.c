@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.155 2009/03/12 17:30:33 grubba Exp $
+|| $Id: sprintf.c,v 1.156 2009/03/12 23:35:03 grubba Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -2021,8 +2021,6 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
       case '[':
 	/* FIXME: !!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 	if (ret > 0) ret = 0;	/* FAILURE! */
-	continue;
-#if 0
 	INC_PCHARP(a,1);
 	if(EXTRACT_PCHARP(a)=='*') {
 	  push_int_type(0, num_arg);
@@ -2041,7 +2039,6 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
 		   0, "Not enough arguments to [%d].", tmp);
 	  ret = -1;
 	}
-#endif /* 0 */
 	/* arg = argp+tmp; */
 	continue;
 	
