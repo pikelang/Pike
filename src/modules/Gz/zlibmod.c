@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: zlibmod.c,v 1.83 2007/07/05 12:41:58 grubba Exp $
+|| $Id: zlibmod.c,v 1.84 2009/03/12 22:39:30 nilsson Exp $
 */
 
 #include "global.h"
@@ -77,32 +77,58 @@ struct zipper
  *! packing routines in the libz library.
  *!
  *! @note
- *! This program is only available if libz was available and found when
+ *! This class is only available if libz was available and found when
  *! Pike was compiled.
  *!
  *! @seealso
  *! @[Gz.inflate()]
  */
 
-/*! @decl void create(int(0..9)|void level, int|void strategy,@
+/*! @decl void create(int(-9..9)|void level, int|void strategy,@
  *!                   int(8..15) window_size)
- *!
- *! If given, @[level] should be a number from 0 to 9 indicating the
- *! packing / CPU ratio. Zero means no packing, 2-3 is considered 'fast',
- *! 6 is default and higher is considered 'slow' but gives better packing.
  *!
  *! This function can also be used to re-initialize a Gz.deflate object
  *! so it can be re-used.
  *!
- *! If the argument is negative, no headers will be emitted. This is
- *! needed to produce ZIP-files, as an example. The negative value is
- *! then negated, and handled as a positive value.
+ *! @param level
+ *!   Indicates the level of effort spent to make the data compress
+ *!   well. Zero means no packing, 2-3 is considered 'fast', 6 is
+ *!   default and higher is considered 'slow' but gives better
+ *!   packing.
  *!
- *! @[strategy], if given, should be one of DEFAULT_STRATEGY, FILTERED or
- *! HUFFMAN_ONLY.
+ *!   If the argument is negative, no headers will be emitted. This is
+ *!   needed to produce ZIP-files, as an example. The negative value
+ *!   is then negated, and handled as a positive value.
  *!
- *! @[window_size] defines the size of the LZ77 window from 256 bytes
- *! to 32768 bytes, expressed as 2^x.
+ *! @param strategy
+ *!   The strategy to be used when compressing the data. One of the
+ *!   following.
+ *! @int
+ *!   @value DEFAULT_STRATEGY
+ *!     The default strategy as selected in the zlib library.
+ *!   @value FILTERED
+ *!     This strategy is intented for data created by a filter or
+ *!     predictor and will put more emphasis on huffman encoding and
+ *!     less on LZ string matching. This is between DEFAULT_STRATEGY
+ *!     and HUFFMAN_ONLY.
+ *!   @value RLE
+ *!     This strategy is even closer to the HUFFMAN_ONLY in that it
+ *!     only looks at the latest byte in the window, i.e. a window
+ *!     size of 1 byte is sufficient for decompression. This mode is
+ *!     not available in all zlib versions.
+ *!   @value HUFFMAN_ONLY
+ *!     This strategy will turn of string matching completely, only
+ *!     doing huffman encoding. Window size doesn't matter in this
+ *!     mode and the data can be decompressed with a zero size window.
+ *!   @value FIXED
+ *!     In this mode dynamic huffman codes are disabled, allowing for
+ *!     a simpler decoder for special applications. This mode is not
+ *!     available in all zlib versions.
+ *! @endint
+ *!
+ *! @param window_size
+ *!   Defines the size of the LZ77 window from 256 bytes to 32768
+ *!   bytes, expressed as 2^x.
  */
 static void gz_deflate_create(INT32 args)
 {
@@ -316,9 +342,59 @@ void zlibmod_pack(struct pike_string *data, dynamic_buffer *buf,
     Pike_error("Error while deflating data (%d).\n",ret);
 }
 
+/*! @endclass
+ */
+
 /*! @decl string compress(string data, void|int(0..1) raw, @
  *!                       void|int(0..9) level, void|int strategy, @
  *!                       void|int(8..15) window_size)
+ *!
+ *! Encodes and returns the input @[data] according to the deflate
+ *! format defined in RFC 1951.
+ *!
+ *! @param data
+ *!   The data to be encoded.
+ *!
+ *! @param raw
+ *!   If set, the data is encoded without the header and footer
+ *!   defined in RFC 1950. Example of uses is the ZIP container
+ *!   format.
+ *!
+ *! @param level
+ *!   Indicates the level of effort spent to make the data compress
+ *!   well. Zero means no packing, 2-3 is considered 'fast', 6 is
+ *!   default and higher is considered 'slow' but gives better
+ *!   packing.
+ *!
+ *! @param strategy
+ *!   The strategy to be used when compressing the data. One of the
+ *!   following.
+ *! @int
+ *!   @value DEFAULT_STRATEGY
+ *!     The default strategy as selected in the zlib library.
+ *!   @value FILTERED
+ *!     This strategy is intented for data created by a filter or
+ *!     predictor and will put more emphasis on huffman encoding and
+ *!     less on LZ string matching. This is between DEFAULT_STRATEGY
+ *!     and HUFFMAN_ONLY.
+ *!   @value RLE
+ *!     This strategy is even closer to the HUFFMAN_ONLY in that it
+ *!     only looks at the latest byte in the window, i.e. a window
+ *!     size of 1 byte is sufficient for decompression. This mode is
+ *!     not available in all zlib versions.
+ *!   @value HUFFMAN_ONLY
+ *!     This strategy will turn of string matching completely, only
+ *!     doing huffman encoding. Window size doesn't matter in this
+ *!     mode and the data can be decompressed with a zero size window.
+ *!   @value FIXED
+ *!     In this mode dynamic huffman codes are disabled, allowing for
+ *!     a simpler decoder for special applications. This mode is not
+ *!     available in all zlib versions.
+ *! @endint
+ *!
+ *! @param window_size
+ *!   Defines the size of the LZ77 window from 256 bytes to 32768
+ *!   bytes, expressed as 2^x.
  *!
  */
 static void gz_compress(INT32 args)
@@ -349,6 +425,9 @@ static void gz_compress(INT32 args)
   pop_n_elems(args);
   push_string(low_free_buf(&buf));
 }
+
+/*! @class deflate
+ */
 
 /*! @decl string deflate(string data, int|void flush)
  *!
@@ -486,7 +565,6 @@ static void exit_gz_deflate(struct object *o)
  */
 
 /*! @decl void create(int|void window_size)
- *! @param magic
  *! The window_size value is passed down to inflateInit2 in zlib.
  *!
  *! If the argument is negative, no header checks are done, and no
@@ -665,7 +743,14 @@ void zlibmod_unpack(struct pike_string *data, dynamic_buffer *buf, int raw)
     Pike_error("Failed to inflate data (%d).\n", ret);
 }
 
+/*! @endclass
+*/
+
 /*! @decl string uncompress(string data, void|int(0..1) raw)
+ *!
+ *! Uncompresses the @[data] and returns it. The @[raw] parameter
+ *! tells the decoder that the indata lacks the data header and footer
+ *! defined in RFC 1950.
  */
 static void gz_uncompress(INT32 args)
 {
@@ -694,6 +779,9 @@ static void gz_uncompress(INT32 args)
   push_string(low_free_buf(&buf));
 
 }
+
+/*! @class inflate
+ */
 
 /*! @decl string inflate(string data)
  *!
