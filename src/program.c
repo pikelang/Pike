@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.759 2009/03/04 16:21:50 grubba Exp $
+|| $Id: program.c,v 1.760 2009/03/12 17:31:36 grubba Exp $
 */
 
 #include "global.h"
@@ -8976,6 +8976,11 @@ static void f_compilation_apply_attribute_constant(INT32 args)
   struct pike_string *test;
   get_all_args("apply_attribute_constant", args, "%S", &attribute);
   MAKE_CONST_STRING(test, "sprintf_format");
+  if (attribute == test) {
+    f___handle_sprintf_format(args);
+    return;
+  }
+  MAKE_CONST_STRING(test, "strict_sprintf_format");
   if (attribute == test) {
     f___handle_sprintf_format(args);
     return;
