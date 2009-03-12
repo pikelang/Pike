@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.154 2008/12/13 08:24:32 nilsson Exp $
+|| $Id: sprintf.c,v 1.155 2009/03/12 17:30:33 grubba Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -667,7 +667,7 @@ static void sprintf_error(struct format_stack *fs,
 }
 
 /* This is called once for every '%' on every ouputted line
- * it takes care of linebrak and column mode. It returns 1
+ * it takes care of linebreak and column mode. It returns 1
  * if there is more for next line.
  */
 
@@ -1860,10 +1860,20 @@ void f_sprintf_76(INT32 args)
   low_f_sprintf(args, 76);
 }
 
+/* Push the types corresponding to the %-directives in the format string.
+ *
+ *   severity is the severity level if any syntax errors
+ *            are encountered in the format string.
+ *
+ * Returns 1 on success.
+ *         0 on unhandled (ie position-dependent args).
+ *        -1 on syntax error.
+ */
 static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
-				       int num_arg)
+				       int severity)
 {
-  int tmp,setwhat,e;
+  int tmp, setwhat, e;
+  int ret = 1;		/* OK */
   struct svalue *arg=0;	/* pushback argument */
   struct svalue *lastarg=0;
 
@@ -1872,7 +1882,7 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
 
   check_c_stack(500);
 
-  if (num_arg < 0) num_arg = MAX_INT32;
+  /* if (num_arg < 0) num_arg = MAX_INT32; */
 
   for(a=format;COMPARE_PCHARP(a,<,format_end);INC_PCHARP(a,1))
   {
@@ -1898,14 +1908,15 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
       default:
 	if(EXTRACT_PCHARP(a) < 256 && isprint(EXTRACT_PCHARP(a)))
 	{
-	  yyreport(REPORT_ERROR, type_check_system_string,
+	  yyreport(severity, type_check_system_string,
 		   0, "Error in format string, %c is not a format.",
 		   EXTRACT_PCHARP(a));
 	}else{
-	  yyreport(REPORT_ERROR, type_check_system_string,
+	  yyreport(severity, type_check_system_string,
 		   0, "Error in format string, U%08x is not a format.",
 		   EXTRACT_PCHARP(a));
 	}
+	ret = -1;
 	num_snurkel = 0;
 	break;
 
@@ -1932,8 +1943,9 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
 	{
 	case 0: case 1:
 	  if(tmp < 0) {
-	    yyreport(REPORT_ERROR, type_check_system_string,
+	    yyreport(severity, type_check_system_string,
 		     0, "Illegal width %d.", tmp);
+	    ret = -1;
 	  }
 	case 2: case 3: case 4: break;
 	}
@@ -1949,16 +1961,18 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
       case '/':
         column |= ROUGH_LINEBREAK;
         if( column & LINEBREAK ) {
-	  yyreport(REPORT_ERROR, type_check_system_string,
+	  yyreport(severity, type_check_system_string,
 		   0, "Can not use both the modifiers / and =.");
+	  ret = -1;
 	}
         continue;
 
       case '=':
         column |= LINEBREAK;
         if( column & ROUGH_LINEBREAK ) {
-	  yyreport(REPORT_ERROR, type_check_system_string,
+	  yyreport(severity, type_check_system_string,
 		   0, "Can not use both the modifiers / and =.");
+	  ret = -1;
 	}
         continue;
 
@@ -1975,8 +1989,9 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
 	for(INC_PCHARP(a,1);INDEX_PCHARP(a,tmp)!='\'';tmp++)
 	{
 	  if(COMPARE_PCHARP(a,>=,format_end)) {
-	    yyreport(REPORT_ERROR, type_check_system_string,
+	    yyreport(severity, type_check_system_string,
 		     0, "Unfinished pad string in format string.");
+	    ret = -1;
 	  }
 	}
 	INC_PCHARP(a,tmp);
@@ -1991,17 +2006,23 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
 
       case '<':
 	/* FIXME: !!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-	return 0;	/* FAILURE! */
+	if (ret > 0) ret = 0;	/* FAILURE! */
+	continue;
+#if 0
 	if(!lastarg) {
-	  yyreport(REPORT_ERROR, type_check_system_string,
+	  yyreport(severity, type_check_system_string,
 		   0, "No last argument.");
+	  ret = -1;
 	}
 	arg=lastarg;
+#endif /* 0 */
 	continue;
 
       case '[':
 	/* FIXME: !!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-	return 0;	/* FAILURE! */
+	if (ret > 0) ret = 0;	/* FAILURE! */
+	continue;
+#if 0
 	INC_PCHARP(a,1);
 	if(EXTRACT_PCHARP(a)=='*') {
 	  push_int_type(0, num_arg);
@@ -2010,14 +2031,17 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
 	} else
 	  tmp=STRTOL_PCHARP(a,&a,10);
 	if(EXTRACT_PCHARP(a)!=']')  {
-	  yyreport(REPORT_ERROR, type_check_system_string,
+	  yyreport(severity, type_check_system_string,
 		   0, "Expected ] in format string, not %c.",
 		   EXTRACT_PCHARP(a));
+	  ret = -1;
 	}
 	if(tmp >= num_arg) {
-	  yyreport(REPORT_ERROR, type_check_system_string,
+	  yyreport(severity, type_check_system_string,
 		   0, "Not enough arguments to [%d].", tmp);
+	  ret = -1;
 	}
+#endif /* 0 */
 	/* arg = argp+tmp; */
 	continue;
 	
@@ -2030,8 +2054,9 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
 	{
 	  if (!INDEX_PCHARP(a,e) &&
 	      !COMPARE_PCHARP(ADD_PCHARP(a,e),<,format_end)) {
-	    yyreport(REPORT_ERROR, type_check_system_string,
+	    yyreport(severity, type_check_system_string,
 		     0, "Missing %%} in format string.");
+	    ret = -1;
 	    break;
 	  } else if(INDEX_PCHARP(a,e)=='%') {
 	    switch(INDEX_PCHARP(a,e+1))
@@ -2047,8 +2072,12 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
 	/* Note: No need to check the return value, since we
 	 *       simply or all the types together. Thus the
 	 *       argument order isn't significant.
+	 *
+	 * ... Unless there was a syntax error...
 	 */
-	push_sprintf_argument_types(ADD_PCHARP(a,1), e-2, MAX_INT32);
+	if (push_sprintf_argument_types(ADD_PCHARP(a,1), e-2, severity) < 0) {
+	  ret = -1;
+	}
 	/* Join the argument types for our array. */
 	push_type(PIKE_T_ZERO);
 	for (cnt = pop_stack_mark(); cnt > 1; cnt--) {
@@ -2152,7 +2181,7 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
     }
     while (num_snurkel--) push_type(T_ARRAY);
   }
-  return 1;	/* OK */
+  return ret;
 }
 
 static node *optimize_sprintf(node *n)
@@ -2213,18 +2242,55 @@ static node *optimize_sprintf(node *n)
   return ret;
 }
 
+/*! @decl type(mixed) __handle_sprintf_format(string attr, string fmt, @
+ *!                                           type arg_type, type cont_type)
+ *!
+ *!   Type attribute handler for @expr{"sprintf_format"@}.
+ *!
+ *! @param attr
+ *!   Attribute to handle, either @expr{"sprintf_format"@}
+ *!   or @expr{"strict_sprintf_format"@}.
+ *!
+ *! @param fmt
+ *!   Sprintf-style formatting string to generate type information from.
+ *!
+ *! @param arg_type
+ *!   Declared type of the @[fmt] argument (typically @expr{string@}).
+ *!
+ *! @param cont_type
+ *!   Continuation function type after the @[fmt] argument. This is
+ *!   scanned for the type attribute @expr{"sprintf_args"@} to
+ *!   determine where the remaining arguments to @[sprintf()] will
+ *!   come from.
+ *!
+ *! This function is typically called from
+ *! @[PikeCompiler()->apply_attribute_constant()] and is used to perform
+ *! stricter compile-time argument checking of @[sprintf()]-style functions.
+ *!
+ *! It currently implements two operating modes depending on the value of
+ *! @[attr]:
+ *! @string
+ *!   @value "strict_sprintf_format"
+ *!     The formatting string @[fmt] is known to always be passed to
+ *!     @[sprintf()].
+ *!   @value "sprintf_format"
+ *!     The formatting string @[fmt] is passed to @[sprintf()] only
+ *!     if there are @expr{"sprintf_args"@}.
+ *! @endstring
+ *!
+ *! @seealso
+ *!   @[PikeCompiler()->apply_attribute_constant()], @[sprintf()]
+ */
 void f___handle_sprintf_format(INT32 args)
 {  
   struct pike_type *res;
   struct pike_type *tmp;
   struct pike_string *attr;
   struct pike_string *fmt;
+  int severity = REPORT_ERROR;
   int found = 0;
   int fmt_count;
 
-#if 0
-  fprintf(stderr, "__handle_sprintf_format()\n");
-#endif /* 0 */
   if (args != 4)
     SIMPLE_WRONG_NUM_ARGS_ERROR("__handle_sprintf_format", 4);
   if (Pike_sp[-4].type != PIKE_T_STRING)
@@ -2239,6 +2305,26 @@ void f___handle_sprintf_format(INT32 args)
   tmp = Pike_sp[-1].u.type;
   if ((tmp->type != PIKE_T_FUNCTION) && (tmp->type != T_MANY)) {
     SIMPLE_ARG_TYPE_ERROR("__handle_sprintf_format", 4, "type(function)");
+  }
+
+#if 0
+  fprintf(stderr, "__handle_sprintf_format(\"%s\", \"%s\", ...)\n",
+	  Pike_sp[-4].u.string->str, Pike_sp[-3].u.string->str);
+#endif /* 0 */
+
+  MAKE_CONST_STRING(attr, "sprintf_format");
+  if (Pike_sp[-4].u.string == attr) {
+    /* Don't complain so loud about syntax errors in
+     * relaxed mode.
+     */
+    severity = REPORT_NOTICE;
+  } else {
+    MAKE_CONST_STRING(attr, "strict_sprintf_format");
+    if (Pike_sp[-4].u.string != attr) {
+      Pike_error("Bad argument 1 to __handle_sprintf_format(), expected "
+		 "\"sprintf_format\" or \"strict_sprintf_format\", "
+		 "got \"%S\".\n", Pike_sp[-4].u.string);
+    }
   }
 
   fmt = Pike_sp[-3].u.string;
@@ -2270,20 +2356,38 @@ void f___handle_sprintf_format(INT32 args)
     }
     if (arg) {
       type_stack_mark();
-      if (push_sprintf_argument_types(MKPCHARP(fmt->str, fmt->size_shift),
-				      fmt->len, -1)) {
+      switch (push_sprintf_argument_types(MKPCHARP(fmt->str, fmt->size_shift),
+					  fmt->len, severity)) {
+      case 1:
+	/* Ok. */
 	if (!array_cnt) {
 	  pop_stack_mark();
 	  push_type(T_VOID);	/* No more args */
 	  while (tmp->type == PIKE_T_FUNCTION) {
 	    tmp = tmp->cdr;
 	  }
-	  push_finished_type(tmp->cdr);	/* return type */
+	  push_finished_type(tmp->cdr);	/* Return type */
 	  push_reverse_type(T_MANY);
 	  fmt_count = pop_stack_mark();
 	  while (fmt_count > 1) {
 	    push_reverse_type(T_FUNCTION);
 	    fmt_count--;
+	  }
+	  if (severity < REPORT_ERROR) {
+	    /* Add the type where the fmt isn't sent to sprintf(). */
+	    type_stack_mark();
+	    for (arg = Pike_sp[-1].u.type; arg != tmp; arg = arg->cdr) {
+	      push_finished_type(arg->car);	      
+	    }
+	    push_type(T_VOID);			/* No more args */
+	    push_finished_type(tmp->cdr);	/* Return type */
+	    push_reverse_type(T_MANY);
+	    fmt_count = pop_stack_mark();
+	    while (fmt_count > 1) {
+	      push_reverse_type(T_FUNCTION);
+	      fmt_count--;
+	    }
+	    push_type(T_OR);
 	  }
 	  res = pop_unfinished_type();
 	  pop_n_elems(args);
@@ -2298,10 +2402,50 @@ void f___handle_sprintf_format(INT32 args)
 	  while (array_cnt--) {
 	    push_type(PIKE_T_ARRAY);
 	  }
+	  if (severity < REPORT_ERROR) {
+	    push_type(T_VOID);
+	    push_type(T_OR);
+	  }
 	  found = 1;
 	}
-      } else {
-	/* There was a position argument. */
+	break;
+      case -1:
+	/* Syntax error. */
+	if (severity < REPORT_ERROR) {
+	  /* Add the type where the fmt isn't sent to sprintf(). */
+	  type_stack_pop_to_mark();
+	  if (array_cnt--) {
+	    push_type(PIKE_T_ZERO);	/* No args */
+	    while (array_cnt--) {
+	      push_type(PIKE_T_ARRAY);
+	      push_type(PIKE_T_ZERO);
+	      push_type(T_OR);
+	    }
+	    push_type(T_VOID);
+	    push_type(T_OR);
+	    push_finished_type(tmp->cdr);	/* Rest type */
+	    push_reverse_type(tmp->type);
+	  } else {
+	    push_type(T_VOID);	/* No more args */
+	    while (tmp->type == PIKE_T_FUNCTION) {
+	      tmp = tmp->cdr;
+	    }
+	    push_finished_type(tmp->cdr);	/* Return type */
+	    push_reverse_type(T_MANY);
+	  }
+	  fmt_count = pop_stack_mark();
+	  while (fmt_count > 1) {
+	    push_reverse_type(T_FUNCTION);
+	    fmt_count--;
+	  }
+	  res = pop_unfinished_type();
+	  pop_n_elems(args);
+	  push_type_value(res);
+	  return;
+	}
+	/* FALL_THROUGH */
+      case 0:
+	/* There was a position argument or a parse error in strict mode. */
 	pop_stack_mark();
 	pop_stack_mark();
 	type_stack_pop_to_mark();
@@ -2344,6 +2488,34 @@ void f___handle_sprintf_format(INT32 args)
   }
 }
 
+/*! @decl constant sprintf_format = __attribute__("sprintf_format")
+ *!
+ *!   Type constant used for typing arguments that are optionally
+ *!   sent to @[sprintf()] depending on the presence of extra arguments.
+ *!
+ *! @seealso
+ *!   @[strict_sprintf_format], @[sprintf_args], @[sprintf()]
+ */
+
+/*! @decl constant strict_sprintf_format = @
+ *!         __attribute__("strict_sprintf_format")
+ *!
+ *!   Type constant used for typing arguments that are always
+ *!   sent to @[sprintf()] regardless of the presence of extra arguments.
+ *!
+ *! @seealso
+ *!   @[sprintf_format], @[sprintf_args], @[sprintf()]
+ */
+
+/*! @decl constant sprintf_args = __attribute__("sprintf_args")
+ *!
+ *!   Type constant used for typing extra arguments that are
+ *!   sent to @[sprintf()].
+ *!
+ *! @seealso
+ *!   @[strict_sprintf_format], @[sprintf_format], @[sprintf()]
+ */
+
 PIKE_MODULE_INIT
 {
   struct pike_string *attr;
@@ -2360,6 +2532,13 @@ PIKE_MODULE_INIT
   low_add_efun(attr, &s);
   free_type(s.u.type);
 
+  MAKE_CONST_STRING(attr, "strict_sprintf_format");
+  s.type = T_TYPE;
+  s.subtype = 0;
+  s.u.type = make_pike_type(tAttr("strict_sprintf_format", tOr(tStr, tObj)));
+  low_add_efun(attr, &s);
+  free_type(s.u.type);
+
   MAKE_CONST_STRING(attr, "sprintf_args");
   s.u.type = make_pike_type(tAttr("sprintf_args", tMix));
   low_add_efun(attr, &s);
@@ -2368,7 +2547,7 @@ PIKE_MODULE_INIT
   /* function(string|object, mixed ... : string) */
   ADD_EFUN2("sprintf", 
 	    f_sprintf,
-	    tFuncV(tAttr("sprintf_format", tOr(tStr, tObj)),
+	    tFuncV(tAttr("strict_sprintf_format", tOr(tStr, tObj)),
 		   tAttr("sprintf_args", tMix), tStr),
 	    OPT_TRY_OPTIMIZE,
 	    optimize_sprintf,
