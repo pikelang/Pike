@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.403 2009/02/24 20:52:18 grubba Exp $
+|| $Id: file.c,v 1.404 2009/03/12 19:00:42 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -2943,7 +2943,7 @@ static void file_take_fd(INT32 args)
   pop_n_elems(args);
 }
 
-static void do_close_fd(int fd)
+static void do_close_fd(ptrdiff_t fd)
 {
   int ret;
   if (fd < 0) return;
@@ -2961,7 +2961,7 @@ PMOD_EXPORT struct object *file_make_object_from_fd(int fd, int mode, int guess)
      * Attempt to clone ourselves.
      */
     ONERROR err;
-    SET_ONERROR(err, do_close_fd, fd);
+    SET_ONERROR(err, do_close_fd, (ptrdiff_t) fd);
     o = clone_object_from_object(Pike_fp->current_object, 0);
     UNSET_ONERROR(err);
     if (!o->prog) return NULL;	/* Destructed in create() or __INIT(). */
@@ -2991,7 +2991,7 @@ PMOD_EXPORT void push_new_fd_object(int factory_fun_num,
   struct my_file *f;
   ONERROR err;
 
-  SET_ONERROR(err, do_close_fd, fd);
+  SET_ONERROR(err, do_close_fd, (ptrdiff_t) fd);
   apply_current(factory_fun_num, 0);
   if ((Pike_sp[-1].type != PIKE_T_OBJECT) ||
       !(o = Pike_sp[-1].u.object)->prog ||
@@ -3627,7 +3627,7 @@ static void file_open_socket(INT32 args)
 	   !Pike_sp[2-args].u.string->size_shift) {
     PIKE_SOCKADDR addr;
     int addr_len;
-    addr_len = get_inet_addr(&addr, STR0(Pike_sp[2-args].u.string),
+    addr_len = get_inet_addr(&addr, (char *) STR0(Pike_sp[2-args].u.string),
 			     NULL, -1, 0);
     family = SOCKADDR_FAMILY(addr);
   }
