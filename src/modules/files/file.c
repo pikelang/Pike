@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.404 2009/03/12 19:00:42 mast Exp $
+|| $Id: file.c,v 1.405 2009/03/12 19:02:32 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -2943,6 +2943,8 @@ static void file_take_fd(INT32 args)
   pop_n_elems(args);
 }
 
+/* Use ptrdiff_t for the fd since we're passed a void * and should
+ * read it as an integer of the same size. */
 static void do_close_fd(ptrdiff_t fd)
 {
   int ret;
