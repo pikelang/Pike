@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_threadlib.h,v 1.67 2009/03/13 16:02:34 mast Exp $
+|| $Id: pike_threadlib.h,v 1.68 2009/03/13 16:22:31 mast Exp $
 */
 
 #ifndef PIKE_THREADLIB_H
@@ -487,6 +487,7 @@ extern int num_pike_threads;
 #include <time.h>
 #endif
 PMOD_EXPORT extern clock_t thread_start_clock;
+PMOD_EXPORT extern THREAD_T last_clocked_thread;
 #define USE_CLOCK_FOR_SLICES
 #define DO_IF_USE_CLOCK_FOR_SLICES(X) X
 #else
@@ -605,7 +606,10 @@ PMOD_EXPORT extern THREAD_T threads_disabled_thread;
     _th_state->status = THREAD_RUNNING;					\
     _th_state->swapped = 0;						\
     DO_IF_DEBUG(_th_state->debug_flags = 0;)				\
-    DO_IF_USE_CLOCK_FOR_SLICES (thread_start_clock = 0);		\
+    DO_IF_USE_CLOCK_FOR_SLICES (					\
+      thread_start_clock = 0;						\
+      last_clocked_thread = _th_state->id;				\
+    );									\
   } while (0)
 
 #define EXIT_THREAD_STATE(_tmp) do {					\
@@ -668,7 +672,12 @@ PMOD_EXPORT extern const char msg_thr_swapped_over[];
       });								\
     _th_state->swapped=0;						\
     Pike_interpreter=_th_state->state;					\
-    DO_IF_USE_CLOCK_FOR_SLICES (thread_start_clock = 0);		\
+    DO_IF_USE_CLOCK_FOR_SLICES (					\
+      if (last_clocked_thread != _th_state->id) {			\
+	thread_start_clock = clock();					\
+	last_clocked_thread = _th_state->id;				\
+      }									\
+    );									\
   } while(0)
 
 #define SWAP_OUT_CURRENT_THREAD() \

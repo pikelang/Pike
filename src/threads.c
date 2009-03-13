@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.274 2009/01/26 10:15:06 grubba Exp $
+|| $Id: threads.c,v 1.275 2009/03/13 16:22:31 mast Exp $
 */
 
 #include "global.h"
@@ -347,6 +347,7 @@ struct program *thread_local_prog = 0;
 PMOD_EXPORT ptrdiff_t thread_storage_offset;
 #ifdef USE_CLOCK_FOR_SLICES
 PMOD_EXPORT clock_t thread_start_clock = 0;
+PMOD_EXPORT THREAD_T last_clocked_thread = 0;
 #endif
 
 #ifdef PIKE_DEBUG
@@ -925,6 +926,11 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
     }
   }
 #elif defined (USE_CLOCK_FOR_SLICES)
+#ifdef PIKE_DEBUG
+  if (last_clocked_thread != th_self())
+    Pike_fatal ("Stale thread %08lx in last_clocked_thread (self is %08lx)\n",
+		(unsigned long) last_clocked_thread, (unsigned long) th_self());
+#endif
   if (clock() - thread_start_clock < (clock_t) (CLOCKS_PER_SEC / 20))
     return;
 #else
@@ -956,9 +962,15 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
   THREADS_DISALLOW();
 
 #ifdef USE_CLOCK_FOR_SLICES
-  /* Must set the base time for the slice here since clock() returns
-   * thread local time. */
+  /* If we didn't yield then give ourselves a new time slice. If we
+   * did yield then thread_start_clock is the current clock anyway
+   * after the thread swap in. */
   thread_start_clock = clock();
+#ifdef PIKE_DEBUG
+  if (last_clocked_thread != th_self())
+    Pike_fatal ("Stale thread %08lx in last_clocked_thread (self is %08lx)\n",
+		(unsigned long) last_clocked_thread, (unsigned long) th_self());
+#endif
 #endif
 
   DEBUG_CHECK_THREAD();
