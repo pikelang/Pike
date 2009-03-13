@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.866 2009/03/11 21:40:54 marcus Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.867 2009/03/13 22:06:34 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -4932,6 +4932,61 @@ void test()
     Thread.thread_create (lambda () {});
     destruct (l);
   ]])
+]])
+
+cond([[all_constants()->thread_create]],
+[[
+  test_any([[
+    int run = 1;
+
+    mapping(string:int) rounds = ([]);
+
+    void imutex_locker (string id)
+    {
+      while (run) {
+	getpwuid (0);
+	rounds[id]++;
+	//werror (id);
+      }
+    };
+
+    void threads_disabler (string id)
+    {
+      while (run) {
+	object l = _disable_threads();
+	rounds[id]++;
+	//werror (id);
+	l = 0;
+      }
+    };
+
+    array(Thread.Thread) t = ({
+      Thread.thread_create (imutex_locker, "0"),
+      Thread.thread_create (imutex_locker, "1"),
+      Thread.thread_create (imutex_locker, "2"),
+      Thread.thread_create (threads_disabler, "a"),
+      Thread.thread_create (threads_disabler, "b"),
+    });
+    sleep (5);
+    run = 0;
+    t->wait();
+    //werror ("%O\n", rounds);
+    int minimum = min (@values (rounds)), maximum = max (@values (rounds));
+
+    if (minimum < 10) {
+      werror ("A thread got stuck: %O\n", rounds);
+      return 0;
+    }
+
+    // This span is currently very generous, since the time slicing in
+    // threads.c:check_threads can be flaky on some systems.
+    if (minimum * 100 < maximum) {
+      werror ("Too uneven distribution between threads: %O\n", rounds);
+      return 0;
+    }
+
+    return 1;
+  ]], 1)
 ]])
 
 cond([[0]],
