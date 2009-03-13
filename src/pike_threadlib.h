@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_threadlib.h,v 1.68 2009/03/13 16:22:31 mast Exp $
+|| $Id: pike_threadlib.h,v 1.69 2009/03/13 21:06:54 mast Exp $
 */
 
 #ifndef PIKE_THREADLIB_H
@@ -107,7 +107,7 @@ PMOD_EXPORT extern struct program *thread_id_prog;
 
 
 PMOD_EXPORT extern int num_threads;
-PMOD_EXPORT extern int live_threads, disallow_live_threads;
+PMOD_EXPORT extern int live_threads;
 struct object;
 PMOD_EXPORT extern size_t thread_stack_size;
 
@@ -859,13 +859,6 @@ PMOD_EXPORT extern int Pike_in_gc;
      }) \
      if(num_threads > 1 && !threads_disabled) { \
        SWAP_OUT_THREAD(_tmp_uid); \
-       while (disallow_live_threads) {					\
-	 THREADS_FPRINTF(1, (stderr, "THREADS_ALLOW_UID() %s:%d t:%08lx(#%d) " \
-			     "live threads disallowed\n",		\
-			     __FILE__, __LINE__,			\
-			     (unsigned long int)_tmp_uid->id, live_threads)); \
-	 co_wait_interpreter(&threads_disabled_change);			\
-       }								\
        live_threads++; \
        THREADS_FPRINTF(1, (stderr, "THREADS_ALLOW_UID() %s:%d t:%08lx(#%d)\n", \
 			   __FILE__, __LINE__, \
