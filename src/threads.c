@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.277 2009/03/13 21:06:54 mast Exp $
+|| $Id: threads.c,v 1.278 2009/03/13 21:44:46 mast Exp $
 */
 
 #include "global.h"
@@ -356,7 +356,7 @@ PMOD_EXPORT const char msg_ip_not_locked[] =
 PMOD_EXPORT const char msg_ip_not_locked_this_thr[] =
   "Interpreter not locked by this thread.\n";
 PMOD_EXPORT const char msg_thr_swapped_over[] =
-  "Thread 0x%08x swapped in over existing thread 0x%08x.\n";
+  "Thread %"PRINTSIZET"x swapped in over existing thread %"PRINTSIZET"x.\n";
 PMOD_EXPORT const char msg_saved_thread_id[] =
   "Saved thread id: ";
 PMOD_EXPORT const char msg_swap_in_cur_thr_failed[] =
@@ -372,7 +372,8 @@ PMOD_EXPORT const char msg_thr_allow_in_gc[] =
   "Threads allowed during garbage collection (pass %d).\n";
 PMOD_EXPORT const char msg_thr_allow_in_disabled[] =
   "Threads allowed from a different thread "
-  "while threads are disabled. (self: 0x%08x, disabler: 0x%08x)\n";
+  "while threads are disabled. "
+  "(self: %"PRINTSIZET"x, disabler: %"PRINTSIZET"x)\n";
 PMOD_EXPORT const char msg_global_dynbuf_in_use[] =
   "Threads allowed while the global dynamic buffer is in use.\n";
 #endif
@@ -478,8 +479,9 @@ void init_threads_disable(struct object *o)
 		      (stderr,
 		       "_disable_threads(): Waiting for %d threads to finish\n",
 		       live_threads));
-      low_co_wait_interpreter(&live_threads_change);
+      _do_co_wait_interpreter(&live_threads_change);
     }
+    THREADS_FPRINTF(0, (stderr, "_disable_threads(): threads now disabled\n"));
     SWAP_IN_CURRENT_THREAD();
   }
 }
@@ -494,9 +496,8 @@ void exit_threads_disable(struct object *o)
 
       /* Order shouldn't matter for unlock, so no need to do it backwards. */
       while(im) {
-	THREADS_FPRINTF(0,
-			(stderr,
-			 "exit_threads_disable(): Unlocking IM 0x%p\n", im));
+	THREADS_FPRINTF(0, (stderr,
+			    "exit_threads_disable(): Unlocking IM %p\n", im));
 	mt_unlock(&(im->lock));
 	im = im->next;
       }
@@ -525,8 +526,7 @@ void init_interleave_mutex(IMUTEX_T *im)
 
   init_threads_disable(NULL);
 
-  THREADS_FPRINTF(0, (stderr,
-		      "init_interleave_mutex(): Locking IM 0x%p\n", im));
+  THREADS_FPRINTF(0, (stderr, "init_interleave_mutex(): Locking IM %p\n", im));
 
   /* Lock it so that it can be unlocked by exit_threads_disable() */
   mt_lock(&(im->lock));
@@ -1236,10 +1236,11 @@ void f_thread_create(INT32 args)
      */
     SWAP_OUT_CURRENT_THREAD();
     while (thread_state->status == THREAD_NOT_STARTED) {
-      THREADS_FPRINTF(0, (stderr, "THREAD_CREATE %p waiting...\n",
+      THREADS_FPRINTF(0, (stderr, "f_thread_create %p waiting...\n",
 			  thread_state));
-      low_co_wait_interpreter(&thread_state->status_change);
+      _do_co_wait_interpreter(&thread_state->status_change);
     }
+    THREADS_FPRINTF(0, (stderr, "f_thread_create %p continue\n", thread_state));
     SWAP_IN_CURRENT_THREAD();
   } else {
     low_cleanup_interpret(&thread_state->state);
@@ -1247,8 +1248,7 @@ void f_thread_create(INT32 args)
     Pike_error("Failed to create thread (errno = %d).\n", tmp);
   }
 
-  THREADS_FPRINTF(0, (stderr, "THREAD_CREATE -> t:%p\n",
-		      thread_state));
+  THREADS_FPRINTF(0, (stderr, "f_thread_create %p done\n", thread_state));
   push_int(0);
 }
 
@@ -1656,7 +1656,7 @@ void exit_mutex_obj_compat_7_4(struct object *o)
 #define THIS_KEY ((struct key_storage *)(CURRENT_STORAGE))
 void init_mutex_key_obj(struct object *o)
 {
-  THREADS_FPRINTF(1, (stderr, "KEY k:%p, o:%p\n",
+  THREADS_FPRINTF(1, (stderr, "KEY k:%p, t:%p\n",
 		      THIS_KEY, Pike_interpreter.thread_state));
   THIS_KEY->mut=0;
   THIS_KEY->mutex_obj = NULL;
@@ -2020,18 +2020,16 @@ static void f_thread_id_result(INT32 args)
 
   th->waiting++;
 
-  THREADS_FPRINTF(0, (stderr,
-		      "Thread->wait(): Waiting for thread %p (state:%d).\n",
-		      th, th->status));
+  THREADS_FPRINTF(0, (stderr, "Thread->wait(): Waiting for thread_state %p "
+		      "(state:%d).\n", th, th->status));
   while(th->status != THREAD_EXITED) {
     SWAP_OUT_CURRENT_THREAD();
     co_wait_interpreter(&th->status_change);
     SWAP_IN_CURRENT_THREAD();
     check_threads_etc();
     THREADS_FPRINTF(0,
-		    (stderr,
-		     "Thread->wait(): Waiting for thread %p (state:%d).\n",
-		     th, th->status));
+		    (stderr, "Thread->wait(): Waiting for thread_state %p "
+		     "(state:%d).\n", th, th->status));
   }
 
   assign_svalue_no_free(Pike_sp, &th->result);

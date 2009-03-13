@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_threadlib.h,v 1.69 2009/03/13 21:06:54 mast Exp $
+|| $Id: pike_threadlib.h,v 1.70 2009/03/13 21:44:46 mast Exp $
 */
 
 #ifndef PIKE_THREADLIB_H
@@ -434,10 +434,11 @@ struct interleave_mutex
  */
 #define LOCK_IMUTEX(im) do { \
     if (!threads_disabled) { \
-      THREADS_FPRINTF(0, (stderr, "Locking IMutex 0x%p...\n", (im))); \
+      THREADS_FPRINTF(0, (stderr, "Locking IMutex %p...\n", (im))); \
       THREADS_ALLOW(); \
       mt_lock(&((im)->lock)); \
       THREADS_DISALLOW(); \
+      THREADS_FPRINTF(0, (stderr, "Locked IMutex %p\n", (im))); \
     } \
   } while(0)
 
@@ -447,7 +448,7 @@ struct interleave_mutex
  */
 #define UNLOCK_IMUTEX(im) do { \
     if (!threads_disabled) { \
-      THREADS_FPRINTF(0, (stderr, "Unlocking IMutex 0x%p...\n", (im))); \
+      THREADS_FPRINTF(0, (stderr, "Unlocking IMutex %p\n", (im))); \
       mt_unlock(&((im)->lock)); \
     } \
   } while(0)
@@ -507,6 +508,7 @@ PMOD_EXPORT extern THREAD_T last_clocked_thread;
       /* E.g. THREADS_DISALLOW is used in numerous places where the */	\
       /* value in errno must not be clobbered. */			\
       int saved_errno__ = errno;					\
+      fprintf (stderr, "[%"PRINTSIZET"x] ", (size_t) th_self());	\
       fprintf X;							\
       errno = saved_errno__;						\
     }									\
@@ -521,13 +523,13 @@ PMOD_EXPORT extern THREAD_T last_clocked_thread;
 extern THREAD_T debug_locking_thread;
 #define SET_LOCKING_THREAD (debug_locking_thread = th_self(), 0)
 
-#define low_mt_lock_interpreter()					\
+#define _do_mt_lock_interpreter()					\
   do {mt_lock(&interpreter_lock); SET_LOCKING_THREAD;} while (0)
 #define low_mt_trylock_interpreter()					\
   (mt_trylock(&interpreter_lock) || SET_LOCKING_THREAD)
-#define low_co_wait_interpreter(COND) \
+#define _do_co_wait_interpreter(COND) \
   do {co_wait((COND), &interpreter_lock); SET_LOCKING_THREAD;} while (0)
-#define low_co_wait_interpreter_timeout(COND, SECS, NANOS) do {		\
+#define _do_co_wait_interpreter_timeout(COND, SECS, NANOS) do {		\
     co_wait_timeout((COND), &interpreter_lock, (SECS), (NANOS));	\
     SET_LOCKING_THREAD;							\
   } while (0)
@@ -548,35 +550,61 @@ PMOD_EXPORT extern const char msg_ip_not_locked_this_thr[];
 
 #else
 
-#define low_mt_lock_interpreter() do {mt_lock(&interpreter_lock);} while (0)
+#define _do_mt_lock_interpreter() do {mt_lock(&interpreter_lock);} while (0)
 #define low_mt_trylock_interpreter() (mt_trylock(&interpreter_lock))
-#define low_co_wait_interpreter(COND) do {co_wait((COND), &interpreter_lock);} while (0)
-#define low_co_wait_interpreter_timeout(COND, SECS, NANOS) do {		\
+#define _do_co_wait_interpreter(COND) do {				\
+    co_wait((COND), &interpreter_lock);					\
+  } while (0)
+#define _do_co_wait_interpreter_timeout(COND, SECS, NANOS) do {		\
     co_wait_timeout((COND), &interpreter_lock, (SECS), (NANOS));	\
   } while (0)
 
 #endif
 
+#define _do_mt_unlock_interpreter() do {				\
+    mt_unlock(&interpreter_lock);					\
+  } while (0)
+
+#define low_mt_lock_interpreter() do {					\
+    _do_mt_lock_interpreter();						\
+    THREADS_FPRINTF (1, (stderr, "Got interpreter lock @ %s:%d\n",	\
+			 __FILE__, __LINE__));				\
+  } while (0)
+#define low_co_wait_interpreter(COND) do {				\
+    THREADS_FPRINTF (1, (stderr, "Waiting on %s @ %s:%d\n",		\
+			 #COND, __FILE__, __LINE__));			\
+    _do_co_wait_interpreter (COND);					\
+    THREADS_FPRINTF (1, (stderr, "Acquired %s @ %s:%d\n",		\
+			 #COND, __FILE__, __LINE__));			\
+  } while (0)
+#define low_co_wait_interpreter_timeout(COND, SECS, NANOS) do {		\
+    THREADS_FPRINTF (1, (stderr, "Timed wait on %s @ %s:%d\n",		\
+			 #COND, __FILE__, __LINE__));			\
+    _do_co_wait_interpreter_timeout (COND, SECS, NANOS);		\
+    THREADS_FPRINTF (1, (stderr, "Stopped waiting on %s @ %s:%d\n",	\
+			 #COND, __FILE__, __LINE__));			\
+  } while (0)
+
 static INLINE int threads_disabled_wait(void)
 {
   do {
-    THREADS_FPRINTF(1, (stderr, "Thread 0x%x: Wait on threads_disabled\n",
-			(int) th_self()));
-    low_co_wait_interpreter(&threads_disabled_change);
+    THREADS_FPRINTF(1, (stderr, "Wait on threads_disabled\n"));
+    _do_co_wait_interpreter(&threads_disabled_change);
   } while (threads_disabled);
-  THREADS_FPRINTF(1, (stderr, "Thread 0x%x: Continue after threads_disabled\n",
-		      (int) th_self()));
+  THREADS_FPRINTF(1, (stderr, "Continue after threads_disabled\n"));
   return 0;
 }
 
 #define mt_lock_interpreter() do {					\
     low_mt_lock_interpreter();						\
-    (threads_disabled && threads_disabled_wait());			\
+    if (threads_disabled) threads_disabled_wait();			\
   } while (0)
 #define mt_trylock_interpreter() \
   (low_mt_trylock_interpreter() || (threads_disabled && threads_disabled_wait()))
 #define mt_unlock_interpreter() do {					\
-    mt_unlock(&interpreter_lock);					\
+    THREADS_FPRINTF(1, (stderr, "Releasing interpreter lock @ %s:%d\n",	\
+			__FILE__, __LINE__));				\
+    _do_mt_unlock_interpreter();					\
   } while (0)
 #define co_wait_interpreter(COND) do {					\
     low_co_wait_interpreter(COND);					\
@@ -648,9 +676,9 @@ PMOD_EXPORT extern const char msg_thr_swapped_over[];
     DO_IF_DEBUG (							\
       if (Pike_sp != (struct svalue *) (ptrdiff_t) -1)			\
 	Pike_fatal (msg_thr_swapped_over,				\
-		    (unsigned long int) _th_state->id,			\
+		    (size_t) _th_state->id,				\
 		    Pike_interpreter.thread_state ?			\
-		    (unsigned long int) Pike_interpreter.thread_state->id : 0); \
+		    (size_t) Pike_interpreter.thread_state->id : 0);	\
     );									\
     DO_IF_PROFILING({							\
 	if (_th_state->swapped) {					\
@@ -684,8 +712,8 @@ PMOD_EXPORT extern const char msg_thr_swapped_over[];
   do {\
      struct thread_state *_tmp = Pike_interpreter.thread_state; \
      SWAP_OUT_THREAD(_tmp); \
-     THREADS_FPRINTF(1, (stderr, "SWAP_OUT_CURRENT_THREAD() %s:%d t:%08lx\n", \
-			 __FILE__, __LINE__, (unsigned long int)_tmp->id))
+     THREADS_FPRINTF(1, (stderr, "SWAP_OUT_CURRENT_THREAD() @ %s:%d\n", \
+			 __FILE__, __LINE__))
 
 PMOD_EXPORT extern void debug_list_all_threads(void);
 extern void dumpmem(const char *desc, void *x, int size);
@@ -694,8 +722,8 @@ PMOD_EXPORT extern const char msg_saved_thread_id[];
 PMOD_EXPORT extern const char msg_swap_in_cur_thr_failed[];
 
 #define SWAP_IN_CURRENT_THREAD()					      \
-   THREADS_FPRINTF(1, (stderr, "SWAP_IN_CURRENT_THREAD() %s:%d ... t:%08lx\n", \
-		       __FILE__, __LINE__, (unsigned long int)_tmp->id));	      \
+   THREADS_FPRINTF(1, (stderr, "SWAP_IN_CURRENT_THREAD() @ %s:%d\n",	\
+		       __FILE__, __LINE__));				\
    SWAP_IN_THREAD(_tmp);						      \
    DO_IF_DEBUG(								      \
    {									      \
@@ -810,18 +838,17 @@ PMOD_EXPORT extern int Pike_in_gc;
      }) \
      if(num_threads > 1 && !threads_disabled) { \
        SWAP_OUT_THREAD(_tmp); \
-       THREADS_FPRINTF(1, (stderr, "THREADS_ALLOW() %s:%d t:%08lx(#%d)\n", \
-			   __FILE__, __LINE__, \
-			   (unsigned long int)_tmp->id, live_threads)); \
-       mt_unlock_interpreter(); \
+       THREADS_FPRINTF(1, (stderr, "THREADS_ALLOW() @ %s:%d (%d live thr)\n", \
+			   __FILE__, __LINE__, live_threads));		\
+       _do_mt_unlock_interpreter();					\
      } else {								\
        DO_IF_DEBUG(							\
 	 THREAD_T self = th_self();					\
 	 if (threads_disabled &&					\
 	     !th_equal(threads_disabled_thread, self))			\
 	   DO_IF_NOT_XLC_IA64(Pike_fatal(msg_thr_allow_in_disabled,	\
-					 self,				\
-					 threads_disabled_thread));	\
+					 (size_t) self,			\
+					 (size_t) threads_disabled_thread)); \
        );								\
      }									\
      DO_IF_DEBUG(_tmp->debug_flags |= THREAD_DEBUG_LOOSE;)		\
@@ -832,10 +859,10 @@ PMOD_EXPORT extern int Pike_in_gc;
      REVEAL_GLOBAL_VARIABLES(); \
      DO_IF_PIKE_CLEANUP (if (_tmp) {) \
      if(_tmp->swapped) { \
-       low_mt_lock_interpreter(); \
-       THREADS_FPRINTF(1, (stderr, "THREADS_DISALLOW() %s:%d t:%08lx(#%d)\n", \
-			   __FILE__, __LINE__, \
-			   (unsigned long int)_tmp->id, live_threads)); \
+       _do_mt_lock_interpreter(); \
+       THREADS_FPRINTF(1, (stderr, "THREADS_DISALLOW() @ %s:%d "	\
+			   "(%d live thr)\n",				\
+			   __FILE__, __LINE__, live_threads));		\
        if (threads_disabled) threads_disabled_wait(); \
        SWAP_IN_THREAD(_tmp);\
      } \
@@ -843,6 +870,15 @@ PMOD_EXPORT extern int Pike_in_gc;
      DEBUG_CHECK_THREAD(); \
      DO_IF_PIKE_CLEANUP (}) \
    } while(0)
+
+/* The difference between THREADS_ALLOW and THREADS_ALLOW_UID is that
+ * _disable_threads waits for the latter to hold in
+ * THREADS_DISALLOW_UID before returning. Otoh, THREADS_ALLOW sections
+ * might continue to run when threads are officially disabled. That is
+ * fine as long as they don't have any effect on the process state
+ * that is observable from other threads. Iow, THREADS_ALLOW_UID is
+ * necessary when doing any kind of I/O, calling nonreentrant
+ * functions, or similar. */
 
 #define THREADS_ALLOW_UID() do { \
      struct thread_state *_tmp_uid = Pike_interpreter.thread_state; \
@@ -860,18 +896,18 @@ PMOD_EXPORT extern int Pike_in_gc;
      if(num_threads > 1 && !threads_disabled) { \
        SWAP_OUT_THREAD(_tmp_uid); \
        live_threads++; \
-       THREADS_FPRINTF(1, (stderr, "THREADS_ALLOW_UID() %s:%d t:%08lx(#%d)\n", \
-			   __FILE__, __LINE__, \
-			   (unsigned long int)_tmp_uid->id, live_threads)); \
-       mt_unlock_interpreter(); \
+       THREADS_FPRINTF(1, (stderr, "THREADS_ALLOW_UID() @ %s:%d "	\
+			   "(%d live thr)\n",				\
+			   __FILE__, __LINE__, live_threads));		\
+       _do_mt_unlock_interpreter();					\
      } else {								\
        DO_IF_DEBUG(							\
 	 THREAD_T self = th_self();					\
 	 if (threads_disabled &&					\
 	     !th_equal(threads_disabled_thread, self))			\
 	   DO_IF_NOT_XLC_IA64(Pike_fatal(msg_thr_allow_in_disabled,	\
-					 self,				\
-					 threads_disabled_thread));	\
+					 (size_t) self,			\
+					 (size_t) threads_disabled_thread)); \
        );								\
      }									\
      DO_IF_DEBUG(_tmp_uid->debug_flags |= THREAD_DEBUG_LOOSE;)		\
@@ -882,12 +918,11 @@ PMOD_EXPORT extern int Pike_in_gc;
      REVEAL_GLOBAL_VARIABLES(); \
      DO_IF_PIKE_CLEANUP (if (_tmp_uid) {) \
      if(_tmp_uid->swapped) { \
-       low_mt_lock_interpreter(); \
+       _do_mt_lock_interpreter(); \
        live_threads--; \
        THREADS_FPRINTF(1, (stderr, \
-                           "THREADS_DISALLOW_UID() %s:%d t:%08lx(#%d)\n", \
-			   __FILE__, __LINE__, \
-			   (unsigned long int)_tmp_uid->id, live_threads)); \
+			   "THREADS_DISALLOW_UID() @ %s:%d (%d live thr)\n", \
+			   __FILE__, __LINE__, live_threads));	     \
        co_broadcast(&live_threads_change); \
        if (threads_disabled) threads_disabled_wait(); \
        SWAP_IN_THREAD(_tmp_uid);\
