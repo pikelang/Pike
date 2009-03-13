@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.166 2008/10/04 17:19:05 mast Exp $
+|| $Id: error.c,v 1.167 2009/03/13 00:29:19 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -619,9 +619,11 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_va_fatal(const char *fmt, va_list args
   {
     JMP_BUF jmp;
     struct callback_list saved_eval_cbs = evaluator_callbacks;
-    /* Don't want thread switches or any other evaluator stuff while
-     * we let the master describe the backtrace below. */
-    low_init_threads_disable();
+    /* Simulate threads_disabled to avoid thread switches or any other
+     * evaluator stuff while we let the master describe the backtrace
+     * below. Doing it the naughty way without going through
+     * init_threads_disable etc to avoid hanging on runaway locks. */
+    threads_disabled++;
     MEMSET (&evaluator_callbacks, 0, sizeof (evaluator_callbacks));
     if (SETJMP (jmp))
       fprintf(stderr,"Got exception when trying to describe backtrace.\n");
@@ -633,7 +635,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_va_fatal(const char *fmt, va_list args
 	write_to_stderr(Pike_sp[-1].u.string->str, Pike_sp[-1].u.string->len);
     }
     UNSETJMP (jmp);
-    exit_threads_disable (NULL);
+    threads_disabled--;
     evaluator_callbacks = saved_eval_cbs;
   }else{
     fprintf(stderr,"No stack - no backtrace.\n");
