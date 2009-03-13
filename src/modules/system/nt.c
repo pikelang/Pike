@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: nt.c,v 1.82 2009/03/13 14:31:43 grubba Exp $
+|| $Id: nt.c,v 1.83 2009/03/13 14:46:42 grubba Exp $
 */
 
 /*
@@ -276,6 +276,20 @@ static const HKEY hkeys[] = {
   HKEY_USERS,
   /* HKEY_CURRENT_CONFIG */
 };
+
+/*! @decl constant HKEY_CLASSES_ROOT = 0
+ *! @decl constant HKEY_LOCAL_MACHINE = 1
+ *! @decl constant HKEY_CURRENT_USER = 2
+ *! @decl constant HKEY_USERS = 3
+ *!
+ *!   Root handles in the Windows registry.
+ *!
+ *! @note
+ *!   These constants are only available on Win32 systems.
+ *!
+ *! @seealso
+ *!   @[RegGetValue()], @[RegGetValues()], @[RegGetKeyNames()]
+ */
 
 /*! @decl string|int|array(string) RegGetValue(int hkey, string key, @
  *!                                            string index)
