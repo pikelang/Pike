@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.275 2009/03/13 16:22:31 mast Exp $
+|| $Id: threads.c,v 1.276 2009/03/13 21:03:47 mast Exp $
 */
 
 #include "global.h"
@@ -958,6 +958,11 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
 
   THREADS_ALLOW();
   /* Allow other threads to run */
+  /* FIXME: Ought to use condition vars or something to get another
+   * thread to run. yield functions are notoriously unreliable and
+   * poorly defined. It might not really yield we need it to. It might
+   * make us yield to another process instead of just another thread.
+   * It might even make us sleep for a short while. */
   th_yield();
   THREADS_DISALLOW();
 
