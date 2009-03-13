@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: nt.c,v 1.81 2008/10/17 17:12:38 mast Exp $
+|| $Id: nt.c,v 1.82 2009/03/13 14:31:43 grubba Exp $
 */
 
 /*
@@ -71,9 +71,6 @@
 #include "fdlib.h"
 
 #define sp Pike_sp
-
-/*! @module System
- */
 
 static void throw_nt_error(char *funcname, int err)
 /*
@@ -635,6 +632,9 @@ static void f_sid_account(INT32 args)
   push_array(allocate_array(3));
   
 }
+
+/*! @module System
+ */
 
 /*! @decl object LogonUser(string username, string|int(0..0) domain, @
  *!                        string password, int|void logon_type, @
