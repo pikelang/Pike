@@ -1,7 +1,6 @@
 
 void main(int n, array args)
 {
-  werror("\n\n%O\n\n", args);
   if(n!=2) exit(1);
   string file = Stdio.read_file(args[1]);
   if(!file) exit(1);
