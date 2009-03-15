@@ -1,9 +1,9 @@
 START_MARKER
-// $Id: testsuite.in,v 1.8 2005/11/16 18:41:20 grubba Exp $
+// $Id: testsuite.in,v 1.9 2009/03/15 12:11:24 mast Exp $
 
 // gdbm
-cond( [[ master()->resolv("Gdbm") ]],
-[[
+cond_begin([[ master()->resolv("Gdbm") ]])
+
   test_true(programp(Gdbm.gdbm))
   test_do(destruct(Gdbm.gdbm()))
 
@@ -52,5 +52,7 @@ cond( [[ master()->resolv("Gdbm") ]],
 
   test_do(rm("test.gdbm"))
   test_do(add_constant("GDBMBASE"))
-]])
+
+cond_end // Gdbm
+
 END_MARKER

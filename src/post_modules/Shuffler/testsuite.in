@@ -1,8 +1,7 @@
 START_MARKER
 dnl tests for Shuffler module
 
-cond([[ Shuffler.Shuffle ]],
-[[
+cond_begin([[ Shuffler.Shuffle ]])
 
 test_any([[
     Stdio.File f = Stdio.File()->pipe();
@@ -14,6 +13,6 @@ test_any([[
     return "nosegfault";
 ]],"nosegfault")
 
-]])
+cond_end // Shuffler.Shuffle
 
 END_MARKER

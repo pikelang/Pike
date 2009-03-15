@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.868 2009/03/14 21:16:14 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.869 2009/03/15 12:11:23 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -4720,8 +4720,8 @@ cond([[all_constants()->_verify_internals]],
   test_do(_verify_internals())
 ]])
 
-cond([[all_constants()->thread_create]],
-[[
+cond_begin([[all_constants()->thread_create]])
+
 // thread_create
   test_do(thread_create(lambda() { }))
 
@@ -4737,8 +4737,38 @@ cond([[all_constants()->thread_create]],
   test_do(add_constant("_tmp_mutex_lock"))
   test_true(_tmp_mutex->trylock())
   test_do(add_constant("_tmp_mutex"))
-  test_any([[ object m = Thread.Mutex(); object k = m->lock(); thread_create(lambda(object k){ sleep(10); catch { destruct(k); }; }, k);if (catch{m->lock(); return 0;}) { return 1; } return 0; ]],1)
-  test_any([[ array data=({0,Thread.Mutex(),Thread.Mutex(),0}); data[3]=data[2]->lock(); thread_create(lambda(array data) {object o=data[1]->lock(); destruct(data[3]); sleep(10); data[0]=1; destruct(o);  },data); object l=data[2]->lock(1); object ll=data[1]->lock(); return data[0]; ]],1)
+
+  test_any([[
+    object m = Thread.Mutex();
+    object k = m->lock();
+    thread_create(lambda(object k){
+		    sleep(10);
+		    catch { destruct(k); };
+		  }, k);
+    if (catch{
+	  m->lock();
+	  return 0;
+	}) {
+      return 1;
+    }
+    return 0;
+  ]],1)
+
+  test_any([[
+    array data=({0,Thread.Mutex(),Thread.Mutex(),0});
+    data[3]=data[2]->lock();
+    thread_create(lambda(array data) {
+		    object o=data[1]->lock();
+		    destruct(data[3]);
+		    sleep(10);
+		    data[0]=1;
+		    destruct(o);
+		  },data);
+    object l=data[2]->lock(1);
+    object ll=data[1]->lock();
+    return data[0];
+  ]],1)
+
   test_any([[
     array data=({1, Thread.Mutex(), Thread.Condition(), 0});
     object key = data[1]->lock();
@@ -4799,8 +4829,31 @@ cond([[all_constants()->thread_create]],
     return 0;
   ]], 0)
 
-  test_any([[object o=Thread.Queue(); thread_create(lambda(object f) { for(int e=0;e<10000;e++) f->write(random(4711)); f->write(-1); },o); int tmp=0; while(o->read() != -1) tmp++; return tmp;]],10000)
-  test_any([[object o=Thread.Fifo(); thread_create(lambda(object f) { for(int e=0;e<10000;e++) f->write(random(4711)); f->write(-1); },o); int tmp=0; while(o->read() != -1) tmp++; return tmp;]],10000)
+  test_any([[
+    object o=Thread.Queue();
+    thread_create(lambda(object f) {
+		    for(int e=0;e<10000;e++)
+		      f->write(random(4711));
+		    f->write(-1);
+		  },o);
+    int tmp=0;
+    while(o->read() != -1)
+      tmp++;
+    return tmp;
+  ]],10000)
+
+  test_any([[
+    object o=Thread.Fifo();
+    thread_create(lambda(object f) {
+		    for(int e=0;e<10000;e++)
+		      f->write(random(4711));
+		    f->write(-1);
+		  },o);
+    int tmp=0;
+    while(o->read() != -1)
+      tmp++;
+    return tmp;
+  ]],10000)
 
 dnl this will crash pike on out-of-address-space-related errors
 dnl  test_any([[ catch { allocate(10000,thread_create)(lambda() { sleep(1); })->wait(); } ]])
@@ -4814,10 +4867,7 @@ dnl  test_any([[ catch { allocate(10000,thread_create)(lambda() { sleep(1); })->
     sleep (0.1);
     return count > 0; 
   ]], 1)
-]])
 
-cond([[all_constants()->thread_create]],
-[[
   // _disable_threads
   test_any([[
 #ifndef __NT__
@@ -4932,10 +4982,7 @@ void test()
     Thread.thread_create (lambda () {});
     destruct (l);
   ]])
-]])
 
-cond([[all_constants()->thread_create]],
-[[
   test_any([[
     int run = 1;
 
@@ -5005,7 +5052,8 @@ cond([[all_constants()->thread_create]],
 
     return 1;
   ]], 1)
-]])
+
+cond_end // thread_create
 
 cond([[0]],
 [[
@@ -6715,8 +6763,8 @@ test_true([[Float.MIN <= 1e-37]])
 test_true([[Float.MAX >= 1e37]])
 test_true([[Float.EPSILON <= 1e-5]])
 
-cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
-[[
+cond_begin([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]])
+
   // Test the lexer.
   test_eq("2147483648", [[ (string)0x80000000 ]])
   test_eq("2147483649", [[ (string)0x80000001 ]])
@@ -6746,7 +6794,8 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
   // integers in almost every way.
   test_do([[ _next ((mixed) Int.NATIVE_MAX + 1) ]])
   test_do([[ _next ((mixed) Int.NATIVE_MIN - 1) ]])
-]])
+
+cond_end // __AUTO_BIGNUM__
     
   // These numbers should be native integers.
   test_eval_error([[ _next ((mixed) -0x80000000) ]])
@@ -6755,8 +6804,8 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
   test_eval_error([[ _next ((mixed) Int.NATIVE_MAX) ]])
   test_eval_error([[ _next ((mixed) Int.NATIVE_MIN) ]])
 
-cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
-[[
+cond_begin([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]])
+
   // Test incrementations (FIXME: More cases?).
   test_eq("2147483648",
    [[ (string)(class { int f(int x) { x++; return x; } })()->f(0x7fffffff) ]])
@@ -6810,10 +6859,7 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
    [[ (string)(class { int f() { int x=-0x8000000000000000;x--;return x; } })()->f()]])
 
   test_encode(1<<99);
-]])
 
-cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
-[[
   // - Left shift.
   test_eq("1073741824", [[ (string)(1<<30) ]])
   test_eq("2147483648", [[ (string)(1<<31) ]])
@@ -6851,10 +6897,7 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
   test_eq("9223372036854775808", [[ (string)abs(0x8000000000000000) ]])
   test_eq("9223372036854775809", [[ (string)abs(0x8000000000000001) ]])
   test_eq("9223372036854775809", [[ (string)abs(-0x8000000000000001) ]])
-]])
 
-cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
-[[
   // - Add.
   test_eq("2147483648", [[ (string)(0x7fffffff + 1) ]])
   test_eq("2147483649", [[ (string)(0x7fffffff + 2) ]])
@@ -6893,10 +6936,6 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
 
   // sprintf (and the describe stuff in the master)
   test_do([[sprintf ("%O", 10->pow);]])
-]])
-
-cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
-[[
 
   // - sscanf.
   test_eq("12345678901234567890",
@@ -6958,10 +6997,7 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
              (int)(mixed)471100000000000000000000000000000000000000000000042)
   test_eq(6745697846498645967,
           [[ Gmp.mpz("6745697846498645967")->cast_to_int(); ]])
-]])
 
-cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
-[[
   test_eq(0x7fffffff, [[ decode_value(encode_value(0x7fffffff)) ]])
   test_eq(0x7ffffffff, [[ decode_value(encode_value(0x7ffffffff)) ]])
   test_eq(0x7fffffffff, [[ decode_value(encode_value(0x7fffffffff)) ]])
@@ -7004,10 +7040,6 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
   test_eval_error([[ _next ((mixed) decode_value (encode_value (Int.NATIVE_MIN))) ]])
   test_do([[ _next ((mixed) decode_value (encode_value (Int.NATIVE_MAX + 1))) ]])
   test_do([[ _next ((mixed) decode_value (encode_value (Int.NATIVE_MIN - 1))) ]])
-]])
-
-cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
-[[
   test_eq(2147483648, -2147483648/-1)
   test_eq(2147483648, -2147483648*-1)
 
@@ -7037,10 +7069,7 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
     4711: 0x54325827a124*0x12348795482485425,
     0x54325827124*0x1234879548a2485425: 1174,
   ]) ]])
-]])
 
-cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
-[[
   test_any([[int a=2147483648; a=a+17;  return a]], 2147483665)
   test_any([[int a=2147483648; a=a-17;  return a]], 2147483631)
   test_any([[int a=2147483648; a=a*17;  return a]], 36507222016)
@@ -7067,10 +7096,7 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
   test_true([[ floatp((1<<99)*3.14) ]]);
   test_true([[ floatp((1<<99)-3.14) ]]);
   test_true([[ floatp((1<<99)+3.14) ]]);
-]])
 
-cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
-[[
    test_eq([[(12)+(3)]],0xf);
    test_eq([[(12)+(3*(1<<32))]],0x30000000c);
    test_eq([[(12)+(3*(1<<64))]],0x3000000000000000c);
@@ -7103,10 +7129,7 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
    test_eq([[(12*(1<<128))-(3*(1<<32))]],0xbfffffffffffffffffffffffd00000000);
    test_eq([[(12*(1<<128))-(3*(1<<64))]],0xbfffffffffffffffd0000000000000000);
    test_eq([[(12*(1<<128))-(3*(1<<128))]],0x900000000000000000000000000000000);
-]])
 
-cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
-[[
    test_eq([[(12)*(3)]],0x24);
    test_eq([[(12)*(3*(1<<32))]],0x2400000000);
    test_eq([[(12)*(3*(1<<64))]],0x240000000000000000);
@@ -7154,10 +7177,7 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
     test_eq([[Gmp.mpz(123456789012345678901234567890)/
 	      Gmp.mpz(67890123456789)]],Gmp.mpz(1818479371169857));
   ]] )
-]])
 
-cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
-[[
   test_any([[int a=10->pow(30); int b=1000000000000000000000000000000; 
             return ([a:1])[b]]],1);
   test_any([[int a=10->pow(30); int b=1000000000000000000000000000000; 
@@ -7200,7 +7220,7 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
 	    array b=({j+13,j+11,j-1,j+8,j+16,j+15,j+12});
             return sizeof( a-b )]],0);
 
-]])
+cond_end // __AUTO_BIGNUM__
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -9837,10 +9857,11 @@ test_equal(17+class{mixed ``+(mixed n){return (<n>);}}(),(<17>))
 cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
 [[
   test_equal(1700000000000000000000+class{mixed ``+(mixed n){return (<n>);}}(),(<1700000000000000000000>))
-  cond( [[ master()->resolv("Gmp")->mpz ]],
-  [[
-    test_eval_error(Gmp.mpz(1700000000000000000000)+class{mixed ``+(mixed n){return (<n>);}}())
-  ]])
+]])
+
+cond( [[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 && master()->resolv("Gmp")->mpz ]],
+[[
+  test_eval_error(Gmp.mpz(1700000000000000000000)+class{mixed ``+(mixed n){return (<n>);}}())
 ]])
 
 // - `-
@@ -10067,8 +10088,8 @@ test_eq([[combine_path_unix("/","/fo\1111/bar/gazonk/../../")]],"/fo\1111/")
 // - compile_string
 // see test for clone()
 
-cond([[all_constants()->thread_create]],
-[[
+cond_begin([[all_constants()->thread_create]])
+
   test_any([[
     string file = #"
 /*
@@ -10115,7 +10136,8 @@ int main(int argc, array(string) argv)
 
   return 0;
   ]], 0)
-]])
+
+cond_end // thread_create
 
 // - copy_value
 test_eq(copy_value(1),1)

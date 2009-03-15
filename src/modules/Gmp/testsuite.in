@@ -1,8 +1,8 @@
 START_MARKER
-dnl $Id: testsuite.in,v 1.30 2005/09/14 17:50:04 marcus Exp $
+dnl $Id: testsuite.in,v 1.31 2009/03/15 12:11:24 mast Exp $
 
-cond( [[ master()->resolv("Gmp")->mpz ]],
-[[
+cond_begin([[ master()->resolv("Gmp")->mpz ]])
+
   test_true(programp(Gmp.mpz))
   test_false(Gmp.mpz())
   test_false(!Gmp.mpz(1))
@@ -50,15 +50,16 @@ cond( [[ master()->resolv("Gmp")->mpz ]],
   test_true(Gmp.mpz(1))
   test_eq(Gmp.mpz(17)->powm(12,4711),85)
   test_eq((string)Gmp.mpz(2)->powm(270,Gmp.mpz(10)->pow(39)),"428761855001222473056385648716020711424")
-]])
 
-cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
+cond_end // Gmp.mpz
+
+cond([[ master()->resolv("Gmp")->mpz && sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
 [[
   test_eq(Gmp.mpz(1) + 0x100000000, 0x100000001)
 ]])
 
-cond( [[ master()->resolv("Gmp")->mpq ]],
-[[
+cond_begin([[ master()->resolv("Gmp")->mpq ]])
+
   test_true(programp(Gmp.mpq))
   test_false(Gmp.mpq())
   test_false(!Gmp.mpq(1))
@@ -99,7 +100,9 @@ cond( [[ master()->resolv("Gmp")->mpq ]],
   test_false(Gmp.mpq(0))
   test_true(Gmp.mpq(1))
 
-  cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
+cond_end // Gmp.mpq
+
+  cond([[ master()->resolv("Gmp")->mpq && sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
   [[
     test_eq(Gmp.mpq(234,99)*Gmp.mpz(1000000000000000000000),Gmp.mpq(26000000000000000000000,11))
     test_eq(Gmp.mpz(1000000000000000000000)*Gmp.mpq(234,99),Gmp.mpz(2000000000000000000000))
@@ -107,10 +110,8 @@ cond( [[ master()->resolv("Gmp")->mpq ]],
     test_eq(1000000000000000000000*Gmp.mpq(234,99),Gmp.mpq(26000000000000000000000,11))
   ]])
 
-]])
+cond_begin([[ master()->resolv("Gmp")->mpf ]])
 
-cond( [[ master()->resolv("Gmp")->mpf ]],
-[[
   test_true(programp(Gmp.mpf))
   test_false(Gmp.mpf())
   test_false(!Gmp.mpf(1))
@@ -148,7 +149,8 @@ cond( [[ master()->resolv("Gmp")->mpf ]],
   test_eq((int)Gmp.mpf(17),17)
   test_false(Gmp.mpf(0))
   test_true(Gmp.mpf(1))
-]])
+
+cond_end // Gmp.mpf
 
   define([[mpx_test_cmp]],[[
     cond( [[ master()->resolv("Gmp")->mpz ]],[[
@@ -183,8 +185,8 @@ dnl    mpx_test($1,$2,$3,Gmp.mpf)
   mpx_mega_test(1,2,3)
   mpx_mega_test(-2,-1,4)
 
-cond( [[ master()->resolv("Gmp")->mpz ]],
-[[
+cond_begin([[ master()->resolv("Gmp")->mpz ]])
+
   test_true(catch(Gmp.mpz("abcd", 47)))
   test_true(catch(Gmp.mpz(-17)->digits(256)))
   test_eq(Gmp.mpz(0)->digits(256), "\0");
@@ -257,6 +259,7 @@ cond( [[ master()->resolv("Gmp")->mpz ]],
   test_eq(Gmp.mpz(10)->small_factor(),2)
   test_eq(Gmp.mpz(15)->small_factor(),3)
   test_eq(Gmp.mpz(10403)->small_factor(),101)
-]]);
+
+cond_end // Gmp.mpz
 
 END_MARKER

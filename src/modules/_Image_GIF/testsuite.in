@@ -1,6 +1,5 @@
 START_MARKER
-cond([[ master()->resolv("_Image_GIF")->encode ]],
-[[
+cond_begin([[ master()->resolv("_Image_GIF")->encode ]])
 
 dnl  NOTE: We are just testing the API here, not if the module actually
 dnl  performed correctly.
@@ -65,5 +64,5 @@ test_true( functionp(Image.GIF.encode_trans) )
 
 test_true( functionp(Image.GIF.encode_fs) )
 
-]])
+cond_end
 END_MARKER

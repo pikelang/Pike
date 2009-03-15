@@ -15,8 +15,8 @@ test_eq([[ sprintf("%-4c",2147483648) ]],"\0\0\0\200")
 test_eq([[ sprintf("%2c",2147483648) ]],"\0\0")
 test_eq([[ sprintf("%-2c",2147483648) ]],"\0\0")
 
-cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
-[[
+cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]])
+
   test_eq([[ sprintf("%1c", 0x1abcd7893) ]], "\223")
   test_eq([[ sprintf("%2c", 0x1abcd7893) ]], "x\223")
   test_eq([[ sprintf("%3c", 0x1abcd7893) ]], "\315x\223")
@@ -44,7 +44,8 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
 
   test_eq("\25363274223", [[ sprintf("%c", 0x1abcd7893) ]])
   test_eq("\12414503555", [[ sprintf("%c", -0x1abcd7893) ]])
-]])
+
+cond_end // __AUTO_BIGNUM__
 
 test_eq([[ sprintf("%x", -1) ]], "-1")
 test_eq([[ sprintf("%4x", -1) ]], "  -1")
@@ -71,13 +72,14 @@ test_eq("00ff", [[ sprintf("%04.2x", -1) ]])
 test_eq("0001", [[ sprintf("%04.2x", 1) ]])
 test_eq("00cc", [[ sprintf("%04.2x", -0x1234) ]])
 
-cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
-[[
+cond_begin([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]])
+
   test_eq("-123456789123456789", [[ sprintf("%x", -0x123456789123456789) ]])
   test_eq("ba9877", [[ sprintf("%.6x", -0x123456789123456789) ]])
   test_eq("876edcba9877", [[ sprintf("%.12x", -0x123456789123456789) ]])
   test_eq("        876edcba9877", [[ sprintf("%20.12x",-0x123456789123456789)]])
-]])
+
+cond_end // __AUTO_BIGNUM__
 
 test_eq("77777777760000000000", [[ sprintf("%.20o", -0x80000000) ]])
 

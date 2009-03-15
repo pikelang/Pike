@@ -1,8 +1,8 @@
 START_MARKER
-// $Id: testsuite.in,v 1.9 2008/03/02 18:21:56 marcus Exp $
+// $Id: testsuite.in,v 1.10 2009/03/15 12:11:24 mast Exp $
 
-cond( [[ master()->resolv("Java")->jvm ]],
-[[
+cond_begin([[ master()->resolv("Java")->jvm ]])
+
   test_true([[objectp(Java)]])
   test_true([[objectp(Java.pkg)]])
   test_true([[objectp(Java.pkg.java.lang.String)]])
@@ -55,7 +55,9 @@ RAApAE8AKgBZACsAZwAsAIEALQABAF4AAAACAF8=
 #endif
   ]],({1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,13.0,935.5}))
   test_do(rm("conftest.class"))
-]])
+
+cond_end // Java.jvm
+
 END_MARKER
 
 conftest.java:

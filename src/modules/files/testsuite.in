@@ -66,8 +66,8 @@ test_any(int e; object o=Stdio.File(); if(!o->open(testfile,"wct")) return "open
 
 test_any(string s; object o=Stdio.File(); if(!o->open(testfile,"r")) return "open"+o->errno(); s=o->read(9999999); if(!o->close()) return "close"+o->errno(); return s,sprintf("%'+-*'100000s",""))
 
-cond([[ Stdio.File()->proxy ]],
-[[
+cond_begin([[ Stdio.File()->proxy ]])
+
   test_any([[string s; object o2,o3,o=Stdio.File(); if(!o->open(testfile,"r")) return "open"+o->errno(); o2=Stdio.File(); o3=o2->pipe(); o2->proxy(o); destruct(o2); s=o3->read(100000); return s]],sprintf("%'+-*'100000s",""))
   test_any([[string s; object o2,o3,o=Stdio.File(); if(!o->open(testfile,"r")) return "open"+o->errno(); o2=Stdio.File(); o3=o2->pipe(); o2->proxy(o); destruct(o2); s=o3->read(9999999); return s]],sprintf("%'+-*'100000s",""))
   test_any([[string s; object o2,o3,o=Stdio.File(); if(!o->open(testfile,"r")) return "open"+o->errno(); o2=Stdio.File(); o3=o2->pipe(); o2->proxy(o); o2=0; s=o3->read(9999999); return s]],sprintf("%'+-*'100000s",""))
@@ -137,7 +137,7 @@ test_any([[
  return x->read() || ("errno:"+x->errno());
 ]],"test")
 
-]])
+cond_end // Stdio.File()->proxy
 
 
 test_any([[object o,o2=Stdio.File(); o=o2->pipe(); destruct(o2); return o->read()]],"")
@@ -258,8 +258,8 @@ test_eq(Stdio.read_file(testfile,1,5), "foo\n"*5))
 test_eq(Stdio.read_file(testfile,100,5),"")
 
 dnl locking
-cond([[Stdio.File()->lock]],
-[[
+cond_begin([[Stdio.File()->lock]])
+
   dnl FIXME: It seems MacOS X has a flock(2) that always fails with ENOTSUP.
   test_true(Stdio.File(testfile,"wr")->lock()&&1)
   test_true(Stdio.File(testfile,"wr")->trylock()&&1)
@@ -275,7 +275,8 @@ cond([[Stdio.File()->lock]],
     return o->trylock();
   ]], 0)
   test_true(Stdio.File(testfile,"wr")->lock()&&1)
-]])
+
+cond_end // Stdio.File()->lock
 
 dnl pty handling
 
@@ -327,19 +328,17 @@ run_sub_test(({"-DBACKEND=SelectBackend", "SRCDIR/socktest.pike"}))
 
 run_sub_test(({"-DBACKEND=SelectBackend", "-DIPV6", "SRCDIR/socktest.pike"}))
 
-cond([[ Pike["PollBackend"] ]],
-[[
+cond_begin([[ Pike["PollBackend"] ]])
   run_sub_test(({"-DBACKEND=PollBackend", "SRCDIR/socktest.pike"}))
 
   run_sub_test(({"-DBACKEND=PollBackend", "-DIPV6", "SRCDIR/socktest.pike"}))
-]])
+cond_end
 
-cond([[ Pike["PollDeviceBackend"] ]],
-[[
+cond_begin([[ Pike["PollDeviceBackend"] ]])
   run_sub_test(({"-DBACKEND=PollDeviceBackend", "SRCDIR/socktest.pike"}))
 
   run_sub_test(({"-DBACKEND=PollDeviceBackend", "-DIPV6", "SRCDIR/socktest.pike"}))
-]])
+cond_end
 
 run_sub_test(({"SRCDIR/sendfiletest.pike"}))
 

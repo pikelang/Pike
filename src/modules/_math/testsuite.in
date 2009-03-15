@@ -1,5 +1,5 @@
 START_MARKER
-dnl $Id: testsuite.in,v 1.13 2005/01/16 17:08:42 nilsson Exp $
+dnl $Id: testsuite.in,v 1.14 2009/03/15 12:11:24 mast Exp $
 
 define(exarg,[[test_any([[
   function x=$1;
@@ -164,8 +164,9 @@ test_eval_error(return log(-Math.inf))
 dnl - pow
 test_eq(pow(10.0,10.0),10000000000.0)
 test_eq(pow(9,9),387420489)
-cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
-[[
+
+cond_begin([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]])
+
   test_eq(pow(20,20),104857600000000000000000000)
 
   test_eq(pow(0, 100000000000000), 0)
@@ -180,8 +181,10 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
   test_eq(1->pow(100000000000001), 1)
   test_eq((-1)->pow(100000000000000), 1)
   test_eq((-1)->pow(100000000000001), -1)
-  test_eval_error(return 2->pow(100000000000000)))
-]])
+  test_eval_error(return 2->pow(100000000000000))
+
+cond_end // __AUTO_BIGNUM__
+
 test_true(floatp(pow(2.0,2.0)))
 test_true(floatp(pow(2,2.0)))
 test_true(floatp(pow(2.0,2)))
