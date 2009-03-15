@@ -798,7 +798,6 @@ testfont binary
 /src/pike_search_engine.c foreign_ident
 /src/pike_search_engine2.c foreign_ident
 /src/pike_security.h foreign_ident
-/src/pike_threadlib.h foreign_ident
 /src/pike_types.c foreign_ident
 /src/pike_types.h foreign_ident
 /src/pikecode.c foreign_ident
@@ -922,8 +921,6 @@ testfont binary
 /src/svalue.h foreign_ident
 /src/test_co.pike foreign_ident
 /src/testsuite.in foreign_ident
-/src/threads.c foreign_ident
-/src/threads.h foreign_ident
 /src/time_stuff.h foreign_ident
 /src/tmodule.c foreign_ident
 /src/treeopt.in foreign_ident

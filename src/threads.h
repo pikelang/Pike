@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.h,v 1.139 2010/09/29 12:48:22 grubba Exp $
+|| $Id$
 */
 
 #ifndef THREADS_H
@@ -19,8 +19,6 @@
 
 struct svalue;
 struct pike_frame;
-
-extern PIKE_MUTEX_T interleave_lock;
 
 /* Status values */
 #define THREAD_NOT_STARTED -1
