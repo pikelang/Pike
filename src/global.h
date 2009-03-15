@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: global.h,v 1.120 2010/05/29 23:58:08 mast Exp $
+|| $Id$
 */
 
 #ifndef GLOBAL_H
@@ -505,12 +505,40 @@ typedef struct p_wchar_p
 #endif
 
 #ifdef PIKE_DEBUG
+
 #define DO_IF_DEBUG(X) X
+#define DO_IF_DEBUG_ELSE(DEBUG, NO_DEBUG) DEBUG
+
 #undef NDEBUG
-#else
+
+/* Set of macros to simplify passing __FILE__ and __LINE__ to
+ * functions only in debug mode. */
+#define DLOC			__FILE__, __LINE__
+#define COMMA_DLOC		, __FILE__, __LINE__
+#define DLOC_DECL		const char *dloc_file, int dloc_line
+#define COMMA_DLOC_DECL		, const char *dloc_file, int dloc_line
+#define DLOC_ARGS		dloc_file, dloc_line
+#define DLOC_PF(PRE, SUF)	PRE "%s:%d" SUF
+#define DLOC_ARGS_OPT		dloc_file, dloc_line
+#define COMMA_DLOC_ARGS_OPT	, dloc_file, dloc_line
+#define DLOC_ENABLED
+
+#else  /* !PIKE_DEBUG */
+
 #define DO_IF_DEBUG(X)
+#define DO_IF_DEBUG_ELSE(DEBUG, NO_DEBUG) NO_DEBUG
 #define NDEBUG
-#endif
+
+#define DLOC
+#define COMMA_DLOC
+#define DLOC_DECL
+#define COMMA_DLOC_DECL
+#define DLOC_ARGS		__FILE__, __LINE__
+#define DLOC_PF(PRE, SUF)
+#define DLOC_ARGS_OPT
+#define COMMA_DLOC_ARGS_OPT
+
+#endif	/* !PIKE_DEBUG */
 
 #if defined (PIKE_DEBUG) || defined (DO_PIKE_CLEANUP)
 #define DO_IF_DEBUG_OR_CLEANUP(X) X

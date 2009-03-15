@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_error.h,v 1.56 2010/09/27 17:05:57 grubba Exp $
+|| $Id$
 */
 
 #ifndef PIKE_ERROR_H
@@ -58,6 +58,9 @@ PMOD_EXPORT extern const char msg_fatal_error[];
 #define Pike_fatal \
  (fprintf(stderr,"%s: Fatal error:\n",__FILE__ ":" DEFINETOSTR(__LINE__) ),debug_fatal)
 #endif
+
+#define pike_fatal_dloc							\
+ (fprintf (stderr, msg_fatal_error, DLOC_ARGS), debug_fatal)
 
 #ifndef NO_PIKE_SHORTHAND
 #define fatal Pike_fatal
