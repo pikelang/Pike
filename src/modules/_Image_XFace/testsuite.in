@@ -1,4 +1,5 @@
-// $Id: testsuite.in,v 1.2 1998/03/28 14:54:24 grubba Exp $
-cond([[ master()->resolv("_Image_XFace")->decode ]],
-[[
-]])
+START_MARKER
+// $Id: testsuite.in,v 1.3 2009/03/15 12:09:24 mast Exp $
+cond_begin([[ master()->resolv("_Image_XFace")->decode ]])
+cond_end
+END_MARKER

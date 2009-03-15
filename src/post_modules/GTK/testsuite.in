@@ -1,6 +1,7 @@
-dnl $Id: testsuite.in,v 1.3 2003/01/21 18:31:30 nilsson Exp $
+START_MARKER
+dnl $Id: testsuite.in,v 1.4 2009/03/15 12:09:24 mast Exp $
 
-dnl cond([[ master()->resolv("GTK")->setup_gtk ]],
-dnl [[
+dnl cond_begin([[ master()->resolv("GTK")->setup_gtk ]])
 dnl   test_do( GTK.setup_gtk("",1) )
-dnl ]])
+dnl cond_end
+END_MARKER
