@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: nt.c,v 1.83 2009/03/13 14:46:42 grubba Exp $
+|| $Id: nt.c,v 1.84 2009/03/16 13:53:36 grubba Exp $
 */
 
 /*
@@ -313,13 +313,18 @@ static const HKEY hkeys[] = {
  *!
  *! @returns
  *!   Returns the value stored at the specified location in the register
- *!   if any. Throws errors on failure.
+ *!   if any. Returns @expr{UNDEFINED@} on missing keys, throws errors
+ *!   on other failures.
+ *!
+ *! @note
+ *!   This function threw errors on missing keys in Pike 7.6 and earlier
+ *!   (see @[System.RegGetValue_76()]).
  *!
  *! @note
  *!   This function is only available on Win32 systems.
  *!
  *! @seealso
- *!   @[RegGetValues()], @[RegGetKeyNames()]
+ *!   @[RegGetValues()], @[RegGetKeyNames()], @[System.RegGetValue_76()]
  */
 void f_RegGetValue(INT32 args)
 {
@@ -338,6 +343,12 @@ void f_RegGetValue(INT32 args)
   }
 
   ret = RegOpenKeyEx(hkeys[hkey_num], (LPCTSTR)key, 0, KEY_READ,  &new_key);
+  if ((ret == ERROR_FILE_NOT_FOUND) ||
+      (ret == ERROR_PATH_NOT_FOUND)) {
+    pop_n_elems(args);
+    push_undefined();
+    return;
+  }
   if(ret != ERROR_SUCCESS)
     throw_nt_error("RegOpenKeyEx", ret);
 
@@ -348,6 +359,9 @@ void f_RegGetValue(INT32 args)
   {
     pop_n_elems(args);
     push_regvalue(type, buffer, len);
+  } else if (ret == ERROR_FILE_NOT_FOUND) {
+    pop_n_elems(args);
+    push_undefined();
   }else{
     throw_nt_error("RegQueryValueEx", ret);
   }
@@ -376,7 +390,8 @@ static void do_regclosekey(HKEY key)
  *!
  *! @returns
  *!   Returns an array of value keys stored at the specified location if any.
- *!   Throws errors on failure.
+ *!   Returns @expr{UNDEFINED@} on missing @[key].
+ *!   Throws errors on other failures.
  *!
  *! @example
  *!   > RegGetKeyNames(HKEY_CURRENT_USER, "Keyboard Layout");
@@ -388,10 +403,14 @@ static void do_regclosekey(HKEY key)
  *!   })
  *!
  *! @note
+ *!   This function threw errors on missing @[key] in Pike 7.6 and earlier
+ *!   (see @[System.RegGetKeyNames_76()]).
+ *!
+ *! @note
  *!   This function is only available on Win32 systems.
  *!
  *! @seealso
- *!   @[RegGetValue()], @[RegGetValues()]
+ *!   @[RegGetValue()], @[RegGetValues()], @[System.RegGetKeyNames_76()]
  */
 void f_RegGetKeyNames(INT32 args)
 {
@@ -408,6 +427,12 @@ void f_RegGetKeyNames(INT32 args)
   }
 
   ret = RegOpenKeyEx(hkeys[hkey_num], (LPCTSTR)key, 0, KEY_READ,  &new_key);
+  if ((ret == ERROR_FILE_NOT_FOUND) ||
+      (ret == ERROR_PATH_NOT_FOUND)) {
+    pop_n_elems(args);
+    push_undefined();
+    return;
+  }
   if(ret != ERROR_SUCCESS)
     throw_nt_error("RegGetKeyNames[RegOpenKeyEx]", ret);
 
@@ -461,7 +486,9 @@ void f_RegGetKeyNames(INT32 args)
  *!
  *! @returns
  *!   Returns a mapping with all the values stored at the specified location
- *!   in the register if any. Throws errors on failure.
+ *!   in the register if any.
+ *!   Returns @expr{UNDEFINED@} on missing @[key].
+ *!   Throws errors on other failures.
  *!
  *! @example
  *! > RegGetValues(HKEY_CURRENT_USER, "Keyboard Layout\\Preload");
@@ -470,10 +497,14 @@ void f_RegGetKeyNames(INT32 args)
  *! ])
  *!
  *! @note
+ *!   This function threw errors on missing @[key] in Pike 7.6 and earlier
+ *!   (see @[System.RegGetValues_76()]).
+ *!
+ *! @note
  *!   This function is only available on Win32 systems.
  *!
  *! @seealso
- *!   @[RegGetValue()], @[RegGetKeyNames()]
+ *!   @[RegGetValue()], @[RegGetKeyNames()], @[System.RegGetValues_76()]
  */
 void f_RegGetValues(INT32 args)
 {
@@ -492,6 +523,12 @@ void f_RegGetValues(INT32 args)
 
   ret = RegOpenKeyEx(hkeys[hkey_num], (LPCTSTR)key, 0, KEY_READ,  &new_key);
 
+  if ((ret == ERROR_FILE_NOT_FOUND) ||
+      (ret == ERROR_PATH_NOT_FOUND)) {
+    pop_n_elems(args);
+    push_undefined();
+    return;
+  }
   if(ret != ERROR_SUCCESS)
     throw_nt_error("RegOpenKeyEx", ret);
 
@@ -528,6 +565,94 @@ void f_RegGetValues(INT32 args)
   }
   CALL_AND_UNSET_ONERROR(tmp);
   f_aggregate_mapping(i*2);
+}
+
+/*! @module System
+ */
+
+/*! @decl string|int|array(string) RegGetValue_76(int hkey, string key, @
+ *!                                               string index)
+ *!
+ *!   Get a single value from the register (COMPAT).
+ *!
+ *!   Pike 7.6 compatibility implementation of @[RegGetValue()].
+ *!   The difference being that this function throws errors when
+ *!   keys are missing.
+ *!
+ *! @note
+ *!   This function is only available on Win32 systems.
+ *!
+ *! @seealso
+ *!   @[RegGetKeyNames_76()], @[RegGetValues_76()], @[RegGetValue()]
+ */
+void f_RegGetValue_76(INT32 args)
+{
+  if (args) {
+    assign_svalues_no_free(Pike_sp, Pike_sp-args, args, BIT_MIXED);
+    Pike_sp += args;
+  }
+  f_RegGetValue(args);
+  if (IS_UNDEFINED(Pike_sp-1)) {
+    /* FIXME: We don't actually know which of the two calls that failed,
+     * but the caller probably doesn't care. */
+    throw_nt_error("RegQueryValueEx", ERROR_FILE_NOT_FOUND);
+  }
+  stack_pop_n_elems_keep_top(args);
+}
+
+/*! @decl array(string) RegGetKeyNames_76(int hkey, string key)
+ *!
+ *!   Get a list of value key names from the register (COMPAT).
+ *!
+ *!   Pike 7.6 compatibility implementation of @[RegGetKeyNames()].
+ *!   The difference being that this function throws errors when
+ *!   keys are missing.
+ *!
+ *! @note
+ *!   This function is only available on Win32 systems.
+ *!
+ *! @seealso
+ *!   @[RegGetValue()], @[RegGetValues_76()], @[RegGetKeyNames()]
+ */
+void f_RegGetKeyNames_76(INT32 args)
+{
+  if (args) {
+    assign_svalues_no_free(Pike_sp, Pike_sp-args, args, BIT_MIXED);
+    Pike_sp += args;
+  }
+  f_RegGetKeyNames(args);
+  if (IS_UNDEFINED(Pike_sp-1)) {
+    throw_nt_error("RegGetKeyNames[RegOpenKeyEx]", ERROR_FILE_NOT_FOUND);
+  }
+  stack_pop_n_elems_keep_top(args);
+}
+
+/*! @decl mapping(string:string|int|array(string)) RegGetValues_76(int hkey, @
+ *!                                                                string key)
+ *!
+ *!   Get multiple values from the register (COMPAT).
+ *!
+ *!   Pike 7.6 compatibility implementation of @[RegGetValues()].
+ *!   The difference being that this function throws errors when
+ *!   keys are missing.
+ *!
+ *! @note
+ *!   This function is only available on Win32 systems.
+ *!
+ *! @seealso
+ *!   @[RegGetValue_76()], @[RegGetKeyNames_76()], @[RegGetValues()]
+ */
+void f_RegGetValues_76(INT32 args)
+{
+  if (args) {
+    assign_svalues_no_free(Pike_sp, Pike_sp-args, args, BIT_MIXED);
+    Pike_sp += args;
+  }
+  f_RegGetValues(args);
+  if (IS_UNDEFINED(Pike_sp-1)) {
+    throw_nt_error("RegOpenKeyEx", ERROR_FILE_NOT_FOUND);
+  }
+  stack_pop_n_elems_keep_top(args);
 }
 
 static struct program *token_program;
@@ -646,9 +771,6 @@ static void f_sid_account(INT32 args)
   push_array(allocate_array(3));
   
 }
-
-/*! @module System
- */
 
 /*! @decl object LogonUser(string username, string|int(0..0) domain, @
  *!                        string password, int|void logon_type, @
@@ -3706,6 +3828,18 @@ void init_nt_system_calls(void)
 
   ADD_EFUN("RegGetKeyNames", f_RegGetKeyNames, tFunc(tInt tStr, tArr(tStr)),
 	   OPT_EXTERNAL_DEPEND);
+
+  ADD_FUNCTION2("RegGetValue_76", f_RegGetValue_76,
+		tFunc(tInt tStr tStr, tOr3(tStr, tInt, tArr(tStr))),
+		0, OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
+
+  ADD_FUNCTION2("RegGetValues_76", f_RegGetValues_76,
+		tFunc(tInt tStr, tMap(tStr, tOr3(tStr, tInt, tArr(tStr)))),
+		0, OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
+
+  ADD_FUNCTION2("RegGetKeyNames_76", f_RegGetKeyNames_76,
+		tFunc(tInt tStr, tArr(tStr)),
+		0, OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
 
   ADD_EFUN("uname", f_nt_uname,tFunc(tNone,tMapping), OPT_TRY_OPTIMIZE);
   ADD_FUNCTION2("uname", f_nt_uname,tFunc(tNone,tMapping), 0, OPT_TRY_OPTIMIZE);
