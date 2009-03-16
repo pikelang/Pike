@@ -1,4 +1,4 @@
-// $Id: DNS.pmod,v 1.100 2008/07/24 16:04:20 grubba Exp $
+// $Id: DNS.pmod,v 1.101 2009/03/16 14:09:54 grubba Exp $
 // Not yet finished -- Fredrik Hubinette
 
 //! Domain Name System
@@ -761,6 +761,7 @@ class client
       }
     };
 #endif
+    res -= ({ UNDEFINED });
     return sizeof(res) ? res : ({ fallbackvalue });
   }
 
