@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.160 2008/09/03 19:47:20 grubba Exp $
+|| $Id: acconfig.h,v 1.161 2009/03/17 19:07:44 grubba Exp $
 */
 
 #ifndef MACHINE_H
@@ -441,6 +441,18 @@
 
 /* Define if you have struct sockaddr_in6 */
 #undef HAVE_STRUCT_SOCKADDR_IN6
+
+/* Define this if you have a struct iovec */
+#undef HAVE_STRUCT_IOVEC
+
+/* Define this if you have a struct msghdr */
+#undef HAVE_STRUCT_MSGHDR
+
+/* Define this if you have a struct msghdr with 'msg_control' member */
+#undef HAVE_STRUCT_MSGHDR_MSG_CONTROL
+
+/* Define this if you have a struct msghdr with 'msg_accrights' member */
+#undef HAVE_STRUCT_MSGHDR_MSG_ACCRIGHTS
 
 /* Define this to the max value of an unsigned short unless <limits.h> does.. */
 #undef USHRT_MAX
