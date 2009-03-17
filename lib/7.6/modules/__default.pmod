@@ -1,5 +1,5 @@
 // Compatibility namespace
-// $Id: __default.pmod,v 1.14 2009/03/16 13:52:11 grubba Exp $
+// $Id: __default.pmod,v 1.15 2009/03/17 12:26:02 grubba Exp $
 
 #pike 7.7
 
@@ -33,9 +33,9 @@ protected Mapping.ShadowedMapping compat_all_constants =
 			    "array_sscanf": array_sscanf_76,
 			    "master": master,
 #if constant(System.RegGetValue_76)
-			    "RegGetValue", System.RegGetValue_76,
-			    "RegGetKeyNames", System.RegGetKeyNames_76,
-			    "RegGetValues", System.RegGetValues_76,
+			    "RegGetValue": System.RegGetValue_76,
+			    "RegGetKeyNames": System.RegGetKeyNames_76,
+			    "RegGetValues": System.RegGetValues_76,
 #endif
 			  ]), 1);
 
