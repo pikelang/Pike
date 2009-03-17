@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: colortable.c,v 1.131 2008/06/16 21:56:24 mast Exp $
+|| $Id: colortable.c,v 1.132 2009/03/17 15:14:29 per Exp $
 */
 
 #include "global.h"
@@ -819,7 +819,10 @@ rerun_rehash:
 	    if (oldhash[j].pixels)
 	    {
 	       mark=insert_in_hash(oldhash[j].color,hash,hashsize);
-	       if (!mark) goto rerun_rehash;
+	       if (!mark) {
+                   free(hash);
+                   goto rerun_rehash;
+               }
 	       mark->pixels=oldhash[j].pixels;
 	    }
 	 
@@ -863,7 +866,10 @@ rerun_mask:
 	 if (oldhash[j].pixels)
 	 {
 	    mark=insert_in_hash_mask(oldhash[j].color,hash,hashsize,rgb_mask);
-	    if (!mark) goto rerun_mask; /* increase mask level inst of hash */
+	    if (!mark) {
+                free( oldhash );
+                goto rerun_mask; /* increase mask level inst of hash */
+            }
 	    mark->pixels+=oldhash[j].pixels-1;
 	 }
 
