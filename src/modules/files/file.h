@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.h,v 1.39 2009/02/23 21:46:03 grubba Exp $
+|| $Id: file.h,v 1.40 2009/03/18 07:55:45 grubba Exp $
 */
 
 #ifndef FILE_H
@@ -47,14 +47,6 @@ struct my_file
 };
 
 #ifdef _REENTRANT
-
-#ifndef HAVE_STRUCT_IOVEC
-struct iovec {
-  void *iov_base;
-  size_t iov_len;
-};
-#endif /* !HAVE_STRUCT_IOVEC */
-
 
 struct pike_sendfile
 {
@@ -139,7 +131,8 @@ void push_stat(PIKE_STAT_T *s);
 
 /* open_mode
  *
- * Note: The lowest 8 bits are reserved for the fd_* flags from "fdlib.h".
+ * Note: The lowest 8 bits are reserved for the fd_* (aka PROP_*)
+ *       flags from "fdlib.h".
  */
 #define FILE_READ               0x1000
 #define FILE_WRITE              0x2000
@@ -155,5 +148,6 @@ void push_stat(PIKE_STAT_T *s);
 #define FILE_NO_CLOSE_ON_DESTRUCT 0x0002
 #define FILE_LOCK_FD		0x0004
 #define FILE_NOT_OPENED         0x0010
+#define FILE_HAVE_RECV_FD	0x0020
 
 #endif
