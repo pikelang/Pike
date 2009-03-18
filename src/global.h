@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: global.h,v 1.114 2009/03/18 07:55:45 grubba Exp $
+|| $Id: global.h,v 1.115 2009/03/18 09:27:52 grubba Exp $
 */
 
 #ifndef GLOBAL_H
@@ -92,6 +92,12 @@ struct svalue;
 struct timeval;
 #endif
 
+#ifndef CONFIGURE_TEST
+/* machine.h doesn't exist if we're included from a configure test
+ * program. In that case these defines will already be included. */
+#include "machine.h"
+#endif
+
 #ifndef HAVE_STRUCT_IOVEC
 #define HAVE_STRUCT_IOVEC
 struct iovec {
@@ -99,12 +105,6 @@ struct iovec {
   size_t iov_len;
 };
 #endif /* !HAVE_STRUCT_IOVEC */
-
-#ifndef CONFIGURE_TEST
-/* machine.h doesn't exist if we're included from a configure test
- * program. In that case these defines will already be included. */
-#include "machine.h"
-#endif
 
 /* Some identifiers used as flags in the machine.h defines. */
 #define PIKE_YES	1
