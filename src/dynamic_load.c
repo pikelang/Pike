@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dynamic_load.c,v 1.95 2008/05/30 16:00:48 mast Exp $
+|| $Id: dynamic_load.c,v 1.96 2009/03/19 10:16:38 grubba Exp $
 */
 
 #ifdef TESTING
@@ -108,7 +108,13 @@ static void *dlopen(const char *foo, int how)
 static char * dlerror(void)
 {
   static char buffer[200];
-  sprintf(buffer,"LoadLibrary failed with error: %d",GetLastError());
+  int err = GetLastError();
+  switch(err) {
+  case ERROR_MOD_NOT_FOUND:
+    return "The specified module could not be found.";
+  default:
+    sprintf(buffer,"LoadLibrary failed with error: %d",GetLastError());
+  }
   return buffer;
 }
 
