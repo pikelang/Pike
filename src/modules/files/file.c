@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.405 2009/03/12 19:02:32 mast Exp $
+|| $Id: file.c,v 1.406 2009/03/19 13:46:29 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -1108,14 +1108,17 @@ static void file__enable_callbacks(INT32 args)
 
   debug_check_internals (f);
 
-  if (FD >= 0 && !(fd_query_properties(FD, fd_CAN_NONBLOCK) & fd_CAN_NONBLOCK))
-    Pike_error("Callback operations not supported for this file.\n");
-
   for (ev = 0; ev < NELEM (f->event_cbs); ev++)
     if (!UNSAFE_IS_ZERO (&f->event_cbs[ev]))
       cb_events |= 1 << ev;
 
-  if (cb_events) ADD_FD_EVENTS (f, cb_events);
+  if (cb_events) {
+    if (FD >= 0 &&
+	!(fd_query_properties(FD, fd_CAN_NONBLOCK) & fd_CAN_NONBLOCK))
+      Pike_error("Callback operations not supported for this file.\n");
+
+    ADD_FD_EVENTS (f, cb_events);
+  }
 
   pop_n_elems(args);
   push_int(0);
