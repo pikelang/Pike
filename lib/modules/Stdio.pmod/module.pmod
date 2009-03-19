@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.253 2009/02/24 20:49:32 grubba Exp $
+// $Id: module.pmod,v 1.254 2009/03/19 13:43:54 grubba Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -143,7 +143,6 @@ class File
   {
     return File()->_fd;
   }
-
 #endif
   
 #ifdef TRACK_OPEN_FILES
@@ -1402,7 +1401,11 @@ class File
     SET(read_oob_callback,0);
     SET(write_oob_callback,0);
     ::set_blocking();
-    ::_enable_callbacks();
+    // NOTE: _enable_callbacks() can throw in only one case;
+    //       when callback operations aren't supported, which
+    //       we don't care about in this case, since we've
+    //       just cleared all the callbacks anyway.
+    catch { ::_enable_callbacks(); };
   }
 
   //! @decl void set_nonblocking_keep_callbacks()
@@ -1556,6 +1559,14 @@ class FILE
 {
 #define BUFSIZE 8192
   inherit File : file;
+
+#ifdef STDIO_DIRECT_FD
+  // This is needed since it was overloaded in File above.
+  protected Fd fd_factory()
+  {
+    return FILE()->_fd;
+  }
+#endif
 
   /* Private functions / buffers etc. */
 
@@ -1796,16 +1807,31 @@ class FILE
     return res;
   }
 
+  //! @decl File pipe(int|void flags)
+  //!
   //! Same as @[Stdio.File()->pipe()].
   //!
   //! @note
-  //!   Returns an @[Stdio.File] object, NOT a @[Stdio.FILE] object.
-  File pipe(void|int flags)
+  //!   Returns an @[Stdio.File] object, NOT an @[Stdio.FILE] object.
+  //!
+  //!   In future releases of Pike this will most likely change
+  //!   to returning an @[Stdio.FILE] object. This is already
+  //!   the case if @expr{STDIO_DIRECT_FD@} has been defined.
+
+  //! @ignore
+#ifndef STDIO_DIRECT_FD
+  File
+#else
+  FILE
+#endif
+  pipe(void|int flags)
   {
     bpos=0; cached_lines=({}); lp=0;
     b="";
     return query_num_arg() ? file::pipe(flags) : file::pipe();
   }
+
+  //! @endignore
 
 #if constant(files.__HAVE_OPENAT__)
   //! @decl FILE openat(string filename, string mode)
