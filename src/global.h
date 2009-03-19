@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: global.h,v 1.115 2009/03/18 09:27:52 grubba Exp $
+|| $Id: global.h,v 1.116 2009/03/19 11:46:28 grubba Exp $
 */
 
 #ifndef GLOBAL_H
@@ -97,14 +97,6 @@ struct timeval;
  * program. In that case these defines will already be included. */
 #include "machine.h"
 #endif
-
-#ifndef HAVE_STRUCT_IOVEC
-#define HAVE_STRUCT_IOVEC
-struct iovec {
-  void *iov_base;
-  size_t iov_len;
-};
-#endif /* !HAVE_STRUCT_IOVEC */
 
 /* Some identifiers used as flags in the machine.h defines. */
 #define PIKE_YES	1
@@ -510,6 +502,14 @@ static INLINE long PTRDIFF_T_TO_LONG(ptrdiff_t x)
 #else /* !__ECL */
 #define PTRDIFF_T_TO_LONG(x)       ((long)(x))
 #endif /* __ECL */
+
+#ifndef HAVE_STRUCT_IOVEC
+#define HAVE_STRUCT_IOVEC
+struct iovec {
+  void *iov_base;
+  size_t iov_len;
+};
+#endif /* !HAVE_STRUCT_IOVEC */
 
 #include "port.h"
 #include "dmalloc.h"
