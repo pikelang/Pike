@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Wix.pmod,v 1.32 2009/03/20 13:53:22 grubba Exp $
+// $Id: Wix.pmod,v 1.33 2009/03/20 15:27:05 grubba Exp $
 //
 // 2004-11-01 Henrik Grubbström
 
@@ -36,29 +36,6 @@ class WixNode
     if (text) {
       add_child(Parser.XML.Tree.SimpleTextNode(text));
     }
-  }
-}
-
-class UninstallFile
-{
-  string id;
-  string name;
-
-  protected void create(string name, string id)
-  {
-    UninstallFile::name = name;
-    UninstallFile::id = id;
-  }
-
-  WixNode gen_xml()
-  {
-    mapping(string:string) attrs = ([
-      "Id":id,
-      "Name":name,
-      "LongName":name,
-      "On":"uninstall",
-    ]);
-    return WixNode("RemoveFile", attrs);
   }
 }
 
@@ -290,6 +267,29 @@ class Directory
       IniFile::id = id;
       IniFile::name = name;
       IniFile::contents = contents;
+    }
+  }
+
+  class UninstallFile
+  {
+    string id;
+    string name;
+
+    protected void create(string name, string id)
+    {
+      UninstallFile::name = name;
+      UninstallFile::id = id;
+    }
+
+    WixNode gen_xml()
+    {
+      mapping(string:string) attrs = ([
+	"Id":id,
+	"Name":gen_8dot3(name),
+	"LongName":name,
+	"On":"uninstall",
+      ]);
+      return WixNode("RemoveFile", attrs);
     }
   }
 
