@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Wix.pmod,v 1.31 2009/02/27 14:11:35 grubba Exp $
+// $Id: Wix.pmod,v 1.32 2009/03/20 13:53:22 grubba Exp $
 //
 // 2004-11-01 Henrik Grubbström
 
@@ -153,8 +153,8 @@ class Directory
     string base;
     long_name = upper_case(long_name);
     if (long_name != (base = replace(long_name,
-				     " +,;=[]"/"",
-				     ({"", @("______"/"")})))) {
+				     " +-,;=[]"/"",
+				     ({"", @("_______"/"")})))) {
       truncated = 1;
     }
     array(string) segs = base/".";
