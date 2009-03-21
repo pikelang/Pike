@@ -3,7 +3,7 @@
 // RFC1521 functionality for Pike
 //
 // Marcus Comstedt 1996-1999
-// $Id: module.pmod,v 1.20 2008/06/28 16:36:55 nilsson Exp $
+// $Id: module.pmod,v 1.21 2009/03/21 15:30:06 mast Exp $
 
 
 //! RFC1521, the @b{Multipurpose Internet Mail Extensions@} memo, defines a
@@ -228,8 +228,7 @@ string encode_word( string|array(string) word, string encoding )
 protected string remap(array(string) item)
 {
   if (sizeof(item)>1 && item[1])
-    return master()->resolv("Locale")["Charset"]
-      ->decoder(item[1])->feed(item[0])->drain();
+    return Locale.Charset.decoder(item[1])->feed(item[0])->drain();
   else
     return item[0];
 }
@@ -241,8 +240,7 @@ protected array(string) reremap(string word, string|function(string:string) sele
     return ({ word,0 });
   string s = stringp(selector)? selector : selector(word);
   return s?
-    ({ master()->resolv("Locale")["Charset"]
-       ->encoder(s,replacement,repcb)->feed(word)->drain(), s }) :
+    ({ Locale.Charset.encoder(s,replacement,repcb)->feed(word)->drain(), s }) :
     ({ word,0 });
 }
 
