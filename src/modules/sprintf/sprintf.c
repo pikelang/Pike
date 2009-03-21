@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.158 2009/03/13 07:53:37 grubba Exp $
+|| $Id: sprintf.c,v 1.159 2009/03/21 19:19:23 mast Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -2380,7 +2380,7 @@ void f___handle_sprintf_format(INT32 args)
 	    /* Add the type where the fmt isn't sent to sprintf(). */
 	    type_stack_mark();
 	    for (arg = Pike_sp[-1].u.type; arg != tmp; arg = arg->cdr) {
-	      push_finished_type(arg->car);	      
+	      push_finished_type(arg->car);
 	    }
 	    push_type(T_VOID);			/* No more args */
 	    push_finished_type(tmp->cdr);	/* Return type */

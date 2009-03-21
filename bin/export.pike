@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: export.pike,v 1.73 2009/03/10 17:27:43 marcus Exp $ */
+/* $Id: export.pike,v 1.74 2009/03/21 19:14:37 mast Exp $ */
 
 multiset except_modules = (<>);
 string vpath;
@@ -351,7 +351,7 @@ int main(int argc, array(string) argv)
        * do it asynchronously. We also want to perform
        * the version bumps back-to-back, to avoid
        * ambiguities regarding the stable version. */
-      
+
       int r = svn_bump_version(1);
       array(int) version = getversion();
       vpath = sprintf("Pike-v%d.%d.%d", @version);

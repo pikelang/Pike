@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.114 2009/03/17 19:07:44 grubba Exp $
+# $Id: configure.in,v 1.115 2009/03/21 19:19:23 mast Exp $
 AC_INIT(file.c)
 AC_CONFIG_HEADER(file_machine.h)
 
@@ -49,7 +49,7 @@ if test "x$ac_cv_header_sys_sendfile_h" = "xyes"; then
     AC_DEFINE(HAVE_BROKEN_SYS_SENDFILE_H)
   fi
 fi
-    
+
 
 AC_HEADER_DIRENT
 AC_CHECK_LIB(bind, __inet_ntoa)
@@ -190,7 +190,7 @@ if test "$ac_cv_func_sendfile" = "yes"; then
         case "x$pike_cv_sys_os" in
 	  xFreeBSD*)
 	    pike_cv_new_freebsd_sendfile="yes"
-            # The behaviour was fixed in FreeBSD 5.0.        
+	    # The behaviour was fixed in FreeBSD 5.0.
             if test `uname -r | awk -F. '{print $1}'` -lt 5; then
 	      pike_cv_new_freebsd_sendfile="no"
 	    fi
@@ -1048,7 +1048,7 @@ int main()
     fprintf(stderr,"shutdown failed\n");
     exit(9);
   }
- 
+
   if(shutdown(fds[0],1))
   {
     fprintf(stderr,"shutdown failed\n");
@@ -1092,7 +1092,7 @@ int main()
     fprintf(stderr,"write() failed\n");
     exit(1);
   }
-  
+
   foo.tv_sec=1;
   foo.tv_usec=0;
   FD_ZERO(&tmp);
@@ -1103,7 +1103,7 @@ int main()
     fprintf(stderr,"select() never falls through\n");
     exit(5);
   }
- 
+
   if(!FD_ISSET(fds[1], &tmp))
   {
     fprintf(stderr,"select() does not modify read set properly\n");
@@ -1132,7 +1132,7 @@ int main()
     fprintf(stderr,"select() does not report shutdown()\n");
     exit(7);
   }
- 
+
   if(!FD_ISSET(fds[1], &tmp))
   {
     fprintf(stderr,"select() does not modify read set properly on shutdown()\n");
@@ -1204,7 +1204,7 @@ int main()
   f=fopen("conftest.out.2","w");
   fprintf(f,"%d\n",try);
   fclose(f);
-  
+
   return 0;
 }],
 pike_cv_socket_buffer_max=`cat conftest.out.2`

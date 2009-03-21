@@ -1796,19 +1796,19 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
 		  else
 		     tval=value;
                   switch(tval)
-        	  { case 'o':case 'O':
-        	      catch
+		  { case 'o':case 'O':
+		      catch
 		      { tval=value[1];
-        	        value=tval=='n'||tval=='N';
+			value=tval=='n'||tval=='N';
 			break;
 		      };
-                    default:
-                      value=1;
-                      break;
-                    case 0:case 'f':case 'F':case 'n':case 'N':
+		    default:
+		      value=1;
+		      break;
+		    case 0:case 'f':case 'F':case 'n':case 'N':
 		      value=0;
-                      break;
-                  }
+		      break;
+		  }
                 }
 		while(0);
                 plugbuf+=({_c.plugbyte(value)});
@@ -1820,8 +1820,8 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
         	  value=(string)value;
 		  switch(sizeof(value))
 		  { default:
-        	      ERROR("\"char\" types must be 1 byte wide, got %O\n",
-        	       value);
+		      ERROR("\"char\" types must be 1 byte wide, got %O\n",
+		       value);
 		    case 0:
 		      plugbuf+=({_c.plugint32(-1)});		// NULL
 		      break;
