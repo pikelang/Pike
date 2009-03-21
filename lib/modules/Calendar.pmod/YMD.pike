@@ -2462,9 +2462,9 @@ class YMD_Time
    int month_no() { return RBASE->month_no(); }
    int week_no() { return RBASE->week_no(); }
    int month_name() { return RBASE->month_name(); }
-   int month_shortname() { return RBASE->month_shortname(); }
+   string month_shortname() { return RBASE->month_shortname(); }
    int month_day() { return RBASE->month_day(); }
-   int month_day_name() { return RBASE->month_day_name(); }
+   string month_day_name() { return RBASE->month_day_name(); }
    int week_day() { return RBASE->week_day(); }
    int year_day() { return RBASE->year_day(); }
    int year_name() { return RBASE->year_name(); }
@@ -2565,9 +2565,9 @@ class cSuperTimeRange
    int month_no() { return RBASE->month_no(); }
    int week_no() { return RBASE->week_no(); }
    int month_name() { return RBASE->month_name(); }
-   int month_shortname() { return RBASE->month_shortname(); }
+   string month_shortname() { return RBASE->month_shortname(); }
    int month_day() { return RBASE->month_day(); }
-   int month_day_name() { return RBASE->month_day_name(); }
+   string month_day_name() { return RBASE->month_day_name(); }
    int week_day() { return RBASE->week_day(); }
    int year_day() { return RBASE->year_day(); }
    string week_name() { return RBASE->week_name(); }
