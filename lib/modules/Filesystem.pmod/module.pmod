@@ -238,3 +238,123 @@ function `()(void|string path)
   return get_filesystem("System")(".")->cd(path||".") ||
 	 error("Can't create filesystem on given path\n"),0;
 }
+
+//! Iterator object that traverses a directory tree and returns
+//! files as values and paths as indices. Example that uses the
+//! iterator to create a really simple sort of make:
+//! @example
+//!   object i=Filesystem.Traversion(".");
+//!   foreach(i; string dir; string file) {
+//!   	if(!has_suffix(file, ".c")) continue;
+//!     file = dir+file;
+//!     string ofile = file;
+//!   	ofile[-1]='o';
+//!   	object s=file_stat(ofile);
+//!   	if(s && i->stat()->mtime<s->mtime) continue;
+//!   	// compile file
+//!   }
+class Traversion {
+  string path;
+  array(string) files;
+  object current;
+  int(0..) pos;
+  int(0..1) symlink;
+  int(0..1) ignore_errors;
+  function(array:array) sort_fun;
+  constant is_traversion = 1;
+
+  //! Returns the current progress of the traversion as a value
+  //! between 0.0 and 1.0. Note that this value isn't based on the
+  //! number of files, but the directory structure.
+  float progress(void|float share) {
+    if(!share) share=1.0;
+    float sub = 0.0;
+    if(current && current->is_traversion)
+      sub = current->progress(share/sizeof(files));
+    return share/sizeof(files)*(pos+1) + sub;
+  }
+
+  //! @decl void create(string path, void|int(0..1) symlink, void|int(0..1) ignore_errors, void|function(array:array) sort_fun)
+  //! @param path
+  //! The root path from which to traverse.
+  //! @param symlink
+  //! Don't traverse symlink directories.
+  //! @param ignore_errors
+  //! Ignore directories that can not be accessed.
+  //! @param sort_fun
+  //! Sort function to be applied to directory entries before
+  //! traversing. Can also be a filter function.
+  void create(string _path, void|int(0..1) _symlink, void|int(0..1) _ignore_errors, void|function(array:array) _sort_fun) {
+    path = _path;
+    if(path[-1]!='/') path+="/";
+    files = get_dir(path);
+    sort_fun = _sort_fun;
+    if(sort_fun)
+      files = sort_fun(files);
+    symlink = _symlink;
+    ignore_errors = _ignore_errors;
+    if(!arrayp(files))
+      if(ignore_errors)
+        files = ({});
+      else
+        error( "Failed to access %s\n", path );
+    if(sizeof(files)) set_current();
+  }
+
+  static void set_current() {
+    current = file_stat(path + files[pos]);
+    if(!current) return;
+    if(!current->isdir) return;
+    if(symlink && file_stat(path + files[pos],1)->islnk) {
+      pos++;
+      if(pos < sizeof(files))
+	set_current();
+      return;
+    }
+    
+    current = Traversion(path + files[pos], symlink, ignore_errors, sort_fun);
+  }
+
+  int `!() {
+    if( pos >= sizeof(files) ) return 1;
+    return 0;
+  }
+
+  //! Returns the stat for the current index-value-pair.
+  Stdio.Stat stat() {
+    if(!current) return 0;
+    if(current->is_traversion)
+      return current->stat();
+    return current;
+  }
+
+  int add(int steps) {
+    if(current && current->is_traversion)
+      steps = current->add(steps);
+    if(!steps) return 0;
+    pos += steps;
+    if( pos >= sizeof(files) )
+      return pos - sizeof(files) + 1;
+    set_current();
+    return 0;
+  }
+
+  void `+=(int steps) {
+    if (steps < 0) error ("Cannot step backwards.\n");
+    add(steps);
+  }
+
+  string index() {
+    if(current && current->is_traversion)
+      return current->index();
+    if( pos >= sizeof(files) ) return UNDEFINED;
+    return path;
+  }
+
+  string value() {
+    if(current && current->is_traversion)
+      return current->value();
+    if( pos >= sizeof(files) ) return UNDEFINED;
+    return files[pos];
+  }
+}
