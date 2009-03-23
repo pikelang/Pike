@@ -261,6 +261,8 @@ class Traversion {
   object current;
   int(0..) pos;
   int(0..1) symlink;
+  int(0..1) ignore_errors;
+  function(array:array) sort_fun;
   constant is_traversion = 1;
 
   //! Returns the current progress of the traversion as a value
@@ -274,16 +276,30 @@ class Traversion {
     return share/sizeof(files)*(pos+1) + sub;
   }
 
-  //! @decl void create(string path, void|int(0..1) symlink)
+  //! @decl void create(string path, void|int(0..1) symlink, void|int(0..1) ignore_errors, void|function(array:array) sort_fun)
   //! @param path
   //! The root path from which to traverse.
   //! @param symlink
   //! Don't traverse symlink directories.
-  void create(string _path, void|int(0..1) _symlink) {
+  //! @param ignore_errors
+  //! Ignore directories that can not be accessed.
+  //! @param sort_fun
+  //! Sort function to be applied to directory entries before
+  //! traversing. Can also be a filter function.
+  void create(string _path, void|int(0..1) _symlink, void|int(0..1) _ignore_errors, void|function(array:array) _sort_fun) {
     path = _path;
     if(path[-1]!='/') path+="/";
     files = get_dir(path);
+    sort_fun = _sort_fun;
+    if(sort_fun)
+      files = sort_fun(files);
     symlink = _symlink;
+    ignore_errors = _ignore_errors;
+    if(!arrayp(files))
+      if(ignore_errors)
+        files = ({});
+      else
+        error( "Failed to access %s\n", path );
     if(sizeof(files)) set_current();
   }
 
@@ -297,8 +313,8 @@ class Traversion {
 	set_current();
       return;
     }
-
-    current = Traversion(path + files[pos], symlink);
+    
+    current = Traversion(path + files[pos], symlink, ignore_errors, sort_fun);
   }
 
   int `!() {
@@ -326,18 +342,21 @@ class Traversion {
   }
 
   void `+=(int steps) {
+    if (steps < 0) error ("Cannot step backwards.\n");
     add(steps);
   }
 
   string index() {
     if(current && current->is_traversion)
       return current->index();
+    if( pos >= sizeof(files) ) return UNDEFINED;
     return path;
   }
 
   string value() {
     if(current && current->is_traversion)
       return current->value();
+    if( pos >= sizeof(files) ) return UNDEFINED;
     return files[pos];
   }
 }
