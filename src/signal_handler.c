@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.334 2008/07/09 13:29:01 grubba Exp $
+|| $Id: signal_handler.c,v 1.335 2009/03/30 12:46:57 per Exp $
 */
 
 #include "global.h"
@@ -1217,6 +1217,7 @@ static void report_child(int pid,
 	    add_ref(o);
 	    add_to_callback(&evaluator_callbacks, call_pid_status_callback,
 			    o, NULL);
+            wake_up_backend();
 	  }
 	  if(WIFSTOPPED(status)) {
 	    p->sig = WSTOPSIG(status);
