@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.237 2009/03/11 10:04:19 marcus Exp $
+ * $Id: backend.cmod,v 1.238 2009/03/30 12:47:50 per Exp $
  *
  * Backend object.
  */
@@ -3159,6 +3159,7 @@ PIKECLASS PollDeviceBackend
       IF_PD(fprintf (stderr, "[%d]BACKEND[%d]: Doing poll on fds:\n",
 		     THR_NO, me->id));
 
+      check_threads_etc();
       THREADS_ALLOW();
 
       /* Note: The arguments to MY_POLL may be evaluated multiple times. */
@@ -3167,6 +3168,7 @@ PIKECLASS PollDeviceBackend
       IF_PD(fprintf(stderr, " => %d (timeout was: %d)\n", i, poll_timeout));
 
       THREADS_DISALLOW();
+      check_threads_etc();
       me->may_need_wakeup = 0;
       GETTIMEOFDAY(&current_time);
     }
@@ -3750,6 +3752,7 @@ PIKECLASS PollBackend
 	      poll_timeout);
 #endif /* POLL_DEBUG */
 
+      check_threads_etc();
       THREADS_ALLOW();
 
       /* Note: The arguments to MY_POLL may be evaluated multiple times. */
@@ -3758,6 +3761,7 @@ PIKECLASS PollBackend
       IF_PD(fprintf(stderr, " => %d\n", i));
 
       THREADS_DISALLOW();
+      check_threads_etc();
       me->may_need_wakeup = 0;
       GETTIMEOFDAY(&current_time);
     }
@@ -3997,7 +4001,7 @@ PIKECLASS PollBackend
    */
   PIKEFUN float|int(0..0) `()(void|float|int(0..0) sleep_time)
   {
-    struct timeval timeout;	/* Got bogus gcc warning on timeout.tv_usec. */
+    struct timeval timeout;	/* Got correct gcc warning on timeout.tv_usec. */
 
     if (sleep_time && sleep_time->type == PIKE_T_FLOAT) {
       timeout.tv_sec = (long) floor (sleep_time->u.float_number);
@@ -4005,7 +4009,10 @@ PIKECLASS PollBackend
 	(long) ((sleep_time->u.float_number - timeout.tv_sec) * 1e6);
     }
     else
+    {
       timeout.tv_sec = -1;
+      timeout.tv_usec = 0;
+    }
 
     pb_low_backend_once(THIS, &timeout);
 
@@ -4299,6 +4306,7 @@ PIKECLASS SelectBackend
       IF_PD(fprintf (stderr, "[%d]BACKEND[%d]: Doing poll on fds:\n",
 		     THR_NO, me->id));
 
+      check_threads_etc();
       THREADS_ALLOW();
 
       /* Note: The arguments to MY_POLL may be evaluated multiple times. */
@@ -4307,6 +4315,7 @@ PIKECLASS SelectBackend
       IF_PD(fprintf(stderr, " => %d\n", i));
 
       THREADS_DISALLOW();
+      check_threads_etc();
       me->may_need_wakeup = 0;
       GETTIMEOFDAY(&current_time);
     }
