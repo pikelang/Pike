@@ -3,7 +3,7 @@
 // RFC1521 functionality for Pike
 //
 // Marcus Comstedt 1996-1999
-// $Id: module.pmod,v 1.22 2009/03/30 13:27:07 nilsson Exp $
+// $Id: module.pmod,v 1.23 2009/03/30 16:18:19 grubba Exp $
 
 
 //! RFC1521, the @b{Multipurpose Internet Mail Extensions@} memo, defines a
@@ -1178,11 +1178,7 @@ class Message {
 	    else
 	      error("invalid parameter %O in Content-Type %O (%O)\n",
 		    p[0], headers["content-type"], guess);
-	  params[ lower_case(p[0]) ] = map(p[2..],
-                                           lambda(string|int x) {
-                                             if(intp(x))
-                                               return sprintf("%c",x);
-                                             return x; })*"";
+	  params[ lower_case(p[0]) ] = quote(p[2..]);
 	}
       charset = lower_case(params["charset"] || charset);
       boundary = params["boundary"];
