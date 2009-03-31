@@ -3,7 +3,7 @@
 // RFC1521 functionality for Pike
 //
 // Marcus Comstedt 1996-1999
-// $Id: module.pmod,v 1.25 2009/03/31 16:19:52 jonasw Exp $
+// $Id: module.pmod,v 1.26 2009/03/31 17:38:44 grubba Exp $
 
 
 //! RFC1521, the @b{Multipurpose Internet Mail Extensions@} memo, defines a
@@ -1090,6 +1090,79 @@ class Message {
 		} )*"\r\n" + "\r\n\r\n" + data;
   }
 
+  protected string token_to_string(string|int token)
+  {
+    return intp(token) ? sprintf("%c", token) : token;
+  }
+
+  //! Parse a Content-Type or Content-Disposition parameter.
+  //!
+  //! @param params
+  //!   Mapping to add parameters to.
+  //!
+  //! @param entry
+  //!   Array of tokens containing a parameter declaration.
+  //!
+  //! @param header
+  //!   Name of the header from which @[entry] originated.
+  //!   This is only used to report errors.
+  //!
+  //! @param guess
+  //!   Make a best-effort attempt to parse broken entries.
+  //!
+  //! @param entry2
+  //!   Same as @[entry], but tokenized with @[MIME.TOKENIZE_KEEP_ESCAPES].
+  //!
+  //! @seealso
+  //!   @[create()]
+  protected void parse_param(mapping(string:string) params,
+			     array(string|int) entry,
+			     string header,
+			     int|void guess,
+			     array(string|int)|void entry2)
+  {
+    if(sizeof(entry)) {
+      if(sizeof(entry)<3 || entry[1]!='=' || !stringp(entry[0]))
+	if(guess)
+	  return; // just ignore the broken data we failed to parse
+	else
+	  error("invalid parameter %O in %s %O (%O)\n",
+		entry[0], header, headers[lower_case(header)], guess);
+      string param = lower_case(entry[0]);
+      string val;
+      if (guess) {
+	val = map(entry[2..], token_to_string) * "";
+      } else if (sizeof(filter(entry[2..], intp))) {
+	error("invalid quoting of parameter %O in %s %O (%O)\n",
+	      entry[0], header, headers[lower_case(header)], guess);
+      } else {
+	val = entry[2..]*"";
+      }
+
+      params[param] = val;
+
+      // Check for MSIE:
+      //
+      // MSIE insists on sending the full local path to the file as
+      // the "filename" parameter, but forgets to quote the backslashes.
+      //
+      // Heuristic:
+      //   * If there are forward slashes, or properly quoted backslashes,
+      //     everything's alright.
+      //   * Note that UNC-paths (\\host\dir\file) look like they have
+      //     a properly quoted backslash as the first character, so
+      //     we disregard the first character.
+      if ((param == "filename") && guess && entry2 &&
+	  !has_value(val, "/") && !has_value(val[1..], "\\") &&
+	  (sizeof(entry2) >= 3) && (entry2[1] == '=') &&
+	  (lower_case(entry2[0]) == param)) {
+	val = map(entry2[2..], token_to_string) * "";
+	if (has_value(val, "\\"))
+	  params[param] = val;
+      }
+    }
+  }
+
   //! @decl void create()
   //! @decl void create(string message)
   //! @decl void create(string message, @
@@ -1171,26 +1244,7 @@ class Message {
       type = lower_case(arr[0][0]);
       subtype = lower_case(arr[0][2]);
       foreach( arr[1..], p )
-	if(sizeof(p)) {
-	  if(sizeof(p)<3 || p[1]!='=' || !stringp(p[0]))
-	    if(guess)
-	      continue; // just ignore the broken data we failed to parse
-	    else
-	      error("invalid parameter %O in Content-Type %O (%O)\n",
-		    p[0], headers["content-type"], guess);
-	  if (guess) {
-	    params[ lower_case(p[0]) ] =
-	      map(p[2..], lambda(string|int x) {
-			    return intp(x)?sprintf("%c",x):x;
-			  })*"";
-	  } else if (sizeof(filter(p[2..], intp))) {
-	    error("invalid quoting of parameter %O in Content-Type %O (%O)\n",
-		  p[0], headers["content-type"], guess);
-	  } else {
-	    // Note: Decoded quoting.
-	    params[ lower_case(p[0]) ] = p[2..]*"";
-	  }
-	}
+	parse_param(params, p, "Content-Type", guess);
       charset = lower_case(params["charset"] || charset);
       boundary = params["boundary"];
     }
@@ -1219,34 +1273,9 @@ class Message {
       } else
       {
 	disposition = lower_case(arr[0][0]);
-	foreach( arr[1..], p )
-	  if(sizeof(p))
-	  {
-	    if(sizeof(p)<3 || p[1]!='=' || !stringp(p[0]))
-	      if(guess) {
-		break;
-	      } else
-		error("invalid parameter %O in Content-Disposition\n", p[0]);
-	    string param = lower_case(p[0]);
-	    string val = p[2..]*"";
-	    
-	    //  Previous MSIE check might not always throw error, so perform
-	    //  additional test for "filename" parameter. We'll try to accept
-	    //  both local and UNC paths.
-	    if ((param == "filename") && guess && arr2 &&
-		!has_value(val, "/") && !has_value(val[1..], "\\")) {
-	      // Check for MSIE.
-	      string val2;
-	      foreach(arr2, array(string|int) p2) {
-		if ((sizeof(p2) < 3) || (p2[1] != '=') ||
-		    (lower_case(p2[0]) != "filename")) continue;
-		val2 = p2[2..]*"";
-		break;
-	      }
-	      if (val2 && has_value(val2, "\\")) val = val2;
-	    }
-	    disp_params[ param ] = val;
-	  }
+	foreach( arr[1..]; int i; p )
+	  parse_param(disp_params, p, "Content-Disposition", guess,
+		      arr2 && ((i+1) < sizeof(arr2)) && arr2[i+1]);
       }
     }
     if (headers["content-transfer-encoding"]) {
