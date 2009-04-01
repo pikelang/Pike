@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.248 2008/08/17 10:54:29 mast Exp $
+|| $Id: svalue.c,v 1.249 2009/04/01 20:30:09 mast Exp $
 */
 
 #include "global.h"
@@ -1494,14 +1494,27 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
       if (!prog)
 	my_strcat("0");
       else {
+	int describe_nicely;
 	struct inherit *inh;
 	prog = (inh = prog->inherits + s->subtype)->prog;
 
-	if ((prog->flags & PROGRAM_FINISHED) &&
-	    Pike_interpreter.evaluator_stack &&
-	    (Pike_in_gc <= GC_PASS_PREPARE || Pike_in_gc >= GC_PASS_FREE) &&
-	    master_object &&
-	    !no_pike_calls) {
+	describe_nicely =
+	  (prog->flags & PROGRAM_FINISHED) &&
+	  Pike_interpreter.evaluator_stack &&
+	  (Pike_in_gc <= GC_PASS_PREPARE || Pike_in_gc >= GC_PASS_FREE) &&
+	  master_object &&
+	  !no_pike_calls;
+	if (describe_nicely) {
+	  /* Don't call _sprintf's or other pike code when we're low
+	   * on stack, since that code tends to do sprintf("%O",...)
+	   * on stuff which means we usually ends up here again
+	   * quickly. */
+	  if (low_stack_check (50)) describe_nicely = 0;
+	  else low_check_c_stack (Pike_interpreter.c_stack_margin + 1000,
+				  describe_nicely = 0);
+	}
+
+	if (describe_nicely) {
 	  DECLARE_CYCLIC();
 	  int fun=FIND_LFUN(prog, LFUN__SPRINTF);
 	  debug_malloc_touch(prog);
