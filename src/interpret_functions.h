@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.210 2008/11/18 19:06:23 mast Exp $
+|| $Id: interpret_functions.h,v 1.211 2009/04/01 20:41:32 mast Exp $
 */
 
 /*
@@ -1332,7 +1332,6 @@ OPCODE0_PTRJUMP(F_CATCH, "catch", I_UPDATE_ALL, {
 
   else {
     debug_malloc_touch_named (Pike_interpreter.catch_ctx, "(2)");
-    check_c_stack(8192);
 
     while (1) {
       /* Loop here every time an exception is caught. Once we've

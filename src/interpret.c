@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.411 2008/11/19 21:47:09 mast Exp $
+|| $Id: interpret.c,v 1.412 2009/04/01 20:41:32 mast Exp $
 */
 
 #include "global.h"
@@ -2240,7 +2240,9 @@ static int catching_eval_instruction (PIKE_OPCODE_T *pc)
 #endif
     return -3;
   }else{
-    int x = eval_instruction(pc);
+    int x;
+    check_c_stack(8192);
+    x = eval_instruction(pc);
     Pike_interpreter.catching_eval_jmpbuf = NULL;
 #ifdef PIKE_DEBUG
     pike_trace(3, "-    catching_eval_instruction(%p) ==> %d\n", pc, x);
