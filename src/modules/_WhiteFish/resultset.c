@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: resultset.c,v 1.30 2006/01/16 06:29:20 mast Exp $");
+RCSID("$Id: resultset.c,v 1.31 2009/04/01 15:28:59 stewa Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -438,7 +438,7 @@ static void f_resultset_or( INT32 args )
  *! @decl ResultSet or( ResultSet a )
  *!
  *! Add the given resultsets together, to generate a resultset with
- *! both sets included. The ranking will be averaged if a document
+ *! both sets included. The rankings will be added if a document
  *! exists in both resultsets.
  */
 {
@@ -554,7 +554,7 @@ static void f_resultset_intersect( INT32 args )
  *!
  *! Return a new resultset with all entries that are present in _both_
  *! sets. Only the document_id is checked, the resulting ranking is
- *! the lowest ranking of the two sets..
+ *! the sum of the rankings if the two sets.
  */
 {
   struct object *res = wf_resultset_new();
@@ -626,7 +626,7 @@ static void f_resultset_intersect( INT32 args )
       {	
 	if(left_doc>last)
 	  wf_resultset_add( res, (last = left_doc),
-			    MINIMUM(left_rank,right_rank) );
+			    left_rank+right_rank ); 
       }
       left_used=1;
     }
@@ -637,7 +637,7 @@ static void f_resultset_intersect( INT32 args )
       {	
 	if(right_doc>last)
 	  wf_resultset_add( res, (last = right_doc),
-			    MINIMUM(left_rank,right_rank) );
+			    left_rank+right_rank );
       }
       right_used=1;
     }
