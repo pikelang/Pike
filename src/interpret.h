@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.h,v 1.179 2008/12/12 15:07:42 mast Exp $
+|| $Id: interpret.h,v 1.180 2009/04/01 20:26:37 mast Exp $
 */
 
 #ifndef INTERPRET_H
@@ -153,25 +153,27 @@ PMOD_EXPORT extern const char Pike_check_mark_stack_errmsg[];
 
 PMOD_EXPORT extern const char Pike_check_c_stack_errmsg[];
 
-#define check_c_stack(X) do {						\
+#define low_check_c_stack(MIN_BYTES, RUN_IF_LOW) do {			\
     ptrdiff_t x_= (((char *)&x_) - Pike_interpreter.stack_top) +	\
-      STACK_DIRECTION * (Pike_interpreter.c_stack_margin + (X));	\
-  x_*=STACK_DIRECTION;							\
-  if(x_>0) {								\
-    low_error(Pike_check_c_stack_errmsg);				\
-    /* Pike_fatal("C stack overflow: x_:%p &x_:%p top:%p margin:%p\n",	\
-	       x_, &x_, Pike_interpreter.stack_top,			\
-	       Pike_interpreter.c_stack_margin + (X)); */		\
-  }									\
+      STACK_DIRECTION * (MIN_BYTES);					\
+    x_*=STACK_DIRECTION;						\
+    if(x_>0) {RUN_IF_LOW;}						\
+  } while (0)
+
+
+#define check_c_stack(MIN_BYTES) do {					\
+    low_check_c_stack (Pike_interpreter.c_stack_margin + (MIN_BYTES), {	\
+	low_error(Pike_check_c_stack_errmsg);				\
+	/* Pike_fatal("C stack overflow: x_:%p &x_:%p top:%p margin:%p\n", \
+	   x_, &x_, Pike_interpreter.stack_top,				\
+	   Pike_interpreter.c_stack_margin + (MIN_BYTES)); */		\
+      });								\
   }while(0)
 
-#define fatal_check_c_stack(X) do { 			\
-    ptrdiff_t x_= 					\
-      ((char *)&x_) + STACK_DIRECTION * (X) - Pike_interpreter.stack_top ; \
-    x_*=STACK_DIRECTION;						\
-    if(x_>0) {								\
-      ((void (*)(const char*, ...))Pike_fatal)(Pike_check_c_stack_errmsg);	\
-    }									\
+#define fatal_check_c_stack(MIN_BYTES) do {				\
+    low_check_c_stack ((MIN_BYTES), {					\
+	((void (*)(const char*, ...))Pike_fatal)(Pike_check_c_stack_errmsg); \
+      });								\
   }while(0)
 
 
