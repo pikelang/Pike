@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iterators.cmod,v 1.70 2008/06/29 12:37:10 nilsson Exp $
+|| $Id: iterators.cmod,v 1.71 2009/04/01 20:08:28 mast Exp $
 */
 
 #include "global.h"
@@ -924,7 +924,8 @@ PIKECLASS string_iterator
   EXIT
     gc_trivial;
     {
-      free_string(THIS->s);
+      if (THIS->s)
+	free_string(THIS->s);
     }
 };
 
