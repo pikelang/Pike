@@ -1,5 +1,5 @@
 /*
- * $Id: join_autodoc.pike,v 1.19 2008/06/28 16:37:02 nilsson Exp $
+ * $Id: join_autodoc.pike,v 1.20 2009/04/03 18:50:46 grubba Exp $
  *
  * AutoDoc mk II join script.
  *
@@ -46,6 +46,10 @@ void recurse(array(string) sources, string save_to, int post_process) {
 
   foreach(sources, string builddir) {
     Stdio.Stat stat = file_stat(builddir);
+    if (!stat) {
+      werror("File %O not found\n", builddir);
+      exit(1);
+    }
     if(stat->isdir) {
 
       if(builddir[-1]!='/') builddir += "/";
