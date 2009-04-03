@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: RankingProfile.pike,v 1.19 2004/03/15 18:09:12 stewa Exp $
+// $Id: RankingProfile.pike,v 1.20 2009/04/03 17:53:09 grubba Exp $
 
 #include "search.h"
 
@@ -16,8 +16,10 @@ int cutoff;
 
 //! @decl void create(void|int cutoff, void|array(int) proximity_ranking,@
 //!       void|Search.Database.Base db, void|array(int)|mapping(string:int) field_ranking)
-//! @[cutoff] defaults to 8, @[proximity_ranking] defaults to @code{({ 8, 7, 6, 5, 4, 3, 2, 1, })@}
-//! and @[field_ranking] defaults to @code{({ 17, 0, 147 }) + allocate(62)@}. @[db] is only
+//! @[cutoff] defaults to 8, @[proximity_ranking] defaults to
+//! @expr{({ 8, 7, 6, 5, 4, 3, 2, 1, })@}
+//! and @[field_ranking] defaults to @expr{({ 17, 0, 147 }) + allocate(62)@}.
+//! @[db] is only
 //! needed if @[field_ranking] is provided as a mapping.
 void create(void|int _cutoff, void|array(int) _proximity_ranking,
             void|Search.Database.Base db, void|array(int)|mapping(string:int) _field_ranking)
