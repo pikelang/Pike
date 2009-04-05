@@ -1,9 +1,8 @@
 //
-// $Id: SGML.pike,v 1.4 2009/04/01 20:17:41 mast Exp $
+// $Id: SGML.pike,v 1.5 2009/04/05 10:01:59 mast Exp $
 
 #pike __REAL_VERSION__
 
-class SGML
 //!  	This is a handy simple parser of SGML-like
 //!	syntax like HTML. It doesn't do anything advanced,
 //!	but finding the corresponding end-tags.
@@ -26,14 +25,14 @@ class SGML
 //!    tag "gat" object with data:
 //!    ({
 //!        tag "gurka" object with data:
-//!	({
+//!        ({
 //!            " "
 //!        })
 //!        tag "banan" object with data:
-//!	({
+//!        ({
 //!            " "
 //!            tag "kiwi" object with data:
-//!	    ({
+//!            ({
 //!               " "
 //!            })
 //!        })
@@ -54,7 +53,7 @@ class SGML
 //!	 array(SGMLatom) data;  - contained data
 //!     @}
 //!
-{
+
   //!
    string file;
 
@@ -211,4 +210,6 @@ class SGML
    {
       return data;
    }
-}
+
+// For compatibility with 7.6 and early 7.8.
+constant SGML = this_program;
