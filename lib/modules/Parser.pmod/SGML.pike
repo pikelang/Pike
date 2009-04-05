@@ -1,5 +1,5 @@
 //
-// $Id: SGML.pike,v 1.5 2009/04/05 10:01:59 mast Exp $
+// $Id: SGML.pike,v 1.6 2009/04/05 10:05:00 mast Exp $
 
 #pike __REAL_VERSION__
 
@@ -88,7 +88,7 @@
 		  if (stringp (a))
 		    res += sprintf ("\n%s%s", i, a);
 		  else
-		    res += "\n" + i + a->_sprintf ('O', sub_m);
+		    res += "\n" + i + a->_sprintf ('s', sub_m);
 	      }
 	      res += "\n" + (" " * m->indent) + "</" + name + ">";
 	    }
