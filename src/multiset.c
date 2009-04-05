@@ -44,6 +44,10 @@
 #define ENLARGE_SIZE(size) (((size) << 1) + 4)
 #define DO_SHRINK(msd, extra) ((((msd)->size + extra) << 2) + 4 <= (msd)->allocsize)
 
+/* For use with TEST_MULTISET: Always goes into the tracking code in
+ * the various find functions, as if a destructed index was encountered. */
+/* #define TEST_MULTISET_TRACKING_PATHS */
+
 #if defined (PIKE_DEBUG) || defined (TEST_MULTISET)
 static void debug_dump_ind_data (struct msnode_ind *node,
 				 struct multiset_data *msd);
@@ -924,33 +928,17 @@ static enum find_types low_multiset_track_eq (
   struct multiset_data *msd, struct svalue *key, struct rbstack_ptr *track);
 static enum find_types low_multiset_track_le_gt (
   struct multiset_data *msd, struct svalue *key, struct rbstack_ptr *track);
-
-static void midflight_remove_node (struct multiset *l,
-				   struct multiset_data **pmsd,
-				   union msnode *node)
-{
-  /* If the node index is destructed, we could in principle ignore the
-   * copy-on-write here and remove it in all copies, but then we'd
-   * have to find another way than (l->msd != msd) to signal the tree
-   * change to the calling code. */
-  ONERROR uwp;
-  sub_ref (*pmsd);
-#ifdef PIKE_DEBUG
-  if ((*pmsd)->refs <= 0) Pike_fatal ("Expected extra ref to passed msd.\n");
-#endif
-  *pmsd = NULL;
-  add_msnode_ref (l);
-  SET_ONERROR (uwp, do_sub_msnode_ref, l);
-  multiset_delete_node (l, MSNODE2OFF (l->msd, node));
-  UNSET_ONERROR (uwp);
-  add_ref (*pmsd = l->msd);
-}
+static enum find_types low_multiset_track_lt_ge (
+  struct multiset_data *msd, struct svalue *key, struct rbstack_ptr *track);
 
 static void midflight_remove_node_fast (struct multiset *l,
 					struct rbstack_ptr *track,
 					int keep_rbstack)
 {
-  /* The note for midflight_remove_node applies here too. */
+  /* If the node index is destructed, we could in principle ignore the
+   * copy-on-write here and remove it in all copies, but then we'd
+   * have to find another way than (l->msd != msd) to signal the tree
+   * change to the calling code. */
   struct svalue ind, val;
   union msnode *node = RBNODE (RBSTACK_PEEK (*track));
   int indval = l->msd->flags & MULTISET_INDVAL;
@@ -1316,6 +1304,10 @@ union msnode *low_multiset_find_eq (struct multiset *l, struct svalue *key)
 
   while (1) {
     if ((node = HDR (msd->root))) {
+#ifdef TEST_MULTISET_TRACKING_PATHS
+      goto index_destructed;
+#endif
+
       if (msd->cmp_less.type == T_INT) {
 	struct svalue tmp;
 	LOW_RB_FIND (
@@ -1362,10 +1354,38 @@ union msnode *low_multiset_find_eq (struct multiset *l, struct svalue *key)
   index_destructed:
     if (l->msd != msd)
       MOVE_MSD_REF_AND_FREE (l, msd);
-    else
-      midflight_remove_node (l, &msd, RBNODE (node));
+
+    else {
+      /* Try again with tracking to be able to remove the destructed node. */
+      RBSTACK_INIT (rbstack);
+
+      while (1) {
+	enum find_types find_type = low_multiset_track_eq (msd, key, &rbstack);
+
+	if (l->msd != msd)
+	  MOVE_MSD_REF_AND_FREE (l, msd);
+
+	else if (find_type == FIND_DESTRUCTED) {
+	  sub_extra_ref (msd);
+	  midflight_remove_node_fast (l, &rbstack, 0);
+	  msd = l->msd;
+	  add_ref (msd);
+	  /* Let's stay in tracking mode - if there's one destructed
+	   * index, there might be many. */
+	}
+
+	else {
+	  node = find_type == FIND_EQUAL ? RBSTACK_PEEK (rbstack) : NULL;
+	  RBSTACK_FREE (rbstack);
+	  goto done;
+	}
+      }
+
+      /* NOT REACHED */
+    }
   }
 
+done:
   UNSET_ONERROR (uwp);
   sub_extra_ref (msd);
   return RBNODE (node);
@@ -1445,6 +1465,8 @@ static enum find_types low_multiset_find_lt_ge (
 {
   struct rb_node_hdr *node = HDR (msd->root);
 
+  /* Note: Similar code in low_multiset_track_lt_ge. */
+
 #ifdef PIKE_DEBUG
   /* Allow zero refs too since that's used during initial building. */
   if (msd->refs == 1) Pike_fatal ("Copy-on-write assumed here.\n");
@@ -1511,6 +1533,10 @@ PMOD_EXPORT ptrdiff_t multiset_find_lt (struct multiset *l, struct svalue *key)
 
   while (1) {
     enum find_types find_type = low_multiset_find_lt_ge (msd, key, &node);
+#ifdef TEST_MULTISET_TRACKING_PATHS
+    find_type = FIND_DESTRUCTED;
+#endif
+
     if (l->msd != msd)		/* Multiset changed; try again. */
       MOVE_MSD_REF_AND_FREE (l, msd);
     else
@@ -1521,9 +1547,40 @@ PMOD_EXPORT ptrdiff_t multiset_find_lt (struct multiset *l, struct svalue *key)
 	case FIND_GREATER:	/* Got greater or equal - step back one. */
 	  node = INODE (node->i.prev);
 	  goto done;
-	case FIND_DESTRUCTED:
-	  midflight_remove_node (l, &msd, node);
-	  break;
+
+	case FIND_DESTRUCTED: {
+	  /* Try again with tracking to be able to remove the
+	   * destructed node. */
+	  RBSTACK_INIT (rbstack);
+	  while (1) {
+	    find_type = low_multiset_track_lt_ge (msd, key, &rbstack);
+	    if (l->msd != msd)
+	      MOVE_MSD_REF_AND_FREE (l, msd);
+	    else
+	      switch (find_type) {
+		case FIND_LESS:
+		case FIND_NOROOT:
+		  node = RBNODE (RBSTACK_PEEK (rbstack));
+		  RBSTACK_FREE (rbstack);
+		  goto done;
+		case FIND_GREATER:
+		  node = INODE (RBNODE (RBSTACK_PEEK (rbstack))->i.prev);
+		  RBSTACK_FREE (rbstack);
+		  goto done;
+		case FIND_DESTRUCTED:
+		  sub_extra_ref (msd);
+		  midflight_remove_node_fast (l, &rbstack, 0);
+		  msd = l->msd;
+		  add_ref (msd);
+		  /* Let's stay in tracking mode - if there's one
+		   * destructed index, there might be many. */
+		  break;
+		default: DO_IF_DEBUG (Pike_fatal ("Invalid find_type.\n"));
+	      }
+	  }
+	  /* NOT REACHED */
+	}
+
 	default: DO_IF_DEBUG (Pike_fatal ("Invalid find_type.\n"));
       }
   }
@@ -1555,6 +1612,10 @@ PMOD_EXPORT ptrdiff_t multiset_find_ge (struct multiset *l, struct svalue *key)
 
   while (1) {
     enum find_types find_type = low_multiset_find_lt_ge (msd, key, &node);
+#ifdef TEST_MULTISET_TRACKING_PATHS
+    find_type = FIND_DESTRUCTED;
+#endif
+
     if (l->msd != msd)		/* Multiset changed; try again. */
       MOVE_MSD_REF_AND_FREE (l, msd);
     else
@@ -1565,9 +1626,40 @@ PMOD_EXPORT ptrdiff_t multiset_find_ge (struct multiset *l, struct svalue *key)
 	case FIND_NOROOT:
 	case FIND_GREATER:
 	  goto done;
-	case FIND_DESTRUCTED:
-	  midflight_remove_node (l, &msd, node);
-	  break;
+
+	case FIND_DESTRUCTED: {
+	  /* Try again with tracking to be able to remove the
+	   * destructed node. */
+	  RBSTACK_INIT (rbstack);
+	  while (1) {
+	    find_type = low_multiset_track_lt_ge (msd, key, &rbstack);
+	    if (l->msd != msd)
+	      MOVE_MSD_REF_AND_FREE (l, msd);
+	    else
+	      switch (find_type) {
+		case FIND_LESS:
+		  node = INODE (RBNODE (RBSTACK_PEEK (rbstack))->i.next);
+		  RBSTACK_FREE (rbstack);
+		  goto done;
+		case FIND_NOROOT:
+		case FIND_GREATER:
+		  node = RBNODE (RBSTACK_PEEK (rbstack));
+		  RBSTACK_FREE (rbstack);
+		  goto done;
+		case FIND_DESTRUCTED:
+		  sub_extra_ref (msd);
+		  midflight_remove_node_fast (l, &rbstack, 0);
+		  msd = l->msd;
+		  add_ref (msd);
+		  /* Let's stay in tracking mode - if there's one
+		   * destructed index, there might be many. */
+		  break;
+		default: DO_IF_DEBUG (Pike_fatal ("Invalid find_type.\n"));
+	      }
+	  }
+	  /* NOT REACHED */
+	}
+
 	default: DO_IF_DEBUG (Pike_fatal ("Invalid find_type.\n"));
       }
   }
@@ -1599,6 +1691,10 @@ PMOD_EXPORT ptrdiff_t multiset_find_le (struct multiset *l, struct svalue *key)
 
   while (1) {
     enum find_types find_type = low_multiset_find_le_gt (msd, key, &node);
+#ifdef TEST_MULTISET_TRACKING_PATHS
+    find_type = FIND_DESTRUCTED;
+#endif
+
     if (l->msd != msd)		/* Multiset changed; try again. */
       MOVE_MSD_REF_AND_FREE (l, msd);
     else
@@ -1609,9 +1705,40 @@ PMOD_EXPORT ptrdiff_t multiset_find_le (struct multiset *l, struct svalue *key)
 	case FIND_GREATER:	/* Got greater - step back one. */
 	  node = INODE (node->i.prev);
 	  goto done;
-	case FIND_DESTRUCTED:
-	  midflight_remove_node (l, &msd, node);
-	  break;
+
+	case FIND_DESTRUCTED: {
+	  /* Try again with tracking to be able to remove the
+	   * destructed node. */
+	  RBSTACK_INIT (rbstack);
+	  while (1) {
+	    find_type = low_multiset_track_le_gt (msd, key, &rbstack);
+	    if (l->msd != msd)
+	      MOVE_MSD_REF_AND_FREE (l, msd);
+	    else
+	      switch (find_type) {
+		case FIND_LESS:
+		case FIND_NOROOT:
+		  node = RBNODE (RBSTACK_PEEK (rbstack));
+		  RBSTACK_FREE (rbstack);
+		  goto done;
+		case FIND_GREATER:
+		  node = INODE (RBNODE (RBSTACK_PEEK (rbstack))->i.prev);
+		  RBSTACK_FREE (rbstack);
+		  goto done;
+		case FIND_DESTRUCTED:
+		  sub_extra_ref (msd);
+		  midflight_remove_node_fast (l, &rbstack, 0);
+		  msd = l->msd;
+		  add_ref (msd);
+		  /* Let's stay in tracking mode - if there's one
+		   * destructed index, there might be many. */
+		  break;
+		default: DO_IF_DEBUG (Pike_fatal ("Invalid find_type.\n"));
+	      }
+	  }
+	  /* NOT REACHED */
+	}
+
 	default: DO_IF_DEBUG (Pike_fatal ("Invalid find_type.\n"));
       }
   }
@@ -1643,6 +1770,10 @@ PMOD_EXPORT ptrdiff_t multiset_find_gt (struct multiset *l, struct svalue *key)
 
   while (1) {
     enum find_types find_type = low_multiset_find_le_gt (msd, key, &node);
+#ifdef TEST_MULTISET_TRACKING_PATHS
+    find_type = FIND_DESTRUCTED;
+#endif
+
     if (l->msd != msd)		/* Multiset changed; try again. */
       MOVE_MSD_REF_AND_FREE (l, msd);
     else
@@ -1653,9 +1784,40 @@ PMOD_EXPORT ptrdiff_t multiset_find_gt (struct multiset *l, struct svalue *key)
 	case FIND_NOROOT:
 	case FIND_GREATER:
 	  goto done;
-	case FIND_DESTRUCTED:
-	  midflight_remove_node (l, &msd, node);
-	  break;
+
+	case FIND_DESTRUCTED: {
+	  /* Try again with tracking to be able to remove the
+	   * destructed node. */
+	  RBSTACK_INIT (rbstack);
+	  while (1) {
+	    find_type = low_multiset_track_le_gt (msd, key, &rbstack);
+	    if (l->msd != msd)
+	      MOVE_MSD_REF_AND_FREE (l, msd);
+	    else
+	      switch (find_type) {
+		case FIND_LESS:
+		  node = INODE (RBNODE (RBSTACK_PEEK (rbstack))->i.next);
+		  RBSTACK_FREE (rbstack);
+		  goto done;
+		case FIND_NOROOT:
+		case FIND_GREATER:
+		  node = RBNODE (RBSTACK_PEEK (rbstack));
+		  RBSTACK_FREE (rbstack);
+		  goto done;
+		case FIND_DESTRUCTED:
+		  sub_extra_ref (msd);
+		  midflight_remove_node_fast (l, &rbstack, 0);
+		  msd = l->msd;
+		  add_ref (msd);
+		  /* Let's stay in tracking mode - if there's one
+		   * destructed index, there might be many. */
+		  break;
+		default: DO_IF_DEBUG (Pike_fatal ("Invalid find_type.\n"));
+	      }
+	  }
+	  /* NOT REACHED */
+	}
+
 	default: DO_IF_DEBUG (Pike_fatal ("Invalid find_type.\n"));
       }
   }
@@ -1958,6 +2120,59 @@ static enum find_types low_multiset_track_le_gt (
 	}
 	EXTERNAL_CMP (&msd->cmp_less);
 	cmp_res = UNSAFE_IS_ZERO (sp - 1) ? 1 : -1;
+	pop_stack();
+      },
+      {*track = rbstack; return FIND_LESS;},
+      {*track = rbstack; return FIND_GREATER;});
+  }
+}
+
+static enum find_types low_multiset_track_lt_ge (
+  struct multiset_data *msd, struct svalue *key, struct rbstack_ptr *track)
+{
+  struct rb_node_hdr *node = HDR (msd->root);
+  struct rbstack_ptr rbstack = *track;
+
+  /* Note: Similar code in low_multiset_find_lt_ge. */
+
+#ifdef PIKE_DEBUG
+  /* Allow zero refs too since that's used during initial building. */
+  if (msd->refs == 1) Pike_fatal ("Copy-on-write assumed here.\n");
+  if (!msd->root) Pike_fatal ("Tree assumed to not be empty here.\n");
+#endif
+
+  if (msd->cmp_less.type == T_INT) {
+    struct svalue tmp;
+    LOW_RB_TRACK_NEQ (
+      rbstack, node,
+      {
+	low_use_multiset_index (RBNODE (node), tmp);
+	if (IS_DESTRUCTED (&tmp)) {
+	  *track = rbstack;
+	  return FIND_DESTRUCTED;
+	}
+	/* TODO: Use special variant of alpha_svalue_cmpfun so we don't
+	 * have to copy the index svalues. */
+	INTERNAL_CMP (key, low_use_multiset_index (RBNODE (node), tmp), cmp_res);
+	cmp_res = cmp_res <= 0 ? -1 : 1;
+      },
+      {*track = rbstack; return FIND_LESS;},
+      {*track = rbstack; return FIND_GREATER;});
+  }
+
+  else {
+    LOW_RB_TRACK_NEQ (
+      rbstack, node,
+      {
+	low_push_multiset_index (RBNODE (node));
+	if (IS_DESTRUCTED (sp - 1)) {
+	  pop_2_elems();
+	  *track = rbstack;
+	  return FIND_DESTRUCTED;
+	}
+	push_svalue (key);
+	EXTERNAL_CMP (&msd->cmp_less);
+	cmp_res = UNSAFE_IS_ZERO (sp - 1) ? -1 : 1;
 	pop_stack();
       },
       {*track = rbstack; return FIND_LESS;},
