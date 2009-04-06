@@ -2041,6 +2041,7 @@ static enum find_types low_multiset_track_eq (
   struct rb_node_hdr *node = HDR (msd->root);
   struct rbstack_ptr rbstack = *track;
   enum find_types find_type;
+  ONERROR uwp;
 
   /* Note: Similar code in multiset_find_eq. */
 
@@ -2050,6 +2051,8 @@ static enum find_types low_multiset_track_eq (
   if (!msd->root) Pike_fatal ("Tree assumed to not be empty here.\n");
 #endif
 
+  SET_ONERROR (uwp, rbstack_do_free, track);
+
   if (msd->cmp_less.type == T_INT) {
     struct svalue tmp;
     LOW_RB_TRACK (
@@ -2057,6 +2060,7 @@ static enum find_types low_multiset_track_eq (
       {
 	low_use_multiset_index (RBNODE (node), tmp);
 	if (IS_DESTRUCTED (&tmp)) {
+	  UNSET_ONERROR (uwp);
 	  *track = rbstack;
 	  return FIND_DESTRUCTED;
 	}
@@ -2082,6 +2086,7 @@ static enum find_types low_multiset_track_eq (
 	low_push_multiset_index (RBNODE (node));
 	if (IS_DESTRUCTED (sp - 1)) {
 	  pop_2_elems();
+	  UNSET_ONERROR (uwp);
 	  *track = rbstack;
 	  return FIND_DESTRUCTED;
 	}
@@ -2103,6 +2108,7 @@ static enum find_types low_multiset_track_eq (
       /* An extra check for a destructed key before entering the loop below,
        * lest we might go backwards through the whole multiset. */
       RBSTACK_FREE (rbstack);
+      UNSET_ONERROR (uwp);
       *track = rbstack;
       return FIND_KEY_DESTRUCTED;
     }
@@ -2131,6 +2137,7 @@ static enum find_types low_multiset_track_eq (
   }
 
 done:
+  UNSET_ONERROR (uwp);
   if (IS_DESTRUCTED (key) && find_type != FIND_DESTRUCTED) {
     RBSTACK_FREE (rbstack);
     *track = rbstack;
@@ -2146,6 +2153,7 @@ static enum find_types low_multiset_track_le_gt (
   struct rb_node_hdr *node = HDR (msd->root);
   struct rbstack_ptr rbstack = *track;
   enum find_types find_type;
+  ONERROR uwp;
 
   /* Note: Similar code in low_multiset_find_le_gt. */
 
@@ -2155,6 +2163,8 @@ static enum find_types low_multiset_track_le_gt (
   if (!msd->root) Pike_fatal ("Tree assumed to not be empty here.\n");
 #endif
 
+  SET_ONERROR (uwp, rbstack_do_free, track);
+
   if (msd->cmp_less.type == T_INT) {
     struct svalue tmp;
     LOW_RB_TRACK_NEQ (
@@ -2162,6 +2172,7 @@ static enum find_types low_multiset_track_le_gt (
       {
 	low_use_multiset_index (RBNODE (node), tmp);
 	if (IS_DESTRUCTED (&tmp)) {
+	  UNSET_ONERROR (uwp);
 	  *track = rbstack;
 	  return FIND_DESTRUCTED;
 	}
@@ -2183,6 +2194,7 @@ static enum find_types low_multiset_track_le_gt (
 	low_push_multiset_index (RBNODE (node));
 	if (IS_DESTRUCTED (sp - 1)) {
 	  pop_2_elems();
+	  UNSET_ONERROR (uwp);
 	  *track = rbstack;
 	  return FIND_DESTRUCTED;
 	}
@@ -2196,6 +2208,7 @@ static enum find_types low_multiset_track_le_gt (
   }
 
 done:
+  UNSET_ONERROR (uwp);
   if (IS_DESTRUCTED (key)) {
     RBSTACK_FREE (rbstack);
     *track = rbstack;
@@ -2211,6 +2224,7 @@ static enum find_types low_multiset_track_lt_ge (
   struct rb_node_hdr *node = HDR (msd->root);
   struct rbstack_ptr rbstack = *track;
   enum find_types find_type;
+  ONERROR uwp;
 
   /* Note: Similar code in low_multiset_find_lt_ge. */
 
@@ -2220,6 +2234,8 @@ static enum find_types low_multiset_track_lt_ge (
   if (!msd->root) Pike_fatal ("Tree assumed to not be empty here.\n");
 #endif
 
+  SET_ONERROR (uwp, rbstack_do_free, track);
+
   if (msd->cmp_less.type == T_INT) {
     struct svalue tmp;
     LOW_RB_TRACK_NEQ (
@@ -2227,6 +2243,7 @@ static enum find_types low_multiset_track_lt_ge (
       {
 	low_use_multiset_index (RBNODE (node), tmp);
 	if (IS_DESTRUCTED (&tmp)) {
+	  UNSET_ONERROR (uwp);
 	  *track = rbstack;
 	  return FIND_DESTRUCTED;
 	}
@@ -2247,6 +2264,7 @@ static enum find_types low_multiset_track_lt_ge (
 	low_push_multiset_index (RBNODE (node));
 	if (IS_DESTRUCTED (sp - 1)) {
 	  pop_2_elems();
+	  UNSET_ONERROR (uwp);
 	  *track = rbstack;
 	  return FIND_DESTRUCTED;
 	}
@@ -2261,6 +2279,7 @@ static enum find_types low_multiset_track_lt_ge (
   }
 
 done:
+  UNSET_ONERROR (uwp);
   if (IS_DESTRUCTED (key)) {
     RBSTACK_FREE (rbstack);
     *track = rbstack;
