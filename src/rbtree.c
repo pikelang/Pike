@@ -88,6 +88,11 @@ void rbstack_low_free (struct rbstack_ptr *rbstack)
   rbstack->ssp = 0;
 }
 
+void rbstack_do_free (struct rbstack_ptr *rbstack_ptr)
+{
+  RBSTACK_FREE (*rbstack_ptr);
+}
+
 /* Inserts the given node at *pos and advances *pos. *top is the top
  * of the stack, which also is advanced to keep track of the top. */
 void rbstack_insert (struct rbstack_ptr *top, struct rbstack_ptr *pos,

@@ -46,6 +46,7 @@ void rbstack_low_pop (struct rbstack_ptr *rbstack);
 void rbstack_low_up (struct rbstack_ptr *rbstack);
 void rbstack_low_up_to_root (struct rbstack_ptr *rbstack);
 void rbstack_low_free (struct rbstack_ptr *rbstack);
+void rbstack_do_free (struct rbstack_ptr *rbstack);
 void rbstack_insert (struct rbstack_ptr *top, struct rbstack_ptr *pos,
 		     struct rb_node_hdr *node);
 void rbstack_assign (struct rbstack_ptr *target, struct rbstack_ptr *source);
