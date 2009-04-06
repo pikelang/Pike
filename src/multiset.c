@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.116 2009/04/06 00:35:00 mast Exp $
+|| $Id: multiset.c,v 1.117 2009/04/06 00:36:54 mast Exp $
 */
 
 #include "global.h"
@@ -2599,7 +2599,6 @@ PMOD_EXPORT void multiset_delete_node (struct multiset *l,
       return;
     }
     low_use_multiset_index (existing, ind);
-    /* FIXME: Handle destructed object in ind. */
 
     add_ref (msd);
     find_type = low_multiset_track_le_gt (msd, &ind, &rbstack);
@@ -2622,7 +2621,17 @@ PMOD_EXPORT void multiset_delete_node (struct multiset *l,
       int indval = msd->flags & MULTISET_INDVAL;
 
       /* Step backwards until the existing node is found. */
-      while (RBNODE (node) != existing) LOW_RB_TRACK_PREV (rbstack, node);
+      while (RBNODE (node) != existing) {
+	if (!node) {
+	  /* The index is destructed, or things changed under our
+	   * feet, or perhaps there are flaky compare functions. Build
+	   * the stack solely from the rb_node structure instead. */
+	  RBSTACK_FREE (rbstack);
+	  low_rb_build_stack (HDR (msd->root), HDR (existing), &rbstack);
+	  break;
+	}
+	LOW_RB_TRACK_PREV (rbstack, node);
+      }
 
       UNSET_ONERROR (uwp);
 
