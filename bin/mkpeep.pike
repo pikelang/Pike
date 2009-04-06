@@ -4,7 +4,7 @@
 
 #pragma strict_types
 
-/* $Id: mkpeep.pike,v 1.28 2009/03/11 21:34:30 grubba Exp $ */
+/* $Id: mkpeep.pike,v 1.29 2009/04/06 18:19:03 grubba Exp $ */
 
 #define JUMPBACK 3
 
@@ -282,12 +282,12 @@ string treat(string expr)
 }
 
 /* Dump C co(d|r)e */
-void dump2(array(array(array(string))) data,int ind)
+void dump2(array(array(int|string|array(string))) data,int ind)
 {
   int e,i,max,maxe;
   mixed tmp;
   string test;
-  mapping(string:mapping(string:array(array(array(string))))) foo;
+  mapping(string:mapping(string:array(array(int|string|array(string))))) foo;
   mixed cons, var;
 
   foo=([]);
@@ -299,10 +299,10 @@ void dump2(array(array(array(string))) data,int ind)
     /* First we create a mapping:
      * foo [ meta variable ] [ condition ] = ({ lines });
      */
-    foreach(data, array(array(string)) d)
+    foreach(data, array(int|string|array(string)) d)
     {
-      array(string) a = d[0];
-      array(string) b = d[1];
+      array(string) a = [array(string)]d[0];
+      array(string) b = [array(string)]d[1];
       for(e=0;e<sizeof(a);e++)
       {
 	if(sscanf(a[e],"F_%[A-Z0-9_]==%s",cons,var)==2 ||
@@ -318,7 +318,8 @@ void dump2(array(array(array(string))) data,int ind)
 
     /* Check what variable has most values */
     max=maxe=e=0; 
-    foreach(values(foo), mapping(string:array(array(array(string)))) d)
+    foreach(values(foo),
+	    mapping(string:array(array(int|string|array(string)))) d)
     {
       if(sizeof(d)>max)
       {
@@ -336,9 +337,10 @@ void dump2(array(array(array(string))) data,int ind)
     write(sprintf("%*nswitch(%s)\n",ind,treat(test)));
     write(sprintf("%*n{\n",ind));
 
-    mapping(string:array(array(array(string)))) d = values(foo)[maxe];
+    mapping(string:array(array(int|string|array(string)))) d =
+      values(foo)[maxe];
     array(string) a = indices(d);
-    array(array(array(array(string)))) b = values(d);
+    array(array(array(int|string|array(string)))) b = values(d);
 
 
     /* foo: variable
@@ -358,7 +360,7 @@ void dump2(array(array(array(string))) data,int ind)
       
       write(sprintf("%*ncase %s:\n",ind,cons+""));
 
-      foreach(b[e], array(array(string)) d) d[0]-=({a[e]});
+      foreach(b[e], array(int|string|array(string)) d) d[0]-=({a[e]});
       dump2(b[e],ind+2);
       write(sprintf("%*n  break;\n",ind));
       write("\n");
@@ -370,11 +372,11 @@ void dump2(array(array(array(string))) data,int ind)
   /* Take care of whatever is left */
   if(sizeof(data))
   {
-    foreach(data, array(array(string)) d)
+    foreach(data, array(int|string|array(string)) d)
     {
       write(sprintf("%*n/* %s */\n",ind,d[3]));
       
-      if(sizeof(d[0]))
+      if(sizeof([array(string)]d[0]))
       {
 	string test;
 	test=treat(d[0]*" && ");
@@ -382,12 +384,12 @@ void dump2(array(array(array(string))) data,int ind)
       }
       write(sprintf("%*n{\n",ind));
       ind+=2;
-      write("%*ndo_optimization(%d,\n",ind,d[2]);
+      write("%*ndo_optimization(%d,\n",ind,[int]d[2]);
 
-      for(i=0;i<sizeof(d[1]);i++)
+      for(i=0;i<sizeof([array(string)]d[1]);i++)
       {
-	array args=({});
-	string fcode=d[1][i];
+	array(string) args=({});
+	string fcode=([array(string)]d[1])[i];
 	if(i+1<sizeof(d[1]) && d[1][i+1][0]=='(')
 	{
 	  string tmp=d[1][i+1];
@@ -417,7 +419,7 @@ int main(int argc, array(string) argv)
   int e,max,maxe;
   string f;
   mapping foo=([]);
-  array(array(array(string))) data=({});
+  array(array(int|string|array(string))) data=({});
 
   mapping tests=([]);
 
