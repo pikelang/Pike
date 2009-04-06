@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.115 2008/07/22 20:03:19 mast Exp $
+|| $Id: multiset.c,v 1.116 2009/04/06 00:35:00 mast Exp $
 */
 
 #include "global.h"
@@ -5234,6 +5234,7 @@ void test_multiset (void)
 #ifdef RB_STATS
     reset_rb_stats();
 #endif
+
     for (i = max, v = 0; i > 0; i--) {
       if (!(i % 10000)) fprintf (stderr, "grow %s %d, %d duplicates         \r",
 				 pass ? "cmp_less" : "internal", i, v);
@@ -5243,16 +5244,46 @@ void test_multiset (void)
 	sub_msnode_ref (l);
       }
       multiset_add (l, sp - 1, NULL);
+
+      {
+	struct multiset_data *msd = l->msd;
+	RBSTACK_INIT (rbstack_find);
+	add_ref (msd);
+	if (low_multiset_track_eq (msd, sp - 1, &rbstack_find) != FIND_EQUAL)
+	  fprintf (stderr, "Round %d: Didn't find node after add.\n", i);
+	else {
+	  RBSTACK_INIT (rbstack_build);
+	  low_rb_build_stack (HDR (msd->root), RBSTACK_PEEK (rbstack_find),
+			      &rbstack_build);
+	  while (1) {
+	    struct rb_node_hdr *f, *b;
+	    RBSTACK_POP (rbstack_find, f);
+	    RBSTACK_POP (rbstack_build, b);
+	    if (f != b) {
+	      fprintf (stderr, "Round %d: find and build stacks differ.\n", i);
+	      break;
+	    }
+	    if (!f) break;
+	  }
+	  RBSTACK_FREE (rbstack_build);
+	}
+	RBSTACK_FREE (rbstack_find);
+	sub_extra_ref (msd);
+      }
+
       pop_stack();
     }
+
     if (v != 114)
       fprintf (stderr, "Got %d duplicates but expected 114 - "
 	       "the pseudorandom sequence isn't as expected\n", v);
+
 #ifdef RB_STATS
     fputc ('\n', stderr), print_rb_stats (1);
 #endif
     check_multiset (l, 0);
     my_srand (0);
+
     for (i = max; i > 0; i--) {
       if (!(i % 10000)) fprintf (stderr, "shrink %s %d                   \r",
 				 pass ? "cmp_less" : "internal", i);
@@ -5261,6 +5292,7 @@ void test_multiset (void)
 	Pike_fatal ("Pseudo-random sequence didn't repeat.\n");
       pop_stack();
     }
+
 #ifdef RB_STATS
     fputc ('\n', stderr), print_rb_stats (1);
 #endif
