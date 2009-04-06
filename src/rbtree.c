@@ -35,7 +35,7 @@ DECLSPEC(noreturn) static void debug_custom_rb_fatal (
 
 #endif
 
-void rbstack_push (struct rbstack_ptr *rbstack, struct rb_node_hdr *node)
+void rbstack_low_push (struct rbstack_ptr *rbstack, struct rb_node_hdr *node)
 {
   struct rbstack_slice *new = ALLOC_STRUCT (rbstack_slice);
   new->up = rbstack->slice;
@@ -49,7 +49,7 @@ void rbstack_push (struct rbstack_ptr *rbstack, struct rb_node_hdr *node)
   rbstack->ssp = 1;
 }
 
-void rbstack_pop (struct rbstack_ptr *rbstack)
+void rbstack_low_pop (struct rbstack_ptr *rbstack)
 {
   struct rbstack_slice *old = rbstack->slice;
   rbstack->slice = old->up;
@@ -60,20 +60,20 @@ void rbstack_pop (struct rbstack_ptr *rbstack)
   rbstack->ssp = STACK_SLICE_SIZE;
 }
 
-void rbstack_up (struct rbstack_ptr *rbstack)
+void rbstack_low_up (struct rbstack_ptr *rbstack)
 {
   rbstack->slice = rbstack->slice->up;
   rbstack->ssp = STACK_SLICE_SIZE;
 }
 
-void rbstack_up_to_root (struct rbstack_ptr *rbstack)
+void rbstack_low_up_to_root (struct rbstack_ptr *rbstack)
 {
   struct rbstack_slice *up;
   while ((up = rbstack->slice->up)) rbstack->slice = up;
   rbstack->ssp = 0;
 }
 
-void rbstack_free (struct rbstack_ptr *rbstack)
+void rbstack_low_free (struct rbstack_ptr *rbstack)
 {
   struct rbstack_slice *ptr = rbstack->slice;
   do {
@@ -101,7 +101,7 @@ void rbstack_insert (struct rbstack_ptr *top, struct rbstack_ptr *pos,
     rbp2.slice->stack[--rbp2.ssp] = rbp1.slice->stack[--rbp1.ssp];
     if (!rbp2.ssp) rbp2.slice = rbp1.slice, rbp2.ssp = STACK_SLICE_SIZE;
     if (!rbp1.ssp) {
-      if (rbp1.slice->up) rbstack_up (&rbp1);
+      if (rbp1.slice->up) rbstack_low_up (&rbp1);
 #ifdef PIKE_DEBUG
       else if (rbp1.ssp != rbpos.ssp || rbp1.slice != rbpos.slice)
 	Pike_fatal ("Didn't find the given position on the stack.\n");

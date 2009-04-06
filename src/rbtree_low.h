@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rbtree_low.h,v 1.10 2009/04/06 00:34:16 mast Exp $
+|| $Id$
 */
 
 /* The lower level api for using rbtree. This is in a separate file
@@ -41,11 +41,11 @@ struct rbstack_ptr
   size_t ssp;			/* Only zero when the stack is empty. */
 };
 
-void rbstack_push (struct rbstack_ptr *rbstack, struct rb_node_hdr *node);
-void rbstack_pop (struct rbstack_ptr *rbstack);
-void rbstack_up (struct rbstack_ptr *rbstack);
-void rbstack_up_to_root (struct rbstack_ptr *rbstack);
-void rbstack_free (struct rbstack_ptr *rbstack);
+void rbstack_low_push (struct rbstack_ptr *rbstack, struct rb_node_hdr *node);
+void rbstack_low_pop (struct rbstack_ptr *rbstack);
+void rbstack_low_up (struct rbstack_ptr *rbstack);
+void rbstack_low_up_to_root (struct rbstack_ptr *rbstack);
+void rbstack_low_free (struct rbstack_ptr *rbstack);
 void rbstack_insert (struct rbstack_ptr *top, struct rbstack_ptr *pos,
 		     struct rb_node_hdr *node);
 void rbstack_assign (struct rbstack_ptr *target, struct rbstack_ptr *source);
@@ -70,7 +70,7 @@ void rbstack_shift (struct rbstack_ptr rbstack,
     if ((rbstack).ssp < STACK_SLICE_SIZE) {				\
       (rbstack).slice->stack[(rbstack).ssp++] = (node);			\
     }									\
-    else rbstack_push (&(rbstack), node);				\
+    else rbstack_low_push (&(rbstack), node);				\
     DO_IF_RB_STATS (							\
       if (++(rbstack).slice->depth > (rbstack).slice->maxdepth)		\
 	(rbstack).slice->maxdepth = (rbstack).slice->depth;		\
@@ -82,7 +82,7 @@ void rbstack_shift (struct rbstack_ptr rbstack,
       (node) = (rbstack).slice->stack[--(rbstack).ssp];			\
       DO_IF_RB_STATS ((rbstack).slice->depth--);			\
       if (!(rbstack).ssp && (rbstack).slice->up)			\
-	rbstack_pop (&(rbstack));					\
+	rbstack_low_pop (&(rbstack));					\
     }									\
     else (node) = NULL;							\
   } while (0)
@@ -91,7 +91,7 @@ void rbstack_shift (struct rbstack_ptr rbstack,
     if ((rbstack).ssp && !--(rbstack).ssp) {				\
       DO_IF_RB_STATS ((rbstack).slice->depth--);			\
       if ((rbstack).slice->up)						\
-	rbstack_pop (&(rbstack));					\
+	rbstack_low_pop (&(rbstack));					\
     }									\
   } while (0)
 
@@ -99,14 +99,14 @@ void rbstack_shift (struct rbstack_ptr rbstack,
     if ((rbstack).ssp) {						\
       (node) = (rbstack).slice->stack[--(rbstack).ssp];			\
       if (!(rbstack).ssp && (rbstack).slice->up)			\
-	rbstack_up (&(rbstack));					\
+	rbstack_low_up (&(rbstack));					\
     }									\
     else (node) = NULL;							\
   } while (0)
 
 #define RBSTACK_UP_IGNORE(rbstack) do {					\
     if ((rbstack).ssp && !--(rbstack).ssp && (rbstack).slice->up)	\
-      rbstack_up (&(rbstack));						\
+      rbstack_low_up (&(rbstack));					\
   } while (0)
 
 #define RBSTACK_PEEK(rbstack)						\
@@ -119,14 +119,14 @@ void rbstack_shift (struct rbstack_ptr rbstack,
 
 #define RBSTACK_UP_TO_ROOT(rbstack, node) do {				\
     if ((rbstack).ssp) {						\
-      rbstack_up_to_root (&(rbstack));					\
+      rbstack_low_up_to_root (&(rbstack));				\
       (node) = (rbstack).slice->stack[0];				\
     }									\
   } while (0)
 
 #define RBSTACK_FREE(rbstack) do {					\
     if ((rbstack).ssp) {						\
-      if ((rbstack).slice->up) rbstack_free (&(rbstack));		\
+      if ((rbstack).slice->up) rbstack_low_free (&(rbstack));		\
       (rbstack).ssp = 0;						\
     }									\
     DO_IF_RB_STATS (							\
@@ -140,7 +140,7 @@ void rbstack_shift (struct rbstack_ptr rbstack,
 
 #define RBSTACK_FREE_SET_ROOT(rbstack, node) do {			\
     if ((rbstack).ssp) {						\
-      if ((rbstack).slice->up) rbstack_free (&(rbstack));		\
+      if ((rbstack).slice->up) rbstack_low_free (&(rbstack));		\
       (rbstack).ssp = 0;						\
       (node) = (rbstack).slice->stack[0];				\
     }									\
