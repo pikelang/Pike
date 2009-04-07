@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rbtree_low.h,v 1.8 2004/05/28 09:42:44 mast Exp $
+|| $Id: rbtree_low.h,v 1.9 2009/04/07 14:53:38 peter Exp $
 */
 
 /* The lower level api for using rbtree. This is in a separate file
@@ -166,7 +166,7 @@ void low_rb_unlink_without_move (struct rb_node_hdr **root,
 				 struct rbstack_ptr *rbstack_ptr,
 				 int keep_rbstack);
 void low_rb_build_stack (struct rb_node_hdr *root, struct rb_node_hdr *node,
-			 struct rbstack_ptr *rbstack);
+			 struct rbstack_ptr *rbstack_ptr);
 
 #if defined (PIKE_DEBUG) || defined (TEST_MULTISET)
 

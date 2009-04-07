@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.93 2008/08/31 14:59:52 grubba Exp $
+|| $Id: multiset.c,v 1.94 2009/04/07 14:53:38 peter Exp $
 */
 
 #include "global.h"
@@ -24,7 +24,7 @@
 #include "svalue.h"
 #include "block_alloc.h"
 
-RCSID("$Id: multiset.c,v 1.93 2008/08/31 14:59:52 grubba Exp $");
+RCSID("$Id: multiset.c,v 1.94 2009/04/07 14:53:38 peter Exp $");
 
 /* FIXME: Optimize finds and searches on type fields? (But not when
  * objects are involved!) Well.. Although cheap I suspect it pays off
@@ -2613,7 +2613,6 @@ PMOD_EXPORT void multiset_delete_node (struct multiset *l,
       return;
     }
     low_use_multiset_index (existing, ind);
-    /* FIXME: Handle destructed object in ind. */
 
     add_ref (msd);
     find_type = low_multiset_track_le_gt (msd, &ind, &rbstack);
@@ -2636,7 +2635,17 @@ PMOD_EXPORT void multiset_delete_node (struct multiset *l,
       int indval = msd->flags & MULTISET_INDVAL;
 
       /* Step backwards until the existing node is found. */
-      while (RBNODE (node) != existing) LOW_RB_TRACK_PREV (rbstack, node);
+      while (RBNODE (node) != existing) {
+	if (!node) {
+	  /* The index is destructed, or things changed under our
+	   * feet, or perhaps there are flaky compare functions. Build
+	   * the stack solely from the rb_node structure instead. */
+	  RBSTACK_FREE (rbstack);
+	  low_rb_build_stack (HDR (msd->root), HDR (existing), &rbstack);
+	  break;
+	}
+	LOW_RB_TRACK_PREV (rbstack, node);
+      }
 
       UNSET_ONERROR (uwp);
 
@@ -5208,6 +5217,7 @@ void test_multiset (void)
 #ifdef RB_STATS
     reset_rb_stats();
 #endif
+
     for (i = max, v = 0; i > 0; i--) {
       if (!(i % 10000)) fprintf (stderr, "grow %s %d, %d duplicates         \r",
 				 pass ? "cmp_less" : "internal", i, v);
@@ -5217,16 +5227,46 @@ void test_multiset (void)
 	sub_msnode_ref (l);
       }
       multiset_add (l, sp - 1, NULL);
+
+      {
+	struct multiset_data *msd = l->msd;
+	RBSTACK_INIT (rbstack_find);
+	add_ref (msd);
+	if (low_multiset_track_eq (msd, sp - 1, &rbstack_find) != FIND_EQUAL)
+	  fprintf (stderr, "Round %d: Didn't find node after add.\n", i);
+	else {
+	  RBSTACK_INIT (rbstack_build);
+	  low_rb_build_stack (HDR (msd->root), RBSTACK_PEEK (rbstack_find),
+			      &rbstack_build);
+	  while (1) {
+	    struct rb_node_hdr *f, *b;
+	    RBSTACK_POP (rbstack_find, f);
+	    RBSTACK_POP (rbstack_build, b);
+	    if (f != b) {
+	      fprintf (stderr, "Round %d: find and build stacks differ.\n", i);
+	      break;
+	    }
+	    if (!f) break;
+	  }
+	  RBSTACK_FREE (rbstack_build);
+	}
+	RBSTACK_FREE (rbstack_find);
+	sub_extra_ref (msd);
+      }
+
       pop_stack();
     }
+
     if (v != 114)
       fprintf (stderr, "Got %d duplicates but expected 114 - "
 	       "the pseudorandom sequence isn't as expected\n", v);
+
 #ifdef RB_STATS
     fputc ('\n', stderr), print_rb_stats (1);
 #endif
     check_multiset (l, 0);
     my_srand (0);
+
     for (i = max; i > 0; i--) {
       if (!(i % 10000)) fprintf (stderr, "shrink %s %d                   \r",
 				 pass ? "cmp_less" : "internal", i);
@@ -5235,6 +5275,7 @@ void test_multiset (void)
 	Pike_fatal ("Pseudo-random sequence didn't repeat.\n");
       pop_stack();
     }
+
 #ifdef RB_STATS
     fputc ('\n', stderr), print_rb_stats (1);
 #endif
