@@ -633,7 +633,8 @@ protected class DocParserClass {
           string|mapping(string:string) args = getArgs(keyword, arg);
           if (mappingp(args))
             foreach(indices(args), string s)
-              res += " " + s + "=\"" + args[s] + "\"";
+              res += " " + s +
+		"=\"" + Parser.encode_html_entities(args[s]) + "\"";
           res += ">";
           if (stringp(args))
             res += args;
@@ -710,7 +711,8 @@ protected class DocParserClass {
         string|mapping(string:string) args = getArgs(keyword, arg);
         if (mappingp(args)) {
           foreach(indices(args), string s)
-            res += " " + s + "=\"" + args[s] + "\"";
+            res += " " + s +
+	      "=\"" + Parser.encode_html_entities(args[s]) + "\"";
           res += "/>";
         }
         else if (stringp(args))
