@@ -270,7 +270,7 @@ test_eq(sprintf_76("%O", "a\0""0"),"\"a\\0\"\"0\"")
 test_eq(sprintf("%q", "a\nb"),"\"a\\nb\"")
 test_eq(sprintf("%q", "a\0b"),"\"a\\0b\"")
 test_eq(sprintf("%q", "a\0""0"),"\"a\\u00000\"")
-test_eq(sprintf("%q", "\177\177""0"),"\\177\\u007f0")
+test_eq(sprintf("%q", "\177\177""0"),"\"\\177\\u007f0\"")
 
 test_eq(sprintf("%H", ""),"\0")
 test_eq(sprintf("%H", "hello"),"\5hello")
