@@ -189,7 +189,8 @@ protected string _sprintf(int type, void|mapping flags)
 //!	references in the already cached prepared statements
 //!   @member string client_encoding
 //!	Character encoding for the client side, it defaults to using
-//!	the default encoding specified by the database, e.g.: "SQL_ASCII"
+//!	the default encoding specified by the database, e.g.
+//!	@ref{UTF8@} or @ref{SQL_ASCII@}.
 //!   @member string standard_conforming_strings
 //!	When on, backslashes in strings must not be escaped any longer,
 //!	@[quote()] automatically adjusts quoting strategy accordingly
@@ -351,14 +352,15 @@ string get_charset()
 //! Common values are:
 //! @mapping
 //!   @member string client_encoding
-//!	Character encoding for the client side, e.g.: "SQL_ASCII"
+//!	Character encoding for the client side, e.g.
+//!	@ref{UTF8@} or @ref{SQL_ASCII@}.
 //!   @member string server_encoding
 //!	Character encoding for the server side as determined when the
-//!	database was created, e.g.: "SQL_ASCII"
+//!	database was created, e.g. @ref{UTF8@} or @ref{SQL_ASCII@}
 //!   @member string DateStyle
-//!	Date parsing/display, e.g.: "ISO, DMY"
+//!	Date parsing/display, e.g. @ref{ISO, DMY@}
 //!   @member string TimeZone
-//!	Default timezone used by the database, e.g.: "localtime"
+//!	Default timezone used by the database, e.g. @ref{localtime@}
 //!   @member string standard_conforming_strings
 //!	When on, backslashes in strings must not be escaped any longer
 //!   @member string session_authorization
@@ -369,7 +371,7 @@ string get_charset()
 //!   @member string integer_datetimes
 //!	Reports wether the database supports 64-bit-integer dates and times
 //!   @member string server_version
-//!	Shows the server version, e.g.: "8.3.3"
+//!	Shows the server version, e.g. @ref{8.3.3@}
 //! @endmapping
 //!
 //! The values can be changed during a session using SET commands to the
@@ -1562,7 +1564,7 @@ final private array(string) closestatement(mapping tp)
 //! Bindings are supported natively straight across the network.
 //! Special bindings supported are:
 //! @mapping
-//!  @member int ":_cache"
+//!  @member int :_cache
 //!   Forces caching on or off for the query at hand.
 //! @endmapping
 //!
