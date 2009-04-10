@@ -1801,8 +1801,8 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
 		      catch
 		      { tval=value[1];
 			value=tval=='n'||tval=='N';
-			break;
 		      };
+		      break;
 		    default:
 		      value=1;
 		      break;
