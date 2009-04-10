@@ -778,7 +778,6 @@ final int _decodemsg(void|state waitforstate)
 	      { default:value=_c.getstring(collen);
 		  break;
 		case TEXTOID:
-		case XMLOID:
 		case BPCHAROID:
 		case VARCHAROID:
 		  value=_c.getstring(collen);
@@ -1760,7 +1759,6 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
 	  else
 	    switch(dtoid[i])
 	    { case TEXTOID:
-	      case XMLOID:
 	      case BPCHAROID:
 	      case VARCHAROID:
 	      { value=(string)value;
@@ -1782,7 +1780,8 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
 	      { int k;
 		value=(string)value;
 		if(String.width(value)>8)
-		  ERROR("Wide string %O cannot be converted to BYTEA\n",value);
+		  ERROR("Wide string %O not supported for type OID %d\n",
+		   value,dtoid[i]);
 		len+=k=sizeof(value);
 		plugbuf+=({_c.plugint32(k),value});
 		break;

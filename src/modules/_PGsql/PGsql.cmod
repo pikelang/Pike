@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: PGsql.cmod,v 1.34 2009/04/10 17:19:53 srb Exp $
+ * $Id: PGsql.cmod,v 1.35 2009/04/10 17:20:28 srb Exp $
  *
  * PGsql, accelerator functions for Sql.pgsql for Pike.
  *
@@ -398,7 +398,6 @@ outofmem: Pike_fatal("Out of memory\n");
 	      push_string(low_getstring(collen));
 	      break;
 	    case TEXTOID:
-	    case XMLOID:
 	    case BPCHAROID:
 	    case VARCHAROID:
 	      push_string(low_getstring(collen));
