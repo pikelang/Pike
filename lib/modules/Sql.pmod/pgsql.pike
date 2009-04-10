@@ -113,10 +113,10 @@ Thread.Mutex _stealmutex;
 
 #define USERERROR(msg)	throw(({(msg), backtrace()[..<1]}))
 
-protected string _sprintf(int type, void|mapping flags) {
-  string res=UNDEFINED;
-  switch(type) {
-    case 'O':
+protected string _sprintf(int type, void|mapping flags)
+{ string res=UNDEFINED;
+  switch(type)
+  { case 'O':
       res=sprintf(DRIVERNAME"(%s@%s:%d/%s,%d)",
        user,host,port,database,backendpid);
       break;
@@ -149,7 +149,7 @@ protected string _sprintf(int type, void|mapping flags) {
 
 //! @decl void create()
 //! @decl void create(string host, void|string database, void|string user,@
-//!                   void|string password, void|mapping(string:mixed) options)
+//!		      void|string password, void|mapping(string:mixed) options)
 //!
 //! With no arguments, this function initialises (reinitialises if a
 //! connection has been set up previously) a connection to the
@@ -176,27 +176,27 @@ protected string _sprintf(int type, void|mapping flags) {
 //! Currently supports at least the following:
 //! @mapping
 //!   @member int use_ssl
-//!     If the database supports and allows SSL connections, the session
-//!     will be SSL encrypted, if not, the connection will fallback
-//!     to plain unencrypted
+//!	If the database supports and allows SSL connections, the session
+//!	will be SSL encrypted, if not, the connection will fallback
+//!	to plain unencrypted
 //!   @member int force_ssl
-//!     If the database supports and allows SSL connections, the session
-//!     will be SSL encrypted, if not, the connection will abort
+//!	If the database supports and allows SSL connections, the session
+//!	will be SSL encrypted, if not, the connection will abort
 //!   @member int cache_autoprepared_statements
-//!     If set to zero, it disables the automatic statement prepare and
-//!     cache logic; caching prepared statements can be problematic
-//!     when stored procedures and tables are redefined which leave stale
-//!     references in the already cached prepared statements
+//!	If set to zero, it disables the automatic statement prepare and
+//!	cache logic; caching prepared statements can be problematic
+//!	when stored procedures and tables are redefined which leave stale
+//!	references in the already cached prepared statements
 //!   @member string client_encoding
-//!     Character encoding for the client side, it defaults to using
-//!     the default encoding specified by the database, e.g.: "SQL_ASCII"
+//!	Character encoding for the client side, it defaults to using
+//!	the default encoding specified by the database, e.g.: "SQL_ASCII"
 //!   @member string standard_conforming_strings
-//!     When on, backslashes in strings must not be escaped any longer,
-//!     @[quote()] automatically adjusts quoting strategy accordingly
+//!	When on, backslashes in strings must not be escaped any longer,
+//!	@[quote()] automatically adjusts quoting strategy accordingly
 //!   @member string escape_string_warning
-//!     When on, a warning is issued if a backslash (\) appears in an
-//!     ordinary string literal and @[standard_conforming_strings] is off,
-//!     defaults to on
+//!	When on, a warning is issued if a backslash (\) appears in an
+//!	ordinary string literal and @[standard_conforming_strings] is off,
+//!	defaults to on
 //! @endmapping
 //! For the numerous other options please check the PostgreSQL manual.
 //!
@@ -211,8 +211,8 @@ protected string _sprintf(int type, void|mapping flags) {
 //!   @[Postgres.postgres], @[Sql.Sql], @[select_db()],
 //!   @url{http://search.postgresql.org/search?u=%2Fdocs%2F&q=client+connection+defaults@}
 protected void create(void|string _host, void|string _database,
- void|string _user, void|string _pass, void|mapping(string:mixed) _options) {
-  pass = _pass; _pass = "CENSORED";
+ void|string _user, void|string _pass, void|mapping(string:mixed) _options)
+{ pass = _pass; _pass = "CENSORED";
   if(pass)
     String.secure(pass);
   user = _user; database = _database; host = _host || PGSQL_DEFAULT_HOST;
@@ -245,8 +245,8 @@ protected void create(void|string _host, void|string _database,
 //!
 //! @seealso
 //!   @[big_query()]
-string error(void|int clear) {
-  string s=lastmessage*"\n";
+string error(void|int clear)
+{ string s=lastmessage*"\n";
   if(clear)
     lastmessage=({});
   warningscollected=0;
@@ -258,38 +258,38 @@ string error(void|int clear) {
 //!
 //! @seealso
 //!   @[server_info()]
-string host_info() {
-  return sprintf("fd:%d TCP/IP %s:%d PID %d",
+string host_info()
+{ return sprintf("fd:%d TCP/IP %s:%d PID %d",
    _c?_c.query_fd():-1,host,port,backendpid);
 }
 
-final private object getsocket(void|int nossl) {
-  object lcon = Stdio.File();
+final private object getsocket(void|int nossl)
+{ object lcon = Stdio.File();
   if(!lcon.connect(host,port))
     return UNDEFINED;
 
   object fcon;
 #if constant(SSL.sslfile)
-  if(!nossl && (options->use_ssl || options->force_ssl)) {
-     PD("SSLRequest\n");
-     { object c=.pgsql_util.PGassist();
-       lcon.write(({c.plugint32(8),c.plugint32(PG_PROTOCOL(1234,5679))}));
-     }
-     switch(lcon.read(1)) {
-       case "S":
-         SSL.context context = SSL.context();
-         context->random = Crypto.Random.random_string;
-         fcon=.pgsql_util.PGconnS(lcon, context);
-	 if(fcon)
-	   return fcon;
-       default:lcon.close();
-	 if(!lcon.connect(host,port))
-	   return UNDEFINED;
-       case "N":
-	 if(options->force_ssl)
-	   ERROR("Encryption not supported on connection to %s:%d\n",
-	    host,port);
-     }
+  if(!nossl && (options->use_ssl || options->force_ssl))
+  { PD("SSLRequest\n");
+    { object c=.pgsql_util.PGassist();
+      lcon.write(({c.plugint32(8),c.plugint32(PG_PROTOCOL(1234,5679))}));
+    }
+    switch(lcon.read(1))
+    { case "S":
+	SSL.context context = SSL.context();
+	context->random = Crypto.Random.random_string;
+	fcon=.pgsql_util.PGconnS(lcon, context);
+	if(fcon)
+	  return fcon;
+      default:lcon.close();
+	if(!lcon.connect(host,port))
+	  return UNDEFINED;
+      case "N":
+	if(options->force_ssl)
+	  ERROR("Encryption not supported on connection to %s:%d\n",
+	   host,port);
+    }
   }
 #else
   if(options->force_ssl)
@@ -308,9 +308,9 @@ final private object getsocket(void|int nossl) {
 //! @note
 //! This function is PostgreSQL-specific, and thus it is not available
 //! through the generic SQL-interface.
-void cancelquery() {
-  if(qstate==inquery) {
-    qstate=cancelpending;
+void cancelquery()
+{ if(qstate==inquery)
+  { qstate=cancelpending;
     object lcon;
     PD("CancelRequest\n");
     if(!(lcon=getsocket(1)))
@@ -351,25 +351,25 @@ string get_charset()
 //! Common values are:
 //! @mapping
 //!   @member string client_encoding
-//!     Character encoding for the client side, e.g.: "SQL_ASCII"
+//!	Character encoding for the client side, e.g.: "SQL_ASCII"
 //!   @member string server_encoding
-//!     Character encoding for the server side as determined when the
-//!     database was created, e.g.: "SQL_ASCII"
+//!	Character encoding for the server side as determined when the
+//!	database was created, e.g.: "SQL_ASCII"
 //!   @member string DateStyle
-//!     Date parsing/display, e.g.: "ISO, DMY"
+//!	Date parsing/display, e.g.: "ISO, DMY"
 //!   @member string TimeZone
-//!     Default timezone used by the database, e.g.: "localtime"
+//!	Default timezone used by the database, e.g.: "localtime"
 //!   @member string standard_conforming_strings
-//!     When on, backslashes in strings must not be escaped any longer
+//!	When on, backslashes in strings must not be escaped any longer
 //!   @member string session_authorization
-//!     Displays the authorisationrole which the current session runs under
+//!	Displays the authorisationrole which the current session runs under
 //!   @member string is_superuser
-//!     Indicates if the current authorisationrole has database-superuser
-//!     privileges
+//!	Indicates if the current authorisationrole has database-superuser
+//!	privileges
 //!   @member string integer_datetimes
-//!     Reports wether the database supports 64-bit-integer dates and times
+//!	Reports wether the database supports 64-bit-integer dates and times
 //!   @member string server_version
-//!     Shows the server version, e.g.: "8.3.3"
+//!	Shows the server version, e.g.: "8.3.3"
 //! @endmapping
 //!
 //! The values can be changed during a session using SET commands to the
@@ -432,8 +432,8 @@ mapping(string:string) getruntimeparameters()
 //! @note
 //! This function is PostgreSQL-specific, and thus it is not available
 //! through the generic SQL-interface.
-mapping(string:mixed) getstatistics() {
-  mapping(string:mixed) stats=([
+mapping(string:mixed) getstatistics()
+{ mapping(string:mixed) stats=([
     "warnings_dropped":warningsdropcount,
     "skipped_describe_count":skippeddescribe,
     "used_prepared_statements":prepstmtused,
@@ -462,8 +462,8 @@ mapping(string:mixed) getstatistics() {
 //! @note
 //! This function is PostgreSQL-specific, and thus it is not available
 //! through the generic SQL-interface.
-int setcachedepth(void|int newdepth) {
-  int olddepth=cachedepth;
+int setcachedepth(void|int newdepth)
+{ int olddepth=cachedepth;
   if(!zero_type(newdepth) && newdepth>=0)
     cachedepth=newdepth;
   return olddepth;
@@ -478,8 +478,8 @@ int setcachedepth(void|int newdepth) {
 //! @note
 //! This function is PostgreSQL-specific, and thus it is not available
 //! through the generic SQL-interface.
-int settimeout(void|int newtimeout) {
-  int oldtimeout=timeout;
+int settimeout(void|int newtimeout)
+{ int oldtimeout=timeout;
   if(!zero_type(newtimeout) && newtimeout>0)
     timeout=newtimeout;
   return oldtimeout;
@@ -494,8 +494,8 @@ int settimeout(void|int newtimeout) {
 //! @note
 //! This function is PostgreSQL-specific, and thus it is not available
 //! through the generic SQL-interface.
-int setportalbuffersize(void|int newportalbuffersize) {
-  int oldportalbuffersize=portalbuffersize;
+int setportalbuffersize(void|int newportalbuffersize)
+{ int oldportalbuffersize=portalbuffersize;
   if(!zero_type(newportalbuffersize) && newportalbuffersize>0)
     portalbuffersize=newportalbuffersize;
   return oldportalbuffersize;
@@ -510,25 +510,25 @@ int setportalbuffersize(void|int newportalbuffersize) {
 //! @note
 //! This function is PostgreSQL-specific, and thus it is not available
 //! through the generic SQL-interface.
-int setfetchlimit(void|int newfetchlimit) {
-  int oldfetchlimit=_fetchlimit;
+int setfetchlimit(void|int newfetchlimit)
+{ int oldfetchlimit=_fetchlimit;
   if(!zero_type(newfetchlimit) && newfetchlimit>=0)
     _fetchlimit=newfetchlimit;
   return oldfetchlimit;
 }
 
-final private string glob2reg(string glob) {
-  if (!glob||!sizeof(glob))
+final private string glob2reg(string glob)
+{ if(!glob||!sizeof(glob))
     return "%";
   return replace(glob,({"*","?","\\","%","_"}),({"%","_","\\\\","\\%","\\_"}));
 }
 
-final private string a2nls(array(string) msg) {
-  return msg*"\n"+"\n";
+final private string a2nls(array(string) msg)
+{ return msg*"\n"+"\n";
 }
 
-final private string pinpointerror(void|string query,void|string offset) {
-  if(!query)
+final private string pinpointerror(void|string query,void|string offset)
+{ if(!query)
     return "";
   int k=(int)offset;
   if(k<=0)
@@ -536,7 +536,8 @@ final private string pinpointerror(void|string query,void|string offset) {
   return MARKSTART+(k>1?query[..k-2]:"")+MARKERROR+query[k-1..]+MARKEND;
 }
 
-final int _decodemsg(void|state waitforstate) {
+final int _decodemsg(void|state waitforstate)
+{
 #ifdef DEBUG
   { array line;
 #ifdef DEBUGMORE
@@ -545,19 +546,19 @@ final int _decodemsg(void|state waitforstate) {
     PD("Waiting for state %O %O\n",waitforstate,line&&line[sizeof(line)-2]);
   }
 #endif
-  while(_mstate!=waitforstate) {
-    if(_mstate!=unauthenticated) {
-      if(qstate==cancelpending)
-        qstate=canceled,sendclose();
-      if(_c.flushed && qstate==inquery && !_c.bpeek(0)) {
-        int tcurr=time();
-        int told=tcurr+timeout;
-        sessionblocked++;
-        while(!_c.bpeek(told-tcurr))
-          if((tcurr=time())-told>=timeout) {
-            sendclose();cancelquery();
-            break;
-          }
+  while(_mstate!=waitforstate)
+  { if(_mstate!=unauthenticated)
+    { if(qstate==cancelpending)
+	qstate=canceled,sendclose();
+      if(_c.flushed && qstate==inquery && !_c.bpeek(0))
+      { int tcurr=time();
+	int told=tcurr+timeout;
+	sessionblocked++;
+	while(!_c.bpeek(told-tcurr))
+	  if((tcurr=time())-told>=timeout)
+	  { sendclose();cancelquery();
+	    break;
+	  }
       }
     }
     int msgtype=_c.getbyte();
@@ -566,328 +567,328 @@ final int _decodemsg(void|state waitforstate) {
     _bytesreceived+=1+msglen;
     enum errortype { noerror=0, protocolerror, protocolunsupported };
     errortype errtype=noerror;
-    switch(msgtype) {
-      void storetiming() {
-        tprepared->trun=gethrtime()-tprepared->trunstart;
-        m_delete(tprepared,"trunstart");
-        tprepared = UNDEFINED;
+    switch(msgtype)
+    { void storetiming()
+      { tprepared->trun=gethrtime()-tprepared->trunstart;
+	m_delete(tprepared,"trunstart");
+	tprepared = UNDEFINED;
       };
-      void getcols() {
-        int bintext=_c.getbyte();
-        array a;
-        int cols=_c.getint16();
-        msglen-=4+1+2+2*cols;
-        foreach(a=allocate(cols,([]));;mapping m)
-          m->type=_c.getint16();
-        if(_c.portal) {	      // Discard column info, and make it line oriented
-	  a=({(["type":bintext?BYTEAOID:TEXTOID,"name":"line"])});
+      void getcols()
+      { int bintext=_c.getbyte();
+	array a;
+	int cols=_c.getint16();
+	msglen-=4+1+2+2*cols;
+	foreach(a=allocate(cols,([]));;mapping m)
+	  m->type=_c.getint16();
+	if(_c.portal)	      // Discard column info, and make it line oriented
+	{ a=({(["type":bintext?BYTEAOID:TEXTOID,"name":"line"])});
 	  _c.portal->_datarowdesc=a;
-        }
-        _mstate=gotrowdescription;
+	}
+	_mstate=gotrowdescription;
       };
-      array(string) getstrings() {
-        string s;
-        if(msglen<1)
-          errtype=protocolerror;
-        s=_c.getstring(msglen);
-        if(s[--msglen])
-          errtype=protocolerror;
-        if(!msglen)
-          return ({});
-        s=s[..msglen-1];msglen=0;
-        return s/"\0";
+      array(string) getstrings()
+      { string s;
+	if(msglen<1)
+	  errtype=protocolerror;
+	s=_c.getstring(msglen);
+	if(s[--msglen])
+	  errtype=protocolerror;
+	if(!msglen)
+	  return ({});
+	s=s[..msglen-1];msglen=0;
+	return s/"\0";
       };
-      mapping(string:string) getresponse() {
-        mapping(string:string) msgresponse=([]);
-        msglen-=4;
-        foreach(getstrings();;string f)
+      mapping(string:string) getresponse()
+      { mapping(string:string) msgresponse=([]);
+	msglen-=4;
+	foreach(getstrings();;string f)
 	  if(sizeof(f))
-            msgresponse[f[..0]]=f[1..];
-        PD("%O\n",msgresponse);
-        return msgresponse;
+	    msgresponse[f[..0]]=f[1..];
+	PD("%O\n",msgresponse);
+	return msgresponse;
       };
       case 'R':PD("Authentication\n");
       { string sendpass;
-        int authtype;
-        msglen-=4+4;
-        switch(authtype=_c.getint32()) {
-          case 0:PD("Ok\n");
+	int authtype;
+	msglen-=4+4;
+	switch(authtype=_c.getint32())
+	{ case 0:PD("Ok\n");
 	    _mstate=authenticated;
-            break;
-          case 2:PD("KerberosV5\n");
-            errtype=protocolunsupported;
-            break;
-          case 3:PD("ClearTextPassword\n");
-            sendpass=pass;
-            break;
-          case 4:PD("CryptPassword\n");
-            if(msglen<2)
-              errtype=protocolerror;
-            sendpass=_c.getstring(msglen);msglen=0;			// salt
-            errtype=protocolunsupported; // Pike lacks function that takes salt
-            break;
-          case 5:PD("MD5Password\n");
-            if(msglen<4)
-              errtype=protocolerror;
+	    break;
+	  case 2:PD("KerberosV5\n");
+	    errtype=protocolunsupported;
+	    break;
+	  case 3:PD("ClearTextPassword\n");
+	    sendpass=pass;
+	    break;
+	  case 4:PD("CryptPassword\n");
+	    if(msglen<2)
+	      errtype=protocolerror;
+	    sendpass=_c.getstring(msglen);msglen=0;			// salt
+	    errtype=protocolunsupported; // Pike lacks function that takes salt
+	    break;
+	  case 5:PD("MD5Password\n");
+	    if(msglen<4)
+	      errtype=protocolerror;
 #if constant(Crypto.MD5.hash)
 #define md5hex(x) String.string2hex(Crypto.MD5.hash(x))
-            sendpass=md5hex(pass+user);
-            sendpass="md5"+md5hex(sendpass+_c.getstring(msglen));
+	    sendpass=md5hex(pass+user);
+	    sendpass="md5"+md5hex(sendpass+_c.getstring(msglen));
 #else
-            _c.getstring(msglen);
-            errtype=protocolunsupported;
+	    _c.getstring(msglen);
+	    errtype=protocolunsupported;
 #endif
-            msglen=0;
-            break;
-          case 6:PD("SCMCredential\n");
-            errtype=protocolunsupported;
-            break;
-          case 7:PD("GSS\n");
-            errtype=protocolunsupported;
-            break;
-          case 9:PD("SSPI\n");
-            errtype=protocolunsupported;
-            break;
-          case 8:PD("GSSContinue\n");
-            errtype=protocolunsupported;
-            if(msglen<1)
-              errtype=protocolerror;
-            SSauthdata=_c.getstring(msglen);msglen=0;
-            break;
-          default:PD("Unknown Authentication Method %c\n",authtype);
-            errtype=protocolunsupported;
-            break;
-        }
-        switch(errtype) {
-          case noerror:
-            if(_mstate==unauthenticated)
-              _c.sendcmd(({"p",_c.plugint32(4+sizeof(sendpass)+1),
-               sendpass,"\0"}),1);
-            break;
-          default:
-          case protocolunsupported:
-            ERROR("Unsupported authenticationmethod %c\n",authtype);
-            break;
-        }
-        break;
+	    msglen=0;
+	    break;
+	  case 6:PD("SCMCredential\n");
+	    errtype=protocolunsupported;
+	    break;
+	  case 7:PD("GSS\n");
+	    errtype=protocolunsupported;
+	    break;
+	  case 9:PD("SSPI\n");
+	    errtype=protocolunsupported;
+	    break;
+	  case 8:PD("GSSContinue\n");
+	    errtype=protocolunsupported;
+	    if(msglen<1)
+	      errtype=protocolerror;
+	    SSauthdata=_c.getstring(msglen);msglen=0;
+	    break;
+	  default:PD("Unknown Authentication Method %c\n",authtype);
+	    errtype=protocolunsupported;
+	    break;
+	}
+	switch(errtype)
+	{ case noerror:
+	    if(_mstate==unauthenticated)
+	      _c.sendcmd(({"p",_c.plugint32(4+sizeof(sendpass)+1),
+	       sendpass,"\0"}),1);
+	    break;
+	  default:
+	  case protocolunsupported:
+	    ERROR("Unsupported authenticationmethod %c\n",authtype);
+	    break;
+	}
+	break;
       }
       case 'K':PD("BackendKeyData\n");
-        msglen-=4+4;backendpid=_c.getint32();cancelsecret=_c.getstring(msglen);
-        msglen=0;
-        break;
+	msglen-=4+4;backendpid=_c.getint32();cancelsecret=_c.getstring(msglen);
+	msglen=0;
+	break;
       case 'S':PD("ParameterStatus\n");
-        msglen-=4;
+	msglen-=4;
       { array(string) ts=getstrings();
-        if(sizeof(ts)==2) {
-          _runtimeparameter[ts[0]]=ts[1];
-          PD("%s=%s\n",ts[0],ts[1]);
-        }
-        else
-          errtype=protocolerror;
+	if(sizeof(ts)==2)
+	{ _runtimeparameter[ts[0]]=ts[1];
+	  PD("%s=%s\n",ts[0],ts[1]);
+	}
+	else
+	  errtype=protocolerror;
       }
-        break;
+	break;
       case 'Z':PD("ReadyForQuery\n");
-        msglen-=4+1;
-        backendstatus=_c.getbyte();
-        _mstate=readyforquery;
-        qstate=queryidle;
-        _closesent=0;
-        break;
+	msglen-=4+1;
+	backendstatus=_c.getbyte();
+	_mstate=readyforquery;
+	qstate=queryidle;
+	_closesent=0;
+	break;
       case '1':PD("ParseComplete\n");
-        msglen-=4;
-        _mstate=parsecomplete;
-        break;
+	msglen-=4;
+	_mstate=parsecomplete;
+	break;
       case 't':
-        PD("ParameterDescription (for %s)\n",
+	PD("ParameterDescription (for %s)\n",
 	 _c.portal?_c.portal->_portalname:"DISCARDED");
       { array a;
-        int cols=_c.getint16();
-        msglen-=4+2+4*cols;
-        foreach(a=allocate(cols);int i;)
+	int cols=_c.getint16();
+	msglen-=4+2+4*cols;
+	foreach(a=allocate(cols);int i;)
 	  a[i]=_c.getint32();
 #ifdef DEBUGMORE
-        PD("%O\n",a);
+	PD("%O\n",a);
 #endif
-        if(_c.portal)
+	if(_c.portal)
 	  _c.portal->_datatypeoid=a;
-        _mstate=gotparameterdescription;
-        break;
+	_mstate=gotparameterdescription;
+	break;
       }
       case 'T':
-        PD("RowDescription (for %s)\n",
+	PD("RowDescription (for %s)\n",
 	 _c.portal?_c.portal->_portalname:"DISCARDED");
-        msglen-=4+2;
+	msglen-=4+2;
       { array a;
-        foreach(a=allocate(_c.getint16());int i;) {
-          string s;
+	foreach(a=allocate(_c.getint16());int i;)
+	{ string s;
 	  msglen-=sizeof(s=_c.getstring())+1;
-          mapping(string:mixed) res=(["name":s]);
-          msglen-=4+2+4+2+4+2;
-          res->tableoid=_c.getint32()||UNDEFINED;
+	  mapping(string:mixed) res=(["name":s]);
+	  msglen-=4+2+4+2+4+2;
+	  res->tableoid=_c.getint32()||UNDEFINED;
 	  res->tablecolattr=_c.getint16()||UNDEFINED;
-          res->type=_c.getint32();
+	  res->type=_c.getint32();
 	  { int len=_c.getint16();
-            res->length=len>=0?len:"variable";
+	    res->length=len>=0?len:"variable";
 	  }
-          res->atttypmod=_c.getint32();res->formatcode=_c.getint16();
-          a[i]=res;
-        }
+	  res->atttypmod=_c.getint32();res->formatcode=_c.getint16();
+	  a[i]=res;
+	}
 #ifdef DEBUGMORE
-        PD("%O\n",a);
+	PD("%O\n",a);
 #endif
 	if(_c.portal)
 	  _c.portal->_datarowdesc=a;
-        _mstate=gotrowdescription;
-        break;
+	_mstate=gotrowdescription;
+	break;
       }
       case 'n':PD("NoData\n");
-        msglen-=4;
-        _c.portal->_datarowdesc=({});
+	msglen-=4;
+	_c.portal->_datarowdesc=({});
 	_c.portal->_fetchlimit=0;		// disables subsequent Executes
-        _mstate=gotrowdescription;
-        break;
+	_mstate=gotrowdescription;
+	break;
       case '2':PD("BindComplete\n");
-        msglen-=4;
-        _mstate=bindcomplete;
-        break;
+	msglen-=4;
+	_mstate=bindcomplete;
+	break;
       case 'D':PD("DataRow\n");
-        msglen-=4;
-        if(_c.portal) {
-          if(tprepared)
-            storetiming();
+	msglen-=4;
+	if(_c.portal)
+	{ if(tprepared)
+	    storetiming();
 #ifdef USEPGsql
-          _c.decodedatarow(msglen);msglen=0;
+	  _c.decodedatarow(msglen);msglen=0;
 #else
-          array a, datarowdesc;
+	  array a, datarowdesc;
 	  _c.portal->_bytesreceived+=msglen;
 	  datarowdesc=_c.portal->_datarowdesc;
-          int cols=_c.getint16();
+	  int cols=_c.getint16();
 	  int atext = _c.portal->_alltext;	  // cache locally for speed
 	  string cenc=_runtimeparameter[CLIENT_ENCODING];
 	  a=allocate(cols,UNDEFINED);
-          msglen-=2+4*cols;
-          foreach(a;int i;) {
-            int collen=_c.getint32();
-            if(collen>0) {
-              msglen-=collen;
-              mixed value;
-              switch(datarowdesc[i]->type)
-              { default:value=_c.getstring(collen);
-                  break;
+	  msglen-=2+4*cols;
+	  foreach(a;int i;)
+	  { int collen=_c.getint32();
+	    if(collen>0)
+	    { msglen-=collen;
+	      mixed value;
+	      switch(datarowdesc[i]->type)
+	      { default:value=_c.getstring(collen);
+		  break;
 		case TEXTOID:
 		case XMLOID:
 		case BPCHAROID:
 		case VARCHAROID:
-	          value=_c.getstring(collen);
+		  value=_c.getstring(collen);
 		  if(cenc==UTF8CHARSET)
 		    value=utf8_to_string(value);
-                  break;
-                case CHAROID:value=atext?_c.getstring(1):_c.getbyte();
-                  break;
-                case BOOLOID:value=_c.getbyte();
+		  break;
+		case CHAROID:value=atext?_c.getstring(1):_c.getbyte();
+		  break;
+		case BOOLOID:value=_c.getbyte();
 		  if(atext)
 		    value=value?"t":"f";
-                  break;
-                case INT8OID:value=_c.getint64();
-                  break;
+		  break;
+		case INT8OID:value=_c.getint64();
+		  break;
 #if SIZEOF_FLOAT>=8
-	        case FLOAT8OID:
+		case FLOAT8OID:
 #endif
-                case FLOAT4OID:
+		case FLOAT4OID:
 		  value=_c.getstring(collen);
 		  if(!atext)
 		    value=(float)value;
-                  break;
-                case INT2OID:value=_c.getint16();
-                  break;
-	        case OIDOID:
-                case INT4OID:value=_c.getint32();
-              }
+		  break;
+		case INT2OID:value=_c.getint16();
+		  break;
+		case OIDOID:
+		case INT4OID:value=_c.getint32();
+	      }
 	      if(atext&&!stringp(value))
-	        value=(string)value;
+		value=(string)value;
 	      a[i]=value;
-            }
-            else if(!collen)
-              a[i]="";
-          }
+	    }
+	    else if(!collen)
+	      a[i]="";
+	  }
 	  a=({a});
 	  _c.portal->_datarows+=a;
 	  _c.portal->_inflight-=sizeof(a);
 #endif
-        }
-        else
+	}
+	else
 	  _c.getstring(msglen),msglen=0;
-        _mstate=dataready;
-        break;
+	_mstate=dataready;
+	break;
       case 's':PD("PortalSuspended\n");
-        msglen-=4;
-        _mstate=portalsuspended;
-        break;
+	msglen-=4;
+	_mstate=portalsuspended;
+	break;
       case 'C':PD("CommandComplete\n");
       { msglen-=4;
-        if(msglen<1)
-          errtype=protocolerror;
-        string s=_c.getstring(msglen-1);
-        if(_c.portal) {
-          if(tprepared)
-            storetiming();
-          _c.portal->_statuscmdcomplete=s;
-        }
-        PD("%s\n",s);
-        if(_c.getbyte())
-          errtype=protocolerror;
-        msglen=0;
-        _mstate=commandcomplete;
-        break;
+	if(msglen<1)
+	  errtype=protocolerror;
+	string s=_c.getstring(msglen-1);
+	if(_c.portal)
+	{ if(tprepared)
+	    storetiming();
+	  _c.portal->_statuscmdcomplete=s;
+	}
+	PD("%s\n",s);
+	if(_c.getbyte())
+	  errtype=protocolerror;
+	msglen=0;
+	_mstate=commandcomplete;
+	break;
       }
       case 'I':PD("EmptyQueryResponse\n");
-        msglen-=4;
-        _mstate=commandcomplete;
-        break;
+	msglen-=4;
+	_mstate=commandcomplete;
+	break;
       case '3':PD("CloseComplete\n");
-        msglen-=4;
-        _closesent=0;
-        break;
+	msglen-=4;
+	_closesent=0;
+	break;
       case 'd':PD("CopyData\n");
-        if(tprepared)
-          storetiming();
-        msglen-=4;
-        if(msglen<0)
-          errtype=protocolerror;
-        if(_c.portal) {
-	  _c.portal->_bytesreceived+=msglen;
-          _c.portal->_datarows+=({({_c.getstring(msglen)})});
-        }
+	if(tprepared)
+	  storetiming();
+	msglen-=4;
+	if(msglen<0)
+	  errtype=protocolerror;
+	if(_c.portal)
+	{ _c.portal->_bytesreceived+=msglen;
+	  _c.portal->_datarows+=({({_c.getstring(msglen)})});
+	}
 	msglen=0;
-        _mstate=dataready;
-        break;
+	_mstate=dataready;
+	break;
       case 'H':PD("CopyOutResponse\n");
-        getcols();
-        break;
+	getcols();
+	break;
       case 'G':PD("CopyInResponse\n");
-        getcols();
-        _mstate=copyinresponse;
-        break;
+	getcols();
+	_mstate=copyinresponse;
+	break;
       case 'c':PD("CopyDone\n");
-        msglen-=4;
-        break;
+	msglen-=4;
+	break;
       case 'E':PD("ErrorResponse\n");
       { mapping(string:string) msgresponse;
-        msgresponse=getresponse();
+	msgresponse=getresponse();
 	warningsdropcount+=warningscollected;
 	warningscollected=0;
-        switch(msgresponse->C) {
-          case "P0001":
-            lastmessage=({sprintf("%s: %s",msgresponse->S,msgresponse->M)});
+	switch(msgresponse->C)
+	{ case "P0001":
+	    lastmessage=({sprintf("%s: %s",msgresponse->S,msgresponse->M)});
 	    USERERROR(a2nls(lastmessage
 	     +({pinpointerror(_c.portal->query,msgresponse->P)})));
 	    break;
-          case "08P01":case "42P05":
+	  case "08P01":case "42P05":
 	    errtype=protocolerror;
 	  case "XX000":case "42883":case "42P01":
 	    invalidatecache=1;
 	  default:
-            lastmessage=({sprintf("%s %s:%s %s\n (%s:%s:%s)",
+	    lastmessage=({sprintf("%s %s:%s %s\n (%s:%s:%s)",
 	     msgresponse->S,msgresponse->C,msgresponse->P||"",msgresponse->M,
 	     msgresponse->F||"",msgresponse->R||"",msgresponse->L||"")});
 	    if(msgresponse->D)
@@ -899,81 +900,81 @@ final int _decodemsg(void|state waitforstate) {
 	     pinpointerror(msgresponse->q,msgresponse->p)});
 	    if(msgresponse->W)
 	      lastmessage+=({msgresponse->W});
-            switch(msgresponse->S) {
-	      case "PANIC":werror(a2nls(lastmessage));
-            }
+	    switch(msgresponse->S)
+	    { case "PANIC":werror(a2nls(lastmessage));
+	    }
 	    USERERROR(a2nls(lastmessage));
-        }
-        break;
+	}
+	break;
       }
       case 'N':PD("NoticeResponse\n");
       { mapping(string:string) msgresponse;
-        msgresponse=getresponse();
-        if(clearmessage) {
-	  warningsdropcount+=warningscollected;
+	msgresponse=getresponse();
+	if(clearmessage)
+	{ warningsdropcount+=warningscollected;
 	  clearmessage=warningscollected=0;
-          lastmessage=({});
-        }
-        warningscollected++;
-        lastmessage=({sprintf("%s %s: %s",
+	  lastmessage=({});
+	}
+	warningscollected++;
+	lastmessage=({sprintf("%s %s: %s",
 	 msgresponse->S,msgresponse->C,msgresponse->M)});
-        break;
+	break;
       }
       case 'A':PD("NotificationResponse\n");
       { msglen-=4+4;
-        int pid=_c.getint32();
-        string condition,extrainfo=UNDEFINED;
-        { array(string) ts=getstrings();
-          switch(sizeof(ts)) {
-            case 0:errtype=protocolerror;
+	int pid=_c.getint32();
+	string condition,extrainfo=UNDEFINED;
+	{ array(string) ts=getstrings();
+	  switch(sizeof(ts))
+	  { case 0:errtype=protocolerror;
 	      break;
-            default:errtype=protocolerror;
-            case 2:extrainfo=ts[1];
-            case 1:condition=ts[0];
-          }
-        }
-        PD("%d %s\n%s\n",pid,condition,extrainfo);
-        runcallback(pid,condition,extrainfo);
-        break;
+	    default:errtype=protocolerror;
+	    case 2:extrainfo=ts[1];
+	    case 1:condition=ts[0];
+	  }
+	}
+	PD("%d %s\n%s\n",pid,condition,extrainfo);
+	runcallback(pid,condition,extrainfo);
+	break;
       }
       default:
-	if(msgtype!=-1) {
-	  PD("Unknown message received %c\n",msgtype);
-          msglen-=4;PD("%O\n",_c.getstring(msglen));msglen=0;
-          errtype=protocolunsupported;
+	if(msgtype!=-1)
+	{ PD("Unknown message received %c\n",msgtype);
+	  msglen-=4;PD("%O\n",_c.getstring(msglen));msglen=0;
+	  errtype=protocolunsupported;
 	}
-	else {
-	  array(string) msg=lastmessage;
-	  if(!reconnect(1)) {
-	    sleep(RECONNECTDELAY);
-            if(!reconnect(1)) {
-	      sleep(RECONNECTBACKOFF);
-              reconnect(1);
+	else
+	{ array(string) msg=lastmessage;
+	  if(!reconnect(1))
+	  { sleep(RECONNECTDELAY);
+	    if(!reconnect(1))
+	    { sleep(RECONNECTBACKOFF);
+	      reconnect(1);
 	    }
 	  }
 	  msg+=lastmessage;
 	  string s=sizeof(msg)?a2nls(msg):"";
-          ERROR("%sConnection lost to database %s@%s:%d/%s %d\n",
-           s,user,host,port,database,backendpid);
+	  ERROR("%sConnection lost to database %s@%s:%d/%s %d\n",
+	   s,user,host,port,database,backendpid);
 	}
-        break;
+	break;
     }
     if(msglen)
       errtype=protocolerror;
-    switch(errtype) {
-      case protocolunsupported:
-        ERROR("Unsupported servermessage received %c\n",msgtype);
-        break;
+    switch(errtype)
+    { case protocolunsupported:
+	ERROR("Unsupported servermessage received %c\n",msgtype);
+	break;
       case protocolerror:
 	array(string) msg=lastmessage;
 	lastmessage=({});
-        reconnect(1);
+	reconnect(1);
 	msg+=lastmessage;
 	string s=sizeof(msg)?a2nls(msg):"";
-        ERROR("%sProtocol error with database %s\n",s,host_info());
-        break;
+	ERROR("%sProtocol error with database %s\n",s,host_info());
+	break;
       case noerror:
-        break;
+	break;
     }
     if(zero_type(waitforstate))
       break;
@@ -983,8 +984,8 @@ final int _decodemsg(void|state waitforstate) {
 }
 
 #ifndef UNBUFFEREDIO
-private int read_cb(mixed foo, string d) {
-  _c.unread(d);
+private int read_cb(mixed foo, string d)
+{ _c.unread(d);
   do _decodemsg();
   while(_c.bpeek(0)==1);
   return 0;
@@ -997,20 +998,20 @@ private int read_cb(mixed foo, string d) {
 //! @note
 //! This function is PostgreSQL-specific, and thus it is not available
 //! through the generic SQL-interface.
-void close() {
-  cancelquery();
+void close()
+{ cancelquery();
   if(_c)
     _c.sendterminate();
 }
 
-void destroy() {
-  close();
+void destroy()
+{ close();
 }
 
-private int reconnect(void|int force) {
-  Thread.MutexKey connectmtxkey;
-  if(_c) {
-    reconnected++;
+private int reconnect(void|int force)
+{ Thread.MutexKey connectmtxkey;
+  if(_c)
+  { reconnected++;
     prepstmtused=0;
 #ifdef DEBUG
     ERROR("While debugging, reconnects are forbidden\n");
@@ -1024,10 +1025,10 @@ private int reconnect(void|int force) {
     if(!(connectmtxkey = _stealmutex.trylock(2)))
       return 0;				    // Recursive reconnect, bailing out
   }
-  if(!(_c=getsocket())) {
-    string msg=sprintf("Couldn't connect to database on %s:%d",host,port);
-    if(force) {
-      lastmessage+=({msg});
+  if(!(_c=getsocket()))
+  { string msg=sprintf("Couldn't connect to database on %s:%d",host,port);
+    if(force)
+    { lastmessage+=({msg});
       return 0;
     }
     else
@@ -1060,8 +1061,8 @@ private int reconnect(void|int force) {
 	return 0;
   }
   PD("%O\n",_runtimeparameter);
-  if(force) {
-    lastmessage+=({sprintf("Reconnected to database %s",host_info())});
+  if(force)
+  { lastmessage+=({sprintf("Reconnected to database %s",host_info())});
     runcallback(backendpid,"_reconnect","");
   }
   return 1;
@@ -1073,8 +1074,8 @@ private int reconnect(void|int force) {
 //!
 //! @seealso
 //!   @[resync()], @[cancelquery()]
-void reload() {
-  resync();
+void reload()
+{ resync();
 }
 
 //! @decl void resync()
@@ -1099,36 +1100,36 @@ void reload() {
 //! @note
 //! This function is PostgreSQL-specific, and thus it is not available
 //! through the generic SQL-interface.
-void resync(void|int special) {
-  mixed err;
+void resync(void|int special)
+{ mixed err;
   int didsync;
-  if(err = catch {
-      sendclose(1);
+  if(err = catch
+    { sendclose(1);
       PD("Portalsinflight: %d\n",portalsinflight);
-      if(!portalsinflight) {
-        if(!earlyclose) {
-          PD("Sync\n");
-          _c.sendcmd(({"S",_c.plugint32(4)}),2);
-        }
-        didsync=1;
-        if(!special) {
-          _decodemsg(readyforquery);
-	  switch(backendstatus) {
-	    case 'T':case 'E':
-              foreach(prepareds;;mapping tp) {
-                m_delete(tp,"datatypeoid");
-                m_delete(tp,"datarowdesc");
-              }
+      if(!portalsinflight)
+      { if(!earlyclose)
+	{ PD("Sync\n");
+	  _c.sendcmd(({"S",_c.plugint32(4)}),2);
+	}
+	didsync=1;
+	if(!special)
+	{ _decodemsg(readyforquery);
+	  switch(backendstatus)
+	  { case 'T':case 'E':
+	      foreach(prepareds;;mapping tp)
+	      { m_delete(tp,"datatypeoid");
+		m_delete(tp,"datarowdesc");
+	      }
 	      big_query("ROLLBACK");
 	      big_query("RESET ALL");
 	      big_query("CLOSE ALL");
 	      big_query("DISCARD TEMP");
 	  }
-        }
+	}
       }
       earlyclose=0;
-    }) {
-    earlyclose=0;
+    })
+  { earlyclose=0;
     PD("%O\n",err);
     if(!reconnect(1))
       ERROR(a2nls(lastmessage));
@@ -1151,8 +1152,8 @@ void resync(void|int special) {
 //!
 //! @seealso
 //!   @[create()]
-void select_db(string dbname) {
-  database=dbname;
+void select_db(string dbname)
+{ database=dbname;
   reconnect();
   reconnected=0;
 }
@@ -1172,7 +1173,7 @@ void select_db(string dbname) {
 //!    Function to be called on receiving a notification-event of
 //!    condition @ref{condition@}.
 //!    The callback function is invoked with
-//!     @expr{void notify_cb(pid,condition,extrainfo, .. args);@}
+//!	@expr{void notify_cb(pid,condition,extrainfo, .. args);@}
 //!    @ref{pid@} is the process id of the database session that originated
 //!    the event.  @ref{condition@} contains the current condition.
 //!    @ref{extrainfo@} contains optional extra information specified by
@@ -1193,11 +1194,11 @@ void select_db(string dbname) {
 //! through the generic SQL-interface.
 void set_notify_callback(string condition,
  void|function(int,string,string,mixed ...:void) notify_cb,void|int selfnotify,
-  mixed ... args) {
-  if(!notify_cb)
+  mixed ... args)
+{ if(!notify_cb)
     m_delete(notifylist,condition);
-  else {
-    array old=notifylist[condition];
+  else
+  { array old=notifylist[condition];
     if(!old)
       old=({notify_cb});
     if(selfnotify||args)
@@ -1208,8 +1209,8 @@ void set_notify_callback(string condition,
   }
 }
 
-final private void runcallback(int pid,string condition,string extrainfo) {
-  array cb;
+final private void runcallback(int pid,string condition,string extrainfo)
+{ array cb;
   if((cb=notifylist[condition]||notifylist[""])
    && (pid!=backendpid || sizeof(cb)>1 && cb[1]))
     cb[0](pid,condition,extrainfo,@cb[2..]);
@@ -1245,8 +1246,8 @@ string quote(string s)
 //! @note
 //! This function is PostgreSQL-specific, and thus it is not available
 //! through the generic SQL-interface.
-string quotebinary(string s) {
-  return replace(s, ({ "'", "\\", "\0" }), ({ "''", "\\\\", "\\000" }) );
+string quotebinary(string s)
+{ return replace(s, ({ "'", "\\", "\0" }), ({ "''", "\\\\", "\\000" }) );
 }
 
 //! This function creates a new database (assuming we
@@ -1257,8 +1258,8 @@ string quotebinary(string s) {
 //!
 //! @seealso
 //!   @[drop_db()]
-void create_db(string db) {
-  big_query("CREATE DATABASE :db",([":db":db]));
+void create_db(string db)
+{ big_query("CREATE DATABASE :db",([":db":db]));
 }
 
 //! This function destroys a database and all the data it contains (assuming
@@ -1271,8 +1272,8 @@ void create_db(string db) {
 //!
 //! @seealso
 //!   @[create_db()]
-void drop_db(string db) {
-  big_query("DROP DATABASE :db",([":db":db]));
+void drop_db(string db)
+{ big_query("DROP DATABASE :db",([":db":db]));
 }
 
 //! @returns
@@ -1292,16 +1293,16 @@ string server_info ()
 //!
 //! @param glob
 //! If specified, list only those databases matching it.
-array(string) list_dbs (void|string glob) {
- array row,ret=({});
- object res=big_query("SELECT d.datname "
-  "FROM pg_database d "
-  "WHERE d.datname ILIKE :glob "
-  "ORDER BY d.datname",
-  ([":glob":glob2reg(glob)]));
- while(row=res->fetch_row())
-   ret+=({row[0]});
- return ret;
+array(string) list_dbs (void|string glob)
+{ array row,ret=({});
+  object res=big_query("SELECT d.datname "
+   "FROM pg_database d "
+   "WHERE d.datname ILIKE :glob "
+   "ORDER BY d.datname",
+   ([":glob":glob2reg(glob)]));
+  while(row=res->fetch_row())
+    ret+=({row[0]});
+  return ret;
 }
 
 //! @returns
@@ -1310,21 +1311,21 @@ array(string) list_dbs (void|string glob) {
 //!
 //! @param glob
 //! If specified, list only the tables with matching names.
-array(string) list_tables (void|string glob) {
- array row,ret=({});	         // This query might not work on PostgreSQL 7.4
- object res=big_query(		 // due to missing schemasupport
-  "SELECT CASE WHEN 'public'=n.nspname THEN '' ELSE n.nspname||'.' END "
-  "  ||c.relname AS name "
-  "FROM pg_catalog.pg_class c "
-  "  LEFT JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace "
-  "WHERE c.relkind IN ('r','v') AND n.nspname<>'pg_catalog' "
-  "  AND n.nspname !~ '^pg_toast' AND pg_catalog.pg_table_is_visible(c.oid) "
-  "  AND c.relname ILIKE :glob "
-  "  ORDER BY 1",
-  ([":glob":glob2reg(glob)]));
- while(row=res->fetch_row())
-   ret+=({row[0]});
- return ret;
+array(string) list_tables (void|string glob)
+{ array row,ret=({});		 // This query might not work on PostgreSQL 7.4
+  object res=big_query(		 // due to missing schemasupport
+   "SELECT CASE WHEN 'public'=n.nspname THEN '' ELSE n.nspname||'.' END "
+   "  ||c.relname AS name "
+   "FROM pg_catalog.pg_class c "
+   "  LEFT JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace "
+   "WHERE c.relkind IN ('r','v') AND n.nspname<>'pg_catalog' "
+   "  AND n.nspname !~ '^pg_toast' AND pg_catalog.pg_table_is_visible(c.oid) "
+   "  AND c.relname ILIKE :glob "
+   "  ORDER BY 1",
+   ([":glob":glob2reg(glob)]));
+  while(row=res->fetch_row())
+    ret+=({row[0]});
+  return ret;
 }
 
 //! @returns
@@ -1334,41 +1335,41 @@ array(string) list_tables (void|string glob) {
 //!
 //! @mapping
 //!   @member string schema
-//!     Schema the table belongs to
+//!	Schema the table belongs to
 //!   @member string table
-//!     Name of the table
+//!	Name of the table
 //!   @member string kind
-//!     Type of table
+//!	Type of table
 //!   @member string owner
-//!     Tableowner
+//!	Tableowner
 //!   @member int rowcount
-//!     Estimated rowcount of the table
+//!	Estimated rowcount of the table
 //!   @member int datasize
-//!     Estimated total datasize of the table in bytes
+//!	Estimated total datasize of the table in bytes
 //!   @member int indexsize
-//!     Estimated total indexsize of the table in bytes
+//!	Estimated total indexsize of the table in bytes
 //!   @member string name
-//!     Name of the column
+//!	Name of the column
 //!   @member string type
-//!     A textual description of the internal (to the server) column type-name
+//!	A textual description of the internal (to the server) column type-name
 //!   @member int typeoid
-//!     The OID of the internal (to the server) column type
+//!	The OID of the internal (to the server) column type
 //!   @member string length
-//!     Size of the columndatatype
+//!	Size of the columndatatype
 //!   @member mixed default
-//!     Default value for the column
+//!	Default value for the column
 //!   @member int is_shared
 //!   @member int has_index
-//!     If the table has any indices
+//!	If the table has any indices
 //!   @member int has_primarykey
-//!     If the table has a primary key
+//!	If the table has a primary key
 //! @endmapping
 //!
 //! @param glob
 //! If specified, list only the tables with matching names.
 //! Setting it to @expr{*@} will include system columns in the list.
-array(mapping(string:mixed)) list_fields(void|string table, void|string glob) {
-  array row, ret=({});
+array(mapping(string:mixed)) list_fields(void|string table, void|string glob)
+{ array row, ret=({});
   string schema=UNDEFINED;
 
   sscanf(table||"*", "%s.%s", schema, table);
@@ -1433,18 +1434,18 @@ array(mapping(string:mixed)) list_fields(void|string table, void|string glob) {
       "relhaspkey":"has_primarykey",
       "reltuples":"rowcount",
      ]);
-    foreach(colnames;int i;mapping m) {
-      string nf,field=m->name;
+    foreach(colnames;int i;mapping m)
+    { string nf,field=m->name;
       if(nf=renames[field])
-        field=nf;
+	field=nf;
       colnames[i]=field;
     }
   }
 
 #define delifzero(m,field) if(!(m)[field]) m_delete(m,field)
 
-  while(row=res->fetch_row()) {
-    mapping m=mkmapping(colnames,row);
+  while(row=res->fetch_row())
+  { mapping m=mkmapping(colnames,row);
     delifzero(m,"is_shared");
     delifzero(m,"has_index");
     delifzero(m,"has_primarykey");
@@ -1454,9 +1455,9 @@ array(mapping(string:mixed)) list_fields(void|string table, void|string glob) {
   return ret;
 }
 
-private int oidformat(int oid) {
-  switch(oid) {
-    case BOOLOID:
+private int oidformat(int oid)
+{ switch(oid)
+  { case BOOLOID:
     case BYTEAOID:
     case CHAROID:
     case INT8OID:
@@ -1472,19 +1473,19 @@ private int oidformat(int oid) {
     case UUIDOID:
       return 1; //binary
   }
-  return 0;     // text
+  return 0;	// text
 }
 
-final void _sendexecute(int fetchlimit) {
-  string portalname=_c.portal->_portalname;
+final void _sendexecute(int fetchlimit)
+{ string portalname=_c.portal->_portalname;
   PD("Execute portal %s fetchlimit %d\n",portalname,fetchlimit);
   _c.sendcmd(({"E",_c.plugint32(4+sizeof(portalname)+1+4),portalname,
    "\0",_c.plugint32(fetchlimit)}),!!fetchlimit);
-  if(!fetchlimit) {
-    _c.portal->_fetchlimit=0;			   // disables further Executes
+  if(!fetchlimit)
+  { _c.portal->_fetchlimit=0;			   // disables further Executes
     earlyclose=1;
-    if(sizeof(portalname)) {
-      PD("Close portal %s & Sync\n",portalname);
+    if(sizeof(portalname))
+    { PD("Close portal %s & Sync\n",portalname);
       _c.sendcmd(({"C",_c.plugint32(4+1+sizeof(portalname)+1),
        "P",portalname,"\0"}));
     }
@@ -1494,10 +1495,10 @@ final void _sendexecute(int fetchlimit) {
     _c.portal->_inflight+=fetchlimit;
 }
 
-final private void sendclose(void|int hold) {
-  string portalname;
-  if(_c.portal && (portalname=_c.portal->_portalname)) {
-    _c.portal->_portalname = UNDEFINED;
+final private void sendclose(void|int hold)
+{ string portalname;
+  if(_c.portal && (portalname=_c.portal->_portalname))
+  { _c.portal->_portalname = UNDEFINED;
     _c.setportal();
     portalsinflight--;
 #ifdef DEBUGMORE
@@ -1505,20 +1506,20 @@ final private void sendclose(void|int hold) {
 #endif
     if(!sizeof(portalname))
       unnamedportalinuse--;
-    if(sizeof(portalname)) {
-      if(!earlyclose) {
-        PD("Close portal %s\n",portalname);
-        _c.sendcmd(({"C",_c.plugint32(4+1+sizeof(portalname)+1),
-         "P",portalname,"\0"}),!hold||portalsinflight?1:0);
+    if(sizeof(portalname))
+    { if(!earlyclose)
+      { PD("Close portal %s\n",portalname);
+	_c.sendcmd(({"C",_c.plugint32(4+1+sizeof(portalname)+1),
+	 "P",portalname,"\0"}),!hold||portalsinflight?1:0);
       }
       _closesent=1;
     }
   }
 }
 
-final private string trbackendst(int c) {
-  switch(c) {
-    case 'I':return "idle";
+final private string trbackendst(int c)
+{ switch(c)
+  { case 'I':return "idle";
     case 'T':return "intransaction";
     case 'E':return "infailedtransaction";
   }
@@ -1536,15 +1537,15 @@ final private string trbackendst(int c) {
 //! @note
 //! This function is PostgreSQL-specific, and thus it is not available
 //! through the generic SQL-interface.
-final string status_commit() {
-  return trbackendst(backendstatus);
+final string status_commit()
+{ return trbackendst(backendstatus);
 }
 
-final private array(string) closestatement(mapping tp) {
-  string oldprep=tp->preparedname;
+final private array(string) closestatement(mapping tp)
+{ string oldprep=tp->preparedname;
   array(string) ret=({});
-  if(oldprep) {
-    PD("Close statement %s\n",oldprep);
+  if(oldprep)
+  { PD("Close statement %s\n",oldprep);
     ret=({"C",_c.plugint32(4+1+sizeof(oldprep)+1),
      "S",oldprep,"\0"});
   }
@@ -1591,8 +1592,8 @@ final private array(string) closestatement(mapping tp) {
 //!   @[big_typed_query()], @[Sql.Sql], @[Sql.sql_result],
 //!   @[Sql.Sql()->query()], @[Sql.pgsql_util.pgsql_result]
 object big_query(string q,void|mapping(string|int:mixed) bindings,
- void|int _alltyped) {
-  string preparedname="";
+ void|int _alltyped)
+{ string preparedname="";
   string portalname="";
   int forcecache=-1;
   string cenc=_runtimeparameter[CLIENT_ENCODING];
@@ -1602,36 +1603,36 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
       break;
     default:
       if(String.width(q)>8)
-        ERROR("Don't know how to convert %O to %s encoding\n",q,cenc);
+	ERROR("Don't know how to convert %O to %s encoding\n",q,cenc);
   }
   array(string|int) paramValues;
   array(string) from,to;
-  if(bindings) {
-    int pi=0,rep=0;
+  if(bindings)
+  { int pi=0,rep=0;
     paramValues=allocate(sizeof(bindings));
     from=allocate(sizeof(bindings));
     to=allocate(sizeof(bindings));
-    foreach(bindings; mixed name; mixed value) {
-      if(stringp(name)) {	       // Throws if mapping key is empty string
-        if(name[0]!=':')
-          name=":"+name;
-        if(name[1]=='_') {	       // Special option parameter
-	  switch(name) {
-	    case ":_cache":forcecache=(int)value;
+    foreach(bindings; mixed name; mixed value)
+    { if(stringp(name))		       // Throws if mapping key is empty string
+      { if(name[0]!=':')
+	  name=":"+name;
+	if(name[1]=='_')	       // Special option parameter
+	{ switch(name)
+	  { case ":_cache":forcecache=(int)value;
 	      break;
 	  }
-          continue;
-        }
+	  continue;
+	}
 	if(!has_value(q,name))
 	  continue;
       }
       from[rep]=name;
       string rval;
       if(multisetp(value))		// multisets are taken literally
-        rval=indices(value)*",";	// and bypass the encoding logic
+	rval=indices(value)*",";	// and bypass the encoding logic
       else
       { paramValues[pi++]=value;
-        rval=sprintf("$%d",pi);
+	rval=sprintf("$%d",pi);
       }
       to[rep++]=rval;
     }
@@ -1647,42 +1648,42 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
     ERROR("Querystring %O contains invalid literal nul-characters\n",q);
   mapping(string:mixed) tp;
   int tstart;
-  if(forcecache==1 || forcecache!=0 && sizeof(q)>=MINPREPARELENGTH) {
-    array(string) plugbuf=({});
-    if(tp=prepareds[q]) {
-      if(tp->preparedname)
-        prepstmtused++, preparedname=tp->preparedname;
+  if(forcecache==1 || forcecache!=0 && sizeof(q)>=MINPREPARELENGTH)
+  { array(string) plugbuf=({});
+    if(tp=prepareds[q])
+    { if(tp->preparedname)
+	prepstmtused++, preparedname=tp->preparedname;
       else if((tstart=tp->trun)
        && tp->tparse*FACTORPLAN>=tstart
        && (zero_type(options->cache_autoprepared_statements)
-        || options->cache_autoprepared_statements))
+	|| options->cache_autoprepared_statements))
 	preparedname=PREPSTMTPREFIX+(string)pstmtcount++;
     }
-    else {
-      if(totalhits>=cachedepth) {
-        foreach(prepareds;string ind;tp) {
-	  int oldhits=tp->hits;
+    else
+    { if(totalhits>=cachedepth)
+      { foreach(prepareds;string ind;tp)
+	{ int oldhits=tp->hits;
 	  totalhits-=oldhits-(tp->hits=oldhits>>1);
-	  if(oldhits<=1) {
-	    plugbuf+=closestatement(tp);
+	  if(oldhits<=1)
+	  { plugbuf+=closestatement(tp);
 	    m_delete(prepareds,ind);
 	  }
-        }
+	}
       }
       if(forcecache!=1 && createprefix->match(q))      // Flush cache on CREATE
-        invalidatecache=1;
+	invalidatecache=1;
       else
-        prepareds[q]=tp=([]);
+	prepareds[q]=tp=([]);
     }
-    if(invalidatecache) {
-      invalidatecache=0;
-      foreach(prepareds;;mapping np) {
-	plugbuf+=closestatement(np);
-        m_delete(np,"preparedname");
+    if(invalidatecache)
+    { invalidatecache=0;
+      foreach(prepareds;;mapping np)
+      { plugbuf+=closestatement(np);
+	m_delete(np,"preparedname");
       }
     }
-    if(sizeof(plugbuf)) {
-      _c.sendcmd(plugbuf,1);	 			      // close expireds
+    if(sizeof(plugbuf))
+    { _c.sendcmd(plugbuf,1);				      // close expireds
       PD("%O\n",plugbuf);
     }
     tstart=gethrtime();
@@ -1699,68 +1700,68 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
   portalsinflight++; portalsopened++;
   clearmessage=1;
   mixed err;
-  if(err = catch {
-      if(!sizeof(preparedname) || !tp || !tp->preparedname) {
-        PD("Parse statement %s\n",preparedname);
-        // Even though the protocol doesn't require the Parse command to be
-        // followed by a flush, it makes a VERY noticeable difference in
-        // performance if it is omitted; seems like a flaw in the PostgreSQL
-        // server v8.3.3
-        _c.sendcmd(({"P",_c.plugint32(4+sizeof(preparedname)+1+sizeof(q)+1+2),
-         preparedname,"\0",q,"\0",_c.plugint16(0)}),3);
-        PD("Query: %O\n",q);
+  if(err = catch
+    { if(!sizeof(preparedname) || !tp || !tp->preparedname)
+      { PD("Parse statement %s\n",preparedname);
+	// Even though the protocol doesn't require the Parse command to be
+	// followed by a flush, it makes a VERY noticeable difference in
+	// performance if it is omitted; seems like a flaw in the PostgreSQL
+	// server v8.3.3
+	_c.sendcmd(({"P",_c.plugint32(4+sizeof(preparedname)+1+sizeof(q)+1+2),
+	 preparedname,"\0",q,"\0",_c.plugint16(0)}),3);
+	PD("Query: %O\n",q);
       }			 // sends Parameter- and RowDescription for 'S'
-      if(!tp || !tp->datatypeoid) {
-        PD("Describe statement %s\n",preparedname);
-        _c.sendcmd(({"D",_c.plugint32(4+1+sizeof(preparedname)+1),
-         "S",preparedname,"\0"}),1);
+      if(!tp || !tp->datatypeoid)
+      { PD("Describe statement %s\n",preparedname);
+	_c.sendcmd(({"D",_c.plugint32(4+1+sizeof(preparedname)+1),
+	 "S",preparedname,"\0"}),1);
       }
-      else {
-        skippeddescribe++;
-        _c.portal->_datatypeoid=tp->datatypeoid;
-        _c.portal->_datarowdesc=tp->datarowdesc;
+      else
+      { skippeddescribe++;
+	_c.portal->_datatypeoid=tp->datatypeoid;
+	_c.portal->_datarowdesc=tp->datarowdesc;
       }
       { array(string) plugbuf=({"B",UNDEFINED});
-        int len=4+sizeof(portalname)+1+sizeof(preparedname)+1
-         +2+sizeof(paramValues)*(2+4)+2+2;
-        plugbuf+=({portalname,"\0",preparedname,"\0",
-         _c.plugint16(sizeof(paramValues))});
-        if(!tp || !tp->datatypeoid) {
-          _decodemsg(gotparameterdescription);
-          if(tp)
-            tp->datatypeoid=_c.portal->_datatypeoid;
-        }
-        array dtoid=_c.portal->_datatypeoid;
-        if(sizeof(dtoid)!=sizeof(paramValues))
+	int len=4+sizeof(portalname)+1+sizeof(preparedname)+1
+	 +2+sizeof(paramValues)*(2+4)+2+2;
+	plugbuf+=({portalname,"\0",preparedname,"\0",
+	 _c.plugint16(sizeof(paramValues))});
+	if(!tp || !tp->datatypeoid)
+	{ _decodemsg(gotparameterdescription);
+	  if(tp)
+	    tp->datatypeoid=_c.portal->_datatypeoid;
+	}
+	array dtoid=_c.portal->_datatypeoid;
+	if(sizeof(dtoid)!=sizeof(paramValues))
 	  USERERROR(
 	   sprintf("Invalid number of bindings, expected %d, got %d\n",
 	    sizeof(dtoid),sizeof(paramValues)));
-        foreach(dtoid;;int textbin)
-          plugbuf+=({_c.plugint16(oidformat(textbin))});
-        plugbuf+=({_c.plugint16(sizeof(paramValues))});
-        foreach(paramValues;int i;mixed value) {
-          if(zero_type(value))
-            plugbuf+=({_c.plugint32(-1)});				// NULL
-          else if(stringp(value) && !sizeof(value)) {
-	    int k=0;
-	    switch(dtoid[i]) {
-	      default:
-	        k=-1;	     // cast empty strings to NULL for non-string types
+	foreach(dtoid;;int textbin)
+	  plugbuf+=({_c.plugint16(oidformat(textbin))});
+	plugbuf+=({_c.plugint16(sizeof(paramValues))});
+	foreach(paramValues;int i;mixed value)
+	{ if(zero_type(value))
+	    plugbuf+=({_c.plugint32(-1)});				// NULL
+	  else if(stringp(value) && !sizeof(value))
+	  { int k=0;
+	    switch(dtoid[i])
+	    { default:
+		k=-1;	     // cast empty strings to NULL for non-string types
 	      case BYTEAOID:
 	      case TEXTOID:
 	      case XMLOID:
 	      case BPCHAROID:
 	      case VARCHAROID:;
 	    }
-            plugbuf+=({_c.plugint32(k)});
+	    plugbuf+=({_c.plugint32(k)});
 	  }
-          else
-            switch(dtoid[i])
+	  else
+	    switch(dtoid[i])
 	    { case TEXTOID:
 	      case XMLOID:
 	      case BPCHAROID:
 	      case VARCHAROID:
-              { value=(string)value;
+	      { value=(string)value;
 		switch(cenc)
 		{ case UTF8CHARSET:
 		    value=string_to_utf8(value);
@@ -1771,21 +1772,21 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
 		       value,cenc);
 		}
 		int k;
-                len+=k=sizeof(value);
-                plugbuf+=({_c.plugint32(k),value});
-                break;
-              }
-              default:
-              { int k;
-                value=(string)value;
+		len+=k=sizeof(value);
+		plugbuf+=({_c.plugint32(k),value});
+		break;
+	      }
+	      default:
+	      { int k;
+		value=(string)value;
 		if(String.width(value)>8)
 		  ERROR("Wide string %O cannot be converted to BYTEA\n",value);
-                len+=k=sizeof(value);
-                plugbuf+=({_c.plugint32(k),value});
-                break;
-              }
-              case BOOLOID:plugbuf+=({_c.plugint32(1)});len++;
-	        do
+		len+=k=sizeof(value);
+		plugbuf+=({_c.plugint32(k),value});
+		break;
+	      }
+	      case BOOLOID:plugbuf+=({_c.plugint32(1)});len++;
+		do
 		{ int tval;
 		  if(stringp(value))
 		    tval=value[0];
@@ -1795,7 +1796,7 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
 		  }
 		  else
 		     tval=value;
-                  switch(tval)
+		  switch(tval)
 		  { case 'o':case 'O':
 		      catch
 		      { tval=value[1];
@@ -1809,15 +1810,15 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
 		      value=0;
 		      break;
 		  }
-                }
+		}
 		while(0);
-                plugbuf+=({_c.plugbyte(value)});
-                break;
-              case CHAROID:
-                if(intp(value))
+		plugbuf+=({_c.plugbyte(value)});
+		break;
+	      case CHAROID:
+		if(intp(value))
 		  len++,plugbuf+=({_c.plugint32(1),_c.plugbyte(value)});
-                else {
-        	  value=(string)value;
+		else
+		{ value=(string)value;
 		  switch(sizeof(value))
 		  { default:
 		      ERROR("\"char\" types must be 1 byte wide, got %O\n",
@@ -1828,79 +1829,79 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
 		    case 1:len++;
 		      plugbuf+=({_c.plugint32(1),_c.plugbyte(value[0])});
 		  }
-                }
-                break;
-              case INT8OID:len+=8;
-                plugbuf+=({_c.plugint32(8),_c.plugint64((int)value)});
-                break;
+		}
+		break;
+	      case INT8OID:len+=8;
+		plugbuf+=({_c.plugint32(8),_c.plugint64((int)value)});
+		break;
 	      case OIDOID:
-              case INT4OID:len+=4;
-                plugbuf+=({_c.plugint32(4),_c.plugint32((int)value)});
-                break;
-              case INT2OID:len+=2;
-                plugbuf+=({_c.plugint32(2),_c.plugint16((int)value)});
-                break;
-            }
-        }
-        if(!tp || !tp->datarowdesc) {
-	  if(tp && dontcacheprefix->match(q))	      // Don't cache FETCH/COPY
+	      case INT4OID:len+=4;
+		plugbuf+=({_c.plugint32(4),_c.plugint32((int)value)});
+		break;
+	      case INT2OID:len+=2;
+		plugbuf+=({_c.plugint32(2),_c.plugint16((int)value)});
+		break;
+	    }
+	}
+	if(!tp || !tp->datarowdesc)
+	{ if(tp && dontcacheprefix->match(q))	      // Don't cache FETCH/COPY
 	    m_delete(prepareds,q),tp=0;
-          _decodemsg(gotrowdescription);
-          if(tp)
-            tp->datarowdesc=_c.portal->_datarowdesc;
-        }
-        { array a;int i;
-          len+=(i=sizeof(a=_c.portal->_datarowdesc))*2;
-          plugbuf+=({_c.plugint16(i)});
-          foreach(a;;mapping col)
-            plugbuf+=({_c.plugint16(oidformat(col->type))});
-        }
-        plugbuf[1]=_c.plugint32(len);
-        PD("Bind portal %s statement %s\n",portalname,preparedname);
-        _c.sendcmd(plugbuf);
+	  _decodemsg(gotrowdescription);
+	  if(tp)
+	    tp->datarowdesc=_c.portal->_datarowdesc;
+	}
+	{ array a;int i;
+	  len+=(i=sizeof(a=_c.portal->_datarowdesc))*2;
+	  plugbuf+=({_c.plugint16(i)});
+	  foreach(a;;mapping col)
+	    plugbuf+=({_c.plugint16(oidformat(col->type))});
+	}
+	plugbuf[1]=_c.plugint32(len);
+	PD("Bind portal %s statement %s\n",portalname,preparedname);
+	_c.sendcmd(plugbuf);
 #ifdef DEBUGMORE
-        PD("%O\n",plugbuf);
+	PD("%O\n",plugbuf);
 #endif
       }
       _c.portal->_statuscmdcomplete=UNDEFINED;
       _sendexecute(_fetchlimit
        && !limitpostfix->match(q)		    // Optimisation for LIMIT 1
        && FETCHLIMITLONGRUN);
-      if(tp) {
-        _decodemsg(bindcomplete);
-        int tend=gethrtime();
-        if(tend==tstart)
+      if(tp)
+      { _decodemsg(bindcomplete);
+	int tend=gethrtime();
+	if(tend==tstart)
 	  m_delete(prepareds,q);
-        else {
-          tp->hits++;
-          totalhits++;
-	  if(!tp->preparedname) {
-	    if(sizeof(preparedname))
+	else
+	{ tp->hits++;
+	  totalhits++;
+	  if(!tp->preparedname)
+	  { if(sizeof(preparedname))
 	      tp->preparedname=preparedname;
 	    tstart=tend-tstart;
 	    if(!tp->tparse || tp->tparse>tstart)
 	      tp->tparse=tstart;
 	  }
 	  tp->trunstart=tend;
-        }
-        tprepared=tp;
+	}
+	tprepared=tp;
       }
-    }) {
-    PD("%O\n",err);
+    })
+  { PD("%O\n",err);
     resync(1);
     backendstatus=UNDEFINED;
-    if(to && sizeof(to)) {
-      string val;
+    if(to && sizeof(to))
+    { string val;
       int i;
       lastmessage+=({"Parameter bindings:"});
       foreach(to;i;val)
-         lastmessage+=({sprintf("%16s %3s %.61s",
-          from[i],val,sprintf("%O",paramValues[i]))});
+	 lastmessage+=({sprintf("%16s %3s %.61s",
+	  from[i],val,sprintf("%O",paramValues[i]))});
     }
     throw(err);
   }
-  { object tportal=_c.portal;	        // Make copy, because it might dislodge
-    tportal->fetch_row(1);	        // upon initial fetch_row()
+  { object tportal=_c.portal;		// Make copy, because it might dislodge
+    tportal->fetch_row(1);		// upon initial fetch_row()
     return tportal;
   }
 }
@@ -1910,8 +1911,8 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
 //!
 //! @seealso
 //!   @[big_query()], @[big_typed_query()], @[Sql.Sql], @[Sql.sql_result]
-object streaming_query(string q,void|mapping(string|int:mixed) bindings) {
-  return big_query(q,bindings);
+object streaming_query(string q,void|mapping(string|int:mixed) bindings)
+{ return big_query(q,bindings);
 }
 
 //! This function returns an object that allows streaming and typed
@@ -1919,6 +1920,6 @@ object streaming_query(string q,void|mapping(string|int:mixed) bindings) {
 //!
 //! @seealso
 //!   @[big_query()], @[Sql.Sql], @[Sql.sql_result]
-object big_typed_query(string q,void|mapping(string|int:mixed) bindings) {
-  return big_query(q,bindings,1);
+object big_typed_query(string q,void|mapping(string|int:mixed) bindings)
+{ return big_query(q,bindings,1);
 }

@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: PGsql.cmod,v 1.33 2009/02/28 20:29:20 srb Exp $
+ * $Id: PGsql.cmod,v 1.34 2009/04/10 17:19:53 srb Exp $
  *
  * PGsql, accelerator functions for Sql.pgsql for Pike.
  *
@@ -49,23 +49,23 @@ typedef unsigned char uchar;
 #define STRLEN(x)    (sizeof(x)-1)
 #define THISOBJ	     (Pike_fp->current_object)
 
-#define BOOLOID         16
-#define BYTEAOID        17
-#define CHAROID         18
-#define INT8OID         20
-#define INT2OID         21
-#define INT4OID         23
-#define TEXTOID         25
-#define OIDOID          26
-#define XMLOID          142
-#define FLOAT4OID       700
-#define FLOAT8OID       701
-#define MACADDROID      829
-#define INETOID         869
-#define BPCHAROID       1042
-#define VARCHAROID      1043
-#define CTIDOID         1247
-#define UUIDOID         2950
+#define BOOLOID		16
+#define BYTEAOID	17
+#define CHAROID		18
+#define INT8OID		20
+#define INT2OID		21
+#define INT4OID		23
+#define TEXTOID		25
+#define OIDOID		26
+#define XMLOID		142
+#define FLOAT4OID	700
+#define FLOAT8OID	701
+#define MACADDROID	829
+#define INETOID		869
+#define BPCHAROID	1042
+#define VARCHAROID	1043
+#define CTIDOID		1247
+#define UUIDOID		2950
 
 #define PGMSG_DATAROW	'D'
 
@@ -73,33 +73,32 @@ typedef unsigned char uchar;
 #define CLIENT_ENCODING	"client_encoding"
 
 PIKECLASS PGsql
-{
-  CVAR uchar buf[BUFSIZE];
+{ CVAR uchar buf[BUFSIZE];
   CVAR uchar*plow,*phigh;
   CVAR uchar*extrabuf;
   CVAR unsigned extrafilled;
   PIKEVAR int flushed;
   PIKEVAR object portal;
 
-  INIT {
-    THIS->phigh=THIS->plow=THIS->buf;
+  INIT
+  { THIS->phigh=THIS->plow=THIS->buf;
     THIS->extrabuf=xalloc(1);
     THIS->extrafilled=0;
     THIS->flushed=-1;
   }
 
-  EXIT {
-    xfree(THIS->extrabuf);
+  EXIT
+  { xfree(THIS->extrabuf);
   }
 
-  static int rread(void*const a,const int len,const int not_all) {
-    int i;
+  static int rread(void*const a,const int len,const int not_all)
+  { int i;
     push_int(len);
     if(not_all)
       push_int(1);
     apply(THISOBJ,"read",1+!!not_all);
-    if(Pike_sp[-1].type == PIKE_T_STRING) {
-      i=Pike_sp[-1].u.string->len;
+    if(Pike_sp[-1].type == PIKE_T_STRING)
+    { i=Pike_sp[-1].u.string->len;
       memcpy(a,Pike_sp[-1].u.string->str,i);
     }
     else
@@ -108,8 +107,8 @@ PIKECLASS PGsql
     return i;
   }
 
-  static int low_peek(const int timeout) {
-    int retval;
+  static int low_peek(const int timeout)
+  { int retval;
     push_int(timeout);
     apply(THISOBJ, "peek", 1);
     retval = Pike_sp[-1].u.integer;
@@ -117,103 +116,104 @@ PIKECLASS PGsql
     return retval;
   }
 
-  static int medium_peek(const int timeout) {
-    int retval=1;
-    if(THIS->phigh==THIS->plow && !THIS->extrafilled) {
-      PD((stderr,"PGsql peek %d\n",timeout));
+  static int medium_peek(const int timeout)
+  { int retval=1;
+    if(THIS->phigh==THIS->plow && !THIS->extrafilled)
+    { PD((stderr,"PGsql peek %d\n",timeout));
       retval=low_peek(timeout);
     }
     return retval;
   }
 
-  static void flushifneeded(void) {
-    if(!THIS->flushed && low_peek(0)) {
-      apply(THISOBJ,"sendflush",0);
+  static void flushifneeded(void)
+  { if(!THIS->flushed && low_peek(0))
+    { apply(THISOBJ,"sendflush",0);
       pop_stack();				  /* void function returns 0 */
     }
-    if(THIS->extrafilled) {
-      if(THIS->extrafilled>BUFSIZE)
-        THIS->extrabuf=realloc(THIS->extrabuf,1);
+    if(THIS->extrafilled)
+    { if(THIS->extrafilled>BUFSIZE)
+	THIS->extrabuf=realloc(THIS->extrabuf,1);
       THIS->extrafilled=0;
     }
   }
 
-  static int low_getbyte(void) {
-    int retval;
-    if(THIS->phigh!=THIS->plow) {
+  static int low_getbyte(void)
+  { int retval;
+    if(THIS->phigh!=THIS->plow)
+    {
 ret:  retval=*THIS->plow++;
 ret2: PD((stderr,"PGsql getbyte 0x%02x=%c\n",retval,retval));
       return retval;
     }
     flushifneeded();
     retval = rread(THIS->buf, BUFSIZE, 1);
-    if(retval>0) {
-      THIS->phigh=(THIS->plow=THIS->buf)+retval;
+    if(retval>0)
+    { THIS->phigh=(THIS->plow=THIS->buf)+retval;
       goto ret;
     }
     retval=-1;
     goto ret2;
   }
 
-  static int low_getint16(void) {
-    int s0=low_getbyte();
+  static int low_getint16(void)
+  { int s0=low_getbyte();
     int r=(s0&0x7f)<<8|low_getbyte();
     return s0&0x80 ? r-(1<<15) : r ;
   }
 
-  static int low_getint32(void) {
-    int r=low_getint16();
+  static int low_getint32(void)
+  { int r=low_getint16();
     r=r<<8|low_getbyte();
     return r<<8|low_getbyte();
   }
 
-  static struct pike_string*low_getstring(int length) {
-    struct pike_string*retval;
+  static struct pike_string*low_getstring(int length)
+  { struct pike_string*retval;
     struct string_builder sb,*psb=0;
     int len = 0,left;
     uchar*p;
-#ifdef PIKE_DEBUG                                  /* placate silly warnings */
-    retval=0;p=0;		        /* these initialisations are useless */
+#ifdef PIKE_DEBUG				   /* placate silly warnings */
+    retval=0;p=0;			/* these initialisations are useless */
 #endif
-    if(length) {
-      len=length;
+    if(length)
+    { len=length;
       retval=begin_shared_string(len);
       p=(uchar*)retval->str;
     }
-    do {
-      left=THIS->phigh-THIS->plow;
-      if(length) {
-        if(left>=len) {
-ret:      memcpy(p,THIS->plow,len);
-          THIS->plow+=len;
-ret2:     PD((stderr,"PGsql getstring %d\n",length));
-          return low_end_shared_string(retval);
-        }
-        memcpy(p,THIS->plow,left);
-        len-=left;p+=left;THIS->plow+=left;
+    do
+    { left=THIS->phigh-THIS->plow;
+      if(length)
+      { if(left>=len)
+ret:	{ memcpy(p,THIS->plow,len);
+	  THIS->plow+=len;
+ret2:	  PD((stderr,"PGsql getstring %d\n",length));
+	  return low_end_shared_string(retval);
+	}
+	memcpy(p,THIS->plow,left);
+	len-=left;p+=left;THIS->plow+=left;
       }
-      else {
-        p=memchr(THIS->plow,0,left);
-        if(p) {
-          len=p-THIS->plow;
-	  if(!psb) {
-            retval=begin_shared_string(len++);      /* nul terminated anyway */
+      else
+      { p=memchr(THIS->plow,0,left);
+	if(p)
+	{ len=p-THIS->plow;
+	  if(!psb)
+	  { retval=begin_shared_string(len++);	    /* nul terminated anyway */
 	    p=(uchar*)retval->str;
-            goto ret;
+	    goto ret;
 	  }
-          PD((stderr,"PGsql getstring %s\n",psb->s->str));
-          return finish_string_builder(&sb);
-        }
-        else if(!psb)
-          init_string_builder(psb=&sb,0);
-        string_builder_binary_strcat0(psb,THIS->plow,left);
+	  PD((stderr,"PGsql getstring %s\n",psb->s->str));
+	  return finish_string_builder(&sb);
+	}
+	else if(!psb)
+	  init_string_builder(psb=&sb,0);
+	string_builder_binary_strcat0(psb,THIS->plow,left);
       }
       flushifneeded();
       for(;len>BUFSIZE;len-=left,p+=left)
-        if((left=rread(p,len,0))<=0)
-          goto bad;
+	if((left=rread(p,len,0))<=0)
+	  goto bad;
       if(!len)
-        goto ret2;
+	goto ret2;
       left=rread(THIS->buf,BUFSIZE,1);
       THIS->phigh=(THIS->plow=THIS->buf)+left;
     } while(left>0);
@@ -221,11 +221,12 @@ bad:
     Pike_error("Missing %d bytes from network\n",len);
   }
 
-  PIKEFUN void create() {
+  PIKEFUN void create()
+  {
 #ifdef TCP_NODELAY
     apply(THISOBJ,"query_fd",0);
-    if(Pike_sp[-1].type == PIKE_T_INT) {
-      int fd=Pike_sp[-1].u.integer;
+    if(Pike_sp[-1].type == PIKE_T_INT)
+    { int fd=Pike_sp[-1].u.integer;
       int newval = 1;
       setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &newval, sizeof(newval));
     }
@@ -233,57 +234,57 @@ bad:
 #endif
   }
 
-  PIKEFUN void setportal(void|object portal) {
-    if(THIS->portal)
+  PIKEFUN void setportal(void|object portal)
+  { if(THIS->portal)
       free_object(THIS->portal);
-    if((THIS->portal=portal)) {
-      debug_malloc_touch(THIS->portal);
+    if((THIS->portal=portal))
+    { debug_malloc_touch(THIS->portal);
       Pike_sp--;				/* don't decrease references */
     }
     else
       pop_stack();
   }
 
-  PIKEFUN int bpeek(void|int timeoutp) {
-    int timeout=0;
+  PIKEFUN int bpeek(void|int timeoutp)
+  { int timeout=0;
     if(timeoutp)
       timeout=timeoutp->u.integer;
     RETURN medium_peek(timeout);
   }
 
-  PIKEFUN int getbyte() {
-    push_int(low_getbyte());
+  PIKEFUN int getbyte()
+  { push_int(low_getbyte());
   }
 
-  PIKEFUN int getint16() {
-    push_int(low_getint16());
+  PIKEFUN int getint16()
+  { push_int(low_getint16());
   }
 
-  PIKEFUN int getint32() {
-    push_int(low_getint32());
+  PIKEFUN int getint32()
+  { push_int(low_getint32());
   }
 
-  PIKEFUN string getstring(void|int length) {
-    RETURN low_getstring(length ? length->u.integer : 0);
+  PIKEFUN string getstring(void|int length)
+  { RETURN low_getstring(length ? length->u.integer : 0);
   }
 
-  PIKEFUN void unread(string oldbuf) {
-    int len = oldbuf->len;
-    if(len) {
-      uchar*q;
+  PIKEFUN void unread(string oldbuf)
+  { int len = oldbuf->len;
+    if(len)
+    { uchar*q;
       int left=THIS->phigh-THIS->plow;
       PD((stderr,"PGsql unread %d\n",len));
-      if(THIS->extrafilled) {
-        memmove(THIS->extrabuf,THIS->plow,left);
-        q=realloc(THIS->extrabuf,left+len);
-        if(!q)
+      if(THIS->extrafilled)
+      { memmove(THIS->extrabuf,THIS->plow,left);
+	q=realloc(THIS->extrabuf,left+len);
+	if(!q)
 outofmem: Pike_fatal("Out of memory\n");
       }
-      else {
-        q=realloc(THIS->extrabuf,left+len);
-        if(!q)
+      else
+      { q=realloc(THIS->extrabuf,left+len);
+	if(!q)
 	  goto outofmem;
-        memcpy(q,THIS->plow,left);
+	memcpy(q,THIS->plow,left);
       }
       THIS->phigh=(THIS->plow=THIS->extrabuf=q)+left+len;
       memcpy(q+left,oldbuf->str,len);
@@ -291,8 +292,8 @@ outofmem: Pike_fatal("Out of memory\n");
     }
   }
 
-  PIKEFUN void decodedatarow(int msglen) {
-    int i;
+  PIKEFUN void decodedatarow(int msglen)
+  { int i;
     long totalrecvd=0, recvdbstats=0;
     int nrows=0, buffer=0;
     int rowsreceived,inflight,fetchlimit,parentfetchlimit,portalbuffersize;
@@ -357,161 +358,162 @@ outofmem: Pike_fatal("Out of memory\n");
     rowsreceived=Pike_sp[-1].u.integer;
     pop_stack();
 
-    for(;;) {
-      int cols=low_getint16();
+    for(;;)
+    { int cols=low_getint16();
       if(cols != datarowdesc->size)
-        Pike_error("Mismatching dataset and description sizes\n");
+	Pike_error("Mismatching dataset and description sizes\n");
       totalrecvd+=msglen;
       msglen-=2+4*cols;
-      for(i=0; i<cols; i++) {
-        int collen=low_getint32();
-        if(collen>0) {
-          struct svalue drd,*svp;
-          msglen-=collen;
-          array_index_no_free(&drd,datarowdesc,i);
-          svp = low_mapping_string_lookup(drd.u.mapping, MK_STRING("type"));
+      for(i=0; i<cols; i++)
+      { int collen=low_getint32();
+	if(collen>0)
+	{ struct svalue drd,*svp;
+	  msglen-=collen;
+	  array_index_no_free(&drd,datarowdesc,i);
+	  svp = low_mapping_string_lookup(drd.u.mapping, MK_STRING("type"));
 	  free_svalue(&drd);
-          switch(svp->u.integer) {
+	  switch(svp->u.integer)
+	  {
 #if SIZEOF_FLOAT_TYPE>=8
-            case FLOAT8OID:
+	    case FLOAT8OID:
 #endif
-            case FLOAT4OID:
-	      if(!alltext) {
-                char*tb=xalloc(collen+1);
-                char*p=tb;
-	        if(!tb)
+	    case FLOAT4OID:
+	      if(!alltext)
+	      { char*tb=xalloc(collen+1);
+		char*p=tb;
+		if(!tb)
 		  Pike_fatal("Out of memory\n");
-                do
-                  *p++=low_getbyte();
-                while(--collen);
-                *p=0; push_float(atof(tb)); xfree(tb);
-                break;
-            case CHAROID:
-	        if(!alltext) {
-	          push_int(low_getbyte());
-	          break;
-	        }
+		do
+		  *p++=low_getbyte();
+		while(--collen);
+		*p=0; push_float(atof(tb)); xfree(tb);
+		break;
+	    case CHAROID:
+		if(!alltext)
+		{ push_int(low_getbyte());
+		  break;
+		}
 	      }
 	    default:
 	      push_string(low_getstring(collen));
 	      break;
-            case TEXTOID:
-            case XMLOID:
-            case BPCHAROID:
-            case VARCHAROID:
+	    case TEXTOID:
+	    case XMLOID:
+	    case BPCHAROID:
+	    case VARCHAROID:
 	      push_string(low_getstring(collen));
 	      if(isutf8)
 		f_utf8_to_string(1);
 	      break;
-            case BOOLOID: {
-	      int val=low_getbyte();
-	      if(alltext) {
-	        struct pike_string*s;
-	        s = MK_STRING("f");
-	        if(val)
-	          s = MK_STRING("t");
+	    case BOOLOID:
+	    { int val=low_getbyte();
+	      if(alltext)
+	      { struct pike_string*s;
+		s = MK_STRING("f");
+		if(val)
+		  s = MK_STRING("t");
 		ref_push_string(s);
 	      }
 	      else
-	        push_int(val);
-              break;
+		push_int(val);
+	      break;
 	    }
-            case INT2OID:push_int(low_getint16());
-              break;
-            case INT8OID: {
-	      LONGEST firstword = low_getint32();
+	    case INT2OID:push_int(low_getint16());
+	      break;
+	    case INT8OID:
+	    { LONGEST firstword = low_getint32();
 #if SIZEOF_LONGEST>=8
 	      push_longest((firstword<<32)|(low_getint32()&0xffffffffU));
 #else
-              int nextword = low_getint32();
-              switch(firstword) {
-                default:
-                  push_int(firstword);push_int(32);f_lsh(2);
-                  if(nextword>=0)
+	      int nextword = low_getint32();
+	      switch(firstword)
+	      { default:
+		  push_int(firstword);push_int(32);f_lsh(2);
+		  if(nextword>=0)
 		    goto nextor;
-                  push_int((nextword>>1)&0x7fffffff); push_int(1); f_lsh(2);
-                  f_or(2);
-                  goto tor;
-                case -1:
+		  push_int((nextword>>1)&0x7fffffff); push_int(1); f_lsh(2);
+		  f_or(2);
+		  goto tor;
+		case -1:
 		  if(nextword<0)
 		    goto simple;
-                  push_int(firstword);push_int(32);f_lsh(2);
-                  goto nextor;
-                case 0:
-                  if(nextword<0) {
-                    push_int((nextword>>1)&0x7fffffff); push_int(1); f_lsh(2);
-tor:		    if(nextword&1) {
-		      nextword=1;
-nextor:               push_int(nextword);
-                      f_or(2);
+		  push_int(firstword);push_int(32);f_lsh(2);
+		  goto nextor;
+		case 0:
+		  if(nextword<0)
+		  { push_int((nextword>>1)&0x7fffffff); push_int(1); f_lsh(2);
+tor:		    if(nextword&1)
+		    { nextword=1;
+nextor:		      push_int(nextword);
+		      f_or(2);
 		    }
-                  }
-                  else
-simple:             push_int(nextword);
-              }
+		  }
+		  else
+simple:		    push_int(nextword);
+	      }
 #endif
-              break;
-            }
-            case OIDOID:
-            case INT4OID:push_int(low_getint32());
-          }
+	      break;
+	    }
+	    case OIDOID:
+	    case INT4OID:push_int(low_getint32());
+	  }
 	  if(alltext && Pike_sp[-1].type != PIKE_T_STRING)
 	    o_cast_to_string();
-        }
-        else if(!collen)
-          push_empty_string();
-        else
-          push_undefined();
+	}
+	else if(!collen)
+	  push_empty_string();
+	else
+	  push_undefined();
       }
       if(msglen)
-        Pike_error("Protocol error\n");
+	Pike_error("Protocol error\n");
       f_aggregate(cols);
       nrows++;
       inflight--;
       if(medium_peek(0)>0)
-        switch(low_getbyte()) {
-	  case PGMSG_DATAROW:
+	switch(low_getbyte())
+	{ case PGMSG_DATAROW:
 
-	    switch(buffer) {
-	      case 0:
+	    switch(buffer)
+	    { case 0:
 	      case 1:
-	        if(fetchlimit) {
-	          if(parentfetchlimit) {
-	            push_int(portalbuffersize/2);
-	            push_int(rowsreceived+nrows);
-	            f_multiply(2);
-	            push_svalue(bytesreceived);
+		if(fetchlimit)
+		{ if(parentfetchlimit)
+		  { push_int(portalbuffersize/2);
+		    push_int(rowsreceived+nrows);
+		    f_multiply(2);
+		    push_svalue(bytesreceived);
 		    push_int(totalrecvd);
 		    f_add(2);
-	            f_divide(2);
-	            fetchlimit=Pike_sp[-1].u.integer;
-	            if(fetchlimit>parentfetchlimit)
-	              fetchlimit=parentfetchlimit;
-	            else if(!fetchlimit)
-	              fetchlimit=1;
-	            pop_stack();
-	          }
-	          else
-	            fetchlimit=0;
-	          switch(buffer) {
-	            case 1: {
-		      ref_push_object(pgsqlsess);
+		    f_divide(2);
+		    fetchlimit=Pike_sp[-1].u.integer;
+		    if(fetchlimit>parentfetchlimit)
+		      fetchlimit=parentfetchlimit;
+		    else if(!fetchlimit)
+		      fetchlimit=1;
+		    pop_stack();
+		  }
+		  else
+		    fetchlimit=0;
+		  switch(buffer)
+		  { case 1:
+		    { ref_push_object(pgsqlsess);
 		      ref_push_string(MK_STRING("_nextportal"));
 		      f_arrow(2); i=Pike_sp[-1].u.integer;
 		      pop_stack();
 
-                      if(i)
-		        break;
-	            }
-	            case 0:
-	              if(fetchlimit && inflight<=fetchlimit-1) {
-			push_int(fetchlimit);
+		      if(i)
+			break;
+		    }
+		    case 0:
+		      if(fetchlimit && inflight<=fetchlimit-1)
+		      { push_int(fetchlimit);
 			apply(pgsqlsess, "_sendexecute", 1);
 			inflight+=fetchlimit;
 			pop_stack();		  /* void function returns 0 */
 		      }
-	          }
-	        }
+		  }
+		}
 	    }
 
 	    PD((stderr,"PGsql DataRow fast fetch\n"));
@@ -519,9 +521,9 @@ simple:             push_int(nextword);
 	    recvdbstats+=1+msglen;
 	    msglen-=4;
 	    continue;
-	  default:THIS->plow--;				         /* ungetc() */
+	  default:THIS->plow--;					 /* ungetc() */
 	  case -1:;
-        }
+	}
       break;
     }
 
@@ -529,8 +531,8 @@ simple:             push_int(nextword);
     ref_push_object(portal); ref_push_string(MK_STRING("_datarows"));
     f_arrow(2);
 
-    if(Pike_sp[-1].u.array->size) {
-      push_undefined();
+    if(Pike_sp[-1].u.array->size)
+    { push_undefined();
       object_set_index2(portal,0, MK_STRING_SVALUE("_datarows"), Pike_sp-1);
       pop_stack();
       stack_swap();
@@ -554,8 +556,8 @@ simple:             push_int(nextword);
     object_set_index2(portal,0, MK_STRING_SVALUE("_fetchlimit"), Pike_sp-1);
     pop_stack();
 
-    if(--nrows) {
-      push_int(rowsreceived+nrows);
+    if(--nrows)
+    { push_int(rowsreceived+nrows);
       object_set_index2(portal,0, MK_STRING_SVALUE("_rowsreceived"),
        Pike_sp-1);
       pop_stack();
@@ -582,10 +584,10 @@ simple:             push_int(nextword);
   }
 }
 
-PIKE_MODULE_INIT {
-  INIT;
+PIKE_MODULE_INIT
+{ INIT;
 }
 
-PIKE_MODULE_EXIT {
-  EXIT;
+PIKE_MODULE_EXIT
+{ EXIT;
 }

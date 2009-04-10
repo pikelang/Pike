@@ -12,13 +12,13 @@
 				    // only for benchmarking mutex performance
 #define USEPGsql     1		    // Doesn't use Stdio.FILE, but _PGsql
 
-#define FETCHLIMIT           1024   // Initial upper limit on the
+#define FETCHLIMIT	     1024   // Initial upper limit on the
 				    // number of rows to fetch across the
 				    // network at a time
 				    // 0 for no chunking
 				    // Needs to be >0 for interleaved
 				    // portals
-#define FETCHLIMITLONGRUN    1      // for long running background queries
+#define FETCHLIMITLONGRUN    1	    // for long running background queries
 #define STREAMEXECUTES	     1	    // streams executes if defined
 #define MINPREPARELENGTH     16	    // statements shorter than this will not
 				    // be cached
@@ -38,9 +38,9 @@
 				    // -> if parsingtime*FACTORPLAN >= runtime
 				    // cache the statement
 #define DRIVERNAME	     "pgsql"
-#define MARKSTART            "{""{\n"	      // split string to avoid
-#define MARKERROR            ">"">"">"">"     // foldeditors from recognising
-#define MARKEND              "\n}""}"	      // it as a fold
+#define MARKSTART	     "{""{\n"	      // split string to avoid
+#define MARKERROR	     ">"">"">"">"     // foldeditors from recognising
+#define MARKEND		     "\n}""}"	      // it as a fold
 
 #ifdef DEBUG
 #define PD(X ...)     werror(X)
@@ -54,7 +54,9 @@
 #define UNBUFFEREDIO 1
 #endif
 
-protected enum state {unauthenticated,authenticated,readyforquery,
- parsecomplete,bindcomplete,commandcomplete,gotrowdescription,
- gotparameterdescription,dataready,dataprocessed,portalsuspended,
- copyinresponse};
+protected enum state
+{ unauthenticated,authenticated,readyforquery,
+  parsecomplete,bindcomplete,commandcomplete,gotrowdescription,
+  gotparameterdescription,dataready,dataprocessed,portalsuspended,
+  copyinresponse
+};
