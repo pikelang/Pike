@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.235 2009/04/10 11:41:39 grubba Exp $
+|| $Id: stralloc.c,v 1.236 2009/04/10 11:43:57 grubba Exp $
 */
 
 #include "global.h"
@@ -2558,8 +2558,8 @@ PMOD_EXPORT ptrdiff_t string_builder_quote_string(struct string_builder *buf,
       }
       string_builder_putchar(buf, ch);
     } else {
-    ctrl_char:
       p_wchar2 next_ch;
+    ctrl_char:
       /* Control character. */
       string_builder_putchar(buf, '\\');
       if ((ch > 6) && (ch < 14)) {
