@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.234 2009/01/06 10:04:24 srb Exp $
+|| $Id: stralloc.c,v 1.235 2009/04/10 11:41:39 grubba Exp $
 */
 
 #include "global.h"
@@ -2552,13 +2552,13 @@ PMOD_EXPORT ptrdiff_t string_builder_quote_string(struct string_builder *buf,
       /* Printable character or DEL. */
       if (ch == '\177') {
 	/* DEL */
-	string_builder_binary_strcat(buf, "\\177", 4);
-	goto next;
+	goto ctrl_char;
       } else if ((ch == '"') || (ch == '\\')) {
 	string_builder_putchar(buf, '\\');
       }
       string_builder_putchar(buf, ch);
     } else {
+    ctrl_char:
       p_wchar2 next_ch;
       /* Control character. */
       string_builder_putchar(buf, '\\');
