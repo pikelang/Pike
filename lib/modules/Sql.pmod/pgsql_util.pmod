@@ -237,7 +237,6 @@ int _qmtxkey;
 Thread.MutexKey _qmtxkey;
 #endif
 
-string query;
 string _portalname;
 
 int _bytesreceived;
@@ -245,7 +244,9 @@ int _rowsreceived;
 int _interruptable;
 int _inflight;
 int _portalbuffersize;
+array _params;
 string _statuscmdcomplete;
+string _query;
 array(array(mixed)) _datarows;
 array(mapping(string:mixed)) _datarowdesc=({});
 array(int) _datatypeoid;
@@ -260,27 +261,25 @@ protected string _sprintf(int type, void|mapping flags)
   switch(type)
   { case 'O':
       res=sprintf("pgsql_result  numrows: %d  eof: %d  querylock: %d"
-       " inflight: %d\nportalname: %O  datarows: %d\n"
-       "query: %O\n"
-       "laststatus: %s\n",
+       " inflight: %d\nportalname: %O  datarows: %d  laststatus: %s\n",
        numrows,eoffound,!!_qmtxkey,_inflight,
        _portalname,sizeof(_datarowdesc),
-       query,
        _statuscmdcomplete||"");
       break;
   }
   return res;
 }
 
-void create(object pgsqlsess,string _query,int fetchlimit,
- int portalbuffersize,int alltyped)
+void create(object pgsqlsess,string query,int fetchlimit,
+ int portalbuffersize,int alltyped,array params)
 { _pgsqlsess = pgsqlsess;
-  query = _query;
+  _query = query;
   _datarows = ({ }); numrows = UNDEFINED;
   fetchmutex = Thread.Mutex();
   _fetchlimit=fetchlimit;
   _portalbuffersize=portalbuffersize;
   _alltext = !alltyped;
+  _params = params;
   steallock();
 }
 

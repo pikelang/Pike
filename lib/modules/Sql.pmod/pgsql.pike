@@ -609,6 +609,22 @@ final int _decodemsg(void|state waitforstate)
 	PD("%O\n",msgresponse);
 	return msgresponse;
       };
+      array(string) showbindings()
+      { array(string) msgs=({});
+        array from;
+	if(from = _c.portal->_params)
+	{ array to,paramValues;
+	  [from,to,paramValues] = from;
+          if(sizeof(paramValues))
+          { string val;
+            int i;
+            string fmt=sprintf("%%%ds %%3s %%.61s",max(@map(from,sizeof)));
+            foreach(paramValues;i;val)
+               msgs+=({sprintf(fmt,from[i],to[i],sprintf("%O",val))});
+          }
+        }
+	return msgs;
+      };
       case 'R':PD("Authentication\n");
       { string sendpass;
 	int authtype;
@@ -882,8 +898,8 @@ final int _decodemsg(void|state waitforstate)
 	{ case "P0001":
 	    lastmessage=({sprintf("%s: %s",msgresponse->S,msgresponse->M)});
 	    USERERROR(a2nls(lastmessage
-	     +({pinpointerror(_c.portal->query,msgresponse->P)})));
-	    break;
+	     +({pinpointerror(_c.portal->_query,msgresponse->P)})
+	     +showbindings()));
 	  case "08P01":case "42P05":
 	    errtype=protocolerror;
 	  case "XX000":case "42883":case "42P01":
@@ -897,10 +913,11 @@ final int _decodemsg(void|state waitforstate)
 	    if(msgresponse->H)
 	      lastmessage+=({msgresponse->H});
 	    lastmessage+=({
-	     pinpointerror(_c.portal&&_c.portal->query,msgresponse->P)+
+	     pinpointerror(_c.portal&&_c.portal->_query,msgresponse->P)+
 	     pinpointerror(msgresponse->q,msgresponse->p)});
 	    if(msgresponse->W)
 	      lastmessage+=({msgresponse->W});
+	    lastmessage+=showbindings();
 	    switch(msgresponse->S)
 	    { case "PANIC":werror(a2nls(lastmessage));
 	    }
@@ -1607,12 +1624,12 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
 	ERROR("Don't know how to convert %O to %s encoding\n",q,cenc);
   }
   array(string|int) paramValues;
-  array(string) from,to;
+  array from;
   if(bindings)
   { int pi=0,rep=0;
     paramValues=allocate(sizeof(bindings));
     from=allocate(sizeof(bindings));
-    to=allocate(sizeof(bindings));
+    array(string) to=allocate(sizeof(bindings));
     foreach(bindings; mixed name; mixed value)
     { if(stringp(name))		       // Throws if mapping key is empty string
       { if(name[0]!=':')
@@ -1640,6 +1657,7 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
     if(rep--)
       q=replace(q,from=from[..rep],to=to[..rep]);
     paramValues= pi ? paramValues[..pi-1] : ({});
+    from=({from,to,paramValues});
   }
   else
     paramValues = ({});
@@ -1691,7 +1709,7 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
   }					  // pgsql_result autoassigns to portal
   else
     tp=UNDEFINED;
-  .pgsql_util.pgsql_result(this,q,_fetchlimit,portalbuffersize,_alltyped);
+  .pgsql_util.pgsql_result(this,q,_fetchlimit,portalbuffersize,_alltyped,from);
   if(unnamedportalinuse)
     portalname=PORTALPREFIX+(string)pportalcount++;
   else
@@ -1891,14 +1909,6 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
   { PD("%O\n",err);
     resync(1);
     backendstatus=UNDEFINED;
-    if(to && sizeof(to))
-    { string val;
-      int i;
-      lastmessage+=({"Parameter bindings:"});
-      foreach(to;i;val)
-	 lastmessage+=({sprintf("%16s %3s %.61s",
-	  from[i],val,sprintf("%O",paramValues[i]))});
-    }
     throw(err);
   }
   { object tportal=_c.portal;		// Make copy, because it might dislodge
