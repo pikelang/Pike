@@ -332,7 +332,7 @@ void cancelquery()
 //!   @[get_charset()], @[create()],
 //!   @url{http://search.postgresql.org/search?u=%2Fdocs%2F&q=character+sets@}
 void set_charset(string charset)
-{ big_query("SET CLIENT_ENCODING TO :charset",([":charset":charset]));
+{ big_query(sprintf("SET CLIENT_ENCODING TO '%s'",quote(charset)));
 }
 
 //! @returns
