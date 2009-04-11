@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.359 2009/03/04 14:28:42 grubba Exp $
+|| $Id: pike_types.c,v 1.360 2009/04/11 12:42:22 grubba Exp $
 */
 
 #include "global.h"
@@ -3976,6 +3976,7 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
 #ifdef TYPE_GROUPING
     if (!ret != !(flags & LE_B_GROUPED)) {
       if ((a->flags | b->flags) & PT_FLAG_ASSIGN) {
+	/* Note: Needed for side effects... */
 	low_pike_types_le(a, b->cdr, array_cnt, flags);
       }
       return ret;
