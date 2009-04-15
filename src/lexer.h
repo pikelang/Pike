@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lexer.h,v 1.85 2008/07/22 23:35:13 mast Exp $
+|| $Id: lexer.h,v 1.86 2009/04/15 22:07:59 grubba Exp $
 */
 
 /*
@@ -597,8 +597,6 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	    return TOK_DEPRECATED_ID;
 	  if(ISWORD("__func__"))
 	    return TOK_FUNCTION_NAME;
-	  if(ISWORD("__OOB__"))
-	    break;
 	  /* Allow triple (or more) underscore for the user, and make sure we
 	   * don't get false matches below for wide strings.
 	   */
@@ -622,7 +620,21 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 #endif /* SHIFT == 1 */
 #endif /* SHIFT == 0 */
 	    yylval->n=mkstrnode(tmp);
-	    free_string(tmp);
+	    /* - But only for lower case US-ASCII.
+	     * - Upper case is used for symbols intended for #if constant().
+	     */
+	    if (tmp->size_shift) {
+	      free_string(tmp);	    
+	      return TOK_IDENTIFIER;
+	    }
+	    while(len--) {
+	      int c = tmp->str[len];
+	      if ((c >= 'A') && (c <= 'Z')) {
+		free_string(tmp);
+		return TOK_IDENTIFIER;
+	      }
+	    }
+	    free_string(tmp);	    
 	  }
 	  return TOK_RESERVED;
 	}
