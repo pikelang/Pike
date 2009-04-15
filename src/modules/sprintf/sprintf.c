@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.161 2009/04/15 18:53:44 grubba Exp $
+|| $Id: sprintf.c,v 1.162 2009/04/15 21:31:58 grubba Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -54,7 +54,7 @@
 
 */
 
-/*! @decl string sprintf(string format, mixed ... args)
+/*! @decl string sprintf(strict_sprintf_format format, sprintf_args ... args)
  *!
  *!   Print formated output to string.
  *!
@@ -80,13 +80,13 @@
  *!     @value '='
  *!       Column mode if strings are greater than field size. Breaks
  *!       between words (possibly skipping or adding spaces). Can not be
- *!       used together with '/'.
+ *!       used together with @expr{'/'@}.
  *!     @value '/'
  *!       Column mode with rough line break (break at exactly field size
- *!       instead of between words). Can not be used together with '='.
+ *!       instead of between words). Can not be used together with @expr{'='@}.
  *!     @value '#'
- *!       Table mode, print a list of '\n' separated word (top-to-bottom
- *!       order).
+ *!       Table mode, print a list of @expr{'\n'@} separated words
+ *!       (top-to-bottom order).
  *!     @value '$'
  *!       Inverse table mode (left-to-right order).
  *!     @value 'n'
@@ -173,16 +173,16 @@
  *!     @value 'O'
  *!       Any value, debug style. Do not rely on the exact formatting;
  *!       how the result looks can vary depending on locale, phase of
- *!       the moon or anything else the _sprintf method implementor
- *!       wanted for debugging.
+ *!       the moon or anything else the @[lfun::_sprintf()] method
+ *!       implementor wanted for debugging.
  *!     @value 'H'
- *!       Binary Hollerith string. Equivalent to sprintf("%c%s",
- *!       strlen(str), str). Arguments (such as width etc) adjust the
+ *!       Binary Hollerith string. Equivalent to @expr{sprintf("%c%s",
+ *!       strlen(str), str)@}. Arguments (such as width etc) adjust the
  *!       length-part of the format. Requires 8-bit strings.
  *!     @value 'n'
- *!       No argument. Same as '%s' with an empty string as argument.
+ *!       No argument. Same as @expr{"%s"@} with an empty string as argument.
  *!       Note: Does take an argument array (but ignores its content)
- *!       if the modifier '@@' is active.
+ *!       if the modifier @expr{'@@'@} is active.
  *!     @value 't'
  *!       Type of the argument.
  *!     @value '{'
@@ -200,7 +200,7 @@
  *!
  *! @note
  *!   sprintf-style formatting is applied by many formatting functions, such
- *!   @[write()] and @[werror]. It is also possible to get sprintf-style
+ *!   @[write()] and @[werror()]. It is also possible to get sprintf-style
  *!   compile-time argument checking by using the type-attributes
  *!   @[sprintf_format] or @[strict_sprintf_format] in combination
  *!   with @[sprintf_args].
@@ -212,6 +212,7 @@
  *!   Support for specifying modifiers via a mapping was added in Pike 7.8.
  *!
  *! @example
+ *! @code
  *! Pike v7.4 release 13 running Hilfe v3.5 (Incremental Pike Frontend)
  *! > sprintf("The unicode character %c has character code %04X.", 'A', 'A');
  *! (1) Result: "The unicode character A has character code 0041."
@@ -304,6 +305,7 @@
  *! > write("%|*s\n",screen_width, "THE END");
  *!                                THE END
  *! (14) Result: 71
+ *! @endcode
  *!
  *! @seealso
  *!   @[lfun::_sprintf()], @[strict_sprintf_format], @[sprintf_format],
@@ -344,15 +346,15 @@ struct format_info
 {
   char *fi_free_string;
   struct pike_string *to_free_string;
-  PCHARP b;
-  ptrdiff_t len;
-  ptrdiff_t width;
-  int precision;
-  PCHARP pad_string;
-  ptrdiff_t pad_length;
-  int column_entries;
+  PCHARP b;		/* Buffer to format */
+  ptrdiff_t len;	/* Buffer length */
+  ptrdiff_t width;	/* Field width (handled by fix_field) */
+  int precision;	/* Field precision (handled by 'boduxXefgEGsq') */
+  PCHARP pad_string;	/* Padding (handled by fix_field) */
+  ptrdiff_t pad_length;	/* Padding length (handled by fix_field) */
+  int column_entries;	/* Number of column entries (handled by do_one) */
   short flags;
-  char pos_pad;
+  char pos_pad;		/* Positive padding (handled by fix_field) */
   int column_width;
   ptrdiff_t column_modulo;
 };
@@ -684,7 +686,7 @@ static void sprintf_error(struct format_stack *fs,
   va_end(args);
 }
 
-/* This is called once for every '%' on every ouputted line
+/* This is called once for every '%' on every outputted line
  * it takes care of linebreak and column mode. It returns 1
  * if there is more for next line.
  */
