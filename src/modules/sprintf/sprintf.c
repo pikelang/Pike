@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.162 2009/04/15 21:31:58 grubba Exp $
+|| $Id: sprintf.c,v 1.163 2009/04/15 22:14:28 grubba Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -206,10 +206,12 @@
  *!   with @[sprintf_args].
  *!
  *! @note
- *!   The 'q' operator was added in Pike 7.7.
+ *!   The @expr{'q'@} operator was added in Pike 7.7.
  *!
  *! @note
  *!   Support for specifying modifiers via a mapping was added in Pike 7.8.
+ *!   This support can be tested for with the constant
+ *!   @[String.__HAVE_SPRINTF_STAR_MAPPING__].
  *!
  *! @example
  *! @code
@@ -309,7 +311,7 @@
  *!
  *! @seealso
  *!   @[lfun::_sprintf()], @[strict_sprintf_format], @[sprintf_format],
- *!   @[sprintf_args]
+ *!   @[sprintf_args], @[String.__HAVE_SPRINTF_STAR_MAPPING__].
  */
 #include "global.h"
 #include "pike_error.h"
@@ -2580,6 +2582,21 @@ void f___handle_sprintf_format(INT32 args)
  *!   @[strict_sprintf_format], @[sprintf_format], @[sprintf()]
  */
 
+/*! @module String
+ */
+
+/*! @decl constant __HAVE_SPRINTF_STAR_MAPPING__ = 1
+ *!
+ *!   Presence of this symbol indicates that @[sprintf()] supports
+ *!   mappings for the @tt{'*'@}-modifier syntax.
+ *!
+ *! @seealso
+ *!   @[sprintf()], @[lfun::_sprintf()]
+ */
+
+/*! @endmodule
+ */
+
 PIKE_MODULE_INIT
 {
   struct pike_string *attr;
@@ -2623,6 +2640,8 @@ PIKE_MODULE_INIT
 	    OPT_TRY_OPTIMIZE,
 	    optimize_sprintf,
 	    0);
+
+  add_integer_constant("__HAVE_SPRINTF_STAR_MAPPING__",1,0);
 }
 
 PIKE_MODULE_EXIT

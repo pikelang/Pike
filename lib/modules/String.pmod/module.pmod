@@ -18,6 +18,8 @@ constant string2hex = __builtin.string2hex;
 constant hex2string = __builtin.hex2string;
 constant secure = __builtin.string_secure;
 
+constant __HAVE_SPRINTF_STAR_MAPPING__ = global.sprintf.__HAVE_SPRINTF_STAR_MAPPING__;
+
 //! This function implodes a list of words to a readable string, e.g.
 //! @expr{({"straw","berry","pie"})@} becomes
 //! @expr{"straw, berry and pie"@}. If the separator is omitted, the
