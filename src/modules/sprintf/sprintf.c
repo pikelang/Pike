@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.160 2009/04/01 20:46:57 mast Exp $
+|| $Id: sprintf.c,v 1.161 2009/04/15 18:53:44 grubba Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -90,15 +90,26 @@
  *!     @value '$'
  *!       Inverse table mode (left-to-right order).
  *!     @value 'n'
- *!       (Where n is a number or *) field size specifier.
+ *!     @value ':n'
+ *!       (Where n is a number or *) field width specifier.
  *!     @value '.n'
  *!       Precision specifier.
- *!     @value ':n'
- *!       Field size precision specifier.
  *!     @value ';n'
  *!       Column width specifier.
  *!     @value '*'
- *!       If n is a * then next argument is used for precision/field size.
+ *!       If n is a @tt{*@} then next argument is used for precision/field
+ *!       size. The argument may either be an integer, or a modifier mapping
+ *!       as received by @[lfun::_sprintf()]:
+ *!       @mapping
+ *!         @member int|void "precision"
+ *!           Precision.
+ *!         @member int(0..)|void "width"
+ *!           Field width.
+ *!         @member int(0..1)|void "flag_left"
+ *!           Indicates that the output should be left-aligned.
+ *!         @member int(0..)|void "indent"
+ *!           Indentation level in @tt{%O@}-mode.
+ *!       @endmapping
  *!     @value "'"
  *!       Set a pad string. @tt{'@} cannot be a part of the pad string (yet).
  *!     @value '~'
@@ -196,6 +207,9 @@
  *!
  *! @note
  *!   The 'q' operator was added in Pike 7.7.
+ *!
+ *! @note
+ *!   Support for specifying modifiers via a mapping was added in Pike 7.8.
  *!
  *! @example
  *! Pike v7.4 release 13 running Hilfe v3.5 (Incremental Pike Frontend)
@@ -1009,7 +1023,7 @@ static void low_pike_sprintf(struct format_stack *fs,
 			     int compat_mode)
 {
   int argument=0;
-  int tmp,setwhat,d,e;
+  int tmp,setwhat,d,e,indent;
   char buffer[140];
   struct format_info *f,*start;
   double tf;
@@ -1056,6 +1070,7 @@ static void low_pike_sprintf(struct format_stack *fs,
     arg=NULL;
     setwhat=0;
     begin=a;
+    indent = 0;
 
     for(INC_PCHARP(a,1);;INC_PCHARP(a,1))
     {
@@ -1091,7 +1106,42 @@ static void low_pike_sprintf(struct format_stack *fs,
 	goto got_arg;
 
       case '*':
-	GET_INT(tmp);
+	{
+	  struct svalue *sval;
+	  struct mapping *m;
+	  GET_SVALUE(sval);
+	  if (sval->type == T_INT) {
+	    tmp = sval->u.integer;
+	    goto got_arg;
+	  } else if (sval->type != T_MAPPING) {
+	    sprintf_error(fs, "Wrong type for argument %d: "
+			  "expected %s, got %s.\n",
+			  argument+1, "int|mapping(string:int)",
+			  get_name_of_type(sval->type));
+	  }
+	  m = sval->u.mapping;
+	  if ((sval = simple_mapping_string_lookup(m, "precision")) &&
+	      (sval->type == T_INT)) {
+	    fs->fsp->precision = sval->u.integer;
+	  }
+	  if ((sval = simple_mapping_string_lookup(m, "width")) &&
+	      (sval->type == T_INT) && (sval->u.integer >= 0)) {
+	    fs->fsp->width = sval->u.integer;
+	  }
+	  if ((sval = simple_mapping_string_lookup(m, "flag_left")) &&
+	      (sval->type == T_INT)) {
+	    if (sval->u.integer) {
+	      fs->fsp->flags |= FIELD_LEFT;
+	    } else {
+	      fs->fsp->flags &= ~FIELD_LEFT;
+	    }
+	  }
+	  if ((sval = simple_mapping_string_lookup(m, "indent")) &&
+	      (sval->type == T_INT) && (sval->u.integer >= 0)) {
+	    indent = sval->u.integer;
+	  }
+	  continue;
+	}
 
       got_arg:
 	switch(setwhat)
@@ -1633,7 +1683,7 @@ static void low_pike_sprintf(struct format_stack *fs,
 	  dynbuf_string s;
 
 	  init_buf(&save_buf);
-	  describe_svalue(t,0,0);
+	  describe_svalue(t,indent,0);
 	  s=complex_free_buf(&save_buf);
 	  fs->fsp->b=MKPCHARP(s.str,0);
 	  fs->fsp->len=s.len;
@@ -1930,15 +1980,6 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
 	break;
 
       /* First the modifiers */
-      case '0':
-	if (setwhat<2) continue;
-      case '1': case '2': case '3':
-      case '4': case '5': case '6':
-      case '7': case '8': case '9':
-	tmp=STRTOL_PCHARP(a,&a,10);
-	INC_PCHARP(a,-1);
-	goto got_arg;
-
       case '*':
 	tmp = 0;
 	if (setwhat < 2) {
@@ -1946,8 +1987,21 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
 	} else {
 	  push_int_type(MIN_INT32, MAX_INT32);
 	}
+	/* Allow a mapping in all cases. */
+	push_int_type(MIN_INT32, MAX_INT32);
+	push_type(T_STRING);
+	push_int_type(MIN_INT32, MAX_INT32);
+	push_reverse_type(T_MAPPING);
+	push_type(T_OR);
+	continue;
 
-      got_arg:
+      case '0':
+	if (setwhat<2) continue;
+      case '1': case '2': case '3':
+      case '4': case '5': case '6':
+      case '7': case '8': case '9':
+	tmp=STRTOL_PCHARP(a,&a,10);
+	INC_PCHARP(a,-1);
 	switch(setwhat)
 	{
 	case 0: case 1:
