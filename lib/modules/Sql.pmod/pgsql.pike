@@ -1779,7 +1779,11 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
 	    { case TEXTOID:
 	      case BPCHAROID:
 	      case VARCHAROID:
-	      { value=(string)value;
+	      { if(!value)
+		{ plugbuf+=({_c.plugint32(-1)});
+		  break;
+		}
+		value=(string)value;
 		switch(cenc)
 		{ case UTF8CHARSET:
 		    value=string_to_utf8(value);
@@ -1796,6 +1800,10 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
 	      }
 	      default:
 	      { int k;
+		if(!value)
+		{ plugbuf+=({_c.plugint32(-1)});
+		  break;
+		}
 		value=(string)value;
 		if(String.width(value)>8)
 		  ERROR("Wide string %O not supported for type OID %d\n",
