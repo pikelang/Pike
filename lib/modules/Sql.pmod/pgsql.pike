@@ -640,10 +640,7 @@ final int _decodemsg(void|state waitforstate)
 	    sendpass=pass;
 	    break;
 	  case 4:PD("CryptPassword\n");
-	    if(msglen<2)
-	      errtype=protocolerror;
-	    sendpass=_c.getstring(msglen);msglen=0;			// salt
-	    errtype=protocolunsupported; // Pike lacks function that takes salt
+	    errtype=protocolunsupported;
 	    break;
 	  case 5:PD("MD5Password\n");
 	    if(msglen<4)
