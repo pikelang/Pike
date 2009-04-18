@@ -456,7 +456,9 @@ j.  The most bothersome problem is that things are no longer freed
     right away when running out of refs. See issue "Immediate
     destruct/free when refcount reaches zero".
 
-k.  FIXME: How to solve weak refs?
+k.  Weak refs are handled with a separate refcount in each thing. That
+    means things have two refcounts: One for weak refs and another for
+    all refs. See also issue "Weak ref garbage collection".
 
 l.  One might consider separating the refcounts from the things by
     using a hash table. This makes sense when considering that only
@@ -708,6 +710,32 @@ work in general. This is the case even if the micro-gc is implemented,
 since stack refs aren't counted.
 
 FIXME: List cases and discuss solutions.
+
+
+Issue: Weak ref garbage collection
+
+When the two refcounters (one for total number of refs and another for
+the number of weak refs) are equal then the thing is semantically
+freed. The problem is that it still got refs which might be followed
+later, so the gc cannot free it.
+
+There are two ways to tackle this problem:
+
+One alternative is to keep track of all the weak pointers that point
+to each thing, so that they can be followed backwards and cleared when
+only weak pointers are left. That tracking requires additional data
+structures and the associated overhead, and clearing the other
+pointers might require lock space locks to be taken.
+
+Another alternative is to free all refs emanating from the thing with
+only weak pointers left, and keep it as an empty structure (a
+destructed object, an empty array/multiset/mapping, or an empty
+skeleton program which contains no identifiers). This approach
+requires a flag to recognize such semi-freed things, and that all code
+that dereference weak pointers check for it. A problem is that data
+blocks remain allocated longer than necessary, maybe even
+indefinitely. That can be mitigated to some degree by shortening them
+using realloc(3).
 
 
 Issue: Moving things between lock spaces
