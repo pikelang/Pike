@@ -424,11 +424,29 @@ f.  The refcounter word is changed to hold both normal refcount, weak
     table.
 
 g.  The collector typically runs concurrently with the rest of the
-    program. It sometimes interrupts the other threads for handshakes.
-    These interrupts are not aligned with the evaluator callback
-    calls, since that would cause too much pausing of the collector
-    thread. This requires that threads can be stopped and resumed
-    preemptively. See issue "Preemptive thread suspension".
+    program, but there are some situations when it has to synchronize
+    with them (aka handshake). In the research paper this is done by
+    letting the gc thread suspend and resume the other threads (one at
+    a time). Since preemptive suspend and resume operations are
+    generally unsupported in thread libraries (c.f. issue "Preemptive
+    thread suspension"), a cooperative approach is necessary:
+
+    The gc thread sets a state flag that all other threads need a
+    handshake. Threads that are running do the handshake work
+    themselves before waiting on a mutex or in the next evaluator
+    callback call, and the gc thread handles the threads that are
+    currently waiting (ensuring that they don't start in the
+    meantime).
+
+    The work that needs to be done during a handshake is to set some
+    flags and record some local thread state for use by the gc thread.
+    This can be done concurrently in several threads, so no locking is
+    necessary.
+
+    Due to this interaction with the other threads, it's vital that
+    the gc thread does not hold any mutex, and that it takes care to
+    avoid being stopped (e.g. through an interrupt) while it works on
+    behalf on another thread.
 
 h.  All garbage collection, both for noncyclic and cyclic garbage, are
     discovered and handled by the gc thread. The other threads never
@@ -474,8 +492,6 @@ l.  One might consider separating the refcounts from the things by
     refcounter - research shows that most objects in a refcounted heap
     have very few refs. Overflowing (a.k.a. "stuck") refcounters at 3
     would then be stored in a hash table.
-
-m.  FIXME: Is the third NOP handshake really necessary?
 
 To simplify memory handling, the gc should be used consistently on all
 heap structs, regardless whether they are pike visible things or not.
@@ -1265,9 +1281,9 @@ o  FIXME: More..
 
 Issue: Preemptive thread suspension
 
-The proposed gc should preferably be able to suspend other threads
-preemptively (see issue "Garbage collector", item g). Survey of
-platform support for this:
+The proposed gc as presented in the research paper needs to suspend
+and resume other threads. A survey of platform support for preemptive
+thread suspension:
 
 o  POSIX threads: No support. Deprecated and removed from the standard
    since it can very easily lead to deadlocks. On some systems there
@@ -1276,11 +1292,8 @@ o  POSIX threads: No support. Deprecated and removed from the standard
 o  Windows: SuspendThread and ResumeThread exists but are only
    intended for use by debuggers.
 
-It's clear that a nonpreemptive fallback is required.
-
-Regardless of method, it's vital that the gc thread does not hold any
-mutex, and that it takes care to avoid being stopped while it suspends
-another thread. This is more important if a preemptive method is used.
+It's clear that a nonpreemptive method is required. See issue "Garbage
+collector" item g for details on that.
 
 
 Issue: OpenMP
