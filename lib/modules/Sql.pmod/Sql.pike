@@ -1,5 +1,5 @@
 /*
- * $Id: Sql.pike,v 1.96 2009/04/18 18:46:29 grubba Exp $
+ * $Id: Sql.pike,v 1.97 2009/04/18 18:57:07 grubba Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -440,7 +440,7 @@ protected ZeroWrapper zero = ZeroWrapper();
 //!   The arguments following the query.
 //!
 //! @returns
-//!   Returns an arrsy with two elements:
+//!   Returns an array with two elements:
 //!   @array
 //!     @elem string 0
 //!       The query altered to use bindings-syntax.
