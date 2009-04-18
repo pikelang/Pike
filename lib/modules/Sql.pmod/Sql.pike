@@ -1,5 +1,5 @@
 /*
- * $Id: Sql.pike,v 1.95 2009/04/18 14:14:35 grubba Exp $
+ * $Id: Sql.pike,v 1.96 2009/04/18 18:46:29 grubba Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -406,6 +406,9 @@ string|object compile_query(string q)
 }
 
 //! Wrapper to handle zero.
+//!
+//! @seealso
+//!   @[zero]
 protected class ZeroWrapper
 {
   //! @returns
@@ -416,7 +419,7 @@ protected class ZeroWrapper
   //!     @value "ZeroWrapper()"
   //!       If @[fmt] is @expr{'O'@}.
   //!   @endstring
-  //!   Otherwise it formats a zero.
+  //!   Otherwise it formats a @expr{0@} (zero).
   protected string _sprintf(int fmt, mapping(string:mixed) params)
   {
     if (fmt == 's') return "NULL";
@@ -424,6 +427,9 @@ protected class ZeroWrapper
     return sprintf(sprintf("%%*%c", fmt), params, 0);
   }
 }
+
+//! Instance of @[Zerowrapper] used by @[handle_extraargs()].
+protected ZeroWrapper zero = ZeroWrapper();
 
 //! Handle @[sprintf]-based quoted arguments
 //!
@@ -455,7 +461,7 @@ protected array(string|mapping(string|int:mixed))
       continue;
     }
     if (intp(s) || floatp(s)) {
-      args[j] = s || ZeroWrapper();
+      args[j] = s || zero;
       continue;
     }
     ERROR("Wrong type to query argument #"+(j+1)+".\n");
