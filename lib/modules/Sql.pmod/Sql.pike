@@ -1,5 +1,5 @@
 /*
- * $Id: Sql.pike,v 1.93 2009/01/06 10:05:03 srb Exp $
+ * $Id: Sql.pike,v 1.94 2009/04/18 12:27:15 grubba Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -405,7 +405,22 @@ string|object compile_query(string q)
   return q;
 }
 
-//! Handle sprintf-based quoted arguments
+//! Handle @[sprintf]-based quoted arguments
+//!
+//! @param query
+//!   The query as sent to @[query()] or @[big_query()].
+//!
+//! @param extraargs
+//!   The arguments following the query.
+//!
+//! @returns
+//!   Returns an arrsy with two elements:
+//!   @array
+//!     @elem string 0
+//!       The query altered to use bindings-syntax.
+//!     @elem mapping(string|int:mixed) 1
+//!       A bindings mapping.
+//!   @endarray
 protected array(string|mapping(string|int:mixed))
   handle_extraargs(string query, array(mixed) extraargs) {
 
@@ -433,7 +448,7 @@ protected array(string|mapping(string|int:mixed))
 //!   Send an SQL query to the underlying SQL-server.
 //! @param q
 //!   Query to send to the SQL-server. This can either be a string with the
-//!   query, or a previously compiled query (see compile_query()).
+//!   query, or a previously compiled query (see @[compile_query()]).
 //! @param extraargs
 //!   This parameter, if specified, can be in two forms:
 //!
