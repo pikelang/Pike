@@ -1,5 +1,17 @@
 START_MARKER
 
+test_any([[
+  Sql.Sql sql = Sql.Sql("null://");
+  return sql->query("INSERT INTO foo (foo, bar) VALUES (%s, %s) WHERE bar = %d",
+                    0, "blah", 0)[0]->query;
+]], "INSERT INTO foo (foo, bar) VALUES (NULL, :arg0) WHERE bar = 0")
+
+test_any([[
+  Sql.Sql sql = Sql.Sql("null://");
+  return sql->query("INSERT INTO foo (foo, bar) VALUES (%s, %s) WHERE bar = %d",
+                    0, "blah", 0)[0]->formatted_query;
+]], "INSERT INTO foo (foo, bar) VALUES (NULL, 'quote(\"blah\")') WHERE bar = 0")
+
 test_do([[
   catch {
     add_constant( "db", Sql.Sql("mysql://localhost") );
