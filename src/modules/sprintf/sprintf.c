@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.164 2009/04/19 19:17:31 grubba Exp $
+|| $Id: sprintf.c,v 1.165 2009/04/19 19:34:15 grubba Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -164,7 +164,9 @@
  *!       Like @tt{%e@}, but uses uppercase @tt{E@} for exponent.
  *!     @value 'F'
  *!       Binary IEEE representation of float (@tt{%4F@} gives 
- *!       single precision, @tt{%8F@} gives double precision.)
+ *!       single precision, @tt{%8F@} gives double precision)
+ *!       in network (big endian) byte order. To get little endian
+ *!       byte order, negate the field size.
  *!     @value 's'
  *!       String.
  *!     @value 'q'
@@ -212,6 +214,11 @@
  *!   Support for specifying modifiers via a mapping was added in Pike 7.8.
  *!   This support can be tested for with the constant
  *!   @[String.__HAVE_SPRINTF_STAR_MAPPING__].
+ *!
+ *! @note
+ *!   Support for specifying little endian byte order to @expr{'F'@}
+ *!   was added in Pike 7.8. This support can be tested for with the
+ *!   constant @[String.__HAVE_SPRINTF_NEGATIVE_F__].
  *!
  *! @example
  *! @code
@@ -311,7 +318,8 @@
  *!
  *! @seealso
  *!   @[lfun::_sprintf()], @[strict_sprintf_format], @[sprintf_format],
- *!   @[sprintf_args], @[String.__HAVE_SPRINTF_STAR_MAPPING__].
+ *!   @[sprintf_args], @[String.__HAVE_SPRINTF_STAR_MAPPING__],
+ *!   @[String.__HAVE_SPRINTF_NEGATIVE_F__].
  */
 #include "global.h"
 #include "pike_error.h"
@@ -2614,6 +2622,15 @@ void f___handle_sprintf_format(INT32 args)
  *!   @[sprintf()], @[lfun::_sprintf()]
  */
 
+/*! @decl constant __HAVE_SPRINTF_NEGATIVE_F__ = 1
+ *!
+ *!   Presence of this symbol indicates that @[sprintf()] supports
+ *!   little endian output for the @tt{'F'@}-format specifier.
+ *!
+ *! @seealso
+ *!   @[sprintf()], @[lfun::_sprintf()]
+ */
+
 /*! @endmodule
  */
 
@@ -2660,8 +2677,6 @@ PIKE_MODULE_INIT
 	    OPT_TRY_OPTIMIZE,
 	    optimize_sprintf,
 	    0);
-
-  add_integer_constant("__HAVE_SPRINTF_STAR_MAPPING__",1,0);
 }
 
 PIKE_MODULE_EXIT
