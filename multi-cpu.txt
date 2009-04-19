@@ -142,10 +142,11 @@ from a shared thing.
 
 A shared thing never automatically becomes thread local, but there is
 a function to explicitly "take" it. It would first have to make sure
-there are no references to it from shared or other thread local
-things. Thread.Queue has a special case so that if a thread local
-thing with no other refs is enqueued, it is disowned by the current
-thread, and later becomes thread local in the thread that dequeues it.
+there are no references to it from shared or other thread local things
+(c.f. issue "Moving things between lock spaces"). Thread.Queue has a
+special case so that if a thread local thing with no other refs is
+enqueued, it is disowned by the current thread, and later becomes
+thread local in the thread that dequeues it.
 
 
 Issue: Lock spaces
@@ -199,97 +200,200 @@ access.
 
 The scope of a lock space lock is (at least) the state inside all the
 things it contains, but not the set of things itself, i.e. things
-might be added to a lock space without holding a write lock (provided
-the memory structure allows it). Removing a thing from a lock space
-always requires the write lock since that is necessary to ensure that
-a lock actually governs a thing for as long as it is held (regardless
-it's for reading or writing).
-
-FIXME: Allow removing garbage from a lock space without the write
-lock?
+might be added to a lock space without holding a write lock. Removing
+a thing from a lock space always requires the write lock since that is
+necessary to ensure that a lock actually governs a thing for as long
+as it is held (regardless it's for reading or writing).
 
 See also issues "Memory object structure" and "Lock space locking" for
 more details.
 
 
+Issue: Garbage collector
+
+Pike has used refcounting to collect noncyclic structures, combined
+with a stop-the-world periodical collector for cyclic structures. The
+periodic pauses are already a problem, and it only gets worse as the
+heap size and number of concurrent threads increase. Since the gc
+needs an overhaul anyway, it makes sense to replace it with a more
+modern solution.
+
+PHD-200-10.ps [FIXME: ref] is a recent thesis work that combines
+several state-of-the-art gc algorithms to an efficient whole: It
+describes a generational collector that uses deferred-update
+refcounting for old things with on-the-fly collection, and on-the-fly
+mark-and-sweep for young things. An on-the-fly cycle detector is also
+employed for the refcounted area. See said work for rationale and
+details.
+
+Effects of using this in Pike:
+
+a.  References from the C or pike stacks don't need any handling at
+    all (see also issue "Garbage collection and external references").
+
+b.  Special code is used to update refs in the heap. During certain
+    circumstances, before changing a pointer inside a thing which can
+    point to another thing, the state of all non-NULL pointers in it
+    are copied to a thread local log.
+
+c.  A new LogPointer field is required per thing. If a state copy has
+    taken place as described above, it points to the log that contains
+    the original pointer state of the thing.
+
+    Data containers that can be of arbitrary size (i.e. arrays,
+    mappings and multisets) should be segmented into fixed-sized
+    chunks with one LogPointer each, so that the state copy doesn't
+    get arbitrarily large.
+
+d.  The double-linked lists aren't needed. Hence two pointers less per
+    thing.
+
+e.  The refcounter word is changed to hold both normal refcount, weak
+    count(?), and flags. Overflowed counts are stored in a separate
+    hash table.
+
+f.  The collector typically runs concurrently with the rest of the
+    program. It sometimes interrupts the other threads for handshakes.
+    These interrupts are not aligned with the evaluator callback
+    calls, since that would cause too much pausing of the collector
+    thread. This requires that threads can be stopped and resumed
+    externally. FIXME: Verify this in pthreads and on windows.
+
+g.  All garbage collection, both for noncyclic and cyclic garbage, are
+    discovered and handled by the gc thread. The other threads never
+    frees any block known to the gc.
+
+g.  An effect of the above is that all garbage is discovered by a
+    separate collector thread which doesn't execute any other pike
+    code. This opens up the issue on how to call destruct functions.
+
+    At least thread local things should reasonably get their destruct
+    calls in that thread. A problem is however what to do when that
+    thread has exited or emigrated (see issue "Foreign thread
+    visits").
+
+    For shared things it's not clear which thread should call destruct
+    anyway, so in that case any thread could do it. It might however
+    be a good idea to not do it directly in the gc thread, since doing
+    so would require that thread too to be a proper pike thread with
+    pike stack etc; it seems better to keep it an "invisible"
+    low-level thread outside the "worker" threads. In programs with a
+    "backend thread" it could be useful to allow the gc thread wake up
+    the backend thread to let it execute the destruct calls.
+
+h.  The most bothersome problem is that things are no longer freed
+    right away when running out of refs. This behavior in Pike is used
+    implicitly in many places, mainly to release locks timely by just
+    putting them in a local variable that gets freed when the function
+    exits (either by normal return or by exception).
+
+    Maybe a solution can be devised to keep this characteristic in
+    that special case, i.e. when a thread local thing only got a
+    single reference from the stack. This should be easy to detect in
+    the compiler: It's an assignment to a local variable that never
+    gets referenced. That's already a warning, but it is currently
+    tuned down to not warn in these cases (precisely to allow this
+    problematic idiom).
+
+    So the compiler could in such cases add implicit destruct calls on
+    function exit. Consider however if someone adds e.g. a werror call
+    to print out a description of the MutexKey object. The local
+    variable is referenced, but one won't expect that the innocent
+    werror() would change the freeing of the MutexKey. It's therefore
+    probably better to strengthen the compiler warning and require
+    people to deal with it on the Pike level (a werror for debug
+    purposes is unlikely to be there permanently, at least).
+
+    Question: Are there more cases where pike programmers expect
+    immediate frees?
+
+i.  FIXME: How to solve weak refs?
+
+j.  One might consider separating the refcounts from the things by
+    using a hash table. This makes sense when considering that only
+    the collector thread is using the refcounts, thereby avoiding
+    false aliasing occurring from refcounter updates (and other gc
+    related flags) by that thread.
+
+    All the hash table lookups would however incur a significant
+    overhead in the gc thread. A better alternative would be to use a
+    bitmap based on the possible allocation slots used by the malloc
+    implementation, but that would require very tight integration with
+    the malloc system. The bitmap could work with only two bits per
+    refcounter - research shows that most objects in a refcounted heap
+    have very few refs. Overflowing (a.k.a. "stuck") refcounters at 3
+    would then be stored in a hash table.
+
+k.  FIXME: Is the third NOP handshake really necessary?
+
+To simplify memory handling, the gc should be used consistently on all
+heap structs, regardless whether they are pike visible things or not.
+An interesting question is whether the type info for every struct
+(more concretely, the address of some area where the gc can find the
+functions it needs to handle the struct) is carried in the struct
+itself (through a new pointer field), or if it continues to be carried
+in the context for every pointer to the struct (e.g. in the type field
+in svalues).
+
+
 Issue: Memory object structure
 
-Of concern are the refcounted memory objects known to the gc. They are
-called "things", to avoid confusion with "objects" which are the
-structs for pike objects.
+Of concern are the memory objects known to the gc. They are called
+"things", to avoid confusion with "objects" which are the structs for
+pike objects.
 
-There are three types of things:
+There are two types of things:
 
-o  First class things with ref counter, lock space pointer, and
-   double-linked list pointers (to be able to visit all things in
-   memory, regardless of other references). Most pike visible types
-   are first class things. The exceptions are ints and floats, which
-   are passed by value, and strings and types.
+o  First class things with gc header and lock space pointer. Most pike
+   visible types are first class things. The exceptions are ints and
+   floats, which are passed by value.
 
-o  Second class things with ref counter and lock space pointer but no
-   double-linked list pointers. These are always reached through
-   pointers from one or more first class things. It's the job of the
-   visit functions for those first class things to ensure that the gc
-   visits these, thus they don't need the double-linked list pointers.
-   Only strings and types are likely to be of this type.
-
-o  Third class things contain only a ref counter. They are similar to
-   second class except that their lock spaces are implicit from the
-   referencing things, which means all those things must always be in
-   the same lock space.
+o  Second class things contain only a gc header. They are similar to
+   first class except that their lock spaces are implicit from the
+   referencing things, which means all those referencing things must
+   always be in the same lock space.
 
 Thread local things could have NULL as lock space pointer, but as a
 debug measure they could also point to the thread object so that it's
 possible to detect bugs with a thread accessing things local to
 another thread.
 
-Before the multi-cpu architecture, all first class things are linked
-into the same global double-linked lists (one for each type: array,
-mapping, multiset, object, and program). This gets split into one set
-of double-linked lists for each thread and for each lock space. That
-allows things to be added and removed to a thread or lock space
-without requiring other locks (a lock-free double-linked list is
-apparently difficult to accomplish). It also allows the gc to do
-garbage collection locally in each thread and in each lock space
-(although cyclic structures over several lock spaces won't be freed
-that way).
+Before the multi-cpu architecture, there are global double-linked
+lists for each referenced pike type: array, mapping, multiset, object,
+and program (strings and types are handled differently). Thanks to the
+new gc, the double-linked lists aren't needed at all anymore.
 
-A global lock-free hash table (see issue "Lock-free hash table") is
-used to keep track of all lock space lock objects, and hence all
-things they contain in their double-linked lists.
+	    +----------+                      +----------+
+	    | Thread 1 |                      | Thread 2 |
+	   .+----------+.                    .+----------+.
+	  :   refs   O   :                  :   O   O      :
+     ,----- O <--> O      :          ,------- O         O ------.
+     |    :     O     O -----.       |      :      O  O    :    |
+     |     :............:    |       |       :............:     |
+ ref |                       | ref   | ref                      | ref
+     |                       |       |                          |
+    .|..............       ..v.......v.....  refs ..............|.
+   : |     refs     : ref :  O       O   O <------> O       O   v :
+  :  v  O <---> O ------------> O      O    :   :      O        O  :
+   : O    O    O  O :     : O       O   O  :     : O       O  O   :
+    +--------------+       +--------------+       +--------------+
+    | Lock space 1 |       | Lock space 2 |       | Lock space 3 |
+    +--------------+       +--------------+       +--------------+
 
-            +----------+                    +----------+
-            | Thread 1 |                    | Thread 2 |
-            +----------+                    +----------+
-            // \\  // \\                    // \\  // \\
-       ,--- O   O  O   O     ,------------- O   O  O   O ---.
-       |    \\ //  \\ //     |              \\ //  \\ //    |
-   ref |      O      O -.    | ref            O      O      | ref
-       |                |    |                              |
-       v  refs      ref |    v                              v
-       O <----- O       `--> O        O            O        O
-     // \\    // \\        // \\    // \\  refs  // \\    // \\
-     O   O -> O   O        O   O    O   O <----> O   O    O   O
-     \\ //    \\ //        \\ //    \\ //        \\ //    \\ //
-    +--------------+      +--------------+      +--------------+
-    | Lock space 1 |      | Lock space 2 |      | Lock space 3 |
-    +--------------+      +--------------+      +--------------+
-                 ^________          ^            ____^
-                          |         |           |
-+-----------------------+-|-+-----+-|-+-------+-|-+-----------------
-|                       | X |     | X |       | X |               ...
-+-----------------------+---+-----+---+-------+---+-----------------
+This figure tries to show some threads and lock spaces, and their
+associated things as O's inside the dotted areas. Some examples of
+possible references between things are included: Thread local things
+can only reference things belonging to the same thread or things in
+any lock space, while things in lock spaces can reference things in
+the same or other lock spaces. There can be cyclic structures that
+span lock spaces.
 
-Figure 2: "Space Invaders". The O's represent things, and the \\ and
-// represent the double-linked lists. Some examples of references
-between things are included, and at the bottom is the global hash
-table with pointers to all lock spaces.
-
-Accessing a lock space lock structure from the global hash table
-requires a hazard pointer (c.f. issue "Hazard pointers"). Accessing it
-from a thing is safe if the thread controls at least one ref to the
-thing, because a lock space has to be empty to delete the lock space
-lock struct.
+The lock space lock structs are tracked by the gc just like anything
+else, and they are therefore garbage collected when they become empty
+and unreferenced. The gc won't free a lock space lock struct that is
+locked since it always got at least one reference from the array of
+locked locks that each thread maintains (c.f. issue "Lock space
+locking").
 
 
 Issue: Lock space lock semantics
@@ -316,38 +420,18 @@ Allowing lock-free updates is attractive, so the standard read/write
 lock that governs the global lock space will probably be multiple
 read-safe/single write.
 
-An exception to the lock semantics above are the reference counters in
-refcounted things (c.f. issue "Refcounting and shared data"). A ref to
-a thing can always be added or removed if it is certain that the thing
-cannot asynchronously disappear. That means:
-
-o  Refcount changes must always be atomic, even when a write lock is
-   held.
-o  The refcount may be incremented or decremented when any kind of
-   read lock is held.
-o  The refcount may be incremented or decremented without any kind of
-   lock at all, provided the same thread already holds at least one
-   other ref to the same thing. This means another thread might hold a
-   write lock, but it still won't free the thing since the refcount
-   never can reach zero.
-o  A thing may be freed if its refcount is zero and a write lock is
-   held.
-
-FIXME: Whether or not to free a thing if its refcount is zero and only
-some kind of read lock is held is tricky. To allow that it's necessary
-to have an atomic-decrement-and-get instruction (can be emulated with
-CAS, though) to ensure no other thread is decrementing it and reaching
-zero at the same time. Lock-free linked lists are also necessary to
-make unlinking possible. Barring that, we need to figure out a policy
-for scheduling frees of things reaching refcount zero during read
-locks.
+An exception to the lock semantics above are refcounters or any other
+fields used by the gc (the gc typically runs concurrently in a thread
+of its own, and it doesn't heed any locks - see issue "Garbage
+collector"). A ref to a thing can always be added or removed, even if
+another thread holds an exclusive write lock on it. That since the
+thing will only be freed by the gc, which won't free it if a ref is
+added.
 
 
 Issue: Lock space locking
 
-Assuming that a thread already controls at least one ref to a thing
-(so it won't be freed asynchronously), this is the locking process
-before accessing it:
+This is the locking procedure to access a thing:
 
 1.  Read the lock space pointer. If it's NULL then the thing is thread
     local and nothing more needs to be done.
@@ -369,12 +453,6 @@ space. Still, a system where more arrays can be allocated and chained
 on would perhaps be prudent to avoid the theoretical possibility of
 running out of space for locked locks.
 
-"Controlling" a ref means either to add one "for the stack", or
-ensuring a lock on a thing that holds a ref. Note that implicit locks
-might be released in step 4, so unless the thread controls a ref to
-the referring thing too, it might no longer exist afterwards, and
-hence the thing itself might be gone.
-
 Since implicit locks can be released (almost) at will, they are open
 for performance tuning: Too long lock durations and they'll outlock
 other threads, too short and the locking overhead becomes more
@@ -383,52 +461,31 @@ at every evaluator callback call (i.e. at approximately every pike
 function call and return).
 
 
-Issue: Refcounting and shared data
+Issue: Moving things between lock spaces
 
-Using the traditional refcounting on shared data could easily produce
-hotspots: Some strings, shared constants, and the object instances for
-pike modules are often accessed from many threads, so their refcounts
-would be changed frequently from different processors.
+Things can be moved between lock spaces, or be made thread local or
+disowned. In all these cases, one or more things are given explicitly.
+It's natural if not only those things are moved, but also all other
+things in the same source lock space that are referenced from the
+given things and not from anywhere else (this operation is the same as
+Pike.count_memory does). In the case of making things thread local or
+disowned, it is also necessary to check that the explicitly given
+things aren't referenced from elsewhere.
 
-E.g. making a single function call in a pike module requires the
-refcount of the module object to be increased during the call since
-there is a new reference from a pike_frame. The refcounters in the
-module objects for commonly used modules like Stdio.pmod/module.pmod
-could easily become hotspots.
+FIXME: This is a problem with the proposed garbage collector (see
+issue "Garbage collector"). Old things got refcounts that can be used,
+but they might be stale, and the logging doesn't provide information
+in the form we need. New things are even worse since they got no
+refcounts at all that can be used to check for outside refs.
+Furthermore, there is a race since an external ref can be added at any
+time from any thread.
 
-Atomic increments and decrements are not enough to overcome this - the
-memory must not be changed at all to avoid slow synchronizations
-between cpu local caches.
+All this is settled when the gc is run: If the "controlled" refs are
+temporarily ignored then the set to move is the one that would turn
+into garbage. But it is not good to either have to wait for the gc or
+run it synchronously.
 
-Observation: Refcounters become hotspots primarily in globally
-accessible shared data, which for the most part has a long lifetime
-(i.e. programs, module objects, and constants). Otoh, they are most
-valuable in short-lived data (shared or not), which would produce lots
-of garbage if they were to be reaped by the gc instead.
-
-Following this observation, the problem with refcounter hotspots can
-to a large degree be mitigated by simply turning off refcounting in
-the large body of practically static data in the shared runtime
-environment.
-
-A good way to do that is to extend the resolver in the master to mark
-all programs it compiles, their constants, and the module objects, so
-that refcounting of them is disabled. To do this, there has to be a
-function similar to Pike.count_memory that can walk through a
-structure recursively and mark everything in it. When those things
-lose their refs, they will always become garbage that only is freed by
-the gc.
-
-Question: Is there data that is missed with this approach?
-
-A disabled refcounter is recognized by a negative value and flagged by
-setting the topmost two bits to one and the rest to zero, i.e. a value
-in the middle of the negative range. That way, in case there is code
-that steps the refcounter then it stays negative. (Such code is still
-bad for performance and should be fixed, though.)
-
-Disabling refcounting requires the gc to operate differently; see
-issue "Garbage collection and external references".
+Also, the problem above applies to Pike.count_memory too.
 
 
 Issue: Strings
@@ -452,25 +509,17 @@ Issue: Types
 
 Like strings, types are globally unique and always shared in Pike.
 That means lock-free access to them is desirable, and it should also
-be doable fairly easily since they are constant (except for the
-refcounts which can be updated atomically). Otoh it's probably not as
-vital as for strings since types typically only are built during
-compilation.
-
-Types are more or less always part of global shared data. That
-suggests they should have their refcounts disabled most of the time
-(see issue "Refcounting and shared data"). But again, since types
-typically only get built during compilation, their refcounts probably
-won't become hotspots anyway. So it looks like they could be exempt
-from that rule.
+be doable fairly easily since they are constant. Otoh it's probably
+not as vital as for strings since types typically only are built
+during compilation.
 
 
 Issue: Shared mapping and multiset data blocks
 
 An interesting issue is if things like mapping/multiset data blocks
-should be second or third class things (c.f. issue "Memory object
-structure"). If they're third class it means copy-on-write behavior
-doesn't work across lock spaces. If they're second class it means
+should be first or second class things (c.f. issue "Memory object
+structure"). If they're second class it means copy-on-write behavior
+doesn't work across lock spaces. If they're first class it means
 additional overhead handling the lock spaces of the mapping data
 blocks, and if a mapping data is shared between lock spaces then it
 has to be in some third lock space of its own, or in the global lock
@@ -569,9 +618,9 @@ and then for each thing subtract it from its refcount. If the result
 isn't zero then there are external references (e.g. from global C
 variables or from the C stack) and the thing is not garbage.
 
-Since refcounting can be disabled in some objects (see issue
-"Refcounting and shared data"), this approach no longer work; the gc
-has to be changed to find external references some other way:
+The new gc (c.f. issue "Garbage collector") does not refcount external
+refs and refs from the C or Pike stacks. It needs to find them some
+other way:
 
 References from global C variables are few, so they can be dealt with
 by requiring C modules and the core parts to provide callbacks that
@@ -581,10 +630,10 @@ is however not compatible with old C modules.
 References from C stacks are common, and it is infeasible to require
 callbacks that keep track of them. The gc instead has to scan the C
 stacks for the threads and treat any aligned machine word containing
-an apparently valid pointer to a known thing as an external reference.
-This is the common approach used by standalone gc libraries that don't
-require application support. For reference, here is one such garbage
-collector, written in C++:
+an apparently valid pointer to a gc candidate thing as an external
+reference. This is the common approach used by standalone gc libraries
+that don't require application support. For reference, here is one
+such garbage collector, written in C++:
 http://developer.apple.com/DOCUMENTATION/Cocoa/Conceptual/GarbageCollection/Introduction.html#//apple_ref/doc/uid/TP40002427
 Its source is here:
 http://www.opensource.apple.com/darwinsource/10.5.5/autozone-77.1/
@@ -592,27 +641,6 @@ http://www.opensource.apple.com/darwinsource/10.5.5/autozone-77.1/
 The same approach is also necessary to cope with old C modules (see
 issue "C module compatibility"), but since global C level pointers are
 few, it might not be mandatory to get this working.
-
-Btw, using this approach to find external refs should be considerably
-more efficient than the old "check" pass, even if C stacks are scanned
-wholesale.
-
-
-Issue: Local garbage collection
-
-Each thread periodically invokes a gc that only looks for garbage in
-the local data of that thread. This can naturally be done without
-disturbing the other threads. It follows that this gc also can be
-disabled on a per-thread basis. This is a reason for keeping thread
-local data in separate double-linked lists (see issue "Memory object
-structure").
-
-Similarly, if gc statistics are added to each lock space, they could
-also be gc'd for internal garbage at appropriate times when they get
-write locked by some thread. That might be interesting since known
-cyclic structures could then be put in lock spaces of their own and be
-gc'd efficiently without a global gc. Note that a global gc is still
-required to clean up cycles with things in more than one lock space.
 
 
 Issue: Global pike level caches
@@ -644,11 +672,6 @@ should be small enough to make this viable in many cases.
 
 FIXME: Check cache line sizes on the other important architectures.
 
-Worth noting that the problem is greatest for the frequently changed
-ref counters at the start of each thing, so the most important thing
-is to keep ref counters separated. I.e. things larger than a cache
-line can probably be packed without padding.
-
 Another way is to move things when they get shared, but that is pretty
 complicated and slow.
 
@@ -672,6 +695,21 @@ by freeing the whole pool altogether. FIXME: Investigate alternatives
 here.
 
 See also issue "False sharing".
+
+
+Issue: Heap size control
+
+There should be better tools to control the heap size. It should be
+possible to set the wanted heap size so that the gc runs timely before
+that limit is reached. Pike should detect the available amount of real
+memory (i.e. not counting swap) to use as default. The gc should still
+use a garbage projection strategy to keep the process below the
+configured maximum size for as long as possible. This is more
+important if the gc is used also for previously refcounted garbage
+(c.f. issue "Garbage collector").
+
+Malloc calls should be wrapped to allow the gc to run in blocking mode
+in case they fail.
 
 
 Issue: The compiler
@@ -762,7 +800,8 @@ allocated again (common for block_alloc).
 Hazard pointers are a good way to solve these problems without leaving
 the blocks to the garbage collector (see
 http://www.research.ibm.com/people/m/michael/ieeetpds-2004.pdf). So a
-generic hazard pointer tool is necessary.
+generic hazard pointer tool might be necessary for blocks not known to
+the gc.
 
 Note however that a more difficult variant of the ABA problem still
 can occur when the block cannot be freed after leaving the data
@@ -863,6 +902,32 @@ o  Windows/Visual Studio: Got "Interlocked Variable Access":
    http://msdn.microsoft.com/en-us/library/ms684122.aspx
 
 o  FIXME: More..
+
+
+Issue: OpenMP
+
+OpenMP (see www.openmp.org) is a system to parallelize code using
+pragmas that are inserted into the code blocks. It can be used to
+easily parallelize otherwise serial internal algorithms like searching
+and all sorts of loops over arrays etc. Thus it addresses a different
+problem than the high-level parallelizing architecture above, but it
+might provide significant improvements nevertheless.
+
+It's therefore worthwhile to look into how this can be deployed in the
+Pike sources. If support is widespread enough, it could be considered
+to even make it a requirement to be able to deploy the builtin tools
+for atomicity and ordering (provided they are useful outside the omp
+parallellized blocks).
+
+Compiler support (taken from www.openmp.org):
+
+o  gcc since 4.3.2.
+o  Microsoft Visual Studio 2008 or later.
+o  Sun compiler (starting version unknown).
+o  Intel compiler since 10.1.
+o  ..and some more.
+
+FIXME: Survey platform-specific limitations.
 
 
 Various links
