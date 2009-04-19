@@ -1,0 +1,873 @@
+Multi-cpu support in Pike
+-------------------------
+
+This is a draft spec for how to implement multi-cpu support in Pike.
+The intention is that it gets extended along the way as more issues
+gets ironed out. Discussions take place in "Pike dev" in LysKOM or
+pike-devel@lists.lysator.liu.se.
+
+Initial draft created 8 Nov 2008 by Martin Stjernholm.
+
+
+Background and goals
+
+Pike supports multiple threads, but like many other high-level
+languages it only allows one thread at a time to access the data
+structures. This means that the utilization of multi-cpu and
+multi-core systems remains low, even though there are some modules
+that can do isolated computational tasks in parallell (e.g. the Image
+module).
+
+It is the so-called "interpreter lock" that must be locked to access
+any reference variable (i.e. everything except floats and native
+integers). This lock is held by default in essentially all C code and
+is explicitly unlocked in a region by the THREADS_ALLOW/
+THREADS_DISALLOW macros. On the pike level, the lock is always held -
+no pike variable can be accessed and no pike function can be called
+otherwise.
+
+The purpose of the multi-cpu support is to rectify this. The design
+goals are, in order of importance:
+
+1.  Pike threads should be able to execute pike code concurrently on
+    multiple cpus as long as they only modify thread local pike data
+    and read a shared pool of static data (i.e. the pike programs,
+    modules and constants).
+
+2.  There should be as few internal hot spots as possible (preferably
+    none) when pike code is executed concurrently. Care must be taken
+    to avoid internal synchronization, or updates of shared data that
+    would cause "cache line ping-pong" between cpus.
+
+3.  The concurrency should be transparent on the pike level. Pike code
+    should still be able to access shared data without locking and
+    without risking low-level inconsistencies. (So Thread.Mutex etc
+    would still be necessary to achieve higher level synchronization.)
+
+4.  There should be tools on the pike level to allow further
+    performance tuning, e.g. lock-free queues, concurrent access hash
+    tables, and the possibility to lock different regions of shared
+    data separately. These tools should be designed so that they are
+    easy to slot into existing code with few changes.
+
+5.  There should be tools to monitor and debug concurrency. It should
+    be possible to make assertions that certain objects aren't shared,
+    and that certain access patterns don't cause thread
+    synchronization. This is especially important if goal (3) is
+    realized, since the pike code by itself won't show what is shared
+    and what is thread local.
+
+6.  C modules should continue to work without source level
+    modification (but likely without allowing any kind of
+    concurrency).
+
+Note that even if goal (3) is accomplished, this is no miracle cure
+that would make all multithreaded pike programs run with optimal
+efficiency on multiple cpus. One could expect better concurrency in
+old code without adaptions, but it could still be hampered
+considerably by e.g. frequent updates to shared data. Concurrency is a
+problem that must be taken into account on all levels.
+
+
+Other languages
+
+Perl: All data is thread local by default. Data can be explicitly
+shared, in which case Perl ensures internal consistency. Every shared
+variable is apparently locked individually. Referencing a thread local
+variable from a shared one causes the thread to die. See perthrtut(1).
+
+Python: Afaik it's the same state of affairs as Pike.
+
+
+Solution overview
+
+The basic approach is to divide all data into thread local and shared:
+
+o  Thread local data is everything that is accessible to one thread
+   only, i.e. there are no references to anything in it from shared
+   data or from any other thread. This is typically data that the
+   current thread has created itself and only reference from the
+   stack. The thread can access its local data without locking.
+
+o  Shared data is everything that is accessible from more than one
+   thread. Access to it is synchronized using a global read/write
+   lock, the so-called "global lock". I.e. this lock can either be
+   locked for reading by many threads, or be locked by a single thread
+   for writing. Locking the global lock for writing is the same as
+   locking the interpreter lock in current pikes. (This single lock is
+   refined later - see issue "Lock spaces".)
+
+o  There is also a special case where data can be "disowned", i.e. not
+   shared and not local in any thread. This is used in e.g.
+   Thread.Queue for the objects that are in transit between threads.
+   Disowned data cannot have arbitrary references to it - it must
+   always be under the control of some object that in some way ensures
+   consistency. (Garbage could be made disowned since it by definition
+   no longer is accessible from anywhere, but of course it is always
+   better to clean it up instead.)
+
++--------+           +---------------------+     Direct    +--------+
+|        |<-- refs --| Thread 1 local data |<- - access - -|        |
+|        |           +---------------------+               | Thread |
+|        |                                                 |    1   |
+|        |<- - - - Access through global lock only  - - - -|        |
+| Shared |                                                 +--------+
+|        |
+|  data  |           +---------------------+     Direct    +--------+
+|        |<-- refs --| Thread 2 local data |<- - access - -|        |
+|        |           +---------------------+               | Thread |
+|        |                                                 |    2   |
+|        |<- - - - Access through global lock only  - - - -|        |
+|        |                                                 +--------+
++--------+                 ... etc ...
+
+The principal use case for this model is that threads can do most of
+their work with local data and read access to the shared data, and
+comparatively seldom require the global write lock to update the
+shared data. Every shared thing does not have its own lock since that
+would cause excessive lock overhead.
+
+Note that the shared data is typically the same as the data referenced
+from the common environment (i.e. the "global data").
+
+Also note that the current object (this) always is shared in pike
+modules, so a thread cannot assume free access to it. In other pike
+classes it would often be shared too, but it is still important to
+utilize the situation when it is thread local. See issue "Function
+calls".
+
+A thread local thing, and all the things it references directly or
+indirectly, automatically becomes shared whenever it gets referenced
+from a shared thing.
+
+A shared thing never automatically becomes thread local, but there is
+a function to explicitly "take" it. It would first have to make sure
+there are no references to it from shared or other thread local
+things. Thread.Queue has a special case so that if a thread local
+thing with no other refs is enqueued, it is disowned by the current
+thread, and later becomes thread local in the thread that dequeues it.
+
+
+Issue: Lock spaces
+
+Having a single global read/write lock for all shared data could
+become a bottleneck. Thus there is a need for shared data with locks
+separate from the global lock. Things that share a common lock is
+called a "lock space", and it is always possible to look up the lock
+that governs any given thing (see issue "Memory object structure").
+
+A special global lock space, which corresponds to the shared data
+discussed above, is created on startup. All others have to be created
+explicitly.
+
+The intended use case for lock spaces is a "moderately large"
+collection of things: Too large and you get outlocking problems, too
+small and the lock overhead (both execution- and memorywise) gets
+prohibiting. A typical lock space could be a RAM cache consisting of a
+mapping and all its content.
+
+Many different varieties of lock space locks can be considered, e.g. a
+simple exclusive access mutex lock or a read/write lock, priority
+locks, locks that ensure fairness, etc. Therefore different (C-level)
+implementations should be allowed.
+
+One important characteristic of lock space locks is whether they are
+implicit or explicit:
+
+Implicit locks are locked internally, without intervention on the pike
+level. The lock duration is unspecified; locks are only acquired to
+ensure internal consistency. All low level data access functions check
+whether the lock space for the accessed thing is locked already. If it
+isn't then the lock is acquired automatically. All implicit locks have
+a well defined lock order (by pointer comparison), and since they only
+are taken to guarantee internal consistency, an access function can
+always release a lock to ensure correct order (see also issue "Lock
+space locking").
+
+Explicit locks are exposed to the pike level and must be locked in a
+similar way to Thread.Mutex. If a low level data access function
+encounters an explicit lock that isn't locked, it throws an error.
+Thus it is left to the pike programmer to avoid deadlocks, but the
+pike core won't cause any by itself. Since the pike core keeps track
+which lock governs which thing it ensures that no lock violating
+access occurs, which is a valuable aid to ensure correctness.
+
+One can also consider a variant with a read/write lock space lock that
+is implicit for read but explicit for write, thus combining atomic
+pike-level updates with the convenience of implicit locking for read
+access.
+
+The scope of a lock space lock is (at least) the state inside all the
+things it contains, but not the set of things itself, i.e. things
+might be added to a lock space without holding a write lock (provided
+the memory structure allows it). Removing a thing from a lock space
+always requires the write lock since that is necessary to ensure that
+a lock actually governs a thing for as long as it is held (regardless
+it's for reading or writing).
+
+FIXME: Allow removing garbage from a lock space without the write
+lock?
+
+See also issues "Memory object structure" and "Lock space locking" for
+more details.
+
+
+Issue: Memory object structure
+
+Of concern are the refcounted memory objects known to the gc. They are
+called "things", to avoid confusion with "objects" which are the
+structs for pike objects.
+
+There are three types of things:
+
+o  First class things with ref counter, lock space pointer, and
+   double-linked list pointers (to be able to visit all things in
+   memory, regardless of other references). Most pike visible types
+   are first class things. The exceptions are ints and floats, which
+   are passed by value, and strings and types.
+
+o  Second class things with ref counter and lock space pointer but no
+   double-linked list pointers. These are always reached through
+   pointers from one or more first class things. It's the job of the
+   visit functions for those first class things to ensure that the gc
+   visits these, thus they don't need the double-linked list pointers.
+   Only strings and types are likely to be of this type.
+
+o  Third class things contain only a ref counter. They are similar to
+   second class except that their lock spaces are implicit from the
+   referencing things, which means all those things must always be in
+   the same lock space.
+
+Thread local things could have NULL as lock space pointer, but as a
+debug measure they could also point to the thread object so that it's
+possible to detect bugs with a thread accessing things local to
+another thread.
+
+Before the multi-cpu architecture, all first class things are linked
+into the same global double-linked lists (one for each type: array,
+mapping, multiset, object, and program). This gets split into one set
+of double-linked lists for each thread and for each lock space. That
+allows things to be added and removed to a thread or lock space
+without requiring other locks (a lock-free double-linked list is
+apparently difficult to accomplish). It also allows the gc to do
+garbage collection locally in each thread and in each lock space
+(although cyclic structures over several lock spaces won't be freed
+that way).
+
+A global lock-free hash table (see issue "Lock-free hash table") is
+used to keep track of all lock space lock objects, and hence all
+things they contain in their double-linked lists.
+
+            +----------+                    +----------+
+            | Thread 1 |                    | Thread 2 |
+            +----------+                    +----------+
+            // \\  // \\                    // \\  // \\
+       ,--- O   O  O   O     ,------------- O   O  O   O ---.
+       |    \\ //  \\ //     |              \\ //  \\ //    |
+   ref |      O      O -.    | ref            O      O      | ref
+       |                |    |                              |
+       v  refs      ref |    v                              v
+       O <----- O       `--> O        O            O        O
+     // \\    // \\        // \\    // \\  refs  // \\    // \\
+     O   O -> O   O        O   O    O   O <----> O   O    O   O
+     \\ //    \\ //        \\ //    \\ //        \\ //    \\ //
+    +--------------+      +--------------+      +--------------+
+    | Lock space 1 |      | Lock space 2 |      | Lock space 3 |
+    +--------------+      +--------------+      +--------------+
+                 ^________          ^            ____^
+                          |         |           |
++-----------------------+-|-+-----+-|-+-------+-|-+-----------------
+|                       | X |     | X |       | X |               ...
++-----------------------+---+-----+---+-------+---+-----------------
+
+Figure 2: "Space Invaders". The O's represent things, and the \\ and
+// represent the double-linked lists. Some examples of references
+between things are included, and at the bottom is the global hash
+table with pointers to all lock spaces.
+
+Accessing a lock space lock structure from the global hash table
+requires a hazard pointer (c.f. issue "Hazard pointers"). Accessing it
+from a thing is safe if the thread controls at least one ref to the
+thing, because a lock space has to be empty to delete the lock space
+lock struct.
+
+
+Issue: Lock space lock semantics
+
+There are three types of locks:
+
+o  A read-safe lock ensures only that the data is consistent, not that
+   it stays constant. This allows lock-free updates in things where
+   possible (which could include arrays, mappings, and maybe even
+   multisets and objects of selected classes).
+
+o  A read-constant lock ensures both consistency and constantness
+   (i.e. what usually is assumed for a read-only lock).
+
+o  A write lock ensures complete exclusive access. The owning thread
+   can modify the data, and it can assume no other changes occur to it
+   (barring refcounters - see below). The owning thread can also under
+   limited time leave the data in inconsistent state. This is however
+   still limited by the calls to check_threads(), which means that the
+   state must be consistent again every time the evaluator callbacks
+   are run. See issue "Emulating the interpreter lock".
+
+Allowing lock-free updates is attractive, so the standard read/write
+lock that governs the global lock space will probably be multiple
+read-safe/single write.
+
+An exception to the lock semantics above are the reference counters in
+refcounted things (c.f. issue "Refcounting and shared data"). A ref to
+a thing can always be added or removed if it is certain that the thing
+cannot asynchronously disappear. That means:
+
+o  Refcount changes must always be atomic, even when a write lock is
+   held.
+o  The refcount may be incremented or decremented when any kind of
+   read lock is held.
+o  The refcount may be incremented or decremented without any kind of
+   lock at all, provided the same thread already holds at least one
+   other ref to the same thing. This means another thread might hold a
+   write lock, but it still won't free the thing since the refcount
+   never can reach zero.
+o  A thing may be freed if its refcount is zero and a write lock is
+   held.
+
+FIXME: Whether or not to free a thing if its refcount is zero and only
+some kind of read lock is held is tricky. To allow that it's necessary
+to have an atomic-decrement-and-get instruction (can be emulated with
+CAS, though) to ensure no other thread is decrementing it and reaching
+zero at the same time. Lock-free linked lists are also necessary to
+make unlinking possible. Barring that, we need to figure out a policy
+for scheduling frees of things reaching refcount zero during read
+locks.
+
+
+Issue: Lock space locking
+
+Assuming that a thread already controls at least one ref to a thing
+(so it won't be freed asynchronously), this is the locking process
+before accessing it:
+
+1.  Read the lock space pointer. If it's NULL then the thing is thread
+    local and nothing more needs to be done.
+2.  Address an array containing the pointers to the lock spaces that
+    are already locked by the thread.
+3.  Search for the lock space pointer in the array. If present then
+    nothing more needs to be done.
+4.  Lock the lock space lock as appropriate. Note that this can imply
+    other implicit locks that are held are unlocked to ensure correct
+    lock order (see issue "Lock spaces"). Then it's added to the
+    array.
+
+A thread typically won't hold more than a few locks at any time (less
+than ten or so), so a plain array and linear search should perform
+well. For quickest possible access the array should be a static thread
+local variable (c.f. issue "Thread local storage"). If the array gets
+full, implicit locks in it can be released automatically to make
+space. Still, a system where more arrays can be allocated and chained
+on would perhaps be prudent to avoid the theoretical possibility of
+running out of space for locked locks.
+
+"Controlling" a ref means either to add one "for the stack", or
+ensuring a lock on a thing that holds a ref. Note that implicit locks
+might be released in step 4, so unless the thread controls a ref to
+the referring thing too, it might no longer exist afterwards, and
+hence the thing itself might be gone.
+
+Since implicit locks can be released (almost) at will, they are open
+for performance tuning: Too long lock durations and they'll outlock
+other threads, too short and the locking overhead becomes more
+significant. As a starting point, it seems reasonable to release them
+at every evaluator callback call (i.e. at approximately every pike
+function call and return).
+
+
+Issue: Refcounting and shared data
+
+Using the traditional refcounting on shared data could easily produce
+hotspots: Some strings, shared constants, and the object instances for
+pike modules are often accessed from many threads, so their refcounts
+would be changed frequently from different processors.
+
+E.g. making a single function call in a pike module requires the
+refcount of the module object to be increased during the call since
+there is a new reference from a pike_frame. The refcounters in the
+module objects for commonly used modules like Stdio.pmod/module.pmod
+could easily become hotspots.
+
+Atomic increments and decrements are not enough to overcome this - the
+memory must not be changed at all to avoid slow synchronizations
+between cpu local caches.
+
+Observation: Refcounters become hotspots primarily in globally
+accessible shared data, which for the most part has a long lifetime
+(i.e. programs, module objects, and constants). Otoh, they are most
+valuable in short-lived data (shared or not), which would produce lots
+of garbage if they were to be reaped by the gc instead.
+
+Following this observation, the problem with refcounter hotspots can
+to a large degree be mitigated by simply turning off refcounting in
+the large body of practically static data in the shared runtime
+environment.
+
+A good way to do that is to extend the resolver in the master to mark
+all programs it compiles, their constants, and the module objects, so
+that refcounting of them is disabled. To do this, there has to be a
+function similar to Pike.count_memory that can walk through a
+structure recursively and mark everything in it. When those things
+lose their refs, they will always become garbage that only is freed by
+the gc.
+
+Question: Is there data that is missed with this approach?
+
+A disabled refcounter is recognized by a negative value and flagged by
+setting the topmost two bits to one and the rest to zero, i.e. a value
+in the middle of the negative range. That way, in case there is code
+that steps the refcounter then it stays negative. (Such code is still
+bad for performance and should be fixed, though.)
+
+Disabling refcounting requires the gc to operate differently; see
+issue "Garbage collection and external references".
+
+
+Issue: Strings
+
+Strings are unique in Pike. This property is hard to keep if threads
+have local string pools, since a thread local string might become
+shared at any moment, and thus would need to be moved. Therefore the
+string hash table remains global, and lock congestion is avoided with
+some concurrent access hash table implementation. See issue "Lock-free
+hash table".
+
+Lock-free is a good start, but the hash function must also provide a
+good even distribution to avoid hotspots. Pike currently uses an
+in-house algorithm (DO_HASHMEM in pike_memory.h). Replacing it with a
+more widespread and better studied alternative should be considered.
+There seems to be few that are below O(n) (which DO_HASHMEM is),
+though.
+
+
+Issue: Types
+
+Like strings, types are globally unique and always shared in Pike.
+That means lock-free access to them is desirable, and it should also
+be doable fairly easily since they are constant (except for the
+refcounts which can be updated atomically). Otoh it's probably not as
+vital as for strings since types typically only are built during
+compilation.
+
+Types are more or less always part of global shared data. That
+suggests they should have their refcounts disabled most of the time
+(see issue "Refcounting and shared data"). But again, since types
+typically only get built during compilation, their refcounts probably
+won't become hotspots anyway. So it looks like they could be exempt
+from that rule.
+
+
+Issue: Shared mapping and multiset data blocks
+
+An interesting issue is if things like mapping/multiset data blocks
+should be second or third class things (c.f. issue "Memory object
+structure"). If they're third class it means copy-on-write behavior
+doesn't work across lock spaces. If they're second class it means
+additional overhead handling the lock spaces of the mapping data
+blocks, and if a mapping data is shared between lock spaces then it
+has to be in some third lock space of its own, or in the global lock
+space, neither of which would be very good.
+
+So it doesn't look like there's a better way than to botch
+copy-on-write in this case.
+
+
+Issue: Emulating the interpreter lock
+
+For compatibility with old C modules, and for the _disable_threads
+function, it is necessary to retain a complete lock like the current
+interpretator lock. It has to lock the global area for writing, and
+also stop all access to all lock spaces, since the thread local data
+might refer to any lock space.
+
+This lock is implemented as a read/write lock, which normally is held
+permanently for reading by all threads. Only when a thread is waiting
+to acquire the compat interpreter lock is it released as each thread
+goes into check_threads().
+
+This lock cannot wait for explicit lock space locks to be released.
+Thus it can override the assumption that a lock space is safe from
+tampering by holding a write lock on it. Still, it's only available
+from the C level (with the exception of _disable_threads) so the
+situation is not any different from the way the interpreter lock
+overrides Thread.Mutex today.
+
+
+Issue: Function calls
+
+A lock on an object is almost always necessary before calling a
+function in it. Therefore the central apply function (mega_apply) must
+ensure an appropriate lock is taken. Which kind of lock
+(read-safe/read-constant/write - see issue "Lock space lock
+semantics") depends on what the function wants to do. Therefore all
+object functions are extended with flags for this.
+
+The best default is probably read-safe. Flags for no locking (for the
+few special cases where the implementations actually are completely
+lock-free) and for compat-interpreter-lock-locking should probably
+exist as well. A compat-interpreter-lock flag is also necessary for
+global functions that don't have a "this" object (aka efuns).
+
+Having the required locking declared this way also alleviates each
+function from the burden of doing the locking to access the current
+storage, and it allows future compiler optimizations to minimize lock
+operations.
+
+
+Issue: Exceptions
+
+"Forgotten" locks after exceptions shouldn't be a problem: Explicit
+locks are handled just like today (i.e. it's up to the pike
+programmer), and implicit locks can safely be released when an
+exception is thrown.
+
+One case requires attention: An old-style function that requires the
+compat interpreter lock might catch an error. In that case the error
+system has to ensure that lock is reacquired.
+
+
+Issue: C module interface
+
+A new add_function variant is probably added for new-style functions.
+It takes bits for the flags discussed for issue "Function calls".
+New-style functions can only assume free access to the current storage
+according to those flags; everything else must be locked (through a
+new set of macros/functions).
+
+Accessor functions for data types (e.g. add_shared_strings,
+mapping_lookup, and object_index_no_free) handles the necessary
+locking internally. They will only assume that the thing is safe, i.e.
+that the caller ensures the current thread controls at least one ref.
+
+THREADS_ALLOW/THREADS_DISALLOW and their likes are not used in
+new-style functions.
+
+There will be new GC callbacks for walking module global pointers to
+things (see issue "Garbage collection and external references").
+
+
+Issue: C module compatibility
+
+Ref issue "Emulating the interpreter lock".
+
+Ref issue "Garbage collection and external references".
+
+
+Issue: Garbage collection and external references
+
+The current gc design is that there is an initial "check" pass that
+determines external references by counting all internal references,
+and then for each thing subtract it from its refcount. If the result
+isn't zero then there are external references (e.g. from global C
+variables or from the C stack) and the thing is not garbage.
+
+Since refcounting can be disabled in some objects (see issue
+"Refcounting and shared data"), this approach no longer work; the gc
+has to be changed to find external references some other way:
+
+References from global C variables are few, so they can be dealt with
+by requiring C modules and the core parts to provide callbacks that
+lets the gc walk through them (see issue "C module interface"). This
+is however not compatible with old C modules.
+
+References from C stacks are common, and it is infeasible to require
+callbacks that keep track of them. The gc instead has to scan the C
+stacks for the threads and treat any aligned machine word containing
+an apparently valid pointer to a known thing as an external reference.
+This is the common approach used by standalone gc libraries that don't
+require application support. For reference, here is one such garbage
+collector, written in C++:
+http://developer.apple.com/DOCUMENTATION/Cocoa/Conceptual/GarbageCollection/Introduction.html#//apple_ref/doc/uid/TP40002427
+Its source is here:
+http://www.opensource.apple.com/darwinsource/10.5.5/autozone-77.1/
+
+The same approach is also necessary to cope with old C modules (see
+issue "C module compatibility"), but since global C level pointers are
+few, it might not be mandatory to get this working.
+
+Btw, using this approach to find external refs should be considerably
+more efficient than the old "check" pass, even if C stacks are scanned
+wholesale.
+
+
+Issue: Local garbage collection
+
+Each thread periodically invokes a gc that only looks for garbage in
+the local data of that thread. This can naturally be done without
+disturbing the other threads. It follows that this gc also can be
+disabled on a per-thread basis. This is a reason for keeping thread
+local data in separate double-linked lists (see issue "Memory object
+structure").
+
+Similarly, if gc statistics are added to each lock space, they could
+also be gc'd for internal garbage at appropriate times when they get
+write locked by some thread. That might be interesting since known
+cyclic structures could then be put in lock spaces of their own and be
+gc'd efficiently without a global gc. Note that a global gc is still
+required to clean up cycles with things in more than one lock space.
+
+
+Issue: Global pike level caches
+
+
+Issue: Thread.Queue
+
+A lock-free implementation should be used. The things in the queue are
+typically disowned to allow them to become thread local in the reading
+thread.
+
+
+Issue: False sharing
+
+False sharing occurs when thread local things used frequently by
+different threads are next to each other so that they share the same
+cache line. Thus the cpu caches might force frequent resynchronization
+of the cache line even though there is no apparent hotspot problem on
+the C level.
+
+This can be a problem in particular for all the block_alloc pools
+containing small structs. Using thread local pools is seldom a
+workable solution since most thread local structs might become shared
+later on.
+
+One way to avoid it is to add padding (and alignment). Cache line
+sizes are usually 64 bytes or less (at least for Intel ia32). That
+should be small enough to make this viable in many cases.
+
+FIXME: Check cache line sizes on the other important architectures.
+
+Worth noting that the problem is greatest for the frequently changed
+ref counters at the start of each thing, so the most important thing
+is to keep ref counters separated. I.e. things larger than a cache
+line can probably be packed without padding.
+
+Another way is to move things when they get shared, but that is pretty
+complicated and slow.
+
+
+Issue: Malloc and block_alloc
+
+Standard OS mallocs are usually locking. Bundling a lock-free one
+could be important. FIXME: Survey free implementations.
+
+Block_alloc is a simple homebrew memory manager used in several
+different places to allocate fixed-size blocks. The block_alloc pools
+are often shared, so they must allow efficient concurrent access. With
+a modern malloc, it is possible that the need for block_alloc is gone,
+or perhaps the malloc lib has builtin support for fixed-size pools.
+Making a lock-free implementation is nontrivial, so the homebrew ought
+to be ditched in any case.
+
+A problem with ditching block_alloc is that there is some code that
+walks through all allocated blocks in a pool, and also avoids garbage
+by freeing the whole pool altogether. FIXME: Investigate alternatives
+here.
+
+See also issue "False sharing".
+
+
+Issue: The compiler
+
+
+Issue: Foreign thread visits
+
+JVM threads..
+
+
+Issue: Pike security system
+
+It is possible that keeping the pike security system intact would
+complicate the implementation, and even if it was kept intact a lot of
+testing would be required before one can be confident that it really
+works (and there are currently very few tests for it in the test
+suite).
+
+Also, the security system isn't used at all to my (mast's) knowledge,
+and it is not even compiled in by default (has to be enabled with a
+configure flag).
+
+All this leads to the conclusion that it is easiest to ignore the
+security system altogether, and if possible leave it as it is with the
+option to get it working later.
+
+
+Issue: Contention-free counters
+
+There is probably a need for contention-free counters in several
+different areas. They should be possible to update from several
+threads in parallell without synchronization. Querying the current
+count is always approximate since it can be changing simultaneously in
+other threads. However, the thread's own local count is always
+accurate.
+
+They should be separated from the blocks they apply to, to avoid cache
+line invalidation of those blocks.
+
+To accomplish that, a generic tool somewhat similar to block_alloc is
+created that allocates one or more counter blocks for each thread. In
+these blocks indexes are allocated, so a counter is defined by the
+same index into all the thread local counter blocks.
+
+Each thread can then modify its own counters without locking, and it
+typically has its own counter blocks in the local cache while the
+corresponding main memory is marked invalid. To query a counter, a
+thread would need to read the blocks for all other threads.
+
+This means that these counters are efficient for updates but less so
+for queries. However, since queries always are approximate, it is
+possible to cache them for some time (e.g. 1 ms). Each thread would
+need its own cache though, since the local count cannot be cached.
+
+It should be lock-free for allocating and freeing counters, and
+preferably also for starting and stopping threads (c.f. issue "Foreign
+thread visits"). In both cases the freeing steps represents a race
+problem - see issue "Hazard pointers". To free counters, the counter
+index would constitute the hazard pointer.
+
+
+Issue: Lock-free hash table
+
+A good lock-free hash table implementation is necessary. A promising
+one is http://blogs.azulsystems.com/cliff/2007/03/a_nonblocking_h.html.
+It requires a CAS (Compare And Swap) instruction to work, but that
+shouldn't be a problem. The java implementation
+(http://sourceforge.net/projects/high-scale-lib) is Public Domain. In
+the comments there is talk about efforts to make a C version.
+
+It supports (through putIfAbsent) the uniqueness requirement for
+strings, i.e. if several threads try to add the same string (at
+different addresses) then all will end up with the same string pointer
+afterwards.
+
+The java implementation relies on the gc to free up the old hash
+tables after resize. We don't have that convenience, but the problem
+is still solvable; see issue "Hazard pointers".
+
+
+Issue: Hazard pointers
+
+A problem with most lock-free algorithms is how to know no other
+thread is accessing a block that is about to be freed. Another is the
+ABA problem which can occur when a block is freed and immediately
+allocated again (common for block_alloc).
+
+Hazard pointers are a good way to solve these problems without leaving
+the blocks to the garbage collector (see
+http://www.research.ibm.com/people/m/michael/ieeetpds-2004.pdf). So a
+generic hazard pointer tool is necessary.
+
+Note however that a more difficult variant of the ABA problem still
+can occur when the block cannot be freed after leaving the data
+structure. (In the canonical example with a lock-free stack - see e.g.
+"ABA problem" in Wikipedia - consider the case when A is a thing that
+continues to live on and actually gets pushed back.) The only reliable
+way to cope with that is probably to use wrappers.
+
+
+Issue: Thread local storage
+
+Implementation would be considerably simpler if working TLS can be
+assumed on the C level, through the __thread keyword (or
+__declspec(thread) in Visual C++). A survey of the support for TLS in
+common compilers and OS'es is needed to decide whether this is an
+workable assumption:
+
+o  GCC: __thread is supported. Source: Wikipedia.
+   FIXME: Check from which version.
+
+o  Visual C++: __declspec(thread) is supported. Source: Wikipedia.
+   FIXME: Check from which version.
+
+o  Intel C compiler: Support exists. Source: Wikipedia.
+   FIXME: Check from which version.
+
+o  Sun C compiler: Support exists. Source: Wikipedia.
+   FIXME: Check from which version.
+
+o  Linux (i386, x86_64, sparc32, sparc64): TLS is supported and works
+   for dynamic libs. C.f. http://people.redhat.com/drepper/tls.pdf.
+   FIXME: Check from which version of glibc and kernel (if relevant).
+
+o  Windows (i386, x86_64): TLS is supported but does not always work
+   in dll's loaded using LoadLibrary (which means all dynamic modules
+   in pike). C.f. http://msdn.microsoft.com/en-us/library/2s9wt68x.aspx.
+   According to Wikipedia this is fixed in Vista and Server 2008
+   (FIXME: verify). In any case, TLS is still usable in the pike core.
+
+o  MacOS X: FIXME: Check this.
+
+o  Solaris: FIXME: Check this.
+
+o  *BSD: FIXME: Check this.
+
+
+Issue: Platform specific primitives
+
+Some low-level primitives, such as CAS and fences, are necessary to
+build the various lock-free tools. A third-party library would be
+useful.
+
+An effort to make a standardized library is here:
+http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2006/n2047.html (C
+level interface at the end). It apparently lacks implementation,
+though.
+
+Required operations:
+
+CAS(address, old_value, new_value)
+  Compare-and-set: Atomically sets *address to new_value iff its
+  current value is old_value. Needed for 32-bit variables, and on
+  64-bit systems also for 64-bit variables.
+
+ATOMIC_INC(address)
+ATOMIC_DEC(address)
+  Increments/decrements *address atomically. Can be simulated with
+  CAS. 32-bit version necessary, 64-bit version would be nice.
+
+LFENCE()
+  Load fence: All memory reads in the thread before this point are
+  guaranteed to be done (i.e. be globally visible) before any
+  following it.
+
+SFENCE()
+  Store fence: All memory writes in the thread before this point are
+  guaranteed to be done before any following it.
+
+MFENCE()
+  Memory fence: Both load and store fence at the same time. (On many
+  architectures this is implied by CAS etc, but we shouldn't assume
+  that.)
+
+The following operations are uncertain - still not known if they're
+useful and supported enough to be required, or if it's better to do
+without them:
+
+CASW(address, old_value_low, old_value_high, new_value_low, new_value_high)
+  A compare-and-set that works on a double pointer size area.
+  Supported on more modern x86 and x86_64 processors (c.f.
+  http://en.wikipedia.org/wiki/Compare-and-swap#Extensions).
+
+FIXME: More..
+
+Survey of platform support:
+
+o  Windows/Visual Studio: Got "Interlocked Variable Access":
+   http://msdn.microsoft.com/en-us/library/ms684122.aspx
+
+o  FIXME: More..
+
+
+Various links
+
+Pragmatic nonblocking synchronization for real-time systems
+  http://www.usenix.org/publications/library/proceedings/usenix01/full_papers/hohmuth/hohmuth_html/index.html
+DCAS is not a silver bullet for nonblocking algorithm design
+  http://portal.acm.org/citation.cfm?id=1007945
