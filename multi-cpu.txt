@@ -209,133 +209,6 @@ See also issues "Memory object structure" and "Lock space locking" for
 more details.
 
 
-Issue: Garbage collector
-
-Pike has used refcounting to collect noncyclic structures, combined
-with a stop-the-world periodical collector for cyclic structures. The
-periodic pauses are already a problem, and it only gets worse as the
-heap size and number of concurrent threads increase. Since the gc
-needs an overhaul anyway, it makes sense to replace it with a more
-modern solution.
-
-PHD-200-10.ps [FIXME: ref] is a recent thesis work that combines
-several state-of-the-art gc algorithms to an efficient whole: It
-describes a generational collector that uses deferred-update
-refcounting for old things with on-the-fly collection, and on-the-fly
-mark-and-sweep for young things. An on-the-fly cycle detector is also
-employed for the refcounted area. See said work for rationale and
-details.
-
-Effects of using this in Pike:
-
-a.  References from the C or pike stacks don't need any handling at
-    all (see also issue "Garbage collection and external references").
-
-b.  Special code is used to update refs in the heap. During certain
-    circumstances, before changing a pointer inside a thing which can
-    point to another thing, the state of all non-NULL pointers in it
-    are copied to a thread local log.
-
-c.  A new LogPointer field is required per thing. If a state copy has
-    taken place as described above, it points to the log that contains
-    the original pointer state of the thing.
-
-    Data containers that can be of arbitrary size (i.e. arrays,
-    mappings and multisets) should be segmented into fixed-sized
-    chunks with one LogPointer each, so that the state copy doesn't
-    get arbitrarily large.
-
-d.  The double-linked lists aren't needed. Hence two pointers less per
-    thing.
-
-e.  The refcounter word is changed to hold both normal refcount, weak
-    count(?), and flags. Overflowed counts are stored in a separate
-    hash table.
-
-f.  The collector typically runs concurrently with the rest of the
-    program. It sometimes interrupts the other threads for handshakes.
-    These interrupts are not aligned with the evaluator callback
-    calls, since that would cause too much pausing of the collector
-    thread. This requires that threads can be stopped and resumed
-    externally. FIXME: Verify this in pthreads and on windows.
-
-g.  All garbage collection, both for noncyclic and cyclic garbage, are
-    discovered and handled by the gc thread. The other threads never
-    frees any block known to the gc.
-
-g.  An effect of the above is that all garbage is discovered by a
-    separate collector thread which doesn't execute any other pike
-    code. This opens up the issue on how to call destruct functions.
-
-    At least thread local things should reasonably get their destruct
-    calls in that thread. A problem is however what to do when that
-    thread has exited or emigrated (see issue "Foreign thread
-    visits").
-
-    For shared things it's not clear which thread should call destruct
-    anyway, so in that case any thread could do it. It might however
-    be a good idea to not do it directly in the gc thread, since doing
-    so would require that thread too to be a proper pike thread with
-    pike stack etc; it seems better to keep it an "invisible"
-    low-level thread outside the "worker" threads. In programs with a
-    "backend thread" it could be useful to allow the gc thread wake up
-    the backend thread to let it execute the destruct calls.
-
-h.  The most bothersome problem is that things are no longer freed
-    right away when running out of refs. This behavior in Pike is used
-    implicitly in many places, mainly to release locks timely by just
-    putting them in a local variable that gets freed when the function
-    exits (either by normal return or by exception).
-
-    Maybe a solution can be devised to keep this characteristic in
-    that special case, i.e. when a thread local thing only got a
-    single reference from the stack. This should be easy to detect in
-    the compiler: It's an assignment to a local variable that never
-    gets referenced. That's already a warning, but it is currently
-    tuned down to not warn in these cases (precisely to allow this
-    problematic idiom).
-
-    So the compiler could in such cases add implicit destruct calls on
-    function exit. Consider however if someone adds e.g. a werror call
-    to print out a description of the MutexKey object. The local
-    variable is referenced, but one won't expect that the innocent
-    werror() would change the freeing of the MutexKey. It's therefore
-    probably better to strengthen the compiler warning and require
-    people to deal with it on the Pike level (a werror for debug
-    purposes is unlikely to be there permanently, at least).
-
-    Question: Are there more cases where pike programmers expect
-    immediate frees?
-
-i.  FIXME: How to solve weak refs?
-
-j.  One might consider separating the refcounts from the things by
-    using a hash table. This makes sense when considering that only
-    the collector thread is using the refcounts, thereby avoiding
-    false aliasing occurring from refcounter updates (and other gc
-    related flags) by that thread.
-
-    All the hash table lookups would however incur a significant
-    overhead in the gc thread. A better alternative would be to use a
-    bitmap based on the possible allocation slots used by the malloc
-    implementation, but that would require very tight integration with
-    the malloc system. The bitmap could work with only two bits per
-    refcounter - research shows that most objects in a refcounted heap
-    have very few refs. Overflowing (a.k.a. "stuck") refcounters at 3
-    would then be stored in a hash table.
-
-k.  FIXME: Is the third NOP handshake really necessary?
-
-To simplify memory handling, the gc should be used consistently on all
-heap structs, regardless whether they are pike visible things or not.
-An interesting question is whether the type info for every struct
-(more concretely, the address of some area where the gc can find the
-functions it needs to handle the struct) is carried in the struct
-itself (through a new pointer field), or if it continues to be carried
-in the context for every pointer to the struct (e.g. in the type field
-in svalues).
-
-
 Issue: Memory object structure
 
 Of concern are the memory objects known to the gc. They are called
@@ -461,6 +334,382 @@ at every evaluator callback call (i.e. at approximately every pike
 function call and return).
 
 
+Issue: Garbage collector
+
+Pike has used refcounting to collect noncyclic structures, combined
+with a stop-the-world periodical collector for cyclic structures. The
+periodic pauses are already a problem, and it only gets worse as the
+heap size and number of concurrent threads increase. Since the gc
+needs an overhaul anyway, it makes sense to replace it with a more
+modern solution.
+
+http://www.cs.technion.ac.il/users/wwwb/cgi-bin/tr-get.cgi/2006/PHD/PHD-2006-10.ps
+is a recent thesis work that combines several state-of-the-art gc
+algorithms to an efficient whole. A brief overview of the highlights:
+
+o  The reference counts aren't updated for references on the stack.
+   The stacks are scanned when the gc runs instead. This saves a great
+   deal of refcount updates, and it also simplifies C level
+   programming a lot. Only refcounts between things on the heap are
+   counted.
+
+o  The refcounts are only updated when the gc runs. This saves a lot
+   of the remaining updates since if a pointer starts with value p_0
+   and then changes to p_1, then p_2, p_3, ..., and lastly to p_n at
+   the next gc, then only p_0->refs needs to be decremented and
+   p_n->refs needs to be incremented - the changes in all the other
+   refcounts, for the things pointed to in between, cancel out.
+
+o  The above is accomplished by thread local logging, to make the old
+   p_0 value available to the gc at the next run. This means it scales
+   well with many cpu's.
+
+o  A generational gc uses refcounting only for old things in the heap.
+   New things, which are typically very short-lived, aren't refcounted
+   at all but instead gc'ed using a mark-and-sweep collector. This is
+   shown to be more efficient for short-lived data, and it handles
+   cyclic structures without any extra effort.
+
+o  By using refcounting on old data, the gc only need to give
+   attention to refcounts that gets down to zero. This means the heap
+   can scale to any size without affecting the gc run time, as opposed
+   to using a mark-and-sweep collector on the whole heap. Thus the gc
+   time scales only with the amount of _change_ in the heap.
+
+o  Cyclic structures in the old refcounted data is handled
+   incrementally using the fact that a cyclic structure can only occur
+   when a refcounter is decremented to a value greater than zero.
+   Those things can therefore be tracked and cycle checked in the
+   background. The gc uses several different methods to weed out false
+   alarms before doing actual cycle checks.
+
+o  The gc runs entirely in its own thread. It only needs to stop the
+   working threads for a very short time to scan stacks etc, and they
+   can be stopped one at a time.
+
+Effects of using this in Pike:
+
+a.  References from the C or pike stacks don't need any handling at
+    all (see also issue "Garbage collection and external references").
+
+b.  A significant complication in various lock-free algorithms is the
+    safe freeing of old blocks (see e.g. issue "Lock-free hash
+    table"). This gc would solve almost all such problems in a
+    convenient way.
+
+c.  Special code is used to update refs in the heap. During certain
+    circumstances, before changing a pointer inside a thing which can
+    point to another thing, the state of all non-NULL pointers in it
+    are copied to a thread local log.
+
+    This is mostly problematic since it requires that every pointer
+    assignment inside a thing is replaced with a macro or function
+    call, which has a big impact on C code. See issue "C module
+    interface".
+
+d.  A new log_pointer field is required per thing. If a state copy has
+    taken place as described above, it points to the log that contains
+    the original pointer state of the thing.
+
+    Data containers that can be of arbitrary size (i.e. arrays,
+    mappings and multisets) should be segmented into fixed-sized
+    chunks with one log_pointer each, so that the state copy doesn't
+    get arbitrarily large.
+
+e.  The double-linked lists aren't needed. Hence two pointers less per
+    thing.
+
+f.  The refcounter word is changed to hold both normal refcount, weak
+    count, and flags. Overflowed counts are stored in a separate hash
+    table.
+
+g.  The collector typically runs concurrently with the rest of the
+    program. It sometimes interrupts the other threads for handshakes.
+    These interrupts are not aligned with the evaluator callback
+    calls, since that would cause too much pausing of the collector
+    thread. This requires that threads can be stopped and resumed
+    preemptively. See issue "Preemptive thread suspension".
+
+h.  All garbage collection, both for noncyclic and cyclic garbage, are
+    discovered and handled by the gc thread. The other threads never
+    frees any block known to the gc.
+
+i.  An effect of the above is that all garbage is discovered by a
+    separate collector thread which doesn't execute any other pike
+    code. This opens up the issue on how to call destruct functions.
+
+    At least thread local things should reasonably get their destruct
+    calls in that thread. A problem is however what to do when that
+    thread has exited or emigrated (see issue "Foreign thread
+    visits").
+
+    For shared things it's not clear which thread should call destruct
+    anyway, so in that case any thread could do it. It might however
+    be a good idea to not do it directly in the gc thread, since doing
+    so would require that thread too to be a proper pike thread with
+    pike stack etc; it seems better to keep it an "invisible"
+    low-level thread outside the "worker" threads. In programs with a
+    "backend thread" it could be useful to allow the gc thread wake up
+    the backend thread to let it execute the destruct calls.
+
+j.  The most bothersome problem is that things are no longer freed
+    right away when running out of refs. See issue "Immediate
+    destruct/free when refcount reaches zero".
+
+k.  FIXME: How to solve weak refs?
+
+l.  One might consider separating the refcounts from the things by
+    using a hash table. This makes sense when considering that only
+    the collector thread is using the refcounts, thereby avoiding
+    false aliasing occurring from refcounter updates (and other gc
+    related flags) by that thread.
+
+    All the hash table lookups would however incur a significant
+    overhead in the gc thread. A better alternative would be to use a
+    bitmap based on the possible allocation slots used by the malloc
+    implementation, but that would require very tight integration with
+    the malloc system. The bitmap could work with only two bits per
+    refcounter - research shows that most objects in a refcounted heap
+    have very few refs. Overflowing (a.k.a. "stuck") refcounters at 3
+    would then be stored in a hash table.
+
+m.  FIXME: Is the third NOP handshake really necessary?
+
+To simplify memory handling, the gc should be used consistently on all
+heap structs, regardless whether they are pike visible things or not.
+An interesting question is whether the type info for every struct
+(more concretely, the address of some area where the gc can find the
+functions it needs to handle the struct) is carried in the struct
+itself (through a new pointer field), or if it continues to be carried
+in the context for every pointer to the struct (e.g. in the type field
+in svalues).
+
+Since the gc would be used for most internal structs as well, which
+are almost exclusively used via compile-time typed pointers, it would
+probably save significant heap space to retain the type in the pointer
+context. It does otoh complicate the gc - everywhere where the gc is
+fed a pointer to a thing, it must also be fed a type info pointer, and
+the gc must then keep track of this data tuple internally.
+
+
+Issue: Immediate destruct/free when refcount reaches zero
+
+When a thing in Pike runs out of references, it's destructed and freed
+almost immediately in the pre-multi-cpu implementation. This behavior
+in Pike is used implicitly in many places. The major (hopefully all)
+principal use cases of concern are:
+
+1.  It's popular to make code that releases a lock timely by just
+    storing it in a local variable that gets freed when the function
+    exits (either by normal return or by exception). E.g:
+
+      void foo() {
+	Thread.MutexKey my_lock = my_mutex->lock();
+	... do some work ...
+	// my_lock falls out of scope here when the function exits
+	// (also if it's due to a thrown exception), so the lock is
+	// released right away.
+      }
+
+    There's also code that opens files and sockets etc, and expects
+    them to be automatically closed again through this method. (That
+    practice has been shown to be bug prone, though, so in the sources
+    at Roxen many of those places have been fixed over time.)
+
+2.  In some cases, structures are carefully kept acyclic to make them
+    get freed quickly, and there is no control of which party that got
+    the "last reference".
+
+    One example is if a cache holds one ref to an entry, and there
+    might at the same time be one or more worker threads that hold
+    references to the same entry while they use it. In this case the
+    cache can be pruned safely by dropping the reference to the entry,
+    without destructing it.
+
+    A variant when the structure cannot be made acyclic is to make a
+    "wrapper object": It holds a reference to the cyclic structure,
+    and all other parties makes sure to hold a ref to the wrapper as
+    long as they got interest in any part of the data. When the
+    wrapper runs out of refs, it destructs the cyclic structure
+    explicitly.
+
+    These tricks have mostly been used to reduce the amount of cyclic
+    garbage that requires the stop-the-world gc to run more often, but
+    there are also occasions when the structure holds open fd's which
+    must be closed without delay (one such occasion is the connection
+    fd in the http protocol in the Roxen WebServer).
+
+3.  In some applications with extremely high data mutation rate, the
+    immediate freeing of acyclic structures is seen as a prerequisite
+    to keep bounds on memory consumption.
+
+4.  FIXME: Are there more?
+
+The proposed gc (c.f. issue "Garbage collector") does not retain the
+immediate destruct and free semantic - only the gc running in its own
+thread may free things. Although it would run much more often than the
+old gc (probably on the order of once a minute up to several times a
+second), it would still break this semantic. To discuss each use case
+above:
+
+1.  Locks, and in some cases also open fd's, cannot wait until the
+    next gc run.
+
+    Observing that mutex locks always are thread local things, almost
+    all these cases (exceptions are possibly fd objects that somehow
+    are shared anyway) can be solved by a modified gc approach - see
+    issue "Micro-gc".
+
+    Since the micro-gc approach appears to be expensive, it's worth
+    considering to actually ditch this behavior and solve the problem
+    on the pike level instead. The compiler can be used to detect many
+    of these cases by looking for assignments to local variables that
+    aren't accessed from anywhere (there is already such a warning,
+    but it has been tuned down just to allow this problematic idiom).
+
+    A new language construct would be necessary, to ensure that the
+    variable gets destructed both on normal function exit and when an
+    exception is thrown. It could look something like this:
+
+      void foo() {
+	destruct_on_exit (Thread.MutexKey my_lock = my_mutex->lock()) {
+	  ... do some work which requires the lock ...
+	}
+      }
+
+    I.e. the destruct_on_exit clause ensures that the variable(s) in
+    the parentheses are destructed (regardless of the amount of refs)
+    if execution passes out of the block in any way.
+
+    Anyway, since implementing the micro-gc is a comparatively small
+    amount of extra work, the intention is to do that first, and then
+    later implement the full gc as an experimental mode so that
+    performance can be compared.
+
+2.  This is not a problem as long as the reason only is gc efficiency.
+    It's worth noting that tricks such as "wrapper objects" still have
+    some use since they lessen the load on the background cycle
+    detector.
+
+    It is however a problem if there are open fd's or similar things
+    in the structure. It doesn't look like this is feasible to solve
+    internally; such structures typically are shared data, and letting
+    different threads reference shared data without locking is
+    essential for multi-cpu performance. This is therefore a case that
+    is probably best to solve on the pike level instead, possibly
+    through pike-visible refcounting. These cases appear to be fairly
+    few, at least.
+
+3.  If the solution in the issue "Micro-gc" is implemented, this
+    problem hardly exists at all since thread local data is refcounted
+    and freed almost exactly the same way as before.
+
+    Otherwise, since the gc thread operate only on the new and changed
+    data, and collects newly allocated data very efficiently, it would
+    keep up with a very high mutation rate. GC runs are scheduled to
+    run just often enough to keep the heap size within a set limit -
+    as long as the gc thread doesn't become saturated and runs
+    continuously, it offloads the refcounting and freeing overhead
+    from the worker threads completely.
+
+    If the data mutation rate is so high that the gc thread becomes
+    saturated, what would happen is that malloc calls would start to
+    block when the heap limit is reached. Research shows that a
+    periodic gc done right provides considerably more throughput than
+    pure refcounting, so the application would still run faster
+    including that blocking.
+
+    The remaining concern is then that the blocking would introduce
+    uneven response times - the worker threads would go very fast most
+    of the time but every once in a while they could hang waiting on
+    the gc thread. These hangs are (according to the research paper)
+    on the order of milliseconds, but if they still are problematic
+    then a crude solution would be to introduce artificial short
+    sleeps in the working threads to bring down the mutation rate -
+    even with those sleeps the application would probably still be
+    significantly faster than the current approach.
+
+
+Issue: Micro-gc
+
+A way to retain the immediate-destruct (and free) semantic for thread
+local things referenced only from the pike stack is to implement a
+"micro-gc" that runs very quickly and is called often enough to keep
+the semantic.
+
+To begin with, the mark-and-sweep gc for new data (as discussed in the
+issue "Garbage collector") is not implemented, and the refcounts for
+thread local things are not delay-updated at all. The work of the
+micro-gc then becomes to free all things in the zero-count table (ZCT)
+that aren't referenced from the thread's C and pike stacks.
+
+Scanning the two stacks completely in every micro-gc would be too
+expensive. That is solved by partitioning the ZCT so that every pike
+stack frame gets one of its own. New zero-count things are always put
+in the ZCT for current topmost frame.
+
+That way, the micro-gc can scan the topmost parts of the stacks (above
+the last pike stack frame) for references to things in the topmost
+ZCT, and when a pike stack frame is popped then the things in its ZCT
+can be freed without scanning at all. This is enough to timely
+destruct and free the things put on the pike stack.
+
+Furthermore, since the old immediate-destruct semantics only requires
+destructing before and after every pike level function call, it won't
+be necessary for the micro-gc to scan the C stack at all (there's
+never any part of it above the current frame, i.e. above the innermost
+mega_apply, to scan).
+
+Note that the above works under the assumption that new things are
+only referenced from the stacks in or below the current frame. That's
+not always true - code might change the stack further back to
+reference new things, e.g. if a function allocates some temporary
+struct on the stack and then pass the pointer to it to subroutines
+that change it.
+
+Such code on the C level is very unlikely, since it would mean that C
+code would be changing something on the C stack back across a pike
+level apply.
+
+On the Pike level it can occur with inner functions changing variables
+in their surrounding functions. Those cases can however be detected
+and handle one way or the other. One way is to detect them at compile
+time and "stay" in the frame of the outermost surrounding function for
+the purposes of the micro-gc. That doesn't scale well if the inner
+functions are deeply recursive, though.
+
+This micro-gc approach comes at a considerable expense compared to the
+solution described in the issue "Garbage collector": Not only does the
+generational gc with mark-and-sweep for young data disappear (which
+according to the research paper gives 15-40% more total throughput),
+but the delayed updating of the refcounts disappear to a large extent
+too. Refcounting from the stacks is still avoided though, and delayed
+updating of refcounts in shared data is still done, which is crucial
+for multi-cpu performance.
+
+
+Issue: Single-refcount optimizations
+
+Pre-multi-cpu Pike makes use of the refcounting to optimize
+operations: Some operations that shouldn't be destructive on their
+operands can be destructive anyway on an operand if it has no other
+references. A common case in adding elements to arrays:
+
+  array arr = ({});
+  while (...)
+    arr += ({another_element});
+
+Here arr only got a single reference from the stack, so the +=
+operator destructively grows the array to add new elements to the end
+of it.
+
+With the new gc approach, such single-refcount optimizations no longer
+work in general. This is the case even if the micro-gc is implemented,
+since stack refs aren't counted.
+
+FIXME: List cases and discuss solutions.
+
+
 Issue: Moving things between lock spaces
 
 Things can be moved between lock spaces, or be made thread local or
@@ -514,16 +763,43 @@ not as vital as for strings since types typically only are built
 during compilation.
 
 
-Issue: Shared mapping and multiset data blocks
+Issue: Mapping and multiset data blocks
 
-An interesting issue is if things like mapping/multiset data blocks
-should be first or second class things (c.f. issue "Memory object
-structure"). If they're second class it means copy-on-write behavior
-doesn't work across lock spaces. If they're first class it means
-additional overhead handling the lock spaces of the mapping data
-blocks, and if a mapping data is shared between lock spaces then it
-has to be in some third lock space of its own, or in the global lock
-space, neither of which would be very good.
+Mappings and multisets currently have a deferred copy-on-write
+behavior, i.e. several mappings/multisets can share the same data
+block and it's only copied to a local one when changed through a
+specific mapping/multiset.
+
+If mappings and/or multisets are changed to be lock-free then the
+copy-on-write behavior needs to be solved:
+
+o  A flag is added to the mapping/multiset data block that is set
+   whenever it is shared.
+o  Every destructive operation checks the flag. If set, it makes a
+   copy, otherwise it changes the original block. Thus the flag is
+   essentially a read-only marker.
+o  The flag is cleared by the gc if it finds only one ref to a data
+   block. (Refcounting cannot be used without locking.)
+o  Hazard pointers are necessary for every destructive access,
+   including the setting of the flag. The reason is that the
+   read-onlyness only is in effect after all currently modifying
+   threads are finished with the block. The thread that is setting the
+   flag therefore has to wait until there are no other hazard pointers
+   to the block before returning.
+
+It's a good question whether keeping the copy-on-write feature is
+worth this overhead. Of course, an alternative is to simply let the
+builtin mappings and/or multisets be locking, and instead have special
+objects that implements lock-free data types.
+
+Another issue is if things like mapping/multiset data blocks should be
+first or second class things (c.f. issue "Memory object structure").
+If they're second class it means copy-on-write behavior doesn't work
+across lock spaces. If they're first class it means additional
+overhead handling the lock spaces of the mapping data blocks, and if a
+mapping data is shared between lock spaces then it has to be in some
+third lock space of its own, or in the global lock space, neither of
+which would be very good.
 
 So it doesn't look like there's a better way than to botch
 copy-on-write in this case.
@@ -580,7 +856,10 @@ exception is thrown.
 
 One case requires attention: An old-style function that requires the
 compat interpreter lock might catch an error. In that case the error
-system has to ensure that lock is reacquired.
+system has to ensure that lock is reacquired. This is however only a
+problem if C level module compatibility is kept as an option, which
+currently appears to be unlikely with the proposed gc (see issue
+"Garbage collector", item c).
 
 
 Issue: C module interface
@@ -602,8 +881,36 @@ new-style functions.
 There will be new GC callbacks for walking module global pointers to
 things (see issue "Garbage collection and external references").
 
+The proposed gc requires that every pointer change in a (heap
+allocated) thing is tracked (for pointers that might point to other
+heap allocated things). This is because the gc has to log the old
+state of the pointers before the first change after a gc run (see
+issue "Garbage collector", item c). For all builtin data types, this
+is handled internally in primitives like mapping_insert and
+object_set_index, so the only cases that the C module code typically
+has to handle are direct updates in the current storage. Therefore all
+pointer changes that currently looks someting like
+
+  THIS->my_thing = some_thing;
+
+must be wrapped in some kind of macro/function call to become:
+
+  set_ptr (THIS, my_thing, some_thing);
+
+On the positive side, all the refcount twiddling to account for
+references from the C and pike stacks can be removed from the C code.
+That also includes a lot of the SET_ONERROR stuff which currently is
+necessary to avoid lost refs when errors are thrown.
+
 
 Issue: C module compatibility
+
+Currently it doesn't look like the goal to keep a source-level
+compatibility mode for C modules can be achieved. The problem is that
+every pointer assignment in every heap allocated thing must be wrapped
+inside a macro/function call to make the new gc work (see issue
+"Garbage collector", item c), and lots of C module code change such
+pointers directly through plain assignments.
 
 Ref issue "Emulating the interpreter lock".
 
@@ -638,12 +945,26 @@ http://developer.apple.com/DOCUMENTATION/Cocoa/Conceptual/GarbageCollection/Intr
 Its source is here:
 http://www.opensource.apple.com/darwinsource/10.5.5/autozone-77.1/
 
-The same approach is also necessary to cope with old C modules (see
-issue "C module compatibility"), but since global C level pointers are
-few, it might not be mandatory to get this working.
+The same approach would also be necessary to cope with old C modules
+(see issue "C module compatibility"), but since global C level
+pointers are few, it might not be mandatory to get this working. And
+besides, it appears unlikely that compatibility with old C modules can
+be kept.
 
 
 Issue: Global pike level caches
+
+Global caches that are shared between threads are common, and in
+almost all cases such caches are implemented using mappings. There's
+therefore a need for (at least) a hash table data type that handle
+concurrent access and high mutation rates very efficiently.
+
+Issue "Lock-free hash table" discusses such a solution. It's currently
+not clear whether the builtin mappings will be lock-free or not (c.f.
+the copy-on-write problem in issue "Mapping and multiset data
+blocks"), but if they're not then a mapping-like object class is
+implemented that is lock-free. It's easy to replace global cache
+mappings with such objects.
 
 
 Issue: Thread.Queue
@@ -651,6 +972,9 @@ Issue: Thread.Queue
 A lock-free implementation should be used. The things in the queue are
 typically disowned to allow them to become thread local in the reading
 thread.
+
+
+Issue: "Relying on the interpreter lock"
 
 
 Issue: False sharing
@@ -786,8 +1110,9 @@ different addresses) then all will end up with the same string pointer
 afterwards.
 
 The java implementation relies on the gc to free up the old hash
-tables after resize. We don't have that convenience, but the problem
-is still solvable; see issue "Hazard pointers".
+tables after resize. The proposed gc (issue "Garbage collector") would
+solve it for us too, but even without that the problem is still
+solvable - see issue "Hazard pointers".
 
 
 Issue: Hazard pointers
@@ -859,6 +1184,12 @@ http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2006/n2047.html (C
 level interface at the end). It apparently lacks implementation,
 though.
 
+The linux kernel is reported to contain a good abstraction lib for
+these primitives, along with implementations for a large set of
+architectures (see
+http://www.rdrop.com/users/paulmck/scalability/paper/ordering.2006.08.21a.pdf).
+Can we use it? (Check GPL contamination.)
+
 Required operations:
 
 CAS(address, old_value, new_value)
@@ -904,6 +1235,26 @@ o  Windows/Visual Studio: Got "Interlocked Variable Access":
 o  FIXME: More..
 
 
+Issue: Preemptive thread suspension
+
+The proposed gc should preferably be able to suspend other threads
+preemptively (see issue "Garbage collector", item g). Survey of
+platform support for this:
+
+o  POSIX threads: No support. Deprecated and removed from the standard
+   since it can very easily lead to deadlocks. On some systems there
+   might still be a pthread_suspend function.
+
+o  Windows: SuspendThread and ResumeThread exists but are only
+   intended for use by debuggers.
+
+It's clear that a nonpreemptive fallback is required.
+
+Regardless of method, it's vital that the gc thread does not hold any
+mutex, and that it takes care to avoid being stopped while it suspends
+another thread. This is more important if a preemptive method is used.
+
+
 Issue: OpenMP
 
 OpenMP (see www.openmp.org) is a system to parallelize code using
@@ -936,3 +1287,5 @@ Pragmatic nonblocking synchronization for real-time systems
   http://www.usenix.org/publications/library/proceedings/usenix01/full_papers/hohmuth/hohmuth_html/index.html
 DCAS is not a silver bullet for nonblocking algorithm design
   http://portal.acm.org/citation.cfm?id=1007945
+A simple and efficient memory model for weakly-ordered architectures
+  http://www.open-std.org/Jtc1/sc22/WG21/docs/papers/2007/n2237.pdf
