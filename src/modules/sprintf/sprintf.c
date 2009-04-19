@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.163 2009/04/15 22:14:28 grubba Exp $
+|| $Id: sprintf.c,v 1.164 2009/04/19 19:17:31 grubba Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -392,6 +392,10 @@ struct format_stack
 
 /* Generate binary IEEE strings on a machine which uses a different kind
    of floating point internally */
+
+#if !defined(NEED_CUSTOM_IEEE) && (SIZEOF_FLOAT_TYPE > 4)
+#define NEED_CUSTOM_IEEE
+#endif
 
 #ifdef NEED_CUSTOM_IEEE
 
@@ -1618,27 +1622,33 @@ static void low_pike_sprintf(struct format_stack *fs,
 	switch(l) {
 	case 4:
 	  {
-#ifdef FLOAT_IS_IEEE_BIG
 	    float f = DO_NOT_WARN((float)tf);
-	    MEMCPY(x, &f, 4);
-#else
-#ifdef FLOAT_IS_IEEE_LITTLE
-	    float f = DO_NOT_WARN((float)tf);
-	    x[0] = ((char *)&f)[3];
-	    x[1] = ((char *)&f)[2];
-	    x[2] = ((char *)&f)[1];
-	    x[3] = ((char *)&f)[0];
-#else
-	    low_write_IEEE_float(x, tf, 4);
+#if SIZEOF_FLOAT_TYPE > 4
+	    /* Some paranoia in case libc doesn't handle
+	     * conversion to denormalized floats. */
+	    if (f != 0.0) {
 #endif
+#ifdef FLOAT_IS_IEEE_BIG
+	      MEMCPY(x, &f, 4);
+#elif defined(FLOAT_IS_IEEE_LITTLE)
+	      x[0] = ((char *)&f)[3];
+	      x[1] = ((char *)&f)[2];
+	      x[2] = ((char *)&f)[1];
+	      x[3] = ((char *)&f)[0];
+#else
+	      low_write_IEEE_float(x, tf, 4);
+#endif /* IEEE */
+#if SIZEOF_FLOAT_TYPE > 4
+	      break;
+	    }
+	    low_write_IEEE_float(x, tf, 4);
 #endif
 	  }
 	  break;
 	case 8:
 #ifdef DOUBLE_IS_IEEE_BIG
 	  MEMCPY(x, &tf, 8);
-#else
-#ifdef DOUBLE_IS_IEEE_LITTLE
+#elif defined(DOUBLE_IS_IEEE_LITTLE)
 	  x[0] = ((char *)&tf)[7];
 	  x[1] = ((char *)&tf)[6];
 	  x[2] = ((char *)&tf)[5];
@@ -1650,7 +1660,17 @@ static void low_pike_sprintf(struct format_stack *fs,
 #else
 	  low_write_IEEE_float(x, tf, 8);
 #endif
-#endif
+	}
+	if (fs->fsp->flags & FIELD_LEFT) {
+	  /* Reverse the byte order. */
+	  int i;
+	  char c;
+	  l--;
+	  for (i=0; i < (l-i); i++) {
+	    c = x[i];
+	    x[i] = x[l-i];
+	    x[l-i] = c;
+	  }
 	}
 	break;
       }
