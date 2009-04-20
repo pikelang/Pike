@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rusage.c,v 1.52 2008/11/08 08:58:21 mast Exp $
+|| $Id: rusage.c,v 1.53 2009/04/20 17:32:12 jonasw Exp $
 */
 
 #include "global.h"
@@ -33,6 +33,9 @@
 #endif
 #ifdef HAVE_MACH_MACH_H
 #include <mach/mach.h>
+#ifdef HAVE_PTHREAD_MACH_THREAD_NP
+#include <pthread.h>
+#endif
 #endif
 #ifdef HAVE_MACH_THREAD_ACT_H
 #include <mach/thread_act.h>
@@ -630,7 +633,15 @@ PMOD_EXPORT cpu_time_t fallback_gct (void)
 {
   thread_basic_info_data_t tbid;
   mach_msg_type_number_t tbid_len = THREAD_BASIC_INFO_COUNT;
-  if (thread_info (mach_thread_self(), THREAD_BASIC_INFO,
+
+  //  Try to get kernel thread via special OS X extension since it's faster
+  //  (~40x on PPC G5) than the context switch caused by mach_thread_self().
+#ifdef HAVE_PTHREAD_MACH_THREAD_NP
+  mach_port_t self = pthread_mach_thread_np(pthread_self());
+#else
+  mach_port_t self = mach_thread_self();
+#endif
+  if (thread_info (self, THREAD_BASIC_INFO,
 		   (thread_info_t) &tbid, &tbid_len))
     return (cpu_time_t) -1;
   return
