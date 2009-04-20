@@ -199,11 +199,12 @@ pike-level updates with the convenience of implicit locking for read
 access.
 
 The scope of a lock space lock is (at least) the state inside all the
-things it contains, but not the set of things itself, i.e. things
-might be added to a lock space without holding a write lock. Removing
-a thing from a lock space always requires the write lock since that is
-necessary to ensure that a lock actually governs a thing for as long
-as it is held (regardless it's for reading or writing).
+things it contains (with a couple exceptions - see issue "Lock space
+lock semantics"), but not the set of things itself, i.e. things might
+be added to a lock space without holding a write lock. Removing a
+thing from a lock space always requires the write lock on it since
+that is necessary to ensure that a lock actually governs a thing for
+as long as it is held (regardless it's for reading or writing).
 
 See also issues "Memory object structure" and "Lock space locking" for
 more details.
@@ -283,23 +284,45 @@ o  A read-constant lock ensures both consistency and constantness
 
 o  A write lock ensures complete exclusive access. The owning thread
    can modify the data, and it can assume no other changes occur to it
-   (barring refcounters - see below). The owning thread can also under
-   limited time leave the data in inconsistent state. This is however
-   still limited by the calls to check_threads(), which means that the
-   state must be consistent again every time the evaluator callbacks
-   are run. See issue "Emulating the interpreter lock".
+   (barring refcounters and lock space pointers - see below). The
+   owning thread can also under limited time leave the data in
+   inconsistent state. This is however still limited by the calls to
+   check_threads(), which means that the state must be consistent
+   again every time the evaluator callbacks are run. See issue
+   "Emulating the interpreter lock".
 
 Allowing lock-free updates is attractive, so the standard read/write
 lock that governs the global lock space will probably be multiple
 read-safe/single write.
 
-An exception to the lock semantics above are refcounters or any other
-fields used by the gc (the gc typically runs concurrently in a thread
-of its own, and it doesn't heed any locks - see issue "Garbage
-collector"). A ref to a thing can always be added or removed, even if
-another thread holds an exclusive write lock on it. That since the
-thing will only be freed by the gc, which won't free it if a ref is
-added.
+The lock space lock covers all the data in the thing, with two
+exceptions:
+
+o  The refcounter (and other gc-related flags and fields) can always
+   change concurrently since the gc runs in a thread of its own, and
+   it doesn't heed any locks - see issue "Garbage collector".
+
+   A ref to a thing can always be added or removed, even if another
+   thread holds an exclusive write lock on it. That since the thing
+   will only be freed by the gc, which won't free it if a ref is
+   added.
+
+   Refcount updates need to be atomic if the refcounts are to be used
+   at all from other threads. Even so, they can only be used
+   opportunistically since they (almost) always might change
+   asynchronously. That could still be good enough for e.g.
+   Pike.count_memory (noone could expect it to be accurate anyway if
+   another thread is modifying the data structure being measured).
+
+o  The lock space pointer itself must at all times be either NULL or
+   point to a valid lock space struct, since another thread need to
+   access it to tell whether access to the thing is permissible. A
+   write lock is required to change the lock space pointer, but even
+   so the update must be atomic.
+
+   Since the lock space lock structs are collected by the gc, there is
+   no risk for races when threads asynchronously dereference lock
+   space pointers.
 
 
 Issue: Lock space locking
