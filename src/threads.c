@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.278 2009/03/13 21:44:46 mast Exp $
+|| $Id: threads.c,v 1.279 2009/04/21 12:31:05 jonasw Exp $
 */
 
 #include "global.h"
@@ -891,6 +891,20 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
     static struct timeval         last_check = { 0, 0 };
     task_thread_times_info_data_t info;
     mach_msg_type_number_t        info_size = TASK_THREAD_TIMES_INFO_COUNT;
+    
+    /* Before making an expensive call to task_info() we perform a
+       preliminary check that at least 35 ms real time has passed. If
+       not yet true we'll postpone the next check a full interval. */
+    static cpu_time_t             real_time_last_check = 0;
+    cpu_time_t                    real_time_now = get_real_time();
+#ifdef INT64
+    const cpu_time_t              real_time_interval = 35000000L; /* usec */
+#else
+    const cpu_time_t              real_time_interval = 35L;       /* msec */
+#endif
+    if (real_time_now - real_time_last_check < real_time_interval)
+      return;
+    real_time_last_check = real_time_now;
     
     /* Get user time and test if 50 ms has passed since last check. */
     if (task_info(mach_task_self(), TASK_THREAD_TIMES_INFO,
