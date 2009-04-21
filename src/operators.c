@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.258 2010/05/27 23:16:59 mast Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -124,7 +124,7 @@ void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 
 #ifdef AUTO_BIGNUM
   case T_INT:
-    if (ind->type == T_STRING) {
+    if (ind->type == T_STRING && !IS_UNDEFINED (what)) {
       INT_TYPE val = what->u.integer;
 
       convert_svalue_to_bignum(what);
