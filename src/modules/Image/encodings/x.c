@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: x.c,v 1.51 2008/06/16 21:56:24 mast Exp $
+|| $Id$
 */
 
 /*
@@ -203,7 +203,7 @@ static void image_x_encode_truecolor(INT32 args)
 
    if (nct) 
    {
-      tmp=(rgb_group*)xalloc(sizeof(rgb_group)*img->xsize*img->ysize +1);
+      tmp=(rgb_group*)xalloc(sizeof(rgb_group)*img->xsize*img->ysize +RGB_VEC_PAD);
       if (!image_colortable_map_image(nct,img->img,tmp,
 				      img->xsize*img->ysize,img->xsize))
       {

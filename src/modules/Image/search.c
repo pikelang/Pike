@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: search.c,v 1.33 2005/08/15 17:00:39 grubba Exp $
+|| $Id$
 */
 
 /*
@@ -509,7 +509,7 @@ void img_apply_max(struct image *dest,
    double qr,qg,qb;
    register double r=0,g=0,b=0;
 
-   d=xalloc(sizeof(rgb_group)*img->xsize*img->ysize+1);
+   d=xalloc(sizeof(rgb_group)*img->xsize*img->ysize+RGB_VEC_PAD);
 
 THREADS_ALLOW();
 

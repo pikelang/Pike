@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xcf.c,v 1.56 2008/01/22 21:23:51 grubba Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -1205,7 +1205,7 @@ void image_xcf_f__decode_tiles( INT32 args )
 
   if(cmap)
   {
-    colortable = xalloc(sizeof(rgb_group)*image_colortable_size( cmap ));
+    colortable = xalloc(sizeof(rgb_group)*image_colortable_size( cmap ) + RGB_VEC_PAD);
     SET_ONERROR(err, free, colortable);
     image_colortable_write_rgb( cmap, (unsigned char *)colortable );
   }

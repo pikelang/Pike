@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.101 2010/05/29 16:12:12 nilsson Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -992,9 +992,9 @@ static int _png_decode_idat(struct IHDR *ihdr, struct neo_colortable *ct,
   if( sp[-1].type!=T_STRING )
     Pike_error("Got illegal data from decompression.\n");
 
-  w1=xalloc(sizeof(rgb_group)*ihdr->width*ihdr->height);
+  w1=xalloc(sizeof(rgb_group)*ihdr->width*ihdr->height + RGB_VEC_PAD);
   SET_ONERROR(err, free_and_clear, &w1);
-  wa1=xalloc(sizeof(rgb_group)*ihdr->width*ihdr->height);
+  wa1=xalloc(sizeof(rgb_group)*ihdr->width*ihdr->height + RGB_VEC_PAD);
   SET_ONERROR(a_err, free_and_clear, &wa1);
 
   fs = sp[-1].u.string;
@@ -1029,9 +1029,9 @@ static int _png_decode_idat(struct IHDR *ihdr, struct neo_colortable *ct,
       int got_alpha = 0;
 
       /* need arena */
-      t1=xalloc(sizeof(rgb_group)*ihdr->width*ihdr->height);
+      t1=xalloc(sizeof(rgb_group)*ihdr->width*ihdr->height + RGB_VEC_PAD);
       SET_ONERROR(t_err, free_and_clear, &t1);
-      ta1=xalloc(sizeof(rgb_group)*ihdr->width*ihdr->height);
+      ta1=xalloc(sizeof(rgb_group)*ihdr->width*ihdr->height + RGB_VEC_PAD);
       SET_ONERROR(ta_err, free_and_clear, &ta1);
 
       /* loop over adam7 interlace's
@@ -1684,7 +1684,7 @@ static void image_png_encode(INT32 args)
 	 unsigned char *tmp, *ts;
 
          x = img->xsize;
-         tmp=xalloc(x*y);
+	 tmp=xalloc(x*y + RGB_VEC_PAD);
 
 	 image_colortable_index_8bit_image(ct,s,tmp,x*y,x);
          ps=begin_shared_string( y * ((x*bpp+7)/8+1) );

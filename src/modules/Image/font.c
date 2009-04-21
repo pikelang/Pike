@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: font.c,v 1.92 2010/07/27 16:46:05 mast Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -605,7 +605,7 @@ void font_write(INT32 args)
    else
      img->ysize = this->height;
    img->rgb.r=img->rgb.g=img->rgb.b=255;
-   img->img=malloc(img->xsize*img->ysize*sizeof(rgb_group)+1);
+   img->img=malloc(img->xsize*img->ysize*sizeof(rgb_group)+RGB_VEC_PAD);
 
    if (!img->img) {
      free_object(o);

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: blit.c,v 1.60 2006/08/31 14:02:47 nilsson Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -216,7 +216,7 @@ void img_crop(struct image *dest,
    if (x1>x2) tmp=x1, x1=x2, x2=tmp;
    if (y1>y2) tmp=y1, y1=y2, y2=tmp;
 
-   new=xalloc( (x2-x1+1)*(y2-y1+1)*sizeof(rgb_group)+1 );
+   new=xalloc( (x2-x1+1)*(y2-y1+1)*sizeof(rgb_group)+RGB_VEC_PAD );
 
    if (x1==0 && y1==0 &&
        img->xsize-1==x2 && img->ysize-1==y2)
@@ -260,7 +260,7 @@ void img_crop(struct image *dest,
 void img_clone(struct image *newimg,struct image *img)
 {
    if (newimg->img) free(newimg->img);
-   newimg->img=xalloc(sizeof(rgb_group)*img->xsize*img->ysize+1);
+   newimg->img=xalloc(sizeof(rgb_group)*img->xsize*img->ysize+RGB_VEC_PAD);
    THREADS_ALLOW();
    MEMCPY(newimg->img,img->img,sizeof(rgb_group)*img->xsize*img->ysize);
    THREADS_DISALLOW();

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dct.c,v 1.29 2005/08/15 17:00:39 grubba Exp $
+|| $Id$
 */
 
 /*
@@ -116,7 +116,7 @@ void image_dct(INT32 args)
    }
 
    if (!(img->img=(rgb_group*)malloc(sizeof(rgb_group)*
-				     img->xsize*img->ysize+1)))
+				     img->xsize*img->ysize+RGB_VEC_PAD)))
    {
       free(area);
       free(costbl);

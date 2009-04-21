@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image.c,v 1.236 2009/07/21 14:25:52 grubba Exp $
+|| $Id$
 */
 
 /*
@@ -409,7 +409,7 @@ THREADS_ALLOW();
    
 THREADS_DISALLOW();
 
-   d=xalloc(sizeof(rgb_group)*img->xsize*img->ysize + 1);
+   d=xalloc(sizeof(rgb_group)*img->xsize*img->ysize + RGB_VEC_PAD);
 
 THREADS_ALLOW();
 CHRONO("apply_matrix, one");
@@ -631,7 +631,7 @@ void img_read_grey(INT32 args)
    int n=THIS->xsize*THIS->ysize;
    rgb_group *d;
    img_read_get_channel(1,"grey",args,&m1,&s1,&c1);
-   d=THIS->img=(rgb_group*)xalloc(sizeof(rgb_group)*n+1);
+   d=THIS->img=(rgb_group*)xalloc(sizeof(rgb_group)*n+RGB_VEC_PAD);
    switch (m1)
    {
       case 0: MEMSET(d,c1,n*sizeof(rgb_group)); break;
@@ -649,7 +649,7 @@ void img_read_rgb(INT32 args)
    img_read_get_channel(1,"red",args,&m1,&s1,&(rgb.r));
    img_read_get_channel(2,"green",args,&m2,&s2,&(rgb.g));
    img_read_get_channel(3,"blue",args,&m3,&s3,&(rgb.b));
-   d=THIS->img=(rgb_group*)xalloc(sizeof(rgb_group)*n+1);
+   d=THIS->img=(rgb_group*)xalloc(sizeof(rgb_group)*n+RGB_VEC_PAD);
 
    switch (m1|(m2<<4)|(m3<<4))
    {
@@ -703,7 +703,7 @@ void img_read_cmyk(INT32 args)
    img_read_get_channel(2,"magenta",args,&m2,&s2,&(rgb.g));
    img_read_get_channel(3,"yellow",args,&m3,&s3,&(rgb.b));
    img_read_get_channel(4,"black",args,&m4,&s4,&k);
-   d=THIS->img=(rgb_group*)xalloc(sizeof(rgb_group)*n+1);
+   d=THIS->img=(rgb_group*)xalloc(sizeof(rgb_group)*n+RGB_VEC_PAD);
 
    while (n--)
    {
@@ -742,7 +742,7 @@ void img_read_adjusted_cmyk(INT32 args)
    img_read_get_channel(2,"magenta",args,&m2,&s2,&(rgb.g));
    img_read_get_channel(3,"yellow",args,&m3,&s3,&(rgb.b));
    img_read_get_channel(4,"black",args,&m4,&s4,&k);
-   d=THIS->img=(rgb_group*)xalloc(sizeof(rgb_group)*n+1);
+   d=THIS->img=(rgb_group*)xalloc(sizeof(rgb_group)*n+RGB_VEC_PAD);
 
    while (n--)
    {
@@ -799,7 +799,7 @@ void img_read_cmy(INT32 args)
    img_read_get_channel(1,"cyan",args,&m1,&s1,&(rgb.r));
    img_read_get_channel(2,"magenta",args,&m2,&s2,&(rgb.g));
    img_read_get_channel(3,"yellow",args,&m3,&s3,&(rgb.b));
-   d=THIS->img=(rgb_group*)xalloc(sizeof(rgb_group)*n+1);
+   d=THIS->img=(rgb_group*)xalloc(sizeof(rgb_group)*n+RGB_VEC_PAD);
 
    while (n--)
    {
@@ -912,7 +912,7 @@ void image_create_method(INT32 args)
       if (args<2) push_int(0);
 
       THIS->img=(rgb_group*)
-	 xalloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1);
+	 xalloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD);
 
       if (args>2) pop_n_elems(args-2);
       push_int(0); stack_swap();
@@ -964,7 +964,7 @@ void image_create(INT32 args)
    else
       getrgb(THIS,2,args,args,"Image.Image->create()"); 
 
-   THIS->img=xalloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1);
+   THIS->img=xalloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD);
 
    img_clear(THIS->img,THIS->rgb,THIS->xsize*THIS->ysize);
    pop_n_elems(args);
@@ -1041,7 +1041,7 @@ void image_clone(INT32 args)
    if (img->xsize<0) img->xsize=1;
    if (img->ysize<0) img->ysize=1;
 
-   img->img=xalloc(sizeof(rgb_group)*img->xsize*img->ysize+1);
+   img->img=xalloc(sizeof(rgb_group)*img->xsize*img->ysize+RGB_VEC_PAD);
    if (THIS->img)
    {
       if (img->xsize==THIS->xsize
@@ -1095,12 +1095,12 @@ void image_clear(INT32 args)
 
    getrgb(img,0,args,args,"Image.Image->clear()"); 
 
-   img->img=malloc(sizeof(rgb_group)*img->xsize*img->ysize+1);
+   img->img=malloc(sizeof(rgb_group)*img->xsize*img->ysize+RGB_VEC_PAD);
    if (!img->img)
    {
      free_object(o);
      SIMPLE_OUT_OF_MEMORY_ERROR("clear",
-				sizeof(rgb_group)*img->xsize*img->ysize+1);
+				sizeof(rgb_group)*img->xsize*img->ysize+RGB_VEC_PAD);
    }
 
    img_clear(img->img,img->rgb,img->xsize*img->ysize);
@@ -1225,11 +1225,11 @@ static void image_change_color(INT32 args)
    img=(struct image*)(o->storage);
    *img=*THIS;
 
-   if (!(img->img=malloc(sizeof(rgb_group)*img->xsize*img->ysize+1)))
+   if (!(img->img=malloc(sizeof(rgb_group)*img->xsize*img->ysize+RGB_VEC_PAD)))
    {
       free_object(o);
       SIMPLE_OUT_OF_MEMORY_ERROR("change_color",
-				 sizeof(rgb_group)*img->xsize*img->ysize+1);
+				 sizeof(rgb_group)*img->xsize*img->ysize+RGB_VEC_PAD);
    }
 
    left=THIS->xsize*THIS->ysize;
@@ -2285,11 +2285,11 @@ void image_grey(INT32 args)
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
    *img=*THIS;
-   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
+   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD)))
    {
       free_object(o);
       SIMPLE_OUT_OF_MEMORY_ERROR("grey",
-				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+1);
+				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD);
    }
 
    d=img->img;
@@ -2377,11 +2377,11 @@ void image_color(INT32 args)
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
    *img=*THIS;
-   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
+   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD)))
    {
       free_object(o);
       SIMPLE_OUT_OF_MEMORY_ERROR("color",
-				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+1);
+				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD);
    }
 
    d=img->img;
@@ -2445,10 +2445,10 @@ void image_invert(INT32 args)
    img=(struct image*)o->storage;
    *img=*THIS;
    sz = sizeof(rgb_group)*THIS->xsize * THIS->ysize;
-   if (!(img->img=malloc(sz + 1)))
+   if (!(img->img=malloc(sz + RGB_VEC_PAD)))
    {
       free_object(o);
-      SIMPLE_OUT_OF_MEMORY_ERROR("invert", sz + 1);
+      SIMPLE_OUT_OF_MEMORY_ERROR("invert", sz + RGB_VEC_PAD);
    }
 
    d = (char *)img->img;
@@ -2538,11 +2538,11 @@ void image_threshold(INT32 args)
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
    *img=*THIS;
-   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
+   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD)))
    {
       free_object(o);
       SIMPLE_OUT_OF_MEMORY_ERROR("threshold",
-				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+1);
+				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD);
    }
 
    d=img->img;
@@ -2662,11 +2662,11 @@ void image_hsv_to_rgb(INT32 args)
    img=(struct image*)o->storage;
    *img=*THIS;
 
-   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
+   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD)))
    {
       free_object(o);
       SIMPLE_OUT_OF_MEMORY_ERROR("hsv_to_rgb",
-				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+1);
+				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD);
    }
 
    d=img->img;
@@ -2749,11 +2749,11 @@ void image_rgb_to_hsv(INT32 args)
    img=(struct image*)o->storage;
    *img=*THIS;
 
-   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
+   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD)))
    {
       free_object(o);
       SIMPLE_OUT_OF_MEMORY_ERROR("rgb_to_hsv",
-				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+1);
+				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD);
    }
 
    d=img->img;
@@ -2877,11 +2877,11 @@ void image_yuv_to_rgb(INT32 args)
    img=(struct image*)o->storage;
    *img=*THIS;
 
-   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
+   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD)))
    {
       free_object(o);
       SIMPLE_OUT_OF_MEMORY_ERROR("yuv_to_rgb",
-				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+1);
+				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD);
    }
 
    d=img->img;
@@ -2932,11 +2932,11 @@ void image_rgb_to_yuv(INT32 args)
    img=(struct image*)o->storage;
    *img=*THIS;
 
-   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
+   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD)))
    {
       free_object(o);
       SIMPLE_OUT_OF_MEMORY_ERROR("rgb_to_yuv",
-				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+1);
+				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD);
    }
 
    d=img->img;
@@ -3026,11 +3026,11 @@ void image_distancesq(INT32 args)
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
    *img=*THIS;
-   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
+   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD)))
    {
       free_object(o);
       SIMPLE_OUT_OF_MEMORY_ERROR("distancesq",
-				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+1);
+				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD);
    }
 
    d=img->img;
@@ -3239,11 +3239,11 @@ void image_select_from(INT32 args)
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
    *img=*THIS;
-   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
+   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD)))
    {
       free_object(o);
       SIMPLE_OUT_OF_MEMORY_ERROR("select_from",
-				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+1);
+				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD);
    }
    MEMSET(img->img,0,sizeof(rgb_group)*img->xsize*img->ysize);
 
@@ -3900,7 +3900,7 @@ void image_modify_by_intensity(INT32 args)
    div=rgb.r+rgb.g+rgb.b;
    if (!div) div=1;
 
-   s=xalloc(sizeof(rgb_group)*(args-3)+1);
+   s=xalloc(sizeof(rgb_group)*(args-3)+RGB_VEC_PAD);
 
    for (x=0; x<args-3; x++)
    {
@@ -3924,12 +3924,12 @@ void image_modify_by_intensity(INT32 args)
       else s[x].r=s[x].g=s[x].b=0;
    }
 
-   list=malloc(sizeof(rgb_group)*256+1);
+   list=malloc(sizeof(rgb_group)*256+RGB_VEC_PAD);
    if (!list) 
    {
       free(s);
       SIMPLE_OUT_OF_MEMORY_ERROR("modify_by_intensity",
-				 sizeof(rgb_group)*256+1);
+				 sizeof(rgb_group)*256+RGB_VEC_PAD);
    }
    for (x=0; x<args-4; x++)
    {
@@ -3950,12 +3950,12 @@ void image_modify_by_intensity(INT32 args)
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
    *img=*THIS;
-   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
+   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD)))
    {
       free_object(o);
       free(list);
       SIMPLE_OUT_OF_MEMORY_ERROR("modify_by_intensity",
-				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+1);
+				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD);
    }
 
    d=img->img;
@@ -4303,11 +4303,11 @@ void image_gamma(INT32 args)
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
    *img=*THIS;
-   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
+   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD)))
    {
       free_object(o);
       SIMPLE_OUT_OF_MEMORY_ERROR("gamma",
-				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+1);
+				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD);
    }
 
    d=img->img;
@@ -4850,7 +4850,7 @@ void image__decode( INT32 args )
 
     THIS->xsize = w;
     THIS->ysize = h;
-    THIS->img = xalloc( sizeof(rgb_group)*w*h+1 );
+    THIS->img = xalloc( sizeof(rgb_group)*w*h+RGB_VEC_PAD );
 
     memcpy( THIS->img, a->item[2].u.string->str, a->item[2].u.string->len );
     pop_stack();

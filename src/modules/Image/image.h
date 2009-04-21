@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image.h,v 1.51 2003/01/27 11:59:14 mirar Exp $
+|| $Id$
 */
 
 #ifdef PIKE_IMAGE_IMAGE_H
@@ -71,6 +71,15 @@ static inline INT32 FLOAT_TO_COLORL(double X)
 	(((INT32)((X)*((float)(COLORLMAX/256))))*256+((INT32)((X)*255)))
 #endif /* __ECL */
 
+#ifdef USE_VALGRIND
+/* Workaround for valgrind false alarms: gcc (4.2.3) can generate code
+ * that reads a full native integer from memory when we retrieve an
+ * rgb_group. This makes valgrind complain if it's done past the end
+ * of an alloc'ed block, so pad some extra. */
+#define RGB_VEC_PAD (SIZEOF_CHAR_P - sizeof (rgb_group))
+#else
+#define RGB_VEC_PAD 1
+#endif
 
 #define FS_SCALE 1024
 

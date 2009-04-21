@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: atari.c,v 1.4 2004/05/19 00:06:06 nilsson Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -49,7 +49,7 @@ struct atari_palette* decode_atari_palette(unsigned char *pal,
   struct atari_palette* ret_pal = xalloc(sizeof(struct atari_palette));
 
   ret_pal->size=size;
-  ret_pal->colors=xalloc(size*sizeof(rgb_group));
+  ret_pal->colors=xalloc(size*sizeof(rgb_group) + RGB_VEC_PAD);
 
   if(size==2)
   {

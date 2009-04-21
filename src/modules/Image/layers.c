@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: layers.c,v 1.100 2008/01/16 19:42:57 grubba Exp $
+|| $Id$
 */
 
 /*
@@ -2774,10 +2774,10 @@ void img_lay(struct layer **layer,
    int xoffs=dest->xoffs,xsize=dest->xsize;
 
 #ifdef LAYERS_DUAL
-   line1=malloc(sizeof(rgb_group)*width);
-   aline1=malloc(sizeof(rgb_group)*width);
-   line2=malloc(sizeof(rgb_group)*width);
-   aline2=malloc(sizeof(rgb_group)*width);
+   line1=malloc(sizeof(rgb_group)*width + RGB_VEC_PAD);
+   aline1=malloc(sizeof(rgb_group)*width + RGB_VEC_PAD);
+   line2=malloc(sizeof(rgb_group)*width + RGB_VEC_PAD);
+   aline2=malloc(sizeof(rgb_group)*width + RGB_VEC_PAD);
    if (!line1 || !aline1
        !line2 || !aline2)
    {
@@ -2785,7 +2785,7 @@ void img_lay(struct layer **layer,
       if (aline1) free(aline1);
       if (line2) free(line2);
       if (aline2) free(aline2);
-      resource_error(NULL,0,0,"memory",sizeof(rgb_group)*4*width,
+      resource_error(NULL,0,0,"memory",4*(sizeof(rgb_group)*width + RGB_VEC_PAD),
 		     "Out of memory.\n");
    }
 #endif
