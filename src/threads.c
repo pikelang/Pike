@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.279 2009/04/21 12:31:05 jonasw Exp $
+|| $Id: threads.c,v 1.280 2009/04/21 16:02:29 jonasw Exp $
 */
 
 #include "global.h"
@@ -895,16 +895,23 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
     /* Before making an expensive call to task_info() we perform a
        preliminary check that at least 35 ms real time has passed. If
        not yet true we'll postpone the next check a full interval. */
-    static cpu_time_t             real_time_last_check = 0;
-    cpu_time_t                    real_time_now = get_real_time();
+    struct timeval                tv;
+    if (GETTIMEOFDAY(&tv) == 0) {
 #ifdef INT64
-    const cpu_time_t              real_time_interval = 35000000L; /* usec */
+      static INT64 real_time_last_check = 0;
+      INT64 real_time_now = tv.tv_sec * 1000000 + tv.tv_usec;
+      if (real_time_now - real_time_last_check < 35000)
+	return;
+      real_time_last_check = real_time_now;
 #else
-    const cpu_time_t              real_time_interval = 35L;       /* msec */
+      static struct timeval real_time_last_check = { 0, 0 };
+      struct timeval diff;
+      timersub(&real_time_now, &real_time_last_check, &diff);
+      if (diff.tv_usec < 35000 && diff.tv_sec == 0)
+	return;
+      real_time_last_check = tv;
 #endif
-    if (real_time_now - real_time_last_check < real_time_interval)
-      return;
-    real_time_last_check = real_time_now;
+    }
     
     /* Get user time and test if 50 ms has passed since last check. */
     if (task_info(mach_task_self(), TASK_THREAD_TIMES_INFO,
