@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.h,v 1.82 2008/10/01 23:45:05 mast Exp $
+|| $Id: array.h,v 1.83 2009/04/21 17:48:14 grubba Exp $
 */
 
 #ifndef ARRAY_H
@@ -261,7 +261,7 @@ PMOD_EXPORT struct array *implode_array(struct array *a, struct array *b);
 #define AGGR_ARR_EPILOGUE(base_sval) do {				\
     ptrdiff_t diff__ = Pike_sp - base_sval;				\
     if (!diff__) {							\
-      if (base_sval[-1].u.array->size) {				\
+      if (!base_sval[-1].u.array->size) {				\
 	free_array (base_sval[-1].u.array);				\
 	add_ref (base_sval[-1].u.array = &empty_array);			\
       }									\
