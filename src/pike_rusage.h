@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_rusage.h,v 1.25 2009/04/21 11:41:57 mast Exp $
+|| $Id: pike_rusage.h,v 1.26 2009/04/21 12:03:34 mast Exp $
 */
 
 #ifndef PIKE_RUSAGE_H
@@ -129,8 +129,7 @@
 #elif defined (MIGHT_HAVE_POSIX_MONOTONIC_GRT)
 #  define GRT_RUNTIME_CHOICE
 #elif defined (HAVE_HOST_GET_CLOCK_SERVICE)
-/* Define GRT_RUNTIME_CHOICE to allow MIGHT_HAVE_POSIX_MONOTONIC_GRT
- * to take precedence at runtime, if it would become possible. */
+/* Define this to avoid special cases in init_rusage. */
 #  define GRT_RUNTIME_CHOICE
 #elif defined (HAVE_POSIX_REALTIME_GRT)
 #  define real_time_is_monotonic 0
