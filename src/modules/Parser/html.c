@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: html.c,v 1.183 2008/10/07 19:06:05 mast Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -1869,6 +1869,7 @@ static int scan_forward_arg(struct parser_html_storage *this,
 			    struct piece **destp,
 			    ptrdiff_t *d_p,
 			    enum scan_arg_do what,
+			    int scan_name, /* Break on "=" if outside quotes. */
 			    int finished,
 			    int *quote)
 /* Returns 1 if end is found, 2 if broken for entity, 0 otherwise. If
@@ -1984,9 +1985,17 @@ retryloop:
 
       if (ch == ARG_EQ (this))
       {
-	 DEBUG_MARK_SPOT("scan_forward_arg: end by arg_eq",
-			 destp[0],*d_p);
-	 break;
+	if (scan_name) {
+	  DEBUG_MARK_SPOT("scan_forward_arg: end by arg_eq",
+			  destp[0],*d_p);
+	  break;
+	}
+	else {
+	  DEBUG_MARK_SPOT("scan_forward_arg: = ignored in arg val",
+			  destp[0],*d_p);
+	  if (what == SCAN_ARG_PUSH) push_feed_range(*destp,*d_p,*destp,*d_p+1),n++;
+	  goto next;
+	}
       }
 
       if (ch == TAG_END (this)) {
@@ -2463,7 +2472,7 @@ static newstate handle_result(struct parser_html_storage *this,
 				 -(ptrdiff_t)N_WS(this));
 		 else pos = *head, cpos = *c_head + 1;
 		 scan_forward_arg (this, pos, cpos, &pos, &cpos,
-				   SCAN_ARG_ONLY, 1, NULL);
+				   SCAN_ARG_ONLY, 1, 1, NULL);
 		 put_out_feed_range(this,*head,*c_head,pos,cpos);
 		 if (skip) skip_feed_range(st,head,c_head,pos,cpos);
 		 this->out_ctx = CTX_TAG;
@@ -2856,7 +2865,7 @@ static newstate find_end_of_container(struct parser_html_storage *this,
       if (endtag) c2++;
 
       /* scan tag name as argument and push */
-      if (!scan_forward_arg(this,s2,c2,&s3,&c3,SCAN_ARG_PUSH,finished,NULL))
+      if (!scan_forward_arg(this,s2,c2,&s3,&c3,SCAN_ARG_PUSH,1,finished,NULL))
       {
 	DEBUG_MARK_SPOT("find_end_of_cont : wait at tag name",s2,c2);
 	return STATE_WAIT; /* come again */
@@ -3152,7 +3161,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	 }
 
 	 /* scan tag name as argument and push */
-	 if (!scan_forward_arg(this,dst,cdst,&dst,&cdst,SCAN_ARG_PUSH,finished,NULL))
+	 if (!scan_forward_arg(this,dst,cdst,&dst,&cdst,SCAN_ARG_PUSH,1,finished,NULL))
 	 {
 	   st->ignore_data=1;
 	   return STATE_WAIT; /* come again */
@@ -3368,7 +3377,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	  DEBUG_MARK_SPOT ("do_try_feed at arg name", s2, c2);
 	  if (!scan_forward_arg (this, s2, c2, &s3, &c3,
 				 this->splice_arg ? SCAN_ARG_PUSH : SCAN_ARG_ONLY,
-				 finished, NULL)) {
+				 1, finished, NULL)) {
 	    pop_n_elems (pushed);
 	    return STATE_WAIT;
 	  }
@@ -3454,7 +3463,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	      if (!scan_forward (s1, c1, &s1, &c1, WS(this),
 				 -(ptrdiff_t)N_WS(this)) ||
 		  !scan_forward_arg (this, s1, c1, &s2, &c2,
-				     SCAN_ARG_PUSH, finished, NULL)) {
+				     SCAN_ARG_PUSH, 0, finished, NULL)) {
 		DEBUG((stderr,"%*d do_try_feed wait in splice arg at "
 		       "%p:%"PRINTPTRDIFFT"d\n", this->stack_count,
 		       this->stack_count,s1,c1));
@@ -3567,7 +3576,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	DEBUG_MARK_SPOT ("do_try_feed at arg val", dst, cdst);
 	if (!(res = scan_forward_arg (this, dst, cdst, &dst, &cdst,
 				      scan_entity ? SCAN_ARG_ENT_BREAK : SCAN_ARG_ONLY,
-				      finished, &quote)))
+				      0, finished, &quote)))
 	  return STATE_WAIT;
 
 	if (res == 1) {		/* arg end */
@@ -4226,7 +4235,7 @@ static void tag_name(struct parser_html_storage *this,struct piece *feed,
      s1 = feed, c1 = c;
 
    /* scan as argument and push*/
-   scan_forward_arg(this,s1,c1,&s2,&c2,SCAN_ARG_PUSH,1,NULL);
+   scan_forward_arg(this,s1,c1,&s2,&c2,SCAN_ARG_PUSH,1,1,NULL);
    if (pushed) f_add (2);
 }
 
@@ -4261,7 +4270,7 @@ static void tag_args(struct parser_html_storage *this,struct piece *feed,ptrdiff
 		    -(ptrdiff_t)N_WS(this));
      else
        s1 = feed, c1 = c;
-     scan_forward_arg(this,s1,c1,&s2,&c2,SCAN_ARG_ONLY,1,NULL);
+     scan_forward_arg(this,s1,c1,&s2,&c2,SCAN_ARG_ONLY,1,1,NULL);
    }
    else s2 = feed, c2 = c;
 
@@ -4299,7 +4308,7 @@ new_arg:
 	else if (n && s1==s2 && c1==c2) { /* previous arg value didn't really end */
 	  DEBUG_MARK_SPOT("html_tag_args arg val continues",s3,c3);
 	  push_string (TAG_FIN_STRING (this));
-	  scan_forward_arg (this,s3,c3,&s2,&c2,SCAN_ARG_PUSH,1,NULL);
+	  scan_forward_arg (this,s3,c3,&s2,&c2,SCAN_ARG_PUSH,0,1,NULL);
 	  f_add (3);
 	  continue;
 	}
@@ -4310,7 +4319,7 @@ new_arg:
       }
 
       /* scan this argument name and push*/
-      scan_forward_arg(this,s1,c1,&s2,&c2,SCAN_ARG_PUSH,1,NULL);
+      scan_forward_arg(this,s1,c1,&s2,&c2,SCAN_ARG_PUSH,1,1,NULL);
       if (flags & FLAG_CASE_INSENSITIVE_TAG)
 	f_lower_case(1);
       n++;
@@ -4341,7 +4350,7 @@ new_arg:
 	  if (ch == TAG_END (this) && to_tag_end) break;
 	  DEBUG_MARK_SPOT("html_tag_args arg name continues",s4,c4);
 	  push_string (TAG_FIN_STRING (this));
-	  scan_forward_arg (this,s4,c4,&s2,&c2,SCAN_ARG_PUSH,1,NULL);
+	  scan_forward_arg (this,s4,c4,&s2,&c2,SCAN_ARG_PUSH,1,1,NULL);
 	  if (flags & FLAG_CASE_INSENSITIVE_TAG)
 	    f_lower_case(1);
 	  f_add (3);
@@ -4383,7 +4392,7 @@ new_arg:
       DEBUG_MARK_SPOT("html_tag_args value start",s2,c2);
 
       /* scan the argument value */
-      scan_forward_arg(this,s2,c2,&s1,&c1,SCAN_ARG_PUSH,1,NULL);
+      scan_forward_arg(this,s2,c2,&s1,&c1,SCAN_ARG_PUSH,0,1,NULL);
 
       DEBUG_MARK_SPOT("html_tag_args value end",s1,c1);
 
@@ -4487,7 +4496,7 @@ static void html_tag_content(INT32 args)
     case TYPE_CONT: {
       struct piece *end, *dummy;
       ptrdiff_t cend, cdummy;
-      if (scan_forward_arg (THIS, beg, cbeg, &beg, &cbeg, SCAN_ARG_PUSH, 1, NULL)) {
+      if (scan_forward_arg (THIS, beg, cbeg, &beg, &cbeg, SCAN_ARG_PUSH, 1, 1, NULL)) {
 	if (scan_for_end_of_tag (THIS, beg, cbeg, &beg, &cbeg, 1,
 				 THIS->flags & FLAG_MATCH_TAG, NULL) &&
 	    !find_end_of_container (THIS, sp-1, beg, cbeg+1,

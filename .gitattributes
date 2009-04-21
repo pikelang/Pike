@@ -596,7 +596,6 @@ testfont binary
 /src/modules/Parser/Makefile.in foreign_ident
 /src/modules/Parser/acconfig.h foreign_ident
 /src/modules/Parser/configure.in foreign_ident
-/src/modules/Parser/html.c foreign_ident
 /src/modules/Parser/initstuff.h foreign_ident
 /src/modules/Parser/parser.c foreign_ident
 /src/modules/Parser/parser.h foreign_ident

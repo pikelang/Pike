@@ -273,6 +273,16 @@ test_parser([[
   p->add_tag ("t", lambda (object p, mapping a) {return ({a->a});});
   return p->finish("<t a=\"f'o><t>" WIDENER)->read();
 ]], "f'o><t>" WIDENER);
+test_parser([[
+  object p = Parser.HTML();
+  p->add_tag ("t", lambda (object p, mapping a) {return ({a->a});});
+  return p->finish("<t a=b=\"c=d\"='e'=f=g>" WIDENER)->read();
+]], "b=c=d=e=f=g" WIDENER);
+test_parser([[
+  object p = Parser.HTML();
+  p->add_tag ("t", lambda (object p, mapping a) {return ({a->a + " " + a[""]});});
+  return p->finish("<t a=b =\"c=d\"='e'=f=g>" WIDENER)->read();
+]], "b c=d=e=f=g" WIDENER);
 test_parser([[{
   object p = Parser.HTML();
   p->add_tag ("t", lambda (object p, mapping a)
