@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.335 2009/03/30 12:46:57 per Exp $
+|| $Id: signal_handler.c,v 1.336 2009/04/22 18:54:32 grubba Exp $
 */
 
 #include "global.h"
@@ -375,7 +375,6 @@ static void (*default_signals[MAX_SIGNALS])(INT32);
 static struct callback *signal_evaluator_callback =0;
 
 DECLARE_FIFO(sig, unsigned char);
-
 
 #ifdef USE_PID_MAPPING
 static void report_child(int pid,
@@ -1031,6 +1030,85 @@ static void f_signame(int args)
     push_int(0);
 }
 
+/* #define PIKE_USE_FORKD */
+
+#ifdef PIKE_USE_FORKD
+/* Forkd communication fd. */
+static int forkd_fd = -1;
+
+void forkd(int fd)
+{
+  struct msghdr msg;
+  struct iovec iov;
+  char cmsgbuf[CMSG_LEN(sizeof(int))];
+  char buf;
+  int i;
+  int num_fail = 0;
+  msg.msg_name = NULL;
+  msg.msg_namelen = 0;
+  msg.msg_iov = &iov;
+  msg.msg_iovlen = 1;
+  msg.msg_flags = 0;
+
+  /* Clean up the fds so we don't need to do it for the children. */
+  if (fd != 3) {
+    do {
+      i = dup2(fd, 3);
+    } while ((i < 0) && ((errno == EINTR) || (errno == EBUSY)));
+    if (i < 0) {
+      write(2, "FORKD: Failed to dup fd!\n", 25);
+      _exit(0);
+    }
+    fd = 3;
+  }
+  for (i = 4; num_fail < PIKE_BADF_LIMIT; i++) {
+    int j;
+    do {
+      j = close(i);
+    } while ((j < 0) && (errno == EINTR));
+    if ((j < 0) && (errno = EBADF)) num_fail++;
+  }
+
+  while (1) {
+    int i;
+    struct cmsghdr *cmsg;
+    msg.msg_control = cmsgbuf;
+    msg.msg_controllen = sizeof(cmsgbuf);
+    iov.iov_base = &buf;
+    iov.iov_len = 1;
+    do {
+      i = recvmsg(fd, &msg, 0);
+    } while ((i < 0) && (errno = EINTR));
+    if (!i) _exit(0);	/* Connection closed, shutdown forkd. */
+    for (cmsg = CMSG_FIRSTHDR(&msg); cmsg; cmsg = CMSG_NXTHDR(&msg, cmsg)) {
+      int ctrl_fd = NULL;
+      if ((cmsg->cmsg_level != SOL_SOCKET) ||
+	  (cmsg->cmsg_type != SCM_RIGHTS) ||
+	  (cmsg->cmsg_len != CMSG_LEN(sizeof(int)))) {
+	continue;
+      }
+      ctrl_fd = ((int *)CMSG_DATA(cmsg))[0];
+      num_fds = (cmsg->cmsg_len - CMSG_LEN(0)) / sizeof(int);
+      do {
+	i = fork();
+      } while ((i < 0) && (errno = EINTR));
+      if (i < 0) {
+	/* Fork failure. */
+      } else if (i) {
+	/* Fork success. */
+      } else {
+	/* Child. */
+	forkd_child(ctrl_fd);
+      }
+      do {
+	i = close(ctrl_fd);
+      } while ((i < 0) && (errno == EINTR));
+    }
+  }
+}
+
+#endif
+
 
 /* Define two macros:
  *
@@ -1533,8 +1611,11 @@ static void f_pid_status_wait(INT32 args)
       case EINTR: 
 	break;
 	      
-#ifdef _REENTRANT
+#if defined(_REENTRANT) || defined(USE_SIGCHILD)
       case ECHILD:
+	/* If there is a SIGCHILD handler, it might have reaped
+	 * the child before the call to WAITPID() above.
+	 */
 	/* Linux stupidity...
 	 * child might be forked by another thread (aka process).
 	 *
@@ -1603,7 +1684,7 @@ static void f_pid_status_wait(INT32 args)
 			getpid(), pid));
 	}
 	break;
-#endif /* _REENTRANT */
+#endif /* _REENTRANT || USE_SIGCHILD */
 
       default:
 	Pike_error("Lost track of a child (pid %d, errno from wait %d).\n",
