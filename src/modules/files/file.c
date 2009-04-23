@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.406 2009/03/19 13:46:29 grubba Exp $
+|| $Id: file.c,v 1.407 2009/04/23 16:02:25 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -1271,7 +1271,7 @@ static void file_write(INT32 args)
 #ifdef _REENTRANT
 	if (FD<0) {
 	  free(iovbase);
-	  Pike_error("File destructed while in file->write.\n");
+	  Pike_error("File closed while in file->write.\n");
 	}
 #endif
 	if(i<0)
@@ -1353,7 +1353,7 @@ static void file_write(INT32 args)
     check_threads_etc();
 
 #ifdef _REENTRANT
-    if(FD<0) Pike_error("File destructed while in file->write.\n");
+    if(FD<0) Pike_error("File closed while in file->write.\n");
 #endif
 
     if(i<0)
@@ -1467,7 +1467,7 @@ static void file_write_oob(INT32 args)
     check_threads_etc();
 
 #ifdef _REENTRANT
-    if(FD<0) Pike_error("File destructed while in file->write_oob.\n");
+    if(FD<0) Pike_error("File closed while in file->write_oob.\n");
 #endif
 
     if(i<0)
