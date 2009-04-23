@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.165 2009/04/19 19:34:15 grubba Exp $
+|| $Id: sprintf.c,v 1.166 2009/04/23 15:55:05 grubba Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -1634,7 +1634,7 @@ static void low_pike_sprintf(struct format_stack *fs,
 #if SIZEOF_FLOAT_TYPE > 4
 	    /* Some paranoia in case libc doesn't handle
 	     * conversion to denormalized floats. */
-	    if (f != 0.0) {
+	    if ((f != 0.0) || (tf == 0.0)) {
 #endif
 #ifdef FLOAT_IS_IEEE_BIG
 	      MEMCPY(x, &f, 4);
