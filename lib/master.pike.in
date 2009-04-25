@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.476 2010/07/28 22:58:01 mast Exp $
+// $Id$
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -2203,6 +2203,8 @@ protected object Unicode;
 //!   @[joinnode]
 class dirnode
 {
+  string name;
+
   string dirname;
   object|void compilation_handler;
   constant is_resolv_dirnode = 1;
@@ -2256,11 +2258,12 @@ class dirnode
     return 0;
   }
 
-  protected void create(string d, object|void h)
+  protected void create(string d, object|void h, void|string name)
   {
-    resolv_debug ("dirnode(%O,%O) created\n",d,h);
+    resolv_debug ("dirnode(%O,%O) created with name %O\n", d, h, name);
     dirname=d;
     compilation_handler=h;
+    this_program::name = name;
     fc[dirname]=this;
     array(string) files = sort(master_get_dir(d)||({}));
     if (!sizeof(d)) return;
@@ -2375,7 +2378,9 @@ class dirnode
 	  }
 	  resolv_debug("dirnode(%O)->ind(%O) => found subdirectory %O, "
 		       "creating new dirnode\n", dirname, index, fname);
-	  return fc[fname] = dirnode(fname, compilation_handler);
+	  return fc[fname] = dirnode(fname, compilation_handler,
+				     name && (name == "predef::" ?
+					      index : name + "." + index));
 	}
 	resolv_debug("dirnode(%O)->ind(%O) casting (object)%O\n",
 		     dirname, index, fname);
@@ -2573,8 +2578,8 @@ class dirnode
 
   protected string _sprintf(int as)
   {
-    return as=='O' && sprintf("master()->dirnode(%O:%O)",
-			      dirname, module && module);
+    return as=='O' && (name || sprintf("master()->dirnode(%O:%O)",
+				       dirname, module && module));
   }
 }
 
@@ -2586,6 +2591,9 @@ class dirnode
 class joinnode
 {
   constant is_resolv_joinnode = 1;
+
+  string name;
+
   array(object|mapping) joined_modules;
   mapping(string:mixed) cache=([]);
 
@@ -2597,24 +2605,47 @@ class joinnode
 
   string _sprintf(int as)
   {
-    return as=='O' && sprintf("master()->joinnode(%O)",joined_modules);
+    if (as != 'O') return 0;
+    if (name) {
+      if (has_value (name, "|"))
+	return "joinnode(" + name + ")";
+      else
+	return name;		// Let's be brief.
+    }
+    else
+      return sprintf("master()->joinnode(%O)", joined_modules);
   }
 
   protected void create(array(object|mapping) _joined_modules,
 			object|void _compilation_handler,
-			joinnode|void _fallback_module)
+			joinnode|void _fallback_module,
+			void|string name)
   {
     joined_modules = _joined_modules;
     compilation_handler = _compilation_handler;
     fallback_module = _fallback_module || ([]);
-    resolv_debug ("joinnode(%O) created\n", joined_modules);
+
+    if (name)
+      this_program::name = name;
+    else {
+      mapping(string:int(1..1)) names = ([]);
+      foreach (_joined_modules, object|mapping m) {
+	if (objectp (m) && stringp (m->name))
+	  names[m->name] = 1;
+      }
+      if (sizeof (names))
+	this_program::name = sort (indices (names)) * "|";
+    }
+
+    resolv_debug ("joinnode(%O) created with name %O\n", joined_modules, name);
   }
 
   void add_path(string path)
   {
     path = combine_path(getcwd(), path);
     dirnode node = fc[path] ||
-      (fc[path] = dirnode(path, compilation_handler));
+      (fc[path] = dirnode(path, compilation_handler,
+			  name && !has_value (name, "|") && name));
     if (sizeof(joined_modules) &&
 	joined_modules[0] == node) return;
     joined_modules = ({ node }) + (joined_modules - ({ node }));
@@ -2662,7 +2693,9 @@ class joinnode
       DEC_RESOLV_MSG_DEPTH();
       resolv_debug("joinnode(%O)->ind(%O) => new joinnode, fallback: %O\n",
 		   joined_modules, index, fallback_module[index]);
-      return joinnode(res, compilation_handler, fallback_module[index]);
+      return joinnode(res, compilation_handler, fallback_module[index],
+		      name && !has_value (name, "|") &&
+		      (name == "predef::" ? index : name + "." + index));
     }
 
     DEC_RESOLV_MSG_DEPTH();
@@ -2814,7 +2847,8 @@ joinnode handle_import(string path, string|void current_file,
   return node;
 }
 
-program|object findmodule(string fullname, object|void handler)
+program|object findmodule(string fullname, object|void handler,
+			  void|string name)
 {
   program|object o;
 
@@ -2834,7 +2868,7 @@ program|object findmodule(string fullname, object|void handler)
     if(stat->isdir)
     {
       resolv_debug ("findmodule(%O) => new dirnode\n", fullname);
-      return fc[fullname] = dirnode(fullname, handler);
+      return fc[fullname] = dirnode(fullname, handler, name);
     }
 #if constant (load_module)
     else if (has_suffix (fullname, ".so")) {
@@ -2924,7 +2958,9 @@ multiset no_resolv = (<>);
 class CompatResolver
 {
   //! Join node of the root modules for this resolver.
-  joinnode root_module = joinnode(({instantiate_static_modules(predef::_static_modules)}));
+  joinnode root_module =
+    joinnode(({instantiate_static_modules(predef::_static_modules)}),
+	     0, 0, "predef::");
 
   //! Lookup from handler module to corresponding root_module.
   mapping(object:joinnode) handler_root_modules = ([]);
@@ -3106,7 +3142,7 @@ class CompatResolver
       if(mappingp(v))
 	v = joinify(v);
       if(res[n])
-	res[n] = joinnode(({res[n], v}));
+	res[n] = joinnode(({res[n], v}), 0, 0, n);
       else
 	res[n] = v;
     }
@@ -3171,7 +3207,8 @@ class CompatResolver
 				 return objectp(x) && x->is_resolv_dirnode;
 			       }) }),
 		    current_handler,
-		    root_module->fallback_module);
+		    root_module->fallback_module,
+		    "predef::");
 
     // FIXME: Is this needed?
     // Kluge to get _static_modules to work at top level.
