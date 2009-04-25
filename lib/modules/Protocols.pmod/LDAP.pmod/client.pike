@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.119 2009/12/14 12:28:24 mast Exp $
+// $Id$
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -899,7 +899,7 @@ void reset_options()
    last_rv = SIMPLE_RESULT (raw, 1, 0);
    if (!last_rv->error_number()) {
      bound_dn = dn;
-     md5_password = Crypto.MD5()->update (pass)->digest();
+     md5_password = Crypto.MD5.hash (pass);
    }
    DWRITE_HI(sprintf("client.BIND: %s\n", last_rv->error_string()));
    seterr (last_rv->error_number(), last_rv->error_string());

@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: module.pmod,v 1.34 2009/10/08 12:14:58 mast Exp $
+// $Id$
 
 #include "ldap_globals.h"
 
@@ -1721,7 +1721,7 @@ object/*(client)*/ get_connection (string ldap_url, void|string binddn,
 		(conn->get_bound_dn() == binddn &&
 		 (conn->get_bind_password_hash() ==
 		  (md5_pass ||
-		   (md5_pass = Crypto.MD5()->update (pass || "")->digest()))) &&
+		   (md5_pass = Crypto.MD5.hash (pass || "")))) &&
 		 (!version || conn->get_protocol_version() == version))) {
 	      DWRITE ("Reusing connection which has been idle for %d s.\n",
 		      now - last_use);
