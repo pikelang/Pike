@@ -1239,7 +1239,8 @@ void image_gif_netscape_loop_block(INT32 args)
       if (sp[-args].type!=T_INT) 
 	 Pike_error("Image.GIF.netscape_loop_block: illegal argument (exected int)\n");
       else
-	 loops=sp[-args].u.integer;
+	/* Should check range here, but that wouldn't be strictly compatible. */
+	loops= (unsigned short) sp[-args].u.integer;
    } else
       loops=65535;
    pop_n_elems(args);
