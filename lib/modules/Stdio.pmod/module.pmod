@@ -481,7 +481,7 @@ class File
   //! @param callback
   //!   Function to be called on completion.
   //!   The first argument will be @expr{1@} if a connection was
-  //!   successfully estabished, and @expr{0@} (zero) on failure.
+  //!   successfully established, and @expr{0@} (zero) on failure.
   //!   The rest of the arguments to @[callback] are passed
   //!   verbatim from @[args].
   //!
@@ -1354,14 +1354,18 @@ class File
     CHECK_OPEN();
     ::_disable_callbacks(); // Thread safing
 
+    // Bypass the ::set_xxx_callback functions; we instead enable all
+    // the event bits at once through the _enable_callbacks call at the end.
+
     _SET(read_callback,rcb);
     _SET(write_callback,wcb);
     if ((___close_callback = ccb) && (!rcb)) {
-      ::set_read_callback(__stdio_close_callback);
+      _fd->_read_callback = __stdio_close_callback;
     }
 
     _SET(read_oob_callback,roobcb);
     _SET(write_oob_callback,woobcb);
+
 #ifdef __STDIO_DEBUG
     if(mixed x=catch { ::set_nonblocking(); })
     {
@@ -1373,6 +1377,7 @@ class File
 #else
     ::set_nonblocking();
 #endif
+
     ::_enable_callbacks();
   }
 
