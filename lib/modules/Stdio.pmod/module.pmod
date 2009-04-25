@@ -1188,7 +1188,8 @@ class File
   //!   These functions do not set the file nonblocking.
   //!
   //! @note
-  //!   Callbacks are also set by @[set_nonblocking()].
+  //!   Callbacks are also set by @[set_callbacks] and
+  //!   @[set_nonblocking()].
   //!
   //! @note
   //! After a callback has been called, it's disabled until it has
@@ -1228,24 +1229,71 @@ class File
   //! data arrives.
   //!
   //! @seealso
-  //! @[set_nonblocking()], @[set_id()], @[set_backend],
-  //! @[query_read_callback], @[query_write_callback],
+  //! @[set_callbacks], @[set_nonblocking()], @[set_id()],
+  //! @[set_backend], @[query_read_callback], @[query_write_callback],
   //! @[query_read_oob_callback], @[query_write_oob_callback],
   //! @[query_close_callback]
+
+#define SET(X,Y) ::set_##X ((___##X = (Y)) && __stdio_##X)
+#define _SET(X,Y) _fd->_##X=(___##X = (Y)) && __stdio_##X
+
+  void set_callbacks (void|function(mixed, string:int) read_cb,
+		      void|function(mixed:int) write_cb,
+		      void|function(mixed:int) close_cb,
+		      void|function(mixed, string:int) read_oob_cb,
+		      void|function(mixed:int) write_oob_cb)
+  //! Installs all the specified callbacks at once. Use @[UNDEFINED]
+  //! to keep the current setting for a callback.
+  //!
+  //! Like @[set_nonblocking], the callbacks are installed atomically.
+  //! As opposed to @[set_nonblocking], this function does not do
+  //! anything with the stream, and it doesn't even have to be open.
+  //!
+  //! @seealso
+  //! @[set_read_callback], @[set_write_callback],
+  //! @[set_read_oob_callback], @[set_write_oob_callback],
+  //! @[set_close_callback], @[query_callbacks]
+  {
+    ::_disable_callbacks();
+
+    // Bypass the ::set_xxx_callback functions; we instead enable all
+    // the event bits at once through the _enable_callbacks call at the end.
+
+    if (!zero_type (read_cb))
+      _SET (read_callback, read_cb);
+    if (!zero_type (write_cb))
+      _SET (write_callback, write_cb);
+
+    if (!zero_type (close_cb) &&
+	(___close_callback = close_cb) && !___read_callback)
+      _fd->_read_callback = __stdio_close_callback;
+
+    if (!zero_type (read_oob_cb))
+      _SET (read_oob_callback, read_oob_cb);
+    if (!zero_type (write_oob_cb))
+      _SET (write_oob_callback, write_oob_cb);
+
+    ::_enable_callbacks();
+  }
 
   //! @decl function(mixed, string:int) query_read_callback()
   //! @decl function(mixed:int) query_write_callback()
   //! @decl function(mixed, string:int) query_read_oob_callback()
   //! @decl function(mixed:int) query_write_oob_callback()
   //! @decl function(mixed:int) query_close_callback()
+  //! @decl array(function(mixed,void|string:int)) query_callbacks()
   //!
   //! These functions return the currently installed callbacks for the
   //! respective events.
   //!
+  //! @[query_callbacks] returns the callbacks in the same order as
+  //! @[set_callbacks] and @[set_nonblocking] expect them.
+  //!
   //! @seealso
   //! @[set_nonblocking()], @[set_read_callback],
   //! @[set_write_callback], @[set_read_oob_callback],
-  //! @[set_write_oob_callback], @[set_close_callback]
+  //! @[set_write_oob_callback], @[set_close_callback],
+  //! @[set_callbacks]
 
   //! @ignore
 
@@ -1261,9 +1309,6 @@ class File
   {
     return ___read_callback;
   }
-
-#define SET(X,Y) ::set_##X ((___##X = (Y)) && __stdio_##X)
-#define _SET(X,Y) _fd->_##X=(___##X = (Y)) && __stdio_##X
 
 #define CBFUNC(TYPE, X)					\
   void set_##X (TYPE l##X)				\
@@ -1293,6 +1338,17 @@ class File
   }
 
   function(mixed|void:int) query_close_callback() { return ___close_callback; }
+
+  array(function(mixed,void|string:int)) query_callbacks()
+  {
+    return ({
+      ___read_callback,
+      ___write_callback,
+      ___close_callback,
+      ___read_oob_callback,
+      ___write_oob_callback,
+    });
+  }
 
   protected void fix_internal_callbacks()
   {
@@ -1351,7 +1407,7 @@ class File
   //!   option @tt{'--without-oob'@}.
   //!
   //! @seealso
-  //! @[set_blocking()], @[set_read_callback()],
+  //! @[set_blocking()], @[set_callbacks], @[set_read_callback()],
   //! @[set_write_callback()], @[set_read_oob_callback()],
   //! @[set_write_oob_callback()], @[set_close_callback()]
   //! @[set_nonblocking_keep_callbacks()],
