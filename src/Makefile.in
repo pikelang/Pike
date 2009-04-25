@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.483 2010/05/29 23:56:18 mast Exp $
+# $Id$
 #
 
 # This line is needed on some machines.
@@ -197,6 +197,8 @@ MODULE_REQUIREMENTS= \
   precompile.sh-stamp \
   modules/static_module_makefile \
   modules/dynamic_module_makefile \
+  post_modules/static_module_makefile \
+  post_modules/dynamic_module_makefile \
   propagated_variables \
   $(SRCDIR)/language.h \
   $(SRCDIR)/interpret_protos.h \
@@ -1311,23 +1313,23 @@ modules/common_module_makefile: $(SRCDIR)/modules/common_module_makefile.in conf
 	  (EXITCODE=$$?; rm cfl.common_module_makefile; exit $$EXITCODE)
 	-@rm cfl.common_module_makefile
 
-modules/static_module_makefile: modules/common_module_makefile $(SRCDIR)/modules/static_module_makefile.in config.status
+modules/static_module_makefile post_modules/static_module_makefile: modules/common_module_makefile $(SRCDIR)/modules/static_module_makefile.in config.status
 	-@(while :; do \
 	  echo foo > cfl.static_module_makefile; test "`echo cfl.*`" = cfl.static_module_makefile && break; \
 	  rm cfl.static_module_makefile; echo "Waiting to run config.status serially:" cfl.*; sleep 1; \
 	  arb=17; while test $$arb != 0; do arb=`expr $$arb - 1`; done; \
 	done;)
-	CONFIG_FILES=modules/static_module_makefile CONFIG_HEADERS="" ./config.status || \
+	CONFIG_FILES="modules/static_module_makefile post_modules/static_module_makefile:modules/static_module_makefile.in" CONFIG_HEADERS="" ./config.status || \
 	  (EXITCODE=$$?; rm cfl.static_module_makefile; exit $$EXITCODE)
 	-@rm cfl.static_module_makefile
 
-modules/dynamic_module_makefile: modules/common_module_makefile $(SRCDIR)/@dmmsrc@ config.status
+modules/dynamic_module_makefile post_modules/dynamic_module_makefile: modules/common_module_makefile $(SRCDIR)/@dmmsrc@ config.status
 	-@(while :; do \
 	  echo foo > cfl.dynamic_module_makefile; test "`echo cfl.*`" = cfl.dynamic_module_makefile && break; \
 	  rm cfl.dynamic_module_makefile; echo "Waiting to run config.status serially:" cfl.*; sleep 1; \
 	  arb=19; while test $$arb != 0; do arb=`expr $$arb - 1`; done; \
 	done;)
-	CONFIG_FILES=modules/dynamic_module_makefile:@dmmsrc@ CONFIG_HEADERS="" ./config.status || \
+	CONFIG_FILES="modules/dynamic_module_makefile:@dmmsrc@ post_modules/dynamic_module_makefile:@dmmsrc@" CONFIG_HEADERS="" ./config.status || \
 	  (EXITCODE=$$?; rm cfl.dynamic_module_makefile; exit $$EXITCODE)
 	-@rm cfl.dynamic_module_makefile
 
