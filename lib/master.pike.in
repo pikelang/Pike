@@ -1042,6 +1042,14 @@ int newest;
 	if(s->mtime>newest) newest=[int]s->mtime;			\
   } while(0)
 
+#define AUTORELOAD_CHECK_PRECOMPILED_FILE(X) do {			\
+    if(autoreload_on) {							\
+      int mtime = get_precompiled_mtime (X);				\
+      if (mtime >= 0 && mtime > newest)					\
+	if(s->mtime>newest) newest=[int]s->mtime;			\
+    }									\
+  } while(0)
+
 #define AUTORELOAD_FINISH(VAR, CACHE, FILE)				\
   if(autoreload_on) {							\
     mixed val = CACHE[FILE];						\
@@ -1444,8 +1452,9 @@ string fc_reverse_lookup (object obj)
 }
 
 array(string) query_precompiled_names(string fname)
+//! Returns identifiers (e.g. file names) of potentially precompiled
+//! files in priority order.
 {
-  // Filenames of potential precompiled files in priority order.
 #ifdef PRECOMPILED_SEARCH_MORE
   // Search for precompiled files in all module directories, not just
   // in the one where the source file is. This is useful when running
@@ -1458,6 +1467,22 @@ array(string) query_precompiled_names(string fname)
       return map (pike_module_path, `+, "/", fname[sizeof (path)..], ".o");
 #endif
   return ({ fname + ".o" });
+}
+
+int get_precompiled_mtime (string id)
+//! Given an identifier returned by query_precompiled_names, returns
+//! the mtime of the precompiled entry. Returns -1 if there is no
+//! entry.
+{
+  Stat s = master_file_stat (fakeroot (id));
+  return s && s->isreg ? s->mtime : -1;
+}
+
+string read_precompiled (string id)
+//! Given an identifier returned by query_precompiled_names, returns
+//! the precompiled entry. Can assume the entry exists.
+{
+  return master_read_file (id);
 }
 
 protected class CompileCallbackError
@@ -1724,16 +1749,15 @@ protected program low_findprog(string pname,
     case "":
     case ".pike":
       foreach(query_precompiled_names(fname), string oname) {
-	if(Stat s2=master_file_stat(fakeroot(oname)))
-	{
-	  if(s2->isreg && s2->mtime >= s->mtime)
-	  {
+	int o_mtime = get_precompiled_mtime (oname);
+	if (o_mtime >= 0) {
+	  if (o_mtime >= s->mtime) {
 	    mixed err=catch {
 	      object|program decoded;
-	      AUTORELOAD_CHECK_FILE(oname);
+	      AUTORELOAD_CHECK_PRECOMPILED_FILE (oname);
 	      resolv_debug ("low_findprog %s: decoding dumped\n", fname);
 	      INC_RESOLV_MSG_DEPTH();
-	      decoded = decode_value(master_read_file(oname),
+	      decoded = decode_value(read_precompiled (oname),
 				     (handler && handler->get_codec ||
 				      get_codec)(fname, mkobj, handler));
 	      DEC_RESOLV_MSG_DEPTH();
