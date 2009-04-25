@@ -2,7 +2,7 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.207 2009/11/03 02:46:49 bill Exp $
+// $Id$
 
 // Windows installer FIXMEs:
 //
@@ -2376,6 +2376,27 @@ an extra CRT instance.\n");
 
 #endif /* SUPPORT_WIX */
 
+void collect_dlls (function(string:void) handle_dll)
+{
+  if (string pike_build_root = getenv ("PIKE_BUILD_ROOT"))
+    if (array(string) dlls = get_dir (combine_path (pike_build_root, "dll"))) {
+    dll_loop:
+      foreach (dlls, string dll_name) {
+	dll_name = lower_case (dll_name);
+	if (has_suffix (dll_name, ".dll")) {
+	  foreach (getenv ("PATH") / ";", string path) {
+	    string dll_path = combine_path (path, dll_name);
+	    if (Stdio.exist (dll_path)) {
+	      handle_dll (normalize_path (dll_path));
+	      continue dll_loop;
+	    }
+	  }
+	  error_msg ("Warning: Could not find dll %s to include.\n", dll_name);
+	}
+      }
+    }
+}
+
 // Create a master.pike with the correct lib_prefix
 void make_master(string dest, string master, string lib_prefix,
 		 string include_prefix, string|void share_prefix,
@@ -2637,29 +2658,14 @@ void do_install()
       finalize_pike();
 
 #ifdef __NT__
-    if (export) {
-      if (string pike_build_root = getenv ("PIKE_BUILD_ROOT"))
-	if (array(string) dlls =
-	    get_dir (combine_path (pike_build_root, "dll"))) {
-	dll_loop:
-	  foreach (dlls, string dll) {
-	    dll = lower_case (dll);
-	    foreach (getenv ("PATH") / ";", string path) {
-	      string dll_path = combine_path (path, dll);
-	      if (Stdio.exist (dll_path)) {
-		dll_path = normalize_path (dll_path);
-		status ("Including dll", dll_path);
-		dll = basename (dll_path);
-		export_file (dll_path,
-			     combine_path (vars->TMP_BUILDDIR, dll),
-			     combine_path (exec_prefix, dll));
-		continue dll_loop;
-	      }
-	    }
-	    error_msg ("Warning: Could not find dll %s to include.\n", dll);
-	  }
-	}
-    }
+    if (export)
+      collect_dlls (lambda (string dll_path) {
+		      status ("Including dll", dll_path);
+		      string name = basename (dll_path);
+		      export_file (dll_path,
+				   combine_path (vars->TMP_BUILDDIR, name),
+				   combine_path (exec_prefix, name));
+		    });
 
 #ifndef PRIVATE_CRT
     if (export == 1 && include_crt &&
@@ -3001,6 +3007,7 @@ int main(int argc, array(string) argv)
     ({"--verbose",Getopt.NO_ARG,({"--verbose"})}),
     ({"--release-crt",Getopt.NO_ARG,({"--release-crt"})}),
     ({"--debug-crt",Getopt.NO_ARG,({"--debug-crt"})}),
+    ({"--collect-dlls", Getopt.HAS_ARG, ({"--collect-dlls"})}),
     }) ),array opt)
     {
       switch(opt[0])
@@ -3033,6 +3040,19 @@ int main(int argc, array(string) argv)
 	case "--debug-crt":
 	  include_crt = "debug";
 	  break;
+
+	case "--collect-dlls":
+	  // A helper to collect all the dlls, to make it easier to
+	  // check that the dll list is complete.
+	  collect_dlls (lambda (string dll_path) {
+			  werror ("Copying dll %s\n", dll_path);
+			  string target =
+			    combine_path (opt[1], basename (dll_path));
+			  if (!Stdio.cp (dll_path, target))
+			    error_msg ("Failed to copy dll to %s: %d\n",
+				       target, errno());
+			});
+	  return 0;
 
 	default:
 	  install_type=opt[0];
