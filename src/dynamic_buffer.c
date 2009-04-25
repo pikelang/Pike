@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dynamic_buffer.c,v 1.27 2008/07/16 01:08:05 mast Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -30,7 +30,7 @@ PMOD_EXPORT char *low_make_buf_space(ptrdiff_t space, dynamic_buffer *buf)
 
     buf->s.str=(char *)realloc(buf->s.str, buf->bufsize);
     if(!buf->s.str)
-      Pike_error("Out of memory.\n");
+      Pike_fatal("Out of memory.\n");
   }
   ret = buf->s.str + buf->s.len;
   buf->s.len += space;
