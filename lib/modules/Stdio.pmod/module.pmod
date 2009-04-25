@@ -433,7 +433,7 @@ class File
     array(mixed) args = _async_args;
     _async_cb = 0;
     _async_args = 0;
-    set_nonblocking(0,0,0,0,0);
+    set_callbacks (0,0,0,0,0);
     if (cb) {
       if (is_open() && query_address()) {
 	// Connection OK.
@@ -536,11 +536,11 @@ class File
     int res;
     if (err = catch(res = connect(host, port))) {
       // Illegal format. -- Bad hostname?
-      set_nonblocking(0, 0, 0, 0, 0);
+      set_callbacks (0, 0, 0, 0, 0);
       call_out(_async_check_cb, 0);
     } else if (!res) {
       // Connect failed.
-      set_nonblocking(0, 0, 0, 0, 0);
+      set_callbacks (0, 0, 0, 0, 0);
       call_out(_async_check_cb, 0);
     }
     return 1;	// OK so far. (Or rather the callback will be used).
