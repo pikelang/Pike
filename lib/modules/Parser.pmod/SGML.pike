@@ -1,5 +1,5 @@
 //
-// $Id: SGML.pike,v 1.7 2009/04/05 10:12:08 mast Exp $
+// $Id$
 
 #pike __REAL_VERSION__
 
@@ -49,8 +49,10 @@
 //!	 string name;           - name of tag
 //!	 mapping args;          - argument to tag
 //!	 int line,char,column;  - position of tag
+//!	 int eline,echar,ecolumn;  - end position of tag, src[char..echar-1] got the block. add by Xuesong Guo
 //!	 string file;           - filename (see <ref>create</ref>)
 //!	 array(SGMLatom) data;  - contained data
+//!	 int open;		- is not an empty element and has no end tag. add by Xuesong Guo
 //!     @}
 //!
 
@@ -64,8 +66,10 @@
       string name;
       mapping args;
       int line,char,column;
+      int eline,echar,ecolumn;
       string file;
       array(SGMLatom) data=({});
+      int open;
 
       string _sprintf(int t, mapping m)
       {
@@ -97,13 +101,14 @@
 	 }
 
 	 else if (t == 'O')
-	   return sprintf ("SGMLatom(%s%s)",
+	   return sprintf ("SGMLatom(%s%s%s)",
 			   name,
 			   (args && sizeof (args) ?
 			    map ((array) args,
 				 lambda (array arg) {
 				   return sprintf (" %s=%q", arg[0], arg[1]);
-				 }) * "" : ""));
+				 }) * "" : ""),
+			   open ? ", open" : "");
       }
    }
 
@@ -113,19 +118,22 @@
 
    array(SGMLatom|string) data;
 
-   protected private array(string) got_tag(object g)
+   protected private array(string) got_tag(object g,string s)
    {
-      string name=g->tag_name();
+      string name=name_formater?name_formater(g->tag_name()):g->tag_name();
 
       if (name!="" && name[0]=='/')
       {
 	 int i=search(tagstack->name,name[1..]);
 	 if (i!=-1) 
 	 {
+	    tagstack[i]->open=0;
 	    i++;
 	    while (i--)
 	    {
-	       tagstack[0]->data=res[0];
+	       SGMLatom t=tagstack[0];
+	       t->data=res[0];
+	       [t->eline,t->echar,t->ecolumn]=g->at();
 	       res=res[1..];
 	       tagstack=tagstack[1..];
 	    }
@@ -135,10 +143,25 @@
 
       SGMLatom t=SGMLatom();
       t->name=name;
-      t->args=g->tag_args();
+      if(argname_formater==0){
+	      t->args=g->tag_args();
+      }else{
+	      t->args=([]);
+	      foreach(g->tag_args;string k;mixed d){
+		      t->args[argname_formater(k)]=d;
+	      }
+      }
       [t->line,t->char,t->column]=g->at();
       t->file=file;
-      res[0]+=({t});
+      if(!has_suffix(s,"/>"))
+	      t->open=1;
+      for(int i=0;i<sizeof(res);i++){
+	      //werror("%d:%d\n",sizeof(tagstack),sizeof(res));
+	      if(i>=sizeof(tagstack)||tagstack[i]->open){
+		      res[i]+=({t});
+		      break;
+	      }
+      }
       tagstack=({t})+tagstack;
       res=({({})})+res;
 
@@ -165,21 +188,39 @@
    private protected object p=.HTML();
 
    //! @decl void create()
-   //! @decl void create(string filename)
+   //! @decl void create(string filename,function|void name_formater,function|void argname_formater)
    //!	This object is created with this filename.
    //!	It's passed to all created tags, for debug and trace purposes.
+   //!  All tag name will be replace as name_formater(name)
+   //!  All arg_name will be replace as argname_formater(arg_name)
    //! @note
    //! 	No, it doesn't read the file itself. See @[feed()].
 
    protected int i;
 
-   void create(void|string _file)
+   function name_formater;
+   function argname_formater;
+   void create(void|string _file,function|void _name_formater,function|void _argname_formater)
    {
       file=_file;
+      if(_name_formater)
+	      name_formater=_name_formater;
+      if(_argname_formater)
+	      argname_formater=_argname_formater;
 
       p->_set_tag_callback(got_tag);
       p->_set_data_callback(lambda(object g,string data)
-			    { if (data!="") res[0]+=({data}); return ({}); });
+			    {
+			    if (data!="") {
+				for(int i=0;i<sizeof(res);i++){
+				//werror("%d:%d\n",sizeof(tagstack),sizeof(res));
+					if(i>=sizeof(tagstack)||tagstack[i]->open){
+						res[i]+=({data});
+						break;
+						}
+				}
+			    }
+			    return ({}); });
    }
 
    //! @decl object feed(string s)
