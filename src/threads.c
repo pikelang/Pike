@@ -170,6 +170,9 @@ PMOD_EXPORT int co_wait(COND_T *c, MUTEX_T *m)
 
   mt_unlock(& c->lock);
   mt_unlock(m);
+
+  /* NB: No race here since the event is manually reset. */
+
   event_wait(&me.event);
   mt_lock(m);
 

@@ -320,6 +320,8 @@ extern pthread_attr_t small_pattr;
 #define th_equal(X,Y) ((X)==(Y))
 #define th_hash(X) (X)
 
+/* FIXME: Check if we can switch to the cheaper CRITICAL_SECTION objects. */
+
 #define PIKE_MUTEX_T HANDLE
 #define mt_init(X) LOW_THREAD_CHECK_ZERO_ERROR ((*(X)=CreateMutex(NULL, 0, NULL)))
 #define mt_lock(X)							\
@@ -345,6 +347,9 @@ extern pthread_attr_t small_pattr;
 #define th_atfork_prepare()
 #define th_atfork_parent()
 #define th_atfork_child()
+
+/* FIXME: Use windows condition variables if running on Vista or
+ * Windows Server 2008. */
 
 #endif	/* NT_THREADS */
 
