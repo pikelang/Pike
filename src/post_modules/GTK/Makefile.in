@@ -56,8 +56,8 @@ compile1:
 	    test -f "$$f" || ln -s "$(srcdir)/$$f" "$$f"; \
 	  done; \
 	else :; fi
-	@echo "Original CFLAGS:$(CFLAGS)"
-	@echo "Modified CFLAGS:`echo ' $(CFLAGS) ' | sed -e 's/ -g[^ ]*//g' -e 's/ -W[^ ]*//g'` `echo ' $(CFLAGS) ' | sed -ne 's/.*\( -gcc-version[^ ]*\).*/\1/p'`"
+#	@echo "Original CFLAGS:$(CFLAGS)"
+#	@echo "Modified CFLAGS:`echo ' $(CFLAGS) ' | sed -e 's/ -g[^ ]*//g' -e 's/ -W[^ ]*//g'` `echo ' $(CFLAGS) ' | sed -ne 's/.*\( -gcc-version[^ ]*\).*/\1/p'`"
 	@$(MAKE) OBJS="`cat files_to_compile`" \
 	       CFLAGS="`echo $(CFLAGS) | sed -e 's/ -g[^ ]*//g' -e 's/ -W[^ ]*//g'` `echo ' $(CFLAGS) ' | sed -ne 's/.*\( -gcc-version[^ ]*\).*/\1/p'`" \
 	          all
