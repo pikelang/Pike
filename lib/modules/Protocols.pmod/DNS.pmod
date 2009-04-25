@@ -1,4 +1,4 @@
-// $Id: DNS.pmod,v 1.102 2010/01/05 18:47:33 bill Exp $
+// $Id$
 // Not yet finished -- Fredrik Hubinette
 
   //inherit Stdio.UDP : udp;
@@ -137,18 +137,7 @@ class protocol
   protected string make_raw_addr6(string addr6)
   {
     if(!addr6) return "\0"*16;
-    if(has_value(addr6, "::")) {
-      int parts = sizeof((addr6/":")-({""}));
-      if(has_value(addr6, ".")) parts++;
-      addr6 = replace(addr6, "::", ":"+"0:"*(8-parts));
-      sscanf(addr6, ":%s", addr6);
-    }
-    if(has_value(addr6, "."))
-      return sprintf("%2c%2c%2c%2c%2c%2c%1c%1c%1c%1c",
-		     @array_sscanf(addr6, "%x:%x:%x:%x:%x:%x:%x.%x.%x.%x"));
-    else
-      return sprintf("%@2c",
-		     array_sscanf(addr6, "%x:%x:%x:%x:%x:%x:%x:%x"));
+    return sprintf ("%@2c", Protocols.IPv6.parse_addr (addr6));
   }
 
   protected private string mkrdata(mapping entry, int pos, mapping(string:int) c)
