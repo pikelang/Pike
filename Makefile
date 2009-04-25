@@ -1,11 +1,11 @@
 #
-# $Id: Makefile,v 1.148 2007/04/19 11:17:01 mast Exp $
+# $Id$
 #
 # Meta Makefile
 #
 
 VPATH=.
-OS=`uname -s -r -m|sed \"s/ /-/g\"|tr \"[A-Z]\" \"[a-z]\"|tr \"/()\" \"___\"`
+OS=$${PIKE_BUILD_OS:-`uname -s -r -m|sed \"s/ /-/g\"|tr \"[A-Z]\" \"[a-z]\"|tr \"/()\" \"___\"`}
 BUILDDIR=build/$(OS)
 METATARGET=
 
