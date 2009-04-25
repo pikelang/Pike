@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: block_alloc.h,v 1.89 2008/08/27 20:52:35 grubba Exp $
+|| $Id$
 */
 
 #undef PRE_INIT_BLOCK
@@ -39,16 +39,14 @@
 #define BLOCK_ALLOC_HSIZE_SHIFT 2
 #define MAX_EMPTY_BLOCKS 4	/* Must be >= 1. */
 
-#ifndef BLOCK_ALLOC_USED
-#define BLOCK_ALLOC_USED DO_IF_DMALLOC(real_used) DO_IF_NOT_DMALLOC(used)
-#endif
-
 #if defined (DMALLOC_BLOCK_BACKLOG) && defined (DEBUG_MALLOC)
 #define DO_IF_BLOCK_BACKLOG(X) X
 #define DO_IF_NOT_BLOCK_BACKLOG(X)
+#define BLOCK_ALLOC_USED real_used
 #else
 #define DO_IF_BLOCK_BACKLOG(X)
 #define DO_IF_NOT_BLOCK_BACKLOG(X) X
+#define BLOCK_ALLOC_USED used
 #endif
 
 /* Invalidate the block as far as possible if running with dmalloc.
@@ -109,7 +107,7 @@ struct PIKE_CONCAT(DATA,_block)						\
   struct PIKE_CONCAT(DATA,_block) *prev;				\
   struct DATA *PIKE_CONCAT3(free_,DATA,s);				\
   INT32 used;								\
-  DO_IF_DMALLOC(INT32 real_used;)					\
+  DO_IF_BLOCK_BACKLOG (INT32 real_used;)				\
   struct DATA x[BSIZE];							\
 };									\
 struct PIKE_CONCAT(DATA,_context)					\
@@ -171,7 +169,7 @@ static void PIKE_CONCAT(alloc_more_,DATA)(void)				\
     n->next->prev=n;							\
   n->prev=NULL;								\
   n->used=0;								\
-  DO_IF_DMALLOC(n->real_used = 0);					\
+  DO_IF_BLOCK_BACKLOG (n->real_used = 0);				\
   PIKE_CONCAT(DATA,_blocks)=n;						\
   PIKE_CONCAT(DATA,_free_blocks)=n;					\
 									\
@@ -203,7 +201,7 @@ BA_STATIC BA_INLINE struct DATA *BA_UL(PIKE_CONCAT(alloc_,DATA))(void)	\
   )									\
   else if(!blk->BLOCK_ALLOC_USED++)					\
     --PIKE_CONCAT3(num_empty_,DATA,_blocks);				\
-  DO_IF_DMALLOC(blk->used++);						\
+  DO_IF_BLOCK_BACKLOG (blk->used++);					\
 									\
   tmp = blk->PIKE_CONCAT3(free_,DATA,s);				\
   /* Mark the new block as available. */				\
@@ -299,11 +297,11 @@ void BA_UL(PIKE_CONCAT(really_free_,DATA))(struct DATA *d)		\
 	  Pike_fatal ("really_free_" TOSTR(DATA) " called with "	\
 		      "unknown pointer %p (probably already freed)\n", d); \
 	}								\
-	blk->used--;							\
 	dmalloc_mark_as_free(d, 1);					\
 	DO_IF_BLOCK_BACKLOG({						\
 	    struct DATA *d2 =						\
 	      PIKE_CONCAT(DATA,s_to_free)[PIKE_CONCAT(DATA,s_to_free_ptr)]; \
+	    blk->used--;						\
 	    PIKE_MEM_NA(*d);						\
 	    PIKE_CONCAT(DATA,s_to_free)[PIKE_CONCAT(DATA,s_to_free_ptr)] = d; \
 	    PIKE_CONCAT(DATA,s_to_free_ptr) =				\
