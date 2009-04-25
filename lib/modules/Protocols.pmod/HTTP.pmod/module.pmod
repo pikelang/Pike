@@ -146,7 +146,8 @@ constant DAV_STORAGE_FULL	= 507; // RFC 2518 10.6: Insufficient Storage
   con->https = (url->scheme=="https")? 1 : 0;
 #else
   if(url->scheme!="http")
-    error("Can't handle %O or any other protocol than HTTP.\n",
+    error("Can't handle %O or any other protocol than HTTP "
+	  "(HTTPS requires Nettle support).\n",
 	  url->scheme);
 #endif
 
