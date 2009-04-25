@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.255 2009/12/03 17:06:47 mast Exp $
+// $Id$
 #pike __REAL_VERSION__
 
 inherit files;
@@ -424,9 +424,9 @@ class File
   }
 #endif
 
-  protected private function(int, mixed ...:void) _async_cb;
-  protected private array(mixed) _async_args;
-  protected private void _async_check_cb(mixed|void ignored)
+  private function(int, mixed ...:void) _async_cb;
+  private array(mixed) _async_args;
+  private void _async_check_cb(mixed|void ignored)
   {
     // Copy the args to avoid races.
     function(int, mixed ...:void) cb = _async_cb;
@@ -1589,7 +1589,7 @@ class FILE
     return ::_sprintf( type, flags );
   }
 
-  inline private protected final int low_get_data()
+  inline private int low_get_data()
   {
     string s = file::read(BUFSIZE,1);
     if(s && strlen(s)) {
@@ -1603,7 +1603,7 @@ class FILE
     }
   }
  
-  inline private protected final int get_data()
+  inline private int get_data()
   {
     if( bpos )
     {
@@ -1617,7 +1617,7 @@ class FILE
   // Return 0 at end of file, 1 otherwise.
   // At exit cached_lines contains at least one string,
   // and lp is set to zero.
-  inline private protected final int get_lines()
+  inline private int get_lines()
   {
     if( bpos )
     {
@@ -1635,7 +1635,7 @@ class FILE
   }
 
   // NB: Caller is responsible for clearing cached_lines and lp.
-  inline private protected final string extract(int bytes, int|void skip)
+  inline private string extract(int bytes, int|void skip)
   {
     string s;
     s=b[bpos..bpos+bytes-1];
@@ -3265,8 +3265,8 @@ class UDP
 {
   inherit files.UDP;
 
-  private protected array extra=0;
-  private protected function(mapping,mixed...:void) callback=0;
+  private array extra=0;
+  private function(mapping,mixed...:void) callback=0;
 
   //! @decl UDP set_nonblocking()
   //! @decl UDP set_nonblocking(function(mapping(string:int|string), @
@@ -3318,7 +3318,7 @@ class UDP
     return this;
   }
    
-  private protected void _read_callback()
+  private void _read_callback()
   {
     mapping i;
     if (i=read())
