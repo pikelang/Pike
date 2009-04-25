@@ -486,14 +486,14 @@ int main(int argc, array(string) argv)
   Stdio.write_file("buildid.txt", replace(stamp, symbols));
   files += ({ vpath+"/buildid.txt" });
 
-  werror("Creating "+filename+".tar.gz:\n");
+  werror("Creating "+filename+".tar.gz.\n");
 
   int first = 1;
   foreach(files/25.0, files)
     {
       if(Process.create_process
 	 ( ({"tar",
-	     first?"cvf":"rvf",
+	     first?"cf":"rf",
 	     pike_base_name+"/"+filename+".tar" }) +
 	   files)->wait())
       {
@@ -518,7 +518,7 @@ int main(int argc, array(string) argv)
     Process.create_process( ({ "cp", "-R", build+"/doc_build/images",
 			       vpath+"/refdoc/images" }) )->wait();
     if(Process.create_process
-       ( ({"tar", "rvf", pike_base_name+"/"+filename+".tar",
+       ( ({"tar", "rf", pike_base_name+"/"+filename+".tar",
 	   vpath+"/refdoc/autodoc.xml", vpath+"/refdoc/images" }) )->wait())
       {
 	werror("Tar file creation failed!\n");
