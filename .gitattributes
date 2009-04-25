@@ -26,7 +26,6 @@ testfont binary
 # Remove the corresponding line before committing
 # changes to these files.
 /ANNOUNCE foreign_ident
-/Makefile foreign_ident
 /README-CVS foreign_ident
 /README-CVS.txt foreign_ident
 /bin/extract.pike foreign_ident
