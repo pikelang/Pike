@@ -55,6 +55,9 @@ constant LDAP_NO_OBJECT_CLASS_MODS       = 0x45;    /* 69 */
 constant LDAP_RESULTS_TOO_LARGE          = 0x46;    /* 70 - CLDAP */
 constant LDAP_AFFECTS_MULTIPLE_DSAS      = 0x47;    /* 71 */
 constant LDAP_OTHER                      = 0x50;    /* 80 */
+// 81-90 are reserved for (client) APIs (c.f.
+// http://www.iana.org/assignments/ldap-parameters). These are not
+// standardized but are common among many client APIs.
 constant LDAP_SERVER_DOWN                = 0x51;    /* 81 */
 constant LDAP_LOCAL_ERROR                = 0x52;    /* 82 */
 constant LDAP_ENCODING_ERROR             = 0x53;    /* 83 */
@@ -65,13 +68,25 @@ constant LDAP_FILTER_ERROR               = 0x57;    /* 87 */
 constant LDAP_USER_CANCELLED             = 0x58;    /* 88 */
 constant LDAP_PARAM_ERROR                = 0x59;    /* 89 */
 constant LDAP_NO_MEMORY                  = 0x5a;    /* 90 */
+// 91-112 are reserved for "LDAP APIs" - see above.
 constant LDAP_CONNECT_ERROR              = 0x5b;    /* 91 */
-constant LDAP_NOT_SUPPORTED              = 0x5c;    /* 92 - LDAPv3 */
-constant LDAP_CONTROL_NOT_FOUND          = 0x5d;    /* 93 - LDAPv3 */
-constant LDAP_NO_RESULTS_RETURNED        = 0x5e;    /* 94 - LDAPv3 */
-constant LDAP_MORE_RESULTS_TO_RETURN     = 0x5f;    /* 95 - LDAPv3 */
-constant LDAP_CLIENT_LOOP                = 0x60;    /* 96 - LDAPv3 */
-constant LDAP_REFERRAL_LIMIT_EXCEEDED    = 0x61;    /* 97 - LDAPv3 */
+constant LDAP_NOT_SUPPORTED              = 0x5c;    /* 92 */
+constant LDAP_CONTROL_NOT_FOUND          = 0x5d;    /* 93 */
+constant LDAP_NO_RESULTS_RETURNED        = 0x5e;    /* 94 */
+constant LDAP_MORE_RESULTS_TO_RETURN     = 0x5f;    /* 95 */
+constant LDAP_CLIENT_LOOP                = 0x60;    /* 96 */
+constant LDAP_REFERRAL_LIMIT_EXCEEDED    = 0x61;    /* 97 */
+constant LCUP_RESOURCES_EXHAUSTED        = 0x71;    /* 113 */
+constant LCUP_SECURITY_VIOLATION         = 0x72;    /* 114 */
+constant LCUP_INVALID_DATA               = 0x73;    /* 115 */
+constant LCUP_UNSUPPORTED_SCHEME         = 0x74;    /* 116 */
+constant LCUP_RELOAD_REQUIRED            = 0x75;    /* 117 */
+constant LDAP_CANCELED                   = 0x76;    /* 118 */
+constant LDAP_NO_SUCH_OPERATION          = 0x77;    /* 119 */
+constant LDAP_TOO_LATE                   = 0x78;    /* 120 */
+constant LDAP_CANNOT_CANCEL              = 0x79;    /* 121 */
+constant LDAP_ASSERTION_FAILED           = 0x7a;    /* 122 */
+constant LDAP_AUTHORIZATION_DENIED       = 0x7b;    /* 123 */
 
 //! Mapping from @expr{LDAP_*@} result codes to descriptive strings.
 constant ldap_error_strings = ([
