@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: zlibmod.c,v 1.84 2009/03/12 22:39:30 nilsson Exp $
+|| $Id: zlibmod.c,v 1.85 2009/04/26 18:33:18 peter Exp $
 */
 
 #include "global.h"
@@ -790,10 +790,10 @@ static void gz_uncompress(INT32 args)
  *!
  *! @example
  *! // whole file
- *! write(Gz_inflate()->inflate(stdin->read(0x7fffffff));
+ *! write(Gz.inflate()->inflate(stdin->read(0x7fffffff));
  *!
  *! // streaming (blocks)
- *! function inflate=Gz_inflate()->inflate;
+ *! function inflate=Gz.inflate()->inflate;
  *! while(string s=stdin->read(8192))
  *!   write(inflate(s));
  *!
