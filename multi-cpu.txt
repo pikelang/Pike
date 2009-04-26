@@ -845,8 +845,9 @@ o  A flag is added to the mapping/multiset data block that is set
 o  Every destructive operation checks the flag. If set, it makes a
    copy, otherwise it changes the original block. Thus the flag is
    essentially a read-only marker.
-o  The flag is cleared by the gc if it finds only one ref to a data
-   block. (Refcounting cannot be used without locking.)
+o  In addition to the flag, the gc performs normal refcounting. It
+   clears the flag if the refcount is 1. (The refcount cannot be used
+   directly since it's delay-updated.)
 o  Hazard pointers are necessary for every destructive access,
    including the setting of the flag. The reason is that the
    read-onlyness only is in effect after all currently modifying
@@ -866,10 +867,8 @@ across lock spaces. If they're first class it means additional
 overhead handling the lock spaces of the mapping data blocks, and if a
 mapping data is shared between lock spaces then it has to be in some
 third lock space of its own, or in the global lock space, neither of
-which would be very good.
-
-So it doesn't look like there's a better way than to botch
-copy-on-write in this case.
+which would be very good. So it doesn't look like there's a better way
+than to botch copy-on-write in this case.
 
 
 Issue: Emulating the interpreter lock
