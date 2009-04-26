@@ -759,26 +759,52 @@ FIXME: List cases and discuss solutions.
 
 Issue: Weak ref garbage collection
 
-When the two refcounters (one for total number of refs and another for
-the number of weak refs) are equal then the thing is semantically
-freed. The problem is that it still got refs which might be followed
-later, so the gc cannot free it.
+Each thing has two refcounters - one for total number of refs and
+another for the number of weak refs. The thing is semantically freed
+when they become equal. The problem is that it still got refs which
+might be followed later, so the gc still cannot free it.
 
 There are two ways to tackle this problem:
 
-One alternative is to keep track of all the weak pointers that point
-to each thing, so that they can be followed backwards and cleared when
-only weak pointers are left. That tracking requires additional data
-structures and the associated overhead, and clearing the other
-pointers might require lock space locks to be taken.
+1. Keep track of all the weak pointers that point to each thing, so
+that they can be followed backwards and cleared when only weak
+pointers are left.
 
-Another alternative is to free all refs emanating from the thing with
-only weak pointers left, and keep it as an empty structure (a
-destructed object, an empty array/multiset/mapping, or an empty
-skeleton program which contains no identifiers). This approach
-requires a flag to recognize such semi-freed things, and that all code
-that dereference weak pointers check for it. A problem is that data
-blocks remain allocated longer than necessary, maybe even
+That tracking requires additional data structures and the associated
+overhead. Clearing the other pointers would be done by the gc thread,
+which presents a problem how to do that for things which are write or
+read-constant locked. There are several alternatives:
+
+a.  The gc thread clears all pointers for unlocked things (locking
+    them while doing so), and for locked things leaves a work list of
+    clearings to do by the locking thread when it is about to release
+    the lock.
+
+    Care must be taken to handle the case that the thing containing
+    the pointer becomes unreferenced and freed by the gc before the
+    lock is released.
+
+b.  Make asynchronous clearing part of the semantics for weak
+    pointers, i.e. no lock can stop a weak pointer from being cleared.
+    Reading and clearing such pointers must then be atomic. (A thread
+    can always ensure specific pointers aren't cleared in inconvenient
+    situations by having an extra nonweak reference to the thing, e.g.
+    on the stack.)
+
+As long as the gc threads clears the pointers, there is no risk that
+the things containing them gets freed, since only the gc thread might
+do that. There is however a risk that the pointers have changed; CAS
+is necessary, and the structure tracking the reverse dependencies
+should be lock-free.
+
+2. Free all refs emanating from the thing with only weak pointers
+left, and keep it as an empty structure (a destructed object, an empty
+array/multiset/mapping, or an empty skeleton program which contains no
+identifiers).
+
+This approach requires a flag to recognize such semi-freed things, and
+that all code that dereference weak pointers check for it. A problem
+is that data blocks remain allocated longer than necessary, maybe even
 indefinitely. That can be mitigated to some degree by shortening them
 using realloc(3).
 
