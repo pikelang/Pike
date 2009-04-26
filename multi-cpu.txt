@@ -284,12 +284,16 @@ o  A read-constant lock ensures both consistency and constantness
 
 o  A write lock ensures complete exclusive access. The owning thread
    can modify the data, and it can assume no other changes occur to it
-   (barring refcounters and lock space pointers - see below). The
-   owning thread can also under limited time leave the data in
+   (barring refcounters and lock space pointers - see below), although
+   that assumption has to be "weak" since there are a few situations
+   when another thread can intervene - see issue "Emulating the
+   interpreter lock".
+
+   The owning thread can also under limited time leave the data in
    inconsistent state. This is however still limited by the calls to
    check_threads(), which means that the state must be consistent
-   again every time the evaluator callbacks are run. See issue
-   "Emulating the interpreter lock".
+   again every time the evaluator callbacks are run. The reason is the
+   same one as above.
 
 Allowing lock-free updates is attractive, so the standard read/write
 lock that governs the global lock space will probably be multiple
@@ -323,6 +327,8 @@ o  The lock space pointer itself must at all times be either NULL or
    Since the lock space lock structs are collected by the gc, there is
    no risk for races when threads asynchronously dereference lock
    space pointers.
+
+FIXME: What about concurrent gc access to follow pointers?
 
 
 Issue: Lock space locking
@@ -922,10 +928,7 @@ exception is thrown.
 
 One case requires attention: An old-style function that requires the
 compat interpreter lock might catch an error. In that case the error
-system has to ensure that lock is reacquired. This is however only a
-problem if C level module compatibility is kept as an option, which
-currently appears to be unlikely with the proposed gc (see issue
-"Garbage collector", item c).
+system has to ensure that lock is reacquired.
 
 
 Issue: C module interface
@@ -1042,6 +1045,8 @@ thread.
 
 Issue: "Relying on the interpreter lock"
 
+FIXME
+
 
 Issue: False sharing
 
@@ -1104,10 +1109,12 @@ in case they fail.
 
 Issue: The compiler
 
+FIXME
+
 
 Issue: Foreign thread visits
 
-JVM threads..
+FIXME. JVM threads..
 
 
 Issue: Pike security system
@@ -1245,16 +1252,24 @@ Some low-level primitives, such as CAS and fences, are necessary to
 build the various lock-free tools. A third-party library would be
 useful.
 
-An effort to make a standardized library is here:
-http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2006/n2047.html (C
-level interface at the end). It apparently lacks implementation,
-though.
+o  An effort to make a standardized library is here:
+   http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2006/n2047.html
+   (C level interface at the end). It apparently lacks implementation,
+   though.
 
-The linux kernel is reported to contain a good abstraction lib for
-these primitives, along with implementations for a large set of
-architectures (see
-http://www.rdrop.com/users/paulmck/scalability/paper/ordering.2006.08.21a.pdf).
-Can we use it? (Check GPL contamination.)
+o  The linux kernel is reported to contain a good abstraction lib for
+   these primitives, along with implementations for a large set of
+   architectures (see
+   http://www.rdrop.com/users/paulmck/scalability/paper/ordering.2006.08.21a.pdf).
+
+o  Another one is part of a lock-free hash implementation here:
+   http://www.sunrisetel.net/software/devtools/sunrise-data-dictionary.shtml
+   It has a MIT-style open source license (with ad clauses).
+
+It appears that the libraries themselves are very short and simple;
+the difficult part is rather to specify the semantics carefully. It's
+probably easiest to make one ourselves with ideas from e.g. the linux
+kernel paper mentioned above.
 
 Required operations:
 
