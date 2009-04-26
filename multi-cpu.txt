@@ -754,7 +754,75 @@ With the new gc approach, such single-refcount optimizations no longer
 work in general. This is the case even if the micro-gc is implemented,
 since stack refs aren't counted.
 
-FIXME: List cases and discuss solutions.
+The primary case when these optimizations make a big difference is
+when data structures (mostly arrays and strings) are built with code
+like above. The characteristics for this case are:
+
+o  The thing being built is thread local.
+o  The thing being built only got references from the stack.
+o  The thing being built might be passed to subfunctions, but they
+   have returned when the would-be destructive operation take place.
+o  The construct to optimize only occurs in Pike code (from C there
+   are ways to explicitly request destructive updates).
+
+With the micro-gc, all refs from outside the two stacks are counted in
+real-time, so it's easy to detect if a thread local thing got
+non-stack references. The remaining problem is therefore only when
+there are several references to the same thing on the pike stack of
+the local function. That is uncommon, but it still requires attention;
+in the following case b has to be ({0}) and not ({0,1,2}) after the
+loop:
+
+  array(int) a = ({0}), b = a;
+  for (int i = 1; i <= 2; i++)
+    a += ({i});
+
+In simple cases, it appears easy to detect multiple stack references
+at compile time and disable the optimization. However, a simple check
+for a direct assignment from one stack variable to another is not
+foolproof. Consider:
+
+  array(int) a = ({0});
+  array(array(int)) x = ({a});
+  array(int) b = x[0];
+  x = 0;
+  for (int i = 1; i <= 2; i++)
+    a += ({i});
+
+It is no longer obvious to the compiler that b got the same array as
+a, and when 0 is assigned to x the non-stack ref disappears, so the
+array in a and b got refcount zero when the += operation takes place.
+
+The defensive way to cope is therefore to only allow destructive
+updates when (in addition to the conditions listed earlier) there is
+only one stack position in the current frame, or any surrounding frame
+reachable from the current function, that might contain a ref to the
+thing at the point where the destructive update is to take place. I.e.
+it must be clear that all other reachable stack positions cannot
+contain a ref.
+
+More or less complicated compile-time analysis can be used to check
+that, but it's not far fetched to believe that there can be situations
+in current code that the compiler can't analyze well enough.
+
+Also, the analysis above assumes the micro-gc, which is a less than
+optimal solution in itself and probably something to be ditched
+eventually. In its absense this problem becomes a lot more difficult.
+
+A better way would be to introduce language constructs, like
+String.Buffer, to do destructive updates explicitly. That would also
+allow destructive updates even when there are intentional multiple
+refs (the lack of such tools is a drawback in the current
+implementation). The problem is that old code needs changing to keep
+its performance.
+
+Strings are also common in this use case, and they are even trickier
+since they always are shared, i.e. not thread local. To optimize such
+cases the compiler would have to generate code that internally uses
+string builders (i.e. strings under construction which haven't been
+hashed and put into the string table yet).
+
+FIXME: Are there other important single-refcount optimization cases?
 
 
 Issue: Weak ref garbage collection
