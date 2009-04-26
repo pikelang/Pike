@@ -44,20 +44,26 @@ goals are, in order of importance:
     without risking low-level inconsistencies. (So Thread.Mutex etc
     would still be necessary to achieve higher level synchronization.)
 
-4.  There should be tools on the pike level to allow further
+4.  Current pike code should continue to run without compatibility
+    problems, and also keep the same time and space complexity
+    characteristics in the uniprocessor or locked case. This includes
+    important optimizations that defines de-facto behavior which much
+    pike code takes into account.
+
+5.  There should be tools on the pike level to allow further
     performance tuning, e.g. lock-free queues, concurrent access hash
     tables, and the possibility to lock different regions of shared
     data separately. These tools should be designed so that they are
     easy to slot into existing code with few changes.
 
-5.  There should be tools to monitor and debug concurrency. It should
+6.  There should be tools to monitor and debug concurrency. It should
     be possible to make assertions that certain objects aren't shared,
     and that certain access patterns don't cause thread
     synchronization. This is especially important if goal (3) is
     realized, since the pike code by itself won't show what is shared
     and what is thread local.
 
-6.  C modules should continue to work without source level
+7.  C modules should continue to work without source level
     modification (but likely without allowing any kind of
     concurrency).
 
