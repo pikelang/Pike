@@ -709,9 +709,9 @@ destruct and free the things put on the pike stack.
 
 Furthermore, since the old immediate-destruct semantics only requires
 destructing before and after every pike level function call, it won't
-be necessary for the micro-gc to scan the C stack at all (there's
-never any part of it above the current frame, i.e. above the innermost
-mega_apply, to scan).
+be necessary for the micro-gc to scan the C stack at all. That since
+there never is any part of it above the current frame, i.e. above the
+innermost mega_apply, to scan.
 
 Note that the above works under the assumption that new things are
 only referenced from the stacks in or below the current frame. That's
