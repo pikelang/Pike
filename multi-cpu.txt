@@ -815,18 +815,43 @@ Also, the analysis above assumes the micro-gc, which is a less than
 optimal solution in itself and probably something to be ditched
 eventually. In its absense this problem becomes a lot more difficult.
 
-A better way would be to introduce language constructs, like
+The approach above can also be applied to mappings, multisets and
+objects (sporting `+=) being built the same way. Strings are also
+common in this use case, but they require a different solution since
+they are always shared, i.e. not thread local.
+
+For strings, the compiler could detect string variables being modified
+through +=, and in such cases emit code that treats them as string
+builders (a string builder is an unfinished string that can be
+modified, it has not been hashed into the global string table, and it
+cannot be used in comparisons etc). Then += can be implemented with a
+string_builder_append, and every time the string builder is being used
+in a string context, the string builder content gets converted to a
+real string. The string builder itself is bound to the specific
+variable on the stack, and it cannot get other references.
+
+The string approach cannot be used for other data types since they can
+be modified destructively. Consider:
+
+  array(int) a = ({0}), b = a;
+  b[0] = 1;
+  for (int i = 1; i <= 2; i++)
+    a += ({i});
+
+If a was an "array builder" here then the assignment b = a would
+implicitly copy the array, but the assignment to b[0] should affect a
+too, because at that point both a and b refer to the same array.
+
+To conclude, the current single-refcount optimizations in these common
+cases can be solved in other ways, but not completely, and it would
+require quite a bit of work in the compiler.
+
+Another approach is to introduce language constructs, like
 String.Buffer, to do destructive updates explicitly. That would also
 allow destructive updates even when there are intentional multiple
 refs (the lack of such tools is a drawback in the current
-implementation). The problem is that old code needs changing to keep
-its performance.
-
-Strings are also common in this use case, and they are even trickier
-since they always are shared, i.e. not thread local. To optimize such
-cases the compiler would have to generate code that internally uses
-string builders (i.e. strings under construction which haven't been
-hashed and put into the string table yet).
+implementation). The problem is that old code needs some rewriting to
+keep its performance.
 
 FIXME: Are there other important single-refcount optimization cases?
 
