@@ -725,11 +725,10 @@ code would be changing something on the C stack back across a pike
 level apply.
 
 On the Pike level it can occur with inner functions changing variables
-in their surrounding functions. Those cases can however be detected
-and handle one way or the other. One way is to detect them at compile
-time and "stay" in the frame of the outermost surrounding function for
-the purposes of the micro-gc. That doesn't scale well if the inner
-functions are deeply recursive, though.
+in their surrounding functions. Those cases can however be handled by
+following the pointer chain (pike_frame.scope) to those function
+scopes, and that pointer chain is never deeper than the number of
+lexically nested functions.
 
 This micro-gc approach comes at a considerable expense compared to the
 solution described in the issue "Garbage collector": Not only does the
