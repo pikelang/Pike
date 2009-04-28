@@ -334,7 +334,14 @@ o  The lock space pointer itself must at all times be either NULL or
    no risk for races when threads asynchronously dereference lock
    space pointers.
 
-FIXME: What about concurrent gc access to follow pointers?
+Note: The gc might concurrently read pointers in any thing, regardless
+of its locks. That does however not imply that all pointer updates
+have to be atomic: If a pointer gets updated by the locking thread
+then the old value gets logged first (c.f. issue "Garbage collector",
+item d). The gc checks after reading the pointer from the live thing
+if it has been logged, and if so then the logged value is used
+instead. Hence the gc never uses the value read from the live thing if
+it could have gotten updated concurrenty.
 
 
 Issue: Lock space locking
