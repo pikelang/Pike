@@ -1342,23 +1342,28 @@ way to cope with that is probably to use wrappers.
 
 Issue: Thread local storage
 
-Implementation would be considerably simpler if working TLS can be
-assumed on the C level, through the __thread keyword (or
-__declspec(thread) in Visual C++). A survey of the support for TLS in
-common compilers and OS'es is needed to decide whether this is an
-workable assumption:
+Implementation would be considerably faster and simpler if working TLS
+can be assumed on the C level, through the __thread keyword (or
+__declspec(thread) in Visual C++).
 
-o  GCC: __thread is supported. Source: Wikipedia.
-   FIXME: Check from which version.
+In particular, good compiler support that can access TLS variables
+without function calls could be important for performance, since the
+lock space locking will be frequent and use TLS variables heavily.
 
-o  Visual C++: __declspec(thread) is supported. Source: Wikipedia.
-   FIXME: Check from which version.
+A survey of the support for TLS in common compilers and OS'es:
+
+o  GCC: __thread is supported since 3.3.
+   http://gcc.gnu.org/onlinedocs/gcc-3.3.1/gcc/Thread-Local.html
+
+o  Visual C++: __declspec(thread) is supported since (at least) MSVC
+   7.1 (aka Visual Studio .NET 2003).
+   http://msdn.microsoft.com/en-us/library/9w1sdazb.aspx
 
 o  Intel C compiler: Support exists. Source: Wikipedia.
    FIXME: Check from which version.
 
-o  Sun C compiler: Support exists. Source: Wikipedia.
-   FIXME: Check from which version.
+o  Sun C compiler: Support exists at least in Sun Studio 8 and later.
+   http://docs.sun.com/source/817-5070/Language_Extensions.html#pgfId-997650
 
 o  Linux (i386, x86_64, sparc32, sparc64): TLS is supported and works
    for dynamic libs. C.f. http://people.redhat.com/drepper/tls.pdf.
@@ -1367,12 +1372,14 @@ o  Linux (i386, x86_64, sparc32, sparc64): TLS is supported and works
 o  Windows (i386, x86_64): TLS is supported but does not always work
    in dll's loaded using LoadLibrary (which means all dynamic modules
    in pike). C.f. http://msdn.microsoft.com/en-us/library/2s9wt68x.aspx.
-   According to Wikipedia this is fixed in Vista and Server 2008
-   (FIXME: verify). In any case, TLS is still usable in the pike core.
+   This is fixed in Vista and Server 2008. In any case, TLS is still
+   usable in the pike core.
 
-o  MacOS X: FIXME: Check this.
+o  MacOS X: Still missing in 10.5.
+   http://developer.apple.com/releasenotes/DeveloperTools/RN-dyld/index.html
 
-o  Solaris: FIXME: Check this.
+o  Solaris: Supported beginning with (at least) Solaris 8.
+   http://docs.sun.com/source/817-5070/Comp_Options_App.html#28486
 
 o  *BSD: FIXME: Check this.
 
