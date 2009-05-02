@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.869 2009/03/15 12:11:23 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.870 2009/05/02 11:07:17 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -7819,6 +7819,10 @@ test_equal("foo-bar-gazonk"/"-",({"foo","bar","gazonk"}))
 test_equal("foobargazonk"/"",({"f","o","o","b","a","r","g","a","z","o","n","k"}))
 test_equal(({1,0,1,2,1,2,2,2,1,1,1})/({2}),({ ({1,0,1}), ({1}), ({}), ({}), ({1,1,1}) }))
 test_equal(({1,2,3,4})/({}),({ ({1}), ({2}), ({3}), ({4}) }))
+test_eq(sizeof(allocate(119)/({})), 119)
+test_eq(sizeof(allocate(120)/({})), 120)
+test_eq(sizeof(allocate(121)/({})), 121)
+test_eq(sizeof(allocate(122)/({})), 122)
 test_equal(({1,0,1,2,1,2,2,2,1,1,1})/({2,1}),({ ({1,0,1}), ({2,2}), ({1,1}) }))
 test_equal( ({1,2,3})/({2,3}), ({ ({1}), ({}) }) )
 test_eq([[`/(20,2,2)]],5)
