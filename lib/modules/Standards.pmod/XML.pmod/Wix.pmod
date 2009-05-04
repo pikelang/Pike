@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Wix.pmod,v 1.33 2009/03/20 15:27:05 grubba Exp $
+// $Id: Wix.pmod,v 1.34 2009/05/04 14:32:50 grubba Exp $
 //
 // 2004-11-01 Henrik Grubbström
 
@@ -464,6 +464,7 @@ class Directory
       WixNode component = WixNode("Component", ([
 				    "Id": get_component_id(),
 				    "Guid":guid->str(),
+				    "DiskId":"1",
 				  ]) +
 				  (contains_dlls ? ([
 				    "SharedDllRefCount":"yes"
