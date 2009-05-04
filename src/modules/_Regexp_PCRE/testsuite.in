@@ -25,6 +25,13 @@ cond_begin([[ master()->resolv("Regexp.PCRE.Plain") ]])
       });
       return x*({});, ({"","oo","","","",""}))
 
+   test_equal([[Regexp.PCRE ("")->exec ("foo", 2)]], [[({2, 2})]])
+   test_equal([[Regexp.PCRE ("")->exec ("foo", 3)]], [[({3, 3})]])
+   test_equal([[Regexp.PCRE ("")->exec ("foo", 4)]], -1)
+   test_equal([[Regexp.PCRE ("")->exec ("foo", 17)]], -1)
+
+   test_equal([[Regexp.PCRE ("")->replace ("xyz", "123")]], "123x123y123z123")
+
 cond_end // Regexp.PCRE.Plain
 
 cond_begin([[ master()->resolv("Regexp.PCRE.Widestring") ]])

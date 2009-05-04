@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pcre_glue.cmod,v 1.21 2008/07/31 14:52:26 mast Exp $
+|| $Id: pcre_glue.cmod,v 1.22 2009/05/04 12:26:05 mast Exp $
 || (original author: mirar)
 */
 
@@ -407,7 +407,6 @@ PIKECLASS _pcre
       {
 	 struct array *res;
 
-	 int rc;
 	 int ovector[OVECTOR_SIZE];
 	 INT32 off=0;
 	 char *dummy_s;
@@ -423,28 +422,38 @@ PIKECLASS _pcre
 	    case 2: get_all_args("exec",args,"%s%d",&dummy_s,&off); break;
 	    case 1: get_all_args("exec",args,"%s",&dummy_s); break;
 	 }
-	 
-	 rc=pcre_exec(THIS->re,THIS->extra,
-		      subject->str,subject->len,
-		      off,opts,
-		      ovector,OVECTOR_SIZE);
 
-	 if (rc<0)
-	 {
-	    push_int(rc);
+	 if (off > subject->len) {
+	   /* If we don't check this then pcre_exec might return an
+	    * empty string match past the end of the input string.
+	    * That's arguably a bug in the pcre lib (observed in
+	    * version 7.8). */
+	   push_int (PCRE_ERROR_NOMATCH);
 	 }
-	 else
-	 {
-	    int i;
-	    rc*=2;
-	    res=allocate_array(rc);
-	    for (i=0; i<rc; i++)
-	    {
+
+	 else {
+	   int rc=pcre_exec(THIS->re,THIS->extra,
+			    subject->str,subject->len,
+			    off,opts,
+			    ovector,OVECTOR_SIZE);
+
+	   if (rc<0)
+	   {
+	     push_int(rc);
+	   }
+	   else
+	   {
+	     int i;
+	     rc*=2;
+	     res=allocate_array(rc);
+	     for (i=0; i<rc; i++)
+	     {
 	       ITEM(res)[i].type=T_INT;
 	       ITEM(res)[i].subtype=0;
 	       ITEM(res)[i].u.integer=ovector[i];
-	    }
-	    push_array(res);
+	     }
+	     push_array(res);
+	   }
 	 }
       }
 
