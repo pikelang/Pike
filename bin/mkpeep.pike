@@ -4,7 +4,7 @@
 
 #pragma strict_types
 
-/* $Id: mkpeep.pike,v 1.29 2009/04/06 18:19:03 grubba Exp $ */
+/* $Id: mkpeep.pike,v 1.30 2009/05/05 13:36:34 tor Exp $ */
 
 #define JUMPBACK 3
 
@@ -302,7 +302,7 @@ void dump2(array(array(int|string|array(string))) data,int ind)
     foreach(data, array(int|string|array(string)) d)
     {
       array(string) a = [array(string)]d[0];
-      array(string) b = [array(string)]d[1];
+      // array(string) b = [array(string)]d[1];
       for(e=0;e<sizeof(a);e++)
       {
 	if(sscanf(a[e],"F_%[A-Z0-9_]==%s",cons,var)==2 ||
@@ -384,26 +384,26 @@ void dump2(array(array(int|string|array(string))) data,int ind)
       }
       write(sprintf("%*n{\n",ind));
       ind+=2;
-      write("%*ndo_optimization(%d,\n",ind,[int]d[2]);
+      write("%*ndo_optimization(%d,\n",[int(0..)]ind,[int]d[2]);
 
       for(i=0;i<sizeof([array(string)]d[1]);i++)
       {
 	array(string) args=({});
 	string fcode=([array(string)]d[1])[i];
-	if(i+1<sizeof(d[1]) && d[1][i+1][0]=='(')
+	if(i+1<sizeof([array(string)]d[1]) && d[1][i+1][0]=='(')
 	{
-	  string tmp=d[1][i+1];
+	  string tmp=[string]d[1][i+1];
 	  args=explode_comma_expr(tmp[1..strlen(tmp)-2]);
 	  i++;
 	}
 	write("%*n                %d,%s,%{(%s), %}\n",
-	      ind,
+	      [int(0..)]ind,
 	      sizeof(args)+1,
 	      fcode,
 	      Array.map(args,treat));
 
       }
-      write("%*n                0);\n",ind);
+      write("%*n                0);\n",[int(0..)]ind);
 
       write(sprintf("%*ncontinue;\n",ind));
       ind-=2;
@@ -416,19 +416,19 @@ void dump2(array(array(int|string|array(string))) data,int ind)
 
 int main(int argc, array(string) argv)
 {
-  int e,max,maxe;
+  // int e,max,maxe;
   string f;
-  mapping foo=([]);
+  // mapping foo=([]);
   array(array(int|string|array(string))) data=({});
 
-  mapping tests=([]);
+  // mapping tests=([]);
 
   /* Read input file */
   f=cpp(Stdio.read_bytes(argv[1]),argv[1]);
   foreach(f/"\n",f)
   {
-    array(string) a, b;
-    mapping tmp;
+    // array(string) a, b;
+    // mapping tmp;
 
     sscanf(f,"%s#",f);
 
