@@ -2,7 +2,7 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.201 2009/03/20 13:51:44 grubba Exp $
+// $Id: install.pike,v 1.202 2009/05/06 12:24:40 grubba Exp $
 
 // Windows installer FIXMEs:
 //
@@ -2341,7 +2341,7 @@ an extra CRT instance.\n");
 					    "Id":"1",
 					  ])))->
 			add_child(line_feed)->
-			add_child(root->gen_xml())->
+			add_child(root->gen_xml(UNDEFINED, "1"))->
 			add_child(line_feed)->
 			add_child(feature_node)->
 			add_child(line_feed)->
