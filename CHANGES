@@ -1,5 +1,125 @@
-Changes since Pike 7.8.116:
+Changes since Pike 7.8.116 (initial 7.8 release):
 ----------------------------------------------------------------------
+
+FIXME: Mention OOB changes?
+
+FIXME: Mention Stdio.Fd_ref elimination work and related fd work which
+includes new functions?
+
+FIXME: Mentions thread yield changes?
+
+FIXME: Mention "Fixed bug with a C stack check in F_CATCH that could be thrown from a spot where the catch context wasn't properly set up."
+
+FIXME: Mention "Stop calling _sprintf or master()->describe_object in
+describe_svalue when we're running low on stack, to avoid throwing
+out-of-stack errors better while an out-of-stack backtrace is being
+formatted."?
+
+
+Bugfixes
+--------
+
+o Fixed bug in AGGR_ARR_EPILOGUE() (aka END_AGGREGATE_ARRAY()) that
+  caused the empty array to always be returned if there were no
+  unaggragated elements on the stack at END_AGGREGATE_ARRAY.
+
+  You are encouraged to upgrade just for this fix since it creates
+  very rare but (seemingly) random occurances of empty arrays.
+
+o Fixed multiset_delete_node to work with destructed indices. This
+  fixes occasional bugs in various functions when there are destructed
+  objects in indices. 
+
+  You are encouraged to upgrade just for this fix since it creates
+  (seemingly) random crashes that are hard to reproduce and track down.
+
+o Clean up and fix UTF8/Unicode/wide string support for pgsql.
+
+  FIXME: pgsql has changed a bit, anything notable?
+
+o Fixed bug when seeking backwards in Gz.File.
+
+o Fixed bug in fd_stat on windows when used on a file system with a
+  long name.
+
+o Fixed off-by-one bug in Stdio.Readline that caused a space in the
+  last column to disappear instead of being converted to a linefeed 
+  when word wrapping is used.
+
+o Fix bug in Fakefile.read()
+  FIXME: You don't say.... I wonder if I should hack up CVS to refuse
+  checkins with a message on the form "Fix[^ ]* bug in [^ ]*".
+
+o Image.TIFF: Fixed memory leak on OOM.
+
+o Fixed crash bug in Fixed core-dump typo in yyexplain_not_implements().
+
+o LysKOM.ProtocolTypes: Bugfix of LocalToGlobalBlock
+  FIXME: Elaborate.
+
+o Don't risk hanging on mutexes when threads are disabled in Pike_fatal.
+  FIXME: Rephrase
+
+o Added 7.6 compat versions for RegGet{Value{,s},KeyNames}().
+
+o Fixed memory leak in Image.Colortable.
+
+o Reinstated the class as Parser.SGML(). It inadvertedly became
+  Parser.SGML()->SGML() in the move to a separate file.
+  Parser.SGML.SGML is kept as a compatibility alias.
+
+o Added Pike 7.6 and earlier compat for store_constant(UNDEFINED).
+
+o Potential fix for "Lost track of child" on pikes compiled --without-threads.
+
+o Regexp.PCRE: Do not match the empty string past the end of the input.
+
+
+Optimizations
+-------------
+
+o Fixed Filesystem._Tar.ReadFile to not gobble the whole tar entries
+  into memory at once.
+
+o Improve performance of get_cpu_time() on OS X by avoiding a kernel
+  trap to get the ID of the underlying system thread.
+
+o Throttle calls to task_info() on OS X since they are quite
+  expensive. This gives a significant performance boost (>10%) on
+  CPU-intensive applications.
+
+
+Extensions and New Functions
+----------------------------
+
+o Added support for specifying (some) modifiers via a mapping in sprintf(). 
+ 
+  FIXME: Elaborate.
+
+  This support is detectable by checking for
+  String.__HAVE_SPRINTF_STAR_MAPPING__
+
+o Added support for generating little-endian floats with %F in sprintf().
+
+  This support is detectable by checking for
+  String.__HAVE_SPRINTF_NEGATIVE_F__
+
+o Sql.Sql now supports NULL values for %s-parameters.
+
+o Timeout support in win32 threads.
+
+o Made FakeFile() support getchar/gets/unread.
+
+o Added symlink support to chown and utime.
+  FIXME: Review. Symlink support in chown is extremly dangerous if
+  done wrong.
+
+o function_name() now knows how to adjust the names of named lambdas.
+
+o Changed handling of POLLHUP for poll devices, it is now signalled on
+  all of the callbacks.
+
+o Updated timezone data to tzdata2009c.
 
 
 New modules / classes / methods added
@@ -10,6 +130,35 @@ o Protocols.IPv6
   Support for the IPv6 protocol. This currently only contains tools to
   parse and normalize addresses. (Not much more is necessary since the
   usual I/O interfaces support IPv6 as-is.)
+
+  FIXME: Should probably be in Tools or Standards.
+
+o Added Filesystem._Tar.extract to be able to extract many/all files
+  in a reasonably efficient way.
+
+o Added Parser.Tabular
+  FIXME: Description
+
+o Calendar.TMD.http_time() that knows how to handle dates according to
+  HTTP 1.1 (RFC 2616).
+
+
+Building and installing
+-----------------------
+
+o Use the #-character as prefix and suffix for placeholders in
+  master.pike.in instead of the currency sign, to avoid 8-bit character
+  encoding issues.
+
+o Disabled "Option Compare Binary" in win32 installer, since it
+  apparently isn't supported in vbs.
+
+o Improved subbort for bumping via both Subversion and git.
+
+o A recent stable Pike (7.8.116+) is now required to do a "make
+  export".
+
+o The win32 installer now removes the generated master.pike on uninstall.
 
 
 Changes since Pike 7.6:
