@@ -57,8 +57,7 @@ o Fixed crash bug in Fixed core-dump typo in yyexplain_not_implements().
 o LysKOM.ProtocolTypes: Bugfix of LocalToGlobalBlock
   FIXME: Elaborate.
 
-o Don't risk hanging on mutexes when threads are disabled in Pike_fatal.
-  FIXME: Rephrase
+o Protected Pike_fatal() against the risk of hanging on mutexes.
 
 o Added 7.6 compat versions for RegGet{Value{,s},KeyNames}().
 
@@ -139,7 +138,7 @@ o Added Filesystem._Tar.extract to be able to extract many/all files
 o Added Parser.Tabular
   FIXME: Description
 
-o Calendar.TMD.http_time() that knows how to handle dates according to
+o Calendar.YMD.http_time() that knows how to handle dates according to
   HTTP 1.1 (RFC 2616).
 
 
@@ -149,9 +148,6 @@ Building and installing
 o Use the #-character as prefix and suffix for placeholders in
   master.pike.in instead of the currency sign, to avoid 8-bit character
   encoding issues.
-
-o Disabled "Option Compare Binary" in win32 installer, since it
-  apparently isn't supported in vbs.
 
 o Improved subbort for bumping via both Subversion and git.
 
