@@ -33,6 +33,9 @@ o Fixed multiset_delete_node to work with destructed indices. This
   You are encouraged to upgrade just for this fix since it creates
   (seemingly) random crashes that are hard to reproduce and track down.
 
+o Fixed bug in the Odbc module on WIN32 where it would fail for some
+  field-types with the error "22003:Numeric value out of range".
+
 o Clean up and fix UTF8/Unicode/wide string support for pgsql.
 
   FIXME: pgsql has changed a bit, anything notable?
@@ -69,7 +72,8 @@ o Reinstated the class as Parser.SGML(). It inadvertedly became
 
 o Added Pike 7.6 and earlier compat for store_constant(UNDEFINED).
 
-o Potential fix for "Lost track of child" on pikes compiled --without-threads.
+o Fixed race-condition causing "Lost track of child" on pikes compiled
+  --without-threads.
 
 o Regexp.PCRE: Do not match the empty string past the end of the input.
 
