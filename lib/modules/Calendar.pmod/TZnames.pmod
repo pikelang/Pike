@@ -161,7 +161,7 @@ mapping zones =
                   "Samarkand","Tashkent","Ho_Chi_Minh","Aden",               
                   "Yekaterinburg","Omsk","Novosibirsk","Krasnoyarsk",        
                   "Irkutsk","Yakutsk","Vladivostok","Sakhalin","Magadan",   
-                  "Kamchatka","Anadyr","Riyadh87","Riyadh88","Riyadh89"}),  
+                  "Kamchatka","Anadyr"}),                      
    "Australia": ({"Darwin","Perth","Eucla","Brisbane","Lindeman","Adelaide",
                   "Hobart","Currie","Melbourne","Sydney","Broken_Hill",     
                   "Lord_Howe"}),                                
