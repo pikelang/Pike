@@ -10,7 +10,7 @@
 // and zic(8) is the usual compiler.
 
 // pike mkrules.pike ../data/{africa,antarctica,asia,australasia,backward,etcetera,europe,northamerica,pacificnew,southamerica,systemv}
-// $Id: mkrules.pike,v 1.14 2009/05/12 12:03:41 grubba Exp $
+// $Id: mkrules.pike,v 1.15 2009/05/12 15:48:35 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -691,12 +691,22 @@ void collect_rules(string file)
 
 int main(int ac,array(string) am)
 {
-   if (sizeof(am)<1)
+   array(string) files = am[1..];
+   if (!sizeof(files))
    {
-      werror("USAGE: %s datafile [datafile ...]\n",am[0]);
-      return 1;
+      werror("defaulting to reading zonefiles from %s...",
+	     combine_path(__FILE__, "../tzdata"));
+      files = get_dir(combine_path(__FILE__, "../tzdata"));
+      files = map(sort(files),
+		  lambda(string fname) {
+		    if ((< "CVS", "factory", "leapseconds", >)[fname] ||
+			has_prefix(fname, "solar") ||
+			has_suffix(fname, ".sh") ||
+			has_suffix(fname, ".tab")) return 0;
+		    return combine_path(__FILE__, "../tzdata", fname);
+		  }) - ({ 0 });
    }
-   map(am[1..],collect_rules);
+   map(files, collect_rules);
 
    write("thinking...\n");
 
