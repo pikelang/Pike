@@ -38,7 +38,11 @@ o Fixed bug in the Odbc module on WIN32 where it would fail for some
 
 o Clean up and fix UTF8/Unicode/wide string support for pgsql.
 
-  FIXME: pgsql has changed a bit, anything notable?
+o Sql.pgsql:
+  - Substantial documentation improvements.
+  - Various small fixes and performance improvements.
+  - Fix fully transparent UTF8/Unicode/wide string/character set support.
+  - Fix formatting errors in error().
 
 o Fixed bug when seeking backwards in Gz.File.
 
@@ -49,9 +53,10 @@ o Fixed off-by-one bug in Stdio.Readline that caused a space in the
   last column to disappear instead of being converted to a linefeed 
   when word wrapping is used.
 
-o Fix bug in Fakefile.read()
-  FIXME: You don't say.... I wonder if I should hack up CVS to refuse
-  checkins with a message on the form "Fix[^ ]* bug in [^ ]*".
+o Fix bug in FakeFile.read()
+  Replaced the broken-in-multiple-ways implementation by something that
+  actually works (hence the original enlightnening description: "fixed a bug",
+  there is really no concise way to classify this level of brokenness).
 
 o Image.TIFF: Fixed memory leak on OOM.
 
@@ -140,7 +145,8 @@ o Added Filesystem._Tar.extract to be able to extract many/all files
   in a reasonably efficient way.
 
 o Added Parser.Tabular
-  FIXME: Description
+  It provides a flexible yet concise record-description language to parse
+  character/column/delimiter-organised records.
 
 o Calendar.YMD.http_time() that knows how to handle dates according to
   HTTP 1.1 (RFC 2616).
@@ -153,7 +159,7 @@ o Use the #-character as prefix and suffix for placeholders in
   master.pike.in instead of the currency sign, to avoid 8-bit character
   encoding issues.
 
-o Improved subbort for bumping via both Subversion and git.
+o Improved support for bumping via both Subversion and git.
 
 o A recent stable Pike (7.8.116+) is now required to do a "make
   export".
@@ -683,7 +689,7 @@ o Gmp
 
 o Gz
 
-  - Added compress() and uncompress() functions as an simpler and more
+  - Added compress() and uncompress() functions as a simpler and more
     efficient but non-streaming interface.
 
   - Support for RLE And FIXED compression method, if supported by

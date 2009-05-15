@@ -1,5 +1,5 @@
 //! This is a parser for line and block oriented data.
-//! It provides a flexible record-description language to support
+//! It provides a flexible yet concise record-description language to parse
 //! character/column/delimiter-organised records.
 //!
 //! @seealso
