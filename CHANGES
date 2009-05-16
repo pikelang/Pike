@@ -15,6 +15,12 @@ describe_svalue when we're running low on stack, to avoid throwing
 out-of-stack errors better while an out-of-stack backtrace is being
 formatted."?
 
+General
+-------
+
+o Sql.pgsql:
+  - Substantial documentation improvements.
+
 
 Bugfixes
 --------
@@ -39,10 +45,9 @@ o Fixed bug in the Odbc module on WIN32 where it would fail for some
 o Clean up and fix UTF8/Unicode/wide string support for pgsql.
 
 o Sql.pgsql:
-  - Substantial documentation improvements.
   - Various small fixes and performance improvements.
-  - Fix fully transparent UTF8/Unicode/wide string/character set support.
-  - Fix formatting errors in error().
+  - Fixed fully transparent UTF8/Unicode/wide string/character set support.
+  - Fixed formatting errors in error().
 
 o Fixed bug when seeking backwards in Gz.File.
 
@@ -63,7 +68,6 @@ o Image.TIFF: Fixed memory leak on OOM.
 o Fixed crash bug in Fixed core-dump typo in yyexplain_not_implements().
 
 o LysKOM.ProtocolTypes: Bugfix of LocalToGlobalBlock
-  FIXME: Elaborate.
 
 o Protected Pike_fatal() against the risk of hanging on mutexes.
 
@@ -100,9 +104,9 @@ o Throttle calls to task_info() on OS X since they are quite
 Extensions and New Functions
 ----------------------------
 
-o Added support for specifying (some) modifiers via a mapping in sprintf(). 
+o Added support for specifying modifiers via a mapping to '*' in sprintf(). 
  
-  FIXME: Elaborate.
+  See the documentation for details.
 
   This support is detectable by checking for
   String.__HAVE_SPRINTF_STAR_MAPPING__
