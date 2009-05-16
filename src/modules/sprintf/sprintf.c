@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.167 2009/05/16 21:10:45 peter Exp $
+|| $Id: sprintf.c,v 1.168 2009/05/16 21:36:26 peter Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -222,7 +222,7 @@
  *!
  *! @example
  *! @code
- *! Pike v7.8 release 236 running Hilfe v3.5 (Incremental Pike Frontend)
+ *! Pike v7.8 release 263 running Hilfe v3.5 (Incremental Pike Frontend)
  *! > sprintf("The unicode character %c has character code %04X.", 'A', 'A');
  *! (1) Result: "The unicode character A has character code 0041."
  *! > sprintf("#%@@02X is the HTML code for purple.", Image.Color.purple->rgb());
