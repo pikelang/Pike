@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.168 2009/05/16 21:36:26 peter Exp $
+|| $Id: sprintf.c,v 1.169 2009/05/18 10:48:17 grubba Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -1408,7 +1408,7 @@ static void low_pike_sprintf(struct format_stack *fs,
       {
 	struct string_builder buf;
 	struct pike_string *s;
-        INT_TYPE tmp;
+        ptrdiff_t tmp;
 	ptrdiff_t l,n;
 	char *x;
 
@@ -1416,7 +1416,8 @@ static void low_pike_sprintf(struct format_stack *fs,
 	CHECK_OBJECT_SPRINTF()
 	GET_STRING(s);
 	if( s->size_shift )
-	    sprintf_error(fs, "%%H requires all characters in the string to be at most eight bits large\n");
+	  sprintf_error(fs, "%%H requires all characters in the string "
+			"to be at most eight bits large\n");
 
 	tmp = s->len;
         l=1;
@@ -1425,8 +1426,11 @@ static void low_pike_sprintf(struct format_stack *fs,
         else if(fs->fsp->flags&ZERO_PAD)
           sprintf_error(fs, "Length of string to %%H is 0.\n");
 
-        if( tmp >= (1<<(l*8)) )
-	  sprintf_error(fs, "Length of string to %%%"PRINTPTRDIFFT"dH too large.\n", l);
+	/* Note: Workaround for optimizer bug in gcc/ia32, where
+	 *       (tmp>>(l*8)) is a noop for l = 4. */
+        if( (tmp>>((l-1)*8)) & ~0xff )
+	  sprintf_error(fs, "Length of string to %%%"PRINTPTRDIFFT"dH "
+			"too large.\n", l);
 
 
         x=(char *)alloca(l);
