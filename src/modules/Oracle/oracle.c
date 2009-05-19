@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: oracle.c,v 1.96 2009/05/19 14:06:18 grubba Exp $
+|| $Id: oracle.c,v 1.97 2009/05/19 17:54:18 grubba Exp $
 */
 
 /*
@@ -2025,7 +2025,10 @@ static sb4 input_callback(void *vbind_struct,
 {
   struct bind * bind = (struct bind *)vbind_struct;
 #ifdef ORACLE_DEBUG
-  fprintf(stderr,"%s %ld %ld\n",__FUNCTION__,(long)iter,(long)index);
+  fprintf(stderr,"%s %ld %ld\n"
+	  "  bind{addr:%p, len:%d}",
+	  __FUNCTION__,(long)iter,(long)index,
+	  bind->addr, bind->len);
 #endif
 
   *bufpp = bind->addr;
@@ -2072,6 +2075,9 @@ static void free_bind_block(struct bind_block *bind)
   while(bind->bindnum>=0)
   {
     free_svalue( & bind->bind[bind->bindnum].ind);
+    if (bind->bind[bind->bindnum].val.type == T_MULTISET) {
+      sub_msnode_ref(bind->bind[bind->bindnum].val.u.multiset);
+    }
     free_svalue( & bind->bind[bind->bindnum].val);
     free_inout(& bind->bind[bind->bindnum].data);
     bind->bindnum--;
@@ -2281,7 +2287,10 @@ static void f_big_typed_query_create(INT32 args)
 	bind.bind[bind.bindnum].data.curlen=1;
 	
 #ifdef ORACLE_DEBUG
-	fprintf(stderr,"BINDING... rlen=%ld\n",(long)rlen);
+	fprintf(stderr,"BINDING... rlen=%ld\n"
+		"addr: %p, len:%ld, ftype: %d\n",
+		(long)rlen,
+		addr, (long)len, fty);
 #endif
 	if(k->ind.type == T_INT)
 	{
