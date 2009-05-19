@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: oracle.c,v 1.95 2008/10/28 10:15:40 stewa Exp $
+|| $Id: oracle.c,v 1.96 2009/05/19 14:06:18 grubba Exp $
 */
 
 /*
@@ -319,15 +319,22 @@ void *low_check_storage(void *storage, unsigned long magic, char *prog)
 #endif
 
 #define STORAGE(O) ((O)->storage + (O)->prog->inherits[0].storage_offset)
-#define THIS_DBCON ((struct dbcon *)check_storage(CURRENT_STORAGE,0xdbc04711UL,"dbcon"))
-#define THIS_QUERY_DBCON ((struct dbcon *)check_storage(parent_storage(1),0xdbc04711UL,"dbcon"))
-#define THIS_RESULT_DBCON ((struct dbcon *)check_storage(parent_storage(2),0xdbc04711UL,"dbcon"))
-#define THIS_QUERY ((struct dbquery *)check_storage(CURRENT_STORAGE,0xdb994711UL,"dbquery"))
-#define THIS_RESULT_QUERY ((struct dbquery *)check_storage(parent_storage(1),0xdb994711UL,"dbquery"))
-#define THIS_RESULT ((struct dbresult *)check_storage(CURRENT_STORAGE,0xdbe04711UL,"dbresult"))
-#define THIS_RESULTINFO ((struct dbresultinfo *)check_storage(CURRENT_STORAGE,0xdbe14711UL,"dbresultinfo"))
-#define THIS_DBDATE ((struct dbdate *)check_storage(CURRENT_STORAGE,0xdbda4711UL,"dbdate"))
-#define THIS_DBNULL ((struct dbnull *)check_storage(CURRENT_STORAGE,0xdb004711UL,"dbnull"))
+#define DBNULL_MAGIC	0xdb004711UL
+#define DBCON_MAGIC	0xdbc04711UL
+#define DBQUERY_MAGIC	0xdb994711UL
+#define DBRESULT_MAGIC	0xdbe04711UL
+#define DBRESINFO_MAGIC	0xdbe14711UL
+#define DBDATE_MAGIC	0xdbda4711UL
+#define DBTS_MAGIC	0xdb754711UL
+#define THIS_DBCON ((struct dbcon *)check_storage(CURRENT_STORAGE,DBCON_MAGIC,"dbcon"))
+#define THIS_QUERY_DBCON ((struct dbcon *)check_storage(parent_storage(1),DBCON_MAGIC,"dbcon"))
+#define THIS_RESULT_DBCON ((struct dbcon *)check_storage(parent_storage(2),DBCON_MAGIC,"dbcon"))
+#define THIS_QUERY ((struct dbquery *)check_storage(CURRENT_STORAGE,DBQUERY_MAGIC,"dbquery"))
+#define THIS_RESULT_QUERY ((struct dbquery *)check_storage(parent_storage(1),DBQUERY_MAGIC,"dbquery"))
+#define THIS_RESULT ((struct dbresult *)check_storage(CURRENT_STORAGE,DBRESULT_MAGIC,"dbresult"))
+#define THIS_RESULTINFO ((struct dbresultinfo *)check_storage(CURRENT_STORAGE,DBRESINFO_MAGIC,"dbresultinfo"))
+#define THIS_DBDATE ((struct dbdate *)check_storage(CURRENT_STORAGE,DBDATE_MAGIC,"dbdate"))
+#define THIS_DBNULL ((struct dbnull *)check_storage(CURRENT_STORAGE,DBNULL_MAGIC,"dbnull"))
 
 static struct program *oracle_program = NULL;
 static struct program *compile_query_program = NULL;
@@ -545,7 +552,7 @@ static void init_dbcon_struct(struct object *o)
   fprintf(stderr,"%s\n",__FUNCTION__);
 #endif
 #ifdef PIKE_DEBUG
-  ((unsigned long *)(Pike_fp->current_storage))[0]=0xdbc04711UL;
+  ((unsigned long *)(Pike_fp->current_storage))[0]=DBCON_MAGIC;
 #endif
   THIS_DBCON->error_handle=0;
   THIS_DBCON->context=0;
@@ -604,7 +611,7 @@ void init_dbquery_struct(struct object *o)
   fprintf(stderr,"%s\n",__FUNCTION__);
 #endif
 #ifdef PIKE_DEBUG
-  ((unsigned long *)(Pike_fp->current_storage))[0]=0xdb994711UL;
+  ((unsigned long *)(Pike_fp->current_storage))[0]=DBQUERY_MAGIC;
 #endif
   THIS_QUERY->cols=-2;
   THIS_QUERY->statement=0;
@@ -640,7 +647,7 @@ static void init_dbresult_struct(struct object *o)
   fprintf(stderr,"%s\n",__FUNCTION__);
 #endif
 #ifdef PIKE_DEBUG
-  ((unsigned long *)(Pike_fp->current_storage))[0]=0xdbe04711UL;
+  ((unsigned long *)(Pike_fp->current_storage))[0]=DBRESULT_MAGIC;
 #endif
   THIS_RESULT->dbcon_lock=0;
   THIS_RESULT->dbquery_lock=0;
@@ -699,7 +706,7 @@ static void init_dbresultinfo_struct(struct object *o)
   fprintf(stderr,"%s\n",__FUNCTION__);
 #endif
 #ifdef PIKE_DEBUG
-  ((unsigned long *)(Pike_fp->current_storage))[0]=0xdbe14711UL;
+  ((unsigned long *)(Pike_fp->current_storage))[0]=DBRESINFO_MAGIC;
 #endif
   THIS_RESULTINFO->define_handle=0;
   init_inout(& THIS_RESULTINFO->data);
@@ -742,7 +749,7 @@ struct dbdate
 static void init_dbdate_struct(struct object *o)
 {
 #ifdef PIKE_DEBUG
-  ((unsigned long *)(Pike_fp->current_storage))[0]=0xdbda4711UL;
+  ((unsigned long *)(Pike_fp->current_storage))[0]=DBDATE_MAGIC;
 #endif
 }
 static void exit_dbdate_struct(struct object *o) {}
@@ -760,7 +767,7 @@ struct dbnull
 static void init_dbnull_struct(struct object *o)
 {
 #ifdef PIKE_DEBUG
-  ((unsigned long *)(Pike_fp->current_storage))[0]=0xdb004711UL;
+  ((unsigned long *)(Pike_fp->current_storage))[0]=DBNULL_MAGIC;
 #endif
 }
 static void exit_dbnull_struct(struct object *o) {}
@@ -989,9 +996,8 @@ static sb4 output_callback(struct inout *inout,
       *piecep = OCI_ONE_PIECE;
       return OCI_CONTINUE;
 
-      return 0;
   }
-
+  return 0;
 }
 			   
 /* NOTE: May be called by OCIStmtFetch() in a THREADS_ALLOW context. */
@@ -1177,6 +1183,14 @@ static void f_fetch_fields(INT32 args)
 	  type=SQLT_FLT;
 	  break;
 
+        case SQLT_INTERVAL_YM:
+        case SQLT_INTERVAL_DS:
+	case SQLT_TIMESTAMP:
+	case SQLT_TIMESTAMP_TZ:
+	case SQLT_TIMESTAMP_LTZ:
+	  /* Assume a reasonable expansion. */
+	  size *= 10;
+	  /* FALL_THROUGH */
 	case SQLT_STR: /* string */
 	case SQLT_AFC: /* char */
 	case SQLT_AVC: /* charz */
@@ -1234,6 +1248,7 @@ static void f_fetch_fields(INT32 args)
 	  type=SQLT_LNG;
 	  break;
 
+	case SQLT_DATE:
 	case SQLT_DAT:
 	case SQLT_ODT:
 	  type_name="date";
@@ -1348,6 +1363,11 @@ static void push_inout_value(struct inout *inout,
   {
     switch(inout->ftype)
     {
+      case SQLT_INTERVAL_YM:
+      case SQLT_INTERVAL_DS:
+      case SQLT_TIMESTAMP:
+      case SQLT_TIMESTAMP_TZ:
+      case SQLT_TIMESTAMP_LTZ:
       case SQLT_CLOB:
       case SQLT_BLOB:
       case SQLT_BIN:
@@ -1360,6 +1380,7 @@ static void push_inout_value(struct inout *inout,
 	ref_push_object(nullstring_object);
 	break;
 
+      case SQLT_DATE:
       case SQLT_ODT:
       case SQLT_DAT:
 	ref_push_object(nulldate_object);
@@ -1489,6 +1510,7 @@ static void push_inout_value(struct inout *inout,
     }
     break;
 	
+    case SQLT_DATE:
     case SQLT_ODT:
     case SQLT_DAT:
 #if 0
@@ -2403,6 +2425,10 @@ static void f_big_typed_query_create(INT32 args)
 
 }
 
+/*
+ * dbdate
+ */
+
 static void dbdate_create(INT32 args)
 {
   struct tm *tm;
@@ -2496,6 +2522,10 @@ static void dbdate_cast(INT32 args)
   }
   Pike_error("Cannot cast Oracle.Date to %s\n",s);
 }
+
+/*
+ * dbnull
+ */
 
 static void dbnull_create(INT32 args)
 {
