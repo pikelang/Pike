@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
-// Copyright © 2001 Roxen IS. All rights reserved.
+// Copyright © 2001 - 2009, Roxen IS. All rights reserved.
 //
-// $Id: Utils.pmod,v 1.47 2008/06/24 09:41:06 jonasw Exp $
+// $Id: Utils.pmod,v 1.48 2009/05/25 12:41:22 mast Exp $
 
 #if !constant(report_error)
 #define report_error werror
