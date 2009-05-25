@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
-// Copyright © 2001 Roxen IS. All rights reserved.
+// Copyright © 2001 - 2009, Roxen IS. All rights reserved.
 //
-// $Id: ResultSet.pike,v 1.2 2001/06/22 01:28:35 nilsson Exp $
+// $Id: ResultSet.pike,v 1.3 2009/05/25 18:26:52 mast Exp $
 
 inherit _WhiteFish.ResultSet;
 

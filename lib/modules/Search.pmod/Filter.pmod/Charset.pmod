@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
-// Copyright © 2001 Roxen IS. All rights reserved.
+// Copyright © 2001 - 2009, Roxen IS. All rights reserved.
 //
-// $Id: Charset.pmod,v 1.6 2001/08/08 11:01:06 per Exp $
+// $Id: Charset.pmod,v 1.7 2009/05/25 18:26:52 mast Exp $
 
 constant contenttypes = ({});
 

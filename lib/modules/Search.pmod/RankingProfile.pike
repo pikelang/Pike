@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
-// Copyright © 2001 Roxen IS. All rights reserved.
+// Copyright © 2001 - 2009, Roxen IS. All rights reserved.
 //
-// $Id: RankingProfile.pike,v 1.20 2009/04/03 17:53:09 grubba Exp $
+// $Id: RankingProfile.pike,v 1.21 2009/05/25 18:26:52 mast Exp $
 
 #include "search.h"
 

@@ -1,9 +1,7 @@
-
-
 // This file is part of Roxen Search
-// Copyright © 2001 Roxen IS. All rights reserved.
+// Copyright © 2001 - 2009, Roxen IS. All rights reserved.
 //
-// $Id: Query.pmod,v 1.35 2008/03/28 12:53:28 liin Exp $
+// $Id: Query.pmod,v 1.36 2009/05/25 18:26:52 mast Exp $
 
 static function(string,int:string) blobfeeder(Search.Database.Base db,
                                               array words)

@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
-// Copyright © 2000,2001 Roxen IS. All rights reserved.
+// Copyright © 2000 - 2009, Roxen IS. All rights reserved.
 //
-// $Id: HTML.pmod,v 1.43 2008/08/07 11:01:35 agehall Exp $
+// $Id: HTML.pmod,v 1.44 2009/05/25 18:26:52 mast Exp $
 
 // Filter for text/html
 

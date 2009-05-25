@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
-// Copyright © 2001 Roxen IS. All rights reserved.
+// Copyright © 2001 - 2009, Roxen IS. All rights reserved.
 //
-// $Id: AbstractParser.pike,v 1.7 2004/08/07 15:27:00 js Exp $
+// $Id: AbstractParser.pike,v 1.8 2009/05/25 18:26:52 mast Exp $
 
 //! @param options
 //!   @mapping

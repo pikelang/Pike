@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
-// Copyright © 2001 Roxen IS. All rights reserved.
+// Copyright © 2001 - 2009, Roxen IS. All rights reserved.
 //
-// $Id: DefaultParser.pike,v 1.13 2008/06/25 09:45:41 wellhard Exp $
+// $Id: DefaultParser.pike,v 1.14 2009/05/25 18:26:52 mast Exp $
 
 static inherit .AbstractParser;
 static inherit .Lexer;

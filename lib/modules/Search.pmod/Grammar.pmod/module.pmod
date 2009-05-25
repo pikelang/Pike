@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
-// Copyright © 2001 Roxen IS. All rights reserved.
+// Copyright © 2001 - 2009, Roxen IS. All rights reserved.
 //
-// $Id: module.pmod,v 1.15 2008/08/26 13:39:07 jonasw Exp $
+// $Id: module.pmod,v 1.16 2009/05/25 18:26:52 mast Exp $
 
 //! Abstract parse tree node.
 class ParseNode {

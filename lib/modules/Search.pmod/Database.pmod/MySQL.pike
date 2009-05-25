@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
-// Copyright © 2000,2001 Roxen IS. All rights reserved.
+// Copyright © 2000 - 2009, Roxen IS. All rights reserved.
 //
-// $Id: MySQL.pike,v 1.88 2008/08/15 14:54:40 mast Exp $
+// $Id: MySQL.pike,v 1.89 2009/05/25 18:26:52 mast Exp $
 
 inherit .Base;
 

@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
-// Copyright © 2001 Roxen IS. All rights reserved.
+// Copyright © 2001 - 2009, Roxen IS. All rights reserved.
 //
-// $Id: Base.pike,v 1.6 2007/11/16 10:12:03 wellhard Exp $
+// $Id: Base.pike,v 1.7 2009/05/25 18:26:52 mast Exp $
 
 //! Base class for Roxen Search database storage abstraction implementations.
 

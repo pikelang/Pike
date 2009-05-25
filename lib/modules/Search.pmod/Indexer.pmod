@@ -1,8 +1,7 @@
-
 // This file is part of Roxen Search
-// Copyright © 2001 Roxen IS. All rights reserved.
+// Copyright © 2001 - 2009, Roxen IS. All rights reserved.
 //
-// $Id: Indexer.pmod,v 1.18 2004/08/08 14:22:53 js Exp $
+// $Id: Indexer.pmod,v 1.19 2009/05/25 18:26:52 mast Exp $
 
 //!
 void index_document(Search.Database.Base db,
