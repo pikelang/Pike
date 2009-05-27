@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.10 2009/05/27 14:47:55 grubba Exp $
+# $Id: configure.in,v 1.11 2009/05/27 15:52:11 grubba Exp $
 AC_INIT(accept_and_parse.c)
 AC_CONFIG_HEADER(config.h)
 
@@ -12,8 +12,12 @@ AC_CHECK_LIB(nsl, gethostbyname)
 AC_CHECK_LIB(net, __get_socket_descriptor)
 
 AC_CHECK_HEADERS(poll.h sys/poll.h sys/socket.h netinet/in.h arpa/inet.h \
-		 asm/unistd.h sys/uio.h sys/types.h winsock.h winsock2.h \
-		 ws2tcpip.h)
+		 asm/unistd.h sys/uio.h sys/types.h winsock2.h ws2tcpip.h)
+
+if test "$ac_cv_header_winsock2_h" = "yes"; then :; else
+  # Note: This header file interferes with winsock2.h.
+  AC_CHECK_HEADERS(winsock.h)
+fi
 
 AC_CHECK_FUNCS(poll gmtime_r gmtime sendfile signal inet_ntoa inet_ntop)
 
