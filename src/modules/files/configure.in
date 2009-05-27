@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.116 2009/05/27 14:19:39 grubba Exp $
+# $Id: configure.in,v 1.117 2009/05/27 15:54:20 grubba Exp $
 AC_INIT(file.c)
 AC_CONFIG_HEADER(file_machine.h)
 
@@ -9,8 +9,7 @@ AC_DEFINE(WITH_TERMIOS)
 AC_HAVE_HEADERS(sys/types.h sys/socket.h arpa/inet.h sys/socketvar.h \
   netinet/in.h poll.h sys/poll.h sys/uio.h sys/mman.h linux/mman.h sys/time.h \
   sys/param.h sys/mount.h ustat.h sys/statfs.h sys/statvfs.h sys/vfs.h \
-  sys/stream.h sys/protosw.h netdb.h sys/sysproto.h winsock.h \
-  winsock2.h ws2tcpip.h \
+  sys/stream.h sys/protosw.h netdb.h sys/sysproto.h winsock2.h ws2tcpip.h \
   direct.h sys/wait.h process.h sys/file.h net/netdb.h limits.h unistd.h \
   termios.h poll.h sys/poll.h sys/select.h sys/un.h netinet/tcp.h \
   sys/sendfile.h sys/ioctl.h linux/if.h sys/xattr.h libzfs.h,,,[
@@ -27,6 +26,11 @@ AC_HAVE_HEADERS(sys/types.h sys/socket.h arpa/inet.h sys/socketvar.h \
 #include <sys/param.h>
 #endif
 ])
+
+if test "$ac_cv_header_winsock2_h" = "yes"; then :; else
+  # Note: This header file interferes with winsock2.h.
+  AC_CHECK_HEADERS(winsock.h)
+fi
 
 # FIXME: Detect broken <sys/socketvar.h> on Solaris 10?
 #   <sys/socketvar.h> includes <sys/zone.h>, which attempts to include
