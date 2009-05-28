@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.186 2009/02/23 22:36:08 mast Exp $
+|| $Id: system.c,v 1.187 2009/05/28 11:54:37 grubba Exp $
 */
 
 /*
@@ -1977,10 +1977,10 @@ static void describe_hostent(struct hostent *hp)
     INT32 nelem = 0;
 
     for (p = hp->h_addr_list; *p != 0; p++) {
-#ifdef HAVE_INET_NTOP
+#ifdef fd_inet_ntop
       char buffer[64];
 
-      push_text(inet_ntop(hp->h_addrtype, *p, buffer, sizeof(buffer)));
+      push_text(fd_inet_ntop(hp->h_addrtype, *p, buffer, sizeof(buffer)));
 #else
       struct in_addr in;
  
@@ -2001,10 +2001,10 @@ static void describe_hostent(struct hostent *hp)
   }
 #else
   {
-#ifdef HAVE_INET_NTOP
+#ifdef fd_inet_ntop
     char buffer[64];
 
-    push_text(inet_ntop(hp->h_addrtype, hp->h_addr, buffer, sizeof(buffer)));
+    push_text(fd_inet_ntop(hp->h_addrtype, hp->h_addr, buffer, sizeof(buffer)));
 #else
     struct in_addr in;
     MEMCPY(&in.s_addr, hp->h_addr, sizeof (in.s_addr));

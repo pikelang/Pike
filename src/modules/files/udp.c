@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: udp.c,v 1.81 2009/02/10 09:50:35 grubba Exp $
+|| $Id: udp.c,v 1.82 2009/05/28 11:54:38 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -647,9 +647,9 @@ void udp_read(INT32 args)
   push_string( make_shared_binary_string(buffer, res) );
 
   push_constant_text("ip");
-#ifdef HAVE_INET_NTOP
-  push_text( inet_ntop( SOCKADDR_FAMILY(from), SOCKADDR_IN_ADDR(from),
-			buffer, sizeof(buffer) ) );
+#ifdef fd_inet_ntop
+  push_text( fd_inet_ntop( SOCKADDR_FAMILY(from), SOCKADDR_IN_ADDR(from),
+			   buffer, sizeof(buffer) ) );
 #else
   push_text( inet_ntoa( *SOCKADDR_IN_ADDR(from) ) );
 #endif
@@ -959,9 +959,9 @@ static void udp_query_address(INT32 args)
     return;
   }
 
-#ifdef HAVE_INET_NTOP
-  inet_ntop(SOCKADDR_FAMILY(addr), SOCKADDR_IN_ADDR(addr),
-	    buffer, sizeof(buffer)-20);
+#ifdef fd_inet_ntop
+  fd_inet_ntop(SOCKADDR_FAMILY(addr), SOCKADDR_IN_ADDR(addr),
+	       buffer, sizeof(buffer)-20);
 #else
   q=inet_ntoa(*SOCKADDR_IN_ADDR(addr));
   strncpy(buffer,q,sizeof(buffer)-20);

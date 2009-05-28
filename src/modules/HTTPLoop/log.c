@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: log.c,v 1.18 2004/09/19 00:31:00 nilsson Exp $
+|| $Id: log.c,v 1.19 2009/05/28 11:54:37 grubba Exp $
 */
 
 #include "config.h"
@@ -72,12 +72,12 @@ static void push_log_entry(struct log_entry *le)
   lo->method = make_shared_binary_string(le->method.str, le->method.len);
   lo->protocol = le->protocol;
   le->protocol->refs++;
-#ifdef HAVE_INET_NTOP
+#ifdef fd_inet_ntop
   {
     char buffer[64];
-    lo->from = make_shared_string( inet_ntop(SOCKADDR_FAMILY(le->from),
-					     SOCKADDR_IN_ADDR(le->from),
-					     buffer, sizeof(buffer)) );
+    lo->from = make_shared_string( fd_inet_ntop(SOCKADDR_FAMILY(le->from),
+						SOCKADDR_IN_ADDR(le->from),
+						buffer, sizeof(buffer)) );
   }
 #else
   lo->from = make_shared_string( inet_ntoa(*SOCKADDR_IN_ADDR(le->from)) );
@@ -207,13 +207,14 @@ void f_aap_log_as_commonlog_to_file(INT32 args)
 	break;
       }
 
-#ifdef HAVE_INET_NTOP
+#ifdef fd_inet_ntop
     if(SOCKADDR_FAMILY(le->from) != AF_INET) {
       char buffer[64];
       fprintf(foo,
-      "%s - %s [%02d/%s/%d:%02d:%02d:%02d +0000] \"%s\" %d %ld\n",
-	      inet_ntop(SOCKADDR_FAMILY(le->from), SOCKADDR_IN_ADDR(le->from),
-			buffer, sizeof(buffer)), /* hostname */
+	      "%s - %s [%02d/%s/%d:%02d:%02d:%02d +0000] \"%s\" %d %ld\n",
+	      fd_inet_ntop(SOCKADDR_FAMILY(le->from),
+			   SOCKADDR_IN_ADDR(le->from),
+			   buffer, sizeof(buffer)), /* hostname */
 	      "-",                          /* remote-user */
 	      tm.tm_mday, month[tm.tm_mon], tm.tm_year+1900,
 	      tm.tm_hour, tm.tm_min, tm.tm_sec, /* date */
@@ -221,7 +222,7 @@ void f_aap_log_as_commonlog_to_file(INT32 args)
 	      le->reply, /* reply code */
 	      DO_NOT_WARN((long)le->sent_bytes)); /* bytes transfered */
     } else
-#endif /* HAVE_INET_NTOP */
+#endif /* fd_inet_ntop */
     fprintf(foo,
     "%d.%d.%d.%d - %s [%02d/%s/%d:%02d:%02d:%02d +0000] \"%s\" %d %ld\n",
 	    ((unsigned char *)&le->from.ipv4.sin_addr)[ 0 ],

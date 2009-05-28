@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: socket.c,v 1.102 2009/02/23 21:46:56 grubba Exp $
+|| $Id: socket.c,v 1.103 2009/05/28 11:54:38 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -591,9 +591,9 @@ static void socket_query_address(INT32 args)
     return;
   }
 
-#ifdef HAVE_INET_NTOP
-  if(!inet_ntop(SOCKADDR_FAMILY(addr), SOCKADDR_IN_ADDR(addr),
-		buffer, sizeof(buffer)-20))
+#ifdef fd_inet_ntop
+  if(!fd_inet_ntop(SOCKADDR_FAMILY(addr), SOCKADDR_IN_ADDR(addr),
+		   buffer, sizeof(buffer)-20))
   {
     THIS->my_errno = errno;
     push_int(0);
