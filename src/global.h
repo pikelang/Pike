@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: global.h,v 1.117 2009/05/27 17:48:29 grubba Exp $
+|| $Id: global.h,v 1.118 2009/05/28 12:13:20 grubba Exp $
 */
 
 #ifndef GLOBAL_H
@@ -45,21 +45,21 @@
 #define WIN32	100	/* WinNT 1.0 */
 #endif
 
-/* We want WinNT 6.0 API's if available. */
-#if !defined(_WIN32_WINDOWS) || (_WIN32_WINDOWS < 0x600)
+/* We want WinNT 5.0 API's if available. */
+#if !defined(_WIN32_WINDOWS) || (_WIN32_WINDOWS < 0x500)
 #undef _WIN32_WINDOWS
-#define _WIN32_WINDOWS 0x0600
+#define _WIN32_WINDOWS 0x0500
 #endif
 
-#if !defined(_WIN32_WINNT) || (_WIN32_WINNT < 0x600)
+#if !defined(_WIN32_WINNT) || (_WIN32_WINNT < 0x500)
 #undef _WIN32_WINNT
-#define _WIN32_WINNT 0x0600
+#define _WIN32_WINNT 0x0500
 #endif
 
 /* In later versions of the WIN32 SDKs, we also need to define this one. */
-#if !defined(NTDDI_VERSION) || (NTDDI_VERSION < 0x06000000)
+#if !defined(NTDDI_VERSION) || (NTDDI_VERSION < 0x05000000)
 #undef NTDDI_VERSION
-#define NTDDI_VERSION 0x06000000
+#define NTDDI_VERSION 0x05000000
 #endif
 
 #endif /* __NT__ */
