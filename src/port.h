@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: port.h,v 1.65 2008/10/06 17:00:00 mast Exp $
+|| $Id: port.h,v 1.66 2009/05/28 13:10:48 grubba Exp $
 */
 
 #ifndef PORT_H
@@ -137,6 +137,14 @@ void GETTIMEOFDAY(struct timeval *t);
 time_t TIME(time_t *);
 #else
 #  define TIME time
+#endif
+
+#ifndef HAVE_SNPRINTF
+#ifdef HAVE__SNPRINTF
+/* In WIN32 snprintf is known as _snprintf... */
+#define snprintf _snprintf
+#define HAVE_SNPRINTF
+#endif
 #endif
 
 #ifndef HAVE_RINT
