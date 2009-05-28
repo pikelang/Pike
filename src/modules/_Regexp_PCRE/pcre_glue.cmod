@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pcre_glue.cmod,v 1.22 2009/05/04 12:26:05 mast Exp $
+|| $Id: pcre_glue.cmod,v 1.23 2009/05/28 21:43:20 marcus Exp $
 || (original author: mirar)
 */
 
@@ -595,29 +595,29 @@ PIKE_MODULE_INIT
    }
 #endif
 
-#define FIGURE_BUILD_TIME_OPTION(X)					\
+#define FIGURE_BUILD_TIME_OPTION(X,T)					\
    do									\
    {									\
-      int outcome;							\
+      T outcome;							\
       if (pcre_config(PCRE_CONFIG_##X,&outcome)==0)			\
          add_integer_constant("buildconfig_"#X,outcome,0);		\
    }									\
    while (0)
 
 #ifdef PCRE_CONFIG_UTF8
-   FIGURE_BUILD_TIME_OPTION(UTF8);
+   FIGURE_BUILD_TIME_OPTION(UTF8,int);
 #endif
 #ifdef PCRE_CONFIG_NEWLINE
-   FIGURE_BUILD_TIME_OPTION(NEWLINE);
+   FIGURE_BUILD_TIME_OPTION(NEWLINE,int);
 #endif
 #ifdef PCRE_CONFIG_LINK_SIZE
-   FIGURE_BUILD_TIME_OPTION(LINK_SIZE);
+   FIGURE_BUILD_TIME_OPTION(LINK_SIZE,int);
 #endif
 #ifdef PCRE_CONFIG_POSIX_MALLOC_THRESHOLD
-   FIGURE_BUILD_TIME_OPTION(POSIX_MALLOC_THRESHOLD);
+   FIGURE_BUILD_TIME_OPTION(POSIX_MALLOC_THRESHOLD,int);
 #endif
 #ifdef PCRE_CONFIG_MATCH_LIMIT
-   FIGURE_BUILD_TIME_OPTION(MATCH_LIMIT);
+   FIGURE_BUILD_TIME_OPTION(MATCH_LIMIT,unsigned long int);
 #endif
 
 /*! @module OPTION
