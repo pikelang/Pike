@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.c,v 1.88 2009/02/01 03:49:53 mast Exp $
+|| $Id: fdlib.c,v 1.89 2009/05/28 11:38:17 grubba Exp $
 */
 
 #include "global.h"
@@ -1458,6 +1458,69 @@ PMOD_EXPORT FD debug_fd_dup2(FD from, FD to)
   return to;
 }
 
+PMOD_EXPORT const char *debug_fd_inet_ntop(int af, const void *addr,
+					   char *cp, size_t sz)
+{
+  static char *(*inet_ntop_funp)(int, void*, char *, size_t);
+  static int tried;
+  static HINSTANCE ws2_32lib;
+
+  if (!inet_ntop_funp) {
+    if (!tried) {
+      tried = 1;
+      if ((ws2_32lib = LoadLibrary("Ws2_32"))) {
+	FARPROC proc;
+	if ((proc = GetProcAddress(ws2_32lib, "InetNtopA"))) {
+	  inet_ntop_funp = (char *(*)(int, void *, char *, size_t))proc;
+	}
+      }
+    }
+    if (!inet_ntop_funp) {
+      const unsigned char *q = (const unsigned char *)addr;
+      if (af == AF_INET) {
+	snprintf(cp, sz, "%d.%d.%d.%d", q[0], q[1], q[2], q[3]);
+	return cp;
+#ifdef AF_INET6
+      } else if (af == AF_INET6) {
+	int i;
+	char *buf = cp;
+	int got_zeros = 0;
+	int got_other = 0;
+	for (i=0; i < 8; i++) {
+	  size_t val = (q[0]<<8) | q[1];
+	  if (!val) {
+	    if (!got_zeros) {
+	      if (!i) {
+		snprintf(buf, sz, ":");
+	      }
+	      got_zeros = 1;
+	      goto next;
+	    } else if (got_zeros == 1) goto next;
+	  }
+	  got_zeros |= got_zeros << 1;
+	  if (i) {
+	    snprintf(buf, sz, ":%x", val);
+	  } else {
+	    snprintf(buf, sz, "%x", val);
+	  }
+	  got_other = 1;
+	next:
+	  sz -= strlen(buf);
+	  buf += strlen(buf);
+	  q += 2;
+	}
+	if (!got_other) {
+	  snprintf(buf, sz, ":");
+	  sz -= strlen(buf);
+	}
+	return cp;
+#endif
+      }
+      return NULL;
+    }
+  }
+  return inet_ntop_funp(af, addr, cp, sz);
+}
 #endif /* HAVE_WINSOCK_H && !__GNUC__ */
 
 #ifdef EMULATE_DIRECT
