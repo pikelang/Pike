@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.c,v 1.89 2009/05/28 11:38:17 grubba Exp $
+|| $Id: fdlib.c,v 1.90 2009/05/28 22:43:57 grubba Exp $
 */
 
 #include "global.h"
@@ -1485,14 +1485,11 @@ PMOD_EXPORT const char *debug_fd_inet_ntop(int af, const void *addr,
 	int i;
 	char *buf = cp;
 	int got_zeros = 0;
-	int got_other = 0;
 	for (i=0; i < 8; i++) {
 	  size_t val = (q[0]<<8) | q[1];
 	  if (!val) {
 	    if (!got_zeros) {
-	      if (!i) {
-		snprintf(buf, sz, ":");
-	      }
+	      snprintf(buf, sz, ":");
 	      got_zeros = 1;
 	      goto next;
 	    } else if (got_zeros == 1) goto next;
@@ -1503,13 +1500,12 @@ PMOD_EXPORT const char *debug_fd_inet_ntop(int af, const void *addr,
 	  } else {
 	    snprintf(buf, sz, "%x", val);
 	  }
-	  got_other = 1;
 	next:
 	  sz -= strlen(buf);
 	  buf += strlen(buf);
 	  q += 2;
 	}
-	if (!got_other) {
+	if (got_zeros == 1) {
 	  snprintf(buf, sz, ":");
 	  sz -= strlen(buf);
 	}
