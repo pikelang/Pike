@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.h,v 1.61 2009/03/08 22:09:48 grubba Exp $
+|| $Id: fdlib.h,v 1.62 2009/05/28 11:39:02 grubba Exp $
 */
 
 #ifndef FDLIB_H
@@ -115,6 +115,7 @@ typedef off_t PIKE_OFF_T;
 #define fd_dup(fd) dmalloc_register_fd(debug_fd_dup(dmalloc_touch_fd(fd)))
 #define fd_dup2(fd,to) dmalloc_register_fd(debug_fd_dup2(dmalloc_touch_fd(fd),dmalloc_close_fd(to)))
 #define fd_connect(fd,X,Z) debug_fd_connect(dmalloc_touch_fd(fd),(X),(Z))
+#define fd_inet_ntop(af,addr,cp,sz) debug_fd_inet_ntop(af,addr,cp,sz)
 
 
 /* Prototypes begin here */
@@ -151,6 +152,8 @@ PMOD_EXPORT int debug_fd_select(int fds, FD_SET *a, FD_SET *b, FD_SET *c, struct
 PMOD_EXPORT int debug_fd_ioctl(FD fd, int cmd, void *data);
 PMOD_EXPORT FD debug_fd_dup(FD from);
 PMOD_EXPORT FD debug_fd_dup2(FD from, FD to);
+PMOD_EXPORT const char *debug_fd_inet_ntop(int af, const void *addr,
+					   char *cp, size_t sz);
 /* Prototypes end here */
 
 #undef SOCKFUN1
@@ -360,6 +363,9 @@ typedef off_t PIKE_OFF_T;
 #define fd_ioctl(fd,X,Y) ioctl(dmalloc_touch_fd(fd),(X),(Y))
 #define fd_dup(fd) dmalloc_register_fd(dup(dmalloc_touch_fd(fd)))
 #define fd_connect(fd,X,Z) connect(dmalloc_touch_fd(fd),(X),(Z))
+#ifdef HAVE_INET_NTOP
+#define fd_inet_ntop(af,addr,cp,sz) inet_ntop(af,addr,cp,sz)
+#endif
 
 #ifdef HAVE_BROKEN_F_SETFD
 #define fd_dup2(fd,to) (set_close_on_exec(to,0), dmalloc_register_fd(dup2(dmalloc_touch_fd(fd),dmalloc_close_fd(to))))
