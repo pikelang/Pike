@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: requestobject.c,v 1.34 2008/10/06 15:52:31 nilsson Exp $
+|| $Id: requestobject.c,v 1.35 2009/05/28 14:21:11 grubba Exp $
 */
 
 #include "global.h"
@@ -430,11 +430,11 @@ void f_aap_index_op(INT32 args)
 
   if(s == s_remoteaddr)
   {
-#ifdef HAVE_INET_NTOP
+#ifdef fd_inet_ntop
     char buffer[64];
-    push_text(inet_ntop(SOCKADDR_FAMILY(THIS->request->from),
-			SOCKADDR_IN_ADDR(THIS->request->from),
-			buffer, sizeof(buffer)) );
+    push_text(fd_inet_ntop(SOCKADDR_FAMILY(THIS->request->from),
+			   SOCKADDR_IN_ADDR(THIS->request->from),
+			   buffer, sizeof(buffer)) );
 #else
     push_text(inet_ntoa(*SOCKADDR_IN_ADDR(THIS->request->from)));
 #endif
