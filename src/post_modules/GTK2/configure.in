@@ -320,7 +320,7 @@ else
 fi
 
 AC_MSG_CHECKING([if we are using X11])
-AC_CACHE_VAL(pgtk2_have_x11, [
+AC_CACHE_VAL(pgtk2_cv_have_x11, [
    AC_TRY_COMPILE([
 #include <gdk/gdk.h> 
 #include <gdk/gdkx.h> 
@@ -329,9 +329,10 @@ AC_CACHE_VAL(pgtk2_have_x11, [
      GdkWindow *w = (GdkWindow *)0;
      Window window = GDK_WINDOW_XWINDOW (w);
  ], 
- [pgtk2_have_x11=x11],
- [pgtk2_have_x11=nox11])
+ [pgtk2_cv_have_x11=x11],
+ [pgtk2_cv_have_x11=nox11])
 ])
+pgtk2_have_x11="$pgtk2_cv_have_x11"
 if test "x$pgtk2_have_x11" = "xx11"; then
   AC_MSG_RESULT(yes)
 else
