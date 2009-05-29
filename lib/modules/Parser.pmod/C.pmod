@@ -4,7 +4,7 @@
 //
 // #pike __REAL_VERSION__
 //
-// $Id: C.pmod,v 1.44 2007/11/12 10:03:16 nilsson Exp $
+// $Id: C.pmod,v 1.45 2009/05/29 10:36:49 grubba Exp $
 
 //! Splits the @[data] string into an array of tokens. An additional
 //! element with a newline will be added to the resulting array of
@@ -65,6 +65,7 @@ array(string) split(string data, void|mapping state)
 	  pos=search(data,"\n",pos+1);
 	break;
 
+      case '`':
       case 'a'..'z':
       case 'A'..'Z':
       case 128..65536: // Lets simplify things for now...
@@ -74,6 +75,7 @@ array(string) split(string data, void|mapping state)
 	  switch(data[pos])
 	  {
            case '$': // allowed in some C (notably digital)
+	   case '`':
            case 'a'..'z':
            case 'A'..'Z':
            case '0'..'9':
@@ -138,9 +140,6 @@ array(string) split(string data, void|mapping state)
 
       default:
 	error("Unknown token %O\n",data[pos..pos+20]);
-
-      case  '`':
-	while(data[pos]=='`') data[pos]++;
 
       case '\\': pos++; continue; /* IGNORED */
 
