@@ -1,25 +1,14 @@
 Changes since Pike 7.8.116 (initial 7.8 release):
 ----------------------------------------------------------------------
 
-FIXME: Mention OOB changes?
-
-FIXME: Mention Stdio.Fd_ref elimination work and related fd work which
-includes new functions?
-
-FIXME: Mentions thread yield changes?
-
-FIXME: Mention "Fixed bug with a C stack check in F_CATCH that could be thrown from a spot where the catch context wasn't properly set up."
-
-FIXME: Mention "Stop calling _sprintf or master()->describe_object in
-describe_svalue when we're running low on stack, to avoid throwing
-out-of-stack errors better while an out-of-stack backtrace is being
-formatted."?
-
 General
 -------
 
 o Sql.pgsql:
   - Substantial documentation improvements.
+
+o Stdio.Fd_ref is depricated and in the process of beeing eliminated. 
+  You have never used it before, so don't start using it now.
 
 
 Bugfixes
@@ -29,14 +18,14 @@ o Fixed bug in AGGR_ARR_EPILOGUE() (aka END_AGGREGATE_ARRAY()) that
   caused the empty array to always be returned if there were no
   unaggragated elements on the stack at END_AGGREGATE_ARRAY.
 
-  You are encouraged to upgrade just for this fix since it creates
-  very rare but (seemingly) random occurances of empty arrays.
+  You are encouraged to upgrade just for this fix since the bug
+  creates very rare but (seemingly) random occurances of empty arrays.
 
 o Fixed multiset_delete_node to work with destructed indices. This
   fixes occasional bugs in various functions when there are destructed
   objects in indices. 
 
-  You are encouraged to upgrade just for this fix since it creates
+  You are encouraged to upgrade just for this fix since the bug creates
   (seemingly) random crashes that are hard to reproduce and track down.
 
 o Fixed bug in the Odbc module on WIN32 where it would fail for some
@@ -86,6 +75,12 @@ o Fixed race-condition causing "Lost track of child" on pikes compiled
 
 o Regexp.PCRE: Do not match the empty string past the end of the input.
 
+o Reduced the risk of throwing out-of-stack errors while formatting an
+  out-of-stack backtrace.
+
+o Fixed bug that would cause sprintf's %nH to refuse all strings as to
+  long for some values of "n" on some architechtures.
+
 
 Optimizations
 -------------
@@ -133,6 +128,9 @@ o Changed handling of POLLHUP for poll devices, it is now signalled on
 
 o Updated timezone data to tzdata2009c.
 
+o Added some support for the TIMESTAMP and INTERVAL datatypes to
+  Oracle module.
+
 
 New modules / classes / methods added
 -------------------------------------
@@ -169,6 +167,7 @@ o A recent stable Pike (7.8.116+) is now required to do a "make
   export".
 
 o The win32 installer now removes the generated master.pike on uninstall.
+
 
 
 Changes since Pike 7.6:
