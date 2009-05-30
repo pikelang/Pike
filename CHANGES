@@ -117,9 +117,8 @@ o Timeout support in win32 threads.
 
 o Made FakeFile() support getchar/gets/unread.
 
-o Added symlink support to chown and utime.
-  FIXME: Review. Symlink support in chown is extremly dangerous if
-  done wrong.
+o Added option to chown and utime that makes it possible to change the
+  symlink instead of the target of the link.
 
 o function_name() now knows how to adjust the names of named lambdas.
 
