@@ -140,8 +140,6 @@ o Protocols.IPv6
   parse and normalize addresses. (Not much more is necessary since the
   usual I/O interfaces support IPv6 as-is.)
 
-  FIXME: Should probably be in Tools or Standards.
-
 o Added Filesystem._Tar.extract to be able to extract many/all files
   in a reasonably efficient way.
 
