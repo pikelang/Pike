@@ -7,7 +7,7 @@ General
 o Sql.pgsql:
   - Substantial documentation improvements.
 
-o Stdio.Fd_ref is depricated and in the process of beeing eliminated. 
+o Stdio.Fd_ref is deprecated and in the process of being eliminated. 
   You have never used it before, so don't start using it now.
 
 
@@ -16,7 +16,7 @@ Bugfixes
 
 o Fixed bug in AGGR_ARR_EPILOGUE() (aka END_AGGREGATE_ARRAY()) that
   caused the empty array to always be returned if there were no
-  unaggragated elements on the stack at END_AGGREGATE_ARRAY.
+  unaggregated elements on the stack at END_AGGREGATE_ARRAY.
 
   You are encouraged to upgrade just for this fix since the bug
   creates very rare but (seemingly) random occurances of empty arrays.
@@ -30,8 +30,6 @@ o Fixed multiset_delete_node to work with destructed indices. This
 
 o Fixed bug in the Odbc module on WIN32 where it would fail for some
   field-types with the error "22003:Numeric value out of range".
-
-o Clean up and fix UTF8/Unicode/wide string support for pgsql.
 
 o Sql.pgsql:
   - Various small fixes and performance improvements.
@@ -64,8 +62,8 @@ o Added 7.6 compat versions for RegGet{Value{,s},KeyNames}().
 
 o Fixed memory leak in Image.Colortable.
 
-o Reinstated the class as Parser.SGML(). It inadvertedly became
-  Parser.SGML()->SGML() in the move to a separate file.
+o Parser.SGML: Reinstated the class as Parser.SGML(). It inadvertedly
+  became Parser.SGML()->SGML() in the move to a separate file.
   Parser.SGML.SGML is kept as a compatibility alias.
 
 o Added Pike 7.6 and earlier compat for store_constant(UNDEFINED).
@@ -78,8 +76,8 @@ o Regexp.PCRE: Do not match the empty string past the end of the input.
 o Reduced the risk of throwing out-of-stack errors while formatting an
   out-of-stack backtrace.
 
-o Fixed bug that would cause sprintf's %nH to refuse all strings as to
-  long for some values of "n" on some architechtures.
+o Fixed bug that would cause sprintf's %nH to refuse all strings as too
+  long for some values of "n" on some architectures.
 
 
 Optimizations
@@ -158,7 +156,7 @@ o Use the #-character as prefix and suffix for placeholders in
   master.pike.in instead of the currency sign, to avoid 8-bit character
   encoding issues.
 
-o Improved support for bumping via both Subversion and git.
+o Improved support for version bumping via both Subversion and git.
 
 o A recent stable Pike (7.8.116+) is now required to do a "make
   export".
