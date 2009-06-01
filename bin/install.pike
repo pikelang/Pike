@@ -2,7 +2,7 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.203 2009/06/01 14:06:52 mbaehr Exp $
+// $Id: install.pike,v 1.204 2009/06/01 15:30:19 marcus Exp $
 
 // Windows installer FIXMEs:
 //
@@ -2126,7 +2126,7 @@ int pre_install(array(string) argv)
     prefix = getcwd();
     exec_prefix = combine_path(prefix, "bin");
     lib_prefix = combine_path(prefix, "lib");
-    include_prefix = vars->include_prefix||combine_path(prefix,"include","pike");
+    include_prefix = combine_path(prefix,"include","pike");
     make_master("lib/master.pike", "lib/master.pike.in",
 		lib_prefix, include_prefix, UNDEFINED, cflags, ldflags);
     status1("Installing master done.");

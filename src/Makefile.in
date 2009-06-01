@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.474 2009/06/01 14:06:52 mbaehr Exp $
+# $Id: Makefile.in,v 1.475 2009/06/01 15:30:19 marcus Exp $
 #
 
 # This line is needed on some machines.
@@ -57,7 +57,7 @@ include_prefix = @includedir@
 # TESTARGS = -F -a
 
 # Arguments for install.pike used by the install targets.
-INSTALLARGS ?= --new-style
+INSTALLARGS = --new-style
 
 #
 # use bison please, yacc isn't good enough.
@@ -658,7 +658,7 @@ install: pike-complete-stamp tools
 	man_prefix="$(man_prefix)" pike_name=$(pike_name) \
 	fakeroot="$(buildroot)" PIKE_MODULE_RELOC="$(PIKE_MODULE_RELOC)" \
 	cflags="@DYNAMIC_MODULE_FLAGS@" ldflags="" \
-	include_prefix="$(include_prefix)" $(INSTALLARGS)
+	$(INSTALLARGS)
 
 install_interactive: pike-complete-stamp tools
 	@$(RUNPIKE) $(TMP_BINDIR)/install.pike --interactive \
