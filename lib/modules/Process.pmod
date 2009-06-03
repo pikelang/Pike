@@ -291,7 +291,13 @@ string search_path(string command)
 
    if (!search_path_entries) 
    {
+#ifdef __NT__
+      array(string) e=replace(getenv("PATH")||"", "\\", "/")/";"-({""});
+#elif defined(__amigaos__)
+      array(string) e=(getenv("PATH")||"")/";"-({""});
+#else
       array(string) e=(getenv("PATH")||"")/":"-({""});
+#endif
 
       multiset(string) filter=(<>);
       search_path_entries=({});
