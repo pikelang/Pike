@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.461 2009/03/05 11:44:17 grubba Exp $
+// $Id: master.pike.in,v 1.462 2009/06/04 11:14:38 per Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -22,7 +22,7 @@
 
 #define PIKE_AUTORELOAD
 #define GETCWD_CACHE
-#define FILE_STAT_CACHE
+//#define FILE_STAT_CACHE
 
 // This define is searched and replaced by bin/install.pike.
 #undef PIKE_MODULE_RELOC
@@ -1150,7 +1150,7 @@ Stat master_file_stat(string x)
 #ifdef __NT__
       tmp = map(tmp, lower_case);
 #endif
-      d = dir_cache[dir] = aggregate_multiset(@tmp);
+      d = dir_cache[dir] = (multiset)tmp;
     }
     else
       dir_cache[dir]=0;
@@ -1165,6 +1165,7 @@ Stat master_file_stat(string x)
 }
 #else
 #define master_file_stat file_stat
+#define master_get_dir   get_dir
 #endif // FILE_STAT_CACHE
 
 
