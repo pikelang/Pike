@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.475 2009/06/01 15:30:19 marcus Exp $
+# $Id: Makefile.in,v 1.476 2009/06/05 18:11:36 mbaehr Exp $
 #
 
 # This line is needed on some machines.
@@ -51,7 +51,7 @@ lib_prefix = $(prefix)/lib/pike
 data_prefix = @datadir@
 share_prefix = $(data_prefix)/pike
 man_prefix = $(prefix)/man
-include_prefix = @includedir@
+include_prefix = $(prefix)/include/pike
 
 # Arguments for test_pike.pike used by the verify targets.
 # TESTARGS = -F -a
@@ -652,6 +652,7 @@ pike_icon.res: pike.ico
 install: pike-complete-stamp tools
 	@$(RUNPIKE) $(TMP_BINDIR)/install.pike \
 	exec_prefix="$(exec_prefix)" lib_prefix="$(lib_prefix)" \
+	include_prefix="$(include_prefix)" \
 	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
 	SRCDIR="$(SRCDIR)" prefix="$(prefix)" DOCDIR_SRC="$(DOCDIR_SRC)" \
 	MANDIR_SRC="$(MANDIR_SRC)" \
