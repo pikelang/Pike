@@ -16,13 +16,14 @@ If you are building Pike from the CVS, read README-CVS instead.
 
 The top-level makefile (in this directory, not the src directory) has
 all the magic you need to build Pike. Just type 'make'.
+To install type "make install" or "make install_interactive".
 
 You will need gnu m4, bison and a C compiler. You probably also want
 to use GNU make and libz.
 
 If that doesn't work, refer to README-CVS, in particular the sections
-on additional DEPENDENCIES, on CONFIGURE OPTIONS AND BUILD VARIABLES,
-on MANUAL BUILDING and, if needed, IF IT DOESN'T WORK.
+on additional "DEPENDENCIES", on "CONFIGURE OPTIONS AND BUILD VARIABLES",
+on "MANUAL BUILDING" and, if needed, the section "IF IT DOESN'T WORK".
 
 
 THREADS SUPPORT
