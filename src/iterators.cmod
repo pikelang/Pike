@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iterators.cmod,v 1.71 2009/04/01 20:08:28 mast Exp $
+|| $Id: iterators.cmod,v 1.72 2009/06/06 13:10:24 grubba Exp $
 */
 
 #include "global.h"
@@ -85,7 +85,7 @@ PIKECLASS Iterator
    *! if there is any.
    *!
    *! The iterator does not need to support being reused, so this
-   *! function is typically protected.
+   *! function is typically declared @expr{protected@}.
    */
   PIKEFUN void create(void|mixed data)
     flags ID_PROTECTED;
@@ -108,6 +108,9 @@ PIKECLASS Iterator
    *! number of steps. The amount may be negative to move backwards.
    *! If the iterator doesn't support backward movement it should
    *! throw an exception in that case.
+   *!
+   *! @seealso
+   *!   @[next], @[`+=], @[`-]
    */
   PIKEFUN Iterator `+(int steps)
     flags ID_PROTECTED|ID_OPTIONAL;
@@ -144,6 +147,9 @@ PIKECLASS Iterator
    *!   advance the iterator, @[next()] is the preferred API.
    *!   @[next()] has the additional advantage of not being an
    *!   lfun, so it is possible to advance the iterator by hand.
+   *!
+   *! @seealso
+   *!   @[next], @[`+], @[`-]
    */
   PIKEFUN Iterator `+=(int steps)
     prototype;
@@ -156,6 +162,9 @@ PIKECLASS Iterator
    *! backward movement to some degree. It should back up the
    *! specified number of steps. The amount may be negative to move
    *! forward.
+   *!
+   *! @seealso
+   *!   @[next], @[`+], @[`+=]
    */
   PIKEFUN int(0..1) `-(int steps)
     flags ID_PROTECTED|ID_OPTIONAL;
@@ -241,6 +250,9 @@ PIKECLASS Iterator
    *! @returns
    *!   Returns @tt{1@} if it succeeded in advancing, and
    *!   @tt{0@} (zero) if it has reached the end of the iterator.
+   *!
+   *! @seealso
+   *!   @[`+], @[`+=], @[`-]
    */
   PIKEFUN int(0..1) next()
     prototype;
