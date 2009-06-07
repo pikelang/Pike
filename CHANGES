@@ -79,6 +79,8 @@ o Reduced the risk of throwing out-of-stack errors while formatting an
 o Fixed bug that would cause sprintf's %nH to refuse all strings as too
   long for some values of "n" on some architectures.
 
+o Made Process.search_path() aware if Win32 and AmigaOS specifics.
+
 
 Optimizations
 -------------
@@ -129,6 +131,7 @@ o Added some support for the TIMESTAMP and INTERVAL datatypes to
   Oracle module.
 
 
+
 New modules / classes / methods added
 -------------------------------------
 
@@ -147,6 +150,8 @@ o Added Parser.Tabular
 
 o Calendar.YMD.http_time() that knows how to handle dates according to
   HTTP 1.1 (RFC 2616).
+
+o Added support for GTK2 get_window() and get_pixmap().
 
 
 Building and installing
