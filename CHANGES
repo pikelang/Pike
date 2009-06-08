@@ -81,6 +81,8 @@ o Fixed bug that would cause sprintf's %nH to refuse all strings as too
 
 o Made Process.search_path() aware if Win32 and AmigaOS specifics.
 
+o Fixed bug in Protocols.HTTP.Query that dropped the last byte of a
+  request if the server did not provide a Content-Type header.
 
 Optimizations
 -------------
