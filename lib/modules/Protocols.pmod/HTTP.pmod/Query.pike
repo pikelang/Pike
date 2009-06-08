@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.101 2008/12/16 15:36:08 per Exp $
+// $Id: Query.pike,v 1.102 2009/06/08 18:46:03 marcus Exp $
 
 //! Open and execute an HTTP query.
 //!
@@ -934,16 +934,16 @@ string data(int|void max_length)
      }
    }
    if(zero_type( len ))
-     len = sizeof( buf ) - datapos - 1;
+     len = sizeof( buf ) - datapos;
    if(!zero_type(max_length) && len>max_length)
      len = max_length;
 #ifdef HTTP_QUERY_NOISE
-   werror("buf[datapos..]     : %O\n", buf[datapos
-				       ..min(sizeof(buf), datapos+19)]);
-   werror("buf[..datapos+len] : %O\n", buf[max(0, datapos+len-19)
-				       ..min(sizeof(buf), datapos+len)]);
+   werror("buf[datapos..]      : %O\n", buf[datapos
+				        ..<min(sizeof(buf), datapos+19)]);
+   werror("buf[..<datapos+len] : %O\n", buf[max(0, datapos+len-19)
+				        ..<min(sizeof(buf), datapos+len)]);
 #endif
-   return buf[datapos..datapos+len-1];
+   return buf[datapos..<datapos+len];
 }
 
 protected Locale.Charset.Decoder charset_decoder;
