@@ -52,7 +52,7 @@ o Fix bug in FakeFile.read()
 
 o Image.TIFF: Fixed memory leak on OOM.
 
-o Fixed crash bug in Fixed core-dump typo in yyexplain_not_implements().
+o Fixed crash bug in yyexplain_not_implements().
 
 o LysKOM.ProtocolTypes: Bugfix of LocalToGlobalBlock
 
