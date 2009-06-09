@@ -139,9 +139,9 @@ New modules / classes / methods added
 
 o Protocols.IPv6
 
-  Support for the IPv6 protocol. This currently only contains tools to
-  parse and normalize addresses. (Not much more is necessary since the
-  usual I/O interfaces support IPv6 as-is.)
+  Helpers for IPv6 related things. This currently only contains tools
+  to parse and normalize addresses. (Not much more is necessary since
+  the usual I/O interfaces support IPv6 as-is.)
 
 o Added Filesystem._Tar.extract to be able to extract many/all files
   in a reasonably efficient way.
