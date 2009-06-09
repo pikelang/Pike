@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.102 2009/06/08 18:46:03 marcus Exp $
+// $Id: Query.pike,v 1.103 2009/06/09 17:17:05 grubba Exp $
 
 //! Open and execute an HTTP query.
 //!
@@ -377,7 +377,7 @@ void async_fetch_read(mixed dummy,string data)
        sizeof(buf)-datapos>=(int)headers["content-length"])
    {
       con->set_nonblocking(0,0,0);
-      request_ok(@extra_args);
+      request_ok(this_object(), @extra_args);
    }
 }
 
@@ -1182,13 +1182,14 @@ void async_fetch(function callback,mixed ... extra)
    if (!zero_type (headers["content-length"]) &&
        sizeof(buf)-datapos>=(int)headers["content-length"])
    {
-      callback(@extra);
+      // FIXME: This is triggered erroneously for chunked transfer!
+      call_out(callback, 0, this_object(), @extra);
       return;
    }
 
    if (!con)
    {
-      callback(@extra); // nothing to do, stupid...
+      call_out(callback, 0, this_object(), @extra); // nothing to do, stupid...
       return;
    }
    extra_args=extra;
