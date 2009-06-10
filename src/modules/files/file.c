@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.409 2009/05/28 11:54:37 grubba Exp $
+|| $Id: file.c,v 1.410 2009/06/10 13:55:45 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -2702,8 +2702,10 @@ static void file_errno(INT32 args)
 
 /*! @decl int mode()
  *!
- *! Returns the open mode for the file.
+ *! Returns the open mode and capabilities for the file.
  *!
+ *! @returns
+ *!   Returns an @[`|()] of the following flags:
  *! @int
  *!   @value 0x1000
  *!     FILE_READ
@@ -2719,7 +2721,23 @@ static void file_errno(INT32 args)
  *!     FILE_EXCLUSIVE
  *!   @value 0x0400
  *!     FILE_NONBLOCKING
+ *!   @value 0x0040
+ *!     PROP_SEND_FD
+ *!   @value 0x0010
+ *!     PROP_BIDIRECTIONAL
+ *!   @value 0x0008
+ *!     PROP_BUFFERED
+ *!   @value 0x0004
+ *!     PROP_SHUTDOWN
+ *!   @value 0x0002
+ *!     PROP_CAN_NONBLOCK
+ *!   @value 0x0001
+ *!     PROP_IPC
  *! @endint
+ *!
+ *! @note
+ *!   In some versions of Pike 7.7 and 7.8 the @tt{PROP_@} flags were
+ *!   filtered from the result.
  *!
  *! @seealso
  *!   @[open()]
@@ -2727,9 +2745,7 @@ static void file_errno(INT32 args)
 static void file_mode(INT32 args)
 {
   pop_n_elems(args);
-  push_int(THIS->open_mode &
-	   (FILE_READ | FILE_WRITE | FILE_APPEND | FILE_CREATE |
-	    FILE_TRUNC | FILE_EXCLUSIVE | FILE_NONBLOCKING));
+  push_int(THIS->open_mode);
 }
 
 /*! @decl void set_backend (Pike.Backend backend)
