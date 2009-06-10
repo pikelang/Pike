@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.462 2009/06/04 11:14:38 per Exp $
+// $Id: master.pike.in,v 1.463 2009/06/10 16:11:15 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -174,12 +174,12 @@ protected class Pike_0_5_master
 #ifdef FILE_STAT_CACHE
   extern int invalidate_time;
   extern mapping(string:multiset(string)) dir_cache;
+#endif
   local array(mixed) master_file_stat(string x)
   {
     Stat st = global::master_file_stat(x);
     return st && (array)st;
   }
-#endif
 
   //! @decl mapping(string:array(string)) environment
   //!
@@ -670,9 +670,7 @@ protected class Pike_7_2_master
 #endif
   extern int compat_major;
   extern int compat_minor;
-#ifdef FILE_STAT_CACHE
   Stat master_file_stat(string x);
-#endif
   object low_cast_to_object(string oname, string current_file,
 			    object|void current_handler);
   object findmodule(string fullname, object|void handler);
@@ -1164,8 +1162,8 @@ Stat master_file_stat(string x)
   return predef::file_stat(x);
 }
 #else
-#define master_file_stat file_stat
-#define master_get_dir   get_dir
+constant master_file_stat = predef::file_stat;
+constant master_get_dir = predef::get_dir;
 #endif // FILE_STAT_CACHE
 
 
