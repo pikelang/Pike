@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.410 2009/06/10 13:55:45 grubba Exp $
+|| $Id: file.c,v 1.411 2009/06/10 15:44:59 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -2708,31 +2708,31 @@ static void file_errno(INT32 args)
  *!   Returns an @[`|()] of the following flags:
  *! @int
  *!   @value 0x1000
- *!     FILE_READ
+ *!     @[FILE_READ]
  *!   @value 0x2000
- *!     FILE_WRITE
+ *!     @[FILE_WRITE]
  *!   @value 0x4000
- *!     FILE_APPEND
+ *!     @[FILE_APPEND]
  *!   @value 0x8000
- *!     FILE_CREATE
+ *!     @[FILE_CREATE]
  *!   @value 0x0100
- *!     FILE_TRUNC
+ *!     @[FILE_TRUNC]
  *!   @value 0x0200
- *!     FILE_EXCLUSIVE
+ *!     @[FILE_EXCLUSIVE]
  *!   @value 0x0400
- *!     FILE_NONBLOCKING
+ *!     @[FILE_NONBLOCKING]
  *!   @value 0x0040
- *!     PROP_SEND_FD
+ *!     @[PROP_SEND_FD]
  *!   @value 0x0010
- *!     PROP_BIDIRECTIONAL
+ *!     @[PROP_BIDIRECTIONAL]
  *!   @value 0x0008
- *!     PROP_BUFFERED
+ *!     @[PROP_BUFFERED]
  *!   @value 0x0004
- *!     PROP_SHUTDOWN
+ *!     @[PROP_SHUTDOWN]
  *!   @value 0x0002
- *!     PROP_CAN_NONBLOCK
+ *!     @[PROP_NONBLOCK]
  *!   @value 0x0001
- *!     PROP_IPC
+ *!     @[PROP_IPC]
  *! @endint
  *!
  *! @note
