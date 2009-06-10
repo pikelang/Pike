@@ -84,6 +84,8 @@ o Made Process.search_path() aware if Win32 and AmigaOS specifics.
 o Fixed bug in Protocols.HTTP.Query that dropped the last byte of a
   request if the server did not provide a Content-Length header.
 
+o Fixed bug in Protocols.HTTP.Query that dropped the first argument to
+  the async_fetch() callbacks (ie the query object) in some circumstances.
 
 Optimizations
 -------------
