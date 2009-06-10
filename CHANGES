@@ -28,6 +28,12 @@ o Fixed multiset_delete_node to work with destructed indices. This
   You are encouraged to upgrade just for this fix since the bug creates
   (seemingly) random crashes that are hard to reproduce and track down.
 
+o Fixed overzealous filtering of the value returned from Stdio.File()->mode().
+  This bug caused Stdio.nb_sendfile to always run in blocking mode.
+
+  You are encouraged to upgrade just for this fix since the bug can
+  cause supposedly nonblocking actions to block and hang the script.
+
 o Fixed bug in the Odbc module on WIN32 where it would fail for some
   field-types with the error "22003:Numeric value out of range".
 
