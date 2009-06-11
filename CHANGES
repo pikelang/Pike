@@ -93,7 +93,7 @@ o Fixed bug in Protocols.HTTP.Query that dropped the last byte of a
 o Fixed bug in Protocols.HTTP.Query that dropped the first argument to
   the async_fetch() callbacks (ie the query object) in some circumstances.
 
-o Fixed bug in Protocols.HTTP.AsyncClient that made alla data decoding fail.
+o Fixed bug in Protocols.HTTP.AsyncClient that made all data decoding fail.
 
 
 Optimizations
