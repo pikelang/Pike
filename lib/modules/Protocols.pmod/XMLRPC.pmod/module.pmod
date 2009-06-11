@@ -396,7 +396,7 @@ class AsyncClient
   {
     mixed result;
     if(request) {
-      if (request->status == 200)
+      if (request->status() == 200)
 	// The xml-rpc spec says "Unless there's a lower-level error,
 	// always return 200 OK."
 	result = decode_response(request->data());
