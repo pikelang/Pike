@@ -11,7 +11,8 @@ do
     ;;
 
     --cflags)
-      echo ""
+      #Funny story: Pike configure considers empty SDL_CFLAGS == fail
+      echo "-D_DUMMY"
       exit 0
     ;;
 
