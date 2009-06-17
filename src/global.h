@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: global.h,v 1.56 2000/12/23 07:33:49 hubbe Exp $
+ * $Id: global.h,v 1.57 2009/06/17 18:57:56 grubba Exp $
  */
 #ifndef GLOBAL_H
 #define GLOBAL_H
@@ -38,13 +38,6 @@
 #ifndef _PROTOTYPES
 #  define _PROTOTYPES
 #endif /* !_PROTOTYPES */
-
-/*
- * We want to use __builtin functions.
- */
-#ifndef __BUILTIN_VA_ARG_INCR
-#define __BUILTIN_VA_ARG_INCR	1
-#endif /* !__BUILTIN_VA_ARG_INCR */
 
 /*
  * Some structure forward declarations are needed.
