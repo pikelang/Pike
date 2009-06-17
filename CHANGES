@@ -95,6 +95,11 @@ o Fixed bug in Protocols.HTTP.Query that dropped the first argument to
 
 o Fixed bug in Protocols.HTTP.AsyncClient that made all data decoding fail.
 
+o Fixed fatal "Invalid formatting method: 'p' 0x70." in COM.
+
+o low_get_function_line() now knows about prototypes.
+  Fixes [bug 4855] ("Bad offset" when generating backtrace).
+
 
 Optimizations
 -------------
