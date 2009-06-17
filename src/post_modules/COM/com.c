@@ -1,5 +1,5 @@
 /*
- * $Id: com.c,v 1.10 2008/06/28 19:27:35 mast Exp $
+ * $Id: com.c,v 1.11 2009/06/17 10:59:59 grubba Exp $
  *
  * Pike interface to Common Object Model (COM)
  *
@@ -1209,8 +1209,8 @@ static void f_cobj__sprintf(INT32 args)
       {
 	struct string_builder s;
 	init_string_builder(&s, 0);
-	string_builder_sprintf(&s, "Com.cobj(%p)",
-			       cobj->pIDispatch);
+	string_builder_sprintf(&s, "Com.cobj(%llx)",
+			       (LONGEST)(ptrdiff_t)cobj->pIDispatch);
 	push_string(finish_string_builder(&s));
 	stack_pop_n_elems_keep_top(args);
 	return;
