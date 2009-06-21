@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.870 2009/05/02 11:07:17 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.871 2009/06/21 17:17:37 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -834,6 +834,24 @@ test_any_equal([[
        "B", ({ "get_a", "get_b" }),
        "C", ({ "get_a", "get_b", "get_c" }),
        "D", ({ "get_a", "get_b", "get_c", "get_d" }) }))
+
+test_any([[
+  // Test multiple inherit of same symbol,
+  // where later symbol is protected.
+  class A { constant foo = 1; };
+  class B { constant foo = 2; };
+  class C { inherit A; protected inherit B; };
+  return C()->foo;
+]], 1)
+
+test_any([[
+  // Test multiple inherit of same symbol,
+  // where later symbol is protected.
+  class A { constant foo = 1; };
+  class B { protected constant foo = 2; };
+  class C { inherit A; inherit B; };
+  return C()->foo;
+]], 1)
 
 test_any_equal([[
   // Test that extern works as intended.
