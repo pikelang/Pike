@@ -106,6 +106,9 @@ o Removed spurious call to the fail callback after a successful
 o Fixed issue where symbols could be hidden by a later inherit of the
   same, but protected, symbol.
 
+o Fixed NULL dereference on failure to resolve the function return
+  type when functions are used as types.
+
 
 Optimizations
 -------------
