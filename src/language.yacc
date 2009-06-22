@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.450 2008/07/18 20:14:15 grubba Exp $
+|| $Id: language.yacc,v 1.451 2009/06/22 18:51:14 grubba Exp $
 */
 
 %pure_parser
@@ -372,6 +372,9 @@ int yylex(YYSTYPE *yylval);
 %type <n> simple_identifier
 %type <n> foreach_lvalues
 %type <n> foreach_optional_lvalue
+
+%type <ptr> push_compiler_frame0
+%type <ptr> push_compiler_frame1
 %%
 
 all: program { YYACCEPT; }
@@ -777,6 +780,8 @@ push_compiler_frame0: /* empty */
       copy_pike_type(Pike_compiler->compiler_frame->current_type,
 		Pike_compiler->compiler_frame->previous->current_type);
     }
+
+    $$ = Pike_compiler->compiler_frame;
   }
   ;
 
@@ -1110,6 +1115,14 @@ def: modifiers optional_attributes type_or_error optional_constant optional_star
 	Pike_compiler->compiler_frame->variable[e].flags |= LOCAL_VAR_IS_USED;
       }
     }
+#ifdef PIKE_DEBUG
+    if (Pike_compiler->compiler_frame != $7) {
+      Pike_fatal("Lost track of compiler_frame!\n"
+		 "  Got: %p (Expected: %p) Previous: %p\n",
+		 Pike_compiler->compiler_frame, $7,
+		 Pike_compiler->compiler_frame->previous);
+    }
+#endif
     pop_compiler_frame();
     free_node($6);
     free_node($11);
@@ -1119,6 +1132,14 @@ def: modifiers optional_attributes type_or_error optional_constant optional_star
   | modifiers optional_attributes type_or_error optional_constant optional_stars TOK_IDENTIFIER push_compiler_frame0
     error
   {
+#ifdef PIKE_DEBUG
+    if (Pike_compiler->compiler_frame != $7) {
+      Pike_fatal("Lost track of compiler_frame!\n"
+		 "  Got: %p (Expected: %p) Previous: %p\n",
+		 Pike_compiler->compiler_frame, $7,
+		 Pike_compiler->compiler_frame->previous);
+    }
+#endif
     pop_compiler_frame();
     free_node($6);
     if ($2)
@@ -1551,19 +1572,31 @@ identifier_type: idents
 
       switch(Pike_sp[-1].type) {
 	case T_FUNCTION:
-        if((p = program_from_function(Pike_sp-1)))
+	if((p = program_from_function(Pike_sp-1))) {
 	  push_object_type(0, p?(p->id):0);
-	else
-	{
-	  struct pike_type *a,*b;
-	  a=get_type_of_svalue(Pike_sp-1);
-	  b=check_call(function_type_string,a,0);
-	  push_finished_type(b);
-	  free_type(a);
-	  free_type(b);
+	  break;
+	} else {
+	  /* Attempt to get the return type for the function. */
+	  struct pike_type *a, *b;
+	  a = get_type_of_svalue(Pike_sp-1);
+	  /* Note: check_splice_call() below eats a reference from a.
+	   * Note: CALL_INHIBIT_WARNINGS is needed since we don't
+	   *       provide a function name (and we don't want
+	   *       warnings here anyway).
+	   */
+	  a = check_splice_call(NULL, a, 0, mixed_type_string, NULL,
+				CALL_INHIBIT_WARNINGS);
+	  if (a) {
+	    b = new_get_return_type(a, 0);
+	    free_type(a);
+	    if (b) {
+	      push_finished_type(b);
+	      free_type(b);
+	      break;
+	    }
+	  }
 	}
-	break;
-
+	// FALL_THROUGH
       
       default:
 	if (Pike_compiler->compiler_pass!=1)
@@ -2153,6 +2186,8 @@ continue: TOK_CONTINUE optional_label { $$=mknode(F_CONTINUE,$2,0); } ;
 push_compiler_frame1: /* empty */
   {
     push_compiler_frame(SCOPE_LOCAL);
+
+    $$ = Pike_compiler->compiler_frame;
   }
   ;
 
@@ -2299,10 +2334,26 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier push_compiler_frame1
     c->lex.current_file = save_file;
     free_node($3);
     free_node ($2);
+#ifdef PIKE_DEBUG
+    if (Pike_compiler->compiler_frame != $4) {
+      Pike_fatal("Lost track of compiler_frame!\n"
+		 "  Got: %p (Expected: %p) Previous: %p\n",
+		 Pike_compiler->compiler_frame, $4,
+		 Pike_compiler->compiler_frame->previous);
+    }
+#endif
     pop_compiler_frame();
   }
   | TOK_LAMBDA line_number_info implicit_identifier push_compiler_frame1 error
   {
+#ifdef PIKE_DEBUG
+    if (Pike_compiler->compiler_frame != $4) {
+      Pike_fatal("Lost track of compiler_frame!\n"
+		 "  Got: %p (Expected: %p) Previous: %p\n",
+		 Pike_compiler->compiler_frame, $4,
+		 Pike_compiler->compiler_frame->previous);
+    }
+#endif
     pop_compiler_frame();
     $$ = mkintnode(0);
     COPY_LINE_NUMBER_INFO($$, $2);
@@ -2409,6 +2460,14 @@ local_function: TOK_IDENTIFIER push_compiler_frame1 func_args
 
     c->lex.current_line = save_line;
     c->lex.current_file = save_file;
+#ifdef PIKE_DEBUG
+    if (Pike_compiler->compiler_frame != $2) {
+      Pike_fatal("Lost track of compiler_frame!\n"
+		 "  Got: %p (Expected: %p) Previous: %p\n",
+		 Pike_compiler->compiler_frame, $2,
+		 Pike_compiler->compiler_frame->previous);
+    }
+#endif
     pop_compiler_frame();
     free_node($1);
 
@@ -2433,6 +2492,14 @@ local_function: TOK_IDENTIFIER push_compiler_frame1 func_args
   }
   | TOK_IDENTIFIER push_compiler_frame1 error
   {
+#ifdef PIKE_DEBUG
+    if (Pike_compiler->compiler_frame != $2) {
+      Pike_fatal("Lost track of compiler_frame!\n"
+		 "  Got: %p (Expected: %p) Previous: %p\n",
+		 Pike_compiler->compiler_frame, $2,
+		 Pike_compiler->compiler_frame->previous);
+    }
+#endif
     pop_compiler_frame();
     $$=mkintnode(0);
   }
@@ -2543,6 +2610,14 @@ local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
 
     c->lex.current_line = save_line;
     c->lex.current_file = save_file;
+#ifdef PIKE_DEBUG
+    if (Pike_compiler->compiler_frame != $3) {
+      Pike_fatal("Lost track of compiler_frame!\n"
+		 "  Got: %p (Expected: %p) Previous: %p\n",
+		 Pike_compiler->compiler_frame, $3,
+		 Pike_compiler->compiler_frame->previous);
+    }
+#endif
     pop_compiler_frame();
     free_node($2);
 
@@ -2567,6 +2642,14 @@ local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
   }
   | optional_stars TOK_IDENTIFIER push_compiler_frame1 error
   {
+#ifdef PIKE_DEBUG
+    if (Pike_compiler->compiler_frame != $3) {
+      Pike_fatal("Lost track of compiler_frame!\n"
+		 "  Got: %p (Expected: %p) Previous: %p\n",
+		 Pike_compiler->compiler_frame, $3,
+		 Pike_compiler->compiler_frame->previous);
+    }
+#endif
     pop_compiler_frame();
     free_node($2);
     $$=mkintnode(0);
@@ -3559,6 +3642,14 @@ optional_block: /* EMPTY */ { $$=0; }
     free_node ($2);
     free_string(name);
     free_type(type);
+#ifdef PIKE_DEBUG
+    if (Pike_compiler->compiler_frame != $3) {
+      Pike_fatal("Lost track of compiler_frame!\n"
+		 "  Got: %p (Expected: %p) Previous: %p\n",
+		 Pike_compiler->compiler_frame, $3,
+		 Pike_compiler->compiler_frame->previous);
+    }
+#endif
     pop_compiler_frame();
   }
   ;
