@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.261 2008/12/13 08:05:24 nilsson Exp $
+|| $Id: program.h,v 1.262 2009/06/22 12:05:02 grubba Exp $
 */
 
 #ifndef PROGRAM_H
@@ -573,6 +573,13 @@ struct parent_info
   INT16 parent_identifier;
 };
 
+/* Single entry cache for object indexing. */
+struct identifier_lookup_cache
+{
+  INT32 program_id;
+  INT32 identifier_id;
+};
+
 struct program
 {
   PIKE_MEMORY_OBJECT_MEMBERS; /* Must be first */
@@ -625,9 +632,11 @@ struct program
 #ifdef PIKE_DEBUG
 static INLINE int CHECK_IDREF_RANGE (int x, const struct program *p)
 {
-  if (x < 0 || x >= p->num_identifier_references)
+  if (x < 0 || x >= p->num_identifier_references) {
+    dump_program_tables(p);
     debug_fatal ("Identifier reference index %d out of range 0..%d\n", x,
 		 p->num_identifier_references - 1);
+  }
   return x;
 }
 #else
