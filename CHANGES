@@ -100,6 +100,12 @@ o Fixed fatal "Invalid formatting method: 'p' 0x70." in COM.
 o low_get_function_line() now knows about prototypes.
   Fixes [bug 4855] ("Bad offset" when generating backtrace).
 
+o Removed spurious call to the fail callback after a successful
+  Protocols.HTTP.Query()->timed_async_fetch(). Fixes [bug 4773].
+
+o Fixed issue where symbols could be hidden by a later inherit of the
+  same, but protected, symbol.
+
 
 Optimizations
 -------------
