@@ -1,25 +1,25 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.104 2009/06/15 13:48:31 grubba Exp $
+// $Id: Query.pike,v 1.105 2009/06/22 06:35:52 nilsson Exp $
 
 //! Open and execute an HTTP query.
 //!
 //! @example
 //! HTTP.Query o=HTTP.Query();
-//! 
+//!
 //! void ok()
 //! {
 //!    write("ok...\n");
 //!    write("%O\n", o->headers);
 //!    exit(0);
 //! }
-//! 
+//!
 //! void fail()
 //! {
 //!    write("fail\n");
 //!    exit(0);
 //! }
-//! 
+//!
 //! int main()
 //! {
 //!    o->set_callbacks(ok, fail);
@@ -204,11 +204,11 @@ protected void connect(string server,int port,int blocking)
 #endif /* 0 */
      });
      context->random = Crypto.Random.random_string;
-     
+
      object read_callback=con->query_read_callback();
      object write_callback=con->query_write_callback();
      object close_callback=con->query_close_callback();
-     
+
      ssl = SSL.sslfile(con, context, 1,blocking);
      if(!blocking) {
        ssl->set_read_callback(read_callback);
@@ -347,7 +347,7 @@ void async_got_host(string server,int port)
 			      SSL_rsa_with_3des_ede_cbc_sha,
 			    });
 			    context->random = Crypto.Random.random_string;
-		 
+
 			    ssl = SSL.sslfile(con, context, 1,0);
 			    ssl->set_nonblocking(0,async_connected,async_failed);
 			    con=ssl;
@@ -376,6 +376,7 @@ void async_fetch_read(mixed dummy,string data)
    if (!zero_type (headers["content-length"]) &&
        sizeof(buf)-datapos>=(int)headers["content-length"])
    {
+      remove_call_out(async_timeout); // Bug 4773
       con->set_nonblocking(0,0,0);
       request_ok(this_object(), @extra_args);
    }
@@ -929,7 +930,7 @@ string data(int|void max_length)
 #endif
 	 return 0;
        }
-       if( s ) 
+       if( s )
 	 buf += s;
      }
    }
@@ -1219,7 +1220,7 @@ void timed_async_fetch(function(object, mixed ...:void) ok_callback,
     call_out(fail_callback, 0, this_object(), @extra);
     return;
   }
-  
+
   extra_args = extra;
   request_ok = ok_callback;
   request_fail = fail_callback;
