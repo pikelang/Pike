@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.262 2009/06/22 12:05:02 grubba Exp $
+|| $Id: program.h,v 1.263 2009/06/22 12:06:11 grubba Exp $
 */
 
 #ifndef PROGRAM_H
@@ -633,7 +633,7 @@ struct program
 static INLINE int CHECK_IDREF_RANGE (int x, const struct program *p)
 {
   if (x < 0 || x >= p->num_identifier_references) {
-    dump_program_tables(p);
+    dump_program_tables(p, 4);
     debug_fatal ("Identifier reference index %d out of range 0..%d\n", x,
 		 p->num_identifier_references - 1);
   }
