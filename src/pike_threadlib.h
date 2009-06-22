@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_threadlib.h,v 1.70 2009/03/13 21:44:46 mast Exp $
+|| $Id: pike_threadlib.h,v 1.71 2009/06/22 21:09:04 grubba Exp $
 */
 
 #ifndef PIKE_THREADLIB_H
@@ -932,6 +932,9 @@ PMOD_EXPORT extern int Pike_in_gc;
      DO_IF_PIKE_CLEANUP (}) \
    } while(0)
 
+/* FIXME! The macro below leaks live_threads!
+ *        Avoid if possible!
+ */
 #define SWAP_IN_THREAD_IF_REQUIRED() do { 			\
   struct thread_state *_tmp=thread_state_for_id(th_self());	\
   HIDE_GLOBAL_VARIABLES();					\
