@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.263 2009/06/22 12:06:11 grubba Exp $
+|| $Id: program.h,v 1.264 2009/06/22 12:07:04 grubba Exp $
 */
 
 #ifndef PROGRAM_H
@@ -629,6 +629,7 @@ struct program
 #endif
 };
 
+void dump_program_tables (struct program *p, int indent);
 #ifdef PIKE_DEBUG
 static INLINE int CHECK_IDREF_RANGE (int x, const struct program *p)
 {
@@ -779,7 +780,6 @@ void low_start_new_program(struct program *p,
 PMOD_EXPORT void debug_start_new_program(int line, const char *file);
 void dump_program_desc(struct program *p);
 int sizeof_variable(int run_time_type);
-void dump_program_tables (struct program *p, int indent);
 void check_program(struct program *p);
 struct program *end_first_pass(int finish);
 PMOD_EXPORT struct program *debug_end_program(void);
