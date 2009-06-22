@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.871 2009/06/21 17:17:37 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.872 2009/06/22 18:56:11 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -595,6 +595,12 @@ test_type_error(object,float,17.23)
 test_type_error(object,array,({1,2,3}))
 test_type_error(object,mapping,([1:2,3:4]))
 test_type_error(object,multiset,(<1,2,3>))
+
+test_any_equal([[
+  // This code caused a NULL dereference in Pike 7.8.306 and earlier.
+  indices foo;
+  return typeof(foo);
+]], typeof(indices((mixed)0)))
 
 // Check that complex function types survive soft casting to function.
 ignore_warning("Soft cast of scope(0,function(*)) to function is a noop.", [[
