@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.763 2009/06/21 17:16:06 grubba Exp $
+|| $Id: program.c,v 1.764 2009/06/22 12:08:51 grubba Exp $
 */
 
 #include "global.h"
@@ -3007,7 +3007,7 @@ static ptrdiff_t alignof_variable(int run_time_type)
 
 #ifdef PIKE_DEBUG
 
-void dump_program_tables (struct program *p, int indent)
+void dump_program_tables (const struct program *p, int indent)
 {
   int d;
 
@@ -5911,6 +5911,9 @@ int add_ext_ref(struct program_state *state, struct program *target, int i)
  * In Pike 7.3.22 and prior, it looked up the last definition regardless
  * of inherit depth, unless there was a definition in the current program.
  *
+ * Note also that the changed handling of mixin's in Pike 7.7.40 affects
+ * the behaviour when using static inherit. See F below.
+ *
  * Example:
  *
  * class A {
@@ -5929,6 +5932,15 @@ int add_ext_ref(struct program_state *state, struct program *target, int i)
  * class D {
  *   inherit B;
  *   inherit C;
+ * }
+ *
+ * class E {
+ *   int foo() {}
+ * }
+ *
+ * class F {
+ *   inherit A;
+ *   static inherit E;
  * }
  *
  * Lookup of identifier "foo" in D():
@@ -5952,6 +5964,12 @@ int add_ext_ref(struct program_state *state, struct program *target, int i)
  * B-+-foo		All versions of Pike
  *   |
  *   +-A---foo
+ *
+ * External lookup of identifier "foo" in E():
+ *
+ * F-+-A---foo		            --- Pike 7.7.33
+ *   |
+ *   +-E---foo		Pike 7.7.34 ---
  */
 int really_low_find_shared_string_identifier(struct pike_string *name,
 					     struct program *prog,
