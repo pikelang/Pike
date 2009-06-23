@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.112 2008/09/19 15:10:42 mast Exp $
+/* $Id: sslfile.pike,v 1.113 2009/06/23 12:22:57 mast Exp $
  */
 
 #if constant(SSL.Cipher.CipherAlgorithm)
@@ -1293,7 +1293,8 @@ protected void update_internal_state (void|int assume_real_backend)
   if (assume_real_backend || stream->query_backend() != local_backend) {
     mixed install_read_cbs, install_write_cb;
 
-    if (nonblocking_mode && close_state >= NORMAL_CLOSE) {
+    if (nonblocking_mode &&
+	(SSL_HANDSHAKING || close_state >= NORMAL_CLOSE)) {
       // Normally we never install our own callbacks if we aren't in
       // callback mode, but handling a nonblocking close is an
       // exception.
@@ -1301,7 +1302,8 @@ protected void update_internal_state (void|int assume_real_backend)
       install_write_cb = SSL_INTERNAL_WRITING;
 
       SSL3_DEBUG_MORE_MSG ("update_internal_state: "
-			   "After close [r:%O w:%O rcb:%O]\n",
+			   "%s [r:%O w:%O rcb:%O]\n",
+			   SSL_HANDSHAKING ? "Handshaking" : "After close",
 			   !!install_read_cbs, !!install_write_cb,
 			   got_extra_read_call_out);
     }
@@ -1858,7 +1860,7 @@ protected int ssl_write_callback (int called_from_real_backend)
       }
 
       else {
-	if (write_callback && !sizeof (write_buffer)
+	if (write_callback && !sizeof (write_buffer) && !SSL_HANDSHAKING
 	    && (close_state < NORMAL_CLOSE || cb_errno)) {
 	  // errno() should return the error in the write callback - need
 	  // to propagate it here.
