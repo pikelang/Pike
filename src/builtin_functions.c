@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.689 2009/04/01 20:47:59 mast Exp $
+|| $Id: builtin_functions.c,v 1.690 2009/06/23 16:34:18 grubba Exp $
 */
 
 #include "global.h"
@@ -5066,18 +5066,28 @@ PMOD_EXPORT void f__assembler_debug(INT32 args)
   a_flag = l;
 }
 
-/*! @decl void _dump_program_tables(program p)
+/*! @decl void _dump_program_tables(program p, int|void indent)
  *!
  *! Dumps the internal tables for the program @[p] on stderr.
+ *!
+ *! @param p
+ *!   Program to dump.
+ *!
+ *! @param indent
+ *!   Number of spaces to indent the output.
+ *!
+ *! @note
+ *!   In Pike 7.8.308 and earlier @[indent] wasn't supported.
  */
 void f__dump_program_tables(INT32 args)
 {
   struct program *p;
+  int indent = 0;
 
   ASSERT_SECURITY_ROOT("_dump_program_tables");	/* FIXME: Might want lower. */
-  get_all_args("_dump_program_tables", args, "%p", &p);
+  get_all_args("_dump_program_tables", args, "%p.%d", &p, &indent);
 
-  dump_program_tables(p, 0);
+  dump_program_tables(p, indent);
   pop_n_elems(args);
 }
 
