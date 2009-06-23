@@ -1,5 +1,5 @@
 START_MARKER
-dnl $Id: testsuite.in,v 1.32 2009/06/23 12:37:31 grubba Exp $
+dnl $Id: testsuite.in,v 1.33 2009/06/23 15:09:51 grubba Exp $
 
 cond_begin([[ master()->resolv("Gmp")->mpz ]])
 
@@ -201,7 +201,7 @@ cond_begin([[ master()->resolv("Gmp")->mpz ]])
     // In old gmp gcdext() returned ({ 1, 3, -2 }).
     // In gmp 4.3.1 and later it returns ({ 1, -16, 11 }).
     // Verify against the definition to allow both cases.
-    [int g, int s, int t] = Gmp.mpz(13)->gcdext(19);
+    [int|object g, int|object s, int|object t] = Gmp.mpz(13)->gcdext(19);
     if (!intp(g) || !intp(s) || !intp(t)) return ({ g, s, t });
     if ((abs(s) > 19) || (abs(t) > 13)) return ({ g, s, t });
     if (s*13 + t*19 != g) return ({ g, s, t });
