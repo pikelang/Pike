@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.227 2009/02/21 12:54:38 grubba Exp $
+|| $Id: builtin.cmod,v 1.228 2009/06/23 16:26:16 grubba Exp $
 */
 
 #include "global.h"
@@ -1848,7 +1848,7 @@ void low_backtrace(struct Pike_interpreter *i)
     if ((bf->fun.u.object = f->current_object) &&
 	(bf->fun.u.object->prog)) {
       add_ref(bf->fun.u.object);
-      bf->fun.subtype = f->fun;
+      bf->fun.subtype = CHECK_IDREF_RANGE(f->fun, f->current_object->prog);
       bf->fun.type = PIKE_T_FUNCTION;
       function = ID_FROM_INT(f->current_object->prog, f->fun);
     } else {
