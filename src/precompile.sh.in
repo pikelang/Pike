@@ -88,6 +88,21 @@ fi
 
 test $CACHE_OUTPUT = yes && trap 'rm -rf "$TMPOUTPUT" ; exit 1' 1 2 15
 
+# method QQQQQQQ below requires a path without repeats.
+UNIQPATH=""
+ifs_save="${IFS- 	}"
+IFS=" :"
+for dir in $PATH; do
+  if echo ":$UNIQPATH:" | grep ":$dir:" >/dev/null; then :; else
+    if [ ":$UNIQPATH:" = "::" ]; then
+      UNIQPATH="$dir"
+    else
+      UNIQPATH="$UNIQPATH:$dir"
+    fi
+  fi
+done
+IFS="${ifs_save}"
+
 while test "$retries" != .............. ; do
 
 RUNPIKE=
@@ -125,7 +140,7 @@ case $method in
     for p in pike pike79 pike78 pike77 pike76 pike75 pike74 \
              pike73 pike72 pike71 pike70
     do
-      for dir in $PATH
+      for dir in $UNIQPATH
       do
         if [ -x $dir/$p ]; then
           if [ "x$LAST_PIKE" = xpike ] ; then
@@ -140,6 +155,7 @@ case $method in
         fi
       done
       if [ "x$RUNPIKE" != x ]; then
+        # We found a binary, so retry this method on failure.
 	method=QQQQQQ
         break
       fi
