@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.764 2009/06/22 12:08:51 grubba Exp $
+|| $Id: program.c,v 1.765 2009/06/24 17:35:28 grubba Exp $
 */
 
 #include "global.h"
@@ -7003,7 +7003,7 @@ PMOD_EXPORT struct pike_string *low_get_function_line (struct object *o,
     if (IDENTIFIER_IS_PIKE_FUNCTION(id->identifier_flags) &&
 	(id->func.offset != -1))
       return low_get_line (p->program + id->func.offset, p, linep);
-    if ((ret = get_identifier_line(p, fun, linep))) {
+    if ((ret = get_identifier_line(o->prog, fun, linep))) {
       add_ref(ret);
       return ret;
     }
