@@ -122,9 +122,10 @@ case $method in
   QQQQQQQ)
     ifs_save="${IFS- 	}"
     IFS=" :"
-    for dir in $PATH
+    for p in pike pike79 pike78 pike77 pike76 pike75 pike74 \
+             pike73 pike72 pike71 pike70
     do
-      for p in pike pike71 pike72 pike73
+      for dir in $PATH
       do
         if [ -x $dir/$p ]; then
           if [ "x$LAST_PIKE" = xpike ] ; then
