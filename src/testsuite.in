@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.873 2009/06/24 19:07:04 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.874 2009/06/24 20:23:43 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -845,8 +845,8 @@ test_any([[
   // Test that backtraces with prototypes are rendered correctly by
   // describe_backtrace() et al. These backtraces have caused both
   // "Bad offset" and "Identifier reference index out of range".
-  class A { void foo(); }
-  class B { int gazonk; inherit A; void bar() { foo(); } }
+  class A { void foo(); };
+  class B { int gazonk; inherit A; void bar() { foo(); } };
   return sizeof(describe_backtrace(catch { B()->bar(); })) > 0;
 ]], 1)
 
