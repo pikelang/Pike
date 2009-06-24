@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.228 2009/06/23 16:26:16 grubba Exp $
+|| $Id: builtin.cmod,v 1.229 2009/06/24 11:35:46 grubba Exp $
 */
 
 #include "global.h"
@@ -1473,10 +1473,13 @@ PIKEFUN void _putenv (string var, void|string val)
 
 PIKECLASS backtrace_frame
 {
-  PIKEVAR mixed fun;
+  PIKEVAR mixed _fun flags ID_PROTECTED|ID_PRIVATE;
+#ifdef PIKE_DEBUG
+  PIKEVAR program oprog flags ID_PROTECTED|ID_PRIVATE;
+#endif
   PIKEVAR array args;
 
-  /* These are cleared when filename and lineno has been initialized
+  /* These are cleared when filename and lineno have been initialized
    * from them. */
   PIKEVAR program prog flags ID_PROTECTED|ID_PRIVATE;
   CVAR PIKE_OPCODE_T *pc;
@@ -1504,6 +1507,25 @@ PIKECLASS backtrace_frame
     THIS->lineno = -1;
   }
 
+  PIKEFUN mixed `fun()
+  {
+    push_svalue(&THIS->_fun);
+  }
+
+  PIKEFUN void `fun=(mixed val)
+  {
+    /* FIXME: Should we allow this at all?
+     *        Linenumber info etc won't match.
+     */
+#ifdef PIKE_DEBUG
+    if ((val->type == T_FUNCTION) && (val->subtype != FUNCTION_BUILTIN)) {
+      assign_short_svalue((union anything *)&THIS->oprog,
+			  (union anything *)&val->u.object->prog, T_PROGRAM);
+    }
+#endif
+    assign_svalue(&THIS->_fun, val);
+  }
+
   /*! @decl int(0..1) _is_type(string t)
    *! This object claims to be an array for backward compatibility.
    */
@@ -1523,8 +1545,17 @@ PIKECLASS backtrace_frame
       file = low_get_line(THIS->pc, THIS->prog, &THIS->lineno);
       THIS->pc = NULL;
     }
-    else if (THIS->fun.type == PIKE_T_FUNCTION) {
-      file = low_get_function_line (THIS->fun.u.object, THIS->fun.subtype,
+    else if (THIS->_fun.type == PIKE_T_FUNCTION) {
+#ifdef PIKE_DEBUG
+      if (THIS->_fun.u.object->prog &&
+	  THIS->_fun.u.object->prog != THIS->oprog) {
+	struct identifier *id = ID_FROM_INT(THIS->oprog, THIS->_fun.subtype);
+	/* FIXME: Dump dmalloc info for the object? */
+	Pike_fatal("Lost track of function pointer! Function name was %s.\n",
+		   id->name?id->name->str:"<no name>");
+      }
+#endif
+      file = low_get_function_line (THIS->_fun.u.object, THIS->_fun.subtype,
 				    &THIS->lineno);
     }
     else if (THIS->prog) {
@@ -1566,17 +1597,25 @@ PIKECLASS backtrace_frame
     } else {
       push_text("Unknown file, ");
     }
-    if (THIS->fun.type == PIKE_T_FUNCTION) {
-      if (THIS->fun.u.object->prog) {
-	push_svalue(&THIS->fun);
+    if (THIS->_fun.type == PIKE_T_FUNCTION) {
+      if (THIS->_fun.u.object->prog) {
+#ifdef PIKE_DEBUG
+	if (THIS->_fun.u.object->prog != THIS->oprog) {
+	  struct identifier *id = ID_FROM_INT(THIS->oprog, THIS->_fun.subtype);
+	  /* FIXME: Dump dmalloc info for the object? */
+	  Pike_fatal("Lost track of function pointer! Function name was %s.\n",
+		     id->name?id->name->str:"<no name>");
+	}
+#endif
+	push_svalue(&THIS->_fun);
 	f_function_name(1);
 	push_text("(), ");
 	f_add(2);
       } else {
-	free_svalue(&THIS->fun);
-	THIS->fun.type = PIKE_T_INT;
-	THIS->fun.u.integer = 0;
-	THIS->fun.subtype = NUMBER_DESTRUCTED;
+	free_svalue(&THIS->_fun);
+	THIS->_fun.type = PIKE_T_INT;
+	THIS->_fun.u.integer = 0;
+	THIS->_fun.subtype = NUMBER_DESTRUCTED;
 	push_text("destructed_function(), ");	
       }
     } else {
@@ -1663,7 +1702,7 @@ PIKECLASS backtrace_frame
 	push_int(THIS->lineno);
 	break;
       case 2:	/* Function */
-        push_svalue(&THIS->fun);
+        push_svalue(&THIS->_fun);
         break;
       default:	/* Arguments */
         {
@@ -1743,7 +1782,7 @@ PIKECLASS backtrace_frame
 
     case 2:	/* Function */
       if (THIS->lineno == -1) fill_in_file_and_line();
-      assign_svalue(&THIS->fun, value);
+      assign_svalue(&THIS->_fun, value);
       break;
     default:	/* Arguments */
       assign_svalue(THIS->args->item + index - 3, value);
@@ -1845,16 +1884,19 @@ void low_backtrace(struct Pike_interpreter *i)
       bf->pc = f->pc;
     }
 
-    if ((bf->fun.u.object = f->current_object) &&
-	(bf->fun.u.object->prog)) {
-      add_ref(bf->fun.u.object);
-      bf->fun.subtype = CHECK_IDREF_RANGE(f->fun, f->current_object->prog);
-      bf->fun.type = PIKE_T_FUNCTION;
+    if ((bf->_fun.u.object = f->current_object) &&
+	(bf->_fun.u.object->prog)) {
+      add_ref(bf->_fun.u.object);
+#ifdef PIKE_DEBUG
+      add_ref(bf->oprog = bf->_fun.u.object->prog);
+#endif
+      bf->_fun.subtype = CHECK_IDREF_RANGE(f->fun, f->current_object->prog);
+      bf->_fun.type = PIKE_T_FUNCTION;
       function = ID_FROM_INT(f->current_object->prog, f->fun);
     } else {
-      bf->fun.u.integer = 0;
-      bf->fun.subtype = NUMBER_DESTRUCTED;
-      bf->fun.type = PIKE_T_INT;
+      bf->_fun.u.integer = 0;
+      bf->_fun.subtype = NUMBER_DESTRUCTED;
+      bf->_fun.type = PIKE_T_INT;
     }
 
     if (f->locals) {
