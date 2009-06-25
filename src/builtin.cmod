@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.229 2009/06/24 11:35:46 grubba Exp $
+|| $Id: builtin.cmod,v 1.230 2009/06/25 11:17:39 grubba Exp $
 */
 
 #include "global.h"
@@ -1507,12 +1507,16 @@ PIKECLASS backtrace_frame
     THIS->lineno = -1;
   }
 
-  PIKEFUN mixed `fun()
+  /* NOTE: Use old-style getter/setter syntax for compatibility with
+   *       old Parser.Pike.split() used by precompile.pike.
+   */
+
+  PIKEFUN mixed `->fun()
   {
     push_svalue(&THIS->_fun);
   }
 
-  PIKEFUN void `fun=(mixed val)
+  PIKEFUN void `->=fun(mixed val)
   {
     /* FIXME: Should we allow this at all?
      *        Linenumber info etc won't match.
