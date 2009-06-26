@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 - 2009, Roxen IS. All rights reserved.
 //
-// $Id: Base.pike,v 1.7 2009/05/25 18:26:52 mast Exp $
+// $Id: Base.pike,v 1.8 2009/06/26 14:29:27 noring Exp $
 
 //! Base class for Roxen Search database storage abstraction implementations.
 
@@ -101,6 +101,16 @@ mapping(string:string) get_metadata(int|Standards.URI|string uri,
 // FIXME: docs
 mapping(int:string) get_special_metadata(array(int) doc_ids,
 					  string wanted_field);
+
+//! Remove URI from the database.
+//! @param uri
+//!   The URI of the resource being removed.
+void remove_uri(string|Standards.URI uri);
+
+//! Remove URI prefix from the database.
+//! @param uri
+//!   The URI prefix of the resource being removed.
+void remove_uri_prefix(string|Standards.URI uri);
 
 //! Remove a document from the database. 
 //! @param uri

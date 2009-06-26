@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000 - 2009, Roxen IS. All rights reserved.
 //
-// $Id: MySQL.pike,v 1.89 2009/05/25 18:26:52 mast Exp $
+// $Id: MySQL.pike,v 1.90 2009/06/26 14:29:27 noring Exp $
 
 inherit .Base;
 
@@ -151,9 +151,12 @@ int get_uri_id(string uri, void|int do_not_create)
   return db->master_sql->insert_id();
 }
 
-int get_document_id(string uri, void|string language)
+int get_document_id(string uri, void|string language, void|int do_not_create)
 {
-  int uri_id=get_uri_id(uri);
+  int uri_id=get_uri_id(uri, do_not_create);
+
+  if (!uri_id)
+    return 0;
   
   string s=sprintf("select id from document where "
 		   "uri_id='%d'", uri_id);
@@ -191,13 +194,24 @@ mapping get_uri_and_language(int|array(int) doc_id)
   }
 }
 
+void remove_uri(string|Standards.URI uri)
+{
+  db->query("delete from uri where uri_md5=%s", to_md5((string)uri));
+}
+
+void remove_uri_prefix(string|Standards.URI uri)
+{
+  string uri_string = (string)uri;
+  db->query("delete from uri where uri like '" + db->quote(uri_string) + "%%'");
+}
+
 static int docs; // DEBUG
 
 void remove_document(string|Standards.URI uri, void|string language)
 {
   docs++; // DEBUG
 
-  int uri_id=get_uri_id((string)uri);
+  int uri_id=get_uri_id((string)uri, 1);
 
   if(!uri_id)
     return;
@@ -450,7 +464,7 @@ void remove_metadata(Standards.URI|string uri, void|string language)
 {
   int doc_id;
   if(!intp(uri))
-    doc_id = get_document_id((string)uri, language);
+    doc_id = get_document_id((string)uri, language, 1);
   db->query("delete from metadata where doc_id = %d", doc_id);
 }
 
@@ -625,7 +639,7 @@ void add_links(Standards.URI|string uri,
 void remove_links(Standards.URI|string uri,
 		  void|string language)
 {
-  int doc_id = get_document_id((string)uri, language);
+  int doc_id = get_document_id((string)uri, language, 1);
 
   db->query("delete from link where from_id=%d", doc_id);
 }
