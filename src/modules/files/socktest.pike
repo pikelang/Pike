@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.50 2009/02/08 14:27:10 grubba Exp $ */
+/* $Id: socktest.pike,v 1.51 2009/06/28 09:43:48 grubba Exp $ */
 
 // #define OOB_DEBUG
 
@@ -113,7 +113,8 @@ class Socket {
     got_callback();
     if(input_buffer != expected_data)
     {
-      predef::write("Failed to read complete data, errno=%d.\n",err);
+      predef::write("Failed to read complete data, errno=%d, %O.\n",
+		    err, strerror(err));
       if(sizeof(input_buffer) < 100)
       {
 	predef::write(num+":Input buffer: "+input_buffer+"\n");
@@ -380,7 +381,7 @@ array(object(Socket)) stdtest()
     }
 #endif /* ENETUNREACH */
 #endif /* IPV6 */
-    write("Connect failed: (%d)\n", sock->errno());
+    write("Connect failed: (%d, %O)\n", sock->errno(), strerror(sock->errno()));
     sleep(1);
     fd_fail();
   }
@@ -388,7 +389,8 @@ array(object(Socket)) stdtest()
   sock2=port2::accept();
   if(!sock2)
   {
-    write("Accept returned 0, errno: %d\n", port2::errno());
+    write("Accept returned 0, errno: %d, %O\n",
+	  port2::errno(), strerror(port2::errno()));
     sleep(1);
     fd_fail();
   }
@@ -418,7 +420,8 @@ array(object) spair(int type)
     sock2=port2::accept();
     if(!sock2)
     {
-      write("Accept returned 0, errno: %d\n", port2::errno());
+      write("Accept returned 0, errno: %d, %O\n",
+	    port2::errno(), strerror(port2::errno()));
       fd_fail();
     }
   }else{
@@ -427,7 +430,8 @@ array(object) spair(int type)
 		      Stdio.PROP_SHUTDOWN);
     if(!sock2)
     {
-      write("File->pipe() failed 0, errno: %d\n", sock1->errno());
+      write("File->pipe() failed 0, errno: %d, %O\n",
+	    sock1->errno(), strerror(sock1->errno()));
       fd_fail();
     }
   }
@@ -606,7 +610,8 @@ void accept_callback()
   object o=port1::accept();
   if(!o)
   {
-    write("Accept failed, errno: %d\n", port1::errno());
+    write("Accept failed, errno: %d, %O\n",
+	  port1::errno(), strerror(port1::errno()));
   }
 #ifdef BACKEND
   o->set_backend(backend);
@@ -697,7 +702,7 @@ int main(int argc, array(string) argv)
     }
 #endif /* EAFNOSUPPORT */
 #endif /* IPV6 */
-    write("Bind failed. (%d)\n",port1::errno());
+    write("Bind failed. (%d, %O)\n", port1::errno(), strerror(port1::errno()));
     fd_fail();
   }
   DEBUG_WERR("port1: %O\n", port1::query_address());
@@ -705,7 +710,8 @@ int main(int argc, array(string) argv)
 
   if(!port2::bind(0, 0, ANY) || !port2::query_address())
   {
-    write("Bind failed(2). (%d)\n",port2::errno());
+    write("Bind failed(2). (%d, %O)\n",
+	  port2::errno(), strerror(port2::errno()));
     fd_fail();
   }
   DEBUG_WERR("port2: %O\n", port2::query_address());
