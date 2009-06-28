@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.183 2008/06/29 17:20:35 grubba Exp $
+|| $Id: mpz_glue.c,v 1.184 2009/06/28 10:08:26 grubba Exp $
 */
 
 #include "global.h"
@@ -1577,6 +1577,7 @@ static void mpzmod_fac(INT32 args)
   PUSH_REDUCED (res);
 }
 
+#ifdef HAVE_MPZ_BIN_UI
 /*! @decl Gmp.mpz bin(int k)
  *! 
  *! Return the binomial coefficient @expr{n@} over @[k], where
@@ -1592,6 +1593,10 @@ static void mpzmod_fac(INT32 args)
  *! @throws
  *!   The @[k] value can't be arbitrarily large. An error is thrown if
  *!   it's too large.
+ *!
+ *! @note
+ *!   This function is currently (Pike 7.8) not available with old
+ *!   releases of the gmp libraries.
  */
 static void mpzmod_bin(INT32 args)
 {
@@ -1612,6 +1617,10 @@ static void mpzmod_bin(INT32 args)
   pop_n_elems(args);
   PUSH_REDUCED(res);
 }
+#else
+/* FIXME: Implement mpz_bin_ui() using primitives. */
+/* Note: When fixing; note IF_MPZ_BIN_UI further below. */
+#endif /* HAVE_MPZ_BIN_UI */
 
 #define BINFUN(name, errmsg_name, fun)			\
 static void name(INT32 args)				\
@@ -2234,6 +2243,11 @@ static void pike_mp_free (void *ptr, size_t size)
 #define tMpz_binop_type tFuncV(tNone, tMpz_arg, tMpz_ret)
 #define tMpz_cmpop_type tFunc(tMixed, tInt01)
 
+#ifdef HAVE_MPZ_BIN_UI
+#define IF_MPZ_BIN_UI(X) X
+#else
+#define IF_MPZ_BIN_UI(X)
+#endif
 #define MPZ_DEFS()							\
   ADD_STORAGE(MP_INT);							\
   									\
@@ -2307,7 +2321,8 @@ static void pike_mp_free (void *ptr, size_t size)
   ADD_FUNCTION("invert", mpzmod_invert,tFunc(tMpz_arg,tMpz_ret),0);	\
 									\
   ADD_FUNCTION("fac", mpzmod_fac, tFunc(tNone,tMpz_ret), 0);		\
-  ADD_FUNCTION("bin", mpzmod_bin, tFunc(tMpz_arg,tMpz_ret), 0);		\
+  IF_MPZ_BIN_UI(ADD_FUNCTION("bin", mpzmod_bin,				\
+			     tFunc(tMpz_arg,tMpz_ret), 0));		\
 									\
   ADD_FUNCTION("sgn", mpzmod_sgn, tFunc(tNone,tInt), 0);		\
   ADD_FUNCTION("sqrt", mpzmod_sqrt,tFunc(tNone,tMpz_ret),0);		\

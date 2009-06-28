@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.49 2008/09/15 14:13:48 grubba Exp $
+# $Id: configure.in,v 1.50 2009/06/28 10:08:26 grubba Exp $
 AC_INIT(mpz_glue.c)
 AC_CONFIG_HEADER(gmp_machine.h)
 AC_ARG_WITH(gmp,     [  --with(out)-gmp        Support bignums],[],[with_gmp=yes])
@@ -234,6 +234,7 @@ if test x$with_gmp = xyes ; then
   CHECK_GMP_FUNC(mpz_xor, [mpz_t a, b, c; mpz_xor(a, b, c)])
   CHECK_GMP_FUNC(mpz_import, [mpz_t a; mpz_import(a, 1, 1, 1, 0, 0, 0)])
   CHECK_GMP_FUNC(mpz_fits_ulong_p, [mpz_t a; mpz_fits_ulong_p (a)])
+  CHECK_GMP_FUNC(mpz_bin_ui, [mpz_t a, b; mpz_bin_ui(a, b, 1)])
 
   echo >>confdefs.h '
 #ifdef HAVE_GMP2_GMP_H
