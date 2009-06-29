@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.413 2009/06/29 10:59:12 grubba Exp $
+|| $Id: file.c,v 1.414 2009/06/29 15:13:14 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -4171,6 +4171,7 @@ static TH_RETURN_TYPE proxy_thread(void * data)
     while(w<len)
     {
       ptrdiff_t wl = fd_write(p->to, p->buffer+w, len-w);
+      if (!wl) break;
       if(wl<0)
       {
 	if(errno==EINTR) continue;
