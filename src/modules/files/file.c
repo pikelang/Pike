@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.411 2009/06/10 15:44:59 grubba Exp $
+|| $Id: file.c,v 1.412 2009/06/29 09:21:59 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -3705,6 +3705,27 @@ static void file_open_socket(INT32 args)
       push_int(0);
       return;
     }
+#ifdef SO_REUSEPORT
+    /* FreeBSD 7.x wants this to reuse portnumbers.
+     * Linux 2.6.x seems to have reserved a slot for the option, but not
+     * enabled it. Survive libc's with the option on kernels without.
+     */
+    if((fd_setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, (char *)&o, sizeof(int)) < 0)
+#ifdef ENOPROTOOPT
+       && (errno != ENOPROTOOPT)
+#endif
+#ifdef WSAENOPROTOOPT
+       && (errno != WSAENOPROTOOPT)
+#endif
+){
+      ERRNO=errno;
+      while (fd_close(fd) && errno == EINTR) {}
+      errno = ERRNO;
+      pop_n_elems(args);
+      push_int(0);
+      return;
+    }
+#endif /* SO_REUSEPORT */
     if (fd_bind(fd, (struct sockaddr *)&addr, addr_len) < 0) {
       ERRNO=errno;
       while (fd_close(fd) && errno == EINTR) {}
@@ -3732,6 +3753,27 @@ static void file_open_socket(INT32 args)
       push_int(0);
       return;
     }
+#ifdef SO_REUSEPORT
+    /* FreeBSD 7.x wants this to reuse portnumbers.
+     * Linux 2.6.x seems to have reserved a slot for the option, but not
+     * enabled it. Survive libc's with the option on kernels without.
+     */
+    if((fd_setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, (char *)&o, sizeof(int)) < 0)
+#ifdef ENOPROTOOPT
+       && (errno != ENOPROTOOPT)
+#endif
+#ifdef WSAENOPROTOOPT
+       && (errno != WSAENOPROTOOPT)
+#endif
+){
+      ERRNO=errno;
+      while (fd_close(fd) && errno == EINTR) {}
+      errno = ERRNO;
+      pop_n_elems(args);
+      push_int(0);
+      return;
+    }
+#endif /* SO_REUSEPORT */
   }
 
   init_fd(fd, FILE_READ | FILE_WRITE |
