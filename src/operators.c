@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.246 2009/02/06 00:47:01 srb Exp $
+|| $Id: operators.c,v 1.247 2009/06/30 14:14:57 mast Exp $
 */
 
 #include "global.h"
@@ -157,7 +157,7 @@ void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 		  "the NULL value":get_name_of_type(what->type),
 		  ind->u.integer);
     else if (ind->type == T_FLOAT)
-      Pike_error ("Cannot index %s with %"PRINTPIKEFLOAT"g.\n",
+      Pike_error ("Cannot index %s with %"PRINTPIKEFLOAT"e.\n",
 		  (what->type == T_INT && !what->u.integer)?
 		  "the NULL value":get_name_of_type(what->type),
 		  ind->u.float_number);
@@ -483,6 +483,13 @@ PMOD_EXPORT void o_cast_to_string(void)
   case T_FLOAT:
     sprintf(buf,"%.*"PRINTPIKEFLOAT"g",
      MAX_FLOAT_PREC_LEN, sp[-1].u.float_number);
+    /* Ensure that a decimal point gets printed, since "g" removes it
+     * completely if only zeroes would follow. Don't need to check for
+     * an 'e', since if that is printed then "g" behaved like the "e"
+     * format, and it always prints a '.' if the precision isn't
+     * zero. */
+    if (!strchr (buf, '.'))
+      strcat (buf, ".0");
     break;
 
   case T_INT:
@@ -1621,6 +1628,9 @@ PMOD_EXPORT void f_add(INT32 args)
       case T_FLOAT:
 	sprintf(buffer,"%.*"PRINTPIKEFLOAT"g",
          MAX_FLOAT_PREC_LEN, sp[e].u.float_number);
+	/* See comment for T_FLOAT in o_cast_to_string. */
+	if (!strchr (buffer, '.'))
+	  strcat (buffer, ".0");
 #ifdef PIKE_DEBUG
 	if (strlen (buffer) > MAX_FLOAT_SPRINTF_LEN)
 	  Pike_fatal ("Formatted float %s is %"PRINTSIZET"u, "
