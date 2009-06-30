@@ -8,7 +8,9 @@ constant contenttypes = ({ }); // Hide this program.
 //! Data extracted from input, grouped by type. Standard fields are
 //! @expr{"body"@}, @expr{"title"@}, @expr{"description"@},
 //! @expr{"keywords"@} and @expr{"mtime"@}.
-mapping(string:string|int) fields=([]);
+//! @note
+//!   Note that all field values (even @expr{"mtime"@}) are strings.
+mapping(string:string) fields=([]);
 // body, title, description, keywords, mtime
 
 //! The size of the document.
