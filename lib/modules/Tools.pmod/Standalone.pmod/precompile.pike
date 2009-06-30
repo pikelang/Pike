@@ -162,8 +162,24 @@ string usage = #"[options] <from> > <to>
     to detect the version of precompile at compile time.
 ";
 
-
 #define PC Parser.Pike
+
+#if 0 && !constant(Parser._parser._Pike.tokenize)
+class parser_pike
+{
+  inherit PC;
+  static void create()
+  {
+    // Kludge for `fun.
+    backquoteops["f"] = 1;
+  }
+}
+static parser_pike PP = parser_pike();
+
+#define split PP->split
+#else
+#define split PC.split
+#endif
 
 /* Strings declared with MK_STRING. */
 mapping(string:string) strings = ([
@@ -261,9 +277,11 @@ string allocate_string_svalue(string orig_str)
   if (svalue_sym) return svalue_sym;
   int svalue_id = last_svalue_id++;
   stradd += ({
-    sprintf("module_svalues[%d].type = PIKE_T_STRING;\n"
+    sprintf("#ifdef module_svalues_declared\n"
+	    "module_svalues[%d].type = PIKE_T_STRING;\n"
 	    "module_svalues[%d].subtype = 0;\n"
-	    "copy_shared_string(module_svalues[%d].u.string, %s);\n",
+	    "copy_shared_string(module_svalues[%d].u.string, %s);\n"
+	    "#endif\n",
 	    svalue_id, svalue_id, svalue_id, str_sym),
   });
   svalue_sym = svalues[str_sym] = sprintf("(module_svalues+%d)", svalue_id);
@@ -895,7 +913,7 @@ class PikeType
 	  break;
 
 	case "string":
-	  tok=convert_comments(PC.tokenize(PC.split(tok),"piketype"));
+	  tok=convert_comments(PC.tokenize(split(tok),"piketype"));
 	  tok=PC.group(PC.hide_whitespaces(tok));
 	  
 	case "array":
@@ -2581,7 +2599,7 @@ int main(int argc, array(string) argv)
   string file = argv[1];
 
   x=Stdio.read_file(file)-"\r";
-  x=PC.split(x);
+  x=split(x);
   x=PC.tokenize(x,file);
   x = convert_comments(x);
   x=PC.hide_whitespaces(x);
@@ -2612,19 +2630,25 @@ int main(int argc, array(string) argv)
 
   if (last_str_id) {
     // Add code for allocation and deallocation of the strings.
-    tmp->addfuncs = stradd + tmp->addfuncs;
+    tmp->addfuncs = 
+      ({ "#ifdef module_strings_declared\n" }) +
+      stradd +
+      ({ "#endif\n" }) + tmp->addfuncs;
     tmp->exitfuncs += ({
-      sprintf("{\n"
+      sprintf("#ifdef module_strings_declared\n"
+	      "{\n"
 	      "  int i;\n"
 	      "  for(i=0; i < %d; i++) {\n"
 	      "    if (module_strings[i]) free_string(module_strings[i]);\n"
 	      "    module_strings[i] = NULL;\n"
 	      "  }\n"
-	      "}\n",
+	      "}\n"
+	      "#endif\n",
 	      last_str_id),
     });
     tmp->declarations += ({
-      sprintf("static struct pike_string *module_strings[%d] = {\n"
+      sprintf("#define module_strings_declared\n"
+	      "static struct pike_string *module_strings[%d] = {\n"
 	      "%s};\n",
 	      last_str_id, "  NULL,\n"*last_str_id),
     });
@@ -2634,11 +2658,14 @@ int main(int argc, array(string) argv)
     //       support for other svalues than strings is added.
     if (last_svalue_id) {
       tmp->exitfuncs += ({
-	sprintf("free_svalues(module_svalues, %d, BIT_STRING);\n",
+	sprintf("#ifdef module_svalues_declared\n"
+		"free_svalues(module_svalues, %d, BIT_STRING);\n"
+		"#endif\n",
 		last_svalue_id),
       });
       tmp->declarations += ({
-	sprintf("static struct svalue module_svalues[%d];\n",
+	sprintf("#define module_svalues_declared\n"
+		"static struct svalue module_svalues[%d];\n",
 		last_svalue_id),
       });
     }
