@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 - 2009, Roxen IS. All rights reserved.
 //
-// $Id: Base.pike,v 1.8 2009/06/26 14:29:27 noring Exp $
+// $Id: Base.pike,v 1.9 2009/06/30 12:34:59 grubba Exp $
 
 //! Base class for Roxen Search database storage abstraction implementations.
 
@@ -101,6 +101,21 @@ mapping(string:string) get_metadata(int|Standards.URI|string uri,
 // FIXME: docs
 mapping(int:string) get_special_metadata(array(int) doc_ids,
 					  string wanted_field);
+
+//! Set last modification time for @[uri], @[language] to
+//! @[mtime] (seconds since @tt{1970-01-01T00:00:00 UTC@}).
+void set_lastmodified(Standards.URI|string uri,
+		      void|string language,
+		      int when);
+
+//! Get last modification time for @[uri], @[language].
+//!
+//! @returns
+//!   Returns modification time in seconds since
+//!   @tt{1970-01-01T00:00:00 UTC@}) if known,
+//!   and @expr{0@} (zero) otherwise.
+int get_lastmodified(Standards.URI|string|array(Standards.URI|string) uri,
+		     void|string language);
 
 //! Remove URI from the database.
 //! @param uri
