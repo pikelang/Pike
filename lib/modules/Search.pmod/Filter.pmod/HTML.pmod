@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000 - 2009, Roxen IS. All rights reserved.
 //
-// $Id: HTML.pmod,v 1.44 2009/05/25 18:26:52 mast Exp $
+// $Id: HTML.pmod,v 1.45 2009/06/30 13:17:14 grubba Exp $
 
 // Filter for text/html
 
@@ -74,6 +74,38 @@ static string clean(string data) {
   return cleaner->finish(data)->read();
 }
 
+void parse_http_header(string header, string value, .Output res)
+{
+  switch(lower_case(header))
+  {
+  case "robots":
+    res->fields->robots = (stringp(res->fields->robots)?
+			   res->fields->robots+",": "") +
+      value;
+    break;
+
+  case "last-modified":
+    catch {
+      res->fields->mtime =
+	(string)Protocols.HTTP.Server.http_decode_date(value);
+    };
+    // FALL_THROUGH
+
+  case "mtime":
+  case "description":
+  case "keywords":
+  case "modified":
+  case "author":
+#ifdef INTRAWISE
+  case "intrawise.folderid":
+  case "intrawise.type":
+#endif
+  default:
+    res->fields[lower_case(header)] = value;
+    break;
+  }
+}
+
 .Output filter(Standards.URI uri, string|Stdio.File data,
 	       string content_type,
 	       mapping headers,
@@ -87,6 +119,11 @@ static string clean(string data) {
     data=data->read();
 
   data = .Charset.decode_http( data, headers, default_charset );
+
+  foreach(headers; string header; string value)
+  {
+    parse_http_header(header, value, res);
+  }
 
 #if 0
   array parse_rank(Parser.HTML p, mapping m, string c)
@@ -106,27 +143,8 @@ static string clean(string data) {
   {
     if (e->noindex)
       return ({ });
-    string n = m->name||m["http-equiv"];
-    switch(lower_case(n || ""))
-    {
-      case "robots":
-	res->fields->robots = (stringp(res->fields->robots)?
-			       res->fields->robots+",": "") +
-			      (m->contents||m->content||m->data||"");
-	break;
-
-      case "description":
-      case "keywords":
-      case "modified":
-      case "author":
-#ifdef INTRAWISE
-      case "intrawise.folderid":
-      case "intrawise.type":
-#endif
-      default:
-	res->fields[lower_case(n)] = m->contents||m->content||m->data||"";
-	break;
-    }
+    parse_http_header(m->name||m["http-equiv"]||"",
+		      m->contents||m->content||m->data||"", res);
     return ({});
   };
 
