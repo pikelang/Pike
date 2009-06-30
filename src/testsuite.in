@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.875 2009/06/30 14:20:38 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.876 2009/06/30 21:39:51 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -8232,11 +8232,16 @@ test_eq([[(string)1]],[["1"]])
 test_eq([[(string)-1]],[["-1"]])
 test_eq([[(string)1.0]],[["1.0"]])
 test_eq([[(string)-1.0]],[["-1.0"]])
-test_true([[has_value ((string)1e100, ".")]])
-test_true([[has_value ((string)1e-100, ".")]])
-test_true([[has_value ((string)-1e100, ".")]])
-test_true([[has_value ((string)-1e-100, ".")]])
-test_true([[has_value ((string)124354236143512312334562453624.1, ".")]])
+test_true([[has_value ((string)1e100, ".") ||
+	    has_value ((string)1e100, "e")]])
+test_true([[has_value ((string)-1e100, ".") ||
+	    has_value ((string)-1e100, "e")]])
+test_true([[has_value ((string)1e-100, ".") ||
+	    has_value ((string)1e-100, "e")]])
+test_true([[has_value ((string)-1e-100, ".") ||
+	    has_value ((string)-1e-100, "e")]])
+test_true([[has_value ((string)124354236143512312334562453624.1, ".") ||
+	    has_value ((string)124354236143512312334562453624.1, "e")]])
 test_do(return (string)1e308)
 test_do(return (string)1e200)
 test_do(return (string)1e-200)
