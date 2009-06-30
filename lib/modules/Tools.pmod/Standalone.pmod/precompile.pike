@@ -277,7 +277,7 @@ string allocate_string_svalue(string orig_str)
   if (svalue_sym) return svalue_sym;
   int svalue_id = last_svalue_id++;
   stradd += ({
-    sprintf("#ifdef module_svalues_declared\n"
+    sprintf("\n#ifdef module_svalues_declared\n"
 	    "module_svalues[%d].type = PIKE_T_STRING;\n"
 	    "module_svalues[%d].subtype = 0;\n"
 	    "copy_shared_string(module_svalues[%d].u.string, %s);\n"
@@ -2631,11 +2631,11 @@ int main(int argc, array(string) argv)
   if (last_str_id) {
     // Add code for allocation and deallocation of the strings.
     tmp->addfuncs = 
-      ({ "#ifdef module_strings_declared\n" }) +
+      ({ "\n#ifdef module_strings_declared\n" }) +
       stradd +
       ({ "#endif\n" }) + tmp->addfuncs;
     tmp->exitfuncs += ({
-      sprintf("#ifdef module_strings_declared\n"
+      sprintf("\n#ifdef module_strings_declared\n"
 	      "{\n"
 	      "  int i;\n"
 	      "  for(i=0; i < %d; i++) {\n"
@@ -2658,7 +2658,7 @@ int main(int argc, array(string) argv)
     //       support for other svalues than strings is added.
     if (last_svalue_id) {
       tmp->exitfuncs += ({
-	sprintf("#ifdef module_svalues_declared\n"
+	sprintf("\n#ifdef module_svalues_declared\n"
 		"free_svalues(module_svalues, %d, BIT_STRING);\n"
 		"#endif\n",
 		last_svalue_id),
