@@ -6,10 +6,10 @@ constant contenttypes = ({ }); // Hide this program.
 // Wide strings here
 
 //! Data extracted from input, grouped by type. Standard fields are
-//! @expr{"body"@}, @expr{"title"@}, @expr{"description"@} and
-//! @expr{"keywords"@}.
-mapping(string:string) fields=([]);
-// body, title, description, keywords
+//! @expr{"body"@}, @expr{"title"@}, @expr{"description"@},
+//! @expr{"keywords"@} and @expr{"mtime"@}.
+mapping(string:string|int) fields=([]);
+// body, title, description, keywords, mtime
 
 //! The size of the document.
 int document_size;
