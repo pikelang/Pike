@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 - 2009, Roxen IS. All rights reserved.
 //
-// $Id: Base.pike,v 1.9 2009/06/30 12:34:59 grubba Exp $
+// $Id: Base.pike,v 1.10 2009/06/30 12:35:33 noring Exp $
 
 //! Base class for Roxen Search database storage abstraction implementations.
 
@@ -215,3 +215,6 @@ int get_num_deleted_documents();
 //! Returns a list of the @[count] most common words in the database.
 //! @[count] defaults to @expr{10@}.
 array(array) get_most_common_words(void|int count);
+
+//! Calls @[cb] for all uri:s that match @[uri_prefix].
+void list_url_by_prefix(string url_prefix, function(string:void) cb);

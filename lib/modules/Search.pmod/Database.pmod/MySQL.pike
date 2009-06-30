@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000 - 2009, Roxen IS. All rights reserved.
 //
-// $Id: MySQL.pike,v 1.90 2009/06/26 14:29:27 noring Exp $
+// $Id: MySQL.pike,v 1.91 2009/06/30 12:35:33 noring Exp $
 
 inherit .Base;
 
@@ -940,4 +940,18 @@ array(array) get_most_common_words(void|int count)
   else
     return Array.transpose( ({ map(a->word, my_denormalize),
 			       (array(int))a->c }) );
+}
+
+void list_url_by_prefix(string url_prefix, function(string:void) cb)
+{
+  Sql.sql_result q =
+    db->big_query("SELECT uri "
+		  "  FROM uri "
+		  " WHERE uri LIKE '"+db->quote(url_prefix)+"%'");
+  for(;;) {
+    array row = q->fetch_row();
+    if(!row)
+      break;
+    cb(row[0]);
+  }
 }
