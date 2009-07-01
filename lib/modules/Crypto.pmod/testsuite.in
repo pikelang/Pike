@@ -1,5 +1,5 @@
 START_MARKER
-// $Id: testsuite.in,v 1.41 2008/05/16 11:30:31 grubba Exp $
+// $Id: testsuite.in,v 1.42 2009/07/01 19:07:25 grubba Exp $
 
 // Nettle.Yarrow
 
@@ -35,7 +35,7 @@ cond_resolv( Nettle.Yarrow, [[
   test_eq( Nettle.Yarrow()->min_seed_size(), 32)
   test_eval_error( Nettle.Yarrow()->get_seed() )
   test_eq( S(Nettle.Yarrow()->seed("\0"*32)->get_seed()),
-    "200fe7972e93822621682027def987291e977e546fd879bd86643e5932123507" )
+    "16bcc413e02acc9fce9991ed14816cd3bb0b9da2deb8898fe1b0639234cd6c93" )
   test_eq( Nettle.Yarrow()->is_seeded(), 0)
   test_eq( Nettle.Yarrow()->seed("\0"*32)->is_seeded(), 1)
   test_do( Nettle.Yarrow()->seed("\0"*32)->force_reseed() )
