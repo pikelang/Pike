@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000 - 2009, Roxen IS. All rights reserved.
 //
-// $Id: HTML.pmod,v 1.45 2009/06/30 13:17:14 grubba Exp $
+// $Id: HTML.pmod,v 1.46 2009/07/01 08:30:57 grubba Exp $
 
 // Filter for text/html
 
@@ -86,8 +86,20 @@ void parse_http_header(string header, string value, .Output res)
 
   case "last-modified":
     catch {
+#if constant(Roxen.parse_since)
+      // Roxen.parse_since() supports multiple time formats.
+      res->fields->mtime = (string)Roxen.parse_since(value)[0];
+#elif constant(Protocols.HTTP.Server.http_decode_date)
+      // Protocols.HTTP.Server.http_decode_date() currently
+      // only supports the format specified by the RFC.
       res->fields->mtime =
 	(string)Protocols.HTTP.Server.http_decode_date(value);
+#else
+      // Fallback for Pike 7.4.
+      Calendar.ISO_UTC.Second s=
+	Calendar.ISO_UTC.parse("%e, %D %M %Y %h:%m:%s GMT", value);
+      res->fields->mtime = (string)(s && s->unix_time());
+#endif
     };
     // FALL_THROUGH
 
