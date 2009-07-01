@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.20 2008/07/17 10:53:20 mast Exp $
+# $Id: configure.in,v 1.21 2009/07/01 17:46:42 grubba Exp $
 AC_INIT(nettle.cmod)
 AC_CONFIG_HEADER(nettle_config.h)
 
@@ -80,6 +80,9 @@ instead. Nettle is available at http://www.lysator.liu.se/~nisse/nettle/.
   # These might have been purged from the Nettle lib to avoid GPL
   # contamination.
   AC_CHECK_FUNCS(nettle_blowfish_decrypt nettle_serpent_decrypt)
+
+  # These are the recomended interfaces in Nettle 2.0.
+  AC_CHECK_FUNCS(nettle_yarrow256_random nettle_yarrow256_slow_reseed)
 fi
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )

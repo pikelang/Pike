@@ -1,5 +1,5 @@
 /* nettle.cmod -*- c -*- */
-/* $Id: nettle.cmod,v 1.48 2009/07/01 11:38:59 grubba Exp $ */
+/* $Id: nettle.cmod,v 1.49 2009/07/01 17:46:43 grubba Exp $ */
 
 #include "global.h"
 #include "interpret.h"
@@ -90,10 +90,11 @@ PIKECLASS Yarrow
     optflags OPT_SIDE_EFFECT;
   {
     if(data->len < YARROW256_SEED_FILE_SIZE)
-      Pike_error( "Seed must be at least 32 characters.\n" );
+      Pike_error("Seed must be at least %d characters.\n",
+		 YARROW256_SEED_FILE_SIZE);
 
     NO_WIDE_STRING(data);
-    yarrow256_seed(&THIS->ctx, data->len, (const uint8_t *)data->str);
+    yarrow256_seed(&THIS->ctx, data->len, STR0(data));
     RETURN this_object();
   }
 
@@ -121,21 +122,23 @@ PIKECLASS Yarrow
     if( !yarrow256_is_seeded(&THIS->ctx) )
       Pike_error("Random generator not seeded.\n");
 
-    /* FIXME: From change notes for Nettle 2.0:
-     *
-     * * Changes to the yarrow256 interface. The automatic seed file
-     *   generation, and the seed_file member in struct
-     *   yarrow256_ctx, has been removed. To generate a new seed
-     *   file, use yarrow256_random. The function
-     *   yarrow256_force_reseed has been replaced by the two
-     *   functions yarrow256_fast_reseed and yarrow256_slow_reseed,
-     *   which were previously static. This interface change makes it
-     *   easier to mix in the current content of the seed file before
-     *   overwriting it with newly generated data.
-     */
-
+#ifdef HAVE_NETTLE_YARROW256_RANDOM
+    {
+      /* From change notes for Nettle 2.0:
+       *
+       * * Changes to the yarrow256 interface. The automatic seed file
+       *   generation, and the seed_file member in struct
+       *   yarrow256_ctx, has been removed. To generate a new seed
+       *   file, use yarrow256_random.
+       */
+      struct pike_string *res = begin_shared_string(YARROW256_SEED_FILE_SIZE);
+      yarrow256_random(&THIS->ctx, YARROW256_SEED_FILE_SIZE, STR0(res));
+      RETURN end_shared_string(res);
+    }
+#else
     RETURN make_shared_binary_string((const char *)THIS->ctx.seed_file,
 				     YARROW256_SEED_FILE_SIZE);
+#endif
   }
 
   /*! @decl int(0..1) is_seeded()
@@ -158,7 +161,18 @@ PIKECLASS Yarrow
   PIKEFUN void force_reseed()
     optflags OPT_SIDE_EFFECT;
   {
+#ifdef HAVE_NETTLE_YARROW256_SLOW_RESEED
+    /* From change notes for Nettle 2.0:
+     *
+     * * Changes to the yarrow256 interface. The function
+     *   yarrow256_force_reseed has been replaced by the two
+     *   functions yarrow256_fast_reseed and yarrow256_slow_reseed,
+     *   which were previously static.
+     */
+    yarrow256_slow_reseed(&THIS->ctx);
+#else
     yarrow256_force_reseed(&THIS->ctx);
+#endif
   }
 
   /*! @decl int(0..1) update(string data, int source, int entropy)
