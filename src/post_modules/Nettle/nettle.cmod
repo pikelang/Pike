@@ -1,5 +1,5 @@
 /* nettle.cmod -*- c -*- */
-/* $Id: nettle.cmod,v 1.47 2008/06/28 22:57:14 nilsson Exp $ */
+/* $Id: nettle.cmod,v 1.48 2009/07/01 11:38:59 grubba Exp $ */
 
 #include "global.h"
 #include "interpret.h"
@@ -120,6 +120,20 @@ PIKECLASS Yarrow
   {
     if( !yarrow256_is_seeded(&THIS->ctx) )
       Pike_error("Random generator not seeded.\n");
+
+    /* FIXME: From change notes for Nettle 2.0:
+     *
+     * * Changes to the yarrow256 interface. The automatic seed file
+     *   generation, and the seed_file member in struct
+     *   yarrow256_ctx, has been removed. To generate a new seed
+     *   file, use yarrow256_random. The function
+     *   yarrow256_force_reseed has been replaced by the two
+     *   functions yarrow256_fast_reseed and yarrow256_slow_reseed,
+     *   which were previously static. This interface change makes it
+     *   easier to mix in the current content of the seed file before
+     *   overwriting it with newly generated data.
+     */
+
     RETURN make_shared_binary_string((const char *)THIS->ctx.seed_file,
 				     YARROW256_SEED_FILE_SIZE);
   }
