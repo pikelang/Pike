@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.21 2009/07/01 17:46:42 grubba Exp $
+# $Id: configure.in,v 1.22 2009/07/02 09:18:14 grubba Exp $
 AC_INIT(nettle.cmod)
 AC_CONFIG_HEADER(nettle_config.h)
 
@@ -54,6 +54,30 @@ else
       AC_MSG_RESULT([no])
       IDEA_OBJ=""
     fi
+
+    # These might have been purged from the Nettle lib to avoid GPL
+    # contamination.
+    AC_CHECK_FUNCS(nettle_blowfish_decrypt nettle_serpent_decrypt)
+
+    # This is the recomended interface in Nettle 2.0.
+    AC_CHECK_FUNCS(nettle_yarrow256_slow_reseed)
+
+    AC_MSG_CHECKING([for struct yarrow256_ctx.seed_file])
+    AC_CACHE_VAL(pike_cv_nettle_struct_yarrow256_ctx_seed_file, [
+      pike_cv_nettle_struct_yarrow256_ctx_seed_file=no
+      AC_TRY_COMPILE([
+#include <nettle/yarrow.h>
+      ], [
+  struct yarrow256_ctx ctx;
+  return !sizeof(ctx.seed_file);
+      ], [
+        pike_cv_nettle_struct_yarrow256_ctx_seed_file=yes
+      ])
+    ])
+    AC_MSG_RESULT($pike_cv_nettle_struct_yarrow256_ctx_seed_file);
+    if test "x$pike_cv_nettle_struct_yarrow256_ctx_seed_file" = "xyes"; then
+      AC_DEFINE(HAVE_STRUCT_YARROW256_CTX_SEED_FILE)
+    fi
   else
     if test "$ac_cv_lib_gmp_mpz_init:$ac_cv_lib_gmp___mpz_init:$ac_cv_lib_gmp___gmpz_init" = "no:no:no"; then
       # No gmp found; enable it if possible.
@@ -76,13 +100,6 @@ instead. Nettle is available at http://www.lysator.liu.se/~nisse/nettle/.
     ])
     PIKE_FEATURE_NODEP(Nettle)
   fi
-
-  # These might have been purged from the Nettle lib to avoid GPL
-  # contamination.
-  AC_CHECK_FUNCS(nettle_blowfish_decrypt nettle_serpent_decrypt)
-
-  # These are the recomended interfaces in Nettle 2.0.
-  AC_CHECK_FUNCS(nettle_yarrow256_random nettle_yarrow256_slow_reseed)
 fi
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
