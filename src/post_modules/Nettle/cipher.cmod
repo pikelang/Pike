@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cipher.cmod,v 1.40 2008/07/31 14:52:27 mast Exp $
+|| $Id: cipher.cmod,v 1.41 2009/07/02 16:35:38 grubba Exp $
 */
 
 #include "global.h"
@@ -65,6 +65,13 @@ typedef void (*pike_nettle_set_key_func)(void *ctx,
 					 /* Force means to use key even if it is weak */
 					 int force);
 
+#ifdef HAVE_NETTLE_CRYPT_FUNC_IS_POINTER
+typedef nettle_crypt_func crypt_func;
+#else
+/* Nettle 2.0 */
+typedef nettle_crypt_func *crypt_func;
+#endif
+
 struct pike_cipher
 {
   const char *name;
@@ -79,8 +86,8 @@ struct pike_cipher
   pike_nettle_set_key_func set_encrypt_key;
   pike_nettle_set_key_func set_decrypt_key;
 
-  nettle_crypt_func encrypt;
-  nettle_crypt_func decrypt;
+  crypt_func encrypt;
+  crypt_func decrypt;
 };
 
 #define _PIKE_CIPHER(name, NAME) {		\
@@ -90,8 +97,8 @@ struct pike_cipher
   NAME##_KEY_SIZE,				\
   pike_##name##_set_encrypt_key,		\
   pike_##name##_set_decrypt_key,		\
-  (nettle_crypt_func) name##_encrypt,		\
-  (nettle_crypt_func) name##_decrypt,		\
+  (crypt_func) name##_encrypt,			\
+  (crypt_func) name##_decrypt,			\
 }
 
 /*! @class CipherInfo
@@ -175,7 +182,7 @@ static void low_make_key(INT32 size)
 PIKECLASS CipherState
 {
   INHERIT CipherInfo;
-  CVAR nettle_crypt_func crypt;
+  CVAR crypt_func crypt;
   CVAR void *ctx;
   CVAR int key_size;
 
