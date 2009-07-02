@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.23 2009/07/02 16:35:38 grubba Exp $
+# $Id: configure.in,v 1.24 2009/07/02 21:27:56 grubba Exp $
 AC_INIT(nettle.cmod)
 AC_CONFIG_HEADER(nettle_config.h)
 
@@ -83,7 +83,12 @@ else
     AC_CACHE_VAL(pike_cv_nettle_crypt_func_is_pointer, [
       pike_cv_nettle_crypt_func_is_pointer=no
       AC_TRY_COMPILE([
-#include <nettle/nettle-types.h>
+/* Note: Old Nettles had the nettle_crypt_func typedef directly
+ *       in <nettle/nettle-meta.h> while more modern have it in
+ *       <nettle/nettle-types.h>. Since <nettle/nettle-meta.h>
+ *       pulls in <nettle/nettle-types.h> it should be sufficient.
+ */
+#include <nettle/nettle-meta.h>
       ], [
   nettle_crypt_func foo = (nettle_crypt_func)(void *)0;
   return (int)foo;
