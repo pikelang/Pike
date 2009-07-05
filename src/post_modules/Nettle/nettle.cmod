@@ -1,5 +1,5 @@
 /* nettle.cmod -*- c -*- */
-/* $Id: nettle.cmod,v 1.52 2009/07/05 13:57:44 grubba Exp $ */
+/* $Id: nettle.cmod,v 1.53 2009/07/05 14:09:20 grubba Exp $ */
 
 #include "global.h"
 #include "interpret.h"
@@ -139,7 +139,7 @@ PIKECLASS Yarrow
    */
   PIKEFUN string get_seed()
     optflags OPT_EXTERNAL_DEPEND;
-    rawtype tDeprecated(tFunc(tNone, tstr8));
+    rawtype tDeprecated(tFunc(tNone, tStr8));
   {
     if( !yarrow256_is_seeded(&THIS->ctx) )
       Pike_error("Random generator not seeded.\n");
