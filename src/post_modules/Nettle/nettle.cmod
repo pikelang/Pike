@@ -1,5 +1,5 @@
 /* nettle.cmod -*- c -*- */
-/* $Id: nettle.cmod,v 1.51 2009/07/02 09:18:14 grubba Exp $ */
+/* $Id: nettle.cmod,v 1.52 2009/07/05 13:57:44 grubba Exp $ */
 
 #include "global.h"
 #include "interpret.h"
@@ -45,6 +45,9 @@ PIKECLASS Yarrow
 {
   CVAR struct yarrow256_ctx ctx;
   CVAR struct yarrow_source *sources;
+#ifndef HAVE_STRUCT_YARROW256_CTX_SEED_FILE
+  PIKEVAR string seed_file flags ID_PRIVATE|ID_STATIC;
+#endif
 
   /*! @decl void create(void|int sources)
    *! The number of entropy sources that will feed entropy to the
@@ -95,6 +98,17 @@ PIKECLASS Yarrow
 
     NO_WIDE_STRING(data);
     yarrow256_seed(&THIS->ctx, data->len, STR0(data));
+#ifndef HAVE_STRUCT_YARROW256_CTX_SEED_FILE
+    {
+      struct pike_string *seed_file =
+	begin_shared_string(YARROW256_SEED_FILE_SIZE);
+      yarrow256_random(&THIS->ctx, YARROW256_SEED_FILE_SIZE, STR0(seed_file));
+      if (THIS->seed_file) {
+	free_string(THIS->seed_file);
+      }
+      THIS->seed_file = end_shared_string(seed_file);
+    }
+#endif
     RETURN this_object();
   }
 
@@ -110,31 +124,33 @@ PIKECLASS Yarrow
     RETURN YARROW256_SEED_FILE_SIZE;
   }
 
-#ifdef HAVE_STRUCT_YARROW256_CTX_SEED_FILE
-  /*! @decl string get_seed()
+  /*! @decl __deprecated__ string(0..255) get_seed()
    *!   Returns part of the internal state so that it can
    *!   be saved for later seeding.
    *!
    *! @note
-   *!   Note that this function may not exist when compiled with
-   *!   Nettle 2.0 or later. In that case you may want to fall back
-   *!   to using @expr{random_string(32)@}.
+   *!   Note that the value returned by this function is only genererated
+   *!   when @[seed()] is called. For a seed that takes later incremental
+   *!   seeding into account, consider using @expr{random_string(32)@}
+   *!   instead.
    *!
    *! @seealso
    *!   @[seed()], @[random_string()]
    */
   PIKEFUN string get_seed()
     optflags OPT_EXTERNAL_DEPEND;
+    rawtype tDeprecated(tFunc(tNone, tstr8));
   {
-    struct pike_string *res;
-
     if( !yarrow256_is_seeded(&THIS->ctx) )
       Pike_error("Random generator not seeded.\n");
 
+#ifdef HAVE_STRUCT_YARROW256_CTX_SEED_FILE
     RETURN make_shared_binary_string(THIS->ctx.seed_file,
                                      YARROW256_SEED_FILE_SIZE);
-  }
+#else
+    REF_RETURN THIS->seed_file;
 #endif /* HAVE_STRUCT_YARROW256_CTX_SEED_FILE */
+  }
 
   /*! @decl int(0..1) is_seeded()
    *! Returns 1 if the random generator is seeded and ready
