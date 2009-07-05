@@ -1,5 +1,5 @@
 /* nettle.cmod -*- c -*- */
-/* $Id: nettle.cmod,v 1.53 2009/07/05 14:09:20 grubba Exp $ */
+/* $Id: nettle.cmod,v 1.54 2009/07/05 14:35:03 grubba Exp $ */
 
 #include "global.h"
 #include "interpret.h"
@@ -45,8 +45,31 @@ PIKECLASS Yarrow
 {
   CVAR struct yarrow256_ctx ctx;
   CVAR struct yarrow_source *sources;
+
 #ifndef HAVE_STRUCT_YARROW256_CTX_SEED_FILE
+  /* NOTE: Nettle 2.0 does not have the automatic seed_file maintenance
+   *       that Nettle 1.x had. This stuff is needed since it affected
+   *       the state emitted by random_string(). When Nettle 2.0 is the
+   *       default, consider implementing this via overloading of the
+   *       various seeding functions instead, since it does have a bit
+   *       of overhead.
+   *
+   *	/grubba 2009-07-05
+   */
   PIKEVAR string seed_file flags ID_PRIVATE|ID_STATIC;
+
+  static void pike_generate_seed_file(void)
+  {
+    struct pike_string *seed_file =
+      begin_shared_string(YARROW256_SEED_FILE_SIZE);
+    yarrow256_random(&THIS->ctx, YARROW256_SEED_FILE_SIZE, STR0(seed_file));
+    if (THIS->seed_file) {
+      free_string(THIS->seed_file);
+    }
+    THIS->seed_file = end_shared_string(seed_file);
+  }
+#else
+#define pike_generate_seed_file()
 #endif
 
   /*! @decl void create(void|int sources)
@@ -98,17 +121,7 @@ PIKECLASS Yarrow
 
     NO_WIDE_STRING(data);
     yarrow256_seed(&THIS->ctx, data->len, STR0(data));
-#ifndef HAVE_STRUCT_YARROW256_CTX_SEED_FILE
-    {
-      struct pike_string *seed_file =
-	begin_shared_string(YARROW256_SEED_FILE_SIZE);
-      yarrow256_random(&THIS->ctx, YARROW256_SEED_FILE_SIZE, STR0(seed_file));
-      if (THIS->seed_file) {
-	free_string(THIS->seed_file);
-      }
-      THIS->seed_file = end_shared_string(seed_file);
-    }
-#endif
+    pike_generate_seed_file();
     RETURN this_object();
   }
 
@@ -124,15 +137,9 @@ PIKECLASS Yarrow
     RETURN YARROW256_SEED_FILE_SIZE;
   }
 
-  /*! @decl __deprecated__ string(0..255) get_seed()
+  /*! @decl string(0..255) get_seed()
    *!   Returns part of the internal state so that it can
    *!   be saved for later seeding.
-   *!
-   *! @note
-   *!   Note that the value returned by this function is only genererated
-   *!   when @[seed()] is called. For a seed that takes later incremental
-   *!   seeding into account, consider using @expr{random_string(32)@}
-   *!   instead.
    *!
    *! @seealso
    *!   @[seed()], @[random_string()]
@@ -148,7 +155,12 @@ PIKECLASS Yarrow
     RETURN make_shared_binary_string(THIS->ctx.seed_file,
                                      YARROW256_SEED_FILE_SIZE);
 #else
-    REF_RETURN THIS->seed_file;
+    if (THIS->seed_file) {
+      REF_RETURN THIS->seed_file;
+    } else {
+      struct pike_string *s = begin_shared_string(YARROW256_SEED_FILE_SIZE);
+      RETURN end_shared_string(s);
+    }
 #endif /* HAVE_STRUCT_YARROW256_CTX_SEED_FILE */
   }
 
@@ -184,6 +196,7 @@ PIKECLASS Yarrow
 #else
     yarrow256_force_reseed(&THIS->ctx);
 #endif
+    pike_generate_seed_file();
   }
 
   /*! @decl int(0..1) update(string data, int source, int entropy)
@@ -195,6 +208,7 @@ PIKECLASS Yarrow
   PIKEFUN int(0..1) update(string data, int source, int entropy)
     optflags OPT_SIDE_EFFECT;
   {
+    int ret;
     /* FIXME: Wide strings could actually be supported here */
     NO_WIDE_STRING(data);
     if( !THIS->sources )
@@ -205,8 +219,11 @@ PIKECLASS Yarrow
       Pike_error("Entropy must be positive.\n");
     if( entropy>(data->len*8) )
       Pike_error("Impossibly large entropy value.\n");
-    RETURN yarrow256_update(&THIS->ctx, source, entropy, data->len,
-                            (const uint8_t *)data->str);
+    ret = yarrow256_update(&THIS->ctx, source, entropy, data->len,
+			   (const uint8_t *)data->str);
+    if (ret)
+      pike_generate_seed_file();
+    RETURN ret;
   }
 
   /*! @decl int(0..) needed_sources()
