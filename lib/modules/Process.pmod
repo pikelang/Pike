@@ -363,7 +363,7 @@ array(string) split_quoted_string(string s, int(0..1)|void nt_mode)
     {
       case '"':
       ret[-1]+=x[e][1..];
-      while(x[++e][0]!='"')
+      while(sizeof (x) > e + 1 && x[++e][0]!='"')
       {
 	if(sizeof(x[e])==1 && x[e][0]=='\\' && x[e+1][0]=='"') e++;
 	ret[-1]+=x[e];
@@ -373,7 +373,7 @@ array(string) split_quoted_string(string s, int(0..1)|void nt_mode)
 
       case '\'':
       ret[-1]+=x[e][1..];
-      while(x[++e][0]!='\'') ret[-1]+=x[e];
+      while(sizeof (x) > e + 1 && x[++e][0]!='\'') ret[-1]+=x[e];
       ret[-1]+=x[e][1..];
       break;
       
@@ -387,7 +387,7 @@ array(string) split_quoted_string(string s, int(0..1)|void nt_mode)
 	} else {
 	  ret[-1]+=x[e][1..];
 	}
-      }else{
+      }else if (sizeof (x) > e + 1) {
 	// Escaped special character.
 	ret[-1]+=x[++e];
       }
