@@ -391,39 +391,41 @@ array(string) split_quoted_string(string s, int(0..1)|void nt_mode)
 
   for(int e=1;e<sizeof(x);e++)
   {
-    if (!sizeof(x[e])) {
+    string piece = x[e];
+    if (!sizeof(piece)) {
       // Escaped NUL.
       ret[-1] += "\0";
       e++;
       continue;
     }
-    switch(x[e][0])
+    switch(piece[0])
     {
       case '"':
-      ret[-1]+=x[e][1..];
-      while(sizeof (x) > e + 1 && x[++e][0]!='"')
+      ret[-1]+=piece[1..];
+      while(sizeof (x) > e + 1 && (piece = x[++e])[0]!='"')
       {
-	if(sizeof(x[e])==1 && x[e][0]=='\\' && x[e+1][0]=='"') e++;
-	ret[-1]+=x[e];
+	if(sizeof(piece)==1 && piece[0]=='\\' && x[e+1][0]=='"')
+	  piece = x[++e];
+	ret[-1]+=piece;
       }
-      ret[-1]+=x[e][1..];
+      ret[-1]+=piece[1..];
       break;
 
       case '\'':
-      ret[-1]+=x[e][1..];
-      while(sizeof (x) > e + 1 && x[++e][0]!='\'') ret[-1]+=x[e];
-      ret[-1]+=x[e][1..];
+      ret[-1]+=piece[1..];
+      while(sizeof (x) > e + 1 && (piece = x[++e])[0]!='\'') ret[-1]+=piece;
+      ret[-1]+=piece[1..];
       break;
       
       case '\\':
-      if(sizeof(x[e])>1)
+      if(sizeof(piece)>1)
       {
 	if (nt_mode) {
 	  // On NT we only escape special characters with \;
 	  // other \'s we keep verbatim.
-	  ret[-1]+=x[e];
+	  ret[-1]+=piece;
 	} else {
-	  ret[-1]+=x[e][1..];
+	  ret[-1]+=piece[1..];
 	}
       }else if (sizeof (x) > e + 1) {
 	// Escaped special character.
@@ -434,23 +436,23 @@ array(string) split_quoted_string(string s, int(0..1)|void nt_mode)
       case ' ':
       case '\t':
       case '\n':
-	while(sizeof(x[e])==1)
+	while(sizeof(piece)==1)
 	{
 	  if(e+1 < sizeof(x))
 	  {
 	    if((<' ','\t','\n'>) [x[e+1][0]])
-	      e++;
+	      piece = x[++e];
 	    else
 	      break;
 	  }else{
 	    return ret;
 	  }
 	}
-	ret+=({x[e][1..]});
+	ret+=({piece[1..]});
       break;
 
       default:
-	ret[-1]+="\0"+x[e];
+	ret[-1]+="\0"+piece;
 	break;
     }
   }
