@@ -337,13 +337,43 @@ string sh_quote(string s)
 	({"\\\\", "\\'", "\\\"","\\ "}));
 }
 
-//!
 array(string) split_quoted_string(string s, int(0..1)|void nt_mode)
+//! Splits the given string into a list of arguments, according to
+//! common command line quoting rules:
+//!
+//! @ul
+//! @item
+//!   Sequences of whitespace, i.e. space, tab or newline, are treated
+//!   as argument separators by default.
+//!
+//! @item
+//!   Single or double quotes (@expr{'@} or @expr{"@}) can be used
+//!   around an argument to avoid whitespace splitting inside it. If
+//!   such quoted strings are used next to each other then they get
+//!   concatenated to one argument; e.g. @expr{a"b"'c'@} becomes a
+//!   single argument @expr{abc@}.
+//!
+//! @item
+//!   Backslash (@expr{\@}) can be used in front of one of the space
+//!   or quote characters mentioned above to treat them literally.
+//!   E.g. @expr{x\ y@} is a single argument with a space in the
+//!   middle, and @expr{x\"y@} is a single argument with a double
+//!   quote in the middle.
+//!
+//! @item
+//!   A backslash can also be used to quote itself; i.e. @expr{\\@}
+//!   becomes @expr{\@}.
+//!
+//! @item
+//!   Backslashes in front of other characters are removed by default.
+//!   However, if the optional @[nt_mode] flag is set then they are
+//!   retained as-is, to work better with Windows style paths.
+//! @endul
 {
   // Remove initial white-space.
   sscanf(s,"%*[ \n\t]%s",s);
 
-  // Prefix interresting characters with NUL,
+  // Prefix interesting characters with NUL,
   // and split on NUL.
   s=replace(s,
 	    ({"\"",  "'",  "\\",  " ",  "\t",  "\n", "\0"}),
