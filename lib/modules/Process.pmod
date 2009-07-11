@@ -387,34 +387,39 @@ array(string) split_quoted_string(string s, int(0..1)|void nt_mode)
 	    ({"\"",  "'",  "\\",  " ",  "\t",  "\n", "\0"}),
 	    ({"\0\"","\0'","\0\\","\0 ","\0\t","\0\n", "\0\0"}));
   array(string) x=s/"\0";
-  array(string) ret=({x[0]});
+  array(string) ret = ({});
+  string last = x[0];
+  int always_keep_last;
 
+piece_loop:
   for(int e=1;e<sizeof(x);e++)
   {
     string piece = x[e];
     if (!sizeof(piece)) {
       // Escaped NUL.
-      ret[-1] += "\0";
+      last += "\0";
       e++;
       continue;
     }
     switch(piece[0])
     {
       case '"':
-      ret[-1]+=piece[1..];
+      last+=piece[1..];
       while(sizeof (x) > e + 1 && (piece = x[++e])[0]!='"')
       {
 	if(sizeof(piece)==1 && piece[0]=='\\' && x[e+1][0]=='"')
 	  piece = x[++e];
-	ret[-1]+=piece;
+	last+=piece;
       }
-      ret[-1]+=piece[1..];
+      last+=piece[1..];
+      always_keep_last = 1;
       break;
 
       case '\'':
-      ret[-1]+=piece[1..];
-      while(sizeof (x) > e + 1 && (piece = x[++e])[0]!='\'') ret[-1]+=piece;
-      ret[-1]+=piece[1..];
+      last+=piece[1..];
+      while(sizeof (x) > e + 1 && (piece = x[++e])[0]!='\'') last+=piece;
+      last+=piece[1..];
+      always_keep_last = 1;
       break;
       
       case '\\':
@@ -423,13 +428,13 @@ array(string) split_quoted_string(string s, int(0..1)|void nt_mode)
 	if (nt_mode) {
 	  // On NT we only escape special characters with \;
 	  // other \'s we keep verbatim.
-	  ret[-1]+=piece;
+	  last+=piece;
 	} else {
-	  ret[-1]+=piece[1..];
+	  last+=piece[1..];
 	}
       }else if (sizeof (x) > e + 1) {
 	// Escaped special character.
-	ret[-1]+=x[++e];
+	last+=x[++e];
       }
       break;
       
@@ -445,17 +450,21 @@ array(string) split_quoted_string(string s, int(0..1)|void nt_mode)
 	    else
 	      break;
 	  }else{
-	    return ret;
+	    break piece_loop;
 	  }
 	}
-	ret+=({piece[1..]});
+	if (sizeof (last) || always_keep_last)
+	  ret += ({last});
+	last = piece[1..];
       break;
 
       default:
-	ret[-1]+="\0"+piece;
+	last+="\0"+piece;
 	break;
     }
   }
+  if (sizeof (last) || always_keep_last)
+    ret += ({last});
   return ret;
 }
 
