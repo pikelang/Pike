@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.45 2009/11/10 13:12:08 grubba Exp $
+dnl $Id$
 
 START_MARKER
 
@@ -750,6 +750,62 @@ test_equal([[Process.split_quoted_string ("\"\\\"foo bar\"")]],
 	   [[({"\"foo bar"})]])
 test_equal([[Process.split_quoted_string ("\"\"foo bar\"")]],
 	   [[({"foo", "bar"})]])
+test_equal([[Process.split_quoted_string (" \t\n\r a \t\n\r b \t\n\r ")]],
+	   [[({"a", "b"})]])
+test_equal([[Process.split_quoted_string ("")]],
+	   [[({})]])
+test_equal([[Process.split_quoted_string ("\"\"")]],
+	   [[({""})]])
+test_equal([[Process.split_quoted_string ("''")]],
+	   [[({""})]])
+test_equal([[Process.split_quoted_string ("a  ''  \"\"  b")]],
+	   [[({"a", "", "", "b"})]])
+test_equal([[Process.split_quoted_string ("\\")]],
+	   [[({})]])
+test_equal([[Process.split_quoted_string ("\\\\")]],
+	   [[({"\\"})]])
+test_equal([[Process.split_quoted_string ("\\\\", 1)]],
+	   [[({"\\"})]])
+test_equal([[Process.split_quoted_string ("\"")]],
+	   [[({""})]])
+test_equal([[Process.split_quoted_string ("'")]],
+	   [[({""})]])
+test_equal([[Process.split_quoted_string ("\"\\\"'\\x\"")]],
+	   [[({"\"'\\x"})]])
+test_equal([[Process.split_quoted_string ("'\"\\'\\x'")]],
+	   [[({"\"\\x"})]])
+test_equal([[Process.split_quoted_string ("\"a  \t\n\rb\"")]],
+	   [[({"a  \t\n\rb"})]])
+test_equal([[Process.split_quoted_string ("a\"b\"\'c\'")]],
+	   [[({"abc"})]])
+test_equal([[Process.split_quoted_string ("a\\ b")]],
+	   [[({"a b"})]])
+test_equal([[Process.split_quoted_string ("\\a\\b")]],
+	   [[({"ab"})]])
+test_equal([[Process.split_quoted_string ("\\a\\b", 1)]],
+	   [[({"\\a\\b"})]])
+test_equal([[Process.split_quoted_string ("\0")]],
+	   [[({"\0"})]])
+test_equal([[Process.split_quoted_string ("\0q\0p\0\0r\0")]],
+	   [[({"\0q\0p\0\0r\0"})]])
+test_equal([[Process.split_quoted_string ("\"\0\"")]],
+	   [[({"\0"})]])
+test_equal([[Process.split_quoted_string ("\"\0q\0p\0\0r\0\"")]],
+	   [[({"\0q\0p\0\0r\0"})]])
+test_equal([[Process.split_quoted_string ("'\0'")]],
+	   [[({"\0"})]])
+test_equal([[Process.split_quoted_string ("'\0q\0p\0\0r\0'")]],
+	   [[({"\0q\0p\0\0r\0"})]])
+test_equal([[Process.split_quoted_string ("\"\\\"")]],
+	   [[({"\""})]])
+test_equal([[Process.split_quoted_string ("\"\\")]],
+	   [[({"\\"})]])
+test_equal([[Process.split_quoted_string ("\"\\\0")]],
+	   [[({"\\\0"})]])
+test_equal([[Process.split_quoted_string ("\"a\\bc")]],
+	   [[({"a\\bc"})]])
+test_equal([[Process.split_quoted_string ("'a\\bc")]],
+	   [[({"a\\bc"})]])
 test_equal([[Process.split_quoted_string("pike -m master.pike 'write(\"test\");'")]],[[({"pike","-m","master.pike","write(\"test\");"})]])
 test_false([[
 #ifdef __NT__
