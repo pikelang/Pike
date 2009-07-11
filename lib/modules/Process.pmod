@@ -339,7 +339,7 @@ string sh_quote(string s)
 
 array(string) split_quoted_string(string s, int(0..1)|void nt_mode)
 //! Splits the given string into a list of arguments, according to
-//! common command line quoting rules:
+//! common (i.e. @expr{/bin/sh@}-based) command line quoting rules:
 //!
 //! @ul
 //! @item
@@ -368,6 +368,14 @@ array(string) split_quoted_string(string s, int(0..1)|void nt_mode)
 //!   Backslashes in front of other characters are removed by default.
 //!   However, if the optional @[nt_mode] flag is set then they are
 //!   retained as-is, to work better with Windows style paths.
+//!
+//! @item
+//!   Backslashes are treated literally inside quoted strings, with
+//!   the exception that @expr{\"@} is treated as a literal @expr{"@}
+//!   inside a @expr{"@}-quoted string. It's therefore possible to
+//!   include a literal @expr{"@} in a @expr{"@}-quoted string, as
+//!   opposed to @expr{'@}-quoted strings which cannot contain a
+//!   @expr{'@}.
 //! @endul
 {
   // Remove initial white-space.
