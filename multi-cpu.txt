@@ -1375,13 +1375,18 @@ o  Windows (i386, x86_64): TLS is supported but does not always work
    This is fixed in Vista and Server 2008. In any case, TLS is still
    usable in the pike core.
 
-o  MacOS X: Still missing in 10.5.
+o  MacOS X: Still missing in 10.5:
    http://developer.apple.com/releasenotes/DeveloperTools/RN-dyld/index.html
+   No signs of improvement in 10.6.
 
 o  Solaris: Supported beginning with (at least) Solaris 8.
    http://docs.sun.com/source/817-5070/Comp_Options_App.html#28486
 
 o  *BSD: FIXME: Check this.
+
+Conclusion: Due to the deficiencies in MacOS X, it appears to be
+necessary to support pthread_{set,get}specific as well. Wrapper macros
+are necessary to be able to use TLS where available.
 
 
 Issue: Platform specific primitives
