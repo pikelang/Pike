@@ -395,31 +395,48 @@ piece_loop:
   for(int e=1;e<sizeof(x);e++)
   {
     string piece = x[e];
-    if (!sizeof(piece)) {
-      // Escaped NUL.
-      last += "\0";
-      e++;
+    if (piece == "") {
+      // Escaped NUL. There should always be another element in x.
+      last += "\0" + x[++e];
       continue;
     }
     switch(piece[0])
     {
       case '"':
+      always_keep_last = 1;
       last+=piece[1..];
-      while(sizeof (x) > e + 1 && (piece = x[++e])[0]!='"')
-      {
-	if(sizeof(piece)==1 && piece[0]=='\\' && x[e+1][0]=='"')
-	  piece = x[++e];
-	last+=piece;
+      while (1) {
+	if (++e == sizeof (x))
+	  break piece_loop;
+	if (has_prefix (piece = x[e], "\""))
+	  break;
+	if (piece == "") {	// Escaped NUL.
+	  last += "\0" + x[++e];
+	}
+	else {
+	  if(piece == "\\" && sizeof (x) > e + 1 && has_prefix (x[e+1], "\""))
+	    piece = x[++e];
+	  last+=piece;
+	}
       }
       last+=piece[1..];
-      always_keep_last = 1;
       break;
 
       case '\'':
-      last+=piece[1..];
-      while(sizeof (x) > e + 1 && (piece = x[++e])[0]!='\'') last+=piece;
-      last+=piece[1..];
       always_keep_last = 1;
+      last+=piece[1..];
+      while (1) {
+	if (++e == sizeof (x))
+	  break piece_loop;
+	if (has_prefix (piece = x[e], "'"))
+	  break;
+	if (piece == "") {	// Escaped NUL.
+	  last += "\0" + x[++e];
+	}
+	else
+	  last+=piece;
+      }
+      last+=piece[1..];
       break;
       
       case '\\':
@@ -458,10 +475,6 @@ piece_loop:
 	  ret += ({last});
 	last = piece[1..];
       break;
-
-      default:
-	last+="\0"+piece;
-	break;
     }
   }
   if (sizeof (last) || always_keep_last)
