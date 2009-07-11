@@ -343,8 +343,8 @@ array(string) split_quoted_string(string s, int(0..1)|void nt_mode)
 //!
 //! @ul
 //! @item
-//!   Sequences of whitespace, i.e. space, tab or newline, are treated
-//!   as argument separators by default.
+//!   Sequences of whitespace, i.e. space, tab, @expr{\n@} or
+//!   @expr{\r@}, are treated as argument separators by default.
 //!
 //! @item
 //!   Single or double quotes (@expr{'@} or @expr{"@}) can be used
@@ -379,13 +379,13 @@ array(string) split_quoted_string(string s, int(0..1)|void nt_mode)
 //! @endul
 {
   // Remove initial white-space.
-  sscanf(s,"%*[ \n\t]%s",s);
+  sscanf(s,"%*[ \t\n\r]%s",s);
 
   // Prefix interesting characters with NUL,
   // and split on NUL.
   s=replace(s,
-	    ({"\"",  "'",  "\\",  " ",  "\t",  "\n", "\0"}),
-	    ({"\0\"","\0'","\0\\","\0 ","\0\t","\0\n", "\0\0"}));
+	    ({"\"",  "'",  "\\",  " ",  "\t",  "\n",   "\r",   "\0"}),
+	    ({"\0\"","\0'","\0\\","\0 ","\0\t","\0\n", "\0\r", "\0\0"}));
   array(string) x=s/"\0";
   array(string) ret = ({});
   string last = x[0];
@@ -441,11 +441,12 @@ piece_loop:
       case ' ':
       case '\t':
       case '\n':
+      case '\r':
 	while(sizeof(piece)==1)
 	{
 	  if(e+1 < sizeof(x))
 	  {
-	    if((<' ','\t','\n'>) [x[e+1][0]])
+	    if((<' ','\t','\n', '\r'>) [x[e+1][0]])
 	      piece = x[++e];
 	    else
 	      break;
