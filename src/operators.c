@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.249 2009/07/12 11:48:23 grubba Exp $
+|| $Id: operators.c,v 1.250 2009/07/12 19:43:05 grubba Exp $
 */
 
 #include "global.h"
@@ -49,14 +49,18 @@
 #define PIKE_MERGE_DESTR_A	0
 
     /* These calculations should always give some margin based on the size. */
+    /* The calculations utilize that log10(256) ~= 2.4 < 5/2. */
+
     /* One extra char for the sign. */
 #define MAX_INT_SPRINTF_LEN (1 + (SIZEOF_INT_TYPE * 5 + 1) / 2)
-
-#define MAX_FLOAT_PREC_LEN ((SIZEOF_FLOAT_TYPE * 5 + 1) / 2)
+    /* Three quarters of the float is the mantissa. */
+#define MAX_FLOAT_PREC_LEN ((SIZEOF_FLOAT_TYPE * 15 + 4) / 8)
+    /* One quarter of the float is the exponent. */
+#define MAX_FLOAT_EXP_LEN ((SIZEOF_FLOAT_TYPE * 5 + 4) / 8)
     /* Six extra chars: Mantissa sign, decimal point, zero before the
      * decimal point, the 'e', exponent sign, and an extra digit due
      * to the mantissa/exponent split. */
-#define MAX_FLOAT_SPRINTF_LEN (6 + MAX_FLOAT_PREC_LEN)
+#define MAX_FLOAT_SPRINTF_LEN (6 + MAX_FLOAT_PREC_LEN + MAX_FLOAT_EXP_LEN)
 
     /* Enough to hold a Pike float or int in textform including a trailing \0
      */
@@ -481,14 +485,8 @@ PMOD_EXPORT void o_cast_to_string(void)
     return;
 
   case T_FLOAT:
-    if (sp[-1].u.float_number < 0) {
-      /* Some libc's have bugs in the handling of large negative floats... */
-      sprintf(buf,"-%.*"PRINTPIKEFLOAT"g",
-	      MAX_FLOAT_PREC_LEN, -sp[-1].u.float_number);
-    } else {
-      sprintf(buf,"%.*"PRINTPIKEFLOAT"g",
-	      MAX_FLOAT_PREC_LEN, sp[-1].u.float_number);
-    }
+    sprintf(buf,"%.*"PRINTPIKEFLOAT"g",
+	    MAX_FLOAT_PREC_LEN, sp[-1].u.float_number);
     /* Ensure that either an exponent or a decimal point gets printed,
      * since %g can remove both which would make it look like an integer. */
     if (!strchr (buf, '.') && !strchr (buf, 'e'))
