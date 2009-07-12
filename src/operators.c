@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.248 2009/06/30 21:39:51 mast Exp $
+|| $Id: operators.c,v 1.249 2009/07/12 11:48:23 grubba Exp $
 */
 
 #include "global.h"
@@ -481,8 +481,14 @@ PMOD_EXPORT void o_cast_to_string(void)
     return;
 
   case T_FLOAT:
-    sprintf(buf,"%.*"PRINTPIKEFLOAT"g",
-     MAX_FLOAT_PREC_LEN, sp[-1].u.float_number);
+    if (sp[-1].u.float_number < 0) {
+      /* Some libc's have bugs in the handling of large negative floats... */
+      sprintf(buf,"-%.*"PRINTPIKEFLOAT"g",
+	      MAX_FLOAT_PREC_LEN, -sp[-1].u.float_number);
+    } else {
+      sprintf(buf,"%.*"PRINTPIKEFLOAT"g",
+	      MAX_FLOAT_PREC_LEN, sp[-1].u.float_number);
+    }
     /* Ensure that either an exponent or a decimal point gets printed,
      * since %g can remove both which would make it look like an integer. */
     if (!strchr (buf, '.') && !strchr (buf, 'e'))
