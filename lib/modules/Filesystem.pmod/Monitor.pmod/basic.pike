@@ -1,7 +1,7 @@
 //
 // Basic filesystem monitor.
 //
-// $Id: basic.pike,v 1.2 2009/07/13 09:08:19 grubba Exp $
+// $Id: basic.pike,v 1.3 2009/07/13 12:40:30 grubba Exp $
 //
 // 2009-07-09 Henrik Grubbström
 //
@@ -78,6 +78,29 @@ void data_changed(string path);
 //! Overload this to do something useful.
 void attr_changed(string path, Stdio.Stat st);
 
+//! File existance callback.
+//!
+//! @param path
+//!   Path of the file or directory.
+//!
+//! @param st
+//!   Status information for @[path] as obtained by @expr{file_stat(path, 1)@}.
+//!
+//! This function is called during initialization for all monitored paths,
+//! and subpaths for monitored directories. It represents the initial state
+//! for the monitor.
+//!
+//! @note
+//!   For directories, @[file_created()] will be called for the subpaths
+//!   before the call for the directory itself. This can be used to detect
+//!   when the initialization for a directory is finished.
+//!
+//! Called by @[check()] and @[check_monitor()] the first time a monitored
+//! path is checked (and only if it exists).
+//!
+//! Overload this to do something useful.
+void file_exists(string path, Stdio.Stat st);
+
 //! File creation callback.
 //!
 //! @param path
@@ -125,8 +148,16 @@ void file_deleted(string path);
 //! Overload this to do something useful.
 void stable_data_change(string path);
 
+//! Flags for @[Monitor]s.
+enum MonitorFlags {
+  MF_RECURSE = 1,
+  MF_AUTO = 2,
+  MF_INITED = 4,
+};
+
 //! Monitoring information.
-protected class Monitor(string path, int(0..1) recurse,
+protected class Monitor(string path,
+			MonitorFlags flags,
 			int max_dir_check_interval,
 			int file_interval_factor)
 {
@@ -142,7 +173,7 @@ protected class Monitor(string path, int(0..1) recurse,
   protected string _sprintf(int c)
   {
     return sprintf("Monitor(%O, %O, next: %s, st: %O)",
-		   path, recurse, ctime(next_poll) - "\n", st);
+		   path, flags, ctime(next_poll) - "\n", st);
   }
 }
 
@@ -196,7 +227,7 @@ protected void update_monitor(Monitor m, Stdio.Stat st)
     if (d < 0) d = m->max_dir_check_interval;
     if (d < delta) delta = d;
   }
-  m->next_poll = time(1) + delta;
+  m->next_poll = time(1) + (delta || 1);
   monitor_queue->adjust(m);
 }
 
@@ -218,13 +249,17 @@ protected void release_monitor(Monitor m)
 //! @param path
 //!   Path to monitor.
 //!
-//! @param recurse
+//! @param flags
 //!   @int
 //!     @value 0
 //!       Don't recurse.
 //!     @value 1
 //!       Monitor the entire subtree, and any directories
 //!       or files that may appear later.
+//!     @value 3
+//!       Monitor the entire subtree, and any directories
+//!       or files that may appear later. Remove the monitor
+//!       automatically when @[path] is deleted.
 //!   @endint
 //!
 //! @param max_dir_check_interval
@@ -237,27 +272,14 @@ protected void release_monitor(Monitor m)
 //!
 //! @seealso
 //!   @[release()]
-void monitor(string path, int(0..1)|void recurse,
+void monitor(string path, MonitorFlags|void flags,
 	     int(0..)|void max_dir_check_interval,
 	     int(0..)|void file_interval_factor)
 {
   Monitor m = monitors[path] ||
-    Monitor(path, recurse, max_dir_check_interval, file_interval_factor);
+    Monitor(path, flags, max_dir_check_interval, file_interval_factor);
   monitors[path] = m;
   monitor_queue->push(m);
-  Stdio.Stat st = file_stat(path, 1);
-  update_monitor(m, st);
-  // FIXME: What about symlinks?
-  if (st && st->isdir) {
-    array(string) files = get_dir(path) || ({});
-    m->files = files;
-    if (recurse) {
-      foreach(files, string file) {
-	monitor(Stdio.append_path(path, file), recurse,
-		max_dir_check_interval, file_interval_factor);
-      }
-    }
-  }
 }
 
 //! Release a @[path] from monitoring.
@@ -265,26 +287,29 @@ void monitor(string path, int(0..1)|void recurse,
 //! @param path
 //!   Path to stop monitoring.
 //!
-//! @param recurse
+//! @param flags
 //!   @int
 //!     @value 0
 //!       Don't recurse.
 //!     @value 1
 //!       Release the entire subtree.
+//!     @value 3
+//!       Release the entire subtree, but only those paths that were
+//!       added automatically by a recursive monitor.
 //!   @endint
 //!
 //! @seealso
 //!   @[monitor()]
-void release(string path, int(0..1)|void recurse)
+void release(string path, MonitorFlags|void flags)
 {
   Monitor m = m_delete(monitors, path);
   if (m) {
     release_monitor(m);
   }
-  if (recurse && m->st && m->st->isdir) {
+  if (flags && m->st && m->st->isdir) {
     path = combine_path(path, "");
     foreach(monitors; string mpath; m) {
-      if (has_prefix(mpath, path)) {
+      if (has_prefix(mpath, path) && ((m->flags & flags) == flags)) {
 	m_delete(monitors, mpath);
 	release_monitor(m);
       }
@@ -317,9 +342,42 @@ protected int(0..1) check_monitor(Monitor m)
   // werror("Checking monitor %O...\n", m);
   Stdio.Stat st = file_stat(m->path, 1);
   Stdio.Stat old_st = m->st;
+  int flags = m->flags;
+  m->flags |= MF_INITED;
   update_monitor(m, st);
+  if (!(flags & MF_INITED)) {
+    // Initialize.
+    if (st->isdir) {
+      array(string) files = get_dir(m->path);
+      m->files = files;
+      foreach(files, string file) {
+	file = Stdio.append_path(m->path, file);
+	if (monitors[file]) {
+	  // There's already a monitor for the file.
+	  // Assume it has already notified about existance.
+	  continue;
+	}
+	if (m->flags & MF_RECURSE) {
+	  monitor(file, flags | MF_AUTO,
+		  m->max_dir_check_interval, m->file_interval_factor);
+	  check_monitor(monitors[file]);
+	} else if (file_exists) {
+	  file_exists(file, file_stat(file, 1));
+	}
+      }
+    }
+    // Signal file_exists for path as an end marker.
+    if (file_exists) {
+      file_exists(m->path, st);
+    }
+    return 1;
+  }
   if (!st) {
     if (old_st) {
+      if (m->flags & MF_AUTO) {
+	m_delete(monitors, m->path);
+	release_monitor(m);
+      }
       if (file_deleted) {
 	file_deleted(m->path);
       }
@@ -352,12 +410,11 @@ protected int(0..1) check_monitor(Monitor m)
 	      check_monitor(m2);
 	    }
 	  };
-	if (m->recurse) {
-	  monitor(file, m->recurse,
+	if (m->flags & MF_RECURSE) {
+	  monitor(file, flags | MF_AUTO,
 		  m->max_dir_check_interval, m->file_interval_factor);
-	  monitors[file]->last_change = time(1);
-	}
-	if (!m2 && file_created) {
+	  check_monitor(monitors[file]);
+	} else if (!m2 && file_created) {
 	  file_created(file, file_stat(file, 1));
 	}
       }
@@ -371,12 +428,11 @@ protected int(0..1) check_monitor(Monitor m)
 	      check_monitor(m2);
 	    }
 	  };
-	if (m->recurse) {
-	  // Release the file after the recursive call above,
-	  // to make sure all notifications propagate properly.
-	  release(file, m->recurse);
-	}
-	if (!m2 && file_deleted) {
+	if (m->flags & MF_RECURSE) {
+	  // The monitor for the file has probably removed itself,
+	  // or the user has done it by hand, in either case we
+	  // don't need to do anything more here.
+	} else if (!m2 && file_deleted) {
 	  file_deleted(file);
 	}
 	if (err) throw(err);
@@ -385,13 +441,13 @@ protected int(0..1) check_monitor(Monitor m)
     } else {
       if (data_changed) {
 	data_changed(m->path);
+	return 1;
+      }
+      if (attr_changed) {
+	attr_changed(m->path, st);
       }
       return 1;
     }
-    if (attr_changed) {
-      attr_changed(m->path, st);
-    }
-    return 1;
   }
   if (m->last_change < time(1) - stable_time) {
     m->last_change = 0x7fffffff;
@@ -515,6 +571,7 @@ void set_nonblocking()
   Monitor m = monitor_queue->peek();
   int t = (m && m->next_poll - time(1)) || max_dir_check_interval;
   if (t > max_dir_check_interval) t = max_dir_check_interval;
+  if (t < 0) t = 0;
   if (backend) co_id = backend->call_out(backend_check, t);
   else co_id = call_out(backend_check, t);
 }
