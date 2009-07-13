@@ -1,10 +1,15 @@
 //
 // Basic filesystem monitor.
 //
-// $Id: basic.pike,v 1.1 2009/07/13 08:55:30 grubba Exp $
+// $Id: basic.pike,v 1.2 2009/07/13 09:08:19 grubba Exp $
 //
 // 2009-07-09 Henrik Grubbström
 //
+
+//! Basic filesystem monitor.
+//!
+//! This module is intended to be used for incremental scanning of
+//! a filesystem.
 
 //! The default maximum number of seconds between checks of directories
 //! in seconds.
@@ -438,6 +443,8 @@ void check(int|void max_wait)
 }
 
 //! Backend to use.
+//!
+//! If @expr{0@} (zero) - use the default backend.
 protected Pike.Backend backend;
 
 //! Call-out identifier for @[backend_check()] if in
@@ -461,6 +468,10 @@ void set_backend(Pike.Backend|void backend)
   }
 }
 
+//! Turn off nonblocking mode.
+//!
+//! @seealso
+//!   @[set_nonblocking()]
 void set_blocking()
 {
   if (co_id) {
@@ -470,6 +481,14 @@ void set_blocking()
   }
 }
 
+//! Backend check callback function.
+//!
+//! This function is intended to be called from a backend,
+//! and performs a @[check()] followed by rescheduling
+//! itself via a call to @[set_nonblocking()].
+//!
+//! @seealso
+//!   @[check()], @[set_nonblocking()]
 protected void backend_check()
 {
   co_id = 0;
@@ -480,6 +499,16 @@ protected void backend_check()
   if (err) throw(err);
 }
 
+//! Turn on nonblocking mode.
+//!
+//! Register suitable callbacks with the backend to automatically
+//! call @[check()].
+//!
+//! @[check()] and thus all the callbacks will be called from the
+//! backend thread.
+//!
+//! @seealso
+//!   @[set_blocking()], @[check()].
 void set_nonblocking()
 {
   if (co_id) return;
