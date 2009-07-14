@@ -1,7 +1,7 @@
 //
 // Basic filesystem monitor.
 //
-// $Id: basic.pike,v 1.4 2009/07/14 16:14:07 grubba Exp $
+// $Id: basic.pike,v 1.5 2009/07/14 16:33:49 grubba Exp $
 //
 // 2009-07-09 Henrik Grubbström
 //
@@ -338,6 +338,14 @@ void release(string path, MonitorFlags|void flags)
 //! @param m
 //!   @[Monitor] to check.
 //!
+//! @param flags
+//!   @int
+//!     @value 0
+//!       Don't recurse.
+//!     @value 1
+//!       Check all monitors for the entire subtree rooted in @[m].
+//!   @endint
+//!
 //! This function is called by @[check()] for the @[Monitor]s
 //! it considers need checking. If it detects any changes an
 //! appropriate callback will be called.
@@ -350,18 +358,22 @@ void release(string path, MonitorFlags|void flags)
 //!   Any callbacks will be called from the same thread as the one
 //!   calling @[check_monitor()].
 //!
+//! @note
+//!   The return value can not be trusted to return @expr{1@} for all
+//!   detected changes in recursive mode.
+//!
 //! @seealso
 //!   @[check()], @[data_changed()], @[attr_changed()], @[file_created()],
 //!   @[file_deleted()], @[stable_data_change()]
-protected int(0..1) check_monitor(Monitor m)
+protected int(0..1) check_monitor(Monitor m, MonitorFlags|void flags)
 {
   // werror("Checking monitor %O...\n", m);
   Stdio.Stat st = file_stat(m->path, 1);
   Stdio.Stat old_st = m->st;
-  int flags = m->flags;
+  int orig_flags = m->flags;
   m->flags |= MF_INITED;
   update_monitor(m, st);
-  if (!(flags & MF_INITED)) {
+  if (!(orig_flags & MF_INITED)) {
     // Initialize.
     if (st->isdir) {
       array(string) files = get_dir(m->path);
@@ -374,7 +386,7 @@ protected int(0..1) check_monitor(Monitor m)
 	  continue;
 	}
 	if (m->flags & MF_RECURSE) {
-	  monitor(file, flags | MF_AUTO,
+	  monitor(file, orig_flags | MF_AUTO,
 		  m->max_dir_check_interval, m->file_interval_factor);
 	  check_monitor(monitors[file]);
 	} else if (file_exists) {
@@ -423,11 +435,11 @@ protected int(0..1) check_monitor(Monitor m)
 	    if (m2) {
 	      // We have a separate monitor on the created file.
 	      // Let it handle the notification.
-	      check_monitor(m2);
+	      check_monitor(m2, flags);
 	    }
 	  };
 	if (m->flags & MF_RECURSE) {
-	  monitor(file, flags | MF_AUTO,
+	  monitor(file, orig_flags | MF_AUTO,
 		  m->max_dir_check_interval, m->file_interval_factor);
 	  check_monitor(monitors[file]);
 	} else if (!m2 && file_created) {
@@ -441,7 +453,7 @@ protected int(0..1) check_monitor(Monitor m)
 	    if (m2) {
 	      // We have a separate monitor on the deleted file.
 	      // Let it handle the notification.
-	      check_monitor(m2);
+	      check_monitor(m2, flags);
 	    }
 	  };
 	if (m->flags & MF_RECURSE) {
@@ -453,6 +465,16 @@ protected int(0..1) check_monitor(Monitor m)
 	}
 	if (err) throw(err);
       }
+      if (flags & MF_RECURSE) {
+	// Check the remaining files in the directory.
+	foreach(((files - new_files) - deleted_files), string file) {
+	  file = Stdio.append_path(m->path, file);
+	  Monitor m2 = monitors[file];
+	  if (m2) {
+	    check_monitor(m2, flags);
+	  }
+	}
+      }
       if (sizeof(new_files) || sizeof(deleted_files)) return 1;
     } else {
       if (data_changed) {
@@ -463,6 +485,16 @@ protected int(0..1) check_monitor(Monitor m)
 	attr_changed(m->path, st);
       }
       return 1;
+    }
+  }
+  if ((flags & MF_RECURSE) && (st->isdir)) {
+    // Check the files in the directory.
+    foreach(m->files, string file) {
+      file = Stdio.append_path(m->path, file);
+      Monitor m2 = monitors[file];
+      if (m2) {
+	check_monitor(m2, flags);
+      }
     }
   }
   if (m->last_change < time(1) - stable_time) {
