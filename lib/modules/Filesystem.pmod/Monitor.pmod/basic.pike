@@ -1,7 +1,7 @@
 //
 // Basic filesystem monitor.
 //
-// $Id: basic.pike,v 1.3 2009/07/13 12:40:30 grubba Exp $
+// $Id: basic.pike,v 1.4 2009/07/14 16:14:07 grubba Exp $
 //
 // 2009-07-09 Henrik Grubbström
 //
@@ -276,10 +276,25 @@ void monitor(string path, MonitorFlags|void flags,
 	     int(0..)|void max_dir_check_interval,
 	     int(0..)|void file_interval_factor)
 {
-  Monitor m = monitors[path] ||
-    Monitor(path, flags, max_dir_check_interval, file_interval_factor);
-  monitors[path] = m;
-  monitor_queue->push(m);
+  path = combine_path(path, ".");
+  Monitor m = monitors[path];
+  if (m) {
+    if (!(flags & MF_AUTO)) {
+      // The new monitor is added by hand.
+      // Adjust the monitor.
+      m->flags = flags;
+      m->max_dir_check_interval = max_dir_check_interval;
+      m->file_interval_factor = file_interval_factor;
+      m->next_poll = 0;
+      monitor_queue->adjust(m);
+    }
+    // For the other cases there's no need to do anything,
+    // since we can keep the monitor as-is.
+  } else {
+    m = Monitor(path, flags, max_dir_check_interval, file_interval_factor);
+    monitors[path] = m;
+    monitor_queue->push(m);
+  }
 }
 
 //! Release a @[path] from monitoring.
@@ -302,6 +317,7 @@ void monitor(string path, MonitorFlags|void flags,
 //!   @[monitor()]
 void release(string path, MonitorFlags|void flags)
 {
+  path = combine_path(path, ".");
   Monitor m = m_delete(monitors, path);
   if (m) {
     release_monitor(m);
