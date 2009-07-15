@@ -1,7 +1,7 @@
 //
 // Basic filesystem monitor.
 //
-// $Id: basic.pike,v 1.6 2009/07/15 13:07:08 grubba Exp $
+// $Id: basic.pike,v 1.7 2009/07/15 16:11:44 grubba Exp $
 //
 // 2009-07-09 Henrik Grubbström
 //
@@ -223,10 +223,10 @@ protected void update_monitor(Monitor m, Stdio.Stat st)
     delta *= m->file_interval_factor;
   }
   if (st) {
-    int d = ((time(1) - st->mtime)>>4 || 1);
+    int d = 1 + ((time(1) - st->mtime)>>4);
     if (d < 0) d = m->max_dir_check_interval;
     if (d < delta) delta = d;
-    d = ((time(1) - st->ctime)>>4 || 1);
+    d = 1 + ((time(1) - st->ctime)>>4);
     if (d < 0) d = m->max_dir_check_interval;
     if (d < delta) delta = d;
   }
