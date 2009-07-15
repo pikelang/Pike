@@ -1,7 +1,7 @@
 //
 // Basic filesystem monitor.
 //
-// $Id: basic.pike,v 1.7 2009/07/15 16:11:44 grubba Exp $
+// $Id: basic.pike,v 1.8 2009/07/15 16:28:52 grubba Exp $
 //
 // 2009-07-09 Henrik Grubbström
 //
@@ -181,6 +181,14 @@ protected class Monitor(string path,
 }
 
 //! Mapping from monitored path to corresponding @[Monitor].
+//!
+//! The paths are normalized to @expr{combine_path(path, ".")@},
+//! i.e. no trailing slashes.
+//!
+//! @note
+//!   All filesystems are handled as if case-sensitive. This should
+//!   not be a problem for case-insensitive filesystems as long as
+//!   case is maintained.
 protected mapping(string:Monitor) monitors = ([]);
 
 //! Heap containing all active @[Monitor]s.
@@ -215,6 +223,15 @@ void clear()
 }
 
 //! Calculate a suitable time for the next poll of this monitor.
+//!
+//! @param m
+//!   Monitor to update.
+//!
+//! @param st
+//!   New stat for the monitor.
+//!
+//! This function is called by @[check_monitor()] to schedule the
+//! next check.
 protected void update_monitor(Monitor m, Stdio.Stat st)
 {
   int delta = m->max_dir_check_interval;
@@ -531,17 +548,15 @@ protected int(0..1) check_monitor(Monitor m, MonitorFlags|void flags)
 //!   @[monitor()]
 void check(int|void max_wait)
 {
-  if (!sizeof(monitors)) {
-    if (max_wait > 0) sleep(max_wait);
-    return;
-  }
   while(1) {
     int cnt;
     int t = time();
     Monitor m;
-    while ((m = monitor_queue->peek()) &&
-	   m <= t) {
-      cnt += check_monitor(m);
+    if (sizeof(monitors)) {
+      while ((m = monitor_queue->peek()) &&
+	     m <= t) {
+	cnt += check_monitor(m);
+      }
     }
     if (cnt || !max_wait) return;
     if (max_wait > 0) max_wait--;
