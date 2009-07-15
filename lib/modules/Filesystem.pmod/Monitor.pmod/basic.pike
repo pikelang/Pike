@@ -1,7 +1,7 @@
 //
 // Basic filesystem monitor.
 //
-// $Id: basic.pike,v 1.5 2009/07/14 16:33:49 grubba Exp $
+// $Id: basic.pike,v 1.6 2009/07/15 13:07:08 grubba Exp $
 //
 // 2009-07-09 Henrik Grubbström
 //
@@ -137,6 +137,9 @@ void file_deleted(string path);
 //! @param path
 //!   Path of the file or directory that has stopped changing.
 //!
+//! @param st
+//!   Status information for @[path] as obtained by @expr{file_stat(path, 1)@}.
+//!
 //! This function is called when previous changes to @[path] are
 //! considered "stable".
 //!
@@ -146,7 +149,7 @@ void file_deleted(string path);
 //! Called by @[check()] and @[check_monitor()].
 //!
 //! Overload this to do something useful.
-void stable_data_change(string path);
+void stable_data_change(string path, Stdio.Stat st);
 
 //! Flags for @[Monitor]s.
 enum MonitorFlags {
@@ -500,7 +503,7 @@ protected int(0..1) check_monitor(Monitor m, MonitorFlags|void flags)
   if (m->last_change < time(1) - stable_time) {
     m->last_change = 0x7fffffff;
     if (stable_data_change) {
-      stable_data_change(m->path);
+      stable_data_change(m->path, st);
     }
     return 1;
   }
