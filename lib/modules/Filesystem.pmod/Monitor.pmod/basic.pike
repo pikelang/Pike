@@ -1,7 +1,7 @@
 //
 // Basic filesystem monitor.
 //
-// $Id: basic.pike,v 1.9 2009/07/16 14:13:44 grubba Exp $
+// $Id: basic.pike,v 1.10 2009/07/16 14:14:20 grubba Exp $
 //
 // 2009-07-09 Henrik Grubbström
 //
@@ -36,8 +36,8 @@ protected constant default_max_dir_check_interval = 60;
 //! Overload this constant to change the default.
 protected constant default_file_interval_factor = 5;
 
-//! The minimum number of seconds without changes for a change to be
-//! regarded as stable (see @[stable_data_change()].
+//! The default minimum number of seconds without changes for a change
+//! to be regarded as stable (see @[stable_data_change()].
 protected constant default_stable_time = 5;
 
 protected int max_dir_check_interval = default_max_dir_check_interval;
