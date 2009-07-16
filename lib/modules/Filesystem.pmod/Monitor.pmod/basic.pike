@@ -1,7 +1,7 @@
 //
 // Basic filesystem monitor.
 //
-// $Id: basic.pike,v 1.8 2009/07/15 16:28:52 grubba Exp $
+// $Id: basic.pike,v 1.9 2009/07/16 14:13:44 grubba Exp $
 //
 // 2009-07-09 Henrik Grubbström
 //
@@ -38,10 +38,11 @@ protected constant default_file_interval_factor = 5;
 
 //! The minimum number of seconds without changes for a change to be
 //! regarded as stable (see @[stable_data_change()].
-protected constant stable_time = 5;
+protected constant default_stable_time = 5;
 
 protected int max_dir_check_interval = default_max_dir_check_interval;
 protected int file_interval_factor = default_file_interval_factor;
+protected int stable_time = default_stable_time;
 
 // Callbacks
 
@@ -162,7 +163,8 @@ enum MonitorFlags {
 protected class Monitor(string path,
 			MonitorFlags flags,
 			int max_dir_check_interval,
-			int file_interval_factor)
+			int file_interval_factor,
+			int stable_time)
 {
   int next_poll;
   Stdio.Stat st;
@@ -203,14 +205,21 @@ protected ADT.Heap monitor_queue = ADT.Heap();
 //!
 //! @param file_interval_factor
 //!   Override of @[default_file_interval_factor].
+//!
+//! @param stable_time
+//!   Override of @[default_stable_time].
 protected void create(int|void max_dir_check_interval,
-		      int|void file_interval_factor)
+		      int|void file_interval_factor,
+		      int|void stable_time)
 {
   if (max_dir_check_interval > 0) {
     this_program::max_dir_check_interval = max_dir_check_interval;
   }
   if (file_interval_factor > 0) {
     this_program::file_interval_factor = file_interval_factor;
+  }
+  if (stable_time > 0) {
+    this_program::stable_time = stable_time;
   }
   clear();
 }
@@ -290,11 +299,16 @@ protected void release_monitor(Monitor m)
 //!   Override of @[default_file_interval_factor] for this path
 //!   or subtree.
 //!
+//! @param stable_time
+//!   Override of @[default_stable_time] for this path
+//!   or subtree.
+//!
 //! @seealso
 //!   @[release()]
 void monitor(string path, MonitorFlags|void flags,
 	     int(0..)|void max_dir_check_interval,
-	     int(0..)|void file_interval_factor)
+	     int(0..)|void file_interval_factor,
+	     int(0..)|void stable_time)
 {
   path = combine_path(path, ".");
   Monitor m = monitors[path];
@@ -305,13 +319,15 @@ void monitor(string path, MonitorFlags|void flags,
       m->flags = flags;
       m->max_dir_check_interval = max_dir_check_interval;
       m->file_interval_factor = file_interval_factor;
+      m->stable_time = stable_time;
       m->next_poll = 0;
       monitor_queue->adjust(m);
     }
     // For the other cases there's no need to do anything,
     // since we can keep the monitor as-is.
   } else {
-    m = Monitor(path, flags, max_dir_check_interval, file_interval_factor);
+    m = Monitor(path, flags,
+		max_dir_check_interval, file_interval_factor, stable_time);
     monitors[path] = m;
     monitor_queue->push(m);
   }
@@ -407,7 +423,9 @@ protected int(0..1) check_monitor(Monitor m, MonitorFlags|void flags)
 	}
 	if (m->flags & MF_RECURSE) {
 	  monitor(file, orig_flags | MF_AUTO,
-		  m->max_dir_check_interval, m->file_interval_factor);
+		  m->max_dir_check_interval,
+		  m->file_interval_factor,
+		  m->stable_time);
 	  check_monitor(monitors[file]);
 	} else if (file_exists) {
 	  file_exists(file, file_stat(file, 1));
@@ -460,7 +478,9 @@ protected int(0..1) check_monitor(Monitor m, MonitorFlags|void flags)
 	  };
 	if (m->flags & MF_RECURSE) {
 	  monitor(file, orig_flags | MF_AUTO,
-		  m->max_dir_check_interval, m->file_interval_factor);
+		  m->max_dir_check_interval,
+		  m->file_interval_factor,
+		  m->stable_time);
 	  check_monitor(monitors[file]);
 	} else if (!m2 && file_created) {
 	  file_created(file, file_stat(file, 1));
@@ -517,7 +537,7 @@ protected int(0..1) check_monitor(Monitor m, MonitorFlags|void flags)
       }
     }
   }
-  if (m->last_change < time(1) - stable_time) {
+  if (m->last_change < time(1) - m->stable_time) {
     m->last_change = 0x7fffffff;
     if (stable_data_change) {
       stable_data_change(m->path, st);
