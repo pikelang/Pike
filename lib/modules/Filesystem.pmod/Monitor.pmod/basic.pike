@@ -1,7 +1,7 @@
 //
 // Basic filesystem monitor.
 //
-// $Id: basic.pike,v 1.15 2009/07/17 16:03:50 grubba Exp $
+// $Id: basic.pike,v 1.16 2009/07/17 16:44:33 grubba Exp $
 //
 // 2009-07-09 Henrik Grubbström
 //
@@ -668,3 +668,24 @@ void set_nonblocking()
   if (backend) co_id = backend->call_out(backend_check, t);
   else co_id = call_out(backend_check, t);
 }
+
+//! Set the @[default_max_dir_check_interval].
+void set_max_dir_check_interval(int max_dir_check_interval)
+{
+  if (max_dir_check_interval > 0) {
+    this_program::max_dir_check_interval = max_dir_check_interval;
+  } else {
+    this_program::max_dir_check_interval = default_max_dir_check_interval;
+  }
+}
+
+//! Set the @[default_file_interval_factor].
+void set_file_interval_factor(int file_interval_factor)
+{
+  if (file_interval_factor > 0) {
+    this_program::file_interval_factor = file_interval_factor;
+  } else {
+    this_program::file_interval_factor = default_file_interval_factor;
+  }
+}
+
