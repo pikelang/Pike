@@ -1,7 +1,7 @@
 //
 // Basic filesystem monitor.
 //
-// $Id: basic.pike,v 1.13 2009/07/17 15:56:50 grubba Exp $
+// $Id: basic.pike,v 1.14 2009/07/17 16:00:20 grubba Exp $
 //
 // 2009-07-09 Henrik Grubbström
 //
@@ -246,6 +246,10 @@ protected void update_monitor(Monitor m, Stdio.Stat st)
   m->st = st;
   if (!st || !st->isdir) {
     delta *= m->file_interval_factor || file_interval_factor;
+  }
+  if (!next_poll) {
+    // Attempt to distribute polls evenly at startup.
+    delta = 1 + random(delta);
   }
   if (st) {
     int d = 1 + ((time(1) - st->mtime)>>4);
