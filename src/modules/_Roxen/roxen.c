@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: roxen.c,v 1.53 2008/08/24 21:32:00 srb Exp $
+|| $Id: roxen.c,v 1.54 2009/07/17 14:33:51 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -42,6 +42,8 @@
  */
 
 /*! @class HeaderParser
+ *!
+ *! Class for parsing HTTP-requests.
  */
 
 #define THP ((struct header_buf *)Pike_fp->current_storage)
@@ -73,6 +75,16 @@ static void f_hp_exit( struct object *o )
 
 static void f_hp_feed( INT32 args )
 /*! @decl array(string|mapping) feed(string data)
+ *!
+ *! @returns
+ *!   @array
+ *!     @elem string 0
+ *!       Trailing data.
+ *!     @elem string 1
+ *!       First line of request.
+ *!     @elem mapping(string:string|array(string)) 2
+ *!       Headers.
+ *!   @endarray
  */
 {
   struct pike_string *str = Pike_sp[-1].u.string;
@@ -85,6 +97,8 @@ static void f_hp_feed( INT32 args )
   ptrdiff_t os=0, i, j, l;
   unsigned char *in;
 
+  if (args != 1)
+    Pike_error("Bad number of arguments to feed().\n");
   if( Pike_sp[-1].type != PIKE_T_STRING )
     Pike_error("Wrong type of argument to feed()\n");
   if( str->size_shift )

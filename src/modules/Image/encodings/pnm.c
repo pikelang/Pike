@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pnm.c,v 1.34 2005/01/23 13:30:04 nilsson Exp $
+|| $Id: pnm.c,v 1.35 2009/07/17 14:29:12 grubba Exp $
 */
 
 /*
@@ -26,7 +26,7 @@
 **!	P4(PBM) - binary bitmap 
 **!	P5(PGM) - binary greymap 
 **!	P6(PPM) - binary truecolor
-** 	P7 - binary truecolor (used by xv for thumbnails)
+**! 	P7 - binary truecolor (used by xv for thumbnails)
 **!	</pre>
 **!
 **!	Simple encoding:<br>

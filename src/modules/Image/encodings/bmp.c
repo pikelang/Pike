@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: bmp.c,v 1.46 2005/01/23 13:30:04 nilsson Exp $
+|| $Id: bmp.c,v 1.47 2009/07/17 14:29:12 grubba Exp $
 */
 
 /*
@@ -62,6 +62,8 @@ static struct pike_string *colortable_string = NULL;
  * 0006 - 0007	Reserved
  * 0008 - 0009	Reserved
  * 000a - 000d	Offset to bitmap (offs)
+ *
+ * Bitmap info from this point.
  * 000e - 0011	Size of info struct (0x28)
  * 0012 - 0015	Width
  * 0016 - 0019	Height
