@@ -1,7 +1,7 @@
 //
 // Basic filesystem monitor.
 //
-// $Id: basic.pike,v 1.10 2009/07/16 14:14:20 grubba Exp $
+// $Id: basic.pike,v 1.11 2009/07/17 13:58:13 grubba Exp $
 //
 // 2009-07-09 Henrik Grubbström
 //
@@ -463,8 +463,12 @@ protected int(0..1) check_monitor(Monitor m, MonitorFlags|void flags)
     m->last_change = time(1);
     if (st->isdir) {
       array(string) files = get_dir(m->path);
-      array(string) new_files = files - m->files;
-      array(string) deleted_files = m->files - files;
+      array(string) new_files = files;
+      array(string) deleted_files = ({});
+      if (m->files) {
+	new_files -= m->files;
+	deleted_files = m->files - files;
+      }
       m->files = files;
       foreach(new_files, string file) {
 	file = Stdio.append_path(m->path, file);
