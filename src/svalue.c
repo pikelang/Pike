@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.249 2009/04/01 20:30:09 mast Exp $
+|| $Id: svalue.c,v 1.250 2009/07/17 14:26:24 grubba Exp $
 */
 
 #include "global.h"
@@ -2048,7 +2048,8 @@ PMOD_EXPORT void debug_check_svalue(const struct svalue *s)
   check_svalue_type (s);
   if(s->type<=MAX_REF_TYPE &&
      ((PIKE_POINTER_ALIGNMENT-1) & (ptrdiff_t)(s->u.refs)))
-    Pike_fatal("Odd pointer! type=%d u->refs=%p\n",s->type,s->u.refs);
+    Pike_fatal("Odd pointer! type=%d u->refs=%p, align: %d\n",
+	       s->type, s->u.refs, PIKE_POINTER_ALIGNMENT);
 
   if(s->type==T_INT) {
     if(s->subtype!=NUMBER_NUMBER &&
