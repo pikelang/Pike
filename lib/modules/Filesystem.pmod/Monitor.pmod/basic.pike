@@ -1,7 +1,7 @@
 //
 // Basic filesystem monitor.
 //
-// $Id: basic.pike,v 1.12 2009/07/17 15:34:31 jonasw Exp $
+// $Id: basic.pike,v 1.13 2009/07/17 15:56:50 grubba Exp $
 //
 // 2009-07-09 Henrik Grubbström
 //
@@ -173,7 +173,6 @@ protected class Monitor(string path,
 
   int `<(mixed m) { return next_poll < m; }
   int `>(mixed m) { return next_poll > m; }
-  int `==(mixed m) { return next_poll == m; }
 
   protected string _sprintf(int c)
   {
