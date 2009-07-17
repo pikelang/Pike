@@ -1,7 +1,7 @@
 //
 // Basic filesystem monitor.
 //
-// $Id: basic.pike,v 1.11 2009/07/17 13:58:13 grubba Exp $
+// $Id: basic.pike,v 1.12 2009/07/17 15:34:31 jonasw Exp $
 //
 // 2009-07-09 Henrik Grubbström
 //
@@ -243,10 +243,10 @@ void clear()
 //! next check.
 protected void update_monitor(Monitor m, Stdio.Stat st)
 {
-  int delta = m->max_dir_check_interval;
+  int delta = m->max_dir_check_interval || max_dir_check_interval;
   m->st = st;
   if (!st || !st->isdir) {
-    delta *= m->file_interval_factor;
+    delta *= m->file_interval_factor || file_interval_factor;
   }
   if (st) {
     int d = 1 + ((time(1) - st->mtime)>>4);
@@ -541,7 +541,7 @@ protected int(0..1) check_monitor(Monitor m, MonitorFlags|void flags)
       }
     }
   }
-  if (m->last_change < time(1) - m->stable_time) {
+  if (m->last_change < time(1) - (m->stable_time || stable_time)) {
     m->last_change = 0x7fffffff;
     if (stable_data_change) {
       stable_data_change(m->path, st);
