@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.167 2009/03/13 00:29:19 mast Exp $
+|| $Id: error.c,v 1.168 2009/07/17 14:32:34 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -938,8 +938,8 @@ static void f_error_create(INT32 args)
   struct object *o; \
   va_start(foo,desc); \
   ASSERT_THREAD_SWAPPED_IN(); \
-  o=fast_clone_object(PIKE_CONCAT(FEL,_error_program)); \
-  DWERROR((stderr, "%s(): Throwing a " #FEL " error\n", func))
+  DWERROR((stderr, "%s(): Throwing a " #FEL " error\n", func)); \
+  o=fast_clone_object(PIKE_CONCAT(FEL,_error_program))
 
 #define ERROR_DONE(FOO) \
   PIKE_CONCAT(FOO,_error_va(o,func, \
