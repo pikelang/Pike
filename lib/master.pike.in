@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.463 2009/06/10 16:11:15 grubba Exp $
+// $Id: master.pike.in,v 1.464 2009/07/17 12:31:19 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -2598,7 +2598,7 @@ class joinnode
     if (sizeof(joined_modules) &&
 	joined_modules[0] == node) return;
     joined_modules = ({ node }) + (joined_modules - ({ node }));
-    // FIXME: Propagate!
+    cache = ([]);
   }
 
   void rem_path(string path)
@@ -2610,8 +2610,7 @@ class joinnode
 				!node->is_resolv_dirnode ||
 				(node->dirname != path);
 			    });
-    // FIXME: What about the cache?
-    // FIXME: Propagate!
+    cache = ([]);
   }
 
   protected mixed ind(string index)
