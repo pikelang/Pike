@@ -1,7 +1,7 @@
 // This file is part of Pike. For copyright information see COPYRIGHT.
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
-// $Id: peep.in,v 1.83 2008/05/30 11:20:44 grubba Exp $
+// $Id: peep.in,v 1.84 2009/07/21 17:54:16 grubba Exp $
 
 NOP :
 POP_N_ELEMS (0) : 
@@ -266,7 +266,6 @@ CONST_1 ADD: ADD_NEG_INT (1)
 NUMBER [$1a >= 0] ADD : ADD_INT ($1a)
 NEG_NUMBER [$1a > 0] ADD : ADD_NEG_INT ($1a)
 
-CONST0 SUBTRACT: ADD_INT (0)
 CONST1 SUBTRACT: ADD_NEG_INT (1)
 CONST_1 SUBTRACT: ADD_INT (1)
 NUMBER [$1a >= 0] SUBTRACT : ADD_NEG_INT ($1a)
