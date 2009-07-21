@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image.c,v 1.235 2007/08/10 13:54:51 grubba Exp $
+|| $Id: image.c,v 1.236 2009/07/21 14:25:52 grubba Exp $
 */
 
 /*
@@ -126,6 +126,7 @@
 
 extern struct program *image_program;
 extern struct program *image_colortable_program;
+extern struct program *image_color_program;
 
 #ifdef THIS
 #undef THIS /* Needed for NT */
@@ -2312,6 +2313,7 @@ void image_grey(INT32 args)
 /*
 **! method object color()
 **! method object color(int value)
+**! method object color(Color color)
 **! method object color(int r,int g,int b)
 **!    Colorize an image. 
 **!
@@ -2336,6 +2338,8 @@ void image_grey(INT32 args)
 **! arg int g
 **! arg int b
 **!	red, green, blue factors
+**! arg Color color
+**!     Color object with factors
 **! arg int value
 **!	factor
 **!
@@ -2353,9 +2357,16 @@ void image_color(INT32 args)
    if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
    if (args<3)
    {
+      struct color_struct *cs;
       if (args>0 && sp[-args].type==T_INT)
 	 rgb.r=rgb.b=rgb.g=sp[-args].u.integer;
-      else 
+      else if (args>0 && sp[-args].type == T_OBJECT &&
+	       (cs = (struct color_struct *)get_storage(sp[-args].u.object,
+							image_color_program)))
+	 rgb.r=cs->rgb.r,
+	 rgb.g=cs->rgb.g,
+	 rgb.b=cs->rgb.b;
+      else
 	 rgb.r=THIS->rgb.r,
 	 rgb.g=THIS->rgb.g,
 	 rgb.b=THIS->rgb.b;
