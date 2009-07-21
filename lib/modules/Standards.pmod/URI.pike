@@ -4,7 +4,7 @@
 //! absolute form, as defined in RFC 2396 and RFC 3986.
 
 // Implemented by Johan Sundström and Johan Schön.
-// $Id: URI.pike,v 1.29 2008/06/28 16:49:56 nilsson Exp $
+// $Id: URI.pike,v 1.30 2009/07/21 09:03:58 mast Exp $
 
 #pragma strict_types
 
@@ -195,7 +195,7 @@ void reparse_uri(this_program|string|void base_uri)
   //    query and fragment components are defined as found (or not found)
   //    within the URI reference and not inherited from the base URI.
   //    (Doing this at once saves us some useless parsing efforts.)
-  if(!uri || uri == "")
+  if((!uri || uri == "") && this_program::base_uri)
   {
     DEBUG("Path is empty -- Inherit entire base URI "
 	  "as per RFC 2396, §5.2 step 2. Done!");
@@ -203,7 +203,7 @@ void reparse_uri(this_program|string|void base_uri)
     return;
   }
 
-  if(uri[0] == '#')
+  if(has_prefix (uri, "#") && this_program::base_uri)
   {
     DEBUG("Fragment only. Using entire base URI, except fragment.");
     inherit_properties(this_program::base_uri);
