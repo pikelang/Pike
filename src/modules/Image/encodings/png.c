@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.91 2009/07/22 20:55:25 nilsson Exp $
+|| $Id: png.c,v 1.92 2009/07/22 21:01:43 nilsson Exp $
 */
 
 #include "global.h"
@@ -1183,12 +1183,11 @@ static void img_png_decode(INT32 args,int header_only)
 	    if (!ct)
 	       PIKE_ERROR("Image.PNG._decode",
 			  "Internal error: cloned colortable isn't colortable.\n", sp, args);
-	    ref_push_string(param_palette);
-	    mapping_insert(m,sp-1,sp-2);
-	    pop_n_elems(2);
+	    mapping_string_insert(m, param_palette, sp-1);
+	    pop_stack();
 	    break;
 	 case T_INT:
-	    pop_n_elems(1);
+	    pop_stack();
 	    break;
 	 default:
 	    PIKE_ERROR("Image.PNG._decode",
@@ -1459,7 +1458,6 @@ static void img_png_decode(INT32 args,int header_only)
      else
        f_add(n);
 
-     /* FIXME: trns leaks on OOM. */
      if (_png_decode_idat(&ihdr, ct, trns)==1)
      {
        mapping_string_insert(m, param_alpha, sp-1);
