@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.90 2008/12/13 08:24:00 nilsson Exp $
+|| $Id: png.c,v 1.91 2009/07/22 20:55:25 nilsson Exp $
 */
 
 #include "global.h"
@@ -126,7 +126,7 @@ static void png_decompress(int style)
   dynamic_buffer buf;
   ONERROR err;
 
-  if (style)
+  if (style!=0)
     Pike_error("Internal error: Illegal decompression style %d.\n",style);
 
   initialize_buf(&buf);
@@ -978,27 +978,176 @@ static void free_and_clear(void **mem)
   }
 }
 
+struct IHDR
+{
+  unsigned INT32 width,height;
+  int bpp;  /* bit depth, 1, 2, 4, 8 or 16  */
+  int type; /* 0, 2,3,4 or 6 */
+  int compression; /* 0 */
+  int filter;
+  int interlace;
+};
+
+/* IN: IDAT string on stack */
+/* OUT: Image object with image (and possibly alpha, depending on
+   return value) */
+static int _png_decode_idat(struct IHDR *ihdr, struct neo_colortable *ct,
+                            struct pike_string *trns)
+{
+  struct pike_string *fs;
+  struct image *img;
+  rgb_group *w1,*wa1,*t1,*ta1;
+  unsigned char *s0;
+  unsigned int i,x,y;
+  ONERROR err, a_err, t_err;
+
+  png_decompress(ihdr->compression);
+  if( sp[-1].type!=T_STRING )
+    Pike_error("Got illegal data from decompression.\n");
+
+  w1=xalloc(sizeof(rgb_group)*ihdr->width*ihdr->height);
+  SET_ONERROR(err, free_and_clear, &w1);
+  wa1=xalloc(sizeof(rgb_group)*ihdr->width*ihdr->height);
+  SET_ONERROR(a_err, free_and_clear, &wa1);
+
+  fs = sp[-1].u.string;
+
+  /* --- interlace decoding --- */
+
+  switch (ihdr->interlace)
+  {
+  case 0: /* none */
+    fs=_png_unfilter((unsigned char*)fs->str,fs->len,
+                     ihdr->width,ihdr->height,
+                     ihdr->filter,ihdr->type,ihdr->bpp,
+                     NULL);
+
+    if (!_png_write_rgb(w1,wa1,
+                        ihdr->type,ihdr->bpp,
+                        (unsigned char*)fs->str,fs->len,
+                        ihdr->width,
+                        ihdr->width*ihdr->height,
+                        ct,trns))
+    {
+      free(wa1);
+      wa1=NULL;
+    }
+    free_string(fs);
+    break;
+
+  case 1: /* adam7 */
+
+    /* need arena */
+    t1=xalloc(sizeof(rgb_group)*ihdr->width*ihdr->height);
+    SET_ONERROR(t_err, free_and_clear, &t1);
+    ta1=xalloc(sizeof(rgb_group)*ihdr->width*ihdr->height);
+    UNSET_ONERROR(t_err);
+
+    /* loop over adam7 interlace's
+       and write them to the arena */
+
+    s0=(unsigned char*)fs->str;
+    for (i=0; i<7; i++)
+    {
+      struct pike_string *ds;
+      rgb_group *d1, *da1;
+      unsigned int x0 = adam7[i].x0;
+      unsigned int xd = adam7[i].xd;
+      unsigned int y0 = adam7[i].y0;
+      unsigned int yd = adam7[i].yd;
+      unsigned int iwidth = (ihdr->width+xd-1-x0)/xd;
+      unsigned int iheight = (ihdr->height+yd-1-y0)/yd;
+
+      if(!iwidth || !iheight) continue;
+
+      ds=_png_unfilter(s0,fs->len-(s0-(unsigned char*)fs->str),
+                       iwidth, iheight,
+                       ihdr->filter,ihdr->type,ihdr->bpp,
+                       &s0);
+
+      if (!_png_write_rgb(w1,wa1,ihdr->type,ihdr->bpp,
+                          (unsigned char*)ds->str,ds->len,
+                          iwidth,
+                          iwidth*iheight,
+                          ct,trns))
+      {
+        if(wa1) free(wa1);
+        wa1=NULL;
+      }
+      d1=w1;
+      for (y=y0; y<ihdr->height; y+=yd)
+        for (x=x0; x<ihdr->width; x+=xd)
+          t1[x+y*ihdr->width]=*(d1++);
+
+      if (wa1)
+      {
+        da1=wa1;
+        for (y=y0; y<ihdr->height; y+=yd)
+          for (x=x0; x<ihdr->width; x+=xd)
+            ta1[x+y*ihdr->width]=*(da1++);
+      }
+
+      free_string(ds);
+    }
+
+    free(w1);
+    w1=t1;
+    if (wa1) {
+      free(wa1);
+      wa1=ta1;
+    } else {
+      free(ta1);
+    }
+
+    break;
+  default:
+    Pike_error("Unknown interlace type %d.\n", ihdr->interlace);
+  }
+
+  /* Image data now in w1, alpha in wa1 */
+  pop_stack();
+
+  UNSET_ONERROR(a_err);
+  UNSET_ONERROR(err);
+
+  /* Create image object and leave it on the stack */
+  push_object(clone_object(image_program,0));
+  img=(struct image*)get_storage(sp[-1].u.object,image_program);
+  if (img->img) free(img->img); /* protect from memleak */
+  img->xsize=ihdr->width;
+  img->ysize=ihdr->height;
+  img->img=w1;
+
+  /* Create alpha object and leave it on the stack */
+  if( wa1 )
+  {
+    push_object(clone_object(image_program,0));
+    img=(struct image*)get_storage(sp[-1].u.object,image_program);
+    if (img->img) free(img->img); /* protect from memleak */
+    img->xsize=ihdr->width;
+    img->ysize=ihdr->height;
+    img->img=wa1;
+    return 1;
+  }
+
+  return 0;
+}
+
+static void png_free_string(struct pike_string *str)
+{
+  if(str) free_string(str);
+}
+
 static void img_png_decode(INT32 args,int header_only)
 {
    struct array *a;
    struct mapping *m;
    struct neo_colortable *ct=NULL;
-   rgb_group *d1,*da1,*w1,*wa1,*t1,*ta1=NULL;
-   struct pike_string *fs,*trns=NULL;
-   unsigned char *s,*s0;
-   struct image *img;
-   ONERROR err, a_err, t_err;
+   struct pike_string *trns=NULL;
 
-   int n=0,i,x=-1,y;
-   struct ihdr
-   {
-      INT32 width,height;
-      int bpp;  /* bit depth, 1, 2, 4, 8 or 16  */
-      int type; /* 0, 2,3,4 or 6 */
-      int compression; /* 0 */
-      int filter; 
-      int interlace;
-   } ihdr={-1,-1,-1,-1,-1,-1,-1};
+   int n=0, i;
+   struct IHDR ihdr={-1,-1,-1,-1,-1,-1,-1};
+   ONERROR err;
 
    if (args<1)
      SIMPLE_TOO_FEW_ARGS_ERROR("Image.PNG._decode", 1);
@@ -1102,6 +1251,14 @@ static void img_png_decode(INT32 args,int header_only)
 
 	    ihdr.width=int_from_32bit(data+0);
 	    ihdr.height=int_from_32bit(data+4);
+
+            if( sizeof(rgb_group)*(double)ihdr.width*(double)ihdr.height >
+                (double)INT_MAX )
+              Pike_error("Image.PNG._decode: Too large image "
+                         "(total size exceeds %d bytes (%.0f))\n", INT_MAX,
+                         sizeof(rgb_group)*
+                         (double)ihdr.width*(double)ihdr.height);
+
 	    ihdr.bpp=data[8];
 	    ihdr.type=data[9];
 	    ihdr.compression=data[10];
@@ -1121,24 +1278,18 @@ static void img_png_decode(INT32 args,int header_only)
 	    {
 	       ct=(struct neo_colortable*)
 		  get_storage(sp[-1].u.object,image_colortable_program);
-	       ref_push_string(param_palette);
-	       mapping_insert(m,sp-1,sp-2);
+	       mapping_string_insert(m, param_palette, sp-1);
 	    }
 	    else
 	    {
-	       ref_push_string(param_spalette);
-	       mapping_insert(m,sp-1,sp-2);
+	       mapping_string_insert(m, param_spalette, sp-1);
 	    }
-	    pop_n_elems(2);
+	    pop_stack();
 	    break;
 
          case 0x49444154: /* IDAT */
 	    /* compressed image data. push, n++ */
 	    if (header_only) break;
-
-	    if (ihdr.compression!=0)
-	       Pike_error("Image.PNG._decode: unknown compression (%d)\n",
-		     ihdr.compression);
 
 	    ref_push_string(b->item[1].u.string);
 	    n++;
@@ -1268,16 +1419,13 @@ static void img_png_decode(INT32 args,int header_only)
 		  break;
 	    }
 	    f_aggregate(3);
-	    ref_push_string(param_background);
-	    mapping_insert(m,sp-1,sp-2);
-	    pop_n_elems(2);
+	    mapping_string_insert(m, param_background, sp-1);
+	    pop_stack();
 	    break;
 
          case 0x74524e53: /* tRNS */
-	    push_string(trns=b->item[1].u.string);
-	    push_int(-2);
-	    mapping_insert(m,sp-1,sp-2);
-	    sp-=2; /* we have no own ref to trns */
+	    trns=b->item[1].u.string;
+            add_ref(trns);
 	    break;
 
          default:
@@ -1288,198 +1436,60 @@ static void img_png_decode(INT32 args,int header_only)
       }
    }
 
-   if (header_only)  goto header_stuff;
 
    /* on stack: mapping   n×string */
 
-   /* IDAT stuff on stack, now */
-   if (!n) 
-      push_empty_string();
-   else
-      f_add(n);
-
-   if (ihdr.type==-1)
-      PIKE_ERROR("Image.PNG._decode", "Missing header (IHDR chunk).\n",
-		 sp, args);
-
-   if (ihdr.type==3 && !ct)
-      PIKE_ERROR("Image.PNG._decode", "Missing palette (PLTE chunk).\n",
-		 sp, args);
-
-   if (ihdr.compression==0)
+   if(trns)
    {
-      png_decompress(ihdr.compression);
-      if (sp[-1].type!=T_STRING)
-	 PIKE_ERROR("Image.PNG._decode",
-		    "Got illegal data from decompression.\n", sp ,args);
+     SET_ONERROR(err, png_free_string, &trns);
    }
-   else
-      Pike_error("Image.PNG._decode: illegal compression type 0x%02x\n",
-	    ihdr.compression);
-
-   fs=sp[-1].u.string;
-   push_int(-1);
-   mapping_insert(m,sp-1,sp-2);
-
-   pop_n_elems(2);
-
-   s=(unsigned char*)fs->str;
-   if(sizeof(rgb_group)*(double)ihdr.width*(double)ihdr.height>(double)INT_MAX)
-       Pike_error("Image.PNG._decode: Too large image "
-		  "(total size exceeds %d bytes (%.0f))\n", INT_MAX, 
-		 sizeof(rgb_group)*(double)ihdr.width*(double)ihdr.height);
-   w1=d1=xalloc(sizeof(rgb_group)*ihdr.width*ihdr.height);
-   SET_ONERROR(err, free_and_clear, &d1);
-   wa1=da1=xalloc(sizeof(rgb_group)*ihdr.width*ihdr.height);
-   SET_ONERROR(a_err, free_and_clear, &da1);
-
-   /* --- interlace decoding --- */
-
-   switch (ihdr.interlace)
+   if (!header_only)
    {
-      case 0: /* none */
-	 fs=_png_unfilter((unsigned char*)fs->str,fs->len,
-			  ihdr.width,ihdr.height,
-			  ihdr.filter,ihdr.type,ihdr.bpp,
-			  NULL);
-	 push_string(fs);
-	 if (!_png_write_rgb(w1,wa1,
-			     ihdr.type,ihdr.bpp,(unsigned char*)fs->str,
-			     fs->len,
-			     ihdr.width,
-			     ihdr.width*ihdr.height,
-			     ct,trns))
-	 {
-	    free(wa1);
-	    wa1=NULL;
-	 }
-	 pop_stack();
-	 break;
+     if (ihdr.type==-1)
+       PIKE_ERROR("Image.PNG._decode", "Missing header (IHDR chunk).\n",
+                  sp, args);
 
-      case 1: /* adam7 */
+     if (ihdr.type==3 && !ct)
+       PIKE_ERROR("Image.PNG._decode", "Missing palette (PLTE chunk).\n",
+                  sp, args);
 
-	 /* need arena */
-	 t1=xalloc(sizeof(rgb_group)*ihdr.width*ihdr.height);
-	 SET_ONERROR(t_err, free_and_clear, &t1);
-	 ta1=xalloc(sizeof(rgb_group)*ihdr.width*ihdr.height);
-	 UNSET_ONERROR(t_err);
+     /* Join IDAT blocks */
+     if (!n)
+       push_empty_string();
+     else
+       f_add(n);
 
-	 /* loop over adam7 interlace's 
-	    and write them to the arena */
-
-	 s0=(unsigned char*)fs->str;
-	 for (i=0; i<7; i++)
-	 {
-	    struct pike_string *ds;
-	    unsigned int x0 = adam7[i].x0;
-	    unsigned int xd = adam7[i].xd;
-	    unsigned int y0 = adam7[i].y0;
-	    unsigned int yd = adam7[i].yd;
-	    unsigned int iwidth = (ihdr.width+xd-1-x0)/xd;
-	    unsigned int iheight = (ihdr.height+yd-1-y0)/yd;
-
-	    if(!iwidth || !iheight) continue;
-
-	    ds=_png_unfilter(s0,fs->len-(s0-(unsigned char*)fs->str),
-			     iwidth, iheight,
-			     ihdr.filter,ihdr.type,ihdr.bpp,
-			     &s0);
-
-	    push_string(ds);
-	    if (!_png_write_rgb(w1,wa1,ihdr.type,ihdr.bpp,
-				(unsigned char*)ds->str,ds->len,
-				iwidth,
-				iwidth*iheight,
-				ct,trns))
-	    {
-	       if (wa1) free(wa1);
-	       wa1=NULL;
-	    }
-	    d1=w1;
-	    for (y=y0; y<ihdr.height; y+=yd)
-	       for (x=x0; x<ihdr.width; x+=xd)
-		  t1[x+y*ihdr.width]=*(d1++);
-
-	    if (wa1)
-	    {
-	       da1=wa1;
-	       for (y=y0; y<ihdr.height; y+=yd)
-		  for (x=x0; x<ihdr.width; x+=xd)
-		     ta1[x+y*ihdr.width]=*(da1++);
-	    }
-
-	    pop_stack();
-	 }
-
-	 free(w1);
-	 w1=t1;
-	 if (wa1) {
-	   free(wa1); wa1=ta1;
-	 } else {
-	   free(ta1);
-	 }
-
-	 break;
-      default:
-	 PIKE_ERROR("Image.PNG._decode", "Unknown interlace type.\n",
-		    sp, args);
+     /* FIXME: trns leaks on OOM. */
+     if (_png_decode_idat(&ihdr, ct, trns)==1)
+     {
+       mapping_string_insert(m, param_alpha, sp-1);
+       pop_stack();
+     }
+     mapping_string_insert(m, param_image, sp-1);
+     pop_stack();
+   }
+   if(trns)
+   {
+     CALL_AND_UNSET_ONERROR(err);
    }
 
-   UNSET_ONERROR(a_err);
-   UNSET_ONERROR(err);
-   
-   
-   /* --- done, store in mapping --- */
-
-   ref_push_string(param_image);
-   push_object(clone_object(image_program,0));
-   img=(struct image*)get_storage(sp[-1].u.object,image_program);
-   if (img->img) free(img->img); /* protect from memleak */
-   img->xsize=ihdr.width;
-   img->ysize=ihdr.height;
-   img->img=w1;
-   mapping_insert(m,sp-2,sp-1);
-   pop_n_elems(2);
-   
-   if (wa1)
-   {
-      ref_push_string(param_alpha);
-      push_object(clone_object(image_program,0));
-      img=(struct image*)get_storage(sp[-1].u.object,image_program);
-      if (img->img) free(img->img); /* protect from memleak */
-      img->xsize=ihdr.width;
-      img->ysize=ihdr.height;
-      img->img=wa1;
-      mapping_insert(m,sp-2,sp-1);
-      pop_n_elems(2);
-   }
-
-header_stuff:
-
-   ref_push_string(param_type);
    push_int(ihdr.type);
-   mapping_insert(m,sp-2,sp-1);
-   pop_n_elems(2);
-   ref_push_string(param_bpp);
+   mapping_string_insert(m, param_type, sp-1);
+   pop_stack();
+
    push_int(ihdr.bpp);
-   mapping_insert(m,sp-2,sp-1);
-   pop_n_elems(2);
+   mapping_string_insert(m, param_bpp, sp-1);
+   pop_stack();
 
    push_constant_text("xsize");
    push_int(ihdr.width);
    mapping_insert(m,sp-2,sp-1);
    pop_n_elems(2);
+
    push_constant_text("ysize");
    push_int(ihdr.height);
    mapping_insert(m,sp-2,sp-1);
    pop_n_elems(2);
-
-   push_int(-1);
-   map_delete(m,sp-1);
-   pop_stack();
-   push_int(-2);
-   map_delete(m,sp-1);
-   pop_stack();
 
    pop_stack(); /* remove 'a' from stack */
 }
@@ -1774,7 +1784,7 @@ static void image_png_decode(INT32 args)
    if (!args)
      SIMPLE_TOO_FEW_ARGS_ERROR("Image.PNG.decode", 1);
    
-   image_png__decode(args);
+   img_png_decode(args,0);
    push_constant_text("image");
    f_index(2);
 }
