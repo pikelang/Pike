@@ -1,5 +1,5 @@
 START_MARKER
-dnl $Id: testsuite.in,v 1.23 2006/08/31 14:45:33 nilsson Exp $
+dnl $Id: testsuite.in,v 1.24 2009/07/22 20:42:08 nilsson Exp $
 
 test_eq([[ Image.PNM.decode("P1\n5 5\n0 1 1 1 1\n1 0 1 1 1\n"
   "1 1 0 1 1\n1 1 1 0 1\n1 1 1 1 0") ]],
@@ -804,6 +804,9 @@ test_encoding(XBM,[[
   object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
   img=c*img;
 ]],)
+
+test_equal( Image.PNG.decode_header(Image.PNG.encode(Image.Image(20,20))),
+(["bpp":8, "type":2, "xsize":20, "ysize":20 ]) )
 
 cond( (master()->resolv("Image.XFace")||([]))->encode,[[
   test_any([[
