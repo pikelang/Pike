@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_error.h,v 1.52 2008/12/29 10:55:20 grubba Exp $
+|| $Id: pike_error.h,v 1.53 2009/07/22 12:46:43 grubba Exp $
 */
 
 #ifndef PIKE_ERROR_H
@@ -170,7 +170,10 @@ PMOD_EXPORT extern const char msg_unsetjmp_nosync_2[];
     X.func=(error_call)(Y);					\
     DO_IF_DMALLOC( if( X.func == free ) X.func=dmalloc_free);	\
     X.arg=(void *)(Z);						\
-    if(!Pike_interpreter.recoveries) break;			\
+    if(!Pike_interpreter.recoveries) {				\
+      X.previous = NULL;					\
+      break;							\
+    }								\
     X.previous=Pike_interpreter.recoveries->onerror;		\
     X.file = __FILE__;						\
     X.line = __LINE__;						\
