@@ -1,7 +1,7 @@
 //
 // Basic filesystem monitor.
 //
-// $Id: basic.pike,v 1.17 2009/07/22 15:08:28 grubba Exp $
+// $Id: basic.pike,v 1.18 2009/07/22 15:37:40 grubba Exp $
 //
 // 2009-07-09 Henrik Grubbström
 //
@@ -395,10 +395,22 @@ protected class Monitor(string path,
   }
 }
 
+//! Canonicalize a path.
+//!
+//! @param path
+//!   Path to canonicalize.
+//!
+//! @returns
+//!   The default implementation returns @expr{combine_path(path, ".")@},
+//!   i.e. no trailing slashes.
+protected string canonic_path(string path)
+{
+  return combine_path(path, ".");
+}
+
 //! Mapping from monitored path to corresponding @[Monitor].
 //!
-//! The paths are normalized to @expr{combine_path(path, ".")@},
-//! i.e. no trailing slashes.
+//! The paths are normalized to @expr{canonic_path(path)@},
 //!
 //! @note
 //!   All filesystems are handled as if case-sensitive. This should
@@ -533,7 +545,7 @@ void monitor(string path, MonitorFlags|void flags,
 	     int(0..)|void file_interval_factor,
 	     int(0..)|void stable_time)
 {
-  path = combine_path(path, ".");
+  path = canonic_path(path);
   Monitor m = monitors[path];
   if (m) {
     if (!(flags & MF_AUTO)) {
@@ -576,13 +588,15 @@ void monitor(string path, MonitorFlags|void flags,
 //!   @[monitor()]
 void release(string path, MonitorFlags|void flags)
 {
-  path = combine_path(path, ".");
+  path = canonic_path(path);
   Monitor m = m_delete(monitors, path);
   if (m) {
     release_monitor(m);
   }
   if (flags && m->st && m->st->isdir) {
-    path = combine_path(path, "");
+    if (!sizeof(path) || path[-1] != '/') {
+      path += "/";
+    }
     foreach(monitors; string mpath; m) {
       if (has_prefix(mpath, path) && ((m->flags & flags) == flags)) {
 	m_delete(monitors, mpath);
