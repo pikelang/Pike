@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: colortable.c,v 1.132 2009/03/17 15:14:29 per Exp $
+|| $Id: colortable.c,v 1.133 2009/07/22 12:54:29 grubba Exp $
 */
 
 #include "global.h"
@@ -1248,6 +1248,7 @@ static struct nct_cube _img_get_cube_from_args(INT32 args)
       np=&(s->next);
    }
    cube.numentries=no;
+   cube.weight = WEIGHT_NEEDED;
 
    return cube;
 }
