@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.92 2009/07/22 21:01:43 nilsson Exp $
+|| $Id: png.c,v 1.93 2009/07/22 21:29:07 nilsson Exp $
 */
 
 #include "global.h"
@@ -1138,7 +1138,10 @@ static void png_free_string(struct pike_string *str)
   if(str) free_string(str);
 }
 
-static void img_png_decode(INT32 args,int header_only)
+#define MODE_ALL          0
+#define MODE_HEADER_ONLY  1
+#define MODE_IMAGE_ONLY   2
+static void img_png_decode(INT32 args, int mode)
 {
    struct array *a;
    struct mapping *m;
@@ -1288,7 +1291,7 @@ static void img_png_decode(INT32 args,int header_only)
 
          case 0x49444154: /* IDAT */
 	    /* compressed image data. push, n++ */
-	    if (header_only) break;
+	    if ( mode == MODE_HEADER_ONLY ) break;
 
 	    ref_push_string(b->item[1].u.string);
 	    n++;
@@ -1304,6 +1307,7 @@ static void img_png_decode(INT32 args,int header_only)
           case 0x6348524d: /* cHRM */
 	  {
 	    int i;
+            if(mode==MODE_IMAGE_ONLY) break;
 	    if(b->item[1].u.string->len!=32) break;
 	    for(i=0; i<32; i+=4)
 	      push_float((float)int_from_32bit((unsigned char*)b->
@@ -1318,6 +1322,7 @@ static void img_png_decode(INT32 args,int header_only)
           case 0x73424954: /* sBIT */
 	  {
 	    int i;
+            if(mode==MODE_IMAGE_ONLY) break;
 	    for(i=0; i<b->item[1].u.string->len; i++)
 	      push_int(b->item[1].u.string->str[i]);
 	    f_aggregate(b->item[1].u.string->len);
@@ -1328,6 +1333,7 @@ static void img_png_decode(INT32 args,int header_only)
 	  break;
 
           case 0x67414d41: /* gAMA */
+            if(mode==MODE_IMAGE_ONLY) break;
 	    if(b->item[1].u.string->len!=4) break;
 	    push_constant_text("gamma");
 	    push_float((float)int_from_32bit((unsigned char*)b->
@@ -1337,6 +1343,7 @@ static void img_png_decode(INT32 args,int header_only)
 	    break;
 
           case 0x70485973: /* pHYs */
+            if(mode==MODE_IMAGE_ONLY) break;
 	    if(b->item[1].u.string->len!=9) break;
 	    push_int(b->item[1].u.string->str[8]);
 	    push_int(int_from_32bit((unsigned char*)b->
@@ -1350,6 +1357,7 @@ static void img_png_decode(INT32 args,int header_only)
 	    break;
 
           case 0x6f464673: /* oFFs */
+            if(mode==MODE_IMAGE_ONLY) break;
 	    if(b->item[1].u.string->len!=9) break;
 	    push_int(b->item[1].u.string->str[8]);
 	    push_int(int_from_32bit((unsigned char*)b->
@@ -1363,6 +1371,7 @@ static void img_png_decode(INT32 args,int header_only)
 	    break;
 
           case 0x74494d45: /* tIME */
+            if(mode==MODE_IMAGE_ONLY) break;
 	    if(b->item[1].u.string->len!=7) break;
 	    push_int(int_from_16bit(b->item[1].u.string->str));
 	    push_int(b->item[1].u.string->str[2]);
@@ -1377,6 +1386,7 @@ static void img_png_decode(INT32 args,int header_only)
 	    break;
 
          case 0x624b4744: /* bKGD */
+            if(mode==MODE_IMAGE_ONLY) break;
 	    switch (ihdr.type)
 	    {
 	       case 0:
@@ -1428,6 +1438,7 @@ static void img_png_decode(INT32 args,int header_only)
 	    break;
 
          default:
+            if(mode==MODE_IMAGE_ONLY) break;
 	    ref_push_string(b->item[1].u.string);
 	    ref_push_string(b->item[0].u.string);
 	    mapping_insert(m,sp-1,sp-2);
@@ -1438,12 +1449,11 @@ static void img_png_decode(INT32 args,int header_only)
 
    /* on stack: mapping   n×string */
 
-   if(trns)
+   if ( mode != MODE_HEADER_ONLY )
    {
-     SET_ONERROR(err, png_free_string, &trns);
-   }
-   if (!header_only)
-   {
+     if(trns)
+       SET_ONERROR(err, png_free_string, &trns);
+
      if (ihdr.type==-1)
        PIKE_ERROR("Image.PNG._decode", "Missing header (IHDR chunk).\n",
                   sp, args);
@@ -1465,29 +1475,31 @@ static void img_png_decode(INT32 args,int header_only)
      }
      mapping_string_insert(m, param_image, sp-1);
      pop_stack();
+
+     if(trns)
+       CALL_AND_UNSET_ONERROR(err);
    }
-   if(trns)
+
+   if ( mode != MODE_IMAGE_ONLY )
    {
-     CALL_AND_UNSET_ONERROR(err);
+     push_int(ihdr.type);
+     mapping_string_insert(m, param_type, sp-1);
+     pop_stack();
+
+     push_int(ihdr.bpp);
+     mapping_string_insert(m, param_bpp, sp-1);
+     pop_stack();
+
+     push_constant_text("xsize");
+     push_int(ihdr.width);
+     mapping_insert(m,sp-2,sp-1);
+     pop_n_elems(2);
+
+     push_constant_text("ysize");
+     push_int(ihdr.height);
+     mapping_insert(m,sp-2,sp-1);
+     pop_n_elems(2);
    }
-
-   push_int(ihdr.type);
-   mapping_string_insert(m, param_type, sp-1);
-   pop_stack();
-
-   push_int(ihdr.bpp);
-   mapping_string_insert(m, param_bpp, sp-1);
-   pop_stack();
-
-   push_constant_text("xsize");
-   push_int(ihdr.width);
-   mapping_insert(m,sp-2,sp-1);
-   pop_n_elems(2);
-
-   push_constant_text("ysize");
-   push_int(ihdr.height);
-   mapping_insert(m,sp-2,sp-1);
-   pop_n_elems(2);
 
    pop_stack(); /* remove 'a' from stack */
 }
@@ -1754,7 +1766,7 @@ static void image_png_encode(INT32 args)
 
 static void image_png__decode(INT32 args)
 {
-   img_png_decode(args,0);
+   img_png_decode(args, MODE_ALL);
 }
 
 /*! @decl mapping decode_header(string data)
@@ -1765,7 +1777,7 @@ static void image_png__decode(INT32 args)
 
 static void image_png_decode_header(INT32 args)
 {
-   img_png_decode(args,1);
+   img_png_decode(args, MODE_HEADER_ONLY);
 }
 
 /*! @decl Image.Image decode(string data)
@@ -1782,7 +1794,7 @@ static void image_png_decode(INT32 args)
    if (!args)
      SIMPLE_TOO_FEW_ARGS_ERROR("Image.PNG.decode", 1);
    
-   img_png_decode(args,0);
+   img_png_decode(args, MODE_IMAGE_ONLY);
    push_constant_text("image");
    f_index(2);
 }
