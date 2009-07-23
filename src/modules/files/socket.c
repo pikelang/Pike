@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: socket.c,v 1.103 2009/05/28 11:54:38 grubba Exp $
+|| $Id: socket.c,v 1.104 2009/07/23 14:23:29 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -338,13 +338,17 @@ static void port_bind(INT32 args)
  *!   This function is only available on systems that support Unix domain
  *!   sockets.
  *!
+ *! @note
+ *!   @[path] had a quite restrictive length limit (~100 characters)
+ *!   prior to Pike 7.8.334.
+ *!
  *! @seealso
  *!   @[accept], @[set_id]
  */
 static void unix_bind(INT32 args)
 {
   struct port *p = THIS;
-  struct sockaddr_un addr;
+  struct sockaddr_un *addr;
   struct pike_string *path;
   struct svalue *cb;
   int addr_len,fd,tmp;
@@ -353,20 +357,17 @@ static void unix_bind(INT32 args)
 
   get_all_args("Port->bind_unix", args, "%n%*", &path, &cb);
 
-  tmp = sizeof(addr.sun_path);
+  addr_len = sizeof(struct sockaddr_un) + path->len;
+  addr = xalloc(addr_len);
 
-  if(path->len > tmp)
-    SIMPLE_BAD_ARG_ERROR("Port->bind_unix", 1, "path too long");
-
-  strcpy(addr.sun_path, path->str);
-  addr.sun_family = AF_UNIX;
-
-  addr_len = sizeof(struct sockaddr_un);
+  strcpy(addr->sun_path, path->str);
+  addr->sun_family = AF_UNIX;
 
   fd=fd_socket(AF_UNIX, SOCK_STREAM, 0);
 
   if(fd < 0)
   {
+    free(addr);
     p->my_errno=errno;
     pop_n_elems(args);
     push_int(0);
@@ -392,9 +393,17 @@ static void unix_bind(INT32 args)
   my_set_close_on_exec(fd,1);
 
   THREADS_ALLOW_UID();
-  tmp=fd_bind(fd, (struct sockaddr *)&addr, addr_len) < 0 ||
-    fd_listen(fd, 16384) < 0;
+  do {
+    tmp = fd_bind(fd, (struct sockaddr *)&addr, addr_len);
+  } while ((tmp < 0) && (errno == EINTR));
+  if (tmp >= 0) {
+    do {
+      tmp = fd_listen(fd, 16384);
+    } while ((tmp < 0) && (errno == EINTR));
+  }
   THREADS_DISALLOW_UID();
+
+  free(addr);
 
   if(!Pike_fp->current_object->prog)
   {
@@ -403,7 +412,7 @@ static void unix_bind(INT32 args)
     Pike_error("Object destructed in Stdio.Port->unix_bind()\n");
   }
 
-  if(tmp)
+  if(tmp < 0)
   {
     p->my_errno=errno;
     while (fd_close(fd) && errno == EINTR) {}
