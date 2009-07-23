@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.31 2009/03/17 19:07:44 grubba Exp $
+|| $Id: acconfig.h,v 1.32 2009/07/23 15:15:51 grubba Exp $
 */
 
 #ifndef FILE_MACHINE_H
@@ -36,8 +36,11 @@
 /* Define this if you want to disable the use of sendfile(2). */
 #undef HAVE_BROKEN_SENDFILE
 
-/* Define this if you have a struct stat with 'blocks' member */
+/* Define this if you have a struct stat with 'blocks' member. */
 #undef HAVE_STRUCT_STAT_BLOCKS
+
+/* Define this if you have a struct sockaddr_un with 'sun_len' member. */
+#undef HAVE_STRUCT_SOCKADDR_UN_SUN_LEN
 
 /* Define if your statfs() call takes 4 arguments */
 #undef HAVE_SYSV_STATFS

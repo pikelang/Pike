@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.117 2009/05/27 15:54:20 grubba Exp $
+# $Id: configure.in,v 1.118 2009/07/23 15:15:51 grubba Exp $
 AC_INIT(file.c)
 AC_CONFIG_HEADER(file_machine.h)
 
@@ -107,6 +107,29 @@ AC_CACHE_VAL(pike_cv_struct_stat_blocks, [
 if test "$pike_cv_struct_stat_blocks" = "yes"; then
   AC_MSG_RESULT(yes)
   AC_DEFINE(HAVE_STRUCT_STAT_BLOCKS)
+else
+  AC_MSG_RESULT(no)
+fi
+
+AC_MSG_CHECKING([if struct sockaddr_un has a sun_len member (BSD)])
+AC_CACHE_VAL(pike_cv_struct_sockaddr_un_sun_len, [
+	AC_TRY_COMPILE([
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif /* HAVE_SYS_TYPES_H */
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif /* HAVE_SYS_SOCKET_H */
+], [
+	struct sockaddr_un addr;
+        addr.sun_len = 10;
+],  [pike_cv_struct_sockaddr_un_sun_len=yes],
+    [pike_cv_struct_sockaddr_un_sun_len=no])
+])
+
+if test "$pike_cv_struct_sockaddr_un_sun_len" = "yes"; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE(HAVE_STRUCT_SOCKADDR_UN_SUN_LEN)
 else
   AC_MSG_RESULT(no)
 fi
