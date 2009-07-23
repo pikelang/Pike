@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.336 2009/04/22 18:54:32 grubba Exp $
+|| $Id: signal_handler.c,v 1.337 2009/07/23 11:20:27 grubba Exp $
 */
 
 #include "global.h"
@@ -324,19 +324,26 @@
   static int PIKE_CONCAT(pre,_fd)[2]; \
   static volatile sig_atomic_t PIKE_CONCAT(pre,_data_available)
 
-#define BEGIN_FIFO_PUSH(pre,TYPE) do { \
-  TYPE PIKE_CONCAT(pre,_tmp_) ; int PIKE_CONCAT(pre,_tmp3_) ; \
-  int PIKE_CONCAT(pre,_errno_save)=errno
+#define BEGIN_FIFO_PUSH(pre,TYPE) do {		\
+    TYPE PIKE_CONCAT(pre,_tmp_) ;		\
+    int PIKE_CONCAT(pre,_tmp3_) ;		\
+    int PIKE_CONCAT(pre,_errno_save)=errno
 
 #define FIFO_DATA(pre,TYPE) PIKE_CONCAT(pre,_tmp_)
 
-#define END_FIFO_PUSH(pre,TYPE) \
- while( (PIKE_CONCAT(pre,_tmp3_)=write(PIKE_CONCAT(pre,_fd)[1],(char *)&PIKE_CONCAT(pre,_tmp_),sizeof(PIKE_CONCAT(pre,_tmp_)))) < 0 && errno==EINTR); \
- DO_IF_DEBUG(if( PIKE_CONCAT(pre,_tmp3_) != sizeof( PIKE_CONCAT(pre,_tmp_))) \
-		  Pike_fatal("Atomic pipe write failed!!\n"); ) \
-  errno=PIKE_CONCAT(pre,_errno_save);\
-  PIKE_CONCAT(pre,_data_available)=1; \
- } while(0)
+#define END_FIFO_PUSH(pre,TYPE)					\
+  while( (PIKE_CONCAT(pre,_tmp3_) =				\
+	  write(PIKE_CONCAT(pre,_fd)[1],			\
+		(char *)&PIKE_CONCAT(pre,_tmp_),		\
+		sizeof(PIKE_CONCAT(pre,_tmp_)))) < 0 &&		\
+	 errno==EINTR)						\
+    ;								\
+  DO_IF_DEBUG(if( PIKE_CONCAT(pre,_tmp3_) !=			\
+		  sizeof( PIKE_CONCAT(pre,_tmp_)))		\
+		Pike_fatal("Atomic pipe write failed!!\n"); )	\
+    errno=PIKE_CONCAT(pre,_errno_save);				\
+  PIKE_CONCAT(pre,_data_available)=1;				\
+  } while(0)
 
 
 #define QUICK_CHECK_FIFO(pre,TYPE) PIKE_CONCAT(pre,_data_available)
@@ -1161,6 +1168,11 @@ static RETSIGTYPE receive_sigchild(int signum)
   if(pid>0)
   {
     BEGIN_FIFO_PUSH(wait,wait_data);
+
+#ifdef __CHECKER__
+    /* Clear potential padding. */
+    MEMSET(&FIFO_DATA(wait,wait_data), 0, sizeof(FIFO_DATA(wait,wait_data)));
+#endif
 
     PROC_FPRINTF((stderr, "[%d] receive_sigchild got pid %d\n",
 		  getpid(), pid));
