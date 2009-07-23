@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.416 2009/07/23 14:10:33 grubba Exp $
+|| $Id: file.c,v 1.417 2009/07/23 15:19:44 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -3871,6 +3871,10 @@ static void file_connect_unix( INT32 args )
 
   name->sun_family=AF_UNIX;
   strcpy( name->sun_path, Pike_sp[-args].u.string->str );
+#ifdef HAVE_STRUCT_SOCKADDR_UN_SUN_LEN
+  /* Length including NUL. */
+  name->sun_len = Pike_sp[-args].u.string->len + 1;
+#endif
   pop_n_elems(args);
 
   close_fd();

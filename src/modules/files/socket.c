@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: socket.c,v 1.104 2009/07/23 14:23:29 grubba Exp $
+|| $Id: socket.c,v 1.105 2009/07/23 15:19:44 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -362,6 +362,10 @@ static void unix_bind(INT32 args)
 
   strcpy(addr->sun_path, path->str);
   addr->sun_family = AF_UNIX;
+#ifdef HAVE_STRUCT_SOCKADDR_UN_SUN_LEN
+  /* Length including NUL. */
+  name->sun_len = path->len + 1;
+#endif
 
   fd=fd_socket(AF_UNIX, SOCK_STREAM, 0);
 
