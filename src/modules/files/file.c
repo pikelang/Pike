@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.415 2009/06/29 15:15:03 grubba Exp $
+|| $Id: file.c,v 1.416 2009/07/23 14:10:33 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -3838,6 +3838,9 @@ static void file_set_keepalive(INT32 args)
  *!
  *!   Open a UNIX domain socket connection to the specified destination.
  *!
+ *! @param filename
+ *!   Filename to create.
+ *!
  *!   In nonblocking mode, success is indicated with the write-callback,
  *!   and failure with the close-callback or the read_oob-callback.
  *!
@@ -3848,21 +3851,26 @@ static void file_set_keepalive(INT32 args)
  *!   In nonblocking mode @expr{0@} (zero) may be returned and @[errno()] set
  *!   to @tt{EWOULDBLOCK@} or @tt{WSAEWOULDBLOCK@}. This should not be regarded
  *!   as a connection failure.
+ *!
+ *! @note
+ *!   @[path] had a quite restrictive length limit (~100 characters)
+ *!   prior to Pike 7.8.334.
  */
 static void file_connect_unix( INT32 args )
 {
-  struct sockaddr_un name;
+  struct sockaddr_un *name;
   int tmp;
 
   if( args < 1 )
     SIMPLE_TOO_FEW_ARGS_ERROR("Stdio.File->connect_unix", 1);
   if( (Pike_sp[-args].type != PIKE_T_STRING) ||
-      (Pike_sp[-args].u.string->size_shift) ||
-      (Pike_sp[-args].u.string->len >= PATH_MAX) )
+      (Pike_sp[-args].u.string->size_shift) )
     Pike_error("Illegal argument. Expected string(8bit)\n");
 
-  name.sun_family=AF_UNIX;
-  strcpy( name.sun_path, Pike_sp[-args].u.string->str );
+  name = xalloc(sizeof(struct sockaddr_un) + Pike_sp[-args].u.string->len);
+
+  name->sun_family=AF_UNIX;
+  strcpy( name->sun_path, Pike_sp[-args].u.string->str );
   pop_n_elems(args);
 
   close_fd();
@@ -3870,6 +3878,7 @@ static void file_connect_unix( INT32 args )
 
   if( FD < 0 )
   {
+    free(name);
     ERRNO = errno;
     push_int(0);
     return;
@@ -3879,7 +3888,11 @@ static void file_connect_unix( INT32 args )
 	  | fd_query_properties(FD, SOCKET_CAPABILITIES), 0);
   my_set_close_on_exec(FD, 1);
 
-  tmp=connect(FD,(void *)&name,sizeof(struct sockaddr_un));
+  do {
+    tmp=connect(FD,(void *)name,
+		sizeof(struct sockaddr_un) + Pike_sp[-args].u.string->len);
+  } while ((tmp < 0) && (errno == EINTR));
+  free(name);
   if (tmp == -1) {
     ERRNO = errno;
     push_int(0);
