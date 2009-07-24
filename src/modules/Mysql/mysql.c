@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.116 2008/08/28 10:36:58 jonasw Exp $
+|| $Id: mysql.c,v 1.117 2009/07/24 12:42:39 mast Exp $
 */
 
 /*
@@ -1534,9 +1534,9 @@ static void f_list_tables(INT32 args)
  *!   @member string "type"
  *!	The SQL type of the field.
  *!   @member int "length"
- *!	The length of the field.
- *!   @member int "max_length"
- *!	The length of the longest element in this field.
+ *!	The length of the longest possible value that can be stored in
+ *!	the field. Note that this measures the display length in
+ *!	string form.
  *!   @member multiset(string) "flags"
  *!	Some flags.
  *!   @member int decimals
