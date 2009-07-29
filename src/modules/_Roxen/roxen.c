@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: roxen.c,v 1.54 2009/07/17 14:33:51 grubba Exp $
+|| $Id: roxen.c,v 1.55 2009/07/29 15:48:47 nilsson Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -53,6 +53,7 @@ struct  header_buf
   unsigned char *pnt;
   ptrdiff_t hsize, left;
   int slash_n, tslash_n, spc;
+  int mode;
 };
 
 static void f_hp_init( struct object *o )
@@ -62,6 +63,7 @@ static void f_hp_init( struct object *o )
   THP->hsize = 0;
   THP->left = 0;
   THP->spc = THP->slash_n = THP->tslash_n = 0;
+  THP->mode = 0;
 }
 
 static void f_hp_exit( struct object *o )
@@ -193,7 +195,8 @@ static void f_hp_feed( INT32 args )
   /* Parse headers. */
   for(i = 0; i < l; i++)
   {
-    if(in[i] > 64 && in[i] < 91) in[i]+=32;	/* lower_case */
+    if(in[i] > 64 && in[i] < 91)
+      in[i]+=32;	/* lower_case */
     else if( in[i] == ':' )
     {
       /* FIXME: Does not support white space before the colon. */
@@ -247,19 +250,32 @@ static void f_hp_feed( INT32 args )
 
       pop_n_elems(2);
     }
+    else if( in[i]=='\r' || in[i]=='\n' )
+    {
+      if( THP->mode == 1 )
+      {
+        /* FIXME: Reset stack so that backtrace shows faulty header. */
+        Pike_error("Malformed HTTP header.\n");
+      }
+      else
+        os = i+1;
+    }
   }
   push_mapping( headers );
   f_aggregate( 3 );             /* data, firstline, headers */
 }
 
 static void f_hp_create( INT32 args )
-/*! @decl void create(void)
+/*! @decl void create(int throw_errors)
  */
 {
   if (THP->headers) {
     free(THP->headers);
     THP->headers = NULL;
   }
+
+  get_all_args("create",args,".%i",&THP->mode);
+
   THP->headers = xalloc( 8192 );
   THP->pnt = THP->headers;
   THP->hsize = 8192;
@@ -596,7 +612,7 @@ PIKE_MODULE_INIT
   set_init_callback( f_hp_init );
   set_exit_callback( f_hp_exit );
   ADD_FUNCTION( "feed", f_hp_feed, tFunc(tStr,tArr(tOr(tStr,tMapping))), 0 );
-  ADD_FUNCTION( "create", f_hp_create, tFunc(tNone,tVoid), ID_PROTECTED );
+  ADD_FUNCTION( "create", f_hp_create, tFunc(tOr(tInt,tVoid),tVoid), ID_PROTECTED );
   end_class( "HeaderParser", 0 );
 }
 
