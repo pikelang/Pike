@@ -1,3 +1,12 @@
+Changes since Pike 7.8.316 (second 7.8 release):
+----------------------------------------------------------------------
+
+General
+-------
+
+o Nettle 2.0 is now supported.
+
+
 Changes since Pike 7.8.116 (initial 7.8 release):
 ----------------------------------------------------------------------
 
