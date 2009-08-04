@@ -1,7 +1,7 @@
 //
 // Basic filesystem monitor.
 //
-// $Id: basic.pike,v 1.18 2009/07/22 15:37:40 grubba Exp $
+// $Id: basic.pike,v 1.19 2009/08/04 10:51:33 grubba Exp $
 //
 // 2009-07-09 Henrik Grubbström
 //
@@ -646,7 +646,7 @@ protected int(0..1) check_monitor(Monitor m, MonitorFlags|void flags)
 //! Check for changes.
 //!
 //! @param max_wait
-//!   Maximum time in seconds to wait for changes. @expr{-1}
+//!   Maximum time in seconds to wait for changes. @expr{-1@}
 //!   for infinite wait.
 //!
 //! A suitable subset of the monitored files will be checked
@@ -654,7 +654,8 @@ protected int(0..1) check_monitor(Monitor m, MonitorFlags|void flags)
 //!
 //! @returns
 //!   The function returns when either a change has been detected
-//!   or when @[max_wait] has expired.
+//!   or when @[max_wait] has expired. The returned value indicates
+//!   the number of seconds until the next call of @[check()].
 //!
 //! @note
 //!   Any callbacks will be called from the same thread as the one
@@ -662,9 +663,10 @@ protected int(0..1) check_monitor(Monitor m, MonitorFlags|void flags)
 //!
 //! @seealso
 //!   @[monitor()]
-void check(int|void max_wait)
+int check(int|void max_wait)
 {
   while(1) {
+    int ret = max_dir_check_interval;
     int cnt;
     int t = time();
     Monitor m;
@@ -673,10 +675,19 @@ void check(int|void max_wait)
 	     m <= t) {
 	cnt += check_monitor(m);
       }
+      if (m) {
+	ret = m->next_poll - t;
+	if (ret <= 0) ret = 1;
+      }
     }
-    if (cnt || !max_wait) return;
-    if (max_wait > 0) max_wait--;
-    sleep(1);
+    if (cnt || !max_wait) return ret;
+    if (ret < max_wait) {
+      max_wait -= ret;
+      sleep(ret);
+    } else {
+      if (max_wait > 0) max_wait--;
+      sleep(1);
+    }
   }
 }
 
@@ -730,14 +741,18 @@ void set_blocking()
 protected void backend_check()
 {
   co_id = 0;
+  int t;
   mixed err = catch {
-      check(0);
+      t = check(0);
     };
-  set_nonblocking();
+  set_nonblocking(t);
   if (err) throw(err);
 }
 
 //! Turn on nonblocking mode.
+//!
+//! @param t
+//!   Suggested time in seconds until next call of @[check()].
 //!
 //! Register suitable callbacks with the backend to automatically
 //! call @[check()].
@@ -745,15 +760,21 @@ protected void backend_check()
 //! @[check()] and thus all the callbacks will be called from the
 //! backend thread.
 //!
+//! @note
+//!   If nonblocking mode is already active, this function will
+//!   be a noop.
+//!
 //! @seealso
 //!   @[set_blocking()], @[check()].
-void set_nonblocking()
+void set_nonblocking(int|void t)
 {
   if (co_id) return;
-  Monitor m = monitor_queue->peek();
-  int t = (m && m->next_poll - time(1)) || max_dir_check_interval;
-  if (t > max_dir_check_interval) t = max_dir_check_interval;
-  if (t < 0) t = 0;
+  if (!zero_type(t)) {
+    Monitor m = monitor_queue->peek();
+    t = (m && m->next_poll - time(1)) || max_dir_check_interval;
+    if (t > max_dir_check_interval) t = max_dir_check_interval;
+    if (t < 0) t = 0;
+  }
   if (backend) co_id = backend->call_out(backend_check, t);
   else co_id = call_out(backend_check, t);
 }
