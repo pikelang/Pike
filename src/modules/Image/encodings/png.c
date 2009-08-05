@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.95 2009/08/05 14:23:17 grubba Exp $
+|| $Id: png.c,v 1.96 2009/08/05 14:36:30 grubba Exp $
 */
 
 #include "global.h"
@@ -983,10 +983,10 @@ static int _png_decode_idat(struct IHDR *ihdr, struct neo_colortable *ct,
 {
   struct pike_string *fs;
   struct image *img;
-  rgb_group *w1,*wa1,*t1,*ta1 = NULL;
+  rgb_group *w1,*wa1;
   unsigned char *s0;
   unsigned int i,x,y;
-  ONERROR err, a_err, t_err, ta_err;
+  ONERROR err, a_err;
 
   png_decompress(ihdr->compression);
   if( sp[-1].type!=T_STRING )
@@ -1023,65 +1023,71 @@ static int _png_decode_idat(struct IHDR *ihdr, struct neo_colortable *ct,
     break;
 
   case 1: /* adam7 */
-
-    /* need arena */
-    t1=xalloc(sizeof(rgb_group)*ihdr->width*ihdr->height);
-    SET_ONERROR(t_err, free_and_clear, &t1);
-
-    /* loop over adam7 interlace's
-       and write them to the arena */
-
-    s0=(unsigned char*)fs->str;
-    for (i=0; i<7; i++)
     {
-      struct pike_string *ds;
-      rgb_group *d1, *da1 = NULL;
-      unsigned int x0 = adam7[i].x0;
-      unsigned int xd = adam7[i].xd;
-      unsigned int y0 = adam7[i].y0;
-      unsigned int yd = adam7[i].yd;
-      unsigned int iwidth = (ihdr->width+xd-1-x0)/xd;
-      unsigned int iheight = (ihdr->height+yd-1-y0)/yd;
+      rgb_group *t1,*ta1;
+      ONERROR t_err, ta_err, ds_err;
+      int got_alpha = 0;
+      
+      /* need arena */
+      t1=xalloc(sizeof(rgb_group)*ihdr->width*ihdr->height);
+      SET_ONERROR(t_err, free_and_clear, &t1);
+      ta1=xalloc(sizeof(rgb_group)*ihdr->width*ihdr->height);
+      SET_ONERROR(ta_err, free_and_clear, &ta1);
 
-      if(!iwidth || !iheight) continue;
+      /* loop over adam7 interlace's
+	 and write them to the arena */
 
-      ds=_png_unfilter(s0,fs->len-(s0-(unsigned char*)fs->str),
-                       iwidth, iheight,
-                       ihdr->filter,ihdr->type,ihdr->bpp,
-                       &s0);
-
-      if (_png_write_rgb(w1,wa1,ihdr->type,ihdr->bpp,
-			 (unsigned char*)ds->str,ds->len,
-			 iwidth,
-			 iwidth*iheight,
-			 ct,trns))
+      s0=(unsigned char*)fs->str;
+      for (i=0; i<7; i++)
       {
-	if (!ta1) {
-	  ta1=xalloc(sizeof(rgb_group)*ihdr->width*ihdr->height);
-	  SET_ONERROR(ta_err, free_and_clear, &ta1);
+	struct pike_string *ds;
+	rgb_group *d1, *da1 = NULL;
+	unsigned int x0 = adam7[i].x0;
+	unsigned int xd = adam7[i].xd;
+	unsigned int y0 = adam7[i].y0;
+	unsigned int yd = adam7[i].yd;
+	unsigned int iwidth = (ihdr->width+xd-1-x0)/xd;
+	unsigned int iheight = (ihdr->height+yd-1-y0)/yd;
+
+	if(!iwidth || !iheight) continue;
+
+	ds=_png_unfilter(s0,fs->len-(s0-(unsigned char*)fs->str),
+			 iwidth, iheight,
+			 ihdr->filter,ihdr->type,ihdr->bpp,
+			 &s0);
+
+	if (_png_write_rgb(w1,wa1,ihdr->type,ihdr->bpp,
+			   (unsigned char*)ds->str,ds->len,
+			   iwidth,
+			   iwidth*iheight,
+			   ct,trns))
+	{
+	  da1 = wa1;
+	  for (y=y0; y<ihdr->height; y+=yd)
+	    for (x=x0; x<ihdr->width; x+=xd)
+	      ta1[x+y*ihdr->width]=*(da1++);
+	  got_alpha = 1;
 	}
-	da1 = wa1;
-        for (y=y0; y<ihdr->height; y+=yd)
-          for (x=x0; x<ihdr->width; x+=xd)
-            ta1[x+y*ihdr->width]=*(da1++);
+	d1=w1;
+	for (y=y0; y<ihdr->height; y+=yd)
+	  for (x=x0; x<ihdr->width; x+=xd)
+	    t1[x+y*ihdr->width]=*(d1++);
+
+	free_string(ds);
       }
-      d1=w1;
-      for (y=y0; y<ihdr->height; y+=yd)
-        for (x=x0; x<ihdr->width; x+=xd)
-          t1[x+y*ihdr->width]=*(d1++);
 
-      free_string(ds);
-    }
-
-    free(wa1);
-    wa1 = ta1;
-    if (ta1) {
+      free(wa1);
+      if (got_alpha) {
+	wa1 = ta1;
+      } else {
+	free(ta1);
+	wa1 = NULL;
+      }
       UNSET_ONERROR(ta_err);
+      free(w1);
+      w1=t1;
+      UNSET_ONERROR(t_err);
     }
-    free(w1);
-    w1=t1;
-    UNSET_ONERROR(t_err);
-
     break;
   default:
     Pike_error("Unknown interlace type %d.\n", ihdr->interlace);
