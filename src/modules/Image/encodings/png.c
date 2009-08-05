@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.93 2009/07/22 21:29:07 nilsson Exp $
+|| $Id: png.c,v 1.94 2009/08/05 14:10:29 grubba Exp $
 */
 
 #include "global.h"
@@ -534,7 +534,6 @@ static int _png_write_rgb(rgb_group *w1,
 			  const struct pike_string *trns)
 {
    /* returns 1 if alpha channel, 0 if not */
-   /* w1, wa1 will be freed upon error */
 
    static const rgb_group white={255,255,255};
    static const rgb_group grey4[4]={{0,0,0},{85,85,85},
@@ -624,7 +623,6 @@ static int _png_write_rgb(rgb_group *w1,
 	       }
 	       break;
 	    default:
-	       free(wa1); free(w1);
 	       Pike_error("Image.PNG._decode: Unsupported color type/bit depth %d (grey)/%d bit.\n",
 		     type,bpp);
 	 }
@@ -667,7 +665,6 @@ static int _png_write_rgb(rgb_group *w1,
 	       }
 	       break;
 	    default:
-	       free(wa1); free(w1);
 	       Pike_error("Image.PNG._decode: Unsupported color type/bit depth %d (rgb)/%d bit.\n",
 		     type,bpp);
 	 }
@@ -687,21 +684,15 @@ static int _png_write_rgb(rgb_group *w1,
       case 3: /* 1,2,4,8 bit palette index. Alpha might be in palette */
 	 if (!ct)
 	 {
-	    free(w1);
-	    free(wa1);
 	    Pike_error("Image.PNG.decode: No palette, but color type 3 needs one.\n");
 	 }
 	 if (ct->type!=NCT_FLAT)
 	 {
-	    free(w1);
-	    free(wa1);
 	    Pike_error("Image.PNG.decode: Internal error (created palette isn't flat).\n");
 	 }
 	 mz=ct->u.flat.numentries;
 	 if (mz==0)
 	 {
-	    free(w1);
-	    free(wa1);
 	    Pike_error("Image.PNG.decode: Palette is zero entries long;"
 		       " need at least one color.\n");
 	 }
@@ -866,7 +857,6 @@ static int _png_write_rgb(rgb_group *w1,
 	       break;
 	       
 	    default:
-	       free(w1); free(wa1);
 	       Pike_error("Image.PNG._decode: Unsupported color type/bit depth %d (palette)/%d bit.\n",
 		     type,bpp);
 	 }
@@ -900,7 +890,6 @@ static int _png_write_rgb(rgb_group *w1,
 	       }
 	       break;
 	    default:
-	       free(wa1); free(w1);
 	       Pike_error("Image.PNG._decode: Unsupported color type/bit depth %d (grey+a)/%d bit.\n",
 		     type,bpp);
 	 }
@@ -940,13 +929,11 @@ static int _png_write_rgb(rgb_group *w1,
 	       }
 	       break;
 	    default:
-	       free(wa1); free(w1);
 	       Pike_error("Image.PNG._decode: Unsupported color type/bit depth %d (rgba)/%d bit.\n",
 		     type,bpp);
 	 }
 	 return 1; /* alpha channel */
       default:
-	 free(wa1); free(w1);
 	 Pike_error("Image.PNG._decode: Unknown color type %d (bit depth %d).\n",
 	       type,bpp);
    }
