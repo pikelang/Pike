@@ -193,4 +193,14 @@ test_tests(
   }
 )
 ]])
+
+cond_resolv( Nettle.Yarrow, [[
+  test_any_equal([[
+    object y = Nettle.Yarrow()->seed("What happen? Somebody set up us the bomb.");
+    return ({ y->get_seed(), y->random_string(20), y->get_seed(), y->random_string(20) });
+  ]], [[({String.hex2string("73a35b2f896a8061be0ad434a592a43a82b81b9ed6c018f1c5a51300bbc8d53d"),
+	  String.hex2string("7847458e32fb789ff6b6cd6e1c8cc3712ba532a8"),
+	  String.hex2string("73a35b2f896a8061be0ad434a592a43a82b81b9ed6c018f1c5a51300bbc8d53d"),
+	  String.hex2string("49a090656a6d93782e169994f41005a3616d3cd7")})]])
+]])
 END_MARKER
