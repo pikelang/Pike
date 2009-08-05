@@ -1,7 +1,7 @@
 //
 // Basic filesystem monitor.
 //
-// $Id: basic.pike,v 1.19 2009/08/04 10:51:33 grubba Exp $
+// $Id: basic.pike,v 1.20 2009/08/05 13:06:15 grubba Exp $
 //
 // 2009-07-09 Henrik Grubbström
 //
@@ -183,7 +183,7 @@ protected class Monitor(string path,
 		   path, flags, ctime(next_poll) - "\n", st);
   }
 
-  //! Calculate a suitable time for the next poll of this monitor.
+  //! Calculate and set a suitable time for the next poll of this monitor.
   //!
   //! @param st
   //!   New stat for the monitor.
@@ -207,6 +207,13 @@ protected class Monitor(string path,
       if (d < delta) delta = d;
       d = 1 + ((time(1) - st->ctime)>>4);
       if (d < 0) d = max_dir_check_interval || global::max_dir_check_interval;
+      if (d < delta) delta = d;
+    }
+    if (last_change <= time(1)) {
+      // Time until stable.
+      d = last_change + (stable_time || global::stable_time) - time(1);
+      d >>= 1;
+      if (d < 0) d = 1;
       if (d < delta) delta = d;
     }
     next_poll = time(1) + (delta || 1);
