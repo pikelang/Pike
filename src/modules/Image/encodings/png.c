@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.94 2009/08/05 14:10:29 grubba Exp $
+|| $Id: png.c,v 1.95 2009/08/05 14:23:17 grubba Exp $
 */
 
 #include "global.h"
@@ -983,10 +983,10 @@ static int _png_decode_idat(struct IHDR *ihdr, struct neo_colortable *ct,
 {
   struct pike_string *fs;
   struct image *img;
-  rgb_group *w1,*wa1,*t1,*ta1;
+  rgb_group *w1,*wa1,*t1,*ta1 = NULL;
   unsigned char *s0;
   unsigned int i,x,y;
-  ONERROR err, a_err, t_err;
+  ONERROR err, a_err, t_err, ta_err;
 
   png_decompress(ihdr->compression);
   if( sp[-1].type!=T_STRING )
@@ -1027,8 +1027,6 @@ static int _png_decode_idat(struct IHDR *ihdr, struct neo_colortable *ct,
     /* need arena */
     t1=xalloc(sizeof(rgb_group)*ihdr->width*ihdr->height);
     SET_ONERROR(t_err, free_and_clear, &t1);
-    ta1=xalloc(sizeof(rgb_group)*ihdr->width*ihdr->height);
-    UNSET_ONERROR(t_err);
 
     /* loop over adam7 interlace's
        and write them to the arena */
@@ -1037,7 +1035,7 @@ static int _png_decode_idat(struct IHDR *ihdr, struct neo_colortable *ct,
     for (i=0; i<7; i++)
     {
       struct pike_string *ds;
-      rgb_group *d1, *da1;
+      rgb_group *d1, *da1 = NULL;
       unsigned int x0 = adam7[i].x0;
       unsigned int xd = adam7[i].xd;
       unsigned int y0 = adam7[i].y0;
@@ -1052,39 +1050,37 @@ static int _png_decode_idat(struct IHDR *ihdr, struct neo_colortable *ct,
                        ihdr->filter,ihdr->type,ihdr->bpp,
                        &s0);
 
-      if (!_png_write_rgb(w1,wa1,ihdr->type,ihdr->bpp,
-                          (unsigned char*)ds->str,ds->len,
-                          iwidth,
-                          iwidth*iheight,
-                          ct,trns))
+      if (_png_write_rgb(w1,wa1,ihdr->type,ihdr->bpp,
+			 (unsigned char*)ds->str,ds->len,
+			 iwidth,
+			 iwidth*iheight,
+			 ct,trns))
       {
-        if(wa1) free(wa1);
-        wa1=NULL;
+	if (!ta1) {
+	  ta1=xalloc(sizeof(rgb_group)*ihdr->width*ihdr->height);
+	  SET_ONERROR(ta_err, free_and_clear, &ta1);
+	}
+	da1 = wa1;
+        for (y=y0; y<ihdr->height; y+=yd)
+          for (x=x0; x<ihdr->width; x+=xd)
+            ta1[x+y*ihdr->width]=*(da1++);
       }
       d1=w1;
       for (y=y0; y<ihdr->height; y+=yd)
         for (x=x0; x<ihdr->width; x+=xd)
           t1[x+y*ihdr->width]=*(d1++);
 
-      if (wa1)
-      {
-        da1=wa1;
-        for (y=y0; y<ihdr->height; y+=yd)
-          for (x=x0; x<ihdr->width; x+=xd)
-            ta1[x+y*ihdr->width]=*(da1++);
-      }
-
       free_string(ds);
     }
 
+    free(wa1);
+    wa1 = ta1;
+    if (ta1) {
+      UNSET_ONERROR(ta_err);
+    }
     free(w1);
     w1=t1;
-    if (wa1) {
-      free(wa1);
-      wa1=ta1;
-    } else {
-      free(ta1);
-    }
+    UNSET_ONERROR(t_err);
 
     break;
   default:
