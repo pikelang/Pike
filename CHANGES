@@ -16,6 +16,10 @@ o Fixed casting of floats to strings to again work more like in Pike
   many digits that the binary/decimal conversion errors become
   visible.
 
+o Protocols.HTTP.Server.HeaderParser will now discard parts of a
+  header value if the header value contains a newline (like "Host:
+  google.com\n.hax.net\r\n") and headers without colon.
+
 
 Changes since Pike 7.8.116 (initial 7.8 release):
 ----------------------------------------------------------------------
