@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.250 2009/07/17 14:26:24 grubba Exp $
+|| $Id: svalue.c,v 1.251 2009/08/05 11:53:31 mast Exp $
 */
 
 #include "global.h"
@@ -1715,7 +1715,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 
     case T_FLOAT:
       {
-	double d = s->u.float_number;
+	FLOAT_TYPE d = s->u.float_number;
 	if (d != d) {
 	  my_strcat("nan");
 	} else if (d && (d+d == d)) {
@@ -1725,7 +1725,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	    my_strcat("-inf");
 	  }
 	} else {
-	  sprintf(buf, "%.16g", d);
+	  sprintf(buf, "%.*"PRINTPIKEFLOAT"g", PIKEFLOAT_DIG, d);
 	  my_strcat(buf);
 	  if (!STRCHR (buf, '.') && !STRCHR (buf, 'e'))
 	    /* A small float number without fraction can be
