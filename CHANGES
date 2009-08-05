@@ -7,6 +7,16 @@ General
 o Nettle 2.0 is now supported.
 
 
+Bug fixes
+---------
+
+o Fixed casting of floats to strings to again work more like in Pike
+  7.6 and earlier: The string will always contain either a "." or an
+  "e" to signify that it is a float, and it will no longer display so
+  many digits that the binary/decimal conversion errors become
+  visible.
+
+
 Changes since Pike 7.8.116 (initial 7.8 release):
 ----------------------------------------------------------------------
 
