@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.251 2009/08/05 09:43:19 mast Exp $
+|| $Id: operators.c,v 1.252 2009/08/05 11:56:18 mast Exp $
 */
 
 #include "global.h"
@@ -57,7 +57,7 @@
     /* One quarter of the float is the exponent. */
 #define MAX_FLOAT_EXP_LEN ((SIZEOF_FLOAT_TYPE * 5 + 4) / 8)
     /* Six extra chars: Mantissa sign, decimal point, zero before the
-     * decimal point, the 'e' exponent sign, and an extra digit due
+     * decimal point, the 'e', the exponent sign, and an extra digit due
      * to the mantissa/exponent split. */
 #define MAX_FLOAT_SPRINTF_LEN (6 + PIKEFLOAT_DIG + MAX_FLOAT_EXP_LEN)
 
