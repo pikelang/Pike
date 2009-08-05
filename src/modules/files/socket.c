@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: socket.c,v 1.106 2009/07/23 15:20:06 grubba Exp $
+|| $Id: socket.c,v 1.107 2009/08/05 13:59:03 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -385,6 +385,7 @@ static void unix_bind(INT32 args)
 		     SO_REUSEADDR, (char *)&o, sizeof(int)) < 0)
     {
       p->my_errno=errno;
+      free(addr);
       while (fd_close(fd) && errno == EINTR) {}
       errno = p->my_errno;
       pop_n_elems(args);
