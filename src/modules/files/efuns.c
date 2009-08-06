@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.187 2008/10/30 15:51:06 jonasw Exp $
+|| $Id: efuns.c,v 1.188 2009/08/06 12:21:48 grubba Exp $
 */
 
 #include "global.h"
@@ -77,6 +77,13 @@
 #ifdef HAVE_SYS_XATTR_H
 #include <sys/xattr.h>
 #endif /* HAVE_SYS_XATTR_H */
+
+#ifdef HAVE_LIBZFS_INIT
+#ifdef HAVE_LIBZFS_H
+#include <libzfs.h>
+#endif /* HAVE_LIBZFS_H */
+static libzfs_handle_t *libzfs_handle;
+#endif /* HAVE_LIBZFS_INIT */
 
 #define sp Pike_sp
 
@@ -180,24 +187,27 @@ static void f_listxattr(INT32 args)
   {
     /* Too little space in stackbuffer.*/
     size_t blen = 65536;
+    ptr = NULL;
     do_free = 1;
-    ptr = xalloc( 1 );
     do {
-      char *tmp = realloc( ptr, blen );
-      if( !tmp )
-	break;
-      ptr = tmp;
+      if (!ptr) {
+	ptr = xalloc(blen);
+      } else {
+	char *tmp = realloc( ptr, blen );
+	if( !tmp )
+	  break;
+	ptr = tmp;
+      }
       THREADS_ALLOW();
       do {
 	if (nofollow)
-	  res = LLISTXATTR(name, buffer, sizeof(buffer));
+	  res = LLISTXATTR(name, ptr, sizeof(blen));
 	else
 	  res = LISTXATTR(name, ptr, blen);
       } while( res < 0 && errno == EINTR );
       THREADS_DISALLOW();
       blen *= 2;
-    }
-    while( (res < 0) && (errno == ERANGE) );
+    } while( (res < 0) && (errno == ERANGE) );
   }
 
   pop_n_elems( args );
@@ -757,6 +767,7 @@ void f_filesystem_stat(INT32 args)
     push_int(0);
   }else{
     int num_fields = 0;
+    char *fsname = NULL;
 #ifdef HAVE_STATVFS
 #if 0
     push_text("id");         push_int(st.f_fsid);
@@ -771,7 +782,7 @@ void f_filesystem_stat(INT32 args)
     push_text("favail");     push_int(st.f_favail);
     num_fields += 7;
 #ifdef HAVE_STATVFS_F_FSTR
-    push_text("fsname");     push_text(st.f_fstr);
+    push_text("fsname");     push_text(fsname = st.f_fstr);
     num_fields++;
 #endif /* HAVE_STATVFS_F_FSTR */
 #ifdef HAVE_STATVFS_F_BASETYPE
@@ -813,7 +824,7 @@ void f_filesystem_stat(INT32 args)
 #ifdef HAVE_USTAT
     push_text("bfree");      push_int(st.f_tfree);
     push_text("ffree");      push_int(st.f_tinode);
-    push_text("fsname");     push_text(st.f_fname);
+    push_text("fsname");     push_text(fsname = st.f_fname);
     num_fields += 3;
 #else
     /* Should not be reached */
@@ -821,6 +832,36 @@ void f_filesystem_stat(INT32 args)
 #endif /* HAVE_USTAT */
 #endif /* HAVE_STATFS */
 #endif /* HAVE_STATVFS */
+#if defined(HAVE_LIBZFS_INIT) && defined(HAVE_ZFS_PATH_TO_ZHANDLE)
+    /* zfs_path_to_zhandle() has an unfortunate tendency to output stuff
+     * to stderr when it fails...
+     */
+    if (fsname && !strcmp(fsname, "zfs")) {
+      zfs_handle_t *zfs_handle;
+      if ((str->len == 1) && (str->str[0] == '.')) {
+	/* Workaround for bug in zfs_path_to_zhandle(). */
+	zfs_handle = zfs_path_to_zhandle(libzfs_handle, "./",
+					 ZFS_TYPE_FILESYSTEM);
+      } else {
+	zfs_handle = zfs_path_to_zhandle(libzfs_handle, str->str,
+					 ZFS_TYPE_FILESYSTEM);
+      }
+      if (zfs_handle) {
+#ifndef HAVE_ZFS_PROP_UTF8ONLY
+	/* NOTE: ZFS_PROP_UTF8ONLY is not present in Solaris 10 127112-05.
+	 *       Attempt to be forward compatible.
+	 */
+#define ZFS_PROP_UTF8ONLY	(ZFS_PROP_XATTR + 4)
+#endif /* !HAVE_ZFS_PROP_UTF8ONLY */
+	if (zfs_prop_get_int(zfs_handle, ZFS_PROP_UTF8ONLY)) {
+	  push_text("filename_encoding");
+	  push_text("utf8");
+	  num_fields++;
+	}
+      }
+    }
+#endif /* HAVE_LIBZFS_INIT && HAVE_ZFS_PATH_TO_ZHANDLE */
+
     f_aggregate_mapping(num_fields*2);
   }
 }
@@ -1344,6 +1385,9 @@ void f_get_dir(INT32 args)
 	free(tmp);
 	Pike_error("get_dir(): readdir_r(\"%S\") failed: %d\n", str, err);
       }
+#ifdef READDIR_DEBUG
+      fprintf(stderr, "Pushing %d filenames...\n", num_files);
+#endif /* READDIR_DEBUG */
       for(e=0;e<num_files;e++)
       {
 	push_string(make_shared_binary_string(ptrs[e],lens[e]));
@@ -1882,6 +1926,10 @@ void init_files_efuns(void)
   set_close_on_exec(1,1);
   set_close_on_exec(2,1);
 
+#ifdef HAVE_LIBZFS_INIT
+  libzfs_handle = libzfs_init();
+#endif
+
 #ifdef __NT__
   {
     /* MoveFileEx doesn't exist in W98 and earlier. */
@@ -1961,5 +2009,8 @@ void exit_files_efuns(void)
       movefileex = 0;
     kernel32lib = 0;
   }
+#endif
+#ifdef HAVE_LIBZFS_INIT
+  libzfs_fini(libzfs_handle);
 #endif
 }
