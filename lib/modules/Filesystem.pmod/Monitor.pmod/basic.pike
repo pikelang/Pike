@@ -1,7 +1,7 @@
 //
 // Basic filesystem monitor.
 //
-// $Id: basic.pike,v 1.20 2009/08/05 13:06:15 grubba Exp $
+// $Id: basic.pike,v 1.21 2009/08/06 11:53:01 grubba Exp $
 //
 // 2009-07-09 Henrik Grubbström
 //
@@ -656,6 +656,10 @@ protected int(0..1) check_monitor(Monitor m, MonitorFlags|void flags)
 //!   Maximum time in seconds to wait for changes. @expr{-1@}
 //!   for infinite wait.
 //!
+//! @param max_cnt
+//!   Maximum number of paths to check in this call. @expr{0@}
+//!   (zero) for unlimited.
+//!
 //! A suitable subset of the monitored files will be checked
 //! for changes.
 //!
@@ -670,7 +674,7 @@ protected int(0..1) check_monitor(Monitor m, MonitorFlags|void flags)
 //!
 //! @seealso
 //!   @[monitor()]
-int check(int|void max_wait)
+int check(int|void max_wait, int|void max_cnt)
 {
   while(1) {
     int ret = max_dir_check_interval;
@@ -681,13 +685,16 @@ int check(int|void max_wait)
       while ((m = monitor_queue->peek()) &&
 	     m <= t) {
 	cnt += check_monitor(m);
+	if (!--max_cnt) break;
       }
       if (m) {
 	ret = m->next_poll - t;
 	if (ret <= 0) ret = 1;
+      } else {
+	max_cnt--;
       }
     }
-    if (cnt || !max_wait) return ret;
+    if (cnt || !max_wait || !max_cnt) return ret;
     if (ret < max_wait) {
       max_wait -= ret;
       sleep(ret);
