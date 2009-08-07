@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_error.h,v 1.53 2009/07/22 12:46:43 grubba Exp $
+|| $Id: pike_error.h,v 1.54 2009/08/07 14:05:59 grubba Exp $
 */
 
 #ifndef PIKE_ERROR_H
@@ -217,7 +217,10 @@ PMOD_EXPORT extern const char msg_assert_onerr[];
      X.func=(error_call)(Y); \
      X.arg=(void *)(Z); \
      X.frame_pointer = Pike_interpreter.frame_pointer; \
-     if(!Pike_interpreter.recoveries) break; \
+     if(!Pike_interpreter.recoveries) {		       \
+       X.previous = NULL;			       \
+       break;					       \
+     }						       \
      X.previous=Pike_interpreter.recoveries->onerror; \
      Pike_interpreter.recoveries->onerror=&X; \
   }while(0)
