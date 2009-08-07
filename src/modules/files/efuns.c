@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.188 2009/08/06 12:21:48 grubba Exp $
+|| $Id: efuns.c,v 1.189 2009/08/07 13:06:37 grubba Exp $
 */
 
 #include "global.h"
@@ -78,12 +78,14 @@
 #include <sys/xattr.h>
 #endif /* HAVE_SYS_XATTR_H */
 
+#if 0
 #ifdef HAVE_LIBZFS_INIT
 #ifdef HAVE_LIBZFS_H
 #include <libzfs.h>
 #endif /* HAVE_LIBZFS_H */
 static libzfs_handle_t *libzfs_handle;
 #endif /* HAVE_LIBZFS_INIT */
+#endif /* 0 */
 
 #define sp Pike_sp
 
@@ -268,12 +270,16 @@ static void f_getxattr(INT32 args)
     /* Too little space in buffer.*/
     size_t blen = 65536;
     do_free = 1;
-    ptr = xalloc( 1 );
+    ptr = NULL;
     do {
-      char *tmp = realloc( ptr, blen );
-      if( !tmp )
-	break;
-      ptr = tmp;
+      if (!ptr) {
+	ptr = xalloc(blen);
+      } else {
+	char *tmp = realloc( ptr, blen );
+	if( !tmp )
+	  break;
+	ptr = tmp;
+      }
       THREADS_ALLOW();
       do {
 	if (nofollow)
@@ -283,8 +289,7 @@ static void f_getxattr(INT32 args)
       } while( res < 0 && errno == EINTR );
       THREADS_DISALLOW();
       blen *= 2;
-    }
-    while( (res < 0) && (errno == ERANGE) );
+    } while( (res < 0) && (errno == ERANGE) );
   }
 
   if( res < 0 )
@@ -832,6 +837,7 @@ void f_filesystem_stat(INT32 args)
 #endif /* HAVE_USTAT */
 #endif /* HAVE_STATFS */
 #endif /* HAVE_STATVFS */
+#if 0
 #if defined(HAVE_LIBZFS_INIT) && defined(HAVE_ZFS_PATH_TO_ZHANDLE)
     /* zfs_path_to_zhandle() has an unfortunate tendency to output stuff
      * to stderr when it fails...
@@ -861,6 +867,7 @@ void f_filesystem_stat(INT32 args)
       }
     }
 #endif /* HAVE_LIBZFS_INIT && HAVE_ZFS_PATH_TO_ZHANDLE */
+#endif /* 0 */
 
     f_aggregate_mapping(num_fields*2);
   }
@@ -1926,9 +1933,11 @@ void init_files_efuns(void)
   set_close_on_exec(1,1);
   set_close_on_exec(2,1);
 
+#if 0
 #ifdef HAVE_LIBZFS_INIT
   libzfs_handle = libzfs_init();
 #endif
+#endif /* 0 */
 
 #ifdef __NT__
   {
@@ -2010,7 +2019,9 @@ void exit_files_efuns(void)
     kernel32lib = 0;
   }
 #endif
+#if 0
 #ifdef HAVE_LIBZFS_INIT
   libzfs_fini(libzfs_handle);
 #endif
+#endif /* 0 */
 }
