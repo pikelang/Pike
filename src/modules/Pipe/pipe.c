@@ -885,10 +885,24 @@ static void pipe_output(INT32 args)
 
       while (THIS->firstbuffer)
       {
+	ptrdiff_t len;
+	char *data;
 	b=THIS->firstbuffer;
 	THIS->firstbuffer=b->next;
 	fd_lseek(THIS->fd, THIS->pos, SEEK_SET);
-	fd_write(THIS->fd,b->s->str,b->s->len);
+
+	len = b->s->len;
+	data = b->s->str;
+	while (len > 0) {
+	  ptrdiff_t bytes;
+	  do {
+	    bytes = fd_write(THIS->fd, data, len);
+	  } while((bytes < 0) && (errno == EINTR));
+	  if (bytes < 0) break;
+	  len -= bytes;
+	  data += bytes;
+	}
+
 	sbuffers-=b->s->len;
 	nbuffers--;
 	free_string(b->s);
