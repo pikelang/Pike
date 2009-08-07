@@ -1,7 +1,7 @@
 //
 // Basic filesystem monitor.
 //
-// $Id: basic.pike,v 1.21 2009/08/06 11:53:01 grubba Exp $
+// $Id: basic.pike,v 1.22 2009/08/07 12:46:48 grubba Exp $
 //
 // 2009-07-09 Henrik Grubbström
 //
@@ -211,7 +211,7 @@ protected class Monitor(string path,
     }
     if (last_change <= time(1)) {
       // Time until stable.
-      d = last_change + (stable_time || global::stable_time) - time(1);
+      int d = last_change + (stable_time || global::stable_time) - time(1);
       d >>= 1;
       if (d < 0) d = 1;
       if (d < delta) delta = d;
