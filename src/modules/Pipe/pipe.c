@@ -484,17 +484,17 @@ static INLINE struct pike_string* gimme_some_data(size_t pos)
    /* We have a file cache, read from it */
    if (this->fd!=-1)
    {
-     char buffer[READ_BUFFER_SIZE];
+      char buffer[READ_BUFFER_SIZE];
+      ptrdiff_t sz = this->pos-pos;
 
-      if (this->pos<=pos) return NULL; /* no data */
-      len=this->pos-pos;
-      if (len>READ_BUFFER_SIZE) len=READ_BUFFER_SIZE;
+      if (sz <= 0) return NULL; /* no data */
+      if (sz > READ_BUFFER_SIZE) sz = READ_BUFFER_SIZE;
       THREADS_ALLOW();
       fd_lseek(this->fd, pos, SEEK_SET);
       THREADS_DISALLOW();
       do {
 	THREADS_ALLOW();
-	len = fd_read(this->fd, buffer, len);
+	len = fd_read(this->fd, buffer, sz);
 	THREADS_DISALLOW();
 	if (len < 0) {
 	  if (errno != EINTR) {
