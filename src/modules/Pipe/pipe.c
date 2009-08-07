@@ -323,8 +323,19 @@ static INLINE int append_buffer(struct pike_string *s)
 
    if(THIS->fd!= -1)
    {
+     ptrdiff_t len = s->len;
+     char *data = s->str;
+     ptrdiff_t bytes;
+
      fd_lseek(THIS->fd, THIS->pos, SEEK_SET);
-     fd_write(THIS->fd, s->str, s->len);
+     while (len > 0) {
+       do {
+	 bytes = fd_write(THIS->fd, data, len);
+       } while ((bytes < 0) && (errno == EINTR));
+       if (bytes < 0) break;
+       data += bytes;
+       len -= bytes;
+     }
      THIS->pos+=s->len;
      return 0;
    }
