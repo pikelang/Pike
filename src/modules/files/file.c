@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.417 2009/07/23 15:19:44 grubba Exp $
+|| $Id: file.c,v 1.418 2009/08/07 09:47:37 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -4751,8 +4751,9 @@ static void fd__sprintf(INT32 args)
   {
     case 'O':
     {
-      char buf[20];
-      sprintf (buf, "Fd(%d)", FD);
+      /* NB: A signed 64-bit int maxes out at 21 characters. */
+      char buf[30];
+      sprintf (buf, "Fd(%ld)", (long)FD);
       push_text(buf);
       return;
     }
@@ -4763,8 +4764,7 @@ static void fd__sprintf(INT32 args)
       return;
     }
   }
-  push_int( 0 );
-  Pike_sp[-1].subtype = 1;
+  push_undefined();
 }
 
 
