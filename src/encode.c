@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.287 2008/10/02 15:49:02 mast Exp $
+|| $Id: encode.c,v 1.288 2009/08/09 13:09:58 grubba Exp $
 */
 
 #include "global.h"
@@ -1556,6 +1556,9 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 
 		  /* run-time type */
 		  code_number(id->run_time_type, data);
+
+		  /* opt flags */
+		  code_number(id->opt_flags, data);
 		  break;
 
 		case IDENTIFIER_PIKE_FUNCTION:
@@ -4343,6 +4346,9 @@ static void decode_value2(struct decode_data *data)
 
 		/* run_time_type */
 		decode_number(id.run_time_type, data);
+
+		/* opt_flags */
+		decode_number(id.opt_flags, data);
 
 		/* Expected identifier number. */
 		decode_number(no, data);
