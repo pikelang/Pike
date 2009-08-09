@@ -7,6 +7,18 @@ General
 o Nettle 2.0 is now supported.
 
 
+Extensions and New Functions
+----------------------------
+
+o Image.Image
+
+  Added support for sending Color objects to the color() function.
+
+o Calendar
+
+  Updated timezone data to 2009j.
+
+
 Bug fixes
 ---------
 
@@ -19,6 +31,10 @@ o Fixed casting of floats to strings to again work more like in Pike
 o Protocols.HTTP.Server.HeaderParser will now discard parts of a
   header value if the header value contains a newline (like "Host:
   google.com\n.hax.net\r\n") and headers without colon.
+
+o file_open_socket() now attepts to set SO_REUSEPORT on the socket.
+  Potentially fixes issues on FreeBSD 7.x where ports aren't reused.
+
 
 
 Changes since Pike 7.8.116 (initial 7.8 release):
