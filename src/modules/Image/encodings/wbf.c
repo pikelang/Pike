@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: wbf.c,v 1.18 2005/01/23 13:30:04 nilsson Exp $
+|| $Id: wbf.c,v 1.19 2009/08/10 14:23:25 grubba Exp $
 */
 
 #include "global.h"
@@ -108,12 +108,25 @@ static void push_ext_header( struct ext_header *eh )
   f_aggregate_mapping( 4 );
 }
 
+static void free_wbf_header_contents( struct wbf_header *wh )
+{
+  while( wh->first_ext_header )
+  {
+    struct ext_header *eh = wh->first_ext_header;
+    wh->first_ext_header = eh->next;
+    free( eh );
+  }
+}
+
 static struct wbf_header decode_header( struct buffer *data )
 {
   struct wbf_header res;
+  ONERROR err;
   MEMSET( &res, 0, sizeof(res) );
   res.type = wbf_read_int( data );
   res.fix_header_field = read_uchar( data );
+  SET_ONERROR(err, free_wbf_header_contents, &res);
+
   if( res.fix_header_field & 0x80 )
   {
     switch( (res.fix_header_field>>5) & 0x3 )
@@ -133,31 +146,21 @@ static struct wbf_header decode_header( struct buffer *data )
            q = read_uchar( data );
            eh = xalloc( sizeof( struct ext_header ) );
            MEMSET( eh, 0, sizeof( struct ext_header ) );
+           eh->next = res.first_ext_header;
+           res.first_ext_header = eh;
            eh->name_len = ((q>>4) & 0x7) + 1;
            eh->value_len = (q & 0xf) + 1;
            read_string( data, eh->name_len, eh->name );
            read_string( data, eh->value_len, eh->value );
-           eh->next = res.first_ext_header;
-           res.first_ext_header = eh->next;
          }
        }
     }
   }
   res.width = wbf_read_int( data );
   res.height = wbf_read_int( data );
+  UNSET_ONERROR(err);
   return res;
 }
-
-static void free_wbf_header_contents( struct wbf_header *wh )
-{
-  while( wh->first_ext_header )
-  {
-    struct ext_header *eh = wh->first_ext_header;
-    wh->first_ext_header = eh->next;
-    free( eh );
-  }
-}
-
 
 static void low_image_f_wbf_decode_type0( struct wbf_header *wh,
                                           struct buffer *buff )
