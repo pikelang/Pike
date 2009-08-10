@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.97 2009/08/10 13:59:14 nilsson Exp $
+|| $Id: png.c,v 1.98 2009/08/10 16:10:00 nilsson Exp $
 */
 
 #include "global.h"
@@ -1546,67 +1546,72 @@ static void image_png_encode(INT32 args)
 
    if (args>1)
    {
-      if (sp[1-args].type!=T_MAPPING)
+     struct svalue *s;
+
+     if (sp[1-args].type!=T_MAPPING)
 	SIMPLE_BAD_ARG_ERROR("Image.PNG.encode", 2, "mapping");
 
-      push_svalue(sp+1-args);
-      ref_push_string(param_alpha);
-      f_index(2);
-      if ( !UNSAFE_IS_ZERO( sp - 1 ) )
-	 if (sp[-1].type!=T_OBJECT ||
-	     !(alpha=(struct image*)
-	       get_storage(sp[-1].u.object,image_program)))
-	    PIKE_ERROR("Image.PNG.encode",
-		       "Option (arg 2) \"alpha\" has illegal type.\n",
-		       sp, args);
+      /* Attribute alpha */
+      s = low_mapping_string_lookup(sp[1-args].u.mapping, param_alpha);
 
-      pop_stack();
+      if( s )
+      {
+        if( s->type==T_OBJECT &&
+            (alpha=(struct image*)
+             get_storage(s->u.object,image_program)) )
+        {
+          if (alpha->xsize!=img->xsize ||
+              alpha->ysize!=img->ysize)
+            PIKE_ERROR("Image.PNG.encode",
+                       "Option (arg 2) \"alpha\"; images differ in size.\n",
+                       sp, args);
 
-      if (alpha &&
-	  (alpha->xsize!=img->xsize ||
-	   alpha->ysize!=img->ysize))
-	 PIKE_ERROR("Image.PNG.encode",
-		    "Option (arg 2) \"alpha\"; images differ in size.\n",
-		    sp, args);
+          if (!alpha->img)
+            PIKE_ERROR("Image.PNG.encode",
+                       "Option (arg 2) \"alpha\"; no image\n",
+                       sp, args);
+        }
+        else if( !(s->type==T_INT && s->u.integer==0) )
+          PIKE_ERROR("Image.PNG.encode",
+                     "Option (arg 2) \"alpha\" has illegal type.\n",
+                     sp, args);
+      }
 
-      if (alpha && !alpha->img)
-	PIKE_ERROR("Image.PNG.encode", "Option (arg 2) \"alpha\"; no image\n",
-		   sp, args);
+      /* Attribute palette */
+      s = low_mapping_string_lookup(sp[1-args].u.mapping, param_palette);
 
-      push_svalue(sp+1-args);
-      ref_push_string(param_palette);
-      f_index(2);
-      if (!(sp[-1].type==T_INT
-	    && sp[-1].subtype==NUMBER_UNDEFINED))
-	 if (sp[-1].type!=T_OBJECT ||
+      if (s && !(s->type==T_INT && s->u.integer==0))
+	 if (s->type!=T_OBJECT ||
 	     !(ct=(struct neo_colortable*)
-	       get_storage(sp[-1].u.object,image_colortable_program)))
+	       get_storage(s->u.object,image_colortable_program)))
 	   PIKE_ERROR("Image.PNG.encode",
 		      "Option (arg 2) \"palette\" has illegal type.\n",
 		      sp, args);
-      pop_stack();
 
-      push_svalue(sp+1-args);
-      ref_push_string(param_zlevel);
-      f_index(2);
-      if ( sp[-1].type!=T_INT )
-        PIKE_ERROR("Image.PNG.encode",
-                   "Option (arg 2) \"zlevel\" has illegal value.\n",
-                   sp, args);
-      else if (sp[-1].subtype!=NUMBER_UNDEFINED)
-        zlevel = sp[-1].u.integer;
-      pop_stack();
+      /* Attribute zlevel */
+      s = low_mapping_string_lookup(sp[1-args].u.mapping, param_zlevel);
 
-      push_svalue(sp+1-args);
-      ref_push_string(param_zstrategy);
-      f_index(2);
-      if ( sp[-1].type!=T_INT )
-        PIKE_ERROR("Image.PNG.encode",
-                   "Option (arg 2) \"zstrategy\" has illegal value.\n",
-                   sp, args);
-      else if (sp[-1].subtype!=NUMBER_UNDEFINED)
-        zstrategy = sp[-1].u.integer;
-      pop_stack();
+      if ( s )
+      {
+        if( s->type!=T_INT )
+          PIKE_ERROR("Image.PNG.encode",
+                     "Option (arg 2) \"zlevel\" has illegal value.\n",
+                     sp, args);
+        else
+          zlevel = s->u.integer;
+      }
+
+      /* Attribute zstrategy */
+      s = low_mapping_string_lookup(sp[1-args].u.mapping, param_zstrategy);
+      if( s )
+      {
+        if ( s->type!=T_INT )
+          PIKE_ERROR("Image.PNG.encode",
+                     "Option (arg 2) \"zstrategy\" has illegal value.\n",
+                     sp, args);
+        else
+          zstrategy = s->u.integer;
+      }
    }
 
    sprintf(buf,"%c%c%c%c%c%c%c%c",
@@ -1637,8 +1642,8 @@ static void image_png_encode(INT32 args)
 	   (char)((img->ysize>>8)&255), (char)((img->ysize)&255),
 	   bpp /* bpp */,
 	   ct?3:(alpha?6:2) /* type (P/(RGBA/RGB)) */,
-	   0 /* compression */,
-	   0 /* filter */,
+	   0 /* compression, 0=deflate */,
+	   0 /* filter, 0=per line filter */,
 	   0 /* interlace */);
    push_string(make_shared_binary_string(buf,13));
 
