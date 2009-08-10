@@ -1,5 +1,5 @@
 START_MARKER
-dnl $Id: testsuite.in,v 1.24 2009/07/22 20:42:08 nilsson Exp $
+dnl $Id: testsuite.in,v 1.25 2009/08/10 15:56:51 nilsson Exp $
 
 test_eq([[ Image.PNM.decode("P1\n5 5\n0 1 1 1 1\n1 0 1 1 1\n"
   "1 1 0 1 1\n1 1 1 0 1\n1 1 1 1 0") ]],
@@ -807,6 +807,27 @@ test_encoding(XBM,[[
 
 test_equal( Image.PNG.decode_header(Image.PNG.encode(Image.Image(20,20))),
 (["bpp":8, "type":2, "xsize":20, "ysize":20 ]) )
+
+test_true( Image.PNG.encode(Image.Image(5,5)) )
+test_true( Image.PNG.encode(Image.Image(5,5), ([])) )
+test_true( Image.PNG.encode(Image.Image(5,5), (["alpha":0])) )
+test_eval_error( Image.PNG.encode(Image.Image(5,5), (["alpha":"x"])) )
+test_eval_error( Image.PNG.encode(Image.Image(5,5), (["alpha":Image.Image(4,4)])) )
+test_true( Image.PNG.encode(Image.Image(5,5), (["alpha":Image.Image(5,5)])) )
+dnl FIXME: Test that alpha is actually encoded
+dnl FIXME: Test "palette" attribute
+test_eval_error( Image.PNG.encode(Image.Image(5,5), (["zlevel":"x"])) )
+test_true( Image.PNG.encode(Image.Image(5,5), (["zlevel":0])) )
+test_true( Image.PNG.encode(Image.Image(5,5), (["zlevel":9])) )
+test_true( Image.PNG.encode(Image.Image(5,5), (["zstrategy":Gz.DEFAULT_STRATEGY])) )
+test_true( Image.PNG.encode(Image.Image(5,5), (["zstrategy":Gz.FILTERED])) )
+cond( Gz.RLE, [[
+  test_true( Image.PNG.encode(Image.Image(5,5), (["zstrategy":Gz.RLE])) )
+]])
+test_true( Image.PNG.encode(Image.Image(5,5), (["zstrategy":Gz.HUFFMAN_ONLY])) )
+cond( Gz.FIXED, [[
+  test_true( Image.PNG.encode(Image.Image(5,5), (["zstrategy":Gz.FIXED])) )
+]])
 
 cond( (master()->resolv("Image.XFace")||([]))->encode,[[
   test_any([[
