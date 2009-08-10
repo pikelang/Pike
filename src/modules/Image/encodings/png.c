@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.96 2009/08/05 14:36:30 grubba Exp $
+|| $Id: png.c,v 1.97 2009/08/10 13:59:14 nilsson Exp $
 */
 
 #include "global.h"
@@ -103,13 +103,13 @@ static INLINE COLORTYPE _png_c16(unsigned long z,int bpp)
 static void push_png_chunk(const char *type,    /* 4 bytes */
 			   struct pike_string *data) /* (freed) or on stack */
 {
-   /* 
+   /*
     *  0: 4 bytes of length of data block (=n)
     *  4: 4 bytes of chunk type
     *  8: n bytes of data
     *  8+n: 4 bytes of CRC
     */
-   
+
    if (!data) { data=sp[-1].u.string; sp--; }
 
    push_nbo_32bit(data->len);
@@ -170,7 +170,7 @@ static void image_png__chunk(INT32 args)
        sp[-args].type!=T_STRING ||
        sp[1-args].type!=T_STRING)
       PIKE_ERROR("Image.PNG._chunk", "Illegal argument(s).\n", sp, args);
-   
+
    a=sp[-args].u.string;
    if (a->len!=4)
       PIKE_ERROR("Image.PNG._chunk", "Type string not 4 characters.\n",
@@ -224,7 +224,7 @@ static void image_png___decode(INT32 args)
        (sp[1-args].type!=T_INT ||
 	sp[1-args].u.integer!=0))
       nocrc=1;
-   
+
    add_ref(str=sp[-args].u.string);
    data=(unsigned char*)str->str;
    len=str->len;
@@ -337,9 +337,9 @@ static void image_png___decode(INT32 args)
  *
  *	    "palette": object colortable,     - image palette
  *                                             (if non-truecolor)
- *         
+ *
  *     advanced options:
- * 
+ *
  *	    "background": array(int) color,   - suggested background color
  *	    "background_index": int index,    - what index in colortable
  *
@@ -347,24 +347,24 @@ static void image_png___decode(INT32 args)
  *	                 float white_point_y,
  *			 float red_x,
  *			 float red_y,         - CIE x,y chromaticities
- *			 float green_x,         
+ *			 float green_x,
  *			 float green_y,
  *			 float blue_x,
- *			 float blue_y })  
+ *			 float blue_y })
  *
  *	    "gamma":  float gamma,            - gamma
  *
- *	    "spalette": object colortable,    - suggested palette, 
+ *	    "spalette": object colortable,    - suggested palette,
  *                                             for truecolor images
  *	    "histogram": array(int) hist,     - histogram for the image,
  *	                                        corresponds to palette index
- *	
+ *
  *	    "physical": ({ int unit,          - physical pixel dimension
  *	                   int x,y })           unit 0 means pixels/meter
  *
  *	    "sbit": array(int) sbits          - significant bits
  *
- *	    "text": array(array(string)) text - text information, 
+ *	    "text": array(array(string)) text - text information,
  *                 ({ ({ keyword, data }), ... })
  *
  *                 Standard keywords:
@@ -381,7 +381,7 @@ static void image_png___decode(INT32 args)
  *                 Comment        Miscellaneous comment
  *
  *	    "time": ({ int year, month, day,  - time of last modification
- *	               hour, minute, second })  
+ *	               hour, minute, second })
  *
  *      wizard options:
  *	    "compression": int method         - compression method (0)
@@ -422,7 +422,7 @@ static struct pike_string *_png_unfilter(unsigned char *data,
 
    for (;;)
    {
-      if (!len || !ysize--) 
+      if (!len || !ysize--)
       {
 	 if (pos) *pos=s;
 	 return end_shared_string(ps);
@@ -480,7 +480,7 @@ static struct pike_string *_png_unfilter(unsigned char *data,
 	       s++;
 	    }
 	    if (len) len--;
-	    
+
 	    break;
 	 case 4: /* paeth */
 	    while (x-- && --len)
@@ -489,11 +489,11 @@ static struct pike_string *_png_unfilter(unsigned char *data,
 
 	       if (x+sbb<xsize)
 		  {
-		     a=d[-sbb]; 
+		     a=d[-sbb];
 		     if (d - (unsigned char*)ps->str >= xsize)
 		     {
 			b=d[-xsize];
-			c=d[-xsize-sbb]; 
+			c=d[-xsize-sbb];
 		     }
 		     else b=c=0;
 
@@ -510,12 +510,12 @@ static struct pike_string *_png_unfilter(unsigned char *data,
 	       else if (d - (unsigned char*)ps->str >= xsize)
 		  *d=(unsigned char)(d[-xsize]+*s); /* de facto */
 	       else *d=*s;
-       
+
 	       d++;
 	       s++;
 	    }
 	    if (len) len--;
-	    
+
 	    break;
 	 default:
 	    Pike_error("Unsupported subfilter %d (filter %d)\n", s[-1],type);
@@ -590,12 +590,12 @@ static int _png_write_rgb(rgb_group *w1,
 	       while (n)
 	       {
 		  int q;
-		  if (x) 
+		  if (x)
 		  {
 		     x--,q=(((*s)>>4)&15)|((*s)&240);
 		     d1->r=d1->g=d1->b=q; d1++;
 		  }
-		  if (x) 
+		  if (x)
 		  {
 		     x--,q=((*s)&15)|((*s)<<4);
 		     d1->r=d1->g=d1->b=q; d1++;
@@ -763,7 +763,7 @@ static int _png_write_rgb(rgb_group *w1,
 		     for (i=8; i;)
 		     {
 			i-=2;
-			if (x) 
+			if (x)
 			{
 			   int m=((*s)>>i)&3;
 			   x--;
@@ -803,7 +803,7 @@ static int _png_write_rgb(rgb_group *w1,
 		     for (i=8; i>=4;)
 		     {
 			i-=4;
-			if (x) 
+			if (x)
 			{
 			   int m=((*s)>>i)&3;
 			   x--;
@@ -855,7 +855,7 @@ static int _png_write_rgb(rgb_group *w1,
 		     n--;
 		  }
 	       break;
-	       
+
 	    default:
 	       Pike_error("Image.PNG._decode: Unsupported color type/bit depth %d (palette)/%d bit.\n",
 		     type,bpp);
@@ -1027,7 +1027,7 @@ static int _png_decode_idat(struct IHDR *ihdr, struct neo_colortable *ct,
       rgb_group *t1,*ta1;
       ONERROR t_err, ta_err, ds_err;
       int got_alpha = 0;
-      
+
       /* need arena */
       t1=xalloc(sizeof(rgb_group)*ihdr->width*ihdr->height);
       SET_ONERROR(t_err, free_and_clear, &t1);
@@ -1496,7 +1496,7 @@ static void img_png_decode(INT32 args, int mode)
 
 /*! @decl string encode(Image.Image image)
  *! @decl string encode(Image.Image image, mapping options)
- *! 	Encodes a PNG image. 
+ *! 	Encodes a PNG image.
  *!
  *! @param options
  *!   @mapping
@@ -1519,7 +1519,7 @@ static void img_png_decode(INT32 args, int mode)
  *!   @[__decode]
  *!
  *! @note
- *!	Please read some about PNG files. 
+ *!	Please read some about PNG files.
  */
 
 static void image_png_encode(INT32 args)
@@ -1532,7 +1532,7 @@ static void image_png_encode(INT32 args)
    int zlevel=8;
    int zstrategy=0;
    char buf[20];
-   
+
    if (!args)
      SIMPLE_TOO_FEW_ARGS_ERROR("Image.PNG.encode", 1);
 
@@ -1574,9 +1574,9 @@ static void image_png_encode(INT32 args)
 		   sp, args);
 
       push_svalue(sp+1-args);
-      ref_push_string(param_palette); 
+      ref_push_string(param_palette);
       f_index(2);
-      if (!(sp[-1].type==T_INT 
+      if (!(sp[-1].type==T_INT
 	    && sp[-1].subtype==NUMBER_UNDEFINED))
 	 if (sp[-1].type!=T_OBJECT ||
 	     !(ct=(struct neo_colortable*)
@@ -1608,7 +1608,7 @@ static void image_png_encode(INT32 args)
         zstrategy = sp[-1].u.integer;
       pop_stack();
    }
-   
+
    sprintf(buf,"%c%c%c%c%c%c%c%c",
 	   137,'P','N','G',13,10,26,10);
    push_string(make_shared_binary_string(buf,8));
@@ -1644,7 +1644,7 @@ static void image_png_encode(INT32 args)
 
    push_png_chunk("IHDR",NULL);
    n++;
-	      
+
    if (ct)
    {
       struct pike_string *ps;
@@ -1782,7 +1782,7 @@ static void image_png_decode(INT32 args)
 {
    if (!args)
      SIMPLE_TOO_FEW_ARGS_ERROR("Image.PNG.decode", 1);
-   
+
    img_png_decode(args, MODE_IMAGE_ONLY);
    push_constant_text("image");
    f_index(2);
