@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.118 2009/07/23 15:15:51 grubba Exp $
+# $Id: configure.in,v 1.119 2009/08/10 08:01:05 grubba Exp $
 AC_INIT(file.c)
 AC_CONFIG_HEADER(file_machine.h)
 
@@ -61,14 +61,15 @@ AC_CHECK_LIB(bind, __inet_ntoa)
 AC_CHECK_LIB(socket, socket)
 AC_CHECK_LIB(nsl, gethostbyname)
 AC_CHECK_LIB(net, __get_socket_descriptor)
-AC_CHECK_LIB(zfs, libzfs_init)
+dnl AC_CHECK_LIB(zfs, libzfs_init)
 
 AC_HAVE_FUNCS(getwd perror readdir_r statvfs statfs ustat lseek64 lstat fsync \
  grantpt unlockpt ptsname posix_openpt socketpair writev sendfile munmap \
  madvise poll setsockopt getprotobyname truncate64 ftruncate64 inet_ntoa \
  inet_ntop execve listxattr flistxattr getxattr fgetxattr setxattr fsetxattr \
- fdopendir pathconf fpathconf dirfd fstatat openat unlinkat libzfs_init \
- zfs_path_to_zhandle)
+ fdopendir pathconf fpathconf dirfd fstatat openat unlinkat)
+
+dnl AC_HAVE_FUNCS(libzfs_init zfs_path_to_zhandle)
 
 define(PIKE_CHECK_ZFS_ENUM, [
   AC_MSG_CHECKING([if the $1 value $2 exists])
@@ -89,7 +90,7 @@ define(PIKE_CHECK_ZFS_ENUM, [
   fi
 ])
 # Solaris 10 127112-05 doesn't have this value.
-PIKE_CHECK_ZFS_ENUM(zfs_prop_t, ZFS_PROP_UTF8ONLY)
+dnl PIKE_CHECK_ZFS_ENUM(zfs_prop_t, ZFS_PROP_UTF8ONLY)
 
 AC_FUNC_MMAP
 
