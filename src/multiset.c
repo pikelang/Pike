@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.117 2009/04/06 00:36:54 mast Exp $
+|| $Id: multiset.c,v 1.118 2009/08/10 14:27:47 grubba Exp $
 */
 
 #include "global.h"
@@ -2356,6 +2356,7 @@ PMOD_EXPORT ptrdiff_t multiset_add_after (struct multiset *l,
 	node = SHIFT_HDRPTR (node, msd, l->msd);
 	if (node != HDR (low_multiset_first (l->msd))) {
 	  RBSTACK_FREE (rbstack);
+	  UNSET_ONERROR (uwp2);
 	  continue;
 	}
 	rbstack_shift (rbstack, HDR (msd->nodes), HDR (l->msd->nodes));
