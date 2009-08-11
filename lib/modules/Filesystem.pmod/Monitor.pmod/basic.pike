@@ -1,7 +1,7 @@
 //
 // Basic filesystem monitor.
 //
-// $Id: basic.pike,v 1.22 2009/08/07 12:46:48 grubba Exp $
+// $Id: basic.pike,v 1.23 2009/08/11 09:51:14 grubba Exp $
 //
 // 2009-07-09 Henrik Grubbström
 //
@@ -491,7 +491,11 @@ protected void release_monitor(Monitor m)
   m->next_poll = -1000;
   monitor_queue->adjust(m);
   while (monitor_queue->peek() < 0) {
+#if __VERSION__ < 7.8
+    monitor_queue->top();
+#else
     monitor_queue->pop();
+#endif
   }
 }
 
