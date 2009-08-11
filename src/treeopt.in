@@ -2,7 +2,7 @@
 // This file is part of Pike. For copyright information see COPYRIGHT.
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
-// $Id: treeopt.in,v 1.99 2009/08/06 13:39:28 grubba Exp $
+// $Id: treeopt.in,v 1.100 2009/08/11 15:16:35 grubba Exp $
 //
 // The tree optimizer
 //
@@ -55,17 +55,17 @@ F_PUSH_ARRAY(F_APPLY(F_CONSTANT
 F_PUSH_ARRAY(0 = F_CONSTANT[$$->u.sval.type == T_ARRAY], *):
   {
     struct array *a = $0->u.sval.u.array;
-    node *n = NULL;
+    node *res = NULL;
     int i;
     for(i=0; i<a->size; i++) {
-      if (n) {
-	n = mknode(F_ARG_LIST, n, mksvaluenode(a->item+i));
+      if (res) {
+	res = mknode(F_ARG_LIST, res, mksvaluenode(a->item+i));
       } else {
 	/* i is always 0 here. */
-	n = mksvaluenode(a->item);
+	res = mksvaluenode(a->item);
       }
     }
-    $$ = n;
+    $$ = res;
   }
   ;
 
@@ -1400,14 +1400,14 @@ F_FOR(0 = F_APPLY(1 = F_CONSTANT
     {
       if(oper == F_LE) {
 	static struct pike_string *plus_name;
-	node *n;
+	node *fun;
 	if ((!plus_name && !(plus_name = findstring("`+"))) ||
-	    !(n=find_module_identifier(plus_name, 0))) {
+	    !(fun=find_module_identifier(plus_name, 0))) {
 	  yyerror("Internally used efun undefined: `+");
 	  tmp3 = mkintnode(0);
         } else {
 	  ADD_NODE_REF2(*arg2,
-	    tmp3 = mkapplynode(n, mknode(F_ARG_LIST, *arg2, mkintnode(1)));
+	    tmp3 = mkapplynode(fun, mknode(F_ARG_LIST, *arg2, mkintnode(1)));
 	  );
 	}
       } else if(oper == F_LT) {
@@ -1419,14 +1419,14 @@ F_FOR(0 = F_APPLY(1 = F_CONSTANT
     }else{
       if(oper == F_GE) {
 	static struct pike_string *minus_name;
-	node *n;
+	node *fun;
 	if ((!minus_name && !(minus_name = findstring("`-"))) ||
-	    !(n=find_module_identifier(minus_name, 0))) {
+	    !(fun=find_module_identifier(minus_name, 0))) {
 	  yyerror("Internally used efun undefined: `-");
 	  tmp3 = mkintnode(0);
         } else {
 	  ADD_NODE_REF2(*arg2,
-	    tmp3 = mkapplynode(n, mknode(F_ARG_LIST, *arg2, mkintnode(1)));
+	    tmp3 = mkapplynode(fun, mknode(F_ARG_LIST, *arg2, mkintnode(1)));
 	  );
 	}
       } else if(oper == F_GT) {
