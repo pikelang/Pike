@@ -121,11 +121,11 @@ int _sizeof() { return num_values; }
 // compat
 //! Removes and returns the item on top of the heap,
 //! which also is the smallest value in the heap.
-mixed top() { return pop(); }
+__deprecated__ mixed top() { return pop(); }
 
 // compat
 //! Returns the number of elements in the heap.
-int size() { return _sizeof(); }
+__deprecated__ int size() { return _sizeof(); }
 
 //! Returns the item on top of the heap (which is also the smallest value
 //! in the heap) without removing it.
