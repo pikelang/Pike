@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.252 2009/08/05 11:56:18 mast Exp $
+|| $Id: operators.c,v 1.253 2009/08/12 14:44:02 grubba Exp $
 */
 
 #include "global.h"
@@ -1751,6 +1751,7 @@ PMOD_EXPORT void f_add(INT32 args)
     }									\
 									\
     DO_IF_DEBUG (Pike_fatal ("Shouldn't be reached.\n"));		\
+    break;								\
   } while (0)
 
 #define ADD(TYPE, ADD_FUNC, PUSH_FUNC) do {				\
