@@ -2,16 +2,14 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: SDL.cmod,v 1.32 2008/07/31 14:52:27 mast Exp $
+|| $Id: SDL.cmod,v 1.33 2009/08/12 11:59:55 per Exp $
 */
 
 #include "global.h"
 #include "stralloc.h"
 #include "pike_macros.h"
-#include "interpret.h"
 #include "program.h"
 #include "program_id.h"
-#include "object.h"
 #include "operators.h"
 #include "fdlib.h"
 #include "fd_control.h"
@@ -20,6 +18,8 @@
 #include "array.h"
 #include "builtin_functions.h"
 #include "mapping.h"
+#include "pike_types.h"
+#include "threads.h"
 
 #include "sdl_config.h"
 
@@ -303,8 +303,8 @@ PIKEFUN string get_key_state()
      optflags OPT_EXTERNAL_DEPEND;
 {
   int numkeys;
-  char *state = SDL_GetKeyState(&numkeys);
-  push_string(make_shared_binary_string(state, numkeys));
+  unsigned char *state = SDL_GetKeyState(&numkeys);
+  push_string(make_shared_binary_string((char*)state, numkeys));
 }
 
 /*! @class Rect
@@ -1686,9 +1686,12 @@ PIKEFUN void warp_mouse( int xpos, int ypos )
  *! @fixme
  *!   Document this function
  */
+
 PIKEFUN void gl_swap_buffers( )
 {
+  THREADS_ALLOW();
   SDL_GL_SwapBuffers( );
+  THREADS_DISALLOW();
 }
 
 /*! @decl object set_video_mode(int width, int height, int bpp, int flags)
