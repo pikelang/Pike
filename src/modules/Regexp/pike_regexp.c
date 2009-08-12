@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_regexp.c,v 1.26 2006/07/09 22:09:45 nilsson Exp $
+|| $Id: pike_regexp.c,v 1.27 2009/08/12 15:29:04 grubba Exp $
 */
 
 /*
@@ -259,7 +259,7 @@ regexp *pike_regcomp(char *exp,int excompat)
     if (exp == (char *)NULL)
 	FAIL("NULL argument");
 
-    exp2=(short*)xalloc( (strlen(exp)+1) * (sizeof(short[8])/sizeof(char[8])) );
+    exp2=(short*)xalloc( (strlen(exp)+1) * sizeof(short) );
     for ( scan=exp,dest=exp2;( c= UCHARAT(scan++)); ) {
 	switch (c) {
 	    case '(':
