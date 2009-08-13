@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.251 2009/08/05 11:53:31 mast Exp $
+|| $Id: svalue.c,v 1.252 2009/08/13 16:29:05 grubba Exp $
 */
 
 #include "global.h"
@@ -557,6 +557,7 @@ PMOD_EXPORT int svalue_is_true(const struct svalue *s)
 	}
       }
     }
+    /* FALL_THROUGH */
   default:
     return 1;
   }
@@ -820,7 +821,7 @@ PMOD_EXPORT int is_eq(const struct svalue *a, const struct svalue *b)
 /* Returns 0 or 1. */
 PMOD_EXPORT int low_is_equal(const struct svalue *a,
 			     const struct svalue *b,
-			     struct processing *p)
+			     struct processing *proc)
 {
   check_svalue_type (a);
   check_svalue_type (b);
@@ -887,18 +888,18 @@ PMOD_EXPORT int low_is_equal(const struct svalue *a,
 	pike_types_le(b->u.type, a->u.type);
 
     case T_OBJECT:
-      return object_equal_p(a->u.object, b->u.object, p);
+      return object_equal_p(a->u.object, b->u.object, proc);
 
     case T_ARRAY:
       check_array_for_destruct(a->u.array);
       check_array_for_destruct(b->u.array);
-      return array_equal_p(a->u.array, b->u.array, p);
+      return array_equal_p(a->u.array, b->u.array, proc);
 
     case T_MAPPING:
-      return mapping_equal_p(a->u.mapping, b->u.mapping, p);
+      return mapping_equal_p(a->u.mapping, b->u.mapping, proc);
 
     case T_MULTISET:
-      return multiset_equal_p(a->u.multiset, b->u.multiset, p);
+      return multiset_equal_p(a->u.multiset, b->u.multiset, proc);
       
     default:
       Pike_fatal("Unknown type in is_equal.\n");
