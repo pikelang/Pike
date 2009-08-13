@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: a_source_pikestring.c,v 1.10 2004/10/16 07:27:29 agehall Exp $
+|| $Id: a_source_pikestring.c,v 1.11 2009/08/13 16:21:14 grubba Exp $
 */
 
 #include "global.h"
@@ -25,9 +25,9 @@ struct ps_source
   int offset, len;
 };
 
-static struct data get_data( struct source *_s, off_t len )
+static struct data get_data( struct source *src, off_t len )
 {
-  struct ps_source *s = (struct ps_source *)_s;
+  struct ps_source *s = (struct ps_source *)src;
   struct data res;
   
   res.do_free = 0;
@@ -48,9 +48,9 @@ static struct data get_data( struct source *_s, off_t len )
   return res;
 }
 
-static void free_source( struct source *_s )
+static void free_source( struct source *src )
 {
-  free_string(((struct ps_source *)_s)->str);
+  free_string(((struct ps_source *)src)->str);
 }
 
 struct source *source_pikestring_make( struct svalue *s,

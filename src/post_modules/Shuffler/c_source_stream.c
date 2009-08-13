@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: c_source_stream.c,v 1.13 2007/01/25 09:43:37 grubba Exp $
+|| $Id: c_source_stream.c,v 1.14 2009/08/13 16:21:14 grubba Exp $
 */
 
 #include "global.h"
@@ -46,23 +46,23 @@ struct fd_source
 
 
 static void read_callback( int fd, struct fd_source *s );
-static void setup_callbacks( struct source *_s )
+static void setup_callbacks( struct source *src )
 {
-  struct fd_source *s = (struct fd_source *)_s;
+  struct fd_source *s = (struct fd_source *)src;
   if( !s->available )
     set_read_callback( s->fd, (void*)read_callback, s );
 }
 
-static void remove_callbacks( struct source *_s )
+static void remove_callbacks( struct source *src )
 {
-  struct fd_source *s = (struct fd_source *)_s;
+  struct fd_source *s = (struct fd_source *)src;
   set_read_callback( s->fd, 0, 0 );
 }
 
 
-static struct data get_data( struct source *_s, off_t len )
+static struct data get_data( struct source *src, off_t len )
 {
-  struct fd_source *s = (struct fd_source *)_s;
+  struct fd_source *s = (struct fd_source *)src;
   struct data res;
   res.off = res.do_free = 0;
   res.len = s->available;
@@ -73,7 +73,7 @@ static struct data get_data( struct source *_s, off_t len )
     res.data = s->_buffer;
     MEMCPY( res.data, s->_read_buffer, res.len );
     s->available = 0;
-    setup_callbacks( _s );
+    setup_callbacks( src );
   }
   else if( !s->len )
     s->s.eof = 1;
@@ -88,10 +88,10 @@ static struct data get_data( struct source *_s, off_t len )
 }
 
 
-static void free_source( struct source *_s )
+static void free_source( struct source *src )
 {
-  remove_callbacks( _s );
-  free_object(((struct fd_source *)_s)->obj);
+  remove_callbacks( src );
+  free_object(((struct fd_source *)src)->obj);
 }
 
 static void read_callback( int fd, struct fd_source *s )
@@ -137,9 +137,9 @@ static void read_callback( int fd, struct fd_source *s )
     s->when_data_cb( s->when_data_cb_arg );
 }
 
-static void set_callback( struct source *_s, void (*cb)( void *a ), void *a )
+static void set_callback( struct source *src, void (*cb)( void *a ), void *a )
 {
-  struct fd_source *s = (struct fd_source *)_s;
+  struct fd_source *s = (struct fd_source *)src;
   s->when_data_cb = cb;
   s->when_data_cb_arg = a;;
 }

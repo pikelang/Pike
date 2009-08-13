@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: e_source_block_pikestream.c,v 1.6 2007/11/10 21:23:14 nilsson Exp $
+|| $Id: e_source_block_pikestream.c,v 1.7 2009/08/13 16:21:14 grubba Exp $
 */
 
 #include "global.h"
@@ -32,9 +32,9 @@ struct pf_source
 };
 
 
-static struct data get_data( struct source *_s, off_t len )
+static struct data get_data( struct source *src, off_t len )
 {
-  struct pf_source *s = (struct pf_source *)_s;
+  struct pf_source *s = (struct pf_source *)src;
   struct data res = { 0, 0, 0, NULL };
 
   if( s->len>0 && len > s->len ) {
@@ -72,9 +72,9 @@ static struct data get_data( struct source *_s, off_t len )
   return res;
 }
 
-static void free_source( struct source *_s )
+static void free_source( struct source *src )
 {
-  free_object(((struct pf_source *)_s)->obj);
+  free_object(((struct pf_source *)src)->obj);
 }
 
 struct source *source_block_pikestream_make( struct svalue *s,

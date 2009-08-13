@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: a_source_system_memory.c,v 1.12 2005/05/19 22:35:40 mast Exp $
+|| $Id: a_source_system_memory.c,v 1.13 2009/08/13 16:21:14 grubba Exp $
 */
 
 #include "global.h"
@@ -31,9 +31,9 @@ struct sm_source
   int offset, len;
 };
 
-static struct data get_data( struct source *_s, off_t len )
+static struct data get_data( struct source *src, off_t len )
 {
-  struct sm_source *s = (struct sm_source *)_s;
+  struct sm_source *s = (struct sm_source *)src;
   struct data res;
   
   res.do_free = 0;
@@ -54,9 +54,9 @@ static struct data get_data( struct source *_s, off_t len )
   return res;
 }
 
-static void free_source( struct source *_s )
+static void free_source( struct source *src )
 {
-  free_object(((struct sm_source *)_s)->obj);
+  free_object(((struct sm_source *)src)->obj);
 }
 
 struct source *source_system_memory_make( struct svalue *s,

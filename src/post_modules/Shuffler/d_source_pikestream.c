@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: d_source_pikestream.c,v 1.8 2007/11/10 21:23:02 nilsson Exp $
+|| $Id: d_source_pikestream.c,v 1.9 2009/08/13 16:21:14 grubba Exp $
 */
 
 #include "global.h"
@@ -43,9 +43,9 @@ struct callback_prog
   struct pf_source *s;
 };
 
-static void setup_callbacks( struct source *_s )
+static void setup_callbacks( struct source *src )
 {
-  struct pf_source *s = (struct pf_source *)_s;
+  struct pf_source *s = (struct pf_source *)src;
   if( !s->str )
   {
     ref_push_object( s->cb_obj );
@@ -57,9 +57,9 @@ static void setup_callbacks( struct source *_s )
   }
 }
 
-static void remove_callbacks( struct source *_s )
+static void remove_callbacks( struct source *src )
 {
-  struct pf_source *s = (struct pf_source *)_s;
+  struct pf_source *s = (struct pf_source *)src;
   push_int(0);
   apply( s->obj, "set_read_callback", 1 );
   pop_stack();
@@ -69,9 +69,9 @@ static void remove_callbacks( struct source *_s )
 }
 
 
-static struct data get_data( struct source *_s, off_t len )
+static struct data get_data( struct source *src, off_t len )
 {
-  struct pf_source *s = (struct pf_source *)_s;
+  struct pf_source *s = (struct pf_source *)src;
   struct data res = { 0, 0, 0, NULL };
   char *buffer = NULL;
 
@@ -108,7 +108,7 @@ static struct data get_data( struct source *_s, off_t len )
     res.do_free = 1;
     free_string( s->str );
     s->str = 0;
-    setup_callbacks( _s );
+    setup_callbacks( src );
   }
   else if( !s->len )
     s->s.eof = 1;
@@ -122,11 +122,11 @@ static struct data get_data( struct source *_s, off_t len )
   return res;
 }
 
-static void free_source( struct source *_s )
+static void free_source( struct source *src )
 {
-  remove_callbacks( _s );
-  free_object(((struct pf_source *)_s)->cb_obj);
-  free_object(((struct pf_source *)_s)->obj);
+  remove_callbacks( src );
+  free_object(((struct pf_source *)src)->cb_obj);
+  free_object(((struct pf_source *)src)->obj);
 }
 
 static void f_got_data( INT32 args )
@@ -155,9 +155,9 @@ static void f_got_data( INT32 args )
     s->when_data_cb( s->when_data_cb_arg );
 }
 
-static void set_callback( struct source *_s, void (*cb)( void *a ), void *a )
+static void set_callback( struct source *src, void (*cb)( void *a ), void *a )
 {
-  struct pf_source *s = (struct pf_source *)_s;
+  struct pf_source *s = (struct pf_source *)src;
   s->when_data_cb = cb;
   s->when_data_cb_arg = a;
 }
