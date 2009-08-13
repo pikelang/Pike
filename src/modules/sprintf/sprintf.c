@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.170 2009/05/18 13:04:32 grubba Exp $
+|| $Id: sprintf.c,v 1.171 2009/08/13 16:06:50 grubba Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -2109,7 +2109,6 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
       case '<':
 	/* FIXME: !!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 	if (ret > 0) ret = 0;	/* FAILURE! */
-	continue;
 #if 0
 	if(!lastarg) {
 	  yyreport(severity, type_check_system_string,
