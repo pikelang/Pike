@@ -4,7 +4,7 @@
 //! absolute form, as defined in RFC 2396 and RFC 3986.
 
 // Implemented by Johan Sundström and Johan Schön.
-// $Id: URI.pike,v 1.30 2009/07/21 09:03:58 mast Exp $
+// $Id: URI.pike,v 1.31 2009/08/15 07:21:46 nilsson Exp $
 
 #pragma strict_types
 
@@ -418,7 +418,8 @@ string get_path_query()
 
 //! Returns the query variables as a @expr{mapping(string:string)@}.
 mapping(string:string) get_query_variables() {
-  return (mapping(string:string))(((query||"")/"&")[*]/"=");
+  if(!query) return ([]);
+  return (mapping(string:string))((query/"&")[*]/"=");
 }
 
 //! Sets the query variables from the provided mapping.
