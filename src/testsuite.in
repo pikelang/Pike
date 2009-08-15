@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.877 2009/08/05 09:45:33 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.878 2009/08/15 19:13:05 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -8246,14 +8246,14 @@ test_eq([[(string) 0.8]], [["0.8"]])
 cond([[Float.DIGITS_10 >= 6]], [[  // Usual size with 32 bit IEEE floats.
   test_eq([[(string) 0.811113]], [["0.811113"]])
   test_eq([[(string) 0.811114]], [["0.811114"]])
-  test_eq([[(string) 0.811113e20]], [["8.11113e+19"]])
-  test_eq([[(string) 0.811114e20]], [["8.11114e+19"]])
+  test_true([[Regexp ("^8\\.11113e\\+0*19$")->match ((string) 0.811113e20)]])
+  test_true([[Regexp ("^8\\.11114e\\+0*19$")->match ((string) 0.811114e20)]])
 ]])
 cond([[Float.DIGITS_10 >= 15]], [[  // Usual size with 64 bit IEEE floats.
   test_eq([[(string) 0.811111111111113]], [["0.811111111111113"]])
   test_eq([[(string) 0.811111111111114]], [["0.811111111111114"]])
-  test_eq([[(string) 0.811111111111113e20]], [["8.11111111111113e+19"]])
-  test_eq([[(string) 0.811111111111114e20]], [["8.11111111111114e+19"]])
+  test_true([[Regexp ("^8\\.11111111111113e\\+0*19$")->match ((string) 0.811111111111113e20)]])
+  test_true([[Regexp ("^8\\.11111111111114e\\+0*19$")->match ((string) 0.811111111111114e20)]])
 ]])
 test_do(return (string)1e308)
 test_do(return (string)1e200)
