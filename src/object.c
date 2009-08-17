@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.301 2008/07/24 17:51:23 mast Exp $
+|| $Id: object.c,v 1.302 2009/08/17 23:22:10 srb Exp $
 */
 
 #include "global.h"
@@ -207,17 +207,17 @@ PMOD_EXPORT struct object *low_clone(struct program *p)
       Pike_fatal("Frame stack out of whack.\n"); \
   } while(0)
 #else
-#define CHECK_FRAME()
+#define CHECK_FRAME()	0
 #endif
 
 #define POP_FRAME()				\
-  CHECK_FRAME()					\
+  CHECK_FRAME();				\
   Pike_fp=pike_frame->next;			\
   pike_frame->next=0;				\
   free_pike_frame(pike_frame); }while(0)
 
 #define POP_FRAME2()				\
-  do{CHECK_FRAME()				\
+  do{CHECK_FRAME();				\
   Pike_fp=pike_frame->next;			\
   pike_frame->next=0;				\
   free_pike_frame(pike_frame);}while(0)
@@ -2367,7 +2367,7 @@ void push_magic_index(struct program *type, int inherit_no, int parent_level)
   add_ref(MAGIC_O2S(magic)->o=loc.o);
   MAGIC_O2S(magic)->inherit = loc.inherit + inherit_no;
 #ifdef DEBUG
-  if(loc.inherit + inherit_no >= loc.o->prog->inherits + loc.o->prog->num_inherit)
+  if(loc.inherit + inherit_no >= loc.o->prog->inherits + loc.o->prog->num_inherits)
      Pike_fatal("Magic index blahonga!\n");
 #endif
   push_object(magic);
