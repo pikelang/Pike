@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: compilation.h,v 1.36 2008/05/03 15:51:50 grubba Exp $
+|| $Id: compilation.h,v 1.37 2009/08/17 11:02:11 grubba Exp $
 */
 
 /*
@@ -60,12 +60,13 @@
 #endif
 
 #ifdef PUSH
-#define IMEMBER(X,Y,Z) MEMCPY((char *)&(nEw->Y), (char *)&(Pike_compiler->Y), sizeof(nEw->Y));
+#define IMEMBER(X,Y,Z) (nEw->Y=Pike_compiler->Y);
 #define STACKMEMBER(X,Y,Z) (nEw->Y=Pike_compiler->Y);
-#define ZMEMBER(X,Y,Z) MEMSET((char *)&(nEw->Y), 0, sizeof(nEw->Y));
+#define ZMEMBER(X,Y,Z) /* Zapped by the MEMSET in SNAME() below. */;
 #define SNAME(X,Y) { \
       struct X *nEw; \
       nEw=ALLOC_STRUCT(X); \
+      MEMSET((char *)nEw, 0, sizeof(struct X)); \
       nEw->previous=Pike_compiler;
 #define SEND \
       Pike_compiler=nEw; \
@@ -98,10 +99,11 @@
 
 
 #ifdef INIT
-#define IMEMBER(X,Y,Z) MEMCPY((char *)&(c->Y), (char *)&(Pike_compiler->Y), sizeof(c->Y));
+#define IMEMBER(X,Y,Z) (c->Y=Pike_compiler->Y);
 #define STACKMEMBER(X,Y,Z) (c->Y=Pike_compiler->Y);
-#define ZMEMBER(X,Y,Z) MEMSET((char *)&(c->Y), 0, sizeof(c->Y));
+#define ZMEMBER(X,Y,Z) /* Zapped by the MEMSET in SNAME() below. */;
 #define SNAME(X,Y) { \
+      MEMSET(c, 0, sizeof(struct X));		\
       c->previous = Pike_compiler;
 #define SEND \
       Pike_compiler = c; \
