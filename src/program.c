@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.765 2009/06/24 17:35:28 grubba Exp $
+|| $Id: program.c,v 1.766 2009/08/17 11:41:33 grubba Exp $
 */
 
 #include "global.h"
@@ -1295,7 +1295,8 @@ PMOD_EXPORT void do_free_program (struct program *p)
 #ifdef PIKE_USE_MACHINE_CODE
 /* Special cases for low_add_to_program and add_to_program since
  * many OSes require us to use mmap to allocate memory for our
- * machine code.
+ * machine code. For decoding efficiency we also want a multi copy
+ * variant to be used by decode().
  */
 #define BAR(NUMTYPE,TYPE,ARGTYPE,NAME)					\
 void PIKE_CONCAT(low_add_to_,NAME) (struct program_state *state,	\
@@ -1319,8 +1320,65 @@ void PIKE_CONCAT(low_add_to_,NAME) (struct program_state *state,	\
   state->new_program->							\
     NAME[state->new_program->PIKE_CONCAT(num_,NAME)++]=(ARG);		\
 }									\
+void PIKE_CONCAT(low_add_many_to_,NAME) (struct program_state *state,	\
+					 TYPE *ARG, NUMTYPE cnt) {	\
+  NUMTYPE m = state->malloc_size_program->PIKE_CONCAT(num_,NAME);	\
+  CHECK_FOO(NUMTYPE,TYPE,NAME);						\
+  if((m + cnt) > state->new_program->PIKE_CONCAT(num_,NAME)) {		\
+    TYPE *tmp;								\
+    NUMTYPE n = m;							\
+    do {								\
+      n = MINIMUM(n*2+1,MAXVARS(NUMTYPE));				\
+      if(n==MAXVARS(NUMTYPE)) {						\
+	yyerror("Too many " #NAME ".");					\
+	return;								\
+      }									\
+    } while (m + cnt > n);						\
+    m = n;								\
+    tmp = mexec_realloc((void *)state->new_program->NAME,		\
+			sizeof(TYPE) * m);				\
+    if(!tmp) Pike_fatal("Out of memory.\n");				\
+    PIKE_CONCAT(RELOCATE_,NAME)(state->new_program, tmp);		\
+    state->malloc_size_program->PIKE_CONCAT(num_,NAME)=m;		\
+    state->new_program->NAME=tmp;					\
+  }									\
+  MEMCPY(state->new_program->NAME +					\
+	 state->new_program->PIKE_CONCAT(num_,NAME),			\
+	 ARG, sizeof(TYPE) * cnt);					\
+  state->new_program->PIKE_CONCAT(num_,NAME) += cnt;			\
+}									\
 void PIKE_CONCAT(add_to_,NAME) (ARGTYPE ARG) {				\
   PIKE_CONCAT(low_add_to_,NAME) ( Pike_compiler, ARG );			\
+}
+#else /* !PIKE_USE_MACHINE_CODE */
+#define BAR(NUMTYPE,TYPE,ARGTYPE,NAME)					\
+  FOO(NUMTYPE,TYPE,ARGTYPE,NAME)					\
+  void PIKE_CONCAT(low_add_many_to_,NAME) (struct program_state *state,	\
+					   TYPE *ARG, NUMTYPE cnt) {	\
+  NUMTYPE m = state->malloc_size_program->PIKE_CONCAT(num_,NAME);	\
+  CHECK_FOO(NUMTYPE,TYPE,NAME);						\
+  if((m + cnt) > state->new_program->PIKE_CONCAT(num_,NAME)) {		\
+    TYPE *tmp;								\
+    NUMTYPE n = m;							\
+    do {								\
+      n = MINIMUM(n*2+1,MAXVARS(NUMTYPE));				\
+      if(n==MAXVARS(NUMTYPE)) {						\
+	yyerror("Too many " #NAME ".");					\
+	return;								\
+      }									\
+    } while (m + cnt > n);						\
+    m = n;								\
+    tmp = realloc((void *)state->new_program->NAME,			\
+		  sizeof(TYPE) * m);					\
+    if(!tmp) Pike_fatal("Out of memory.\n");				\
+    PIKE_CONCAT(RELOCATE_,NAME)(state->new_program, tmp);		\
+    state->malloc_size_program->PIKE_CONCAT(num_,NAME)=m;		\
+    state->new_program->NAME=tmp;					\
+  }									\
+  MEMCPY(state->new_program->NAME +					\
+	 state->new_program->PIKE_CONCAT(num_,NAME),			\
+	 ARG, sizeof(TYPE) * cnt);					\
+  state->new_program->PIKE_CONCAT(num_,NAME) += cnt;			\
 }
 #endif /* PIKE_USE_MACHINE_CODE */
 
