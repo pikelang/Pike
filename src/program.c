@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.766 2009/08/17 11:41:33 grubba Exp $
+|| $Id: program.c,v 1.767 2009/08/18 15:56:11 grubba Exp $
 */
 
 #include "global.h"
@@ -1328,11 +1328,11 @@ void PIKE_CONCAT(low_add_many_to_,NAME) (struct program_state *state,	\
     TYPE *tmp;								\
     NUMTYPE n = m;							\
     do {								\
-      n = MINIMUM(n*2+1,MAXVARS(NUMTYPE));				\
       if(n==MAXVARS(NUMTYPE)) {						\
 	yyerror("Too many " #NAME ".");					\
 	return;								\
       }									\
+      n = MINIMUM(n*2+1,MAXVARS(NUMTYPE));				\
     } while (m + cnt > n);						\
     m = n;								\
     tmp = mexec_realloc((void *)state->new_program->NAME,		\
@@ -1361,11 +1361,11 @@ void PIKE_CONCAT(add_to_,NAME) (ARGTYPE ARG) {				\
     TYPE *tmp;								\
     NUMTYPE n = m;							\
     do {								\
-      n = MINIMUM(n*2+1,MAXVARS(NUMTYPE));				\
       if(n==MAXVARS(NUMTYPE)) {						\
 	yyerror("Too many " #NAME ".");					\
 	return;								\
       }									\
+      n = MINIMUM(n*2+1,MAXVARS(NUMTYPE));				\
     } while (m + cnt > n);						\
     m = n;								\
     tmp = realloc((void *)state->new_program->NAME,			\
@@ -2088,8 +2088,12 @@ int override_identifier (struct reference *new_ref, struct pike_string *name)
     if((i = ID_FROM_PTR(Pike_compiler->new_program, ref))->name != name)
       continue;
 
-    /* Do not zapp inherited inline ('local') identifiers */
-    if((ref->id_flags & (ID_INLINE|ID_INHERITED)) == (ID_INLINE|ID_INHERITED)) {
+    /* Do not zapp inherited inline ('local') identifiers,
+     * or inherited externals with new externals,
+     * since this makes it hard to identify in encode_value().
+     */
+    if((ref->id_flags & (ID_INLINE|ID_INHERITED)) == (ID_INLINE|ID_INHERITED)
+       || (ref->id_flags & new_ref->id_flags & ID_EXTERN)) {
       /* But we still need to hide them, since we shadow them... */
       ref->id_flags |= ID_HIDDEN;
       continue;
