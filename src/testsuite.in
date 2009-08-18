@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.878 2009/08/15 19:13:05 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.879 2009/08/18 19:31:10 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -772,6 +772,8 @@ test_any_equal([[
     local mixed d;
     extern mixed e;
     local mixed f;
+    local mixed g() {}
+    mixed h();
     this_program get_a() { return this_program::this; }
   };
   class B {
@@ -782,6 +784,8 @@ test_any_equal([[
     protected mixed d = b();
     protected mixed e = a();
     protected local mixed f = b();
+    protected mixed g();
+    protected mixed h();
     this_program get_b() { return this_program::this; }
   };
   class C {
@@ -797,7 +801,7 @@ test_any_equal([[
             "B", sort(indices(d->get_b())),
             "C", sort(indices(d->get_c())),
             "D", sort(indices(d->get_d())) });
-]], ({ "A", ({ "a", "b", "c", "d", "e", "f", "get_a" }),
+]], ({ "A", ({ "a", "b", "c", "d", "e", "f", "g", "h", "get_a" }),
        "B", ({ "get_a", "get_b" }),
        "C", ({ "get_a", "get_b", "get_c" }),
        "D", ({ "get_a", "get_b", "get_c", "get_d" }) }))
