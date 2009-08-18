@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.290 2009/08/17 13:55:06 grubba Exp $
+|| $Id: encode.c,v 1.291 2009/08/18 13:57:16 grubba Exp $
 */
 
 #include "global.h"
@@ -5220,6 +5220,9 @@ static void rec_restore_value(char **v, ptrdiff_t *l)
   }
 }
 
+/* Defined in builtin.cmod. */
+extern struct program *MasterCodec_program;
+
 /*! @decl mixed decode_value(string coded_value, void|Codec codec)
  *!
  *! Decode a value from the string @[coded_value].
@@ -5276,8 +5279,8 @@ void f_decode_value(INT32 args)
     case 1:
       codec = get_master();
       if (!codec) {
-	/* Use a dummy if there's no master around yet, to avoid checks. */
-	push_object (clone_object (null_program, 0));
+	/* The codec used for decoding the master program. */
+	push_object (clone_object (MasterCodec_program, 0));
 	args++;
 	codec = Pike_sp[-1].u.object;
       }
