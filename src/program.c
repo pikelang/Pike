@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.767 2009/08/18 15:56:11 grubba Exp $
+|| $Id: program.c,v 1.768 2009/08/18 19:55:13 grubba Exp $
 */
 
 #include "global.h"
@@ -1928,7 +1928,7 @@ struct program *id_to_program(INT32 id)
       }
       break;
     }
-    if (module) {
+    if (module && get_master()) {
       /* fprintf(stderr, "%s... ", module); */
       push_text(module);
       SAFE_APPLY_MASTER("resolv", 1);
@@ -5798,7 +5798,9 @@ INT32 define_function(struct pike_string *name,
 	fprintf(stderr, "%.*sidentifier is local\n",
 		c->compilation_depth, "");
 #endif
-
+	/* Hide the previous definition, and make a new definition. */
+	Pike_compiler->new_program->identifier_references[i].id_flags |=
+	  ID_PROTECTED;
 	goto make_a_new_def;
       }
 
