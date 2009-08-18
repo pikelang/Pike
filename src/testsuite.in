@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.879 2009/08/18 19:31:10 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.880 2009/08/18 19:44:34 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -801,7 +801,7 @@ test_any_equal([[
             "B", sort(indices(d->get_b())),
             "C", sort(indices(d->get_c())),
             "D", sort(indices(d->get_d())) });
-]], ({ "A", ({ "a", "b", "c", "d", "e", "f", "g", "h", "get_a" }),
+]], ({ "A", ({ "a", "b", "c", "d", "e", "f", "g", "get_a", "h" }),
        "B", ({ "get_a", "get_b" }),
        "C", ({ "get_a", "get_b", "get_c" }),
        "D", ({ "get_a", "get_b", "get_c", "get_d" }) }))
