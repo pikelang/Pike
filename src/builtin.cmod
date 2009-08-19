@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.232 2009/08/18 13:56:10 grubba Exp $
+|| $Id: builtin.cmod,v 1.233 2009/08/19 08:51:23 grubba Exp $
 */
 
 #include "global.h"
@@ -4032,6 +4032,9 @@ PIKECLASS List
 /*! @endmodule
  */
 
+/*! @module Pike
+ */
+
 /*! @class MasterCodec
  *!
  *! This codec is used when loading a dumped master.
@@ -4042,7 +4045,8 @@ PIKECLASS List
 PIKECLASS MasterCodec
   flags ID_PROTECTED;
 {
-  /*! Look up a function in @[all_constants()].
+  /*! @decl mixed functionof(mixed symbol)
+   *! Look up a function in @[all_constants()].
    */
   PIKEFUN mixed functionof(mixed symbol)
   {
@@ -4051,6 +4055,12 @@ PIKECLASS MasterCodec
     stack_pop_keep_top();
   }
 }
+
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
 
 void init_builtin(void)
 {
