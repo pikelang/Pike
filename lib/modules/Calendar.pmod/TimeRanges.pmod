@@ -1,6 +1,6 @@
 //! module Calendar
 
-// $Id: TimeRanges.pmod,v 1.36 2008/11/04 15:49:23 mast Exp $
+// $Id: TimeRanges.pmod,v 1.37 2009/08/19 09:09:12 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -259,19 +259,24 @@ class TimeRange
 //!	of steps the motion will be. It does <i>never</i> represent
 //!	any <i>fixed</i> amount of time, like seconds or days.
 
-   TimeRange `+(program|this_program|int n)
+   TimeRange `+(program|this_program|int n,
+		program|this_program|int ... more)
    {
+      if (sizeof(more)) n = predef::`+(n, @more);
       if (objectp(n)) return add(1,n);
       return add(n);
    }
 
-   TimeRange ``+(int n)
+  TimeRange ``+(int n, int ... more)
    {
+      if (sizeof(more)) n = predef::`+(n, @more);
       return add(n);
    }
 
-   TimeRange `-(TimeRange|program|int n)
+   TimeRange `-(program|this_program|int n,
+		TimeRange|this_program|int ... more)
    {
+      if (sizeof(more)) n = predef::`+(n, @more);
       if (objectp(n)) return add(-1,n);
       return add(-n);
    }
