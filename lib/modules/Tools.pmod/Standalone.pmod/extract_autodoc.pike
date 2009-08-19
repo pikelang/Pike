@@ -1,5 +1,5 @@
 /*
- * $Id: extract_autodoc.pike,v 1.46 2007/03/03 21:46:38 nilsson Exp $
+ * $Id: extract_autodoc.pike,v 1.47 2009/08/19 08:46:23 grubba Exp $
  *
  * AutoDoc mk II extraction script.
  *
@@ -116,7 +116,7 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
       if(fn[-1]=='~') continue;
       if(fn[0]=='#' && fn[-1]=='#') continue;
 
-      Stdio.Stat stat = file_stat(srcdir+fn, 1);
+      Stdio.Stat stat = file_stat(srcdir+fn);
 
       if (!stat) continue;
 
@@ -187,14 +187,15 @@ string extract(string filename, string imgdest,
   if(!has_value(name_sans_suffix, "."))
     error("No suffix in file %O.\n", name_sans_suffix);
   suffix = ((name_sans_suffix/"/")[-1]/".")[-1];
-  if( !(< "c", "cpp", "m", /* "cmod", */ "pike", "pmod", >)[suffix] )
+  if( !(< "c", "cc", "cpp", "m", /* "cmod", */ "pike", "pmod", >)[suffix] )
     error("Unknown filetype %O.\n", suffix);
   name_sans_suffix =
     name_sans_suffix[..sizeof(name_sans_suffix)-(sizeof(suffix)+2)];
 
   string result;
   mixed err = catch {
-    if( suffix == "c" || suffix == "cpp" /* || suffix == "cmod" */)
+    if( suffix == "c" || suffix == "cc" || suffix == "cpp"
+	/* || suffix == "cmod" */)
       result = Tools.AutoDoc.ProcessXML.extractXML(filename,0,0,0,root);
     else {
       string type = ([ "pike":"class", "pmod":"module", ])[suffix];
