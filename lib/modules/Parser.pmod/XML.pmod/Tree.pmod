@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.74 2008/10/04 19:56:48 mast Exp $
+ * $Id: Tree.pmod,v 1.75 2009/08/19 08:49:02 grubba Exp $
  *
  */
 
@@ -1494,8 +1494,55 @@ class XMLParser
     }
   }
 
+  //! Factory for creating nodes.
+  //!
+  //! @param type
+  //!   Type of node to create. One of:
+  //!   @int
+  //!     @value XML_TEXT
+  //!       XML text. @[text] contains a string with the text.
+  //!     @value XML_COMMENT
+  //!       XML comment. @[text] contains a string with the comment text.
+  //!     @value XML_HEADER
+  //!       @tt{<?xml?>@}-header @[attr] contains a mapping with
+  //!       the attributes.
+  //!     @value XML_PI
+  //!       XML processing instruction. @[name] contains the name of the
+  //!       processing instruction and @[text] the remainder.
+  //!     @value XML_ELEMENT
+  //!       XML element tag. @[name] contains the name of the tag and
+  //!       @[attr] the attributes.
+  //!     @value XML_DOCTYPE
+  //!     @value DTD_ENTITY
+  //!     @value DTD_ELEMENT
+  //!     @value DTD_ATTLIST
+  //!     @value DTD_NOTATION
+  //!       DTD information.
+  //!   @endint
+  //!
+  //! @param name
+  //!   Name of the tag if applicable.
+  //!
+  //! @param attr
+  //!   Attributes for the tag if applicable.
+  //!
+  //! @param text
+  //!   Contained text of the tab if any.
+  //!
+  //! This function is called during parsning to create the various
+  //! XML nodes.
+  //!
+  //! Overload this function to provide application-specific XML nodes.
+  //!
+  //! @returns
+  //!   Returns a node object representing the XML tag,
+  //!   or @expr{0@} (zero) if the subtree rooted in the
+  //!   tag should be cut.
+  //!
+  //! @note
+  //!   This function is not available in Pike 7.6 and earlier.
   protected this_program node_factory(int type, string name,
-				   mapping attr, string text);
+				      mapping attr, string text);
 
   protected this_program|int(0..0)
     parse_xml_callback(string type, string name,
@@ -1571,32 +1618,34 @@ class XMLParser
         }
       }
       node = node_factory(XML_ELEMENT, name, attr, "");
-	
-      //  Add children to our tree node. We need to merge consecutive text
-      //  children since two text elements can't be neighbors according to
-      //  the W3 spec. This is necessary since CDATA sections are
-      //  converted to text nodes which might need to be concatenated
-      //  with neighboring text nodes.
-      Node text_node;
-      int(0..1) modified;
 
-      foreach(contents; int i; Node child) {
-        if (child->get_node_type() == XML_TEXT) {
-          if (text_node) {
-            //  Add this text string to the previous text node.
-            text_node->_add_to_text (child->get_text());
-            contents[i]=0;
-            modified=1;
-          }
-          else
-            text_node = child;
-        } else
-          text_node = 0;
+      if (node) {
+	//  Add children to our tree node. We need to merge consecutive text
+	//  children since two text elements can't be neighbors according to
+	//  the W3 spec. This is necessary since CDATA sections are
+	//  converted to text nodes which might need to be concatenated
+	//  with neighboring text nodes.
+	Node text_node;
+	int(0..1) modified;
+
+	foreach(contents; int i; Node child) {
+	  if (child->get_node_type() == XML_TEXT) {
+	    if (text_node) {
+	      //  Add this text string to the previous text node.
+	      text_node->_add_to_text (child->get_text());
+	      contents[i]=0;
+	      modified=1;
+	    }
+	    else
+	      text_node = child;
+	  } else
+	    text_node = 0;
+	}
+
+	if( modified )
+	  contents -= ({ 0 });
+	node->replace_children( contents );
       }
-
-      if( modified )
-        contents -= ({ 0 });
-      node->replace_children( contents );
       return (node);
 
     case "error":
