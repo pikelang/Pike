@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.291 2009/08/18 13:57:16 grubba Exp $
+|| $Id: encode.c,v 1.292 2009/08/19 18:31:34 grubba Exp $
 */
 
 #include "global.h"
@@ -1332,6 +1332,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	  int inherit_num = 1;
 	  struct svalue str_sval;
 	  char *id_dumped = (char *) alloca(p->num_identifiers);
+	  int d_min = 0;
 	  MEMSET(id_dumped,0,p->num_identifiers);
 	  str_sval.type = T_STRING;
 	  str_sval.subtype = 0;
@@ -1615,10 +1616,19 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		  /* Not supported. */
 		  Pike_error("Cannot encode functions implemented in C "
 			     "(identifier=\"%S\").\n",
-			     p->identifiers[d].name);
+			     id->name);
 		  break;
 
 		case IDENTIFIER_VARIABLE:
+		  if (d < d_min) {
+		    EDB(3,
+			fprintf(stderr, "%*sencode: Skipping overloaded variable \"%s\"\n",
+				data->depth, "",
+				id->name->str));
+		    /* We still want to dump it later... */
+		    id_dumped[ref->identifier_offset] = 0;
+		    goto next_identifier_ref;
+		  }
 		  EDB(3,
 		      fprintf(stderr, "%*sencode: encoding variable\n",
 			      data->depth, ""));
@@ -1678,6 +1688,10 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	      struct inherit *inh = p->inherits + inherit_num;
 	      struct reference *ref = p->identifier_references + d;
 	      int i;
+
+	      /* The references from this inherit stop at this point. */
+	      d_min = inh->identifier_level +
+		inh->prog->num_identifier_references;
 
 	      EDB(3,
 		  fprintf(stderr, "%*sencode: encoding inherit\n",
