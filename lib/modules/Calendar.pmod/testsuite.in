@@ -1,5 +1,5 @@
 START_MARKER
-dnl $Id: testsuite.in,v 1.23 2009/03/11 16:02:53 nilsson Exp $
+dnl $Id: testsuite.in,v 1.24 2009/08/19 10:54:27 grubba Exp $
 
 dnl NOTE:
 dnl   *every* time the Calendar tests have failed, it's not the 
@@ -88,6 +88,7 @@ test_true( $1->week()->year() == $2->week()->year() )
 ]])
 define(test_day,[[
 test_do([[
+  // werror("Testing day %O\n", $1);
   sscanf($1,"%d-%d-%d %s %dw%d",
          int y,int m,int d,string wd,int wy,int w);
   add_constant("d1", Calendar.ISO.Day(y,m,d));
@@ -153,6 +154,10 @@ test_any([[
   d->week_day();
   return d->range (d)->week()->year_no();
 ]], 2007)
+
+dnl From Xuesong Guo <peterpan@wukong.com>
+test_eq([[((Calendar.dwim_day("20090501")+1)+1)]],
+	[[(Calendar.dwim_day("20090501")+2)]])
 
 test_eq([[(Calendar.ISO.Week (2007, 52) + 1)->year_no()]], 2008)
 
