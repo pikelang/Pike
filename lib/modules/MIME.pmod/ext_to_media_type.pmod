@@ -1,4 +1,4 @@
-// $Id: ext_to_media_type.pmod,v 1.7 2008/06/28 16:36:55 nilsson Exp $
+// $Id: ext_to_media_type.pmod,v 1.8 2009/08/20 15:07:17 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -301,6 +301,8 @@ protected mapping ext2type = ([
   "hdml"    : "text/x-hdml",
   "htt"     : "text/webviewhtml",
   "pgr"     : "text/parsnegar-document",
+  "pike"    : "text/x-pike-code",
+  "pmod"    : "text/x-pike-code",
   "rt"      : "text/vnd.rn-realtext",
 // "src"     : "text/speech",
 // "talk"    : "text/speech",
