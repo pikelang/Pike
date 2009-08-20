@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.253 2009/08/12 14:44:02 grubba Exp $
+|| $Id: operators.c,v 1.254 2009/08/20 16:24:36 mast Exp $
 */
 
 #include "global.h"
@@ -486,9 +486,8 @@ PMOD_EXPORT void o_cast_to_string(void)
   case T_FLOAT:
     sprintf(buf,"%.*"PRINTPIKEFLOAT"g",
 	    PIKEFLOAT_DIG, sp[-1].u.float_number);
-    /* Ensure that either an exponent or a decimal point gets printed,
-     * since %g can remove both which would make it look like an integer. */
-    if (!strchr (buf, '.') && !strchr (buf, 'e'))
+    /* Same kludge as in svalue.c:describe_svalue. */
+    if (!STRCHR (buf, '.') && !STRCHR (buf, ',') && !STRCHR (buf, 'e'))
       strcat (buf, ".0");
     break;
 
