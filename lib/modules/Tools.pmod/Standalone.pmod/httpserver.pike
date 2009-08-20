@@ -13,6 +13,8 @@ the world without any authentication.
 constant version = sprintf(#"Pike httpserver %d.%d.%d
 ",(int)__REAL_VERSION__,__REAL_MINOR__,__REAL_BUILD__);
 
+constant description = "Minimal HTTP-server.";
+
 int main(int argc, array(string) argv)
 {
     int my_port = 8080;
