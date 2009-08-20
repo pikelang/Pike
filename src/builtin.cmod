@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.235 2009/08/19 18:50:22 grubba Exp $
+|| $Id: builtin.cmod,v 1.236 2009/08/20 04:20:05 nilsson Exp $
 */
 
 #include "global.h"
@@ -4073,7 +4073,7 @@ PIKECLASS MasterCodec
     stack_pop_keep_top();
   }
   /*! @decl object decode_object(object obj, mixed data)
-   *! Calls @expr{@obj->_decode(@[data])@}.
+   *! Calls @expr{obj->_decode(@[data])@}.
    */
   PIKEFUN object decode_object(object obj, mixed data)
   {
