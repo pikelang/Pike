@@ -4,7 +4,7 @@
 constant doc = #"Usage: httpserver [flags] [port]
 Starts a simple HTTP server on port 8080 unless another port is specified. The
 server will present the contents of the current directory and it's children to
-the world without and authentication.
+the world without any authentication.
 
       --version             print version information and exit
       --help                display this help and exit
@@ -34,11 +34,17 @@ int main(int argc, array(string) argv)
 string dirlist( string dir )
 {
     string res = 
+	"<html><head>\n"
         "<style>a { text-decoration: none;  }\n"
-        ".odd { background-color:#efefef; }\n.even { background-color:#fefefe; }"
-        "</style>\n<h1>"+dir[2..]+"</h1>"
-        "<table cellspacing='0' cellpadding='2'>"
-        "<tr><th align=left>Filename</th><th align=left>Type</th><th align=right>Size</th>";
+        ".odd { background-color:#efefef; }\n"
+	".even { background-color:#fefefe; }\n"
+        "</style>\n"
+	"</head><body>\n"
+	"<h1>"+Parser.encode_html_entities(dir[2..])+"</h1>"
+        "<table cellspacing='0' cellpadding='2'>\n"
+        "<tr><th align='left'>Filename</th>"
+	"<th align='right'>Type</th>"
+	"<th align='right'>Size</th></tr>\n";
 
     foreach( get_dir( dir ); int i; string fn )
     {
@@ -50,16 +56,24 @@ string dirlist( string dir )
         if( t == "application/octet-stream" )
             t = "<span style='color:darkgrey'>unknown</span>";
 
+	fn = Parser.encode_html_entities(fn);
         res += 
-            sprintf("<tr class='%s'><td><a href='%s%s'>%s%[2]s</a></td><td align=right>%s</td><td align=right>%s</td></tr>\n", 
+            sprintf("<tr class='%s'><td><a href='%s%s'>%s%[2]s</a></td>"
+		    "<td align='right'>%s</td>"
+		    "<td align='right'>%s</td></tr>\n", 
                     (i&1?"odd":"even"),
-                    replace(fn,(["'":"&quot","&":"&amp;"])), 
-                    s->isdir?"/":"",
-                    replace(fn,(["<":"&lt;","&":"&amp;"])), 
-                    t,
+                    fn, s->isdir?"/":"", fn, t,
                     s->isdir?"":String.int2size(s->size));
     }
-    return res+"</table>";
+    return res+"</table></body></html>\n";
+}
+
+string file_not_found(string fname)
+{
+  return
+    "<html><body><h1>File not found</h1>\n"
+    "<tt>" + Parser.encode_html_entities(fname) + "</tt><br />\n"
+    "</body></html>\n";
 }
 
 void handle_request(Protocols.HTTP.Server.Request request)
@@ -67,9 +81,15 @@ void handle_request(Protocols.HTTP.Server.Request request)
     string file = "."+combine_path("/",request->not_query);
     Stdio.Stat s = file_stat( file );
     if( !s )
-        request->response_and_finish( (["data":"nofile: "+file,"error":404]) );
+	request->response_and_finish( (["data":
+					file_not_found(request->not_query),
+					"type":"text/html",
+					"error":404]) );
     else if( s->isdir )
-        request->response_and_finish( ([ "data":dirlist(file),"type":"text/html" ]) );
+        request->response_and_finish( ([ "data":dirlist(file),
+					 "type":"text/html" ]) );
     else
-        request->response_and_finish( ([ "file":Stdio.File(file) ]) );
+        request->response_and_finish( ([ "file":Stdio.File(file),
+					 "type":Protocols.HTTP.Server.
+					 filename_to_type(file) ]) );
 }
