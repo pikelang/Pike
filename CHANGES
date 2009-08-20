@@ -4,7 +4,8 @@ Changes since Pike 7.8.316 (second 7.8 release):
 General
 -------
 
-o Nettle 2.0 is now supported.
+o ADT.Heap
+  The compat functions top() and size() are now marked as deprecated.
 
 
 Extensions and New Functions
@@ -17,6 +18,21 @@ o Image.Image
 o Calendar
 
   Updated timezone data to 2009j.
+
+o Added "pike -x httpserver" that implements a minimal HTTP-server
+  exporting the current directory.
+
+
+Optimizations
+-------------
+
+o Lowered startup time by extending encode_value() and MasterCodec so
+  that master.pike can be precompiled.
+
+o Lowered startup time by reducing the number of MEMSET() calls done
+  on startup.
+
+o Allow threads while calling SWL_GL_SwapBuffers.
 
 
 Bug fixes
@@ -35,6 +51,26 @@ o Protocols.HTTP.Server.HeaderParser will now discard parts of a
 o file_open_socket() now attepts to set SO_REUSEPORT on the socket.
   Potentially fixes issues on FreeBSD 7.x where ports aren't reused.
 
+o Calendar.TimeRanges now knows that `+() and `-() can get any number
+  of arguments.
+
+o The experimental extended ZFS support is disabled since it pulled in
+  unwanted dependencies.
+
+o Fixed propagation of changed module directories for joinnodes by
+  zapping the joinnode cache.
+
+o Fixed memory leak in Image.WBF.
+
+o Fixed potential NULL-deref in Image.XWD.
+
+o Fixed potential NULL-deref in Image.PNG.
+
+
+Building and installing
+-----------------------
+
+o Nettle 2.0 is now supported.
 
 
 Changes since Pike 7.8.116 (initial 7.8 release):
