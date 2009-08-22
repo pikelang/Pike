@@ -1,9 +1,8 @@
-#!/usr/local/bin/pike
 
 #pike 7.2
 
 /*
- * $Id: Grammar_parser.pmod,v 1.3 2008/06/28 16:54:02 nilsson Exp $
+ * $Id: Grammar_parser.pmod,v 1.4 2009/08/22 18:37:27 nilsson Exp $
  *
  * Generates a parser from a textual specification.
  *
