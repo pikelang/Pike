@@ -1,7 +1,5 @@
-#!/usr/local/bin/pike
-
 /*
- * $Id: lr.pike,v 1.5 2003/08/22 14:25:57 nilsson Exp $
+ * $Id: lr.pike,v 1.6 2009/08/22 18:39:23 nilsson Exp $
  *
  * An LR(1) Parser in Pike
  *
@@ -180,30 +178,3 @@ class scan {
 }
 
 object(scan) scanner = scan();
-
-int main(int argc, array(string) argv)
-{
-  mixed result;
-
-  werror("Grammar:\n\n" + (string) g);
-
-#if efun(_memory_usage)
-  werror("Memory usage:\n%O\n", _memory_usage());
-#endif
-
-  werror("Compiling...\n");
-
-  g->set_error_handler(ErrorHandler(0)->report);
-
-  g->compile();
-
-  werror("Compilation finished!\n");
-
-#if efun(_memory_usage)
-  werror("Memory usage:\n%O\n", _memory_usage());
-#endif
-
-  result = g->parse(scanner->scan);
-
-  werror("Result of parsing: \"%s\"\n", result + "");
-}

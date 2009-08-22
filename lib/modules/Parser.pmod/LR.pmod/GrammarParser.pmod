@@ -1,9 +1,7 @@
-#!/usr/local/bin/pike
-
 #pike __REAL_VERSION__
 
 /*
- * $Id: GrammarParser.pmod,v 1.6 2008/06/28 16:36:55 nilsson Exp $
+ * $Id: GrammarParser.pmod,v 1.7 2009/08/22 18:39:23 nilsson Exp $
  *
  * Generates a parser from a textual specification.
  *
@@ -365,27 +363,4 @@ Parser make_parser(string str, object|void m)
 int|Parser make_parser_from_file(string fname, object|void m)
 {
   return make_parser(Stdio.read_file(fname), m);
-}
-
-/*
- * Syntax-checks and compiles the grammar files
- */
-int main(int argc, array(string) argv)
-{
-  if (argc == 1) {
-    werror("Usage:\n\t%s <files>\n", argv[0]);
-  } else {
-    int i;
-
-    for (i=1; i < argc; i++) {
-      werror("Compiling \"%s\"...\n", argv[i]);
-
-      int|Parser g = make_parser_from_file(argv[i]);
-      if (lr_error || !g) {
-	werror("Compilation failed\n");
-      } else {
-	werror("Compilation done\n");
-      }
-    }
-  }
 }
