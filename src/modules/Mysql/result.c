@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: result.c,v 1.39 2008/06/25 11:53:31 srb Exp $
+|| $Id: result.c,v 1.40 2009/08/26 12:38:23 grubba Exp $
 */
 
 /*
@@ -615,6 +615,130 @@ static void f_fetch_row(INT32 args)
   mysql_field_seek(PIKE_MYSQL_RES->result, 0);
 }
 
+static void json_escape(struct string_builder *res,
+			unsigned char *str, size_t len)
+{
+  size_t i;
+  // FIXME: Use string_builder_append on string segments for maximum speed
+  for (i = 0; i < len; i++) {
+    switch (str[i]) {
+      case 0:
+ 	string_builder_putchar(res, '\\');
+ 	string_builder_putchar(res, '0');
+	break;
+      case '\"':
+ 	string_builder_putchar(res, '\\');
+ 	string_builder_putchar(res, '\"');
+	break;
+      case '\\':
+ 	string_builder_putchar(res, '\\');
+ 	string_builder_putchar(res, '\\');
+	break;
+      case '\n':
+ 	string_builder_putchar(res, '\\');
+ 	string_builder_putchar(res, 'n');
+	break;
+      case '\b':
+ 	string_builder_putchar(res, '\\');
+ 	string_builder_putchar(res, 'b');
+	break;
+      case '\f':
+ 	string_builder_putchar(res, '\\');
+ 	string_builder_putchar(res, 'f');
+	break;
+      case '\r':
+ 	string_builder_putchar(res, '\\');
+ 	string_builder_putchar(res, 'r');
+	break;
+      case '\t':
+ 	string_builder_putchar(res, '\\');
+ 	string_builder_putchar(res, 't');
+	break;
+      default:
+	string_builder_putchar(res, str[i]);
+	break;
+    }
+  }
+}
+
+/*! @decl int|string fetch_json()
+ *!
+ *! Fetch all remaining rows and return JSON, utf8 encoded.
+ *!
+ *! Returns @expr{0@} (zero) XXX.
+ *!
+ *! @seealso
+ *!   @[fetch_row()]
+ *!
+ *! FIXME: Encode binary fields as utf8.
+ *!
+ */
+static void f_fetch_json_result(INT32 args)
+{
+  int num_fields;
+  MYSQL_ROW row;
+#ifdef HAVE_MYSQL_FETCH_LENGTHS
+  FETCH_LENGTHS_TYPE *row_lengths;
+#endif /* HAVE_MYSQL_FETCH_LENGTHS */
+
+  if (!PIKE_MYSQL_RES->result) {
+    Pike_error("Can't fetch data from an uninitialized result object.\n");
+  }
+
+  struct string_builder res;
+  init_string_builder(&res, 0);
+  string_builder_putchar(&res, '[');
+
+  num_fields = mysql_num_fields(PIKE_MYSQL_RES->result);
+  mysql_field_seek(PIKE_MYSQL_RES->result, 0);
+
+  pop_n_elems(args);
+
+  int r = 0;
+next_row:
+  row = mysql_fetch_row(PIKE_MYSQL_RES->result);
+#ifdef HAVE_MYSQL_FETCH_LENGTHS
+  row_lengths = mysql_fetch_lengths(PIKE_MYSQL_RES->result);
+#endif /* HAVE_MYSQL_FETCH_LENGTHS */
+
+  if ((num_fields > 0) && row) {
+    int i;
+
+    if (r)
+	string_builder_putchar(&res, ',');
+
+    string_builder_putchar(&res, '[');
+    for (i=0; i < num_fields; i++) {
+      if (i)
+	  string_builder_putchar(&res, ',');
+      if (row[i]) {
+	string_builder_putchar(&res, '\"');
+#ifdef HAVE_MYSQL_FETCH_LENGTHS
+	json_escape(&res, row[i], row_lengths[i]);
+#else
+	json_escape(&res, row[i], strlen([i]));
+#endif /* HAVE_MYSQL_FETCH_LENGTHS */
+	string_builder_putchar(&res, '\"');
+      } else {
+	/* NULL? */
+	string_builder_putchar(&res, '0');
+	if(i+1<num_fields)
+	  mysql_field_seek(PIKE_MYSQL_RES->result, i+1);
+      }
+    }
+    string_builder_putchar(&res, ']');
+    r++;
+    goto next_row;
+  } else {
+    /* No rows left in result */
+    PIKE_MYSQL_RES->eof = 1;
+    string_builder_putchar(&res, ']');
+    push_string(finish_string_builder(&res));
+  }
+
+  mysql_field_seek(PIKE_MYSQL_RES->result, 0);
+}
+
 /*! @endclass
  */
 
@@ -653,6 +777,8 @@ void init_mysql_res_programs(void)
   ADD_FUNCTION("seek", f_seek,tFunc(tInt,tVoid), ID_PUBLIC);
   /* function(void:int|array(string|int|float)) */
   ADD_FUNCTION("fetch_row", f_fetch_row,tFunc(tVoid,tOr(tInt,tArr(tOr3(tStr,tInt,tFlt)))), ID_PUBLIC);
+  /* function(void:int|string) */
+  ADD_FUNCTION("fetch_json_result", f_fetch_json_result,tFunc(tVoid,tOr(tInt,tStr)), ID_PUBLIC);
 
   set_init_callback(init_res_struct);
   set_exit_callback(exit_res_struct);
