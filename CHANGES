@@ -15,6 +15,10 @@ o Image.Image
 
   Added support for sending Color objects to the color() function.
 
+o Sql.Sql
+
+  Added support for fetching result sets as JSON-encoded strings.
+
 o Calendar
 
   Updated timezone data to 2009j.
