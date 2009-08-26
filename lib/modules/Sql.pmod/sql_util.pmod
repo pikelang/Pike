@@ -1,5 +1,5 @@
 /*
- * $Id: sql_util.pmod,v 1.14 2007/05/03 13:57:35 mast Exp $
+ * $Id: sql_util.pmod,v 1.15 2009/08/26 12:38:13 grubba Exp $
  *
  * Some SQL utility functions.
  * They are kept here to avoid circular references.
@@ -137,6 +137,12 @@ class UnicodeWrapper (
       }
     }
     return row;
+  }
+
+  //! JSON is always utf8 default, do nothing.
+  int|string fetch_json_result()
+  {
+    return master_result->fetch_json_result();
   }
 }
 
