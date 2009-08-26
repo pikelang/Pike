@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.880 2009/08/18 19:44:34 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.881 2009/08/26 12:26:33 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -10248,6 +10248,12 @@ test_any([[
   // Bug 3693
   array(mapping) a = ({([])})*2;
   return a[0] == a[1];
+]], 1)
+
+test_any([[
+  class X {int __hash() {return 17;}};
+  mixed c = copy_value (X());
+  return objectp (c) && object_program (c) == X;
 ]], 1)
 
 // - cos
