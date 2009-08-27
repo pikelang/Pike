@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: result.c,v 1.35 2009/08/26 12:38:55 grubba Exp $
+|| $Id: result.c,v 1.36 2009/08/27 08:24:12 grubba Exp $
 */
 
 /*
@@ -98,7 +98,7 @@
  * Globals
  */
 
-RCSID("$Id: result.c,v 1.35 2009/08/26 12:38:55 grubba Exp $");
+RCSID("$Id: result.c,v 1.36 2009/08/27 08:24:12 grubba Exp $");
 
 struct program *mysql_result_program = NULL;
 
@@ -683,12 +683,13 @@ static void f_fetch_json_result(INT32 args)
 #ifdef HAVE_MYSQL_FETCH_LENGTHS
   FETCH_LENGTHS_TYPE *row_lengths;
 #endif /* HAVE_MYSQL_FETCH_LENGTHS */
+  struct string_builder res;
+  int r = 0;
 
   if (!PIKE_MYSQL_RES->result) {
     Pike_error("Can't fetch data from an uninitialized result object.\n");
   }
 
-  struct string_builder res;
   init_string_builder(&res, 0);
   string_builder_putchar(&res, '[');
 
@@ -697,7 +698,6 @@ static void f_fetch_json_result(INT32 args)
 
   pop_n_elems(args);
 
-  int r = 0;
 next_row:
   row = mysql_fetch_row(PIKE_MYSQL_RES->result);
 #ifdef HAVE_MYSQL_FETCH_LENGTHS
