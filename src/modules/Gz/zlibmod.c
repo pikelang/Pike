@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: zlibmod.c,v 1.85 2009/04/26 18:33:18 peter Exp $
+|| $Id: zlibmod.c,v 1.86 2009/08/28 13:30:54 mast Exp $
 */
 
 #include "global.h"
@@ -229,15 +229,23 @@ static void gz_deflate_create(INT32 args)
 }
 
 
+static void do_mt_unlock (PIKE_MUTEX_T *lock)
+{
+  mt_unlock (lock);
+}
+
 static int do_deflate(dynamic_buffer *buf,
 		      struct zipper *this,
 		      int flush)
 {
    int ret=0;
+   ONERROR uwp;
 
    THREADS_ALLOW();
    mt_lock(& this->lock);
    THREADS_DISALLOW();
+   SET_ONERROR (uwp, do_mt_unlock, &this->lock);
+
    if(!this->gz.state)
       ret=Z_STREAM_ERROR;
    else
@@ -262,7 +270,7 @@ static int do_deflate(dynamic_buffer *buf,
       }
       while (ret==Z_OK && (this->gz.avail_in || !this->gz.avail_out));
 
-   mt_unlock(& this->lock);
+   CALL_AND_UNSET_ONERROR (uwp);
    return ret;
 }
 
@@ -638,9 +646,13 @@ static int do_inflate(dynamic_buffer *buf,
 		      int flush)
 {
   int fail=0;
+  ONERROR uwp;
+
   THREADS_ALLOW();
   mt_lock(& this->lock);
   THREADS_DISALLOW();
+  SET_ONERROR (uwp, do_mt_unlock, &this->lock);
+
   if(!this->gz.state)
   {
     fail=Z_STREAM_ERROR;
@@ -689,7 +701,8 @@ static int do_inflate(dynamic_buffer *buf,
       }
     } while(!this->gz.avail_out || flush==Z_FINISH || this->gz.avail_in);
   }
-  mt_unlock(& this->lock);
+
+  CALL_AND_UNSET_ONERROR (uwp);
   return fail;
 }
 
