@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: zlibmod.c,v 1.86 2009/08/28 13:30:54 mast Exp $
+|| $Id: zlibmod.c,v 1.87 2009/08/30 13:44:15 grubba Exp $
 */
 
 #include "global.h"
@@ -229,22 +229,26 @@ static void gz_deflate_create(INT32 args)
 }
 
 
+#ifdef _REENTRANT
 static void do_mt_unlock (PIKE_MUTEX_T *lock)
 {
   mt_unlock (lock);
 }
+#endif
 
 static int do_deflate(dynamic_buffer *buf,
 		      struct zipper *this,
 		      int flush)
 {
    int ret=0;
-   ONERROR uwp;
 
+#ifdef _REENTRANT
+   ONERROR uwp;
    THREADS_ALLOW();
    mt_lock(& this->lock);
    THREADS_DISALLOW();
    SET_ONERROR (uwp, do_mt_unlock, &this->lock);
+#endif
 
    if(!this->gz.state)
       ret=Z_STREAM_ERROR;
@@ -270,7 +274,9 @@ static int do_deflate(dynamic_buffer *buf,
       }
       while (ret==Z_OK && (this->gz.avail_in || !this->gz.avail_out));
 
+#ifdef _REENTRANT
    CALL_AND_UNSET_ONERROR (uwp);
+#endif
    return ret;
 }
 
