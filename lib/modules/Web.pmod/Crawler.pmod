@@ -33,7 +33,7 @@
 //! @enddl
 
 // Author:  Johan Schön.
-// $Id: Crawler.pmod,v 1.26 2008/06/28 16:37:02 nilsson Exp $
+// $Id: Crawler.pmod,v 1.27 2009/09/04 13:55:30 jonasw Exp $
 
 #define CRAWLER_DEBUG
 #ifdef CRAWLER_DEBUG
@@ -579,7 +579,7 @@ class ComplexQueue(Stats stats, Policy policy)
       return -1;
 
     //    policy->min_delay_per_host
-    URIStack uri_stack=host_heap->top();
+    URIStack uri_stack = host_heap->pop();
     if(!uri_stack->size())
       return 0;
     
