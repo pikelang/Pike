@@ -480,7 +480,7 @@ int silent_do_cmd(array(string) cmd, mixed|void filter, int|void silent,
       while(1)
       {
 	string s = f->read(4);
-	if (!s) {
+	if (!s || !sizeof (s)) {
 	  werror("Connection closed!\n");
 	  exit(1);
 	}
