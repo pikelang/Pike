@@ -138,7 +138,7 @@ mapping(string:mixed) low_announce(mapping args, string ip) {
     add_torrent( args->info_hash );
   }
 
-  TorrentInfo torrent = torrents[ args->info_hash];
+  TorrentInfo torrent = torrents[ args->info_hash ];
 
   if( args->ip ) {
     array temp_ip=array_sscanf(args->ip, "%d.%d.%d.%d");
