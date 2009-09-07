@@ -1,4 +1,4 @@
-// $Id: ext_to_media_type.pmod,v 1.8 2009/08/20 15:07:17 grubba Exp $
+// $Id: ext_to_media_type.pmod,v 1.9 2009/09/07 18:29:50 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -838,4 +838,9 @@ protected mapping ext2type = ([
 
 string `()(string ext) {
   return small_ext2type[ext] || ext2type[ext];
+}
+
+protected mixed cast(string to)
+{
+  if(to=="mapping") return small_ext2type + ext2type;
 }
