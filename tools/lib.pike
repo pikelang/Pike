@@ -469,7 +469,11 @@ int silent_do_cmd(array(string) cmd, mixed|void filter, int|void silent,
 			  f->write(s);
 
 			signal(signum("SIGINT"), 0);
-			f->close("w");
+			// Some port forwarders doesn't handle unidirectional
+			// close too well and closes the connection completely
+			// instead. Afaict, the one in VirtualBox 3.0.4 is one
+			// of them (c.f. http://www.virtualbox.org/ticket/4925).
+			//f->close("w");
 		      },f);
 
       string sout = "", serr = "";
