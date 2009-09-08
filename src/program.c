@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.768 2009/08/18 19:55:13 grubba Exp $
+|| $Id: program.c,v 1.769 2009/09/08 16:49:31 grubba Exp $
 */
 
 #include "global.h"
@@ -7645,6 +7645,36 @@ int report_compiler_dependency(struct program *p)
  *!
  *!   Report a diagnostic from the compiler.
  *!
+ *! @param severity
+ *!   The severity of the diagnostic.
+ *!
+ *!   The default implementation does the following depending on @[severity]:
+ *!   @int
+ *!     @value NOTICE
+ *!       Ignored.
+ *!     @value WARNING
+ *!       Calls @[MasterObject()->compile_warning()].
+ *!     @value ERROR
+ *!     @value FATAL
+ *!       Calls @[MasterObject()->compile_error()].
+ *!   @endint
+ *!
+ *!   If there's no master object yet, the diagnostic is output to
+ *!   @[Stdio.stderr].
+ *!
+ *! @param filename
+ *! @param linenumber
+ *!   Location which triggered the diagnostic.
+ *!
+ *! @param subsystem
+ *!   Compiler subsystem that generated the diagnostic.
+ *!
+ *! @param message
+ *!   @[sprintf()]-style formatting string with the diagnostic message.
+ *!
+ *! @param extra_args
+ *!   Extra arguments to @[sprintf()].
+ *!
  *! @seealso
  *!   @[PikeCompiler()->report()]
  */
@@ -7775,9 +7805,15 @@ static void f_compilation_env_resolv(INT32 args)
  *!
  *!   Get compatibility handler for Pike @[major].@[minor].
  *!
+ *!   The default implementation calls the corresponding
+ *!   function in the master object.
+ *!
  *! @note
  *!   This function is typically called by
  *!   @[PikeCompiler()->get_compilation_handler()].
+ *!
+ *! @seealso
+ *!   @[MasterObject()->get_compilation_handler()].
  */
 static void f_compilation_env_get_compilation_handler(INT32 args)
 {
@@ -7810,6 +7846,9 @@ static void f_compilation_env_get_compilation_handler(INT32 args)
  *! @note
  *!   This function is typically called by 
  *!   @[Pike_compiler()->get_default_module()].
+ *!
+ *! @seealso
+ *!   @[MasterObject()->get_default_module()].
  */
 static void f_compilation_env_get_default_module(INT32 args)
 {
@@ -7826,6 +7865,12 @@ static void f_compilation_env_get_default_module(INT32 args)
  *!                              object|void handler)
  *!
  *!   Look up an inherit @[inh].
+ *!
+ *!   The default implementation calls the corresponding function
+ *!   in the master object.
+ *!
+ *! @seealso
+ *!   @[MasterObject()->handle_inherit()].
  */
 static void f_compilation_env_handle_inherit(INT32 args)
 {
@@ -7839,6 +7884,16 @@ static void f_compilation_env_handle_inherit(INT32 args)
 }
 
 /*! @decl int filter_exception(SeverityLevel level, mixed err)
+ *!
+ *!   The default implementation calls
+ *!   @[MasterObject()->compile_exception()] for @[level] @[ERROR]
+ *!   and @[FATAL].
+ *!
+ *! @note
+ *!   This function is not implemented in Pike 7.8.
+ *!
+ *! @seealso
+ *!   @[MasterObject()->compile_exception()].
  */
 static void f_compilation_env_filter_exception(INT32 args)
 {
@@ -7851,14 +7906,22 @@ static void f_compilation_env_filter_exception(INT32 args)
     args = 2;
   }
 
+#if 0
   if (level >= REPORT_WARNING) {
     if (level >= REPORT_ERROR) {
       APPLY_MASTER("compile_exception", 1);
+      /* FIXME! */
     } else {
       push_int(level);
       push_string(format_exception_for_error_msg(err));
+      /* FIXME! */
     }
   }
+#endif
+
+  pop_n_elems(args);
+  push_undefined();
+  return;
 }
 
 /*! @class PikeCompiler
