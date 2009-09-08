@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: result.c,v 1.41 2009/08/27 08:13:49 grubba Exp $
+|| $Id: result.c,v 1.42 2009/09/08 18:29:23 nilsson Exp $
 */
 
 /*
@@ -663,14 +663,12 @@ static void json_escape(struct string_builder *res,
 
 /*! @decl int|string fetch_json()
  *!
- *! Fetch all remaining rows and return JSON, utf8 encoded.
+ *! Fetch all remaining rows and return then as JSON encoded data.
  *!
  *! Returns @expr{0@} (zero) XXX.
  *!
  *! @seealso
  *!   @[fetch_row()]
- *!
- *! FIXME: Encode binary fields as utf8.
  *!
  */
 static void f_fetch_json_result(INT32 args)
