@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.881 2009/08/26 12:26:33 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.882 2009/09/08 21:18:04 nilsson Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -8340,6 +8340,14 @@ test_any(int a=3; a&=10; return a,2)
 // testing |=
 test_any(int a=3; a|=10; return a,11)
 test_any(int a = UNDEFINED; a|=1; return zero_type(a), 0)
+test_any_equal(array a=({ "x" }); a|=({"x","y"}); return a, ({"x","y"}))
+test_any_equal(array a=({ "x" }); a|=({"y"}); return a, ({"x","y"}))
+test_any_equal(array a=({ "x" }); a|=({"x"}); return a, ({"x"}))
+test_any_equal(array a=({ "x" }); a|=a; return a, ({"x"}))
+test_any_equal(array a=({ "x" }); mapping m=(["a":a]); a|=({"x","y"}); return a, ({"x","y"}))
+test_any_equal(array a=({ "x" }); mapping m=(["a":a]); a|=({"y"}); return a, ({"x","y"}))
+test_any_equal(array a=({ "x" }); mapping m=(["a":a]); a|=({"x"}); return a, ({"x"}))
+test_any_equal(array a=({ "x" }); mapping m=(["a":a]); a|=a; return a, ({"x"}))
 // testing ^=
 test_any(int a=3; a^=10; return a,9)
 // testing <<=
