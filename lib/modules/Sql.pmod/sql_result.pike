@@ -1,5 +1,5 @@
 /*
- * $Id: sql_result.pike,v 1.20 2009/08/26 12:38:20 grubba Exp $
+ * $Id: sql_result.pike,v 1.21 2009/09/08 18:43:25 nilsson Exp $
  *
  * Implements the generic result module of the SQL-interface
  *
@@ -114,7 +114,7 @@ class _get_iterator
   }
 }
 
-static string encode_json(mixed msg)
+protected string encode_json(mixed msg, int(0..1) canonic)
 {
   if (stringp(msg))
     return "\"" + replace(msg, ([ "\"" : "\\\"",
@@ -125,29 +125,38 @@ static string encode_json(mixed msg)
 				  "\r" : "\\r",
 				  "\t" : "\\t" ])) + "\"";
   else if (arrayp(msg))
-    return "[" + (map(msg, encode_json) * ",") + "]";
+    return "[" + (map(msg, encode_json, canonic) * ",") + "]";
   else if (mappingp(msg))
-    return "{" + (map(sort(indices(msg)), // Sort for determinism (cachability)
+  {
+    array ind = indices(msg);
+    if(canonic) sort(ind);
+    return "{" + (map(ind,
 		      lambda (string ind)
 		      {
-			return encode_json(ind) + ":" + encode_json(msg[ind]);
+			return encode_json(ind, canonic) + ":" +
+                          encode_json(msg[ind], canonic);
 		      }) * ",") + "}";
+  }
   return (string)msg;
 }
 
-//! Fetch remaining result as JSON, utf8 encoded.
-int|string fetch_json_result()
+//! Fetch remaining result as JSON encoded data.
+int|string fetch_json_result(void|int(0..1) canonic)
 {
   if (arrayp(master_res) || !master_res->fetch_json_result) {
-    array res = ({});
+    string res;
     for (;;) {
       array row = fetch_row();
       if (!row)
 	break;
-      res += ({ row });
+      if(res)
+        res += ",";
+      else
+        res = "[";
+      res += encode_json(row, canonic);
     }
-    return string_to_utf8(encode_json(res));
+    return res + "]";
   }
   index = num_rows();
-  return master_res->fetch_json_result();
+  return master_res->fetch_json_result(canonic);
 }
