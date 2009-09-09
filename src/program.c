@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.769 2009/09/08 16:49:31 grubba Exp $
+|| $Id: program.c,v 1.770 2009/09/09 15:58:21 grubba Exp $
 */
 
 #include "global.h"
@@ -7623,6 +7623,16 @@ int report_compiler_dependency(struct program *p)
 /*! @class CompilerEnvironment
  *!
  *!   The compiler environment.
+ *!
+ *!   By inheriting this class and overloading the functions,
+ *!   it is possible to make a custom Pike compiler.
+ *!
+ *! @note
+ *!   Prior to Pike 7.8 this sort of customization has to be done
+ *!   either via custom master objects, or via @[CompilationHandler]s.
+ *!
+ *! @seealso
+ *!   @[CompilationHandler], @[MasterObject], @[master()], @[replace_master()]
  */
 
 /*! @decl enum SeverityLevel
