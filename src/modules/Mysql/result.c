@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: result.c,v 1.43 2009/09/09 08:24:48 grubba Exp $
+|| $Id: result.c,v 1.44 2009/09/09 15:48:04 grubba Exp $
 */
 
 /*
@@ -669,7 +669,7 @@ static void json_escape(struct string_builder *res,
  *!   @[fetch_row()]
  *!
  *! @fixme
- *!   Ensure that all fields (including binary fileds) are UTF-8 encoded.
+ *!   Ensure that all fields (including binary fields) are UTF-8 encoded.
  */
 static void f_fetch_json_result(INT32 args)
 {
