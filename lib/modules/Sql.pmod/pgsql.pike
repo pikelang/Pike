@@ -794,8 +794,8 @@ final int _decodemsg(void|state waitforstate)
 		case BPCHAROID:
 		case VARCHAROID:
 		  value=_c.getstring(collen);
-		  if(cenc==UTF8CHARSET)
-		    value=utf8_to_string(value);
+		  if(cenc==UTF8CHARSET && catch(value=utf8_to_string(value)))
+		    ERROR("%O contains non-%s characters\n",value,UTF8CHARSET);
 		  break;
 		case CHAROID:value=atext?_c.getstring(1):_c.getbyte();
 		  break;
