@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: result.c,v 1.42 2009/09/08 18:29:23 nilsson Exp $
+|| $Id: result.c,v 1.43 2009/09/09 08:24:48 grubba Exp $
 */
 
 /*
@@ -661,15 +661,15 @@ static void json_escape(struct string_builder *res,
   }
 }
 
-/*! @decl int|string fetch_json()
+/*! @decl string fetch_json_result()
  *!
- *! Fetch all remaining rows and return then as JSON encoded data.
- *!
- *! Returns @expr{0@} (zero) XXX.
+ *! Fetch all remaining rows and return them as @tt{JSON@}-encoded data.
  *!
  *! @seealso
  *!   @[fetch_row()]
  *!
+ *! @fixme
+ *!   Ensure that all fields (including binary fileds) are UTF-8 encoded.
  */
 static void f_fetch_json_result(INT32 args)
 {
@@ -776,7 +776,7 @@ void init_mysql_res_programs(void)
   /* function(void:int|array(string|int|float)) */
   ADD_FUNCTION("fetch_row", f_fetch_row,tFunc(tVoid,tOr(tInt,tArr(tOr3(tStr,tInt,tFlt)))), ID_PUBLIC);
   /* function(void:int|string) */
-  ADD_FUNCTION("fetch_json_result", f_fetch_json_result,tFunc(tVoid,tOr(tInt,tStr)), ID_PUBLIC);
+  ADD_FUNCTION("fetch_json_result", f_fetch_json_result,tFunc(tVoid,tStr), ID_PUBLIC);
 
   set_init_callback(init_res_struct);
   set_exit_callback(exit_res_struct);
