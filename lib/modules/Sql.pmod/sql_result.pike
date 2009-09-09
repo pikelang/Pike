@@ -1,5 +1,5 @@
 /*
- * $Id: sql_result.pike,v 1.21 2009/09/08 18:43:25 nilsson Exp $
+ * $Id: sql_result.pike,v 1.22 2009/09/09 09:06:41 grubba Exp $
  *
  * Implements the generic result module of the SQL-interface
  *
@@ -114,49 +114,52 @@ class _get_iterator
   }
 }
 
-protected string encode_json(mixed msg, int(0..1) canonic)
+protected void encode_json(String.Buffer res, mixed msg)
 {
-  if (stringp(msg))
-    return "\"" + replace(msg, ([ "\"" : "\\\"",
-				  "\\" : "\\\\",
-				  "\n" : "\\n",
-				  "\b" : "\\b",
-				  "\f" : "\\f",
-				  "\r" : "\\r",
-				  "\t" : "\\t" ])) + "\"";
-  else if (arrayp(msg))
-    return "[" + (map(msg, encode_json, canonic) * ",") + "]";
-  else if (mappingp(msg))
-  {
-    array ind = indices(msg);
-    if(canonic) sort(ind);
-    return "{" + (map(ind,
-		      lambda (string ind)
-		      {
-			return encode_json(ind, canonic) + ":" +
-                          encode_json(msg[ind], canonic);
-		      }) * ",") + "}";
+  if (stringp(msg)) {
+    res->add("\"" + replace(msg, ([ "\"" : "\\\"",
+				    "\\" : "\\\\",
+				    "\n" : "\\n",
+				    "\b" : "\\b",
+				    "\f" : "\\f",
+				    "\r" : "\\r",
+				    "\t" : "\\t" ])) + "\"");
+  } else if (arrayp(msg)) {
+    res->add("[");
+    foreach(msg; int i; mixed val) {
+      if (i) res->add(",");
+      encode_json(res, val);
+    }
+    res->add("]");
+  } else if (mappingp(msg)) {
+    // NOTE: For reference only, not currently reached.
+    res->add("{");
+    foreach(sort(indices(msg)); int i; string ind) {
+      if (i) res->add(",");
+      encode_json(res, ind);
+      res->add(":");
+      encode_json(res, msg[ind]);
+    }
+    res->add("}");
+  } else {
+    res->add((string)msg);
   }
-  return (string)msg;
 }
 
-//! Fetch remaining result as JSON encoded data.
-int|string fetch_json_result(void|int(0..1) canonic)
+//! Fetch remaining result as @tt{JSON@}-encoded data.
+int|string fetch_json_result()
 {
   if (arrayp(master_res) || !master_res->fetch_json_result) {
-    string res;
-    for (;;) {
-      array row = fetch_row();
-      if (!row)
-	break;
-      if(res)
-        res += ",";
-      else
-        res = "[";
-      res += encode_json(row, canonic);
+    String.Buffer res = String.Buffer();
+    res->add("[");
+    array row;
+    for (int i = 0; row = fetch_row(); i++) {
+      if(i) res->add(",");
+      encode_json(res, row);
     }
-    return res + "]";
+    res->add("]");
+    return string_to_utf8(res->get());
   }
   index = num_rows();
-  return master_res->fetch_json_result(canonic);
+  return master_res->fetch_json_result();
 }
