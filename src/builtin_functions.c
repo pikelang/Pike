@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.692 2009/08/26 15:50:31 grubba Exp $
+|| $Id: builtin_functions.c,v 1.693 2009/09/09 13:01:45 grubba Exp $
 */
 
 #include "global.h"
@@ -901,15 +901,15 @@ PMOD_EXPORT void f_search(INT32 args)
 		    "Start must not be greater than the "
 		    "length of the string.\n");
 
-    if(Pike_sp[1-args].type == T_STRING) {
-      /* Handle searching for the empty string. */
-      if (Pike_sp[1-args].u.string->len) {
-	start = string_search(haystack,
-			      Pike_sp[1-args].u.string,
-			      start);
+    if ((Pike_sp[1-args].type == T_INT) ||
+	((Pike_sp[1-args].type == T_STRING) &&
+	 (Pike_sp[1-args].u.string->len == 1))) {
+      INT_TYPE val;
+      if (Pike_sp[1-args].type == T_INT) {
+	val = Pike_sp[1-args].u.integer;
+      } else {
+	val = index_shared_string(Pike_sp[1-args].u.string, 0);
       }
-    } else if (Pike_sp[1-args].type == T_INT) {
-      INT_TYPE val = Pike_sp[1-args].u.integer;
       
       switch(Pike_sp[-args].u.string->size_shift) {
       case 0:
@@ -956,6 +956,13 @@ PMOD_EXPORT void f_search(INT32 args)
       }
       if (start >= haystack->len) {
 	start = -1;
+      }
+    } else if(Pike_sp[1-args].type == T_STRING) {
+      /* Handle searching for the empty string. */
+      if (Pike_sp[1-args].u.string->len) {
+	start = string_search(haystack,
+			      Pike_sp[1-args].u.string,
+			      start);
       }
     } else {
       SIMPLE_BAD_ARG_ERROR("search", 2, "string | int");
