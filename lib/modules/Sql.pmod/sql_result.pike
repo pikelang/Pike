@@ -1,5 +1,5 @@
 /*
- * $Id: sql_result.pike,v 1.22 2009/09/09 09:06:41 grubba Exp $
+ * $Id: sql_result.pike,v 1.23 2009/09/10 00:01:52 nilsson Exp $
  *
  * Implements the generic result module of the SQL-interface
  *
@@ -117,47 +117,47 @@ class _get_iterator
 protected void encode_json(String.Buffer res, mixed msg)
 {
   if (stringp(msg)) {
-    res->add("\"" + replace(msg, ([ "\"" : "\\\"",
-				    "\\" : "\\\\",
-				    "\n" : "\\n",
-				    "\b" : "\\b",
-				    "\f" : "\\f",
-				    "\r" : "\\r",
-				    "\t" : "\\t" ])) + "\"");
+    res->add("\"", replace(msg, ([ "\"" : "\\\"",
+                                   "\\" : "\\\\",
+                                   "\n" : "\\n",
+                                   "\b" : "\\b",
+                                   "\f" : "\\f",
+                                   "\r" : "\\r",
+                                   "\t" : "\\t" ])), "\"");
   } else if (arrayp(msg)) {
-    res->add("[");
+    res->putchar('[');
     foreach(msg; int i; mixed val) {
-      if (i) res->add(",");
+      if (i) res->putchar(',');
       encode_json(res, val);
     }
-    res->add("]");
+    res->putchar(']');
   } else if (mappingp(msg)) {
     // NOTE: For reference only, not currently reached.
-    res->add("{");
+    res->putchar('{');
     foreach(sort(indices(msg)); int i; string ind) {
-      if (i) res->add(",");
+      if (i) res->putchar(',');
       encode_json(res, ind);
-      res->add(":");
+      res->putchar(':');
       encode_json(res, msg[ind]);
     }
-    res->add("}");
+    res->putchar('}');
   } else {
     res->add((string)msg);
   }
 }
 
 //! Fetch remaining result as @tt{JSON@}-encoded data.
-int|string fetch_json_result()
+string fetch_json_result()
 {
   if (arrayp(master_res) || !master_res->fetch_json_result) {
     String.Buffer res = String.Buffer();
-    res->add("[");
+    res->putchar('[');
     array row;
     for (int i = 0; row = fetch_row(); i++) {
-      if(i) res->add(",");
+      if(i) res->putchar(',');
       encode_json(res, row);
     }
-    res->add("]");
+    res->putchar(']');
     return string_to_utf8(res->get());
   }
   index = num_rows();
