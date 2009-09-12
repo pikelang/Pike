@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.770 2009/09/09 15:58:21 grubba Exp $
+|| $Id: program.c,v 1.771 2009/09/12 13:31:37 grubba Exp $
 */
 
 #include "global.h"
@@ -1952,6 +1952,22 @@ struct program *id_to_program(INT32 id)
 
 /* Here starts routines which are used to build new programs */
 
+/*
+ * A typical program goes through the following steps:
+ *
+ * allocate_program  ==> PROGRAM_VIRGIN
+ *
+ * start_program     ==> !PROGRAM_VIRGIN
+ *
+ * end_first_pass    ==> PROGRAM_PASS_1_DONE
+ *
+ * fixate_program    ==> PROGRAM_FIXED
+ *
+ * optimize_program  ==> PROGRAM_OPTIMIZED 
+ *
+ * end_first_pass(1) ==> PROGRAM_FINISHED
+ */
+
 /* Re-allocate all the memory in the program in one chunk. because:
  * 1) The individual blocks are much bigger than they need to be
  * 2) cuts down on malloc overhead (maybe)
@@ -2482,7 +2498,6 @@ void low_start_new_program(struct program *p,
 
 #ifdef WITH_FACETS
   if(Pike_compiler->compiler_pass == 1 && p) {
-    p->facet_class = 0;
     p->facet_index = -1;
     p->facet_group = NULL;
   }
@@ -3693,7 +3708,7 @@ PMOD_EXPORT struct program *debug_end_program(void)
 
 
 /*
- * Allocate needed for this program in the object structure.
+ * Allocate space needed for this program in the object structure.
  * An offset to the data is returned.
  */
 PMOD_EXPORT size_t low_add_storage(size_t size, size_t alignment,
@@ -4048,6 +4063,10 @@ int find_inherit(struct program *p, struct pike_string *name)
   fprintf(stderr, "find_inherit(0x%08lx, \"%s\")...\n",
 	  (unsigned long)p, name->str);
 #endif /* 0 */
+  /* FIXME: This loop could be optimized by advancing by the number
+   *        of inherits in the inherit. But in that case the loop
+   *        would have to go the other way.
+   */
   for(e = p->num_inherits-1; e>0; e--) {
 #if 0
     fprintf(stderr, "  %04d: %04d %s\n",
@@ -4060,6 +4079,7 @@ int find_inherit(struct program *p, struct pike_string *name)
   return 0;
 }
 
+/* Reference the symbol super_name::function_name */
 node *reference_inherited_identifier(struct pike_string *super_name,
 				     struct pike_string *function_name)
 {
@@ -4077,6 +4097,10 @@ node *reference_inherited_identifier(struct pike_string *super_name,
 
   p=Pike_compiler->new_program;
 
+  /* FIXME: This loop could be optimized by advancing by the number
+   *        of inherits in the inherit. But in that case the loop
+   *        would have to go the other way.
+   */
   for(e=p->num_inherits-1;e>0;e--)
   {
     if(p->inherits[e].inherit_level!=1) continue;
@@ -4122,6 +4146,10 @@ node *reference_inherited_identifier(struct pike_string *super_name,
   {
     struct program *p=state->new_program;
 
+    /* FIXME: This loop could be optimized by advancing by the number
+     *        of inherits in the inherit. But in that case the loop
+     *        would have to go the other way.
+     */
     for(e=p->num_inherits-1;e>0;e--)
     {
       if(p->inherits[e].inherit_level!=1) continue;
@@ -4167,6 +4195,9 @@ node *reference_inherited_identifier(struct pike_string *super_name,
   return 0;
 }
 
+/* FIXME: This function probably doesn't do what it is intended to do
+ *        if the last inherit had inherits of its own. Consider removal.
+ */
 void rename_last_inherit(struct pike_string *n)
 {
   if(Pike_compiler->new_program->inherits[Pike_compiler->new_program->num_inherits].name)
@@ -4252,18 +4283,19 @@ void check_for_facet_inherit(struct program *p)
    * class declaration the class will be temporarily marked as a
    * product-class, but this will be taken care of when the facet
    * keyword is found. */
-  if (p && Pike_compiler->new_program->facet_group &&
+  if (!p) return;
+  if (Pike_compiler->new_program->facet_group &&
       p->facet_group != Pike_compiler->new_program->facet_group)
     yyerror("A class can not belong to two facet-groups.");
-  if (p && p->facet_class == PROGRAM_IS_FACET_CLASS) {
-    if (Pike_compiler->new_program->facet_class == PROGRAM_IS_FACET_CLASS) {
+  if (p->flags & PROGRAM_IS_FACET) {
+    if (Pike_compiler->new_program->flags & PROGRAM_IS_FACET) {
       if(Pike_compiler->new_program->facet_index != p->facet_index)
 	yyerror("Facet class can't inherit from class in different facet.");
     }
     /* Otherwise this is a product class */
     else {
       if( !Pike_compiler->new_program->facet_group ) {
-	Pike_compiler->new_program->facet_class = PROGRAM_IS_PRODUCT_CLASS;
+	Pike_compiler->new_program->flags |= PROGRAM_IS_PRODUCT;
 	add_ref(p->facet_group);
 	Pike_compiler->new_program->facet_group = p->facet_group;
       }
@@ -4275,16 +4307,16 @@ void check_for_facet_inherit(struct program *p)
     }
   }
   /* The inherited class is not a facet class */
-  else if (p && p->facet_class == PROGRAM_IS_PRODUCT_CLASS) {
-    if (Pike_compiler->new_program->facet_class == PROGRAM_IS_FACET_CLASS) {
+  else if (p->flags & PROGRAM_IS_PRODUCT) {
+    if (Pike_compiler->new_program->flags & PROGRAM_IS_FACET) {
       yyerror("Facet class can't inherit from product class.");
     }
-    else if(Pike_compiler->new_program->facet_class==PROGRAM_IS_PRODUCT_CLASS){
-      yyerror("Product class can't inherit from other prodcut class.");
+    else if(Pike_compiler->new_program->flags & PROGRAM_IS_PRODUCT){
+      yyerror("Product class can't inherit from other product class.");
     }
     /* A class that inherits from a product class is also a product class */
-    else if(Pike_compiler->new_program->facet_class!=PROGRAM_IS_FACET_CLASS) {
-      Pike_compiler->new_program->facet_class = PROGRAM_IS_PRODUCT_CLASS;
+    else {
+      Pike_compiler->new_program->flags |= PROGRAM_IS_PRODUCT;
       add_ref(p->facet_group);
       Pike_compiler->new_program->facet_group = p->facet_group;
     }
@@ -4710,6 +4742,20 @@ int isidentifier(struct pike_string *s)
 						  SEE_PROTECTED|SEE_PRIVATE);
 }
 
+/*
+ * Definition of identifiers.
+ *
+ * Pike has three plus one classes of identifiers:
+ *
+ *   IDENTIFIER_VARIABLE - A value stored in object->storage
+ *   IDENTIFIER_CONSTANT - A value stored in program->constants
+ *   IDENTIFIER_FUNCTION - Either a C function or a Pike function
+ * and
+ *   IDENTIFIER_ALIAS    - An alias for a different identifier.
+ *
+ */
+
+
 /* Define an alias for a (possibly extern) identifier.
  *
  * Note that both type and name may be NULL. If they are NULL
@@ -4921,6 +4967,7 @@ int low_define_variable(struct pike_string *name,
   return n;
 }
 
+/* type is a textual type */
 PMOD_EXPORT int map_variable(const char *name,
 		 const char *type,
 		 INT32 flags,
@@ -4946,6 +4993,7 @@ PMOD_EXPORT int map_variable(const char *name,
   return ret;
 }
 
+/* type is a serialized tokenized type. */
 PMOD_EXPORT int quick_map_variable(const char *name,
 		       int name_length,
 		       size_t offset,

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.266 2009/08/17 11:41:33 grubba Exp $
+|| $Id: program.h,v 1.267 2009/09/12 13:31:38 grubba Exp $
 */
 
 #ifndef PROGRAM_H
@@ -543,8 +543,8 @@ struct pike_trampoline
 #define PROGRAM_LIVE_OBJ 0x2000
 
 /* Indicates that the class is a facet or product_class. */
-#define PROGRAM_IS_FACET_CLASS 0x1
-#define PROGRAM_IS_PRODUCT_CLASS 0x2
+#define PROGRAM_IS_FACET 0x4000
+#define PROGRAM_IS_PRODUCT 0x8000
 
 /* Using define instead of enum allows for ifdefs - Hubbe */
 #define PROG_EVENT_INIT 0
@@ -623,7 +623,6 @@ struct program
 
 #ifdef WITH_FACETS
   /* Facet related stuff */
-  INT16 facet_class;   /* PROGRAM_IS_X_CLASS (X=FACET/PRODUCT) */
   INT32 facet_index;   /* Index to the facet this facet class belongs to */
   struct object *facet_group;
 #endif
