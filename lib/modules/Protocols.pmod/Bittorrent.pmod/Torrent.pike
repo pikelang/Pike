@@ -62,7 +62,7 @@
 
 import .Bencoding;
 
-constant cvsid="$Id: Torrent.pike,v 1.38 2008/09/01 18:10:51 grubba Exp $";
+constant cvsid="$Id: Torrent.pike,v 1.39 2009/09/12 00:05:18 nilsson Exp $";
 
 Protocols.HTTP.Session http=Protocols.HTTP.Session();
 
@@ -140,6 +140,9 @@ void load_metainfo(string filename)
    if (!s)
       error("Failed to read metainfo file %O: %s\n",
 	    filename,strerror(errno()));
+   catch {
+     s = utf8_to_string(s);
+   };
    mixed err=catch {
      decode_metainfo(s);
    };
