@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: facetgroup.cmod,v 1.6 2005/12/31 03:36:44 nilsson Exp $
+|| $Id: facetgroup.cmod,v 1.7 2009/09/12 13:28:15 grubba Exp $
 */
 
 #include "global.h"
@@ -38,12 +38,14 @@ DECLARATIONS
 /*! @class FacetGroup
  *! 
  *! This class is used to handle facets in the system. All facets 
- *! in the system have to belong to a facet group. The facet 
+ *! in the system have to belong to a facet group. A facet 
  *! group is a pike module that inherits from this class. For 
  *! example you can create a file MyFacetgroup.pmod with the following
  *! content:
  *!
- *! @expr{inherit FacetGroup; @}
+ *! @code
+ *!   inherit FacetGroup;
+ *! @endcode
  *!
  *! You can then use the facet group MyFacetGroup in a facet-class 
  *! like this:
