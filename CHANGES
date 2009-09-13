@@ -38,6 +38,11 @@ o Lowered startup time by reducing the number of MEMSET() calls done
 
 o Allow threads while calling SWL_GL_SwapBuffers.
 
+o Added optimization of has_value() and search() for single-character strings.
+
+o Added optimization when combining two arrays where the second array
+  contains a single item.
+
 
 Bug fixes
 ---------
