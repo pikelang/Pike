@@ -57,7 +57,7 @@ o Protocols.HTTP.Server.HeaderParser will now discard parts of a
   header value if the header value contains a newline (like "Host:
   google.com\n.hax.net\r\n") and headers without colon.
 
-o file_open_socket() now attepts to set SO_REUSEPORT on the socket.
+o file_open_socket() now attempts to set SO_REUSEPORT on the socket.
   Potentially fixes issues on FreeBSD 7.x where ports aren't reused.
 
 o Calendar.TimeRanges now knows that `+() and `-() can get any number
