@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.477 2009/06/26 15:01:11 grubba Exp $
+# $Id: Makefile.in,v 1.478 2009/09/13 20:47:55 peter Exp $
 #
 
 # This line is needed on some machines.
@@ -637,6 +637,11 @@ Pike.msi: Pike.wixobj Pike_ui.wixobj Pike_module.msm Pike_banner.bmp UpFldrBtn.i
 	$(LIGHT) Pike.wixobj Pike_ui.wixobj -o Pike.msi -cc cab_cache
 
 wix: Pike.msi
+
+wix_export: Pike.msi
+	VER=`$(RUNPIKE) --dumpversion` ;\
+	cp Pike.msi $(BASEDIR)/Pike-v$(VER)-win32.msi ;\
+	cp config.info $(BASEDIR)/Pike-v$(VER)-win32.info
 
 force :
 	@:
