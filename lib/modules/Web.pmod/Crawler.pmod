@@ -33,7 +33,7 @@
 //! @enddl
 
 // Author:  Johan Schön.
-// $Id: Crawler.pmod,v 1.27 2009/09/04 13:55:30 jonasw Exp $
+// $Id: Crawler.pmod,v 1.28 2009/09/14 08:06:39 mast Exp $
 
 #define CRAWLER_DEBUG
 #ifdef CRAWLER_DEBUG
@@ -824,6 +824,9 @@ class Crawler
     object|int uri;
     mapping headers;
     Standards.URI real_uri;
+    int got_uri_from_queue;
+
+    if (mixed err = catch {
 
     if (_uri) {
       uri = _uri;
@@ -833,6 +836,7 @@ class Crawler
     else
     {
       uri=queue->get();
+      got_uri_from_queue = 1;
 
       if(uri==-1)
       {
@@ -898,6 +902,14 @@ class Crawler
     }
   
     call_out(get_next_uri,0);
+
+      }) {
+      if (got_uri_from_queue)
+	// Set error stage for the uri before throwing, so it
+	// doesn't get stuck in the queue.
+	queue->set_stage (real_uri, 6);
+      throw (err);
+    }
   }
 
 //!  
