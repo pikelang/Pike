@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.56 2007/01/31 10:45:37 grubba Exp $
+ * $Id: Tree.pmod,v 1.57 2009/09/15 16:02:56 grubba Exp $
  *
  */
 
@@ -897,7 +897,7 @@ static class VirtualNode {
       
       data->add("<", tagname);
       if (mapping attr = n->get_short_attributes()) {
-	foreach(indices(attr), string a) {
+	foreach(sort(indices(attr)), string a) {
 	  data->add(" ", a, "='", attrq(attr[a]), "'");
 	}
       }
@@ -920,7 +920,7 @@ static class VirtualNode {
 	if (attr->encoding)
 	  data->add(" encoding='", attrq(attr->encoding), "'");
 	m_delete(attr, "encoding");
-	foreach(indices(attr), string a)
+	foreach(sort(indices(attr)), string a)
 	  data->add(" ", a, "='", attrq(attr[a]), "'");
       }
       data->add("?>\n");
