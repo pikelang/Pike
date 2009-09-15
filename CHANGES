@@ -23,6 +23,10 @@ o Calendar
 
   Updated timezone data to 2009j.
 
+o Parser.XML.Tree
+
+  Output from render_xml() is now on canonical form.
+
 o Added "pike -x httpserver" that implements a minimal HTTP-server
   exporting the current directory.
 
