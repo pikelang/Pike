@@ -4,7 +4,7 @@
 //! absolute form, as defined in RFC 2396 and RFC 3986.
 
 // Implemented by Johan Sundström and Johan Schön.
-// $Id: URI.pike,v 1.31 2009/08/15 07:21:46 nilsson Exp $
+// $Id: URI.pike,v 1.32 2009/09/17 17:25:11 grubba Exp $
 
 #pragma strict_types
 
@@ -47,6 +47,9 @@ string raw_uri;
 #define DEBUG(X, Y ...)
 #endif
 
+// FIXME: What about decoding of Percent-Encoding (RFC3986 2.1)?
+//        cf pct-encoded in the functions below.
+
 // Parse authority component (according to RFC 1738, § 3.1)
 // Updated to RFC 3986 $ 3.2.
 protected void parse_authority()
@@ -66,6 +69,8 @@ protected void parse_authority()
     // IPvFuture  = "v" 1*HEXDIG "." 1*( unreserved / sub-delims / ":" )
     sscanf(authority, "[%s]%*[:]%d", host, port);
   } else {
+    // IPv4address = dec-octet "." dec-octet "." dec-octet "." dec-octet
+    // reg-name    = *( unreserved / pct-encoded / sub-delims )
     sscanf(authority, "%[^:]%*[:]%d", host, port);
   }
   DEBUG("parse_authority(): host=%O, port=%O", host, port);
@@ -188,6 +193,7 @@ void reparse_uri(this_program|string|void base_uri)
   // RFC 2396, §5.2:
   // 1) The URI reference is parsed into the potential four components and
   //    fragment identifier, as described in Section 4.3.
+  // URI         = scheme ":" hier-part [ "?" query ] [ "#" fragment ]
 
   // 2) If the path component is empty and the scheme, authority, and
   //    query components are undefined, then it is a reference to the
@@ -212,10 +218,13 @@ void reparse_uri(this_program|string|void base_uri)
   }
 
   // Parse fragment identifier
+  // fragment    = *( pchar / "/" / "?" )
+  // pchar       = unreserved / pct-encoded / sub-delims / ":" / "@"
   sscanf(uri, "%s#%s", uri, fragment);
   DEBUG("Found fragment %O", fragment);
 
   // Parse scheme
+  // scheme      = ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )
   if(sscanf(uri, "%[A-Za-z0-9+.-]:%s", scheme, uri) < 2)
   {
     scheme = 0;
@@ -234,16 +243,22 @@ void reparse_uri(this_program|string|void base_uri)
   DEBUG("Found scheme %O", scheme);
 
   // Parse authority/login
+  //
+  // hier-part    = "//" authority path-abempty / path-absolute
+  //                / path-rootless / path-empty
   if(sscanf(uri, "//%[^/]%s", authority, uri))
   {
     DEBUG("Found authority %O", authority);
   }
 
   // Parse query information
+  // query       = *( pchar / "/" / "?" )
+  // pchar       = unreserved / pct-encoded / sub-delims / ":" / "@"
   sscanf(uri, "%s?%s", uri, query);
   DEBUG("Found query %O", query);
 
   // Parse path:
+  // pchar       = unreserved / pct-encoded / sub-delims / ":" / "@"
   if ((uri == "") && !scheme && !authority && (this_program::base_uri)) {
     // Empty path.
     path = this_program::base_uri->path;
