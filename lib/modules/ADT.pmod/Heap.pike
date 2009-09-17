@@ -9,7 +9,7 @@
 protected private array values=allocate(10);
 protected private int num_values;
 
-#ifdef DEBUG
+#ifdef ADT_HEAP_DEBUG
 void verify_heap()
 {
   for(int e=1; e<num_values; e++)
