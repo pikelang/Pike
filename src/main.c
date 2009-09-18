@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.235 2008/07/31 21:11:36 mast Exp $
+|| $Id: main.c,v 1.236 2009/09/18 16:00:42 grubba Exp $
 */
 
 #include "global.h"
@@ -135,7 +135,7 @@ static void get_master_key(HKEY cat)
 }
 #endif /* __NT__ */
 
-static void set_default_master(void)
+static void set_default_master(const char *bin_name)
 {
   char *mp = master_location + CONSTANT_STRLEN (MASTER_COOKIE);
 
@@ -150,7 +150,7 @@ static void set_default_master(void)
   if(!*mp) get_master_key(HKEY_LOCAL_MACHINE);
 #endif
 
-  if(!*mp)
+  if(!*mp && strncmp(DEFAULT_MASTER, "NONE/", 5))
   {
     SNPRINTF (mp, sizeof (master_location) - CONSTANT_STRLEN (MASTER_COOKIE),
 	      DEFAULT_MASTER,
@@ -174,6 +174,20 @@ static void set_default_master(void)
 	       sizeof (master_location) - CONSTANT_STRLEN (MASTER_COOKIE));
     }
   }
+#else
+  if (!*mp) {
+    /* Attempt to find a master via the path to the binary. */
+    /* Note: We assume that MAXPATHLEN is > 18 characters. */
+    if (strlen(bin_name) < (2*MAXPATHLEN -
+			    CONSTANT_STRLEN(MASTER_COOKIE "master.pike"))) {
+      char *p;
+      strcpy(mp, bin_name);
+      p = strrchr(mp, '/');
+      if (!p) p = mp;
+      else p++;
+      strcpy(p, "master.pike");
+    }
+  }
 #endif
 
   TRACE((stderr, "Default master at \"%s\"...\n", mp));
@@ -193,7 +207,7 @@ static void find_lib_dir(int argc, char **argv)
 
   TRACE((stderr, "find_lib_dir...\n"));
   
-  set_default_master();
+  set_default_master(argv[0]);
 
   for(e=1; e<argc; e++)
   {
