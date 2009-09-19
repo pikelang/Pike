@@ -218,7 +218,7 @@ void test_generic_debug(string dir)
     else if (has_suffix(p, ".pike") || has_suffix(p, ".pmod")) {
       string data = Stdio.read_bytes(p);
       if (cpp("#define DEBUG\n" + data, p) !=
-	  cpp("#define RELEASE_TESTS\n" + data, p))
+	  cpp("#undef DEBUG\n" + data, p))
 	write("%O has a dependency on the DEBUG symbol being defined.\n", p);
     }
   }
