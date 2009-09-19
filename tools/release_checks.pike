@@ -37,40 +37,37 @@ int test_copying() {
   return 1;
 }
 
-int test_master_year() {
+protected int test_year(string str, string match, string err)
+{
   int y;
-  sscanf(Stdio.read_file("lib/master.pike.in"),
-	 "%*s 1994-%d Linköping", y);
+  sscanf(str, match, y);
   if(gmtime(time())->year+1900 != y) {
-    write("The year in the copyright message in master.pike.in\n"
-	  "needs an update.\n");
+    write("The year in the copyright message in %s\nneeds an update.\n", err);
     return 0;
   }
   return 1;
+}
+
+int test_master_year() {
+  return test_year( Stdio.read_file("lib/master.pike.in"),
+                    "%*s 1994-%d Linköping", "master.pike.in");
 }
 
 int test_install_year() {
-  int y;
-  sscanf(Stdio.read_file("bin/install.pike"),
-	 "%*s 1994-%d IDA", y);
-  if(gmtime(time())->year+1900 != y) {
-    write("The year in the copyright message in install.pike\n"
-	  "needs an update.\n");
-    return 0;
-  }
-  return 1;
+  return test_year( Stdio.read_file("bin/install.pike"),
+                    "%*s 1994-%d IDA", "install.pike");
 }
 
 int test_unbug_year() {
-  int y;
-  sscanf(Stdio.read_file("bin/unbug"),
-	 "%*s 2002-%d, Department", y);
-  if(gmtime(time())->year+1900 != y) {
-    write("The year in the copyright message in unbug\n"
-	  "needs an update.\n");
-    return 0;
-  }
-  return 1;
+  string data = Stdio.read_file("bin/unbug");
+  if( Crypto.MD5.hash(data) == "D\262\307\336\276g\33""6DBk\335}\343^\272" )
+    return 1;
+  return test_year( data, "%*s 2002-%d, Department", "unbug");
+}
+
+int test_legal_year() {
+  return test_year( Tools.Legal.Copyright.get_latest_pike(),
+                    "%*s 2002-%d,", "Tools.Legal.Copyright");
 }
 
 int test_charset_table(string t) {
