@@ -2,7 +2,7 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.205 2009/06/05 18:11:36 mbaehr Exp $
+// $Id: install.pike,v 1.206 2009/09/19 02:30:34 nilsson Exp $
 
 // Windows installer FIXMEs:
 //
@@ -1576,7 +1576,7 @@ do
     case \"$1\" in
               -v|\\
        --version) echo \""+version()+
-#" Copyright (C) 1994-2008 IDA, Linköping University
+#" Copyright (C) 1994-2009 IDA, Linköping University
 Pike comes with ABSOLUTELY NO WARRANTY; This is free software and you
 are welcome to redistribute it under certain conditions; Read the
 files COPYING and COPYRIGHT in the Pike distribution for more details.
