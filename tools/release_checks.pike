@@ -208,6 +208,22 @@ void test_fncases(void|string dir) {
   }
 }
 
+// Rationale: The DEBUG symbol should be reserved for user code.
+void test_generic_debug(string dir)
+{
+  foreach(get_dir(dir), string fn) {
+    string p = dir + "/" + fn;
+    if (Stdio.is_dir(p))
+      test_generic_debug(p);
+    else if (has_suffix(p, ".pike") || has_suffix(p, ".pmod")) {
+      string data = Stdio.read_bytes(p);
+      if (cpp("#define DEBUG\n" + data, p) !=
+	  cpp("#define RELEASE_TESTS\n" + data, p))
+	write("%O has a dependency on the DEBUG symbol being defined.\n", p);
+    }
+  }
+}
+
 void main(int args) {
   if(args>1) {
     write("This program checks various aspects of the Pike tree\n"
@@ -227,8 +243,11 @@ void main(int args) {
   test_charset_table("tables.c");
   test_charset_table("misc.c");
   test_unicode();
+  // FIXME: Consider verifying that lib/modules/Calendar.pmod/tzdata
+  //        is up to date.
   test_realpike();
   test_version();
+  test_generic_debug("lib/modules");
 
   test_fncases("src");
   test_fncases("lib");
