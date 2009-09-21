@@ -1,7 +1,7 @@
 //
 // Basic filesystem monitor.
 //
-// $Id: basic.pike,v 1.24 2009/09/21 11:15:36 grubba Exp $
+// $Id: basic.pike,v 1.25 2009/09/21 11:23:17 grubba Exp $
 //
 // 2009-07-09 Henrik Grubbström
 //
@@ -617,9 +617,17 @@ void release(string path, MonitorFlags|void flags)
   }
 }
 
-//! Check whether a path is monitored.
+//! Check whether a path is monitored or not.
 //!
 //! @param path
+//!   Path to check.
+//!
+//! @returns
+//!   Returns @expr{1@} if there is a monitor on @[path],
+//!   and @expr{0@} (zero) otherwise.
+//!
+//! @seealso
+//!   @[monitor()], @[release()]
 int(0..1) is_monitored(string path)
 {
   return !!monitors[canonic_path(path)];
