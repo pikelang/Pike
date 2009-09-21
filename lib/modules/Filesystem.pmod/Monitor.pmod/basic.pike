@@ -1,7 +1,7 @@
 //
 // Basic filesystem monitor.
 //
-// $Id: basic.pike,v 1.23 2009/08/11 09:51:14 grubba Exp $
+// $Id: basic.pike,v 1.24 2009/09/21 11:15:36 grubba Exp $
 //
 // 2009-07-09 Henrik Grubbström
 //
@@ -615,6 +615,14 @@ void release(string path, MonitorFlags|void flags)
       }
     }
   }
+}
+
+//! Check whether a path is monitored.
+//!
+//! @param path
+int(0..1) is_monitored(string path)
+{
+  return !!monitors[canonic_path(path)];
 }
 
 //! Check a single @[Monitor] for changes.
