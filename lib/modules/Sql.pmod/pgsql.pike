@@ -612,7 +612,7 @@ final int _decodemsg(void|state waitforstate)
       array(string) showbindings()
       { array(string) msgs=({});
         array from;
-	if(from = _c.portal->_params)
+	if(_c.portal && (from = _c.portal->_params))
 	{ array to,paramValues;
 	  [from,to,paramValues] = from;
           if(sizeof(paramValues))
