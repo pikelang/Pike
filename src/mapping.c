@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.212 2008/07/16 15:47:08 grubba Exp $
+|| $Id: mapping.c,v 1.213 2009/09/22 15:45:09 grubba Exp $
 */
 
 #include "global.h"
@@ -2005,6 +2005,7 @@ void describe_mapping(struct mapping *m,struct processing *p,int indent)
   }
   else {
     int save_t_flag = Pike_interpreter.trace_level;
+    dynamic_buffer save_buf;
 
     if (m->data->size == 1) {
       my_strcat("([ /* 1 element */\n");
@@ -2013,6 +2014,7 @@ void describe_mapping(struct mapping *m,struct processing *p,int indent)
       my_strcat(buf);
     }
 
+    save_buffer (&save_buf);
     Pike_interpreter.trace_level = 0;
     if(SETJMP(catch)) {
       free_svalue(&throw_value);
@@ -2022,6 +2024,7 @@ void describe_mapping(struct mapping *m,struct processing *p,int indent)
       sort_array_destructively(a);
     UNSETJMP(catch);
     Pike_interpreter.trace_level = save_t_flag;
+    restore_buffer (&save_buf);
 
     for(e = 0; e < a->size; e++)
     {
@@ -2031,7 +2034,7 @@ void describe_mapping(struct mapping *m,struct processing *p,int indent)
     
       for(d = 0; d < indent; d++)
 	my_putchar(' ');
-    
+
       describe_svalue(ITEM(a)+e, indent+2, &doing);
       my_strcat (": ");
 
