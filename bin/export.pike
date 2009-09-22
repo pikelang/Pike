@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: export.pike,v 1.74 2009/03/21 19:14:37 mast Exp $ */
+/* $Id: export.pike,v 1.75 2009/09/22 20:37:20 peter Exp $ */
 
 multiset except_modules = (<>);
 string vpath;
@@ -33,6 +33,10 @@ array(string) get_files(string path)
       continue;
 
     if( path==vpath+"/bin" && except_modules[fn] )
+      continue;
+
+    //Don't include uncompressed bundle archives
+    if( path==vpath+"/bundles" && file_stat(path+"/"+fn+".tar.gz") )      
       continue;
 
     if( has_prefix(path, vpath+"/lib/modules") &&
