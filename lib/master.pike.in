@@ -4582,6 +4582,10 @@ string describe_function (function f)
   if(object_program (o)) { // Check if it's an object in a way that
 			   // (hopefully) doesn't call any functions
 			   // in it (neither `== nor `!).
+
+    if (objects[object_program (o)] == o)
+      return describe_module (o) + name;
+
     string s;
     if (!catch (s = sprintf("%O",o)) && s != "object")
       return s+"->"+name;
