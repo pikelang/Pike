@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.478 2009/09/13 20:47:55 peter Exp $
+# $Id: Makefile.in,v 1.479 2009/09/24 17:23:25 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -46,12 +46,13 @@ BUILD_BASE=
 buildroot=
 
 prefix = @prefix@
-exec_prefix = $(prefix)/bin
-lib_prefix = $(prefix)/lib/pike
+exec_prefix = @exec_prefix@
+bindir = @bindir@
+lib_prefix = @libdir@@PIKE_LIB_ABI@/pike
 data_prefix = @datadir@
 share_prefix = $(data_prefix)/pike
-man_prefix = $(prefix)/man
-include_prefix = $(prefix)/include/pike
+man_prefix = @mandir@
+include_prefix = @includedir@/pike
 
 # Arguments for test_pike.pike used by the verify targets.
 # TESTARGS = -F -a
@@ -445,12 +446,12 @@ tools: hilfe rsif
 
 hilfe: $(TMP_BINDIR)/hilfe Makefile
 	@echo "Creating hilfe..."; \
-	( sed -e 's!/usr/bin/env pike!$(exec_prefix)/pike!' \
+	( sed -e 's!/usr/bin/env pike!$(bindir)/pike!' \
 	  <$(TMP_BINDIR)/hilfe >./hilfe && chmod 755 ./hilfe) || exit 1 ;
 
 rsif: $(TMP_BINDIR)/rsif Makefile
 	@echo "Creating rsif..."; \
-	( sed -e 's!pike!$(exec_prefix)/pike!' <$(TMP_BINDIR)/rsif \
+	( sed -e 's!pike!$(bindir)/pike!' <$(TMP_BINDIR)/rsif \
 	  >./rsif && chmod 755 ./rsif) || exit 1 ;
 
 dump_modules: pike-complete-stamp master-stamp
@@ -610,7 +611,7 @@ Pike_module.wxs: pike-complete-stamp $(TMP_BINDIR)/install.pike Makefile
 	if [ -f autodoc.xml ]; then no_autodoc=""; fi; \
 	$(RUNPIKE) $(TMP_BINDIR)/install.pike --wix-module $$no_autodoc \
 	@INSTALL_EXPORT_ARGS@ \
-	exec_prefix="$(exec_prefix)" lib_prefix="$(lib_prefix)" \
+	exec_prefix="$(bindir)" lib_prefix="$(lib_prefix)" \
 	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
 	SRCDIR="$(SRCDIR)" prefix="$(prefix)" DOCDIR_SRC="$(DOCDIR_SRC)" \
 	MANDIR_SRC="$(MANDIR_SRC)" \
@@ -623,7 +624,7 @@ Pike.wxs: $(TMP_BINDIR)/install.pike Makefile
 	if [ -f autodoc.xml ]; then no_autodoc=""; fi; \
 	$(RUNPIKE) $(TMP_BINDIR)/install.pike --wix $$no_autodoc \
 	@INSTALL_EXPORT_ARGS@ \
-	exec_prefix="$(exec_prefix)" lib_prefix="$(lib_prefix)" \
+	exec_prefix="$(bindir)" lib_prefix="$(lib_prefix)" \
 	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
 	SRCDIR="$(SRCDIR)" prefix="$(prefix)" DOCDIR_SRC="$(DOCDIR_SRC)" \
 	MANDIR_SRC="$(MANDIR_SRC)" \
@@ -656,7 +657,7 @@ pike_icon.res: pike.ico
 # install
 install: pike-complete-stamp tools
 	@$(RUNPIKE) $(TMP_BINDIR)/install.pike \
-	exec_prefix="$(exec_prefix)" lib_prefix="$(lib_prefix)" \
+	exec_prefix="$(bindir)" lib_prefix="$(lib_prefix)" \
 	include_prefix="$(include_prefix)" \
 	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
 	SRCDIR="$(SRCDIR)" prefix="$(prefix)" DOCDIR_SRC="$(DOCDIR_SRC)" \
@@ -668,7 +669,7 @@ install: pike-complete-stamp tools
 
 install_interactive: pike-complete-stamp tools
 	@$(RUNPIKE) $(TMP_BINDIR)/install.pike --interactive \
-	exec_prefix="$(exec_prefix)"  prefix=$(prefix) \
+	exec_prefix="$(bindir)"  prefix=$(prefix) \
 	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
 	SRCDIR="$(SRCDIR)" DOCDIR_SRC="$(DOCDIR_SRC)" \
 	MANDIR_SRC="$(MANDIR_SRC)" \
@@ -841,7 +842,7 @@ bench: tinstall
 verify_installed: testsuites master-stamp
 	if test "$(TESTARGS)" = "" ; then args="-F -a -v" ; else \
 	  args="$(TESTARGS)" ; fi; \
-	$(exec_prefix)/pike $(PIKEOPTS) -x test_pike $$args
+	$(bindir)/pike $(PIKEOPTS) -x test_pike $$args
 
 check: verify
 
@@ -1060,7 +1061,7 @@ bin_export:
 	if [ -f autodoc.xml ]; then no_autodoc=""; fi; \
 	$(RUNPIKE) $(TMP_BINDIR)/install.pike --export $$no_autodoc \
 	@INSTALL_EXPORT_ARGS@ \
-	exec_prefix="$(exec_prefix)" lib_prefix="$(lib_prefix)" \
+	exec_prefix="$(bindir)" lib_prefix="$(lib_prefix)" \
 	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
 	SRCDIR="$(SRCDIR)" prefix="$(prefix)" DOCDIR_SRC="$(DOCDIR_SRC)" \
 	MANDIR_SRC="$(MANDIR_SRC)" \
