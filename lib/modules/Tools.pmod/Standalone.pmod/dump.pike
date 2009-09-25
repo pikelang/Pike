@@ -6,7 +6,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dump.pike,v 1.10 2008/06/28 16:37:02 nilsson Exp $
+|| $Id: dump.pike,v 1.11 2009/09/25 11:12:59 grubba Exp $
 */
 
 constant description = "Dumps Pike files into object files.";
@@ -214,7 +214,7 @@ do_dump: {
 
       }) && programp (p))
     {
-      if(!p->dont_dump_module && !p->dont_dump_program)
+      if(!p->dont_dump_module && !p->dont_dump_program && !p->this_program_does_not_exist)
       {
 	string s;
 	if ((err = catch {
