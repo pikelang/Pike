@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.479 2009/09/24 17:23:25 grubba Exp $
+# $Id: Makefile.in,v 1.480 2009/09/26 12:27:52 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -48,7 +48,7 @@ buildroot=
 prefix = @prefix@
 exec_prefix = @exec_prefix@
 bindir = @bindir@
-lib_prefix = @libdir@@PIKE_LIB_ABI@/pike
+lib_prefix = @libdir@/pike
 data_prefix = @datadir@
 share_prefix = $(data_prefix)/pike
 man_prefix = @mandir@
