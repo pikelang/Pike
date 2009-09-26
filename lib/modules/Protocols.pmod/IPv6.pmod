@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 // Some IPv6 utilities.
 
 protected array(int) parse_ipv6_seq (string seq)

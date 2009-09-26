@@ -3,6 +3,8 @@
 //! This is an empty Sql handler typically used to test other
 //! functionality of the Sql module.
 
+#pike __REAL_VERSION__
+
 //! @returns
 //!   @expr{@[sprintf]("quote(%q)", s)@}.
 string quote(string s)
