@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.882 2009/09/08 21:18:04 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.883 2009/09/29 11:10:40 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -5089,6 +5089,19 @@ void test()
 
     return 1;
   ]], 1)
+
+  test_any([[
+    Stdio.write_file ("testsuite_test.pike", #"\
+      int main()
+      {
+	Thread.Mutex m = Thread.Mutex();
+	Thread.MutexKey l = m->lock();
+	Thread.thread_create (lambda () {m->lock(); exit (0);});
+	call_out (destruct, 0, l);
+	return -1;
+      }");
+    return Process.system (RUNPIKE +" testsuite_test.pike");
+  ]], 0)
 
 cond_end // thread_create
 
