@@ -121,6 +121,106 @@ object do_method(string method,
   return con;
 }
 
+//! Low level asynchronous HTTP call method.
+//!
+//! @param method
+//!   The HTTP method to use, e.g. @expr{"GET"@}.
+//! @param url
+//!   The URL to perform @[method] on. Should be a complete URL,
+//!   including protocol, e.g. @expr{"https://pike.ida.liu.se/"@}.
+//! @param query_variables
+//!   Calls @[http_encode_query] and appends the result to the URL.
+//! @param request_headers
+//!   The HTTP headers to be added to the request. By default the
+//!   headers User-agent, Host and, if needed by the url,
+//!   Authorization will be added, with generated contents.
+//!   Providing these headers will override the default. Setting
+//!   the value to 0 will remove that header from the request.
+//! @param con
+//!   Previously initialized connection object.
+//!   In particular the callbacks must have been set
+//!   (@[Query.set_callbacks()]).
+//! @param data
+//!   Data payload to be transmitted in the request.
+//!
+//! @seealso
+//!   @[do_method()], @[Query.set_callbacks()]
+void do_async_method(string method,
+		     string|Standards.URI url,
+		     void|mapping(string:int|string|array(string)) query_variables,
+		     void|mapping(string:string|array(string)) request_headers,
+		     Protocols.HTTP.Query con, void|string data)
+{
+  if(stringp(url))
+    url=Standards.URI(url);
+
+  if( (< "httpu", "httpmu" >)[url->scheme] ) {
+    error("Asynchronous httpu or httpmu not yet supported.\n");
+  }
+
+#if constant(SSL.sslfile) 	
+  if(url->scheme!="http" && url->scheme!="https")
+    error("Can't handle %O or any other protocols than HTTP or HTTPS.\n",
+	  url->scheme);
+
+  con->https = (url->scheme=="https")? 1 : 0;
+#else
+  if(url->scheme!="http")
+    error("Can't handle %O or any other protocol than HTTP.\n",
+	  url->scheme);
+#endif
+
+  if(!request_headers)
+    request_headers = ([]);
+  mapping default_headers = ([
+    "user-agent" : "Mozilla/5.0 (compatible; MSIE 6.0; Pike HTTP client)"
+    " Pike/" + __REAL_MAJOR__ + "." + __REAL_MINOR__ + "." + __REAL_BUILD__,
+    "host" : url->host + 
+    (url->port!=(url->scheme=="https"?443:80)?":"+url->port:"")]);
+
+  if(url->user || url->passwd)
+    default_headers->authorization = "Basic "
+				   + MIME.encode_base64(url->user + ":" +
+							(url->password || ""));
+  request_headers = default_headers | request_headers;
+
+  string query=url->query;
+  if(query_variables && sizeof(query_variables))
+  {
+    if(query)
+      query+="&"+http_encode_query(query_variables);
+    else
+      query=http_encode_query(query_variables);
+  }
+
+  string path=url->path;
+  if(path=="") path="/";
+
+  // Reset the state of con.
+  con->errno = 0;
+  con->ok = 0;
+  con->headers = 0;
+  con->protocol = 0;
+  con->status = 0;
+  con->status_desc = 0;
+  con->data_timeout = 120;
+  con->timeout = 120;
+  if (con->ssl)
+    con->ssl = 0;
+  con->con = 0;
+  con->request = 0;
+  con->buf = "";
+  con->headerbuf = "";
+  con->datapos = 0;
+  con->discarded_bytes = 0;
+  // con->conthread = 0;
+
+  con->async_request(url->host, url->port,
+		     method+" "+path+(query?("?"+query):"")+" HTTP/1.0",
+		     request_headers, data);
+}
+
+
 //! @decl Protocols.HTTP.Query get_url(string|Standards.URI url)
 //! @decl Protocols.HTTP.Query get_url(string|Standards.URI url, @
 //!                                    mapping query_variables)
