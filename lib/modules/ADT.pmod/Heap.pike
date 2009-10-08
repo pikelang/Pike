@@ -6,8 +6,8 @@
 
 #define SWAP(X,Y) do{ mixed tmp=values[X]; values[X]=values[Y]; values[Y]=tmp; }while(0)
 
-protected private array values=allocate(10);
-protected private int num_values;
+protected array values=allocate(10);
+protected int num_values;
 
 #ifdef ADT_HEAP_DEBUG
 void verify_heap()
