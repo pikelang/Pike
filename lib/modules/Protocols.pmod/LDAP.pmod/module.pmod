@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: module.pmod,v 1.33 2009/09/08 08:04:38 mast Exp $
+// $Id: module.pmod,v 1.34 2009/10/08 12:14:58 mast Exp $
 
 #include "ldap_globals.h"
 
@@ -1619,7 +1619,10 @@ object get_cached_filter (string filter, void|int ldap_version)
 // Client connection pool
 
 constant connection_idle_timeout = 30;
-// This better be shorter than the server side timeout.
+// This better be shorter than the server side timeout. (According to
+// http://support.microsoft.com/kb/315071, the AD default value is 900
+// seconds, and the server sends an LDAP disconnect notification
+// before closing it, which we ought to look for.)
 
 constant connection_rebind_threshold = 4;
 // Let there be a couple of differently bound connections before
