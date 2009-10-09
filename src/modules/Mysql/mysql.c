@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.84 2008/03/21 17:35:52 grubba Exp $
+|| $Id: mysql.c,v 1.85 2009/10/09 13:09:59 mast Exp $
 */
 
 /*
@@ -96,7 +96,7 @@
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.84 2008/03/21 17:35:52 grubba Exp $");
+RCSID("$Id: mysql.c,v 1.85 2009/10/09 13:09:59 mast Exp $");
 
 /*! @module Mysql
  *!
@@ -635,9 +635,12 @@ static void mysql__sprintf(INT32 args)
 
       if (socket) {
 	const char *info;
-	MYSQL_ALLOW();
+	/* _sprintf functions must not hang. mysql_get_host_info is
+	 * safe to execute anyway, because it only returns a field in
+	 * the MYSQL struct. */
+	/* MYSQL_ALLOW(); */
 	info = mysql_get_host_info(socket);
-	MYSQL_DISALLOW();
+	/* MYSQL_DISALLOW(); */
 	push_text("mysql(/*%s%s*/)");
 	push_text(info);
 	push_text("");
