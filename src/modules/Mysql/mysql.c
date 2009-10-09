@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.117 2009/07/24 12:42:39 mast Exp $
+|| $Id: mysql.c,v 1.118 2009/10/09 13:10:00 mast Exp $
 */
 
 /*
@@ -686,9 +686,12 @@ static void mysql__sprintf(INT32 args)
 
       if (mysql) {
 	const char *info;
-	MYSQL_ALLOW();
+	/* _sprintf functions must not hang. mysql_get_host_info is
+	 * safe to execute anyway, because it only returns a field in
+	 * the MYSQL struct. */
+	/* MYSQL_ALLOW(); */
 	info = mysql_get_host_info(mysql);
-	MYSQL_DISALLOW();
+	/* MYSQL_DISALLOW(); */
 	push_text("mysql(/*%s%s*/)");
 	push_text(info ? info : "");
 #ifdef HAVE_MYSQL_SSL
