@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.437 2009/08/06 13:08:40 grubba Exp $
+|| $Id: las.c,v 1.438 2009/10/11 17:19:13 grubba Exp $
 */
 
 #include "global.h"
@@ -3468,8 +3468,10 @@ void fix_type_field(node *n)
     else {
       node *low = CADR (n), *high = CDDR (n);
       n->type = range_type(CAR(n)->type,
-			   low->token == F_RANGE_OPEN ? NULL : CAR (low)->type,
-			   high->token == F_RANGE_OPEN ? NULL : CAR (high)->type);
+			   ((low->token == F_RANGE_OPEN) || !CAR(low)) ?
+			   NULL : CAR (low)->type,
+			   ((high->token == F_RANGE_OPEN) || !CAR(high)) ?
+			   NULL : CAR (high)->type);
     }
     break;
 
