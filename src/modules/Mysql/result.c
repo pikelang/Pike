@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: result.c,v 1.44 2009/09/09 15:48:04 grubba Exp $
+|| $Id: result.c,v 1.45 2009/10/12 09:41:27 grubba Exp $
 */
 
 /*
@@ -679,6 +679,7 @@ static void f_fetch_json_result(INT32 args)
   FETCH_LENGTHS_TYPE *row_lengths;
 #endif /* HAVE_MYSQL_FETCH_LENGTHS */
   struct string_builder res;
+  ONERROR uwp;
   int r = 0;
 
   if (!PIKE_MYSQL_RES->result) {
@@ -686,6 +687,7 @@ static void f_fetch_json_result(INT32 args)
   }
 
   init_string_builder(&res, 0);
+  SET_ONERROR(uwp, free_string_builder, &res);
   string_builder_putchar(&res, '[');
 
   num_fields = mysql_num_fields(PIKE_MYSQL_RES->result);
@@ -731,6 +733,7 @@ next_row:
     /* No rows left in result */
     PIKE_MYSQL_RES->eof = 1;
     string_builder_putchar(&res, ']');
+    UNSET_ONERROR(uwp);
     push_string(finish_string_builder(&res));
   }
 
