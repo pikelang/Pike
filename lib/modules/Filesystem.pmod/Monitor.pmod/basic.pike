@@ -1,7 +1,7 @@
 //
 // Basic filesystem monitor.
 //
-// $Id: basic.pike,v 1.25 2009/09/21 11:23:17 grubba Exp $
+// $Id: basic.pike,v 1.26 2009/10/12 14:59:53 grubba Exp $
 //
 // 2009-07-09 Henrik Grubbström
 //
@@ -680,6 +680,9 @@ protected int(0..1) check_monitor(Monitor m, MonitorFlags|void flags)
 //!   Maximum number of paths to check in this call. @expr{0@}
 //!   (zero) for unlimited.
 //!
+//! @param ret_stats
+//!   Optional mapping that will be filled with statistics (see below).
+//!
 //! A suitable subset of the monitored files will be checked
 //! for changes.
 //!
@@ -688,14 +691,30 @@ protected int(0..1) check_monitor(Monitor m, MonitorFlags|void flags)
 //!   or when @[max_wait] has expired. The returned value indicates
 //!   the number of seconds until the next call of @[check()].
 //!
+//!   If @[ret_stats] has been provided, it will be filled with
+//!   the following entries:
+//!   @mapping
+//!     @member int "num_monitors"
+//!       The total number of active monitors when the scan completed.
+//!     @member int "scanned_monitors"
+//!       The number of monitors that were scanned for updates during the call.
+//!     @member int "updated_monitors"
+//!       The number of monitors that were updated during the call.
+//!     @member int "idle_time"
+//!       The number of seconds that the call slept.
+//!   @endmapping
+//!
 //! @note
 //!   Any callbacks will be called from the same thread as the one
 //!   calling @[check()].
 //!
 //! @seealso
 //!   @[monitor()]
-int check(int|void max_wait, int|void max_cnt)
+int check(int|void max_wait, int|void max_cnt,
+	  mapping(string:int)|void ret_stats)
 {
+  int scan_cnt = max_cnt;
+  int scan_wait = max_wait;
   while(1) {
     int ret = max_dir_check_interval;
     int cnt;
@@ -705,21 +724,29 @@ int check(int|void max_wait, int|void max_cnt)
       while ((m = monitor_queue->peek()) &&
 	     m <= t) {
 	cnt += check_monitor(m);
-	if (!--max_cnt) break;
+	if (--scan_cnt) break;
       }
       if (m) {
 	ret = m->next_poll - t;
 	if (ret <= 0) ret = 1;
       } else {
-	max_cnt--;
+	scan_cnt--;
       }
     }
-    if (cnt || !max_wait || !max_cnt) return ret;
-    if (ret < max_wait) {
-      max_wait -= ret;
+    if (cnt || !scan_wait || !scan_cnt) {
+      if (ret_stats) {
+	ret_stats->num_monitors = sizeof(monitors);
+	ret_stats->scanned_monitors = max_cnt - scan_cnt;
+	ret_stats->updated_monitors = cnt;
+	ret_stats->idle_time = max_wait - scan_wait;
+      }
+      return ret;
+    }
+    if (ret < scan_wait) {
+      scan_wait -= ret;
       sleep(ret);
     } else {
-      if (max_wait > 0) max_wait--;
+      if (scan_wait > 0) scan_wait--;
       sleep(1);
     }
   }
