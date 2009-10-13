@@ -1,7 +1,7 @@
 //
 // Basic filesystem monitor.
 //
-// $Id: basic.pike,v 1.26 2009/10/12 15:00:11 grubba Exp $
+// $Id: basic.pike,v 1.27 2009/10/13 12:39:20 grubba Exp $
 //
 // 2009-07-09 Henrik Grubbström
 //
@@ -261,7 +261,7 @@ protected class Monitor(string path,
       // Initialize.
       if (st) {
 	if (st->isdir) {
-	  array(string) files = get_dir(path);
+	  array(string) files = get_dir(path) || ({});
 	  this_program::files = files;
 	  foreach(files, string file) {
 	    file = Stdio.append_path(path, file);
@@ -312,7 +312,7 @@ protected class Monitor(string path,
 	(st->size != old_st->size)) {
       last_change = time(1);
       if (st->isdir) {
-	array(string) files = get_dir(path);
+	array(string) files = get_dir(path) || ({});
 	array(string) new_files = files;
 	array(string) deleted_files = ({});
 	if (this_program::files) {
@@ -719,12 +719,14 @@ int check(int|void max_wait, int|void max_cnt,
     int ret = max_dir_check_interval;
     int cnt;
     int t = time();
-    Monitor m;
     if (sizeof(monitors)) {
-      while ((m = monitor_queue->peek()) &&
-	     m <= t) {
+      Monitor m;
+      while ((m = monitor_queue->peek()) && (m->next_poll <= t)) {
 	cnt += check_monitor(m);
-	if (--scan_cnt) break;
+	if (!(--scan_cnt)) {
+	  m = monitor_queue->peek();
+	  break;
+	}
       }
       if (m) {
 	ret = m->next_poll - t;
