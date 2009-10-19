@@ -1,7 +1,7 @@
 //
 // Basic filesystem monitor.
 //
-// $Id: basic.pike,v 1.27 2009/10/13 12:39:20 grubba Exp $
+// $Id: basic.pike,v 1.28 2009/10/19 14:23:45 grubba Exp $
 //
 // 2009-07-09 Henrik Grubbström
 //
@@ -290,14 +290,34 @@ protected class Monitor(string path,
     }
     if (!st) {
       if (old_st) {
-	if (this_program::flags & MF_AUTO) {
-	  m_delete(monitors, path);
-	  release_monitor(this);
+	int delay;
+	// Propagate deletions to any submonitors.
+	if (files) {
+	  foreach(files, string file) {
+	    file = canonic_path(Stdio.append_path(path, file));
+	    if (monitors[file]) {
+	      // Adjust next_poll, so that the monitor will be checked soon.
+	      monitors[file]->next_poll = time(1)-1;
+	      monitor_queue->adjust(monitors[file]);
+	      delay = 1;
+	    }
+	  }
 	}
-	if (file_deleted) {
-	  file_deleted(path);
+	if (delay) {
+	  // Delay the notification until the submonitors have notified.
+	  st = old_st;
+	  next_poll = time(1);
+	  monitor_queue->adjust(this);
+	} else {
+	  if (this_program::flags & MF_AUTO) {
+	    m_delete(monitors, path);
+	    release_monitor(this);
+	  }
+	  if (file_deleted) {
+	    file_deleted(path);
+	  }
+	  return 1;
 	}
-	return 1;
       }
       return 0;
     }
