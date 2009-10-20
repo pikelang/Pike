@@ -1,7 +1,7 @@
 //
 // Basic filesystem monitor.
 //
-// $Id: basic.pike,v 1.28 2009/10/19 14:23:45 grubba Exp $
+// $Id: basic.pike,v 1.29 2009/10/20 14:33:26 grubba Exp $
 //
 // 2009-07-09 Henrik Grubbström
 //
@@ -264,7 +264,7 @@ protected class Monitor(string path,
 	  array(string) files = get_dir(path) || ({});
 	  this_program::files = files;
 	  foreach(files, string file) {
-	    file = Stdio.append_path(path, file);
+	    file = canonic_path(Stdio.append_path(path, file));
 	    if (monitors[file]) {
 	      // There's already a monitor for the file.
 	      // Assume it has already notified about existance.
@@ -326,6 +326,27 @@ protected class Monitor(string path,
       if (file_created) {
 	file_created(path, st);
       }
+      if (st->isdir) {
+	array(string) files = get_dir(path) || ({});
+	this_program::files = files;
+	foreach(files, string file) {
+	  file = canonic_path(Stdio.append_path(path, file));
+	  if (monitors[file]) {
+	    // There's already a monitor for the file.
+	    // Assume it has already notified about existance.
+	    continue;
+	  }
+	  if (this_program::flags & MF_RECURSE) {
+	    monitor(file, orig_flags | MF_AUTO,
+		    max_dir_check_interval,
+		    file_interval_factor,
+		    stable_time);
+	    check_monitor(monitors[file]);
+	  } else if (file_created) {
+	    file_created(file, file_stat(file, 1));
+	  }
+	}
+      }
       return 1;
     }
     if ((st->mtime != old_st->mtime) || (st->ctime != old_st->ctime) ||
@@ -341,7 +362,7 @@ protected class Monitor(string path,
 	}
 	this_program::files = files;
 	foreach(new_files, string file) {
-	  file = Stdio.append_path(path, file);
+	  file = canonic_path(Stdio.append_path(path, file));
 	  Monitor m2 = monitors[file];
 	  mixed err = catch {
 	      if (m2) {
@@ -361,7 +382,7 @@ protected class Monitor(string path,
 	  }
 	}
 	foreach(deleted_files, string file) {
-	  file = Stdio.append_path(path, file);
+	  file = canonic_path(Stdio.append_path(path, file));
 	  Monitor m2 = monitors[file];
 	  mixed err = catch {
 	      if (m2) {
@@ -382,7 +403,7 @@ protected class Monitor(string path,
 	if (flags & MF_RECURSE) {
 	  // Check the remaining files in the directory.
 	  foreach(((files - new_files) - deleted_files), string file) {
-	    file = Stdio.append_path(path, file);
+	    file = canonic_path(Stdio.append_path(path, file));
 	    Monitor m2 = monitors[file];
 	    if (m2) {
 	      m2->check(flags);
@@ -404,7 +425,7 @@ protected class Monitor(string path,
     if ((flags & MF_RECURSE) && (st->isdir)) {
       // Check the files in the directory.
       foreach(files, string file) {
-	file = Stdio.append_path(path, file);
+	file = canonic_path(Stdio.append_path(path, file));
 	Monitor m2 = monitors[file];
 	if (m2) {
 	  m2->check(flags);
