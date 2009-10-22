@@ -1,7 +1,7 @@
 //
 // Basic filesystem monitor.
 //
-// $Id: basic.pike,v 1.29 2009/10/20 14:33:26 grubba Exp $
+// $Id: basic.pike,v 1.30 2009/10/22 15:45:01 grubba Exp $
 //
 // 2009-07-09 Henrik Grubbström
 //
@@ -873,7 +873,7 @@ protected void backend_check()
 void set_nonblocking(int|void t)
 {
   if (co_id) return;
-  if (!zero_type(t)) {
+  if (zero_type(t)) {
     Monitor m = monitor_queue->peek();
     t = (m && m->next_poll - time(1)) || max_dir_check_interval;
     if (t > max_dir_check_interval) t = max_dir_check_interval;
