@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: nt.c,v 1.84 2009/03/16 13:53:36 grubba Exp $
+|| $Id: nt.c,v 1.85 2009/10/23 16:52:39 mast Exp $
 */
 
 /*
@@ -2758,7 +2758,7 @@ static void f_normalize_path(INT32 args)
     if (!wfile) SIMPLE_OUT_OF_MEMORY_ERROR ("normalize_path", (l + 1) * 2);
     SET_ONERROR (wfile_uwp, free, wfile);
     wfile[l] = 0;
-    while (l--) wfile[l] = file[l];
+    while (l--) wfile[l] = (unsigned char) file[l];
 
     hres = isf->lpVtbl->ParseDisplayName (isf, NULL, NULL, wfile,
 					  NULL, &idl, NULL);
