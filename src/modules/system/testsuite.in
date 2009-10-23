@@ -1,5 +1,5 @@
 START_MARKER
-// $Id: testsuite.in,v 1.18 2009/03/15 12:11:24 mast Exp $
+// $Id: testsuite.in,v 1.19 2009/10/23 16:52:57 mast Exp $
 
 
 // system.c:
@@ -150,6 +150,36 @@ cond([[ all_constants()->getpwuid && all_constants()->getpwnam ]], [[
 cond([[ System->NetSessionEnum ]],
 [[
   test_true( System.NetSessionEnum(0,0,0,0) )
+]])
+
+cond([[System->normalize_path]],
+[[
+  test_any([[
+    Stdio.recursive_rm ("testsuite_test");
+    mkdir ("testsuite_test");
+
+    int test_normalize_path (string f)
+    {
+      string ff = "testsuite_test/" + f;
+      Stdio.write_file (ff, "foo");
+      string n = System.normalize_path (ff);
+      if (!n) {
+	werror ("System.normalize_path (%O) produced 0\n", ff);
+	return 0;
+      }
+#ifdef __NT__
+      if (!has_suffix (n, "\\testsuite_test\\" + f)) {
+	werror ("System.normalize_path (%O) produced %O\n", ff, n);
+	return 0;
+      }
+#endif
+      return 1;
+    };
+
+    if (!test_normalize_path ("foo")) return 0;
+    if (!test_normalize_path ("\345\344\366")) return 0;
+    return 1;
+  ]], 1)
 ]])
 
 
