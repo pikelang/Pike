@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.189 2009/08/07 13:06:37 grubba Exp $
+|| $Id: efuns.c,v 1.190 2009/10/23 11:23:17 grubba Exp $
 */
 
 #include "global.h"
@@ -442,8 +442,8 @@ void f_file_stat(INT32 args)
 
   if(args<1)
     SIMPLE_TOO_FEW_ARGS_ERROR("file_stat", 1);
-  if(sp[-args].type != T_STRING)
-    SIMPLE_BAD_ARG_ERROR("file_stat", 1, "string");
+  if((sp[-args].type != T_STRING) || sp[-args].u.string->size_shift)
+    SIMPLE_BAD_ARG_ERROR("file_stat", 1, "string(0..255)");
 
   str = sp[-args].u.string;
   l = (args>1 && !UNSAFE_IS_ZERO(sp+1-args))?1:0;
