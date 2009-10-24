@@ -1,6 +1,6 @@
 // -*- Pike -*-
 
-// $Id: module.pike,v 1.33 2008/07/08 12:59:17 grubba Exp $
+// $Id: module.pike,v 1.34 2009/10/24 14:59:00 bill Exp $
 
 #pike __REAL_VERSION__
 
@@ -299,8 +299,8 @@ int main(int argc, array(string) argv)
       if(run->automake == ALWAYS ||
 	 max_time_of_files("$src/Makefile.in") < tmp1)
       {
-	run_or_fail((["dir":srcdir]),"aclocal");
-	run_or_fail((["dir":srcdir]),"automake");
+	run_or_fail((["cwd":srcdir]),"aclocal");
+	run_or_fail((["cwd":srcdir]),"automake");
 	rm(fix("$src/stamp-h.in"));
       }
     }
@@ -328,7 +328,7 @@ int main(int argc, array(string) argv)
     {
       if(run->autoheader==ALWAYS || max_time_of_files(stamp_file) <= tmp1)
       {
-	run_or_fail((["dir":srcdir]),"autoheader");
+	run_or_fail((["cwd":srcdir]),"autoheader");
 	if( stamp_file == "$src/stamp-h.in" )
 	  Stdio.write_file(fix(stamp_file),"foo\n");
       }
@@ -352,14 +352,14 @@ int main(int argc, array(string) argv)
 	  // If we fail to determine the autoconf version we assume
 	  // yet another incompatble autoconf change.
 	  if(!v || v>2.52)
-	    run_or_fail((["dir":srcdir]),"autoconf","--include="+src_path);
+	    run_or_fail((["cwd":srcdir]),"autoconf","--include="+src_path);
 	  else
-	    run_or_fail((["dir":srcdir]),"autoconf","--localdir="+src_path);
+	    run_or_fail((["cwd":srcdir]),"autoconf","--localdir="+src_path);
 	}
 	else
 	{
 	  write("** Running autoconf\n");
-	  run_or_fail( (["dir":srcdir]), "autoconf" );
+	  run_or_fail( (["cwd":srcdir]), "autoconf" );
 	}
       }
     }
