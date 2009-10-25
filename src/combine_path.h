@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: combine_path.h,v 1.15 2004/05/01 15:25:04 mast Exp $
+|| $Id: combine_path.h,v 1.16 2009/10/25 12:03:25 mast Exp $
 */
 
 /*
@@ -39,7 +39,14 @@ static int find_absolute(PCHARP s)
 {
   int c0=INDEX_PCHARP(s,0);
   int c1=c0?INDEX_PCHARP(s,1):0;
-  if(isalpha(c0) && c1==':' && IS_SEP(INDEX_PCHARP(s,2)))
+  /* The following used to use isalpha(c0), but it apparently can
+   * index out-of-bound memory in the msvc 9.0 crt when given 16-bit
+   * char values (known to occur with 0x20ac, at least). Besides, a
+   * drive letter is limited to a..z, so this is faster and more
+   * correct. */
+  if(((c0 >= 'A' && c0 <= 'Z') ||
+      (c0 >= 'a' && c0 <= 'z')) &&
+     c1==':' && IS_SEP(INDEX_PCHARP(s,2)))
     return 3;
 
   if(IS_SEP(c0) && IS_SEP(c1))
