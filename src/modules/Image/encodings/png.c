@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.98 2009/08/10 16:10:00 nilsson Exp $
+|| $Id: png.c,v 1.99 2009/10/26 14:51:46 mast Exp $
 */
 
 #include "global.h"
@@ -1466,8 +1466,11 @@ static void img_png_decode(INT32 args, int mode)
      pop_stack();
 
      if(trns)
-       CALL_AND_UNSET_ONERROR(err);
+       UNSET_ONERROR(err);
    }
+
+   if (trns)
+     png_free_string (trns);
 
    if ( mode != MODE_IMAGE_ONLY )
    {
