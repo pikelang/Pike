@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 - 2009, Roxen IS. All rights reserved.
 //
-// $Id: PDF.pmod,v 1.17 2009/05/25 18:26:52 mast Exp $
+// $Id: PDF.pmod,v 1.18 2009/10/28 16:13:46 jonasw Exp $
 
 // Filter for application/pdf
 
@@ -34,8 +34,12 @@ constant contenttypes = ({ "application/pdf" });
   };
   if(!rm(fn))
     werror("Search: Failed to remove temporary file: %s\n", fn);
-  if(err)
+  if(err) {
+#ifdef SEARCH_DEBUG
+    werror("error from pdftohtml: %s\n\n", describe_backtrace(err));
+#endif
     throw(err);
+  }
 
 
   res = ::filter(uri, text, "text/html", ([]));
