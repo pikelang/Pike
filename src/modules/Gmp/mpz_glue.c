@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.184 2009/06/28 10:08:26 grubba Exp $
+|| $Id: mpz_glue.c,v 1.185 2009/10/28 17:54:54 grubba Exp $
 */
 
 #include "global.h"
@@ -618,12 +618,59 @@ static void mpzmod_get_int(INT32 args)
 #endif /* AUTO_BIGNUM */
 }
 
+static INT32 crc_table[256];
+
+static void init_crc_table(void)
+{
+  int i;
+  for (i = 0; i < 256; i++) {
+    int j;
+    INT32 crc = i << 24;
+    for (j = 0; j < 8; j++) {
+      if (crc < 0) {
+	crc = (crc << 1)^0x04c11db7L;
+      } else {
+	crc <<= 1;
+      }
+    }
+    crc_table[i] = crc;
+  }
+}
+
 /*! @decl int __hash()
+ *!
+ *!   Calculate a hash of the value.
+ *!
+ *! @note
+ *!   Prior to Pike 7.8.359 this function returned the low
+ *!   32-bits as an unsigned integer. This could in some
+ *!   common cases lead to very unbalanced mappings.
+ *!
+ *! @seealso
+ *!   @[hash_value()]
  */
 static void mpzmod___hash(INT32 args)
 {
+  MP_INT *mpz = THIS;
+
+  /* Calculate the CRC32 of the limbs.
+   * NOTE: LSB first!
+   */
+  INT32 crc = 0;
+  size_t pos;
+  for (pos = 0; pos < mpz_size(mpz); pos++) {
+    mp_limb_t x = MPZ_GETLIMBN (mpz, pos);
+    size_t i;
+    for (i=0; i<sizeof(mp_limb_t); i++) {
+      crc = (crc >> 8) ^ crc_table[((crc >> 24) ^ x) & 0xff];
+      x >>= 8;
+    }
+  }
   pop_n_elems(args);
-  push_int(mpz_get_si(THIS));
+  if (mpz_sgn(mpz) < 0)
+    push_int(-crc);
+  else
+    push_int(crc);
 }
 
 /*! @decl float cast_to_float()
@@ -2348,6 +2395,8 @@ PIKE_MODULE_INIT
     fatal("Gmp.mpz initialized twice!\n");
   }
 #endif /* PIKE_DEBUG */
+
+  init_crc_table();
 
   /* Make sure that gmp uses the same malloc functions as we do since
    * we got code that frees blocks allocated inside gmp (e.g.
