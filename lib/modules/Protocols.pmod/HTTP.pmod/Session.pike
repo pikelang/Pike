@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Session.pike,v 1.22 2008/06/28 16:36:57 nilsson Exp $
+// $Id: Session.pike,v 1.23 2009/10/30 18:51:24 mast Exp $
 
 import Protocols.HTTP;
 
@@ -874,8 +874,8 @@ Request async_do_method_url(string method,
 
    if (method=="POST")
       extra_headers=
-	 (extra_headers||([]))+
-	 (["content-type":"application/x-www-form-urlencoded"]);
+	 (["content-type":"application/x-www-form-urlencoded"])+
+	 (extra_headers||([]));
 
    p->do_async(p->prepare_method(method,url,query_variables,
 				 extra_headers,data));
