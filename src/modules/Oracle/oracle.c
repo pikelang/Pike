@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: oracle.c,v 1.97 2009/05/19 17:54:18 grubba Exp $
+|| $Id: oracle.c,v 1.98 2009/10/30 11:00:21 mast Exp $
 */
 
 /*
@@ -2492,8 +2492,15 @@ static void dbdate_sprintf(INT32 args)
 		   &bsize,
 		   buffer);
 		
-  if(!IS_SUCCESS(rc))
+  if(!IS_SUCCESS(rc)) {
+    if (mode == 'O') {
+      /* Be fault tolerant in debug mode. */
+      pop_n_elems (args);
+      push_undefined();
+      return;
+    }
     ora_error_handler(get_global_error_handle(), rc,"OCIDateToText");
+  }
 
   pop_n_elems(args);
   push_text(buffer);
