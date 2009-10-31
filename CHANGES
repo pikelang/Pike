@@ -1,3 +1,35 @@
+Changes since Pike 7.8.352 (third 7.8 release):
+----------------------------------------------------------------------
+
+Bug fixes
+---------
+
+o Fixed segfault in combine_path_nt on windows when the first char
+  of an appended path is wide.
+
+o Fixed a problem in "pike -x module" that prevented auto tools from
+  running in the correct directory.
+
+o Fixed memory leak on out of memory in Mysql.fetch_json_result().
+
+o Fixed locking problem in Mysql.
+
+o Fixed NULL-deref for compilation errors in range expressions.
+
+o Fixes a segfault occuring if exit() is used from a thread when
+  cleanup-on-exit is compiled in.
+
+
+Building and installing
+-----------------------
+
+o Fixed som library searchpath issues.
+
+o Some potential fixes for --enable-pikelib mode on platforms had
+  problems with the final linking.
+
+
+
 Changes since Pike 7.8.316 (second 7.8 release):
 ----------------------------------------------------------------------
 
