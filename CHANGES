@@ -72,7 +72,7 @@ o Lowered startup time by extending encode_value() and MasterCodec so
 o Lowered startup time by reducing the number of MEMSET() calls done
   on startup.
 
-o Allow threads while calling SWL_GL_SwapBuffers.
+o Allow threads while calling SDL_GL_SwapBuffers.
 
 o Added optimization of has_value() and search() for single-character strings.
 
