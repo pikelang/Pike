@@ -2,7 +2,7 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.206 2009/09/19 02:30:34 nilsson Exp $
+// $Id: install.pike,v 1.207 2009/11/03 02:46:49 bill Exp $
 
 // Windows installer FIXMEs:
 //
@@ -2895,10 +2895,13 @@ the PRIVATE_CRT stuff in install.pike.\n");
     try_install_dir(combine_path(vars->DOCDIR_SRC, "structure"),
 		    combine_path(doc_prefix, "src", "structure"), 0);
 
-    foreach(({"install_module", "precompile.pike", "smartlink",
+    foreach(({"install_module", "smartlink",
 	      "fixdepends.sh", "mktestsuite", "test_pike.pike"}), string f)
       install_file(combine_path(vars->TMP_BINDIR,f),
 		   combine_path(include_prefix,f));
+
+    install_file(combine_path(vars->TMP_BINDIR,"precompile_installed.pike"),
+		 combine_path(include_prefix,"precompile.pike"));
 
     if(!export) {
       mkdirhier(combine_path(include_prefix, "modules"));
