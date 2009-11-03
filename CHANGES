@@ -19,6 +19,9 @@ o Fixed NULL-deref for compilation errors in range expressions.
 o Fixes a segfault occuring if exit() is used from a thread when
   cleanup-on-exit is compiled in.
 
+o Fixed so than an existing content-type is not overriden in
+  async_do_method_url.
+
 
 Building and installing
 -----------------------
