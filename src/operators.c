@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.255 2009/09/07 16:46:05 grubba Exp $
+|| $Id: operators.c,v 1.256 2009/11/05 13:48:55 grubba Exp $
 */
 
 #include "global.h"
@@ -318,29 +318,15 @@ PMOD_EXPORT void o_cast_to_int(void)
        we really want to reduce the number of number parsers
        around here. :) /Noring */
 #ifdef AUTO_BIGNUM
-
     /* The generic function is rather slow, so I added this
      * code for benchmark purposes. :-) /per
      */
-    if( sp[-1].u.string->len < 10 &&
-	!sp[-1].u.string->size_shift )
-    {
-      int i=atoi(sp[-1].u.string->str);
-      free_string(sp[-1].u.string);
-      sp[-1].type=T_INT;
-      sp[-1].subtype = NUMBER_NUMBER;
-      sp[-1].u.integer=i;
-    }
-    else
+    if( (sp[-1].u.string->len >= 10) || sp[-1].u.string->size_shift )
       convert_stack_top_string_to_inumber(10);
-    return;   /* FIXME: OK to return? Cast tests below indicates
-		 we have to do this, at least for now... /Noring */
-    /* Yes, it is ok to return, it is actually an optimization :)
-     * /Hubbe
-     */
+    else
 #else
     {
-      int i=STRTOL(sp[-1].u.string->str,0,10);
+      INT_TYPE i = STRTOL(sp[-1].u.string->str, 0, 10);
       free_string(sp[-1].u.string);
       sp[-1].type=T_INT;
       sp[-1].subtype = NUMBER_NUMBER;
