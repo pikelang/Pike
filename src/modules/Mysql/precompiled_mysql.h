@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: precompiled_mysql.h,v 1.19 2008/08/20 13:34:00 grubba Exp $
+|| $Id: precompiled_mysql.h,v 1.20 2009/11/05 13:49:31 grubba Exp $
 */
 
 /*
@@ -72,6 +72,7 @@ struct precompiled_mysql_result {
   struct object *connection;
   MYSQL_RES	*result;
   int eof;
+  int typed_mode;
 };
 
 /*
