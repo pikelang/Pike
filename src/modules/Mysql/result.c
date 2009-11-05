@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: result.c,v 1.47 2009/11/05 14:45:38 grubba Exp $
+|| $Id: result.c,v 1.48 2009/11/05 14:45:55 grubba Exp $
 */
 
 /*
@@ -589,7 +589,7 @@ static void f_fetch_row(INT32 args)
 #endif
 		>= 10) {
 	      push_text(row[i]);
-	      convert_stack_top_staring_to_inumber(10);
+	      convert_stack_top_string_to_inumber(10);
 	      break;
 	    }
 #endif
