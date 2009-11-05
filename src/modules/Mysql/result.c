@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: result.c,v 1.45 2009/10/12 09:41:27 grubba Exp $
+|| $Id: result.c,v 1.46 2009/11/05 14:05:15 grubba Exp $
 */
 
 /*
@@ -305,6 +305,18 @@ static void f_create(INT32 args)
     Pike_error("Bad argument 1 to mysql_result()\n");
   }
 
+#ifdef OLD_SQL_COMPAT
+  PIKE_MYSQL_RES->typed_mode = 1;
+#else
+  PIKE_MYSQL_RES->typed_mode = 0;
+#endif
+  if (args > 1) {
+    if (sp[1-args].type != T_INT) {
+      Pike_error("Bad argument 2 to mysql_result()\n");
+    }
+    PIKE_MYSQL_RES->typed_mode = !!sp[1-args].u.integer;
+  }
+
   if (PIKE_MYSQL_RES->result) {
     mysql_free_result(PIKE_MYSQL_RES->result);
   }
@@ -562,26 +574,37 @@ static void f_fetch_row(INT32 args)
       if (row[i]) {
 	MYSQL_FIELD *field;
 
-	if ((field = mysql_fetch_field(PIKE_MYSQL_RES->result))) {
+	if (PIKE_MYSQL_RES->typed_mode &&
+	    (field = mysql_fetch_field(PIKE_MYSQL_RES->result))) {
 	  switch (field->type) {
-#ifdef OLD_SQL_COMPAT
 	    /* Integer types */
+	  case FIELD_TYPE_DECIMAL:
+          case FIELD_TYPE_LONGLONG:
+#ifdef AUTO_BIGNUM
+	    if (
+#ifdef HAVE_MYSQL_FETCH_LENGTHS
+		row_lengths[i]
+#else
+		strlen(row[i])
+#endif
+		>= 10) {
+	      push_text(row[i]);
+	      convert_stack_top_to_inumber(10);
+	      break;
+	    }
+#endif
+	    /* FALL_THROUGH */
+	  case FIELD_TYPE_TINY:
 	  case FIELD_TYPE_SHORT:
 	  case FIELD_TYPE_LONG:
 	  case FIELD_TYPE_INT24:
-	  case FIELD_TYPE_DECIMAL:
-#if 0
-	    /* This one will not always fit in an INT32 */
-          case FIELD_TYPE_LONGLONG:
-#endif /* 0 */
-	    push_int(atoi(row[i]));
+	    push_int(STRTOL(row[i], 0, 10));
 	    break;
 	    /* Floating point types */
 	  case FIELD_TYPE_FLOAT:
 	  case FIELD_TYPE_DOUBLE:
 	    push_float(atof(row[i]));
 	    break;
-#endif /* OLD_SQL_COMPAT */
 	  default:
 #ifdef HAVE_MYSQL_FETCH_LENGTHS
 	    push_string(make_shared_binary_string(row[i], row_lengths[i]));
@@ -591,7 +614,7 @@ static void f_fetch_row(INT32 args)
 	    break;
 	  }
 	} else {
-	  /* Probably doesn't happen, but... */
+	  /* Everything is strings mode. */
 #ifdef HAVE_MYSQL_FETCH_LENGTHS
 	  push_string(make_shared_binary_string(row[i], row_lengths[i]));
 #else
@@ -599,7 +622,7 @@ static void f_fetch_row(INT32 args)
 #endif /* HAVE_MYSQL_FETCH_LENGTHS */
 	}
       } else {
-	/* NULL? */
+	/* NULL */
 	push_undefined();
 	if(i+1<num_fields)
 	  mysql_field_seek(PIKE_MYSQL_RES->result, i+1);
