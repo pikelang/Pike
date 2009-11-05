@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.118 2009/10/09 13:10:00 mast Exp $
+|| $Id: mysql.c,v 1.119 2009/11/05 14:15:15 grubba Exp $
 */
 
 /*
@@ -862,6 +862,7 @@ static void f_select_db(INT32 args)
 }
 
 #define PIKE_MYSQL_FLAG_STORE_RESULT	1
+#define PIKE_MYSQL_FLAG_TYPED_RESULT	2
 
 static void low_query(INT32 args, char *name, int flags)
 {
@@ -991,7 +992,12 @@ static void low_query(INT32 args, char *name, int flags)
 
     /* Create the object */
     ref_push_object(Pike_fp->current_object);
-    push_object(o = clone_object(mysql_result_program, 1));
+    if (flags & PIKE_MYSQL_FLAG_TYPED_RESULT) {
+      push_int(1);
+      push_object(o = clone_object(mysql_result_program, 2));
+    } else {
+      push_object(o = clone_object(mysql_result_program, 1));
+    }
 
     /* Set the result. */
     if ((!(res = (struct precompiled_mysql_result *)
@@ -1011,6 +1017,17 @@ static void f_big_query(INT32 args)
 static void f_streaming_query(INT32 args)
 {
   low_query(args, "streaming_query", 0);
+}
+
+static void f_big_typed_query(INT32 args)
+{
+  low_query(args, "big_typed_query",
+	    PIKE_MYSQL_FLAG_STORE_RESULT | PIKE_MYSQL_FLAG_TYPED_RESULT);
+}
+
+static void f_streaming_typed_query(INT32 args)
+{
+  low_query(args, "streaming_typed_query", PIKE_MYSQL_FLAG_TYPED_RESULT);
 }
 
 
@@ -1884,6 +1901,11 @@ PIKE_MODULE_INIT
   /* function(string:int|object) */
   ADD_FUNCTION("streaming_query",
 	       f_streaming_query,tFunc(tStr,tObj), ID_PUBLIC);
+  ADD_FUNCTION("big_typed_query",
+	       f_big_typed_query,tFunc(tStr,tObj), ID_PUBLIC);
+  /* function(string:int|object) */
+  ADD_FUNCTION("streaming_typed_query",
+	       f_streaming_typed_query,tFunc(tStr,tObj), ID_PUBLIC);
 #ifdef USE_OLD_FUNCTIONS
   /* function(string:void) */
   ADD_FUNCTION("create_db", f_create_db,tFunc(tStr,tVoid), ID_PUBLIC);
