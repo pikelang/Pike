@@ -1,5 +1,5 @@
 /*
- * $Id: sql_result.pike,v 1.24 2009/11/06 15:22:13 grubba Exp $
+ * $Id: sql_result.pike,v 1.25 2009/11/06 16:54:14 grubba Exp $
  *
  * Implements the generic result module of the SQL-interface
  *
@@ -86,7 +86,7 @@ void seek(int skip) {
 //!   @endmixed
 //!
 //! @note
-//!    @tt{TYPED@}-operation was not supported at all prior to Pike 7.8.361,
+//!    @tt{TYPED@}-operation was not supported at all prior to Pike 7.8.363,
 //!    and may not be supported for all databases.
 int|array(string|int|float) fetch_row();
 

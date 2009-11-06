@@ -1,5 +1,5 @@
 /*
- * $Id: Sql.pike,v 1.98 2009/11/06 15:23:49 grubba Exp $
+ * $Id: Sql.pike,v 1.99 2009/11/06 16:53:35 grubba Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -633,7 +633,7 @@ int|object big_typed_query(object|string q, mixed ... extraargs)
     pre_res = master_sql->big_typed_query(q);
   }
 
-  if(pre_res) return .sql_object_result(pre_res, 3);
+  if(pre_res) return .sql_object_result(pre_res);
   return 0;
 }
 
