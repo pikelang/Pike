@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: oracle.c,v 1.98 2009/10/30 11:00:21 mast Exp $
+|| $Id: oracle.c,v 1.99 2009/11/09 14:34:02 grubba Exp $
 */
 
 /*
@@ -28,6 +28,7 @@
 #include "array.h"
 #include "stralloc.h"
 #include "interpret.h"
+#include "operators.h"
 #include "pike_types.h"
 #include "pike_memory.h"
 #include "threads.h"
@@ -2570,10 +2571,32 @@ static void dbnull_sprintf(INT32 args)
 
 }
 
-static void dbnull_not(INT32 args)
+static void dbnull_eq(INT32 args)
 {
-  pop_n_elems(args);
-  push_int(1);
+  if(args<1) Pike_error("Too few arguments to Oracle.NULL->`==\n");
+  if(args > 1) pop_n_elems(args-1);
+  args = 1;
+  if (Pike_sp[-1].type != T_OBJECT) {
+    push_int(0);
+    return;
+  }
+  /* Check if it's an Oracle-NULL. */
+  stack_dup();
+  push_constant_text("is_oracle_null");
+  o_index();
+  if ((Pike_sp[-1].type != T_INT) || !Pike_sp[-1].u.integer) {
+    /* No - is it the generic Sql.NULL? */
+    pop_stack();
+    push_constant_text("is_sql_null");
+    o_index();
+    return;
+  }
+  pop_stack();
+  /* Yes - are the types the same? */
+  push_constant_text("type");
+  o_index();
+  push_svalue(&THIS_DBNULL->type);
+  f_eq(2);
 }
 
 PIKE_MODULE_INIT
@@ -2704,9 +2727,14 @@ PIKE_MODULE_INIT
   MY_END_CLASS(Date);
 
   MY_START_CLASS(dbnull); {
-    ADD_FUNCTION("create",dbnull_create,tFunc(tOr(tStr,tInt),tVoid),0);
-    ADD_FUNCTION("_sprintf",dbnull_sprintf,tFunc(tInt, tStr),0);
-    ADD_FUNCTION("`!",dbnull_not,tFunc(tVoid, tInt),0);
+    struct pike_string *null_string = make_shared_string("Null");
+    low_inherit(SqlNull_program, NULL, -1, 0, 0, null_string);
+    free_string(null_string);
+    add_integer_constant("is_oracle_null", 1, 0);
+    ADD_FUNCTION("create", dbnull_create, tFunc(tOr(tStr, tInt), tVoid),
+		 ID_PROTECTED);
+    ADD_FUNCTION("_sprintf", dbnull_sprintf, tFunc(tInt, tStr), ID_PROTECTED);
+    ADD_FUNCTION("`==", dbnull_eq, tFunc(tMix, tInt01), ID_PROTECTED);
     map_variable("type","mixed",0,offset+OFFSETOF(dbnull, type), T_MIXED);
   }
   NULL_program=end_program();
