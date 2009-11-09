@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.h,v 1.37 2008/07/09 13:29:01 grubba Exp $
+|| $Id: builtin_functions.h,v 1.38 2009/11/09 14:33:02 grubba Exp $
 */
 
 #ifndef BUILTIN_EFUNS_H
@@ -45,6 +45,8 @@ struct replace_many_context
   int num;
   int flags;
 };
+
+extern struct program *SqlNull_program;
 
 PMOD_EXPORT void f_equal(INT32 args);
 PMOD_EXPORT void f_hash(INT32 args);

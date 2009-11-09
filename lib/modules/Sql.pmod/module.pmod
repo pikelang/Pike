@@ -11,3 +11,8 @@
 //!    return db->query("SELECT name FROM users WHERE "
 //!                     "group=%s", group)->name * ",";
 //! }
+
+constant Null = Builtin.SqlNull;
+
+//! The SQL NULL marker.
+object(Null) NULL = Null();

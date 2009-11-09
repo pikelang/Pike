@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.236 2009/08/20 04:20:05 nilsson Exp $
+|| $Id: builtin.cmod,v 1.237 2009/11/09 14:32:09 grubba Exp $
 */
 
 #include "global.h"
@@ -3322,6 +3322,74 @@ PMOD_EXPORT void append_list_node(struct pike_list_node *node,
   add_ref(new_node);
   add_ref(new_node);
 }
+
+/*! @module Sql
+ */
+
+/*! @class Null
+ *!
+ *! This class is used to implement the SQL NULL value.
+ *!
+ *! @note
+ *!   There's typically only one object of this class: @[Sql.NULL],
+ *!   but some databases (eg Oracle) have multiple types of NULL,
+ *!   in which case they all inherit this class.
+ *!
+ *! @seealso
+ *!   @[Sql.NULL]
+ */
+PIKECLASS SqlNull
+{
+  EXTRA {
+    /*! @decl constant is_sql_null = 1
+     *!
+     *! SQL Null marker.
+     */
+    add_integer_constant("is_sql_null", 1, 0);
+  }
+
+  PIKEFUN int `!()
+    flags ID_PROTECTED;
+  {
+    RETURN 1;
+  }
+
+  PIKEFUN string _sprintf(int fmt, mixed ... extras)
+    flags ID_PROTECTED;
+  {
+    pop_n_elems(args);
+    if (fmt == 'O') {
+      push_constant_text("Sql.NULL");
+    } else {
+      push_undefined();
+    }
+  }
+
+  PIKEFUN int _hash()
+    flags ID_PROTECTED;
+  {
+    pop_n_elems(args);
+    push_int(17);
+  }
+    
+  PIKEFUN int `==(mixed other)
+    flags ID_PROTECTED;
+  {
+    if (other->type != T_OBJECT) {
+      pop_stack();
+      push_int(0);
+      return;
+    }
+    push_constant_text("is_sql_null");
+    o_index();
+  }
+}
+
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
 
 /*! @module ADT
  */
