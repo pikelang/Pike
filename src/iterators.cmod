@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iterators.cmod,v 1.72 2009/06/06 13:10:24 grubba Exp $
+|| $Id: iterators.cmod,v 1.73 2009/11/09 16:37:17 grubba Exp $
 */
 
 #include "global.h"
@@ -407,8 +407,8 @@ PIKECLASS mapping_iterator
 	tmp=THIS->md->hash[THIS->bucket];
 	if(k)
 	{
-	  k=my_rand() % k;
-	  while(--k > 0) tmp=tmp->next;
+	  k = my_rand() % k;
+	  while(k--) tmp=tmp->next;
 	}
 	THIS->current=tmp;
       }else{
