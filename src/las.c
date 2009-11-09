@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.438 2009/10/11 17:19:13 grubba Exp $
+|| $Id: las.c,v 1.439 2009/11/09 17:17:45 grubba Exp $
 */
 
 #include "global.h"
@@ -1481,13 +1481,28 @@ void resolv_constant(node *n)
     }
     }
 
-    i=ID_FROM_INT(p, numid);
+    i = ID_FROM_INT(p, numid);
     
     /* Warning:
      * This code doesn't produce function pointers for class constants,
      * which can be harmful...
      * /Hubbe
      */
+    
+    if (IDENTIFIER_IS_ALIAS(i->identifier_flags)) {
+      struct external_variable_context loc;
+
+      loc.o = Pike_compiler->fake_object;
+      do {
+	loc.inherit = INHERIT_FROM_INT(p, numid);
+	loc.parent_identifier = 0;
+
+	find_external_context(&loc, i->func.ext_ref.depth);
+	numid = i->func.ext_ref.id;
+	p = loc.o->prog;
+	i = ID_FROM_INT(p, numid);
+      } while (IDENTIFIER_IS_ALIAS(i->identifier_flags));
+    }
     if(IDENTIFIER_IS_CONSTANT(i->identifier_flags))
     {
       if(i->func.offset != -1)
@@ -1498,7 +1513,7 @@ void resolv_constant(node *n)
 	  yyerror("Constant is not defined yet.");
 	push_int(0);
       }
-    }else{
+    } else {
       my_yyerror("Identifier %S is not a constant", i->name);
       push_int(0);
     }
