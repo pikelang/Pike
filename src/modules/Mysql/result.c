@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: result.c,v 1.48 2009/11/05 14:45:55 grubba Exp $
+|| $Id: result.c,v 1.49 2009/11/10 09:34:10 grubba Exp $
 */
 
 /*
@@ -60,6 +60,7 @@
 #include "pike_error.h"
 #include "builtin_functions.h"
 #include "las.h"
+#include "port.h"
 #include "threads.h"
 #include "multiset.h"
 #include "bignum.h"
