@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.44 2009/11/10 10:00:26 grubba Exp $
+dnl $Id: testsuite.in,v 1.45 2009/11/10 13:12:08 grubba Exp $
 
 START_MARKER
 
@@ -725,7 +725,7 @@ dnl Mapping.Iterator
 
 test_do([[
   // Test for [bug 5085].
-  for (i=0; i < 100; i++) {
+  for (int i=0; i < 100; i++) {
     // The following line trigged the bug 33% of the time.
     get_iterator(([1:1]))->_random();
   }
