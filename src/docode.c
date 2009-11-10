@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.c,v 1.204 2008/08/28 15:13:19 grubba Exp $
+|| $Id: docode.c,v 1.205 2009/11/10 08:41:33 peter Exp $
 */
 
 #include "global.h"
@@ -1936,7 +1936,7 @@ static int do_docode2(node *n, int flags)
       tmp=findstring("call_function");
       if(!tmp) yyerror("No call_function efun.");
       foo=find_module_identifier(tmp,0);
-      if(!foo || !foo->token==F_CONSTANT)
+      if(!foo || foo->token!=F_CONSTANT)
       {
 	yyerror("No call_function efun.");
       }else{
