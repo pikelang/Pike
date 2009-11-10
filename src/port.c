@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: port.c,v 1.87 2008/01/19 14:51:53 grubba Exp $
+|| $Id: port.c,v 1.88 2009/11/10 09:43:45 grubba Exp $
 */
 
 /*
@@ -175,7 +175,7 @@ PMOD_EXPORT /*@null@*/ void *pike_realloc(void *ptr, size_t sz)
 			islower(x) ? (x) + 10 - 'a' : (x) + 10 - 'A')
 #define MBASE	('z' - 'a' + 1 + 10)
 
-long STRTOL(const char *str, char **ptr, int base)
+PMOD_EXPORT long STRTOL(const char *str, char **ptr, int base)
 {
   /* Note: Code duplication in STRTOL_PCHARP and pcharp_to_svalue_inumber. */
 

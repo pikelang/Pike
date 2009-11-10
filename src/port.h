@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: port.h,v 1.66 2009/05/28 13:10:48 grubba Exp $
+|| $Id: port.h,v 1.67 2009/11/10 09:31:53 grubba Exp $
 */
 
 #ifndef PORT_H
@@ -158,7 +158,7 @@ time_t TIME(time_t *);
 #define RINT rint
 #define RINTL rintl
 
-long STRTOL(const char *str,char **ptr,int base);
+PMOD_EXPORT long STRTOL(const char *str,char **ptr,int base);
 PMOD_EXPORT double STRTOD(const char * nptr, char **endptr);
 
 #ifndef HAVE_STRCSPN
