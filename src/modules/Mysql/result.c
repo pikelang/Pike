@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: result.c,v 1.49 2009/11/10 09:34:10 grubba Exp $
+|| $Id: result.c,v 1.50 2009/11/10 14:24:40 grubba Exp $
 */
 
 /*
@@ -579,7 +579,6 @@ static void f_fetch_row(INT32 args)
 	    (field = mysql_fetch_field(PIKE_MYSQL_RES->result))) {
 	  switch (field->type) {
 	    /* Integer types */
-	  case FIELD_TYPE_DECIMAL:
           case FIELD_TYPE_LONGLONG:
 #ifdef AUTO_BIGNUM
 	    if (
@@ -606,6 +605,9 @@ static void f_fetch_row(INT32 args)
 	  case FIELD_TYPE_DOUBLE:
 	    push_float(atof(row[i]));
 	    break;
+	  case FIELD_TYPE_DECIMAL:
+	    /* Fixed-point number. */
+	    /* FIXME: Convert to Gmp.mpr? */
 	  default:
 #ifdef HAVE_MYSQL_FETCH_LENGTHS
 	    push_string(make_shared_binary_string(row[i], row_lengths[i]));
