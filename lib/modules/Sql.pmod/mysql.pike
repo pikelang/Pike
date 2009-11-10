@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.pike,v 1.43 2008/11/26 01:02:57 mast Exp $
+ * $Id: mysql.pike,v 1.44 2009/11/10 12:55:57 grubba Exp $
  *
  * Glue for the Mysql-module
  */
@@ -711,7 +711,7 @@ Mysql.mysql_result big_query (string query,
 //!   kind that returns a result. Zero is returned otherwise.
 //!
 //! @seealso
-//!   @[Sql.big_query]
+//!   @[Sql.big_query()], @[big_typed_query()], @[streaming_query()]
 {
   QUERY_BODY (big_query);
 }
@@ -727,8 +727,53 @@ Mysql.mysql_result streaming_query (string query,
 //! tables are locked until all the results has been read.
 //!
 //! In all other respects, it behaves like @[big_query].
+//!
+//! @seealso
+//!   @[big_query()], @[streaming_typed_query()]
 {
   QUERY_BODY (streaming_query);
+}
+
+Mysql.mysql_result big_typed_query (string query,
+				    mapping(string|int:mixed)|void bindings,
+				    void|string charset)
+//! Makes a typed SQL query.
+//!
+//! This function sends the SQL query @[query] to the Mysql-server.
+//!
+//! The types of the result fields depend on the corresponding SQL types.
+//! They are mapped as follows:
+//! @mixed
+//!   @type zero
+//!     The @tt{NULL@} value is returned as @[UNDEFINED].
+//!   @type int
+//!     Integer values are returned as @tt{int@} values.
+//!   @type float
+//!     Floating point values are returned as @tt{float@} values.
+//!   @type string
+//!     All other SQL field types are returned as @tt{string@} values.
+//! @endmixed
+//!
+//! In all other respects, it behaves like @[big_query].
+//!
+//! @seealso
+//!   @[big_query()], @[streaming_typed_query()]
+{
+  QUERY_BODY (big_typed_query);
+}
+
+Mysql.mysql_result streaming_typed_query (string query,
+					  mapping(string|int:mixed)|void bindings,
+					  void|string charset)
+//! Makes a streaming typed SQL query.
+//!
+//! This function acts as the combination of @[streaming_query()]
+//! and @[big_typed_query()].
+//!
+//! @seealso
+//!   @[big_typed_query()], @[streaming_typed_query()]
+{
+  QUERY_BODY (streaming_typed_query);
 }
 
 int(0..1) is_keyword( string name )
@@ -849,5 +894,6 @@ protected void create(string|void host, string|void database,
 }
 
 #else
+final constant dont_dump_module=1;
 constant this_program_does_not_exist=1;
 #endif /* constant(Mysql.mysql) */
