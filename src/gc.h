@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.h,v 1.136 2008/07/24 20:02:53 mast Exp $
+|| $Id: gc.h,v 1.137 2009/11/11 20:05:07 mast Exp $
 */
 
 #ifndef GC_H
@@ -329,6 +329,7 @@ void do_gc_recurse_short_svalue(union anything *u, int type);
 int gc_do_free(void *a);
 size_t do_gc(void *ignored, int explicit_call);
 void f__gc_status(INT32 args);
+void f_implicit_gc_real_time (INT32 args);
 void f_count_memory (INT32 args);
 void cleanup_gc(void);
 

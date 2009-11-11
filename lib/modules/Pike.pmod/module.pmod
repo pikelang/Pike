@@ -3,7 +3,7 @@
 
 // Pike core things that don't belong anywhere else.
 //
-// $Id: module.pmod,v 1.22 2008/09/19 15:10:09 mast Exp $
+// $Id: module.pmod,v 1.23 2009/11/11 20:05:06 mast Exp $
 
 constant WEAK_INDICES = __builtin.PIKE_WEAK_INDICES;
 constant WEAK_VALUES = __builtin.PIKE_WEAK_VALUES;
@@ -71,6 +71,7 @@ constant SelectBackend = __builtin.SelectBackend;
 constant DefaultBackend = __builtin.__backend;
 
 constant gc_parameters = __builtin.gc_parameters;
+constant implicit_gc_real_time = __builtin.implicit_gc_real_time;
 constant count_memory = __builtin.count_memory;
 
 constant get_runtime_info = __builtin.get_runtime_info;

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.331 2008/10/12 22:41:16 mast Exp $
+|| $Id: gc.c,v 1.332 2009/11/11 20:05:06 mast Exp $
 */
 
 #include "global.h"
@@ -121,9 +121,8 @@ static double objects_alloced = 0.0;
 static double objects_freed = 0.0;
 static double gc_time = 0.0, non_gc_time = 0.0;
 static cpu_time_t last_gc_end_time = 0;
-#ifdef CPU_TIME_MIGHT_NOT_BE_THREAD_LOCAL
 cpu_time_t auto_gc_time = 0;
-#endif
+cpu_time_t auto_gc_real_time = 0;
 
 struct link_frame		/* See cycle checking blurb below. */
 {
@@ -3341,7 +3340,7 @@ size_t do_gc(void *ignored, int explicit_call)
 {
   ALLOC_COUNT_TYPE start_allocs;
   size_t start_num_objs, unreferenced;
-  cpu_time_t gc_start_time;
+  cpu_time_t gc_start_time, gc_start_real_time;
   ptrdiff_t objs, pre_kill_objs;
 #if defined (PIKE_DEBUG) || defined (DO_PIKE_CLEANUP)
   unsigned destroy_count;
@@ -3371,6 +3370,7 @@ size_t do_gc(void *ignored, int explicit_call)
   gc_generation++;
   Pike_in_gc=GC_PASS_PREPARE;
   gc_start_time = get_cpu_time();
+  gc_start_real_time = get_real_time();
   gc_debug = d_flag;
 #ifdef PIKE_DEBUG
   SET_ONERROR(uwp, fatal_on_error, "Shouldn't get an exception inside the gc.\n");
@@ -3853,23 +3853,22 @@ size_t do_gc(void *ignored, int explicit_call)
     else
       alloc_threshold = (ALLOC_COUNT_TYPE) new_threshold;
 
-    if (!explicit_call && last_gc_time != (cpu_time_t) -1) {
+    if (!explicit_call) {
+      auto_gc_real_time += get_real_time() - gc_start_real_time;
+
+      if (last_gc_time != (cpu_time_t) -1) {
 #ifdef CPU_TIME_MIGHT_BE_THREAD_LOCAL
-      if (cpu_time_is_thread_local
+	if (cpu_time_is_thread_local
 #ifdef PIKE_DEBUG
-	  /* At high debug levels, the gc may get called before
-	   * the threads are initialized.
-	   */
-	  && Pike_interpreter.thread_state
+	    /* At high debug levels, the gc may get called before
+	     * the threads are initialized.
+	     */
+	    && Pike_interpreter.thread_state
 #endif
-	  )
-	Pike_interpreter.thread_state->auto_gc_time += last_gc_time;
-      else
+	   )
+	  Pike_interpreter.thread_state->auto_gc_time += last_gc_time;
 #endif
-      {
-#ifdef CPU_TIME_MIGHT_NOT_BE_THREAD_LOCAL
 	auto_gc_time += last_gc_time;
-#endif
       }
     }
 
@@ -3960,10 +3959,17 @@ size_t do_gc(void *ignored, int explicit_call)
  *!       @[Pike.gc_parameters].
  *!     @member int "last_gc"
  *!       Time when the garbage-collector last ran.
+ *!     @member int "total_gc_cpu_time"
+ *!       The total amount of CPU time that has been consumed in
+ *!       implicit GC runs, in nanoseconds. 0 on systems where Pike
+ *!       lacks support for CPU time measurement.
+ *!     @member int "total_gc_real_time"
+ *!       The total amount of real time that has been spent in
+ *!       implicit GC runs, in nanoseconds.
  *!   @endmapping
  *!
  *! @seealso
- *!   @[gc()], @[Pike.gc_parameters()]
+ *!   @[gc()], @[Pike.gc_parameters()], @[Pike.implicit_gc_real_time]
  */
 void f__gc_status(INT32 args)
 {
@@ -4022,6 +4028,22 @@ void f__gc_status(INT32 args)
   push_int64(last_gc);
   size++;
 
+  push_constant_text ("total_gc_cpu_time");
+  push_int64 (auto_gc_time);
+#ifndef LONG_CPU_TIME
+  push_int (1000000000 / CPU_TIME_TICKS);
+  o_multiply();
+#endif
+  size++;
+
+  push_constant_text ("total_gc_real_time");
+  push_int64 (auto_gc_real_time);
+#ifndef LONG_CPU_TIME
+  push_int (1000000000 / CPU_TIME_TICKS);
+  o_multiply();
+#endif
+  size++;
+
 #ifdef PIKE_DEBUG
   push_constant_text ("max_rec_frames");
   push_int64 (DO_NOT_WARN ((INT64) tot_max_rec_frames));
@@ -4037,6 +4059,25 @@ void f__gc_status(INT32 args)
 #endif
 
   f_aggregate_mapping(size * 2);
+}
+
+/*! @decl int implicit_gc_real_time()
+ *! @belongs Pike
+ *!
+ *! Returns the total amount of real time that has been spent in
+ *! implicit GC runs, in nanoseconds.
+ *!
+ *! @seealso
+ *!   @[Debug.gc_status]
+ */
+void f_implicit_gc_real_time (INT32 args)
+{
+  pop_n_elems (args);
+  push_int64 (auto_gc_real_time);
+#ifndef LONG_CPU_TIME
+  push_int (1000000000 / CPU_TIME_TICKS);
+  o_multiply();
+#endif
 }
 
 void dump_gc_info(void)

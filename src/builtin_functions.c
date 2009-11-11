@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.693 2009/09/09 13:01:45 grubba Exp $
+|| $Id: builtin_functions.c,v 1.694 2009/11/11 20:05:07 mast Exp $
 */
 
 #include "global.h"
@@ -7553,7 +7553,8 @@ PMOD_EXPORT void f_gethrvtime(INT32 args)
  *!
  *! @seealso
  *!   @[System.REAL_TIME_IS_MONOTONIC], @[System.REAL_TIME_RESOLUTION],
- *!   @[time()], @[System.gettimeofday()], @[gethrvtime()]
+ *!   @[time()], @[System.gettimeofday()], @[gethrvtime()],
+ *!   @[Pike.implicit_gc_real_time]
  */
 PMOD_EXPORT void f_gethrtime(INT32 args)
 {
@@ -9725,6 +9726,8 @@ void init_builtin_efuns(void)
   ADD_EFUN("_gc_status",f__gc_status,
 	   tFunc(tNone,tMap(tString,tOr(tInt,tFloat))),
 	   OPT_EXTERNAL_DEPEND);
+  ADD_FUNCTION ("implicit_gc_real_time", f_implicit_gc_real_time,
+		tFunc(tNone,tInt), OPT_EXTERNAL_DEPEND);
   ADD_FUNCTION ("count_memory", f_count_memory,
 		tFuncV(tOr(tInt,tMap(tString,tInt)),
 		       tOr8(tArray,tMultiset,tMapping,tObj,tPrg(tObj),
