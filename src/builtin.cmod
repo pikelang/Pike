@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.237 2009/11/09 14:32:09 grubba Exp $
+|| $Id: builtin.cmod,v 1.238 2009/11/11 12:53:48 grubba Exp $
 */
 
 #include "global.h"
@@ -4156,14 +4156,20 @@ PIKECLASS MasterCodec
 /*! @endmodule
  */
 
+struct object *SqlNULL_object;
+
 void init_builtin(void)
 {
   init_pike_list_node_blocks();
   INIT
+
+  add_object_constant("SqlNULL",
+		      SqlNULL_object = clone_object(SqlNull_program, 0), 0);
 }
 
 void exit_builtin(void)
 {
+  if (SqlNULL_object) free_object(SqlNULL_object);
   EXIT
 #ifndef DO_PIKE_CLEANUP
   /* This is performed by exit_builtin_modules() at a later point
