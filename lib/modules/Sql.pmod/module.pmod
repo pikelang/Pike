@@ -15,4 +15,4 @@
 constant Null = Builtin.SqlNull;
 
 //! The SQL NULL marker.
-object(Null) NULL = Null();
+constant NULL = Builtin.SqlNULL;
