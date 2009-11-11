@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.238 2009/11/11 12:53:48 grubba Exp $
+|| $Id: builtin.cmod,v 1.239 2009/11/11 14:05:58 grubba Exp $
 */
 
 #include "global.h"
@@ -3365,7 +3365,7 @@ PIKECLASS SqlNull
     }
   }
 
-  PIKEFUN int _hash()
+  PIKEFUN int __hash()
     flags ID_PROTECTED;
   {
     pop_n_elems(args);
