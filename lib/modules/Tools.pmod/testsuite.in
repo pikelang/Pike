@@ -1,5 +1,5 @@
 START_MARKER
-// $Id: testsuite.in,v 1.28 2008/06/28 16:32:05 nilsson Exp $
+// $Id: testsuite.in,v 1.29 2009/11/11 18:21:13 nilsson Exp $
 
 // Tools.Hilfe
 define(test_hilfe_setup_low,[[test_do([[
@@ -188,6 +188,11 @@ test_hilfe("b->i;", "3");
 
 test_hilfe("sscanf(\"abc\"[0..2],\"%s\",string s);", "1")
 test_hilfe("s;","\"abc\"")
+
+test_hilfe("new", "")
+test_hilfe("int a = 3;", "")
+test_hilfe("int b = 23;", "")
+test_hilfe("a & b;", "3")
 
 test_do( add_constant("testhilfe") )
 
