@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.694 2009/11/11 20:05:07 mast Exp $
+|| $Id: builtin_functions.c,v 1.695 2009/11/11 20:22:19 mast Exp $
 */
 
 #include "global.h"
@@ -9727,7 +9727,7 @@ void init_builtin_efuns(void)
 	   tFunc(tNone,tMap(tString,tOr(tInt,tFloat))),
 	   OPT_EXTERNAL_DEPEND);
   ADD_FUNCTION ("implicit_gc_real_time", f_implicit_gc_real_time,
-		tFunc(tNone,tInt), OPT_EXTERNAL_DEPEND);
+		tFunc(tOr(tInt,tVoid),tInt), OPT_EXTERNAL_DEPEND);
   ADD_FUNCTION ("count_memory", f_count_memory,
 		tFuncV(tOr(tInt,tMap(tString,tInt)),
 		       tOr8(tArray,tMultiset,tMapping,tObj,tPrg(tObj),

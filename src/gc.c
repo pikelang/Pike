@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.332 2009/11/11 20:05:06 mast Exp $
+|| $Id: gc.c,v 1.333 2009/11/11 20:22:19 mast Exp $
 */
 
 #include "global.h"
@@ -4061,23 +4061,37 @@ void f__gc_status(INT32 args)
   f_aggregate_mapping(size * 2);
 }
 
-/*! @decl int implicit_gc_real_time()
+/*! @decl int implicit_gc_real_time (void|int nsec)
  *! @belongs Pike
  *!
  *! Returns the total amount of real time that has been spent in
- *! implicit GC runs, in nanoseconds.
+ *! implicit GC runs. The time is normally returned in microseconds,
+ *! but if the optional argument @[nsec] is nonzero it's returned in
+ *! nanoseconds.
  *!
  *! @seealso
  *!   @[Debug.gc_status]
  */
 void f_implicit_gc_real_time (INT32 args)
 {
+  int nsec = args && !UNSAFE_IS_ZERO (Pike_sp - args);
   pop_n_elems (args);
-  push_int64 (auto_gc_real_time);
+  if (nsec) {
+    push_int64 (auto_gc_real_time);
 #ifndef LONG_CPU_TIME
-  push_int (1000000000 / CPU_TIME_TICKS);
-  o_multiply();
+    push_int (1000000000 / CPU_TIME_TICKS);
+    o_multiply();
 #endif
+  }
+  else {
+#if CPU_TIME_TICKS_LOW > 1000000
+    push_int64 (auto_gc_real_time / (CPU_TIME_TICKS / 1000000));
+#else
+    push_int64 (auto_gc_real_time);
+    push_int (1000000 / CPU_TIME_TICKS);
+    o_multiply();
+#endif
+  }
 }
 
 void dump_gc_info(void)
