@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: result.c,v 1.50 2009/11/10 14:24:40 grubba Exp $
+|| $Id: result.c,v 1.51 2009/11/11 13:10:50 grubba Exp $
 */
 
 /*
@@ -626,7 +626,11 @@ static void f_fetch_row(INT32 args)
 	}
       } else {
 	/* NULL */
-	push_undefined();
+	if (PIKE_MYSQL_RES->typed_mode) {
+	  ref_push_object(SqlNULL_object);
+	} else {
+	  push_undefined();
+	}
 	if(i+1<num_fields)
 	  mysql_field_seek(PIKE_MYSQL_RES->result, i+1);
       }
