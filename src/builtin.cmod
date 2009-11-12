@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.239 2009/11/11 14:05:58 grubba Exp $
+|| $Id: builtin.cmod,v 1.240 2009/11/12 15:10:21 grubba Exp $
 */
 
 #include "global.h"
@@ -4156,7 +4156,13 @@ PIKECLASS MasterCodec
 /*! @endmodule
  */
 
-struct object *SqlNULL_object;
+static struct object *SqlNULL_object;
+
+/* Proxy function needed for dynamic linkage on WIN32. */
+PMOD_EXPORT struct object *get_sql_null(void)
+{
+  return SqlNULL_object;
+}
 
 void init_builtin(void)
 {
