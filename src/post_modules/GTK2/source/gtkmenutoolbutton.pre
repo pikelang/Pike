@@ -52,10 +52,9 @@ void set_menu(GTK2.Widget menu);
 +GTK2.Widget get_menu();
 //! Returns the GTK2.Menu.
 
-void set_arrow_tooltip(GTK2.Tooltips tooltips, string tip_text, string tip_private);
+void set_arrow_tooltip(GTK2.Tooltips tooltips, string tip_text, string tip_private)
 //! Sets the GTK2.Tooltips object to be used for the arrow button
 //! which pops up the menu.
-/*
 {
   pgtk2_verify_inited();
   {
@@ -67,6 +66,7 @@ void set_arrow_tooltip(GTK2.Tooltips tooltips, string tip_text, string tip_priva
   }
   RETURN_THIS();
 }
+/*
 */
 
 endrequire;

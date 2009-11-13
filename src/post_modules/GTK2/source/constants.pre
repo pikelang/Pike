@@ -1903,3 +1903,8 @@ constant int GTK_RECENT_FILTER_APPLICATION;
 constant int GTK_RECENT_FILTER_GROUP;
 constant int GTK_RECENT_FILTER_AGE;
 endrequire;
+
+require gtk216;
+constant int GTK_ENTRY_ICON_PRIMARY;
+constant int GTK_ENTRY_ICON_SECONDARY;
+endrequire;

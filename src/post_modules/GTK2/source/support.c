@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: support.c,v 1.20 2008/01/30 13:29:55 per Exp $
+|| $Id: support.c,v 1.21 2009/11/13 13:50:26 per Exp $
 */
 
 #include <version.h>
@@ -767,13 +767,10 @@ void pgtk2_signal_func_wrapper(struct signal_data *d,
   for (i=0; i<n_params; i++) {
     pgtk2_push_gvalue_rt(&(param_values[i]));
   }
-  if (n_params)
-    f_aggregate(n_params);
+/*   if (n_params) */
+/*     f_aggregate(n_params); */
   push_svalue(&d->args);
-  if (n_params)
-    apply_svalue(&d->cb,3);
-  else
-    apply_svalue(&d->cb,2);
+  apply_svalue(&d->cb,2+n_params);
   if (return_value) {
     pgtk2_set_value(return_value,&Pike_sp[-1]);
     pop_stack();

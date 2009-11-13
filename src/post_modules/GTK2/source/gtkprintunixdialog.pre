@@ -1,5 +1,5 @@
 /* -*- C -*- */
-require gtk212;
+require not_now;
 class GTK2.PrintUnixDialog;
 inherit GTK2.Dialog;
 

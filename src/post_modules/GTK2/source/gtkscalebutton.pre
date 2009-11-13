@@ -56,27 +56,24 @@ void set_adjustment(GTK2.Adjustment adj);
 void set_icons(array icons)
 //! Sets the icons to be used.
 {
-  pgtk_verify_inited();
-  {
     struct array *a;
     int i,j;
     gchar **icons;
 
     get_all_args("set_icons",args,"%A",&a);
     if (a==NULL || a->size<1)
-      Pike_error("Invalid array argument 1.\n");
+        Pike_error("Invalid array argument 1.\n");
     icons=g_new0(gchar *,a->size+1);
     for (i=j=0; i<a->size; i++) {
-      icons[j]=g_strdup(CGSTR0((ITEM(a)+i)->u.string));
-      j++;
+        icons[j]=g_strdup(CGSTR0((ITEM(a)+i)->u.string));
+        j++;
     }
     icons[j]=NULL;
     gtk_scale_button_set_icons(GTK_SCALE_BUTTON(THIS->obj),icons);
     for (i=0; icons[i]; i++)
-      g_free(icons[i]);
+        g_free(icons[i]);
     g_free(icons);
-  }
-  RETURN_THIS();
+    RETURN_THIS();
 }
 
 void set_value(float val);

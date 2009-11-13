@@ -1,6 +1,12 @@
 @pgtk2_have_x11@
 @pgtk_has_libglade@
 @pgtk_has_gnome@
+@pgtk_has_gtk222@
+@pgtk_has_gtk220@
+@pgtk_has_gtk218@
+@pgtk_has_gtk216@
+@pgtk_has_gtk214@
+@pgtk_has_gtk212@
 @pgtk_has_gtk210@
 @pgtk_has_gtk28@
 @pgtk_has_gtk26@

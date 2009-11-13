@@ -156,7 +156,7 @@ void draw_pixbuf(GDK2.GC gc, GDK2.Pixbuf pixbuf, int xsrc, int ysrc,
   get_all_args("draw_pixbuf",args,"%o%o%+%+%+%+%i%i",
 		&g,&p,&xs,&ys,&xd,&yd,&w,&h);
   if (w>0 && h>0)
-    gdk_draw_pixbuf(TWIN,GC(g),GDK_PIXBUF(p),xs,ys,xd,yd,w,h,
+      gdk_draw_pixbuf(TWIN,GC(g),GDK_PIXBUF(get_gobject(p)),xs,ys,xd,yd,w,h,
 		    GDK_RGB_DITHER_NONE,0,0);
   RETURN_THIS();
 }
@@ -175,7 +175,7 @@ void draw_bitmap(GDK2.GC gc, GDK2.Bitmap bitmap, int xsrc, int ysrc,
 
   /* Hm. gdk_draw_bitmap does not exist? Not that it matters. */
   if (w>0 && h>0)
-    gdk_draw_drawable(TWIN,GC(g),GDK_DRAWABLE(p),xs,ys,xd,yd,w,h);
+      gdk_draw_drawable(TWIN,GC(g),GDK_DRAWABLE(get_gobject(p)),xs,ys,xd,yd,w,h);
   RETURN_THIS();
 }
 
@@ -190,7 +190,7 @@ void draw_image(GDK2.GC gc, GDK2.Image image, int xsrc, int ysrc,
   get_all_args("draw_image",args,"%o%o%+%+%+%+%i%i",
 	       &g,&p,&xs,&ys,&xd,&yd,&w,&h);
   if (w>0 && h>0)
-    gdk_draw_image(TWIN,GC(g),GDK_IMAGE(p),xs,ys,xd,yd,w,h);
+      gdk_draw_image(TWIN,GC(g),GDK_IMAGE(get_gobject(p)),xs,ys,xd,yd,w,h);
   RETURN_THIS();
 }
 

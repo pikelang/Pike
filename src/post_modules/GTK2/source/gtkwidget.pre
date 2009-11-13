@@ -456,6 +456,7 @@ void modify_style(GTK2.RcStyle style);
 }
 */
 
+
 +GTK2.RcStyle get_modifier_style();
 //! Returns the current modifier style.
 /*

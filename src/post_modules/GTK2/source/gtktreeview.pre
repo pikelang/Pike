@@ -631,7 +631,7 @@ mapping convert_tree_to_widget_coords(int tx, int ty)
     INT_TYPE tx,ty;
     get_all_args("convert_tree_to_widget_coords",args,"%i%i",&tx,&ty);
     pgtk2_pop_n_elems(args);
-    gtk_tree_view_convert_tree_to_widget_woords(GTK_TREE_VIEW(THIS->obj),
+    gtk_tree_view_convert_tree_to_widget_coords(GTK_TREE_VIEW(THIS->obj),
 			tx,ty,&wx,&wy);
     ref_push_string(_STR("x")); push_int(wx);
     ref_push_string(_STR("y")); push_int(wy);

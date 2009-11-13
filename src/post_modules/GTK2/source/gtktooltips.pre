@@ -1,5 +1,4 @@
 /* -*- C -*- */
-not gtk212;
 class GTK2.Tooltips;
 inherit GTK2.Data;
 
@@ -42,4 +41,3 @@ void set_tip(GTK2.Widget in, string to, null);
 void force_window();
 //! Realize the tooltip window (as returned from get_gdkwindow())
 
-endnot;

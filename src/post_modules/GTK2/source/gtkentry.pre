@@ -96,6 +96,11 @@ int get_activates_default();
 int get_has_frame();
 //! Gets the value set by set_has_frame().
 
+require gtk216;
+void set_icon_from_pixbuf(int icon_pos,GDK2.Pixbuf b);
+void set_icon_from_stock(int icon_pos,string id);
+endrequire;
+
 require gtk210;
 array get_inner_border()
 //! This function returns the entry's inner-border property.

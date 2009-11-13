@@ -1,5 +1,5 @@
 /* -*- C -*- */
-require gtk24;
+require not_now;
 
 class GTK2.FileChooserDialog;
 inherit GTK2.Dialog;
