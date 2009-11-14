@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Session.pike,v 1.23 2009/10/30 18:51:24 mast Exp $
+// $Id: Session.pike,v 1.24 2009/11/14 12:26:04 mast Exp $
 
 import Protocols.HTTP;
 
@@ -754,8 +754,8 @@ Request do_method_url(string method,
 {
    if (method=="POST")
       extra_headers=
-	 (extra_headers||([]))+
-	 (["content-type":"application/x-www-form-urlencoded"]);
+	 (["content-type":"application/x-www-form-urlencoded"])+
+	 (extra_headers||([]));
    
    Request p=Request();
    p->do_sync(p->prepare_method(method,url,query_variables,
