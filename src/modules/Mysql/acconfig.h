@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.18 2006/11/17 18:43:17 mast Exp $
+|| $Id: acconfig.h,v 1.19 2009/11/14 12:59:53 mast Exp $
 */
 
 /*
@@ -25,27 +25,6 @@
 
 /* Return type of mysql_fetch_lengths(). Usually unsigned long. */
 #undef FETCH_LENGTHS_TYPE
-
-/* Define if you have mysql_fetch_lengths(). */
-#undef HAVE_MYSQL_FETCH_LENGTHS
-
-/* Define if you have mysql_real_query(). */
-#undef HAVE_MYSQL_REAL_QUERY
-
-/* Define if you have mysql_options(). */
-#undef HAVE_MYSQL_OPTIONS
-
-/* Define if you have mysql_set_character_set(). */
-#undef HAVE_MYSQL_SET_CHARACTER_SET
-
-/* Define if you have mysql_character_set_name(). */
-#undef HAVE_MYSQL_CHARACTER_SET_NAME
-
-/* Define if you have the mysql_port variable. */
-#undef HAVE_MYSQL_PORT
-
-/* Define if you have the mysql_unix_port variable. */
-#undef HAVE_MYSQL_UNIX_PORT
 
 /* Define if your mysql.h defines MYSQL_OPT_CONNECT_TIMEOUT */
 #undef HAVE_MYSQL_OPT_CONNECT_TIMEOUT
