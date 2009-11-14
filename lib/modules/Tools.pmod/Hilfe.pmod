@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.171 2009/11/11 18:21:13 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.172 2009/11/14 21:31:57 mast Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -2973,6 +2973,7 @@ class GenericAsyncHilfe
 
   void write_callback()
   {
+    if (!sizeof(outbuffer)) return;
     int i=outfile->write(outbuffer);
     outbuffer=outbuffer[i..];
   }
