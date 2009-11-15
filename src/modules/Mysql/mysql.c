@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.119 2009/11/05 14:15:15 grubba Exp $
+|| $Id: mysql.c,v 1.120 2009/11/15 00:58:35 mast Exp $
 */
 
 /*
@@ -157,6 +157,9 @@ static MUTEX_T stupid_port_lock;
 #define MYSQL_DISALLOW()
 #endif /* _REENTRANT */
 
+#define PIKE_MYSQL_FLAG_STORE_RESULT	1
+#define PIKE_MYSQL_FLAG_TYPED_RESULT	2
+
 #define CHECK_8BIT_NONBINARY_STRING(FUNC, ARG) do {			\
     if (sp[ARG-1-args].type != T_STRING ||				\
 	sp[ARG-1-args].u.string->size_shift ||				\
@@ -214,12 +217,10 @@ static void exit_mysql_struct(struct object *o)
     free_mapping (PIKE_MYSQL->options);
     PIKE_MYSQL->options = NULL;
   }
-#ifndef HAVE_MYSQL_SET_CHARACTER_SET
   if (PIKE_MYSQL->conn_charset) {
     free_string (PIKE_MYSQL->conn_charset);
     PIKE_MYSQL->conn_charset = NULL;
   }
-#endif
 
   MYSQL_ALLOW();
 
@@ -347,14 +348,48 @@ static void pike_mysql_set_options(struct mapping *options)
 		  val->u.string->str);
   }
 #endif /* MYSQL_SET_CHARSET_DIR */
-#ifdef HAVE_MYSQL_SET_CHARSET_NAME
-  if ((val = simple_mapping_string_lookup(options, "mysql_charset_name")) &&
-      (val->type == T_STRING) && (!val->u.string->size_shift)) {
-    mysql_options(PIKE_MYSQL->mysql, MYSQL_SET_CHARSET_NAME,
-		  val->u.string->str);
-  }
-#endif /* MYSQL_SET_CHARSET_NAME */
 #endif /* HAVE_MYSQL_OPTIONS */
+
+  if ((val = simple_mapping_string_lookup(options, "mysql_charset_name")) &&
+      (val->type == T_STRING) && (!val->u.string->size_shift) &&
+      !string_has_null (val->u.string)) {
+    if (PIKE_MYSQL->conn_charset)
+      free (PIKE_MYSQL->conn_charset);
+    copy_shared_string (PIKE_MYSQL->conn_charset, val->u.string);
+  }
+}
+
+static void low_query(INT32 args, char *name, int flags);
+
+static void connection_set_charset()
+{
+#ifdef HAVE_MYSQL_SET_CHARACTER_SET
+  int res;
+  MYSQL *mysql = PIKE_MYSQL->mysql;
+  struct pike_string *charset = PIKE_MYSQL->conn_charset;
+  MYSQL_ALLOW();
+  res = mysql_set_character_set (mysql, charset->str);
+  MYSQL_DISALLOW();
+  if (res) {
+    const char *err;
+    MYSQL_ALLOW();
+    err = mysql_error(mysql);
+    MYSQL_DISALLOW();
+    Pike_error("Setting the charset failed: %s\n", err);
+  }
+
+#else
+  /* Old libs (< 4.1.13) doesn't support changing the connection
+   * charset. We emulate it by setting the charset ourselves. Note
+   * that this doesn't work with mysql_real_escape_string, but that
+   * function isn't used. */
+  push_constant_text ("SET NAMES '");
+  ref_push_string (PIKE_MYSQL->conn_charset);
+  push_constant_text ("'");
+  f_add (3);
+  low_query (1, "set_charset", PIKE_MYSQL_FLAG_STORE_RESULT);
+  pop_stack();
+#endif
 }
 
 static void pike_mysql_reconnect (int reconnect)
@@ -404,10 +439,11 @@ static void pike_mysql_reconnect (int reconnect)
     options = (unsigned int)val->u.integer;
   }
 
-#if !defined (HAVE_MYSQL_SET_CHARACTER_SET) && defined (HAVE_MYSQL_OPTIONS) && defined (HAVE_MYSQL_SET_CHARSET_NAME)
+#if defined (HAVE_MYSQL_OPTIONS) && defined (HAVE_MYSQL_SET_CHARSET_NAME)
   if (PIKE_MYSQL->conn_charset)
     mysql_options (mysql, MYSQL_SET_CHARSET_NAME,
 		   PIKE_MYSQL->conn_charset->str);
+#define RECONNECT_CHARSET_IS_SET
 #endif
 
   MYSQL_ALLOW();
@@ -488,6 +524,11 @@ static void pike_mysql_reconnect (int reconnect)
       }
     }
   }
+
+#ifndef RECONNECT_CHARSET_IS_SET
+  if (PIKE_MYSQL->conn_charset)
+    connection_set_charset();
+#endif
 }
 
 /*
@@ -642,24 +683,13 @@ static void f_create(INT32 args)
 
   pike_mysql_reconnect (0);
 
-#ifndef HAVE_MYSQL_SET_CHARACTER_SET
 #ifdef HAVE_MYSQL_CHARACTER_SET_NAME
-  {
+  if (!PIKE_MYSQL->conn_charset) {
     const char *charset = mysql_character_set_name (PIKE_MYSQL->mysql);
-    if (PIKE_MYSQL->conn_charset)
-      free_string (PIKE_MYSQL->conn_charset);
-    if (charset)
+    if (charset) /* Just paranoia; mysql_character_set_name should
+		  * always return a string. */
       PIKE_MYSQL->conn_charset = make_shared_string (charset);
-    else
-      /* Just paranoia; mysql_character_set_name should always return
-       * a string. */
-      PIKE_MYSQL->conn_charset = NULL;
   }
-#else
-  if (PIKE_MYSQL->conn_charset)
-    free_string (PIKE_MYSQL->conn_charset);
-  PIKE_MYSQL->conn_charset = NULL;
-#endif
 #endif
 
   pop_n_elems(args);
@@ -860,9 +890,6 @@ static void f_select_db(INT32 args)
 
   pop_n_elems(args);
 }
-
-#define PIKE_MYSQL_FLAG_STORE_RESULT	1
-#define PIKE_MYSQL_FLAG_TYPED_RESULT	2
 
 static void low_query(INT32 args, char *name, int flags)
 {
@@ -1771,58 +1798,20 @@ static void f_set_charset (INT32 args)
     SIMPLE_ARG_ERROR ("set_charset", 0,
 		      "The charset name cannot contain a NUL character.");
 
-#ifdef HAVE_MYSQL_SET_CHARACTER_SET
-  {
-    int res;
-    MYSQL *mysql = PIKE_MYSQL->mysql;
-    MYSQL_ALLOW();
-    res = mysql_set_character_set (mysql, charset->str);
-    MYSQL_DISALLOW();
-    if (res) {
-      const char *err;
-      MYSQL_ALLOW();
-      err = mysql_error(mysql);
-      MYSQL_DISALLOW();
-      Pike_error("Setting the charset failed: %s\n", err);
-    }
-  }
-
-#else  /* !HAVE_MYSQL_SET_CHARACTER_SET */
-  push_constant_text ("SET NAMES '");
-  ref_push_string (charset);
-  push_constant_text ("'");
-  f_add (3);
-  low_query (1, "set_charset", PIKE_MYSQL_FLAG_STORE_RESULT);
-  args++;
   if (PIKE_MYSQL->conn_charset)
     free_string (PIKE_MYSQL->conn_charset);
   copy_shared_string (PIKE_MYSQL->conn_charset, charset);
-#endif
-
+  connection_set_charset();
   pop_n_elems (args);
 }
 
 static void f_get_charset (INT32 args)
 {
   pop_n_elems (args);
-#ifdef HAVE_MYSQL_SET_CHARACTER_SET
-  {
-    /* mysql_character_set_name should always exist if
-     * mysql_set_character_set exists. */
-    const char *charset = mysql_character_set_name (PIKE_MYSQL->mysql);
-    if (charset)
-      push_text (charset);
-    else
-      /* Just paranoia; mysql_character_set_name should always return
-       * a string. */
-      push_constant_text ("latin1");
-  }
-#else
   if (PIKE_MYSQL->conn_charset)
     ref_push_string (PIKE_MYSQL->conn_charset);
   else
     push_constant_text ("latin1");
-#endif
 }
 
 static void f__can_send_as_latin1 (INT32 args)
