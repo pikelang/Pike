@@ -1,5 +1,5 @@
 //
-// $Id: connection.pike,v 1.43 2008/06/28 16:49:55 nilsson Exp $
+// $Id: connection.pike,v 1.44 2009/11/16 14:13:20 mast Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -361,9 +361,24 @@ string|int got_data(string|int s)
        }
       case PACKET_handshake:
        {
+	 if (handshake_finished) {
+	   // Don't allow renegotiation at all for now, to address
+	   // http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2009-3555.
+	   send_packet (Alert (ALERT_warning, ALERT_no_renegotiation,
+			       version[1]));
+	   return -1;
+	 }
 	 if (expect_change_cipher)
 	 {
 	   /* No change_cipher message was received */
+	   // FIXME: There's a bug somewhere since expect_change_cipher often
+	   // remains set after the handshake is completed. The effect is that
+	   // renegotiation doesn't work all the time.
+	   //
+	   // A side effect is that we are partly invulnerable to the
+	   // renegotiation vulnerability mentioned above. It is however not
+	   // safe to assume that, since there might be routes past this,
+	   // maybe through the use of a version 2 hello message below.
 	   send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
 			     version[1]));
 	   return -1;
@@ -398,6 +413,13 @@ string|int got_data(string|int s)
 	break;
       case PACKET_V2:
        {
+	 if (handshake_finished) {
+	   // Don't allow renegotiation at all for now, to address
+	   // http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2009-3555.
+	   send_packet (Alert (ALERT_warning, ALERT_no_renegotiation,
+			       version[1]));
+	   return -1;
+	 }
 	 int err = handle_handshake(HANDSHAKE_hello_v2,
 				    packet->fragment[1 .. ],
 				    packet->fragment);

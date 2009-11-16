@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: Constants.pmod,v 1.4 2009/09/07 18:31:29 nilsson Exp $
+/* $Id: Constants.pmod,v 1.5 2009/11/16 14:13:20 mast Exp $
  *
  */
 
@@ -121,7 +121,9 @@ constant ALERT_descriptions = (< ALERT_close_notify,
  				 ALERT_certificate_revoked,
  				 ALERT_certificate_expired,
  				 ALERT_certificate_unknown,
- 				 ALERT_illegal_parameter >);
+				 ALERT_illegal_parameter,
+				 ALERT_no_renegotiation,
+			      >);
  			      
 constant CONNECTION_client 	= 0;
 constant CONNECTION_server 	= 1;
