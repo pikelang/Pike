@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.333 2009/11/11 20:22:19 mast Exp $
+|| $Id: gc.c,v 1.334 2009/11/16 23:59:33 mast Exp $
 */
 
 #include "global.h"
@@ -2453,7 +2453,7 @@ int gc_mark(void *a)
   if (!*(INT32 *) a)
     gc_fatal(a, 0, "Marked a thing without refs.\n");
   if (m->weak_refs < 0)
-    gc_fatal(a, 0, "Marking thing scheduled for weak free.\n");
+    gc_fatal(a, 0, "Marked a thing scheduled for weak free.\n");
 #endif
 
   if (Pike_in_gc == GC_PASS_ZAP_WEAK) {
@@ -4311,6 +4311,8 @@ static TYPE_FIELD mc_block_lookahead_default = BIT_PROGRAM|BIT_STRING|BIT_TYPE;
  * blocked because they are acyclic and don't contain refs to anything
  * but strings and other types. */
 
+static int mc_block_strings;
+
 static int mc_enqueued_noninternal;
 /* Set whenever something is enqueued in MC_PASS_LOOKAHEAD that isn't
  * internal already. This is used to detect whether another
@@ -4710,6 +4712,12 @@ static void pass_lookahead_visit_ref (void *thing, int ref_type,
   assert (mc_ref_from->la_count != ((unsigned INT16) -1) >> 1);
 #endif
 
+  if (mc_block_strings > 0 &&
+      visit_fn == (visit_thing_fn *) &visit_string) {
+    MC_DEBUG_MSG (ref_to, "ignored string");
+    return;
+  }
+
   ref_from_flags = mc_ref_from->flags;
 
   /* Create mc_marker if necessary. */
@@ -4785,7 +4793,9 @@ static void pass_lookahead_visit_ref (void *thing, int ref_type,
 
     /* Handle the target becoming internal. */
 
-    if (ref_to->int_refs == *(INT32 *) thing) {
+    if (ref_to->int_refs == *(INT32 *) thing ||
+	(mc_block_strings < 0 &&
+	 visit_fn == (visit_thing_fn *) &visit_string)) {
       assert (!(ref_to_flags & MC_FLAG_INTERNAL));
       assert (!(ref_to_flags & MC_FLAG_INT_VISITED));
       ref_to_flags |= MC_FLAG_INTERNAL;
@@ -5104,6 +5114,13 @@ PMOD_EXPORT int mc_count_bytes (void *thing)
  *!       blocked things are still recursed and memory counted if they
  *!       are given as arguments or only got internal references.
  *!
+ *!     @member int block_strings
+ *!       If positive then strings are always excluded (except any
+ *!       given directly in @[things]), if negative they are always
+ *!       included. Otherwise they are counted if they have no other
+ *!       refs, but note that since strings are shared they might get
+ *!       refs from other unrelated parts of the program.
+ *!
  *!     @member int block_pike_cycle_depth
  *!       Do not heed @expr{pike_cycle_depth@} values found in
  *!       objects. This is implicit if the lookahead is negative.
@@ -5222,6 +5239,7 @@ void f_count_memory (INT32 args)
 
   mc_block_lookahead = mc_block_lookahead_default;
   mc_block_pike_cycle_depth = 0;
+  mc_block_strings = 0;
 
   if (Pike_sp[-args].type == T_MAPPING) {
     struct mapping *opts = Pike_sp[-args].u.mapping;
@@ -5255,6 +5273,14 @@ void f_count_memory (INT32 args)
     CHECK_BLOCK_FLAG ("block_multisets", BIT_MULTISET);
     CHECK_BLOCK_FLAG ("block_objects", BIT_OBJECT);
     CHECK_BLOCK_FLAG ("block_programs", BIT_PROGRAM);
+
+    MAKE_CONST_STRING (ind, "block_strings");
+    if ((val = low_mapping_string_lookup (opts, ind))) {
+      if (val->type != T_INT)
+	SIMPLE_ARG_ERROR ("count_memory", 1,
+			  "\"block_strings\" must be an integer.");
+      mc_block_strings = val->u.integer > 0 ? 1 : val->u.integer < 0 ? -1 : 0;
+    }
 
     MAKE_CONST_STRING (ind, "block_pike_cycle_depth");
     if ((val = low_mapping_string_lookup (opts, ind)) && !UNSAFE_IS_ZERO (val))
