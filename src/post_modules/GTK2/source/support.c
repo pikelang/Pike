@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: support.c,v 1.21 2009/11/13 13:50:26 per Exp $
+|| $Id: support.c,v 1.22 2009/11/16 14:00:32 per Exp $
 */
 
 #include <version.h>
@@ -767,14 +767,11 @@ void pgtk2_signal_func_wrapper(struct signal_data *d,
   for (i=0; i<n_params; i++) {
     pgtk2_push_gvalue_rt(&(param_values[i]));
   }
-/*   if (n_params) */
-/*     f_aggregate(n_params); */
   push_svalue(&d->args);
   apply_svalue(&d->cb,2+n_params);
-  if (return_value) {
-    pgtk2_set_value(return_value,&Pike_sp[-1]);
-    pop_stack();
-  }
+  if (return_value && G_VALUE_TYPE(return_value) != 0 )
+      pgtk2_set_value(return_value,&Pike_sp[-1]);
+  pop_stack();
 }
 
 void pgtk2_free_signal_data(struct signal_data *s, GClosure *gcl) {
@@ -1242,8 +1239,10 @@ void pgtk2_set_gvalue(GValue *gv, GType gt, struct svalue *sv) {
       } else
 	g_value_set_pointer(gv,NULL);
       break;
+      case 0: // void
+          break;
     default:
-      Pike_error("Unable to handle type %d - %s.\n",gt,g_type_name(gt));
+        Pike_error("Unable to handle type %d - %s.\n",gt,g_type_name(gt) ?g_type_name(gt): "unnamed" );
   }
 }
 
@@ -1338,3 +1337,18 @@ int pgtk2_tree_view_row_separator_func(GtkTreeModel *model,
   return res;
 }
 
+
+int pgtk2_entry_completion_match_func( GtkEntryCompletion *x,
+                                       const gchar *key,
+                                       GtkTreeIter *iter,
+                                       struct signal_data *d)
+{
+  int res;
+  push_gobject(x);
+  pgtk2_push_gchar( key );
+  push_gobjectclass(iter,pgtk2_tree_iter_program);
+  apply_svalue( &d->cb, 3 );
+  res = Pike_sp[-1].u.integer;
+  pop_stack();
+  return res;
+}
