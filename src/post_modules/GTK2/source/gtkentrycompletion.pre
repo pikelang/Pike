@@ -44,6 +44,32 @@ void create(?mapping(string:mixed) props)
 +GTK2.Widget get_entry();
 //! Gets the entry this widget has been attached to.
 
+void set_match_func( function(object,string,object:void) cb )
+//! Sets the function to be called to decide if a specific row should
+//! be displayed.
+{
+  pgtk2_verify_inited();
+  {
+      extern gboolean pgtk2_entry_completion_match_func( GtkEntryCompletion *x,
+                                                         const gchar *key,
+                                                         GtkTreeIter *iter,
+                                                         gpointer user_data);
+    struct signal_data *sd;
+    struct svalue *sv1;
+    get_all_args("set_match_func",args,"%*",&sv1);
+    sd=(struct signal_data *)g_malloc(sizeof(struct signal_data));
+    if (sd==NULL)
+        SIMPLE_OUT_OF_MEMORY_ERROR("set_match_func",sizeof(struct signal_data));
+    assign_svalue_no_free( &sd->cb, sv1 );
+    sd->args.type = PIKE_T_INT;
+    gtk_entry_completion_set_match_func( GTK_ENTRY_COMPLETION(THIS->obj),
+                                         pgtk2_entry_completion_match_func,
+                                         (gpointer*)sd,
+                                         (GtkDestroyNotify)pgtk2_free_signal_data);
+  }
+  RETURN_THIS();
+}
+
 void set_model(?GTK2.TreeModel model)
 //! Sets the model.  If this completion already has a model set, it will
 //! remove it before setting the new model.  If omitted it will unset the
@@ -118,6 +144,11 @@ void set_popup_completion(int setting);
 
 int get_popup_completion();
 //! Returns whether completions should be presented in a popup window.
+endrequire;
+
+require gtk212;
+void set_inline_selection(int inline_selection);
+//! Sets whether it is possible to cycle through the possible completions inside the entry.
 endrequire;
 
 require gtk28;
