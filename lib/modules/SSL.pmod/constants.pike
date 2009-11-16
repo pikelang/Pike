@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: constants.pike,v 1.10 2002/03/20 16:40:01 nilsson Exp $
+/* $Id: constants.pike,v 1.11 2009/11/16 14:13:20 mast Exp $
  *
  */
 
@@ -81,6 +81,7 @@ constant ALERT_certificate_revoked      = 44;
 constant ALERT_certificate_expired      = 45;
 constant ALERT_certificate_unknown      = 46;
 constant ALERT_illegal_parameter        = 47;
+constant ALERT_no_renegotiation         = 100;
 constant ALERT_descriptions = (< ALERT_close_notify,
  				 ALERT_unexpected_message,
  				 ALERT_bad_record_mac,
@@ -92,7 +93,9 @@ constant ALERT_descriptions = (< ALERT_close_notify,
  				 ALERT_certificate_revoked,
  				 ALERT_certificate_expired,
  				 ALERT_certificate_unknown,
- 				 ALERT_illegal_parameter >);
+				 ALERT_illegal_parameter,
+				 ALERT_no_renegotiation,
+			      >);
  			      
 constant CONNECTION_client 	= 0;
 constant CONNECTION_server 	= 1;
