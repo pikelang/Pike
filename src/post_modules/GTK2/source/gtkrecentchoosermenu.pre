@@ -3,6 +3,7 @@ require gtk210;
 class GTK2.RecentChooserMenu;
 inherit GTK2.Menu;
 inherit GTK2.RecentChooser;
+inherit GTK2.Activatable;
 
 void create(mapping(string:mixed)|GTK2.RecentManager|void props)
 //! Create a new GTK2.RecentChooserMenu.

@@ -1,6 +1,7 @@
 /* -*- C -*- */
 class GTK2.Button;
 inherit GTK2.Bin;
+inherit GTK2.Activatable;
 
 //! A container that can only contain one child, and accepts events.
 //! draws a bevelbox around itself.

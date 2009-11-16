@@ -1,6 +1,7 @@
 /* -*- C -*- */
 class GTK2.MenuItem;
 inherit GTK2.Item;
+inherit GTK2.Activatable;
 
 //! Menu items, to be added to menus.
 

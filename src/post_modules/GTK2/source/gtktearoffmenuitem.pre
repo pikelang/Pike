@@ -1,6 +1,7 @@
 /* -*- C -*- */
 class GTK2.TearoffMenuItem;
 inherit GTK2.MenuItem;
+inherit GTK2.Activatable;
 
 //! A GTK2.TearoffMenuItem is a special W(MenuItem) which is used to
 //! tear off and reattach its menu.

@@ -3,6 +3,7 @@ require gtk24;
 
 class GTK2.ToolItem;
 inherit GTK2.Bin;
+inherit GTK2.Activatable;
 
 //! Properties:
 //! int is-important
