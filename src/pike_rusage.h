@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_rusage.h,v 1.26 2009/04/21 12:03:34 mast Exp $
+|| $Id: pike_rusage.h,v 1.27 2009/11/17 01:25:04 mast Exp $
 */
 
 #ifndef PIKE_RUSAGE_H
@@ -10,6 +10,9 @@
 
 #include "global.h"
 
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 #ifdef HAVE_TIME_H
 #include <time.h>
 #endif
@@ -72,14 +75,14 @@
 #    define posix_thread_gct get_cpu_time
 #    define posix_thread_gct_res get_cpu_time_res
 #    define GCT_IS_POSIX_THREAD
+#  elif defined (MIGHT_HAVE_POSIX_THREAD_GCT)
+#    define GCT_RUNTIME_CHOICE
 #  elif FB_CPU_TIME_IS_THREAD_LOCAL == PIKE_YES
 #    define cpu_time_is_thread_local 1
 #    define fallback_gct_impl get_cpu_time_impl
 #    define fallback_gct get_cpu_time
 #    define fallback_gct_res get_cpu_time_res
 #    define GCT_IS_FALLBACK
-#  elif defined (MIGHT_HAVE_POSIX_THREAD_GCT)
-#    define GCT_RUNTIME_CHOICE
 #  elif defined (HAVE_POSIX_PROCESS_GCT)
 #    define cpu_time_is_thread_local 0
 #    define posix_process_gct_impl get_cpu_time_impl
