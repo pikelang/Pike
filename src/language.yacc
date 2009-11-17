@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.452 2009/09/12 13:31:38 grubba Exp $
+|| $Id: language.yacc,v 1.453 2009/11/17 14:08:46 grubba Exp $
 */
 
 %pure_parser
@@ -2833,13 +2833,10 @@ class: TOK_CLASS line_number_info optional_identifier
       MAKE_CONST_STRING(create_string, "create");
       if (((ref_id = isidentifier(create_string)) < 0) ||
 	  (ref = PTR_FROM_INT(Pike_compiler->new_program, ref_id))->inherit_offset ||
-	  (((id = ID_FROM_PTR(Pike_compiler->new_program, ref))->func.offset == -1) &&
-	   (Pike_compiler->compiler_pass == 2))) {
+	  ((id = ID_FROM_PTR(Pike_compiler->new_program, ref))->func.offset == -1)) {
 	int e;
-	node *create_code = NULL;
 	struct pike_type *type = NULL;
 	int nargs = Pike_compiler->num_create_args;
-	int f;
 
 	push_compiler_frame(SCOPE_LOCAL);
 	
@@ -2894,64 +2891,69 @@ class: TOK_CLASS line_number_info optional_identifier
 			  0,
 			  OPT_SIDE_EFFECT);
 	
-	/* Third: Generate the initialization code.
-	 *
-	 * global_arg = [type]local_arg;
-	 * [,..]
-	 */
+	if (Pike_compiler->compiler_pass == 2) {
+	  node *create_code = NULL;
+	  int f;
 
-	for(e=0; e<nargs; e++)
-	{
-	  if(!Pike_compiler->compiler_frame->variable[e].name ||
-	     !Pike_compiler->compiler_frame->variable[e].name->len)
+	  /* Third: Generate the initialization code.
+	   *
+	   * global_arg = [type]local_arg;
+	   * [,..]
+	   */
+
+	  for(e=0; e<nargs; e++)
 	  {
-	    my_yyerror("Missing name for argument %d.",e);
-	  } else {
-	    node *local_node = mklocalnode(e, 0);
+	    if(!Pike_compiler->compiler_frame->variable[e].name ||
+	       !Pike_compiler->compiler_frame->variable[e].name->len)
+	    {
+	      my_yyerror("Missing name for argument %d.",e);
+	    } else {
+	      node *local_node = mklocalnode(e, 0);
 
-	    /* FIXME: Should probably use some other flag. */
-	    if ((runtime_options & RUNTIME_CHECK_TYPES) &&
-		(Pike_compiler->compiler_pass == 2) &&
-		(Pike_compiler->compiler_frame->variable[e].type !=
-		 mixed_type_string)) {
-	      /* fprintf(stderr, "Creating soft cast node for local #%d\n", e);*/
+	      /* FIXME: Should probably use some other flag. */
+	      if ((runtime_options & RUNTIME_CHECK_TYPES) &&
+		  (Pike_compiler->compiler_pass == 2) &&
+		  (Pike_compiler->compiler_frame->variable[e].type !=
+		   mixed_type_string)) {
+		/* fprintf(stderr, "Creating soft cast node for local #%d\n", e);*/
 
-	      /* The following is needed to go around the optimization in
-	       * mksoftcastnode().
-	       */
-	      free_type(local_node->type);
-	      copy_pike_type(local_node->type, mixed_type_string);
+		/* The following is needed to go around the optimization in
+		 * mksoftcastnode().
+		 */
+		free_type(local_node->type);
+		copy_pike_type(local_node->type, mixed_type_string);
 	  
-	      local_node = mksoftcastnode(Pike_compiler->compiler_frame->
-					  variable[e].type, local_node);
+		local_node = mksoftcastnode(Pike_compiler->compiler_frame->
+					    variable[e].type, local_node);
+	      }
+	      create_code =
+		mknode(F_COMMA_EXPR, create_code,
+		       mknode(F_ASSIGN, local_node,
+			      mkidentifiernode(e)));
 	    }
-	    create_code =
-	      mknode(F_COMMA_EXPR, create_code,
-		     mknode(F_ASSIGN, local_node,
-			    mkidentifiernode(e)));
 	  }
-	}
 
-	/* Fourth: Add a return 0; at the end. */
+	  /* Fourth: Add a return 0; at the end. */
 
-	create_code = mknode(F_COMMA_EXPR,
-			     mknode(F_POP_VALUE, create_code, NULL),
-			     mknode(F_RETURN, mkintnode(0), NULL));
+	  create_code = mknode(F_COMMA_EXPR,
+			       mknode(F_POP_VALUE, create_code, NULL),
+			       mknode(F_RETURN, mkintnode(0), NULL));
 
-	/* Fifth: Define the function. */
+	  /* Fifth: Define the function. */
 
-	f=dooptcode(create_string, create_code, type, ID_PROTECTED);
+	  f=dooptcode(create_string, create_code, type, ID_PROTECTED);
 
 #ifdef PIKE_DEBUG
-	if(Pike_interpreter.recoveries &&
-	   Pike_sp-Pike_interpreter.evaluator_stack < Pike_interpreter.recoveries->stack_pointer)
-	  Pike_fatal("Stack error (underflow)\n");
+	  if(Pike_interpreter.recoveries &&
+	     Pike_sp-Pike_interpreter.evaluator_stack < Pike_interpreter.recoveries->stack_pointer)
+	    Pike_fatal("Stack error (underflow)\n");
 
-	if(Pike_compiler->compiler_pass == 1 &&
-	   f!=Pike_compiler->compiler_frame->current_function_number)
-	  Pike_fatal("define_function screwed up! %d != %d\n",
-		     f, Pike_compiler->compiler_frame->current_function_number);
+	  if(Pike_compiler->compiler_pass == 1 &&
+	     f!=Pike_compiler->compiler_frame->current_function_number)
+	    Pike_fatal("define_function screwed up! %d != %d\n",
+		       f, Pike_compiler->compiler_frame->current_function_number);
 #endif
+	}
 
 	/* Done. */
 
@@ -2968,6 +2970,16 @@ class: TOK_CLASS line_number_info optional_identifier
     /* fprintf(stderr, "LANGUAGE.YACC: CLASS end\n"); */
 
     if(p) {
+      /* Update the type for the program constant,
+       * since we might have a lfun::create(). */
+      struct identifier *i;
+      struct svalue sv;
+      sv.type = T_PROGRAM;
+      sv.subtype = 0;
+      sv.u.program = p;
+      i = ID_FROM_INT(Pike_compiler->new_program, $<number>4);
+      free_type(i->type);
+      i->type = get_type_of_svalue(&sv);
       free_program(p);
     } else if (!Pike_compiler->num_parse_error) {
       /* Make sure code in this class is aware that something went wrong. */
