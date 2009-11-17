@@ -1455,8 +1455,11 @@ array generate_overload_func_for(array(FuncData) d,
 
   string argbase="-args";
 
-  int best_method;
-  int best_method_value;
+  int best_method = -1;
+  int best_method_value=evaluate_method(x);
+#ifdef PRECOMPILE_OVERLOAD_DEBUG
+  werror("Value X: %d\n",best_method_value);
+#endif /* PRECOMPILE_OVERLOAD_DEBUG */    
 
   array(mapping(string:array(FuncData))) y;
   if(min_args)
@@ -1464,10 +1467,13 @@ array generate_overload_func_for(array(FuncData) d,
     y=allocate(min(min_args,16), ([]));
     for(int a=0;a<sizeof(y);a++)
     {
+#ifdef PRECOMPILE_OVERLOAD_DEBUG
+      werror("BT: arg: %d\n", a);
+#endif /* PRECOMPILE_OVERLOAD_DEBUG */
       foreach(d, FuncData q)
 	{
 #ifdef PRECOMPILE_OVERLOAD_DEBUG
-	  werror("BT: %s\n",q->args[a]->type()->basetypes()*"|");
+	  werror("BT: q: %O %s\n",q, q->args[a]->type()->basetypes()*"|");
 #endif /* PRECOMPILE_OVERLOAD_DEBUG */
 	  foreach(q->args[a]->type()->basetypes(), string t)
 	  {
@@ -1479,12 +1485,6 @@ array generate_overload_func_for(array(FuncData) d,
 	}
     }
 
-    best_method=-1;
-    best_method_value=evaluate_method(x);
-#ifdef PRECOMPILE_OVERLOAD_DEBUG
-    werror("Value X: %d\n",best_method_value);
-#endif /* PRECOMPILE_OVERLOAD_DEBUG */
-    
     for(int a=0;a<sizeof(y);a++)
     {
       int v=evaluate_method(y[a]);
