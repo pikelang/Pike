@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rusage.c,v 1.53 2009/04/20 17:32:12 jonasw Exp $
+|| $Id: rusage.c,v 1.54 2009/11/17 01:23:08 mast Exp $
 */
 
 #include "global.h"
@@ -908,7 +908,7 @@ void init_rusage (void)
   else
 #endif
 
-#ifdef MIGHT_HAVE_POSIX_THREAD_GCT
+#ifdef MIGHT_HAVE_POSIX_PROCESS_GCT
     if (sysconf (_SC_CPUTIME) > 0 && posix_cputime_is_reliable()) {
 #ifndef cpu_time_is_thread_local
       cpu_time_is_thread_local = 0;
