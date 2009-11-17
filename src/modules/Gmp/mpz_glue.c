@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.185 2009/10/28 17:54:54 grubba Exp $
+|| $Id: mpz_glue.c,v 1.186 2009/11/17 14:43:33 grubba Exp $
 */
 
 #include "global.h"
@@ -2168,7 +2168,30 @@ static void mpzmod_random(INT32 args)
   dmalloc_touch_svalue(Pike_sp);
   PUSH_REDUCED(res);
 }
-  
+
+/*! @decl string(0..255) _encode()
+ */  
+static void mpzmod__encode(INT32 args)
+{
+  pop_n_elems(args);
+  /* 256 would be better, but then negative numbers
+   * won't work... /Hubbe
+   */
+  push_int(36);
+  mpzmod_digits(1);
+}
+
+/*! @decl void _decode(string(0..255))
+ */
+static void mpzmod__decode(INT32 args)
+{
+  /* 256 would be better, but then negative numbers
+   * won't work... /Hubbe
+   */
+  push_int(36);
+  mpzmod_create(args+1);
+}
+
 /*! @endclass
  */
 
@@ -2381,6 +2404,10 @@ static void pike_mp_free (void *ptr, size_t size)
   ADD_FUNCTION("popcount", mpzmod_popcount,tFunc(tVoid,tInt), 0);	\
 									\
   ADD_FUNCTION("_random",mpzmod_random,tFunc(tNone,tMpz_ret),0);	\
+  									\
+  ADD_FUNCTION("_encode",mpzmod__encode,tFunc(tNone,tStr8),0);		\
+  									\
+  ADD_FUNCTION("_decode",mpzmod__decode,tFunc(tStr8,tVoid),0);		\
   									\
   set_init_callback(init_mpz_glue);					\
   set_exit_callback(exit_mpz_glue);					\
