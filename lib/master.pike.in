@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.466 2009/11/13 13:49:09 per Exp $
+// $Id: master.pike.in,v 1.467 2009/11/17 14:44:56 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -5103,6 +5103,10 @@ class Encoder
 	    ENC_RETURN ("o" + path);
 #endif
 	  }
+	}
+	if (prog == object_program(_static_modules)) {
+	  ENC_MSG ("  got _static_modules.\n");
+	  ENC_RETURN ("c" + "_static_modules");
 	}
       }
 
