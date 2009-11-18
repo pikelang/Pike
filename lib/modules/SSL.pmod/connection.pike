@@ -1,5 +1,5 @@
 //
-// $Id: connection.pike,v 1.44 2009/11/16 14:13:20 mast Exp $
+// $Id: connection.pike,v 1.45 2009/11/18 16:12:02 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -364,6 +364,7 @@ string|int got_data(string|int s)
 	 if (handshake_finished) {
 	   // Don't allow renegotiation at all for now, to address
 	   // http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2009-3555.
+	   // For details see: http://www.g-sec.lu/practicaltls.pdf
 	   send_packet (Alert (ALERT_warning, ALERT_no_renegotiation,
 			       version[1]));
 	   return -1;
