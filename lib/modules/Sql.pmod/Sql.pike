@@ -1,5 +1,5 @@
 /*
- * $Id: Sql.pike,v 1.99 2009/11/06 16:53:35 grubba Exp $
+ * $Id: Sql.pike,v 1.100 2009/11/18 10:20:22 grubba Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -275,6 +275,11 @@ void create(string|object host, void|string|mapping(string:int|string) db,
 	master_sql = p(host);
       } else {
 	master_sql = p();
+      }
+      if (!master_sql->query && !master_sql->big_query) {
+	master_sql = UNDEFINED;
+	ERROR("Failed to index module Sql.%s or Sql.Provider.%s.\n",
+	      program_name, program_name);
       }
     } else {
       ERROR("Failed to index module Sql.%s or Sql.Provider.%s.\n",
