@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.334 2009/11/16 23:59:33 mast Exp $
+|| $Id: gc.c,v 1.335 2009/11/19 23:42:59 mast Exp $
 */
 
 #include "global.h"
@@ -1162,10 +1162,52 @@ again:
 		  indent,"");
       }
 
-      if (((struct object *) a)->refs > 0 && p) {
+      if (p == pike_trampoline_program && ((struct object *) a)->refs > 0) {
+	/* Special hack to get something useful out of trampolines.
+	 * Ought to have an event hook for this sort of thing. */
+	struct pike_trampoline *t =
+	  (struct pike_trampoline *) ((struct object *) a)->storage;
+	struct object *o = t->frame->current_object;
+	struct program *p = o->prog;
+	struct identifier *id;
+	INT32 line;
+	struct pike_string *file;
+
+	fprintf (stderr, "%*s**The object is a trampoline.\n", indent, "");
+
+	if (!p) {
+	  fprintf (stderr, "%*s**The trampoline function's object "
+		   "is destructed.\n", indent, "");
+	  p = id_to_program (o->program_id);
+	}
+
+	if (p) {
+	  id = ID_FROM_INT (p, t->func);
+	  if (IDENTIFIER_IS_PIKE_FUNCTION(id->identifier_flags) &&
+	      id->func.offset >= 0 &&
+	      (file = get_line(p->program + id->func.offset, p, &line))) {
+	    fprintf(stderr, "%*s**Function %s at %s:%ld\n",
+		    indent, "", id->name->str, file->str, (long) line);
+	    free_string(file);
+	  }
+	  else
+	    fprintf(stderr, "%*s**Function %s at unknown location.\n",
+		    indent, "", id->name->str);
+
+	  if (depth && o->prog) {
+	    fprintf (stderr, "%*s**Describing function's object:\n",
+		     indent, "");
+	    describe_something (o, T_OBJECT, indent + 2, depth - 1,
+				(flags & DESCRIBE_SHORT) & ~DESCRIBE_MEM,
+				0);
+	  }
+	}
+      }
+
+      else if (((struct object *) a)->refs > 0 && p) {
 	size_t inh_idx, var_idx, var_count = 0;
 
-	if (((struct object *)a)->prog) {
+	if (p) {
 	  fprintf (stderr, "%*s**Object variables:\n", indent, "");
 
 	  for (inh_idx = 0; inh_idx < p->num_inherits; inh_idx++) {
