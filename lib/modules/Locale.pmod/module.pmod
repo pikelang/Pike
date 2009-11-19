@@ -359,6 +359,8 @@ object get_object(string project, string lang) {
 		       "pike"      : pike_tag, ]) );
   xml_parser->feed(data)->finish();
 
+  xml_parser = 0;		// To avoid trampoline garbage.
+
 #ifdef LOCALE_DEBUG
   };   
   werror("\nLocale: Read %O in %O (bindings: %d, functions: %d) in %.3fs\n", 
