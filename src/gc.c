@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.335 2009/11/19 23:42:59 mast Exp $
+|| $Id: gc.c,v 1.336 2009/11/19 23:45:21 mast Exp $
 */
 
 #include "global.h"
@@ -3731,6 +3731,21 @@ size_t do_gc(void *ignored, int explicit_call)
 	for (r = kill_list; r != &sentinel_frame; r = r->next)
 	  /* Can't do this while the list is being freed below. */
 	  CHECK_KILL_LIST_FRAME (r);
+      }
+
+      /* A helper to locate garbage through trampolines.
+       * FIXME: This ought to be accessible even when pike is compiled
+       * without rtldebug. */
+      if (gc_trace >= 3 && !gc_destruct_everything) {
+	struct gc_rec_frame *r;
+	for (r = kill_list; r != &sentinel_frame; r = r->next) {
+	  struct object *o = (struct object *) r->data;
+	  if (o->prog == pike_trampoline_program && o->refs > 1) {
+	    fprintf (stderr, "Got trampoline garbage:\n");
+	    describe_something (o, T_OBJECT, 0, 0, 0, NULL);
+	    locate_references (o);
+	  }
+	}
       }
 #endif
 

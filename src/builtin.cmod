@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.240 2009/11/12 15:10:21 grubba Exp $
+|| $Id: builtin.cmod,v 1.241 2009/11/19 23:45:22 mast Exp $
 */
 
 #include "global.h"
@@ -435,8 +435,19 @@ PIKEFUN multiset(1) mkmultiset(array(1=mixed) a)
  *!
  *!   @string
  *!   @value "gc"
- *!     Trace the start and end of each run of the garbage collector.
- *!     The setting is never thread local.
+ *!     Trace the doings of the garbage collector. The setting is
+ *!     never thread local. @[level] has two different meanings:
+ *!     @dl
+ *!     @item 1..2
+ *!       Trace the start and end of each gc run.
+ *!     @item 3..
+ *!       Additionally show info about the collected garbage, to aid
+ *!       hunting down garbage problems. This currently shows gc'd
+ *!       trampolines. Note that the output can be very bulky and is
+ *!       somewhat low-level technical. Also note that pike currently
+ *!       has to be configured with @expr{--with-rtldebug@} to enable
+ *!       this.
+ *!     @enddl
  *!   @endstring
  *!
  *! @param all_threads
