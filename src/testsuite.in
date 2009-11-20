@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.884 2009/11/09 23:00:11 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.885 2009/11/20 11:14:09 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -228,6 +228,37 @@ test_any([[
   string x(string i) { return i; };
   return x("")+1+1;
 ]], "11")
+
+test_any([[
+  // Check that parent pointers aren't added unnecessarily [bug 2672].
+  class I {};
+
+  class X
+  {
+    // Neither the inherit nor the variable type should add
+    // a parent pointer requirement.
+    inherit I;
+    I i;
+  };
+
+  X x = ((program) X)(); // Error: Parent lost, cannot clone program.
+  return 0;
+]], 0)
+
+test_eval_error([[
+  // Check that parent pointers aren't added unnecessarily [bug 2672].
+  class I {};
+
+  class X
+  {
+    // The cloning of I makes X need its parent.
+    inherit I;
+    I i = I();
+  };
+
+  X x = ((program) X)(); // Error: Parent lost, cannot clone program.
+  return 0;
+]], 0)
 
 test_compile_any([[
   mixed foo() 
