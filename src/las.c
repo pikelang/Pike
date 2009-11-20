@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.441 2009/11/19 18:49:29 grubba Exp $
+|| $Id: las.c,v 1.442 2009/11/20 10:58:09 grubba Exp $
 */
 
 #include "global.h"
@@ -1207,6 +1207,7 @@ node *debug_mkexternalnode(struct program *parent_prog, int i)
   res->u.integer.a = parent_prog->id;
   res->u.integer.b = i;
 
+#if 0
   /* Don't do this if res about to get inherited, since the inherit won't
    * be affected by later overloading of the inherited class in our parents.
    */
@@ -1219,6 +1220,7 @@ node *debug_mkexternalnode(struct program *parent_prog, int i)
       state=state->previous;
     }
 /*   } */
+#endif /* 0 */
 
   return res;
 #endif /* 0 */
