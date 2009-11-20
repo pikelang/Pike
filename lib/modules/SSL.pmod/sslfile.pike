@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.113 2009/06/23 12:22:57 mast Exp $
+/* $Id: sslfile.pike,v 1.114 2009/11/20 15:30:15 mast Exp $
  */
 
 #if constant(SSL.Cipher.CipherAlgorithm)
@@ -272,7 +272,7 @@ protected THREAD_T op_thread;
 #define CHECK_CB_MODE(CUR_THREAD) do {					\
     if (Pike.Backend backend = stream && stream->query_backend()) {	\
       THREAD_T backend_thread = backend->executing_thread();		\
-      if (backend_thread != CUR_THREAD &&				\
+      if (backend_thread && backend_thread != CUR_THREAD &&		\
 	  (stream->query_read_callback() ||				\
 	   stream->query_write_callback() ||				\
 	   stream->query_close_callback()))				\
