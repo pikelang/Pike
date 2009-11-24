@@ -197,9 +197,10 @@ string eatIdentifier(void|int allowScopePrefix) {
     parseError("expected identifier, got %O", s);
   readToken();
 
-  // Special hax for `->symbol and `->symbol=
-  if( s=="`->" && isIdent(peekToken()) )
+  // Special hax for `->symbol and `->symbol=, and `symbol and `symbol=
+  if( (s=="`->" || s=="`") && isIdent(peekToken()) )
   {
+    if (s == "`->") s = "`"; // Convert old to new syntax.
     s += readToken();
     if( peekToken()=="=" )
       s += readToken();
