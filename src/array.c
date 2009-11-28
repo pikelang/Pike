@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.223 2009/02/12 21:06:27 srb Exp $
+|| $Id: array.c,v 1.224 2009/11/28 13:13:30 mast Exp $
 */
 
 #include "global.h"
@@ -994,7 +994,7 @@ static INLINE int lfun_cmp (const struct svalue *a, const struct svalue *b)
   return 2;
 }
 
-INLINE int set_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
+int set_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
 {
   int res, typediff = a->type - b->type;
 
@@ -1090,7 +1090,7 @@ static int switch_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
   }
 }
 
-static int alpha_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
+int alpha_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
 {
   int res, typediff = a->type - b->type;
 
