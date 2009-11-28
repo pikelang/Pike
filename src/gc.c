@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.336 2009/11/19 23:45:21 mast Exp $
+|| $Id: gc.c,v 1.337 2009/11/28 11:49:47 mast Exp $
 */
 
 #include "global.h"
@@ -1009,17 +1009,7 @@ static void debug_gc_fatal_va (void *a, int flags,
      * checks in describe(). */
     Pike_in_gc = 0;
     describe(a);
-  
     if (flags & 1) locate_references(a);
-
-    m=find_marker(a);
-    if(m)
-    {
-      fprintf(stderr,"** Describing marker for this thing.\n");
-      describe(m);
-    }else{
-      fprintf(stderr,"** No marker found for this thing.\n");
-    }
     Pike_in_gc = orig_gc_pass;
   }
 
