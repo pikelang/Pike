@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.224 2009/11/28 13:13:30 mast Exp $
+|| $Id: array.c,v 1.225 2009/11/28 13:14:00 mast Exp $
 */
 
 #include "global.h"
@@ -2391,7 +2391,7 @@ PMOD_EXPORT struct pike_string *implode(struct array *a,
   ret=begin_wide_shared_string(len,max_shift);
   r=MKPCHARP_STR(ret);
   len = del->len;
-  if(e = a->size)
+  if((e = a->size))
     for(ae=a->item;;ae++)
     {
       switch(ae->type)
