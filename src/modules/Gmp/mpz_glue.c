@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.165 2008/03/28 20:23:33 mast Exp $
+|| $Id: mpz_glue.c,v 1.166 2009/11/28 14:59:31 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.165 2008/03/28 20:23:33 mast Exp $");
+RCSID("$Id: mpz_glue.c,v 1.166 2009/11/28 14:59:31 mast Exp $");
 #include "gmp_machine.h"
 #include "module.h"
 
@@ -1841,7 +1841,7 @@ static void mpzmod_popcount(INT32 args)
        Pike_sp[-1].u.integer=-1;
 #endif
     break;
-  default:
+  default:;
 #ifdef PIKE_DEBUG
     Pike_fatal("Gmp.mpz->popcount: Unexpected sign!\n");
 #endif
