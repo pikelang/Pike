@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.360 2009/04/11 12:42:22 grubba Exp $
+|| $Id: pike_types.c,v 1.361 2009/11/28 13:36:21 mast Exp $
 */
 
 #include "global.h"
@@ -8022,7 +8022,7 @@ PMOD_EXPORT void visit_type (struct pike_type *t, int action)
 
 void gc_mark_type_as_referenced(struct pike_type *t)
 {
-  if (gc_mark(t)) {
+  if (gc_mark(t, PIKE_T_TYPE)) {
     GC_ENTER(t, PIKE_T_TYPE) {
       switch(t->type) {
       case PIKE_T_SCOPE:

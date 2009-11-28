@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.118 2009/08/10 14:27:47 grubba Exp $
+|| $Id: multiset.c,v 1.119 2009/11/28 13:36:20 mast Exp $
 */
 
 #include "global.h"
@@ -4163,7 +4163,7 @@ static void gc_unlink_msnode_shared (struct multiset_data *msd,
 
 void gc_mark_multiset_as_referenced (struct multiset *l)
 {
-  if (gc_mark (l))
+  if (gc_mark (l, T_MULTISET))
     GC_ENTER (l, T_MULTISET) {
       struct multiset_data *msd = l->msd;
 
@@ -4176,7 +4176,7 @@ void gc_mark_multiset_as_referenced (struct multiset *l)
 	DOUBLELINK (first_multiset, l); /* Linked in first. */
       }
 
-      if (gc_mark (msd) && msd->root &&
+      if (gc_mark (msd, T_MULTISET_DATA) && msd->root &&
 	  ((msd->ind_types | msd->val_types) & BIT_COMPLEX)) {
 	struct marker *m = get_marker (msd);
 	TYPE_FIELD ind_types = 0, val_types = 0;

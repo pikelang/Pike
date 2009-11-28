@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.h,v 1.137 2009/11/11 20:05:07 mast Exp $
+|| $Id: gc.h,v 1.138 2009/11/28 13:36:20 mast Exp $
 */
 
 #ifndef GC_H
@@ -296,6 +296,7 @@ void describe_location(void *real_memblock,
 		       int depth,
 		       int flags);
 void debug_gc_fatal(void *a, int flags, const char *fmt, ...);
+void debug_gc_fatal_2 (void *a, int type, int flags, const char *fmt, ...);
 void low_describe_something(void *a,
 			    int t,
 			    int indent,
@@ -319,7 +320,7 @@ void debug_really_free_gc_frame(struct gc_frame *l);
 int gc_do_weak_free(void *a);
 void gc_delayed_free(void *a, int type);
 void debug_gc_mark_enqueue(queue_call call, void *data);
-int gc_mark(void *a);
+int gc_mark_func(void *a DO_IF_DEBUG (COMMA int type));
 void gc_move_marker (void *old_thing, void *new_thing);
 PMOD_EXPORT void gc_cycle_enqueue(gc_cycle_check_cb *checkfn, void *data, int weak);
 void gc_cycle_run_queue(void);
@@ -337,6 +338,12 @@ void cleanup_gc(void);
 #define DMALLOC_TOUCH_MARKER(X, EXPR) (get_marker(X), (EXPR))
 #else
 #define DMALLOC_TOUCH_MARKER(X, EXPR) (EXPR)
+#endif
+
+#ifdef PIKE_DEBUG
+#define gc_mark(DATA, TYPE) gc_mark_func (DATA, TYPE)
+#else
+#define gc_mark(DATA, TYPE) gc_mark_func (DATA)
 #endif
 
 #define gc_check(VP) \
@@ -438,6 +445,8 @@ static INLINE int debug_gc_check_weak (void *a, const char *place)
 
 #define gc_fatal \
   fprintf(stderr, "%s:%d: GC fatal:\n", __FILE__, __LINE__), debug_gc_fatal
+#define gc_fatal_2 \
+  fprintf(stderr, "%s:%d: GC fatal:\n", __FILE__, __LINE__), debug_gc_fatal_2
 
 #ifdef PIKE_DEBUG
 

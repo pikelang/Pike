@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.254 2009/08/20 16:24:36 mast Exp $
+|| $Id: svalue.c,v 1.255 2009/11/28 13:36:21 mast Exp $
 */
 
 #include "global.h"
@@ -2291,9 +2291,16 @@ void gc_check_weak_short_svalue(const union anything *u, TYPE_T type)
 
 #define GC_DONT_MARK(U, TN) do {} while (0)
 
+#define MARK_PRE {							\
+    DO_IF_DEBUG (							\
+      if (!s->u.refs)							\
+	(gc_fatal_2 (s->u.ptr, s->type, 0, "Marking thing without refs.\n")); \
+    );									\
+  }
+
 #define DO_MARK_FUNC_SVALUE(U, T, ZAP, GC_DO)				\
       if (s->subtype == FUNCTION_BUILTIN) {				\
-	DO_IF_DEBUG (if (d_flag) gc_mark (s->u.efun->name));		\
+	DO_IF_DEBUG (if (d_flag) gc_mark (s->u.efun->name, T_STRING));	\
 	DO_IF_DEBUG_OR_CLEANUP (GC_DO_MARK ((*s->u.efun), type));	\
 	break;								\
       }									\
@@ -2310,7 +2317,7 @@ void gc_check_weak_short_svalue(const union anything *u, TYPE_T type)
 	GC_DO_MARK(U, TN)
 
 #define DO_MARK_STRING(U)						\
-      DO_IF_DEBUG(if (U.refs && d_flag) gc_mark(U.string))
+      DO_IF_DEBUG(if (U.refs && d_flag) gc_mark(U.string, T_STRING))
 
 #define DONT_MARK_STRING(U)
 
@@ -2323,7 +2330,7 @@ PMOD_EXPORT TYPE_FIELD real_gc_mark_svalues(struct svalue *s, size_t num)
   {
     dmalloc_touch_svalue(s);
     GC_RECURSE_SWITCH((s->u), (s->type), ZAP_SVALUE, DONT_FREE_WEAK,
-		      GC_DO_MARK, {},
+		      GC_DO_MARK, MARK_PRE,
 		      DO_MARK_FUNC_SVALUE, GC_DO_MARK,
 		      DO_MARK_STRING, GC_DO_MARK);
     t |= 1 << s->type;
@@ -2340,7 +2347,7 @@ TYPE_FIELD gc_mark_weak_svalues(struct svalue *s, size_t num)
   {
     dmalloc_touch_svalue(s);
     GC_RECURSE_SWITCH((s->u), (s->type), ZAP_SVALUE, FREE_WEAK,
-		      GC_DONT_MARK, {},
+		      GC_DONT_MARK, MARK_PRE,
 		      DO_MARK_FUNC_SVALUE, DO_MARK_OBJ_WEAK,
 		      DO_MARK_STRING, GC_DO_MARK);
     t |= 1 << s->type;
@@ -2375,7 +2382,7 @@ int gc_mark_without_recurse(struct svalue *s)
   int freed = 0;
   dmalloc_touch_svalue(s);
   GC_RECURSE_SWITCH((s->u), (s->type), ZAP_SVALUE, DONT_FREE_WEAK,
-		    GC_DONT_MARK, {},
+		    GC_DONT_MARK, MARK_PRE,
 		    DONT_MARK_FUNC_SVALUE, GC_DONT_MARK,
 		    DONT_MARK_STRING, GC_DONT_MARK);
   return freed;
@@ -2386,7 +2393,7 @@ int gc_mark_weak_without_recurse(struct svalue *s)
   int freed = 0;
   dmalloc_touch_svalue(s);
   GC_RECURSE_SWITCH((s->u), (s->type), ZAP_SVALUE, FREE_WEAK,
-		    GC_DONT_MARK, {},
+		    GC_DONT_MARK, MARK_PRE,
 		    DONT_MARK_FUNC_SVALUE, GC_DONT_MARK,
 		    DONT_MARK_STRING, GC_DONT_MARK);
   return freed;

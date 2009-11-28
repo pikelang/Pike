@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.303 2009/08/25 16:59:22 grubba Exp $
+|| $Id: object.c,v 1.304 2009/11/28 13:36:20 mast Exp $
 */
 
 #include "global.h"
@@ -2027,7 +2027,7 @@ PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o)
   debug_malloc_touch(o);
   debug_malloc_touch(o->storage);
 
-  if(gc_mark(o)) {
+  if(gc_mark(o, T_OBJECT)) {
     if(o->next == o) return; /* Fake object used by compiler */
 
     GC_ENTER (o, T_OBJECT) {

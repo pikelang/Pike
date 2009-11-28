@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.772 2009/11/20 10:58:09 grubba Exp $
+|| $Id: program.c,v 1.773 2009/11/28 13:36:21 mast Exp $
 */
 
 #include "global.h"
@@ -10185,7 +10185,7 @@ void gc_mark_program_as_referenced(struct program *p)
      */
     debug_malloc_touch(p);
 
-    if (gc_mark(p)) {
+    if (gc_mark(p, T_PROGRAM)) {
       if (p == gc_mark_program_pos)
 	gc_mark_program_pos = p->next;
       if (p == gc_internal_program)
@@ -10199,7 +10199,7 @@ void gc_mark_program_as_referenced(struct program *p)
     return;
   }
   
-  if(gc_mark(p))
+  if(gc_mark(p, T_PROGRAM))
     GC_ENTER (p, T_PROGRAM) {
       int e;
 

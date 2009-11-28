@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.337 2009/11/28 11:49:47 mast Exp $
+|| $Id: gc.c,v 1.338 2009/11/28 13:36:20 mast Exp $
 */
 
 #include "global.h"
@@ -993,7 +993,7 @@ static void describe_marker(struct marker *m)
 
 #endif /* PIKE_DEBUG */
 
-static void debug_gc_fatal_va (void *a, int flags,
+static void debug_gc_fatal_va (void *a, int type, int flags,
 			       const char *fmt, va_list args)
 {
 #ifdef PIKE_DEBUG
@@ -1005,10 +1005,13 @@ static void debug_gc_fatal_va (void *a, int flags,
 
 #ifdef PIKE_DEBUG
   if (a) {
+    void *inblock;
     /* Temporarily jumping out of gc to avoid being caught in debug
      * checks in describe(). */
     Pike_in_gc = 0;
-    describe(a);
+    if (type == PIKE_T_UNKNOWN)
+      type = attempt_to_identify (a, &inblock);
+    describe_something (a, type, 0, 0, 0, inblock);
     if (flags & 1) locate_references(a);
     Pike_in_gc = orig_gc_pass;
   }
@@ -1027,7 +1030,15 @@ void debug_gc_fatal (void *a, int flags, const char *fmt, ...)
 {
   va_list args;
   va_start (args, fmt);
-  debug_gc_fatal_va (a, flags, fmt, args);
+  debug_gc_fatal_va (a, PIKE_T_UNKNOWN, flags, fmt, args);
+  va_end (args);
+}
+
+void debug_gc_fatal_2 (void *a, int type, int flags, const char *fmt, ...)
+{
+  va_list args;
+  va_start (args, fmt);
+  debug_gc_fatal_va (a, type, flags, fmt, args);
   va_end (args);
 }
 
@@ -1037,7 +1048,7 @@ static void dloc_gc_fatal (const char *file, int line,
   va_list args;
   fprintf (stderr, "%s:%d: GC fatal:\n", file, line);
   va_start (args, fmt);
-  debug_gc_fatal_va (a, flags, fmt, args);
+  debug_gc_fatal_va (a, PIKE_T_UNKNOWN, flags, fmt, args);
   va_end (args);
 }
 
@@ -2459,14 +2470,14 @@ void gc_delayed_free(void *a, int type)
   m->flags |= GC_GOT_DEAD_REF;
 }
 
-int gc_mark(void *a)
+int gc_mark_func(void *a DO_IF_DEBUG (COMMA int type))
 {
   struct marker *m;
 
 #ifdef PIKE_DEBUG
   if (Pike_in_gc == GC_PASS_ZAP_WEAK && !find_marker (a))
-    gc_fatal (a, 0, "gc_mark() called for for thing without marker "
-	      "in zap weak pass.\n");
+    gc_fatal_2 (a, type, 0, "gc_mark() called for for thing without marker "
+		"in zap weak pass.\n");
 #endif
 
   m = get_marker (a);
@@ -2483,9 +2494,9 @@ int gc_mark(void *a)
   if (Pike_in_gc != GC_PASS_MARK && Pike_in_gc != GC_PASS_ZAP_WEAK)
     Pike_fatal("GC mark attempted in invalid pass.\n");
   if (!*(INT32 *) a)
-    gc_fatal(a, 0, "Marked a thing without refs.\n");
+    gc_fatal_2 (a, type, 1, "Marked a thing without refs.\n");
   if (m->weak_refs < 0)
-    gc_fatal(a, 0, "Marked a thing scheduled for weak free.\n");
+    gc_fatal_2 (a, type, 1, "Marked a thing scheduled for weak free.\n");
 #endif
 
   if (Pike_in_gc == GC_PASS_ZAP_WEAK) {
@@ -2495,8 +2506,8 @@ int gc_mark(void *a)
      * internal cyclic nonweak refs. */
 #ifdef PIKE_DEBUG
     if (!(m->flags & GC_MARKED))
-      gc_fatal(a, 0, "gc_mark() called for thing in zap weak pass "
-	       "that wasn't marked before.\n");
+      gc_fatal_2 (a, type, 0, "gc_mark() called for thing in zap weak pass "
+		  "that wasn't marked before.\n");
 #endif
     if (m->flags & GC_FREE_VISITED) {
       debug_malloc_touch (a);
@@ -2513,8 +2524,8 @@ int gc_mark(void *a)
     debug_malloc_touch (a);
 #ifdef PIKE_DEBUG
     if (m->weak_refs != 0)
-      gc_fatal (a, 0, "weak_refs changed in marker "
-		"already visited by gc_mark().\n");
+      gc_fatal_2 (a, type, 0, "weak_refs changed in marker "
+		  "already visited by gc_mark().\n");
 #endif
     return 0;
   }

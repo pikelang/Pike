@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.225 2009/11/28 13:14:00 mast Exp $
+|| $Id: array.c,v 1.226 2009/11/28 13:36:20 mast Exp $
 */
 
 #include "global.h"
@@ -2689,7 +2689,7 @@ static void gc_check_array(struct array *a)
 
 void gc_mark_array_as_referenced(struct array *a)
 {
-  if(gc_mark(a))
+  if(gc_mark(a, T_ARRAY))
     GC_ENTER (a, T_ARRAY) {
       if (a == gc_mark_array_pos)
 	gc_mark_array_pos = a->next;
