@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.338 2009/11/28 13:36:20 mast Exp $
+|| $Id: gc.c,v 1.339 2009/11/28 13:53:59 mast Exp $
 */
 
 #include "global.h"
@@ -2470,7 +2470,7 @@ void gc_delayed_free(void *a, int type)
   m->flags |= GC_GOT_DEAD_REF;
 }
 
-int gc_mark_func(void *a DO_IF_DEBUG (COMMA int type))
+int real_gc_mark(void *a DO_IF_DEBUG (COMMA int type))
 {
   struct marker *m;
 

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.h,v 1.138 2009/11/28 13:36:20 mast Exp $
+|| $Id: gc.h,v 1.139 2009/11/28 13:53:59 mast Exp $
 */
 
 #ifndef GC_H
@@ -320,7 +320,7 @@ void debug_really_free_gc_frame(struct gc_frame *l);
 int gc_do_weak_free(void *a);
 void gc_delayed_free(void *a, int type);
 void debug_gc_mark_enqueue(queue_call call, void *data);
-int gc_mark_func(void *a DO_IF_DEBUG (COMMA int type));
+int real_gc_mark(void *a DO_IF_DEBUG (COMMA int type));
 void gc_move_marker (void *old_thing, void *new_thing);
 PMOD_EXPORT void gc_cycle_enqueue(gc_cycle_check_cb *checkfn, void *data, int weak);
 void gc_cycle_run_queue(void);
@@ -341,9 +341,9 @@ void cleanup_gc(void);
 #endif
 
 #ifdef PIKE_DEBUG
-#define gc_mark(DATA, TYPE) gc_mark_func (DATA, TYPE)
+#define gc_mark(DATA, TYPE) real_gc_mark (DATA, TYPE)
 #else
-#define gc_mark(DATA, TYPE) gc_mark_func (DATA)
+#define gc_mark(DATA, TYPE) real_gc_mark (DATA)
 #endif
 
 #define gc_check(VP) \
