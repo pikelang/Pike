@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.236 2009/04/10 11:43:57 grubba Exp $
+|| $Id: stralloc.c,v 1.237 2009/11/30 10:08:24 grubba Exp $
 */
 
 #include "global.h"
@@ -2945,13 +2945,17 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 					flags, min_width, precision);
 	  break;
 
-	  /* FIMXE: TODO: Doubles (ie 'a', 'e', 'E', 'g', 'G'). */
-
 	  /* %f used in modules/Image/colors.c. */
+	case 'a':
+	case 'e':
+	case 'E':
 	case 'f':
+	case 'g':
+	case 'G':
 	  {
 	    double val = va_arg(args, double);
 	    size_t bytes;
+	    char nfmt[] = { '%', fmt[-1], 0 };
 
 	    if (PIKE_ISNAN(val)) {
 	      /* NaN */
@@ -2964,23 +2968,20 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 	    } else if (flags & APPEND_SIGNED) {
 	      string_builder_putchar(s, '+');
 	    }
-	    if (val+val == val) {
-	      if (val > 0.0) {
-		/* Infinity */
-		string_builder_strcat(s, "inf");
-	      } else {
-		string_builder_strcat(s, "0.0");
-	      }
+	    if ((val+val == val) && (val > 0.0)) {
+	      /* Infinity */
+	      string_builder_strcat(s, "inf");
 	      break;
 	    }
 	    /* FIXME: Field lengths and precision. */
-	    if ((bytes = SNPRINTF(NULL, 0, "%f", val))) {
+	    if ((bytes = SNPRINTF(NULL, 0, nfmt, val))) {
 	      p_wchar0 *p = string_builder_allocate(s, bytes, 0);
-	      size_t check = SNPRINTF((char*)p, bytes+1, "%f", val);
+	      size_t check = SNPRINTF((char*)p, bytes+1, nfmt, val);
 	      if (check != bytes) {
-		Pike_fatal("string_builder_vsprintf(): snprintf(%f) is not "
-			   "trustworthy: %"PRINTSIZET"u != %"PRINTSIZET"u\n",
-			   val, bytes, check);
+		Pike_fatal("string_builder_vsprintf(): snprintf(\"%s\", %f) "
+			   "is not trustworthy: "
+			   "%"PRINTSIZET"u != %"PRINTSIZET"u\n",
+			   nfmt, val, bytes, check);
 	      }
 	      if (s->s->size_shift) {
 		/* We need to widen the string we just wrote. */
@@ -3002,7 +3003,7 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 
 	default:
 	  Pike_fatal("string_builder_vsprintf(): Invalid formatting method: "
-		     "'%c' 0x%x.\n", fmt[-1], fmt[-1]);
+		     "\"%%%c\" 0x%x.\n", (fmt[-1] & 0xff), fmt[-1]);
 	}
 	break;
       }
@@ -3094,7 +3095,8 @@ PMOD_EXPORT long STRTOL_PCHARP(PCHARP str, PCHARP *ptr, int base)
     {
     case '-':
       neg++;
-    case '+':			/* fall-through */
+      /* FALL_THROUGH */
+    case '+':
       INC_PCHARP(str,1);
       c=EXTRACT_PCHARP(str);
     }
