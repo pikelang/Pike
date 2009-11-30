@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.168 2009/11/28 13:36:19 mast Exp $
+# $Id: Makefile,v 1.169 2009/11/30 13:14:07 mast Exp $
 #
 # Meta Makefile
 #
@@ -15,11 +15,11 @@
 
 # Set to a flag for parallelizing make, e.g. -j2. It's given to make
 # at the level where it's most effective.
-MAKE_PARALLEL=-j`test -f /proc/cpuinfo && grep ^processor /proc/cpuinfo | wc -l || echo 1`
+#MAKE_PARALLEL=-j`test -f /proc/cpuinfo && grep ^processor /proc/cpuinfo | wc -l || echo 1`
 
 # Tip: Remove "-r" from the line below if you don't want to rebuild
 # from scratch every time you upgrade the kernel.
-OS=`uname -s -m|sed \"s/ /-/g\"|tr \"[A-Z]\" \"[a-z]\"|tr \"/()\" \"___\"`
+OS=`uname -s -r -m|sed \"s/ /-/g\"|tr \"[A-Z]\" \"[a-z]\"|tr \"/()\" \"___\"`
 
 VPATH=.
 BUILDDIR=build/$(OS)
