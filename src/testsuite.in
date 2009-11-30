@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.885 2009/11/20 11:14:09 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.886 2009/11/30 14:02:34 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -6853,6 +6853,10 @@ test_true([[Float.MAX_10_EXP >= 37]])
 test_true([[Float.MIN <= 1e-37]])
 test_true([[Float.MAX >= 1e37]])
 test_true([[Float.EPSILON <= 1e-5]])
+test_true([[1 <= 1.0]])
+test_true([[1 >= 1.0]])
+test_true([[1.0 <= 1]])
+test_true([[1.0 >= 1]])
 
 cond_begin([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]])
 

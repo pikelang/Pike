@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.255 2009/11/28 13:36:21 mast Exp $
+|| $Id: svalue.c,v 1.256 2009/11/30 14:02:22 grubba Exp $
 */
 
 #include "global.h"
@@ -1153,8 +1153,8 @@ PMOD_EXPORT int is_lt(const struct svalue *a, const struct svalue *b)
 PMOD_EXPORT int is_le(const struct svalue *a, const struct svalue *b)
 {
   /* Can't optimize this to !is_gt (a, b) since that'd assume total order. */
-  if (((1 << a->type) & (BIT_FUNCTION|BIT_PROGRAM|BIT_TYPE)) &&
-      ((1 << b->type) & (BIT_FUNCTION|BIT_PROGRAM|BIT_TYPE))) {
+  int mask = (1 << a->type)|(1 << b->type);
+  if (!(mask & ~(BIT_FUNCTION|BIT_PROGRAM|BIT_TYPE))) {
     /* NOTE: Special case for types, since is_eq() below only does
      * a pointer comparison.
      */
@@ -1194,6 +1194,25 @@ PMOD_EXPORT int is_le(const struct svalue *a, const struct svalue *b)
     free_type(a_type);
     free_type(b_type);
     return res;
+  } else if (mask == (BIT_INT | BIT_FLOAT)) {
+    /* Special case, since is_eq() won't promote ints to floats... */
+    FLOAT_TYPE aa, bb;
+    if (a->type == PIKE_T_INT) {
+      aa = (FLOAT_TYPE)a->u.integer;
+      bb = b->u.float_number;
+    } else {
+      aa = a->u.float_number;
+      bb = (FLOAT_TYPE)b->u.integer;
+    }
+    if (aa == bb) return 1;
+#ifdef HAVE_ISLESS
+    return isless(aa, bb);
+#else
+    if (PIKE_ISUNORDERED(aa, bb)) {
+      return 0;
+    }
+    return aa < bb;
+#endif
   }
   return is_lt (a, b) || is_eq (a, b);
 }
@@ -1252,6 +1271,8 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
   check_svalue_type (s);
   check_refs(s);
 
+  /* fprintf(stderr, "Describing svalue: %s\n", get_name_of_type(s->type)); */
+    
   indent+=2;
   switch(s->type)
   {
