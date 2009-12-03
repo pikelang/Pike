@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.115 2009/12/03 13:52:09 mast Exp $
+/* $Id: sslfile.pike,v 1.116 2009/12/03 14:33:02 mast Exp $
  */
 
 #if constant(SSL.Cipher.CipherAlgorithm)
@@ -827,7 +827,11 @@ int write (string|array(string) data, mixed... args)
 	     (!nonblocking_mode || written < 65536)) {
 	int size = sizeof (data[idx]) - pos;
 	if (size > SSL.Constants.PACKET_MAX_SIZE) {
-	  int n = conn->send_streaming_data (data[idx][pos..]);
+	  // send_streaming_data will pick the first PACKET_MAX_SIZE
+	  // bytes of the string, so do that right away in the same
+	  // range operation.
+	  int n = conn->send_streaming_data (
+	    data[idx][pos..pos + SSL.Constants.PACKET_MAX_SIZE - 1]);
 	  SSL3_DEBUG_MSG ("SSL.sslfile->write: Queued data[%d][%d..%d]\n",
 			  idx, pos, pos + n - 1);
 	  written += n;
@@ -864,7 +868,8 @@ int write (string|array(string) data, mixed... args)
 	     // Limit the amount written in a single call, for the
 	     // same reason as above.
 	     (!nonblocking_mode || written < 65536)) {
-	int n = conn->send_streaming_data (data[written..]);
+	int n = conn->send_streaming_data (
+	  data[written..written + SSL.Constants.PACKET_MAX_SIZE - 1]);
 	SSL3_DEBUG_MSG ("SSL.sslfile->write: Queued data[%d..%d]\n",
 			written, written + n - 1);
 	written += n;
