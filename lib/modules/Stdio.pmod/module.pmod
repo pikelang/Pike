@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.254 2009/03/19 13:43:54 grubba Exp $
+// $Id: module.pmod,v 1.255 2009/12/03 17:06:47 mast Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -30,6 +30,10 @@ inherit files;
 #endif
 
 protected constant LineIterator = __builtin.file_line_iterator;
+
+final constant DATA_CHUNK_SIZE = 64 * 1024;
+//! Size used in various places to divide incoming or outgoing data
+//! into chunks.
 
 //! The Stdio.Stream API.
 //!
@@ -2805,6 +2809,11 @@ protected class nb_sendfile
 
   // NOTE: Always modified from backend callbacks, so no need
   // for locking.
+  //
+  // The strings in to_write are always split up into DATA_CHUNK_SIZE
+  // pieces to limit the size of the strings passed to to->write().
+  // That way repeated operations like str=str[x..] are avoided on
+  // arbitrarily large strings.
   protected array(string) to_write = ({});
   protected int sent;
 
@@ -2869,7 +2878,7 @@ protected class nb_sendfile
     SF_WERR("Blocking read.");
     if( sizeof( to_write ) > 2)
       return;
-    string more_data = from->read(65536, 1);
+    string more_data = from->read(DATA_CHUNK_SIZE, 1);
     if (!more_data) {
       SF_WERR(sprintf("Blocking read failed with errno: %d\n", from->errno()));
       more_data = "";
@@ -2894,15 +2903,15 @@ protected class nb_sendfile
     if (len > 0) {
       if (sizeof(data) < len) {
 	len -= sizeof(data);
-	to_write += ({ data });
+	to_write += data / (float) DATA_CHUNK_SIZE;
       } else {
-	to_write += ({ data[..len-1] });
+	to_write += data[..len-1] / (float) DATA_CHUNK_SIZE;
 	from->set_blocking();
 	reader_done();
 	return;
       }
     } else {
-      to_write += ({ data });
+      to_write += data / (float) DATA_CHUNK_SIZE;
     }
     if (blocking_to) {
       while(sizeof(to_write)) {
@@ -3102,10 +3111,23 @@ protected class nb_sendfile
       return;
     }
 
-    to_write = (hd || ({})) - ({ "" });
+    if (hd)
+      to_write = map (hd, lambda (string s) {
+			    return s / (float) DATA_CHUNK_SIZE;
+			  }) * ({}) - ({""});
+    else
+      to_write = ({});
+
     from = f;
     len = l;
-    trailers = (tr || ({})) - ({ "" });
+
+    if (tr)
+      trailers = map (tr, lambda (string s) {
+			    return s / (float) DATA_CHUNK_SIZE;
+			  }) * ({}) - ({""});
+    else
+      trailers = ({});
+
     to = t;
     callback = cb;
     args = a;
