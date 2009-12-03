@@ -462,9 +462,10 @@ class File
   //! the input.
   {
     if( trim )
-      return String.SplitIterator( "",(<'\n','\r'>),1,read_function(8192));
+      return String.SplitIterator( "",(<'\n','\r'>),1,
+				   read_function(DATA_CHUNK_SIZE));
     // This one is about twice as fast, but it's way less flexible.
-    return LineIterator( read_function(8192) );
+    return LineIterator( read_function(DATA_CHUNK_SIZE) );
   }
 
 
@@ -923,7 +924,7 @@ class File
 #ifdef STDIO_CALLBACK_TEST_MODE
       s = ::read (1, 1);
 #else
-      s = ::read(8192,1);
+      s = ::read(DATA_CHUNK_SIZE,1);
 #endif
       if (s) {
 	if(sizeof(s))
@@ -1027,7 +1028,7 @@ class File
 #ifdef STDIO_CALLBACK_TEST_MODE
       s = ::read_oob (1, 1);
 #else
-      s = ::read_oob(8192,1);
+      s = ::read_oob(DATA_CHUNK_SIZE,1);
 #endif
     }
 
@@ -1622,7 +1623,6 @@ class Port
 //!   The output part of @[Stdio.FILE] is currently not buffered.
 class FILE
 {
-#define BUFSIZE 8192
   inherit File : file;
 
 #ifdef STDIO_DIRECT_FD
@@ -1652,7 +1652,7 @@ class FILE
 
   inline private int low_get_data()
   {
-    string s = file::read(BUFSIZE,1);
+    string s = file::read(DATA_CHUNK_SIZE,1);
     if(s && strlen(s)) {
       if( input_conversion ) {
 	s = input_conversion( s );
@@ -1994,9 +1994,9 @@ class FILE
   protected object _get_iterator()
   {
     if( input_conversion )
-      return String.SplitIterator( "",'\n',1,read_function(8192));
+      return String.SplitIterator( "",'\n',1,read_function(DATA_CHUNK_SIZE));
     // This one is about twice as fast, but it's way less flexible.
-    return __builtin.file_line_iterator( read_function(8192) );
+    return __builtin.file_line_iterator( read_function(DATA_CHUNK_SIZE) );
   }
 
   object line_iterator( int|void trim )
@@ -2016,7 +2016,8 @@ class FILE
   //!   @[_get_iterator()]
   {
     if( trim )
-      return String.SplitIterator( "",(<'\n','\r'>),1,read_function(8192));
+      return String.SplitIterator( "",(<'\n','\r'>),1,
+				   read_function(DATA_CHUNK_SIZE));
     return _get_iterator();
   }
 
@@ -2032,7 +2033,7 @@ class FILE
     }
 
     /* Optimization - Hubbe */
-    if(!sizeof(b) && bytes > BUFSIZE) {
+    if(!sizeof(b) && bytes > DATA_CHUNK_SIZE) {
       if (input_conversion) {
 	// NOTE: This may depending on the charset return less
 	//       characters than requested.
@@ -2628,15 +2629,13 @@ int convert_modestring2int(string mode_string)
   return result;
 }
 
-#define BLOCK 65536
-
 #if constant(System.cp)
 constant cp=System.cp;
 #else
 int cp(string from, string to)
 //! Copies the file @[from] to the new position @[to]. If there is
 //! no system function for cp, a new file will be created and the
-//! old one copied manually in chunks of 65536 bytes.
+//! old one copied manually in chunks of @[DATA_CHUNK_SIZE] bytes.
 //! This function can also copy directories recursively.
 //! @returns
 //!  0 on error, 1 on success
@@ -2675,10 +2674,10 @@ int cp(string from, string to)
     function(string:int) w=t->write;
     do
     {
-      data=r(BLOCK);
+      data=r(DATA_CHUNK_SIZE);
       if(!data) return 0;
       if(w(data)!=sizeof(data)) return 0;
-    }while(sizeof(data) == BLOCK);
+    }while(sizeof(data) == DATA_CHUNK_SIZE);
   
     f->close();
     t->close();
@@ -2714,11 +2713,11 @@ int file_equal (string file_1, string file_2)
   function(int,int|void:string) f1_read = f1->read, f2_read = f2->read;
   string d1, d2;
   do {
-    d1 = f1_read (BLOCK);
+    d1 = f1_read (DATA_CHUNK_SIZE);
     if (!d1) return 0;
-    d2 = f2_read (BLOCK);
+    d2 = f2_read (DATA_CHUNK_SIZE);
     if (d1 != d2) return 0;
-  } while (sizeof (d1) == BLOCK);
+  } while (sizeof (d1) == DATA_CHUNK_SIZE);
   f1->close();
   f2->close();
   return 1;
