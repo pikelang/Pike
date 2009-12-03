@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.114 2009/11/20 15:30:15 mast Exp $
+/* $Id: sslfile.pike,v 1.115 2009/12/03 13:52:09 mast Exp $
  */
 
 #if constant(SSL.Cipher.CipherAlgorithm)
@@ -820,7 +820,11 @@ int write (string|array(string) data, mixed... args)
     if (arrayp (data)) {
       int idx = 0, pos = 0;
 
-      while (idx < sizeof (data) && !sizeof (write_buffer)) {
+      while (idx < sizeof (data) && !sizeof (write_buffer) &&
+	     // Always stop after 64k data in nonblocking mode, so
+	     // that we don't loop here arbitrarily long if the write
+	     // is very large and the bottleneck is in the encryption.
+	     (!nonblocking_mode || written < 65536)) {
 	int size = sizeof (data[idx]) - pos;
 	if (size > SSL.Constants.PACKET_MAX_SIZE) {
 	  int n = conn->send_streaming_data (data[idx][pos..]);
@@ -856,7 +860,10 @@ int write (string|array(string) data, mixed... args)
     }
 
     else			// data is a string.
-      while (written < sizeof (data) && !sizeof (write_buffer)) {
+      while (written < sizeof (data) && !sizeof (write_buffer) &&
+	     // Limit the amount written in a single call, for the
+	     // same reason as above.
+	     (!nonblocking_mode || written < 65536)) {
 	int n = conn->send_streaming_data (data[written..]);
 	SSL3_DEBUG_MSG ("SSL.sslfile->write: Queued data[%d..%d]\n",
 			written, written + n - 1);
