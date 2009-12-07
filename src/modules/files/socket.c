@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: socket.c,v 1.107 2009/08/05 13:59:03 grubba Exp $
+|| $Id: socket.c,v 1.108 2009/12/07 13:44:12 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -345,17 +345,17 @@ static void port_bind(INT32 args)
  *! @seealso
  *!   @[accept], @[set_id]
  */
-static void unix_bind(INT32 args)
+static void bind_unix(INT32 args)
 {
   struct port *p = THIS;
   struct sockaddr_un *addr;
   struct pike_string *path;
-  struct svalue *cb;
+  struct svalue *cb = NULL;
   int addr_len,fd,tmp;
 
   do_close(p);
 
-  get_all_args("Port->bind_unix", args, "%n%*", &path, &cb);
+  get_all_args("Port->bind_unix", args, "%n.%*", &path, &cb);
 
   addr_len = sizeof(struct sockaddr_un) + path->len;
   addr = xalloc(addr_len);
@@ -381,17 +381,10 @@ static void unix_bind(INT32 args)
 #ifndef __NT__
   {
     int o=1;
-    if(fd_setsockopt(fd, SOL_SOCKET,
-		     SO_REUSEADDR, (char *)&o, sizeof(int)) < 0)
-    {
-      p->my_errno=errno;
-      free(addr);
-      while (fd_close(fd) && errno == EINTR) {}
-      errno = p->my_errno;
-      pop_n_elems(args);
-      push_int(0);
-      return;
-    }
+    do {
+      tmp = fd_setsockopt(fd, SOL_SOCKET, SO_REUSEADDR,
+			  (char *)&o, sizeof(int));
+    } while ((tmp < 0) && (errno = EINTR));
   }
 #endif
 
@@ -399,7 +392,7 @@ static void unix_bind(INT32 args)
 
   THREADS_ALLOW_UID();
   do {
-    tmp = fd_bind(fd, (struct sockaddr *)&addr, addr_len);
+    tmp = fd_bind(fd, (struct sockaddr *)addr, addr_len);
   } while ((tmp < 0) && (errno == EINTR));
   if (tmp >= 0) {
     do {
@@ -414,7 +407,7 @@ static void unix_bind(INT32 args)
   {
     if (fd >= 0)
       while (fd_close(fd) && errno == EINTR) {}
-    Pike_error("Object destructed in Stdio.Port->unix_bind()\n");
+    Pike_error("Object destructed in Stdio.Port->bind_unix()\n");
   }
 
   if(tmp < 0)
@@ -727,7 +720,7 @@ void port_setup_program(void)
 	       tFunc(tOr(tInt,tStr) tOr(tVoid,tMix) tOr(tVoid,tStr),tInt), 0);
 #ifdef HAVE_SYS_UN_H
   /* function(int|string,void|mixed,void|string:int) */
-  ADD_FUNCTION("bind_unix", unix_bind,
+  ADD_FUNCTION("bind_unix", bind_unix,
                tFunc(tStr tOr(tVoid,tMix),tInt), 0);
 #endif /* HAVE_SYS_UN_H */
   ADD_FUNCTION("close",port_close,tFunc(tNone,tVoid),0);
