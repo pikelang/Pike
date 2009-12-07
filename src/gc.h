@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.h,v 1.97 2003/10/08 20:45:12 mast Exp $
+|| $Id: gc.h,v 1.98 2009/12/07 12:32:05 mast Exp $
 */
 
 #ifndef GC_H
@@ -50,7 +50,7 @@ extern void *gc_svalue_location;
 #else
 #define GC_ALLOC(OBJ)  do{						\
   LOW_GC_ALLOC(OBJ);							\
-  if(num_allocs == alloc_threshold)		\
+  if(num_allocs >= alloc_threshold)					\
     ADD_GC_CALLBACK();							\
 } while(0)
 #endif
