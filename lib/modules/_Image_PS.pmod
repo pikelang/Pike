@@ -81,7 +81,7 @@ object decode( string data, mapping|void options )
 	if ((sscanf(data,
 		    "%*s%%ImageData:%*[ ]%d%*[ ]%d%*[ ]%d%*[ ]%d%"
 		    "*[ ]%d%*[ ]%d%*[ ]%d%*[ ]\"%s\"",
-		    width, height, bits, ncols, 
+		    width, height, bits, ncols,
 		    nbws, width2, encoding, init_tag) > 7) &&
 	    (width == width2) && (width > 0) && (height > 0) && (bits == 8) &&
 	    (< 1, 2 >)[encoding]) {
@@ -147,10 +147,10 @@ object decode( string data, mapping|void options )
 
   if(options->eps_crop)
     command += ({"-dEPSCrop"});
-  
+
   if(options->cie_color)
     command += ({"-dUseCIEColor"});
-  
+
   command += ({
     "-sOutputFile=-",
     options->file || "-",
@@ -283,3 +283,68 @@ string encode(  object img, mapping|void options )
 
 //! Same as encode. Present for API reasons.
 function _encode = encode;
+
+//! Decodes the header of the postscript @[data] into a mapping.
+//!
+//! @mapping
+//!   @member int "xsize"
+//!   @member int "ysize"
+//!     Size of image
+//!   @member string "type"
+//!     File type information as MIME type. Always "application/postscript".
+//!   @member string "color_space"
+//!     Color space of image. "GRAYSCALE", "LAB", RGB", "CMYK" or "UNKNOWN"
+//!  @endmapping
+//!
+public mapping decode_header(string data) {
+  if(has_prefix(data, "\xc5\xd0\xd3\xc6")) {
+    // DOS EPS Binary Header.
+    int ps_start, ps_len, meta_start, meta_len, tiff_start, tiff_len, sum;
+    sscanf(data, "%*4c%-4c%-4c%-4c%-4c%-4c%-4c%-2c",
+	   ps_start, ps_len, meta_start, meta_len,
+	   tiff_start, tiff_len, sum);
+#if constant(Image.TIFF.decode_header)
+    if (tiff_start && tiff_len) {
+      return Image.TIFF.decode_header(data[tiff_start..tiff_start + tiff_len-1]);
+    }
+#endif
+    data = data[ps_start..ps_start+ps_len-1];
+  }
+
+  if (has_prefix(data, "%!PS-Adobe-3.0 EPSF-3.0")) {
+    int width, height, bits, ncols;
+    int nbws, width2, encoding;
+    string init_tag;
+    if ((sscanf(data,
+		  "%*s%%ImageData:%*[ ]%d%*[ ]%d%*[ ]%d%*[ ]%d%"
+		  "*[ ]%d%*[ ]%d%*[ ]%d%*[ ]\"%s\"",
+		  width, height, bits, ncols,
+		  nbws, width2, encoding, init_tag) > 7) &&
+	  (width == width2) && (width > 0) && (height > 0) && (bits == 8) &&
+	  (< 1, 2 >)[encoding]) {
+	    string color_space;
+	    switch (ncols) {
+	      case 1:
+		color_space = "GRAYSCALE";
+		break;
+	      case 2:
+		color_space = "LAB";
+		break;
+	      case 3:
+		color_space = "RGB";
+		break;
+	      case 4:
+		color_space = "CMYK";
+	      break;
+	      default:
+		color_space = "UNKNOWN";
+		break;
+	    }
+	return ([ "type": "application/postscript",
+		  "xsize": width,
+		  "ysize": height,
+		  "color_space": color_space ]);
+      }
+    }
+  return 0;
+}

@@ -1,0 +1,279 @@
+#if constant(@module@.decode)
+inherit @module@;
+#endif
+
+private class Type {
+}
+
+private class Byte  {
+  inherit Type;
+  int type = 1;
+  int size = 1;
+  string le = "%1-d";
+  string be = "%1d";
+
+  int read(Stdio.File f, int(0..1) little_endian) {
+    sscanf(f->read(size), little_endian ? le: be , int value);
+    return value;
+  }
+}
+
+private class Ascii  {
+  inherit Type;
+  int type = 2;
+  int size = 1;
+  string le = "%1-c";
+  string be = "%1c";
+
+  int read(Stdio.File f, int(0..1) little_endian) {
+    sscanf(f->read(size), little_endian ? le: be , int value);
+    return value;
+  }
+}
+
+private class Short  {
+  inherit Type;
+  int type = 3;
+  int size = 2;
+  string le = "%2-c";
+  string be = "%2c";
+
+  int read(Stdio.File f, int(0..1) little_endian) {
+    sscanf(f->read(size), little_endian ? le: be , int value);
+    return value;
+  }
+}
+
+private class Long  {
+  inherit Type;
+  int type = 4;
+  int size = 4;
+  string le = "%4-c";
+  string be = "%4c";
+
+  int read(Stdio.File f, int(0..1) little_endian) {
+    sscanf(f->read(size), little_endian ? le: be , int value);
+    return value;
+  }
+}
+
+private Byte BYTE = Byte();
+private Ascii ASCII = Ascii();
+private Short SHORT = Short();
+private Long LONG = Long();
+
+
+
+// @param tiff_tags
+//   Defines TIFF tags to parse.
+//
+// @mapping
+//   @member int "tag"
+//     integer value for the TIFF tags to parse
+//       @mapping
+//         @member string "name"
+//           Name of the tag. Currently only used to aid the programmer
+//           when reading the rules.
+//         @member TYPE|array(TYPE) "type"
+//           Defines what types a tag can have.
+//         @member string|array(string) "prop"
+//           The property name that the value of tag will be displayed as in the
+//           resulting mapping.
+//         @member function "fn"
+//           Optional function to do processing on the tag value.
+//           Can return a single value or a mapping. If mapping, that mapping
+//           is added to the resulting mapping.
+//       @endmapping
+//  @endmapping
+//
+private mapping tiff_tags = ([
+  254: ([ "name": "NewSubfileType",
+          "type": LONG,
+          "prop": "NewSubfileType" ]),
+  256: ([ "name": "ImageLength",
+          "type": ({ SHORT, LONG}),
+          "prop": ({ "ImageLength", "ysize"}) ]),
+  257: ([ "name": "ImageWidth",
+          "type": ({ SHORT, LONG}),
+          "prop": ({ "ImageWidth", "xsize" }) ]),
+  258: ([ "name": "BitsPerSample",
+          "type": SHORT,
+          "prop": "BitsPerSample",
+          "fn":   lambda(mixed value, int size, int count) {
+                    array res = ({});
+                    value = (value/"\0");
+                    for (int i = 0; i < count; i++) {
+                      sscanf(value[i],"%c", int s);
+                      res += ({ (string) s });
+                    }
+                    return res * ",";
+                    } ]),
+  259: ([ "name":  "Compression",
+          "type":  SHORT,
+          "prop":  "Compression" ]),
+  262: ([ "name":  "PhotometricInterpretation",
+          "type":   SHORT,
+          "prop":  "PhotometricInterpretation",
+          "fn":     lambda(mixed value, int size, int count) {
+                      mapping res = ([ "PhotometricInterpretation": value ]);
+                      switch (value) {
+                        case 2:
+                          return res + ([ "color_space": "RGB" ]);
+                        case 5:
+                          return res + ([ "color_space": "CMYK" ]);
+                        default:
+                          return res;
+                      }
+                    } ]),
+  271: ([ "name": "Make",
+          "type": ASCII,
+          "prop": "Make" ]),
+  272: ([ "name": "Model",
+          "type": ASCII,
+          "prop": "Model" ]),
+  277: ([ "name": "SamplesPerPixel",
+          "type": SHORT,
+          "prop": "SamplesPerPixel" ]),
+  296: ([ "name": "ResolutionUnit",
+          "type": SHORT,
+          "prop": "ResolutionUnit" ]),
+  305: ([ "name": "Software",
+          "type": ASCII,
+          "prop": "Software" ]),
+  306: ([ "name": "DateTime",
+          "type": ASCII,
+          "prop": "DateTime" ]),
+  317: ([ "name": "Predictor",
+          "type": SHORT,
+          "prop": "Predictor" ]),
+  700: ([ "name": "XMP",
+          "type": BYTE,
+          "prop": "XMP" ])
+]);
+
+
+private Type get_type(array(Type)|Type types, int type) {
+  if (!arrayp(types)) {
+    if (types->type == type) {
+      return types;
+    }
+  }
+  else {
+    for (int i = 0; i < sizeof(types); i++) {
+      if (types[i]->type == type) {
+        return types[i];
+      }
+    }
+  }
+  return 0;
+}
+
+private mapping extract_IFD(Stdio.File f, int(0..1) little_endian, mapping tags) {
+  int buf;
+  constant IFD_SIZE = 12;
+  mapping res = ([ ]);
+
+  int entries = SHORT->read(f, little_endian);
+
+  for(int i = 0; i < entries; i++) {
+    int tag = SHORT->read(f, little_endian);
+    if (tags[tag]) {
+      int type = SHORT->read(f, little_endian);
+      Type t = get_type(tags[tag]->type, type);
+      if (t) {
+        int count = LONG->read(f, little_endian);
+        buf = LONG->read(f, little_endian);
+        int total = count * t->size;
+        if (total > 4) {
+          int pos = f->tell();
+          f->seek(buf);
+          // Exclude the trailing "\0"
+          string s = "%" + (little_endian ? "-" : "") +  (total - 1)  + "s";
+          sscanf(f->read(total), s, buf);
+          f->seek(pos);
+        }
+        mixed value = buf;
+        if (tags[tag]->fn) {
+          value = tags[tag]->fn(value, t->size, count);
+          if (mappingp(value)) {
+            res += value;
+            continue;
+          }
+        }
+        if (arrayp(tags[tag]->prop)) {
+          foreach(tags[tag]->prop, string prop) {
+            res[prop] = value;
+          }
+        }
+        else {
+          res[tags[tag]->prop] = value;
+        }
+      }
+    }
+    else {
+      f->seek(f->tell() + (IFD_SIZE - SHORT->size));
+    }
+  }
+  return res;
+}
+
+
+//! Decodes the header of the TIFF @[data] into a mapping.
+//!
+//! @mapping
+//!   @member int "xsize"
+//!   @member int "ysize"
+//!   @member int "ImageWidth"
+//!   @member int "ImageLength"
+//!     Size of image
+//!   @member string "type"
+//!     File type information as MIME type. Always "image/tiff".
+//!   @member string "color_space"
+//!     Color space of TIFF image. "RGB" or "CMYK".
+//!   @member string "byte_order"
+//!     @expr{II@} for Little Endian and @expr{MM@} for Big Endian.
+//!   @member int "NewSubfileType"
+//!   @member string "BitsPerSample"
+//!   @member int "Compression"
+//!   @member int "PhotometricInterpretation"
+//!   @member string "Make"
+//!   @member string "Model"
+//!   @member int "SamplesPerPixel"
+//!   @member int "ResolutionUnit"
+//!   @member string "Software"
+//!   @member string "DateTime"
+//!   @member int "Predictor"
+//!   @member string "XMP"
+//! @endmapping
+//!
+public mapping decode_header(string data) {
+  Stdio.FakeFile f = Stdio.FakeFile(data);
+  string byte_order;
+  int(0..1) little_endian;
+
+  byte_order =  f->read(2);
+  if(byte_order == "II") {
+    // Byte order for Little endian
+    little_endian = 1;
+  }
+  else if(byte_order == "MM") {
+    // Byte order for Big endian
+    little_endian = 0;
+  }
+  else {
+    // Not a TIFF
+    return 0;
+  }
+
+  if(SHORT->read(f, little_endian) != 42) {
+   // Wrong magic number
+   return 0;
+  }
+  werror("foo!\n");
+
+  // offset to first IFD
+  int pos = LONG->read(f, little_endian);
+  f->seek(pos);
+  return (([ "type": "image/tiff",
+             "byte_order": byte_order ]) + extract_IFD(f, little_endian, tiff_tags));
+}
