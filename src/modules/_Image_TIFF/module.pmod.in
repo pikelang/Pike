@@ -269,7 +269,6 @@ public mapping decode_header(string data) {
    // Wrong magic number
    return 0;
   }
-  werror("foo!\n");
 
   // offset to first IFD
   int pos = LONG->read(f, little_endian);
