@@ -1,3 +1,6 @@
+
+//! @appears predef::Image.TIFF
+
 #if constant(@module@.decode)
 inherit @module@;
 #endif
@@ -64,12 +67,13 @@ private Long LONG = Long();
 
 
 
-// @param tiff_tags
+// @decl mapping(int:mapping(string:mixed)) tiff_tags
 //   Defines TIFF tags to parse.
 //
 // @mapping
-//   @member int "tag"
-//     integer value for the TIFF tags to parse
+//   Lookup from integer TIFF tag to parse information:
+//   @member mapping(string:string|TYPE|array(TYPE))
+//     For each supported TIFF tag the following information is kept:
 //       @mapping
 //         @member string "name"
 //           Name of the tag. Currently only used to aid the programmer
@@ -77,8 +81,8 @@ private Long LONG = Long();
 //         @member TYPE|array(TYPE) "type"
 //           Defines what types a tag can have.
 //         @member string|array(string) "prop"
-//           The property name that the value of tag will be displayed as in the
-//           resulting mapping.
+//           The property name that the value of tag will be displayed
+//           as in the resulting mapping.
 //         @member function "fn"
 //           Optional function to do processing on the tag value.
 //           Can return a single value or a mapping. If mapping, that mapping
@@ -86,7 +90,7 @@ private Long LONG = Long();
 //       @endmapping
 //  @endmapping
 //
-private mapping tiff_tags = ([
+private mapping(int:mapping(string:mixed)) tiff_tags = ([
   254: ([ "name": "NewSubfileType",
           "type": LONG,
           "prop": "NewSubfileType" ]),
@@ -225,13 +229,13 @@ private mapping extract_IFD(Stdio.File f, int(0..1) little_endian, mapping tags)
 //!   @member int "ysize"
 //!   @member int "ImageWidth"
 //!   @member int "ImageLength"
-//!     Size of image
+//!     Size of image in pixels.
 //!   @member string "type"
-//!     File type information as MIME type. Always "image/tiff".
+//!     File type information as MIME type. Always @expr{"image/tiff"@}.
 //!   @member string "color_space"
-//!     Color space of TIFF image. "RGB" or "CMYK".
+//!     Color space of TIFF image. Either @expr{"RGB"@} or @expr{"CMYK"@}.
 //!   @member string "byte_order"
-//!     @expr{II@} for Little Endian and @expr{MM@} for Big Endian.
+//!     Either @expr{"II"@} for Little Endian or @expr{"MM"@} for Big Endian.
 //!   @member int "NewSubfileType"
 //!   @member string "BitsPerSample"
 //!   @member int "Compression"
@@ -274,5 +278,6 @@ public mapping decode_header(string data) {
   int pos = LONG->read(f, little_endian);
   f->seek(pos);
   return (([ "type": "image/tiff",
-             "byte_order": byte_order ]) + extract_IFD(f, little_endian, tiff_tags));
+             "byte_order": byte_order ]) +
+	  extract_IFD(f, little_endian, tiff_tags));
 }
