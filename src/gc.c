@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.339 2009/11/28 13:53:59 mast Exp $
+|| $Id: gc.c,v 1.340 2009/12/13 23:22:34 mast Exp $
 */
 
 #include "global.h"
@@ -1232,31 +1232,35 @@ again:
 	    for (var_idx = 0; var_idx < p2->num_variable_index; var_idx++) {
 	      struct identifier *id =
 		p2->identifiers + p2->variable_index[var_idx];
-	      void *ptr;
+	      if (id->run_time_type != PIKE_T_FREE &&
+		  id->run_time_type != PIKE_T_GET_SET) {
+		void *ptr;
 
-	      fprintf (stderr, "%*s**%*srtt: %-8s  name: ",
-		       indent, "", inh->inherit_level + 1, "",
-		       get_name_of_type (id->run_time_type));
+		fprintf (stderr, "%*s**%*srtt: %-8s  name: ",
+			 indent, "", inh->inherit_level + 1, "",
+			 get_name_of_type (id->run_time_type));
 
-	      if (id->name->size_shift)
-		safe_print_short_svalue (stderr, (union anything *) &id->name,
-					 T_STRING);
-	      else
-		fprintf (stderr, "%-20s", id->name->str);
+		if (id->name->size_shift)
+		  safe_print_short_svalue (stderr, (union anything *) &id->name,
+					   T_STRING);
+		else
+		  fprintf (stderr, "%-20s", id->name->str);
 
-	      fprintf (stderr, "  off: %4"PRINTPTRDIFFT"d  value: ",
-		       inh->storage_offset + id->func.offset);
+		fprintf (stderr, "  off: %4"PRINTPTRDIFFT"d  value: ",
+			 inh->storage_offset + id->func.offset);
 
-	      ptr = PIKE_OBJ_STORAGE ((struct object *) a) +
-		inh->storage_offset + id->func.offset;
-	      if (id->run_time_type == T_MIXED)
-		safe_print_svalue_compact (stderr, (struct svalue *) ptr);
-	      else
-		safe_print_short_svalue_compact (stderr, (union anything *) ptr,
-						 id->run_time_type);
+		ptr = PIKE_OBJ_STORAGE ((struct object *) a) +
+		  inh->storage_offset + id->func.offset;
+		if (id->run_time_type == T_MIXED)
+		  safe_print_svalue_compact (stderr, (struct svalue *) ptr);
+		else
+		  safe_print_short_svalue_compact (stderr,
+						   (union anything *) ptr,
+						   id->run_time_type);
 
-	      fputc ('\n', stderr);
-	      var_count++;
+		fputc ('\n', stderr);
+		var_count++;
+	      }
 	    }
 	  }
 
@@ -1408,9 +1412,27 @@ again:
 		    id->func.ext_ref.depth, id->func.ext_ref.id);
 	  } else if (id->identifier_flags & IDENTIFIER_C_FUNCTION)
 	    fprintf (stderr, "  addr: %p", id->func.c_fun);
-	  else if (IDENTIFIER_IS_VARIABLE (id->identifier_flags))
-	    fprintf (stderr, "  rtt: %s  off: %"PRINTPTRDIFFT"d",
-		     get_name_of_type (id->run_time_type), id->func.offset);
+	  else if (IDENTIFIER_IS_VARIABLE (id->identifier_flags)) {
+	    if (id->run_time_type == PIKE_T_GET_SET) {
+	      fprintf (stderr, "  ");
+	      if (id->func.gs_info.getter >= 0) {
+		fprintf (stderr, "getter: %d(%d)",
+			 id->func.gs_info.getter,
+			 id->func.gs_info.getter + id_inh->identifier_level);
+		if (id->func.gs_info.setter >= 0)
+		  fprintf (stderr, ", ");
+	      }
+	      if (id->func.gs_info.setter >= 0)
+		fprintf (stderr, "setter: %d(%d)",
+			 id->func.gs_info.setter,
+			 id->func.gs_info.setter + id_inh->identifier_level);
+	    }
+	    else if (id->run_time_type == PIKE_T_FREE)
+	      fprintf (stderr, "  extern");
+	    else
+	      fprintf (stderr, "  rtt: %s  off: %"PRINTPTRDIFFT"d",
+		       get_name_of_type (id->run_time_type), id->func.offset);
+	  }
 	  else if (IDENTIFIER_IS_PIKE_FUNCTION (id->identifier_flags))
 	    fprintf (stderr, "  pc: %"PRINTPTRDIFFT"d", id->func.offset);
 	  else if (IDENTIFIER_IS_CONSTANT (id->identifier_flags)) {
