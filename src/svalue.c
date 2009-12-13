@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.257 2009/12/13 23:24:15 mast Exp $
+|| $Id: svalue.c,v 1.258 2009/12/13 23:30:07 mast Exp $
 */
 
 #include "global.h"
@@ -1871,7 +1871,7 @@ PMOD_EXPORT void print_short_svalue_compact (FILE *out, const union anything *a,
   else {
     struct svalue sval;
     sval.type = type;
-    sval.subtype = 0;		/* Just in case type == T_INT. */
+    sval.subtype = 0;
     sval.u = *a;
     print_svalue_compact (out, &sval);
   }
