@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.118 2009/09/08 08:15:36 mast Exp $
+// $Id: client.pike,v 1.119 2009/12/14 12:28:24 mast Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -324,7 +324,8 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
 
       foreach (ent; string attr; ResultAttributeValue vals) {
 	if (function(string:string) decoder =
-	    get_attr_decoder (attr, DO_IF_DEBUG (dn == ""))) {
+	    get_attr_decoder (attr, DO_IF_DEBUG (stringp (dn) ?
+						 dn == "" : dn[0] == ""))) {
 	  if (stringp (vals)) {
 	    DECODE_VALUE (attr, vals, decoder);
 	    ent[attr] = vals;
