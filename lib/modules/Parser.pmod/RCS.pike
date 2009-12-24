@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 inherit Parser._RCS;
 
-// $Id: RCS.pike,v 1.39 2008/06/28 16:36:55 nilsson Exp $
+// $Id: RCS.pike,v 1.40 2009/12/24 13:02:58 grubba Exp $
 
 //! A RCS file parser that eats a RCS *,v file and presents nice pike
 //! data structures of its contents.
@@ -12,42 +12,50 @@ inherit Parser._RCS;
 #define DEBUG(X, Y ...)
 #endif
 
-//! Version number of the head version of the file
+//! Version number of the head version of the file.
 string head;
 
-//! The default branch (or revision), if present, @expr{0@} otherwise
+//! The default branch (or revision), if present, @expr{0@} otherwise.
 string|int(0..0) branch;
 
-//! The usernames listed in the ACCESS section of the RCS file
+//! The usernames listed in the ACCESS section of the RCS file.
 array(string) access;
 
-//! The RCS file comment if present, @expr{0@} otherwise
+//! The RCS file comment if present, @expr{0@} otherwise.
 string|int(0..0) comment;
 
 //! The keyword expansion options (as named by RCS) if present,
-//! @expr{0@} otherwise
+//! @expr{0@} otherwise.
 string expand;
 
-//! The RCS file description
+//! The RCS file description.
 string description;
 
 //! Maps from username to revision for users that have acquired locks
-//! on this file
+//! on this file.
 mapping(string:string) locks;	 // id:num
 
-//! 1 if strict locking is set, 0 otherwise
+//! @expr{1@} if strict locking is set, @expr{0@} otherwise.
 int(0..1) strict_locks;
 
-//! Maps tag names (indices) to tagged revision numbers (values)
+//! Maps tag names (indices) to tagged revision numbers (values).
+//!
+//! @note
+//!   This mapping typically contains raw revision numbers for branches
+//!   (ie @expr{"1.1.0.2"@} and not @expr{"1.1.2"@}).
 mapping(string:string) tags;
 
-//! Maps branch numbers (indices) to branch names (values)
+//! Maps branch numbers (indices) to branch names (values).
+//!
+//! @note
+//!   The indices are short branch revision numbers (ie @expr{"1.1.2"@}
+//!   and not @expr{"1.1.0.2"@}).
 mapping(string:string) branches;
 
-string _sprintf(int type)
+protected string _sprintf(int type)
 {
-  return type=='O' && sprintf("%O(/* %d revisions */)", this_program,
-			      revisions && sizeof(revisions));
+  return type=='O' && sprintf("%O(/* %O, %d revisions */)", this_program,
+			      rcs_file_name, revisions && sizeof(revisions));
 }
 
 //! Data for all revisions of the file. The indices of the mapping are
@@ -58,7 +66,7 @@ mapping(string:Revision) revisions;
 //! Data for all revisions on the trunk, sorted in the same order as the
 //! RCS file stored them - ie descending, most recent first, I'd assume
 //! (rcsfile(5), of course, fails to state such irrelevant information).
-array(mapping) trunk = ({});
+array(Revision) trunk = ({});
 
 protected mapping parse_mapping(array data)
 {
@@ -73,12 +81,14 @@ protected string parse_string(string data, string|void leader)
 function symbol_is_branch = Regexp("\\.0\\.[0-9]*[02468]$")->match;
 function symbol_is_revision = Regexp("^[0-9.]*$")->match;
 
+//! The filename of the RCS file as sent to @[create()].
 string rcs_file_name;
 
 //! Initializes the RCS object.
 //! @param file_name
 //!   The path to the raw RCS file (includes trailing ",v"). Used
-//!   mainly for error reporting (truncated RCS file).
+//!   mainly for error reporting (truncated RCS file or similar).
+//!   Stored in @[rcs_file_name].
 //! @param file_contents
 //!   If a string is provided, that string will be parsed to
 //!   initialize the RCS object. If a zero (@expr{0@}) is sent, no
@@ -253,20 +263,40 @@ loop:
   {
     if(ptr = R->rcs_next)
     {
+      Revision N = revisions[ptr];
+      N->rcs_prev = R->revision;	// The reverse of rcs_next.
+
       if(String.count(R->revision, ".") > 1)
       {
 	R->next = ptr; // on a branch, the next pointer means the successor
-	revisions[ptr]->ancestor = R->revision;
+	N->ancestor = R->revision;
       }
       else // current revision is on the trunk:
       {
 	R->ancestor = ptr; // on the trunk, the next pointer is the ancestor
-	revisions[ptr]->next = R->revision;
+	N->next = R->revision;
       }
     }
-    foreach(R->branches, string branch_point)
+    foreach(R->branches, string branch_point) {
+      revisions[branch_point]->rcs_prev = R->revision;
       revisions[branch_point]->ancestor = R->revision;
+    }
   }
+
+#ifdef PARSER_RCS_DEBUG
+  // Verify that rcs_prev behaves correctly.
+  foreach(values(revisions), Revision R) {
+    string expected = (String.count(R->revision, ".") == 1 ?
+		       R->next : R->ancestor);
+    if (expected != R->rcs_prev) {
+      error("Invalid rcs_prev calculation: Got %O, Expected %O\n"
+	    "Revision: %O, Next: %O, Ancestor: %O, rcs_next: %O\n",
+	    R->rcs_prev, expected, R->revision, R->next, R->ancestor,
+	    R->rcs_next);
+    }
+  }
+#endif
+
   return raw[i][2..];
 }
 
@@ -338,7 +368,7 @@ class DeltatextIterator
     callback_args = progress_callback_args;
   }
 
-  string _sprintf(int|void type, mapping|void options)
+  protected string _sprintf(int|void type, mapping|void options)
   {
     string name = "DeltatextIterator";
     if(type == 't')
@@ -520,14 +550,13 @@ this_program parse(array raw, void|function(string:void) progress_callback)
 //! Returns the file contents from the revision @[rev], without performing
 //! any keyword expansion.
 //! @seealso
-//!   @[expand_keywords_for_revision]
+//!   @[expand_keywords_for_revision()]
 string get_contents_for_revision( string|Revision rev )
 {
   if( stringp( rev ) ) rev = revisions[rev];
   if( !rev ) return 0;
   if( rev->text ) return rev->text;
-  string revision = rev->revision, next = rev->next, ancestor = rev->ancestor;
-  Revision parent = revisions[String.count(revision,".")==1 ? next : ancestor];
+  Revision parent = revisions[rev->rcs_prev];
   string old = get_contents_for_revision( parent ), diff = rev->rcs_text;
   String.Buffer new = String.Buffer();
   function append = new->add;
@@ -680,58 +709,109 @@ string expand_keywords_for_revision( string|Revision rev, string|void text,
 //! All data tied to a particular revision of the file.
 class Revision
 {
-  //! the revision number (i e @[RCS]->revisions["1.1"]->revision == "1.1")
+  //! The revision number (i e
+  //! @expr{rcs_file->revisions["1.1"]->revision == "1.1"@}).
   string revision;
 
-  //! the name of the user that committed the revision
+  //! The userid of the user that committed the revision.
   string author;
 
-  //! when there are branches from this revision, an array of the
-  //! revision numbers where each branch starts, otherwise 0
+  //! When there are branches from this revision, an array with the
+  //! first revision number for each of the branches, otherwise @expr{0@}.
+  //!
+  //! Follow the @[next] fields to get to the branch head.
   array(string) branches;
 
-  //! the state of the revision - typically "Exp" or "dead"
+  //! The state of the revision - typically @expr{"Exp"@} or @expr{"dead"@}.
   string state;
 
-  //! the (UTC) date and time when the revision was committed (second
-  //! precision)
+  //! The (UTC) date and time when the revision was committed (second
+  //! precision).
   Calendar.TimeRange time;
 
-  //! the branch name on which this revision was committed (calculated
-  //! according to how cvs manages branches)
+  //! The branch name on which this revision was committed (calculated
+  //! according to how cvs manages branches).
   string branch;
 
-  //! the revision stored next in the rcs file, or 0 if none exists
+  //! The revision stored next in the RCS file, or @expr{0@} if none exists.
+  //!
+  //! @note
+  //!   This field is straight from the RCS file, and has somewhat weird
+  //!   semantics. Usually you will want to use one of the derived fields
+  //!   @[next] or @[prev] or possibly @[rcs_prev].
+  //!
+  //! @seealso
+  //!   @[next], @[prev], @[rcs_prev]
   string rcs_next;
 
+  //! The revision that this revision is based on,
+  //! or @expr{0@} if it is the HEAD.
+  //!
+  //! This is the reverse pointer of @[rcs_next] and @[branches], and
+  //! is used by @[get_contents_for_revision()] when applying the deltas
+  //! to set @[text].
+  //!
+  //! @seealso
+  //!   @[rcs_next]
+  string rcs_prev;
 
-  //! the revision of the ancestor of this revision, or 0 if this was
-  //! the initial revision
+
+  //! The revision of the ancestor of this revision, or @expr{0@} if this was
+  //! the initial revision.
+  //!
+  //! @seealso
+  //!   @[next]
   string ancestor;
 
-  //! the revision that succeeds this revision, or 0 if none exists
+  //! The revision that succeeds this revision, or @expr{0@} if none exists
+  //! (ie if this is the HEAD of the trunk or of a branch).
+  //!
+  //! @seealso
+  //!   @[ancestor]
   string next;
 
-  //! the log message associated with the revision
+  //! The log message associated with the revision.
   string log;
 
-  //! the number of lines this revision contained, altogether (not of
-  //! particular interest for binary files)
+  //! The number of lines this revision contained, altogether (not of
+  //! particular interest for binary files).
+  //!
+  //! @seealso
+  //!   @[added], @[removed]
   int lines;
 
-  //! the number of lines that were added from the previous revision
-  //! to make this revision (for the initial revision too)
+  //! The number of lines that were added from the previous revision
+  //! to make this revision (for the initial revision too).
+  //!
+  //! @seealso
+  //!   @[lines], @[removed]
   int added;
 
-  //! the number of lines that were removed from the previous revision
-  //! to make this revision
+  //! The number of lines that were removed from the previous revision
+  //! to make this revision.
+  //!
+  //! @seealso
+  //!   @[lines], @[added]
   int removed;
 
-  string rcs_text; // the diff as stored in the rcs file
+  //! The raw delta as stored in the RCS file.
+  //!
+  //! @seealso
+  //!   @[text], @[get_contents_for_revision()]
+  string rcs_text;
 
-  string text; // when parsed once, the text, as it was checked in
+  //! The text as committed or @expr{0@} if
+  //! @[get_contents_for_revision()] hasn't been called for this revision
+  //! yet.
+  //!
+  //! Typically you don't access this field directly, but use
+  //! @[get_contents_for_revision()] to retrieve it.
+  //!
+  //! @seealso
+  //!   @[get_contents_for_revision()], @[rcs_text]
+  string text;
 
-  string _sprintf(int|void type)
+  protected string _sprintf(int|void type)
   {
     if(type == 't')
       return "Revision";
