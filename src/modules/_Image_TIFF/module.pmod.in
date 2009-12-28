@@ -87,6 +87,7 @@ private Long LONG = Long();
 //           Optional function to do processing on the tag value.
 //           Can return a single value or a mapping. If mapping, that mapping
 //           is added to the resulting mapping.
+//           Note that the first argument can either be an integer or a string.
 //       @endmapping
 //  @endmapping
 //
@@ -104,14 +105,17 @@ private mapping(int:mapping(string:mixed)) tiff_tags = ([
           "type": SHORT,
           "prop": "BitsPerSample",
           "fn":   lambda(mixed value, int size, int count) {
-                    array res = ({});
-                    value = (value/"\0");
-                    for (int i = 0; i < count; i++) {
-                      sscanf(value[i],"%c", int s);
-                      res += ({ (string) s });
-                    }
+		    if (intp(value)) {
+		      return (string)value;
+		    }
+		    array res = ({});
+		    value = (value/"\0");
+		    for (int i = 0; i < count; i++) {
+		      sscanf(value[i],"%c", int s);
+		      res += ({ (string) s });
+		    }
                     return res * ",";
-                    } ]),
+		  } ]),
   259: ([ "name":  "Compression",
           "type":  SHORT,
           "prop":  "Compression" ]),
@@ -121,6 +125,10 @@ private mapping(int:mapping(string:mixed)) tiff_tags = ([
           "fn":     lambda(mixed value, int size, int count) {
                       mapping res = ([ "PhotometricInterpretation": value ]);
                       switch (value) {
+		        case 0:
+			  return res + ([ "color_space": "WhiteIsZero" ]);
+		        case 1:
+			  return res + ([ "color_space": "BlackIsZero" ]);
                         case 2:
                           return res + ([ "color_space": "RGB" ]);
                         case 5:
