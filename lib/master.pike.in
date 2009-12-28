@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.467 2009/11/17 14:44:56 grubba Exp $
+// $Id: master.pike.in,v 1.468 2009/12/28 14:15:21 mast Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -3812,6 +3812,8 @@ void _main(array(string) orig_argv)
       // The main reason for this catch is actually to get a new call
       // to eval_instruction in interpret.c so that the debug and
       // trace levels set above take effect in the bytecode evaluator.
+      // Note that it won't work if there's another catch surrounding
+      // this one.
       object script;
       if(cur_compat_ver <= Version(7,4)) {
 	script=prog();
