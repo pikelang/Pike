@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.243 2010/01/02 13:24:19 srb Exp $
+|| $Id: builtin.cmod,v 1.244 2010/01/02 17:12:41 srb Exp $
 */
 
 #include "global.h"
@@ -785,32 +785,36 @@ PIKEFUN string string_normalize_space (string s, string|void whitespace)
 
   init_string_builder_alloc (&sb, len, shift);
   sb.known_shift = shift;
-#define DO_IT_SPACECHECK(c)	\
-	((c)==' '||(c)=='\t'||(c)=='\r'||(c)=='\n'||(c)=='\v'||(c)=='\f')
+#define DO_IT_SPACECASE	\
+	case ' ':case '\t':case '\r':case '\n':case '\v':case '\f'
   switch (shift) {
 #define DO_IT(TYPE)							\
-    { TYPE *start = src, *end = start+len, *dst = (void*)sb.s->str;	\
+    { const TYPE *start = src, *end = start+len;			\
+      TYPE *dst = (void*)sb.s->str;					\
       if (!ws) {							\
         for (; start < end; start++) {					\
-	  unsigned chr = *start;					\
-	  if (!DO_IT_SPACECHECK(chr))					\
-	    break;							\
+	  switch(*start) {						\
+	    DO_IT_SPACECASE:						\
+	      continue;							\
+          }								\
+          break;							\
         }								\
         for (; start < end; start++) {					\
 	  unsigned chr = *start;					\
-	  if (DO_IT_SPACECHECK(chr))					\
-	    if (foundspace)						\
-	      continue;							\
-	    else							\
-	      foundspace=1,chr=' ';					\
-	  else								\
-	    foundspace=0;						\
+	  switch(chr) {							\
+	    DO_IT_SPACECASE:						\
+	      if (foundspace)						\
+	        continue;						\
+	      foundspace=1;chr=' ';					\
+	      break;							\
+	    default:foundspace=0;					\
+	  }								\
 	  *dst++ = chr;							\
 	}								\
       } else {								\
         for (; start < end; start++) {					\
 	  unsigned chr = *start;					\
-          char *p = ws;							\
+          const char *p = ws;						\
           do {								\
             if (*p == chr)						\
               goto lead##TYPE;						\
@@ -820,16 +824,15 @@ lead##TYPE:;								\
         }								\
         for (; start < end; start++) {					\
 	  unsigned chr = *start;					\
-          char *p = ws;							\
-          do {								\
-            if (*p == chr)						\
+          const char *p = ws;						\
+          do								\
+            if (*p == chr) {						\
 	      if (foundspace)						\
                 goto skip##TYPE;					\
-	      else {							\
-	        foundspace=1;chr=*ws;					\
-                goto copy##TYPE;					\
-              }								\
-          } while(*++p);						\
+	      foundspace=1;chr=*ws;					\
+              goto copy##TYPE;						\
+            }								\
+          while(*++p);							\
 	  if (foundspace && (chr=='\n' || chr=='\r')) {			\
 	    dst[-1] = chr; foundspace=0;				\
             goto lead##TYPE;						\
@@ -846,7 +849,7 @@ skip##TYPE:;								\
     case 1: DO_IT (p_wchar1); break;
     case 2: DO_IT (p_wchar2); break;
 #undef DO_IT
-#undef DO_IT_SPACECHECK
+#undef DO_IT_SPACECASE
   }
   if (foundspace)
     len--;
