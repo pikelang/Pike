@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.h,v 1.40 2009/11/12 15:10:21 grubba Exp $
+|| $Id: builtin_functions.h,v 1.41 2010/01/02 13:17:10 srb Exp $
 */
 
 #ifndef BUILTIN_EFUNS_H
@@ -181,6 +181,7 @@ PMOD_EXPORT void f_ctime(INT32 args);
 PMOD_EXPORT void f_mkmapping(INT32 args);
 PMOD_EXPORT void f_string_count(INT32 args);
 PMOD_EXPORT void f_string_trim_whites(INT32 args);
+PMOD_EXPORT void f_string_normalize_space(INT32 args);
 PMOD_EXPORT void f_string_trim_all_whites(INT32 args);
 PMOD_EXPORT void f_program_implements(INT32 args);
 PMOD_EXPORT void f_program_inherits(INT32 args);

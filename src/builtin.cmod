@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.241 2009/11/19 23:45:22 mast Exp $
+|| $Id: builtin.cmod,v 1.242 2010/01/02 13:17:10 srb Exp $
 */
 
 #include "global.h"
@@ -748,6 +748,106 @@ PIKEFUN string string_trim_whites (string s)
 #undef DO_IT
   }
   RETURN string_slice (s, start, end + 1 - start);
+}
+
+/*! @decl string normalize_space (string s, string|void whitespace)
+ *! @belongs String
+ *!
+ *! Returns @[s] with white space normalised.
+ *! White space is normalised by stripping leading and trailing white space
+ *! and replacing sequences of white space characters with a single space.
+ *! @[whitespace] is defined to be " \t\r\n\v\f" if omitted, the first
+ *! character denotes the replacement character for replacing sequences.
+ *!
+ *! Note that trailing and leading whitespace around \r and \n characters
+ *! is stripped as well.
+ */
+PMOD_EXPORT
+PIKEFUN string string_normalize_space (string s, string|void whitespace)
+  errname String.normalize_space;
+  optflags OPT_TRY_OPTIMIZE;
+{ size_t len = s->len;
+  void *src = s->str;
+  unsigned shift = s->size_shift;
+  const char *ws;
+  struct string_builder sb;
+  unsigned foundspace = 0;
+
+  if(whitespace)
+    if(whitespace->size_shift>8)
+      Pike_error("Cannot use wide strings for whitespace\n");
+    else if(!whitespace->len)
+      REF_RETURN s;
+    else
+      ws = whitespace->str;
+  else
+    ws = 0;
+
+  init_string_builder_alloc (&sb, len, shift);
+  sb.known_shift = shift;
+#define DO_IT_SPACECHECK(c)	\
+	((c)==' '||(c)=='\t'||(c)=='\r'||(c)=='\n'||(c)=='\v'||(c)=='\f')
+  switch (shift) {
+#define DO_IT(TYPE)							\
+    { TYPE *start = src, *end = start+len, *dst = (void*)sb.s->str;	\
+      for (; start < end; start++) {					\
+  	unsigned chr = *start;						\
+	if (!ws) {							\
+	  if (!DO_IT_SPACECHECK(chr))					\
+	    break;							\
+	} else {							\
+          char *p = ws;							\
+          do {								\
+            if (*p == chr)						\
+              goto lead##TYPE;						\
+          } while(*++p);						\
+          break;							\
+        }								\
+lead##TYPE:;								\
+      }									\
+      for (; start < end; start++) {					\
+  	unsigned chr = *start;						\
+	if (!ws) {							\
+	  if (DO_IT_SPACECHECK(chr))					\
+	    if (foundspace)						\
+	      continue;							\
+	    else							\
+	      foundspace=1,chr=' ';					\
+	  else								\
+	    foundspace=0;						\
+        } else {							\
+          char *p = ws;							\
+          do {								\
+            if (*p == chr)						\
+	      if (foundspace)						\
+                goto skip##TYPE;					\
+	      else {							\
+	        foundspace=1;chr=*ws;					\
+                goto copy##TYPE;					\
+              }								\
+          } while(*++p);						\
+	  if (foundspace && (chr=='\n' || chr=='\r')) {			\
+	    dst[-1] = chr; foundspace=0;				\
+            goto lead##TYPE;						\
+	  }								\
+	  foundspace=0;							\
+        }								\
+copy##TYPE:								\
+	*dst++ = chr;							\
+skip##TYPE:;								\
+      }									\
+      len = dst - (TYPE*)sb.s->str;					\
+    }
+    case 0: DO_IT (p_wchar0); break;
+    case 1: DO_IT (p_wchar1); break;
+    case 2: DO_IT (p_wchar2); break;
+#undef DO_IT
+#undef DO_IT_SPACECHECK
+  }
+  if (foundspace)
+    len--;
+  sb.s->len = len;
+  RETURN finish_string_builder (&sb);
 }
 
 /*! @decl string trim_all_whites (string s)

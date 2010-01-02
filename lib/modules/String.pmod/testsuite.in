@@ -1,5 +1,5 @@
 START_MARKER
-dnl $Id: testsuite.in,v 1.26 2008/06/29 18:03:03 nilsson Exp $
+dnl $Id: testsuite.in,v 1.27 2010/01/02 13:17:10 srb Exp $
 
 test_eq([[ String.Buffer()->add("xxx") ]], 3)
 test_any([[
@@ -115,6 +115,25 @@ test_eq(String.trim_all_whites ("\400"), "\400")
 test_eq(String.trim_all_whites ("\200000"), "\200000")
 test_eq(String.trim_all_whites (" \t\n\r "), "")
 test_eq(String.trim_all_whites (""), "")
+
+test_eq(String.normalize_space ("\v\f \t\n\r\0\v\f \t\n\r"), "\0")
+test_eq(String.normalize_space ("\v\f \t\n\r\400\v\f \t\n\r"), "\400")
+test_eq(String.normalize_space ("\v\f \t\n\r\200000\v\f \t\n\r"), "\200000")
+test_eq(String.normalize_space ("\v\f \t\n\ra\400\v\f \t\n\ra\400\t \v\f"),
+			        "a\400 a\400")
+test_eq(String.normalize_space ("\0"), "\0")
+test_eq(String.normalize_space ("\400"), "\400")
+test_eq(String.normalize_space ("\200000"), "\200000")
+test_eq(String.normalize_space (" \t\n\r\v\f "), "")
+test_eq(String.normalize_space (""), "")
+test_eq(String.normalize_space ("  a  bb    ccc    ddd \n eee f g\n"),
+				 "a bb ccc ddd eee f g")
+test_eq(String.normalize_space ("  a  bb    ccc    ddd \n eee f g\n"," \t"),
+			        "a bb ccc ddd\neee f g\n")
+test_eq(String.normalize_space ("  a  bb    ccc    ddd \n eee f g\n","\t "),
+			        "a\tbb\tccc\tddd\neee\tf\tg\n")
+test_eq(String.normalize_space ("  a  bb    ccc    ddd \n eee f g\n",""),
+				 "  a  bb    ccc    ddd \n eee f g\n")
 
 dnl MISSING TEST: String.Iterator
 

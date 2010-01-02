@@ -6,6 +6,7 @@ constant Buffer = __builtin.Buffer;
 constant count=__builtin.string_count;
 constant width=__builtin.string_width;
 constant trim_whites = __builtin.string_trim_whites;
+constant normalize_space = __builtin.string_normalize_space;
 constant trim_all_whites = __builtin.string_trim_all_whites;
 constant Iterator = __builtin.string_iterator;
 constant SplitIterator = __builtin.string_split_iterator;
