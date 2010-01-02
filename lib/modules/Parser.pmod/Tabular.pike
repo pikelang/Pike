@@ -352,6 +352,8 @@ csvready:
       }
     }
     string out=replace(s[..<1]*"",({"\n","  ","   "}),({""," "," "}));
+    if(String.width(out)>8)
+      out=string_to_utf8(out);
     if(verb>0)
       werror("%d %.*s\r",recordcount,verb,out);
     else
@@ -385,7 +387,7 @@ private void add2map(mapping res,string name,mixed entry)
 //!  @[fetch()]
 int skipemptylines()
 { string line; int eof=1;
-  while((line=in->gets()) && emptyline->match(line))
+  while((line=in->gets()) && String.width(line)==8 && emptyline->match(line))
     recordcount++;
   if(line)
     eof=0,in->unread(line+"\n");
