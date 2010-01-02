@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.242 2010/01/02 13:17:10 srb Exp $
+|| $Id: builtin.cmod,v 1.243 2010/01/02 13:24:19 srb Exp $
 */
 
 #include "global.h"
@@ -790,24 +790,14 @@ PIKEFUN string string_normalize_space (string s, string|void whitespace)
   switch (shift) {
 #define DO_IT(TYPE)							\
     { TYPE *start = src, *end = start+len, *dst = (void*)sb.s->str;	\
-      for (; start < end; start++) {					\
-  	unsigned chr = *start;						\
-	if (!ws) {							\
+      if (!ws) {							\
+        for (; start < end; start++) {					\
+	  unsigned chr = *start;					\
 	  if (!DO_IT_SPACECHECK(chr))					\
 	    break;							\
-	} else {							\
-          char *p = ws;							\
-          do {								\
-            if (*p == chr)						\
-              goto lead##TYPE;						\
-          } while(*++p);						\
-          break;							\
         }								\
-lead##TYPE:;								\
-      }									\
-      for (; start < end; start++) {					\
-  	unsigned chr = *start;						\
-	if (!ws) {							\
+        for (; start < end; start++) {					\
+	  unsigned chr = *start;					\
 	  if (DO_IT_SPACECHECK(chr))					\
 	    if (foundspace)						\
 	      continue;							\
@@ -815,7 +805,21 @@ lead##TYPE:;								\
 	      foundspace=1,chr=' ';					\
 	  else								\
 	    foundspace=0;						\
-        } else {							\
+	  *dst++ = chr;							\
+	}								\
+      } else {								\
+        for (; start < end; start++) {					\
+	  unsigned chr = *start;					\
+          char *p = ws;							\
+          do {								\
+            if (*p == chr)						\
+              goto lead##TYPE;						\
+          } while(*++p);						\
+          break;							\
+lead##TYPE:;								\
+        }								\
+        for (; start < end; start++) {					\
+	  unsigned chr = *start;					\
           char *p = ws;							\
           do {								\
             if (*p == chr)						\
@@ -831,10 +835,10 @@ lead##TYPE:;								\
             goto lead##TYPE;						\
 	  }								\
 	  foundspace=0;							\
-        }								\
 copy##TYPE:								\
-	*dst++ = chr;							\
+	  *dst++ = chr;							\
 skip##TYPE:;								\
+        }								\
       }									\
       len = dst - (TYPE*)sb.s->str;					\
     }
