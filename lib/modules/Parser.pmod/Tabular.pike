@@ -91,13 +91,18 @@ private string gets(int n)
 { string s;
   if(n)
   { s=read(n);
-    if(has_value(s,"\n"))
+    if(has_value(s,"\n")||has_value(s,"\r"))
       throw(severity);
   }
   else
   { s=in->gets();
     if(!s)
        throw(severity);
+    if(has_value(s,"\r"))	// Retrofix \r-only line endings
+    { array t;
+      t=s/"\r";
+      s=t[0];in->unread(t[1..]*"\n");
+    }
     alread->add(s);alread->putchar('\n');
     if(has_suffix(s,"\r"))
       s=s[..<1];
@@ -205,9 +210,20 @@ delimready:
                 break;
               }
               case '\n':
+		FETCHAR(c,buf,i);
+		switch(c)
+		{ default:i--;
+		  case '\r':case '\x1a':;
+		}
                 eol=1;
                 break delimready;
-              case '\r':case '\x1a':;
+              case '\r':
+		FETCHAR(c,buf,i);
+		if(c!='\n')
+		  i--;
+                eol=1;
+                break delimready;
+	      case '\x1a':;
             }
             FETCHAR(c,buf,i);
           }
@@ -250,12 +266,27 @@ csvready:
                 }
                 break;
               case '\n':
+		FETCHAR(c,buf,i);
+		switch(c)
+		{ default:i--;
+		  case '\r':case '\x1a':;
+		}
                 if(!inquotes)
                 { eol=1;
                   break csvready;
                 }
                 word->putchar('\n');
-              case '\r':case '\x1a':;
+		break;
+              case '\r':
+		FETCHAR(c,buf,i);
+		if(c!='\n')
+		  i--;
+                if(!inquotes)
+                { eol=1;
+                  break csvready;
+                }
+                word->putchar('\n');
+	      case '\x1a':;
             }
             FETCHAR(c,buf,i);
           }
