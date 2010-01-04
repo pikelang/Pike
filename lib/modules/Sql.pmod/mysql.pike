@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.pike,v 1.45 2009/11/11 13:38:19 grubba Exp $
+ * $Id: mysql.pike,v 1.46 2010/01/04 17:18:18 mast Exp $
  *
  * Glue for the Mysql-module
  */
@@ -409,6 +409,11 @@ string utf8_encode_query (string q, function(string:string) encode_fn)
       }
       break;
     }
+
+    if (end < 0)
+      // The query ends in a quoted string. We pretend it continues to
+      // the end and let MySQL complain later.
+      end = sizeof (suffix);
 
 #define IS_IDENTIFIER_CHAR(chr) (Unicode.is_wordchar (chr) ||		\
 				 (<'_', '$'>)[chr])
