@@ -1,9 +1,9 @@
-// $Id: DNS.pmod,v 1.101 2009/03/16 14:09:54 grubba Exp $
+// $Id: DNS.pmod,v 1.102 2010/01/05 18:47:33 bill Exp $
 // Not yet finished -- Fredrik Hubinette
 
-//! Domain Name System
+  //inherit Stdio.UDP : udp;
 //! RFC 1034, RFC 1035 and RFC 2308
-//!
+  protected void send_reply(mapping r, mapping q, mapping m, Stdio.UDP udp);
 
 #pike __REAL_VERSION__
 
@@ -623,9 +623,11 @@ class server
   //!
   inherit protocol;
 
-  inherit Stdio.UDP : udp;
+  //inherit Stdio.UDP : udp;
 
-  protected void send_reply(mapping r, mapping q, mapping m)
+  array(Stdio.UDP) ports = ({});
+
+  protected void send_reply(mapping r, mapping q, mapping m, Stdio.UDP udp)
   {
     // FIXME: Needs to handle truncation somehow.
     if(!r)
@@ -636,7 +638,7 @@ class server
     r->rd = q->rd;
     r->qd = r->qd || q->qd;
     string s = mkquery(r);
-    udp::send(m->ip, m->port, s);
+    udp->send(m->ip, m->port, s);
   }
 
   //! Reply to a query (stub).
@@ -646,6 +648,11 @@ class server
   //!
   //! @param udp_data
   //!   Raw UDP data.
+  //!
+  //! @param cb
+  //!   Callback you can call with the result instead of returning it.
+  //!   In that case, return @expr{0@} (zero).
+  //!  
   //!
   //! Overload this function to implement the proper lookup.
   //!
@@ -666,7 +673,8 @@ class server
   //!     @member array|void "ns"
   //!     @member array|void "ar"
   //!   @endmapping
-  protected mapping reply_query(mapping query, mapping udp_data)
+  protected mapping reply_query(mapping query, mapping udp_data,
+				 function(mapping:void) cb)
   {
     // Override this function.
     //
@@ -676,18 +684,30 @@ class server
     return 0;
   }
 
-  protected void handle_query(mapping q, mapping m)
+  protected void handle_query(mapping q, mapping m, Stdio.UDP udp)
   {
-    mapping r = reply_query(q, m);
-    send_reply(r, q, m);
+    int(0..1) result_available = 0;
+    void _cb(mapping r) {
+      if(result_available)
+       error("DNS: you can either use the callback OR return the reply, not both.\n");
+      result_available = 1;
+      send_reply(r, q, m, udp);
+    };
+    mapping r = reply_query(q, m, _cb);
+    if(r && result_available)
+      error("DNS: you can either use the callback OR return the reply, not both.\n");
+    if(r) {
+      result_available = 1;
+      send_reply(r, q, m, udp);
+    }
   }
 
-  protected void handle_response(mapping r, mapping m)
+  protected void handle_response(mapping r, mapping m, Stdio.UDP udp)
   {
     // This is a stub intended to simplify servers which allow recursion
   }
 
-  protected private void rec_data(mapping m)
+  protected private void rec_data(mapping m, Stdio.UDP udp)
   {
     mixed err;
     mapping q;
@@ -698,27 +718,54 @@ class server
 	     describe_backtrace(err));
       if(m && m->data && sizeof(m->data)>=2)
 	send_reply((["rcode":1]),
-		   mkmapping(({"id"}), array_sscanf(m->data, "%2c")), m);
+		   mkmapping(({"id"}), array_sscanf(m->data, "%2c")), m, udp);
     }
     else if(q->qr)
-      handle_response(q, m);
+      handle_response(q, m, udp);
     else
-      handle_query(q, m);
+      handle_query(q, m, udp);
   }
 
-  void create(int|void port)
+  void create(int|string|void arg1, string|int ... args)
   {
-    if(!port)
-      port = 53;
-    if(!udp::bind(port))
-      error("DNS: failed to bind port "+port+".\n");
-#if 0
-    werror("Protocols.DNS.server(%O)\n"
-	   "UDP Address: %s\n"
-	   "%s\n", port, udp::query_address(),
-	   describe_backtrace(backtrace()));
-#endif /* 0 */
-    udp::set_read_callback(rec_data);
+    if(!arg1 && !sizeof(args))
+      arg1 = 53;
+    if(!sizeof(args))
+    {
+      if(stringp(arg1))
+       args = ({ arg1, 53 });
+      else
+       args = ({ 0, arg1 });
+    }
+    else
+      args = ({ arg1 }) + args;
+    if(sizeof(args)&1)
+      error("DNS: if you specify more than one argument, the number of "
+           "arguments needs to be even (server(ip1, port1, ip2, port2, "
+           "...)).\n");
+    for(int i;i<sizeof(args);i+=2) {
+      Stdio.UDP udp = Stdio.UDP();
+      if(args[i]) {
+       if (!udp->bind(args[i+1],args[i]))
+         error("DNS: failed to bind host:port %s:%d.\n", args[i],args[i+1]);
+      } else {
+       if(!udp->bind(args[i+1]))
+         error("DNS: failed to bind port %d.\n", args[i+1]);
+      }
+      udp->set_read_callback(rec_data, udp);
+      // port objects are stored for destruction when the server object is destroyed.
+      ports += ({udp});
+    }
+
+  }
+
+  static void destory()
+  {
+    if(sizeof(ports))
+    {
+      foreach(ports;; Stdio.UDP port)
+        destruct(port);
+    }
   }
 
 }
