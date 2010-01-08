@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 inherit Parser._RCS;
 
-// $Id: RCS.pike,v 1.40 2009/12/24 13:02:58 grubba Exp $
+// $Id: RCS.pike,v 1.41 2010/01/08 18:33:36 grubba Exp $
 
 //! A RCS file parser that eats a RCS *,v file and presents nice pike
 //! data structures of its contents.
@@ -688,7 +688,7 @@ string expand_keywords_for_revision( string|Revision rev, string|void text,
 	result += sprintf( "%s$%s: %s $", before, keyword, expansion );
       else
       {
-	if( sscanf( rest, "%*[^\n]$%s", rest ) != 2 )
+	if( sscanf( rest, "%*[^\n$]$%s", rest ) != 2 )
 	{
 	  result += text;
 	  break;
