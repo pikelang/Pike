@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.247 2010/01/08 18:17:53 srb Exp $
+|| $Id: builtin.cmod,v 1.248 2010/01/08 22:08:42 srb Exp $
 */
 
 #include "global.h"
@@ -827,7 +827,7 @@ PIKEFUN string string_normalize_space (string s, string|void whitespace)
        case 0x2000:case 0x2001:case 0x2002:case 0x2003:case 0x2004:	\
        case 0x2005:case 0x2006:case 0x2007:case 0x2008:case 0x2009:	\
        case 0x200a:case 0x2028:case 0x2029:case 0x202f:case 0x205f:	\
-       case 0x3000	/* FIXME generate list from Unicode.txt */
+       case 0x3000	/* FIXME generate list from UnicodeData.txt */
   switch (shift) {
 #define NORMALISE_TIGHT_LOOP(TYPE,CASE)					\
     {									\
