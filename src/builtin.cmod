@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.245 2010/01/02 18:21:19 srb Exp $
+|| $Id: builtin.cmod,v 1.246 2010/01/08 17:55:10 srb Exp $
 */
 
 #include "global.h"
@@ -760,7 +760,8 @@ PIKEFUN string string_trim_whites (string s)
  *!
  *! @param whitespace
  *! Defines what is considered to be white space eligible for normalisation.
- *! It has a default value of @expr{" \t\r\n\v\f"@}.
+ *! It has a default value that starts with @expr{" \t\r\n\v\f"@} and in
+ *! addition to that contains all whitespace characters part of Unicode.
  *! The first character denotes the character for replacing sequences.
  *!
  *! @note
@@ -771,94 +772,136 @@ PMOD_EXPORT
 PIKEFUN string string_normalize_space (string s, string|void whitespace)
   errname String.normalize_space;
   optflags OPT_TRY_OPTIMIZE;
-{ size_t len = s->len;
-  void *src = s->str;
-  unsigned shift = s->size_shift;
-  const char *ws;
+{
+  size_t len = s->len, wlen;
+  const void *src = s->str;
+  unsigned shift = s->size_shift, replspace;
+  const void *ws;
+  void *wstemp = 0;
   struct string_builder sb;
   unsigned foundspace = 0;
 
-  if(whitespace)
-    if(whitespace->size_shift>8)
-      Pike_error("Cannot use wide strings for whitespace\n");
-    else if(!whitespace->len)
-      REF_RETURN s;
+  {
+    unsigned bshift = shift, wshift;
+    if(whitespace)
+      if(!(wlen = whitespace->len))
+        REF_RETURN s;
+      else {
+        ws = whitespace->str; wshift = whitespace->size_shift;
+        replspace = index_shared_string(whitespace, 0);
+	if(replspace > 0xffff)
+	  bshift = 2;
+	else if(replspace > 0xff && !bshift)
+	  bshift = 1;
+	if(wshift!=bshift) {	/* convert whitespace to shift of input */
+	  PCHARP pcnws;
+	  wstemp = xalloc(wlen<<bshift);
+	  pcnws = MKPCHARP(wstemp, bshift);
+	  if(wshift>bshift) {
+	    PCHARP pcows;
+	    pcows = MKPCHARP_STR(whitespace);
+	    size_t clen = wlen, i;
+	    i = wlen = 0;
+	    do {
+	      unsigned chr = INDEX_PCHARP(pcows, i++);
+	      if (chr<=0xff || chr<=0xffff && bshift)	/* bshift is 0 or 1 */
+		SET_INDEX_PCHARP(pcnws, wlen++, chr);
+	    } while(--clen);
+	  } else
+	    pike_string_cpy(pcnws, whitespace);
+	  ws = wstemp;
+	}
+      }
     else
-      ws = whitespace->str;
-  else
-    ws = 0;
+      ws = 0;
 
-  init_string_builder_alloc (&sb, len, shift);
-  sb.known_shift = shift;
-#define DO_IT_SPACECASE	\
-	case ' ':case '\t':case '\r':case '\n':case '\v':case '\f'
+    init_string_builder_alloc (&sb, len, bshift);
+    if(bshift == shift)
+      sb.known_shift = bshift;
+  }
+#define SPACECASE8							\
+       case ' ':case '\t':case '\r':case '\n':case '\v':case '\f':	\
+       case 0x85:case 0xa0
+#define SPACECASE16							\
+       SPACECASE8:case 0x1680:case 0x180e:				\
+       case 0x2000:case 0x2001:case 0x2002:case 0x2003:case 0x2004:	\
+       case 0x2005:case 0x2006:case 0x2007:case 0x2008:case 0x2009:	\
+       case 0x200a:case 0x2028:case 0x2029:case 0x202f:case 0x205f:	\
+       case 0x3000	/* FIXME generate list from Unicode.txt */
   switch (shift) {
-#define DO_IT(TYPE)							\
-    { const TYPE *start = src, *end = start+len;			\
-      TYPE *dst = (void*)sb.s->str;					\
+#define NORMALISE_TIGHT_LOOP(TYPE,CASE)					\
+    {									\
+      const TYPE *start = src, *end = start+len;			\
       if (!ws) {							\
+        TYPE *dst = (void*)sb.s->str;					\
         for (; start < end; start++) {					\
 	  switch(*start) {						\
-	    DO_IT_SPACECASE:						\
+	    CASE:							\
 	      continue;							\
           }								\
           break;							\
         }								\
         for (; start < end; start++) {					\
-	  unsigned chr = *start;					\
-	  switch(chr) {							\
-	    DO_IT_SPACECASE:						\
-	      if (foundspace)						\
+	  if(*start<=' ' || *start>=0x85)  /* optimise common case */	\
+	    switch(*start) {						\
+	      CASE:							\
+	        if (foundspace)						\
+	          continue;						\
+	        foundspace=1; *dst++ = ' ';				\
 	        continue;						\
-	      foundspace=1;chr=' ';					\
-	      break;							\
-	    default:foundspace=0;					\
-	  }								\
-	  *dst++ = chr;							\
+	      default:goto found##TYPE;					\
+	    }								\
+	  else								\
+found##TYPE:								\
+	    foundspace=0;						\
+	  *dst++ = *start;						\
 	}								\
+	sb.s->len = dst - (TYPE*)sb.s->str;				\
       } else {								\
+	const TYPE*ps = (const TYPE*)ws+wlen;				\
         for (; start < end; start++) {					\
-	  unsigned chr = *start;					\
-          const char *p = ws;						\
+	  size_t clen = wlen;						\
           do {								\
-            if (*p == chr)						\
+            if (ps[-clen] == *start)					\
               goto lead##TYPE;						\
-          } while(*++p);						\
+          } while(--clen);						\
           break;							\
 lead##TYPE:;								\
         }								\
         for (; start < end; start++) {					\
 	  unsigned chr = *start;					\
-          const char *p = ws;						\
+	  size_t clen = wlen;						\
           do								\
-            if (*p == chr) {						\
+            if (ps[-clen] == chr) {					\
 	      if (foundspace)						\
                 goto skip##TYPE;					\
-	      foundspace=1;chr=*ws;					\
+	      foundspace=1;chr=replspace;				\
               goto copy##TYPE;						\
             }								\
-          while(*++p);							\
+          while(--clen);						\
 	  if (foundspace && (chr=='\n' || chr=='\r')) {			\
-	    dst[-1] = chr; foundspace=0;				\
+	    sb.s->len--; string_builder_putchar(&sb, chr);		\
+	    foundspace=0;						\
             goto lead##TYPE;						\
 	  }								\
 	  foundspace=0;							\
 copy##TYPE:								\
-	  *dst++ = chr;							\
+	  string_builder_putchar(&sb, chr);				\
 skip##TYPE:;								\
         }								\
       }									\
-      len = dst - (TYPE*)sb.s->str;					\
     }
-    case 0: DO_IT (p_wchar0); break;
-    case 1: DO_IT (p_wchar1); break;
-    case 2: DO_IT (p_wchar2); break;
-#undef DO_IT
-#undef DO_IT_SPACECASE
+    case 0: NORMALISE_TIGHT_LOOP (p_wchar0,SPACECASE8); break;
+    case 1: NORMALISE_TIGHT_LOOP (p_wchar1,SPACECASE16); break;
+    case 2: NORMALISE_TIGHT_LOOP (p_wchar2,SPACECASE16); break;
+#undef NORMALISE_TIGHT_LOOP
+#undef SPACECASE8
+#undef SPACECASE16
   }
+  if (wstemp)
+    free(wstemp);
   if (foundspace)
-    len--;
-  sb.s->len = len;
+    sb.s->len--;
   RETURN finish_string_builder (&sb);
 }
 
