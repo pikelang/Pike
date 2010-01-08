@@ -352,8 +352,7 @@ csvready:
       }
     }
     string out=replace(s[..<1]*"",({"\n","  ","   "}),({""," "," "}));
-    if(String.width(out)>8)
-      out=string_to_utf8(out);
+    out=string_to_utf8(out);	// FIXME Debugging output defaults to UTF-8
     if(verb>0)
       werror("%d %.*s\r",recordcount,verb,out);
     else
