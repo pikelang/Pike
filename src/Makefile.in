@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.480 2009/09/26 12:27:52 grubba Exp $
+# $Id: Makefile.in,v 1.481 2010/01/09 01:00:31 srb Exp $
 #
 
 # This line is needed on some machines.
@@ -208,6 +208,7 @@ SRC_TARGETS= \
  $(SRCDIR)/interpret_functions_fixed.h \
  $(SRCDIR)/peep_engine.c \
  $(SRCDIR)/case_info.h \
+ $(SRCDIR)/whitespace.h \
  $(SRCDIR)/treeopt.h @PMOD_TARGETS@
 
 
@@ -1087,6 +1088,10 @@ $(SRCDIR)/peep_engine.c: $(SRCDIR)/peep.in $(TMP_BINDIR)/mkpeep.pike
 
 peep.o: $(SRCDIR)/peep_engine.c
 
+$(SRCDIR)/whitespace.h: $(SRCDIR)/UnicodeData.txt $(TMP_BINDIR)/getwhitespace.sh
+	$(TMP_BINDIR)/getwhitespace.sh >$(SRCDIR)/whitespace.h \
+	  <$(SRCDIR)/UnicodeData.txt
+
 $(SRCDIR)/case_info.h: $(SRCDIR)/UnicodeData.txt $(TMP_BINDIR)/make_ci.pike
 	./precompile.sh $(TMP_BINDIR)/make_ci.pike $(SRCDIR)/case_info.h \
 	  <$(SRCDIR)/UnicodeData.txt
@@ -1274,7 +1279,7 @@ $(SRCDIR)/interpret_functions_fixed.h: $(SRCDIR)/interpret_functions.h precompil
 	./precompile.sh --cache make_interpret_functions.pike >"$@" "$(SRCDIR)/interpret_functions.h" || { rm "$@"; exit 1; }
 
 # UnixWare make needs help to find the source file...
-builtin.o: $(SRCDIR)/builtin.c
+builtin.o: $(SRCDIR)/builtin.c $(SRCDIR)/whitespace.h
 
 iterators.o: $(SRCDIR)/iterators.c
 
