@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.250 2010/01/09 01:14:11 srb Exp $
+|| $Id: builtin.cmod,v 1.251 2010/01/09 13:49:05 srb Exp $
 */
 
 #include "global.h"
@@ -846,9 +846,8 @@ PIKEFUN string string_normalize_space (string s, string|void whitespace)
 	  if(*start<=' ' || *start>=0x85)  /* optimise common case */	\
 	    switch(*start) {						\
 	      CASE							\
-	        if (foundspace)						\
-	          continue;						\
-	        foundspace=1; *dst++ = ' ';				\
+	        if (!foundspace)					\
+	          *dst++ = ' ', foundspace=1;				\
 	        continue;						\
 	      default:goto found##TYPE;					\
 	    }								\
@@ -870,14 +869,13 @@ found##TYPE:								\
 lead##TYPE:;								\
         }								\
         for (; start < end; start++) {					\
-	  unsigned chr = *start;					\
+	  TYPE chr = *start;						\
 	  size_t clen = wlen;						\
           do								\
             if (ps[-clen] == chr) {					\
-	      if (foundspace)						\
-                goto skip##TYPE;					\
-	      foundspace=1;chr=replspace;				\
-              goto copy##TYPE;						\
+	      if (!foundspace)						\
+	        string_builder_putchar(&sb, replspace), foundspace=1;	\
+              goto skip##TYPE;						\
             }								\
           while(--clen);						\
 	  if (foundspace && (chr=='\n' || chr=='\r')) {			\
@@ -885,9 +883,7 @@ lead##TYPE:;								\
 	    foundspace=0;						\
             goto lead##TYPE;						\
 	  }								\
-	  foundspace=0;							\
-copy##TYPE:								\
-	  string_builder_putchar(&sb, chr);				\
+	  string_builder_putchar(&sb, chr); foundspace=0;		\
 skip##TYPE:;								\
         }								\
       }									\
