@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 inherit Parser._RCS;
 
-// $Id: RCS.pike,v 1.41 2010/01/08 18:33:36 grubba Exp $
+// $Id: RCS.pike,v 1.42 2010/01/09 15:42:12 grubba Exp $
 
 //! A RCS file parser that eats a RCS *,v file and presents nice pike
 //! data structures of its contents.
@@ -637,28 +637,50 @@ protected string kwchars = Array.uniq(sort("Author" "Date" "Header" "Id" "Name"
 
 //! Expand keywords and return the resulting text according to the
 //! expansion rules set for the file.
+//!
 //! @param rev
 //!   The revision to apply the expansion for.
 //! @param text
 //!   If supplied, substitute keywords for that text instead using values that
 //!   would apply for the given revision. Otherwise, revision @[rev] is used.
-//! @param override_binary
-//!   If 1, perform expansion even if the file was checked in as binary.
+//! @param expansion_mode
+//!   Expansion mode
+//!   @int
+//!     @value 1
+//!       Perform expansion even if the file was checked in as binary.
+//!     @value 0
+//!       Perform expansion only if the file was checked in as non-binary
+//!       with expansion enabled.
+//!     @value -1
+//!       Perform contraction if the file was checked in as non-binary.
+//!   @endint
+//!
 //! @note
 //!   The Log keyword (which lacks sane quoting rules) is not
 //!   expanded. Keyword expansion rules set in CVSROOT/cvswrappers
-//!   are ignored. Only implements the -kkv and -kb expansion modes.
+//!   are ignored. Only implements the @tt{-kkv@}, @tt{-ko@} and @tt{-kb@}
+//!   expansion modes.
+//!
+//! @note
+//!   Does not perform any line-ending conversion.
+//!
 //! @seealso
 //!   @[get_contents_for_revision]
 string expand_keywords_for_revision( string|Revision rev, string|void text,
-				     int|void override_binary )
+				     int|void expansion_mode )
 {
   if( stringp( rev ) ) rev = revisions[rev];
   if( !rev ) return 0;
   if( !text ) text = get_contents_for_revision( rev );
-  if( rev->expand == "b" && !override_binary )
+  if( (rev->expand == "b") && (expansion_mode <= 0) )
     return text;
-  string before, delimiter, keyword, expansion, rest, result = "";
+  if( (rev->expand == "o") && !expansion_mode )
+    return text;
+
+  array(string) segments = text/"$";
+
+  if (sizeof(segments) < 3) return text;	// Common case.
+
   string date = replace( rev->time->format_time(), "-", "/" ),
     file = basename( rcs_file_name );
   mapping kws = ([ "Author"	: rev->author,
@@ -674,36 +696,32 @@ string expand_keywords_for_revision( string|Revision rev, string|void text,
 		   "Revision"	: rev->revision,
 		   "Source"	: rcs_file_name,
 		   "State"	: rev->state ]);
-  while( sizeof( text ) )
-  {
-    if( sscanf( text, "%s$%["+kwchars+"]%[:$]%s",
-		before, keyword, delimiter, rest ) < 4 )
-    {
-      result += text;
-      break;
-    }
-    if( expansion = kws[keyword] )
-    {
-      if( has_value( delimiter, "$" ) )
-	result += sprintf( "%s$%s: %s $", before, keyword, expansion );
-      else
-      {
-	if( sscanf( rest, "%*[^\n$]$%s", rest ) != 2 )
-	{
-	  result += text;
-	  break;
+
+  String.Buffer result = String.Buffer();
+  int i;
+  result->add(segments[0]);
+  for (i = 1; i < sizeof(segments)-1; i++) {
+    string segment = segments[i];
+    if (!has_value(segment, "\n")) {
+      sscanf(segment, "%[a-zA-Z]%s", string keyword, string rest);
+      if (sizeof(keyword) && (!sizeof(rest) || has_prefix(rest, ":"))) {
+	string expansion;
+	if (expansion = kws[keyword]) {
+	  result->add("$", keyword);
+	  if (!expansion_mode) {
+	    result->add(": ", expansion, " ");
+	  }
+	  segment = segments[++i];
 	}
-	result += sprintf( "%s$%s: %s $", before, keyword, expansion );
       }
-      text = rest;
     }
-    else
-    {
-      result += before + "$" + keyword;
-      text = delimiter + rest; // delimiter could be the start of a keyword
-    }
+    result->add("$", segment);
   }
-  return result;
+  if (i < sizeof(segments)) {
+    // Trailer.
+    result->add("$", segments[-1]);
+  }
+  return result->get();
 }
 
 //! All data tied to a particular revision of the file.
