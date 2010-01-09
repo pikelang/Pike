@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.249 2010/01/09 01:00:31 srb Exp $
+|| $Id: builtin.cmod,v 1.250 2010/01/09 01:14:11 srb Exp $
 */
 
 #include "global.h"
@@ -762,11 +762,16 @@ PIKEFUN string string_trim_whites (string s)
  *! Defines what is considered to be white space eligible for normalisation.
  *! It has a default value that starts with @expr{" \t\r\n\v\f"@} and in
  *! addition to that contains all whitespace characters part of Unicode.
- *! The first character denotes the character for replacing sequences.
+ *! The first character denotes the character for replacing whitespace
+ *! sequences.
  *!
  *! @note
  *! Trailing and leading whitespace around \r and \n characters
  *! is stripped as well (only useful if they're not in the @[whitespace] set).
+ *!
+ *! @note
+ *! This function is a lot faster with just one argument (i.e. the builtin
+ *! whitespace set has an optimised code path).
  */
 PMOD_EXPORT
 PIKEFUN string string_normalize_space (string s, string|void whitespace)
