@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.252 2010/01/11 13:19:56 jonasw Exp $
+|| $Id: builtin.cmod,v 1.253 2010/01/11 16:30:48 srb Exp $
 */
 
 #include "global.h"
@@ -786,6 +786,8 @@ PIKEFUN string string_normalize_space (string s, string|void whitespace)
   struct string_builder sb;
   unsigned foundspace = 0;
 
+  wlen = replspace = 0;    /* useless, but suppresses silly compiler warning */
+
   {
     unsigned bshift = shift, wshift;
     if(whitespace)
@@ -808,7 +810,7 @@ PIKEFUN string string_normalize_space (string s, string|void whitespace)
 	    i = wlen = 0;
 	    do {
 	      unsigned chr = INDEX_PCHARP(pcows, i++);
-	      if (chr<=0xff || chr<=0xffff && shift)	/* shift is 0 or 1 */
+	      if (chr<=0xff || (chr<=0xffff && shift))	/* shift is 0 or 1 */
 		SET_INDEX_PCHARP(pcnws, wlen++, chr);
 	    } while(--clen);
 	  } else
@@ -861,7 +863,7 @@ found##TYPE:								\
         for (; start < end; start++) {					\
 	  size_t clen = wlen;						\
           do {								\
-            if (ps[-clen] == *start)					\
+            if (ps[0-clen] == *start)					\
               goto lead##TYPE;						\
           } while(--clen);						\
           break;							\
@@ -871,7 +873,7 @@ lead##TYPE:;								\
 	  TYPE chr = *start;						\
 	  size_t clen = wlen;						\
           do								\
-            if (ps[-clen] == chr) {					\
+            if (ps[0-clen] == chr) {					\
 	      if (!foundspace)						\
 	        string_builder_putchar(&sb, replspace), foundspace=1;	\
               goto skip##TYPE;						\
