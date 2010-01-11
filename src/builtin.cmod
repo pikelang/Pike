@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.251 2010/01/09 13:49:05 srb Exp $
+|| $Id: builtin.cmod,v 1.252 2010/01/11 13:19:56 jonasw Exp $
 */
 
 #include "global.h"
@@ -803,8 +803,7 @@ PIKEFUN string string_normalize_space (string s, string|void whitespace)
 	  wstemp = xalloc(wlen<<shift);
 	  pcnws = MKPCHARP(wstemp, shift);
 	  if(wshift>shift) {
-	    PCHARP pcows;
-	    pcows = MKPCHARP_STR(whitespace);
+	    PCHARP pcows = MKPCHARP_STR(whitespace);
 	    size_t clen = wlen, i;
 	    i = wlen = 0;
 	    do {
