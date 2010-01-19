@@ -479,7 +479,7 @@ class Runtime_timezone_compiler
       int h,m,s;
       string res;
 
-      if (t=="0") return 0;
+      if (t=="0" || t=="-") return 0;
 
       res="";
       if (sscanf(t,"-%d:%d:%d%s",h,m,s,res)&&res=="")
