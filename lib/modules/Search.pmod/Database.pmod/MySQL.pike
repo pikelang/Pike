@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000 - 2009, Roxen IS. All rights reserved.
 //
-// $Id: MySQL.pike,v 1.91 2009/06/30 12:35:33 noring Exp $
+// $Id: MySQL.pike,v 1.92 2010/01/20 12:49:40 marty Exp $
 
 inherit .Base;
 
@@ -604,6 +604,44 @@ _WhiteFish.DateSet get_global_dateset()
     dateset_cache->add_many( (array(int))a->doc_id,
 			     (array(int))a->at );
     return dateset_cache;
+  }
+}
+
+static
+{
+  _WhiteFish.DateSet publ_dateset_cache;
+  int publ_dateset_cache_max_doc_id = -1;
+};
+
+_WhiteFish.DateSet get_global_publ_dateset()
+{
+  int max_doc_id = get_max_doc_id();
+  if(max_doc_id == publ_dateset_cache_max_doc_id)
+    return publ_dateset_cache;
+  else
+  {
+    array(mapping(string:mixed)) a = 
+      db->query("SELECT doc_id, value FROM metadata "
+		" WHERE name = 'external_use' "
+		"   AND doc_id > %d ORDER BY doc_id ASC",
+		publ_dateset_cache_max_doc_id);
+    
+    a = map(a, lambda(mapping(string:mixed) row)
+	       {
+		 int visible_from = 0;
+		 catch {
+		   visible_from = 
+		     decode_value(MIME.decode_base64(row->value))[0];
+		 };
+		 return row + ([ "visible_from" : visible_from ]);
+	       });
+    
+    publ_dateset_cache_max_doc_id = max_doc_id;
+    if(!publ_dateset_cache)
+      publ_dateset_cache = _WhiteFish.DateSet();
+    publ_dateset_cache->add_many( (array(int))a->doc_id,
+				  (array(int))a->visible_from );
+    return publ_dateset_cache;
   }
 }
 

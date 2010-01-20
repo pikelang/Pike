@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 - 2009, Roxen IS. All rights reserved.
 //
-// $Id: Query.pmod,v 1.36 2009/05/25 18:26:52 mast Exp $
+// $Id: Query.pmod,v 1.37 2010/01/20 12:49:40 marty Exp $
 
 static function(string,int:string) blobfeeder(Search.Database.Base db,
                                               array words)
@@ -62,7 +62,7 @@ Search.ResultSet do_query_phrase(Search.Database.Base db,
 
 enum search_order
 {
-  RELEVANCE=1, DATE_ASC, DATE_DESC, NONE
+  RELEVANCE=1, DATE_ASC, DATE_DESC, NONE, PUBL_DATE_ASC, PUBL_DATE_DESC
 };
 
 static Search.ResultSet sort_resultset(Search.ResultSet resultset,
@@ -451,6 +451,17 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
           res[0]->sort();
         else
           res[0]->sort_rev();
+	break;
+
+      case PUBL_DATE_ASC:
+      case PUBL_DATE_DESC:
+        res[0] = res[0]->finalize()->add_ranking(db->get_global_publ_dateset());
+        if(order==PUBL_DATE_DESC)
+          res[0]->sort();
+        else
+          res[0]->sort_rev();
+
+	
       case NONE:
     }
 
