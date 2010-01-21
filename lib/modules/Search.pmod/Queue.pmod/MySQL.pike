@@ -131,12 +131,10 @@ mapping(string:mapping(string:string)) extra_data = ([]);
 mapping get_extra( Standards.URI uri )
 {
   if( extra_data[(string)uri] )
-    return extra_data[(string)uri];
+    return extra_data[(string)uri] || ([ ]);
   array r = db->query( "SELECT md5,recurse,stage,template "
 		       "FROM "+table+" WHERE uri_md5=%s", to_md5((string)uri) );
-  if( sizeof( r ) )
-    return r[0];
-  
+  return (sizeof(r) && r[0]) || ([ ]);
 }
 
 static int empty_count;
