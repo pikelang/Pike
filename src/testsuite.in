@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.887 2010/01/21 14:38:31 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.888 2010/01/21 16:14:47 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -2810,7 +2810,7 @@ test_any([[
 ]], "middle")
 
 test_any([[
-  // Test symbol lookup in multi-pass.
+  // Test external symbol lookup in las.c:eval_low_safe_and_stupid().
   // LysLysKOM 18285732
   // An old pike will fail with the fatal
   // "Identifier out of range, loc->parent_identifer=-1!"
@@ -2827,7 +2827,7 @@ test_any([[
     class B()
     {
        inherit A;
-       string fi()
+       int fi()
        {
           return fum?1:0;
        }
