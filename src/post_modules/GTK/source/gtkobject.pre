@@ -8,7 +8,7 @@ signal destroy;
 
 void destroy()
 {
-  if(!args && THIS->obj)
+  if(THIS->obj)
   {
     gtk_object_destroy( THIS->obj );
     THIS->obj = NULL;
