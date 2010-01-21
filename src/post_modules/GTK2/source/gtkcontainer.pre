@@ -22,10 +22,19 @@ void set_border_width( int external_border_width );
 //! padding around the container.
 //! Calling this function might result in a resize of the container.
 
-void add(GTK2.Widget widget);
+void add(GTK2.Widget widget)
 //! Add a subwidget to the container. Don't forget to call show() in
 //! the subwidget. Some (even most) containers can only contain one child.
 //! Calling this function might result in a resize of the container.
+{
+  pgtk2_verify_inited();
+  {
+    struct object *o1;
+    get_all_args("add",args,"%o",&o1);
+    gtk_container_add(GTK_CONTAINER(THIS->obj),GTK_WIDGET(get_gobject(o1)));
+  }
+  RETURN_THIS();
+}
 
 void remove(GTK2.Widget widget);
 //! Remove a child from the container. The argument is the child to remove.
@@ -57,7 +66,7 @@ array(GTK2.Widget) get_children()
   pgtk2_pop_n_elems(args);
   g=g1=gtk_container_get_children(GTK_CONTAINER(THIS->obj));
   while (g1) {
-    push_gobject(g->data);
+    push_gobject(g1->data);
     n++;
     g1=g_list_next(g1);
   }
