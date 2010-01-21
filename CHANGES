@@ -7,6 +7,9 @@ Bug fixes
 o Fixed segfault in combine_path_nt on windows when the first char
   of an appended path is wide.
 
+o Fixed fatal error in the constant expression evaluator of the
+  compiler for certain code.
+
 o Fixed a problem in "pike -x module" that prevented auto tools from
   running in the correct directory.
 
@@ -21,6 +24,10 @@ o Fixes a segfault occuring if exit() is used from a thread when
 
 o Fixed so than an existing content-type is not overriden in
   async_do_method_url.
+
+o Fixed issue where GTK objects weren't destroyed properly.
+  http://pike.ida.liu.se/docs/tutorial/hello/window.xml now
+  works again.
 
 
 Building and installing
