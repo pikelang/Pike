@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.413 2009/08/06 13:17:50 grubba Exp $
+|| $Id: interpret.c,v 1.414 2010/01/21 15:39:58 grubba Exp $
 */
 
 #include "global.h"
@@ -2343,18 +2343,30 @@ PMOD_EXPORT int apply_low_safe_and_stupid(struct object *o, INT32 offset)
   JMP_BUF tmp;
   struct pike_frame *new_frame=alloc_pike_frame();
   int ret;
-  int use_dummy_reference = !o->prog->num_identifier_references;
-  int p_flags = o->prog->flags;
+  int use_dummy_reference = 1;
+  struct program *prog = o->prog;
+  int p_flags = prog->flags;
   LOW_JMP_BUF *saved_jmpbuf;
+  int fun = -1;
 
-  /* This is needed for opcodes that use INHERIT_FROM_*
+  /* Search for a function that belongs to the current program,
+   * since this is needed for opcodes that use INHERIT_FROM_*
    * (eg F_EXTERN) to work.
    */
+  for (fun = prog->num_identifier_references; fun--;) {
+    if (!prog->identifier_references[fun].inherit_offset) {
+      use_dummy_reference = 0;
+      break;
+    }
+  }
+
   if (use_dummy_reference) {
+    /* No suitable function was found, so add one. */
     struct identifier dummy;
     struct reference dummy_ref = {
       0, 0, ID_HIDDEN,
     };
+    /* FIXME: Assert that o->prog == Pike_compiler->new_program */
     copy_shared_string(dummy.name, empty_pike_string);
     copy_pike_type(dummy.type, function_type_string);
     dummy.filename_strno = -1;
@@ -2363,22 +2375,23 @@ PMOD_EXPORT int apply_low_safe_and_stupid(struct object *o, INT32 offset)
     dummy.identifier_flags = IDENTIFIER_PIKE_FUNCTION|IDENTIFIER_HAS_BODY;
     dummy.func.offset = offset;
     dummy.opt_flags = 0;
-    dummy_ref.identifier_offset = Pike_compiler->new_program->num_identifiers;
+    dummy_ref.identifier_offset = prog->num_identifiers;
     add_to_identifiers(dummy);
+    fun = prog->num_identifier_references;
     add_to_identifier_references(dummy_ref);
   }
 
   /* FIXME: Is this up-to-date with mega_apply? */
   new_frame->next = Pike_fp;
   add_ref(new_frame->current_object = o);
-  add_ref(new_frame->current_program = o->prog);
-  new_frame->context = o->prog->inherits;
+  add_ref(new_frame->current_program = prog);
+  new_frame->context = prog->inherits;
   new_frame->locals = Pike_sp;
   new_frame->expendible=new_frame->locals;
   new_frame->args = 0;
   new_frame->num_args=0;
   new_frame->num_locals=0;
-  new_frame->fun = o->prog->num_identifier_references-1;
+  new_frame->fun = fun;
   new_frame->pc = 0;
   new_frame->current_storage=o->storage;
 
@@ -2400,7 +2413,7 @@ PMOD_EXPORT int apply_low_safe_and_stupid(struct object *o, INT32 offset)
   }else{
     int tmp;
     new_frame->mark_sp_base=new_frame->save_mark_sp=Pike_mark_sp;
-    tmp=eval_instruction(o->prog->program + offset);
+    tmp=eval_instruction(prog->program + offset);
     Pike_mark_sp=new_frame->save_mark_sp;
     
 #ifdef PIKE_DEBUG
@@ -2419,8 +2432,8 @@ PMOD_EXPORT int apply_low_safe_and_stupid(struct object *o, INT32 offset)
     /* Pop the dummy identifier. */
     free_type(function_type_string);
     free_string(empty_pike_string);
-    Pike_compiler->new_program->num_identifier_references--;
-    Pike_compiler->new_program->num_identifiers--;
+    prog->num_identifier_references--;
+    prog->num_identifiers--;
   }
 
   assert (new_frame == Pike_fp);
