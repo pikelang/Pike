@@ -434,6 +434,9 @@ mapping(string:mixed) init(mapping(string:mixed) diagram_data)
   if (diagram_data->ynames)
   {
     diagram_data->ynames=({" "})+diagram_data->ynames;
+    diagram_data->values_for_ynames =
+      ({ diagram_data->values_for_ynames[0] }) +
+      diagram_data->values_for_ynames;
     diagram_data->yspace=(diagram_data->ymaxvalue-
 			    diagram_data->yminvalue)
       /(float)sizeof(diagram_data->ynames);
@@ -463,10 +466,7 @@ mapping(string:mixed) create_text(mapping(string:mixed) diagram_data)
     diagram_data->xnamesimg=allocate(j=sizeof(diagram_data->xnames));
     for(int i=0; i<j; i++)
     {
-      if ( ((diagram_data->values_for_xnames[i]>LITET)
-	    || (diagram_data->values_for_xnames[i]<-LITET))
-	   && ((diagram_data->xnames[i])
-	       && sizeof(diagram_data->xnames[i])))
+      if (diagram_data->xnames[i] && sizeof(diagram_data->xnames[i]))
 	diagram_data->xnamesimg[i]=notext
 	  ->write(UNICODE(diagram_data->xnames[i],diagram_data->encoding))
 	  ->scale(0,diagram_data->fontsize);
@@ -970,6 +970,9 @@ mapping(string:mixed) create_graph(mapping diagram_data)
     if (diagram_data->xnames)
     {
       diagram_data->xnames=({" "})+diagram_data->xnames;
+      diagram_data->values_for_xnames =
+	({ diagram_data->values_for_xnames[0] }) +
+	diagram_data->values_for_xnames;
       diagram_data->xspace=(diagram_data->xmaxvalue
 			      - diagram_data->xminvalue)/
 	(LITET+sizeof(diagram_data->xnames));

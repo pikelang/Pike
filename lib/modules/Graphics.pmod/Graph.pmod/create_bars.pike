@@ -96,9 +96,18 @@ mapping(string:mixed) create_bars(mapping(string:mixed) diagram_data)
   START_DEBUG("text");
   float start;
   start=diagram_data->xminvalue+diagram_data->xspace/2.0;
-  diagram_data->values_for_xnames=allocate(sizeof(diagram_data->xnames));
-  for(int i=0; i<sizeof(diagram_data->xnames); i++)
-    diagram_data->values_for_xnames[i]=start+start*2*i;
+  if (!diagram_data->values_for_xnames) {
+    diagram_data->values_for_xnames=allocate(sizeof(diagram_data->xnames));
+    if (diagram_data->subtype=="line") {
+      for(int i=0; i<sizeof(diagram_data->xnames); i++) {
+	diagram_data->values_for_xnames[i]=start*2*i;
+      }
+    } else {
+      for(int i=0; i<sizeof(diagram_data->xnames); i++) {
+	diagram_data->values_for_xnames[i]=start+start*2*i;
+      }
+    }
+  }
 
   if (!(diagram_data->values_for_ynames))
   {
@@ -402,9 +411,7 @@ mapping(string:mixed) create_bars(mapping(string:mixed) diagram_data)
 	  }
 	  else
 	  {
-	    l[i*2]=xstart+(diagram_data->xspace/2.0+
-			   diagram_data->xspace*i)
-	      * xmore;
+	    l[i*2]=xstart+diagram_data->xspace*i * xmore;
 	    l[i*2+1]=-(d[i]-diagram_data->yminvalue)*ymore+
 	      diagram_data->ysize-ystart;	  
 	  }
@@ -657,16 +664,28 @@ mapping(string:mixed) create_bars(mapping(string:mixed) diagram_data)
 
   START_DEBUG("text_on_axis");
   for(int i=0; i<s; i++)
-    if ((diagram_data->values_for_xnames[i]<diagram_data->xmaxvalue)&&
-	(diagram_data->values_for_xnames[i]>diagram_data->xminvalue))
+    if ((diagram_data->values_for_xnames[i]<=diagram_data->xmaxvalue)&&
+	(diagram_data->values_for_xnames[i]>=diagram_data->xminvalue))
     {
+      float xpos = floor((diagram_data->values_for_xnames[i]
+			  - diagram_data->xminvalue)*xmore+xstart);
+
       barsdiagram->paste_alpha_color(
                     diagram_data->xnamesimg[i], 
 		    @(diagram_data->textcolor), 
-		    (int)floor((diagram_data->values_for_xnames[i]
-				- diagram_data->xminvalue)*xmore+xstart
-			       - diagram_data->xnamesimg[i]->xsize()/2), 
+		    (int)(xpos - diagram_data->xnamesimg[i]->xsize()/2), 
 		    (int)floor(diagram_data->ysize-ypos_for_xaxis+si/4.0));
+
+      if (diagram_data->subtype == "line") {
+	barsdiagram->setcolor(@diagram_data->axcolor);
+	barsdiagram->
+	  polygone(make_polygon_from_line(
+			diagram_data->linewidth, 
+			({
+			  xpos, (float)diagram_data->ysize-ypos_for_xaxis - si/4.0,
+			  xpos, (float)diagram_data->ysize-ypos_for_xaxis + si/4.0,
+			}), 1, 1)[0]);
+      }
     }
 
   //Write the text on the Y-axis
