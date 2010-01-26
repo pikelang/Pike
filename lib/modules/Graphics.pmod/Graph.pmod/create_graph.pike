@@ -355,7 +355,13 @@ mapping(string:mixed) init(mapping(string:mixed) diagram_data)
 		ymaxvalue=k;
 	    }
 	  xminvalue=0.0;
-	  xmaxvalue=10.0;
+	  if (diagram_data->subtype == "line") {
+	    if (xmaxvalue < (float)j) {
+	      xmaxvalue = (float)j;
+	    }
+	  } else {
+	    xmaxvalue=10.0;
+	  }
 	}
 	else
 	  if (diagram_data->type=="pie")
