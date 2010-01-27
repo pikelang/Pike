@@ -1,6 +1,15 @@
 Changes since Pike 7.8.352 (third 7.8 release):
 ----------------------------------------------------------------------
 
+Extensions and Changes
+----------------------
+
+o Protocols.HTTP.Session will no longer override an existing
+  content-type header in async_do_method_url.
+
+o Updated timezone data to tzdata2009u.
+
+
 Bug fixes
 ---------
 
@@ -28,6 +37,10 @@ o Fixed so than an existing content-type is not overriden in
 o Fixed issue where GTK objects weren't destroyed properly.
   http://pike.ida.liu.se/docs/tutorial/hello/window.xml now
   works again.
+
+o Fixed several issues related to lables on the X and Y axises 
+  and the calculation of xmaxvalue for the bars/line/linear case 
+  in Graphics.Graph.
 
 
 Building and installing
