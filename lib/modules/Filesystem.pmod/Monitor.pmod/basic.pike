@@ -1,7 +1,7 @@
 //
 // Basic filesystem monitor.
 //
-// $Id: basic.pike,v 1.31 2010/01/28 14:06:45 grubba Exp $
+// $Id: basic.pike,v 1.32 2010/01/28 14:19:52 grubba Exp $
 //
 // 2009-07-09 Henrik Grubbström
 //
@@ -317,10 +317,10 @@ protected class Monitor(string path,
       delta = 1 + random(delta);
     }
     if (st) {
-      int d = 1 + ((time(1) - st->mtime)>>4);
+      int d = 1 + ((time(1) - st->mtime)>>8);
       if (d < 0) d = max_dir_check_interval || global::max_dir_check_interval;
       if (d < delta) delta = d;
-      d = 1 + ((time(1) - st->ctime)>>4);
+      d = 1 + ((time(1) - st->ctime)>>8);
       if (d < 0) d = max_dir_check_interval || global::max_dir_check_interval;
       if (d < delta) delta = d;
     }
