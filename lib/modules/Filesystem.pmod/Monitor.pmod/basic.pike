@@ -1,7 +1,7 @@
 //
 // Basic filesystem monitor.
 //
-// $Id: basic.pike,v 1.32 2010/01/28 14:19:52 grubba Exp $
+// $Id: basic.pike,v 1.33 2010/01/28 15:15:01 grubba Exp $
 //
 // 2009-07-09 Henrik Grubbström
 //
@@ -158,6 +158,8 @@ enum MonitorFlags {
   MF_AUTO = 2,
   MF_INITED = 4,
 };
+
+protected constant S_IFMT = 0x7ffff000;
 
 //! Monitoring information for a single filesystem path.
 //!
@@ -471,8 +473,10 @@ protected class Monitor(string path,
       }
       return 1;
     }
-    if (!st) {
-      if (old_st) {
+    if (old_st) {
+      if (!st || ((old_st->mode & S_IFMT) != (st->mode & S_IFMT))) {
+	// File deleted or changed type.
+
 	int delay;
 	// Propagate deletions to any submonitors.
 	if (files) {
@@ -492,17 +496,27 @@ protected class Monitor(string path,
 	  next_poll = time(1);
 	  monitor_queue->adjust(this);
 	} else {
-	  if (this_program::flags & MF_AUTO) {
+	  if (st) {
+	    // Avoid race when a file has been replaced with a directory
+	    // or vice versa or similar.
+	    st = UNDEFINED;
+
+	    // We will catch the new file at the next poll.
+	    next_poll = time(1);
+	    monitor_queue->adjust(this);
+	  } else if (this_program::flags & MF_AUTO) {
 	    m_delete(monitors, path);
 	    release_monitor(this);
 	  }
+
 	  file_deleted(path, old_st);
 	  return 1;
 	}
+	return 0;
       }
-      return 0;
-    }
-    if (!old_st) {
+    } else if (st) {
+      // File created.
+
       last_change = time(1);
       file_created(path, st);
       if (st->isdir) {
