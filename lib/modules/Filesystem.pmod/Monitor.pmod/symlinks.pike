@@ -1,7 +1,7 @@
 //
 // Filesystem monitor with support for symbolic links.
 //
-// $Id: symlinks.pike,v 1.1 2010/01/28 14:08:06 grubba Exp $
+// $Id: symlinks.pike,v 1.2 2010/01/28 14:27:16 grubba Exp $
 //
 // 2010-01-25 Henrik Grubbström
 //
@@ -11,11 +11,17 @@
 //! This module extends @[Filesystem.Monitor.basic] with
 //! support for symbolic links.
 //!
+//! @note
+//!   For operating systems where symbolic links aren't supported,
+//!   this module will behave exactly like @[Filesystem.Monitor.basic].
+//!
 //! @seealso
 //!   @[Filesystem.Monitor.basic]
 
 //! @decl inherit Filesystem.Monitor.basic
 inherit "basic.pike" : basic;
+
+#if constant(readlink)
 
 //! @decl void attr_changed(string path, Stdio.Stat st)
 //!
@@ -434,3 +440,5 @@ protected int allocate_symlink(string sym)
   available_ids -= res;
   return symlink_ids[sym] = res;
 }
+
+#endif /* constant(readlink) */
