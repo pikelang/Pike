@@ -1,7 +1,7 @@
 //
 // Filesystem monitor with support for symbolic links.
 //
-// $Id: symlinks.pike,v 1.2 2010/01/28 14:27:16 grubba Exp $
+// $Id: symlinks.pike,v 1.3 2010/02/01 14:38:00 grubba Exp $
 //
 // 2010-01-25 Henrik Grubbström
 //
@@ -163,14 +163,15 @@ protected class Monitor
 			 string path, Stdio.Stat|void st,
 			 string|void symlink)
   {
-    if (!cb || state[path]) return;
+    if (!cb || state[path] || (st && st->islnk)) return;
     state[path] = 1;
     if (!symlink || !symlink_targets[symlink]) {
       cb(path, st);
     }
     if (sizeof(symlink_targets)) {
       // Check the list of symlink targets.
-      foreach(symlink_targets; string src; string dest) {
+      foreach(reverse(sort(indices(symlink_targets))), string src) {
+	string dest = symlink_targets[src];
 	if (has_prefix(path, dest)) {
 	  low_call_callback(cb, state, symlink_targets - ([ src : dest ]),
 			    src + path[sizeof(dest)..], st, symlink);
