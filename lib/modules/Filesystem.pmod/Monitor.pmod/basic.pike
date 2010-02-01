@@ -1,7 +1,7 @@
 //
 // Basic filesystem monitor.
 //
-// $Id: basic.pike,v 1.33 2010/01/28 15:15:01 grubba Exp $
+// $Id: basic.pike,v 1.34 2010/02/01 14:36:18 grubba Exp $
 //
 // 2009-07-09 Henrik Grubbström
 //
@@ -541,6 +541,8 @@ protected class Monitor(string path,
 	}
       }
       return 1;
+    } else {
+      return 0;
     }
     if ((st->mtime != old_st->mtime) || (st->ctime != old_st->ctime) ||
 	(st->size != old_st->size)) {
