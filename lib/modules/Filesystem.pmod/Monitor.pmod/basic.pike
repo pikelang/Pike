@@ -1,7 +1,7 @@
 //
 // Basic filesystem monitor.
 //
-// $Id: basic.pike,v 1.34 2010/02/01 14:36:18 grubba Exp $
+// $Id: basic.pike,v 1.35 2010/02/02 14:34:47 grubba Exp $
 //
 // 2009-07-09 Henrik Grubbström
 //
@@ -157,6 +157,7 @@ enum MonitorFlags {
   MF_RECURSE = 1,
   MF_AUTO = 2,
   MF_INITED = 4,
+  MF_HARD = 8,
 };
 
 protected constant S_IFMT = 0x7ffff000;
@@ -337,6 +338,15 @@ protected class Monitor(string path,
     monitor_queue->adjust(this);
   }
 
+  //! Check if this monitor should be removed automatically.
+  void check_for_release(int mask, int flags)
+  {
+    if ((this_program::flags & mask) == flags) {
+      m_delete(monitors, path);
+      release_monitor(this);
+    }
+  }
+
   //! Called when the status has changed for an existing file.
   protected int(0..1) status_change(Stdio.Stat old_st, Stdio.Stat st,
 				    int orig_flags)
@@ -361,7 +371,7 @@ protected class Monitor(string path,
 	    }
 	  };
 	if (this_program::flags & MF_RECURSE) {
-	  monitor(file, orig_flags | MF_AUTO,
+	  monitor(file, orig_flags | MF_AUTO | MF_HARD,
 		  max_dir_check_interval,
 		  file_interval_factor,
 		  stable_time);
@@ -458,7 +468,7 @@ protected class Monitor(string path,
 	      continue;
 	    }
 	    if (this_program::flags & MF_RECURSE) {
-	      monitor(file, orig_flags | MF_AUTO,
+	      monitor(file, orig_flags | MF_AUTO | MF_HARD,
 		      max_dir_check_interval,
 		      file_interval_factor,
 		      stable_time);
@@ -504,9 +514,12 @@ protected class Monitor(string path,
 	    // We will catch the new file at the next poll.
 	    next_poll = time(1);
 	    monitor_queue->adjust(this);
-	  } else if (this_program::flags & MF_AUTO) {
-	    m_delete(monitors, path);
-	    release_monitor(this);
+	  } else {
+	    // The monitor no longer has a link from its parent directory.
+	    this_program::flags &= ~MF_HARD;
+
+	    // Check if we should remove the monitor.
+	    check_for_release(MF_AUTO, MF_AUTO);
 	  }
 
 	  file_deleted(path, old_st);
@@ -530,7 +543,7 @@ protected class Monitor(string path,
 	    continue;
 	  }
 	  if (this_program::flags & MF_RECURSE) {
-	    monitor(file, orig_flags | MF_AUTO,
+	    monitor(file, orig_flags | MF_AUTO | MF_HARD,
 		    max_dir_check_interval,
 		    file_interval_factor,
 		    stable_time);
@@ -735,6 +748,9 @@ void monitor(string path, MonitorFlags|void flags,
       m->next_poll = 0;
       monitor_queue->adjust(m);
     }
+    if (flags & MF_HARD) {
+      m->flags |= MF_HARD;
+    }
     // For the other cases there's no need to do anything,
     // since we can keep the monitor as-is.
   } else {
@@ -775,9 +791,8 @@ void release(string path, MonitorFlags|void flags)
       path += "/";
     }
     foreach(monitors; string mpath; m) {
-      if (has_prefix(mpath, path) && ((m->flags & flags) == flags)) {
-	m_delete(monitors, mpath);
-	release_monitor(m);
+      if (has_prefix(mpath, path)) {
+	m->check_for_release(flags, flags);
       }
     }
   }
