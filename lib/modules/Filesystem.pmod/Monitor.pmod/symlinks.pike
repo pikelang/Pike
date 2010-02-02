@@ -1,7 +1,7 @@
 //
 // Filesystem monitor with support for symbolic links.
 //
-// $Id: symlinks.pike,v 1.3 2010/02/01 14:38:00 grubba Exp $
+// $Id: symlinks.pike,v 1.4 2010/02/02 14:37:07 grubba Exp $
 //
 // 2010-01-25 Henrik Grubbström
 //
@@ -225,7 +225,9 @@ protected class Monitor
 			       global::symlink_targets,
 			       m_path, UNDEFINED, path);
 	  m->symlinks -= sym_id;
-	  // FIXME: Unregister the monitor if it is the last ref.
+	  // Unregister the monitor if it is the last ref,
+	  // and there are no hard links to the file.
+	  m->check_for_release(MF_AUTO|MF_HARD, MF_AUTO);
 	}
       }
       global::available_ids |= m_delete(symlink_ids, path);
@@ -256,7 +258,7 @@ protected class Monitor
       int sym_done = sym_id;
       Monitor m;
       if (!(m = monitors[dest])) {
-	monitor(dest, flags | MF_AUTO,
+	monitor(dest, (flags & ~MF_HARD) | MF_AUTO,
 		max_dir_check_interval,
 		file_interval_factor,
 		stable_time);
@@ -408,6 +410,21 @@ protected class Monitor
       return;
     }
     ::stable_data_change(path, st);
+  }
+
+  //! Check if this monitor should be removed automatically.
+  void check_for_release(int mask, int flags)
+  {
+    if (symlinks) {
+      // We need to check if this is the direct target of a symlink.
+      foreach(symlink_targets;; string dest) {
+	if (path == dest) {
+	  // The monitor still has a symlink pointing to it.
+	  return;
+	}
+      }
+    }
+    ::check_for_release(mask, flags);
   }
 
   //! Called when the status has changed for an existing file.
