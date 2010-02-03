@@ -1,7 +1,7 @@
 //
 // Filesystem monitor with support for symbolic links.
 //
-// $Id: symlinks.pike,v 1.4 2010/02/02 14:37:07 grubba Exp $
+// $Id: symlinks.pike,v 1.5 2010/02/03 13:44:33 grubba Exp $
 //
 // 2010-01-25 Henrik Grubbström
 //
@@ -314,6 +314,14 @@ protected class Monitor
     ::attr_changed(path, st);
   }
 
+  protected void low_file_exists(string path, Stdio.Stat st)
+  {
+    // Note: May be called for symlink targets before they have
+    //       initialized properly, in which case st will be 0.
+    if (!st || !global::file_exists) return;
+    global::file_exists(path, st);
+  }
+
   //! File existance callback.
   //!
   //! @param st
@@ -335,7 +343,7 @@ protected class Monitor
   {
     check_symlink(path, st, 1);
     if (st && st->islnk) {
-      notify_symlink(global::file_exists, path);
+      notify_symlink(low_file_exists, path);
       return;
     }
     ::file_exists(path, st);
