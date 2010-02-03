@@ -1,7 +1,7 @@
 //
 // Filesystem monitor with support for symbolic links.
 //
-// $Id: symlinks.pike,v 1.5 2010/02/03 13:44:33 grubba Exp $
+// $Id: symlinks.pike,v 1.6 2010/02/03 13:46:19 grubba Exp $
 //
 // 2010-01-25 Henrik Grubbström
 //
@@ -448,6 +448,8 @@ protected class Monitor
 
 }
 
+#endif /* constant(readlink) */
+
 //! Mapping from symlink name to symlink target.
 protected mapping(string:string) symlink_targets = ([]);
 
@@ -466,5 +468,3 @@ protected int allocate_symlink(string sym)
   available_ids -= res;
   return symlink_ids[sym] = res;
 }
-
-#endif /* constant(readlink) */
