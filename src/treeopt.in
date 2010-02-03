@@ -2,7 +2,7 @@
 // This file is part of Pike. For copyright information see COPYRIGHT.
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
-// $Id: treeopt.in,v 1.100 2009/08/11 15:16:35 grubba Exp $
+// $Id: treeopt.in,v 1.101 2010/02/03 20:22:29 grubba Exp $
 //
 // The tree optimizer
 //
@@ -399,7 +399,7 @@ F_POP_VALUE(0 = F_LOOP, *):
 F_POP_VALUE(0 = F_SWITCH, *):
   $0;
 
-F_POP_VALUE('?'(0, ':'(1, 2)), *):
+F_POP_VALUE(# = '?'(0, ':'(1, 2)), *):
   '?'($0, ':'(F_POP_VALUE($1, -), F_POP_VALUE($2, -)));
 
 
