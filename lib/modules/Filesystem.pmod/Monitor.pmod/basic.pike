@@ -1,7 +1,7 @@
 //
 // Basic filesystem monitor.
 //
-// $Id: basic.pike,v 1.30 2009/10/22 15:45:01 grubba Exp $
+// $Id: basic.pike,v 1.31 2010/02/03 14:06:18 grubba Exp $
 //
 // 2009-07-09 Henrik Grubbström
 //
@@ -157,7 +157,10 @@ enum MonitorFlags {
   MF_RECURSE = 1,
   MF_AUTO = 2,
   MF_INITED = 4,
+  MF_HARD = 8,
 };
+
+protected constant S_IFMT = 0x7ffff000;
 
 //! Monitoring information for a single filesystem path.
 //!
@@ -176,6 +179,121 @@ protected class Monitor(string path,
 
   int `<(mixed m) { return next_poll < m; }
   int `>(mixed m) { return next_poll > m; }
+
+  //! Call a notification callback.
+  //!
+  //! @param cb
+  //!   Callback to call or @[UNDEFINED] for no operation.
+  //!
+  //! @param path
+  //!   Path to notify on.
+  //!
+  //! @param st
+  //!   Stat for the @[path].
+  protected void call_callback(function(string, Stdio.Stat|void:void) cb,
+			       string path, Stdio.Stat|void st)
+  {
+    if (!cb) return;
+    cb(path, st);
+  }
+
+  //! File attribute or content changed callback.
+  //!
+  //! @param st
+  //!   Status information for @[path] as obtained by
+  //!   @expr{file_stat(path, 1)@}.
+  //!
+  //! This function is called when a change has been detected for an
+  //! attribute for a monitored file or directory.
+  //!
+  //! Called by @[check()] and @[check_monitor()].
+  //!
+  //! @note
+  //!   If there is a @[data_changed()] callback, it may supersede this
+  //!   callback if the file content also has changed.
+  protected void attr_changed(string path, Stdio.Stat st)
+  {
+    if (global::data_changed) {
+      call_callback(global::data_changed, path);
+    } else {
+      call_callback(global::attr_changed, path, st);
+    }
+  }
+
+  //! File existance callback.
+  //!
+  //! @param st
+  //!   Status information for @[path] as obtained by
+  //!   @expr{file_stat(path, 1)@}.
+  //!
+  //! This function is called during initialization for all monitored paths,
+  //! and subpaths for monitored directories. It represents the initial state
+  //! for the monitor.
+  //!
+  //! @note
+  //!   For directories, @[file_created()] will be called for the subpaths
+  //!   before the call for the directory itself. This can be used to detect
+  //!   when the initialization for a directory is finished.
+  //!
+  //! Called by @[check()] and @[check_monitor()] the first time a monitored
+  //! path is checked (and only if it exists).
+  protected void file_exists(string path, Stdio.Stat st)
+  {
+    call_callback(global::file_exists, path, st);
+  }
+
+  //! File creation callback.
+  //!
+  //! @param st
+  //!   Status information for @[path] as obtained by
+  //!   @expr{file_stat(path, 1)@}.
+  //!
+  //! This function is called when either a monitored path has started
+  //! existing, or when a new file or directory has been added to a
+  //! monitored directory.
+  //!
+  //! Called by @[check()] and @[check_monitor()].
+  protected void file_created(string path, Stdio.Stat st)
+  {
+    call_callback(global::file_created, path, st);
+  }
+
+  //! File deletion callback.
+  //!
+  //! @param path
+  //!   Path of the new file or directory that has been deleted.
+  //!
+  //! @param old_st
+  //!   Stat for the file prior to deletion (if known). Note that
+  //!   this argument is not passed along to top level function.
+  //!
+  //! This function is called when either a monitored path has stopped
+  //! to exist, or when a file or directory has been deleted from a
+  //! monitored directory.
+  //!
+  //! Called by @[check()] and @[check_monitor()].
+  protected void file_deleted(string path, Stdio.Stat|void old_st)
+  {
+    call_callback(global::file_deleted, path);
+  }
+
+  //! Stable change callback.
+  //!
+  //! @param st
+  //!   Status information for @[path] as obtained by
+  //!   @expr{file_stat(path, 1)@}.
+  //!
+  //! This function is called when previous changes to @[path] are
+  //! considered "stable".
+  //!
+  //! "Stable" in this case means that there have been no detected
+  //! changes for at lease @[stable_time] seconds.
+  //!
+  //! Called by @[check()] and @[check_monitor()].
+  protected void stable_data_change(string path, Stdio.Stat st)
+  {
+    call_callback(global::stable_data_change, path, st);
+  }
 
   protected string _sprintf(int c)
   {
@@ -202,10 +320,10 @@ protected class Monitor(string path,
       delta = 1 + random(delta);
     }
     if (st) {
-      int d = 1 + ((time(1) - st->mtime)>>4);
+      int d = 1 + ((time(1) - st->mtime)>>8);
       if (d < 0) d = max_dir_check_interval || global::max_dir_check_interval;
       if (d < delta) delta = d;
-      d = 1 + ((time(1) - st->ctime)>>4);
+      d = 1 + ((time(1) - st->ctime)>>8);
       if (d < 0) d = max_dir_check_interval || global::max_dir_check_interval;
       if (d < delta) delta = d;
     }
@@ -218,6 +336,85 @@ protected class Monitor(string path,
     }
     next_poll = time(1) + (delta || 1);
     monitor_queue->adjust(this);
+  }
+
+  //! Check if this monitor should be removed automatically.
+  void check_for_release(int mask, int flags)
+  {
+    if ((this_program::flags & mask) == flags) {
+      m_delete(monitors, path);
+      release_monitor(this);
+    }
+  }
+
+  //! Called when the status has changed for an existing file.
+  protected int(0..1) status_change(Stdio.Stat old_st, Stdio.Stat st,
+				    int orig_flags)
+  {
+    if (st->isdir) {
+      array(string) files = get_dir(path) || ({});
+      array(string) new_files = files;
+      array(string) deleted_files = ({});
+      if (this_program::files) {
+	new_files -= this_program::files;
+	deleted_files = this_program::files - files;
+      }
+      this_program::files = files;
+      foreach(new_files, string file) {
+	file = canonic_path(Stdio.append_path(path, file));
+	Monitor m2 = monitors[file];
+	mixed err = catch {
+	    if (m2) {
+	      // We have a separate monitor on the created file.
+	      // Let it handle the notification.
+	      m2->check(flags);
+	    }
+	  };
+	if (this_program::flags & MF_RECURSE) {
+	  monitor(file, orig_flags | MF_AUTO | MF_HARD,
+		  max_dir_check_interval,
+		  file_interval_factor,
+		  stable_time);
+	  monitors[file]->check();
+	} else if (!m2) {
+	  file_created(file, file_stat(file, 1));
+	}
+      }
+      foreach(deleted_files, string file) {
+	file = canonic_path(Stdio.append_path(path, file));
+	Monitor m2 = monitors[file];
+	mixed err = catch {
+	    if (m2) {
+	      // We have a separate monitor on the deleted file.
+	      // Let it handle the notification.
+	      m2->check(flags);
+	    }
+	  };
+	if (this_program::flags & MF_RECURSE) {
+	  // The monitor for the file has probably removed itself,
+	  // or the user has done it by hand, in either case we
+	  // don't need to do anything more here.
+	} else if (!m2) {
+	  file_deleted(file);
+	}
+	if (err) throw(err);
+      }
+      if (flags & MF_RECURSE) {
+	// Check the remaining files in the directory.
+	foreach(((files - new_files) - deleted_files), string file) {
+	  file = canonic_path(Stdio.append_path(path, file));
+	  Monitor m2 = monitors[file];
+	  if (m2) {
+	    m2->check(flags);
+	  }
+	}
+      }
+      if (sizeof(new_files) || sizeof(deleted_files)) return 1;
+    } else {
+      attr_changed(path, st);
+      return 1;
+    }
+    return 0;
   }
 
   //! Check for changes.
@@ -271,25 +468,25 @@ protected class Monitor(string path,
 	      continue;
 	    }
 	    if (this_program::flags & MF_RECURSE) {
-	      monitor(file, orig_flags | MF_AUTO,
+	      monitor(file, orig_flags | MF_AUTO | MF_HARD,
 		      max_dir_check_interval,
 		      file_interval_factor,
 		      stable_time);
 	      check_monitor(monitors[file]);
-	    } else if (file_exists) {
+	    } else {
 	      file_exists(file, file_stat(file, 1));
 	    }
 	  }
 	}
 	// Signal file_exists for path as an end marker.
-	if (file_exists) {
-	  file_exists(path, st);
-	}
+	file_exists(path, st);
       }
       return 1;
     }
-    if (!st) {
-      if (old_st) {
+    if (old_st) {
+      if (!st || ((old_st->mode & S_IFMT) != (st->mode & S_IFMT))) {
+	// File deleted or changed type.
+
 	int delay;
 	// Propagate deletions to any submonitors.
 	if (files) {
@@ -309,23 +506,32 @@ protected class Monitor(string path,
 	  next_poll = time(1);
 	  monitor_queue->adjust(this);
 	} else {
-	  if (this_program::flags & MF_AUTO) {
-	    m_delete(monitors, path);
-	    release_monitor(this);
+	  if (st) {
+	    // Avoid race when a file has been replaced with a directory
+	    // or vice versa or similar.
+	    st = UNDEFINED;
+
+	    // We will catch the new file at the next poll.
+	    next_poll = time(1);
+	    monitor_queue->adjust(this);
+	  } else {
+	    // The monitor no longer has a link from its parent directory.
+	    this_program::flags &= ~MF_HARD;
+
+	    // Check if we should remove the monitor.
+	    check_for_release(MF_AUTO, MF_AUTO);
 	  }
-	  if (file_deleted) {
-	    file_deleted(path);
-	  }
+
+	  file_deleted(path, old_st);
 	  return 1;
 	}
+	return 0;
       }
-      return 0;
-    }
-    if (!old_st) {
+    } else if (st) {
+      // File created.
+
       last_change = time(1);
-      if (file_created) {
-	file_created(path, st);
-      }
+      file_created(path, st);
       if (st->isdir) {
 	array(string) files = get_dir(path) || ({});
 	this_program::files = files;
@@ -337,90 +543,24 @@ protected class Monitor(string path,
 	    continue;
 	  }
 	  if (this_program::flags & MF_RECURSE) {
-	    monitor(file, orig_flags | MF_AUTO,
+	    monitor(file, orig_flags | MF_AUTO | MF_HARD,
 		    max_dir_check_interval,
 		    file_interval_factor,
 		    stable_time);
 	    check_monitor(monitors[file]);
-	  } else if (file_created) {
+	  } else {
 	    file_created(file, file_stat(file, 1));
 	  }
 	}
       }
       return 1;
+    } else {
+      return 0;
     }
     if ((st->mtime != old_st->mtime) || (st->ctime != old_st->ctime) ||
 	(st->size != old_st->size)) {
       last_change = time(1);
-      if (st->isdir) {
-	array(string) files = get_dir(path) || ({});
-	array(string) new_files = files;
-	array(string) deleted_files = ({});
-	if (this_program::files) {
-	  new_files -= this_program::files;
-	  deleted_files = this_program::files - files;
-	}
-	this_program::files = files;
-	foreach(new_files, string file) {
-	  file = canonic_path(Stdio.append_path(path, file));
-	  Monitor m2 = monitors[file];
-	  mixed err = catch {
-	      if (m2) {
-		// We have a separate monitor on the created file.
-		// Let it handle the notification.
-		m2->check(flags);
-	      }
-	    };
-	  if (this_program::flags & MF_RECURSE) {
-	    monitor(file, orig_flags | MF_AUTO,
-		    max_dir_check_interval,
-		    file_interval_factor,
-		    stable_time);
-	    monitors[file]->check();
-	  } else if (!m2 && file_created) {
-	    file_created(file, file_stat(file, 1));
-	  }
-	}
-	foreach(deleted_files, string file) {
-	  file = canonic_path(Stdio.append_path(path, file));
-	  Monitor m2 = monitors[file];
-	  mixed err = catch {
-	      if (m2) {
-		// We have a separate monitor on the deleted file.
-		// Let it handle the notification.
-		m2->check(flags);
-	      }
-	    };
-	  if (this_program::flags & MF_RECURSE) {
-	    // The monitor for the file has probably removed itself,
-	    // or the user has done it by hand, in either case we
-	    // don't need to do anything more here.
-	  } else if (!m2 && file_deleted) {
-	    file_deleted(file);
-	  }
-	  if (err) throw(err);
-	}
-	if (flags & MF_RECURSE) {
-	  // Check the remaining files in the directory.
-	  foreach(((files - new_files) - deleted_files), string file) {
-	    file = canonic_path(Stdio.append_path(path, file));
-	    Monitor m2 = monitors[file];
-	    if (m2) {
-	      m2->check(flags);
-	    }
-	  }
-	}
-	if (sizeof(new_files) || sizeof(deleted_files)) return 1;
-      } else {
-	if (data_changed) {
-	  data_changed(path);
-	  return 1;
-	}
-	if (attr_changed) {
-	  attr_changed(path, st);
-	}
-	return 1;
-      }
+      if (status_change(old_st, st, orig_flags)) return 1;
     }
     if ((flags & MF_RECURSE) && (st->isdir)) {
       // Check the files in the directory.
@@ -434,9 +574,7 @@ protected class Monitor(string path,
     }
     if (last_change < time(1) - (stable_time || global::stable_time)) {
       last_change = 0x7fffffff;
-      if (stable_data_change) {
-	stable_data_change(path, st);
-      }
+      stable_data_change(path, st);
       return 1;
     }
     return 0;
@@ -610,6 +748,9 @@ void monitor(string path, MonitorFlags|void flags,
       m->next_poll = 0;
       monitor_queue->adjust(m);
     }
+    if (flags & MF_HARD) {
+      m->flags |= MF_HARD;
+    }
     // For the other cases there's no need to do anything,
     // since we can keep the monitor as-is.
   } else {
@@ -650,9 +791,8 @@ void release(string path, MonitorFlags|void flags)
       path += "/";
     }
     foreach(monitors; string mpath; m) {
-      if (has_prefix(mpath, path) && ((m->flags & flags) == flags)) {
-	m_delete(monitors, mpath);
-	release_monitor(m);
+      if (has_prefix(mpath, path)) {
+	m->check_for_release(flags, flags);
       }
     }
   }
