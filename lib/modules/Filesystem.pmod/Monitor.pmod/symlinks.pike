@@ -1,7 +1,7 @@
 //
 // Filesystem monitor with support for symbolic links.
 //
-// $Id: symlinks.pike,v 1.6 2010/02/03 13:46:19 grubba Exp $
+// $Id: symlinks.pike,v 1.7 2010/02/03 15:24:41 grubba Exp $
 //
 // 2010-01-25 Henrik Grubbström
 //
@@ -433,6 +433,15 @@ protected class Monitor
       }
     }
     ::check_for_release(mask, flags);
+  }
+
+  //! Called to create a sub monitor.
+  protected void monitor(string path, int flags, int max_dir_interval,
+			 int file_interval_factor, int stable_time)
+  {
+    ::monitor(path, flags, max_dir_check_interval,
+	      file_interval_factor, stable_time);
+    monitors[path]->symlinks |= symlinks;
   }
 
   //! Called when the status has changed for an existing file.
