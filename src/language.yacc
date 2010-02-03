@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.453 2009/11/17 14:08:46 grubba Exp $
+|| $Id: language.yacc,v 1.454 2010/02/03 20:19:52 grubba Exp $
 */
 
 %pure_parser
@@ -3151,6 +3151,7 @@ cond: TOK_IF
 		mknode(':',
 		       mkcastnode(void_type_string, $8),
 		       mkcastnode(void_type_string, $9)));
+    COPY_LINE_NUMBER_INFO($$, $3);
     $$ = mkcastnode(void_type_string, $$);
     COPY_LINE_NUMBER_INFO($$, $3);
     free_node ($3);
