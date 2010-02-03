@@ -1,7 +1,7 @@
 //
 // Basic filesystem monitor.
 //
-// $Id: basic.pike,v 1.31 2010/02/03 14:06:18 grubba Exp $
+// $Id: basic.pike,v 1.32 2010/02/03 15:24:48 grubba Exp $
 //
 // 2009-07-09 Henrik Grubbström
 //
@@ -345,6 +345,14 @@ protected class Monitor(string path,
       m_delete(monitors, path);
       release_monitor(this);
     }
+  }
+
+  //! Called to create a sub monitor.
+  protected void monitor(string path, int flags, int max_dir_interval,
+			 int file_interval_factor, int stable_time)
+  {
+    global::monitor(path, flags, max_dir_check_interval,
+		    file_interval_factor, stable_time);
   }
 
   //! Called when the status has changed for an existing file.
