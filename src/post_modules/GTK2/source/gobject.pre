@@ -286,3 +286,13 @@ object ref_sink();
 int is_floating();
 //! Checks whether this object has a floating reference.
 endrequire;
+
+string get_docs()
+//! Get documentation on object
+{
+  struct svalue *sv;
+
+  sv=pgtk2_get_doc(G_OBJECT(THIS->obj),0);
+  push_svalue(sv);
+  free_svalue(sv);
+}

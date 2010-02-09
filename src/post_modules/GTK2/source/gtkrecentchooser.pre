@@ -138,7 +138,8 @@ array get_uris()
   pgtk2_pop_n_elems(args);
   {
     gchar **a;
-    unsigned int len;
+//    unsigned int len;
+    gsize len;
 
     a=gtk_recent_chooser_get_uris(GTK_RECENT_CHOOSER(THIS->obj),&len);
     if (len) {

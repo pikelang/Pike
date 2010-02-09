@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: support.c,v 1.22 2009/11/16 14:00:32 per Exp $
+|| $Id: support.c,v 1.23 2010/02/09 17:53:42 ldillon Exp $
 */
 
 #include <version.h>
@@ -1351,4 +1351,127 @@ int pgtk2_entry_completion_match_func( GtkEntryCompletion *x,
   res = Pike_sp[-1].u.integer;
   pop_stack();
   return res;
+}
+
+void add_property_docs(GType type, GString *str) {
+  GObjectClass *class;
+  GParamSpec **props;
+  guint n=0,i;
+  gboolean has_prop=FALSE;
+  G_CONST_RETURN gchar *blurb=NULL;
+
+  class=g_type_class_ref(type);
+  props=g_object_class_list_properties(class,&n);
+
+  for (i=0; i<n; i++) {
+    if (props[i]->owner_type!=type)
+      continue; /* these are from a parent type */
+
+    if (!has_prop) {
+      g_string_append_printf(str,"Properties from %s:\n",g_type_name(type));
+      has_prop=TRUE;
+    }
+    g_string_append_printf(str,"  %s - %s: %s\n",
+		g_param_spec_get_name(props[i]),
+		g_type_name(props[i]->value_type),
+		g_param_spec_get_nick(props[i]));
+    blurb=g_param_spec_get_blurb(props[i]);
+    if (blurb)
+      g_string_append_printf(str,"    %s\n",blurb);
+  }
+  g_free(props);
+  if (has_prop)
+    g_string_append(str,"\n");
+  g_type_class_unref(class);
+}
+
+void add_signal_docs(GType type, GString *str) {
+  GTypeClass *class=NULL;
+  guint *signal_ids,n=0,i;
+
+  if (G_TYPE_IS_CLASSED(type))
+    class=g_type_class_ref(type);
+  signal_ids=g_signal_list_ids(type,&n);
+
+  if (n>0) {
+    g_string_append_printf(str,"Signals from %s:\n",g_type_name(type));
+    for (i=0; i<n; i++) {
+      GSignalQuery q;
+      guint j;
+
+      g_signal_query(signal_ids[i],&q);
+      g_string_append(str,"  ");
+      g_string_append(str,q.signal_name);
+      g_string_append(str," (");
+      for (j=0; j<q.n_params; j++) {
+	g_string_append(str,g_type_name(q.param_types[j]));
+	if (j!=q.n_params-1)
+	  g_string_append(str,", ");
+      }
+      g_string_append(str,")");
+      if (q.return_type && q.return_type!=G_TYPE_NONE) {
+	g_string_append(str," -> ");
+	g_string_append(str,g_type_name(q.return_type));
+      }
+      g_string_append(str,"\n");
+    }
+    g_free(signal_ids);
+    g_string_append(str,"\n");
+  }
+  if (class)
+    g_type_class_unref(class);
+}
+
+struct svalue *pgtk2_get_doc(GObject *o, int pushv) {
+  GType type=0;
+  GString *str;
+  struct svalue *sv;
+
+/*
+  if (o)
+    type=G_OBJECT_TYPE(G_OBJECT(o)->obj);
+  else
+    return NULL;
+*/
+  type=G_OBJECT_TYPE(o);
+  str=g_string_new_len(NULL,512);
+
+  if (g_type_is_a(type,G_TYPE_INTERFACE))
+    g_string_append_printf(str,"Interface %s\n\n",g_type_name(type));
+  else if (g_type_is_a(type,G_TYPE_OBJECT))
+    g_string_append_printf(str,"Object %s\n\n",g_type_name(type));
+
+  if (g_type_is_a(type,G_TYPE_OBJECT)) {
+    GType parent=G_TYPE_OBJECT;
+    GArray *parents=g_array_new(FALSE,FALSE,sizeof(GType));
+    int ip;
+
+    while (parent) {
+      g_array_append_val(parents,parent);
+      parent=g_type_next_base(type,parent);
+    }
+    for (ip=parents->len-1; ip>=0; --ip) {
+      GType *interfaces;
+      guint n,i;
+
+      parent=g_array_index(parents,GType,ip);
+      add_signal_docs(parent,str);
+      add_property_docs(parent,str);
+
+      interfaces=g_type_interfaces(parent,&n);
+      for (i=0; i<n; i++)
+	add_signal_docs(interfaces[i],str);
+      g_free(interfaces);
+    }
+    g_array_free(parents,TRUE);
+  }
+  push_string(make_shared_binary_string(str->str,str->len));
+  g_string_free(str,TRUE);
+  if (!pushv) {
+    sv=g_new0(struct svalue,1);
+    assign_svalue_no_free(sv,&Pike_sp[-1]);
+    pop_stack();
+    return sv;
+  }
+  return sv;
 }
