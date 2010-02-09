@@ -25,14 +25,14 @@ void create(int|void size_or_props, ?float min, ?float max,
     INT_TYPE size;
     FLOAT_TYPE min,max,step;
     struct array *a;
-    gchar **icons;
+    const gchar **icons;
     int i,j;
-    GtkScaleButton *gsb;
+    GtkWidget *gsb;
 
     get_all_args("create",args,"%i%f%f%f%A",&size,&min,&max,&step,&a);
     if (a==NULL || a->size<1)
       Pike_error("Invalid array argument 5.\n");
-    icons=g_new0(gchar *,a->size+1);
+    icons=g_new0(const gchar *,a->size+1);
     for (i=j=0; i<a->size; i++) {
       icons[j]=g_strdup(CGSTR0((ITEM(a)+i)->u.string));
       j++;
@@ -41,7 +41,7 @@ void create(int|void size_or_props, ?float min, ?float max,
     gsb=gtk_scale_button_new(size,min,max,step,icons);
     THIS->obj=G_OBJECT(gsb);
     for (i=0; icons[i]; i++)
-      g_free(icons[i]);
+      g_free((gpointer *)icons[i]);
     g_free(icons);
   } else {
     INIT_WITH_PROPS(GTK_TYPE_SCALE_BUTTON);
@@ -58,12 +58,12 @@ void set_icons(array icons)
 {
     struct array *a;
     int i,j;
-    gchar **icons;
+    const gchar **icons;
 
     get_all_args("set_icons",args,"%A",&a);
     if (a==NULL || a->size<1)
         Pike_error("Invalid array argument 1.\n");
-    icons=g_new0(gchar *,a->size+1);
+    icons=g_new0(const gchar *,a->size+1);
     for (i=j=0; i<a->size; i++) {
         icons[j]=g_strdup(CGSTR0((ITEM(a)+i)->u.string));
         j++;
@@ -71,7 +71,7 @@ void set_icons(array icons)
     icons[j]=NULL;
     gtk_scale_button_set_icons(GTK_SCALE_BUTTON(THIS->obj),icons);
     for (i=0; icons[i]; i++)
-        g_free(icons[i]);
+        g_free((gpointer *)icons[i]);
     g_free(icons);
     RETURN_THIS();
 }

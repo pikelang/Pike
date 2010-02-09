@@ -17,17 +17,16 @@ void create(GTK2.Widget|GDK2.Drawable context, mapping|void attributes)
   GdkGC *gc;
   GdkGCValues values;
   int have_values=0;
-  struct mapping *m;
+  struct mapping *m=NULL;
+  struct svalue *sv;
 
   pgtk2_verify_setup();
   pgtk2_verify_not_inited();
-  get_all_args("'()",args,"%o",&o);
-  memset(&values,0,sizeof(values));
+  get_all_args("create",args,"%o.%m",&o,&m);
+  memset(&values,0,sizeof(values)); 
 
-  if (args>1) {
-    struct svalue *sv;
+  if (m!=NULL) {
     have_values=1;
-    get_all_args("'()",args,"%o%m",&o,&m);
 
 #define VALUE(X,Y)					\
     if ( (sv=simple_mapping_string_lookup(m,#X)) ) {	\
@@ -47,9 +46,7 @@ void create(GTK2.Widget|GDK2.Drawable context, mapping|void attributes)
     VALUE(ts_y_origin,GDK_GC_TS_Y_ORIGIN);
     VALUE(fill,GDK_GC_FILL);
     VALUE(function,GDK_GC_FUNCTION);
-  }
 
-  if (have_values) {
     if (G_TYPE_FROM_INSTANCE(get_gobject(o))==GDK_TYPE_DRAWABLE)
       gc=gdk_gc_new_with_values(GDK_WINDOW(get_gobject(o)),
 				&values,have_values);

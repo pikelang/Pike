@@ -173,16 +173,27 @@ void create(string|mapping options)
 	  int stride;
 	  
 	  sv = low_mapping_string_lookup(m,_STR("rowstride"));
-	  if (sv==NULL)
-	    SIMPLE_ARG_ERROR("create", args,
-			     "rowstride must exist and be non-zero");
-	  stride=PGTK_GETINT(sv);
-	  pixel_data=g_malloc(height*stride+width+1);
-	  if (pixel_data==NULL)
-	    SIMPLE_OUT_OF_MEMORY_ERROR("create",height*stride+width+1);
-	  memcpy(pixel_data,STR0(rowdata->u.string),rowdata->u.string->len);
-	  gp=gdk_pixbuf_new_from_data(pixel_data,GDK_COLORSPACE_RGB,
+	  if (sv==NULL) {
+	    GInputStream *gis;
+
+	    gis=g_memory_input_stream_new_from_data(STR0(rowdata->u.string),
+			rowdata->u.string->len,NULL);
+	    gp=gdk_pixbuf_new_from_stream(gis,NULL,&error);
+	    if (error!=NULL)
+	      Pike_error("error in pixbuf new: %s\n",error->message);
+	    g_input_stream_close(gis,NULL,NULL);
+	  } else {
+	    stride=PGTK_GETINT(sv);
+	    if (stride==0)
+	      SIMPLE_ARG_ERROR("create", args,
+			       "rowstride must be non-zero");
+	    pixel_data=g_malloc(height*stride+width+1);
+	    if (pixel_data==NULL)
+	      SIMPLE_OUT_OF_MEMORY_ERROR("create",height*stride+width+1);
+	    memcpy(pixel_data,STR0(rowdata->u.string),rowdata->u.string->len);
+	    gp=gdk_pixbuf_new_from_data(pixel_data,GDK_COLORSPACE_RGB,
 				      alpha,bits,width,height,stride,pixel_data_free,NULL);
+	  }
         } else {
 	  gp=gdk_pixbuf_new(GDK_COLORSPACE_RGB,alpha,bits,width,height);
 	}
