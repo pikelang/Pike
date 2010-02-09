@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.304 2009/11/28 13:36:20 mast Exp $
+|| $Id: object.c,v 1.305 2010/02/09 12:30:25 grubba Exp $
 */
 
 #include "global.h"
@@ -1105,6 +1105,9 @@ PMOD_EXPORT void schedule_really_free_object(struct object *o)
  * NOTE: This function may be called by the compiler on objects
  *       cloned from unfinished programs (ie placeholder
  *       objects). Degenerated cases may thus occur.
+ *       It may also be called via lfuns in the currently
+ *       compiling program (notably lfun::`->()) and thus
+ *       execute in place-holder objacts.
  */
 PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
 					  struct object *o,
@@ -1207,7 +1210,9 @@ PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
       } else {
 	Pike_error("No getter for variable %S.\n", i->name);
       }
-    } else if ((i->run_time_type == PIKE_T_FREE) || !PIKE_OBJ_STORAGE(o)) {
+    } else if (!(p->flags & PROGRAM_FINISHED) ||
+	       (i->run_time_type == PIKE_T_FREE) ||
+	       !PIKE_OBJ_STORAGE(o)) {
       /* Variable storage not allocated. */
 #ifdef PIKE_DEBUG
       if ((i->run_time_type != PIKE_T_FREE) && (p->flags & PROGRAM_FINISHED)) {
@@ -1217,7 +1222,7 @@ PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
       to->type = T_INT;
       to->subtype = ((i->run_time_type == PIKE_T_FREE)?
 		     NUMBER_UNDEFINED:NUMBER_NUMBER);
-      to->u.integer = 0;      
+      to->u.integer = 0;
     } else {
       void *ptr=LOW_GET_GLOBAL(o,f,i);
       switch(i->run_time_type)

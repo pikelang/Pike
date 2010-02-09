@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.889 2010/02/04 17:45:00 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.890 2010/02/09 12:30:24 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -2854,6 +2854,31 @@ test_any([[
   compile_string(to_compile);
   add_constant("A");
   return 0;
+]], 0)
+
+test_any([[
+  // Test eval_low() on seemingly constant expressions, that
+  // attempt to access variables in the fake object. [Bug 5273]
+  // An old pike (with RTL debug) will fail with the fatal
+  // "Invalid type 33896 in svalue at 891e510."
+  // during compilation.
+
+  class Test
+  {
+    protected object foo;
+
+    mixed `-> (mixed what)
+    {
+      return foo;
+    }
+
+    int bar ()
+    {
+      return (this_object()->gazonk == "foo") ? 1 : 0;
+    }
+  };
+
+  return Test()->bar;
 ]], 0)
 
 test_any([[string gurk="bozo"; string b(int x) { return (x?b(x-1)+gurk:""); }; return b(5)]],[["bozo"*5]])
