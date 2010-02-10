@@ -174,6 +174,7 @@ void create(string|mapping options)
 	  
 	  sv = low_mapping_string_lookup(m,_STR("rowstride"));
 	  if (sv==NULL) {
+#ifdef HAVE_GTK214
 	    GInputStream *gis;
 
 	    gis=g_memory_input_stream_new_from_data(STR0(rowdata->u.string),
@@ -182,6 +183,9 @@ void create(string|mapping options)
 	    if (error!=NULL)
 	      Pike_error("error in pixbuf new: %s\n",error->message);
 	    g_input_stream_close(gis,NULL,NULL);
+#else
+	    Pike_error("Not supported in gtk versions prior to 2.14.\n");
+#endif
 	  } else {
 	    stride=PGTK_GETINT(sv);
 	    if (stride==0)
