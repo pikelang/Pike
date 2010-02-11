@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.52 2009/06/28 12:00:35 grubba Exp $ */
+/* $Id: socktest.pike,v 1.53 2010/02/11 18:17:31 grubba Exp $ */
 
 // #define OOB_DEBUG
 
@@ -360,15 +360,21 @@ int portno2;
 array(object(Socket)) stdtest()
 {
   object sock,sock2;
-  sock=Socket();
-  DEBUG_WERR("Connecting to %O port %d...\n", LOOPBACK, portno2);
-  if (!sock->connect(LOOPBACK, portno2)) {
+  int i;
+
+  // TIME_WAIT is typically 4 minutes.
+  for (i = 0; i < 4*60; i++) {
+    sock=Socket();
+    DEBUG_WERR("Connecting to %O port %d...\n", LOOPBACK, portno2);
+    if (sock->connect(LOOPBACK, portno2)) {
+      break;
+    }
 #ifdef IPV6
 #if constant(System.ENETUNREACH)
     if (sock->errno() == System.ENETUNREACH) {
       /* No IPv6 support on this machine (Solaris). */
       write("Connect failed: Network unreachable.\n"
-	     "IPv6 not configured?\n");
+	    "IPv6 not configured?\n");
       exit(0);
     }
 #endif /* ENETUNREACH */
@@ -376,14 +382,27 @@ array(object(Socket)) stdtest()
     if (sock->errno() == System.EADDRNOTAVAIL) {
       /* No IPv6 support on this machine (OSF/1). */
       write("Connect failed: Address not available.\n"
-	     "IPv6 not configured?\n");
+	    "IPv6 not configured?\n");
       exit(0);
     }
 #endif /* ENETUNREACH */
 #endif /* IPV6 */
+    if (sock->errno() == System.EADDRINUSE) {
+      /* Out of sockets on the loopback interface? */
+      if (!i) {
+	write("Connect failed: Address in use. Waiting for better times.\n");
+      }
+      sleep(1);
+      continue;
+    }
     write("Connect failed: (%d, %O)\n", sock->errno(), strerror(sock->errno()));
     sleep(1);
     fd_fail();
+  }
+  if (i) {
+    // Sleep some more for good measure.
+    write("Succeeded after %d seconds.\n", i);
+    sleep(1);
   }
   DEBUG_WERR("Accepting...\n");
   sock2=port2::accept();
