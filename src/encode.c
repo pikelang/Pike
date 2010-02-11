@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.292 2009/08/19 18:31:34 grubba Exp $
+|| $Id: encode.c,v 1.293 2010/02/11 17:03:08 grubba Exp $
 */
 
 #include "global.h"
@@ -2649,6 +2649,8 @@ static void decode_value2(struct decode_data *data)
 #ifdef ENCODE_DEBUG
   data->depth += 2;
 #endif
+
+  check_c_stack(1024);
 
   DECODE("decode_value2");
 
