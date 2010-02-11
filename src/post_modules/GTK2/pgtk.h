@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pgtk.h,v 1.19 2008/07/19 10:50:35 mast Exp $
+|| $Id: pgtk.h,v 1.20 2010/02/11 15:48:06 ldillon Exp $
 */
 
 /* Sort of unnessesary, and decreases code-size with 140Kb */
@@ -329,3 +329,5 @@ void pgtk2_marshaller(GClosure *closure, GValue *return_value,
 int pgtk2_tree_view_row_separator_func(GtkTreeModel *model,
 				       GtkTreeIter *iter,
 				       struct signal_data *d);
+
+struct svalue *pgtk2_get_doc(GObject *o, int pushv);
