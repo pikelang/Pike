@@ -125,7 +125,7 @@ void draw_text(GDK2.GC gc, int x, int y, string text)
   pl=gtk_widget_create_pango_layout(GTK_WIDGET(THIS->obj),
                                     CGSTR0(Pike_sp[-1].u.string));
   gdk_draw_layout(TWIN,GC(g),x,y,pl);
-  g_object_unref(pc);
+/*  g_object_unref(pc); */
   g_object_unref(pl);
   pop_stack();
 
