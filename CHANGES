@@ -1,17 +1,24 @@
 Changes since Pike 7.8.352 (third 7.8 release):
 ----------------------------------------------------------------------
 
-Extensions and Changes
-----------------------
+Extensions and New Functions
+----------------------------
 
 o Protocols.HTTP.Session will no longer override an existing
   content-type header in async_do_method_url.
 
 o Updated timezone data to tzdata2009u.
 
+o String.normalize_space
+
+  New and efficient C implementation; sanitises whitespace, even in wide
+  strings.
+
 
 Bug fixes
 ---------
+
+o Improved widestring support for Parser.Tabular.
 
 o Fixed segfault in combine_path_nt on windows when the first char
   of an appended path is wide.
