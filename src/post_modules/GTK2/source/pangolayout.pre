@@ -2,6 +2,7 @@
 require pango;
 
 class Pango.Layout;
+inherit G.Object;
 
 //! Pango Layout.
 
@@ -14,7 +15,7 @@ void create(Pango.Context context)
   {
     struct object *o1;
     get_all_args("create",args,"%o",&o1);
-    THIS->obj=(void *)pango_layout_new((PangoContext *)get_gobject(o1));
+    THIS->obj=(void *)pango_layout_new(PANGO_CONTEXT(get_gobject(o1)));
     pgtk2_pop_n_elems(args);
   }
   pgtk2__init_this_object();
@@ -28,9 +29,10 @@ Pango.Layout copy(Pango.Layout src)
     struct object *o1;
     PangoLayout *pl;
     get_all_args("copy",args,"%o",&o1);
-    pl=pango_layout_copy((PangoLayout *)get_gobject(o1));
+    pl=pango_layout_copy(PANGO_LAYOUT(get_gobject(o1)));
     pgtk2_pop_n_elems(args);
-    push_gobjectclass(pl,ppango2_layout_program);
+    push_gobject(pl);
+/*    push_gobjectclass(pl,ppango2_layout_program); */
   }
 }
 
@@ -40,9 +42,10 @@ Pango.Context get_context()
   pgtk2_verify_inited();
   pgtk2_pop_n_elems(args);
   {
-    PangoContext *pc=pango_layout_get_context((PangoLayout *)THIS->obj);
+    PangoContext *pc=pango_layout_get_context(PANGO_LAYOUT(THIS->obj));
     g_object_ref(pc);
-    push_gobjectclass(pc,ppango2_context_program);
+    push_gobject(pc);
+/*    push_gobjectclass(pc,ppango2_context_program); */
   }
 }
 
@@ -51,15 +54,35 @@ void context_changed();
 //! layout's context.  This function should be called if you make changes
 //! to the context subsequent to creating the layout.
 
-void set_text(string text, int length);
+void set_text(string text)
 //! Sets the text of the layout.
+{
+  struct pike_string *text;
+
+  get_all_args("set_text",args,"%t",&text);
+  ref_push_string(text);
+  f_string_to_utf8(1);
+  pango_layout_set_text(PANGO_LAYOUT(THIS->obj),Pike_sp[-1].u.string->str,Pike_sp[-1].u.string->len);
+  pop_stack();
+  RETURN_THIS();
+}
 
 string get_text();
 //! Gets the text.
 
-void set_markup(string markup, int length);
+void set_markup(string markup, int length)
 //! Same as set_markup_with_accel(), but the markup text isn't scanned for
 //! accelerators.
+{
+  struct pike_string *text;
+
+  get_all_args("set_markup",args,"%t",&text);
+  ref_push_string(text);
+  f_string_to_utf8(1);
+  pango_layout_set_markup(PANGO_LAYOUT(THIS->obj),Pike_sp[-1].u.string->str,Pike_sp[-1].u.string->len);
+  pop_stack();
+  RETURN_THIS();
+}
 
 void set_markup_with_accel(string markup, int length, ?int accel_marker)
 //! Sets the layout text and attribute from marked-up text.  Replaces the
@@ -79,7 +102,7 @@ void set_markup_with_accel(string markup, int length, ?int accel_marker)
     gunichar accel_char;
     get_all_args("set_markup_with_accel",args,"%s%i.%i",&markup,&len,
 				&accel_marker);
-    pango_layout_set_markup_with_accel((PangoLayout *)THIS->obj,
+    pango_layout_set_markup_with_accel(PANGO_LAYOUT(THIS->obj),
 		markup,len,accel_marker,&accel_char);
     pgtk2_pop_n_elems(args);
     push_int(accel_char);
@@ -95,7 +118,7 @@ void set_font_description(Pango.FontDescription desc)
   {
     struct object *o1;
     get_all_args("set_font_description",args,"%o",&o1);
-    pango_layout_set_font_description((PangoLayout *)THIS->obj,
+    pango_layout_set_font_description(PANGO_LAYOUT(THIS->obj),
 		(PangoFontDescription *)get_gobject(o1));
   }
   RETURN_THIS();
@@ -197,10 +220,10 @@ void set_tabs(?Pango.TabArray tabs)
   if (args) {
     struct object *o1;
     get_all_args("set_tabs",args,"%o",&o1);
-    pango_layout_set_tabs((PangoLayout *)THIS->obj,
+    pango_layout_set_tabs(PANGO_LAYOUT(THIS->obj),
 		(PangoTabArray *)get_gobject(o1));
   } else
-    pango_layout_set_tabs((PangoLayout *)THIS->obj,NULL);
+    pango_layout_set_tabs(PANGO_LAYOUT(THIS->obj),NULL);
   RETURN_THIS();
 }
 
@@ -212,7 +235,7 @@ Pango.TabArray get_tabs()
   pgtk2_verify_inited();
   pgtk2_pop_n_elems(args);
   {
-    PangoTabArray *pta=pango_layout_get_tabs((PangoLayout *)THIS->obj);
+    PangoTabArray *pta=pango_layout_get_tabs(PANGO_LAYOUT(THIS->obj));
     push_gobjectclass(pta,ppango2_tab_array_program);
   }
 }
@@ -243,7 +266,7 @@ mapping(string:int) xy_to_index(int x, int y)
     int index,trailing,res;
     get_all_args("xy_to_index",args,"%i%i",&x,&y);
     pgtk2_pop_n_elems(args);
-    res=pango_layout_xy_to_index((PangoLayout *)THIS->obj,x,y,&index,&trailing);
+    res=pango_layout_xy_to_index(PANGO_LAYOUT(THIS->obj),x,y,&index,&trailing);
     if (res) {
       ref_push_string(_STR("index")); push_int(index);
       ref_push_string(_STR("trailing")); push_int(trailing);
@@ -271,7 +294,7 @@ mapping(string:int) index_to_pos(int index)
     PangoRectangle pos;
     get_all_args("index_to_pos",args,"%i",&index);
     pgtk2_pop_n_elems(args);
-    pango_layout_index_to_pos((PangoLayout *)THIS->obj,index,&pos);
+    pango_layout_index_to_pos(PANGO_LAYOUT(THIS->obj),index,&pos);
     ref_push_string(_STR("x")); push_int(pos.x);
     ref_push_string(_STR("y")); push_int(pos.y);
     ref_push_string(_STR("width")); push_int(pos.width);
@@ -297,7 +320,7 @@ array(mapping(string:int)) get_cursor_pos(int index)
     PangoRectangle pos1,pos2;
     get_all_args("get_cursor_pos",args,"%i",&index);
     pgtk2_pop_n_elems(args);
-    pango_layout_get_cursor_pos((PangoLayout *)THIS->obj,index,&pos1,&pos2);
+    pango_layout_get_cursor_pos(PANGO_LAYOUT(THIS->obj),index,&pos1,&pos2);
     ref_push_string(_STR("x")); push_int(pos1.x);
     ref_push_string(_STR("y")); push_int(pos1.y);
     ref_push_string(_STR("width")); push_int(pos1.width);
@@ -335,7 +358,7 @@ mapping(string:int) move_cursor_visually(int strong, int old_index,
     get_all_args("move_cursor_visually",args,"%i%i%i%i",&strong,&old_index,
 			&old_trailing,&dir);
     pgtk2_pop_n_elems(args);
-    pango_layout_move_cursor_visually((PangoLayout *)THIS->obj,
+    pango_layout_move_cursor_visually(PANGO_LAYOUT(THIS->obj),
 		strong,old_index,old_trailing,dir,&new_index,&new_trailing);
     ref_push_string(_STR("index")); push_int(new_index);
     ref_push_string(_STR("trailing")); push_int(new_trailing);
@@ -350,7 +373,7 @@ mapping(string:int) get_size()
   pgtk2_pop_n_elems(args);
   {
     int width,height;
-    pango_layout_get_size((PangoLayout *)THIS->obj,&width,&height);
+    pango_layout_get_size(PANGO_LAYOUT(THIS->obj),&width,&height);
     ref_push_string(_STR("width")); push_int(width);
     ref_push_string(_STR("height")); push_int(height);
     f_aggregate_mapping(4);

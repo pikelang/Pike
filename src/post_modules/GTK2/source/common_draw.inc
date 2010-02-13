@@ -108,7 +108,7 @@ void draw_arc(GDK2.GC gc, int filledp, int x1, int y1, int x2, int y2,
   RETURN_THIS();
 }
 
-void draw_text(GDK2.GC gc, int x, int y, string text)
+void draw_text(GDK2.GC gc, int x, int y, string|Pango.Layout text)
 //! y is used as the baseline for the text.<br />
 {
   struct object *g;
@@ -116,14 +116,25 @@ void draw_text(GDK2.GC gc, int x, int y, string text)
   PangoContext *pc;
   PangoLayout *pl;
   struct pike_string *text;
+  struct svalue *sv;
 
-  get_all_args("draw_text",args,"%o%+%+%t",&g,&x,&y,&text);
+  get_all_args("draw_text",args,"%o%+%+%*",&g,&x,&y,&sv);
 
+  if (sv->type==PIKE_T_STRING) {
+    push_svalue(sv);
+    f_string_to_utf8(1);
+    pl=gtk_widget_create_pango_layout(GTK_WIDGET(THIS->obj),
+		CGSTR0(Pike_sp[-1].u.string));
+  } else {
+    pl=(PangoLayout *)(get_gobject(sv->u.object));
+  }
+/*
   ref_push_string(text);
   f_string_to_utf8(1);
-  pc=gtk_widget_get_pango_context(GTK_WIDGET(THIS->obj));
   pl=gtk_widget_create_pango_layout(GTK_WIDGET(THIS->obj),
                                     CGSTR0(Pike_sp[-1].u.string));
+*/
+  pc=gtk_widget_get_pango_context(GTK_WIDGET(THIS->obj));
   gdk_draw_layout(TWIN,GC(g),x,y,pl);
 /*  g_object_unref(pc); */
   g_object_unref(pl);
