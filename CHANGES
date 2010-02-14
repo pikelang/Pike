@@ -18,6 +18,9 @@ o String.normalize_space
 Bug fixes
 ---------
 
+o Fixed dangling cache reference in prepared statements when using CREATE
+  statements via Sql.pgsql.
+
 o Improved widestring support for Parser.Tabular.
 
 o Fixed segfault in combine_path_nt on windows when the first char

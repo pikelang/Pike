@@ -1687,7 +1687,7 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
 	}
       }
       if(forcecache!=1 && createprefix->match(q))      // Flush cache on CREATE
-	invalidatecache=1;
+	invalidatecache=1,tp=UNDEFINED;
       else
 	prepareds[q]=tp=([]);
     }
