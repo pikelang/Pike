@@ -1718,18 +1718,18 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
     tp=UNDEFINED;
   connectionclosed=0;
   for(;;)
-   {
-  .pgsql_util.pgsql_result(this,q,_fetchlimit,portalbuffersize,_alltyped,from);
-  if(unnamedportalinuse)
-    portalname=PORTALPREFIX+(string)pportalcount++;
-  else
-    unnamedportalinuse++;
-  _c.portal->_portalname=portalname;
-  qstate=inquery;
-  portalsinflight++; portalsopened++;
-  clearmessage=1;
-  mixed err;
-  if(!(err = catch
+  { .pgsql_util.pgsql_result(this,q,_fetchlimit,portalbuffersize,_alltyped,
+     from);
+    if(unnamedportalinuse)
+      portalname=PORTALPREFIX+(string)pportalcount++;
+    else
+      unnamedportalinuse++;
+    _c.portal->_portalname=portalname;
+    qstate=inquery;
+    portalsinflight++; portalsopened++;
+    clearmessage=1;
+    mixed err;
+    if(!(err = catch
     { if(!sizeof(preparedname) || !tp || !tp->preparedname)
       { PD("Parse statement %s\n",preparedname);
 	// Even though the protocol doesn't require the Parse command to be
@@ -1924,13 +1924,13 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
 	tprepared=tp;
       }
     }))
-    break;
-  PD("%O\n",err);
-  resync(1);
-  backendstatus=UNDEFINED;
-  if(!connectionclosed)
-    throw(err);
-  tp=UNDEFINED;
+      break;
+    PD("%O\n",err);
+    resync(1);
+    backendstatus=UNDEFINED;
+    if(!connectionclosed)
+      throw(err);
+    tp=UNDEFINED;
   }
   { object tportal=_c.portal;		// Make copy, because it might dislodge
     tportal->fetch_row(1);		// upon initial fetch_row()
