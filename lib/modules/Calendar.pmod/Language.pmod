@@ -494,9 +494,6 @@ protected class _ymd_base
 
 // this should probably be called UK_en or something:
 
-constant cENGLISH=cISO;
-constant cENG=cISO;
-constant cEN=cISO;
 class cISO
 {
    inherit _ymd_base;
@@ -532,12 +529,12 @@ class cISO
       return (string)y;
    }
 };
+constant cENGLISH=cISO;
+constant cENG=cISO;
+constant cEN=cISO;
 
 // swedish (note: all name as cLANG where LANG is in caps)
 
-constant cSE_SV=cSWEDISH;
-constant cSV=cSWEDISH;
-constant cSWE=cSWEDISH;
 class cSWEDISH
 {
    inherit _ymd_base;
@@ -631,11 +628,13 @@ class cSWEDISH
       return (string)y;
    }
 }
+constant cSE_SV=cSWEDISH;
+constant cSV=cSWEDISH;
+constant cSWE=cSWEDISH;
 
 // austrian
 // source: Martin Baehr <mbaehr@email.archlab.tuwien.ac.at>
 
-constant cDE_AT=cAUSTRIAN; // this is a german dialect, appearantly
 class cAUSTRIAN
 {
    inherit _ymd_base;
@@ -653,12 +652,11 @@ class cAUSTRIAN
       SETUPSTUFF;
    }
 }
+constant cDE_AT=cAUSTRIAN; // this is a german dialect, appearantly
 
 // Welsh
 // source: book
 
-constant cCY=cWELSH;
-constant cCYM=cWELSH;
 class cWELSH
 {
    inherit _ymd_base;
@@ -686,12 +684,12 @@ class cWELSH
       SETUPSTUFF;
    }
 }
+constant cCY=cWELSH;
+constant cCYM=cWELSH;
 
 // Spanish
 // Julio César Gázquez <jgazquez@dld.net>
 
-constant cES=cSPANISH;
-constant cSPA=cSPANISH;
 class cSPANISH
 {
    inherit _ymd_base;
@@ -733,12 +731,12 @@ class cSPANISH
       SETUPSTUFF;
    }
 }
+constant cES=cSPANISH;
+constant cSPA=cSPANISH;
 
 // portugese
 // source: Sérgio Araújo <sergio@projecto-oasis.cx>
 
-constant cPT=cPORTUGESE; // Portugese (Brasil)
-constant cPOR=cPORTUGESE;
 class cPORTUGESE
 {
    inherit _ymd_base;
@@ -792,6 +790,8 @@ class cPORTUGESE
       SETUPSTUFF;
    }
 }
+constant cPT=cPORTUGESE; // Portugese (Brasil)
+constant cPOR=cPORTUGESE;
 
 // Hungarian
 // Csongor Fagyal <concept@conceptonline.hu>
@@ -2155,6 +2155,44 @@ class cSERBIAN_UNICODE
 
    void create() { SETUPSTUFF; }
 }
+
+
+constant cEL=cGREEK_UNICODE; //Greek Ellinika
+constant cGR=cGREEK_UNICODE;
+class cGREEK_UNICODE
+{
+   inherit _ymd_base;
+
+   static private constant month_names=
+   ({
+     "\u0399\u03b1\u03bd\u03bf\u03c5\u03ac\u03c1\u03b9\u03bf\u03c2",
+     "\u03a6\u03b5\u03b2\u03c1\u03bf\u03c5\u03ac\u03c1\u03b9\u03bf\u03c2",
+     "\u039c\u03ac\u03c1\u03c4\u03b9\u03bf\u03c2",
+     "\u0391\u03c0\u03c1\u03af\u03bb\u03b9\u03bf\u03c2",
+     "\u039c\u03ac\u03b9\u03bf\u03c2",
+     "\u0399\u03bf\u03cd\u03bd\u03b9\u03bf\u03c2",
+     "\u0399\u03bf\u03cd\u03bb\u03b9\u03bf\u03c2",
+     "\u0391\u03cd\u03b3\u03bf\u03c5\u03c3\u03c4\u03bf\u03c2",
+     "\u03a3\u03b5\u03c0\u03c4\u03ad\u03bc\u03b2\u03c1\u03b9\u03bf\u03c2",
+     "\u039f\u03ba\u03c4\u03ce\u03b2\u03c1\u03b9\u03bf\u03c2",
+     "\u039d\u03bf\u03ad\u03bc\u03b2\u03c1\u03b9\u03bf\u03c2",
+     "\u0394\u03b5\u03ba\u03ad\u03bc\u03b2\u03c1\u03b9\u03bf\u03c2",
+   });
+
+   static private constant week_day_names=
+   ({
+     "\u0394\u03b5\u03c5\u03c4\u03ad\u03c1\u03b1",
+     "\u03a4\u03c1\u03af\u03c4\u03b7",
+     "\u03a4\u03b5\u03c4\u03ac\u03c1\u03c4\u03b7",
+     "\u03a0\u03ad\u03bc\u03c0\u03c4\u03b7",
+     "\u03a0\u03b1\u03c1\u03b1\u03c3\u03ba\u03b5\u03c5\u03ae",
+     "\u03a3\u03ac\u03b2\u03b2\u03b1\u03c4\u03bf",
+     "\u039a\u03c5\u03c1\u03b9\u03b1\u03ba\u03ae",
+   });
+
+   void create() { SETUPSTUFF; }
+}
+
 
 // ----------------------------------------------------------------
 
