@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod,v 1.50 2008/07/25 14:38:21 bill Exp $
+// $Id: module.pmod,v 1.51 2010/02/15 20:13:44 grubba Exp $
 //
 
 #pike __REAL_VERSION__
@@ -48,9 +48,10 @@ class Client
 {
   inherit Protocol;
 
+  int errorcode = 0;
   protected int cmd(string c, string|void comment)
   {
-    int r = command(c);
+    int r = errorcode = command(c);
     switch(r) {
     case 200..399:
       break;
