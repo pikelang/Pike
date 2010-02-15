@@ -1,5 +1,5 @@
 START_MARKER
-dnl $Id: testsuite.in,v 1.26 2010/02/15 01:05:09 srb Exp $
+dnl $Id: testsuite.in,v 1.27 2010/02/15 02:05:53 srb Exp $
 
 test_eq([[ Image.PNM.decode("P1\n5 5\n0 1 1 1 1\n1 0 1 1 1\n"
   "1 1 0 1 1\n1 1 1 0 1\n1 1 1 1 0") ]],
@@ -821,7 +821,7 @@ test_true( Image.PNG.encode(Image.Image(5,5), (["zlevel":0])) )
 test_true( Image.PNG.encode(Image.Image(5,5), (["zlevel":9])) )
 test_true( Image.PNG.encode(Image.Image(5,5), (["zstrategy":Gz.DEFAULT_STRATEGY])) )
 test_true( Image.PNG.encode(Image.Image(5,5), (["zstrategy":Gz.FILTERED])) )
-cond( Gz.RLE, [[
+cond_resolv( Gz.RLE, [[
   test_true( Image.PNG.encode(Image.Image(5,5), (["zstrategy":Gz.RLE])) )
 ]])
 test_true( Image.PNG.encode(Image.Image(5,5), (["zstrategy":Gz.HUFFMAN_ONLY])) )
