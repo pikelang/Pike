@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.420 2010/02/15 20:38:24 grubba Exp $
+|| $Id: file.c,v 1.421 2010/02/15 20:39:56 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -895,7 +895,7 @@ static void file_peek(INT32 args)
       ret=poll(&fds, 1, timeout);
       THREADS_DISALLOW();
     } else {
-      ret=poll(&fds, 1, 0);
+      ret=poll(&fds, 1, 1);
     }
 
     if(ret < 0)
