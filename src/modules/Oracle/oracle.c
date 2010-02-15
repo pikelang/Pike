@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: oracle.c,v 1.100 2009/11/12 15:10:21 grubba Exp $
+|| $Id: oracle.c,v 1.101 2010/02/15 19:10:33 grubba Exp $
 */
 
 /*
@@ -2229,7 +2229,13 @@ static void f_big_typed_query_create(INT32 args)
 	  case T_STRING:
 	    addr = (ub1 *)value->u.string->str;
 	    len = value->u.string->len;
-	    fty = SQLT_LNG;
+	    if (len < 4000)
+            {
+	      rlen = 4000;
+	      fty = SQLT_CHR;
+	    }
+	    else
+	      fty = SQLT_LNG;
 	    break;
 	    
 	  case T_FLOAT:
