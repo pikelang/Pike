@@ -99,6 +99,7 @@ private int warningsdropcount; // Number of uncollected warnings
 private int prepstmtused;    // Number of times prepared statements were used
 private int warningscollected;
 private int invalidatecache;
+private int connectionclosed;
 
 private string host, database, user, pass;
 private int port;
@@ -538,6 +539,17 @@ final private string pinpointerror(void|string query,void|string offset)
   return MARKSTART+(k>1?query[..k-2]:"")+MARKERROR+query[k-1..]+MARKEND;
 }
 
+private void phasedreconnect()
+{ connectionclosed=1;
+  if(!reconnect(1))
+  { sleep(RECONNECTDELAY);
+    if(!reconnect(1))
+    { sleep(RECONNECTBACKOFF);
+      reconnect(1);
+    }
+  }
+}
+
 final int _decodemsg(void|state waitforstate)
 {
 #ifdef DEBUG
@@ -889,6 +901,11 @@ final int _decodemsg(void|state waitforstate)
       case 'E':PD("ErrorResponse\n");
       { mapping(string:string) msgresponse;
 	msgresponse=getresponse();
+        void preplastmessage()
+        { lastmessage=({sprintf("%s %s:%s %s\n (%s:%s:%s)",
+	   msgresponse->S,msgresponse->C,msgresponse->P||"",msgresponse->M,
+	   msgresponse->F||"",msgresponse->R||"",msgresponse->L||"")});
+        };
 	warningsdropcount+=warningscollected;
 	warningscollected=0;
 	switch(msgresponse->C)
@@ -897,14 +914,16 @@ final int _decodemsg(void|state waitforstate)
 	    USERERROR(a2nls(lastmessage
 	     +({pinpointerror(_c.portal->_query,msgresponse->P)})
 	     +showbindings()));
+	  case "57P01":case "57P02":case "57P03":
+	    preplastmessage();phasedreconnect();
+            PD(a2nls(lastmessage));
+	    USERERROR(a2nls(lastmessage));
 	  case "08P01":case "42P05":
 	    errtype=protocolerror;
 	  case "XX000":case "42883":case "42P01":
 	    invalidatecache=1;
 	  default:
-	    lastmessage=({sprintf("%s %s:%s %s\n (%s:%s:%s)",
-	     msgresponse->S,msgresponse->C,msgresponse->P||"",msgresponse->M,
-	     msgresponse->F||"",msgresponse->R||"",msgresponse->L||"")});
+	    preplastmessage();
 	    if(msgresponse->D)
 	      lastmessage+=({msgresponse->D});
 	    if(msgresponse->H)
@@ -960,14 +979,7 @@ final int _decodemsg(void|state waitforstate)
 	}
 	else
 	{ array(string) msg=lastmessage;
-	  if(!reconnect(1))
-	  { sleep(RECONNECTDELAY);
-	    if(!reconnect(1))
-	    { sleep(RECONNECTBACKOFF);
-	      reconnect(1);
-	    }
-	  }
-	  msg+=lastmessage;
+          phasedreconnect();msg+=lastmessage;
 	  string s=sizeof(msg)?a2nls(msg):"";
 	  ERROR("%sConnection lost to database %s@%s:%d/%s %d\n",
 	   s,user,host,port,database,backendpid);
@@ -982,9 +994,7 @@ final int _decodemsg(void|state waitforstate)
 	break;
       case protocolerror:
 	array(string) msg=lastmessage;
-	lastmessage=({});
-	reconnect(1);
-	msg+=lastmessage;
+	lastmessage=({});phasedreconnect();msg+=lastmessage;
 	string s=sizeof(msg)?a2nls(msg):"";
 	ERROR("%sProtocol error with database %s\n",s,host_info());
 	break;
@@ -1706,6 +1716,9 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
   }					  // pgsql_result autoassigns to portal
   else
     tp=UNDEFINED;
+  connectionclosed=0;
+  for(;;)
+   {
   .pgsql_util.pgsql_result(this,q,_fetchlimit,portalbuffersize,_alltyped,from);
   if(unnamedportalinuse)
     portalname=PORTALPREFIX+(string)pportalcount++;
@@ -1716,7 +1729,7 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
   portalsinflight++; portalsopened++;
   clearmessage=1;
   mixed err;
-  if(err = catch
+  if(!(err = catch
     { if(!sizeof(preparedname) || !tp || !tp->preparedname)
       { PD("Parse statement %s\n",preparedname);
 	// Even though the protocol doesn't require the Parse command to be
@@ -1910,11 +1923,14 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
 	}
 	tprepared=tp;
       }
-    })
-  { PD("%O\n",err);
-    resync(1);
-    backendstatus=UNDEFINED;
+    }))
+    break;
+  PD("%O\n",err);
+  resync(1);
+  backendstatus=UNDEFINED;
+  if(!connectionclosed)
     throw(err);
+  tp=UNDEFINED;
   }
   { object tportal=_c.portal;		// Make copy, because it might dislodge
     tportal->fetch_row(1);		// upon initial fetch_row()
