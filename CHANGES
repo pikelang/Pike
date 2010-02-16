@@ -15,6 +15,14 @@ o String.normalize_space
   strings.
 
 
+Deprecations
+------------
+
+o The libpq based old Postgres driver is now deprecated.  The new pgsql
+  driver is faster, better tested, more stable, maintained, has more
+  features, does not depend on external libraries and is less filling.
+
+
 Bug fixes
 ---------
 
