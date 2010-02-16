@@ -1038,10 +1038,6 @@ private int reconnect(void|int force)
   if(_c)
   { reconnected++;
     prepstmtused=0;
-#ifdef DEBUG
-    ERROR("While debugging, reconnects are forbidden\n");
-    exit(1);
-#endif
     if(!force)
       _c.sendterminate();
     _c.close(); _c=0;
@@ -1522,7 +1518,9 @@ final void _sendexecute(int fetchlimit)
 
 final private void sendclose(void|int hold)
 { string portalname;
-  if(_c.portal && (portalname=_c.portal->_portalname))
+  if(!_c)
+    portalsinflight=unnamedportalinuse=0;
+  else if(_c.portal && (portalname=_c.portal->_portalname))
   { _c.portal->_portalname = UNDEFINED;
     _c.setportal();
     portalsinflight--;
