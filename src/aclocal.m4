@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.169 2008/07/22 19:31:48 mast Exp $
+dnl $Id: aclocal.m4,v 1.170 2010/02/16 17:49:31 grubba Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -643,7 +643,7 @@ define([PIKE_RETAIN_VARIABLES],
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.169 2008/07/22 19:31:48 mast Exp $
+  # $Id: aclocal.m4,v 1.170 2010/02/16 17:49:31 grubba Exp $
 
   MY_AC_PROG_CC
 
@@ -1664,8 +1664,18 @@ int main(int argc, char **argv)
         ifelse([$2], , :, [$2])
       fi
     fi
+    AC_MSG_CHECKING([for pkgconfig directory])
+    if test -d "$real_dir/pkgconfig/."; then
+      PKG_CONFIG_PATH="$PKG_CONFIG_PATH${PKG_CONFIG_PATH:+:}$real_dir/pkgconfig"
+      export PKG_CONFIG_PATH
+      AC_MSG_RESULT(yes - $real_dir/pkgconfig)
+    else
+      AC_MSG_RESULT(no)
+    fi
   ], $3)
 ])
+
+AC_SUBST(PKG_CONFIG_PATH)
 
 AC_DEFUN(PIKE_FIND_LIB_INCLUDE,
 [
