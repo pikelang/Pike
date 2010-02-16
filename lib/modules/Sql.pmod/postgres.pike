@@ -1,7 +1,7 @@
 /*
  * This is part of the Postgres module for Pike.
  *
- * $Id: postgres.pike,v 1.39 2008/08/29 11:54:40 srb Exp $
+ * $Id: postgres.pike,v 1.40 2010/02/16 09:14:19 srb Exp $
  *
  */
 
@@ -17,8 +17,8 @@
 //! connect to the database over a TCP/IP socket.
 //!
 //! @note
-//! Please note that there is a more advanced driver to access PostgreSQL
-//! databases: @[Sql.pgsql].
+//! This driver has been @b{deprecated@}.  You should use the
+//! more advanced driver @[Sql.pgsql] to access PostgreSQL databases instead.
 //!
 //! @note
 //! Also note that @b{this module uses blocking I/O@} to connect
