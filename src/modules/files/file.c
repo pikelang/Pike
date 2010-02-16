@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.421 2010/02/15 20:39:56 grubba Exp $
+|| $Id: file.c,v 1.422 2010/02/16 01:35:53 srb Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -882,7 +882,7 @@ static void file_peek(INT32 args)
   {
 #ifdef HAVE_AND_USE_POLL
     struct pollfd fds;
-    int timeout = 0;
+    int timeout = 1;
     if (args && !IS_UNDEFINED(Pike_sp - args)) {
       timeout = (int)(tf*1000); /* ignore overflow for now */
     }
@@ -895,7 +895,7 @@ static void file_peek(INT32 args)
       ret=poll(&fds, 1, timeout);
       THREADS_DISALLOW();
     } else {
-      ret=poll(&fds, 1, 1);
+      ret=poll(&fds, 1, 0);
     }
 
     if(ret < 0)
