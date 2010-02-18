@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.429 2010/02/18 15:57:21 grubba Exp $
+|| $Id: file.c,v 1.430 2010/02/18 16:01:14 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -4016,6 +4016,7 @@ static void file_connect(INT32 args)
 	    break;
 	  }
           sysleep(INUSE_BUSYWAIT_DELAY);
+	  /* FALL_THROUGH */
 #endif
 	case EINTR:
 	  continue;
