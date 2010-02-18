@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.267 2009/09/12 13:31:38 grubba Exp $
+|| $Id: program.h,v 1.268 2010/02/18 08:52:55 srb Exp $
 */
 
 #ifndef PROGRAM_H
@@ -848,7 +848,7 @@ PMOD_EXPORT int simple_add_variable(const char *name,
 			const char *type,
 			INT32 flags);
 PMOD_EXPORT int add_constant(struct pike_string *name,
-		 struct svalue *c,
+		 const struct svalue *c,
 		 INT32 flags);
 PMOD_EXPORT int simple_add_constant(const char *name,
 			struct svalue *c,
@@ -896,7 +896,7 @@ int find_shared_string_identifier(struct pike_string *name,
 				  struct program *prog);
 PMOD_EXPORT int find_identifier(const char *name,struct program *prog);
 int store_prog_string(struct pike_string *str);
-int store_constant(struct svalue *foo,
+int store_constant(const struct svalue *foo,
 		   int equal,
 		   struct pike_string *constant_name);
 struct array *program_indices(struct program *p);

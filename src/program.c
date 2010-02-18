@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.774 2010/02/08 17:40:10 grubba Exp $
+|| $Id: program.c,v 1.775 2010/02/18 08:52:54 srb Exp $
 */
 
 #include "global.h"
@@ -5214,7 +5214,7 @@ PMOD_EXPORT int simple_add_variable(const char *name,
 }
 
 PMOD_EXPORT int add_constant(struct pike_string *name,
-			     struct svalue *c,
+			     const struct svalue *c,
 			     INT32 flags)
 {
   int n;
@@ -6320,7 +6320,7 @@ int store_prog_string(struct pike_string *str)
 }
 
 /* NOTE: O(n²)! */
-int store_constant(struct svalue *foo,
+int store_constant(const struct svalue *foo,
 		   int equal,
 		   struct pike_string *constant_name)
 {

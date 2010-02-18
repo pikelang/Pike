@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.h,v 1.171 2008/12/20 15:49:19 grubba Exp $
+|| $Id: svalue.h,v 1.172 2010/02/18 08:52:55 srb Exp $
 */
 
 #ifndef SVALUE_H
@@ -799,7 +799,7 @@ int gc_cycle_check_weak_short_svalue(union anything *u, TYPE_T type);
 void real_gc_free_svalue(struct svalue *s);
 void real_gc_free_short_svalue(union anything *u, TYPE_T type);
 PMOD_EXPORT INT32 pike_sizeof(const struct svalue *s);
-int svalues_are_constant(struct svalue *s,
+int svalues_are_constant(const struct svalue *s,
 			 INT32 num,
 			 TYPE_FIELD hint,
 			 struct processing *p);
