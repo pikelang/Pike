@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.426 2010/02/18 14:50:53 srb Exp $
+|| $Id: file.c,v 1.427 2010/02/18 14:51:06 srb Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -3991,6 +3991,11 @@ static void file_connect(INT32 args)
     if(tmp<0)
       switch(errno)
       {
+#if 0
+	/* Even though this code is robust(er) now,
+	 * it has no business here and should be dealt
+	 * with at the Pike programming level.
+	 */
 #ifdef EADDRINUSE
 	case EADDRINUSE:
 #endif
@@ -4003,6 +4008,7 @@ static void file_connect(INT32 args)
 	    break;
 	  }
           sysleep(INUSE_BUSYWAIT_DELAY);
+#endif
 	case EINTR:
 	  continue;
       }
