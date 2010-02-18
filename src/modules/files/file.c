@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.427 2010/02/18 14:51:06 srb Exp $
+|| $Id: file.c,v 1.428 2010/02/18 15:41:15 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -3111,6 +3111,11 @@ static void file_set_buffer(INT32 args)
 #endif
 }
 
+#if !defined(HAVE_SOCKETPAIR) || !defined(UNIX_SOCKETS_WORK_WITH_SHUTDOWN)
+
+/* Paranoia... */
+#undef UNIX_SOCKETS_WORK_WITH_SHUTDOWN
+
 #ifndef AF_UNIX
 #define AF_UNIX	4711
 #endif /* AF_UNIX */
@@ -3142,7 +3147,6 @@ static void file_set_buffer(INT32 args)
 extern int errno;
 #endif /* !errno */
 
-#ifndef HAVE_SOCKETPAIR
 static int socketpair_fd = -1;
 int my_socketpair(int family, int type, int protocol, int sv[2])
 {
@@ -3348,8 +3352,10 @@ int socketpair_ultra(int family, int type, int protocol, int sv[2])
   }
 }
 
+#ifndef HAVE_SOCKETPAIR
 #define socketpair socketpair_ultra
 #endif
+#endif /* !HAVE_SOCKETPAIR || !UNIX_SOCKETS_WORK_WITH_SHUTDOWN */
 
 /*! @decl Stdio.File pipe()
  *! @decl Stdio.File pipe(int flags)
@@ -3387,7 +3393,7 @@ static void file_pipe(INT32 args)
 
 #ifdef UNIX_SOCKETS_WORK_WITH_SHUTDOWN
 #undef UNIX_SOCKET_CAPABILITIES
-#define UNIX_SOCKET_CAPABILITIES (fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK | fd_CAN_SHUTDOWN)
+#define UNIX_SOCKET_CAPABILITIES (fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK | fd_CAN_SHUTDOWN | fd_SEND_FD)
 #endif
 
 #if defined(HAVE_SOCKETPAIR)
@@ -3401,14 +3407,16 @@ static void file_pipe(INT32 args)
     }
 #endif
 
+#ifndef UNIX_SOCKETS_WORK_WITH_SHUTDOWN
     if(!(type & ~(SOCKET_CAPABILITIES)))
     {
-      i=socketpair(AF_UNIX, SOCK_STREAM, 0, &inout[0]);
+      i=socketpair_ultra(AF_UNIX, SOCK_STREAM, 0, &inout[0]);
       if (i >= 0) {
 	type=SOCKET_CAPABILITIES;
 	break;
       }
     }
+#endif
 
     if (!i) {
       Pike_error("Cannot create a pipe matching those parameters.\n");
