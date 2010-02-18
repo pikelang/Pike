@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.425 2010/02/18 14:50:28 srb Exp $
+|| $Id: file.c,v 1.426 2010/02/18 14:50:53 srb Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -122,6 +122,8 @@
 #define ERRNO (THIS->my_errno)
 
 #define READ_BUFFER 8192
+#define INUSE_BUSYWAIT_DELAY	0.01
+#define INUSE_TIMEOUT		0.1
 
 /* Don't try to use socketpair() on AmigaOS, socketpair_ultra works better */
 #ifdef __amigaos__
@@ -3938,7 +3940,7 @@ static void file_connect(INT32 args)
   struct svalue *src_port = NULL;
 
   int tmp, was_closed = FD < 0;
-  int tries = 10;
+  int tries;
 
   if (args < 4) {
     get_all_args("Stdio.File->connect", args, "%S%*", &dest_addr, &dest_port);
@@ -3980,20 +3982,32 @@ static void file_connect(INT32 args)
     pop_stack();
   }
 
-  do {
+  for(tries = 0;; tries++)
+  {
     tmp=FD;
     THREADS_ALLOW();
     tmp=fd_connect(tmp, (struct sockaddr *)&addr, addr_len);
     THREADS_DISALLOW();
-  } while(tmp < 0 &&
-	  (errno == EINTR
+    if(tmp<0)
+      switch(errno)
+      {
 #ifdef EADDRINUSE
-	  || errno==EADDRINUSE
+	case EADDRINUSE:
 #endif
 #ifdef WSAEADDRINUSE
-	  || errno==WSAEADDRINUSE
+	case WSAEADDRINUSE:
 #endif
-	   ) && --tries);
+	  if(tries > INUSE_TIMEOUT/INUSE_BUSYWAIT_DELAY)
+	  {
+	    /* errno = EAGAIN; */	/* no ports available */
+	    break;
+	  }
+          sysleep(INUSE_BUSYWAIT_DELAY);
+	case EINTR:
+	  continue;
+      }
+    break;
+  }
 
   if(tmp < 0
 #ifdef EINPROGRESS
