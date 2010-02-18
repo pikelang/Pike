@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sqlite.cmod,v 1.29 2008/08/05 11:02:38 grubba Exp $
+|| $Id: sqlite.cmod,v 1.30 2010/02/18 14:50:41 srb Exp $
 */
 
 #include "global.h"
@@ -33,14 +33,7 @@
 #include <sqlite3.h>
 #include <time.h>
 
-#ifdef __NT__
-#define SLEEP() Sleep (0) /* Sleeps for the remainder of the time slice. */
-#elif defined (HAVE_USLEEP)
-#define SLEEP() usleep(100)
-#else
-#define SLEEP() sleep(1)
-#endif
-
+#define SLEEP() sysleep(0.0001)
 
 DECLARATIONS
 

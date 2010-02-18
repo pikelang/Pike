@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: port.c,v 1.88 2009/11/10 09:43:45 grubba Exp $
+|| $Id: port.c,v 1.89 2010/02/18 14:50:41 srb Exp $
 */
 
 /*
@@ -33,6 +33,7 @@
 #include <errno.h>
 #include <float.h>
 #include <string.h>
+#include <time.h>
 
 #ifndef HAVE_ISSPACE
 PMOD_EXPORT const char Pike_isspace_vector[] =
@@ -153,6 +154,33 @@ PMOD_EXPORT unsigned INT32 my_rand(void)
 {
   if( ++rnd_index == RNDBUF) rnd_index=0;
   return rndbuf[rnd_index] += rndbuf[rnd_index+RNDJUMP-(rnd_index<RNDBUF-RNDJUMP?0:RNDBUF)];
+}
+
+PMOD_EXPORT void sysleep(double left)
+{
+#ifdef __NT__
+  Sleep(DO_NOT_WARN((int)(left*1000+0.5)));
+#elif defined(HAVE_NANOSLEEP)
+  {
+    struct timespec req;
+    left+=5e-10;
+    req.tv_nsec=(left - (req.tv_sec=left))*1e9;
+    nanosleep(&req,(void*)0);
+  }
+#elif defined(HAVE_POLL)
+  {
+    /* MacOS X is stupid, and requires a non-NULL pollfd pointer. */
+    struct pollfd sentinel;
+    poll(&sentinel, 0, (int)(left*1000+0.5));
+  }
+#else
+  {
+    struct timeval t3;
+    left+=5e-7;
+    t3.tv_usec=(left - (t3.tv_sec=left))*1e6;
+    select(0,0,0,0,&t3);
+  }
+#endif
 }
 
 #ifndef CONFIGURE_TEST

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.281 2009/09/29 11:09:33 mast Exp $
+|| $Id: threads.c,v 1.282 2010/02/18 14:50:41 srb Exp $
 */
 
 #include "global.h"
@@ -2667,13 +2667,7 @@ void cleanup_all_other_threads (void)
 
   while (num_pending_interrupts && time (NULL) < timeout) {
     THREADS_ALLOW();
-#ifdef __NT__
-    Sleep (1);
-#elif defined (HAVE_USLEEP)
-    usleep (1000);
-#else
-    sleep (1);
-#endif
+    sysleep(1.0);
     THREADS_DISALLOW();
   }
 

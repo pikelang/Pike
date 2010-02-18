@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.695 2009/11/11 20:22:19 mast Exp $
+|| $Id: builtin_functions.c,v 1.696 2010/02/18 14:50:41 srb Exp $
 */
 
 #include "global.h"
@@ -4397,6 +4397,68 @@ PMOD_EXPORT void f_callablep(INT32 args)
 #undef HAVE_POLL
 #endif
 
+static void delaysleep(double delay, unsigned do_abort_on_signal,
+ unsigned do_microsleep)
+{
+#define POLL_SLEEP_LIMIT 0.02
+
+#ifdef HAVE_GETHRTIME
+   hrtime_t t0,tv;
+#else
+   struct timeval t0,tv;
+#endif
+
+   /* Special case, sleep(0) means 'yield' */
+   if(delay == 0.0)
+   {
+     check_threads_etc();
+     return;
+   }
+
+   if(sizeof(FLOAT_TYPE)<sizeof(double))
+     delay += FLT_EPSILON*5;	/* round up */
+
+#ifdef HAVE_GETHRTIME
+   t0=tv=gethrtime();
+#define GET_TIME_ELAPSED tv=gethrtime()
+#define TIME_ELAPSED (tv-t0)*1e-9
+#else
+   GETTIMEOFDAY(&t0);
+   tv=t0;
+#define GET_TIME_ELAPSED GETTIMEOFDAY(&tv)
+#define TIME_ELAPSED ((tv.tv_sec-t0.tv_sec) + (tv.tv_usec-t0.tv_usec)*1e-6)
+#endif
+
+#define FIX_LEFT() \
+       GET_TIME_ELAPSED; \
+       left = delay - TIME_ELAPSED; \
+       if (do_microsleep) left-=POLL_SLEEP_LIMIT;
+
+   if (!do_microsleep || delay>POLL_SLEEP_LIMIT)
+   {
+     for(;;)
+     {
+       double left;
+       /* THREADS_ALLOW may take longer time then POLL_SLEEP_LIMIT */
+       THREADS_ALLOW();
+       FIX_LEFT();
+       if(left>0.0)
+	 sysleep(left);
+       THREADS_DISALLOW();
+       if(do_abort_on_signal)
+	 return;
+       FIX_LEFT();
+       if(left<=0.0)
+	 break;
+       check_threads_etc();
+     }
+   }
+
+   if (do_microsleep)
+      while (delay>TIME_ELAPSED)
+	 GET_TIME_ELAPSED;
+}
+
 /*! @decl void sleep(int|float s, void|int abort_on_signal)
  *!
  *!   This function makes the program stop for @[s] seconds.
@@ -4415,29 +4477,8 @@ PMOD_EXPORT void f_callablep(INT32 args)
  */
 PMOD_EXPORT void f_sleep(INT32 args)
 {
-#ifdef HAVE_GETHRTIME
-   hrtime_t t0,tv;
-#else
-   struct timeval t0,tv;
-#endif
-
    double delay=0.0;
-   int do_abort_on_signal;
-
-#ifdef HAVE_GETHRTIME
-   t0=tv=gethrtime();
-#define GET_TIME_ELAPSED tv=gethrtime()
-#define TIME_ELAPSED (tv-t0)*1e-9
-#else
-   GETTIMEOFDAY(&t0);
-   tv=t0;
-#define GET_TIME_ELAPSED GETTIMEOFDAY(&tv)
-#define TIME_ELAPSED ((tv.tv_sec-t0.tv_sec) + (tv.tv_usec-t0.tv_usec)*1e-6)
-#endif
-
-#define FIX_LEFT() \
-       GET_TIME_ELAPSED; \
-       left = delay - TIME_ELAPSED;
+   unsigned do_abort_on_signal;
 
    switch(Pike_sp[-args].type)
    {
@@ -4450,62 +4491,11 @@ PMOD_EXPORT void f_sleep(INT32 args)
 	 break;
    }
 
-   /* Special case, sleep(0) means 'yield' */
-   if(delay == 0.0)
-   {
-     check_threads_etc();
-     pop_n_elems(args);
-     return;
-   }
-
-   if(args > 1 && !UNSAFE_IS_ZERO(Pike_sp + 1-args))
-   {
-     do_abort_on_signal=1;
-   }else{
-     do_abort_on_signal=0;
-   }
-
+   do_abort_on_signal = delay!=0.0 && args > 1
+    && !UNSAFE_IS_ZERO(Pike_sp + 1-args);
    pop_n_elems(args);
 
-   while(1)
-   {
-     double left;
-     /* THREADS_ALLOW may take longer time then POLL_SLEEP_LIMIT */
-     THREADS_ALLOW();
-     do {
-       FIX_LEFT();
-       if(left<=0.0) break;
-
-#ifdef __NT__
-       Sleep(DO_NOT_WARN((int)(left*1000)));
-#elif defined(HAVE_POLL)
-       {
-	 /* MacOS X is stupid, and requires a non-NULL pollfd pointer. */
-	 struct pollfd sentinel;
-	 poll(&sentinel, 0, (int)(left*1000));
-       }
-#else
-       {
-	 struct timeval t3;
-	 t3.tv_sec=left;
-	 t3.tv_usec=(int)((left - (int)left)*1e6);
-	 select(0,0,0,0,&t3);
-       }
-#endif
-     } while(0);
-     THREADS_DISALLOW();
-     
-     if(do_abort_on_signal) return;
-     
-     FIX_LEFT();
-     
-     if(left<=0.0)
-     {
-       break;
-     }else{
-       check_threads_etc();
-     }
-   }
+   delaysleep(delay, do_abort_on_signal, 0);
 }
 
 #undef FIX_LEFT
@@ -4525,33 +4515,8 @@ PMOD_EXPORT void f_sleep(INT32 args)
  */
 PMOD_EXPORT void f_delay(INT32 args)
 {
-#define POLL_SLEEP_LIMIT 0.02
-
-#ifdef HAVE_GETHRTIME
-   hrtime_t t0,tv;
-#else
-   struct timeval t0,tv;
-#endif
-
    double delay=0.0;
-   int do_microsleep;
-   int do_abort_on_signal;
-
-#ifdef HAVE_GETHRTIME
-   t0=tv=gethrtime();
-#define GET_TIME_ELAPSED tv=gethrtime()
-#define TIME_ELAPSED (tv-t0)*1e-9
-#else
-   GETTIMEOFDAY(&t0);
-   tv=t0;
-#define GET_TIME_ELAPSED GETTIMEOFDAY(&tv)
-#define TIME_ELAPSED ((tv.tv_sec-t0.tv_sec) + (tv.tv_usec-t0.tv_usec)*1e-6)
-#endif
-
-#define FIX_LEFT() \
-       GET_TIME_ELAPSED; \
-       left = delay - TIME_ELAPSED; \
-       if (do_microsleep) left-=POLL_SLEEP_LIMIT;
+   unsigned do_abort_on_signal;
 
    switch(Pike_sp[-args].type)
    {
@@ -4564,71 +4529,11 @@ PMOD_EXPORT void f_delay(INT32 args)
 	 break;
    }
 
-   /* Special case, sleep(0) means 'yield' */
-   if(delay == 0.0)
-   {
-     check_threads_etc();
-     pop_n_elems(args);
-     return;
-   }
-
-   if(args > 1 && !UNSAFE_IS_ZERO(Pike_sp + 1-args))
-   {
-     do_microsleep=0;
-     do_abort_on_signal=1;
-   }else{
-     do_microsleep=delay<10;
-     do_abort_on_signal=0;
-   }
-
+   do_abort_on_signal = delay!=0.0 && args > 1
+    && !UNSAFE_IS_ZERO(Pike_sp + 1-args);
    pop_n_elems(args);
 
-   if (delay>POLL_SLEEP_LIMIT || !do_microsleep)
-   {
-     while(1)
-     {
-       double left;
-       /* THREADS_ALLOW may take longer time then POLL_SLEEP_LIMIT */
-       THREADS_ALLOW();
-       do {
-	 FIX_LEFT();
-	 if(left<=0.0) break;
-
-#ifdef __NT__
-	 Sleep(DO_NOT_WARN((int)(left*1000)));
-#elif defined(HAVE_POLL)
-	 {
-	   /* MacOS X is stupid, and requires a non-NULL pollfd pointer. */
-	   struct pollfd sentinel;
-	   poll(&sentinel, 0, (int)(left*1000));
-	 }
-#else
-	 {
-	   struct timeval t3;
-	   t3.tv_sec=left;
-	   t3.tv_usec=(int)((left - (int)left)*1e6);
-	   select(0,0,0,0,&t3);
-	 }
-#endif
-       } while(0);
-       THREADS_DISALLOW();
-
-       if(do_abort_on_signal) return;
-       
-       FIX_LEFT();
-       
-       if(left<=0.0)
-       {
-	 break;
-       }else{
-	 check_threads_etc();
-       }
-     }
-   }
-
-   if (do_microsleep)
-      while (delay>TIME_ELAPSED) 
-	 GET_TIME_ELAPSED;
+   delaysleep(delay, do_abort_on_signal, !do_abort_on_signal && delay<10);
 }
 
 /*! @decl int gc()
