@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.430 2010/02/18 16:01:14 grubba Exp $
+|| $Id: file.c,v 1.431 2010/02/18 16:27:57 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -1880,6 +1880,10 @@ static void file_open(INT32 args)
   }
   else
   {
+     int default_capabilities = FILE_CAPABILITIES;
+     int so_type = -1;
+     ACCEPT_SIZE_T so_type_len = sizeof(so_type);
+
 #ifdef PIKE_SECURITY
      if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
      {
@@ -1893,10 +1897,23 @@ static void file_open(INT32 args)
      if (fd<0)
 	Pike_error("Not a valid FD.\n");
 
+#ifdef SO_TYPE
+     /* Check if we have a socket. */
+     while ((getsockopt(fd, SOL_SOCKET, SO_TYPE,
+			(void *)&so_type, &so_type_len) == -1) &&
+	    (errno == EINTR))
+       ;
+
+     if (so_type != -1) {
+       default_capabilities = SOCKET_CAPABILITIES;
+       /* FIXME: Detect pipes and UNIX-domain sockets. */
+     }
+#endif
+
      /* FIXME: What are the intended semantics for the flag FILE_NOT_OPENED?
       *        (grubba 2004-09-01
       */
-     init_fd(fd, flags | fd_query_properties(fd, FILE_CAPABILITIES),
+     init_fd(fd, flags | fd_query_properties(fd, default_capabilities),
 	     FILE_NOT_OPENED);
   }
 
@@ -3904,7 +3921,7 @@ static void file_connect_unix( INT32 args )
   }
 
   init_fd(FD, FILE_READ | FILE_WRITE
-	  | fd_query_properties(FD, SOCKET_CAPABILITIES), 0);
+	  | fd_query_properties(FD, UNIX_SOCKET_CAPABILITIES), 0);
   my_set_close_on_exec(FD, 1);
 
   do {
