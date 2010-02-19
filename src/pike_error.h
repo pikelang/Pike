@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_error.h,v 1.54 2009/08/07 14:05:59 grubba Exp $
+|| $Id: pike_error.h,v 1.55 2010/02/19 10:15:49 srb Exp $
 */
 
 #ifndef PIKE_ERROR_H
@@ -115,7 +115,7 @@ typedef struct JMP_BUF
   ONERROR *onerror;
 #ifdef PIKE_DEBUG
   int line;
-  char *file;
+  const char *file;
   int on_stack;
 #endif
 } JMP_BUF;
