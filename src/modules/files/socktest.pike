@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.56 2010/02/20 14:42:50 srb Exp $ */
+/* $Id: socktest.pike,v 1.57 2010/02/20 17:48:36 srb Exp $ */
 
 // #define OOB_DEBUG
 
@@ -365,11 +365,8 @@ array(object(Socket)) stdtest()
   int warned = 0;
 
   sock=Socket();
-  // TIME_WAIT typically is 4 minutes,
-  // but if not enough sockets are available, we
-  // cut this test short after trying for 30 seconds.
-  // We are testing Pike, not the OS limits.
-  for (i = 30; ; i--) {
+  do
+  {
     got_callback();
     DEBUG_WERR("Connecting to %O port %d...\n", LOOPBACK, portno2);
     if (sock->connect(LOOPBACK, portno2)) {
@@ -395,26 +392,19 @@ array(object(Socket)) stdtest()
 #endif /* IPV6 */
     if (sock->errno() == System.EADDRINUSE) {
       /* Out of sockets on the loopback interface? */
-      if(!warned)
-        write("\nConnect failed: Address in use. Waiting for better times.\n");
-      warned = 1;
-      if(i<=0)
-      {
-	write("Dropping socket because of insufficient system resources.\n");
-	// This is supposed to let go of the socket and consider this
-	// socket a success
-	sock->input_finished=sock->output_finished=1;
-	sock->cleanup();
-        return 0;
-      }
-      sleep(1);
-      continue;
+      write("\nConnect failed: Address in use. Dropping socket.\n");
+      // This is supposed to let go of the socket and consider this
+      // socket a success
+      sock->input_finished=sock->output_finished=1;
+      sock->cleanup();
+      return 0;
     }
     write("\nConnect failed: (%d, %O)\n",
 	  sock->errno(), strerror(sock->errno()));
     sleep(1);
     fd_fail();
   }
+  while(0);
   got_callback();
   DEBUG_WERR("Accepting...\n");
   sock2=port2::accept();
@@ -553,7 +543,7 @@ void finish()
 	  stdtest();
 	  break;
 	}
-	/* To few available fds; advance to the next set of tests. */
+	/* Too few available fds; advance to the next set of tests. */
 	_tests = 27;
 	/* FALL_THROUGH */
 
