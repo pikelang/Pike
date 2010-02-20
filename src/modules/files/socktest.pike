@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.55 2010/02/18 14:51:18 srb Exp $ */
+/* $Id: socktest.pike,v 1.56 2010/02/20 14:42:50 srb Exp $ */
 
 // #define OOB_DEBUG
 
@@ -102,6 +102,7 @@ class Socket {
       finish();
       DEBUG_WERR("Closing fd:%O\n", query_fd());
       close();
+      set_blocking();
       destruct(this_object());
     }
   }
@@ -399,9 +400,9 @@ array(object(Socket)) stdtest()
       warned = 1;
       if(i<=0)
       {
+	write("Dropping socket because of insufficient system resources.\n");
 	// This is supposed to let go of the socket and consider this
 	// socket a success
-	// It seems to work sometimes, but not always, FIXME.
 	sock->input_finished=sock->output_finished=1;
 	sock->cleanup();
         return 0;
