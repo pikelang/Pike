@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: smartlink.c,v 1.22 2008/08/19 15:57:34 marcus Exp $
+|| $Id: smartlink.c,v 1.23 2010/02/20 17:14:22 srb Exp $
 */
 
 /*
@@ -106,7 +106,7 @@ int main(int argc, char **argv)
 
   if (!strcmp(argv[1], "-v")) {
     fprintf(stdout,
-	    "$Id: smartlink.c,v 1.22 2008/08/19 15:57:34 marcus Exp $\n"
+	    "$Id: smartlink.c,v 1.23 2010/02/20 17:14:22 srb Exp $\n"
 	    "Usage:\n"
 	    "\t%s binary [args]\n",
 	    argv[0]);
@@ -389,12 +389,14 @@ int main(int argc, char **argv)
     }
   }
 
+#if 0	/* Enabling this messes with the definition of EOPNOTSUP */
 #ifdef USE_OSX_TWOLEVEL_NAMESPACE
   /* Mac OS X needs to be 10.3 or better for ld to accept
      "-undefined dynamic_lookup" */
   if (putenv("MACOSX_DEPLOYMENT_TARGET=10.3")) {
     fatal("Out of memory (8)!\n");
   }
+#endif
 #endif
 
   execv(argv[1], new_argv);
