@@ -26,6 +26,14 @@ o The libpq based old Postgres driver is now deprecated.  The new pgsql
 Bug fixes
 ---------
 
+o Support undocumented OS behaviour on out-of-band data returning
+  EOPNOTSUPP and ECONNRESET when a stream is half closed.
+  The undocumented behaviour is found on (at least) 2.6.x Linux
+  and FreeBSD 7.x and 8.x.
+
+o Use nanosleep() when available instead of poll or select hacks for
+  the Pike-level sleep() function.
+
 o Fixed dangling cache reference in prepared statements when using CREATE
   statements via Sql.pgsql.
 
