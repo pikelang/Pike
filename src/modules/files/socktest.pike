@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.57 2010/02/20 17:48:36 srb Exp $ */
+/* $Id: socktest.pike,v 1.58 2010/02/21 13:28:17 srb Exp $ */
 
 // #define OOB_DEBUG
 
@@ -361,7 +361,6 @@ int portno2;
 array(object(Socket)) stdtest()
 {
   object sock,sock2;
-  int i;
   int warned = 0;
 
   sock=Socket();
