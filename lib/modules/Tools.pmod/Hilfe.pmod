@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.172 2009/11/14 21:31:57 mast Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.173 2010/02/21 22:42:16 srb Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -1305,7 +1305,7 @@ private class ParserState {
 
   private string caught_error;
 
-  //! Prints out any error that might have occured while
+  //! Prints out any error that might have occurred while
   //! @[push_string] was executed. The error will be
   //! printed with the print function @[w].
   void show_error(function(array(string)|string, mixed ... : int) w) {
@@ -2613,7 +2613,7 @@ class StdinHilfe
       {
         if(!objectp(error))
           error = Error.mkerror(error);
-        readline->message(sprintf("%s\nAn error occured, attempting to complete your input!\nPlease include the backtrace above and the line below in your report:\ninput: %s\n", error->describe(), input));
+        readline->message(sprintf("%s\nAn error occurred, attempting to complete your input!\nPlease include the backtrace above and the line below in your report:\ninput: %s\n", error->describe(), input));
         completions = ({});
       }
     }
@@ -2671,7 +2671,7 @@ class StdinHilfe
 
       if (error)
       {
-        readline->message(sprintf("%s\nAn error occured, attempting to complete your input!\nPlease include the backtrace above and the lines below in your report:\ninput: %s\ntokens: %O\ncompletable: %O\n", error->describe(), input, tokens, completable, ));
+        readline->message(sprintf("%s\nAn error occurred, attempting to complete your input!\nPlease include the backtrace above and the lines below in your report:\ninput: %s\ntokens: %O\ncompletable: %O\n", error->describe(), input, tokens, completable, ));
       }
       else if (variables->DEBUG_COMPLETIONS)
         readline->message(sprintf("input: %s\ntokens: %O\ncompletable: %O\ncompletions: %O\n", input, tokens, completable, completions));

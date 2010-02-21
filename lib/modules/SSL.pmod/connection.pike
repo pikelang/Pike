@@ -1,5 +1,5 @@
 //
-// $Id: connection.pike,v 1.45 2009/11/18 16:12:02 grubba Exp $
+// $Id: connection.pike,v 1.46 2010/02/21 22:42:16 srb Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -279,7 +279,7 @@ string handshake_buffer = "";
 int handshake_finished = 0;
 
 //! Main receive handler. Returns a string of received application
-//! data, or 1 if a close was received, or -1 if an error occured.
+//! data, or 1 if a close was received, or -1 if an error occurred.
 //!
 //! This function is intended to be called from an i/o read callback.
 string|int got_data(string|int s)

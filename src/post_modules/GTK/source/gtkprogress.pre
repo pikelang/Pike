@@ -33,7 +33,7 @@ void configure( float value, float min, float max );
 void set_percentage( float pct );
 //! Sets the value (between 0.0 and 1.0). Uses the min and max values.
 void set_activity_mode( int modep );
-//! As well as indicating the amount of progress that has occured, the
+//! As well as indicating the amount of progress that has occurred, the
 //! progress bar may be set to just indicate that there is some
 //! activity. This can be useful in situations where progress cannot be
 //! measured against a value range.<p>

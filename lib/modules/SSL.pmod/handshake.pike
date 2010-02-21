@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 #pragma strict_types
 
-/* $Id: handshake.pike,v 1.61 2008/09/05 12:31:51 mast Exp $
+/* $Id: handshake.pike,v 1.62 2010/02/21 22:42:16 srb Exp $
  *
  */
 
@@ -653,7 +653,7 @@ int verify_certificate_chain(array(string) certs)
 //! for supporting SSLv2 hello messages).
 //!
 //! This function returns 0 if hadshake is in progress, 1 if handshake
-//! is finished, and -1 if a fatal error occured. It uses the
+//! is finished, and -1 if a fatal error occurred. It uses the
 //! send_packet() function to transmit packets.
 int(-1..1) handle_handshake(int type, string data, string raw)
 {

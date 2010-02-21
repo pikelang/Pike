@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.214 2009/11/28 13:36:20 mast Exp $
+|| $Id: mapping.c,v 1.215 2010/02/21 22:42:19 srb Exp $
 */
 
 #include "global.h"
@@ -2296,7 +2296,7 @@ void check_mapping(const struct mapping *m)
   {
     if(Pike_in_gc)
     {
-      fprintf(stderr,"Pike was in GC stage %d when this fatal occured:\n",Pike_in_gc);
+      fprintf(stderr,"Pike was in GC stage %d when this fatal occurred:\n",Pike_in_gc);
       Pike_in_gc=0;
     }
     

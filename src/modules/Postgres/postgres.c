@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: postgres.c,v 1.65 2009/02/15 16:15:41 srb Exp $
+|| $Id: postgres.c,v 1.66 2010/02/21 22:42:19 srb Exp $
 */
 
 /*
@@ -710,7 +710,7 @@ static void f_trace (INT32 args)
  *! 
  *! The callback function must return no value, and takes a string argument,
  *! which will be the name of the table on which the notification event
- *! has occured. In future versions, support for user-specified arguments
+ *! has occurred. In future versions, support for user-specified arguments
  *! will be added.
  *!
  *! @note

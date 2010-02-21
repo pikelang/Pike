@@ -628,7 +628,7 @@ object s_lambda(object arglist, Environment env, Environment globals)
  * fatal.
  *
  * The catch special form catches errors, returning Lfalse
- * if an error occured. */
+ * if an error occurred. */
 object s_catch(object arglist, Environment env, Environment globals)
 {
   return s_begin(arglist, env, globals) || Lfalse;

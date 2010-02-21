@@ -409,7 +409,7 @@ void add_child_in_window(GTK2.Widget child, int wintype, int xpos, int ypos);
 //! correct position in buffer coordinates any time scrolling occurs or buffer
 //! changes occur, and then call GTK2.TextView->move_child() to update the
 //! child's position.  Unfortunately there's no good way to detect that
-//! scrolling has occured, using the current API; a possible hack would be to
+//! scrolling has occurred, using the current API; a possible hack would be to
 //! update all child positions when the scroll adjustments change or the text
 //! buffer changes.
 

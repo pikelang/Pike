@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.3 2008/06/28 16:54:21 nilsson Exp $
+/* $Id: sslfile.pike,v 1.4 2010/02/21 22:42:16 srb Exp $
  *
  */
 
@@ -266,7 +266,7 @@ string|int read(string|int ...args) {
 
   string|int data=got_data(read_blocking_packet());
   if(!stringp(data)) {
-    return ""; //EOF or ssl-fatal error occured.
+    return ""; //EOF or ssl-fatal error occurred.
   }
 
   while(stringp(data)) {

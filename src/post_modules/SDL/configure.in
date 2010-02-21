@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.10 2005/11/13 01:47:46 peter Exp $
+# $Id: configure.in,v 1.11 2010/02/21 22:42:20 srb Exp $
 AC_INIT(SDL.cmod)
 
 AC_MODULE_INIT()
@@ -220,7 +220,7 @@ int main(int argc, char *argv[])
           echo "*** If you have an old version installed, it is best to remove it, although"
           echo "*** you may also be able to get things to work by modifying LD_LIBRARY_PATH"],
         [ echo "*** The test program failed to compile or link. See the file config.log for the"
-          echo "*** exact error that occured. This usually means SDL was incorrectly installed"
+          echo "*** exact error that occurred. This usually means SDL was incorrectly installed"
           echo "*** or that you have moved SDL since it was installed. In the latter case, you"
           echo "*** may want to edit the sdl-config script: $SDL_CONFIG" ])
           CFLAGS="$ac_save_CFLAGS"

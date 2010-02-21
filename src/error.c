@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.168 2009/07/17 14:32:34 grubba Exp $
+|| $Id: error.c,v 1.169 2010/02/21 22:42:19 srb Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -609,7 +609,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_va_fatal(const char *fmt, va_list args
   if (fmt) (void)VFPRINTF(stderr, fmt, args);
 
   if(Pike_in_gc)
-    fprintf(stderr,"Pike was in GC stage %d when this fatal occured.\n",Pike_in_gc);
+    fprintf(stderr,"Pike was in GC stage %d when this fatal occurred.\n",Pike_in_gc);
   Pike_in_gc = GC_PASS_DISABLED;
 
   d_flag=Pike_interpreter.trace_level=0;

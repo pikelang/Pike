@@ -59,7 +59,7 @@ float get_y_align( );
 //!
 
 GTK.Progress set_activity_mode( int modep );
-//! As well as indicating the amount of progress that has occured, the
+//! As well as indicating the amount of progress that has occurred, the
 //! progress bar may be set to just indicate that there is some
 //! activity. This can be useful in situations where progress cannot be
 //! measured against a value range.

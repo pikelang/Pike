@@ -1,7 +1,7 @@
 /*
  * This is part of the Postgres module for Pike.
  *
- * $Id: postgres.pike,v 1.40 2010/02/16 09:14:19 srb Exp $
+ * $Id: postgres.pike,v 1.41 2010/02/21 22:42:16 srb Exp $
  *
  */
 
@@ -201,7 +201,7 @@ protected void poll (int delay)
 //!
 //! The callback function must return no value, and takes a string argument,
 //! which will be the name of the table on which the notification event
-//! has occured. In future versions, support for user-specified arguments
+//! has occurred. In future versions, support for user-specified arguments
 //! will be added.
 //!
 //! @note
