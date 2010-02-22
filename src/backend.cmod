@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.238 2009/03/30 12:47:50 per Exp $
+ * $Id: backend.cmod,v 1.239 2010/02/22 23:05:53 mast Exp $
  *
  * Backend object.
  */
@@ -1007,10 +1007,7 @@ PIKECLASS Backend
        pop_n_elems(args);
        if(e==-1)
        {
-	 Pike_sp->type = T_INT;
-	 Pike_sp->subtype = NUMBER_UNDEFINED;
-	 Pike_sp->u.integer=-1;
-	 Pike_sp++;
+	 push_undefined();
        }else{
 	 push_int(CALL(e)->tv.tv_sec - current_time.tv_sec);
        }
