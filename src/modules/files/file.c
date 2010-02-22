@@ -125,7 +125,9 @@
 #define FD (THIS->box.fd)
 #define ERRNO (THIS->my_errno)
 
-#define READ_BUFFER 8192
+#define READ_BUFFER		8192
+#define DIRECT_BUFSIZE		(64*1024)
+#define SMALL_NETBUF		2048
 #define INUSE_BUSYWAIT_DELAY	0.01
 #define INUSE_TIMEOUT		0.1
 
@@ -631,13 +633,16 @@ static struct pike_string *do_read(int fd,
 {
   ONERROR ebuf;
   ptrdiff_t bytes_read, i;
+  INT32 try_read;
   bytes_read=0;
   *err=0;
 
-  if(r <= 65536)
+  if(r <= DIRECT_BUFSIZE
+   || all && (r<<1) > r && (((r-1)|r)+1)!=(r<<1))   /* r<<1 != power of two */
   {
     struct pike_string *str;
 
+    i=r;
 
     str=begin_shared_string(r);
 
@@ -647,7 +652,9 @@ static struct pike_string *do_read(int fd,
       int fd=FD;
       int e;
       THREADS_ALLOW();
-      i = fd_read(fd, str->str+bytes_read, r);
+
+      try_read = i;
+      i = fd_read(fd, str->str+bytes_read, i);
       e=errno;
       THREADS_DISALLOW();
 
@@ -674,6 +681,24 @@ static struct pike_string *do_read(int fd,
 	}
 	break;
       }
+
+      /*
+       * Large reads cause the kernel to validate more memory before
+       * starting the actual read, and hence cause slowdowns.
+       * Ideally you read as much as you're going to receive.
+       * This buffer calculation algorithm tries to optimise the
+       * read length depending on past read chunksizes.
+       * For network reads this allows it to follow the packetsizes.
+       * The initial read will attempt the full buffer.  /srb
+       */
+      if( i < try_read )
+	i += SMALL_NETBUF;
+      else
+	i += (r-i)>>1;
+      if (i < SMALL_NETBUF)
+	i = SMALL_NETBUF;
+      if(i > r-SMALL_NETBUF)
+	i = r;
     }while(r);
 
     UNSET_ONERROR(ebuf);
@@ -692,18 +717,22 @@ static struct pike_string *do_read(int fd,
     /* For some reason, 8k seems to work faster than 64k.
      * (4k seems to be about 2% faster than 8k when using linux though)
      * /Hubbe (Per pointed it out to me..)
+     *
+     * The slowdowns most likely are because of memory validation
+     * done by the kernel for buffer space which is later unused
+     * (short read)   /srb
      */
-#define CHUNK ( 1024 * 8 )
-    INT32 try_read;
     dynamic_buffer b;
 
     b.s.str=0;
     initialize_buf(&b);
     SET_ONERROR(ebuf, free_dynamic_buffer, &b);
+    i = all && (r<<1)>r ? DIRECT_BUFSIZE : READ_BUFFER;
     do{
       int e;
       char *buf;
-      try_read=MINIMUM(CHUNK,r);
+
+      try_read = i;
 
       buf = low_make_buf_space(try_read, &b);
 
@@ -714,23 +743,13 @@ static struct pike_string *do_read(int fd,
 
       check_threads_etc();
 
-      if(i==try_read)
-      {
-	r-=i;
-	bytes_read+=i;
-	if(!all) break;
-      }
-      else if(i>0)
+      if(i>=0)
       {
 	bytes_read+=i;
 	r-=i;
-	low_make_buf_space(i - try_read, &b);
-	if(!all) break;
-      }
-      else if(i==0)
-      {
-	low_make_buf_space(-try_read, &b);
-	break;
+	if(try_read > i)
+	  low_make_buf_space(i - try_read, &b);
+	if(!all || !i) break;
       }
       else
       {
@@ -747,6 +766,16 @@ static struct pike_string *do_read(int fd,
 	  break;
 	}
       }
+
+      /* See explanation in previous loop above */
+      if( i < try_read )
+	i += SMALL_NETBUF;
+      else
+	i += (DIRECT_BUFSIZE-i)>>1;
+      if (i < SMALL_NETBUF)
+	i = SMALL_NETBUF;
+      if(i > r-SMALL_NETBUF)
+	i = r;
     }while(r);
 
     UNSET_ONERROR(ebuf);
@@ -755,7 +784,6 @@ static struct pike_string *do_read(int fd,
       ADD_FD_EVENTS (THIS, PIKE_BIT_FD_READ);
 
     return low_free_buf(&b);
-#undef CHUNK
   }
 }
 
@@ -3224,7 +3252,7 @@ static void file_listxattr(INT32 args)
   if( res<0 && errno==ERANGE )
   {
     /* Too little space in buffer.*/
-    int blen = 65536;
+    int blen = DIRECT_BUFSIZE;
     do_free = 1;
     ptr = xalloc( 1 );
     do {
@@ -3294,7 +3322,7 @@ static void file_getxattr(INT32 args)
   if( res<0 && errno==ERANGE )
   {
     /* Too little space in buffer.*/
-    int blen = 65536;
+    int blen = DIRECT_BUFSIZE;
     do_free = 1;
     ptr = xalloc( 1 );
     do {
