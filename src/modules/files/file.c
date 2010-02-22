@@ -1476,7 +1476,7 @@ static void file_peek(INT32 args)
     fd_set tmp;
     struct timeval tv;
 
-    tv.tv_usec=1;
+    tv.tv_usec=0;
     tv.tv_sec=0;
     fd_FD_ZERO(&tmp);
     fd_FD_SET(FD, &tmp);
@@ -1489,9 +1489,13 @@ static void file_peek(INT32 args)
 
     /* FIXME: Handling of EOF and not_eof */
 
-    THREADS_ALLOW();
-    ret = fd_select(ret+1,&tmp,0,0,&tv);
-    THREADS_DISALLOW();
+    if(tv.tv_sec || tv.tv_usec) {
+      THREADS_ALLOW();
+      ret = fd_select(ret+1,&tmp,0,0,&tv);
+      THREADS_DISALLOW();
+    }
+    else
+      ret = fd_select(ret+1,&tmp,0,0,&tv);
 
     if(ret < 0)
     {
