@@ -1,7 +1,7 @@
 #! /usr/bin/env pike
 #pike __REAL_VERSION__
 
-/* $Id: test_pike.pike,v 1.139 2008/12/15 09:01:46 mast Exp $ */
+/* $Id: test_pike.pike,v 1.140 2010/02/22 20:18:43 srb Exp $ */
 
 constant description = "Executes tests according to testsuite files.";
 
@@ -987,8 +987,8 @@ int main(int argc, array(string) argv)
 	    err=catch {
 	      // Is it intentional that compilation errors are
 	      // considered success too? /mast
-	      // Yes, apparently it is. There are tests that doesn't
-	      // care whether the error is catched during compilation
+	      // Yes, apparently it is. There are tests that don't
+	      // care whether the error is caught during compilation
 	      // or evaluation. /mast
 	      a = compile_string(to_compile, testsuite)()->a();
 	    };

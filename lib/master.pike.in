@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.469 2009/12/28 14:16:30 mast Exp $
+// $Id: master.pike.in,v 1.470 2010/02/22 20:18:42 srb Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -3957,7 +3957,7 @@ void compile_warning(string file,int line,string err)
 }
 
 
-//! This function is called when an exception is catched during
+//! This function is called when an exception is caught during
 //! compilation. Its message is also reported to @[compile_error] if
 //! this function returns zero.
 int compile_exception (array|object trace)
