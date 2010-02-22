@@ -3,7 +3,7 @@
 // RFC1521 functionality for Pike
 //
 // Marcus Comstedt 1996-1999
-// $Id: module.pmod,v 1.29 2010/02/22 18:02:37 grubba Exp $
+// $Id: module.pmod,v 1.30 2010/02/22 18:03:30 grubba Exp $
 
 
 //! RFC1521, the @b{Multipurpose Internet Mail Extensions@} memo, defines a
@@ -1348,9 +1348,9 @@ class Message {
 
 	  // Strip the terminating LF or CRLF.
 	  if ((found > 1) && (data[found - 2] == '\r')) {
-	    part = ({ data[start..found-3] });
+	    part = data[start..found-3];
 	  } else {
-	    part = ({ data[start..found-2] });
+	    part = data[start..found-2];
 	  }
 	  if (start) {
 	    parts += ({ part });
