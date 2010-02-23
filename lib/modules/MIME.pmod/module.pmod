@@ -3,7 +3,7 @@
 // RFC1521 functionality for Pike
 //
 // Marcus Comstedt 1996-1999
-// $Id: module.pmod,v 1.31 2010/02/23 10:10:42 grubba Exp $
+// $Id: module.pmod,v 1.32 2010/02/23 15:54:57 grubba Exp $
 
 
 //! RFC1521, the @b{Multipurpose Internet Mail Extensions@} memo, defines a
@@ -60,6 +60,129 @@
 #pike __REAL_VERSION__
 inherit ___MIME;
 
+//! Class representing a substring of a larger string.
+//!
+//! This class is used to reduce the number of string copies
+//! during parsing of @[MIME.Message]s.
+protected class StringRange
+{
+  string data;
+  int start;	// Inclusive.
+  int end;	// Exclusive.
+  protected void create(string|StringRange s, int start, int end)
+  {
+    if (start == end) {
+      data = "";
+      this_program::start = this_program::end = 0;
+      return;
+    }
+    if (start < 0) start = 0;
+    if (end < 0) end = 0;
+    if (objectp(s)) {
+      start += s->start;
+      if (start > s->end) start = s->end;
+      end += s->start;
+      if (end > s->end) end = s->end;
+      s = s->data;
+    }
+    if ((end - start)*16 < sizeof(s)) {
+      s = s[start..end-1];
+      end -= start;
+      start = 0;
+    }
+    data = s;
+    this_program::start = start;
+    this_program::end = end;
+  }
+  protected int _sizeof()
+  {
+    return end-start;
+  }
+  protected string|StringRange `[..](int low, int ltype, int high, int htype)
+  {
+    int len = end - start;
+    if (ltype == Pike.INDEX_FROM_END) {
+      low = len - (low + 1);
+    }
+    high += 1;
+    if (htype == Pike.INDEX_FROM_END) {
+      high = len - high;
+    } else if (htype == Pike.OPEN_BOUND) {
+      high = len;
+    }
+    if (low < 0) low = 0;
+    if (high < 0) high = 0;
+    if (low > len) low = len;
+    if (high > len) high = len;
+    if (!low && (high == len)) return this_object();
+    if ((high - low) < 65536) return data[low..high-1];
+    return StringRange(this_object(), low, high);
+  }
+  protected int `[](int pos)
+  {
+    int npos = pos;
+    if (npos < 0) {
+      npos += end;
+      if (npos < start) {
+	error("Index out of range [-%d..%d]\n", 1 + end-start, end-start);
+      }
+    } else {
+      npos += start;
+      if (npos >= end) {
+	error("Index out of range [-%d..%d]\n", 1 + end-start, end-start);
+      }
+    }
+    return data[npos];
+  }
+  protected mixed cast(string type)
+  {
+    switch(type) {
+    case "string":
+      return data[start..end-1];
+    case "object":
+      return this_object();
+    default:
+      error("StringRange: Unsupported cast to %s.\n", type);
+    }
+  }
+  protected int _search(string frag, int|void pos)
+  {
+    if (pos < 0) {
+      error("Start must be greater or equal to zero.\n");
+    }
+    int npos = pos + start;
+    if (npos > end) {
+      error("Start must not be greater than the length of the string.\n");
+    }
+    npos = search(data, frag, npos);
+    if (npos < 0) return npos;
+    if ((npos + sizeof(frag)) > end) return -1;
+    return npos - start;
+  }
+  protected string _sprintf(int c)
+  {
+    if (c == 'O')
+      return sprintf("StringRange(%d bytes[%d..%d])",
+		     data && sizeof(data), start, end-1);
+    return (string)this_object();
+  }
+}
+
+#if (__REAL_VERSION__ < 7.8) || ((__REAL_VERSION__) < 7.9 && (__REAL_BUILD__ < 15))
+// Compat with some older Pikes...
+
+// Support has_prefix on objects.
+protected int(0..1) has_prefix(string|object s, string prefix)
+{
+  if (!objectp(s)) return predef::has_prefix(s, prefix);
+  for(int i = 0; i < sizeof(prefix); i++) {
+    if (s[i] != prefix[i]) return 0;
+  }
+  return 1;
+}
+
+#endif
+
 //! This function will create a string that can be used as a separator string
 //! for multipart messages.  The generated string is guaranteed not to appear
 //! in @tt{base64@}, @tt{quoted-printable@}, or @tt{x-uue@} encoded data.
@@ -91,16 +214,16 @@ string generate_boundary( )
 //! @seealso
 //! @[MIME.encode()]
 //!
-string decode( string data, string encoding )
+string|StringRange decode( string|StringRange data, string encoding )
 {
   switch (lower_case( encoding || "binary" )) {
   case "base64":
-    return decode_base64( data );
+    return decode_base64( (string)data );
   case "quoted-printable":
-    return decode_qp( data );
+    return decode_qp( (string)data );
   case "x-uue":
   case "x-uuencode":
-    return decode_uue( data );
+    return decode_uue( (string)data );
   case "7bit":
   case "8bit":
   case "binary":
@@ -635,10 +758,11 @@ string guess_subtype( string type )
 //! unless @[use_multiple] has been specified, in which case the contents will
 //! be arrays.
 //!
-array(mapping(string:string|array(string))|string) 
-  parse_headers(string message, void|int(1..1) use_multiple)
+array(mapping(string:string|array(string))|string|StringRange) 
+  parse_headers(string|StringRange message, void|int(1..1) use_multiple)
 {
-  string head, body, header, hname, hcontents;
+  string head, header, hname, hcontents;
+  string|StringRange body;
   if (has_prefix(message, "\r\n") || has_prefix(message, "\n")) {
     // No headers.
     return ({ ([]), message[1 + (message[0] == '\r')..] });
@@ -650,10 +774,10 @@ array(mapping(string:string|array(string))|string)
 		    (mesgsep1<mesgsep2? mesgsep1 : mesgsep2)));
     if (mesgsep<0) {
       // No body.
-      head = message;
+      head = (string)message;
       body = "";
     } else if (mesgsep) {
-      head = (mesgsep>0? message[..mesgsep-1]:"");
+      head = (string)(mesgsep>0? message[..mesgsep-1]:"");
       body = message[mesgsep+(message[mesgsep]=='\r'? 4:2)..];
     }
   }
@@ -682,8 +806,8 @@ class Message {
 
   import Array;
 
-  protected string encoded_data;
-  protected string decoded_data;
+  protected string|StringRange encoded_data;
+  protected string|StringRange decoded_data;
 
   //! This mapping contains all the headers of the message.
   //!
@@ -902,7 +1026,7 @@ class Message {
   {
     if (encoded_data && !decoded_data)
       decoded_data = decode( encoded_data, transfer_encoding );
-    return decoded_data;
+    return decoded_data = (string)decoded_data;
   }
 
   string `->data()
@@ -921,7 +1045,8 @@ class Message {
   string getencoded( )
   {
     if (decoded_data && !encoded_data)
-      encoded_data = encode( decoded_data, transfer_encoding, get_filename() );
+      encoded_data = encode( (string)decoded_data, transfer_encoding,
+			     get_filename() );
     return encoded_data;
   }
 
@@ -1211,7 +1336,7 @@ class Message {
   //!
   //! @seealso
   //! @[cast()]
-  void create(void | string message,
+  void create(void | string|StringRange message,
 	      void | mapping(string:string|array(string)) hdrs,
 	      void | array(object) parts,
 	      void | int guess)
@@ -1227,6 +1352,11 @@ class Message {
     charset = "us-ascii";
     boundary = 0;
     disposition = 0;
+    if (!objectp(message) && (sizeof(message) > 0x10000)) {
+      // Message is larger than 1 MB.
+      // Attempt to reduce memory use by using StringRange.
+      message = StringRange(message, 0, sizeof(message));
+    }
     if (hdrs || parts) {
       string|array(string) hname;
       decoded_data = message;
