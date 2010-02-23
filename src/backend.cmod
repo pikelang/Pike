@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.239 2010/02/22 23:05:53 mast Exp $
+ * $Id: backend.cmod,v 1.240 2010/02/23 10:47:22 grubba Exp $
  *
  * Backend object.
  */
@@ -1007,7 +1007,10 @@ PIKECLASS Backend
        pop_n_elems(args);
        if(e==-1)
        {
-	 push_undefined();
+	 Pike_sp->type = T_INT;
+	 Pike_sp->subtype = NUMBER_UNDEFINED;
+	 Pike_sp->u.integer=-1;
+	 Pike_sp++;
        }else{
 	 push_int(CALL(e)->tv.tv_sec - current_time.tv_sec);
        }
@@ -3026,9 +3029,10 @@ PIKECLASS PollDeviceBackend
    * oob_out	write	POLLWRBAND	(EVFILT_WRITE)		WRITE_OOB
    *
    * close_in	read	POLLIN		EVFILT_READ[EOF]	READ
+   *                    POLLHUP(Linux pipe)
    *
    * close_out	write	POLLHUP		EVFILT_WRITE[EOF]	WRITE
-   *								>WRITE_OOB
+   *			POLLERR(Linux pipe)			>WRITE_OOB
    *
    * conn_ok	write	POLLOUT		EVFILT_WRITE		WRITE
    *
