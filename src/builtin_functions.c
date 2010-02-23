@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.697 2010/02/23 13:16:38 grubba Exp $
+|| $Id: builtin_functions.c,v 1.698 2010/02/23 14:37:22 grubba Exp $
 */
 
 #include "global.h"
@@ -1100,7 +1100,7 @@ PMOD_EXPORT void f_has_prefix(INT32 args)
       Pike_sp[-1].u.integer = i;
       /* Note: Integers do not need to be freed. */
       object_index_no_free(Pike_sp-1, o, inherit_no, Pike_sp-1);
-      if (Pike_sp[-1].type != T_INTEGER) {
+      if (Pike_sp[-1].type != PIKE_T_INT) {
 	Pike_error("Unexepected value returned from index operator.\n");
       }
       if (ch != Pike_sp[-1].u.integer) {
@@ -1109,7 +1109,7 @@ PMOD_EXPORT void f_has_prefix(INT32 args)
 	return;
       }
     }
-    pop_n_elems(arg+1);
+    pop_n_elems(args+1);
     push_int(1);
     return;
   }
