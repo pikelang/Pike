@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.696 2010/02/18 14:50:41 srb Exp $
+|| $Id: builtin_functions.c,v 1.697 2010/02/23 13:16:38 grubba Exp $
 */
 
 #include "global.h"
@@ -1071,7 +1071,7 @@ PMOD_EXPORT void f_search(INT32 args)
   }
 }
 
-/*! @decl int has_prefix(string s, string prefix)
+/*! @decl int has_prefix(string|object s, string prefix)
  *!
  *!   Returns @expr{1@} if the string @[s] starts with @[prefix],
  *!   returns @expr{0@} (zero) otherwise.
@@ -1082,13 +1082,39 @@ PMOD_EXPORT void f_has_prefix(INT32 args)
 
   if(args<2)
     SIMPLE_TOO_FEW_ARGS_ERROR("has_prefix", 2);
-  if(Pike_sp[-args].type!=T_STRING)
-    SIMPLE_ARG_TYPE_ERROR("has_prefix", 1, "string");
+  if((Pike_sp[-args].type!=T_STRING) && (Pike_sp[-args].type!=T_OBJECT))
+    SIMPLE_ARG_TYPE_ERROR("has_prefix", 1, "string|object");
   if(Pike_sp[1-args].type!=T_STRING)
     SIMPLE_ARG_TYPE_ERROR("has_prefix", 2, "string");
 
-  a = Pike_sp[-args].u.string;
   b = Pike_sp[1-args].u.string;
+
+  if (Pike_sp[-args].type == T_OBJECT) {
+    ptrdiff_t i;
+    struct object *o = Pike_sp[-args].u.object;
+    int inherit_no = Pike_sp[-args].subtype;
+    push_int(0);
+
+    for (i = 0; i < b->len; i++) {
+      p_wchar2 ch = index_shared_string(b, i);
+      Pike_sp[-1].u.integer = i;
+      /* Note: Integers do not need to be freed. */
+      object_index_no_free(Pike_sp-1, o, inherit_no, Pike_sp-1);
+      if (Pike_sp[-1].type != T_INTEGER) {
+	Pike_error("Unexepected value returned from index operator.\n");
+      }
+      if (ch != Pike_sp[-1].u.integer) {
+	pop_n_elems(args + 1);
+	push_int(0);
+	return;
+      }
+    }
+    pop_n_elems(arg+1);
+    push_int(1);
+    return;
+  }
+
+  a = Pike_sp[-args].u.string;
 
   /* First handle some common special cases. */
   if ((b->len > a->len) || (b->size_shift > a->size_shift)) {
@@ -9267,7 +9293,7 @@ void init_builtin_efuns(void)
 		tFunc(tObj tMix tOr(tVoid, tSetvar(3, tMix)), tVar(3))),
 	   0);
   
-  ADD_EFUN2("has_prefix", f_has_prefix, tFunc(tStr tStr,tInt01),
+  ADD_EFUN2("has_prefix", f_has_prefix, tFunc(tOr(tStr,tObj) tStr,tInt01),
 	    OPT_TRY_OPTIMIZE, 0, 0);
 
   ADD_EFUN2("has_suffix", f_has_suffix, tFunc(tStr tStr,tInt01),
