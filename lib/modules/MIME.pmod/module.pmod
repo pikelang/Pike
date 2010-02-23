@@ -3,7 +3,7 @@
 // RFC1521 functionality for Pike
 //
 // Marcus Comstedt 1996-1999
-// $Id: module.pmod,v 1.30 2010/02/22 18:03:30 grubba Exp $
+// $Id: module.pmod,v 1.31 2010/02/23 10:10:42 grubba Exp $
 
 
 //! RFC1521, the @b{Multipurpose Internet Mail Extensions@} memo, defines a
@@ -1310,15 +1310,20 @@ class Message {
 	  epilogue = "--";
 	} else
 	  error("boundary missing from multipart-body\n");
-      } else {
-	parts = parts[1..<1];
+      }
+      parts = parts[1..<1];
+      if ((sscanf(epilogue, "--%*[ \t]%s", epilogue)<2 ||
+	   (epilogue != "" && epilogue[0] != '\n' &&
+	    epilogue[0..1] != "\r\n")) && !guess) {
+	error("multipart message improperly terminated (%O%s)\n",
+	      epilogue[..200],
+	      sizeof(epilogue) > 201 ? "[...]" : "");
       }
 
       encoded_data = 0;
       if(sizeof(decoded_data) && decoded_data[-1]=='\r')
 	decoded_data = decoded_data[..<1];
-
-      body_parts = map(parts, lambda(string part){
+      parts = map(parts, lambda(string part){
 	if(sizeof(part) && part[-1]=='\r')
 	  part = part[..<1];
 	sscanf(part, "%*[ \t]%s", part);
@@ -1328,9 +1333,11 @@ class Message {
 	  part = part[1..];
 	else if(!guess)
 	  error("newline missing after multipart boundary\n");
-	return this_program(part, 0, 0, guess);
+	return part;
       });
 #else
+      // Rewrite to avoid lots of temporary strings.
+
       string data = getdata();
       string separator = "--" + boundary;
       array(string) parts = ({});
@@ -1363,6 +1370,12 @@ class Message {
 
 	// Skip past the separator and any white space after it.
 	found += sizeof(separator);
+	string terminator = data[found..found+1];
+	if (terminator == "--") {
+	  found += 2;
+	} else {
+	  terminator = 0;
+	}
 	while ((found < sizeof(data)) &&
 	       ((data[found] == ' ') || (data[found] == '\t'))) {
 	  found++;
@@ -1372,30 +1385,28 @@ class Message {
 	} else if ((found < sizeof(data)) &&
 		   (data[found..found+1] == "\r\n")) {
 	  found += 2;
-	} else if (!guess) {
+	} else if (!guess && !terminator) {
 	  error("newline missing after multipart boundary\n");
 	}
 
 	start = found;
+	if (terminator) break;
       }
       string epilogue = data[start..];
       if (!decoded_data) {
 	if (guess) {
 	  decoded_data = epilogue;
-	  epilogue = "--";
+	  epilogue = "";
 	} else
 	  error("boundary missing from multipart-body\n");
       }
-      body_parts = map(parts, this_program, 0, 0, guess);
-#endif
-
-      if ((sscanf(epilogue, "--%*[ \t]%s", epilogue)<2 ||
-	   (epilogue != "" && epilogue[0] != '\n' &&
-	    epilogue[0..1] != "\r\n")) && !guess) {
+      if ((epilogue != "") && !guess) {
 	error("multipart message improperly terminated (%O%s)\n",
 	      epilogue[..200],
 	      sizeof(epilogue) > 201 ? "[...]" : "");
       }
+#endif
+      body_parts = map(parts, this_program, 0, 0, guess);
     }
     if((hdrs || parts) && !decoded_data) {
       decoded_data = (parts?
