@@ -3,7 +3,7 @@
 // RFC1521 functionality for Pike
 //
 // Marcus Comstedt 1996-1999
-// $Id: module.pmod,v 1.32 2010/02/23 15:54:57 grubba Exp $
+// $Id: module.pmod,v 1.33 2010/02/23 16:21:29 grubba Exp $
 
 
 //! RFC1521, the @b{Multipurpose Internet Mail Extensions@} memo, defines a
@@ -168,7 +168,7 @@ protected class StringRange
   }
 }
 
-#if (__REAL_VERSION__ < 7.8) || ((__REAL_VERSION__) < 7.9 && (__REAL_BUILD__ < 15))
+#if (__REAL_VERSION__ < 7.8) || ((__REAL_VERSION__) < 7.9 && (__REAL_BUILD__ < 413))
 // Compat with some older Pikes...
 
 // Support has_prefix on objects.
