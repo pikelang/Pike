@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.890 2010/02/09 12:30:24 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.891 2010/02/23 10:49:42 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -12755,6 +12755,7 @@ test_true(sizeof(call_out_info()) > 0)
 test_true(call_out_info()[-1][0] > 1)
 test_eq(find_call_out(call_out_info()[-1][2]), call_out_info()[-1][0])
 test_eq(find_call_out(a),-1)
+test_eq(zero_type(find_call_out(a)),1)
 test_true(zero_type(find_call_out(a)))
 test_true(!sizeof(call_out_info()) || function_name(call_out_info()[-1][2])!="call_out_cb")
 test_do(remove_call_out(call_out_info()[-1][2]))
