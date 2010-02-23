@@ -3,7 +3,7 @@
 // RFC1521 functionality for Pike
 //
 // Marcus Comstedt 1996-1999
-// $Id: module.pmod,v 1.34 2010/02/23 16:30:30 grubba Exp $
+// $Id: module.pmod,v 1.35 2010/02/23 18:18:23 grubba Exp $
 
 
 //! RFC1521, the @b{Multipurpose Internet Mail Extensions@} memo, defines a
@@ -1352,7 +1352,7 @@ class Message {
     charset = "us-ascii";
     boundary = 0;
     disposition = 0;
-    if (!objectp(message) && (sizeof(message) > 0x10000)) {
+    if (message && !objectp(message) && (sizeof(message) > 0x10000)) {
       // Message is larger than 1 MB.
       // Attempt to reduce memory use by using StringRange.
       message = StringRange(message, 0, sizeof(message));
