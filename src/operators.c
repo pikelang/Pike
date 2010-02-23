@@ -39,6 +39,10 @@
 #define OP_MODULO_BY_ZERO_ERROR(FUNC) \
      math_error(FUNC, sp-2, 2, 0, "Modulo by zero.\n")
 
+    /* These calculations should always give some margin based on the size. */
+    /* One extra char for the sign. */
+#define MAX_INT_SPRINTF_LEN (1 + (SIZEOF_INT_TYPE * 5 + 1) / 2)
+
 /* The destructive multiset merge code is broken.
  * l->msd gets -1 refs.
  *
@@ -329,7 +333,8 @@ PMOD_EXPORT void o_cast_to_int(void)
 /* Special case for casting to string. */
 PMOD_EXPORT void o_cast_to_string(void)
 {
-  char buf[MAX_NUM_BUF];
+  struct pike_string *s;
+
   switch(TYPEOF(sp[-1]))
   {
   case T_OBJECT:
@@ -357,7 +362,6 @@ PMOD_EXPORT void o_cast_to_string(void)
 			    LFUN__IS_TYPE);
 	  if( f != -1)
 	  {
-	    struct pike_string *s;
 	    REF_MAKE_CONST_STRING(s, "string");
 	    push_string(s);
 	    apply_low(o, f, 1);
@@ -376,7 +380,6 @@ PMOD_EXPORT void o_cast_to_string(void)
     {
       int i, alen;
       struct array *a = sp[-1].u.array;
-      struct pike_string *s;
       int shift = 0;
       alen = a->size;
 
@@ -440,9 +443,8 @@ PMOD_EXPORT void o_cast_to_string(void)
 	}
 	break;
       }
-      s = end_shared_string(s);
       pop_stack();
-      push_string(s);
+      push_string(end_shared_string(s));
     }
     return;
 
@@ -453,15 +455,44 @@ PMOD_EXPORT void o_cast_to_string(void)
     return;
 
   case T_FLOAT:
-    format_pike_float (buf, sp[-1].u.float_number);
-    break;
+    {
+      char buf[MAX_FLOAT_SPRINTF_LEN+1];
+      format_pike_float (buf, sp[-1].u.float_number);
+      s = make_shared_string(buf);
+      break;
+    }
 
   case T_INT:
-    sprintf(buf, "%"PRINTPIKEINT"d", sp[-1].u.integer);
+    {
+      INT_TYPE org;
+      char buf[MAX_INT_SPRINTF_LEN];
+      register char*b = buf+sizeof buf-1;
+      register unsigned INT_TYPE i;
+      org = sp[-1].u.integer;
+      *b-- = '\0';
+      i = org;
+      
+      if( org < 0 )
+        i = -i;
+      
+      goto jin;				       /* C as a macro assembler :-) */
+      do
+      {
+        i /= 10;
+jin:    *b-- = '0'+(i%10);
+      }
+      while( i >= 10 );
+      
+      if( org < 0 )
+        *b = '-';
+      else
+        b++;
+      s = make_shared_string(b);
+    }
     break;
   }
-	
-  SET_SVAL(sp[-1], PIKE_T_STRING, 0, string, make_shared_string(buf));
+
+  SET_SVAL(sp[-1], PIKE_T_STRING, 0, string, s);
 }
 
 PMOD_EXPORT void o_cast(struct pike_type *type, INT32 run_time_type)
