@@ -3,7 +3,7 @@
 // RFC1521 functionality for Pike
 //
 // Marcus Comstedt 1996-1999
-// $Id: module.pmod,v 1.33 2010/02/23 16:21:29 grubba Exp $
+// $Id: module.pmod,v 1.34 2010/02/23 16:30:30 grubba Exp $
 
 
 //! RFC1521, the @b{Multipurpose Internet Mail Extensions@} memo, defines a
@@ -1468,7 +1468,7 @@ class Message {
 #else
       // Rewrite to avoid lots of temporary strings.
 
-      string data = getdata();
+      string|StringRange data = decoded_data || getdata();
       string separator = "--" + boundary;
       array(string) parts = ({});
       int start = 0;
