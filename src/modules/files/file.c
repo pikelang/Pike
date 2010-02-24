@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.434 2010/02/20 17:14:14 srb Exp $
+|| $Id: file.c,v 1.435 2010/02/24 18:01:09 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -3898,6 +3898,7 @@ static void file_set_keepalive(INT32 args)
 static void file_connect_unix( INT32 args )
 {
   struct sockaddr_un *name;
+  int addr_len;
   int tmp;
 
   if( args < 1 )
@@ -3906,7 +3907,12 @@ static void file_connect_unix( INT32 args )
       (Pike_sp[-args].u.string->size_shift) )
     Pike_error("Illegal argument. Expected string(8bit)\n");
 
-  name = xalloc(sizeof(struct sockaddr_un) + Pike_sp[-args].u.string->len);
+  /* NOTE: Some operating systems (eg Linux 2.6) do not support
+   *       paths longer than what fits into a plain struct sockaddr_un.
+   */
+  addr_len = sizeof(struct sockaddr_un) + Pike_sp[-args].u.string->len + 1 -
+    sizeof(addr->sun_path);
+  name = xalloc(addr_len);
 
   name->sun_family=AF_UNIX;
   strcpy( name->sun_path, Pike_sp[-args].u.string->str );
@@ -3932,8 +3938,7 @@ static void file_connect_unix( INT32 args )
   my_set_close_on_exec(FD, 1);
 
   do {
-    tmp=connect(FD,(void *)name,
-		sizeof(struct sockaddr_un) + Pike_sp[-args].u.string->len);
+    tmp=connect(FD,(void *)name, addr_len);
   } while ((tmp < 0) && (errno == EINTR));
   free(name);
   if (tmp == -1) {
