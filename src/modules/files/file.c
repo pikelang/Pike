@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.435 2010/02/24 18:01:09 grubba Exp $
+|| $Id: file.c,v 1.436 2010/02/24 18:03:03 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -3911,7 +3911,7 @@ static void file_connect_unix( INT32 args )
    *       paths longer than what fits into a plain struct sockaddr_un.
    */
   addr_len = sizeof(struct sockaddr_un) + Pike_sp[-args].u.string->len + 1 -
-    sizeof(addr->sun_path);
+    sizeof(name->sun_path);
   name = xalloc(addr_len);
 
   name->sun_family=AF_UNIX;
