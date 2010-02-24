@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: socket.c,v 1.109 2010/02/24 16:07:23 grubba Exp $
+|| $Id: socket.c,v 1.110 2010/02/24 22:26:34 srb Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -395,12 +395,10 @@ static void bind_unix(INT32 args)
   my_set_close_on_exec(fd,1);
 
   THREADS_ALLOW_UID();
-  fprintf(stderr, "Binding...\n");
   do {
     tmp = fd_bind(fd, (struct sockaddr *)addr, addr_len);
   } while ((tmp < 0) && (errno == EINTR));
   if (tmp >= 0) {
-    fprintf(stderr, "Listening...\n");
     do {
       tmp = fd_listen(fd, 16384);
     } while ((tmp < 0) && (errno == EINTR));
@@ -419,7 +417,6 @@ static void bind_unix(INT32 args)
   if(tmp < 0)
   {
     p->my_errno=errno;
-    fprintf(stderr, "Failure: %d.\n", errno);
     while (fd_close(fd) && errno == EINTR) {}
     errno = p->my_errno;
     pop_n_elems(args);
