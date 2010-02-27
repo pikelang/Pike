@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rusage.c,v 1.54 2009/11/17 01:23:08 mast Exp $
+|| $Id: rusage.c,v 1.55 2010/02/27 01:21:31 jonasw Exp $
 */
 
 #include "global.h"
@@ -641,8 +641,15 @@ PMOD_EXPORT cpu_time_t fallback_gct (void)
 #else
   mach_port_t self = mach_thread_self();
 #endif
-  if (thread_info (self, THREAD_BASIC_INFO,
-		   (thread_info_t) &tbid, &tbid_len))
+  int err = thread_info (self, THREAD_BASIC_INFO,
+						 (thread_info_t) &tbid, &tbid_len);
+#ifndef HAVE_PTHREAD_MACH_THREAD_NP
+  //  Adjust refcount on new port returned from mach_thread_self(). Not
+  //  needed for pthread_mach_thread_np() since we're reusing an existing
+  //  port.
+  mach_port_deallocate(mach_task_self(), self);
+#endif
+  if (err)
     return (cpu_time_t) -1;
   return
     tbid.user_time.seconds * CPU_TIME_TICKS +
