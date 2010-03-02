@@ -1,5 +1,5 @@
 START_MARKER
-dnl $Id: testsuite.in,v 1.30 2010/03/02 20:43:28 nilsson Exp $
+dnl $Id: testsuite.in,v 1.31 2010/03/02 20:45:12 nilsson Exp $
 
 test_eq([[ String.Buffer()->add("xxx") ]], 3)
 test_any([[
@@ -106,6 +106,7 @@ test_eq(String.trim_whites ("\400"), "\400")
 test_eq(String.trim_whites ("\200000"), "\200000")
 test_eq(String.trim_whites (" \t "), "")
 test_eq(String.trim_whites (""), "")
+test_eq(String.trim_whites (" \t\rx\r\t "), "\rx\r")
 
 test_eq(String.trim_all_whites (" \t\n\r\0 \t\n\r"), "\0")
 test_eq(String.trim_all_whites (" \t\n\r\400 \t\n\r"), "\400")
