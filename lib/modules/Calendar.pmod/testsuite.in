@@ -1,5 +1,5 @@
 START_MARKER
-dnl $Id: testsuite.in,v 1.24 2009/08/19 10:54:27 grubba Exp $
+dnl $Id: testsuite.in,v 1.25 2010/03/02 11:51:09 grubba Exp $
 
 dnl NOTE:
 dnl   *every* time the Calendar tests have failed, it's not the 
@@ -256,6 +256,8 @@ test_eq([[Calendar.ISO.Week (2008, 1)->set_size (Calendar.ISO.Day())->year_no()]
 test_eq([[Calendar.ISO.Week (2008, 1)->year_no()]], 2008)
 test_eq([[Calendar.ISO.Week (2008, 1)->year_day()]], 0)
 test_equal([[Calendar.ISO.Week ("julian", 2454466)->format_iso_week()]], "2008-W01")
+dnl [bug 5303]
+test_eq([[Calendar.ISO.Week("unix",1262300400)->month_day()]], 28)
 
 test_equal([[
   Calendar.ISO.Week (2008, 1)->datetime() - (["timezone": 1, "unix": 1])
