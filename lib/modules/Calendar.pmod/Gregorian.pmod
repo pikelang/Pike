@@ -88,24 +88,25 @@ protected array(int) year_month_from_month(int y,int m)
 protected array(int) month_from_yday(int y,int yd)
 {
 // [month,day-of-month,ndays,month-year-day]
-   if (yd >= 1) {
-     int l=year_leap_year(y);
-     if (yd<32) return ({1,yd,31,1});
-     yd-=l;
-     switch (yd)
-     {
-       case 0..59: return ({2,yd-31+l,28+l,32});
-       case 60..90: return ({3,yd-59,31    ,60+l});
-       case 91..120: return ({4,yd-90,30   ,91+l});
-       case 121..151: return ({5,yd-120,31 ,121+l});
-       case 152..181: return ({6,yd-151,30 ,152+l});
-       case 182..212: return ({7,yd-181,31 ,182+l});
-       case 213..243: return ({8,yd-212,31 ,213+l});
-       case 244..273: return ({9,yd-243,30 ,244+l});
-       case 274..304: return ({10,yd-273,31,274+l});
-       case 305..334: return ({11,yd-304,30,305+l});
-       case 335..365: return ({12,yd-334,31,335+l});
-     }
+   while (yd <= 0) {
+      yd += 365 + year_leap_year(--y);
+   }
+   int l=year_leap_year(y);
+   if (yd<32) return ({1,yd,31,1});
+   yd-=l;
+   switch (yd)
+   {
+      case 0..59: return ({2,yd-31+l,28+l,32});
+      case 60..90: return ({3,yd-59,31    ,60+l});
+      case 91..120: return ({4,yd-90,30   ,91+l});
+      case 121..151: return ({5,yd-120,31 ,121+l});
+      case 152..181: return ({6,yd-151,30 ,152+l});
+      case 182..212: return ({7,yd-181,31 ,182+l});
+      case 213..243: return ({8,yd-212,31 ,213+l});
+      case 244..273: return ({9,yd-243,30 ,244+l});
+      case 274..304: return ({10,yd-273,31,274+l});
+      case 305..334: return ({11,yd-304,30,305+l});
+      case 335..365: return ({12,yd-334,31,335+l});
    }
    error("yday out of range.\n");
 }
