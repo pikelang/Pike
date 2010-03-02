@@ -18,7 +18,6 @@ int parse_type( string s )
 
 void main()
 {
-  multiset is_wordchar = (<>);
   int last_was,c,last_c;
 
   write( "static const struct {\n"
