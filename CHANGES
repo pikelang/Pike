@@ -14,6 +14,10 @@ o String.normalize_space
   New and efficient C implementation; sanitises whitespace, even in wide
   strings.
 
+o String.trim_all_whites
+
+  Extended to the entire range of Unicode white spaces.
+
 
 Deprecations
 ------------

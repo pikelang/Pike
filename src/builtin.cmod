@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.253 2010/01/11 16:30:48 srb Exp $
+|| $Id: builtin.cmod,v 1.254 2010/03/02 20:12:49 nilsson Exp $
 */
 
 #include "global.h"
@@ -907,7 +907,8 @@ skip##TYPE:;								\
  *! @belongs String
  *!
  *! Trim leading and trailing white spaces characters (space, tab,
- *! newline and carriage return) from the string @[s].
+ *! newline, carriage return, form feed, vertical tab and all the
+ *! white spaces defined in Unicode) from the string @[s].
  */
 PMOD_EXPORT
 PIKEFUN string string_trim_all_whites (string s)
@@ -917,23 +918,36 @@ PIKEFUN string string_trim_all_whites (string s)
   ptrdiff_t start = 0, end = s->len;
   int chr;
   switch (s->size_shift) {
-#define DO_IT(TYPE)							\
+#define SPACECASE8							\
+       case ' ':case '\t':case '\r':case '\n':case '\v':case '\f':	\
+       case 0x85:case 0xa0:
+#include "whitespace.h"
+
+#define DO_IT(TYPE,CASE)						\
     {									\
-      for (; start < s->len; start++) {					\
+      for (; start < end; start++) {					\
 	chr = ((TYPE *) s->str)[start];					\
-	if (chr != ' ' && chr != '\t' && chr != '\n' && chr != '\r')	\
-	  break;							\
+	switch(chr) {							\
+	  CASE								\
+	    continue;							\
+	}								\
+	break;								\
       }									\
       while (--end > start) {						\
 	chr = ((TYPE *) s->str)[end];					\
-	if (chr != ' ' && chr != '\t' && chr != '\n' && chr != '\r')	\
-	  break;							\
+	switch(chr) {							\
+	  CASE								\
+	    continue;							\
+	}								\
+	break;								\
       }									\
     }
-    case 0: DO_IT (p_wchar0); break;
-    case 1: DO_IT (p_wchar1); break;
-    case 2: DO_IT (p_wchar2); break;
+    case 0: DO_IT (p_wchar0,SPACECASE8); break;
+    case 1: DO_IT (p_wchar1,SPACECASE16); break;
+    case 2: DO_IT (p_wchar2,SPACECASE16); break;
 #undef DO_IT
+#undef SPACECASE8
+#undef SPACECASE16
   }
   RETURN string_slice (s, start, end + 1 - start);
 }
@@ -2366,7 +2380,13 @@ PIKECLASS Buffer
     struct Buffer_struct *str = THIS;
     if(!str->str.s)
       init_string_builder_alloc(&str->str, str->initial, 0);
-    string_builder_putchar(&str->str, c);
+
+#if 0
+    if( c>=0 && c<256 && str->str.s->len+1<str->str.malloced )
+      STR0(str->str.s)[ str->str.s->len++ ] = c;
+    else
+#endif
+      string_builder_putchar(&str->str, c);
   }
 
   /*! @decl string get_copy()
