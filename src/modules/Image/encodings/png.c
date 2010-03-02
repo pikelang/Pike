@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.66 2006/08/14 13:09:25 nilsson Exp $
+|| $Id: png.c,v 1.67 2010/03/02 17:32:53 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: png.c,v 1.66 2006/08/14 13:09:25 nilsson Exp $");
+RCSID("$Id: png.c,v 1.67 2010/03/02 17:32:53 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -1610,8 +1610,23 @@ static void image_png_encode(INT32 args)
 		  else bit-=bpp;
 		  ts++;
 	       }
+	       if (bit != (8 - bpp)) {
+		 /* The last byte wasn't filled fully,
+		  * so we need to pad with a few bits.
+		  */
+		 d++;
+	       }
 	    }
 	 }
+
+#ifdef PIKE_DEBUG
+	 if (d != (unsigned char *)(ps->str + ps->len)) {
+	   Pike_fatal("PNG data doesn't align properly "
+		      "%d x %d (%d bpp) len: %ld, got: %ld.\n",
+		      img->xsize, img->ysize, bpp,
+		      (long)ps->len, (long)(d - (unsigned char *)ps->str));
+	 }
+#endif
 
          push_string(end_shared_string(ps));
 	 free(tmp);
