@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.44 2007/03/07 16:33:32 mast Exp $
+|| $Id: backend.cmod,v 1.45 2010/03/03 12:41:41 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.44 2007/03/07 16:33:32 mast Exp $");
+RCSID("$Id: backend.cmod,v 1.45 2010/03/03 12:41:41 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -1168,6 +1168,11 @@ PIKECLASS Backend
 #endif /* WITH_OOB */
 	      if (me->fds[i].write.callback) {
 		(*(me->fds[i].write.callback))(i, me->fds[i].write.data);
+	      } else {
+		/* Write notification without corresponding callback.
+		 * Clear the bit in the set to avoid infinite looping.
+		 */
+		MY_FD_CLR(&me->set, i, MY_POLLOUT);
 	      }
 	  }
 	}
