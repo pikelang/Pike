@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.470 2010/02/22 20:18:42 srb Exp $
+// $Id: master.pike.in,v 1.471 2010/03/03 13:00:31 mast Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -1650,16 +1650,13 @@ protected program low_findprog(string pname,
 
 #ifdef THREADED
   object key;
-  // FIXME: The catch is needed, since we might be called in
-  // a context when threads are disabled.
-  // (compile() disables threads).
+  // The catch is needed, since we might be called in a context when
+  // threads are disabled. (compile() disables threads).
   mixed err = catch {
     key=compilation_mutex->lock(2);
   };
-  if (err) {
-    werror( "low_findprog: Caught spurious error:\n"
-	    "%s\n", describe_backtrace(err) );
-  }
+  if (err && !has_suffix (err[0], "when threads are disabled!"))
+    throw (err);
 #endif
 
 #ifdef PIKE_MODULE_RELOC
