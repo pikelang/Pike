@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.254 2010/03/02 20:12:49 nilsson Exp $
+|| $Id: builtin.cmod,v 1.255 2010/03/03 16:31:05 srb Exp $
 */
 
 #include "global.h"
@@ -2380,13 +2380,7 @@ PIKECLASS Buffer
     struct Buffer_struct *str = THIS;
     if(!str->str.s)
       init_string_builder_alloc(&str->str, str->initial, 0);
-
-#if 0
-    if( c>=0 && c<256 && str->str.s->len+1<str->str.malloced )
-      STR0(str->str.s)[ str->str.s->len++ ] = c;
-    else
-#endif
-      string_builder_putchar(&str->str, c);
+    string_builder_putchar(&str->str, c);
   }
 
   /*! @decl string get_copy()
