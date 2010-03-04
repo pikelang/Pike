@@ -1,4 +1,4 @@
-// $Id: ext_to_media_type.pmod,v 1.9 2009/09/07 18:29:50 nilsson Exp $
+// $Id: ext_to_media_type.pmod,v 1.10 2010/03/04 02:21:21 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -22,13 +22,59 @@ protected mapping ext2type = ([
 // IANA registered
 
   "726"     : "audio/32kadpcm",
+// audio/3gpp
+// audio/3gpp2
+// audio/ac3
+// audio/AMR
+// audio/AMR-WB
+// audio/AMR-WB+
+// audio/ATRAC-ADVANCED-LOSSLESS
+// audio/ATRAC-X
+// audio/ATRAC3
   "au"      : "audio/basic",
   "snd"     : "audio/basic",
+// audio/BV16
+// audio/BV32
+// audio/clearmode
+// audio/CN
 // audio/DAT12
+  "dls"     : "audio/dls",
+// audio/dsr-es201108
+// audio/dsr-es202050
+// audio/dsr-es202211
+// audio/dsr-es202212
+// audio/DVI4
+// audio/eac3
+// audio/EVRC
+// audio/EVRC0
+// audio/EVRC1
+// audio/EVRCB
+// audio/EVRCB0
+// audio/EVRCB1
+// audio/example
+// audio/G719
+// audio/G722
+// audio/G7221
+// audio/G723
+// audio/G726-16
+// audio/G726-24
+// audio/G726-32
+// audio/G726-40
+// audio/G728
+// audio/G729
+// audio/G7291
+// audio/G729D
+// audio/G729E
 // audio/G.722.1
+// audio/GSM
+// audio/GSM-EFR
+// audio/iLBC
+// audio/L8
   "l16"     : "audio/L16",
 // audio/L20
 // audio/L24
+// audio/LPC
+// audio/mobile-xmf
 // audio/MP4A-LATM
 // audio/mpa-robust
   "abs"     : "audio/mpeg",
@@ -36,11 +82,17 @@ protected mapping ext2type = ([
   "mp3"     : "audio/mpeg",
 // "mpa"      : "audio/mpeg",
   "mpega"   : "audio/mpeg",
+  "oga"     : "audio/ogg",
+  "ogg"     : "audio/ogg",
+  "spx"     : "audio/ogg",
 // audio/parityfec
+// audio/PCMA
+// audio/PCMU
   "sid"     : "audio/prs.sid",
   "psid"    : "audio/prs.sid",
 // audio/telephone-event
 // audio/tone
+// audio/VDVI
 // audio/vnd.3gpp.iufp
 // audio/vnd.cisco.nse
 // audio/vnd.cns.anp1
@@ -128,9 +180,8 @@ protected mapping ext2type = ([
   "xif"     : "image/vnd.xiff",
 
 
-// Pending registration
-
-  "svg"     : "image/svg",
+  "svg"     : "image/svg+xml",
+  "svgz"    : "image/svg+xml",
 
 // Other
 
@@ -194,6 +245,7 @@ protected mapping ext2type = ([
   "mpg"     : "video/mpeg",
   "mpv"     : "video/mpeg",
   "vbs"     : "video/mpeg",
+// video/nv
 // video/prityfec
 // video/pointer
   "moov"    : "video/quicktime",
