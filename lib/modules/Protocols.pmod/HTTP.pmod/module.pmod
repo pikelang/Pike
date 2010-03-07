@@ -374,24 +374,28 @@ string get_url_data(string|Standards.URI url,
 }
 
 //! Similar to @[get_url], except that query variables is sent as a
-//! POST request instead of a GET request.
+//! POST request instead of a GET request.  If query_variables is a
+//! simple string, it is assumed to contain the verbatim
+//! body of the POST request; Content-Type must be properly specified
+//! manually, in this case.
 .Query post_url(string|Standards.URI url,
-		mapping(string:int|string|array(string)) query_variables,
+	mapping(string:int|string|array(string))|string query_variables,
 		void|mapping(string:string|array(string)) request_headers,
 		void|Protocols.HTTP.Query con)
 {
-  return do_method("POST", url, 0,
-		   (request_headers||([]))|
+  return do_method("POST", url, 0, stringp(query_variables) ? request_headers
+		   : (request_headers||([]))|
 		   (["content-type":
 		     "application/x-www-form-urlencoded"]),
 		   con,
-		   http_encode_query(query_variables));
+		   stringp(query_variables) ? query_variables
+		    : http_encode_query(query_variables));
 }
 
 //! Similar to @[get_url_nice], except that query variables is sent as
 //! a POST request instead of a GET request.
 array(string) post_url_nice(string|Standards.URI url,
-			    mapping(string:int|string|array(string)) query_variables,
+			    mapping(string:int|string|array(string))|string query_variables,
 			    void|mapping(string:string|array(string)) request_headers,
 			    void|Protocols.HTTP.Query con)
 {
@@ -402,7 +406,7 @@ array(string) post_url_nice(string|Standards.URI url,
 //! Similar to @[get_url_data], except that query variables is sent as
 //! a POST request instead of a GET request.
 string post_url_data(string|Standards.URI url,
-		     mapping(string:int|string|array(string)) query_variables,
+		     mapping(string:int|string|array(string))|string query_variables,
 		     void|mapping(string:string|array(string)) request_headers,
 		     void|Protocols.HTTP.Query con)
 {

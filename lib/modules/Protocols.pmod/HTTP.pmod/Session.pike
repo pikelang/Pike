@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Session.pike,v 1.24 2009/11/14 12:26:04 mast Exp $
+// $Id: Session.pike,v 1.25 2010/03/07 21:48:27 srb Exp $
 
 import Protocols.HTTP;
 
@@ -749,13 +749,16 @@ void return_connection(Standards.URI url,Query query)
 Request do_method_url(string method,
 		      string url,
 		      void|mapping query_variables,
-		      void|string data,
+		      void|string|mapping data,
 		      void|mapping extra_headers)
 {
-   if (method=="POST")
+   if (mappingp(data))
+   {
+      data = http_encode_query(data);
       extra_headers=
 	 (["content-type":"application/x-www-form-urlencoded"])+
 	 (extra_headers||([]));
+   }
    
    Request p=Request();
    p->do_sync(p->prepare_method(method,url,query_variables,
@@ -766,7 +769,7 @@ Request do_method_url(string method,
 //! @decl Request get_url(URL url, @
 //!                       void|mapping query_variables)
 //! @decl Request post_url(URL url, @
-//!                        mapping query_variables)
+//!                        mapping|string query_variables)
 //! @decl Request put_url(URL url,string file, @
 //!                       void|mapping query_variables)
 //! @decl Request delete_url(URL url, @
@@ -796,10 +799,9 @@ Request delete_url(URL url,
 }
 
 Request post_url(URL url,
-		 mapping query_variables)
+		 mapping|string query_variables)
 {
-   return do_method_url("POST", url, 0,
-			http_encode_query(query_variables));
+   return do_method_url("POST", url, 0, query_variables);
 }
 
 
@@ -808,9 +810,9 @@ Request post_url(URL url,
 //! @decl string get_url_data(URL url, @
 //!                           mapping query_variables)
 //! @decl array(string) post_url_nice(URL url, @
-//!                                   mapping query_variables)
+//!                                   mapping|string query_variables)
 //! @decl string post_url_data(URL url, @
-//!                            mapping query_variables)
+//!                            mapping|string query_variables)
 //!	Returns an array of @expr{({content_type,data})@} and
 //!     just the data string respective, 
 //!	after calling the requested server for the information.
@@ -837,14 +839,14 @@ string get_url_data(URL url,
 
 
 array(string) post_url_nice(URL url,
-			    mapping query_variables)
+			    mapping|string query_variables)
 {
    object c = post_url(url, query_variables);
    return c && ({ c->headers["content-type"], c->data() });
 }
 
 string post_url_data(URL url,
-		     mapping query_variables)
+		     mapping|string query_variables)
 {
    Request z = post_url(url, query_variables);
    return z && z->data();
@@ -856,7 +858,7 @@ string post_url_data(URL url,
 Request async_do_method_url(string method,
 			    URL url,
 			    void|mapping query_variables,
-			    void|string data,
+			    void|string|mapping data,
 			    void|mapping extra_headers,
 			    function callback_headers_ok,
 			    function callback_data_ok,
@@ -872,10 +874,13 @@ Request async_do_method_url(string method,
 		    callback_fail,
 		    p,@callback_arguments);
 
-   if (method=="POST")
+   if (mappingp(data))
+   {
+      data = http_encode_query(data);
       extra_headers=
 	 (["content-type":"application/x-www-form-urlencoded"])+
 	 (extra_headers||([]));
+   }
 
    p->do_async(p->prepare_method(method,url,query_variables,
 				 extra_headers,data));
@@ -964,14 +969,13 @@ Request async_delete_url(URL url,
 }
 
 Request async_post_url(URL url,
-		       mapping query_variables,
+		       mapping|string query_variables,
 		       function callback_headers_ok,
 		       function callback_data_ok,
 		       function callback_fail,
 		       mixed ...callback_arguments)
 {
-   return async_do_method_url("POST", url, 0,
-			      http_encode_query(query_variables),0,
+   return async_do_method_url("POST", url, 0, query_variables, 0,
 			      callback_headers_ok,callback_data_ok,
 			      callback_fail,callback_arguments);
 }

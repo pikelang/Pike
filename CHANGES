@@ -18,6 +18,10 @@ o String.trim_all_whites
 
   Extended to the entire range of Unicode white spaces.
 
+o Protocols.HTTP
+
+  Allow directly specifying the body of a POST request (needed for the Google
+  Apps API).
 
 Deprecations
 ------------
