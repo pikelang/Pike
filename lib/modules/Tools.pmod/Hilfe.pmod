@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.173 2010/02/21 22:42:16 srb Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.174 2010/03/08 01:35:15 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -94,7 +94,7 @@ string format_hr_time(int i) {
   return sprintf("%.2fs", i/1000000.0);
 }
 
-private class CommandSet {
+protected class CommandSet {
   inherit Command;
 
   string help(string what) { return "Change Hilfe settings."; }
@@ -104,7 +104,7 @@ private class CommandSet {
     return documentation_set;
   }
 
-  private void bench_reswrite(function(string, mixed ... : int) w,
+  protected void bench_reswrite(function(string, mixed ... : int) w,
 			      string sres, int num, mixed res,
 			      int last_compile_time, int last_eval_time) {
     if(!sres)
@@ -119,7 +119,7 @@ private class CommandSet {
 	 format_hr_time(last_eval_time) );
   }
 
-  private class Reswriter (string format) {
+  protected class Reswriter (string format) {
     void `()(function(string, mixed ... : int) w, string sres, int num,
 	     mixed res, int last_compile_time, int last_eval_time) {
       mixed err = catch {
@@ -137,7 +137,7 @@ private class CommandSet {
     }
   }
 
-  private class Intwriter (string type, function fallback) {
+  protected class Intwriter (string type, function fallback) {
     void `()(function(string, mixed ... : int) w, string sres, int num,
 	     mixed res, int last_compile_time, int last_eval_time) {
       if(res && intp(res)) {
@@ -154,7 +154,7 @@ private class CommandSet {
     }
   }
 
-  private array my_indices(string|mapping|multiset|object|program in) {
+  protected array my_indices(string|mapping|multiset|object|program in) {
     if(objectp(in) || programp(in))
       return sort(indices(in));
     return indices(in);
@@ -296,7 +296,7 @@ private class CommandSet {
   }
 }
 
-private class CommandExit {
+protected class CommandExit {
   inherit Command;
   string help(string what) { return "Exit Hilfe."; }
 
@@ -308,7 +308,7 @@ private class CommandExit {
   }
 }
 
-private class CommandDoc {
+protected class CommandDoc {
   inherit Command;
   string help(string what) 
   { 
@@ -368,7 +368,7 @@ by pressing F1.";
   }
 }
 
-private class CommandHelp {
+protected class CommandHelp {
   inherit Command;
   string help(string what) { return "Show help text."; }
 
@@ -429,26 +429,26 @@ Enter \"help me more\" for further Hilfe help.
   }
 }
 
-private class CommandDot {
+protected class CommandDot {
   inherit Command;
   string help(string what) { return 0; }
 
-  private constant usr_vector_a = ({
+  protected constant usr_vector_a = ({
     89, 111, 117, 32, 97, 114, 101, 32, 105, 110, 115, 105, 100, 101, 32, 97,
     32, 72, 105, 108, 102, 101, 46, 32, 73, 116, 32, 115, 109, 101, 108, 108,
     115, 32, 103, 111, 111, 100, 32, 104, 101, 114, 101, 46, 32, 89, 111,
     117, 32, 115, 101, 101, 32 });
-  private constant usr_vector_b = ({
+  protected constant usr_vector_b = ({
     32, 89, 111, 117, 32, 99, 97, 110, 32, 103, 111, 32, 105, 110, 32, 97,
     110, 121, 32, 100, 105, 114, 101, 99, 116, 105, 111, 110, 32, 102, 114,
     111, 109, 32, 104, 101, 114, 101, 46 });
-  private constant usr_vector_c = ({
+  protected constant usr_vector_c = ({
     32, 89, 111, 117, 32, 97, 114, 101, 32, 99, 97, 114, 114, 121, 105, 110,
     103, 32 });
-  private constant usr_vector_d = usr_vector_c[..8] + ({
+  protected constant usr_vector_d = usr_vector_c[..8] + ({
     101, 109, 112, 116, 121, 32, 104, 97, 110, 100, 101, 100, 46 });
 
-  private array(string) thing(array|mapping|object thing, string what,
+  protected array(string) thing(array|mapping|object thing, string what,
 			      void|string a, void|string b) {
     if(!sizeof(thing)) return ({});
     return ({ sizeof(thing)+" "+what+(sizeof(thing)==1?(a||""):(b||"s")) });
@@ -485,12 +485,12 @@ private class CommandDot {
 class CommandDump {
   inherit Command;
 
-  private function(array(string)|string, mixed ... : int) write;
+  protected function(array(string)|string, mixed ... : int) write;
 
   string help(string what) { return "Dump variables and other info."; }
   string doc(string what, string with) { return documentation_dump; }
 
-  private void wrapper(Evaluator e) {
+  protected void wrapper(Evaluator e) {
     if(!e->last_compiled_expr) {
       write("No wrapper compiled so far.\n");
       return;
@@ -504,14 +504,14 @@ class CommandDump {
     write(w+"\n");
   }
 
-  private string print_mapping(array(string) ind, array val) {
+  protected string print_mapping(array(string) ind, array val) {
     int m = max( @filter(map(ind, sizeof), `<, 20), 8 );
     foreach(ind; int i; string name)
       write("%-*s : %s\n", m, name, replace(sprintf("%O", val[i]), "\n",
 					    "\n"+(" "*m)+"   "));
   }
 
-  private void dump(Evaluator e) {
+  protected void dump(Evaluator e) {
     if(sizeof(e->constants)) {
       write("\nConstants:\n");
       array(string) a=indices(e->constants);
@@ -572,7 +572,7 @@ class CommandDump {
   }
 }
 
-private class CommandHej {
+protected class CommandHej {
   inherit Command;
   string help(string what) { return 0; }
   void exec(Evaluator e, string line, array(string) words,
@@ -581,7 +581,7 @@ private class CommandHej {
   }
 }
 
-private class CommandNew {
+protected class CommandNew {
   inherit Command;
   string help(string what) { return "Clears the Hilfe state."; }
   string doc(string what, string with) { return documentation_new; }
@@ -617,7 +617,7 @@ private class CommandNew {
   }
 }
 
-private class CommandStartStop {
+protected class CommandStartStop {
   inherit Command;
   SubSystems subsystems;
 
@@ -658,7 +658,7 @@ private class CommandStartStop {
 //
 
 #if constant(thread_create)
-private class SubSysBackend {
+protected class SubSysBackend {
   int(0..1) is_running;
 
   constant startdoc = "backend [once]\n"
@@ -685,7 +685,7 @@ private class SubSysBackend {
     return is_running;
   }
 
-  private void backend_loop(function(string:int) write_err, int(0..1) once){
+  protected void backend_loop(function(string:int) write_err, int(0..1) once){
     is_running=1;
     object backend = master()->resolv("Pike.DefaultBackend");
     mixed err;
@@ -705,7 +705,7 @@ private class SubSysBackend {
 }
 #endif // constant(thread_create)
 
-private class SubSysLogger {
+protected class SubSysLogger {
 
   constant startdoc = "logging [<filename>]\n"
   "\tLogs all input and output to a log file. If no file name is \n"
@@ -770,7 +770,7 @@ private class SubSysLogger {
   int(0..1) runningp() { return running; }
 }
 
-private class SubSysPhish {
+protected class SubSysPhish {
 
   constant startdoc = "phish\n"
     "\tStart the Pike Hilfe Shell.\n";
@@ -827,7 +827,7 @@ private class SubSysPhish {
 
 
 // General subsystem handler class.
-private class SubSystems {
+protected class SubSystems {
   mapping(string:object) subsystems;
 
   void create (){
@@ -880,45 +880,48 @@ private class SubSystems {
   }
 }
 
-private constant whitespace = (< ' ', '\n' ,'\r', '\t' >);
-private constant termblock = (< "catch", "do", "gauge", "lambda",
-				"class stop" >);
-private constant modifier = (< "extern", "final", "inline", "local", "nomask",
-			       "optional", "private", "protected", "public",
-			       "static", "variant" >);
+protected constant whitespace = (< ' ', '\n' ,'\r', '\t' >);
+protected constant termblock = (< "catch", "do", "gauge", "lambda",
+                                  "class stop" >);
+protected constant modifier = (< "extern", "final", "inline", "local",
+                                 "nomask", "optional", "private", "protected",
+                                 "public", "static", "variant" >);
 
-private constant types = (< "string", "int", "float", "array", "mapping",
-                            "multiset", "mixed", "object", "program",
-			    "function", "void" >);
+protected constant types = (< "string", "int", "float", "array", "mapping",
+                              "multiset", "mixed", "object", "program",
+                              "function", "void" >);
 
 // infix token may appear between two literals
-private constant infix = (< "!=", "%", "%=", "&", "&=", "*", "*=", 
-                            "+", "+=", ",", "-", "-=", 
-                            "->", "->=", "/", "/=", 
-                            "<", "<<", "<<=", "<=", "==", 
-                            ">", ">=", ">>", ">>=", 
-                            "^", "^=", "|", "|=", "~", "~=", 
-                            "&&", "||", "=", ".." >);
+protected constant infix = (< "!=", "%", "%=", "&", "&=", "*", "*=", 
+                              "+", "+=", ",", "-", "-=",
+                              "->", "->=", "/", "/=",
+                              "<", "<<", "<<=", "<=", "==",
+                              ">", ">=", ">>", ">>=",
+                              "^", "^=", "|", "|=", "~", "~=",
+                              "&&", "||", "=", ".." >);
 
 // before literal but not after 
-private constant prefix = (< "!", "@", "(", "({", "([", "(<", "[", "{", "<", ">" >);
+protected constant prefix = (< "!", "@", "(", "({", "([", "(<", "[", "{",
+                               "<", ">" >);
 
 // after literal but not before
-private constant postfix = (< ")", "})", "])", ">)", "]", "}" >);
+protected constant postfix = (< ")", "})", "])", ">)", "]", "}" >);
 
 // before or after literal but not between
-private constant prepostfix = (< "--", "++" >);
+protected constant prepostfix = (< "--", "++" >);
 
 // between two expressions
-private constant seperator = (< "?", ":", ",", ";" >);
+protected constant seperator = (< "?", ":", ",", ";" >);
 
-private constant reference = ([ ".":"module", "->":"object", "[":"array" ]);
+protected constant reference = ([ ".":"module", "->":"object", "[":"array" ]);
 
-private constant group = ([ "(":")", "({":"})", "([":"])", "(<":">)", "[":"]", "{":"}" ]);
+protected constant group = ([ "(":")", "({":"})", "([":"])", "(<":">)",
+                              "[":"]", "{":"}" ]);
 
 // Symbols not valid in type expressions.
 // All of the above except ".", "|", "&" and "~".
-private constant notype = (infix+prefix+postfix+prepostfix+seperator) - (< ".", "|", "&", "~" >);
+protected constant notype = (infix+prefix+postfix+prepostfix+seperator) -
+  (< ".", "|", "&", "~" >);
 
 string typeof_token(string|array token)
 {
@@ -935,7 +938,7 @@ string typeof_token(string|array token)
   else if ( (token[0]==token[-1] && (< '"', '\'' >)[token[0]])
             || token == array_sscanf(token, "%[0-9.]")[0] )
     type = "literal";
-  else if ((token == array_sscanf(token, "%[a-zA-Z0-9_]")[0] || token[0]=='`') )
+  else if (token == array_sscanf(token, "%[a-zA-Z0-9_]")[0] || token[0]=='`')
     type = "symbol";
     // FIXME: handle unicode chars
   else if (token == array_sscanf(token, "%[ \t\r\n]")[0])
@@ -1174,16 +1177,16 @@ class Expression {
 //! that manages the current state of the parser. Essentially tokens are
 //! entered in one end and complete expressions are outputted in the other.
 //! The parser object is accessible as ___Hilfe->state from Hilfe expressions.
-private class ParserState {
-  private ADT.Stack pstack = ADT.Stack();
-  private constant starts = ([ ")":"(", "}":"{", "]":"[",
+protected class ParserState {
+  protected ADT.Stack pstack = ADT.Stack();
+  protected constant starts = ([ ")":"(", "}":"{", "]":"[",
 			       ">)":"(<", "})":"({", "])":"([" ]);
-  private array(string) pipeline = ({ });
-  private array(Expression) ready = ({ });
-  private string last;
-  private string block;
+  protected array(string) pipeline = ({ });
+  protected array(Expression) ready = ({ });
+  protected string last;
+  protected string block;
 
-  private mapping low_state = ([]);
+  protected mapping low_state = ([]);
 
   //! Feed more tokens into the state.
   void feed(array(string) tokens) {
@@ -1294,7 +1297,7 @@ private class ParserState {
           expr = Expression( (array)expr+({ " else ___Hilfe->last_else=1;" }));
       }
       else if( expr[0]=="else" )
-        expr = Expression( ({ "if", "(___Hilfe->last_else);" }) + (array)expr );
+        expr = Expression( ({ "if", "(___Hilfe->last_else);" })+(array)expr );
 
       ret += ({ expr });
     }
@@ -1303,7 +1306,7 @@ private class ParserState {
     return ret;
   }
 
-  private string caught_error;
+  protected string caught_error;
 
   //! Prints out any error that might have occurred while
   //! @[push_string] was executed. The error will be
@@ -1401,7 +1404,7 @@ private class ParserState {
 //! In every Hilfe object (@[Evaluator]) there is a HilfeHistory
 //! object that manages the result history. That history object is
 //! accessible both from __ and ___Hilfe->history in Hilfe expressions.
-private class HilfeHistory {
+protected class HilfeHistory {
 
   inherit ADT.History;
 
@@ -1656,7 +1659,7 @@ class Evaluator {
   //
   //
 
-  private int(0..1) hilfe_error(mixed err) {
+  protected int(0..1) hilfe_error(mixed err) {
     if(!err) return 1;
     mixed err2 = catch {
       if( (arrayp(err) && sizeof(err)==2 && stringp(err[0])) ||
@@ -1677,7 +1680,7 @@ class Evaluator {
     return 0;
   }
 
-  private void add_hilfe_constant(string code, string var) {
+  protected void add_hilfe_constant(string code, string var) {
     if(object o = hilfe_compile("constant " + code +
 				";\nmixed ___HilfeWrapper() { return " +
 				var + "; }", var)) {
@@ -1685,7 +1688,7 @@ class Evaluator {
     }
   }
 
-  private void add_hilfe_variable(string type, string code, string var) {
+  protected void add_hilfe_variable(string type, string code, string var) {
     int(0..1) existed;
     mixed old_value;
     if(!zero_type(variables[var])) {
@@ -1705,7 +1708,7 @@ class Evaluator {
       variables[var] = old_value;
   }
 
-  private void add_hilfe_entity(string type, string code,
+  protected void add_hilfe_entity(string type, string code,
 				string var, mapping vtype) {
     int(0..1) existed;
     mixed old_value;
@@ -1728,7 +1731,7 @@ class Evaluator {
   // Rewrites "dangerous" tokens (int/string/float-variables) to
   // operate directly in the variable mapping. It rewrites all other
   // variables as well, but we didn't have to.
-  private int rel_parser( Expression expr, multiset(string) symbols,
+  protected int rel_parser( Expression expr, multiset(string) symbols,
 			  void|int p ) {
     int top = !p;
     while( p<sizeof(expr)) {
@@ -1810,7 +1813,7 @@ class Evaluator {
 #if 0
   // Some debug code to intercept calls to relocate. Aspect
   // Oriented Programming would be handy here...
-  private int relocate( Expression expr, multiset(string) symbols,
+  protected int relocate( Expression expr, multiset(string) symbols,
 			multiset(string) next_symbols, int p,
 			void|string safe_word, void|int(0..1) top) {
     int op = p;
@@ -1822,7 +1825,7 @@ class Evaluator {
   }
 #endif
 
-  private int relocate( Expression expr, multiset(string) symbols,
+  protected int relocate( Expression expr, multiset(string) symbols,
 			multiset(string) next_symbols, int p,
 			void|string safe_word, void|int(0..1) top) {
     // Type declaration?
@@ -2140,8 +2143,8 @@ class Evaluator {
   function reswrite = std_reswrite;
 
 
-  private string hch_errors = "";
-  private string hch_warnings = "";
+  protected string hch_errors = "";
+  protected string hch_warnings = "";
   protected class HilfeCompileHandler {
 
     int stack_level;
@@ -2376,14 +2379,16 @@ mapping base_objects(Evaluator e)
   return all_constants() + e->constants + e->variables;
 }
 
-array(object|array(string)) resolv(Evaluator e, array completable, void|object base, void|string type)
+array(object|array(string)) resolv(Evaluator e, array completable,
+                                   void|object base, void|string type)
 {
   if (e->variables->DEBUG_COMPLETIONS)
     e->safe_write("resolv(%O, %O, %O)\n", completable, base, type);
   if (!sizeof(completable))
     return ({ base, completable, type });
 
-  if (stringp(completable[0]) && completable[0] == array_sscanf(completable[0], "%[ \t\r\n]")[0])
+  if (stringp(completable[0]) &&
+      completable[0] == array_sscanf(completable[0], "%[ \t\r\n]")[0])
     return ({ base, completable[1..], type });
 
   if (typeof_token(completable[0]) == "argumentgroup" && type != "autodoc")
@@ -2398,7 +2403,7 @@ array(object|array(string)) resolv(Evaluator e, array completable, void|object b
       catch
       {
         // quick and dirty attempt to load a local module
-        base = compile_string(sprintf("object o=.%s;", completable[1]), 0)()->o;
+        base=compile_string(sprintf("object o=.%s;", completable[1]), 0)()->o;
       };
       if (!base)
         return ({ 0, completable, type });
@@ -2545,9 +2550,11 @@ class StdinHilfe
       if (debug)
         write(sprintf("%O = %s\n", token, _tokentype));
 
-      if ( ( _tokentype == "reference" && (!tokentype || tokentype == "symbol"))
+      if ( ( _tokentype == "reference" &&
+             (!tokentype || tokentype == "symbol"))
             || (_tokentype == "symbol" && (!tokentype 
-                 || (< "reference", "referencegroup", "argumentgroup" >)[tokentype])) 
+                 || (< "reference", "referencegroup",
+                       "argumentgroup" >)[tokentype]))
             || ( (<"argumentgroup", "referencegroup" >)[_tokentype] 
                  && (!tokentype || tokentype == "reference"))
          )
@@ -2631,7 +2638,8 @@ class StdinHilfe
         error = Error.mkerror(error);
       }
       else if (!tokens || !sizeof(tokens))
-        completions = sort(indices(master()->root_module)) + sort(indices(base_objects(this)));
+        completions = sort(indices(master()->root_module)) +
+          sort(indices(base_objects(this)));
         // FIXME: base_objects should not be sorted like this
 
       if (!completions || !sizeof(completions))
@@ -2643,7 +2651,8 @@ class StdinHilfe
         if (variables->DEBUG_COMPLETIONS)
           readline->message(sprintf("type: %s\n", typeof_token(token)));
 
-        completions = sort(indices(master()->root_module)) + sort(indices(base_objects(this)));
+        completions = sort(indices(master()->root_module)) +
+          sort(indices(base_objects(this)));
         // FIXME: base_objects should not be sorted like this
 
         switch(typeof_token(token))
