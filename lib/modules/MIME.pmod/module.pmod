@@ -3,7 +3,7 @@
 // RFC1521 functionality for Pike
 //
 // Marcus Comstedt 1996-1999
-// $Id: module.pmod,v 1.38 2010/03/11 01:15:08 srb Exp $
+// $Id: module.pmod,v 1.39 2010/03/11 06:37:43 srb Exp $
 
 
 //! RFC1521, the @b{Multipurpose Internet Mail Extensions@} memo, defines a
@@ -147,13 +147,12 @@ protected class StringRange
   }
   protected int _search(string frag, int|void pos)
   {
-    if (pos < 0) {
+    if (pos < 0)
       error("Start must be greater or equal to zero.\n");
-    }
     int npos = pos + start;
-    if (npos > end) {
+    if (npos > end)
       error("Start must not be greater than the length of the string.\n");
-    }
+    if ((npos + sizeof(frag)) > end) return -1;
     npos = search(data, frag, npos);
     if (npos < 0) return npos;
     if ((npos + sizeof(frag)) > end) return -1;
