@@ -3,7 +3,7 @@
 // RFC1521 functionality for Pike
 //
 // Marcus Comstedt 1996-1999
-// $Id: module.pmod,v 1.36 2010/02/23 19:07:39 jonasw Exp $
+// $Id: module.pmod,v 1.37 2010/03/11 01:15:00 srb Exp $
 
 
 //! RFC1521, the @b{Multipurpose Internet Mail Extensions@} memo, defines a
@@ -115,7 +115,7 @@ protected class StringRange
     if (low > len) low = len;
     if (high > len) high = len;
     if (!low && (high == len)) return this_object();
-    if ((high - low) < 65536) return data[low..high-1];
+    if ((high - low) < 65536) return data[start+low..start+high-1];
     return StringRange(this_object(), low, high);
   }
   protected int `[](int pos)
@@ -162,8 +162,8 @@ protected class StringRange
   protected string _sprintf(int c)
   {
     if (c == 'O')
-      return sprintf("StringRange(%d bytes[%d..%d])",
-		     data && sizeof(data), start, end-1);
+      return sprintf("StringRange(%d bytes[%d..%d] %O)",
+		     data && sizeof(data), start, end-1, data && data[..40]);
     return (string)this_object();
   }
 }
@@ -1352,7 +1352,7 @@ class Message {
     charset = "us-ascii";
     boundary = 0;
     disposition = 0;
-    if (message && !objectp(message) && (sizeof(message) > 0x100000)) {
+    if (message && stringp(message) && (sizeof(message) > 0x100000)) {
       // Message is larger than 1 MB.
       // Attempt to reduce memory use by using StringRange.
       message = StringRange(message, 0, sizeof(message));
@@ -1543,6 +1543,12 @@ class Message {
 		      "This is a multi-part message in MIME format.\r\n":
 		      "");
     }
+  }
+  protected string _sprintf(int c)
+  {
+    if (c == 'O')
+      return sprintf("Message(%O)", disp_params);
+    return (string)this_object();
   }
 }
 
