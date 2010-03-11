@@ -3,7 +3,7 @@
 // RFC1521 functionality for Pike
 //
 // Marcus Comstedt 1996-1999
-// $Id: module.pmod,v 1.37 2010/03/11 01:15:00 srb Exp $
+// $Id: module.pmod,v 1.38 2010/03/11 01:15:08 srb Exp $
 
 
 //! RFC1521, the @b{Multipurpose Internet Mail Extensions@} memo, defines a
@@ -1429,44 +1429,6 @@ class Message {
     }
     if (boundary && type=="multipart" && !body_parts &&
        (encoded_data || decoded_data)) {
-#if 0
-      // For large data sets, this wastes quite a bit of memory...
-      array(string) parts = ("\n"+getdata())/("\n--"+boundary);
-      decoded_data = parts[0][1..];
-      string epilogue = parts[-1];
-      if (sizeof(parts)<2) {
-	if (guess) {
-	  decoded_data = epilogue;
-	  epilogue = "--";
-	} else
-	  error("boundary missing from multipart-body\n");
-      }
-      parts = parts[1..<1];
-      if ((sscanf(epilogue, "--%*[ \t]%s", epilogue)<2 ||
-	   (epilogue != "" && epilogue[0] != '\n' &&
-	    epilogue[0..1] != "\r\n")) && !guess) {
-	error("multipart message improperly terminated (%O%s)\n",
-	      epilogue[..200],
-	      sizeof(epilogue) > 201 ? "[...]" : "");
-      }
-
-      encoded_data = 0;
-      if(sizeof(decoded_data) && decoded_data[-1]=='\r')
-	decoded_data = decoded_data[..<1];
-      parts = map(parts, lambda(string part){
-	if(sizeof(part) && part[-1]=='\r')
-	  part = part[..<1];
-	sscanf(part, "%*[ \t]%s", part);
-	if(has_prefix(part, "\r\n"))
-	  part = part[2..];
-	else if(has_prefix(part, "\n"))
-	  part = part[1..];
-	else if(!guess)
-	  error("newline missing after multipart boundary\n");
-	return part;
-      });
-#else
-      // Rewrite to avoid lots of temporary strings.
 
       string|StringRange data = decoded_data || getdata();
       string separator = "--" + boundary;
@@ -1535,7 +1497,6 @@ class Message {
 	      epilogue[..200],
 	      sizeof(epilogue) > 201 ? "[...]" : "");
       }
-#endif
       body_parts = map(parts, this_program, 0, 0, guess);
     }
     if((hdrs || parts) && !decoded_data) {
