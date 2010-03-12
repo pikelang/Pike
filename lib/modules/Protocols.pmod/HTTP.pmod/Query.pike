@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.105 2009/06/22 06:35:52 nilsson Exp $
+// $Id: Query.pike,v 1.106 2010/03/12 10:18:34 srb Exp $
 
 //! Open and execute an HTTP query.
 //!
@@ -173,9 +173,7 @@ protected void connect(string server,int port,int blocking)
 #ifdef HTTP_QUERY_DEBUG
      werror("<- (connect error: %s)\n", strerror (errno));
 #endif
-     //con->set_blocking(); // Only to remove callbacks to avoid cycles.
      con->close();
-     //destruct(con);
      con = 0;
      ok = 0;
      return;
@@ -303,13 +301,10 @@ protected void async_timeout()
 #ifdef HTTP_QUERY_DEBUG
    werror("** TIMEOUT\n");
 #endif
-   if (con)
-   {
-      //con->set_blocking(); // Only to remove callbacks to avoid cycles.
+   if (con) {
       con->close();
-      //destruct(con);
+      con=0;
    }
-   con=0;
    low_async_failed(110);	// ETIMEDOUT/Linux-i386
 }
 
@@ -322,9 +317,8 @@ void async_got_host(string server,int port)
    {
       async_failed();
       if (con) {
-	//con->set_blocking(); // Only to remove callbacks to avoid cycles.
 	con->close();	//  we may be destructed here
-	//catch { destruct(con); };
+	con = 0;
       }
       return;
    }
@@ -388,9 +382,7 @@ void async_fetch_close()
    werror("-> close\n");
 #endif
    if (con) {
-     //con->set_blocking();
      con->close();
-     //destruct(con);
      con=0;
    }
    remove_call_out(async_timeout);
@@ -1165,13 +1157,22 @@ protected void destroy()
    }
    async_id = 0;
 
-   if(async_dns)
-     async_dns->close();
-   async_dns = 0;
+   close();
+}
 
-   catch (con->set_blocking()); // Only to remove callbacks to avoid cycles.
-   catch { con->close(); };
-   //catch { destruct(con); };
+//! Close all associated file descriptors.
+//!
+void close()
+{
+  if (con) {
+    con->set_nonblocking();	// Clear callbacks to avoid loops
+    con->close();
+    con = 0;
+  }
+  if(async_dns) {
+    async_dns->close();
+    async_dns = 0;
+  }
 }
 
 //! Fetch all data in background.
