@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: matrix_code.h,v 1.21 2008/09/17 12:05:13 mast Exp $
+|| $Id: matrix_code.h,v 1.22 2010/03/14 20:07:39 mirar Exp $
 */
 
 /*
@@ -493,11 +493,23 @@ static void matrixX(_add)(INT32 args)
 {
    struct matrixX(_storage) *mx=NULL;
    struct matrixX(_storage) *dmx;
-   int n;
+   int n,i;
    FTYPE *s1,*s2,*d;
 
    if (args<1)
       SIMPLE_TOO_FEW_ARGS_ERROR("`+",1);
+
+   if (args>1) /* one add per argument */
+   {
+      ref_push_object(THISOBJ);
+      for (i=0; i<args; i++)
+      {
+	 push_svalue(Pike_sp-args+i-1);
+	 f_add(2);
+      }
+      stack_pop_n_elems_keep_top(args);
+      return;
+   }
 
    if (Pike_sp[-1].type!=T_OBJECT ||
        !((mx=(struct matrixX(_storage)*)
@@ -508,8 +520,6 @@ static void matrixX(_add)(INT32 args)
       math_error("`+",Pike_sp-args,args,0,
 		 "Cannot add matrices of different size.\n");
 
-   pop_n_elems(args-1); /* shouldn't be needed */
-   
    dmx=matrixX(_push_new_)(mx->xsize,mx->ysize);
 
    s1=THIS->m;
@@ -528,11 +538,23 @@ static void matrixX(_sub)(INT32 args)
 {
    struct matrixX(_storage) *mx=NULL;
    struct matrixX(_storage) *dmx;
-   int n;
+   int n,i;
    FTYPE *s1,*s2=NULL,*d;
 
    if (args) 
    {
+      if (args>1) /* one subtract per argument */
+      {
+	 ref_push_object(THISOBJ);
+	 for (i=0; i<args; i++)
+	 {
+	    push_svalue(Pike_sp-args+i-1);
+	    f_minus(2);
+	 }
+	 stack_pop_n_elems_keep_top(args);
+	 return;
+      }
+
       if (Pike_sp[-1].type!=T_OBJECT ||
 	  !((mx=(struct matrixX(_storage)*)
 	     get_storage(Pike_sp[-1].u.object,XmatrixY(math_,_program)))))
@@ -542,8 +564,6 @@ static void matrixX(_sub)(INT32 args)
 	  mx->ysize != THIS->ysize)
 	 math_error("`-",Pike_sp-args,args,0,
 		    "Cannot add matrices of different size.\n");
-
-      pop_n_elems(args-1); /* shouldn't be needed */
 
       s2=mx->m;
    }
@@ -634,7 +654,17 @@ static void matrixX(_mult)(INT32 args)
    if (args<1)
       SIMPLE_TOO_FEW_ARGS_ERROR("`*",1);
 
-   pop_n_elems(args-1); /* shouldn't be needed */
+   if (args>1) /* one multiply per argument */
+   {
+      ref_push_object(THISOBJ);
+      for (i=0; i<args; i++)
+      {
+	 push_svalue(Pike_sp-args+i-1);
+	 f_multiply(2);
+      }
+      stack_pop_n_elems_keep_top(args);
+      return;
+   }
 
    if (Pike_sp[-1].type==T_INT)
    {

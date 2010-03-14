@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: math_matrix.c,v 1.40 2007/12/18 23:24:49 nilsson Exp $
+|| $Id: math_matrix.c,v 1.41 2010/03/14 20:07:39 mirar Exp $
 */
 
 #include "global.h"
@@ -16,6 +16,7 @@
 #include "operators.h"
 #include "builtin_functions.h"
 #include "module_support.h"
+#include "operators.h"
 
 #include "math_module.h"
 
