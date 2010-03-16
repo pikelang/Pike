@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.120 2010/03/16 10:21:21 grubba Exp $
+|| $Id: mpz_glue.c,v 1.121 2010/03/16 11:35:57 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.120 2010/03/16 10:21:21 grubba Exp $");
+RCSID("$Id: mpz_glue.c,v 1.121 2010/03/16 11:35:57 grubba Exp $");
 #include "gmp_machine.h"
 #include "module.h"
 
@@ -1552,7 +1552,7 @@ static void mpzmod_random(INT32 args)
   if(mpz_sgn(THIS) <= 0)
     Pike_error("random on negative number.\n");
 
-  res=fast_clone_object(THIS_PROGRAM,0);
+  push_object(res=fast_clone_object(THIS_PROGRAM,0));
   /* We add four to assure reasonably uniform randomness */
   push_int(mpz_size(THIS)*sizeof(mp_limb_t) + 4);
   f_random_string(1);
