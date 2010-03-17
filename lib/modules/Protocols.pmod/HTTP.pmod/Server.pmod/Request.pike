@@ -585,12 +585,31 @@ void response_and_finish(mapping m, function|void _log_cb)
    if (request_headers->range && !m->start && zero_type(m->error))
    {
       int a,b;
-      if (sscanf(request_headers->range,"bytes %d-%d",a,b)==2)
+      if (sscanf(request_headers->range,"bytes%*[ =]%d-%d",a,b)==3)
 	 m->start=a,m->stop=b;
-      else if (sscanf(request_headers->range,"bytes -%d",b))
-	 m->start=0,m->stop=b;
-      else if (sscanf(request_headers->range,"bytes %d-",a))
+      else if (sscanf(request_headers->range,"bytes%*[ =]-%d",b))
+      {
+        if( m->size==-1 )
+        {
+	    m_delete(m,"file");
+	    m->data="";
+	    m->error=416;
+        }
+        else
+        {
+          m->start=m->size-b;
+          m->stop=-1;
+        }
+      }
+      else if (sscanf(request_headers->range,"bytes%*[ =]%d-",a))
 	 m->start=a,m->stop=-1;
+      else if (has_value(request_headers->range, ","))
+      {
+        // Multiple ranges
+        m_delete(m,"file");
+        m->data="";
+        m->error=416;
+      }
    }
 
    if (request_headers["if-modified-since"])
