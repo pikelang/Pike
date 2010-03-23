@@ -1039,7 +1039,7 @@ void destroy()
 { close();
 }
 
-private void reconnect(void|int force)
+private int reconnect(void|int force)
 { Thread.MutexKey connectmtxkey;
   if(_c)
   { reconnected++;
@@ -1085,12 +1085,19 @@ private void reconnect(void|int force)
   plugbuf[0]=_c.plugint32(len);
   _c.write(plugbuf);
   PD("%O\n",plugbuf);
-  _decodemsg(readyforquery);
+  { mixed err=catch(_decodemsg(readyforquery));
+    if(err)
+      if(force)
+	return 0;
+      else
+	throw(err);
+  }
   PD("%O\n",_runtimeparameter);
   if(force)
   { lastmessage+=({sprintf("Reconnected to database %s",host_info())});
     runcallback(backendpid,"_reconnect","");
   }
+  return 1;
 }
 
 //! @decl void reload()
