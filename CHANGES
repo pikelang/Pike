@@ -45,7 +45,7 @@ o Use nanosleep() when available instead of poll or select hacks for
 o Fixed dangling cache reference in prepared statements when using CREATE
   statements via Sql.pgsql.
 
-o Fixed broken autoreconnect logic in Sql.pgsql.
+o Fixed broken (autore)connect logic in Sql.pgsql.
 
 o Improved widestring support for Parser.Tabular.
 
