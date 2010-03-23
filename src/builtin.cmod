@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.109 2008/04/22 18:17:55 mast Exp $
+|| $Id: builtin.cmod,v 1.110 2010/03/23 12:24:39 grubba Exp $
 */
 
 #include "global.h"
@@ -902,6 +902,13 @@ PIKEFUN mixed random(object o)
 PIKEFUN int random(int i)
 {
   if(i <= 0) RETURN 0;
+#ifdef AUTO_BIGNUM
+  if(i >> 31) {
+    unsigned INT_TYPE a = my_rand();
+    unsigned INT_TYPE b = my_rand();
+    RETURN (INT_TYPE)(((a<<32)|b) % i);
+  }
+#endif
   RETURN  my_rand() % i;
 }      
 
