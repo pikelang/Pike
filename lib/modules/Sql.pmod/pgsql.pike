@@ -979,7 +979,8 @@ final int _decodemsg(void|state waitforstate)
 	}
 	else
 	{ array(string) msg=lastmessage;
-          phasedreconnect();msg+=lastmessage;
+	  if(_mstate!=unauthenticated)
+            phasedreconnect(),msg+=lastmessage;
 	  string s=sizeof(msg)?a2nls(msg):"";
 	  ERROR("%sConnection lost to database %s@%s:%d/%s %d\n",
 	   s,user,host,port,database,backendpid);
