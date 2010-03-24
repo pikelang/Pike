@@ -1,7 +1,7 @@
 //
 // Filesystem monitor with support for symbolic links.
 //
-// $Id: symlinks.pike,v 1.7 2010/02/03 15:24:41 grubba Exp $
+// $Id: symlinks.pike,v 1.8 2010/03/24 15:53:17 grubba Exp $
 //
 // 2010-01-25 Henrik Grubbström
 //
@@ -258,7 +258,11 @@ protected class Monitor
       int sym_done = sym_id;
       Monitor m;
       if (!(m = monitors[dest])) {
-	monitor(dest, (flags & ~MF_HARD) | MF_AUTO,
+	MonitorFlags m_flags = (flags & ~MF_HARD) | MF_AUTO;
+	if (inhibit_notify) {
+	  m_flags &= ~MF_INITED;
+	}
+	monitor(dest, m_flags,
 		max_dir_check_interval,
 		file_interval_factor,
 		stable_time);
