@@ -320,7 +320,8 @@ int num_fields()
 //!  @[Sql.sql_result()->num_rows()]
 int num_rows()
 { int numrows;
-  sscanf(_statuscmdcomplete,"%*s %d",numrows);
+  if(_statuscmdcomplete)
+    sscanf(_statuscmdcomplete,"%*s %d",numrows);
   return numrows;
 }
 
