@@ -3,7 +3,7 @@
 // RFC1521 functionality for Pike
 //
 // Marcus Comstedt 1996-1999
-// $Id: module.pmod,v 1.39 2010/03/11 06:37:43 srb Exp $
+// $Id: module.pmod,v 1.40 2010/04/08 12:36:14 grubba Exp $
 
 
 //! RFC1521, the @b{Multipurpose Internet Mail Extensions@} memo, defines a
@@ -1504,6 +1504,7 @@ class Message {
 		      "");
     }
   }
+
   protected string _sprintf(int c)
   {
     if (c == 'O')
