@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.775 2010/02/18 08:52:54 srb Exp $
+|| $Id: program.c,v 1.776 2010/04/10 14:07:30 mast Exp $
 */
 
 #include "global.h"
@@ -2583,6 +2583,8 @@ void low_start_new_program(struct program *p,
   if (Pike_compiler->fake_object->storage) {
     /* Stipple to find illegal accesses */
     MEMSET(Pike_compiler->fake_object->storage,0x55,256*sizeof(struct svalue));
+    PIKE_MEM_WO_RANGE (Pike_compiler->fake_object->storage,
+		       256 * sizeof (struct svalue));
   }
 #else
   Pike_compiler->fake_object->storage=(char *)malloc(sizeof(struct parent_info));
