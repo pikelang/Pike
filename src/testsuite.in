@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.892 2010/04/10 14:34:07 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.893 2010/04/10 17:12:42 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -12091,8 +12091,10 @@ test_equal(version(), "Pike v"+__REAL_MAJOR__+"."+__REAL_MINOR__+" release "+__R
 // - zero_type
 test_eq(zero_type(0),0)
 test_eq(zero_type(([])[7]),1)
+test_eq(zero_type(([7: 0])[7]),0)
+test_eq(zero_type(([7: UNDEFINED])[7]),0)
 test_eq(zero_type(UNDEFINED), 1)
-test_eq (zero_type (m_delete (([]), 1)), 1)
+test_eq(zero_type (m_delete (([]), 1)), 1)
 
 test_true([[lambda (int|void a) { return zero_type(a); }()]])
 test_true([[lambda () {mixed a; return zero_type(a = ([])[0]);}()]])
@@ -12129,8 +12131,8 @@ test_any([[
   // Preserve zero_type in call.
   return lambda (mixed a) {return zero_type (a);} (UNDEFINED);
 ]], 1);
-test_true([[zero_type (({UNDEFINED}))]], 1); // Preserve zero_type in array.
-test_any([[zero_type (map (({1}), ([])))]], 1); // Produce zero_type in map().
+test_true([[zero_type (({UNDEFINED})[0])]], 1); // Preserve zero_type in array.
+test_true([[zero_type (map (({1}), ([]))[0])]], 1); // Produce zero_type in map().
 test_any([[
   // Preserve zero_type in foreach.
   foreach (({UNDEFINED}), mixed e)
