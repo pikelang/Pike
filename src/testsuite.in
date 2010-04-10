@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.891 2010/02/23 10:49:42 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.892 2010/04/10 14:34:07 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -12092,6 +12092,7 @@ test_equal(version(), "Pike v"+__REAL_MAJOR__+"."+__REAL_MINOR__+" release "+__R
 test_eq(zero_type(0),0)
 test_eq(zero_type(([])[7]),1)
 test_eq(zero_type(UNDEFINED), 1)
+test_eq (zero_type (m_delete (([]), 1)), 1)
 
 test_true([[lambda (int|void a) { return zero_type(a); }()]])
 test_true([[lambda () {mixed a; return zero_type(a = ([])[0]);}()]])
@@ -12124,7 +12125,18 @@ test_any([[
   return zero_type (-i);
 ]], 0)
 
-
+test_any([[
+  // Preserve zero_type in call.
+  return lambda (mixed a) {return zero_type (a);} (UNDEFINED);
+]], 1);
+test_true([[zero_type (({UNDEFINED}))]], 1); // Preserve zero_type in array.
+test_any([[zero_type (map (({1}), ([])))]], 1); // Produce zero_type in map().
+test_any([[
+  // Preserve zero_type in foreach.
+  foreach (({UNDEFINED}), mixed e)
+    if (zero_type (e)) return 1;
+  return 0;
+]], 1);
 
 test_program(int b=10; mixed a() { return 1; })
 test_program(mixed b=10; mixed a() { return 1;})
