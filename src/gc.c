@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.340 2009/12/13 23:22:34 mast Exp $
+|| $Id: gc.c,v 1.341 2010/04/11 17:24:47 mast Exp $
 */
 
 #include "global.h"
@@ -1152,6 +1152,17 @@ again:
 	  fprintf(stderr,"%*s**The object is on objects_to_destruct.\n",indent,"");
       }
 
+      {
+	struct program_state *ps;
+	for (ps = Pike_compiler; ps; ps = ps->previous)
+	  if (ps->fake_object == (struct object *) a) {
+	    fprintf (stderr, "%*s**The object is a fake for new program %p "
+		     "in compiler program state %p.\n",
+		     indent, "", ps->new_program, ps);
+	    break;
+	  }
+      }
+
       if(!p)
       {
 	p=id_to_program(((struct object *)a)->program_id);
@@ -1691,7 +1702,7 @@ static void gc_watched_found (struct marker *m, const char *found_in)
 
 #ifndef GC_MARK_DEBUG
 struct pike_queue gc_mark_queue;
-#else  /* !GC_MARK_DEBUG */
+#else  /* GC_MARK_DEBUG */
 
 /* Cut'n'paste from queue.c. */
 
