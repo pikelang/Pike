@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.306 2010/04/10 14:26:29 mast Exp $
+|| $Id: object.c,v 1.307 2010/04/11 17:26:23 mast Exp $
 */
 
 #include "global.h"
@@ -961,7 +961,10 @@ void low_destruct_objects_to_destruct(void)
    * to avoid that reentrant calls to this function go through all
    * objects instead of just the newly added ones. This way we avoid
    * extensive recursion in this function and also avoid destructing
-   * the objects arbitrarily late. */
+   * the objects arbitrarily late.
+   *
+   * Note that we might start a gc during this, but since the unlinked
+   * objects have no refs, the gc never encounters them. */
   while (objects_to_destruct) {
     o = objects_to_destruct, objects_to_destruct = 0;
 
@@ -1051,7 +1054,9 @@ PMOD_EXPORT void schedule_really_free_object(struct object *o)
   if(o->prog)
   {
     o->next = objects_to_destruct;
-    DO_IF_DMALLOC(o->prev = (void *) -1);
+#ifdef PIKE_DEBUG
+    o->prev = (void *) -3;
+#endif
     PIKE_MEM_WO(o->prev);
     objects_to_destruct = o;
 
