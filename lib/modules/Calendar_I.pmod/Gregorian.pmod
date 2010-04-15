@@ -21,13 +21,13 @@ class _TimeUnit
 {
    inherit Calendar_I._TimeUnit;
 
-   program vYear=function_object(this_program)->Year;
-   program vDay=function_object(this_program)->Day;
-   program vMonth=function_object(this_program)->Month;
-   program vWeek=function_object(this_program)->Week;
-   program vHour=function_object(this_program)->Hour;
-   program vMinute=function_object(this_program)->Minute;
-   program vSecond=function_object(this_program)->Second;
+   program vYear=global::Year;
+   program vDay=global::Day;
+   program vMonth=global::Month;
+   program vWeek=global::Week;
+   program vHour=global::Hour;
+   program vMinute=global::Minute;
+   program vSecond=global::Second;
 }
 
 //== Year ====================================================================
