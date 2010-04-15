@@ -3,11 +3,11 @@
 
 //! Portuguese language locale
 
-// $Id: por.pmod,v 1.1 2002/10/01 10:57:57 nilsson Exp $
+// $Id: por.pmod,v 1.2 2010/04/15 13:08:30 grubba Exp $
 
 inherit "abstract";
 
-constant name = ""; // FIXME
+constant name = "Português";
 constant english_name = "portuguese";
 constant iso_639_1 = "pt";
 constant iso_639_2 = "por";
