@@ -1550,9 +1550,9 @@ class cSecond
 
 // backwards compatible with calendar I
    string iso_name()
-   { return this->format_ymd()+" T"+format_tod(); }
+   { return this->format_ymd()+"T"+format_tod(); }
    string iso_short_name() 
-   { return this->format_ymd_short()+" T"+(format_tod()-":"); }
+   { return this->format_ymd_short()+"T"+(format_tod()-":"); }
 
 
    TimeRange place(TimeRange what,void|int force)
