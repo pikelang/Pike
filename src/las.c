@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.442 2009/11/20 10:58:09 grubba Exp $
+|| $Id: las.c,v 1.443 2010/04/15 16:54:55 grubba Exp $
 */
 
 #include "global.h"
@@ -3470,10 +3470,15 @@ void fix_type_field(node *n)
       type_a=CAR(n)->type;
       type_b=CDR(n)->type;
       if((valid = check_indexing(type_a, type_b, n)) <= 0)
-	if(!Pike_compiler->catch_level)
+	if(!Pike_compiler->catch_level) {
 	  yytype_report((!valid)?REPORT_ERROR:REPORT_WARNING,
-			NULL, 0, NULL, NULL, 0, type_b,
+			NULL, 0, NULL, NULL, 0, type_a,
 			0, "Indexing on illegal type.");
+	  ref_push_type_value(type_b);
+	  low_yyreport((!valid)?REPORT_ERROR:REPORT_WARNING, NULL, 0,
+		       type_check_system_string, 1,
+		       "Index   : %O.");
+	}
       n->type = index_type(type_a, type_b, n);
     } else {
       copy_pike_type(n->type, mixed_type_string);
@@ -5333,6 +5338,13 @@ ptrdiff_t eval_low(node *n,int print_error)
 #endif /* PIKE_USE_MACHINE_CODE */
 
   prog->num_program = num_program;
+
+#ifdef PIKE_DEBUG
+  if(l_flag > 3 && n)
+  {
+    fprintf(stderr,"Evaluation ==> %d\n", ret);
+  }
+#endif
 
   return ret;
 }
