@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.h,v 1.139 2009/11/28 13:53:59 mast Exp $
+|| $Id: gc.h,v 1.140 2010/04/16 00:15:17 mast Exp $
 */
 
 #ifndef GC_H
@@ -472,25 +472,49 @@ static INLINE int debug_gc_check_weak (void *a, const char *place)
 
 #endif	/* !PIKE_DEBUG */
 
+#ifdef DEBUG_MALLOC
+static INLINE void dmalloc_visit_svalues (struct svalue *s, size_t num,
+					  int ref_type, char *l)
+{
+  real_visit_svalues (dmalloc_check_svalues (s, num, l), num, ref_type);
+}
+#define visit_svalues(S, NUM, REF_TYPE)					\
+  dmalloc_visit_svalues ((S), (NUM), (REF_TYPE), DMALLOC_LOCATION())
+#else
+#define visit_svalues real_visit_svalues
+#endif
+
 #define gc_recurse_svalues(S,N)						\
   (Pike_in_gc == GC_PASS_CYCLE ?					\
-   gc_cycle_check_svalues((S), (N)) : gc_mark_svalues((S), (N)))
+   gc_cycle_check_svalues((S), (N)) :					\
+   Pike_in_gc == GC_PASS_MARK || Pike_in_gc == GC_PASS_ZAP_WEAK ?	\
+   gc_mark_svalues((S), (N)) :						\
+   (visit_svalues ((S), (N), REF_TYPE_NORMAL), 0))
 #define gc_recurse_short_svalue(U,T)					\
   (Pike_in_gc == GC_PASS_CYCLE ?					\
-   gc_cycle_check_short_svalue((U), (T)) : gc_mark_short_svalue((U), (T)))
+   gc_cycle_check_short_svalue((U), (T)) :				\
+   Pike_in_gc == GC_PASS_MARK || Pike_in_gc == GC_PASS_ZAP_WEAK ?	\
+   gc_mark_short_svalue((U), (T)) :					\
+   visit_short_svalue ((U), (T), REF_TYPE_NORMAL))
 #define gc_recurse_weak_svalues(S,N)					\
   (Pike_in_gc == GC_PASS_CYCLE ?					\
-   gc_cycle_check_weak_svalues((S), (N)) : gc_mark_weak_svalues((S), (N)))
+   gc_cycle_check_weak_svalues((S), (N)) :				\
+   Pike_in_gc == GC_PASS_MARK || Pike_in_gc == GC_PASS_ZAP_WEAK ?	\
+   gc_mark_weak_svalues((S), (N)) :					\
+   (visit_svalues ((S), (N), REF_TYPE_WEAK), 0))
 #define gc_recurse_weak_short_svalue(U,T)				\
   (Pike_in_gc == GC_PASS_CYCLE ?					\
-   gc_cycle_check_weak_short_svalue((U), (T)) : gc_mark_weak_short_svalue((U), (T)))
+   gc_cycle_check_weak_short_svalue((U), (T)) :				\
+   Pike_in_gc == GC_PASS_MARK || Pike_in_gc == GC_PASS_ZAP_WEAK ?	\
+   gc_mark_weak_short_svalue((U), (T)) :				\
+   visit_short_svalue ((U), (T), REF_TYPE_WEAK))
 
 #define GC_RECURSE_THING(V, T)						\
-  (mc_pass ?								\
-   PIKE_CONCAT3 (visit_,T,_ref) (debug_malloc_pass (V), REF_TYPE_NORMAL) : \
-   (DMALLOC_TOUCH_MARKER(V, Pike_in_gc == GC_PASS_CYCLE) ?		\
-    PIKE_CONCAT(gc_cycle_check_, T)(V, 0) :				\
-    PIKE_CONCAT3(gc_mark_, T, _as_referenced)(V)))
+  (DMALLOC_TOUCH_MARKER(V, Pike_in_gc == GC_PASS_CYCLE) ?		\
+   PIKE_CONCAT(gc_cycle_check_, T)(V, 0) :				\
+   Pike_in_gc == GC_PASS_MARK || Pike_in_gc == GC_PASS_ZAP_WEAK ?	\
+   PIKE_CONCAT3(gc_mark_, T, _as_referenced)(V) :			\
+   PIKE_CONCAT3 (visit_,T,_ref) (debug_malloc_pass (V), REF_TYPE_NORMAL))
 #define gc_recurse_array(V) GC_RECURSE_THING((V), array)
 #define gc_recurse_mapping(V) GC_RECURSE_THING((V), mapping)
 #define gc_recurse_multiset(V) GC_RECURSE_THING((V), multiset)
@@ -633,6 +657,9 @@ PMOD_EXPORT extern visit_ref_cb *visit_ref;
 /* Map between type and visit function for the standard ref types. */
 PMOD_EXPORT extern visit_thing_fn *const visit_fn_from_type[MAX_REF_TYPE + 1];
 PMOD_EXPORT TYPE_T type_from_visit_fn (visit_thing_fn *fn);
+
+PMOD_EXPORT void real_visit_svalues (const struct svalue *s, size_t num,
+				     int ref_type);
 
 static INLINE void real_visit_short_svalue (const union anything *u, TYPE_T t,
 					    int ref_type)
