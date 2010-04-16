@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.893 2010/04/10 17:12:42 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.894 2010/04/16 00:16:16 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -6915,6 +6915,25 @@ cond([[has_value (cpp ("__AUTO_BIGNUM__"), "1")]], [[
 	      Pike.count_memory (-1, Int.NATIVE_MAX + 1)]])
 ]])
 test_do([[add_constant("count_memory_stats")]])
+
+test_program([[
+  function ff()
+  {
+    array x;
+    array b() {return x;};
+    x = ({b});
+    return b;
+  }
+
+  int a()
+  {
+    function f = ff();
+    int s = Pike.count_memory (0, f());
+    f = 0;
+    gc();
+    return s > 0;
+  }
+]])
 
 // Numerical limits.
 test_true([[Int.NATIVE_MIN <= -2147483648]])
