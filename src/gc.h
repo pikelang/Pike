@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.h,v 1.143 2010/04/19 15:01:50 grubba Exp $
+|| $Id: gc.h,v 1.144 2010/04/19 18:45:46 grubba Exp $
 */
 
 #ifndef GC_H
@@ -479,18 +479,6 @@ static INLINE int debug_gc_check_weak (void *a, const char *place)
 
 #endif	/* !PIKE_DEBUG */
 
-#ifdef DEBUG_MALLOC
-static INLINE TYPE_FIELD dmalloc_visit_svalues (struct svalue *s, size_t num,
-						int ref_type, char *l)
-{
-  return real_visit_svalues (dmalloc_check_svalues (s, num, l), num, ref_type);
-}
-#define visit_svalues(S, NUM, REF_TYPE)					\
-  dmalloc_visit_svalues ((S), (NUM), (REF_TYPE), DMALLOC_LOCATION())
-#else
-#define visit_svalues real_visit_svalues
-#endif
-
 #define gc_recurse_svalues(S,N)						\
   (Pike_in_gc == GC_PASS_CYCLE ?					\
    gc_cycle_check_svalues((S), (N)) :					\
@@ -680,6 +668,13 @@ static INLINE int real_visit_short_svalue (const union anything *u, TYPE_T t,
   (real_visit_short_svalue (debug_malloc_pass ((U)->ptr), (T), (REF_TYPE)))
 
 #ifdef DEBUG_MALLOC
+static INLINE TYPE_FIELD dmalloc_visit_svalues (struct svalue *s, size_t num,
+						int ref_type, char *l)
+{
+  return real_visit_svalues (dmalloc_check_svalues (s, num, l), num, ref_type);
+}
+#define visit_svalues(S, NUM, REF_TYPE)					\
+  dmalloc_visit_svalues ((S), (NUM), (REF_TYPE), DMALLOC_LOCATION())
 static INLINE void dmalloc_visit_svalue (const struct svalue *s,
 					 int ref_type, char *l)
 {
@@ -694,6 +689,7 @@ static INLINE void dmalloc_visit_svalue (const struct svalue *s,
 #define visit_svalue(S, REF_TYPE) \
   dmalloc_visit_svalue ((S), (REF_TYPE), DMALLOC_LOCATION())
 #else
+#define visit_svalues real_visit_svalues
 static INLINE void visit_svalue (const struct svalue *s, int ref_type)
 {
   int t = s->type;
@@ -704,6 +700,7 @@ static INLINE void visit_svalue (const struct svalue *s, int ref_type)
   }
 }
 #endif
+
 
 /* Memory counting */
 
