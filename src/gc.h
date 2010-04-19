@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.h,v 1.142 2010/04/19 14:01:37 mast Exp $
+|| $Id: gc.h,v 1.143 2010/04/19 15:01:50 grubba Exp $
 */
 
 #ifndef GC_H
@@ -480,10 +480,10 @@ static INLINE int debug_gc_check_weak (void *a, const char *place)
 #endif	/* !PIKE_DEBUG */
 
 #ifdef DEBUG_MALLOC
-static INLINE void dmalloc_visit_svalues (struct svalue *s, size_t num,
-					  int ref_type, char *l)
+static INLINE TYPE_FIELD dmalloc_visit_svalues (struct svalue *s, size_t num,
+						int ref_type, char *l)
 {
-  real_visit_svalues (dmalloc_check_svalues (s, num, l), num, ref_type);
+  return real_visit_svalues (dmalloc_check_svalues (s, num, l), num, ref_type);
 }
 #define visit_svalues(S, NUM, REF_TYPE)					\
   dmalloc_visit_svalues ((S), (NUM), (REF_TYPE), DMALLOC_LOCATION())
@@ -665,15 +665,16 @@ PMOD_EXPORT extern visit_ref_cb *visit_ref;
 PMOD_EXPORT extern visit_thing_fn *const visit_fn_from_type[MAX_REF_TYPE + 1];
 PMOD_EXPORT TYPE_T type_from_visit_fn (visit_thing_fn *fn);
 
-PMOD_EXPORT void real_visit_svalues (const struct svalue *s, size_t num,
-				     int ref_type);
+PMOD_EXPORT TYPE_FIELD real_visit_svalues (const struct svalue *s, size_t num,
+					   int ref_type);
 
-static INLINE void real_visit_short_svalue (const union anything *u, TYPE_T t,
-					    int ref_type)
+static INLINE int real_visit_short_svalue (const union anything *u, TYPE_T t,
+						  int ref_type)
 {
   check_short_svalue (u, t);
   if (t <= MAX_REF_TYPE)
     visit_ref (u->ptr, ref_type, visit_fn_from_type[t], NULL);
+  return 0;
 }
 #define visit_short_svalue(U, T, REF_TYPE) \
   (real_visit_short_svalue (debug_malloc_pass ((U)->ptr), (T), (REF_TYPE)))

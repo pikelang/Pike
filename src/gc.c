@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.346 2010/04/19 14:01:36 mast Exp $
+|| $Id: gc.c,v 1.347 2010/04/19 15:05:20 grubba Exp $
 */
 
 #include "global.h"
@@ -4276,11 +4276,12 @@ PMOD_EXPORT TYPE_T type_from_visit_fn (visit_thing_fn *fn)
   return PIKE_T_UNKNOWN;
 }
 
-PMOD_EXPORT void real_visit_svalues (const struct svalue *s, size_t num,
+PMOD_EXPORT TYPE_FIELD real_visit_svalues (const struct svalue *s, size_t num,
 				     int ref_type)
 {
   for (; num; num--, s++)
     visit_svalue (s, ref_type);
+  return 0;
 }
 
 /* Memory counting
