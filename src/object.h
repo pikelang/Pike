@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.h,v 1.98 2008/06/03 14:52:47 mast Exp $
+|| $Id: object.h,v 1.99 2010/04/19 13:50:11 mast Exp $
 */
 
 #ifndef OBJECT_H
@@ -129,7 +129,7 @@ PMOD_EXPORT int object_equal_p(struct object *a, struct object *b, struct proces
 PMOD_EXPORT struct array *object_indices(struct object *o, int inherit_level);
 PMOD_EXPORT struct array *object_values(struct object *o, int inherit_level);
 PMOD_EXPORT void visit_object (struct object *o, int action);
-PMOD_EXPORT void visit_function (struct svalue *s, int ref_type);
+PMOD_EXPORT void visit_function (const struct svalue *s, int ref_type);
 PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o);
 PMOD_EXPORT void real_gc_cycle_check_object(struct object *o, int weak);
 unsigned gc_touch_all_objects(void);

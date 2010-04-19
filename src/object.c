@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.307 2010/04/11 17:26:23 mast Exp $
+|| $Id: object.c,v 1.308 2010/04/19 13:50:10 mast Exp $
 */
 
 #include "global.h"
@@ -2020,7 +2020,7 @@ PMOD_EXPORT void visit_object (struct object *o, int action)
   }
 }
 
-PMOD_EXPORT void visit_function (struct svalue *s, int ref_type)
+PMOD_EXPORT void visit_function (const struct svalue *s, int ref_type)
 {
 #ifdef PIKE_DEBUG
   if (s->type != T_FUNCTION)

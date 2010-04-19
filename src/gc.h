@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.h,v 1.140 2010/04/16 00:15:17 mast Exp $
+|| $Id: gc.h,v 1.141 2010/04/19 13:50:10 mast Exp $
 */
 
 #ifndef GC_H
@@ -672,7 +672,7 @@ static INLINE void real_visit_short_svalue (const union anything *u, TYPE_T t,
   (real_visit_short_svalue (debug_malloc_pass ((U)->ptr), (T), (REF_TYPE)))
 
 #ifdef DEBUG_MALLOC
-static INLINE void dmalloc_visit_svalue (struct svalue *s,
+static INLINE void dmalloc_visit_svalue (const struct svalue *s,
 					 int ref_type, char *l)
 {
   int t = s->type;
@@ -686,7 +686,7 @@ static INLINE void dmalloc_visit_svalue (struct svalue *s,
 #define visit_svalue(S, REF_TYPE) \
   dmalloc_visit_svalue ((S), (REF_TYPE), DMALLOC_LOCATION())
 #else
-static INLINE void visit_svalue (struct svalue *s, int ref_type)
+static INLINE void visit_svalue (const struct svalue *s, int ref_type)
 {
   int t = s->type;
   check_svalue (s);
