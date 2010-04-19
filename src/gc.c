@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.345 2010/04/19 13:51:48 mast Exp $
+|| $Id: gc.c,v 1.346 2010/04/19 14:01:36 mast Exp $
 */
 
 #include "global.h"
@@ -1703,6 +1703,7 @@ static void gc_watched_found (struct marker *m, const char *found_in)
 
 #ifndef GC_MARK_DEBUG
 struct pike_queue gc_mark_queue;
+#define CHECK_MARK_QUEUE_EMPTY() assert (!gc_mark_queue.first)
 #else  /* GC_MARK_DEBUG */
 
 /* Cut'n'paste from queue.c. */
@@ -1726,6 +1727,8 @@ struct gc_queue_block
 };
 
 struct gc_queue_block *gc_mark_first = NULL, *gc_mark_last = NULL;
+
+#define CHECK_MARK_QUEUE_EMPTY() assert (!gc_mark_first)
 
 void gc_mark_run_queue()
 {
@@ -1763,6 +1766,8 @@ void gc_mark_enqueue (queue_call call, void *data)
   struct gc_queue_block *b;
 
 #ifdef PIKE_DEBUG
+  if (Pike_in_gc != GC_PASS_MARK && Pike_in_gc != GC_PASS_ZAP_WEAK)
+    gc_fatal (data, 0, "gc_mark_enqueue() called in invalid gc pass.\n");
   if (gc_found_in_type == PIKE_T_UNKNOWN || !gc_found_in)
     gc_fatal (data, 0, "gc_mark_enqueue() called outside GC_ENTER.\n");
   {
@@ -3557,13 +3562,7 @@ size_t do_gc(void *ignored, int explicit_call)
      * follow the same reference several times, e.g. with shared mapping
      * data blocks. */
     ACCEPT_UNFINISHED_TYPE_FIELDS {
-      /* The queue should be empty here. */
-#ifdef GC_MARK_DEBUG
-      assert (!gc_mark_first);
-#else
-      assert (!gc_mark_queue.first);
-#endif
-
+      CHECK_MARK_QUEUE_EMPTY();
       gc_mark_all_arrays();
       gc_mark_run_queue();
       gc_mark_all_multisets();
@@ -3577,6 +3576,7 @@ size_t do_gc(void *ignored, int explicit_call)
 #ifdef PIKE_DEBUG
       if(gc_debug) gc_mark_all_strings();
 #endif /* PIKE_DEBUG */
+      CHECK_MARK_QUEUE_EMPTY();
     } END_ACCEPT_UNFINISHED_TYPE_FIELDS;
 
     GC_VERBOSE_DO(fprintf(stderr,
@@ -3635,6 +3635,7 @@ size_t do_gc(void *ignored, int explicit_call)
     obj_count = delayed_freed;
 #endif
     Pike_in_gc = GC_PASS_ZAP_WEAK;
+    CHECK_MARK_QUEUE_EMPTY();
     /* Zap weak references from external to internal things. That
      * occurs when something has both external weak refs and nonweak
      * cyclic refs from internal things. */
@@ -3643,6 +3644,7 @@ size_t do_gc(void *ignored, int explicit_call)
     gc_zap_ext_weak_refs_in_multisets();
     gc_zap_ext_weak_refs_in_objects();
     gc_zap_ext_weak_refs_in_programs();
+    CHECK_MARK_QUEUE_EMPTY();
     GC_VERBOSE_DO(
       fprintf(stderr,
 	      "| zap weak: freed %"PRINTPTRDIFFT"d external weak refs, "
