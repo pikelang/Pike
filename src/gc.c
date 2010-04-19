@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.344 2010/04/16 00:15:17 mast Exp $
+|| $Id: gc.c,v 1.345 2010/04/19 13:51:48 mast Exp $
 */
 
 #include "global.h"
@@ -3557,7 +3557,13 @@ size_t do_gc(void *ignored, int explicit_call)
      * follow the same reference several times, e.g. with shared mapping
      * data blocks. */
     ACCEPT_UNFINISHED_TYPE_FIELDS {
-      assert (!gc_mark_queue.first); /* Should be empty. */
+      /* The queue should be empty here. */
+#ifdef GC_MARK_DEBUG
+      assert (!gc_mark_first);
+#else
+      assert (!gc_mark_queue.first);
+#endif
+
       gc_mark_all_arrays();
       gc_mark_run_queue();
       gc_mark_all_multisets();
