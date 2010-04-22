@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.872 2008/02/09 13:14:34 marcus Exp $")
+AC_REVISION("$Id: configure.in,v 1.873 2010/04/22 15:34:09 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -7893,6 +7893,7 @@ touch confdefs.h 2>/dev/null
 OLD_CPPFLAGS="$CPPFLAGS"
 CPPFLAGS="-I. -I$srcdir $CPPFLAGS"
 AC_TRY_RUN([
+#include <stdio.h>
 #include "global.h"
 #include "svalue.h"
 
