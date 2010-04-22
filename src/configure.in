@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.703 2008/10/30 15:15:29 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.704 2010/04/22 15:31:25 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -6567,6 +6567,7 @@ EOF
 touch confdefs.h 2>/dev/null
 
 AC_TRY_RUN([
+#include <stdio.h>
 #include "global.h"
 #include "svalue.h"
 
