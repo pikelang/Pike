@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.240 2010/02/23 10:47:22 grubba Exp $
+ * $Id: backend.cmod,v 1.241 2010/04/27 08:25:41 grubba Exp $
  *
  * Backend object.
  */
@@ -3318,6 +3318,7 @@ PIKECLASS PollDeviceBackend
 		    "but hasn't been handled.\n", THR_NO, me->id,
 		    (long)PDB_GET_FD(poll_fds[i]),
 		    (long)PDB_GET_EVENTS(poll_fds[i]));
+	    pdb_describe_event(me, poll_fds[i]);
 	  }
 #endif /* PIKE_DEBUG */
 	}
@@ -3889,6 +3890,7 @@ PIKECLASS PollBackend
 		    "but hasn't been handled.\n", THR_NO, me->id,
 		    (long)PB_GET_FD(pb->active_set.poll_fds[i]),
 		    (long)PB_GET_EVENTS(pb->active_set.poll_fds[i]));
+	    /* pdb_describe_event(me, pb->active_set.poll_fds[i]); */
 	  }
 #endif /* PIKE_DEBUG */
 	}
