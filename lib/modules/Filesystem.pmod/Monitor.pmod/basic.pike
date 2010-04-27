@@ -1,7 +1,7 @@
 //
 // Basic filesystem monitor.
 //
-// $Id: basic.pike,v 1.37 2010/04/27 14:58:11 grubba Exp $
+// $Id: basic.pike,v 1.38 2010/04/27 15:00:54 grubba Exp $
 //
 // 2009-07-09 Henrik Grubbström
 //
@@ -301,6 +301,27 @@ protected class Monitor(string path,
 		   path, flags, ctime(next_poll) - "\n", st);
   }
 
+  //! Bump the monitor to an earlier scan time.
+  //!
+  //! @param seconds
+  //!   Number of seconds to bump. Defaults to @expr{30@}.
+  void bump(int|void flags, int|void seconds)
+  {
+    next_poll -= seconds || 30;
+    monitor_queue->adjust(this);
+
+    if ((flags & MF_RECURSE) && st->isdir && files) {
+      // Bump the files in the directory as well.
+      foreach(files, string file) {
+	file = canonic_path(Stdio.append_path(path, file));
+	Monitor m2 = monitors[file];
+	if (m2) {
+	  m2->bump(flags, seconds);
+	}
+      }
+    }
+  }
+
   //! Calculate and set a suitable time for the next poll of this monitor.
   //!
   //! @param st
@@ -408,12 +429,12 @@ protected class Monitor(string path,
 	if (err) throw(err);
       }
       if (flags & MF_RECURSE) {
-	// Check the remaining files in the directory.
+	// Check the remaining files in the directory soon.
 	foreach(((files - new_files) - deleted_files), string file) {
 	  file = canonic_path(Stdio.append_path(path, file));
 	  Monitor m2 = monitors[file];
 	  if (m2) {
-	    m2->check(flags);
+	    m2->bump(flags);
 	  }
 	}
       }
@@ -571,12 +592,12 @@ protected class Monitor(string path,
       if (status_change(old_st, st, orig_flags, flags)) return 1;
     }
     if ((flags & MF_RECURSE) && (st->isdir)) {
-      // Check the files in the directory.
+      // Check the files in the directory soon.
       foreach(files, string file) {
 	file = canonic_path(Stdio.append_path(path, file));
 	Monitor m2 = monitors[file];
 	if (m2) {
-	  m2->check(flags);
+	  m2->bump(flags);
 	}
       }
     }
