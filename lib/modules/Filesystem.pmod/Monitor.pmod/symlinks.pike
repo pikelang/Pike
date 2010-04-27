@@ -1,7 +1,7 @@
 //
 // Filesystem monitor with support for symbolic links.
 //
-// $Id: symlinks.pike,v 1.8 2010/03/24 15:53:17 grubba Exp $
+// $Id: symlinks.pike,v 1.9 2010/04/27 14:58:11 grubba Exp $
 //
 // 2010-01-25 Henrik Grubbström
 //
@@ -450,13 +450,13 @@ protected class Monitor
 
   //! Called when the status has changed for an existing file.
   protected int(0..1) status_change(Stdio.Stat old_st, Stdio.Stat st,
-				    int orig_flags)
+				    int orig_flags, int flags)
   {
     check_symlink(path, st);
     if (st && st->islnk) {
       return 1;
     }
-    return ::status_change(old_st, st, orig_flags);
+    return ::status_change(old_st, st, orig_flags, flags);
   }
 
 }

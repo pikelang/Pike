@@ -1,7 +1,7 @@
 //
 // Basic filesystem monitor.
 //
-// $Id: basic.pike,v 1.36 2010/02/03 15:24:41 grubba Exp $
+// $Id: basic.pike,v 1.37 2010/04/27 14:58:11 grubba Exp $
 //
 // 2009-07-09 Henrik Grubbström
 //
@@ -357,7 +357,7 @@ protected class Monitor(string path,
 
   //! Called when the status has changed for an existing file.
   protected int(0..1) status_change(Stdio.Stat old_st, Stdio.Stat st,
-				    int orig_flags)
+				    int orig_flags, int flags)
   {
     if (st->isdir) {
       array(string) files = get_dir(path) || ({});
@@ -568,7 +568,7 @@ protected class Monitor(string path,
     if ((st->mtime != old_st->mtime) || (st->ctime != old_st->ctime) ||
 	(st->size != old_st->size)) {
       last_change = time(1);
-      if (status_change(old_st, st, orig_flags)) return 1;
+      if (status_change(old_st, st, orig_flags, flags)) return 1;
     }
     if ((flags & MF_RECURSE) && (st->isdir)) {
       // Check the files in the directory.
