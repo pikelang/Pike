@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 - 2009, Roxen IS. All rights reserved.
 //
-// $Id: Utils.pmod,v 1.48 2009/05/25 12:41:22 mast Exp $
+// $Id: Utils.pmod,v 1.49 2010/04/28 12:09:39 noring Exp $
 
 #if !constant(report_error)
 #define report_error werror
@@ -669,6 +669,9 @@ class Logger {
   private int profile;
   private int stderr_logging;
 
+  private int last_log_purge_time;
+  private constant log_purge_freq = 8*60*60; // Purge log every 8 h or so.
+
   private Sql.Sql get_db() {
     Sql.Sql db;
 #if constant(DBManager)
@@ -722,11 +725,18 @@ class Logger {
   {
     Sql.Sql db = get_db();
     if(!db) return;
+    int t1 = time();
+    if (t1 < last_log_purge_time + log_purge_freq) return;
+    last_log_purge_time = t1;
     if(days)
       db->query("DELETE FROM eventlog "
 		" WHERE at <= NOW() - INTERVAL "+days+" DAY");
     else
-      db->query("DELETE FROM eventlog");
+      db->query("DELETE FROM eventlog"); // FIXME: TRUNCATE TABLE?
+    db->query("OPTIMIZE TABLE eventlog");
+    int t2 = time();
+    if (t2 - t1 > 10) // More than 10 s is somewhat slow, report warning.
+      report_warning("Search log purge took %d s.\n", t2-t1);
   }
   
     //!
