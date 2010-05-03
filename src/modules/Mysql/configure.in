@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.61 2008/07/18 18:20:15 mast Exp $
+# $Id: configure.in,v 1.62 2010/05/03 11:26:21 grubba Exp $
 #
 # Configure script for the mysql-module
 #
@@ -324,7 +324,7 @@ int main(int argc, char *argv[])
 {
 #ifdef MYSQL_VERSION_ID
   unsigned long ver = mysql_get_client_version();
-  if(ver != MYSQL_VERSION_ID) {
+  if((ver/100) != (MYSQL_VERSION_ID/100)) {
     fprintf(stderr, "Version mismatch: compile=%lu, run=%lu\n",
             (unsigned long)MYSQL_VERSION_ID, ver);
     exit(1);
@@ -335,7 +335,10 @@ int main(int argc, char *argv[])
 	AC_MSG_WARN([Header version does not match library version, diabling module])
 	PIKE_FEATURE(Mysql,[no (header/library mismatch)])
 	pike_cv_mysql=no
-      ],[])
+      ],[
+	# Cross-compiling.
+	:
+      ])
     ],[])
   fi
 
