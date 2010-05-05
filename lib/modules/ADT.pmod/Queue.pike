@@ -1,4 +1,4 @@
-// $Id: Queue.pike,v 1.9 2004/01/11 00:38:16 nilsson Exp $
+// $Id: Queue.pike,v 1.10 2010/05/05 08:23:05 grubba Exp $
 
 //! A simple FIFO queue.
 
@@ -15,6 +15,16 @@ void create(mixed ...args)
   l = args + allocate(QUEUE_SIZE);
   head = sizeof(args);
   tail = 0;
+}
+
+static int _sizeof()
+{
+  return head - tail;
+}
+
+static array _values()
+{
+  return l[tail..head-1];
 }
 
 void write(mixed item)
