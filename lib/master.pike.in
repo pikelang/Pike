@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.471 2010/03/03 13:00:31 mast Exp $
+// $Id: master.pike.in,v 1.472 2010/05/06 14:13:58 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -1478,7 +1478,7 @@ protected void compile_cb_rethrow (object|array err)
   array bt;
   if (array|object e = catch (bt = get_backtrace (err)))
     handle_error (e);
-  throw (CompileCallbackError (describe_error (err), bt));
+  throw (CompileCallbackError (call_describe_error (err), bt));
 }
 
 protected void call_compile_warning (object handler, string file,
@@ -1635,6 +1635,18 @@ object show_doc(program|object|function obj)
   }
 }
 
+// Make it possible to customize the backtrace formatting.
+protected string call_describe_backtrace(array(mixed) trace,
+					 void|int linewidth)
+{
+  return (all_constants()["describe_backtrace"]||describe_backtrace)
+    (trace, linewidth);
+}
+
+protected string call_describe_error(mixed /* object|array */ err)
+{
+  return (all_constants()["describe_error"]||describe_error)(err);
+}
 
 protected program low_findprog(string pname,
 			       string ext,
@@ -1740,7 +1752,8 @@ protected program low_findprog(string pname,
 	    resolv_debug ("low_findprog %s: dump decode failed\n", fname);
 	    programs[fname] = no_value;
 	    call_compile_warning (handler, oname,
-				  "Decode failed: " + describe_error(err));
+				  "Decode failed: " +
+				  call_describe_error(err));
 	    // handle_error(err);
 	  } else if (out_of_date_warning) {
 	    call_compile_warning (handler, oname,
@@ -1781,7 +1794,7 @@ protected program low_findprog(string pname,
     case ".so":
       if (fname == "") {
 	werror( "low_findprog(%O, %O) => load_module(\"\")\n"
-		"%s\n", pname, ext, describe_backtrace(backtrace()) );
+		"%s\n", pname, ext, call_describe_backtrace(backtrace()) );
       }
 
       if (array|object err = catch (ret = load_module(fakeroot(fname)))) {
@@ -1961,7 +1974,7 @@ void handle_error(array|object trace)
   // NB: Use predef::trace() to modify trace level here.
   // predef::trace(2);
   if(mixed x=catch {
-    werror(describe_backtrace(trace));
+    werror(call_describe_backtrace(trace));
   }) {
     // One reason for this might be too little stack space, which
     // easily can occur for "out of stack" errors. It should help to
@@ -2298,7 +2311,7 @@ class dirnode
 		     dirname, !module ? "doesn't exist" : "exists");
 	return !module;
       }) {
-	//werror ("findmodule error: " + describe_backtrace (err));
+	//werror ("findmodule error: " + call_describe_backtrace (err));
 
 	// findmodule() failed. This can occur due to circularities
 	// between encode_value()'ed programs.
@@ -2377,7 +2390,7 @@ class dirnode
 	    }
 	  }) {
 	  resolv_debug("dirnode(%O)->ind(%O) ==> Cast to object failed: %s\n",
-		       dirname, index, describe_backtrace(ret));
+		       dirname, index, call_describe_backtrace(ret));
 	}
       } else {
 	resolv_debug("dirnode(%O)->ind(%O) casting (program)%O\n",
@@ -2487,7 +2500,8 @@ class dirnode
     if (err = catch { return `[](index); }) {
       call_compile_warning (compilation_handler,
 			    dirname+"."+fname,
-			    "Compilation failed: " + describe_error(err));
+			    "Compilation failed: " +
+			    call_describe_error(err));
     }
     return UNDEFINED;
   }
@@ -2496,9 +2510,9 @@ class dirnode
   void fill_cache()
   {
 #if 0
-    werror(describe_backtrace(({ sprintf("Filling cache in dirnode %O\n",
-					 dirname),
-				 backtrace() })));
+    werror(call_describe_backtrace(({ sprintf("Filling cache in dirnode %O\n",
+					      dirname),
+				      backtrace() })));
 #endif
     if (_cache_full) {
       return;
@@ -2678,8 +2692,8 @@ class joinnode
   void fill_cache()
   {
 #if 0
-    werror(describe_backtrace(({ "Filling cache in joinnode\n",
-				 backtrace() })));
+    werror(call_describe_backtrace(({ "Filling cache in joinnode\n",
+				      backtrace() })));
 #endif
     if (_cache_full) {
       return;
@@ -3644,7 +3658,7 @@ void _main(array(string) orig_argv)
 	  if (compile_err->is_cpp_or_compilation_error) {
 	    // Don't clutter the output with the backtrace for
 	    // compilation errors.
-	    exit (20, describe_error (compile_err));
+	    exit (20, call_describe_error (compile_err));
 	  }
 	  else throw (compile_err);
 	}
@@ -3759,7 +3773,7 @@ void _main(array(string) orig_argv)
     if (err)
       exit(1, "Pike: Failed to load tool %s:\n"
            "%s\n", argv[0],
-           stringp(err[0])?err[0]:describe_backtrace(err));
+           stringp(err[0])?err[0]:call_describe_backtrace(err));
 
     argv[0] = search(programs, prog) || argv[0];
   } else {
@@ -3787,7 +3801,7 @@ void _main(array(string) orig_argv)
 	exit(1, "Pike: Failed to compile script.\n");
       else
 	exit(1, "Pike: Failed to compile script:\n"
-	     "%s", describe_backtrace(err));
+	     "%s", call_describe_backtrace(err));
     }
 
     // Don't list the program with its real path in the programs
@@ -4571,7 +4585,7 @@ string describe_backtrace(mixed trace, void|int linewidth)
 
       })
       return sprintf ("<Failed to index backtrace object %O: %s>\n",
-		      err_obj, trim_all_whites (describe_error (err)));
+		      err_obj, trim_all_whites (call_describe_error (err)));
   }
 
   else if (arrayp(trace)) {
@@ -4592,7 +4606,7 @@ string describe_backtrace(mixed trace, void|int linewidth)
     _gdb_breakpoint();
 #endif
     return sprintf ("<Invalid backtrace/error container: %O>\n"
-		    "%s\n", trace, describe_backtrace(backtrace()));
+		    "%s\n", trace, call_describe_backtrace(backtrace()));
   }
 
   {
@@ -4791,7 +4805,7 @@ string describe_error (mixed /* object|array */ err)
 
       })
       return sprintf ("<Failed to index error object %O: %s>\n",
-		      err_obj, trim_all_whites (describe_error (err)));
+		      err_obj, trim_all_whites (call_describe_error (err)));
   }
 
   else if (arrayp(err) && sizeof([array]err)==2 &&
