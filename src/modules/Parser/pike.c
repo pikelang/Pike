@@ -69,13 +69,13 @@ static void do_free_arrayptr( struct array **x )
   free_array( *x );
 }			   
 
-/*! @decl array(array(string)|string) tokenize(string code)
- *!
- *!   Tokenize a string of Pike tokens.
- *!
- *! @returns
- *!   Returns an array with Pike-level tokens and the remainder (a
- *!   partial token), if any.
+/* @decl array(array(string)|string) tokenize(string code)
+ *
+ *   Tokenize a string of Pike tokens.
+ *
+ * @returns
+ *   Returns an array with Pike-level tokens and the remainder (a
+ *   partial token), if any.
  */
 static void f_tokenize( INT32 args )
 {
