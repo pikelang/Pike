@@ -78,6 +78,9 @@ o Fixed several issues related to lables on the X and Y axises
   and the calculation of xmaxvalue for the bars/line/linear case 
   in Graphics.Graph.
 
+o Fixed encoding/decoding bug in "pike -x httpserver" that prevented
+  files with space in the name for being accessable.
+
 
 Building and installing
 -----------------------
