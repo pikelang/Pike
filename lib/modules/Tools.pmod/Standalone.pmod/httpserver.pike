@@ -59,13 +59,13 @@ string dirlist( string dir )
         if( t == "application/octet-stream" )
             t = "<span style='color:darkgrey'>unknown</span>";
 
-	fn = Parser.encode_html_entities(fn);
         res += 
             sprintf("<tr class='%s'><td><a href='%s%s'>%s%[2]s</a></td>"
 		    "<td align='right'>%s</td>"
 		    "<td align='right'>%s</td></tr>\n", 
                     (i&1?"odd":"even"),
-                    fn, s->isdir?"/":"", fn, t,
+                    Protocols.HTTP.uri_encode(fn), s->isdir?"/":"", 
+		    Parser.encode_html_entities(fn), t,
                     s->isdir?"":String.int2size(s->size));
     }
     return res+"</table></body></html>\n";
@@ -82,6 +82,7 @@ string file_not_found(string fname)
 void handle_request(Protocols.HTTP.Server.Request request)
 {
     string file = "."+combine_path("/",request->not_query);
+    file = Protocols.HTTP.uri_decode(file);
     Stdio.Stat s = file_stat( file );
     if( !s )
 	request->response_and_finish( (["data":
