@@ -19,6 +19,23 @@
 
 #include "parser.h"
 
+/*! @module Parser
+ */
+
+/*! @module _parser
+ */
+
+/*! @module _RCS
+ *!
+ *! Low-level helpers for @[Parser.RCS].
+ *!
+ *! @note
+ *!   You probably want to use @[Parser.RCS] instead of this module.
+ *!
+ *! @seealso
+ *!   @[Parser.RCS]
+ */
+
 static void push_token( const char * from, int start, int end )
 {
     struct array *a = Pike_sp[-1].u.array;
@@ -34,6 +51,17 @@ static void push_token( const char * from, int start, int end )
     a->size++;
 }
 
+/*! @decl array(array(string)) tokenize(string code)
+ *!
+ *!   Tokenize a string of RCS tokens.
+ *!
+ *! @note
+ *!   Don't use this function directly.
+ *!   Use @[Parser.RCS.tokenize()] instead.
+ *!
+ *! @seealso
+ *!   @[Parser.RCS.tokenize()]
+ */
 static void tokenize( struct pike_string *s )
 {
     int in_string = 0;
@@ -87,6 +115,15 @@ static void f_tokenize( INT32 args )
     stack_swap();
     pop_stack();
 }
+
+/*! @endmodule
+ */
+
+/*! @endmodule
+ */
+
+/*! @endmodule
+ */
 
 void init_parser_rcs(void)
 {

@@ -20,6 +20,23 @@
 
 #include "parser.h"
 
+/*! @module Parser
+ */
+
+/*! @module _parser
+ */
+
+/*! @module _C
+ *!
+ *! Low-level helpers for @[Parser.C].
+ *!
+ *! @note
+ *!   You probably want to use @[Parser.C] instead of this module.
+ *!
+ *! @seealso
+ *!   @[Parser.C], @[_Pike].
+ */
+
 static int m_isidchar( unsigned int x )
 {
   if( (x >= 'a' && x <= 'z') || (x>='A' && x<='Z') || x>128 || x == '_')
@@ -89,13 +106,17 @@ static void do_free_arrayptr( struct array **x )
   free_array( *x );
 }			   
 
-/* @decl array(array(string)|string) tokenize(string code)
- *
- *   Tokenize a string of C tokens.
- *
- * @returns
- *   Returns an array with C-level tokens and the remainder (a
- *   partial token), if any.
+/*! @decl array(array(string)|string) tokenize(string code)
+ *!
+ *!   Tokenize a string of C tokens.
+ *!
+ *! @note
+ *!   Don't use this function directly.
+ *!   Use @[Parser.C.tokenize()] instead.
+ *!
+ *! @returns
+ *!   Returns an array with an array with C-level tokens, and
+ *!   the remainder (a partial token), if any.
  */
 static void f_tokenize( INT32 args )
 {
@@ -140,6 +161,14 @@ static void f_tokenize( INT32 args )
   stack_pop_n_elems_keep_top(args);
 }
 
+/*! @endmodule
+ */
+
+/*! @endmodule
+ */
+
+/*! @endmodule
+ */
 
 void init_parser_c()
 {

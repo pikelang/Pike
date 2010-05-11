@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: parser.c,v 1.20 2004/10/07 22:49:58 nilsson Exp $
+|| $Id: parser.c,v 1.21 2010/05/11 16:10:48 grubba Exp $
 */
 
 #include "global.h"
@@ -100,6 +100,22 @@ static struct
 #define PARSER_CHECK_STACK(X)
 #endif /* PIKE_DEBUG */
 
+/*! @module Parser
+ */
+
+/*! @module _parser
+ *!
+ *! Low-level helpers for parsers.
+ *!
+ *! @note
+ *!   You probably don't want to use the modules contained in
+ *!   this module directly, but instead use the other @[Parser]
+ *!   modules. See instead the modules below.
+ *!
+ *! @seealso
+ *!   @[Parser], @[Parser.C], @[Parser.Pike], @[Parser.RCS],
+ *!   @[Parser.HTML], @[Parser.XML]
+ */
 
 static void parser_magic_index(INT32 args)
 {
@@ -168,6 +184,12 @@ static void parser_magic_index(INT32 args)
    stack_swap();
    pop_stack();
 }
+
+/*! @endmodule
+ */
+
+/*! @endmodule
+ */
 
 PIKE_MODULE_INIT
 {

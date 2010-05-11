@@ -24,6 +24,23 @@
 
 #include "parser.h"
 
+/*! @module Parser
+ */
+
+/*! @module _parser
+ */
+
+/*! @module _Pike
+ *!
+ *! Low-level helpers for @[Parser.Pike].
+ *!
+ *! @note
+ *!   You probably want to use @[Parser.Pike] instead of this module.
+ *!
+ *! @seealso
+ *!   @[Parser.Pike], @[_C].
+ */
+
 INLINE static int m_isidchar( unsigned int x )
 {
   if( (x >= 'a' && x <= 'z') || (x>='A' && x<='Z') || x>128 || x == '_')
@@ -69,13 +86,13 @@ static void do_free_arrayptr( struct array **x )
   free_array( *x );
 }			   
 
-/* @decl array(array(string)|string) tokenize(string code)
- *
- *   Tokenize a string of Pike tokens.
- *
- * @returns
- *   Returns an array with Pike-level tokens and the remainder (a
- *   partial token), if any.
+/*! @decl array(array(string)|string) tokenize(string code)
+ *!
+ *!   Tokenize a string of Pike tokens.
+ *!
+ *! @returns
+ *!   Returns an array with Pike-level tokens and the remainder (a
+ *!   partial token), if any.
  */
 static void f_tokenize( INT32 args )
 {
@@ -131,6 +148,14 @@ static void f_tokenize( INT32 args )
   f_aggregate( 2 );
 }
 
+/*! @endmodule
+ */
+
+/*! @endmodule
+ */
+
+/*! @endmodule
+ */
 
 void init_parser_pike()
 {
