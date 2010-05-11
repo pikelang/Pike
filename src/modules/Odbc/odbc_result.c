@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc_result.c,v 1.65 2010/05/11 14:30:46 grubba Exp $
+|| $Id: odbc_result.c,v 1.66 2010/05/11 14:46:27 grubba Exp $
 */
 
 /*
@@ -238,6 +238,9 @@ static void odbc_fix_fields(void)
     odbc_field_sizes[i] = precision;
     switch(sql_type) {
     case SQL_CHAR:
+#ifdef SQL_WCHAR
+    case SQL_WCHAR:
+#endif
       push_text("char");
       break;
     case SQL_NUMERIC:
@@ -269,6 +272,9 @@ static void odbc_fix_fields(void)
       odbc_field_types[i] = SQL_C_CHAR;
       break;
     case SQL_VARCHAR:
+#ifdef SQL_WVARCHAR
+    case SQL_WVARCHAR:
+#endif
       push_text("var string");
       odbc_field_sizes[i] = 0;	/* Variable length */
       break;
@@ -279,6 +285,9 @@ static void odbc_fix_fields(void)
       push_text("time");
       break;
     case SQL_LONGVARCHAR:
+#ifdef SQL_WLONGVARCHAR
+    case SQL_WLONGVARCHAR:
+#endif
       push_text("var string");
       odbc_field_sizes[i] = 0;	/* Variable length */
       break;
