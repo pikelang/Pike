@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc.c,v 1.51 2008/11/15 13:06:00 grubba Exp $
+|| $Id: odbc.c,v 1.52 2010/05/11 16:28:02 grubba Exp $
 */
 
 /*
@@ -184,6 +184,31 @@ static void clean_last_error(void)
 
 /*
  * Glue functions
+ */
+
+/*! @module Odbc
+ *!
+ *! Low-level interface to Open DataBase Connectivity SQL-drivers.
+ *!
+ *! @note
+ *!   You typically don't want to access this module directly, but
+ *!   instead use @[Sql.Sql()] with an @expr{"odbc://"@} or
+ *!   @expr{"dsn://"@} URL.
+ *!
+ *! @seealso
+ *!   @[Sql.Sql()]
+ */
+
+/*! @class odbc
+ *!
+ *! Low-level connection to an ODBC or DSN database.
+ *!
+ *! @note
+ *!   You typically don't want to access this module directly, but
+ *!   instead use the @[Sql.odbc] or @[Sql.dsn] created by @[Sql.Sql()].
+ *!
+ *! @seealso
+ *!   @[Sql.odbc], @[Sql.dsn]
  */
 
 static void init_odbc_struct(struct object *o)
@@ -547,6 +572,13 @@ static void f_reload(INT32 args)
   /**************************************************/
 }
 
+/*! @endclass
+ */
+
+/*! @decl array(string) list_dbs()
+ *!
+ *! List the configured ODBC database sources.
+ */
 static void f_list_dbs(INT32 args)
 {
 #ifdef SQL_WCHAR
@@ -632,6 +664,9 @@ static void f_connect_lock (INT32 args)
 #endif
 
 #endif /* HAVE_ODBC */
+
+/*! @endmodule
+ */
 
 /*
  * Module linkage
