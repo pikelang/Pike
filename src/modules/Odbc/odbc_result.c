@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc_result.c,v 1.64 2009/05/11 11:36:13 grubba Exp $
+|| $Id: odbc_result.c,v 1.65 2010/05/11 14:30:46 grubba Exp $
 */
 
 /*
@@ -755,6 +755,14 @@ static void f_fetch_row(INT32 args)
 	    if (!len) {
 	      free_string(s);
 	      push_empty_string();
+	      break;
+	    } else if (len == SQL_NULL_DATA) {
+	      free_string(s);
+	      if (num_strings > 1) {
+		num_strings--;
+	      } else {
+		push_undefined();
+	      }
 	      break;
 #ifdef SQL_NO_TOTAL
 	    } else if (len == SQL_NO_TOTAL) {
