@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 - 2009, Roxen IS. All rights reserved.
 //
-// $Id: Utils.pmod,v 1.50 2010/04/28 12:10:35 noring Exp $
+// $Id: Utils.pmod,v 1.51 2010/05/18 12:49:52 mast Exp $
 
 #if !constant(report_error)
 #define report_error werror
@@ -330,6 +330,7 @@ class ProfileCache (string db_name) {
 		  "aggregate_multiset":aggregate_multiset,
 		  "aggregate":aggregate,
 		  "allocate":allocate,
+		  "`+": `+,
 		  "this_program":0 ]);
       }
 
