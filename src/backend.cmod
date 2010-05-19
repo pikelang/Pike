@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.241 2010/04/27 08:25:41 grubba Exp $
+ * $Id: backend.cmod,v 1.242 2010/05/19 14:00:16 grubba Exp $
  *
  * Backend object.
  */
@@ -33,6 +33,8 @@
 #include "interpret.h"
 #include "stuff.h"
 #include "bignum.h"
+#include "builtin_functions.h"
+#include "mapping.h"
 #include "svalue.h"
 #include "gc.h"
 
@@ -760,20 +762,44 @@ PIKECLASS Backend
      return args;
    }
 
+  static void backend_count_memory_in_call_outs(struct Backend_struct *me)
+  {
+    push_text("num_call_outs");
+    push_int(me->num_pending_calls);
 
- /* FIXME add a global function for this? */
- static void backend_count_memory_in_call_outs(struct Backend_struct *me,
-				       struct callback *foo,
-				       void *bar,
-				       void *gazonk)
-   {
-     push_text("num_call_outs");
-     push_int(me->num_pending_calls);
-     push_text("call_out_bytes");
-     
-     push_int64(me->call_buffer_size * sizeof(call_out **)+
-		me->num_pending_calls * sizeof(call_out));
-   }
+    push_text("call_out_bytes");     
+    push_int64(me->call_buffer_size * sizeof(call_out **)+
+	       me->num_pending_calls * sizeof(call_out));
+
+  }
+
+  static void count_memory_in_call_outs(struct callback *foo,
+					void *bar,
+					void *gazonk)
+  {
+    backend_count_memory_in_call_outs(default_backend);
+  }
+
+  /*! @decl mapping(string:int) get_stats()
+   *!
+   *! Get some statistics about the backend.
+   *!
+   *! @returns
+   *!   Returns a mapping with the follwoing content:
+   *!   @mapping
+   *!     @member int "num_call_outs"
+   *!       The number of active call-outs.
+   *!     @member int "call_out_bytes"
+   *!       The amount of memory used by the call-outs.
+   *!   @endmapping
+   */
+  PIKEFUN mapping(string:int) get_stats()
+  {
+    struct svalue *save_sp = Pike_sp;
+    backend_count_memory_in_call_outs(THIS);
+    f_aggregate_mapping(Pike_sp - save_sp);
+    stack_pop_n_elems_keep_top(args);
+  }
 
    /* FIXME */
 #if 0
@@ -4934,6 +4960,7 @@ PMOD_EXPORT void debug_check_fd_not_in_use (int fd)
 
 #endif /* PIKE_DEBUG */
 
+static struct callback *mem_callback;
 
 void init_backend(void)
 {
@@ -4966,6 +4993,9 @@ void init_backend(void)
 #endif
     default_backend = (struct Backend_struct *)
       get_storage(default_backend_obj, Backend_program);
+
+    mem_callback=add_memory_usage_callback(count_memory_in_call_outs,0,0);
+    
     add_object_constant("__backend", default_backend_obj, 0);
     add_program_constant("DefaultBackendClass", default_backend_obj->prog, 0);
   }
@@ -4974,6 +5004,7 @@ void init_backend(void)
 #ifdef DO_PIKE_CLEANUP
 void exit_backend()
 {
+  if (mem_callback) remove_callback(mem_callback);
   free_object(default_backend_obj);
   default_backend = 0;
   EXIT;
