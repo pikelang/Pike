@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.699 2010/03/30 11:54:56 peter Exp $
+|| $Id: builtin_functions.c,v 1.700 2010/05/19 09:32:22 grubba Exp $
 */
 
 #include "global.h"
@@ -341,6 +341,10 @@ static void f_hash_7_0( INT32 args )
  *!   The hash algorithm was also changed in Pike 7.1. If you want a hash
  *!   that is compatible with Pike 7.0 and earlier, use @[7.0::hash()].
  *!
+ *! @note
+ *!   This hash function differs from the one provided by @[hash_value()],
+ *!   in that @[hash_value()] returns a process specific value.
+ *!
  *! @seealso
  *!   @[7.0::hash()], @[7.4::hash()], @[hash_value]
  */
@@ -397,13 +401,13 @@ PMOD_EXPORT void f_hash(INT32 args)
  *! for the hash value).
  *!
  *! If the value is an object with an @[lfun::__hash], that function
- *! is called and its result is returned.
+ *! is called and its result returned.
  *!
  *! @note
- *! This is the hashing method used by mappings.
+ *!   This is the hashing method used by mappings.
  *!
  *! @seealso
- *! @[hash]
+ *!   @[hash()], @[lfun::__hash()]
  */
 void f_hash_value(INT32 args)
 {

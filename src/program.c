@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.776 2010/04/10 14:07:30 mast Exp $
+|| $Id: program.c,v 1.777 2010/05/19 09:32:22 grubba Exp $
 */
 
 #include "global.h"
@@ -795,11 +795,14 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!
  *!   Hashing callback.
  *!
- *!   This function gets called by various mapping operations when the
- *!   object is used as index in a mapping. It should return an
- *!   integer that corresponds to the object in such a way that all
- *!   values which @[lfun::`==] considers equal to the object gets the
- *!   same hash value.
+ *!   The main caller of this function is @[predef::hash_value()]
+ *!   or the low-level equvivalent, which get called by various
+ *!   mapping operations when the object is used as index in a mapping.
+ *!
+ *! @returns
+ *!   It should return an integer that corresponds to the object
+ *!   in such a way that all values which @[lfun::`==] considers
+ *!   equal to the object get the same hash value.
  *!
  *! @note
  *!   The function @[predef::hash] does not return hash values that
@@ -809,7 +812,7 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!   It's assumed that this function is side-effect free.
  *!
  *! @seealso
- *!   @[lfun::`==]
+ *!   @[lfun::`==], @[predef::hash_value()]
  */
 
 /*! @decl mixed lfun::cast(string requested_type)
