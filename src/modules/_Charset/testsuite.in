@@ -1,5 +1,5 @@
 START_MARKER
-// $Id: testsuite.in,v 1.19 2008/09/21 16:17:58 nilsson Exp $
+// $Id: testsuite.in,v 1.20 2010/05/21 14:09:32 jonasw Exp $
 
 // Locale.Charset.decoder
 test_true([[objectp(Locale.Charset)]])
@@ -7,6 +7,9 @@ test_true([[functionp(Locale.Charset.decoder)]])
 test_true([[objectp(Locale.Charset.decoder("latin1"))]])
 test_true([[functionp(Locale.Charset.decoder("latin1")->feed)]])
 test_eq([[Locale.Charset.decoder("latin1")->feed("xyzåäö¤ß¶")->drain()]],"xyzåäö¤ß¶")
+
+// 7-bit ASCII
+test_eq([[Locale.Charset.encoder("ASCII", "?", lambda(string ch) { return "&#" + ch[0] + ";"; })->feed("räksmörgås")->drain()]],"r&#228;ksm&#246;rg&#229;s")
 
 // Locale.Charset.rfc1345
 test_eq([[Locale.Charset.decoder("iso646-se")->feed("}{|][\\")->drain()]],"åäöÅÄÖ")

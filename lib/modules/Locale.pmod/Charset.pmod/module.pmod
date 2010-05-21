@@ -357,7 +357,7 @@ Decoder decoder(string name)
     "iso885911987", "iso885911998", "iso88591", "isoir100",
     "latin1", "l1", "ansix341968", "iso646irv1991", "iso646us",
     "isoir6", "us", "usascii", "ascii", "367", "819",
-    "isolatin1">)[name])
+    "isolatin1", "iso4873">)[name])
     return ASCIIDec();
 
   if(has_prefix(name, "iso2022"))
@@ -461,6 +461,27 @@ private class ASCIIEnc
   {
     replacement = r;
     repcb = rc;
+  }
+}
+
+private class USASCIIEnc {
+  //  7-bit US ASCII
+  inherit ASCIIEnc;
+  constant charset = "usascii";
+  protected string low_convert(string s, string|void r,
+			       function(string:string)|void rc)
+  {
+    int i = sizeof(s);
+    string rr;
+    while(--i>=0)
+      if(s[i]>127)
+	if(rc && (rr = rc(s[i..i])))
+	  s=s[..i-1]+low_convert(rr,r)+s[i+1..];
+	else if(r)
+	  s=s[..i-1]+low_convert(r)+s[i+1..];
+	else
+	  encode_error (s, i, charset, "Character unsupported by encoding.\n");
+    return s;
   }
 }
 
@@ -619,13 +640,15 @@ Encoder encoder(string name, string|void replacement,
 
   if(!name || (<
     "iso885911987", "iso885911998", "iso88591", "isoir100",
-    "latin1", "l1", "ansix341968", "iso646irv1991", "iso646us",
-    "isoir6", "us", "usascii", "ascii", "367", "819",
-    "isolatin1">)[name])
+    "latin1", "l1", "819", "isolatin1">)[name])
     // FIXME: This doesn't accurately check the range of valid
     // characters according to the chosen charset.
     return ASCIIEnc(replacement, repcb);
-
+  
+  if ((< "ascii", "us", "usascii", "isoir6", "iso646us", "iso646irv1991",
+	 "367", "ansix341968", "iso4873" >)[name])
+    return USASCIIEnc(replacement, repcb);
+  
   if(has_prefix(name, "iso2022"))
     return ISO2022Enc(name[7..], replacement, repcb);
 
