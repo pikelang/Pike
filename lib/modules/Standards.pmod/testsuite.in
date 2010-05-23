@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.18 2009/08/15 07:21:46 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.19 2010/05/23 19:25:52 grubba Exp $"]]);
 
 // - Standards.ISO639_2
 test_equal(Standards.ISO639_2.get_language("swe"),"Swedish")
@@ -62,7 +62,9 @@ test_equal((string)Standards.URI("g#s/../x",      "http://a/b/c/d;p?q"), "http:/
 test_equal((string)Standards.URI("http:g",        "http://a/b/c/d;p?q"), "http:g")
 test_equal(Standards.URI("http://www.com/")->get_query_variables(),([]))
 test_equal(Standards.URI("http://www.com/?a=b")->get_query_variables(),(["a":"b"]))
-
+// Some tests of empty path followed by a query.
+test_eq(Standards.URI("http://user:??@host?query")->query, "query")
+test_eq(Standards.URI("http://user:??@host?query")->password, "??")
 
 // - Standards.IDNA
 define([[test_punycode]], [[

@@ -4,7 +4,7 @@
 //! absolute form, as defined in RFC 2396 and RFC 3986.
 
 // Implemented by Johan Sundström and Johan Schön.
-// $Id: URI.pike,v 1.32 2009/09/17 17:25:11 grubba Exp $
+// $Id: URI.pike,v 1.33 2010/05/23 19:25:52 grubba Exp $
 
 #pragma strict_types
 
@@ -52,6 +52,7 @@ string raw_uri;
 
 // Parse authority component (according to RFC 1738, § 3.1)
 // Updated to RFC 3986 $ 3.2.
+// NOTE: Censors the userinfo from the @[authority] variable.
 protected void parse_authority()
 {
   // authority   = [ userinfo "@" ] host [ ":" port ]
@@ -249,6 +250,16 @@ void reparse_uri(this_program|string|void base_uri)
   if(sscanf(uri, "//%[^/]%s", authority, uri))
   {
     DEBUG("Found authority %O", authority);
+    int q = search(authority, "?", search(authority, "@")+1);
+    if (q >= 0) {
+      // There's a question mark in the host and port section
+      // of the authority. This happens when the path is empty
+      // and there's a query part afterwards.
+      // Example: http://foo?bar
+      uri = authority[q..] + uri;
+      authority = authority[..q-1];
+      DEBUG("Adjusted authority %O", authority);
+    }
   }
 
   // Parse query information
