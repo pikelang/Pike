@@ -21,6 +21,9 @@ protected private inherit _Charset;
 //!   @item utf16
 //!   @item utf16be
 //!   @item utf16le
+//!   @item utf32
+//!   @item utf32be
+//!   @item utf32le
 //!   @item utf75
 //!   @item utf7½
 //!     UTF encodings
@@ -223,6 +226,34 @@ private class UTF16LEdec {
   protected void create() { le=1; }
 }
 
+private class UTF32dec {
+  inherit ASCIIDec;
+  constant charset = "utf32";
+  string drain()
+  {
+    string s = ::drain();
+    if (sizeof(s) & 3) {
+      feed(s[<sizeof(s) & 3..]);
+      s = s[..sizeof(s) & 3];
+    }
+    return (string)(array_sscanf(s, "%{%4c%}")[0]*({}));
+  }
+}
+
+private class UTF32LEdec {
+  inherit ASCIIDec;
+  constant charset = "utf32le";
+  string drain()
+  {
+    string s = ::drain();
+    if (sizeof(s) & 3) {
+      feed(s[<sizeof(s) & 3..]);
+      s = s[..sizeof(s) & 3];
+    }
+    return (string)(array_sscanf(s, "%{%-4c%}")[0]*({}));
+  }
+}
+
 private class ISO6937dec {
   protected Decoder decoder = rfc1345("iso6937");
   protected string trailer = "";
@@ -370,6 +401,9 @@ Decoder decoder(string name)
     "utf16": UTF16dec,
     "utf16be": UTF16dec,
     "utf16le": UTF16LEdec,
+    "utf32": UTF32dec,
+    "utf32be": UTF32dec,
+    "utf32le": UTF32LEdec,
     "utf75": UTF7_5dec,
     "utf7½": UTF7_5dec,
     "shiftjis": ShiftJisDec,
@@ -526,6 +560,24 @@ private class UTF16LEenc {
   }
 }
 
+private class UTF32enc {
+  inherit ASCIIEnc;
+  protected string low_convert(string s, string|void r,
+			       function(string:string)|void rc)
+  {
+    return sprintf("%{%4c%}", (array(int))s);
+  }
+}
+
+private class UTF32LEenc {
+  inherit ASCIIEnc;
+  protected string low_convert(string s, string|void r,
+			       function(string:string)|void rc)
+  {
+    return sprintf("%{%-4c%}", (array(int))s);
+  }
+}
+
 private class ISO6937enc {
   protected Encoder encoder;
   protected void create(string|void replacement,
@@ -659,6 +711,9 @@ Encoder encoder(string name, string|void replacement,
     "utf16": UTF16enc,
     "utf16be": UTF16enc,
     "utf16le": UTF16LEenc,
+    "utf32": UTF32enc,
+    "utf32be": UTF32enc,
+    "utf32le": UTF32LEenc,
     "utf75": UTF7_5enc,
     "utf7½": UTF7_5enc,
     "gb18030": GB18030Enc,
