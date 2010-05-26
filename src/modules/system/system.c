@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.187 2009/05/28 11:54:37 grubba Exp $
+|| $Id: system.c,v 1.188 2010/05/26 16:11:33 grubba Exp $
 */
 
 /*
@@ -1856,6 +1856,18 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port, i
     /* Avoid creating an IPv6 address for "*". */
     /* For IN6ADDR_ANY, use "::". */
     hints.ai_family = PF_INET;
+#if defined(PF_INET6) && defined(AI_V4MAPPED)
+  } else {
+    /* Map all addresses to the IPv6 namespace,
+     * to avoid address conflicts when once end
+     * of the socket is IPv4 and one end is IPv6.
+     * This is needed on eg Linux where a socket
+     * bound to ::FFFF:127.0.0.1 can't connect
+     * to the IPv4 address 127.0.0.1.
+     */
+    hints.ai_family = PF_INET6;
+    hints.ai_flags = AI_V4MAPPED;
+#endif
   }
   hints.ai_protocol = (udp? IPPROTO_UDP:IPPROTO_TCP);
   if(!service)
