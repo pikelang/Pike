@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.436 2010/02/24 18:03:03 grubba Exp $
+|| $Id: file.c,v 1.437 2010/05/26 13:23:36 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -3994,13 +3994,13 @@ static void file_connect(INT32 args)
      (src_port->type != PIKE_T_STRING || src_port->u.string->size_shift))
     SIMPLE_BAD_ARG_ERROR("Stdio.File->connect", 4, "int|string (8bit)");
 
+/*   fprintf(stderr, "connect: family: %d\n", SOCKADDR_FAMILY(addr)); */
+
   addr_len = get_inet_addr(&addr, dest_addr->str,
 			   (dest_port->type == PIKE_T_STRING?
 			    dest_port->u.string->str : NULL),
 			   (dest_port->type == PIKE_T_INT?
 			    dest_port->u.integer : -1), 0);
-
-/*   fprintf(stderr, "connect: family: %d\n", SOCKADDR_FAMILY(addr)); */
 
   if(was_closed)
   {
@@ -4017,6 +4017,26 @@ static void file_connect(INT32 args)
     if(UNSAFE_IS_ZERO(Pike_sp-1) || FD < 0)
       Pike_error("Stdio.File->connect(): Failed to open socket.\n");
     pop_stack();
+#ifdef AF_INET6
+  } else if (SOCKADDR_FAMILY(addr) == AF_INET) {
+    PIKE_SOCKADDR local_addr;
+    ACCEPT_SIZE_T len = 0;
+    SOCKADDR_FAMILY(local_addr) = AF_INET;
+    while ((fd_getsockname(FD, (struct sockaddr *)&local_addr, &len) < 0) &&
+	   (errno == EINTR))
+      ;
+    if (SOCKADDR_FAMILY(local_addr) == AF_INET6) {
+      /* Convert IPv4 addr to the corresponding IPv6 ::FFFF:a.b.c.d address. */
+      /* Use local_addr above as temporary storage. */
+      MEMSET(&local_addr.ipv6.sin6_addr, 16, 0);
+      ((INT16*)&local_addr.ipv6.sin6_addr)[5] = 0xffff;
+      MEMCPY(((char *)&local_addr.ipv6.sin6_addr) + 12,
+	     &addr.ipv4.sin_addr, 4);
+      local_addr.ipv6.sin6_port = addr.ipv4.sin_port;
+      MEMCPY(&addr, &local_addr, len);
+      addr_len = len;
+    }
+#endif /* AF_INET6 */
   }
 
   for(tries = 0;; tries++)
@@ -4095,7 +4115,8 @@ static void file_connect(INT32 args)
  *! @returns
  *!   This function returns the address and port of a socket end-point
  *!   on the form @expr{"x.x.x.x port"@} (IPv4) or
- *!   @expr{"x:x:x:x:x:x:x:x port"@} (IPv6).
+ *!   @expr{"x:x:x:x:x:x:x:x port"@} (IPv6). IPv6 addresses
+ *!   may use the contracted syntax.
  *!
  *!   If this file is not a socket, is not connected, or some other
  *!   error occurs, @expr{0@} (zero) is returned and @[errno()] will
@@ -4160,6 +4181,10 @@ static void file_query_address(INT32 args)
   }
 #endif
   sprintf(buffer+strlen(buffer)," %d",(int)(ntohs(addr.ipv4.sin_port)));
+
+  /* FIXME: Consider converting ::FFFF:a.b.c.d IPv6 addresses to
+   *        plain IPv4 addresses.
+   */
 
   push_text(buffer);
 }
