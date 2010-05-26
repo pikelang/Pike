@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.437 2010/05/26 13:23:36 grubba Exp $
+|| $Id: file.c,v 1.438 2010/05/26 16:13:50 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -4017,26 +4017,6 @@ static void file_connect(INT32 args)
     if(UNSAFE_IS_ZERO(Pike_sp-1) || FD < 0)
       Pike_error("Stdio.File->connect(): Failed to open socket.\n");
     pop_stack();
-#ifdef AF_INET6
-  } else if (SOCKADDR_FAMILY(addr) == AF_INET) {
-    PIKE_SOCKADDR local_addr;
-    ACCEPT_SIZE_T len = 0;
-    SOCKADDR_FAMILY(local_addr) = AF_INET;
-    while ((fd_getsockname(FD, (struct sockaddr *)&local_addr, &len) < 0) &&
-	   (errno == EINTR))
-      ;
-    if (SOCKADDR_FAMILY(local_addr) == AF_INET6) {
-      /* Convert IPv4 addr to the corresponding IPv6 ::FFFF:a.b.c.d address. */
-      /* Use local_addr above as temporary storage. */
-      MEMSET(&local_addr.ipv6.sin6_addr, 16, 0);
-      ((INT16*)&local_addr.ipv6.sin6_addr)[5] = 0xffff;
-      MEMCPY(((char *)&local_addr.ipv6.sin6_addr) + 12,
-	     &addr.ipv4.sin_addr, 4);
-      local_addr.ipv6.sin6_port = addr.ipv4.sin_port;
-      MEMCPY(&addr, &local_addr, len);
-      addr_len = len;
-    }
-#endif /* AF_INET6 */
   }
 
   for(tries = 0;; tries++)
