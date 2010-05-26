@@ -1,5 +1,5 @@
 /* nettle.cmod -*- c -*- */
-/* $Id: nettle.cmod,v 1.55 2009/07/05 19:41:58 grubba Exp $ */
+/* $Id: nettle.cmod,v 1.56 2010/05/26 21:54:06 jonasw Exp $ */
 
 #include "global.h"
 #include "interpret.h"
@@ -225,8 +225,9 @@ PIKECLASS Yarrow
       Pike_error("Impossibly large entropy value.\n");
     ret = yarrow256_update(&THIS->ctx, source, entropy, data->len,
 			   (const uint8_t *)data->str);
-    if (ret)
+    if (ret) {
       pike_generate_seed_file();
+    }
     RETURN ret;
   }
 
