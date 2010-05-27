@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.257 2009/11/05 16:51:45 grubba Exp $
+|| $Id: operators.c,v 1.258 2010/05/27 23:16:59 mast Exp $
 */
 
 #include "global.h"
@@ -13,6 +13,7 @@
 #include "mapping.h"
 #include "array.h"
 #include "stralloc.h"
+#include "pike_float.h"
 #include "opcodes.h"
 #include "operators.h"
 #include "pike_memory.h"
@@ -48,22 +49,14 @@
 #undef PIKE_MERGE_DESTR_A
 #define PIKE_MERGE_DESTR_A	0
 
-    /* These calculations should always give some margin based on the size. */
-    /* The calculations utilize that log10(256) ~= 2.4 < 5/2. */
+    /* This calculation should always give some margin based on the size. */
+    /* It utilizes that log10(256) ~= 2.4 < 5/2. */
+    /* One extra char for the sign and one for the \0 terminator. */
+#define MAX_INT_SPRINTF_LEN (2 + (SIZEOF_INT_TYPE * 5 + 1) / 2)
 
-    /* One extra char for the sign. */
-#define MAX_INT_SPRINTF_LEN (1 + (SIZEOF_INT_TYPE * 5 + 1) / 2)
-
-    /* One quarter of the float is the exponent. */
-#define MAX_FLOAT_EXP_LEN ((SIZEOF_FLOAT_TYPE * 5 + 4) / 8)
-    /* Six extra chars: Mantissa sign, decimal point, zero before the
-     * decimal point, the 'e', the exponent sign, and an extra digit due
-     * to the mantissa/exponent split. */
-#define MAX_FLOAT_SPRINTF_LEN (6 + PIKEFLOAT_DIG + MAX_FLOAT_EXP_LEN)
-
-    /* Enough to hold a Pike float or int in textform including a trailing \0
+    /* Enough to hold a Pike float or int in textform
      */
-#define MAX_NUM_BUF  (MAXIMUM(MAX_INT_SPRINTF_LEN,MAX_FLOAT_SPRINTF_LEN)+1)
+#define MAX_NUM_BUF  (MAXIMUM(MAX_INT_SPRINTF_LEN,MAX_FLOAT_SPRINTF_LEN))
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -469,11 +462,7 @@ PMOD_EXPORT void o_cast_to_string(void)
     return;
 
   case T_FLOAT:
-    sprintf(buf,"%.*"PRINTPIKEFLOAT"g",
-	    PIKEFLOAT_DIG, sp[-1].u.float_number);
-    /* Same kludge as in svalue.c:describe_svalue. */
-    if (!STRCHR (buf, '.') && !STRCHR (buf, ',') && !STRCHR (buf, 'e'))
-      strcat (buf, ".0");
+    format_pike_float (buf, sp[-1].u.float_number);
     break;
 
   case T_INT:

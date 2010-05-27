@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.481 2010/01/09 01:00:31 srb Exp $
+# $Id: Makefile.in,v 1.482 2010/05/27 23:16:38 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -169,6 +169,7 @@ CORE_OBJ= \
  object.o \
  opcodes.o \
  operators.o \
+ pike_float.o \
  port.o \
  program.o \
  rbtree.o \

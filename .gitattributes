@@ -762,6 +762,7 @@ testfont binary
 /src/pike_embed.c foreign_ident
 /src/pike_embed.h foreign_ident
 /src/pike_error.h foreign_ident
+/src/pike_float.c foreign_ident
 /src/pike_float.h foreign_ident
 /src/pike_int_types.h foreign_ident
 /src/pike_macros.h foreign_ident

@@ -1,6 +1,6 @@
 /* Misc stuff for dealing with floats.
  *
- * $Id: pike_float.h,v 1.8 2005/07/15 18:16:52 grubba Exp $
+ * $Id: pike_float.h,v 1.9 2010/05/27 23:17:09 mast Exp $
  */
 
 #ifndef PIKE_FLOAT_H
@@ -70,5 +70,21 @@ static INLINE int pike_isnan(double x)
 #endif
 #endif
 #endif
+
+/* This calculation should always give some margin based on the size. */
+/* It utilizes that log10(256) ~= 2.4 < 5/2. */
+/* One quarter of the float is the exponent. */
+#define MAX_FLOAT_EXP_LEN ((SIZEOF_FLOAT_TYPE * 5 + 4) / 8)
+
+/* Ten extra bytes: Mantissa sign, decimal point (up to four bytes),
+ * zero before the decimal point, the 'e', the exponent sign, an extra
+ * digit due to the mantissa/exponent split, and the \0 termination.
+ *
+ * Four bytes for the decimal point is built on the assumption that it
+ * can be any unicode char, which in utf8 encoding can take up to four
+ * bytes. See format_pike_float. */
+#define MAX_FLOAT_SPRINTF_LEN (10 + PIKEFLOAT_DIG + MAX_FLOAT_EXP_LEN)
+
+PMOD_EXPORT void format_pike_float (char *buf, FLOAT_TYPE f);
 
 #endif	/* !PIKE_FLOAT_H */

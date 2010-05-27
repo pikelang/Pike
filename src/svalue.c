@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.259 2010/02/18 08:52:55 srb Exp $
+|| $Id: svalue.c,v 1.260 2010/05/27 23:17:09 mast Exp $
 */
 
 #include "global.h"
@@ -1262,7 +1262,7 @@ static int no_pike_calls = 0;	/* FIXME: Use TLS for this. */
  */
 PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct processing *p)
 {
-  char buf[50];
+  char buf[MAXIMUM (50, MAX_FLOAT_SPRINTF_LEN)];
 
   /* This needs to be a bit lower than LOW_C_STACK_MARGIN so that the
    * the raw error can be printed in exit_on_error. */
@@ -1735,30 +1735,8 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
     }
 
     case T_FLOAT:
-      {
-	FLOAT_TYPE d = s->u.float_number;
-	if (d != d) {
-	  my_strcat("nan");
-	} else if (d && (d+d == d)) {
-	  if (d > 0.0) {
-	    my_strcat("inf");
-	  } else {
-	    my_strcat("-inf");
-	  }
-	} else {
-	  sprintf(buf, "%.*"PRINTPIKEFLOAT"g", PIKEFLOAT_DIG, d);
-	  my_strcat(buf);
-	  if (!STRCHR (buf, '.') && !STRCHR (buf, ',') && !STRCHR (buf, 'e'))
-	    /* A small float number without fraction can be
-	     * indistinguishable from an integer when formatted by %g.
-	     * Kludge: Check for ',' too if someone has managed to
-	     * meddle with the LC_NUMERIC locale (not that the dot
-	     * below is really the right thing then, but at least it
-	     * doesn't become "47,11.0"). */
-	    /* Note: Code dup in operators.c:o_cast_to_string. */
-	    my_strcat (".0");
-	}
-      }
+      format_pike_float (buf, s->u.float_number);
+      my_strcat (buf);
       break;
 
     case T_ARRAY:
