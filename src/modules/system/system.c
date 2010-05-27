@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.188 2010/05/26 16:11:33 grubba Exp $
+|| $Id: system.c,v 1.189 2010/05/27 14:48:45 grubba Exp $
 */
 
 /*
@@ -1856,6 +1856,10 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port, i
     /* Avoid creating an IPv6 address for "*". */
     /* For IN6ADDR_ANY, use "::". */
     hints.ai_family = PF_INET;
+#if 0
+    /* We want to be able to run the compiled Pike
+     * even on systems without IPv6...
+     */
 #if defined(PF_INET6) && defined(AI_V4MAPPED)
   } else {
     /* Map all addresses to the IPv6 namespace,
@@ -1868,6 +1872,7 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port, i
     hints.ai_family = PF_INET6;
     hints.ai_flags = AI_V4MAPPED;
 #endif
+#endif /* 0 */
   }
   hints.ai_protocol = (udp? IPPROTO_UDP:IPPROTO_TCP);
   if(!service)
