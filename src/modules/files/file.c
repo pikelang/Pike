@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.438 2010/05/26 16:13:50 grubba Exp $
+|| $Id: file.c,v 1.439 2010/05/27 11:50:21 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -4162,11 +4162,17 @@ static void file_query_address(INT32 args)
 #endif
   sprintf(buffer+strlen(buffer)," %d",(int)(ntohs(addr.ipv4.sin_port)));
 
-  /* FIXME: Consider converting ::FFFF:a.b.c.d IPv6 addresses to
-   *        plain IPv4 addresses.
+  /* NOTE: IPv6-mapped IPv4 addresses may only connect to other IPv4 addresses.
+   *
+   * Make the Pike-level code believe it has an actual IPv4 address
+   * when getting a mapped address (::FFFF:a.b.c.d).
    */
-
-  push_text(buffer);
+  if ((!strncmp(buffer, "::FFFF:", 7) || !strncmp(buffer, "::ffff:", 7)) &&
+      !strchr(buffer + 7, ':')) {
+    push_text(buffer+7);
+  } else {
+    push_text(buffer);
+  }
 }
 
 /*! @decl Stdio.File `<<(string data)
