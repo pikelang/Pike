@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.256 2010/03/23 12:24:01 grubba Exp $
+|| $Id: builtin.cmod,v 1.257 2010/05/28 18:13:46 mast Exp $
 */
 
 #include "global.h"
@@ -3567,6 +3567,16 @@ PIKECLASS SqlNull
     }
     push_constant_text("is_sql_null");
     o_index();
+  }
+
+  /*! @decl string encode_json()
+   *!
+   *! Defined for use with @[Standards.JSON.encode], so that it
+   *! formats NULL as @expr{null@}.
+   */
+  PIKEFUN string encode_json()
+  {
+    push_constant_text ("null");
   }
 }
 
