@@ -1,17 +1,18 @@
-// $Id: JSON.pmod.in,v 1.1 2010/05/28 17:39:15 mast Exp $
+// $Id: JSON.pmod.in,v 1.2 2010/05/28 18:38:35 mast Exp $
+
+#pike __REAL_VERSION__
+
+//! @ignore
+#if !constant (@module@)
+constant this_program_does_not_exist = 1;
+#else
+inherit @module@;
+//! @endignore
 
 //! @appears Standards.JSON module
 //!
 //! Tools for handling the JSON structured data format. See
 //! @url{http://www.json.org/@} and RFC 4627.
-
-#if !constant (@module@)
-constant this_program_does_not_exist = 1;
-#else
-
-//! @ignore
-inherit @module@;
-//! @endignore
 
 True true = True();
 False false = False();

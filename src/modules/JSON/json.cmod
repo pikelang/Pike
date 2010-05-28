@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: json.cmod,v 1.1 2010/05/28 17:39:15 mast Exp $
+|| $Id: json.cmod,v 1.2 2010/05/28 18:38:35 mast Exp $
 */
 
 /* JSON encoder.
@@ -36,7 +36,7 @@ DECLARATIONS
 
 struct json_proc {
   struct string_builder buf;
-  int ascii_only;
+  int flags;
   int indent;
 };
 
@@ -61,7 +61,7 @@ static void json_encode_recur (struct json_proc *ctx, struct svalue *val)
 	  Pike_error ("Cannot json encode non-unicode char "
 		      "0x%"PRINTPIKEINT"x.\n", (INT_TYPE) c);
 	if (c == '"' || c == '\\' || c <= 0x1f ||
-	    (c >= 0x7f && ctx->ascii_only)) {
+	    (c >= 0x7f && ctx->flags & ASCII_ONLY)) {
 	  if (s < i) {
 	    PCHARP piece = ADD_PCHARP (str, s);
 	    string_builder_append (buf, piece, i - s);
@@ -188,12 +188,13 @@ static void json_encode_recur (struct json_proc *ctx, struct svalue *val)
       if (o->prog) {
 	int fun = find_identifier ("encode_json", o->prog);
 	if (fun >= 0) {
+	  int args = 1;
+	  push_int (ctx->flags);
 	  if (ctx->indent >= 0) {
 	    push_int (ctx->indent);
-	    apply_low (o, fun, 1);
+	    args++;
 	  }
-	  else
-	    apply_low (o, fun, 0);
+	  apply_low (o, fun, args);
 	  if (Pike_sp[-1].type != PIKE_T_STRING)
 	    Pike_error ("Expected string from %O->encode_json(), got %s.\n",
 			val, get_name_of_type (Pike_sp[-1].type));
@@ -239,7 +240,7 @@ static void json_encode_recur (struct json_proc *ctx, struct svalue *val)
  *!   special numbers NaN and infinity), strings, arrays, mappings
  *!   with string indices, and the special object values @[null],
  *!   @[true] and @[false] defined in this module (or really any
- *!   object that implement an @expr{encode_json@} callback).
+ *!   object that implements an @expr{encode_json@} callback).
  *!
  *! @param flags
  *!   Flag bit field to control formatting. See @[ASCII_ONLY] and
@@ -251,14 +252,13 @@ static void json_encode_recur (struct json_proc *ctx, struct svalue *val)
  *! on the returned string to get a valid transport encoded JSON
  *! string.
  */
-PMOD_EXPORT
 PIKEFUN string encode (mixed val, void|int flags)
   optflags OPT_TRY_OPTIMIZE;
 {
   struct json_proc ctx;
   ONERROR uwp;
-  ctx.ascii_only = (flags ? flags->u.integer & ASCII_ONLY : 0);
-  ctx.indent = (flags ? (flags->u.integer & HUMAN_READABLE ? 0 : -1) : -1);
+  ctx.flags = (flags ? flags->u.integer : 0);
+  ctx.indent = (ctx.flags & HUMAN_READABLE ? 0 : -1);
   init_string_builder (&ctx.buf, 0);
   SET_ONERROR (uwp, free_string_builder, &ctx.buf);
   json_encode_recur (&ctx, val);
