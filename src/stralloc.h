@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.h,v 1.111 2008/10/06 17:00:00 mast Exp $
+|| $Id: stralloc.h,v 1.112 2010/05/28 17:37:52 mast Exp $
 */
 
 #ifndef STRALLOC_H
@@ -346,6 +346,8 @@ PMOD_EXPORT void string_build_mkspace(struct string_builder *s,
 				      ptrdiff_t chars, int mag);
 PMOD_EXPORT void *string_builder_allocate(struct string_builder *s, ptrdiff_t chars, int mag);
 PMOD_EXPORT void string_builder_putchar(struct string_builder *s, int ch);
+PMOD_EXPORT void string_builder_putchars(struct string_builder *s, int ch,
+					 ptrdiff_t count);
 PMOD_EXPORT void string_builder_binary_strcat0(struct string_builder *s,
 					       const p_wchar0 *str, ptrdiff_t len);
 PMOD_EXPORT void string_builder_binary_strcat1(struct string_builder *s,

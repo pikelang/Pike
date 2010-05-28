@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.237 2009/11/30 10:08:24 grubba Exp $
+|| $Id: stralloc.c,v 1.238 2010/05/28 17:37:52 mast Exp $
 */
 
 #include "global.h"
@@ -2326,6 +2326,43 @@ PMOD_EXPORT void string_builder_putchar(struct string_builder *s, int ch)
   }
   i = s->s->len++;
   low_set_index(s->s,i,ch);
+  /* Ensure NUL-termination */
+  s->s->str[s->s->len << s->s->size_shift] = 0;
+}
+
+PMOD_EXPORT void string_builder_putchars(struct string_builder *s, int ch,
+					 ptrdiff_t count)
+{
+  ptrdiff_t len = s->s->len;
+  int mag = min_magnitude(ch);
+
+  if (mag > s->s->size_shift) {
+    string_build_mkspace(s, count, mag);
+    s->known_shift = mag;
+  } else if (((size_t)s->s->len) >= ((size_t)s->malloced)) {
+    string_build_mkspace(s, count, mag);
+    s->known_shift = MAXIMUM(mag, s->known_shift);
+  }
+
+  switch (s->s->size_shift) {
+    case 0:
+      MEMSET (STR0 (s->s) + s->s->len, ch, count);
+      break;
+    case 1: {
+      int i;
+      for (i = 0; i < count; i++)
+	(STR1 (s->s) + s->s->len)[i] = ch;
+      break;
+    }
+    case 2: {
+      int i;
+      for (i = 0; i < count; i++)
+	(STR2 (s->s) + s->s->len)[i] = ch;
+      break;
+    }
+  }
+
+  s->s->len += count;
   /* Ensure NUL-termination */
   s->s->str[s->s->len << s->s->size_shift] = 0;
 }
