@@ -1,0 +1,284 @@
+/* -*- c -*-
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: json.cmod,v 1.1 2010/05/28 17:39:15 mast Exp $
+*/
+
+/* JSON encoder.
+ *
+ * Ref: RFC 4627
+ *
+ * Created May 2010 by Martin Stjernholm
+ */
+
+#include "cyclic.h"
+#include "global.h"
+#include "interpret.h"
+#include "mapping.h"
+#include "module.h"
+#include "pike_error.h"
+#include "pike_float.h"
+#include "pike_types.h"
+#include "stralloc.h"
+#include "svalue.h"
+
+#define DEFAULT_CMOD_STORAGE static
+
+DECLARATIONS
+
+/*! @module Standards */
+
+/*! @module JSON */
+
+#define ASCII_ONLY 1
+#define HUMAN_READABLE 2
+
+struct json_proc {
+  struct string_builder buf;
+  int ascii_only;
+  int indent;
+};
+
+static void json_encode_recur (struct json_proc *ctx, struct svalue *val)
+{
+  struct string_builder *buf = &ctx->buf;
+  DECLARE_CYCLIC();
+
+  check_c_stack (1024);
+
+  if (val->type <= MAX_COMPLEX && BEGIN_CYCLIC (val->u.ptr, 0))
+    Pike_error ("Cyclic data structure - already visited %O.\n", val);
+
+  switch (val->type) {
+    case PIKE_T_STRING: {
+      PCHARP str = MKPCHARP_STR (val->u.string);
+      ptrdiff_t l = val->u.string->len, i, s;
+      string_builder_putchar (buf, '"');
+      for (s = 0, i = 0; i < l; i++) {
+	p_wchar2 c = INDEX_PCHARP (str, i);
+	if (c < 0 || c > 0x10ffff)
+	  Pike_error ("Cannot json encode non-unicode char "
+		      "0x%"PRINTPIKEINT"x.\n", (INT_TYPE) c);
+	if (c == '"' || c == '\\' || c <= 0x1f ||
+	    (c >= 0x7f && ctx->ascii_only)) {
+	  if (s < i) {
+	    PCHARP piece = ADD_PCHARP (str, s);
+	    string_builder_append (buf, piece, i - s);
+	  }
+	  string_builder_putchar (buf, '\\');
+	  switch (c) {
+	    case '"': string_builder_putchar (buf, '"'); break;
+	    case '\\': string_builder_putchar (buf, '\\'); break;
+	    case '\b': string_builder_putchar (buf, 'b'); break;
+	    case '\f': string_builder_putchar (buf, 'f'); break;
+	    case '\n': string_builder_putchar (buf, 'n'); break;
+	    case '\r': string_builder_putchar (buf, 'r'); break;
+	    case '\t': string_builder_putchar (buf, 't'); break;
+	    default:
+	      string_builder_putchar (buf, 'u');
+	      string_builder_append_integer (buf, c, 16, APPEND_ZERO_PAD, 4, 4);
+	      break;
+	  }
+	  s = i + 1;
+	}
+      }
+      if (s < i) {
+	PCHARP piece = ADD_PCHARP (str, s);
+	string_builder_append (buf, piece, i - s);
+      }
+      string_builder_putchar (buf, '"');
+      break;
+    }
+
+    case PIKE_T_INT:
+      string_builder_append_integer (buf, val->u.integer,
+				     10, APPEND_SIGNED, 0, 0);
+      break;
+
+    case PIKE_T_FLOAT: {
+      FLOAT_TYPE f = val->u.float_number;
+      char b[MAX_FLOAT_SPRINTF_LEN];
+      if (PIKE_ISNAN (f))
+	Pike_error ("Cannot json encode NaN.\n");
+      if (PIKE_ISINF (f))
+	Pike_error ("Cannot json encode infinity.\n");
+      format_pike_float (b, f);
+      string_builder_strcat (buf, b);
+      break;
+    }
+
+    case PIKE_T_ARRAY: {
+      struct array *a = val->u.array;
+      int size = a->size;
+      string_builder_putchar (buf, '[');
+      if (size) {
+	int i, indent = ctx->indent;
+	if (indent >= 0 && size > 1) {
+	  ctx->indent = indent = indent + 2;
+	  string_builder_putchar (buf, '\n');
+	  string_builder_putchars (buf, ' ', indent);
+	}
+	json_encode_recur (ctx, ITEM (a));
+	for (i = 1; i < size; i++) {
+	  string_builder_putchar (buf, ',');
+	  if (indent >= 0) {
+	    string_builder_putchar (buf, '\n');
+	    string_builder_putchars (buf, ' ', indent);
+	  }
+	  json_encode_recur (ctx, ITEM (a) + i);
+	}
+	if (indent >= 0 && size > 1) {
+	  ctx->indent = indent = indent - 2;
+	  string_builder_putchar (buf, '\n');
+	  string_builder_putchars (buf, ' ', indent);
+	}
+      }
+      string_builder_putchar (buf, ']');
+      break;
+    }
+
+    case PIKE_T_MAPPING: {
+      struct mapping_data *md;
+      int size;
+      check_mapping_for_destruct (val->u.mapping);
+      md = val->u.mapping->data;
+      size = md->size;
+      string_builder_putchar (buf, '{');
+      if (size) {
+	int indent = ctx->indent;
+	struct keypair *k;
+	int e, notfirst = 0;
+	NEW_MAPPING_LOOP (md) {
+	  if (notfirst) {
+	    string_builder_putchar (buf, ',');
+	    if (indent >= 0) {
+	      string_builder_putchar (buf, '\n');
+	      string_builder_putchars (buf, ' ', indent);
+	    }
+	  }
+	  else {
+	    if (indent >= 0 && size > 1) {
+	      ctx->indent = indent = indent + 2;
+	      string_builder_putchar (buf, '\n');
+	      string_builder_putchars (buf, ' ', indent);
+	    }
+	    notfirst = 1;
+	  }
+	  if (k->ind.type != T_STRING)
+	    Pike_error ("Cannot json encode mapping "
+			"with non-string index %O.\n", &k->ind);
+	  json_encode_recur (ctx, &k->ind);
+	  string_builder_putchar (buf, ':');
+	  if (indent >= 0) string_builder_putchar (buf, ' ');
+	  json_encode_recur (ctx, &k->val);
+	}
+	if (indent >= 0 && size > 1) {
+	  ctx->indent = indent = indent - 2;
+	  string_builder_putchar (buf, '\n');
+	  string_builder_putchars (buf, ' ', indent);
+	}
+      }
+      string_builder_putchar (buf, '}');
+      break;
+    }
+
+    case PIKE_T_OBJECT: {
+      struct object *o = val->u.object;
+      if (o->prog) {
+	int fun = find_identifier ("encode_json", o->prog);
+	if (fun >= 0) {
+	  if (ctx->indent >= 0) {
+	    push_int (ctx->indent);
+	    apply_low (o, fun, 1);
+	  }
+	  else
+	    apply_low (o, fun, 0);
+	  if (Pike_sp[-1].type != PIKE_T_STRING)
+	    Pike_error ("Expected string from %O->encode_json(), got %s.\n",
+			val, get_name_of_type (Pike_sp[-1].type));
+	  string_builder_shared_strcat (buf, Pike_sp[-1].u.string);
+	  free_string ((--Pike_sp)->u.string);
+	  break;
+	}
+      }
+      Pike_error ("Cannot json encode object %O "
+		  "without encode_json function.\n", val);
+    }
+
+    default:
+      Pike_error ("Cannot json encode %s.\n", get_name_of_type (val->type));
+  }
+
+  if (val->type <= MAX_COMPLEX)
+    END_CYCLIC();
+}
+
+/*! @decl constant ASCII_ONLY = 1
+ *! @decl constant HUMAN_READABLE = 2
+ *!
+ *! Bit field flags for use with @[encode]:
+ *!
+ *! @dl
+ *! @item Standards.JSON.ASCII_ONLY
+ *!   Use @expr{\uxxxx@} escapes for all non-ascii characters and DEL
+ *!   (U+007f). The default is to escape only the characters that must
+ *!   be escaped.
+ *! @item Standards.JSON.HUMAN_READABLE
+ *!   Pretty print with indentation to make the result more easy on
+ *!   human eyes. The default is to use no extra whitespace at all.
+ *! @enddl
+ */
+
+/*! @decl string encode (mixed val, void|int flags)
+ *!
+ *! Encodes a value to a JSON string.
+ *!
+ *! @param val
+ *!   The value to encode. It can contain integers, floats (except the
+ *!   special numbers NaN and infinity), strings, arrays, mappings
+ *!   with string indices, and the special object values @[null],
+ *!   @[true] and @[false] defined in this module (or really any
+ *!   object that implement an @expr{encode_json@} callback).
+ *!
+ *! @param flags
+ *!   Flag bit field to control formatting. See @[ASCII_ONLY] and
+ *!   @[HUMAN_READABLE] for further details.
+ *!
+ *! @note
+ *! 8-bit and wider characters in input strings are neither escaped
+ *! nor utf-8 encoded by default. @[string_to_utf8] can be used safely
+ *! on the returned string to get a valid transport encoded JSON
+ *! string.
+ */
+PMOD_EXPORT
+PIKEFUN string encode (mixed val, void|int flags)
+  optflags OPT_TRY_OPTIMIZE;
+{
+  struct json_proc ctx;
+  ONERROR uwp;
+  ctx.ascii_only = (flags ? flags->u.integer & ASCII_ONLY : 0);
+  ctx.indent = (flags ? (flags->u.integer & HUMAN_READABLE ? 0 : -1) : -1);
+  init_string_builder (&ctx.buf, 0);
+  SET_ONERROR (uwp, free_string_builder, &ctx.buf);
+  json_encode_recur (&ctx, val);
+  UNSET_ONERROR (uwp);
+  RETURN finish_string_builder (&ctx.buf);
+}
+
+/*! @endmodule */
+
+/*! @endmodule */
+
+PIKE_MODULE_INIT
+{
+  add_integer_constant ("ASCII_ONLY", ASCII_ONLY, 0);
+  add_integer_constant ("HUMAN_READABLE", HUMAN_READABLE, 0);
+
+  INIT;
+}
+
+PIKE_MODULE_EXIT
+{
+  EXIT;
+}

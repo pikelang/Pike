@@ -1,0 +1,45 @@
+// $Id: JSON.pmod.in,v 1.1 2010/05/28 17:39:15 mast Exp $
+
+//! @appears Standards.JSON module
+//!
+//! Tools for handling the JSON structured data format. See
+//! @url{http://www.json.org/@} and RFC 4627.
+
+#if !constant (@module@)
+constant this_program_does_not_exist = 1;
+#else
+
+//! @ignore
+inherit @module@;
+//! @endignore
+
+True true = True();
+False false = False();
+Null null = Null();
+//! Objects representing the three JSON literals @expr{true@},
+//! @expr{false@} and @expr{null@}. @expr{true@} and @expr{false@}
+//! should behave as expected in boolean contexts.
+
+class True
+//! Type for the @[true] object.
+{
+  string encode_json() {return "true";}
+  protected string _sprintf (int flag) {return flag == 'O' && "JSON.true";}
+}
+
+class False
+//! Type for the @[false] object.
+{
+  int `!() {return 1;}
+  string encode_json() {return "false";}
+  protected string _sprintf (int flag) {return flag == 'O' && "JSON.false";}
+}
+
+class Null
+//! Type for the @[null] object.
+{
+  string encode_json() {return "null";}
+  protected string _sprintf (int flag) {return flag == 'O' && "JSON.null";}
+}
+
+#endif	// constant (@module@)

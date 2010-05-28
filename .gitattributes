@@ -529,6 +529,10 @@ testfont binary
 /src/modules/Image/polyfill.c foreign_ident
 /src/modules/Image/search.c foreign_ident
 /src/modules/Image/testsuite.in foreign_ident
+/src/modules/JSON/JSON.pmod.in foreign_ident
+/src/modules/JSON/Makefile.in foreign_ident
+/src/modules/JSON/configure.in foreign_ident
+/src/modules/JSON/json.cmod foreign_ident
 /src/modules/Java/Makefile.in foreign_ident
 /src/modules/Java/acconfig.h foreign_ident
 /src/modules/Java/jvm.c foreign_ident

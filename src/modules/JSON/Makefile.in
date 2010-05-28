@@ -1,0 +1,10 @@
+# $Id: Makefile.in,v 1.1 2010/05/28 17:39:15 mast Exp $
+@make_variables@
+VPATH=@srcdir@
+MODNAME=JSON
+MODDIR=Standards.pmod/
+MODULE_PMOD_IN=@srcdir@/JSON.pmod.in
+MODULE_WRAPPER_PREFIX=_
+OBJS=json.o
+@dynamic_module_makefile@
+@dependencies@
