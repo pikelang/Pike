@@ -18,9 +18,9 @@ mapping lay = ([
  "_ndochead" : "</p></dd>\n",
 
  "dochead" : "\n<dt><font face='Helvetica'>",
- "_dochead" : "</font><dt>\n",
+ "_dochead" : "</font></dt>\n",
  "typehead" : "\n<dt><font face='Helvetica'>",
- "_typehead" : "</font><dt>\n",
+ "_typehead" : "</font></dt>\n",
  "docbody" : "<dd><font face='Helvetica'>",
  "_docbody" : "</font></dd>",
  "fixmehead" : "<dt><font face='Helvetica' color='red'>",
