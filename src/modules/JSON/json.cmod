@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: json.cmod,v 1.2 2010/05/28 18:38:35 mast Exp $
+|| $Id: json.cmod,v 1.3 2010/05/28 18:42:49 mast Exp $
 */
 
 /* JSON encoder.
@@ -215,8 +215,8 @@ static void json_encode_recur (struct json_proc *ctx, struct svalue *val)
     END_CYCLIC();
 }
 
-/*! @decl constant ASCII_ONLY = 1
- *! @decl constant HUMAN_READABLE = 2
+/*! @decl constant ASCII_ONLY
+ *! @decl constant HUMAN_READABLE
  *!
  *! Bit field flags for use with @[encode]:
  *!
@@ -224,10 +224,11 @@ static void json_encode_recur (struct json_proc *ctx, struct svalue *val)
  *! @item Standards.JSON.ASCII_ONLY
  *!   Use @expr{\uxxxx@} escapes for all non-ascii characters and DEL
  *!   (U+007f). The default is to escape only the characters that must
- *!   be escaped.
+ *!   be escaped. The flag value is 1.
  *! @item Standards.JSON.HUMAN_READABLE
  *!   Pretty print with indentation to make the result more easy on
  *!   human eyes. The default is to use no extra whitespace at all.
+ *!   The flag value is 2.
  *! @enddl
  */
 
