@@ -12,8 +12,6 @@ string default_ns;
 mapping lay = ([
  "docgroup" : "\n\n<hr clear='all' size='1' noshadow='noshadow' />\n<dl>",
  "_docgroup" : "</dl>\n",
- "dochead" : "<dt>",
- "_dochead" : "</dt>\n",
  "ndochead" : "<dd><p>",
  "_ndochead" : "</p></dd>\n",
 
