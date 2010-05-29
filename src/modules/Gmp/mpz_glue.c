@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.187 2009/11/28 13:09:03 mast Exp $
+|| $Id: mpz_glue.c,v 1.188 2010/05/29 13:49:22 grubba Exp $
 */
 
 #include "global.h"
@@ -786,6 +786,32 @@ static void mpzmod_digits(INT32 args)
   pop_n_elems(args);
 
   push_string(s);
+}
+
+/*! @decl string encode_json(int|void flags, int|void indent)
+ *!
+ *!   Encode the value as a JSON string.
+ *!
+ *! @seealso
+ *!   @[digits()], @[Standards.JSON]
+ */
+static void mpzmod_encode_json(INT32 args)
+{
+  INT_TYPE flags;
+  INT_TYPE indent = 0;
+  get_all_args("Gmp.mpz->encode_json", args, ".%i%i", &flags, &indent);
+
+  if (indent) {
+    push_text(" ");
+    push_int(indent);
+    o_multiply();
+  }
+  mpzmod_digits(0);
+  if (indent) {
+    f_add(2);
+  }
+
+  stack_pop_n_elems_keep_top(args);
 }
 
 /*! @decl string _sprintf(int ind, mapping opt)
@@ -2370,6 +2396,8 @@ static void pike_mp_free (void *ptr, size_t size)
                ID_PROTECTED);                                           \
   									\
   ADD_FUNCTION("digits", mpzmod_digits,tFunc(tOr(tVoid,tInt),tStr), 0);	\
+  ADD_FUNCTION("encode_json", mpzmod_encode_json,			\
+	       tFunc(tOr(Void,tInt) tOr(tVoid,tInt),tStr), 0);		\
   ADD_FUNCTION("_sprintf", mpzmod__sprintf, tFunc(tInt tMapping,tStr),  \
                ID_PROTECTED);                                           \
   ADD_FUNCTION("size", mpzmod_size,tFunc(tOr(tVoid,tInt),tInt), 0);	\
