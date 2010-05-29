@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.482 2010/05/27 23:16:38 mast Exp $
+# $Id: Makefile.in,v 1.483 2010/05/29 23:56:18 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -82,7 +82,7 @@ OSFLAGS=@OSFLAGS@
 WARN=@WARN@
 
 #add extra defines here
-DEFINES=@CPPFLAGS@
+DEFINES=@CPPFLAGS@ -DPIKE_CORE
 
 # -O should work with all compilers
 OPTIMIZE=@OPTIMIZE@
