@@ -1,0 +1,41 @@
+START_MARKER
+
+test_true(Standards.JSON.true)
+test_false(Standards.JSON.false)
+test_true(Standards.JSON.null)
+
+define(test_enc,[[
+test_eq(Standards.JSON.encode([[$1]]),[[$2]])
+]])
+
+test_enc(-1, "-1")
+test_enc(0, "0")
+test_enc(1, "1")
+test_eval_error(Standards.JSON.encode(Int.NATIVE_MAX+1))
+
+test_enc(-1.0, "-1.0")
+test_enc(0.0, "0.0")
+test_enc(1.0, "1.0")
+test_eval_error(Standards.JSON.encode(Math.inf))
+test_eval_error(Standards.JSON.encode(Math.nan))
+
+test_enc("", "\"\"")
+test_enc("\"\\\b\f\n\r\t", "\"\\\"\\\\\\b\\f\\n\\r\\t\"")
+test_enc("\x0123", "\"\u0123\"")
+test_eval_error(Standards.JSON.encode("\x0123456"))
+
+test_enc(({}), "[]")
+test_enc(({1,2.0,"3"}),[[ "[1,2.0,\"3\"]" ]])
+test_eval_error([[
+array a = ({ 1, 2 });
+a[1] = a;
+return Standards.JSON.encode(a);
+]])
+
+test_enc( ([]), "{}" )
+test_enc( ([ "a":1, "b":2.0, "c":"3" ]),[["{\"c\":\"3\",\"b\":2.0,\"a\":1}"]])
+test_eval_error(Standards.JSON.encode( ([1:2]) ))
+
+test_enc(([ "a":({(["b":2])}) ]), [["{\"a\":[{\"b\":2}]}"]])
+
+END_MARKER
