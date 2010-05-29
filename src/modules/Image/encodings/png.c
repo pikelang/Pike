@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.100 2010/03/02 17:27:03 grubba Exp $
+|| $Id: png.c,v 1.101 2010/05/29 16:12:12 nilsson Exp $
 */
 
 #include "global.h"
@@ -1428,6 +1428,10 @@ static void img_png_decode(INT32 args, int mode)
 
          default:
             if(mode==MODE_IMAGE_ONLY) break;
+
+            /* Private chunks from Adobe Fireworks: prVW, mkBF, mkBS,
+               mkBT, mkTS */
+
 	    ref_push_string(b->item[1].u.string);
 	    ref_push_string(b->item[0].u.string);
 	    mapping_insert(m,sp-1,sp-2);
