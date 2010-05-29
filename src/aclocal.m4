@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.170 2010/02/16 17:49:31 grubba Exp $
+dnl $Id: aclocal.m4,v 1.171 2010/05/29 14:57:32 grubba Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -264,7 +264,7 @@ dnl conflicts between headers that can't be used simultaneously. It
 dnl can also be quite a bit slower than the standard autoconf method.
 AC_DEFUN([PIKE_FUNCS_NEED_DECLS],
 [
-  test "x$1" != x && pike_cv_funcs_need_decls=$1
+  test "x$1" != x && pike_cv_funcs_need_decls="$1"
   if test "x$pike_cv_funcs_need_decls" = xyes; then
     echo > hdrlist.h
   fi
@@ -275,6 +275,16 @@ pushdef([AC_CONFIG_HEADER],
   CONFIG_HEADERS="$1"
   popdef([AC_CONFIG_HEADER])
   AC_CONFIG_HEADER($1)
+])
+
+# The CHECK_HEADERS_ONCE macro gets broken if CHECK_HEADER gets redefined.
+# We redefine it to do an ordinary CHECK_HEADERS.
+ifdef([AC_CHECK_HEADERS_ONCE],[
+  define([ORIG_AC_CHECK_HEADERS_ONCE], defn([AC_CHECK_HEADERS_ONCE]))
+  AC_DEFUN([AC_CHECK_HEADERS_ONCE],[
+    dnl ORIG_AC_CHECK_HEADERS_ONCE([$1])
+    AC_CHECK_HEADERS([$1])
+  ])
 ])
 
 define([ORIG_AC_CHECK_HEADER], defn([AC_CHECK_HEADER]))
@@ -420,7 +430,8 @@ $2], break, pike_cv_search_$1=no)
     fi
   else
     AC_SEARCH_LIBS([$1],[$3],[
-      dnl In case ACTION-IF-FOUND refers to the pike_cv_search_* variable.
+      dnl Since ACTION-IF-FOUND should refer to the pike_cv_search_* variable
+      dnl rather than to the ac_cv_search_* variable.
       pike_cv_search_$1=$ac_cv_search_$1
       $4],[$5],[$6])
   fi
@@ -643,7 +654,7 @@ define([PIKE_RETAIN_VARIABLES],
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.170 2010/02/16 17:49:31 grubba Exp $
+  # $Id: aclocal.m4,v 1.171 2010/05/29 14:57:32 grubba Exp $
 
   MY_AC_PROG_CC
 
@@ -1451,7 +1462,7 @@ AC_DEFUN(PIKE_SELECT_ABI,
 
   # ABI-dirs
   AC_MSG_CHECKING(for ABI lib-suffixes)
-  AC_CACHE_VAL(pike_cv_abi_dirs,
+  AC_CACHE_VAL(pike_cv_abi_suffixes,
   [
     extra_abi_dirs=""
     if type isainfo 2>/dev/null >/dev/null; then
