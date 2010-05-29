@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: global.h,v 1.119 2010/04/15 23:34:28 mast Exp $
+|| $Id: global.h,v 1.120 2010/05/29 23:58:08 mast Exp $
 */
 
 #ifndef GLOBAL_H
@@ -101,7 +101,74 @@ struct timeval;
 #ifndef CONFIGURE_TEST
 /* machine.h doesn't exist if we're included from a configure test
  * program. In that case these defines will already be included. */
+
+/* Newer autoconf adds the PACKAGE_* defines for us, regardless
+ * whether we want them or not. If we're being included from a module
+ * they will clash, and so we need to ensure the one for the module
+ * survives, either they are defined already or get defined later.
+ * Tedious work.. */
+#ifndef PIKE_CORE
+#ifdef PACKAGE_NAME
+#define ORIG_PACKAGE_NAME PACKAGE_NAME
+#undef PACKAGE_NAME
+#endif
+#ifdef PACKAGE_TARNAME
+#define ORIG_PACKAGE_TARNAME PACKAGE_TARNAME
+#undef PACKAGE_TARNAME
+#endif
+#ifdef PACKAGE_VERSION
+#define ORIG_PACKAGE_VERSION PACKAGE_VERSION
+#undef PACKAGE_VERSION
+#endif
+#ifdef PACKAGE_STRING
+#define ORIG_PACKAGE_STRING PACKAGE_STRING
+#undef PACKAGE_STRING
+#endif
+#ifdef PACKAGE_BUGREPORT
+#define ORIG_PACKAGE_BUGREPORT PACKAGE_BUGREPORT
+#undef PACKAGE_BUGREPORT
+#endif
+#ifdef PACKAGE_URL
+#define ORIG_PACKAGE_URL PACKAGE_URL
+#undef PACKAGE_URL
+#endif
+#endif
+
 #include "machine.h"
+
+#ifndef PIKE_CORE
+#undef PACKAGE_NAME
+#ifdef ORIG_PACKAGE_NAME
+#define PACKAGE_NAME ORIG_PACKAGE_NAME
+#undef ORIG_PACKAGE_NAME
+#endif
+#undef PACKAGE_TARNAME
+#ifdef ORIG_PACKAGE_TARNAME
+#define PACKAGE_TARNAME ORIG_PACKAGE_TARNAME
+#undef ORIG_PACKAGE_TARNAME
+#endif
+#undef PACKAGE_VERSION
+#ifdef ORIG_PACKAGE_VERSION
+#define PACKAGE_VERSION ORIG_PACKAGE_VERSION
+#undef ORIG_PACKAGE_VERSION
+#endif
+#undef PACKAGE_STRING
+#ifdef ORIG_PACKAGE_STRING
+#define PACKAGE_STRING ORIG_PACKAGE_STRING
+#undef ORIG_PACKAGE_STRING
+#endif
+#undef PACKAGE_BUGREPORT
+#ifdef ORIG_PACKAGE_BUGREPORT
+#define PACKAGE_BUGREPORT ORIG_PACKAGE_BUGREPORT
+#undef ORIG_PACKAGE_BUGREPORT
+#endif
+#undef PACKAGE_URL
+#ifdef ORIG_PACKAGE_URL
+#define PACKAGE_URL ORIG_PACKAGE_URL
+#undef ORIG_PACKAGE_URL
+#endif
+#endif
+
 #endif
 
 /* Some identifiers used as flags in the machine.h defines. */
