@@ -11,7 +11,7 @@ test_eq(Standards.JSON.encode([[$1]], Standards.JSON.CANONICAL),[[$2]])
 test_enc(-1, "-1")
 test_enc(0, "0")
 test_enc(1, "1")
-test_eval_error(Standards.JSON.encode(Int.NATIVE_MAX+1))
+test_enc(Int.NATIVE_MAX+1, (string) (Int.NATIVE_MAX + 1))
 test_enc(UNDEFINED, "0")
 
 test_enc(-1.0, "-1.0")
@@ -46,6 +46,7 @@ test_enc(([ "a":({(["b":2])}) ]), [["{\"a\":[{\"b\":2}]}"]])
 
 test_enc(Sql.NULL, "null")
 test_eval_error( Standards.JSON.encode(Sql.Null) ) dnl FIXME?
+					dnl No, we can't encode types. /mast
 test_any([[
 class X { string encode_json() { return "smallpox"; } };
 return Standards.JSON.encode(X());
