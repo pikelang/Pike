@@ -243,6 +243,16 @@ EOF
   ORIG_AC_CHECK_SIZEOF($1,$2)
 ])
 
+dnl The CHECK_HEADERS_ONCE macro gets broken if CHECK_HEADERS gets redefined.
+dnl We redefine it to do an ordinary CHECK_HEADERS.
+ifdef([AC_CHECK_HEADERS_ONCE],[
+  define([ORIG_AC_CHECK_HEADERS_ONCE], defn([AC_CHECK_HEADERS_ONCE]))
+  AC_DEFUN([AC_CHECK_HEADERS_ONCE],[
+    dnl ORIG_AC_CHECK_HEADERS_ONCE([$1])
+    AC_CHECK_HEADERS([$1])
+  ])
+])
+
 define([ORIG_CHECK_HEADERS], defn([AC_CHECK_HEADERS]))
 define([AC_CHECK_HEADERS],
 [
