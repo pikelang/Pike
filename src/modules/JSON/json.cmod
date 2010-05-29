@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: json.cmod,v 1.3 2010/05/28 18:42:49 mast Exp $
+|| $Id: json.cmod,v 1.4 2010/05/29 13:38:38 mast Exp $
 */
 
 /* JSON encoder.
@@ -12,6 +12,7 @@
  * Created May 2010 by Martin Stjernholm
  */
 
+#include "array.h"
 #include "cyclic.h"
 #include "global.h"
 #include "interpret.h"
@@ -33,6 +34,7 @@ DECLARATIONS
 
 #define ASCII_ONLY 1
 #define HUMAN_READABLE 2
+#define CANONICAL 4
 
 struct json_proc {
   struct string_builder buf;
@@ -40,9 +42,113 @@ struct json_proc {
   int indent;
 };
 
-static void json_encode_recur (struct json_proc *ctx, struct svalue *val)
+static void json_encode_recur (struct json_proc *ctx, struct svalue *val);
+
+static void encode_mapcont (struct json_proc *ctx, struct mapping *m)
+/* Assumes there's at least one element. */
 {
   struct string_builder *buf = &ctx->buf;
+  int e, notfirst = 0;
+  struct keypair *k;
+  struct mapping_data *md = m->data;
+
+  NEW_MAPPING_LOOP (md) {
+    if (notfirst) {
+      string_builder_putchar (buf, ',');
+      if (ctx->indent >= 0) {
+	int indent = ctx->indent;
+	string_builder_putchar (buf, '\n');
+	string_builder_putchars (buf, ' ', indent);
+      }
+    }
+    else {
+      if (ctx->indent >= 0) {
+	int indent = ctx->indent = ctx->indent + 2;
+	string_builder_putchar (buf, '\n');
+	string_builder_putchars (buf, ' ', indent);
+      }
+      notfirst = 1;
+    }
+
+    if (k->ind.type != T_STRING)
+      Pike_error ("Cannot json encode mapping with non-string index %O.\n",
+		  &k->ind);
+    json_encode_recur (ctx, &k->ind);
+
+    string_builder_putchar (buf, ':');
+    if (ctx->indent >= 0) string_builder_putchar (buf, ' ');
+    json_encode_recur (ctx, &k->val);
+  }
+}
+
+static void encode_mapcont_canon (struct json_proc *ctx, struct mapping *m)
+/* Assumes there's at least one element. */
+{
+  struct string_builder *buf = &ctx->buf;
+  int i, notfirst = 0;
+  struct array *inds = mapping_indices (m);
+  int size = inds->size;
+  ONERROR uwp;
+  SET_ONERROR (uwp, do_free_array, inds);
+
+  {
+    /* Same order as encode_value_canonic. */
+    INT32 *order = get_switch_order (inds);
+    order_array (inds, order);
+  }
+
+  for (i = 0; i < size; i++) {
+    struct svalue *ind = ITEM (inds) + i;
+
+    {
+      /* Push the value on the stack so we know it's still there when
+       * we get to formatting it. Probably not really necessary, but
+       * better safe than sorry. */
+      struct svalue *val = low_mapping_lookup (m, ind);
+      if (val)
+	push_svalue (val);
+      else
+	/* The entry has disappeared since the array was created.
+	 * Ignore it and continue is the right thing to do. */
+	continue;
+    }
+
+    if (notfirst) {
+      int indent = ctx->indent;
+      string_builder_putchar (buf, ',');
+      if (indent >= 0) {
+	string_builder_putchar (buf, '\n');
+	string_builder_putchars (buf, ' ', indent);
+      }
+    }
+    else {
+      int indent = ctx->indent;
+      if (indent >= 0) {
+	ctx->indent = indent = indent + 2;
+	string_builder_putchar (buf, '\n');
+	string_builder_putchars (buf, ' ', indent);
+      }
+      notfirst = 1;
+    }
+
+    if (ind->type != T_STRING)
+      Pike_error ("Cannot json encode mapping with non-string index %O.\n",
+		  ind);
+    json_encode_recur (ctx, ind);
+
+    string_builder_putchar (buf, ':');
+    if (ctx->indent >= 0) string_builder_putchar (buf, ' ');
+
+    json_encode_recur (ctx, Pike_sp - 1);
+    pop_stack();
+  }
+
+  UNSET_ONERROR (uwp);
+  free_array (inds);
+}
+
+static void json_encode_recur (struct json_proc *ctx, struct svalue *val)
+{
   DECLARE_CYCLIC();
 
   check_c_stack (1024);
@@ -52,6 +158,7 @@ static void json_encode_recur (struct json_proc *ctx, struct svalue *val)
 
   switch (val->type) {
     case PIKE_T_STRING: {
+      struct string_builder *buf = &ctx->buf;
       PCHARP str = MKPCHARP_STR (val->u.string);
       ptrdiff_t l = val->u.string->len, i, s;
       string_builder_putchar (buf, '"');
@@ -92,7 +199,7 @@ static void json_encode_recur (struct json_proc *ctx, struct svalue *val)
     }
 
     case PIKE_T_INT:
-      string_builder_append_integer (buf, val->u.integer,
+      string_builder_append_integer (&ctx->buf, val->u.integer,
 				     10, APPEND_SIGNED, 0, 0);
       break;
 
@@ -104,34 +211,38 @@ static void json_encode_recur (struct json_proc *ctx, struct svalue *val)
       if (PIKE_ISINF (f))
 	Pike_error ("Cannot json encode infinity.\n");
       format_pike_float (b, f);
-      string_builder_strcat (buf, b);
+      string_builder_strcat (&ctx->buf, b);
       break;
     }
 
     case PIKE_T_ARRAY: {
-      struct array *a = val->u.array;
-      int size = a->size;
+      struct string_builder *buf = &ctx->buf;
       string_builder_putchar (buf, '[');
-      if (size) {
-	int i, indent = ctx->indent;
-	if (indent >= 0 && size > 1) {
-	  ctx->indent = indent = indent + 2;
-	  string_builder_putchar (buf, '\n');
-	  string_builder_putchars (buf, ' ', indent);
-	}
-	json_encode_recur (ctx, ITEM (a));
-	for (i = 1; i < size; i++) {
-	  string_builder_putchar (buf, ',');
-	  if (indent >= 0) {
+      {
+	struct array *a = val->u.array;
+	int size = a->size;
+	if (size) {
+	  int i;
+	  if (ctx->indent >= 0 && size > 1) {
+	    int indent = ctx->indent = ctx->indent + 2;
 	    string_builder_putchar (buf, '\n');
 	    string_builder_putchars (buf, ' ', indent);
 	  }
-	  json_encode_recur (ctx, ITEM (a) + i);
-	}
-	if (indent >= 0 && size > 1) {
-	  ctx->indent = indent = indent - 2;
-	  string_builder_putchar (buf, '\n');
-	  string_builder_putchars (buf, ' ', indent);
+	  json_encode_recur (ctx, ITEM (a));
+	  for (i = 1; i < size; i++) {
+	    string_builder_putchar (buf, ',');
+	    if (ctx->indent >= 0) {
+	      int indent = ctx->indent;
+	      string_builder_putchar (buf, '\n');
+	      string_builder_putchars (buf, ' ', indent);
+	    }
+	    json_encode_recur (ctx, ITEM (a) + i);
+	  }
+	  if (ctx->indent >= 0 && size > 1) {
+	    int indent = ctx->indent = ctx->indent - 2;
+	    string_builder_putchar (buf, '\n');
+	    string_builder_putchars (buf, ' ', indent);
+	  }
 	}
       }
       string_builder_putchar (buf, ']');
@@ -139,47 +250,20 @@ static void json_encode_recur (struct json_proc *ctx, struct svalue *val)
     }
 
     case PIKE_T_MAPPING: {
-      struct mapping_data *md;
-      int size;
+      string_builder_putchar (&ctx->buf, '{');
       check_mapping_for_destruct (val->u.mapping);
-      md = val->u.mapping->data;
-      size = md->size;
-      string_builder_putchar (buf, '{');
-      if (size) {
-	int indent = ctx->indent;
-	struct keypair *k;
-	int e, notfirst = 0;
-	NEW_MAPPING_LOOP (md) {
-	  if (notfirst) {
-	    string_builder_putchar (buf, ',');
-	    if (indent >= 0) {
-	      string_builder_putchar (buf, '\n');
-	      string_builder_putchars (buf, ' ', indent);
-	    }
-	  }
-	  else {
-	    if (indent >= 0 && size > 1) {
-	      ctx->indent = indent = indent + 2;
-	      string_builder_putchar (buf, '\n');
-	      string_builder_putchars (buf, ' ', indent);
-	    }
-	    notfirst = 1;
-	  }
-	  if (k->ind.type != T_STRING)
-	    Pike_error ("Cannot json encode mapping "
-			"with non-string index %O.\n", &k->ind);
-	  json_encode_recur (ctx, &k->ind);
-	  string_builder_putchar (buf, ':');
-	  if (indent >= 0) string_builder_putchar (buf, ' ');
-	  json_encode_recur (ctx, &k->val);
-	}
-	if (indent >= 0 && size > 1) {
-	  ctx->indent = indent = indent - 2;
-	  string_builder_putchar (buf, '\n');
-	  string_builder_putchars (buf, ' ', indent);
+      if (m_sizeof (val->u.mapping)) {
+	if (ctx->flags & CANONICAL)
+	  encode_mapcont_canon (ctx, val->u.mapping);
+	else
+	  encode_mapcont (ctx, val->u.mapping);
+	if (ctx->indent >= 0) {
+	  int indent = ctx->indent = ctx->indent - 2;
+	  string_builder_putchar (&ctx->buf, '\n');
+	  string_builder_putchars (&ctx->buf, ' ', indent);
 	}
       }
-      string_builder_putchar (buf, '}');
+      string_builder_putchar (&ctx->buf, '}');
       break;
     }
 
@@ -198,7 +282,7 @@ static void json_encode_recur (struct json_proc *ctx, struct svalue *val)
 	  if (Pike_sp[-1].type != PIKE_T_STRING)
 	    Pike_error ("Expected string from %O->encode_json(), got %s.\n",
 			val, get_name_of_type (Pike_sp[-1].type));
-	  string_builder_shared_strcat (buf, Pike_sp[-1].u.string);
+	  string_builder_shared_strcat (&ctx->buf, Pike_sp[-1].u.string);
 	  free_string ((--Pike_sp)->u.string);
 	  break;
 	}
@@ -217,6 +301,7 @@ static void json_encode_recur (struct json_proc *ctx, struct svalue *val)
 
 /*! @decl constant ASCII_ONLY
  *! @decl constant HUMAN_READABLE
+ *! @decl constant CANONICAL
  *!
  *! Bit field flags for use with @[encode]:
  *!
@@ -225,10 +310,19 @@ static void json_encode_recur (struct json_proc *ctx, struct svalue *val)
  *!   Use @expr{\uxxxx@} escapes for all non-ascii characters and DEL
  *!   (U+007f). The default is to escape only the characters that must
  *!   be escaped. The flag value is 1.
+ *!
  *! @item Standards.JSON.HUMAN_READABLE
  *!   Pretty print with indentation to make the result more easy on
  *!   human eyes. The default is to use no extra whitespace at all.
  *!   The flag value is 2.
+ *!
+ *! @item Standards.JSON.CANONICAL
+ *!   Make the output canonical, so that the same encoded value always
+ *!   generates the same char-by-char equal string. In practice this
+ *!   means that mapping elements are sorted on its indices. Note that
+ *!   the other flags take precedence, so e.g. the canonical form with
+ *!   @[HUMAN_READABLE] is not the same as the canonical form without
+ *!   it. The flag value is 4.
  *! @enddl
  */
 
@@ -244,8 +338,8 @@ static void json_encode_recur (struct json_proc *ctx, struct svalue *val)
  *!   object that implements an @expr{encode_json@} callback).
  *!
  *! @param flags
- *!   Flag bit field to control formatting. See @[ASCII_ONLY] and
- *!   @[HUMAN_READABLE] for further details.
+ *!   Flag bit field to control formatting. See @[ASCII_ONLY],
+ *!   @[HUMAN_READABLE] and @[CANONICAL] for further details.
  *!
  *! @note
  *! 8-bit and wider characters in input strings are neither escaped
@@ -275,6 +369,7 @@ PIKE_MODULE_INIT
 {
   add_integer_constant ("ASCII_ONLY", ASCII_ONLY, 0);
   add_integer_constant ("HUMAN_READABLE", HUMAN_READABLE, 0);
+  add_integer_constant ("CANONICAL", CANONICAL, 0);
 
   INIT;
 }
