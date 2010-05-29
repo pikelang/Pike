@@ -12,6 +12,7 @@ test_enc(-1, "-1")
 test_enc(0, "0")
 test_enc(1, "1")
 test_eval_error(Standards.JSON.encode(Int.NATIVE_MAX+1))
+test_enc(UNDEFINED, "0")
 
 test_enc(-1.0, "-1.0")
 test_enc(0.0, "0.0")
@@ -35,7 +36,19 @@ return Standards.JSON.encode(a);
 test_enc( ([]), "{}" )
 test_enc( ([ "a":1, "b":2.0, "c":"3" ]),[["{\"c\":\"3\",\"b\":2.0,\"a\":1}"]])
 test_eval_error(Standards.JSON.encode( ([1:2]) ))
+test_eval_error([[
+mapping m = ([ "a":1 ]);
+m->a = m;
+return Standards.JSON.encode(m);
+]])
 
 test_enc(([ "a":({(["b":2])}) ]), [["{\"a\":[{\"b\":2}]}"]])
+
+test_enc(Sql.NULL, "null")
+test_eval_error( Standards.JSON.encode(Sql.Null) ) dnl FIXME?
+test_any([[
+class X { string encode_json() { return "smallpox"; } };
+return Standards.JSON.encode(X());
+]], "smallpox")
 
 END_MARKER
