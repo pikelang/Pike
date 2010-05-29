@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.188 2010/05/29 13:49:22 grubba Exp $
+|| $Id: mpz_glue.c,v 1.189 2010/05/29 13:57:43 grubba Exp $
 */
 
 #include "global.h"
@@ -2397,7 +2397,7 @@ static void pike_mp_free (void *ptr, size_t size)
   									\
   ADD_FUNCTION("digits", mpzmod_digits,tFunc(tOr(tVoid,tInt),tStr), 0);	\
   ADD_FUNCTION("encode_json", mpzmod_encode_json,			\
-	       tFunc(tOr(Void,tInt) tOr(tVoid,tInt),tStr), 0);		\
+	       tFunc(tOr(tVoid,tInt) tOr(tVoid,tInt),tStr), 0);		\
   ADD_FUNCTION("_sprintf", mpzmod__sprintf, tFunc(tInt tMapping,tStr),  \
                ID_PROTECTED);                                           \
   ADD_FUNCTION("size", mpzmod_size,tFunc(tOr(tVoid,tInt),tInt), 0);	\
