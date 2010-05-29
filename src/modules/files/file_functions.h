@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file_functions.h,v 1.47 2009/02/24 20:53:12 grubba Exp $
+|| $Id: file_functions.h,v 1.48 2010/05/29 16:11:27 nilsson Exp $
 */
 
 #define CB_FUNC tFunc(tNone,tOr(tVoid,tMixed))
@@ -121,7 +121,7 @@ FILE_FUNC("query_address",file_query_address, tFunc(tOr(tInt01,tVoid),tStr))
 /* function(void|string,void|string:void) */
 FILE_FUNC("create",file_create, tFunc(tOr(tVoid,tStr) tOr(tVoid,tStr),tVoid))
 /* function(mixed:object) */
-FILE_FUNC("`<<",file_lsh, tFunc(tMixed,FILE_OBJ))
+FILE_FUNC("`<<",file_lsh, tAttr("deprecated", tFunc(tMixed,FILE_OBJ)))
 
 #ifdef _REENTRANT
 /* function(object:void) */
