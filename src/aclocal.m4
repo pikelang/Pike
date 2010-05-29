@@ -131,7 +131,7 @@ dnl conflicts between headers that can't be used simultaneously. It
 dnl can also be quite a bit slower than the standard autoconf method.
 AC_DEFUN([PIKE_FUNCS_NEED_DECLS],
 [
-  test "x$1" != x && pike_cv_funcs_need_decls=$1
+  test "x$1" != x && pike_cv_funcs_need_decls="$1"
   if test "x$pike_cv_funcs_need_decls" = xyes; then
     echo > hdrlist.h
   fi
@@ -142,6 +142,16 @@ pushdef([AC_CONFIG_HEADER],
   CONFIG_HEADERS="$1"
   popdef([AC_CONFIG_HEADER])
   AC_CONFIG_HEADER($1)
+])
+
+# The CHECK_HEADERS_ONCE macro gets broken if CHECK_HEADER gets redefined.
+# We redefine it to do an ordinary CHECK_HEADERS.
+ifdef([AC_CHECK_HEADERS_ONCE],[
+  define([ORIG_AC_CHECK_HEADERS_ONCE], defn([AC_CHECK_HEADERS_ONCE]))
+  AC_DEFUN([AC_CHECK_HEADERS_ONCE],[
+    dnl ORIG_AC_CHECK_HEADERS_ONCE([$1])
+    AC_CHECK_HEADERS([$1])
+  ])
 ])
 
 define([ORIG_AC_CHECK_HEADER], defn([AC_CHECK_HEADER]))
