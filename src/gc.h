@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.h,v 1.144 2010/04/19 18:45:46 grubba Exp $
+|| $Id: gc.h,v 1.145 2010/05/30 09:43:08 mast Exp $
 */
 
 #ifndef GC_H
@@ -653,11 +653,11 @@ PMOD_EXPORT extern visit_ref_cb *visit_ref;
 PMOD_EXPORT extern visit_thing_fn *const visit_fn_from_type[MAX_REF_TYPE + 1];
 PMOD_EXPORT TYPE_T type_from_visit_fn (visit_thing_fn *fn);
 
-PMOD_EXPORT TYPE_FIELD real_visit_svalues (const struct svalue *s, size_t num,
+PMOD_EXPORT TYPE_FIELD real_visit_svalues (struct svalue *s, size_t num,
 					   int ref_type);
 
-static INLINE int real_visit_short_svalue (const union anything *u, TYPE_T t,
-						  int ref_type)
+static INLINE int real_visit_short_svalue (union anything *u, TYPE_T t,
+					   int ref_type)
 {
   check_short_svalue (u, t);
   if (t <= MAX_REF_TYPE)
@@ -675,7 +675,7 @@ static INLINE TYPE_FIELD dmalloc_visit_svalues (struct svalue *s, size_t num,
 }
 #define visit_svalues(S, NUM, REF_TYPE)					\
   dmalloc_visit_svalues ((S), (NUM), (REF_TYPE), DMALLOC_LOCATION())
-static INLINE void dmalloc_visit_svalue (const struct svalue *s,
+static INLINE void dmalloc_visit_svalue (struct svalue *s,
 					 int ref_type, char *l)
 {
   int t = s->type;
@@ -690,7 +690,7 @@ static INLINE void dmalloc_visit_svalue (const struct svalue *s,
   dmalloc_visit_svalue ((S), (REF_TYPE), DMALLOC_LOCATION())
 #else
 #define visit_svalues real_visit_svalues
-static INLINE void visit_svalue (const struct svalue *s, int ref_type)
+static INLINE void visit_svalue (struct svalue *s, int ref_type)
 {
   int t = s->type;
   check_svalue (s);
