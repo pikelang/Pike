@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: json.cmod,v 1.7 2010/05/30 21:12:23 mast Exp $
+|| $Id: json.cmod,v 1.8 2010/05/30 21:13:56 mast Exp $
 */
 
 /* JSON encoder.
@@ -329,7 +329,8 @@ static void json_encode_recur (struct json_proc *ctx, struct svalue *val)
  *! @enddl
  */
 
-/*! @decl string encode (mixed val, void|int flags)
+/*! @decl string encode (int|float|string|array|mapping|object val, @
+ *!                      void|int flags)
  *!
  *! Encodes a value to a JSON string.
  *!
@@ -350,7 +351,8 @@ static void json_encode_recur (struct json_proc *ctx, struct svalue *val)
  *! on the returned string to get a valid transport encoded JSON
  *! string.
  */
-PIKEFUN string encode (mixed val, void|int flags)
+PIKEFUN string encode (int|float|string|array|mapping|object val,
+		       void|int flags)
   optflags OPT_TRY_OPTIMIZE;
 {
   struct json_proc ctx;
