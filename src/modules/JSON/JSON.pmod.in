@@ -1,4 +1,4 @@
-// $Id: JSON.pmod.in,v 1.2 2010/05/28 18:38:35 mast Exp $
+// $Id: JSON.pmod.in,v 1.3 2010/05/30 21:04:31 mast Exp $
 
 #pike __REAL_VERSION__
 
@@ -19,7 +19,8 @@ False false = False();
 Null null = Null();
 //! Objects representing the three JSON literals @expr{true@},
 //! @expr{false@} and @expr{null@}. @expr{true@} and @expr{false@}
-//! should behave as expected in boolean contexts.
+//! should behave as expected in boolean contexts. @expr{null@} is
+//! false in a boolean context.
 
 class True
 //! Type for the @[true] object.
@@ -39,6 +40,7 @@ class False
 class Null
 //! Type for the @[null] object.
 {
+  int `!() {return 1;}
   string encode_json() {return "null";}
   protected string _sprintf (int flag) {return flag == 'O' && "JSON.null";}
 }

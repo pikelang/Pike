@@ -2,7 +2,7 @@ START_MARKER
 
 test_true(Standards.JSON.true)
 test_false(Standards.JSON.false)
-test_true(Standards.JSON.null)
+test_false(Standards.JSON.null)
 
 define(test_enc,[[
 test_eq(Standards.JSON.encode([[$1]], Standards.JSON.CANONICAL),[[$2]])
