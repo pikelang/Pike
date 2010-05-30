@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: json.cmod,v 1.4 2010/05/29 13:38:38 mast Exp $
+|| $Id: json.cmod,v 1.5 2010/05/30 10:47:45 mast Exp $
 */
 
 /* JSON encoder.
@@ -95,6 +95,7 @@ static void encode_mapcont_canon (struct json_proc *ctx, struct mapping *m)
     /* Same order as encode_value_canonic. */
     INT32 *order = get_switch_order (inds);
     order_array (inds, order);
+    free (order);
   }
 
   for (i = 0; i < size; i++) {
