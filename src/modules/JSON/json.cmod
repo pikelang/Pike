@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: json.cmod,v 1.5 2010/05/30 10:47:45 mast Exp $
+|| $Id: json.cmod,v 1.6 2010/05/30 11:47:06 mast Exp $
 */
 
 /* JSON encoder.
@@ -91,12 +91,9 @@ static void encode_mapcont_canon (struct json_proc *ctx, struct mapping *m)
   ONERROR uwp;
   SET_ONERROR (uwp, do_free_array, inds);
 
-  {
-    /* Same order as encode_value_canonic. */
-    INT32 *order = get_switch_order (inds);
-    order_array (inds, order);
-    free (order);
-  }
+  /* encode_value_canonic uses get_switch_order, but this sort is good
+   * enough considering we only have to deal (correctly) with strings. */
+  sort_array_destructively (inds);
 
   for (i = 0; i < size; i++) {
     struct svalue *ind = ITEM (inds) + i;
