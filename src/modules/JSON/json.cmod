@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: json.cmod,v 1.8 2010/05/30 21:13:56 mast Exp $
+|| $Id: json.cmod,v 1.9 2010/05/30 22:58:11 mast Exp $
 */
 
 /* JSON encoder.
@@ -34,7 +34,7 @@ DECLARATIONS
 
 #define ASCII_ONLY 1
 #define HUMAN_READABLE 2
-#define CANONICAL 4
+#define PIKE_CANONICAL 4
 
 struct json_proc {
   struct string_builder buf;
@@ -251,7 +251,7 @@ static void json_encode_recur (struct json_proc *ctx, struct svalue *val)
       string_builder_putchar (&ctx->buf, '{');
       check_mapping_for_destruct (val->u.mapping);
       if (m_sizeof (val->u.mapping)) {
-	if (ctx->flags & CANONICAL)
+	if (ctx->flags & PIKE_CANONICAL)
 	  encode_mapcont_canon (ctx, val->u.mapping);
 	else
 	  encode_mapcont (ctx, val->u.mapping);
@@ -299,7 +299,7 @@ static void json_encode_recur (struct json_proc *ctx, struct svalue *val)
 
 /*! @decl constant ASCII_ONLY
  *! @decl constant HUMAN_READABLE
- *! @decl constant CANONICAL
+ *! @decl constant PIKE_CANONICAL
  *!
  *! Bit field flags for use with @[encode]:
  *!
@@ -319,13 +319,19 @@ static void json_encode_recur (struct json_proc *ctx, struct svalue *val)
  *!   human eyes. The default is to use no extra whitespace at all.
  *!   The flag value is 2.
  *!
- *! @item Standards.JSON.CANONICAL
- *!   Make the output canonical, so that the same encoded value always
+ *! @item Standards.JSON.PIKE_CANONICAL
+ *!   Make the output canonical, so that the same value always
  *!   generates the same char-by-char equal string. In practice this
  *!   means that mapping elements are sorted on their indices. Note
  *!   that the other flags take precedence, so e.g. the canonical form
  *!   with @[HUMAN_READABLE] is not the same as the canonical form
  *!   without it. The flag value is 4.
+ *!
+ *!   This canonical form is stable for the @[encode] function. In the
+ *!   future there may be a standardized canonical form which quite
+ *!   likely will be different from this one. In that case a separate
+ *!   flag has to be added so this one doesn't change - hence the name
+ *!   @[PIKE_CANONICAL].
  *! @enddl
  */
 
@@ -343,7 +349,7 @@ static void json_encode_recur (struct json_proc *ctx, struct svalue *val)
  *!
  *! @param flags
  *!   Flag bit field to control formatting. See @[ASCII_ONLY],
- *!   @[HUMAN_READABLE] and @[CANONICAL] for further details.
+ *!   @[HUMAN_READABLE] and @[PIKE_CANONICAL] for further details.
  *!
  *! @note
  *! 8-bit and wider characters in input strings are neither escaped
@@ -374,7 +380,7 @@ PIKE_MODULE_INIT
 {
   add_integer_constant ("ASCII_ONLY", ASCII_ONLY, 0);
   add_integer_constant ("HUMAN_READABLE", HUMAN_READABLE, 0);
-  add_integer_constant ("CANONICAL", CANONICAL, 0);
+  add_integer_constant ("PIKE_CANONICAL", PIKE_CANONICAL, 0);
 
   INIT;
 }

@@ -5,7 +5,7 @@ test_false(Standards.JSON.false)
 test_false(Standards.JSON.null)
 
 define(test_enc,[[
-test_eq(Standards.JSON.encode([[$1]], Standards.JSON.CANONICAL),[[$2]])
+test_eq(Standards.JSON.encode([[$1]], Standards.JSON.PIKE_CANONICAL),[[$2]])
 ]])
 
 test_enc(-1, "-1")
