@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: json.cmod,v 1.6 2010/05/30 11:47:06 mast Exp $
+|| $Id: json.cmod,v 1.7 2010/05/30 21:12:23 mast Exp $
 */
 
 /* JSON encoder.
@@ -166,7 +166,7 @@ static void json_encode_recur (struct json_proc *ctx, struct svalue *val)
 	  Pike_error ("Cannot json encode non-unicode char "
 		      "0x%"PRINTPIKEINT"x.\n", (INT_TYPE) c);
 	if (c == '"' || c == '\\' || c <= 0x1f ||
-	    (c >= 0x7f && ctx->flags & ASCII_ONLY)) {
+	    (c >= 0x7f && ctx->flags & ASCII_ONLY && c <= 0xffff)) {
 	  if (s < i) {
 	    PCHARP piece = ADD_PCHARP (str, s);
 	    string_builder_append (buf, piece, i - s);
@@ -309,6 +309,11 @@ static void json_encode_recur (struct json_proc *ctx, struct svalue *val)
  *!   (U+007f). The default is to escape only the characters that must
  *!   be escaped. The flag value is 1.
  *!
+ *!   Note however that the limited length of the escapes makes it
+ *!   possible to escape chars up to U+ffff inclusive only. Chars
+ *!   above that are still unescaped in the output (which can be
+ *!   detected with @[String.width]).
+ *!
  *! @item Standards.JSON.HUMAN_READABLE
  *!   Pretty print with indentation to make the result more easy on
  *!   human eyes. The default is to use no extra whitespace at all.
@@ -317,10 +322,10 @@ static void json_encode_recur (struct json_proc *ctx, struct svalue *val)
  *! @item Standards.JSON.CANONICAL
  *!   Make the output canonical, so that the same encoded value always
  *!   generates the same char-by-char equal string. In practice this
- *!   means that mapping elements are sorted on its indices. Note that
- *!   the other flags take precedence, so e.g. the canonical form with
- *!   @[HUMAN_READABLE] is not the same as the canonical form without
- *!   it. The flag value is 4.
+ *!   means that mapping elements are sorted on their indices. Note
+ *!   that the other flags take precedence, so e.g. the canonical form
+ *!   with @[HUMAN_READABLE] is not the same as the canonical form
+ *!   without it. The flag value is 4.
  *! @enddl
  */
 
