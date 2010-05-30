@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: json.cmod,v 1.9 2010/05/30 22:58:11 mast Exp $
+|| $Id: json.cmod,v 1.10 2010/05/30 23:22:06 mast Exp $
 */
 
 /* JSON encoder.
@@ -327,10 +327,12 @@ static void json_encode_recur (struct json_proc *ctx, struct svalue *val)
  *!   with @[HUMAN_READABLE] is not the same as the canonical form
  *!   without it. The flag value is 4.
  *!
- *!   This canonical form is stable for the @[encode] function. In the
- *!   future there may be a standardized canonical form which quite
- *!   likely will be different from this one. In that case a separate
- *!   flag has to be added so this one doesn't change - hence the name
+ *!   This canonical form is stable for the @[encode] function,
+ *!   providing floats aren't used (their formatting is currently
+ *!   affected by float size and libc formatting code). In the future
+ *!   there may be a standardized canonical form which quite likely
+ *!   will be different from this one. In that case a separate flag
+ *!   has to be added so this one doesn't change - hence the name
  *!   @[PIKE_CANONICAL].
  *! @enddl
  */
