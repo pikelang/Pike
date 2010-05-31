@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.215 2010/02/21 22:42:19 srb Exp $
+|| $Id: mapping.c,v 1.216 2010/05/31 10:18:26 mast Exp $
 */
 
 #include "global.h"
@@ -72,7 +72,7 @@ DO_IF_DEBUG(								\
     datasize+=MAPPING_DATA_SIZE(m->data->hashsize, m->data->num_keypairs) / \
       (double) m->data->refs;						\
   }							\
-  size += (INT32) datasize;				\
+  size += (size_t) datasize;				\
 }while(0)
 
 BLOCK_ALLOC_FILL_PAGES(mapping, 2)
