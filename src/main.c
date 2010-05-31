@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.164 2004/12/17 17:28:40 grubba Exp $
+|| $Id: main.c,v 1.165 2010/05/31 14:46:16 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: main.c,v 1.164 2004/12/17 17:28:40 grubba Exp $");
+RCSID("$Id: main.c,v 1.165 2010/05/31 14:46:16 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -853,6 +853,7 @@ void low_exit_main(void)
   exit_object();
   exit_dynamic_load();
   exit_signals();
+  exit_builtin_efuns();
   exit_builtin();
   exit_cpp();
   cleanup_interpret();

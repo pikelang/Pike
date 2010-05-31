@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.h,v 1.24 2004/03/31 14:28:21 grubba Exp $
+|| $Id: builtin_functions.h,v 1.25 2010/05/31 14:46:16 grubba Exp $
 */
 
 #ifndef BUILTIN_EFUNS_H
@@ -116,6 +116,7 @@ PMOD_EXPORT void f__reset_dmalloc(INT32 args);
 PMOD_EXPORT void f__locate_references(INT32 args);
 PMOD_EXPORT void f_map_array(INT32 args);
 void init_builtin_efuns(void);
+void exit_builtin_efuns(void);
 void init_builtin(void);
 void exit_builtin(void);
 void f_werror (INT32 args);
