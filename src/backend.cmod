@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.158 2010/05/19 14:00:15 grubba Exp $
+|| $Id: backend.cmod,v 1.159 2010/05/31 14:34:23 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.158 2010/05/19 14:00:15 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.159 2010/05/31 14:34:23 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -3645,9 +3645,12 @@ void init_backend(void)
 }
 
 #ifdef DO_PIKE_CLEANUP
-void exit_backend()
+void exit_backend(void)
 {
-  if (mem_callback) remove_callback(mem_callback);
+  /* Note: The mem_callback has already been freed
+   *       by exit_builtin_efuns() at this point.
+   */
+  /* if (mem_callback) remove_callback(mem_callback); */
   free_object (default_backend->backend_obj);
   default_backend = 0;
   EXIT;

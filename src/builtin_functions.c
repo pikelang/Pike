@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.564 2009/08/26 12:25:56 mast Exp $
+|| $Id: builtin_functions.c,v 1.565 2010/05/31 14:34:24 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.564 2009/08/26 12:25:56 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.565 2010/05/31 14:34:24 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -9018,3 +9018,9 @@ void init_builtin_efuns(void)
 #endif
 #endif
 }
+
+void exit_builtin_efuns(void)
+{
+  free_callback_list(&memory_usage_callback);
+}
+
