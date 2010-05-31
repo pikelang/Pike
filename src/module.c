@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: module.c,v 1.59 2008/11/02 19:57:58 grubba Exp $
+|| $Id: module.c,v 1.60 2010/05/31 13:59:05 grubba Exp $
 */
 
 #include "global.h"
@@ -131,6 +131,7 @@ static void exit_builtin_modules(void)
   exit_pike_searching();
   exit_object();
   exit_signals();
+  exit_builtin_efuns();
   exit_builtin();
   exit_cpp();
   cleanup_interpret();

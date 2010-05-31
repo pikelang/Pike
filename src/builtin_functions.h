@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.h,v 1.41 2010/01/02 13:17:10 srb Exp $
+|| $Id: builtin_functions.h,v 1.42 2010/05/31 13:59:05 grubba Exp $
 */
 
 #ifndef BUILTIN_EFUNS_H
@@ -161,6 +161,7 @@ PMOD_EXPORT void f_filter(INT32 args);
 PMOD_EXPORT void f_inherit_list(INT32 args);
 PMOD_EXPORT void f_function_defined(INT32 args);
 void init_builtin_efuns(void);
+void exit_builtin_efuns(void);
 
 /* From iterators.cmod. */
 PMOD_EXPORT void f_get_iterator(INT32 args);

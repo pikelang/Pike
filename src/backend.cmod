@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.242 2010/05/19 14:00:16 grubba Exp $
+ * $Id: backend.cmod,v 1.243 2010/05/31 13:59:05 grubba Exp $
  *
  * Backend object.
  */
@@ -5002,9 +5002,12 @@ void init_backend(void)
 }
 
 #ifdef DO_PIKE_CLEANUP
-void exit_backend()
+void exit_backend(void)
 {
-  if (mem_callback) remove_callback(mem_callback);
+  /* Note: The mem_callback has already been freed
+   *       by exit_builtin_efuns() at this point.
+   */
+  /* if (mem_callback) remove_callback(mem_callback); */
   free_object(default_backend_obj);
   default_backend = 0;
   EXIT;

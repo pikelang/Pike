@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.700 2010/05/19 09:32:22 grubba Exp $
+|| $Id: builtin_functions.c,v 1.701 2010/05/31 13:59:04 grubba Exp $
 */
 
 #include "global.h"
@@ -9706,4 +9706,9 @@ void init_builtin_efuns(void)
   ADD_INT_CONSTANT ("DESTRUCT_NO_REFS", DESTRUCT_NO_REFS, 0);
   ADD_INT_CONSTANT ("DESTRUCT_GC", DESTRUCT_GC, 0);
   ADD_INT_CONSTANT ("DESTRUCT_CLEANUP", DESTRUCT_CLEANUP, 0);
+}
+
+void exit_builtin_efuns(void)
+{
+  free_callback_list(&memory_usage_callback);
 }
