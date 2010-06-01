@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cyclic.h,v 1.9 2003/01/05 14:29:54 grubba Exp $
+|| $Id: cyclic.h,v 1.10 2010/06/01 09:43:20 grubba Exp $
 */
 
 #ifndef CYCLIC_H
@@ -50,12 +50,12 @@ typedef struct CYCLIC
 #define END_CYCLIC()  unlink_cyclic(&cyclic_struct__)
 
 /* Prototypes begin here */
-void unlink_cyclic(CYCLIC *c);
-void *begin_cyclic(CYCLIC *c,
-		   char *id,
-		   void *thread,
-		   void *a,
-		   void *b);
+PMOD_EXPORT void unlink_cyclic(CYCLIC *c);
+PMOD_EXPORT void *begin_cyclic(CYCLIC *c,
+			       char *id,
+			       void *thread,
+			       void *a,
+			       void *b);
 /* Prototypes end here */
 
 #endif /* CYCLIC_H */

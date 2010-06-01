@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cyclic.c,v 1.13 2004/09/18 20:50:48 nilsson Exp $
+|| $Id: cyclic.c,v 1.14 2010/06/01 09:43:19 grubba Exp $
 */
 
 #include "global.h"
@@ -40,17 +40,17 @@ static void low_unlink_cyclic(CYCLIC *c)
   Pike_fatal("Unlink cyclic on lost cyclic struct.\n");
 }
 
-void unlink_cyclic(CYCLIC *c)
+PMOD_EXPORT void unlink_cyclic(CYCLIC *c)
 {
   UNSET_ONERROR(c->onerr);
   low_unlink_cyclic(c);
 }
 
-void *begin_cyclic(CYCLIC *c,
-		   char *id,
-		   void *th,
-		   void *a,
-		   void *b)
+PMOD_EXPORT void *begin_cyclic(CYCLIC *c,
+			       char *id,
+			       void *th,
+			       void *a,
+			       void *b)
 {
   size_t h;
   void *ret=0;
