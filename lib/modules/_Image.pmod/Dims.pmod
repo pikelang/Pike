@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-//   $Id: Dims.pmod,v 1.10 2008/06/28 16:37:03 nilsson Exp $
+//   $Id: Dims.pmod,v 1.11 2010/06/02 17:08:32 jonasw Exp $
 //
 //   Imagedimensionreadermodule for Pike.
 //   Created by Johan Sch�n, <js@roxen.com>.
@@ -283,8 +283,23 @@ array(int) get_TIFF(Stdio.File f)
  return 0;
 }
 
-//! Read dimensions from a JPEG, GIF, PNG or TIFF file and return an array
-//! with width and height, or if the file isn't a valid image,
+//! Reads the dimensions from a PSD file and returns an array with
+//! width and height, or if the file isn't a valid image, 0.
+array(int) get_PSD(Stdio.File f)
+{
+  //  4 bytes signature + 2 bytes version
+  if (f->read(6) != "8BPS\0\1") return 0;
+  
+  //  6 bytes reserved
+  //  2 bytes channel count
+  f->read(8);
+  
+  //  4 bytes height, 4 bytes width (big-endian)
+  return reverse(array_sscanf(f->read(8), "%4c%4c"));
+}
+
+//! Read dimensions from a JPEG, GIF, PNG, TIFF or PSD file and return an
+//! array with width and height, or if the file isn't a valid image,
 //! @expr{0@}. The argument @[file] should be file object or the data
 //! from a file. The offset pointer will be assumed to be at the start
 //! of the file data and will be modified by the function.
@@ -299,8 +314,8 @@ array(int) get_TIFF(Stdio.File f)
 //!     @elem int 1
 //!       Image height.
 //!     @elem string 2
-//!       Image type. Any of @expr{"gif"@}, @expr{"png"@}, @expr{"tiff"@} and
-//!       @expr{"jpeg@}.
+//!       Image type. Any of @expr{"gif"@}, @expr{"png"@}, @expr{"tiff"@},
+//!       @expr{"jpeg"@} and @expr{"psd"@}.
 //!   @endarray
 array(int) get(string|Stdio.File file) {
   string fn;
@@ -318,6 +333,17 @@ array(int) get(string|Stdio.File file) {
   case "\x89PNG\r\n":
     file->read(6+4); // offset+IHDR
     return array_sscanf(file->read(8), "%4c%4c") + ({ "png" });
+
+  case "8BPS\0\1":
+    //  Photoshop PSD
+    //
+    //  4 bytes signature + 2 bytes version
+    //  6 bytes reserved
+    //  2 bytes channel count
+    file->read(6 + 2);
+    
+    //  4 bytes height, 4 bytes width (big-endian)
+    return reverse(array_sscanf(file->read(8), "%4c%4c")) + ({ "psd" });
 
   default:
      string buf;
