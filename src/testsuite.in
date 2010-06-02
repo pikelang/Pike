@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.894 2010/04/16 00:16:16 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.895 2010/06/02 11:13:57 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -8385,10 +8385,23 @@ test_eq([[(string)1]],[["1"]])
 test_eq([[(string)-1]],[["-1"]])
 test_eq([[(string)1.0]],[["1.0"]])
 test_eq([[(string)-1.0]],[["-1.0"]])
-test_true([[has_value ((string)1e100, ".") ||
-	    has_value ((string)1e100, "e")]])
-test_true([[has_value ((string)-1e100, ".") ||
-	    has_value ((string)-1e100, "e")]])
+// Note: 32-bit floats overflow at ~3.4e38.
+test_true([[has_value ((string)1e38, ".") ||
+	    has_value ((string)1e38, "e")]])
+test_true([[has_value ((string)-1e38, ".") ||
+	    has_value ((string)-1e38, "e")]])
+test_true([[has_value ((string)1e-38, ".") ||
+	    has_value ((string)1e-38, "e")]])
+test_true([[has_value ((string)-1e-38, ".") ||
+	    has_value ((string)-1e-38, "e")]])
+cond([[Float.DIGITS_10 >= 15]], [[  // Usual size with 64 bit IEEE floats.
+  // Note: 1e100 overflows to infinity with 32 bit floats.
+  test_true([[has_value ((string)1e100, ".") ||
+	      has_value ((string)1e100, "e")]])
+  test_true([[has_value ((string)-1e100, ".") ||
+	      has_value ((string)-1e100, "e")]])
+]])
+// Note: 1e-100 underflows to 0.0 with 32 bit IEEE floats, but that's ok.
 test_true([[has_value ((string)1e-100, ".") ||
 	    has_value ((string)1e-100, "e")]])
 test_true([[has_value ((string)-1e-100, ".") ||
