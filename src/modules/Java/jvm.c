@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: jvm.c,v 1.93 2010/06/02 16:12:57 grubba Exp $
+|| $Id: jvm.c,v 1.94 2010/06/03 09:07:25 grubba Exp $
 */
 
 /*
@@ -161,7 +161,22 @@ array input to make_jargs
 
  */
 
-
+static const char *pike_jni_error(jint errcode)
+{
+  switch(errcode) {
+  case JNI_EDETACHED:
+    return "thread detached from the VM";
+  case JNI_EVERSION:
+    return "JNI version error";
+  case JNI_ENOMEM:
+    return "not enough memory";
+  case JNI_EEXIST:
+    return "VM already created";
+  case JNI_EINVAL:
+    return "invalid arguments";
+  }
+  return "unknown error";
+}
 
 /* Attach foo */
 
@@ -3415,8 +3430,10 @@ static void f_create(INT32 args)
   {
     jint errcode;
     void *vp; /* To avoid aliasing. */
-    if((errcode = JNI_CreateJavaVM(&j->jvm, &vp, &j->vm_args)))
-      Pike_error("Failed to create virtual machine: %d\n", errcode);
+    if((errcode = JNI_CreateJavaVM(&j->jvm, &vp, &j->vm_args))) {
+      Pike_error("Failed to create virtual machine: %s (%d)\n",
+		 pike_jni_error(errcode), errcode);
+    }
     j->env = vp;
   }
 
