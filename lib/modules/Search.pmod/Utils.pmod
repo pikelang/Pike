@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 - 2009, Roxen IS. All rights reserved.
 //
-// $Id: Utils.pmod,v 1.49 2010/04/28 12:09:39 noring Exp $
+// $Id: Utils.pmod,v 1.50 2010/06/03 11:52:35 noring Exp $
 
 #if !constant(report_error)
 #define report_error werror
@@ -453,7 +453,7 @@ class Scheduler {
   private mapping(int:int) compact_queue = ([]);
   private array(int) priority_queue = ({});
   private mapping db_profiles;
-  private object schedule_process;
+  private mixed schedule_run;
 
   void create(mapping _db_profiles) {
     db_profiles = _db_profiles;
@@ -518,24 +518,20 @@ class Scheduler {
 
 #if constant (roxen)
   private void reschedule() {
-    if( schedule_process )
-      schedule_process->stop();
     WERR("Scheduler runs next event in "+(next_run-time())+" seconds.");
-    // We use BackgroundProcess since there is no support for unscheduling
-    // tasks created with background_run.
-    schedule_process = 
-      roxen.BackgroundProcess(next_run-time(), do_scheduled_stuff);
+    remove_call_out(schedule_run);
+    schedule_run = roxen.background_run(next_run-time(), do_scheduled_stuff);
   }
 
   void unschedule() {
-    if( schedule_process )
-      schedule_process->stop();
+    remove_call_out(schedule_run);
+    schedule_run = 0;
   }
 
 
   private void do_scheduled_stuff() {
-    if( schedule_process )
-      schedule_process->stop();
+    remove_call_out(schedule_run);
+    schedule_run = 0;
     WERR("Running scheduler event.");
 
     foreach(indices(db_profiles), int id) {
