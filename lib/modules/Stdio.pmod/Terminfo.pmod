@@ -1,4 +1,4 @@
-// $Id: Terminfo.pmod,v 1.29 2008/11/03 08:42:40 stewa Exp $
+// $Id: Terminfo.pmod,v 1.30 2010/06/05 12:40:37 grubba Exp $
 #pike __REAL_VERSION__
 
 
@@ -408,6 +408,7 @@ class Terminfo {
   }
 }
 
+//! Termcap database
 class TermcapDB {
 
   MUTEX
@@ -662,7 +663,7 @@ class TermcapDB {
   }
 }
 
-
+//! Terminfo database for a single directory.
 class TerminfoDB {
 
   MUTEX
@@ -671,13 +672,21 @@ class TerminfoDB {
   protected private mapping(string:Terminfo) cache = ([]);
   protected private int complete_index=0;
 
-  void create(string|void dirname)
+  protected string _sprintf()
+  {
+    return sprintf("Stdio.Terminfo.TerminfoDB(%O)", dir);
+  }
+
+  protected void create(string|void dirname)
   {
     if (!dirname)
     {
+      // This is retained for compat.
+      // Typical initialization is now via MetaTerminfoDB.
       foreach (({"/usr/share/lib/terminfo", "/usr/share/terminfo",
 		 "/usr/share/termcap",
-		 "/usr/lib/terminfo", "/usr/share/misc/terminfo"}), string dn)
+		 "/usr/lib/terminfo", "/usr/share/misc/terminfo",
+		 "/lib/terminfo", "/etc/terminfo" }), string dn)
       {
 	.Stat s = file_stat(dn);
 	if (s && s->type=="dir")
@@ -753,9 +762,66 @@ class TerminfoDB {
   }
 }
 
+//! @[TerminfoDB] that merges several directorys.
+class MetaTerminfoDB {
+  protected array(TerminfoDB) dbs = ({});
+
+  //! Create a new Meta @[TerminfoDB].
+  //!
+  //! @param dbs
+  //!   Array with elements in priority order. Elements may be either
+  //!   @mixed
+  //!     @type TerminfoDB
+  //!       An active @[TerminfoDB].
+  //!     @type string
+  //!       A directory that may exist and contain a terminfo database.
+  //!   @endarray
+  //!
+  //! @returns
+  //!   If the resulting set of @[TerminfoDB]'s is empty,
+  //!   the object will be destructed.
+  protected void create(array(TerminfoDB|string)|void dbs)
+  {
+    if (!dbs) {
+      // Terminfo locations in priority order.
+      dbs = ({
+	// Local terminfo.
+	"/etc/terminfo",
+	// Operating System terminfo.
+	"/lib/terminfo", "/usr/lib/terminfo",
+	// Extra terminfo. These are often symlinks to the above.
+	"/usr/share/lib/terminfo", "/usr/share/terminfo",
+	"/usr/share/termcap", "/usr/share/misc/terminfo",
+      });
+    }
+    foreach(dbs, string|TerminfoDB db) {
+      if (stringp(db)) {
+	.Stat st = file_stat(db);
+	if (!st || !st->isdir) continue;
+	db = TerminfoDB(db);
+      }
+      if (!db) continue;
+      this_program::dbs += ({ db });
+    }
+    // werror("TerminfoDBs: %O\n", this_program::dbs);
+    if (!sizeof(this_program::dbs)) {
+      destruct(this);
+    }
+  }
+
+  Terminfo `[](string name)
+  {
+    foreach(dbs, TerminfoDB db) {
+      Terminfo ti = db[name];
+      if (ti) return ti;
+    }
+    return 0;
+  }
+}
+
 protected private Termcap defterm;
 protected private TermcapDB deftermcap;
-protected private TerminfoDB defterminfo;
+protected private MetaTerminfoDB defterminfo;
 
 TermcapDB defaultTermcapDB()
 {
@@ -766,11 +832,11 @@ TermcapDB defaultTermcapDB()
   return tcdb;
 }
 
-TerminfoDB defaultTerminfoDB()
+MetaTerminfoDB defaultTerminfoDB()
 {
-  TerminfoDB tidb;
+  MetaTerminfoDB tidb;
   LOCK;
-  catch { tidb = defterminfo || (defterminfo = TerminfoDB()); };
+  catch { tidb = defterminfo || (defterminfo = MetaTerminfoDB()); };
   UNLOCK;
   return tidb;
 }
