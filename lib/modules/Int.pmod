@@ -43,15 +43,55 @@ constant NATIVE_MAX = __builtin.NATIVE_INT_MAX;
 //! limits.
 
 //! Swaps the upper and lower byte in a word.
+//!
+//! @seealso
+//!   @[swap_long()]
 int(0..65535) swap_word(int(0..65535) i) {
   return ((i&255)<<8) | ((i&(255<<8))>>8);
 }
 
 //! Swaps the upper and lower word in a longword, and the upper and
 //! lower bytes in the words. Simply put, the bytes are reversed.
+//!
+//! @seealso
+//!   @[swap_word()]
 int(0..4294967295) swap_long(int(0..4294967295) i) {
   return ((i&255)<<24) | ((i&(255<<8))<<8) |
     ((i&(255<<16))>>8) | ((i&(255<<24))>>24);
+}
+
+//! Reverses the order of the low order @[bits] number of bits
+//! of the value @[value].
+//!
+//! @note
+//!   Any higher order bits of the value will be cleared.
+//!   The returned value will thus be unsigned.
+//!
+//! @seealso
+//!   @[reverse()], @[swap_word()], @[swap_long()]
+int(0..) reflect(int value, int(0..) bits)
+{
+  int aligned_bits = bits;
+  if (bits & (bits-1)) {
+    // Find the closest larger even power of two.
+    aligned_bits <<= 1;
+    while (aligned_bits & (aligned_bits-1)) {
+      aligned_bits -= (aligned_bits & ~(aligned_bits-1));
+    }
+  }
+  bits = aligned_bits - bits;
+  // Perform pair-wise swapping of bit-sequences.
+  int mask = (1<<aligned_bits)-1;
+  int filter = mask;
+  while (aligned_bits >>= 1) {
+    filter ^= filter>>aligned_bits;
+    value = (value & filter)>>aligned_bits |
+      (value & (filter^mask))<<aligned_bits;
+  }
+
+  // Adjust the returned value in case we've swapped more bits
+  // than needed. We then have junk in the lowest order bits.
+  return value>>bits;
 }
 
 protected class Inf {
