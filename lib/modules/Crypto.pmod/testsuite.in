@@ -1,5 +1,5 @@
 START_MARKER
-// $Id: testsuite.in,v 1.44 2010/06/06 20:21:53 nilsson Exp $
+// $Id: testsuite.in,v 1.45 2010/06/06 20:22:36 nilsson Exp $
 
 // Nettle.Yarrow
 
@@ -27,7 +27,7 @@ cond_resolv( Nettle.Proxy, [[
       string u = b2->unpad(b1->pad());
       if(u!=p) error("Data differs (%O, %O, %O).\n", i,u,p);
     }
-    for(int i=Crypto.AES->block_size(); i<Crypto.AES->block_size()*2; i++) {
+    for(int i=Crypto.AES->block_size(); i<Crypto.AES->block_size()*3; i++) {
       string p = random_string(i);
       string x = b1->crypt(p);
       string u = b2->unpad(x+b1->pad());
