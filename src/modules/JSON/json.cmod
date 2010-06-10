@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: json.cmod,v 1.13 2010/06/10 14:33:06 arne Exp $
+|| $Id: json.cmod,v 1.14 2010/06/10 14:39:08 arne Exp $
 */
 
 /* JSON encoder.
@@ -315,9 +315,9 @@ static void json_encode_recur (struct json_proc *ctx, struct svalue *val)
  *!   detected with @[String.width]).
  *!
  *! @item Standards.JSON.HUMAN_READABLE
- *!   Pretty print with indentation to make the result more easy on
- *!   human eyes. The default is to use no extra whitespace at all.
- *!   The flag value is 2.
+ *!   Pretty print with indentation to make the result easier on human
+ *!   eyes. The default is to use no extra whitespace at all. The flag
+ *!   value is 2.
  *!
  *! @item Standards.JSON.PIKE_CANONICAL
  *!   Make the output canonical, so that the same value always
@@ -458,10 +458,10 @@ void low_decode(struct pike_string *data, int flags) {
  *! Takes a string and checks if it is valid JSON.
  *! 
  *! @returns
- *! 	In case the string contains valid JSON @expr{-1@} is returned. It is then guarenteed to be parsed
+ *! 	In case the string contains valid JSON @expr{-1@} is returned. It is then guaranteed to be parsed
  *! 	without errors by @[decode()].
  *! 	In case the string is not valid JSON, the integer position inside the string
- *! 	where the error occures is returned.
+ *! 	where the error occurs is returned.
  */
 PIKEFUN int validate(string data) {
     low_validate(data, 0);
@@ -469,7 +469,8 @@ PIKEFUN int validate(string data) {
 
 /*! @decl array|mapping|string|float|int decode(string s)
  *!
- *! Parses a JSON-formatted string and returns the corresponding pike data type.
+ *! Parses a JSON-formatted string and returns the corresponding pike
+ *! data structure.
  *! 
  *! @throws
  *! 	Throws an exception in case the data contained in @expr{s@} is not valid
@@ -484,10 +485,10 @@ PIKEFUN mixed decode(string data) {
  *! Takes a utf8 encoded string and checks if it is valid JSON.
  *! 
  *! @returns
- *! 	In case the string contains valid JSON @expr{-1@} is returned. It is then guarenteed to be parsed
+ *! 	In case the string contains valid JSON @expr{-1@} is returned. It is then guaranteed to be parsed
  *! 	without errors by @[decode()].
  *! 	In case the string is not valid JSON, the integer position inside the string
- *! 	where the error occures is returned.
+ *! 	where the error occurs is returned.
  */
 PIKEFUN int validate_utf8(string data) {
     low_validate(data, JSON_UTF8);
@@ -495,8 +496,8 @@ PIKEFUN int validate_utf8(string data) {
 
 /*! @decl array|mapping|string|float|int decode(string s)
  *!
- *! Parses a utf8 encoded JSON-formatted string and returns the corresponding pike data type.
- *! Should give the same results as @expr{Standards.JSON.decode(utf8_to_string(s))@}.
+ *! Parses a utf8 encoded JSON-formatted string and returns the corresponding pike data structure.
+ *! Should give the same result as @expr{Standards.JSON.decode(utf8_to_string(s))@}.
  *! 
  *! @throws
  *! 	Throws an exception in case the data contained in @expr{s@} is not valid
