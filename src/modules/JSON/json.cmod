@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: json.cmod,v 1.12 2010/06/10 14:28:31 arne Exp $
+|| $Id: json.cmod,v 1.13 2010/06/10 14:33:06 arne Exp $
 */
 
 /* JSON encoder.
@@ -408,8 +408,6 @@ void low_validate(struct pike_string *data, int flags) {
 void low_decode(struct pike_string *data, int flags) {
     ptrdiff_t stop;
     struct parser_state state;
-
-    printf("in decode\n");
 
     switch (data->size_shift) {
     case 0:
