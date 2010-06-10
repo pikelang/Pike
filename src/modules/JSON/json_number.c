@@ -5,18 +5,8 @@
 #include <stdio.h>
 #include "global.h"
 
-// p_wchar2 is INT32
-#if defined(HAVE_WCHAR_H) && 4 == SIZEOF_WCHAR_T
-# define USE_WCHAR_SCANF
-#endif
 
-#ifdef USE_WCHAR_SCANF
-# include <wchar.h>
-#endif
-
-
-
-#line 31 "rl/json_number.rl"
+#line 21 "rl/json_number.rl"
 
 
 static p_wchar2 *_parse_JSON_number(p_wchar2 *p, p_wchar2 *pe, struct parser_state *state) {
@@ -25,7 +15,7 @@ static p_wchar2 *_parse_JSON_number(p_wchar2 *p, p_wchar2 *pe, struct parser_sta
     int d = 0;
 
     
-#line 29 "json_number.c"
+#line 19 "json_number.c"
 static const int JSON_number_start = 1;
 static const int JSON_number_first_final = 6;
 static const int JSON_number_error = 0;
@@ -33,17 +23,17 @@ static const int JSON_number_error = 0;
 static const int JSON_number_en_main = 1;
 
 
-#line 39 "rl/json_number.rl"
+#line 29 "rl/json_number.rl"
 
     
-#line 40 "json_number.c"
+#line 30 "json_number.c"
 	{
 	cs = JSON_number_start;
 	}
 
-#line 41 "rl/json_number.rl"
+#line 31 "rl/json_number.rl"
     
-#line 47 "json_number.c"
+#line 37 "json_number.c"
 	{
 	if ( p == pe )
 		goto _test_eof;
@@ -89,7 +79,7 @@ case 6:
 		goto tr8;
 	goto st0;
 tr8:
-#line 23 "rl/json_number.rl"
+#line 13 "rl/json_number.rl"
 	{
 		p--; {p++; cs = 7; goto _out;}
     }
@@ -98,17 +88,17 @@ st7:
 	if ( ++p == pe )
 		goto _test_eof7;
 case 7:
-#line 102 "json_number.c"
+#line 92 "json_number.c"
 	goto st0;
 tr2:
-#line 29 "rl/json_number.rl"
+#line 19 "rl/json_number.rl"
 	{d = 1;}
 	goto st3;
 st3:
 	if ( ++p == pe )
 		goto _test_eof3;
 case 3:
-#line 112 "json_number.c"
+#line 102 "json_number.c"
 	if ( 48 <= (*p) && (*p) <= 57 )
 		goto st8;
 	goto st0;
@@ -133,14 +123,14 @@ case 8:
 		goto tr8;
 	goto st0;
 tr9:
-#line 28 "rl/json_number.rl"
+#line 18 "rl/json_number.rl"
 	{d = 1;}
 	goto st4;
 st4:
 	if ( ++p == pe )
 		goto _test_eof4;
 case 4:
-#line 144 "json_number.c"
+#line 134 "json_number.c"
 	switch( (*p) ) {
 		case 43: goto st5;
 		case 45: goto st5;
@@ -209,7 +199,7 @@ case 10:
 	_out: {}
 	}
 
-#line 42 "rl/json_number.rl"
+#line 32 "rl/json_number.rl"
 
     if (cs >= JSON_number_first_final) {
 		if (!state->validate) {

@@ -3,16 +3,6 @@
 #include <stdio.h>
 #include "global.h"
 
-// p_wchar2 is INT32
-#if defined(HAVE_WCHAR_H) && 4 == SIZEOF_WCHAR_T
-# define USE_WCHAR_SCANF
-#endif
-
-#ifdef USE_WCHAR_SCANF
-# include <wchar.h>
-#endif
-
-
 %%{
     machine JSON_number;
     alphtype int;
