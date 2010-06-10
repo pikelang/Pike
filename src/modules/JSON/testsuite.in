@@ -10,6 +10,7 @@ test_eq(Standards.JSON.encode([[$1]], Standards.JSON.PIKE_CANONICAL),[[$2]])
 ]])
 define(test_dec_enc,[[
 test_equal(Standards.JSON.decode ([[$1]]), [[$2]])
+test_equal(Standards.JSON.decode_utf8 (string_to_utf8 ([[$1]])), [[$2]])
 test_equal(Standards.JSON.decode (Standards.JSON.encode ([[$2]])), [[$2]])
 ]])
 
@@ -267,5 +268,10 @@ test_any([[
 	int b = (t == Standards.JSON.decode_utf8(s));
 	return a && b;
 ]], 1)
+
+test_dec_enc([["[\"abc\",\"r\344ksm\366rg\345s\",\"def\"]"]],
+	     [[({"abc", "r\344ksm\366rg\345s", "def"})]])
+test_dec_enc([["[\"abc\",\"\u20acuro\",\"def\"]"]],
+	     [[({"abc", "\u20acuro", "def"})]])
 
 END_MARKER

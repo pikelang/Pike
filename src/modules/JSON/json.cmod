@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: json.cmod,v 1.18 2010/06/10 14:41:44 arne Exp $
+|| $Id: json.cmod,v 1.19 2010/06/10 14:52:30 arne Exp $
 */
 
 /* JSON tools.
@@ -381,13 +381,15 @@ void low_validate(struct pike_string *data, int flags) {
     ptrdiff_t stop;
     struct parser_state state;
 
-    switch (data->size_shift) {
-    case 0:
-        break;
-    case 1:
-    case 2:
-	Pike_error("Strings wider than 1 byte are NOT valid UTF-8.\n");
-        break;
+    if (flags & JSON_UTF8) {
+      switch (data->size_shift) {
+      case 0:
+	  break;
+      case 1:
+      case 2:
+	  Pike_error("Strings wider than 1 byte are NOT valid UTF-8.\n");
+	  break;
+      }
     }
 
     state.flags = flags|JSON_VALIDATE;
@@ -409,13 +411,15 @@ void low_decode(struct pike_string *data, int flags) {
     ptrdiff_t stop;
     struct parser_state state;
 
-    switch (data->size_shift) {
-    case 0:
-        break;
-    case 1:
-    case 2:
-	Pike_error("Strings wider than 1 byte are NOT valid UTF-8.\n");
-        break;
+    if (flags & JSON_UTF8) {
+      switch (data->size_shift) {
+      case 0:
+	  break;
+      case 1:
+      case 2:
+	  Pike_error("Strings wider than 1 byte are NOT valid UTF-8.\n");
+	  break;
+      }
     }
 
     state.level = 0;
