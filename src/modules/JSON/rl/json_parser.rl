@@ -7,8 +7,6 @@
 #include "builtin_functions.h"
 #include "gc.h"
 
-#include "json.h"
-
 
 static ptrdiff_t _parse_JSON(PCHARP str, ptrdiff_t p, ptrdiff_t pe, struct parser_state *state);
 
@@ -29,9 +27,9 @@ static ptrdiff_t _parse_JSON(PCHARP str, ptrdiff_t p, ptrdiff_t pe, struct parse
     action parse_mapping { PARSE(mapping, fpc); fexec i; }
     action parse_array { PARSE(array, fpc); fexec i; }
 
-    action push_true { PUSH_SPECIAL("true"); }
-    action push_false { PUSH_SPECIAL("false"); }
-    action push_null { PUSH_SPECIAL("null"); }
+    action push_true { PUSH_SPECIAL(true); }
+    action push_false { PUSH_SPECIAL(false); }
+    action push_null { PUSH_SPECIAL(null); }
 
     main := myspace* . (number_start >parse_number |
 			string_start >parse_string |
@@ -53,7 +51,7 @@ static ptrdiff_t _parse_JSON(PCHARP str, ptrdiff_t p, ptrdiff_t pe, struct parse
     %% write exec;
 
     if (cs >= JSON_first_final) {
-		return p;
+	return p;
     }
 
     if (!(state->flags&JSON_VALIDATE) && c > 0) pop_n_elems(c);

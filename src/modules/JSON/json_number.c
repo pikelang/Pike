@@ -78,7 +78,7 @@ case 6:
 tr8:
 #line 10 "rl/json_number.rl"
 	{
-		p--; {p++; cs = 7; goto _out;}
+	p--; {p++; cs = 7; goto _out;}
     }
 	goto st7;
 st7:
@@ -199,15 +199,15 @@ case 10:
 #line 30 "rl/json_number.rl"
 
     if (cs >= JSON_number_first_final) {
-		if (!(state->flags&JSON_VALIDATE)) {
-			if (d == 1) {
-				push_float((FLOAT_TYPE)STRTOD_PCHARP(ADD_PCHARP(str, i), NULL));
-			} else {
-				pcharp_to_svalue_inumber(Pike_sp++, ADD_PCHARP(str, i), NULL, 10, p - i + 1);
-			}
-		}
+	if (!(state->flags&JSON_VALIDATE)) {
+	    if (d == 1) {
+		push_float((FLOAT_TYPE)STRTOD_PCHARP(ADD_PCHARP(str, i), NULL));
+	    } else {
+		pcharp_to_svalue_inumber(Pike_sp++, ADD_PCHARP(str, i), NULL, 10, p - i);
+	    }
+	}
 
-		return p;
+	return p;
     }
 
     state->flags |= JSON_ERROR;

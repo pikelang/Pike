@@ -9,8 +9,6 @@
 #include "builtin_functions.h"
 #include "gc.h"
 
-#include "json.h"
-
 
 static ptrdiff_t _parse_JSON(PCHARP str, ptrdiff_t p, ptrdiff_t pe, struct parser_state *state);
 
@@ -21,7 +19,7 @@ static ptrdiff_t _parse_JSON(PCHARP str, ptrdiff_t p, ptrdiff_t pe, struct parse
 #include "json_mapping.c"
 
 
-#line 44 "rl/json_parser.rl"
+#line 42 "rl/json_parser.rl"
 
 
 static ptrdiff_t _parse_JSON(PCHARP str, ptrdiff_t p, ptrdiff_t pe, struct parser_state *state) {
@@ -29,7 +27,7 @@ static ptrdiff_t _parse_JSON(PCHARP str, ptrdiff_t p, ptrdiff_t pe, struct parse
     int cs;
     int c = 0;
     
-#line 33 "json_parser.c"
+#line 31 "json_parser.c"
 static const int JSON_start = 1;
 static const int JSON_first_final = 12;
 static const int JSON_error = 0;
@@ -37,17 +35,17 @@ static const int JSON_error = 0;
 static const int JSON_en_main = 1;
 
 
-#line 51 "rl/json_parser.rl"
+#line 49 "rl/json_parser.rl"
 
     
-#line 44 "json_parser.c"
+#line 42 "json_parser.c"
 	{
 	cs = JSON_start;
 	}
 
-#line 53 "rl/json_parser.rl"
+#line 51 "rl/json_parser.rl"
     
-#line 51 "json_parser.c"
+#line 49 "json_parser.c"
 	{
 	if ( p == pe )
 		goto _test_eof;
@@ -81,38 +79,38 @@ st0:
 cs = 0;
 	goto _out;
 tr2:
-#line 27 "rl/json_parser.rl"
+#line 25 "rl/json_parser.rl"
 	{ PARSE_STRING(p); {p = (( i))-1;} }
 	goto st12;
 tr3:
-#line 28 "rl/json_parser.rl"
+#line 26 "rl/json_parser.rl"
 	{ PARSE(number, p); {p = (( i))-1;} }
 	goto st12;
 tr4:
-#line 30 "rl/json_parser.rl"
+#line 28 "rl/json_parser.rl"
 	{ PARSE(array, p); {p = (( i))-1;} }
 	goto st12;
 tr8:
-#line 29 "rl/json_parser.rl"
+#line 27 "rl/json_parser.rl"
 	{ PARSE(mapping, p); {p = (( i))-1;} }
 	goto st12;
 tr12:
-#line 33 "rl/json_parser.rl"
-	{ PUSH_SPECIAL("false"); }
+#line 31 "rl/json_parser.rl"
+	{ PUSH_SPECIAL(false); }
 	goto st12;
 tr15:
-#line 34 "rl/json_parser.rl"
-	{ PUSH_SPECIAL("null"); }
+#line 32 "rl/json_parser.rl"
+	{ PUSH_SPECIAL(null); }
 	goto st12;
 tr18:
-#line 32 "rl/json_parser.rl"
-	{ PUSH_SPECIAL("true"); }
+#line 30 "rl/json_parser.rl"
+	{ PUSH_SPECIAL(true); }
 	goto st12;
 st12:
 	if ( ++p == pe )
 		goto _test_eof12;
 case 12:
-#line 116 "json_parser.c"
+#line 114 "json_parser.c"
 	switch( ( ((int)INDEX_PCHARP(str, p))) ) {
 		case 13: goto st12;
 		case 32: goto st12;
@@ -208,10 +206,10 @@ case 11:
 	_out: {}
 	}
 
-#line 54 "rl/json_parser.rl"
+#line 52 "rl/json_parser.rl"
 
     if (cs >= JSON_first_final) {
-		return p;
+	return p;
     }
 
     if (!(state->flags&JSON_VALIDATE) && c > 0) pop_n_elems(c);

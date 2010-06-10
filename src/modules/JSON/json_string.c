@@ -4,17 +4,18 @@
 #define HEX2DEC(x) ((x) <= '9' ? (x) - '0' : ((x) < 'G') ? (x) - 'A' + 10 : (x) - 'a' + 10)
 
 
-#line 71 "rl/json_string.rl"
+#line 66 "rl/json_string.rl"
 
 
 static ptrdiff_t _parse_JSON_string(PCHARP str, ptrdiff_t p, ptrdiff_t pe, struct parser_state *state) {
     int temp = 0;
-    ptrdiff_t mark = 0;
+    ptrdiff_t start = p, mark = 0;
     struct string_builder s;
     int cs;
+    ONERROR handle;
 
     
-#line 18 "json_string.c"
+#line 19 "json_string.c"
 static const int JSON_string_start = 1;
 static const int JSON_string_first_final = 9;
 static const int JSON_string_error = 0;
@@ -22,19 +23,22 @@ static const int JSON_string_error = 0;
 static const int JSON_string_en_main = 1;
 
 
-#line 80 "rl/json_string.rl"
+#line 76 "rl/json_string.rl"
 
-    if (!(state->flags&JSON_VALIDATE)) init_string_builder(&s, 0);
+    if (!(state->flags&JSON_VALIDATE)) {
+	init_string_builder(&s, 0);
+	SET_ONERROR (handle, free_string_builder, &s);
+    }
 
     
-#line 31 "json_string.c"
+#line 35 "json_string.c"
 	{
 	cs = JSON_string_start;
 	}
 
-#line 84 "rl/json_string.rl"
+#line 83 "rl/json_string.rl"
     
-#line 38 "json_string.c"
+#line 42 "json_string.c"
 	{
 	if ( p == pe )
 		goto _test_eof;
@@ -64,22 +68,22 @@ case 2:
 tr2:
 #line 42 "rl/json_string.rl"
 	{
-		mark = p;
+	mark = p;
     }
 	goto st3;
 tr8:
 #line 29 "rl/json_string.rl"
 	{
-		if (!(state->flags&JSON_VALIDATE)) switch(( ((int)INDEX_PCHARP(str, p)))) {
-			case '"':
-			case '/':
-			case '\\':      string_builder_putchar(&s, ( ((int)INDEX_PCHARP(str, p)))); break;
-			case 'b':       string_builder_putchar(&s, '\b'); break;
-			case 'f':       string_builder_putchar(&s, '\f'); break;
-			case 'n':       string_builder_putchar(&s, '\n'); break;
-			case 'r':       string_builder_putchar(&s, '\r'); break;
-			case 't':       string_builder_putchar(&s, '\t'); break;
-		}
+	if (!(state->flags&JSON_VALIDATE)) switch(( ((int)INDEX_PCHARP(str, p)))) {
+	    case '"':
+	    case '/':
+	    case '\\':      string_builder_putchar(&s, ( ((int)INDEX_PCHARP(str, p)))); break;
+	    case 'b':       string_builder_putchar(&s, '\b'); break;
+	    case 'f':       string_builder_putchar(&s, '\f'); break;
+	    case 'n':       string_builder_putchar(&s, '\n'); break;
+	    case 'r':       string_builder_putchar(&s, '\r'); break;
+	    case 't':       string_builder_putchar(&s, '\t'); break;
+	}
     }
 #line 46 "rl/json_string.rl"
 	{ mark = p + 1; }
@@ -87,18 +91,18 @@ tr8:
 tr13:
 #line 14 "rl/json_string.rl"
 	{
-		if (!(state->flags&JSON_VALIDATE)) {
-			temp *= 16;
-			temp += HEX2DEC(( ((int)INDEX_PCHARP(str, p))));
+	if (!(state->flags&JSON_VALIDATE)) {
+	    temp *= 16;
+	    temp += HEX2DEC(( ((int)INDEX_PCHARP(str, p))));
 
-			if (IS_NUNICODE(temp)) {
-				p--; {p++; cs = 3; goto _out;}
-			}
-		}
+	    if (IS_NUNICODE(temp)) {
+		p--; {p++; cs = 3; goto _out;}
+	    }
+	}
     }
 #line 25 "rl/json_string.rl"
 	{
-		if (!(state->flags&JSON_VALIDATE)) string_builder_putchar(&s, temp);
+	if (!(state->flags&JSON_VALIDATE)) string_builder_putchar(&s, temp);
     }
 #line 46 "rl/json_string.rl"
 	{ mark = p + 1; }
@@ -107,7 +111,7 @@ st3:
 	if ( ++p == pe )
 		goto _test_eof3;
 case 3:
-#line 111 "json_string.c"
+#line 115 "json_string.c"
 	switch( ( ((int)INDEX_PCHARP(str, p))) ) {
 		case 34: goto tr6;
 		case 92: goto tr7;
@@ -121,32 +125,22 @@ case 3:
 tr3:
 #line 42 "rl/json_string.rl"
 	{
-		mark = p;
+	mark = p;
     }
 #line 48 "rl/json_string.rl"
 	{
-		if (p - mark > 0) {
-            //string_builder_binary_strcat(s, mark, (ptrdiff_t)(fpc - mark));
-
-			// looking for the lowest possible magnitude here may be worth it. i am not entirely
-			// sure if i want to do the copying here.
-			// use string_builder_binary_strcat here
-			if (!(state->flags&JSON_VALIDATE))
-				string_builder_append(&s, ADD_PCHARP(str, mark), p - mark);
+	if (p - mark > 0) {
+	    if (!(state->flags&JSON_VALIDATE))
+		    string_builder_append(&s, ADD_PCHARP(str, mark), p - mark);
         }
     }
 	goto st9;
 tr6:
 #line 48 "rl/json_string.rl"
 	{
-		if (p - mark > 0) {
-            //string_builder_binary_strcat(s, mark, (ptrdiff_t)(fpc - mark));
-
-			// looking for the lowest possible magnitude here may be worth it. i am not entirely
-			// sure if i want to do the copying here.
-			// use string_builder_binary_strcat here
-			if (!(state->flags&JSON_VALIDATE))
-				string_builder_append(&s, ADD_PCHARP(str, mark), p - mark);
+	if (p - mark > 0) {
+	    if (!(state->flags&JSON_VALIDATE))
+		    string_builder_append(&s, ADD_PCHARP(str, mark), p - mark);
         }
     }
 	goto st9;
@@ -154,39 +148,29 @@ st9:
 	if ( ++p == pe )
 		goto _test_eof9;
 case 9:
-#line 70 "rl/json_string.rl"
+#line 65 "rl/json_string.rl"
 	{ p--; {p++; cs = 9; goto _out;} }
-#line 160 "json_string.c"
+#line 154 "json_string.c"
 	goto st0;
 tr4:
 #line 42 "rl/json_string.rl"
 	{
-		mark = p;
+	mark = p;
     }
 #line 48 "rl/json_string.rl"
 	{
-		if (p - mark > 0) {
-            //string_builder_binary_strcat(s, mark, (ptrdiff_t)(fpc - mark));
-
-			// looking for the lowest possible magnitude here may be worth it. i am not entirely
-			// sure if i want to do the copying here.
-			// use string_builder_binary_strcat here
-			if (!(state->flags&JSON_VALIDATE))
-				string_builder_append(&s, ADD_PCHARP(str, mark), p - mark);
+	if (p - mark > 0) {
+	    if (!(state->flags&JSON_VALIDATE))
+		    string_builder_append(&s, ADD_PCHARP(str, mark), p - mark);
         }
     }
 	goto st4;
 tr7:
 #line 48 "rl/json_string.rl"
 	{
-		if (p - mark > 0) {
-            //string_builder_binary_strcat(s, mark, (ptrdiff_t)(fpc - mark));
-
-			// looking for the lowest possible magnitude here may be worth it. i am not entirely
-			// sure if i want to do the copying here.
-			// use string_builder_binary_strcat here
-			if (!(state->flags&JSON_VALIDATE))
-				string_builder_append(&s, ADD_PCHARP(str, mark), p - mark);
+	if (p - mark > 0) {
+	    if (!(state->flags&JSON_VALIDATE))
+		    string_builder_append(&s, ADD_PCHARP(str, mark), p - mark);
         }
     }
 	goto st4;
@@ -194,7 +178,7 @@ st4:
 	if ( ++p == pe )
 		goto _test_eof4;
 case 4:
-#line 198 "json_string.c"
+#line 182 "json_string.c"
 	switch( ( ((int)INDEX_PCHARP(str, p))) ) {
 		case 34: goto tr8;
 		case 47: goto tr8;
@@ -223,14 +207,14 @@ case 5:
 tr10:
 #line 10 "rl/json_string.rl"
 	{
-		if (!(state->flags&JSON_VALIDATE)) temp = HEX2DEC(( ((int)INDEX_PCHARP(str, p))));
+	if (!(state->flags&JSON_VALIDATE)) temp = HEX2DEC(( ((int)INDEX_PCHARP(str, p))));
     }
 	goto st6;
 st6:
 	if ( ++p == pe )
 		goto _test_eof6;
 case 6:
-#line 234 "json_string.c"
+#line 218 "json_string.c"
 	if ( ( ((int)INDEX_PCHARP(str, p))) < 65 ) {
 		if ( 48 <= ( ((int)INDEX_PCHARP(str, p))) && ( ((int)INDEX_PCHARP(str, p))) <= 57 )
 			goto tr11;
@@ -243,21 +227,21 @@ case 6:
 tr11:
 #line 14 "rl/json_string.rl"
 	{
-		if (!(state->flags&JSON_VALIDATE)) {
-			temp *= 16;
-			temp += HEX2DEC(( ((int)INDEX_PCHARP(str, p))));
+	if (!(state->flags&JSON_VALIDATE)) {
+	    temp *= 16;
+	    temp += HEX2DEC(( ((int)INDEX_PCHARP(str, p))));
 
-			if (IS_NUNICODE(temp)) {
-				p--; {p++; cs = 7; goto _out;}
-			}
-		}
+	    if (IS_NUNICODE(temp)) {
+		p--; {p++; cs = 7; goto _out;}
+	    }
+	}
     }
 	goto st7;
 st7:
 	if ( ++p == pe )
 		goto _test_eof7;
 case 7:
-#line 261 "json_string.c"
+#line 245 "json_string.c"
 	if ( ( ((int)INDEX_PCHARP(str, p))) < 65 ) {
 		if ( 48 <= ( ((int)INDEX_PCHARP(str, p))) && ( ((int)INDEX_PCHARP(str, p))) <= 57 )
 			goto tr12;
@@ -270,21 +254,21 @@ case 7:
 tr12:
 #line 14 "rl/json_string.rl"
 	{
-		if (!(state->flags&JSON_VALIDATE)) {
-			temp *= 16;
-			temp += HEX2DEC(( ((int)INDEX_PCHARP(str, p))));
+	if (!(state->flags&JSON_VALIDATE)) {
+	    temp *= 16;
+	    temp += HEX2DEC(( ((int)INDEX_PCHARP(str, p))));
 
-			if (IS_NUNICODE(temp)) {
-				p--; {p++; cs = 8; goto _out;}
-			}
-		}
+	    if (IS_NUNICODE(temp)) {
+		p--; {p++; cs = 8; goto _out;}
+	    }
+	}
     }
 	goto st8;
 st8:
 	if ( ++p == pe )
 		goto _test_eof8;
 case 8:
-#line 288 "json_string.c"
+#line 272 "json_string.c"
 	if ( ( ((int)INDEX_PCHARP(str, p))) < 65 ) {
 		if ( 48 <= ( ((int)INDEX_PCHARP(str, p))) && ( ((int)INDEX_PCHARP(str, p))) <= 57 )
 			goto tr13;
@@ -308,19 +292,26 @@ case 8:
 	_out: {}
 	}
 
-#line 85 "rl/json_string.rl"
+#line 84 "rl/json_string.rl"
 
     if (cs < JSON_string_first_final) {
-		if (!(state->flags&JSON_VALIDATE)) {
-			free_string_builder(&s);
-		}
+	if (!(state->flags&JSON_VALIDATE)) {
+	    UNSET_ONERROR(handle);
+	    free_string_builder(&s);
+	}
 
-		state->flags |= JSON_ERROR;
-		return p;
+	state->flags |= JSON_ERROR;
+	if (p == pe) {
+	    err_msg = "Unterminated string";
+	    return start;
+	}
+	return p;
     }
 
-    if (!(state->flags&JSON_VALIDATE))
-		push_string(finish_string_builder(&s));
+    if (!(state->flags&JSON_VALIDATE)) {
+	push_string(finish_string_builder(&s));
+	UNSET_ONERROR(handle);
+    }
 
     return p;
 }

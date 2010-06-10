@@ -8,7 +8,7 @@
     # format, not correctness in the sense of sscanf 
     # 
     action break {
-		fpc--; fbreak;
+	fpc--; fbreak;
     }
     getkey ((int)INDEX_PCHARP(str, fpc));
 
@@ -29,15 +29,15 @@ static ptrdiff_t _parse_JSON_number(PCHARP str, ptrdiff_t p, ptrdiff_t pe, struc
     %% write exec;
 
     if (cs >= JSON_number_first_final) {
-		if (!(state->flags&JSON_VALIDATE)) {
-			if (d == 1) {
-				push_float((FLOAT_TYPE)STRTOD_PCHARP(ADD_PCHARP(str, i), NULL));
-			} else {
-				pcharp_to_svalue_inumber(Pike_sp++, ADD_PCHARP(str, i), NULL, 10, p - i + 1);
-			}
-		}
+	if (!(state->flags&JSON_VALIDATE)) {
+	    if (d == 1) {
+		push_float((FLOAT_TYPE)STRTOD_PCHARP(ADD_PCHARP(str, i), NULL));
+	    } else {
+		pcharp_to_svalue_inumber(Pike_sp++, ADD_PCHARP(str, i), NULL, 10, p - i);
+	    }
+	}
 
-		return p;
+	return p;
     }
 
     state->flags |= JSON_ERROR;
