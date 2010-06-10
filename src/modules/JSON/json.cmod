@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: json.cmod,v 1.16 2010/06/10 14:40:26 arne Exp $
+|| $Id: json.cmod,v 1.17 2010/06/10 14:41:07 arne Exp $
 */
 
 /* JSON tools.
@@ -430,7 +430,7 @@ void low_decode(struct pike_string *data, int flags) {
 	}
     }
 
-    push_string(data);
+    ref_push_string(data);
     push_int((INT_TYPE)stop);
     push_int((INT_TYPE)stop+10);
     f_index(3);
