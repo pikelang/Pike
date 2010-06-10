@@ -5,8 +5,28 @@ test_true(Standards.JSON.true)
 test_false(Standards.JSON.false)
 test_false(Standards.JSON.null)
 
+test_eq(Standards.JSON.ASCII_ONLY, 1)
+test_eq(Standards.JSON.HUMAN_READABLE, 2)
+test_eq(Standards.JSON.PIKE_CANONICAL, 4)
+
 define(test_enc,[[
 test_eq(Standards.JSON.encode([[$1]], Standards.JSON.PIKE_CANONICAL),[[$2]])
+]])
+define(test_dec_enc,[[
+  test_equal(Standards.JSON.decode ([[$1]]), [[$2]])
+  test_eq(Standards.JSON.validate ([[$1]]), -1)
+  test_equal(Standards.JSON.decode_utf8 (string_to_utf8 ([[$1]])), [[$2]])
+  test_eq(Standards.JSON.validate_utf8 (string_to_utf8 ([[$1]])), -1)
+  test_equal(Standards.JSON.decode (Standards.JSON.encode ([[$2]])), [[$2]])
+  test_equal(Standards.JSON.decode (Standards.JSON.encode ([[$2]], Standards.JSON.ASCII_ONLY)), [[$2]])
+  test_equal(Standards.JSON.decode (Standards.JSON.encode ([[$2]], Standards.JSON.HUMAN_READABLE)), [[$2]])
+  test_equal(Standards.JSON.decode (Standards.JSON.encode ([[$2]], Standards.JSON.PIKE_CANONICAL)), [[$2]])
+  test_equal(Standards.JSON.decode (Standards.JSON.encode ([[$2]], 7)), [[$2]])
+]])
+
+define(test_dec_enc_canon,[[
+  test_dec_enc([[$1]], [[$2]])
+  test_enc([[$2]], [[$1]])
 ]])
 define(test_dec_enc,[[
 test_equal(Standards.JSON.decode ([[$1]]), [[$2]])
@@ -14,33 +34,35 @@ test_equal(Standards.JSON.decode_utf8 (string_to_utf8 ([[$1]])), [[$2]])
 test_equal(Standards.JSON.decode (Standards.JSON.encode ([[$2]])), [[$2]])
 ]])
 
-test_enc(-1, "-1")
-test_enc(0, "0")
-test_enc(1, "1")
-test_enc(Int.NATIVE_MAX+1, (string) (Int.NATIVE_MAX + 1))
+test_dec_enc_canon("-1", -1)
+test_dec_enc_canon("0", 0)
+test_dec_enc_canon("1", 1)
+test_dec_enc_canon((string) (Int.NATIVE_MAX + 1), Int.NATIVE_MAX+1)
+test_dec_enc_canon((string) (Int.NATIVE_MIN - 1), Int.NATIVE_MIN-1)
 test_enc(UNDEFINED, "0")
 
-test_enc(-1.0, "-1.0")
-test_enc(0.0, "0.0")
-test_enc(1.0, "1.0")
+test_dec_enc_canon("-1.0", -1.0)
+test_dec_enc_canon("0.0", 0.0)
+test_dec_enc_canon("1.0", 1.0)
 test_eval_error(Standards.JSON.encode(Math.inf))
 test_eval_error(Standards.JSON.encode(Math.nan))
 
-test_enc("", "\"\"")
-test_enc("\"\\\b\f\n\r\t", "\"\\\"\\\\\\b\\f\\n\\r\\t\"")
-test_enc("\x0123", "\"\u0123\"")
+test_dec_enc_canon("\"\"", "")
+test_dec_enc_canon("\"\\\"\\\\\\b\\f\\n\\r\\t\"", "\"\\\b\f\n\r\t")
+test_dec_enc_canon("\"\u0123\"", "\x0123")
 test_eval_error(Standards.JSON.encode("\x0123456"))
 
-test_enc(({}), "[]")
-test_enc(({1,2.0,"3"}),[[ "[1,2.0,\"3\"]" ]])
+test_dec_enc_canon("[]", ({}))
+test_dec_enc_canon([[ "[1,2.0,\"3\"]" ]], ({1,2.0,"3"}))
 test_eval_error([[
 array a = ({ 1, 2 });
 a[1] = a;
 return Standards.JSON.encode(a);
 ]])
 
-test_enc( ([]), "{}" )
-test_enc( ([ "a":1, "b":2.0, "c":"3" ]),[["{\"a\":1,\"b\":2.0,\"c\":\"3\"}"]])
+test_dec_enc_canon("{}",  ([]))
+test_dec_enc_canon([["{\"a\":1,\"b\":2.0,\"c\":\"3\"}"]],
+		   ([ "a":1, "b":2.0, "c":"3" ]))
 test_eval_error(Standards.JSON.encode( ([1:2]) ))
 test_eval_error([[
 mapping m = ([ "a":1 ]);
@@ -48,7 +70,7 @@ m->a = m;
 return Standards.JSON.encode(m);
 ]])
 
-test_enc(([ "a":({(["b":2])}) ]), [["{\"a\":[{\"b\":2}]}"]])
+test_dec_enc_canon([["{\"a\":[{\"b\":2}]}"]], ([ "a":({(["b":2])}) ]))
 
 test_enc(Sql.NULL, "null")
 test_eval_error( Standards.JSON.encode(Sql.Null) ) dnl FIXME?
@@ -84,8 +106,8 @@ test_eq(_refs(Standards.JSON.decode(" [ 45, 34, 3, 4, 5 ] ")), 1)
 test_true(-1 != Standards.JSON.validate_utf8("[ 32, 23, 43  , 54   ,45]        uh"))
 test_eq(-1, Standards.JSON.validate_utf8("[ 32, 23, 43  , 54   ,45]       "))
 
-test_dec_enc("\"\\\\/\\\"\\\"\\\\\"", "\\/\"\"\\")
-test_dec_enc("\"\\\\/skjdhf\\\"sdf\\\"d\\\\\"", "\\/skjdhf\"sdf\"d\\")
+test_dec_enc_canon("\"\\\\/\\\"\\\"\\\\\"", "\\/\"\"\\")
+test_dec_enc_canon("\"\\\\/skjdhf\\\"sdf\\\"d\\\\\"", "\\/skjdhf\"sdf\"d\\")
 
   // test examples from json.org
 test_dec_enc([[
@@ -209,13 +231,12 @@ test_dec_enc([["{\"menu\": {\
         (["id": "About", "label": "About Adobe CVG Viewer..."])
     })
 ])])]])
-test_eq([[
+test_dec_enc_canon([[
+  "\"" + String.int2char(76) + String.int2char(2000) +
+  String.int2char(10000) + String.int2char(900000) + "\""
+]], [[
   "" + String.int2char(76) + String.int2char(2000) +
   String.int2char(10000) + String.int2char(900000) + ""
-]], [[
-  Standards.JSON.decode_utf8(string_to_utf8(
-    "\"" + String.int2char(76) + String.int2char(2000) +
-    String.int2char(10000) + String.int2char(900000) + "\""))
 ]])
 test_eq([[Standards.JSON.validate("{\"menu\": {\
     \"header\": \"SVG Viewer\",\
@@ -246,32 +267,19 @@ test_eq([[Standards.JSON.validate("{\"menu\": {\
 }}\
 ")]], -1 )
 
-test_eval_error([[
-	string s = "sdfsdf  skldjf ";
-	s[10] = 0xdfff;
-	Standards.JSON.decode(Standards.JSON.encode(s));
-]])
-test_eval_error([[
-	string s = "sdfsdf  skldjf ";
-	s[10] = 0xdfff;
-	Standards.JSON.decode_utf8(Standards.JSON.encode(string_to_utf8(s)));
-]])
-test_do([[
-	string s = "{ \"key\": null }";
-	Standards.JSON.decode(s);
-	Standards.JSON.decode_utf8(s);
-]])
-test_any([[
-	string s = "\"http:\\/\\/foobar\\/\"";
-	string t = "http://foobar/";
-	int a = (t == Standards.JSON.decode(s));
-	int b = (t == Standards.JSON.decode_utf8(s));
-	return a && b;
-]], 1)
+test_eval_error(Standards.JSON.decode(Standards.JSON.encode("sdfsdf \xdfff skldjf "s)))
+test_eval_error(Standards.JSON.decode_utf8(Standards.JSON.encode(string_to_utf8("sdfsdf \xdfff skldjf "s))))
+test_dec_enc_canon([["{\"key\":null}"]], (["key": Standards.JSON.null]))
+test_dec_enc("\"http:\\/\\/foobar\\/\"","http://foobar/");
 
 test_dec_enc([["[\"abc\",\"r\344ksm\366rg\345s\",\"def\"]"]],
 	     [[({"abc", "r\344ksm\366rg\345s", "def"})]])
 test_dec_enc([["[\"abc\",\"\u20acuro\",\"def\"]"]],
 	     [[({"abc", "\u20acuro", "def"})]])
+
+test_dec_enc_canon([["[\"abc\",\"r\344ksm\366rg\345s\",\"def\"]"]],
+		   [[({"abc", "r\344ksm\366rg\345s", "def"})]])
+test_dec_enc_canon([["[\"abc\",\"\u20acuro\",\"def\"]"]],
+		   [[({"abc", "\u20acuro", "def"})]])
 
 END_MARKER
