@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: json.cmod,v 1.17 2010/06/10 14:41:07 arne Exp $
+|| $Id: json.cmod,v 1.18 2010/06/10 14:41:44 arne Exp $
 */
 
 /* JSON tools.
@@ -37,15 +37,15 @@ DECLARATIONS
 #define HUMAN_READABLE 2
 #define PIKE_CANONICAL 4
 
-struct json_proc {
+struct encode_context {
   struct string_builder buf;
   int flags;
   int indent;
 };
 
-static void json_encode_recur (struct json_proc *ctx, struct svalue *val);
+static void json_encode_recur (struct encode_context *ctx, struct svalue *val);
 
-static void encode_mapcont (struct json_proc *ctx, struct mapping *m)
+static void encode_mapcont (struct encode_context *ctx, struct mapping *m)
 /* Assumes there's at least one element. */
 {
   struct string_builder *buf = &ctx->buf;
@@ -82,7 +82,7 @@ static void encode_mapcont (struct json_proc *ctx, struct mapping *m)
   }
 }
 
-static void encode_mapcont_canon (struct json_proc *ctx, struct mapping *m)
+static void encode_mapcont_canon (struct encode_context *ctx, struct mapping *m)
 /* Assumes there's at least one element. */
 {
   struct string_builder *buf = &ctx->buf;
@@ -146,7 +146,7 @@ static void encode_mapcont_canon (struct json_proc *ctx, struct mapping *m)
   free_array (inds);
 }
 
-static void json_encode_recur (struct json_proc *ctx, struct svalue *val)
+static void json_encode_recur (struct encode_context *ctx, struct svalue *val)
 {
   DECLARE_CYCLIC();
 
@@ -364,7 +364,7 @@ PIKEFUN string encode (int|float|string|array|mapping|object val,
 		       void|int flags)
   optflags OPT_TRY_OPTIMIZE;
 {
-  struct json_proc ctx;
+  struct encode_context ctx;
   ONERROR uwp;
   ctx.flags = (flags ? flags->u.integer : 0);
   ctx.indent = (ctx.flags & HUMAN_READABLE ? 0 : -1);
