@@ -61,23 +61,29 @@ test_true(functionp(Standards.JSON.decode))
 test_true(functionp(Standards.JSON.encode))
 test_true(functionp(Standards.JSON.validate))
 // test the special types
-test_true(Standards.JSON.true == Standards.JSON.decode("true"))
-test_true(Standards.JSON.false == Standards.JSON.decode("false"))
-test_true(Standards.JSON.null == Standards.JSON.decode("null"))
+test_eq(Standards.JSON.true, Standards.JSON.decode("true"))
+test_eq(Standards.JSON.false, Standards.JSON.decode("false"))
+test_eq(Standards.JSON.null, Standards.JSON.decode("null"))
+
 // test numbers
-test_true(Standards.JSON.decode("0E4") == 0.0)
+test_eq(Standards.JSON.decode("0E4"), 0.0)
+
 // test reference counter.
-// not sure how stable that is amoung pike versions....
+// not sure how stable that is among pike versions....
+// It better be, or else we got garbage trouble. /mast
 test_true(_refs(Standards.JSON.decode("\" It says little, does less, means nothing.\"")) == 1)
-test_true(_refs(Standards.JSON.decode(" { \"asd\" : 45 }  ")) == 1)
-test_true(_refs(Standards.JSON.decode(" [ 45, 34, 3, 4, 5 ] ")) == 1)
+test_eq(_refs(Standards.JSON.decode(" { \"asd\" : 45 }  ")), 1)
+test_eq(_refs(Standards.JSON.decode(" [ 45, 34, 3, 4, 5 ] ")), 1)
+
 // testing if junk at the end breaks
 test_true(-1 != Standards.JSON.validate_utf8("[ 32, 23, 43  , 54   ,45]        uh"))
-test_true(-1 == Standards.JSON.validate_utf8("[ 32, 23, 43  , 54   ,45]       "))
-test_true("\\/\"\"\\" == Standards.JSON.decode(Standards.JSON.encode("\\/\"\"\\")))
-test_true("\\/skjdhf\"sdf\"d\\" == Standards.JSON.decode(Standards.JSON.encode("\\/skjdhf\"sdf\"d\\")))
-// test examples from json.org
-test_true(equal(Standards.JSON.decode(
+test_eq(-1, Standards.JSON.validate_utf8("[ 32, 23, 43  , 54   ,45]       "))
+
+test_eq("\\/\"\"\\", Standards.JSON.decode(Standards.JSON.encode("\\/\"\"\\")))
+test_eq("\\/skjdhf\"sdf\"d\\", Standards.JSON.decode(Standards.JSON.encode("\\/skjdhf\"sdf\"d\\")))
+
+  // test examples from json.org
+test_equal([[Standards.JSON.decode(
 "{\
     \"glossary\": {\
         \"title\": \"example glossary\",\
@@ -100,7 +106,7 @@ test_true(equal(Standards.JSON.decode(
         }\
     }\
 }\
-"), ([
+")]], [[([
     "glossary": ([
         "title": "example glossary",
 	"GlossDiv": ([
@@ -121,8 +127,8 @@ test_true(equal(Standards.JSON.decode(
             ])
         ])
     ])
-])))
-test_true(equal(Standards.JSON.decode(Standards.JSON.encode(([
+])]])
+test_equal([[Standards.JSON.decode(Standards.JSON.encode(([
     "glossary": ([
         "title": "example glossary",
 	"GlossDiv": ([
@@ -143,7 +149,7 @@ test_true(equal(Standards.JSON.decode(Standards.JSON.encode(([
             ])
         ])
     ])
-]))), ([
+])))]], [[([
     "glossary": ([
         "title": "example glossary",
 	"GlossDiv": ([
@@ -164,8 +170,8 @@ test_true(equal(Standards.JSON.decode(Standards.JSON.encode(([
             ])
         ])
     ])
-])))
-test_true(equal(Standards.JSON.decode("    {	 \"menu\": 	{\
+])]])
+test_equal([[Standards.JSON.decode("    {	 \"menu\": 	{\
   \"id\": \"file\",\
   \"value\": \"File\",\
   \"popup\": {\
@@ -176,7 +182,7 @@ test_true(equal(Standards.JSON.decode("    {	 \"menu\": 	{\
     ]\
   }\
 }	}\
-"), (["menu": ([
+")]], [[(["menu": ([
   "id": "file",
   "value": "File",
   "popup": ([
@@ -186,8 +192,8 @@ test_true(equal(Standards.JSON.decode("    {	 \"menu\": 	{\
       (["value": "Close", "onclick": "CloseDoc()"])
     })
   ])
-])])))
-test_true(equal(Standards.JSON.decode("{\"menu\": {\
+])])]])
+test_equal([[Standards.JSON.decode("{\"menu\": {\
     \"header\": \"SVG Viewer\",\
     \"items\": [\
         {\"id\": \"Open\"},\
@@ -214,7 +220,7 @@ test_true(equal(Standards.JSON.decode("{\"menu\": {\
         {\"id\": \"About\", \"label\": \"About Adobe CVG Viewer...\"}\
     ]\
 }}\
-"), (["menu": ([
+")]], [[(["menu": ([
     "header": "SVG Viewer",
     "items": ({
         (["id": "Open"]),
@@ -240,10 +246,16 @@ test_true(equal(Standards.JSON.decode("{\"menu\": {\
         (["id": "Help"]),
         (["id": "About", "label": "About Adobe CVG Viewer..."])
     })
-])]) ))
-test_true(
-    "" + String.int2char(76) + String.int2char(2000) + String.int2char(10000) + String.int2char(900000) + "" == Standards.JSON.decode_utf8(string_to_utf8("\"" + String.int2char(76) + String.int2char(2000) + String.int2char(10000) + String.int2char(900000) + "\"")))
-test_true(Standards.JSON.validate("{\"menu\": {\
+])])]])
+test_eq([[
+  "" + String.int2char(76) + String.int2char(2000) +
+  String.int2char(10000) + String.int2char(900000) + ""
+]], [[
+  Standards.JSON.decode_utf8(string_to_utf8(
+    "\"" + String.int2char(76) + String.int2char(2000) +
+    String.int2char(10000) + String.int2char(900000) + "\""))
+]])
+test_eq([[Standards.JSON.validate("{\"menu\": {\
     \"header\": \"SVG Viewer\",\
     \"items\": [\
         {\"id\": \"Open\"},\
@@ -270,33 +282,23 @@ test_true(Standards.JSON.validate("{\"menu\": {\
         {\"id\": \"About\", \"label\": \"About Adobe CVG Viewer...\"}\
     ]\
 }}\
-") == -1 )
-test_any([[
+")]], -1 )
+
+test_eval_error([[
 	string s = "sdfsdf  skldjf ";
 	s[10] = 0xdfff;
-	mixed e = catch {
-		mixed a = Standards.JSON.decode(Standards.JSON.encode(s));
-	};
-	return !!e;
-]], 1)
-test_any([[
+	Standards.JSON.decode(Standards.JSON.encode(s));
+]])
+test_eval_error([[
 	string s = "sdfsdf  skldjf ";
 	s[10] = 0xdfff;
-	mixed e = catch {
-		mixed a = Standards.JSON.decode_utf8(Standards.JSON.encode(string_to_utf8(s)));
-	};
-	return !!e;
-]], 1)
-test_any([[
+	Standards.JSON.decode_utf8(Standards.JSON.encode(string_to_utf8(s)));
+]])
+test_do([[
 	string s = "{ \"key\": null }";
-	mixed e = catch {
-		mixed a = Standards.JSON.decode(s);
-	};
-	mixed e1 = catch {
-		mixed a = Standards.JSON.decode_utf8(s);
-	};
-	return !e && !e1;
-]], 1)
+	Standards.JSON.decode(s);
+	Standards.JSON.decode_utf8(s);
+]])
 test_any([[
 	string s = "\"http:\\/\\/foobar\\/\"";
 	string t = "http://foobar/";
