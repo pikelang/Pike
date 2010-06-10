@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: json.cmod,v 1.20 2010/06/10 14:53:41 arne Exp $
+|| $Id: json.cmod,v 1.21 2010/06/10 15:15:10 arne Exp $
 */
 
 /* JSON tools.
@@ -36,6 +36,59 @@ DECLARATIONS
 #define ASCII_ONLY 1
 #define HUMAN_READABLE 2
 #define PIKE_CANONICAL 4
+
+#define JSON_UTF8	1
+#define JSON_ERROR	2
+#define JSON_VALIDATE	4
+
+static char *err_msg;
+
+struct object *JSON_null = NULL, *JSON_false = NULL, *JSON_true = NULL;
+
+#define PUSH_SPECIAL(X) do {if (!(state->flags&JSON_VALIDATE)) {	\
+    if (!JSON_##X) {							\
+	struct svalue ind, val;						\
+	MAKE_CONST_STRING (ind.u.string, #X);				\
+	ind.type = T_STRING;						\
+	ind.subtype = 0;						\
+	object_index_no_free (&val, Pike_fp->current_object, 0, &ind);	\
+	if (val.type == PIKE_T_OBJECT) {				\
+	    JSON_##X = val.u.object;					\
+	} else Pike_error("Could not resolv Standards.JSON."#X"\n");	\
+    }									\
+    ref_push_object(JSON_##X);						\
+} c++; if (state->level > 0) return p+1; } while(0)
+
+#define PARSE(X, FPC) do {						\
+    state->level++;							\
+    i = _parse_JSON_##X(str, FPC, pe, state);				\
+    state->level--;							\
+    if (state->flags&JSON_ERROR) {					\
+	    return i;							\
+    } else if (state->level > 0) return i;				\
+    c++;								\
+} while(0)
+
+#define PARSE_STRING(FPC) do {						\
+    state->level++;							\
+    if (state->flags&JSON_UTF8) 					\
+	i = _parse_JSON_string_utf8(str, FPC, pe, state);		\
+    else								\
+	i = _parse_JSON_string(str, FPC, pe, state);			\
+    state->level--;							\
+    if (state->flags&JSON_ERROR) {					\
+	    return i;							\
+    } else if (state->level > 0) return i;				\
+    c++;								\
+} while(0)
+
+#define IS_NUNICODE(x)	((x) < 0 || ((x) > 0xd7ff && (x) < 0xe000) || (x) > 0x10ffff)
+#define IS_NUNICODE1(x)	((x) < 0 || ((x) > 0xd7ff && (x) < 0xe000))
+
+struct parser_state {
+    unsigned int level;
+    int flags;
+};
 
 struct encode_context {
   struct string_builder buf;
@@ -381,12 +434,8 @@ void low_validate(struct pike_string *data, int flags) {
     ptrdiff_t stop;
     struct parser_state state;
 
-    if (flags & JSON_UTF8 && data->size_shift)
-      Pike_error("Strings wider than 1 byte are NOT valid UTF-8.\n");
-    
     state.flags = flags|JSON_VALIDATE;
     state.level = 0;
-    state.data = data;
 
     stop = _parse_JSON(MKPCHARP_STR(data), 0, data->len, &state);
 
@@ -403,11 +452,9 @@ void low_decode(struct pike_string *data, int flags) {
     ptrdiff_t stop;
     struct parser_state state;
 
-    if (flags & JSON_UTF8 && data->size_shift)
-      Pike_error("Strings wider than 1 byte are NOT valid UTF-8.\n");
+    err_msg = NULL;
 
     state.level = 0;
-    state.data = data;
     state.flags = flags;
 
     stop = _parse_JSON(MKPCHARP_STR(data), 0, data->len, &state);
@@ -420,21 +467,12 @@ void low_decode(struct pike_string *data, int flags) {
 
     ref_push_string(data);
     push_int((INT_TYPE)stop);
-    push_int((INT_TYPE)stop+10);
-    f_index(3);
-    if (((struct svalue*)(Pike_sp - 1))->type != PIKE_T_STRING) {
-	push_text("Parsing JSON failed at position %d.\n");
-	push_int((INT_TYPE)stop);
-	f_sprintf(2);
-    } else {
-	push_text("Parsing JSON failed in position %d (%O).\n");
-	stack_swap();
-	push_int(stop);
-	stack_swap();
-	f_sprintf(3);
+    if (err_msg) {
+      push_text (err_msg);
+      apply (Pike_fp->current_object, "decode_error", 3);
     }
-    f_aggregate(1);
-    f_throw(1);
+    else
+      apply (Pike_fp->current_object, "decode_error", 2);
 
     return;
 }
@@ -442,34 +480,32 @@ void low_decode(struct pike_string *data, int flags) {
 
 /*! @decl int validate(string s)
  *!
- *! Takes a string and checks if it is valid JSON.
+ *! Checks if a string is valid JSON.
  *! 
  *! @returns
  *! 	In case the string contains valid JSON @expr{-1@} is returned. It is then guaranteed to be parsed
  *! 	without errors by @[decode()].
- *! 	In case the string is not valid JSON, the integer position inside the string
- *! 	where the error occurs is returned.
+ *! 	In case the string is not valid JSON, the error position is returned.
  */
 PIKEFUN int validate(string data) {
     low_validate(data, 0);
 }
 
-/*! @decl array|mapping|string|float|int decode(string s)
+/*! @decl array|mapping|string|float|int|object decode(string s)
  *!
- *! Parses a JSON-formatted string and returns the corresponding pike
- *! data structure.
+ *! Decodes a JSON string.
  *! 
  *! @throws
  *! 	Throws an exception in case the data contained in @expr{s@} is not valid
  *! 	JSON.
  */
-PIKEFUN mixed decode(string data) {
+PIKEFUN array|mapping|string|float|int|object decode(string data) {
     low_decode(data, 0);
 }
 
 /*! @decl int validate_utf8(string s)
  *!
- *! Takes a utf8 encoded string and checks if it is valid JSON.
+ *! Checks if a string is valid utf8 encoded JSON.
  *! 
  *! @returns
  *! 	In case the string contains valid JSON @expr{-1@} is returned. It is then guaranteed to be parsed
@@ -478,19 +514,29 @@ PIKEFUN mixed decode(string data) {
  *! 	where the error occurs is returned.
  */
 PIKEFUN int validate_utf8(string data) {
+    if (data->size_shift)
+      Pike_error("Strings wider than 1 byte are NOT valid UTF-8.\n");
+
     low_validate(data, JSON_UTF8);
 }
 
-/*! @decl array|mapping|string|float|int decode(string s)
+/*! @decl array|mapping|string|float|int|object decode_utf8(string s)
  *!
- *! Parses a utf8 encoded JSON-formatted string and returns the corresponding pike data structure.
+ *! Decodes an utf8 encoded JSON string.
  *! Should give the same result as @expr{Standards.JSON.decode(utf8_to_string(s))@}.
  *! 
  *! @throws
  *! 	Throws an exception in case the data contained in @expr{s@} is not valid
  *! 	JSON.
  */
-PIKEFUN mixed decode_utf8(string data) {
+PIKEFUN array|mapping|string|float|int|object decode_utf8(string data) {
+    if (data->size_shift) {
+	ref_push_string(data);
+	push_int(0);
+	push_text("Strings wider than 1 byte are NOT valid UTF-8.");
+	apply (Pike_fp->current_object, "decode_error", 3);
+    }
+
     low_decode(data, JSON_UTF8);
 }
 
