@@ -64,7 +64,6 @@ test_true(functionp(Standards.JSON.validate))
 test_true(Standards.JSON.true == Standards.JSON.decode("true"))
 test_true(Standards.JSON.false == Standards.JSON.decode("false"))
 test_true(Standards.JSON.null == Standards.JSON.decode("null"))
-test_true(Standards.JSON.decode("true") == ~Standards.JSON.decode("false"))
 // test numbers
 test_true(Standards.JSON.decode("0E4") == 0.0)
 // test reference counter.
@@ -77,7 +76,6 @@ test_true(-1 != Standards.JSON.validate_utf8("[ 32, 23, 43  , 54   ,45]        u
 test_true(-1 == Standards.JSON.validate_utf8("[ 32, 23, 43  , 54   ,45]       "))
 test_true("\\/\"\"\\" == Standards.JSON.decode(Standards.JSON.encode("\\/\"\"\\")))
 test_true("\\/skjdhf\"sdf\"d\\" == Standards.JSON.decode(Standards.JSON.encode("\\/skjdhf\"sdf\"d\\")))
-test_true("\"\\\\\\\""*20 == Standards.JSON.decode_utf8(Standards.JSON.decode(Standards.JSON.decode_utf8(Standards.JSON.decode(Standards.JSON.encode(Standards.JSON.encode_utf8(Standards.JSON.encode(Standards.JSON.encode_utf8("\"\\\\\\\""*20), Standards.JSON.HUMAN_READABLE))))))))
 // test examples from json.org
 test_true(equal(Standards.JSON.decode(
 "{\
@@ -288,11 +286,6 @@ test_any([[
 		mixed a = Standards.JSON.decode_utf8(Standards.JSON.encode(string_to_utf8(s)));
 	};
 	return !!e;
-]], 1)
-test_any([[
-	string s = "   ";
-	s[1] = 0xe000;
-	return (s == Standards.JSON.decode_utf8(Standards.JSON.encode_utf8(s)));
 ]], 1)
 test_any([[
 	string s = "{ \"key\": null }";
