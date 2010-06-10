@@ -2,14 +2,14 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: json.cmod,v 1.21 2010/06/10 15:15:10 arne Exp $
+|| $Id: json.cmod,v 1.22 2010/06/10 15:27:30 arne Exp $
 */
 
 /* JSON tools.
  *
  * Ref: RFC 4627
  *
- * Decoder comes from Public.Parser.JSON2, created by Arne Gödeke.
+ * Decoder comes from Public.Parser.JSON2 by Arne Gödeke.
  * Encoder created May 2010 by Martin Stjernholm.
  */
 
@@ -555,5 +555,9 @@ PIKE_MODULE_INIT
 
 PIKE_MODULE_EXIT
 {
+  if (JSON_null) free_object (JSON_null);
+  if (JSON_false) free_object (JSON_false);
+  if (JSON_true) free_object (JSON_true);
+
   EXIT;
 }
