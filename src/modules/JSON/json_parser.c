@@ -1,6 +1,6 @@
 
-#line 1 "rl/json.rl"
-//vim: syntax=ragel
+#line 1 "rl/json_parser.rl"
+// vim: syntax=ragel
 
 #include "mapping.h"
 #include "operators.h"
@@ -11,21 +11,21 @@
 
 #include "json.h"
 
-#include "json_utf8.c"
 
-static p_wchar2 *_parse_JSON(p_wchar2 *p, p_wchar2 *pe, struct parser_state *state);
+static ptrdiff_t _parse_JSON(PCHARP str, ptrdiff_t p, ptrdiff_t pe, struct parser_state *state);
 
+#include "json_string_utf8.c"
 #include "json_string.c"
 #include "json_number.c"
 #include "json_array.c"
 #include "json_mapping.c"
 
 
-#line 43 "rl/json.rl"
+#line 44 "rl/json_parser.rl"
 
 
-static p_wchar2 *_parse_JSON(p_wchar2 *p, p_wchar2 *pe, struct parser_state *state) {
-    p_wchar2 *i = p;
+static ptrdiff_t _parse_JSON(PCHARP str, ptrdiff_t p, ptrdiff_t pe, struct parser_state *state) {
+    p_wchar2 i = p;
     int cs;
     int c = 0;
     
@@ -37,7 +37,7 @@ static const int JSON_error = 0;
 static const int JSON_en_main = 1;
 
 
-#line 50 "rl/json.rl"
+#line 51 "rl/json_parser.rl"
 
     
 #line 44 "json_parser.c"
@@ -45,7 +45,7 @@ static const int JSON_en_main = 1;
 	cs = JSON_start;
 	}
 
-#line 52 "rl/json.rl"
+#line 53 "rl/json_parser.rl"
     
 #line 51 "json_parser.c"
 	{
@@ -57,7 +57,7 @@ st1:
 	if ( ++p == pe )
 		goto _test_eof1;
 case 1:
-	switch( (*p) ) {
+	switch( ( ((int)INDEX_PCHARP(str, p))) ) {
 		case 13: goto st1;
 		case 32: goto st1;
 		case 34: goto tr2;
@@ -68,11 +68,11 @@ case 1:
 		case 116: goto st9;
 		case 123: goto tr8;
 	}
-	if ( (*p) < 45 ) {
-		if ( 9 <= (*p) && (*p) <= 10 )
+	if ( ( ((int)INDEX_PCHARP(str, p))) < 45 ) {
+		if ( 9 <= ( ((int)INDEX_PCHARP(str, p))) && ( ((int)INDEX_PCHARP(str, p))) <= 10 )
 			goto st1;
-	} else if ( (*p) > 46 ) {
-		if ( 48 <= (*p) && (*p) <= 57 )
+	} else if ( ( ((int)INDEX_PCHARP(str, p))) > 46 ) {
+		if ( 48 <= ( ((int)INDEX_PCHARP(str, p))) && ( ((int)INDEX_PCHARP(str, p))) <= 57 )
 			goto tr3;
 	} else
 		goto tr3;
@@ -81,31 +81,31 @@ st0:
 cs = 0;
 	goto _out;
 tr2:
-#line 26 "rl/json.rl"
-	{ PARSE(string, p); {p = (( i))-1;} }
+#line 27 "rl/json_parser.rl"
+	{ PARSE_STRING(p); {p = (( i))-1;} }
 	goto st12;
 tr3:
-#line 27 "rl/json.rl"
+#line 28 "rl/json_parser.rl"
 	{ PARSE(number, p); {p = (( i))-1;} }
 	goto st12;
 tr4:
-#line 29 "rl/json.rl"
+#line 30 "rl/json_parser.rl"
 	{ PARSE(array, p); {p = (( i))-1;} }
 	goto st12;
 tr8:
-#line 28 "rl/json.rl"
+#line 29 "rl/json_parser.rl"
 	{ PARSE(mapping, p); {p = (( i))-1;} }
 	goto st12;
 tr12:
-#line 32 "rl/json.rl"
+#line 33 "rl/json_parser.rl"
 	{ PUSH_SPECIAL("false"); }
 	goto st12;
 tr15:
-#line 33 "rl/json.rl"
+#line 34 "rl/json_parser.rl"
 	{ PUSH_SPECIAL("null"); }
 	goto st12;
 tr18:
-#line 31 "rl/json.rl"
+#line 32 "rl/json_parser.rl"
 	{ PUSH_SPECIAL("true"); }
 	goto st12;
 st12:
@@ -113,81 +113,81 @@ st12:
 		goto _test_eof12;
 case 12:
 #line 116 "json_parser.c"
-	switch( (*p) ) {
+	switch( ( ((int)INDEX_PCHARP(str, p))) ) {
 		case 13: goto st12;
 		case 32: goto st12;
 	}
-	if ( 9 <= (*p) && (*p) <= 10 )
+	if ( 9 <= ( ((int)INDEX_PCHARP(str, p))) && ( ((int)INDEX_PCHARP(str, p))) <= 10 )
 		goto st12;
 	goto st0;
 st2:
 	if ( ++p == pe )
 		goto _test_eof2;
 case 2:
-	if ( (*p) == 97 )
+	if ( ( ((int)INDEX_PCHARP(str, p))) == 97 )
 		goto st3;
 	goto st0;
 st3:
 	if ( ++p == pe )
 		goto _test_eof3;
 case 3:
-	if ( (*p) == 108 )
+	if ( ( ((int)INDEX_PCHARP(str, p))) == 108 )
 		goto st4;
 	goto st0;
 st4:
 	if ( ++p == pe )
 		goto _test_eof4;
 case 4:
-	if ( (*p) == 115 )
+	if ( ( ((int)INDEX_PCHARP(str, p))) == 115 )
 		goto st5;
 	goto st0;
 st5:
 	if ( ++p == pe )
 		goto _test_eof5;
 case 5:
-	if ( (*p) == 101 )
+	if ( ( ((int)INDEX_PCHARP(str, p))) == 101 )
 		goto tr12;
 	goto st0;
 st6:
 	if ( ++p == pe )
 		goto _test_eof6;
 case 6:
-	if ( (*p) == 117 )
+	if ( ( ((int)INDEX_PCHARP(str, p))) == 117 )
 		goto st7;
 	goto st0;
 st7:
 	if ( ++p == pe )
 		goto _test_eof7;
 case 7:
-	if ( (*p) == 108 )
+	if ( ( ((int)INDEX_PCHARP(str, p))) == 108 )
 		goto st8;
 	goto st0;
 st8:
 	if ( ++p == pe )
 		goto _test_eof8;
 case 8:
-	if ( (*p) == 108 )
+	if ( ( ((int)INDEX_PCHARP(str, p))) == 108 )
 		goto tr15;
 	goto st0;
 st9:
 	if ( ++p == pe )
 		goto _test_eof9;
 case 9:
-	if ( (*p) == 114 )
+	if ( ( ((int)INDEX_PCHARP(str, p))) == 114 )
 		goto st10;
 	goto st0;
 st10:
 	if ( ++p == pe )
 		goto _test_eof10;
 case 10:
-	if ( (*p) == 117 )
+	if ( ( ((int)INDEX_PCHARP(str, p))) == 117 )
 		goto st11;
 	goto st0;
 st11:
 	if ( ++p == pe )
 		goto _test_eof11;
 case 11:
-	if ( (*p) == 101 )
+	if ( ( ((int)INDEX_PCHARP(str, p))) == 101 )
 		goto tr18;
 	goto st0;
 	}
@@ -208,14 +208,14 @@ case 11:
 	_out: {}
 	}
 
-#line 53 "rl/json.rl"
+#line 54 "rl/json_parser.rl"
 
     if (cs >= JSON_first_final) {
 		return p;
     }
 
-    if (!state->validate && c > 0) pop_n_elems(c);
+    if (!(state->flags&JSON_VALIDATE) && c > 0) pop_n_elems(c);
 
-    push_int((INT_TYPE)p);
-    return NULL;
+    state->flags |= JSON_ERROR;
+    return p;
 }

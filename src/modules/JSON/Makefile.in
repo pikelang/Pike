@@ -1,10 +1,40 @@
-# $Id: Makefile.in,v 1.1 2010/05/28 17:39:15 mast Exp $
+# $Id: Makefile.in,v 1.2 2010/06/10 14:26:51 arne Exp $
+
 @make_variables@
+
 VPATH=@srcdir@
 MODNAME=JSON
 MODDIR=Standards.pmod/
-MODULE_PMOD_IN=@srcdir@/JSON.pmod.in
+MODULE_PMOD_IN=$(SRCDIR)/JSON.pmod.in
 MODULE_WRAPPER_PREFIX=_
 OBJS=json.o
+
 @dynamic_module_makefile@
+
+# Ragel targets
+
+# Enable this to include ragel in the build chain.
+#ENABLE_RAGEL=yes
+
+RAGEL = ragel -G2 -C
+
+RAGEL_TARGETS=json_parser.c json_string.c json_mapping.c json_array.c json_number.c json_utf8.c json_string_utf8.c json_mapping_utf8.c json_array_utf8.c json_number_utf8.c
+
+$(SRCDIR)/%.c: rl/%.rl rl/json_defaults.rl
+	@if [ x"$(ENABLE_RAGEL)" != x ]; then \
+	  echo "cd $(SRCDIR) && $(RAGEL) -o $*.c rl/$*.rl"; \
+	  cd "$(SRCDIR)" && $(RAGEL) -o $*.c rl/$*.rl; \
+	elif [ -f $@ ]; then \
+	  echo "touch $@"; \
+	  touch $@; \
+	else \
+	  echo "C target $@ missing."; \
+	  false; \
+	fi
+
+source: $(RAGEL_TARGETS)
+
+ragel_clean:
+	cd "$(SRCDIR)" && $(RM) $(RAGEL_TARGETS)
+
 @dependencies@
