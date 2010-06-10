@@ -1,4 +1,4 @@
-//vim: syntax=ragel
+// vim: syntax=ragel
 
 #include "mapping.h"
 #include "operators.h"
@@ -9,10 +9,10 @@
 
 #include "json.h"
 
-#include "json_utf8.c"
 
-static p_wchar2 *_parse_JSON(p_wchar2 *p, p_wchar2 *pe, struct parser_state *state);
+static ptrdiff_t _parse_JSON(PCHARP str, ptrdiff_t p, ptrdiff_t pe, struct parser_state *state);
 
+#include "json_string_utf8.c"
 #include "json_string.c"
 #include "json_number.c"
 #include "json_array.c"
@@ -22,8 +22,9 @@ static p_wchar2 *_parse_JSON(p_wchar2 *p, p_wchar2 *pe, struct parser_state *sta
     machine JSON;
     alphtype int;
     include JSOND "json_defaults.rl";
+    getkey ((int)INDEX_PCHARP(str, fpc));
 
-    action parse_string { PARSE(string, fpc); fexec i; }
+    action parse_string { PARSE_STRING(fpc); fexec i; }
     action parse_number { PARSE(number, fpc); fexec i; }
     action parse_mapping { PARSE(mapping, fpc); fexec i; }
     action parse_array { PARSE(array, fpc); fexec i; }
@@ -42,8 +43,8 @@ static p_wchar2 *_parse_JSON(p_wchar2 *p, p_wchar2 *pe, struct parser_state *sta
 			) . myspace*;
 }%%
 
-static p_wchar2 *_parse_JSON(p_wchar2 *p, p_wchar2 *pe, struct parser_state *state) {
-    p_wchar2 *i = p;
+static ptrdiff_t _parse_JSON(PCHARP str, ptrdiff_t p, ptrdiff_t pe, struct parser_state *state) {
+    p_wchar2 i = p;
     int cs;
     int c = 0;
     %% write data;
@@ -55,8 +56,8 @@ static p_wchar2 *_parse_JSON(p_wchar2 *p, p_wchar2 *pe, struct parser_state *sta
 		return p;
     }
 
-    if (!state->validate && c > 0) pop_n_elems(c);
+    if (!(state->flags&JSON_VALIDATE) && c > 0) pop_n_elems(c);
 
-    push_int((INT_TYPE)p);
-    return NULL;
+    state->flags |= JSON_ERROR;
+    return p;
 }
