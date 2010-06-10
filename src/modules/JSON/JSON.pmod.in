@@ -1,4 +1,4 @@
-// $Id: JSON.pmod.in,v 1.3 2010/05/30 21:04:31 mast Exp $
+// $Id: JSON.pmod.in,v 1.4 2010/06/10 15:19:51 arne Exp $
 
 #pike __REAL_VERSION__
 
@@ -43,6 +43,49 @@ class Null
   int `!() {return 1;}
   string encode_json() {return "null";}
   protected string _sprintf (int flag) {return flag == 'O' && "JSON.null";}
+}
+
+//! Error thrown when JSON decode fails.
+class DecodeError {
+    inherit Error.Generic;
+
+    constant error_type = "json_decode";
+    constant is_json_decode_error = 1;
+
+    //! The string that failed to be decoded.
+    string err_str;
+
+    //! The failing position in @[err_str].
+    int err_pos;
+
+    protected void create(string err_str, int err_pos, void|string reason, void|array bt) {
+	this_program::err_str = err_str;
+	this_program::err_pos = err_pos;
+
+	string pre_context = err_pos > 13 ?
+	    sprintf ("...%O", err_str[err_pos - 10..err_pos - 1]) :
+	    err_pos > 0 ?
+	    sprintf ("%O", err_str[..err_pos - 1]) :
+	    "";
+	string post_context = err_pos < sizeof (err_str) - 14 ?
+	    sprintf ("%O...", err_str[err_pos + 1..err_pos + 10]) :
+	    err_pos + 1 < sizeof (err_str) ?
+	    sprintf ("%O", err_str[err_pos + 1..]) :
+	    "";
+	err_str = sprintf ("%s->[%c]<-%s", pre_context, err_str[err_pos], post_context);
+
+	if (reason)
+	    ::create(sprintf("Error decoding JSON at position %d %s: %s.\n",
+			     err_pos, err_str, reason), bt);
+	else 
+	    ::create(sprintf("Error decoding JSON at position %d %s\n",
+			     err_pos, err_str), bt);
+    }
+}
+
+void decode_error(string err_str, int err_pos, void|string reason, void|mixed ... args) {
+    if (sizeof(args)) reason = sprintf(reason, @args);
+    throw(DecodeError(err_str, err_pos, reason, backtrace()[..<1]));
 }
 
 #endif	// constant (@module@)
