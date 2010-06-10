@@ -1,4 +1,3 @@
-// vim:syntax=lpc
 START_MARKER
 
 test_true(Standards.JSON.true)
@@ -10,7 +9,7 @@ test_eq(Standards.JSON.HUMAN_READABLE, 2)
 test_eq(Standards.JSON.PIKE_CANONICAL, 4)
 
 define(test_enc,[[
-test_eq(Standards.JSON.encode([[$1]], Standards.JSON.PIKE_CANONICAL),[[$2]])
+  test_eq(Standards.JSON.encode([[$1]], Standards.JSON.PIKE_CANONICAL),[[$2]])
 ]])
 define(test_dec_enc,[[
   test_equal(Standards.JSON.decode ([[$1]]), [[$2]])
@@ -29,9 +28,11 @@ define(test_dec_enc_canon,[[
   test_enc([[$2]], [[$1]])
 ]])
 define(test_dec_enc,[[
-test_equal(Standards.JSON.decode ([[$1]]), [[$2]])
-test_equal(Standards.JSON.decode_utf8 (string_to_utf8 ([[$1]])), [[$2]])
-test_equal(Standards.JSON.decode (Standards.JSON.encode ([[$2]])), [[$2]])
+  test_equal(Standards.JSON.decode ([[$1]]), [[$2]])
+  test_eq(Standards.JSON.validate ([[$1]]), -1)
+  test_equal(Standards.JSON.decode_utf8 (string_to_utf8 ([[$1]])), [[$2]])
+  test_eq(Standards.JSON.validate_utf8 (string_to_utf8 ([[$1]])), -1)
+  test_equal(Standards.JSON.decode (Standards.JSON.encode ([[$2]])), [[$2]])
 ]])
 
 test_dec_enc_canon("-1", -1)
@@ -79,14 +80,14 @@ test_any([[
 class X { string encode_json() { return "smallpox"; } };
 return Standards.JSON.encode(X());
 ]], "smallpox")
-// all examples are taken from www.json.org
-//
+
 test_true(programp(Standards.JSON.True))
 test_true(programp(Standards.JSON.False))
 test_true(programp(Standards.JSON.Null))
 test_true(functionp(Standards.JSON.decode))
 test_true(functionp(Standards.JSON.encode))
 test_true(functionp(Standards.JSON.validate))
+
 // test the special types
 test_eq(Standards.JSON.true, Standards.JSON.decode("true"))
 test_eq(Standards.JSON.false, Standards.JSON.decode("false"))
@@ -101,7 +102,7 @@ test_eq(Standards.JSON.decode("0E4"), 0.0)
 test_true(_refs(Standards.JSON.decode("\" It says little, does less, means nothing.\"")) == 1)
 test_eq(_refs(Standards.JSON.decode(" { \"asd\" : 45 }  ")), 1)
 test_eq(_refs(Standards.JSON.decode(" [ 45, 34, 3, 4, 5 ] ")), 1)
-  
+
 // testing if junk at the end breaks
 test_true(-1 != Standards.JSON.validate_utf8("[ 32, 23, 43  , 54   ,45]        uh"))
 test_eq(-1, Standards.JSON.validate_utf8("[ 32, 23, 43  , 54   ,45]       "))
@@ -109,7 +110,7 @@ test_eq(-1, Standards.JSON.validate_utf8("[ 32, 23, 43  , 54   ,45]       "))
 test_dec_enc_canon("\"\\\\/\\\"\\\"\\\\\"", "\\/\"\"\\")
 test_dec_enc_canon("\"\\\\/skjdhf\\\"sdf\\\"d\\\\\"", "\\/skjdhf\"sdf\"d\\")
 
-  // test examples from json.org
+// test examples from json.org
 test_dec_enc([[
 "{\
     \"glossary\": {\
