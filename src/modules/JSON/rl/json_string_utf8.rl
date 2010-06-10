@@ -1,8 +1,6 @@
 // vim:syntax=ragel
 #define HEX2DEC(x) ((x) <= '9' ? (x) - '0' : ((x) < 'G') ? (x) - 'A' + 10 : (x) - 'a' + 10)
 
-#include "global.h"
-
 %%{
     machine JSON_string;
     alphtype char;
@@ -21,11 +19,11 @@
 		if (IS_NUNICODE(temp)) {
 			goto failure;	
 		}
-		if (!state->validate) string_builder_putchar(&s, temp);
+		if (!(state->flags&JSON_VALIDATE)) string_builder_putchar(&s, temp);
     }
 
     action add_unquote {
-		if (!state->validate) switch(fc) {
+		if (!(state->flags&JSON_VALIDATE)) switch(fc) {
 			case '"':
 			case '/':
 			case '\\':      string_builder_putchar(&s, fc); break;
@@ -45,7 +43,7 @@
 
     action string_append {
 		if (fpc - mark > 0) {
-			if (!state->validate)
+			if (!(state->flags&JSON_VALIDATE))
 				string_builder_binary_strcat(&s, mark, (ptrdiff_t)(fpc - mark));
         }
     }
@@ -74,7 +72,7 @@
     }
 
     action finish {
-		if (!state->validate) { 
+		if (!(state->flags&JSON_VALIDATE)) { 
 			string_builder_putchar(&s, unicode); 
 		}
     }
@@ -95,7 +93,9 @@
 		  ) >mark %*{ fpc--; fbreak; };
 }%%
 
-static char *_parse_JSON_string_utf8(char *p, char *pe, struct parser_state *state) {
+static ptrdiff_t _parse_JSON_string_utf8(PCHARP str, ptrdiff_t pos, ptrdiff_t end, struct parser_state *state) {
+    char *p = (char*)(str.ptr) + pos;
+    char *pe = (char*)(str.ptr) + end;
     char *mark = 0;
     struct string_builder s;
     int cs;
@@ -104,27 +104,27 @@ static char *_parse_JSON_string_utf8(char *p, char *pe, struct parser_state *sta
 
     %% write data;
 
-    if (!state->validate)
+    if (!(state->flags&JSON_VALIDATE))
 		init_string_builder(&s, 0);
 
     %% write init;
     %% write exec;
 
     if (cs >= JSON_string_first_final) {
-		if (!state->validate)
+		if (!(state->flags&JSON_VALIDATE))
 			push_string(finish_string_builder(&s));
 
-		return p;
+		return p - (char*)(str.ptr);
     }
 
 failure:
 
-    if (!state->validate) {
+    if (!(state->flags&JSON_VALIDATE)) {
 		free_string_builder(&s);
     }
 
-    push_int((INT_TYPE)p);
-    return NULL;
+    state->flags |= JSON_ERROR;
+    return p - (char*)(str.ptr);
 }
 
 #undef HEX2DEC

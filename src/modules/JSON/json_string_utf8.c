@@ -3,13 +3,13 @@
 // vim:syntax=ragel
 #define HEX2DEC(x) ((x) <= '9' ? (x) - '0' : ((x) < 'G') ? (x) - 'A' + 10 : (x) - 'a' + 10)
 
-#include "global.h"
+
+#line 94 "rl/json_string_utf8.rl"
 
 
-#line 96 "rl/json_string_utf8.rl"
-
-
-static char *_parse_JSON_string_utf8(char *p, char *pe, struct parser_state *state) {
+static ptrdiff_t _parse_JSON_string_utf8(PCHARP str, ptrdiff_t pos, ptrdiff_t end, struct parser_state *state) {
+    char *p = (char*)(str.ptr) + pos;
+    char *pe = (char*)(str.ptr) + end;
     char *mark = 0;
     struct string_builder s;
     int cs;
@@ -27,7 +27,7 @@ static const int JSON_string_en_main = 1;
 
 #line 106 "rl/json_string_utf8.rl"
 
-    if (!state->validate)
+    if (!(state->flags&JSON_VALIDATE))
 		init_string_builder(&s, 0);
 
     
@@ -72,29 +72,29 @@ case 2:
 		goto tr3;
 	goto st0;
 tr2:
-#line 40 "rl/json_string_utf8.rl"
+#line 38 "rl/json_string_utf8.rl"
 	{
 		mark = p;
     }
-#line 46 "rl/json_string_utf8.rl"
+#line 44 "rl/json_string_utf8.rl"
 	{
 		if (p - mark > 0) {
-			if (!state->validate)
+			if (!(state->flags&JSON_VALIDATE))
 				string_builder_binary_strcat(&s, mark, (ptrdiff_t)(p - mark));
         }
     }
-#line 53 "rl/json_string_utf8.rl"
+#line 51 "rl/json_string_utf8.rl"
 	{ unicode = ((p_wchar2)((*p) & (0xdf-0xc0))) << 6; }
 	goto st3;
 tr9:
-#line 46 "rl/json_string_utf8.rl"
+#line 44 "rl/json_string_utf8.rl"
 	{
 		if (p - mark > 0) {
-			if (!state->validate)
+			if (!(state->flags&JSON_VALIDATE))
 				string_builder_binary_strcat(&s, mark, (ptrdiff_t)(p - mark));
         }
     }
-#line 53 "rl/json_string_utf8.rl"
+#line 51 "rl/json_string_utf8.rl"
 	{ unicode = ((p_wchar2)((*p) & (0xdf-0xc0))) << 6; }
 	goto st3;
 st3:
@@ -106,61 +106,61 @@ case 3:
 		goto tr8;
 	goto st0;
 tr5:
-#line 40 "rl/json_string_utf8.rl"
+#line 38 "rl/json_string_utf8.rl"
 	{
 		mark = p;
     }
 	goto st4;
 tr8:
-#line 54 "rl/json_string_utf8.rl"
+#line 52 "rl/json_string_utf8.rl"
 	{ unicode |= (p_wchar2)((*p) & (0xbf-0x80)); }
-#line 76 "rl/json_string_utf8.rl"
+#line 74 "rl/json_string_utf8.rl"
 	{
-		if (!state->validate) { 
+		if (!(state->flags&JSON_VALIDATE)) { 
 			string_builder_putchar(&s, unicode); 
 		}
     }
-#line 44 "rl/json_string_utf8.rl"
+#line 42 "rl/json_string_utf8.rl"
 	{ mark = p + 1; }
 	goto st4;
 tr16:
-#line 58 "rl/json_string_utf8.rl"
+#line 56 "rl/json_string_utf8.rl"
 	{ 
 	unicode |= (p_wchar2)((*p) & (0xbf-0x80));
 		if ((unicode < 0x0800 || unicode > 0xd7ff) && (unicode < 0xe000 || unicode > 0xffff)) {
 			goto failure;	
 		}
     }
-#line 76 "rl/json_string_utf8.rl"
+#line 74 "rl/json_string_utf8.rl"
 	{
-		if (!state->validate) { 
+		if (!(state->flags&JSON_VALIDATE)) { 
 			string_builder_putchar(&s, unicode); 
 		}
     }
-#line 44 "rl/json_string_utf8.rl"
+#line 42 "rl/json_string_utf8.rl"
 	{ mark = p + 1; }
 	goto st4;
 tr19:
-#line 69 "rl/json_string_utf8.rl"
+#line 67 "rl/json_string_utf8.rl"
 	{ 
 		unicode |= (p_wchar2)((*p) & (0xbf-0x80));
 		if (unicode < 0x010000 || unicode > 0x10ffff) {
 			goto failure;
 		}
     }
-#line 76 "rl/json_string_utf8.rl"
+#line 74 "rl/json_string_utf8.rl"
 	{
-		if (!state->validate) { 
+		if (!(state->flags&JSON_VALIDATE)) { 
 			string_builder_putchar(&s, unicode); 
 		}
     }
-#line 44 "rl/json_string_utf8.rl"
+#line 42 "rl/json_string_utf8.rl"
 	{ mark = p + 1; }
 	goto st4;
 tr20:
-#line 27 "rl/json_string_utf8.rl"
+#line 25 "rl/json_string_utf8.rl"
 	{
-		if (!state->validate) switch((*p)) {
+		if (!(state->flags&JSON_VALIDATE)) switch((*p)) {
 			case '"':
 			case '/':
 			case '\\':      string_builder_putchar(&s, (*p)); break;
@@ -171,23 +171,23 @@ tr20:
 			case 't':       string_builder_putchar(&s, '\t'); break;
 		}
     }
-#line 44 "rl/json_string_utf8.rl"
+#line 42 "rl/json_string_utf8.rl"
 	{ mark = p + 1; }
 	goto st4;
 tr25:
-#line 15 "rl/json_string_utf8.rl"
+#line 13 "rl/json_string_utf8.rl"
 	{
 		temp *= 16;
 		temp += HEX2DEC((*p));
     }
-#line 20 "rl/json_string_utf8.rl"
+#line 18 "rl/json_string_utf8.rl"
 	{
 		if (IS_NUNICODE(temp)) {
 			goto failure;	
 		}
-		if (!state->validate) string_builder_putchar(&s, temp);
+		if (!(state->flags&JSON_VALIDATE)) string_builder_putchar(&s, temp);
     }
-#line 44 "rl/json_string_utf8.rl"
+#line 42 "rl/json_string_utf8.rl"
 	{ mark = p + 1; }
 	goto st4;
 st4:
@@ -212,29 +212,29 @@ case 4:
 		goto tr10;
 	goto st0;
 tr3:
-#line 40 "rl/json_string_utf8.rl"
+#line 38 "rl/json_string_utf8.rl"
 	{
 		mark = p;
     }
-#line 46 "rl/json_string_utf8.rl"
+#line 44 "rl/json_string_utf8.rl"
 	{
 		if (p - mark > 0) {
-			if (!state->validate)
+			if (!(state->flags&JSON_VALIDATE))
 				string_builder_binary_strcat(&s, mark, (ptrdiff_t)(p - mark));
         }
     }
-#line 56 "rl/json_string_utf8.rl"
+#line 54 "rl/json_string_utf8.rl"
 	{ unicode = ((p_wchar2)((*p) & 0x0f)) << 12; }
 	goto st5;
 tr10:
-#line 46 "rl/json_string_utf8.rl"
+#line 44 "rl/json_string_utf8.rl"
 	{
 		if (p - mark > 0) {
-			if (!state->validate)
+			if (!(state->flags&JSON_VALIDATE))
 				string_builder_binary_strcat(&s, mark, (ptrdiff_t)(p - mark));
         }
     }
-#line 56 "rl/json_string_utf8.rl"
+#line 54 "rl/json_string_utf8.rl"
 	{ unicode = ((p_wchar2)((*p) & 0x0f)) << 12; }
 	goto st5;
 st5:
@@ -246,7 +246,7 @@ case 5:
 		goto tr15;
 	goto st0;
 tr15:
-#line 57 "rl/json_string_utf8.rl"
+#line 55 "rl/json_string_utf8.rl"
 	{ unicode |= ((p_wchar2)((*p) & (0xbf-0x80))) << 6; }
 	goto st6;
 st6:
@@ -258,29 +258,29 @@ case 6:
 		goto tr16;
 	goto st0;
 tr4:
-#line 40 "rl/json_string_utf8.rl"
+#line 38 "rl/json_string_utf8.rl"
 	{
 		mark = p;
     }
-#line 46 "rl/json_string_utf8.rl"
+#line 44 "rl/json_string_utf8.rl"
 	{
 		if (p - mark > 0) {
-			if (!state->validate)
+			if (!(state->flags&JSON_VALIDATE))
 				string_builder_binary_strcat(&s, mark, (ptrdiff_t)(p - mark));
         }
     }
-#line 65 "rl/json_string_utf8.rl"
+#line 63 "rl/json_string_utf8.rl"
 	{ unicode = ((p_wchar2)((*p) & 0x07)) << 18; }
 	goto st7;
 tr11:
-#line 46 "rl/json_string_utf8.rl"
+#line 44 "rl/json_string_utf8.rl"
 	{
 		if (p - mark > 0) {
-			if (!state->validate)
+			if (!(state->flags&JSON_VALIDATE))
 				string_builder_binary_strcat(&s, mark, (ptrdiff_t)(p - mark));
         }
     }
-#line 65 "rl/json_string_utf8.rl"
+#line 63 "rl/json_string_utf8.rl"
 	{ unicode = ((p_wchar2)((*p) & 0x07)) << 18; }
 	goto st7;
 st7:
@@ -292,7 +292,7 @@ case 7:
 		goto tr17;
 	goto st0;
 tr17:
-#line 66 "rl/json_string_utf8.rl"
+#line 64 "rl/json_string_utf8.rl"
 	{ unicode |= ((p_wchar2)((*p) & (0xbf-0x80))) << 12; }
 	goto st8;
 st8:
@@ -304,7 +304,7 @@ case 8:
 		goto tr18;
 	goto st0;
 tr18:
-#line 57 "rl/json_string_utf8.rl"
+#line 55 "rl/json_string_utf8.rl"
 	{ unicode |= ((p_wchar2)((*p) & (0xbf-0x80))) << 6; }
 	goto st9;
 st9:
@@ -316,23 +316,23 @@ case 9:
 		goto tr19;
 	goto st0;
 tr6:
-#line 40 "rl/json_string_utf8.rl"
+#line 38 "rl/json_string_utf8.rl"
 	{
 		mark = p;
     }
-#line 46 "rl/json_string_utf8.rl"
+#line 44 "rl/json_string_utf8.rl"
 	{
 		if (p - mark > 0) {
-			if (!state->validate)
+			if (!(state->flags&JSON_VALIDATE))
 				string_builder_binary_strcat(&s, mark, (ptrdiff_t)(p - mark));
         }
     }
 	goto st15;
 tr13:
-#line 46 "rl/json_string_utf8.rl"
+#line 44 "rl/json_string_utf8.rl"
 	{
 		if (p - mark > 0) {
-			if (!state->validate)
+			if (!(state->flags&JSON_VALIDATE))
 				string_builder_binary_strcat(&s, mark, (ptrdiff_t)(p - mark));
         }
     }
@@ -341,28 +341,28 @@ st15:
 	if ( ++p == pe )
 		goto _test_eof15;
 case 15:
-#line 95 "rl/json_string_utf8.rl"
+#line 93 "rl/json_string_utf8.rl"
 	{ p--; {p++; cs = 15; goto _out;} }
 #line 347 "json_string_utf8.c"
 	goto st0;
 tr7:
-#line 40 "rl/json_string_utf8.rl"
+#line 38 "rl/json_string_utf8.rl"
 	{
 		mark = p;
     }
-#line 46 "rl/json_string_utf8.rl"
+#line 44 "rl/json_string_utf8.rl"
 	{
 		if (p - mark > 0) {
-			if (!state->validate)
+			if (!(state->flags&JSON_VALIDATE))
 				string_builder_binary_strcat(&s, mark, (ptrdiff_t)(p - mark));
         }
     }
 	goto st10;
 tr14:
-#line 46 "rl/json_string_utf8.rl"
+#line 44 "rl/json_string_utf8.rl"
 	{
 		if (p - mark > 0) {
-			if (!state->validate)
+			if (!(state->flags&JSON_VALIDATE))
 				string_builder_binary_strcat(&s, mark, (ptrdiff_t)(p - mark));
         }
     }
@@ -398,7 +398,7 @@ case 11:
 		goto tr22;
 	goto st0;
 tr22:
-#line 11 "rl/json_string_utf8.rl"
+#line 9 "rl/json_string_utf8.rl"
 	{
 		temp = HEX2DEC((*p));
     }
@@ -418,7 +418,7 @@ case 12:
 		goto tr23;
 	goto st0;
 tr23:
-#line 15 "rl/json_string_utf8.rl"
+#line 13 "rl/json_string_utf8.rl"
 	{
 		temp *= 16;
 		temp += HEX2DEC((*p));
@@ -439,7 +439,7 @@ case 13:
 		goto tr24;
 	goto st0;
 tr24:
-#line 15 "rl/json_string_utf8.rl"
+#line 13 "rl/json_string_utf8.rl"
 	{
 		temp *= 16;
 		temp += HEX2DEC((*p));
@@ -482,20 +482,20 @@ case 14:
 #line 112 "rl/json_string_utf8.rl"
 
     if (cs >= JSON_string_first_final) {
-		if (!state->validate)
+		if (!(state->flags&JSON_VALIDATE))
 			push_string(finish_string_builder(&s));
 
-		return p;
+		return p - (char*)(str.ptr);
     }
 
 failure:
 
-    if (!state->validate) {
+    if (!(state->flags&JSON_VALIDATE)) {
 		free_string_builder(&s);
     }
 
-    push_int((INT_TYPE)p);
-    return NULL;
+    state->flags |= JSON_ERROR;
+    return p - (char*)(str.ptr);
 }
 
 #undef HEX2DEC

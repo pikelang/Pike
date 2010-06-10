@@ -1,4 +1,8 @@
-#define PUSH_SPECIAL(X) do {if (!state->validate) {						\
+#define JSON_UTF8	1
+#define JSON_ERROR	2
+#define JSON_VALIDATE	4
+
+#define PUSH_SPECIAL(X) do {if (!(state->flags&JSON_VALIDATE)) {						\
     push_text("Standards.JSON." X); 								\
     APPLY_MASTER("resolv", 1);											\
     if (((struct svalue*)(Pike_sp - 1))->type != PIKE_T_OBJECT) { 		\
@@ -9,41 +13,26 @@
 
 #define PARSE(X, FPC) do {												\
     state->level++;														\
-    i = _parse_JSON_##X(FPC, pe, state);								\
+    i = _parse_JSON_##X(str, FPC, pe, state);								\
     state->level--;														\
-    if (i == NULL) {													\
-		return NULL;													\
+    if (state->flags&JSON_ERROR) {													\
+	    return i;													\
     } else if (state->level > 0) return i;											\
     c++;																\
 } while(0)								
 
-#define JSON_CONVERT(a,b) do {											\
-	if (a->len < 0 || (a->len << 2) >> 2 != a->len) {		\
-		Pike_error("Value passed to malloc would overflowed.\n");		\
-	}																	\
-    switch (a->size_shift) {											\
-    case 0:																\
-		b=(p_wchar2 *)malloc(sizeof(p_wchar2) * a->len);		\
-		if (b == NULL) {												\
-			SIMPLE_OUT_OF_MEMORY_ERROR (state.validate == 1 			\
-						? "validate" : "parse", sizeof(p_wchar2) * a->len); \
-		}																\
-        convert_0_to_2(b,STR0(a), a->len);								\
-		break;															\
-    case 1:																\
-		b=(p_wchar2 *)malloc(sizeof(p_wchar2) * a->len);				\
-		if (b == NULL) {												\
-			SIMPLE_OUT_OF_MEMORY_ERROR (state.validate == 1 			\
-						? "validate" : "parse", sizeof(p_wchar2) * a->len); \
-		}																\
-		convert_1_to_2(b,STR1(a), a->len);								\
-		break;															\
-    case 2:																\
-		b = STR2(a);													\
-		break;															\
-    default:															\
-		Pike_error("Bad string shift.\n");								\
-    } } while (0)
+#define PARSE_STRING(FPC) do {												\
+    state->level++;														\
+    if (state->flags&JSON_UTF8)\
+	i = _parse_JSON_string_utf8(str, FPC, pe, state);								\
+    else\
+	i = _parse_JSON_string(str, FPC, pe, state);								\
+    state->level--;														\
+    if (state->flags&JSON_ERROR) {													\
+	    return i;													\
+    } else if (state->level > 0) return i;											\
+    c++;																\
+} while(0)								
 
 #define IS_NUNICODE(x)	((x) < 0 || ((x) > 0xd7ff && (x) < 0xe000) || (x) > 0x10ffff)
 #define IS_NUNICODE1(x)	((x) < 0 || ((x) > 0xd7ff && (x) < 0xe000))
@@ -74,9 +63,10 @@
 		Pike_error("Bad string shift.\n");								\
     }} while (0)
 
+
 struct parser_state {
     unsigned int level;
-    short validate;
+    int flags;
     struct pike_string *data;
 };
 

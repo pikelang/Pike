@@ -5,13 +5,14 @@
     machine JSON_string;
     alphtype int;
     include JSOND "json_defaults.rl";
+    getkey ((int)INDEX_PCHARP(str, fpc));
 
     action hex0 {
-		if (!state->validate) temp = HEX2DEC(fc);
+		if (!(state->flags&JSON_VALIDATE)) temp = HEX2DEC(fc);
     }
 
     action hex1 {
-		if (!state->validate) {
+		if (!(state->flags&JSON_VALIDATE)) {
 			temp *= 16;
 			temp += HEX2DEC(fc);
 
@@ -22,11 +23,11 @@
     }
 
     action hex2 {
-		if (!state->validate) string_builder_putchar(&s, temp);
+		if (!(state->flags&JSON_VALIDATE)) string_builder_putchar(&s, temp);
     }
 
     action add_unquote {
-		if (!state->validate) switch(fc) {
+		if (!(state->flags&JSON_VALIDATE)) switch(fc) {
 			case '"':
 			case '/':
 			case '\\':      string_builder_putchar(&s, fc); break;
@@ -51,8 +52,8 @@
 			// looking for the lowest possible magnitude here may be worth it. i am not entirely
 			// sure if i want to do the copying here.
 			// use string_builder_binary_strcat here
-			if (!state->validate)
-				string_builder_append(&s, MKPCHARP(mark, 2), (ptrdiff_t)(fpc - mark));
+			if (!(state->flags&JSON_VALIDATE))
+				string_builder_append(&s, ADD_PCHARP(str, mark), fpc - mark);
         }
     }
 
@@ -69,30 +70,29 @@
 		  ) >mark %*{ fpc--; fbreak; };
 }%%
 
-static p_wchar2 *_parse_JSON_string(p_wchar2 *p, p_wchar2 *pe, struct parser_state *state) {
-    p_wchar2 temp = 0;
-    p_wchar2 *mark = 0;
+static ptrdiff_t _parse_JSON_string(PCHARP str, ptrdiff_t p, ptrdiff_t pe, struct parser_state *state) {
+    int temp = 0;
+    ptrdiff_t mark = 0;
     struct string_builder s;
     int cs;
 
     %% write data;
 
-    if (!state->validate)
-		init_string_builder(&s, 0);
+    if (!(state->flags&JSON_VALIDATE)) init_string_builder(&s, 0);
 
     %% write init;
     %% write exec;
 
     if (cs < JSON_string_first_final) {
-		if (!state->validate) {
+		if (!(state->flags&JSON_VALIDATE)) {
 			free_string_builder(&s);
 		}
 
-		push_int((INT_TYPE)p);
-		return NULL;
+		state->flags |= JSON_ERROR;
+		return p;
     }
 
-    if (!state->validate)
+    if (!(state->flags&JSON_VALIDATE))
 		push_string(finish_string_builder(&s));
 
     return p;

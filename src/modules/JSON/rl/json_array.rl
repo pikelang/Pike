@@ -4,18 +4,19 @@
     machine JSON_array;
     alphtype int;
     include JSOND "json_defaults.rl";
+    getkey ((int)INDEX_PCHARP(str, fpc));
 
     action parse_value {
 		state->level++;
-		i = _parse_JSON(fpc, pe, state);
+		i = _parse_JSON(str, fpc, pe, state);
 		state->level--;
 
-		if (i == NULL) {
-			if (!state->validate) { 
+		if (state->flags&JSON_ERROR) {
+			if (!(state->flags&JSON_VALIDATE)) { 
 				free_array(a);
 			}
-			return NULL;
-		} else if (!state->validate) {
+			return i;
+		} else if (!(state->flags&JSON_VALIDATE)) {
 			a = array_insert(a, &(Pike_sp[-1]), c);
 			pop_stack();
 		}
@@ -36,15 +37,15 @@
 			     ) %*{ fpc--; fbreak; }) ;
 }%%
 
-static p_wchar2 *_parse_JSON_array(p_wchar2 *p, p_wchar2 *pe, struct parser_state *state) {
-    p_wchar2 *i = p;
+static ptrdiff_t _parse_JSON_array(PCHARP str, ptrdiff_t p, ptrdiff_t pe, struct parser_state *state) {
+    ptrdiff_t i = p;
     struct array *a;
     int cs;
     int c = 0;
 
     %% write data;
 
-    if (!state->validate) {
+    if (!(state->flags&JSON_VALIDATE)) {
 	a = low_allocate_array(0,5);
     }
 
@@ -52,17 +53,17 @@ static p_wchar2 *_parse_JSON_array(p_wchar2 *p, p_wchar2 *pe, struct parser_stat
     %% write exec;
 
     if (cs >= JSON_array_first_final) {
-	if (!state->validate) {
+	if (!(state->flags&JSON_VALIDATE)) {
 	    push_array(a);
 	}
 	return p;
     }
 
-    if (!state->validate) {
+    state->flags |= JSON_ERROR;
+
+    if (!(state->flags&JSON_VALIDATE)) {
 	free_array(a);
     }
 
-
-    push_int((INT_TYPE)p);
-    return NULL;
+    return p;
 }
