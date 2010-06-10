@@ -27,13 +27,6 @@ define(test_dec_enc_canon,[[
   test_dec_enc([[$1]], [[$2]])
   test_enc([[$2]], [[$1]])
 ]])
-define(test_dec_enc,[[
-  test_equal(Standards.JSON.decode ([[$1]]), [[$2]])
-  test_eq(Standards.JSON.validate ([[$1]]), -1)
-  test_equal(Standards.JSON.decode_utf8 (string_to_utf8 ([[$1]])), [[$2]])
-  test_eq(Standards.JSON.validate_utf8 (string_to_utf8 ([[$1]])), -1)
-  test_equal(Standards.JSON.decode (Standards.JSON.encode ([[$2]])), [[$2]])
-]])
 
 test_dec_enc_canon("-1", -1)
 test_dec_enc_canon("0", 0)
@@ -272,11 +265,6 @@ test_eval_error(Standards.JSON.decode(Standards.JSON.encode("sdfsdf \xdfff skldj
 test_eval_error(Standards.JSON.decode_utf8(Standards.JSON.encode(string_to_utf8("sdfsdf \xdfff skldjf "))))
 test_dec_enc_canon([["{\"key\":null}"]], (["key": Standards.JSON.null]))
 test_dec_enc("\"http:\\/\\/foobar\\/\"","http://foobar/");
-
-test_dec_enc([["[\"abc\",\"r\344ksm\366rg\345s\",\"def\"]"]],
-	     [[({"abc", "r\344ksm\366rg\345s", "def"})]])
-test_dec_enc([["[\"abc\",\"\u20acuro\",\"def\"]"]],
-	     [[({"abc", "\u20acuro", "def"})]])
 
 test_dec_enc_canon([["[\"abc\",\"r\344ksm\366rg\345s\",\"def\"]"]],
 		   [[({"abc", "r\344ksm\366rg\345s", "def"})]])
