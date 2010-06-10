@@ -1,3 +1,4 @@
+// vim:syntax=lpc
 START_MARKER
 
 test_true(Standards.JSON.true)
@@ -51,5 +52,264 @@ test_any([[
 class X { string encode_json() { return "smallpox"; } };
 return Standards.JSON.encode(X());
 ]], "smallpox")
+// all examples are taken from www.json.org
+//
+test_true(programp(Standards.JSON.True))
+test_true(programp(Standards.JSON.False))
+test_true(programp(Standards.JSON.Null))
+test_true(functionp(Standards.JSON.decode))
+test_true(functionp(Standards.JSON.encode))
+test_true(functionp(Standards.JSON.validate))
+// test the special types
+test_true(Standards.JSON.true == Standards.JSON.decode("true"))
+test_true(Standards.JSON.false == Standards.JSON.decode("false"))
+test_true(Standards.JSON.null == Standards.JSON.decode("null"))
+test_true(Standards.JSON.decode("true") == ~Standards.JSON.decode("false"))
+// test numbers
+test_true(Standards.JSON.decode("0E4") == 0.0)
+// test reference counter.
+// not sure how stable that is amoung pike versions....
+test_true(_refs(Standards.JSON.decode("\" It says little, does less, means nothing.\"")) == 1)
+test_true(_refs(Standards.JSON.decode(" { \"asd\" : 45 }  ")) == 1)
+test_true(_refs(Standards.JSON.decode(" [ 45, 34, 3, 4, 5 ] ")) == 1)
+// testing if junk at the end breaks
+test_true(-1 != Standards.JSON.validate_utf8("[ 32, 23, 43  , 54   ,45]        uh"))
+test_true(-1 == Standards.JSON.validate_utf8("[ 32, 23, 43  , 54   ,45]       "))
+test_true("\\/\"\"\\" == Standards.JSON.decode(Standards.JSON.encode("\\/\"\"\\")))
+test_true("\\/skjdhf\"sdf\"d\\" == Standards.JSON.decode(Standards.JSON.encode("\\/skjdhf\"sdf\"d\\")))
+test_true("\"\\\\\\\""*20 == Standards.JSON.decode_utf8(Standards.JSON.decode(Standards.JSON.decode_utf8(Standards.JSON.decode(Standards.JSON.encode(Standards.JSON.encode_utf8(Standards.JSON.encode(Standards.JSON.encode_utf8("\"\\\\\\\""*20), Standards.JSON.HUMAN_READABLE))))))))
+// test examples from json.org
+test_true(equal(Standards.JSON.decode(
+"{\
+    \"glossary\": {\
+        \"title\": \"example glossary\",\
+	\"GlossDiv\": {\
+            \"title\": \"S\",\
+	    \"GlossList\": {\
+                \"GlossEntry\": {\
+                    \"ID\": \"SGML\",\
+		    \"SortAs\": \"SGML\",\
+		    \"GlossTerm\": \"Standard Generalized Markup Language\",\
+		    \"Acronym\": \"SGML\",\
+		    \"Abbrev\": \"ISO 8879:1986\",\
+		    \"GlossDef\": {\
+                        \"para\": \"A meta-markup language, used to create markup languages such as DocBook.\",\
+			\"GlossSeeAlso\": [\"GML\", \"XML\"]\
+                    },\
+		    \"GlossSee\": \"markup\"\
+                }\
+            }\
+        }\
+    }\
+}\
+"), ([
+    "glossary": ([
+        "title": "example glossary",
+	"GlossDiv": ([
+            "title": "S",
+	    "GlossList": ([
+                "GlossEntry": ([
+                    "ID": "SGML",
+		    "SortAs": "SGML",
+		    "GlossTerm": "Standard Generalized Markup Language",
+		    "Acronym": "SGML",
+		    "Abbrev": "ISO 8879:1986",
+		    "GlossDef": ([
+                        "para": "A meta-markup language, used to create markup languages such as DocBook.",
+			"GlossSeeAlso": ({"GML", "XML"})
+                    ]),
+		    "GlossSee": "markup"
+                ])
+            ])
+        ])
+    ])
+])))
+test_true(equal(Standards.JSON.decode(Standards.JSON.encode(([
+    "glossary": ([
+        "title": "example glossary",
+	"GlossDiv": ([
+            "title": "S",
+	    "GlossList": ([
+                "GlossEntry": ([
+                    "ID": "SGML",
+		    "SortAs": "SGML",
+		    "GlossTerm": "Standard Generalized Markup Language",
+		    "Acronym": "SGML",
+		    "Abbrev": "ISO 8879:1986",
+		    "GlossDef": ([
+                        "para": "A meta-markup language, used to create markup languages such as DocBook.",
+			"GlossSeeAlso": ({"GML", "XML"})
+                    ]),
+		    "GlossSee": "markup"
+                ])
+            ])
+        ])
+    ])
+]))), ([
+    "glossary": ([
+        "title": "example glossary",
+	"GlossDiv": ([
+            "title": "S",
+	    "GlossList": ([
+                "GlossEntry": ([
+                    "ID": "SGML",
+		    "SortAs": "SGML",
+		    "GlossTerm": "Standard Generalized Markup Language",
+		    "Acronym": "SGML",
+		    "Abbrev": "ISO 8879:1986",
+		    "GlossDef": ([
+                        "para": "A meta-markup language, used to create markup languages such as DocBook.",
+			"GlossSeeAlso": ({"GML", "XML"})
+                    ]),
+		    "GlossSee": "markup"
+                ])
+            ])
+        ])
+    ])
+])))
+test_true(equal(Standards.JSON.decode("    {	 \"menu\": 	{\
+  \"id\": \"file\",\
+  \"value\": \"File\",\
+  \"popup\": {\
+    \"menuitem\": [\
+      {\"value\": \"New\", 	\"onclick\": \"CreateNewDoc()\"},\
+      {\"value\": \"Open\", \"onclick\": \"OpenDoc()\"},\
+      {\"value\": \"Close\", \"onclick\": \"CloseDoc()\"}\
+    ]\
+  }\
+}	}\
+"), (["menu": ([
+  "id": "file",
+  "value": "File",
+  "popup": ([
+    "menuitem": ({
+      (["value": "New", "onclick": "CreateNewDoc()"]),
+      (["value": "Open", "onclick": "OpenDoc()"]),
+      (["value": "Close", "onclick": "CloseDoc()"])
+    })
+  ])
+])])))
+test_true(equal(Standards.JSON.decode("{\"menu\": {\
+    \"header\": \"SVG Viewer\",\
+    \"items\": [\
+        {\"id\": \"Open\"},\
+        {\"id\": \"OpenNew\", \"label\": \"Open New\"},\
+        null,\
+        {\"id\": \"ZoomIn\", \"label\": \"Zoom In\"},\
+        {\"id\": \"ZoomOut\", \"label\": \"Zoom Out\"},\
+        {\"id\": \"OriginalView\", \"label\": \"Original View\"},\
+        null,\
+        {\"id\": \"Quality\"},\
+        {\"id\": \"Pause\"},\
+        {\"id\": \"Mute\"},\
+        null,\
+        {\"id\": \"Find\", \"label\": \"Find...\"},\
+        {\"id\": \"FindAgain\", \"label\": \"Find Again\"},\
+        {\"id\": \"Copy\"},\
+        {\"id\": \"CopyAgain\", \"label\": \"Copy Again\"},\
+        {\"id\": \"CopySVG\", \"label\": \"Copy SVG\"},\
+        {\"id\": \"ViewSVG\", \"label\": \"View SVG\"},\
+        {\"id\": \"ViewSource\", \"label\": \"View Source\"},\
+        {\"id\": \"SaveAs\", \"label\": \"Save As\"},\
+        null,\
+        {\"id\": \"Help\"},\
+        {\"id\": \"About\", \"label\": \"About Adobe CVG Viewer...\"}\
+    ]\
+}}\
+"), (["menu": ([
+    "header": "SVG Viewer",
+    "items": ({
+        (["id": "Open"]),
+        (["id": "OpenNew", "label": "Open New"]),
+        Standards.JSON.null,
+        (["id": "ZoomIn", "label": "Zoom In"]),
+        (["id": "ZoomOut", "label": "Zoom Out"]),
+        (["id": "OriginalView", "label": "Original View"]),
+        Standards.JSON.null,
+        (["id": "Quality"]),
+        (["id": "Pause"]),
+        (["id": "Mute"]),
+        Standards.JSON.null,
+        (["id": "Find", "label": "Find..."]),
+        (["id": "FindAgain", "label": "Find Again"]),
+        (["id": "Copy"]),
+        (["id": "CopyAgain", "label": "Copy Again"]),
+        (["id": "CopySVG", "label": "Copy SVG"]),
+        (["id": "ViewSVG", "label": "View SVG"]),
+        (["id": "ViewSource", "label": "View Source"]),
+        (["id": "SaveAs", "label": "Save As"]),
+        Standards.JSON.null,
+        (["id": "Help"]),
+        (["id": "About", "label": "About Adobe CVG Viewer..."])
+    })
+])]) ))
+test_true(
+    "" + String.int2char(76) + String.int2char(2000) + String.int2char(10000) + String.int2char(900000) + "" == Standards.JSON.decode_utf8(string_to_utf8("\"" + String.int2char(76) + String.int2char(2000) + String.int2char(10000) + String.int2char(900000) + "\"")))
+test_true(Standards.JSON.validate("{\"menu\": {\
+    \"header\": \"SVG Viewer\",\
+    \"items\": [\
+        {\"id\": \"Open\"},\
+        {\"id\": \"OpenNew\", \"label\": \"Open New\"},\
+        null,\
+        {\"id\": \"ZoomIn\", \"label\": \"Zoom In\"},\
+        {\"id\": \"ZoomOut\", \"label\": \"Zoom Out\"},\
+        {\"id\": \"OriginalView\", \"label\": \"Original View\"},\
+        null,\
+        {\"id\": \"Quality\"},\
+        {\"id\": \"Pause\"},\
+        {\"id\": \"Mute\"},\
+        null,\
+        {\"id\": \"Find\", \"label\": \"Find...\"},\
+        {\"id\": \"FindAgain\", \"label\": \"Find Again\"},\
+        {\"id\": \"Copy\"},\
+        {\"id\": \"CopyAgain\", \"label\": \"Copy Again\"},\
+        {\"id\": \"CopySVG\", \"label\": \"Copy SVG\"},\
+        {\"id\": \"ViewSVG\", \"label\": \"View SVG\"},\
+        {\"id\": \"ViewSource\", \"label\": \"View Source\"},\
+        {\"id\": \"SaveAs\", \"label\": \"Save As\"},\
+        null,\
+        {\"id\": \"Help\"},\
+        {\"id\": \"About\", \"label\": \"About Adobe CVG Viewer...\"}\
+    ]\
+}}\
+") == -1 )
+test_any([[
+	string s = "sdfsdf  skldjf ";
+	s[10] = 0xdfff;
+	mixed e = catch {
+		mixed a = Standards.JSON.decode(Standards.JSON.encode(s));
+	};
+	return !!e;
+]], 1)
+test_any([[
+	string s = "sdfsdf  skldjf ";
+	s[10] = 0xdfff;
+	mixed e = catch {
+		mixed a = Standards.JSON.decode_utf8(Standards.JSON.encode(string_to_utf8(s)));
+	};
+	return !!e;
+]], 1)
+test_any([[
+	string s = "   ";
+	s[1] = 0xe000;
+	return (s == Standards.JSON.decode_utf8(Standards.JSON.encode_utf8(s)));
+]], 1)
+test_any([[
+	string s = "{ \"key\": null }";
+	mixed e = catch {
+		mixed a = Standards.JSON.decode(s);
+	};
+	mixed e1 = catch {
+		mixed a = Standards.JSON.decode_utf8(s);
+	};
+	return !e && !e1;
+]], 1)
+test_any([[
+	string s = "\"http:\\/\\/foobar\\/\"";
+	string t = "http://foobar/";
+	int a = (t == Standards.JSON.decode(s));
+	int b = (t == Standards.JSON.decode_utf8(s));
+	return a && b;
+]], 1)
 
 END_MARKER
