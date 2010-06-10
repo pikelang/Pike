@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: json.cmod,v 1.15 2010/06/10 14:39:51 arne Exp $
+|| $Id: json.cmod,v 1.16 2010/06/10 14:40:26 arne Exp $
 */
 
 /* JSON tools.
@@ -394,7 +394,6 @@ void low_validate(struct pike_string *data, int flags) {
     state.level = 0;
     state.data = data;
 
-    pop_stack();
     stop = _parse_JSON(MKPCHARP_STR(data), 0, data->len, &state);
 
     if (state.flags & JSON_ERROR || stop != data->len) {
@@ -423,7 +422,6 @@ void low_decode(struct pike_string *data, int flags) {
     state.data = data;
     state.flags = flags;
 
-    pop_stack();
     stop = _parse_JSON(MKPCHARP_STR(data), 0, data->len, &state);
 
     if (!(state.flags&JSON_ERROR)) {
