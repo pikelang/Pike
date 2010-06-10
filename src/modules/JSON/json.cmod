@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: json.cmod,v 1.10 2010/05/30 23:22:06 mast Exp $
+|| $Id: json.cmod,v 1.11 2010/06/10 14:08:36 arne Exp $
 */
 
 /* JSON encoder.
@@ -372,6 +372,217 @@ PIKEFUN string encode (int|float|string|array|mapping|object val,
   json_encode_recur (&ctx, val);
   UNSET_ONERROR (uwp);
   RETURN finish_string_builder (&ctx.buf);
+}
+
+#include "json_parser.c"
+
+/*! @decl int validate(string s)
+ *!
+ *! Takes a string and checks if it is valid JSON.
+ *! 
+ *! @returns
+ *! 	In case the string contains valid JSON @expr{-1@} is returned. It is then guarenteed to be parsed
+ *! 	without errors by @[decode()].
+ *! 	In case the string is not valid JSON, the integer position inside the string
+ *! 	where the error occures is returned.
+ */
+PIKEFUN int validate(string data) {
+    p_wchar2 *start;
+    struct parser_state state;
+    p_wchar2 *p;
+
+    state.validate = 1;
+    JSON_CONVERT(data, start);
+
+    state.level = 0;
+    state.data = data;
+
+    pop_stack();
+
+    p = _parse_JSON(start, start + data->len, &state);
+
+    if (data->size_shift < 2)
+		free(start);
+
+	if (p != NULL) {
+		if (p == start + data->len) {
+			push_int(-1);
+			return;
+		}
+
+		push_int((INT_TYPE)(p - start) / 4);
+		return;
+    }
+
+    push_int((INT_TYPE)start);
+    f_minus(2);
+    push_int(4);
+    o_divide();
+
+    return;
+}
+
+/*! @decl array|mapping|string|float|int decode(string s)
+ *!
+ *! Parses a JSON-formatted string and returns the corresponding pike data type.
+ *! 
+ *! @throws
+ *! 	Throws an exception in case the data contained in @expr{s@} is not valid
+ *! 	JSON.
+ */
+PIKEFUN mixed decode(string data) {
+    p_wchar2 *start, *stop;
+    struct parser_state state;
+    int error_offset;
+
+    state.validate = 0;
+    JSON_CONVERT(data, start);
+
+    state.level = 0;
+    state.data = data;
+
+    stop = _parse_JSON(start, start + data->len, &state);
+
+    if (data->size_shift < 2)
+		free(start);
+
+    if (stop != NULL) {
+			
+		if (stop == start + data->len) {
+			stack_pop_keep_top(); // pop string data
+			return;
+		}
+
+		pop_stack(); // pop unlegitimate result
+		push_int((INT_TYPE)stop);
+    }
+
+    error_offset = (((struct svalue*)(Pike_sp - 1))->u.integer - (INT_TYPE)start) / 4;
+    pop_stack();
+    push_int(error_offset);
+    push_int(error_offset+10);
+    f_index(3);
+
+    if (((struct svalue*)(Pike_sp - 1))->type != PIKE_T_STRING) {
+		Pike_error("Parsing JSON failed and I dont know where.\n");
+    } else {
+		push_text("Parsing JSON failed in position %d (%O).\n");
+		stack_swap();
+		push_int(error_offset);
+		stack_swap();
+		f_sprintf(3);
+		f_aggregate(1);
+		f_throw(1);
+    }
+
+    return;
+}
+
+/*! @decl int validate_utf8(string s)
+ *!
+ *! Takes a utf8 encoded string and checks if it is valid JSON.
+ *! 
+ *! @returns
+ *! 	In case the string contains valid JSON @expr{-1@} is returned. It is then guarenteed to be parsed
+ *! 	without errors by @[decode()].
+ *! 	In case the string is not valid JSON, the integer position inside the string
+ *! 	where the error occures is returned.
+ */
+PIKEFUN int validate_utf8(string data) {
+    char *start, *stop;
+    struct parser_state state;
+
+    switch (data->size_shift) {
+    case 0:
+        break;
+    case 1:
+    case 2:
+		Pike_error("Strings wider than 1 byte are NOT valid UTF-8.\n");
+        break;
+    }
+
+    start = (char *)STR0(data);
+
+    state.validate = 1;
+    state.level = 0;
+    state.data = data;
+
+    pop_stack();
+    if ((stop = _parse_JSON_utf8(start, (start + data->len), &state)) == NULL) {
+
+		push_int((INT_TYPE)start);
+		f_minus(2);
+
+	} else {
+		if (stop == start + data->len) {
+			push_int(-1);
+		} else {
+			push_int((INT_TYPE)(stop - start));
+		}
+    }
+
+    return;
+}
+
+/*! @decl array|mapping|string|float|int decode(string s)
+ *!
+ *! Parses a utf8 encoded JSON-formatted string and returns the corresponding pike data type.
+ *! Should give the same results as @expr{Standards.JSON.decode(utf8_to_string(s))@}.
+ *! 
+ *! @throws
+ *! 	Throws an exception in case the data contained in @expr{s@} is not valid
+ *! 	JSON.
+ */
+PIKEFUN mixed decode_utf8(string data) {
+    char *start, *stop;
+    struct parser_state state;
+    INT_TYPE error_offset;
+
+    switch (data->size_shift) {
+    case 0:
+        break;
+    case 1:
+    case 2:
+	Pike_error("Strings wider than 1 byte are NOT valid UTF-8.\n");
+        break;
+    }
+
+    start = (char *)STR0(data);
+
+    state.validate = 0;
+    state.level = 0;
+    state.data = data;
+
+    stop = _parse_JSON_utf8(start, (start + data->len), &state);
+
+    if (stop != NULL) {
+		if (stop == start + data->len) {
+			stack_pop_keep_top(); // pop string data
+			return;
+		}
+
+		pop_stack(); // pop the unlegitimate result
+		push_int((INT_TYPE)stop);
+    }
+
+    error_offset = (((struct svalue*)(Pike_sp - 1))->u.integer - (INT_TYPE)start);
+    pop_stack();
+    push_int(error_offset);
+    push_int(error_offset+10);
+    f_index(3);
+    if (((struct svalue*)(Pike_sp - 1))->type != PIKE_T_STRING) {
+		Pike_error("Parsing JSON failed and I dont know where.\n");
+    } else {
+		push_text("Parsing JSON failed in position %d (%O).\n");
+		stack_swap();
+		push_int(error_offset);
+		stack_swap();
+		f_sprintf(3);
+		f_aggregate(1);
+		f_throw(1);
+    }
+
+    return;
 }
 
 /*! @endmodule */
