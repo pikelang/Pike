@@ -1,0 +1,64 @@
+json_array.o: $(SRCDIR)/json_array.c
+json.o: $(SRCDIR)/json.c \
+  $(PIKE_SRC_DIR)/array.h $(PIKE_SRC_DIR)/svalue.h \
+  $(PIKE_SRC_DIR)/global.h \
+  $(BUILD_BASE)/machine.h \
+  $(PIKE_SRC_DIR)/pike_int_types.h $(PIKE_SRC_DIR)/port.h \
+  $(PIKE_SRC_DIR)/dmalloc.h $(PIKE_SRC_DIR)/cyclic.h \
+  $(PIKE_SRC_DIR)/pike_error.h $(PIKE_SRC_DIR)/errors.h \
+  $(PIKE_SRC_DIR)/threads.h $(PIKE_SRC_DIR)/object.h \
+  $(PIKE_SRC_DIR)/block_alloc_h.h $(PIKE_SRC_DIR)/interpret.h \
+  $(PIKE_SRC_DIR)/program.h $(PIKE_SRC_DIR)/pike_macros.h \
+  $(PIKE_SRC_DIR)/pike_memory.h $(PIKE_SRC_DIR)/stralloc.h \
+  $(PIKE_SRC_DIR)/pike_search.h $(PIKE_SRC_DIR)/time_stuff.h \
+  $(PIKE_SRC_DIR)/program_id.h $(PIKE_SRC_DIR)/pike_rusage.h \
+  $(PIKE_SRC_DIR)/compilation.h \
+  $(PIKE_SRC_DIR)/program_areas.h $(PIKE_SRC_DIR)/las.h \
+  $(PIKE_SRC_DIR)/dynamic_buffer.h \
+  $(PIKE_SRC_DIR)/pike_threadlib.h \
+  $(PIKE_SRC_DIR)/pike_embed.h $(PIKE_SRC_DIR)/callback.h \
+  $(PIKE_SRC_DIR)/array.h $(PIKE_SRC_DIR)/global.h \
+  $(PIKE_SRC_DIR)/interpret.h $(PIKE_SRC_DIR)/mapping.h \
+  $(PIKE_SRC_DIR)/module.h $(PIKE_SRC_DIR)/pike_error.h \
+  $(PIKE_SRC_DIR)/pike_float.h $(PIKE_SRC_DIR)/pike_types.h \
+  $(PIKE_SRC_DIR)/stralloc.h $(PIKE_SRC_DIR)/svalue.h \
+  $(SRCDIR)/json_parser.c \
+  $(PIKE_SRC_DIR)/operators.h $(PIKE_SRC_DIR)/object.h \
+  $(PIKE_SRC_DIR)/builtin_functions.h $(PIKE_SRC_DIR)/gc.h \
+  $(PIKE_SRC_DIR)/queue.h \
+  $(SRCDIR)/json_string_utf8.c \
+  $(SRCDIR)/json_string.c \
+  $(SRCDIR)/json_number.c \
+  $(SRCDIR)/json_array.c \
+  $(SRCDIR)/json_mapping.c
+json_mapping.o: $(SRCDIR)/json_mapping.c
+json_number.o: $(SRCDIR)/json_number.c
+json_parser.o: $(SRCDIR)/json_parser.c \
+  $(PIKE_SRC_DIR)/mapping.h $(PIKE_SRC_DIR)/svalue.h \
+  $(PIKE_SRC_DIR)/global.h \
+  $(BUILD_BASE)/machine.h \
+  $(PIKE_SRC_DIR)/pike_int_types.h $(PIKE_SRC_DIR)/port.h \
+  $(PIKE_SRC_DIR)/dmalloc.h $(PIKE_SRC_DIR)/block_alloc_h.h \
+  $(PIKE_SRC_DIR)/operators.h $(PIKE_SRC_DIR)/object.h \
+  $(PIKE_SRC_DIR)/array.h $(PIKE_SRC_DIR)/builtin_functions.h \
+  $(PIKE_SRC_DIR)/callback.h $(PIKE_SRC_DIR)/array.h \
+  $(PIKE_SRC_DIR)/gc.h $(PIKE_SRC_DIR)/queue.h \
+  $(PIKE_SRC_DIR)/threads.h $(PIKE_SRC_DIR)/object.h \
+  $(PIKE_SRC_DIR)/pike_error.h $(PIKE_SRC_DIR)/errors.h \
+  $(PIKE_SRC_DIR)/interpret.h $(PIKE_SRC_DIR)/program.h \
+  $(PIKE_SRC_DIR)/pike_macros.h $(PIKE_SRC_DIR)/pike_memory.h \
+  $(PIKE_SRC_DIR)/stralloc.h $(PIKE_SRC_DIR)/pike_search.h \
+  $(PIKE_SRC_DIR)/time_stuff.h $(PIKE_SRC_DIR)/program_id.h \
+  $(PIKE_SRC_DIR)/pike_rusage.h $(PIKE_SRC_DIR)/compilation.h \
+  $(PIKE_SRC_DIR)/program_areas.h $(PIKE_SRC_DIR)/las.h \
+  $(PIKE_SRC_DIR)/dynamic_buffer.h \
+  $(PIKE_SRC_DIR)/pike_threadlib.h \
+  $(PIKE_SRC_DIR)/pike_embed.h \
+  $(SRCDIR)/json_string_utf8.c \
+  $(SRCDIR)/json_string.c \
+  $(SRCDIR)/json_number.c \
+  $(SRCDIR)/json_array.c \
+  $(SRCDIR)/json_mapping.c
+json_string.o: $(SRCDIR)/json_string.c
+json_string_utf8.o:  \
+ $(SRCDIR)/json_string_utf8.c
