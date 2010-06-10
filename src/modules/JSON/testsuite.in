@@ -8,6 +8,10 @@ test_false(Standards.JSON.null)
 define(test_enc,[[
 test_eq(Standards.JSON.encode([[$1]], Standards.JSON.PIKE_CANONICAL),[[$2]])
 ]])
+define(test_dec_enc,[[
+test_equal(Standards.JSON.decode ([[$1]]), [[$2]])
+test_equal(Standards.JSON.decode (Standards.JSON.encode ([[$2]])), [[$2]])
+]])
 
 test_enc(-1, "-1")
 test_enc(0, "0")
@@ -74,16 +78,16 @@ test_eq(Standards.JSON.decode("0E4"), 0.0)
 test_true(_refs(Standards.JSON.decode("\" It says little, does less, means nothing.\"")) == 1)
 test_eq(_refs(Standards.JSON.decode(" { \"asd\" : 45 }  ")), 1)
 test_eq(_refs(Standards.JSON.decode(" [ 45, 34, 3, 4, 5 ] ")), 1)
-
+  
 // testing if junk at the end breaks
 test_true(-1 != Standards.JSON.validate_utf8("[ 32, 23, 43  , 54   ,45]        uh"))
 test_eq(-1, Standards.JSON.validate_utf8("[ 32, 23, 43  , 54   ,45]       "))
 
-test_eq("\\/\"\"\\", Standards.JSON.decode(Standards.JSON.encode("\\/\"\"\\")))
-test_eq("\\/skjdhf\"sdf\"d\\", Standards.JSON.decode(Standards.JSON.encode("\\/skjdhf\"sdf\"d\\")))
+test_dec_enc("\"\\\\/\\\"\\\"\\\\\"", "\\/\"\"\\")
+test_dec_enc("\"\\\\/skjdhf\\\"sdf\\\"d\\\\\"", "\\/skjdhf\"sdf\"d\\")
 
   // test examples from json.org
-test_equal([[Standards.JSON.decode(
+test_dec_enc([[
 "{\
     \"glossary\": {\
         \"title\": \"example glossary\",\
@@ -106,7 +110,7 @@ test_equal([[Standards.JSON.decode(
         }\
     }\
 }\
-")]], [[([
+"]], [[([
     "glossary": ([
         "title": "example glossary",
 	"GlossDiv": ([
@@ -128,50 +132,7 @@ test_equal([[Standards.JSON.decode(
         ])
     ])
 ])]])
-test_equal([[Standards.JSON.decode(Standards.JSON.encode(([
-    "glossary": ([
-        "title": "example glossary",
-	"GlossDiv": ([
-            "title": "S",
-	    "GlossList": ([
-                "GlossEntry": ([
-                    "ID": "SGML",
-		    "SortAs": "SGML",
-		    "GlossTerm": "Standard Generalized Markup Language",
-		    "Acronym": "SGML",
-		    "Abbrev": "ISO 8879:1986",
-		    "GlossDef": ([
-                        "para": "A meta-markup language, used to create markup languages such as DocBook.",
-			"GlossSeeAlso": ({"GML", "XML"})
-                    ]),
-		    "GlossSee": "markup"
-                ])
-            ])
-        ])
-    ])
-])))]], [[([
-    "glossary": ([
-        "title": "example glossary",
-	"GlossDiv": ([
-            "title": "S",
-	    "GlossList": ([
-                "GlossEntry": ([
-                    "ID": "SGML",
-		    "SortAs": "SGML",
-		    "GlossTerm": "Standard Generalized Markup Language",
-		    "Acronym": "SGML",
-		    "Abbrev": "ISO 8879:1986",
-		    "GlossDef": ([
-                        "para": "A meta-markup language, used to create markup languages such as DocBook.",
-			"GlossSeeAlso": ({"GML", "XML"})
-                    ]),
-		    "GlossSee": "markup"
-                ])
-            ])
-        ])
-    ])
-])]])
-test_equal([[Standards.JSON.decode("    {	 \"menu\": 	{\
+test_dec_enc([["    {	 \"menu\": 	{\
   \"id\": \"file\",\
   \"value\": \"File\",\
   \"popup\": {\
@@ -182,7 +143,7 @@ test_equal([[Standards.JSON.decode("    {	 \"menu\": 	{\
     ]\
   }\
 }	}\
-")]], [[(["menu": ([
+"]], [[(["menu": ([
   "id": "file",
   "value": "File",
   "popup": ([
@@ -193,7 +154,7 @@ test_equal([[Standards.JSON.decode("    {	 \"menu\": 	{\
     })
   ])
 ])])]])
-test_equal([[Standards.JSON.decode("{\"menu\": {\
+test_dec_enc([["{\"menu\": {\
     \"header\": \"SVG Viewer\",\
     \"items\": [\
         {\"id\": \"Open\"},\
@@ -220,7 +181,7 @@ test_equal([[Standards.JSON.decode("{\"menu\": {\
         {\"id\": \"About\", \"label\": \"About Adobe CVG Viewer...\"}\
     ]\
 }}\
-")]], [[(["menu": ([
+"]], [[(["menu": ([
     "header": "SVG Viewer",
     "items": ({
         (["id": "Open"]),
