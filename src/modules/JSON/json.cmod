@@ -2,14 +2,15 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: json.cmod,v 1.14 2010/06/10 14:39:08 arne Exp $
+|| $Id: json.cmod,v 1.15 2010/06/10 14:39:51 arne Exp $
 */
 
-/* JSON encoder.
+/* JSON tools.
  *
  * Ref: RFC 4627
  *
- * Created May 2010 by Martin Stjernholm
+ * Decoder comes from Public.Parser.JSON2, created by Arne Gödeke.
+ * Encoder created May 2010 by Martin Stjernholm.
  */
 
 #include "array.h"
