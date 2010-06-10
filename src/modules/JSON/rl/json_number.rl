@@ -28,16 +28,12 @@ static ptrdiff_t _parse_JSON_number(PCHARP str, ptrdiff_t p, ptrdiff_t pe, struc
     %% write init;
     %% write exec;
 
-    printf("test\n");
-
     if (cs >= JSON_number_first_final) {
 		if (!(state->flags&JSON_VALIDATE)) {
 			if (d == 1) {
-				printf("pushing float\n");
 				push_float((FLOAT_TYPE)STRTOD_PCHARP(ADD_PCHARP(str, i), NULL));
 			} else {
-				printf("pushing int\n");
-				pcharp_to_svalue_inumber(Pike_sp++, ADD_PCHARP(str, i), NULL, 10, p - i + 2);
+				pcharp_to_svalue_inumber(Pike_sp++, ADD_PCHARP(str, i), NULL, 10, p - i + 1);
 			}
 		}
 
