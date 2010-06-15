@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.238 2010/05/28 17:37:52 mast Exp $
+|| $Id: stralloc.c,v 1.239 2010/06/15 16:10:19 grubba Exp $
 */
 
 #include "global.h"
@@ -2317,12 +2317,9 @@ PMOD_EXPORT void string_builder_putchar(struct string_builder *s, int ch)
   ptrdiff_t i;
   int mag = min_magnitude(ch);
 
-  if (mag > s->s->size_shift) {
-    string_build_mkspace(s, 1, mag);
+  string_build_mkspace(s, 1, mag);
+  if (mag > s->known_shift) {
     s->known_shift = mag;
-  } else if (((size_t)s->s->len) >= ((size_t)s->malloced)) {
-    string_build_mkspace(s, 1, mag);
-    s->known_shift = MAXIMUM(mag, s->known_shift);
   }
   i = s->s->len++;
   low_set_index(s->s,i,ch);
@@ -2336,12 +2333,9 @@ PMOD_EXPORT void string_builder_putchars(struct string_builder *s, int ch,
   ptrdiff_t len = s->s->len;
   int mag = min_magnitude(ch);
 
-  if (mag > s->s->size_shift) {
-    string_build_mkspace(s, count, mag);
+  string_build_mkspace(s, count, mag);
+  if (mag > s->known_shift) {
     s->known_shift = mag;
-  } else if (((size_t)s->s->len) >= ((size_t)s->malloced)) {
-    string_build_mkspace(s, count, mag);
-    s->known_shift = MAXIMUM(mag, s->known_shift);
   }
 
   switch (s->s->size_shift) {
