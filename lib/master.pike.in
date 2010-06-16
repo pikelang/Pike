@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.472 2010/05/06 14:13:58 grubba Exp $
+// $Id: master.pike.in,v 1.473 2010/06/16 14:17:32 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -2746,7 +2746,7 @@ class joinnode
 
   int `== (mixed other)
   {
-    return objectp (other) && other->is_resolv_joinnode &&
+    return objectp (other) && (other->is_resolv_joinnode == 1) &&
       equal (mkmultiset (joined_modules), mkmultiset (other->joined_modules));
   }
 
