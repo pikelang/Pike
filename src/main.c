@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.237 2010/06/17 17:16:05 grubba Exp $
+|| $Id: main.c,v 1.238 2010/06/17 17:24:34 grubba Exp $
 */
 
 #include "global.h"
@@ -203,8 +203,9 @@ static void set_default_master(const char *bin_name)
 static char libpike_file[MAXPATHLEN * 2];
 static void *libpike;
 
-static void (*init_pike)(const char **argv, const char *file);
-static void (*init_pike_runtime)(void (*exit_cb)(int));
+static void (*init_pike_var)(const char **argv, const char *file);
+static void (*init_pike_runtime_var)(void (*exit_cb)(int));
+static void (*add_predefine_var)(char *s);
 #endif /* LIBPIKE */
 
 static void find_lib_dir(int argc, char **argv)
@@ -317,8 +318,10 @@ int main(int argc, char **argv)
   }
 
 #define LOOKUP(symbol) do {						\
-    if (!(symbol = CAST_TO_FUN(dlsym(libpike, TOSTR(symbol)))) &&	\
-	!(symbol = CAST_TO_FUN(dlsym(libpike, "_" TOSTR(symbol))))) {	\
+    if (!(PIKE_CONCAT(symbol, _var) =					\
+	  CAST_TO_FUN(dlsym(libpike, TOSTR(symbol)))) &&		\
+	!(PIKE_CONCAT(symbol, _var) =					\
+	  CAST_TO_FUN(dlsym(libpike, "_" TOSTR(symbol))))) {		\
       fprintf(stderr, "Missing symbol in %s: " TOSTR(symbol) "\n",	\
 	      libpike_name);						\
       dlclose(libpike);							\
@@ -327,8 +330,11 @@ int main(int argc, char **argv)
   } while(0)
 
   LOOKUP(init_pike);
+#define init_pike init_pike_var
   LOOKUP(init_pike_runtime);
+#define init_pike_runtime init_pike_runtime_var
   LOOKUP(add_predefine);
+#define add_predefine add_predefine_var
   
 #endif /* LIBPIKE */
 
