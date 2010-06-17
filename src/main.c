@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.236 2009/09/18 16:00:42 grubba Exp $
+|| $Id: main.c,v 1.237 2010/06/17 17:16:05 grubba Exp $
 */
 
 #include "global.h"
@@ -43,8 +43,14 @@
 
 #include "pike_embed.h"
 
-#if defined(__linux__) && defined(HAVE_DLOPEN) && defined(HAVE_DLFCN_H)
+#ifdef LIBPIKE
+#if defined(HAVE_DLOPEN) && defined(HAVE_DLFCN_H)
 #include <dlfcn.h>
+#elif !defined(USE_DLL) && defined(USE_MY_WIN32_DLOPEN)
+#include "pike_dlfcn.h"
+#else
+#undef LIBPIKE
+#endif
 #endif
 
 #include "las.h"
