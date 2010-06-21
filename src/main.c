@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.238 2010/06/17 17:24:34 grubba Exp $
+|| $Id: main.c,v 1.239 2010/06/21 15:10:34 grubba Exp $
 */
 
 #include "global.h"
@@ -310,10 +310,10 @@ int main(int argc, char **argv)
   }
 #endif /* HAVE_DLINIT */
 
-  if (!(libpike = dlopen(libpike_name, RTLD_NOW))) {
+  if (!(libpike = dlopen(libpike_file, RTLD_NOW))) {
     const char *err = dlerror();
     if (!err) err = "Unknown reason.";
-    fprintf(stderr, "Failed to open %s: %s\n", libpike_name, err);
+    fprintf(stderr, "Failed to open %s: %s\n", libpike_file, err);
     exit(1);
   }
 
@@ -323,7 +323,7 @@ int main(int argc, char **argv)
 	!(PIKE_CONCAT(symbol, _var) =					\
 	  CAST_TO_FUN(dlsym(libpike, "_" TOSTR(symbol))))) {		\
       fprintf(stderr, "Missing symbol in %s: " TOSTR(symbol) "\n",	\
-	      libpike_name);						\
+	      libpike_file);						\
       dlclose(libpike);							\
       exit(1);								\
     }									\
