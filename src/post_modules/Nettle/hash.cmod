@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: hash.cmod,v 1.34 2010/06/21 12:23:15 mast Exp $
+|| $Id: hash.cmod,v 1.35 2010/06/21 12:35:35 mast Exp $
 */
 
 #include "global.h"
@@ -128,14 +128,14 @@ PIKECLASS HashInfo
     if(!ctx)
       SIMPLE_OUT_OF_MEMORY_ERROR("hash", meta->context_size);
 
-    /* THREADS_ALLOW(); */
+    THREADS_ALLOW();
     meta->init(ctx);
     meta->update(ctx, in->len, (const uint8_t *)in->str);
+    THREADS_DISALLOW();
 
     digest_length = meta->digest_size;
     out = begin_shared_string(digest_length);
     meta->digest(ctx, digest_length, (uint8_t *)out->str);
-    /* THREADS_DISALLOW(); */
 
     pop_n_elems(args);
     push_string(end_shared_string(out));
@@ -235,9 +235,9 @@ PIKECLASS HashInfo
 
     free(read_buffer);
 
+    THREADS_DISALLOW();
     out = begin_shared_string(meta->digest_size);
     meta->digest(ctx, meta->digest_size, (uint8_t *)out->str);
-    THREADS_DISALLOW();
 
     pop_n_elems(args);
     push_string(end_shared_string(out));
