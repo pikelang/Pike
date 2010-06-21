@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.243 2010/05/31 13:59:05 grubba Exp $
+ * $Id: backend.cmod,v 1.244 2010/06/21 13:25:11 grubba Exp $
  *
  * Backend object.
  */
@@ -135,8 +135,8 @@ static int compat_box_dispatcher (struct fd_callback_box *box, int event);
 struct call_out_s
 {
   INT32 pos;
+  size_t fun_hval;
   struct timeval tv;
-  struct call_out_s *next; /* For block alloc */
   struct call_out_s *next_fun;
   struct call_out_s **prev_fun;
   struct call_out_s *next_arr;
@@ -147,6 +147,9 @@ struct call_out_s
 
 /* MUST be after any include of "block_alloc_h.h"! */
 #include "block_alloc.h"
+
+#undef BLOCK_ALLOC_NEXT
+#define BLOCK_ALLOC_NEXT	next_fun
 
 #ifdef PIKE_DEBUG
 #define MESS_UP_BLOCK(X) do {\
@@ -611,13 +614,16 @@ PIKECLASS Backend
  
 /* start a new call out, return 1 for success */
  static struct array * new_call_out(struct Backend_struct *me,
-				    int num_arg,
-				    struct svalue *argp)
+				    int num_arg)
    {
      call_out *new;
      struct array *args;
+     size_t fun_hval;
      size_t hval;
      
+     /* NOTE: hash_svalue() can run Pike code! */
+     fun_hval = hash_svalue(Pike_sp + 1 - num_arg);
+
      PROTECT_CALL_OUTS();
      if(me->num_pending_calls==me->call_buffer_size)
      {
@@ -669,11 +675,10 @@ PIKECLASS Backend
 	       c->PIKE_CONCAT(next_,X)->PIKE_CONCAT(prev_,X)=		\
 		 &c->PIKE_CONCAT(next_,X);				\
 	     c->PIKE_CONCAT(prev_,X)=&me->call_hash[hval].X;		\
-	     me->call_hash[hval].X=c;
+	     me->call_hash[hval].X=c
 	     
-
 	     LINK(arr,c);
-	     hval=hash_svalue(c->args->item);
+	     hval=c->fun_hval;
 	     LINK(fun,c);
 	   }
 	 }
@@ -681,7 +686,7 @@ PIKECLASS Backend
      }
 
      /* time to allocate a new call_out struct */
-     args=aggregate_array(num_arg-1);
+     push_array(args=aggregate_array(num_arg-1));
 
 #ifdef PIKE_DEBUG
      if (CALL(me->num_pending_calls)) {
@@ -695,20 +700,20 @@ PIKECLASS Backend
      {
        hval=PTR_TO_INT(args);
        LINK(arr,new);
-       hval=hash_svalue(args->item);
+       hval = new->fun_hval = fun_hval;
        LINK(fun,new);
      }
      
-     switch(argp[0].type)
+     switch(Pike_sp[-2].type)
      {
        case T_INT:
-	 new->tv.tv_sec=argp[0].u.integer;
+	 new->tv.tv_sec=Pike_sp[-2].u.integer;
 	 new->tv.tv_usec=0;
 	 break;
 	 
        case T_FLOAT:
        {
-	 FLOAT_TYPE tmp=argp[0].u.float_number;
+	 FLOAT_TYPE tmp=Pike_sp[-2].u.float_number;
 	 new->tv.tv_sec = DO_NOT_WARN((long)floor(tmp));
 	 new->tv.tv_usec = DO_NOT_WARN((long)(1000000.0 * (tmp - floor(tmp))));
 	 break;
@@ -746,7 +751,7 @@ PIKECLASS Backend
      }
      
      new->args=args;
-     Pike_sp--;
+     Pike_sp -= 2;
      dmalloc_touch_svalue(Pike_sp);
      
      
@@ -851,7 +856,7 @@ PIKECLASS Backend
        Pike_sp[-args] = Pike_sp[1-args];
        Pike_sp[1-args] = tmp;
        
-       v = new_call_out(THIS, args, Pike_sp-args);
+       v = new_call_out(THIS, args);
        ref_push_array(v);
      }
 
@@ -940,8 +945,9 @@ PIKECLASS Backend
    static int backend_find_call_out(struct Backend_struct *me,
 				    struct svalue *fun)
      {
-       size_t hval;
+       size_t hval, fun_hval;
        call_out *c;
+       struct svalue *save_sp;
        
        if(!me->num_pending_calls) return -1;
        
@@ -961,19 +967,38 @@ PIKECLASS Backend
 	   }
 	 }
        }
-       
-       hval=hash_svalue(fun);
-       hval%=me->hash_size;
+       /* Note: is_eq() may call Pike code (which we want),
+	*       but Pike code may change the hash tables...
+	*/
+       fun_hval=hash_svalue(fun);
+       hval = fun_hval % me->hash_size;
+       save_sp = Pike_sp;
        for(c=me->call_hash[hval].fun;c;c=c->next_fun)
        {
-	 if(is_eq(fun, ITEM(c->args)))
+	 if(c->fun_hval == fun_hval)
 	 {
 #ifdef PIKE_DEBUG
 	   if(CALL(c->pos) != c)
 	     Pike_fatal("Call_out->pos not correct!\n");
 #endif
-	   return c->pos;
+	   push_int(c->pos);
+	   push_svalue(ITEM(c->args));
 	 }
+       }
+
+       /* Check if any of the potential hits we found is a match. */
+       while (Pike_sp > save_sp) {
+	 if (is_eq(fun, Pike_sp-1)) {
+	   INT_TYPE pos;
+#ifdef PIKE_DEBUG
+	   if (Pike_sp[-2].type != T_INT)
+	     Pike_fatal("Call_out->pos out of sync!\n");
+#endif
+	   pos = Pike_sp[-2].u.integer;
+	   pop_n_elems(Pike_sp - save_sp);
+	   return pos;
+	 }
+	 pop_n_elems(2);
        }
        return -1;
      }
@@ -1106,10 +1131,13 @@ PIKECLASS Backend
      {
        int e;
        struct array *ret;
+       ONERROR err;
 
        backend_verify_call_outs(me);
        PROTECT_CALL_OUTS();
-       ret=allocate_array_no_init(me->num_pending_calls,0);
+       ret=allocate_array_no_init(0, me->num_pending_calls);
+       SET_ONERROR(err, do_free_array, ret);
+       ret->type_field = BIT_ARRAY;
        for(e=0;e<me->num_pending_calls;e++)
        {
 	 struct array *v;
@@ -1133,8 +1161,9 @@ PIKECLASS Backend
 	 
 	 ITEM(ret)[e].type=T_ARRAY;
 	 ITEM(ret)[e].u.array=v;
+	 ret->size++;
        }
-       ret->type_field = BIT_ARRAY;
+       UNSET_ONERROR(err);
        UNPROTECT_CALL_OUTS();
        return ret;
      }
@@ -1637,7 +1666,7 @@ PIKECLASS Backend
    *! @decl int executing_thread()
    *!
    *! Return the thread currently executing in the backend. I.e. the
-   *! thread that has called @[`()] and haven't exited from that call.
+   *! thread that has called @[`()] and hasn't exited from that call.
    *! Zero is returned if there's no thread in the backend.
    *!
    *! If Pike is compiled without thread support then @expr{1@} is
