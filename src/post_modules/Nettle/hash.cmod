@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: hash.cmod,v 1.33 2010/06/18 15:51:14 mast Exp $
+|| $Id: hash.cmod,v 1.34 2010/06/21 12:23:15 mast Exp $
 */
 
 #include "global.h"
@@ -106,7 +106,8 @@ PIKECLASS HashInfo
   /*! @decl string hash(string data)
    *!
    *!  Works as a (faster) shortcut for
-   *!  @expr{obj->update(data)->digest()@}.
+   *!  @expr{HashState()->update(data)->digest()@}, where HashState is
+   *!  the hash state class corresponding to this HashInfo.
    *!
    *! @seealso
    *!   @[HashState()->update()] and @[HashState()->digest()].
@@ -143,7 +144,9 @@ PIKECLASS HashInfo
   /*! @decl string hash(Stdio.File file, void|int bytes)
    *!
    *!  Works as a (faster) shortcut for
-   *!  @expr{obj->update(Stdio.read_file(file))->digest()@}.
+   *!  @expr{HashState()->update(Stdio.read_file(file))->digest()@},
+   *!  where HashState is the hash state class corresponding to this
+   *!  HashInfo.
    *!
    *! @param bytes
    *!   The number of bytes of the file object @[file] that should be
