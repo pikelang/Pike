@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.348 2010/05/30 09:43:06 mast Exp $
+|| $Id: gc.c,v 1.349 2010/06/22 07:03:14 mast Exp $
 */
 
 #include "global.h"
@@ -121,7 +121,7 @@ size_t gc_ext_weak_refs;
 static double objects_alloced = 0.0;
 static double objects_freed = 0.0;
 static double gc_time = 0.0, non_gc_time = 0.0;
-static cpu_time_t last_gc_end_time = 0;
+static cpu_time_t last_gc_end_real_time = -1;
 cpu_time_t auto_gc_time = 0;
 cpu_time_t auto_gc_real_time = 0;
 
@@ -3895,19 +3895,25 @@ size_t do_gc(void *ignored, int explicit_call)
 		   (double) start_allocs / (double) alloc_threshold);
 
     /* Comparisons to avoid that overflows mess up the statistics. */
-    if (gc_start_time > last_gc_end_time) {
-      last_non_gc_time = gc_start_time - last_gc_end_time;
+    if (last_gc_end_real_time != -1 &&
+	gc_start_real_time > last_gc_end_real_time) {
+      last_non_gc_time = gc_start_real_time - last_gc_end_real_time;
       non_gc_time = non_gc_time * multiplier +
 	last_non_gc_time * (1.0 - multiplier);
     }
     else last_non_gc_time = (cpu_time_t) -1;
-    last_gc_end_time = get_cpu_time();
-    if (last_gc_end_time > gc_start_time) {
-      last_gc_time = last_gc_end_time - gc_start_time;
+    last_gc_end_real_time = get_real_time();
+    if (last_gc_end_real_time > gc_start_real_time) {
       gc_time = gc_time * multiplier +
-	last_gc_time * (1.0 - multiplier);
+	(last_gc_end_real_time - gc_start_real_time) * (1.0 - multiplier);
     }
-    else last_gc_time = (cpu_time_t) -1;
+    {
+      cpu_time_t gc_end_time = get_cpu_time();
+      if (gc_end_time > gc_start_time)
+	last_gc_time = gc_end_time - gc_start_time;
+      else
+	last_gc_time = (cpu_time_t) -1;
+    }
 
     /* At this point, unreferenced contains the number of things that
      * were without external references during the check and mark
@@ -4051,11 +4057,11 @@ size_t do_gc(void *ignored, int explicit_call)
  *!     @member float "last_garbage_ratio"
  *!       Garbage ratio in the last gc run.
  *!     @member int "non_gc_time"
- *!       Decaying average over the CPU milliseconds spent outside the
- *!       garbage collector.
+ *!       Decaying average over the interval between gc runs, measured
+ *!       in real time nanoseconds.
  *!     @member int "gc_time"
- *!       Decaying average over the CPU milliseconds spent inside the
- *!       garbage collector.
+ *!       Decaying average over the length of the gc runs, measured in
+ *!       real time nanoseconds.
  *!     @member string "last_garbage_strategy"
  *!       The garbage accumulation goal that the gc aimed for when
  *!       setting "alloc_threshold" in the last run. The value is
@@ -4213,8 +4219,8 @@ void dump_gc_info(void)
   fprintf(stderr,"Avg frees per gc           : %f\n",objects_freed);
   fprintf(stderr,"Garbage ratio in last gc   : %f\n", last_garbage_ratio);
 					     
-  fprintf(stderr,"Avg cpu "CPU_TIME_UNIT" between gc      : %f\n", non_gc_time);
-  fprintf(stderr,"Avg cpu "CPU_TIME_UNIT" in gc           : %f\n", gc_time);
+  fprintf(stderr,"Avg "CPU_TIME_UNIT" between gc          : %f\n", non_gc_time);
+  fprintf(stderr,"Avg "CPU_TIME_UNIT" in gc               : %f\n", gc_time);
   fprintf(stderr,"Avg time ratio in gc       : %f\n", gc_time / non_gc_time);
 
   fprintf(stderr,"Garbage strategy in last gc: %s\n",
