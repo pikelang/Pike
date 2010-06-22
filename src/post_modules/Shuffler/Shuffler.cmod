@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: Shuffler.cmod,v 1.50 2008/08/12 15:19:31 mast Exp $
+|| $Id: Shuffler.cmod,v 1.51 2010/06/22 14:02:37 grubba Exp $
 */
 
 #include "global.h"
@@ -228,9 +228,8 @@ PIKECLASS Shuffle
 
     THIS->write_callback = 
       find_identifier("write_callback",Pike_fp->current_object->prog);
-    THIS->box.backend = NULL;
-    THIS->box.ref_obj = Pike_fp->current_object;
-    THIS->box.fd = -1;
+    INIT_FD_CALLBACK_BOX(&THIS->box, NULL, Pike_fp->current_object, -1,
+			 0, got_shuffler_event);
     debug_malloc_touch(THIS->box.ref_obj);
     
     SHUFFLE_DEBUG1("init()\n", THIS );
@@ -615,9 +614,10 @@ PIKECLASS Shuffle
     if( THIS->box.fd >= 0 )
     {
       set_nonblocking( THIS->box.fd, 1 );
-      if(THIS->box.backend)
+      if(THIS->box.backend) {
+	/* FIXME: Ought to change backend to be here. */
         set_fd_callback_events(&THIS->box, 0);
-      else
+      } else
         INIT_FD_CALLBACK_BOX(&THIS->box, be, THIS->box.ref_obj,
          THIS->box.fd, 0, got_shuffler_event);
     }

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: udp.c,v 1.82 2009/05/28 11:54:38 grubba Exp $
+|| $Id: udp.c,v 1.83 2010/06/22 14:02:33 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -756,11 +756,33 @@ void udp_sendto(INT32 args)
 }
 
 
+static int got_udp_event (struct fd_callback_box *box, int event)
+{
+  struct udp_storage *u = (struct udp_storage *) box;
+#ifdef PIKE_DEBUG
+  if (event != PIKE_FD_READ)
+    Pike_fatal ("Got unexpected event %d.\n", event);
+#endif
+
+  u->my_errno = errno;		/* Propagate backend setting. */
+
+  check_destructed (&u->read_callback);
+  if (UNSAFE_IS_ZERO (&u->read_callback))
+    set_fd_callback_events (&u->box, 0);
+  else {
+    apply_svalue (&u->read_callback, 0);
+    if (Pike_sp[-1].type == PIKE_T_INT && Pike_sp[-1].u.integer == -1) {
+      pop_stack();
+      return -1;
+    }
+    pop_stack();
+  }
+  return 0;
+}
+
 void zero_udp(struct object *o)
 {
-  THIS->box.backend = NULL;
-  THIS->box.ref_obj = o;
-  FD = -1;
+  INIT_FD_CALLBACK_BOX(&THIS->box, NULL, o, -1, 0, got_udp_event);
   THIS->my_errno = 0;
   THIS->type=SOCK_DGRAM;
   THIS->protocol=0;
@@ -785,30 +807,6 @@ int low_exit_udp()
   /* map_variable handles read_callback. */
 
   return ret;
-}
-
-static int got_udp_event (struct fd_callback_box *box, int event)
-{
-  struct udp_storage *u = (struct udp_storage *) box;
-#ifdef PIKE_DEBUG
-  if (event != PIKE_FD_READ)
-    Pike_fatal ("Got unexpected event %d.\n", event);
-#endif
-
-  u->my_errno = errno;		/* Propagate backend setting. */
-
-  check_destructed (&u->read_callback);
-  if (UNSAFE_IS_ZERO (&u->read_callback))
-    set_fd_callback_events (&u->box, 0);
-  else {
-    apply_svalue (&u->read_callback, 0);
-    if (Pike_sp[-1].type == PIKE_T_INT && Pike_sp[-1].u.integer == -1) {
-      pop_stack();
-      return -1;
-    }
-    pop_stack();
-  }
-  return 0;
 }
 
 static void udp_set_read_callback(INT32 args)

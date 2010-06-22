@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: socket.c,v 1.110 2010/02/24 22:26:34 srb Exp $
+|| $Id: socket.c,v 1.111 2010/06/22 14:02:26 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -683,9 +683,7 @@ static void port_query_backend (INT32 args)
 
 static void init_port_struct(struct object *o)
 {
-  THIS->box.backend = NULL;
-  THIS->box.ref_obj = o;
-  THIS->box.fd = -1;
+  INIT_FD_CALLBACK_BOX(&THIS->box, NULL, o, -1, 0, got_port_event);
   THIS->my_errno=0;
   /* map_variable takes care of id and accept_callback. */
 }
