@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.349 2010/06/22 07:03:14 mast Exp $
+|| $Id: gc.c,v 1.350 2010/06/22 09:24:33 mast Exp $
 */
 
 #include "global.h"
@@ -40,6 +40,7 @@ int gc_enabled = 1;
 double gc_garbage_ratio_low = 0.2;
 double gc_time_ratio = 0.05;
 double gc_garbage_ratio_high = 0.5;
+double gc_min_time_ratio = 1.0/10001.0; /* Martys constant. */
 
 /* This slowness factor approximately corresponds to the average over
  * the last ten gc rounds. (0.9 == 1 - 1/10) */
@@ -483,7 +484,7 @@ static INLINE void really_free_free_extra_frame (struct free_extra_frame *f)
 /* These are only collected for the sake of gc_status. */
 static double last_garbage_ratio = 0.0;
 static enum {
-  GARBAGE_RATIO_LOW, GARBAGE_RATIO_HIGH
+  GARBAGE_RATIO_LOW, GARBAGE_RATIO_HIGH, GARBAGE_MAX_INTERVAL
 } last_garbage_strategy = GARBAGE_RATIO_LOW;
 
 struct callback_list gc_callbacks;
@@ -3947,6 +3948,16 @@ size_t do_gc(void *ignored, int explicit_call)
       last_garbage_strategy = GARBAGE_RATIO_HIGH;
     }
 
+    if (non_gc_time > 0.0 && gc_min_time_ratio > 0.0) {
+      /* Upper limit on the new threshold based on gc_min_time_ratio. */
+      double max_threshold = (objects_alloced+1.0) *
+	gc_time / (gc_min_time_ratio * non_gc_time);
+      if (max_threshold < new_threshold) {
+	new_threshold = max_threshold;
+	last_garbage_strategy = GARBAGE_MAX_INTERVAL;
+      }
+    }
+
 #if 0
     /* Afaics this is to limit the growth of the threshold to avoid
      * that a single sudden allocation spike causes a very long gc
@@ -4065,9 +4076,11 @@ size_t do_gc(void *ignored, int explicit_call)
  *!     @member string "last_garbage_strategy"
  *!       The garbage accumulation goal that the gc aimed for when
  *!       setting "alloc_threshold" in the last run. The value is
- *!       either "garbage_ratio_low" or "garbage_ratio_high", which
- *!       corresponds to the gc parameters with the same names in
- *!       @[Pike.gc_parameters].
+ *!       either "garbage_ratio_low", "garbage_ratio_high" or
+ *!       "garbage_max_interval". The first two correspond to the gc
+ *!       parameters with the same names in @[Pike.gc_parameters], and
+ *!       the last is the minimum gc time limit specified through the
+ *!       "min_gc_time_ratio" parameter to @[Pike.gc_parameters].
  *!     @member int "last_gc"
  *!       Time when the garbage-collector last ran.
  *!     @member int "total_gc_cpu_time"
@@ -4127,10 +4140,15 @@ void f__gc_status(INT32 args)
 
   push_constant_text ("last_garbage_strategy");
   switch (last_garbage_strategy) {
-    case GARBAGE_RATIO_LOW: push_constant_text ("garbage_ratio_low"); break;
-    case GARBAGE_RATIO_HIGH: push_constant_text ("garbage_ratio_high"); break;
+    case GARBAGE_RATIO_LOW:
+      push_constant_text ("garbage_ratio_low"); break;
+    case GARBAGE_RATIO_HIGH:
+      push_constant_text ("garbage_ratio_high"); break;
+    case GARBAGE_MAX_INTERVAL:
+      push_constant_text ("garbage_max_interval"); break;
 #ifdef PIKE_DEBUG
-    default: Pike_fatal ("Unknown last_garbage_strategy %d\n", last_garbage_strategy);
+    default:
+      Pike_fatal ("Unknown last_garbage_strategy %d\n", last_garbage_strategy);
 #endif
   }
   size++;
@@ -4226,7 +4244,8 @@ void dump_gc_info(void)
   fprintf(stderr,"Garbage strategy in last gc: %s\n",
 	  last_garbage_strategy == GARBAGE_RATIO_LOW ? "garbage_ratio_low" :
 	  last_garbage_strategy == GARBAGE_RATIO_HIGH ? "garbage_ratio_high" :
-	  "???");
+	  last_garbage_strategy == GARBAGE_MAX_INTERVAL ?
+	  "garbage_max_interval" : "???");
 
 #ifdef PIKE_DEBUG
   fprintf(stderr,"Max used recursion frames  : %u\n", tot_max_rec_frames);

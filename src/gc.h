@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.h,v 1.145 2010/05/30 09:43:08 mast Exp $
+|| $Id: gc.h,v 1.146 2010/06/22 09:24:32 mast Exp $
 */
 
 #ifndef GC_H
@@ -24,15 +24,22 @@ extern int gc_enabled;
  * total amount of allocated things is this. */
 extern double gc_garbage_ratio_low;
 
-/* When more than this fraction of the cpu time is spent in the gc,
- * aim to minimize it as long as the garbage ratio is less than
- * gc_garbage_ratio_high. */
+/* When more than this fraction of the time is spent in the gc, aim to
+ * minimize it as long as the garbage ratio is less than
+ * gc_garbage_ratio_high. (Note that the intervals currently are
+ * measured in real time since cpu time typically is thread local.) */
 extern double gc_time_ratio;
 
 /* If the garbage ratio gets up to this value, disregard gc_time_ratio
  * and start running the gc as often as it takes so that it doesn't
  * get any higher. */
 extern double gc_garbage_ratio_high;
+
+/* If there's very little garbage, the gc can settle on extremely long
+ * intervals that won't pick up an increased garbage rate until it's
+ * too late. This is the minimum time ratio between the gc running
+ * time and the gc interval time to avoid that. */
+extern double gc_min_time_ratio;
 
 /* When predicting the next gc interval, use a decaying average with
  * this slowness factor. It should be a value less than 1.0 that

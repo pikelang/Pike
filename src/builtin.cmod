@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.258 2010/05/28 18:34:40 mast Exp $
+|| $Id: builtin.cmod,v 1.259 2010/06/22 09:24:35 mast Exp $
 */
 
 #include "global.h"
@@ -514,15 +514,24 @@ PIKEFUN int trace(int level, void|string facility, void|zero|int all_threads)
  *!   completely disabled so that even explicit @[gc] calls won't do
  *!   anything.
  *! @member float "garbage_ratio_low"
- *!   As long as the gc time is less than gc_time_ratio, aim to run
+ *!   As long as the gc time is less than time_ratio below, aim to run
  *!   the gc approximately every time the ratio between the garbage
  *!   and the total amount of allocated things is this.
  *! @member float "time_ratio"
- *!   When more than this fraction of the cpu time is spent in the gc,
- *!   aim for gc_garbage_ratio_high instead of gc_garbage_ratio_low.
+ *!   When more than this fraction of the time is spent in the gc, aim
+ *!   for garbage_ratio_high instead of garbage_ratio_low.
  *! @member float "garbage_ratio_high"
  *!   Upper limit for the garbage ratio - run the gc as often as it
  *!   takes to keep it below this.
+ *! @member float "min_gc_time_ratio"
+ *!   This puts an upper limit on the gc interval, in addition to the
+ *!   factors above. It is specified as the minimum amount of time
+ *!   spent doing gc, as a factor of the total time. The reason for
+ *!   this limit is that the current amount of garbage can only be
+ *!   measured in a gc run, and if the gc starts to run very seldom
+ *!   due to very little garbage, it might get too slow to react to an
+ *!   increase in garbage generation. Set to 0.0 to turn this limit
+ *!   off.
  *! @member float "average_slowness"
  *!   When predicting the next gc interval, use a decaying average
  *!   with this slowness factor. It should be a value between 0.0 and
@@ -543,7 +552,7 @@ PIKEFUN mapping(string:mixed) gc_parameters (void|mapping(string:mixed) params)
   struct svalue get;
 
   if (!params) {
-    push_mapping (allocate_mapping (5));
+    push_mapping (allocate_mapping (6));
     params = Pike_sp[-1].u.mapping;
   }
 
@@ -591,6 +600,7 @@ PIKEFUN mapping(string:mixed) gc_parameters (void|mapping(string:mixed) params)
   HANDLE_FLOAT_FACTOR ("garbage_ratio_low", gc_garbage_ratio_low);
   HANDLE_FLOAT_FACTOR ("time_ratio", gc_time_ratio);
   HANDLE_FLOAT_FACTOR ("garbage_ratio_high", gc_garbage_ratio_high);
+  HANDLE_FLOAT_FACTOR ("min_gc_time_ratio", gc_min_time_ratio);
   HANDLE_FLOAT_FACTOR ("average_slowness", gc_average_slowness);
 
 #undef HANDLE_PARAM
