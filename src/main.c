@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.239 2010/06/21 15:10:34 grubba Exp $
+|| $Id: main.c,v 1.240 2010/06/22 12:37:19 grubba Exp $
 */
 
 #include "global.h"
@@ -202,6 +202,24 @@ static void set_default_master(const char *bin_name)
 #ifdef LIBPIKE
 static char libpike_file[MAXPATHLEN * 2];
 static void *libpike;
+
+typedef void (*modfun)(void);
+#ifdef NO_CAST_TO_FUN
+/* Function pointers can't be casted to scalar pointers according to
+ * ISO-C (probably to support true Harward achitecture machines).
+ */
+static modfun CAST_TO_FUN(void *ptr)
+{
+  union {
+    void *ptr;
+    modfun fun;
+  } u;
+  u.ptr = ptr;
+  return u.fun;
+}
+#else /* !NO_CAST_TO_FUN */
+#define CAST_TO_FUN(X)	((modfun)X)
+#endif /* NO_CAST_TO_FUN */
 
 static void (*init_pike_var)(const char **argv, const char *file);
 static void (*init_pike_runtime_var)(void (*exit_cb)(int));
