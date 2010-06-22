@@ -1,5 +1,5 @@
 /* nettle.cmod -*- c -*- */
-/* $Id: nettle.cmod,v 1.56 2010/05/26 21:54:06 jonasw Exp $ */
+/* $Id: nettle.cmod,v 1.57 2010/06/22 12:56:42 nilsson Exp $ */
 
 #include "global.h"
 #include "interpret.h"
@@ -796,21 +796,75 @@ PIKECLASS Proxy {
     MEMSET(result, 0, roffset + len);
   }
 
-  /*! @decl string pad()
+  /*! @decl string pad(void|int method)
    *!
-   *! Pad and de/encrypt any data left in the buffer.
+   *! Pad and decrypt any data left in the buffer.
+   *!
+   *! @param method
+   *! What type of padding was applied to the original buffer.
+   *! @int
+   *!   @value Crypto.PAD_SSL
+   *!   @value Crypto.PAD_ISO_10126
+   *!   @value Crypto.PAD_ANSI_X923
+   *!   @value Crypto.PAD_PKCS7
+   *!   @value Crypto.PAD_ZERO
+   *! @endint
+   *! Defaults to Crypto.PAD_SSL for compatibility reasons.
    *!
    *! @seealso
    *!   @[unpad()]
    */
-  PIKEFUN string pad() {
+  PIKEFUN string pad(void|int method) {
     ptrdiff_t i;
+    int m = 0;
+    int size = THIS->block_size - THIS->backlog_len;
+
+    if(method)
+    {
+      if(method->type != PIKE_T_INT)
+        Pike_error("Bad argument type.\n");
+      m = method->u.integer;
+    }
+
+    switch(m)
+    {
+    case 0:
+      size--;
+      break;
+    case 4:
+      if( THIS->backlog_len>0 && 
+          THIS->backlog[THIS->backlog_len-1] == 0 )
+        Pike_error("Using zero padding on a zero terminated string.\n");
+      size = 0;
+      break;
+    }
 
     for (i = THIS->backlog_len; i < THIS->block_size - 1; i++)
-      THIS->backlog[i] = DO_NOT_WARN((unsigned char)(my_rand() & 0xff));
+      switch(m)
+      {
+      default:
+        Pike_error("Unknown method.\n");
+      case 0:
+      case 1:
+        /* ISO 10126 */
+        THIS->backlog[i] = DO_NOT_WARN((unsigned char)(my_rand() & 0xff));
+        break;
+      case 2:
+        /* ANSI X.923 */
+        THIS->backlog[i] = 0;
+        break;
+      case 3:
+        /* PKCS7 / RFC 3852 */
+        THIS->backlog[i] = DO_NOT_WARN((unsigned char)size);
+        break;
+      case 4:
+        /* Null only */
+        THIS->backlog[i] = 0;
+        break;
+      }
+
   
-    THIS->backlog[THIS->block_size - 1] =
-      DO_NOT_WARN((unsigned char)(THIS->block_size - THIS->backlog_len - 1));
+    THIS->backlog[THIS->block_size - 1] = DO_NOT_WARN((unsigned char)size);
 
     push_string(make_shared_binary_string((const char *)THIS->backlog,
 					  THIS->block_size));
@@ -821,22 +875,41 @@ PIKECLASS Proxy {
     safe_apply(THIS->object, "crypt", 1);
   }
 
-  /*! @decl string unpad(string data)
+  /*! @decl string unpad(string data, void|int method)
    *!
-   *! De/encrypt and unpad a block of data.
+   *! Encrypt and unpad a block of data.
    *!
    *! This performs the reverse operation of @[pad()].
+   *!
+   *! @param method
+   *! What type of padding was applied to the original buffer.
+   *! @int
+   *!   @value Crypto.PAD_SSL
+   *!   @value Crypto.PAD_ISO_10126
+   *!   @value Crypto.PAD_ANSI_X923
+   *!   @value Crypto.PAD_PKCS7
+   *!   @value Crypto.PAD_ZERO
+   *! @endint
+   *! Defaults to Crypto.PAD_SSL for compatibility reasons.
    *!
    *! @seealso
    *!   @[pad()]
    */
-  PIKEFUN string unpad(string str) {
+  PIKEFUN string unpad(string str, void|int method) {
     ptrdiff_t len;
+    int m = 0;
 
     len = str->len;
-
     if( len % THIS->block_size)
       Pike_error("String must be integral numbers of blocks.\n");
+
+    if( method!=NULL )
+    {
+      m = method->u.integer;
+      pop_stack();
+      args--;
+    }
+
     safe_apply(THIS->object, "crypt", 1);
     if (Pike_sp[-1].type != T_STRING)
       Pike_error("crypt() did not return string.\n");
@@ -845,11 +918,34 @@ PIKECLASS Proxy {
 		 DO_NOT_WARN((long)Pike_sp[-1].u.string->len));
     str = Pike_sp[-1].u.string;
 
-    if (str->str[len - 1] > (THIS->block_size - 1))
-      Pike_error("Invalid padding (%d > %d)\n",
-		 str->str[len-1], THIS->block_size-1);
+    if( m==0 )
+    {
+      if (str->str[len - 1]+1 > THIS->block_size)
+        Pike_error("Invalid padding (%d > %d)\n",
+                   str->str[len-1]+1, THIS->block_size-1);
+    }
+    else
+      if (str->str[len - 1] > THIS->block_size)
+        Pike_error("Invalid padding (%d > %d)\n",
+                   str->str[len-1], THIS->block_size-1);
 
-    len -= (str->str[len - 1] + 1);
+
+    len -= str->str[len - 1];
+    switch( m )
+    {
+    case 0:
+      len--;
+      break;
+    case 4:
+      {
+        int c=THIS->block_size;
+        while( str->str[len-1]==0 && c>0 )
+        {
+          c--;
+          len--;
+        }
+      }
+    }
 
     if (len < 0)
       Pike_error("String to short to unpad\n");
