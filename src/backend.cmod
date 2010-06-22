@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.244 2010/06/21 13:25:11 grubba Exp $
+ * $Id: backend.cmod,v 1.245 2010/06/22 14:04:13 grubba Exp $
  *
  * Backend object.
  */
@@ -822,7 +822,7 @@ PIKECLASS Backend
      }
 #endif
 
-/*! @decl mixed call_out(function f, float|int delay, mixed ... args)
+/*! @decl array call_out(function f, float|int delay, mixed ... args)
  *!
  *! Make a delayed call to a function.
  *!
@@ -841,7 +841,7 @@ PIKECLASS Backend
  *! @seealso
  *!   @[remove_call_out()], @[find_call_out()], @[call_out_info()]
  */
-   PIKEFUN mixed call_out(mixed f, int|float t, mixed ... rest)
+   PIKEFUN array call_out(mixed f, int|float t, mixed ... rest)
      {
        struct svalue tmp;
        struct array *v;
@@ -1028,7 +1028,7 @@ PIKECLASS Backend
      }
 
 /*! @decl int find_call_out(function f)
- *! @decl int find_call_out(mixed id)
+ *! @decl int find_call_out(array id)
  *!
  *! Find a call out in the queue.
  *!
@@ -1070,13 +1070,13 @@ PIKECLASS Backend
      }
 
 /*! @decl int remove_call_out(function f)
- *! @decl int remove_call_out(int id)
+ *! @decl int remove_call_out(array id)
  *!
  *! Remove a call out from the call out queue.
  *!
  *! This function finds the first call to the function @[f] in the call_out
  *! queue and removes it.  You can also give a call out id as argument (as
- *! returned by @[call_out()] or @[find_call_out()]).
+ *! returned by @[call_out()]).
  *!
  *! @returns
  *!   The remaining time in seconds left to that call out will be returned.
@@ -2035,11 +2035,6 @@ PIKECLASS Backend
 	    goto backend_round_done;
 	  }
 	}
-	/* Don't call any other callbacks for this fd.
-	 */
-
-	CALL_AND_UNSET_ONERROR(uwp);
-	continue;
       }
 
       CALL_AND_UNSET_ONERROR(uwp);
