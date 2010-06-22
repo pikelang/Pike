@@ -1,5 +1,5 @@
 /* nettle.cmod -*- c -*- */
-/* $Id: nettle.cmod,v 1.57 2010/06/22 12:56:42 nilsson Exp $ */
+/* $Id: nettle.cmod,v 1.58 2010/06/22 14:30:13 grubba Exp $ */
 
 #include "global.h"
 #include "interpret.h"
@@ -595,7 +595,7 @@ PIKECLASS CBC
 /*! @class Buffer
  *! @belongs Crypto
  *! Acts as a buffer so that data can be fed to a cipher in blocks
- *! that doesn't correspond to cipher block sizes.
+ *! that don't correspond to cipher block sizes.
  */
 PIKECLASS Proxy {
   CVAR struct object *object;
@@ -616,9 +616,11 @@ PIKECLASS Proxy {
     if(THIS->backlog) {
       MEMSET(THIS->backlog, 0, THIS->block_size);
       free(THIS->backlog);
+      THIS->backlog = NULL;
     }
     if(THIS->object) {
       free_object(THIS->object);
+      THIS->object = NULL;
     }
   }
 
@@ -632,6 +634,7 @@ PIKECLASS Proxy {
   PIKEFUN void create(program|object|function cipher, mixed ... more)
     flags ID_PROTECTED;
   {
+    exit_Proxy_struct();
     THIS->object = make_cipher_object(args);
 
     safe_apply(THIS->object, "block_size", 0);
@@ -798,10 +801,10 @@ PIKECLASS Proxy {
 
   /*! @decl string pad(void|int method)
    *!
-   *! Pad and decrypt any data left in the buffer.
+   *! Pad and encrypt any data left in the buffer.
    *!
    *! @param method
-   *! What type of padding was applied to the original buffer.
+   *! The type of padding to apply to the buffer.
    *! @int
    *!   @value Crypto.PAD_SSL
    *!   @value Crypto.PAD_ISO_10126
@@ -877,12 +880,12 @@ PIKECLASS Proxy {
 
   /*! @decl string unpad(string data, void|int method)
    *!
-   *! Encrypt and unpad a block of data.
+   *! Decrypt and unpad a block of data.
    *!
    *! This performs the reverse operation of @[pad()].
    *!
    *! @param method
-   *! What type of padding was applied to the original buffer.
+   *! The type of padding that was applied to the original buffer.
    *! @int
    *!   @value Crypto.PAD_SSL
    *!   @value Crypto.PAD_ISO_10126
@@ -948,7 +951,7 @@ PIKECLASS Proxy {
     }
 
     if (len < 0)
-      Pike_error("String to short to unpad\n");
+      Pike_error("String too short to unpad\n");
   
     add_ref(str);
     pop_stack();
