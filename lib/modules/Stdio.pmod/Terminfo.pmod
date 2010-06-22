@@ -1,4 +1,4 @@
-// $Id: Terminfo.pmod,v 1.30 2010/06/05 12:40:37 grubba Exp $
+// $Id: Terminfo.pmod,v 1.31 2010/06/22 12:15:24 nilsson Exp $
 #pike __REAL_VERSION__
 
 
@@ -775,7 +775,7 @@ class MetaTerminfoDB {
   //!       An active @[TerminfoDB].
   //!     @type string
   //!       A directory that may exist and contain a terminfo database.
-  //!   @endarray
+  //!   @endmixed
   //!
   //! @returns
   //!   If the resulting set of @[TerminfoDB]'s is empty,
