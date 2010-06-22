@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.171 2009/08/13 16:06:50 grubba Exp $
+|| $Id: sprintf.c,v 1.172 2010/06/22 00:07:45 arne Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -1694,8 +1694,10 @@ static void low_pike_sprintf(struct format_stack *fs,
       {
 	struct svalue *t;
 	DO_OP();
-	/* No need to do CHECK_OBJECT_SPRINTF() here,
-	   it is checked in describe_svalue. */
+	CHECK_OBJECT_SPRINTF()
+	/* Its necessary to use CHECK_OBJECT_SPRINTF() here,
+	   because describe_svalue encodes \t and others 
+	   when returned by _sprintf */
 	GET_SVALUE(t);
 	if (compat_mode && (compat_mode <= 76)) {
 	  /* We don't care about the nested case, since it

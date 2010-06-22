@@ -299,4 +299,6 @@ test_eval_error(return sprintf("%1H", "x"*256);)
 dnl / : ; ^ _ > hasn't been tested
 test_eval_error(return sprintf("%d");)
 
+test_eq(sprintf("%O", class { string _sprintf(int type) { return "\t"; } }()), "\t")
+
 END_MARKER
