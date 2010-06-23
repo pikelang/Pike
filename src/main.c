@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.240 2010/06/22 12:37:19 grubba Exp $
+|| $Id: main.c,v 1.241 2010/06/23 16:22:54 grubba Exp $
 */
 
 #include "global.h"
@@ -287,14 +287,14 @@ static void find_lib_dir(int argc, char **argv)
 	 )
 	dir = p+1;
     }
-    if ((p + CONSTANT_STRLEN("pike.so")) >= libpike_file + 2*MAXPATHLEN) {
+    if ((dir + CONSTANT_STRLEN("pike.so")) >= libpike_file + 2*MAXPATHLEN) {
       /* Not likely to happen as long as MASTER_COOKIE is longer than "pike.so".
        */
       fprintf(stderr, "Too long path to pike.so.\n");
       exit(1);
     }
     /* Don't forget the NUL! */
-    memcpy(p, "pike.so", CONSTANT_STRLEN("pike.so") + 1);
+    memcpy(dir, "pike.so", CONSTANT_STRLEN("pike.so") + 1);
   }
 #endif /* LIBPIKE */
 }
