@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: zlibmod.c,v 1.88 2009/08/30 15:58:54 grubba Exp $
+|| $Id: zlibmod.c,v 1.89 2010/06/24 18:56:11 jonasw Exp $
 */
 
 #include "global.h"
@@ -461,6 +461,9 @@ static void gz_compress(INT32 args)
  *!     All input is packed and an 'end of data' marker is appended.
  *! @endint
  *!
+ *! @note
+ *!   Data must not be wide string.
+ *!
  *! @seealso
  *! @[Gz.inflate->inflate()]
  */
@@ -489,7 +492,9 @@ static void gz_deflate(INT32 args)
     Pike_error("Bad argument 1 to gz_deflate->deflate()\n");
 
   data=sp[-args].u.string;
-
+  if (data->size_shift)
+    Pike_error("Cannot input wide string to gz_deflate->deflate()\n");
+  
   if(args>1)
   {
     if(sp[1-args].type != T_INT)
@@ -785,6 +790,8 @@ static void gz_uncompress(INT32 args)
     SIMPLE_TOO_FEW_ARGS_ERROR("uncompress", 1);
   if(Pike_sp[-args].type!=PIKE_T_STRING)
     SIMPLE_BAD_ARG_ERROR("uncompress", 1, "string");
+  if (Pike_sp[-args].u.string->size_shift)
+    Pike_error("Cannot input wide string to uncompress\n");
   if(args>1)
   {
     if(Pike_sp[1-args].type==PIKE_T_INT)
@@ -841,6 +848,8 @@ static void gz_inflate(INT32 args)
     Pike_error("Bad argument 1 to gz_inflate->inflate()\n");
 
   data=sp[-args].u.string;
+  if (data->size_shift)
+    Pike_error("Cannot input wide string to gz_inflate->inflate()\n");
 
   this->gz.next_in=(Bytef *)data->str;
   this->gz.avail_in = DO_NOT_WARN((unsigned INT32)(data->len));
@@ -933,6 +942,9 @@ static void exit_gz_inflate(struct object *o)
 /*! @decl int crc32(string data, void|int start_value)
  *!
  *!   This function calculates the standard ISO3309 Cyclic Redundancy Check.
+ *!
+ *! @note
+ *!   Data must not be wide string.
  */
 static void gz_crc32(INT32 args)
 {
@@ -940,6 +952,8 @@ static void gz_crc32(INT32 args)
    if (!args ||
        sp[-args].type!=T_STRING)
       Pike_error("Gz.crc32: illegal or missing argument 1 (expected string)\n");
+  if (sp[-args].u.string->size_shift)
+    Pike_error("Cannot input wide string to Gz.crc32\n");
 
    if (args>1) {
       if (sp[1-args].type!=T_INT)
