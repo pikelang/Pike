@@ -4,6 +4,10 @@ Changes since Pike 7.8.352 (third 7.8 release):
 Extensions and New Functions
 ----------------------------
 
+o Standards.JSON
+
+  New module for encoding and decoding JSON data. Implemented in C.
+
 o Protocols.HTTP.Session will no longer override an existing
   content-type header in async_do_method_url.
 
