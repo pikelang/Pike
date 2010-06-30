@@ -4,7 +4,7 @@
 
 //! Polish language locale by Piotr Klaban <makler@@man.torun.pl>.
 
-// $Id: pol.pmod,v 1.3 2010/06/30 13:20:48 grubba Exp $
+// $Id: pol.pmod,v 1.4 2010/06/30 14:35:28 grubba Exp $
 
 inherit "abstract";
 
@@ -42,13 +42,23 @@ constant languages=([
 ]);
 
 constant months = ({
-  "Stycznia", "Lutego", "Marzca", "Kwietnia", "Maja",
+  "Styczeñ", "Luty", "Marzec", "Kwiecieñ", "Maj",
+  "Czerwiec", "Lipiec", "Sierpieñ", "Wrzesien", "Pa¼dziernik",
+  "Listopad", "Grudzieñ" });
+
+constant dated_months = ({
+  "Stycznia", "Lutego", "Marca", "Kwietnia", "Maja",
   "Czerwca", "Lipca", "Sierpnia", "Wrze¶nia", "Pa¼dziernika",
   "Listopada", "Grudnia" });
 
 constant days = ({
   "Niedziela","Poniedzia³ek","Wtorek","¦roda",
   "Czwartek","Pi±tek","Sobota" });
+
+string month(int(1..12) num, int|void dated)
+{
+  return (dated?dated_months:months)[ num - 1 ];
+}
 
 string ordered(int i)
 {
@@ -69,11 +79,11 @@ string date(int timestamp, string|void m)
   if(m=="full")
     return ctime(timestamp)[11..15]+", "+
 	   ordered(t1["mday"]) + " " +
-           month(t1["mon"]+1) + " " +
+           month(t1["mon"]+1, 1) + " " +
            (t2["year"]+1900);
 
   if(m=="date")
-    return (ordered(t1["mday"]) + " " + month(t1["mon"]+1) + " " +
+    return (ordered(t1["mday"]) + " " + month(t1["mon"]+1, 1) + " " +
        (t2["year"]+1900));
 
   if(m=="time")
@@ -93,7 +103,7 @@ string date(int timestamp, string|void m)
   if(t1["year"] != t2["year"])
     return (month(t1["mon"]+1) + " " + (t1["year"]+1900));
 
-  return (ordered(t1["mday"]) + " " + month(t1["mon"]+1));
+  return (ordered(t1["mday"]) + " " + month(t1["mon"]+1, 1));
 }
 
 
