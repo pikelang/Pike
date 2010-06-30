@@ -4,7 +4,7 @@
 
 //! Polish language locale by Piotr Klaban <makler@@man.torun.pl>.
 
-// $Id: pol.pmod,v 1.4 2010/06/30 14:35:28 grubba Exp $
+// $Id: pol.pmod,v 1.5 2010/06/30 15:22:23 grubba Exp $
 
 inherit "abstract";
 
@@ -80,11 +80,11 @@ string date(int timestamp, string|void m)
     return ctime(timestamp)[11..15]+", "+
 	   ordered(t1["mday"]) + " " +
            month(t1["mon"]+1, 1) + " " +
-           (t2["year"]+1900);
+           (t1["year"]+1900);
 
   if(m=="date")
     return (ordered(t1["mday"]) + " " + month(t1["mon"]+1, 1) + " " +
-       (t2["year"]+1900));
+       (t1["year"]+1900));
 
   if(m=="time")
     return ctime(timestamp)[11..15];
