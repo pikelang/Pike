@@ -1,4 +1,4 @@
-// $Id: SloppyDOM.pmod,v 1.3 2008/12/09 18:56:23 nilsson Exp $
+// $Id: SloppyDOM.pmod,v 1.4 2010/06/30 09:08:40 mast Exp $
 
 #pike __REAL_VERSION__
 
@@ -783,11 +783,20 @@ static class NodeWithChildElements
 	      if (intp (elem)) elem = make_node (elem);
 	      if (mixed pred_res = elem->simple_path_recur (pred_expr, 0, 0)) {
 		if (arrayp (pred_res)) {
-		  foreach (pred_res, Node pred_node)
-		    if (pred_node->get_text_content() == value) {
+		  foreach (pred_res, mapping(string:string)|Node pred_node) {
+		    if (objectp (pred_node) &&
+			pred_node->get_text_content() == value) {
 		      filtered_res += ({elem});
 		      continue res_loop;
 		    }
+		    else
+		      foreach (pred_node;; string attr_val) {
+			if (attr_val == value) {
+			  filtered_res += ({elem});
+			  continue res_loop;
+			}
+		      }
+		  }
 		}
 		else if (mappingp (pred_res)) {
 		  if (values (pred_res)[0] == value) {
