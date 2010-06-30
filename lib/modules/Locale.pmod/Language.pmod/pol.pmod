@@ -2,9 +2,9 @@
 
 #charset iso-8859-2
 
-//! Polish language locale by Piotr Klaban.
+//! Polish language locale by Piotr Klaban <makler@@man.torun.pl>.
 
-// $Id: pol.pmod,v 1.2 2002/11/24 15:34:17 marcus Exp $
+// $Id: pol.pmod,v 1.3 2010/06/30 13:20:48 grubba Exp $
 
 inherit "abstract";
 
@@ -42,9 +42,9 @@ constant languages=([
 ]);
 
 constant months = ({
-  "Styczeñ", "Luty", "Marzec", "Kwiecieñ", "Maj",
-  "Czerwiec", "Lipiec", "Sierpieñ", "Wrzesieñ", "Pa¼dziernik",
-  "Listopad", "Grudzieñ" });
+  "Stycznia", "Lutego", "Marzca", "Kwietnia", "Maja",
+  "Czerwca", "Lipca", "Sierpnia", "Wrze¶nia", "Pa¼dziernika",
+  "Listopada", "Grudnia" });
 
 constant days = ({
   "Niedziela","Poniedzia³ek","Wtorek","¦roda",
