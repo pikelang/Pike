@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.196 2008/09/08 11:31:16 grubba Exp $
+|| $Id: pike_memory.c,v 1.197 2010/07/01 13:42:49 grubba Exp $
 */
 
 #include "global.h"
@@ -309,7 +309,10 @@ PMOD_EXPORT void *debug_xrealloc(void *m, size_t s)
 
 PMOD_EXPORT void *debug_xcalloc(size_t n, size_t s)
 {
-  return calloc(n,s);
+  size_t sz = n * s;
+  void *ret = xalloc(sz);
+  MEMSET(ret, 0, sz);
+  return ret;
 }
 
 PMOD_EXPORT char *debug_xstrdup(const char *src)
