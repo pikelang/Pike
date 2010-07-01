@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dmalloc.h,v 1.68 2008/09/04 20:31:07 mast Exp $
+|| $Id: dmalloc.h,v 1.69 2010/07/01 13:40:58 grubba Exp $
 */
 
 #ifndef DMALLOC_H
@@ -141,13 +141,14 @@ char *dmalloc_find_name(void *p);
 #define debug_malloc_touch_named_bt(X,NAME) debug_malloc_update_location_bt ((void *)(X), __FILE__, __LINE__, (NAME))
 
 #define xalloc(X) ((void *)debug_malloc_update_location((void *)debug_xalloc(X), DMALLOC_NAMED_LOCATION(" xalloc")))
+#define xcalloc(N, S) ((void *)debug_malloc_update_location((void *)debug_xcalloc(N, S), DMALLOC_NAMED_LOCATION(" xcalloc")))
 #define xfree(X) debug_xfree(debug_malloc_update_location((X), DMALLOC_NAMED_LOCATION(" free")))
 PMOD_EXPORT void debug_malloc_dump_references(void *x, int indent, int depth, int flags);
 #define dmalloc_touch(TYPE,X) ((TYPE) debug_malloc_pass (X))
 #define dmalloc_touch_named(TYPE,X,NAME) ((TYPE) debug_malloc_pass_named (X, NAME))
 void debug_malloc_dump_fd(int fd);
-#define dmalloc_touch_svalue(X) do { struct svalue *_tmp = (X); if (_tmp->type <= MAX_REF_TYPE) { debug_malloc_touch(_tmp->u.refs); } } while(0)
-#define dmalloc_touch_svalue_named(X,NAME) do { struct svalue *_tmp = (X); if (_tmp->type <= MAX_REF_TYPE) { debug_malloc_touch_named(_tmp->u.refs,NAME); } } while(0)
+#define dmalloc_touch_svalue(X) do { const struct svalue *_tmp = (X); if (_tmp->type <= MAX_REF_TYPE) { debug_malloc_touch(_tmp->u.refs); } } while(0)
+#define dmalloc_touch_svalue_named(X,NAME) do { const struct svalue *_tmp = (X); if (_tmp->type <= MAX_REF_TYPE) { debug_malloc_touch_named(_tmp->u.refs,NAME); } } while(0)
 
 #define DMALLOC_LINE_ARGS ,char * dmalloc_location
 #define DMALLOC_POS ,DMALLOC_LOCATION()
@@ -210,16 +211,15 @@ PMOD_EXPORT void* dlpvalloc(size_t);
 #define debug_malloc_dump_references(X,x,y,z)
 #define debug_malloc_dump_fd(fd)
 #define xalloc debug_xalloc
+#define xcalloc debug_xcalloc
 
 #if defined(DYNAMIC_MODULE) && defined(__NT__) && !defined(USE_DLL)
 #define xmalloc debug_xmalloc
-#define xcalloc debug_xcalloc
 #define xrealloc debug_xrealloc
 #define xfree debug_xfree
 #define xstrdup debug_xstrdup
 #else
 #define xmalloc malloc
-#define xcalloc calloc
 #define xrealloc realloc
 #define xfree free
 #define xstrdup strdup
