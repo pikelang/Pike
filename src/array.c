@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.226 2009/11/28 13:36:20 mast Exp $
+|| $Id: array.c,v 1.227 2010/07/01 09:16:05 grubba Exp $
 */
 
 #include "global.h"
@@ -116,11 +116,9 @@ PMOD_EXPORT struct array *real_allocate_array(ptrdiff_t size,
   INIT_PIKE_MEMOBJ(v);
   DOUBLELINK (first_array, v);
 
-  for(e=0;e<v->size;e++)
-  {
-    ITEM(v)[e].type=T_INT;
-    ITEM(v)[e].subtype=NUMBER_NUMBER;
-    ITEM(v)[e].u.integer=0;
+  MEMSET(v->real_item, 0, sizeof(struct svalue) * size);
+  for(e=0;e<size;e++) {
+    v->item[e].type=T_INT;
   }
 
   return v;
