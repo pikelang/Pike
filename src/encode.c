@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.293 2010/02/11 17:03:08 grubba Exp $
+|| $Id: encode.c,v 1.294 2010/07/01 11:25:18 grubba Exp $
 */
 
 #include "global.h"
@@ -3572,7 +3572,7 @@ static void decode_value2(struct decode_data *data)
 	      decode_error(Pike_sp - 1, NULL, "Placeholder already has storage!\n");
 	    } else {
 	      placeholder->storage=p->storage_needed ?
-		(char *)xalloc(p->storage_needed) :
+		(char *)xcalloc(p->storage_needed, 1) :
 		(char *)NULL;
 	      call_c_initializers(placeholder);
 	    }
@@ -4681,7 +4681,7 @@ static void decode_value2(struct decode_data *data)
 	    free_program(placeholder->prog);
 	    add_ref(placeholder->prog = p);
 	    placeholder->storage = p->storage_needed ?
-	      (char *)xalloc(p->storage_needed) :
+	      (char *)xcalloc(p->storage_needed, 1) :
 	      (char *)NULL;
 	    call_c_initializers(placeholder);
 	    if (!data->delay_counter) {

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.777 2010/05/19 09:32:22 grubba Exp $
+|| $Id: program.c,v 1.778 2010/07/01 11:25:21 grubba Exp $
 */
 
 #include "global.h"
@@ -8262,7 +8262,7 @@ static int run_pass1(struct compilation *c)
 #endif
       debug_malloc_touch(c->placeholder);
       c->placeholder->storage=c->p->storage_needed ?
-	(char *)xalloc(c->p->storage_needed) :
+	(char *)xcalloc(c->p->storage_needed, 1) :
 	(char *)NULL;
       call_c_initializers(c->placeholder);
     }

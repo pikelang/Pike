@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.308 2010/04/19 13:50:10 mast Exp $
+|| $Id: object.c,v 1.309 2010/07/01 11:25:18 grubba Exp $
 */
 
 #include "global.h"
@@ -114,7 +114,7 @@ PMOD_EXPORT struct object *low_clone(struct program *p)
 
   o=alloc_object();
 
-  o->storage=p->storage_needed ? (char *)xalloc(p->storage_needed) : (char *)NULL;
+  o->storage=p->storage_needed ? (char *)xcalloc(p->storage_needed, 1) : (char *)NULL;
 
   GC_ALLOC(o);
 
@@ -236,6 +236,13 @@ PMOD_EXPORT void call_c_initializers(struct object *o)
   struct program *p=o->prog;
   struct pike_frame *pike_frame=0;
   int frame_pushed = 0;
+
+  /* NOTE: This function is only called for objects straight after
+   *       low_clone(), or after an explicit xcalloc(), which implies
+   *       that the storage (if any) has been zeroed.
+   */
+
+  if (!p->storage_needed) return;
   
   /* clear globals and call C initializers */
   for(e=p->num_inherits-1; e>=0; e--)
@@ -258,20 +265,15 @@ PMOD_EXPORT void call_c_initializers(struct object *o)
 	  struct svalue *s;
 	  s=(struct svalue *)(storage + prog->identifiers[d].func.offset);
 	  s->type=T_INT;
-	  s->u.integer=0;
-	  s->subtype=0;
-	} else {
+#ifdef NEED_CUSTOM_IEEE
+	} else if (prog->identifiers[d].run_time_type == T_FLOAT) {
+	  /* Note: In IEEE representations the value 0.0 is represented as all
+	   *       zeros, and the default initialization is thus sufficient.
+	   */
 	  union anything *u;
 	  u=(union anything *)(storage + prog->identifiers[d].func.offset);
-	  switch(prog->identifiers[d].run_time_type)
-	  {
-	    case PIKE_T_FREE:
-	    case PIKE_T_GET_SET:
-	      break;
-	    case T_INT: u->integer=0; break;
-	    case T_FLOAT: u->float_number=0.0; break;
-	    default: u->refs=0; break;
-	  }
+	  u->float_number=0.0;
+#endif /* NEED_CUSTOM_IEEE */
 	}
 	(void) debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" clear_global"));
       }
