@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.c,v 1.206 2009/11/20 10:58:09 grubba Exp $
+|| $Id: docode.c,v 1.207 2010/07/01 17:23:51 grubba Exp $
 */
 
 #include "global.h"
@@ -921,7 +921,21 @@ static int do_docode2(node *n, int flags)
 	    emit2(F_EXTERNAL, n->u.integer.b, level);
 	  }
 	} else if (level) {
-	  emit2(F_EXTERNAL, n->u.integer.b, level);
+	  if (IDENTIFIER_IS_CONSTANT(id->identifier_flags) &&
+	      (ref->id_flags & ID_INLINE) && !ref->inherit_offset &&
+	      (id->func.offset >= 0)) {
+	    /* An inline, local or final constant identifier in
+	     * a lexically surrounding (aka parent) class.
+	     * Avoid vtable traversal during runtime by moving
+	     * the constant to this class.
+	     */
+	    int tmp1 = store_constant(&state->new_program->
+				      constants[id->func.offset].sval,
+				      1, NULL);
+	    emit1(F_CONSTANT, tmp1);
+	  } else {
+	    emit2(F_EXTERNAL, n->u.integer.b, level);
+	  }
 	} else if (n->u.integer.b == IDREF_MAGIC_THIS) {
 	  emit1(F_THIS_OBJECT, 0);
 	} else if(IDENTIFIER_IS_FUNCTION(id->identifier_flags) &&
@@ -931,6 +945,13 @@ static int do_docode2(node *n, int flags)
 	   * can't zero, i.e. when we know the function isn't just a
 	   * prototype. */
 	  emit1(F_LFUN, n->u.integer.b);
+	} else if (IDENTIFIER_IS_CONSTANT(id->identifier_flags) &&
+		   (ref->id_flags & ID_INLINE) && !ref->inherit_offset &&
+		   (id->func.offset >= 0)) {
+	  /* An inline, local or final constant identifier.
+	   * No need for vtable traversal during runtime.
+	   */
+	  emit1(F_CONSTANT, id->func.offset);
 	}else{
 	  emit1(F_GLOBAL, n->u.integer.b);
 	}
@@ -997,7 +1018,6 @@ static int do_docode2(node *n, int flags)
     INT32 *prev_switch_jumptable = current_switch.jumptable;
     int adroppings , bdroppings;
     current_switch.jumptable=0;
-
 
     if(!CDDR(n))
     {
