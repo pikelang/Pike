@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.c,v 1.207 2010/07/01 17:23:51 grubba Exp $
+|| $Id: docode.c,v 1.208 2010/07/04 12:16:06 grubba Exp $
 */
 
 #include "global.h"
@@ -929,10 +929,16 @@ static int do_docode2(node *n, int flags)
 	     * Avoid vtable traversal during runtime by moving
 	     * the constant to this class.
 	     */
-	    int tmp1 = store_constant(&state->new_program->
-				      constants[id->func.offset].sval,
-				      1, NULL);
-	    emit1(F_CONSTANT, tmp1);
+	    struct svalue *s = &state->new_program->
+	      constants[id->func.offset].sval;
+	    if (s->type == T_PROGRAM &&
+		s->u.program->flags & PROGRAM_USES_PARENT) {
+	      /* An external reference is required. */
+	      emit2(F_EXTERNAL, n->u.integer.b, level);
+	    } else {
+	      int tmp1 = store_constant(s, 1, NULL);
+	      emit1(F_CONSTANT, tmp1);
+	    }
 	  } else {
 	    emit2(F_EXTERNAL, n->u.integer.b, level);
 	  }
@@ -951,7 +957,15 @@ static int do_docode2(node *n, int flags)
 	  /* An inline, local or final constant identifier.
 	   * No need for vtable traversal during runtime.
 	   */
-	  emit1(F_CONSTANT, id->func.offset);
+	  struct svalue *s = &state->new_program->
+	    constants[id->func.offset].sval;
+	  if (s->type == T_PROGRAM &&
+	      s->u.program->flags & PROGRAM_USES_PARENT) {
+	    /* Program using parent. Convert to an LFUN. */
+	    emit1(F_LFUN, n->u.integer.b);
+	  } else {
+	    emit1(F_CONSTANT, id->func.offset);
+	  }
 	}else{
 	  emit1(F_GLOBAL, n->u.integer.b);
 	}
