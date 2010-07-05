@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: jvm.c,v 1.94 2010/06/03 09:07:25 grubba Exp $
+|| $Id: jvm.c,v 1.95 2010/07/05 09:03:47 grubba Exp $
 */
 
 /*
@@ -168,12 +168,19 @@ static const char *pike_jni_error(jint errcode)
     return "thread detached from the VM";
   case JNI_EVERSION:
     return "JNI version error";
+    /* The following error codes are not available in old jvms. */
+#ifdef JNI_ENOMEM
   case JNI_ENOMEM:
     return "not enough memory";
+#endif
+#ifdef JNI_EEXIST
   case JNI_EEXIST:
     return "VM already created";
+#endif
+#ifdef JNI_EINVAL
   case JNI_EINVAL:
     return "invalid arguments";
+#endif
   }
   return "unknown error";
 }
