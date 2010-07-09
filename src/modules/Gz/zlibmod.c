@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: zlibmod.c,v 1.89 2010/06/24 18:56:11 jonasw Exp $
+|| $Id: zlibmod.c,v 1.90 2010/07/09 12:52:58 nilsson Exp $
 */
 
 #include "global.h"
@@ -85,7 +85,7 @@ struct zipper
  */
 
 /*! @decl void create(int(-9..9)|void level, int|void strategy,@
- *!                   int(8..15) window_size)
+ *!                   int(8..15)|void window_size)
  *!
  *! This function can also be used to re-initialize a Gz.deflate object
  *! so it can be re-used.
@@ -146,8 +146,8 @@ static void gz_deflate_create(INT32 args)
   if(args>2)
   {
     if(sp[2-args].type != T_INT)
-      Pike_error("Bad argument 2 to gz->create()\n");
-    wbits = sp[1-args].u.integer;
+      Pike_error("Bad argument 3 to gz->create()\n");
+    wbits = sp[2-args].u.integer;
     if( wbits == 0 ) wbits = 15;
     if( wbits < 8 || wbits > 15 )
       Pike_error("Invalid window size for gz_deflate->create().\n");
