@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.309 2010/07/01 11:25:18 grubba Exp $
+|| $Id: object.c,v 1.310 2010/07/11 10:08:02 grubba Exp $
 */
 
 #include "global.h"
@@ -242,8 +242,6 @@ PMOD_EXPORT void call_c_initializers(struct object *o)
    *       that the storage (if any) has been zeroed.
    */
 
-  if (!p->storage_needed) return;
-  
   /* clear globals and call C initializers */
   for(e=p->num_inherits-1; e>=0; e--)
   {
