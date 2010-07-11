@@ -1,7 +1,7 @@
 #! /usr/bin/env pike
 #pike __REAL_VERSION__
 
-/* $Id: test_pike.pike,v 1.140 2010/02/22 20:18:43 srb Exp $ */
+/* $Id: test_pike.pike,v 1.141 2010/07/11 11:58:25 mast Exp $ */
 
 constant description = "Executes tests according to testsuite files.";
 
@@ -523,6 +523,9 @@ int main(int argc, array(string) argv)
 #endif
       }
     }
+
+  // For easy access in spawned test scripts.
+  putenv ("TEST_VERBOSITY", (string) verbose);
 
   if (watchdog_pid) {
 #if defined(__NT__) && !constant(thread_create)
