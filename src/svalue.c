@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.260 2010/05/27 23:17:09 mast Exp $
+|| $Id: svalue.c,v 1.261 2010/07/11 12:39:10 jonasw Exp $
 */
 
 #include "global.h"
@@ -1896,49 +1896,50 @@ PMOD_EXPORT void copy_svalues_recursively_no_free(struct svalue *to,
 {
   ONERROR err;
   int allocated_here = 0;
-  if (!m) {
-    m = allocate_mapping(num);
-    allocated_here = 1;
-    SET_ONERROR(err, do_free_mapping, m);
-  }
   while(num--)
   {
     struct svalue *tmp;
-
+    int from_type = from->type;
+    
     check_svalue_type (from);
     check_refs(from);
-
-    if ((tmp = low_mapping_lookup(m, from))) {
-      *to = *tmp;
-      if (tmp->type <= MAX_REF_TYPE) add_ref(tmp->u.dummy);
-      to++;
-      from++;
-      continue;
+    
+    if (from_type == T_ARRAY ||
+	from_type == T_MAPPING ||
+	from_type == T_MULTISET) {
+      /* Recursive data */
+      if (m && (tmp = low_mapping_lookup(m, from))) {
+	*to = *tmp;
+	if (tmp->type <= MAX_REF_TYPE) add_ref(tmp->u.dummy);
+      } else {
+#define ALLOC_DUPL_MAPPING(type_hint)				\
+	do if (!m && (type_hint) & BIT_COMPLEX) {		\
+	    m = allocate_mapping(num && 1);			\
+	    allocated_here = 1;					\
+	    SET_ONERROR(err, do_free_mapping, m);		\
+	  } while (0)
+	  
+	if (from_type == T_ARRAY) {
+	  struct array *ar = from->u.array;
+	  ALLOC_DUPL_MAPPING(ar->type_field);
+	  to->u.array = copy_array_recursively(ar, m);
+	} else if (from_type == T_MAPPING) {
+	  struct mapping *ma = from->u.mapping;
+	  ALLOC_DUPL_MAPPING(m_ind_types(ma) | m_val_types(ma));
+	  to->u.mapping = copy_mapping_recursively(ma, m);
+	} else {
+	  struct multiset *mu = from->u.multiset;
+	  ALLOC_DUPL_MAPPING(multiset_ind_types(mu) | multiset_val_types(mu));
+	  to->u.multiset = copy_multiset_recursively(mu, m);
+	}
+	to->type = from_type;
+#undef ALLOC_DUPL_MAPPING
+      }
+    } else {
+      *to = *from;
+      if (from_type <= MAX_REF_TYPE) add_ref(from->u.array);
     }
-
-    switch(from->type)
-    {
-    default:
-      *to=*from;
-      if(from->type <= MAX_REF_TYPE) add_ref(from->u.array);
-      break;
-
-    case T_ARRAY:
-      to->u.array=copy_array_recursively(from->u.array,m);
-      to->type=T_ARRAY;
-      break;
-
-    case T_MAPPING:
-      to->u.mapping=copy_mapping_recursively(from->u.mapping,m);
-      to->type=T_MAPPING;
-      break;
-
-    case T_MULTISET:
-      to->u.multiset=copy_multiset_recursively(from->u.multiset,m);
-      to->type=T_MULTISET;
-      break;
-    }
-    mapping_insert(m, from, to);
+    
     to++;
     from++;
   }

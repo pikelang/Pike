@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.119 2009/11/28 13:36:20 mast Exp $
+|| $Id: multiset.c,v 1.120 2010/07/11 12:39:10 jonasw Exp $
 */
 
 #include "global.h"
@@ -3745,13 +3745,15 @@ struct multiset *copy_multiset_recursively (struct multiset *l,
   add_ref (new.msd2 = msd);
   SET_ONERROR (uwp, free_tree_build_data, &new);
 
-  aa.type = T_MULTISET;
-  aa.subtype = 0;
-  aa.u.multiset = l;
-  bb.type = T_MULTISET;
-  bb.subtype = 0;
-  bb.u.multiset = new.l;
-  mapping_insert(p, &aa, &bb);
+  if (p) {
+    aa.type = T_MULTISET;
+    aa.subtype = 0;
+    aa.u.multiset = l;
+    bb.type = T_MULTISET;
+    bb.subtype = 0;
+    bb.u.multiset = new.l;
+    mapping_insert(p, &aa, &bb);
+  }
 
   node = low_multiset_first (msd);
   pos = 0;

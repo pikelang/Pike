@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.228 2010/07/11 12:30:45 jonasw Exp $
+|| $Id: array.c,v 1.229 2010/07/11 12:39:11 jonasw Exp $
 */
 
 #include "global.h"
@@ -2439,14 +2439,16 @@ PMOD_EXPORT struct array *copy_array_recursively(struct array *a,
   }
 
   ret=allocate_array_no_init(a->size,0);
-
-  aa.type = T_ARRAY;
-  aa.subtype = 0;
-  aa.u.array = a;
-  bb.type = T_ARRAY;
-  bb.subtype = 0;
-  bb.u.array = ret;
-  low_mapping_insert(m, &aa, &bb, 1);
+  
+  if (m) {
+    aa.type = T_ARRAY;
+    aa.subtype = 0;
+    aa.u.array = a;
+    bb.type = T_ARRAY;
+    bb.subtype = 0;
+    bb.u.array = ret;
+    low_mapping_insert(m, &aa, &bb, 1);
+  }
 
   ret->flags = a->flags & ~ARRAY_LVALUE;
 

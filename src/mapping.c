@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.216 2010/05/31 10:18:26 mast Exp $
+|| $Id: mapping.c,v 1.217 2010/07/11 12:39:11 jonasw Exp $
 */
 
 #include "global.h"
@@ -2152,14 +2152,16 @@ PMOD_EXPORT struct mapping *copy_mapping_recursively(struct mapping *m,
     return copy_mapping(m);
 
   ret=allocate_mapping(MAP_SLOTS(m->data->size));
-
-  aa.type = T_MAPPING;
-  aa.subtype = 0;
-  aa.u.mapping = m;
-  bb.type = T_MAPPING;
-  bb.subtype = 0;
-  bb.u.mapping = ret;
-  mapping_insert(p, &aa, &bb);
+  
+  if (p) {
+    aa.type = T_MAPPING;
+    aa.subtype = 0;
+    aa.u.mapping = m;
+    bb.type = T_MAPPING;
+    bb.subtype = 0;
+    bb.u.mapping = ret;
+    mapping_insert(p, &aa, &bb);
+  }
 
   ret->data->flags = m->data->flags;
 
