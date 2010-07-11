@@ -673,7 +673,7 @@ int main(int argc, array(string) argv)
 	  skipped += sub_skipped;
 	  if (sub_failed) failure = 1;
 	}
-	if (verbose)
+	if (verbose > 1)
 	  werror("Accumulated: %d tests, %d failed, %d skipped\n",
 		 successes + errors, errors, skipped);
 	if (failure) werror ("\n");
