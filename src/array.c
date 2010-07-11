@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.227 2010/07/01 09:16:05 grubba Exp $
+|| $Id: array.c,v 1.228 2010/07/11 12:30:45 jonasw Exp $
 */
 
 #include "global.h"
@@ -80,7 +80,6 @@ PMOD_EXPORT struct array *real_allocate_array(ptrdiff_t size,
 					      ptrdiff_t extra_space)
 {
   struct array *v;
-  ptrdiff_t e;
 
   if(size+extra_space == 0)
   {
@@ -115,10 +114,12 @@ PMOD_EXPORT struct array *real_allocate_array(ptrdiff_t size,
   v->size = DO_NOT_WARN((INT32)size);
   INIT_PIKE_MEMOBJ(v);
   DOUBLELINK (first_array, v);
-
-  MEMSET(v->real_item, 0, sizeof(struct svalue) * size);
-  for(e=0;e<size;e++) {
-    v->item[e].type=T_INT;
+  
+  {
+    struct svalue *item = ITEM(v);
+    struct svalue *item_end = item + v->size;
+    while (item < item_end)
+      *item++ = svalue_int_zero;
   }
 
   return v;
@@ -2432,8 +2433,9 @@ PMOD_EXPORT struct array *copy_array_recursively(struct array *a,
 #endif
 
   if (!a->size) {
-    add_ref(&empty_array);
-    return array_set_flags(&empty_array, a->flags);
+    ret = (a->flags & ARRAY_WEAK_FLAG) ? &weak_empty_array : &empty_array;
+    add_ref(ret);
+    return ret;
   }
 
   ret=allocate_array_no_init(a->size,0);
