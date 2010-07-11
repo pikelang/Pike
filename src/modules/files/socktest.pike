@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.58 2010/02/21 13:28:17 srb Exp $ */
+/* $Id: socktest.pike,v 1.59 2010/07/11 11:48:42 mast Exp $ */
 
 // #define OOB_DEBUG
 
@@ -47,7 +47,15 @@ Pike.BACKEND backend = Pike.BACKEND();
 //int idnum;
 //mapping in_cleanup=([]);
 
+int num_tests;
+
 int delayed_failure = 0;
+
+void exit_test (int failure)
+{
+  Tools.Testsuite.report_result (max (num_tests - !!failure, 0), !!failure);
+  exit (failure);
+}
 
 void fd_fail()
 {
@@ -75,7 +83,7 @@ void fd_fail()
     write("\n");
   }
 #endif /* constant(Stdio.get_all_active_fd) */
-  exit(1);
+  exit_test(1);
 }
 
 class Socket {
@@ -130,7 +138,7 @@ class Socket {
 	predef::write(num+":Expected data: "+sizeof(expected_data)+" bytes.\n");
       }
 
-      exit(1);
+      exit_test(1);
     }
 
     input_finished++;
@@ -154,7 +162,7 @@ class Socket {
 	output_buffer=output_buffer[tmp..];
       } else {
 	predef::write("Failed to write all data.\n");
-	exit(1);
+	exit_test(1);
       }
     }else{
       set_write_callback(0);
@@ -223,7 +231,7 @@ class Socket2
 	output_buffer=output_buffer[tmp..];
       } else {
 	predef::write("Failed to write all data.\n");
-	exit(1);
+	exit_test(1);
       }
     }else{
       set_write_callback(0);
@@ -299,7 +307,7 @@ void got_oob1(mixed ignored, string got)
     write(sprintf("\nloopback: Received unexpected oob data "
 		   "(0x%02x != 0x%02x)\n",
 		   got[0], expected[0]));
-    exit(1);
+    exit_test(1);
   }
   oob_loopback->set_write_oob_callback(send_oob1);
 }
@@ -325,7 +333,7 @@ void got_oob0(mixed ignored, string got)
     write(sprintf("\nloopback: Received unexpected oob data "
 		   "(0x%02x != 0x%02x)\n",
 		   got[0], expected[0]));
-    exit(1);
+    exit_test(1);
   }
   oob_sent++;
   if (oob_sent >
@@ -377,7 +385,7 @@ array(object(Socket)) stdtest()
       /* No IPv6 support on this machine (Solaris). */
       write("Connect failed: Network unreachable.\n"
 	    "IPv6 not configured?\n");
-      exit(0);
+      exit_test(0);
     }
 #endif /* ENETUNREACH */
 #if constant(System.EADDRNOTAVAIL)
@@ -385,7 +393,7 @@ array(object(Socket)) stdtest()
       /* No IPv6 support on this machine (OSF/1). */
       write("Connect failed: Address not available.\n"
 	    "IPv6 not configured?\n");
-      exit(0);
+      exit_test(0);
     }
 #endif /* ENETUNREACH */
 #endif /* IPV6 */
@@ -484,6 +492,7 @@ void finish()
     int tests;
 
     _tests++;
+    num_tests++;
 #ifdef IPV6
     // Linux 2.6.x seems to hang when running out of IPV6 ports
     // on the loopback. Give it some time to clean up its act...
@@ -618,7 +627,7 @@ void finish()
 
     default:
       write("\n");
-      exit(delayed_failure);
+      exit_test(delayed_failure);
       break;
     }
   }
@@ -704,7 +713,7 @@ int main(int argc, array(string) argv)
       /* No IPv6 support at all. */
       write("\nBind failed: Invalid address.\n"
 	     "IPv6 addresses not supported.\n");
-      exit(0);
+      exit_test(0);
     }
 #endif /* IPV6 */
     throw(err);
@@ -718,7 +727,7 @@ int main(int argc, array(string) argv)
       /* No IPv6 support on this machine (Linux). */
       write("\nBind failed: Address family not supported.\n"
 	     "IPv6 not supported.\n");
-      exit(0);      
+      exit_test(0);
     }
 #endif /* EAFNOSUPPORT */
 #if constant(System.EPROTONOSUPPORT)
@@ -726,7 +735,7 @@ int main(int argc, array(string) argv)
       /* No IPv6 support on this machine (FreeBSD). */
       write("\nBind failed: Protocol not supported.\n"
 	     "IPv6 not supported.\n");
-      exit(0);      
+      exit_test(0);
     }
 #endif /* EAFNOSUPPORT */
 #endif /* IPV6 */

@@ -1,3 +1,9 @@
+void exit_test (int failure)
+{
+  Tools.Testsuite.report_result (1 - !!failure, !!failure);
+  exit (failure);
+}
+
 #ifndef TEST_NORMAL
 
 #define PRE "connecttest (closed): "
@@ -6,7 +12,7 @@ void fail()
 { 
 // can't connect to socket - this is what we expect
    write(PRE "everything ok\n");
-   exit(0); // ok
+   exit_test(0); // ok
 }
 
 void ok()
@@ -18,7 +24,7 @@ void ok()
       write(PRE "socket still open (??)"
 	     " (port %d)\n",z);
 
-   exit(1);      
+   exit_test(1);
 }
 
 #else
@@ -28,7 +34,7 @@ void ok()
 void fail()
 { 
    write(PRE "can't connect to open port; failure reported\n");
-   exit(1); // fail
+   exit_test(1); // fail
 }
 
 void ok()
@@ -38,13 +44,13 @@ void ok()
    {
       write(PRE "connected ok, but socket closed"
 	     " (port %d)\n",z);
-      exit (1);
+      exit_test (1);
    }
    else
    {
       write(PRE "everything ok"
 	     " (port %d)\n",z);
-      exit (0);
+      exit_test (0);
    }
 }
 
@@ -56,7 +62,7 @@ void timeout()
 {
    write(PRE "timeout - connection neither succeded "
 	  "nor failed\n");
-   exit(1);
+   exit_test(1);
 }
 
 object f=Stdio.File();
@@ -67,7 +73,7 @@ int main()
 {
    if (!p->bind(0)) {
      write(PRE "failed to bind a port: %s.\n", strerror(p->errno()));
-     exit(1);
+     exit_test(1);
    }
    z = (int)(p->query_address()/" ")[-1];
 //     write("port: %d\n",z);
@@ -92,16 +98,16 @@ int main()
       write(PRE "failed to connect "
 	     "to neither \"localhost\" nor \"127.0.0.1\"\n");
       write(PRE "reporting ok\n");
-      return 0;
+      exit_test (0);
    } else if (!ok) {
      write(PRE "connect() failed with errno %d: %s\n",
 	    f->errno(), strerror(f->errno()));
 #ifdef TEST_NORMAL
      write(PRE "reporting failure\n");
-     return 1;
+     exit_test (1);
 #else
      write(PRE "reporting ok\n");
-     return 0;
+     exit_test (0);
 #endif
    }
    call_out(timeout, 10);

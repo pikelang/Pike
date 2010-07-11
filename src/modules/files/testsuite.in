@@ -304,20 +304,9 @@ cond([[ all_constants()->testdir ]],
 ]])
 
 define(run_sub_test, [[
-  test_any([[
-    array(string) args = $1;
-    Process.Process proc = Process.create_process(RUNPIKE_ARRAY + args);
-    __watchdog_new_pid (proc->pid());
-    int code = proc->wait();
-    __watchdog_new_pid (getpid());
-    if (!code) return 0;
-    if (code == -1) {
-      return sprintf("Test program %O died of signal %d.",
-		     args, proc->last_signal());
-    }
-    return sprintf("Test program %O exited with code %d.",
-		   args, code);
-  ]], 0)
+  test_tests([[
+    array a() {return Tools.Testsuite.run_script ($1);}
+  ]])
 ]])
 
 run_sub_test(({"SRCDIR/socktest.pike"}))
