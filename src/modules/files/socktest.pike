@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.60 2010/07/11 15:15:42 mast Exp $ */
+/* $Id: socktest.pike,v 1.61 2010/07/11 15:18:09 mast Exp $ */
 
 // #define OOB_DEBUG
 
@@ -13,7 +13,7 @@
 #endif
 
 #ifdef SOCK_DEBUG
-#define DEBUG_WERR(X...)	predef::write(X)
+#define DEBUG_WERR(X...)	log(X)
 #else /* !SOCK_DEBUG */
 #define DEBUG_WERR(X...)
 #endif /* SOCK_DEBUG */
@@ -44,10 +44,22 @@ Pike.BACKEND backend = Pike.BACKEND();
 #endif
 #endif
 
+constant log = Tools.Testsuite.log;
+
 //int idnum;
 //mapping in_cleanup=([]);
 
 int num_tests, num_failed;
+
+string log_prefix = "";
+
+void log_status (string msg, mixed... args)
+{
+  if (sizeof (args)) msg = sprintf (msg, @args);
+  if (msg != "")
+    msg = log_prefix + msg;
+  Tools.Testsuite.log_status (msg);
+}
 
 void exit_test (int failure)
 {
@@ -56,30 +68,31 @@ void exit_test (int failure)
   exit (failure);
 }
 
-void fd_fail()
+void fd_fail (string msg, mixed... args)
 {
+  log (msg, @args);
 #if constant(Stdio.get_all_active_fd)
   array(int) fds = sort(Stdio.get_all_active_fd());
 
   if (sizeof(fds)) {
-    write("%d open fds:\n", sizeof(fds));
+    log("%d open fds:\n", sizeof(fds));
     int i;
     for(i=0; i < sizeof(fds); i++) {
       if (i) {
-	write(", %d", fds[i]);
+	log(", %d", fds[i]);
       } else {
-	write("  %d", fds[i]);
+	log("  %d", fds[i]);
       }
       int j;
       for (j = i; j+1 < sizeof(fds); j++) {
 	if (fds[j+1] != fds[j]+1) break;
       }
       if (j != i) {
-	write(" - %d", fds[j]);
+	log(" - %d", fds[j]);
 	i = j;
       }
     }
-    write("\n");
+    log("\n");
   }
 #endif /* constant(Stdio.get_all_active_fd) */
   exit_test(1);
@@ -121,20 +134,20 @@ class Socket {
     got_callback();
     if(input_buffer != expected_data)
     {
-      predef::write("Failed to read complete data, errno=%d, %O.\n",
-		    err, strerror(err));
+      log("Failed to read complete data, errno=%d, %O.\n",
+	  err, strerror(err));
       if(sizeof(input_buffer) < 100)
       {
-	predef::write(num+":Input buffer: "+input_buffer+"\n");
+	log(num+":Input buffer: "+input_buffer+"\n");
       }else{
-	predef::write(num+":Input buffer: "+sizeof(input_buffer)+" bytes.\n");
+	log(num+":Input buffer: "+sizeof(input_buffer)+" bytes.\n");
       }
 
       if(sizeof(expected_data) < 100)
       {
-	predef::write(num+":Expected data: "+expected_data+"\n");
+	log(num+":Expected data: "+expected_data+"\n");
       }else{
-	predef::write(num+":Expected data: "+sizeof(expected_data)+" bytes.\n");
+	log(num+":Expected data: "+sizeof(expected_data)+" bytes.\n");
       }
 
       exit_test(1);
@@ -160,7 +173,7 @@ class Socket {
       {
 	output_buffer=output_buffer[tmp..];
       } else {
-	predef::write("Failed to write all data.\n");
+	log("Failed to write all data.\n");
 	exit_test(1);
       }
     }else{
@@ -181,8 +194,7 @@ class Socket {
   void read_oob_callback(mixed id, string foo)
   {
     got_callback();
-    predef::write("Got unexpected out of band data on %O: %O", query_fd(), foo);
-    fd_fail();
+    fd_fail("Got unexpected out of band data on %O: %O", query_fd(), foo);
   }
 
   void create(object|void o)
@@ -197,8 +209,7 @@ class Socket {
     }else{
       if(!open_socket(0, ANY))
       {
-	predef::write("Failed to open socket: "+strerror(errno())+"\n");
-	fd_fail();
+	fd_fail("Failed to open socket: "+strerror(errno())+"\n");
       }
     }
 #ifdef BACKEND
@@ -222,14 +233,15 @@ class Socket2
       int prerefs = _refs ("%s");
       int tmp=write(({"%s"}), output_buffer);
       if (_refs ("%s") != prerefs) {
-	predef::write ("Format string leak from %d to %d.\n", prerefs, _refs ("%s"));
-	exit (1);
+	log ("Format string leak from %d to %d.\n",
+	     prerefs, _refs ("%s"));
+	exit_test (1);
       }
       if(tmp >= 0)
       {
 	output_buffer=output_buffer[tmp..];
       } else {
-	predef::write("Failed to write all data.\n");
+	log("Failed to write all data.\n");
 	exit_test(1);
       }
     }else{
@@ -243,8 +255,7 @@ class Socket2
 
 void die()
 {
-  write("No callbacks for %d seconds!\n", SOCKTEST_TIMEOUT);
-  fd_fail();
+  fd_fail("No callbacks for %d seconds!\n", SOCKTEST_TIMEOUT);
 }
 
 int max_fds = 1024;
@@ -256,10 +267,10 @@ void got_callback()
 {
   counter++;
 #ifdef OOB_DEBUG
-  predef::write(sprintf("%c\b","|/-\\" [ counter & 3 ]));
+  Tools.Testsuite.log_twiddler();
 #else /* !OOB_DEBUG */
-  if(verbose && !(counter & 0xf))
-    predef::write(sprintf("%c\b","|/-\\" [ (counter>>4) & 3 ]));
+  if(!(counter & 0xf))
+    Tools.Testsuite.log_twiddler();
 #endif /* OOB_DEBUG */
 #ifdef BACKEND
   backend->remove_call_out(die);
@@ -303,9 +314,9 @@ void got_oob1(mixed ignored, string got)
 #endif
   got_callback();
   if (got != expected) {
-    write(sprintf("\nloopback: Received unexpected oob data "
-		   "(0x%02x != 0x%02x)\n",
-		   got[0], expected[0]));
+    log("loopback: Received unexpected oob data "
+	"(0x%02x != 0x%02x)\n",
+	got[0], expected[0]);
     exit_test(1);
   }
   oob_loopback->set_write_oob_callback(send_oob1);
@@ -329,9 +340,9 @@ void got_oob0(mixed ignored, string got)
 #endif
   got_callback();
   if (got != expected) {
-    write(sprintf("\nloopback: Received unexpected oob data "
-		   "(0x%02x != 0x%02x)\n",
-		   got[0], expected[0]));
+    log("loopback: Received unexpected oob data "
+	"(0x%02x != 0x%02x)\n",
+	got[0], expected[0]);
     exit_test(1);
   }
   oob_sent++;
@@ -382,33 +393,32 @@ array(object(Socket)) stdtest()
 #if constant(System.ENETUNREACH)
     if (sock->errno() == System.ENETUNREACH) {
       /* No IPv6 support on this machine (Solaris). */
-      write("Connect failed: Network unreachable.\n"
-	    "IPv6 not configured?\n");
+      log("Connect failed: Network unreachable.\n"
+	  "IPv6 not configured?\n");
       exit_test(0);
     }
 #endif /* ENETUNREACH */
 #if constant(System.EADDRNOTAVAIL)
     if (sock->errno() == System.EADDRNOTAVAIL) {
       /* No IPv6 support on this machine (OSF/1). */
-      write("Connect failed: Address not available.\n"
-	    "IPv6 not configured?\n");
+      log("Connect failed: Address not available.\n"
+	  "IPv6 not configured?\n");
       exit_test(0);
     }
 #endif /* ENETUNREACH */
 #endif /* IPV6 */
     if (sock->errno() == System.EADDRINUSE) {
       /* Out of sockets on the loopback interface? */
-      write("\nConnect failed: Address in use. Dropping socket.\n");
+      log("Connect failed: Address in use. Dropping socket.\n");
       // This is supposed to let go of the socket and consider this
       // socket a success
       sock->input_finished=sock->output_finished=1;
       sock->cleanup();
       return 0;
     }
-    write("\nConnect failed: (%d, %O)\n",
-	  sock->errno(), strerror(sock->errno()));
     sleep(1);
-    fd_fail();
+    fd_fail("Connect failed: (%d, %O)\n",
+	    sock->errno(), strerror(sock->errno()));
   }
   while(0);
   got_callback();
@@ -416,10 +426,9 @@ array(object(Socket)) stdtest()
   sock2=port2::accept();
   if(!sock2)
   {
-    write("Accept returned 0, errno: %d, %O\n",
-	  port2::errno(), strerror(port2::errno()));
     sleep(1);
-    fd_fail();
+    fd_fail("Accept returned 0, errno: %d, %O\n",
+	    port2::errno(), strerror(port2::errno()));
   }
 #ifdef BACKEND
   sock2->set_backend(backend);
@@ -447,9 +456,8 @@ array(object) spair(int type)
     sock2=port2::accept();
     if(!sock2)
     {
-      write("Accept returned 0, errno: %d, %O\n",
-	    port2::errno(), strerror(port2::errno()));
-      fd_fail();
+      fd_fail("Accept returned 0, errno: %d, %O\n",
+	      port2::errno(), strerror(port2::errno()));
     }
   }else{
     sock2=sock1->pipe(Stdio.PROP_BIDIRECTIONAL |
@@ -457,9 +465,8 @@ array(object) spair(int type)
 		      Stdio.PROP_SHUTDOWN);
     if(!sock2)
     {
-      write("File->pipe() failed 0, errno: %d, %O\n",
-	    sock1->errno(), strerror(sock1->errno()));
-      fd_fail();
+      fd_fail("File->pipe() failed 0, errno: %d, %O\n",
+	      sock1->errno(), strerror(sock1->errno()));
     }
   }
 #ifdef BACKEND
@@ -469,16 +476,6 @@ array(object) spair(int type)
 }
 
 mixed keeper;
-
-void test_write(string str)
-{
-  if( verbose )
-    write("\n" + str);
-  else
-    write("\r                                                       \r" + str);
-  //  else
-  //    write("Test %d\r", _tests);
-}
 
 void finish()
 {
@@ -500,13 +497,13 @@ void finish()
     switch(_tests)
     {
       case 1:
-	test_write("Testing dup & assign. ");
+	log_status("Testing dup & assign");
 	sock1=stdtest()[0];
 	sock1->assign(sock1->dup());
 	break;
 	
       case 2:
-	test_write("Testing accept. ");
+	log_status("Testing accept");
 	string data1 = "foobar" * 4711;
 	for(int e=0;e<10;e++)
 	{
@@ -517,7 +514,7 @@ void finish()
 	break;
 	
       case 3:
-	test_write("Testing uni-directional shutdown on socket ");
+	log_status("Testing uni-directional shutdown on socket");
 	socks=spair(0);
 	num_running=1;
 	socks[1]->set_nonblocking(lambda() {},lambda(){},finish);
@@ -526,7 +523,7 @@ void finish()
 	break;
 
       case 4:
-	test_write("Testing uni-directional shutdown on pipe ");
+	log_status("Testing uni-directional shutdown on pipe");
 	socks=spair(1);
 	num_running=1;
 	socks[1]->set_nonblocking(lambda() {},lambda(){},finish);
@@ -536,7 +533,7 @@ void finish()
 
       case 5..13:
 	tests=(_tests-2)*2;
-	test_write("Testing "+(tests*2)+" sockets. ");
+	log_status("Testing "+(tests*2)+" sockets");
 	for(int e=0;e<tests;e++) stdtest();
 	stdtest();
 	break;
@@ -545,7 +542,7 @@ void finish()
 	if (max_fds > 64) {
 	  /* These tests require mare than 64 open fds. */
 	  tests=(_tests-2)*2;
-	  test_write("Testing "+(tests*2)+" sockets. ");
+	  log_status("Testing "+(tests*2)+" sockets");
 	  for(int e=0;e<tests;e++) stdtest();
 	  stdtest();
 	  break;
@@ -556,7 +553,7 @@ void finish()
 
       case 27..48:
 	tests=_tests-25;
-	test_write("Copying "+((tests/2)*(2<<(tests/2))*11)+" bytes of data on "+(tests&~1)+" "+(tests&1?"pipes":"sockets")+" ");
+	log_status("Copying "+((tests/2)*(2<<(tests/2))*11)+" bytes of data on "+(tests&~1)+" "+(tests&1?"pipes":"sockets"));
 	for(int e=0;e<tests/2;e++)
 	{
 	  string data1 = "foobar" * (2<<(tests/2));
@@ -566,8 +563,7 @@ void finish()
 	  sock2=socks[1];
 	  if(!sock2)
 	  {
-	    write("Failed to open pipe: "+strerror(sock1->errno())+".\n");
-	    fd_fail();
+	    fd_fail("Failed to open pipe: "+strerror(sock1->errno())+".\n");
 	  }
 	  sock1=Socket(sock1);
 	  sock2=Socket(sock2);
@@ -581,7 +577,7 @@ void finish()
 	break;
 
       case 49: {
-	test_write ("Testing leak in write(). ");
+	log_status ("Testing leak in write()");
 	string data1="foobar" * 20;
 	string data2="fubar" * 20;
 	socks=spair(1);
@@ -589,8 +585,7 @@ void finish()
 	sock2=socks[1];
 	if(!sock2)
 	{
-	  write("Failed to open pipe: "+strerror(sock1->errno())+".\n");
-	  fd_fail();
+	  fd_fail("Failed to open pipe: "+strerror(sock1->errno())+".\n");
 	}
 	sock1=Socket2(sock1);
 	sock2=Socket2(sock2);
@@ -606,16 +601,16 @@ void finish()
 #if constant(Stdio.__OOB__)
     case 50:
       if (Stdio.__OOB__ >= 3) {
-	test_write("Testing out-of-band data. ");
+	log_status("Testing out-of-band data");
 	start();
 	socks = spair(0);
 	oob_originator = socks[0];
 	oob_loopback = socks[1];
 #ifdef OOB_DEBUG
-	write("originator: %O\n"
-	       "loopback: %O\n",
-	       oob_originator,
-	       oob_loopback);
+	log("originator: %O\n"
+	    "loopback: %O\n",
+	    oob_originator,
+	    oob_loopback);
 #endif /* OOB_DEBUG */
       
 	socks[0]->set_nonblocking(0,0,0,got_oob0,send_oob0);
@@ -625,12 +620,12 @@ void finish()
 #endif /* constant(Stdio.__OOB__) */
 
     default:
-      write("\n");
+      // log_status("");
       exit_test(0);
       break;
     }
   }
-//  write("FINISHED with FINISH %d\n",_tests);
+//  log("FINISHED with FINISH %d\n",_tests);
 }
 
 void accept_callback()
@@ -638,8 +633,8 @@ void accept_callback()
   object o=port1::accept();
   if(!o)
   {
-    write("Accept failed, errno: %d, %O\n",
-	  port1::errno(), strerror(port1::errno()));
+    fd_fail("Accept failed, errno: %d, %O\n",
+	    port1::errno(), strerror(port1::errno()));
   }
 #ifdef BACKEND
   o->set_backend(backend);
@@ -650,18 +645,18 @@ void accept_callback()
 
 int main(int argc, array(string) argv)
 {
-  string testargs=getenv()->TESTARGS;
-  argv += testargs?(testargs/" "):({});
-  if(has_value(argv[1..], "-v") || has_value(argv[1..], "--verbose"))
-    verbose=1;
+  verbose = (int) (getenv()->TEST_VERBOSITY || 2);
 
-  write("\nSocket test");
+  if (verbose) {
+    string greeting = "Socket test";
 #ifdef BACKEND
-  write(" using " DEFINETOSTRING(BACKEND));
+    greeting += " using " DEFINETOSTRING(BACKEND);
 #endif
 #ifdef IPV6
-  write(" in IPv6 mode");
+    greeting += " in IPv6 mode";
 #endif /* IPV6 */
+    log_status (greeting + "\n");
+  }
 
 #if constant(System.getrlimit)
   array(int) file_limit = System.getrlimit("nofile");
@@ -673,32 +668,39 @@ int main(int argc, array(string) argv)
 	max_fds = file_limit[1];
       }
     }
-    if( verbose )
-      write("\n"
-            "Available fds: %d\n", max_fds);
+    if( verbose > 1 )
+      log("Available fds: %d\n", max_fds);
   }
 #endif /* constant(System.getrlimit) */
 
 #if constant(fork)
-  write("\nForking...");
+#if 0
+  log("Forking...\n");
+#endif
   object pid;
   num_tests++;
   if (mixed err = catch { pid = fork(); }) {
     num_failed++;
-    write(" failed.\n");
+    log("Fork failed: %s", describe_error (err));
   } else if (pid) {
     int res = pid->wait();
     if (res) {
       if (res == -1) {
-	write("\nChild died of signal %d\n", pid->last_signal());
+	log("Child died of signal %d\n", pid->last_signal());
       } else {
-	write("\nChild failed with errcode %d\n", res);
+	log("Child failed with errcode %d\n", res);
       }
       num_failed++;
     }
-    write("\nRunning in parent...\n");
+#if 0
+    log("Running in parent...\n");
+#endif
+    log_prefix = "Parent: ";
   } else {
-    write(" ok.\n");
+#if 0
+    log("Fork ok.\n");
+#endif
+    log_prefix = "Child: ";
   }
 #endif /* constant(fork) */
 
@@ -712,8 +714,8 @@ int main(int argc, array(string) argv)
 #ifdef IPV6
     if (has_prefix(describe_error(err), "Invalid address")) {
       /* No IPv6 support at all. */
-      write("\nBind failed: Invalid address.\n"
-	     "IPv6 addresses not supported.\n");
+      log("Bind failed: Invalid address.\n"
+	  "IPv6 addresses not supported.\n");
       exit_test(0);
     }
 #endif /* IPV6 */
@@ -726,31 +728,30 @@ int main(int argc, array(string) argv)
 #if constant(System.EAFNOSUPPORT)
     if (port1::errno() == System.EAFNOSUPPORT) {
       /* No IPv6 support on this machine (Linux). */
-      write("\nBind failed: Address family not supported.\n"
-	     "IPv6 not supported.\n");
+      log("Bind failed: Address family not supported.\n"
+	  "IPv6 not supported.\n");
       exit_test(0);
     }
 #endif /* EAFNOSUPPORT */
 #if constant(System.EPROTONOSUPPORT)
     if (port1::errno() == System.EPROTONOSUPPORT) {
       /* No IPv6 support on this machine (FreeBSD). */
-      write("\nBind failed: Protocol not supported.\n"
-	     "IPv6 not supported.\n");
+      log("Bind failed: Protocol not supported.\n"
+	  "IPv6 not supported.\n");
       exit_test(0);
     }
 #endif /* EAFNOSUPPORT */
 #endif /* IPV6 */
-    write("Bind failed. (%d, %O)\n", port1::errno(), strerror(port1::errno()));
-    fd_fail();
+    fd_fail("Bind failed. (%d, %O)\n",
+	    port1::errno(), strerror(port1::errno()));
   }
   DEBUG_WERR("port1: %O\n", port1::query_address());
   sscanf(port1::query_address(),"%*s %d",portno1);
 
   if(!port2::bind(0, 0, ANY) || !port2::query_address())
   {
-    write("Bind failed(2). (%d, %O)\n",
-	  port2::errno(), strerror(port2::errno()));
-    fd_fail();
+    fd_fail("Bind failed(2). (%d, %O)\n",
+	    port2::errno(), strerror(port2::errno()));
   }
   DEBUG_WERR("port2: %O\n", port2::query_address());
   sscanf(port2::query_address(),"%*s %d",portno2);
@@ -760,7 +761,6 @@ int main(int argc, array(string) argv)
   _tests=49;
   finish();
 #else /* !OOB_DEBUG */
-  test_write("\nDoing simple tests. ");
   stdtest();
 #endif /* OOB_DEBUG */
 

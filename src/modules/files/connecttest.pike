@@ -1,3 +1,6 @@
+constant log = Tools.Testsuite.log;
+constant log_status = Tools.Testsuite.log_status;
+
 void exit_test (int failure)
 {
   Tools.Testsuite.report_result (1 - !!failure, !!failure);
@@ -11,18 +14,17 @@ void exit_test (int failure)
 void fail()
 { 
 // can't connect to socket - this is what we expect
-   write(PRE "everything ok\n");
    exit_test(0); // ok
 }
 
 void ok()
 {
    if (f->write("hej")==-1)
-      write(PRE "succeeded to connect to closed socket"
-	     " (port %d)\n",z);
+     log(PRE "succeeded to connect to closed socket"
+	 " (port %d)\n",z);
    else
-      write(PRE "socket still open (??)"
-	     " (port %d)\n",z);
+     log(PRE "socket still open (??)"
+	 " (port %d)\n",z);
 
    exit_test(1);
 }
@@ -33,7 +35,7 @@ void ok()
 
 void fail()
 { 
-   write(PRE "can't connect to open port; failure reported\n");
+   log(PRE "can't connect to open port; failure reported\n");
    exit_test(1); // fail
 }
 
@@ -42,14 +44,12 @@ void ok()
 // can connect to socket - this is what we expect
    if (f->write("hej")==-1)
    {
-      write(PRE "connected ok, but socket closed"
-	     " (port %d)\n",z);
+      log(PRE "connected ok, but socket closed"
+	  " (port %d)\n",z);
       exit_test (1);
    }
    else
    {
-      write(PRE "everything ok"
-	     " (port %d)\n",z);
       exit_test (0);
    }
 }
@@ -60,8 +60,8 @@ void rcb(){}
 
 void timeout()
 {
-   write(PRE "timeout - connection neither succeded "
-	  "nor failed\n");
+   log(PRE "timeout - connection neither succeded "
+       "nor failed\n");
    exit_test(1);
 }
 
@@ -72,7 +72,7 @@ object p=Stdio.Port();
 int main()
 {
    if (!p->bind(0)) {
-     write(PRE "failed to bind a port: %s.\n", strerror(p->errno()));
+     log(PRE "failed to bind a port: %s.\n", strerror(p->errno()));
      exit_test(1);
    }
    z = (int)(p->query_address()/" ")[-1];
@@ -83,7 +83,7 @@ int main()
    p = 0;
 #endif
 
-   write(PRE "using port %d\n",z);
+   log_status(PRE "using port %d",z);
 
    sleep(0.1);
    
@@ -95,18 +95,18 @@ int main()
    if (catch { ok = f->connect("127.0.0.1",z); } &&
        catch { ok = f->connect("localhost",z); })
    {
-      write(PRE "failed to connect "
-	     "to neither \"localhost\" nor \"127.0.0.1\"\n");
-      write(PRE "reporting ok\n");
+#if 0
+      log(PRE "failed to connect "
+	  "to neither \"localhost\" nor \"127.0.0.1\"\n");
+      log(PRE "reporting ok\n");
+#endif
       exit_test (0);
    } else if (!ok) {
-     write(PRE "connect() failed with errno %d: %s\n",
-	    f->errno(), strerror(f->errno()));
 #ifdef TEST_NORMAL
-     write(PRE "reporting failure\n");
+     log(PRE "connect() failed with errno %d: %s\n",
+	 f->errno(), strerror(f->errno()));
      exit_test (1);
 #else
-     write(PRE "reporting ok\n");
      exit_test (0);
 #endif
    }
