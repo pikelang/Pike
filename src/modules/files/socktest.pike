@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.61 2010/07/11 15:18:09 mast Exp $ */
+/* $Id: socktest.pike,v 1.62 2010/07/11 18:28:11 mast Exp $ */
 
 // #define OOB_DEBUG
 
@@ -13,7 +13,7 @@
 #endif
 
 #ifdef SOCK_DEBUG
-#define DEBUG_WERR(X...)	log(X)
+#define DEBUG_WERR(X...)	log_msg(X)
 #else /* !SOCK_DEBUG */
 #define DEBUG_WERR(X...)
 #endif /* SOCK_DEBUG */
@@ -44,7 +44,7 @@ Pike.BACKEND backend = Pike.BACKEND();
 #endif
 #endif
 
-constant log = Tools.Testsuite.log;
+constant log_msg = Tools.Testsuite.log_msg;
 
 //int idnum;
 //mapping in_cleanup=([]);
@@ -70,29 +70,29 @@ void exit_test (int failure)
 
 void fd_fail (string msg, mixed... args)
 {
-  log (msg, @args);
+  log_msg (msg, @args);
 #if constant(Stdio.get_all_active_fd)
   array(int) fds = sort(Stdio.get_all_active_fd());
 
   if (sizeof(fds)) {
-    log("%d open fds:\n", sizeof(fds));
+    log_msg("%d open fds:\n", sizeof(fds));
     int i;
     for(i=0; i < sizeof(fds); i++) {
       if (i) {
-	log(", %d", fds[i]);
+	log_msg(", %d", fds[i]);
       } else {
-	log("  %d", fds[i]);
+	log_msg("  %d", fds[i]);
       }
       int j;
       for (j = i; j+1 < sizeof(fds); j++) {
 	if (fds[j+1] != fds[j]+1) break;
       }
       if (j != i) {
-	log(" - %d", fds[j]);
+	log_msg(" - %d", fds[j]);
 	i = j;
       }
     }
-    log("\n");
+    log_msg("\n");
   }
 #endif /* constant(Stdio.get_all_active_fd) */
   exit_test(1);
@@ -134,20 +134,20 @@ class Socket {
     got_callback();
     if(input_buffer != expected_data)
     {
-      log("Failed to read complete data, errno=%d, %O.\n",
-	  err, strerror(err));
+      log_msg("Failed to read complete data, errno=%d, %O.\n",
+	      err, strerror(err));
       if(sizeof(input_buffer) < 100)
       {
-	log(num+":Input buffer: "+input_buffer+"\n");
+	log_msg(num+":Input buffer: "+input_buffer+"\n");
       }else{
-	log(num+":Input buffer: "+sizeof(input_buffer)+" bytes.\n");
+	log_msg(num+":Input buffer: "+sizeof(input_buffer)+" bytes.\n");
       }
 
       if(sizeof(expected_data) < 100)
       {
-	log(num+":Expected data: "+expected_data+"\n");
+	log_msg(num+":Expected data: "+expected_data+"\n");
       }else{
-	log(num+":Expected data: "+sizeof(expected_data)+" bytes.\n");
+	log_msg(num+":Expected data: "+sizeof(expected_data)+" bytes.\n");
       }
 
       exit_test(1);
@@ -173,7 +173,7 @@ class Socket {
       {
 	output_buffer=output_buffer[tmp..];
       } else {
-	log("Failed to write all data.\n");
+	log_msg("Failed to write all data.\n");
 	exit_test(1);
       }
     }else{
@@ -233,15 +233,15 @@ class Socket2
       int prerefs = _refs ("%s");
       int tmp=write(({"%s"}), output_buffer);
       if (_refs ("%s") != prerefs) {
-	log ("Format string leak from %d to %d.\n",
-	     prerefs, _refs ("%s"));
+	log_msg ("Format string leak from %d to %d.\n",
+		 prerefs, _refs ("%s"));
 	exit_test (1);
       }
       if(tmp >= 0)
       {
 	output_buffer=output_buffer[tmp..];
       } else {
-	log("Failed to write all data.\n");
+	log_msg("Failed to write all data.\n");
 	exit_test(1);
       }
     }else{
@@ -314,9 +314,9 @@ void got_oob1(mixed ignored, string got)
 #endif
   got_callback();
   if (got != expected) {
-    log("loopback: Received unexpected oob data "
-	"(0x%02x != 0x%02x)\n",
-	got[0], expected[0]);
+    log_msg("loopback: Received unexpected oob data "
+	    "(0x%02x != 0x%02x)\n",
+	    got[0], expected[0]);
     exit_test(1);
   }
   oob_loopback->set_write_oob_callback(send_oob1);
@@ -340,9 +340,9 @@ void got_oob0(mixed ignored, string got)
 #endif
   got_callback();
   if (got != expected) {
-    log("loopback: Received unexpected oob data "
-	"(0x%02x != 0x%02x)\n",
-	got[0], expected[0]);
+    log_msg("loopback: Received unexpected oob data "
+	    "(0x%02x != 0x%02x)\n",
+	    got[0], expected[0]);
     exit_test(1);
   }
   oob_sent++;
@@ -393,23 +393,23 @@ array(object(Socket)) stdtest()
 #if constant(System.ENETUNREACH)
     if (sock->errno() == System.ENETUNREACH) {
       /* No IPv6 support on this machine (Solaris). */
-      log("Connect failed: Network unreachable.\n"
-	  "IPv6 not configured?\n");
+      log_msg("Connect failed: Network unreachable.\n"
+	      "IPv6 not configured?\n");
       exit_test(0);
     }
 #endif /* ENETUNREACH */
 #if constant(System.EADDRNOTAVAIL)
     if (sock->errno() == System.EADDRNOTAVAIL) {
       /* No IPv6 support on this machine (OSF/1). */
-      log("Connect failed: Address not available.\n"
-	  "IPv6 not configured?\n");
+      log_msg("Connect failed: Address not available.\n"
+	      "IPv6 not configured?\n");
       exit_test(0);
     }
 #endif /* ENETUNREACH */
 #endif /* IPV6 */
     if (sock->errno() == System.EADDRINUSE) {
       /* Out of sockets on the loopback interface? */
-      log("Connect failed: Address in use. Dropping socket.\n");
+      log_msg("Connect failed: Address in use. Dropping socket.\n");
       // This is supposed to let go of the socket and consider this
       // socket a success
       sock->input_finished=sock->output_finished=1;
@@ -607,10 +607,10 @@ void finish()
 	oob_originator = socks[0];
 	oob_loopback = socks[1];
 #ifdef OOB_DEBUG
-	log("originator: %O\n"
-	    "loopback: %O\n",
-	    oob_originator,
-	    oob_loopback);
+	log_msg("originator: %O\n"
+		"loopback: %O\n",
+		oob_originator,
+		oob_loopback);
 #endif /* OOB_DEBUG */
       
 	socks[0]->set_nonblocking(0,0,0,got_oob0,send_oob0);
@@ -625,7 +625,7 @@ void finish()
       break;
     }
   }
-//  log("FINISHED with FINISH %d\n",_tests);
+//  log_msg("FINISHED with FINISH %d\n",_tests);
 }
 
 void accept_callback()
@@ -669,36 +669,36 @@ int main(int argc, array(string) argv)
       }
     }
     if( verbose > 1 )
-      log("Available fds: %d\n", max_fds);
+      log_msg("Available fds: %d\n", max_fds);
   }
 #endif /* constant(System.getrlimit) */
 
 #if constant(fork)
 #if 0
-  log("Forking...\n");
+  log_msg("Forking...\n");
 #endif
   object pid;
   num_tests++;
   if (mixed err = catch { pid = fork(); }) {
     num_failed++;
-    log("Fork failed: %s", describe_error (err));
+    log_msg("Fork failed: %s", describe_error (err));
   } else if (pid) {
     int res = pid->wait();
     if (res) {
       if (res == -1) {
-	log("Child died of signal %d\n", pid->last_signal());
+	log_msg("Child died of signal %d\n", pid->last_signal());
       } else {
-	log("Child failed with errcode %d\n", res);
+	log_msg("Child failed with errcode %d\n", res);
       }
       num_failed++;
     }
 #if 0
-    log("Running in parent...\n");
+    log_msg("Running in parent...\n");
 #endif
     log_prefix = "Parent: ";
   } else {
 #if 0
-    log("Fork ok.\n");
+    log_msg("Fork ok.\n");
 #endif
     log_prefix = "Child: ";
   }
@@ -714,8 +714,8 @@ int main(int argc, array(string) argv)
 #ifdef IPV6
     if (has_prefix(describe_error(err), "Invalid address")) {
       /* No IPv6 support at all. */
-      log("Bind failed: Invalid address.\n"
-	  "IPv6 addresses not supported.\n");
+      log_msg("Bind failed: Invalid address.\n"
+	      "IPv6 addresses not supported.\n");
       exit_test(0);
     }
 #endif /* IPV6 */
@@ -728,16 +728,16 @@ int main(int argc, array(string) argv)
 #if constant(System.EAFNOSUPPORT)
     if (port1::errno() == System.EAFNOSUPPORT) {
       /* No IPv6 support on this machine (Linux). */
-      log("Bind failed: Address family not supported.\n"
-	  "IPv6 not supported.\n");
+      log_msg("Bind failed: Address family not supported.\n"
+	      "IPv6 not supported.\n");
       exit_test(0);
     }
 #endif /* EAFNOSUPPORT */
 #if constant(System.EPROTONOSUPPORT)
     if (port1::errno() == System.EPROTONOSUPPORT) {
       /* No IPv6 support on this machine (FreeBSD). */
-      log("Bind failed: Protocol not supported.\n"
-	  "IPv6 not supported.\n");
+      log_msg("Bind failed: Protocol not supported.\n"
+	      "IPv6 not supported.\n");
       exit_test(0);
     }
 #endif /* EAFNOSUPPORT */

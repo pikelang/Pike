@@ -1,4 +1,4 @@
-constant log = Tools.Testsuite.log;
+constant log_msg = Tools.Testsuite.log_msg;
 constant log_status = Tools.Testsuite.log_status;
 
 void exit_test (int failure)
@@ -20,11 +20,11 @@ void fail()
 void ok()
 {
    if (f->write("hej")==-1)
-     log(PRE "succeeded to connect to closed socket"
-	 " (port %d)\n",z);
+     log_msg(PRE "succeeded to connect to closed socket"
+	     " (port %d)\n",z);
    else
-     log(PRE "socket still open (??)"
-	 " (port %d)\n",z);
+     log_msg(PRE "socket still open (??)"
+	     " (port %d)\n",z);
 
    exit_test(1);
 }
@@ -35,7 +35,7 @@ void ok()
 
 void fail()
 { 
-   log(PRE "can't connect to open port; failure reported\n");
+   log_msg(PRE "can't connect to open port; failure reported\n");
    exit_test(1); // fail
 }
 
@@ -44,8 +44,8 @@ void ok()
 // can connect to socket - this is what we expect
    if (f->write("hej")==-1)
    {
-      log(PRE "connected ok, but socket closed"
-	  " (port %d)\n",z);
+      log_msg(PRE "connected ok, but socket closed"
+	      " (port %d)\n",z);
       exit_test (1);
    }
    else
@@ -60,8 +60,8 @@ void rcb(){}
 
 void timeout()
 {
-   log(PRE "timeout - connection neither succeded "
-       "nor failed\n");
+   log_msg(PRE "timeout - connection neither succeded "
+	   "nor failed\n");
    exit_test(1);
 }
 
@@ -72,7 +72,7 @@ object p=Stdio.Port();
 int main()
 {
    if (!p->bind(0)) {
-     log(PRE "failed to bind a port: %s.\n", strerror(p->errno()));
+     log_msg(PRE "failed to bind a port: %s.\n", strerror(p->errno()));
      exit_test(1);
    }
    z = (int)(p->query_address()/" ")[-1];
@@ -96,15 +96,15 @@ int main()
        catch { ok = f->connect("localhost",z); })
    {
 #if 0
-      log(PRE "failed to connect "
-	  "to neither \"localhost\" nor \"127.0.0.1\"\n");
-      log(PRE "reporting ok\n");
+      log_msg(PRE "failed to connect "
+	      "to neither \"localhost\" nor \"127.0.0.1\"\n");
+      log_msg(PRE "reporting ok\n");
 #endif
       exit_test (0);
    } else if (!ok) {
 #ifdef TEST_NORMAL
-     log(PRE "connect() failed with errno %d: %s\n",
-	 f->errno(), strerror(f->errno()));
+     log_msg(PRE "connect() failed with errno %d: %s\n",
+	     f->errno(), strerror(f->errno()));
      exit_test (1);
 #else
      exit_test (0);

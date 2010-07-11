@@ -20,11 +20,11 @@ array(int) run_script (string|array(string) pike_script)
 protected int verbosity = -1;
 
 protected string last_log;
-// The last message passed to log() if verbosity == 0.
+// The last message passed to log_msg if verbosity == 0.
 
 protected int last_line_length = 0;
 // The length of the last "in place" message (i.e. without trailing
-// newline) passed to log() if verbosity == 1. -1 if the last logged
+// newline) passed to log_msg if verbosity == 1. -1 if the last logged
 // message wasn't "in place". Initialized to 0 to work with subtests,
 // since the main testsuite typically logs an "in place" message just
 // before spawning the subtest.
@@ -36,7 +36,7 @@ void log_start()
 
 protected int twiddler_counter = -1;
 
-void log (string msg, mixed... args)
+void log_msg (string msg, mixed... args)
 //! Logs a testsuite message. The message is shown regardless of the
 //! verbosity level. If the previous message was logged "in place" by
 //! @[log_status] for verbosity 1 then a newline is inserted first.
@@ -76,7 +76,7 @@ void log_status (string msg, mixed... args)
 //! @ul
 //! @item
 //!   If the verbosity is 0 then nothing is logged, but the message is
-//!   saved and will be logged if the next call is to @[log].
+//!   saved and will be logged if the next call is to @[log_msg].
 //! @item
 //!   If the verbosity is 1, the message is "in place" on the current
 //!   line without a trailing line feed, so that the next message will
