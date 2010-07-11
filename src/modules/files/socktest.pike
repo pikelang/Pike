@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.59 2010/07/11 11:48:42 mast Exp $ */
+/* $Id: socktest.pike,v 1.60 2010/07/11 15:15:42 mast Exp $ */
 
 // #define OOB_DEBUG
 
@@ -47,13 +47,12 @@ Pike.BACKEND backend = Pike.BACKEND();
 //int idnum;
 //mapping in_cleanup=([]);
 
-int num_tests;
-
-int delayed_failure = 0;
+int num_tests, num_failed;
 
 void exit_test (int failure)
 {
-  Tools.Testsuite.report_result (max (num_tests - !!failure, 0), !!failure);
+  if (failure) num_failed++;
+  Tools.Testsuite.report_result (max (num_tests - num_failed, 0), num_failed);
   exit (failure);
 }
 
@@ -627,7 +626,7 @@ void finish()
 
     default:
       write("\n");
-      exit_test(delayed_failure);
+      exit_test(0);
       break;
     }
   }
@@ -683,7 +682,9 @@ int main(int argc, array(string) argv)
 #if constant(fork)
   write("\nForking...");
   object pid;
-  if (catch { pid = fork(); }) {
+  num_tests++;
+  if (mixed err = catch { pid = fork(); }) {
+    num_failed++;
     write(" failed.\n");
   } else if (pid) {
     int res = pid->wait();
@@ -693,7 +694,7 @@ int main(int argc, array(string) argv)
       } else {
 	write("\nChild failed with errcode %d\n", res);
       }
-      delayed_failure = 1;
+      num_failed++;
     }
     write("\nRunning in parent...\n");
   } else {
