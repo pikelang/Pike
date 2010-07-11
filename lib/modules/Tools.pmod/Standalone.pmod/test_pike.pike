@@ -229,7 +229,13 @@ class Watchdog
       else {
 	// Buffer up to 100 kb of stdout noise applying to the last
 	// test, so it can be printed out if it hangs or fails.
-	in = replace (in, "\r", "\n");
+
+	// Do away with "\r         \r" lines and convert remaining \r's to \n.
+	array(string) rl = in / "\r";
+	for (int i = 0; i < sizeof (rl) - 2; i++)
+	  if (sscanf (rl[i], "%*[ ]%*c") == 1) rl[i] = 0;
+	in = (rl - ({0})) * "\n";
+
 	string ts = "[" + format_timestamp() + "] ";
 	if (stdout_buf == "" || has_suffix (stdout_buf, "\n"))
 	  stdout_buf += ts;
