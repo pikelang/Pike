@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.120 2010/07/11 12:39:10 jonasw Exp $
+|| $Id: multiset.c,v 1.121 2010/07/11 19:12:02 mast Exp $
 */
 
 #include "global.h"
@@ -3711,6 +3711,7 @@ PMOD_EXPORT void f_aggregate_multiset (INT32 args)
 struct multiset *copy_multiset_recursively (struct multiset *l,
 					    struct mapping *p)
 {
+  int not_complex;
   struct tree_build_data new;
   struct multiset_data *msd = l->msd;
   union msnode *node;
@@ -3718,7 +3719,6 @@ struct multiset *copy_multiset_recursively (struct multiset *l,
   struct svalue ind;
   TYPE_FIELD ind_types, val_types;
   ONERROR uwp;
-  struct svalue aa, bb;
 
   debug_malloc_touch (l);
   debug_malloc_touch (msd);
@@ -3727,33 +3727,40 @@ struct multiset *copy_multiset_recursively (struct multiset *l,
   if (d_flag > 1) check_multiset_type_fields (l);
 #endif
 
-  if (!msd->root || !((msd->ind_types | msd->val_types) & BIT_COMPLEX))
-    return copy_multiset (l);
+  if (msd->root && ((msd->ind_types | msd->val_types) & BIT_COMPLEX)) {
+    not_complex = 0;
 
-  got_values = msd->flags & MULTISET_INDVAL;
+    got_values = msd->flags & MULTISET_INDVAL;
 
-  /* Use a dummy empty msd temporarily in the new multiset, since the
-   * real one is not suitable for general consumption while it's being
-   * built below. This will have the effect that any changes in the
-   * multiset made by other code during the build will change the
-   * dummy msd and will thus be lost afterwards. */
-  new.l = allocate_multiset (0, msd->flags, &msd->cmp_less);
-  new.msd = low_alloc_multiset_data (multiset_sizeof (l), msd->flags);
-  assign_svalue_no_free (&new.msd->cmp_less, &msd->cmp_less);
-  ind_types = 0;
-  val_types = got_values ? 0 : BIT_INT;
-  add_ref (new.msd2 = msd);
-  SET_ONERROR (uwp, free_tree_build_data, &new);
+    /* Use a dummy empty msd temporarily in the new multiset, since the
+     * real one is not suitable for general consumption while it's being
+     * built below. This will have the effect that any changes in the
+     * multiset made by other code during the build will change the
+     * dummy msd and will thus be lost afterwards. */
+    new.l = allocate_multiset (0, msd->flags, &msd->cmp_less);
+    new.msd = low_alloc_multiset_data (multiset_sizeof (l), msd->flags);
+    assign_svalue_no_free (&new.msd->cmp_less, &msd->cmp_less);
+    ind_types = 0;
+    val_types = got_values ? 0 : BIT_INT;
+    add_ref (new.msd2 = msd);
+    SET_ONERROR (uwp, free_tree_build_data, &new);
+  }
+  else {
+    not_complex = 1;
+    new.l = copy_multiset (l);
+  }
 
   if (p) {
+    struct svalue aa, bb;
     aa.type = T_MULTISET;
-    aa.subtype = 0;
     aa.u.multiset = l;
     bb.type = T_MULTISET;
-    bb.subtype = 0;
     bb.u.multiset = new.l;
     mapping_insert(p, &aa, &bb);
   }
+
+  if (not_complex)
+    return new.l;
 
   node = low_multiset_first (msd);
   pos = 0;

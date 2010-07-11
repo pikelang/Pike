@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.217 2010/07/11 12:39:11 jonasw Exp $
+|| $Id: mapping.c,v 1.218 2010/07/11 19:12:01 mast Exp $
 */
 
 #include "global.h"
@@ -2133,11 +2133,11 @@ PMOD_EXPORT void f_aggregate_mapping(INT32 args)
 PMOD_EXPORT struct mapping *copy_mapping_recursively(struct mapping *m,
 						     struct mapping *p)
 {
+  int not_complex;
   struct mapping *ret;
   INT32 e;
   struct keypair *k;
   struct mapping_data  *md;
-  struct svalue aa, bb;
 
 #ifdef PIKE_DEBUG
   if(m->data->refs <=0)
@@ -2148,20 +2148,26 @@ PMOD_EXPORT struct mapping *copy_mapping_recursively(struct mapping *m,
   if(d_flag > 1) check_mapping_type_fields(m);
 #endif
 
-  if(!((m->data->val_types | m->data->ind_types) & BIT_COMPLEX))
-    return copy_mapping(m);
+  if((m->data->val_types | m->data->ind_types) & BIT_COMPLEX) {
+    not_complex = 0;
+    ret=allocate_mapping(MAP_SLOTS(m->data->size));
+  }
+  else {
+    not_complex = 1;
+    ret = copy_mapping(m);
+  }
 
-  ret=allocate_mapping(MAP_SLOTS(m->data->size));
-  
   if (p) {
+    struct svalue aa, bb;
     aa.type = T_MAPPING;
-    aa.subtype = 0;
     aa.u.mapping = m;
     bb.type = T_MAPPING;
-    bb.subtype = 0;
     bb.u.mapping = ret;
     mapping_insert(p, &aa, &bb);
   }
+
+  if (not_complex)
+    return ret;
 
   ret->data->flags = m->data->flags;
 
