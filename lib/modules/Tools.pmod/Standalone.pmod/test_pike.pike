@@ -5,6 +5,9 @@
 
 constant description = "Executes tests according to testsuite files.";
 
+constant log_status = Tools.Testsuite.log_status;
+constant log_msg = Tools.Testsuite.log_msg;
+
 #if !constant(_verify_internals)
 #define _verify_internals()
 #endif
@@ -34,16 +37,15 @@ void print_code(string test)
 					 return sprintf("\\%o", s[0]);
 				       })->feed(test)->drain()/"\n";
   foreach(lines; int r; string line) {
-    werror("%3d: %s\n", r+1, line);
+    log_msg("%3d: %s\n", r+1, line);
   }
-  werror("\n");
+  log_msg("\n");
   return;
 }
 
 void report_size()
 {
 #if 0
-  werror("\n");
   Process.system(sprintf("/usr/proc/bin/pmap %d|tail -1", getpid()));
 #endif
 }
@@ -75,15 +77,15 @@ array find_testsuites(string dir)
 array(string|array(string)) read_tests( string fn ) {
   string|array(string) tests = Stdio.read_file( fn );
   if(!tests) {
-    werror("Failed to read test file %O, errno=%d.\n",
-	   fn, errno());
+    log_msg("Failed to read test file %O, errno=%d.\n",
+	    fn, errno());
     exit(1);
   }
 
   string pike_compat;
   if(sscanf (tests, "START%s\n%s", pike_compat, tests) == 2) {
     if(!has_suffix(tests, "END\n"))
-      werror("%s: Missing end marker.\n", fn);
+      log_msg("%s: Missing end marker.\n", fn);
     else
       tests = tests[..<sizeof ("END\n")];
     pike_compat = String.trim_whites (pike_compat);
@@ -108,7 +110,7 @@ class WarningFlag {
   }
 
   void compile_error(string file, int line, string text) {
-    werror("%s:%d: %s\n", file,line,text);
+    log_msg("%s:%d: %s\n", file,line,text);
   }
 }
 
@@ -128,7 +130,7 @@ class WarningFlag {
 
 // FIXME: Should make WATCHDOG_TIMEOUT even larger when running in valgrind.
 
-#define WATCHDOG_MSG(fmt, x...) werror ("\n[WATCHDOG]: " fmt, x)
+#define WATCHDOG_MSG(fmt, x...) log_msg ("[WATCHDOG]: " fmt, x)
 
 #if 0
 #define WATCHDOG_DEBUG_MSG(fmt, x...) WATCHDOG_MSG (fmt, x)
@@ -214,7 +216,7 @@ class Watchdog
       }
       else if (wd_cmd == "show last") {
 	WATCHDOG_DEBUG_MSG ("Showing output from last test\n");
-	write (stdout_buf);
+	log_msg (stdout_buf);
 	stdout_buf = "";
       }
       else
@@ -282,7 +284,7 @@ class Watchdog
 	  }
 	  if (stdout_buf != "") {
 	    WATCHDOG_MSG ("Output from last test:\n");
-	    write (stdout_buf);
+	    log_msg (stdout_buf);
 	    stdout_buf = "";
 	  }
 	  WATCHDOG_MSG ("%s: Sending SIGABRT to %d.\n", ts, watched_pid);
@@ -396,9 +398,9 @@ int main(int argc, array(string) argv)
 	     {
 	       if(sscanf(p,"%s_bytes",p))
 	       {
-		 werror("%20ss:  %8d   %8d Kb\n",p,
-			x["num_"+p+"s"],
-			x[p+"_bytes"]/1024);
+		 log_msg("%20ss:  %8d   %8d Kb\n",p,
+			 x["num_"+p+"s"],
+			 x[p+"_bytes"]/1024);
 	       }
 	     }
 	   });
@@ -467,8 +469,8 @@ int main(int argc, array(string) argv)
 	  if (i < 0) {
 	    i = search(orig_argv, argv[0]);
 	    if (i < 0) {
-	      werror("Forked operation failed: Failed to find %O in %O\n",
-		     argv[0], orig_argv);
+	      log_msg("Forked operation failed: Failed to find %O in %O\n",
+		      argv[0], orig_argv);
 	      break;
 	    }
 	  } else {
@@ -504,7 +506,7 @@ int main(int argc, array(string) argv)
 	{
 	  object p=Stdio.Port();
 	  p->bind(0);
-	  werror("Debug port is: %s\n",p->query_address());
+	  log_msg("Debug port is: %s\n",p->query_address());
 	  sscanf(p->query_address(),"%*s %d",int portno);
 	  extra_info+=sprintf(" dport:%d",portno);
 	  thread_create(lambda(object p){
@@ -529,13 +531,16 @@ int main(int argc, array(string) argv)
 
   if (watchdog_pid) {
 #if defined(__NT__) && !constant(thread_create)
-    werror("Watchdog not supported on NT without threads.\n");
+    log_msg("Watchdog not supported on NT without threads.\n");
     return 1;
 #else
     Watchdog (watchdog_pid, verbose);
     return -1;
 #endif
   }
+
+  // Avoid an initial empty line when verbose == 1.
+  Tools.Testsuite.log_start();
 
   // FIXME: Make this code more robust!
   args=args[..<argc];
@@ -565,7 +570,7 @@ int main(int argc, array(string) argv)
     if (all_constants()->regression) forked += ({ "--regression" });
     forked += ({"--subprocess"});
     // debug port not propagated.
-    //werror("forked:%O\n", forked);
+    //log_msg("forked:%O\n", forked);
   }
 
   Process.create_process watchdog;
@@ -587,8 +592,8 @@ int main(int argc, array(string) argv)
       Stdio.File pipe_2 = pipe_1->pipe(Stdio.PROP_IPC | Stdio.PROP_NONBLOCK);
 #endif /* __NT__ */
       if (!pipe_2) {
-	werror ("Failed to create pipe for watchdog: %s\n",
-		strerror (pipe_1->errno()));
+	log_msg ("Failed to create pipe for watchdog: %s\n",
+		 strerror (pipe_1->errno()));
 	exit (1);
       }
       pipe_2->dup2 (Stdio.stdout);
@@ -597,7 +602,8 @@ int main(int argc, array(string) argv)
 	(["stdin": pipe_1, "stdout": orig_stdout]));
       pipe_1->close();
       orig_stdout->close();
-      werror ("Forked watchdog pid %d.\n", watchdog->pid());
+      // Note that the following message gets sent to the watchdog.
+      log_msg ("Forked watchdog pid %d.\n", watchdog->pid());
     }
   }
 
@@ -626,9 +632,11 @@ int main(int argc, array(string) argv)
   add_constant("__watchdog_show_last_test", watchdog_show_last_test);
   add_constant("__send_watchdog_command", send_watchdog_command);
   add_constant("_verbose", verbose);
+  add_constant ("log_msg", log_msg);
+  add_constant ("log_status", log_status);
 
   if(!subprocess)
-    werror("Begin tests at %s (pid %d)\n", ctime(time())[..<1], getpid());
+    log_msg("Begin tests at %s (pid %d)\n", ctime(time())[..<1], getpid());
 
   testsuites += Getopt.get_args(argv, 1)[1..];
   foreach(testsuites; int pos; string ts) {
@@ -665,18 +673,19 @@ int main(int argc, array(string) argv)
 	  failure = 1;
 	} else {
 	  [int sub_succeeded, int sub_failed, int sub_skipped] = subres;
-	  if (verbose)
-	    werror("Subresult: %d tests, %d failed, %d skipped\n",
-		   sub_succeeded + sub_failed, sub_failed, sub_skipped);
+	  if (verbose) {
+	    log_status ("");
+	    log_msg("Subresult: %d tests, %d failed, %d skipped\n",
+		    sub_succeeded + sub_failed, sub_failed, sub_skipped);
+	  }
 	  successes += sub_succeeded;
 	  errors += sub_failed;
 	  skipped += sub_skipped;
 	  if (sub_failed) failure = 1;
 	}
 	if (verbose > 1)
-	  werror("Accumulated: %d tests, %d failed, %d skipped\n",
-		 successes + errors, errors, skipped);
-	if (failure) werror ("\n");
+	  log_msg("Accumulated: %d tests, %d failed, %d skipped\n",
+		  successes + errors, errors, skipped);
 	if (fail && errors) {
 	  exit(1);
 	}
@@ -687,10 +696,10 @@ int main(int argc, array(string) argv)
     {
       [string pike_compat, tests] = read_tests( testsuite );
 
-      werror("Doing tests in %s%s (%s)\n", testsuite,
-	     pike_compat ? " in " + pike_compat + " compat mode" : "",
-	     ({sizeof(tests) + " tests",
-	       subprocess && ("pid " + getpid())}) * ", ");
+      log_msg("Doing tests in %s%s (%s)\n", testsuite,
+	      pike_compat ? " in " + pike_compat + " compat mode" : "",
+	      ({sizeof(tests) + " tests",
+		subprocess && ("pid " + getpid())}) * ", ");
       int qmade, qskipped, qmadep, qskipp;
 
       int testno, testline;
@@ -730,12 +739,12 @@ int main(int argc, array(string) argv)
 
 	    if(err) {
 	      if (err && err->is_cpp_or_compilation_error)
-		werror( "\nConditional %d%s failed.\n",
-			e+1, testline?" (line "+testline+")":"");
+		log_msg( "Conditional %d%s failed.\n",
+			 e+1, testline?" (line "+testline+")":"");
 	      else
-		werror( "\nConditional %d%s failed:\n"
-			"%s\n", e+1, testline?" (line "+testline+")":"",
-			describe_backtrace(err) );
+		log_msg( "Conditional %d%s failed:\n"
+			 "%s\n", e+1, testline?" (line "+testline+")":"",
+			 describe_backtrace(err) );
 	      errors++;
 	      tmp = -1;
 	    }
@@ -747,7 +756,7 @@ int main(int argc, array(string) argv)
 	  if(tmp==-1)
 	  {
 	    if(verbose>1)
-	      werror("Not doing test "+(e+1)+"\n");
+	      log_msg("Not doing test "+(e+1)+"\n");
 	    successes++;
 	    skipped++;
 	    skip=1;
@@ -768,23 +777,26 @@ int main(int argc, array(string) argv)
 
 	watchdog_start_new_test ("Test %d at %s:%d", e + 1, testfile, testline);
 
-	string pad_on_error = "\n";
 	if(maybe_tty && Stdio.Terminfo.is_tty())
         {
 	  if(verbose == 1) {
-	    werror("test %d, line %d\r", e+1, testline);
-	    pad_on_error = "                                        \r";
+	    // \r isn't necessary here if everyone uses
+	    // Tools.Testsuite.{log_msg|log_status}, but it avoids
+	    // messy lines for all the tests that just write directly.
+	    log_status ("test %d, line %d\r", e+1, testline);
 	  }
 	}
 	else if(verbose > 1){
 	  if(skip) {
-	    if(qmade) werror(" Made %d test%s.\n", qmade, qmade==1?"":"s");
+	    if(qmade)
+	      log_msg("Made %d test%s.\n", qmade, qmade==1?"":"s");
 	    qmade=0;
 	    qskipp=1;
 	    qskipped++;
 	  }
 	  else {
-	    if(qskipped) werror(" Skipped %d test%s.\n", qskipped, qskipped==1?"":"s");
+	    if(qskipped)
+	      log_msg("Skipped %d test%s.\n", qskipped, qskipped==1?"":"s");
 	    qskipped=0;
 	    qmadep=1;
 	    qmade++;
@@ -797,28 +809,28 @@ int main(int argc, array(string) argv)
 	  switch( (e-start) % 50)
 	  {
 	  case 0:
-	    werror("%5d: ", e);
+	    log_msg("%5d: ", e);
 	    // fallthrough
 
 	  default:
-	    werror(skip?"-":"+");
+	    log_msg(skip?"-":"+");
 	    break;
 		
 	  case 9:
 	  case 19:
 	  case 29:
 	  case 39:
-	    werror(skip?"- ":"+ ");
+	    log_msg(skip?"- ":"+ ");
 	    break;
 
 	  case 49:
-	    werror(skip?"-\n":"+\n");
+	    log_msg(skip?"-\n":"+\n");
 	  }
 	}
 	if(skip) continue;
 
 	if (!testfile || !testno || !type) {
-	  werror ("%sInvalid format in test file: %O\n", pad_on_error, type);
+	  log_msg ("Invalid format in test file: %O\n", type);
 	  errors++;
 	  continue;
 	}
@@ -836,8 +848,8 @@ int main(int argc, array(string) argv)
 
 	if(verbose>1)
 	{
-	  werror("Doing test %d (%d total) at %s:%d%s\n",
-		 testno, successes+errors+1, testfile, testline, extra_info);
+	  log_msg("Doing test %d (%d total) at %s:%d%s\n",
+		  testno, successes+errors+1, testfile, testline, extra_info);
 	  if(verbose>2) print_code(test);
 	}
 
@@ -904,10 +916,9 @@ int main(int argc, array(string) argv)
 	    _dmalloc_set_name();
 	    master()->set_inhibit_compile_errors(0);
 	    if (objectp (err) && err->is_cpp_or_compilation_error)
-	      werror ("%s%s failed.\n", pad_on_error, fname);
+	      log_msg ("%s failed.\n", fname);
 	    else
-	      werror ("%s%s failed:\n%s", pad_on_error, fname,
-		      describe_backtrace (err));
+	      log_msg ("%s failed:\n%s", fname, describe_backtrace (err));
 	    print_code(test);
 	    errors++;
 	  }
@@ -916,8 +927,8 @@ int main(int argc, array(string) argv)
 	    master()->set_inhibit_compile_errors(0);
 
 	    if(wf->warning) {
-	      werror(pad_on_error + fname + " produced warning.\n");
-	      werror("%{%s\n%}", wf->warnings);
+	      log_msg (fname + " produced warning.\n");
+	      log_msg ("%{%s\n%}", wf->warnings);
 	      print_code(test);
 	      errors++;
 	      break;
@@ -938,16 +949,16 @@ int main(int argc, array(string) argv)
 	    }
 	    else {
 	      _dmalloc_set_name();
-	      werror("%s%s failed.\n"
-		     "Expected compile error, got another kind of error:\n%s",
-		     pad_on_error, fname, describe_backtrace (err));
+	      log_msg ("%s failed.\n"
+		       "Expected compile error, got another kind of error:\n%s",
+		       fname, describe_backtrace (err));
 	      print_code(test);
 	      errors++;
 	    }
 	  }
 	  else {
 	    _dmalloc_set_name();
-	    werror(pad_on_error + fname + " failed (expected compile error).\n");
+	    log_msg (fname + " failed (expected compile error).\n");
 	    print_code(test);
 	    errors++;
 	  }
@@ -962,10 +973,9 @@ int main(int argc, array(string) argv)
 	  {
 	    _dmalloc_set_name();
 	    if (objectp (err) && err->is_cpp_or_compilation_error)
-	      werror ("%s%s failed.\n", pad_on_error, fname);
+	      log_msg ("%s failed.\n", fname);
 	    else
-	      werror ("%s%s failed:\n%s", pad_on_error, fname,
-		      describe_backtrace (err));
+	      log_msg ("%s failed:\n%s", fname, describe_backtrace (err));
 	    print_code(test);
 	    errors++;
 	  }
@@ -974,7 +984,7 @@ int main(int argc, array(string) argv)
 	    if( wf->warning )
 	      successes++;
 	    else {
-	      werror(pad_on_error + fname + " failed (expected compile warning).\n");
+	      log_msg(fname + " failed (expected compile warning).\n");
 	      print_code(test);
 	      errors++;
 	    }
@@ -1001,13 +1011,13 @@ int main(int argc, array(string) argv)
 	    _dmalloc_set_name();
 	    successes++;
 	    if(verbose>3)
-	      werror("Time in a(): %f\n",at);
+	      log_msg("Time in a(): %f\n",at);
 	  }
 	  else {
 	    watchdog_show_last_test();
 	    _dmalloc_set_name();
-	    werror(pad_on_error + fname + " failed (expected eval error).\n");
-	    werror("Got %O\n", a);
+	    log_msg("%s failed (expected eval error).\n"
+		    "Got %O\n", fname, a);
 	    print_code(test);
 	    errors++;
 	  }
@@ -1045,8 +1055,8 @@ int main(int argc, array(string) argv)
 	    if(check > 1) _verify_internals();
 
 	    if(wf->warning) {
-	      werror(pad_on_error + fname + " produced warning.\n");
-	      werror("%{%s\n%}", wf->warnings);
+	      log_msg("%s produced warning.\n"
+		      "%{%s\n%}", fname, wf->warnings);
 	      print_code(test);
 	      errors++;
 	      break;
@@ -1058,10 +1068,9 @@ int main(int argc, array(string) argv)
 	    master()->set_inhibit_compile_errors(0);
 	    watchdog_show_last_test();
 	    if (objectp (err) && err->is_cpp_or_compilation_error)
-	      werror ("%s%s failed.\n", pad_on_error, fname);
+	      log_msg ("%s failed.\n", fname);
 	    else
-	      werror ("%s%s failed:\n%s\n",
-		      pad_on_error, fname, describe_backtrace (err));
+	      log_msg ("%s failed:\n%s\n", fname, describe_backtrace (err));
 	    print_code(test);
 	    errors++;
 	    break;
@@ -1070,19 +1079,19 @@ int main(int argc, array(string) argv)
 	  if( o->__cpp_line != o->__rtl_line ||
 	      ( computed_line && computed_line!=o->__cpp_line))
 	    {
-	      werror(pad_on_error + fname + " Line numbering failed.\n");
+	      log_msg(fname + " Line numbering failed.\n");
 	      print_code(to_compile);
-	      werror("   Preprocessed:\n");
+	      log_msg("   Preprocessed:\n");
 	      print_code(cpp(to_compile, testsuite));
-	      werror("   CPP lines: %d\n",o->__cpp_line);
-	      werror("   RTL lines: %d\n",o->__rtl_line);
+	      log_msg("   CPP lines: %d\n",o->__cpp_line);
+	      log_msg("   RTL lines: %d\n",o->__rtl_line);
 	      if(computed_line)
-		werror("Actual lines: %d\n",computed_line);
+		log_msg("Actual lines: %d\n",computed_line);
 	      errors++;
 	    }
 
 	  if(verbose>2)
-	    werror("Time in a(): %f, Time in b(): %O\n",at,bt);
+	    log_msg("Time in a(): %f, Time in b(): %O\n",at,bt);
 	
 	  switch(type)
 	  {
@@ -1090,9 +1099,9 @@ int main(int argc, array(string) argv)
 	    if(a)
 	    {
 	      watchdog_show_last_test();
-	      werror(pad_on_error + fname + " failed.\n");
+	      log_msg(fname + " failed.\n");
 	      print_code(test);
-	      werror(sprintf("o->a(): %O\n",a));
+	      log_msg("o->a(): %O\n",a);
 	      errors++;
 	    }
 	    else {
@@ -1104,9 +1113,9 @@ int main(int argc, array(string) argv)
 	    if(!a)
 	    {
 	      watchdog_show_last_test();
-	      werror(pad_on_error + fname + " failed.\n");
+	      log_msg(fname + " failed.\n");
 	      print_code(test);
-	      werror(sprintf("o->a(): %O\n",a));
+	      log_msg("o->a(): %O\n",a);
 	      errors++;
 	    }
 	    else {
@@ -1117,9 +1126,9 @@ int main(int argc, array(string) argv)
 	  case "PUSH_WARNING":
 	    if (!stringp(a)) {
 	      watchdog_show_last_test();
-	      werror(pad_on_error + fname + " failed.\n");
+	      log_msg(fname + " failed.\n");
 	      print_code(test);
-	      werror(sprintf("o->a(): %O\n", a));
+	      log_msg("o->a(): %O\n", a);
 	    } else {
 	      pushed_warnings[a]++;
 	    }
@@ -1128,18 +1137,18 @@ int main(int argc, array(string) argv)
 	  case "POP_WARNING":
 	    if (!stringp(a)) {
 	      watchdog_show_last_test();
-	      werror(pad_on_error + fname + " failed.\n");
+	      log_msg(fname + " failed.\n");
 	      print_code(test);
-	      werror(sprintf("o->a(): %O\n", a));
+	      log_msg("o->a(): %O\n", a);
 	    } else if (pushed_warnings[a]) {
 	      if (!--pushed_warnings[a]) {
 		m_delete(pushed_warnings, a);
 	      }
 	    } else {
 	      watchdog_show_last_test();
-	      werror(pad_on_error + fname + " failed.\n");
+	      log_msg(fname + " failed.\n");
 	      print_code(test);
-	      werror(sprintf("o->a(): %O not pushed!\n", a));
+	      log_msg("o->a(): %O not pushed!\n", a);
 	    }
 	    break;
 		
@@ -1153,9 +1162,9 @@ int main(int argc, array(string) argv)
 	       (sizeof (a) == 3 && !intp (a[2])) ||
 	       sizeof (a) > 3) {
 	      watchdog_show_last_test();
-	      werror(pad_on_error + fname + " failed to return proper results.\n");
+	      log_msg(fname + " failed to return proper results.\n");
 	      print_code(test);
-	      werror(sprintf("o->a(): %O\n",a));
+	      log_msg("o->a(): %O\n",a);
 	      errors++;
 	    }
 	    else {
@@ -1164,12 +1173,12 @@ int main(int argc, array(string) argv)
 	      if (sizeof (a) >= 3) skipped += a[2];
 	      if (verbose>1)
 		if(a[1])
-		  werror("%d/%d tests failed%s.\n",
-			 a[1], a[0]+a[1],
-			 sizeof (a) >= 3 ? " (skipped " + a[2] + ")" : "");
+		  log_msg("%d/%d tests failed%s.\n",
+		      a[1], a[0]+a[1],
+		      sizeof (a) >= 3 ? " (skipped " + a[2] + ")" : "");
 		else
-		  werror("Did %d tests in %s%s.\n", a[0], fname,
-			 sizeof (a) >= 3 ? " (skipped " + a[2] + ")" : "");
+		  log_msg("Did %d tests in %s%s.\n", a[0], fname,
+		      sizeof (a) >= 3 ? " (skipped " + a[2] + ")" : "");
 	    }
 	    break;
 
@@ -1177,18 +1186,18 @@ int main(int argc, array(string) argv)
 	    if(a!=b)
 	    {
 	      watchdog_show_last_test();
-	      werror(pad_on_error + fname + " failed.\n");
+	      log_msg(fname + " failed.\n");
 	      print_code(test);
-	      werror(sprintf("o->a(): %O\n",a));
-	      werror(sprintf("o->b(): %O\n",b));
+	      log_msg("o->a(): %O\n"
+		      "o->b(): %O\n", a, b);
 	      errors++;
 	      if (stringp(a) && stringp(b) && (sizeof(a) == sizeof(b)) &&
 		  (sizeof(a) > 20)) {
-		werror("Differences at:\n");
+		log_msg("Differences at:\n");
 		int i;
 		for(i = 0; i < sizeof(a); i++) {
 		  if (a[i] != b[i]) {
-		    werror("  %4d: 0x%04x != 0x%04x\n", i, a[i], b[i]);
+		    log_msg("  %4d: 0x%04x != 0x%04x\n", i, a[i], b[i]);
 		  }
 		}
 	      }
@@ -1205,18 +1214,18 @@ int main(int argc, array(string) argv)
 	    if(!equal(a,b))
 	    {
 	      watchdog_show_last_test();
-	      werror(pad_on_error + fname + " failed.\n");
+	      log_msg(fname + " failed.\n");
 	      print_code(test);
-	      werror(sprintf("o->a(): %O\n",a));
-	      werror(sprintf("o->b(): %O\n",b));
+	      log_msg("o->a(): %O\n"
+		      "o->b(): %O\n", a, b);
 	      errors++;
 	      if (stringp(a) && stringp(b) && (sizeof(a) == sizeof(b)) &&
 		  (sizeof(a) > 20)) {
-		werror("Differences at:\n");
+		log_msg("Differences at:\n");
 		int i;
 		for(i = 0; i < sizeof(a); i++) {
 		  if (a[i] != b[i]) {
-		    werror("  %4d: 0x%04x != 0x%04x\n", i, a[i], b[i]);
+		    log_msg("  %4d: 0x%04x != 0x%04x\n", i, a[i], b[i]);
 		  }
 		}
 	      }
@@ -1227,12 +1236,10 @@ int main(int argc, array(string) argv)
 	    break;
 		
 	  default:
-	    werror(sprintf("\n%s: Unknown test type (%O).\n", fname, type));
+	    log_msg("%s: Unknown test type (%O).\n", fname, type);
 	    errors++;
 	  }
 	}
-
-	if (errors > prev_errors) werror ("\n");
 
 	if(check > 2) _verify_internals();
 	
@@ -1247,20 +1254,20 @@ int main(int argc, array(string) argv)
 	a=b=0;
       }
 
-      if(maybe_tty && Stdio.Terminfo.is_tty())
-      {
-	if (verbose)
-	  werror("                                        \r");
-      }
+      if(maybe_tty && Stdio.Terminfo.is_tty()) {}
       else if(verbose > 1) {
 	if(!qskipp && !qmadep);
-	else if(!qskipp) werror("Made all tests\n");
-	else if(!qmadep) werror("Skipped all tests\n");
-	else if(qmade) werror(" Made %d test%s.\n", qmade, qmade==1?"":"s");
-	else if(qskipped) werror(" Skipped %d test%s.\n", qskipped, qskipped==1?"":"s");
+	else if(!qskipp)
+	  log_msg("Made all tests\n");
+	else if(!qmadep)
+	  log_msg("Skipped all tests\n");
+	else if(qmade)
+	  log_msg(" Made %d test%s.\n", qmade, qmade==1?"":"s");
+	else if(qskipped)
+	  log_msg(" Skipped %d test%s.\n", qskipped, qskipped==1?"":"s");
       }
       else if (verbose) {
-	werror("\n");
+	log_msg("\n");
       }
     }
     }
@@ -1271,33 +1278,34 @@ int main(int argc, array(string) argv)
       tests=0;
       gc();
       mapping tmp=_memory_usage();
-      werror(sprintf("%-10s: %6s %10s\n","Category","num","bytes"));
+      log_msg("%-10s: %6s %10s\n","Category","num","bytes");
       foreach(sort(indices(tmp)),string foo)
       {
 	if(sscanf(foo,"%s_bytes",foo))
 	{
-	  werror(sprintf("%-10s: %6d %10d\n",
-			foo+"s",
-			tmp["num_"+foo+"s"],
-			tmp[foo+"_bytes"]));
+	  log_msg("%-10s: %6d %10d\n",
+		  foo+"s",
+		  tmp["num_"+foo+"s"],
+		  tmp[foo+"_bytes"]);
 	  total+=tmp[foo+"_bytes"];
 	}
       }
-      werror( "%-10s: %6s %10d\n",
-	      "Total", "", total );
+      log_msg( "%-10s: %6s %10d\n",
+	       "Total", "", total );
     }
   }
 
   if (!subprocess) {
+    log_status ("");
+
     if(errors || verbose>1)
     {
-      werror("Failed tests: "+errors+".\n");
+      log_msg("Failed tests: "+errors+".\n");
     }
 
-    werror(sprintf("Total tests: %d (%d tests skipped)\n",
-		   successes+errors, skipped));
+    log_msg("Total tests: %d (%d tests skipped)\n", successes+errors, skipped);
     if(verbose)
-      werror("Finished tests at "+ctime(time()));
+      log_msg("Finished tests at "+ctime(time()));
   }
   else {
     // Clear the output buffer in the watchdog so that
@@ -1314,7 +1322,7 @@ int main(int argc, array(string) argv)
     multiset const_names = (multiset)const_names;
     foreach(indices(all_constants()), string const)
       if( !const_names[const] )
-	werror("Leaked constant %O\n", const);
+	log_msg("Leaked constant %O\n", const);
   }
 #endif
 
