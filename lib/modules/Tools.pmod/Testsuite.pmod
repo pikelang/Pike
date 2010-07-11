@@ -19,7 +19,8 @@ array(int) run_script (string|array(string) pike_script)
 
 void report_result (int succeeded, int failed, void|int skipped)
 //! Use this to report the number of successful, failed, and skipped
-//! tests in a script started using @[run_script].
+//! tests in a script started using @[run_script]. Can be called
+//! multiple times - the counts are accumulated.
 {
   // Not really a watchdog command, but sent using the same format.
   write ("WD succeeded %d failed %d skipped %d\n",
@@ -107,8 +108,12 @@ array(int) low_run_script (array(string) command, mapping opts)
 	write (filter (in));
 	foreach (get_cmds(), string wd_cmd) {
 	  if (sscanf (wd_cmd, "succeeded %d failed %d skipped %d",
-		      succeeded, failed, skipped) == 3)
-	    got_subresult = 1;
+		      int ok, int fail, int skip) == 3) {
+	    succeeded += ok;
+	    failed += fail;
+	    skipped += skip;
+	    got_subresult++;
+	  }
 	  else
 	    all_constants()->__send_watchdog_command (wd_cmd);
 	}
