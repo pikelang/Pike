@@ -17,36 +17,59 @@ array(int) run_script (string|array(string) pike_script)
     ({0, 1, 0});
 }
 
-protected int verbosity = -1;
+protected int verbosity = lambda () {return (int) getenv()->TEST_VERBOSITY;}();
 
 protected string last_log;
 // The last message passed to log_msg if verbosity == 0.
 
-protected int last_line_length = 0;
-// The length of the last "in place" message (i.e. without trailing
-// newline) passed to log_msg if verbosity == 1. -1 if the last logged
-// message wasn't "in place". Initialized to 0 to work with subtests,
-// since the main testsuite typically logs an "in place" message just
-// before spawning the subtest.
+protected int last_line_length;
+// The length of the last logged line that didn't end with a newline.
 
-void log_start()
+protected int last_line_inplace = lambda () {return verbosity == 1;}();
+// Set if the last line was logged by log_status on verbosity level 1.
+// Initialized to 1 on verbosity level 1 to work with subtests, since
+// the main testsuite typically logs an "in place" message just before
+// spawning the subtest.
+
+void log_start (int verbosity)
 {
-  last_line_length = -1;
+  this_program::verbosity = verbosity;
+  last_line_inplace = 0;
 }
 
 protected int twiddler_counter = -1;
 
 void log_msg (string msg, mixed... args)
 //! Logs a testsuite message. The message is shown regardless of the
-//! verbosity level. If the previous message was logged "in place" by
-//! @[log_status] for verbosity 1 then a newline is inserted first.
+//! verbosity level. If the previous message was logged without a
+//! trailing newline then a newline is inserted first.
+//!
 //! The message should normally have a trailing newline - no extra
-//! newline is added to it.
+//! newline is added to it. Use @[log_status] to log a message
+//! intended to be overwritten.
 {
-  if (verbosity < 0)
-    verbosity = (int) getenv()->TEST_VERBOSITY;
-
   if (sizeof (args)) msg = sprintf (msg, @args);
+
+  if (last_line_length) {
+    write ("\n");
+    last_line_length = 0;
+  }
+
+  log_msg_cont (msg);
+}
+
+void log_msg_cont (string msg, mixed... args)
+//! Similar to @[log_msg], but doesn't insert a newline first if the
+//! previous message didn't end with one. Does however insert a
+//! newline if the previous message was logged "in place" by
+//! @[log_status].
+{
+  if (sizeof (args)) msg = sprintf (msg, @args);
+
+  if (last_line_inplace && last_line_length) {
+    write ("\n");
+    last_line_length = 0;
+  }
 
   switch (verbosity) {
     case 0:
@@ -54,19 +77,27 @@ void log_msg (string msg, mixed... args)
 	if (!has_suffix (last_log, "\n")) last_log += "\n";
 	write (last_log);
 	last_log = 0;
+	last_line_length = 0;
       }
       break;
 
     case 1:
       twiddler_counter = -1;
-      if (last_line_length != -1) {
-	write ("\n");
-	last_line_length = -1;
-      }
       break;
   }
 
   write (msg);
+  last_line_inplace = 0;
+
+  if (has_suffix (msg, "\n") || has_suffix (msg, "\r"))
+    last_line_length = 0;
+  else {
+    array(string) msg_lines = msg / "\n";
+    if (sizeof (msg_lines) > 1) last_line_length = 0;
+    // FIXME: This length calculation is too simplistic since it
+    // assumes 1 char == 1 position.
+    last_line_length += sizeof (msg_lines[-1]);
+  }
 }
 
 void log_status (string msg, mixed... args)
@@ -79,8 +110,8 @@ void log_status (string msg, mixed... args)
 //!   saved and will be logged if the next call is to @[log_msg].
 //! @item
 //!   If the verbosity is 1, the message is "in place" on the current
-//!   line without a trailing line feed, so that the next message will
-//!   replace this one.
+//!   line without a trailing line feed, so that the next
+//!   @[log_status] message will replace this one.
 //! @item
 //!   If the verbosity is 2 or greater, the message is logged with a
 //!   trailing line feed.
@@ -94,37 +125,40 @@ void log_status (string msg, mixed... args)
 //! @seealso
 //! @[log_twiddler]
 {
-  if (verbosity < 0)
-    verbosity = (int) getenv()->TEST_VERBOSITY;
-
   if (sizeof (args)) msg = sprintf (msg, @args);
 
   switch (verbosity) {
     case 0:
       last_log = (msg != "" && msg);
-      break;
+      return;
 
     case 1:
-      write ("\r%*s\r", max (last_line_length, 40), "");
-      twiddler_counter = -1;
-      if (has_suffix (msg, "\n"))
-	last_line_length = -1;
-      else {
-	// FIXME: This length calculation is too simplistic since it
-	// assumes 1 char == 1 position.
-	last_line_length = sizeof ((msg / "\n")[-1]);
-	if (last_line_length == 0)
-	  last_line_length = -1;
+      if (last_line_length) {
+	if (last_line_inplace)
+	  write ("\r%*s\r", max (last_line_length, 40), "");
+	else
+	  write ("\n");
       }
+      twiddler_counter = -1;
       write (msg);
+      last_line_inplace = 1;
       break;
 
     default:
-      if (msg != "") {
-	if (!has_suffix (msg, "\n")) msg += "\n";
-	write (msg);
-      }
+      if (msg == "")
+	return;
+      if (!has_suffix (msg, "\n")) msg += "\n";
+      write (msg);
+      last_line_inplace = 0;
       break;
+  }
+
+  if (has_suffix (msg, "\n") || has_suffix (msg, "\r"))
+    last_line_length = 0;
+  else {
+    // FIXME: This length calculation is too simplistic since it
+    // assumes 1 char == 1 position.
+    last_line_length = sizeof ((msg / "\n")[-1]);
   }
 }
 
@@ -133,7 +167,7 @@ void log_twiddler()
 //! of an "in place" message written by @[log_status] on verbosity
 //! level 1.
 {
-  if (verbosity != 1 || last_line_length == -1) return;
+  if (verbosity != 1 || last_line_length) return;
   if (twiddler_counter == -1) {
     write (" ");
     last_line_length += 2;
