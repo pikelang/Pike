@@ -5,8 +5,9 @@
 
 constant description = "Executes tests according to testsuite files.";
 
-constant log_status = Tools.Testsuite.log_status;
 constant log_msg = Tools.Testsuite.log_msg;
+constant log_msg_cont = Tools.Testsuite.log_msg_cont;
+constant log_status = Tools.Testsuite.log_status;
 
 #if !constant(_verify_internals)
 #define _verify_internals()
@@ -545,8 +546,7 @@ int main(int argc, array(string) argv)
 #endif
   }
 
-  // Avoid an initial empty line when verbose == 1.
-  Tools.Testsuite.log_start();
+  Tools.Testsuite.log_start (verbose);
 
   // FIXME: Make this code more robust!
   args=args[..<argc];
@@ -639,6 +639,7 @@ int main(int argc, array(string) argv)
   add_constant("__send_watchdog_command", send_watchdog_command);
   add_constant("_verbose", verbose);
   add_constant ("log_msg", log_msg);
+  add_constant ("log_msg_cont", log_msg_cont);
   add_constant ("log_status", log_status);
 
   if(!subprocess)
@@ -819,18 +820,18 @@ int main(int argc, array(string) argv)
 	    // fallthrough
 
 	  default:
-	    log_msg(skip?"-":"+");
+	    log_msg_cont(skip?"-":"+");
 	    break;
 		
 	  case 9:
 	  case 19:
 	  case 29:
 	  case 39:
-	    log_msg(skip?"- ":"+ ");
+	    log_msg_cont(skip?"- ":"+ ");
 	    break;
 
 	  case 49:
-	    log_msg(skip?"-\n":"+\n");
+	    log_msg_cont(skip?"-\n":"+\n");
 	  }
 	}
 	if(skip) continue;
