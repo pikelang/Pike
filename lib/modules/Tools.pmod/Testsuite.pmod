@@ -18,6 +18,7 @@ array(int) run_script (string|array(string) pike_script)
 }
 
 protected int verbosity = lambda () {return (int) getenv()->TEST_VERBOSITY;}();
+protected int on_tty = lambda () {return (int) getenv()->TEST_ON_TTY;}();
 
 protected string last_log;
 // The last message passed to log_msg if verbosity == 0.
@@ -31,9 +32,10 @@ protected int last_line_inplace = lambda () {return verbosity == 1;}();
 // the main testsuite typically logs an "in place" message just before
 // spawning the subtest.
 
-void log_start (int verbosity)
+void log_start (int verbosity, int on_tty)
 {
   this_program::verbosity = verbosity;
+  this_program::on_tty = on_tty;
   last_line_inplace = 0;
 }
 
@@ -55,6 +57,12 @@ void log_msg (string msg, mixed... args)
     last_line_length = 0;
   }
 
+  if (last_log) {
+    if (!has_suffix (last_log, "\n")) last_log += "\n";
+    write (last_log);
+    last_log = 0;
+  }
+
   log_msg_cont (msg);
 }
 
@@ -71,22 +79,9 @@ void log_msg_cont (string msg, mixed... args)
     last_line_length = 0;
   }
 
-  switch (verbosity) {
-    case 0:
-      if (last_log) {
-	if (!has_suffix (last_log, "\n")) last_log += "\n";
-	write (last_log);
-	last_log = 0;
-	last_line_length = 0;
-      }
-      break;
-
-    case 1:
-      twiddler_counter = -1;
-      break;
-  }
-
+  last_log = 0;
   write (msg);
+  twiddler_counter = -1;
   last_line_inplace = 0;
 
   if (has_suffix (msg, "\n") || has_suffix (msg, "\r"))
@@ -133,12 +128,18 @@ void log_status (string msg, mixed... args)
       return;
 
     case 1:
-      if (last_line_length) {
-	if (last_line_inplace)
-	  write ("\r%*s\r", max (last_line_length, 40), "");
-	else
-	  write ("\n");
+      if (!on_tty) {
+	// Logging to a file or something, so our \r stunts won't look
+	// good. Let's store it like for verbosity == 0; if the user
+	// wants to log all these then (s)he should use verbosity > 1.
+	last_log = (msg != "" && msg);
+	return;
       }
+
+      if (last_line_inplace)
+	write ("\r%*s\r", max (last_line_length, 40), "");
+      else if (last_line_length)
+	write ("\n");
       twiddler_counter = -1;
       write (msg);
       last_line_inplace = 1;
@@ -167,7 +168,7 @@ void log_twiddler()
 //! of an "in place" message written by @[log_status] on verbosity
 //! level 1.
 {
-  if (verbosity != 1 || last_line_length) return;
+  if (verbosity != 1 || !last_line_length || !on_tty) return;
   if (twiddler_counter == -1) {
     write (" ");
     last_line_length += 2;

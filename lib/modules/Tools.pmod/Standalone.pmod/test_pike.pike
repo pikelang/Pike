@@ -535,6 +535,9 @@ int main(int argc, array(string) argv)
 
   // For easy access in spawned test scripts.
   putenv ("TEST_VERBOSITY", (string) verbose);
+  putenv ("TEST_ON_TTY", (string) (maybe_tty && Stdio.Terminfo.is_tty()));
+
+  Tools.Testsuite.log_start (verbose, maybe_tty && Stdio.Terminfo.is_tty());
 
   if (watchdog_pid) {
 #if defined(__NT__) && !constant(thread_create)
@@ -545,8 +548,6 @@ int main(int argc, array(string) argv)
     return -1;
 #endif
   }
-
-  Tools.Testsuite.log_start (verbose);
 
   // FIXME: Make this code more robust!
   args=args[..<argc];
