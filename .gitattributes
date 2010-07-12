@@ -830,7 +830,6 @@ testfont binary
 /src/post_modules/Unicode/normalize.h foreign_ident
 /src/post_modules/Unicode/split.c foreign_ident
 /src/post_modules/Unicode/split.h foreign_ident
-/src/post_modules/Unicode/test.pike foreign_ident
 /src/post_modules/Unicode/unicode_module.cmod foreign_ident
 /src/post_modules/_ADT/Makefile.in foreign_ident
 /src/post_modules/_ADT/adt.cmod foreign_ident
@@ -869,7 +868,6 @@ testfont binary
 /src/svalue.c foreign_ident
 /src/svalue.h foreign_ident
 /src/test_co.pike foreign_ident
-/src/testsuite.in foreign_ident
 /src/time_stuff.h foreign_ident
 /src/tmodule.c foreign_ident
 /src/treeopt.in foreign_ident

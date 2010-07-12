@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-// $Id: test.pike,v 1.8 2007/06/17 23:20:41 mast Exp $
+// $Id$
 
 #define c1 c[0]
 #define c2 c[1]
@@ -8,11 +8,27 @@
 #define c4 c[3]
 #define c5 c[4]
 
-int tests, fail;
-array(string) argv = ({"dummy", combine_path (__FILE__, "..")});
+constant log_msg = Tools.Testsuite.log_msg;
+constant log_status = Tools.Testsuite.log_status;
 
-array(int) a()
+int tests, fail;
+
+void main(int argc, array argv)
 {
+  if (getenv()->TEST_VERBOSITY)
+    // Run from testsuite.
+    argv = ({"dummy", combine_path (__FILE__, "..")});
+  else {
+    write("Performing Unicode normalization tests\n");
+    write("See http://www.unicode.org/Public/3.2-Update/NormalizationTest-3.2.0.txt\n");
+    if( argc<2 || has_value( argv, "--help" ) )
+    {
+      write("\nUsage %s <path>\nwhere path is the path to the directory with the NormalizationTest.txt file.\n",
+	    argv[0]);
+      exit(0);
+    }
+  }
+
   int part, opl;
 
   foreach( Stdio.File( argv[1]+"/NormalizationTest.txt","r" )->read()/"\n", string l )
@@ -22,10 +38,9 @@ array(int) a()
 
     if( l[0] == '@' )
     {
-      if( opl ) write("Done. "+(tests-opl+1)+" tests.\n" );
-      write("\n");
+      if( opl ) log_status("Done. "+(tests-opl+1)+" tests." );
       opl = tests+1;
-      write( replace( l[1..], " #", ":") +"\n" );
+      log_status( replace( l[1..], " #", ":"));
       part++;
       continue;
     }
@@ -51,12 +66,11 @@ array(int) a()
       foreach( t, string tt )
 	if( Unicode.normalize( tt, method ) != ok )
 	{
-	  write("\n");
-	  werror("Test %d/%s failed:\n"
-		"expected: %s\n"
-		"got:      %s\n"
-		"input:    %s\n",tests/6,method,
-		 hex(ok), hex(Unicode.normalize(tt,method)), hex(tt));
+	  log_msg("Test %d/%s failed:\n"
+		  "expected: %s\n"
+		  "got:      %s\n"
+		  "input:    %s\n",tests/6,method,
+		  hex(ok), hex(Unicode.normalize(tt,method)), hex(tt));
 	  fail++;
 	  return;
 	}
@@ -73,23 +87,8 @@ array(int) a()
     test( c4, "NFKC", c1, c2, c3, c4, c5 );
     test( c5, "NFKD", c1, c2, c3, c4, c5 );
   }
-  write( "Done. "+(tests-opl+1)+" tests.\n" );
+  log_status( "Done. "+(tests-opl+1)+" tests." );
 
-  return ({tests, fail});
-}
-
-void main(int argc, array argv)
-{
-
-  write("Performing Unicode normalization tests\n");
-  write("See http://www.unicode.org/Public/3.2-Update/NormalizationTest-3.2.0.txt\n");
-  if( argc<2 || has_value( argv, "--help" ) )
-  {
-    write("\nUsage %s <path>\nwhere path is the path to the directory with the NormalizationTest.txt file.\n",
-	  argv[0]);
-    exit(0);
-  }
-
-  global::argv = argv;
-  a();
+  Tools.Testsuite.report_result (tests - fail, fail, 0);
+  return 0;
 }

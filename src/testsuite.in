@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.899 2010/09/27 17:06:30 grubba Exp $"]]);
+test_true([["$Id$"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -286,8 +286,8 @@ test_compile_any([[
 dnl number of variables/scope, number of scopes, expect_compiler_error
 define(test_scopes,[[
   test_any([[
-    write("Testing scoped variables $1:$2%s...\n",
-	  $3?" expecting a compilation error":"");
+    log_status("Testing scoped variables $1:$2%s...",
+	       $3?" expecting a compilation error":"");
     string line = sprintf("#line %d %O\n", __LINE__, __FILE__);
     string s = "{\n" +
       (map(indices(allocate($1)), lambda(int no) {
@@ -2435,7 +2435,7 @@ string efoo(string e)
  {
    void compile_error(string file, int line, string err)
    {
-     // write("file: %O, line: %O, err: %O\n", file, line, err);
+     // log_msg("file: %O, line: %O, err: %O\n", file, line, err);
    }
  };
 
@@ -3256,7 +3256,6 @@ int tests;
 #define FMT "%d:%d  "
 
 int maxdepth;
-int quiet;
 string status_prefix="";
 
 class Codec {
@@ -3290,8 +3289,8 @@ void low_generate(int depth,
     if(!(tests & 63))
     {	
       __signal_watchdog();
-      if(!quiet)
-        write("\r%s" FMT, status_prefix,maxdepth,tests);
+      if (_verbose == 1)
+	log_status("%s" FMT, status_prefix,maxdepth,tests);
     }
 
     string test=code*"\n"+"\n"
@@ -3315,27 +3314,27 @@ void low_generate(int depth,
     if(err)
     {
       errors++;
-      werror("\nTest failed:\n"
-	     "----------------------------------\n"
-	     "%s\n"
-	     "---------------------------------\n"
-	     "expected answer: %O\n"
-	     "Answer received: %O\n",test,ans,res);
+      log_msg("Test failed:\n"
+	      "----------------------------------\n"
+	      "%s\n"
+	      "---------------------------------\n"
+	      "expected answer: %O\n"
+	      "Answer received: %O\n",test,ans,res);
       if(!stringp(err) || !has_prefix(err, "Test failed"))
       {
 	string tmp=master()->describe_backtrace(err);
 	array s=tmp/"\n";
 	s=s[..20];
-	write("%s\n",s*"\n");
+	log_msg("%s\n",s*"\n");
       }
       if (res == "None") {
         // Probable decode error; try to get some debug.
 	catch {
-	  write("Encoding...\n");
+	  log_msg("Encoding...\n");
 	  string encoded = ((function)encode_value)(tmp, Codec(), 6);
-	  write("Decoding...\n");
+	  log_msg("Decoding...\n");
           tmp = ((function)decode_value)(encoded, Codec(), 6);
-	  write("Strange... No error thrown...\n");
+	  log_msg("Strange... No error thrown...\n");
         };
       }
       return;
@@ -3372,9 +3371,7 @@ void low_generate(int depth,
 
 array(int) a()
 {
-  write("\nTesting vtables and scope access.\n");
-
-  quiet = !_verbose;
+  log_status("Testing vtables and scope access.\n");
 
   int total_tests;
   for(maxdepth=1;maxdepth<9 && !errors;maxdepth++)
@@ -3385,15 +3382,12 @@ array(int) a()
 		 "X",0);
 
     status_prefix+=sprintf(FMT,maxdepth,tests);
-    if(quiet)
-      write("%d .. ",maxdepth);
-    else
-      write("\r%s",status_prefix);
+    if (_verbose == 1)
+      log_status(status_prefix);
     total_tests+=tests;
     tests=0;
   }
   
-  write("\n");
   return ({ total_tests-errors, errors });
 }
 
@@ -5037,7 +5031,7 @@ void log (function f, string msg)
   if (f == test) msg = "[T] " + msg;
   else if (f == thread_disabler) msg = " " * 20 + "[D] " + msg;
   else if (f == mutex_locker) msg = " " * 40 + "[L] " + msg;
-  write (msg);
+  log_msg (msg);
 #endif
 }
 
@@ -10372,8 +10366,8 @@ int main(int argc, array(string) argv)
       // watchdog kicks in.. /mast
       //if (!(i%10))
       //  __signal_watchdog();
-      //if (!(i % 100))
-      //  write ("%s: %O at %d\n", ctime (time())[..<1], this_thread(), i);
+      if (!(i % 100))
+	log_status ("%s: %O at %d", ctime (time())[..<1], this_thread(), i);
     }
   } )->wait();
 
