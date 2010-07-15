@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.350 2010/06/22 09:24:33 mast Exp $
+|| $Id: gc.c,v 1.351 2010/07/15 22:31:18 mast Exp $
 */
 
 #include "global.h"
@@ -40,7 +40,7 @@ int gc_enabled = 1;
 double gc_garbage_ratio_low = 0.2;
 double gc_time_ratio = 0.05;
 double gc_garbage_ratio_high = 0.5;
-double gc_min_time_ratio = 1.0/10001.0; /* Martys constant. */
+double gc_min_time_ratio = 1.0/10000.0; /* Martys constant. */
 
 /* This slowness factor approximately corresponds to the average over
  * the last ten gc rounds. (0.9 == 1 - 1/10) */
@@ -1649,11 +1649,11 @@ void debug_describe_svalue(struct svalue *s)
     case T_INT:
       fprintf(stderr,"    %"PRINTPIKEINT"d (subtype %d)\n",s->u.integer,
 	      s->subtype);
-      break;
+      return;
 
     case T_FLOAT:
       fprintf(stderr,"    %"PRINTPIKEFLOAT"f\n",s->u.float_number);
-      break;
+      return;
 
     case T_FUNCTION:
       if(s->subtype == FUNCTION_BUILTIN)
