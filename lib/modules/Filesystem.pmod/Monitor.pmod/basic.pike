@@ -1,7 +1,7 @@
 //
 // Basic filesystem monitor.
 //
-// $Id: basic.pike,v 1.33 2010/04/27 16:05:49 grubba Exp $
+// $Id: basic.pike,v 1.34 2010/07/15 09:03:32 jonasw Exp $
 //
 // 2009-07-09 Henrik Grubbström
 //
@@ -586,7 +586,11 @@ protected class Monitor(string path,
     } else {
       return 0;
     }
-    if ((st->mtime != old_st->mtime) || (st->ctime != old_st->ctime) ||
+    
+    //  Note: ctime seems to change unexpectedly when running ImageMagick
+    //        on NFS disk so we disable it for the moment [bug 5587].
+    if ((st->mtime != old_st->mtime) ||
+	/* (st->ctime != old_st->ctime) || */
 	(st->size != old_st->size)) {
       last_change = time(1);
       if (status_change(old_st, st, orig_flags, flags)) return 1;
