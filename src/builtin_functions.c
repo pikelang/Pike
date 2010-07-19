@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.701 2010/05/31 13:59:04 grubba Exp $
+|| $Id: builtin_functions.c,v 1.702 2010/07/19 15:30:48 mast Exp $
 */
 
 #include "global.h"
@@ -5019,7 +5019,8 @@ PMOD_EXPORT void f__assembler_debug(INT32 args)
   a_flag = l;
 }
 
-/*! @decl void _dump_program_tables(program p, int|void indent)
+/*! @decl void dump_program_tables(program p, int|void indent)
+ *! @belongs Debug
  *!
  *! Dumps the internal tables for the program @[p] on stderr.
  *!
@@ -7909,6 +7910,22 @@ PMOD_EXPORT void f__list_open_fds(INT32 args)
   extern void list_open_fds(void);
   list_open_fds();
 }
+
+/*! @decl void dump_dmalloc_locations(string|array|mapping| @
+ *!                                   multiset|function|object| @
+ *!                                   program|type o)
+ *! @belongs Debug
+ *!
+ *! @note
+ *!   Only available when compiled with dmalloc.
+ */
+PMOD_EXPORT void f__dump_dmalloc_locations(INT32 args)
+{
+  ASSERT_SECURITY_ROOT("_dump_dmalloc_locations");
+  if(args)
+    debug_malloc_dump_references (Pike_sp[-args].u.refs, 2, 1, 0);
+  pop_n_elems(args-1);
+}
 #endif
 
 #ifdef PIKE_DEBUG
@@ -9651,6 +9668,8 @@ void init_builtin_efuns(void)
 	   tOr(tFunc(tStr tInt,tVoid), tFunc(tVoid,tVoid)),OPT_SIDE_EFFECT);
   ADD_EFUN("_list_open_fds",f__list_open_fds,
 	   tFunc(tVoid,tVoid),OPT_SIDE_EFFECT);
+  ADD_EFUN("_dump_dmalloc_locations",f__dump_dmalloc_locations,
+	   tFunc(tSetvar(1,tMix),tVar(1)),OPT_SIDE_EFFECT);
 #endif
 #ifdef PIKE_DEBUG
   

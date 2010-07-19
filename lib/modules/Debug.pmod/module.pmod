@@ -1,52 +1,36 @@
-// $Id: module.pmod,v 1.5 2005/03/24 17:38:26 nilsson Exp $
+// $Id: module.pmod,v 1.6 2010/07/19 15:30:47 mast Exp $
 
 #pike __REAL_VERSION__
 
-#if constant(_assembler_debug)
-constant assembler_debug = _assembler_debug;
-#endif
-
-#if constant(_compiler_trace)
-constant compiler_trace  = _compiler_trace;
-#endif
+constant verify_internals = _verify_internals;
+constant memory_usage = _memory_usage;
+constant gc_status = _gc_status;
+constant describe_program = _describe_program;
 
 #if constant(_debug)
+// These functions require --with-rtldebug.
 constant debug = _debug;
-#endif
-
-#if constant(_describe)
+constant optimizer_debug = _optimizer_debug;
+constant assembler_debug = _assembler_debug;
+constant dump_program_tables = _dump_program_tables;
+constant locate_references = _locate_references;
 constant describe = _describe;
-#endif
-
-#if constant(_describe_program)
-constant describe_program = _describe_program;
-#endif
-
-#if constant(_dmalloc_set_name)
-constant dmalloc_set_name = _dmalloc_set_name;
-#endif
-
-#if constant(_dump_backlog)
+constant gc_set_watch = _gc_set_watch;
 constant dump_backlog = _dump_backlog;
 #endif
 
-#if constant(_gc_set_watch)
-constant gc_set_watch = _gc_set_watch;
-#endif
-
-#if constant(_gc_status)
-constant gc_status = _gc_status;
-#endif
-
-#if constant(_list_open_fds)
+#if constant(_dmalloc_set_name)
+// These functions require --with-dmalloc.
+constant reset_dmalloc = _reset_dmalloc;
+constant dmalloc_set_name = _dmalloc_set_name;
 constant list_open_fds = _list_open_fds;
+constant dump_dmalloc_locations = _dump_dmalloc_locations;
 #endif
 
-#if constant(_locate_references)
-constant locate_references = _locate_references;
+#if constant(_compiler_trace)
+// Requires -DYYDEBUG.
+constant compiler_trace  = _compiler_trace;
 #endif
-
-constant memory_usage = _memory_usage;
 
 //! Returns a pretty printed version of the
 //! output from @[memory_usage].
@@ -61,18 +45,6 @@ string pp_memory_usage() {
   }
   return ret;
 }
-
-#if constant(_optimizer_debug)
-constant optimizer_debug = _optimizer_debug;
-#endif
-
-#if constant(_reset_dmalloc)
-constant reset_dmalloc = _reset_dmalloc;
-#endif
-
-#if constant(_verify_internals)
-constant verify_internals = _verify_internals;
-#endif
 
 //! Returns the number of objects of every kind in memory.
 mapping(string:int) count_objects() {
