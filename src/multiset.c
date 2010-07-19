@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.121 2010/07/11 19:12:02 mast Exp $
+|| $Id: multiset.c,v 1.122 2010/07/19 15:49:25 mast Exp $
 */
 
 #include "global.h"
@@ -4389,6 +4389,17 @@ void init_multiset()
 	       test.i.ind.type);
 #undef msnode_check
 #endif
+
+#ifdef DEBUG_MALLOC
+  /* Make some statically allocated structs known to dmalloc. */
+  dmalloc_register (&empty_ind_msd, sizeof (empty_ind_msd),
+		    DMALLOC_LOCATION());
+  dmalloc_accept_leak (&empty_ind_msd);
+  dmalloc_register (&empty_indval_msd, sizeof (empty_indval_msd),
+		    DMALLOC_LOCATION());
+  dmalloc_accept_leak (&empty_indval_msd);
+#endif
+
   init_multiset_blocks();
 }
 

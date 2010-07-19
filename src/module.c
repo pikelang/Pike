@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: module.c,v 1.60 2010/05/31 13:59:05 grubba Exp $
+|| $Id: module.c,v 1.61 2010/07/19 15:49:24 mast Exp $
 */
 
 #include "global.h"
@@ -56,6 +56,18 @@ static void init_builtin_modules(void)
   void init_iterators(void);
 #ifdef WITH_FACETS
   void init_facetgroup(void);
+#endif
+
+#ifdef DEBUG_MALLOC
+  /* Make some statically allocated structs known to dmalloc. These
+   * will still show up in the DO_PIKE_CLEANUP leak report if they
+   * leak, in spite of dmalloc_accept_leak. */
+  dmalloc_register (&empty_array, sizeof (empty_array),
+		    DMALLOC_LOCATION());
+  dmalloc_accept_leak (&empty_array);
+  dmalloc_register (&weak_empty_array, sizeof (weak_empty_array),
+		    DMALLOC_LOCATION());
+  dmalloc_accept_leak (&weak_empty_array);
 #endif
 
   TRACE((stderr, "Init cpp...\n"));
