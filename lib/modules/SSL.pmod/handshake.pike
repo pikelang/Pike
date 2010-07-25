@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 #pragma strict_types
 
-/* $Id: handshake.pike,v 1.62 2010/02/21 22:42:16 srb Exp $
+/* $Id: handshake.pike,v 1.63 2010/07/25 19:32:26 marcus Exp $
  *
  */
 
@@ -1376,4 +1376,6 @@ void create(int is_server, void|SSL.context ctx)
   }
 }
 
-#endif // constant(SSL.Cipher.DHKeyExchange)
+#else // constant(SSL.Cipher.DHKeyExchange)
+constant this_program_does_not_exist = 1;
+#endif

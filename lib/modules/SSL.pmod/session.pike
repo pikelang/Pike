@@ -1,5 +1,5 @@
 //
-// $Id: session.pike,v 1.38 2008/06/28 16:49:55 nilsson Exp $
+// $Id: session.pike,v 1.39 2010/07/25 19:32:27 marcus Exp $
 
 #pike __REAL_VERSION__
 #pragma strict_types
@@ -329,4 +329,6 @@ array(.state) new_client_states(string client_random, string server_random,
   return ({ read_state, write_state });
 }
 
-#endif // constant(SSL.Cipher.CipherSpec)
+#else // constant(SSL.Cipher.CipherSpec)
+constant this_program_does_not_exist = 1;
+#endif

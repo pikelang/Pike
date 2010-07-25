@@ -1,5 +1,5 @@
 //
-// $Id: context.pike,v 1.38 2008/06/28 16:49:55 nilsson Exp $
+// $Id: context.pike,v 1.39 2010/07/25 19:32:26 marcus Exp $
 
 #pike __REAL_VERSION__
 #pragma strict_types
@@ -345,4 +345,6 @@ private void update_trusted_issuers()
   }
 }
 
-#endif // constant(Gmp.mpz) && constant(Crypto.Hash)
+#else // constant(Gmp.mpz) && constant(Crypto.Hash)
+constant this_program_does_not_exist = 1;
+#endif

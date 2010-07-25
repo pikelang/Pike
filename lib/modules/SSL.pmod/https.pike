@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: https.pike,v 1.18 2004/04/19 22:59:06 nilsson Exp $
+/* $Id: https.pike,v 1.19 2010/07/25 19:32:26 marcus Exp $
  *
  * dummy https server
  */
@@ -162,4 +162,6 @@ void create()
   sslport::create();
 }
 
+#else // constant(SSL.Cipher.CipherAlgorithm)
+constant this_program_does_not_exist = 1;
 #endif

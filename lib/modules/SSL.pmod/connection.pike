@@ -1,5 +1,5 @@
 //
-// $Id: connection.pike,v 1.46 2010/02/21 22:42:16 srb Exp $
+// $Id: connection.pike,v 1.47 2010/07/25 19:32:26 marcus Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -435,4 +435,6 @@ string|int got_data(string|int s)
   return closing & 2 ? 1 : res;
 }
 
+#else // constant(SSL.Cipher.CipherAlgorithm)
+constant this_program_does_not_exist = 1;
 #endif
