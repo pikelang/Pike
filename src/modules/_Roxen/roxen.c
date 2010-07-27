@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: roxen.c,v 1.55 2009/07/29 15:48:47 nilsson Exp $
+|| $Id: roxen.c,v 1.56 2010/07/27 16:46:05 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -274,6 +274,7 @@ static void f_hp_create( INT32 args )
     THP->headers = NULL;
   }
 
+  THP->mode = 0;
   get_all_args("create",args,".%i",&THP->mode);
 
   THP->headers = xalloc( 8192 );

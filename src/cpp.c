@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.177 2009/03/08 22:08:27 grubba Exp $
+|| $Id: cpp.c,v 1.178 2010/07/27 16:46:02 mast Exp $
 */
 
 #include "global.h"
@@ -1760,7 +1760,7 @@ void f_cpp(INT32 args)
 
   struct object *handler = 0;
 
-  int compat_major, compat_minor, picky_cpp;
+  int compat_major = 0, compat_minor = 0, picky_cpp = 0;
 
   ONERROR err;
 #ifdef PIKE_DEBUG
@@ -1817,13 +1817,10 @@ void f_cpp(INT32 args)
     }
   }
 
-  if(args > 5)
+  if(compat_major)
     cpp_change_compat(&this, compat_major, compat_minor);
 
-  if(args > 6)
-    this.picky_cpp = picky_cpp;
-  else
-    this.picky_cpp = 0;
+  this.picky_cpp = picky_cpp;
 
   if (use_initial_predefs)
     /* Typically compiling the master here. */

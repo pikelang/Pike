@@ -1056,7 +1056,7 @@ array forward_search(string str, int flags, ?GTK2.TextIter limit)
     GtkTextBuffer *tb;
     const gchar *str;
     INT_TYPE flags;
-    struct object *o1;
+    struct object *o1 = NULL;
     int res;
 
     get_all_args("forward_search",args,"%s%i.%o",&str,&flags,&o1);
@@ -1091,7 +1091,7 @@ array backward_search(string str, int flags, ?GTK2.TextIter limit)
     GtkTextBuffer *tb;
     const gchar *str;
     INT_TYPE flags;
-    struct object *o1;
+    struct object *o1 = NULL;
     int res;
 
     get_all_args("backward_search",args,"%s%i.%o",&str,&flags,&o1);

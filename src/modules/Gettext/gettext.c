@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gettext.c,v 1.27 2008/04/01 08:01:28 mast Exp $
+|| $Id: gettext.c,v 1.28 2010/07/27 16:46:04 mast Exp $
 */
 
 #include "global.h"
@@ -75,28 +75,19 @@
  */
 void f_gettext(INT32 args)
 {
-  const char *domain, *msg;
-  int cat;
+  const char *domain = NULL, *msg;
+  int cat = 0;
 
   get_all_args("Locale.Gettext.gettext", args, "%c.%C%D", &msg, &domain, &cat);
 
-  switch(args) {
-#ifdef PIKE_DEBUG
-  case 0:
-    /* NOT_REACHED, but... */
-    Pike_error("Too few arguments to Locale.Gettext.gettext().\n");
-    break;
-#endif
-  case 1:
-    push_text(gettext(msg));
-    break;
-  case 2:
-    push_text(dgettext(domain, msg));
-    break;
-  default:
-    push_text(dcgettext(domain, msg, cat));
-    break;
+  if (domain) {
+    if (args > 2 && Pike_sp[2-args].subtype == NUMBER_NUMBER)
+      push_text(dcgettext(domain, msg, cat));
+    else
+      push_text(dgettext(domain, msg));
   }
+  else
+    push_text(gettext(msg));
 
   stack_pop_n_elems_keep_top(args);
 }

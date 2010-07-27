@@ -233,12 +233,15 @@ GDK2.Color get_color(?string spec)
 {
   pgtk2_verify_inited();
   {
-    GdkColor *color;
+    GdkColor *color = NULL;
     char *spec=NULL;
     get_all_args("get_color",args,".%s",&color);
-    color=(GdkColor *)g_malloc(sizeof(GdkColor));
-    if (color==NULL)
-      SIMPLE_OUT_OF_MEMORY_ERROR("get_color",sizeof(GdkColor));
+    if (!color) {
+      /* FIXME: This looks like a leak. /mast */
+      color=(GdkColor *)g_malloc(sizeof(GdkColor));
+      if (color==NULL)
+	SIMPLE_OUT_OF_MEMORY_ERROR("get_color",sizeof(GdkColor));
+    }
     gnome_canvas_get_color(GNOME_CANVAS(THIS->obj),spec,color);
     pgtk2_pop_n_elems(args);
     push_gdkobject(color,color,1);

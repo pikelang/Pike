@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: font.c,v 1.91 2008/05/04 00:34:22 nilsson Exp $
+|| $Id: font.c,v 1.92 2010/07/27 16:46:05 mast Exp $
 */
 
 #include "global.h"
@@ -310,11 +310,11 @@ void font_load(INT32 args)
   size_t mmaped_size = 0;
 #endif
   size_t size = 0;
-  char *filename;
+  char *filename = NULL;
 
   get_all_args("Image.Font->load()", args, ".%s", &filename);
 
-  if (!args) 
+  if (!filename)
   {
     fh = (struct file_head *)image_default_font;
     size = IMAGE_DEFAULT_FONT_SIZE;
@@ -408,7 +408,7 @@ void font_load(INT32 args)
 	new_font=malloc(sizeof(struct font)+
 			sizeof(struct _char)*(num_chars-1));
 	if(!new_font) {
-	  if (args) {
+	  if (filename) {
 #ifdef HAVE_MMAP
 	    if (mmaped_size)
 	      munmap((void *)fh, mmaped_size);
@@ -470,7 +470,7 @@ void font_load(INT32 args)
 #ifdef FONT_DEBUG
     else fprintf(stderr,"FONT wrong cookie\n");
 #endif
-    if (args) {
+    if (filename) {
 #ifdef HAVE_MMAP
       if (mmaped_size)
 	munmap((void *)fh, mmaped_size);

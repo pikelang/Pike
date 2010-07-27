@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.703 2010/07/27 15:33:37 mast Exp $
+|| $Id: builtin_functions.c,v 1.704 2010/07/27 16:46:01 mast Exp $
 */
 
 #include "global.h"
@@ -2886,13 +2886,13 @@ PMOD_EXPORT void f_time(INT32 args)
 PMOD_EXPORT void f_crypt(INT32 args)
 {
   char salt[2];
-  char *ret, *pwd, *saltp;
+  char *ret, *pwd, *saltp = NULL;
   char *choise =
     "cbhisjKlm4k65p7qrJfLMNQOPxwzyAaBDFgnoWXYCZ0123tvdHueEGISRTUV89./";
 
   get_all_args("crypt", args, "%s.%s", &pwd, &saltp);
 
-  if(args>1)
+  if(saltp)
   {
     if( Pike_sp[1-args].u.string->len < 2 )
     {
@@ -5501,7 +5501,7 @@ static int my_time_inverse (struct tm *target_tm, time_t *result, time_fn timefn
 PMOD_EXPORT void f_mktime (INT32 args)
 {
   INT_TYPE sec, min, hour, mday, mon, year;
-  INT_TYPE isdst = -1, tz;
+  INT_TYPE isdst = -1, tz = 0;
   struct tm date;
   time_t retval;
 

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: socket.c,v 1.111 2010/06/22 14:02:26 grubba Exp $
+|| $Id: socket.c,v 1.112 2010/07/27 16:46:05 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -191,7 +191,7 @@ static void port_errno(INT32 args)
 static void port_listen_fd(INT32 args)
 {
   struct port *p = THIS;
-  struct svalue *cb;
+  struct svalue *cb = NULL;
   int fd;
   do_close(p);
 
@@ -214,7 +214,7 @@ static void port_listen_fd(INT32 args)
   }
 
   change_fd_for_box (&p->box, fd);
-  if(args > 1) assign_accept_cb (p, cb);
+  if(cb) assign_accept_cb (p, cb);
   p->my_errno=0;
   pop_n_elems(args);
   push_int(1);
@@ -425,7 +425,7 @@ static void bind_unix(INT32 args)
   }
 
   change_fd_for_box (&p->box, fd);
-  if(args > 1) assign_accept_cb (p, cb);
+  if (cb) assign_accept_cb (p, cb);
   p->my_errno=0;
   pop_n_elems(args);
   push_int(1);
