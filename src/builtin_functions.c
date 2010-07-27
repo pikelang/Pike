@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.702 2010/07/19 15:30:48 mast Exp $
+|| $Id: builtin_functions.c,v 1.703 2010/07/27 15:33:37 mast Exp $
 */
 
 #include "global.h"
@@ -2559,7 +2559,7 @@ PMOD_EXPORT void f_allocate(INT32 args)
 {
   INT_TYPE size;
   struct array *a;
-  struct svalue *init;
+  struct svalue *init = NULL;
 
   get_all_args("allocate", args, "%+.%*", &size, &init);
   if (size > MAX_INT32)
@@ -2570,9 +2570,19 @@ PMOD_EXPORT void f_allocate(INT32 args)
   {
     INT32 e;
     push_array (a);
-    for(e=0;e<size;e++)
-      copy_svalues_recursively_no_free(a->item+e, init, 1, 0);
-    a->type_field = 1 << init->type;
+    if (init) {
+      for(e=0;e<size;e++)
+	copy_svalues_recursively_no_free(a->item+e, init, 1, 0);
+      a->type_field = 1 << init->type;
+    }
+    else {
+      /* It's somewhat quirky that allocate(17) and allocate(17, UNDEFINED)
+       * have different behavior, but it's of some use, and it's compatible
+       * with previous versions. */
+      for(e=0;e<size;e++)
+	ITEM (a)[e] = svalue_undefined;
+      a->type_field = BIT_INT;
+    }
     stack_pop_n_elems_keep_top (args);
   }
   else {
