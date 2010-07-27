@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: module_support.c,v 1.74 2008/04/25 13:46:30 grubba Exp $
+|| $Id: module_support.c,v 1.75 2010/07/27 16:43:16 mast Exp $
 */
 
 #include "global.h"
@@ -160,14 +160,21 @@ PMOD_EXPORT void check_all_args(const char *fnname, int args, ... )
  * For compatibility:
  *
  *   %s: char *				Only 8 bit strings without NUL.
- *   %S: struct pike_string *		Only 8bit strings
+ *   %S: struct pike_string *		Only 8 bit strings
  *   %W: struct pike_string *		Allow wide strings
  *   %M: struct multiset *
  *
  * A period can be specified between type specifiers to mark the start
  * of optional arguments. If the real arguments run out in the list of
- * optional arguments, the remaining pointers won't be assigned at
- * all.
+ * optional arguments, or if a real argument is UNDEFINED in an
+ * optional argument position, the corresponding pointer won't be
+ * assigned at all.
+ *
+ * WARNING: If you use a period to parse optional arguments, then you
+ * should _always_ initialize the corresponding variables before
+ * calling get_args/get_all_args. Just looking at num_args afterwards
+ * is not safe since the user might have passed UNDEFINED, in which
+ * case the variable won't be assigned anyway.
  *
  * Note: If there are more arguments than there are type specifiers
  * the excessive arguments will be silently ignored. This may change
@@ -225,6 +232,15 @@ static int va_get_args_2(struct svalue *s,
     ptr = va_arg(ap, void *);
 
 #define cast_arg(PTR, TYPE)	((TYPE)(PTR))
+
+#ifdef PIKE_DEBUG
+    /* Try to check that the caller has given the variable for every
+     * optional argument a value, because otherwise the caller is
+     * almost certainly doing something stupid. See the warning in the
+     * blurb above. */
+    if (optional && PIKE_MEM_NOT_DEF (*cast_arg (ptr, char *)))
+      Pike_fatal ("Detected undefined default value for optional argument.\n");
+#endif
 
     if (optional && IS_UNDEFINED (s)) {
       /* An optional argument with an undefined value should be
