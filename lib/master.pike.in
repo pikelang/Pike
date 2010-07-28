@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.473 2010/06/16 14:17:32 grubba Exp $
+// $Id: master.pike.in,v 1.474 2010/07/28 10:29:59 mast Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -5719,6 +5719,8 @@ string _sprintf(int t)
 {
   // NOTE: The ||'O' is for Pike 7.2 compat only.
   switch(t||'O') {
+    // FIXME: What good is this lying for 't'? The master is still an
+    // object.. /mast
   case 't': return "master";
   case 'O': return "master()";
   }
