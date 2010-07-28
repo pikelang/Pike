@@ -32,6 +32,12 @@ cond_begin([[ master()->resolv("Regexp.PCRE.Plain") ]])
 
    test_equal([[Regexp.PCRE ("")->replace ("xyz", "123")]], "123x123y123z123")
 
+test_any_equal([[
+  // Crash bug reported by Eiichiro ITANI.
+  object re = Regexp.PCRE("(a)?(b)");
+  return re->split("b");
+]], [[({0, "b"})]])
+
 cond_end // Regexp.PCRE.Plain
 
 cond_begin([[ master()->resolv("Regexp.PCRE.Widestring") ]])
