@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pcre_glue.cmod,v 1.17 2004/06/28 00:23:52 aldem Exp $
+|| $Id: pcre_glue.cmod,v 1.18 2010/07/28 21:42:26 mast Exp $
 || (original author: mirar)
 */
 
 #include "global.h"
-RCSID("$Id: pcre_glue.cmod,v 1.17 2004/06/28 00:23:52 aldem Exp $");
+RCSID("$Id: pcre_glue.cmod,v 1.18 2010/07/28 21:42:26 mast Exp $");
 #include "pcre_machine.h"
 
 #include "pike_macros.h"
@@ -500,18 +500,18 @@ PIKEFUN array(string) split_subject(string subject,array(int) previous_result)
 
    for (i=0; i<sz*2; i++)
       if (ITEM(previous_result)[i].type!=T_INT)
-	 SIMPLE_BAD_ARG_ERROR("split_subjects",2,"array(int)");
+	 SIMPLE_BAD_ARG_ERROR("split_subject",2,"array(int)");
 
    res=allocate_array(sz);   
    for (i=j=0; j<sz; i+=2,j++)
    {
-      ITEM(res)[j].type=T_STRING;
-      ITEM(res)[j].subtype=0;
-      ITEM(res)[j].u.string=
-	 string_slice(subject,
-		      ITEM(previous_result)[i].u.integer,
-		      ITEM(previous_result)[i+1].u.integer-
-		      ITEM(previous_result)[i].u.integer);
+     INT_TYPE start = ITEM(previous_result)[i].u.integer;
+     INT_TYPE end = ITEM(previous_result)[i+1].u.integer;
+     if (start >= 0 && end >= start) {
+       ITEM(res)[j].type=T_STRING;
+       ITEM(res)[j].subtype=0;
+       ITEM(res)[j].u.string= string_slice(subject, start, end - start);
+     }
    }
 
    RETURN res;

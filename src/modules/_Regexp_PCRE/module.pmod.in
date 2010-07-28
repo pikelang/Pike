@@ -1,5 +1,5 @@
 // -*- Pike -*-
-// $Id: module.pmod.in,v 1.8 2004/02/19 13:53:38 nilsson Exp $
+// $Id: module.pmod.in,v 1.9 2010/07/28 21:42:26 mast Exp $
 // original author: mirar
 
 #pike __REAL_VERSION__
@@ -274,8 +274,11 @@ class Widestring
       array(int)|int v=::exec(subject_utf8,startoffset);
 
       if (intp(v)) return handle_exec_error([int]v);
-      return map(split_subject(subject_utf8,[array(int)]v),
-		 utf8_to_string);
+      array(string) res = split_subject(subject_utf8,[array(int)]v);
+      foreach (res; int i; string subres)
+	if (stringp (subres))
+	  res[i] = utf8_to_string (subres);
+      return res;
    }
 
 //! The exec function is wrapped to give the correct indexes for 
