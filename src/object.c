@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.310 2010/07/11 10:08:02 grubba Exp $
+|| $Id: object.c,v 1.311 2010/07/28 22:50:59 mast Exp $
 */
 
 #include "global.h"
@@ -658,6 +658,7 @@ PMOD_EXPORT struct object *get_master(void)
   }
 
   {
+    int f;
     ONERROR uwp;
 
     /* fprintf(stderr, "Cloning master...\n"); */
@@ -673,7 +674,11 @@ PMOD_EXPORT struct object *get_master(void)
 
     call_c_initializers(master_object);
     call_pike_initializers(master_object,0);
-  
+
+    f = find_identifier ("is_pike_master", master_program);
+    if (f >= 0)
+      object_low_set_index (master_object, f, &svalue_int_one);
+
     /* fprintf(stderr, "Master loaded.\n"); */
 
     UNSET_ONERROR (uwp);

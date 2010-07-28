@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.474 2010/07/28 10:29:59 mast Exp $
+// $Id: master.pike.in,v 1.475 2010/07/28 22:50:57 mast Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -84,6 +84,13 @@ int compat_minor=-1;
 
 //!
 int show_if_constant_errors = 0;
+
+int is_pike_master = 0;
+// This integer variable should exist in any object that aspires to be
+// the master. It gets set to 1 when the master is installed, and is
+// therefore set in any object that is or has been the master. That
+// makes the Encoder class encode references to the master and all
+// ex-masters as references to the current master object.
 
 // ---  Functions begin here.
 

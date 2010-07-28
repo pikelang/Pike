@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.704 2010/07/27 16:46:01 mast Exp $
+|| $Id: builtin_functions.c,v 1.705 2010/07/28 22:51:00 mast Exp $
 */
 
 #include "global.h"
@@ -7364,22 +7364,28 @@ PMOD_EXPORT void f__typeof(INT32 args)
  */
 PMOD_EXPORT void f_replace_master(INT32 args)
 {
+  struct object *new_master;
   ASSERT_SECURITY_ROOT("replace_master");
 
   if(!args)
     SIMPLE_TOO_FEW_ARGS_ERROR("replace_master", 1);
   if(Pike_sp[-args].type != T_OBJECT)
     SIMPLE_BAD_ARG_ERROR("replace_master", 1, "object");
-  if(!Pike_sp[-args].u.object->prog)
+  new_master = Pike_sp[-args].u.object;
+  if(!new_master->prog)
     bad_arg_error("replace_master", Pike_sp-args, args, 1, "object", Pike_sp-args,
 		  "Called with destructed object.\n");
 
   if (Pike_sp[-args].subtype)
     bad_arg_error("replace_master", Pike_sp-args, args, 1, "object", Pike_sp-args,
 		  "Subtyped master objects are not supported yet.\n");
-    
+
+  push_constant_text ("is_pike_master");
+  args++;
+  object_set_index (new_master, 0, Pike_sp - 1, &svalue_int_one);
+
   free_object(master_object);
-  master_object=Pike_sp[-args].u.object;
+  master_object=new_master;
   add_ref(master_object);
 
   free_program(master_program);
