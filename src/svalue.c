@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.261 2010/07/11 12:39:10 jonasw Exp $
+|| $Id: svalue.c,v 1.262 2010/07/28 22:46:39 mast Exp $
 */
 
 #include "global.h"
@@ -30,14 +30,10 @@
 
 #define sp Pike_sp
 
-PMOD_EXPORT const struct svalue svalue_undefined =
+PMOD_EXPORT struct svalue svalue_undefined =
   SVALUE_INIT (T_INT, NUMBER_UNDEFINED, 0);
-PMOD_EXPORT const struct svalue svalue_int_zero = SVALUE_INIT_INT (0);
-#ifdef HAVE_UNION_INIT
-PMOD_EXPORT const struct svalue svalue_int_one = SVALUE_INIT_INT (1);
-#else
+PMOD_EXPORT struct svalue svalue_int_zero = SVALUE_INIT_INT (0);
 PMOD_EXPORT struct svalue svalue_int_one = SVALUE_INIT_INT (1);
-#endif
 
 #ifdef PIKE_DEBUG
 PMOD_EXPORT const char msg_type_error[] =

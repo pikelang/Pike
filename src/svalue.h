@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.h,v 1.172 2010/02/18 08:52:55 srb Exp $
+|| $Id: svalue.h,v 1.173 2010/07/28 22:46:40 mast Exp $
 */
 
 #ifndef SVALUE_H
@@ -323,13 +323,8 @@ struct svalue
 
 #define FUNCTION_BUILTIN USHRT_MAX
 
-extern PMOD_EXPORT const struct svalue svalue_undefined, svalue_int_zero;
-#ifdef HAVE_UNION_INIT
-extern PMOD_EXPORT const struct svalue svalue_int_one;
-#else
-/* The value 1 is initialized first thing in init_pike. */
-extern PMOD_EXPORT struct svalue svalue_int_one;
-#endif
+extern PMOD_EXPORT struct svalue svalue_undefined,
+  svalue_int_zero, svalue_int_one;
 
 #define is_gt(a,b) is_lt(b,a)
 #define is_ge(a,b) is_le(b,a)
