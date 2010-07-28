@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.475 2010/07/28 22:50:57 mast Exp $
+// $Id: master.pike.in,v 1.476 2010/07/28 22:58:01 mast Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -5097,6 +5097,11 @@ class Encoder
 						   module_object))
 	    ENC_RETURN (ref);
 	}
+      }
+
+      else if (what->is_pike_master) {
+	ENC_MSG ("  is a master object\n");
+	ENC_RETURN ("o/master");
       }
 
       program prog;
