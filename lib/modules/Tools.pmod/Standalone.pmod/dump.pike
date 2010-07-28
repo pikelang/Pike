@@ -6,7 +6,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dump.pike,v 1.11 2009/09/25 11:12:59 grubba Exp $
+|| $Id: dump.pike,v 1.12 2010/07/28 23:31:42 mast Exp $
 */
 
 constant description = "Dumps Pike files into object files.";
@@ -114,9 +114,11 @@ class MyMaster
     }
     programs["/master"] = this_program;
     objects[this_program] = this;
-#if constant(_gdb_breakpoint)
-    _gdb_breakpoint();
-#endif
+
+    // When we arrive at our own dump.pike during dumping, we should
+    // dump it as a module class like any other, and thus we should
+    // remove the /main special case.
+    m_delete (programs, "/main");
   }
 }
 
