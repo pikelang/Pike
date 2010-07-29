@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pcre_glue.cmod,v 1.18 2010/07/28 21:42:26 mast Exp $
+|| $Id: pcre_glue.cmod,v 1.19 2010/07/29 12:31:46 mast Exp $
 || (original author: mirar)
 */
 
 #include "global.h"
-RCSID("$Id: pcre_glue.cmod,v 1.18 2010/07/28 21:42:26 mast Exp $");
+RCSID("$Id: pcre_glue.cmod,v 1.19 2010/07/29 12:31:46 mast Exp $");
 #include "pcre_machine.h"
 
 #include "pike_macros.h"
@@ -511,6 +511,13 @@ PIKEFUN array(string) split_subject(string subject,array(int) previous_result)
        ITEM(res)[j].type=T_STRING;
        ITEM(res)[j].subtype=0;
        ITEM(res)[j].u.string= string_slice(subject, start, end - start);
+     }
+     else {
+       /* This is bogus, but defacto compatible with how string_slice
+	* behaved in the old code above when rtldebug isn't enabled. */
+       ITEM(res)[j].type=T_STRING;
+       ITEM(res)[j].subtype=0;
+       copy_shared_string (ITEM(res)[j].u.string, empty_pike_string);
      }
    }
 
