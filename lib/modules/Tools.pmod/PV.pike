@@ -2,7 +2,23 @@
 
 //! Display a image on the screen. Requires GTK.
 
+#if constant(GTK2.TRUE)
+// Toplevel compat for GTK2
+constant GTK = GTK2;
+class GDK { constant Pixmap = GTK2.GdkPixmap; }
+#define USE_GTK2
+#endif
+
 inherit GTK.Window;
+
+#ifdef USE_GTK2
+// Compat for old Window functions
+void set_background(GTK2.GdkPixmap p) { get_window()->set_background(p); }
+GTK2.GdkWindow get_gdkwindow() { return get_window(); }
+void set_policy( int a, int b, int c ) { set_resizable(a||b); }
+void set_usize(int w, int h) { set_size_request(w, h); }
+void set_app_paintable(int flag) { (flag? set_flags:unset_flags)(GTK2.APP_PAINTABLE); }
+#endif
 
 typedef Standards.URI|string|Image.Image|Image.Layer|array(Image.Layer) PVImage;
 //! The image types accepted. If the image is a string, it is assumed

@@ -2,7 +2,7 @@
 
 constant description = "Pike image viewer (diet).";
 
-#if constant(GTK.Window)
+#if constant(GTK.Window) || constant(GTK2.Window)
 int main(int argc, array(string) argv)
 {
   if(argc<2) { werror("Usage: pike -x pv files...\n"); return 1; }
