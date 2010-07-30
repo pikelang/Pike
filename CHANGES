@@ -27,6 +27,9 @@ o Protocols.HTTP
   Allow directly specifying the body of a POST request (needed for the Google
   Apps API).
 
+o Tools.PV and pike -x pv now works with GTK2 as well as GTK.
+
+
 Deprecations
 ------------
 
