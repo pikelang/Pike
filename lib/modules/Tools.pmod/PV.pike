@@ -2,7 +2,7 @@
 
 //! Display a image on the screen. Requires GTK.
 
-#if constant(GTK2.TRUE)
+#if constant(GTK2.Window)
 // Toplevel compat for GTK2
 constant GTK = GTK2;
 class GDK { constant Pixmap = GTK2.GdkPixmap; }
