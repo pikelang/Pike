@@ -109,11 +109,8 @@ void set(Image.Image|int image_or_xsize,int|void ysize)
 
   if (args==1) {
     get_all_args("init",args,"%o",&img);
-    /* Might throw an error!*/
-    if (THIS->obj)
-      g_object_unref(THIS->obj);
     THIS->obj=G_OBJECT(gdkimage_from_pikeimage(img,THIS->extra_int,
-						 (void *)THIS->obj));
+					       &THIS->obj));
   } else {
     INT_TYPE x,y;
     GdkImage *gi;

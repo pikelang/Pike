@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: support.c,v 1.23 2010/02/09 17:53:42 ldillon Exp $
+|| $Id: support.c,v 1.24 2010/07/31 23:35:36 marcus Exp $
 */
 
 #include <version.h>
@@ -86,7 +86,8 @@ int get_color_from_pikecolor(struct object *o, INT_TYPE *r, INT_TYPE *g, INT_TYP
   return 1;
 }
 
-GdkImage *gdkimage_from_pikeimage(struct object *img, int fast, GdkImage *i) {
+GdkImage *gdkimage_from_pikeimage(struct object *img, int fast, GObject **pi) {
+  GdkImage *i;
   GdkColormap *col=gdk_colormap_get_system();
   GdkVisual *vis=gdk_visual_get_system();
   struct image *img_data;
@@ -103,16 +104,21 @@ GdkImage *gdkimage_from_pikeimage(struct object *img, int fast, GdkImage *i) {
 
   if (x==0 || y==0)
     Pike_error("Size of image must be > 0x0\n");
-  if (i) {
-    if ((i->width!=x) || (i->height!=y)) {
-      gdk_image_destroy((void *)i);
+  if (pi) {
+    i = *pi;
+    if (i != NULL && ((i->width!=x) || (i->height!=y))) {
+      g_object_unref(i);
+      gdk_image_destroy(i);
       i=NULL;
     }
-  }
+  } else
+    i=NULL;
   if (!i) {
     PFTIME("Create");
     i=(void *)gdk_image_new(fast,vis,x,y);
   }
+  if (pi)
+    *pi = i;
 
   if (!i)
     Pike_error("Failed to create gdkimage\n");

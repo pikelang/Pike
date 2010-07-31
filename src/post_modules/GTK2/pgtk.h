@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pgtk.h,v 1.20 2010/02/11 15:48:06 ldillon Exp $
+|| $Id: pgtk.h,v 1.21 2010/07/31 23:35:33 marcus Exp $
 */
 
 /* Sort of unnessesary, and decreases code-size with 140Kb */
@@ -175,7 +175,7 @@ void push_pgdk2object(void *obj, struct program *def, int owned);
 #define push_gdkobject(X,Y,Z) push_pgdk2object(X,pgdk2_##Y##_program,Z)
 
 
-GdkImage *pgtk2_gdkimage_from_pikeimage(struct object *img, int fast, GdkImage *i);
+GdkImage *pgtk2_gdkimage_from_pikeimage(struct object *img, int fast, GObject **pi);
 struct object *pgtk2_pikeimage_from_gdkimage(GdkImage *img);
 #define gdkimage_from_pikeimage pgtk2_gdkimage_from_pikeimage
 #define pikeimage_from_gdkimage pgtk2_pikeimage_from_gdkimage
