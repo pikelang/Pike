@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: support.c,v 1.25 2010/07/31 23:54:07 marcus Exp $
+|| $Id: support.c,v 1.26 2010/08/01 00:10:20 marcus Exp $
 */
 
 #include <version.h>
@@ -105,7 +105,7 @@ GdkImage *gdkimage_from_pikeimage(struct object *img, int fast, GObject **pi) {
   if (x==0 || y==0)
     Pike_error("Size of image must be > 0x0\n");
   if (pi) {
-    i = *pi;
+    i = GDK_IMAGE(*pi);
     if (i != NULL && ((i->width!=x) || (i->height!=y))) {
       g_object_unref(i);
       i=NULL;
@@ -117,7 +117,7 @@ GdkImage *gdkimage_from_pikeimage(struct object *img, int fast, GObject **pi) {
     i=(void *)gdk_image_new(fast,vis,x,y);
   }
   if (pi)
-    *pi = i;
+    *pi = G_OBJECT(i);
 
   if (!i)
     Pike_error("Failed to create gdkimage\n");
