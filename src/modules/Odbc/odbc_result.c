@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc_result.c,v 1.50 2008/11/05 11:52:42 grubba Exp $
+|| $Id: odbc_result.c,v 1.51 2010/08/04 12:57:56 grubba Exp $
 */
 
 /*
@@ -10,6 +10,11 @@
  *
  * Henrik Grubbström
  */
+
+/* FIXME: ODBC allows for multiple result sets from the same query.
+ * Support for SQLMoreResults should be added to support that (and it
+ * needs to work also in the case when the first result set has no
+ * columns). */
 
 /*
  * Includes
@@ -21,7 +26,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-RCSID("$Id: odbc_result.c,v 1.50 2008/11/05 11:52:42 grubba Exp $");
+RCSID("$Id: odbc_result.c,v 1.51 2010/08/04 12:57:56 grubba Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -133,6 +138,8 @@ static void odbc_fix_fields(void)
   SQLHSTMT hstmt = PIKE_ODBC_RES->hstmt;
   int i;
   SWORD *odbc_field_types = alloca(sizeof(SWORD) * PIKE_ODBC_RES->num_fields);
+  SQLULEN *odbc_field_sizes =
+    alloca(sizeof(SQLULEN) * PIKE_ODBC_RES->num_fields);
   size_t buf_size = 1024;
 #ifdef SQL_WCHAR
   SQLWCHAR *buf = alloca(buf_size * sizeof(SQLWCHAR));
@@ -230,33 +237,48 @@ static void odbc_fix_fields(void)
 #endif /* ODBC_DEBUG */
     odbc_field_types[i] = SQL_C_CHAR;
 #endif
+    odbc_field_sizes[i] = precision;
     switch(sql_type) {
     case SQL_CHAR:
+#ifdef SQL_WCHAR
+    case SQL_WCHAR:
+#endif
       push_text("char");
       break;
     case SQL_NUMERIC:
       push_text("numeric");
+      odbc_field_types[i] = SQL_C_CHAR;
       break;
     case SQL_DECIMAL:
       push_text("decimal");
+      odbc_field_types[i] = SQL_C_CHAR;
       break;
     case SQL_INTEGER:
       push_text("integer");
+      odbc_field_types[i] = SQL_C_CHAR;
       break;
     case SQL_SMALLINT:
       push_text("short");
+      odbc_field_types[i] = SQL_C_CHAR;
       break;
     case SQL_FLOAT:
       push_text("float");
+      odbc_field_types[i] = SQL_C_CHAR;
       break;
     case SQL_REAL:
       push_text("real");
+      odbc_field_types[i] = SQL_C_CHAR;
       break;
     case SQL_DOUBLE:
       push_text("double");
+      odbc_field_types[i] = SQL_C_CHAR;
       break;
     case SQL_VARCHAR:
+#ifdef SQL_WVARCHAR
+    case SQL_WVARCHAR:
+#endif
       push_text("var string");
+      odbc_field_sizes[i] = 0;	/* Variable length */
       break;
     case SQL_DATE:
       push_text("date");
@@ -265,7 +287,11 @@ static void odbc_fix_fields(void)
       push_text("time");
       break;
     case SQL_LONGVARCHAR:
+#ifdef SQL_WLONGVARCHAR
+    case SQL_WLONGVARCHAR:
+#endif
       push_text("var string");
+      odbc_field_sizes[i] = 0;	/* Variable length */
       break;
     case SQL_BINARY:
       push_text("binary");
@@ -280,6 +306,7 @@ static void odbc_fix_fields(void)
       fprintf(stderr, "SQL_C_BINARY\n");
 #endif /* ODBC_DEBUG */
       odbc_field_types[i] = SQL_C_BINARY;
+      odbc_field_sizes[i] = 0;	/* Variable length */
       break;
     case SQL_LONGVARBINARY:
       push_text("long blob");
@@ -287,6 +314,7 @@ static void odbc_fix_fields(void)
       fprintf(stderr, "SQL_C_BINARY\n");
 #endif /* ODBC_DEBUG */
       odbc_field_types[i] = SQL_C_BINARY;
+      odbc_field_sizes[i] = 0;	/* Variable length */
       break;
     case SQL_BIGINT:
       push_text("long integer");
@@ -329,8 +357,19 @@ static void odbc_fix_fields(void)
   /*
    * Now it's time to bind the columns
    */
-  for (i=0; i < PIKE_ODBC_RES->num_fields; i++)
+  for (i=0; i < PIKE_ODBC_RES->num_fields; i++) {
     PIKE_ODBC_RES->field_info[i].type = odbc_field_types[i];
+#ifdef SQL_WCHAR
+    if (odbc_field_types[i] == SQL_C_WCHAR) {
+      /* NOTE: Field size is in characters, while SQLGetData()
+       *       wants bytes.
+       */
+      PIKE_ODBC_RES->field_info[i].size = odbc_field_sizes[i]
+	* (ptrdiff_t)sizeof(SQLWCHAR);
+    } else
+#endif 
+      PIKE_ODBC_RES->field_info[i].size = odbc_field_sizes[i];
+  }
 }
 
 /*
@@ -550,37 +589,88 @@ static void f_fetch_row(INT32 args)
 		     code, NULL, NULL);
  
     for (i=0; i < PIKE_ODBC_RES->num_fields; i++) {
-      SQLLEN len = 0;
+      SQLLEN len = PIKE_ODBC_RES->field_info[i].size;
       SWORD field_type = PIKE_ODBC_RES->field_info[i].type;
       static char dummy_buf[4];
 
-      /* First get the size of the data. */
+      /* First get the size of the data.
+       *
+       * Note that this method of getting the size apparently isn't
+       * always supported for all data types (eg for INTEGER/MSSQL),
+       * where we instead use the width returned by SQLDescribeCol()
+       * earlier.
+       *
+       * Note also that FreeTDS/UnixODBC apparently has both a broken
+       * SQLDescribeCol() (which returns the SQL_C_BINARY size for
+       * eg INTEGER even if SQL_C_CHAR has been requested, and a
+       * SQLGetData() which doesn't properly support streamed fetching.
+       *
+       * We tried solving this by performing SQLGetData with zero size,
+       * and using the result if it succeeded, using the SQLDescribeCol()
+       * size if not zero, and otherwise throw an error. Unfortunately
+       * this didn't work, since MSSQL believes that it returned all the
+       * data in the first call (which failed with code "22003")...
+       *
+       * On unbroken ODBC implementations the UnixODBC method is
+       * preferred, since less buffer space is wasted.
+       */
 
-      ODBC_ALLOW();
+#ifdef __NT__
+      if (!len) {
+#endif /* __NT__ */
 
-      code = SQLGetData(hstmt, (SQLUSMALLINT)(i+1),
-			field_type, dummy_buf, 0, &len);
-#ifdef SQL_WCHAR
-      if (code == SQL_NULL_DATA && (field_type == SQL_C_WCHAR)) {
-	/* Kludge for FreeTDS which doesn't support WCHAR.
-	 * Refetch as a normal char.
-	 */
+	ODBC_ALLOW();
+
 #ifdef ODBC_DEBUG
-	fprintf(stderr, "ODBC:fetch_row(): Field %d: WCHAR not supported.\n",
-		i + 1);
+	fprintf(stderr, "ODBC:fetch_row(): Field %d: "
+		"SQLGetData(X, %d, %d, X, 0, X)...\n",
+		i + 1, i+1, field_type);
 #endif /* ODBC_DEBUG */
-	field_type = SQL_C_CHAR;
 	code = SQLGetData(hstmt, (SQLUSMALLINT)(i+1),
 			  field_type, dummy_buf, 0, &len);
-      }
+#ifdef SQL_WCHAR
+	if (code == SQL_NULL_DATA && (field_type == SQL_C_WCHAR)) {
+	  /* Kludge for FreeTDS which doesn't support WCHAR.
+	   * Refetch as a normal char.
+	   */
+#ifdef ODBC_DEBUG
+	  fprintf(stderr, "ODBC:fetch_row(): Field %d: WCHAR not supported.\n",
+		  i + 1);
+#endif /* ODBC_DEBUG */
+	  field_type = SQL_C_CHAR;
+#ifdef ODBC_DEBUG
+	  fprintf(stderr, "ODBC:fetch_row(): Field %d: "
+		  "SQLGetData(X, %d, %d, X, 0, X)...\n",
+		  i + 1, i+1, field_type);
+#endif /* ODBC_DEBUG */
+	  code = SQLGetData(hstmt, (SQLUSMALLINT)(i+1),
+			    field_type, dummy_buf, 0, &len);
+	}
 #endif
 
-      ODBC_DISALLOW();
+#ifdef ODBC_DEBUG
+	fprintf(stderr, "ODBC:fetch_row(): Field %d: "
+		"SQLGetData(X, %d, %d, X, 0, X, X) ==> code: %d, len: %ld.\n",
+		i + 1,
+		i+1, field_type, code, len);
+#endif /* ODBC_DEBUG */
+
+	ODBC_DISALLOW();
 
 #ifdef SQL_WCHAR
-      /* In case the type got changed in the kludge above. */
-      PIKE_ODBC_RES->field_info[i].type = field_type;
+	/* In case the type got changed in the kludge above. */
+	PIKE_ODBC_RES->field_info[i].type = field_type;
 #endif
+
+#ifdef __NT__
+      }
+#endif /* __NT__ */
+
+#ifdef ODBC_DEBUG
+      fprintf(stderr, "ODBC:fetch_row(): Field %d: "
+	      "field_type: %d, len: %ld, code: %d.\n",
+	      i + 1, field_type, len, code);
+#endif /* ODBC_DEBUG */
 
       if (code == SQL_NO_DATA_FOUND) {
 	/* All data already returned. */
@@ -590,8 +680,10 @@ static void f_fetch_row(INT32 args)
 	push_text("");
 	continue;
       }
-      odbc_check_error("odbc->fetch_row", "SQLGetData() failed",
-		       code, NULL, NULL);
+      if (!len) {
+	odbc_check_error("odbc->fetch_row", "SQLGetData() failed",
+			 code, NULL, NULL);
+      }
       if (len == SQL_NULL_DATA) {
 #ifdef ODBC_DEBUG
 	fprintf(stderr, "ODBC:fetch_row(): NULL\n");
@@ -642,6 +734,12 @@ static void f_fetch_row(INT32 args)
 #endif /* SQL_WCHAR */
 	  }
 
+#ifdef ODBC_DEBUG
+	  fprintf(stderr, "ODBC:fetch_row(): Field %d: "
+		  "SQLGetData(X, %d, %d, X, %d, X)...\n",
+		  i + 1, i+1, field_type, bytes+pad);
+#endif /* ODBC_DEBUG */
+
 	  ODBC_ALLOW();
 
 	  code = SQLGetData(hstmt, (SQLUSMALLINT)(i+1),
@@ -652,8 +750,10 @@ static void f_fetch_row(INT32 args)
 	  num_strings++;
 #ifdef ODBC_DEBUG
 	  fprintf(stderr,
-		  "ODBC:fetch_row(): %d:%d: Got %ld/%ld bytes (pad: %ld).\n",
-		  i+1, num_strings, (long)bytes, (long)len, (long)pad);
+		  "ODBC:fetch_row(): %d:%d: Got %ld/%ld bytes (pad: %ld).\n"
+		  "     Code: %d\n",
+		  i+1, num_strings, (long)bytes, (long)len, (long)pad,
+		  code);
 #endif /* ODBC_DEBUG */
 	  if (code == SQL_NO_DATA_FOUND) {
 	    /* No data or end marker. */
@@ -666,6 +766,14 @@ static void f_fetch_row(INT32 args)
 	    if (!len) {
 	      free_string(s);
 	      push_text("");
+	      break;
+	    } else if (len == SQL_NULL_DATA) {
+	      free_string(s);
+	      if (num_strings > 1) {
+		num_strings--;
+	      } else {
+		push_undefined();
+	      }
 	      break;
 #ifdef SQL_NO_TOTAL
 	    } else if (len == SQL_NO_TOTAL) {
