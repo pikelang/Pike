@@ -877,6 +877,16 @@ GDK2.Window get_window();
 //! Returns the widget's window if it is realized, other NULL.
 endrequire;
 
+not gtk214;
+GDK2.Window get_window()
+{
+  pgtk2_verify_inited();
+  // Prior to GTK 2.14 this was retrieved straight from the struct. cf:
+  // http://mail.gnome.org/archives/gtk-devel-list/2004-September/msg00087.html
+  push_gobject(GTK_WIDGET(THIS->obj)->window);
+}
+endnot;
+
 void set_flags(int flags)
 //! Set certain flags, such as GTK2.CAN_DEFAULT.
 {
