@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: precompiled_odbc.h,v 1.24 2007/12/07 17:34:45 mast Exp $
+|| $Id: precompiled_odbc.h,v 1.25 2010/08/05 08:24:55 grubba Exp $
 */
 
 /*
@@ -47,6 +47,7 @@
 #include <sql.h>
 #endif /* HAVE_SQL_H */
 #endif /* !HAVE_ISQL_H */
+
 #ifdef HAVE_ISQLEXT_H
 #include <isqlext.h>
 #else /* !HAVE_ISQLEXT_H */
@@ -108,6 +109,7 @@ typedef HSTMT	SQLHSTMT;
 
 struct field_info {
   SWORD type;
+  SQLULEN size;
 };
 
 struct precompiled_odbc {
