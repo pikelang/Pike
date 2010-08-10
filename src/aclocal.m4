@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.171 2010/05/29 14:57:32 grubba Exp $
+dnl $Id: aclocal.m4,v 1.172 2010/08/10 15:09:46 grubba Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -654,7 +654,7 @@ define([PIKE_RETAIN_VARIABLES],
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.171 2010/05/29 14:57:32 grubba Exp $
+  # $Id: aclocal.m4,v 1.172 2010/08/10 15:09:46 grubba Exp $
 
   MY_AC_PROG_CC
 
@@ -1346,7 +1346,12 @@ AC_DEFUN(PIKE_WITH_ABI,
       ;;
       *)
         # Defaults
-        pike_cv_wanted_abi="32"
+	if test "x$pike_cv_default_compiler_abi" = "xunknown"; then
+          pike_cv_wanted_abi="32"
+	else
+	  # Default to the compiler default.
+	  pike_cv_wanted_abi="$pike_cv_default_compiler_abi"
+	fi
         case "x`uname -m`" in
           x*64)
             pike_cv_wanted_abi="64"
@@ -1364,6 +1369,11 @@ AC_DEFUN(PIKE_WITH_ABI,
           # On MacOS X hw.optional.64bitop is set to 1 if
           # 64bit is supported and useful.
           if test "`sysctl -n hw.optional.64bitops 2>/dev/null`" = "1"; then
+            pike_cv_wanted_abi="64"
+          fi
+          # On MacOS X hw.cpu64bit_capable is set to 1 if
+          # 64bit is supported and useful.
+          if test "`sysctl -n hw.cpu64bit_capable 2>/dev/null`" = "1"; then
             pike_cv_wanted_abi="64"
           fi
         fi
