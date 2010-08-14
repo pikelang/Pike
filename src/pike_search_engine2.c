@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_search_engine2.c,v 1.10 2008/06/23 19:30:42 mast Exp $
+|| $Id: pike_search_engine2.c,v 1.11 2010/08/14 16:16:34 jonasw Exp $
 */
 
 /*
@@ -37,7 +37,7 @@ static INLINE int NameNH(MEMCMP)(NCHAR *a, HCHAR *b, ptrdiff_t e)
 #endif
 }
 
-INLINE HCHAR *NameNH(memchr_search)(void *data,
+HCHAR *NameNH(memchr_search)(void *data,
 				    HCHAR *haystack,
 				    ptrdiff_t haystacklen)
 {
