@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: matrix.c,v 1.51 2005/08/15 17:00:39 grubba Exp $
+|| $Id: matrix.c,v 1.52 2010/08/14 16:07:30 jonasw Exp $
 */
 
 /*
@@ -713,7 +713,7 @@ static void img_skewx(struct image *src,
 
    if (dest->img) free(dest->img);
    if (diff<0)
-      dest->xsize = DOUBLE_TO_INT(ceil(-diff)) + src->xsize, x0=-diff;
+      dest->xsize = DOUBLE_TO_INT(ceil(-diff)) + src->xsize, x0 = -diff;
    else
       dest->xsize = DOUBLE_TO_INT(ceil(diff)) + src->xsize, x0=0;
    dest->ysize=src->ysize;
@@ -801,7 +801,7 @@ static void img_skewy(struct image *src,
 
    if (dest->img) free(dest->img);
    if (diff<0)
-      dest->ysize = DOUBLE_TO_INT(ceil(-diff)) + src->ysize, y0 =- diff;
+      dest->ysize = DOUBLE_TO_INT(ceil(-diff)) + src->ysize, y0 = -diff;
    else
       dest->ysize = DOUBLE_TO_INT(ceil(diff)) + src->ysize, y0 = 0;
    xsz=dest->xsize=src->xsize;

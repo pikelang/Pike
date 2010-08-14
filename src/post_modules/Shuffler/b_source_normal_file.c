@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: b_source_normal_file.c,v 1.15 2009/08/13 16:21:14 grubba Exp $
+|| $Id: b_source_normal_file.c,v 1.16 2010/08/14 16:07:30 jonasw Exp $
 */
 
 #include "global.h"
@@ -37,7 +37,7 @@ struct fd_source
   off_t len;
 };
 
-static struct data get_data( struct source *src, int len )
+static struct data get_data( struct source *src, off_t len )
 {
   struct fd_source *s = (struct fd_source *)src;
   struct data res;
