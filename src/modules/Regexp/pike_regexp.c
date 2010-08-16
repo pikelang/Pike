@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_regexp.c,v 1.27 2009/08/12 15:29:04 grubba Exp $
+|| $Id: pike_regexp.c,v 1.28 2010/08/16 19:00:19 mast Exp $
 */
 
 /*
@@ -72,6 +72,7 @@
 #include "pike_regexp.h"
 #include "pike_memory.h"
 #include "pike_error.h"
+#include "interpret.h"
 
 #undef NOTHING
 
@@ -878,6 +879,8 @@ char           *prog;
 {
     register char  *scan;	/* Current node. */
     char           *nxt;	/* nxt node. */
+
+    check_c_stack (4 * sizeof (void *));
 
     scan = prog;
 #ifdef PIKE_DEBUG
