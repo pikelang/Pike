@@ -523,7 +523,12 @@ static char *regpiece(int *flagp)
     }
     else
     {
-      /*  Emit a+ as (a&) where & means "self" /Fredrik Hubinette */
+      /* ret ->	1: x			nxt: 2
+       * tmp ->	2: BRANCH	op: 3	nxt: 4
+       *	3: BACK			nxt: 1
+       *	4: BRANCH	op: 5	nxt: 5
+       *	5: NOTHING
+       */
       char *tmp;
       tmp=regnode(BACK);
       reginsert(BRANCH, tmp);
