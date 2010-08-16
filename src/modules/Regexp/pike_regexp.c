@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_regexp.c,v 1.28 2010/08/16 19:00:19 mast Exp $
+|| $Id$
 */
 
 /*
@@ -129,6 +129,8 @@
 				 * times. */
 #define WORDSTART 11		/* node matching a start of a word          */
 #define WORDEND 12		/* node matching an end of a word           */
+#define KPLUS	13		/* node Match this (simple) thing 1 or more
+				 * times. */
 #define	OPEN	20		/* no	Mark this point in input as start of
 				 * #n. */
  /* OPEN+1 is number 1, etc. */
@@ -148,10 +150,10 @@
  * BACK		Normal "nxt" pointers all implicitly point forward; BACK
  *		exists to make loop structures possible.
  *
- * STAR		complex '*', are implemented as circular BRANCH structures 
+ * STAR,KPLUS	Complex cases are implemented as circular BRANCH structures
  *		using BACK.  Simple cases (one character per match) are 
- *		implemented with STAR for speed and to minimize recursive 
- *		plunges.
+ *		implemented with STAR or KPLUS for speed and to minimize
+ *		recursive plunges.
  *
  * OPEN,CLOSE	...are numbered at compile time.
  */
@@ -203,7 +205,7 @@
  * Flags to be passed up and down.
  */
 #define	HASWIDTH	01	/* Known never to match null string. */
-#define	SIMPLE		02	/* Simple enough to be STAR operand. */
+#define	SIMPLE		02	/* Simple enough to be STAR or KPLUS operand. */
 #define	SPSTART		04	/* Starts with * */
 #define	WORST		0	/* Worst case. */
 
@@ -470,7 +472,7 @@ static char  *regbranch(int *flagp)
 }
 
 /*
- - regpiece - something followed by possible [*]
+ - regpiece - something followed by possible [*] or [+]
  *
  * Note that the branching code sequence used for * is somewhat optimized:  
  * they use the same NOTHING node as both the endmarker for their branch 
@@ -515,14 +517,21 @@ static char *regpiece(int *flagp)
   }
   else if(op == PLUS)
   {
-    /*  Emit a+ as (a&) where & means "self" /Fredrik Hubinette */
-    char *tmp;
-    tmp=regnode(BACK);
-    reginsert(BRANCH, tmp);
-    regtail(ret, tmp);
-    regoptail(tmp, ret);
-    regtail(ret, regnode(BRANCH));
-    regtail(ret, regnode(NOTHING));
+    if (flags & SIMPLE)
+    {
+      reginsert(KPLUS, ret);
+    }
+    else
+    {
+      /*  Emit a+ as (a&) where & means "self" /Fredrik Hubinette */
+      char *tmp;
+      tmp=regnode(BACK);
+      reginsert(BRANCH, tmp);
+      regtail(ret, tmp);
+      regoptail(tmp, ret);
+      regtail(ret, regnode(BRANCH));
+      regtail(ret, regnode(NOTHING));
+    }
   }
     
   regparse++;
@@ -973,6 +982,7 @@ char           *prog;
 		}
 	    }
 	    break;
+	case KPLUS:
 	case STAR:{
 		register char   nextch;
 		register ptrdiff_t no;
@@ -1252,6 +1262,10 @@ char           *op;
 
     case STAR:
 	p = "STAR";
+	break;
+
+    case KPLUS:
+	p = "KPLUS";
 	break;
 
     default:
