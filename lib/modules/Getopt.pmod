@@ -51,9 +51,21 @@ protected void my_error(string err, int throw_errors) {
 //! @param def
 //!   This argument has two functions: It specifies if the option takes an
 //!   argument or not, and it informs @[find_option()] what to return if the
-//!   option is not present. If @[def] is given and the option does not have an
-//!   argument @[find_option()] will fail. @[def] can be specified as
-//!   @[UNDEFINED] or left out if the option does not take an argument.
+//!   option is not present.
+//!
+//!   The value may be one of:
+//!   @mixed
+//!     @type int(0)|zero
+//!       The option does not require a value.
+//!     @type int(1)|string
+//!       The option requires a value, and @[def] will be returned
+//!       if the option is not present. If the option is present,
+//!       but does not have an argument @[find_option()] will fail.
+//!
+//!       Note that a set option will always return a @expr{string@},
+//!       so setting @[def] to @expr{1@} can be used to detect whether
+//!       the option is present or not.
+//!   @endmixed
 //!
 //! @param throw_errors
 //!   If @[throw_errors] has been specified @[find_option()] will
