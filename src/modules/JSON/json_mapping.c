@@ -1,6 +1,6 @@
 
 #line 1 "rl/json_mapping.rl"
-// vim:syntax=ragel
+/* vim:syntax=ragel */
 
 
 
@@ -78,7 +78,7 @@ tr2:
 
 	if (state->flags&JSON_ERROR) {
 	    if (!(state->flags&JSON_VALIDATE)) {
-		pop_stack(); // pop mapping
+		pop_stack(); /* pop mapping */
 	    }
 	    return p;
 	}
@@ -133,7 +133,7 @@ tr6:
 
 	if (state->flags&JSON_ERROR) {
 	    if (!(state->flags&JSON_VALIDATE)) {
-		pop_2_elems(); // pop mapping and key
+		pop_2_elems(); /* pop mapping and key */
 	    }
 	    return p;
 	} else if (!(state->flags&JSON_VALIDATE)) {
@@ -186,7 +186,7 @@ case 6:
 
     state->flags |= JSON_ERROR;
     if (!(state->flags&JSON_VALIDATE)) {
-	if (c & 1) pop_2_elems(); // pop key and mapping
+	if (c & 1) pop_2_elems(); /* pop key and mapping */
 	else pop_stack();
     }
 

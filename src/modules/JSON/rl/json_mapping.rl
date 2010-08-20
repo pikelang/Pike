@@ -1,4 +1,4 @@
-// vim:syntax=ragel
+/* vim:syntax=ragel */
 
 
 %%{
@@ -14,7 +14,7 @@
 
 	if (state->flags&JSON_ERROR) {
 	    if (!(state->flags&JSON_VALIDATE)) {
-		pop_2_elems(); // pop mapping and key
+		pop_2_elems(); /* pop mapping and key */
 	    }
 	    return p;
 	} else if (!(state->flags&JSON_VALIDATE)) {
@@ -36,7 +36,7 @@
 
 	if (state->flags&JSON_ERROR) {
 	    if (!(state->flags&JSON_VALIDATE)) {
-		pop_stack(); // pop mapping
+		pop_stack(); /* pop mapping */
 	    }
 	    return p;
 	}
@@ -85,7 +85,7 @@ static ptrdiff_t _parse_JSON_mapping(PCHARP str, ptrdiff_t p, ptrdiff_t pe, stru
 
     state->flags |= JSON_ERROR;
     if (!(state->flags&JSON_VALIDATE)) {
-	if (c & 1) pop_2_elems(); // pop key and mapping
+	if (c & 1) pop_2_elems(); /* pop key and mapping */
 	else pop_stack();
     }
 

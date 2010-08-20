@@ -1,6 +1,6 @@
 
 #line 1 "rl/json_number.rl"
-// vim:syntax=ragel
+/* vim:syntax=ragel */
 
 
 #line 19 "rl/json_number.rl"

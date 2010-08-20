@@ -1,6 +1,6 @@
 
 #line 1 "rl/json_parser.rl"
-// vim: syntax=ragel
+/* vim: syntax=ragel */
 
 #include "mapping.h"
 #include "operators.h"

@@ -1,4 +1,4 @@
-// vim:syntax=ragel
+/* vim:syntax=ragel */
 
 %%{
     machine JSON_number;
