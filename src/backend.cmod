@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.245 2010/06/22 14:04:13 grubba Exp $
+ * $Id: backend.cmod,v 1.246 2010/08/20 11:00:32 grubba Exp $
  *
  * Backend object.
  */
@@ -3502,6 +3502,10 @@ PIKECLASS PollDeviceBackend
       timeout.tv_sec = (long) floor (sleep_time->u.float_number);
       timeout.tv_usec =
 	(long) ((sleep_time->u.float_number - timeout.tv_sec) * 1e6);
+    }
+    else if (sleep_time && sleep_time->type == T_INT &&
+	     sleep_time->u.integer) {
+      SIMPLE_BAD_ARG_ERROR("`()", 1, "float|int(0..0)");
     }
     else
       timeout.tv_sec = -1;
