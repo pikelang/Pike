@@ -30,17 +30,26 @@ class encoder
   protected string low_convert(string s, string|void r,
 			     function(string:string)|void rc)
   {
-    int i = sizeof(s);
+    if (String.width(s) <= 8) return s;
+
+    String.Buffer res = String.Buffer();
+    function(string ...:void) add = res->add;
+    function(int:void) putchar = res->putchar;
+
     string rr;
-    while(--i>=0)
-      if(s[i]>255)
+    foreach(s; int i; int c) {
+      if(c>255) {
 	if(rc && (rr = rc(s[i..i])))
-	  s=s[..i-1]+low_convert(rr,r)+s[i+1..];
+	  add(low_convert(rr,r));
 	else if(r)
-	  s=s[..i-1]+low_convert(r)+s[i+1..];
+	  add(r);
 	else
-	  error("Character unsupported by encoding.\n");
-    return s;
+	  encode_error (s, i, charset, "Character unsupported by encoding.\n");
+      } else {
+	putchar(c);
+      }
+    }
+    return res->get();
   }
   this_program feed(string ss)
   {
@@ -64,7 +73,7 @@ class encoder
   }
   protected void create(string|void r, string|void rc)
   {
-    replacement = r;
+    replacement = r && low_convert(r);
     repcb = rc;
   }
 }
