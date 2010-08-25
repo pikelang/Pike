@@ -34,21 +34,24 @@ class encoder
 
     String.Buffer res = String.Buffer();
     function(string ...:void) add = res->add;
-    function(int:void) putchar = res->putchar;
 
     string rr;
+    int l;
     foreach(s; int i; int c) {
       if(c>255) {
+	if (l < i)
+	  add (s[l..i - 1]);
+	l = i + 1;
 	if(rc && (rr = rc(s[i..i])))
 	  add(low_convert(rr,r));
 	else if(r)
 	  add(r);
 	else
 	  encode_error (s, i, charset, "Character unsupported by encoding.\n");
-      } else {
-	putchar(c);
       }
     }
+    if (l < sizeof (s))
+      add (s[l..]);
     return res->get();
   }
   this_program feed(string ss)
