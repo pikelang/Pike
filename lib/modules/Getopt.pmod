@@ -55,9 +55,9 @@ protected void my_error(string err, int throw_errors) {
 //!
 //!   The value may be one of:
 //!   @mixed
-//!     @type int(0)|zero
+//!     @type int(0..0)|zero
 //!       The option does not require a value.
-//!     @type int(1)|string
+//!     @type int(1..1)|string
 //!       The option requires a value, and @[def] will be returned
 //!       if the option is not present. If the option is present,
 //!       but does not have an argument @[find_option()] will fail.
