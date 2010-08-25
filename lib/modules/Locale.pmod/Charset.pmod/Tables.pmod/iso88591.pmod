@@ -3,6 +3,7 @@
 //! Codec for the ISO-8859-1 character encoding.
 
 class decoder {
+  constant charset = "iso88591";
   protected private string s = "";
   this_program feed(string ss)
   {
@@ -24,6 +25,7 @@ class decoder {
 
 class encoder
 {
+  constant charset = "iso88591";
   protected string s = "";
   protected string|void replacement;
   protected function(string:string)|void repcb;
@@ -47,7 +49,8 @@ class encoder
 	else if(r)
 	  add(r);
 	else
-	  encode_error (s, i, charset, "Character unsupported by encoding.\n");
+	  Locale.Charset.encode_error (s, i, charset,
+				       "Character unsupported by encoding.\n");
       }
     }
     if (l < sizeof (s))
