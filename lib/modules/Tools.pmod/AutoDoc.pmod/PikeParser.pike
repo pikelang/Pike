@@ -554,28 +554,6 @@ array parseArgList(int|void allowLiterals) {
   }
 }
 
-array parseCreateArgList() {
-  array(string) argnames = ({});
-  array(Type) argtypes = ({});
-  array(array(string)) argmodifiers = ({});
-  for (;;) {
-    array(string) m = parseModifiers();
-    Type t = parseOrType();
-    if (!t)
-      return ({ argnames, argtypes, argmodifiers });
-    if (peekToken() == "...") {
-      t = VarargsType(t);
-      eat("...");
-    }
-    argnames += ({ eatIdentifier() });
-    argtypes += ({ t });
-    argmodifiers += ({ m });
-    if (peekToken() != ",")
-      return ({ argnames, argtypes, argmodifiers });
-    eat(",");
-  }
-}
-
 array(string) parseModifiers() {
   string s = peekToken();
   array(string) mods = ({ });
@@ -630,36 +608,6 @@ PikeObject|array(PikeObject) parseDecl(mapping|void args) {
     c->modifiers = modifiers;
     readToken();
     c->name = eatIdentifier();
-    if (peekToken() == "(") {
-      eat("(");
-      [array(string) createArgNames,
-       array(Type) createArgTypes,
-       array(array(string)) createArgModifiers] =
-        parseCreateArgList();
-      array(PikeObject) objs = allocate(sizeof(createArgNames)+1);
-      foreach(createArgNames; int argno; string name) {
-	Variable var = Variable();
-	var->name = name;
-	var->modifiers = createArgModifiers[argno];
-	if (object_program(var->type = createArgTypes[argno]) ==
-	    VarargsType) {
-	  // Convert vararg types to array types.
-	  ArrayType new_type = ArrayType();
-	  new_type->valuetype = var->type->type;
-	  var->type = new_type;
-	}
-	objs[argno] = var;
-      }
-      Method createMethod = Method();
-      createMethod->name = "create";
-      createMethod->modifiers = ({ "static" });
-      createMethod->returntype = VoidType();
-      createMethod->argnames = createArgNames;
-      createMethod->argtypes = createArgTypes;
-      objs[-1] = createMethod;
-      c->docGroups += ({ DocGroup(objs, EmptyDoc) });
-      eat(")");
-    }
     return c;
   }
   else if (s == "{") {

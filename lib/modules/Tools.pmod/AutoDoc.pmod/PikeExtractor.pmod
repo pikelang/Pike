@@ -206,10 +206,17 @@ protected private class Extractor {
         Documentation doc = readAdjacentDocLines();
         p->squeezedInDoc = doc;
       }
-      if (objectp(p) && p->objtype == "class" && parser->peekToken() == "{") {
-        parser->eat("{");
-        parseClassBody([object(Class)] p, 0);
-        parser->eat("}");
+      if (objectp(p) && p->objtype == "class") {
+	if (parser->peekToken() == "(") {
+	  parser->eat("(");
+	  parseCreateArgList([object(Class)] p);
+	  parser->eat(")");
+	}
+	if (parser->peekToken() == "{") {
+	  parser->eat("{");
+	  parseClassBody([object(Class)] p, 0);
+	  parser->eat("}");
+	}
       }
       else if (objectp(p) && p->objtype == "modifier" &&
 	       parser->peekToken() == "{") {
@@ -466,6 +473,58 @@ protected private class Extractor {
 	}
       }
     } // for (;;)
+  }
+
+  void parseCreateArgList(Class c) {
+    Method createMethod = Method();
+    createMethod->name = "create";
+    createMethod->modifiers = ({ "static" });
+    createMethod->returntype = VoidType();
+    createMethod->argnames = ({});
+    createMethod->argtypes = ({});
+
+    array(Variable) createVars = ({});
+
+    for (;;) {
+      Documentation doc;
+      string s;
+      if (isDocComment(s = parser->peekToken())) {
+	doc = readAdjacentDocLines();
+	object(.DocParser.Parse) parse =
+	  .DocParser.Parse(doc->text, doc->position);
+	.DocParser.MetaData metadata = parse->metadata();
+	doc->xml = parse->doc("_variable");
+      }
+      array(string) m = parser->parseModifiers();
+      Type t = parser->parseOrType();
+      if (!t) break;
+      if (parser->peekToken() == "...") {
+	t = VarargsType(t);
+	parser->eat("...");
+      }
+      Variable var = Variable();
+      var->name = parser->eatIdentifier();
+      createMethod->argnames += ({ var->name });
+      createMethod->argtypes += ({ t });
+      var->modifiers = m;
+      if (object_program(t) == VarargsType) {
+	// Convert vararg types to array types.
+	ArrayType new_type = ArrayType();
+	new_type->valuetype = t->type;
+	t = new_type;
+      }
+      var->type = t;
+      if (doc) {
+	c->docGroups += ({ DocGroup(({ var }), doc) });
+      } else {
+	createVars += ({ var });
+      }
+      if (parser->peekToken() != ",") break;
+      parser->eat(",");
+      // FIXME: Support doc comment following the variable decl.
+    }
+
+    c->docGroups += ({ DocGroup(createVars + ({ createMethod }), EmptyDoc) });
   }
 
 } // static private class Extractor
