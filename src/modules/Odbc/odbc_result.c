@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc_result.c,v 1.66 2010/05/11 14:46:27 grubba Exp $
+|| $Id: odbc_result.c,v 1.67 2010/08/26 09:47:35 grubba Exp $
 */
 
 /*
@@ -241,7 +241,7 @@ static void odbc_fix_fields(void)
 #ifdef SQL_WCHAR
     case SQL_WCHAR:
 #endif
-      push_text("char");
+      push_text("string");
       break;
     case SQL_NUMERIC:
       push_text("numeric");

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: oracle.c,v 1.101 2010/02/15 19:10:33 grubba Exp $
+|| $Id: oracle.c,v 1.102 2010/08/26 09:39:19 grubba Exp $
 */
 
 /*
@@ -1200,7 +1200,7 @@ static void f_fetch_fields(INT32 args)
 	case SQLT_VCS: /* varchar */
 	case SQLT_LNG: /* long */
 	case SQLT_LVC: /* long varchar */
-	  type_name="char";
+	  type_name="string";
 
 	  if (size > 0) {
 	    type = SQLT_CHR;
