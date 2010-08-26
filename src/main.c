@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.241 2010/06/23 16:22:54 grubba Exp $
+|| $Id: main.c,v 1.242 2010/08/26 14:17:24 mast Exp $
 */
 
 #include "global.h"
@@ -617,7 +617,7 @@ int main(int argc, char **argv)
 
   if(SETJMP(back))
   {
-    if(throw_severity == THROW_EXIT)
+    if(throw_severity == THROW_EXIT || throw_severity == THROW_THREAD_EXIT)
     {
       num=throw_value.u.integer;
     }else{
