@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
-// A very special purpose Pike parser that can parse some selected
-// elements of the Pike language...
+//! A very special purpose Pike parser that can parse some selected
+//! elements of the Pike language...
 
 #include "./debug.h"
 #define TOKEN_DEBUG 0
@@ -9,6 +9,7 @@
 protected inherit .PikeObjects;
 protected inherit "module.pmod";
 
+//! The end of file marker.
 constant EOF = "";
 
 protected mapping(string : string) quote =
@@ -96,6 +97,7 @@ void skipNewlines() {
 // PARSING OF PIKE SOURCE FILES
 //========================================================================
 
+//! The current position in the source.
 SourcePosition currentPosition = 0;
 
 protected int parseError(string message, mixed ... args) {
@@ -127,6 +129,17 @@ string lookAhead(int offset, int | void with_newlines) {
   }
 }
 
+//! Peek at the next token in the stream without advancing.
+//!
+//! @param with_newlines
+//!   If set will return @expr{"\n"@} tokens, these will
+//!   otherwise silently be skipped.
+//!
+//! @returns
+//!   Returns the next token.
+//!
+//! @seealso
+//!   @[readToken()]
 string peekToken(int | void with_newlines) {
   int at = tokenPtr;
 
@@ -144,6 +157,17 @@ string peekToken(int | void with_newlines) {
 protected int nReadDocComments = 0;
 int getReadDocComments() { return nReadDocComments; }
 
+//! Read the next token from the stream and advance.
+//!
+//! @param with_newlines
+//!   If set will return @expr{"\n"@} tokens, these will
+//!   otherwise silently be skipped.
+//!
+//! @returns
+//!   Returns the next token.
+//!
+//! @seealso
+//!   @[peekToken()]
 string readToken(int | void with_newlines) {
   if (tokenPtr >= sizeof(tokens))
     return EOF;
@@ -163,7 +187,7 @@ string readToken(int | void with_newlines) {
   return tokens[pos];
 }
 
-// consume one token, error if not (one of) the expected
+//! Consume one token, error if not (one of) the expected
 string eat(multiset(string) | string token) {
   string s = peekToken();
   if (multisetp(token)) {
@@ -181,7 +205,14 @@ string eat(multiset(string) | string token) {
   return readToken();
 }
 
-// Also ::ident, scope::ident
+//! Expect an identifier.
+//!
+//! @note
+//!   Also @expr{::ident@}, @expr{scope::ident@}.
+//!
+//! @note
+//!   This function also converts old-style getters and setters
+//!   into new-style.
 string eatIdentifier(void|int allowScopePrefix) {
   //  SHOW(({lookAhead(0),lookAhead(1),lookAhead(2)}));
   string scope = scopeModules[lookAhead(0)] && lookAhead(1) == "::"
@@ -333,7 +364,7 @@ StringType parseString() {
   return s;
 }
 
-// also parses stuff preceded by "scope::" or "::"
+//! Also parses stuff preceded by @expr{"scope::"@} or @{"::"@}
 string|void parseIdents() {
   string result = "";
   if (peekToken() == "." || peekToken() == "::")
@@ -505,13 +536,20 @@ Type parseType() {
   }
 }
 
-// If allowLiterals != 0 then you can write a literal or Pike idents
-// as an argument, like:
-//    void convert("jpeg", Image image, float quality)
-//
-// For a literal arg, the argname[] string contains the literal and
-// the corresponding argtypes element is 0
-// NOTE: expects that the arglist is followed by a ")".
+//! Parse the list of arguments in a function declaration.
+//!
+//! @param allowLiterals
+//!   If allowLiterals != 0 then you can write a literal or Pike idents
+//!   as an argument, like:
+//!   @code
+//!      void convert("jpeg", Image image, float quality)
+//!   @endcode
+//!
+//!   For a literal arg, the argname[] string contains the literal and
+//!   the corresponding argtypes element is 0
+//!
+//! @note
+//!   Expects that the arglist is followed by a ")".
 array parseArgList(int|void allowLiterals) {
   array(string) argnames = ({ });
   array(Type) argtypes = ({ });
@@ -554,6 +592,7 @@ array parseArgList(int|void allowLiterals) {
   }
 }
 
+//! Parse a set of modifiers from the token stream.
 array(string) parseModifiers() {
   string s = peekToken();
   array(string) mods = ({ });
@@ -565,6 +604,7 @@ array(string) parseModifiers() {
   return mods;
 }
 
+//! Parse the next literal constant (if any) from the token stream.
 void|string parseLiteral() {
   string sign = peekToken() == "-" ? readToken() : "";
   string s = peekToken();
@@ -577,12 +617,19 @@ void|string parseLiteral() {
   return 0;
 }
 
+//! Expect a literal constant.
+//!
+//! @seealso
+//!   @[parseLiteral()]
 string eatLiteral() {
   return parseLiteral() || parseError("expected literal");
 }
 
-// parseDecl() reads ONLY THE HEAD, NOT the ";" or "{" .. "}" !!!
-
+//! Parse the next Pike declaration from the token stream.
+//!
+//! @note
+//!   @[parseDecl()] reads ONLY THE HEAD, NOT the @expr{";"@}
+//!   or @expr{"{" .. "}"@} !!!
 PikeObject|array(PikeObject) parseDecl(mapping|void args) {
   args = args || ([]);
   skip("\n");
@@ -705,6 +752,7 @@ PikeObject|array(PikeObject) parseDecl(mapping|void args) {
   }
 }
 
+//! Tokenize a string of Pike code.
 array(array(string)|array(int)) tokenize(string s, int line) {
   array(string) a = Parser.Pike.split(s) + ({ EOF });
 
@@ -751,6 +799,7 @@ array(array(string)|array(int)) tokenize(string s, int line) {
   return ({ t, p });
 }
 
+//!
 void setTokens(array(string) t, array(int) p) {
   tokens = t;
   positions = p;
@@ -760,11 +809,10 @@ void setTokens(array(string) t, array(int) p) {
 #endif
 }
 
-// create(string, filename, firstline)
-// create(array(Token))
+//!
 protected void create(string|void s,
-                   string|SourcePosition|void _filename,
-                   int|void line)
+		      string|SourcePosition|void _filename,
+		      int|void line)
 {
   if (s) {
     if (objectp(_filename)) {

@@ -1,8 +1,8 @@
 #pike __REAL_VERSION__
 
-// This module contains classes to represent Pike objects such as
-// classes, modules, methods, variables ...
-// The classes can produce XML representations of themselves.
+//! This module contains classes to represent Pike objects such as
+//! classes, modules, methods, variables ...
+//! The classes can produce XML representations of themselves.
 
 // #pragma strict_types
 #include "./debug.h"
@@ -15,21 +15,38 @@ protected inherit Parser.XML.Tree;
 // REPRESENTATION OF TYPES
 //========================================================================
 
+//! The base class for representing types.
 class Type(string name) {
+  //! @returns
+  //!   Returns a string with a Pike-syntax representation of the type.
   string print() { return name; }
+
+  //! @returns
+  //!   Returns a string with an XML representation of the type.
   string xml() { return xmltag(name);}
 }
 
+//! The class for representing array types.
+//!
+//! @seealso
+//!   @[Type]
 class ArrayType {
+  //!
   inherit Type;
+
+  //! The @[Type] of the array elements.
   Type valuetype;
+
+  //!
   void create() { ::create("array"); }
+
   string print() {
     if (valuetype)
       return "array(" + valuetype->print() + ")";
     else
       return "array";
   }
+
   string xml() {
     if (!valuetype)
       return ::xml();
@@ -38,9 +55,17 @@ class ArrayType {
   }
 }
 
+//! The class for representing program (aka class) types.
+//!
+//! @seealso
+//!   @[Type]
 class ProgramType {
+  //!
   inherit Type;
+
+  //! The name of the class (if any).
   string classname;
+
   string print() {
     if(classname)
       return "program(" + classname + ")";
@@ -48,18 +73,37 @@ class ProgramType {
       return "program";
   }
   // FIXME xml() needs to be overridden.
+
+  //!
   void create() { ::create("program"); }
 }
 
+//! The class for representing the float type.
+//!
+//! @seealso
+//!   @[Type]
 class FloatType {
+  //!
   inherit Type;
+
+  //!
   void create() { ::create("float"); }
 }
 
+//! The class for representing integer types.
+//!
+//! @seealso
+//!   @[Type]
 class IntType {
+  //!
   inherit Type;
+
+  //! The minimum and maximum range limits for the integer type.
   string min, max;
+
+  //!
   void create() { ::create("int"); }
+
   string print() {
     if (min || max)
       return "int(" + (min ? min : "")
@@ -75,11 +119,23 @@ class IntType {
   }
 }
 
+//! The class for representing string types.
+//!
+//! @seealso
+//!   @[Type]
 class StringType {
+  //!
   inherit Type;
+
+  //! The minimum value for characters in the string.
   string min;
+
+  //! The maximum value for characters in the string.
   string max;
+
+  //!
   void create() { ::create("string"); }
+
   string print() {
     if (min||max)
       return "string(" + (min ? min : "")
@@ -96,16 +152,35 @@ class StringType {
   }
 }
 
+//! The class for representing the mixed type.
+//!
+//! @seealso
+//!   @[Type]
 class MixedType {
+  //!
   inherit Type;
+
+  //!
   void create() { ::create("mixed"); }
 }
 
+//! The class for representing function types.
+//!
+//! @seealso
+//!   @[Type]
 class FunctionType {
+  //!
   inherit Type;
+
+  //! An array with types for the arguments to the function.
   array(Type) argtypes;
+
+  //! The type for the return value of the function.
   Type returntype;
+
+  //!
   void create() { ::create("function"); }
+
   string print() {
     if (argtypes && returntype) {
       return "function("
@@ -129,10 +204,20 @@ class FunctionType {
   }
 }
 
+//! The class for representing mapping types.
+//!
+//! @seealso
+//!   @[Type]
 class MappingType {
+  //!
   inherit Type;
+
+  //! The types for the indices and values of the mapping.
   Type indextype, valuetype;
+
+  //!
   void create() { ::create("mapping"); }
+
   string print() {
     if (indextype && valuetype) {
       return "mapping("
@@ -154,10 +239,20 @@ class MappingType {
   }
 }
 
+//! The class for representing multiset types.
+//!
+//! @seealso
+//!   @[Type]
 class MultisetType {
+  //!
   inherit Type;
+
+  //! The type for the indices of the multiset.
   Type indextype;
+
+  //!
   void create() { ::create("multiset"); }
+
   string print() {
     if (indextype) {
       return "multiset("
@@ -175,10 +270,20 @@ class MultisetType {
   }
 }
 
+//! The class for representing object types.
+//!
+//! @seealso
+//!   @[Type]
 class ObjectType {
+  //!
   inherit Type;
+
+  //! The name of the class for the object.
   string classname;
+
+  //!
   void create() { ::create("object"); }
+
   string print() {
     if (classname)
       return "object(" + classname + ")";
@@ -190,10 +295,20 @@ class ObjectType {
   }
 }
 
+//! The class for representing type types.
+//!
+//! @seealso
+//!   @[Type]
 class TypeType {
+  //!
   inherit Type;
+
+  //! The subtype of the type.
   Type subtype = MixedType();
+
+  //!
   void create() { ::create("type"); }
+
   string print() {
     if (subtype->name != "mixed") {
       return "type(" + subtype->print() + ")";
@@ -205,20 +320,44 @@ class TypeType {
   }
 }
 
+//! The class for representing the void type.
+//!
+//! @seealso
+//!   @[Type]
 class VoidType {
+  //!
   inherit Type;
+
+  //!
   void create() { ::create("void"); }
 }
 
+//! The class for representing the zero type.
+//!
+//! @seealso
+//!   @[Type]
 class ZeroType {
+  //!
   inherit Type;
+
+  //!
   void create() { ::create("zero"); }
 }
 
+//! The class for representing union types.
+//!
+//! @seealso
+//!   @[Type]
 class OrType {
+  //!
   inherit Type;
+
+  //! An array with the types that are member of the union.
   array(Type) types;
+
+  //!
   void create() { ::create("or"); }
+
   string print() {
     return map(types, lambda(Type t) { return t->print(); }) * " | ";
   }
@@ -230,20 +369,51 @@ class OrType {
   }
 }
 
+//! The class for representing varargs types.
+//!
+//! @seealso
+//!   @[Type]
 class VarargsType {
+  //!
   inherit Type;
+
+  //! The type that is varargs.
   Type type;
+
+  //!
   void create(Type t) { ::create("varargs"); type = t; }
+
   string print() { return type->print() + " ..."; }
   string xml() { return xmltag("varargs", type->xml()); }
 }
 
+//! The class for representing attributed types.
+//!
+//! @seealso
+//!   @[Type]
 class AttributeType {
+  //!
   inherit Type;
+
+  //! The name of the attribute.
   string attribute;
+
+  //! The type that is attributed.
   Type subtype;
+
+  //! Flag indicating:
+  //! @int
+  //!   @value 0
+  //!     The attribute is on the type.
+  //!   @value 1
+  //!     The attribute is a prefix and acts as a modifier.
+  //!     This is only used for functions.
+  //! @endint
   int prefix;
+
+  //!
   void create() { ::create("__attribute__"); }
+
   string print() {
     if (attribute == "\"deprecated\"") {
       return prefix?"__deprecated__ " + subtype->print():
@@ -265,23 +435,39 @@ class AttributeType {
 // DOCUMENTATION OBJECT
 //========================================================================
 
+//! The base class for documentation strings.
+//!
+//! @seealso
+//!   @[DocGroup]
 class Documentation(string|void text, string|void xml,
 		    SourcePosition|void position)
 {}
 
+//! The empty @[Documentation].
 protected Documentation EmptyDoc =
   Documentation("", "\n", SourcePosition(__FILE__, __LINE__, __LINE__));
 
+//! A class associating a piece of @[Documentation]
+//! with a set of @[PikeObject]s.
 class DocGroup {
+  //! The set of @[PikeObject]s that are documented.
   array(PikeObject) objects = ({ });
+
+  //! The @[Documentation] for the @[objects].
   Documentation documentation = 0;
+
+  //!
   protected void create(array(PikeObject) objs, Documentation doc) {
     documentation = doc;
     objects = objs;
   }
+
+  //! Relocation information.
   string appears = 0;
   string belongs = 0;
 
+  //! @returns
+  //!   Returns a string with an XML representation of the documentation.
   string xml() {
     mapping(string:string) m = ([]);
     if (appears) m->appears = appears;
@@ -314,15 +500,33 @@ class DocGroup {
 // REPRESENTATION OF PIKES LEXICAL OBJECTS (class, function, variable ...)
 //========================================================================
 
+//! Base class for representing a documentable Pike lexical entity.
+//!
+//! This class is inherited by classes for representing
+//! classes, functions, variables, etc.
+//!
+//! @seealso
+//!   @[Inherit], @[Import], @[Class], @[Module], @[NameSpace], @[AutoDoc],
+//!   @[Modifier], @[Method], @[Constant], @[Typedef], @[EnumConstant],
+//!   @[Enum], @[Variable]
 class PikeObject {
+  //! The set of modifiers affecting this entity.
   array(string) modifiers = ({ });
+
+  //! The name of the entity.
   string name;
+
+  //! The object type identifier.
   constant objtype = "pikeobject";
 
+  //! The source position where the entity was found.
   SourcePosition position;
+
+  //! Relocation information.
   string appears;
   string belongs;
 
+  //!
   Documentation squeezedInDoc;
 
   protected string standardTags() {
@@ -334,6 +538,8 @@ class PikeObject {
     return s;
   }
 
+  //! @returns
+  //!   Returns a string with an XML representation of the entity.
   string xml() {
     return standardStart() + standardEnd();
   }
@@ -352,14 +558,23 @@ class PikeObject {
   protected string printModifiers() {
     return modifiers * " " + (sizeof(modifiers) ? " " : "");
   }
+
+  //! @returns
+  //!   Returns a string with a Pike syntax representation of the entity.
   string print() { return printModifiers() + objtype; }
 }
 
+//! Representation of an inherit.
 class Inherit {
+  //!
   inherit PikeObject;
+
+  //!
   constant objtype = "inherit";
 
+  //! Name of the class that is inherited.
   string classname;
+
   string xml() {
     return standardStart() +
       standardTags() +
@@ -371,34 +586,59 @@ class Inherit {
   }
 }
 
+//! Representation of an import.
 class Import {
+  //!
   inherit Inherit;
+
+  //!
   constant objtype = "import";
+
   string print() {
     return ::print() + " " + classname;
   }
 }
 
+//! Base class for representing classes, modules and namespaces.
+//!
+//! @seealso
+//!   @[Class], @[Module], @[NameSpace], @[AutoDoc], @[Modifier]
 class _Class_or_Module {
+  //!
   inherit PikeObject;
 
   string directory = 0;
   string file = 0;
 
-  // NB: The documentation appears as a child of the <class> or <module>
+  //! @note
+  //!   The documentation appears as a child of the <class> or <module>
   Documentation documentation;
 
+  //! @[Inherit]s and @[Import]s that affect the symbol lookup
+  //! for the entity.
   array(Inherit|Import) inherits = ({ });
+
+  //! Entities that are children to this entity.
   array(_Class_or_Module) children = ({ });
+
+  //! Documented entities that are children to this entity.
   array(DocGroup) docGroups = ({ });
 
+  //! @returns
+  //!   Returns @expr{1@} if there is any documentation
+  //!   at all for this entity.
   int containsDoc() { return documentation != 0 || sizeof(docGroups) > 0; }
 
+  //! Adds @[p] to the set of @[inherits].
   void AddInherit(PikeObject p) {
     inherits += ({ p });
   }
+
+  //! Adds @[c] to the set of @[children].
   void AddChild(_Class_or_Module c) { children += ({ c }); }
 
+  //! @returns
+  //!   Returns the first child with the name @[name] if any.
   PikeObject findChild(string name) {
     int a = Array.search_array(children,
                                lambda(PikeObject o, string n) {
@@ -408,7 +648,10 @@ class _Class_or_Module {
     return children[a];
   }
 
-  PikeObject findObject(string name) {
+  //! @returns
+  //!   Returns the first @[DocGroup] that documents an entity
+  //!   with the name @[name] if any.
+  DocGroup findObject(string name) {
     int a = Array.search_array(docGroups,
                                lambda(DocGroup d, string n) {
                                  return (search(d->objects->name, n) >= 0);
@@ -417,6 +660,7 @@ class _Class_or_Module {
     return docGroups[a];
   }
 
+  //! Adds @[d] to the set of @[docGroups].
   void AddGroup(DocGroup d) {
     docGroups += ({ d });
   }
@@ -474,47 +718,77 @@ class _Class_or_Module {
   }
 }
 
+//! Represents a class.
 class Class {
+  //!
   inherit _Class_or_Module;
+
+  //!
   constant objtype = "class";
 }
 
+//! Represents a module.
 class Module {
+  //!
   inherit _Class_or_Module;
+
+  //!
   constant objtype = "module";
 }
 
-// A name space, eg: predef:: or lfun::
+//! Represents a name space, eg: @expr{predef::@} or @expr{lfun::@}.
 class NameSpace {
+  //!
   inherit _Class_or_Module;
+
+  //!
   constant objtype = "namespace";
 }
 
-// The top-level container.
-// This container should only contain namespaces,
-// and they in turn contain modules etc.
+//! The top-level container.
+//! This container should only contain namespaces,
+//! and they in turn contain modules etc.
 class AutoDoc {
+  //!
   inherit _Class_or_Module;
+
+  //!
   constant objtype = "autodoc";
 }
 
-// A modifier range, e.g.:
-// static private {
-//   ...
-//   <<declarations>>
-//   ...
-// }
+//! A modifier range, e.g.:
+//! @code
+//! static private {
+//!   ...
+//!   <<declarations>>
+//!   ...
+//! }
+//! @endcode
 class Modifier {
+  //!
   inherit _Class_or_Module;
+
+  //!
   constant objtype = "modifier";
 }
 
+//! Represents a function.
 class Method {
+  //!
   inherit PikeObject;
+
+  //! The names of the arguments.
   array(string) argnames;
+
+  //! The types for the arguments.
   array(Type) argtypes;
+
+  //! The return type for the function.
   Type returntype;
+
+  //!
   constant objtype = "method";
+
   string xml() {
     string s = standardTags() + "\n";
     string args = "";
@@ -539,10 +813,17 @@ class Method {
   }
 }
 
+//! Represents a named constant.
 class Constant {
+  //!
   inherit PikeObject;
+
+  //!
   constant objtype = "constant";
-  Type typedefType = 0;   // if it is a typedef
+
+  //! Typedef @[Type] if it is a typedef.
+  Type typedefType = 0;
+
   string xml() {
     return standardStart() + standardTags()
       + (typedefType ? xmltag("typevalue", typedefType->xml()) : "")
@@ -553,10 +834,17 @@ class Constant {
   }
 }
 
+//! Represents a typedef.
 class Typedef {
+  //!
   inherit PikeObject;
+
+  //!
   constant objtype = "typedef";
+
+  //! Typedef @[Type].
   Type type = 0;
+
   string xml() {
     return standardStart() + standardTags()
       + xmltag("type", type->xml())
@@ -567,10 +855,14 @@ class Typedef {
   }
 }
 
-// The values inside enum Foo { ... }
+//! The values inside @expr{enum Foo { ... }@}
 class EnumConstant {
+  //!
   inherit PikeObject;
+
+  //!
   constant objtype = "constant";
+
   string xml() {
     mapping m = ([]) + standardAttributes();
     return opentag(objtype, m) + standardTags()
@@ -581,16 +873,23 @@ class EnumConstant {
   }
 }
 
-// The enum container
+//! The enum container.
 class Enum {
+  //!
   inherit PikeObject;
+
+  //!
   constant objtype = "enum";
 
-  // mimic the class { ... } behaviour
+  //! Mimic the @expr{class { ... }@} behaviour.
   Documentation documentation;
 
+  //! The set of children.
   array(DocGroup) children = ({ });
+
+  //! Adds @[c] to the set of @[children].
   void addChild(DocGroup c) { children += ({ c }); }
+
   string xml() {
 
     // need some special handling to make this look as if it
@@ -684,10 +983,17 @@ class Enum {
   }
 }
 
+//! Represents a variable.
 class Variable {
+  //!
   inherit PikeObject;
+
+  //!
   constant objtype = "variable";
+
+  //! @[Type] of the variable.
   Type type;
+
   string xml() {
     return standardStart() +
       standardTags() +
