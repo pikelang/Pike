@@ -403,7 +403,7 @@ StringType parseString() {
 //! Parse a '.'-separated identitifer string.
 //!
 //! @note
-//!   Also parses stuff preceded by @expr{"scope::"@} or @{"::"@}
+//!   Also parses stuff preceded by @expr{"scope::"@} or @expr{"::"@}
 string|void parseIdents() {
   string result = "";
   if (peekToken() == "." || peekToken() == "::")
