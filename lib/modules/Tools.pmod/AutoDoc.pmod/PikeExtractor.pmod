@@ -529,6 +529,10 @@ protected private class Extractor {
 
 } // static private class Extractor
 
+//! Extract documentation for a Pike namespace.
+//!
+//! @seealso
+//!   @[extractModule()], @[extractClass()]
 NameSpace extractNamespace(string s, void|string filename,
 			   void|string namespaceName) {
   Extractor e = Extractor(s, filename);
@@ -542,6 +546,10 @@ NameSpace extractNamespace(string s, void|string filename,
   return ns;
 }
 
+//! Extract documentation for a Pike module.
+//!
+//! @seealso
+//!   @[extractNamespace()], @[extractClass()]
 Module extractModule(string s, void|string filename, void|string moduleName) {
   Extractor e = Extractor(s, filename);
   Module m = Module();
@@ -554,6 +562,10 @@ Module extractModule(string s, void|string filename, void|string moduleName) {
   return m;
 }
 
+//! Extract documentation for a Pike class (aka program).
+//!
+//! @seealso
+//!   @[extractNamespace()], @[extractModule()]
 Class extractClass(string s, void|string filename, void|string className) {
   Extractor e = Extractor(s, filename);
   Class c = Class();

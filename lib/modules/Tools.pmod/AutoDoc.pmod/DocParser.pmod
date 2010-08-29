@@ -9,30 +9,48 @@ inherit .PikeObjects;
 
 #include "./debug.h"
 
+//! Metadata about a @[Documentation] object.
 class MetaData {
+  //! Type of documented entity.
   string type;
-  string name; // if (type == "class", "module", "endmodule", or "endclass")
+
+  //! If @[type] is one of @expr{"class"@}, @expr{"module"@},
+  //! @expr{"endmodule"@}, or @expr{"endclass"@}.
+  string name;
+
+  //! Set of declarations.
   array(PikeObject) decls = ({});
+
+  //! Relocation information.
   string belongs = 0;
   string appears = 0;
+
+  //! Set of inherits.
   array(PikeObject) inherits = ({});
 }
 
+//! End of file marker.
 constant EOF = .PikeParser.EOF;
 
-constant METAKEYWORD = 1;          // @decl
-constant BRACEKEYWORD = 2;         // @i{ @}
-constant DELIMITERKEYWORD = 3;     // @param
-constant CONTAINERKEYWORD = 4;     // @mapping
-constant SINGLEKEYWORD = 5;        // @deprecated
-constant ENDKEYWORD = 6;
-constant ERRORKEYWORD = 7;
+//! Enum of documentation token types.
+enum DocTokenType {
+  METAKEYWORD = 1,	//! eg @expr{@@decl@}
+  BRACEKEYWORD = 2,	//! eg @expr{@@i{@@}@}
+  DELIMITERKEYWORD = 3,	//! eg @expr{@@param@}
+  CONTAINERKEYWORD = 4,	//! eg @expr{@@mapping@}
+  SINGLEKEYWORD = 5,	//! eg @expr{@@deprecated@}
+  ENDKEYWORD = 6,	//! eg @expr{@@endmapping@}
+  ERRORKEYWORD = 7,	//! eg @expr{@@invalid@}
 
-constant TEXTTOKEN = 8;
-constant ENDTOKEN = 9;
+  TEXTTOKEN = 8,	//! Documentation text.
+  ENDTOKEN = 9,		//! End of documentation marker.
+};
 
 // The following is the "DTD" of
-mapping(string : int) keywordtype =
+// the documentation markup language.
+
+//! The @[DocTokenType]s for the documentation @@-keywords.
+mapping(string : DocTokenType) keywordtype =
 ([
   "appears" : METAKEYWORD,
   "belongs" : METAKEYWORD,
@@ -267,8 +285,10 @@ protected array(Token) split(string s, SourcePosition pos) {
   return res;
 }
 
+//! Internal class for parsing documentation markup. 
 protected class DocParserClass {
 
+  //!
   SourcePosition currentPosition = 0;
 
   protected void parseError(string s, mixed ... args) {
@@ -289,15 +309,17 @@ protected class DocParserClass {
     return t;
   }
 
-  // argHandlers:
-  //
-  //   Contains functions that handle keywords with non-standard arg list
-  //   syntax. The function for each keyword can return a mapping or a string:
-  //
-  //   If a mapping(string:string) is returned, it is interpreted as the
-  //   attributes to put in the tag.
-  //   If a string is returned, it is an XML fragment that gets inserted
-  //   inside the tag.
+  //! Contains functions that handle keywords with non-standard arg list
+  //! syntax. The function for each keyword can return a mapping or a string:
+  //!
+  //! @mixed
+  //!   @type mapping(string:string)
+  //!     If a @expr{mapping(string:string)@} is returned, it is interpreted
+  //!     as the attributes to put in the tag.
+  //!   @type string
+  //!     If a string is returned, it is an XML fragment that gets inserted
+  //!     inside the tag.
+  //! @endmixed
   mapping(string : function(string, string : string)
           | function(string, string : mapping(string : string))) argHandlers =
   ([
@@ -757,6 +779,8 @@ protected class DocParserClass {
     tokenArr += ({ Token(ENDTOKEN, 0, 0, 0, 0) });
   }
 
+  //! @returns
+  //!   Returns the @[MetaData] for the documentation string.
   MetaData getMetaData() {
     MetaData meta = MetaData();
     string scopeModule = 0;
@@ -922,6 +946,12 @@ protected class DocParserClass {
     return meta;
   }
 
+  //! @returns
+  //!   Returns the documentation corresponding to the @[context]
+  //!   as an XML string.
+  //!
+  //! @note
+  //!   @[getMetaData()] must be called before this function.
   string getDoc(string context) {
     string xml = xmlContainerContents(context);
     switch (peekToken()->type) {
@@ -936,8 +966,12 @@ protected class DocParserClass {
   }
 }
 
-// Each of the arrays in the returned array can be fed to
-// Parse::create()
+//! Split a @[block] of documentation text into segments of @[Token]s
+//! split on @[METAKEYWORD]s.
+//!
+//! @returns
+//!   Each of the arrays in the returned array can be fed to
+//!   @[Parse::create()]
 array(array(Token)) splitDocBlock(string block, SourcePosition position) {
   array(Token) tokens = split(block, position);
   array(Token) current = ({ });
@@ -956,20 +990,28 @@ array(array(Token)) splitDocBlock(string block, SourcePosition position) {
   return result;
 }
 
-// This is a class, because you need to examine the meta lines
-// _before_ you can determine which context to parse the
-// actual doc lines in.
+//! Documentation markup parser.
+//!
+//! This is a class, because you need to examine the meta lines
+//! @b{before@} you can determine which context to parse the
+//! actual doc lines in.
 class Parse {
+  //!
   inherit DocParserClass;
+
   protected int state;
   protected MetaData mMetaData = 0;
   protected string mDoc = 0;
   protected string mContext = 0;
+
+  //! Parse a documentation string @[s].
   void create(string | array(Token) s, SourcePosition|void sp) {
     ::create(s, sp);
     state = 0;
   }
 
+  //! @returns
+  //!   Returns the @[MetaData] for the documentation string.
   MetaData metadata() {
     if (state == 0) {
       ++state;
@@ -978,6 +1020,12 @@ class Parse {
     return mMetaData;
   }
 
+  //! @returns
+  //!   Returns the documentation corresponding to the @[context]
+  //!   as an XML string.
+  //!
+  //! @note
+  //!   @[metadata()] must be called before this function.
   string doc(string context) {
     if (state == 1) {
       ++state;

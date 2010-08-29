@@ -33,6 +33,14 @@ protected multiset(string) modifiers =
 protected multiset(string) scopeModules =
 (< "predef", "top", "lfun", "efun" >);
 
+//! Skip the next token if it is a member of the @[tokens] set.
+//!
+//! @note
+//!   The newline token (@expr{"\n"@}) is not skipped implicitly
+//!   by this function.
+//!
+//! @seealso
+//!   @[readToken()], @[peekToken()], @[eat()], @[skipUntil()]
 void skip(multiset(string)|string tokens) {
   if (multisetp(tokens))
     while (tokens[peekToken(WITH_NL)]) readToken(WITH_NL);
@@ -40,6 +48,7 @@ void skip(multiset(string)|string tokens) {
     while (peekToken(WITH_NL) == tokens) readToken(WITH_NL);
 }
 
+//! Skip passed a matched pair of parenthesis, brackets or braces.
 void skipBlock() {
   string left = peekToken();
   string right = matchTokens[left];
@@ -61,6 +70,14 @@ void skipBlock() {
   parseError("expected " + quoteString(right));
 }
 
+//! Skip tokens until one of @[tokens] is the next to read.
+//!
+//! @note
+//!   The newline token (@expr{"\n"@}) is not skipped implicitly
+//!   by this function.
+//!
+//! @seealso
+//!   @[skip()]
 void skipUntil(multiset(string)|string tokens) {
   string s = peekToken(WITH_NL);
   if (stringp(tokens)) {
@@ -88,6 +105,7 @@ void skipUntil(multiset(string)|string tokens) {
   }
 }
 
+//! Skip past any newlines.
 void skipNewlines() {
   while (peekToken(WITH_NL) == "\n")
     readToken(WITH_NL);
@@ -111,8 +129,15 @@ private int tokenPtr = 0;
 private array(string) tokens;
 private array(int) positions;
 private string filename;
+
+//! Newline indicator flag value.
 constant WITH_NL = 1;
 
+//! Peek @[offset] tokens ahead, skipping newlines,
+//! unless @[with_newlines] is set.
+//!
+//! @seealso
+//!   @[peekToken()]
 string lookAhead(int offset, int | void with_newlines) {
   if (with_newlines)
     return tokens[min(tokenPtr + offset, sizeof(tokens) - 1)];
@@ -139,7 +164,7 @@ string lookAhead(int offset, int | void with_newlines) {
 //!   Returns the next token.
 //!
 //! @seealso
-//!   @[readToken()]
+//!   @[readToken()], @[lookAhead()]
 string peekToken(int | void with_newlines) {
   int at = tokenPtr;
 
@@ -155,6 +180,10 @@ string peekToken(int | void with_newlines) {
 }
 
 protected int nReadDocComments = 0;
+
+//! @returns
+//!   Returns the number of documentation comments
+//!   that have been returned by @[readToken()].
 int getReadDocComments() { return nReadDocComments; }
 
 //! Read the next token from the stream and advance.
@@ -187,7 +216,7 @@ string readToken(int | void with_newlines) {
   return tokens[pos];
 }
 
-//! Consume one token, error if not (one of) the expected
+//! Consume one token, error if not (one of) the expected in @[token].
 string eat(multiset(string) | string token) {
   string s = peekToken();
   if (multisetp(token)) {
@@ -240,6 +269,7 @@ string eatIdentifier(void|int allowScopePrefix) {
   return scope + colons + s;
 }
 
+//! Parse a union type.
 Type parseOrType() {
   array(Type) a = ({ parseType() });
   while (peekToken() == "|") {
@@ -269,6 +299,7 @@ Type parseOrType() {
   return base;
 }
 
+//! Parse a mapping type.
 MappingType parseMapping() {
   eat("mapping");
   MappingType m = MappingType();
@@ -282,6 +313,7 @@ MappingType parseMapping() {
   return m;
 }
 
+//! Parse an array type.
 ArrayType parseArray() {
   eat("array");
   ArrayType a = ArrayType();
@@ -293,6 +325,7 @@ ArrayType parseArray() {
   return a;
 }
 
+//! Parse a multiset type.
 MultisetType parseMultiset() {
   eat("multiset");
   MultisetType m = MultisetType();
@@ -304,6 +337,7 @@ MultisetType parseMultiset() {
   return m;
 }
 
+//! Parse a function type.
 FunctionType parseFunction() {
   eat("function");
   FunctionType f = FunctionType();
@@ -334,6 +368,7 @@ FunctionType parseFunction() {
   return f;
 }
 
+//! Parse an integer type.
 IntType parseInt() {
   eat("int");
   IntType i = IntType();
@@ -349,6 +384,7 @@ IntType parseInt() {
   return i;
 }
 
+//! Parse a string type.
 StringType parseString() {
   eat("string");
   StringType s = StringType();
@@ -364,7 +400,10 @@ StringType parseString() {
   return s;
 }
 
-//! Also parses stuff preceded by @expr{"scope::"@} or @{"::"@}
+//! Parse a '.'-separated identitifer string.
+//!
+//! @note
+//!   Also parses stuff preceded by @expr{"scope::"@} or @{"::"@}
 string|void parseIdents() {
   string result = "";
   if (peekToken() == "." || peekToken() == "::")
