@@ -211,6 +211,10 @@ protected private class Extractor {
 	  parser->eat("(");
 	  parseCreateArgList([object(Class)] p);
 	  parser->eat(")");
+	  if (isDocComment(parser->peekToken())) {
+	    Documentation doc = readAdjacentDocLines();
+	    p->squeezedInDoc = doc;
+	  }
 	}
 	if (parser->peekToken() == "{") {
 	  parser->eat("{");
