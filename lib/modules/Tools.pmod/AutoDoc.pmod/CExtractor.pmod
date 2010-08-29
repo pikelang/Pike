@@ -8,7 +8,6 @@
 
 // #pragma strict_types
 
-protected inherit .PikeObjects;
 protected inherit .DocParser;
 
 #include "./debug.h"

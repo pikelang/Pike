@@ -7,7 +7,6 @@
 #define TOKEN_DEBUG 0
 
 protected inherit .PikeObjects;
-protected inherit "module.pmod";
 
 //! The end of file marker.
 constant EOF = "";

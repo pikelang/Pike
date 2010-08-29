@@ -4,7 +4,6 @@
 // PARSING OF DOCUMENTATION COMMENTS
 //========================================================================
 
-inherit "module.pmod";
 inherit .PikeObjects;
 
 #include "./debug.h"
