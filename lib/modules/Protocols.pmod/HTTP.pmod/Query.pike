@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.106 2010/03/12 10:18:34 srb Exp $
+// $Id: Query.pike,v 1.107 2010/08/31 06:47:58 nilsson Exp $
 
 //! Open and execute an HTTP query.
 //!
@@ -607,7 +607,7 @@ this_program thread_request(string server, int port, string query,
       headers=mkmapping(Array.map(indices(headers),lower_case),
 			values(headers));
 
-      if (data!="") headers->content_length=sizeof(data);
+      if (data!="") headers["content-length"]=sizeof(data);
 
       headers=headers_encode(headers);
    }
@@ -681,7 +681,7 @@ this_program sync_request(string server, int port, string query,
     }
 
     if(data != "")
-      http_headers->content_length = sizeof( data );
+      http_headers["content-length"] = sizeof( data );
 
     http_headers = headers_encode( http_headers );
   }
@@ -734,7 +734,7 @@ this_program async_request(string server,int port,string query,
       headers=mkmapping(Array.map(indices(headers),lower_case),
 			values(headers));
 
-      if (data!="") headers->content_length=sizeof(data);
+      if (data!="") headers["content-length"]=sizeof(data);
 
       headers=headers_encode(headers);
    }
