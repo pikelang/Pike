@@ -60,6 +60,45 @@ constant HTTP_UNSUPP_VERSION	= 505; // RFC 2616 10.5.6: HTTP Version Not Support
 constant TCN_VARIANT_NEGOTIATES	= 506; // RFC 2295 8.1: Variant Also Negotiates
 constant DAV_STORAGE_FULL	= 507; // RFC 2518 10.6: Insufficient Storage
 
+//! Makes an HTTP request through a proxy.
+.Query do_proxied_method(string|Standards.URI proxy,
+                         string user, string password,
+                         string method,
+                         string|Standards.URI url,
+                         void|mapping(string:int|string|array(string)) query_variables,
+                         void|mapping(string:string|array(string)) request_headers,
+                         void|Protocols.HTTP.Query con, void|string data)
+{
+  if( stringp(proxy) )
+    proxy = Standards.URI(proxy);
+  if( stringp(url) )
+    url = Standards.URI(url);
+  if( url->scheme != "http" ) error("No can do.\n");
+
+  if( query_variables )
+    url->set_query_variables( url->get_query_variables() +
+                              query_variables );
+  string web_url = (string)url;
+
+  // Note: url object is wrecked here
+  url->host = proxy->host;
+  url->port = proxy->port;
+  url->query = 0;
+  url->path = web_url;
+
+
+  if( user || password )
+  {
+    if( !request_headers )
+      request_headers = ([]);
+    request_headers["Proxy-Authorization"] = "Basic "
+      + MIME.encode_base64(url->user + ":" +
+                           (url->password || ""));
+  }
+
+  return do_method(method, url, 0, request_headers, con, data);
+}
+
 //! Low level HTTP call method.
 //!
 //! @param method
