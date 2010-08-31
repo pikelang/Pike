@@ -1908,3 +1908,7 @@ require gtk216;
 constant int GTK_ENTRY_ICON_PRIMARY;
 constant int GTK_ENTRY_ICON_SECONDARY;
 endrequire;
+
+constant int GTK_MAJOR_VERSION;
+constant int GTK_MINOR_VERSION;
+constant int GTK_MICRO_VERSION;
