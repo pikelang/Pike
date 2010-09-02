@@ -136,6 +136,15 @@ int pgtk2_radio_action_callback(GtkAction *action, GtkRadioAction *current,
   pop_stack();
   return res;
 }
+
+void pgtk2_free_action_data(gpointer data) {
+  struct signal_data *s=data;
+  if (s!=NULL) {
+    free_svalue(&s->cb);
+    free_svalue(&s->args);
+    g_free(s);
+  }
+}
 %}
 
 void add_actions(array(mapping(string:mixed)) entries)
@@ -216,7 +225,7 @@ void add_actions(array(mapping(string:mixed)) entries)
 	  sd->args.u.integer = 0;
 	}
       }
-      gtk_action_group_add_actions(GTK_ACTION_GROUP(THIS->obj), &gta, 1, sd);
+      gtk_action_group_add_actions_full(GTK_ACTION_GROUP(THIS->obj), &gta, 1, sd,pgtk2_free_action_data);
     }
   }
   RETURN_THIS();
