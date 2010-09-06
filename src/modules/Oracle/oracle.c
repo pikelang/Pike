@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: oracle.c,v 1.103 2010/09/06 11:39:51 grubba Exp $
+|| $Id: oracle.c,v 1.104 2010/09/06 12:05:05 grubba Exp $
 */
 
 /*
@@ -2728,9 +2728,9 @@ PIKE_MODULE_INIT
 	map_variable("decimals","int",0,offset+OFFSETOF(dbresultinfo, decimals), T_INT);
 	
 	ADD_FUNCTION("`->=",protect_dbresultinfo,
-		     tFunc(tStr tMix,tVoid),0);
+		     tFunc(tStr tMix,tVoid), ID_STATIC);
 	ADD_FUNCTION("`[]=",protect_dbresultinfo,
-		     tFunc(tStr tMix,tVoid),0);
+		     tFunc(tStr tMix,tVoid), ID_STATIC);
 #ifdef ORACLE_DEBUG
 	set_gc_check_callback(gc_dbresultinfo_struct);
 #endif
