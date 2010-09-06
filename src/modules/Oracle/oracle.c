@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: oracle.c,v 1.102 2010/08/26 09:39:19 grubba Exp $
+|| $Id: oracle.c,v 1.103 2010/09/06 11:39:51 grubba Exp $
 */
 
 /*
@@ -1631,6 +1631,16 @@ static void free_inout(struct inout *i)
 }
 
 
+static void f_eof(INT32 args)
+{
+  struct dbquery *dbquery = THIS_RESULT_QUERY;
+  pop_n_elems(args);
+  /* Note: Valid OCI statement types start at 1.
+   *       We use 0 to indicate EOF.
+   */
+  push_int(!dbquery->query_type);
+}
+
 static void f_fetch_row(INT32 args)
 {
   int i = 0;
@@ -1644,6 +1654,15 @@ static void f_fetch_row(INT32 args)
 #endif
 
   pop_n_elems(args);
+
+  if (!dbquery->query_type) {
+    /* EOF already reached. */
+#ifdef ORACLE_DEBUG
+    fprintf(stderr," EOF already reached.\n", rc);
+#endif
+    push_undefined();
+    return;
+  }
 
   if(!dbquery->field_info)
   {
@@ -1682,6 +1701,12 @@ static void f_fetch_row(INT32 args)
 
     if(rc==OCI_NO_DATA)
     {
+      /* No more rows int the result.
+       * NB: Oracle will complain with:
+       *       ORA-01002: fetch out of sequence
+       *     if any further attempts to fetch rows are performed.
+       */
+      dbquery->query_type = 0;
       push_undefined();
       return;
     }
@@ -2678,6 +2703,9 @@ PIKE_MODULE_INIT
 	ADD_FUNCTION("fetch_fields",
 		     f_fetch_fields,tFunc(tNone,tArr(tMap(tStr,tMix))),
 		     ID_PUBLIC);
+	
+	/* function(:int) */
+	ADD_FUNCTION("eof", f_eof,tFunc(tNone,tInt), ID_PUBLIC);
 	
 	/* function(:int|array(string|int)) */
 	ADD_FUNCTION("fetch_row",
