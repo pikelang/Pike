@@ -370,12 +370,12 @@ They can also manipulate arrays, multisets and mappings as sets.</p>
 <r><c>Shift left</c>
    <c><expr>a &lt;&lt; b</expr></c>
    <c><expr>`&lt;&lt;</expr></c>
-   <c>Multiplies a by 2 b times.</c></r>
+   <c>Multiplies a by 2, b times.</c></r>
 
 <r><c>Shift right</c>
    <c><expr>a &gt;&gt; b</expr></c>
    <c><expr>`&gt;&gt;</expr></c>
-   <c>Divides a by 2 b times.</c></r>
+   <c>Divides a by 2, b times.</c></r>
 
 <r><c>Inverse (not)</c>
    <c><expr>~ a</expr></c>
