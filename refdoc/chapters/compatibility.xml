@@ -18,6 +18,38 @@
   <subsection title="Global Functions">
   </subsection>
   <subsection title="Modules">
+    <p>The following modules and functions have moved or been renamed:
+      <matrix>
+        <r><c><ref>7.6::Image.colortable</ref></c>
+           <c><ref>Image.Colortable</ref></c></r>
+        <r><c><ref>7.6::Image.font</ref></c>
+           <c><ref>Image.Font</ref></c></r>
+        <r><c><ref>7.6::Image.image</ref></c>
+           <c><ref>Image.Image</ref></c></r>
+        <r><c><ref>7.6::_Charset</ref></c>
+           <c><ref>Locale.Charset.module</ref></c></r>
+        <r><c><ref>7.6::spider.isbasechar()</ref></c>
+           <c><ref>Parser.XML.isbasechar()</ref></c></r>
+        <r><c><ref>7.6::spider.iscombiningchar()</ref></c>
+           <c><ref>Parser.XML.iscombiningchar()</ref></c></r>
+        <r><c><ref>7.6::spider.isdigit()</ref></c>
+           <c><ref>Parser.XML.isdigit()</ref></c></r>
+        <r><c><ref>7.6::spider.isextender()</ref></c>
+           <c><ref>Parser.XML.isextender()</ref></c></r>
+        <r><c><ref>7.6::spider.isfirstnamechar()</ref></c>
+           <c><ref>Parser.XML.isfirstnamechar()</ref></c></r>
+        <r><c><ref>7.6::spider.ishexchar()</ref></c>
+           <c><ref>Parser.XML.ishexchar()</ref></c></r>
+        <r><c><ref>7.6::spider.isidographic()</ref></c>
+           <c><ref>Parser.XML.isidographic()</ref></c></r>
+        <r><c><ref>7.6::spider.isletter()</ref></c>
+           <c><ref>Parser.XML.isletter()</ref></c></r>
+        <r><c><ref>7.6::spider.isnamechar()</ref></c>
+           <c><ref>Parser.XML.isnamechar()</ref></c></r>
+        <r><c><ref>7.6::spider.isspace()</ref></c>
+           <c><ref>Parser.XML.ispace()</ref></c></r>
+      </matrix>
+    </p>
   </subsection>
   <subsection title="Compiler">
   </subsection>
