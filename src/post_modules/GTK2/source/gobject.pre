@@ -296,3 +296,46 @@ string get_docs()
   push_svalue(sv);
   free_svalue(sv);
 }
+
+%{
+int pgtk2_object_destroy_data(gpointer data) {
+  struct svalue *sv=(struct svalue *)data;
+  free_svalue(sv);
+  g_free(sv);
+}
+%}
+
+object set_data(string name, mixed arg)
+//! Gets a named field from the object.
+{
+  pgtk2_verify_inited();
+  {
+    char *name;
+    struct svalue *sv,*sv1;
+
+    get_all_args("set_data",args,"%s%*",&name,&sv);
+    sv1=(struct svalue *)g_malloc(sizeof(struct svalue));
+    assign_svalue_no_free(sv1,sv);
+    g_object_set_data_full(G_OBJECT(THIS->obj),name,(void *)sv1,(GDestroyNotify)pgtk2_object_destroy_data);
+  }
+  RETURN_THIS();
+}
+
+object get_data(string name)
+//! Each object carries around a table of associations from strings to
+//! pointers. This function lets you set an association. 
+//!
+//! If the object already had an association with that name, the old
+//! association will be destroyed.
+{
+  pgtk2_verify_inited();
+  {
+    struct svalue *sv;
+    char *name;
+
+    get_all_args("get_data",args,"%s",&name);
+    sv=(struct svalue *)g_object_get_data(G_OBJECT(THIS->obj),name);
+    pop_n_elems(args);
+    push_svalue(sv);
+  }
+}
