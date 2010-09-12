@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.190 2009/10/23 11:23:17 grubba Exp $
+|| $Id: efuns.c,v 1.191 2010/09/12 14:55:17 grubba Exp $
 */
 
 #include "global.h"
@@ -1601,7 +1601,7 @@ void f_exece(INT32 args)
 
   if(en)
   {
-    INT32 e;
+    INT32 e, i = 0;
     struct keypair *k;
 
     env=(char **)malloc((1+m_sizeof(en)) * sizeof(char *));
@@ -1615,12 +1615,11 @@ void f_exece(INT32 args)
       push_constant_text("=");
       push_string(k->val.u.string);
       f_add(3);
-      env[e]=sp[-1].u.string->str;
-      sp--;
-      dmalloc_touch_svalue(sp);
+      env[i++]=sp[-1].u.string->str;
+      dmalloc_touch_svalue(sp-1);
     }
 
-    env[e]=0;
+    env[i]=0;
   }else{
     env=environ;
   }
