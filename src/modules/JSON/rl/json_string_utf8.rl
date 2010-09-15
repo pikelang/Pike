@@ -3,7 +3,7 @@
 
 %%{
     machine JSON_string;
-    alphtype char;
+    alphtype unsigned char;
     include JSOND "json_defaults.rl";
 
     action hex0 {
@@ -44,7 +44,7 @@
     action string_append {
 	if (fpc - mark > 0) {
 	    if (!(state->flags&JSON_VALIDATE))
-		string_builder_binary_strcat(&s, mark, (ptrdiff_t)(fpc - mark));
+		string_builder_binary_strcat(&s, (char *)mark, (ptrdiff_t)(fpc - mark));
         }
     }
 
@@ -94,10 +94,10 @@
 }%%
 
 static ptrdiff_t _parse_JSON_string_utf8(PCHARP str, ptrdiff_t pos, ptrdiff_t end, struct parser_state *state) {
-    char *p = (char*)(str.ptr) + pos;
-    char *pe = (char*)(str.ptr) + end;
+    unsigned char *p = (unsigned char*)(str.ptr) + pos;
+    unsigned char *pe = (unsigned char*)(str.ptr) + end;
     ptrdiff_t start = pos;
-    char *mark = 0;
+    unsigned char *mark = 0;
     struct string_builder s;
     int cs;
     ONERROR handle;
@@ -120,7 +120,7 @@ static ptrdiff_t _parse_JSON_string_utf8(PCHARP str, ptrdiff_t pos, ptrdiff_t en
 	    UNSET_ONERROR(handle);
 	}
 
-	return p - (char*)(str.ptr);
+	return p - (unsigned char*)(str.ptr);
     }
 
 failure:
@@ -135,7 +135,7 @@ failure:
 	err_msg = "Unterminated string";
 	return start;
     }
-    return p - (char*)(str.ptr);
+    return p - (unsigned char*)(str.ptr);
 }
 
 #undef HEX2DEC
