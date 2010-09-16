@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ppc64.c,v 1.3 2008/06/26 20:35:20 marcus Exp $
+|| $Id: ppc64.c,v 1.4 2010/09/16 21:19:47 marcus Exp $
 */
 
 /*
@@ -568,6 +568,7 @@ INT32 ppc64_ins_f_jump(unsigned int a, int backward_jump)
     if(a<F_OFFSET || !(instrs[a-F_OFFSET].flags & I_BRANCH) ||
        !(test_func = instrs[a-F_OFFSET].address))
       Pike_fatal("ppc64_ins_f_jump: invalid branch op %d\n", a);
+  maybe_update_pc();
   FLUSH_CODE_GENERATOR_STATE();
   if(test_func) {
     ADD_CALL(test_func);
