@@ -29,6 +29,8 @@ o Protocols.HTTP
 
 o Tools.PV and pike -x pv now works with GTK2 as well as GTK.
 
+o Integer constants exported by modules can now be used in cpp expressions.
+
 
 Deprecations
 ------------

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.178 2010/07/27 16:46:02 mast Exp $
+|| $Id: cpp.c,v 1.179 2010/09/18 11:56:50 marcus Exp $
 */
 
 #include "global.h"
@@ -557,25 +557,13 @@ static int do_safe_index_call(struct cpp *this, struct pike_string *s)
   return res;
 }
 
-void cpp_func_constant(struct cpp *this, INT32 args)
+static void cpp_low_constant(struct cpp *this, int value)
 {
   struct svalue *save_stack=sp;
   struct array *arr;
-  int res = 0;
+  INT_TYPE res = 0;
   int n;
 
-  if (args != 1) {
-    cpp_error(this, "Bad number of arguments to constant().");
-    pop_n_elems(args);
-    push_int(0);
-    return;
-  }
-#ifdef PIKE_DEBUG
-  if (Pike_sp[-1].type != T_STRING) {
-    Pike_fatal("Bad argument 1 to constant(): %s (expected string).\n",
-	       get_name_of_type(Pike_sp[-1].type));
-  }
-#endif /* PIKE_DEBUG */
   /* FIXME: Protection against errors. */
   /* Remove extra whitespace. */
   push_constant_text(" ");
@@ -672,8 +660,38 @@ void cpp_func_constant(struct cpp *this, INT32 args)
     res = do_safe_index_call(this, arr->item[n].u.string);
   }
 
-  pop_n_elems(args + sp - save_stack);
+  if (value && res) {
+    if (sp[-1].type == T_INT)
+      res = sp[-1].u.integer;
+    else
+      res = 0;
+  }
+
+  pop_n_elems(1 + sp - save_stack);
   push_int(res);
+}
+
+void cpp_func_constant(struct cpp *this, INT32 args)
+{
+  if (args != 1) {
+    cpp_error(this, "Bad number of arguments to constant().");
+    pop_n_elems(args);
+    push_int(0);
+    return;
+  }
+#ifdef PIKE_DEBUG
+  if (Pike_sp[-1].type != T_STRING) {
+    Pike_fatal("Bad argument 1 to constant(): %s (expected string).\n",
+	       get_name_of_type(Pike_sp[-1].type));
+  }
+#endif /* PIKE_DEBUG */
+  cpp_low_constant(this, 0);
+}
+
+void cpp_resolv_constant(struct cpp *this, struct pike_string *identifier)
+{
+  ref_push_string (identifier);
+  cpp_low_constant(this, 1);
 }
 
 /* Macro handling. */

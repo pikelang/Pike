@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: preprocessor.h,v 1.95 2008/06/29 21:14:00 marcus Exp $
+|| $Id: preprocessor.h,v 1.96 2010/09/18 11:56:55 marcus Exp $
 */
 
 /*
@@ -610,6 +610,31 @@ static ptrdiff_t calcC(struct cpp *this, WCHAR *data, ptrdiff_t len,
 	  cpp_func(this, arg);
 	else
 	  pop_n_elems(arg);
+      } else if (data[pos] == '.') {
+	while (GOBBLE('.')) {
+	  struct pike_string *ind_name;
+	  SKIPWHITE();
+	  ind_name = GOBBLE_IDENTIFIER();
+	  if (ind_name == NULL) {
+	    cpp_error_sprintf(this, "Syntax error in #if missing identifier after '.'.");
+	    free_string (func_name);
+	    func_name = NULL;
+	    break;
+	  }
+	  if(OUTP()) {
+	    push_string (func_name);
+	    push_text (".");
+	    push_string (ind_name);
+	    f_add(3);
+	    func_name = Pike_sp[-1].u.string;
+	    --Pike_sp;
+	  }
+	  SKIPWHITE();
+	}
+	if (func_name == NULL)
+	  break;
+	if(OUTP())
+	  cpp_resolv_constant(this, func_name);
       } else {
 	if(OUTP())
 	  push_int(0);
