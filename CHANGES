@@ -40,6 +40,21 @@ o The libpq based old Postgres driver is now deprecated.  The new pgsql
   features, does not depend on external libraries and is less filling.
 
 
+Incompatible changes
+--------------------
+
+o Signal handlers in GTK2 do no longer get their arguments in the
+  form of an array.  The prototype for a signal handler which was
+  previously e.g.
+
+    int query_tooltip(GTK2.Widget w, array(mixed) params, mixed callback_arg)
+
+  now becomes
+
+    int query_tooltip(GTK2.Widget w, int x, int y, int keyboard_tooltip,
+		      GTK2.GObject tooltip, mixed callback_arg)
+
+
 Bug fixes
 ---------
 
