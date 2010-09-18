@@ -319,7 +319,7 @@ optional class Queue {
 	break;
 
       default:
-	ret = buffer[r_ptr..w_ptr];
+	ret = buffer[r_ptr..w_ptr-1];
 	r_ptr = w_ptr = 0;
 	buffer=allocate(sizeof(buffer)); // Throw away any references.
 	break;
@@ -879,7 +879,7 @@ optional class Queue
 	break;
 
       default:
-	ret = buffer[r_ptr..w_ptr];
+	ret = buffer[r_ptr..w_ptr-1];
 	r_ptr = w_ptr = 0;
 	buffer=allocate(sizeof(buffer)); // Throw away any references.
 	break;
