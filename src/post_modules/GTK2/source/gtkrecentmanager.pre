@@ -52,7 +52,7 @@ int remove_item(string uri)
   pgtk2_verify_inited();
   {
     struct pike_string *t;
-    GError *error;
+    GError *error=NULL;
     int res;
 
     get_all_args("remove_item",args,"%T",&t);
@@ -74,7 +74,7 @@ mapping lookup_item(string uri)
   pgtk2_verify_inited();
   {
     struct pike_string *t;
-    GError *error;
+    GError *error=NULL;
     GtkRecentInfo *gri;
 
     get_all_args("lookup_item",args,"%T",&t);
@@ -98,7 +98,7 @@ int move_item(string uri, string new_uri)
   pgtk2_verify_inited();
   {
     struct pike_string *t,*t1;
-    GError *error;
+    GError *error=NULL;
     int res;
 
     get_all_args("move_item",args,"%T%T",&t,&t1);

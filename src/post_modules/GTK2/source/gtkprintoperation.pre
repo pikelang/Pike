@@ -150,7 +150,7 @@ int run(int action, GTK2.Window parent)
   {
     struct object *o1;
     INT_TYPE action;
-    GError *null;
+    GError *error=NULL;
     GtkPrintOperationResult res;
 
     get_all_args("run",args,"%i%o",&action,&o1);
