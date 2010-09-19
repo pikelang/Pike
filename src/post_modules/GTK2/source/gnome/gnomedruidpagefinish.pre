@@ -15,8 +15,14 @@ void set_title_color( GDK.Color color );
 //! Set the title color
 void set_text_color( GDK.Color color );
 //! Set the text color
-void set_text( string text );
+void set_text( string text, mixed ... fmt )
 //! Set the text
+{
+  pgtk2_get_string_arg_with_sprintf(args);
+  pgtk2_verify_inited();
+  gnome_druid_page_finish_set_text(GNOME_DRUID_PAGE_FINISH(THIS->obj),Pike_sp[-1].u.string->str);
+  pgtk2_return_this(1);
+}
 void set_title( string title );
 //! Set the title
 /* set logo and set watermark has GdkImlibImage objects.. */

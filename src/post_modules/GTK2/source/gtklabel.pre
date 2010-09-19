@@ -62,8 +62,14 @@ void create(string|mapping(string:mixed)|void text_or_props)
   pgtk2__init_this_object();
 }
 
-void set_text(string text);
+void set_text(string text, mixed ... fmt)
 //! Set the text in the label
+{
+  pgtk2_get_string_arg_with_sprintf(args);
+  pgtk2_verify_inited();
+  gtk_label_set_text(GTK_LABEL(THIS->obj),Pike_sp[-1].u.string->str);
+  pgtk2_return_this(1);
+}
 
 require pango;
 void set_markup(string text);
@@ -179,12 +185,18 @@ void set_selectable(int setting);
 //! Selectable labels allow the user to select text from the label, for copy
 //! and past.
 
-void set_text_with_mnemonic(string text);
+void set_text_with_mnemonic(string text, mixed ... fmt)
 //! Sets the label's text from the string text.  If characters in text are
 //! preceded by an underscore, they are underlined indicating that they
 //! represent a keyboard accelerator called a mnemonic.  The mnemonic key can
 //! be used to activate another widget, chose automatically, or explicitly
 //! using set_mnemonic_widget().
+{
+  pgtk2_get_string_arg_with_sprintf(args);
+  pgtk2_verify_inited();
+  gtk_label_set_text_with_mnemonic(GTK_LABEL(THIS->obj),Pike_sp[-1].u.string->str);
+  pgtk2_return_this(1);
+}
 
 int get_justify();
 //! Returns the justification of the label.

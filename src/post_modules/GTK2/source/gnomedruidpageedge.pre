@@ -115,8 +115,14 @@ void set_text_color(GDK2.Color color)
   RETURN_THIS();
 }
 
-void set_text(string text);
+void set_text(string text, mixed ... fmt)
 //! Sets the contents of the text portion.
+{
+  pgtk2_get_string_arg_with_sprintf(args);
+  pgtk2_verify_inited();
+  gnome_druid_page_edge_set_text(GNOME_DRUID_PAGE_EDGE(THIS->obj),Pike_sp[-1].u.string->str);
+  pgtk2_return_this(1);
+}
 
 void set_title(string title);
 //! Sets the contents of the page's title text.

@@ -54,17 +54,13 @@ void context_changed();
 //! layout's context.  This function should be called if you make changes
 //! to the context subsequent to creating the layout.
 
-void set_text(string text)
+void set_text(string text, mixed ... fmt)
 //! Sets the text of the layout.
 {
-  struct pike_string *text;
-
-  get_all_args("set_text",args,"%t",&text);
-  ref_push_string(text);
-  f_string_to_utf8(1);
+  pgtk2_get_string_arg_with_sprintf(args);
+  pgtk2_verify_inited();
   pango_layout_set_text(PANGO_LAYOUT(THIS->obj),Pike_sp[-1].u.string->str,Pike_sp[-1].u.string->len);
-  pop_stack();
-  RETURN_THIS();
+  pgtk2_return_this(1);
 }
 
 string get_text();

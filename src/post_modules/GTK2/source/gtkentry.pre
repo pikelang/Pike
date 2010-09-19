@@ -68,8 +68,14 @@ void create(int|mapping(string:mixed)|void maxlen_or_props)
   pgtk2__init_this_object();
 }
 
-void set_text(string text);
+void set_text(string text, mixed ... fmt)
 //! Set the text to the specified string, replacing the current contents.
+{
+  pgtk2_get_string_arg_with_sprintf(args);
+  pgtk2_verify_inited();
+  gtk_entry_set_text(GTK_ENTRY(THIS->obj),Pike_sp[-1].u.string->str);
+  pgtk2_return_this(1);
+}
 
 string get_text();
 //! Returns the contents of the entry widget.

@@ -29,9 +29,15 @@ void set_url(string url);
 string get_url();
 //! Return the url
 
-void set_text(string text);
+void set_text(string text, mixed ... fmt)
 //! Sets the internal label widget text (used to display a URL's link
 //! text) to the given value.
+{
+  pgtk2_get_string_arg_with_sprintf(args);
+  pgtk2_verify_inited();
+  gnome_href_set_text(GNOME_HREF(THIS->obj),Pike_sp[-1].u.string->str);
+  pgtk2_return_this(1);
+}
 
 string get_text();
 //! Returns the contents of the label widget used to display the link text.

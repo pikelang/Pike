@@ -41,8 +41,14 @@ void pulse();
 //! forth.  Each call to pulse() causes the block to move by a little bit (the
 //! amount of movement per pulse is determined by set_pulse_step()).
 
-void set_text(string text);
+void set_text(string text, mixed ... fmt)
 //! Causes the given text to appear superimposed on the progress bar.
+{
+  pgtk2_get_string_arg_with_sprintf(args);
+  pgtk2_verify_inited();
+  gtk_progress_bar_set_text(GTK_PROGRESS_BAR(THIS->obj),Pike_sp[-1].u.string->str);
+  pgtk2_return_this(1);
+}
 
 void set_fraction(float fraction);
 //! Causes the progress bar to "fill in" the given fraction of the bar.  The
