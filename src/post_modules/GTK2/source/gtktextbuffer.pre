@@ -300,7 +300,7 @@ endrequire;
 
 void set_text(string text, int len);
 //! Deletes current contents of this buffer, and inserts text instead.  If
-//! len is -1, text must be nul-terminated.  text must be valid UTF-8.
+//! len is -1, text must be nul-terminated.
 
 string get_text(GTK2.TextIter start, GTK2.TextIter end,
 	int include_hidden_chars)

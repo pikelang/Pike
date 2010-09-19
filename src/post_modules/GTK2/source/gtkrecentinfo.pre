@@ -167,7 +167,7 @@ GDK2.Pixbuf get_icon(int size)
 }
 
 string get_short_name()
-//! Computes a valid UTF-8 string that can be used as the name of the item
+//! Computes a string that can be used as the name of the item
 //! in a menu or list. For example, calling this function on an item that
 //! refers to "file:///foo/bar.txt" will yield "bar.txt".
 {
