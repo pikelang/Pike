@@ -45,6 +45,10 @@ int pgtk2_is_object_program(struct program *X)
   if ((X)==ppango2_font_description_program)
     return 0;
 #endif
+#ifdef GTK_TYPE_RECENT_INFO
+  if ((X)==pgtk2_recent_info_program)
+    return 0;
+#endif
   return 1;
 }
 
