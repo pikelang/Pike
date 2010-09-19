@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: support.c,v 1.26 2010/08/01 00:10:20 marcus Exp $
+|| $Id: support.c,v 1.27 2010/09/19 17:54:56 marcus Exp $
 */
 
 #include <version.h>
@@ -786,9 +786,12 @@ void pgtk2_free_signal_data(struct signal_data *s, GClosure *gcl) {
 }
 
 void pgtk2_push_gchar(const gchar *s) {
-  push_text(s); 
-  push_int(1);
-  f_utf8_to_string(2);
+  if (s) {
+    push_text(s); 
+    push_int(1);
+    f_utf8_to_string(2);
+  } else
+    push_int(0);
 }
 
 gchar *pgtk2_get_str(struct svalue *sv) {
