@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: preprocessor.h,v 1.96 2010/09/18 11:56:55 marcus Exp $
+|| $Id: preprocessor.h,v 1.97 2010/09/19 15:03:27 marcus Exp $
 */
 
 /*
@@ -518,7 +518,7 @@ static ptrdiff_t calcC(struct cpp *this, WCHAR *data, ptrdiff_t len,
   
   default: {
     struct pike_string *func_name = GOBBLE_IDENTIFIER();
-    if (func_name) {
+    if (func_name || data[pos] == '.') {
       /* NOTE: defined() can not be handled here, 
        *       since the argument must not be expanded.
        */
@@ -531,7 +531,7 @@ static ptrdiff_t calcC(struct cpp *this, WCHAR *data, ptrdiff_t len,
       
       SKIPWHITE();
 
-      if (cpp_func)
+      if (cpp_func && data[pos] == '(')
       {
 	int start, end;
 	int arg = 0;
@@ -542,12 +542,7 @@ static ptrdiff_t calcC(struct cpp *this, WCHAR *data, ptrdiff_t len,
 	  Pike_fatal ("Didn't expect wide string name for meta function.\n");
 #endif
 
-	if(!GOBBLE('('))
-	{
-	  if(OUTP())
-	    push_int(0);
-	  break;
-	}
+	pos++; /* GOBBLE('(') */
 
 	start_line = this->current_line;
 
@@ -580,6 +575,7 @@ static ptrdiff_t calcC(struct cpp *this, WCHAR *data, ptrdiff_t len,
 	      cpp_error_sprintf(this, "Missing ) in the meta function %S().",
 				func_name);
 	      this->current_line = old_line;
+	      free_string (func_name);
 	      return pos-1;
 	    }
 	    /* FALL_THROUGH */
@@ -611,6 +607,8 @@ static ptrdiff_t calcC(struct cpp *this, WCHAR *data, ptrdiff_t len,
 	else
 	  pop_n_elems(arg);
       } else if (data[pos] == '.') {
+	if (func_name == NULL)
+	  add_ref((func_name = empty_pike_string));
 	while (GOBBLE('.')) {
 	  struct pike_string *ind_name;
 	  SKIPWHITE();
