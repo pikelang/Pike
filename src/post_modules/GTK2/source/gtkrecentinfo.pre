@@ -105,7 +105,7 @@ array get_groups()
 
     groups=gr=gtk_recent_info_get_groups((GtkRecentInfo *)THIS->obj,NULL);
     i=0;
-    while (gr) {
+    while (*gr) {
       PGTK_PUSH_GCHAR(*gr);
       i++;
       gr++;
