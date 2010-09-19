@@ -606,6 +606,7 @@ class Type
       case "string":
       case "string...":
       case "mixed":
+      case "mixed...":
       case "mapping":
       case "float": 
       case "object":
@@ -1485,6 +1486,7 @@ Type parse_type( mixed t )
    case "mapping":
    case "object":
    case "mixed":
+   case "mixed...":
    case "float":
    case "double":
    case "string":
