@@ -47,5 +47,5 @@ string get_name()
 {
   pgtk2_verify_inited();
   pgtk2_pop_n_elems(args);
-  push_text(gtk_source_style_scheme_get_name((GtkSourceStyleScheme *)THIS->obj));
+  PGTK_PUSH_GCHAR(gtk_source_style_scheme_get_name((GtkSourceStyleScheme *)THIS->obj));
 }

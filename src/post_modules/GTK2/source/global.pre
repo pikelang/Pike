@@ -476,11 +476,11 @@ array(mapping(string:mixed)) get_formats()
     i++;
     k=0;
     ref_push_string(_STR("name"));
-    push_text(gdk_pixbuf_format_get_name(gs2->data));
+    PGTK_PUSH_GCHAR(gdk_pixbuf_format_get_name(gs2->data));
     k++;
 
     ref_push_string(_STR("description"));
-    push_text(gdk_pixbuf_format_get_description(gs2->data));
+    PGTK_PUSH_GCHAR(gdk_pixbuf_format_get_description(gs2->data));
     k++;
 
     ref_push_string(_STR("mime_types"));
@@ -513,7 +513,7 @@ array(mapping(string:mixed)) get_formats()
 
 #ifdef HAVE_GTK26
     ref_push_string(_STR("license"));
-    push_text(gdk_pixbuf_format_get_license(gs2->data));
+    PGTK_PUSH_GCHAR(gdk_pixbuf_format_get_license(gs2->data));
     k++;
 #endif
 
@@ -552,11 +552,11 @@ mapping(string:mixed) get_file_info(string filename)
   k=0;
 
   ref_push_string(_STR("name"));
-  push_text(gdk_pixbuf_format_get_name(gpf));
+  PGTK_PUSH_GCHAR(gdk_pixbuf_format_get_name(gpf));
   k++;
 
   ref_push_string(_STR("description"));
-  push_text(gdk_pixbuf_format_get_description(gpf));
+  PGTK_PUSH_GCHAR(gdk_pixbuf_format_get_description(gpf));
   k++;
   
   ref_push_string(_STR("mime_types"));
@@ -589,7 +589,7 @@ mapping(string:mixed) get_file_info(string filename)
 
 #ifdef HAVE_GTK26
   ref_push_string(_STR("license"));
-  push_text(gdk_pixbuf_format_get_license(gpf));
+  PGTK_PUSH_GCHAR(gdk_pixbuf_format_get_license(gpf));
   k++;
 #endif
 

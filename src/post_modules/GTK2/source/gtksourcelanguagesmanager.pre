@@ -76,7 +76,7 @@ array(string) get_lang_files_dirs()
     gsl=gtk_source_languages_manager_get_lang_files_dirs(
 			GTK_SOURCE_LANGUAGES_MANAGER(THIS->obj));
     while (gsl) {
-      push_text(gsl->data);
+      PGTK_PUSH_GCHAR(gsl->data);
       i++;
       gsl=g_slist_next(gsl);
     }

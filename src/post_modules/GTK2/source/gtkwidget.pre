@@ -421,7 +421,7 @@ string path()
     gchar *path;
     gtk_widget_path(GTK_WIDGET(THIS->obj),&len,&path,NULL);
     pgtk2_pop_n_elems(args);
-    push_text(path);
+    PGTK_PUSH_GCHAR(path);
   }
 }
 
@@ -434,7 +434,7 @@ string class_path()
     gchar *path;
     gtk_widget_class_path(GTK_WIDGET(THIS->obj),&len,&path,NULL);
     pgtk2_pop_n_elems(args);
-    push_text(path);
+    PGTK_PUSH_GCHAR(path);
   }
 }
 

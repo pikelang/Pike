@@ -41,7 +41,7 @@ string _sprintf(int flag)
     gchar *s=gtk_tree_path_to_string((GtkTreePath *)THIS->obj);
     if (s) {
       ref_push_string(_STR("GTK2.TreePath( \""));
-      push_text(s);
+      PGTK_PUSH_GCHAR(s);
       ref_push_string(_STR("\" );"));
       f_add(3);
       g_free(s);

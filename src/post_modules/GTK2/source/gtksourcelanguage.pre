@@ -49,7 +49,7 @@ array(string) get_mime_types()
     int i=0;
     gsl=gs2=gtk_source_language_get_mime_types(GTK_SOURCE_LANGUAGE(THIS->obj));
     while (gs2) {
-      push_text(gs2->data);
+      PGTK_PUSH_GCHAR(gs2->data);
       g_free(gs2->data);
       i++;
       gs2=g_slist_next(gs2);

@@ -109,7 +109,7 @@ array(string) get_authors()
     int i=0;
     auth=gtk_about_dialog_get_authors(GTK_ABOUT_DIALOG(THIS->obj));
     while (auth[i]) {
-      push_text(auth[i++]);
+      PGTK_PUSH_GCHAR(auth[i++]);
       f_utf8_to_string(1);
     }
     f_aggregate(i);
@@ -172,7 +172,7 @@ array(string) get_artists()
     int i=0;
     art=gtk_about_dialog_get_artists(GTK_ABOUT_DIALOG(THIS->obj));
     while (art[i]) {
-      push_text(art[i++]);
+      PGTK_PUSH_GCHAR(art[i++]);
       f_utf8_to_string(1);
     }
     f_aggregate(i);
@@ -235,7 +235,7 @@ array(string) get_documenters()
     int i=0;
     doc=gtk_about_dialog_get_documenters(GTK_ABOUT_DIALOG(THIS->obj));
     while (doc[i]) {
-      push_text(doc[i++]);
+      PGTK_PUSH_GCHAR(doc[i++]);
       f_utf8_to_string(1);
     }
     f_aggregate(i);
@@ -319,7 +319,7 @@ mixed get_property(string property)
       int i=0;
       g_object_get(G_OBJECT(THIS->obj),prop->str,&a,NULL);
       while (a[i])
-	push_text(a[i]);
+	PGTK_PUSH_GCHAR(a[i]);
       f_aggregate(i);
       g_strfreev(a);
     } else {

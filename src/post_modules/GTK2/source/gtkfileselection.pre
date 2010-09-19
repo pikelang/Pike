@@ -118,7 +118,7 @@ array(string) get_selection()
     gchar *n1=*names;
     int i=0;
     while (n1) {
-      push_text(n1);
+      PGTK_PUSH_GCHAR(n1);
       i++;
       n1++;
     }

@@ -53,7 +53,7 @@ array get_group()
     gl=g2=gtk_radio_tool_button_get_group(
 		GTK_RADIO_TOOL_BUTTON(THIS->obj));
     while (g2) {
-      push_text(g2->data);
+      PGTK_PUSH_GCHAR(g2->data);
       g_object_ref(GTK_RADIO_TOOL_BUTTON(g2->data));
       num++;
       g2=g_slist_next(g2);

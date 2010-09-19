@@ -80,7 +80,7 @@ string get_icon_name()
   pgtk2_pop_n_elems(args);
   {
     const gchar *s=gtk_icon_source_get_icon_name((GtkIconSource *)THIS->obj);
-    push_text(s);
+    PGTK_PUSH_GCHAR(s);
   }
 }
 endrequire;
