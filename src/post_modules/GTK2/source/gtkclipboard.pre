@@ -65,8 +65,15 @@ endrequire;
 void clear();
 //! Clears the contents of the clipboard.
 
-void set_text(string text, int len);
+void set_text(string text, mixed ... fmt)
 //! Sets the contents of the clipboard to the given string.
+//! If multiple arguments are supplied, sprintf() is called implicitly.
+{
+  pgtk2_get_string_arg_with_sprintf(args);
+  pgtk2_verify_inited();
+  gtk_clipboard_set_text( GTK_CLIPBOARD(THIS->obj),Pike_sp[-1].u.string->str,Pike_sp[-1].u.string->len);
+  pgtk2_return_this(1);
+}
 
 require gtk26;
 void set_image(GDK2.Pixbuf pixbuf);

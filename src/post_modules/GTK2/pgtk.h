@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pgtk.h,v 1.21 2010/07/31 23:35:33 marcus Exp $
+|| $Id: pgtk.h,v 1.22 2010/09/19 20:12:19 marcus Exp $
 */
 
 /* Sort of unnessesary, and decreases code-size with 140Kb */
@@ -170,6 +170,7 @@ void pgtk2_push_gobjectclass(void *obj, struct program *def);
 void pgtk2_clear_obj_struct(struct object *o);
 void pgtk2_setup_mixin(struct object *o, struct program *p);
 void pgtk2_default__sprintf(int n, int a, int l);
+void pgtk2_get_string_arg_with_sprintf( INT32 args );
 
 void push_pgdk2object(void *obj, struct program *def, int owned);
 #define push_gdkobject(X,Y,Z) push_pgdk2object(X,pgdk2_##Y##_program,Z)

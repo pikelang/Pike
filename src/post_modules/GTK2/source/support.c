@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: support.c,v 1.27 2010/09/19 17:54:56 marcus Exp $
+|| $Id: support.c,v 1.28 2010/09/19 20:12:25 marcus Exp $
 */
 
 #include <version.h>
@@ -814,6 +814,20 @@ gchar *pgtk2_get_str(struct svalue *sv) {
 
 void pgtk2_free_str(gchar *s) {
   g_free(s);
+}
+
+void pgtk2_get_string_arg_with_sprintf( INT32 args )
+{
+  if( args < 1 )
+    Pike_error("Too few arguments, %d required, got %d\n", 1, args);
+
+  if( Pike_sp[-args].type != PIKE_T_STRING )
+    Pike_error("Illegal argument %d, expected string\n", 0);
+
+  if( args > 1 )
+    f_sprintf(args);
+
+  f_string_to_utf8(1);
 }
 
 void pgtk2_default__sprintf(int args, int offset, int len) {

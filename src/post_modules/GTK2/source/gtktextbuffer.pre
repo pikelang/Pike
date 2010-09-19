@@ -298,9 +298,15 @@ int backspace(GTK2.TextIter iter, int interactive, int default_editable)
 }
 endrequire;
 
-void set_text(string text, int len);
-//! Deletes current contents of this buffer, and inserts text instead.  If
-//! len is -1, text must be nul-terminated.
+void set_text(string text, mixed ... fmt)
+//! Deletes current contents of this buffer, and inserts text instead.
+//! If multiple arguments are supplied, sprintf() is called implicitly.
+{
+  pgtk2_get_string_arg_with_sprintf(args);
+  pgtk2_verify_inited();
+  gtk_text_buffer_set_text( GTK_TEXT_BUFFER(THIS->obj),Pike_sp[-1].u.string->str,Pike_sp[-1].u.string->len);
+  pgtk2_return_this(1);
+}
 
 string get_text(GTK2.TextIter start, GTK2.TextIter end,
 	int include_hidden_chars)
