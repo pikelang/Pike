@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.163 2010/04/29 15:08:51 grubba Exp $
+|| $Id: stralloc.c,v 1.164 2010/09/20 14:49:32 grubba Exp $
 */
 
 #include "global.h"
@@ -24,7 +24,7 @@
 #include <ctype.h>
 #include <math.h>
 
-RCSID("$Id: stralloc.c,v 1.163 2010/04/29 15:08:51 grubba Exp $");
+RCSID("$Id: stralloc.c,v 1.164 2010/09/20 14:49:32 grubba Exp $");
 
 /* #define STRALLOC_USE_PRIMES */
 
@@ -376,6 +376,9 @@ static INLINE struct pike_string *internal_findstring(const char *s,
 	  !MEMCMP(curr->str, s,len<<size_shift))) /* found it */
     {
       *prev = curr->next;
+      if (*base == curr) {
+	Pike_fatal("String circularity imminent (FIND).\n");
+      }
       curr->next = *base;
       *base = curr;
       UNLOCK_BUCKET(hval);
@@ -385,6 +388,10 @@ static INLINE struct pike_string *internal_findstring(const char *s,
     if (curr->len > HASH_PREFIX)
       depth++;
 #endif
+    if (curr == curr->next) {
+      Pike_fatal("String circularity detected for string 0x%lx.\n",
+		 (unsigned long)curr);
+    }
   }
 #ifndef HASH_PREFIX
   /* These heuruistics might require tuning! /Hubbe */
@@ -428,6 +435,9 @@ static struct pike_string *propagate_shared_string(const struct pike_string *s,
     if (curr == s) /* found it */
     {
       *prev=curr->next;
+      if (*base == curr) {
+	Pike_fatal("String circularity imminent (PROPAGATE).\n");
+      }
       curr->next=*base;
       *base=curr;
       return curr;
@@ -455,6 +465,10 @@ static void rehash_string_backwards(struct pike_string *s)
 
   /* Reverse the hash list. */
   while ((next = s->next)) {
+    if (prev == s) {
+      Pike_fatal("String circularity detected for string 0x%lx (REVERSE).\n",
+		 (unsigned long)s);
+    }
     s->next = prev;
     prev = s;
     s = next;
@@ -465,6 +479,9 @@ static void rehash_string_backwards(struct pike_string *s)
   do {
     ptrdiff_t h = HMODULO(s->hval);
     next = s->next;
+    if (base_table[h] == s) {
+      Pike_fatal("String circularity imminent (REHASH).\n");
+    }
     s->next = base_table[h];
     base_table[h] = s;
   } while ((s = next));
@@ -590,6 +607,9 @@ static void link_pike_string(struct pike_string *s, size_t hval)
   LOCK_BUCKET(hval);
   h=HMODULO(hval);
   s->refs = 0;
+  if (base_table[h] == s) {
+    Pike_fatal("String circularity imminent (LINK).\n");
+  }
   s->next = base_table[h];
   base_table[h] = s;
   s->hval=hval;
@@ -649,6 +669,9 @@ static void link_pike_string(struct pike_string *s, size_t hval)
 	tmp2->hval=do_hash(tmp2); /* compute new hash value */
 	h2=HMODULO(tmp2->hval);
 
+	if (base_table[h2] == tmp2) {
+	  Pike_fatal("String circularity imminent (PREFIX).\n");
+	}
 	tmp2->next=base_table[h2];    /* and re-hash */
 	base_table[h2]=tmp2;
       }
