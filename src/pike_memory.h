@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_memory.h,v 1.29 2000/12/13 21:31:53 hubbe Exp $
+ * $Id: pike_memory.h,v 1.30 2010/09/21 15:25:53 grubba Exp $
  */
 #ifndef MEMORY_H
 #define MEMORY_H
@@ -141,7 +141,7 @@ PMOD_EXPORT void *debug_xcalloc(size_t n, size_t s);
     size_t ret;						\
   							\
     ret = 9248339*len;					\
-    if(len<mlen)					\
+    if(len<=mlen)					\
       mlen=len;						\
     else						\
     {							\
