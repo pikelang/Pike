@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.h,v 1.52 2008/04/29 19:32:17 mast Exp $
+|| $Id: pike_memory.h,v 1.53 2010/09/21 15:24:50 grubba Exp $
 */
 
 #ifndef MEMORY_H
@@ -175,7 +175,7 @@ void mexec_free(void *ptr);
     size_t ret;						\
   							\
     ret = 9248339*len;					\
-    if(len<mlen)					\
+    if(len<=mlen)					\
       mlen=len;						\
     else						\
     {							\
