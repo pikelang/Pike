@@ -145,7 +145,7 @@ unsigned INT32 hashmem(const unsigned char *a,INT32 len,INT32 mlen)
   unsigned INT32 ret;
 
   ret=9248339*len;
-  if(len<mlen)
+  if(len<=mlen)
     mlen=len;
   else
   {
