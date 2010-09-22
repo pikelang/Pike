@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.36 2004/12/08 17:11:53 grubba Exp $
+# $Id: configure.in,v 1.37 2010/09/22 12:45:44 grubba Exp $
 #
 # Configure script for the oracle module
 #
@@ -124,8 +124,20 @@ if test x$with_oracle = xyes; then
   fi
 
   oracle_lib_dir="`cat conftest`"
-
   AC_MSG_RESULT($oracle_lib_dir)
+
+  if test "x$oracle_lib_dir" = "xno"; then :; else
+    for suff in $pike_cv_abi_suffixes; do
+      d="$oracle_lib_dir$suff"
+      PIKE_CHECK_ABI_DIR($d, [
+        oracle_lib_dir="$d"
+        break
+      ])
+    done
+
+    AC_MSG_CHECKING(abi adjusted oracle_lib_dir)
+    AC_MSG_RESULT($oracle_lib_dir)
+  fi
 
   AC_MSG_CHECKING(for Oracle includes)
 
