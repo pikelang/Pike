@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.337 2009/07/23 11:20:27 grubba Exp $
+|| $Id: signal_handler.c,v 1.338 2010/09/22 12:56:34 grubba Exp $
 */
 
 #include "global.h"
@@ -4835,8 +4835,7 @@ PMOD_EXPORT void low_init_signals(void)
   /* SIGCHLD */
 #ifdef USE_SIGCHILD
   my_signal(SIGCHLD, receive_sigchild);
-#endif
-#ifdef USE_WAIT_THREAD
+#elif defined(SIGCHLD)
   my_signal(SIGCHLD, SIG_DFL);
 #endif
 
@@ -4845,18 +4844,25 @@ PMOD_EXPORT void low_init_signals(void)
   my_signal(SIGPIPE, SIG_IGN);
 #endif
 
-#ifdef PIKE_DEBUG
+  /* The Java JVM has a tendency to mess with the following... */
 #ifdef SIGSEGV
-/*  my_signal(SIGSEGV, fatal_signal); */
+  my_signal(SIGSEGV, SIG_DFL);
 #endif
 #ifdef SIGBUS
-/*  my_signal(SIGBUS, fatal_signal); */
+  my_signal(SIGBUS, SIG_DFL);
 #endif
+#ifdef SIGXFSZ
+  my_signal(SIGXFSZ, SIG_DFL);
+#endif
+#ifdef SIGILL
+  my_signal(SIGILL, SIG_DFL);
 #endif
 
   /* SIGFPE */
 #ifdef IGNORE_SIGFPE
   my_signal(SIGFPE, SIG_IGN);
+#elif defined(SIGFPE)
+  my_signal(SIGFPE, SIG_DFL);
 #endif
 
   /* SIGPIPE */
