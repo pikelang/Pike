@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.164 2010/09/20 14:49:32 grubba Exp $
+|| $Id: stralloc.c,v 1.165 2010/09/22 14:35:37 grubba Exp $
 */
 
 #include "global.h"
@@ -24,7 +24,7 @@
 #include <ctype.h>
 #include <math.h>
 
-RCSID("$Id: stralloc.c,v 1.164 2010/09/20 14:49:32 grubba Exp $");
+RCSID("$Id: stralloc.c,v 1.165 2010/09/22 14:35:37 grubba Exp $");
 
 /* #define STRALLOC_USE_PRIMES */
 
@@ -354,6 +354,8 @@ static INLINE struct pike_string *internal_findstring(const char *s,
 #ifndef HASH_PREFIX
   unsigned int depth=0;
 #endif
+  int full_depth = 0;
+  struct pike_string *loop = NULL;
   size_t h;
   LOCK_BUCKET(hval);
   h=HMODULO(hval);
@@ -388,9 +390,12 @@ static INLINE struct pike_string *internal_findstring(const char *s,
     if (curr->len > HASH_PREFIX)
       depth++;
 #endif
-    if (curr == curr->next) {
-      Pike_fatal("String circularity detected for string 0x%lx.\n",
-		 (unsigned long)curr);
+    if (++full_depth >= 1024) {
+      if (!loop) loop = curr;
+      else if (curr == loop) {
+	Pike_fatal("String circularity detected for string 0x%lx (length:%d).\n",
+		   (unsigned long)curr, full_depth-1024);
+      }
     }
   }
 #ifndef HASH_PREFIX
@@ -603,7 +608,17 @@ PMOD_EXPORT struct pike_string *debug_begin_shared_string(size_t len)
 
 static void link_pike_string(struct pike_string *s, size_t hval)
 {
+  struct pike_string *old;
   size_t h;
+
+  if ((old = internal_findstring(s->str, s->len, s->size_shift, hval))) {
+    if (old == s) {
+      Pike_fatal("Relinking already linked string! %s\n", s->str);
+    } else {
+      Pike_fatal("Relinking duplicate string! %s\n", s->str);
+    }
+  }
+
   LOCK_BUCKET(hval);
   h=HMODULO(hval);
   s->refs = 0;
@@ -623,6 +638,7 @@ static void link_pike_string(struct pike_string *s, size_t hval)
   /* These heuristics might require tuning! /Hubbe */
   if(need_more_hash_prefix_depth > MAX_AVG_LINK_LENGTH * 4)
   {
+    size_t count=0;
     /* Changed heuristic 2005-01-17:
      *
      *   Increase HASH_PREFIX if there's some bucket containing
@@ -675,6 +691,23 @@ static void link_pike_string(struct pike_string *s, size_t hval)
 	tmp2->next=base_table[h2];    /* and re-hash */
 	base_table[h2]=tmp2;
       }
+    }
+
+    for(h=0;h<htable_size;h++)
+    {
+      struct pike_string *tmp=base_table[h];
+      while(tmp) {
+	size_t h2 = HMODULO(tmp->hval);
+	count++;
+	if (h2 != h) {
+	  Pike_fatal("PREFIX rehash failed!\n");
+	}
+	tmp = tmp->next;
+      }
+    }
+    if (count != num_strings) {
+      Pike_fatal("Lost track of strings during prefix rehash: %d != %d\n",
+		 count, num_strings);
     }
 #ifdef PIKE_RUN_UNLOCKED
     for(h=0;h<BUCKET_LOCKS;h++) mt_unlock(bucket_locks + h);
