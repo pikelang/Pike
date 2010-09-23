@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.189 2010/05/27 14:48:45 grubba Exp $
+|| $Id: system.c,v 1.190 2010/09/23 13:12:14 grubba Exp $
 */
 
 /*
@@ -2568,7 +2568,7 @@ static void f_setrlimit(INT32 args)
        sp[1-args].u.integer<-1) 
       SIMPLE_BAD_ARG_ERROR("setrlimit",2,"int(-1..)");
    if (sp[2-args].type!=T_INT ||
-       sp[1-args].u.integer<-1) 
+       sp[2-args].u.integer<-1) 
       SIMPLE_BAD_ARG_ERROR("setrlimit",3,"int(-1..)");
 
 #ifdef RLIM_INFINITY
