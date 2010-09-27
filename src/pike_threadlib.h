@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_threadlib.h,v 1.71 2009/06/22 21:09:04 grubba Exp $
+|| $Id: pike_threadlib.h,v 1.72 2010/09/27 14:24:14 grubba Exp $
 */
 
 #ifndef PIKE_THREADLIB_H
@@ -333,8 +333,7 @@ extern pthread_attr_t small_pattr;
   LOW_THREAD_CHECK_ZERO_ERROR (						\
     WaitForSingleObject(CheckValidHandle(*(X)), INFINITE) == WAIT_OBJECT_0)
 #define mt_trylock(X)							\
-  LOW_THREAD_CHECK_ZERO_ERROR (						\
-    WaitForSingleObject(CheckValidHandle(*(X)), 0) != WAIT_FAILED)
+  (WaitForSingleObject(CheckValidHandle(*(X)), 0) != WAIT_FAILED)
 #define mt_unlock(X) LOW_THREAD_CHECK_ZERO_ERROR (ReleaseMutex(CheckValidHandle(*(X))))
 #define mt_destroy(X) LOW_THREAD_CHECK_ZERO_ERROR (CloseHandle(CheckValidHandle(*(X))))
 
@@ -515,7 +514,7 @@ PMOD_EXPORT extern THREAD_T last_clocked_thread;
   } while(0)
 #endif /* VERBOSE_THREADS_DEBUG */
 
-#if defined(PIKE_DEBUG) && !defined(__NT__)
+#if defined(PIKE_DEBUG)
 
 /* This is a debug wrapper to enable checks that the interpreter lock
  * is hold by the current thread. */
