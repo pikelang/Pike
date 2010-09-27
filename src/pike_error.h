@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_error.h,v 1.55 2010/02/19 10:15:49 srb Exp $
+|| $Id: pike_error.h,v 1.56 2010/09/27 17:05:57 grubba Exp $
 */
 
 #ifndef PIKE_ERROR_H
@@ -231,8 +231,8 @@ PMOD_EXPORT extern const char msg_assert_onerr[];
 #endif /* PIKE_DEBUG */
 
 #define CALL_AND_UNSET_ONERROR(X) do {		\
-     X.func(X.arg);				\
      UNSET_ONERROR(X);				\
+     X.func(X.arg);				\
   }while(0)
 
 #if defined(PIKE_DEBUG) && 0

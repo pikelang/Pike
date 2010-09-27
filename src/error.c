@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.169 2010/02/21 22:42:19 srb Exp $
+|| $Id: error.c,v 1.170 2010/09/27 17:06:17 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -135,7 +135,8 @@ PMOD_EXPORT DECLSPEC(noreturn) void pike_throw(void) ATTRIBUTE((noreturn))
   {
     while(Pike_interpreter.recoveries->onerror)
     {
-      while(Pike_fp != Pike_interpreter.recoveries->onerror->frame_pointer)
+      ONERROR *err = Pike_interpreter.recoveries->onerror;
+      while(Pike_fp != err->frame_pointer)
       {
 #ifdef PIKE_DEBUG
 	if(!Pike_fp)
@@ -144,8 +145,8 @@ PMOD_EXPORT DECLSPEC(noreturn) void pike_throw(void) ATTRIBUTE((noreturn))
 	POP_PIKE_FRAME();
       }
 
-      (*Pike_interpreter.recoveries->onerror->func)(Pike_interpreter.recoveries->onerror->arg);
-      Pike_interpreter.recoveries->onerror=Pike_interpreter.recoveries->onerror->previous;
+      Pike_interpreter.recoveries->onerror = err->previous;
+      (*err->func)(err->arg);
     }
 
     {
@@ -170,7 +171,9 @@ PMOD_EXPORT DECLSPEC(noreturn) void pike_throw(void) ATTRIBUTE((noreturn))
 
   while(Pike_interpreter.recoveries->onerror)
   {
-    while(Pike_fp != Pike_interpreter.recoveries->onerror->frame_pointer)
+    ONERROR *err = Pike_interpreter.recoveries->onerror;
+
+    while(Pike_fp != err->frame_pointer)
     {
 #ifdef PIKE_DEBUG
       if(!Pike_fp)
@@ -178,8 +181,8 @@ PMOD_EXPORT DECLSPEC(noreturn) void pike_throw(void) ATTRIBUTE((noreturn))
 #endif
       POP_PIKE_FRAME();
     }
-    (*Pike_interpreter.recoveries->onerror->func)(Pike_interpreter.recoveries->onerror->arg);
-    Pike_interpreter.recoveries->onerror=Pike_interpreter.recoveries->onerror->previous;
+    Pike_interpreter.recoveries->onerror = err->previous;
+    (*err->func)(err->arg);
   }
 
   while(Pike_fp != Pike_interpreter.recoveries->frame_pointer)

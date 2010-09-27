@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.898 2010/07/27 15:33:35 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.899 2010/09/27 17:06:30 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -3951,6 +3951,13 @@ test_any([[
   };
   return Y(5)->x;
 ]], 7)
+
+test_eval_error([[
+  // Triggered infinite recursion and core dump.
+  // cf LysLysKOM 18719518/Pike mailinglist 12047.
+  object o = class{}();
+  o->foo += "";
+]])
 
 test_compile_error([[
   class X {
