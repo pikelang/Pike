@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.165 2010/09/22 14:35:37 grubba Exp $
+|| $Id: stralloc.c,v 1.166 2010/09/27 12:16:21 grubba Exp $
 */
 
 #include "global.h"
@@ -24,7 +24,7 @@
 #include <ctype.h>
 #include <math.h>
 
-RCSID("$Id: stralloc.c,v 1.165 2010/09/22 14:35:37 grubba Exp $");
+RCSID("$Id: stralloc.c,v 1.166 2010/09/27 12:16:21 grubba Exp $");
 
 /* #define STRALLOC_USE_PRIMES */
 
@@ -70,7 +70,7 @@ static PIKE_MUTEX_T *bucket_locks;
 }while(0)
 
 #else
-#define LOCK_BUCKET(HVAL)
+#define LOCK_BUCKET(HVAL) CHECK_INTERPRETER_LOCK()
 #define UNLOCK_BUCKET(HVAL)
 #endif
 
@@ -514,6 +514,8 @@ static void stralloc_rehash(void)
    * NOTE: bucket zero is already locked
    */
   for(h=1;h<BUCKET_LOCKS;h++) mt_lock(bucket_locks+h);
+#else
+  CHECK_INTERPRETER_LOCK();
 #endif
 
   SET_HSIZE( ++hashprimes_entry );
