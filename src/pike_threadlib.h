@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_threadlib.h,v 1.34 2010/09/27 12:01:07 grubba Exp $
+|| $Id: pike_threadlib.h,v 1.35 2010/09/27 14:09:52 grubba Exp $
 */
 
 #ifndef PIKE_THREADLIB_H
@@ -322,8 +322,7 @@ extern pthread_attr_t small_pattr;
   LOW_THREAD_CHECK_ZERO_ERROR (						\
     WaitForSingleObject(CheckValidHandle(*(X)), INFINITE) == WAIT_OBJECT_0)
 #define mt_trylock(X)							\
-  LOW_THREAD_CHECK_ZERO_ERROR (						\
-    WaitForSingleObject(CheckValidHandle(*(X)), 0) != WAIT_FAILED)
+  (WaitForSingleObject(CheckValidHandle(*(X)), 0) != WAIT_FAILED)
 #define mt_unlock(X) LOW_THREAD_CHECK_ZERO_ERROR (ReleaseMutex(CheckValidHandle(*(X))))
 #define mt_destroy(X) LOW_THREAD_CHECK_ZERO_ERROR (CloseHandle(CheckValidHandle(*(X))))
 
