@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_threadlib.h,v 1.33 2009/03/12 23:44:33 mast Exp $
+|| $Id: pike_threadlib.h,v 1.34 2010/09/27 12:01:07 grubba Exp $
 */
 
 #ifndef PIKE_THREADLIB_H
@@ -441,10 +441,10 @@ PMOD_EXPORT extern clock_t thread_start_clock;
   } while(0)
 #endif /* VERBOSE_THREADS_DEBUG */
 
-#if defined(PIKE_DEBUG) && !defined(__NT__)
+#if defined(PIKE_DEBUG)
 
 /* This is a debug wrapper to enable checks that the interpreter lock
- * is hold by the current thread. */
+ * is held by the current thread. */
 
 extern THREAD_T debug_locking_thread;
 #define SET_LOCKING_THREAD (debug_locking_thread = th_self(), 0)
@@ -460,10 +460,10 @@ extern THREAD_T debug_locking_thread;
   if (th_running) {							\
     THREAD_T self;							\
     if (!mt_trylock(&interpreter_lock))					\
-      Pike_fatal("Interpreter is not locked.\n");				\
+      Pike_fatal("Interpreter is not locked.\n");			\
     self = th_self();							\
     if (!th_equal(debug_locking_thread, self))				\
-      Pike_fatal("Interpreter is not locked by this thread.\n");		\
+      Pike_fatal("Interpreter is not locked by this thread.\n");	\
   }									\
 } while (0)
 
