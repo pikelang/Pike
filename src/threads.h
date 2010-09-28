@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.h,v 1.136 2008/08/05 21:23:46 mast Exp $
+|| $Id: threads.h,v 1.137 2010/09/28 16:06:34 mast Exp $
 */
 
 #ifndef THREADS_H
@@ -77,6 +77,7 @@ PMOD_EXPORT struct thread_state *thread_state_for_id(THREAD_T tid);
 PMOD_EXPORT struct object *thread_for_id(THREAD_T tid);
 PMOD_EXPORT void f_all_threads(INT32 args);
 PMOD_EXPORT int count_pike_threads(void);
+PMOD_EXPORT void pike_thread_yield();
 TH_RETURN_TYPE new_thread_func(void * data);
 void f_thread_create(INT32 args);
 void f_thread_set_concurrency(INT32 args);

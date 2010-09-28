@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.282 2010/02/18 14:50:41 srb Exp $
+|| $Id: threads.c,v 1.283 2010/09/28 16:06:34 mast Exp $
 */
 
 #include "global.h"
@@ -972,6 +972,11 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
   }
 #endif
 
+  pike_thread_yield();
+}
+
+PMOD_EXPORT void pike_thread_yield()
+{
   DEBUG_CHECK_THREAD();
 
   THREADS_ALLOW();

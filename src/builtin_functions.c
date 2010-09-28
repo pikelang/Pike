@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.705 2010/07/28 22:51:00 mast Exp $
+|| $Id: builtin_functions.c,v 1.706 2010/09/28 16:06:35 mast Exp $
 */
 
 #include "global.h"
@@ -4461,6 +4461,9 @@ static void delaysleep(double delay, unsigned do_abort_on_signal,
    if(delay == 0.0)
    {
      check_threads_etc();
+     /* Since check_threads doesn't yield on every call, we need this
+      * to ensure th_yield gets called. */
+     pike_thread_yield();
      return;
    }
 
