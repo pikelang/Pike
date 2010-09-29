@@ -118,7 +118,7 @@ mapping zones =
                   "Montevideo","Caracas"}),                    
    "Pacific":   ({"Rarotonga","Fiji","Gambier","Marquesas","Tahiti","Guam",
                   "Tarawa","Enderbury","Kiritimati","Saipan","Majuro",      
-                  "Kwajalein","Truk","Ponape","Kosrae","Nauru","Noumea",   
+                  "Kwajalein","Chuuk","Pohnpei","Kosrae","Nauru","Noumea", 
                   "Auckland","Chatham","Niue","Norfolk","Palau",            
                   "Port_Moresby","Pitcairn","Pago_Pago","Apia","Guadalcanal",
                   "Fakaofo","Tongatapu","Funafuti","Johnston","Midway",     
