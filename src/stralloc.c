@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.166 2010/09/27 12:16:21 grubba Exp $
+|| $Id: stralloc.c,v 1.167 2010/09/29 09:46:54 grubba Exp $
 */
 
 #include "global.h"
@@ -24,7 +24,7 @@
 #include <ctype.h>
 #include <math.h>
 
-RCSID("$Id: stralloc.c,v 1.166 2010/09/27 12:16:21 grubba Exp $");
+RCSID("$Id: stralloc.c,v 1.167 2010/09/29 09:46:54 grubba Exp $");
 
 /* #define STRALLOC_USE_PRIMES */
 
@@ -542,6 +542,11 @@ static void stralloc_rehash(void)
 
 /* Use the BLOCK_ALLOC() stuff for short strings */
 
+#undef INIT_BLOCK
+#define INIT_BLOCK(NEW_STR) do {				      \
+    (NEW_STR)->refs = 1;					      \
+  } while(0)
+
 #define SHORT_STRING_BLOCK	256
 #define SHORT_STRING_THRESHOLD	15 /* % 4 === -1 */
 
@@ -563,6 +568,9 @@ struct short_pike_string2 {
 BLOCK_ALLOC(short_pike_string0, SHORT_STRING_BLOCK)
 BLOCK_ALLOC(short_pike_string1, SHORT_STRING_BLOCK)
 BLOCK_ALLOC(short_pike_string2, SHORT_STRING_BLOCK)
+
+#undef INIT_BLOCK
+#define INIT_BLOCK(x)
 
 #define really_free_short_pike_string(s) do { \
      if (!s->size_shift) { \
@@ -602,6 +610,8 @@ PMOD_EXPORT struct pike_string *debug_begin_shared_string(size_t len)
   } else {
     t=(struct pike_string *)xalloc(len + sizeof(struct pike_string));
   }
+  t->refs = 0;
+  add_ref(t);	/* For DMALLOC */
   t->str[len]=0;
   t->len=len;
   t->size_shift=0;
@@ -623,7 +633,6 @@ static void link_pike_string(struct pike_string *s, size_t hval)
 
   LOCK_BUCKET(hval);
   h=HMODULO(hval);
-  s->refs = 0;
   if (base_table[h] == s) {
     Pike_fatal("String circularity imminent (LINK).\n");
   }
@@ -741,6 +750,8 @@ PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(size_t len, int s
   } else {
     t=(struct pike_string *)xalloc((len<<shift) + sizeof(struct pike_string));
   }
+  t->refs = 0;
+  add_ref(t);	/* For DMALLOC */
   t->len=len;
   t->size_shift=shift;
   low_set_index(t,len,0);
@@ -769,10 +780,10 @@ PMOD_EXPORT struct pike_string *low_end_shared_string(struct pike_string *s)
   {
     really_free_pike_string(s);
     s = s2;
+    add_ref(s);
   }else{
     link_pike_string(s, h);
   }
-  add_ref(s);
 
   return s;
   
@@ -857,9 +868,9 @@ PMOD_EXPORT struct pike_string * debug_make_shared_binary_string(const char *str
     s=begin_shared_string(len);
     MEMCPY(s->str, str, len);
     link_pike_string(s, h);
+  } else {
+    add_ref(s);
   }
-
-  add_ref(s);
 
   return s;
 }
@@ -912,9 +923,9 @@ PMOD_EXPORT struct pike_string * debug_make_shared_binary_string1(const p_wchar1
     s=begin_wide_shared_string(len,1);
     MEMCPY(s->str, str, len<<1);
     link_pike_string(s, h);
+  } else {
+    add_ref(s);
   }
-
-  add_ref(s);
 
   return s;
 }
@@ -947,9 +958,9 @@ PMOD_EXPORT struct pike_string * debug_make_shared_binary_string2(const p_wchar2
     s=begin_wide_shared_string(len,2);
     MEMCPY(s->str, str, len<<2);
     link_pike_string(s, h);
+  } else {
+    add_ref(s);
   }
-
-  add_ref(s);
 
   return s;
 }
@@ -1649,7 +1660,6 @@ PMOD_EXPORT struct pike_string *modify_shared_string(struct pike_string *a,
 	add_ref(a = old);
       } else {
 	link_pike_string(a, a->hval);
-	add_ref(a);
       }
       return a;
     }else{
