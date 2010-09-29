@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.h,v 1.138 2010/09/28 16:20:59 grubba Exp $
+|| $Id: threads.h,v 1.139 2010/09/29 12:48:22 grubba Exp $
 */
 
 #ifndef THREADS_H
@@ -113,6 +113,8 @@ PMOD_EXPORT void call_with_interpreter(void (*func)(void *ctx), void *ctx);
 PMOD_EXPORT void enable_external_threads(void);
 PMOD_EXPORT void disable_external_threads(void);
 /* Prototypes end here */
+#else
+#define pike_thread_yield()
 
 #endif
 
