@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.211 2009/04/01 20:41:32 mast Exp $
+|| $Id$
 */
 
 /*
@@ -2251,7 +2251,6 @@ OPCODE1_JUMP(F_CALL_OTHER_AND_RETURN,"call other & return", I_UPDATE_ALL, {
   int args_=(ARGS);							 \
   struct svalue *expected_stack=Pike_sp-args_;				 \
   LOCAL_VAR(struct svalue *s);						 \
-  FAST_CHECK_THREADS_ON_CALL();						 \
   s = &Pike_fp->context->prog->constants[arg1].sval;			 \
   if(Pike_interpreter.trace_level)					 \
   {									 \
@@ -2295,46 +2294,53 @@ OPCODE1_JUMP(F_CALL_OTHER_AND_RETURN,"call other & return", I_UPDATE_ALL, {
 }while(0)
 #else
 #define DO_CALL_BUILTIN(ARGS) do {					\
-    FAST_CHECK_THREADS_ON_CALL();					\
     (*(Pike_fp->context->prog->constants[arg1].sval.u.efun->function))(ARGS); \
   } while (0)
 #endif
 
 OPCODE1(F_CALL_BUILTIN, "call builtin", I_UPDATE_ALL, {
+  FAST_CHECK_THREADS_ON_CALL();
   DO_CALL_BUILTIN(DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)));
 });
 
 OPCODE1(F_CALL_BUILTIN_AND_POP,"call builtin & pop", I_UPDATE_ALL, {
+  FAST_CHECK_THREADS_ON_CALL();
   DO_CALL_BUILTIN(DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)));
   pop_stack();
 });
 
 OPCODE1_RETURN(F_CALL_BUILTIN_AND_RETURN,"call builtin & return", I_UPDATE_ALL, {
+  FAST_CHECK_THREADS_ON_CALL();
   DO_CALL_BUILTIN(DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)));
   DO_DUMB_RETURN;
 });
 
 
 OPCODE1(F_MARK_CALL_BUILTIN, "mark, call builtin", I_UPDATE_ALL, {
+  FAST_CHECK_THREADS_ON_CALL();
   DO_CALL_BUILTIN(0);
 });
 
 OPCODE1(F_MARK_CALL_BUILTIN_AND_POP, "mark, call builtin & pop", 0, {
+  FAST_CHECK_THREADS_ON_CALL();
   DO_CALL_BUILTIN(0);
   pop_stack();
 });
 
 OPCODE1_RETURN(F_MARK_CALL_BUILTIN_AND_RETURN, "mark, call builtin & return", I_UPDATE_ALL, {
+  FAST_CHECK_THREADS_ON_CALL();
   DO_CALL_BUILTIN(0);
   DO_DUMB_RETURN;
 });
 
 
 OPCODE1(F_CALL_BUILTIN1, "call builtin 1", I_UPDATE_ALL, {
+  FAST_CHECK_THREADS_ON_CALL();
   DO_CALL_BUILTIN(1);
 });
 
 OPCODE1(F_CALL_BUILTIN1_AND_POP, "call builtin1 & pop", I_UPDATE_ALL, {
+  FAST_CHECK_THREADS_ON_CALL();
   DO_CALL_BUILTIN(1);
   pop_stack();
 });
@@ -2343,6 +2349,10 @@ OPCODE1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN, "ltosval, call builtin & assign",
 	I_UPDATE_ALL, {
   INT32 args = DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp));
   ONERROR uwp;
+
+  /* Give other threads a chance to run now, before we temporarily
+   * clear the svalue, in case another thread looks at it. */
+  FAST_CHECK_THREADS_ON_CALL();
 
   /* FIXME: Assert that args > 0 */
 
@@ -2387,6 +2397,10 @@ OPCODE1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN_POP,
 	"ltosval, call builtin, assign & pop", I_UPDATE_ALL, {
   INT32 args = DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp));
   ONERROR uwp;
+
+  /* Give other threads a chance to run now, before we temporarily
+   * clear the svalue, in case another thread looks at it. */
+  FAST_CHECK_THREADS_ON_CALL();
 
   /* FIXME: Assert that args > 0 */
 

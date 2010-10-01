@@ -387,7 +387,6 @@ testfont binary
 /src/install-sh foreign_ident
 /src/interpret.c foreign_ident
 /src/interpret.h foreign_ident
-/src/interpret_functions.h foreign_ident
 /src/interpreter.h foreign_ident
 /src/iterators.cmod foreign_ident
 /src/language.yacc foreign_ident
