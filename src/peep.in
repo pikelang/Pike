@@ -1,7 +1,7 @@
 // This file is part of Pike. For copyright information see COPYRIGHT.
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
-// $Id: peep.in,v 1.84 2009/07/21 17:54:16 grubba Exp $
+// $Id$
 
 NOP :
 POP_N_ELEMS (0) : 
@@ -290,13 +290,15 @@ NEG_NUMBER [$1a > 0] SUBTRACT : ADD_INT ($1a)
 // CONST_1 ADD_INT : NUMBER($2a-1)
 // CONST_1 ADD_NEG_INT : NUMBER(-(1+$2a))
 
-LTOSVAL2 ADD ASSIGN : ADD_TO
+// FIXME: What about LTOSVAL_AND_FREE variants of the following three rules?
+
+LTOSVAL2_AND_FREE ADD ASSIGN : ADD_TO
 LTOSVAL ADD ASSIGN : ADD_TO
 
-LTOSVAL2 ADD_INTS ASSIGN : ADD_TO
+LTOSVAL2_AND_FREE ADD_INTS ASSIGN : ADD_TO
 LTOSVAL ADD_INTS ASSIGN : ADD_TO
 
-LTOSVAL2 ADD_FLOATS ASSIGN : ADD_TO
+LTOSVAL2_AND_FREE ADD_FLOATS ASSIGN : ADD_TO
 LTOSVAL ADD_FLOATS ASSIGN : ADD_TO
 
 LOCAL CONST1 ADD_TO : INC_LOCAL($1a)

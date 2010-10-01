@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.c,v 1.208 2010/07/04 12:16:06 grubba Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -1165,7 +1165,7 @@ static int do_docode2(node *n, int flags)
 	  match_types(CAR(n)->type, object_type_string)))
       {
 	code_expression(CDR(n), 0, "assignment");
-	emit0(F_LTOSVAL2);
+	emit0(F_LTOSVAL2_AND_FREE);
       }else{
 	emit0(F_LTOSVAL);
 	code_expression(CDR(n), 0, "assignment");
@@ -1257,9 +1257,9 @@ static int do_docode2(node *n, int flags)
 	  num_args = do_docode(CDAR(n), 0);
 	  switch (num_args)
 	  {
-	    case 0: emit0(F_LTOSVAL1); break;
-	    case 1: emit0(F_LTOSVAL2); break;
-	    case 2: emit0(F_LTOSVAL3); break;
+	    case 0: emit0(F_LTOSVAL_AND_FREE); break;
+	    case 1: emit0(F_LTOSVAL2_AND_FREE); break;
+	    case 2: emit0(F_LTOSVAL3_AND_FREE); break;
 #ifdef PIKE_DEBUG
 	    default:
 	      Pike_fatal("Arglebargle glop-glyf?\n");
@@ -1276,7 +1276,7 @@ static int do_docode2(node *n, int flags)
 	  emit0(CAR(n)->token);
 
 	emit0(n->token);
-	return n->token==F_ASSIGN;
+	return n->token==F_ASSIGN; /* So when is this false? /mast */
       }
     case F_APPLY:
       if ((CAAR(n)->token == F_CONSTANT) &&
