@@ -587,9 +587,9 @@ void response_and_finish(mapping m, function|void _log_cb)
       int a,b;
       if (sscanf(request_headers->range,"bytes%*[ =]%d-%d",a,b)==3)
 	 m->start=a,m->stop=b;
-      else if (sscanf(request_headers->range,"bytes%*[ =]-%d",b))
+      else if (sscanf(request_headers->range,"bytes%*[ =]-%d",b)==2)
       {
-        if( m->size==-1 )
+        if( m->size==-1 || m->size < b )
         {
 	    m_delete(m,"file");
 	    m->data="";
@@ -601,7 +601,7 @@ void response_and_finish(mapping m, function|void _log_cb)
           m->stop=-1;
         }
       }
-      else if (sscanf(request_headers->range,"bytes%*[ =]%d-",a))
+      else if (sscanf(request_headers->range,"bytes%*[ =]%d-",a)==2)
 	 m->start=a,m->stop=-1;
       else if (has_value(request_headers->range, ","))
       {
