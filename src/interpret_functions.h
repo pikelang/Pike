@@ -637,6 +637,10 @@ OPCODE1(F_DEC_LOCAL_AND_POP, "--local and pop", 0, {
   }
 });
 
+/* lval[0], lval[1], *Pike_sp
+ * ->
+ * lval[0], lval[1], result, *Pike_sp
+ */
 OPCODE0(F_LTOSVAL, "lvalue to svalue", I_UPDATE_SP, {
   dmalloc_touch_svalue(Pike_sp-2);
   dmalloc_touch_svalue(Pike_sp-1);
@@ -645,7 +649,30 @@ OPCODE0(F_LTOSVAL, "lvalue to svalue", I_UPDATE_SP, {
   print_return_value();
 });
 
-OPCODE0(F_LTOSVAL2, "ltosval2", I_UPDATE_SP, {
+/* The F_LTOSVAL*_AND_FREE opcodes are used to optimize foo+=bar and
+ * similar things. The optimization is to free the old reference to
+ * foo after it has been pushed on the stack. That way we make it
+ * possible for foo to have only 1 reference, and then the low
+ * array/multiset/mapping manipulation routines can be destructive if
+ * they like.
+ *
+ * Warning: We must not release the interpreter lock while foo is
+ * zeroed, or else other threads might read the zero in cases where
+ * there's supposed to be none.
+ *
+ * FIXME: The next opcode must not throw, because then the zeroing
+ * becomes permanent and can cause lasting side effects if it's a
+ * global variable. F_ADD and most other opcodes currently break this.
+ *
+ * (Another way to handle both problems above is to restrict this
+ * optimization to local variables.)
+ */
+
+/* lval[0], lval[1], x, *Pike_sp
+ * ->
+ * lval[0], lval[1], result, x, *Pike_sp
+ */
+OPCODE0(F_LTOSVAL2_AND_FREE, "ltosval2 and free", I_UPDATE_SP, {
   dmalloc_touch_svalue(Pike_sp-3);
   dmalloc_touch_svalue(Pike_sp-2);
   dmalloc_touch_svalue(Pike_sp-1);
@@ -654,12 +681,7 @@ OPCODE0(F_LTOSVAL2, "ltosval2", I_UPDATE_SP, {
   mark_free_svalue (Pike_sp - 1);
   Pike_sp++;
   lvalue_to_svalue_no_free(Pike_sp-2, Pike_sp-4);
-  /* This is so that foo+=bar (and similar things) will be faster.
-   * It's done by freeing the old reference to foo after it has been
-   * pushed on the stack. That way foo can have only 1 reference if we
-   * are lucky, and then the low array/multiset/mapping manipulation
-   * routines can be destructive if they like.
-   */
+
   if( (1 << Pike_sp[-2].type) &
       (BIT_ARRAY | BIT_MULTISET | BIT_MAPPING | BIT_STRING) )
   {
@@ -671,7 +693,11 @@ OPCODE0(F_LTOSVAL2, "ltosval2", I_UPDATE_SP, {
   }
 });
 
-OPCODE0(F_LTOSVAL3, "ltosval3", I_UPDATE_SP, {
+/* lval[0], lval[1], x, y, *Pike_sp
+ * ->
+ * lval[0], lval[1], result, x, y, *Pike_sp
+ */
+OPCODE0(F_LTOSVAL3_AND_FREE, "ltosval3 and free", I_UPDATE_SP, {
   dmalloc_touch_svalue(Pike_sp-4);
   dmalloc_touch_svalue(Pike_sp-3);
   dmalloc_touch_svalue(Pike_sp-2);
@@ -700,7 +726,11 @@ OPCODE0(F_LTOSVAL3, "ltosval3", I_UPDATE_SP, {
   }
 });
 
-OPCODE0(F_LTOSVAL1, "ltosval1", I_UPDATE_SP, {
+/* lval[0], lval[1], *Pike_sp
+ * ->
+ * lval[0], lval[1], result, *Pike_sp
+ */
+OPCODE0(F_LTOSVAL_AND_FREE, "ltosval and free", I_UPDATE_SP, {
   dmalloc_touch_svalue(Pike_sp-2);
   dmalloc_touch_svalue(Pike_sp-1);
 
@@ -1678,6 +1708,7 @@ OPCODE0(F_NOT, "!", 0, {
   }
 });
 
+/* Used with F_LTOSVAL*_AND_FREE - must not release interpreter lock. */
 OPCODE0_ALIAS(F_LSH, "<<", I_UPDATE_SP, o_lsh);
 OPCODE0_ALIAS(F_RSH, ">>", I_UPDATE_SP, o_rsh);
 
@@ -1695,10 +1726,12 @@ COMPARISON(F_GE, ">=", is_ge(Pike_sp-2,Pike_sp-1));
 COMPARISON(F_LT, "<", is_lt(Pike_sp-2,Pike_sp-1));
 COMPARISON(F_LE, "<=", is_le(Pike_sp-2,Pike_sp-1));
 
+/* Used with F_LTOSVAL*_AND_FREE - must not release interpreter lock. */
 OPCODE0(F_ADD, "+", I_UPDATE_SP, {
   f_add(2);
 });
 
+/* Used with F_LTOSVAL*_AND_FREE - must not release interpreter lock. */
 OPCODE0(F_ADD_INTS, "int+int", I_UPDATE_SP, {
   if(Pike_sp[-1].type == T_INT && Pike_sp[-2].type == T_INT 
      DO_IF_BIGNUM(
@@ -1715,6 +1748,7 @@ OPCODE0(F_ADD_INTS, "int+int", I_UPDATE_SP, {
   }
 });
 
+/* Used with F_LTOSVAL*_AND_FREE - must not release interpreter lock. */
 OPCODE0(F_ADD_FLOATS, "float+float", I_UPDATE_SP, {
   if(Pike_sp[-1].type == T_FLOAT && Pike_sp[-2].type == T_FLOAT)
   {
@@ -1726,6 +1760,7 @@ OPCODE0(F_ADD_FLOATS, "float+float", I_UPDATE_SP, {
   }
 });
 
+/* Used with F_LTOSVAL*_AND_FREE - must not release interpreter lock. */
 OPCODE0_ALIAS(F_SUBTRACT, "-", I_UPDATE_SP, o_subtract);
 OPCODE0_ALIAS(F_AND, "&", I_UPDATE_SP, o_and);
 OPCODE0_ALIAS(F_OR, "|", I_UPDATE_SP, o_or);
@@ -1920,6 +1955,7 @@ OPCODE0(F_SOFT_CAST, "soft cast", I_UPDATE_SP, {
   pop_stack();
 });
 
+/* Used with F_LTOSVAL*_AND_FREE - must not release interpreter lock. */
 OPCODE1_ALIAS(F_RANGE, "range", I_UPDATE_SP, o_range2);
 
 OPCODE0(F_COPY_VALUE, "copy_value", 0, {
