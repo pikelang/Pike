@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: psd.c,v 1.47 2008/01/19 15:28:27 grubba Exp $
+|| $Id: psd.c,v 1.48 2010/10/01 14:12:10 nilsson Exp $
 */
 
 #include "global.h"
@@ -213,9 +213,8 @@ static void decode_layers_and_masks( struct psd_image *dst,
   while( count-- )
   {
     unsigned int cnt;
-    struct layer *l= 
-    layer = (struct layer *)xalloc( sizeof( struct layer ));
-    MEMSET(layer, 0, sizeof(struct layer));
+    struct layer *l=
+      layer = (struct layer *)xcalloc( sizeof( struct layer ), 1);
     layer->next = dst->first_layer;
     if(dst->first_layer) dst->first_layer->prev = layer;
     dst->first_layer = layer;

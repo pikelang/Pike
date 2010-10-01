@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: tga.c,v 1.42 2008/01/27 20:28:41 grubba Exp $
+|| $Id: tga.c,v 1.43 2010/10/01 14:12:10 nilsson Exp $
 */
 
 /*
@@ -570,10 +570,7 @@ static struct image_alpha ReadImage(struct buffer *fp, struct tga_header *hdr)
 
     pelbytes = ROUNDUP_DIVIDE (hdr->colorMapSize, 8);
     colors = length + index;
-    cmap = malloc (colors * pelbytes);
-
-    /* Zero the entries up to the beginning of the map. */
-    MEMSET (cmap, 0, index * pelbytes);
+    cmap = xcalloc (colors * pelbytes, 1);
 
     /* Read in the rest of the colormap. */
     if (std_fread (cmap + (index * pelbytes), pelbytes, length, fp) != length)
