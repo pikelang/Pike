@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.246 2010/08/20 11:00:32 grubba Exp $
+ * $Id$
  *
  * Backend object.
  */
@@ -1493,6 +1493,8 @@ PIKECLASS Backend
     if (box->fd >= 0) update_fd_set (box->backend, box->fd, box->events, 0);
     remove_fd_box (box);
     box->backend = NULL;
+    /* Make sure no further callbacks are called on this box. */
+    box->revents = 0;
 
     if (box->ref_obj && box->events) {
       /* Use gc safe method to allow calls from within the gc. */
