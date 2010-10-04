@@ -30,6 +30,7 @@ _$*
 *.elc
 *.ln
 core
+core.*
 /Pike*
 /build
 /xenofarm_result
