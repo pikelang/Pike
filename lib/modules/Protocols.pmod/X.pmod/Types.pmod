@@ -32,12 +32,25 @@
 
 #include "error.h"
 
+//! Classes for various X resources.
+
+//! The base class for X resources.
+//!
+//! @seealso
+//!   @[Drawable], @[Font], @[Window]
 class XResource
 {
   object display;
   int id;
   int autofree = 1;
 
+  //! @decl void create(Display d, int i)
+  //!
+  //! @param d
+  //!   @[Display] the resource belongs to.
+  //!
+  //! @param i
+  //!   Identification number for the resource.
   void create(object d, int i)
   {
     display = d;
@@ -65,9 +78,12 @@ class XResource
 
 }
 
+//!
 class Font
 {
   import ".";
+
+  //!
   inherit XResource;
 
   object QueryTextExtents_req(string str)
@@ -283,9 +299,12 @@ class Colormap
 /* Kludge */
 #define PIXMAP (_Types.get_pixmap_class())
 
+//!
 class Drawable
 {
+  //!
   inherit XResource;
+
   int depth;
   object colormap, parent, visual;
 
@@ -472,8 +491,10 @@ class Pixmap
   }
 }
 
+//!
 class Window
 {
+  //!
   inherit Drawable;
   int currentInputMask;
 
@@ -844,6 +865,10 @@ class Window
     return req;
   }
 
+  //! @decl array(Protocols.X.Atom.Atom) ListProperties()
+  //!
+  //! @returns
+  //!   Returns an array of atoms for the window.
   array ListProperties()
   {
     object req = ListProperties_req();
@@ -876,6 +901,7 @@ class Window
     return req;
   }
 
+  //!
   void ChangeProperty(object property, object type,
 		      int format, array(int)|string data)
   {
@@ -893,6 +919,19 @@ class Window
     return req;
   }
 
+  //! @decl mapping GetProperty(Protocols.X.Atom.Atom property, @
+  //!                           Protocols.X.Atom.Atom|void type)
+  //! @returns
+  //!   Returns @expr{0@} (zero) if the property isn't set, and
+  //!   returns a mapping containing the following fields on success:
+  //!   @mapping
+  //!     @member int "bytesAfter"
+  //!     @member array(int) "data"
+  //!     @member int "format"
+  //!
+  //!     @member Protocols.X.Atom.Atom "type"
+  //!
+  //!   @endmapping
   mapping GetProperty(object property, object|void type)
   {
     object req = GetProperty_req(property, type);
@@ -971,8 +1010,20 @@ class Window
     display->extensions["SHAPE"]->ShapeOffset( this_object(), kind, xo, yo );
   }
 
-
-  // Init function.
+  //! @decl void create(Display d, int i, Visual|void v, Window|void p)
+  //!
+  //! Init function.
+  //!
+  //! @param d
+  //! @param i
+  //!   Display and identifier for the window.
+  //!   Sent unmodified to @[Drawable::create()].
+  //!
+  //! @param v
+  //!   @[Visual] for the window.
+  //!
+  //! @param p
+  //!   Parent @[Window].
   void create(mixed ... args)
   {
     ::create( @args );
@@ -983,8 +1034,10 @@ class Window
   }
 }
 
+//!
 class RootWindow
 {
+  //!
   inherit Window;
 
   object defaultColorMap;

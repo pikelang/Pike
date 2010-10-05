@@ -31,6 +31,7 @@
 
 #pike __REAL_VERSION__
 
+//!
 class Atom
 {
   object display;

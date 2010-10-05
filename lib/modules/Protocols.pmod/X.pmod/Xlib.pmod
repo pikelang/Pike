@@ -135,6 +135,12 @@ class id_manager
   }
 }
   
+//! A connection to an X server.
+//!
+//! This class is the main interface for using @[Protocols.X].
+//!
+//! @note
+//!   Most of the module assumes that the backend is active.
 class Display
 {
   import ._Xlib;
@@ -713,7 +719,14 @@ class Display
 	exit(0);
     close();
   }
-  
+
+  //! Process all pending actions.
+  //!
+  //! Calls @[handle_action()] for all all actions
+  //! that have been queued on the @[pending_actions] queue.
+  //!
+  //! @note
+  //!   Enables nonblocking mode when done.
   void process_pending_actions()
   {
     array a;
@@ -721,7 +734,21 @@ class Display
       handle_action(a);
     set_nonblocking(read_callback, write_callback, close_callback);
   }
-	  
+
+  //! Open a connection to @[display].
+  //!
+  //! @param display
+  //!   X server to connect to. Defaults to the value set in
+  //!   the environment variable @tt{$DISPLAY@}.
+  //!
+  //! @throws
+  //!   Throws errors on invalid parameters.
+  //!
+  //! @note
+  //!   Failure diagnostics are reported on @[Stdio.stderr].
+  //!
+  //! @returns
+  //!   Returns @expr{1@} on success and @expr{0@} (zero) on failure.
   int open(string|void display)
   {
     int async = !!connect_handler;
