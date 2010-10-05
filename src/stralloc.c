@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.167 2010/09/29 09:46:54 grubba Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -24,7 +24,11 @@
 #include <ctype.h>
 #include <math.h>
 
-RCSID("$Id: stralloc.c,v 1.167 2010/09/29 09:46:54 grubba Exp $");
+#ifndef HUGE
+#define HUGE HUGE_VAL
+#endif /*!HUGE*/
+
+RCSID("$Id$");
 
 /* #define STRALLOC_USE_PRIMES */
 
@@ -994,11 +998,19 @@ PMOD_EXPORT struct pike_string *debug_make_shared_string2(const p_wchar2 *str)
 PMOD_EXPORT void unlink_pike_string(struct pike_string *s)
 {
   size_t h;
+  struct pike_string *found;
   LOCK_BUCKET(s->hval);
   h= HMODULO(s->hval);
-  propagate_shared_string(s,h);
+  found = propagate_shared_string(s,h);
 #ifdef PIKE_DEBUG
-  if (base_table[h] != s) {
+  if (found != s) {
+    /* Note: Code backported from Pike 7.8 may trigger this
+     *       since in Pike 7.8 it's ok to call free_string()
+     *       with strings that haven't been ended yet.
+     */
+    Pike_fatal("propagate_shared_string() failed. String not found.\n"
+	       "free_string() called with unshared string?\n");
+  } else if (base_table[h] != s) {
     Pike_fatal("propagate_shared_string() failed. Probably got bogus pike_string.\n");
   }
 #endif /* PIKE_DEBUG */
