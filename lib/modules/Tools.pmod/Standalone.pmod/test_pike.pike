@@ -1,7 +1,7 @@
 #! /usr/bin/env pike
 #pike __REAL_VERSION__
 
-/* $Id: test_pike.pike,v 1.141 2010/07/11 11:58:25 mast Exp $ */
+/* $Id$ */
 
 constant description = "Executes tests according to testsuite files.";
 
@@ -1326,7 +1326,6 @@ int main(int argc, array(string) argv)
   if(watchdog)
   {
     Stdio.stdout->close();
-    catch { watchdog->kill(signum("SIGKILL")); };
     watchdog->wait();
   }
 
