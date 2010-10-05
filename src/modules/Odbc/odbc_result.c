@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc_result.c,v 1.52 2010/08/04 13:03:27 grubba Exp $
+|| $Id$
 */
 
 /*
@@ -26,7 +26,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-RCSID("$Id: odbc_result.c,v 1.52 2010/08/04 13:03:27 grubba Exp $");
+RCSID("$Id$");
 
 #include "interpret.h"
 #include "object.h"
@@ -757,18 +757,18 @@ static void f_fetch_row(INT32 args)
 #endif /* ODBC_DEBUG */
 	  if (code == SQL_NO_DATA_FOUND) {
 	    /* No data or end marker. */
-	    free_string(s);
+	    really_free_pike_string(s);
 	    push_text("");
 	    break;
 	  } else {
 	    odbc_check_error("odbc->fetch_row", "SQLGetData() failed",
 			     code, NULL, NULL);
 	    if (!len) {
-	      free_string(s);
+	      really_free_pike_string(s);
 	      push_text("");
 	      break;
 	    } else if (len == SQL_NULL_DATA) {
-	      free_string(s);
+	      really_free_pike_string(s);
 	      if (num_strings > 1) {
 		num_strings--;
 	      } else {
