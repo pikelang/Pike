@@ -358,7 +358,9 @@ static INLINE struct pike_string *internal_findstring(const char *s,
 #ifndef HASH_PREFIX
   unsigned int depth=0;
 #endif
+#ifdef PIKE_DEBUG
   int full_depth = 0;
+#endif
   struct pike_string *loop = NULL;
   size_t h;
   LOCK_BUCKET(hval);
@@ -382,9 +384,11 @@ static INLINE struct pike_string *internal_findstring(const char *s,
 	  !MEMCMP(curr->str, s,len<<size_shift))) /* found it */
     {
       *prev = curr->next;
+#ifdef PIKE_DEBUG
       if (*base == curr) {
 	Pike_fatal("String circularity imminent (FIND).\n");
       }
+#endif
       curr->next = *base;
       *base = curr;
       UNLOCK_BUCKET(hval);
@@ -394,6 +398,7 @@ static INLINE struct pike_string *internal_findstring(const char *s,
     if (curr->len > HASH_PREFIX)
       depth++;
 #endif
+#ifdef PIKE_DEBUG
     if (++full_depth >= 1024) {
       if (!loop) loop = curr;
       else if (curr == loop) {
@@ -401,6 +406,7 @@ static INLINE struct pike_string *internal_findstring(const char *s,
 		   (unsigned long)curr, full_depth-1024);
       }
     }
+#endif
   }
 #ifndef HASH_PREFIX
   /* These heuruistics might require tuning! /Hubbe */
@@ -444,9 +450,11 @@ static struct pike_string *propagate_shared_string(const struct pike_string *s,
     if (curr == s) /* found it */
     {
       *prev=curr->next;
+#ifdef PIKE_DEBUG
       if (*base == curr) {
 	Pike_fatal("String circularity imminent (PROPAGATE).\n");
       }
+#endif
       curr->next=*base;
       *base=curr;
       return curr;
@@ -474,10 +482,12 @@ static void rehash_string_backwards(struct pike_string *s)
 
   /* Reverse the hash list. */
   while ((next = s->next)) {
+#ifdef PIKE_DEBUG
     if (prev == s) {
       Pike_fatal("String circularity detected for string 0x%lx (REVERSE).\n",
 		 (unsigned long)s);
     }
+#endif
     s->next = prev;
     prev = s;
     s = next;
@@ -488,9 +498,11 @@ static void rehash_string_backwards(struct pike_string *s)
   do {
     ptrdiff_t h = HMODULO(s->hval);
     next = s->next;
+#ifdef PIKE_DEBUG
     if (base_table[h] == s) {
       Pike_fatal("String circularity imminent (REHASH).\n");
     }
+#endif
     s->next = base_table[h];
     base_table[h] = s;
   } while ((s = next));
@@ -624,9 +636,10 @@ PMOD_EXPORT struct pike_string *debug_begin_shared_string(size_t len)
 
 static void link_pike_string(struct pike_string *s, size_t hval)
 {
-  struct pike_string *old;
   size_t h;
 
+#ifdef PIKE_DEBUG
+  struct pike_string *old;
   if ((old = internal_findstring(s->str, s->len, s->size_shift, hval))) {
     if (old == s) {
       Pike_fatal("Relinking already linked string! %s\n", s->str);
@@ -634,12 +647,15 @@ static void link_pike_string(struct pike_string *s, size_t hval)
       Pike_fatal("Relinking duplicate string! %s\n", s->str);
     }
   }
+#endif
 
   LOCK_BUCKET(hval);
   h=HMODULO(hval);
+#ifdef PIKE_DEBUG
   if (base_table[h] == s) {
     Pike_fatal("String circularity imminent (LINK).\n");
   }
+#endif
   s->next = base_table[h];
   base_table[h] = s;
   s->hval=hval;
@@ -653,7 +669,9 @@ static void link_pike_string(struct pike_string *s, size_t hval)
   /* These heuristics might require tuning! /Hubbe */
   if(need_more_hash_prefix_depth > MAX_AVG_LINK_LENGTH * 4)
   {
+#ifdef PIKE_DEBUG
     size_t count=0;
+#endif
     /* Changed heuristic 2005-01-17:
      *
      *   Increase HASH_PREFIX if there's some bucket containing
@@ -700,9 +718,11 @@ static void link_pike_string(struct pike_string *s, size_t hval)
 	tmp2->hval=do_hash(tmp2); /* compute new hash value */
 	h2=HMODULO(tmp2->hval);
 
+#ifdef PIKE_DEBUG
 	if (base_table[h2] == tmp2) {
 	  Pike_fatal("String circularity imminent (PREFIX).\n");
 	}
+#endif
 	tmp2->next=base_table[h2];    /* and re-hash */
 	base_table[h2]=tmp2;
       }
@@ -713,17 +733,22 @@ static void link_pike_string(struct pike_string *s, size_t hval)
       struct pike_string *tmp=base_table[h];
       while(tmp) {
 	size_t h2 = HMODULO(tmp->hval);
-	count++;
+#ifdef PIKE_DEBUG
 	if (h2 != h) {
 	  Pike_fatal("PREFIX rehash failed!\n");
 	}
+	count++;
+#endif
 	tmp = tmp->next;
       }
     }
+
+#ifdef PIKE_DEBUG
     if (count != num_strings) {
       Pike_fatal("Lost track of strings during prefix rehash: %d != %d\n",
 		 count, num_strings);
     }
+#endif
 #ifdef PIKE_RUN_UNLOCKED
     for(h=0;h<BUCKET_LOCKS;h++) mt_unlock(bucket_locks + h);
 #endif
