@@ -24,7 +24,6 @@
 /lib/modules/Search.pmod/Query.pmod foreign_ident
 /lib/modules/Search.pmod/RankingProfile.pike foreign_ident
 /lib/modules/Search.pmod/ResultSet.pike foreign_ident
-/lib/modules/Search.pmod/Utils.pmod foreign_ident
 /lib/modules/Search.pmod/module.pmod foreign_ident
 /lib/modules/Search.pmod/search.h foreign_ident
 /src/modules/_WhiteFish/Makefile.in foreign_ident
