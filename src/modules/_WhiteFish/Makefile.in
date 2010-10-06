@@ -1,0 +1,9 @@
+# $Id: Makefile.in,v 1.8 2006/06/30 14:17:57 mast Exp $
+@make_variables@
+VPATH=@srcdir@:@srcdir@/../..:../..
+OBJS=whitefish.o resultset.o blob.o buffer.o blobs.o linkfarm.o
+MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
+CONFIG_HEADERS=@CONFIG_HEADERS@
+
+@dynamic_module_makefile@
+@dependencies@
