@@ -5,6 +5,8 @@
 multiset except_modules = (<>);
 string vpath;
 
+string main_branch;
+
 string dirname(string dir)
 {
   array tmp=dir/"/";
@@ -227,7 +229,7 @@ int(0..1) rebuild, ignore_missing;
 void cleanup_git()
 {
   /* Roll forward to a useable state. */
-  git_cmd("checkout", "HEAD");
+  git_cmd("checkout", main_branch);
 }
 
 int main(int argc, array(string) argv)
@@ -317,6 +319,12 @@ int main(int argc, array(string) argv)
 
   if (tag) {
     if (file_stat(pike_base_name + "/.git")) {
+      main_branch = Process.popen("git symbolic-ref -q HEAD");
+      if (!has_prefix(main_branch, "refs/heads/")) {
+	werror("Unexpected HEAD: %O\n", main_branch);
+	exit(1);
+      }
+      main_branch = main_branch[sizeof("refs/heads/")..];
       git = cleanup_git;	/* Restore state when we're done. */
 
       git_cmd("pull", "--rebase");
