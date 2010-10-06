@@ -1,0 +1,388 @@
+<main>
+<charentity>
+<begin>HTML</begin>
+</charentity>
+
+<document>
+<begin>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0 Transitional//EN&quot; &quot;http://www.w3.org/TR/REC-html40/loose.dtd&quot;&gt;
+&lt;html&gt; 
+&lt;head&gt; 
+&lt;META HTTP-EQUIV=&quot;Content-Type&quot; CONTENT=&quot;text/html; charset=<charset/>&quot;&gt;
+&lt;META NAME=&quot;GENERATOR&quot; CONTENT=&quot;wvWare/<version/>&quot;&gt;
+&lt;title&gt; 
+<title/>
+&lt;/title&gt; 
+&lt;/head&gt; 
+&lt;body bgcolor=&quot;#FFFFFF&quot; text=&quot;#000000&quot; link=&quot;#0000ee&quot; vlink=&quot;#551a8b&quot;&gt;
+</begin>
+<end>
+&lt;!--
+&lt;hr&gt;
+&lt;address&gt;
+&lt;a href=&quot;http://wvware.sourceforge.net/&quot;&gt;&lt;img
+src=&quot;wvSmall.gif&quot; height=31 width=47
+align=left border=0 alt=&quot;wvWare&quot;&gt;&lt;/a&gt;
+&lt;a href=&quot;http://validator.w3.org/check/referer&quot;&gt;&lt;img
+src=&quot;vh40.gif&quot; height=31 width=88
+align=right border=0 alt=&quot;Valid HTML 4.0!&quot;&gt;&lt;/a&gt;
+Document created with &lt;a href=&quot;http://wvware.sourceforge.net/&quot;&gt;wvWare/<version/>&lt;/a&gt;&lt;br&gt;
+&lt;/address&gt;
+--&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</end>
+</document>
+
+<section>
+<begin>
+&lt;!--Section Begins--&gt;&lt;br&gt;
+</begin>
+<end>
+&lt;!--Section Ends--&gt;
+</end>
+</section>
+
+<justification>
+<left>left</left>
+<right>right</right>
+<center>center</center>
+<block>left</block>
+<asian>&lt;!--Could Someone who sees this tag tell me what was is this type of justification, asian languages only i thing--&gt;</asian>
+</justification>
+
+<numbering>
+<Arabic>type=&quot;1&quot;</Arabic>
+<UpperRoman>type=&quot;I&quot;</UpperRoman>
+<LowerRoman>type=&quot;i&quot;</LowerRoman>
+<UpperCaseN>type=&quot;A&quot;</UpperCaseN>
+<LowerCaseN>type=&quot;a&quot;</LowerCaseN>
+</numbering>
+
+<border>
+<noned>none</noned>
+<singled>solid</singled>
+<thickd>solid</thickd>
+<doubled>double</doubled>
+<number4d>double</number4d>
+<hairlined>solid</hairlined>
+<dotd>dotted</dotd>
+<dashlargegapd>dashed</dashlargegapd>
+<dotdashd>dotted</dotdashd>
+<dotdotdashd>dotted</dotdotdashd>
+<tripled>double</tripled>
+<thin-thicksmallgapd>dashed</thin-thicksmallgapd>
+<thick-thinsmallgapd>dashed</thick-thinsmallgapd>
+<thin-thick-thinsmallgapd>dashed</thin-thick-thinsmallgapd>
+<thin-thickmediumgapd>dashed</thin-thickmediumgapd>
+<thick-thinmediumgapd>dashed</thick-thinmediumgapd>
+<thin-thick-thinmediumgapd>dashed</thin-thick-thinmediumgapd>
+<thin-thicklargegapd>dashed</thin-thicklargegapd>
+<thick-thinlargegapd>dashed</thick-thinlargegapd>
+<thin-thick-thinlargegapd>dashed</thin-thick-thinlargegapd>
+<waved>solid</waved>
+<doublewaved>double</doublewaved>
+<dashsmallgapd>sashed</dashsmallgapd>
+<dashdotstrokedd>dashed</dashdotstrokedd>
+<emboss3Dd>ridge</emboss3Dd>
+<engrave3Dd>groove</engrave3Dd>
+<defaultd>ridge</defaultd>
+</border>
+
+<!-- <begin>&lt;ol <nfc/> start=&quot;<start/>&quot;&gt; -->
+<olist>
+<begin>&lt;ol <nfc/>&gt;
+</begin>
+<end>&lt;/ol&gt;</end>
+</olist>
+
+<ulist>
+<begin>&lt;ul&gt;
+</begin>
+<end>&lt;/ul&gt;</end>
+</ulist>
+
+<!-- <begin>&lt;li&gt;</begin> -->
+<entry>
+<begin>&lt;li value=&quot;<start/>&quot;&gt;</begin>
+<end>&lt;/li&gt;</end>
+</entry>
+
+
+<!-- 
+this tableoverride option can be used to turn off handling of
+these tags in tables, which I find is necessary for at least netscape
+-->
+<tableoverrides>
+<ParaBefore>0</ParaBefore>
+<ParaRight>0</ParaRight>
+<ParaAfter>0</ParaAfter>
+<ParaLeft>0</ParaLeft>
+<ParaLeft1>0</ParaLeft1>
+<VertMergedCells>0</VertMergedCells>
+</tableoverrides>
+
+<table>
+<begin>&lt;table width=&quot;<tablerelwidth/>%&quot; border=&quot;1&quot; cols=&quot;<no_cols/>&quot; rows=&quot;<no_rows/>&quot;&gt;</begin>
+<end>&lt;/table&gt;</end>
+</table>
+
+<row>
+<begin>&lt;tr&gt;</begin>
+<end>&lt;/tr&gt;</end>
+</row>
+
+<cell>
+<begin>&lt;td bgcolor=&quot;<cellbgcolor/>&quot; width=&quot;<cellrelwidth/>%&quot; rowspan=&quot;<rowspan/>&quot; colspan=&quot;<colspan/>&quot;&gt;</begin>
+<end>&lt;/td&gt;</end>
+</cell>
+
+<paragraph>
+<begin>
+<table.end/>
+<table.begin/>
+<row.begin/><cell.begin/><olist.end/><olist.begin/><ulist.end/><ulist.begin/><entry.begin/><text.begin/>
+</begin>
+<end>
+<text.end/><entry.end/><olist.end/><ulist.end/><cell.end/><row.end/>
+</end>
+</paragraph>
+
+<!-- these are all the character properties that can show up in word -->
+<bold><begin>&lt;b&gt;</begin><end>&lt;/b&gt;</end></bold>
+<italic><begin>&lt;i&gt;</begin><end>&lt;/i&gt;</end></italic>
+
+<!--
+text that has been deleted and will be displayed with strikethrough when
+revision marked text is to be displayed
+
+use either this line...
+--> 
+<RMarkDel><begin>&lt;s&gt;</begin><end>&lt;/s&gt;&lt;a href=&quot;#author<ibstRMarkDel/>&quot;&gt;[Author ID<ibstRMarkDel/>: at <dttmRMarkDel/> ]&lt;/a&gt;</end></RMarkDel>
+
+<!--
+or uncomment below to make deleted text dissappear (well, become commented out)
+-->
+<!--
+<RMarkDel><begin>&lt;!-&#45;</begin><end>-&#45;&gt;</end></RMarkDel>
+-->
+
+<!-- Overwriting char props. like CaPs->CAPS SmallCaps->smallcaps -->
+<outline><begin></begin><end></end></outline>
+<smallcaps><begin>&lt;span style=&quot;text-transform:lowercase&quot;&gt;</begin><end>&lt;/span&gt;</end></smallcaps>
+<caps><begin>&lt;span style=&quot;text-transform:uppercase&quot;&gt;</begin><end>&lt;/span&gt;</end></caps>
+<vanish><begin></begin><end></end></vanish>
+
+<!--If you uncomment this then the annotation text links will become commented out by html tags-->
+<!--
+<vanish><begin>&lt;!-&#45;</begin><end>-&#45;&gt;</end></vanish>
+-->
+
+<!--
+text that has been newly typed since the last time revision marks have been accepted
+and will be displayed with underline when revision marked text is to be displayed
+
+use either this line...
+-->
+<RMark><begin>&lt;u&gt;</begin><end>&lt;/u&gt;&lt;a href=&quot;#author<ibstRMark/>&quot;&gt;[Author ID<ibstRMark/>: at <dttmRMark/>]&lt;/a&gt;</end></RMark>
+
+<!--
+or uncomment below to make the underline dissappear
+-->
+<!--
+<RMark><begin></begin><end></end></RMark>
+-->
+
+
+<strike><begin>&lt;s&gt;</begin><end>&lt;/s&gt;</end></strike>
+<shadow><begin></begin><end></end></shadow>
+<lowercase><begin></begin><end></end></lowercase>
+<emboss><begin></begin><end></end></emboss>
+<imprint><begin></begin><end></end></imprint>
+<!--double strike-->
+<dstrike><begin>&lt;s&gt;</begin><end>&lt;/s&gt;</end></dstrike>
+
+<!--
+ftc's
+&
+hps
+
+keep them for font face and do that later.
+-->
+
+<super><begin>&lt;sup&gt;</begin><end>&lt;/sup&gt;</end></super>
+<sub><begin>&lt;sub&gt;</begin><end>&lt;/sub&gt;</end></sub>
+
+<singleu><begin>&lt;u&gt;</begin><end>&lt;/u&gt;</end></singleu>
+<wordu><begin>&lt;u&gt;</begin><end>&lt;/u&gt;</end></wordu>
+<doubleu><begin>&lt;u&gt;</begin><end>&lt;/u&gt;</end></doubleu>
+<dottedu><begin>&lt;u&gt;</begin><end>&lt;/u&gt;</end></dottedu>
+<hiddenu><begin>&lt;u&gt;</begin><end>&lt;/u&gt;</end></hiddenu>
+<thicku><begin>&lt;u&gt;</begin><end>&lt;/u&gt;</end></thicku>
+<dashu><begin>&lt;u&gt;</begin><end>&lt;/u&gt;</end></dashu>
+<dotu><begin>&lt;u&gt;</begin><end>&lt;/u&gt;</end></dotu>
+<dotdashu><begin>&lt;u&gt;</begin><end>&lt;/u&gt;</end></dotdashu>
+<dotdotdashu><begin>&lt;u&gt;</begin><end>&lt;/u&gt;</end></dotdotdashu>
+<waveu><begin>&lt;u&gt;</begin><end>&lt;/u&gt;</end></waveu>
+
+<!--
+text whose properties have been changed since the last time revision marks have been accepted
+and will be displayed with a note showing the change points.
+
+use either this line (which admit it a bit scary looking, but harmless)...
+--> 
+<PropRMark><begin>&lt;a href=&quot;#author<ibstPropRMark/>&quot;&gt;-&#45;&amp;gt;&lt;/a&gt;</begin><end>&lt;a href=&quot;#author<ibstPropRMark/>&quot;&gt;[Author ID<ibstPropRMark/>: at <dttmPropRMark/>]&lt;/a&gt;</end></PropRMark>
+
+<!--
+or uncomment below to make the notes dissappear
+-->
+<!--
+<PropRMark><begin></begin><end></end></PropRMark>
+-->
+
+<!--
+<color>
+-->
+<Black><begin>Black</begin><end></end></Black>
+<Blue><begin>Blue</begin><end></end></Blue>
+<Cyan><begin>Cyan</begin><end></end></Cyan>
+<Green><begin>Green</begin><end></end></Green>
+<Magenta><begin>Magenta</begin><end></end></Magenta>
+<Red><begin>Red</begin><end></end></Red>
+<Yellow><begin>Yellow</begin><end></end></Yellow>
+<White><begin>White</begin><end></end></White>
+<DkBlue><begin>DarkBlue</begin><end></end></DkBlue>
+<DkCyan><begin>DarkCyan</begin><end></end></DkCyan>
+<DkGreen><begin>DarkGreen</begin><end></end></DkGreen>
+<DkMagenta><begin>DarkMagenta</begin><end></end></DkMagenta>
+<DkRed><begin>DarkRed</begin><end></end></DkRed>
+<DkYellow><begin>#8b8b00</begin><end></end></DkYellow>
+<DkGray><begin>DarkGray</begin><end></end></DkGray>
+<LtGray><begin>LightGrey</begin><end></end></LtGray>
+<!--
+</color>
+-->
+
+<!--
+<animation>
+-->
+<LasVegas><begin>&lt;blink&gt;</begin><end>&lt;/blink&gt;</end></LasVegas>
+<BackgroundBlink><begin>&lt;blink&gt;</begin><end>&lt;/blink&gt;</end></BackgroundBlink>
+<SparkleText><begin>&lt;blink&gt;</begin><end>&lt;/blink&gt;</end></SparkleText>
+<MarchingAnts><begin>&lt;blink&gt;</begin><end>&lt;/blink&gt;</end></MarchingAnts>
+<MarchingRedAnts><begin>&lt;blink&gt;</begin><end>&lt;/blink&gt;</end></MarchingRedAnts>
+<Shimmer><begin>&lt;blink&gt;</begin><end>&lt;/blink&gt;</end></Shimmer>
+<!--
+</animation>
+-->
+
+<!--
+I dont understand what this one is, and ive never come across it
+
+use this sample line (which admit it a bit scary looking, but harmless)...
+-->
+<DispFldRMark><begin>&lt;a href=&quot;#author<ibstDispFldRMark/>&quot;&gt;--&amp;gt;&lt;/a&gt;</begin><end>&lt;a href=&quot;#author<ibstDispFldRMark/>&quot;&gt;[Author ID<ibstDispFldRMark/>: at <dttmDispFldRMark/> (<xstDispFldRMark/>)]&lt;/a&gt;</end></DispFldRMark>
+
+<!--
+or uncomment below to ignore it, the previous might even crash wv ?
+-->
+<!--
+<DispFldRMark><begin></begin><end></end></DispFldRMark>
+-->
+
+<animation>
+<begin><LasVegas.begin/><BackgroundBlink.begin/><SparkleText.begin/><MarchingAnts.begin/><MarchingRedAnts.begin/><Shimmer.begin/></begin>
+<end><Shimmer.end/><MarchingRedAnts.end/><MarchingAnts.end/><SparkleText.end/><BackgroundBlink.end/><LasVegas.end/></end>
+</animation>
+
+<fontstr>
+<begin>&lt;font color=&quot;<black.begin/><blue.begin/><cyan.begin/><green.begin/><magenta.begin/><red.begin/><yellow.begin/><white.begin/><dkblue.begin/><dkcyan.begin/><dkgreen.begin/><dkmagenta.begin/><dkred.begin/><dkyellow.begin/><dkgray.begin/><ltgray.begin/>&quot;&gt;</begin>
+<end><ltgray.end/><dkgray.end/><dkyellow.end/><dkred.end/><dkmagenta.end/><dkgreen.end/><dkcyan.end/><dkblue.end/><white.end/><yellow.end/><red.end/><magenta.end/><green.end/><cyan.end/><blue.end/><black.end/>&lt;/font&gt;</end>
+</fontstr>
+
+<comment>
+<begin>
+&lt;a href=&quot;#comment<ibstAnno/> &quot;&gt;-&#45;&amp;gt;&lt;/a&gt;
+</begin>
+<end>&lt;a href=&quot;#comment<ibstAnno/> &quot;&gt;[Author:<xstUsrInitl/>]&lt;/a&gt;
+</end>
+</comment>
+
+<style name="Normal">
+<character>
+<begin><PropRMark.begin/><DispFldRMark.begin/><animation.begin/><fontstr.begin/><bold.begin/><italic.begin/><strike.begin/><RMarkDel.begin/><outline.begin/><smallcaps.begin/><caps.begin/><vanish.begin/><RMark.begin/><shadow.begin/><lowercase.begin/><emboss.begin/><imprint.begin/><dstrike.begin/><super.begin/><sub.begin/><singleu.begin/><wordu.begin/><doubleu.begin/><dottedu.begin/><hiddenu.begin/><thicku.begin/><dashu.begin/><dotu.begin/><dotdashu.begin/><dotdotdashu.begin/><waveu.begin/></begin>
+<end><waveu.end/><dotdotdashu.end/><dotdashu.end/><dotu.end/><dashu.end/><thicku.end/><hiddenu.end/><dottedu.end/><doubleu.end/><wordu.end/><singleu.end/><sub.end/><super.end/><dstrike.end/><imprint.end/><emboss.end/><lowercase.end/><shadow.end/><RMark.end/><vanish.end/><caps.end/><smallcaps.end/><outline.end/><RMarkDel.end/><strike.end/><italic.end/><bold.end/><fontstr.end/><animation.end/><DispFldRMark.end/><PropRMark.end/></end>
+</character>
+
+<!-- Netscape does handle this correctly yet, here is how each different side of the border should work.
+border-top: thin <bordertopstyle/> <bordertopcolor/>;
+border-left: thin <borderleftstyle/> <borderleftcolor/>;
+border-right: thin <borderrightstyle/> <borderrightcolor/>;
+border-bottom: thin <borderbottomstyle/> <borderbottomcolor/>
+-->
+
+
+<pmargin>
+<begin>margin: <mmParaBefore/> <mmParaRight/> <mmParaAfter/> <mmParaLeft/>;</begin>
+</pmargin>
+
+<pborder>
+<begin>
+border: thin <borderleftstyle/> <borderleftcolor/>;
+<!--
+border-top: thin <bordertopstyle/> <bordertopcolor/>;
+border-left: thin <borderleftstyle/> <borderleftcolor/>;
+border-right: thin <borderrightstyle/> <borderrightcolor/>;
+border-bottom: thin <borderbottomstyle/> <borderbottomcolor/>
+-->
+</begin>
+</pborder>
+
+<text>	
+<begin>&lt;p&gt;&lt;div name=&quot;<stylename/>&quot; align=&quot;<just/>&quot; style=&quot;<paramargin/> <paraborder/> padding: <mmPadTop/> <mmPadRight/> <mmPadBottom/> <mmPadLeft/>; &quot;&gt; 
+
+&lt;p style=&quot;text-indent: <mmParaLeft1/>; text-align: <just/>; line-height: <mmLineHeight/>; color: <parafgcolor/>; background-color: <parabgcolor/>; &quot;&gt;</begin>
+
+<end>&lt;/p&gt;&lt;/div&gt;</end>
+</text>
+
+<picture>
+<begin>
+&lt;img <htmlAlignGuess/> width=&quot;<pixPicWidth/>&quot; height=&quot;<pixPicHeight/>&quot; alt=&quot;0x01 graphic&quot; src=&quot;placeholder.png&quot;&gt;<htmlNextLineGuess/>
+</begin>
+</picture>
+
+</style>
+
+<!--we need to be override the character properties-->
+<!--
+<style name="Normal">
+<character>
+<begin><PropRMark.begin/><DispFldRMark.begin/><animation.begin/><fontstr.begin/><bold.begin/><italic.begin/><strike.begin/><RMarkDel.begin/><outline.begin/><smallcaps.begin/><caps.begin/><vanish.begin/><RMark.begin/><shadow.begin/><lowercase.begin/><emboss.begin/><imprint.begin/><dstrike.begin/><super.begin/><sub.begin/><singleu.begin/><wordu.begin/><doubleu.begin/><dottedu.begin/><hiddenu.begin/><thicku.begin/><dashu.begin/><dotu.begin/><dotdashu.begin/><dotdotdashu.begin/><waveu.begin/></begin>
+<end><waveu.end/><dotdotdashu.end/><dotdashu.end/><dotu.end/><dashu.end/><thicku.end/><hiddenu.end/><dottedu.end/><doubleu.end/><wordu.end/><singleu.end/><sub.end/><super.end/><dstrike.end/><imprint.end/><emboss.end/><lowercase.end/><shadow.end/><RMark.end/><vanish.end/><caps.end/><smallcaps.end/><outline.end/><RMarkDel.end/><strike.end/><italic.end/><bold.end/><fontstr.end/><animation.end/><DispFldRMark.end/><PropRMark.end/></end>
+</character>
+
+<text>	
+<begin>&lt;div name=&quot;<stylename/>&quot;  align=&quot;<just/>&quot;&gt;&lt;p&gt;</begin>
+<end>&lt;/p&gt;&lt;/div&gt;</end>
+</text>
+
+</style>
+
+<style name="Heading 1">
+
+<character>
+<begin></begin>
+<end></end>
+</character>
+
+<text>	
+<begin>&lt;div name=&quot;<stylename/>&quot;  align=&quot;<just/>&quot;&gt;&lt;H1&gt;</begin>
+<end>&lt;/H1&gt;&lt;/div&gt;</end>
+</text>
+
+
+
+</style>
+-->
+
+</main>
