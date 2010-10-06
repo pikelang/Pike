@@ -1,13 +1,15 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Utils.pmod,v 1.38 2003/08/19 14:45:45 mattias Exp $
+// $Id$
 
 #if !constant(report_error)
 #define report_error werror
 #define report_debug werror
 #define report_warning werror
 #endif
+
+final constant dont_dump_module=1;
 
 #ifdef SEARCH_DEBUG
 # define WERR(X) report_debug("search: "+(X)+"\n");
