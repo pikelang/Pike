@@ -5,6 +5,8 @@
 multiset except_modules = (<>);
 string vpath;
 
+string main_branch;
+
 string dirname(string dir)
 {
   array tmp=dir/"/";
@@ -192,12 +194,12 @@ string svn_get_repos()
     get_elements("repository")[0]->get_elements("root")[0]->value_of_node();
 }
 
-void git_cmd(string ... args)
+mapping git_cmd(string ... args)
 {
-  int code =
-    Process.create_process( ({ "git" }) + args,
-			    ([ "cwd":pike_base_name ]))->wait();
-  if (code) exit(code);
+  mapping res =
+    Process.run(({ "git" }) + args, ([ "cwd":pike_base_name ]));
+  if (res->exitcode) exit(res->exitcode);
+  return res;
 }
 
 void git_bump_version(int|void is_release)
@@ -274,7 +276,7 @@ int(0..1) rebuild, ignore_missing;
 void cleanup_git()
 {
   /* Roll forward to a useable state. */
-  git_cmd("checkout", "HEAD");
+  git_cmd("checkout", main_branch);
 }
 
 int main(int argc, array(string) argv)
@@ -387,6 +389,13 @@ int main(int argc, array(string) argv)
 	      svn_cmd("switch", old_url);
 	    };
     } else if (file_stat(pike_base_name + "/.git")) {
+      main_branch =
+	String.trim_all_whites(git_cmd("symbolic-ref", "-q", "HEAD")->stdout);
+      if (!has_prefix(main_branch, "refs/heads/")) {
+	werror("Unexpected HEAD: %O\n", main_branch);
+	exit(1);
+      }
+      main_branch = main_branch[sizeof("refs/heads/")..];
       git = cleanup_git;	/* Restore state when we're done. */
 
       git_cmd("pull", "--rebase");
