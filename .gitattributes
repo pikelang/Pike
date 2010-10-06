@@ -29,7 +29,6 @@ testfont binary
 /Makefile foreign_ident
 /README-CVS foreign_ident
 /README-CVS.txt foreign_ident
-/bin/export.pike foreign_ident
 /bin/extract.pike foreign_ident
 /bin/install.pike foreign_ident
 /bin/make_ci.pike foreign_ident
