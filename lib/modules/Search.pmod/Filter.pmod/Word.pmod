@@ -1,16 +1,16 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Word.pmod,v 1.8 2001/11/19 13:33:15 js Exp $
+// $Id: Word.pmod,v 1.12 2004/08/07 15:27:00 js Exp $
 
-inherit Search.Filter.HTML;
+inherit .HTML;
 
 constant contenttypes = ({ "application/msword", "application/vnd.ms-word" });
 constant fields = ({ "body", "title", "keywords"});
 
-Output filter(Standards.URI uri, string|Stdio.File data, string content_type)
+.Output filter(Standards.URI uri, string|Stdio.File data, string content_type)
 {
-  Output res=Output();
+  .Output res=.Output();
 
   if(objectp(data))
     data=data->read();
@@ -24,12 +24,15 @@ Output filter(Standards.URI uri, string|Stdio.File data, string content_type)
 	  fn, r, sizeof(data));
   
   string text;
+  string bin = combine_path(getcwd(), "modules/search/bin/wvWare");
+  string cwd = combine_path(getcwd(), "modules/search/bin");
+  string xml = combine_path(getcwd(), "modules/search/pike-modules/"
+				      "Search.pmod/Filter.pmod/wvHtml.xml");
+  string doc = combine_path(getcwd(), fn);
   mixed err = catch
   {
-    text = my_popen(({ "modules/search/bin/wvWare",
-		       "-c", "utf-8",
-		       "-x", "modules/search/pike-modules/Search.pmod/Filter.pmod/wvHtml.xml",
-		       fn }));
+    //  Wait for process exit since rm() may otherwise fail
+    text = my_popen( ({ bin, "-1", "-c", "utf-8", "-x", xml, doc }), cwd, 1);
   };
   if(!rm(fn))
     werror("Search: Failed to remove temporary file: %s\n", fn);
@@ -37,9 +40,4 @@ Output filter(Standards.URI uri, string|Stdio.File data, string content_type)
     throw(err);
   
   return ::filter(uri, text, "text/html", ([]), "utf-8");
-}
-
-string _sprintf()
-{
-  return "Search.Filter.Word";
 }

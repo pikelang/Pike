@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Base.pmod,v 1.18 2001/09/25 22:02:37 js Exp $
+// $Id: Base.pike,v 1.6 2007/11/16 10:12:03 wellhard Exp $
 
 //! Base class for Roxen Search database storage abstraction implementations.
 
@@ -20,12 +20,13 @@
 //!   The non-zero numeric identifier if @[uri] exists, or 0 otherwise.
 int get_uri_id(string uri,  void|int do_not_create);
 
-//! Retrieve and possibly creates the document id corresponding to the given URI
-//! and language code.
+//! Retrieve and possibly creates the document id corresponding to the
+//! given URI and language code.
 //! @param uri
 //!   The URI to be retrieved or created.
 //! @param language
-//!   A two letter ISO-639-1 language code, or 0 if the document is language neutral.
+//!   A two letter ISO-639-1 language code, or 0 if the document is
+//!   language neutral.
 //! @param do_not_create
 //!   If non-zero, do not create the document.
 //! @returns
@@ -44,15 +45,18 @@ int get_document_id(string uri, void|string language, void|int do_not_create);
 //!   @endmapping
 mapping get_uri_and_language(int|array(int) doc_id);
 
-//! Index words into the database. The data may be buffered until the next @[sync] call.
+//! Index words into the database. The data may be buffered until the
+//! next @[sync] call.
 //! @param uri
 //!   The URI of the resource being indexed.
 //! @param language
-//!   A two letter ISO-639-1 language code, or 0 if the document is language neutral.
+//!   A two letter ISO-639-1 language code, or 0 if the document is
+//!   language neutral.
 //! @param field
 //!   The field name for the words being indexed.
 //! @param words
-//!   The words being indexed. Possibly in wide-string format. (Not UTF8 encoded.)
+//!   The words being indexed. Possibly in wide-string format. (Not
+//!   UTF8 encoded.)
 void insert_words(Standards.URI|string uri,
 		  void|string language,
 		  string field,
@@ -62,10 +66,11 @@ void insert_words(Standards.URI|string uri,
 //! @param uri
 //!   The URI of the resource being indexed.
 //! @param language
-//!   A two letter ISO-639-1 language code, or 0 if the document is language neutral.
+//!   A two letter ISO-639-1 language code, or 0 if the document is
+//!   language neutral.
 //! @param metadata
-//!   A collection of metadata strings to be set for a document. The strings may be wide.
-//!   The "body" metadata may be cut off at 64K.
+//!   A collection of metadata strings to be set for a document. The
+//!   strings may be wide. The "body" metadata may be cut off at 64K.
 void set_metadata(Standards.URI|string uri,
 		  void|string language,
 		  mapping(string:string) metadata);
@@ -74,18 +79,21 @@ void set_metadata(Standards.URI|string uri,
 //! @param uri
 //!   The URI of the resource whose metadata should be removed.
 //! @param language
-//!   A two letter ISO-639-1 language code, or 0 if the document is language neutral.
+//!   A two letter ISO-639-1 language code, or 0 if the document is
+//!   language neutral.
 void remove_metadata(Standards.URI|string uri, void|string language);
 
 //! Retrieve a metadata collection for a document.
 //! @param uri
 //!   The URI of the resource being indexed.
 //! @param language
-//!   A two letter ISO-639-1 language code, or 0 if the document is language neutral.
+//!   A two letter ISO-639-1 language code, or 0 if the document is
+//!   language neutral.
 //! @param wanted_fields
 //!   An array containing the wanted metadata field names, or 0.
 //! @returns
-//!   The metadata fields in @[wanted_fields] or all existing fields if @[wanted_fields] is 0.
+//!   The metadata fields in @[wanted_fields] or all existing fields
+//!   if @[wanted_fields] is 0.
 mapping(string:string) get_metadata(int|Standards.URI|string uri,
 				    void|string language,
 				    void|array(string) wanted_fields);
@@ -98,9 +106,14 @@ mapping(int:string) get_special_metadata(array(int) doc_ids,
 //! @param uri
 //!   The URI of the resource being indexed.
 //! @param language
-//!   A two letter ISO-639-1 language code. If zero, delete all existing language forks
-//!   with the URI of @[uri].
+//!   A two letter ISO-639-1 language code. If zero, delete all
+//!   existing language forks with the URI of @[uri].
 void remove_document(string|Standards.URI uri, void|string language);
+
+//! Removes all documents that matches the provided uri prefix.
+//! @param uri
+//!   The URI prefix of the documents to delete.
+void remove_document_prefix(string|Standards.URI uri);
 
 //! Writes the data stored in temporary buffers to permanent storage.
 //! Calls the function set by @[set_sync_callback]] when done.
@@ -112,18 +125,16 @@ void set_sync_callback(function f);
 // FIXME
 //! Retrieves a blob from the database.
 //! @param word
-//!   The wanted word. Possibly in wide-string format. (Not UTF-8 encoded.)
+//!   The wanted word. Possibly in wide-string format. (Not UTF-8
+//!   encoded.)
 //! @param num
 //! @param blobcache
+//!
 //! @returns
 //!   The blob requested, or 0 if there's no more blobs.
-string get_blob(string word, int num, void|mapping(string:mapping(int:string)) blobcache);
+string get_blob(string word, int num,
+		void|mapping(string:mapping(int:string)) blobcache);
 
-//! Retrieves a list of deleted document ids
-//! @returns
-//!   An array containing deleted document ids.
-array(int) get_deleted_documents();
-  
 //! Allocate a field id.
 //! @param field
 //!   The (possibly wide string) field name wanted.
@@ -137,35 +148,45 @@ int allocate_field_id(string field);
 //! @param do_not_create
 //!   If non-zero, do not allocate a field id for this field
 //! @returns
-//!   An allocated numeric id, or -1 if it did not exist, or allocation failed.
+//!   An allocated numeric id, or -1 if it did not exist, or
+//!   allocation failed.
 int get_field_id(string field, void|int do_not_create);
 
-//! Remove a field from the database. Also removes all stored metadata with this field, but
-//! not all indexed words using this field id.
+//! Remove a field from the database. Also removes all stored metadata
+//! with this field, but not all indexed words using this field id.
 //! @param field
 //!   The (possibly wide string) field name to be removed.
 void remove_field(string field);
 
-//! Remove a field from the database. Also removes all stored metadata with this field, but
-//! not all indexed words using this field id.
+//! Remove a field from the database if it isn't used by the filters.
+//! Also removes all stored metadata with this field, but not all
+//! indexed words using this field id.
+//! @param field
+//!   The (possibly wide string) field name to be removed.
+void safe_remove_field(string field);
+
+//! Lists all fields in the search database.
 //! @returns
-//!   A mapping with the fields in the index part, and the corresponding numeric field id as values.
+//!   A mapping with the fields in the index part, and the
+//!   corresponding numeric field id as values.
 mapping(string:int) list_fields();
 
-//! Retrieve statistics about the number of documents in different languages.
+//! Retrieve statistics about the number of documents in different
+//! languages.
 //! @returns
-//!   A mapping with the the language code in the index part, and the corresponding number of documents
-//!   as values.
+//!   A mapping with the the language code in the index part, and the
+//!   corresponding number of documents as values.
 mapping(string|int:int) get_language_stats();
 
-//! FIXME
+//! Returns the number of distinct words in the database.
 int get_num_words();
 
-//! FIXME
+//! Returns the size, in bytes, of the search database.
 int get_database_size();
 
-//! FIXME
+//! Returns the number of deleted documents in the database.
 int get_num_deleted_documents();
 
-//! FIXME
+//! Returns a list of the @[count] most common words in the database.
+//! @[count] defaults to @expr{10@}.
 array(array) get_most_common_words(void|int count);

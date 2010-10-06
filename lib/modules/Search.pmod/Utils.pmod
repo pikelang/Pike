@@ -41,8 +41,6 @@ public string normalize(string in)
 }
 
 
-#define THROW(X) throw( ({ (X), backtrace() }) )
-
 //! A result entry from the @[ProfileCache].
 class ProfileEntry {
 
@@ -69,7 +67,7 @@ class ProfileEntry {
     database_profile_id = _database_profile_id;
     query_profile_id = _query_profile_id;
     my_cache = _my_cache;
-    int last_stat = time(1);
+    int last_stat = time();
 
     // Prefetch..
     get_ranking();
@@ -78,8 +76,8 @@ class ProfileEntry {
   //! Checks if it is time to check if the profile values are
   //! to old.
   int(0..1) check_timeout() {
-    if(time(1)-last_stat < 5*60) return 0;
-    last_stat = time(1);
+    if(time()-last_stat < 5*60) return 0;
+    last_stat = time();
     return 1;
   }
 
@@ -104,7 +102,7 @@ class ProfileEntry {
       db = Search.Database.MySQL( DBManager.db_url( get_database_value("db_name"), 1) );
 #endif
       if(!db)
-	THROW("Could not aquire the database URL to database " +
+	error("Could not aquire the database URL to database " +
 	      get_database_value("db_name") + ".\n");
     }
     return db;
@@ -156,7 +154,7 @@ class ProfileEntry {
       case "array": return indices(vals);
       case "multiset": return (multiset)indices(vals);
       default:
-	THROW("Can not cast ADTSet to "+to+".\n");
+	error("Can not cast ADTSet to "+to+".\n");
       }
     }
   }
@@ -199,7 +197,7 @@ class ProfileCache (string db_name) {
 #if constant(DBManager)
     db = DBManager.cached_get(db_name);
 #endif
-    if(!db) THROW("Could not connect to database " + db_name + ".\n");
+    if(!db) error("Could not connect to database " + db_name + ".\n");
     return db;
   }
 
@@ -277,7 +275,7 @@ class ProfileCache (string db_name) {
     array res = get_db()->
       query("SELECT id FROM profile WHERE name=%s AND type=2", name);
     if(!sizeof(res))
-      THROW("No database profile " + name + " found.\n");
+      error("No database profile " + name + " found.\n");
 
     return db_profile_names[name] = (int)res[0]->id;
   }
@@ -292,7 +290,7 @@ class ProfileCache (string db_name) {
     array res = get_db()->
       query("SELECT id FROM profile WHERE name=%s AND type=1", name);
     if(!sizeof(res))
-      THROW("No query profile " + name + " found.\n");
+      error("No query profile " + name + " found.\n");
 
     return query_profile_names[name] = (int)res[0]->id;
   }
@@ -302,14 +300,14 @@ class ProfileCache (string db_name) {
   //! Returns a list of available database profiles.
   array(string) list_db_profiles() {
     /*
-      if (time(1) - last_db_prof_stat < 5*60)
+      if (time() - last_db_prof_stat < 5*60)
       return indices(db_profile_names);*/
     array res = get_db()->query("SELECT name, id FROM profile WHERE type=2");
     db_profile_names = mkmapping(
       res->name,
       map(res->id, lambda(string s) { return (int) s; } ));
     if(sizeof(res))
-      last_db_prof_stat = time(1);
+      last_db_prof_stat = time();
     return res->name;
   }
 
@@ -319,12 +317,12 @@ class ProfileCache (string db_name) {
   array(string) list_query_profiles()
   {
     /*
-      if (time(1) - last_query_prof_stat < 5*60)
+      if (time() - last_query_prof_stat < 5*60)
       return indices(query_profile_names);*/    
     array res = get_db()->query("SELECT name, id FROM profile WHERE type=1");
     query_profile_names = mkmapping( res->name, (array(int)) res->id );
     if(sizeof(query_profile_names))
-      last_query_prof_stat = time(1);
+      last_query_prof_stat = time();
   }
 
   // Used when decoding text encoded pike data types.
@@ -389,10 +387,12 @@ class ProfileCache (string db_name) {
   //! Flushes profile entry @[p] from the profile cache.
   void flush_profile(int p) {
     m_delete(value_cache, p);
-    foreach(indices(db_profile_names), string name)
-      if(db_profile_names[name]==p)
+    foreach(db_profile_names; string name; int dbp)
+      if (dbp == p)
 	m_delete(db_profile_names, name);
-    m_delete(query_profile_names, p);
+    foreach(query_profile_names; string name; int qp)
+      if (qp == p)
+	m_delete(query_profile_names, name);
     foreach(indices(entry_cache), string id) {
       array ids = array_sscanf(id, "%d:%d");
       if(ids[0]==p || ids[1]==p)
@@ -450,13 +450,22 @@ Scheduler get_scheduler(string db_name) {
 class Scheduler {
 
   private int next_run;
-  private mapping(int:int) crawl_queue;
-  private mapping(int:int) compact_queue;
+  private mapping(int:int) entry_queue = ([]);
+  private mapping(int:int) crawl_queue = ([]);
+  private mapping(int:int) compact_queue = ([]);
+  private array(int) priority_queue = ({});
   private mapping db_profiles;
+  private object schedule_process;
 
   void create(mapping _db_profiles) {
     db_profiles = _db_profiles;
     schedule();
+  }
+
+  void check_priority_queue(int profile)
+  {
+    if (!has_value(priority_queue, profile))
+      priority_queue += ({ profile });
   }
 
   //! Call this method to indicate that a new entry has been added
@@ -465,27 +474,19 @@ class Scheduler {
   void new_entry(int latency, array(int) profiles) {
     int would_be_indexed = time() + latency*60;
     foreach(profiles, int profile)
-      crawl_queue[profile] = 0;
-    WERR("New entry.  time: "+(would_be_indexed-time(1))+" profiles: "+(array(string))profiles*",");
-    if(next_run && next_run < would_be_indexed)
+    {
+      entry_queue[profile] = 0;
+      check_priority_queue(profile);
+    }
+    WERR("New entry.  time: "+(would_be_indexed-time())+" profiles: "+
+	 (array(string))profiles*",");
+    if(next_run && next_run<would_be_indexed && next_run>=time())
       return;
     next_run = would_be_indexed;
     reschedule();
   }
 
-  private void reschedule() {
-    remove_call_out(do_scheduled_stuff);
-    WERR("Scheduler runs next event in "+(next_run-time(1))+" seconds.");
-    call_out(do_scheduled_stuff, next_run-time(1));
-  }
-
-  void unschedule() {
-    remove_call_out(do_scheduled_stuff);
-  }
-
-  void schedule() {
-    crawl_queue = ([]);
-    compact_queue = ([]);
+  void schedule(void|int quiet) {
 
     foreach(indices(db_profiles), int id) {
       object dbp = db_profiles[id];
@@ -494,23 +495,106 @@ class Scheduler {
 	m_delete(db_profiles, id);
 	continue;
       }
-      WERR("Scheduling for database profile "+dbp->name);
-      int next = dbp->next_crawl();
+      if(!quiet) WERR("Scheduling for database profile "+dbp->name);
+      int next = dbp->next_recrawl();
       if(next != -1) {
 	crawl_queue[dbp->id] = next;
-	WERR(" Crawl: "+(next-time(1)));
+	check_priority_queue(id);
+	if(!quiet) WERR(" Crawl: "+(next-time()));
       }
       next = dbp->next_compact();
       if(next != -1) {
 	compact_queue[dbp->id] = next;
-	WERR(" Compact: "+(next-time(1)));
+	if(!quiet) WERR(" Compact: "+(next-time()));
       }
-      WERR("\n");
+      if(!quiet) WERR("");
     }
 
-    if(!sizeof(crawl_queue) && !sizeof(compact_queue)) return;
-    next_run = min( @values(crawl_queue)+values(compact_queue) );
+    if(!sizeof(crawl_queue) && !sizeof(compact_queue) && !sizeof(entry_queue))
+      return;
+    next_run = max( min( @values(crawl_queue) + values(compact_queue) +
+			 values(entry_queue) ),
+		    time() + 10 );
     reschedule();
+  }
+
+#if constant (roxen)
+  private void reschedule() {
+    if( schedule_process )
+      schedule_process->stop();
+    WERR("Scheduler runs next event in "+(next_run-time())+" seconds.");
+    // We use BackgroundProcess since there is no support for unscheduling
+    // tasks created with background_run.
+    schedule_process = 
+      roxen.BackgroundProcess(next_run-time(), do_scheduled_stuff);
+  }
+
+  void unschedule() {
+    if( schedule_process )
+      schedule_process->stop();
+  }
+
+
+  private void do_scheduled_stuff() {
+    if( schedule_process )
+      schedule_process->stop();
+    WERR("Running scheduler event.");
+
+    foreach(indices(db_profiles), int id) {
+      if (db_profiles[id]->is_running()) {
+	WERR("Postponing crawl start, profile "+id+" still running.");
+	schedule(1);
+	return;
+      }
+    }
+
+    int t = time();
+
+    WERR(sizeof(crawl_queue)+" profiles in crawl queue.");
+    foreach(priority_queue & indices(crawl_queue), int id) {
+      if(crawl_queue[id]>t || !db_profiles[id]) continue;
+      object dbp = db_profiles[id];
+      if(dbp && dbp->ready_to_crawl()) {
+	WERR("Scheduler starts crawling "+id);
+	dbp->recrawl();
+	m_delete(crawl_queue, id);
+	m_delete(entry_queue, id);
+	priority_queue -= ({ id });
+      }
+    }
+
+    WERR(sizeof(entry_queue)+" profiles in entry queue.");
+    foreach(priority_queue & indices(entry_queue), int id) {
+      if(entry_queue[id]>t || !db_profiles[id]) continue;
+      object dbp = db_profiles[id];
+      if(dbp && dbp->ready_to_crawl()) {
+	WERR("Scheduler starts crawling "+id);
+	dbp->start_indexer();
+	m_delete(entry_queue, id);
+	priority_queue -= ({ id });
+	break;
+      }
+    }
+
+    WERR(sizeof(compact_queue)+" profiles in compact queue.");
+    foreach(indices(compact_queue), int id) {
+      if(compact_queue[id]>t || !db_profiles[id]) continue;
+      db_profiles[id]->start_compact();
+      m_delete(compact_queue, id);
+    }
+
+    schedule();
+  }
+
+#else
+  private void reschedule() {
+    remove_call_out(do_scheduled_stuff);
+    WERR("Scheduler runs next event in "+(next_run-time())+" seconds.");
+    call_out(do_scheduled_stuff, next_run-time());
+  }
+
+  void unschedule() {
+    remove_call_out(do_scheduled_stuff);
   }
 
   private void do_scheduled_stuff() {
@@ -518,6 +602,17 @@ class Scheduler {
     WERR("Running scheduler event.");
 
     int t = time();
+
+    WERR(sizeof(crawl_queue)+" profiles in crawl queue.");
+    foreach(indices(crawl_queue), int id) {
+      if(crawl_queue[id]>t || !db_profiles[id]) continue;
+      object dbp = db_profiles[id];
+      if(dbp && dbp->ready_to_crawl()) {
+	WERR("Scheduler starts crawling "+id);
+	dbp->recrawl();
+	entry_queue = ([]);
+      }
+    }
 
     WERR(sizeof(crawl_queue)+" profiles in crawl queue.");
     foreach(indices(crawl_queue), int id) {
@@ -537,6 +632,8 @@ class Scheduler {
 
     schedule();
   }
+
+#endif
 
   string info() {
     string res = "<table border='1' cellspacing='0' cellpadding='2'>"
@@ -572,6 +669,7 @@ class Logger {
 
   private string|Sql.Sql logdb;
   private int profile;
+  private int stderr_logging;
 
   private Sql.Sql get_db() {
     Sql.Sql db;
@@ -588,11 +686,12 @@ class Logger {
     return db;
   }
 
-  //! @decl void create(Sql.Sql db_object, int profile)
-  //! @decl void create(string db_url, int profile)
-  void create(string|Sql.Sql _logdb, int _profile) {
+  //! @decl void create(Sql.Sql db_object, int profile, int stderr_logging)
+  //! @decl void create(string db_url, int profile, int stderr_logging)
+  void create(string|Sql.Sql _logdb, int _profile, int _stderr_logging) {
     logdb = _logdb;
     profile = _profile;
+    stderr_logging = _stderr_logging;
 
     // create table eventlog (event int unsigned auto_increment primary key,
     // at timestamp(14) not null, code int unsigned not null, extra varchar(255))
@@ -609,13 +708,39 @@ class Logger {
 		"extra varchar(255))");
   }
 
-  //!
+  void werror_event( int code, string type, void|string extra, void|int log_profile )
+  {
+    mapping types = ([ "error" : "Error",
+		       "warning" : "Warning",
+		       "notice" :  "Notice", ]);
+
+    werror(sprintf("%sSearch: %s: %s\n",
+		   "          : ",
+		   types[type],
+		   extra?sprintf(codes[(int)code], @(extra/"\n")):codes[(int)code]));
+  }
+
+  void log_purge(int days)
+  {
+    Sql.Sql db = get_db();
+    if(!db) return;
+    if(days)
+      db->query("DELETE FROM eventlog "
+		" WHERE at <= NOW() - INTERVAL "+days+" DAY");
+    else
+      db->query("DELETE FROM eventlog");
+  }
+  
+    //!
   void log_event( int code, string type, void|string extra, void|int log_profile ) {
     Sql.Sql db = get_db();
     if(!db) return;
 
     if(zero_type(log_profile))
       log_profile = profile;
+
+    if(stderr_logging)
+      werror_event(code, type, extra, log_profile);
 
     if(extra)
       db->query("INSERT INTO eventlog (profile,code,type,extra) VALUES (%d,%d,%s,%s)",
@@ -624,6 +749,7 @@ class Logger {
       db->query("INSERT INTO eventlog (profile, code,type) VALUES (%d,%d,%s)",
 		log_profile, code, type);
   }
+
 
   //!
   void log_error( int code, void|string extra, void|int log_profile ) {
@@ -676,7 +802,7 @@ class Logger {
     44 : "Sitebuilder commit triggered indexing of %s.",
 
     50 : "Crawler did not get any connection from the process.",
-    51 : "Crawler-to-filter bufferdid not get any connection from the process.",
+    51 : "Crawler-to-filter buffer did not get any connection from the process.",
     52 : "Filter did not get any connection from the process.",
     53 : "Filter-to-indexer buffer did not get any connection from the process.",
     54 : "Indexer did not get any connection from the process.",
@@ -722,6 +848,7 @@ class Logger {
     1000: "Disallowed by robots.txt. (%s)",
     1001: "Can't handle scheme. (%s)",
     1002: "No matching filter. (%s)",
+    1003: "Too large content file -- indexing metadata only. (%s)",
     1100: "Failed to connect to %s.",
   ]);
     

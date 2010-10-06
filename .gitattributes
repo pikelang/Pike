@@ -7,7 +7,7 @@
 # Files containing CVS ids follow.
 # Remove the corresponding line before committing
 # changes to these files.
-/lib/modules/Search.pmod/Database.pmod/Base.pmod foreign_ident
+/lib/modules/Search.pmod/Database.pmod/Base.pike foreign_ident
 /lib/modules/Search.pmod/Database.pmod/MySQL.pike foreign_ident
 /lib/modules/Search.pmod/Filter.pmod/Base.pike foreign_ident
 /lib/modules/Search.pmod/Filter.pmod/Charset.pmod foreign_ident
@@ -25,6 +25,7 @@
 /lib/modules/Search.pmod/RankingProfile.pike foreign_ident
 /lib/modules/Search.pmod/ResultSet.pike foreign_ident
 /lib/modules/Search.pmod/module.pmod foreign_ident
+/lib/modules/Search.pmod/search.h foreign_ident
 /src/modules/_WhiteFish/Makefile.in foreign_ident
 /src/modules/_WhiteFish/acconfig.h foreign_ident
 /src/modules/_WhiteFish/blob.c foreign_ident

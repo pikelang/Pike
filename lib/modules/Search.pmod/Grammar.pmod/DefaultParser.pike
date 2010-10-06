@@ -1,20 +1,16 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: DefaultParser.pike,v 1.7 2001/06/22 01:28:35 nilsson Exp $
+// $Id: DefaultParser.pike,v 1.13 2008/06/25 09:45:41 wellhard Exp $
 
-static inherit Search.Grammar.AbstractParser;
-static inherit Search.Grammar.Lexer;
-static private inherit "./module.pmod";
-//static constant ParseNode = Search.Grammar.ParseNode;
-//static constant OrNode    = Search.Grammar.OrNode;
-//static constant AndNode   = Search.Grammar.AndNode;
-//static constant TextNode  = Search.Grammar.TextNode;
+static inherit .AbstractParser;
+static inherit .Lexer;
+import ".";
 
 #include "debug.h"
 
 // =========================================================================
-//   GRAMMAR FOR IMPLICIT <anything>
+//   GRAMMAR FOR IMPLICIT AND/OR
 // =========================================================================
 //
 // START           : query
@@ -34,10 +30,14 @@ static private inherit "./module.pmod";
 // 
 // expr2           : expr3
 //                 | field ':' expr3
-//                 | 'date' ':' date
+//                 | 'date' '>' date
+//                 | 'date' '<' date
+//                 | 'date' '=' date
+//                 | 'date' '!=' date
+//                 | 'date' '<>' date
 //                 | '(' query ')'
 //                 ;
-// 
+//
 // date            : (word <not followed by ':'>
 //                    | '-' | ':' | <unknown character> )*
 //                 ;
@@ -69,6 +69,10 @@ static private inherit "./module.pmod";
 
 static array(array(Token|string)) tokens;
 static array(string) fieldstack;
+
+// fields : multiset(string)
+// implicit : "or"/"and"
+//!
 mapping(string:mixed) options;
 
 static array(Token|string) peek(void|int lookahead) {
@@ -77,9 +81,12 @@ static array(Token|string) peek(void|int lookahead) {
   return tokens[lookahead];
 }
 
-static void advance() {
+static array advance()
+{
+  array res = tokens[0];
   if (sizeof(tokens) > 1)
     tokens = tokens[1 .. ];
+  return res;
 }
 
 static int lookingAtFieldStart(void|int offset) {
@@ -90,12 +97,24 @@ static int lookingAtFieldStart(void|int offset) {
     && peek(offset + 1)[0] == TOKEN_COLON;
 }
 
+static int lookingAtDateStart(void|int offset) {
+  //  SHOW(tokens);
+  return
+    peek(offset)[0] == TOKEN_TEXT &&
+    lower_case(peek(offset)[1])=="date" &&
+    (< TOKEN_EQUAL, TOKEN_LESSEQUAL, TOKEN_GREATEREQUAL,
+       TOKEN_NOTEQUAL,  TOKEN_LESS, TOKEN_GREATER >)[ peek(offset + 1)[0]];
+}
+
+
+//!
 static void create(mapping(string:mixed)|void opt) {
   options = opt || ([ "implicit" : "or" ]);
   if (!options["fields"])
     options["fields"] = getDefaultFields();
 }
 
+//!
 ParseNode parse(string q) {
   fieldstack = ({ "any" });
   tokens = tokenize(q);
@@ -110,7 +129,9 @@ static ParseNode parseQuery() {
     or->addChild(n);
     if (peek()[0] == TOKEN_OR)
       advance();
-    else
+    else if ((< TOKEN_END,
+                TOKEN_RPAREN >)[ peek()[0] ] ||
+	     options->implicit != "or")
       break;
   }
   if (sizeof(or->children) == 1)
@@ -128,7 +149,8 @@ static ParseNode parseExpr0() {
       advance();
     else if ((< TOKEN_END,
                 TOKEN_RPAREN,
-                TOKEN_OR >)[ peek()[0] ])
+                TOKEN_OR >)[ peek()[0] ] ||
+	     options->implicit != "and")
       break;
     // implicit AND
   }
@@ -148,15 +170,21 @@ static ParseNode parseExpr2() {
   // field ':' expr3
   if (lookingAtFieldStart())
   {
-    //    TRACE;
+    //  TRACE;
     fieldstack = ({ peek()[1] }) + fieldstack;
     advance();
     advance();
-    ParseNode n = fieldstack[0] == "date"
-      ? parseDate()
-      : parseExpr3();
+    ParseNode n = parseExpr3();
     fieldstack = fieldstack[1 .. ];
     return n;
+  }
+
+  // 'date' <op> date
+  if(lookingAtDateStart())
+  {
+    advance();
+    array operator = advance();
+    return parseDate(operator);
   }
 
   // '(' query ')'
@@ -172,14 +200,14 @@ static ParseNode parseExpr2() {
 
 static ParseNode parseExpr3() {
   //  TRACE;
-  if (lookingAtFieldStart())
+  if (lookingAtFieldStart() || lookingAtDateStart())
     return 0;
   ParseNode or = OrNode();
   for (;;) {
     ParseNode n = parseExpr4();
     or->addChild(n);
     if (peek()[0] == TOKEN_OR)
-      if (lookingAtFieldStart(1))
+      if (lookingAtFieldStart(1) || lookingAtDateStart(1))
         break; // it was a higher level OR
       else
         advance();
@@ -200,6 +228,7 @@ static ParseNode parseExpr4() {
     // NOTE: No implicit and here!
     if (peek()[0] == TOKEN_AND
         && !(lookingAtFieldStart(1)            // it was a higher level AND
+	     || lookingAtDateStart(1)
              || peek(1)[0] == TOKEN_LPAREN))
       advance();
     else
@@ -213,77 +242,127 @@ static ParseNode parseExpr4() {
 static ParseNode parseExpr5() {
   //  TRACE;
   ParseNode text = TextNode();
+  ParseNode res;
   text->field = fieldstack[0];
+  if (options->implicit == "or") {
+    res = OrNode();
+  } else {
+    res = AndNode();
+  }
   for (;;) {
-    parseExpr6(text);
+    int prefix = 0;
+
+    if (peek()[0] == TOKEN_MINUS) {
+      advance();
+      prefix = '-';
+    }
+    else if (peek()[0] == TOKEN_PLUS) {
+      advance();
+      prefix = '+';
+    }
+
+    if (!prefix && options["implicit"] == "and")
+      prefix = '+';
+
+    while (!(< TOKEN_TEXT, TOKEN_END >) [ peek()[0] ])
+      advance();   // ... ?????????  or something smarter ?????
+
+    if(lookingAtFieldStart()) {
+      // Special case...
+      ParseNode tmp = TextNode();
+      tmp->field = peek()[1];
+      advance();
+      advance();
+
+      while (!(< TOKEN_TEXT, TOKEN_END >) [ peek()[0] ])
+	advance();   // ... ?????????  or something smarter ?????
+
+      parseExpr6(prefix, tmp);
+      if (sizeof(tmp->words)
+	  || sizeof(tmp->phrases)
+	  || sizeof(tmp->plusWords)
+	  || sizeof(tmp->plusPhrases)
+	  || sizeof(tmp->minusWords)
+	  || sizeof(tmp->minusPhrases)) {
+	res->addChild(tmp);
+      }
+    } else {
+      parseExpr6(prefix, text);
+    }
+
     if ( (< TOKEN_END,
             TOKEN_RPAREN,
             TOKEN_AND,
             TOKEN_OR >) [ peek()[0] ]
          || lookingAtFieldStart()
+         || lookingAtDateStart()
          || (peek()[0] == TOKEN_LPAREN))
       break; // it was a higher level IMPLICIT AND
     if (peek()[0] == TOKEN_OR)
       if (lookingAtFieldStart(1)
+	  || lookingAtDateStart(1)
           || peek(1)[0] == TOKEN_LPAREN)
         break;   // it was a higher level OR
       else
         advance();
   }
+
   if (sizeof(text->words)
       || sizeof(text->phrases)
       || sizeof(text->plusWords)
       || sizeof(text->plusPhrases)
       || sizeof(text->minusWords)
       || sizeof(text->minusPhrases))
-    return text;
+    res->addChild(text);
+  if (sizeof(res->children) > 1) return res;
+  if (sizeof(res->children) == 1) return res->children[0];
   return 0;
 }
 
-static void parseExpr6(TextNode node) {
+static void parseExpr6(int prefix, TextNode node) {
   //  TRACE;
-  int prefix = 0;
-
-  if (peek()[0] == TOKEN_MINUS) {
-    advance();
-    prefix = '-';
-  }
-  else if (peek()[0] == TOKEN_PLUS) {
-    advance();
-    prefix = '+';
-  }
-
-  if (!prefix && options["implicit"] == "and")
-    prefix = '+';
-
-  while (!(< TOKEN_TEXT, TOKEN_END >) [ peek()[0] ])
-    advance();   // ... ?????????  or something smarter ?????
 
   if (peek()[0] == TOKEN_TEXT) {
     string text = peek()[1];
     advance();
+    string star = "86196759014593256";
+    string questionmark = "76196758925470133";
+    text=replace(text,({"*","?"}), ({star, questionmark}));
     array(string) words = Unicode.split_words_and_normalize(text);
-    if (!words || !sizeof(words))
-      return;
-    if (sizeof(words) == 1)
-      switch (prefix) {
+    for(int i=0; i<sizeof(words); i++)
+      words[i]=replace(words[i], ({star, questionmark}), ({"*","?"}));
+    // End of abominable kludge
+    if (words) {
+      // If search phrase, remove empty globs. This might promote to
+      // ordinary search word that do support remining globs.
+      if (sizeof(words) > 1)
+	words = filter(words, lambda(string w) { return (w - "*" - "?") == "" ? 0 : 1; });
+    
+      if (sizeof(words) == 1)
+	switch (prefix) {
         case '+': node->plusWords += words;  break;
         case '-': node->minusWords += words; break;
         default:  node->words += words;      break;
-      }
-    else if (sizeof(words) > 1)
-      switch (prefix) {
+	}
+      else if (sizeof(words) > 1) {
+	//  No use of globs at this point so remove them
+	words = map(words, lambda(string w) { return w - "*" - "?"; } );
+	switch (prefix) {
         case '+': node->plusPhrases += ({ words });  break;
         case '-': node->minusPhrases += ({ words }); break;
         default:  node->phrases += ({ words });      break;
+	}
       }
+    }
   }
 }
 
-static ParseNode parseDate() {
+static ParseNode parseDate(array operator)
+{
   //  TRACE;
   DateNode n = DateNode();
   n->date = "";
+  n->operator = operator;
 loop:
   for (;;) {
     switch (peek()[0]) {
@@ -302,4 +381,3 @@ loop:
   }
   return n;
 }
-

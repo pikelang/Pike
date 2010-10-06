@@ -1,5 +1,12 @@
 inherit .Base;
 
+#if constant (String.string2hex)
+// Pike >= 7.6
+#define STRING2HEX String.string2hex
+#else
+#define STRING2HEX Crypto.string_to_hex
+#endif
+
 Sql.Sql db;
 string url, table;
 
@@ -13,7 +20,7 @@ static string to_md5(string url)
 {
   object md5 = Crypto.md5();
   md5->update(string_to_utf8(url));
-  return Crypto.string_to_hex(md5->digest());
+  return STRING2HEX(md5->digest());
 }
 
 void create( Web.Crawler.Stats _stats,
@@ -49,7 +56,13 @@ static void perhaps_create_table(  )
     ");
 }
   
-mapping hascache = ([]);
+static mapping hascache = ([]);
+
+void clear_cache()
+{
+  hascache = ([]);
+}
+
 static int has_uri( string|Standards.URI uri )
 {
   uri = (string)uri;
@@ -73,7 +86,7 @@ void add_uri( Standards.URI uri, int recurse, string template, void|int force )
   // FIXME: Make these configurable?
   foreach( ({"index.xml", "index.html", "index.htm"}),
 	   string index)
-    if(search(rpath,reverse(index))==0)
+    if(search(rpath,reverse(index))==0 && rpath[sizeof(index)]=='/')
       rpath=rpath[sizeof(index)..];
   r->path=reverse(rpath);
 
@@ -86,14 +99,19 @@ void add_uri( Standards.URI uri, int recurse, string template, void|int force )
       // FIXME:
       // Race condition:
       // If a url is forced to be indexed *while* it's being indexed,
-      // and it's changed since the indexnig started, setting the stage
+      // and it's changed since the indexing started, setting the stage
       // to 0 here might be worthless, since it could be overwritten before
       // it's fetched again.
-      if(force)
+      if(force) {
 	set_stage(r, 0);
+	set_recurse(r, recurse);
+      }
     }
     else
-      db->query( "insert into "+table+
+      // There's a race condition between the select query in has_uri()
+      // and this query, so we ignore duplicate key errors from MySQL
+      // by using the "ignore" keyword.
+      db->query( "insert ignore into "+table+
 		 " (uri,uri_md5,recurse,template) values (%s,%s,%d,%s)",
 		 string_to_utf8((string)r),
 		 to_md5((string)r), recurse, (template||"") );
@@ -102,8 +120,18 @@ void add_uri( Standards.URI uri, int recurse, string template, void|int force )
 
 void set_md5( Standards.URI uri, string md5 )
 {
+  if( extra_data[(string)uri] )
+    extra_data[(string)uri]->md5 = md5;
   db->query( "update "+table+
 	     " set md5=%s WHERE uri_md5=%s", md5, to_md5((string)uri) );
+}
+
+void set_recurse( Standards.URI uri, int recurse )
+{
+  if( extra_data[(string)uri] )
+    extra_data[(string)uri]->recurse = (string)recurse;
+  db->query( "update "+table+
+	     " set recurse=%d WHERE uri_md5=%s", recurse, to_md5((string)uri));
 }
 
 mapping(string:mapping(string:string)) extra_data = ([]);
@@ -186,6 +214,19 @@ int|Standards.URI get()
   return -1;
 }
 
+array(Standards.URI) get_uris(void|int stage)
+{
+  array uris = ({});
+  if (stage)
+    uris = db->query( "select * from "+table+" where stage=%d", stage );
+  else
+    uris = db->query( "select * from "+table );
+  uris = map(uris->uri, utf8_to_string);
+  uris = map(uris, Standards.URI);
+
+  return uris;
+}
+
 void put(string|array(string)|Standards.URI|array(Standards.URI) uri)
 {
   if(arrayp(uri))
@@ -208,7 +249,18 @@ void clear()
 
 void remove_uri(string|Standards.URI uri)
 {
+  hascache[(string)uri]=0;
   db->query("delete from "+table+" where uri_md5=%s", to_md5((string)uri));
+}
+
+void remove_uri_prefix(string|Standards.URI uri)
+{
+  string uri_string = (string)uri;
+  foreach(indices(hascache), string _uri)
+    if(has_prefix(_uri, uri_string))
+      hascache[_uri]=0;
+  
+  db->query("delete from "+table+" where uri like '" + db->quote(uri_string) + "%%'");
 }
 
 void clear_stage( int ... stages )

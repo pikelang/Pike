@@ -1,14 +1,10 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: linkfarm.c,v 1.2 2001/07/03 16:09:33 per Exp $");
-#include "pike_macros.h"
+RCSID("$Id: linkfarm.c,v 1.6 2005/05/19 22:35:47 mast Exp $");
 #include "interpret.h"
 #include "program.h"
-#include "program_id.h"
-#include "object.h"
 #include "array.h"
-#include "operators.h"
 #include "module_support.h"
 
 #include "config.h"
@@ -19,11 +15,9 @@ RCSID("$Id: linkfarm.c,v 1.2 2001/07/03 16:09:33 per Exp $");
 #include "buffer.h"
 #include "blobs.h"
 
-/* must be included last */
-#include "module_magic.h"
 static void exit_linkfarm_struct( );
 
-#define HSIZE 83
+#define HSIZE 211
 
 static struct program *linkfarm_program;
 
@@ -43,8 +37,8 @@ struct linkfarm
 
 static struct hash *new_hash( struct pike_string *id )
 {
-  struct hash *res =  malloc( sizeof( struct hash ) );
-  res->s = id;
+  struct hash *res = xalloc( sizeof( struct hash ) );
+  copy_shared_string(res->s, id);
   res->next = 0;
   return res;
 }
@@ -60,24 +54,24 @@ static void free_hash( struct hash *h )
   }
 }
 
-static int find_hash( struct linkfarm *d, struct pike_string *s )
+static void find_hash( struct linkfarm *d, struct pike_string *s )
 {
-  int r = ((int)((long)s>>3)) % HSIZE;
+  unsigned int r = (((unsigned int) (size_t) s>>3) % HSIZE);
   struct hash *h = d->hash[ r ];
   while( h )
   {
     if( h->s == s )
-      return 0;
+      return;
     h = h->next;
   }
   d->size++;
   h = new_hash( s );
   h->next = d->hash[ r ];
   d->hash[ r ] = h;
-  return 0;
+  return;
 }
 
-static int low_add( struct linkfarm *t,
+static void low_add( struct linkfarm *t,
 		    struct pike_string *s )
 {
   int ret=0, i;
@@ -90,7 +84,7 @@ static int low_add( struct linkfarm *t,
 	for( i = 0; i<s->len; i++ )
 	  if( d[i] == '#' )
 	  {
-	    if( !i ) return 1;
+	    if( !i ) return;
 	    s = make_shared_binary_string0( d, i );
 	    ret = 1;
 	    break;
@@ -103,7 +97,7 @@ static int low_add( struct linkfarm *t,
 	for( i = 0; i<s->len; i++ )
 	  if( d[i] == '#' )
 	  {
-	    if( !i ) return 1;
+	    if( !i ) return;
 	    s = make_shared_binary_string1( d, i );
 	    ret = 1;
 	    break;
@@ -116,7 +110,7 @@ static int low_add( struct linkfarm *t,
 	for( i = 0; i<s->len; i++ )
 	  if( d[i] == '#' )
 	  {
-	    if( !i ) return 1;
+	    if( !i ) return;
 	    s = make_shared_binary_string2( d, i );
 	    ret = 1;
 	    break;
@@ -124,32 +118,31 @@ static int low_add( struct linkfarm *t,
       };
       break;
   };
-  if( find_hash( t, s ) )
-  {
-    if( ret ) free_string( s );
-    return 1;
-  }
-  return ret;
+  find_hash(t, s);
+  if(ret) free_string(s);
 }
 
+/*! @module Search
+ */
 
+/*! @class LinkFarm
+ */
+
+/*! @decl void add(int,array,int,int)
+ */
 static void f_linkfarm_add( INT32 args )
 {
   struct pike_string *s;
   struct linkfarm *f = THIS;
-  if( Pike_sp[-1].type != T_STRING )
-    return;
-
-  if( low_add( f, Pike_sp[-1].u.string ) )
-    pop_stack();
-  else
-    Pike_sp--;
+  
+  get_all_args("LinkFarm()->add", args, "%W", &s);
+  low_add(f, s);
+  pop_n_elems(args);
 }
 
 
 static void f_linkfarm_memsize( INT32 args )
-/*
- *! @decl int memsize()
+/*! @decl int memsize()
  *!
  *! Returns the in-memory size of the linkfarm
  */
@@ -174,8 +167,7 @@ static void f_linkfarm_memsize( INT32 args )
 
 
 static void f_linkfarm_read( INT32 args )
-/*
- *! @decl array read();
+/*! @decl array read();
  *!
  *! returns ({ int word_id, @[Blob] b }) or 0
  */
@@ -189,7 +181,7 @@ static void f_linkfarm_read( INT32 args )
     struct hash *h = t->hash[i];
     while( h )
     {
-/*       fprintf(stderr, "%d/%d %s\n", n+1, THIS->size, h->s->str ); */
+/*    fprintf(stderr, "%d/%d %s\n", n+1, THIS->size, h->s->str ); */
       a->item[n].u.string = h->s;
       h->s = 0;
       a->item[n].type = PIKE_T_STRING;
@@ -200,6 +192,12 @@ static void f_linkfarm_read( INT32 args )
   pop_n_elems( args );
   push_array( a );
 }
+
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
 
 
 static void init_linkfarm_struct( )
@@ -227,7 +225,7 @@ void init_linkfarm_program()
   start_new_program();
   ADD_STORAGE(struct linkfarm);
   add_function("add",f_linkfarm_add,
-	       "function(int,array,int,int:void)",0 );
+	       "function(string:void)",0 );
   add_function("memsize", f_linkfarm_memsize, "function(void:int)", 0 );
   add_function("read", f_linkfarm_read, "function(void:array(string))", 0 );
   set_init_callback( init_linkfarm_struct );

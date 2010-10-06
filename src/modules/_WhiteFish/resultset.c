@@ -1,38 +1,39 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: resultset.c,v 1.19 2001/07/03 16:09:33 per Exp $");
+RCSID("$Id: resultset.c,v 1.30 2006/01/16 06:29:20 mast Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
-#include "program_id.h"
 #include "object.h"
 #include "operators.h"
 #include "array.h"
-#include "fsort.h"
+#include "bignum.h"
 #include "module_support.h"
+#include "fsort.h"
 
 #include "config.h"
 
 #include "resultset.h"
 #include "whitefish.h"
 
-/* must be included last */
-#include "module_magic.h"
+#define sp Pike_sp
 
-/*
- *! @class ResultSet
+/*! @module Search
+ */
+
+/*! @class ResultSet
  *!
  *! A resultset is basically an array of hits from the search.
  *! 
  *! Note: inheriting this class is _not_ supported (for performance
- * reasons) 
+ *! reasons)
  */
 
 /* The resultset class abstractions. */
 
 struct result_set_p {  int allocated_size; ResultSet *d; };
-struct program *resultset_program;
+static struct program *dateset_program;
 
 #define THIS ((struct result_set_p*)Pike_fp->current_storage)
 #define T(o) ((struct result_set_p*)o->storage)
@@ -40,11 +41,14 @@ struct program *resultset_program;
 #define RETURN_THIS() pop_n_elems(args); ref_push_object(Pike_fp->current_object)
 
 #ifdef PIKE_DEBUG
+struct program *resultset_program;
 struct object *wf_not_resultset( struct object *o )
 {
   fatal("%p is not a resultset!\n", o );
   return 0; /* not reached */
 }
+#else
+static struct program *resultset_program;
 #endif
 
 void wf_resultset_free( struct object *o )
@@ -52,7 +56,9 @@ void wf_resultset_free( struct object *o )
   free_object( WF_RESULTSET( o ) );
 }
 
-void wf_resultset_add( struct object *o, int document, int weight )
+void wf_resultset_add( struct object *o,
+		       unsigned int document,
+		       unsigned int weight )
 {
   int ind;
   ResultSet *d;
@@ -155,35 +161,66 @@ static void free_rs()
 }
 
 
-
-
 /* Pike functions */
 
 static void f_resultset_create( INT32 args )
 {
+  wf_resultset_clear( Pike_fp->current_object );
   if( args && sp[-1].type == PIKE_T_ARRAY )
   {
     int i;
-    wf_resultset_clear(  Pike_fp->current_object );
-    for(i = 0; i<sp[-1].u.array->size; i++ )
-      if( sp[-1].u.array->item[i].type == PIKE_T_ARRAY )
-	wf_resultset_add( Pike_fp->current_object,
-			  sp[-1].u.array->item[i].u.array->item[0].u.integer,
-			  sp[-1].u.array->item[i].u.array->item[1].u.integer );
+    struct array *d = sp[-1].u.array;
+    for(i = 0; i< d->size; i++ )
+      if( d->item[i].type == PIKE_T_ARRAY )
+      {
+	LONGEST di, ri;
+	struct array *a = d->item[i].u.array;
+	if( a->size < 2 )
+	  continue;
+	if( a->item[0].type == PIKE_T_OBJECT )
+	{
+	  push_object( a->item[0].u.object );
+	  get_all_args( "create", 1, "%l", &di );
+	  Pike_sp--;
+	}
+	else
+	  di = a->item[0].u.integer;
+	if( a->item[1].type == PIKE_T_OBJECT )
+	{
+	  push_object( a->item[1].u.object );
+	  get_all_args( "create", 1, "%l", &ri );
+	  Pike_sp--;
+	}
+	else
+	  ri = a->item[1].u.integer;
+	wf_resultset_add( Pike_fp->current_object, di, ri );
+      }
       else
-	wf_resultset_add( Pike_fp->current_object,
-			  sp[-1].u.array->item[i].u.integer, 1 );
-
+      {
+	LONGEST ri;
+	if( d->item[i].type == PIKE_T_OBJECT )
+	{
+	  push_object( d->item[i].u.object );
+	  get_all_args( "create", 1, "%l", &ri );
+	  Pike_sp--;
+	}
+	else
+	  ri = d->item[i].u.integer;
+	wf_resultset_add( Pike_fp->current_object, ri, 1 );
+      }
   }
+  pop_n_elems(args);
+  push_int(0);
 }
 
+static void f_resultset_slice( INT32 args );
+
 static void f_resultset_cast( INT32 args )
-/*
-*! @decl string cast( string type )
-*! Only works when type == "array". Returns the resultset data as a array.
-*/
+/*! @decl string cast( string type )
+ *! Only works when type == @expr{"array"@}. Returns the resultset
+ *! data as a array.
+ */
 {
-  static void f_resultset_slice( INT32 args );
   pop_n_elems( args );
   push_int(0);
   push_int( 0x7fffffff );
@@ -191,18 +228,16 @@ static void f_resultset_cast( INT32 args )
 }
 
 static void f_resultset_memsize( INT32 args )
-/*
-*! @decl int memsize()
-*!   Return the size of this resultset, in bytes. 
-*/
+/*! @decl int memsize()
+ *!   Return the size of this resultset, in bytes.
+ */
 {
   pop_n_elems( args );
   push_int( THIS->allocated_size*8 + sizeof(struct object) + 8 );
 }
 
 static void f_resultset_test( INT32 args )
-/*
- *! @decl ResultSet test( int nelems, int start, int incr )
+/*! @decl ResultSet test( int nelems, int start, int incr )
  *! 
  *! Fills the resulttest with nelems entries, the document IDs are
  *! strictly raising, starting with @[start], ending with
@@ -213,12 +248,7 @@ static void f_resultset_test( INT32 args )
 {
   int i, j, s, b;
   struct object *o = Pike_fp->current_object;
-  if( args != 3 )
-    Pike_error( "Expected 3 arguments\n" );
-
-  j = Pike_sp[-args].u.integer;
-  b = Pike_sp[-args+1].u.integer;
-  s = Pike_sp[-args+2].u.integer;
+  get_all_args("test", args, "%d%d%d", &j, &b, &s);
   wf_resultset_clear( o );
   for( i = 0; i<j; i++ )
     wf_resultset_add( o, b+i*s, rand()&0xffff );
@@ -227,8 +257,7 @@ static void f_resultset_test( INT32 args )
 }
 
 static void f_resultset_slice( INT32 args )
-/*
- *! @decl array(array(int)) slice( int first, int nelems )
+/*! @decl array(array(int)) slice( int first, int nelems )
  *!
  *! Return nelems entries from the result-set, starting with first.
  *! If 'first' is outside the resultset, or nelems is 0, 0 is returned.
@@ -244,8 +273,7 @@ static void f_resultset_slice( INT32 args )
     return;
   }
 
-  nelems = Pike_sp[-1].u.integer;
-  first = Pike_sp[-2].u.integer;
+  get_all_args("slice", args, "%d%d", &first, &nelems);
 
   if( THIS->d->num_docs - first < nelems )
     nelems = THIS->d->num_docs-first;
@@ -263,10 +291,24 @@ static void f_resultset_slice( INT32 args )
     res->item[i].u.array = a2;
     a2->item[0].type = PIKE_T_INT;
     a2->item[1].type = PIKE_T_INT;
-    a2->item[0].u.integer = THIS->d->hits[i+first].doc_id;
+    if( THIS->d->hits[i+first].doc_id <= ((((unsigned int)1<<31)-1)) )
+	a2->item[0].u.integer = THIS->d->hits[i+first].doc_id;
+    else
+    {
+      push_int64( THIS->d->hits[i+first].doc_id );
+      a2->item[0] = *(Pike_sp-1);
+      Pike_sp--;
+    }
+    if( THIS->d->hits[i+first].ranking <= (((unsigned int)1<<31)-1) )
+      a2->item[1].u.integer = THIS->d->hits[i+first].ranking;
+    else
+    {
+      push_int64( THIS->d->hits[i+first].ranking );
+      a2->item[1] = *(Pike_sp-1);
+      Pike_sp--;
+    }
     a2->item[1].u.integer = THIS->d->hits[i+first].ranking;
   }
-  pop_n_elems( args );
   push_array( res );
 }
 
@@ -277,6 +319,12 @@ static int cmp_hits( void *a, void *b )
   int bi = *(int *)((int *)b+1);
   return ai > bi ? -1 : ai == bi ? 0 : 1 ;
 }
+static int cmp_hits_rev( void *a, void *b )
+{
+  int ai = *(int *)((int *)a+1);
+  int bi = *(int *)((int *)b+1);
+  return ai < bi ? -1 : ai == bi ? 0 : 1 ;
+}
 
 static int cmp_docid( void *a, void *b )
 {
@@ -286,21 +334,29 @@ static int cmp_docid( void *a, void *b )
 }
 
 static void f_resultset_sort( INT32 args )
-/*
-*! @decl void sort()
-*!   Sort this ResultSet according to ranking.
-*/
+/*! @decl void sort()
+ *!   Sort this ResultSet according to ranking.
+ */
 {
   if(THIS->d)
     fsort( THIS->d->hits, THIS->d->num_docs, 8, (void *)cmp_hits );
   RETURN_THIS();
 }
 
+static void f_resultset_sort_rev( INT32 args )
+/*! @decl void sort()
+ *!   Sort this ResultSet according to ranking.
+ */
+{
+  if(THIS->d)
+    fsort( THIS->d->hits, THIS->d->num_docs, 8, (void *)cmp_hits_rev );
+  RETURN_THIS();
+}
+
 static void f_resultset_sort_docid( INT32 args )
-/*
-*! @decl void sort_docid()
-*!   Sort this ResultSet according to document id
-*/
+/*! @decl void sort_docid()
+ *!   Sort this ResultSet according to document id.
+ */
 {
   if(THIS->d)
     fsort( THIS->d->hits, THIS->d->num_docs, 8, (void *)cmp_docid );
@@ -308,10 +364,9 @@ static void f_resultset_sort_docid( INT32 args )
 }
 
 static void f_resultset_dup( INT32 args )
-/*
-*! @decl ResultSet dup()
-*!   Return a new resultset with the same contents as this one
-*/
+/*! @decl ResultSet dup()
+ *!   Return a new resultset with the same contents as this one.
+ */
 {
   struct object *o = clone_object( resultset_program, 0 );
   if(THIS->d)
@@ -327,11 +382,10 @@ static void f_resultset_dup( INT32 args )
 
 
 static void f_resultset__sizeof( INT32 args )
-/*
-*! @decl int _sizeof()
-*! @decl int size()
-*!   Return the size of this resultset, in entries. 
-*/
+/*! @decl int _sizeof()
+ *! @decl int size()
+ *!   Return the size of this resultset, in entries.
+ */
 {
   pop_n_elems( args );
   if( THIS->d )
@@ -342,13 +396,12 @@ static void f_resultset__sizeof( INT32 args )
 
 
 static void f_resultset_overhead( INT32 args )
-/*
-*! @decl int overhead()
-*!   Return the size of the memory overhead, in bytes.
-*!
-*!   You can minimize the overhead by calling dup(), which will create
-*!   a new resultset with the exact size needed.
-*/
+/*! @decl int overhead()
+ *!   Return the size of the memory overhead, in bytes.
+ *!
+ *!   You can minimize the overhead by calling dup(), which will create
+ *!   a new resultset with the exact size needed.
+ */
 {
   pop_n_elems( args );
   if( !THIS->d )
@@ -380,15 +433,14 @@ static void duplicate_resultset( struct object *dest,
 }
 
 static void f_resultset_or( INT32 args )
-/*
-*! @decl ResultSet `|( ResultSet a )
-*! @decl ResultSet `+( ResultSet a )
-*! @decl ResultSet or( ResultSet a )
-*!
-*! Add the given resultsets together, to generate a resultset with
-*! both sets included. The ranking will be averaged if a document
-*! exists in both resultsets.
-*/
+/*! @decl ResultSet `|( ResultSet a )
+ *! @decl ResultSet `+( ResultSet a )
+ *! @decl ResultSet or( ResultSet a )
+ *!
+ *! Add the given resultsets together, to generate a resultset with
+ *! both sets included. The ranking will be averaged if a document
+ *! exists in both resultsets.
+ */
 {
   struct object *res = wf_resultset_new();
   struct object *left = Pike_fp->current_object;
@@ -443,6 +495,8 @@ static void f_resultset_or( INT32 args )
 	left_doc = set_l->hits[lp].doc_id;
 	left_rank = set_l->hits[lp].ranking;
 	left_used = 0;
+	if( !left_rank ) left_rank = right_rank;
+	if( !right_left )right_rank = left_rank;
       }
     }
 
@@ -460,6 +514,8 @@ static void f_resultset_or( INT32 args )
 	right_doc = set_r->hits[rp].doc_id;
 	right_rank = set_r->hits[rp].ranking;
 	right_used = 0;
+	if( !left_rank ) left_rank = right_rank;
+	if( !right_left )right_rank = left_rank;
       }
     }
 
@@ -493,10 +549,8 @@ static void f_resultset_or( INT32 args )
 }
 
 static void f_resultset_intersect( INT32 args )
-/*
- *! @decl ResultSet intersect( ResultSet a )
+/*! @decl ResultSet intersect( ResultSet a )
  *! @decl ResultSet `&( ResultSet a )
- *!
  *!
  *! Return a new resultset with all entries that are present in _both_
  *! sets. Only the document_id is checked, the resulting ranking is
@@ -512,7 +566,7 @@ static void f_resultset_intersect( INT32 args )
   int left_left=1, right_left=1;
   int right_size, left_size;
 
-  int left_doc=0, left_rank=0, right_doc=0, right_rank=0, last=-1;
+  int left_doc=0, left_rank=0, right_doc=0, right_rank=2147483647, last=-1;
   ResultSet *set_r, *set_l = T(left)->d;
 
   get_all_args( "intersect", args, "%o", &right );
@@ -543,6 +597,8 @@ static void f_resultset_intersect( INT32 args )
       {
 	left_doc = set_l->hits[lp].doc_id;
 	left_rank = set_l->hits[lp].ranking;
+	if( !left_rank ) left_rank = right_rank;
+	if( !right_left )right_rank = left_rank;
 	left_used = 0;
       }
     }
@@ -558,6 +614,8 @@ static void f_resultset_intersect( INT32 args )
       {
 	right_doc = set_r->hits[rp].doc_id;
 	right_rank = set_r->hits[rp].ranking;
+	if( !right_rank ) right_rank = left_rank;
+	if( !left_left ) left_rank = right_rank;
 	right_used = 0;
       }
     }
@@ -589,8 +647,7 @@ static void f_resultset_intersect( INT32 args )
 }
 
 static void f_resultset_add_ranking( INT32 args )
-/*
- *! @decl ResultSet add_ranking( ResultSet a )
+/*! @decl ResultSet add_ranking( ResultSet a )
  *!
  *! Return a new resultset. All entries are the same as in this set, 
  *! but if an entry exists in @[a], the ranking from @[a] is added to
@@ -689,8 +746,7 @@ static void f_resultset_add_ranking( INT32 args )
 }
 
 static void f_resultset_sub( INT32 args )
-/*
- *! @decl ResultSet sub( ResultSet a )
+/*! @decl ResultSet sub( ResultSet a )
  *! @decl ResultSet `-( ResultSet a )
  *!
  *! Return a new resultset with all entries in a removed from the
@@ -790,20 +846,191 @@ static void f_resultset_sub( INT32 args )
 
 void exit_resultset_program(void)
 {
-  free_program( resultset_program );
+  if (resultset_program) {
+    free_program (resultset_program);
+    resultset_program = NULL;
+  }
+  if (dateset_program) {
+    free_program (dateset_program);
+    dateset_program = NULL;
+  }
 }
 
+static struct object *dup_dateset()
+{
+  struct object *o = clone_object( dateset_program, 0 );
+  if(THIS->d)
+  {
+    ResultSet *d = malloc( THIS->d->num_docs * 8 + 4 );
+    T(o)->d = d;
+    T(o)->allocated_size = T(o)->d->num_docs;
+    T(o)->d->num_docs = 0;
+  }
+  else
+  {
+    wf_resultset_clear( o );
+  }
+  return o;
+}
+
+static void f_dateset_finalize( INT32 args )
+{
+  int i;
+  ResultSet *source = THIS->d;
+  if (source) {
+    for( i = 0; i<source->num_docs; i++ )
+      source->hits[i].ranking = 0;
+  }
+  RETURN_THIS();
+}
+
+static void f_resultset_set( INT32 args )
+{
+  int i;
+  ResultSet *source = THIS->d;
+  if (source) {
+    for( i = 0; i<source->num_docs; i++ )
+      source->hits[i].ranking = 0;
+  }
+  RETURN_THIS();
+}
+
+#define DUP_DATESET()   do {			\
+    pop_n_elems(args);				\
+    o = dup_dateset();				\
+    res = T(o)->d;				\
+    push_object( o );				\
+  } while(0)
+
+
+static void f_dateset_before( INT32 args )
+{
+  int before, i;
+  struct object *o;
+  ResultSet *source = THIS->d;
+  ResultSet *res;
+
+  get_all_args( "before", args, "%d", &before );
+  DUP_DATESET();
+
+  if (source) {
+    for( i = 0; i<source->num_docs; i++ )
+      if( (int) source->hits[i].ranking < before )
+	res->hits[res->num_docs++] = source->hits[i];
+  }
+}
+
+static void f_dateset_after( INT32 args )
+{
+  int after, i;
+  struct object *o;
+  ResultSet *source = THIS->d;
+  ResultSet *res;
+
+  get_all_args( "before", args, "%d", &after );
+  DUP_DATESET();
+
+  if (source) {
+    for( i = 0; i<source->num_docs; i++ )
+      if( (int) source->hits[i].ranking > after )
+	res->hits[res->num_docs++] = source->hits[i];
+  }
+}
+
+static void f_dateset_between( INT32 args )
+{
+  int before, after, i;
+  struct object *o;
+  ResultSet *source = THIS->d;
+  ResultSet *res;
+
+  get_all_args( "between", args, "%d%d", &after, &before );
+  DUP_DATESET();
+
+  if (source) {
+    if( before <= after )
+      return;
+
+    for( i = 0; i<source->num_docs; i++ )
+      if( ((int) source->hits[i].ranking > after) &&
+	  ((int) source->hits[i].ranking < before) )
+	res->hits[res->num_docs++] = source->hits[i];
+  }
+}
+
+static void f_dateset_not_between( INT32 args )
+{
+  int before, after, i;
+  struct object *o;
+  ResultSet *source = THIS->d;
+  ResultSet *res;
+
+  get_all_args( "not_between", args, "%d%d", &after, &before );
+  DUP_DATESET();
+
+  if (source) {
+    if( before <= after )
+      return;
+
+    for( i = 0; i<source->num_docs; i++ )
+      if( ((int) source->hits[i].ranking < after) ||
+	  ((int) source->hits[i].ranking > before) )
+	res->hits[res->num_docs++] = source->hits[i];
+  }
+}
+
+static void f_resultset_add( INT32 args )
+{
+  LONGEST d, h;
+  get_all_args( "add", args, "%l%l", &d, &h );
+  wf_resultset_add( Pike_fp->current_object, d, h );
+  pop_n_elems(args);
+  push_int(0);
+}
+
+static void f_resultset_add_many( INT32 args )
+{
+  struct array *a, *b;
+  int i;
+  get_all_args( "add", args, "%a%a", &a, &b );
+  if( a->size != b->size )
+    Pike_error("Expected equally sized arrays\n");
+  for( i=0;i<a->size;i++ )
+  {
+    LONGEST ri, di;
+    if( a->item[i].type == PIKE_T_OBJECT )
+    {
+      push_object( a->item[i].u.object );
+      get_all_args( "create", 1, "%l", &di );
+      Pike_sp--;
+    }
+    else
+      di = a->item[i].u.integer;
+    if( b->item[i].type == PIKE_T_OBJECT )
+    {
+      push_object( b->item[i].u.object );
+      get_all_args( "create", 1, "%l", &ri );
+      Pike_sp--;
+    }
+    else
+      ri = b->item[i].u.integer;
+    wf_resultset_add( Pike_fp->current_object, di, ri );
+  }
+  pop_n_elems(args);
+  push_int(0);
+}
 
 void init_resultset_program(void)
 {
   start_new_program();
   {  
-    ADD_STORAGE( ResultSet );
+    ADD_STORAGE( struct result_set_p );
     add_function("cast", f_resultset_cast, "function(string:mixed)", 0 );
     add_function("create",f_resultset_create,
 		 "function(void|array(int|array(int)):void)",0);
 
     add_function("sort",f_resultset_sort,"function(void:object)",0);
+    add_function("sort_rev",f_resultset_sort_rev,"function(void:object)",0);
     add_function("sort_docid",f_resultset_sort_docid,
 		 "function(void:object)",0);
 
@@ -826,6 +1053,9 @@ void init_resultset_program(void)
 		  "function(object:object)", 0 );
     add_function( "`&", f_resultset_intersect, "function(object:object)", 0 );
 
+    add_function("add", f_resultset_add, "function(int,int:void)", 0 );
+    add_function("add_many", f_resultset_add_many,
+		 "function(array(int),array(int):void)", 0 );
     add_function("_sizeof",f_resultset__sizeof,"function(void:int)", 0 );
     add_function("size",f_resultset__sizeof,"function(void:int)", 0 );
 
@@ -833,14 +1063,31 @@ void init_resultset_program(void)
     add_function("memsize",f_resultset_memsize,"function(void:int)", 0 );
     add_function("overhead",f_resultset_overhead,"function(void:int)", 0 );
     add_function("test", f_resultset_test, "function(int,int,int:int)", 0 );
+    add_function( "finalize", f_dateset_finalize, "function(void:object)", 0 );
 
     set_init_callback( init_rs );
     set_exit_callback( free_rs );
   }
   resultset_program = end_program( );
   add_program_constant( "ResultSet", resultset_program,0 );
+
+  start_new_program();
+  {
+    struct svalue x;
+    x.type = PIKE_T_PROGRAM;
+    x.u.program = resultset_program;
+    add_function( "before", f_dateset_before,    "function(int:object)", 0 );
+    add_function( "after", f_dateset_after,     "function(int:object)", 0 );
+    add_function( "between", f_dateset_between, "function(int,int:object)", 0 );
+    add_function( "not_between", f_dateset_not_between, "function(int,int:object)", 0 );
+    do_inherit( &x, 0, NULL );
+  }
+  dateset_program = end_program( );
+  add_program_constant( "DateSet", dateset_program,0 );
 }
 
-/*
- * @endclass ResultSet
+/*! @endclass ResultSet
+ */
+
+/*! @endmodule
  */

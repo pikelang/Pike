@@ -1,4 +1,6 @@
-/* $Id: buffer.c,v 1.10 2002/01/02 12:48:46 js Exp $
+
+
+/* $Id: buffer.c,v 1.14 2004/08/17 16:18:21 grubba Exp $
  */
 #include "global.h"
 
@@ -15,36 +17,33 @@
 #endif
 
 #include "stralloc.h"
-RCSID("$Id: buffer.c,v 1.10 2002/01/02 12:48:46 js Exp $");
-#include "pike_macros.h"
+RCSID("$Id: buffer.c,v 1.14 2004/08/17 16:18:21 grubba Exp $");
 #include "interpret.h"
-#include "program.h"
-#include "program_id.h"
-#include "object.h"
-#include "operators.h"
 
 #include "whitefish.h"
 #include "resultset.h"
 #include "blob.h"
 #include "buffer.h"
 
-/* must be included last */
-#include "module_magic.h"
-
 static INLINE int range( int n, int m )
 {
-  if( n < (m>>3) )    return (m>>3);
-  else if( n < 32 )   return 32;
-  else if( n < 64 )   return 64;
-  else if( n < 128 )  return 128;
-  else if( n < 256 )  return 256;
-  else if( n < 512 )  return 512;
-  else if( n < 1024 ) return 1024;
-  else if( n < 2048 ) return 2048;
-  else return n;
+  int o;
+  int f;
+  if( !m )
+    m = 8;
+  if( m >= 32*1024 )
+  {
+    if( n < (32*1024-1) )
+      return 32*1024;
+    return (n+1);
+  }
+  o = m;
+  f = m+n;
+  while( m<f ) m*=2;
+  return m-o;
 }
 
-static INLINE void wf_buffer_make_space( struct buffer *b, unsigned int n )
+static void wf_buffer_make_space( struct buffer *b, unsigned int n )
 {
 #ifdef PIKE_DEBUG
   if( b->read_only )
@@ -53,7 +52,7 @@ static INLINE void wf_buffer_make_space( struct buffer *b, unsigned int n )
   if( b->allocated_size-b->size < n )
   {
     b->allocated_size += range(n,b->allocated_size);
-    b->data =realloc(b->data,b->allocated_size);
+    b->data = realloc(b->data,b->allocated_size);
   }
 }
 
@@ -111,9 +110,9 @@ int wf_buffer_rbyte( struct buffer *b )
 
 unsigned int wf_buffer_rint( struct buffer *b )
 {
-  return (((((wf_buffer_rbyte( b ) << 8) |
-	     wf_buffer_rbyte( b ))<<8)   |
-	   wf_buffer_rbyte( b )) << 8)   |
+  return (((((wf_buffer_rbyte( b )<<8) |
+	     wf_buffer_rbyte( b ))<<8) |
+	   wf_buffer_rbyte( b ))<<8)   |
          wf_buffer_rbyte( b );
 }
 
@@ -180,7 +179,7 @@ void wf_buffer_free( struct buffer *b )
 void wf_buffer_set_empty( struct buffer *b )
 {
   wf_buffer_clear( b );
-  b->data = malloc( 16 );
+  b->data = xalloc( 16 );
   b->allocated_size = 16;
 }
 
@@ -208,7 +207,7 @@ void wf_buffer_set_pike_string( struct buffer *b,
 
 struct buffer *wf_buffer_new( )
 {
-  struct buffer *b = malloc( sizeof( struct buffer ) );
+  struct buffer *b = xalloc( sizeof( struct buffer ) );
   MEMSET( b, 0, sizeof(struct buffer) );
   return b;
 }

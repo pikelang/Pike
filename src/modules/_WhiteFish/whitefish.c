@@ -3,15 +3,14 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: whitefish.c,v 1.33 2002/01/02 12:48:46 js Exp $");
+RCSID("$Id: whitefish.c,v 1.35 2004/08/07 15:26:57 js Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
-#include "program_id.h"
 #include "object.h"
-#include "operators.h"
 #include "array.h"
 #include "module_support.h"
+#include "module.h"
 
 #include "config.h"
 
@@ -21,8 +20,14 @@ RCSID("$Id: whitefish.c,v 1.33 2002/01/02 12:48:46 js Exp $");
 #include "blobs.h"
 #include "linkfarm.h"
 
+/* 7.2 compatibility stuff. */
+
+#ifndef PIKE_MODULE_INIT
 /* must be included last */
 #include "module_magic.h"
+#define PIKE_MODULE_INIT void pike_module_init(void)
+#define PIKE_MODULE_EXIT void pike_module_exit(void)
+#endif
 
 struct  tofree
 {
@@ -376,32 +381,35 @@ end:
   free_stuff( __f );
   return res;
 }
-				
+
+/*! @module Search
+ */
 
 static void f_do_query_phrase( INT32 args )
 /*! @decl ResultSet do_query_phrase( array(string) words,          @
  *!                          array(int) field_coefficients,       @
  *!                          function(int:string) blobfeeder)   
- *!       @[words]
+ *! @param words
  *!       
- *!          Arrays of word ids. Note that the order is significant
- *!          for the ranking.
+ *! Arrays of word ids. Note that the order is significant for the
+ *! ranking.
  *!
- *!       @[field_coefficients]
+ *! @param field_coefficients
  *!
- *!       An array of ranking coefficients for the different fields. 
- *!       In the range of [0x0000-0xffff]. The array (always) has 65
- *!       elements:
+ *! An array of ranking coefficients for the different fields. In the
+ *! range of [0x0000-0xffff]. The array (always) has 65 elements:
  *!
- *!	  Index        Coefficient for field
- *!	  -----        ---------------------
- *!	  0            body
- *!	  1..64        Special field 0..63
+ *! @array
+ *!   @elem int 0
+ *!     body
+ *!   @elem int 1..64
+ *!     Special field 0..63.
+ *! @endarray
  *!
- *!     @[blobfeeder]
+ *! @param blobfeeder
  *!     
- *!      This function returns a Pike string containing the word hits
- *!	 for a certain word_id. Call repeatedly until it returns 0.
+ *! This function returns a Pike string containing the word hits for a
+ *! certain word_id. Call repeatedly until it returns @expr{0@}.
  */
 {
   double proximity_coefficients[8];
@@ -447,45 +455,52 @@ static void f_do_query_and( INT32 args )
  *!                          array(int) field_coefficients,       @
  *!                          array(int) proximity_coefficients,   @
  *!                          function(int:string) blobfeeder)   
- *!       @[words]
+ *! @param words
  *!       
- *!          Arrays of word ids. Note that the order is significant
- *!          for the ranking.
+ *! Arrays of word ids. Note that the order is significant for the
+ *! ranking.
  *!
- *!       @[field_coefficients]
+ *! @param field_coefficients
  *!
- *!       An array of ranking coefficients for the different fields. 
- *!       In the range of [0x0000-0xffff]. The array (always) has 65
- *!       elements:
+ *! An array of ranking coefficients for the different fields. In the
+ *! range of [0x0000-0xffff]. The array (always) has 65 elements:
  *!
- *!	  Index        Coefficient for field
- *!	  -----        ---------------------
- *!	  0            body
- *!	  1..64        Special field 0..63
+ *! @array
+ *!   @elem int 0
+ *!     body
+ *!   @elem int 1..64
+ *!     Special field 0..63.
+ *! @endarray
  *!
- *!       @[proximity_coefficients]
+ *! @param proximity_coefficients
  *!
- *!         An array of ranking coefficients for the different
- *!         proximity categories. Always has 8 elements, in the range
- *!         of [0x0000-0xffff].
- *!	 
- *!	 Index       Meaning
- *!	 -----       -------
- *!      0           spread: 0 (Perfect hit)
- *!	 1           spread: 1-5
- *!	 2           spread: 6-10                                 
- *!	 3           spread: 11-20
- *!	 4           spread: 21-40
- *!	 5           spread: 41-80
- *!	 6           spread: 81-160
- *!	 7           spread: 161-
+ *! An array of ranking coefficients for the different proximity
+ *! categories. Always has 8 elements, in the range of
+ *! [0x0000-0xffff].
  *!
- *!	 The 'spread' value should be defined somehow.
- *!	 
- *!     @[blobfeeder]
+ *! @array
+ *!   @elem int 0
+ *!     spread: 0 (Perfect hit)
+ *!   @elem int 1
+ *!     spread: 1-5
+ *!   @elem int 2
+ *!     spread: 6-10
+ *!   @elem int 3
+ *!     spread: 11-20
+ *!   @elem int 4
+ *!     spread: 21-40
+ *!   @elem int 5
+ *!     spread: 41-80
+ *!   @elem int 6
+ *!     spread: 81-160
+ *!   @elem int 7
+ *!     spread: 161-
+ *! @endarray
+ *!
+ *! @param blobfeeder
  *!     
- *!      This function returns a Pike string containing the word hits
- *!	 for a certain word_id. Call repeatedly until it returns 0.
+ *! This function returns a Pike string containing the word hits for a
+ *! certain word_id. Call repeatedly until it returns @expr{0@}.
  */
 {
   double proximity_coefficients[8];
@@ -540,45 +555,52 @@ static void f_do_query_or( INT32 args )
  *!                              array(int) field_coefficients,       @
  *!                              array(int) proximity_coefficients,   @
  *!                              function(int:string) blobfeeder)   
- *!       @[words]
+ *! @param words
  *!       
- *!          Arrays of word ids. Note that the order is significant
- *!          for the ranking.
+ *! Arrays of word ids. Note that the order is significant for the
+ *! ranking.
  *!
- *!       @[field_coefficients]
+ *! @param field_coefficients
  *!
- *!       An array of ranking coefficients for the different fields. 
- *!       In the range of [0x0000-0xffff]. The array (always) has 65
- *!       elements:
+ *! An array of ranking coefficients for the different fields. In the
+ *! range of [0x0000-0xffff]. The array (always) has 65 elements:
  *!
- *!	  Index        Coefficient for field
- *!	  -----        ---------------------
- *!	  0            body
- *!	  1..64        Special field 0..63
+ *! @array
+ *!   @elem int 0
+ *!     body
+ *!   @elem int 1..64
+ *!     Special field 0..63.
+ *! @endarray
  *!
- *!       @[proximity_coefficients]
+ *! @param proximity_coefficients
  *!
- *!         An array of ranking coefficients for the different
- *!         proximity categories. Always has 8 elements, in the range
- *!         of [0x0000-0xffff].
- *!	 
- *!	 Index       Meaning
- *!	 -----       -------
- *!      0           spread: 0 (Perfect hit)
- *!	 1           spread: 1-5
- *!	 2           spread: 6-10                                 
- *!	 3           spread: 11-20
- *!	 4           spread: 21-40
- *!	 5           spread: 41-80
- *!	 6           spread: 81-160
- *!	 7           spread: 161-
+ *! An array of ranking coefficients for the different proximity
+ *! categories. Always has 8 elements, in the range of
+ *! [0x0000-0xffff].
  *!
- *!	 The 'spread' value should be defined somehow.
- *!	 
- *!     @[blobfeeder]
+ *! @array
+ *!   @elem int 0
+ *!     spread: 0 (Perfect hit)
+ *!   @elem int 1
+ *!     spread: 1-5
+ *!   @elem int 2
+ *!     spread: 6-10
+ *!   @elem int 3
+ *!     spread: 11-20
+ *!   @elem int 4
+ *!     spread: 21-40
+ *!   @elem int 5
+ *!     spread: 41-80
+ *!   @elem int 6
+ *!     spread: 81-160
+ *!   @elem int 7
+ *!     spread: 161-
+ *! @endarray
+ *!
+ *! @param blobfeeder
  *!     
- *!      This function returns a Pike string containing the word hits
- *!	 for a certain word_id. Call repeatedly until it returns 0.
+ *! This function returns a Pike string containing the word hits for a
+ *! certain word_id. Call repeatedly until it returns @expr{0@}.
  */
 {
   double proximity_coefficients[8];
@@ -627,8 +649,11 @@ static void f_do_query_or( INT32 args )
   wf_resultset_push( res );
 }
 
+/*! @endmodule
+ */
 
-void pike_module_init(void)
+
+PIKE_MODULE_INIT
 {
   init_resultset_program();
   init_blob_program();
@@ -651,7 +676,7 @@ void pike_module_init(void)
 		0 );
 }
 
-void pike_module_exit(void)
+PIKE_MODULE_EXIT
 {
   exit_resultset_program();
   exit_blob_program();
