@@ -1,7 +1,9 @@
 
-static string pike_binary = replace( getenv("PIKE"), "\\", "/");
+#pike __REAL_VERSION__
 
 #if constant(roxen)
+
+static string pike_binary = replace( getenv("PIKE"), "\\", "/");
 
 #ifdef SEARCH_CRAWLER_DEBUG
 int index_log_count;
@@ -242,4 +244,7 @@ class Compactor {
     is_perchance_done();
   }
 }
+#else
+final constant dont_dump_module=1;
+constant this_program_does_not_exist=1;
 #endif
