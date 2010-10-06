@@ -319,7 +319,8 @@ int main(int argc, array(string) argv)
 
   if (tag) {
     if (file_stat(pike_base_name + "/.git")) {
-      main_branch = Process.popen("git symbolic-ref -q HEAD");
+      main_branch =
+	String.trim_all_whites(Process.popen("git symbolic-ref -q HEAD"));
       if (!has_prefix(main_branch, "refs/heads/")) {
 	werror("Unexpected HEAD: %O\n", main_branch);
 	exit(1);
