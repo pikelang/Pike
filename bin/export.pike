@@ -19,7 +19,8 @@ array(string) get_files(string path)
   array(string) files = get_dir(path);
 
   if(!getenv("PIKE_EXPORT_CVS_DIRS"))
-    files -= ({ "CVS", "RCS", ".git", ".cvsignore", ".gitignore" });
+    files -= ({ "CVS", "RCS", ".git", ".cvsignore", ".gitignore",
+		".gitattributes", });
 
   array(string) ret = ({});
   foreach(files, string fn)
@@ -149,7 +150,7 @@ void git_cmd(string ... args)
 {
   int code =
     Process.create_process( ({ "git" }) + args,
-			    ([ "cwd":pike_base_name+"/src" ]))->wait();
+			    ([ "cwd":pike_base_name ]))->wait();
   if (code) exit(code);
 }
 
@@ -159,9 +160,20 @@ void git_bump_version(int|void is_release)
 
   int rel = low_bump_version(is_release);
 
-  git_cmd("commit", "-m",
-	  "release number bumped to "+rel+" by export.pike",
-	  "version.h");
+  string attrs = Stdio.read_file(pike_base_name+"/.gitattributes");
+
+  if (attrs) {
+    string new_attrs = (attrs/"\n/src/version.h foreign_ident\n")*"\n";
+    if (new_attrs != attrs) {
+      werror("Adjusting attributes.\n");
+      Stdio.write_file(pike_base_name+"/.gitattributes", new_attrs);
+    }
+    git_cmd("add", ".gitattributes");
+  }
+
+  git_cmd("add", "src/version.h");
+
+  git_cmd("commit", "-m", "release number bumped to "+rel+" by export.pike");
 }
 
 array(string) build_file_list(string vpath, string list_file)
@@ -216,7 +228,6 @@ void cleanup_git()
 {
   /* Roll forward to a useable state. */
   git_cmd("checkout", "HEAD");
-  git_cmd("stash", "pop");
 }
 
 int main(int argc, array(string) argv)
@@ -306,8 +317,6 @@ int main(int argc, array(string) argv)
 
   if (tag) {
     if (file_stat(pike_base_name + "/.git")) {
-      /* Save the local edits for later. */
-      git_cmd("stash");
       git = cleanup_git;	/* Restore state when we're done. */
 
       git_cmd("pull", "--rebase");
