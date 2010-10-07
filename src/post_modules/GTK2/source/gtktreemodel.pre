@@ -154,15 +154,16 @@ mixed get_value(GTK2.TreeIter iter, int column)
   {
     struct object *o1;
     int res;
+    GtkTreeIter *iter;
+
     get_all_args("iter_next",args,"%o",&o1);
-    res=gtk_tree_model_iter_next(GTK_TREE_MODEL(THIS->obj),
-		(GtkTreeIter *)get_pg2object(o1,pgtk2_tree_iter_program));
+    iter=(GtkTreeIter *)get_pg2object(o1,pgtk2_tree_iter_program);
+    res=gtk_tree_model_iter_next(GTK_TREE_MODEL(THIS->obj),iter);
     pgtk2_pop_n_elems(args);
     if (res) {
 	push_pgdk2object(iter,pgtk2_tree_iter_program,1);
     } else {
       push_int(0);
-      g_free( iter );
     }
   }
 }
