@@ -396,9 +396,11 @@ int main(int argc, array(string) argv)
 	exit(1);
       }
       main_branch = main_branch[sizeof("refs/heads/")..];
+      string remote = String.trim_all_whites(git_cmd("remote")->stdout);
+      if (!sizeof(remote)) remote = UNDEFINED;
       git = cleanup_git;	/* Restore state when we're done. */
 
-      git_cmd("pull", "--rebase");
+      if (remote) git_cmd("pull", "--rebase", remote);
 
       /* Tagging in git is fast, so there's no need to
        * do it asynchronously. We also want to perform
@@ -417,13 +419,17 @@ int main(int argc, array(string) argv)
 
       git_bump_version();
 
-      /* Push the result. */
-      git_cmd("pull", "--rebase");	/* Paranoia... */
-      git_cmd("push");
+      if (remote) {
+	/* Push the result. */
+	git_cmd("pull", "--rebase", remote);	/* Paranoia... */
+	git_cmd("push", remote);
+      }
 
       /* Now it's time for the tags. */
       git_cmd("tag", tag, "HEAD^");
-      git_cmd("push");
+      if (remote) {
+	git_cmd("push", remote, "refs/tags/" + tag + ":refs/tags/" + tag);
+      }
 
       /* Bumping is done, now go back to the stable version,
        * so that we can create the dist files. */
