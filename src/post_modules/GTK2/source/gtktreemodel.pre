@@ -158,7 +158,12 @@ mixed get_value(GTK2.TreeIter iter, int column)
     res=gtk_tree_model_iter_next(GTK_TREE_MODEL(THIS->obj),
 		(GtkTreeIter *)get_pg2object(o1,pgtk2_tree_iter_program));
     pgtk2_pop_n_elems(args);
-    PGTK_PUSH_INT(res);
+    if (res) {
+	push_pgdk2object(iter,pgtk2_tree_iter_program,1);
+    } else {
+      push_int(0);
+      g_free( iter );
+    }
   }
 }
 
