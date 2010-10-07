@@ -757,18 +757,18 @@ static void f_fetch_row(INT32 args)
 #endif /* ODBC_DEBUG */
 	  if (code == SQL_NO_DATA_FOUND) {
 	    /* No data or end marker. */
-	    really_free_pike_string(s);
+	    do_really_free_pike_string(s);
 	    push_text("");
 	    break;
 	  } else {
 	    odbc_check_error("odbc->fetch_row", "SQLGetData() failed",
 			     code, NULL, NULL);
 	    if (!len) {
-	      really_free_pike_string(s);
+	      do_really_free_pike_string(s);
 	      push_text("");
 	      break;
 	    } else if (len == SQL_NULL_DATA) {
-	      really_free_pike_string(s);
+	      do_really_free_pike_string(s);
 	      if (num_strings > 1) {
 		num_strings--;
 	      } else {
