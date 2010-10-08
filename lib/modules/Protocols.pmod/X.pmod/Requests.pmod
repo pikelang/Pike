@@ -1,6 +1,6 @@
 /* Requests.pike
  *
- * $Id: Requests.pmod,v 1.33 2008/01/13 17:02:43 nilsson Exp $
+ * $Id$
  */
 
 /*
@@ -503,6 +503,21 @@ class ListProperties
 		      "Unexpected error '%s'\n",
 		      reply->errorCode));
       }
+  }
+}
+
+class SendEvent
+{
+  inherit request;
+  constant reqType = 25;
+
+  int destination;	// Window id, (0 = PointerWindow, 1 = InputFocus).
+  int eventMask;
+  string event;		// Always 32 bytes.
+
+  string to_string()
+  {
+    return build_request(sprintf("%4c%4c%32s", destination, eventMask, event));
   }
 }
 

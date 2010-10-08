@@ -1,6 +1,6 @@
 /* Types.pmod
  *
- * $Id: Types.pmod,v 1.39 2004/01/11 00:46:12 nilsson Exp $
+ * $Id$
  */
 
 /*
@@ -726,6 +726,21 @@ class Window
 	a[i] = atom;
       }
     return a;
+  }
+
+  object SendEvent_req(int eventmask, string event)
+  {
+    object req = .Requests.SendEvent();
+    req->destination = id;
+    req->eventMask = eventmask;
+    req->event = event;
+
+    return req;
+  }
+
+  void SendEvent(int eventmask, string event)
+  {
+    display->send_request(SendEvent_req(eventmask, event));
   }
 
   object ChangeProperty_req(object property, object type,
