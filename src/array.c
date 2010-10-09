@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.229 2010/07/11 12:39:11 jonasw Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -910,11 +910,12 @@ INT32 *get_order(struct array *v, cmpfun fun)
   return current_order;
 }
 
-/* Returns 2 if no relation is established through lfun calls. */
-static INLINE int lfun_cmp (const struct svalue *a, const struct svalue *b)
+/* Returns 2 if no relation is established through lfun calls, or 3 if
+ * no order defining lfuns (i.e. `< or `>) were found. */
+static int lfun_cmp (const struct svalue *a, const struct svalue *b)
 {
   struct program *p;
-  int fun;
+  int default_res = 3, fun;
 
   if (a->type == T_OBJECT && (p = a->u.object->prog)) {
     if ((fun = FIND_LFUN(p->inherits[a->subtype].prog, LFUN_LT)) != -1) {
@@ -927,6 +928,7 @@ static INLINE int lfun_cmp (const struct svalue *a, const struct svalue *b)
 	return -1;
       }
       pop_stack();
+      default_res = 2;
     }
 
     if ((fun = FIND_LFUN(p->inherits[a->subtype].prog, LFUN_GT)) != -1) {
@@ -939,6 +941,7 @@ static INLINE int lfun_cmp (const struct svalue *a, const struct svalue *b)
 	return 1;
       }
       pop_stack();
+      default_res = 2;
     }
 
     if ((fun = FIND_LFUN(p->inherits[a->subtype].prog, LFUN_EQ)) != -1) {
@@ -964,6 +967,7 @@ static INLINE int lfun_cmp (const struct svalue *a, const struct svalue *b)
 	return 1;
       }
       pop_stack();
+      default_res = 2;
     }
 
     if ((fun = FIND_LFUN(p->inherits[b->subtype].prog, LFUN_GT)) != -1) {
@@ -976,6 +980,7 @@ static INLINE int lfun_cmp (const struct svalue *a, const struct svalue *b)
 	return -1;
       }
       pop_stack();
+      default_res = 2;
     }
 
     if ((fun = FIND_LFUN(p->inherits[b->subtype].prog, LFUN_EQ)) != -1) {
@@ -990,182 +995,209 @@ static INLINE int lfun_cmp (const struct svalue *a, const struct svalue *b)
     }
   }
 
-  return 2;
+  return default_res;
+}
+
+static int obj_or_func_cmp (const struct svalue *a, const struct svalue *b)
+/* Call with either two T_OBJECT or two T_FUNCTION. */
+{
+  int a_subtype, b_subtype, res;
+  struct svalue tmp_a, tmp_b;
+
+  assert ((a->type == T_OBJECT && b->type == T_OBJECT) ||
+	  (a->type == T_FUNCTION && b->type == T_FUNCTION));
+
+  if (a->u.object == b->u.object)
+    return a->subtype - b->subtype;
+
+  /* Destructed objects are considered equal to each other, and
+   * (arbitrarily chosen) greater than others. */
+  if (!a->u.object->prog)
+    return !b->u.object->prog ? 0 : 1;
+  else if (!b->u.object->prog)
+    return -1;
+
+  if (a->type == T_FUNCTION) {
+    if (a->u.object->prog != b->u.object->prog)
+      return a->u.object->prog < b->u.object->prog ? -1 : 1;
+    if (a->subtype != b->subtype)
+      return a->subtype - b->subtype;
+
+    /* We have the same function but in different objects. Compare the
+     * objects themselves. */
+    /* FIXME: Should we try to convert the subtypes to the ones for
+     * the closest inherits? That'd make some sense if the functions
+     * are private, but otherwise it's doubtful. */
+    a_subtype = b_subtype = a->subtype;
+    tmp_a = *a;
+    tmp_a.type = T_OBJECT;
+    tmp_a.subtype = 0;
+    a = &tmp_a;
+    tmp_b = *b;
+    tmp_b.type = T_OBJECT;
+    tmp_b.subtype = 0;
+    b = &tmp_b;
+  }
+
+  else {
+    a_subtype = a->subtype;
+    b_subtype = b->subtype;
+  }
+
+  res = lfun_cmp (a, b);
+
+  if (res == 3) {
+    /* If the objects had no inequality comparison lfuns to call, use
+     * their pointers to get a well defined internal sort order. Let's
+     * also group objects cloned from the same program. */
+    if (a->u.object->prog == b->u.object->prog)
+      return a->u.object < b->u.object ? -1 : 1;
+    else
+      return a->u.object->prog < b->u.object->prog ? -1 : 1;
+  }
+
+  return res == 2 ? 0 : res;
 }
 
 int set_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
 {
-  int res, typediff = a->type - b->type;
+  int typediff = a->type - b->type;
+  if (typediff) {
+    if (a->type == T_OBJECT || b->type == T_OBJECT) {
+      int res = lfun_cmp (a, b);
+      if (res < 2) return res;
+    }
+    return typediff;
+  }
 
-  if (!typediff)
+  switch(a->type)
   {
-    switch(a->type)
-    {
-      case T_FLOAT:
-	if(a->u.float_number < b->u.float_number) return -1;
-	if(a->u.float_number > b->u.float_number) return 1;
-	return 0;
-	
-      case T_FUNCTION:
-	if(a->u.refs < b->u.refs) return -1;
-	if(a->u.refs > b->u.refs) return 1;
-	return a->subtype - b->subtype;
-	
-      case T_INT:
-	if(a->u.integer < b->u.integer) return -1;
-	if(a->u.integer > b->u.integer) return 1;
-	return 0;
-
-      default:
-	if(a->u.refs < b->u.refs) return -1;
-	if(a->u.refs > b->u.refs) return 1;
-	return 0;
-
-      case T_OBJECT:
-	if((a->u.object == b->u.object) && (a->subtype == b->subtype)) {
-	  return 0;
-	}
-	break;
-    }
-  }
-
-  res = lfun_cmp (a, b);
-  if (res != 2) return res;
-
-  if (typediff) return typediff;
-
-#ifdef PIKE_DEBUG
-  if (a->type != T_OBJECT)
-    Pike_fatal ("Expected objects when both types are the same.\n");
-#endif
-
-  /* FIXME: Take subtype into account! */
-
-  if(a->u.object->prog == b->u.object->prog) {
-    if (a->u.object->prog) {
-      if(a->u.object < b->u.object) {
-	return -1;
-      } else {
-	return 1;
-      }
-    } else {
-      /* Destructed objects are considered equal. */
+    case T_FLOAT:
+      if(a->u.float_number < b->u.float_number) return -1;
+      if(a->u.float_number > b->u.float_number) return 1;
       return 0;
-    }
-  } else {
-    /* Attempt to group objects cloned from the same program */
-    if (a->u.object->prog < b->u.object->prog) {
-      return -1;
-    } else {
-      return 1;
-    }
+
+    case T_INT:
+      if(a->u.integer < b->u.integer) return -1;
+      if(a->u.integer > b->u.integer) return 1;
+      return 0;
+
+    case T_OBJECT:
+    case T_FUNCTION:
+      return obj_or_func_cmp (a, b);
+
+    default:
+      if(a->u.refs < b->u.refs) return -1;
+      if(a->u.refs > b->u.refs) return 1;
+      return 0;
   }
+  /* NOT REACHED */
 }
 
 static int switch_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
 {
-  if(a->type == b->type)
+  int typediff = a->type - b->type;
+  if (typediff)
+    return typediff;
+
+  switch(a->type)
   {
-    switch(a->type)
-    {
-      case T_INT:
-	if(a->u.integer < b->u.integer) return -1;
-	if(a->u.integer > b->u.integer) return 1;
-	return 0;
-	
-      case T_FLOAT:
-	if(a->u.float_number < b->u.float_number) return -1;
-	if(a->u.float_number > b->u.float_number) return 1;
-	return 0;
-	
-      case T_STRING:
-	return DO_NOT_WARN((int)my_quick_strcmp(a->u.string, b->u.string));
-	
-      default:
-	return set_svalue_cmpfun(a,b);
-    }
-  }else{
-    return a->type - b->type;
+    case T_INT:
+      if(a->u.integer < b->u.integer) return -1;
+      if(a->u.integer > b->u.integer) return 1;
+      return 0;
+
+    case T_FLOAT:
+      if(a->u.float_number < b->u.float_number) return -1;
+      if(a->u.float_number > b->u.float_number) return 1;
+      return 0;
+
+    case T_STRING:
+      return DO_NOT_WARN((int)my_quick_strcmp(a->u.string, b->u.string));
+
+    case T_OBJECT:
+    case T_FUNCTION:
+      return obj_or_func_cmp (a, b);
+
+    default:
+      if(a->u.refs < b->u.refs) return -1;
+      if(a->u.refs > b->u.refs) return 1;
+      return 0;
   }
+  /* NOT REACHED */
 }
 
 int alpha_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
 {
-  int res, typediff = a->type - b->type;
+  int typediff = a->type - b->type;
+  if (typediff) {
+    if (a->type == T_OBJECT || b->type == T_OBJECT) {
+      int res = lfun_cmp (a, b);
+      if (res < 2) return res;
+    }
+    return typediff;
+  }
 
-  if (!typediff)
+  switch(a->type)
   {
-    switch(a->type)
-    {
-      case T_INT:
-	if(a->u.integer < b->u.integer) return -1;
-	if(a->u.integer > b->u.integer) return  1;
-	return 0;
-	
-      case T_FLOAT:
-	if(a->u.float_number < b->u.float_number) return -1;
-	if(a->u.float_number > b->u.float_number) return  1;
-	return 0;
-	
-      case T_STRING:
-	return DO_NOT_WARN((int)my_quick_strcmp(a->u.string, b->u.string));
-	
-      case T_ARRAY:
-	if(a==b) return 0;
-	if (!a->u.array->size)
-	  if (!b->u.array->size) /* There are several different empty arrays. */
+    case T_INT:
+      if(a->u.integer < b->u.integer) return -1;
+      if(a->u.integer > b->u.integer) return  1;
+      return 0;
+
+    case T_FLOAT:
+      if(a->u.float_number < b->u.float_number) return -1;
+      if(a->u.float_number > b->u.float_number) return  1;
+      return 0;
+
+    case T_STRING:
+      return DO_NOT_WARN((int)my_quick_strcmp(a->u.string, b->u.string));
+
+    case T_ARRAY:
+      if(a==b) return 0;
+      if (!a->u.array->size)
+	if (!b->u.array->size) /* There are several different empty arrays. */
+	  return 0;
+	else
+	  return -1;
+      else
+	if (!b->u.array->size)
+	  return 1;
+      return alpha_svalue_cmpfun(ITEM(a->u.array), ITEM(b->u.array));
+
+    case T_MULTISET:
+      if (a == b) return 0;
+      {
+	ptrdiff_t a_pos = multiset_first (a->u.multiset);
+	ptrdiff_t b_pos = multiset_first (b->u.multiset);
+	int res;
+	struct svalue ind_a, ind_b;
+	if (a_pos < 0)
+	  if (b_pos < 0)
 	    return 0;
 	  else
 	    return -1;
 	else
-	  if (!b->u.array->size)
+	  if (b_pos < 0)
 	    return 1;
-	return alpha_svalue_cmpfun(ITEM(a->u.array), ITEM(b->u.array));
+	res = alpha_svalue_cmpfun (
+	  use_multiset_index (a->u.multiset, a_pos, ind_a),
+	  use_multiset_index (b->u.multiset, b_pos, ind_b));
+	sub_msnode_ref (a->u.multiset);
+	sub_msnode_ref (b->u.multiset);
+	return res;
+      }
 
-      case T_MULTISET:
-	if (a == b) return 0;
-	{
-	  ptrdiff_t a_pos = multiset_first (a->u.multiset);
-	  ptrdiff_t b_pos = multiset_first (b->u.multiset);
-	  struct svalue ind_a, ind_b;
-	  if (a_pos < 0)
-	    if (b_pos < 0)
-	      return 0;
-	    else
-	      return -1;
-	  else
-	    if (b_pos < 0)
-	      return 1;
-	  res = alpha_svalue_cmpfun (
-	    use_multiset_index (a->u.multiset, a_pos, ind_a),
-	    use_multiset_index (b->u.multiset, b_pos, ind_b));
-	  sub_msnode_ref (a->u.multiset);
-	  sub_msnode_ref (b->u.multiset);
-	  return res;
-	}
+    case T_OBJECT:
+    case T_FUNCTION:
+      return obj_or_func_cmp (a, b);
 
-      case T_OBJECT:
-	if((a->u.object == b->u.object) && (a->subtype == b->subtype)) {
-	  return 0;
-	}
-	break;
-	
-      default:
-#if 1
-	/* I think it would be better to leave the order undefined in
-	 * these cases since the addresses aren't observable
-	 * properties in pike. /mast */
-	if(a->u.refs < b->u.refs) return -1;
-	if(a->u.refs > b->u.refs) return 1;
-#endif
-	return 0;
-    }
+    default:
+      if(a->u.ptr < b->u.ptr) return -1;
+      if(a->u.ptr > b->u.ptr) return 1;
+      return 0;
   }
-
-  res = lfun_cmp (a, b);
-  if (res != 2) return res;
-
-  return typediff;
+  /* NOT REACHED */
 }
 
 #define CMP(X,Y) alpha_svalue_cmpfun(X,Y)
