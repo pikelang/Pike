@@ -24,12 +24,28 @@
   INT16 size_shift; /* 14 bit waste, but good for alignment... */	\
   ptrdiff_t len; /* Not counting terminating NUL. */			\
   size_t hval;								\
-  struct pike_string *next 
+  struct pike_string *next;						\
+  char *str	/* Usually, but not necessarily NUL terminated. */
 
 struct pike_string
 {
   PIKE_STRING_CONTENTS;
-  char str[1];			/* NUL terminated. */
+  /* Implementation notes:
+   *
+   * For inlined strings, the string data is stored here, and
+   * not in a different data block. The following could thus
+   * be a struct in a union, but this should be clear enough.
+   *
+   * Inlined strings are never aliased and thus always NUL-terminated.
+   */
+  void *data;			/* Either NULL if str points to a C string,
+				 * or a pike_string or a block of bytes,
+				 * into which str points.
+				 */
+  ptrdiff_t malloced;		/* Either 0 if data is a pike_string,
+				 *    or >0 if data is a malloced block.
+				 */
+  struct pike_string *alias;	/* Shared alias for this string (if known). */
 };
 
 struct string_builder
@@ -44,6 +60,7 @@ struct string_builder
 #define STRING_NOT_SHARED	2	/* String not shared. */
 #define STRING_IS_SHORT		4	/* String is blockalloced. */
 #define STRING_CLEAR_ON_EXIT    8       /* Overwrite before free. */
+#define STRING_IS_INLINED	16	/* See above. */
 
 /* Flags used by string_builder_append_integer() */
 #define APPEND_SIGNED		1	/* Value is signed */

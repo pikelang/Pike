@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.239 2010/06/15 16:10:19 grubba Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -449,7 +449,7 @@ PMOD_EXPORT struct pike_string *findstring(const char *foo)
 }
 
 /*
- * find a string that is already shared and move it to the head
+ * Find a string that is already shared and move it to the head
  * of that list in the hastable
  */
 static struct pike_string *propagate_shared_string(const struct pike_string *s,
@@ -559,59 +559,43 @@ struct pike_string_hdr {
 
 #undef INIT_BLOCK
 #define INIT_BLOCK(NEW_STR) do {				\
-    (NEW_STR)->refs = 1;					\
+    (NEW_STR)->refs = 0;					\
     (NEW_STR)->flags =						\
       STRING_NOT_HASHED|STRING_NOT_SHARED|STRING_IS_SHORT;	\
+    add_ref(NEW_STR);	/* For DMALLOC */			\
   } while(0)
 
-#define SHORT_STRING_BLOCK	256
-#define SHORT_STRING_THRESHOLD	15 /* % 4 === -1 */
+#undef EXIT_BLOCK
+#define EXIT_BLOCK(STR) do {					\
+    if (!((STR)->flags & STRING_IS_INLINED) && (STR)->data) {	\
+      if ((STR)->malloced) {					\
+	free((STR)->data);					\
+      } else {							\
+	free_string((STR)->data);				\
+      }								\
+    }								\
+  } while(0)
 
-struct short_pike_string0 {
-  PIKE_STRING_CONTENTS;
-  p_wchar0 str[SHORT_STRING_THRESHOLD+1];
-};
+#define STRING_BLOCK	256
+#define SHORT_STRING_THRESHOLD	\
+  ((ptrdiff_t)(sizeof(struct pike_string) - (sizeof(struct pike_string_hdr)+1)))
 
-struct short_pike_string1 {
-  PIKE_STRING_CONTENTS;
-  p_wchar1 str[SHORT_STRING_THRESHOLD+1];
-};
-
-struct short_pike_string2 {
-  PIKE_STRING_CONTENTS;
-  p_wchar2 str[SHORT_STRING_THRESHOLD+1];
-};
-
-BLOCK_ALLOC(short_pike_string0, SHORT_STRING_BLOCK)
-BLOCK_ALLOC(short_pike_string1, SHORT_STRING_BLOCK)
-BLOCK_ALLOC(short_pike_string2, SHORT_STRING_BLOCK)
+BLOCK_ALLOC(pike_string, STRING_BLOCK)
 
 #undef INIT_BLOCK
 #define INIT_BLOCK(x)
-
-#define really_free_short_pike_string(s) do { \
-     if (!s->size_shift) { \
-       really_free_short_pike_string0((struct short_pike_string0 *)s); \
-     } else if (s->size_shift == 1) { \
-       really_free_short_pike_string1((struct short_pike_string1 *)s); \
-     DO_IF_DEBUG( \
-     } else if (s->size_shift != 2) { \
-       Pike_fatal("Unsupported string shift: %d\n", s->size_shift); \
-     ) \
-     } else { \
-       really_free_short_pike_string2((struct short_pike_string2 *)s); \
-     } \
-   } while(0)
+#undef EXIT_BLOCK
+#define EXIT_BLOCK(x)
 
 #define free_unlinked_pike_string(s) do { \
-    if (s->len <= SHORT_STRING_THRESHOLD) { \
-      really_free_short_pike_string(s); \
+    if (s->flags & STRING_IS_SHORT) {	\
+      really_free_pike_string(s); \
     } else { \
       debug_free((char *)s, DMALLOC_LOCATION(), 1); \
     } \
   } while(0)
 
-/* note that begin_shared_string expects the _exact_ size of the string,
+/* Note that begin_shared_string expects the _exact_ size of the string,
  * not the maximum size
  */
 PMOD_EXPORT struct pike_string *debug_begin_shared_string(size_t len)
@@ -623,13 +607,15 @@ PMOD_EXPORT struct pike_string *debug_begin_shared_string(size_t len)
     verify_shared_strings_tables();
 #endif
   if (len <= SHORT_STRING_THRESHOLD) {
-    t=(struct pike_string *)alloc_short_pike_string0();
+    t=(struct pike_string *)alloc_pike_string();
+    t->flags |= STRING_IS_INLINED;
   } else {
     t=(struct pike_string *)xalloc(len + 1 + sizeof(struct pike_string_hdr));
-    t->flags = STRING_NOT_HASHED | STRING_NOT_SHARED;
+    t->refs = 0;
+    t->flags = STRING_NOT_HASHED | STRING_NOT_SHARED | STRING_IS_INLINED;
+    add_ref(t);	/* For DMALLOC */
   }
-  t->refs = 0;
-  add_ref(t);	/* For DMALLOC */
+  t->str = (char *)&t->data;
   t->str[len]=0;
   t->len=len;
   t->size_shift=0;
@@ -732,24 +718,17 @@ PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(size_t len, int s
   if(d_flag>10)
     verify_shared_strings_tables();
 #endif
-  if (len <= SHORT_STRING_THRESHOLD) {
-    if (!shift) {
-      t = (struct pike_string *)alloc_short_pike_string0();
-    } else if (shift == 1) {
-      t = (struct pike_string *)alloc_short_pike_string1();
-#ifdef PIKE_DEBUG
-    } else if (shift != 2) {
-      Pike_fatal("Unsupported string shift: %d\n", shift);
-#endif /* PIKE_DEBUG */
-    } else {
-      t = (struct pike_string *)alloc_short_pike_string2();
-    }
+  if (!shift && (len <= SHORT_STRING_THRESHOLD)) {
+    t = (struct pike_string *)alloc_pike_string();
+    t->flags |= STRING_IS_INLINED;
   } else {
     t=(struct pike_string *)xalloc(((len + 1)<<shift) +
 				   sizeof(struct pike_string_hdr));
-    t->flags = STRING_NOT_HASHED|STRING_NOT_SHARED;
+    t->refs = 0;
+    t->flags = STRING_NOT_HASHED | STRING_NOT_SHARED | STRING_IS_INLINED;
+    add_ref(t);	/* For DMALLOC */
   }
-  t->refs = 1;
+  t->str = (char *)&t->data;
   t->len=len;
   t->size_shift=shift;
   DO_IF_DEBUG(t->next = NULL);
@@ -890,8 +869,9 @@ PMOD_EXPORT struct pike_string *end_and_resize_shared_string(struct pike_string 
   if(len > str->len)
     Pike_fatal("Cannot extend string here!\n");
 #endif
-  if( (str->len <= SHORT_STRING_THRESHOLD) ||
-      ((len > SHORT_STRING_THRESHOLD) && (str->len <= (len<<1))) )
+  if(!str->size_shift &&
+     ((str->len <= SHORT_STRING_THRESHOLD) ||
+      ((len > SHORT_STRING_THRESHOLD) && (str->len <= (len<<1)))) )
   {
     /* Short string before and after or
      * long string and at least half the length of the buffer.
@@ -1616,17 +1596,22 @@ PMOD_EXPORT struct pike_string *realloc_unlinked_string(struct pike_string *a,
 {
   struct pike_string *r = NULL;
 
-  if (a->len <= SHORT_STRING_THRESHOLD) {
-    if (size <= SHORT_STRING_THRESHOLD) {
-      /* There's already space enough. */
-      a->len = size;
-      low_set_index(a, size, 0);
-      return a;
+  if (a->flags & STRING_IS_INLINED) {
+    if (a->flags & STRING_IS_SHORT) {
+      if (size <= SHORT_STRING_THRESHOLD) {
+	/* There's already space enough. */
+	a->len = size;
+	low_set_index(a, size, 0);
+	return a;
+      }
+    } else if (size > SHORT_STRING_THRESHOLD) {
+      r=(struct pike_string *)realloc((char *)a,
+				      sizeof(struct pike_string_hdr)+
+				      ((size+1)<<a->size_shift));
+      if (r) {
+	r->str = (char *)&r->data;
+      }
     }
-  } else if (size > SHORT_STRING_THRESHOLD) {
-    r=(struct pike_string *)realloc((char *)a,
-				    sizeof(struct pike_string_hdr)+
-				    ((size+1)<<a->size_shift));
   }
 	
   if(!r)
@@ -2052,9 +2037,7 @@ PMOD_EXPORT struct pike_string *string_replace(struct pike_string *str,
 /*** init/exit memory ***/
 void init_shared_string_table(void)
 {
-  init_short_pike_string0_blocks();
-  init_short_pike_string1_blocks();
-  init_short_pike_string2_blocks();
+  init_pike_string_blocks();
   for(hashprimes_entry=0;hashprimes[hashprimes_entry]<BEGIN_HASH_SIZE;hashprimes_entry++);
   SET_HSIZE(hashprimes_entry);
   base_table=(struct pike_string **)xalloc(sizeof(struct pike_string *)*htable_size);
@@ -2128,22 +2111,18 @@ void cleanup_shared_string_table(void)
   num_strings=0;
 
 #ifdef DO_PIKE_CLEANUP
-  free_all_short_pike_string0_blocks();
-  free_all_short_pike_string1_blocks();
-  free_all_short_pike_string2_blocks();
+  free_all_pike_string_blocks();
 #endif /* DO_PIKE_CLEANUP */
 }
 
 static INLINE size_t memory_in_string (struct pike_string *s)
 {
-  if (s->len <= SHORT_STRING_THRESHOLD)
-    switch (s->size_shift) {
-      case 0: return sizeof (struct short_pike_string0);
-      case 1: return sizeof (struct short_pike_string1);
-      default: return sizeof (struct short_pike_string2);
-    }
-  else
+  if (s->flags & STRING_IS_SHORT)
+    return sizeof(struct pike_string);
+  else if (s->flags & STRING_IS_INLINED)
     return sizeof (struct pike_string_hdr) + ((s->len + 1) << s->size_shift);
+  else
+    return sizeof(struct pike_string) + s->malloced;
 }
 
 void count_memory_in_strings(size_t *num, size_t *size)
