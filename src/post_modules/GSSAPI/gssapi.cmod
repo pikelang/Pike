@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gssapi.cmod,v 1.10 2008/07/22 21:28:02 mast Exp $
+|| $Id$
 */
 
 /*
@@ -645,14 +645,6 @@ PIKEFUN array(string) minor_status_messages (int minor_status, void|string mech)
 {
   gss_OID_desc mech_oid_desc;
   gss_OID mech_oid;
-
-#ifndef PRECOMPILE_API_VERSION
-  /* Live with the pessimal precompile.pike in 7.4.. :P */
-  struct pike_string *_mech;
-  CHECK_OPT_ARG (mech, _mech, T_STRING, string, "string",
-		 "minor_status_messages", 2);
-#define mech _mech
-#endif
 
   if (mech) {
     if (get_pushed_gss_oid (mech, mech_oid = &mech_oid_desc))
@@ -1329,14 +1321,6 @@ PIKECLASS Name
     gss_OID_desc type_desc;
     gss_OID type;
 
-#ifndef PRECOMPILE_API_VERSION
-    /* Live with the pessimal precompile.pike in 7.4.. :P */
-    struct pike_string *_name_type;
-    CHECK_OPT_ARG (name_type, _name_type,
-		   T_STRING, string, "string", "create", 2);
-#define name_type _name_type
-#endif
-
     CHECK_NARROW_STRING (name, "create", 1);
 
     if (name_type)
@@ -1546,13 +1530,6 @@ PIKECLASS Name
     gss_OID mech_oid;
     gss_name_t mn = GSS_C_NO_NAME;
     ONERROR uwp;
-
-#ifndef PRECOMPILE_API_VERSION
-    /* Live with the pessimal precompile.pike in 7.4.. :P */
-    struct pike_string *_mech;
-    CHECK_OPT_ARG (mech, _mech, T_STRING, string, "string", "export", 1);
-#define mech _mech
-#endif
 
     if (THIS->name == GSS_C_NO_NAME)
       Pike_error ("Name object not initialized.\n");
@@ -1843,13 +1820,9 @@ PIKECLASS Cred
 
 #ifndef PRECOMPILE_API_VERSION
     /* Live with the pessimal precompile.pike in 7.4.. :P */
-    struct multiset *_desired_mechs;
     INT_TYPE _desired_time;
-    CHECK_OPT_ARG (desired_mechs, _desired_mechs,
-		   T_MULTISET, multiset, "multiset(string)", "create", 3);
     CHECK_OPT_ARG (desired_time, _desired_time,
 		   T_INT, integer, "int(0..)", "create", 4);
-#define desired_mechs _desired_mechs
 #define desired_time _desired_time
 #endif
 
@@ -2145,13 +2118,6 @@ PIKECLASS Cred
     gss_name_t name = GSS_C_NO_NAME;
     ONERROR uwp;
 
-#ifndef PRECOMPILE_API_VERSION
-    /* Live with the pessimal precompile.pike in 7.4.. :P */
-    struct pike_string *_mech;
-    CHECK_OPT_ARG (mech, _mech, T_STRING, string, "string", "name", 1);
-#define mech _mech
-#endif
-
     if (THIS->cred == GSS_C_NO_CREDENTIAL)
       throw_gssapi_error (GSS_S_NO_CRED, 0, GSS_C_NO_OID, NULL);
 
@@ -2196,13 +2162,6 @@ PIKECLASS Cred
   PIKEFUN int cred_usage (void|string mech)
   {
     gss_cred_usage_t usage;
-
-#ifndef PRECOMPILE_API_VERSION
-    /* Live with the pessimal precompile.pike in 7.4.. :P */
-    struct pike_string *_mech;
-    CHECK_OPT_ARG (mech, _mech, T_STRING, string, "string", "cred_usage", 1);
-#define mech _mech
-#endif
 
     if (THIS->cred == GSS_C_NO_CREDENTIAL)
       throw_gssapi_error (GSS_S_NO_CRED, 0, GSS_C_NO_OID, NULL);
@@ -3836,21 +3795,17 @@ PIKECLASS InitContext
   {
 #ifndef PRECOMPILE_API_VERSION
     /* Live with the pessimal precompile.pike in 7.4.. :P */
-    struct object *_cred;
-    struct pike_string *_mech;
     INT_TYPE _required_services;
     INT_TYPE _desired_services;
     INT_TYPE _desired_time;
-    CHECK_OPT_ARG (cred, _cred, T_OBJECT, object, "Cred", "create", 1);
-    CHECK_OPT_ARG (mech, _mech, T_STRING, string, "string", "create", 3);
     CHECK_OPT_ARG (required_services, _required_services,
 		   T_INT, integer, "int", "create", 4);
     CHECK_OPT_ARG (desired_services, _desired_services,
 		   T_INT, integer, "int", "create", 5);
     CHECK_OPT_ARG (desired_time, _desired_time,
 		   T_INT, integer, "int(0..)", "create", 6);
-#define CRED _cred
-#define MECH _mech
+#define CRED cred
+#define MECH mech
 #define REQUIRED_SERVICES _required_services
 #define DESIRED_SERVICES _desired_services
 #define DESIRED_TIME _desired_time
@@ -3974,14 +3929,6 @@ PIKECLASS InitContext
   PIKEFUN string init (void|string remote_token)
   {
     gss_buffer_desc input_token;
-
-#ifndef PRECOMPILE_API_VERSION
-    /* Live with the pessimal precompile.pike in 7.4.. :P */
-    struct pike_string *_remote_token;
-    CHECK_OPT_ARG (remote_token, _remote_token,
-		   T_STRING, string, "string", "init", 1);
-#define remote_token _remote_token
-#endif
 
     if (THIS_CONTEXT->ctx == GSS_C_NO_CONTEXT) {
       if (remote_token)
@@ -4190,12 +4137,10 @@ PIKECLASS AcceptContext
   {
 #ifndef PRECOMPILE_API_VERSION
     /* Live with the pessimal precompile.pike in 7.4.. :P */
-    struct object *_cred;
     INT_TYPE _required_services;
-    CHECK_OPT_ARG (cred, _cred, T_OBJECT, object, "Cred", "create", 1);
     CHECK_OPT_ARG (required_services, _required_services,
 		   T_INT, integer, "int", "create", 2);
-#define CRED _cred
+#define CRED cred
 #define REQUIRED_SERVICES _required_services
 #else
 #define CRED cred
