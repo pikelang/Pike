@@ -38,7 +38,6 @@
 #include "backend.h"
 #include "pike_rusage.h"
 
-#include <assert.h>
 #include <errno.h>
 
 #ifdef HAVE_SYS_PRCTL_H

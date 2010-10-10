@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dlopen.c,v 1.76 2006/07/05 19:06:46 mast Exp $
+|| $Id$
 */
 
 /* Note: This is not used if --enable-dll is. */
@@ -25,7 +25,6 @@
 #include <windows.h>
 #include <memory.h>
 #include <sys/stat.h>
-#include <assert.h>
 #include <math.h>
 #include <tchar.h>
 #include <interpret.h>

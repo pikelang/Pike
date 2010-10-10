@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.351 2010/07/15 22:31:18 mast Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -30,7 +30,6 @@ struct callback *gc_evaluator_callback=0;
 #include "main.h"
 
 #include <math.h>
-#include <assert.h>
 
 #include "block_alloc.h"
 

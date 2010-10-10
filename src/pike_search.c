@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_search.c,v 1.31 2008/06/29 12:37:10 nilsson Exp $
+|| $Id$
 */
 
 /* New memory searcher functions */
@@ -19,8 +19,6 @@
 #include "pike_macros.h"
 #include "pike_search.h"
 #include "bignum.h"
-
-#include <assert.h>
 
 ptrdiff_t pike_search_struct_offset;
 #define OB2MSEARCH(O) ((struct pike_mem_searcher *)((O)->storage+pike_search_struct_offset))

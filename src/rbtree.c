@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rbtree.c,v 1.26 2009/04/06 00:34:16 mast Exp $
+|| $Id$
 */
 
 /* An implementation of a threaded red/black balanced binary tree.
@@ -16,7 +16,6 @@
 #include "pike_error.h"
 #include "rbtree_low.h"
 
-#include <assert.h>
 #include <stdlib.h>
 
 #if defined (PIKE_DEBUG) || defined (TEST_MULTISET)

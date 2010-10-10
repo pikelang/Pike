@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cipher.cmod,v 1.41 2009/07/02 16:35:38 grubba Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -38,7 +38,6 @@ DECLARATIONS
 #include "idea.h"
 #include <nettle/nettle-meta.h>
 
-#include <assert.h>
 #include <stdio.h>
 #include <stdarg.h>
 

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.414 2010/01/21 15:39:58 grubba Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -38,7 +38,6 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <ctype.h>
-#include <assert.h>
 
 #ifdef HAVE_MMAP
 #ifdef HAVE_SYS_TYPES_H

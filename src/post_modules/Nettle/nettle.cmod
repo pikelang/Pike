@@ -1,5 +1,5 @@
 /* nettle.cmod -*- c -*- */
-/* $Id: nettle.cmod,v 1.58 2010/06/22 14:30:13 grubba Exp $ */
+/* $Id$ */
 
 #include "global.h"
 #include "interpret.h"
@@ -19,7 +19,6 @@
 #include <nettle/yarrow.h>
 #include <nettle/knuth-lfib.h>
 
-#include <assert.h>
 #include <stdio.h>
 #include <stdarg.h>
 

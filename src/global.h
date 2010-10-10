@@ -540,6 +540,8 @@ typedef struct p_wchar_p
 
 #endif	/* !PIKE_DEBUG */
 
+#include <assert.h>
+
 #if defined (PIKE_DEBUG) || defined (DO_PIKE_CLEANUP)
 #define DO_IF_DEBUG_OR_CLEANUP(X) X
 #else

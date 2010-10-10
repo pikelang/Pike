@@ -345,7 +345,6 @@ testfont binary
 /src/bignum.h foreign_ident
 /src/block_alloc.h foreign_ident
 /src/block_alloc_h.h foreign_ident
-/src/builtin.cmod foreign_ident
 /src/builtin_functions.c foreign_ident
 /src/builtin_functions.h foreign_ident
 /src/callback.c foreign_ident
@@ -372,7 +371,6 @@ testfont binary
 /src/crypt.c foreign_ident
 /src/cyclic.c foreign_ident
 /src/cyclic.h foreign_ident
-/src/dlopen.c foreign_ident
 /src/dmalloc.h foreign_ident
 /src/docode.h foreign_ident
 /src/dumpmaster.pike foreign_ident
@@ -393,12 +391,10 @@ testfont binary
 /src/fsort.c foreign_ident
 /src/fsort.h foreign_ident
 /src/fsort_template.h foreign_ident
-/src/gc.c foreign_ident
 /src/gc.h foreign_ident
 /src/hashtable.c foreign_ident
 /src/hashtable.h foreign_ident
 /src/install-sh foreign_ident
-/src/interpret.c foreign_ident
 /src/interpret.h foreign_ident
 /src/interpreter.h foreign_ident
 /src/iterators.cmod foreign_ident
@@ -768,7 +764,6 @@ testfont binary
 /src/modules/system/system.c foreign_ident
 /src/modules/system/system.h foreign_ident
 /src/modules/system/testsuite.in foreign_ident
-/src/multiset.c foreign_ident
 /src/multiset.h foreign_ident
 /src/object.c foreign_ident
 /src/object.h foreign_ident
@@ -793,7 +788,6 @@ testfont binary
 /src/pike_memory.h foreign_ident
 /src/pike_netlib.h foreign_ident
 /src/pike_rusage.h foreign_ident
-/src/pike_search.c foreign_ident
 /src/pike_search.h foreign_ident
 /src/pike_search_engine.c foreign_ident
 /src/pike_search_engine2.c foreign_ident
@@ -825,7 +819,6 @@ testfont binary
 /src/post_modules/GSSAPI/Makefile.in foreign_ident
 /src/post_modules/GSSAPI/acconfig.h foreign_ident
 /src/post_modules/GSSAPI/configure.in foreign_ident
-/src/post_modules/GSSAPI/gssapi.cmod foreign_ident
 /src/post_modules/GTK/acconfig.h foreign_ident
 /src/post_modules/GTK/dummy.c foreign_ident
 /src/post_modules/GTK/gdkeventstrings.h foreign_ident
@@ -842,13 +835,10 @@ testfont binary
 /src/post_modules/GTK2/source/support.c foreign_ident
 /src/post_modules/Makefile.in foreign_ident
 /src/post_modules/Nettle/Makefile.in foreign_ident
-/src/post_modules/Nettle/cipher.cmod foreign_ident
 /src/post_modules/Nettle/configure.in foreign_ident
 /src/post_modules/Nettle/crypt_md5.c foreign_ident
-/src/post_modules/Nettle/hash.cmod foreign_ident
 /src/post_modules/Nettle/idea.c foreign_ident
 /src/post_modules/Nettle/idea.h foreign_ident
-/src/post_modules/Nettle/nettle.cmod foreign_ident
 /src/post_modules/Nettle/nt.cmod foreign_ident
 /src/post_modules/Nettle/rijndaeltest.pike foreign_ident
 /src/post_modules/SDL/Makefile.in foreign_ident
@@ -900,7 +890,6 @@ testfont binary
 /src/program_id.h foreign_ident
 /src/queue.c foreign_ident
 /src/queue.h foreign_ident
-/src/rbtree.c foreign_ident
 /src/rbtree.h foreign_ident
 /src/rbtree_low.h foreign_ident
 /src/run_autoconfig foreign_ident

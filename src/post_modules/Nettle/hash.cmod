@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: hash.cmod,v 1.35 2010/06/21 12:35:35 mast Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -30,7 +30,6 @@ DECLARATIONS
 #include <nettle/sha.h>
 #include <nettle/nettle-meta.h>
 
-#include <assert.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include "fdlib.h"

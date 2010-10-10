@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.122 2010/07/19 15:49:25 mast Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -35,8 +35,6 @@
 /* FIXME: Optimize finds and searches on type fields? (But not when
  * objects are involved!) Well.. Although cheap I suspect it pays off
  * so extremely seldom that it isn't worth it. /mast */
-
-#include <assert.h>
 
 #define sp Pike_sp
 
