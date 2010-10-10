@@ -39,41 +39,11 @@ void log_start (int verbosity, int on_tty)
   last_line_inplace = 0;
 }
 
+protected Thread.Mutex log_mutex = Thread.Mutex();
 protected int twiddler_counter = -1;
 
-void log_msg (string msg, mixed... args)
-//! Logs a testsuite message. The message is shown regardless of the
-//! verbosity level. If the previous message was logged without a
-//! trailing newline then a newline is inserted first.
-//!
-//! The message should normally have a trailing newline - no extra
-//! newline is added to it. Use @[log_status] to log a message
-//! intended to be overwritten.
+protected void unlocked_log_msg_cont (string msg)
 {
-  if (sizeof (args)) msg = sprintf (msg, @args);
-
-  if (last_line_length) {
-    write ("\n");
-    last_line_length = 0;
-  }
-
-  if (last_log) {
-    if (!has_suffix (last_log, "\n")) last_log += "\n";
-    write (last_log);
-    last_log = 0;
-  }
-
-  log_msg_cont (msg);
-}
-
-void log_msg_cont (string msg, mixed... args)
-//! Similar to @[log_msg], but doesn't insert a newline first if the
-//! previous message didn't end with one. Does however insert a
-//! newline if the previous message was logged "in place" by
-//! @[log_status].
-{
-  if (sizeof (args)) msg = sprintf (msg, @args);
-
   if (last_line_inplace && last_line_length) {
     write ("\n");
     last_line_length = 0;
@@ -93,6 +63,44 @@ void log_msg_cont (string msg, mixed... args)
     // assumes 1 char == 1 position.
     last_line_length += sizeof (msg_lines[-1]);
   }
+}
+
+void log_msg (string msg, mixed... args)
+//! Logs a testsuite message. The message is shown regardless of the
+//! verbosity level. If the previous message was logged without a
+//! trailing newline then a newline is inserted first.
+//!
+//! The message should normally have a trailing newline - no extra
+//! newline is added to it. Use @[log_status] to log a message
+//! intended to be overwritten.
+{
+  if (sizeof (args)) msg = sprintf (msg, @args);
+
+  Thread.MutexKey lock = log_mutex->lock();
+
+  if (last_line_length) {
+    write ("\n");
+    last_line_length = 0;
+  }
+
+  if (last_log) {
+    if (!has_suffix (last_log, "\n")) last_log += "\n";
+    write (last_log);
+    last_log = 0;
+  }
+
+  unlocked_log_msg_cont (msg);
+}
+
+void log_msg_cont (string msg, mixed... args)
+//! Similar to @[log_msg], but doesn't insert a newline first if the
+//! previous message didn't end with one. Does however insert a
+//! newline if the previous message was logged "in place" by
+//! @[log_status].
+{
+  if (sizeof (args)) msg = sprintf (msg, @args);
+  Thread.MutexKey lock = log_mutex->lock();
+  unlocked_log_msg_cont (msg);
 }
 
 void log_status (string msg, mixed... args)
@@ -121,6 +129,8 @@ void log_status (string msg, mixed... args)
 //! @[log_twiddler]
 {
   if (sizeof (args)) msg = sprintf (msg, @args);
+
+  Thread.MutexKey lock = log_mutex->lock();
 
   switch (verbosity) {
     case 0:
