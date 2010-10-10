@@ -622,7 +622,6 @@ testfont binary
 /src/modules/call_out/test_co.pike foreign_ident
 /src/modules/common_module_makefile.in foreign_ident
 /src/modules/configure.in foreign_ident
-/src/modules/dynamic_module_makefile.in foreign_ident
 /src/modules/files/Makefile.in foreign_ident
 /src/modules/files/configure.in foreign_ident
 /src/modules/files/datagram.c foreign_ident
