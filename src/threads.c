@@ -2211,6 +2211,7 @@ void f_cond_wait(INT32 args)
     seconds = (INT_TYPE) fsecs;
     nanos = (INT_TYPE)((fsecs - seconds)*1000000000);
   } else {
+    /* FIXME: Support bignum nanos. */
     get_all_args("condition->wait", args, "%o%i%i", &key, &seconds, &nanos);
   }
       
