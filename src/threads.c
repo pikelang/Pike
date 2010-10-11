@@ -417,17 +417,6 @@ PMOD_EXPORT INLINE void pike_low_lock_interpreter (DLOC_DECL)
 		       COMMA_DLOC_ARGS_OPT));
 }
 
-PMOD_EXPORT INLINE int pike_low_trylock_interpreter (DLOC_DECL)
-{
-  int res = mt_trylock (&interpreter_lock);
-  if (!res) {
-    SET_LOCKING_THREAD;
-    THREADS_FPRINTF (1, (stderr, "Got iplock" DLOC_PF(" @ ",) "\n"
-			 COMMA_DLOC_ARGS_OPT));
-  }
-  return res;
-}
-
 PMOD_EXPORT INLINE void pike_low_wait_interpreter (COND_T *cond COMMA_DLOC_DECL)
 {
   THREADS_FPRINTF (1, (stderr,
@@ -475,13 +464,6 @@ PMOD_EXPORT INLINE void pike_lock_interpreter (DLOC_DECL)
 {
   pike_low_lock_interpreter (DLOC_ARGS_OPT);
   if (threads_disabled) threads_disabled_wait (DLOC_ARGS_OPT);
-}
-
-PMOD_EXPORT INLINE int pike_trylock_interpreter (DLOC_DECL)
-{
-  int res = pike_low_trylock_interpreter (DLOC_ARGS_OPT);
-  if (!res && threads_disabled) threads_disabled_wait (DLOC_ARGS_OPT);
-  return res;
 }
 
 PMOD_EXPORT INLINE void pike_unlock_interpreter (DLOC_DECL)

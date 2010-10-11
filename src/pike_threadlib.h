@@ -455,14 +455,12 @@ extern int num_pike_threads;
   } while (0)
 
 PMOD_EXPORT void pike_low_lock_interpreter (DLOC_DECL);
-PMOD_EXPORT int pike_low_trylock_interpreter (DLOC_DECL);
 PMOD_EXPORT void pike_low_wait_interpreter (COND_T *cond COMMA_DLOC_DECL);
 PMOD_EXPORT int pike_low_timedwait_interpreter (COND_T *cond,
 						long sec, long nsec
 						COMMA_DLOC_DECL);
 
 PMOD_EXPORT void pike_lock_interpreter (DLOC_DECL);
-PMOD_EXPORT int pike_trylock_interpreter (DLOC_DECL);
 PMOD_EXPORT void pike_unlock_interpreter (DLOC_DECL);
 PMOD_EXPORT void pike_wait_interpreter (COND_T *cond COMMA_DLOC_DECL);
 PMOD_EXPORT int pike_timedwait_interpreter (COND_T *cond,
@@ -470,14 +468,12 @@ PMOD_EXPORT int pike_timedwait_interpreter (COND_T *cond,
 					    COMMA_DLOC_DECL);
 
 #define low_mt_lock_interpreter() pike_low_lock_interpreter (DLOC)
-#define low_mt_trylock_interpreter() pike_low_trylock_interpreter (DLOC)
 #define low_co_wait_interpreter(COND)					\
   pike_low_wait_interpreter (COND COMMA_DLOC)
 #define low_co_wait_interpreter_timeout(COND, SEC, NSEC)		\
   pike_low_timedwait_interpreter (COND, SEC, NSEC COMMA_DLOC)
 
 #define mt_lock_interpreter() pike_lock_interpreter (DLOC)
-#define mt_trylock_interpreter() pike_trylock_interpreter (DLOC)
 #define mt_unlock_interpreter() pike_unlock_interpreter (DLOC)
 #define co_wait_interpreter(COND) pike_wait_interpreter (COND COMMA_DLOC)
 #define co_wait_interpreter_timeout(COND, SEC, NSEC)			\
