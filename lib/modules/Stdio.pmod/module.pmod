@@ -1709,11 +1709,13 @@ class FILE
 
   /* Public functions. */
 
-  void set_charset( string charset )
+  void set_charset( string|void charset )
   //! Sets the input and output charset of this file to the specified
-  //! @[charset].
+  //! @[charset]. If @[charset] is 0 or not specified the environment
+  //! is used to try to detect a suitable charset.
   //!
-  //! The default charset is @tt{"ISO-8859-1"@}.
+  //! The default charset if this function is not called is
+  //! @tt{"ISO-8859-1"@}.
   //!
   //! @fixme
   //!   Consider using one of
@@ -1733,6 +1735,16 @@ class FILE
   //!   or ISO-IR-178 (@tt{"\e%B"@} - switch to UTF-1)
   //!   automatically to encode wide strings.
   {
+    if( !charset ) // autodetect.
+    {
+      if( getenv("CHARSET") )
+        charset = getenv("CHARSET");
+      else if( getenv("LANG") )
+        sscanf(getenv("LANG"), "%*s.%s", charset );
+      if( !charset )
+        return;
+    }
+
     charset = lower_case( charset );
     if( charset != "iso-8859-1" &&
 	charset != "ascii")

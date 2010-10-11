@@ -1,4 +1,3 @@
-// $Id: Readline.pike,v 1.63 2009/02/10 01:53:31 mast Exp $
 #pike __REAL_VERSION__
 
 //!
@@ -423,7 +422,10 @@ class OutputController
   void create(.File|void _outfd,
 	      .Terminfo.Termcap|string|void _term)
   {
-    outfd = _outfd || Stdio.File( "stdout", "w" );
+    outfd = _outfd || Stdio.FILE( "stdout", "w" );
+    if( outfd->set_charset )
+       outfd->set_charset( 0 ); // autodetect
+
     term = objectp(_term)? _term : .Terminfo.getTerm(_term);
     catch { oldattrs = outfd->tcgetattr(); };
     check_columns();
@@ -784,7 +786,13 @@ class InputController
   //!
   void create(object|void _infd, object|string|void _term)
   {
-    infd = _infd || Stdio.File( "stdin", "r" );
+    infd = _infd;
+    if( !_infd )
+    {
+      infd = Stdio.FILE( "stdin", "r" );
+      if( infd->set_charset )
+        infd->set_charset( 0 ); // autodetect
+    }
     term = objectp(_term)? _term : .Terminfo.getTerm(_term);
     disable();
     if(search(term->aliases, "dumb")>=0) {
