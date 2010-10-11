@@ -259,16 +259,14 @@ AC_INIT(new_build_pgtk.pike)
 AC_CONFIG_HEADER(pgtk_config.h)
 
 
-PIKE_FEATURE_WITHOUT(GTK2)
-PIKE_FEATURE_WITHOUT(GTK)
+PIKE_FEATURE_WITHOUT(GTK1)
 PIKE_FEATURE_WITHOUT(Gnome)
-PIKE_FEATURE_WITHOUT(GTK.GladeXML)
-PIKE_FEATURE_WITHOUT(GTK.GlArea)
+PIKE_FEATURE_WITHOUT(GTK1.GladeXML)
+PIKE_FEATURE_WITHOUT(GTK1.GlArea)
 
 AC_MODULE_INIT()
 
 AC_ARG_WITH(GTK, [  --without-GTK           no support for GTK],[],[with_GTK=yes])
-AC_ARG_WITH(GTK, [  --with-GTK2             Use GTK 2.0 if found],[],[with_GTK2=no])
 
 # Force prototypes from X's headerfiles.
 AC_DEFINE(FUNCPROTO)
@@ -283,11 +281,10 @@ AC_CHECK_FUNCS( gethrtime signal sigaction )
 
 if test "x$with_GTK" = "xyes" ; then
   
-  PIKE_FEATURE_NODEP(GTK.GlArea)
-  PIKE_FEATURE_NODEP(GTK)
-  PIKE_FEATURE_NODEP(GTK.GladeXML)
+  PIKE_FEATURE_NODEP(GTK1.GlArea)
+  PIKE_FEATURE_NODEP(GTK1)
+  PIKE_FEATURE_NODEP(GTK1.GladeXML)
   if test "x$with_GTK2" = "xyes" ; then
-    PIKE_FEATURE_NODEP(GTK2)
     MY_AC_PATH_PROG(PKG_CONFIG,${ac_tool_prefix}pkg-config,no)
   else
      PKG_CONFIG=no
@@ -308,7 +305,6 @@ AC_SUBST(have_gtk_120)
    fi
  else
    if ${ac_tool_prefix}pkg-config gtk+-2.0 2>/dev/null ; then
-     PIKE_FEATURE_OK(GTK2)
      GTK_CFLAGS="`${ac_tool_prefix}pkg-config gtk+-2.0 --cflags`"
      GTK_LIBS="`${ac_tool_prefix}pkg-config gtk+-2.0 --libs`"
      echo "**** WARNING: Using GTK 2.0"
@@ -369,7 +365,7 @@ AC_SUBST(have_gtk_120)
  fi
 
 if test "x$WITH_GTK" = x1 ; then
- PIKE_FEATURE_OK(GTK)
+ PIKE_FEATURE_OK(GTK1)
  AC_SUBST(WITH_GTK)
  AC_SUBST(pgtk_has_libglade)
  AM_PATH_LIBGLADE([
@@ -382,7 +378,7 @@ if test "x$WITH_GTK" = x1 ; then
   pgtk_has_libglade=nolibglade])
 
   if test "x$pgtk_has_libglade" = "xlibglade" ; then
-    PIKE_FEATURE_OK(GTK.GladeXML)
+    PIKE_FEATURE_OK(GTK1.GladeXML)
   fi
 
  PGTK_CFLAGS="$GTK_CFLAGS"
@@ -424,7 +420,7 @@ if test "x$WITH_GTK" = x1 ; then
    esac
  fi
 
- AC_MSG_CHECKING([gnome])
+ AC_MSG_CHECKING([gnome1])
  
  if test "$GNOME_CONFIG" = "no"; then
    pgtk_has_gnome=nognome
@@ -731,7 +727,7 @@ if test "x$WITH_GTK" = x1 ; then
   AC_CHECK_LIB(gtkgl, main,,,`$ac_cv_path_GTK_CONFIG --libs` $GL_LIBS)
   if test x$ac_cv_lib_gtkgl_main = xyes ; then
     pgtk_has_glarea=glarea
-    PIKE_FEATURE_OK(GTK.GlArea)
+    PIKE_FEATURE_OK(GTK1.GlArea)
     LIBS="$GL_LIBS $LIBS"
   else
     unset ac_cv_lib_gtkgl_main
