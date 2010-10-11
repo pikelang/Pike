@@ -6,7 +6,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dump.pike,v 1.12 2010/07/28 23:31:42 mast Exp $
 */
 
 constant description = "Dumps Pike files into object files.";
@@ -51,11 +50,11 @@ class GTKProgress {
 
   void create() {
     GTK.setup_gtk();
-    win = GTK.Window(GTK.WINDOW_TOPLEVEL)
-      ->set_title(version() + " Module Dumping")
-      ->add(frame = GTK.Frame("Dumping Pike modules...")->
-	    set_border_width(16)->
-	    add(bar = GTK.ProgressBar()->set_usize(150,20)));
+    win = GTK.Window(GTK.WINDOW_TOPLEVEL);
+    win->set_title(version() + " Module Dumping")
+       ->add(frame = GTK.Frame("Dumping Pike modules...")
+             ->set_border_width(16)
+             ->add(bar = GTK.ProgressBar()));
     win->show_all();
   }
 #endif
