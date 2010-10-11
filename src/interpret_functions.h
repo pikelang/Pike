@@ -1265,8 +1265,6 @@ OPCODE0_BRANCH(F_LAND, "&&", I_UPDATE_SP, {
     pop_stack();
   }else{
     DO_BRANCH();
-    pop_stack();
-    push_int(0);
   }
 });
 
