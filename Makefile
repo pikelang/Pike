@@ -19,7 +19,7 @@
 
 # Tip: Remove "-r" from the line below if you don't want to rebuild
 # from scratch every time you upgrade the kernel.
-OS=$${PIKE_BUILD_OS:-`uname -s -r -m|sed \"s/ /-/g\"|tr \"[A-Z]\" \"[a-z]\"|tr \"/()\" \"___\"`}
+OS=$${PIKE_BUILD_OS:-`uname -s -r -m|sed "s/ /-/g"|tr "[A-Z]" "[a-z]"|tr "/()" "___"`}
 
 VPATH=.
 BUILDDIR=build/$(OS)
