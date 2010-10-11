@@ -365,6 +365,7 @@ PMOD_EXPORT unsigned long thread_yields = 0;
 #endif
 static int th_running = 0;
 static MUTEX_T interpreter_lock;
+static MUTEX_T interpreter_lock_wanted;
 MUTEX_T thread_table_lock;
 static MUTEX_T interleave_lock;
 static struct program *mutex_key = 0;
@@ -411,7 +412,14 @@ static INLINE void check_interpreter_lock (DLOC_DECL) {}
 
 PMOD_EXPORT INLINE void pike_low_lock_interpreter (DLOC_DECL)
 {
+  /* The double locking here is to ensure that when a thread releases
+   * the interpreter lock, a different thread gets it first. Thereby
+   * we ensure a thread switch in check_threads, if there are other
+   * threads waiting. */
+  mt_lock (&interpreter_lock_wanted);
   mt_lock (&interpreter_lock);
+  mt_unlock (&interpreter_lock_wanted);
+
   SET_LOCKING_THREAD;
   THREADS_FPRINTF (1, (stderr, "Got iplock" DLOC_PF(" @ ",) "\n"
 		       COMMA_DLOC_ARGS_OPT));
@@ -422,7 +430,12 @@ PMOD_EXPORT INLINE void pike_low_wait_interpreter (COND_T *cond COMMA_DLOC_DECL)
   THREADS_FPRINTF (1, (stderr,
 		       "Waiting on cond %p without iplock" DLOC_PF(" @ ",) "\n",
 		       cond COMMA_DLOC_ARGS_OPT));
+
+  /* FIXME: Should use interpreter_lock_wanted here as well. The
+   * problem is that few (if any) thread libs lets us atomically
+   * unlock a mutex and wait, and then lock a different mutex. */
   co_wait (cond, &interpreter_lock);
+
   SET_LOCKING_THREAD;
   THREADS_FPRINTF (1, (stderr,
 		       "Got signal on cond %p with iplock" DLOC_PF(" @ ",) "\n",
@@ -437,7 +450,12 @@ PMOD_EXPORT INLINE int pike_low_timedwait_interpreter (COND_T *cond,
   THREADS_FPRINTF (1, (stderr,
 		       "Waiting on cond %p without iplock" DLOC_PF(" @ ",) "\n",
 		       cond COMMA_DLOC_ARGS_OPT));
+
+  /* FIXME: Should use interpreter_lock_wanted here as well. The
+   * problem is that few (if any) thread libs lets us atomically
+   * unlock a mutex and wait, and then lock a different mutex. */
   res = co_wait_timeout (cond, &interpreter_lock, sec, nsec);
+
   SET_LOCKING_THREAD;
   THREADS_FPRINTF (1, (stderr,
 		       "Got signal on cond %p with iplock" DLOC_PF(" @ ",) "\n",
@@ -2866,6 +2884,7 @@ void low_th_init(void)
   really_low_th_init();
 
   mt_init( & interpreter_lock);
+  mt_init( & interpreter_lock_wanted);
   low_mt_lock_interpreter();
   mt_init( & thread_table_lock);
   mt_init( & interleave_lock);
