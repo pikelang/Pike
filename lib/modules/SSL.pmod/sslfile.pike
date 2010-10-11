@@ -1,8 +1,5 @@
 #pike __REAL_VERSION__
 
-/* $Id$
- */
-
 #if constant(SSL.Cipher.CipherAlgorithm)
 
 //! Interface similar to @[Stdio.File].
@@ -592,9 +589,9 @@ int close (void|string how, void|int clean_close, void|int dont_throw)
 	local_errno = err;
 	RETURN (0);
       }
-      else
+      else if( err != System.EPIPE )
 	// Errors are normally thrown from close().
-	error ("Failed to close SSL connection: %s\n", strerror (err));
+        error ("Failed to close SSL connection: %s\n", strerror (err));
     }
 
     if (stream && (stream->query_read_callback() || stream->query_write_callback())) {
