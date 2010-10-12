@@ -302,7 +302,8 @@ protected void async_timeout()
    werror("** TIMEOUT\n");
 #endif
    if (con) {
-      con->close();
+      if (con->is_open())
+	con->close();
       con=0;
    }
    low_async_failed(110);	// ETIMEDOUT/Linux-i386
@@ -354,6 +355,10 @@ void async_got_host(string server,int port)
 			    async_connected();
 			} else {
 			  // Connect failed.
+			  if (!con->is_open())
+			    // Other code assumes an existing con is
+			    // an open one.
+			    con = 0;
 			  async_failed();
 			}
 		      });
@@ -590,8 +595,11 @@ this_program thread_request(string server, int port, string query,
    if (server1) server=server1; // cheaty, if host doesn't exist
 
    con=Stdio.File();
-   if (!con->open_socket(-1, 0, server))
-     error("HTTP.Query(): can't open socket; "+strerror(con->errno())+"\n");
+   if (!con->open_socket(-1, 0, server)) {
+     int errno = con->errno();
+     con = 0;
+     error("HTTP.Query(): can't open socket; "+strerror(errno)+"\n");
+   }
 
    // prepare the request
 
@@ -646,8 +654,11 @@ this_program sync_request(string server, int port, string query,
   else
   {
     con = Stdio.File();
-    if(!con->open_socket(-1, 0, server))
-      error("HTTP.Query(): can't open socket; "+strerror(con->errno)+"\n");
+    if(!con->open_socket(-1, 0, server)) {
+      int errno = con->errno();
+      con = 0;
+      error("HTTP.Query(): can't open socket; "+strerror(errno)+"\n");
+    }
   }
 
   // prepare the request
