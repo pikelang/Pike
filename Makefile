@@ -394,7 +394,8 @@ spotless:
 delete_builddir:
 	-rm -rf "$(BUILDDIR)"
 
-distclean: delete_builddir
+distclean:
+	@$(DO_MAKE) delete_builddir
 	$(DO_MAKE) "OS=source" delete_builddir
 	-rm -f bin/pike
 
@@ -410,12 +411,15 @@ cvsclean: srcclean distclean docspotless
 	-rm -f export_result.txt
 	-rm -f Pike*.tar.gz
 
-docclean:
+delete_docs:
 	-rm -rf "$(BUILDDIR)/doc_build"
 	-rm -f "$(BUILDDIR)/autodoc.xml"
 	-rm -f "$(BUILDDIR)/modref.xml"
 	-rm -f "$(BUILDDIR)/onepage.xml"
 	-rm -f "$(BUILDDIR)/traditional.xml"
+
+docclean:
+	@$(DO_MAKE) delete_docs
 
 docspotless: docclean
 	if test -f "refdoc/Makefile"; then \
