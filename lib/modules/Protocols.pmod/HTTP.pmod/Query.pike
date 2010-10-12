@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.107 2010/08/31 06:47:58 nilsson Exp $
+// $Id$
 
 //! Open and execute an HTTP query.
 //!
@@ -283,7 +283,7 @@ protected void async_connected()
 protected void low_async_failed(int errno)
 {
 #ifdef HTTP_QUERY_DEBUG
-   werror("** calling failed cb %O", request_fail);
+   werror("** calling failed cb %O\n", request_fail);
 #endif
    this_program::errno = errno;
    ok=0;
