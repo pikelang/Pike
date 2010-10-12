@@ -280,8 +280,9 @@ gdb_hilfe:
 	@$(DO_MAKE) "METATARGET=gdb_hilfe" _make_in_builddir
 
 source:
-	@$(DO_MAKE) "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \
-	  "OS=source" "LIMITED_TARGETS=yes" "METATARGET=source" _make_in_builddir
+	@PIKE_BUILD_OS=source $(DO_MAKE) \
+	  "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \
+	  "LIMITED_TARGETS=yes" "METATARGET=source" _make_in_builddir
 
 export:
 	@EXPORT_PREREQ=yepp ; echo ; \
@@ -307,16 +308,19 @@ export:
 	  echo ; \
 	  exit 1; \
 	fi
-	@$(DO_MAKE) "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \
-	  "OS=source" "LIMITED_TARGETS=yes" "METATARGET=export" _make_in_builddir
+	@PIKE_BUILD_OS=source $(DO_MAKE) \
+	  "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \
+	  "LIMITED_TARGETS=yes" "METATARGET=export" _make_in_builddir
 
 export_forced:
-	@$(DO_MAKE) "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \
-	  "OS=source" "LIMITED_TARGETS=yes" "METATARGET=export" _make_in_builddir
+	@PIKE_BUILD_OS=source $(DO_MAKE) \
+	  "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \
+	  "LIMITED_TARGETS=yes" "METATARGET=export" _make_in_builddir
 
 snapshot_export:
-	@$(DO_MAKE) "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \
-	  "OS=source" "LIMITED_TARGETS=yes" "METATARGET=snapshot_export" \
+	@PIKE_BUILD_OS=source $(DO_MAKE) \
+	  "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \
+	  "LIMITED_TARGETS=yes" "METATARGET=snapshot_export" \
 	  "EXPORT_NAME=Pike-v%maj.%min-snapshot-%Y%M%D" _make_in_builddir
 
 snapshot: snapshot_export
@@ -331,8 +335,9 @@ xenofarm_export:
 	    cp -f "$$f" bundles/; \
 	  fi; \
 	done >>export_result.txt
-	@$(DO_MAKE) "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \
-	  "OS=source" "LIMITED_TARGETS=yes" "METATARGET=snapshot_export" \
+	@PIKE_BUILD_OS=source $(DO_MAKE) \
+	  "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \
+	  "LIMITED_TARGETS=yes" "METATARGET=snapshot_export" \
 	  "EXPORT_NAME=Pike%maj.%min-%Y%M%D-%h%m%s" \
 	  "EXPORTARGS=--snapshot $(EXPORTARGS)" \
 	  _make_in_builddir >>export_result.txt 2>&1
@@ -396,7 +401,7 @@ delete_builddir:
 
 distclean:
 	@$(DO_MAKE) delete_builddir
-	$(DO_MAKE) "OS=source" delete_builddir
+	@PIKE_BUILD_OS=source $(DO_MAKE) delete_builddir
 	-rm -f bin/pike
 
 srcclean:
