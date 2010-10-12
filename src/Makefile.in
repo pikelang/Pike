@@ -731,13 +731,16 @@ spotless: clean_here clean_pike
 
 distclean: spotless
 
-cvsclean: distclean
+# FIXME: Use .gitignore instead.
+gitclean: distclean
 	( for d in `cd $(SRCDIR) && find . -type d -print`; do \
 	    if test -f "$(SRCDIR)/$$d/.cvsignore" ; then \
 	      (cd "$$d" && rm -f `cat "$(SRCDIR)/$$d/.cvsignore"`); \
 	      (cd "$(SRCDIR)/$$d" && rm -f `cat "$(SRCDIR)/$$d/.cvsignore"`); \
 	    else :; fi; \
 	  done)
+
+cvsclean: gitclean
 
 # create tags
 tags:

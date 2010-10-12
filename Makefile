@@ -411,10 +411,12 @@ srcclean:
 	  else :; fi; \
 	done
 
-cvsclean: srcclean distclean docspotless
+gitclean: srcclean distclean docspotless
 	-rm -rf build
 	-rm -f export_result.txt
 	-rm -f Pike*.tar.gz
+
+cvsclean: gitclean
 
 delete_docs:
 	-rm -rf "$(BUILDDIR)/doc_build"
