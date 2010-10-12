@@ -6,7 +6,7 @@
 
 VPATH=.
 MAKE=make
-OS=$${PIKE_BUILD_OS:-`uname -s -r -m|sed "s/ /-/g"|tr "[A-Z]" "[a-z]"|tr "/()" "___"`}
+OS=`if [ -n \"$$PIKE_BUILD_OS\" ]; then echo \"$$PIKE_BUILD_OS\"; else uname -s -r -m|sed \"s/ /-/g\"|tr \"[A-Z]\" \"[a-z]\"|tr \"/()\" \"___\"; fi`
 BUILDDIR=build/$(OS)
 METATARGET=
 
