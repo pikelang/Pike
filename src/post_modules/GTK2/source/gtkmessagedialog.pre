@@ -38,7 +38,7 @@ void create(mapping(string:mixed)|int flags, ?int type, ?int buttons,
     const gchar *msg2;
     GtkWidget *gmd;
 
-    get_all_args("create",args,"%i%i%i%t.%o1",&flags,&type,&buttons,
+    get_all_args("create",args,"%i%i%i%t.%o",&flags,&type,&buttons,
 		 &message,&o1);
     ref_push_string(message);
     f_string_to_utf8(1);
