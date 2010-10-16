@@ -910,12 +910,13 @@ INT32 *get_order(struct array *v, cmpfun fun)
   return current_order;
 }
 
-/* Returns 2 if no relation is established through lfun calls, or 3 if
- * no order defining lfuns (i.e. `< or `>) were found. */
+/* Returns CMPFUN_UNORDERED if no relation is established through lfun
+ * calls, or -CMPFUN_UNORDERED if no order defining lfuns (i.e. `< or
+ * `>) were found. */
 static int lfun_cmp (const struct svalue *a, const struct svalue *b)
 {
   struct program *p;
-  int default_res = 3, fun;
+  int default_res = -CMPFUN_UNORDERED, fun;
 
   if (a->type == T_OBJECT && (p = a->u.object->prog)) {
     if ((fun = FIND_LFUN(p->inherits[a->subtype].prog, LFUN_LT)) != -1) {
@@ -928,7 +929,7 @@ static int lfun_cmp (const struct svalue *a, const struct svalue *b)
 	return -1;
       }
       pop_stack();
-      default_res = 2;
+      default_res = CMPFUN_UNORDERED;
     }
 
     if ((fun = FIND_LFUN(p->inherits[a->subtype].prog, LFUN_GT)) != -1) {
@@ -941,7 +942,7 @@ static int lfun_cmp (const struct svalue *a, const struct svalue *b)
 	return 1;
       }
       pop_stack();
-      default_res = 2;
+      default_res = CMPFUN_UNORDERED;
     }
 
     if ((fun = FIND_LFUN(p->inherits[a->subtype].prog, LFUN_EQ)) != -1) {
@@ -967,7 +968,7 @@ static int lfun_cmp (const struct svalue *a, const struct svalue *b)
 	return 1;
       }
       pop_stack();
-      default_res = 2;
+      default_res = CMPFUN_UNORDERED;
     }
 
     if ((fun = FIND_LFUN(p->inherits[b->subtype].prog, LFUN_GT)) != -1) {
@@ -980,7 +981,7 @@ static int lfun_cmp (const struct svalue *a, const struct svalue *b)
 	return -1;
       }
       pop_stack();
-      default_res = 2;
+      default_res = CMPFUN_UNORDERED;
     }
 
     if ((fun = FIND_LFUN(p->inherits[b->subtype].prog, LFUN_EQ)) != -1) {
@@ -1046,7 +1047,7 @@ static int obj_or_func_cmp (const struct svalue *a, const struct svalue *b)
 
   res = lfun_cmp (a, b);
 
-  if (res == 3) {
+  if (res == -CMPFUN_UNORDERED) {
     /* If the objects had no inequality comparison lfuns to call, use
      * their pointers to get a well defined internal sort order. Let's
      * also group objects cloned from the same program. */
@@ -1056,7 +1057,7 @@ static int obj_or_func_cmp (const struct svalue *a, const struct svalue *b)
       return a->u.object->prog < b->u.object->prog ? -1 : 1;
   }
 
-  return res == 2 ? -1 : res;
+  return res;
 }
 
 int set_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
@@ -1065,7 +1066,7 @@ int set_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
   if (typediff) {
     if (a->type == T_OBJECT || b->type == T_OBJECT) {
       int res = lfun_cmp (a, b);
-      if (res < 2) return res;
+      if (res != -CMPFUN_UNORDERED) return res;
     }
     return typediff;
   }
@@ -1133,7 +1134,7 @@ int alpha_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
   if (typediff) {
     if (a->type == T_OBJECT || b->type == T_OBJECT) {
       int res = lfun_cmp (a, b);
-      if (res < 2) return res;
+      if (res != -CMPFUN_UNORDERED) return res;
     }
     return typediff;
   }
@@ -1242,7 +1243,9 @@ PMOD_EXPORT void sort_array_destructively(struct array *v)
 
 #define SORT_BY_INDEX
 #define EXTRA_LOCALS int cmpfun_res;
-#define CMP(X,Y) ((cmpfun_res = alpha_svalue_cmpfun(svals + X, svals + Y)) ? \
+#define CMP(X,Y) ((cmpfun_res =						\
+		     (alpha_svalue_cmpfun(svals + X, svals + Y) &	\
+		      ~CMPFUN_UNORDERED)) ?				\
 		  cmpfun_res : pos[X] - pos[Y])
 #define SWAP(X,Y) {							\
   {struct svalue tmp = svals[X]; svals[X] = svals[Y]; svals[Y] = tmp;}	\

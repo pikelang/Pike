@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.h,v 1.84 2009/11/28 13:13:30 mast Exp $
+|| $Id$
 */
 
 #ifndef ARRAY_H
@@ -93,6 +93,12 @@ extern struct array *gc_internal_array;
 
 #define allocate_array(X) low_allocate_array((X),0)
 #define allocate_array_no_init(X,Y) low_allocate_array((X),(Y))
+
+/* Special value used for cmpfuns to signify that two values aren't
+ * equal and have no order relation, i.e. one is neither greater nor
+ * lesser than the other. It consists of the largest bit (under the
+ * sign bit) set. */
+#define CMPFUN_UNORDERED (INT_MAX - (INT_MAX >> 1))
 
 typedef int (*cmpfun)(const struct svalue *, const struct svalue *);
 typedef int (*short_cmpfun)(union anything *, union anything *);
