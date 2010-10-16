@@ -1056,7 +1056,7 @@ static int obj_or_func_cmp (const struct svalue *a, const struct svalue *b)
       return a->u.object->prog < b->u.object->prog ? -1 : 1;
   }
 
-  return res == 2 ? 0 : res;
+  return res == 2 ? -1 : res;
 }
 
 int set_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
