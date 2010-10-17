@@ -315,7 +315,6 @@ testfont binary
 /refdoc/structure/module_modref.xml foreign_ident
 /refdoc/structure/onepage.xml foreign_ident
 /refdoc/structure/traditional.xml foreign_ident
-/src/acconfig.h foreign_ident
 /src/aclocal.m4 foreign_ident
 /src/alloca.c foreign_ident
 /src/apply_low.h foreign_ident
@@ -340,7 +339,6 @@ testfont binary
 /src/code/sparc.h foreign_ident
 /src/combine_path.h foreign_ident
 /src/compilation.h foreign_ident
-/src/configure.in foreign_ident
 /src/constants.c foreign_ident
 /src/constants.h foreign_ident
 /src/cpp.c foreign_ident
@@ -712,8 +710,6 @@ testfont binary
 /src/modules/sybase/sybase.c foreign_ident
 /src/modules/sybase/sybase.h foreign_ident
 /src/modules/system/Makefile.in foreign_ident
-/src/modules/system/acconfig.h foreign_ident
-/src/modules/system/configure.in foreign_ident
 /src/modules/system/errnos.list foreign_ident
 /src/modules/system/memory.c foreign_ident
 /src/modules/system/nt.c foreign_ident

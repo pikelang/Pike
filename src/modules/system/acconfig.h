@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.15 2003/05/20 15:12:39 mast Exp $
+|| $Id$
 */
 
 /*
@@ -61,9 +61,6 @@
 
 /* Define if ITIMER_REAL, ITIMER_VIRTUAL and ITIMER_PROF is in tInt02 */
 #undef ITIMER_TYPE_IS_02
-
-/* Define if you have the RDTSC instruction */
-#undef HAVE_RDTSC
 
 /* Define if syslog() might have races which makes it unsafe to run unlocked. */
 #undef MIGHT_HAVE_SYSLOG_RACES

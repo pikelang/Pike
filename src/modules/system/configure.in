@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.83 2010/02/02 17:45:20 grubba Exp $
+# $Id$
 AC_INIT(system.c)
 AC_CONFIG_HEADER(system_machine.h)
 
@@ -433,37 +433,6 @@ AC_MSG_RESULT($pike_cv_itimer_type_is_02)
 if test "$pike_cv_itimer_type_is_02" = yes; then
   AC_DEFINE(ITIMER_TYPE_IS_02)
 fi
-
-
-AC_MSG_CHECKING([for the RDTSC instruction (x86)])
-AC_CACHE_VAL(pike_cv_have_rdtsc, [
-AC_TRY_RUN([
-
-#define RTSC(l,h)							\
-   __asm__ __volatile__ (  "rdtsc"					\
-			   :"=a" (l),					\
-			   "=d" (h))
-
-static long long rtsc()
-{
-   long long now;
-   unsigned long nl,nh;
-   RTSC(nl,nh);
-   return (((long long)nh)<<32)|nl;
-}
-
-int main()
-{
-   if (rtsc()<rtsc()) 
-      return 0;
-   return 1;
-}
-],[pike_cv_have_rdtsc=yes],[pike_cv_have_rdtsc=no],[pike_cv_have_rdtsc="possibly not"])])
-AC_MSG_RESULT($pike_cv_have_rdtsc)
-if test "$pike_cv_have_rdtsc" = yes; then
-  AC_DEFINE(HAVE_RDTSC)
-fi
-
 
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )

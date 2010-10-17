@@ -1265,7 +1265,71 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
    * enough in most cases. So let's avoid as much overhead as
    * possible. */
 
-#ifdef HAVE_GETHRTIME
+#if defined(HAVE_RDTSC) && defined(USE_CLOCK_FOR_SLICES)
+  /* We can get here as often as 30+ thousand times per second;
+     let's try to avoid doing as many clock(3)/times(2) syscalls
+     by using the TSC. We'll skip any further checks until the
+     number of cycles passed comes close to what it was the last
+     time when we decided to yield. */
+
+#define GETCYCLES(v)  do {                                  \
+   unsigned __l, __h;                                       \
+   __asm__ __volatile__ ("rdtsc" : "=a" (__l), "=d" (__h)); \
+   (v)= __l | (((INT64)__h)<<32);                           \
+} while (0)
+
+#define CPUID2(c, a, d) do {                                \
+   unsigned __c, __b;                                       \
+   __asm__ __volatile__ ("cpuid" : "=a" ((a)), "=d" ((d)),  \
+                                   "=b" (__b), "=c" (__c)   \
+                                  : "0" ((c)));             \
+} while (0)
+
+  {
+     static INT64 target, mincycles=1000*1000;
+     static int use_tsc;
+     INT64 now;
+     clock_t elapsed;
+
+     if (!target) {
+       int a, d;
+
+       CPUID2(1, a, d);
+       use_tsc = d&0x10;
+       target = 1;
+
+       if (use_tsc)
+         GETCYCLES(target);
+     }
+
+     if (use_tsc) {
+       GETCYCLES(now);
+
+       if ((target-now)>0) {
+         if ((target-now)>mincycles)
+           use_tsc = 0; /* The counter jumped back too far; TSC unusable */
+         else
+           return;
+       }
+     }
+
+     elapsed = clock() - thread_start_clock;
+
+     if (elapsed < (clock_t) (CLOCKS_PER_SEC/30)) {
+       mincycles |= 0xffff;
+       if ((now-target)<=(mincycles<<4))
+          mincycles += (mincycles>>1);
+       target = now + (mincycles>>1);
+       return;
+     }
+     if (elapsed > (clock_t) (CLOCKS_PER_SEC/18)) {
+       mincycles -= mincycles>>2;
+       if (elapsed > (clock_t) (CLOCKS_PER_SEC/10))
+         mincycles >>= 2;
+     }
+     target = now + mincycles;
+  }
+#elif defined(HAVE_GETHRTIME)
   {
     static hrtime_t last_ = 0;
     hrtime_t now = gethrtime();
