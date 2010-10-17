@@ -342,10 +342,11 @@ static void cleanup_thread_state (struct thread_state *th);
 
 #ifndef CONFIGURE_TEST
 
-#if !defined(HAVE_GETHRTIME) && \
-    !(defined(HAVE_MACH_TASK_INFO_H) && defined(TASK_THREAD_TIMES_INFO)) && \
-    defined(HAVE_CLOCK) && \
-    !defined(HAVE_NO_YIELD)
+#if defined(HAVE_CLOCK) &&						\
+    !defined(HAVE_NO_YIELD) &&						\
+    (defined (HAVE_RDTSC) ||						\
+     (!defined(HAVE_GETHRTIME) &&					\
+      !(defined(HAVE_MACH_TASK_INFO_H) && defined(TASK_THREAD_TIMES_INFO))))
 static clock_t thread_start_clock = 0;
 static THREAD_T last_clocked_thread = 0;
 #define USE_CLOCK_FOR_SLICES
@@ -1264,11 +1265,11 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
    * that a thread switch will take place only occasionally in the
    * window below. */
 
-  /* Could consider using get_cpu_time here to get more accurate
-   * measurements on more platforms. But otoh we don't really need
-   * very high accuracy - the fallback to clock(3) should be good
-   * enough in most cases. So let's avoid as much overhead as
-   * possible. */
+#if defined (USE_CLOCK_FOR_SLICES) && defined (PIKE_DEBUG)
+  if (last_clocked_thread != th_self())
+    Pike_fatal ("Stale thread %08lx in last_clocked_thread (self is %08lx)\n",
+		(unsigned long) last_clocked_thread, (unsigned long) th_self());
+#endif
 
 #if defined(HAVE_RDTSC) && defined(USE_CLOCK_FOR_SLICES)
   /* We can get here as often as 30+ thousand times per second;
@@ -1283,24 +1284,22 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
    (v)= __l | (((INT64)__h)<<32);                           \
 } while (0)
 
-  {
+  if (use_tsc_for_slices) {
      static INT64 target, mincycles=1000*1000;
      INT64 now;
      clock_t elapsed;
 
-     if (use_tsc_for_slices) {
-       if (!target) {
-	 GETCYCLES(target);
-       }
+     if (!target) {
+       GETCYCLES(target);
+     }
 
-       GETCYCLES(now);
+     GETCYCLES(now);
 
-       if ((target-now)>0) {
-         if ((target-now)>mincycles)
-	   use_tsc_for_slices = 0; /* The counter jumped back too far; TSC unusable */
-         else
-           return;
-       }
+     if ((target-now)>0) {
+       if ((target-now)>mincycles)
+	 use_tsc_for_slices = 0; /* The counter jumped back too far; TSC unusable */
+       else
+	 return;
      }
 
      elapsed = clock() - thread_start_clock;
@@ -1318,8 +1317,11 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
          mincycles >>= 2;
      }
      target = now + mincycles;
+     goto do_yield;
   }
-#elif defined(HAVE_GETHRTIME)
+#endif	/* HAVE_RDTSC && USE_CLOCK_FOR_SLICES */
+
+#ifdef HAVE_GETHRTIME
   {
     static hrtime_t last_ = 0;
     hrtime_t now = gethrtime();
@@ -1385,11 +1387,6 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
     }
   }
 #elif defined (USE_CLOCK_FOR_SLICES)
-#ifdef PIKE_DEBUG
-  if (last_clocked_thread != th_self())
-    Pike_fatal ("Stale thread %08lx in last_clocked_thread (self is %08lx)\n",
-		(unsigned long) last_clocked_thread, (unsigned long) th_self());
-#endif
   if (clock() - thread_start_clock < (clock_t) (CLOCKS_PER_SEC / 20))
     return;
 #else
@@ -1398,6 +1395,8 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
     return;
 #endif
 #endif
+
+  do_yield:;
 
 #ifdef PROFILE_CHECK_THREADS
   {
