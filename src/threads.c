@@ -37,6 +37,7 @@
 #include "signal_handler.h"
 #include "backend.h"
 #include "pike_rusage.h"
+#include "pike_cpulib.h"
 
 #include <errno.h>
 
@@ -1247,6 +1248,10 @@ PMOD_EXPORT int count_pike_threads(void)
 
 /* #define PROFILE_CHECK_THREADS */
 
+#if defined(HAVE_RDTSC) && defined(USE_CLOCK_FOR_SLICES)
+static int use_tsc_for_slices;
+#endif
+
 static void check_threads(struct callback *cb, void *arg, void * arg2)
 {
 #ifdef PROFILE_CHECK_THREADS
@@ -1278,36 +1283,21 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
    (v)= __l | (((INT64)__h)<<32);                           \
 } while (0)
 
-#define CPUID2(c, a, d) do {                                \
-   unsigned __c, __b;                                       \
-   __asm__ __volatile__ ("cpuid" : "=a" ((a)), "=d" ((d)),  \
-                                   "=b" (__b), "=c" (__c)   \
-                                  : "0" ((c)));             \
-} while (0)
-
   {
      static INT64 target, mincycles=1000*1000;
-     static int use_tsc;
      INT64 now;
      clock_t elapsed;
 
-     if (!target) {
-       int a, d;
+     if (use_tsc_for_slices) {
+       if (!target) {
+	 GETCYCLES(target);
+       }
 
-       CPUID2(1, a, d);
-       use_tsc = d&0x10;
-       target = 1;
-
-       if (use_tsc)
-         GETCYCLES(target);
-     }
-
-     if (use_tsc) {
        GETCYCLES(now);
 
        if ((target-now)>0) {
          if ((target-now)>mincycles)
-           use_tsc = 0; /* The counter jumped back too far; TSC unusable */
+	   use_tsc_for_slices = 0; /* The counter jumped back too far; TSC unusable */
          else
            return;
        }
@@ -2956,6 +2946,21 @@ void low_th_init(void)
   co_init( & live_threads_change);
   co_init( & threads_disabled_change);
   thread_table_init();
+
+#if defined(HAVE_RDTSC) && defined(USE_CLOCK_FOR_SLICES)
+  {
+    INT32 cpuid[4];
+    x86_get_cpuid (1, cpuid);
+    /* fprintf (stderr, "cpuid 1: %x\n", cpuid[2]); */
+    use_tsc_for_slices = cpuid[2] & 0x10; /* TSC exists */
+    if (use_tsc_for_slices) {
+      x86_get_cpuid (0x80000007, cpuid);
+      /* fprintf (stderr, "cpuid 0x80000007: %x\n", cpuid[2]); */
+      use_tsc_for_slices = cpuid[2] & 0x100; /* TSC is invariant */
+    }
+    /* fprintf (stderr, "use tsc: %d\n", use_tsc_for_slices); */
+  }
+#endif
 
   th_running = 1;
 }
