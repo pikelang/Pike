@@ -2,29 +2,27 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ia32.h,v 1.32 2007/10/15 21:04:45 mast Exp $
+|| $Id$
 */
 
 /* #define ALIGN_PIKE_JUMPS 8 */
 
+#include "pike_cpulib.h"
+
 #define OPCODE_INLINE_BRANCH
 #define OPCODE_RETURN_JUMPADDR
 
-#if defined(_M_IX86) && !defined(__GNUC__)
-#define USE_CL_IA32_ASM_STYLE
-#elif defined(__GNUC__)
-#define USE_GCC_IA32_ASM_STYLE
-#else
+#if !defined (CL_IA32_ASM_STYLE) && !defined (GCC_IA32_ASM_STYLE)
 #error Dont know how to inline assembler with this compiler
 #endif
 
-#ifdef USE_CL_IA32_ASM_STYLE
+#ifdef CL_IA32_ASM_STYLE
 
 #define DEF_PROG_COUNTER void *ia32_pc; \
                          _asm { _asm mov ia32_pc,ebp }
 #define PROG_COUNTER  (((unsigned char **)ia32_pc)[1])
 
-#else  /* USE_GCC_IA32_ASM_STYLE */
+#else  /* GCC_IA32_ASM_STYLE */
 
 #ifdef OPCODE_RETURN_JUMPADDR
 /* Don't need an lvalue in this case. */
@@ -34,7 +32,7 @@
 #define PROG_COUNTER (((unsigned char **)__builtin_frame_address(0))[1])
 #endif
 
-#endif	/* USE_GCC_IA32_ASM_STYLE */
+#endif	/* GCC_IA32_ASM_STYLE */
 
 #ifdef OPCODE_RETURN_JUMPADDR
 /* Adjust for the machine code inserted after the call for I_JUMP opcodes. */
@@ -136,9 +134,7 @@ void ia32_flush_instruction_cache(void *addr, size_t len);
 void ia32_init_interpreter_state(void);
 #define INIT_INTERPRETER_STATE	ia32_init_interpreter_state
 
-#ifdef USE_CL_IA32_ASM_STYLE
-
-#define USE_CL_IA32_ASM_STYLE
+#ifdef CL_IA32_ASM_STYLE
 
 #define CALL_MACHINE_CODE(pc)                                   \
   __asm {                                                       \
@@ -150,9 +146,7 @@ void ia32_init_interpreter_state(void);
 #define EXIT_MACHINE_CODE()                                     \
   __asm { __asm add esp,12 }
 
-#else  /* USE_GCC_IA32_ASM_STYLE */
-
-#define USE_GCC_IA32_ASM_STYLE
+#else  /* GCC_IA32_ASM_STYLE */
 
 #define CALL_MACHINE_CODE(pc)						\
   /* This code does not clobber %eax, %ebx, %ecx & %edx, but		\
@@ -167,4 +161,4 @@ void ia32_init_interpreter_state(void);
 #define EXIT_MACHINE_CODE()						\
   __asm__ __volatile__( "add $16,%%esp\n" : : )
 
-#endif /* USE_GCC_IA32_ASM_STYLE */
+#endif /* GCC_IA32_ASM_STYLE */

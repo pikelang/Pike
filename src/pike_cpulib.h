@@ -2,11 +2,41 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_cpulib.h,v 1.12 2004/06/02 00:08:12 nilsson Exp $
+|| $Id$
 */
 
 #ifndef PIKE_CPULIB_H
 #define PIKE_CPULIB_H
+
+#if defined (__GNUC__)
+#  if defined (__i386__)
+#    define HAVE_X86_ASM
+#    define HAVE_IA32_ASM
+#    define GCC_X86_ASM_STYLE
+#    define GCC_IA32_ASM_STYLE
+#  elif defined (__amd64__) || defined (__x86_64__)
+#    define HAVE_X86_ASM
+#    define HAVE_X86_64_ASM
+#    define GCC_X86_ASM_STYLE
+#    define GCC_X86_64_ASM_STYLE
+#  endif
+#elif defined (_MSC_VER)
+#  if defined (_M_IX86)
+#    define HAVE_X86_ASM
+#    define HAVE_IA32_ASM
+#    define CL_X86_ASM_STYLE
+#    define CL_IA32_ASM_STYLE
+#  elif defined (_M_X64)
+#    define HAVE_X86_ASM
+#    define HAVE_X86_64_ASM
+#    define CL_X86_ASM_STYLE
+#    define CL_X86_64_ASM_STYLE
+#  endif
+#endif
+
+#ifdef HAVE_X86_ASM
+PMOD_EXPORT void x86_get_cpuid(int oper, INT32 *cpuid_ptr);
+#endif
 
 /* FIXME: Should we have an #ifdef PIKE_RUN_UNLOCKED here? -Hubbe
  * Good side: No problems compiling unless --run-unlocked is used

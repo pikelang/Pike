@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ia32.c,v 1.51 2009/11/13 13:47:21 per Exp $
+|| $Id$
 */
 
 /*
@@ -1039,7 +1039,7 @@ void ia32_flush_instruction_cache(void *start, size_t len)
 	mov eax, addr;
 	clflush [eax];
       }
-#else  /* USE_GCC_IA32_ASM_STYLE */
+#else  /* GCC_IA32_ASM_STYLE */
 #if 1
       __asm__ __volatile__("clflush %0" :: "m" (*addr));
 #else
@@ -1054,79 +1054,14 @@ void ia32_flush_instruction_cache(void *start, size_t len)
   }
 }
 
-static void ia32_get_cpuid(int oper, INT32 *cpuid_ptr)
-{
-  static int cpuid_supported = 0;
-  if (!cpuid_supported) {
-    int fbits=0;
-#ifdef USE_CL_IA32_ASM_STYLE
-    __asm {
-      pushf
-      pop  eax
-      mov  ecx, eax
-      xor  eax, 00200000h
-      push eax
-      popf
-      pushf
-      pop  eax
-      xor  ecx, eax
-      mov  fbits, ecx
-    };
-#else  /* USE_GCC_IA32_ASM_STYLE */
-    /* Note: gcc swaps the argument order... */
-    __asm__("pushf\n\t"
-	    "pop  %%eax\n\t"
-	    "movl %%eax, %%ecx\n\t"
-	    "xorl $0x00200000, %%eax\n\t"
-	    "push %%eax\n\t"
-	    "popf\n\t"
-	    "pushf\n\t"
-	    "pop  %%eax\n\t"
-	    "xorl %%eax, %%ecx\n\t"
-	    "movl %%ecx, %0"
-	    : "=m" (fbits)
-	    :
-	    : "cc", "eax", "ecx");
-#endif
-    if (fbits & 0x00200000) {
-      cpuid_supported = 1;
-    } else {
-      cpuid_supported = -1;
-    }
-  }
-
-  if (cpuid_supported > 0) {
-#ifdef USE_CL_IA32_ASM_STYLE
-    __asm {
-      mov eax, oper;
-      mov edi, cpuid_ptr;
-      cpuid;
-      mov [edi], eax;
-      mov [edi+4], ebx;
-      mov [edi+8], edx;
-      mov [edi+12], ecx;
-    };
-#else  /* USE_GCC_IA32_ASM_STYLE */
-    __asm__ __volatile__("cpuid"
-			 : "=a" (cpuid_ptr[0]),
-			   "=b" (cpuid_ptr[1]),
-			   "=d" (cpuid_ptr[2]),
-			   "=c" (cpuid_ptr[3])
-			 : "0" (oper));
-#endif
-  } else {
-    cpuid_ptr[0] = cpuid_ptr[1] = cpuid_ptr[2] = cpuid_ptr[3] = 0;
-  }
-}
-
 void ia32_init_interpreter_state(void)
 {
   /* Note: One extra zero for nul-termination. */
   INT32 cpuid[5] = { 0, 0, 0, 0, 0 };
 
-  /* fprintf(stderr, "Calling ia32_get_cpuid()...\n"); */
+  /* fprintf(stderr, "Calling x86_get_cpuid()...\n"); */
 
-  ia32_get_cpuid(0, cpuid);
+  x86_get_cpuid(0, cpuid);
 
   /* fprintf(stderr, "CPUID: %d, \"%.12s\"\n", cpuid[0], (char *)(cpuid+1)); */
 
@@ -1146,7 +1081,7 @@ void ia32_init_interpreter_state(void)
       int feature_flags_edx;
       int feature_flags_ecx;
     } cpu_info;
-    ia32_get_cpuid(1, (INT32 *) &cpu_info);
+    x86_get_cpuid(1, (INT32 *) &cpu_info);
 #if 0
     fprintf(stderr,
 	    "features: 0x%08x\n"
