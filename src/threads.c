@@ -1255,6 +1255,10 @@ static int use_tsc_for_slices;
 
 static void check_threads(struct callback *cb, void *arg, void * arg2)
 {
+#if defined(HAVE_RDTSC) && defined(USE_CLOCK_FOR_SLICES)
+  static INT64 tsc_mincycles=1000*1000;
+#endif
+
 #ifdef PROFILE_CHECK_THREADS
   static unsigned long calls = 0;
   calls++;
@@ -1285,7 +1289,7 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
 } while (0)
 
   if (use_tsc_for_slices) {
-     static INT64 target, mincycles=1000*1000;
+     static INT64 target;
      INT64 now;
      clock_t elapsed;
 
@@ -1296,7 +1300,7 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
      GETCYCLES(now);
 
      if ((target-now)>0) {
-       if ((target-now)>mincycles)
+       if ((target-now)>tsc_mincycles)
 	 use_tsc_for_slices = 0; /* The counter jumped back too far; TSC unusable */
        else
 	 return;
@@ -1305,18 +1309,18 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
      elapsed = clock() - thread_start_clock;
 
      if (elapsed < (clock_t) (CLOCKS_PER_SEC/30)) {
-       mincycles |= 0xffff;
-       if ((now-target)<=(mincycles<<4))
-          mincycles += (mincycles>>1);
-       target = now + (mincycles>>1);
+       tsc_mincycles |= 0xffff;
+       if ((now-target)<=(tsc_mincycles<<4))
+          tsc_mincycles += (tsc_mincycles>>1);
+       target = now + (tsc_mincycles>>1);
        return;
      }
      if (elapsed > (clock_t) (CLOCKS_PER_SEC/18)) {
-       mincycles -= mincycles>>2;
+       tsc_mincycles -= tsc_mincycles>>2;
        if (elapsed > (clock_t) (CLOCKS_PER_SEC/10))
-         mincycles >>= 2;
+         tsc_mincycles >>= 2;
      }
-     target = now + mincycles;
+     target = now + tsc_mincycles;
      goto do_yield;
   }
 #endif	/* HAVE_RDTSC && USE_CLOCK_FOR_SLICES */
@@ -1404,8 +1408,15 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
     struct timeval now;
     gettimeofday (&now, NULL);
     if (now.tv_sec > last_time) {
-      fprintf (stderr, "check_threads calls in %ld sec(s): %lu\n",
-	       (long) (now.tv_sec - last_time), calls);
+      fprintf (stderr, "check_threads calls in %ld sec(s): %lu "
+	       "(tsc mincycles: %"PRINTINT64"d)\n",
+	       (long) (now.tv_sec - last_time), calls,
+#if defined(HAVE_RDTSC) && defined(USE_CLOCK_FOR_SLICES)
+	       use_tsc_for_slices ? tsc_mincycles : -1
+#else
+	       -2
+#endif
+	      );
       last_time = (unsigned long) now.tv_sec;
       calls = 0;
     }
