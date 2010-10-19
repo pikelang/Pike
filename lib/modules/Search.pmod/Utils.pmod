@@ -448,6 +448,7 @@ Scheduler get_scheduler(string db_name) {
   return scheduler_storage[db_name] = Scheduler(dbp);
 }
 
+//!
 class Scheduler {
 
   private int next_run;
