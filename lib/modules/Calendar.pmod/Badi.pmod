@@ -475,6 +475,7 @@ class cYear
    }
 }
 
+//!
 class Vahid
 {
    inherit YMD;

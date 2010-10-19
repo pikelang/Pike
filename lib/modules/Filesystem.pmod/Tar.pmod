@@ -24,7 +24,8 @@ constant EXTRACT_ERR_ON_UNKNOWN = 16;
 //! If specified, this should be an open file descriptor. This object
 //! could e.g. be a @[Stdio.File], @[Gz.File] or @[Bz2.File] object.
 
-class _Tar  // filesystem
+//! Low-level Tar Filesystem.
+class _Tar
 {
   object fd;
   string filename;
