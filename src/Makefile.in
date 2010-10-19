@@ -983,9 +983,9 @@ autodoc-stamp:
 	@test -f autodoc.xml || $(MAKE) autodoc.xml
 	@test -f autodoc-stamp || echo foo > autodoc-stamp
 
-images1: doc_build/src/post_modules/GTK/refdoc/images
-	@cp $(SRCDIR)/post_modules/GTK/refdoc/images/*.png \
-	  doc_build/src/post_modules/GTK/refdoc/images/
+images1: doc_build/src/post_modules/GTK1/refdoc/images
+	@cp $(SRCDIR)/post_modules/GTK1/refdoc/images/*.png \
+	  doc_build/src/post_modules/GTK1/refdoc/images/
 
 images2: doc_build/src/post_modules/GTK2/refdoc/images
 	@cp $(SRCDIR)/post_modules/GTK2/refdoc/images/*.png \
@@ -1005,15 +1005,15 @@ doc_build/lib: doc_build
 doc_build/images: doc_build
 	@test -d doc_build/images || mkdir doc_build/images
 
-doc_build/src/post_modules/GTK/refdoc/images: doc_build/src
+doc_build/src/post_modules/GTK1/refdoc/images: doc_build/src
 	@test -d doc_build/src/post_modules || \
 	  mkdir doc_build/src/post_modules
-	@test -d doc_build/src/post_modules/GTK || \
-	  mkdir doc_build/src/post_modules/GTK
-	@test -d doc_build/src/post_modules/GTK/refdoc || \
-	  mkdir doc_build/src/post_modules/GTK/refdoc
-	@test -d doc_build/src/post_modules/GTK/refdoc/images || \
-	  mkdir doc_build/src/post_modules/GTK/refdoc/images
+	@test -d doc_build/src/post_modules/GTK1 || \
+	  mkdir doc_build/src/post_modules/GTK1
+	@test -d doc_build/src/post_modules/GTK1/refdoc || \
+	  mkdir doc_build/src/post_modules/GTK1/refdoc
+	@test -d doc_build/src/post_modules/GTK1/refdoc/images || \
+	  mkdir doc_build/src/post_modules/GTK1/refdoc/images
 
 doc_build/src/post_modules/GTK2/refdoc/images: doc_build/src
 	@test -d doc_build/src/post_modules || \
