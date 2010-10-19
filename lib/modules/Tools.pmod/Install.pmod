@@ -48,6 +48,10 @@ array(string) features()
   a += ({ "profiling" });
 #endif
 
+#if constant(_debug)
+  a += ({ "rtl_debug" });
+#endif
+
 #if 0
   // No use reporting stuff that always exists. This list is for
   // things that might not be compiled in due to configure options,
