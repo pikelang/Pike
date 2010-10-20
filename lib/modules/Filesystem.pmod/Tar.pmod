@@ -1,5 +1,5 @@
 /*
- * $Id: Tar.pmod,v 1.40 2009/02/21 12:54:21 mast Exp $
+ * $Id$
  */
 
 #pike __REAL_VERSION__
@@ -455,7 +455,7 @@ class _Tar  // filesystem
 
 	    if (r->isreg()) {
 	      Stdio.File o = Stdio.File();
-	      if (!o->open (destpath, "wc"))
+	      if (!o->open (destpath, "wct"))
 		error ("Failed to create %q: %s\n",
 		       destpath, strerror (o->errno()));
 
