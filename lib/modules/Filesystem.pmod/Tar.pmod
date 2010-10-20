@@ -456,7 +456,7 @@ class _Tar
 
 	    if (r->isreg()) {
 	      Stdio.File o = Stdio.File();
-	      if (!o->open (destpath, "wc"))
+	      if (!o->open (destpath, "wct"))
 		error ("Failed to create %q: %s\n",
 		       destpath, strerror (o->errno()));
 
