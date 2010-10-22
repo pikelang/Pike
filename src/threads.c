@@ -344,7 +344,7 @@ static void cleanup_thread_state (struct thread_state *th);
 #ifndef CONFIGURE_TEST
 
 #if defined(HAVE_CLOCK) &&						\
-    (defined (HAVE_RDTSC) ||						\
+    (defined (RDTSC) ||							\
      (!defined(HAVE_GETHRTIME) &&					\
       !(defined(HAVE_MACH_TASK_INFO_H) && defined(TASK_THREAD_TIMES_INFO))))
 static clock_t thread_start_clock = 0;
@@ -1249,14 +1249,14 @@ PMOD_EXPORT int count_pike_threads(void)
 
 /* #define PROFILE_CHECK_THREADS */
 
-#if defined(HAVE_RDTSC) && defined(USE_CLOCK_FOR_SLICES)
+#if defined(RDTSC) && defined(USE_CLOCK_FOR_SLICES)
 static int use_tsc_for_slices;
 #define TSC_START_INTERVAL (1000 * 1000)
 #endif
 
 static void check_threads(struct callback *cb, void *arg, void * arg2)
 {
-#if defined(HAVE_RDTSC) && defined(USE_CLOCK_FOR_SLICES)
+#if defined(RDTSC) && defined(USE_CLOCK_FOR_SLICES)
   static INT64 tsc_mincycles = TSC_START_INTERVAL;
 #endif
 
@@ -1276,25 +1276,19 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
 		(unsigned long) last_clocked_thread, (unsigned long) th_self());
 #endif
 
-#if defined(HAVE_RDTSC) && defined(USE_CLOCK_FOR_SLICES)
+#if defined(RDTSC) && defined(USE_CLOCK_FOR_SLICES)
   /* We can get here as often as 30+ thousand times per second;
      let's try to avoid doing as many clock(3)/times(2) syscalls
      by using the TSC. We'll skip any further checks until the
      number of cycles passed comes close to what it was the last
      time when we decided to yield. */
 
-#define GETCYCLES(v)  do {                                  \
-   unsigned __l, __h;                                       \
-   __asm__ __volatile__ ("rdtsc" : "=a" (__l), "=d" (__h)); \
-   (v)= __l | (((INT64)__h)<<32);                           \
-} while (0)
-
   if (use_tsc_for_slices) {
      static INT64 target;
      INT64 now;
      clock_t elapsed;
 
-     GETCYCLES(now);
+     RDTSC(now);
 
      if ((target-now)>0) {
        if ((target-now)>tsc_mincycles) {
@@ -1342,7 +1336,7 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
      target = now + tsc_mincycles;
      goto do_yield;
   }
-#endif	/* HAVE_RDTSC && USE_CLOCK_FOR_SLICES */
+#endif	/* RDTSC && USE_CLOCK_FOR_SLICES */
 
 #ifdef HAVE_GETHRTIME
   {
@@ -1444,7 +1438,7 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
 	       calls, clock_checks,
 	       slice_int_mean,
 	       slice_int_n > 1 ? sqrt (slice_int_m2 / (slice_int_n - 1)) : 0.0,
-#if defined(HAVE_RDTSC) && defined(USE_CLOCK_FOR_SLICES)
+#if defined(RDTSC) && defined(USE_CLOCK_FOR_SLICES)
 	       (INT64) (use_tsc_for_slices ? tsc_mincycles : -1),
 #else
 	       (INT64) -2,
@@ -2994,7 +2988,7 @@ void low_th_init(void)
   co_init( & threads_disabled_change);
   thread_table_init();
 
-#if defined(HAVE_RDTSC) && defined(USE_CLOCK_FOR_SLICES)
+#if defined(RDTSC) && defined(USE_CLOCK_FOR_SLICES)
   {
     INT32 cpuid[4];
     x86_get_cpuid (1, cpuid);
