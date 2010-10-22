@@ -40,6 +40,7 @@
 #include "pike_cpulib.h"
 
 #include <errno.h>
+#include <math.h>
 
 #ifdef HAVE_SYS_PRCTL_H
 #include <sys/prctl.h>
@@ -1260,7 +1261,12 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
 #endif
 
 #ifdef PROFILE_CHECK_THREADS
-  static unsigned long calls = 0;
+  static INT64 prev_now;
+  static unsigned long calls = 0, clock_checks = 0;
+  static unsigned long slice_int_n = 0;
+  static double slice_int_mean = 0.0, slice_int_m2 = 0.0;
+  static unsigned long tsc_int_n = 0;
+  static double tsc_int_mean = 0.0, tsc_int_m2 = 0.0;
   calls++;
 #endif
 
@@ -1306,6 +1312,18 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
        else
 	 return;
      }
+
+#ifdef PROFILE_CHECK_THREADS
+     if (prev_now) {
+       INT64 tsc_interval = now - prev_now;
+       double delta = tsc_interval - tsc_int_mean;
+       tsc_int_n++;
+       tsc_int_mean += delta / tsc_int_n;
+       tsc_int_m2 += delta * (tsc_interval - tsc_int_mean);
+     }
+     prev_now = now;
+     clock_checks++;
+#endif
 
      elapsed = clock() - thread_start_clock;
 
@@ -1406,20 +1424,39 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
   {
     static long last_time;
     struct timeval now;
+
+#ifdef USE_CLOCK_FOR_SLICES
+    if (thread_start_clock) {
+      double slice_time =
+	(double) (clock() - thread_start_clock) / CLOCKS_PER_SEC;
+      double delta = slice_time - slice_int_mean;
+      slice_int_n++;
+      slice_int_mean += delta / slice_int_n;
+      slice_int_m2 += delta * (slice_time - slice_int_mean);
+    }
+#endif
+
     gettimeofday (&now, NULL);
     if (now.tv_sec > last_time) {
-      fprintf (stderr, "check_threads calls in %ld sec(s): %lu "
-	       "(tsc mincycles: %"PRINTINT64"d)\n",
-	       (long) (now.tv_sec - last_time), calls,
+      fprintf (stderr, "check_threads: %lu calls, %lu clocks, "
+	       "slice [avg %.3f, d %.1e], "
+	       "tsc [mincyc %"PRINTINT64"d, avg %.2e, d %.1e]\n",
+	       calls, clock_checks,
+	       slice_int_mean,
+	       slice_int_n > 1 ? sqrt (slice_int_m2 / (slice_int_n - 1)) : 0.0,
 #if defined(HAVE_RDTSC) && defined(USE_CLOCK_FOR_SLICES)
-	       use_tsc_for_slices ? tsc_mincycles : -1
+	       (INT64) (use_tsc_for_slices ? tsc_mincycles : -1),
 #else
-	       -2
+	       (INT64) -2,
 #endif
-	      );
+	       tsc_int_mean,
+	       tsc_int_n > 1 ? sqrt (tsc_int_m2 / (tsc_int_n - 1)) : 0.0);
       last_time = (unsigned long) now.tv_sec;
-      calls = 0;
+      calls = clock_checks = 0;
     }
+
+    /* Cannot use this with the first tsc reading after the yield. */
+    prev_now = 0;
   }
 #endif
 
