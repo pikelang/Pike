@@ -1287,10 +1287,6 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
      INT64 now;
      clock_t elapsed;
 
-     if (!target) {
-       GETCYCLES(target);
-     }
-
      GETCYCLES(now);
 
      if ((target-now)>0) {
