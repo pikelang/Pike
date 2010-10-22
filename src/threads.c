@@ -350,6 +350,11 @@ static void cleanup_thread_state (struct thread_state *th);
 static clock_t thread_start_clock = 0;
 static THREAD_T last_clocked_thread = 0;
 #define USE_CLOCK_FOR_SLICES
+#ifdef RDTSC
+static int use_tsc_for_slices;
+#define TSC_START_INTERVAL 100000
+static INT64 prev_tsc;
+#endif
 #endif
 
 #define THIS_THREAD ((struct thread_state *)CURRENT_STORAGE)
@@ -520,8 +525,13 @@ PMOD_EXPORT void pike_init_thread_state (struct thread_state *ts)
   ts->debug_flags = 0;
 #endif
 #ifdef USE_CLOCK_FOR_SLICES
+  /* Initialize thread_start_clock to zero instead of clock() since we
+   * don't know for how long the thread already has run. */
   thread_start_clock = 0;
   last_clocked_thread = ts->id;
+#ifdef RDTSC
+  prev_tsc = 0;
+#endif
 #endif
 }
 
@@ -600,6 +610,9 @@ PMOD_EXPORT void pike_swap_in_thread (struct thread_state *ts
   if (last_clocked_thread != ts->id) {
     thread_start_clock = clock();
     last_clocked_thread = ts->id;
+#ifdef RDTSC
+    RDTSC (prev_tsc);
+#endif
   }
 #endif
 }
@@ -1249,11 +1262,6 @@ PMOD_EXPORT int count_pike_threads(void)
 
 /* #define PROFILE_CHECK_THREADS */
 
-#if defined(RDTSC) && defined(USE_CLOCK_FOR_SLICES)
-static int use_tsc_for_slices;
-#define TSC_START_INTERVAL (1000 * 1000)
-#endif
-
 static void check_threads(struct callback *cb, void *arg, void * arg2)
 {
 #if defined(RDTSC) && defined(USE_CLOCK_FOR_SLICES)
@@ -1261,7 +1269,6 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
 #endif
 
 #ifdef PROFILE_CHECK_THREADS
-  static INT64 prev_now;
   static unsigned long calls = 0, clock_checks = 0;
   static unsigned long slice_int_n = 0;
   static double slice_int_mean = 0.0, slice_int_m2 = 0.0;
@@ -1284,38 +1291,43 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
      time when we decided to yield. */
 
   if (use_tsc_for_slices) {
-     static INT64 target;
-     INT64 now;
+     static INT64 target_int;
+     INT64 now, tsc_elapsed;
      clock_t elapsed;
 
-     RDTSC(now);
+     /* prev_tsc is normally always valid here, but it can be zero
+      * after a tsc jump reset and just after a thread has been
+      * "pike-ified" with INIT_THREAD_STATE (in which case
+      * thread_start_clock is zero too). */
 
-     if ((target-now)>0) {
-       if ((target-now)>tsc_mincycles) {
-	 /* The counter jumped back in time (since target ==
-	  * previous_now + tsc_mincycles), so reset and continue. In the
-	  * worst case this keeps happening all the time, and then the
-	  * only effect is that we always fall back to clock(3). */
+     RDTSC(now);
+     tsc_elapsed = now - prev_tsc;
+
+     if ((target_int - tsc_elapsed)>0) {
+       if (tsc_elapsed < 0) {
+	 /* The counter jumped back in time, so reset and continue. In
+	  * the worst case this keeps happening all the time, and then
+	  * the only effect is that we always fall back to
+	  * clock(3). */
 #ifdef PROFILE_CHECK_THREADS
 	 fprintf (stderr, "TSC jump detected (now: %"PRINTINT64"d, "
-		  "target: %"PRINTINT64"d, tsc_mincycles: %"PRINTINT64"d) - "
-		  "resetting\n", now, target, tsc_mincycles);
+		  "target_int: %"PRINTINT64"d, tsc_mincycles: %"PRINTINT64"d) - "
+		  "resetting\n", now, target_int, tsc_mincycles);
 #endif
 	 tsc_mincycles = TSC_START_INTERVAL;
+	 prev_tsc = 0;
        }
        else
 	 return;
      }
 
 #ifdef PROFILE_CHECK_THREADS
-     if (prev_now) {
-       INT64 tsc_interval = now - prev_now;
-       double delta = tsc_interval - tsc_int_mean;
+     if (prev_tsc) {
+       double delta = tsc_elapsed - tsc_int_mean;
        tsc_int_n++;
        tsc_int_mean += delta / tsc_int_n;
-       tsc_int_m2 += delta * (tsc_interval - tsc_int_mean);
+       tsc_int_m2 += delta * (tsc_elapsed - tsc_int_mean);
      }
-     prev_now = now;
      clock_checks++;
 #endif
 
@@ -1323,9 +1335,9 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
 
      if (elapsed < (clock_t) (CLOCKS_PER_SEC/30)) {
        tsc_mincycles |= 0xffff;
-       if ((now-target)<=(tsc_mincycles<<4))
+       if ((tsc_elapsed - target_int)<=(tsc_mincycles<<4))
           tsc_mincycles += (tsc_mincycles>>1);
-       target = now + (tsc_mincycles>>1);
+       target_int = (tsc_mincycles>>1);
        return;
      }
      if (elapsed > (clock_t) (CLOCKS_PER_SEC/18)) {
@@ -1333,7 +1345,8 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
        if (elapsed > (clock_t) (CLOCKS_PER_SEC/10))
          tsc_mincycles >>= 2;
      }
-     target = now + tsc_mincycles;
+     target_int = tsc_mincycles;
+     prev_tsc = now;
      goto do_yield;
   }
 #endif	/* RDTSC && USE_CLOCK_FOR_SLICES */
@@ -1450,7 +1463,7 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
     }
 
     /* Cannot use this with the first tsc reading after the yield. */
-    prev_now = 0;
+    prev_tsc = 0;
   }
 #endif
 
@@ -1476,6 +1489,9 @@ PMOD_EXPORT void pike_thread_yield(void)
    * did yield then thread_start_clock is the current clock anyway
    * after the thread swap in. */
   thread_start_clock = clock();
+#ifdef RDTSC
+  RDTSC (prev_tsc);
+#endif
 #ifdef PIKE_DEBUG
   if (last_clocked_thread != th_self())
     Pike_fatal ("Stale thread %08lx in last_clocked_thread (self is %08lx)\n",
