@@ -1250,12 +1250,13 @@ PMOD_EXPORT int count_pike_threads(void)
 
 #if defined(HAVE_RDTSC) && defined(USE_CLOCK_FOR_SLICES)
 static int use_tsc_for_slices;
+#define TSC_START_INTERVAL (1000 * 1000)
 #endif
 
 static void check_threads(struct callback *cb, void *arg, void * arg2)
 {
 #if defined(HAVE_RDTSC) && defined(USE_CLOCK_FOR_SLICES)
-  static INT64 tsc_mincycles=1000*1000;
+  static INT64 tsc_mincycles = TSC_START_INTERVAL;
 #endif
 
 #ifdef PROFILE_CHECK_THREADS
@@ -1290,8 +1291,18 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
      GETCYCLES(now);
 
      if ((target-now)>0) {
-       if ((target-now)>tsc_mincycles)
-	 use_tsc_for_slices = 0; /* The counter jumped back too far; TSC unusable */
+       if ((target-now)>tsc_mincycles) {
+	 /* The counter jumped back in time (since target ==
+	  * previous_now + tsc_mincycles), so reset and continue. In the
+	  * worst case this keeps happening all the time, and then the
+	  * only effect is that we always fall back to clock(3). */
+#ifdef PROFILE_CHECK_THREADS
+	 fprintf (stderr, "TSC jump detected (now: %"PRINTINT64"d, "
+		  "target: %"PRINTINT64"d, tsc_mincycles: %"PRINTINT64"d) - "
+		  "resetting\n", now, target, tsc_mincycles);
+#endif
+	 tsc_mincycles = TSC_START_INTERVAL;
+       }
        else
 	 return;
      }
