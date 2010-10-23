@@ -1333,20 +1333,24 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
 
      elapsed = clock() - thread_start_clock;
 
-     if (elapsed < (clock_t) (CLOCKS_PER_SEC/30)) {
-       tsc_mincycles |= 0xffff;
-       if ((tsc_elapsed - target_int)<=(tsc_mincycles<<4))
-          tsc_mincycles += (tsc_mincycles>>1);
-       target_int = (tsc_mincycles>>1);
-       return;
+     if (thread_start_clock && prev_tsc) {
+       if (elapsed < (clock_t) (CLOCKS_PER_SEC/30)) {
+	 tsc_mincycles |= 0xffff;
+	 if ((tsc_elapsed - target_int)<=(tsc_mincycles<<4))
+	   tsc_mincycles += (tsc_mincycles>>1);
+	 target_int = (tsc_mincycles>>1);
+	 return;
+       }
+       if (elapsed > (clock_t) (CLOCKS_PER_SEC/18)) {
+	 tsc_mincycles -= tsc_mincycles>>2;
+	 if (elapsed > (clock_t) (CLOCKS_PER_SEC/10))
+	   tsc_mincycles >>= 2;
+       }
      }
-     if (elapsed > (clock_t) (CLOCKS_PER_SEC/18)) {
-       tsc_mincycles -= tsc_mincycles>>2;
-       if (elapsed > (clock_t) (CLOCKS_PER_SEC/10))
-         tsc_mincycles >>= 2;
-     }
+
      target_int = tsc_mincycles;
      prev_tsc = now;
+
      goto do_yield;
   }
 #endif	/* RDTSC && USE_CLOCK_FOR_SLICES */
