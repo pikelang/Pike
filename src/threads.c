@@ -1495,8 +1495,15 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
     }
   }
 #elif defined (USE_CLOCK_FOR_SLICES)
-  if (clock() - thread_start_clock < (clock_t) (CLOCKS_PER_SEC / 20))
-    return;
+  {
+    clock_t clock_now = clock();
+    if (clock_now - thread_start_clock < 0)
+      /* clock counter has wrapped since the start of the time slice.
+       * Let's reset and yield. */
+      thread_start_clock = 0;
+    else if (clock_now - thread_start_clock < (clock_t) (CLOCKS_PER_SEC / 20))
+      return;
+  }
 #else
   static int div_;
   if(div_++ & 255)
