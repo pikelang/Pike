@@ -1288,9 +1288,7 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
 #if defined(RDTSC) && defined(USE_CLOCK_FOR_SLICES)
   /* We can get here as often as 30+ thousand times per second;
      let's try to avoid doing as many clock(3)/times(2) syscalls
-     by using the TSC. We'll skip any further checks until the
-     number of cycles passed comes close to what it was the last
-     time when we decided to yield. */
+     by using the TSC. */
 
   if (use_tsc_for_slices) {
      static INT64 target_int = TSC_START_INTERVAL;
