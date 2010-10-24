@@ -343,7 +343,6 @@ static void cleanup_thread_state (struct thread_state *th);
 #ifndef CONFIGURE_TEST
 
 #if defined(HAVE_CLOCK) &&						\
-    !defined(HAVE_NO_YIELD) &&						\
     (defined (HAVE_RDTSC) ||						\
      (!defined(HAVE_GETHRTIME) &&					\
       !(defined(HAVE_MACH_TASK_INFO_H) && defined(TASK_THREAD_TIMES_INFO))))
@@ -1264,11 +1263,6 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
   calls++;
 #endif
 
-#ifndef HAVE_NO_YIELD
-  /* If we have no yield we can't cut calls here since it's possible
-   * that a thread switch will take place only occasionally in the
-   * window below. */
-
 #if defined (USE_CLOCK_FOR_SLICES) && defined (PIKE_DEBUG)
   if (last_clocked_thread != th_self())
     Pike_fatal ("Stale thread %08lx in last_clocked_thread (self is %08lx)\n",
@@ -1397,7 +1391,6 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
   static int div_;
   if(div_++ & 255)
     return;
-#endif
 #endif
 
   do_yield:;
