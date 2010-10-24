@@ -354,6 +354,7 @@ static THREAD_T last_clocked_thread = 0;
 static int use_tsc_for_slices;
 #define TSC_START_INTERVAL 100000
 static INT64 prev_tsc;
+static clock_t prev_clock; /* clock() at the beg of the last tsc interval */
 #endif
 #endif
 
@@ -612,6 +613,7 @@ PMOD_EXPORT void pike_swap_in_thread (struct thread_state *ts
     last_clocked_thread = ts->id;
 #ifdef RDTSC
     RDTSC (prev_tsc);
+    prev_clock = thread_start_clock;
 #endif
   }
 #endif
@@ -1264,16 +1266,16 @@ PMOD_EXPORT int count_pike_threads(void)
 
 static void check_threads(struct callback *cb, void *arg, void * arg2)
 {
-#if defined(RDTSC) && defined(USE_CLOCK_FOR_SLICES)
-  static INT64 tsc_mincycles = TSC_START_INTERVAL;
-#endif
-
 #ifdef PROFILE_CHECK_THREADS
-  static unsigned long calls = 0, clock_checks = 0;
-  static unsigned long slice_int_n = 0;
+  static unsigned long calls = 0, clock_checks = 0, no_clock_advs = 0;
+  static unsigned long slice_int_n = 0; /* Slice interval length. */
   static double slice_int_mean = 0.0, slice_int_m2 = 0.0;
-  static unsigned long tsc_int_n = 0;
+  static unsigned long tsc_int_n = 0; /* Actual tsc interval length. */
   static double tsc_int_mean = 0.0, tsc_int_m2 = 0.0;
+  static unsigned long tsc_tgt_n = 0; /* Target tsc interval length. */
+  static double tsc_tgt_mean = 0.0, tsc_tgt_m2 = 0.0;
+  static unsigned long tps = 0, tps_int_n = 0;  /* TSC intervals per slice. */
+  static double tps_int_mean = 0.0, tps_int_m2 = 0.0;
   calls++;
 #endif
 
@@ -1291,30 +1293,29 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
      time when we decided to yield. */
 
   if (use_tsc_for_slices) {
-     static INT64 target_int;
-     INT64 now, tsc_elapsed;
-     clock_t elapsed;
+     static INT64 target_int = TSC_START_INTERVAL;
+     INT64 tsc_now, tsc_elapsed;
 
      /* prev_tsc is normally always valid here, but it can be zero
       * after a tsc jump reset and just after a thread has been
       * "pike-ified" with INIT_THREAD_STATE (in which case
       * thread_start_clock is zero too). */
 
-     RDTSC(now);
-     tsc_elapsed = now - prev_tsc;
+     RDTSC(tsc_now);
+     tsc_elapsed = tsc_now - prev_tsc;
 
-     if ((target_int - tsc_elapsed)>0) {
+     if (tsc_elapsed < target_int) {
        if (tsc_elapsed < 0) {
 	 /* The counter jumped back in time, so reset and continue. In
 	  * the worst case this keeps happening all the time, and then
 	  * the only effect is that we always fall back to
 	  * clock(3). */
 #ifdef PROFILE_CHECK_THREADS
-	 fprintf (stderr, "TSC jump detected (now: %"PRINTINT64"d, "
-		  "target_int: %"PRINTINT64"d, tsc_mincycles: %"PRINTINT64"d) - "
-		  "resetting\n", now, target_int, tsc_mincycles);
+	 fprintf (stderr, "TSC backward jump detected (now: %"PRINTINT64"d, "
+		  "prev: %"PRINTINT64"d, target_int: %"PRINTINT64"d) - "
+		  "resetting\n", tsc_now, prev_tsc, target_int);
 #endif
-	 tsc_mincycles = TSC_START_INTERVAL;
+	 target_int = TSC_START_INTERVAL;
 	 prev_tsc = 0;
        }
        else
@@ -1329,27 +1330,100 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
        tsc_int_m2 += delta * (tsc_elapsed - tsc_int_mean);
      }
      clock_checks++;
+     tps++;
 #endif
 
-     elapsed = clock() - thread_start_clock;
+     {
+       clock_t clock_now = clock();
 
-     if (thread_start_clock && prev_tsc) {
-       if (elapsed < (clock_t) (CLOCKS_PER_SEC/30)) {
-	 tsc_mincycles |= 0xffff;
-	 if ((tsc_elapsed - target_int)<=(tsc_mincycles<<4))
-	   tsc_mincycles += (tsc_mincycles>>1);
-	 target_int = (tsc_mincycles>>1);
+       /* Aim tsc intervals at 1/20th of a thread time slice interval,
+	* i.e. at 1/400 sec. That means the time is checked with
+	* clock(3) approx 20 times per slice. That still cuts the vast
+	* majority of the clock() calls and we're still fairly safe
+	* against tsc inconsistencies of different sorts, like cpu clock
+	* rate changes (on older cpu's with variable tsc),
+	* unsynchronized tsc's between cores, OS tsc resets, etc -
+	* individual intervals can be off by more than an order of
+	* magnitude in either direction without affecting the final time
+	* slice length appreciably. */
+
+       if (prev_tsc) {
+	 clock_t tsc_interval_time = clock_now - prev_clock;
+	 if (tsc_interval_time > 0) {
+	   /* Estimate the next interval just by extrapolating the
+	    * tsc/clock ratio of the last one. This adapts very
+	    * quickly but is also very "jumpy". That shouldn't matter
+	    * due to the approach with dividing the time slice into
+	    * ~20 tsc intervals. */
+	   INT64 new_target_int =
+	     (tsc_elapsed * (CLOCKS_PER_SEC / 400)) / tsc_interval_time;
+	   if (new_target_int < target_int << 1)
+	     target_int = new_target_int;
+	   else {
+#ifdef PROFILE_CHECK_THREADS
+	     fprintf (stderr, "TSC suspect forward jump detected "
+		      "(prev int: %"PRINTINT64"d, "
+		      "calculated int: %"PRINTINT64"d) - "
+		      "capping\n", target_int, new_target_int);
+#endif
+	     /* The + 1 is paranoia just in case it has become zero somehow. */
+	     target_int = (target_int << 1) + 1;
+	   }
+	   prev_tsc = tsc_now;
+	   prev_clock = clock_now;
+#ifdef PROFILE_CHECK_THREADS
+	   {
+	     double delta = target_int - tsc_tgt_mean;
+	     tsc_tgt_n++;
+	     tsc_tgt_mean += delta / tsc_tgt_n;
+	     tsc_tgt_m2 += delta * (target_int - tsc_tgt_mean);
+	   }
+#endif
+	 }
+	 else {
+	   /* clock(3) can have pretty low resolution and might not
+	    * have advanced during the tsc interval. Just do another
+	    * round on the old estimate, keeping prev_tsc and
+	    * prev_clock fixed to get a longer interval for the next
+	    * measurement. */
+	   if (tsc_interval_time < 0) {
+	     /* clock() wraps around fairly often as well. We still
+	      * keep the old interval but update the baselines in this
+	      * case. */
+	     prev_tsc = tsc_now;
+	     prev_clock = clock_now;
+	   }
+	   target_int += tsc_elapsed;
+#ifdef PROFILE_CHECK_THREADS
+	   no_clock_advs++;
+#endif
+	 }
+       }
+       else {
+#ifdef PROFILE_CHECK_THREADS
+	 fprintf (stderr, "Warning: Encountered zero prev_tsc.\n");
+#endif
+	 prev_tsc = tsc_now;
+       }
+
+       if (clock_now - thread_start_clock < 0)
+	 /* clock counter has wrapped since the start of the time
+	  * slice. Let's reset and yield. */
+	 thread_start_clock = 0;
+       else if (clock_now - thread_start_clock <
+		(clock_t) (CLOCKS_PER_SEC / 20))
 	 return;
-       }
-       if (elapsed > (clock_t) (CLOCKS_PER_SEC/18)) {
-	 tsc_mincycles -= tsc_mincycles>>2;
-	 if (elapsed > (clock_t) (CLOCKS_PER_SEC/10))
-	   tsc_mincycles >>= 2;
-       }
      }
 
-     target_int = tsc_mincycles;
-     prev_tsc = now;
+#ifdef PROFILE_CHECK_THREADS
+     {
+       double delta = tps - tps_int_mean;
+       tps_int_n++;
+       tps_int_mean += delta / tps_int_n;
+       tps_int_m2 += delta * (tps - tps_int_mean);
+       tps = 0;
+     }
+#endif
 
      goto do_yield;
   }
@@ -1449,25 +1523,20 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
 
     gettimeofday (&now, NULL);
     if (now.tv_sec > last_time) {
-      fprintf (stderr, "check_threads: %lu calls, %lu clocks, "
-	       "slice [avg %.3f, d %.1e], "
-	       "tsc [mincyc %"PRINTINT64"d, avg %.2e, d %.1e]\n",
-	       calls, clock_checks,
+      fprintf (stderr, "check_threads: %lu calls, %lu clocks, %lu no advs, "
+	       "slice %.3f:%.1e, tsc int %.2e:%.1e, tsc tgt %.2e:%.1e, tps %g:%.1e\n",
+	       calls, clock_checks, no_clock_advs,
 	       slice_int_mean,
 	       slice_int_n > 1 ? sqrt (slice_int_m2 / (slice_int_n - 1)) : 0.0,
-#if defined(RDTSC) && defined(USE_CLOCK_FOR_SLICES)
-	       (INT64) (use_tsc_for_slices ? tsc_mincycles : -1),
-#else
-	       (INT64) -2,
-#endif
 	       tsc_int_mean,
-	       tsc_int_n > 1 ? sqrt (tsc_int_m2 / (tsc_int_n - 1)) : 0.0);
+	       tsc_int_n > 1 ? sqrt (tsc_int_m2 / (tsc_int_n - 1)) : 0.0,
+	       tsc_tgt_mean,
+	       tsc_tgt_n > 1 ? sqrt (tsc_tgt_m2 / (tsc_tgt_n - 1)) : 0.0,
+	       tps_int_mean,
+	       tps_int_n > 1 ? sqrt (tps_int_m2 / (tps_int_n - 1)) : 0.0);
       last_time = (unsigned long) now.tv_sec;
-      calls = clock_checks = 0;
+      calls = clock_checks = no_clock_advs = 0;
     }
-
-    /* Cannot use this with the first tsc reading after the yield. */
-    prev_tsc = 0;
   }
 #endif
 
@@ -1495,6 +1564,7 @@ PMOD_EXPORT void pike_thread_yield(void)
   thread_start_clock = clock();
 #ifdef RDTSC
   RDTSC (prev_tsc);
+  prev_clock = thread_start_clock;
 #endif
 #ifdef PIKE_DEBUG
   if (last_clocked_thread != th_self())
