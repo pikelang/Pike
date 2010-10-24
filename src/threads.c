@@ -3084,11 +3084,15 @@ void low_th_init(void)
     x86_get_cpuid (1, cpuid);
     /* fprintf (stderr, "cpuid 1: %x\n", cpuid[2]); */
     use_tsc_for_slices = cpuid[2] & 0x10; /* TSC exists */
+#if 0
+    /* Skip tsc invariant check - the current tsc interval method
+     * should be robust enough to cope with variable tsc rates. */
     if (use_tsc_for_slices) {
       x86_get_cpuid (0x80000007, cpuid);
       /* fprintf (stderr, "cpuid 0x80000007: %x\n", cpuid[2]); */
       use_tsc_for_slices = cpuid[2] & 0x100; /* TSC is invariant */
     }
+#endif
     /* fprintf (stderr, "use tsc: %d\n", use_tsc_for_slices); */
   }
 #endif
