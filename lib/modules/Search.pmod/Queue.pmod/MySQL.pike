@@ -260,6 +260,11 @@ void clear_stage( int ... stages )
     db->query( "update "+table+" set stage=0 where stage=%d", s );
 }
 
+void remove_stage (int stage)
+{
+  db->query( "delete from "+table+" where stage=%d", stage );
+}
+
 void clear_md5( int ... stages )
 {
   foreach( stages, int s )
