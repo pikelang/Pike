@@ -11,6 +11,7 @@ array(Standards.URI) get_uris(void|int stage);
 void put(string|array(string)|Standards.URI|array(Standards.URI) uri);
 void clear();
 void clear_stage( int ... stages );
+void remove_stage (int stage);
 void clear_md5( int ... stages );
 int num_with_stage( int ... stage );
 void set_stage( Standards.URI uri, int stage );
