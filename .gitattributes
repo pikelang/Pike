@@ -207,9 +207,7 @@ testfont binary
 /lib/modules/Search.pmod/Filter.pmod/Base.pike foreign_ident
 /lib/modules/Search.pmod/Filter.pmod/Charset.pmod foreign_ident
 /lib/modules/Search.pmod/Filter.pmod/HTML.pmod foreign_ident
-/lib/modules/Search.pmod/Filter.pmod/PDF.pmod foreign_ident
 /lib/modules/Search.pmod/Filter.pmod/PlainText.pmod foreign_ident
-/lib/modules/Search.pmod/Filter.pmod/Word.pmod foreign_ident
 /lib/modules/Search.pmod/Grammar.pmod/AbstractParser.pike foreign_ident
 /lib/modules/Search.pmod/Grammar.pmod/DefaultParser.pike foreign_ident
 /lib/modules/Search.pmod/Grammar.pmod/Lexer.pmod foreign_ident
