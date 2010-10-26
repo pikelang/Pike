@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.899 2010/09/27 17:06:30 grubba Exp $"]]);
+test_true([["$Id$"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -5017,12 +5017,21 @@ dnl  test_any([[ catch { allocate(10000,thread_create)(lambda() { sleep(1); })->
 
   test_any([[
     // Test that a loop relinquishes the interpreter lock every now and then.
-    int count, stop;
-    Thread.thread_create (lambda() {while (!stop) count++;});
+    int count, stop, fail;
+    Thread.thread_create (lambda() {
+			    int stop_time = time() + 1;
+			    while (!stop) {
+			      count++;
+			      if (time() > stop_time) {
+				fail = 1;
+				break;
+			      }
+			    }
+			  });
     sleep (0.1);
     stop = 1;
     sleep (0.1);
-    return count > 0; 
+    return fail ? -1 : count > 0;
   ]], 1)
 
   // _disable_threads
