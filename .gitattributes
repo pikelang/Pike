@@ -204,7 +204,6 @@ testfont binary
 /lib/modules/Protocols.pmod/XMLRPC.pmod/testsuite.in foreign_ident
 /lib/modules/Search.pmod/Database.pmod/Base.pike foreign_ident
 /lib/modules/Search.pmod/Database.pmod/MySQL.pike foreign_ident
-/lib/modules/Search.pmod/Filter.pmod/Base.pike foreign_ident
 /lib/modules/Search.pmod/Filter.pmod/Charset.pmod foreign_ident
 /lib/modules/Search.pmod/Filter.pmod/HTML.pmod foreign_ident
 /lib/modules/Search.pmod/Filter.pmod/PlainText.pmod foreign_ident
