@@ -6478,6 +6478,9 @@ AC_CACHE_VAL(pike_cv_max_open_fd,
 #ifdef HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>
 #endif
+#ifdef HAVE_LIMITS_H
+#include <limits.h>
+#endif
 
 #ifndef MAX_FD
 #define MAX_FD 65536
@@ -6502,6 +6505,12 @@ int main()
     if(lim.rlim_max == RLIM_INFINITY)
     {
       limit = 1024 * 1024 * 2; /* Noone needs more :-) */
+      
+#if defined(OPEN_MAX)
+      /* On Darwin we can find a reasonable limit in OPEN_MAX which limits.h
+         will include from sys/syslimits.h. */
+      limit = (OPEN_MAX < limit) ? OPEN_MAX : limit;
+#endif	 
     }else{
       limit=lim.rlim_max;
       if(limit > 1024 * 1024 * 2) limit= 1024 * 1024 * 2;
