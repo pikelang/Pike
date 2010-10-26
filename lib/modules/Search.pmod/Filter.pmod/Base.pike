@@ -1,7 +1,5 @@
-// This file is part of Roxen Search
-// Copyright © 2001 - 2009, Roxen IS. All rights reserved.
-//
 // $Id$
+#pike __REAL_VERSION__
 
 //! The MIME content types this class can filter.
 constant contenttypes = ({ });

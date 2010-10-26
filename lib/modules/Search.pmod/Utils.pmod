@@ -1,7 +1,5 @@
-// This file is part of Roxen Search
-// Copyright © 2001 - 2009, Roxen IS. All rights reserved.
-//
 // $Id$
+#pike __REAL_VERSION__
 
 #if !constant(report_error)
 #define report_error werror
@@ -337,7 +335,7 @@ class ProfileCache (string db_name) {
       }
 
       mixed resolv(string id, void|string fn, void|string ch) {
-	throw( ({ sprintf("Found symbol %O while trying to decode Roxen Search "
+	throw( ({ sprintf("Found symbol %O while trying to decode Search "
 			  "settings. The database is corrupt or has been "
 			  "tampered with.\n", id),
 		  backtrace() }) );
