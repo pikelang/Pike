@@ -1,12 +1,10 @@
 // This file is part of Roxen Search
 // Copyright © 2001 - 2009, Roxen IS. All rights reserved.
 //
-// $Id: Base.pike,v 1.18 2009/05/25 18:26:52 mast Exp $
+// $Id$
 
 //! The MIME content types this class can filter.
 constant contenttypes = ({ });
-
-constant tmp_filename = Search.TmpFile.tmp_filename;
 
 //!
 .Output filter(Standards.URI uri, string|Stdio.File data,
