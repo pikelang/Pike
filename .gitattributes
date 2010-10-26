@@ -344,7 +344,6 @@ testfont binary
 /src/code/sparc.h foreign_ident
 /src/combine_path.h foreign_ident
 /src/compilation.h foreign_ident
-/src/configure.in foreign_ident
 /src/constants.c foreign_ident
 /src/constants.h foreign_ident
 /src/cpp.c foreign_ident
