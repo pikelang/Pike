@@ -1,7 +1,4 @@
-// This file is part of Roxen Search
-// Copyright © 2001 - 2009, Roxen IS. All rights reserved.
-//
-// $Id: debug.h,v 1.4 2009/05/25 18:26:52 mast Exp $
+// $Id$
 
 #define TRACE werror("### %s:%d\n"	\
                      "  %O()\n"		\

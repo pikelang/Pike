@@ -1,9 +1,7 @@
-// This file is part of Roxen Search
-// Copyright © 2001 - 2009, Roxen IS. All rights reserved.
-//
-// $Id: Base.pike,v 1.10 2009/06/30 12:35:33 noring Exp $
+// $Id$
+#pike __REAL_VERSION__
 
-//! Base class for Roxen Search database storage abstraction implementations.
+//! Base class for Search database storage abstraction implementations.
 
 
 //! @decl void create(string db_url);

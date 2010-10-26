@@ -1,7 +1,5 @@
-// This file is part of Roxen Search
-// Copyright © 2000 - 2009, Roxen IS. All rights reserved.
-//
-// $Id: module.pmod,v 1.18 2009/05/25 18:26:52 mast Exp $
+// $Id$
+#pike __REAL_VERSION__
 
 private mapping filter_mimetypes;
 private multiset filter_fields;

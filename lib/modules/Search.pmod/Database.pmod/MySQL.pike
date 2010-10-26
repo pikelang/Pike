@@ -1,7 +1,5 @@
-// This file is part of Roxen Search
-// Copyright © 2000 - 2009, Roxen IS. All rights reserved.
-//
-// $Id: MySQL.pike,v 1.92 2010/01/20 12:49:40 marty Exp $
+// $Id$
+#pike __REAL_VERSION__
 
 inherit .Base;
 
