@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.96 2009/11/15 00:58:35 mast Exp $
+|| $Id$
 */
 
 /*
@@ -98,7 +98,7 @@
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.96 2009/11/15 00:58:35 mast Exp $");
+RCSID("$Id$");
 
 /*! @module Mysql
  *!
@@ -932,6 +932,12 @@ static void f_big_query(INT32 args)
 
   query = sp[-args].u.string->str;
   qlen = sp[-args].u.string->len;
+
+  /* NB: mysql_real_query() and mysql_query() call mysql_read_query_result()
+   *     which may have inlined a call to send_file_to_server(), which
+   *     allocates a buffer of IO_SIZE*15 (ie 0xf000) bytes on the stack.
+   */
+  check_c_stack(0x10000);
 
   if (socket) {
     MYSQL_ALLOW();
