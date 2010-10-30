@@ -1034,7 +1034,7 @@ void ia32_flush_instruction_cache(void *start, size_t len)
     addr = (char *)(((size_t)start) & ~(ia32_clflush_size-1));
     end_addr = addr + len;
     while (addr < end_addr) {
-#ifdef USE_CL_IA32_ASM_STYLE
+#ifdef CL_IA32_ASM_STYLE
       __asm {
 	mov eax, addr;
 	clflush [eax];
