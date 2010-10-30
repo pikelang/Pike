@@ -997,9 +997,6 @@ static void describe_marker(struct marker *m)
 static void debug_gc_fatal_va (void *a, int type, int flags,
 			       const char *fmt, va_list args)
 {
-#ifdef PIKE_DEBUG
-  struct marker *m;
-#endif
   int orig_gc_pass = Pike_in_gc;
 
   (void) VFPRINTF(stderr, fmt, args);

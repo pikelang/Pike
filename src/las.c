@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.443 2010/04/15 16:54:55 grubba Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -1157,7 +1157,6 @@ node *debug_mkexternalnode(struct program *parent_prog, int i)
   return mkidentifiernode(add_ext_ref(Pike_compiler, parent_prog, i));
 
 #else /* !0 */
-  struct program_state *state;
   node *res = mkemptynode();
   res->token = F_EXTERNAL;
 
