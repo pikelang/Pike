@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.191 2010/09/12 14:55:17 grubba Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -1029,10 +1029,13 @@ void f_mkdir(INT32 args)
   {
     /* Most OS's should have MKDIR_ARGS == 2 nowadays fortunately. */
     int mask = umask(0);
-    THREADS_ALLOW_UID();
+    /* The following is basically the normal THREADS_ALLOW_UID/
+     * THREADS_DISALLOW_UID macros expanded. They cannot be used
+     * directly due to the nested disallow/allow block below. */
+    struct thread_state *cur_ts_ext = Pike_interpreter.thread_state;
+    pike_threads_allow_ext (cur_ts_ext COMMA_DLOC);
     i = mkdir(s) != -1;
     umask(mask);
-    REVEAL_GLOBAL_VARIABLES();
     if (i) {
       /* Attempt to set the mode.
        *
@@ -1049,19 +1052,9 @@ void f_mkdir(INT32 args)
 	do {
 	  i = chmod(s, mode) != -1;
 	  if (i || errno != EINTR) break;
-	  /* Must have do { ... } while(0) around these since
-	   * THREADS_DISALLOW_UID contains "} while (0)" and
-	   * THREADS_ALLOW_UID "do {".
-	   *
-	   * The same thing applies to {HIDE,REVEAL}_HIDDEN_VARIABLES().
-	   */
-	  do {
-	    HIDE_GLOBAL_VARIABLES();
-	    THREADS_DISALLOW_UID();
-	    check_threads_etc();
-	    THREADS_ALLOW_UID();
-	    REVEAL_GLOBAL_VARIABLES();
-	  } while (0);
+	  pike_threads_disallow_ext (cur_ts_ext COMMA_DLOC);
+	  check_threads_etc();
+	  pike_threads_allow_ext (cur_ts_ext COMMA_DLOC);
 	} while (1);
       }
       if (i) {
@@ -1077,8 +1070,7 @@ void f_mkdir(INT32 args)
 	rmdir(s);
       }
     }
-    HIDE_GLOBAL_VARIABLES();
-    THREADS_DISALLOW_UID();
+    pike_threads_disallow_ext (cur_ts_ext COMMA_DLOC);
   }
 #endif
   
