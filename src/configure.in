@@ -5530,7 +5530,15 @@ AC_TRY_RUN([
 static long long rdtsc()
 {
    unsigned long l, h;
+#if defined (_M_IX86) || defined (_M_X64)
+   __asm {
+     rdtsc
+     mov l, eax
+     mov h, edx
+   }
+#else
    __asm__ __volatile__ ("rdtsc" :"=a" (l), "=d" (h));
+#endif
    return (((long long)h)<<32)|l;
 }
 

@@ -41,12 +41,20 @@ PMOD_EXPORT void x86_get_cpuid(int oper, INT32 *cpuid_ptr);
 #ifdef HAVE_RDTSC
 #ifdef GCC_X86_ASM_STYLE
 #define RDTSC(v)  do {					    \
-   unsigned __l, __h;                                       \
+   unsigned INT32 __l, __h;                                 \
    __asm__ __volatile__ ("rdtsc" : "=a" (__l), "=d" (__h)); \
    (v)= __l | (((INT64)__h)<<32);                           \
 } while (0)
 #endif
-/* FIXME: CL_X86_64_ASM_STYLE version */
+#ifdef CL_X86_ASM_STYLE
+#define RDTSC(v) do {							\
+    unsigned INT32 l, h;						\
+    __asm {rdtsc}							\
+    __asm {mov l, eax}							\
+    __asm {mov h, edx}							\
+    v = l | ((INT64) h << 32);						\
+  } while (0)
+#endif
 #endif
 
 /* FIXME: Should we have an #ifdef PIKE_RUN_UNLOCKED here? -Hubbe
