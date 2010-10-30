@@ -1526,7 +1526,7 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
     }
 #endif
 
-    gettimeofday (&now, NULL);
+    GETTIMEOFDAY (&now);
     if (now.tv_sec > last_time) {
       fprintf (stderr, "check_threads: %lu calls, %lu clocks, %lu no advs, "
 	       "slice %.3f:%.1e, tsc int %.2e:%.1e, tsc tgt %.2e:%.1e, tps %g:%.1e\n",
