@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.190 2010/09/23 13:12:14 grubba Exp $
+|| $Id$
 */
 
 /*
@@ -42,6 +42,7 @@
 #include "bignum.h"
 #include "pike_rusage.h"
 #include "pike_netlib.h"
+#include "pike_cpulib.h"
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -2862,30 +2863,19 @@ static void f_get_netinfo_property(INT32 args)
 #endif
 
 
-#ifdef HAVE_RDTSC
+#ifdef RDTSC
 
 /*! @decl int rdtsc()
  *! Executes the rdtsc (clock pulse counter) instruction
  *! and returns the result.
  */
 
-#define RDTSC(l,h)							\
-   __asm__ __volatile__ (  "rdtsc"					\
-			   :"=a" (l),					\
-			   "=d" (h))
-
-static INLINE long long rdtsc(void)
-{
-   long long now;
-   unsigned long nl,nh;
-   RDTSC(nl,nh);
-   return (((long long)nh)<<32)|nl;
-}
-
 static void f_rdtsc(INT32 args)
 {
+   INT64 tsc;
    pop_n_elems(args);
-   push_int64(rdtsc());
+   RDTSC (tsc);
+   push_int64(tsc);
 }
 
 #endif
@@ -3442,7 +3432,7 @@ PIKE_MODULE_INIT
 #endif
 #endif
 
-#ifdef HAVE_RDTSC
+#ifdef RDTSC
   ADD_FUNCTION("rdtsc",f_rdtsc,
 	       tFunc(tNone,tInt),0);
 #endif
