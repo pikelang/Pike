@@ -1372,7 +1372,7 @@ PMOD_EXPORT
 PIKEFUN int random(int i)
 {
   if(i <= 0) RETURN 0;
-#ifdef AUTO_BIGNUM
+#if defined (AUTO_BIGNUM) && SIZEOF_INT_TYPE > 4
   if(i >> 31) {
     unsigned INT_TYPE a = my_rand();
     unsigned INT_TYPE b = my_rand();
