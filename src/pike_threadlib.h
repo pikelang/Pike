@@ -322,6 +322,8 @@ extern pthread_attr_t small_pattr;
 
 /* FIXME: Check if we can switch to the cheaper CRITICAL_SECTION objects. */
 
+/* Note that Windows mutexes always allow recursive locking. */
+
 #define PIKE_MUTEX_T HANDLE
 #define mt_init(X) LOW_THREAD_CHECK_ZERO_ERROR ((*(X)=CreateMutex(NULL, 0, NULL)))
 #define mt_lock(X)							\

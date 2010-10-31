@@ -396,14 +396,17 @@ static volatile IMUTEX_T *interleave_list = NULL;
 #if defined(PIKE_DEBUG)
 
 /* This is a debug wrapper to enable checks that the interpreter lock
- * is hold by the current thread. */
+ * is held by the current thread. */
+static int debug_is_locked;
 static THREAD_T debug_locking_thread;
-#define SET_LOCKING_THREAD (debug_locking_thread = th_self())
+#define SET_LOCKING_THREAD (debug_is_locked = 1,			\
+			    debug_locking_thread = th_self())
+#define UNSET_LOCKING_THREAD (debug_is_locked = 0)
 static INLINE void check_interpreter_lock (DLOC_DECL)
 {
   if (th_running) {
     THREAD_T self;
-    if (!mt_trylock (&interpreter_lock))
+    if (!debug_is_locked)
       pike_fatal_dloc ("Interpreter not locked.\n");
     self = th_self();
     if (!th_equal (debug_locking_thread, self))
@@ -414,6 +417,7 @@ static INLINE void check_interpreter_lock (DLOC_DECL)
 #else
 
 #define SET_LOCKING_THREAD 0
+#define UNSET_LOCKING_THREAD 0
 static INLINE void check_interpreter_lock (DLOC_DECL) {}
 
 #endif
@@ -438,6 +442,7 @@ PMOD_EXPORT INLINE void pike_low_wait_interpreter (COND_T *cond COMMA_DLOC_DECL)
   THREADS_FPRINTF (1, (stderr,
 		       "Waiting on cond %p without iplock" DLOC_PF(" @ ",) "\n",
 		       cond COMMA_DLOC_ARGS_OPT));
+  UNSET_LOCKING_THREAD;
 
   /* FIXME: Should use interpreter_lock_wanted here as well. The
    * problem is that few (if any) thread libs lets us atomically
@@ -458,6 +463,7 @@ PMOD_EXPORT INLINE int pike_low_timedwait_interpreter (COND_T *cond,
   THREADS_FPRINTF (1, (stderr,
 		       "Waiting on cond %p without iplock" DLOC_PF(" @ ",) "\n",
 		       cond COMMA_DLOC_ARGS_OPT));
+  UNSET_LOCKING_THREAD;
 
   /* FIXME: Should use interpreter_lock_wanted here as well. The
    * problem is that few (if any) thread libs lets us atomically
@@ -478,6 +484,7 @@ static void threads_disabled_wait (DLOC_DECL)
     THREADS_FPRINTF (1, (stderr,
 			 "Waiting on threads_disabled" DLOC_PF(" @ ",) "\n"
 			 COMMA_DLOC_ARGS_OPT));
+    UNSET_LOCKING_THREAD;
     co_wait (&threads_disabled_change, &interpreter_lock);
     SET_LOCKING_THREAD;
   } while (threads_disabled);
@@ -496,6 +503,7 @@ PMOD_EXPORT INLINE void pike_unlock_interpreter (DLOC_DECL)
 {
   THREADS_FPRINTF (1, (stderr, "Releasing iplock" DLOC_PF(" @ ",) "\n"
 		       COMMA_DLOC_ARGS_OPT));
+  UNSET_LOCKING_THREAD;
   mt_unlock (&interpreter_lock);
 }
 
