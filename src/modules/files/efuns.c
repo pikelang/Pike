@@ -1200,40 +1200,66 @@ void f_get_dir(INT32 args)
   free_string_builder(&sb);
 
   if (dir == DO_NOT_WARN(INVALID_HANDLE_VALUE)) {
+    int err = GetLastError();
 #ifdef READDIR_DEBUG
-    fprintf(stderr, "  INVALID_HANDLE_VALUE\n");
+    fprintf(stderr, "  INVALID_HANDLE_VALUE, error %d\n", err);
 #endif /* READDIR_DEBUG */
 
     pop_n_elems(args);
-    push_int(0);
+    if (err == ERROR_FILE_NOT_FOUND) {
+      /* Normally there should at least be a "." entry, so this seldom
+       * happens. But it seems unwise to count on it, considering this
+       * being Windows and all..
+       *
+       * Note: The error is ERROR_PATH_NOT_FOUND if the directory
+       * doesn't exist.
+       */
+      push_empty_array();
+    }
+    else {
+      set_errno_from_win32_error (err);
+      push_int(0);
+    }
     return;
   }
 
-  BEGIN_AGGREGATE_ARRAY(10);
+  {
+    int err;
 
-  do {
+    BEGIN_AGGREGATE_ARRAY(10);
+
+    do {
 #ifdef READDIR_DEBUG
-    fprintf(stderr, "  \"%S\"\n", d.cFileName);
+      fprintf(stderr, "  \"%S\"\n", d.cFileName);
 #endif /* READDIR_DEBUG */
-    /* Filter "." and ".." from the list. */
-    if(d.cFileName[0]=='.')
-    {
-      if(!d.cFileName[1]) continue;
-      if(d.cFileName[1]=='.' && !d.cFileName[2]) continue;
+      /* Filter "." and ".." from the list. */
+      if(d.cFileName[0]=='.')
+      {
+	if(!d.cFileName[1]) continue;
+	if(d.cFileName[1]=='.' && !d.cFileName[2]) continue;
+      }
+      push_string(make_shared_binary_string1(d.cFileName, wcslen(d.cFileName)));
+      DO_AGGREGATE_ARRAY(120);
+    } while(FindNextFileW(dir, &d));
+    err = GetLastError();
+
+#ifdef READDIR_DEBUG
+    fprintf(stderr, "  DONE, error %d\n", err);
+#endif /* READDIR_DEBUG */
+
+    FindClose(dir);
+
+    END_AGGREGATE_ARRAY;
+
+    stack_pop_n_elems_keep_top(args);
+
+    if (err != ERROR_SUCCESS && err != ERROR_NO_MORE_FILES) {
+      set_errno_from_win32_error (err);
+      pop_stack();
+      push_int (0);
+      return;
     }
-    push_string(make_shared_binary_string1(d.cFileName, wcslen(d.cFileName)));
-    DO_AGGREGATE_ARRAY(120);
-  } while(FindNextFileW(dir, &d));
-
-#ifdef READDIR_DEBUG
-  fprintf(stderr, "  DONE\n");
-#endif /* READDIR_DEBUG */
-
-  FindClose(dir);
-
-  END_AGGREGATE_ARRAY;
-
-  stack_pop_n_elems_keep_top(args);
+  }
 
 #else /* !__NT__ */
 
