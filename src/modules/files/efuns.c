@@ -1184,7 +1184,7 @@ void f_get_dir(INT32 args)
   }
 
 #ifdef READDIR_DEBUG
-  fprintf(stderr, "FindFirstFile(\"%S\")...\n", STR1(str));
+  fprintf(stderr, "FindFirstFile(\"%S\")...\n", STR1(sb.s));
 #endif /* READDIR_DEBUG */
 
   dir = FindFirstFileW(STR1(sb.s), &d);
