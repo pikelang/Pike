@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.191 2010/09/12 14:55:17 grubba Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -1192,7 +1192,7 @@ void f_get_dir(INT32 args)
   }
 
 #ifdef READDIR_DEBUG
-  fprintf(stderr, "FindFirstFile(\"%S\")...\n", STR1(str));
+  fprintf(stderr, "FindFirstFile(\"%S\")...\n", STR1(sb.s));
 #endif /* READDIR_DEBUG */
 
   dir = FindFirstFileW(STR1(sb.s), &d);
