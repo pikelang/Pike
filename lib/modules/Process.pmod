@@ -230,6 +230,11 @@ mapping run(string|array(string) cmd, void|mapping modifiers)
   exitcode = p->wait();
   threads->wait();
 #else //No threads, use callbacks
+  Pike.SmallBackend backend = Pike.SmallBackend();
+
+  mystdout->set_backend (backend);
+  mystderr->set_backend (backend);
+
   mystdout->set_read_callback( lambda( mixed i, string data) { 
                                  gotstdout += data; 
                                } );
@@ -246,7 +251,9 @@ mapping run(string|array(string) cmd, void|mapping modifiers)
 				});
 
   if (mystdin) {
-    Shuffler.Shuffle sf = Shuffler.Shuffler()->shuffle( mystdin );
+    Shuffler.Shuffler sfr = Shuffler.Shuffler();
+    sfr->set_backend (backend);
+    Shuffler.Shuffle sf = sfr->shuffle( mystdin );
     sf->add_source(stdin_str);
     sf->set_done_callback (lambda () {
 			     mystdin = 0;
@@ -255,7 +262,7 @@ mapping run(string|array(string) cmd, void|mapping modifiers)
   }
 
   while( mystdout || mystderr || mystdin )
-    Pike.DefaultBackend( 1.0 );
+    backend( 1.0 );
 
   exitcode = p->wait();
 #endif
