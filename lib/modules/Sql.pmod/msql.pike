@@ -4,6 +4,10 @@
 //! Implements the glue needed to access the Msql-module from the generic
 //! SQL module.
 
+// Cannot dump this since the #if constant(...) check below may depend
+// on the presence of system libs at runtime.
+constant dont_dump_program = 1;
+
 #if constant(Msql.msql)
 inherit Msql.msql;
 

@@ -1,10 +1,14 @@
 /*
- * $Id: oracle.pike,v 1.7 2002/11/27 15:40:34 mast Exp $
+ * $Id$
  *
  * Glue for the Oracle-module
  */
 
 #pike __REAL_VERSION__
+
+// Cannot dump this since the #if constant(...) check below may depend
+// on the presence of system libs at runtime.
+constant dont_dump_program = 1;
 
 #if constant(Oracle.oracle)
 inherit Oracle.oracle;

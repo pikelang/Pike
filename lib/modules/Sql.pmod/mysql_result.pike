@@ -1,10 +1,14 @@
 /*
- * $Id: mysql_result.pike,v 1.7 2008/06/28 16:49:55 nilsson Exp $
+ * $Id$
  *
  * Glue for the Mysql-module
  */
 
 #pike __REAL_VERSION__
+
+// Cannot dump this since the #if constant(...) check below may depend
+// on the presence of system libs at runtime.
+constant dont_dump_program = 1;
 
 #if constant(Mysql.mysql_result)
 inherit Mysql.mysql_result;

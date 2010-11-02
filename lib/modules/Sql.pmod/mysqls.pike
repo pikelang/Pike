@@ -1,5 +1,5 @@
 /*
- * $Id: mysqls.pike,v 1.5 2004/04/16 12:12:46 grubba Exp $
+ * $Id$
  *
  * Glue for the Mysql-module using SSL
  */
@@ -18,6 +18,10 @@
 //!   compiled with SSL-support.
 
 #pike __REAL_VERSION__
+
+// Cannot dump this since the #if constant(...) check below may depend
+// on the presence of system libs at runtime.
+constant dont_dump_program = 1;
 
 #if constant(Mysql.mysql.CLIENT_SSL)
 

@@ -2,11 +2,15 @@
  * Sybase driver for the Pike programming language.
  * By Francesco Chemolli <kinkie@roxen.com> 10/12/1999
  *
- * $Id: sybase.pike,v 1.11 2008/01/09 14:26:07 mast Exp $
+ * $Id$
  *
  */
 
 #pike __REAL_VERSION__
+
+// Cannot dump this since the #if constant(...) check below may depend
+// on the presence of system libs at runtime.
+constant dont_dump_program = 1;
 
 #if constant(sybase.sybase)
 
