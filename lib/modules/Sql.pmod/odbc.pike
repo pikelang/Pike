@@ -1,10 +1,14 @@
 /*
- * $Id: odbc.pike,v 1.14 2004/04/16 12:12:46 grubba Exp $
+ * $Id$
  *
  * Glue for the ODBC-module
  */
 
 #pike __REAL_VERSION__
+
+// Cannot dump this since the #if constant(...) check below may depend
+// on the presence of system libs at runtime.
+constant dont_dump_program = 1;
 
 #if constant(Odbc.odbc)
 inherit Odbc.odbc;

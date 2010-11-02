@@ -1,11 +1,15 @@
 /*
  * This is part of the Postgres module for Pike.
  *
- * $Id: postgres.pike,v 1.41 2010/02/21 22:42:16 srb Exp $
+ * $Id$
  *
  */
 
 #pike __REAL_VERSION__
+
+// Cannot dump this since the #if constant(...) check below may depend
+// on the presence of system libs at runtime.
+constant dont_dump_program = 1;
 
 #if constant(Postgres.postgres)
 
