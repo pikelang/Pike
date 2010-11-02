@@ -7,6 +7,8 @@
 #define report_warning werror
 #endif
 
+// Cannot dump this because of the #if constant(...) checks depending
+// on Roxen below.
 final constant dont_dump_module=1;
 
 #ifdef SEARCH_DEBUG
