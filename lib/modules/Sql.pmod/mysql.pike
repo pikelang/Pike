@@ -906,6 +906,5 @@ protected void create(string|void host, string|void database,
 }
 
 #else
-final constant dont_dump_module=1;
 constant this_program_does_not_exist=1;
 #endif /* constant(Mysql.mysql) */
