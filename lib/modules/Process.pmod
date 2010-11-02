@@ -236,22 +236,26 @@ mapping run(string|array(string) cmd, void|mapping modifiers)
   mystderr->set_read_callback( lambda( mixed i, string data) {
                                  gotstderr += data;
                                } );
+  mystdout->set_close_callback( lambda () {
+				  mystdout->set_read_callback(0);
+				  mystdout = 0;
+				});
+  mystderr->set_close_callback( lambda () {
+				  mystderr->set_read_callback(0);
+				  mystderr = 0;
+				});
 
   if (mystdin) {
     Shuffler.Shuffle sf = Shuffler.Shuffler()->shuffle( mystdin );
     sf->add_source(stdin_str);
+    sf->set_done_callback (lambda () {
+			     mystdin = 0;
+			   });
     sf->start();
-    mystdin = 0;
   }
 
-  while( !p->status() || p->status() == 1 )
+  while( mystdout || mystderr || mystdin )
     Pike.DefaultBackend( 1.0 );
-
-  mystdout->set_read_callback(0);
-  mystderr->set_read_callback(0);
-  
-  gotstdout += mystdout->read();
-  gotstderr += mystderr->read();
 
   exitcode = p->wait();
 #endif
