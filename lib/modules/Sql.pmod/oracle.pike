@@ -17,4 +17,7 @@ string server_info()
 {
   return "Oracle";
 }
+
+#else
+constant this_program_does_not_exist = 1;
 #endif /* constant(Oracle.oracle) */
