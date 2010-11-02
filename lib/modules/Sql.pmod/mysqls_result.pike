@@ -8,4 +8,6 @@ constant dont_dump_program = 1;
 
 inherit Sql.mysql_result;
 
+#else
+constant this_program_does_not_exist = 1;
 #endif
