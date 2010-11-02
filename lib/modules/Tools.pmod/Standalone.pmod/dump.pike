@@ -6,6 +6,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
+|| $Id$
 */
 
 constant description = "Dumps Pike files into object files.";
@@ -244,8 +245,14 @@ do_dump: {
 	  logmsg("Decode of %O failed (not dumped).\n", file);
       }
 
-      else if(!quiet)
-	logmsg("Not dumping %O (not dumped).\n", file);
+      else {
+	ok = 1;			// Don't count this as a failure.
+	if(!quiet)
+	  logmsg("Not dumped due to %s constant.\n",
+		 p->dont_dump_module ? "dont_dump_module" :
+		 p->dont_dump_program ? "dont_dump_program" :
+		 "this_program_does_not_exist");
+      }
     }
 
     else {
