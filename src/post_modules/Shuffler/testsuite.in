@@ -13,6 +13,42 @@ test_any([[
     return "nosegfault";
 ]],"nosegfault")
 
+cond([[master()->resolv("Pike.PollDeviceBackend")]], [[
+  test_any([[
+    Pike.PollDeviceBackend pb = Pike.PollDeviceBackend();
+    Stdio.File f = Stdio.File(), f2 = f->pipe();
+    Shuffler.Shuffler sfr = Shuffler.Shuffler();
+    sfr->set_backend (pb);
+    Shuffler.Shuffle sf = sfr->shuffle(f);
+    sf->add_source("xyz\n" * 100000);
+    return f2->read();
+  ]], "xyz\n" * 100000)
+]])
+
+cond([[master()->resolv("Pike.PollBackend")]], [[
+  test_any([[
+    Pike.PollBackend pb = Pike.PollBackend();
+    Stdio.File f = Stdio.File(), f2 = f->pipe();
+    Shuffler.Shuffler sfr = Shuffler.Shuffler();
+    sfr->set_backend (pb);
+    Shuffler.Shuffle sf = sfr->shuffle(f);
+    sf->add_source("xyz\n" * 100000);
+    return f2->read();
+  ]], "xyz\n" * 100000)
+]])
+
+cond([[master()->resolv("Pike.SelectBackend")]], [[
+  test_any([[
+    Pike.SelectBackend pb = Pike.SelectBackend();
+    Stdio.File f = Stdio.File(), f2 = f->pipe();
+    Shuffler.Shuffler sfr = Shuffler.Shuffler();
+    sfr->set_backend (pb);
+    Shuffler.Shuffle sf = sfr->shuffle(f);
+    sf->add_source("xyz\n" * 100000);
+    return f2->read();
+  ]], "xyz\n" * 100000)
+]])
+
 cond_end // Shuffler.Shuffle
 
 END_MARKER
