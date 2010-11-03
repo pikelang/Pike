@@ -21,7 +21,16 @@ cond([[master()->resolv("Pike.PollDeviceBackend")]], [[
     sfr->set_backend (pb);
     Shuffler.Shuffle sf = sfr->shuffle(f);
     sf->add_source("xyz\n" * 100000);
-    return f2->read();
+    sf->set_done_callback( lambda() { sf->stop(); destruct(sf); });
+    sf->start();
+    string res = "";
+    f2->set_backend(pb);
+    f2->set_read_callback( lambda(mixed id, string s) { res += s; });
+    while (sf) {
+      pb(1.0);
+    }
+    f->close();
+    return res + f2->read();
   ]], "xyz\n" * 100000)
 ]])
 
@@ -33,7 +42,16 @@ cond([[master()->resolv("Pike.PollBackend")]], [[
     sfr->set_backend (pb);
     Shuffler.Shuffle sf = sfr->shuffle(f);
     sf->add_source("xyz\n" * 100000);
-    return f2->read();
+    sf->set_done_callback( lambda() { sf->stop(); destruct(sf); });
+    sf->start();
+    string res = "";
+    f2->set_backend(pb);
+    f2->set_read_callback( lambda(mixed id, string s) { res += s; });
+    while (sf) {
+      pb(1.0);
+    }
+    f->close();
+    return res + f2->read();
   ]], "xyz\n" * 100000)
 ]])
 
@@ -45,7 +63,16 @@ cond([[master()->resolv("Pike.SelectBackend")]], [[
     sfr->set_backend (pb);
     Shuffler.Shuffle sf = sfr->shuffle(f);
     sf->add_source("xyz\n" * 100000);
-    return f2->read();
+    sf->set_done_callback( lambda() { sf->stop(); destruct(sf); });
+    sf->start();
+    string res = "";
+    f2->set_backend(pb);
+    f2->set_read_callback( lambda(mixed id, string s) { res += s; });
+    while (sf) {
+      pb(1.0);
+    }
+    f->close();
+    return res + f2->read();
   ]], "xyz\n" * 100000)
 ]])
 
