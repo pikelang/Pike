@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: Shuffler.cmod,v 1.51 2010/06/22 14:02:37 grubba Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -584,7 +584,7 @@ PIKECLASS Shuffle
 		       mixed backend )
     flags ID_PROTECTED;
   {
-    struct Backend_struct*be = default_backend;
+    struct Backend_struct *be = default_backend;
 
     if( (args != 4) || !shuffler || !get_storage( shuffler, Shuffler_program ) )
       Pike_error("This class cannot be instantiated directly\n");
@@ -605,8 +605,14 @@ PIKECLASS Shuffle
       change_fd_for_box(&THIS->box, -1);
     else {
       safe_apply( fd, "release_fd", 0 );
-      if(backend->type == PIKE_T_OBJECT && backend->u.object)
-        be = (struct Backend_struct*)backend->u.object;
+      if(backend->type == PIKE_T_OBJECT && backend->u.object) {
+        be = (struct Backend_struct*)
+	  get_storage(backend->u.object, Backend_program);
+	if (!be) {
+	  SIMPLE_BAD_ARG_ERROR("Shuffle->create()", 4,
+			       "object(Pike.__Backend)");
+	}
+      }
       change_fd_for_box(&THIS->box, Pike_sp[-1].u.integer);
       pop_stack();
     }
