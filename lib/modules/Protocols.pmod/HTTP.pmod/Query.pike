@@ -399,28 +399,48 @@ void async_fetch_close()
 }
 
 /****** utilities **************************************************/
+constant rfc_headers = ({ "accept_charset", "accept_encoding", "accept_language", 
+                  "accept_ranges", "cache_control", "content_length", 
+                  "content_type", "if_match", "if_modified_since", 
+                  "if_none_match", "if_range", "if_unmodified_since", 
+                  "max_forwards", "proxy_authorization", "transfer_encoding", 
+                  "user_agent", "www_autenticate" });
+
+constant replace_headers = mkmapping(replace(rfc_headers[*],"-","_"),rfc_headers);
 
 string headers_encode(mapping(string:array(string)|string) h)
 {
+    constant rfc_headers = ({ "accept-charset", "accept-encoding", "accept-language", 
+                              "accept-ranges", "cache-control", "content-length", 
+                              "content-type", "if-match", "if-modified-since", 
+                              "if-none-match", "if-range", "if-unmodified-since", 
+                              "max-forwards", "proxy-authorization", "transfer-encoding", 
+                              "user-agent", "www-autenticate" });
+   constant replace_headers = mkmapping(replace(rfc_headers[*],"-","_"),rfc_headers);
+
    if (!h || !sizeof(h)) return "";
    String.Buffer buf = String.Buffer();
    foreach(h; string name; array(string)|string value)
+   {
+     if( replace_headers[name] )
+       name = replace_headers[name];
      if(stringp(value))
-       buf->add( String.capitalize(replace(name,"_","-")), ": ",
+       buf->add( String.capitalize(name), ": ",
 		 value, "\r\n" );
      else if(!value)
        continue;
      else if (intp(value))
-       buf->add( String.capitalize(replace(name,"_","-")), ": ",
+       buf->add( String.capitalize(name), ": ",
 		 (string)value, "\r\n" );
      else if (arrayp(value)) {
        foreach(value, string value)
-	 buf->add( String.capitalize(replace(name,"_","-")), ": ",
+	 buf->add( String.capitalize(name), ": ",
 		   value, "\r\n" );
      } else {
        error("Protocols.HTTP.Query()->headers_encode(): Bad header: %O:%O.\n",
 	     name, value);
      }
+   }
    return (string)buf;
 }
 
