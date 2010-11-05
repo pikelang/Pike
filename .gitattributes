@@ -888,7 +888,6 @@ testfont binary
 /src/stuff.c foreign_ident
 /src/stuff.h foreign_ident
 /src/svalue.c foreign_ident
-/src/svalue.h foreign_ident
 /src/test_co.pike foreign_ident
 /src/threads.h foreign_ident
 /src/time_stuff.h foreign_ident

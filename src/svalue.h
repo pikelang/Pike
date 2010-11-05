@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.h,v 1.173 2010/07/28 22:46:40 mast Exp $
+|| $Id$
 */
 
 #ifndef SVALUE_H
@@ -398,7 +398,8 @@ PMOD_EXPORT extern const char msg_type_error[];
 PMOD_EXPORT extern const char msg_assign_svalue_error[];
 
 #define IS_INVALID_TYPE(T)						\
-  ((T > MAX_TYPE && T < T_OBJ_INDEX && T != T_VOID) || T > T_ARRAY_LVALUE)
+  ((T > MAX_TYPE && T < T_OBJ_INDEX && T != T_VOID && T != PIKE_T_FREE) || \
+   T > T_ARRAY_LVALUE)
 
 #define check_type(T) do {						\
     TYPE_T typ_ = (T);							\
