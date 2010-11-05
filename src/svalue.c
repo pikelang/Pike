@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.262 2010/07/28 22:46:39 mast Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -2165,8 +2165,9 @@ PMOD_EXPORT void real_gc_check_svalues(const struct svalue *s, size_t num)
   size_t e;
   for(e=0;e<num;e++,s++)
   {
-    check_svalue((struct svalue *) s);
 #ifdef PIKE_DEBUG
+    if (s->type != PIKE_T_FREE)
+      check_svalue((struct svalue *) s);
     gc_svalue_location=(void *)s;
 #endif
     GC_CHECK_SWITCH((s->u), (s->type), NEVER_ZAP, gc_check,
@@ -2186,8 +2187,9 @@ void gc_check_weak_svalues(const struct svalue *s, size_t num)
   size_t e;
   for(e=0;e<num;e++,s++)
   {
-    check_svalue((struct svalue *) s);
 #ifdef PIKE_DEBUG
+    if (s->type != PIKE_T_FREE)
+      check_svalue((struct svalue *) s);
     gc_svalue_location=(void *)s;
 #endif
     GC_CHECK_SWITCH((s->u), (s->type), NEVER_ZAP, gc_check_weak,
@@ -2271,6 +2273,9 @@ void gc_check_weak_short_svalue(const union anything *u, TYPE_T type)
     case T_TYPE:							\
       PRE DO_TYPE(U, type); break;					\
     );									\
+    case PIKE_T_FREE:							\
+      /* Assume use inside a for loop. */				\
+      continue;								\
   }
 
 #define DONT_FREE_WEAK(U, T, ZAP)
@@ -2355,44 +2360,52 @@ TYPE_FIELD gc_mark_weak_svalues(struct svalue *s, size_t num)
 int real_gc_mark_short_svalue(union anything *u, TYPE_T type)
 {
   int freed = 0;
-  debug_malloc_touch(u);
-  GC_RECURSE_SWITCH((*u), type, ZAP_SHORT_SVALUE, DONT_FREE_WEAK,
-		    GC_DO_MARK, {if (!u->refs) return 0;},
-		    DO_FUNC_SHORT_SVALUE, GC_DO_MARK,
-		    DO_MARK_STRING, GC_DO_MARK);
+  do {
+    debug_malloc_touch(u);
+    GC_RECURSE_SWITCH((*u), type, ZAP_SHORT_SVALUE, DONT_FREE_WEAK,
+		      GC_DO_MARK, {if (!u->refs) return 0;},
+		      DO_FUNC_SHORT_SVALUE, GC_DO_MARK,
+		      DO_MARK_STRING, GC_DO_MARK);
+  } while (0);
   return freed;
 }
 
 int gc_mark_weak_short_svalue(union anything *u, TYPE_T type)
 {
   int freed = 0;
-  debug_malloc_touch(u);
-  GC_RECURSE_SWITCH((*u), type, ZAP_SHORT_SVALUE, FREE_WEAK,
-		    GC_DONT_MARK, {if (!u->refs) return 0;},
-		    DO_FUNC_SHORT_SVALUE, DO_MARK_OBJ_WEAK,
-		    DO_MARK_STRING, GC_DO_MARK);
+  do {
+    debug_malloc_touch(u);
+    GC_RECURSE_SWITCH((*u), type, ZAP_SHORT_SVALUE, FREE_WEAK,
+		      GC_DONT_MARK, {if (!u->refs) return 0;},
+		      DO_FUNC_SHORT_SVALUE, DO_MARK_OBJ_WEAK,
+		      DO_MARK_STRING, GC_DO_MARK);
+  } while (0);
   return freed;
 }
 
 int gc_mark_without_recurse(struct svalue *s)
 {
   int freed = 0;
-  dmalloc_touch_svalue(s);
-  GC_RECURSE_SWITCH((s->u), (s->type), ZAP_SVALUE, DONT_FREE_WEAK,
-		    GC_DONT_MARK, MARK_PRE,
-		    DONT_MARK_FUNC_SVALUE, GC_DONT_MARK,
-		    DONT_MARK_STRING, GC_DONT_MARK);
+  do {
+    dmalloc_touch_svalue(s);
+    GC_RECURSE_SWITCH((s->u), (s->type), ZAP_SVALUE, DONT_FREE_WEAK,
+		      GC_DONT_MARK, MARK_PRE,
+		      DONT_MARK_FUNC_SVALUE, GC_DONT_MARK,
+		      DONT_MARK_STRING, GC_DONT_MARK);
+  } while (0);
   return freed;
 }
 
 int gc_mark_weak_without_recurse(struct svalue *s)
 {
   int freed = 0;
-  dmalloc_touch_svalue(s);
-  GC_RECURSE_SWITCH((s->u), (s->type), ZAP_SVALUE, FREE_WEAK,
-		    GC_DONT_MARK, MARK_PRE,
-		    DONT_MARK_FUNC_SVALUE, GC_DONT_MARK,
-		    DONT_MARK_STRING, GC_DONT_MARK);
+  do {
+    dmalloc_touch_svalue(s);
+    GC_RECURSE_SWITCH((s->u), (s->type), ZAP_SVALUE, FREE_WEAK,
+		      GC_DONT_MARK, MARK_PRE,
+		      DONT_MARK_FUNC_SVALUE, GC_DONT_MARK,
+		      DONT_MARK_STRING, GC_DONT_MARK);
+  } while (0);
   return freed;
 }
 
@@ -2443,22 +2456,26 @@ TYPE_FIELD gc_cycle_check_weak_svalues(struct svalue *s, size_t num)
 PMOD_EXPORT int real_gc_cycle_check_short_svalue(union anything *u, TYPE_T type)
 {
   int freed = 0;
-  debug_malloc_touch(u);
-  GC_RECURSE_SWITCH((*u), type, ZAP_SHORT_SVALUE, DONT_FREE_WEAK,
-		    DO_CYCLE_CHECK, {if (!u->refs) return 0;},
-		    DO_FUNC_SHORT_SVALUE, DO_CYCLE_CHECK,
-		    DONT_CYCLE_CHECK_STRING, DONT_CYCLE_CHECK);
+  do {
+    debug_malloc_touch(u);
+    GC_RECURSE_SWITCH((*u), type, ZAP_SHORT_SVALUE, DONT_FREE_WEAK,
+		      DO_CYCLE_CHECK, {if (!u->refs) return 0;},
+		      DO_FUNC_SHORT_SVALUE, DO_CYCLE_CHECK,
+		      DONT_CYCLE_CHECK_STRING, DONT_CYCLE_CHECK);
+  } while (0);
   return freed;
 }
 
 int gc_cycle_check_weak_short_svalue(union anything *u, TYPE_T type)
 {
   int freed = 0;
-  debug_malloc_touch(u);
-  GC_RECURSE_SWITCH((*u), type, ZAP_SHORT_SVALUE, DONT_FREE_WEAK,
-		    DO_CYCLE_CHECK_WEAK, {if (!u->refs) return 0;},
-		    DO_FUNC_SHORT_SVALUE, DO_CYCLE_CHECK_WEAK,
-		    DONT_CYCLE_CHECK_STRING, DONT_CYCLE_CHECK);
+  do {
+    debug_malloc_touch(u);
+    GC_RECURSE_SWITCH((*u), type, ZAP_SHORT_SVALUE, DONT_FREE_WEAK,
+		      DO_CYCLE_CHECK_WEAK, {if (!u->refs) return 0;},
+		      DO_FUNC_SHORT_SVALUE, DO_CYCLE_CHECK_WEAK,
+		      DONT_CYCLE_CHECK_STRING, DONT_CYCLE_CHECK);
+  } while (0);
   return freed;
 }
 
