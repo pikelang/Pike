@@ -214,7 +214,9 @@ mapping run(string|array(string) cmd, void|mapping modifiers)
                   "stderr":mystderr->pipe(),
                 ]));
 
-#if constant(Thread.Thread)
+#if 0 //constant(Thread.Thread)
+  // This is disabled by default since the callback alternative is
+  // much more lightweight - creating threads isn't cheap.
   array threads = ({
       thread_create( lambda() { gotstdout = mystdout->read(); } ),
       thread_create( lambda() { gotstderr = mystderr->read(); } )
@@ -229,7 +231,7 @@ mapping run(string|array(string) cmd, void|mapping modifiers)
 
   exitcode = p->wait();
   threads->wait();
-#else //No threads, use callbacks
+#else
   Pike.SmallBackend backend = Pike.SmallBackend();
 
   mystdout->set_backend (backend);
