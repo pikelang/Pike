@@ -398,8 +398,7 @@ PMOD_EXPORT extern const char msg_type_error[];
 PMOD_EXPORT extern const char msg_assign_svalue_error[];
 
 #define IS_INVALID_TYPE(T)						\
-  ((T > MAX_TYPE && T < T_OBJ_INDEX && T != T_VOID && T != PIKE_T_FREE) || \
-   T > T_ARRAY_LVALUE)
+  ((T > MAX_TYPE && T < T_OBJ_INDEX && T != T_VOID) || T > T_ARRAY_LVALUE)
 
 #define check_type(T) do {						\
     TYPE_T typ_ = (T);							\
