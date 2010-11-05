@@ -2413,7 +2413,7 @@ PMOD_EXPORT struct pike_string *implode(struct array *a,
 	   continue;		    /* skip zero (strings) */
 	 /* FALLTHROUGH */
       default:
-	Pike_error("Arrayelement %d is not a string\n", ae-a->item);
+	Pike_error("Array element %d is not a string\n", ae-a->item);
       case T_STRING:
         len+=ae->u.string->len + del->len;
         if(ae->u.string->size_shift > max_shift)
