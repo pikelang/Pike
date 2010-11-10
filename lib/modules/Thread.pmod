@@ -384,6 +384,19 @@ optional class Queue {
     return ret;
   }
 
+  //! Returns a snapshot of all the values in the queue, in the order
+  //! they were written. The values are still left in the queue, so if
+  //! other threads are reading from it, the returned value should be
+  //! considered stale already on return.
+  array peek_array()
+  {
+    if (w_ptr == r_ptr) return ({});
+    MutexKey key = lock::lock();
+    array ret = buffer[r_ptr..w_ptr - 1];
+    key = 0;
+    return ret;
+  }
+
   //! This function puts a @[value] last in the queue. If the queue is
   //! too small to hold the @[value] it will be expanded to make room.
   //! The number of items in the queue after the write is returned.
