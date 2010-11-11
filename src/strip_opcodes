@@ -3,8 +3,9 @@
 # Avoid clever UTF-8 assumptions.
 LANG=C
 LC_CTYPE=C
+LC_ALL=C
 
-export LANG LC_CTYPE
+export LANG LC_CTYPE LC_ALL
 
 # Notes about limitations in SysV sed:
 #
