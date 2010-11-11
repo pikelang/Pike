@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.268 2010/02/18 08:52:55 srb Exp $
+|| $Id$
 */
 
 #ifndef PROGRAM_H
@@ -901,6 +901,8 @@ int store_constant(const struct svalue *foo,
 		   struct pike_string *constant_name);
 struct array *program_indices(struct program *p);
 struct array *program_values(struct program *p);
+int low_program_index_no_free(struct svalue *to, struct program *p, int e,
+			      struct object *parent, int parent_identifier);
 int program_index_no_free(struct svalue *to, struct svalue *what,
 			  struct svalue *ind);
 int get_small_number(char **q);

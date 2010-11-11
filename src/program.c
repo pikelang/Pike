@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.778 2010/07/01 11:25:21 grubba Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -6462,6 +6462,75 @@ struct array *program_values(struct program *p)
   return(res);
 }
 
+int low_program_index_no_free(struct svalue *to, struct program *p, int e,
+			      struct object *parent, int parent_identifier)
+{
+  struct identifier *id;
+  id=ID_FROM_INT(p, e);
+
+  if (IDENTIFIER_IS_ALIAS(id->identifier_flags)) {
+    struct external_variable_context loc;
+    struct object fake_object;
+    struct parent_info parent_info;
+    int refid;
+
+    if (!parent) return 0;
+
+    parent_info.parent = parent;
+    parent_info.parent_identifier = parent_identifier;
+    fake_object.prog = p;
+    fake_object.refs = 1;
+    fake_object.next = fake_object.prev = NULL;
+    fake_object.storage = ((char *)&parent_info) - p->parent_info_storage;
+#ifdef PIKE_DEBUG
+    fake_object.program_id = p->id;
+#endif
+
+    loc.o = &fake_object;
+    loc.inherit = INHERIT_FROM_INT(p, e);
+    loc.parent_identifier = 0;
+
+    do {
+      find_external_context(&loc, id->func.ext_ref.depth);
+      refid = id->func.ext_ref.id;
+      id = ID_FROM_INT(loc.o->prog, refid);
+    } while (IDENTIFIER_IS_ALIAS(id->identifier_flags));
+
+    if (fake_object.refs != 1) {
+      Pike_fatal("Lost track of fake object! refs: %d\n",
+		 fake_object.refs);
+    }
+
+    if (loc.o != &fake_object) {
+      low_object_index_no_free(to, loc.o, refid);
+#if 0 && defined (COMPILER_DEBUG)
+      safe_pike_fprintf (stderr, "low_program_index_no_free1 %O->%S: %O\n",
+			 what, s, to);
+#endif
+      return 1;
+    }
+  }
+
+  if (IDENTIFIER_IS_CONSTANT(id->identifier_flags)) {
+    if (id->func.offset >= 0) {
+      struct program *p2 = PROG_FROM_INT(p, e);
+      struct svalue *val = &p2->constants[id->func.offset].sval;
+      assign_svalue_no_free(to, val);
+    } else {
+      /* Prototype constant. */
+      to->type = T_INT;
+      to->subtype = NUMBER_NUMBER;
+      to->u.integer = 0;
+    }
+#if 0 && defined (COMPILER_DEBUG)
+    safe_pike_fprintf (stderr, "low_program_index_no_free2 %O->%S: %O\n",
+		       what, s, to);
+#endif
+    return 1;
+  }
+  return 0;
+}
+
 int program_index_no_free(struct svalue *to, struct svalue *what,
 			  struct svalue *ind)
 {
@@ -6496,71 +6565,9 @@ int program_index_no_free(struct svalue *to, struct svalue *what,
   e=find_shared_string_identifier(s, p);
   if(e!=-1)
   {
-    struct identifier *id;
-    id=ID_FROM_INT(p, e);
-
-    if (IDENTIFIER_IS_ALIAS(id->identifier_flags)) {
-      struct external_variable_context loc;
-      struct object fake_object;
-      struct parent_info parent_info;
-      int refid;
-
-      if (!parent) goto fail;
-
-      parent_info.parent = parent;
-      parent_info.parent_identifier = parent_identifier;
-      fake_object.prog = p;
-      fake_object.refs = 1;
-      fake_object.next = fake_object.prev = NULL;
-      fake_object.storage = ((char *)&parent_info) - p->parent_info_storage;
-#ifdef PIKE_DEBUG
-      fake_object.program_id = p->id;
-#endif
-
-      loc.o = &fake_object;
-      loc.inherit = INHERIT_FROM_INT(p, e);
-      loc.parent_identifier = 0;
-
-      do {
-	find_external_context(&loc, id->func.ext_ref.depth);
-	refid = id->func.ext_ref.id;
-	id = ID_FROM_INT(loc.o->prog, refid);
-      } while (IDENTIFIER_IS_ALIAS(id->identifier_flags));
-
-      if (fake_object.refs != 1) {
-	Pike_fatal("Lost track of fake object! refs: %d\n",
-		   fake_object.refs);
-      }
-
-      if (loc.o != &fake_object) {
-	low_object_index_no_free(to, loc.o, refid);
-#if 0 && defined (COMPILER_DEBUG)
-	safe_pike_fprintf (stderr, "program_index_no_free1 %O->%S: %O\n",
-			   what, s, to);
-#endif
-	return 1;
-      }
-    }
-
-    if (IDENTIFIER_IS_CONSTANT(id->identifier_flags)) {
-      if (id->func.offset >= 0) {
-	struct program *p2 = PROG_FROM_INT(p, e);
-	struct svalue *val = &p2->constants[id->func.offset].sval;
-	assign_svalue_no_free(to, val);
-      } else {
-	/* Prototype constant. */
-	to->type = T_INT;
-	to->subtype = NUMBER_NUMBER;
-	to->u.integer = 0;
-      }
-#if 0 && defined (COMPILER_DEBUG)
-      safe_pike_fprintf (stderr, "program_index_no_free2 %O->%S: %O\n",
-			 what, s, to);
-#endif
+    if (low_program_index_no_free(to, p, e, parent, parent_identifier))
       return 1;
-    }
   }
- fail:
 
   to->type=T_INT;
   to->subtype=NUMBER_UNDEFINED;
