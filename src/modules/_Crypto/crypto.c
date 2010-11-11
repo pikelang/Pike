@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: crypto.c,v 1.53 2006/06/09 09:28:45 mast Exp $
+|| $Id$
 */
 
 /*
@@ -427,6 +427,7 @@ static void f_crypto_crypt(INT32 args)
   ptrdiff_t roffset = 0;
   ptrdiff_t soffset = 0;
   ptrdiff_t len;
+  ONERROR uwp;
 
   if (args != 1) {
     Pike_error("Wrong number of arguments to crypto->crypt()\n");
@@ -434,9 +435,11 @@ static void f_crypto_crypt(INT32 args)
   if (sp[-1].type != T_STRING) {
     Pike_error("Bad argument 1 to crypto->crypt()\n");
   }
-  if (!(result = alloca(sp[-1].u.string->len + THIS->block_size))) {
+  if (!(result = malloc(sp[-1].u.string->len + THIS->block_size))) {
     Pike_error("crypto->crypt(): Out of memory\n");
   }
+  SET_ONERROR (uwp, free, result);
+
   if (THIS->backlog_len) {
     if (sp[-1].u.string->len >=
 	(THIS->block_size - THIS->backlog_len)) {
@@ -466,6 +469,7 @@ static void f_crypto_crypt(INT32 args)
       THIS->backlog_len += sp[-1].u.string->len;
       pop_n_elems(args);
       push_string(make_shared_binary_string("", 0));
+      CALL_AND_UNSET_ONERROR (uwp);
       return;
     }
   }
@@ -502,6 +506,7 @@ static void f_crypto_crypt(INT32 args)
 
   push_string(make_shared_binary_string((char *)result, roffset + len));
   MEMSET(result, 0, roffset + len);
+  CALL_AND_UNSET_ONERROR (uwp);
 }
 
 /*! @decl string pad()

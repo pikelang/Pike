@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: invert.c,v 1.16 2002/10/21 17:06:24 marcus Exp $
+|| $Id$
 */
 
 /*
@@ -126,6 +126,7 @@ static void f_crypt_block(INT32 args)
   char *buffer;
   ptrdiff_t i;
   ptrdiff_t len;
+  ONERROR uwp;
 
   if (args != 1) {
     Pike_error("Wrong number of arguments to invert->crypt_block()\n");
@@ -137,9 +138,10 @@ static void f_crypt_block(INT32 args)
     Pike_error("Bad length of argument 1 to invert->crypt_block()\n");
   }
 
-  if (!(buffer = alloca(len = sp[-1].u.string->len))) {
+  if (!(buffer = malloc(len = sp[-1].u.string->len))) {
     Pike_error("invert->crypt_block(): Out of memory\n");
   }
+  SET_ONERROR (uwp, free, buffer);
 
   for (i=0; i<len; i++) {
     buffer[i] = ~sp[-1].u.string->str[i];
@@ -150,6 +152,7 @@ static void f_crypt_block(INT32 args)
   push_string(make_shared_binary_string(buffer, len));
 
   MEMSET(buffer, 0, len);
+  CALL_AND_UNSET_ONERROR (uwp);
 }
 
 /*! @endclass

@@ -279,4 +279,29 @@ test_eq([[xCrypto.crypt_md5("Hello","sl5hO7j4")]],
 test_eq([[xCrypto.crypt_md5("Hello","$1$sl5hO7j4$glLmY.ttmi1hWK8ucIrig.")]],
 	[["$1$sl5hO7j4$glLmY.ttmi1hWK8ucIrig."]])
 
+test_do([[
+  object x = xCrypto.crypto (Crypto.des);
+  x->set_encrypt_key (xCrypto.hex_to_string("8001010101010101"));
+  x->crypt ("x" * 10000000);
+]])
+
+test_do([[
+  object x = xCrypto.cbc (Crypto.des);
+  x->set_encrypt_key (xCrypto.hex_to_string("8001010101010101"));
+  x->encrypt_block ("x" * 10000000);
+]])
+
+test_do([[
+  object x = xCrypto.cbc (Crypto.des);
+  x->set_decrypt_key (xCrypto.hex_to_string("8001010101010101"));
+  x->decrypt_block ("x" * 10000000);
+]])
+
+test_any([[
+  object x = xCrypto.invert();
+  // This used to write off the end of the stack, but that didn't
+  // necessarily result in a testsuite failure here.
+  return x->crypt_block ("x" * 10000000);
+]], [["\207" * 10000000]])
+
 test_do(add_constant("xCrypto"))

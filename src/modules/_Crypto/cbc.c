@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cbc.c,v 1.24 2002/10/21 17:06:23 marcus Exp $
+|| $Id$
 */
 
 /*
@@ -275,6 +275,7 @@ static void f_encrypt_block(INT32 args)
 {
   unsigned INT8 *result;
   INT32 offset = 0;
+  ONERROR uwp;
 
   if (args != 1) {
     Pike_error("Wrong number of arguments to cbc->encrypt_block()\n");
@@ -285,9 +286,10 @@ static void f_encrypt_block(INT32 args)
   if (sp[-1].u.string->len % THIS->block_size) {
     Pike_error("Bad length of argument 1 to cbc->encrypt_block()\n");
   }
-  if (!(result = alloca(sp[-1].u.string->len))) {
+  if (!(result = malloc(sp[-1].u.string->len))) {
     Pike_error("cbc->encrypt_block(): Out of memory\n");
   }
+  SET_ONERROR (uwp, free, result);
 
   while (offset < sp[-1].u.string->len) {
 
@@ -300,6 +302,7 @@ static void f_encrypt_block(INT32 args)
 
   push_string(make_shared_binary_string((INT8 *)result, offset));
   MEMSET(result, 0, offset);
+  CALL_AND_UNSET_ONERROR (uwp);
 }
 
 /*! @decl string decrypt_block(string data)
@@ -311,6 +314,7 @@ static void f_decrypt_block(INT32 args)
 {
   unsigned INT8 *result;
   INT32 offset = 0;
+  ONERROR uwp;
 
   if (args != 1) {
     Pike_error("Wrong number of arguments to cbc->decrypt_block()\n");
@@ -321,9 +325,10 @@ static void f_decrypt_block(INT32 args)
   if (sp[-1].u.string->len % THIS->block_size) {
     Pike_error("Bad length of argument 1 to cbc->decrypt_block()\n");
   }
-  if (!(result = alloca(sp[-1].u.string->len))) {
+  if (!(result = malloc(sp[-1].u.string->len))) {
     Pike_error("cbc->cbc_decrypt(): Out of memory\n");
   }
+  SET_ONERROR (uwp, free, result);
 
   while (offset < sp[-1].u.string->len) {
 
@@ -336,6 +341,7 @@ static void f_decrypt_block(INT32 args)
 
   push_string(make_shared_binary_string((INT8 *)result, offset));
   MEMSET(result, 0, offset);
+  CALL_AND_UNSET_ONERROR (uwp);
 }
 
 /*! @decl string crypt_block(string data)
