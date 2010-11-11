@@ -938,15 +938,17 @@ static void low_query(INT32 args, char *name, int flags)
   }
   if (mysql && tmp) {
     /* Check if we need to reconnect. */
-#if defined(CR_SERVER_GONE_ERROR) && defined(CR_UNKNOWN_ERROR)
+#if defined(CR_SERVER_GONE_ERROR) && defined(CR_SERVER_LOST_ERROR) && \
+  defined(CR_UNKNOWN_ERROR)
     int eno = mysql_errno(mysql);
     if ((eno == CR_SERVER_GONE_ERROR) ||
+	(eno == CR_SERVER_LOST_ERROR) ||
 	(eno == CR_UNKNOWN_ERROR)) {
       mysql = NULL;
     }
-#else /* !CR_SERVER_GONE_ERROR || !CR_UNKNOWN_ERROR */
+#else /* !CR_SERVER_GONE_ERROR || !CR_SERVER_LOST_ERROR || !CR_UNKNOWN_ERROR */
     mysql = NULL;
-#endif /* CR_SERVER_GONE_ERROR && CR_UNKNOWN_ERROR */
+#endif /* CR_SERVER_GONE_ERROR && CR_SERVER_LOST_ERROR && CR_UNKNOWN_ERROR */
   }
   if (!mysql) {
     /* The connection might have been closed. */
