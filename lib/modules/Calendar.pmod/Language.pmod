@@ -39,6 +39,16 @@ protected class _ymd_base
    protected mapping(int:string) week_day_n2ss;
    protected mapping(string:int) week_day_s2n;
 
+   string name()
+   {
+     //  Perform the inverse operation to the `[] method below. We don't
+     //  care about normalizing the name among several aliases.
+     string cls = function_name(object_program(this));
+     if (has_prefix(cls, "c"))
+       return lower_case(cls[1..]);
+     return 0;
+   }
+
    string month_name_from_number(int n)
    {
       return month_n2s[n];
