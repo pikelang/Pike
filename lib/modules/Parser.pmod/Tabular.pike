@@ -666,8 +666,11 @@ array|mapping compile(string|Stdio.File|Stdio.FILE input)
     input="";
   if(stringp(input))
     input=Stdio.FakeFile(input);
-  if(!input->unread)
-    (input=Stdio.FILE())->assign(input);
+  if(!input->unread) {
+    Stdio.FILE tmpf = Stdio.FILE();
+    tmpf->assign(input);
+    input = tmpf;
+  }
   int started=0;
   int lineno=0;
   string beginend="Tabular description ";
