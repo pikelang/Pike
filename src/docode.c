@@ -870,7 +870,13 @@ static int do_docode2(node *n, int flags)
       int level = 0;
       struct program_state *state = Pike_compiler;
       while (state && (state->new_program->id != n->u.integer.a)) {
-	state->new_program->flags |= PROGRAM_USES_PARENT | PROGRAM_NEEDS_PARENT;
+	if ((flags & WANT_LVALUE) ||
+	    (n->node_info & (OPT_EXTERNAL_DEPEND|OPT_NOT_CONST))) {
+	  /* Not a reference to a locally bound external constant.
+	   * We will thus need true parent pointers.  */
+	  state->new_program->flags |=
+	    PROGRAM_USES_PARENT | PROGRAM_NEEDS_PARENT;
+	}
 	state = state->previous;
 	level++;
       }

@@ -1185,7 +1185,17 @@ node *debug_mkexternalnode(struct program *parent_prog, int i)
     /* FIXME */
     if(IDENTIFIER_IS_CONSTANT(id->identifier_flags))
     {
-      res->node_info = OPT_EXTERNAL_DEPEND;
+      if (!(PTR_FROM_INT(parent_prog, i)->id_flags & ID_LOCAL)) {
+	/* It's possible to overload the identifier. */
+	res->node_info = OPT_EXTERNAL_DEPEND;
+      } else {
+	struct svalue *s = &parent_prog->constants[id->func.offset].sval;
+	if ((s->type == T_PROGRAM) &&
+	    (s->u.program->flags & PROGRAM_USES_PARENT)) {
+	  /* The constant program refers to its parent, so we need as well. */
+	  res->node_info = OPT_EXTERNAL_DEPEND;
+	}
+      }
     }else{
       res->node_info = OPT_NOT_CONST;
       if (IDENTIFIER_IS_VARIABLE(id->identifier_flags) &&
