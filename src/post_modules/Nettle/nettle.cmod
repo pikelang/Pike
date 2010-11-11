@@ -1,5 +1,5 @@
 /* nettle.cmod -*- c -*- */
-/* $Id: nettle.cmod,v 1.58 2010/06/22 14:30:13 grubba Exp $ */
+/* $Id$ */
 
 #include "global.h"
 #include "interpret.h"
@@ -560,13 +560,16 @@ PIKECLASS CBC
   PIKEFUN string crypt(string data) {
     unsigned INT8 *result;
     INT32 offset = 0;
+    ONERROR uwp;
 
     NO_WIDE_STRING(data);
 
     if(data->len % THIS->block_size)
       Pike_error("Data length not multiple of block size.\n");
-    if(!(result = alloca(data->len)))
+
+    if(!(result = malloc(data->len)))
       SIMPLE_OUT_OF_MEMORY_ERROR("crypt", data->len);
+    SET_ONERROR (uwp, free, result);
 
     if(THIS->mode == 0) {
       while (offset < data->len) {
@@ -586,6 +589,8 @@ PIKECLASS CBC
     pop_n_elems(args);
     push_string(make_shared_binary_string((INT8 *)result, offset));
     MEMSET(result, 0, offset);
+
+    CALL_AND_UNSET_ONERROR (uwp);
   }
 }
 
@@ -733,9 +738,11 @@ PIKECLASS Proxy {
     ptrdiff_t roffset = 0;
     ptrdiff_t soffset = 0;
     ptrdiff_t len;
+    ONERROR uwp;
 
-    if (!(result = alloca(data->len + THIS->block_size)))
+    if (!(result = malloc(data->len + THIS->block_size)))
       SIMPLE_OUT_OF_MEMORY_ERROR("crypt", data->len + THIS->block_size);
+    SET_ONERROR (uwp, free, result);
 
     if (THIS->backlog_len) {
       if (data->len >= (THIS->block_size - THIS->backlog_len)) {
@@ -762,6 +769,7 @@ PIKECLASS Proxy {
 	THIS->backlog_len += data->len;
 	pop_n_elems(args);
 	push_empty_string();
+	CALL_AND_UNSET_ONERROR (uwp);
 	return;
       }
     }
@@ -797,6 +805,7 @@ PIKECLASS Proxy {
 
     push_string(make_shared_binary_string((char *)result, roffset + len));
     MEMSET(result, 0, roffset + len);
+    CALL_AND_UNSET_ONERROR (uwp);
   }
 
   /*! @decl string pad(void|int method)

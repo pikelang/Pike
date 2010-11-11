@@ -228,6 +228,21 @@ test_tests(
 				         "--quick"}));
   }
 )
+
+test_do([[
+  object x = Nettle.CBC (Crypto.AES);
+  x->set_encrypt_key ("\0" * 16);
+  x->set_iv ("\0" * 16);
+  x->crypt ("x" * 10000000);
+]])
+]])
+
+cond_resolv(Nettle.Proxy, [[
+  test_do([[
+    object x = Crypto.Buffer (Crypto.AES);
+    x->set_encrypt_key ("0" * 32);
+    x->crypt ("x" * 10000000);
+  ]])
 ]])
 
 cond_resolv( Nettle.Yarrow, [[
