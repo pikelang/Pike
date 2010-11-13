@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: hash.cmod,v 1.35 2010/06/21 12:35:35 mast Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -128,10 +128,16 @@ PIKECLASS HashInfo
     if(!ctx)
       SIMPLE_OUT_OF_MEMORY_ERROR("hash", meta->context_size);
 
-    THREADS_ALLOW();
-    meta->init(ctx);
-    meta->update(ctx, in->len, (const uint8_t *)in->str);
-    THREADS_DISALLOW();
+    /* Only thread this block for significant data size */
+    if (in->len > THREADS_ALLOW_THRESHOLD) {
+      THREADS_ALLOW();
+      meta->init(ctx);
+      meta->update(ctx, in->len, (const uint8_t *)in->str);
+      THREADS_DISALLOW();
+    } else {
+      meta->init(ctx);
+      meta->update(ctx, in->len, (const uint8_t *)in->str);
+    }
 
     digest_length = meta->digest_size;
     out = begin_shared_string(digest_length);
@@ -285,9 +291,15 @@ PIKECLASS HashState
 	Pike_error("HashState not properly initialized.\n");
 
       NO_WIDE_STRING(data);
-      THREADS_ALLOW();
-      meta->update(ctx, data->len, (const uint8_t *)data->str);
-      THREADS_DISALLOW();
+      
+      /* Only thread this block for significant data size */
+      if (data->len > THREADS_ALLOW_THRESHOLD) {
+	THREADS_ALLOW();
+	meta->update(ctx, data->len, (const uint8_t *)data->str);
+	THREADS_DISALLOW();
+      } else {
+	meta->update(ctx, data->len, (const uint8_t *)data->str);
+      }
 
       push_object(this_object());
     }

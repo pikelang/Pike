@@ -286,9 +286,7 @@ PIKEFUN string crypt_md5(string pw, string salt)
   char *hash;
   NO_WIDE_STRING(pw);
   NO_WIDE_STRING(salt);
-  THREADS_ALLOW();
-  hash = pike_crypt_md5(pw->len, pw->str,salt->len, salt->str);
-  THREADS_DISALLOW();
+  hash = pike_crypt_md5(pw->len, pw->str, salt->len, salt->str);
   push_text(hash);
 }
 
