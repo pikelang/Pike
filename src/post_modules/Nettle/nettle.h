@@ -12,6 +12,13 @@ extern struct program *nettle_hash_program;
        Pike_error("Bad argument. Must be 8-bit string.\n");	\
   } while(0)
 
+
+/* Hashing methods can normally process hundres of megabytes per second
+   so it's rather wasteful to enable threads during hashing of smaller
+   data sizes. Limit is now 1 MB. */
+#define THREADS_ALLOW_THRESHOLD (1024 * 1024)
+
+
 char *pike_crypt_md5(int pl, const char *const pw,
                      int sl, const char *const salt);
 
