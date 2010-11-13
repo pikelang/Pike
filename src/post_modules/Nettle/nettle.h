@@ -13,7 +13,7 @@ extern struct program *nettle_hash_program;
   } while(0)
 
 
-/* Hashing methods can normally process hundres of megabytes per second
+/* Hashing methods can normally process hundreds of megabytes per second
    so it's rather wasteful to enable threads during hashing of smaller
    data sizes. Limit is now 1 MB. */
 #define THREADS_ALLOW_THRESHOLD (1024 * 1024)
