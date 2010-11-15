@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.706 2010/09/28 16:06:35 mast Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -1081,6 +1081,9 @@ PMOD_EXPORT void f_search(INT32 args)
  *!   Returns @expr{1@} if the string @[s] starts with @[prefix],
  *!   returns @expr{0@} (zero) otherwise.
  *!
+ *!   When @[s] is an object, it needs to implement
+ *!   @[lfun::_sizeof()] and @[lfun::`[]].
+ *!
  *! @seealso
  *!    @[has_suffix()], @[has_value()], @[search()]
  */
@@ -1101,7 +1104,13 @@ PMOD_EXPORT void f_has_prefix(INT32 args)
     ptrdiff_t i;
     struct object *o = Pike_sp[-args].u.object;
     int inherit_no = Pike_sp[-args].subtype;
-    push_int(0);
+
+    apply_lfun(o, LFUN__SIZEOF, 0);
+    if ((Pike_sp[-1].type != T_INT) || (Pike_sp[-1].u.integer < b->len)) {
+      pop_n_elems(args + 1);
+      push_int(0);
+      return;
+    }
 
     for (i = 0; i < b->len; i++) {
       p_wchar2 ch = index_shared_string(b, i);
