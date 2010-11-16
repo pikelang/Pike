@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.45 2009/11/10 13:12:08 grubba Exp $
+dnl $Id$
 
 START_MARKER
 
@@ -1051,5 +1051,25 @@ test_do([[
     }
   }
 ]])
+
+// Thread.Queue
+test_do([[ add_constant("TestQueue", Thread.Queue()); ]])
+test_any([[
+  int i;
+  for(i = 0; i < 10; i++) {
+    TestQueue->write(i);
+  }
+  return TestQueue->read();
+]], 0)
+test_eq([[ TestQueue->size() ]], 9)
+test_equal([[ TestQueue->peek_array() ]], [[ ({ 1,2,3,4,5,6,7,8,9 }) ]])
+test_eq([[ TestQueue->size() ]], 9)
+test_equal([[ TestQueue->read_array() ]], [[ ({ 1,2,3,4,5,6,7,8,9 }) ]])
+test_false([[ TestQueue->size() ]])
+test_equal([[ TestQueue->peek_array() ]], [[ ({ }) ]])
+test_equal([[ TestQueue->try_read_array() ]], [[ ({ }) ]])
+test_false([[ TestQueue->size() ]])
+test_true([[ zero_type(TestQueue->try_read()) ]])
+test_do([[ add_constant("TestQueue"); ]])
 
 END_MARKER
