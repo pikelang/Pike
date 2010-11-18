@@ -1310,8 +1310,9 @@ node *debug_mkcastnode(struct pike_type *type, node *n)
    */     
   copy_pike_type(res->type, type);
 
-  if(match_types(object_type_string, type) ||
-     match_types(program_type_string, type))
+  if((type != zero_type_string) &&
+     (match_types(object_type_string, type) ||
+      match_types(program_type_string, type)))
     res->node_info |= OPT_SIDE_EFFECT;
 
   res->tree_info |= n->tree_info;
