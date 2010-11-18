@@ -2891,7 +2891,7 @@ void f_system_getloadavg(INT32 args)
   }
   
   for (i = 0; i <= 2; i++) {
-    push_float((float)load[i]);
+    push_float((FLOAT_TYPE)load[i]);
   }
   f_aggregate(3);
 }
