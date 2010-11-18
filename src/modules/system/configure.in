@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.83 2010/02/02 17:45:20 grubba Exp $
+# $Id$
 AC_INIT(system.c)
 AC_CONFIG_HEADER(system_machine.h)
 
@@ -24,7 +24,7 @@ AC_CHECK_HEADERS(syslog.h sys/syslog.h sys/types.h errno.h unistd.h pwd.h \
         sys/systeminfo.h windows.h sys/param.h utime.h sys/utime.h sys/id.h \
 	sys/time.h sys/shm.h sys/mman.h fcntl.h sys/fcntl.h netinfo/ni.h \
 	sys/prctl.h cygwin/ipc.h cygwin/sem.h cygwin/shm.h ws2tcpip.h \
-	NewAPIs.h)
+	NewAPIs.h sys/loadavg.h)
 
 # some Linux systems have a broken resource.h that compiles anyway /Mirar
 AC_MSG_CHECKING([for working sys/resource.h])
@@ -99,7 +99,8 @@ AC_HAVE_FUNCS(syslog link symlink readlink resolvepath realpath chown lchown \
 	getspnam_r innetgr utime _utime lutimes sleep usleep nanosleep \
         getrlimit setrlimit setproctitle \
         setitimer getitimer mmap munmap \
-	gettimeofday settimeofday prctl inet_ntoa inet_ntop getaddrinfo)
+	gettimeofday settimeofday prctl inet_ntoa inet_ntop getaddrinfo \
+	getloadavg)
 
 if test "x$ac_cv_func_setpgrp" = "xyes"; then
   AC_MSG_CHECKING([if setpgrp takes two arguments (BSD)])
