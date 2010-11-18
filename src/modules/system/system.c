@@ -111,6 +111,10 @@
 #include <netinfo/ni.h>
 #endif
 
+#ifdef HAVE_SYS_LOADAVG_H
+#include <sys/loadavg.h>
+#endif
+
 #include "dmalloc.h"
 
 
@@ -2862,6 +2866,37 @@ static void f_get_netinfo_property(INT32 args)
 }
 #endif
 
+#ifdef HAVE_GETLOADAVG
+/*! @decl array(float) getloadavg()
+ *! Get system load averages.
+ *!
+ *! @returns
+ *! @array
+ *!   @elem float 0
+ *!     Load average over the last minute.
+ *!   @elem float 1
+ *!     Load average over the last 5 minutes.
+ *!   @elem float 2
+ *!     Load average over the last 15 minutes.
+ *! @endarray
+ */
+void f_system_getloadavg(INT32 args)
+{
+  double load[3];
+  int i;
+
+  pop_n_elems(args); // No args.
+
+  if (getloadavg(load, 3) == -1) {
+    Pike_error("getloadavg failed.\n");
+  }
+  
+  for (i = 0; i <= 2; i++) {
+    push_float((float)load[i]);
+  }
+  f_aggregate(3);
+}
+#endif // HAVE_GETLOADAVG
 
 #ifdef RDTSC
 
@@ -3457,6 +3492,10 @@ PIKE_MODULE_INIT
   ADD_FUNCTION("get_netinfo_property", f_get_netinfo_property,
 	       tFunc(tStr tStr tStr, tArray), 0);
 #endif /* NETINFO */
+
+#ifdef HAVE_GETLOADAVG
+  ADD_FUNCTION("getloadavg", f_system_getloadavg, tFunc(tNone,tArr(tFloat)), 0);
+#endif
 
   init_passwd();
   init_system_memory();
