@@ -2881,11 +2881,12 @@ static void f_get_netinfo_property(INT32 args)
  */
 void f_system_getloadavg(INT32 args)
 {
-  double load[3];
+  double load[3] = { 0.0, 0.0, 0.0 };
   int i;
 
   pop_n_elems(args); // No args.
 
+  /* May return less than requested number of values */
   if (getloadavg(load, 3) == -1) {
     Pike_error("getloadavg failed.\n");
   }
