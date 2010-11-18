@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.258 2010/05/27 23:16:59 mast Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -1981,7 +1981,8 @@ static node *may_have_side_effects(node *n)
   node **arg;
   int argno;
   for (argno = 0; (arg = my_get_arg(&_CDR(n), argno)); argno++) {
-    if (match_types(object_type_string, (*arg)->type)) {
+    if (((*arg)->type != zero_type_string) &&
+	match_types(object_type_string, (*arg)->type)) {
       n->node_info |= OPT_SIDE_EFFECT;
       n->tree_info |= OPT_SIDE_EFFECT;
       return NULL;

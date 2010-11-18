@@ -371,7 +371,6 @@ testfont binary
 /src/interpreter.h foreign_ident
 /src/iterators.cmod foreign_ident
 /src/language.yacc foreign_ident
-/src/las.c foreign_ident
 /src/las.h foreign_ident
 /src/lex.c foreign_ident
 /src/lex.h foreign_ident
@@ -738,7 +737,6 @@ testfont binary
 /src/object.h foreign_ident
 /src/opcodes.c foreign_ident
 /src/opcodes.h foreign_ident
-/src/operators.c foreign_ident
 /src/operators.h foreign_ident
 /src/patch_cc1.c foreign_ident
 /src/peep.c foreign_ident
