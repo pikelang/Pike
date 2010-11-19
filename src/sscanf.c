@@ -716,6 +716,7 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
 	    }								 \
 	  }								 \
 	  sval.type=T_ARRAY;						 \
+	  DO_IF_CHECKER(sval.subtype=0);				 \
 	  sval.u.array=allocate_array(0);				 \
 	  SET_ONERROR(err, do_free_array, sval.u.array);		 \
 									 \
