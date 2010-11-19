@@ -335,7 +335,6 @@ testfont binary
 /src/hashtable.c foreign_ident
 /src/hashtable.h foreign_ident
 /src/install-sh foreign_ident
-/src/interpret.h foreign_ident
 /src/interpreter.h foreign_ident
 /src/iterators.cmod foreign_ident
 /src/language.yacc foreign_ident

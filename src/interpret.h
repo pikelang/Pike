@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.h,v 1.181 2010/03/24 20:47:54 mast Exp $
+|| $Id$
 */
 
 #ifndef INTERPRET_H
@@ -201,6 +201,12 @@ PMOD_EXPORT extern const char Pike_check_c_stack_errmsg[];
 #define STACK_LEVEL_CHECK(depth)
 #endif /* PIKE_DEBUG */
 
+#ifdef __CHECKER__
+#define IF_CHECKER(X)	X
+#else
+#define IF_CHECKER(X)
+#endif
+
 #define pop_stack() do{ free_svalue(--Pike_sp); debug_check_stack(); }while(0)
 #define pop_2_elems() do { pop_stack(); pop_stack(); }while(0)
 
@@ -267,7 +273,8 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     struct svalue *_sp_ = Pike_sp++;					\
     debug_malloc_touch(_);						\
     _sp_->u.program=_;							\
-    _sp_++->type=PIKE_T_PROGRAM;					\
+    _sp_->type=PIKE_T_PROGRAM;						\
+    IF_CHECKER(_sp_->subtype=0);					\
   }while(0)
 
 #define push_int(I) do{							\
@@ -290,6 +297,7 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     struct svalue *_sp_ = Pike_sp++;					\
     _sp_->u.identifier=_;						\
     _sp_->type=T_OBJ_INDEX;						\
+    IF_CHECKER(_sp_->subtype=0);					\
   }while(0)
 
 #define push_mapping(M) do{						\
@@ -298,6 +306,7 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     debug_malloc_touch(_);						\
     _sp_->u.mapping=_;							\
     _sp_->type=PIKE_T_MAPPING;						\
+    IF_CHECKER(_sp_->subtype=0);					\
   }while(0)
 
 #define push_array(A) do{						\
@@ -306,6 +315,7 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     debug_malloc_touch(_);						\
     _sp_->u.array=_ ;							\
     _sp_->type=PIKE_T_ARRAY;						\
+    IF_CHECKER(_sp_->subtype=0);					\
   }while(0)
 
 #define push_empty_array() ref_push_array(&empty_array)
@@ -316,6 +326,7 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     debug_malloc_touch(_);						\
     _sp_->u.multiset=_;							\
     _sp_->type=PIKE_T_MULTISET;						\
+    IF_CHECKER(_sp_->subtype=0);					\
   }while(0)
 
 #define push_string(S) do {						\
@@ -339,6 +350,7 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     debug_malloc_touch(_);						\
     _sp_->u.type=_;							\
     _sp_->type=PIKE_T_TYPE;						\
+    IF_CHECKER(_sp_->subtype=0);					\
   }while(0)
 
 #define push_object(O) do {						\
@@ -365,6 +377,7 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     struct svalue *_sp_ = Pike_sp++;					\
     _sp_->u.float_number=_;						\
     _sp_->type=PIKE_T_FLOAT;						\
+    IF_CHECKER(_sp_->subtype=0);					\
   }while(0)
 
 #define push_text(T) do {						\
@@ -404,6 +417,7 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     add_ref(_);								\
     _sp_->u.program=_;							\
     _sp_->type=PIKE_T_PROGRAM;						\
+    IF_CHECKER(_sp_->subtype=0);					\
   }while(0)
 
 #define ref_push_mapping(M) do{						\
@@ -412,6 +426,7 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     add_ref(_);								\
     _sp_->u.mapping=_;							\
     _sp_->type=PIKE_T_MAPPING;						\
+    IF_CHECKER(_sp_->subtype=0);					\
   }while(0)
 
 #define ref_push_array(A) do{						\
@@ -420,6 +435,7 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     add_ref(_);								\
     _sp_->u.array=_ ;							\
     _sp_->type=PIKE_T_ARRAY;						\
+    IF_CHECKER(_sp_->subtype=0);					\
   }while(0)
 
 #define ref_push_multiset(L) do{					\
@@ -428,6 +444,7 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     add_ref(_);								\
     _sp_->u.multiset=_;							\
     _sp_->type=PIKE_T_MULTISET;						\
+    IF_CHECKER(_sp_->subtype=0);					\
   }while(0)
 
 #define ref_push_string(S) do{						\
@@ -449,6 +466,7 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     add_ref(_);								\
     _sp_->u.type=_;							\
     _sp_->type=PIKE_T_TYPE;						\
+    IF_CHECKER(_sp_->subtype=0);					\
   }while(0)
 
 #define ref_push_object(O) do{						\
