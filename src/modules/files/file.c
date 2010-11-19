@@ -130,6 +130,11 @@
 #undef HAVE_SOCKETPAIR
 #endif
 
+#ifdef UNIX_SOCKETS_WORK_WITH_SHUTDOWN
+#undef UNIX_SOCKET_CAPABILITIES
+#define UNIX_SOCKET_CAPABILITIES (fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK | fd_CAN_SHUTDOWN | fd_SEND_FD)
+#endif
+
 /* #define SOCKETPAIR_DEBUG */
 
 struct program *file_program;
@@ -638,6 +643,92 @@ static struct pike_string *do_read(int fd,
 
     return low_free_buf(&b);
 #undef CHUNK
+  }
+}
+
+/* This function is used to analyse anonymous fds, so that
+ * my_file->open_mode can be set properly. */
+static int low_fd_query_properties(int fd)
+{
+  struct stat st;
+  PIKE_SOCKADDR addr;
+  ACCEPT_SIZE_T len;
+  int i;
+  int orig_errno = errno;
+  int open_mode = 0;
+
+#ifndef __NT__
+  do {
+    i = fcntl(fd, F_GETFL);
+  } while ((i == -1) && (errno == EINTR));
+
+  if (i == -1) {
+    /* Probably EBADF. */
+    errno = orig_errno;
+    return 0;
+  }
+
+  switch(i & fd_ACCMODE) {
+  case fd_RDONLY:
+    open_mode = FILE_READ;
+    break;
+  case fd_WRONLY:
+    open_mode = FILE_WRITE;
+    break;
+  case fd_RDWR:
+    open_mode = FILE_READ | FILE_WRITE;
+    break;
+  }
+  if (i & fd_APPEND) open_mode |= FILE_APPEND;
+  if (i & fd_CREAT) open_mode |= FILE_CREATE;
+  if (i & fd_TRUNC) open_mode |= FILE_TRUNC;
+  if (i & fd_EXCL) open_mode |= FILE_EXCLUSIVE;
+#ifdef O_NONBLOCK
+  if (i & O_NONBLOCK) open_mode |= FILE_NONBLOCKING;
+#elif defined(O_NDELAY)
+  if (i & O_NDELAY) open_mode |= FILE_NONBLOCKING;
+#endif
+
+#endif /* !__NT__ */
+
+  do {
+    i = fd_fstat(fd, &st);
+  } while ((i < 0) && (errno == EINTR));
+
+  errno = orig_errno;
+  if (i < 0) return open_mode|FILE_CAPABILITIES;
+
+  switch(st.st_mode & S_IFMT) {
+  default:
+    return open_mode | FILE_CAPABILITIES;
+  case S_IFIFO:
+    return open_mode | PIPE_CAPABILITIES;
+  case S_IFSOCK:
+    break;
+  }
+
+  addr.sa.sa_family = AF_INET; /* Paranoia, since we don't look at len. */
+
+  do {
+    len = sizeof(addr);
+    i = fd_getsockname(fd, &addr.sa, &len);
+  } while ((i < 0) && (errno == EINTR));
+
+  errno = orig_errno;
+
+  if (i < 0) {
+    /* Not a socket (anymore?). */
+    return open_mode | FILE_CAPABILITIES;
+  } else {
+    switch (addr.sa.sa_family) {
+#if defined(AF_UNIX) && (AF_UNIX != AF_INET)
+    case AF_UNIX:
+      return open_mode | UNIX_SOCKET_CAPABILITIES;
+#endif
+    default:
+      /* FIXME: Consider detecting ports? */
+      return open_mode | SOCKET_CAPABILITIES;
+    }
   }
 }
 
@@ -4653,40 +4744,62 @@ void file_set_notify(INT32 args) {
 
 #endif /* HAVE_NOTIFICATIONS */
 
-
-/*! @decl constant PROP_BIDIRECTIONAL
- *! @fixme
- *! Document this constant.
+/*! @decl constant PROP_SEND_FD = 64
+ *!
+ *!   The @[Stdio.File] object might support sending of open
+ *!   file descriptors.
+ *!
+ *! @seealso
+ *!   @[Stdio.File()->pipe()]
  */
 
-/*! @decl constant PROP_BUFFERED
- *! @fixme
- *! Document this constant.
+/*! @decl constant PROP_REVERSE = 32
+ *!   Request reversed operation.
+ *!
+ *!   Used as argument to @[Stdio.File()->pipe()], when
+ *!   @[PROP_BIDIRECTIONAL] hasn't been specified, to
+ *!   request the direction of the resulting pipe to
+ *!   reversed.
+ *!
+ *! @seealso
+ *!   @[Stdio.File()->pipe()]
  */
 
-/*! @decl constant PROP_SHUTDOWN
- *! @fixme
- *! Document this constant.
+/*! @decl constant PROP_BIDIRECTIONAL = 16
+ *!   The file is bi-directional.
+ *!
+ *! @seealso
+ *!   @[Stdio.File()->pipe()]
  */
 
-/*! @decl constant PROP_NONBLOCK
- *! @fixme
- *! Document this constant.
+/*! @decl constant PROP_BUFFERED = 8
+ *!   The file is buffered (usually 4KB).
+ *!
+ *! @seealso
+ *!   @[Stdio.File()->pipe()]
  */
 
-/*! @decl constant PROP_REVERSE
- *! @fixme
- *! Document this constant.
+/*! @decl constant PROP_SHUTDOWN = 4
+ *!   The file supports shutting down transmission in either
+ *!   direction.
+ *!
+ *! @seealso
+ *!   @[Stdio.File()->close()], @[Stdio.File()->pipe()]
  */
 
-/*! @decl constant PROP_IPC
- *! @fixme
- *! Document this constant.
+/*! @decl constant PROP_NONBLOCK = 2
+ *!   The file supports nonblocking I/O.
+ *!
+ *! @seealso
+ *!   @[Stdio.File()->pipe()]
  */
 
-/*! @decl constant IPPROTO
- *! @fixme
- *! Document this constant.
+/*! @decl constant PROP_IPC = 1
+ *!
+ *!   The file may be used for inter process communication.
+ *!
+ *! @seealso
+ *!   @[Stdio.File()->pipe()]
  */
 
 /*! @decl constant __OOB__
@@ -4971,21 +5084,24 @@ PIKE_MODULE_INIT
   file_program=end_program();
   add_program_constant("Fd",file_program,0);
 
-  o=file_make_object_from_fd(0, FILE_READ , fd_CAN_NONBLOCK);
+  o=file_make_object_from_fd(0, low_fd_query_properties(0)|FILE_READ,
+			     fd_CAN_NONBLOCK);
   ((struct my_file *)(o->storage + file_program->inherits->storage_offset))->flags |= FILE_NO_CLOSE_ON_DESTRUCT;
   (void) dmalloc_register_fd(0);
   dmalloc_accept_leak_fd(0);
   add_object_constant("_stdin",o,0);
   free_object(o);
 
-  o=file_make_object_from_fd(1, FILE_WRITE, fd_CAN_NONBLOCK);
+  o=file_make_object_from_fd(1, low_fd_query_properties(1)|FILE_WRITE,
+			     fd_CAN_NONBLOCK);
   ((struct my_file *)(o->storage + file_program->inherits->storage_offset))->flags |= FILE_NO_CLOSE_ON_DESTRUCT;
   (void) dmalloc_register_fd(1);
   dmalloc_accept_leak_fd(1);
   add_object_constant("_stdout",o,0);
   free_object(o);
 
-  o=file_make_object_from_fd(2, FILE_WRITE, fd_CAN_NONBLOCK);
+  o=file_make_object_from_fd(2, low_fd_query_properties(2)|FILE_WRITE,
+			     fd_CAN_NONBLOCK);
   ((struct my_file *)(o->storage + file_program->inherits->storage_offset))->flags |= FILE_NO_CLOSE_ON_DESTRUCT;
   (void) dmalloc_register_fd(2);
   dmalloc_accept_leak_fd(2);
@@ -5024,6 +5140,7 @@ PIKE_MODULE_INIT
 #endif
   add_integer_constant("PROP_IPC",fd_INTERPROCESSABLE,0);
   add_integer_constant("PROP_NONBLOCK",fd_CAN_NONBLOCK,0);
+  add_integer_constant("PROP_SEND_FD",fd_SEND_FD,0);
   add_integer_constant("PROP_SHUTDOWN",fd_CAN_SHUTDOWN,0);
   add_integer_constant("PROP_BUFFERED",fd_BUFFERED,0);
   add_integer_constant("PROP_BIDIRECTIONAL",fd_BIDIRECTIONAL,0);

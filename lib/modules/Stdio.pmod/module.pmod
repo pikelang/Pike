@@ -563,6 +563,8 @@ class File
   //!       The resulting pipe is buffered (usually 4KB).
   //!     @value PROP_BIDIRECTIONAL
   //!       The resulting pipe is bi-directional.
+  //!     @value PROP_SEND_FD
+  //!       The resulting pipe might support sending of file descriptors.
   //!     @value PROP_REVERSE
   //!       The resulting pipe supports communication "backwards" (but
   //!       not necessarily "forwards", see @[PROP_BIDIRECTIONAL]).
@@ -584,7 +586,8 @@ class File
   //!   same as calling it with no arguments.
   //!
   //! @seealso
-  //!   @[Process.create_process()], @[PROP_IPC], @[PROP_NONBLOCK],
+  //!   @[Process.create_process()],
+  //!   @[PROP_IPC], @[PROP_NONBLOCK], @[PROP_SEND_FD],
   //!   @[PROP_SHUTDOWN], @[PROP_BUFFERED], @[PROP_REVERSE],
   //!   @[PROP_BIDIRECTIONAL]
   //!
