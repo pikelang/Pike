@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.455 2010/05/29 13:44:32 grubba Exp $
+|| $Id$
 */
 
 %pure_parser
@@ -2014,10 +2014,15 @@ block:'{'
   }
   ;
 
+/* Node with line number info at $0. */
 end_block: '}'
   | TOK_LEX_EOF
   {
     yyerror("Missing '}'.");
+    if ($<n>0) {
+      low_yyreport(REPORT_ERROR, $<n>0->current_file, $<n>0->line_number,
+		   parser_system_string, 0, "Opening '{' was here.");
+    }
     yyerror("Unexpected end of file.");
   }
   ;
@@ -2729,7 +2734,7 @@ optional_create_arguments: /* empty */ { $$ = 0; }
   }
   ;
 
-failsafe_program: '{' program end_block
+failsafe_program: '{' program { $<n>$ = NULL; } end_block
                 | error { yyerrok; }
                 | TOK_LEX_EOF
                 {
@@ -3099,7 +3104,7 @@ enum: TOK_ENUM
     $<n>$ = mkconstantsvaluenode(Pike_sp-1);
     pop_stack();
   }
-  enum_list end_block
+  enum_list { $<n>$ = NULL; } end_block
   {
     struct pike_type *t = pop_unfinished_type();
     free_node($<n>5);
