@@ -2574,7 +2574,7 @@ OPCODE1_PTRJUMP(F_COND_RECUR, "recur if not overloaded", I_UPDATE_ALL, {
    *
    *	/grubba 2003-03-25
    */
-  if(((p != Pike_fp->context->prog) &&
+  if(((p != Pike_fp->context->prog) ||
       (Pike_fp->context !=
        &p->inherits[p->identifier_references[Pike_fp->context->identifier_level +
 					     arg1].inherit_offset])) ||
