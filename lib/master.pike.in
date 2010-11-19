@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.476 2010/07/28 22:58:01 mast Exp $
+// $Id$
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -167,7 +167,7 @@ protected class Pike_0_5_master
 #if "#lib_prefix#"[0]!='#'
     "#lib_prefix#"
 #else
-    __DIR__
+    dirname(__FILE__)
 #endif
     ;
   extern array(string) pike_module_path;
@@ -756,6 +756,7 @@ protected class Pike_7_4_master
 			      void|int mkobj);
   extern string include_prefix;
   extern mapping(string:string) predefines;
+  // FIXME: Not in 7.7!
   extern CompatResolver parent_resolver;
   void add_predefine (string name, string value);
   void remove_predefine (string name);
@@ -827,7 +828,28 @@ protected class Pike_7_4_master
 protected class Pike_7_6_master
 {
   inherit Pike_7_4_master;
+
+  extern int show_if_constant_errors;
+  protected void create();
+  extern mapping(string:string) initial_predefines;
+  extern joinnode root_module;
+  extern mapping(object:joinnode) handler_root_modules;
+  extern array(string) system_module_path;
+  protected extern CompatResolver parent_resolver;
+  protected extern mapping resolv_cache;
+  extern CompatResolver fallback_resolver;
+  joinnode get_root_module(object|void current_handler);
+  class Pike06Resolver {}
   local protected object Pike_7_6_compat_handler;
+  local mixed resolv_or_error(string identifier, string|void current_file,
+			      void|object current_handler)
+  {
+    if (!Pike_7_6_compat_handler) {
+      Pike_7_6_compat_handler = global::get_compilation_handler(7, 6);
+    }
+    return Pike_7_6_compat_handler->resolv_or_error(identifier, current_file,
+						    current_handler);
+  }
   local mixed resolv(string identifier, string|void current_file)
   {
     if (!Pike_7_6_compat_handler) {
@@ -845,6 +867,8 @@ protected class Pike_7_6_master
       return this_program::this;
     return get_compat_master(major, minor);
   }
+
+  /* No missing symbols. */
 }
 
 //! Namespaces for compat masters.
