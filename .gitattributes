@@ -637,11 +637,8 @@ testfont binary
 /src/modules/configure.in foreign_ident
 /src/modules/dynamic_module_makefile.in foreign_ident
 /src/modules/files/Makefile.in foreign_ident
-/src/modules/files/acconfig.h foreign_ident
 /src/modules/files/configure.in foreign_ident
 /src/modules/files/datagram.c foreign_ident
-/src/modules/files/file.h foreign_ident
-/src/modules/files/file_functions.h foreign_ident
 /src/modules/files/sendfile.c foreign_ident
 /src/modules/files/sendfiletest.pike foreign_ident
 /src/modules/files/socket.c foreign_ident

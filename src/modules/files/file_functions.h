@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file_functions.h,v 1.48 2010/05/29 16:11:27 nilsson Exp $
+|| $Id$
 */
 
 #define CB_FUNC tFunc(tNone,tOr(tVoid,tMixed))
@@ -33,6 +33,12 @@ FILE_FUNC("write_oob",file_write_oob,
 	       tFuncV(tArr(tStr), tMixed, tInt),
 	       tFuncV(tAttr("sprintf_format", tStr),
 		      tAttr("sprintf_args", tMixed),tInt)))
+
+#if (defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL) && defined(SCM_RIGHTS)) ||	\
+    defined(HAVE_STRUCT_MSGHDR_MSG_ACCRIGHTS) || \
+    defined(I_SENDFD)
+FILE_FUNC("send_fd", file_send_fd, tFunc(tObjIs_STDIO_FD, tInt01))
+#endif
 
 #ifdef HAVE_FSYNC
 /*  function(:int) */
