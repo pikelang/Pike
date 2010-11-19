@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sscanf.c,v 1.160 2004/03/23 18:06:11 nilsson Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -18,7 +18,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: sscanf.c,v 1.160 2004/03/23 18:06:11 nilsson Exp $");
+RCSID("$Id$");
 
 /* 
  * helper functions for sscanf %O
@@ -1381,6 +1381,8 @@ INT32 low_sscanf(struct pike_string *data, struct pike_string *format)
  *!     The sign modifiers can be used to modify the signature of the
  *!     data, making @expr{"%+1c"@} decode @expr{"ä"@} into
  *!     @expr{-28@}.
+ *!   @value "%n"
+ *!     Returns the current character offset in @[data].
  *!   @value "%f"
  *!     Reads a float ("0101" makes 101.0).
  *!   @value "%F"
