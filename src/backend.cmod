@@ -1325,6 +1325,8 @@ PIKECLASS Backend
        else if (fd < me->fd_boxes_start) {
 	 int old_size = me->fd_boxes_size, shift = me->fd_boxes_size;
 	 struct fd_callback_box **old_boxes = me->fd_boxes;
+	 IF_PD(fprintf(stderr, "me->fd_boxes: %p (%d ==> %d)\n",
+		       me->fd_boxes, me->fd_boxes_start, fd));
 	 while (fd < me->fd_boxes_start - shift) shift *= 2;
 	 if (me->fd_boxes_start - shift < 0) shift = me->fd_boxes_start;
 	 me->fd_boxes_start -= shift;
@@ -1442,6 +1444,9 @@ PIKECLASS Backend
        Pike_fatal("update_fd_set() on non-socket!\n");
      }
 #endif /* __NT__ */
+
+     IF_PD(fprintf(stderr, "update_fd_set(%p, %d, 0x%08x, 0x%08x)\n",
+		   me, fd, old_events, new_events));
 
      if (me->update_fd_set_handler) {
        me->update_fd_set_handler(me, me->handler_data,
@@ -2395,6 +2400,8 @@ int POLL_DEVICE_SET_EVENTS(struct Backend_struct *me,
 	       " short write (%d != %d).\n",
 	       fd, e, (int)sizeof(poll_state));
   }
+  IF_PD(fprintf(stderr, "POLL_DEVICE_SET_EVENTS[%p] ==> %d\n",
+		me, e));
   return e;
 }
 	
