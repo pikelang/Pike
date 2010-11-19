@@ -467,7 +467,6 @@ testfont binary
 /src/modules/JSON/json.cmod foreign_ident
 /src/modules/Java/Makefile.in foreign_ident
 /src/modules/Java/acconfig.h foreign_ident
-/src/modules/Java/jvm.c foreign_ident
 /src/modules/Java/ntdl.c foreign_ident
 /src/modules/Java/testsuite.in foreign_ident
 /src/modules/Kerberos/Makefile.in foreign_ident
