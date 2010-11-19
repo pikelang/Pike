@@ -278,7 +278,6 @@ testfont binary
 /packaging/fink/README foreign_ident
 /packaging/windows/installer.vbs foreign_ident
 /refdoc/Makefile foreign_ident
-/refdoc/presentation/tree-split-autodoc.pike foreign_ident
 /refdoc/presentation/wiki.pike foreign_ident
 /refdoc/structure/caudium_modref.html foreign_ident
 /refdoc/structure/modref.xml foreign_ident

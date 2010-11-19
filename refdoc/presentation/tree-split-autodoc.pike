@@ -1,5 +1,5 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.59 2008/12/16 04:05:14 nilsson Exp $
+ * $Id$
  *
  */
 
@@ -550,6 +550,8 @@ class Node
     contents->add( parse_children(n, "module", parse_module, 1) );
     contents->add( parse_children(n, "class", parse_class, 1) );
     contents->add( parse_children(n, "enum", parse_enum, 1) );
+
+    n->zap_tree();
 
     return (string)contents;
   }

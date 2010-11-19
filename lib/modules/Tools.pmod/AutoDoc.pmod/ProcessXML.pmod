@@ -383,13 +383,13 @@ protected string getName(SimpleNode node) { return node->get_attributes()["name"
 //!   the tree has been fully merged.
 void mergeTrees(SimpleNode dest, SimpleNode source) {
   mapping(string : SimpleNode) dest_children = ([]);
-  int dest_has_doc = 0;
+  SimpleNode dest_has_doc;
 
   foreach(dest->get_children(), SimpleNode node)
     if (isNameSpace(node) || isClass(node) || isModule(node))
       dest_children[getName(node)] = node;
     else if (isDoc(node))
-      dest_has_doc = 1;
+      dest_has_doc = node;
 
   array(SimpleNode) children = source->get_children();
   foreach(children; int i; SimpleNode node)
@@ -421,15 +421,17 @@ void mergeTrees(SimpleNode dest, SimpleNode source) {
         break;
       case "doc":
         if (dest_has_doc) {
+	  werror("Original doc: %O\n", dest_has_doc->value_of_node());
+	  werror("New doc: %O\n", node->value_of_node());
 	  if (isNameSpace(dest))
-            processError("duplicate documentation for namespace " +
+            processError("Duplicate documentation for namespace " +
 			 getName(dest));
           else if (isClass(dest))
-            processError("duplicate documentation for class " + getName(dest));
+            processError("Duplicate documentation for class " + getName(dest));
           else if (isModule(dest))
-            processError("duplicate documentation for module " +
+            processError("Duplicate documentation for module " +
                          getName(dest));
-          processError("duplicate documentation");
+          processError("Duplicate documentation");
         }
         // fall through
       default:
