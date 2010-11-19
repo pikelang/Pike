@@ -1426,7 +1426,11 @@ class async_client
       if(m->port != 53 || !has_value(nameservers, m->ip)) return;
       sscanf(m->data,"%2c",int id);
       object r=requests[id];
-      if(!r) return;
+      if(!r) {
+	// Invalid request id. Spoofed answer?
+	// FIXME: Consider black- or greylisting the answer.
+	return;
+      }
       m_delete(requests,id);
       r->callback(r->domain,decode_res(m->data),@r->args);
       destruct(r);
