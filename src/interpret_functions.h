@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.211 2009/04/01 20:41:32 mast Exp $
+|| $Id$
 */
 
 /*
@@ -2524,7 +2524,7 @@ OPCODE1_PTRJUMP(F_COND_RECUR, "recur if not overloaded", I_UPDATE_ALL, {
    *
    *	/grubba 2003-03-25
    */
-  if(((p != Pike_fp->context->prog) &&
+  if(((p != Pike_fp->context->prog) ||
       (Pike_fp->context !=
        &p->inherits[p->identifier_references[Pike_fp->context->identifier_level +
 					     arg1].inherit_offset])) ||
