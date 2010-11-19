@@ -564,7 +564,8 @@ class File
   //!     @value PROP_BIDIRECTIONAL
   //!       The resulting pipe is bi-directional.
   //!     @value PROP_SEND_FD
-  //!       The resulting pipe might support sending of file descriptors.
+  //!       The resulting pipe might support sending of file descriptors
+  //!       (see @[send_fd()] and @[receive_fd()] for details).
   //!     @value PROP_REVERSE
   //!       The resulting pipe supports communication "backwards" (but
   //!       not necessarily "forwards", see @[PROP_BIDIRECTIONAL]).
@@ -586,7 +587,7 @@ class File
   //!   same as calling it with no arguments.
   //!
   //! @seealso
-  //!   @[Process.create_process()],
+  //!   @[Process.create_process()], @[send_fd()], @[receive_fd()],
   //!   @[PROP_IPC], @[PROP_NONBLOCK], @[PROP_SEND_FD],
   //!   @[PROP_SHUTDOWN], @[PROP_BUFFERED], @[PROP_REVERSE],
   //!   @[PROP_BIDIRECTIONAL]
@@ -644,6 +645,14 @@ class File
     }else{
       return 0;
     }
+  }
+#endif
+
+#if constant(files.__HAVE_SEND_FD__)
+  //!
+  int(0..1) send_fd(File|Fd file)
+  {
+    return ::send_fd(file->_fd);
   }
 #endif
 

@@ -41,6 +41,20 @@ struct my_file
   short flags;
   int my_errno;
 
+#ifdef HAVE_PIKE_SEND_FD
+  int *fd_info;
+  /* Info about fds pending to be sent.
+   *   If non-NULL the first element is the array size,
+   *   and the second is the number of fds pending to be
+   *   sent. Elements three and onwards are fds to send.
+   *
+   *   Note that to avoid races between the call to
+   *   send_fd() and the call to write(), these fds
+   *   are dup(2)'ed in send_fd() and close(2)'ed after
+   *   sending in write() (or close() or destroy()).
+   */
+#endif
+
 #if defined(HAVE_FD_FLOCK) || defined(HAVE_FD_LOCKF)
   struct object *key;
 #endif

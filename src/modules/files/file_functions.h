@@ -34,6 +34,10 @@ FILE_FUNC("write_oob",file_write_oob,
 	       tFuncV(tAttr("sprintf_format", tStr),
 		      tAttr("sprintf_args", tMixed),tInt)))
 
+#ifdef HAVE_PIKE_SEND_FD
+FILE_FUNC("send_fd", file_send_fd, tFunc(tObjIs_STDIO_FD, tInt01))
+#endif
+
 #ifdef HAVE_FSYNC
 /*  function(:int) */
 FILE_FUNC("sync", file_sync, tFunc(tNone,tInt))

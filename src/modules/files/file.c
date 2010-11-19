@@ -298,6 +298,9 @@ static void init_fd(int fd, int open_mode, int flags)
     THIS->event_cbs[ev].subtype = NUMBER_NUMBER;
     THIS->event_cbs[ev].u.integer = 0;
   }
+#ifdef HAVE_PIKE_SEND_FD
+  THIS->fd_info = NULL;
+#endif
 #if defined(HAVE_FD_FLOCK) || defined(HAVE_FD_LOCKF)
   THIS->key=0;
 #endif
@@ -310,6 +313,87 @@ static void init_fd(int fd, int open_mode, int flags)
   change_fd_for_box(&THIS->box, fd);
 }
 
+/* Use ptrdiff_t for the fd since we're passed a void * and should
+ * read it as an integer of the same size. */
+static void do_close_fd(ptrdiff_t fd)
+{
+  int ret;
+  if (fd < 0) return;
+  do {
+    ret = fd_close(fd);
+  } while ((ret == -1) && (errno == EINTR));
+}
+
+#ifdef HAVE_PIKE_SEND_FD
+/* Close the queued fds in fd_info, either due to them being successfully
+ * sent, or due to the connection being closed. */
+static void do_close_fd_info(int *fd_info)
+{
+  int num_fds = fd_info[1];
+  int *fds = fd_info + 2;
+  while (num_fds) {
+    do_close_fd(fds[--num_fds]);
+#ifdef PIKE_DEBUG
+    fds[num_fds] = -1;
+#endif
+  }
+  fd_info[1] = 0;
+}
+
+/* Restore THIS->fd_info that was removed during the call to writev_fds(). */
+static void restore_fd_info(int *fd_info)
+{
+  int *other_fd_info;
+  if ((other_fd_info = THIS->fd_info)) {
+    /* Someone added fds to send when we weren't looking... */
+    int i, j, cnt;
+    int num_fds = fd_info[1] + other_fd_info[1] + 2;
+    if (num_fds <= fd_info[0]) {
+      cnt = other_fd_info[1] + 2;
+      for (i = 2; i < cnt; i++) {
+	fd_info[fd_info[1] + i] = other_fd_info[i];
+      }
+      fd_info[1] += cnt-2;
+      free(other_fd_info);
+    } else if (num_fds <= other_fd_info[0]) {
+      /* Move the other fds so that we can prepend the old ones. */
+      cnt = fd_info[1] + 2;
+      for(i = other_fd_info[1] + 1, j = num_fds-1; j >= cnt; i--, j--) {
+	other_fd_info[j] = other_fd_info[i];
+      }
+      for(i = 2; i < cnt; i++) {
+	other_fd_info[i] = fd_info[i];
+      }
+      other_fd_info[1] = num_fds;
+      free(fd_info);
+      fd_info = other_fd_info;
+    } else {
+      int *new_fd_info = malloc(num_fds * sizeof(int));
+      if (!new_fd_info) {
+	/* FIXME: Huston, we have a problem... */
+	Pike_fatal("Out of memory in send_fd().\n");
+      } else {
+	new_fd_info[0] = num_fds;
+	new_fd_info[1] = num_fds - 2;
+	cnt = fd_info[1] + 2;
+	for (i = 2; i < cnt; i++) {
+	  new_fd_info[i] = fd_info[i];
+	}
+	free(fd_info);
+	fd_info = new_fd_info;
+	new_fd_info += i;
+	cnt = other_fd_info[1] + 2;
+	for (i = 2; i < cnt; i++) {
+	  new_fd_info[i] = other_fd_info[i];
+	}
+	free(other_fd_info);
+      }
+    }
+  }
+  THIS->fd_info = fd_info;
+}
+#endif
+
 static void free_fd_stuff(void)
 {
   size_t ev;
@@ -320,6 +404,10 @@ static void free_fd_stuff(void)
     destruct(THIS->key);
     THIS->key=0;
   }
+#endif
+
+#ifdef HAVE_PIKE_SEND_FD
+  if (THIS->fd_info) do_close_fd_info(THIS->fd_info);
 #endif
 
   for (ev = 0; ev < NELEM (THIS->event_cbs); ev++) {
@@ -721,7 +809,8 @@ static int low_fd_query_properties(int fd)
     return open_mode | FILE_CAPABILITIES;
   } else {
     switch (addr.sa.sa_family) {
-#if defined(AF_UNIX) && (AF_UNIX != AF_INET)
+      /* NB: NT defines AF_UNIX (but doesn't support it). */
+#if defined(AF_UNIX) && (AF_UNIX != AF_INET) && !defined(__NT__)
     case AF_UNIX:
       return open_mode | UNIX_SOCKET_CAPABILITIES;
 #endif
@@ -731,6 +820,299 @@ static int low_fd_query_properties(int fd)
     }
   }
 }
+
+/*! @decl void receive_fd(Stdio.Fd fd)
+ *!
+ *!   Remote file descriptor reception handler.
+ *!
+ *! @param fd
+ *!   File descriptor received from the remote end of a @[pipe()].
+ *!   This object has been created by @[fd_factory()].
+ *!
+ *!   This function is called from @[read()] when a remote file
+ *!   descriptor has been received over a @[PROP_SEND_FD]
+ *!   capable @[pipe()].
+ *!
+ *!   The default implementation is just a prototype.
+ *!
+ *!   Overload this function to enable reception of
+ *!   remote file descriptors.
+ *!
+ *! @note
+ *!   The capability of sending and receiving remote file
+ *!   descriptors is only available on some operating systems.
+ *!   This capability is indicated by the precence of @[__HAVE_SEND_FD__].
+ *!
+ *! @seealso
+ *!   @[send_fd()], @[read()], @[fd_factory()], @[__HAVE_SEND_FD__]
+ */
+static int fd_receive_fd_fun_num;
+
+#ifdef HAVE_PIKE_SEND_FD
+static void receive_fds(int *fds, size_t num_fds)
+{
+  size_t i;
+
+  for (i = 0; i < num_fds; i++) {
+    int fd = fds[i];
+    if (fd >= 0) {
+      JMP_BUF jmp;
+      if (SETJMP(jmp))
+	call_handle_error();
+      else {
+	push_new_fd_object(fd_fd_factory_fun_num, fd,
+			   low_fd_query_properties(fd), 0);
+	apply_current(fd_receive_fd_fun_num, 1);
+	pop_stack();
+      }
+      UNSETJMP(jmp);
+    }
+  }
+}
+
+static void check_message(struct msghdr *msg)
+{
+#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
+  struct cmsghdr *cmsg;
+
+  for (cmsg = CMSG_FIRSTHDR(msg); cmsg; cmsg = CMSG_NXTHDR(msg, cmsg)) {
+    if ((cmsg->cmsg_level == SOL_SOCKET) && (cmsg->cmsg_type == SCM_RIGHTS)) {
+      receive_fds((int *)CMSG_DATA(cmsg),
+		  (cmsg->cmsg_len - CMSG_LEN(0))/sizeof(int));
+    }
+  }
+#else
+  receive_fds((int *)msg->msg_accrights, msg->msg_accrightslen/sizeof(int));
+#endif
+}
+
+#ifndef HAVE_STRUCT_MSGHDR_MSG_CONTROL
+/* BSD */
+#define CMSG_LEN(x)	(x)
+#endif
+
+static struct pike_string *do_recvmsg(INT32 r, int all)
+{
+  ONERROR ebuf;
+  ptrdiff_t bytes_read = 0, i;
+  int fd = FD;
+  struct {
+    struct msghdr msg;
+    struct iovec iov;
+    char cmsgbuf[CMSG_LEN(sizeof(int)*128)];
+  } message;
+
+  ERRNO=0;
+
+  message.msg.msg_name = NULL;
+  message.msg.msg_namelen = 0;
+  message.msg.msg_iov = &message.iov;
+  message.msg.msg_iovlen = 1;
+#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
+  /* XPG 4.2 */
+  message.msg.msg_flags = 0;
+#endif
+
+  if(r <= 65536)
+  {
+    struct pike_string *str;
+
+    str=begin_shared_string(r);
+
+    SET_ONERROR(ebuf, do_free_unlinked_pike_string, str);
+
+    do{
+      int fd=FD;
+      int e;
+#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
+      /* XPG 4.2 */
+      message.msg.msg_control = &message.cmsgbuf;
+      message.msg.msg_controllen = sizeof(message.cmsgbuf);
+#else
+      /* BSD */
+      message.msg.msg_accrights = (void *)&message.cmsgbuf;
+      message.msg.msg_accrightslen = sizeof(message.cmsgbuf);
+#endif
+      message.iov.iov_base = str->str + bytes_read;
+      message.iov.iov_len = r;
+      THREADS_ALLOW();
+      i = recvmsg(fd, &message.msg, 0);
+      e=errno;
+      THREADS_DISALLOW();
+
+      check_threads_etc();
+
+      if(i>0)
+      {
+	r-=i;
+	bytes_read+=i;
+
+	if (
+#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
+	    message.msg.msg_controllen
+#else
+	    message.msg.msg_accrightslen
+#endif
+	    ) {
+	  check_message(&message.msg);
+	}
+
+	if(!all) break;
+      }
+      else if(i==0)
+      {
+	break;
+      }
+      else if(e != EINTR)
+      {
+	ERRNO=e;
+	if(!bytes_read)
+	{
+	  do_free_unlinked_pike_string(str);
+	  UNSET_ONERROR(ebuf);
+	  return 0;
+	}
+	break;
+      }
+    }while(r);
+
+    UNSET_ONERROR(ebuf);
+
+    if(!SAFE_IS_ZERO(& THIS->event_cbs[PIKE_FD_READ]))
+      ADD_FD_EVENTS (THIS, PIKE_BIT_FD_READ);
+
+    if(bytes_read == str->len)
+    {
+      return end_shared_string(str);
+    }else{
+      return end_and_resize_shared_string(str, bytes_read);
+    }
+
+  }else{
+    /* For some reason, 8k seems to work faster than 64k.
+     * (4k seems to be about 2% faster than 8k when using linux though)
+     * /Hubbe (Per pointed it out to me..)
+     */
+#define CHUNK ( 1024 * 8 )
+    INT32 try_read;
+    dynamic_buffer b;
+
+    b.s.str=0;
+    initialize_buf(&b);
+    SET_ONERROR(ebuf, free_dynamic_buffer, &b);
+    do{
+      int e;
+      char *buf;
+      try_read=MINIMUM(CHUNK,r);
+
+#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
+      message.msg.msg_control = &message.cmsgbuf;
+      message.msg.msg_controllen = sizeof(message.cmsgbuf);
+#else
+      message.msg.msg_accrights = (void *)&message.cmsgbuf;
+      message.msg.msg_accrightslen = sizeof(message.cmsgbuf);
+#endif
+      message.iov.iov_base = low_make_buf_space(try_read, &b);
+      message.iov.iov_len = try_read;
+
+      THREADS_ALLOW();
+      i = recvmsg(fd, &message.msg, 0);
+      e=errno;
+      THREADS_DISALLOW();
+
+      check_threads_etc();
+
+      if(i>0)
+      {
+	bytes_read+=i;
+	r-=i;
+	if (
+#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
+	    message.msg.msg_controllen
+#else
+	    message.msg.msg_accrightslen
+#endif
+	    ) {
+	  check_message(&message.msg);
+	}
+	if (i != try_read) {
+	  low_make_buf_space(i - try_read, &b);
+	}
+	if(!all) break;
+      }
+      else if(i==0)
+      {
+	low_make_buf_space(-try_read, &b);
+	break;
+      }
+      else
+      {
+	low_make_buf_space(-try_read, &b);
+	if(e != EINTR)
+	{
+	  ERRNO=e;
+	  if(!bytes_read)
+	  {
+	    free(b.s.str);
+	    UNSET_ONERROR(ebuf);
+	    return 0;
+	  }
+	  break;
+	}
+      }
+    }while(r);
+
+    UNSET_ONERROR(ebuf);
+
+    if(!SAFE_IS_ZERO(& THIS->event_cbs[PIKE_FD_READ]))
+      ADD_FD_EVENTS (THIS, PIKE_BIT_FD_READ);
+
+    return low_free_buf(&b);
+#undef CHUNK
+  }
+}
+
+/* Send a set of iovecs and fds over an fd. */
+static int writev_fds(int fd, struct iovec *iov, int iovcnt,
+		      int *fds, int num_fds)
+{
+  int retval, e;
+  struct msghdr msg;
+#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
+  /* XPG 4.2 */
+  struct cmsghdr *cmsg = malloc(CMSG_LEN(num_fds * sizeof(int)));
+
+/*   fprintf(stderr, "writev_fds(%d, %p, %d, %p, %d)\n", fd, iov, iovcnt, fds, num_fds); */
+
+  if (!cmsg) {
+    errno = ENOMEM;
+    return -1;
+  }
+  msg.msg_control = cmsg;
+  msg.msg_controllen = cmsg->cmsg_len = CMSG_LEN(num_fds * sizeof(int));
+  cmsg->cmsg_level = SOL_SOCKET;
+  cmsg->cmsg_type = SCM_RIGHTS;
+  MEMCPY(CMSG_DATA(cmsg), fds, num_fds * sizeof(int));
+  msg.msg_flags = 0;
+#else
+  /* BSD */
+  msg.msg_accrights = (void *)fds;
+  msg.msg_accrightslen = num_fds * sizeof(int);
+#endif
+  msg.msg_name = NULL;
+  msg.msg_namelen = 0;
+  msg.msg_iov = iov;
+  msg.msg_iovlen = iovcnt;
+  retval = sendmsg(fd, &msg, 0);
+#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
+  e = errno;
+  free(cmsg);
+  errno = e;
+#endif
+  return retval;
+}
+
+#endif /* HAVE_PIKE_SEND_FD */
 
 static struct pike_string *do_read_oob(int fd,
 				       INT32 r,
@@ -887,12 +1269,24 @@ static void file_read(INT32 args)
 
   pop_n_elems(args);
 
-  if((tmp=do_read(FD, len, all, & ERRNO)))
-    push_string(tmp);
-  else {
-    errno = ERRNO;
-    push_int(0);
-  }
+#ifdef HAVE_PIKE_SEND_FD
+  /* Check if there's any need to use recvmsg(2). */
+  if ((THIS->open_mode & fd_SEND_FD) &&
+      (THIS->flags & FILE_HAVE_RECV_FD)) {
+    if ((tmp = do_recvmsg(len, all)))
+      push_string(tmp);
+    else {
+      errno = ERRNO;
+      push_int(0);
+    }
+  } else
+#endif /* HAVE_PIKE_SEND_FD */
+    if((tmp=do_read(FD, len, all, & ERRNO)))
+      push_string(tmp);
+    else {
+      errno = ERRNO;
+      push_int(0);
+    }
 
   /* Race: A backend in another thread might have managed to set these
    * again for something that arrived after the read above. Not that
@@ -1278,13 +1672,16 @@ static void file__disable_callbacks(INT32 args)
  *! them using @[format]. If @[format] is an array, the strings in it
  *! are concatenated and the result is used as format string.
  *!
+ *! If there are any file descriptors that have been queued for sending
+ *! (with @[send_fd()]), they will be sent.
+ *!
  *! @note
  *!   Writing of wide strings is not supported. You have to encode the
  *!   data somehow, e.g. with @[string_to_utf8] or with one of the
  *!   charsets supported by @[Locale.Charset.encoder].
  *!
  *! @seealso
- *!   @[read()], @[write_oob()]
+ *!   @[read()], @[write_oob()], @[send_fd()]
  */
 static void file_write(INT32 args)
 {
@@ -1356,6 +1753,14 @@ static void file_write(INT32 args)
 	int fd = FD;
 	int e;
 	int cnt = iovcnt;
+#ifdef HAVE_PIKE_SEND_FD
+	int *fd_info = NULL;
+	int num_fds = 0;
+	if (THIS->fd_info && (num_fds = THIS->fd_info[1])) {
+	  fd_info = THIS->fd_info;
+	  THIS->fd_info = NULL;
+	}
+#endif
 	THREADS_ALLOW();
 
 #ifdef IOV_MAX
@@ -1365,7 +1770,12 @@ static void file_write(INT32 args)
 #ifdef MAX_IOVEC
 	if (cnt > MAX_IOVEC) cnt = MAX_IOVEC;
 #endif
-	i = writev(fd, iov, cnt);
+#ifdef HAVE_PIKE_SEND_FD
+	if (fd_info) {
+	  i = writev_fds(fd, iov, cnt, fd_info + 2, num_fds);
+	} else
+#endif
+	  i = writev(fd, iov, cnt);
 	THREADS_DISALLOW();
 
 	/* fprintf(stderr, "writev(%d, 0x%08x, %d) => %d\n",
@@ -1374,15 +1784,14 @@ static void file_write(INT32 args)
 	e=errno; /* check_threads_etc may effect errno */
 	check_threads_etc();
 
-#ifdef _REENTRANT
-	if (FD<0) {
-	  free(iovbase);
-	  Pike_error("File closed while in file->write.\n");
-	}
-#endif
 	if(i<0)
 	{
 	  /* perror("writev"); */
+#ifdef HAVE_PIKE_SEND_FD
+	  if (fd_info) {
+	    restore_fd_info(fd_info);
+	  }
+#endif
 	  switch(e)
 	  {
 	  default:
@@ -1398,10 +1807,20 @@ static void file_write(INT32 args)
 
 	  case EINTR: continue;
 	  case EWOULDBLOCK: break;
+	    /* FIXME: Special case for ENOTSOCK? */
 	  }
 	  break;
 	}else{
 	  written += i;
+
+#ifdef HAVE_PIKE_SEND_FD
+	  if (fd_info) {
+	    THIS->fd_info = fd_info;
+	    if (i) {
+	      do_close_fd_info(THIS->fd_info = fd_info);
+	    }
+	  }
+#endif
 
 	  /* Avoid extra writev() */
 	  if(THIS->open_mode & FILE_NONBLOCKING)
@@ -1420,6 +1839,12 @@ static void file_write(INT32 args)
 	    }
 	  }
 	}
+#ifdef _REENTRANT
+	if (FD<0) {
+	  free(iovbase);
+	  Pike_error("File closed while in file->write.\n");
+	}
+#endif
       }
 
       free(iovbase);
@@ -1451,19 +1876,36 @@ static void file_write(INT32 args)
   {
     int fd=FD;
     int e;
+#ifdef HAVE_PIKE_SEND_FD
+    int *fd_info = NULL;
+    int num_fds = 0;
+/*     fprintf(stderr, "fd_info: %p\n", THIS->fd_info); */
+    if (THIS->fd_info && (num_fds = THIS->fd_info[1])) {
+      fd_info = THIS->fd_info;
+    }
+#endif
     THREADS_ALLOW();
-    i=fd_write(fd, str->str + written, str->len - written);
+#ifdef HAVE_PIKE_SEND_FD
+    if (fd_info) {
+      struct iovec iov;
+      iov.iov_base = str->str + written;
+      iov.iov_len = str->len - written;
+      i = writev_fds(fd, &iov, 1, fd_info + 2, num_fds);
+    } else
+#endif
+      i=fd_write(fd, str->str + written, str->len - written);
     e=errno;
     THREADS_DISALLOW();
 
     check_threads_etc();
 
-#ifdef _REENTRANT
-    if(FD<0) Pike_error("File closed while in file->write.\n");
-#endif
-
     if(i<0)
     {
+#ifdef HAVE_PIKE_SEND_FD
+      if (fd_info) {
+	restore_fd_info(fd_info);
+      }
+#endif
       switch(e)
       {
       default:
@@ -1480,15 +1922,24 @@ static void file_write(INT32 args)
 
       case EINTR: continue;
       case EWOULDBLOCK: break;
+	/* FIXME: Special case for ENOTSOCK? */
       }
       break;
     }else{
       written+=i;
 
+#ifdef HAVE_PIKE_SEND_FD
+      if (i && fd_info) {
+	do_close_fd_info(THIS->fd_info = fd_info);
+      }
+#endif
       /* Avoid extra write() */
       if(THIS->open_mode & FILE_NONBLOCKING)
 	break;
     }
+#ifdef _REENTRANT
+    if(FD<0) Pike_error("File closed while in file->write.\n");
+#endif
   }
 
   /* Race: A backend in another thread might have managed to set these
@@ -1618,6 +2069,92 @@ static void file_write_oob(INT32 args)
   push_int64(written);
 }
 
+#ifdef HAVE_PIKE_SEND_FD
+
+/*! @decl void send_fd(Stdio.Fd fd)
+ *!
+ *!   Queues an open file descriptor for sending to the other end of a stream.
+ *!
+ *! @note
+ *!   The actual sending is performed at the next successful call
+ *!   to @[write()], this is due to limitations in the system calls.
+ *!   This means that it isn't possible to send a file descriptor
+ *!   without also sending some in-band data.
+ *!
+ *!   This operation is only supported on @[pipe()]'s created with
+ *!   @[PROP_SEND_FD].
+ *!
+ *!   This function is not available on all operating systems, check
+ *!   for @[__HAVE_SEND_FD__].
+ *!
+ *!   The queue is emptied on successful @[write()] and when the
+ *!   write direction is @[close()]'d.
+ *!
+ *! @seealso
+ *!   @[receive_fd()], @[write()], @[pipe()], @[read()], @[__HAVE_SEND_FD__]
+ */
+static void file_send_fd(INT32 args)
+{
+  int e;
+  int other_fd;
+  struct object *o = NULL;
+  struct my_file *f = NULL;
+  int *fd_info = NULL;
+
+  if(args<1 || (Pike_sp[-args].type != PIKE_T_OBJECT) ||
+     !(o = Pike_sp[-args].u.object)->prog ||
+     (o->prog->inherits[Pike_sp[-args].subtype].prog != file_program))
+    SIMPLE_BAD_ARG_ERROR("Stdio.File->send_fd()", 1, "object(is Stdio.Fd)");
+
+  f = (struct my_file *)
+    (o->storage + o->prog->inherits[Pike_sp[-args].subtype].storage_offset);
+
+  if (f->box.fd == -1) {
+    Pike_error("Bad argument 1 to Stdio.File->send_fd(): "
+	       "File descriptor not open.\n");
+  }
+
+  if(FD < 0)
+    Pike_error("File not open for write.\n");
+
+  if (!(THIS->open_mode & fd_SEND_FD))
+    Pike_error("send_fd() not supported on this file.\n");
+
+  if (!(fd_info = THIS->fd_info) || (fd_info[0] == fd_info[1]+2)) {
+    int *fds;
+    if (fd_info) {
+      fds = realloc(fd_info, fd_info[0]*2*sizeof(int));
+      if (fds) fds[0] *= 2;
+    } else {
+      fds = malloc(8*sizeof(int));
+      if (fds) {
+	fds[0] = 8;
+	fds[1] = 0;
+      }
+    }
+    if (!fds)
+      Pike_error("Out of memory.\n");
+    THIS->fd_info = fd_info = fds;
+#ifdef PIKE_DEBUG
+    /* Note: Unusual range. */
+    for (e = fds[0]-2; e > fds[1]; e--) {
+      fds[e + 1] = -1;
+    }
+#endif
+  }
+
+  do {
+    other_fd = dup(f->box.fd);
+  } while((other_fd < 0) && (errno = EINTR));
+
+  if (other_fd < 0) {
+    Pike_error("Out of file descriptors.\n");
+  }
+  fd_info[2 + fd_info[1]++] = other_fd;
+}
+
+#endif
+
 static int do_close(int flags)
 {
   struct my_file *f = THIS;
@@ -1650,6 +2187,9 @@ static int do_close(int flags)
       SUB_FD_EVENTS (f, PIKE_BIT_FD_WRITE|PIKE_BIT_FD_WRITE_OOB);
       fd_shutdown(FD, 1);
       f->open_mode &=~ FILE_WRITE;
+#ifdef HAVE_PIKE_SEND_FD
+      if (f->fd_info) do_close_fd_info(f->fd_info);
+#endif
       return 0;
     }else{
       f->flags&=~FILE_NOT_OPENED;
@@ -3085,17 +3625,6 @@ static void file_take_fd(INT32 args)
   pop_n_elems(args);
 }
 
-/* Use ptrdiff_t for the fd since we're passed a void * and should
- * read it as an integer of the same size. */
-static void do_close_fd(ptrdiff_t fd)
-{
-  int ret;
-  if (fd < 0) return;
-  do {
-    ret = fd_close(fd);
-  } while ((ret == -1) && (errno == EINTR));
-}
-
 PMOD_EXPORT struct object *file_make_object_from_fd(int fd, int mode, int guess)
 {
   struct object *o;
@@ -3110,6 +3639,7 @@ PMOD_EXPORT struct object *file_make_object_from_fd(int fd, int mode, int guess)
     UNSET_ONERROR(err);
     if (!o->prog) return NULL;	/* Destructed in create() or __INIT(). */
     f = (struct my_file *)(o->storage + Pike_fp->context->storage_offset);
+    f->flags |= (THIS->flags & FILE_HAVE_RECV_FD);
   } else {
     /* Clone a plain Fd object. */
     o = low_clone(file_program);
@@ -3134,17 +3664,18 @@ PMOD_EXPORT void push_new_fd_object(int factory_fun_num,
   struct object *o = NULL;
   struct my_file *f;
   ONERROR err;
+  struct inherit *inh;
+  struct identifier *i;
 
   SET_ONERROR(err, do_close_fd, (ptrdiff_t) fd);
   apply_current(factory_fun_num, 0);
   if ((Pike_sp[-1].type != PIKE_T_OBJECT) ||
       !(o = Pike_sp[-1].u.object)->prog ||
-      (o->prog->inherits[Pike_sp[-1].subtype].prog != file_program)) {
+      ((inh = &o->prog->inherits[Pike_sp[-1].subtype])->prog != file_program)) {
     Pike_error("Invalid return value from fd_factory(). "
 	       "Expected object(is Stdio.Fd).\n");
   }
-  f = (struct my_file *)
-    (o->storage + o->prog->inherits[Pike_sp[-1].subtype].storage_offset);
+  f = (struct my_file *)(o->storage + inh->storage_offset);
   if (f->box.fd != -1) {
     Pike_error("Invalid return value from fd_factory(). "
 	       "Expected unopened object(is Stdio.Fd). fd:%d\n",
@@ -3159,6 +3690,13 @@ PMOD_EXPORT void push_new_fd_object(int factory_fun_num,
 #endif
   } else {
     f->open_mode = 0;
+  }
+
+  i = ID_FROM_INT(o->prog, fd_receive_fd_fun_num + inh->identifier_level);
+  if (((i->identifier_flags & IDENTIFIER_TYPE_MASK) ==
+       IDENTIFIER_PIKE_FUNCTION) && (i->func.offset != -1)) {
+    /* receive_fd() is not a prototype. */
+    f->flags |= FILE_HAVE_RECV_FD;
   }
 }
 
@@ -3486,7 +4024,7 @@ static void file_pipe(INT32 args)
   int reverse;
 
   check_all_args("file->pipe",args, BIT_INT | BIT_VOID, 0);
-  if(args) type = Pike_sp[-args].u.integer;
+  if(args && !Pike_sp[-1].subtype) type = Pike_sp[-args].u.integer;
 
   reverse = type & fd_REVERSE;
   type &= ~fd_REVERSE;
@@ -3598,6 +4136,12 @@ static void file_handle_events(int event)
 	close_fd_quietly();
       else
 	free_fd_stuff();
+#ifdef HAVE_PIKE_SEND_FD
+      if (f->fd_info) {
+	free(f->fd_info);
+	f->fd_info = NULL;
+      }
+#endif
       unhook_fd_callback_box (&f->box);
       break;
 
@@ -4746,11 +5290,12 @@ void file_set_notify(INT32 args) {
 
 /*! @decl constant PROP_SEND_FD = 64
  *!
- *!   The @[Stdio.File] object might support sending of open
- *!   file descriptors.
+ *!   The @[Stdio.File] object might support the @[Stdio.File()->send_fd()]
+ *!   operation.
  *!
  *! @seealso
- *!   @[Stdio.File()->pipe()]
+ *!   @[Stdio.File()->pipe()], @[Stdio.File()->send_fd()],
+ *!   @[Stdio.File()->receive_fd()]
  */
 
 /*! @decl constant PROP_REVERSE = 32
@@ -4799,6 +5344,18 @@ void file_set_notify(INT32 args) {
  *!   The file may be used for inter process communication.
  *!
  *! @seealso
+ *!   @[Stdio.File()->pipe()]
+ */
+
+/*! @decl constant __HAVE_SEND_FD__
+ *!
+ *!   Support for sending of file descriptors over
+ *!   @[Stdio.File()->pipe()] objects with @[PROP_SEND_FD]
+ *!   capability is supported.
+ *!
+ *! @seealso
+ *!   @[Stdio.File()->send_fd()], @[Stdio.File()->receive_fd()],
+ *!   @[Stdio.File()->read()], @[Stdio.File()->write()],
  *!   @[Stdio.File()->pipe()]
  */
 
@@ -5072,6 +5629,10 @@ PIKE_MODULE_INIT
     ADD_FUNCTION("fd_factory", fd_fd_factory,
 		 tFunc(tNone, tObjIs_STDIO_FD), ID_PROTECTED);
 
+  fd_receive_fd_fun_num =
+    ADD_FUNCTION("receive_fd", NULL,
+		 tFunc(tObjIs_STDIO_FD, tVoid), ID_PROTECTED);
+
   ADD_FUNCTION("`_fd", fd_backtick__fd, tFunc(tNone, tObjIs_STDIO_FD), 0);
 
   /* function(int, void|mapping:string) */
@@ -5236,6 +5797,9 @@ PIKE_MODULE_INIT
 #endif
 #endif /* 0 */
 
+#ifdef HAVE_PIKE_SEND_FD
+  add_integer_constant("__HAVE_SEND_FD__", 1, 0);
+#endif
   /* function(:array(int)) */
   ADD_FUNCTION2("get_all_active_fd", f_get_all_active_fd,
 		tFunc(tNone,tArr(tInt)), 0, OPT_EXTERNAL_DEPEND);
