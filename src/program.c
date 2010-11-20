@@ -1283,6 +1283,7 @@ PMOD_EXPORT void do_free_program (struct program *p)
 #define RELOCATE_identifiers(ORIG,NEW)
 #define RELOCATE_constants(ORIG,NEW)
 #define RELOCATE_relocations(ORIG,NEW)
+#define RELOCATE_static_storage(ORIG,NEW)
 
 #if SIZEOF_LONG_LONG == 8
 /* we have 8 byte ints, hopefully this constant works on all these systems */
@@ -6309,6 +6310,16 @@ PMOD_EXPORT int find_identifier(const char *name,struct program *prog)
   n=findstring(name);
   if(!n) return -1;
   return find_shared_string_identifier(n,prog);
+}
+
+int allocate_static_storage(int num_ints)
+{
+  int ret = Pike_compiler->new_program->num_static_storage;
+  while (num_ints > 0) {
+    add_to_static_storage(0);
+    num_ints--;
+  }
+  return ret;
 }
 
 int store_prog_string(struct pike_string *str)

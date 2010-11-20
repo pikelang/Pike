@@ -2471,6 +2471,11 @@ static int do_docode2(node *n, int flags)
       tmp1 = do_docode(CAR(n), DO_NOT_COPY);
       if ((tmp2 = lfun_lookup_id(CDR(n)->u.sval.u.string)) != -1) {
 	emit1(F_LOOKUP_LFUN, tmp2);
+#if 0
+      } else if (match_types(CAR(n)->type, object_type_string)) {
+	emit2(F_OBJECT_ARROW, store_prog_string(CDR(n)->u.sval.u.string),
+	      allocate_static_storage(2));
+#endif /* 0 */
       } else {
 	emit1(F_ARROW, store_prog_string(CDR(n)->u.sval.u.string));
       }

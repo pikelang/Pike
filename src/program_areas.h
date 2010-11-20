@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program_areas.h,v 1.15 2007/10/13 15:32:06 grubba Exp $
+|| $Id$
 */
 
 /* Who needs templates anyway? / Hubbe */
@@ -17,6 +17,8 @@
 /* Program *must* be first! */
 BAR(size_t,PIKE_OPCODE_T, PIKE_OPCODE_T, program)
 FOO(size_t,size_t, size_t, relocations)
+/* FIXME: Static storage ought to be in the parent object. */
+FOO(size_t, ptrdiff_t, ptrdiff_t, static_storage)
 FOO(size_t,char, int, linenumbers)
 FOO(unsigned INT16,unsigned INT16, unsigned, identifier_index)
 FOO(unsigned INT16,unsigned INT16, unsigned, variable_index)

@@ -1884,6 +1884,46 @@ OPCODE1(F_ARROW, "->x", 0, {
   print_return_value();
 });
 
+OPCODE2(F_OBJECT_ARROW, "obj->x", 0, {
+  LOCAL_VAR(struct svalue tmp);
+  LOCAL_VAR(struct svalue tmp2);
+  LOCAL_VAR(struct object *o);
+  LOCAL_VAR(struct program *p);
+
+  if ((Pike_sp[-1].type == T_OBJECT) &&
+      (p = (o = Pike_sp[-1].u.object)->prog) &&
+      (FIND_LFUN(p = p->inherits[Pike_sp[-1].subtype].prog,
+		 LFUN_ARROW) == -1)) {
+    int id;
+    if (Pike_fp->context->prog->static_storage[arg2] == p->id) {
+      id = Pike_fp->context->prog->static_storage[arg2 + 1];
+    } else {
+      id = find_shared_string_identifier(Pike_fp->context->prog->strings[arg1],
+					 p);
+      Pike_fp->context->prog->static_storage[arg2] = p->id;
+      Pike_fp->context->prog->static_storage[arg2+1] = id;
+    }
+    if (id >= 0) {
+      low_object_index_no_free(&tmp2, o,
+			       id + o->prog->inherits[Pike_sp[-1].subtype].
+			       identifier_level);
+    } else {
+      /* Not found. */
+      tmp2.type = T_INT;
+      tmp2.subtype = NUMBER_UNDEFINED;
+      tmp2.u.integer = 0;
+    }
+  } else {
+    tmp.type=PIKE_T_STRING;
+    tmp.u.string=Pike_fp->context->prog->strings[arg1];
+    tmp.subtype=1;
+    index_no_free(&tmp2, Pike_sp-1, &tmp);
+  }
+  free_svalue(Pike_sp-1);
+  move_svalue (Pike_sp - 1, &tmp2);
+  print_return_value();
+});
+
 OPCODE1(F_STRING_INDEX, "string index", 0, {
   LOCAL_VAR(struct svalue tmp);
   LOCAL_VAR(struct svalue tmp2);
