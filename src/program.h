@@ -580,6 +580,14 @@ struct identifier_lookup_cache
   INT32 identifier_id;
 };
 
+/* Single entry of the facet stack. */
+struct facet_data
+{
+  INT16 modifiers;
+  INT16 flags;
+  struct svalue facet;
+};
+
 struct program
 {
   PIKE_MEMORY_OBJECT_MEMBERS; /* Must be first */

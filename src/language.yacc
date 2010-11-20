@@ -502,6 +502,44 @@ facet: TOK_FACET TOK_IDENTIFIER ':' idents ';'
     yyerror("No support for facets.");
 #endif
   }
+  | TOK_FACET idents ';'
+  {
+#ifdef WITH_FACETS
+    struct object *o;
+    resolv_constant($2);
+    if (Pike_compiler->compiler_pass == 2) {
+      if (Pike_compiler->new_program->flags & PROGRAM_IS_FACET) {
+	yyerror("A class can only belong to one facet.");
+      }
+      else {
+	if (Pike_sp[-1].type == T_OBJECT) {
+	  /* FIXME: Object subtypes! */
+	  o = Pike_sp[-1].u.object;
+	  ref_push_string($2->u.sval.u.string);
+	  push_int(Pike_compiler->new_program->id);
+	  push_int(!!(Pike_compiler->new_program->flags & PROGRAM_IS_PRODUCT));
+	  safe_apply(o, "add_facet_class", 3);
+	  if (Pike_sp[-1].type == T_INT &&
+	      Pike_sp[-1].u.integer >= 0) {
+	    Pike_compiler->new_program->flags &= ~PROGRAM_IS_PRODUCT;
+	    Pike_compiler->new_program->flags |= PROGRAM_IS_FACET;
+	    Pike_compiler->new_program->facet_index = Pike_sp[-1].u.integer;
+	    add_ref(Pike_compiler->new_program->facet_group = o);
+	  }
+	  else
+	    yyerror("Could not add facet class to system.");
+	  pop_stack();
+	}
+	else
+	  yyerror("Invalid facet group specifier.");
+	pop_stack();
+      }
+    }
+    free_node($2);
+#else
+    yyerror("No support for facets.");
+#endif
+  }
   ;
 
 inherit_ref:

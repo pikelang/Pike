@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: compilation.h,v 1.37 2009/08/17 11:02:11 grubba Exp $
+|| $Id$
 */
 
 /*
@@ -171,6 +171,7 @@
   ZMEMBER(struct mapping *,module_index_cache,0)
   STACKMEMBER(struct pike_type **,type_stackp,type_stack)
   STACKMEMBER(struct pike_type ***,pike_type_mark_stackp,pike_type_mark_stack)
+/*  STACKMEMBER(struct facet_data *,facets,facet_stack) */
   ZMEMBER(INT32,parent_identifier,0)
   IMEMBER(int, compat_major, PIKE_MAJOR_VERSION)
   IMEMBER(int, compat_minor, PIKE_MINOR_VERSION)
