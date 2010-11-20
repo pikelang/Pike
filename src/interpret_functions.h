@@ -309,7 +309,7 @@ OPCODE1(F_LOOKUP_LFUN, "->lfun", 0, {
 
   if ((Pike_sp[-1].type == T_OBJECT) &&
       (p = (o = Pike_sp[-1].u.object)->prog) &&
-      (FIND_LFUN(p = o->prog->inherits[Pike_sp[-1].subtype].prog,
+      (FIND_LFUN(p = p->inherits[Pike_sp[-1].subtype].prog,
 		 LFUN_ARROW) == -1)) {
     int id = FIND_LFUN(p, arg1);
     if ((id != -1) &&
