@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.h,v 1.112 2010/05/28 17:37:52 mast Exp $
+|| $Id$
 */
 
 #ifndef STRALLOC_H
@@ -47,7 +47,7 @@ struct string_builder
 
 /* Flags used by string_builder_append_integer() */
 #define APPEND_SIGNED		1	/* Value is signed */
-/* Note: The follwoing are NOT true flags. */
+/* Note: The following are NOT true flags. */
 #define APPEND_WIDTH_HALF	2	/* h-flag. */
 #define APPEND_WIDTH_LONG	4	/* l-flag. */
 #define APPEND_WIDTH_LONG_LONG	6	/* ll-flag. */

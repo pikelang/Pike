@@ -794,7 +794,6 @@ testfont binary
 /src/specs.in foreign_ident
 /src/sscanf.h foreign_ident
 /src/stralloc.c foreign_ident
-/src/stralloc.h foreign_ident
 /src/stuff.c foreign_ident
 /src/stuff.h foreign_ident
 /src/test_co.pike foreign_ident
