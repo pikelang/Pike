@@ -2,7 +2,7 @@
 // This file is part of Pike. For copyright information see COPYRIGHT.
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
-// $Id: treeopt.in,v 1.101 2010/02/03 20:22:29 grubba Exp $
+// $Id$
 //
 // The tree optimizer
 //
@@ -188,7 +188,7 @@ F_GE(F_APPLY(F_CONSTANT
 //
 //   =>
 //
-// (sscanf(s, "%*" + A + "s" + "xxxx", ...) || 1) - 1
+// (sscanf(s, "%*!" + A + "s" + "xxxx", ...) || 1) - 1
 F_SSCANF(':'(4 = +,
 	     F_ARG_LIST(F_RANGE(0 = +[ pike_types_le($$->type,
 						     string_type_string)],
@@ -199,7 +199,7 @@ F_SSCANF(':'(4 = +,
 {
   struct pike_string *percent_star_string;
   struct pike_string *s_string;
-  MAKE_CONST_STRING(percent_star_string, "%*");
+  MAKE_CONST_STRING(percent_star_string, "%*!");
   MAKE_CONST_STRING(s_string, "s");
   $$ = mkopernode("`-",
 		  mknode(F_LOR,
