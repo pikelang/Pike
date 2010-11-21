@@ -611,8 +611,8 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
 {									 \
   struct svalue sval;							 \
   INT32 matches, arg;							 \
-  ptrdiff_t cnt, eye, e, field_length = 0;				 \
-  int no_assign = 0, minus_flag = 0, plus_flag = 0;			 \
+  ptrdiff_t cnt, eye, start_eye, e, field_length = 0, truncated = 0;	 \
+  int no_assign = 0, minus_flag = 0, plus_flag = 0, truncate = 0;	 \
   struct sscanf_set set;						 \
 									 \
 									 \
@@ -658,6 +658,8 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
     field_length=-1;							 \
     minus_flag=0;							 \
     plus_flag=0;							 \
+    truncate=0;								 \
+    start_eye = eye;							 \
 									 \
     cnt++;								 \
     if(cnt>=match_len)							 \
@@ -691,6 +693,11 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
 									 \
         case '+':							 \
 	  plus_flag=1;							 \
+	  cnt++;							 \
+	  continue;							 \
+									 \
+        case '!':							 \
+	  truncate=1;							 \
 	  cnt++;							 \
 	  continue;							 \
 									 \
@@ -1269,7 +1276,7 @@ INPUT_IS_WIDE(								 \
 	case 'n':							 \
 	  sval.type=T_INT;						 \
 	  sval.subtype=NUMBER_NUMBER;					 \
-	  sval.u.integer=TO_INT32(eye);					 \
+	  sval.u.integer=TO_INT32(eye - truncated);			 \
 	  break;							 \
 									 \
 	default:							 \
@@ -1279,6 +1286,9 @@ INPUT_IS_WIDE(								 \
       break;								 \
     }									 \
     matches++;								 \
+    if (truncate) {							 \
+      truncated += eye - start_eye;					 \
+    }									 \
 									 \
     if(no_assign)							 \
     {									 \
@@ -1455,6 +1465,8 @@ INT32 low_sscanf(struct pike_string *data, struct pike_string *format, INT32 fla
  *!     @expr{-28@}.
  *!   @value "%n"
  *!     Returns the current character offset in @[data].
+ *!     Note that any characters matching fields scanned with the
+ *!     @expr{"!"@}-modifier are removed from the count (see below).
  *!   @value "%f"
  *!     Reads a float ("0101" makes 101.0).
  *!   @value "%F"
@@ -1529,6 +1541,9 @@ INT32 low_sscanf(struct pike_string *data, struct pike_string *format, INT32 fla
  *!     Interpret the data as a signed entity. In other words,
  *!     @expr{"%+1c"@} will read @expr{"\xFF"@} as @expr{-1@} instead
  *!     of @expr{255@}, as @expr{"%1c"@} would have.
+ *!   @value "!"
+ *!     Ignore the matched characters with respect to any following
+ *!     @expr{"%n"@}.
  *! @endstring
  *!
  *! @note
@@ -1668,6 +1683,7 @@ static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
 
       case '-':
       case '+':
+      case '!':
       case '0': case '1': case '2': case '3': case '4':
       case '5': case '6': case '7': case '8': case '9':
 	cnt++;
