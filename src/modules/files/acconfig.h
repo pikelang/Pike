@@ -114,7 +114,8 @@
 #undef USE_PT_CHMOD
 
 #if (defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL) && defined(SCM_RIGHTS)) ||	\
-    defined(HAVE_STRUCT_MSGHDR_MSG_ACCRIGHTS)
+    defined(HAVE_STRUCT_MSGHDR_MSG_ACCRIGHTS) || \
+    defined(I_SENDFD)
 #define HAVE_PIKE_SEND_FD
 #endif
 

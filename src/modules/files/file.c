@@ -298,7 +298,9 @@ static void init_fd(int fd, int open_mode, int flags)
     THIS->event_cbs[ev].subtype = NUMBER_NUMBER;
     THIS->event_cbs[ev].u.integer = 0;
   }
+#ifdef HAVE_PIKE_SEND_FD
   THIS->fd_info = NULL;
+#endif
 #if defined(HAVE_FD_FLOCK) || defined(HAVE_FD_LOCKF)
   THIS->key=0;
 #endif
@@ -322,6 +324,7 @@ static void do_close_fd(ptrdiff_t fd)
   } while ((ret == -1) && (errno == EINTR));
 }
 
+#ifdef HAVE_PIKE_SEND_FD
 /* Close the queued fds in fd_info, either due to them being successfully
  * sent, or due to the connection being closed. */
 static void do_close_fd_info(int *fd_info)
@@ -389,6 +392,7 @@ static void restore_fd_info(int *fd_info)
   }
   THIS->fd_info = fd_info;
 }
+#endif
 
 static void free_fd_stuff(void)
 {
