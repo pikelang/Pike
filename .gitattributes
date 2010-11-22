@@ -347,7 +347,6 @@ testfont binary
 /src/dynamic_buffer.h foreign_ident
 /src/dynamic_load.c foreign_ident
 /src/dynamic_load.h foreign_ident
-/src/encode.c foreign_ident
 /src/encode.h foreign_ident
 /src/error.c foreign_ident
 /src/errors.h foreign_ident
