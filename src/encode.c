@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.192 2008/02/29 14:28:29 grubba Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -32,7 +32,7 @@
 #include "opcodes.h"
 #include "peep.h"
 
-RCSID("$Id: encode.c,v 1.192 2008/02/29 14:28:29 grubba Exp $");
+RCSID("$Id$");
 
 /* #define ENCODE_DEBUG */
 
@@ -41,7 +41,9 @@ RCSID("$Id: encode.c,v 1.192 2008/02/29 14:28:29 grubba Exp $");
 
 #ifdef ENCODE_DEBUG
 /* Pass a nonzero integer as the third arg to encode_value,
- * encode_value_canonic and decode_value to activate this debug. */
+ * encode_value_canonic and decode_value to activate this debug. It
+ * both enables debug messages and also lessens the pickyness to
+ * sort-of be able to decode programs with the wrong codec. */
 #define EDB(N,X) do { debug_malloc_touch(data); if (data->debug>=N) {X;} } while (0)
 #ifndef PIKE_DEBUG
 #error ENCODE_DEBUG requires PIKE_DEBUG
@@ -2848,11 +2850,18 @@ static void decode_value2(struct decode_data *data)
 
 	  decode_value2(data);
 	  f_version(0);
-	  if(!is_eq(Pike_sp-1,Pike_sp-2))
+	  if(!is_eq(Pike_sp-1,Pike_sp-2)
+#ifdef ENCODE_DEBUG
+	     && !data->debug
+#endif
+	    )
 	    Pike_error("Cannot decode programs encoded with other pike version.\n");
 	  pop_n_elems(2);
 
-	  data->pickyness++;
+#ifdef ENCODE_DEBUG
+	  if (!data->debug)
+#endif
+	    data->pickyness++;
 
 	  debug_malloc_touch(p);
 	  decode_number(p->flags,data);
@@ -2890,7 +2899,10 @@ static void decode_value2(struct decode_data *data)
 	      p->parent=program_from_svalue(Pike_sp-1);
 	      break;
 	    default:
-	      decode_error(NULL, Pike_sp - 1, "Program decode failed. Got: ");
+	      if (data->pickyness)
+		decode_error(NULL, Pike_sp - 1, "Program decode failed. Got: ");
+	      p->parent = 0;
+	      break;
 	  }
 	  if(p->parent) {
 	    add_ref(p->parent);
@@ -3210,8 +3222,11 @@ static void decode_value2(struct decode_data *data)
 	      call_c_initializers(placeholder);
 	    }
 	  }
-	  
-	  data->pickyness--;
+
+#ifdef ENCODE_DEBUG
+	  if (!data->debug)
+#endif
+	    data->pickyness--;
 
 	  if(placeholder)
 	  {
@@ -3496,13 +3511,20 @@ static void decode_value2(struct decode_data *data)
 	  /* Check the version. */
 	  decode_value2(data);
 	  f_version(0);
-	  if(!is_eq(Pike_sp-1,Pike_sp-2))
+	  if(!is_eq(Pike_sp-1,Pike_sp-2)
+#ifdef ENCODE_DEBUG
+	     && !data->debug
+#endif
+	    )
 	    Pike_error("Cannot decode programs encoded with other pike version.\n");
 	  pop_n_elems(2);
 
 	  debug_malloc_touch(p);
 
-	  data->pickyness++;
+#ifdef ENCODE_DEBUG
+	  if (!data->debug)
+#endif
+	    data->pickyness++;
 
 	  /* parent */
 	  decode_value2(data);
@@ -3647,23 +3669,25 @@ static void decode_value2(struct decode_data *data)
 	    decode_value2(data);
 	    switch(entry_type) {
 	    case ID_ENTRY_EFUN_CONSTANT:
-	      if ((Pike_sp[-1].type != T_FUNCTION) ||
-		  (Pike_sp[-1].subtype != FUNCTION_BUILTIN)) {
+	      if (((Pike_sp[-1].type != T_FUNCTION) ||
+		   (Pike_sp[-1].subtype != FUNCTION_BUILTIN)) &&
+		  data->pickyness) {
 		ref_push_program (p);
 		decode_error(Pike_sp - 1, Pike_sp - 2,
 			     "Expected efun constant: ");
 	      }
 	      break;
 	    case ID_ENTRY_TYPE_CONSTANT:
-	      if (Pike_sp[-1].type != T_TYPE) {
+	      if (Pike_sp[-1].type != T_TYPE && data->pickyness) {
 		ref_push_program (p);
 		decode_error(Pike_sp - 1, Pike_sp - 2,
 			     "Expected type constant: ");
 	      }
 	      break;
 	    default:
-	      Pike_error("Internal error: Unsupported early constant (%d)\n",
-			 entry_type);
+	      if (data->pickyness)
+		Pike_error("Internal error: Unsupported early constant (%d)\n",
+			   entry_type);
 	      break;
 	    }
 	    /* name */
@@ -4125,7 +4149,10 @@ static void decode_value2(struct decode_data *data)
 	    Pike_sp -= 2;
 	  }
 
-	  data->pickyness--;
+#ifdef ENCODE_DEBUG
+	  if (!data->debug)
+#endif
+	    data->pickyness--;
 
 	  /* The program should be consistent now. */
 	  p->flags &= ~PROGRAM_AVOID_CHECK;
