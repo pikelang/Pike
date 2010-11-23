@@ -399,15 +399,6 @@ void async_fetch_close()
 }
 
 /****** utilities **************************************************/
-constant rfc_headers = ({ "accept_charset", "accept_encoding", "accept_language", 
-                  "accept_ranges", "cache_control", "content_length", 
-                  "content_type", "if_match", "if_modified_since", 
-                  "if_none_match", "if_range", "if_unmodified_since", 
-                  "max_forwards", "proxy_authorization", "transfer_encoding", 
-                  "user_agent", "www_autenticate" });
-
-constant replace_headers = mkmapping(replace(rfc_headers[*],"-","_"),rfc_headers);
-
 string headers_encode(mapping(string:array(string)|string) h)
 {
     constant rfc_headers = ({ "accept-charset", "accept-encoding", "accept-language", 
