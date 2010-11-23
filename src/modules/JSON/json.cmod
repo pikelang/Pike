@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: json.cmod,v 1.22 2010/06/10 15:27:30 arne Exp $
+|| $Id$
 */
 
 /* JSON tools.
@@ -43,20 +43,8 @@ DECLARATIONS
 
 static char *err_msg;
 
-struct object *JSON_null = NULL, *JSON_false = NULL, *JSON_true = NULL;
-
 #define PUSH_SPECIAL(X) do {if (!(state->flags&JSON_VALIDATE)) {	\
-    if (!JSON_##X) {							\
-	struct svalue ind, val;						\
-	MAKE_CONST_STRING (ind.u.string, #X);				\
-	ind.type = T_STRING;						\
-	ind.subtype = 0;						\
-	object_index_no_free (&val, Pike_fp->current_object, 0, &ind);	\
-	if (val.type == PIKE_T_OBJECT) {				\
-	    JSON_##X = val.u.object;					\
-	} else Pike_error("Could not resolv Standards.JSON."#X"\n");	\
-    }									\
-    ref_push_object(JSON_##X);						\
+    push_object (get_val_##X());					\
 } c++; if (state->level > 0) return p+1; } while(0)
 
 #define PARSE(X, FPC) do {						\
@@ -555,9 +543,5 @@ PIKE_MODULE_INIT
 
 PIKE_MODULE_EXIT
 {
-  if (JSON_null) free_object (JSON_null);
-  if (JSON_false) free_object (JSON_false);
-  if (JSON_true) free_object (JSON_true);
-
   EXIT;
 }

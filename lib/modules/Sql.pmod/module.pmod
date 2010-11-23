@@ -12,7 +12,14 @@
 //!                     "group=%s", group)->name * ",";
 //! }
 
-constant Null = Builtin.SqlNull;
+//! @ignore
+// Use getters and Val-> to ensure dynamic resolving in case the
+// values in Val.pmod are replaced.
+program `->Null() {return Val->Null;}
+Val.Null `->NULL() {return Val->null;}
+//! @endignore
 
-//! The SQL NULL marker.
-constant NULL = Builtin.SqlNULL;
+//! @decl program Null;
+//! @decl Val.Null NULL;
+//!
+//! @deprecated Val.Null, Val.null

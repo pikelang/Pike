@@ -1,4 +1,4 @@
-// $Id: JSON.pmod.in,v 1.4 2010/06/10 15:19:51 arne Exp $
+// $Id$
 
 #pike __REAL_VERSION__
 
@@ -14,36 +14,23 @@ inherit @module@;
 //! Tools for handling the JSON structured data format. See
 //! @url{http://www.json.org/@} and RFC 4627.
 
-True true = True();
-False false = False();
-Null null = Null();
-//! Objects representing the three JSON literals @expr{true@},
-//! @expr{false@} and @expr{null@}. @expr{true@} and @expr{false@}
-//! should behave as expected in boolean contexts. @expr{null@} is
-//! false in a boolean context.
+//! @ignore
+// Use getters and Val-> to ensure dynamic resolving in case the
+// values in Val.pmod are replaced.
+Val.True `->true() {return Val->true;}
+Val.False `->false() {return Val->false;}
+Val.Null `->null() {return Val->null;}
+//! @endignore
 
-class True
-//! Type for the @[true] object.
-{
-  string encode_json() {return "true";}
-  protected string _sprintf (int flag) {return flag == 'O' && "JSON.true";}
-}
-
-class False
-//! Type for the @[false] object.
-{
-  int `!() {return 1;}
-  string encode_json() {return "false";}
-  protected string _sprintf (int flag) {return flag == 'O' && "JSON.false";}
-}
-
-class Null
-//! Type for the @[null] object.
-{
-  int `!() {return 1;}
-  string encode_json() {return "null";}
-  protected string _sprintf (int flag) {return flag == 'O' && "JSON.null";}
-}
+//! @decl Val.True true
+//! @decl Val.False false
+//! @decl Val.Null null
+//!
+//! Compat aliases for the corresponding @[Val] objects. These are
+//! used to represent the three JSON literals @expr{true@},
+//! @expr{false@} and @expr{null@}.
+//!
+//! @deprecated Val.true, Val.false, Val.null
 
 //! Error thrown when JSON decode fails.
 class DecodeError {

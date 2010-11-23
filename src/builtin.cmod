@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.259 2010/06/22 09:24:35 mast Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -4361,26 +4361,53 @@ PIKECLASS MasterCodec
 /*! @endmodule
  */
 
-static struct object *SqlNULL_object;
+static struct object *val_module;
 
-/* Proxy function needed for dynamic linkage on WIN32. */
-PMOD_EXPORT struct object *get_sql_null(void)
+static void get_val_module()
 {
-  return SqlNULL_object;
+  assert (!val_module);
+  push_constant_text ("Val");
+  APPLY_MASTER ("resolv", 1);
+  if (Pike_sp[-1].type != T_OBJECT)
+    Pike_error ("\"Val\" didn't resolve to a module object.\n");
+  val_module = (--Pike_sp)->u.object;
+}
+
+/* Always do the lookup in the Val module dynamically to allow the
+ * values to be replaced. */
+#define GET_VAL(NAME)							\
+  PMOD_EXPORT struct object *PIKE_CONCAT (get_val_, NAME) (void)	\
+  {									\
+    struct svalue index, res;						\
+    if (!val_module) get_val_module();					\
+    index.type = T_STRING;						\
+    MAKE_CONST_STRING (index.u.string, TOSTR (NAME));			\
+    object_index_no_free (&res, val_module, 0, &index);			\
+    if (res.type != T_OBJECT)						\
+      Pike_error ("\"Val." TOSTR (NAME) "\" didn't resolve to an object.\n"); \
+    return res.u.object;						\
+  }
+
+GET_VAL (true)
+GET_VAL (false)
+GET_VAL (null)
+
+/* Kludge needed for the static null objects in the oracle module. It
+ * ought to be fixed to use dynamic lookup of them instead. */
+PMOD_EXPORT struct program *get_sql_null_prog(void)
+{
+  return SqlNull_program;
 }
 
 void init_builtin(void)
 {
   init_pike_list_node_blocks();
   INIT
-
-  add_object_constant("SqlNULL",
-		      SqlNULL_object = clone_object(SqlNull_program, 0), 0);
 }
 
 void exit_builtin(void)
 {
-  if (SqlNULL_object) free_object(SqlNULL_object);
+  if (val_module) free_object (val_module);
   EXIT
 #ifndef DO_PIKE_CLEANUP
   /* This is performed by exit_builtin_modules() at a later point
