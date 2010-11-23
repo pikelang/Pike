@@ -290,7 +290,6 @@ testfont binary
 /src/backend.h foreign_ident
 /src/bignum.h foreign_ident
 /src/block_alloc_h.h foreign_ident
-/src/builtin_functions.h foreign_ident
 /src/callback.c foreign_ident
 /src/callback.h foreign_ident
 /src/code/bytecode.c foreign_ident
@@ -459,10 +458,8 @@ testfont binary
 /src/modules/Image/phase.h foreign_ident
 /src/modules/Image/polyfill.c foreign_ident
 /src/modules/Image/testsuite.in foreign_ident
-/src/modules/JSON/JSON.pmod.in foreign_ident
 /src/modules/JSON/Makefile.in foreign_ident
 /src/modules/JSON/configure.in foreign_ident
-/src/modules/JSON/json.cmod foreign_ident
 /src/modules/Java/Makefile.in foreign_ident
 /src/modules/Java/acconfig.h foreign_ident
 /src/modules/Java/ntdl.c foreign_ident
@@ -497,7 +494,6 @@ testfont binary
 /src/modules/Mysql/configure.in foreign_ident
 /src/modules/Mysql/dummy.c foreign_ident
 /src/modules/Mysql/precompiled_mysql.h foreign_ident
-/src/modules/Mysql/result.c foreign_ident
 /src/modules/Odbc/Makefile.in foreign_ident
 /src/modules/Odbc/acconfig.h foreign_ident
 /src/modules/Odbc/configure.in foreign_ident
@@ -506,7 +502,6 @@ testfont binary
 /src/modules/Oracle/Makefile.in foreign_ident
 /src/modules/Oracle/acconfig.h foreign_ident
 /src/modules/Oracle/configure.in foreign_ident
-/src/modules/Oracle/oracle.c foreign_ident
 /src/modules/PDF/Makefile.in foreign_ident
 /src/modules/PDF/acconfig.h foreign_ident
 /src/modules/PDF/configure.in foreign_ident

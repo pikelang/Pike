@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: oracle.c,v 1.104 2010/09/06 12:05:05 grubba Exp $
+|| $Id$
 */
 
 /*
@@ -2762,7 +2762,7 @@ PIKE_MODULE_INIT
 
   MY_START_CLASS(dbnull); {
     struct pike_string *null_string = make_shared_string("Null");
-    low_inherit(get_sql_null()->prog, NULL, -1, 0, 0, null_string);
+    low_inherit(get_sql_null_prog(), NULL, -1, 0, 0, null_string);
     free_string(null_string);
     add_integer_constant("is_oracle_null", 1, 0);
     ADD_FUNCTION("create", dbnull_create, tFunc(tOr(tStr, tInt), tVoid),

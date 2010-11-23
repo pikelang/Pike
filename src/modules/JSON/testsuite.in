@@ -1,8 +1,12 @@
 START_MARKER
 
-test_true(Standards.JSON.true)
-test_false(Standards.JSON.false)
-test_false(Standards.JSON.null)
+test_true(Val.true)
+test_false(Val.false)
+test_false(Val.null)
+
+test_eq(Standards.JSON.true, Val.true)
+test_eq(Standards.JSON.false, Val.false)
+test_eq(Standards.JSON.null, Val.null)
 
 test_eq(Standards.JSON.ASCII_ONLY, 1)
 test_eq(Standards.JSON.HUMAN_READABLE, 2)
@@ -74,17 +78,14 @@ class X { string encode_json() { return "smallpox"; } };
 return Standards.JSON.encode(X());
 ]], "smallpox")
 
-test_true(programp(Standards.JSON.True))
-test_true(programp(Standards.JSON.False))
-test_true(programp(Standards.JSON.Null))
 test_true(functionp(Standards.JSON.decode))
 test_true(functionp(Standards.JSON.encode))
 test_true(functionp(Standards.JSON.validate))
 
 // test the special types
-test_eq(Standards.JSON.true, Standards.JSON.decode("true"))
-test_eq(Standards.JSON.false, Standards.JSON.decode("false"))
-test_eq(Standards.JSON.null, Standards.JSON.decode("null"))
+test_eq(Val.true, Standards.JSON.decode("true"))
+test_eq(Val.false, Standards.JSON.decode("false"))
+test_eq(Val.null, Standards.JSON.decode("null"))
 
 // test numbers
 test_eq(Standards.JSON.decode("0E4"), 0.0)
