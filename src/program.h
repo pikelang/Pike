@@ -226,9 +226,37 @@ union idptr
    * Offset of the struct program_constant in program.constants
    * in the program pointed to by prog in the struct inherit
    * that corresponds to the identifier.
+   *
+   * Future use: Evaluated constant pair.
+   *
+   * There are two types of constants:
+   *
+   *   * Literals (integers, floats, etc). ext_ref.id == -1.
+   *     These behave the same as the old constants.
+   *
+   *   * Evaluated constants. const_info.id != -1.
+   *
+   * For evaluated constants there are a further set of cases:
+   *
+   *   * Evaluated. constants[const_info.offset].type <= MAX_TYPE.
+   *
+   *   * Unevaluated. constants[const_info.offset].type == PIKE_T_UNKNOWN.
+   *
+   *   * Under evaluation. constants[const_info.offset].type == PIKE_T_FREE.
+   *
+   * There's also the distinction between inherited and overloaded
+   * evaluated constants. Note that this differs slightly from other refs:
+   *
+   *   * Inherited, local. ID_LOCAL|ID_INHERITED, ref->prog != p.
+   *
+   *   * Inherited, overloadable. ID_INHERITED, ref->prog == p.
+   *     ref->prog and const_info.* are rewritten at inherit time.
+   *
+   *   * Locally defined. !ID_INHERITED, ref->prog == p.
    */
   struct {
-    ptrdiff_t offset;	/* Offset in the constants table. */
+    INT16 offset;	/* Offset in the constants table. */
+    INT16 id;		/* Reference number for the initialization function. */
   } const_info;
 
   /* Getter/setter reference pair. (IDENTIFIER_VARIABLE && PIKE_T_GET_SET)

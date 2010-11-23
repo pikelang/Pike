@@ -1556,6 +1556,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 
 		  /* offset */
 		  code_number(id->func.const_info.offset, data);
+		  /* FIXME: func.const_info.id */
 
 		  /* run-time type */
 		  code_number(id->run_time_type, data);
@@ -4384,6 +4385,8 @@ static void decode_value2(struct decode_data *data)
 		/* FIXME:
 		 *   Verify validity of func.const_info.offset
 		 */
+
+		/* FIXME: func.const_info.id */
 
 		/* run_time_type */
 		decode_number(id.run_time_type, data);

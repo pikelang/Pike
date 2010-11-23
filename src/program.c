@@ -5348,6 +5348,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
       } else {
 	id->run_time_type = (unsigned char) c->type;
 	id->func.const_info.offset = store_constant(c, 0, 0);
+	id->func.const_info.id = -1;
       }
       free_type(id->type);
       if ((c->type == T_INT) && !(flags & ID_INLINE)) {
@@ -5399,6 +5400,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
     }
     dummy.run_time_type = (unsigned char) c->type;
     dummy.func.const_info.offset = store_constant(c, 0, 0);
+    dummy.func.const_info.id = -1;
     dummy.opt_flags=OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND;
     if(c->type == PIKE_T_PROGRAM && (c->u.program->flags & PROGRAM_CONSTANT))
        dummy.opt_flags=0;
@@ -5408,6 +5410,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
     copy_pike_type(dummy.type, mixed_type_string);
     dummy.run_time_type=T_MIXED;
     dummy.func.const_info.offset = -1;
+    dummy.func.const_info.id = -1;
     dummy.opt_flags=0;
   }
 #endif
