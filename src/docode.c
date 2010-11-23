@@ -929,14 +929,14 @@ static int do_docode2(node *n, int flags)
 	} else if (level) {
 	  if (IDENTIFIER_IS_CONSTANT(id->identifier_flags) &&
 	      (ref->id_flags & ID_INLINE) && !ref->inherit_offset &&
-	      (id->func.offset >= 0)) {
+	      (id->func.const_info.offset >= 0)) {
 	    /* An inline, local or final constant identifier in
 	     * a lexically surrounding (aka parent) class.
 	     * Avoid vtable traversal during runtime by moving
 	     * the constant to this class.
 	     */
 	    struct svalue *s = &state->new_program->
-	      constants[id->func.offset].sval;
+	      constants[id->func.const_info.offset].sval;
 	    if (s->type == T_PROGRAM &&
 		s->u.program->flags & PROGRAM_USES_PARENT) {
 	      /* An external reference is required. */
@@ -959,18 +959,18 @@ static int do_docode2(node *n, int flags)
 	  emit1(F_LFUN, n->u.integer.b);
 	} else if (IDENTIFIER_IS_CONSTANT(id->identifier_flags) &&
 		   (ref->id_flags & ID_INLINE) && !ref->inherit_offset &&
-		   (id->func.offset >= 0)) {
+		   (id->func.const_info.offset >= 0)) {
 	  /* An inline, local or final constant identifier.
 	   * No need for vtable traversal during runtime.
 	   */
 	  struct svalue *s = &state->new_program->
-	    constants[id->func.offset].sval;
+	    constants[id->func.const_info.offset].sval;
 	  if (s->type == T_PROGRAM &&
 	      s->u.program->flags & PROGRAM_USES_PARENT) {
 	    /* Program using parent. Convert to an LFUN. */
 	    emit1(F_LFUN, n->u.integer.b);
 	  } else {
-	    emit1(F_CONSTANT, id->func.offset);
+	    emit1(F_CONSTANT, id->func.const_info.offset);
 	  }
 	}else{
 	  emit1(F_GLOBAL, n->u.integer.b);

@@ -2792,9 +2792,9 @@ class: TOK_CLASS line_number_info optional_identifier
 	if(IDENTIFIER_IS_CONSTANT(id->identifier_flags))
 	{
 	  struct svalue *s;
-	  if ((id->func.offset >= 0) &&
+	  if ((id->func.const_info.offset >= 0) &&
 	      ((s = &PROG_FROM_INT(Pike_compiler->new_program,i)->
-		constants[id->func.offset].sval)->type == T_PROGRAM))
+		constants[id->func.const_info.offset].sval)->type == T_PROGRAM))
 	  {
 	    low_start_new_program(s->u.program, 2,
 				  $3->u.sval.u.string,

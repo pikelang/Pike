@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.311 2010/07/28 22:50:59 mast Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -1184,9 +1184,9 @@ PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
 
   case IDENTIFIER_CONSTANT:
     {
-      if (i->func.offset >= 0) {
+      if (i->func.const_info.offset >= 0) {
 	struct svalue *s;
-	s=& PROG_FROM_INT(p,f)->constants[i->func.offset].sval;
+	s=& PROG_FROM_INT(p,f)->constants[i->func.const_info.offset].sval;
 	if(s->type==T_PROGRAM &&
 	   (s->u.program->flags & PROGRAM_USES_PARENT))
 	{

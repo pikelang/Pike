@@ -1188,8 +1188,8 @@ node *debug_mkexternalnode(struct program *parent_prog, int i)
       if (!(PTR_FROM_INT(parent_prog, i)->id_flags & ID_LOCAL)) {
 	/* It's possible to overload the identifier. */
 	res->node_info = OPT_EXTERNAL_DEPEND;
-      } else {
-	struct svalue *s = &parent_prog->constants[id->func.offset].sval;
+      } else if (id->func.const_info.offset != -1) {
+	struct svalue *s = &parent_prog->constants[id->func.const_info.offset].sval;
 	if ((s->type == T_PROGRAM) &&
 	    (s->u.program->flags & PROGRAM_USES_PARENT)) {
 	  /* The constant program refers to its parent, so we need as well. */
@@ -1522,9 +1522,10 @@ void resolv_constant(node *n)
     }
     if(IDENTIFIER_IS_CONSTANT(i->identifier_flags))
     {
-      if(i->func.offset != -1)
+      if(i->func.const_info.offset != -1)
       {
-	push_svalue(&PROG_FROM_INT(p, numid)->constants[i->func.offset].sval);
+	push_svalue(&PROG_FROM_INT(p, numid)->
+		    constants[i->func.const_info.offset].sval);
       }else{
 	if(Pike_compiler->compiler_pass!=1)
 	  yyerror("Constant is not defined yet.");

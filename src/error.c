@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.170 2010/09/27 17:06:17 grubba Exp $
+|| $Id$
 */
 
 #define NO_PIKE_SHORTHAND
@@ -859,7 +859,7 @@ static void f_error__sprintf(INT32 args)
 						  SEE_PRIVATE);
     if (i != -1)
       push_svalue (&PROG_FROM_INT (p, i)->
-		   constants[ID_FROM_INT (p, i)->func.offset].sval);
+		   constants[ID_FROM_INT (p, i)->func.const_info.offset].sval);
     else {
       ref_push_program (p);
       SAFE_APPLY_MASTER ("describe_program", 1);

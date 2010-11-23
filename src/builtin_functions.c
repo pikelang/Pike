@@ -8995,8 +8995,8 @@ PMOD_EXPORT void f_function_defined(INT32 args)
       id->func.offset != -1)
       file = low_get_line(id_prog->program + id->func.offset, id_prog, &line);
     else if (IDENTIFIER_IS_CONSTANT (id->identifier_flags) &&
-	     id->func.offset >= 0 &&
-	     (p2 = program_from_svalue (&id_prog->constants[id->func.offset].sval)))
+	     id->func.const_info.offset >= 0 &&
+	     (p2 = program_from_svalue (&id_prog->constants[id->func.const_info.offset].sval)))
       file = low_get_program_line (p2, &line);
     else
       /* The program line is better than nothing for C functions. */

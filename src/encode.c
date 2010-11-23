@@ -1555,7 +1555,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		  code_number(id->linenumber, data);
 
 		  /* offset */
-		  code_number(id->func.offset, data);
+		  code_number(id->func.const_info.offset, data);
 
 		  /* run-time type */
 		  code_number(id->run_time_type, data);
@@ -4376,10 +4376,10 @@ static void decode_value2(struct decode_data *data)
 		id.identifier_flags = IDENTIFIER_CONSTANT;
 
 		/* offset */
-		decode_number(id.func.offset, data);
+		decode_number(id.func.const_info.offset, data);
 
 		/* FIXME:
-		 *   Verify validity of func.offset
+		 *   Verify validity of func.const_info.offset
 		 */
 
 		/* run_time_type */

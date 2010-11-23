@@ -286,7 +286,6 @@ testfont binary
 /refdoc/structure/traditional.xml foreign_ident
 /src/aclocal.m4 foreign_ident
 /src/alloca.c foreign_ident
-/src/apply_low.h foreign_ident
 /src/backend.h foreign_ident
 /src/bignum.h foreign_ident
 /src/block_alloc_h.h foreign_ident
@@ -318,7 +317,6 @@ testfont binary
 /src/dynamic_load.c foreign_ident
 /src/dynamic_load.h foreign_ident
 /src/encode.h foreign_ident
-/src/error.c foreign_ident
 /src/errors.h foreign_ident
 /src/export_list foreign_ident
 /src/facetgroup.cmod foreign_ident
@@ -668,7 +666,6 @@ testfont binary
 /src/modules/system/system.h foreign_ident
 /src/modules/system/testsuite.in foreign_ident
 /src/multiset.h foreign_ident
-/src/object.c foreign_ident
 /src/object.h foreign_ident
 /src/opcodes.c foreign_ident
 /src/opcodes.h foreign_ident

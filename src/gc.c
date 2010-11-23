@@ -1445,9 +1445,13 @@ again:
 	  else if (IDENTIFIER_IS_PIKE_FUNCTION (id->identifier_flags))
 	    fprintf (stderr, "  pc: %"PRINTPTRDIFFT"d", id->func.offset);
 	  else if (IDENTIFIER_IS_CONSTANT (id->identifier_flags)) {
-	    fputs ("  value: ", stderr);
-	    safe_print_svalue_compact (
-	      stderr, &id_inh->prog->constants[id->func.offset].sval);
+	    if (id->func.const_info.offset != -1) {
+	      fputs ("  value: ", stderr);
+	      safe_print_svalue_compact (
+	        stderr, &id_inh->prog->constants[id->func.const_info.offset].sval);
+	    } else {
+	      fputs ("  placeholder constant", stderr);
+	    }
 	  }
 
 	  fputc ('\n', stderr);

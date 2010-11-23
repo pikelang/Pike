@@ -208,6 +208,16 @@ union idptr
     unsigned short id;		/* Reference number. */
   } ext_ref;
 
+  /* Constant. (IDENTIFIER_CONSTANT)
+   *
+   * Offset of the struct program_constant in program.constants
+   * in the program pointed to by prog in the struct inherit
+   * that corresponds to the identifier.
+   */
+  struct {
+    ptrdiff_t offset;	/* Offset in the constants table. */
+  } const_info;
+
   /* Getter/setter reference pair. (IDENTIFIER_VARIABLE && PIKE_T_GET_SET)
    */
   struct {
@@ -223,10 +233,6 @@ union idptr
    * to the identifier. See LOW_GET_GLOBAL and GET_GLOBAL. The stored
    * variable may be either a normal or a short svalue, depending on
    * identifier.run_time_type. (IDENTIFIER_VARIABLE)
-   *
-   * For constants: Offset of the struct program_constant in
-   * program.constants in the program pointed to by prog in the struct
-   * inherit that corresponds to the identifier. (IDENTIFIER_CONSTANT)
    *
    * For pike functions: Offset to the start of the function in
    * program.program in the program pointed to by prog in the struct
@@ -381,7 +387,7 @@ struct inherit
    * until one is found with an inherit_level less than this one. */
   INT16 inherit_level;
 
-  /* All the identifier references in the inherited program has been
+  /* All the identifier references in the inherited program have been
    * copied to this program with the first one at this offset. */
   INT16 identifier_level;
 
