@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: preprocessor.h,v 1.97 2010/09/19 15:03:27 marcus Exp $
+|| $Id$
 */
 
 /*
@@ -460,11 +460,14 @@ static ptrdiff_t calcC(struct cpp *this, WCHAR *data, ptrdiff_t len,
   case '0':
     if(data[pos+1]=='x' || data[pos+1]=='X')
     {
-      PCHARP p;
-      long val = STRTOL_PCHARP(MKPCHARP(data+pos+2, SHIFT), &p, 16);
-      if(OUTP())
-	push_int(val);
-      pos = ((WCHAR *)p.ptr) - data;
+      void *p = data + pos + 2;
+      push_int(0);
+
+      safe_wide_string_to_svalue_inumber(Pike_sp-1, p, &p, 16, 0, SHIFT);
+
+      if(!OUTP()) pop_stack();
+
+      pos = ((WCHAR *)p) - data;
       break;
     }
     
@@ -475,6 +478,8 @@ static ptrdiff_t calcC(struct cpp *this, WCHAR *data, ptrdiff_t len,
     PCHARP p;
     double f;
     long l;
+
+    /* FIXME: Support bignums. */
     
     p = MKPCHARP(data+pos, SHIFT);
     f = STRTOD_PCHARP(p, &p1);
