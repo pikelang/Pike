@@ -792,6 +792,7 @@ PikeObject|array(PikeObject) parseDecl(mapping|void args) {
 
 //! Tokenize a string of Pike code.
 array(array(string)|array(int)) tokenize(string s, int line) {
+    if(strlen(s) && s[-1] != '\n') s+="\n";
   array(string) a = Parser.Pike.split(s) + ({ EOF });
 
   array(string) t = ({ });
