@@ -1005,9 +1005,11 @@ doc_build/lib: doc_build
 doc_build/images: doc_build
 	@test -d doc_build/images || mkdir doc_build/images
 
-doc_build/src/post_modules/GTK1/refdoc/images: doc_build/src
+doc_build/src/post_modules: doc_build/src 
 	@test -d doc_build/src/post_modules || \
 	  mkdir doc_build/src/post_modules
+
+doc_build/src/post_modules/GTK1/refdoc/images: doc_build/src/post_modules
 	@test -d doc_build/src/post_modules/GTK1 || \
 	  mkdir doc_build/src/post_modules/GTK1
 	@test -d doc_build/src/post_modules/GTK1/refdoc || \
@@ -1015,9 +1017,7 @@ doc_build/src/post_modules/GTK1/refdoc/images: doc_build/src
 	@test -d doc_build/src/post_modules/GTK1/refdoc/images || \
 	  mkdir doc_build/src/post_modules/GTK1/refdoc/images
 
-doc_build/src/post_modules/GTK2/refdoc/images: doc_build/src
-	@test -d doc_build/src/post_modules || \
-	  mkdir doc_build/src/post_modules
+doc_build/src/post_modules/GTK2/refdoc/images: doc_build/src/post_modules
 	@test -d doc_build/src/post_modules/GTK2 || \
 	  mkdir doc_build/src/post_modules/GTK2
 	@test -d doc_build/src/post_modules/GTK2/refdoc || \
