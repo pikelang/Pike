@@ -5323,6 +5323,21 @@ class Encoder
     foreach (all_constants(); string var; mixed val)
       rev_constants[val] = "c" + var;
 
+    // FIXME: We don't have any good way to do reverse lookups on
+    // things that are assigned to module variables. Here we use
+    // rev_constants only to find the most vital ones.
+    {
+      object val_module = resolv ("Val");
+      foreach (indices (val_module), string var) {
+	mixed val = val_module[var];
+	if (!programp (val) && !functionp (val))
+	  // The classes in Val.pmod are irrelevant since the current
+	  // values might come from other implementations. Besides,
+	  // they're covered by the ordinary module lookup code.
+	  rev_constants[val] = "rVal." + var;
+      }
+    }
+
     rev_static_modules =
       mkmapping (values (_static_modules),
 		 map (indices (_static_modules),
