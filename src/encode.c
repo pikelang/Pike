@@ -4233,6 +4233,9 @@ static void decode_value2(struct decode_data *data)
 		ref.identifier_offset = p->inherits[ref.inherit_offset].prog->
 		  identifier_references[ref_no].identifier_offset;
 
+		ref.run_time_type = PIKE_T_UNKNOWN;
+		ref.func.offset = 0;
+
 		/* Expected identifier reference number */
 		decode_number(no, data);
 
@@ -4387,6 +4390,9 @@ static void decode_value2(struct decode_data *data)
 
 		/* opt_flags */
 		decode_number(id.opt_flags, data);
+
+		ref.run_time_type = PIKE_T_UNKNOWN;
+		ref.func.offset = 0;
 
 		/* Expected identifier number. */
 		decode_number(no, data);
