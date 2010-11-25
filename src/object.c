@@ -1137,6 +1137,26 @@ static void assign_svalue_from_ptr_no_free(struct svalue *to,
       add_ref(o);
       break;
     }
+
+  case PIKE_T_GET_SET:
+    {
+      int fun = func.gs_info.getter;
+      if (fun >= 0) {
+	DECLARE_CYCLIC();
+	if (!BEGIN_CYCLIC(o, (size_t) fun)) {
+	  SET_CYCLIC_RET(1);
+	  apply_low(o, fun, 0);
+	} else {
+	  END_CYCLIC();
+	  Pike_error("Cyclic loop on getter.\n");
+	}
+	END_CYCLIC();
+	*to = *(--Pike_sp);
+      } else {
+	Pike_error("No getter for variable.\n");
+      }
+      break;
+    }
     
   case T_MIXED:
   case PIKE_T_NO_REF_MIXED:
@@ -1290,23 +1310,18 @@ PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
 
   case IDENTIFIER_VARIABLE:
     if (i->run_time_type == PIKE_T_GET_SET) {
-      struct reference *ref = p->identifier_references + f;
       int fun = i->func.gs_info.getter;
       if (fun >= 0) {
-	DECLARE_CYCLIC();
 	fun += p->inherits[ref->inherit_offset].identifier_level;
-	if (!BEGIN_CYCLIC(o, (size_t) fun)) {
-	  SET_CYCLIC_RET(1);
-	  apply_low(o, fun, 0);
-	} else {
-	  END_CYCLIC();
-	  Pike_error("Cyclic loop on getter for symbol %S.\n", i->name);
-	}
-	END_CYCLIC();
-	*to = *(--Pike_sp);
-      } else {
-	Pike_error("No getter for variable %S.\n", i->name);
       }
+      ref->func.gs_info.getter = fun;
+      fun = i->func.gs_info.setter;
+      if (fun >= 0) {
+	fun += p->inherits[ref->inherit_offset].identifier_level;
+      }
+      ref->func.gs_info.setter = fun;
+      ref->run_time_type = PIKE_T_GET_SET;
+      assign_svalue_from_ptr_no_free(to, o, ref->run_time_type, ref->func);
     } else if (!(p->flags & PROGRAM_FINISHED) ||
 	       (i->run_time_type == PIKE_T_FREE) ||
 	       !PIKE_OBJ_STORAGE(o)) {
@@ -1471,6 +1486,27 @@ static void object_lower_set_index(struct object *o, union idptr func, int rtt,
     case PIKE_T_FREE:
       Pike_error("Attempt to store data in extern variable.\n");
       continue;
+
+    case PIKE_T_GET_SET:
+      {
+	int fun = func.gs_info.setter;
+	if (fun >= 0) {
+	  DECLARE_CYCLIC();
+	  if (!BEGIN_CYCLIC(o, (size_t) fun)) {
+	    SET_CYCLIC_RET(1);
+	    push_svalue(from);
+	    apply_low(o, fun, 1);
+	    pop_stack();
+	  } else {
+	    END_CYCLIC();
+	    Pike_error("Cyclic loop on setter.\n");
+	  }
+	  END_CYCLIC();
+	} else {
+	  Pike_error("No setter for variable.\n");
+	}
+	continue;
+      }
 
     /* Partial code duplication from assign_to_short_svalue. */
     case T_MIXED:
@@ -1637,23 +1673,18 @@ PMOD_EXPORT void object_low_set_index(struct object *o,
     /* Getter/setter type variable. */
     struct reference *ref = p->identifier_references + f;
     struct program *pp = p->inherits[ref->inherit_offset].prog;
-    int fun = i->func.gs_info.setter;
+    int fun = i->func.gs_info.getter;
     if (fun >= 0) {
-      DECLARE_CYCLIC();
       fun += p->inherits[ref->inherit_offset].identifier_level;
-      if (!BEGIN_CYCLIC(o, (size_t) fun)) {
-	SET_CYCLIC_RET(1);
-	push_svalue(from);
-	apply_low(o, fun, 1);
-	pop_stack();
-      } else {
-	END_CYCLIC();
-	Pike_error("Cyclic loop on setter for symbol %S.\n", i->name);
-      }
-      END_CYCLIC();
-    } else {
-      Pike_error("No setter for variable %S.\n", i->name);
     }
+    ref->func.gs_info.getter = fun;
+    fun = i->func.gs_info.setter;
+    if (fun >= 0) {
+      fun += p->inherits[ref->inherit_offset].identifier_level;
+    }
+    ref->func.gs_info.setter = fun;
+    ref->run_time_type = PIKE_T_GET_SET;
+    object_lower_set_index(o, ref->func, ref->run_time_type, from);
   }
   else if (rtt == PIKE_T_FREE) {
     Pike_error("Attempt to store data in extern variable %S.\n", i->name);
