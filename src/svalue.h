@@ -168,6 +168,15 @@ struct svalue
 #define T_AND 254
 #define T_OR 255
 
+/* This flag is only valid in struct reference, and corresponds
+ * to struct identifier identifier_flags IDENTIFIER_NO_THIS_REF. */
+#define PIKE_T_NO_REF_FLAG	256
+#define PIKE_T_NO_REF_OBJECT	(PIKE_T_NO_REF_FLAG|PIKE_T_OBJECT)
+#define PIKE_T_NO_REF_FUNCTION	(PIKE_T_NO_REF_FLAG|PIKE_T_FUNCTION)
+#define PIKE_T_NO_REF_MIXED	(PIKE_T_NO_REF_FLAG|PIKE_T_MIXED)
+#define PIKE_T_NO_REF_INT	(PIKE_T_NO_REF_FLAG|PIKE_T_INT)
+#define PIKE_T_NO_REF_FLOAT	(PIKE_T_NO_REF_FLAG|PIKE_T_FLOAT)
+
 /* These are only used together with describe() and friends. */
 #define T_STORAGE 10000
 #define T_MAPPING_DATA 10001

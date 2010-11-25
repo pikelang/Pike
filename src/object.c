@@ -1139,6 +1139,7 @@ static void assign_svalue_from_ptr_no_free(struct svalue *to,
     }
     
   case T_MIXED:
+  case PIKE_T_NO_REF_MIXED:
     {
       struct svalue *s=(struct svalue *)ptr;
       check_destructed(s);
@@ -1147,12 +1148,14 @@ static void assign_svalue_from_ptr_no_free(struct svalue *to,
     }
 
   case T_FLOAT:
+  case PIKE_T_NO_REF_FLOAT:
     to->type=T_FLOAT;
     to->subtype=0;
     to->u.float_number=*(FLOAT_TYPE *)ptr;
     break;
 
   case T_INT:
+  case PIKE_T_NO_REF_INT:
     to->type=T_INT;
     to->subtype=0;
     to->u.integer=*(INT_TYPE *)ptr;
@@ -1166,7 +1169,7 @@ static void assign_svalue_from_ptr_no_free(struct svalue *to,
       if((dummy=*(struct ref_dummy  **)ptr))
       {
 	add_ref(to->u.dummy=dummy);
-	to->type = run_time_type;
+	to->type = run_time_type & ~PIKE_T_NO_REF_FLAG;
       }else{
 	to->type=T_INT;
 	to->u.integer=0;
@@ -1321,6 +1324,9 @@ PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
       ref->func.offset = INHERIT_FROM_INT(o->prog, f)->storage_offset +
 	i->func.offset;
       ref->run_time_type = i->run_time_type;
+      if (i->identifier_flags & IDENTIFIER_NO_THIS_REF) {
+	ref->run_time_type |= PIKE_T_NO_REF_FLAG;
+      }
       assign_svalue_from_ptr_no_free(to, o, ref->run_time_type, ref->func);
     }
     break;
@@ -1450,6 +1456,119 @@ PMOD_EXPORT void object_index_no_free(struct svalue *to,
   }
 }
 
+static void object_lower_set_index(struct object *o, union idptr func, int rtt,
+				   struct svalue *from)
+{
+  int is_zero = UNSAFE_IS_ZERO(from);
+  do {
+    void *ptr = PIKE_OBJ_STORAGE(o) + func.offset;
+    union anything *u = (union anything *)ptr;
+    struct svalue *to = (struct svalue *)ptr;
+    switch(rtt) {
+    case T_SVALUE_PTR: case T_OBJ_INDEX:
+      Pike_error("Cannot assign functions or constants.\n");
+      continue;
+    case PIKE_T_FREE:
+      Pike_error("Attempt to store data in extern variable.\n");
+      continue;
+
+    /* Partial code duplication from assign_to_short_svalue. */
+    case T_MIXED:
+      /* Count references to ourselves. */
+      assign_svalue(to, from);
+      continue;
+    case PIKE_T_NO_REF_MIXED:
+      /* Don't count references to ourselves to help the gc. DDTAH. */
+      dmalloc_touch_svalue(to);
+      if ((to->type != T_OBJECT && to->type != T_FUNCTION) ||
+	  to->u.object != o) {
+	(void) debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" free_global"));
+	free_svalue(to);
+#ifdef DEBUG_MALLOC
+      } else {
+	(void) debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" skip_global"));
+	dmalloc_touch_svalue (to);
+#endif /* DEBUG_MALLOC */
+      }
+      *to = *from;
+      dmalloc_touch_svalue (to);
+      if ((to->type != T_OBJECT && to->type != T_FUNCTION) ||
+	  (to->u.object != o)) {
+	if(to->type <= MAX_REF_TYPE) {
+	  (void) debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" store_global"));
+	  add_ref(to->u.dummy);
+#ifdef DEBUG_MALLOC
+	} else {
+	  (void) debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" store_global"));
+#endif /* DEBUG_MALLOC */
+	}
+#ifdef DEBUG_MALLOC
+      } else {
+	(void) debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" self_global"));
+	dmalloc_touch_svalue (to);
+#endif /* DEBUG_MALLOC */
+      }
+      continue;
+
+    case T_INT:
+    case PIKE_T_NO_REF_INT:
+      if (from->type != T_INT) break;
+      u->integer=from->u.integer;
+      continue;
+    case T_FLOAT:
+    case PIKE_T_NO_REF_FLOAT:
+      if (from->type != T_FLOAT) break;
+      u->float_number=from->u.float_number;
+      continue;
+
+    case PIKE_T_NO_REF_OBJECT:
+      /* Don't count references to ourselves to help the gc. */
+      if ((from->type != T_OBJECT) && !is_zero) break;
+      debug_malloc_touch(u->object);
+      if ((u->object != o) && u->refs && !sub_ref(u->dummy)) {
+	debug_malloc_touch(o);
+	really_free_short_svalue(u,rtt);
+#ifdef DEBUG_MALLOC
+      } else {
+	debug_malloc_touch(o);
+#endif /* DEBUG_MALLOC */
+      }
+      if (is_zero) {
+	debug_malloc_touch(u->ptr);
+	u->refs = NULL;
+	continue;
+      }
+      u->refs = from->u.refs;
+      debug_malloc_touch(u->refs);
+      if (u->object != o) {
+	debug_malloc_touch(o);
+	add_ref(u->dummy);
+#ifdef DEBUG_MALLOC
+      } else {
+	debug_malloc_touch(o);
+#endif /* DEBUG_MALLOC */
+      }
+      continue;
+
+    default:
+      debug_malloc_touch(u->refs);
+      if(u->refs && !sub_ref(u->dummy))
+	really_free_short_svalue(u, rtt & ~PIKE_T_NO_REF_FLAG);
+      if (is_zero) {
+	debug_malloc_touch(u->ptr);
+	u->refs = NULL;
+	continue;
+      }
+      u->refs = from->u.refs;
+      add_ref(u->dummy);
+      continue;
+    }
+
+    Pike_error("Wrong type in assignment, expected %s, got %s.\n",
+	       get_name_of_type(rtt & ~PIKE_T_NO_REF_FLAG),
+	       get_name_of_type(from->type));
+  } while(0);
+}
 
 /* Assign a variable through internal indexing, i.e. directly by
  * identifier index without going through `->= or `[]= lfuns. */
@@ -1459,6 +1578,7 @@ PMOD_EXPORT void object_low_set_index(struct object *o,
 {
   struct identifier *i;
   struct program *p = NULL;
+  struct reference *ref;
   int rtt, id_flags;
 
   while(1) {
@@ -1472,6 +1592,15 @@ PMOD_EXPORT void object_low_set_index(struct object *o,
 
     debug_malloc_touch(o);
     debug_malloc_touch(o->storage);
+
+    if ((ref = PTR_FROM_INT(p, f))->run_time_type != PIKE_T_UNKNOWN) {
+      /* Cached vtable lookup.
+       *
+       * The most common cases of object indexing should match these.
+       */
+      object_lower_set_index(o, ref->func, ref->run_time_type, from);
+      return;
+    }
 
     i=ID_FROM_INT(p, f);
 
@@ -1495,39 +1624,13 @@ PMOD_EXPORT void object_low_set_index(struct object *o,
   }
   else if(rtt == T_MIXED)
   {
-    /* Don't count references to ourselves to help the gc. DDTAH. */
-    struct svalue *to = (struct svalue *) LOW_GET_GLOBAL(o,f,i);
-    dmalloc_touch_svalue(to);
-    if ((to->type != T_OBJECT && to->type != T_FUNCTION) ||
-	to->u.object != o ||
-	!(id_flags & IDENTIFIER_NO_THIS_REF)) {
-      (void) debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" free_global"));
-      free_svalue(to);
-#ifdef DEBUG_MALLOC
-    } else {
-      (void) debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" skip_global"));
-      dmalloc_touch_svalue (to);
-#endif /* DEBUG_MALLOC */
+    ref->func.offset = INHERIT_FROM_INT(p, f)->storage_offset +
+      i->func.offset;
+    ref->run_time_type = i->run_time_type;
+    if (id_flags & IDENTIFIER_NO_THIS_REF) {
+      ref->run_time_type |= PIKE_T_NO_REF_FLAG;
     }
-    *to = *from;
-    dmalloc_touch_svalue (to);
-    if ((to->type != T_OBJECT && to->type != T_FUNCTION) ||
-	(to->u.object != o) ||
-	!(id_flags & IDENTIFIER_NO_THIS_REF)) {
-      if(to->type <= MAX_REF_TYPE) {
-	(void) debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" store_global"));
-	add_ref(to->u.dummy);
-#ifdef DEBUG_MALLOC
-      } else {
-	(void) debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" store_global"));
-#endif /* DEBUG_MALLOC */
-      }
-#ifdef DEBUG_MALLOC
-    } else {
-      (void) debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" self_global"));
-      dmalloc_touch_svalue (to);
-#endif /* DEBUG_MALLOC */
-    }
+    object_lower_set_index(o, ref->func, ref->run_time_type, from);
   }
   else if (rtt == PIKE_T_GET_SET)
   {
@@ -1555,59 +1658,13 @@ PMOD_EXPORT void object_low_set_index(struct object *o,
   else if (rtt == PIKE_T_FREE) {
     Pike_error("Attempt to store data in extern variable %S.\n", i->name);
   } else {
-    /* Partial code duplication from assign_to_short_svalue. */
-    union anything *u = (union anything *) LOW_GET_GLOBAL(o,f,i);
-    if(from->type == rtt)
-    {
-      switch(rtt)
-      {
-	case T_INT: u->integer=from->u.integer; break;
-	case T_FLOAT: u->float_number=from->u.float_number; break;
-	case T_OBJECT:
-	  if (id_flags & IDENTIFIER_NO_THIS_REF) {
-	    /* Don't count references to ourselves to help the gc. */
-	    debug_malloc_touch(u->object);
-	    if ((u->object != o) && u->refs && !sub_ref(u->dummy)) {
-	      debug_malloc_touch(o);
-	      really_free_short_svalue(u,rtt);
-#ifdef DEBUG_MALLOC
-	    } else {
-	      debug_malloc_touch(o);
-#endif /* DEBUG_MALLOC */
-	    }
-	    u->refs = from->u.refs;
-	    debug_malloc_touch(u->refs);
-	    if (u->object != o) {
-	      debug_malloc_touch(o);
-	      add_ref(u->dummy);
-#ifdef DEBUG_MALLOC
-	    } else {
-	      debug_malloc_touch(o);
-#endif /* DEBUG_MALLOC */
-	    }
-	    break;
-	  }
-	  /* FALL THROUGH */
-	default:
-	  debug_malloc_touch(u->refs);
-	  if(u->refs && !sub_ref(u->dummy))
-	    really_free_short_svalue(u,rtt);
-	  u->refs = from->u.refs;
-	  add_ref(u->dummy);
-      }
-    }else if(rtt<=MAX_REF_TYPE && UNSAFE_IS_ZERO(from)){
-      if((rtt != T_OBJECT || u->object != o || !(id_flags & IDENTIFIER_NO_THIS_REF)) &&
-	 u->refs && !sub_ref(u->dummy)) {
-	debug_malloc_touch(u->ptr);
-	really_free_short_svalue(u,rtt);
-      }
-      debug_malloc_touch(u->ptr);
-      u->refs=0;
-    }else{
-      Pike_error("Wrong type in assignment, expected %s, got %s.\n",
-		 get_name_of_type(rtt),
-		 get_name_of_type(from->type));
+    ref->func.offset = INHERIT_FROM_INT(p, f)->storage_offset +
+      i->func.offset;
+    ref->run_time_type = i->run_time_type;
+    if (id_flags & IDENTIFIER_NO_THIS_REF) {
+      ref->run_time_type |= PIKE_T_NO_REF_FLAG;
     }
+    object_lower_set_index(o, ref->func, ref->run_time_type, from);
   }
 }
 
