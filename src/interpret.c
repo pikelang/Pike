@@ -2364,6 +2364,7 @@ PMOD_EXPORT int apply_low_safe_and_stupid(struct object *o, INT32 offset)
     struct identifier dummy;
     struct reference dummy_ref = {
       0, 0, ID_HIDDEN,
+      PIKE_T_UNKNOWN, { 0, },
     };
     /* FIXME: Assert that o->prog == Pike_compiler->new_program */
     copy_shared_string(dummy.name, empty_pike_string);

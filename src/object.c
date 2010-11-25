@@ -1114,6 +1114,68 @@ PMOD_EXPORT void schedule_really_free_object(struct object *o)
   }
 }
 
+static void assign_svalue_from_ptr_no_free(struct svalue *to,
+					   struct object *o,
+					   int run_time_type,
+					   union idptr func)
+{
+  void *ptr = PIKE_OBJ_STORAGE(o) + func.offset;
+  switch(run_time_type)
+  {
+  case T_SVALUE_PTR:
+    {
+      struct svalue *s = func.sval;
+      check_destructed(s);
+      assign_svalue_no_free(to, s);
+      break;
+    }
+  case T_OBJ_INDEX:
+    {
+      to->type = T_FUNCTION;
+      to->subtype = DO_NOT_WARN(func.offset);
+      to->u.object = o;
+      add_ref(o);
+      break;
+    }
+    
+  case T_MIXED:
+    {
+      struct svalue *s=(struct svalue *)ptr;
+      check_destructed(s);
+      assign_svalue_no_free(to, s);
+      break;
+    }
+
+  case T_FLOAT:
+    to->type=T_FLOAT;
+    to->subtype=0;
+    to->u.float_number=*(FLOAT_TYPE *)ptr;
+    break;
+
+  case T_INT:
+    to->type=T_INT;
+    to->subtype=0;
+    to->u.integer=*(INT_TYPE *)ptr;
+    break;
+
+  default:
+    {
+      struct ref_dummy *dummy;
+
+      to->subtype=0;
+      if((dummy=*(struct ref_dummy  **)ptr))
+      {
+	add_ref(to->u.dummy=dummy);
+	to->type = run_time_type;
+      }else{
+	to->type=T_INT;
+	to->u.integer=0;
+      }
+      break;
+    }
+  }
+}
+
 
 /* Get a variable through internal indexing, i.e. directly by
  * identifier index without going through `->= or `[]= lfuns.
@@ -1131,6 +1193,7 @@ PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
 {
   struct identifier *i;
   struct program *p = NULL;
+  struct reference *ref;
 
   while(1) {
     struct external_variable_context loc;
@@ -1141,7 +1204,16 @@ PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
     debug_malloc_touch(o);
     debug_malloc_touch(o->storage);
 
-    i=ID_FROM_INT(p, f);
+    if ((ref = PTR_FROM_INT(p, f))->run_time_type != PIKE_T_UNKNOWN) {
+      /* Cached vtable lookup.
+       *
+       * The most common cases of object indexing should match these.
+       */
+      assign_svalue_from_ptr_no_free(to, o, ref->run_time_type, ref->func);
+      return;
+    }
+
+    i=ID_FROM_PTR(p, ref);
 
     if (!IDENTIFIER_IS_ALIAS(i->identifier_flags)) break;
 
@@ -1176,6 +1248,8 @@ PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
     /* Fall through. */
 
   case IDENTIFIER_C_FUNCTION:
+    ref->func.offset = f;
+    ref->run_time_type = T_OBJ_INDEX;
     to->type=T_FUNCTION;
     to->subtype = DO_NOT_WARN(f);
     to->u.object=o;
@@ -1195,6 +1269,10 @@ PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
 	  to->u.object=o;
 	  add_ref(o);
 	}else{
+	  if (p->flags & PROGRAM_OPTIMIZED) {
+	    ref->func.sval = s;
+	    ref->run_time_type = T_SVALUE_PTR;
+	  }
 	  check_destructed(s);
 	  assign_svalue_no_free(to, s);
 	}
@@ -1240,45 +1318,10 @@ PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
 		     NUMBER_UNDEFINED:NUMBER_NUMBER);
       to->u.integer = 0;
     } else {
-      void *ptr=LOW_GET_GLOBAL(o,f,i);
-      switch(i->run_time_type)
-      {
-      case T_MIXED:
-	{
-	  struct svalue *s=(struct svalue *)ptr;
-	  check_destructed(s);
-	  assign_svalue_no_free(to, s);
-	  break;
-	}
-
-      case T_FLOAT:
-	to->type=T_FLOAT;
-	to->subtype=0;
-	to->u.float_number=*(FLOAT_TYPE *)ptr;
-	break;
-
-      case T_INT:
-	to->type=T_INT;
-	to->subtype=0;
-	to->u.integer=*(INT_TYPE *)ptr;
-	break;
-
-      default:
-	{
-	  struct ref_dummy *dummy;
-
-	  to->subtype=0;
-	  if((dummy=*(struct ref_dummy  **)ptr))
-	  {
-	    add_ref(to->u.dummy=dummy);
-	    to->type=i->run_time_type;
-	  }else{
-	    to->type=T_INT;
-	    to->u.integer=0;
-	  }
-	  break;
-	}
-      }
+      ref->func.offset = INHERIT_FROM_INT(o->prog, f)->storage_offset +
+	i->func.offset;
+      ref->run_time_type = i->run_time_type;
+      assign_svalue_from_ptr_no_free(to, o, ref->run_time_type, ref->func);
     }
     break;
 

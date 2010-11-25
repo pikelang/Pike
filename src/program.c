@@ -4017,6 +4017,8 @@ int really_low_reference_inherited_identifier(struct program_state *q,
       return d;
   }
 
+  funp.run_time_type = PIKE_T_UNKNOWN;
+
   if(q)
     low_add_to_identifier_references(q,funp);
   else
@@ -4843,6 +4845,7 @@ int low_define_alias(struct pike_string *name, struct pike_type *type,
   ref.id_flags=flags;
   ref.identifier_offset=Pike_compiler->new_program->num_identifiers;
   ref.inherit_offset=0;
+  ref.run_time_type = PIKE_T_UNKNOWN;
 
   debug_add_to_identifiers(dummy);
 
@@ -4974,6 +4977,7 @@ int low_define_variable(struct pike_string *name,
   ref.id_flags=flags;
   ref.identifier_offset=Pike_compiler->new_program->num_identifiers;
   ref.inherit_offset=0;
+  ref.run_time_type = PIKE_T_UNKNOWN;
 
   add_to_variable_index(ref.identifier_offset);
 
@@ -5411,6 +5415,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
   ref.id_flags=flags;
   ref.identifier_offset=Pike_compiler->new_program->num_identifiers;
   ref.inherit_offset=0;
+  ref.run_time_type = PIKE_T_UNKNOWN;
 
 #ifdef PROFILING
   dummy.self_time=0;
@@ -5979,6 +5984,8 @@ INT32 define_function(struct pike_string *name,
     ref.inherit_offset = 0;
   }
 
+  ref.run_time_type = PIKE_T_UNKNOWN;
+
   /* Add the reference. */
 
   i=Pike_compiler->new_program->num_identifier_references;
@@ -6021,6 +6028,7 @@ int add_ext_ref(struct program_state *state, struct program *target, int i)
   ref.id_flags = ID_PARENT_REF|ID_PROTECTED|ID_PRIVATE|ID_HIDDEN|ID_INLINE;
   ref.identifier_offset = i;
   ref.inherit_offset = 0;
+  ref.run_time_type = PIKE_T_UNKNOWN;
   add_to_identifier_references(ref);
   state->new_program->flags |= PROGRAM_USES_PARENT | PROGRAM_NEEDS_PARENT;
   return j;

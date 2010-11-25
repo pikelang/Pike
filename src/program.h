@@ -198,6 +198,19 @@ struct object;
 
 union idptr
 {
+  /* For variables: Offset of the variable in the storage pointed to
+   * by inherit.storage_offset in the struct inherit that corresponds
+   * to the identifier. See LOW_GET_GLOBAL and GET_GLOBAL. The stored
+   * variable may be either a normal or a short svalue, depending on
+   * identifier.run_time_type. (IDENTIFIER_VARIABLE)
+   *
+   * For pike functions: Offset to the start of the function in
+   * program.program in the program pointed to by prog in the struct
+   * inherit that corresponds to the identifier. Or -1 if a prototype.
+   * (IDENTIFIER_PIKE_FUNCTION)
+   */
+  ptrdiff_t offset;
+
   /* External symbol reference. (IDENTIFIER_EXTERN)
    *
    * Note that this bit MUST be checked to be zero
@@ -228,18 +241,8 @@ union idptr
   /* C function pointer. (IDENTIFIER_C_FUNCTION) */
   void (*c_fun)(INT32);
 
-  /* For variables: Offset of the variable in the storage pointed to
-   * by inherit.storage_offset in the struct inherit that corresponds
-   * to the identifier. See LOW_GET_GLOBAL and GET_GLOBAL. The stored
-   * variable may be either a normal or a short svalue, depending on
-   * identifier.run_time_type. (IDENTIFIER_VARIABLE)
-   *
-   * For pike functions: Offset to the start of the function in
-   * program.program in the program pointed to by prog in the struct
-   * inherit that corresponds to the identifier. Or -1 if a prototype.
-   * (IDENTIFIER_PIKE_FUNCTION)
-   */
-  ptrdiff_t offset;
+  /* Direct svalue pointer. Only used in the reference vtable cache. */
+  struct svalue *sval;
 };
 
 #define IDENTIFIER_VARIABLE 0
@@ -357,6 +360,17 @@ struct reference
 
   /* ID_* flags - protected, private etc.. */
   unsigned INT16 id_flags;
+
+  /* V-table cache information from this point on. */
+
+  /* Run-time type for the value field if initialized.
+   *   PIKE_T_UNKNOWN indicates uninitialized.
+   */
+  INT16 run_time_type;
+
+  /* Cached value of the lookup.
+   */
+  union idptr func;
 };
 
 /* Magic value used as identifier reference integer to refer to this. */
