@@ -5811,14 +5811,22 @@ static int does_match(struct pike_string *s,int j,
 }
 
 /*! @decl int(0..1) glob(string glob, string str)
+ *! @decl int(0..1) glob(array(string) glob, string str)
  *! @decl array(string) glob(string glob, array(string) str)
+ *! @decl array(string) glob(array(string) glob, array(string) str)
  *!
  *! Match strings against a glob pattern.
  *!
  *! @param glob
- *!   The glob pattern. A question sign ('?') matches any character
- *!   and an asterisk ('*') matches a string of arbitrary length. All
- *!   other characters only match themselves.
+ *!   @mixed
+ *!    @type string 
+ *!      The glob pattern. A question sign ('?') matches any character
+ *!      and an asterisk ('*') matches a string of arbitrary length. All
+ *!      other characters only match themselves.
+ *!    @type array(string)
+ *!      the function returns true, or keeps a string, if any of the given
+ *!       patterns match
+ *!  @endmixed
  *!
  *! @param str
  *!   @mixed
@@ -5835,11 +5843,22 @@ static int does_match(struct pike_string *s,int j,
  *! @seealso
  *!   @[sscanf()], @[Regexp]
  */
+
+static int any_does_match( struct svalue *items, int nglobs, struct pike_string *str )
+{
+   INT32 i;
+   for( i =0; i<nglobs; i++ )
+    if( does_match(str,0,items[i].u.string,0) )
+         return 1;
+   return 0;
+} 
+
 PMOD_EXPORT void f_glob(INT32 args)
 {
   INT32 i;
   struct array *a;
-  struct pike_string *glob;
+  struct svalue *glob;
+  int nglobs;
 
   if(args < 2)
     SIMPLE_TOO_FEW_ARGS_ERROR("glob", 2);
@@ -5848,20 +5867,34 @@ PMOD_EXPORT void f_glob(INT32 args)
     pop_n_elems(args-2);
   args=2;
 
-  if (Pike_sp[-args].type!=T_STRING)
-    SIMPLE_BAD_ARG_ERROR("glob", 1, "string");
+  if (Pike_sp[-args].type==T_STRING)
+  {
+      glob=Pike_sp-args;
+      nglobs = 1;
+  }
+  else if( Pike_sp[-args].type==PIKE_T_ARRAY)
+  {
+      struct array *ga = Pike_sp[-args].u.array;
+      glob = ga->item;
+      nglobs = ga->size;
+      for( i=0; i<nglobs; i++ )
+          if( ga->item[i].type != PIKE_T_STRING )
+              SIMPLE_BAD_ARG_ERROR("glob", 1, "string|array(string)");
+  }
+  else
+      SIMPLE_BAD_ARG_ERROR("glob", 1, "string|array(string)");
 
-  glob=Pike_sp[-args].u.string;
 
   switch(Pike_sp[1-args].type)
   {
   case T_STRING:
-    i=does_match(Pike_sp[1-args].u.string,0,glob,0);
-    pop_n_elems(2);
-    push_int(i);
-    break;
+      i = any_does_match(glob,nglobs,Pike_sp[1-args].u.string);
+      pop_n_elems(2);
+      push_int(i);
+   break;
     
   case T_ARRAY: {
+    INT32 j;
     unsigned matches = 0;
     struct svalue *res;
     a=Pike_sp[1-args].u.array;
@@ -5875,13 +5908,14 @@ PMOD_EXPORT void f_glob(INT32 args)
       res = Pike_sp - 1;
 
       for(i=0;i<a->size;i++)
-	if(does_match(ITEM(a)[i].u.string,0,glob,0))
+      {
+        if(any_does_match(glob,nglobs,ITEM(a)[i].u.string) )
 	{
 	  matches++;
 	  ref_push_string(ITEM(a)[i].u.string);
 	  DO_AGGREGATE_ARRAY (120);
 	}
-
+      }
       /* We know what this array contains - avoid array_fix_type_field
        * in END_AGGREGATE_ARRAY. */
       res->u.array->type_field = matches ? BIT_STRING : 0;
@@ -9212,7 +9246,7 @@ void init_builtin_efuns(void)
   
 /* function(string,string:int)|function(string,string*:array(string)) */
   ADD_EFUN("glob",f_glob,
-	   tOr(tFunc(tStr tStr,tInt),tFunc(tStr tArr(tStr),tArr(tStr))),
+	   tOr(tFunc(tOr(tStr,tArr(tStr)) tStr,tInt),tFunc(tOr(tStr,tArr(tStr)) tArr(tStr),tArr(tStr))),
 	   OPT_TRY_OPTIMIZE);
   
 /* function(string,int|void:int) */
