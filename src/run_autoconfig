@@ -1,7 +1,5 @@
 #!/bin/sh
 #
-# $Id: run_autoconfig,v 1.44 2006/05/20 14:05:35 marcus Exp $
-#
 # Bootstrap script
 
 need_to_make_depend=no
@@ -111,11 +109,17 @@ if [ "x$autoconf_version" != "x$autoheader_version" ]; then
   exit 1
 else :; fi
 
+num=0
 IFS=''
 ( find . -follow -type d -print $prune_flag || \
   find . -type d -print $prune_flag
 ) | egrep -v '/(CVS)|(RCS)|(test-install)$' | sort | uniq | while read dir; do
 
+  num=`expr $num + 1`
+  if [ $num -gt 12 ] ; then
+    num=0
+    wait
+  fi
   IFS=' 	
   '
   if [ -f $dir/Makefile.am -a -f $dir/configure.in ]; then
@@ -128,18 +132,17 @@ IFS=''
 
   if [ -f $dir/configure.in ] && grep AC_CONFIG_HEADER $dir/configure.in >/dev/null; then
     echo "Running $autoheader in $dir"
-    ( cd $dir ; "$autoheader" $ah_args && echo foo >stamp-h.in )
+    ( cd $dir ; "$autoheader" $ah_args && echo foo >stamp-h.in ) &
   fi
 
   if [ -f $dir/configure.in ]; then
     if grep AC_INIT $dir/configure.in >/dev/null; then
       echo "Running $autoconf in $dir"
-      ( cd $dir ; "$autoconf" $ac_args )
+      ( cd $dir ; "$autoconf" $ac_args )&
     else
       echo "$dir seems to use Cygnus-configure."
     fi
   fi
-
   if [ -f $dir/Makefile.in -a ! -f $dir/dependencies ] && egrep @dependencies@ $dir/Makefile.in >/dev/null; then
     touch $dir/dependencies
     need_to_make_depend=yes
@@ -152,6 +155,8 @@ IFS=''
     done
   fi
 done
+
+wait
 
 if test "x$need_to_make_depend" = "xyes" ; then
   echo You need to run \"make depend\" after \"configure\", and then \"configure\" again.

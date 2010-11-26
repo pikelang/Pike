@@ -774,7 +774,6 @@ testfont binary
 /src/queue.c foreign_ident
 /src/queue.h foreign_ident
 /src/rbtree.h foreign_ident
-/src/run_autoconfig foreign_ident
 /src/rusage.c foreign_ident
 /src/rusage.h foreign_ident
 /src/security.c foreign_ident
