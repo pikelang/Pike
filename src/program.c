@@ -4592,6 +4592,8 @@ PMOD_EXPORT void low_inherit(struct program *p,
 
     fun.inherit_offset += inherit_offset;
 
+    fun.run_time_type = PIKE_T_UNKNOWN; /* Invalidate the vtable cache. */
+
     if (fun.id_flags & ID_FINAL)
     {
       Pike_compiler->flags |= COMPILATION_CHECK_FINAL;
