@@ -242,7 +242,8 @@ protected mixed decode(string xml_input, string dtd_input)
 			     case "data":
 			       return data;
 			     case "struct":
-			       return mkmapping(@Array.transpose(data));
+			       return sizeof (data) ?
+				 mkmapping(@Array.transpose(data)) : ([]);
 		             case "dateTime.iso8601":
 			       // FIXME: Don't assume any particular
 			       // timezone here (the Calendar module
