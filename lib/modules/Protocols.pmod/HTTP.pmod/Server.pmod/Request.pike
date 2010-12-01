@@ -634,7 +634,6 @@ void response_and_finish(mapping m, function|void _log_cb)
    if (request_headers["if-modified-since"])
    {
       int t = .http_decode_date(request_headers["if-modified-since"]);
-
       if (t)
       {
 	 if (!m->stat && m->file)
@@ -646,6 +645,23 @@ void response_and_finish(mapping m, function|void _log_cb)
 	    m->error=304;
 	 }
       }
+   }
+
+   if (request_headers["if-none-match"] && m->extra_heads )
+   {
+       string et;
+       if((et = m->extra_heads->ETag) || (et =m->extra_heads->etag))
+       {
+           if( string key = request_headers["if-none-match"] )
+           {
+               if (key == et)
+               {
+                   m_delete(m,"file");
+                   m->data="";
+                   m->error=304;
+               }
+           }
+       }
    }
 
    string header=make_response_header(m);
