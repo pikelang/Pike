@@ -136,7 +136,6 @@ testfont binary
 /src/modules/Postgres/pgres_config.h.in foreign_ident
 /src/modules/Postgres/pgresult.c foreign_ident
 /src/modules/Postgres/pgresult.h foreign_ident
-/src/modules/Postgres/postgres.c foreign_ident
 /src/modules/Postgres/version.h foreign_ident
 /src/modules/Regexp/acconfig.h foreign_ident
 /src/modules/Ssleay/ssleay.c foreign_ident

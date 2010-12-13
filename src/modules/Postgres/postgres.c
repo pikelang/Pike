@@ -62,7 +62,7 @@ static void pgdebug (char * a, ...) {}
 
 struct program * postgres_program;
 
-RCSID("$Id: postgres.c,v 1.9 1999/02/21 23:27:58 peter Exp $");
+RCSID("$Id$");
 
 #define THIS ((struct pgres_object_data *) fp->current_storage)
 
@@ -134,12 +134,12 @@ static void f_create (INT32 args)
 	switch(args) {
 		default:
 		case 5:
-			if (sp[2-args].type==T_INT &&  /*this check is maybe redundant*/
-					sp[2-args].u.integer <=65535 && 
-			    		sp[2-args].u.integer >= 0) {
-				if (sp[2-args].u.integer>0) {
+			if (sp[4-args].type==T_INT &&  /*this check is maybe redundant*/
+					sp[4-args].u.integer <=65535 && 
+			    		sp[4-args].u.integer >= 0) {
+				if (sp[4-args].u.integer>0) {
 					port=xalloc(10*sizeof(char)); /*we only need 6, we just checked.*/
-					sprintf(port,"%d",sp[2-args].u.integer);
+					sprintf(port,"%d",sp[4-args].u.integer);
 				}
 			}
 		case 4:
