@@ -75,7 +75,7 @@ static void pgdebug (char * a, ...) {}
 
 struct program * postgres_program;
 
-RCSID("$Id: postgres.c,v 1.24 2007/04/18 13:25:16 grubba Exp $");
+RCSID("$Id$");
 
 static void set_error (char * newerror)
 {
@@ -257,12 +257,12 @@ static void f_create (INT32 args)
 	switch(args) {
 		default:
 		case 5:
-			if (Pike_sp[2-args].type==PIKE_T_INT &&  /*this check is maybe redundant*/
-					Pike_sp[2-args].u.integer <=65535 && 
-			    		Pike_sp[2-args].u.integer >= 0) {
-				if (Pike_sp[2-args].u.integer>0) {
+			if (Pike_sp[4-args].type==PIKE_T_INT &&  /*this check is maybe redundant*/
+					Pike_sp[4-args].u.integer <=65535 && 
+			    		Pike_sp[4-args].u.integer >= 0) {
+				if (Pike_sp[4-args].u.integer>0) {
 					port=xalloc(10*sizeof(char)); /*we only need 6, we just checked.*/
-					sprintf(port,"%d",Pike_sp[2-args].u.integer);
+					sprintf(port,"%d",Pike_sp[4-args].u.integer);
 				}
 			}
 		case 4:
