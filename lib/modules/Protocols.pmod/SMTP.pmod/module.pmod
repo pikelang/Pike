@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod,v 1.51 2010/02/15 20:13:44 grubba Exp $
+// $Id$
 //
 
 #pike __REAL_VERSION__
@@ -169,13 +169,39 @@ class Client
     return tokens*"";
   }
 
+  //! Return an RFC2822 date-time string suitable for the @tt{Date:@} header.
+  string rfc2822date_time(int ts)
+  {
+    mapping(string:int) lt = localtime(ts);
+    int zsgn = sgn(lt->timezone);
+    int zmin = (zsgn * lt->timezone)/60;
+    int zhr = zmin/60;
+    zmin -= zhr*60;
+    int zone = -zsgn*(zhr*100 + zmin);
+    return sprintf("%s, %02d %s %04d %02d:%02d:%02d %+05d",
+		   ({ "Sun", "Mon", "Tue", "Wed", "Thu",
+		      "Fri", "Sat" })[lt->wday], lt->mday,
+		   ({ "Jan", "Feb", "Mar", "Apr",
+		      "May", "Jun", "Jul", "Aug",
+		      "Sep", "Oct", "Nov", "Dec" })[lt->mon],
+		   lt->year + 1900,
+		   lt->hour, lt->min, lt->sec,
+		   zone);
+  }
+
   //! Sends an e-mail. Wrapper function that uses @[send_message].
   //!
   //! @note
   //!   Some important headers are set to:
   //!   @expr{"Content-Type: text/plain; charset=iso-8859-1"@} and 
-  //!   @expr{"Content-Transfer-Encoding: 8bit"@}. @expr{"Date:"@}
-  //!   header isn't used at all.
+  //!   @expr{"Content-Transfer-Encoding: 8bit"@}.
+  //!   The @expr{"Date:"@} header is set to the current local time.
+  //!   The @expr{"Message-Id"@} header is set to a @[Standards.UUID]
+  //!   followed by the hostname as returned by @[gethostname()].
+  //!
+  //! @note
+  //!   If @[gethostname()] is not supported, it will be replaced
+  //!   with the string @expr{"localhost"@}.
   //!
   //! @throws
   //!   If the mail server returns any other return code than
@@ -184,6 +210,13 @@ class Client
   {
     if (!has_value(msg, "\r\n"))
       msg=replace(msg,"\n","\r\n"); // *simple* mail /Mirar
+    string msgid = "<" + (string)Standards.UUID.make_version1(-1) + "@" +
+#if constant(gethostname)
+      gethostname() +
+#else
+      "localhost"
+#endif
+      ">";
     send_message(parse_addr(from), ({ parse_addr(to) }),
 		 (string)MIME.Message(msg, (["mime-version":"1.0",
 					     "subject":subject,
@@ -192,7 +225,10 @@ class Client
 					     "content-type":
 					       "text/plain;charset=iso-8859-1",
 					     "content-transfer-encoding":
-					       "8bit"])));
+					       "8bit",
+					     "date":rfc2822date_time(time(1)),
+					     "message-id": msgid,
+				      ])));
   }
 
   //! Verifies the mail address @[addr] against the mail server.
