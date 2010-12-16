@@ -1259,7 +1259,7 @@ protected void destroy()
    }
    async_id = 0;
 
-   close();
+   catch(close());
 }
 
 //! Close all associated file descriptors.
