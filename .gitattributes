@@ -728,7 +728,6 @@ testfont binary
 /src/post_modules/Nettle/nt.cmod foreign_ident
 /src/post_modules/Nettle/rijndaeltest.pike foreign_ident
 /src/post_modules/SDL/Makefile.in foreign_ident
-/src/post_modules/SDL/SDL.cmod foreign_ident
 /src/post_modules/SDL/acconfig.h foreign_ident
 /src/post_modules/SDL/configure.in foreign_ident
 /src/post_modules/SDL/constants.h foreign_ident

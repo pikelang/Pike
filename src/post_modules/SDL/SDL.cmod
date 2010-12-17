@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: SDL.cmod,v 1.33 2009/08/12 11:59:55 per Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -321,66 +321,44 @@ PIKEFUN string get_key_state()
  */
 PIKECLASS Rect {
   CVAR SDL_Rect rect;
-  
-  
+    
   INIT {
     THIS->rect.x = THIS->rect.y = 0;
     THIS->rect.w = THIS->rect.h = 0;
   }
-  
-  PIKEFUN mixed `->(string key)
-    optflags OPT_EXTERNAL_DEPEND;
+
+  PIKEFUN int `x()
   {
-    struct pike_string *x, *y, *w, *h;
-    REF_MAKE_CONST_STRING( x, "x" );     
-    REF_MAKE_CONST_STRING( y, "y" );     
-    REF_MAKE_CONST_STRING( w, "w" );     
-    REF_MAKE_CONST_STRING( h, "h" );     
-    if(key == x) {
-      pop_stack(); push_int(THIS->rect.x); 
-    } else if(key == y) {
-      pop_stack(); push_int(THIS->rect.y); 
-    } else if(key == w) {
-      pop_stack(); push_int(THIS->rect.w); 
-    } else if(key == h) {
-      pop_stack(); push_int(THIS->rect.h); 
-    } else { 
-      OBJ_INDEX();
-    }
+    push_int(THIS->rect.x);
   }
-    
-  PIKEFUN int `->=(string key, int value)
-    optflags OPT_SIDE_EFFECT;
+  PIKEFUN int `y()
   {
-    struct pike_string *x, *y, *w, *h;
-    REF_MAKE_CONST_STRING( x, "x" );     
-    REF_MAKE_CONST_STRING( y, "y" );     
-    REF_MAKE_CONST_STRING( w, "w" );     
-    REF_MAKE_CONST_STRING( h, "h" );     
-    if(key == x) {
-      THIS->rect.x = value;
-    } else if(key == y) {
-      THIS->rect.y = value;
-    } else if(key == w) {
-      THIS->rect.w = value;
-    } else if(key == h) {
-      THIS->rect.h = value;
-    } else { 
-      Pike_error("Trying to set invalid value.\n");
-    }
-    RETURN value; /* Return what we got in */
+    push_int(THIS->rect.y);
   }
-    
-  PIKEFUN mixed `[](string key)
-    optflags OPT_EXTERNAL_DEPEND;
+  PIKEFUN int `w()
   {
-    f_Rect_cq__backtick_2D_3E(args);
+    push_int(THIS->rect.w);
+  }
+  PIKEFUN int `h()
+  {
+    push_int(THIS->rect.h);
   }
 
-  PIKEFUN mixed `[]=(string key, int value)
-    optflags OPT_SIDE_EFFECT;
+  PIKEFUN int `x=(int value)
   {
-    f_Rect_cq__backtick_2D_3E_eq(args);
+    THIS->rect.x = value;
+  }
+  PIKEFUN int `y=(int value)
+  {
+    THIS->rect.y = value;
+  }
+  PIKEFUN int `w=(int value)
+  {
+    THIS->rect.w = value;
+  }
+  PIKEFUN int `h=(int value)
+  {
+    THIS->rect.h = value;
   }
 
   /*! @decl mixed cast(string type)
@@ -390,7 +368,6 @@ PIKECLASS Rect {
    *! associated with those names.
    */
   PIKEFUN mixed cast( string type )
-    optflags OPT_EXTERNAL_DEPEND;
   {
     struct pike_string *array_t;
     struct pike_string *mapping_t;
@@ -458,33 +435,21 @@ PIKECLASS Rect {
 PIKECLASS Keysym {
   CVAR SDL_keysym keysym;
 
-  PIKEFUN mixed `->(string key)
-    optflags OPT_EXTERNAL_DEPEND;
+  PIKEFUN int `mod()
   {
-    struct pike_string *mod;
-    struct pike_string *scancode;
-    struct pike_string *sym;
-    struct pike_string *unicode;
-    REF_MAKE_CONST_STRING(mod, "mod");
-    REF_MAKE_CONST_STRING(scancode, "scancode");
-    REF_MAKE_CONST_STRING(sym, "sym");
-    REF_MAKE_CONST_STRING(unicode, "unicode");
-    if(key == mod) {
-      pop_stack(); push_int(THIS->keysym.mod);
-    } else if(key == scancode) {
-      pop_stack(); push_int(THIS->keysym.scancode);
-    } else if(key == sym) {
-      pop_stack(); push_int(THIS->keysym.sym);
-    } else if(key == unicode) {
-      pop_stack(); push_int(THIS->keysym.unicode);
-    } else {
-      OBJ_INDEX();
-    }
+    push_int(THIS->keysym.mod);
   }
-  PIKEFUN mixed `[](string key)
-    optflags OPT_EXTERNAL_DEPEND;
+  PIKEFUN int `scancode()
   {
-    f_Keysym_cq__backtick_2D_3E(args);
+    push_int(THIS->keysym.scancode);
+  }
+  PIKEFUN int `sym()
+  {
+    push_int(THIS->keysym.sym);
+  }
+  PIKEFUN int `unicode()
+  {
+    push_int(THIS->keysym.unicode);
   }
 }
 
@@ -531,80 +496,86 @@ PIKECLASS PixelFormat {
   INIT {
     THIS->fmt = NULL; 
   }
-  /* FIXME: SDL_Palette *palette; */
-  PIKEFUN mixed `->(string key) {
-    struct pike_string *aloss;
-    struct pike_string *alpha;
-    struct pike_string *amask;
-    struct pike_string *ashift;
-    struct pike_string *bits_per_pixel;
-    struct pike_string *bloss;
-    struct pike_string *bmask;
-    struct pike_string *bshift;
-    struct pike_string *bytes_per_pixel;
-    struct pike_string *colorkey;
-    struct pike_string *gloss;
-    struct pike_string *gmask;
-    struct pike_string *gshift;
-    struct pike_string *rloss;
-    struct pike_string *rmask;
-    struct pike_string *rshift;
-    CHECK_INIT(); /* Make sure this is inited */
-    REF_MAKE_CONST_STRING(aloss, "aloss");
-    REF_MAKE_CONST_STRING(alpha, "alpha");
-    REF_MAKE_CONST_STRING(amask, "amask");
-    REF_MAKE_CONST_STRING(ashift, "ashift");
-    REF_MAKE_CONST_STRING(bits_per_pixel, "bits_per_pixel");
-    REF_MAKE_CONST_STRING(bloss, "bloss");
-    REF_MAKE_CONST_STRING(bmask, "bmask");
-    REF_MAKE_CONST_STRING(bshift, "bshift");
-    REF_MAKE_CONST_STRING(bytes_per_pixel, "bytes_per_pixel");
-    REF_MAKE_CONST_STRING(colorkey, "colorkey");
-    REF_MAKE_CONST_STRING(gloss, "gloss");
-    REF_MAKE_CONST_STRING(gmask, "gmask");
-    REF_MAKE_CONST_STRING(gshift, "gshift");
-    REF_MAKE_CONST_STRING(rloss, "rloss");
-    REF_MAKE_CONST_STRING(rmask, "rmask");
-    REF_MAKE_CONST_STRING(rshift, "rshift");
-    if(key == aloss) {
-      pop_stack(); push_int(THIS->fmt->Aloss);
-    } else if(key == alpha) {
-      pop_stack(); push_int(THIS->fmt->alpha);
-    } else if(key == amask) {
-      pop_stack(); push_int(THIS->fmt->Amask);
-    } else if(key == ashift) {
-      pop_stack(); push_int(THIS->fmt->Ashift);
-    } else if(key == bits_per_pixel) {
-      pop_stack(); push_int(THIS->fmt->BitsPerPixel);
-    } else if(key == bloss) {
-      pop_stack(); push_int(THIS->fmt->Bloss);
-    } else if(key == bmask) {
-      pop_stack(); push_int(THIS->fmt->Bmask);
-    } else if(key == bshift) {
-      pop_stack(); push_int(THIS->fmt->Bshift);
-    } else if(key == bytes_per_pixel) {
-      pop_stack(); push_int(THIS->fmt->BytesPerPixel);
-    } else if(key == colorkey) {
-      pop_stack(); push_int(THIS->fmt->colorkey);
-    } else if(key == gloss) {
-      pop_stack(); push_int(THIS->fmt->Gloss);
-    } else if(key == gmask) {
-      pop_stack(); push_int(THIS->fmt->Gmask);
-    } else if(key == gshift) {
-      pop_stack(); push_int(THIS->fmt->Gshift);
-    } else if(key == rloss) {
-      pop_stack(); push_int(THIS->fmt->Rloss);
-    } else if(key == rmask) {
-      pop_stack(); push_int(THIS->fmt->Rmask);
-    } else if(key == rshift) {
-      pop_stack(); push_int(THIS->fmt->Rshift);
-    } else {
-      OBJ_INDEX();
-    }
-  }
 
-  PIKEFUN mixed `[](string key) {
-    f_PixelFormat_cq__backtick_2D_3E(args);
+  PIKEFUN int `aloss()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->fmt->Aloss);
+  }
+  PIKEFUN int `alpha()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->fmt->alpha);
+  }
+  PIKEFUN int `amask()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->fmt->Amask);
+  }
+  PIKEFUN int `ashift()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->fmt->Ashift);
+  }
+  PIKEFUN int `bits_per_pixel()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->fmt->BitsPerPixel);
+  }
+  PIKEFUN int `bloss()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->fmt->Bloss);
+  }
+  PIKEFUN int `bmask()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->fmt->Bmask);
+  }
+  PIKEFUN int `bshift()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->fmt->Bshift);
+  }
+  PIKEFUN int `bytes_per_pixel()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->fmt->BytesPerPixel);
+  }
+  PIKEFUN int `colorkey()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->fmt->colorkey);
+  }
+  PIKEFUN int `gloss()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->fmt->Gloss);
+  }
+  PIKEFUN int `gmask()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->fmt->Gmask);
+  }
+  PIKEFUN int `gshift()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->fmt->Gshift);
+  }
+  PIKEFUN int `rloss()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->fmt->Rloss);
+  }
+  PIKEFUN int `rmask()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->fmt->Rmask);
+  }
+  PIKEFUN int `rshift()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->fmt->Rshift);
   }
 
   /*! @decl array(int) losses()
@@ -805,79 +776,83 @@ PIKECLASS PixelFormat {
 PIKECLASS VideoInfo {
   /* THIS->vidinfo is never freed by us since SDL manages that */
   CVAR const SDL_VideoInfo *vidinfo;
+  CVAR int generation;
   
   INIT {
-    THIS->vidinfo = NULL; 
+    THIS->vidinfo = NULL;
+    THIS->generation = video_generation;
   }
-  PIKEFUN mixed `->(string key) {
-    struct pike_string *blit_fill;
-    struct pike_string *blit_hw;
-    struct pike_string *blit_hw_a;
-    struct pike_string *blit_hw_cc;
-    struct pike_string *blit_sw;
-    struct pike_string *blit_sw_a;
-    struct pike_string *blit_sw_cc;
-    struct pike_string *hw_available;
-    struct pike_string *video_mem;
-    struct pike_string *wm_available;
-    struct pike_string *vfmt;
+
+  PIKEFUN int `blit_fill()
+  {
     CHECK_INIT(); /* Make sure this is inited */
-    REF_MAKE_CONST_STRING(blit_fill, "blit_fill");
-    REF_MAKE_CONST_STRING(blit_hw, "blit_hw");
-    REF_MAKE_CONST_STRING(blit_hw_a, "blit_hw_a");
-    REF_MAKE_CONST_STRING(blit_hw_cc, "blit_hw_cc");
-    REF_MAKE_CONST_STRING(blit_sw, "blit_sw");
-    REF_MAKE_CONST_STRING(blit_sw_a, "blit_sw_a");
-    REF_MAKE_CONST_STRING(blit_sw_cc, "blit_sw_cc");
-    REF_MAKE_CONST_STRING(hw_available, "hw_available");
-    REF_MAKE_CONST_STRING(video_mem, "video_mem");
-    REF_MAKE_CONST_STRING(wm_available, "wm_available");
-    REF_MAKE_CONST_STRING(vfmt, "format");
-    if(key == blit_fill) {
-      pop_stack(); push_int(THIS->vidinfo->blit_fill);
-    } else if(key == blit_hw) {
-      pop_stack(); push_int(THIS->vidinfo->blit_hw);
-    } else if(key == blit_hw_a) {
-      pop_stack(); push_int(THIS->vidinfo->blit_hw_A);
-    } else if(key == blit_hw_cc) {
-      pop_stack(); push_int(THIS->vidinfo->blit_hw_CC);
-    } else if(key == blit_sw) {
-      pop_stack(); push_int(THIS->vidinfo->blit_sw);
-    } else if(key == blit_sw_a) {
-      pop_stack(); push_int(THIS->vidinfo->blit_sw_A);
-    } else if(key == blit_sw_cc) {
-      pop_stack(); push_int(THIS->vidinfo->blit_sw_CC);
-    } else if(key == hw_available) {
-      pop_stack(); push_int(THIS->vidinfo->hw_available);
-    } else if(key == video_mem) {
-      pop_stack(); push_int(THIS->vidinfo->video_mem);
-    } else if(key == wm_available) {
-      pop_stack(); push_int(THIS->vidinfo->wm_available);
-    }  else if(key == vfmt) {
-      struct object *fmt;
-      CHECK_INIT();
-      fmt = clone_object( PixelFormat_program, 0 );
-      OBJ2_PIXELFORMAT(fmt)->fmt = THIS->vidinfo->vfmt;
-      push_object(fmt);
-    } else {
-      OBJ_INDEX();
-    }
+    push_int(THIS->vidinfo->blit_fill);
   }
-  PIKEFUN mixed `[](string key) {
-    f_VideoInfo_cq__backtick_2D_3E(args);
+  PIKEFUN int `blit_hw()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->vidinfo->blit_hw);
+  }
+  PIKEFUN int `blit_hw_a()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->vidinfo->blit_hw_A);
+  }
+  PIKEFUN int `blit_hw_cc()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->vidinfo->blit_hw_CC);
+  }
+  PIKEFUN int `blit_sw()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->vidinfo->blit_sw);
+  }
+  PIKEFUN int `blit_sw_a()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->vidinfo->blit_sw_A);
+  }
+  PIKEFUN int `blit_sw_cc()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->vidinfo->blit_sw_CC);
+  }
+  PIKEFUN int `hw_available()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->vidinfo->hw_available);
+  }
+  PIKEFUN int `video_mem()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->vidinfo->video_mem);
+  }
+  PIKEFUN int `wm_available()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->vidinfo->wm_available);
+  }
+  PIKEFUN object `vfmt()
+  {
+    struct object *fmt;
+    CHECK_INIT(); /* Make sure this is inited */
+    fmt = clone_object(PixelFormat_program, 0);
+    OBJ2_PIXELFORMAT(fmt)->fmt = THIS->vidinfo->vfmt;
+    push_object(fmt);
   }
 }
 /*! @endclass VideoInfo */
 #undef CHECK_INIT
 
-#define CHECK_INIT() if(THIS->_s == NULL) { Pike_error("Surface unitialized!\n"); }
+#define CHECK_INIT() if((THIS->generation != video_generation) || (THIS->_s == NULL)) { Pike_error("Surface unitialized!\n"); }
 /*! @class Surface
  *!
  *! Surface's represent areas of "graphical" memory, memory that can
  *! be drawn to.  The video framebuffer is returned as a
  *! @[SDL.Surface] by @[SDL.set_video_mode()] and
  *! @[SDL.get_video_surface()].
-
+ *!
  *! @decl int w
  *! @decl int h
  *!   The width and height of the surface in pixels.
@@ -1041,58 +1016,46 @@ PIKECLASS Surface {
     THIS->fast_set_pixel = NULL;
   }
 
-  /* Query methods (struct vars) */
-  PIKEFUN mixed `->(string key) {                      
-    struct pike_string *flags;
-    struct pike_string *h;
-/*  struct pike_string *pitch;*/
-    struct pike_string *w;
-    struct pike_string *clip_rect;
-    struct pike_string *format;
-    struct pike_string *init;
-    struct pike_string *set_image;
-    REF_MAKE_CONST_STRING(flags, "flags");
-    REF_MAKE_CONST_STRING(h, "h");
-/*    REF_MAKE_CONST_STRING(pitch, "pitch");*/
-    REF_MAKE_CONST_STRING(w, "w");
-    REF_MAKE_CONST_STRING(clip_rect, "clip_rect");
-    REF_MAKE_CONST_STRING(format, "format");
-    REF_MAKE_CONST_STRING(init, "init");
-    REF_MAKE_CONST_STRING(set_image, "set_image");
-
-    if(key == init || key == set_image) {
-      // These actually (re)initialize the module and do not
-      // a previously initialized module. 
-      OBJ_INDEX();
-      return;
-    }
+  PIKEFUN int `flags()
+  {
     CHECK_INIT(); /* Make sure this is inited */
-    if(key == flags) {
-      pop_stack(); push_int(THIS->_s->flags);
-    } else if(key == h) {
-      pop_stack(); push_int(THIS->_s->h);
-/*    } else if(key == pitch) {
-      pop_stack(); push_int(THIS->_s->pitch); */
-    } else if(key == w) {
-      pop_stack(); push_int(THIS->_s->w);
-    } else if(key == clip_rect) {
-      struct object *rect;
-      rect = clone_object( Rect_program, 0 );
-      OBJ2_RECT(rect)->rect = THIS->_s->clip_rect;
-      pop_stack(); push_object(rect);
-    } else if(key == format) {
-      struct object *fmt;
-      fmt = clone_object( PixelFormat_program, 0 );
-      OBJ2_PIXELFORMAT(fmt)->fmt = THIS->_s->format;
-      pop_stack(); push_object(fmt);
-    } else {
-      OBJ_INDEX();
-    }
+    push_int(THIS->_s->flags);
   }
-  PIKEFUN mixed `[](string key) {
-    f_Surface_cq__backtick_2D_3E( args );
+  PIKEFUN int `h()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->_s->h);
   }
-  
+#if 0
+  PIKEFUN int `pitch()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->_s->pitch);
+  }
+#endif
+  PIKEFUN int `w()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->_s->w);
+  }
+  PIKEFUN int `clip_rect()
+  {
+    struct object *rect;
+    CHECK_INIT(); /* Make sure this is inited */
+    rect = clone_object( Rect_program, 0 );
+    OBJ2_RECT(rect)->rect = THIS->_s->clip_rect;
+    push_object(rect);
+  }
+  PIKEFUN int `format()
+  {
+    struct object *fmt;
+    CHECK_INIT(); /* Make sure this is inited */
+    fmt = clone_object( PixelFormat_program, 0 );
+    OBJ2_PIXELFORMAT(fmt)->fmt = THIS->_s->format;
+    push_object(fmt);
+  }
+
+
   /*! @decl int lock()
    *! This methods locks the surface to allow direct access to the pixels using the
    *! @[get_pixel()] and @[set_pixel()] methods. Note that although all surfaces in SDL don't require
@@ -2113,42 +2076,49 @@ PIKECLASS CD {
   }
 
   /*! @decl int current_frame
-   *! @decl int current_track
-   *! @decl int id
-   *! @decl int numtracks
    *!
    *! @fixme
    *!   Document this variable
    */
-  PIKEFUN mixed `->(string key) {
-    struct pike_string *current_frame;
-    struct pike_string *current_track;
-    struct pike_string *id;
-    struct pike_string *numtracks;
+  PIKEFUN int `current_frame()
+  {
     CHECK_INIT(); /* Make sure this is inited */
-    REF_MAKE_CONST_STRING(current_frame, "current_frame");
-    REF_MAKE_CONST_STRING(current_track, "current_track");
-    REF_MAKE_CONST_STRING(id, "id");
-    REF_MAKE_CONST_STRING(numtracks, "numtracks");
-    if(key == current_frame) {
-      pop_stack(); push_int(THIS->cd->cur_frame);
-    } else if(key == current_track) {
-      pop_stack(); push_int(THIS->cd->cur_track);
-    } else if(key == id) {
-      pop_stack(); push_int(THIS->cd->id);
-    } else if(key == numtracks) {
-      pop_stack(); push_int(THIS->cd->numtracks);
-    } else {
-      OBJ_INDEX();
-    }
-  }    
-
-  PIKEFUN mixed `[](string key) {
-    ref_push_object(Pike_fp->current_object);
-    stack_swap();
-    f_arrow(2); 
+    push_int(THIS->cd->cur_frame);
   }
-    
+
+  /*! @decl int current_track
+   *!
+   *! @fixme
+   *!   Document this variable
+   */
+  PIKEFUN int `current_track()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->cd->cur_track);
+  }
+
+  /*! @decl int id
+   *!
+   *! @fixme
+   *!   Document this variable
+   */
+  PIKEFUN int `id()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->cd->id);
+  }
+
+  /*! @decl int numtracks
+   *!
+   *! @fixme
+   *!   Document this variable
+   */
+  PIKEFUN int `numtracks()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->cd->numtracks);
+  }
+
   /*! @decl CDTrack track(int track)
    *!
    *! @fixme
@@ -2156,6 +2126,7 @@ PIKECLASS CD {
    */
   PIKEFUN object track(int track) {
     struct object *trackobj;
+    CHECK_INIT(); /* Make sure this is inited */
     if(track >= THIS->cd->numtracks || track < 0) {
       Pike_error("Track ID out of range.\n");
     }
@@ -2170,6 +2141,7 @@ PIKECLASS CD {
    *!   Document this function
    */
   PIKEFUN int status() {
+    CHECK_INIT(); /* Make sure this is inited */
     RETURN SDL_CDStatus(THIS->cd);
   }
 
@@ -2179,6 +2151,7 @@ PIKECLASS CD {
    *!   Document this function
    */
   PIKEFUN int play(int start, int length) {
+    CHECK_INIT(); /* Make sure this is inited */
     RETURN SDL_CDPlay(THIS->cd, start, length);
   }
 
@@ -2190,6 +2163,7 @@ PIKECLASS CD {
    */
   PIKEFUN int play_tracks(int start_track, int start_frame,
 			  int ntracks, int nframes) {
+    CHECK_INIT(); /* Make sure this is inited */
     RETURN SDL_CDPlayTracks(THIS->cd, start_track, start_frame,
 			    ntracks, nframes);
   }
@@ -2200,6 +2174,7 @@ PIKECLASS CD {
    *!   Document this function
    */
   PIKEFUN int pause() {
+    CHECK_INIT(); /* Make sure this is inited */
     RETURN SDL_CDPause(THIS->cd);
   }
 
@@ -2209,6 +2184,7 @@ PIKECLASS CD {
    *!   Document this function
    */
   PIKEFUN int resume() {
+    CHECK_INIT(); /* Make sure this is inited */
     RETURN SDL_CDResume(THIS->cd);
   }
 
@@ -2218,6 +2194,7 @@ PIKECLASS CD {
    *!   Document this function
    */
   PIKEFUN int stop() {
+    CHECK_INIT(); /* Make sure this is inited */
     RETURN SDL_CDStop(THIS->cd);
   }
 
@@ -2227,6 +2204,7 @@ PIKECLASS CD {
    *!   Document this function
    */
   PIKEFUN int eject() {
+    CHECK_INIT(); /* Make sure this is inited */
     RETURN SDL_CDEject(THIS->cd);
   }
 }
@@ -2490,12 +2468,6 @@ PIKECLASS Event {
     RETURN SDL_PollEvent(NULL);
   }
 
-  PIKEFUN mixed `[](string key) {
-    ref_push_object(Pike_fp->current_object);
-    stack_swap();
-    f_arrow(2); 
-  }
-
   /*! @decl int axis
    *! @decl int ball
    *! @decl int button
@@ -2514,237 +2486,178 @@ PIKECLASS Event {
    *! @decl int y
    *! @decl int yrel
    */
-  PIKEFUN mixed `->(string key) {
-    struct pike_string *axis;
-    struct pike_string *ball;
-    struct pike_string *button;
-    struct pike_string *code;
-    struct pike_string *gain;
-    struct pike_string *h;
-    struct pike_string *hat;
-    struct pike_string *keysym;
-    struct pike_string *state;
-    struct pike_string *type;
-    struct pike_string *value;
-    struct pike_string *w;
-    struct pike_string *which;
-    struct pike_string *x;
-    struct pike_string *xrel;
-    struct pike_string *y;
-    struct pike_string *yrel;
 
-    REF_MAKE_CONST_STRING(axis, "axis");
-    REF_MAKE_CONST_STRING(ball, "ball");
-    REF_MAKE_CONST_STRING(button, "button");
-    REF_MAKE_CONST_STRING(code, "code");
-    REF_MAKE_CONST_STRING(gain, "gain");
-    REF_MAKE_CONST_STRING(h, "h");
-    REF_MAKE_CONST_STRING(hat, "hat");
-    REF_MAKE_CONST_STRING(keysym, "keysym");
-    REF_MAKE_CONST_STRING(state, "state");
-    REF_MAKE_CONST_STRING(type, "type");
-    REF_MAKE_CONST_STRING(value, "value");
-    REF_MAKE_CONST_STRING(w, "w");
-    REF_MAKE_CONST_STRING(which, "which");
-    REF_MAKE_CONST_STRING(x, "x");
-    REF_MAKE_CONST_STRING(xrel, "xrel");
-    REF_MAKE_CONST_STRING(y, "y");
-    REF_MAKE_CONST_STRING(yrel, "yrel");
+#define ASSERT_EVENT(TYPE, SYM) do {  \
+    if (THIS->event.type != TYPE) \
+      Pike_error("Event->" SYM " is not valid for this event type. \n"); \
+  } while(0)
 
-    if(key == axis) {
-      switch(THIS->event.type) {
-      case SDL_JOYAXISMOTION:
-        pop_stack(); push_int(THIS->event.jaxis.axis); return;
-      default:
-        Pike_error("Event->axis is not valid for this event type. \n");
-      }
+  PIKEFUN int `axis()
+  {
+    ASSERT_EVENT(SDL_JOYAXISMOTION, "axis");
+    push_int(THIS->event.jaxis.axis);
+  }
+  PIKEFUN int `ball()
+  {
+    ASSERT_EVENT(SDL_JOYBALLMOTION, "ball");
+    push_int(THIS->event.jball.ball);
+  }
+  PIKEFUN int `button()
+  {
+    switch(THIS->event.type) {
+    case SDL_JOYBUTTONDOWN:
+    case SDL_JOYBUTTONUP:
+      push_int(THIS->event.jbutton.button); return;
+    case SDL_MOUSEBUTTONDOWN:
+    case SDL_MOUSEBUTTONUP:
+      push_int(THIS->event.button.button); return;
+    default:
+      Pike_error("Event->button is not valid for this event type. \n");
     }
-
-    if(key == ball) {
-      switch(THIS->event.type) {
-      case SDL_JOYBALLMOTION:
-        pop_stack(); push_int(THIS->event.jball.ball); return;
-      default:
-        Pike_error("Event->ball is not valid for this event type. \n");
-      }
+  }
+  PIKEFUN int `code()
+  {
+    ASSERT_EVENT(SDL_USEREVENT, "code");
+    push_int(THIS->event.user.code);
+  }
+  PIKEFUN int `gain()
+  {
+    ASSERT_EVENT(SDL_ACTIVEEVENT, "gain");
+    push_int(THIS->event.active.gain);
+  }
+  PIKEFUN int `h()
+  {
+    ASSERT_EVENT(SDL_VIDEORESIZE, "h");
+    push_int(THIS->event.resize.h);
+  }
+  PIKEFUN int `hat()
+  {
+    ASSERT_EVENT(SDL_JOYHATMOTION, "hat");
+    push_int(THIS->event.jhat.hat);
+  }
+  PIKEFUN object `keysym()
+  {
+    struct object *keysym_obj;
+    switch(THIS->event.type) {
+    case SDL_KEYDOWN:
+    case SDL_KEYUP:
+      keysym_obj = clone_object(Keysym_program, 0);
+      OBJ2_KEYSYM(keysym_obj)->keysym = THIS->event.key.keysym;
+      push_object(keysym_obj);
+      return;
+    default:
+      Pike_error("Event->keysym is not valid for this event type. \n");
     }
-
-    if(key == button) {
-      switch(THIS->event.type) {
-      case SDL_JOYBUTTONDOWN:
-      case SDL_JOYBUTTONUP:
-        pop_stack(); push_int(THIS->event.jbutton.button); return;
-      case SDL_MOUSEBUTTONDOWN:
-      case SDL_MOUSEBUTTONUP:
-        pop_stack(); push_int(THIS->event.button.button); return;
-      default:
-        Pike_error("Event->button is not valid for this event type. \n");
-      }
+  }
+  PIKEFUN int `state()
+  {
+    switch(THIS->event.type) {
+    case SDL_ACTIVEEVENT:
+      push_int(THIS->event.active.state); return;
+    case SDL_JOYBUTTONDOWN:
+    case SDL_JOYBUTTONUP:
+      push_int(THIS->event.jbutton.state); return;
+    case SDL_KEYDOWN:
+    case SDL_KEYUP:
+      push_int(THIS->event.key.state); return;
+    case SDL_MOUSEBUTTONDOWN:
+    case SDL_MOUSEBUTTONUP:
+      push_int(THIS->event.button.state); return;
+    case SDL_MOUSEMOTION:
+      push_int(THIS->event.motion.state); return;
+    default:
+      Pike_error("Event->state is not valid for this event type. \n");
     }
-
-    if(key == code) {
-      switch(THIS->event.type) {
-      case SDL_USEREVENT:
-        pop_stack(); push_int(THIS->event.user.code); return;
-      default:
-        Pike_error("Event->code is not valid for this event type. \n");
-      }
+  }
+  PIKEFUN int `type()
+  {
+    push_int(THIS->event.type);
+  }
+  PIKEFUN int `value()
+  {
+    switch(THIS->event.type) {
+    case SDL_JOYAXISMOTION:
+      push_int(THIS->event.jaxis.value); return;
+    case SDL_JOYHATMOTION:
+      push_int(THIS->event.jhat.value); return;
+    default:
+      Pike_error("Event->value is not valid for this event type. \n");
     }
-
-    if(key == gain) {
-      switch(THIS->event.type) {
-      case SDL_ACTIVEEVENT:
-        pop_stack(); push_int(THIS->event.active.gain); return;
-      default:
-        Pike_error("Event->gain is not valid for this event type. \n");
-      }
+  }
+  PIKEFUN int `w()
+  {
+    ASSERT_EVENT(SDL_VIDEORESIZE, "w");
+    push_int(THIS->event.resize.w);
+  }
+  PIKEFUN int `which()
+  {
+    switch(THIS->event.type) {
+    case SDL_JOYAXISMOTION:
+      push_int(THIS->event.jaxis.which); return;
+    case SDL_JOYBALLMOTION:
+      push_int(THIS->event.jball.which); return;
+    case SDL_JOYBUTTONDOWN:
+    case SDL_JOYBUTTONUP:
+      push_int(THIS->event.jbutton.which); return;
+    case SDL_JOYHATMOTION:
+      push_int(THIS->event.jhat.which); return;
+    case SDL_KEYDOWN:
+    case SDL_KEYUP:
+      push_int(THIS->event.key.which); return;
+    case SDL_MOUSEBUTTONDOWN:
+    case SDL_MOUSEBUTTONUP:
+      push_int(THIS->event.button.which); return;
+    case SDL_MOUSEMOTION:
+      push_int(THIS->event.motion.which); return;
+    default:
+      Pike_error("Event->which is not valid for this event type. \n");
     }
-
-    if(key == h) {
-      switch(THIS->event.type) {
-      case SDL_VIDEORESIZE:
-        pop_stack(); push_int(THIS->event.resize.h); return;
-      default:
-        Pike_error("Event->h is not valid for this event type. \n");
-      }
+  }
+  PIKEFUN int `x()
+  {
+    switch(THIS->event.type) {
+    case SDL_MOUSEBUTTONDOWN:
+    case SDL_MOUSEBUTTONUP:
+      push_int(THIS->event.button.x); return;
+    case SDL_MOUSEMOTION:
+      push_int(THIS->event.motion.x); return;
+    default:
+      Pike_error("Event->x is not valid for this event type. \n");
     }
-
-    if(key == hat) {
-      switch(THIS->event.type) {
-      case SDL_JOYHATMOTION:
-        pop_stack(); push_int(THIS->event.jhat.hat); return;
-      default:
-        Pike_error("Event->hat is not valid for this event type. \n");
-      }
+  }
+  PIKEFUN int `xrel()
+  {
+    switch(THIS->event.type) {
+    case SDL_JOYBALLMOTION:
+      push_int(THIS->event.jball.xrel); return;
+    case SDL_MOUSEMOTION:
+      push_int(THIS->event.motion.xrel); return;
+    default:
+      Pike_error("Event->xrel is not valid for this event type. \n");
     }
-    if(key == keysym) {
-      struct object *keysym_obj;
-      switch(THIS->event.type) {
-      case SDL_KEYDOWN:
-      case SDL_KEYUP: 
-	pop_stack();
-	keysym_obj = clone_object(Keysym_program, 0);
-	OBJ2_KEYSYM(keysym_obj)->keysym = THIS->event.key.keysym;
-	push_object(keysym_obj);
-	return;
-      default:
-        Pike_error("Event->keysym is not valid for this event type. \n");
-      }
+  }
+  PIKEFUN int `y()
+  {
+    switch(THIS->event.type) {
+    case SDL_MOUSEBUTTONDOWN:
+    case SDL_MOUSEBUTTONUP:
+      push_int(THIS->event.button.y); return;
+    case SDL_MOUSEMOTION:
+      push_int(THIS->event.motion.y); return;
+    default:
+      Pike_error("Event->y is not valid for this event type. \n");
     }
-    if(key == state) {
-      switch(THIS->event.type) {
-      case SDL_ACTIVEEVENT:
-        pop_stack(); push_int(THIS->event.active.state); return;
-      case SDL_JOYBUTTONDOWN:
-      case SDL_JOYBUTTONUP:
-        pop_stack(); push_int(THIS->event.jbutton.state); return;
-      case SDL_KEYDOWN:
-      case SDL_KEYUP:
-        pop_stack(); push_int(THIS->event.key.state); return;
-      case SDL_MOUSEBUTTONDOWN:
-      case SDL_MOUSEBUTTONUP:
-        pop_stack(); push_int(THIS->event.button.state); return;
-      case SDL_MOUSEMOTION:
-        pop_stack(); push_int(THIS->event.motion.state); return;
-      default:
-        Pike_error("Event->state is not valid for this event type. \n");
-      }
+  }
+  PIKEFUN int `yrel()
+  {
+    switch(THIS->event.type) {
+    case SDL_JOYBALLMOTION:
+      push_int(THIS->event.jball.yrel); return;
+    case SDL_MOUSEMOTION:
+      push_int(THIS->event.motion.yrel); return;
+    default:
+      Pike_error("Event->yrel is not valid for this event type. \n");
     }
-
-    if(key == type) {
-      pop_stack(); push_int(THIS->event.type); return;
-    }
-
-    if(key == value) {
-      switch(THIS->event.type) {
-      case SDL_JOYAXISMOTION:
-        pop_stack(); push_int(THIS->event.jaxis.value); return;
-      case SDL_JOYHATMOTION:
-        pop_stack(); push_int(THIS->event.jhat.value); return;
-      default:
-        Pike_error("Event->value is not valid for this event type. \n");
-      }
-    }
-
-    if(key == w) {
-      switch(THIS->event.type) {
-      case SDL_VIDEORESIZE:
-        pop_stack(); push_int(THIS->event.resize.w); return;
-      default:
-        Pike_error("Event->w is not valid for this event type. \n");
-      }
-    }
-
-    if(key == which) {
-      switch(THIS->event.type) {
-      case SDL_JOYAXISMOTION:
-        pop_stack(); push_int(THIS->event.jaxis.which); return;
-      case SDL_JOYBALLMOTION:
-        pop_stack(); push_int(THIS->event.jball.which); return;
-      case SDL_JOYBUTTONDOWN:
-      case SDL_JOYBUTTONUP:
-        pop_stack(); push_int(THIS->event.jbutton.which); return;
-      case SDL_JOYHATMOTION:
-        pop_stack(); push_int(THIS->event.jhat.which); return;
-      case SDL_KEYDOWN:
-      case SDL_KEYUP:
-        pop_stack(); push_int(THIS->event.key.which); return;
-      case SDL_MOUSEBUTTONDOWN:
-      case SDL_MOUSEBUTTONUP:
-        pop_stack(); push_int(THIS->event.button.which); return;
-      case SDL_MOUSEMOTION:
-        pop_stack(); push_int(THIS->event.motion.which); return;
-      default:
-        Pike_error("Event->which is not valid for this event type. \n");
-      }
-    }
-
-    if(key == x) {
-      switch(THIS->event.type) {
-      case SDL_MOUSEBUTTONDOWN:
-      case SDL_MOUSEBUTTONUP:
-        pop_stack(); push_int(THIS->event.button.x); return;
-      case SDL_MOUSEMOTION:
-        pop_stack(); push_int(THIS->event.motion.x); return;
-      default:
-        Pike_error("Event->x is not valid for this event type. \n");
-      }
-    }
-
-    if(key == xrel) {
-      switch(THIS->event.type) {
-      case SDL_JOYBALLMOTION:
-        pop_stack(); push_int(THIS->event.jball.xrel); return;
-      case SDL_MOUSEMOTION:
-        pop_stack(); push_int(THIS->event.motion.xrel); return;
-      default:
-        Pike_error("Event->xrel is not valid for this event type. \n");
-      }
-    }
-
-    if(key == y) {
-      switch(THIS->event.type) {
-      case SDL_MOUSEBUTTONDOWN:
-      case SDL_MOUSEBUTTONUP:
-        pop_stack(); push_int(THIS->event.button.y); return;
-      case SDL_MOUSEMOTION:
-        pop_stack(); push_int(THIS->event.motion.y); return;
-      default:
-        Pike_error("Event->y is not valid for this event type. \n");
-      }
-    }
-
-    if(key == yrel) {
-      switch(THIS->event.type) {
-      case SDL_JOYBALLMOTION:
-        pop_stack(); push_int(THIS->event.jball.yrel); return;
-      case SDL_MOUSEMOTION:
-        pop_stack(); push_int(THIS->event.motion.yrel); return;
-      default:
-        Pike_error("Event->yrel is not valid for this event type. \n");
-      }
-    }
-    OBJ_INDEX();
   }
 }
 
