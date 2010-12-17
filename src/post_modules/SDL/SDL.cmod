@@ -112,6 +112,15 @@ static struct object *image_make_rgb_color(INT32 r,INT32 g,INT32 b)
     Pike_error("Invalid class for argument %d\n", arg); \
   }
 
+/* Subsystem init (or rather quit) generations.
+ * This is needed to detect whether a subsystem has been exited
+ * since an object was created.
+ */
+static int timer_generation;
+static int audio_generation;
+static int video_generation;
+static int cdrom_generation;
+static int joystick_generation;
 
 /*! @decl void init(int flags)
  *!
@@ -199,6 +208,11 @@ PIKEFUN int init_sub_system(int flags) {
  */
 PIKEFUN void quit_sub_system(int flags) {
   SDL_QuitSubSystem(flags);
+  if (flags & SDL_INIT_TIMER) timer_generation++;
+  if (flags & SDL_INIT_AUDIO) audio_generation++;
+  if (flags & SDL_INIT_VIDEO) video_generation++;
+  if (flags & SDL_INIT_CDROM) cdrom_generation++;
+  if (flags & SDL_INIT_JOYSTICK) joystick_generation++;
 }
 
 /*! @decl int was_init(int flags)
@@ -230,6 +244,11 @@ PIKEFUN int was_init(int flags)
  */ 
 PIKEFUN void quit() {
   SDL_Quit();
+  timer_generation++;
+  audio_generation++;
+  video_generation++;
+  cdrom_generation++;
+  joystick_generation++;
 }
 
 
@@ -743,7 +762,7 @@ PIKECLASS PixelFormat {
 #undef CHECK_INIT
 
 
-#define CHECK_INIT() if(THIS->vidinfo == NULL) { Pike_error("VideoInfo unitialized!\n"); }
+#define CHECK_INIT() if((THIS->generation != video_generation) || (THIS->vidinfo == NULL)) { Pike_error("VideoInfo unitialized!\n"); }
 
 /*! @class VideoInfo
  *! This (read-only) class is returned by @[SDL.get_video_info()]. It
@@ -899,6 +918,7 @@ PIKECLASS VideoInfo {
 PIKECLASS Surface {
   CVAR SDL_Surface *_s;
   CVAR void (*fast_set_pixel)(Uint16 x, Uint16 y, Uint32 pixel);
+  CVAR int generation;
   
   static void fast_set_pixel1(Uint16 x, Uint16 y, Uint32 pixel) {
     SDL_Surface *screen = THIS->_s;
@@ -1004,12 +1024,13 @@ PIKECLASS Surface {
   INIT {
     THIS->_s = NULL;
     THIS->fast_set_pixel = NULL;
+    THIS->generation = video_generation;
   }
   
   EXIT
     gc_trivial;
   {
-    if(THIS->_s) {
+    if((THIS->generation == video_generation) && THIS->_s) {
       SDL_FreeSurface(THIS->_s);
       THIS->_s = NULL;
     }
@@ -1151,7 +1172,7 @@ PIKECLASS Surface {
    */
   PIKEFUN object init(int flags, int width, int height, int depth, 
 		      int Rmask, int Gmask, int Bmask, int Amask) {
-    if(THIS->_s) {
+    if((THIS->generation == video_generation ) && THIS->_s) {
       SDL_FreeSurface(THIS->_s);
     }
     THIS->_s = SDL_CreateRGBSurface(flags, width, height, depth, 
@@ -1159,6 +1180,7 @@ PIKECLASS Surface {
     if(THIS->_s == NULL) {
       Pike_error("Failed to create SDL surface: %s\n", SDL_GetError());
     } else {
+      THIS->generation = video_generation;
       RET_THIS();
     }
   }
@@ -1227,8 +1249,9 @@ PIKECLASS Surface {
     struct image *i;
     Uint32 *dest;
     rgb_group rgb;
-    if(THIS->_s != NULL) {
+    if((THIS->generation == video_generation) && (THIS->_s != NULL)) {
       SDL_FreeSurface(THIS->_s);
+      THIS->_s = NULL;
     }
     //    if(image_program != NULL) {
     CHECK_CLASS(image, image, 1);
@@ -1249,6 +1272,7 @@ PIKECLASS Surface {
     if(!THIS->_s) {
       Pike_error("Failed to create SDL surface: %s\n", SDL_GetError());
     }
+    THIS->generation = video_generation;
     SDL_LockSurface(THIS->_s);
     dest = THIS->_s->pixels;
 
@@ -1272,8 +1296,9 @@ PIKECLASS Surface {
     struct image *i, *a;
     Uint32 *dest;
     rgb_group rgb, argb;
-    if(THIS->_s != NULL) {
+    if((THIS->generation == video_generation) && (THIS->_s != NULL)) {
       SDL_FreeSurface(THIS->_s);
+      THIS->_s = NULL;
     }
 
     CHECK_CLASS(image, image, 1);
@@ -1294,6 +1319,7 @@ PIKECLASS Surface {
     if(!THIS->_s) {
       Pike_error("Failed to create SDL surface: %s\n", SDL_GetError());
     }
+    THIS->generation = video_generation;
     SDL_LockSurface(THIS->_s);
     dest = THIS->_s->pixels;
 
@@ -1381,6 +1407,8 @@ PIKECLASS Surface {
   PIKEFUN object blit(object dst, object|void _srcrect, object|void _dstrect) {
     SDL_Rect *srcrect = NULL, *dstrect = NULL;
     CHECK_CLASS(dst, Surface, 1);
+    if (OBJ2_SURFACE(dst)->generation != video_generation)
+      Pike_error("Uninitialized destination surface.\n");
     if(_srcrect) {
       CHECK_CLASS(_srcrect, Rect, 2);
       srcrect = &(OBJ2_RECT(_srcrect)->rect);
@@ -1390,6 +1418,7 @@ PIKECLASS Surface {
       dstrect = &(OBJ2_RECT(_dstrect)->rect);
     }
     
+    CHECK_INIT();
     SDL_BlitSurface(THIS->_s, srcrect,
 		    OBJ2_SURFACE(dst)->_s, dstrect);
     RET_THIS();
@@ -1516,6 +1545,8 @@ PIKEFUN int flip(object|void screen) {
     vs = SDL_GetVideoSurface();
   } else {
     CHECK_CLASS(screen, Surface, 5);
+    if (OBJ2_SURFACE(screen)->generation != video_generation)
+      Pike_error("Uninitialized screen Surface.\n");
     vs = OBJ2_SURFACE(screen)->_s;
   }
   RETURN SDL_Flip(vs) == 0;
@@ -1551,6 +1582,8 @@ PIKEFUN void update_rect(int x, int y, int w, int h, object|void screen) {
     vs = SDL_GetVideoSurface();
   } else {
     CHECK_CLASS(screen, Surface, 5);
+    if (OBJ2_SURFACE(screen)->generation != video_generation)
+      Pike_error("Uninitialized screen Surface.\n");
     vs = OBJ2_SURFACE(screen)->_s;
   }
   SDL_UpdateRect(vs, x, y, w, h);
@@ -1703,6 +1736,10 @@ PIKEFUN int blit_surface(object src, object dst,
   SDL_Rect *srcrect = NULL, *dstrect = NULL;
   CHECK_CLASS(src, Surface, 1);
   CHECK_CLASS(dst, Surface, 2);
+  if (OBJ2_SURFACE(src)->generation != video_generation)
+    Pike_error("Uninitialized source Surface.\n");
+  if (OBJ2_SURFACE(dst)->generation != video_generation)
+    Pike_error("Uninitialized destination Surface.\n");
   if(_srcrect) {
     CHECK_CLASS(_srcrect, Rect, 3);
     srcrect = &(OBJ2_RECT(_srcrect)->rect);
@@ -1775,6 +1812,8 @@ PIKEFUN int toggle_fullscreen(void|object screen) {
     vs = SDL_GetVideoSurface();
   } else {
     CHECK_CLASS(screen, Surface, 1);
+    if (OBJ2_SURFACE(screen)->generation != video_generation)
+      Pike_error("Uninitialized screen Surface.\n");
     vs = OBJ2_SURFACE(screen)->_s;
   }
   if(!vs) { RETURN -1; }
@@ -1797,17 +1836,20 @@ PIKEFUN int grab_input(int mode) {
 /*! @class Joystick
  */
 
-#define CHECK_INIT() if(THIS->joystick == NULL) { Pike_error("Joystick uninitialized!\n"); }
+#define CHECK_INIT() if((THIS->generation != joystick_generation) || (THIS->joystick == NULL)) { Pike_error("Joystick uninitialized!\n"); }
 PIKECLASS Joystick {
   CVAR SDL_Joystick *joystick;
+  CVAR int generation;
+
   INIT {
     THIS->joystick = NULL;
+    THIS->generation = joystick_generation;
   }
 
   EXIT
     gc_trivial;
   {
-    if(THIS->joystick != NULL) {
+    if((THIS->generation == joystick_generation) && (THIS->joystick != NULL)) {
       SDL_JoystickClose(THIS->joystick);
       THIS->joystick = NULL;
     }
@@ -1824,6 +1866,7 @@ PIKECLASS Joystick {
       Pike_error("Failed to open joystick %"PRINTPIKEINT"d: %s\n", device_index,
 		 SDL_GetError());
     }
+    THIS->generation = joystick_generation;
   }
 
   /*! @decl int index()
@@ -2017,47 +2060,40 @@ PIKECLASS CDTrack {
     THIS->track.length = 0;
     THIS->track.offset = 0;
   }
-  PIKEFUN mixed `->(string key) {
-    struct pike_string *id;
-    struct pike_string *length;
-    struct pike_string *offset;
-    struct pike_string *type;
-    REF_MAKE_CONST_STRING(id, "id");
-    REF_MAKE_CONST_STRING(length, "length");
-    REF_MAKE_CONST_STRING(offset, "offset");
-    REF_MAKE_CONST_STRING(type, "type");
-    if(key == id) {
-      pop_stack(); push_int(THIS->track.id);
-    } else if(key == length) {
-      pop_stack(); push_int(THIS->track.length);
-    } else if(key == offset) {
-      pop_stack(); push_int(THIS->track.offset);
-    } else if(key == type) {
-      pop_stack(); push_int(THIS->track.type);
-    } else {
-      OBJ_INDEX();
-    }
+  PIKEFUN int `id()
+  {
+    push_int(THIS->track.id);
   }
-  PIKEFUN mixed `[](string key) {
-    f_CDTrack_cq__backtick_2D_3E(args);
+  PIKEFUN int `length()
+  {
+    push_int(THIS->track.length);
   }
-
+  PIKEFUN int `offset()
+  {
+    push_int(THIS->track.offset);
+  }
+  PIKEFUN int `type()
+  {
+    push_int(THIS->track.type);
+  }
 }
 /*! @endclass
  */
 
 /*! @class CD
  */
-#define CHECK_INIT() if(THIS->cd == NULL) { Pike_error("CD unitialized!\n"); }
+#define CHECK_INIT() if((THIS->generation != cdrom_generation) || (THIS->cd == NULL)) { Pike_error("CD unitialized!\n"); }
 PIKECLASS CD {
   CVAR SDL_CD *cd;
+  CVAR int generation;
   INIT {
     THIS->cd = NULL;
+    THIS->generation = cdrom_generation;
   }
   EXIT
     gc_trivial;
   {
-    if(THIS->cd) {
+    if((THIS->generation == cdrom_generation) && THIS->cd) {
       SDL_CDClose(THIS->cd);
       THIS->cd = NULL;
     };
@@ -2073,6 +2109,7 @@ PIKECLASS CD {
     if(!THIS->cd) {
       Pike_error("Failed to open CD %"PRINTPIKEINT"d: %s\n", drive, SDL_GetError());
     }
+    THIS->generation = cdrom_generation;
   }
 
   /*! @decl int current_frame
@@ -2246,6 +2283,7 @@ PIKEFUN string|void cd_name(int drive) {
  */
 PIKECLASS Music {
   CVAR Mix_Music *music;
+  CVAR int generation;
 
   INIT {
     THIS->music = NULL;
@@ -2253,7 +2291,7 @@ PIKECLASS Music {
   EXIT
     gc_trivial;
   {
-    if(THIS->music != NULL) {
+    if((THIS->generation == audio_generation) && (THIS->music != NULL)) {
       Mix_FreeMusic(THIS->music);
       THIS->music = NULL;
     }
@@ -2265,7 +2303,7 @@ PIKECLASS Music {
    *!   Document this function
    */
   PIKEFUN void create(string fname) {
-    if(THIS->music) {
+    if((THIS->generation == audio_generation) && (THIS->music)) {
       // Since you can manually call this...
       Mix_FreeMusic(THIS->music); 
     }
@@ -2274,6 +2312,7 @@ PIKECLASS Music {
       Pike_error("Failed to load %S: %s\n",
 		 fname, SDL_GetError());
     }
+    THIS->generation = audio_generation;
   }
 
   /*! @decl object pause()
