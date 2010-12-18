@@ -852,7 +852,7 @@ PIKECLASS VideoInfo {
     CHECK_INIT(); /* Make sure this is inited */
     push_int(THIS->vidinfo->wm_available);
   }
-  PIKEFUN object `vfmt()
+  PIKEFUN object `format()
   {
     struct object *fmt;
     CHECK_INIT(); /* Make sure this is inited */
