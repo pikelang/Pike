@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 #include "remote.h"
 
-//!
+//! Wrapper for a remote function.
 class Call {
  constant is_remote_call = 1;
 
@@ -973,7 +973,7 @@ class Context {
   }
 }
 
-//!
+//! Wrapper for a remote object.
 class Obj {
   constant is_remote_obj = 1;
 
