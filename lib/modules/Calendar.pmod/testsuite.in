@@ -1,5 +1,5 @@
 START_MARKER
-dnl $Id: testsuite.in,v 1.25 2010/03/02 11:51:09 grubba Exp $
+dnl $Id$
 
 dnl NOTE:
 dnl   *every* time the Calendar tests have failed, it's not the 
@@ -158,6 +158,14 @@ test_any([[
 dnl From Xuesong Guo <peterpan@wukong.com>
 test_eq([[((Calendar.dwim_day("20090501")+1)+1)]],
 	[[(Calendar.dwim_day("20090501")+2)]])
+
+dnl From Marc Dirix <marc@dirix.nu>
+test_any([[
+  object d = Calendar.Day();
+  object m = Calendar.Minute()*60;
+  object r = d + d;
+  return (r + m)->minute();
+]], [[ (Calendar.Day() + Calendar.Day() + Calendar.Minute()*60)->minute() ]])
 
 test_eq([[(Calendar.ISO.Week (2007, 52) + 1)->year_no()]], 2008)
 

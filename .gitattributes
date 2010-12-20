@@ -100,10 +100,8 @@ testfont binary
 /lib/modules/Cache.pmod/Storage.pmod/MySQL.pike foreign_ident
 /lib/modules/Cache.pmod/Storage.pmod/Yabu.pike foreign_ident
 /lib/modules/Cache.pmod/cache.pike foreign_ident
-/lib/modules/Calendar.pmod/TimeRanges.pmod foreign_ident
 /lib/modules/Calendar.pmod/events/regional foreign_ident
 /lib/modules/Calendar.pmod/mkrules.pike foreign_ident
-/lib/modules/Calendar.pmod/testsuite.in foreign_ident
 /lib/modules/Crypto.pmod/Koremutake.pmod foreign_ident
 /lib/modules/Crypto.pmod/PGP.pmod foreign_ident
 /lib/modules/Crypto.pmod/RSA.pike foreign_ident
