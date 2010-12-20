@@ -1,6 +1,6 @@
 //! module Calendar
 
-// $Id: TimeRanges.pmod,v 1.37 2009/08/19 09:09:12 grubba Exp $
+// $Id$
 
 #pike __REAL_VERSION__
 
@@ -262,9 +262,12 @@ class TimeRange
    TimeRange `+(program|this_program|int n,
 		program|this_program|int ... more)
    {
-      if (sizeof(more)) n = predef::`+(n, @more);
-      if (objectp(n)) return add(1,n);
-      return add(n);
+      TimeRange res;
+      if (objectp(n)) res = add(1,n);
+      else res = add(n);
+      if (sizeof(more))
+	 return predef::`+(res, @more);
+      return res;
    }
 
   TimeRange ``+(int n, int ... more)
