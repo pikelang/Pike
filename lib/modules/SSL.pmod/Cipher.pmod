@@ -1,5 +1,5 @@
 //
-//  $Id: Cipher.pmod,v 1.17 2008/06/28 16:49:55 nilsson Exp $
+//  $Id$
 
 #pike __REAL_VERSION__
 
@@ -232,6 +232,12 @@ class IDEA
   void create() { ::create(Crypto.IDEA()); }
 }
 
+class AES
+{
+  inherit Crypto.CBC;
+  void create() { ::create(Crypto.AES()); }
+}
+
 //!
 ADT.struct rsa_sign(object context, string cookie, ADT.struct struct)
 {
@@ -444,6 +450,22 @@ array lookup(int suite,int version)
     res->key_material = 16;
     res->iv_size = 8;
     res->key_bits = 128;
+    break;
+  case CIPHER_aes:
+    res->bulk_cipher_algorithm = AES;
+    res->cipher_type = CIPHER_block;
+    res->is_exportable = 0;
+    res->key_material = 16;
+    res->iv_size = 16;
+    res->key_bits = 128;
+    break;
+  case CIPHER_aes256:
+    res->bulk_cipher_algorithm = AES;
+    res->cipher_type = CIPHER_block;
+    res->is_exportable = 0;
+    res->key_material = 32;
+    res->iv_size = 16;
+    res->key_bits = 256;
     break;
 #endif /* !WEAK_CRYPTO_40BIT (magic comment) */
   default:

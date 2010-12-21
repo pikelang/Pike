@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: Constants.pmod,v 1.5 2009/11/16 14:13:20 mast Exp $
+/* $Id$
  *
  */
 
@@ -34,6 +34,8 @@ constant CIPHER_des      = 4;
 constant CIPHER_3des     = 5;
 constant CIPHER_fortezza = 7;
 constant CIPHER_idea	 = 8;
+constant CIPHER_aes	 = 9;
+constant CIPHER_aes256	 = 10;
 #endif /* !WEAK_CRYPTO_40BIT (magic comment) */
 constant CIPHER_algorithms = (< CIPHER_null, 
 				CIPHER_rc4_40,
@@ -45,6 +47,8 @@ constant CIPHER_algorithms = (< CIPHER_null,
 				CIPHER_3des,
 				CIPHER_fortezza,
 				CIPHER_idea,
+				CIPHER_aes,
+				CIPHER_aes256,
 #endif /* !WEAK_CRYPTO_40BIT (magic comment) */
 			     >);
 
@@ -206,6 +210,7 @@ constant TLS_dh_rsa_with_camellia_128_cbc_sha   = 0x0043;
 constant TLS_dhe_dss_with_camellia_128_cbc_sha  = 0x0044;
 constant TLS_dhe_rsa_with_camellia_128_cbc_sha  = 0x0045;
 constant TLS_dh_anon_with_camellia_128_cbc_sha  = 0x0046;
+
 constant TLS_dhe_rsa_with_aes_128_cbc_sha256    = 0x0067;
 constant TLS_dh_dss_with_aes_256_cbc_sha256     = 0x0068;
 constant TLS_dh_rsa_with_aes_256_cbc_sha256     = 0x0069;
@@ -353,6 +358,10 @@ constant CIPHER_SUITES =
    SSL_rsa_with_3des_ede_cbc_sha :	({ KE_rsa, CIPHER_3des, HASH_sha }),
    SSL_dhe_dss_with_des_cbc_sha :	({ KE_dhe_dss, CIPHER_des, HASH_sha }),
    SSL_dhe_dss_with_3des_ede_cbc_sha :	({ KE_dhe_dss, CIPHER_3des, HASH_sha }),
+   TLS_rsa_with_aes_128_cbc_sha :	({ KE_rsa, CIPHER_aes, HASH_sha }),
+   TLS_dhe_dss_with_aes_128_cbc_sha :	({ KE_dhe_dss, CIPHER_aes, HASH_sha }),
+   TLS_rsa_with_aes_256_cbc_sha :	({ KE_rsa, CIPHER_aes256, HASH_sha }),
+   TLS_dhe_dss_with_aes_256_cbc_sha :	({ KE_dhe_dss, CIPHER_aes256, HASH_sha }),
 #endif /* !WEAK_CRYPTO_40BIT (magic comment) */
 ]);
 

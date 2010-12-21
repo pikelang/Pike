@@ -1,5 +1,5 @@
 //
-// $Id: context.pike,v 1.39 2010/07/25 19:32:26 marcus Exp $
+// $Id$
 
 #pike __REAL_VERSION__
 #pragma strict_types
@@ -148,6 +148,8 @@ void rsa_mode()
 #endif
   preferred_suites = ({
 #ifndef WEAK_CRYPTO_40BIT
+    TLS_rsa_with_aes_256_cbc_sha,
+    TLS_rsa_with_aes_128_cbc_sha,
     SSL_rsa_with_idea_cbc_sha,
     SSL_rsa_with_rc4_128_sha,
     SSL_rsa_with_rc4_128_md5,
@@ -168,6 +170,8 @@ void dhe_dss_mode()
 #endif
   preferred_suites = ({
 #ifndef WEAK_CRYPTO_40BIT
+    TLS_dhe_dss_with_aes_256_cbc_sha,
+    TLS_dhe_dss_with_aes_128_cbc_sha,
     SSL_dhe_dss_with_3des_ede_cbc_sha,
     SSL_dhe_dss_with_des_cbc_sha,
 #endif /* !WEAK_CRYPTO_40BIT (magic comment) */
