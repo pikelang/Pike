@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.117 2010/08/30 14:17:55 mast Exp $
+/* $Id$
  */
 
 #if constant(SSL.Cipher.CipherAlgorithm)
@@ -1510,7 +1510,8 @@ protected int ssl_read_callback (int called_from_real_backend, string input)
 
       else {
 	int write_res;
-	if (stringp(data) || (data > 0)) {
+	if (stringp(data) || (data > 0) ||
+	    ((data < 0) && !conn->handshake_finished)) {
 #ifdef DEBUG
 	  if (!stream)
 	    error ("Got zapped stream in callback.\n");
