@@ -756,6 +756,8 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	array(int) cipher_suites;
 	array(int) compression_methods;
 
+	SSL3_DEBUG_MSG("SSL.session: CLIENT_HELLO\n");
+
        	if (
 	  catch{
 	  version = (client_version = input->get_fix_uint_array(1, 2)) + ({});
@@ -940,6 +942,8 @@ int(-1..1) handle_handshake(int type, string data, string raw)
       }
      case HANDSHAKE_hello_v2:
       {
+	SSL3_DEBUG_MSG("SSL.session: CLIENT_HELLO_V2\n");
+
 #ifdef SSL3_DEBUG
 	werror("SSL.handshake: SSL2 hello message received\n");
 #endif
@@ -1043,6 +1047,8 @@ int(-1..1) handle_handshake(int type, string data, string raw)
        string my_digest;
        string digest;
        
+	SSL3_DEBUG_MSG("SSL.session: FINISHED\n");
+
        if(version[1] == 0) {
 	 my_digest=hash_messages("CLNT");
 	 if (catch {
@@ -1113,6 +1119,8 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 			backtrace()));
       return -1;
     case HANDSHAKE_client_key_exchange:
+      SSL3_DEBUG_MSG("SSL.session: CLIENT_KEY_EXCHANGE\n");
+
 #ifdef SSL3_DEBUG
       werror("client_key_exchange\n");
 #endif
@@ -1153,6 +1161,8 @@ int(-1..1) handle_handshake(int type, string data, string raw)
       break;
     case HANDSHAKE_certificate:
      {
+       SSL3_DEBUG_MSG("SSL.session: CLIENT_CERTIFICATE\n");
+
 #ifdef SSL3_DEBUG
       werror("client_certificate\n");
 #endif
@@ -1213,6 +1223,8 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 			backtrace()));
       return -1;
     case HANDSHAKE_certificate_verify:
+      SSL3_DEBUG_MSG("SSL.session: CERTIFICATE_VERIFY\n");
+
       if (!rsa_message_was_bad)
       {
 	int(0..1) verification_ok;
@@ -1253,6 +1265,8 @@ int(-1..1) handle_handshake(int type, string data, string raw)
     }
     else
     {
+      SSL3_DEBUG_MSG("SSL.session: SERVER_HELLO\n");
+
       handshake_messages += raw;
       string id;
       int cipher_suite, compression_method;
@@ -1386,6 +1400,8 @@ int(-1..1) handle_handshake(int type, string data, string raw)
       return -1;
     case HANDSHAKE_certificate:
       {
+	SSL3_DEBUG_MSG("SSL.session: CERTIFICATE\n");
+
       // we're anonymous, so no certificate is requred.
       if(anonymous)
          break;
@@ -1451,6 +1467,8 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 
     case HANDSHAKE_server_key_exchange:
       {
+	SSL3_DEBUG_MSG("SSL.session: SERVER_KEY_EXCHANGE\n");
+
 	Gmp.mpz n = input->get_bignum();
 	Gmp.mpz e = input->get_bignum();
 	Gmp.mpz signature = input->get_bignum();
@@ -1475,6 +1493,8 @@ int(-1..1) handle_handshake(int type, string data, string raw)
       }
 
     case HANDSHAKE_certificate_request:
+      SSL3_DEBUG_MSG("SSL.session: CERTIFICATE_REQUEST\n");
+
 #ifdef SSL3_DEBUG
 	werror("Certificate request received.\n");
 #endif
@@ -1517,6 +1537,8 @@ int(-1..1) handle_handshake(int type, string data, string raw)
       break;
 
     case HANDSHAKE_server_hello_done:
+      SSL3_DEBUG_MSG("SSL.session: SERVER_HELLO_DONE\n");
+
       /* Send Certificate, ClientKeyExchange, CertificateVerify and
        * ChangeCipherSpec as appropriate, and then Finished.
        */
