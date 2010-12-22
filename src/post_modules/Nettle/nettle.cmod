@@ -964,6 +964,18 @@ PIKECLASS Proxy {
     push_string(make_shared_binary_string(str->str, len));
     free_string(str);
   }
+
+  /*! @decl this_program set_iv(string iv)
+   *! Set the initialization vector to @[iv].
+   */
+  PIKEFUN object set_iv(string iv)
+    optflags OPT_SIDE_EFFECT;
+  {
+    apply(THIS->object, "set_iv", args);
+    args = 1;
+    RETURN this_object();
+  }
+
 }
 
 /*! @endclass
