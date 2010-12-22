@@ -132,6 +132,12 @@ Alert|.packet decrypt_packet(.packet packet, int version)
 #ifdef SSL3_DEBUG
 	werror("Failed MAC-verification!!\n");
 #endif
+#ifdef SSL3_DEBUG_CRYPT
+	werror("Expected digest: %O\n"
+	       "Calculated digest: %O\n"
+	       "Seqence number: %O\n",
+	       digest, mac->hash(packet, seq_num), seq_num);
+#endif
 	return Alert(ALERT_fatal, ALERT_bad_record_mac, version);
       }
     seq_num += 1;

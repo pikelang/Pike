@@ -1,5 +1,5 @@
 //
-// $Id: connection.pike,v 1.47 2010/07/25 19:32:26 marcus Exp $
+// $Id$
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -34,6 +34,12 @@ function(object,int|object,string:void) alert_callback;
 import .Constants;
 
 inherit .handshake;
+
+#ifdef SSL3_DEBUG
+#define SSL3_DEBUG_MSG(X ...)  werror(X)
+#else /*! SSL3_DEBUG */
+#define SSL3_DEBUG_MSG(X ...)
+#endif /* SSL3_DEBUG */
 
 constant PRI_alert = 1;
 constant PRI_urgent = 2;
@@ -327,6 +333,8 @@ string|int got_data(string|int s)
       {
       case PACKET_alert:
        {
+	 SSL3_DEBUG_MSG("SSL.connection: ALERT\n");
+
 	 int i;
 	 int err = 0;
 	 alert_buffer += packet->fragment;
@@ -346,6 +354,8 @@ string|int got_data(string|int s)
        }
       case PACKET_change_cipher_spec:
        {
+	 SSL3_DEBUG_MSG("SSL.connection: CHANGE_CIPHER_SPEC\n");
+
 	 int i;
 	 int err;
 	 for (i = 0; (i < sizeof(packet->fragment)); i++)
@@ -361,6 +371,8 @@ string|int got_data(string|int s)
        }
       case PACKET_handshake:
        {
+	 SSL3_DEBUG_MSG("SSL.connection: HANDSHAKE\n");
+
 	 if (handshake_finished) {
 	   // Don't allow renegotiation at all for now, to address
 	   // http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2009-3555.
@@ -405,6 +417,8 @@ string|int got_data(string|int s)
 	 break;
        }
       case PACKET_application_data:
+	SSL3_DEBUG_MSG("SSL.connection: APPLICATION_DATA\n");
+
 	if (!handshake_finished)
 	{
 	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1]));
@@ -414,6 +428,8 @@ string|int got_data(string|int s)
 	break;
       case PACKET_V2:
        {
+	 SSL3_DEBUG_MSG("SSL.connection: V2\n");
+
 	 if (handshake_finished) {
 	   // Don't allow renegotiation at all for now, to address
 	   // http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2009-3555.
