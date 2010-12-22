@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: packet.pike,v 1.17 2008/06/28 16:49:55 nilsson Exp $
+/* $Id$
  *
  * SSL Record Layer
  */
@@ -94,14 +94,14 @@ object|string recv(string data, int version)
 	if ( (length <= 0) || (length > (PACKET_MAX_SIZE + marginal_size)))
 	  return Alert(ALERT_fatal, ALERT_unexpected_message, version);
       }
-      if (protocol_version[0] != 3)
+      if (protocol_version[0] != PROTOCOL_major)
 	return Alert(ALERT_fatal, ALERT_unexpected_message, version,
 		     sprintf("SSL.packet->send: Version %d.%d "
 			     "is not supported\n",
 			     protocol_version[0], protocol_version[1]),
 		     backtrace());
 #ifdef SSL3_DEBUG
-      if (protocol_version[1] > 0)
+      if (protocol_version[1] > PROTOCOL_minor)
 	werror("SSL.packet->recv: received version %d.%d packet\n",
 	       @ protocol_version);
 #endif
@@ -123,10 +123,10 @@ string send()
   if (! PACKET_types[content_type] )
     error( "Invalid type" );
   
-  if (protocol_version[0] != 3)
+  if (protocol_version[0] != PROTOCOL_major)
     error( "Version %d is not supported\n", protocol_version[0] );
-  if (protocol_version[1] > 0)
 #ifdef SSL3_DEBUG
+  if (protocol_version[1] > PROTOCOL_minor)
     werror("SSL.packet->send: received version %d.%d packet\n",
 	   @ protocol_version);
 #endif

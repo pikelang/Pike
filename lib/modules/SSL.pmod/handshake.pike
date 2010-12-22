@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 #pragma strict_types
 
-/* $Id: handshake.pike,v 1.63 2010/07/25 19:32:26 marcus Exp $
+/* $Id$
  *
  */
 
@@ -136,7 +136,8 @@ Packet client_hello()
 {
   ADT.struct struct = ADT.struct();
   /* Build client_hello message */
-  struct->put_uint(3,1); struct->put_uint(1,1); /* version */
+  struct->put_uint(PROTOCOL_major,1); /* version */
+  struct->put_uint(PROTOCOL_minor,1);
   client_random = sprintf("%4c%s", time(), context->random(28));
   struct->put_fix_string(client_random);
   struct->put_var_string("", 1);
@@ -714,19 +715,20 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 			 id, cipher_suites, compression_methods);
 
 	}
-	  || (version[0] != 3) || (cipher_len & 1))
+	  || (version[0] != PROTOCOL_major) || (cipher_len & 1))
 	{
-	  if (version[1] > 1) version[1] = 1;
+	  version[0] = PROTOCOL_major;
+	  if (version[1] > PROTOCOL_minor) version[1] = PROTOCOL_minor;
 	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 			    "SSL.session->handle_handshake: unexpected message\n",
 			    backtrace()));
 	  return -1;
 	}
-	if (version[1] > 1) {
+	if (version[1] > PROTOCOL_minor) {
 	  SSL3_DEBUG_MSG("Falling back to from SSL 3.%d to "
-			 "SSL 3.1 (aka TLS 1.0).\n",
-			 version[1]);
-	  version[1] = 1;
+			 "SSL 3.%d (aka TLS 1.%d).\n",
+			 version[1], PROTOCOL_minor, PROTOCOL_minor-1);
+	  version[1] = PROTOCOL_minor;
 	}
 
 #ifdef SSL3_DEBUG
@@ -794,24 +796,24 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	  id_len = input->get_uint(2);
 	  ch_len = input->get_uint(2);
 	} || (ci_len % 3) || !ci_len || (id_len) || (ch_len < 16)
-	    || (version[0] != 3))
+	    || (version[0] != PROTOCOL_major))
 	{
 #ifdef SSL3_DEBUG
 	  werror("SSL.handshake: Error decoding SSL2 handshake:\n"
 		 "%s\n", err?describe_backtrace(err):"");
 #endif /* SSL3_DEBUG */
-	  if (version[1] > 1) version[1] = 1;
+	  if (version[1] > PROTOCOL_minor) version[1] = PROTOCOL_minor;
 	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 		      "SSL.session->handle_handshake: unexpected message\n",
 		      backtrace()));
 	  return -1;
 	}
 
-	if (version[1] > 1) {
+	if (version[1] > PROTOCOL_minor) {
 	  SSL3_DEBUG_MSG("Falling back to from SSL 3.%d to "
-			 "SSL 3.1 (aka TLS 1.0).\n",
-			 version[1]);
-	  version[1] = 1;
+			 "SSL 3.%d (aka TLS 1.%d).\n",
+			 version[1], PROTOCOL_minor, PROTOCOL_minor-1);
+	  version[1] = PROTOCOL_minor;
 	}
 
 	string challenge;
@@ -1078,22 +1080,22 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 
       if( !has_value(context->preferred_suites, cipher_suite) ||
 	  !has_value(context->preferred_compressors, compression_method) ||
-	  (version[0] != 3))
+	  (version[0] != PROTOCOL_major))
       {
 	// The server tried to trick us to use some other cipher suite
 	// or compression method than we wanted
-	if (version[1] > 1) version[1] = 1;
+	if (version[1] > PROTOCOL_minor) version[1] = PROTOCOL_minor;
 	send_packet(Alert(ALERT_fatal, ALERT_handshake_failure, version[1],
 			  "SSL.session->handle_handshake: handshake failure\n",
 			  backtrace()));
 	return -1;
       }
 
-      if (version[1] > 1) {
+      if (version[1] > PROTOCOL_minor) {
 	SSL3_DEBUG_MSG("Falling back to from SSL 3.%d to "
-		       "SSL 3.1 (aka TLS 1.0).\n",
-		       version[1]);
-	version[1] = 1;
+		       "SSL 3.%d (aka TLS 1.%d).\n",
+		       version[1], PROTOCOL_minor, PROTOCOL_minor-1);
+	version[1] = PROTOCOL_minor;
       }
 
       session->set_cipher_suite(cipher_suite,version[1]);
