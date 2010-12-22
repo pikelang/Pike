@@ -34,6 +34,8 @@ Gmp.mpz seq_num;    /* Bignum, values 0, .. 2^64-1 are valid */
 
 constant Alert = .alert;
 
+//! TLS IV prefix length.
+int tls_iv;
 
 string tls_pad(string data, int blocksize) {
   int plen=(blocksize-(sizeof(data)+1)%blocksize)%blocksize;
@@ -107,6 +109,15 @@ Alert|.packet decrypt_packet(.packet packet, int version)
   werror("SSL.state: Decrypted_packet %O\n", packet->fragment);
 #endif
 
+  if (tls_iv) {
+    // TLS 1.1 IV. RFC 4346 6.2.3.2:
+    // The decryption operation for all three alternatives is the same.
+    // The receiver decrypts the entire GenericBlockCipher structure and
+    // then discards the first cipher block, corresponding to the IV
+    // component.
+    packet->fragment = packet->fragment[tls_iv..];
+  }
+
   if (mac)
   {
 #ifdef SSL3_DEBUG_CRYPT
@@ -168,7 +179,17 @@ Alert|.packet encrypt_packet(.packet packet, int version)
 	} else {
 	  packet->fragment = tls_pad(packet->fragment+digest,
 				     crypt->block_size());
-	  packet->fragment = crypt->crypt(packet->fragment);
+	  if (tls_iv) {
+	    // RFC 4346 6.2.3.2.2:
+	    // Generate a cryptographically strong random number R of length
+	    // CipherSpec.block_length and prepend it to the plaintext prior
+	    // to encryption.
+	    string iv = Crypto.Random.random_string(tls_iv);
+	    crypt->set_iv(iv);
+	    packet->fragment = iv + crypt->crypt(packet->fragment);
+	  } else {
+	    packet->fragment = crypt->crypt(packet->fragment);
+	  }
 	}
       } else {
 	packet->fragment=crypt->crypt(packet->fragment + digest);
