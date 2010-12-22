@@ -8,7 +8,7 @@
 
 //! Max supported SSL version.
 constant PROTOCOL_major = 3;
-constant PROTOCOL_minor = 1;
+constant PROTOCOL_minor = 2;
 
 /* Packet types */
 constant PACKET_change_cipher_spec = 20;
