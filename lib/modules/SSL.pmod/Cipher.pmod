@@ -485,14 +485,14 @@ array lookup(int suite,int version)
   switch(algorithms[2])
   {
   case HASH_sha:
-    if(version==1)
+    if(version>=1)
       res->mac_algorithm = MAChmac_sha;
     else
       res->mac_algorithm = MACsha;
     res->hash_size = 20;
     break;
   case HASH_md5:
-    if(version==1)
+    if(version>=1)
       res->mac_algorithm = MAChmac_md5;
     else
       res->mac_algorithm = MACmd5;

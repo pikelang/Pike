@@ -195,7 +195,6 @@ testfont binary
 /lib/modules/SSL.pmod/alert.pike foreign_ident
 /lib/modules/SSL.pmod/connection.pike foreign_ident
 /lib/modules/SSL.pmod/https.pike foreign_ident
-/lib/modules/SSL.pmod/session.pike foreign_ident
 /lib/modules/SSL.pmod/testsuite.in foreign_ident
 /lib/modules/Sql.pmod/Sql.pike foreign_ident
 /lib/modules/Sql.pmod/sql_result.pike foreign_ident

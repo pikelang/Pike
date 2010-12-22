@@ -1,5 +1,5 @@
 //
-// $Id: session.pike,v 1.39 2010/07/25 19:32:27 marcus Exp $
+// $Id$
 
 #pike __REAL_VERSION__
 #pragma strict_types
@@ -108,7 +108,8 @@ protected string generate_key_block(string client_random, string server_random,
 					   server_random + client_random));
       }
   }
-  else if(version[1]==1) {
+  else if (version[1] >= 1) {
+    // TLS 1.0 or later.
     key = .Cipher.prf(master_secret, "key expansion",
 		      server_random+client_random, required);
   }
@@ -171,8 +172,9 @@ array(string) generate_keys(string client_random, string server_random,
   if (cipher_spec->is_exportable)
 #endif /* !WEAK_CRYPTO_40BIT (magic comment) */
   {
+    // Exportable (ie weak) crypto.
     if(version[1]==0) {
-      //SSL3.0
+      // SSL 3.0
       function(string:string) md5 = .Cipher.MACmd5()->hash_raw;
       
       keys[2] = md5(key_data->get_fix_string(5) +
@@ -189,8 +191,8 @@ array(string) generate_keys(string client_random, string server_random,
 			client_random)[..cipher_spec->iv_size-1];
 	}
 
-    } if(version[1]==1) {
-      //TLS1.0
+    } else if(version[1] >= 1) {
+      // TLS 1.0 or later.
       string client_wkey = key_data->get_fix_string(5);
       string server_wkey = key_data->get_fix_string(5);
       keys[2] = .Cipher.prf(client_wkey, "client write key",
@@ -210,7 +212,7 @@ array(string) generate_keys(string client_random, string server_random,
 	       sizeof([string]keys[4]), sizeof([string]keys[4]));
 #endif
       }
-      
+
     }
     
   }

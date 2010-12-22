@@ -349,7 +349,7 @@ string hash_messages(string sender)
     return .Cipher.MACmd5(session->master_secret)->hash_master(handshake_messages + sender) +
       .Cipher.MACsha(session->master_secret)->hash_master(handshake_messages + sender);
   }
-  else if(version[1] > 0) {
+  else if(version[1] >= 1) {
     return .Cipher.prf(session->master_secret, sender,
 		       .Cipher.MACmd5()->hash_raw(handshake_messages)+
 		       .Cipher.MACsha()->hash_raw(handshake_messages),12);
@@ -515,7 +515,7 @@ string server_derive_master_secret(string data)
 			   + sha->hash_raw(cookie + premaster_secret 
 					   + client_random + server_random));
   }
-  else if(version[1] > 0) {
+  else if(version[1] >= 1) {
     res=.Cipher.prf(premaster_secret,"master secret",
 		    client_random+server_random,48);
   }
@@ -543,7 +543,7 @@ string client_derive_master_secret(string premaster_secret)
 			   + sha->hash_raw(cookie + premaster_secret 
 					   + client_random + server_random));
   }
-  else if(version[1] > 0) {
+  else if(version[1] >= 1) {
     res+=.Cipher.prf(premaster_secret,"master secret",client_random+server_random,48);
   }
   
@@ -764,7 +764,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	  send_packet(change_cipher_packet());
 	  if(version[1] == 0)
 	    send_packet(finished_packet("SRVR"));
-	  else if(version[1] > 0)
+	  else if(version[1] >= 1)
 	    send_packet(finished_packet("server finished"));
 
 	  expect_change_cipher = 1;
@@ -872,7 +872,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 			       backtrace()));
 	     return -1;
 	   }
-       } else if(version[1] == 1) {
+       } else if(version[1] >= 1) {
 	 my_digest=hash_messages("client finished");
 	 if (catch {
 	   digest = input->get_fix_string(12);
@@ -908,7 +908,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
        {
 	 send_packet(change_cipher_packet());
 	 if(version[1] == 0) send_packet(finished_packet("SRVR"));
-	 else if(version[1] == 1) send_packet(finished_packet("server finished"));
+	 else if(version[1] >= 1) send_packet(finished_packet("server finished"));
 	 expect_change_cipher = 1;
 	 context->record_session(session); /* Cache this session */
        }
@@ -1327,7 +1327,7 @@ werror("sending certificate: " + Standards.PKCS.Certificate.get_dn_string(Tools.
       send_packet(change_cipher_packet());
 
       if(version[1] == 0) send_packet(finished_packet("CLNT"));
-      else if(version[1] == 1) send_packet(finished_packet("client finished"));
+      else if(version[1] >= 1) send_packet(finished_packet("client finished"));
       
       }
 	handshake_state = STATE_client_wait_for_finish;
