@@ -30,15 +30,16 @@ enum ProtocolVersion {
   PROTOCOL_SSL_3_0	= 0x0300,
   PROTOCOL_SSL_3_1	= 0x0301,
   PROTOCOL_TLS_1_0	= 0x0301,
+  PROTOCOL_TLS_1_1	= 0x0302,
 }
 
 //! Max supported SSL version.
-constant PROTOCOL_SSL_MAX = PROTOCOL_TLS_1_0;
-constant PROTOCOL_TLS_MAX = PROTOCOL_TLS_1_0;
+constant PROTOCOL_SSL_MAX = PROTOCOL_TLS_1_1;
+constant PROTOCOL_TLS_MAX = PROTOCOL_TLS_1_1;
 
 //! Max supported SSL version.
 constant PROTOCOL_major = 3;
-constant PROTOCOL_minor = 1;
+constant PROTOCOL_minor = 2;
 
 /* Packet types */
 constant PACKET_change_cipher_spec = 20;
