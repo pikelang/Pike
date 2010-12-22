@@ -54,6 +54,9 @@ class mac_none
 #endif
 
 //! MAC using SHA.
+//!
+//! @note
+//!   Note: This uses the algorithm from the SSL 3.0 draft.
 class MACsha
 {
   protected constant pad_1 =  "6666666666666666666666666666666666666666";
@@ -108,6 +111,9 @@ class MACsha
 }
 
 //! MAC using MD5.
+//!
+//! @note
+//!   Note: This uses the algorithm from the SSL 3.0 draft.
 class MACmd5 {
   inherit MACsha;
 
@@ -118,7 +124,9 @@ class MACmd5 {
   protected Crypto.Hash algorithm = Crypto.MD5;
 }
 
+//! HMAC using SHA.
 //!
+//! This is the MAC algorithm used by TLS 1.0 and later.
 class MAChmac_sha {
 
   protected string secret;
@@ -144,7 +152,9 @@ class MAChmac_sha {
   }
 }
 
+//! HMAC using MD5.
 //!
+//! This is the MAC algorithm used by TLS 1.0 and later.
 class MAChmac_md5 {
   inherit MAChmac_sha;
 
