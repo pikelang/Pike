@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 // #pragma strict_types
 
-// $Id: state.pike,v 1.30 2010/07/25 19:32:27 marcus Exp $
+// $Id$
 
 //! A connection switches from one set of state objects to another, one or
 //! more times during its lifetime. Each state object handles a one-way
@@ -43,18 +43,15 @@ string tls_pad(string data, int blocksize) {
 string tls_unpad(string data) {
   int(0..255) plen=[int(0..255)]data[-1];
 
-#ifdef SSL3_DEBUG
   string padding=reverse(data)[..plen];
 
-  /* Checks that the padding is correctly done */
+  /* Check that the padding is correctly done. Required by TLS 1.1. */
   foreach(values(padding), int tmp)
     {
       if(tmp!=plen) {
-	werror("Incorrect padding detected!!!: %O\n", padding);
-	throw(0);
+	return UNDEFINED;	// Invalid padding.
       }
     }
-#endif
 
   return data[..<plen+1];
 }
@@ -66,7 +63,8 @@ string tls_unpad(string data) {
 Alert|.packet decrypt_packet(.packet packet, int version)
 {
 #ifdef SSL3_DEBUG_CRYPT
-  werror("SSL.state->decrypt_packet: data = %O\n", packet->fragment);
+  werror("SSL.state->decrypt_packet (3.%d, type: %d): data = %O\n",
+	 version, packet->content_type, packet->fragment);
 #endif
   
   if (crypt)
@@ -89,15 +87,22 @@ Alert|.packet decrypt_packet(.packet packet, int version)
       } else {
 	msg = crypt->crypt(msg);
 
+	// FIXME: TLS 1.1 recommends performing the hash check before
+	//        sending the alerts to protect against timing attacks.
+
 	if (catch { msg = tls_unpad(msg); })
 	  return Alert(ALERT_fatal, ALERT_unexpected_message, version);
+	if (!msg) {
+	  // TLS 1.1 requires a bad_record_mac alert on invalid padding.
+	  return Alert(ALERT_fatal, ALERT_bad_record_mac, version);
+	}
       }
     } else {
       msg = crypt->crypt(msg);
     }
     packet->fragment = msg;
   }
-  
+
 #ifdef SSL3_DEBUG_CRYPT
   werror("SSL.state: Decrypted_packet %O\n", packet->fragment);
 #endif
