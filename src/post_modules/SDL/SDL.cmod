@@ -38,9 +38,10 @@ DECLARATIONS
  *! 
  *! This means that classes are used when appropriate and that method
  *! names use all lowercase letters with words separated by _. For
- *! example SDL_SetVideoMode is named SDL.set_video_mode. Also note
+ *! example @tt{SDL_SetVideoMode@} is named @[SDL.set_video_mode]. Also note
  *! that unless otherwise noted, errors result in an error being
- *! thrown rather than returning -1 or 0, as commonly done in SDL methods.
+ *! thrown rather than returning @expr{-1@} or @expr{0@}, as commonly
+ *! done in SDL methods.
  */
 
 
@@ -185,26 +186,30 @@ PIKEFUN void|string get_error() {
 
 /*! @decl void init_sub_system(int flags)
  *! 
- *! After SDL has been initialized with @[init()] you may initialize
+ *! After SDL has been initialized with @[SDL.init()] you may initialize
  *! uninitialized subsystems with this method.
  *! 
  *! @param flags
  *!  The same as what is used in @[SDL.init()].
+ *!
+ *! @seealso
+ *!  @[SDL.init()],  @[SDL.quit()], @[SDL.quit_sub_system()]
  */
 PIKEFUN int init_sub_system(int flags) {
   RETURN SDL_InitSubSystem(flags);
 }
 
-/*! @decl void init_sub_system(int flags)
+/*! @decl void quit_sub_system(int flags)
  *! 
- *! After SDL has been initialized with @[SDL.init()] you may initialize
- *! uninitialized subsystems with this method.
+ *! After an SDL subsystem has been initialized with @[SDL.init()] or
+ *! @[SDL.init_sub_system], it may be shut down with this method.
  *! 
  *! @param  flags
- *! a bitwise OR'd combination of the subsystems
- *! you wish to check (see @[SDL.init()] for a list of subsystem flags).
+ *!   A bitwise OR'd combination of the subsystems
+ *!   you wish to shut down (see @[SDL.init()] for a list of subsystem flags).
+ *!
  *! @seealso
- *!  @[SDL.init()],  @[SDL.quit()], @[SDL.quit_sub_system()]
+ *!  @[SDL.init()], @[SDL.init_sub_system()], @[SDL.quit()]
  */
 PIKEFUN void quit_sub_system(int flags) {
   SDL_QuitSubSystem(flags);
@@ -216,13 +221,17 @@ PIKEFUN void quit_sub_system(int flags) {
 }
 
 /*! @decl int was_init(int flags)
+ *!
  *! This method allows you to see which SDL subsytems have been
  *! initialized.
+ *!
  *! @param  flags
- *! a bitwise OR'd combination of the subsystems
- *! you wish to check (see @[SDL.init()] for a list of subsystem flags).
+ *!   A bitwise OR'd combination of the subsystems
+ *!   you wish to check (see @[SDL.init()] for a list of subsystem flags).
+ *!
  *! @returns
- *!  a bitwised OR'd combination of the initialized subsystems
+ *!  A bitwised OR'd combination of the initialized subsystems
+ *!
  *! @seealso
  *!  @[SDL.init()], @[SDL.init_sub_system()]
  *!
@@ -234,11 +243,14 @@ PIKEFUN int was_init(int flags)
 }
 
 /*! @decl void quit()
+ *!
  *! Shuts down all SDL subsystems and frees the resources allocated to
  *! them. This should always be called before you exit.
+ *!
  *! @note
  *! You can use the @[atexit()] method to ensure that this method is always
  *! called when Pike exits normally. 
+ *!
  *! @seealso
  *!  @[SDL.init()],  @[SDL.init_sub_system()], @[SDL.quit_sub_system()]
  */ 
@@ -265,13 +277,13 @@ PIKEFUN void quit() {
  *! overhead.
  *! 
  *! @param enable
- *!   A value of 1 enables Unicode translation, 0 disables it and -1
- *!   leaves it unchanged (useful for querying the current translation
- *!   mode). 
+ *!   A value of @expr{1@} enables Unicode translation, @expr{0@} disables
+ *!   it and @expr{-1@} leaves it unchanged (useful for querying the current
+ *!   translation mode). 
  *! 
  *! @returns
- *!   The previous translation mode (1 enabled, 0 disabled). If
- *!   @b{enable@} is -1, the return value is the current translation
+ *!   The previous translation mode (@expr{1@} enabled, @expr{0@} disabled).
+ *!   If @b{enable@} is @expr{-1@}, the return value is the current translation
  *!   mode.
  *!   
  *! @seealso
@@ -294,12 +306,13 @@ PIKEFUN int enable_unicode(int enable)
  *! SDL.KMOD_NONE, SDL.KMOD_LSHIFT, SDL.KMOD_RSHIFT, SDL.KMOD_LCTRL,
  *! SDL.KMOD_RCTRL, SDL.KMOD_LALT, SDL.KMOD_RALT, SDL.KMOD_LMETA,
  *! SDL.KMOD_RMETA, SDL.KMOD_NUM, SDL.KMOD_CAPS, and
- *! SDL.KMOD_MODE. For convenience the following are also defined:
+ *! SDL.KMOD_MODE.
+ *!
+ *! For convenience the following are also defined:
  *! SDL.KMOD_CTRL, SDL.KMOD_SHIFT, SDL.KMOD_ALT and SDL.KMOD_META
  *!   
  *! @seealso
- *!   
- *!   @[SDL.get_key_state()]
+ *!   @[SDL.get_key_state()], @[SDL.pump_events()]
  */
 PIKEFUN int get_mod_state()
      optflags OPT_EXTERNAL_DEPEND;
@@ -309,14 +322,20 @@ PIKEFUN int get_mod_state()
 
 /*! @decl string get_key_state()
  *! 
- *! Gets a snapshot of the current keyboard state. The current state
- *! is return as a string. The string is indexed by the SDL.K_* symbols. A
- *! value of 1 means the key is pressed and a value of 0 means its
- *! not. 
+ *! Gets a snapshot of the current keyboard state.
+ *!
+ *! @returns
+ *!   The current state is returned as a string.
+ *!
+ *!   The string is indexed by the SDL.K_* symbols.
+ *!   A value of @expr{1@} means the key is pressed and
+ *!   a value of @expr{0@} means its not. 
  *! 
  *! @note
- *!  @[SDL.pump_events()] to update the state array.
+ *!  Call @[SDL.pump_events()] to update the state array.
  *! 
+ *! @seealso
+ *!   @[SDL.get_mod_state()], @[SDL.pump_events()]
  */
 PIKEFUN string get_key_state()
      optflags OPT_EXTERNAL_DEPEND;
@@ -331,12 +350,6 @@ PIKEFUN string get_key_state()
  *! Used in SDL to define a rectangular area. It is sometimes also used
  *! to specify only points or sizes (i.e only one of the position and
  *! dimension is used). 
- *! @decl int x
- *! @decl int y
- *!   Position of the upper-left corner of the rectangle.
- *! @decl int w
- *! @decl int h
- *!   The width and height of the rectangle.
  */
 PIKECLASS Rect {
   CVAR SDL_Rect rect;
@@ -346,6 +359,11 @@ PIKECLASS Rect {
     THIS->rect.w = THIS->rect.h = 0;
   }
 
+  /*! @decl int x
+   *! @decl int y
+   *!   Position of the upper-left corner of the rectangle.
+   */
+
   PIKEFUN int `x()
   {
     push_int(THIS->rect.x);
@@ -354,6 +372,19 @@ PIKECLASS Rect {
   {
     push_int(THIS->rect.y);
   }
+  PIKEFUN int `x=(int value)
+  {
+    THIS->rect.x = value;
+  }
+  PIKEFUN int `y=(int value)
+  {
+    THIS->rect.y = value;
+  }
+
+  /*! @decl int w
+   *! @decl int h
+   *!   The width and height of the rectangle.
+   */
   PIKEFUN int `w()
   {
     push_int(THIS->rect.w);
@@ -363,14 +394,6 @@ PIKECLASS Rect {
     push_int(THIS->rect.h);
   }
 
-  PIKEFUN int `x=(int value)
-  {
-    THIS->rect.x = value;
-  }
-  PIKEFUN int `y=(int value)
-  {
-    THIS->rect.y = value;
-  }
   PIKEFUN int `w=(int value)
   {
     THIS->rect.w = value;
@@ -381,10 +404,11 @@ PIKECLASS Rect {
   }
 
   /*! @decl mixed cast(string type)
-   *! It is possible to cast a Rect object to an array or
-   *! to a mapping. The array will have the values in the
-   *! x, y, w, h order and the mapping will have the values
-   *! associated with those names.
+   *!
+   *! It is possible to cast a Rect object to an @tt{array@} or
+   *! to a @tt{mapping@}. The array will have the values in the
+   *! order x, y, w, h and the mapping will have the values
+   *! associated with the corresponding names.
    */
   PIKEFUN mixed cast( string type )
   {
@@ -422,50 +446,62 @@ PIKECLASS Rect {
 /*! @endclass Rect */
 
 /*! @class Keysym
+ *!
  *! The Keysym class is used to report key presses and releases. It's
  *! available from the @[SDL.Event] class for keyboard events.
- *! 
- *! The scancode field should generally be left alone - it is the
- *! hardware dependent scancode returned by the keyboard. The sym
- *! field is extremely useful. It is the SDL-defined value of the key. 
- *! This field is very useful when you are checking for certain key presses.
- *! 
- *! mod stores the current state of the keyboard modifiers as
- *! explained in @[SDL.get_mod_state()]. The unicode field is only used
- *! when UNICODE translation is enabled with @[SDL.enable_unicode()]. If
- *! unicode is non-zero then this a the UNICODE character
- *! corresponding to the keypress. If the high 9 bits of the character
- *! are 0, then this maps to the equivalent ASCII character.
- *! 
- *! @note
- *!   UNICODE translation does have a slight overhead so don't
- *!   enable it unless its needed.
- *! 
- *! @decl int scancode
- *!  Hardware specific scancode
- *! @decl int sym
- *!  SDL virtual keysym
- *! @decl int mod
- *!  Current key modifiers
- *! @decl int unicode
- *!  Translated character
  */
-
 PIKECLASS Keysym {
   CVAR SDL_keysym keysym;
 
+  /*! @decl int mod
+   *!  Current key modifiers
+   *!
+   *!  @[mod] stores the current state of the keyboard modifiers as
+   *!  explained in @[SDL.get_mod_state()].
+   */
   PIKEFUN int `mod()
   {
     push_int(THIS->keysym.mod);
   }
+
+  /*! @decl int scancode
+   *!  Hardware specific scancode
+   *! 
+   *!  The @[scancode] field should generally be left alone - it is the
+   *!  hardware dependent scancode returned by the keyboard.
+   *!
+   */
   PIKEFUN int `scancode()
   {
     push_int(THIS->keysym.scancode);
   }
+
+  /*! @decl int sym
+   *!  SDL virtual keysym
+   *!
+   *!  The @[sym] field is extremely useful.
+   *!  It is the SDL-defined value of the key. 
+   *!  This field is very useful when you are checking for certain key presses.
+   *!
+   */
   PIKEFUN int `sym()
   {
     push_int(THIS->keysym.sym);
   }
+
+  /*! @decl int unicode
+   *!
+   *!  Translated character
+   *!
+   *!  The @[unicode] field is only used
+   *!  when UNICODE translation has beed enabled with @[SDL.enable_unicode()].
+   *!  If @[unicode] is non-zero then this the UNICODE character corresponding
+   *!  to the keypress.
+   *! 
+   *! @note
+   *!  UNICODE translation does have a slight overhead so don't
+   *!  enable it unless its needed.
+   */
   PIKEFUN int `unicode()
   {
     push_int(THIS->keysym.unicode);
@@ -477,124 +513,140 @@ PIKECLASS Keysym {
 #define CHECK_INIT() if(THIS->fmt == NULL) { Pike_error("PixelFormat unitialized!\n"); }
 
 /*! @class PixelFormat
+ *!
  *! This describes the format of the pixel data stored at the pixels field
- *! of a @[SDL.Surface]. Every surface stores a PixelFormat in the format
+ *! of a @[SDL.Surface]. Every surface stores a @[PixelFormat] in the format
  *! field.
- *! @decl int bits_per_pixel
- *!   The number of bits used to represent each pixel in a
- *!   surface. Usually 8, 16, 24 or 32.
- *! @decl int bytes_per_pixel
- *!   The number of bytes used to represent each pixel in a
- *!   surface. Usually one to four.
- *! @decl int rmask
- *! @decl int gmask
- *! @decl int bmask
- *! @decl int amask
- *!  Binary mask used to retrieve individual color values.
- *! @decl int rloss
- *! @decl int gloss
- *! @decl int bloss
- *! @decl int aloss
- *!  Precision loss of each color component.
- *! @decl int rshift
- *! @decl int gshift
- *! @decl int bshift
- *! @decl int ashift
- *!  Binary left shift of each color component in the pixel value.
- *! @decl int colorkey
- *!  Pixel value of transparent pixels.
- *! @decl int alpha
- *!  Overall surface alpha value.
  */
-
 PIKECLASS PixelFormat {
-  /* THIS->fmt is never freed by ys since the it's always a pointer to that
+  /* THIS->fmt is never freed by us since the it's always a pointer to that
      of a Surface class */
+  /* FIXME: What if the Surface is freed?
+   *        Ought to use parent pointer!
+   */
   CVAR SDL_PixelFormat *fmt;
   
   INIT {
     THIS->fmt = NULL; 
   }
 
-  PIKEFUN int `aloss()
+  /*! @decl int rloss
+   *! @decl int gloss
+   *! @decl int bloss
+   *! @decl int aloss
+   *!   Precision loss of each color component.
+   */
+  PIKEFUN int `rloss()
   {
     CHECK_INIT(); /* Make sure this is inited */
-    push_int(THIS->fmt->Aloss);
-  }
-  PIKEFUN int `alpha()
-  {
-    CHECK_INIT(); /* Make sure this is inited */
-    push_int(THIS->fmt->alpha);
-  }
-  PIKEFUN int `amask()
-  {
-    CHECK_INIT(); /* Make sure this is inited */
-    push_int(THIS->fmt->Amask);
-  }
-  PIKEFUN int `ashift()
-  {
-    CHECK_INIT(); /* Make sure this is inited */
-    push_int(THIS->fmt->Ashift);
-  }
-  PIKEFUN int `bits_per_pixel()
-  {
-    CHECK_INIT(); /* Make sure this is inited */
-    push_int(THIS->fmt->BitsPerPixel);
-  }
-  PIKEFUN int `bloss()
-  {
-    CHECK_INIT(); /* Make sure this is inited */
-    push_int(THIS->fmt->Bloss);
-  }
-  PIKEFUN int `bmask()
-  {
-    CHECK_INIT(); /* Make sure this is inited */
-    push_int(THIS->fmt->Bmask);
-  }
-  PIKEFUN int `bshift()
-  {
-    CHECK_INIT(); /* Make sure this is inited */
-    push_int(THIS->fmt->Bshift);
-  }
-  PIKEFUN int `bytes_per_pixel()
-  {
-    CHECK_INIT(); /* Make sure this is inited */
-    push_int(THIS->fmt->BytesPerPixel);
-  }
-  PIKEFUN int `colorkey()
-  {
-    CHECK_INIT(); /* Make sure this is inited */
-    push_int(THIS->fmt->colorkey);
+    push_int(THIS->fmt->Rloss);
   }
   PIKEFUN int `gloss()
   {
     CHECK_INIT(); /* Make sure this is inited */
     push_int(THIS->fmt->Gloss);
   }
+  PIKEFUN int `bloss()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->fmt->Bloss);
+  }
+  PIKEFUN int `aloss()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->fmt->Aloss);
+  }
+
+  /*! @decl int rmask
+   *! @decl int gmask
+   *! @decl int bmask
+   *! @decl int amask
+   *!   Binary mask used to retrieve individual color values.
+   */
+  PIKEFUN int `rmask()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->fmt->Rmask);
+  }
   PIKEFUN int `gmask()
   {
     CHECK_INIT(); /* Make sure this is inited */
     push_int(THIS->fmt->Gmask);
+  }
+  PIKEFUN int `bmask()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->fmt->Bmask);
+  }
+  PIKEFUN int `amask()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->fmt->Amask);
+  }
+
+  /*! @decl int rshift
+   *! @decl int gshift
+   *! @decl int bshift
+   *! @decl int ashift
+   *!  Binary left shift of each color component in the pixel value.
+   */
+  PIKEFUN int `rshift()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->fmt->Rshift);
   }
   PIKEFUN int `gshift()
   {
     CHECK_INIT(); /* Make sure this is inited */
     push_int(THIS->fmt->Gshift);
   }
-  PIKEFUN int `rloss()
+  PIKEFUN int `bshift()
   {
     CHECK_INIT(); /* Make sure this is inited */
-    push_int(THIS->fmt->Rloss);
+    push_int(THIS->fmt->Bshift);
   }
-  PIKEFUN int `rmask()
+  PIKEFUN int `ashift()
   {
     CHECK_INIT(); /* Make sure this is inited */
-    push_int(THIS->fmt->Rmask);
+    push_int(THIS->fmt->Ashift);
   }
-  PIKEFUN int `rshift()
+
+  /*! @decl int alpha
+   *!  Overall surface alpha value.
+   */
+  PIKEFUN int `alpha()
   {
     CHECK_INIT(); /* Make sure this is inited */
-    push_int(THIS->fmt->Rshift);
+    push_int(THIS->fmt->alpha);
+  }
+
+  /*! @decl int colorkey
+   *!  Pixel value of transparent pixels.
+   */
+  PIKEFUN int `colorkey()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->fmt->colorkey);
+  }
+
+  /*! @decl int bits_per_pixel
+   *!   The number of bits used to represent each pixel in a
+   *!   surface. Usually 8, 16, 24 or 32.
+   */
+  PIKEFUN int `bits_per_pixel()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->fmt->BitsPerPixel);
+  }
+
+  /*! @decl int bytes_per_pixel
+   *!   The number of bytes used to represent each pixel in a
+   *!   surface. Usually one to four.
+   */
+  PIKEFUN int `bytes_per_pixel()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->fmt->BytesPerPixel);
   }
 
   /*! @decl array(int) losses()
@@ -736,14 +788,16 @@ PIKECLASS PixelFormat {
    *! @param pixel
    *!   A pixel retrieved from a surface with this pixel format or a color
    *!   previously mapped with @[map_rgb()] or @[map_rgba()].
+   *!
    *! @returns
-   *!  A mapping containing with the RGBA components of the pixel as described below.
-   *! @mapping
-   *!   @member Image.Color.Color color
-   *!     The RGB color value of the pixel.
-   *!   @member int alpha
-   *!     The alpha value of the pixel in the range 0-255.
-   *! @endmapping
+   *!   A mapping containing the RGBA components of the pixel:
+   *!   @mapping
+   *!     @member Image.Color.Color "color"
+   *!       The RGB color value of the pixel.
+   *!     @member int "alpha"
+   *!       The alpha value of the pixel in the range 0-255.
+   *!   @endmapping
+   *!
    *! @seealso
    *!   @[map_rgb()], @[map_rgba()], @[get_rgb()]
    */
@@ -765,32 +819,11 @@ PIKECLASS PixelFormat {
 #define CHECK_INIT() if((THIS->generation != video_generation) || (THIS->vidinfo == NULL)) { Pike_error("VideoInfo unitialized!\n"); }
 
 /*! @class VideoInfo
+ *!
  *! This (read-only) class is returned by @[SDL.get_video_info()]. It
  *! contains information on either the 'best' available mode (if
  *! called before @[SDL.set_video_mode()]) or the current video mode.
  *!
- #! @decl int hw_available
- #!   Is it possible to create hardware surfaces?
- #! @decl int wm_available
- #!   Is there a window manager available
- #! @decl int blit_hw
- #!   Are hardware to hardware blits accelerated?
- *! @decl int blit_hw_cc
- *!   Are hardware to hardware colorkey blits accelerated?
- *! @decl int blit_hw_a
- *!   Are hardware to hardware alpha blits accelerated?
- *! @decl int blit_sw
- *!   Are software to hardware blits accelerated?
- *! @decl int blit_sw_cc
- *!   Are software to hardware colorkey blits accelerated?
- *! @decl int blit_sw_a
- *!   Are software to hardware alpha blits accelerated?
- *! @decl int blit_fill
- *!   Are color fills accelerated?
- *! @decl int video_mem
- *!   Total amount of video memory in KB.
- *! @decl SDL.PixelFormat format
- *!   Pixel format of the video device.
  */
 PIKECLASS VideoInfo {
   /* THIS->vidinfo is never freed by us since SDL manages that */
@@ -802,56 +835,89 @@ PIKECLASS VideoInfo {
     THIS->generation = video_generation;
   }
 
+  /*! @decl int blit_fill
+   *!   Are color fills accelerated?
+   */
   PIKEFUN int `blit_fill()
   {
     CHECK_INIT(); /* Make sure this is inited */
     push_int(THIS->vidinfo->blit_fill);
   }
+  /*! @decl int blit_hw
+   *!   Are hardware to hardware blits accelerated?
+   */
   PIKEFUN int `blit_hw()
   {
     CHECK_INIT(); /* Make sure this is inited */
     push_int(THIS->vidinfo->blit_hw);
   }
+  /*! @decl int blit_hw_a
+   *!   Are hardware to hardware alpha blits accelerated?
+   */
   PIKEFUN int `blit_hw_a()
   {
     CHECK_INIT(); /* Make sure this is inited */
     push_int(THIS->vidinfo->blit_hw_A);
   }
+  /*! @decl int blit_hw_cc
+   *!   Are hardware to hardware colorkey blits accelerated?
+   */
   PIKEFUN int `blit_hw_cc()
   {
     CHECK_INIT(); /* Make sure this is inited */
     push_int(THIS->vidinfo->blit_hw_CC);
   }
+  /*! @decl int blit_sw
+   *!   Are software to hardware blits accelerated?
+   */
   PIKEFUN int `blit_sw()
   {
     CHECK_INIT(); /* Make sure this is inited */
     push_int(THIS->vidinfo->blit_sw);
   }
+  /*! @decl int blit_sw_a
+   *!   Are software to hardware alpha blits accelerated?
+   */
   PIKEFUN int `blit_sw_a()
   {
     CHECK_INIT(); /* Make sure this is inited */
     push_int(THIS->vidinfo->blit_sw_A);
   }
+  /*! @decl int blit_sw_cc
+   *!   Are software to hardware colorkey blits accelerated?
+   */
   PIKEFUN int `blit_sw_cc()
   {
     CHECK_INIT(); /* Make sure this is inited */
     push_int(THIS->vidinfo->blit_sw_CC);
   }
+  /*! @decl int hw_available
+   *!   Is it possible to create hardware surfaces?
+   */
   PIKEFUN int `hw_available()
   {
     CHECK_INIT(); /* Make sure this is inited */
     push_int(THIS->vidinfo->hw_available);
   }
+  /*! @decl int video_mem
+   *!   Total amount of video memory in KB.
+   */
   PIKEFUN int `video_mem()
   {
     CHECK_INIT(); /* Make sure this is inited */
     push_int(THIS->vidinfo->video_mem);
   }
+  /*! @decl int wm_available
+   *!   Is there a window manager available
+   */
   PIKEFUN int `wm_available()
   {
     CHECK_INIT(); /* Make sure this is inited */
     push_int(THIS->vidinfo->wm_available);
   }
+  /*! @decl SDL.PixelFormat format
+   *!   Pixel format of the video device.
+   */
   PIKEFUN object `format()
   {
     struct object *fmt;
@@ -871,49 +937,6 @@ PIKECLASS VideoInfo {
  *! be drawn to.  The video framebuffer is returned as a
  *! @[SDL.Surface] by @[SDL.set_video_mode()] and
  *! @[SDL.get_video_surface()].
- *!
- *! @decl int w
- *! @decl int h
- *!   The width and height of the surface in pixels.
- *! @decl SDL.Rect clip_rect
- *!  This is the clipping rectangle as set by @[set_clip_rect()].
- *! @decl int flags
- *!   The following are supported in the flags field.
- *!   @dl
- *!     @item SDL.SWSURFACE
- *!       Surface is stored in system memory
- *!     @item SDL.HWSURFACE
- *!       Surface is stored in video memory
- *!     @item SDL.ASYNCBLIT
- *!       Surface uses asynchronous blits if possible.
- *!     @item SDL.ANYFORMAT
- *!       Allows any pixel-format (Display  surface).
- *!     @item SDL.HWPALETTE
- *!       Surface has exclusive palette.
- *!     @item SDL.DOUBLEBUF
- *!       Surface is double buffered (Display surface).
- *!     @item SDL.FULLSCREEN
- *!       Surface is full screen (Display  Sur face).
- *!     @item SDL.OPENGL
- *!       Surface has an OpenGL context (Display Surface).
- *!     @item SDL.OPENGLBLIT
- *!       Surface supports OpenGL blitting (Display Surface).
- *!     @item SDL.RESIZABLE
- *!       Surface is resizable (Display Surface).
- *!     @item SDL.HWACCEL
- *!       Surface blit uses hardware acceleration.
- *!     @item SDL.SRCCOLORKEY
- *!       Surface use colorkey blitting.
- *!     @item SDL.RLEACCEL
- *!       Colorkey  blitting is accelerated with RLE.
- *!     @item SDL.SRCALPHA
- *!       Surface blit uses alpha blending.
- *!     @item SDL.PREALLOC
- *!       Surface uses preallocated memory.
- *!   @enddl
- *! 
- *! @decl SDL.PixelFormat format
- *!   The pixel format of this surface.
  */
 PIKECLASS Surface {
   CVAR SDL_Surface *_s;
@@ -1037,16 +1060,62 @@ PIKECLASS Surface {
     THIS->fast_set_pixel = NULL;
   }
 
+  /*! @decl int flags
+   *!   The following are supported in the flags field.
+   *!   @dl
+   *!     @item SDL.SWSURFACE
+   *!       Surface is stored in system memory
+   *!     @item SDL.HWSURFACE
+   *!       Surface is stored in video memory
+   *!     @item SDL.ASYNCBLIT
+   *!       Surface uses asynchronous blits if possible.
+   *!     @item SDL.ANYFORMAT
+   *!       Allows any pixel-format (Display  surface).
+   *!     @item SDL.HWPALETTE
+   *!       Surface has exclusive palette.
+   *!     @item SDL.DOUBLEBUF
+   *!       Surface is double buffered (Display surface).
+   *!     @item SDL.FULLSCREEN
+   *!       Surface is full screen (Display  Sur face).
+   *!     @item SDL.OPENGL
+   *!       Surface has an OpenGL context (Display Surface).
+   *!     @item SDL.OPENGLBLIT
+   *!       Surface supports OpenGL blitting (Display Surface).
+   *!     @item SDL.RESIZABLE
+   *!       Surface is resizable (Display Surface).
+   *!     @item SDL.HWACCEL
+   *!       Surface blit uses hardware acceleration.
+   *!     @item SDL.SRCCOLORKEY
+   *!       Surface use colorkey blitting.
+   *!     @item SDL.RLEACCEL
+   *!       Colorkey  blitting is accelerated with RLE.
+   *!     @item SDL.SRCALPHA
+   *!       Surface blit uses alpha blending.
+   *!     @item SDL.PREALLOC
+   *!       Surface uses preallocated memory.
+   *!   @enddl
+   */
   PIKEFUN int `flags()
   {
     CHECK_INIT(); /* Make sure this is inited */
     push_int(THIS->_s->flags);
   }
+
+  /*! @decl int w
+   *! @decl int h
+   *!   The width and height of the surface in pixels.
+   */
   PIKEFUN int `h()
   {
     CHECK_INIT(); /* Make sure this is inited */
     push_int(THIS->_s->h);
   }
+  PIKEFUN int `w()
+  {
+    CHECK_INIT(); /* Make sure this is inited */
+    push_int(THIS->_s->w);
+  }
+
 #if 0
   PIKEFUN int `pitch()
   {
@@ -1054,11 +1123,10 @@ PIKECLASS Surface {
     push_int(THIS->_s->pitch);
   }
 #endif
-  PIKEFUN int `w()
-  {
-    CHECK_INIT(); /* Make sure this is inited */
-    push_int(THIS->_s->w);
-  }
+
+  /*! @decl SDL.Rect clip_rect
+   *!  This is the clipping rectangle as set by @[set_clip_rect()].
+   */
   PIKEFUN int `clip_rect()
   {
     struct object *rect;
@@ -1067,6 +1135,9 @@ PIKECLASS Surface {
     OBJ2_RECT(rect)->rect = THIS->_s->clip_rect;
     push_object(rect);
   }
+  /*! @decl SDL.PixelFormat format
+   *!   The pixel format of this surface.
+   */
   PIKEFUN int `format()
   {
     struct object *fmt;
@@ -1078,10 +1149,14 @@ PIKECLASS Surface {
 
 
   /*! @decl int lock()
-   *! This methods locks the surface to allow direct access to the pixels using the
-   *! @[get_pixel()] and @[set_pixel()] methods. Note that although all surfaces in SDL don't require
-   *! locking, you still need to call this method to enable the set/get pixel
-   *! methods. You should unlock the surface when you're doing modifying it.
+   *!
+   *! This methods locks the surface to allow direct access to the pixels
+   *! using the @[get_pixel()] and @[set_pixel()] methods.
+   *!
+   *! @note
+   *!   Note that although all surfaces in SDL don't require locking,
+   *!   you still need to call this method to enable the set/get pixel
+   *!   methods. You should unlock the surface when you're doing modifying it.
    *!
    *! @note
    *!   Calling this method multiple times means that you need to call
@@ -1104,9 +1179,12 @@ PIKECLASS Surface {
   }
   
   /*! @decl void unlock()
+   *!
    *! Surfaces that were previously locked using @[lock()] must be
-   *! unlocked with @[unlock()].  Surfaces should be unlocked as soon
-   *! as possible.
+   *! unlocked with @[unlock()].
+   *!
+   *! Surfaces should be unlocked as soon as possible.
+   *!
    *! @seealso
    *!  @[lock()]
    */
@@ -1120,14 +1198,28 @@ PIKECLASS Surface {
 
   /*! @decl SDL.Surface init(int flags, int width, int height, int depth, @
    *!                        int Rmask, int Gmask, int Bmask, int Amask)
+   *!
    *! This (re)initializes this surface using the specified
-   *! parameters.  Any previously allocated data will be freed. 
-   *! If @b{depth@} is 8 bits an empty palette is allocated for the surface,
-   *! otherwise a 'packed-pixel' @[SDL.PixelFormat] is created using
-   *! the @b{[RGBA]mask@}'s provided. @b{width@} and @b{height@} specifies
-   *! the desired size of the image. The @b{flags@} specifies the type of
-   *! surface that should be created. It is an OR'd combination of the
-   *! following possible values:
+   *! parameters.
+   *!
+   *! Any previously allocated data will be freed.
+   *!
+   *! @param depth
+   *! @param Rmask
+   *! @param Gmask
+   *! @param Bmask
+   *! @param Amask
+   *!   If @[depth] is 8 bits an empty palette is allocated for the surface,
+   *!   otherwise a 'packed-pixel' @[SDL.PixelFormat] is created using
+   *!   the @b{[RGBA]mask@}'s provided.
+   *!
+   *! @param width
+   *! @param height
+   *!   @[width] and @[height] specify the desired size of the image.
+   *!
+   *! @param flags
+   *!   @[flags] specifies the type of surface that should be created.
+   *!   It is an OR'd combination of the following possible values:
    *! 
    *! @dl
    *!   @item SDL.SWSURFACE
@@ -1163,10 +1255,13 @@ PIKECLASS Surface {
    *!   nonzero), then the SDL.SRCALPHA flag is automatically set. You
    *!   may remove this flag by calling @[set_alpha()] after surface
    *!   creation.
+   *!
    *! @returns
    *!  A reference to itself.
+   *!
    *! @note
    *!  If this method fails, the surface will become uninitialized.
+   *!
    *! @seealso
    *!  @[set_image()]
    */
@@ -1186,10 +1281,15 @@ PIKECLASS Surface {
   }
 
   /*!  @decl SDL.Surface set_image(Image.Image image, int|void flags)
-   *!  @decl SDL.Surface set_image(Image.Image image, Image.Image alpha, int|void flags) 
+   *!  @decl SDL.Surface set_image(Image.Image image, Image.Image alpha, @
+   *!                              int|void flags) 
+   *!
    *! This (re)initializes this surface from the @[Image.Image] in
-   *! @b{image@}. Any previously allocated data will be freed.
-   *! If initialization is successful, this surface will use RGBA8888
+   *! @[image].
+   *!
+   *! Any previously allocated data will be freed.
+   *!
+   *! If initialization is successful, this surface will use @tt{RGBA8888@}
    *! format. For good blitting performance, it should be converted to
    *! the display format using @[display_format()].
    *! 
@@ -1201,11 +1301,11 @@ PIKECLASS Surface {
    *!   doesn't support this, only the alpha value of the red color is
    *!   used in the conversion. When this calling convention is used,
    *!   the surface alpha value of @b{image@} is ignored.
+   *!
    *! @param flags
-   *! 
-   *! When present this specifies the type of surface that should be
-   *! created. It is an OR'd combination of the following possible
-   *! values:
+   *!   When present this specifies the type of surface that should be
+   *!   created. It is an OR'd combination of the following possible
+   *!   values:
    *! 
    *! @dl
    *!   @item SDL.SWSURFACE
@@ -1220,7 +1320,6 @@ PIKECLASS Surface {
    *!     (which are often accelerated).
    *!
    *!   @item SDL.SRCCOLORKEY
-   *!     
    *!     This flag turns on colourkeying for blits from this
    *!     surface. If SDL.HWSURFACE is also specified and colourkeyed
    *!     blits are hardware-accelerated, then SDL will attempt to
@@ -1236,10 +1335,13 @@ PIKECLASS Surface {
    *!     enabled automatically. Use @[set_alpha()] to modify this
    *!     flag at a later point.
    *! @enddl
+   *!
    *! @note
    *!  If this method fails, the surface will become uninitialized.
+   *!
    *! @returns
    *!  A reference to itself.
+   *!
    *! @seealso
    *!  @[init()]
    */
@@ -1401,8 +1503,20 @@ PIKECLASS Surface {
 
    /*! @decl object blit(SDL.Surface dst, SDL.Rect|void srcrect,@
     *!                   SDL.Rect|void dstrect)
-    *! @fixme
-    *!   Document this function
+    *!
+    *! Perform a blit from this surface to the @[dst] surface.
+    *!
+    *! @param dst
+    *!   Destination @[Surface] for the blit.
+    *!
+    *! @param srcrect
+    *!   Optional source @[Rect]. If @[UNDEFINED] the entire source @[Surface]
+    *!   will be copied.
+    *!
+    *! @param dstrect
+    *!   Optional destination @[Rect]. Only the position fields
+    *!   @tt{x@} and @tt{y@} values are used. If @[UNDEFINED] the
+    *!   blit will be performed to position @tt{0, 0@}.
     */
   PIKEFUN object blit(object dst, object|void _srcrect, object|void _dstrect) {
     SDL_Rect *srcrect = NULL, *dstrect = NULL;
@@ -1426,8 +1540,10 @@ PIKECLASS Surface {
 
   /*! @decl object fill_rect(int color, SDL.Rect dstrect)
    *!
-   *! @fixme
-   *!   Document this function
+   *! Fill a rectangle with a solid color.
+   *!
+   *! @seealso
+   *!   @[fill()]
    */
   PIKEFUN object fill_rect(int color, object dstrect) {
     CHECK_INIT();
@@ -1438,8 +1554,10 @@ PIKECLASS Surface {
 
   /*! @decl object fill(int color)
    *!
-   *! @fixme
-   *!   Document this function
+   *! Fill the entire surface with a solid color.
+   *!
+   *! @seealso
+   *!   @[fill_rect()]
    */
   PIKEFUN object fill(int color) {
     CHECK_INIT();
@@ -1449,6 +1567,11 @@ PIKECLASS Surface {
 
   /*! @decl object set_color_key(int flag, int key)
    *!
+   *! Set or clear the color key (aka transparent pixel) for a the surface.
+   *! Also control whether RLE-accelleration is enabled or not.
+   *!
+   *! @param flag
+   *!   
    *! @fixme
    *!   Document this function
    */
