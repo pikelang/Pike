@@ -606,7 +606,10 @@ class protocol
   }
 };
 
-//! Implements a Domain Name Service (DNS) server.
+//! Base class for implementing a Domain Name Service (DNS) server.
+//!
+//! This class is typically used by inheriting it,
+//! and overloading @[reply_query()] and @[handle_response()].
 class server
 {
   //!
@@ -645,8 +648,13 @@ class server
   //!
   //! Overload this function to implement the proper lookup.
   //!
+  //! @note
+  //!   To indicate the default failure @[cb] must be called with an
+  //!   argument of @expr{0@} (zero), and @expr{0@} (zero) be returned.
+  //!
   //! @returns
-  //!   Returns @expr{0@} (zero) on failure, or a result mapping on success:
+  //!   Returns @expr{0@} (zero) when the @[cb] callback will be used,
+  //!   or a result mapping if not:
   //!   @mapping
   //!     @member int "rcode"
   //!     @member array(mapping(string:string|int))|void "an"
@@ -673,6 +681,10 @@ class server
     return 0;
   }
 
+  //! Handle a query.
+  //!
+  //! This function calls @[reply_query()],
+  //! and dispatches the result to @[send_reply()].
   protected void handle_query(mapping q, mapping m, Stdio.UDP udp)
   {
     int(0..1) result_available = 0;
@@ -691,11 +703,19 @@ class server
     }
   }
 
+  //! Handle a query response (stub).
+  //!
+  //! Overload this function to handle responses to possible recursive queries.
   protected void handle_response(mapping r, mapping m, Stdio.UDP udp)
   {
     // This is a stub intended to simplify servers which allow recursion
   }
 
+  //! Low-level DNS-data receiver.
+  //!
+  //! This function receives the raw DNS-data from the @[Stdio.UDP] socket
+  //! @[udp], decodes it, and dispatches the decoded DNS request to
+  //! @[handle_query()] and @[handle_response()].
   protected private void rec_data(mapping m, Stdio.UDP udp)
   {
     mixed err;
@@ -715,7 +735,24 @@ class server
       handle_query(q, m, udp);
   }
 
-  void create(int|string|void arg1, string|int ... args)
+  //! @decl void create()
+  //! @decl void create(int port)
+  //! @decl void create(string ip)
+  //! @decl void create(string ip, int port)
+  //! @decl void create(string ip, int port, string|int ... more)
+  //!
+  //! Open one or more new DNS server ports.
+  //!
+  //! @param ip
+  //!   The IP to bind to. Defaults to @expr{0@} (ie ANY).
+  //!
+  //! @param port
+  //!   The port number to bind to. Defaults to @expr{53@}.
+  //!
+  //! @param more
+  //!   Optional further DNS server ports to open.
+  //!   Must be a set of @[ip], @[port] argument pairs.
+  protected void create(int|string|void arg1, string|int ... args)
   {
     if(!arg1 && !sizeof(args))
       arg1 = 53;
@@ -748,7 +785,7 @@ class server
 
   }
 
-  static void destory()
+  protected void destory()
   {
     if(sizeof(ports))
     {
@@ -1004,17 +1041,19 @@ class client
     }
   }
 
-//! perform a syncronous query
+//! Perform a syncronous DNS query.
 //! 
 //! @param s
-//!   result of @[Protocols.DNS.protocol.mkquery]
+//!   Result of @[Protocols.DNS.protocol.mkquery]
 //! @returns
 //!  mapping containing query result or 0 on failure/timeout
 //!
 //! @example
-//! // perform a hostname lookup, results stored in r->an
-//! object d=Protocols.DNS.client();
-//! mapping r=d->do_sync_query(d->mkquery("pike.ida.liu.se", C_IN, T_A));
+//!   @code
+//!     // Perform a hostname lookup, results stored in r->an
+//!     object d=Protocols.DNS.client();
+//!     mapping r=d->do_sync_query(d->mkquery("pike.ida.liu.se", C_IN, T_A));
+//!   @endcode
   mapping do_sync_query(string s)
   {
     int i;
