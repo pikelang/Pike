@@ -71,7 +71,6 @@ testfont binary
 /lib/7.6/modules/Standards.pmod/UUID.pmod/module.pmod foreign_ident
 /lib/7.6/modules/Stdio.pmod/module.pmod foreign_ident
 /lib/7.6/modules/_Charset.pmod foreign_ident
-/lib/7.6/modules/__default.pmod foreign_ident
 /lib/include/profiling.h foreign_ident
 /lib/modules/ADT.pmod/BitBuffer.pike foreign_ident
 /lib/modules/ADT.pmod/History.pike foreign_ident

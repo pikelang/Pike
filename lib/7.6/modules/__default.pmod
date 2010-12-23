@@ -1,5 +1,5 @@
 // Compatibility namespace
-// $Id: __default.pmod,v 1.15 2009/03/17 12:26:02 grubba Exp $
+// $Id$
 
 #pike 7.7
 
@@ -8,7 +8,7 @@
 //! The symbols in this namespace will appear in
 //! programs that use @tt{#pike 7.6@} or lower.
 
-//! @decl inherit predef::
+//! @decl inherit 7.8::
 
 protected array(array(int|string)) _describe_program(program p)
 {
