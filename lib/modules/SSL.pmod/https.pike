@@ -70,7 +70,7 @@ class conn {
     sslfile->set_write_callback(write_callback);
   }
 
-  void create(object f)
+  protected void create(object f)
   {
     sslfile = f;
     sslfile->set_nonblocking(read_callback, 0, 0);
@@ -80,7 +80,7 @@ class conn {
 class no_random {
   object arcfour = Crypto.Arcfour();
   
-  void create(string|void secret)
+  protected void create(string|void secret)
   {
     if (!secret)
       secret = sprintf("Foo!%4c", time());
@@ -156,7 +156,7 @@ int main()
     return -17;
 }
 
-void create()
+protected void create()
 {
 #ifdef SSL3_DEBUG
   werror("https->create\n");
