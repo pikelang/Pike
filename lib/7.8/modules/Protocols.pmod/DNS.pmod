@@ -29,3 +29,37 @@ class server
     ::create(arg1, @args);
   }
 }
+
+//! Pike 7.8 compatibility version of @[predef::Protocols.DNS.client].
+class client
+{
+  //! Based on the current Protocols.DNS.client.
+  inherit DNS::client;
+
+  //! create() used to be visible.
+  //!
+  //! @seealso
+  //!   @[::create()]
+  void create(void|string|array(string) server,
+	      void|int|array(string) domain)
+  {
+    ::create(server, domain);
+  }
+}
+
+//! Pike 7.8 compatibility version of @[predef::Protocols.DNS.async_client].
+class async_client
+{
+  //! Based on the current Protocols.DNS.server.
+  inherit DNS::async_client;
+
+  //! create() used to be visible.
+  //!
+  //! @seealso
+  //!   @[::create()]
+  void create(void|string|array(string) server,
+	      void|string|array(string) domain)
+  {
+    ::create(server, domain);
+  }
+}

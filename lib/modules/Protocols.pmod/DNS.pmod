@@ -912,7 +912,8 @@ class client
 
   array(string) nameservers = ({});
   array domains = ({});
-  void create(void|string|array(string) server, void|int|array(string) domain)
+  protected void create(void|string|array(string) server,
+			void|int|array(string) domain)
   {
     if(!server)
     {
@@ -1349,6 +1350,7 @@ class client
     return ret;
   }
 
+  //!
   array(string) get_mx(string host)
   {
     mapping m;
@@ -1380,6 +1382,7 @@ class client
 #define GIVE_UP_DELAY (RETRIES * RETRY_DELAY + REMOVE_DELAY)*2
 
 // FIXME: Randomized source port!
+//!
 class async_client
 {
   inherit client;
@@ -1562,7 +1565,9 @@ class async_client
 	       }, callback, @args);
   }
 
-  void create(void|string|array(string) server, void|string|array(string) domain)
+  //!
+  protected void create(void|string|array(string) server,
+			void|string|array(string) domain)
   {
     if(!udp::bind(0))
       error( "DNS: failed to bind a port.\n" );
