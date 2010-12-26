@@ -2,6 +2,20 @@
 
 /* $Id$
  *
+ * The SSL3 Protocol is specified in the following RFCs and drafts:
+ *
+ *   SSL 3.0			draft-freier-ssl-version3-02.txt
+ *
+ *   SSL 3.1/TLS 1.0		RFC 2246
+ *   AES Ciphers for TLS 1.0	RFC 3268
+ *   Extensions for TLS 1.0	RFC 3546
+ *
+ *   SSL 3.2/TLS 1.1		RFC 4346
+ *   Extensions for TLS 1.1	RFC 4366
+ *   ECC Ciphers for TLS 1.1	RFC 4492
+ *
+ *   SSL 3.3/TLS 1.2		RFC 5246
+ *
  */
 
 //! Protocol constants
