@@ -203,7 +203,7 @@ class DES
 {
   inherit Crypto.CBC;
 
-  void create() { ::create(Crypto.DES()); }
+  protected void create() { ::create(Crypto.DES()); }
 
   this_program set_encrypt_key(string k)
   {
@@ -223,7 +223,7 @@ class DES3
 {
   inherit Crypto.CBC;
 
-  void create() {
+  protected void create() {
     ::create(Crypto.DES3());
   }
 
@@ -243,13 +243,13 @@ class DES3
 class IDEA
 {
   inherit Crypto.CBC;
-  void create() { ::create(Crypto.IDEA()); }
+  protected void create() { ::create(Crypto.IDEA()); }
 }
 
 class AES
 {
   inherit Crypto.CBC;
-  void create() { ::create(Crypto.AES()); }
+  protected void create() { ::create(Crypto.AES()); }
 }
 
 //!
@@ -355,7 +355,7 @@ class DHKeyExchange
   Gmp.mpz other; /* Other party's value */
   Gmp.mpz secret; /* our =  g ^ secret mod p */
 
-  void create(DHParameters p) {
+  protected void create(DHParameters p) {
     parameters = p;
   }
 
