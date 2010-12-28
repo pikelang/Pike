@@ -51,7 +51,7 @@ int bind(int port, function callback, string|void ip)
 int listen_fd(int fd, function callback)
 {
   accept_callback = callback;
-  return socket::listen_fd(fd, callback);
+  return socket::listen_fd(fd, ssl_callback);
 }
 
 Stdio.File socket_accept()
