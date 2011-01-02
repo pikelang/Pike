@@ -251,8 +251,13 @@ string parse_string(string str)
 
 string allocate_string(string orig_str)
 {
-  string str = parse_string(orig_str);
-  string str_sym = strings[str];
+  string str, str_sym;
+
+  if (sizeof(orig_str) >= 2 && `==('"', orig_str[0], orig_str[-1]))
+    str = parse_string(orig_str);
+  else
+    str = orig_str;
+  str_sym = strings[str];
   if (str_sym) return str_sym;
 
   if (String.width(str)>8) {
