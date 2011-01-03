@@ -4,13 +4,8 @@ Changes since Pike 7.8.352 (third 7.8 release):
 Extensions and New Functions
 ----------------------------
 
-FIXME: Complete to about 1 Apr 2010
-
 o Added module Search. 
   FIXME: Needs a couple of paragraphs of description.
-
-o ADT.Heap->values and ->num_values can now be overloaded
-  FIXME: TOMUCHINFORMATION? 
 
 o has_prefix now works on objects.
 
@@ -21,7 +16,12 @@ o Standards.JSON
 o Protocols.HTTP.Session will no longer override an existing
   content-type header in async_do_method_url.
 
-o Updated timezone data to tzdata2009u.
+o Protocols.HTTP
+
+  Allow directly specifying the body of a POST request (needed for the Google
+  Apps API).
+
+o Updated timezone data to tzdata2010l.
 
 o String.normalize_space
 
@@ -32,20 +32,41 @@ o String.trim_all_whites
 
   Extended to the entire range of Unicode white spaces. (And is faster.)
 
-o Protocols.HTTP
-
-  Allow directly specifying the body of a POST request (needed for the Google
-  Apps API).
-
 o Tools.PV and pike -x pv now works with GTK2 as well as GTK.
 
 o Integer constants exported by modules can now be used in cpp expressions.
 
+o Modules/programs that have the constant "dont_dump_program" will not
+  be dumped on installation. This is used to prevent dumping of
+  programs that check for external dependencies at compile time such
+  as the MySQL module.
+
+o Added Thread.Queue.peek_array.
+
+o Fixed stack overrun bug in Nettle.CBC and Nettle.Proxy. This is not
+  belived to be a security issue.
+
+o Added System.getloadavg() on platforms that support the getloadavg() call.
+
+o SSL
+
+  Added support for AES to SSL3, and fixed bug that prevented some
+  handshake failure alers to be sent to the client.
+
+o ADT.Heap->values and ->num_values can now be overloaded.
 
 Optimizations
 -------------
 
 o MIME should now use 1/3 less memory when decoding big messages.
+
+o Improved performance of Process.run.
+
+o Nettle.hash
+
+  Disallow threads during hashing of small strings (current threshold is
+  1 MB).  This change improves ApacheBench numbers ~20% for a Roxen
+  benchmark on a quad-core Core i5.
 
 
 Deprecations
@@ -73,6 +94,9 @@ o Signal handlers in GTK2 do no longer get their arguments in the
 
 Bug fixes
 ---------
+
+o Fixed backtraces when Protocols.HTTP.Query objects where garbage
+  collected. [bug 5730]
 
 o Fixed problem with Calendar.month_from_yday() when applied on week
   53. [bug 5303]
@@ -128,6 +152,8 @@ o Fixed several issues related to lables on the X and Y axises
 
 o Fixed encoding/decoding bug in "pike -x httpserver" that prevented
   files with space in the name for being accessable.
+
+o Fixed bug that prevented literal zero to be considered a constant.
 
 
 Building and installing
