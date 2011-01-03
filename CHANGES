@@ -4,6 +4,16 @@ Changes since Pike 7.8.352 (third 7.8 release):
 Extensions and New Functions
 ----------------------------
 
+FIXME: Complete to about 1 Apr 2010
+
+o Added module Search. 
+  FIXME: Needs a couple of paragraphs of description.
+
+o ADT.Heap->values and ->num_values can now be overloaded
+  FIXME: TOMUCHINFORMATION? 
+
+o has_prefix now works on objects.
+
 o Standards.JSON
 
   New module for encoding and decoding JSON data. Implemented in C.
@@ -20,7 +30,7 @@ o String.normalize_space
 
 o String.trim_all_whites
 
-  Extended to the entire range of Unicode white spaces.
+  Extended to the entire range of Unicode white spaces. (And is faster.)
 
 o Protocols.HTTP
 
@@ -30,6 +40,12 @@ o Protocols.HTTP
 o Tools.PV and pike -x pv now works with GTK2 as well as GTK.
 
 o Integer constants exported by modules can now be used in cpp expressions.
+
+
+Optimizations
+-------------
+
+o MIME should now use 1/3 less memory when decoding big messages.
 
 
 Deprecations
@@ -57,6 +73,14 @@ o Signal handlers in GTK2 do no longer get their arguments in the
 
 Bug fixes
 ---------
+
+o Fixed problem with Calendar.month_from_yday() when applied on week
+  53. [bug 5303]
+
+o Fixed leak in the PNG decoder for images with tRNS chunk.
+
+o System.normalize_path no long fails for files with 8-bit chars in
+  their names.
 
 o Support undocumented OS behaviour on out-of-band data returning
   EOPNOTSUPP and ECONNRESET when a stream is half closed.
