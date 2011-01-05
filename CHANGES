@@ -32,7 +32,7 @@ o String.trim_all_whites
 
   Extended to the entire range of Unicode white spaces. (And is faster.)
 
-o Tools.PV and pike -x pv now works with GTK2 as well as GTK.
+o Tools.PV and pike -x pv now work with GTK2 as well as GTK.
 
 o Integer constants exported by modules can now be used in cpp expressions.
 
@@ -44,16 +44,17 @@ o Modules/programs that have the constant "dont_dump_program" will not
 o Added Thread.Queue.peek_array.
 
 o Fixed stack overrun bug in Nettle.CBC and Nettle.Proxy. This is not
-  belived to be a security issue.
+  belived to have been a security issue.
 
 o Added System.getloadavg() on platforms that support the getloadavg() call.
 
 o SSL
 
   Added support for AES to SSL3, and fixed bug that prevented some
-  handshake failure alers to be sent to the client.
+  handshake failure alerts to be sent to the client.
 
 o ADT.Heap->values and ->num_values can now be overloaded.
+
 
 Optimizations
 -------------
@@ -64,15 +65,15 @@ o Improved performance of Process.run.
 
 o Nettle.hash
 
-  Disallow threads during hashing of small strings (current threshold is
-  1 MB).  This change improves ApacheBench numbers ~20% for a Roxen
+  Avoid allowing threads during hashing of small strings (current threshold
+  is 1 MB). This change improves ApacheBench numbers ~20% for a Roxen
   benchmark on a quad-core Core i5.
 
 
 Deprecations
 ------------
 
-o The libpq based old Postgres driver is now deprecated.  The new pgsql
+o The libpq based old Postgres driver is now deprecated. The new pgsql
   driver is faster, better tested, more stable, maintained, has more
   features, does not depend on external libraries and is less filling.
 
@@ -81,7 +82,7 @@ Incompatible changes
 --------------------
 
 o Signal handlers in GTK2 do no longer get their arguments in the
-  form of an array.  The prototype for a signal handler which was
+  form of an array. The prototype for a signal handler which was
   previously e.g.
 
     int query_tooltip(GTK2.Widget w, array(mixed) params, mixed callback_arg)
@@ -117,7 +118,7 @@ o Use nanosleep() when available instead of poll or select hacks for
 o Fixed dangling cache reference in prepared statements when using CREATE
   statements via Sql.pgsql.
 
-o Fixed broken (autore)connect logic in Sql.pgsql.
+o Fixed broken (auto-re-) connect logic in Sql.pgsql.
 
 o Improved widestring support for Parser.Tabular.
 
@@ -136,8 +137,8 @@ o Fixed locking problem in Mysql.
 
 o Fixed NULL-deref for compilation errors in range expressions.
 
-o Fixes a segfault occuring if exit() is used from a thread when
-  cleanup-on-exit is compiled in.
+o Fixed a segfault occuring if exit() is used from a thread when
+  the Pike runtime has been compiled with cleanup-on-exit enabled.
 
 o Fixed so than an existing content-type is not overriden in
   async_do_method_url.
@@ -151,15 +152,15 @@ o Fixed several issues related to lables on the X and Y axises
   in Graphics.Graph.
 
 o Fixed encoding/decoding bug in "pike -x httpserver" that prevented
-  files with space in the name for being accessable.
+  files with space in the name from being accessable.
 
-o Fixed bug that prevented literal zero to be considered a constant.
+o Fixed bug that prevented the literal zero from being considered a constant.
 
 
 Building and installing
 -----------------------
 
-o Fixed som library searchpath issues.
+o Fixed some library searchpath issues.
 
 o Some potential fixes for --enable-pikelib mode on platforms had
   problems with the final linking.
