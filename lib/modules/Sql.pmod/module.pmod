@@ -19,7 +19,21 @@ program `->Null() {return Val->Null;}
 Val.Null `->NULL() {return Val->null;}
 //! @endignore
 
-//! @decl program Null;
+//! @class Null
+//!   Class used to implement the SQL NULL value.
+//!
+//! @deprecated Val.NULL
+//!
+//! @seealso
+//!   @[Val.Null], @[Val.null], @[Sql.NULL]
+
+//! @endclass
+
 //! @decl Val.Null NULL;
 //!
-//! @deprecated Val.Null, Val.null
+//!   The SQL NULL value.
+//!
+//! @deprecated Val.null
+//!
+//! @seealso
+//!   @[Val.null]

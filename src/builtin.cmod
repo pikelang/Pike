@@ -3517,20 +3517,21 @@ PMOD_EXPORT void append_list_node(struct pike_list_node *node,
   add_ref(new_node);
 }
 
-/*! @module Sql
+/*! @module Builtin
  */
 
-/*! @class Null
+/*! @class SqlNull
  *!
- *! This class is used to implement the SQL NULL value.
+ *! This class is used to implement the low-level aspects of @[Val.Null].
  *!
  *! @note
- *!   There's typically only one object of this class: @[Sql.NULL],
- *!   but some databases (eg Oracle) have multiple types of NULL,
- *!   in which case they all inherit this class.
+ *!   This class should typically not be used directly. Use
+ *!   @[Val.Null] instead.
+ *!
+ *! @deprecated Val.Null
  *!
  *! @seealso
- *!   @[Sql.NULL]
+ *!   @[Val.Null], @[Val.null]
  */
 PIKECLASS SqlNull
 {
