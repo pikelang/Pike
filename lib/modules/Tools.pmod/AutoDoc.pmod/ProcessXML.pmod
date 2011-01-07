@@ -1020,12 +1020,17 @@ class NScope
 	  switch(subtype) {
 	  case "method":
 	    if (n) {
-	      if (!h_scope) {
-		h_scope = NScope(thing, path);
+	      NScope scope = h_scope || symbols[n];
+	      if (!scope) {
+		scope = NScope(thing, path);
+	      } else if (!objectp(scope)) {
+		werror("%s is both a non-scope and a %s scope!\n",
+		       path + n, subtype);
+		scope = NScope(thing, path);
 	      } else {
-		h_scope->enterNode(thing);
+		scope->enterNode(thing);
 	      }
-	      symbols[n] = h_scope;
+	      symbols[n] = scope;
 	    }
 	    break;
 	  case "import":
@@ -1053,7 +1058,12 @@ class NScope
 	  default:
 	    // variable, constant, typedef, enum, etc.
 	    if (n) {
-	      symbols[n] = 1;
+	      if (objectp(symbols[n])) {
+		werror("%s is both a %s scope and a %O!\n",
+		       path + n, symbols[n]->type, subtype);
+	      } else {
+		symbols[n] = 1;
+	      }
 	    }
 	    break;
 	  }
@@ -1086,7 +1096,13 @@ class NScope
       case "arguments":
 	foreach(child->get_children(), SimpleNode arg) {
 	  if (arg->get_node_type() == XML_ELEMENT) {
-	    symbols[arg->get_attributes()->name] = 1;
+	    string arg_name = arg->get_attributes()->name;
+	    if (objectp(symbols[arg_name])) {
+	      werror("%s is both a %s scope and an argument!\n",
+		     path + arg_name, h_scope->type);
+	    } else {
+	      symbols[arg_name] = 1;
+	    }
 	  }
 	}
 	break;
@@ -1171,6 +1187,11 @@ class NScopeStack
       f->close();
     }
   }
+  protected string _sprintf(int c)
+  {
+    return sprintf("NScopeStack(num_scopes: %d, top: %O)",
+		   sizeof(stack), top);
+  }
   void reset()
   {
     top = scopes;
@@ -1183,7 +1204,8 @@ class NScopeStack
       error("No such symbol: %O in scope %O %O\n", symbol, top, stack);
     }
     if (!objectp(scope)) {
-      error("Symbol %O is not a scope.\n", symbol);
+      error("Symbol %s is not a scope.\n"
+	    "Stack: %O\n", top->path + symbol, stack);
     }
     stack += ({ top });
     top = scope;
