@@ -1957,6 +1957,14 @@ PIKEFUN int grab_input(int mode) {
 #ifdef HAVE_LIBSDL_JOYSTICK
 
 /*! @class Joystick
+ *!
+ *! Represents a joystick, gamepad or other similar input device attached to the system.
+ *!
+ *! You must call @[SDL.init()] with the @[SDL.INIT_JOYSTICK] flag to enable joystick support.
+ *!
+ *! All index numbers count from @expr{0@}.
+ *!
+ *! All @[SDL.Joystick] methods throw an exception if they are called on an uninitialized object.
  */
 
 #define CHECK_INIT() if((THIS->generation != joystick_generation) || (THIS->joystick == NULL)) { Pike_error("Joystick uninitialized!\n"); }
@@ -1980,8 +1988,13 @@ PIKECLASS Joystick {
 
   /*! @decl void create(int device_index)
    *!
-   *! @fixme
-   *!   Document this function
+   *! Opens the given joystick device for use.  
+   *!
+   *! @param device_index
+   *!  The @i{n@}th joystick device available to the system.
+   *!
+   *! @seealso
+   *!  @[SDL.num_joysticks()]
    */
   PIKEFUN void create(int device_index) {
     THIS->joystick = SDL_JoystickOpen(device_index);
@@ -1994,8 +2007,8 @@ PIKECLASS Joystick {
 
   /*! @decl int index()
    *!
-   *! @fixme
-   *!   Document this function
+   *! @returns
+   *!  The index of this joystick.
    */
   PIKEFUN int index() {
     CHECK_INIT();
@@ -2004,8 +2017,8 @@ PIKECLASS Joystick {
 
   /*! @decl int num_axes()
    *!
-   *! @fixme
-   *!   Document this function
+   *! @returns
+   *!  The number of axes available for this joystick.
    */
   PIKEFUN int num_axes() {
     CHECK_INIT();
@@ -2014,8 +2027,8 @@ PIKECLASS Joystick {
 
   /*! @decl int num_balls()
    *!
-   *! @fixme
-   *!   Document this function
+   *! @returns
+   *!  The number of trackballs available for this joystick.
    */
   PIKEFUN int num_balls() {
     CHECK_INIT();
@@ -2024,8 +2037,8 @@ PIKECLASS Joystick {
 
   /*! @decl int num_hats()
    *!
-   *! @fixme
-   *!   Document this function
+   *! @returns
+   *!  The number of hats available for this joystick.
    */
   PIKEFUN int num_hats() {
     CHECK_INIT();
@@ -2034,8 +2047,8 @@ PIKECLASS Joystick {
 
   /*! @decl int num_buttons()
    *!
-   *! @fixme
-   *!   Document this function
+   *! @returns
+   *!  The number of buttons available for this joystick.
    */
   PIKEFUN int num_buttons() {
     CHECK_INIT();
@@ -2044,8 +2057,18 @@ PIKECLASS Joystick {
 
   /*! @decl float get_axis(int axis)
    *!
-   *! @fixme
-   *!   Document this function
+   *! Returns the current position of the given axis.
+   *!
+   *! The returned value is a float between @expr{-1.0@} and @expr{1.0@}.
+   *!
+   *! @param axis
+   *!  The axis index.
+   *!
+   *! @returns
+   *!  The current position of the given axis. 
+   *!
+   *! @seealso
+   *!  @[num_axes()]
    */
   PIKEFUN float get_axis(int axis) {
     int axis_value;
@@ -2056,8 +2079,39 @@ PIKECLASS Joystick {
 
   /*! @decl int get_hat(int hat)
    *!
-   *! @fixme
-   *!   Document this function
+   *! Returns the current state of the given hat.  
+   *!
+   *! This is represented as an OR'd combination of one or more of the following constants:
+   *!
+   *! @dl
+   *!   @item 
+   *!     @[SDL.HAT_CENTERED]
+   *!   @item 
+   *!     @[SDL.HAT_UP]
+   *!   @item 
+   *!     @[SDL.HAT_RIGHT]
+   *!   @item 
+   *!     @[SDL.HAT_DOWN]
+   *!   @item 
+   *!     @[SDL.HAT_LEFT]
+   *!   @item 
+   *!     @[SDL.HAT_RIGHTUP]
+   *!   @item 
+   *!     @[SDL.HAT_RIGHTDOWN]
+   *!   @item 
+   *!     @[SDL.HAT_LEFTUP]
+   *!   @item 
+   *!     @[SDL.HAT_LEFTDOWN]
+   *! @enddl
+   *!
+   *! @param hat
+   *!  The hat index.
+   *!
+   *! @returns
+   *!  The current state of the given hat.
+   *!
+   *! @seealso
+   *!  @[num_hats()]
    */
   PIKEFUN int get_hat(int hat) {
     CHECK_INIT();
@@ -2066,8 +2120,17 @@ PIKECLASS Joystick {
 
   /*! @decl array(int) get_ball(int ball)
    *!
-   *! @fixme
-   *!   Document this function
+   *! Returns the axis change of the given trackball.  
+   *!
+   *! This is its relative motion along both axes since the last call to @[get_ball()].
+   *! It is returned as a 2-element array holding the values of @i{dx@} and @i{dy@} 
+   *! (- the motion deltas).
+   *! 
+   *! @returns
+   *!  The axis change of the given trackball.
+   *!
+   *! @seealso
+   *!  @[num_balls()]
    */
   PIKEFUN array(int) get_ball(int ball) {
     int dx, dy;
@@ -2081,8 +2144,18 @@ PIKECLASS Joystick {
 
   /*! @decl int get_button(int button)
    *!
-   *! @fixme
-   *!   Document this function
+   *! Returns the current state of the given button.
+   *!
+   *! This is @expr{1@} if the button is pressed, otherwise @expr{0@}.
+   *!
+   *! @param button
+   *!  The button index.
+   *!
+   *! @returns
+   *!  The current state of the given button.
+   *!
+   *! @seealso
+   *!  @[num_buttons()]
    */
   PIKEFUN int get_button(int button) {
     CHECK_INIT();
@@ -2091,8 +2164,11 @@ PIKECLASS Joystick {
 
   /*! @decl string name()
    *!
-   *! @fixme
-   *!   Document this function
+   *! @returns
+   *!  The implementation-dependent name of this joystick.
+   *!
+   *! @seealso
+   *!  @[SDL.joystick_name()]
    */
   PIKEFUN string name() {
     const char *name;
@@ -2113,8 +2189,11 @@ PIKECLASS Joystick {
 
 /*! @decl int num_joysticks()
  *!
- *! @fixme
- *!   Document this function
+ *! @returns
+ *!  The number of joysticks available to the system.
+ *!
+ *! @seealso
+ *!  @[SDL.Joystick] 
  */
 PIKEFUN int num_joysticks() {
   RETURN SDL_NumJoysticks();
@@ -2122,8 +2201,16 @@ PIKEFUN int num_joysticks() {
 
 /*! @decl string joystick_name(int device_index)
  *!
- *! @fixme
- *!   Document this function
+ *! Returns the implementation-dependent name of the @i{n@}th joystick device available to the system.
+ *! 
+ *! @param device_index
+ *!  The @i{n@}th joystick device.
+ *!
+ *! @returns
+ *!  The implementation-dependent name of the given joystick device. 
+ *!
+ *! @seealso
+ *!  @[SDL.Joystick->name()]
  */
 PIKEFUN string joystick_name(int device_index) {
   const char *name = SDL_JoystickName(device_index);
@@ -2137,8 +2224,13 @@ PIKEFUN string joystick_name(int device_index) {
 
 /*! @decl int joystick_opened(int device_index)
  *!
- *! @fixme
- *!   Document this function
+ *! Determines whether the given joystick device has already been opened.
+ *!
+ *! @param device_index
+ *!  The @i{n@}th joystick device.
+ *!  
+ *! @returns
+ *!  @expr{1@} if this device has already been opened, otherwise @expr{0@}. 
  */
 PIKEFUN int joystick_opened(int device_index) {
   RETURN SDL_JoystickOpened(device_index);
@@ -2146,8 +2238,7 @@ PIKEFUN int joystick_opened(int device_index) {
 
 /*! @decl void joystick_update()
  *!
- *! @fixme
- *!   Document this function
+ *! Updates the state of all open joysticks attached to the system.  
  */
 PIKEFUN void joystick_update() {
   SDL_JoystickUpdate();
@@ -2155,8 +2246,28 @@ PIKEFUN void joystick_update() {
 
 /*! @decl int joystick_event_state(int state)
  *!
- *! @fixme
- *!   Document this function
+ *! Enables, disables or queries the state of joystick event processing.  
+ *!
+ *! @param state
+ *!  One of the following constants:
+ *!  @dl
+ *!    @item 
+ *!     @[SDL.ENABLE]
+ *!
+ *!      Enables joystick event processing.
+ *!    @item 
+ *!     @[SDL.IGNORE]
+ *!
+ *!      Disables joystick event processing.
+ *!    @item 
+ *!     @[SDL.QUERY]
+ *!
+ *!      Queries the current state and returns it.
+ *!  @enddl
+ *!
+ *! @returns
+ *!   The current state of joystick event processing.  If @[state] was @[SDL.ENABLE] or @[SDL.IGNORE], 
+ *!   then processing will now be enabled or disabled, respectively.
  */
 PIKEFUN int joystick_event_state(int state) {
   RETURN SDL_JoystickEventState(state);
