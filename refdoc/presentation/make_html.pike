@@ -672,7 +672,8 @@ string parse_doc(Node n, void|int no_text) {
       lay->docbody + parse_text(c) + lay->_docbody;
 
   foreach(n->get_elements("group"), Node c) {
-    string name = c->get_first_element()->get_any_name();
+    Node header = c->get_first_element();
+    string name = header->get_any_name();
     switch(name) {
     case "param":
       foreach(c->get_elements("param"), Node d)
@@ -699,6 +700,19 @@ string parse_doc(Node n, void|int no_text) {
       break;
 
     case "deprecated":
+      ret += lay->dochead + String.capitalize(name) + lay->_dochead;
+      array(Node) replacements = header->get_elements("name");
+      if (sizeof(replacements)) {
+	ret += lay->docbody +
+	  "<p>Replaced by " +
+	  String.implode_nicely(map(replacements, parse_text)) + ".</p>\n" +
+	  lay->_docbody;
+      }
+      if (c = c->get_first_element("text")) {
+	ret += lay->docbody + parse_text(c) + lay->_docbody;
+      }
+      break;
+
     case "bugs":
     case "note":
     case "returns":
