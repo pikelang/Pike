@@ -399,7 +399,7 @@ protected class DocParserClass {
       string s = parser->parseIdents();
       if (!s)
         parseError("@deprecated: expected list identifier, got %O", arg);
-      res += xmltag("name", s);
+      res += xmltag("name", xmltag("ref", s));
       if (parser->peekToken() == EOF)
         return res;
       parser->eat(",");
