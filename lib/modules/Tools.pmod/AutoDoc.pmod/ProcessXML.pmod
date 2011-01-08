@@ -973,6 +973,7 @@ protected class DummyNScope(string name)
   }
 }
 
+//! A symbol lookup scope.
 class NScope
 {
   string name;
@@ -1004,6 +1005,42 @@ class NScope
     }
     this_program::path = path;
     enterNode(tree);
+  }
+
+  //! This function improves the symbol resolution by adding
+  //! implicit inherits for modules in compatibility namespaces.
+  void addImplicitInherits(string|void fallback_namespace)
+  {
+    switch(type) {
+    default:
+      return;
+    case "autodoc":
+      foreach(symbols;;int(1..)|NScope scope) {
+	if (objectp(scope)) {
+	  scope->addImplicitInherits();
+	}
+      }
+      break;
+    case "namespace":
+      if (inherits && sizeof(inherits) == 1) {
+	foreach(symbols;;int(1..)|NScope scope) {
+	  if (objectp(scope)) {
+	    scope->addImplicitInherits(values(inherits)[0]);
+	  }
+	}
+      }
+      break;
+    case "module":
+      if (!inherits) inherits = ([]);
+      string inh = fallback_namespace + (name/"::")[-1];
+      inherits["\0"+inh] = inh;
+      foreach(symbols;;int(1..)|NScope scope) {
+	if (objectp(scope)) {
+	  scope->addImplicitInherits(fallback_namespace);
+	}
+      }
+      break;
+    }
   }
 
   void enterNode(SimpleNode tree)
@@ -1191,6 +1228,10 @@ class NScopeStack
   {
     return sprintf("NScopeStack(num_scopes: %d, top: %O)",
 		   sizeof(stack), top);
+  }
+  void addImplicitInherits()
+  {
+    scopes->addImplicitInherits();
   }
   void reset()
   {
@@ -1562,6 +1603,8 @@ void resolveRefs(SimpleNode tree)
 {
   werror("Building the scope structure...\n");
   NScopeStack scopestack = NScopeStack(NScope(tree));
+  werror("Adding implicit inherits for compatibility modules...\n");
+  scopestack->addImplicitInherits();
   werror("Resolving inherits...\n");
   scopestack->reset();
   scopestack->resolveInherits();
