@@ -21,7 +21,7 @@ o Protocols.HTTP
   Allow directly specifying the body of a POST request (needed for the Google
   Apps API).
 
-o Updated timezone data to tzdata2010l.
+o Updated timezone data to tzdata2010o.
 
 o String.normalize_space
 
