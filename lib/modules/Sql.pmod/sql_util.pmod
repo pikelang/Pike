@@ -1,5 +1,5 @@
 /*
- * $Id: sql_util.pmod,v 1.25 2009/08/26 12:38:22 grubba Exp $
+ * $Id$
  *
  * Some SQL utility functions.
  * They are kept here to avoid circular references.
@@ -158,7 +158,7 @@ class MySQLUnicodeWrapper
 //!
 //! @note
 //! There's normally no need to use this class directly. It's used
-//! automatically when @[Mysql.set_unicode_decode_mode] is activated.
+//! automatically when @[mysql.set_unicode_decode_mode] is activated.
 {
   inherit UnicodeWrapper;
 

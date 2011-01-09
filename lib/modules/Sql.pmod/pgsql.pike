@@ -171,7 +171,7 @@ protected string _sprintf(int type, void|mapping flags)
 //! Specifies the database to connect to.  Not specifying this is
 //! only supported if the PostgreSQL backend has a default database
 //! configured.  If you do not want to connect to any live database,
-//! you can use @ref{template1@}.
+//! you can use @expr{"template1"@}.
 //!
 //! @param options
 //! Currently supports at least the following:
@@ -191,14 +191,14 @@ protected string _sprintf(int type, void|mapping flags)
 //!   @member string "client_encoding"
 //!	Character encoding for the client side, it defaults to using
 //!	the default encoding specified by the database, e.g.
-//!	@ref{UTF8@} or @ref{SQL_ASCII@}.
+//!	@expr{"UTF8"@} or @expr{"SQL_ASCII"@}.
 //!   @member string "standard_conforming_strings"
 //!	When on, backslashes in strings must not be escaped any longer,
 //!	@[quote()] automatically adjusts quoting strategy accordingly
 //!   @member string "escape_string_warning"
 //!	When on, a warning is issued if a backslash (\) appears in an
-//!	ordinary string literal and @[standard_conforming_strings] is off,
-//!	defaults to on
+//!	ordinary string literal and @expr{"standard_conforming_strings"@}
+//!	is off, defaults to on.
 //! @endmapping
 //! For the numerous other options please check the PostgreSQL manual.
 //!
@@ -323,7 +323,7 @@ void cancelquery()
   }
 }
 
-//! Changes the connection charset.  When set to @ref{UTF8@}, the query,
+//! Changes the connection charset.  When set to @expr{"UTF8"@}, the query,
 //! parameters and results can be Pike-native wide strings.
 //!
 //! @param charset
@@ -348,20 +348,20 @@ string get_charset()
 
 //! @returns
 //! Currently active runtimeparameters for
-//! the open session; these are initialised by the @ref{options@} parameter
+//! the open session; these are initialised by the @tt{options@} parameter
 //! during session creation, and then processed and returned by the server.
 //! Common values are:
 //! @mapping
 //!   @member string "client_encoding"
 //!	Character encoding for the client side, e.g.
-//!	@ref{UTF8@} or @ref{SQL_ASCII@}.
+//!	@expr{"UTF8"@} or @expr{"SQL_ASCII"@}.
 //!   @member string "server_encoding"
 //!	Character encoding for the server side as determined when the
-//!	database was created, e.g. @ref{UTF8@} or @ref{SQL_ASCII@}
+//!	database was created, e.g. @expr{"UTF8"@} or @expr{"SQL_ASCII"@}
 //!   @member string "DateStyle"
-//!	Date parsing/display, e.g. @ref{ISO, DMY@}
+//!	Date parsing/display, e.g. @expr{"ISO, DMY"@}
 //!   @member string "TimeZone"
-//!	Default timezone used by the database, e.g. @ref{localtime@}
+//!	Default timezone used by the database, e.g. @expr{"localtime"@}
 //!   @member string "standard_conforming_strings"
 //!	When on, backslashes in strings must not be escaped any longer
 //!   @member string "session_authorization"
@@ -372,7 +372,7 @@ string get_charset()
 //!   @member string "integer_datetimes"
 //!	Reports wether the database supports 64-bit-integer dates and times
 //!   @member string "server_version"
-//!	Shows the server version, e.g. @ref{8.3.3@}
+//!	Shows the server version, e.g. @expr{"8.3.3"@}
 //! @endmapping
 //!
 //! The values can be changed during a session using SET commands to the
@@ -1188,17 +1188,17 @@ void select_db(string dbname)
 //!    to.  A special case is the empty string, which matches all events,
 //!    and can be used as fallback function which is called only when the
 //!    specific condition is not handled.  Another special case is
-//!    @ref{_reconnect@} which gets called whenever the connection unexpectedly
-//!    drops and reconnects to the database.
+//!    @expr{"_reconnect"@} which gets called whenever the connection
+//!    unexpectedly drops and reconnects to the database.
 //!
 //! @param notify_cb
 //!    Function to be called on receiving a notification-event of
 //!    condition @ref{condition@}.
 //!    The callback function is invoked with
 //!	@expr{void notify_cb(pid,condition,extrainfo, .. args);@}
-//!    @ref{pid@} is the process id of the database session that originated
-//!    the event.  @ref{condition@} contains the current condition.
-//!    @ref{extrainfo@} contains optional extra information specified by
+//!    @tt{pid@} is the process id of the database session that originated
+//!    the event.  @tt{condition@} contains the current condition.
+//!    @tt{extrainfo@} contains optional extra information specified by
 //!    the database.
 //!    The rest of the arguments to @ref{notify_cb@} are passed
 //!    verbatim from @ref{args@}.
@@ -1287,7 +1287,7 @@ void create_db(string db)
 //! This function destroys a database and all the data it contains (assuming
 //! we have sufficient privileges to do so).  It is not possible to delete
 //! the database you're currently connected to.  You can connect to database
-//! @ref{template1@} to avoid connecting to any live database.
+//! @expr{"template1"@} to avoid connecting to any live database.
 //!
 //! @param db
 //! Name of the database to be deleted.

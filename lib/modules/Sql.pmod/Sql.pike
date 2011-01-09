@@ -1,5 +1,5 @@
 /*
- * $Id: Sql.pike,v 1.100 2009/11/18 10:20:22 grubba Exp $
+ * $Id$
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -433,7 +433,7 @@ protected class ZeroWrapper
   }
 }
 
-//! Instance of @[Zerowrapper] used by @[handle_extraargs()].
+//! Instance of @[ZeroWrapper] used by @[handle_extraargs()].
 protected ZeroWrapper zero = ZeroWrapper();
 
 //! Handle @[sprintf]-based quoted arguments

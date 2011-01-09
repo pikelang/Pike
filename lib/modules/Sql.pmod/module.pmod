@@ -22,7 +22,7 @@ Val.Null `->NULL() {return Val->null;}
 //! @class Null
 //!   Class used to implement the SQL NULL value.
 //!
-//! @deprecated Val.NULL
+//! @deprecated Val.Null
 //!
 //! @seealso
 //!   @[Val.Null], @[Val.null], @[Sql.NULL]

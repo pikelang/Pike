@@ -78,7 +78,7 @@ private string has_relexpires = "unknown";
 //! (backend process not running, not enough permissions..)
 //!
 //! @seealso
-//!   create
+//!   @[create]
 
 //! @decl string error()
 //!
@@ -88,7 +88,7 @@ private string has_relexpires = "unknown";
 //! times, will return the same result until a new error occurs).
 //!
 //! @seealso
-//!   big_query
+//!   @[big_query]
 
 //! @decl string host_info()
 //!
@@ -242,7 +242,7 @@ string simple_quote(string s)
 //! have enough permissions to do this).
 //!
 //! @seealso
-//!   drop_db
+//!   @[drop_db]
 void create_db(string db) {
 	big_query(sprintf("CREATE DATABASE %s",db));
 }
@@ -251,7 +251,7 @@ void create_db(string db) {
 //! we have enough permissions to do so).
 //!
 //! @seealso
-//!   create_db
+//!   @[create_db]
 void drop_db(string db) {
 	big_query(sprintf("DROP database %s",db));
 }
@@ -380,7 +380,7 @@ array(mapping(string:mixed)) list_fields (string table, void|string wild)
 //!
 //! It returns a postgres_result object (which conforms to the
 //! @[Sql.sql_result] standard interface for accessing data). I
-//! recommend using @[query()] for simpler queries (because it is
+//! recommend using @[Sql.Sql()->query()] for simpler queries (because it is
 //! easier to handle, but stores all the result in memory), and
 //! @[big_query()] for queries you expect to return huge amounts of
 //! data (it's harder to handle, but fetches results on demand).
