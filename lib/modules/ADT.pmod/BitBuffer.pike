@@ -1,5 +1,5 @@
 //
-// $Id: BitBuffer.pike,v 1.9 2007/10/06 13:43:41 nilsson Exp $
+// $Id$
 
 //! Implements a FIFO bit buffer, i.e. a buffer that operates on bits
 //! instead of bytes. It is not designed for performance, but as a way
@@ -13,9 +13,9 @@
 //!   > b->put1(2);
 //!   (1) Result: ADT.BitBuffer(11)
 //!   > b->put0(15);
-//!   (2) Result: ADT.BitBuffer("À\0"0)
+//!   (2) Result: ADT.BitBuffer("\300\0"0)
 //!   > b->drain();
-//!   (3) Result: "À\0"
+//!   (3) Result: "\300\0"
 //!   > sizeof(b);
 //!   (4) Result: 1
 
@@ -62,8 +62,12 @@ string drain() {
 protected int out_buffer, bib;
 
 //! Get @[bits] from the buffer.
+//!
 //! @throws
 //!   Throws an error in case of data underflow.
+//!
+//! @note
+//!   The bits are extracted with the most significant bit first.
 int get( int bits ) {
 
   while( bib<bits && sizeof(data)-dptr ) {
@@ -110,9 +114,14 @@ protected int in_buffer, bob;
 
 //! Put @[bits] number of bits with the value @[value] into the
 //! buffer.
+//!
 //! @note
 //!   @[value] must not be larger than what can be stored with the
 //!   number of bits given in @[bits].
+//!
+//! @note
+//!   The bits are added to the buffer with the most significant
+//!   bit first.
 this_program put( int value, int bits ) {
   //  werror("\n%O %O %O\n", bob, bib, bits);
   if(!bits) return this;
