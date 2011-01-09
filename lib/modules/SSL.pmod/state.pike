@@ -32,6 +32,7 @@ object compress;
 //! 64-bit sequence number.
 Gmp.mpz seq_num;    /* Bignum, values 0, .. 2^64-1 are valid */
 
+//!
 constant Alert = .alert;
 
 //! TLS IV prefix length.

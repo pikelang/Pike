@@ -84,17 +84,17 @@ enum KeyExchangeType {
   KE_rsa	= 1,	//! Rivest-Shamir-Adelman
   /* We ignore the distinction between dh_dss and dh_rsa for now. */
   KE_dh		= 2,	//! Diffie-Hellman
-  KE_dhe_dss	= 3,
-  KE_dhe_rsa	= 4,
-  KE_dh_anon	= 5,
+  KE_dhe_dss	= 3,	//! Diffie-Hellman DSS
+  KE_dhe_rsa	= 4,	//! Diffie-Hellman RSA
+  KE_dh_anon	= 5,	//! Diffie-Hellman Anonymous
   KE_dms	= 6,
 };
 
 //! Compression methods.
 enum CompressionType {
-  COMPRESSION_null = 0,	//! No compression.
-  COMPRESSION_deflate = 1,
-  COMPRESSION_lzs = 64,
+  COMPRESSION_null = 0,		//! No compression.
+  COMPRESSION_deflate = 1,	//! Deflate compression.
+  COMPRESSION_lzs = 64,		//! LZS compression.
 };
 
 /* Alert messages */

@@ -28,20 +28,48 @@ class CipherAlgorithm {
 
 //! Message Authentication Code interface.
 class MACAlgorithm {
-  string hash(object, Gmp.mpz);
+  //! @param packet
+  //!   @[Packet] to generate a MAC hash for.
+  //! @param seq_num
+  //!   Sequence number for the packet in the stream.
+  //! @returns
+  //!   Returns the MAC hash for the @[packet].
+  string hash(object packet, Gmp.mpz seq_num);
 }
 
 //! Cipher specification.
 class CipherSpec {
+  //! The algorithm to use for the bulk of the transfered data.
   program(CipherAlgorithm) bulk_cipher_algorithm;
+
   int cipher_type;
+
+  //! The Message Authentication Code to use for the packets.
   program(MACAlgorithm) mac_algorithm;
+
+  //! Indication whether the combination uses strong or weak
+  //! (aka exportable) crypto.
   int is_exportable;
+
+  //! The number of bytes in the MAC hashes.
   int hash_size;
+
+  //! The number of bytes of key material used on initialization.
   int key_material;
+
+  //! The number of bytes of random data needed for initialization vectors.
   int iv_size;
+
+  //! The effective number of bits in @[key_material].
+  //!
+  //! This is typically @expr{key_material * 8@}, but for eg @[DES]
+  //! this is @expr{key_material * 7@}.
   int key_bits;
+
+  //! The function used to sign packets.
   function(object,string,ADT.struct:ADT.struct) sign;
+
+  //! The function used to verify the signature for packets.
   function(object,string,ADT.struct,Gmp.mpz:int(0..1)) verify;
 }
 
@@ -59,6 +87,8 @@ class mac_none
 //!   Note: This uses the algorithm from the SSL 3.0 draft.
 class MACsha
 {
+  inherit MACAlgorithm;
+
   protected constant pad_1 =  "6666666666666666666666666666666666666666";
   protected constant pad_2 = ("\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"
 			   "\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\");
@@ -128,6 +158,7 @@ class MACmd5 {
 //!
 //! This is the MAC algorithm used by TLS 1.0 and later.
 class MAChmac_sha {
+  inherit MACAlgorithm;
 
   protected string secret;
   protected Crypto.HMAC hmac;
@@ -182,7 +213,7 @@ protected string P_hash(Crypto.Hash hashfn, int hlen, string secret,
   return res[..(len-1)];
 } 
 
-//!
+//! The Pseudo Random Function used to derive the secret keys.
 string prf(string secret,string label,string seed,int len) { 
 
   string s1=secret[..(int)(ceil(sizeof(secret)/2.0)-1)];
@@ -236,19 +267,21 @@ class DES3
   }
 }
 
+//!
 class IDEA
 {
   inherit Crypto.CBC;
   protected void create() { ::create(Crypto.IDEA()); }
 }
 
+//!
 class AES
 {
   inherit Crypto.CBC;
   protected void create() { ::create(Crypto.AES()); }
 }
 
-//!
+//! Signing using RSA.
 ADT.struct rsa_sign(object context, string cookie, ADT.struct struct)
 {
   /* Exactly how is the signature process defined? */
@@ -267,7 +300,7 @@ ADT.struct rsa_sign(object context, string cookie, ADT.struct struct)
   return struct;
 }
 
-//!
+//! Verify an RSA signature.
 int(0..1) rsa_verify(object context, string cookie, ADT.struct struct,
 	       Gmp.mpz signature)
 {
@@ -279,7 +312,7 @@ int(0..1) rsa_verify(object context, string cookie, ADT.struct struct,
   return context->rsa->raw_verify(digest, signature);
 }
 
-//!
+//! Signing using DSA.
 ADT.struct dsa_sign(object context, string cookie, ADT.struct struct)
 {
   /* NOTE: The details are not described in the SSL 3 spec. */
@@ -288,7 +321,7 @@ ADT.struct dsa_sign(object context, string cookie, ADT.struct struct)
   return struct;
 }
 
-//!
+//! The NULL signing method.
 ADT.struct anon_sign(object context, string cookie, ADT.struct struct)
 {
   return struct;
@@ -342,6 +375,10 @@ class DHParameters
   }
 }
 
+//! Implements Diffie-Hellman key-exchange.
+//!
+//! The following key exchange methods are implemented here:
+//! @[KE_dhe_dss], @[KE_dhe_rsa] and @[KE_dh_anon].
 class DHKeyExchange
 {
   /* Public parameters */
@@ -373,7 +410,23 @@ class DHKeyExchange
   }
 }
 
-/* Return array of auth_method, cipher_spec */
+//! Lookup the crypto parameters for a cipher suite.
+//!
+//! @param suite
+//!   Cipher suite to lookup.
+//!
+//! @param version
+//!   Minor version of the SSL protocol to support.
+//!
+//! @returns
+//!   Returns @expr{0@} (zero) for unsupported combinations.
+//!   Otherwise returns an array with the following fields:
+//!   @array
+//!     @elem KeyExchangeType 0
+//!       Key exchange method.
+//!     @elem CipherSpec 1
+//!       Initialized @[CipherSpec] for the @[suite].
+//!   @endarray
 array lookup(int suite,int version)
 {
   CipherSpec res = CipherSpec();

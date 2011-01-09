@@ -5,7 +5,8 @@
 //#pragma strict_types
 
 //! SSL packet layer.
-//! SSL.connection inherits SSL.handshake, and in addition to the state in
+//!
+//! @[SSL.connection] inherits @[SSL.handshake], and in addition to the state in
 //! the handshake super class, it contains the current read and write
 //! states, packet queues. This object is responsible for receiving and
 //! sending packets, processing handshake packets, and providing a clear
