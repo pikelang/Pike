@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sqlite.cmod,v 1.30 2010/02/18 14:50:41 srb Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -174,18 +174,41 @@ PIKECLASS ResObj
     THIS->columns = sqlite3_column_count(THIS->stmt);
   }
 
+  /*! @decl int num_rows()
+   *!
+   *! @note
+   *!   This API is not supported for @[Sql.sqlite].
+   *!
+   *! @seealso
+   *!   @[Sql.sql_result()->num_rows()]
+   */
   PIKEFUN int num_rows() {
     Pike_error("Sql.SQLite: Number of rows not known in advance.\n");
   }
 
+  /*! @decl int num_fields()
+   *!
+   *! @seealso
+   *!   @[Sql.sql_result()->num_fields()]
+   */
   PIKEFUN int num_fields() {
     RETURN THIS->columns;
   }
 
+  /*! @decl int eof()
+   *!
+   *! @seealso
+   *!   @[Sql.sql_result()->eof()]
+   */
   PIKEFUN int eof() {
     RETURN THIS->eof;
   }
 
+  /*! @decl array(mapping(string:mixed)) fetch_fields()
+   *!
+   *! @seealso
+   *!   @[Sql.sql_result()->fetch_fields()]
+   */
   PIKEFUN array(mapping(string:mixed)) fetch_fields() {
     int i,t;
     for(i=0; i<THIS->columns; i++) {
@@ -220,6 +243,11 @@ PIKECLASS ResObj
     f_aggregate(THIS->columns);
   }
 
+  /*! @decl void seek(int skip)
+   *!
+   *! @seealso
+   *!   @[Sql.sql_result()->seek()]
+   */
   PIKEFUN void seek(int skip) {
     int i;
     for(i=0; i<skip; i++)
@@ -229,6 +257,11 @@ PIKECLASS ResObj
       }
   }
 
+  /*! @decl array fetch_row()
+   *!
+   *! @seealso
+   *!   @[Sql.sql_result()->fetch_row()]
+   */
   PIKEFUN array fetch_row() {
     int i;
     sqlite3_stmt *stmt = THIS->stmt;
@@ -296,17 +329,28 @@ PIKECLASS ResObj
 #undef THIS
 #define THIS THIS_SQLITE
 
-  /* @decl void create(string path)
+  /*! @decl void create(string path, mixed ... ignored)
+   *!
+   *! Open the SQLite database stored at @[path].
    */
   PIKEFUN void create(string path, mixed|void a, mixed|void b, mixed|void c)
     flags ID_PROTECTED;
   {
     pop_n_elems(args-1);
     f_string_to_utf8(1);
+    /* FIXME: Does the following work if THIS->db is already open? */
     ERR( sqlite3_open(path->str, &THIS->db), THIS->db );
     pop_stack();
   }
 
+  /*! @decl array|int query(string query, @
+   *!			    mapping(string|int:mixed)|void bindings)
+   *!
+   *! Perform a query against a SQLite database.
+   *!
+   *! @seealso
+   *!   @[Sql.Sql()->query()
+   */
   PIKEFUN array|int query(string query,
 			  mapping(string|int:mixed)|void bindings) {
 
@@ -382,6 +426,14 @@ PIKECLASS ResObj
     }
   }
 
+  /*! @decl ResObj big_query(string query, @
+   *!			     mapping(string|int:mixed)|void bindings)
+   *!
+   *! Perform a streaming query against a SQLite database.
+   *!
+   *! @seealso
+   *!   @[Sql.Sql()->big_query()
+   */
   PIKEFUN object big_query(string query,
 			   mapping(string|int:mixed)|void bindings) {
 
@@ -423,24 +475,50 @@ PIKECLASS ResObj
     push_object(res);
   }
 
+  /*! @decl int changes()
+   *!
+   *! Get the number of changes.
+   *!
+   *! @fixme
+   *!   Document this function properly.
+   */
   PIKEFUN int changes()
     optflags OPT_EXTERNAL_DEPEND;
   {
     RETURN sqlite3_changes(THIS->db);
   }
 
+  /*! @decl int total_changes()
+   *!
+   *! Get the total number of changes for this session.
+   *!
+   *! @fixme
+   *!   Document this function properly.
+   */
   PIKEFUN int total_changes()
     optflags OPT_EXTERNAL_DEPEND;
   {
     RETURN sqlite3_total_changes(THIS->db);
   }
 
+  /*! @decl void interrupt()
+   *!
+   *! @fixme
+   *!   Document this function.
+   */
   PIKEFUN void interrupt()
     optflags OPT_SIDE_EFFECT;
   {
     sqlite3_interrupt(THIS->db);
   }
 
+  /*! @decl string server_info()
+   *!
+   *! Get information about the SQLite library version.
+   *!
+   *! @seealso
+   *!   @[Sql.Sql()->server_info()]
+   */
   PIKEFUN string server_info()
     optflags OPT_TRY_OPTIMIZE;
   {
@@ -460,6 +538,13 @@ PIKECLASS ResObj
     push_longest (sqlite3_last_insert_rowid(THIS->db));
   }
 
+  /*! @decl string error()
+   *!
+   *! Get the latest error message.
+   *!
+   *! @seealso
+   *!   @[Sql.Sql()->error()]
+   */
   PIKEFUN string error()
     optflags OPT_EXTERNAL_DEPEND;
   {
@@ -467,19 +552,55 @@ PIKECLASS ResObj
     f_utf8_to_string(1);
   }
 
+  /*! @decl void select_db(string db)
+   *!
+   *! @note
+   *!   This operation is not supported for SQLite.
+   *!
+   *! @seealso
+   *!   @[Sql.Sql()->select_db()]
+   */
   PIKEFUN void select_db(string db) {
+    /* FIXME: This should be possible to support. */
     Pike_error("This operation is not possible with SQLite.\n");
   }
 
+  /*! @decl void create_db(string db)
+   *!
+   *! @note
+   *!   This operation is not supported for SQLite.
+   *!
+   *! @seealso
+   *!   @[Sql.Sql()->create_db()]
+   */
   PIKEFUN void create_db(string db) {
+    /* FIXME: This should be possible to support. */
     Pike_error("This operation is not possible with SQLite.\n");
   }
 
+  /*! @decl void drop_db(string db)
+   *!
+   *! @note
+   *!   This operation is not supported for SQLite.
+   *!
+   *! @seealso
+   *!   @[Sql.Sql()->drop_db()]
+   */
   PIKEFUN void drop_db(string db) {
+    /* FIXME: This should be possible to support. */
     Pike_error("This operation is not possible with SQLite.\n");
   }
 
+  /*! @decl array(string) list_dbs()
+   *!
+   *! @note
+   *!   This operation is not supported for SQLite.
+   *!
+   *! @seealso
+   *!   @[Sql.Sql()->list_dbs()]
+   */
   PIKEFUN array(string) list_dbs() {
+    /* FIXME: This should be possible to support. */
     Pike_error("This operation is not possible with SQLite.\n");
   }
 
