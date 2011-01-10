@@ -283,7 +283,6 @@ int handle_change_cipher(int c)
 
 string alert_buffer = "";
 string handshake_buffer = "";
-int handshake_finished = 0;
 
 //! Main receive handler. Returns a string of received application
 //! data, or 1 if a close was received, or -1 if an error occurred.
