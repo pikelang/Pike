@@ -2,6 +2,22 @@
 
 /* $Id$
  *
+ * The SSL3 Protocol is specified in the following RFCs and drafts:
+ *
+ *   SSL 3.0			draft-freier-ssl-version3-02.txt
+ *
+ *   SSL 3.1/TLS 1.0		RFC 2246
+ *   AES Ciphers for TLS 1.0	RFC 3268
+ *   Extensions for TLS 1.0	RFC 3546
+ *
+ *   SSL 3.2/TLS 1.1		RFC 4346
+ *   Extensions for TLS 1.1	RFC 4366
+ *   ECC Ciphers for TLS 1.1	RFC 4492
+ *
+ *   SSL 3.3/TLS 1.2		RFC 5246
+ *   Renegotiation Extension	RFC 5746
+ *   Authorization Extensions	RFC 5878
+ *
  */
 
 //! Protocol constants
@@ -51,7 +67,7 @@ constant CIPHER_algorithms = (< CIPHER_null,
 				CIPHER_aes256,
 #endif /* !WEAK_CRYPTO_40BIT (magic comment) */
 			     >);
-
+/* Hash algorithms as per RFC 5246 7.4.1.4.1. */
 constant HASH_none     = 0;
 constant HASH_md5      = 1;
 constant HASH_sha      = 2;
@@ -272,6 +288,7 @@ constant TLS_rsa_psk_with_aes_128_cbc_sha256    = 0x00b6;
 constant TLS_rsa_psk_with_aes_256_cbc_sha384    = 0x00b7;
 constant TLS_rsa_psk_with_null_sha256           = 0x00b8;
 constant TLS_rsa_psk_with_null_sha384           = 0x00b9;
+constant TLS_empty_renegotiation_info_scsv	= 0x00ff;	// RFC 5746
 constant TLS_ecdh_ecdsa_with_null_sha           = 0xc001;
 constant TLS_ecdh_ecdsa_with_rc4_128_sha        = 0xc002;
 constant TLS_ecdh_ecdsa_with_3des_ede_cbc_sha   = 0xc003;
@@ -334,7 +351,7 @@ constant TLS_ecdhe_psk_with_null_sha384         = 0xc03b;
 #endif /* !WEAK_CRYPTO_40BIT (magic comment) */
 
 #if 0
-/* Methods for signing any server_key_exchange message */
+/* Methods for signing any server_key_exchange message (RFC 5246 7.4.1.4.1) */
 constant SIGN_anon = 0;
 constant SIGN_rsa = 1;
 constant SIGN_dsa = 2;
@@ -397,3 +414,14 @@ constant AUTH_fortezza_dms	= 20;
 constant AUTH_ecdsa_sign        = 64;
 constant AUTH_rsa_fixed_ecdh    = 65;
 constant AUTH_ecdsa_fixed_ecdh  = 66;
+
+constant EXTENSION_server_name			= 0;		// RFC 4366.
+constant EXTENSION_max_fragment_length		= 1;		// RFC 4366.
+constant EXTENSION_client_certificate_url	= 2;		// RFC 4366.
+constant EXTENSION_trusted_ca_keys		= 3;		// RFC 4366.
+constant EXTENSION_truncated_hmac		= 4;		// RFC 4366.
+constant EXTENSION_status_request		= 5;		// RFC 4366.
+constant EXTENSION_client_authz			= 7;		// RFC 5878.
+constant EXTENSION_server_authz			= 8;		// RFC 5878.
+constant EXTENSION_signature_algorithms		= 13;		// RFC 5246.
+constant EXTENSION_renegotiation_info		= 0xff01;	// RFC 5746.
