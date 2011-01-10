@@ -200,7 +200,6 @@ testfont binary
 /lib/modules/Protocols.pmod/X.pmod/_Xlib.pmod foreign_ident
 /lib/modules/SSL.pmod/alert.pike foreign_ident
 /lib/modules/SSL.pmod/connection.pike foreign_ident
-/lib/modules/SSL.pmod/handshake.pike foreign_ident
 /lib/modules/SSL.pmod/https.pike foreign_ident
 /lib/modules/SSL.pmod/packet.pike foreign_ident
 /lib/modules/SSL.pmod/session.pike foreign_ident

@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 #pragma strict_types
 
-/* $Id: handshake.pike,v 1.63 2010/07/25 19:32:26 marcus Exp $
+/* $Id$
  *
  */
 
@@ -729,6 +729,25 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	  version[1] = 1;
 	}
 
+	if (!input->is_empty()) {
+	  ADT.struct extensions = ADT.struct(input->get_var_string(2));
+
+	  while (!extensions->is_empty()) {
+	    int extension_type = extensions->get_uint(2);
+	    ADT.struct extension_data =
+	      ADT.struct(extensions->get_var_string(2));
+	    SSL3_DEBUG_MSG("SSL.connection->handle_handshake: "
+			   "Got extension 0x%04x, %O (%d bytes).\n",
+			   extension_type,
+			   extension_data->buffer,
+			   sizeof(extension_data->buffer));
+	    switch(extension_type) {
+	    default:
+	      break;
+	    }
+	  }
+	}
+
 #ifdef SSL3_DEBUG
 	if (!input->is_empty())
 	  werror("SSL.connection->handle_handshake: "
@@ -1105,6 +1124,35 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 		     "compression method: %O\n",
 		     version[0], version[1],
 		     id, cipher_suite, compression_method);
+
+      if (!input->is_empty()) {
+	ADT.struct extensions = ADT.struct(input->get_var_string(2));
+
+	while (!extensions->is_empty()) {
+	  int extension_type = extensions->get_uint(2);
+	  ADT.struct extension_data =
+	    ADT.struct(extensions->get_var_string(2));
+	  SSL3_DEBUG_MSG("SSL.connection->handle_handshake: "
+			 "Got extension 0x%04x, %O (%d bytes).\n",
+			 extension_type,
+			 extension_data->buffer,
+			 sizeof(extension_data->buffer));
+	  switch(extension_type) {
+	  default:
+	    // RFC 5246 7.4.1.4:
+	    // If a client receives an extension type in ServerHello
+	    // that it did not request in the associated ClientHello, it
+	    // MUST abort the handshake with an unsupported_extension
+	    // fatal alert.
+	    send_packet(Alert(ALERT_fatal, ALERT_unsupported_extension,
+			      version[1],
+			      "SSL.session->handle_handshake: "
+			      "Unsupported extension.\n",
+			      backtrace()));
+	    return -1;
+	  }
+	}
+      }
 
       handshake_state = STATE_client_wait_for_server;
       break;
