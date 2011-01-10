@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 #pragma strict_types
 
-// $Id: alert.pike,v 1.12 2008/06/28 16:49:55 nilsson Exp $
+// $Id$
 
 //! Alert package.
 
@@ -20,6 +20,16 @@ constant is_alert = 1;
 //!                   int version, string|void message, mixed|void trace)
 void create(int l, int d, int version, string|void m, mixed|void t)
 {
+  if (!version && (d == ALERT_no_renegotiation)) {
+    // RFC 5746 4.5:
+    // SSLv3 does not define the "no_renegotiation" alert (and does not
+    // offer a way to indicate a refusal to renegotiate at a "warning"
+    // level). SSLv3 clients that refuse renegotiation SHOULD use a
+    // fatal handshake_failure alert.
+    d = ALERT_handshake_failure;
+    l = ALERT_fatal;
+  }
+
   if (! ALERT_levels[l])
     error( "Invalid level\n" );
   if (! ALERT_descriptions[d])
