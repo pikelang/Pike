@@ -45,6 +45,8 @@ constant STATE_client_wait_for_server		= 11;
 constant STATE_client_wait_for_finish		= 12;
 int handshake_state;
 
+int handshake_finished = 0;
+
 constant CERT_none = 0;
 constant CERT_requested = 1;
 constant CERT_received = 2;
