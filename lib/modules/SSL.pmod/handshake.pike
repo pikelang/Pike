@@ -40,6 +40,7 @@ constant STATE_server_wait_for_client		= 2;
 constant STATE_server_wait_for_finish		= 3;
 constant STATE_server_wait_for_verify		= 4;
 
+constant STATE_client_min			= 10;
 constant STATE_client_wait_for_hello		= 10;
 constant STATE_client_wait_for_server		= 11;
 constant STATE_client_wait_for_finish		= 12;
@@ -55,6 +56,11 @@ int certificate_state;
 
 int expect_change_cipher; /* Reset to 0 if a change_cipher message is
 			   * received */
+
+// RFC 5746-related fields
+int secure_renegotiation;
+string client_verify_data = "";	// 3.2: Initially of zero length for both the
+string server_verify_data = "";	//      ClientHello and the ServerHello.
 
 Crypto.RSA temp_key; /* Key used for session key exchange (if not the same
 		      * as the server's certified key) */
@@ -127,6 +133,21 @@ Packet server_hello_packet()
   struct->put_uint(session->cipher_suite, 2);
   struct->put_uint(session->compression_algorithm, 1);
 
+  if (secure_renegotiation) {
+    ADT.struct extensions = ADT.struct();
+
+    // RFC 5746 3.7:
+    // The server MUST include a "renegotiation_info" extension
+    // containing the saved client_verify_data and server_verify_data in
+    // the ServerHello.
+    struct->put_uint(EXTENSION_renegotiation_info, 2);
+    ADT.struct extension = ADT.struct();
+    extension->put_var_string(client_verify_data + server_verify_data, 1);
+
+    extensions->put_var_string(extension->pop_data(), 2);
+    struct->put_var_string(extensions->pop_data(), 2);
+  }
+
   string data = struct->pop_data();
 #ifdef SSL3_DEBUG
   werror("SSL.handshake: Server hello: %O\n", data);
@@ -145,12 +166,34 @@ Packet client_hello()
 
   array(int) cipher_suites, compression_methods;
   cipher_suites = context->preferred_suites;
+  if (!handshake_finished && !secure_renegotiation) {
+    // Initial handshake.
+    // Use the backward-compat way of asking for
+    // support for secure renegotiation.
+    cipher_suites += ({ TLS_empty_renegotiation_info_scsv });
+  }
   compression_methods = context->preferred_compressors;
 
   int cipher_len = sizeof(cipher_suites)*2;
   struct->put_uint(cipher_len, 2);
   struct->put_fix_uint_array(cipher_suites, 2);
   struct->put_var_uint_array(compression_methods, 1, 1);
+
+  if (secure_renegotiation) {
+    ADT.struct extensions = ADT.struct();
+
+    // RFC 5746 3.4:
+    // The client MUST include either an empty "renegotiation_info"
+    // extension, or the TLS_EMPTY_RENEGOTIATION_INFO_SCSV signaling
+    // cipher suite value in the ClientHello.  Including both is NOT
+    // RECOMMENDED.
+    ADT.struct extension = ADT.struct();
+    extension->put_var_string(client_verify_data, 1);
+    struct->put_uint(EXTENSION_renegotiation_info, 2);
+
+    extensions->put_var_string(extension->pop_data(), 2);
+    struct->put_var_string(extensions->pop_data(), 2);
+  }
 
   string data = struct->pop_data();
 
@@ -360,9 +403,17 @@ string hash_messages(string sender)
 Packet finished_packet(string sender)
 {
 #ifdef SSL3_DEBUG
-           werror("Sending finished_packet, with sender=\""+sender+"\"\n" );
+  werror("Sending finished_packet, with sender=\""+sender+"\"\n" );
 #endif
-	   return handshake_packet(HANDSHAKE_finished, hash_messages(sender));
+  string verify_data = hash_messages(sender);
+  if (handshake_state >= STATE_client_min) {
+    // We're the client.
+    client_verify_data = verify_data;
+  } else {
+    // We're the server.
+    server_verify_data = verify_data;
+  }
+  return handshake_packet(HANDSHAKE_finished, verify_data);
 }
 
 Packet certificate_request_packet(SSL.context context)
@@ -731,6 +782,8 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	  version[1] = 1;
 	}
 
+	int missing_secure_renegotiation = secure_renegotiation;
+
 	if (!input->is_empty()) {
 	  ADT.struct extensions = ADT.struct(input->get_var_string(2));
 
@@ -744,9 +797,69 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 			   extension_data->buffer,
 			   sizeof(extension_data->buffer));
 	    switch(extension_type) {
+	    case EXTENSION_renegotiation_info:
+	      string renegotiated_connection =
+		extension_data->get_var_string(1);
+	      if ((renegotiated_connection != client_verify_data) ||
+		  (handshake_finished && !secure_renegotiation)) {
+		// RFC 5746 3.7: (secure_renegotiation)
+		// The server MUST verify that the value of the
+		// "renegotiated_connection" field is equal to the saved
+		// client_verify_data value; if it is not, the server MUST
+		// abort the handshake.
+		//
+		// RFC 5746 4.4: (!secure_renegotiation)
+		// The server MUST verify that the "renegotiation_info"
+		// extension is not present; if it is, the server MUST
+		// abort the handshake.
+		send_packet(Alert(ALERT_fatal, ALERT_handshake_failure,
+				  version[1],
+				  "SSL.session->handle_handshake: "
+				  "Invalid renegotiation data.\n",
+				  backtrace()));
+		return -1;
+	      }
+	      secure_renegotiation = 1;
+	      missing_secure_renegotiation = 0;
+	      break;
 	    default:
 	      break;
 	    }
+	  }
+	}
+	if (missing_secure_renegotiation) {
+	  // RFC 5746 3.7: (secure_renegotiation)
+	  // The server MUST verify that the "renegotiation_info" extension is
+	  // present; if it is not, the server MUST abort the handshake.
+	  send_packet(Alert(ALERT_fatal, ALERT_handshake_failure, version[1],
+			    "SSL.session->handle_handshake: "
+			    "Missing secure renegotiation extension.\n",
+			    backtrace()));
+	  return -1;
+	}
+	if (has_value(cipher_suites, TLS_empty_renegotiation_info_scsv)) {
+	  if (secure_renegotiation || handshake_finished) {
+	    // RFC 5746 3.7: (secure_renegotiation)
+	    // When a ClientHello is received, the server MUST verify that it
+	    // does not contain the TLS_EMPTY_RENEGOTIATION_INFO_SCSV SCSV.  If
+	    // the SCSV is present, the server MUST abort the handshake.
+	    //
+	    // RFC 5746 4.4: (!secure_renegotiation)
+	    // When a ClientHello is received, the server MUST verify
+	    // that it does not contain the
+	    // TLS_EMPTY_RENEGOTIATION_INFO_SCSV SCSV.  If the SCSV is
+	    // present, the server MUST abort the handshake.
+	    send_packet(Alert(ALERT_fatal, ALERT_handshake_failure, version[1],
+			      "SSL.session->handle_handshake: "
+			      "SCSV is present.\n",
+			      backtrace()));
+	    return -1;
+	  } else {
+	    // RFC 5746 3.6:
+	    // When a ClientHello is received, the server MUST check if it
+	    // includes the TLS_EMPTY_RENEGOTIATION_INFO_SCSV SCSV.  If it
+	    // does, set the secure_renegotiation flag to TRUE.
+	    secure_renegotiation = 1;
 	  }
 	}
 
@@ -849,6 +962,14 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	  return -1;
 	}
 
+	if (has_value(cipher_suites, TLS_empty_renegotiation_info_scsv)) {
+	  // RFC 5746 3.6:
+	  // When a ClientHello is received, the server MUST check if it
+	  // includes the TLS_EMPTY_RENEGOTIATION_INFO_SCSV SCSV.  If it
+	  // does, set the secure_renegotiation flag to TRUE.
+	  secure_renegotiation = 1;
+	}
+
 	if (ch_len < 32)
 	  challenge = "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0" + challenge;
 	client_random = challenge[sizeof (challenge) - 32..];
@@ -922,6 +1043,8 @@ int(-1..1) handle_handshake(int type, string data, string raw)
        handshake_messages += raw; /* Second hash includes this message,
 				   * the first doesn't */
        /* Handshake complete */
+
+       client_verify_data = digest;
        
        if (!reuse)
        {
@@ -1127,6 +1250,8 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 		     version[0], version[1],
 		     id, cipher_suite, compression_method);
 
+      int missing_secure_renegotiation = secure_renegotiation;
+
       if (!input->is_empty()) {
 	ADT.struct extensions = ADT.struct(input->get_var_string(2));
 
@@ -1140,6 +1265,36 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 			 extension_data->buffer,
 			 sizeof(extension_data->buffer));
 	  switch(extension_type) {
+	  case EXTENSION_renegotiation_info:
+	    string renegotiated_connection = extension_data->get_var_string(1);
+	    if ((renegotiated_connection !=
+		 (client_verify_data + server_verify_data)) ||
+		(handshake_finished && !secure_renegotiation)) {
+	      // RFC 5746 3.5: (secure_renegotiation)
+	      // The client MUST then verify that the first half of the
+	      // "renegotiated_connection" field is equal to the saved
+	      // client_verify_data value, and the second half is equal to the
+	      // saved server_verify_data value.  If they are not, the client
+	      // MUST abort the handshake.
+	      //
+	      // RFC 5746 4.2: (!secure_renegotiation)
+	      // When the ServerHello is received, the client MUST
+	      // verify that it does not contain the
+	      // "renegotiation_info" extension. If it does, the client
+	      // MUST abort the handshake. (Because the server has
+	      // already indicated it does not support secure
+	      // renegotiation, the only way that this can happen is if
+	      // the server is broken or there is an attack.)
+	      send_packet(Alert(ALERT_fatal, ALERT_handshake_failure,
+				version[1],
+				"SSL.session->handle_handshake: "
+				"Invalid renegotiation data.\n",
+				backtrace()));
+	      return -1;
+	    }
+	    secure_renegotiation = 1;
+	    missing_secure_renegotiation = 0;
+	    break;
 	  default:
 	    // RFC 5246 7.4.1.4:
 	    // If a client receives an extension type in ServerHello
@@ -1154,6 +1309,17 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	    return -1;
 	  }
 	}
+      }
+      if (missing_secure_renegotiation) {
+	// RFC 5746 3.5:
+	// When a ServerHello is received, the client MUST verify that the
+	// "renegotiation_info" extension is present; if it is not, the
+	// client MUST abort the handshake.
+	send_packet(Alert(ALERT_fatal, ALERT_handshake_failure, version[1],
+			  "SSL.session->handle_handshake: "
+			  "Missing secure renegotiation extension.\n",
+			  backtrace()));
+	return -1;
       }
 
       handshake_state = STATE_client_wait_for_server;
@@ -1394,9 +1560,13 @@ werror("sending certificate: " + Standards.PKCS.Certificate.get_dn_string(Tools.
 			"SSL.session->handle_handshake: unexpected message\n",
 			backtrace()));
       return -1;
-    }
-    else
+    } else {
+      SSL3_DEBUG_MSG("SSL.session: FINISHED\n");
+
+      server_verify_data = input->get_var_string(1);
+
       return 1;			// We're done shaking hands
+    }
     }
   }
 #ifdef SSL3_DEBUG

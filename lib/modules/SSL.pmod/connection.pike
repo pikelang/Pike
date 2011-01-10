@@ -18,6 +18,7 @@
 //			(aka draft-freier-ssl-version3-02.txt).
 // TLS 1.0 (SSL 3.1)	RFC 2246 "The TLS Protocol Version 1.0".
 // TLS 1.1 (SSL 3.2)	draft-ietf-tls-rfc2246-bis
+// Renegotiation	RFC 5746 "Renegotiation Indication Extension".
 
 #if constant(SSL.Cipher.CipherAlgorithm)
 
@@ -360,10 +361,11 @@ string|int got_data(string|int s)
        }
       case PACKET_handshake:
        {
-	 if (handshake_finished) {
-	   // Don't allow renegotiation at all for now, to address
+	 if (handshake_finished && !secure_renegotiation) {
+	   // Don't allow renegotiation in unsecure mode, to address
 	   // http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2009-3555.
-	   // For details see: http://www.g-sec.lu/practicaltls.pdf
+	   // For details see: http://www.g-sec.lu/practicaltls.pdf and
+	   // RFC 5746.
 	   send_packet (Alert (ALERT_warning, ALERT_no_renegotiation,
 			       version[1]));
 	   return -1;
@@ -414,7 +416,7 @@ string|int got_data(string|int s)
       case PACKET_V2:
        {
 	 if (handshake_finished) {
-	   // Don't allow renegotiation at all for now, to address
+	   // Don't allow renegotiation using SSLv2 packets at all, to address
 	   // http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2009-3555.
 	   send_packet (Alert (ALERT_warning, ALERT_no_renegotiation,
 			       version[1]));
