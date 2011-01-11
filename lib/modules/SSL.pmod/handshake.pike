@@ -140,7 +140,7 @@ Packet server_hello_packet()
     // The server MUST include a "renegotiation_info" extension
     // containing the saved client_verify_data and server_verify_data in
     // the ServerHello.
-    struct->put_uint(EXTENSION_renegotiation_info, 2);
+    extensions->put_uint(EXTENSION_renegotiation_info, 2);
     ADT.struct extension = ADT.struct();
     extension->put_var_string(client_verify_data + server_verify_data, 1);
 
@@ -189,7 +189,7 @@ Packet client_hello()
     // RECOMMENDED.
     ADT.struct extension = ADT.struct();
     extension->put_var_string(client_verify_data, 1);
-    struct->put_uint(EXTENSION_renegotiation_info, 2);
+    extensions->put_uint(EXTENSION_renegotiation_info, 2);
 
     extensions->put_var_string(extension->pop_data(), 2);
     struct->put_var_string(extensions->pop_data(), 2);
