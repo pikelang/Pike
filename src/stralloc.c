@@ -2333,9 +2333,10 @@ PMOD_EXPORT void string_builder_putchars(struct string_builder *s, int ch,
   ptrdiff_t len = s->s->len;
   int mag = min_magnitude(ch);
 
-  // This is not really expected to happen. But since we are doing
-  // memset here, a negative argument should be avoided.
-  if (count < 0) Pike_fatal("Non-positive count in call to string_builder_putchars().\n");
+  /* This is not really expected to happen. But since we are doing
+   * memset here, a negative argument should be avoided. */
+  if (count < 0)
+    Pike_fatal("Non-positive count in call to string_builder_putchars().\n");
   if (!count) return;
 
   string_build_mkspace(s, count, mag);
