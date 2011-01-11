@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: constants.h,v 1.4 2002/10/11 01:39:59 nilsson Exp $
+|| $Id$
 */
 
 void init_sdl_constants() {
@@ -417,4 +417,11 @@ void init_sdl_constants() {
   /* misc constants */
   add_integer_constant("PRESSED", SDL_PRESSED, 0);
   add_integer_constant("RELEASED", SDL_RELEASED, 0);
+
+#ifdef HAVE_SDL_MIXER
+  /* constants returned by Mix_FadingMusic/fading */
+  add_integer_constant("MIX_NO_FADING", MIX_NO_FADING, 0);
+  add_integer_constant("MIX_FADING_IN", MIX_FADING_IN, 0);
+  add_integer_constant("MIX_FADING_OUT", MIX_FADING_OUT, 0);
+#endif
 }

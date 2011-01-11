@@ -85,8 +85,6 @@ static struct object *image_make_rgb_color(INT32 r,INT32 g,INT32 b)
 # include <SDL.h>
 #endif
 
-#include "constants.h"
-
 #ifdef HAVE_SDL_MIXER
 # ifdef HAVE_SDL_SDL_MIXER_H
 #  include <SDL/SDL_mixer.h>
@@ -94,6 +92,8 @@ static struct object *image_make_rgb_color(INT32 r,INT32 g,INT32 b)
 #  include <SDL_mixer.h>
 # endif
 #endif
+
+#include "constants.h"
 
 #define THIS_OBJ Pike_interpreter.frame_pointer->current_object
 #define RET_THIS() do { pop_n_elems(args); ref_push_object(THIS_OBJ); return; } while(0)
