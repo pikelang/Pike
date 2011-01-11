@@ -349,7 +349,7 @@ PIKECLASS ResObj
    *! Perform a query against a SQLite database.
    *!
    *! @seealso
-   *!   @[Sql.Sql()->query()
+   *!   @[Sql.Sql()->query()]
    */
   PIKEFUN array|int query(string query,
 			  mapping(string|int:mixed)|void bindings) {
@@ -432,7 +432,7 @@ PIKECLASS ResObj
    *! Perform a streaming query against a SQLite database.
    *!
    *! @seealso
-   *!   @[Sql.Sql()->big_query()
+   *!   @[Sql.Sql()->big_query()]
    */
   PIKEFUN object big_query(string query,
 			   mapping(string|int:mixed)|void bindings) {

@@ -2514,6 +2514,15 @@ PIKEFUN string|void cd_name(int drive) {
  */
 
 /*! @class Music
+ *!
+ *! Use an @[SDL.Music] object to load in a music file or sample and then play it back using an
+ *! internal player.
+ *!
+ *! You must call @[SDL.init()] with the @[SDL.INIT_AUDIO] flag for audio support to be available.  You
+ *! must also first set up some audio parameters with a call to @[SDL.open_audio()].
+ *!
+ *! @seealso
+ *!  @[SDL.open_audio()]
  */
 PIKECLASS Music {
   CVAR Mix_Music *music;
@@ -2533,8 +2542,14 @@ PIKECLASS Music {
 
   /*! @decl void create(string fname)
    *!
-   *! @fixme
-   *!   Document this function
+   *! Loads in the given music file and initializes the object ready for playback.
+   *!
+   *! Supported formats are OGG, MP3, MOD, MID and WAV.
+   *!
+   *! An exception is thrown if the file fails to load.
+   *!
+   *! @param fname
+   *!  The name of the music file to be loaded.
    */
   PIKEFUN void create(string fname) {
     if((THIS->generation == audio_generation) && (THIS->music)) {
@@ -2551,8 +2566,15 @@ PIKECLASS Music {
 
   /*! @decl object pause()
    *!
-   *! @fixme
-   *!   Document this function
+   *! Pauses the music playback.
+   *! 
+   *! It is safe to call this method when the music is already paused.
+   *!
+   *! @returns
+   *!  The @[SDL.Music] object.
+   *!
+   *! @seealso
+   *!  @[resume()] @[paused()]
    */
   PIKEFUN object pause() {
     Mix_PauseMusic();
@@ -2561,8 +2583,10 @@ PIKECLASS Music {
 
   /*! @decl object halt()
    *!
-   *! @fixme
-   *!   Document this function
+   *! Stops music playback immediately, including any fader effects.
+   *! 
+   *! @returns
+   *!  The @[SDL.Music] object.
    */
   PIKEFUN object halt() {
     Mix_HaltMusic();
@@ -2571,8 +2595,15 @@ PIKECLASS Music {
 
   /*! @decl object resume()
    *!
-   *! @fixme
-   *!   Document this function
+   *! Resume music playback after a call to @[pause()].
+   *!
+   *! It is safe to call this method when the music isn't paused.
+   *!
+   *! @returns
+   *!  The @[SDL.Music] object.
+   *!
+   *! @seealso
+   *!  @[pause()] @[paused()]
    */
   PIKEFUN object resume() {
     Mix_ResumeMusic();
@@ -2581,8 +2612,15 @@ PIKECLASS Music {
 
   /*! @decl object rewind()
    *!
-   *! @fixme
-   *!   Document this function
+   *! Rewinds the music to the start and resumes playback.
+   *!
+   *! If the music was paused at the time of this call, you will still need to call @[resume()] to
+   *! restart playback.
+   *!
+   *! This function works only for MOD, OGG, MP3 and Native MIDI streams.
+   *!
+   *! @returns
+   *!  The @[SDL.Music] object.
    */
   PIKEFUN object rewind() {
     Mix_RewindMusic();
@@ -2592,17 +2630,23 @@ PIKECLASS Music {
   /* Status queries */
   /*! @decl int paused()
    *!
-   *! @fixme
-   *!   Document this function
+   *! Determines if the music is already paused.
+   *!
+   *! @returns
+   *!  @expr{1@} if the music is paused, otherwise @expr{0@}.
    */
   PIKEFUN int paused() {
     RETURN Mix_PausedMusic();
   }
 
   /*! @decl int playing()
-   *!
-   *! @fixme
-   *!   Document this function
+   *! 
+   *! Determines if the music is already playing.
+   *! 
+   *! This method will return @expr{1@} even if the music has been paused.
+   *! 
+   *! @returns
+   *!  @expr{1@} if the music is playing, otherwise @expr{0@}.
    */
   PIKEFUN int playing() {
     RETURN Mix_PlayingMusic();
@@ -2619,8 +2663,14 @@ PIKECLASS Music {
 
   /*! @decl object play(int|void loops)
    *!
-   *! @fixme
-   *!   Document this function
+   *! Starts playback.  Repeats @tt{loops@} number of times.
+   *!
+   *! @param loops
+   *!  The number of times the music should be looped (i.e. repeated).  If @tt{loops@} is @expr{-1@} or omitted,
+   *!  the music will repeat indefinitely.
+   *!
+   *! @returns
+   *!  The @[SDL.Music] object.
    */
   PIKEFUN object play(int|void _loops) {
     int loops = -1;
@@ -2637,8 +2687,26 @@ PIKECLASS Music {
 
   /*! @decl object fade_in(int ms, int|void loops)
    *!
-   *! @fixme
-   *!   Document this function
+   *! Fades the music in over the given number of milliseconds.  Playback is repeated @tt{loops@} number
+   *! of times.
+   *!
+   *! The fade-in will only happen on the first play, not on subsequent loops.  Likewise, calling this
+   *! method on an object that is already playing has the same effect as @[rewind()]: playback will start
+   *! over at the beginning but without fading in.
+   *!
+   *! @param ms
+   *!  Music fades in over this number of milliseconds.
+   *!
+   *! @param loops
+   *!  How many times the music should be repeated (looped).  Passing a value of @expr{0@} here means the music
+   *!  plays once over - i.e. no repeats.  A value of @expr{-1@} loops the music indefinitely.  This is the
+   *!  default if you don't specify a value.
+   *!
+   *! @returns
+   *!  The @[SDL.Music] object.
+   *!
+   *! @seealso
+   *!  @[fade_out()] @[fading()]
    */
   PIKEFUN object fade_in(int ms, int|void _loops) {
     int loops = -1;
@@ -2655,8 +2723,15 @@ PIKECLASS Music {
 
   /*! @decl object fade_out(int ms)
    *!
-   *! @fixme
-   *!   Document this function
+   *! Fades the music out over the given number of milliseconds.
+   *!
+   *! After @tt{ms@} milliseconds have passed, the music will be stopped; i.e. @[playing()] will return @expr{0@}.
+   *!
+   *! @param ms
+   *!  The number of milliseconds it will take to fade out the music, starting from now.
+   *!
+   *! @returns
+   *!  The @[SDL.Music] object.
    */
   PIKEFUN object fade_out(int ms) {
     Mix_FadeOutMusic(ms);
@@ -2665,8 +2740,14 @@ PIKECLASS Music {
 
   /*! @decl float set_volume(float vol)
    *!
-   *! @fixme
-   *!   Document this function
+   *! Sets the volume for music playback.
+   *!
+   *! @param vol
+   *!  The volume to set.  This is a float value from @expr{0.0@} (silent) to @expr{1.0@} (full volume).  Values
+   *!  above and below these limits will be clamped.
+   *!
+   *! @returns
+   *!  The previous volume setting.
    */
   PIKEFUN float set_volume(float vol) {
     if(vol > 1.0)       { vol = 1.0; }
@@ -2676,8 +2757,8 @@ PIKECLASS Music {
 
   /*! @decl float volume()
    *!
-   *! @fixme
-   *!   Document this function
+   *! @returns
+   *!  The current volume setting.  This is a float value from @expr{0.0@} (silent) to @expr{1.0@} (full volume).
    */
   PIKEFUN float volume() {
     RETURN (FLOAT_TYPE)Mix_VolumeMusic(-1) / 128.0;
@@ -2689,8 +2770,45 @@ PIKECLASS Music {
 
 /*! @decl void open_audio(int frequency, int format, int channels, int bufsize)
  *!
- *! @fixme
- *!   Document this function
+ *! Initializes the audio API.
+ *!
+ *! Throws an exception if audio can't be initialized.
+ *!
+ *! @param frequency
+ *!  Output sampling frequency, measured in samples per second (Hz).
+ *!  A value of @expr{44100@} provides CD-quality playback.  A less CPU-intensive value for games is @expr{22050@}.
+ *!
+ *! @param format
+ *!  Output sample format.  One of the following constants:
+ *!   @dl
+ *!    @item SDL.AUDIO_U8
+ *!     Unsigned 8-bit samples.
+ *!    @item SDL.AUDIO_S8
+ *!     Signed 8-bit samples.
+ *!    @item SDL.AUDIO_U16LSB
+ *!     Unsigned 16-bit samples in little-endian byte order.
+ *!    @item SDL.AUDIO_S16LSB
+ *!     Signed 16-bit samples in little-endian byte order.
+ *!    @item SDL.AUDIO_U16MSB
+ *!     Unsigned 16-bit samples in big-endian byte order.
+ *!    @item SDL.AUDIO_S16MSB
+ *!     Signed 16-bit samples in big-endian byte order.
+ *!    @item SDL.AUDIO_U16
+ *!     Same as SDL.AUDIO_U16LSB.
+ *!    @item SDL.AUDIO_S16
+ *!     Same as SDL.AUDIO_S16LSB.
+ *!    @item SDL.AUDIO_U16SYS
+ *!     Unsigned 16-bit samples in system byte order.
+ *!    @item SDL.AUDIO_S16SYS
+ *!     Signed 16-bit samples in system byte order.  If in doubt, try this one first.
+ *!   @enddl
+ *!
+ *! @param channels
+ *!  Number of sound channels in output: @expr{1@} for mono, @expr{2@} for stereo.
+ *!
+ *! @param bufsize
+ *!  How many bytes to use per output sample.  @expr{1024@} is a typical value for games.  If just playing
+ *!  music you might set this to @expr{4096@} or higher.
  */
 PIKEFUN void open_audio(int frequency, int format, int channels, int bufsize) {
   SDL_InitSubSystem(SDL_INIT_AUDIO); /* Just in case */
