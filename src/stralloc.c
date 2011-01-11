@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.239 2010/06/15 16:10:19 grubba Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -2332,6 +2332,11 @@ PMOD_EXPORT void string_builder_putchars(struct string_builder *s, int ch,
 {
   ptrdiff_t len = s->s->len;
   int mag = min_magnitude(ch);
+
+  // This is not really expected to happen. But since we are doing
+  // memset here, a negative argument should be avoided.
+  if (count < 0) Pike_fatal("Non-positive count in call to string_builder_putchars().\n");
+  if (!count) return;
 
   string_build_mkspace(s, count, mag);
   if (mag > s->known_shift) {
