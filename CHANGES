@@ -61,8 +61,6 @@ Optimizations
 
 o MIME should now use 1/3 less memory when decoding big messages.
 
-o Improved performance of Process.run.
-
 o Nettle.hash
 
   Avoid allowing threads during hashing of small strings (current threshold
