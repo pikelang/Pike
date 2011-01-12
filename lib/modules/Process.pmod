@@ -190,7 +190,7 @@ mapping run(string|array(string) cmd, void|mapping modifiers)
     modifiers = ([]);
 
   if(modifiers->stdout || modifiers->stderr)
-    throw( ({ "Can not redirect stdout or stderr in run_process, "
+    throw( ({ "Can not redirect stdout or stderr in Process.run, "
               "please use Process.Process instead.", backtrace() }) );
 
   Stdio.File mystdout = Stdio.File(); 
