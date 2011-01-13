@@ -62,6 +62,9 @@ int secure_renegotiation;
 string client_verify_data = "";	// 3.2: Initially of zero length for both the
 string server_verify_data = "";	//      ClientHello and the ServerHello.
 
+// RFC 4366 3.1
+array(string) server_names;
+
 Crypto.RSA temp_key; /* Key used for session key exchange (if not the same
 		      * as the server's certified key) */
 
@@ -801,6 +804,23 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 			   extension_data->buffer,
 			   sizeof(extension_data->buffer));
 	    switch(extension_type) {
+	    case EXTENSION_server_name:
+	      // RFC 4366 3.1 "Server Name Indication"
+	      // Example: "\0\f\0\0\tlocalhost"
+	      server_names = ({});
+	      while (!extension_data->is_empty()) {
+		ADT.struct server_name =
+		  ADT.struct(extension_data->get_var_string(2));
+		switch(server_name->get_uint(1)) {	// name_type
+		case 0:	// host_name
+		  server_names += ({ server_name->get_var_string(2) });
+		  break;
+		default:
+		  // Ignore other NameTypes for now.
+		  break;
+		}
+	      }
+	      break;
 	    case EXTENSION_renegotiation_info:
 	      string renegotiated_connection =
 		extension_data->get_var_string(1);
