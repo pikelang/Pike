@@ -327,7 +327,7 @@ PIKEFUN int get_mod_state()
  *! @returns
  *!   The current state is returned as a string.
  *!
- *!   The string is indexed by the @[SDL.K_*] symbols.
+ *!   The string is indexed by the @tt{SDL.K_*@} symbols.
  *!   A value of @expr{1@} means the key is pressed and
  *!   a value of @expr{0@} means it's not.
  *! 
@@ -338,12 +338,14 @@ PIKEFUN int get_mod_state()
  *!   @[SDL.get_mod_state()], @[SDL.pump_events()]
  *!
  *! @example
- *!  // Test if the 'Escape' key is pressed.
- *!SDL.pump_events();
- *!string ks = SDL.get_key_state();
- *!if ( ks[SDL.K_ESCAPE] )
- *!{
- *!    // handle key press...
+ *!   @code
+ *!     // Test if the 'Escape' key is pressed.
+ *!     SDL.pump_events();
+ *!     string ks = SDL.get_key_state();
+ *!     if ( ks[SDL.K_ESCAPE] )
+ *!     {
+ *!       // handle key press...
+ *!   @endcode
  */
 PIKEFUN string get_key_state()
      optflags OPT_EXTERNAL_DEPEND;
@@ -1694,7 +1696,7 @@ PIKEFUN int flip(object|void screen) {
  *! If 'x', 'y', 'w' and 'h' are all 0, @[SDL.update_rect()] will update
  *! the entire screen.
  *! 
- *! This function should not be called while @expr{screen@} is locked.
+ *! This function should not be called while @[screen] is locked.
  *! 
  *! @param x
  *! @param y
@@ -1773,7 +1775,8 @@ PIKEFUN void|object get_video_info()
  *! This won't take effect until after a call to @[SDL.set_video_mode()].
  *!
  *! @param attribute
- *!  The attribute to set.  This will be one of @[SDL.GL_RED_SIZE], @[SDL.GL_GREEN_SIZE], @[SDL.GL_BLUE_SIZE],
+ *!  The attribute to set.  This will be one of @[SDL.GL_RED_SIZE],
+ *!  @[SDL.GL_GREEN_SIZE], @[SDL.GL_BLUE_SIZE],
  *!  @[SDL.GL_DEPTH_SIZE] or @[SDL.GL_DOUBLEBUFFER].
  *!
  *! @param value
@@ -1789,8 +1792,9 @@ PIKEFUN void gl_set_attribute( int attribute, int value )
 
 /*! @decl int gl_get_attribute(int attribute)
  *!
- *! Returns the value of the given SDL/OpenGL attribute.  You might want to call this after
- *! @[SDL.set_video_mode()] to check that attributes have been set as you expected.
+ *! Returns the value of the given SDL/OpenGL attribute.  You might want
+ *! to call this after @[SDL.set_video_mode()] to check that attributes
+ *! have been set as you expected.
  *!
  *! @param attribute
  *!  The SDL/OpenGL attribute to query.
@@ -1799,11 +1803,13 @@ PIKEFUN void gl_set_attribute( int attribute, int value )
  *!  The value of the given attribute.
  *!
  *! @example
- *!  // Has double-buffering been set?
- *!int db = SDL.gl_get_attribute( SDL.GL_DOUBLEBUFFER );
- *!if ( db )
- *!{
- *!    // yes...
+ *!   @code
+ *!     // Has double-buffering been set?
+ *!     int db = SDL.gl_get_attribute( SDL.GL_DOUBLEBUFFER );
+ *!     if ( db )
+ *!     {
+ *!       // yes...
+ *!   @endcode
  */
 PIKEFUN int gl_get_attribute( int attribute )
 {
@@ -1814,7 +1820,8 @@ PIKEFUN int gl_get_attribute( int attribute )
 
 /*! @decl int show_cursor(int show)
  *!
- *! Sets the state of the mouse cursor on the SDL screen (visible or hidden), or queries its current state.
+ *! Sets the state of the mouse cursor on the SDL screen (visible or hidden),
+ *! or queries its current state.
  *!
  *! By default, the cursor is visible.
  *!
@@ -1830,7 +1837,8 @@ PIKEFUN int gl_get_attribute( int attribute )
  *!   @enddl
  *!
  *! @returns
- *!  The current state of the mouse cursor, either @[SDL.ENABLE] or @[SDL.DISABLE].
+ *!  The current state of the mouse cursor, either @[SDL.ENABLE] or
+ *!  @[SDL.DISABLE].
  */
 PIKEFUN int show_cursor( int show )
 {
@@ -1852,7 +1860,8 @@ PIKEFUN void warp_mouse( int xpos, int ypos )
  *! Swaps the OpenGL buffers on a double-buffered screen.
  *!
  *! @seealso
- *!  @[SDL.gl_set_attribute()], @[SDL.gl_get_attribute()], @[SDL.set_video_mode()]
+ *!  @[SDL.gl_set_attribute()], @[SDL.gl_get_attribute()],
+ *!  @[SDL.set_video_mode()]
  */
 
 PIKEFUN void gl_swap_buffers( )
@@ -1943,8 +1952,8 @@ PIKEFUN void|string video_driver_name() {
 
 /*! @decl void set_caption(string title, string icon)
  *!
- *! Sets the window's title and icon name.  Icon name refers to the text that appears next to the application's
- *! icon in its minimized window.
+ *! Sets the window's title and icon name.  Icon name refers to the text
+ *! that appears next to the application's icon in its minimized window.
  *!
  *! @param title
  *!  The window's title.
@@ -1980,7 +1989,8 @@ PIKEFUN array(string) get_caption() {
  *!
  *! Attempts to iconify (i.e. minimize) the application window.
  *!
- *! If the call is successful, the application will receive an @[SDL.APPACTIVE] loss event.
+ *! If the call is successful, the application will receive an
+ *! @[SDL.APPACTIVE] loss event.
  *!
  *! @returns
  *!  Non-zero if successful, otherwise @expr{0@}.  
@@ -2012,8 +2022,9 @@ PIKEFUN int toggle_fullscreen(void|object screen) {
  *!
  *! Sets or queries the current 'grab' mode.
  *!
- *! Grabbing input means asking that all mouse activity be confined to this application window and that nearly 
- *! all keyboard events are passed directly to the application, bypassing the window manager.
+ *! Grabbing input means asking that all mouse activity be confined to
+ *! this application window and that nearly all keyboard events are
+ *! passed directly to the application, bypassing the window manager.
  *!
  *! @param mode
  *!  One of the following constants:
@@ -2039,13 +2050,16 @@ PIKEFUN int grab_input(int mode) {
 
 /*! @class Joystick
  *!
- *! Represents a joystick, gamepad or other similar input device attached to the system.
+ *! Represents a joystick, gamepad or other similar input device attached
+ *! to the system.
  *!
- *! You must call @[SDL.init()] with the @[SDL.INIT_JOYSTICK] flag to enable joystick support.
+ *! You must call @[SDL.init()] with the @[SDL.INIT_JOYSTICK] flag to
+ *! enable joystick support.
  *!
  *! All index numbers count from @expr{0@}.
  *!
- *! All @[SDL.Joystick] methods throw an exception if they are called on an uninitialized object.
+ *! All @[SDL.Joystick] methods throw an exception if they are called on
+ *! an uninitialized object.
  */
 
 #define CHECK_INIT() if((THIS->generation != joystick_generation) || (THIS->joystick == NULL)) { Pike_error("Joystick uninitialized!\n"); }
@@ -2162,7 +2176,8 @@ PIKECLASS Joystick {
    *!
    *! Returns the current state of the given hat.  
    *!
-   *! This is represented as an OR'd combination of one or more of the following constants:
+   *! This is represented as an OR'd combination of one or more of the
+   *! following constants:
    *!
    *! @dl
    *!   @item 
@@ -2203,9 +2218,9 @@ PIKECLASS Joystick {
    *!
    *! Returns the axis change of the given trackball.  
    *!
-   *! This is its relative motion along both axes since the last call to @[get_ball()].
-   *! It is returned as a 2-element array holding the values of @i{dx@} and @i{dy@} 
-   *! (- the motion deltas).
+   *! This is its relative motion along both axes since the last call to
+   *! @[get_ball()]. It is returned as a 2-element array holding the values
+   *! of @i{dx@} and @i{dy@} (- the motion deltas).
    *! 
    *! @returns
    *!  The axis change of the given trackball.
@@ -2272,7 +2287,8 @@ PIKECLASS Joystick {
  *!
  *! Pumps the event loop, gathering events from the input devices.
  *!
- *! Normally you won't need to call this method, as it's called implicitly by @[SDL.Event->poll()].
+ *! Normally you won't need to call this method, as it's called implicitly
+ *! by @[SDL.Event->poll()].
  *!
  *! @seealso
  *!  @[get_key_state()], @[get_mod_state()]
@@ -2295,7 +2311,8 @@ PIKEFUN int num_joysticks() {
 
 /*! @decl string joystick_name(int device_index)
  *!
- *! Returns the implementation-dependent name of the @i{n@}th joystick device available to the system.
+ *! Returns the implementation-dependent name of the @i{n@}th joystick
+ *! device available to the system.
  *! 
  *! @param device_index
  *!  The @i{n@}th joystick device.
@@ -2360,8 +2377,9 @@ PIKEFUN void joystick_update() {
  *!  @enddl
  *!
  *! @returns
- *!   The current state of joystick event processing.  If @[state] was @[SDL.ENABLE] or @[SDL.IGNORE], 
- *!   then processing will now be enabled or disabled, respectively.
+ *!   The current state of joystick event processing.  If @[state] was
+ *!   @[SDL.ENABLE] or @[SDL.IGNORE], then processing will now be enabled
+ *!   or disabled, respectively.
  */
 PIKEFUN int joystick_event_state(int state) {
   RETURN SDL_JoystickEventState(state);
@@ -2598,7 +2616,8 @@ PIKEFUN int cd_num_drives() {
  *!  The CD drive index.
  *!
  *! @returns
- *!  A human-readable and system-dependent name for the given drive, or @expr{0@} if no name is available.
+ *!  A human-readable and system-dependent name for the given drive,
+ *!  or @expr{0@} if no name is available.
  *!
  *! @seealso
  *!  @[SDL.cd_num_drives()]
@@ -2620,11 +2639,12 @@ PIKEFUN string|void cd_name(int drive) {
 
 /*! @class Music
  *!
- *! Use an @[SDL.Music] object to load in a music file or sample and then play it back using an
- *! internal player.
+ *! Use an @[SDL.Music] object to load in a music file or sample and
+ *! then play it back using an internal player.
  *!
- *! You must call @[SDL.init()] with the @[SDL.INIT_AUDIO] flag for audio support to be available.  You
- *! must also first set up some audio parameters with a call to @[SDL.open_audio()].
+ *! You must call @[SDL.init()] with the @[SDL.INIT_AUDIO] flag for
+ *! audio support to be available.  You must also first set up some
+ *! audio parameters with a call to @[SDL.open_audio()].
  *!
  *! @seealso
  *!  @[SDL.open_audio()]
@@ -2647,7 +2667,8 @@ PIKECLASS Music {
 
   /*! @decl void create(string fname)
    *!
-   *! Loads in the given music file and initializes the object ready for playback.
+   *! Loads in the given music file and initializes the object ready
+   *! for playback.
    *!
    *! Supported formats are OGG, MP3, MOD, MID and WAV.
    *!
@@ -2719,8 +2740,8 @@ PIKECLASS Music {
    *!
    *! Rewinds the music to the start and resumes playback.
    *!
-   *! If the music was paused at the time of this call, you will still need to call @[resume()] to
-   *! restart playback.
+   *! If the music was paused at the time of this call, you will still
+   *! need to call @[resume()] to restart playback.
    *!
    *! This function works only for MOD, OGG, MP3 and Native MIDI streams.
    *!
@@ -2784,8 +2805,9 @@ PIKECLASS Music {
    *! Starts playback.  Repeats @tt{loops@} number of times.
    *!
    *! @param loops
-   *!  The number of times the music should be looped (i.e. repeated).  If @tt{loops@} is @expr{-1@} or omitted,
-   *!  the music will repeat indefinitely.
+   *!  The number of times the music should be looped (i.e. repeated).
+   *!  If @tt{loops@} is @expr{-1@} or omitted, the music will repeat
+   *!  indefinitely.
    *!
    *! @returns
    *!  The @[SDL.Music] object.
@@ -2805,20 +2827,23 @@ PIKECLASS Music {
 
   /*! @decl object fade_in(int ms, int|void loops)
    *!
-   *! Fades the music in over the given number of milliseconds.  Playback is repeated @tt{loops@} number
-   *! of times.
+   *! Fades the music in over the given number of milliseconds.
+   *! Playback is repeated @tt{loops@} number of times.
    *!
-   *! The fade-in will only happen on the first play, not on subsequent loops.  Likewise, calling this
-   *! method on an object that is already playing has the same effect as @[rewind()]: playback will start
-   *! over at the beginning but without fading in.
+   *! The fade-in will only happen on the first play, not on subsequent loops.
+   *! Likewise, calling this method on an object that is already playing has
+   *! the same effect as @[rewind()]: playback will start over at the
+   *! beginning but without fading in.
    *!
    *! @param ms
    *!  Music fades in over this number of milliseconds.
    *!
    *! @param loops
-   *!  How many times the music should be repeated (looped).  Passing a value of @expr{0@} here means the music
-   *!  plays once over - i.e. no repeats.  A value of @expr{-1@} loops the music indefinitely.  This is the
-   *!  default if you don't specify a value.
+   *!  How many times the music should be repeated (looped).
+   *!  Passing a value of @expr{0@} here means the music
+   *!  plays once over - i.e. no repeats.  A value of @expr{-1@}
+   *!  loops the music indefinitely.  This is the default if you
+   *!  don't specify a value.
    *!
    *! @returns
    *!  The @[SDL.Music] object.
@@ -2843,10 +2868,12 @@ PIKECLASS Music {
    *!
    *! Fades the music out over the given number of milliseconds.
    *!
-   *! After @tt{ms@} milliseconds have passed, the music will be stopped; i.e. @[playing()] will return @expr{0@}.
+   *! After @tt{ms@} milliseconds have passed, the music will be stopped;
+   *! i.e. @[playing()] will return @expr{0@}.
    *!
    *! @param ms
-   *!  The number of milliseconds it will take to fade out the music, starting from now.
+   *!  The number of milliseconds it will take to fade out the music,
+   *!  starting from now.
    *!
    *! @returns
    *!  The @[SDL.Music] object.
@@ -2861,7 +2888,8 @@ PIKECLASS Music {
    *! Sets the volume for music playback.
    *!
    *! @param vol
-   *!  The volume to set.  This is a float value from @expr{0.0@} (silent) to @expr{1.0@} (full volume).  Values
+   *!  The volume to set.  This is a float value from @expr{0.0@}
+   *!  (silent) to @expr{1.0@} (full volume).  Values
    *!  above and below these limits will be clamped.
    *!
    *! @returns
@@ -2876,7 +2904,8 @@ PIKECLASS Music {
   /*! @decl float volume()
    *!
    *! @returns
-   *!  The current volume setting.  This is a float value from @expr{0.0@} (silent) to @expr{1.0@} (full volume).
+   *!  The current volume setting.  This is a float value from
+   *!  @expr{0.0@} (silent) to @expr{1.0@} (full volume).
    */
   PIKEFUN float volume() {
     RETURN (FLOAT_TYPE)Mix_VolumeMusic(-1) / 128.0;
@@ -2894,7 +2923,8 @@ PIKECLASS Music {
  *!
  *! @param frequency
  *!  Output sampling frequency, measured in samples per second (Hz).
- *!  A value of @expr{44100@} provides CD-quality playback.  A less CPU-intensive value for games is @expr{22050@}.
+ *!  A value of @expr{44100@} provides CD-quality playback.
+ *!  A less CPU-intensive value for games is @expr{22050@}.
  *!
  *! @param format
  *!  Output sample format.  One of the following constants:
@@ -2918,14 +2948,17 @@ PIKECLASS Music {
  *!    @item SDL.AUDIO_U16SYS
  *!     Unsigned 16-bit samples in system byte order.
  *!    @item SDL.AUDIO_S16SYS
- *!     Signed 16-bit samples in system byte order.  If in doubt, try this one first.
+ *!     Signed 16-bit samples in system byte order.
+ *!     If in doubt, try this one first.
  *!   @enddl
  *!
  *! @param channels
- *!  Number of sound channels in output: @expr{1@} for mono, @expr{2@} for stereo.
+ *!  Number of sound channels in output: @expr{1@} for mono,
+ *!  @expr{2@} for stereo.
  *!
  *! @param bufsize
- *!  How many bytes to use per output sample.  @expr{1024@} is a typical value for games.  If just playing
+ *!  How many bytes to use per output sample.
+ *!  @expr{1024@} is a typical value for games.  If just playing
  *!  music you might set this to @expr{4096@} or higher.
  */
 PIKEFUN void open_audio(int frequency, int format, int channels, int bufsize) {
