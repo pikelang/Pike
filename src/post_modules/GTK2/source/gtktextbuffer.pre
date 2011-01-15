@@ -298,7 +298,7 @@ int backspace(GTK2.TextIter iter, int interactive, int default_editable)
 }
 endrequire;
 
-void set_text(string text, mixed ... fmt)
+void set_text(sprintf_format text, sprintf_args ... fmt)
 //! Deletes current contents of this buffer, and inserts text instead.
 //! If multiple arguments are supplied, sprintf() is called implicitly.
 {

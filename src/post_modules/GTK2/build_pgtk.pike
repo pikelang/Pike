@@ -611,6 +611,10 @@ class Type
       case "float": 
       case "object":
 	return name+optp;
+      case "sprintf_format":
+	return "__attribute__(\"sprintf_format\", string)" + optp;
+      case "sprintf_args...":
+	return "__attribute__(\"sprintf_args\", mixed)..." + optp;
 
       case "double": /* int can be used for better precision */
 	return "int|float"+optp;
@@ -1491,6 +1495,8 @@ Type parse_type( mixed t )
    case "double":
    case "string":
    case "string...":
+   case "sprintf_format":
+   case "sprintf_args...":
    case "null":
    case "void":
    case "function":

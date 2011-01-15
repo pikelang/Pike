@@ -41,7 +41,7 @@ void pulse();
 //! forth.  Each call to pulse() causes the block to move by a little bit (the
 //! amount of movement per pulse is determined by set_pulse_step()).
 
-void set_text(string text, mixed ... fmt)
+void set_text(sprintf_format text, sprintf_args ... fmt)
 //! Causes the given text to appear superimposed on the progress bar.
 {
   pgtk2_get_string_arg_with_sprintf(args);

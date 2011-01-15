@@ -65,7 +65,7 @@ endrequire;
 void clear();
 //! Clears the contents of the clipboard.
 
-void set_text(string text, mixed ... fmt)
+void set_text(sprintf_format text, sprintf_args ... fmt)
 //! Sets the contents of the clipboard to the given string.
 //! If multiple arguments are supplied, sprintf() is called implicitly.
 {

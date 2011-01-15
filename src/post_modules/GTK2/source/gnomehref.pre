@@ -29,7 +29,7 @@ void set_url(string url);
 string get_url();
 //! Return the url
 
-void set_text(string text, mixed ... fmt)
+void set_text(sprintf_format text, sprintf_args ... fmt)
 //! Sets the internal label widget text (used to display a URL's link
 //! text) to the given value.
 {
