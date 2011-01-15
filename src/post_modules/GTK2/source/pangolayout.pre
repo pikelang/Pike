@@ -54,7 +54,7 @@ void context_changed();
 //! layout's context.  This function should be called if you make changes
 //! to the context subsequent to creating the layout.
 
-void set_text(string text, mixed ... fmt)
+void set_text(sprintf_format text, sprintf_args ... fmt)
 //! Sets the text of the layout.
 {
   pgtk2_get_string_arg_with_sprintf(args);

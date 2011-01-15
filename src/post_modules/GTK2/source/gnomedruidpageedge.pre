@@ -115,7 +115,7 @@ void set_text_color(GDK2.Color color)
   RETURN_THIS();
 }
 
-void set_text(string text, mixed ... fmt)
+void set_text(sprintf_format text, sprintf_args ... fmt)
 //! Sets the contents of the text portion.
 {
   pgtk2_get_string_arg_with_sprintf(args);
