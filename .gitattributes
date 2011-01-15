@@ -336,8 +336,6 @@ testfont binary
 /src/dmalloc.h foreign_ident
 /src/docode.h foreign_ident
 /src/dumpmaster.pike foreign_ident
-/src/dynamic_buffer.c foreign_ident
-/src/dynamic_buffer.h foreign_ident
 /src/dynamic_load.c foreign_ident
 /src/dynamic_load.h foreign_ident
 /src/encode.h foreign_ident
