@@ -202,7 +202,7 @@ PIKEFUN int init_sub_system(int flags) {
 /*! @decl void quit_sub_system(int flags)
  *! 
  *! After an SDL subsystem has been initialized with @[SDL.init()] or
- *! @[SDL.init_sub_system], it may be shut down with this method.
+ *! @[SDL.init_sub_system()], it may be shut down with this method.
  *! 
  *! @param  flags
  *!   A bitwise OR'd combination of the subsystems
@@ -268,7 +268,7 @@ PIKEFUN void quit() {
  *!
  *! Enables/Disables UNICODE keyboard translation.
  *!
- *! If you wish to translate a keysym to it's printable
+ *! If you wish to translate a keysym to its printable
  *! representation, you need to enable UNICODE translation using this
  *! function and then look in the @b{unicode@} member of the
  *! @[SDL.Keysym] class. This value will be zero for keysyms that do
@@ -308,7 +308,7 @@ PIKEFUN int enable_unicode(int enable)
  *! SDL.KMOD_RMETA, SDL.KMOD_NUM, SDL.KMOD_CAPS, and
  *! SDL.KMOD_MODE.
  *!
- *! For convenience the following are also defined:
+ *! For convenience, the following are also defined:
  *! SDL.KMOD_CTRL, SDL.KMOD_SHIFT, SDL.KMOD_ALT and SDL.KMOD_META
  *!   
  *! @seealso
@@ -327,15 +327,23 @@ PIKEFUN int get_mod_state()
  *! @returns
  *!   The current state is returned as a string.
  *!
- *!   The string is indexed by the SDL.K_* symbols.
+ *!   The string is indexed by the @[SDL.K_*] symbols.
  *!   A value of @expr{1@} means the key is pressed and
- *!   a value of @expr{0@} means its not. 
+ *!   a value of @expr{0@} means it's not.
  *! 
  *! @note
  *!  Call @[SDL.pump_events()] to update the state array.
  *! 
  *! @seealso
  *!   @[SDL.get_mod_state()], @[SDL.pump_events()]
+ *!
+ *! @example
+ *!  // Test if the 'Escape' key is pressed.
+ *!SDL.pump_events();
+ *!string ks = SDL.get_key_state();
+ *!if ( ks[SDL.K_ESCAPE] )
+ *!{
+ *!    // handle key press...
  */
 PIKEFUN string get_key_state()
      optflags OPT_EXTERNAL_DEPEND;
@@ -1649,8 +1657,8 @@ PIKEFUN int video_mode_ok(int width, int height, int bpp, int flags) {
  *! that  doesn't support double-buffering, this is equivalent
  *! to calling @[SDL.update_rect(screen, 0, 0, 0, 0)]
  *! 
- *! The  SDL.DOUBLEBUF  flag  must   have   been   passed   to
- *! SDL_SetVideoMode,  when  setting  the  video mode for this
+ *! The  @[SDL.DOUBLEBUF] flag must have been passed to
+ *! @[SDL.set_video_mode()] when setting the video mode for this
  *! function to perform hardware flipping.
  *! 
  *! @param screen
@@ -1683,10 +1691,10 @@ PIKEFUN int flip(object|void screen) {
  *! rectangle must be confined within the screen boundaries (no clipping
  *! is done).
  *! 
- *! If 'x', 'y', 'w' and 'h' are all 0, SDL_UpdateRect will update
+ *! If 'x', 'y', 'w' and 'h' are all 0, @[SDL.update_rect()] will update
  *! the entire screen.
  *! 
- *! This function should not be called while 'screen' is locked.
+ *! This function should not be called while @expr{screen@} is locked.
  *! 
  *! @param x
  *! @param y
@@ -1760,18 +1768,42 @@ PIKEFUN void|object get_video_info()
 
 /*! @decl void gl_set_attribute(int attribute, int value)
  *!
- *! @fixme
- *!   Document this function
+ *! Sets an SDL/OpenGL attribute to the given value.
+ *!
+ *! This won't take effect until after a call to @[SDL.set_video_mode()].
+ *!
+ *! @param attribute
+ *!  The attribute to set.  This will be one of @[SDL.GL_RED_SIZE], @[SDL.GL_GREEN_SIZE], @[SDL.GL_BLUE_SIZE],
+ *!  @[SDL.GL_DEPTH_SIZE] or @[SDL.GL_DOUBLEBUFFER].
+ *!
+ *! @param value
+ *!  The value to set for this attribute.
+ *!
+ *! @seealso
+ *!  @[SDL.gl_get_attribute()]
  */
 PIKEFUN void gl_set_attribute( int attribute, int value )
 {
   SDL_GL_SetAttribute( attribute, value );
 }
 
-/*! @decl void gl_get_attribute(int attribute)
+/*! @decl int gl_get_attribute(int attribute)
  *!
- *! @fixme
- *!   Document this function
+ *! Returns the value of the given SDL/OpenGL attribute.  You might want to call this after
+ *! @[SDL.set_video_mode()] to check that attributes have been set as you expected.
+ *!
+ *! @param attribute
+ *!  The SDL/OpenGL attribute to query.
+ *!
+ *! @returns
+ *!  The value of the given attribute.
+ *!
+ *! @example
+ *!  // Has double-buffering been set?
+ *!int db = SDL.gl_get_attribute( SDL.GL_DOUBLEBUFFER );
+ *!if ( db )
+ *!{
+ *!    // yes...
  */
 PIKEFUN int gl_get_attribute( int attribute )
 {
@@ -1782,8 +1814,23 @@ PIKEFUN int gl_get_attribute( int attribute )
 
 /*! @decl int show_cursor(int show)
  *!
- *! @fixme
- *!   Document this function
+ *! Sets the state of the mouse cursor on the SDL screen (visible or hidden), or queries its current state.
+ *!
+ *! By default, the cursor is visible.
+ *!
+ *! @param show
+ *!  One of these constants:
+ *!   @dl
+ *!    @item SDL.ENABLE
+ *!     Show the cursor.
+ *!    @item SDL.DISABLE
+ *!     Hide the cursor.
+ *!    @item SDL.QUERY
+ *!     Determine the current state of the cursor.
+ *!   @enddl
+ *!
+ *! @returns
+ *!  The current state of the mouse cursor, either @[SDL.ENABLE] or @[SDL.DISABLE].
  */
 PIKEFUN int show_cursor( int show )
 {
@@ -1802,8 +1849,10 @@ PIKEFUN void warp_mouse( int xpos, int ypos )
 
 /*! @decl void gl_swap_buffers()
  *!
- *! @fixme
- *!   Document this function
+ *! Swaps the OpenGL buffers on a double-buffered screen.
+ *!
+ *! @seealso
+ *!  @[SDL.gl_set_attribute()], @[SDL.gl_get_attribute()], @[SDL.set_video_mode()]
  */
 
 PIKEFUN void gl_swap_buffers( )
@@ -1894,8 +1943,17 @@ PIKEFUN void|string video_driver_name() {
 
 /*! @decl void set_caption(string title, string icon)
  *!
- *! @fixme
- *!   Document this function
+ *! Sets the window's title and icon name.  Icon name refers to the text that appears next to the application's
+ *! icon in its minimized window.
+ *!
+ *! @param title
+ *!  The window's title.
+ *!
+ *! @param icon
+ *!  The minimized window's icon name.
+ *!
+ *! @seealso
+ *!  @[SDL.get_caption()]
  */
 PIKEFUN void set_caption(string title, string icon) {
   SDL_WM_SetCaption(title->str, icon->str);
@@ -1903,8 +1961,11 @@ PIKEFUN void set_caption(string title, string icon) {
 
 /*! @decl array(string) get_caption()
  *!
- *! @fixme
- *!   Document this function
+ *! @returns
+ *!  A 2-element array holding the window title and icon name.
+ *!
+ *! @seealso
+ *!  @[SDL.set_caption()]
  */
 PIKEFUN array(string) get_caption() {
   char *title, *icon;
@@ -1917,8 +1978,12 @@ PIKEFUN array(string) get_caption() {
 
 /*! @decl int iconify_window()
  *!
- *! @fixme
- *!   Document this function
+ *! Attempts to iconify (i.e. minimize) the application window.
+ *!
+ *! If the call is successful, the application will receive an @[SDL.APPACTIVE] loss event.
+ *!
+ *! @returns
+ *!  Non-zero if successful, otherwise @expr{0@}.  
  */
 PIKEFUN int iconify_window() {
   RETURN SDL_WM_IconifyWindow();
@@ -1945,8 +2010,24 @@ PIKEFUN int toggle_fullscreen(void|object screen) {
 
 /*! @decl int grab_input(int mode)
  *!
- *! @fixme
- *!   Document this function
+ *! Sets or queries the current 'grab' mode.
+ *!
+ *! Grabbing input means asking that all mouse activity be confined to this application window and that nearly 
+ *! all keyboard events are passed directly to the application, bypassing the window manager.
+ *!
+ *! @param mode
+ *!  One of the following constants:
+ *!   @dl
+ *!    @item
+ *!     @[SDL.GRAB_ON]
+ *!    @item
+ *!     @[SDL.GRAB_OFF]
+ *!    @item
+ *!     @[SDL.GRAB_QUERY]
+ *!   @enddl
+ *!
+ *! @returns
+ *!  The current grab mode, either @[SDL.GRAB_ON] or @[SDL.GRAB_OFF]. 
  */
 PIKEFUN int grab_input(int mode) {
   RETURN SDL_WM_GrabInput(mode);
@@ -2186,6 +2267,19 @@ PIKECLASS Joystick {
 
 /*! @endclass
  */
+
+/*! @decl void pump_events()
+ *!
+ *! Pumps the event loop, gathering events from the input devices.
+ *!
+ *! Normally you won't need to call this method, as it's called implicitly by @[SDL.Event->poll()].
+ *!
+ *! @seealso
+ *!  @[get_key_state()], @[get_mod_state()]
+ */
+PIKEFUN void pump_events() {
+  SDL_PumpEvents();
+}
 
 /*! @decl int num_joysticks()
  *!
@@ -2484,10 +2578,13 @@ PIKECLASS CD {
 /*! @endclass
  */
 
-/*! @decl int cd_num_drivers()
+/*! @decl int cd_num_drives()
  *!
- *! @fixme
- *!   Document this function
+ *! @returns
+ *!  The number of CD-ROM drives on the system.
+ *!
+ *! @seealso
+ *!  @[SDL.cd_name()]
  */
 PIKEFUN int cd_num_drives() {
   RETURN SDL_CDNumDrives();
@@ -2495,8 +2592,16 @@ PIKEFUN int cd_num_drives() {
 
 /*! @decl string|void cd_name(int drive)
  *!
- *! @fixme
- *!   Document this function
+ *! Returns a human-readable and system-dependent name for the given drive.
+ *!
+ *! @param drive
+ *!  The CD drive index.
+ *!
+ *! @returns
+ *!  A human-readable and system-dependent name for the given drive, or @expr{0@} if no name is available.
+ *!
+ *! @seealso
+ *!  @[SDL.cd_num_drives()]
  */
 PIKEFUN string|void cd_name(int drive) {
   const char *name = SDL_CDName(drive);
@@ -2574,7 +2679,7 @@ PIKECLASS Music {
    *!  The @[SDL.Music] object.
    *!
    *! @seealso
-   *!  @[resume()] @[paused()]
+   *!  @[resume()], @[paused()]
    */
   PIKEFUN object pause() {
     Mix_PauseMusic();
@@ -2603,7 +2708,7 @@ PIKECLASS Music {
    *!  The @[SDL.Music] object.
    *!
    *! @seealso
-   *!  @[pause()] @[paused()]
+   *!  @[pause()], @[paused()]
    */
   PIKEFUN object resume() {
     Mix_ResumeMusic();
@@ -2654,8 +2759,21 @@ PIKECLASS Music {
 
   /*! @decl int fading()
    *!
-   *! @fixme
-   *!   Document this function
+   *! Determines the current state of fading for this @[SDL.Music] object.
+   *!
+   *! @returns
+   *!  One of the following constants:
+   *!  @dl
+   *!   @item 
+   *!    @[SDL.MIX_NO_FADING]
+   *!   @item
+   *!    @[SDL.MIX_FADING_IN]
+   *!   @item
+   *!    @[SDL.MIX_FADING_OUT]
+   *!  @enddl
+   *!
+   *! @seealso
+   *!  @[fade_in()], @[fade_out()]
    */
   PIKEFUN int fading() {
     RETURN Mix_FadingMusic();
@@ -2706,7 +2824,7 @@ PIKECLASS Music {
    *!  The @[SDL.Music] object.
    *!
    *! @seealso
-   *!  @[fade_out()] @[fading()]
+   *!  @[fade_out()], @[fading()]
    */
   PIKEFUN object fade_in(int ms, int|void _loops) {
     int loops = -1;
