@@ -159,6 +159,7 @@ const char *const lfun_names[]  = {
   "`[..]",
   /* NOTE: After this point there are only fake lfuns. */
   "_search",
+  "_types",
 };
 
 struct pike_string *lfun_strings[NELEM(lfun_names)];
@@ -216,6 +217,7 @@ static const char *const raw_lfun_types[] = {
   tFuncV(tZero tRangeBound tZero tRangeBound, tVoid, tMix), /* "`[..]" */
   /* NOTE: After this point there are only fake lfuns. */
   tFuncV(tZero tOr(tZero, tVoid), tVoid, tMix), /* "_search", */
+  tFuncV(tNone,tVoid,tArray),	/* "_types", */
 };
 
 /* These two are not true LFUNs! */
@@ -924,7 +926,8 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!   It's assumed that this function is side-effect free.
  *!
  *! @seealso
- *!   @[predef::indices()], @[lfun::_values()]
+ *!   @[predef::indices()], @[lfun::_values()], @[lfun::_types()],
+ *!   @[::_indices()]
  */
 
 /*! @decl array lfun::_values()
@@ -939,7 +942,8 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!   It's assumed that this function is side-effect free.
  *!
  *! @seealso
- *!   @[predef::values()], @[lfun::_indices()]
+ *!   @[predef::values()], @[lfun::_indices()], @[lfun::_types()],
+ *!   @[::_values()]
  */
 
 /*! @decl mixed lfun::`()(zero ... args)
@@ -1122,6 +1126,27 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!
  *! @seealso
  *!   @[predef::search()]
+ */
+
+/*! @decl array lfun::_types()
+ *!
+ *!   List types callback.
+ *!
+ *!   This callback is typically called via @[predef::types()].
+ *!
+ *! @returns
+ *!   Expected to return an array with the types corresponding to
+ *!   the indices returned by @[lfun::_indices()].
+ *!
+ *! @note
+ *!   It's assumed that this function is side-effect free.
+ *!
+ *! @note
+ *!   @[predef::types()] was added in Pike 7.9.
+ *!
+ *! @seealso
+ *!   @[predef::types()], @[lfun::_indices()], @[lfun::_values()],
+ *!   @[::_types()]
  */
 
 /*! @decl mixed lfun::`symbol()
@@ -1844,6 +1869,9 @@ struct node_s *program_magic_identifier (struct program_state *state,
 		    mknewintnode(state_depth));
     } else if(ident == lfun_strings[LFUN__VALUES]) {
       return mknode(F_MAGIC_VALUES, mknewintnode(inherit_num),
+		    mknewintnode(state_depth));
+    } else if(ident == lfun_strings[LFUN__TYPES]) {
+      return mknode(F_MAGIC_TYPES, mknewintnode(inherit_num),
 		    mknewintnode(state_depth));
     }
   }
@@ -6461,6 +6489,45 @@ struct array *program_values(struct program *p)
       } else {
 	/* Prototype constant. */
 	push_int(0);
+	n++;
+      }
+    }
+  }
+  f_aggregate(n);
+  res = Pike_sp[-1].u.array;
+  add_ref(res);
+  pop_stack();
+  return(res);
+}
+
+struct array *program_types(struct program *p)
+{
+  int e;
+  int n = 0;
+  struct array *res;
+  for (e = p->num_identifier_references; e--; ) {
+    struct identifier *id;
+    if (p->identifier_references[e].id_flags &
+	(ID_HIDDEN|ID_PROTECTED|ID_PRIVATE)) {
+      continue;
+    }
+    id = ID_FROM_INT(p, e);
+    if (IDENTIFIER_IS_ALIAS(id->identifier_flags)) {
+      /* FIXME!
+       */
+      continue;
+    } else if (IDENTIFIER_IS_CONSTANT(id->identifier_flags)) {
+      if (id->func.const_info.offset >= 0) {
+	struct program *p2 = PROG_FROM_INT(p, e);
+	struct svalue *val = &p2->constants[id->func.const_info.offset].sval;
+	if ((val->type != T_PROGRAM) ||
+	    !(val->u.program->flags & PROGRAM_USES_PARENT)) {
+	  ref_push_type_value(ID_FROM_INT(p, e)->type);
+	  n++;
+	}
+      } else {
+	/* Prototype constant. */
+	ref_push_type_value(ID_FROM_INT(p, e)->type);
 	n++;
       }
     }

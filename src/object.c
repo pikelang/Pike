@@ -2026,6 +2026,54 @@ PMOD_EXPORT struct array *object_values(struct object *o, int inherit_number)
   return a;
 }
 
+PMOD_EXPORT struct array *object_types(struct object *o, int inherit_number)
+{
+  struct program *p;
+  struct inherit *inh;
+  struct array *a;
+  int fun;
+  int e;
+
+  p=o->prog;
+  if(!p)
+    Pike_error("types() on destructed object.\n");
+
+  p = (inh = p->inherits + inherit_number)->prog;
+
+  if((fun = low_find_lfun(p, LFUN__TYPES)) == -1)
+  {
+    if ((fun = FIND_LFUN(p, LFUN__VALUES)) != -1) {
+      /* Some compat for the case where lfun::_values() is overloaded,
+       * but not lfun::_types(). */
+      a = object_values(o, inherit_number);
+      for(e=0;e<a->size;e++) {
+	struct pike_type *t = get_type_of_svalue(ITEM(a) + e);
+	free_svalue(ITEM(a) + e);
+	ITEM(a)[e].u.type = t;
+	ITEM(a)[e].type = PIKE_T_TYPE;
+      }
+      a->type_field = BIT_TYPE;
+      return a;
+    }
+    a=allocate_array_no_init(p->num_identifier_index,0);
+    for(e=0;e<(int)p->num_identifier_index;e++)
+    {
+      struct identifier *id = ID_FROM_INT(p,p->identifier_index[e]);
+      add_ref(ITEM(a)[e].u.type = id->type);
+      ITEM(a)[e].type = PIKE_T_TYPE;
+    }
+    a->type_field = BIT_TYPE;
+  }else{
+    apply_low(o, fun + inh->identifier_level, 0);
+    if(sp[-1].type != T_ARRAY)
+      Pike_error("Bad return type from o->_types()\n");
+    a=sp[-1].u.array;
+    sp--;
+    dmalloc_touch_svalue(sp);
+  }
+  return a;
+}
+
 
 PMOD_EXPORT void visit_object (struct object *o, int action)
 {
@@ -2505,6 +2553,7 @@ struct program *magic_index_program=0;
 struct program *magic_set_index_program=0;
 struct program *magic_indices_program=0;
 struct program *magic_values_program=0;
+struct program *magic_types_program=0;
 
 void push_magic_index(struct program *type, int inherit_no, int parent_level)
 {
@@ -2713,7 +2762,7 @@ static void f_magic_set_index(INT32 args)
  *! This is useful when @[lfun::_indices] has been overloaded.
  *!
  *! @seealso
- *!   @[::_values, ::`->]
+ *!   @[::_values()], @[::_types()], @[::`->()]
  */
 static void f_magic_indices (INT32 args)
 {
@@ -2754,7 +2803,7 @@ static void f_magic_indices (INT32 args)
 	if (ref->id_flags & ID_HIDDEN) continue;
 	if ((ref->id_flags & (ID_INHERITED|ID_PRIVATE)) ==
 	    (ID_INHERITED|ID_PRIVATE)) continue;
-	copy_shared_string (ITEM(res)[i].u.string, ID_FROM_PTR (prog, ref)->name);
+	copy_shared_string (ITEM(res)[i].u.string, id->name);
 	ITEM(res)[i++].type = T_STRING;
       }
       res->type_field = BIT_STRING;
@@ -2783,7 +2832,7 @@ static void f_magic_indices (INT32 args)
  *! object. This is useful when @[lfun::_values] has been overloaded.
  *!
  *! @seealso
- *!   @[::_indices, ::`->]
+ *!   @[::_indices()], @[::_types()], @[::`->()]
  */
 static void f_magic_values (INT32 args)
 {
@@ -2856,6 +2905,86 @@ static void f_magic_values (INT32 args)
   res->type_field = types;
 }
 
+/*! @decl mixed ::_types()
+ *!
+ *! Builtin function to list the types of the identifiers of an
+ *! object. This is useful when @[lfun::_types] has been overloaded.
+ *!
+ *! @seealso
+ *!   @[::_indices()], @[::_values()], @[::`->()]
+ */
+static void f_magic_types (INT32 args)
+{
+  struct object *obj;
+  struct program *prog;
+  struct inherit *inherit;
+  struct array *res;
+  TYPE_FIELD types;
+  int type = 0, e, i;
+
+  if (args >= 1) {
+    if (sp[-args].type != T_INT) SIMPLE_BAD_ARG_ERROR ("::_types", 1, "void|int");
+    type = sp[-args].u.integer;
+  }
+
+  if (!(obj = MAGIC_THIS->o)) Pike_error ("Magic index error\n");
+  if (!obj->prog) Pike_error ("Object is destructed.\n");
+
+  /* FIXME: Both type 0 and 1 have somewhat odd behaviors if there are
+   * local identifiers before inherits that are overridden by them
+   * (e.g. listing duplicate identifiers). But then again, this is not
+   * the only place where that gives strange effects, imho. /mast */
+
+  switch (type) {
+    case 0:
+      inherit = MAGIC_THIS->inherit;
+      prog = inherit->prog;
+      break;
+    case 1:
+    case 3:
+      if (type == 1) {
+	inherit = MAGIC_THIS->inherit;
+	prog = inherit->prog;
+      } else {
+	prog = obj->prog;
+	inherit = prog->inherits + 0;
+      }
+      pop_n_elems (args);
+      push_array (res = allocate_array_no_init (prog->num_identifier_references, 0));
+      types = 0;
+      for (e = i = 0; e < (int) prog->num_identifier_references; e++, i++) {
+	struct reference *ref = prog->identifier_references + e;
+	struct identifier *id = ID_FROM_PTR (prog, ref);
+	if (ref->id_flags & ID_HIDDEN) continue;
+	if ((ref->id_flags & (ID_INHERITED|ID_PRIVATE)) ==
+	    (ID_INHERITED|ID_PRIVATE)) continue;
+	add_ref(ITEM(res)[i].u.type = id->type);
+	ITEM(res)[i].type = PIKE_T_TYPE;
+	types = BIT_TYPE;
+      }
+      res->type_field = types;
+      sp[-1].u.array = resize_array (res, i);
+      return;
+    case 2:
+      prog = obj->prog;
+      inherit = prog->inherits + 0;
+      break;
+    default:
+      Pike_error("Unknown indexing type.\n");
+  }
+
+  pop_n_elems (args);
+  push_array (res = allocate_array_no_init (prog->num_identifier_index, 0));
+  types = 0;
+  for (e = 0; e < (int) prog->num_identifier_index; e++) {
+    struct identifier *id = ID_FROM_INT(prog, prog->identifier_index[e]);
+    add_ref(ITEM(res)[e].u.type = id->type);
+    ITEM(res)[e].type = PIKE_T_TYPE;
+    types = BIT_TYPE;
+  }
+  res->type_field = types;
+}
+
 /*! @endnamespace
  */
 
@@ -2898,6 +3027,13 @@ void init_object(void)
 	       offset + OFFSETOF(magic_index_struct, o), T_OBJECT);
   ADD_FUNCTION("`()",f_magic_values,tFunc(tOr(tVoid,tInt),tArray),0);
   magic_values_program=end_program();
+
+  start_new_program();
+  offset=ADD_STORAGE(struct magic_index_struct);
+  MAP_VARIABLE("__obj", tObj, ID_PROTECTED,
+	       offset + OFFSETOF(magic_index_struct, o), T_OBJECT);
+  ADD_FUNCTION("`()",f_magic_types,tFunc(tOr(tVoid,tInt),tArray),0);
+  magic_types_program=end_program();
 
   exit_compiler();
 }
@@ -2946,6 +3082,12 @@ void exit_object(void)
   {
     free_program(magic_values_program);
     magic_values_program=0;
+  }
+
+  if(magic_types_program)
+  {
+    free_program(magic_types_program);
+    magic_types_program=0;
   }
 }
 

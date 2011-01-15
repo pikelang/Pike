@@ -2729,6 +2729,10 @@ OPCODE2(F_THIS, "this", I_UPDATE_SP, {
     print_return_value();
 });
 
+OPCODE2(F_MAGIC_TYPES, "::_types", I_UPDATE_SP, {
+  push_magic_index(magic_types_program, arg2, arg1);
+});
+
 /*
 #undef PROG_COUNTER
 */

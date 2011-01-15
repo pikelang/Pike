@@ -84,6 +84,7 @@ PMOD_EXPORT void f_crypt(INT32 args);
 PMOD_EXPORT void f_destruct(INT32 args);
 PMOD_EXPORT void f_indices(INT32 args);
 PMOD_EXPORT void f_values(INT32 args);
+PMOD_EXPORT void f_types(INT32 args);
 PMOD_EXPORT void f_next_object(INT32 args);
 PMOD_EXPORT void f_object_program(INT32 args);
 int find_longest_prefix(char *str,

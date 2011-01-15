@@ -859,6 +859,7 @@ static int do_docode2(node *n, int flags)
   case F_MAGIC_SET_INDEX:
   case F_MAGIC_INDICES:
   case F_MAGIC_VALUES:
+  case F_MAGIC_TYPES:
     emit2(n->token,
 	  n->u.node.b->u.sval.u.integer,
 	  n->u.node.a->u.sval.u.integer);

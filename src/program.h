@@ -108,6 +108,7 @@ extern struct pike_string *type_check_system_string;
  *       ie use low_find_lfun(), and NOT FIND_LFUN()!
  */
 #define LFUN__SEARCH 45
+#define LFUN__TYPES 46
 
 extern const char *const lfun_names[];
 
@@ -921,6 +922,7 @@ int store_constant(const struct svalue *foo,
 		   struct pike_string *constant_name);
 struct array *program_indices(struct program *p);
 struct array *program_values(struct program *p);
+struct array *program_types(struct program *p);
 int low_program_index_no_free(struct svalue *to, struct program *p, int e,
 			      struct object *parent, int parent_identifier);
 int program_index_no_free(struct svalue *to, struct svalue *what,

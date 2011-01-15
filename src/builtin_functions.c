@@ -3000,7 +3000,7 @@ PMOD_EXPORT void f_destruct(INT32 args)
  *!   returned.
  *!
  *! @seealso
- *!   @[values()]
+ *!   @[values()], @[types()], @[lfun::_indices()]
  */
 PMOD_EXPORT void f_indices(INT32 args)
 {
@@ -3301,7 +3301,7 @@ static node *fix_aggregate_mapping_type(node *n)
  *!   symbols is returned.
  *!
  *! @seealso
- *!   @[indices()]
+ *!   @[indices()], @[types()], @[lfun::_values()]
  */
 PMOD_EXPORT void f_values(INT32 args)
 {
@@ -3358,6 +3358,95 @@ PMOD_EXPORT void f_values(INT32 args)
 			 "string|array|mapping|multiset|"
 			 "object|program|function");
     return;  /* make apcc happy */
+  }
+  pop_n_elems(args);
+  push_array(a);
+}
+
+/*! @decl array(type(mixed)) types(string|array|mapping|multiset|object x)
+ *!
+ *!   Return an array of all valid indices for the value @[x].
+ *!
+ *!   For strings this is simply an array with @tt{int@}
+ *!
+ *!   For arrays, mappings and multisets this is simply
+ *!   an array with @tt{mixed@}.
+ *!
+ *!   For objects which define @[lfun::_types()] that return value
+ *!   is used.
+ *!
+ *!   For other objects an array with type types for all non-protected
+ *!   symbols is returned.
+ *!
+ *! @note
+ *!   This function was added in Pike 7.9.
+ *!
+ *! @seealso
+ *!   @[indices()], @[values()], @[lfun::_types()]
+ */
+PMOD_EXPORT void f_types(INT32 args)
+{
+  ptrdiff_t size;
+  struct array *a = NULL;
+  struct pike_type *default_type = mixed_type_string;
+
+  if(args < 1)
+    SIMPLE_TOO_FEW_ARGS_ERROR("types", 1);
+
+  switch(Pike_sp[-args].type)
+  {
+  case T_STRING:
+    default_type = int_type_string;
+    size=Pike_sp[-args].u.string->len;
+    goto qjump;
+
+  case T_MAPPING:
+    size = Pike_sp[-args].u.mapping->data->size;
+    goto qjump;
+
+  case T_MULTISET:
+    /* FIXME: Ought to be int(1..1). */
+    default_type = int_type_string;
+    size = Pike_sp[-args].u.multiset->msd->size;
+    goto qjump;
+
+  case T_ARRAY:
+    size=Pike_sp[-args].u.array->size;
+
+  qjump:
+    a=allocate_array_no_init(size,0);
+    while(--size>=0)
+    {
+      /* Elements are already integers. */
+      add_ref(ITEM(a)[size].u.type = default_type);
+      ITEM(a)[size].type = PIKE_T_TYPE;
+    }
+    a->type_field = BIT_TYPE;
+    break;
+
+  case T_OBJECT:
+    a=object_types(Pike_sp[-args].u.object, Pike_sp[-args].subtype);
+    break;
+
+  case T_PROGRAM:
+    a = program_types(Pike_sp[-args].u.program);
+    break;
+
+  case T_FUNCTION:
+    {
+      struct program *p = program_from_svalue(Pike_sp-args);
+      if (p) {
+	a = program_types(p);
+	break;
+      }
+    }
+    /* FALL THROUGH */
+
+  default:
+    SIMPLE_BAD_ARG_ERROR("types", 1,
+			 "string|array|mapping|"
+			 "multiset|object|program|function");
+    return; /* make apcc happy */
   }
   pop_n_elems(args);
   push_array(a);
@@ -9459,6 +9548,15 @@ void init_builtin_efuns(void)
 			  tMap(tMix,tSetvar(0,tMix)),
 			  tObj,tPrg(tObj)),
 		     tArr(tVar(0)))),0,fix_values_type,0);
+  
+/* function(string|multiset:array(int))|function(array(0=mixed)|mapping(mixed:0=mixed)|object|program:array(0)) */
+  ADD_EFUN2("types", f_types,
+	    tOr3(tFunc(tOr3(tNStr(tSetvar(0,tInt)),
+			    tArr(tSetvar(0,tMix)),
+			    tMap(tMix,tSetvar(0,tMix))),
+		       tArr(tType(tVar(0)))),
+		 tFunc(tMultiset, tArr(tType(tInt1))),
+		 tFunc(tOr(tObj,tPrg(tObj)), tArr(tType(tMix)))),0,NULL,0);
   
 /* function(mixed:int) */
   ADD_EFUN2("zero_type",f_zero_type,tFunc(tMix,tInt01),0,0,generate_zero_type);

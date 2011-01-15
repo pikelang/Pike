@@ -816,6 +816,7 @@ node *debug_mknode(int token, node *a, node *b)
   case F_MAGIC_INDEX:
   case F_MAGIC_INDICES:
   case F_MAGIC_VALUES:
+  case F_MAGIC_TYPES:
   {
     int e;
     struct program_state *state = Pike_compiler;
@@ -4286,6 +4287,10 @@ void fix_type_field(node *n)
   case F_MAGIC_VALUES:
     /* FIXME: Could have a stricter type for ::_values. */
     MAKE_CONSTANT_TYPE(n->type, tFunc(tOr(tVoid,tInt), tArray));
+    break;
+  case F_MAGIC_TYPES:
+    /* FIXME: Could have a stricter type for ::_types. */
+    MAKE_CONSTANT_TYPE(n->type, tFunc(tOr(tVoid,tInt), tArr(tType(tMix))));
     break;
 
   case F_CATCH:
