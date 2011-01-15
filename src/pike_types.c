@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.361 2009/11/28 13:36:21 mast Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -7718,8 +7718,6 @@ static void low_type_to_string(struct pike_type *t)
   case T_PROGRAM:
     my_putchar(t->type);
     /* FALL_THROUGH */
-  case PIKE_T_NAME:
-  case PIKE_T_ATTRIBUTE:
     t = t->car;
     goto recurse;
 
@@ -7814,6 +7812,15 @@ static void low_type_to_string(struct pike_type *t)
     t = t->cdr;
     goto recurse;
 
+  case PIKE_T_NAME:
+  case PIKE_T_ATTRIBUTE:
+    my_putchar(t->type);
+    my_putchar(0);
+    my_strcat(((struct pike_string *)t->car)->str);
+    my_putchar(0);
+    t = t->cdr;
+    goto recurse;
+
   default:
     Pike_error("low_type_to_string(): Unsupported node: %d\n", t->type);
     break;
@@ -7822,9 +7829,12 @@ static void low_type_to_string(struct pike_type *t)
 
 struct pike_string *type_to_string(struct pike_type *t)
 {
+  ONERROR err;
   dynamic_buffer save_buf;
   init_buf(&save_buf);
+  SET_ONERROR(err, abandon_buf, &save_buf);
   low_type_to_string(t);
+  UNSET_ONERROR(err);
   return free_buf(&save_buf);
 }
 
