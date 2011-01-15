@@ -131,6 +131,12 @@ PMOD_EXPORT struct pike_string *debug_free_buf(dynamic_buffer *old_buf)
   return res;
 }
 
+PMOD_EXPORT void abandon_buf(dynamic_buffer *old_buf)
+{
+  toss_buffer(&pike_global_buffer);
+  pike_global_buffer = *old_buf;
+}
+
 PMOD_EXPORT char *make_buf_space(INT32 space)
 {
   return low_make_buf_space(space,&pike_global_buffer);

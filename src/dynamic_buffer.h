@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dynamic_buffer.h,v 1.22 2008/07/16 01:08:05 mast Exp $
+|| $Id$
 */
 
 #ifndef DYNAMIC_BUFFER_H
@@ -41,6 +41,7 @@ PMOD_EXPORT struct pike_string *debug_low_free_buf(dynamic_buffer *buf);
 PMOD_EXPORT dynbuf_string complex_free_buf(dynamic_buffer *old_buf);
 PMOD_EXPORT char *simple_free_buf(dynamic_buffer *old_buf);
 PMOD_EXPORT struct pike_string *debug_free_buf(dynamic_buffer *old_buf);
+PMOD_EXPORT void abandon_buf(dynamic_buffer *old_buf);
 PMOD_EXPORT char *make_buf_space(INT32 space);
 PMOD_EXPORT void my_putchar(int b);
 PMOD_EXPORT void my_binary_strcat(const char *b, ptrdiff_t l);
