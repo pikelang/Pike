@@ -6,7 +6,7 @@
 //! Pike 7.8 compatibility.
 //!
 //! The symbols in this namespace will appear in
-//! programs that use @tt{#pike 7.6@} or lower.
+//! programs that use @tt{#pike 7.8@} or lower.
 
 //! @decl inherit predef::
 
