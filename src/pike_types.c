@@ -1347,6 +1347,44 @@ struct pike_type *debug_pop_unfinished_type(void)
 
 /******/
 
+static struct pike_string *internal_parse_type_string(const char **_s)
+{
+  const unsigned char **s = (const unsigned char **)_s;
+  const unsigned char *p;
+  struct string_builder tmp;
+  while(ISSPACE(**s)) ++*s;
+  if(**s != '\"') yyerror("Expected '\"'.");
+  else
+    ++*s;
+  init_string_builder(&tmp, 0);
+  p = *s;
+  while(1) {
+    int c;
+    do {
+      c = *p++;
+    } while ((c > '\\') || ((c != '\"') && (c != '\\') && (c != '\n')));
+    string_builder_binary_strcat(&tmp, *_s, p - (1 + *s));
+    if (c == '"') {
+      *s = ++p;
+      break;
+    } else if (c == '\\') {
+      p_wchar2 buf;
+      ptrdiff_t len = 0;
+      if (!parse_esc_seq0((p_wchar0 *)p, &buf, &len)) {
+	string_builder_putchar(&tmp, buf);
+	p += len;
+      } else {
+	yyerror("Invalid \\-escape.");
+      }
+    } else {
+      yyerror("Expected '\"'.");
+      break;
+    }
+    *s = p;
+  }
+  return finish_string_builder(&tmp);
+}
+
 static void internal_parse_typeA(const char **_s)
 {
   char buf[80];
@@ -1664,6 +1702,48 @@ static void internal_parse_typeA(const char **_s)
 	  push_type(T_MIXED);
 	}
 	push_type(T_ARRAY);
+	break;
+      }
+      goto bad_type;
+
+    case '_':
+      if (!strcmp(buf, "__attribute__")) {
+	while(ISSPACE(**s)) ++*s;
+	if(**s == '(')
+	{
+	  struct pike_string *attr;
+	  ++*s;
+	  attr = internal_parse_type_string(_s);
+	  while(ISSPACE(**s)) ++*s;
+	  if(**s != ',') yyerror("Expected ','.");
+	  else
+	    ++*s;
+	  internal_parse_type(_s);
+	  if(**s != ')') yyerror("Expected ')'.");
+	  else
+	    ++*s;
+	  push_type_attribute(attr);
+	  free_string(attr);
+	}else{
+	  push_type(T_MIXED);
+	}
+	break;
+      } else if (!strcmp(buf, "__deprecated__")) {
+	struct pike_string *deprecated_string;
+	MAKE_CONST_STRING(deprecated_string, "deprecated");
+	while(ISSPACE(**s)) ++*s;
+	if(**s == '(')
+	{
+	  ++*s;
+	  internal_parse_type(_s);
+	  if(**s != ')') yyerror("Expected ')'.");
+	  else
+	    ++*s;
+	}else{
+	  push_type(T_MIXED);
+	}
+	push_type_attribute(deprecated_string);
+	free_string(deprecated_string);
 	break;
       }
       goto bad_type;
