@@ -2466,6 +2466,40 @@ static void f___get_first_arg_type(INT32 args)
   }
 }
 
+/*! @decl array(string) __get_type_attributes(type t)
+ *!
+ *!   Get the attribute markers for a type.
+ *!
+ *! @returns
+ *!   Returns an array with the attributes for the type @[t].
+ *!
+ *! @seealso
+ *!   @[__get_return_type()], @[__get_first_arg_type()]
+ */
+static void f___get_type_attributes(INT32 args)
+{
+  struct pike_type *t;
+  int count = 0;
+  if (args != 1) {
+    Pike_error("Bad number of arguments to __get_type_attributes().\n");
+  }
+  if (Pike_sp[-1].type != PIKE_T_TYPE) {
+    Pike_error("Bad argument 1 to __get_type_attributes() expected type.\n");
+  }
+  t = Pike_sp[-1].u.type;
+  /* Note: We assume that the set of attributes is small
+   *       enough that we won't run out of stack. */
+  while ((t->type == PIKE_T_ATTRIBUTE) || (t->type == PIKE_T_NAME)) {
+    if (t->type == PIKE_T_ATTRIBUTE) {
+      ref_push_string((struct pike_string *)t->car);
+      count++;
+    }
+    t = t->cdr;
+  }
+  f_aggregate(count);
+  stack_pop_n_elems_keep_top(args);
+}
+
 /*! @decl mapping (string:mixed) all_constants()
  *!
  *!   Returns a mapping containing all global constants, indexed on the name
@@ -9615,6 +9649,10 @@ void init_builtin_efuns(void)
   /* FIXME: Could have a stricter type. */
   ADD_EFUN("__get_first_arg_type", f___get_first_arg_type,
 	   tFunc(tType(tCallable), tType(tMix)),
+	   OPT_TRY_OPTIMIZE);
+
+  ADD_EFUN("__get_type_attributes", f___get_type_attributes,
+	   tFunc(tType(tMix), tArr(tString)),
 	   OPT_TRY_OPTIMIZE);
 
 #ifdef HAVE_LOCALTIME
