@@ -2796,7 +2796,7 @@ static void f_magic_indices (INT32 args)
 	prog = obj->prog;
       }
       pop_n_elems (args);
-      push_array (res = allocate_array_no_init (prog->num_identifier_references, 0));
+      push_array (res = allocate_array(prog->num_identifier_references));
       for (e = i = 0; e < (int) prog->num_identifier_references; e++) {
 	struct reference *ref = prog->identifier_references + e;
 	struct identifier *id = ID_FROM_PTR (prog, ref);
@@ -2806,8 +2806,9 @@ static void f_magic_indices (INT32 args)
 	copy_shared_string (ITEM(res)[i].u.string, id->name);
 	ITEM(res)[i++].type = T_STRING;
       }
-      res->type_field = BIT_STRING;
+      res->type_field |= BIT_STRING;
       sp[-1].u.array = resize_array (res, i);
+      res->type_field = BIT_STRING;
       return;
     case 2:
       prog = obj->prog;
@@ -2871,7 +2872,7 @@ static void f_magic_values (INT32 args)
 	inherit = prog->inherits + 0;
       }
       pop_n_elems (args);
-      push_array (res = allocate_array_no_init (prog->num_identifier_references, 0));
+      push_array (res = allocate_array(prog->num_identifier_references));
       types = 0;
       for (e = i = 0; e < (int) prog->num_identifier_references; e++, i++) {
 	struct reference *ref = prog->identifier_references + e;
@@ -2883,8 +2884,9 @@ static void f_magic_values (INT32 args)
 				  e + inherit->identifier_level);
 	types |= 1 << ITEM(res)[i].type;
       }
-      res->type_field = types;
+      res->type_field |= types;
       sp[-1].u.array = resize_array (res, i);
+      res->type_field = types;
       return;
     case 2:
       prog = obj->prog;
@@ -2950,7 +2952,7 @@ static void f_magic_types (INT32 args)
 	inherit = prog->inherits + 0;
       }
       pop_n_elems (args);
-      push_array (res = allocate_array_no_init (prog->num_identifier_references, 0));
+      push_array (res = allocate_array(prog->num_identifier_references));
       types = 0;
       for (e = i = 0; e < (int) prog->num_identifier_references; e++, i++) {
 	struct reference *ref = prog->identifier_references + e;
@@ -2962,8 +2964,9 @@ static void f_magic_types (INT32 args)
 	ITEM(res)[i].type = PIKE_T_TYPE;
 	types = BIT_TYPE;
       }
-      res->type_field = types;
+      res->type_field |= types;
       sp[-1].u.array = resize_array (res, i);
+      res->type_field = types;
       return;
     case 2:
       prog = obj->prog;
