@@ -722,7 +722,6 @@ testfont binary
 /src/modules/system/testsuite.in foreign_ident
 /src/multiset.c foreign_ident
 /src/multiset.h foreign_ident
-/src/object.c foreign_ident
 /src/object.h foreign_ident
 /src/opcodes.c foreign_ident
 /src/opcodes.h foreign_ident
