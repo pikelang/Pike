@@ -3613,6 +3613,10 @@ PMOD_EXPORT void append_list_node(struct pike_list_node *node,
  *!   This class should typically not be used directly. Use
  *!   @[Val.Null] instead.
  *!
+ *! @note
+ *!   This class was previously available as @[Sql.Null]. Any such use
+ *!   should be replaced with @[Val.Null].
+ *!
  *! @deprecated Val.Null
  *!
  *! @seealso
