@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod.in,v 1.1 2005/07/28 15:26:09 nilsson Exp $
+ * $Id$
  *
  * GTK2 glue code.
  */
@@ -66,6 +66,8 @@ mixed `[](string what)
   if(!zero_type(INDEX(upper_case(unsillycaps(what)))))
     return INDEX(upper_case(unsillycaps(what)));
   //  return  GTKSupport[what];
+
+  return UNDEFINED;
 }
 
 #endif
