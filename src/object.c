@@ -2694,7 +2694,7 @@ static void f_magic_values (INT32 args)
       pop_n_elems (args);
       push_array (res = allocate_array(prog->num_identifier_references));
       types = 0;
-      for (e = i = 0; e < (int) prog->num_identifier_references; e++, i++) {
+      for (e = i = 0; e < (int) prog->num_identifier_references; e++) {
 	struct reference *ref = prog->identifier_references + e;
 	struct identifier *id = ID_FROM_PTR (prog, ref);
 	if (ref->id_flags & ID_HIDDEN) continue;
@@ -2702,7 +2702,7 @@ static void f_magic_values (INT32 args)
 	    (ID_INHERITED|ID_PRIVATE)) continue;
 	low_object_index_no_free (ITEM(res) + i, obj,
 				  e + inherit->identifier_level);
-	types |= 1 << ITEM(res)[i].type;
+	types |= 1 << ITEM(res)[i++].type;
       }
       res->type_field |= types;
       sp[-1].u.array = resize_array (res, i);
