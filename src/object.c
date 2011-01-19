@@ -2954,14 +2954,14 @@ static void f_magic_types (INT32 args)
       pop_n_elems (args);
       push_array (res = allocate_array(prog->num_identifier_references));
       types = 0;
-      for (e = i = 0; e < (int) prog->num_identifier_references; e++, i++) {
+      for (e = i = 0; e < (int) prog->num_identifier_references; e++) {
 	struct reference *ref = prog->identifier_references + e;
 	struct identifier *id = ID_FROM_PTR (prog, ref);
 	if (ref->id_flags & ID_HIDDEN) continue;
 	if ((ref->id_flags & (ID_INHERITED|ID_PRIVATE)) ==
 	    (ID_INHERITED|ID_PRIVATE)) continue;
 	add_ref(ITEM(res)[i].u.type = id->type);
-	ITEM(res)[i].type = PIKE_T_TYPE;
+	ITEM(res)[i++].type = PIKE_T_TYPE;
 	types = BIT_TYPE;
       }
       res->type_field |= types;
