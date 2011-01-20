@@ -215,6 +215,7 @@ PMOD_EXPORT void prepend_list_node(struct pike_list_node *node,
 				   struct pike_list_node *new_node);
 PMOD_EXPORT void append_list_node(struct pike_list_node *node,
 				  struct pike_list_node *new_node);
+PMOD_EXPORT struct object *get_setter(struct object *o, int f);
 void init_builtin(void);
 void exit_builtin(void);
 

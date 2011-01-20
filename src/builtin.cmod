@@ -3605,6 +3605,79 @@ PMOD_EXPORT void append_list_node(struct pike_list_node *node,
 /*! @module Builtin
  */
 
+/*! @class Setter
+ *!
+ *! Internal class for implementing setters.
+ */
+PIKECLASS Setter
+{
+  PIKEVAR object o
+    flags ID_PROTECTED|ID_PRIVATE|ID_LOCAL;
+  CVAR int f;
+  PIKEFUN void `()(mixed val)
+    flags ID_PROTECTED;
+  {
+    if (!THIS->o) {
+      Pike_error("Uninitialized Setter!\n");
+    }
+    object_low_set_index(THIS->o, THIS->f, Pike_sp-1);
+    pop_n_elems(args);
+    push_int(0);
+  }
+  PIKEFUN string _sprintf(int c, mapping|void opts)
+    flags ID_PROTECTED;
+  {
+    struct program *prog;
+    if (!THIS->o) {
+      push_constant_text("Setter()");
+    } else if ((prog = THIS->o->prog)) {
+      push_constant_text("%O->`%s=");
+      ref_push_object(THIS->o);
+      ref_push_string(ID_FROM_INT(prog, THIS->f)->name);
+      f_sprintf(3);
+    } else {
+      push_constant_text("Setter(destructed object)");
+    }
+    stack_pop_n_elems_keep_top(args);
+  }
+}
+
+PMOD_EXPORT struct object *get_setter(struct object *o, int f)
+{
+  struct object *res = clone_object(Setter_program, 0);
+  struct Setter_struct *setter = OBJ2_SETTER(res);
+  add_ref(setter->o = o);
+  setter->f = f;
+  return res;
+}
+
+/*! @decl function(mixed_void) _get_setter(object o, string s)
+ *!
+ *! Get a setter for the variable named @[s] in object @[o].
+ *!
+ *! @seealso
+ *!   @[object_variablep()]
+ */
+PIKEFUN function(mixed:void) _get_setter(object o, string s)
+{
+  struct program *p;
+  int f;
+  if (!(p = o->prog)) {
+    Pike_error("Indexing a destructed object.\n");
+  }
+  f = find_shared_string_identifier(s, p);
+  if ((f >= 0) &&
+      IDENTIFIER_IS_VARIABLE(ID_FROM_INT(p, f)->identifier_flags)) {
+    push_function(get_setter(o, f), f_Setter_cq__backtick_28_29_fun_num);
+  } else {
+    push_undefined();
+  }
+  stack_pop_n_elems_keep_top(args);
+}
+
+/*! @endclass
+ */
+
 /*! @class SqlNull
  *!
  *! This class is used to implement the low-level aspects of @[Val.Null].
