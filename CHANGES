@@ -53,6 +53,10 @@ o SSL
   Added support for AES to SSL3, and fixed bug that prevented some
   handshake failure alerts to be sent to the client.
 
+o SSL
+
+  Implemented RFC 5746 "TLS Renegotiation Indication Extension".
+
 o ADT.Heap->values and ->num_values can now be overloaded.
 
 
