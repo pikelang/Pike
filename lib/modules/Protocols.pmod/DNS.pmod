@@ -1565,6 +1565,12 @@ class async_client
 	       }, callback, @args);
   }
 
+  void close()
+  {
+    udp::close();
+    udp::set_read_callback(0);
+  }
+
   //!
   protected void create(void|string|array(string) server,
 			void|string|array(string) domain)
