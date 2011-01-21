@@ -1,4 +1,4 @@
-// $Id: DNS.pmod,v 1.102 2010/01/05 18:47:33 bill Exp $
+// $Id$
 // Not yet finished -- Fredrik Hubinette
 
   //inherit Stdio.UDP : udp;
@@ -1528,6 +1528,12 @@ class async_client
 		 }
 		 callback(a, @args);
 	       }, callback, @args);
+  }
+
+  void close()
+  {
+    udp::close();
+    udp::set_read_callback(0);
   }
 
   void create(void|string|array(string) server, void|string|array(string) domain)
