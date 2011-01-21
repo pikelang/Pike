@@ -3762,6 +3762,209 @@ PIKECLASS SqlNull
 /*! @endmodule
  */
 
+/*! @module Serializer
+ */
+
+/*! @class Serializable
+ *!
+ *!   The base class for serializable objects.
+ *!
+ *!   Inherit this class in classes that need to be serializable.
+ *!
+ *! @seealso
+ *!   @[Serializer.serialize()], @[Serializer.deserialize()]
+ */
+PIKECLASS Serializable
+{
+  static void low_serialize(int i, struct svalue *fun, int use_setter)
+  {
+    struct inherit *inh;
+    struct program *p = Pike_fp->current_object->prog;
+    struct svalue *save_sp = Pike_sp;
+
+    inh = p->inherits + i;
+    p = inh->prog;
+
+    for (i = 0; i < p->num_identifier_references; i++) {
+      struct reference *ref = PTR_FROM_INT(p, i);
+      struct identifier *id;
+      if ((ref->id_flags & ID_HIDDEN) ||
+	  ((ref->id_flags & (ID_PRIVATE|ID_INHERITED)) ==
+	   (ID_PRIVATE|ID_INHERITED))) {
+	continue;
+      }
+      id = ID_FROM_PTR(p, ref);
+      if (!IDENTIFIER_IS_VARIABLE(id->identifier_flags)) {
+	continue;
+      }
+      ref_push_string(id->name);
+      ref_push_type_value(id->type);
+      if (use_setter) {
+	push_function(get_setter(Pike_fp->current_object,
+				 i + inh->identifier_level),
+		      f_Setter_cq__backtick_28_29_fun_num);
+      } else {
+	low_object_index_no_free(Pike_sp, Pike_fp->current_object,
+				 i + inh->identifier_level);
+	Pike_sp++;
+      }
+      apply_svalue(fun, 3);
+      pop_stack();
+    }
+    if (Pike_sp != save_sp) {
+      /* Not likely, but... */
+      pop_n_elems(Pike_sp - save_sp);
+    }
+  }
+
+  /*! @decl void _serialize(object o, @
+   *!                       function(string, type, mixed:void) serializer)
+   *!
+   *!   Dispatch function for serialization.
+   *!
+   *! @param o
+   *!   Object to serialize. Always a context of the current object.
+   *!
+   *! @param serializer
+   *!   Function to be called once for every variable
+   *!   in the inheriting class.
+   *!
+   *! The @[serializer] function will be called with three arguments:
+   *!   @dl
+   *!     @item
+   *!       @tt{symbol@} - The symbol name.
+   *!     @item
+   *!       @tt{symbol_type@} - The type of the symbol.
+   *!     @item
+   *!       @tt{value@} - The value of the symbol.
+   *!   @enddl
+   *!
+   *! @note
+   *!   The symbols will be listed in the order they were defined
+   *!   in the class.
+   *!
+   *! @note
+   *!   This function is typically called via @[Serializer.serialize()].
+   */
+  PIKEFUN void _serialize(object o,
+			  function(string, type, mixed:void) serializer)
+    flags ID_PROTECTED;
+    rawtype tFunc(tObj tFunc(tStr tType(tMix) tMix, tVoid), tVoid);
+  {
+    if (o != Pike_fp->current_object) {
+      SIMPLE_BAD_ARG_ERROR("_serialize", 1, "this");
+    }
+    low_serialize(Pike_sp[-args].subtype, serializer, 0);
+    pop_n_elems(args);
+    push_int(0);
+  }
+
+  /*! @decl _deserialize(object o, @
+   *!                    function(string, type, @
+   *!                             function(mixed:void): mixed) deserializer)
+   *!
+   *!   Dispatch function for deserialization.
+   *!
+   *! @param o
+   *!   Object to serialize. Always a context of the current object.
+   *!
+   *! @param deserializer
+   *!   Function to be called once for every variable
+   *!   in the inheriting class.
+   *!
+   *! The @[deserializer] function will be called with three arguments:
+   *!   @dl
+   *!     @item
+   *!       @tt{symbol@} - The symbol name.
+   *!     @item
+   *!       @tt{symbol_type@} - The type of the symbol.
+   *!     @item
+   *!       @tt{setter@} - Function that sets the symbol value.
+   *!   @enddl
+   *!
+   *! @note
+   *!   The symbols will be listed in the order they were defined
+   *!   in the class.
+   *!
+   *! @note
+   *!   This function is typically called via @[Serializer.deserialize()].
+   */
+  PIKEFUN void _deserialize(object o,
+			    function(string, type,
+				     function(mixed:void): mixed) deserializer)
+    flags ID_PROTECTED;
+    rawtype tFunc(tObj tFunc(tStr tType(tMix) tFunc(tMix, tVoid), tVoid), tVoid);
+  {
+    if (o != Pike_fp->current_object) {
+      SIMPLE_BAD_ARG_ERROR("_serialize", 1, "this");
+    }
+    low_serialize(Pike_sp[-args].subtype, deserializer, 1);
+    pop_n_elems(args);
+    push_int(0);
+  }
+}
+/*! @endclass
+ */
+
+/*! @decl void serialize(object o, @
+ *!                      function(string, type, mixed:void) serializer)
+ *!
+ *!   Call @[LFUN::_serialize()] in @[o].
+ *!
+ *! @seealso
+ *!   @[deserialize()], @[LFUN::_serialize()],
+ *!   @[Serializable()->_serialize()]
+ */
+PIKEFUN void serialize(object o,
+		       function(string, type, mixed:void) serializer)
+  rawtype tFunc(tObj tFunc(tStr tType(tMix) tMix, tVoid), tVoid);
+{
+  struct inherit *inh;
+  struct program *p;
+  ptrdiff_t fun;
+  if (!(p = o->prog)) {
+    Pike_error("Indexing a destructed object.\n");
+  }
+  inh = p->inherits + Pike_sp[-args].subtype;
+  p = inh->prog;
+  if ((fun = low_find_lfun(p, LFUN__SERIALIZE)) == -1) {
+    Pike_error("Serialization not supported by object.\n");
+  }
+  apply_low(o, fun + inh->identifier_level, args);
+}
+
+/*! @decl void deserialize(object o, @
+ *!                        function(string, type,
+ *!                                 function(mixed:void):void) deserializer)
+ *!
+ *!   Call @[LFUN::_deserialize()] in @[o].
+ *!
+ *! @seealso
+ *!   @[serialize()], @[LFUN::_deserialize()],
+ *!   @[Serializable()->_deserialize()]
+ */
+PIKEFUN void deserialize(object o,
+			 function(string, type,
+				  function(mixed:void):void) deserializer)
+  rawtype tFunc(tObj tFunc(tStr tType(tMix) tFunc(tMix, tVoid), tVoid), tVoid);
+{
+  struct inherit *inh;
+  struct program *p;
+  ptrdiff_t fun;
+  if (!(p = o->prog)) {
+    Pike_error("Indexing a destructed object.\n");
+  }
+  inh = p->inherits + Pike_sp[-args].subtype;
+  p = inh->prog;
+  if ((fun = low_find_lfun(p, LFUN__DESERIALIZE)) == -1) {
+    Pike_error("Deserialization not supported by object.\n");
+  }
+  apply_low(o, fun + inh->identifier_level, args);
+}
+
+/*! @endmodule
+ */
+
 /*! @module ADT
  */
 

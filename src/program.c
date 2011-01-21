@@ -160,6 +160,8 @@ const char *const lfun_names[]  = {
   /* NOTE: After this point there are only fake lfuns. */
   "_search",
   "_types",
+  "_serialize",
+  "_deserialize",
 };
 
 struct pike_string *lfun_strings[NELEM(lfun_names)];
@@ -218,6 +220,8 @@ static const char *const raw_lfun_types[] = {
   /* NOTE: After this point there are only fake lfuns. */
   tFuncV(tZero tOr(tZero, tVoid), tVoid, tMix), /* "_search", */
   tFuncV(tNone,tVoid,tArray),	/* "_types", */
+  tFuncV(tObj tZero, tVoid, tVoid),	/* "_serialize", */
+  tFuncV(tObj tZero, tVoid, tVoid),	/* "_deserialize", */
 };
 
 /* These two are not true LFUNs! */
@@ -1147,6 +1151,69 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *! @seealso
  *!   @[predef::types()], @[lfun::_indices()], @[lfun::_values()],
  *!   @[::_types()]
+ */
+
+/*! @decl void lfun::_serialize(object o, @
+ *!                             function(string, type, mixed:void) serializer)
+ *!
+ *!   Dispatch function for @[Serializer.serialize()].
+ *!
+ *! @param o
+ *!   Object to serialize. Always a context of the current object.
+ *!
+ *! @param serializer
+ *!   Function to be called once for every variable
+ *!   to serialize.
+ *!
+ *! The @[serializer] function expects to be called with three arguments:
+ *!   @dl
+ *!     @item
+ *!       @tt{symbol@} - The symbol name.
+ *!     @item
+ *!       @tt{symbol_type@} - The type of the symbol.
+ *!     @item
+ *!       @tt{value@} - The value of the symbol.
+ *!   @enddl
+ *!
+ *! @note
+ *!   A default implementation of @[lfun::_serialize()] and
+ *!   @[lfun::_deserialize()] is available in @[Serializer.Serializable].
+ *!
+ *! @seealso
+ *!   @[lfun::_deserialize()], @[Serializer.serialize()],
+ *!   @[Serializer.Serializable()->_serialize()]
+ */
+
+/*! @decl void lfun::_deserialize(object o, @
+ *!                    function(string, type, @
+ *!                             function(mixed:void): mixed) deserializer)
+ *!
+ *!   Dispatch function for @[Serialization.deserialize()].
+ *!
+ *! @param o
+ *!   Object to serialize. Always a context of the current object.
+ *!
+ *! @param deserializer
+ *!   Function to be called once for every variable
+ *!   to serialize.
+ *!
+ *! The @[deserializer] function expects to be called with three arguments:
+ *!   @dl
+ *!     @item
+ *!       @tt{symbol@} - The symbol name.
+ *!     @item
+ *!       @tt{symbol_type@} - The type of the symbol.
+ *!     @item
+ *!       @tt{setter@} - Function that sets the symbol value.
+ *!   @enddl
+ *!
+ *! @note
+ *!   A default implementation of @[lfun::_serialize()] and
+ *!   @[lfun::_deserialize()] is available in @[Serializer.Serializable].
+ *!
+ *! @seealso
+ *!   @[lfun::_serialize()], @[Serializer.deserialize()],
+ *!   @[Serializer.Serializable()->_deserialize()]
  */
 
 /*! @decl mixed lfun::`symbol()
