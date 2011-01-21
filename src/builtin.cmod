@@ -3661,13 +3661,17 @@ PMOD_EXPORT struct object *get_setter(struct object *o, int f)
 PIKEFUN function(mixed:void) _get_setter(object o, string s)
 {
   struct program *p;
+  struct inherit *inh;
   int f;
   if (!(p = o->prog)) {
     Pike_error("Indexing a destructed object.\n");
   }
+  inh = p->inherits + Pike_sp[-args].subtype;
+  p = inh->prog;
   f = find_shared_string_identifier(s, p);
   if ((f >= 0) &&
       IDENTIFIER_IS_VARIABLE(ID_FROM_INT(p, f)->identifier_flags)) {
+    f += inh->identifier_level;
     push_function(get_setter(o, f), f_Setter_cq__backtick_28_29_fun_num);
   } else {
     push_undefined();
