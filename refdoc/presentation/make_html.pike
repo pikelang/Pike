@@ -761,7 +761,8 @@ string parse_type(Node n, void|string debug) {
 
   case "type":
     ret += "<font color='#202020'>type</font>";
-    if (n->count_children() && (c = get_first_element(n))) {
+    if (n->count_children() && (c = get_first_element(n)) &&
+	(c->get_any_name() != "mixed")) {
       ret += "(" + parse_type(c) + ")";
     }
     break;
@@ -793,15 +794,16 @@ string parse_type(Node n, void|string debug) {
 
   case "function":
     ret += "<font color='#202020'>function</font>";
-    c = n->get_first_element("argtype");
+    array(Node) args = n->get_elements("argtype");
     d = n->get_first_element("returntype");
     // Doing different than the XSL here. Must both
     // argtype and returntype be defined?
-    if(c || d) {
+    if(args || d) {
       ret += "(";
-      if(c) ret += map(c->get_children(), parse_type)*", ";
+      if(args) ret += map(args->get_children() * ({}), parse_type)*", ";
       ret += ":";
       if(d) ret += parse_type( get_first_element(d) );
+      else ret += "<font color='#202020'>void</font>";
       ret += ")";
     }
     break;
