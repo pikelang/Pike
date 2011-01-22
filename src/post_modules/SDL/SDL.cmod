@@ -368,11 +368,43 @@ PIKECLASS Rect {
     THIS->rect.x = THIS->rect.y = 0;
     THIS->rect.w = THIS->rect.h = 0;
   }
+#define CHECK_I16_ARG(fun, n, x)	do {			\
+    if ((x) < -32768 || (x) > 32767)				\
+    SIMPLE_BAD_ARG_ERROR((fun), (n), "int(-32768..32767)");	\
+} while(0)
+#define CHECK_U16_ARG(fun, n, x)	do {			\
+    if ((x) < 0 || (x) > 65536)					\
+    SIMPLE_BAD_ARG_ERROR((fun), (n), "int(0..65536)");		\
+} while(0)
 
   /*! @decl int x
    *! @decl int y
-   *!   Position of the upper-left corner of the rectangle.
+   *!   Position of the upper-left corner of the rectangle. Internally these are 16 bit
+   *!   signed integers. A runtime error will be generated when integer values are used
+   *!   that are too big.
    */
+
+  /*! @decl void create()
+   *! @decl void create(int(-32768..32767) x, int(-32768..32767) y)
+   *! @decl void create(int(-32768..32767) x, int(-32768..32767) y, int(0..65536) w, int(0..65536) h)
+   */
+  PIKEFUN void create() { }
+  PIKEFUN void create(int x, int y) {
+      CHECK_I16_ARG("create", 1, x);
+      CHECK_I16_ARG("create", 2, x);
+      THIS->rect.x = x;
+      THIS->rect.y = y;
+  }
+  PIKEFUN void create(int x, int y, int w, int h) {
+      CHECK_I16_ARG("create", 1, x);
+      CHECK_I16_ARG("create", 2, x);
+      CHECK_U16_ARG("create", 3, w);
+      CHECK_U16_ARG("create", 4, h);
+      THIS->rect.x = x;
+      THIS->rect.y = y;
+      THIS->rect.w = w;
+      THIS->rect.h = h;
+  }
 
   PIKEFUN int `x()
   {
@@ -384,16 +416,20 @@ PIKECLASS Rect {
   }
   PIKEFUN int `x=(int value)
   {
+    CHECK_I16_ARG("`x=", 1, value);
     THIS->rect.x = value;
   }
   PIKEFUN int `y=(int value)
   {
+    CHECK_I16_ARG("`y=", 1, value);
     THIS->rect.y = value;
   }
 
   /*! @decl int w
    *! @decl int h
-   *!   The width and height of the rectangle.
+   *!   The width and height of the rectangle. Internally these are 16 bit unsigned
+   *!   integers. A runtime error will be generated when integer values are used
+   *!   that are too big.
    */
   PIKEFUN int `w()
   {
@@ -406,10 +442,12 @@ PIKECLASS Rect {
 
   PIKEFUN int `w=(int value)
   {
+    CHECK_U16_ARG("`w=", 1, value);
     THIS->rect.w = value;
   }
   PIKEFUN int `h=(int value)
   {
+    CHECK_U16_ARG("`h=", 1, value);
     THIS->rect.h = value;
   }
 
