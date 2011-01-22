@@ -3909,10 +3909,10 @@ PIKECLASS Serializable
 /*! @decl void serialize(object o, @
  *!                      function(string, type, mixed:void) serializer)
  *!
- *!   Call @[LFUN::_serialize()] in @[o].
+ *!   Call @[lfun::_serialize()] in @[o].
  *!
  *! @seealso
- *!   @[deserialize()], @[LFUN::_serialize()],
+ *!   @[deserialize()], @[lfun::_serialize()],
  *!   @[Serializable()->_serialize()]
  */
 PIKEFUN void serialize(object o,
@@ -3937,10 +3937,10 @@ PIKEFUN void serialize(object o,
  *!                        function(string, type, @
  *!                                 function(mixed:void):void) deserializer)
  *!
- *!   Call @[LFUN::_deserialize()] in @[o].
+ *!   Call @[lfun::_deserialize()] in @[o].
  *!
  *! @seealso
- *!   @[serialize()], @[LFUN::_deserialize()],
+ *!   @[serialize()], @[lfun::_deserialize()],
  *!   @[Serializable()->_deserialize()]
  */
 PIKEFUN void deserialize(object o,
