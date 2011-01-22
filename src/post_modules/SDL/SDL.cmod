@@ -373,8 +373,8 @@ PIKECLASS Rect {
     SIMPLE_BAD_ARG_ERROR((fun), (n), "int(-32768..32767)");	\
 } while(0)
 #define CHECK_U16_ARG(fun, n, x)	do {			\
-    if ((x) < 0 || (x) > 65536)					\
-    SIMPLE_BAD_ARG_ERROR((fun), (n), "int(0..65536)");		\
+    if ((x) < 0 || (x) > 65535)					\
+    SIMPLE_BAD_ARG_ERROR((fun), (n), "int(0..65535)");		\
 } while(0)
 
   /*! @decl int x
@@ -386,16 +386,18 @@ PIKECLASS Rect {
 
   /*! @decl void create()
    *! @decl void create(int(-32768..32767) x, int(-32768..32767) y)
-   *! @decl void create(int(-32768..32767) x, int(-32768..32767) y, int(0..65536) w, int(0..65536) h)
+   *! @decl void create(int(-32768..32767) x, int(-32768..32767) y, @
+   *!                   int(0..65535) w, int(0..65535) h)
    */
   PIKEFUN void create() { }
-  PIKEFUN void create(int x, int y) {
+  PIKEFUN void create(int(-32768..32767) x, int(-32768..32767) y) {
       CHECK_I16_ARG("create", 1, x);
       CHECK_I16_ARG("create", 2, x);
       THIS->rect.x = x;
       THIS->rect.y = y;
   }
-  PIKEFUN void create(int x, int y, int w, int h) {
+  PIKEFUN void create(int(-32768..32767) x, int(-32768..32767) y,
+		      int(0..65535) w, int(0..65535) h) {
       CHECK_I16_ARG("create", 1, x);
       CHECK_I16_ARG("create", 2, x);
       CHECK_U16_ARG("create", 3, w);
