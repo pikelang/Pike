@@ -377,17 +377,20 @@ PIKECLASS Rect {
     SIMPLE_BAD_ARG_ERROR((fun), (n), "int(0..65535)");		\
 } while(0)
 
-  /*! @decl int x
-   *! @decl int y
-   *!   Position of the upper-left corner of the rectangle. Internally these are 16 bit
-   *!   signed integers. A runtime error will be generated when integer values are used
-   *!   that are too big.
-   */
-
   /*! @decl void create()
    *! @decl void create(int(-32768..32767) x, int(-32768..32767) y)
    *! @decl void create(int(-32768..32767) x, int(-32768..32767) y, @
    *!                   int(0..65535) w, int(0..65535) h)
+   *!
+   *!   Create a new @[Rect].
+   *!
+   *! @param x
+   *! @param y
+   *!   Optional initial values for @[Rect()->x] and @[Rect()->y].
+   *!
+   *! @param w
+   *! @param h
+   *!   Optional initial values for @[Rect()->w] and @[Rect()->h].
    */
   PIKEFUN void create() { }
   PIKEFUN void create(int(-32768..32767) x, int(-32768..32767) y) {
@@ -408,6 +411,13 @@ PIKECLASS Rect {
       THIS->rect.h = h;
   }
 
+  /*! @decl int x
+   *! @decl int y
+   *!   Position of the upper-left corner of the rectangle.
+   *!   Internally these are 16 bit signed integers.
+   *!   A runtime error will be generated when integer values are used
+   *!   that are too big.
+   */
   PIKEFUN int `x()
   {
     push_int(THIS->rect.x);
