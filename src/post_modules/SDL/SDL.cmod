@@ -1906,10 +1906,31 @@ PIKEFUN object set_video_mode(int width, int height, int bpp, int flags)
 }
 
 /*! @decl int blit_surface(SDL.Surface src, SDL.Surface dst,@
- *!                        SDL.Rect srcrect, SDL.Rect dstrect)
+ *!                        SDL.Rect|void srcrect, SDL.Rect|void dstrect)
  *!
- *! @fixme
- *!   Document this function
+ *! Peforms a fast blit from the source surface to the destination surface.
+ *!
+ *! The final blit rectangle is stored in @tt{dstrect@}.  This may differ from
+ *! @tt{srcrect@} if there was clipping.
+ *!
+ *! This function should not be called on a locked surface.
+ *!
+ *! @param src
+ *!  The surface to be copied.
+ *! @param dst
+ *!  The destination surface.  This will usually be your main screen,
+ *!  initialized with a call to @[SDL.set_video_mode()].
+ *! @param srcrect
+ *!  The rectangular section of @tt{src@} to copy.  If the whole surface is to
+ *!  be copied, you can set this to @tt{0@}.
+ *! @param dstrect
+ *!  Where the source surface should be copied to on the destination surface.
+ *!  Only the @tt{x@} and @tt{y@} fields of the @[SDL.Rect] object are used.
+ *!  To copy @tt{src@} to the top-left corner of @tt{dst@}, i.e. at coordinates
+ *!  <0,0>, you can set this to @tt{0@}.
+ *!
+ *! @returns
+ *!  If successful, 0, otherwise -1.
  */
 PIKEFUN int blit_surface(object src, object dst,
 			 object|void _srcrect,
