@@ -411,53 +411,53 @@ PIKECLASS Rect {
       THIS->rect.h = h;
   }
 
-  /*! @decl int x
-   *! @decl int y
+  /*! @decl int(-32768..32767) x
+   *! @decl int(-32768..32767) y
    *!   Position of the upper-left corner of the rectangle.
    *!   Internally these are 16 bit signed integers.
    *!   A runtime error will be generated when integer values are used
    *!   that are too big.
    */
-  PIKEFUN int `x()
+  PIKEFUN int(-32768..32767) `x()
   {
     push_int(THIS->rect.x);
   }
-  PIKEFUN int `y()
+  PIKEFUN int(-32768..32767) `y()
   {
     push_int(THIS->rect.y);
   }
-  PIKEFUN int `x=(int value)
+  PIKEFUN int(-32768..32767) `x=(int(-32768..32767) value)
   {
     CHECK_I16_ARG("`x=", 1, value);
     THIS->rect.x = value;
   }
-  PIKEFUN int `y=(int value)
+  PIKEFUN int(-32768..32767) `y=(int(-32768..32767) value)
   {
     CHECK_I16_ARG("`y=", 1, value);
     THIS->rect.y = value;
   }
 
-  /*! @decl int w
-   *! @decl int h
+  /*! @decl int(0..65535) w
+   *! @decl int(0..65535) h
    *!   The width and height of the rectangle. Internally these are 16 bit unsigned
    *!   integers. A runtime error will be generated when integer values are used
    *!   that are too big.
    */
-  PIKEFUN int `w()
+  PIKEFUN int(0..65535) `w()
   {
     push_int(THIS->rect.w);
   }
-  PIKEFUN int `h()
+  PIKEFUN int(0..65535) `h()
   {
     push_int(THIS->rect.h);
   }
 
-  PIKEFUN int `w=(int value)
+  PIKEFUN int(0..65535) `w=(int(0..65535) value)
   {
     CHECK_U16_ARG("`w=", 1, value);
     THIS->rect.w = value;
   }
-  PIKEFUN int `h=(int value)
+  PIKEFUN int(0..65535) `h=(int(0..65535) value)
   {
     CHECK_U16_ARG("`h=", 1, value);
     THIS->rect.h = value;
