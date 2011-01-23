@@ -1912,7 +1912,7 @@ class ParseBlock
 	  DEFINE("OBJ2_"+upper_case(base)+"(o)",
 		 sprintf("((struct %s *)(o->storage+%s_storage_offset))",
 			 structname, base))+
-	  DEFINE("GET_"+upper_case(base)+"_STORAGE",
+	  DEFINE("GET_"+upper_case(base)+"_STORAGE(o)",
 		 sprintf("((struct %s *)(o->storage+%s_storage_offset)",
 			 structname, base))+
 	    ({
