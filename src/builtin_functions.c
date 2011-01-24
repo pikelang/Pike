@@ -4506,13 +4506,16 @@ static void delaysleep(double delay, unsigned do_abort_on_signal,
        if(left>0.0)
 	 sysleep(left);
        THREADS_DISALLOW();
-       if(do_abort_on_signal)
+       if(do_abort_on_signal) {
+	 GETTIMEOFDAY (&current_time);
 	 return;
+       }
        FIX_LEFT();
        if(left<=0.0)
 	 break;
        check_threads_etc();
      }
+     GETTIMEOFDAY (&current_time);
    }
 
    if (do_microsleep)
