@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.439 2010/05/27 11:50:21 grubba Exp $
+|| $Id$
 */
 
 #define NO_PIKE_SHORTHAND
@@ -4129,7 +4129,7 @@ static void file_query_address(INT32 args)
     i=fd_getpeername(FD,(struct sockaddr *)&addr,&len);
   }
   pop_n_elems(args);
-  if(i < 0 || len < (int)sizeof(addr.ipv4))
+  if(i < 0)
   {
     ERRNO=errno;
     push_int(0);
