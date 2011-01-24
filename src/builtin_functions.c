@@ -9407,7 +9407,7 @@ void init_builtin_efuns(void)
   ADD_EFUN("time",f_time,
 	   tOr(tFunc(tOr(tVoid,tInt01),tInt2Plus),
 	       tFunc(tInt2Plus,tFlt)),
-	   OPT_EXTERNAL_DEPEND);
+	   OPT_SIDE_EFFECT);
   
   /* function(array(0=mixed):array(0)) */
   ADD_FUNCTION2("transpose",f_transpose,
