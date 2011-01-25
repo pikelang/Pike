@@ -1175,11 +1175,12 @@ protected void destroy()
 //!
 void close()
 {
-  if (con) {
+  if (con && (con->get_peer_certificate_info || con->is_open())) {
+    // NB: is_open on SSL connections doesn't quite do what we want.
     con->set_nonblocking();	// Clear callbacks to avoid loops
     con->close();
-    con = 0;
   }
+  con = 0;
   if(async_dns) {
     async_dns->close();
     async_dns = 0;
