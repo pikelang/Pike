@@ -5327,7 +5327,7 @@ PMOD_EXPORT int mc_count_bytes (void *thing)
  *!       recursed anyway.
  *!
  *!     @member int work_queue_alloc
- *!       The number of elements that was allocated to store the work
+ *!       The number of elements that were allocated to store the work
  *!       queue which is used to keep track of the things to visit
  *!       during the lookahead. This is usually bigger than the
  *!       maximum number of things the queue actually held.
@@ -5364,7 +5364,7 @@ PMOD_EXPORT int mc_count_bytes (void *thing)
  *! @note
  *! It's possible that a string that is referenced still isn't
  *! counted, because strings are always shared in Pike and the same
- *! string might be in use in some unrelated part of the program.
+ *! string may be in use in some unrelated part of the program.
  */
 void f_count_memory (INT32 args)
 {
