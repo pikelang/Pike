@@ -77,35 +77,35 @@ DECLARATIONS
  *!	manpage for more details.
  */
 
-/*! @decl array parse_event(string data)
+/*! @decl array(string|int) parse_event(string data)
  *! Parses one inotify_event struct from @expr{data@}.
  *! @returns
  *! 	Returns an array consisting of
- *! 	@ul
- *!	    @item
- *! 		The watch descriptor returned by @[add_watch()] when
- *!		the wathc for this file was added.
- *!	    @item
+ *! 	@array
+ *!	    @elem int 0
+ *! 		The watch descriptor returned by @[_Instance()->add_watch()]
+ *!		when the watch for this file was added.
+ *!	    @elem int 1
  *! 		An integer that describes the event that occured. See
  *!		the inotify manpage for a list of possible events and
  *!		their numerical identifiers.
- *!	    @item
+ *!	    @elem int 2
  *! 		An integer cookie that can be used to group together
  *!		different events that were triggered by moving a file
  *!		from one location to another.
- *! 	    @item
+ *! 	    @elem string 3
  *! 		The name of the file. This will only be present if the
  *!		event happened to a file in a directory that was
  *!		watched, e.g. with @[System.Inotify.IN_CREATE].
  *! 		Otherwise this will be 0.
- *!	    @item
- *! 		The length of the data that has been parsed. In case a
- *!		string contains more than one inotify event, this
- *!		parse function has to be called again with the rest as
+ *!	    @elem int 4
+ *! 		The length of the data that has been parsed. If the @[data]
+ *!		string contains more than one inotify event, this parse
+ *!		function needs to be called again with the remainder as
  *!		an argument.
- *! 	@endul
+ *! 	@endarray
  */
-PIKEFUN array parse_event(string data) {
+PIKEFUN array(string|int) parse_event(string data) {
     struct inotify_event * event;
     size_t len;
 
@@ -136,12 +136,15 @@ PIKEFUN array parse_event(string data) {
 }
 
 /*! @class _Instance
- *! 	Simple wrapper class that gives direct access to the inotify(7)
+ *! 	Simple wrapper class that gives direct access to the @tt{inotify(7)@}
  *!	interface. On create an inotify instance is initiated by calling
- *!	inotify_init(2). Every object of this class has its own inotify
+ *!	@tt{inotify_init(2)@}. Every object of this class has its own inotify
  *!	file descriptor. Use this class only if you want direct access to
  *!	the file descriptor to read from it manually. For a more user
  *!	friendly inferface use @[System.Inotify.Instance].
+ *!
+ *! @seealso
+ *!     @[System.Inotify.Instance]
  */
 PIKECLASS _Instance {
     CVAR int fd;
@@ -160,10 +163,15 @@ PIKECLASS _Instance {
      *!	    description. The values defined by the inotify header
      *!	    file are exported by @[System.Inotify] as constants
      *!	    using the same names (e.g. @[System.Inotify.IN_CREATE]).
+     *! @returns
+     *!     Returns a watch descriptor.
      *! @note
      *!	    Subdirectories are not watched. If you want to watch
-     *!	    subdirectories aswell, its necessary to add watches
-     *!	    for them individually.
+     *!	    subdirectories as well, you need to add watches for
+     *!	    them individually.
+     *!
+     *! @seealso
+     *!     @[rm_watch()], @[parse_event()]
      */
     PIKEFUN int add_watch(string file, int mask) {
 	INT32 err;
@@ -277,8 +285,6 @@ PIKE_MODULE_EXIT {
     EXIT
 }
 
-/*! @endmodule
- */
 /*! @endmodule
  */
 /*! @endmodule
