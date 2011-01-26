@@ -2411,8 +2411,7 @@ PIKECLASS Cred
  *!   classes when the context is established.
  *! @item GSSAPI.TRANS_FLAG
  *!   The context can be transferred between processes using
- *!   @[GSSAPI.Context.export] and @[GSSAPI.Context.import]. See RFC
- *!   2743 section 1.2.10.
+ *!   @[GSSAPI.Context.export]. See RFC 2743 section 1.2.10.
  *! @enddl
  */
 
