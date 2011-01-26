@@ -428,7 +428,8 @@ string parse_text(Node n, void|String.Buffer ret) {
   foreach(n->get_children(), Node c) {
     int node_type = c->get_node_type();
     if(c->get_node_type()==XML_TEXT) {
-      ret->add(quote(c->get_text()));
+      // Don't use quote() here since we don't want to strip whitespace.
+      ret->add(Parser.XML.Tree.text_quote (c->get_text()));
       continue;
     }
 
@@ -479,13 +480,13 @@ string parse_text(Node n, void|String.Buffer ret) {
 
     case "ref":
       if(resolve_reference) {
-	ret->add(resolve_reference(parse_text(c), c->get_attributes()), " ");
+	ret->add(resolve_reference(parse_text(c), c->get_attributes()));
 	break;
       }
       string ref;
       //ref = c->get_attributes()->resolved;
       if(!ref) ref = parse_text(c);
-      ret->add("<font face='courier'>", ref, "</font> ");
+      ret->add("<font face='courier'>", ref, "</font>");
       break;
 
     case "dl":
