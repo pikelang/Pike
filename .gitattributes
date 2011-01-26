@@ -683,7 +683,6 @@ testfont binary
 /src/post_modules/COM/com.c foreign_ident
 /src/post_modules/GL/acconfig.h foreign_ident
 /src/post_modules/GL/auto.c.in foreign_ident
-/src/post_modules/GL/autodoc.c foreign_ident
 /src/post_modules/GL/configure.in foreign_ident
 /src/post_modules/GL/top.c foreign_ident
 /src/post_modules/GLUT/Makefile.in foreign_ident
