@@ -117,11 +117,36 @@ void skipNewlines() {
 //! The current position in the source.
 SourcePosition currentPosition = 0;
 
+class ParseError
+{
+  inherit Error.Generic;
+  constant error_type = "pike_parse_error";
+  constant is_pike_parse_error = 1;
+
+  string filename;
+  int pos;
+
+  string parse_message;
+  // The bare message, without filename and pos etc. Also without
+  // trailing newline.
+
+  protected void create (string filename, int pos, string message,
+			 void|array bt)
+  {
+    this_program::filename = filename;
+    this_program::pos = pos;
+    parse_message = message;
+    ::create (sprintf ("PikeParser: %s:%d: %s\n", filename, pos, message), bt);
+  }
+}
+
 protected int parseError(string message, mixed ... args) {
-  message = sprintf(message, @args);
+  if (sizeof (args))
+    message = sprintf(message, @args);
   // werror("parseError! \n");
   // werror("%s\n", describe_backtrace(backtrace()));
-  error("PikeParser: %s (%s:%d)\n", message, filename, positions[tokenPtr]);
+  throw (ParseError (filename, positions[tokenPtr], message,
+		     backtrace()[..<1]));
 }
 
 private int tokenPtr = 0;
