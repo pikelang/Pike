@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.328 2008/08/04 11:38:56 mast Exp $
+|| $Id$
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.328 2008/08/04 11:38:56 mast Exp $");
+RCSID("$Id$");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -279,6 +279,7 @@ static void close_fd_quietly(void)
   if(fd<0) return;
 
   free_fd_stuff();
+  SUB_FD_EVENTS (THIS, ~0);
   change_fd_for_box (&THIS->box, -1);
 
   while(1)
@@ -333,6 +334,7 @@ static void close_fd(void)
   if(fd<0) return;
 
   free_fd_stuff();
+  SUB_FD_EVENTS (THIS, ~0);
   change_fd_for_box (&THIS->box, -1);
 
   if ( (THIS->flags & FILE_NOT_OPENED) )
