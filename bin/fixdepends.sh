@@ -71,6 +71,16 @@ sed <"$1/dependencies" -e '/^[ 	]*\\$/d' | sed \
     >"$1/dependencies.tmp" && \
   mv "$1/dependencies.tmp" "$1/dependencies"
 
+if test -f "$1/acconfig.h"; then
+# Add suitable dependencies for regenerating $(CONFIG_HEADERS).
+    cat <<EOF
+# Regenerate \$(CONFIG_HEADERS) from \$(SRCDIR)/acconfig.h
+\$(CONFIG_HEADERS): \$(SRCDIR)/\$(CONFIG_HEADERS).in
+\$(SRCDIR)/\$(CONFIG_HEADERS).in \$(SRCDIR)/configure: \$(SRCDIR)/acconfig.h
+EOF
+fi >>$1/dependencies
+
+
 #sed -e "s@/./@/@g
 #s@$d1/\([-a-zA-Z0-9.,_]*\)@\$(SRCDIR)/\1@g" >$1/dependencies
 
