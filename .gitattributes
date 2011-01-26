@@ -765,7 +765,6 @@ testfont binary
 /src/post_modules/GSSAPI/Makefile.in foreign_ident
 /src/post_modules/GSSAPI/acconfig.h foreign_ident
 /src/post_modules/GSSAPI/configure.in foreign_ident
-/src/post_modules/GSSAPI/gssapi.cmod foreign_ident
 /src/post_modules/GTK/acconfig.h foreign_ident
 /src/post_modules/GTK/dummy.c foreign_ident
 /src/post_modules/GTK/gdkeventstrings.h foreign_ident

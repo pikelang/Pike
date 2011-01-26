@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gssapi.cmod,v 1.12 2008/08/11 17:37:34 mast Exp $
+|| $Id$
 */
 
 /*
@@ -459,7 +459,7 @@ static void resolve_syms()
  */
 
 
-/*! @decl constant int ERROR_MASK
+/*! @decl constant ERROR_MASK
  *!
  *! Bitfield mask for the routine error part of major status codes
  *! like @[GSSAPI.Error.major_status]. After applying this mask, the
@@ -467,24 +467,24 @@ static void resolve_syms()
  *! constants.
  */
 
-/*! @decl constant int BAD_MECH
- *! @decl constant int BAD_NAME
- *! @decl constant int BAD_NAMETYPE
- *! @decl constant int BAD_BINDINGS
- *! @decl constant int BAD_STATUS
- *! @decl constant int BAD_SIG
- *! @decl constant int NO_CRED
- *! @decl constant int NO_CONTEXT
- *! @decl constant int DEFECTIVE_TOKEN
- *! @decl constant int DEFECTIVE_CREDENTIAL
- *! @decl constant int CREDENTIALS_EXPIRED
- *! @decl constant int CONTEXT_EXPIRED
- *! @decl constant int FAILURE
- *! @decl constant int BAD_QOP
- *! @decl constant int UNAUTHORIZED
- *! @decl constant int UNAVAILABLE
- *! @decl constant int DUPLICATE_ELEMENT
- *! @decl constant int NAME_NOT_MN
+/*! @decl constant BAD_MECH
+ *! @decl constant BAD_NAME
+ *! @decl constant BAD_NAMETYPE
+ *! @decl constant BAD_BINDINGS
+ *! @decl constant BAD_STATUS
+ *! @decl constant BAD_SIG
+ *! @decl constant NO_CRED
+ *! @decl constant NO_CONTEXT
+ *! @decl constant DEFECTIVE_TOKEN
+ *! @decl constant DEFECTIVE_CREDENTIAL
+ *! @decl constant CREDENTIALS_EXPIRED
+ *! @decl constant CONTEXT_EXPIRED
+ *! @decl constant FAILURE
+ *! @decl constant BAD_QOP
+ *! @decl constant UNAUTHORIZED
+ *! @decl constant UNAVAILABLE
+ *! @decl constant DUPLICATE_ELEMENT
+ *! @decl constant NAME_NOT_MN
  *!
  *! Constants for routine errors in major status codes like
  *! @[GSSAPI.Error.major_status]. See RFC 2743 section 1.2.1.1. Note
@@ -534,17 +534,17 @@ static void resolve_syms()
  *! @enddl
  */
 
-/*! @decl constant int INFO_MASK
+/*! @decl constant INFO_MASK
  *!
  *! Bitfield mask for the informatory part of major status codes like
  *! @[GSSAPI.Error.major_status].
  */
 
-/*! @decl constant int CONTINUE_NEEDED
- *! @decl constant int DUPLICATE_TOKEN
- *! @decl constant int OLD_TOKEN
- *! @decl constant int UNSEQ_TOKEN
- *! @decl constant int GAP_TOKEN
+/*! @decl constant CONTINUE_NEEDED
+ *! @decl constant DUPLICATE_TOKEN
+ *! @decl constant OLD_TOKEN
+ *! @decl constant UNSEQ_TOKEN
+ *! @decl constant GAP_TOKEN
  *!
  *! Bitfield flags for informatory codes in major status codes like
  *! @[GSSAPI.Error.major_status]. See RFC 2743 section 1.2.1.1. Any
@@ -1126,16 +1126,17 @@ static void throw_missing_services_error (OM_uint32 missing)
 }
 
 
-/*! @decl constant string NT_HOSTBASED_SERVICE
- *! @decl constant string NT_USER_NAME
- *! @decl constant string NT_MACHINE_UID_NAME
- *! @decl constant string NT_STRING_UID_NAME
- *! @decl constant string NT_ANONYMOUS
- *! @decl constant string NT_EXPORT_NAME
- *! @decl constant string KRB5_NT_PRINCIPAL_NAME
+/*! @decl constant NT_HOSTBASED_SERVICE
+ *! @decl constant NT_USER_NAME
+ *! @decl constant NT_MACHINE_UID_NAME
+ *! @decl constant NT_STRING_UID_NAME
+ *! @decl constant NT_ANONYMOUS
+ *! @decl constant NT_EXPORT_NAME
+ *! @decl constant KRB5_NT_PRINCIPAL_NAME
  *!
- *! OIDs on dotted-decimal form for the GSS-API mechanism-independent
- *! name types, and some selected mechanism-specific ones:
+ *! String OIDs on dotted-decimal form for the GSS-API
+ *! mechanism-independent name types, and some selected
+ *! mechanism-specific ones:
  *!
  *! @dl
  *! @item NT_HOSTBASED_SERVICE
@@ -1646,9 +1647,9 @@ PIKECLASS Name
 /*! @endclass */
 
 
-/*! @decl constant int INITIATE
- *! @decl constant int ACCEPT
- *! @decl constant int BOTH
+/*! @decl constant INITIATE
+ *! @decl constant ACCEPT
+ *! @decl constant BOTH
  *!
  *! Flags for indicating how a @[GSSAPI.Cred] object may be used:
  *!
@@ -2375,15 +2376,15 @@ PIKECLASS Cred
 /*! @endclass */
 
 
-/*! @decl constant int DELEG_FLAG
- *! @decl constant int MUTUAL_FLAG
- *! @decl constant int REPLAY_FLAG
- *! @decl constant int SEQUENCE_FLAG
- *! @decl constant int CONF_FLAG
- *! @decl constant int INTEG_FLAG
- *! @decl constant int ANON_FLAG
- *! @decl constant int PROT_READY_FLAG
- *! @decl constant int TRANS_FLAG
+/*! @decl constant DELEG_FLAG
+ *! @decl constant MUTUAL_FLAG
+ *! @decl constant REPLAY_FLAG
+ *! @decl constant SEQUENCE_FLAG
+ *! @decl constant CONF_FLAG
+ *! @decl constant INTEG_FLAG
+ *! @decl constant ANON_FLAG
+ *! @decl constant PROT_READY_FLAG
+ *! @decl constant TRANS_FLAG
  *!
  *! Bitfield flags returned by e.g. @[GSSAPI.Context.services] to
  *! denote various services that are available in the context.
