@@ -424,6 +424,7 @@ static void close_fd_quietly(void)
   if(fd<0) return;
 
   free_fd_stuff();
+  SUB_FD_EVENTS (THIS, ~0);
   change_fd_for_box (&THIS->box, -1);
 
   while(1)
@@ -478,6 +479,7 @@ static void close_fd(void)
   if(fd<0) return;
 
   free_fd_stuff();
+  SUB_FD_EVENTS (THIS, ~0);
   change_fd_for_box (&THIS->box, -1);
 
   if ( (THIS->flags & FILE_NOT_OPENED) )
