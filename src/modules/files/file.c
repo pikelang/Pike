@@ -879,9 +879,14 @@ static void check_message(struct msghdr *msg)
     }
   }
 #else
-  receive_fds(msg->msg_accrights, msg->msg_accrightslen/sizeof(int));
+  receive_fds((int *)msg->msg_accrights, msg->msg_accrightslen/sizeof(int));
 #endif
 }
+
+#ifndef HAVE_STRUCT_MSGHDR_MSG_CONTROL
+/* BSD */
+#define CMSG_LEN(x)	(x)
+#endif
 
 static struct pike_string *do_recvmsg(INT32 r, int all)
 {
@@ -900,7 +905,10 @@ static struct pike_string *do_recvmsg(INT32 r, int all)
   message.msg.msg_namelen = 0;
   message.msg.msg_iov = &message.iov;
   message.msg.msg_iovlen = 1;
+#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
+  /* XPG 4.2 */
   message.msg.msg_flags = 0;
+#endif
 
   if(r <= 65536)
   {
@@ -914,10 +922,12 @@ static struct pike_string *do_recvmsg(INT32 r, int all)
       int fd=FD;
       int e;
 #ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
+      /* XPG 4.2 */
       message.msg.msg_control = &message.cmsgbuf;
       message.msg.msg_controllen = sizeof(message.cmsgbuf);
 #else
-      message.msg.msg_accrights = &message.cmsgbuf;
+      /* BSD */
+      message.msg.msg_accrights = (void *)&message.cmsgbuf;
       message.msg.msg_accrightslen = sizeof(message.cmsgbuf);
 #endif
       message.iov.iov_base = str->str + bytes_read;
@@ -996,7 +1006,7 @@ static struct pike_string *do_recvmsg(INT32 r, int all)
       message.msg.msg_control = &message.cmsgbuf;
       message.msg.msg_controllen = sizeof(message.cmsgbuf);
 #else
-      message.msg.msg_accrights = &message.cmsgbuf;
+      message.msg.msg_accrights = (void *)&message.cmsgbuf;
       message.msg.msg_accrightslen = sizeof(message.cmsgbuf);
 #endif
       message.iov.iov_base = low_make_buf_space(try_read, &b);
@@ -1066,6 +1076,7 @@ static int writev_fds(int fd, struct iovec *iov, int iovcnt,
   int retval, e;
   struct msghdr msg;
 #ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
+  /* XPG 4.2 */
   struct cmsghdr *cmsg = malloc(CMSG_LEN(num_fds * sizeof(int)));
 
 /*   fprintf(stderr, "writev_fds(%d, %p, %d, %p, %d)\n", fd, iov, iovcnt, fds, num_fds); */
@@ -1079,15 +1090,16 @@ static int writev_fds(int fd, struct iovec *iov, int iovcnt,
   cmsg->cmsg_level = SOL_SOCKET;
   cmsg->cmsg_type = SCM_RIGHTS;
   MEMCPY(CMSG_DATA(cmsg), fds, num_fds * sizeof(int));
+  msg.msg_flags = 0;
 #else
-  msg.msg_accrights = fds;
+  /* BSD */
+  msg.msg_accrights = (void *)fds;
   msg.msg_accrightslen = num_fds * sizeof(int);
 #endif
   msg.msg_name = NULL;
   msg.msg_namelen = 0;
   msg.msg_iov = iov;
   msg.msg_iovlen = iovcnt;
-  msg.msg_flags = 0;
   retval = sendmsg(fd, &msg, 0);
 #ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
   e = errno;
