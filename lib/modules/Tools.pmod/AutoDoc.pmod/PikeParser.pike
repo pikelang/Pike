@@ -680,6 +680,33 @@ void|string parseLiteral() {
   return 0;
 }
 
+Type literalType (string literal)
+//! Returns the type of a literal. Currently only recognizes the top
+//! level type. Currently does not thoroughly check that the literal
+//! is syntactically valid.
+{
+  if (sizeof (literal))
+    switch (literal[0]) {
+      case '\'': return IntType(); // Character constant.
+      case '"': return StringType();
+      case '(':
+	if (sizeof (literal) > 1)
+	  switch (literal[1]) {
+	    case '{': return ArrayType();
+	    case '[': return MappingType();
+	    case '<': return MultisetType();
+	  }
+	break;
+      default:
+	if (sscanf (literal, "%*D%*c") == 1)
+	  return IntType();
+	if (sscanf (literal, "%*f%*c") == 1)
+	  return FloatType();
+    }
+  // Unrecognized format. Add an option to trig a parse error instead?
+  return 0;
+}
+
 //! Expect a literal constant.
 //!
 //! @seealso
@@ -731,9 +758,22 @@ PikeObject|array(PikeObject) parseDecl(mapping|void args) {
     c->position = position;
     c->modifiers = modifiers;
     readToken();
+    int save_pos = tokenPtr;
+    mixed err = catch (c->type = parseOrType());
+    if (err && (!objectp (err) || !err->is_pike_parse_error))
+      throw (err);
+    if (err || (<"=", ";", EOF>)[peekToken()]) {
+      c->type = 0;
+      tokenPtr = save_pos;
+    }
     c->name = eatIdentifier();
     if (peekToken() == "=") {
       eat("=");
+      if (string l = parseLiteral())
+	// It's intentional that literalType doesn't return too
+	// specific types for integers, i.e. it's int instead of e.g.
+	// int(4711..4711).
+	c->type = literalType (l);
       // TODO: parse the expression ???
       //   added parsing only of types...
       //   a constant value will just be ignored.

@@ -200,7 +200,8 @@ entities:
      </class>
  
 <constant>
-   Only has a name. The element is empty (or has a <source-position> child.)
+   Has a name attribute. Contains optional <type> and
+   <source-position> child elements.
 
 <enum>
    Works as a container. Has a <doc> child element with the documentation of

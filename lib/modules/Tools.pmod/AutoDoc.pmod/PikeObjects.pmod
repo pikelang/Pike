@@ -821,11 +821,15 @@ class Constant {
   //!
   constant objtype = "constant";
 
+  //! The type of the constant, if known.
+  Type type;
+
   //! Typedef @[Type] if it is a typedef.
   Type typedefType = 0;
 
   string xml() {
     return standardStart() + standardTags()
+      + (type ? xmltag ("type", type->xml()) : "")
       + (typedefType ? xmltag("typevalue", typedefType->xml()) : "")
       + standardEnd();
   }

@@ -1100,6 +1100,8 @@ string parse_not_doc(Node n) {
     case "constant":
       if(const++) ret += "<br />\n";
       ret += "<tt>constant ";
+      if (Node type = c->get_first_element ("type"))
+	ret += parse_type (get_first_element (type), "constant") + " ";
       ret += c->get_attributes()->class_path;
       ret += "<font color='#F000F0'>" + c->get_attributes()->name + "</font>";
       cc = c->get_first_element("typevalue");

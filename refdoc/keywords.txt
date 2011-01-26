@@ -83,6 +83,12 @@ Description:  Declare a Pike entity and state that the current
                 2. All @decl's in the block are methods with the same
                    name as that method. (look at the last example
                    below)
+
+	      The rest of the line after @decl should follow real pike
+	      syntax, but the ending semicolon is optional. There are
+	      some differences though, notably it allows a type to be
+	      specified for constants.
+
 Arguments:    <declaration>
               Where:
                 <declaration> is a valid Pike declaration. A trailing
@@ -100,6 +106,9 @@ Examples:
               //! @decl int cube(int i)
               //!  This is how to document a "polymorph" function.
               float|int cube(float|int x) { /* body */ }
+
+	      //! @decl constant int bitmask
+	      //!  A constant which has a public type but private value.
 
 _______________________________________________________________________________
 
