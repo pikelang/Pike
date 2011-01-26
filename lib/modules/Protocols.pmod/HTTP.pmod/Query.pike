@@ -155,6 +155,15 @@ protected int ponder_answer( int|void start_position )
    return 1;
 }
 
+protected void close_connection()
+{
+  Stdio.File con = this_program::con;
+  if (!con) return;
+  this_program::con = 0;
+  con->set_blocking();	// Clear any remaining callbacks.
+  con->close();
+}
+
 protected void connect(string server,int port,int blocking)
 {
 #ifdef HTTP_QUERY_DEBUG
@@ -173,8 +182,7 @@ protected void connect(string server,int port,int blocking)
 #ifdef HTTP_QUERY_DEBUG
      werror("<- (connect error: %s)\n", strerror (errno));
 #endif
-     con->close();
-     con = 0;
+     close_connection();
      ok = 0;
      return;
    }
@@ -301,11 +309,7 @@ protected void async_timeout()
 #ifdef HTTP_QUERY_DEBUG
    werror("** TIMEOUT\n");
 #endif
-   if (con) {
-      if (con->is_open())
-	con->close();
-      con=0;
-   }
+   close_connection();
    low_async_failed(110);	// ETIMEDOUT/Linux-i386
 }
 
@@ -317,10 +321,7 @@ void async_got_host(string server,int port)
    if (!server)
    {
       async_failed();
-      if (con) {
-	con->close();	//  we may be destructed here
-	con = 0;
-      }
+      close_connection();	//  we may be destructed here
       return;
    }
 
@@ -386,10 +387,7 @@ void async_fetch_close()
 #ifdef HTTP_QUERY_DEBUG
    werror("-> close\n");
 #endif
-   if (con) {
-     con->close();
-     con=0;
-   }
+   close_connection();
    remove_call_out(async_timeout);
    if (errno) {
      if (request_fail) (request_fail)(this_object(), @extra_args);
@@ -653,6 +651,7 @@ this_program sync_request(string server, int port, string query,
   }
   else
   {
+    close_connection();	// Close any old connection.
     con = Stdio.File();
     if(!con->open_socket(-1, 0, server)) {
       int errno = con->errno();
@@ -714,8 +713,7 @@ this_program sync_request(string server, int port, string query,
       if (ponder_answer() == -1) {
 	// The keepalive connection was closed from the server end.
 	// Retry with a new one.
-	con->close();
-	con = 0;
+	close_connection();
 	return sync_request (server, port, query, http_headers, data);
       }
   } else
@@ -1175,12 +1173,7 @@ protected void destroy()
 //!
 void close()
 {
-  if (con && (con->get_peer_certificate_info || con->is_open())) {
-    // NB: is_open on SSL connections doesn't quite do what we want.
-    con->set_nonblocking();	// Clear callbacks to avoid loops
-    con->close();
-  }
-  con = 0;
+  close_connection();
   if(async_dns) {
     async_dns->close();
     async_dns = 0;
