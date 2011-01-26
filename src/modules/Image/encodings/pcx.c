@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pcx.c,v 1.25 2008/01/15 14:10:02 grubba Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -252,7 +252,7 @@ static struct object *low_pcx_decode( struct pike_string *data )
   if(b.len < sizeof(struct pcx_header))
     Pike_error("There is not enough data available for this to be a PCX image\n");
   pcx_header = *((struct pcx_header *)get_chunk(&b,sizeof(struct pcx_header)));
-#if BYTEORDER == 1234
+#if PIKE_BYTEORDER == 1234
   SWAP_S(pcx_header.x1);
   SWAP_S(pcx_header.x2);
   SWAP_S(pcx_header.y1);
@@ -525,7 +525,7 @@ static struct pike_string *low_pcx_encode(struct image *data,struct options *opt
   MEMSET(pcx_header.palette, 0, 48);
   MEMSET(pcx_header.filler, 0, 58);
   pcx_header.color = 1;
-#if BYTEORDER == 1234
+#if PIKE_BYTEORDER == 1234
   SWAP_S(pcx_header.hdpi);
   SWAP_S(pcx_header.vdpi);
   SWAP_S(pcx_header.x1);

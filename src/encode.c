@@ -148,7 +148,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 
 /* Code a pike string */
 
-#if BYTEORDER == 4321
+#if PIKE_BYTEORDER == 4321
 #define ENCODE_DATA(S) \
    addstr( (S)->str, (S)->len << (S)->size_shift );
 #else
@@ -2127,7 +2127,7 @@ static int my_extract_char(struct decode_data *data)
       data->ptr+=sizeof(S[0])*(L);					\
   }while(0)
 
-#if BYTEORDER == 4321
+#if PIKE_BYTEORDER == 4321
 #define BITFLIP(S)
 #else
 #define BITFLIP(S)						\
