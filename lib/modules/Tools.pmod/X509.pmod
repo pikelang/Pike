@@ -126,12 +126,16 @@ int(-1..1) time_compare(mapping(string:int) t1, mapping(string:int) t2)
 MetaExplicit extension_sequence = MetaExplicit(2, 3);
 MetaExplicit version_integer = MetaExplicit(2, 0);
 
+Sequence rsa_public_key = Sequence( ({ Identifiers.rsa_id, Null() }));
+
 Sequence rsa_md2_algorithm = Sequence( ({ Identifiers.rsa_md2_id, Null() }) );
 
 Sequence rsa_md5_algorithm = Sequence( ({ Identifiers.rsa_md5_id, Null() }) );
 
 Sequence rsa_sha1_algorithm = Sequence( ({ Identifiers.rsa_sha1_id,
 					   Null() }) );
+
+Sequence dsa_sha1_algorithm = Sequence( ({ Identifiers.dsa_sha_id }) );
 
 //!
 Sequence make_tbs(object issuer, object algorithm,
@@ -160,31 +164,57 @@ Sequence make_tbs(object issuer, object algorithm,
 }
 
 //!
+//! @param issuer
+//!   Distinguished name for the issuer.
+//!
+//! @param rsa
+//!   RSA parameters for the issuer.
+//!
+//! @param subject
+//!   Distinguished name for the subject.
+//!
+//! @param public_key
+//!   DER-encoded integer.
+//!   See @[Standards.PKCS.DSA.public_key()].
+//!
+//! @param serial
+//!   Serial number for this key and issuer.
+//!
+//! @param ttl
+//!   Validity time in seconds for this signature to be valid.
+//!
+//! @param extensions
+//!   Set of extensions.
+//!
+//! @returns
+//!   Returns a DER-encoded certificate.
+string dsa_sign_key(Sequence issuer, Crypto.DSA dsa,
+		    Sequence subject, string public_key,
+		    int serial, int ttl, array|void extensions)
+{
+  Sequence tbs = make_tbs(issuer, dsa_sha1_algorithm,
+			  subject,
+			  Sequence(({ DSA.algorithm_identifier(dsa),
+				      BitString(public_key) }) ),
+			  Integer(serial), ttl, extensions);
+
+  string digest = tbs->get_der();
+  return Sequence(({ tbs, dsa_sha1_algorithm,
+		     BitString(dsa->sign_ssl(digest))
+		  }))->get_der();
+}
+
+//!
 string make_selfsigned_dsa_certificate(Crypto.DSA dsa, int ttl, array name,
 				       array|void extensions)
 {
-  Integer serial =
-    Integer(Gmp.bignum(Standards.UUID.make_version1(-1)->encode(), 256));
-  int now = time();
-  Sequence validity = Sequence( ({ make_time(now), make_time(now + ttl) }) );
-
-  Sequence signature_algorithm = Sequence( ({ Identifiers.dsa_sha_id }) );
-  
-  Sequence keyinfo = Sequence(
-    ({ /* Use an identifier with parameters */
-       DSA.algorithm_identifier(dsa),
-       BitString(DSA.public_key(dsa)) }) );
+  int serial =
+    (int)Gmp.bignum(Standards.UUID.make_version1(-1)->encode(), 256);
 
   Sequence dn = Certificate.build_distinguished_name(@name);
-  
-  Sequence tbs = make_tbs(dn, signature_algorithm,
-			  dn, keyinfo,
-			  serial, ttl, extensions);
-  
-  return Sequence(
-    ({ tbs,
-       signature_algorithm,
-       BitString(dsa->sign_ssl(tbs->get_der())) }))->get_der();
+
+  return dsa_sign_key(dn, dsa, dn, DSA.public_key(dsa),
+		      serial, ttl, extensions);
 }
 
 //!
@@ -205,34 +235,58 @@ int(0..1) rsa_verify_digest(Crypto.RSA rsa, object digest_id,
 }
 
 //!
+//! @param issuer
+//!   Distinguished name for the issuer.
+//!
+//! @param rsa
+//!   RSA parameters for the issuer.
+//!
+//! @param subject
+//!   Distinguished name for the issuer.
+//!
+//! @param public_key
+//!   DER-encoded RSAPublicKey structure.
+//!   See @[Standards.PKCS.RSA.public_key()].
+//!
+//! @param serial
+//!   Serial number for this key and subject.
+//!
+//! @param ttl
+//!   Validity time in seconds for this signature to be valid.
+//!
+//! @param extensions
+//!   Set of extensions.
+//!
+//! @returns
+//!   Returns a DER-encoded certificate.
+string rsa_sign_key(Sequence issuer, Crypto.RSA rsa,
+		    Sequence subject, string public_key,
+		    int serial, int ttl, array|void extensions)
+{
+  Sequence tbs = make_tbs(issuer, rsa_sha1_algorithm,
+			  subject,
+			  Sequence(({ rsa_public_key,
+				      BitString(public_key) }) ),
+			  Integer(serial), ttl, extensions);
+
+  string digest = Crypto.SHA1.hash(tbs->get_der());
+  return Sequence(({ tbs, rsa_sha1_algorithm,
+		     BitString(rsa_sign_digest(rsa, Identifiers.sha1_id,
+					       digest))
+		  }))->get_der();
+}
+
+//!
 string make_selfsigned_rsa_certificate(Crypto.RSA rsa, int ttl, array name,
 				       array|void extensions)
 {
-  Integer serial =
-    Integer(Gmp.bignum(Standards.UUID.make_version1(-1)->encode(), 256));
-
-  int now = time();
-  Sequence validity = Sequence( ({ make_time(now), make_time(now + ttl) }) );
-
-  Sequence signature_algorithm = Sequence( ({ Identifiers.rsa_sha1_id,
-					      Null() }) );
-
-  Sequence keyinfo = Sequence(
-    ({ Sequence( ({ Identifiers.rsa_id, Null() }) ),
-       BitString(RSA.public_key(rsa)) }) );
+  int serial =
+    (int)Gmp.bignum(Standards.UUID.make_version1(-1)->encode(), 256);
 
   Sequence dn = Certificate.build_distinguished_name(@name);
-  
-  Sequence tbs = make_tbs(dn, rsa_sha1_algorithm,
-			  dn, keyinfo,
-			  serial, ttl, extensions);
 
-  return Sequence(
-    ({ tbs,
-       rsa_sha1_algorithm,
-       BitString(rsa_sign_digest(rsa, Identifiers.sha1_id,
-				 Crypto.SHA1.hash(tbs->get_der())
-				 )) }) )->get_der();
+  return rsa_sign_key(dn, rsa, dn, RSA.public_key(rsa),
+		      serial, ttl, extensions);
 }
 
 class Verifier {
