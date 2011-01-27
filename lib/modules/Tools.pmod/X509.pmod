@@ -2,7 +2,7 @@
 //#pragma strict_types
 
 /* 
- * $Id: X509.pmod,v 1.38 2004/09/06 18:05:07 grubba Exp $
+ * $Id$
  *
  * Some random functions for creating RFC-2459 style X.509 certificates.
  *
@@ -163,7 +163,8 @@ Sequence make_tbs(object issuer, object algorithm,
 string make_selfsigned_dsa_certificate(Crypto.DSA dsa, int ttl, array name,
 				       array|void extensions)
 {
-  Integer serial = Integer(1); /* Hard coded serial number */
+  Integer serial =
+    Integer(Gmp.bignum(Standards.UUID.make_version1(-1)->encode(), 256));
   int now = time();
   Sequence validity = Sequence( ({ make_time(now), make_time(now + ttl) }) );
 
@@ -207,7 +208,8 @@ int(0..1) rsa_verify_digest(Crypto.RSA rsa, object digest_id,
 string make_selfsigned_rsa_certificate(Crypto.RSA rsa, int ttl, array name,
 				       array|void extensions)
 {
-  Integer serial = Integer(1); /* Hard coded serial number */
+  Integer serial =
+    Integer(Gmp.bignum(Standards.UUID.make_version1(-1)->encode(), 256));
 
   int now = time();
   Sequence validity = Sequence( ({ make_time(now), make_time(now + ttl) }) );
