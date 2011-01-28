@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.h,v 1.121 2008/07/09 20:43:46 mast Exp $
+|| $Id$
 */
 
 #ifndef PIKE_TYPES_H
@@ -287,6 +287,8 @@ struct pike_type *object_type_to_program_type(struct pike_type *obj_t);
 PMOD_EXPORT char *get_name_of_type(TYPE_T t);
 void cleanup_pike_types(void);
 void cleanup_pike_type_table(void);
+PMOD_EXPORT void *find_type(struct pike_type *t,
+			    void *(*cb)(struct pike_type *));
 PMOD_EXPORT void visit_type (struct pike_type *t, int action);
 void gc_mark_type_as_referenced(struct pike_type *t);
 void gc_check_type (struct pike_type *t);

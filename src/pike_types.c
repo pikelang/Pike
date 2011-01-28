@@ -8034,6 +8034,67 @@ void cleanup_pike_type_table(void)
 #endif /* DO_PIKE_CLEANUP */
 }
 
+PMOD_EXPORT void *find_type(struct pike_type *t,
+			    void *(*cb)(struct pike_type *))
+{
+  void *res;
+  if (!t) return NULL;
+
+  res = cb(t);
+  if (res) return res;
+
+  switch(t->type) {
+    case T_FUNCTION:
+    case T_MANY:
+    case T_TUPLE:
+    case T_MAPPING:
+    case T_OR:
+    case T_AND:
+    case PIKE_T_RING:
+      res = find_type(t->car, cb);
+      if (res) return res;
+      /* FALL_THROUGH */
+    case T_SCOPE:
+    case T_ASSIGN:
+    case PIKE_T_ATTRIBUTE:
+    case PIKE_T_NAME:
+      return find_type(t->cdr, cb);
+
+    case T_ARRAY:
+    case T_MULTISET:
+    case T_NOT:
+    case T_TYPE:
+    case T_PROGRAM:
+    case T_STRING:
+      return find_type(t->car, cb);
+
+#ifdef PIKE_DEBUG
+    case '0':
+    case '1':
+    case '2':
+    case '3':
+    case '4':
+    case '5':
+    case '6':
+    case '7':
+    case '8':
+    case '9':
+    case T_FLOAT:
+    case T_MIXED:
+    case T_VOID:
+    case T_ZERO:
+    case PIKE_T_UNKNOWN:
+    case T_INT:
+    case T_OBJECT:
+      break;
+    default:
+      Pike_fatal("find_type: Unhandled type-node: %d\n", t->type);
+      break;
+#endif /* PIKE_DEBUG */
+  }
+  return NULL;
+}
+
 PMOD_EXPORT void visit_type (struct pike_type *t, int action)
 {
   switch (action) {
