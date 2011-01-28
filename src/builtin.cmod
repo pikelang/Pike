@@ -3776,7 +3776,9 @@ PIKECLASS SqlNull
  */
 PIKECLASS Serializable
 {
-  static void low_serialize(int i, struct svalue *fun, int use_setter)
+  /* Loop over all variables, and call fun_num in the current object. */
+  static void low_serialize(int i, struct svalue *fun,
+			    int use_setter, int fun_num)
   {
     struct inherit *inh;
     struct program *p = Pike_fp->current_object->prog;
@@ -3797,6 +3799,7 @@ PIKECLASS Serializable
       if (!IDENTIFIER_IS_VARIABLE(id->identifier_flags)) {
 	continue;
       }
+      push_svalue(fun);
       ref_push_string(id->name);
       ref_push_type_value(id->type);
       if (use_setter) {
@@ -3808,13 +3811,53 @@ PIKECLASS Serializable
 				 i + inh->identifier_level);
 	Pike_sp++;
       }
-      apply_svalue(fun, 3);
+      apply_current(fun_num, 4);
       pop_stack();
     }
     if (Pike_sp != save_sp) {
       /* Not likely, but... */
       pop_n_elems(Pike_sp - save_sp);
     }
+  }
+
+  /*! @decl void _serialize_variable(function(string, type, mixed:void) serializer, @
+   *!                                string symbol, type symbol_type, @
+   *!                                mixed value)
+   *!
+   *!   Default serialization function for variables.
+   *!
+   *! @param serializer
+   *!   Function to be called in turn.
+   *!
+   *! @param symbol
+   *!   Variable name.
+   *!
+   *! @param symbol_type
+   *!   Type of the variable.
+   *!
+   *! @param value
+   *!   Value of the variable.
+   *!
+   *! This function is typically called from @[_serialize()], and just does
+   *!   @code
+   *!     serializer(symbol, symbol_type, value);
+   *!   @endcode
+   *!
+   *! It is provided for overloading for eg filtering or validation purposes.
+   *!
+   *! @seealso
+   *!   @[_serialize()], @[_deserialize_variable()]
+   */
+  PIKEFUN void _serialize_variable(function(string, type, mixed:void)
+				   serializer, string symbol,
+				   type symbol_type, mixed value)
+    flags ID_PROTECTED;
+  rawtype tFunc(tFunc(tStr tType(tMix) tMix, tVoid)
+		tStr tType(tMix) tMix, tVoid);
+  {
+    f_call_function(args);
+    pop_stack();
+    push_int(0);
   }
 
   /*! @decl void _serialize(object o, @
@@ -3826,18 +3869,11 @@ PIKECLASS Serializable
    *!   Object to serialize. Always a context of the current object.
    *!
    *! @param serializer
-   *!   Function to be called once for every variable
+   *!   Function to typically be called once for every variable
    *!   in the inheriting class.
    *!
-   *! The @[serializer] function will be called with three arguments:
-   *!   @dl
-   *!     @item
-   *!       @tt{symbol@} - The symbol name.
-   *!     @item
-   *!       @tt{symbol_type@} - The type of the symbol.
-   *!     @item
-   *!       @tt{value@} - The value of the symbol.
-   *!   @enddl
+   *! This function calls @[_serialize_variable()] once
+   *! for every variable in the inheriting class.
    *!
    *! @note
    *!   The symbols will be listed in the order they were defined
@@ -3854,8 +3890,53 @@ PIKECLASS Serializable
     if (o != Pike_fp->current_object) {
       SIMPLE_BAD_ARG_ERROR("_serialize", 1, "this");
     }
-    low_serialize(Pike_sp[-args].subtype, serializer, 0);
+    low_serialize(Pike_sp[-args].subtype, serializer, 0,
+		  f_Serializable_cq__serialize_variable_fun_num);
     pop_n_elems(args);
+    push_int(0);
+  }
+
+  /*! @decl void _deserialize_variable(function(string, type, @
+   *!                                  function(mixed:void): mixed) deserializer @
+   *!                                  string symbol, type symbol_type, @
+   *!                                  function(mixed:void) setter)
+   *!
+   *!   Default deserialization function for variables.
+   *!
+   *! @param deserializer
+   *!   Function to be called in turn.
+   *!
+   *! @param symbol
+   *!   Variable name.
+   *!
+   *! @param symbol_type
+   *!   Type of the variable.
+   *!
+   *! @param setter
+   *!   Function that sets the value of the variable.
+   *!
+   *! This function is typically called from @[_deserialize()], and just does
+   *!   @code
+   *!     deserializer(symbol, symbol_type, setter);
+   *!   @endcode
+   *!
+   *! The main use is for overloading to support deserialization of variables
+   *! that contain objects.
+   *!
+   *! @seealso
+   *!   @[_deserialize()], @[_serialize_variable()]
+   */
+  PIKEFUN void _deserialize_variable(function(string, type,
+					      function(mixed:void): mixed)
+				     deserializer, string symbol,
+				     type symbol_type,
+				     function(mixed:void) setter)
+    flags ID_PROTECTED;
+  rawtype tFunc(tFunc(tStr tType(tMix) tFunc(tMix, tVoid), tVoid)
+		tStr tType(tMix) tFunc(tMix, tVoid), tVoid);
+  {
+    f_call_function(args);
+    pop_stack();
     push_int(0);
   }
 
@@ -3869,18 +3950,11 @@ PIKECLASS Serializable
    *!   Object to serialize. Always a context of the current object.
    *!
    *! @param deserializer
-   *!   Function to be called once for every variable
+   *!   Function to typically be called once for every variable
    *!   in the inheriting class.
    *!
-   *! The @[deserializer] function will be called with three arguments:
-   *!   @dl
-   *!     @item
-   *!       @tt{symbol@} - The symbol name.
-   *!     @item
-   *!       @tt{symbol_type@} - The type of the symbol.
-   *!     @item
-   *!       @tt{setter@} - Function that sets the symbol value.
-   *!   @enddl
+   *! This function calls @[_deserialize_variable()] once
+   *! for every variable in the inheriting class.
    *!
    *! @note
    *!   The symbols will be listed in the order they were defined
@@ -3898,7 +3972,8 @@ PIKECLASS Serializable
     if (o != Pike_fp->current_object) {
       SIMPLE_BAD_ARG_ERROR("_serialize", 1, "this");
     }
-    low_serialize(Pike_sp[-args].subtype, deserializer, 1);
+    low_serialize(Pike_sp[-args].subtype, deserializer, 1,
+		  f_Serializable_cq__deserialize_variable_fun_num);
     pop_n_elems(args);
     push_int(0);
   }
