@@ -3896,6 +3896,18 @@ PIKECLASS Serializable
     push_int(0);
   }
 
+  static void *find_program_from_object_type_cb(struct pike_type *t)
+  {
+    struct program *p;
+    if ((t->type != PIKE_T_OBJECT) || !t->cdr) return NULL;
+    p = id_to_program(CDR_TO_INT(t));
+    if (!p || (p->flags & PROGRAM_NEEDS_PARENT) ||
+	(low_find_lfun(p, LFUN__DESERIALIZE) == -1)) return NULL;
+    return p;
+  }
+
+  DEFAULT_CMOD_STORAGE void f_deserialize(INT32 args);
+
   /*! @decl void _deserialize_variable(function(string, type, @
    *!                                  function(mixed:void): mixed) deserializer @
    *!                                  string symbol, type symbol_type, @
@@ -3915,13 +3927,39 @@ PIKECLASS Serializable
    *! @param setter
    *!   Function that sets the value of the variable.
    *!
-   *! This function is typically called from @[_deserialize()], and just does
+   *! This function is typically called from @[_deserialize()], and does
+   *! something like:
    *!   @code
+   *!     if (object_typep(symbol_type)) {
+   *!       program p = program_from_type(symbol_type);
+   *!       if (p && !needs_parent(p) && is_deserializable(p)) {
+   *!         object value = p();
+   *!         setter(value);
+   *!         Serializer.deserialize(value, deserializer);
+   *!         return;
+   *!       }
+   *!     }
    *!     deserializer(symbol, symbol_type, setter);
    *!   @endcode
    *!
-   *! The main use is for overloading to support deserialization of variables
-   *! that contain objects.
+   *! @note
+   *!   The above takes care of the most common cases, but
+   *!   @ul
+   *!     @item
+   *!       Does not support anonymous object types.
+   *!     @item
+   *!       Does not support objects needing a parent.
+   *!     @item
+   *!       Does not support non-serializable objects.
+   *!     @item
+   *!       Selects one of the object types in case of a complex
+   *!       @[symbol_type]. The selected type is NOT deterministic
+   *!       in case there are multiple choices that satisfy the above.
+   *!     @item
+   *!       Is likely to throw errors if @tt{p()@} requires arguments.
+   *!   @endul
+   *!
+   *!   These issues can all be solved by overloading this function.
    *!
    *! @seealso
    *!   @[_deserialize()], @[_serialize_variable()]
@@ -3935,6 +3973,18 @@ PIKECLASS Serializable
   rawtype tFunc(tFunc(tStr tType(tMix) tFunc(tMix, tVoid), tVoid)
 		tStr tType(tMix) tFunc(tMix, tVoid), tVoid);
   {
+    struct program *p = find_type(symbol_type,
+				  find_program_from_object_type_cb);
+    if (p) {
+      struct object *o = clone_object(p, 0);
+      push_object(o);	/* Protection against errors and arg to deserialize. */
+      ref_push_object(o);
+      apply_svalue(setter, 1);
+      pop_stack();
+      push_svalue(deserializer);
+      f_deserialize(2);
+      return;
+    }
     f_call_function(args);
     pop_stack();
     push_int(0);
