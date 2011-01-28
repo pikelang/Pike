@@ -3909,7 +3909,7 @@ PIKECLASS Serializable
   DEFAULT_CMOD_STORAGE void f_deserialize(INT32 args);
 
   /*! @decl void _deserialize_variable(function(string, type, @
-   *!                                  function(mixed:void): mixed) deserializer @
+   *!                                  function(mixed:void): void) deserializer @
    *!                                  string symbol, type symbol_type, @
    *!                                  function(mixed:void) setter)
    *!
@@ -3965,7 +3965,7 @@ PIKECLASS Serializable
    *!   @[_deserialize()], @[_serialize_variable()]
    */
   PIKEFUN void _deserialize_variable(function(string, type,
-					      function(mixed:void): mixed)
+					      function(mixed:void): void)
 				     deserializer, string symbol,
 				     type symbol_type,
 				     function(mixed:void) setter)
@@ -3992,7 +3992,7 @@ PIKECLASS Serializable
 
   /*! @decl void _deserialize(object o, @
    *!              function(string, type, @
-   *!                       function(mixed:void): mixed) deserializer)
+   *!                       function(mixed:void): void) deserializer)
    *!
    *!   Dispatch function for deserialization.
    *!
@@ -4015,7 +4015,7 @@ PIKECLASS Serializable
    */
   PIKEFUN void _deserialize(object o,
 			    function(string, type,
-				     function(mixed:void): mixed) deserializer)
+				     function(mixed:void): void) deserializer)
     flags ID_PROTECTED;
     rawtype tFunc(tObj tFunc(tStr tType(tMix) tFunc(tMix, tVoid), tVoid), tVoid);
   {
