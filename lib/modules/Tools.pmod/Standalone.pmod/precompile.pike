@@ -326,6 +326,7 @@ int parse_type(array t, int p)
 	  case "array":
 	  case "multiset":
 	  case "int":
+	  case "type":
 	    if(arrayp(t[p])) p++;
 	  case "bignum":
 	  case "longest":
@@ -677,7 +678,9 @@ class PikeType
 
 	case "object":
 	case "program": return "struct "+btype+" *";
-	  
+
+        case "type": return "struct pike_type *";
+
 	case "function":
 	case "mixed":
 	case "bignum":
@@ -734,6 +737,9 @@ class PikeType
 	  ret=sprintf("tArr(%s)",args[0]->output_c_type());
 	  if(ret=="tArr(tMix)") return "tArray";
 	  return ret;
+
+        case "type":
+	  return sprintf("tType(%s)", args[0]->output_c_type());
 
 	case "function":
 	  string t=args[..sizeof(args)-3]->output_c_type()*" ";
@@ -979,6 +985,10 @@ class PikeType
 	      case "function":
 		args=({ PikeType("mixed"), PikeType("any") });
 		break;
+
+	      case "type":
+		args=({ PikeType("mixed") });
+		break;
 	    }
 	  }else{
 	    array q;
@@ -1053,9 +1063,11 @@ class PikeType
 		break;
 
 	      case "object":
+	      case "type":
 		if (arrayp(tok[1]) && sizeof(tok[1]) > 2) {
 		  t = tok[1][1];
 		}
+		break;
 	    }
 	  }
       }
