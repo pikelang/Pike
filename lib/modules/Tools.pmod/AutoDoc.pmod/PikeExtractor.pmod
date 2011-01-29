@@ -527,7 +527,14 @@ protected private class Extractor {
       // FIXME: Support doc comment following the variable decl.
     }
 
-    c->docGroups += ({ DocGroup(createVars + ({ createMethod }), EmptyDoc) });
+    c->docGroups += ({
+      DocGroup(({ createMethod }), EmptyDoc),
+    });
+    if (sizeof(createVars)) {
+      c->docGroups += ({
+	DocGroup(createVars, EmptyDoc),
+      });
+    }
   }
 
 } // static private class Extractor
