@@ -857,23 +857,34 @@ string parse_type(Node n, void|string debug) {
       ret += sprintf("__attribute__(%s, %s)", attr, subtype);
     }
     break;
-  case "static": // Not in XSLT
-    ret += "static ";
+
+    // Modifiers:
+  case "extern": // Not in XSLT
+    ret += "extern ";
+    break;
+  case "final": // Not in XSLT
+  case "nomask": // Not in XSLT
+    ret += "final ";
+    break;
+  case "inline": // Not in XSLT
+  case "local": // Not in XSLT
+    ret += "local ";
     break;
   case "optional": // Not in XSLT
     ret += "optional ";
-    break;
-  case "local": // Not in XSLT
-    ret += "local ";
     break;
   case "private": // Not in XSLT
     ret += "private ";
     break;
   case "protected": // Not in XSLT
+  case "static": // Not in XSLT
     ret += "protected ";
     break;
   case "public": // Not in XSLT
     // Ignored.
+    break;
+  case "variant": // Not in XSLT
+    ret += "variant ";
     break;
 
   default:
@@ -1063,7 +1074,10 @@ string parse_not_doc(Node n) {
 	  ret += "<b>)</b></tt>";
 	  break;
 	default:
-	  ret += "<tt>" + parse_type(get_first_element(c->get_first_element("returntype"))); // Check for more children
+	  ret += "<tt>";
+	  cc = c->get_first_element("modifiers");
+	  if(cc) ret += map(cc->get_children(), parse_type)*" " + " ";
+	  ret += parse_type(get_first_element(c->get_first_element("returntype"))); // Check for more children
 	  ret += " ";
 	  ret += c->get_attributes()->class_path;
 	  ret += "<b><font color='#000066'>" + c->get_attributes()->name + "</font>(</b>";
@@ -1100,7 +1114,10 @@ string parse_not_doc(Node n) {
 
     case "constant":
       if(const++) ret += "<br />\n";
-      ret += "<tt>constant ";
+      ret += "<tt>";
+      cc = c->get_first_element("modifiers");
+      if(cc) ret += map(cc->get_children(), parse_type)*" " + " ";
+      ret += "constant ";
       if (Node type = c->get_first_element ("type"))
 	ret += parse_type (get_first_element (type), "constant") + " ";
       ret += c->get_attributes()->class_path;
@@ -1112,16 +1129,20 @@ string parse_not_doc(Node n) {
 
     case "typedef":
       if(typedf++) ret += "<br />\n";
-      ret += "<tt>typedef ";
+      ret += "<tt>";
       cc = c->get_first_element("modifiers");
       if(cc) ret += map(cc->get_children(), parse_type)*" " + " ";
+      ret += "typedef ";
       ret += parse_type(get_first_element(c->get_first_element("type")), "typedef") + " " +
 	c->get_attributes()->class_path + "<font color='#F000F0'>" + c->get_attributes()->name +
 	"</font></tt>";
       break;
 
     case "inherit":
-      ret += "<font face='courier'>inherit ";
+      ret += "<font face='courier'>";
+      cc = c->get_first_element("modifiers");
+      if(cc) ret += map(cc->get_children(), parse_type)*" " + " ";
+      ret += "inherit ";
       Node n = c->get_first_element("classname");
       if (resolve_reference) {
 	ret += "</font>" +
