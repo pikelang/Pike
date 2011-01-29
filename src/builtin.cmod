@@ -3820,9 +3820,11 @@ PIKECLASS Serializable
     }
   }
 
-  /*! @decl void _serialize_variable(function(string, type, mixed:void) serializer, @
-   *!                                string symbol, type symbol_type, @
-   *!                                mixed value)
+  /*! @decl protected void _serialize_variable( @
+   *!			function(string, type, mixed:void) serializer, @
+   *!			string symbol, @
+   *!			type symbol_type, @
+   *!			mixed value)
    *!
    *!   Default serialization function for variables.
    *!
@@ -3860,8 +3862,8 @@ PIKECLASS Serializable
     push_int(0);
   }
 
-  /*! @decl void _serialize(object o, @
-   *!                       function(string, type, mixed:void) serializer)
+  /*! @decl protected void _serialize(object o, @
+   *!			function(string, type, mixed:void) serializer)
    *!
    *!   Dispatch function for serialization.
    *!
@@ -3908,10 +3910,12 @@ PIKECLASS Serializable
 
   DEFAULT_CMOD_STORAGE void f_deserialize(INT32 args);
 
-  /*! @decl void _deserialize_variable(function(string, type, @
-   *!                                  function(mixed:void): void) deserializer @
-   *!                                  string symbol, type symbol_type, @
-   *!                                  function(mixed:void) setter)
+  /*! @decl protected void _deserialize_variable( @
+   *!			function(string, type, @
+   *!			         function(mixed:void): void) deserializer, @
+   *!			string symbol, @
+   *!			type symbol_type, @
+   *!			function(mixed:void) setter)
    *!
    *!   Default deserialization function for variables.
    *!
@@ -3990,9 +3994,9 @@ PIKECLASS Serializable
     push_int(0);
   }
 
-  /*! @decl void _deserialize(object o, @
-   *!              function(string, type, @
-   *!                       function(mixed:void): void) deserializer)
+  /*! @decl protected void _deserialize(object o, @
+   *!			function(string, type, @
+   *!			         function(mixed:void): void) deserializer)
    *!
    *!   Dispatch function for deserialization.
    *!
