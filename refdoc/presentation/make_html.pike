@@ -1179,27 +1179,26 @@ string parse_docgroup(Node n) {
   if(lay->typehead) {
     ret += lay->typehead;
     if(m["homogen-type"]) {
-      string type = "<font face='Helvetica'>" + quote(String.capitalize(m["homogen-type"])) + "</font>\n";
-      if(m["homogen-name"])
-	ret += type + "<font size='+1'><b>" + quote((m->belongs?m->belongs+" ":"") + m["homogen-name"]) +
+      string type = "<font face='Helvetica'>" +
+	quote(String.capitalize(m["homogen-type"])) +
+	"</font>\n";
+      if(m["homogen-name"]) {
+	ret += type + "<font size='+1'><b>" +
+	  quote((m->belongs?m->belongs+" ":"") + m["homogen-name"]) +
 	  "</b></font>\n";
-      else if (m["homogen-type"] == "method") {
-	foreach(Array.uniq(n->get_elements("method")->get_attributes()->name), string name)
-	  ret += type + "<font size='+1'><b>" + name + "</b></font><br />\n";
-      } else if (m["homogen-type"] == "inherit") {
-	foreach(n->get_elements("inherit"), Node child) {
-	  string name = child->get_attributes()->name ||
-	    child->value_of_node();
-	  if (name) {
-	    ret += type + "<font size='+1'><b>" + name + "</b></font><br />\n";
-	  }
-	}
       } else {
-	// FIXME: Error?
+	array(string) names =
+	  Array.uniq(map(n->get_elements(m["homogen-type"]),
+			 lambda(Node child) {
+			   return child->get_attributes()->name ||
+			     child->value_of_node();
+			 }));
+	foreach(names, string name)
+	  ret += type + "<font size='+1'><b>" + name + "</b></font><br />\n";
       }
     }
     else
-      ret += "syntax";
+      ret += "Syntax";
     ret += lay->_typehead;
   }
 
