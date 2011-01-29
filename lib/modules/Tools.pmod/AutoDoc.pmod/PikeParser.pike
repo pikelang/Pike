@@ -660,9 +660,27 @@ array(string) parseModifiers() {
   string s = peekToken();
   array(string) mods = ({ });
   while (modifiers[s]) {
-    mods += ({ s });
+    // Canonicalize some aliases.
+    s = ([ "nomask":"final",
+	   "static":"protected",
+	   "inline":"local",
+    ])[s] || s;
+    if (!has_value(mods, s)) {
+      mods += ({ s });
+    }
     readToken();
     s = peekToken();
+  }
+  if (sizeof(mods) > 1) {
+    // Clean up implied modifiers.
+    if (has_value(mods, "private")) {
+      // private implies protected.
+      mods -= ({ "protected", });
+    }
+    if (has_value(mods, "final")) {
+      // final implies local.
+      mods -= ({ "local" });
+    }
   }
   return mods;
 }
