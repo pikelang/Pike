@@ -62,7 +62,7 @@ void init_tables()
                          INDEX index_uri_id (uri_id))"
 				       ); //FIXME: Remove index_language?
   
-  db->query("create table if not exists deleted_document (doc_id int unsigned not null)");
+  db->query("create table if not exists deleted_document (doc_id int unsigned not null primary key)");
 
 
 
