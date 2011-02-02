@@ -4,7 +4,7 @@
 //! absolute form, as defined in RFC 2396 and RFC 3986.
 
 // Implemented by Johan Sundström and Johan Schön.
-// $Id: URI.pike,v 1.33 2010/05/23 19:25:52 grubba Exp $
+// $Id$
 
 #pragma strict_types
 
@@ -307,7 +307,8 @@ void reparse_uri(this_program|string|void base_uri)
   {
     authority = this_program::base_uri->authority;
     DEBUG("Inherited authority %O from base URI", authority);
-    parse_authority();
+    if (authority)
+      parse_authority();
 
     // 5) If the path component begins with a slash character ("/"), then
     //    the reference is an absolute-path and we skip to step 7.

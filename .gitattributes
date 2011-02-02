@@ -221,7 +221,6 @@ testfont binary
 /lib/modules/Standards.pmod/PKCS.pmod/PFX.pmod foreign_ident
 /lib/modules/Standards.pmod/PKCS.pmod/RSA.pmod foreign_ident
 /lib/modules/Standards.pmod/RDF.pike foreign_ident
-/lib/modules/Standards.pmod/URI.pike foreign_ident
 /lib/modules/Standards.pmod/UUID.pmod foreign_ident
 /lib/modules/Standards.pmod/XML.pmod/Wix.pmod foreign_ident
 /lib/modules/Standards.pmod/testsuite.in foreign_ident
