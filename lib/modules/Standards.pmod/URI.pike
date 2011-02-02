@@ -166,6 +166,7 @@ string combine_uri_path(string base, string rel)
   //    treating them as part of the final URI), by removing them from
   //    the resolved path (i.e., discarding relative levels above the
   //    root), or by avoiding traversal of the reference.
+  segments -= ({ ".." });
   return segments * "/";
 }
 
