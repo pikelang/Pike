@@ -1154,7 +1154,7 @@ static struct pike_type *lfun_setter_type_string = NULL;
  */
 
 /*! @decl void lfun::_serialize(object o, @
- *!                             function(string, type, mixed:void) serializer)
+ *!                             function(mixed, string, type:void) serializer)
  *!
  *!   Dispatch function for @[Serializer.serialize()].
  *!
@@ -1168,11 +1168,11 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *! The @[serializer] function expects to be called with three arguments:
  *!   @dl
  *!     @item
+ *!       @tt{value@} - The value of the symbol.
+ *!     @item
  *!       @tt{symbol@} - The symbol name.
  *!     @item
  *!       @tt{symbol_type@} - The type of the symbol.
- *!     @item
- *!       @tt{value@} - The value of the symbol.
  *!   @enddl
  *!
  *! @note
@@ -1185,8 +1185,8 @@ static struct pike_type *lfun_setter_type_string = NULL;
  */
 
 /*! @decl void lfun::_deserialize(object o, @
- *!                    function(string, type, @
- *!                             function(mixed:void): mixed) deserializer)
+ *!                    function(function(mixed:void), @
+ *!                             string, type: mixed) deserializer)
  *!
  *!   Dispatch function for @[Serialization.deserialize()].
  *!
@@ -1200,11 +1200,11 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *! The @[deserializer] function expects to be called with three arguments:
  *!   @dl
  *!     @item
+ *!       @tt{setter@} - Function that sets the symbol value.
+ *!     @item
  *!       @tt{symbol@} - The symbol name.
  *!     @item
  *!       @tt{symbol_type@} - The type of the symbol.
- *!     @item
- *!       @tt{setter@} - Function that sets the symbol value.
  *!   @enddl
  *!
  *! @note

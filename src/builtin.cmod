@@ -3800,8 +3800,6 @@ PIKECLASS Serializable
 	continue;
       }
       push_svalue(fun);
-      ref_push_string(id->name);
-      ref_push_type_value(id->type);
       if (use_setter) {
 	push_function(get_setter(Pike_fp->current_object,
 				 i + inh->identifier_level),
@@ -3811,6 +3809,8 @@ PIKECLASS Serializable
 				 i + inh->identifier_level);
 	Pike_sp++;
       }
+      ref_push_string(id->name);
+      ref_push_type_value(id->type);
       apply_current(fun_num, 4);
       pop_stack();
     }
@@ -3821,15 +3821,18 @@ PIKECLASS Serializable
   }
 
   /*! @decl protected void _serialize_variable( @
-   *!			function(string, type, mixed:void) serializer, @
+   *!			function(mixed, string, type:void) serializer, @
+   *!			mixed value, @
    *!			string symbol, @
-   *!			type symbol_type, @
-   *!			mixed value)
+   *!			type symbol_type)
    *!
    *!   Default serialization function for variables.
    *!
    *! @param serializer
    *!   Function to be called in turn.
+   *!
+   *! @param value
+   *!   Value of the variable.
    *!
    *! @param symbol
    *!   Variable name.
@@ -3837,12 +3840,9 @@ PIKECLASS Serializable
    *! @param symbol_type
    *!   Type of the variable.
    *!
-   *! @param value
-   *!   Value of the variable.
-   *!
    *! This function is typically called from @[_serialize()], and just does
    *!   @code
-   *!     serializer(symbol, symbol_type, value);
+   *!     serializer(value, symbol, symbol_type);
    *!   @endcode
    *!
    *! It is provided for overloading for eg filtering or validation purposes.
@@ -3850,12 +3850,12 @@ PIKECLASS Serializable
    *! @seealso
    *!   @[_serialize()], @[_deserialize_variable()]
    */
-  PIKEFUN void _serialize_variable(function(string, type, mixed:void)
-				   serializer, string symbol,
-				   type symbol_type, mixed value)
+  PIKEFUN void _serialize_variable(function(mixed, string, type:void)
+				   serializer, mixed value,
+				   string symbol, type symbol_type)
     flags ID_PROTECTED;
-  rawtype tFunc(tFunc(tStr tType(tMix) tMix, tVoid)
-		tStr tType(tMix) tMix, tVoid);
+  rawtype tFunc(tFunc(tMix tStr tType(tMix), tVoid)
+		tMix tStr tType(tMix), tVoid);
   {
     f_call_function(args);
     pop_stack();
@@ -3863,7 +3863,7 @@ PIKECLASS Serializable
   }
 
   /*! @decl protected void _serialize(object o, @
-   *!			function(string, type, mixed:void) serializer)
+   *!			function(mixed, string, type:void) serializer)
    *!
    *!   Dispatch function for serialization.
    *!
@@ -3885,9 +3885,9 @@ PIKECLASS Serializable
    *!   This function is typically called via @[Serializer.serialize()].
    */
   PIKEFUN void _serialize(object o,
-			  function(string, type, mixed:void) serializer)
+			  function(mixed, string, type:void) serializer)
     flags ID_PROTECTED;
-    rawtype tFunc(tObj tFunc(tStr tType(tMix) tMix, tVoid), tVoid);
+    rawtype tFunc(tObj tFunc(tMix tStr tType(tMix), tVoid), tVoid);
   {
     if (o != Pike_fp->current_object) {
       SIMPLE_BAD_ARG_ERROR("_serialize", 1, "this");
@@ -3911,25 +3911,25 @@ PIKECLASS Serializable
   DEFAULT_CMOD_STORAGE void f_deserialize(INT32 args);
 
   /*! @decl protected void _deserialize_variable( @
-   *!			function(string, type, @
-   *!			         function(mixed:void): void) deserializer, @
+   *!			function(function(mixed:void), @
+   *!			         string, type: void) deserializer, @
+   *!			function(mixed:void) setter, @
    *!			string symbol, @
-   *!			type symbol_type, @
-   *!			function(mixed:void) setter)
+   *!			type symbol_type)
    *!
    *!   Default deserialization function for variables.
    *!
    *! @param deserializer
    *!   Function to be called in turn.
    *!
+   *! @param setter
+   *!   Function that sets the value of the variable.
+   *!
    *! @param symbol
    *!   Variable name.
    *!
    *! @param symbol_type
    *!   Type of the variable.
-   *!
-   *! @param setter
-   *!   Function that sets the value of the variable.
    *!
    *! This function is typically called from @[_deserialize()], and does
    *! something like:
@@ -3943,7 +3943,7 @@ PIKECLASS Serializable
    *!         return;
    *!       }
    *!     }
-   *!     deserializer(symbol, symbol_type, setter);
+   *!     deserializer(setter, symbol, symbol_type);
    *!   @endcode
    *!
    *! @note
@@ -3968,14 +3968,14 @@ PIKECLASS Serializable
    *! @seealso
    *!   @[_deserialize()], @[_serialize_variable()]
    */
-  PIKEFUN void _deserialize_variable(function(string, type,
-					      function(mixed:void): void)
-				     deserializer, string symbol,
-				     type symbol_type,
-				     function(mixed:void) setter)
+  PIKEFUN void _deserialize_variable(function(function(mixed:void),
+					      string, type: void)
+				     deserializer, function(mixed:void) setter,
+				     string symbol,
+				     type symbol_type)
     flags ID_PROTECTED;
-  rawtype tFunc(tFunc(tStr tType(tMix) tFunc(tMix, tVoid), tVoid)
-		tStr tType(tMix) tFunc(tMix, tVoid), tVoid);
+  rawtype tFunc(tFunc(tFunc(tMix, tVoid) tStr tType(tMix), tVoid)
+		tFunc(tMix, tVoid) tStr tType(tMix), tVoid);
   {
     struct program *p = find_type(symbol_type,
 				  find_program_from_object_type_cb);
@@ -3995,8 +3995,8 @@ PIKECLASS Serializable
   }
 
   /*! @decl protected void _deserialize(object o, @
-   *!			function(string, type, @
-   *!			         function(mixed:void): void) deserializer)
+   *!			function(function(mixed:void), @
+   *!			         string, type: void) deserializer)
    *!
    *!   Dispatch function for deserialization.
    *!
@@ -4018,10 +4018,10 @@ PIKECLASS Serializable
    *!   This function is typically called via @[Serializer.deserialize()].
    */
   PIKEFUN void _deserialize(object o,
-			    function(string, type,
-				     function(mixed:void): void) deserializer)
+			    function(function(mixed:void),
+				     string, type: void) deserializer)
     flags ID_PROTECTED;
-    rawtype tFunc(tObj tFunc(tStr tType(tMix) tFunc(tMix, tVoid), tVoid), tVoid);
+    rawtype tFunc(tObj tFunc(tFunc(tMix, tVoid) tStr tType(tMix), tVoid), tVoid);
   {
     if (o != Pike_fp->current_object) {
       SIMPLE_BAD_ARG_ERROR("_serialize", 1, "this");
@@ -4036,7 +4036,7 @@ PIKECLASS Serializable
  */
 
 /*! @decl void serialize(object o, @
- *!                      function(string, type, mixed:void) serializer)
+ *!                      function(mixed, string, type:void) serializer)
  *!
  *!   Call @[lfun::_serialize()] in @[o].
  *!
@@ -4045,8 +4045,8 @@ PIKECLASS Serializable
  *!   @[Serializable()->_serialize()]
  */
 PIKEFUN void serialize(object o,
-		       function(string, type, mixed:void) serializer)
-  rawtype tFunc(tObj tFunc(tStr tType(tMix) tMix, tVoid), tVoid);
+		       function(mixed, string, type:void) serializer)
+  rawtype tFunc(tObj tFunc(tMix tStr tType(tMix), tVoid), tVoid);
 {
   struct inherit *inh;
   struct program *p;
@@ -4063,8 +4063,8 @@ PIKEFUN void serialize(object o,
 }
 
 /*! @decl void deserialize(object o, @
- *!                        function(string, type, @
- *!                                 function(mixed:void):void) deserializer)
+ *!                        function(function(mixed:void), @
+ *!                                 string, type: void) deserializer)
  *!
  *!   Call @[lfun::_deserialize()] in @[o].
  *!
@@ -4073,9 +4073,9 @@ PIKEFUN void serialize(object o,
  *!   @[Serializable()->_deserialize()]
  */
 PIKEFUN void deserialize(object o,
-			 function(string, type,
-				  function(mixed:void):void) deserializer)
-  rawtype tFunc(tObj tFunc(tStr tType(tMix) tFunc(tMix, tVoid), tVoid), tVoid);
+			 function(function(mixed:void),
+				  string, type:void) deserializer)
+  rawtype tFunc(tObj tFunc(tFunc(tMix, tVoid) tStr tType(tMix), tVoid), tVoid);
 {
   struct inherit *inh;
   struct program *p;
