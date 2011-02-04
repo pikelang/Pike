@@ -2232,13 +2232,21 @@ static void low_describe_type(struct pike_type *t)
     case T_OBJECT:
       if (t->cdr)
       {
+	dynamic_buffer save_buf;
+	ONERROR err;
 	struct svalue s;
 	if (t->car) {
 	  my_strcat("object(is ");
 	} else {
 	  my_strcat("object(implements ");
 	}
-	if ((s.u.program = id_to_program(CDR_TO_INT(t)))) {
+	/* We need to save the global buffer, in case id_to_program()
+	 * starts running Pike code. */
+	save_buffer(&save_buf);
+	SET_ONERROR(err, restore_buffer, &save_buf);
+	s.u.program = id_to_program(CDR_TO_INT(t));
+	CALL_AND_UNSET_ONERROR(err);
+	if (s.u.program) {
 	  s.type = T_PROGRAM;
 	  s.subtype = 0;
 	  describe_svalue(&s, 0, NULL);
