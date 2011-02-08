@@ -1099,8 +1099,8 @@ static int do_docode2(node *n, int flags)
   case F_MULT_EQ:
   case F_MOD_EQ:
   case F_DIV_EQ:
-    if(CAR(n)->token == F_AUTO_MAP_MARKER ||
-       CDR(n)->token == F_AUTO_MAP_MARKER)
+    if((CAR(n) && CAR(n)->token == F_AUTO_MAP_MARKER) ||
+       (CDR(n) && CDR(n)->token == F_AUTO_MAP_MARKER))
     {
       char *opname;
 
