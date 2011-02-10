@@ -1,9 +1,8 @@
 #pike __REAL_VERSION__
 
-// $Id: module.pmod,v 1.47 2008/06/28 16:37:03 nilsson Exp $
-
 protected constant fmts = ([
   "image/x-pnm" : "PNM",
+  "image/x-webp" : "WebP",
   "image/jpeg" : "JPEG",
   "image/x-gimp-image" : "XCF",
   "image/png" : "PNG",
@@ -17,6 +16,16 @@ protected constant fmts = ([
   "image/x-pcx" : "PCX",
   "application/x-photoshop" : "PSD",
 ]);
+
+//! @belongs Image
+//! Attempts to decode @[data] as image data. The heuristics
+//! has some limited ability to decode macbinary files as well.
+Image.Image decode( string data )
+{
+    mapping res = _decode( data );
+    if( res && res->image )
+        return res->image;
+}
 
 //! @belongs Image
 //! Attempts to decode @[data] as image data. The heuristics
@@ -63,6 +72,17 @@ mapping _decode( string data )
       format = "PS";
     };
     break;
+#if constant(Image.WebP.decode)
+  case "RIFF":
+      if( has_value( data[..20], "WEBPVP8 ") )
+      {
+          catch {
+              i = Image.WebP.decode( data );
+              format = "WebP";
+          };
+      }
+      break;
+#endif
   case "\xc5\xd0\xd3\xc6":	// DOS EPS Binary File Header.
     {
       int ps_start, ps_len, meta_start, meta_len, tiff_start, tiff_len, csum;
