@@ -1065,7 +1065,7 @@ class PikeType
 	      case "object":
 	      case "type":
 		if (arrayp(tok[1]) && sizeof(tok[1]) > 2) {
-		  t = tok[1][1];
+		  t = PC.Token(merge(tok[1][1..sizeof(tok[1])-2]));
 		}
 		break;
 	    }
