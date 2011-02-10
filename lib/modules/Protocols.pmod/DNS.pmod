@@ -818,7 +818,8 @@ class client
 
   protected private int is_ip(string ip)
   {
-    // FIXME: Doesn't work with IPv6
+    if( has_value( ip, ":") )
+        return (replace(ip, "0123456789abcdefABCDEF:"/1, allocate(23,"")) == "");
     return (replace(ip, "0123456789."/1, allocate(11,"")) == "");
   }
 
