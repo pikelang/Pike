@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program_id.h,v 1.26 2006/12/27 16:26:48 grubba Exp $
 */
 
 #ifndef PROGRAM_ID_H
@@ -124,9 +123,17 @@
 #define PROG_IMAGE_CLASS_START          100
 
 #define PROG_IMAGE_IMAGE_ID             100
+#define tObjImpl_IMAGE_IMAGE "\003\000\000\000\000\144"
+#define   tObjIs_IMAGE_IMAGE "\003\001\000\000\000\144"
 #define PROG_IMAGE_COLORTABLE_ID        101
+#define tObjImpl_IMAGE_COLORTABLE "\003\000\000\000\000\145"
+#define   tObjIs_IMAGE_COLORTABLE "\003\001\000\000\000\145"
 #define PROG_IMAGE_LAYER_ID             102
+#define tObjImpl_IMAGE_LAYER "\003\000\000\000\000\146"
+#define   tObjIs_IMAGE_LAYER "\003\001\000\000\000\146"
 #define PROG_IMAGE_FONT_ID              103
+#define tObjImpl_IMAGE_FONT "\003\000\000\000\000\147"
+#define   tObjIs_IMAGE_FONT "\003\001\000\000\000\147"
 
 /* 120 - 159: Submodules */
 #define PROG_IMAGE_SUBMODULE_START      120
