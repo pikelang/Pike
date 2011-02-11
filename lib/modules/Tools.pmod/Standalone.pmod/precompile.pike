@@ -7,7 +7,7 @@
 #define TOSTR(X) #X
 #define DEFINETOSTR(X) TOSTR(X)
 
-constant precompile_api_version = "2";
+constant precompile_api_version = "3";
 
 constant want_args = 1;
 
@@ -17,6 +17,14 @@ string usage = #"[options] <from> > <to>
 
  This script is used to process *.cmod files into *.c files, it 
  reads Pike style prototypes and converts them into C code.
+
+ Supported options are:
+
+   --api=<n>	Require a minimum API version.
+
+   -h,--help	Display this help text.
+
+   -v,--version	Display the API version.
 
  The input can look something like this:
 
@@ -2598,20 +2606,31 @@ int main(int argc, array(string) argv)
   if( has_suffix( lower_case(dirname( argv[0] )), "standalone.pmod" ) )
     usage = "pike -x " + basename( argv[0] )-".pike" + " " + usage;
   foreach(Getopt.find_all_options( argv, ({
-    ({ "help",       Getopt.NO_ARG,       "-h,--help"/"," }) })), array opt )
-  switch(opt[0]) {
+      ({ "api",        Getopt.HAS_ARG,      "--api"/"," }),
+      ({ "help",       Getopt.NO_ARG,       "-h,--help"/"," }),
+      ({ "version",    Getopt.NO_ARG,       "-v,--version"/"," }),
+   })), array opt ) {
+    switch(opt[0]) {
     case "version":
       write( "Precompile format version "+precompile_api_version+"\n");
       return 0;
     case "help":
       write( usage );
       return 0;
+    case "api":
+      if ((int)opt[1] > (int)precompile_api_version) {
+	werror("Unsupported API version: %d (max: %d)\n",
+	       (int)opt[1], (int)precompile_api_version);
+	return 1;
+      }
+      break;
+    }
   }
   argv = Getopt.get_args(argv);
   if( sizeof( argv ) < 2 )
   {
     write((usage/"\n")[0]+"\n");
-    return 0;
+    return 1;
   }
   string file = argv[1];
 
