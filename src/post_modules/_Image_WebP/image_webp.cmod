@@ -31,7 +31,7 @@ struct yuv
     unsigned char *V;
 };
 
-
+// Copy every third byte of src to dest.
 static void copy_row( unsigned char*dest, 
                       unsigned char*src,
                       int xs )
@@ -43,9 +43,11 @@ static void copy_row( unsigned char*dest,
     }
 }
 
+
+// Copy two rows down to a single one with half the length.
+// Simple linear averaging used for the scaling.
 static void copy_row_down( unsigned char*dest, 
-                           unsigned char*src,
-                           unsigned char*src2,
+                           unsigned char*src, unsigned char*src2,
                            int xs )
 {
     int xp;
@@ -165,10 +167,45 @@ static struct object *convert_to_rgb( struct yuv *yuv )
 }
 
 
-
+/*! @decl string encode( Image.Image x, void|mapping(string:int) parameters )
+ *!
+ *! Encodes and Image.Image object to a WebP data stream.
+ *!
+ *! The following parameters are recognized:
+ *! @mapping
+ *! @member int "quality"
+ *!  The overall quality of the generated image, 0 to 100.
+ *!  Default is 80.
+ *! @member int "sharpness"
+ *!  Affects the filtering strength of the in-loop filter.
+ *!  default is 0, maximum is 7.
+ *! @member int "denoise"
+ *!  This affect the pre-processing stage, where the source is
+ *!  first denoised before encoding.
+ *!  default is no denoise (0), maximum is 6.
+ *! @member int "profile"
+ *!  Overall control of the filtering streength.
+ *!  default (0) is to do full filtering, max setting is 2 (no filtering)
+ *! @member int "threads"
+ *!   The maximum number of threads to use when encoding. For large
+ *!   images setting this high will increase perfornance. Default is
+ *!   to only use one thread.
+ *! @member int "quantize"
+ *!   An alternative way to specify the quality. 
+ *!   If used the quality member must not be used.
+ *!   0 to 63, 0 is maximum quality, 63 is lowest.
+ *! @member int "maxtime"
+ *!   How much time the encoder is allowed to use, in microseconds
+ *!   Default is 0, which means unlimited time.
+ *!   1 means to do the encoding as quickly as possible.
+ *!   This is realmtime, not cpu-time, so on a multi-cpu machine increasing 
+ *!   the number of threads will improve the result for non-zero times.
+ *! @endmapping
+ */
 PIKEFUN string encode( object(Image.Image) x, void|mapping(string:int) params )
 {
-    int quality = 80, sharpness = 0, denoise = 0, profile = 0, threads=1, quantize=-1;
+    int quality = 80, sharpness = 0, denoise = 0, profile = 0, 
+        threads=1, quantize=-1, maxtime;
     int err;
     struct pike_string *res = NULL;
     struct image *img = (struct image *)x->storage;
@@ -196,6 +233,7 @@ PIKEFUN string encode( object(Image.Image) x, void|mapping(string:int) params )
         PARAM(profile);
         PARAM(threads);
         PARAM(quantize);
+        PARAM(maxtime);
         if( quantize != -1 && quality != 80 )
             Pike_error("It is not possible to specify both quality and quantize\n");
     }
@@ -243,8 +281,7 @@ PIKEFUN string encode( object(Image.Image) x, void|mapping(string:int) params )
     VCC(VP8E_SET_NOISE_SENSITIVITY, denoise);
     VCC(VP8E_SET_SHARPNESS, sharpness);
 
-    if( (err=vpx_codec_encode(&enc, &vpx_image, 0, 1,
-                              VPX_EFLAG_FORCE_KF, VPX_DL_BEST_QUALITY))
+    if( (err=vpx_codec_encode(&enc, &vpx_image, 0, 1, VPX_EFLAG_FORCE_KF, maxtime))
         == VPX_CODEC_OK )
     {
         vpx_codec_iter_t iter = NULL;
@@ -288,13 +325,37 @@ PIKEFUN string encode( object(Image.Image) x, void|mapping(string:int) params )
 
 }
 
-PIKEFUN object(Image.Image) decode( string data, void|mapping options )
+
+/*! @decl Image.Image decode( string data, void|mapping(string:int) parameters )
+ *!
+ *! Decodes a WebP datastream to an Image.Image object.
+ *!
+ *! The following parameters are recognized:
+ *! @mapping
+ *! @member int "deblock"
+ *!   Strength  of the deblocking filter. Default is 4, maximum is 16.
+ *!   0 means no deblocking is done.
+ *! @member int "noise"
+ *!   Strength  of the added noise. Default is 0, maximum is 16.
+ *!   0 (the default) means that no noise is added.
+ *! @endmapping
+ */
+PIKEFUN object(Image.Image) decode( string data, void|mapping params )
 {
+    int deblock = 4, noise = 0;
+    
     unsigned char *p = (unsigned char *)data->str;
     int len;
     struct yuv *yuv = NULL;
     vpx_codec_ctx_t dec;
     vp8_postproc_cfg_t ppcfg;
+
+    if( params )
+    {
+        struct svalue *pe;
+        PARAM(deblock);
+        PARAM(noise);
+    }    
 
     if( data->len < 30 )
         Pike_error("Not a WEBP image\n");
@@ -316,8 +377,19 @@ PIKEFUN object(Image.Image) decode( string data, void|mapping options )
     if (vpx_codec_dec_init(&dec, &vpx_codec_vp8_dx_algo, NULL, 0) != VPX_CODEC_OK)
         Pike_error("Failed to initialize VP8 decoder\n");
 
-    ppcfg.post_proc_flag = VP8_NOFILTERING;
-    vpx_codec_control(&dec, VP8_SET_POSTPROC, &ppcfg);
+    if( deblock == 0 && noise == 0)
+    {
+        ppcfg.post_proc_flag = VP8_NOFILTERING;
+        vpx_codec_control(&dec, VP8_SET_POSTPROC, &ppcfg);
+    }
+    else
+    {
+        ppcfg.post_proc_flag = VP8_DEBLOCK | VP8_DEMACROBLOCK;
+        if( noise > 0 )
+            ppcfg.post_proc_flag |= VP8_ADDNOISE;
+        ppcfg.deblocking_level = deblock;
+        ppcfg.noise_level = noise;
+    }
 
     if (vpx_codec_decode(&dec, p, len, NULL, 0) != VPX_CODEC_OK) 
     {
@@ -353,16 +425,16 @@ PIKEFUN object(Image.Image) decode( string data, void|mapping options )
     vpx_codec_destroy(&dec);
   
     if( yuv )
+    {
+        // FIXME: We really should to some kind of filtering of the
+        // (half-scale) UV data. At least some kind of linear
+        // interpolation.
         push_object( convert_to_rgb( yuv ) );
+    }
     else
         Pike_error("Failed to decode data\n");
     free_yuv( yuv );
 }
-
-PIKEFUN mapping(string:mixed) _decode( string data )
-{
-}
-
 
 
 /*
