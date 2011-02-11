@@ -1,5 +1,5 @@
 #
-# $Id: common_module_makefile.in,v 1.52 2008/12/20 15:49:19 grubba Exp $
+# $Id$
 #
 # Contains stuff common to both dynamic_module_makefile and
 # static_module_makefile.
@@ -44,13 +44,13 @@ $(MODULE_ARCHIVES) ThisIsAPhonyTargetBlaBlaBla: force
 .SUFFIXES: .c .o .cmod .protos .m .mmod .cc .ccmod
 
 .cmod.c: $(BUILD_BASE)/precompile.sh-stamp $(TMP_BINDIR)/precompile.pike
-	$(BUILD_BASE)/precompile.sh --cache precompile.pike >"$@" "$<" || { rm "$@"; exit 1; }
+	$(BUILD_BASE)/precompile.sh --cache precompile.pike $(PRECOMPILER_ARGS) >"$@" "$<" || { rm "$@"; exit 1; }
 
 .mmod.m: $(BUILD_BASE)/precompile.sh-stamp $(TMP_BINDIR)/precompile.pike
-	$(BUILD_BASE)/precompile.sh --cache precompile.pike >"$@" "$<" || { rm "$@"; exit 1; }
+	$(BUILD_BASE)/precompile.sh --cache precompile.pike $(PRECOMPILER_ARGS) >"$@" "$<" || { rm "$@"; exit 1; }
 
 .ccmod.cc: $(BUILD_BASE)/precompile.sh-stamp $(TMP_BINDIR)/precompile.pike
-	$(BUILD_BASE)/precompile.sh --cache precompile.pike >"$@" "$<" || { rm "$@"; exit 1; }
+	$(BUILD_BASE)/precompile.sh --cache precompile.pike $(PRECOMPILER_ARGS) >"$@" "$<" || { rm "$@"; exit 1; }
 
 
 # GCC dumps core on some files @ OSF1
