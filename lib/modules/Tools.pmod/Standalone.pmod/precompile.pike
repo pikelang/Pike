@@ -189,6 +189,8 @@ static parser_pike PP = parser_pike();
 #define split PC.split
 #endif
 
+int api;	// Requested API level.
+
 /* Strings declared with MK_STRING. */
 mapping(string:string) strings = ([
   // From stralloc.h:
@@ -1073,6 +1075,16 @@ class PikeType
 	      case "object":
 	      case "type":
 		if (arrayp(tok[1]) && sizeof(tok[1]) > 2) {
+		  if ((sizeof(tok[1]) > 3) && (api < 3)) {
+		    // Make sure that the user specifies
+		    // the correct minimum API level
+		    // for build-script compatibility.
+		    werror("%s:%d: API level 3 (or higher) is required "
+			   "for type %s.\n",
+			   t->file, t->line,
+			   PC.simple_reconstitute(({ t, tok[1] })));
+		    exit(1);
+		  }
 		  t = PC.Token(merge(tok[1][1..sizeof(tok[1])-2]));
 		}
 		break;
@@ -2618,9 +2630,15 @@ int main(int argc, array(string) argv)
       write( usage );
       return 0;
     case "api":
-      if ((int)opt[1] > (int)precompile_api_version) {
+      api = (int)opt[1];
+      if (api > (int)precompile_api_version) {
 	werror("Unsupported API version: %d (max: %d)\n",
-	       (int)opt[1], (int)precompile_api_version);
+	       api, (int)precompile_api_version);
+	return 1;
+      } else if (api < 3) {
+	// The --api option was not supported by the API level 2 precompiler.
+	werror("API level 2 and earlier are implicit, and\n"
+	       "must not be specified with the --api option.\n");
 	return 1;
       }
       break;
