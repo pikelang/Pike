@@ -9,4 +9,7 @@ CONFIG_HEADERS=@CONFIG_HEADERS@
 PRECOMPILER_ARGS=--api 3
 
 @dynamic_module_makefile@
+
+image_webp.o : $(SRCDIR)/image_webp.c
+
 @dependencies@

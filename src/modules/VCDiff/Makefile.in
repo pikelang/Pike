@@ -11,5 +11,7 @@ CONFIG_HEADERS=@CONFIG_HEADERS@
 
 vcdiff_wrapper.o: $(SRCDIR)/vcdiff_wrapper.cc $(SRCDIR)/vcdiff_wrapper.h
 
+vcdiff.o : $(SRCDIR)/vcdiff.c
+
 @dependencies@
 
