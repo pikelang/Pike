@@ -4,7 +4,6 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.174 2010/03/08 01:35:15 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -389,7 +388,7 @@ protected class CommandHelp {
 
     case "about hilfe":
       e->print_version();
-      write(cvs_version+#"
+      write(#"
 Initial version written by Fredrik Hübinette 1996-2000
 Rewritten by Martin Nilsson 2002
 ");
@@ -1852,7 +1851,17 @@ class Evaluator {
 
 	  // Relocate symbols in the variable assignment.
 	  for(int i=from+1; i<pos; i++){
+
 	    string t = expr[i];
+
+            if(t=="lambda") {
+              int d = expr->depth(i);
+              do {
+                i++;
+                if( i==pos ) break;
+              } while( expr->depth(++i)>d );
+              continue;
+            }
 
 	    if(expr->in_sscanf(i)) {
 	      int nv = expr->endoftype(i);

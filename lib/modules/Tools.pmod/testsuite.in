@@ -1,5 +1,5 @@
 START_MARKER
-// $Id: testsuite.in,v 1.30 2010/02/14 23:13:46 srb Exp $
+// $Id$
 
 // Tools.Hilfe
 define(test_hilfe_setup_low,[[test_do([[
@@ -179,6 +179,8 @@ test_hilfe("int a;", "")
 test_hilfe("if(a) a=0;", "Ok.\n")
 test_hilfe("else a=1;", "Ok.\n");
 test_hilfe("a;", "1")
+
+test_hilfe("function f = lambda(int(0..1) a){};", "")
 
 test_hilfe("if(a) a=0; else a=1;", "Ok.\n");
 
