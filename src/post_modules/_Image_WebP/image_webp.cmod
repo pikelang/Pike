@@ -14,6 +14,8 @@
 #include "modules/Image/image.h"
 #include "config.h"
 
+#ifdef HAVE_LIBVPX
+
 DECLARATIONS
 
 #include <vpx/vpx_decoder.h>
@@ -465,3 +467,4 @@ PIKEFUN string __to_yuv( object(Image.Image) image )
 INIT {}
 EXIT {}
 
+#endif /* HAVE_LIBVPX */
