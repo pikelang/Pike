@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.172 2010/08/10 15:09:46 grubba Exp $
+dnl $Id$
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -654,7 +654,7 @@ define([PIKE_RETAIN_VARIABLES],
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.172 2010/08/10 15:09:46 grubba Exp $
+  # $Id$
 
   MY_AC_PROG_CC
 
@@ -1231,7 +1231,11 @@ AC_DEFUN(AC_SYS_COMPILER_FLAG,
     
     if test x"[$]pike_cv_option_$2" = "xyes" ; then
       $3="[$]$3 $1"
+      # FIXME: We assume that the C++ compiler takes the same options
+      #        as the C compiler.
+      ifelse($3,CC,[CXX="[$]CXX $1"])
       ifelse($3,OPTIMIZE,[CFLAGS="[$]CFLAGS $1"])
+      ifelse($3,OPTIMIZE,[CXXFLAGS="[$]CXXFLAGS $1"])
       AC_MSG_RESULT(yes)
       $5
     else

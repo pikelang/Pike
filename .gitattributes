@@ -289,7 +289,6 @@ testfont binary
 /refdoc/structure/onepage.xml foreign_ident
 /refdoc/structure/traditional.xml foreign_ident
 /src/acconfig.h foreign_ident
-/src/aclocal.m4 foreign_ident
 /src/alloca.c foreign_ident
 /src/apply_low.h foreign_ident
 /src/array.c foreign_ident
