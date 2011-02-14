@@ -122,38 +122,41 @@ IFS=''
   fi
   IFS=' 	
   '
-  if [ -f $dir/Makefile.am -a -f $dir/configure.in ]; then
+  if [ -f "$dir/Makefile.am" -a -f "$dir/configure.in" ]; then
     # aclocal needs to be run before autoconf
     echo "Running aclocal in $dir"
-    (cd $dir ; aclocal )
+    (cd "$dir" ; aclocal )
     echo "Running automake in $dir"
-    (cd $dir ; automake )
+    (cd "$dir" ; automake )
   fi
 
-  if [ -f $dir/configure.in ] && grep AC_CONFIG_HEADER $dir/configure.in >/dev/null; then
-    echo "Running $autoheader in $dir"
-    ( cd $dir ; "$autoheader" $ah_args && echo foo >stamp-h.in ) &
+  if [ -f "$dir/Makefile.in" -a ! -f "$dir/dependencies" ] && \
+      egrep @dependencies@ "$dir/Makefile.in" >/dev/null; then
+      touch "$dir/dependencies"
+      need_to_make_depend=yes
+  fi
+  if [ -f "$dir/configure.in" ]; then
+      (
+	  cd "$dir"
+	  if grep AC_CONFIG_HEADER configure.in >/dev/null; then
+	      echo "Running $autoheader in $dir"
+	      "$autoheader" $ah_args && echo foo >stamp-h.in
+	  fi
+	  if grep AC_INIT configure.in >/dev/null; then
+	      echo "Running $autoconf in $dir"
+	      "$autoconf" $ac_args
+	  else
+	      echo "$dir seems to use Cygnus-configure."
+	  fi
+	  if [ "$autom4te_polluted" = "yes" ]; then
+              # autoconf 2.53+ pollutes the source tree with cache-directories.
+	      for d in autom4te*.cache; do
+		  test -d "$d" && rm -rf "$d"
+	      done
+	  fi
+      ) &
   fi
 
-  if [ -f $dir/configure.in ]; then
-    if grep AC_INIT $dir/configure.in >/dev/null; then
-      echo "Running $autoconf in $dir"
-      ( cd $dir ; "$autoconf" $ac_args )&
-    else
-      echo "$dir seems to use Cygnus-configure."
-    fi
-  fi
-  if [ -f $dir/Makefile.in -a ! -f $dir/dependencies ] && egrep @dependencies@ $dir/Makefile.in >/dev/null; then
-    touch $dir/dependencies
-    need_to_make_depend=yes
-  fi
-
-  if [ "$autom4te_polluted" = "yes" ]; then
-    # autoconf 2.53+ pullutes the source tree with cache-directories.
-    for d in $dir/autom4te*.cache; do
-      test -d "$d" && rm -rf "$d"
-    done
-  fi
 done
 
 wait
