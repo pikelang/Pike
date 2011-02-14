@@ -876,6 +876,12 @@ pushdef([AC_OUTPUT],
     unset ac_cv_env_CC_value
     unset ac_cv_env_CFLAGS_set
     unset ac_cv_env_CFLAGS_value
+    unset ac_cv_env_CXX_set
+    unset ac_cv_env_CXX_value
+    unset ac_cv_env_CXXCPP_set
+    unset ac_cv_env_CXXCPP_value
+    unset ac_cv_env_CXXFLAGS_set
+    unset ac_cv_env_CXXFLAGS_value
     unset ac_cv_env_LDFLAGS_set
     unset ac_cv_env_LDFLAGS_value
     unset ac_cv_env_LIBS_set
