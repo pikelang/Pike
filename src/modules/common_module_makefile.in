@@ -1,5 +1,5 @@
 #
-# $Id: common_module_makefile.in,v 1.52 2008/12/20 15:49:19 grubba Exp $
+# $Id$
 #
 # Contains stuff common to both dynamic_module_makefile and
 # static_module_makefile.
@@ -116,7 +116,7 @@ $(MODULE_ARCHIVES) ThisIsAPhonyTargetBlaBlaBla: force
 	  if test x"@noopt_retry@" = xyes ; then \
 	    echo "WARNING: Compiler failure! Trying without optimization!" >&2;\
 	    echo "$(CXX) $(PREFLAGS) $(CFLAGS) -c $< -o $@" >$@.fail ;\
-	    if NO_ULIMIT=yes $(CC) $(PREFLAGS) $(NOOPT_CFLAGS) -c $< -o $@ ; then : ; else \
+	    if NO_ULIMIT=yes $(CXX) $(PREFLAGS) $(NOOPT_CFLAGS) -c $< -o $@ ; then : ; else \
 	      status=$$?; \
 	      echo "Compilation command was:" >&2;\
 	      echo "$(CXX) $(PREFLAGS) $(NOOPT_CFLAGS) -c $< -o $@" >&2 ;\

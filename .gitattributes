@@ -288,7 +288,6 @@ testfont binary
 /refdoc/structure/module_modref.xml foreign_ident
 /refdoc/structure/onepage.xml foreign_ident
 /refdoc/structure/traditional.xml foreign_ident
-/src/Makefile.in foreign_ident
 /src/acconfig.h foreign_ident
 /src/aclocal.m4 foreign_ident
 /src/alloca.c foreign_ident
@@ -359,7 +358,6 @@ testfont binary
 /src/main.c foreign_ident
 /src/main.h foreign_ident
 /src/make_banner.pike foreign_ident
-/src/make_variables.in foreign_ident
 /src/mapping.c foreign_ident
 /src/mapping.h foreign_ident
 /src/mklibpike.pike foreign_ident
@@ -659,7 +657,6 @@ testfont binary
 /src/modules/_math/math.c foreign_ident
 /src/modules/_math/testsuite.in foreign_ident
 /src/modules/call_out/test_co.pike foreign_ident
-/src/modules/common_module_makefile.in foreign_ident
 /src/modules/configure.in foreign_ident
 /src/modules/dynamic_module_makefile.in foreign_ident
 /src/modules/files/Makefile.in foreign_ident

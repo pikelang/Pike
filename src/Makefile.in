@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.483 2010/05/29 23:56:18 mast Exp $
+# $Id$
 #
 
 # This line is needed on some machines.
@@ -103,6 +103,7 @@ CFLAGS=$(PREFLAGS) $(OTHERFLAGS)
 SMARTLINK=@SMARTLINK@
 REALCC=@REALCC@
 CC=@CC@
+CXX=@CXX@
 CPP=@CPP@
 GDB=gdb
 
