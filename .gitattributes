@@ -262,7 +262,6 @@ testfont binary
 /refdoc/structure/module_modref.xml foreign_ident
 /refdoc/structure/onepage.xml foreign_ident
 /refdoc/structure/traditional.xml foreign_ident
-/src/aclocal.m4 foreign_ident
 /src/alloca.c foreign_ident
 /src/backend.h foreign_ident
 /src/bignum.h foreign_ident
