@@ -116,7 +116,7 @@ $(MODULE_ARCHIVES) ThisIsAPhonyTargetBlaBlaBla: force
 	  if test x"@noopt_retry@" = xyes ; then \
 	    echo "WARNING: Compiler failure! Trying without optimization!" >&2;\
 	    echo "$(CXX) $(PREFLAGS) $(CFLAGS) -c $< -o $@" >$@.fail ;\
-	    if NO_ULIMIT=yes $(CC) $(PREFLAGS) $(NOOPT_CFLAGS) -c $< -o $@ ; then : ; else \
+	    if NO_ULIMIT=yes $(CXX) $(PREFLAGS) $(NOOPT_CFLAGS) -c $< -o $@ ; then : ; else \
 	      status=$$?; \
 	      echo "Compilation command was:" >&2;\
 	      echo "$(CXX) $(PREFLAGS) $(NOOPT_CFLAGS) -c $< -o $@" >&2 ;\

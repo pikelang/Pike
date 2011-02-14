@@ -931,9 +931,17 @@ fi # force_smartlink_script_only
 CC="$SMARTLINK $REALCC"
 pike_cv_prog_CC="$CC"
 
+# Check if there's a C++ compiler.
+AC_PROG_CXX
+# Strip smartlink from $CXX
+REALCXX="`echo $CXX|sed -e 's/.*smartlink //'`"
+CXX="$SMARTLINK $REALCXX"
+pike_cv_prog_CXX="$CXX"
+
 AC_SUBST(SMARTLINK)
 AC_SUBST(REALCC)
-export REALCC SMARTLINK
+AC_SUBST(REALCXX)
+export REALCC REALCXX SMARTLINK
 
 AC_MSG_CHECKING([for a fallback compiler])
 # Strip smartlink from $FALLBACK_CC

@@ -1,6 +1,8 @@
 # -*- Makefile -*-
 #
-# $Id: make_variables.in,v 1.30 2008/03/05 21:32:14 grubba Exp $
+# $Id$
+#
+# Start of make_variables.in
 #
 # Note: This template is actually used only for make_variables in the
 # subdirectories; the one created in the build base dir is just an
@@ -21,7 +23,7 @@
 # core configure script (e.g. through "make force_configure" in the
 # top directory).
 @propagated_variables@
-#propagated_variables: CC CPP MOD_LDSHARED AR INSTALL
+#propagated_variables: CC CXX CPP MOD_LDSHARED AR INSTALL
 #propagated_variables: BASE_CFLAGS BASE_CPPFLAGS CCSHARED BASE_LDFLAGS
 #propagated_variables: OPTIMIZE WARN PROFIL
 #propagated_variables: LDSHARED_MODULE_REQS
