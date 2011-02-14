@@ -301,6 +301,7 @@ fi
 ${CFLAGS:=}
 
 AC_PROG_CC
+AC_PROG_CXX
 
 # Only need to think of -g since -O2 or other optimization flags gets
 # added through other configure tests.
@@ -931,8 +932,6 @@ fi # force_smartlink_script_only
 CC="$SMARTLINK $REALCC"
 pike_cv_prog_CC="$CC"
 
-# Check if there's a C++ compiler.
-AC_PROG_CXX
 # Strip smartlink from $CXX
 REALCXX="`echo $CXX|sed -e 's/.*smartlink //'`"
 CXX="$SMARTLINK $REALCXX"
