@@ -2,7 +2,7 @@
 @make_variables@
 VPATH=@srcdir@
 MODNAME=VCDiff
-OBJS=vcdiff.o vcdiff_wrapper.o
+OBJS=vcdiff.o @CXX_OBJS@
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 
 CONFIG_HEADERS=@CONFIG_HEADERS@

@@ -5,6 +5,8 @@ AC_MODULE_INIT()
 
 PIKE_FEATURE_WITHOUT(VCDiff)
 
+CXX_OBJS=""
+
 if test x$with_vcdiff = xyes ; then
   PIKE_FEATURE(VCDiff,[no (missing lib)])
 
@@ -37,9 +39,12 @@ open_vcdiff::VCDiffDecoder *dec =
     if test $pike_cv_vcdiff_works = yes ; then
       AC_DEFINE(HAVE_VCDIFF)
       PIKE_FEATURE(VCDiff,[yes])
+      CXX_OBJS="vcdiff_wrapper.o"
       LIBS="-lvcdenc -lvcddec $LIBS"
     fi
   fi
 fi
+
+AC_SUBST(CXX_OBJS)
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
