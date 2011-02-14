@@ -18,8 +18,6 @@
 
 DECLARATIONS
 
-#ifdef HAVE_VPX_VPX_DECODER_H
-
 #include <vpx/vpx_decoder.h>
 #include <vpx/vp8dx.h>
 #include <vpx/vpx_encoder.h>
@@ -465,8 +463,6 @@ PIKEFUN string __to_yuv( object(Image.Image) image )
     free_yuv( yuv_data );
 }
 */
-
-#endif
 
 INIT {}
 EXIT {}
