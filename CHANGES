@@ -167,6 +167,8 @@ o Fixed some library searchpath issues.
 o Some potential fixes for --enable-pikelib mode on platforms had
   problems with the final linking.
 
+o Some issues with the support for building modules needing
+  a C++ compiler have been fixed.
 
 
 Changes since Pike 7.8.316 (second 7.8 release):
