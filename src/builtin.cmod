@@ -3195,7 +3195,8 @@ PIKECLASS bootstring
 PIKECLASS Time
 {
   CVAR int hard_update;
-  
+  struct pike_string *sec, *usec, *usec_full;
+
   /*! @decl int sec;
    *! @decl int usec;
    *!
@@ -3217,12 +3218,6 @@ PIKECLASS Time
   PIKEFUN int `->( string x )
   {
     extern struct timeval current_time;
-    struct pike_string *usec;
-    struct pike_string *sec, *usec_full;
-
-    MAKE_CONST_STRING( sec, "sec" );
-    MAKE_CONST_STRING( usec, "usec" );
-    MAKE_CONST_STRING (usec_full, "usec_full");
 
     if( !x ) {
       push_undefined();
@@ -3259,6 +3254,25 @@ PIKECLASS Time
     f_Time_cq__backtick_2D_3E( args );
   }
 
+  PIKEFUN array(string) _indices()
+  {
+    push_string(sec);
+    push_string(usec);
+    push_string(usec_full);
+    f_aggregate(3);
+  }
+
+  PIKEFUN array(int) _values()
+  {
+    ref_push_string(sec);
+    f_Time_cq__backtick_2D_3E(1);
+    ref_push_string(usec);
+    f_Time_cq__backtick_2D_3E(1);
+    ref_push_string(usec_full);
+    f_Time_cq__backtick_2D_3E(1);
+    f_aggregate(3);
+  }
+
   /*! @decl protected void create( int fast );
    *!
    *! If @[fast] is true, do not request a new time from the system,
@@ -3271,6 +3285,21 @@ PIKECLASS Time
   {
     THIS->hard_update = !fast;
   }
+
+  INIT
+  {
+    MAKE_CONST_STRING( sec, "sec" );
+    MAKE_CONST_STRING( usec, "usec" );
+    MAKE_CONST_STRING( usec_full, "usec_full");
+  }
+
+  EXIT
+  {
+    free_string(sec);
+    free_string(usec);
+    free_string(usec_full);
+  }
+
 }
 
 /*! @endclass
