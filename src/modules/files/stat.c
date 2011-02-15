@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stat.c,v 1.34 2008/06/28 23:06:02 nilsson Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -311,7 +311,7 @@ static void stat_push_compat(INT_TYPE n)
  */
 static void stat_create (INT32 args)
 {
-  if (args >= 1) {
+  if (args >= 1 && !UNSAFE_IS_ZERO (Pike_sp - 1)) {
     pop_n_elems (args - 1);
     args = 1;
 
