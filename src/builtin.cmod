@@ -3195,49 +3195,54 @@ PIKECLASS bootstring
 PIKECLASS Time
 {
   CVAR int hard_update;
-  struct pike_string *sec, *usec, *usec_full;
 
-  /*! @decl int sec;
-   *! @decl int usec;
+  /*! @decl int sec
+   *! @decl int usec
    *!
    *!   The number of seconds and microseconds since the epoch and the
    *!   last whole second, respectively. (See also @[predef::time()])
    *!
+   *! @note
    *!   Please note that these variables will continually update when
    *!   they are requested, there is no need to create new Time()
    *!   objects.
    */
 
-  /*! @decl int usec_full;
-   *!
-   *!   The number of microseconds since the epoch. Please note that
-   *!   pike has to have been compiled with bignum support for this
-   *!   variable to contain sensible values.
-   */
-
-  PIKEFUN int `->( string x )
+  PIKEFUN int `sec()
   {
     extern struct timeval current_time;
-
-    if( !x ) {
-      push_undefined();
-      return;
-    }
 
     if( THIS->hard_update )
       GETTIMEOFDAY( &current_time );
 
-    if( x == usec )
-      RETURN current_time.tv_usec;
-    if( x == sec )
-      RETURN current_time.tv_sec;
-    if (x != usec_full) {
-      push_undefined();
-      return;
-    }
+    RETURN current_time.tv_sec;
+  }
+
+  PIKEFUN int `usec()
+  {
+    extern struct timeval current_time;
+
+    if( THIS->hard_update )
+      GETTIMEOFDAY( &current_time );
+
+    RETURN current_time.tv_usec;
+  }
+
+  /*! @decl int usec_full
+   *!
+   *!   The number of microseconds since the epoch. Please note that
+   *!   pike needs to have been compiled with bignum support for this
+   *!   variable to contain sensible values.
+   */
+
+  PIKEFUN int `usec_full()
+  {
+    extern struct timeval current_time;
+
+    if( THIS->hard_update )
+      GETTIMEOFDAY( &current_time );
 
 #ifdef AUTO_BIGNUM
-    pop_stack();
     push_int( current_time.tv_sec );
     push_int( 1000000 );
     f_multiply( 2 );
@@ -3247,30 +3252,6 @@ PIKECLASS Time
 #else
     RETURN (current_time.tv_sec * 1000000 + current_time.tv_usec);
 #endif
-  }
-  
-  PIKEFUN int `[]( string x )
-  {
-    f_Time_cq__backtick_2D_3E( args );
-  }
-
-  PIKEFUN array(string) _indices()
-  {
-    push_string(sec);
-    push_string(usec);
-    push_string(usec_full);
-    f_aggregate(3);
-  }
-
-  PIKEFUN array(int) _values()
-  {
-    ref_push_string(sec);
-    f_Time_cq__backtick_2D_3E(1);
-    ref_push_string(usec);
-    f_Time_cq__backtick_2D_3E(1);
-    ref_push_string(usec_full);
-    f_Time_cq__backtick_2D_3E(1);
-    f_aggregate(3);
   }
 
   /*! @decl protected void create( int fast );
@@ -3282,24 +3263,10 @@ PIKECLASS Time
    *! of CPU.
    */
   PIKEFUN void create( int|zero|void fast )
+    flags ID_PROTECTED;
   {
     THIS->hard_update = !fast;
   }
-
-  INIT
-  {
-    MAKE_CONST_STRING( sec, "sec" );
-    MAKE_CONST_STRING( usec, "usec" );
-    MAKE_CONST_STRING( usec_full, "usec_full");
-  }
-
-  EXIT
-  {
-    free_string(sec);
-    free_string(usec);
-    free_string(usec_full);
-  }
-
 }
 
 /*! @endclass
