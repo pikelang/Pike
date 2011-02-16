@@ -3317,6 +3317,7 @@ PIKECLASS Timer
    *!   object stops waiting and starts executing code.
    */
   PIKEFUN void create( int|zero|void fast )
+    flags ID_PROTECTED;
   {
     extern struct timeval current_time;
     THIS->hard_update = !fast;
@@ -4219,7 +4220,7 @@ PIKECLASS List
     push_int(!THIS->head->next);
   }
 
-  /*! @decl int(0..) _sizeof()
+  /*! @decl protected int(0..) _sizeof()
    *!
    *!   Returns the number of elements in the list.
    */
@@ -4229,7 +4230,7 @@ PIKECLASS List
     push_int(THIS->num_elems);
   }
 
-  /*! @decl string _sprintf(int c, mapping(string:mixed)|void attr)
+  /*! @decl protected string _sprintf(int c, mapping(string:mixed)|void attr)
    *!
    *!   Describe the list.
    *!
@@ -4377,7 +4378,7 @@ PIKECLASS List
     push_int(0);
   }
 
-  /*! @decl void create(mixed ... values)
+  /*! @decl protected void create(mixed ... values)
    *!
    *!   Create a new @[List], and initialize it with @[values].
    *!
