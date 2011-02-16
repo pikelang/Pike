@@ -38,11 +38,16 @@ static void copy_row( unsigned char*dest,
                       unsigned char*src,
                       int xs )
 {
+    int odd = 0;
+    if( xs & 1 )
+        odd = 1;
     while(xs--)
     {
         *dest++ = *src;
         src += 3;
     }
+    if( odd )
+        *dest++ = *(src-3);
 }
 
 
@@ -61,6 +66,8 @@ static void copy_row_down( unsigned char*dest,
     }
     if( xp < xs )
         *dest++ = (*src + *src2 ) >> 1;
+    // if( xs & 1 )
+    //     *dest++ = (*src + *src2 ) >> 1;
 }
 
 static inline void free_yuv( struct yuv *x )
@@ -72,10 +79,16 @@ static struct yuv *allocate_yuv( int w, int h )
 {
     struct yuv *res;
 
-    int halfpic, sz, halfrow = (w+1)>>1;
+    if( w & 1 ) w++;
+    if( h & 1 ) h++;
 
-    if( halfrow & 1 ) halfrow++;
+    int halfpic, sz, halfrow = w/2;
+
+    // if( halfrow & 1 ) 
+    //     halfrow++;
+
     halfpic = halfrow * h/2;
+
     sz = 
         sizeof( struct yuv ) +
         w*h     +  /* Y */
@@ -83,9 +96,10 @@ static struct yuv *allocate_yuv( int w, int h )
         halfpic;   /* V */
 
     res = xalloc( sz );
-    res->stride = w;
+
+    res->stride = w; 
     res->uvstride = halfrow;
-    res->sz = sz;
+    res->sz    = sz;
     res->xsize = w;
     res->ysize = h;
 
@@ -107,24 +121,34 @@ static struct yuv *convert_to_yuv( struct object *img )
     idat = (struct image *)Pike_sp[-1].u.object->storage;
 
     // Sample UV to half size. Copy Y as-is.
-    for( yp=0; yp<res->ysize; yp++ )
+    for( yp=0; yp<(unsigned)idat->ysize; yp++ )
     {
         rgb_group  *srow = idat->img + yp*idat->xsize;
-        copy_row( res->Y + yp*res->xsize,  &srow->g, res->xsize);
+        copy_row( res->Y + yp*res->stride,  &srow->g, res->xsize);
 
         if( (yp & 1) == 0 )
         {
             copy_row_down( res->V + (yp/2)*halfrow,
                            &srow->r,
-                           &((yp < res->ysize ? srow + res->xsize : srow )->r),
+                           &((yp+1 < (unsigned)idat->ysize ? srow + idat->xsize : srow )->r),
                            res->xsize );
 
             copy_row_down( res->U + (yp/2)*halfrow,
                            &srow->b,
-                           &((yp < res->ysize ? srow + res->xsize : srow )->b),
+                           &((yp+1 < (unsigned)idat->ysize ? srow + idat->xsize : srow )->b),
                            res->xsize );
         }
     }
+
+    if( idat->ysize & 1 )
+    {
+        rgb_group  *srow = idat->img + (idat->ysize-1)*idat->xsize;
+        yp = ((res->ysize-1)/2)*halfrow;
+        copy_row( res->U + (res->ysize-1)*res->stride,  &(srow->g), res->xsize );
+        copy_row_down( res->V + yp,  &(srow->r),  &(srow->r),   res->xsize );
+        copy_row_down( res->U + yp,  &(srow->b),  &(srow->b),  res->xsize );
+    }
+
     pop_stack(); // Free the generated temporary image-object.
 
     return res;
@@ -246,14 +270,7 @@ PIKEFUN string encode( object(Image.Image) x, void|mapping(string:int) params )
 
     if( vpx_img_wrap(&vpx_image, VPX_IMG_FMT_I420, img->xsize, img->ysize, 1, yuv_image->Y) != &vpx_image )
         Pike_error("image wrap failed\n");
-/*    
-    assert(vpx_image.planes[VPX_PLANE_Y] == yuv->Y );
-    assert(vpx_image.planes[VPX_PLANE_U] == yuv->U);
-    assert(vpx_image.planes[VPX_PLANE_V] == yuv->V);
-    assert(vpx_image.strides[VPX_PLANE_Y] = yuv->stride);
-    assert(vpx_image.strides[VPX_PLANE_U] = yuv->uvstride);
-    assert(vpx_image.strides[VPX_PLANE_V] = yuv->uvstride);
-*/
+
     if( quality > 100 )  quality = 100;
 
     // quantize goes from 63..0
