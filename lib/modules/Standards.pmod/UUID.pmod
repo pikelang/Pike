@@ -11,7 +11,7 @@
 //!                identifier components
 //!
 
-// $Id: UUID.pmod,v 1.18 2008/06/28 16:49:56 nilsson Exp $
+// $Id$
 //
 // 2004-10-01 Henrik Grubbström
 // 2004-10-04 Martin Nilsson
@@ -73,6 +73,14 @@
 #else
   constant clk_offset = 0x01b21dd213814000;
 #endif
+
+protected string low_format_uuid (string bin_uuid)
+{
+  string ret = String.string2hex(bin_uuid);
+  while( sizeof(ret)<32 ) ret = "0"+ret;
+  return ret[..7] + "-" + ret[8..11] + "-" + ret[12..15]  +"-" +
+    ret[16..19] + "-" + ret[20..];
+}
 
 
 //! Represents an UUID
@@ -185,10 +193,7 @@ class UUID {
 
   //! Creates a string representation of the UUID.
   string str() {
-    string ret = String.string2hex(encode());
-    while( sizeof(ret)<32 ) ret = "0"+ret;
-    return ret[..7] + "-" + ret[8..11] + "-" + ret[12..15]  +"-" +
-      ret[16..19] + "-" + ret[20..];
+    return low_format_uuid (encode());
   }
 
   //! Creates a URN representation of the UUID.
@@ -415,12 +420,19 @@ UUID make_version5(string name, string|UUID namespace) {
 //! Returns the string representation of the binary UUID @[uuid].
 string format_uuid(string uuid)
 {
+  if (sizeof (uuid) == 16)
+    return low_format_uuid (uuid);
   return UUID(uuid)->str();
 }
 
 //! Returns the binary representation of the UUID @[uuid].
 string parse_uuid(string uuid)
 {
+  if (sizeof (uuid) >= 32) {
+    string s = uuid - "-";
+    if (sizeof (s) == 32)
+      return String.hex2string (s);
+  }
   return UUID(uuid)->encode();
 }
 
