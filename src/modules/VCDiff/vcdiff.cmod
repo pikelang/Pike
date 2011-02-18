@@ -249,6 +249,8 @@ PIKECLASS Decoder {
   }
 }
 
+/*! @endmodule */
+
 #endif /* HAVE_VCDIFF */
 
 PIKE_MODULE_INIT
