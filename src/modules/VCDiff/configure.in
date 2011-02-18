@@ -19,7 +19,7 @@ if test x$with_vcdiff = xyes ; then
     AC_MSG_CHECKING(if the library works)
     AC_CACHE_VAL(pike_cv_vcdiff_works, [
       ac_save_LIBS="$LIBS"
-      LIBS="-lvcdenc -lvcddec $LIBS"
+      LIBS="-lvcdenc -lvcddec -lvcdcom $LIBS"
       AC_LINK_IFELSE(
         [AC_LANG_PROGRAM([#include <google/vcencoder.h>
 #include <google/vcdecoder.h>],
@@ -40,7 +40,7 @@ open_vcdiff::VCDiffDecoder *dec =
       AC_DEFINE(HAVE_VCDIFF)
       PIKE_FEATURE(VCDiff,[yes])
       CXX_OBJS="vcdiff_wrapper.o"
-      LIBS="-lvcdenc -lvcddec $LIBS"
+      LIBS="-lvcdenc -lvcddec -lvcdcom $LIBS"
     fi
   fi
 fi
