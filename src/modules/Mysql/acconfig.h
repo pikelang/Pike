@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.19 2009/11/14 12:59:53 mast Exp $
+|| $Id$
 */
 
 /*
@@ -58,6 +58,9 @@
 
 /* Define if your mysql.h defines FIELD_TYPE_GEOMETRY */
 #undef HAVE_FIELD_TYPE_GEOMETRY
+
+/* Define if your mysql.h defines FIELD_TYPE_BIT */
+#undef HAVE_FIELD_TYPE_BIT
 
 /* Define if your mysql.h defines CLIENT_INTERACTIVE */
 #undef HAVE_CLIENT_INTERACTIVE
