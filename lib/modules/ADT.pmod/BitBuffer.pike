@@ -26,8 +26,8 @@ protected string data = "";
 protected int dptr;
 
 //! The buffer can be initialized with initial data during creation.
-protected void create(void|string _data) {
-  if(_data) feed(_data);
+protected void create(void|string data) {
+  if(data) feed(data);
 }
 
 //! Adds full bytes to the buffer.
