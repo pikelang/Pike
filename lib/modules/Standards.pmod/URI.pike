@@ -313,7 +313,7 @@ void reparse_uri(this_program|string|void base_uri)
 
     // 5) If the path component begins with a slash character ("/"), then
     //    the reference is an absolute-path and we skip to step 7.
-    if(!sscanf(path, "/%*s"))
+    if(!has_prefix(path, "/"))
     {
 
       // 6) If this step is reached, then we are resolving a relative-path
