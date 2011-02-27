@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.19 2010/05/23 19:25:52 grubba Exp $"]]);
+test_true([["$Id$"]]);
 
 // - Standards.ISO639_2
 test_equal(Standards.ISO639_2.get_language("swe"),"Swedish")
@@ -41,8 +41,9 @@ test_equal((string)Standards.URI("../g",          "http://a/b/c/d;p?q"), "http:/
 test_equal((string)Standards.URI("../..",         "http://a/b/c/d;p?q"), "http://a/")
 test_equal((string)Standards.URI("../../",        "http://a/b/c/d;p?q"), "http://a/")
 test_equal((string)Standards.URI("../../g",       "http://a/b/c/d;p?q"), "http://a/g")
-test_equal((string)Standards.URI("../../../g",    "http://a/b/c/d;p?q"), "http://a/../g")
-test_equal((string)Standards.URI("../../../../g", "http://a/b/c/d;p?q"), "http://a/../../g")
+dnl test_equal((string)Standards.URI("",              "http://a/b/c/d;p?q"), "http://a/b/c/d;p?q")
+test_equal((string)Standards.URI("../../../g",    "http://a/b/c/d;p?q"), "http://a/g")
+test_equal((string)Standards.URI("../../../../g", "http://a/b/c/d;p?q"), "http://a/g")
 test_equal((string)Standards.URI("/./g",          "http://a/b/c/d;p?q"), "http://a/./g")
 test_equal((string)Standards.URI("/../g",         "http://a/b/c/d;p?q"), "http://a/../g")
 test_equal((string)Standards.URI("g.",            "http://a/b/c/d;p?q"), "http://a/b/c/g.")
@@ -65,6 +66,7 @@ test_equal(Standards.URI("http://www.com/?a=b")->get_query_variables(),(["a":"b"
 // Some tests of empty path followed by a query.
 test_eq(Standards.URI("http://user:??@host?query")->query, "query")
 test_eq(Standards.URI("http://user:??@host?query")->password, "??")
+test_eq(Standards.URI("http://user:??@host?query")->path, "")
 
 // - Standards.IDNA
 define([[test_punycode]], [[
