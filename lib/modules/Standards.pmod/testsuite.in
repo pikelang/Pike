@@ -67,6 +67,13 @@ test_equal(Standards.URI("http://www.com/?a=b")->get_query_variables(),(["a":"b"
 test_eq(Standards.URI("http://user:??@host?query")->query, "query")
 test_eq(Standards.URI("http://user:??@host?query")->password, "??")
 test_eq(Standards.URI("http://user:??@host?query")->path, "")
+test_eq(Standards.URI("HTTP://WWW.COM/")->scheme, "http")
+
+test_eval_error(Standards.URI(""))
+test_eval_error(Standards.URI("#foo"))
+test_eval_error(Standards.URI("/foo"))
+test_eval_error(Standards.URI("x_x:"))
+
 
 // - Standards.IDNA
 define([[test_punycode]], [[
