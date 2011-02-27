@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: History.pike,v 1.7 2002/11/29 00:28:44 nilsson Exp $
+// $Id$
 
 //! A history is a stack where you can only push entries. When the stack has
 //! reached a certain size the oldest entries are removed on every push.
@@ -9,30 +9,29 @@
 //! off the table in the other.
 
 // The stack where the values are stored.
-private array stack;
+protected array stack;
 
 // A pointer to the top of the stack.
-private int(0..) top;
+protected int(0..) top;
 
 // The number of elements currently in the history.
-private int(0..) size;
+protected int(0..) size;
 
 // The maximum number of entries in the history at one time.
-private int(0..) maxsize;
+protected int(0..) maxsize;
 
 // The sequence number of the latest entry to be pused on
 // the history stack.
-private int(0..) latest_entry_num;
+protected int(0..) latest_entry_num;
 
 // Should we allow identical values to be stored next to each other?
-private int(0..1) no_adjacent_duplicates;
+protected int(0..1) no_adjacent_duplicates;
 
-//! @decl void create(int max_size)
 //! @[max_size] is the maximum number of entries that can reside in the
 //! history at the same time.
-void create(int _maxsize) {
-  stack = allocate(_maxsize);
-  maxsize = _maxsize;
+void create(int max_size) {
+  stack = allocate(max_size);
+  maxsize = max_size;
   /*
   int top = 0;
   int size = 0;
@@ -95,7 +94,7 @@ int get_first_entry_num() {
   return latest_entry_num - size + 1;
 }
 
-private int(0..) find_pos(int i) {
+protected int(0..) find_pos(int i) {
   if(i<0) {
     if(i<-size)
       error("Only %d entries in history.\n", size);
@@ -161,15 +160,15 @@ void flush() {
 
 //! Returns the index numbers of the history entries
 //! available.
-array(int) _indices() {
+protected array(int) _indices() {
   return enumerate(size, 1, get_first_entry_num());
 }
 
 //! Returns the values of the available history entries.
-array _values() {
+protected array _values() {
   return map(_indices(), `[]);
 }
 
-string _sprintf(int t) {
+protected string _sprintf(int t) {
   return t=='O' && sprintf("%O(%d/%d)", this_program, size, maxsize);
 }
