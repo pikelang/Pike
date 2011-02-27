@@ -2293,12 +2293,9 @@ protected object Unicode;
 //!
 //! @seealso
 //!   @[joinnode]
-class dirnode
+class dirnode (string dirname, object|void compilation_handler,
+               string|void name)
 {
-  string name;
-
-  string dirname;
-  object|void compilation_handler;
   constant is_resolv_dirnode = 1;
   // objectp() is intentionally not used on the module object, to
   // allow a module to deny its own existence with `!.
@@ -2350,20 +2347,18 @@ class dirnode
     return 0;
   }
 
-  protected void create(string d, object|void h, void|string name)
+  protected void create()
   {
-    resolv_debug ("dirnode(%O,%O) created with name %O\n", d, h, name);
-    dirname=d;
-    compilation_handler=h;
-    this_program::name = name;
+    resolv_debug ("dirnode(%O,%O) created with name %O\n", dirname,
+                  compilation_handler, name);
     fc[dirname]=this;
-    array(string) files = sort(master_get_dir(d)||({}));
-    if (!sizeof(d)) return;
+    array(string) files = sort(master_get_dir(dirname)||({}));
+    if (!sizeof(dirname)) return;
     array(string) bases = map(files, base_from_filename);
     files = filter(files, bases);
     bases = filter(bases, bases);
     resolv_debug("dirnode(%O,%O) got %d files.\n",
-		 d, h, sizeof(bases));
+		 dirname, compilation_handler, sizeof(bases));
     if (!sizeof(files)) return;
 
     foreach(files; int no; string fname) {
@@ -2680,22 +2675,16 @@ class dirnode
 //!
 //! @seealso
 //!   @[dirnode]
-class joinnode
+class joinnode (array(object|mapping) joined_modules,
+                object|void compilation_handler,
+                joinnode|mapping(mixed:int(0..0))|void fallback_module,
+                string|void name)
 {
   constant is_resolv_joinnode = 1;
 
-  string name;
-
-  array(object|mapping) joined_modules;
   mapping(string:mixed) cache=([]);
 
-  object compilation_handler;
-
-  // NOTE: Uses the empty mapping as the default fallback
-  // for simplified code.
-  joinnode|mapping(mixed:int(0..0)) fallback_module = ([]);
-
-  string _sprintf(int as)
+  protected string _sprintf(int as)
   {
     if (as != 'O') return 0;
     if (name) {
@@ -2708,25 +2697,20 @@ class joinnode
       return sprintf("master()->joinnode(%O)", joined_modules);
   }
 
-  protected void create(array(object|mapping) _joined_modules,
-			object|void _compilation_handler,
-			joinnode|void _fallback_module,
-			void|string name)
+  protected void create()
   {
-    joined_modules = _joined_modules;
-    compilation_handler = _compilation_handler;
-    fallback_module = _fallback_module || ([]);
+    if( !fallback_module )
+      fallback_module = ([]);
 
-    if (name)
-      this_program::name = name;
-    else {
+    if (!name)
+    {
       mapping(string:int(1..1)) names = ([]);
-      foreach (_joined_modules, object|mapping m) {
-	if (objectp (m) && stringp (m->name))
+      foreach (joined_modules, object|mapping m) {
+        if (objectp (m) && stringp (m->name))
 	  names[m->name] = 1;
       }
       if (sizeof (names))
-	this_program::name = sort (indices (names)) * "|";
+	name = sort (indices (names)) * "|";
     }
 
     resolv_debug ("joinnode(%O) created with name %O\n", joined_modules, name);
