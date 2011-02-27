@@ -211,19 +211,21 @@ void reparse_uri(this_program|string|void base_uri)
     return;
   }
 
-  if(has_prefix (uri, "#") && this_program::base_uri)
-  {
-    DEBUG("Fragment only. Using entire base URI, except fragment.");
-    inherit_properties(this_program::base_uri);
-    fragment = uri[1..];
-    return;
-  }
-
   // Parse fragment identifier
   // fragment    = *( pchar / "/" / "?" )
   // pchar       = unreserved / pct-encoded / sub-delims / ":" / "@"
-  sscanf(uri, "%s#%s", uri, fragment);
-  DEBUG("Found fragment %O", fragment);
+  if( sscanf(uri, "%s#%s", uri, fragment)==2 )
+  {
+    DEBUG("Found fragment %O", fragment);
+    if( !sizeof(uri) )
+    {
+      DEBUG("Fragment only. Using entire base URI, except fragment.");
+      string f = fragment;
+      inherit_properties(this_program::base_uri);
+      fragment = f;
+      return;
+    }
+  }
 
   // Parse scheme
   // scheme      = ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )
