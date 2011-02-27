@@ -41,7 +41,7 @@ test_equal((string)Standards.URI("../g",          "http://a/b/c/d;p?q"), "http:/
 test_equal((string)Standards.URI("../..",         "http://a/b/c/d;p?q"), "http://a/")
 test_equal((string)Standards.URI("../../",        "http://a/b/c/d;p?q"), "http://a/")
 test_equal((string)Standards.URI("../../g",       "http://a/b/c/d;p?q"), "http://a/g")
-dnl test_equal((string)Standards.URI("",              "http://a/b/c/d;p?q"), "http://a/b/c/d;p?q")
+test_equal((string)Standards.URI("",              "http://a/b/c/d;p?q"), "http://a/b/c/d;p?q")
 test_equal((string)Standards.URI("../../../g",    "http://a/b/c/d;p?q"), "http://a/g")
 test_equal((string)Standards.URI("../../../../g", "http://a/b/c/d;p?q"), "http://a/g")
 test_equal((string)Standards.URI("/./g",          "http://a/b/c/d;p?q"), "http://a/./g")
