@@ -2699,8 +2699,11 @@ class joinnode (array(object|mapping) joined_modules,
 
   protected void create()
   {
-    if( !fallback_module )
+    if( !fallback_module ) {
+      // NOTE: Uses the empty mapping as the default fallback
+      // for simplified code.
       fallback_module = ([]);
+    }
 
     if (!name)
     {
