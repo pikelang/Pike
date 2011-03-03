@@ -35,7 +35,7 @@ DECLARATIONS
  *! implements a wrapper for SDL and other relevant libraries like
  *! SDL_mixer. The interface is similar to the C one, but using
  *! generally accepted Pike syntax.
- *! 
+ *!
  *! This means that classes are used when appropriate and that method
  *! names use all lowercase letters with words separated by _. For
  *! example @tt{SDL_SetVideoMode@} is named @[SDL.set_video_mode]. Also note
@@ -46,7 +46,7 @@ DECLARATIONS
 
 
 /* To be able to access image functionality */
-#include  "modules/Image/image.h" 
+#include  "modules/Image/image.h"
 
 #ifdef DYNAMIC_MODULE
 struct program *image_program;
@@ -131,29 +131,29 @@ static int joystick_generation;
  *! @param flags
  *!  The flags parameter specifies what part(s) of SDL to
  *!  initialize. It can be one of many of the following ORed together.
- *! 
+ *!
  *! @dl
  *!   @item SDL.INIT_TIMER
  *!    Initializes the timer subsystem.
- *! 
+ *!
  *!   @item SDL.INIT_AUDIO
  *!    Initializes the audio subsystem.
- *! 
+ *!
  *!   @item SDL.INIT_VIDEO
  *!    Initializes the video subsystem.
- *! 
+ *!
  *!   @item SDL.INIT_CDROM
  *!    Initializes the cdrom subsystem.
- *! 
+ *!
  *!   @item SDL.INIT_JOYSTICK
  *!    Initializes the joystick subsystem.
- *! 
+ *!
  *!   @item SDL.INIT_EVERYTHING
  *!    Initialize all of the above.
- *! 
+ *!
  *!   @item SDL.INIT_NOPARACHUTE
  *!    Prevents SDL from catching fatal signals.
- *! 
+ *!
  *!   @item SDL.INIT_EVENTTHREAD
  *!    Run event polling in a separate thread. Not always supported.
  *! @enddl
@@ -185,10 +185,10 @@ PIKEFUN void|string get_error() {
 }
 
 /*! @decl void init_sub_system(int flags)
- *! 
+ *!
  *! After SDL has been initialized with @[SDL.init()] you may initialize
  *! uninitialized subsystems with this method.
- *! 
+ *!
  *! @param flags
  *!  The same as what is used in @[SDL.init()].
  *!
@@ -200,10 +200,10 @@ PIKEFUN int init_sub_system(int flags) {
 }
 
 /*! @decl void quit_sub_system(int flags)
- *! 
+ *!
  *! After an SDL subsystem has been initialized with @[SDL.init()] or
  *! @[SDL.init_sub_system()], it may be shut down with this method.
- *! 
+ *!
  *! @param  flags
  *!   A bitwise OR'd combination of the subsystems
  *!   you wish to shut down (see @[SDL.init()] for a list of subsystem flags).
@@ -249,11 +249,11 @@ PIKEFUN int was_init(int flags)
  *!
  *! @note
  *! You can use the @[atexit()] method to ensure that this method is always
- *! called when Pike exits normally. 
+ *! called when Pike exits normally.
  *!
  *! @seealso
  *!  @[SDL.init()],  @[SDL.init_sub_system()], @[SDL.quit_sub_system()]
- */ 
+ */
 PIKEFUN void quit() {
   SDL_Quit();
   timer_generation++;
@@ -275,19 +275,19 @@ PIKEFUN void quit() {
  *! not have a printable representation.  UNICODE translation is
  *! disabled by default as the conversion can cause a slight
  *! overhead.
- *! 
+ *!
  *! @param enable
  *!   A value of @expr{1@} enables Unicode translation, @expr{0@} disables
  *!   it and @expr{-1@} leaves it unchanged (useful for querying the current
- *!   translation mode). 
- *! 
+ *!   translation mode).
+ *!
  *! @returns
  *!   The previous translation mode (@expr{1@} enabled, @expr{0@} disabled).
  *!   If @b{enable@} is @expr{-1@}, the return value is the current translation
  *!   mode.
- *!   
+ *!
  *! @seealso
- *!   
+ *!
  *!   @[SDL.Keysym]
  */
 PIKEFUN int enable_unicode(int enable)
@@ -300,7 +300,7 @@ PIKEFUN int enable_unicode(int enable)
 /*! @decl int get_mod_state()
  *!
  *! Returns the current state of the modifier keys (CTRL, ALT, etc.).
- *! 
+ *!
  *! @returns
  *! The return value can be an OR'd combination of the following:
  *! SDL.KMOD_NONE, SDL.KMOD_LSHIFT, SDL.KMOD_RSHIFT, SDL.KMOD_LCTRL,
@@ -310,7 +310,7 @@ PIKEFUN int enable_unicode(int enable)
  *!
  *! For convenience, the following are also defined:
  *! SDL.KMOD_CTRL, SDL.KMOD_SHIFT, SDL.KMOD_ALT and SDL.KMOD_META
- *!   
+ *!
  *! @seealso
  *!   @[SDL.get_key_state()], @[SDL.pump_events()]
  */
@@ -321,7 +321,7 @@ PIKEFUN int get_mod_state()
 }
 
 /*! @decl string get_key_state()
- *! 
+ *!
  *! Gets a snapshot of the current keyboard state.
  *!
  *! @returns
@@ -330,10 +330,10 @@ PIKEFUN int get_mod_state()
  *!   The string is indexed by the @tt{SDL.K_*@} symbols.
  *!   A value of @expr{1@} means the key is pressed and
  *!   a value of @expr{0@} means it's not.
- *! 
+ *!
  *! @note
  *!  Call @[SDL.pump_events()] to update the state array.
- *! 
+ *!
  *! @seealso
  *!   @[SDL.get_mod_state()], @[SDL.pump_events()]
  *!
@@ -356,14 +356,14 @@ PIKEFUN string get_key_state()
 }
 
 /*! @class Rect
- *! 
+ *!
  *! Used in SDL to define a rectangular area. It is sometimes also used
  *! to specify only points or sizes (i.e only one of the position and
- *! dimension is used). 
+ *! dimension is used).
  */
 PIKECLASS Rect {
   CVAR SDL_Rect rect;
-    
+
   INIT {
     THIS->rect.x = THIS->rect.y = 0;
     THIS->rect.w = THIS->rect.h = 0;
@@ -474,15 +474,15 @@ PIKECLASS Rect {
   {
     struct pike_string *array_t;
     struct pike_string *mapping_t;
-    REF_MAKE_CONST_STRING( array_t, "array" ); 
-    REF_MAKE_CONST_STRING( mapping_t, "mapping" ); 
+    REF_MAKE_CONST_STRING( array_t, "array" );
+    REF_MAKE_CONST_STRING( mapping_t, "mapping" );
 
     if( type == array_t )
     {
       pop_n_elems( args );
       push_int(THIS->rect.x);
       push_int(THIS->rect.y);
-      push_int(THIS->rect.w); 
+      push_int(THIS->rect.w);
       push_int(THIS->rect.h);
       f_aggregate(4);
       return;
@@ -526,7 +526,7 @@ PIKECLASS Keysym {
 
   /*! @decl int scancode
    *!  Hardware specific scancode
-   *! 
+   *!
    *!  The @[scancode] field should generally be left alone - it is the
    *!  hardware dependent scancode returned by the keyboard.
    *!
@@ -540,7 +540,7 @@ PIKECLASS Keysym {
    *!  SDL virtual keysym
    *!
    *!  The @[sym] field is extremely useful.
-   *!  It is the SDL-defined value of the key. 
+   *!  It is the SDL-defined value of the key.
    *!  This field is very useful when you are checking for certain key presses.
    *!
    */
@@ -557,7 +557,7 @@ PIKECLASS Keysym {
    *!  when UNICODE translation has beed enabled with @[SDL.enable_unicode()].
    *!  If @[unicode] is non-zero then this the UNICODE character corresponding
    *!  to the keypress.
-   *! 
+   *!
    *! @note
    *!  UNICODE translation does have a slight overhead so don't
    *!  enable it unless its needed.
@@ -568,7 +568,7 @@ PIKECLASS Keysym {
   }
 }
 
-/*! @endclass Keysym */  
+/*! @endclass Keysym */
 
 #define CHECK_INIT() if(THIS->fmt == NULL) { Pike_error("PixelFormat unitialized!\n"); }
 
@@ -585,9 +585,9 @@ PIKECLASS PixelFormat {
    *        Ought to use parent pointer!
    */
   CVAR SDL_PixelFormat *fmt;
-  
+
   INIT {
-    THIS->fmt = NULL; 
+    THIS->fmt = NULL;
   }
 
   /*! @decl int rloss
@@ -741,10 +741,10 @@ PIKECLASS PixelFormat {
     push_int(THIS->fmt->Ashift);
     f_aggregate(4);
   }
-  
+
   /*! @decl int map_rgb(int r, int g, int b)
    *! @decl int map_rgb(Image.Color.Color color)
-   *! 
+   *!
    *! Maps the RGB color value to the specified pixel format and
    *! returns the pixel value as an integer.
    *!
@@ -757,7 +757,7 @@ PIKECLASS PixelFormat {
    *! @param r
    *! @param g
    *! @param b
-   *! 
+   *!
    *! The red, green and blue components specified as an integer
    *! between 0 and 255.
    *!
@@ -797,17 +797,17 @@ PIKECLASS PixelFormat {
    *! @param g
    *! @param b
    *! @param a
-   *! 
+   *!
    *! The red, green and blue components specified as an integer
    *! between 0 and 255.
    *!
    *! @param color
    *! The color as represented by an @[Image.Color.Color] object.
-   *! 
+   *!
    *! @returns
    *! A pixel value best approximating the given RGB color value for a
-   *! given pixel format. 
-   *! 
+   *! given pixel format.
+   *!
    *! @seealso
    *!   @[map_rgb()], @[get_rgb()], @[get_rgba()]
    */
@@ -823,7 +823,7 @@ PIKECLASS PixelFormat {
   }
 
   /*! @decl Image.Color.Color get_rgb(int pixel)
-   *! 
+   *!
    *! Get RGB component values from a pixel stored in this pixel format.
    *!
    *! @param pixel
@@ -831,7 +831,7 @@ PIKECLASS PixelFormat {
    *!   previously mapped with @[map_rgb()] or @[map_rgba()].
    *! @returns
    *!  A @[Image.Color.Color] object with the RGB components of the pixel.
-   *! 
+   *!
    *! @seealso
    *!   @[map_rgb()], @[map_rgba()], @[get_rgba()]
    */
@@ -842,7 +842,7 @@ PIKECLASS PixelFormat {
   }
 
   /*! @decl mapping(string:Image.Color.Color|int) get_rgba(int pixel)
-   *! 
+   *!
    *! Get RGB component values from a pixel stored in this pixel format.
    *!
    *! @param pixel
@@ -870,7 +870,7 @@ PIKECLASS PixelFormat {
     push_text("alpha");
     push_int(a);
     f_aggregate_mapping(4);
-  }  
+  }
 }
 /*! @endclass PixelFormat */
 #undef CHECK_INIT
@@ -889,7 +889,7 @@ PIKECLASS VideoInfo {
   /* THIS->vidinfo is never freed by us since SDL manages that */
   CVAR const SDL_VideoInfo *vidinfo;
   CVAR int generation;
-  
+
   INIT {
     THIS->vidinfo = NULL;
     THIS->generation = video_generation;
@@ -1002,7 +1002,7 @@ PIKECLASS Surface {
   CVAR SDL_Surface *_s;
   CVAR void (*fast_set_pixel)(Uint16 x, Uint16 y, Uint32 pixel);
   CVAR int generation;
-  
+
   static void fast_set_pixel1(Uint16 x, Uint16 y, Uint32 pixel) {
     SDL_Surface *screen = THIS->_s;
     *((Uint8 *)screen->pixels + y * screen->pitch + x) = pixel;
@@ -1011,19 +1011,19 @@ PIKECLASS Surface {
     SDL_Surface *screen = THIS->_s;
     *((Uint16 *)screen->pixels +  y * (screen->pitch>>1) + x) = pixel;
   }
-  static void fast_set_pixel3(Uint16 x, Uint16 y, Uint32 pixel) { 
+  static void fast_set_pixel3(Uint16 x, Uint16 y, Uint32 pixel) {
     SDL_Surface *screen = THIS->_s;
-    Uint8 *pix = (Uint8 *)screen->pixels + y * screen->pitch + x * 3; 
-    if(SDL_BYTEORDER == SDL_BIG_ENDIAN) { 
-      pix[2] = pixel & 0xff; 
-      pix[1] = (pixel >> 8) & 0xff; 
-      pix[0] = (pixel >> 16) & 0xff; 
-    } else { 
-      pix[0] = pixel; 
-      pix[1] = (pixel >> 8) & 0xff; 
-      pix[2] = (pixel >> 16) & 0xff; 
-    } 
-  } 
+    Uint8 *pix = (Uint8 *)screen->pixels + y * screen->pitch + x * 3;
+    if(SDL_BYTEORDER == SDL_BIG_ENDIAN) {
+      pix[2] = pixel & 0xff;
+      pix[1] = (pixel >> 8) & 0xff;
+      pix[0] = (pixel >> 16) & 0xff;
+    } else {
+      pix[0] = pixel;
+      pix[1] = (pixel >> 8) & 0xff;
+      pix[2] = (pixel >> 16) & 0xff;
+    }
+  }
   static void fast_set_pixel4(Uint16 x, Uint16 y, Uint32 pixel) {
     SDL_Surface *screen = THIS->_s;
     *((Uint32 *)screen->pixels + y * (screen->pitch>>2) + x) = pixel;
@@ -1031,10 +1031,10 @@ PIKECLASS Surface {
   static void (*get_fast_set_pixel(int bpp))(Uint16 x, Uint16 y, Uint32 pixel)
   {
     switch(bpp) {
-    case 1: return &fast_set_pixel1; 
-    case 2: return &fast_set_pixel2; 
-    case 3: return &fast_set_pixel3; 
-    case 4: return &fast_set_pixel4; 
+    case 1: return &fast_set_pixel1;
+    case 2: return &fast_set_pixel2;
+    case 3: return &fast_set_pixel3;
+    case 4: return &fast_set_pixel4;
     }
     return NULL;
   }
@@ -1061,7 +1061,7 @@ PIKECLASS Surface {
 	Pike_error("Pixel out of bounds!\n");
       }
       p = (Uint8 *)surface->pixels + y * surface->pitch + x * bpp;
-      
+
       switch(bpp) {
       case 1:  RETURN *p;
       case 2:  RETURN *(Uint16 *)p;
@@ -1076,7 +1076,7 @@ PIKECLASS Surface {
       }
     } else {
       Pike_error("Surface must be locked before you can set or get pixels.\n");
-    }      
+    }
   }
 
   /*! @decl int set_pixel(int x, int y, int pixel)
@@ -1109,7 +1109,7 @@ PIKECLASS Surface {
     THIS->fast_set_pixel = NULL;
     THIS->generation = video_generation;
   }
-  
+
   EXIT
     gc_trivial;
   {
@@ -1237,7 +1237,7 @@ PIKECLASS Surface {
     }
     RETURN locked;
   }
-  
+
   /*! @decl void unlock()
    *!
    *! Surfaces that were previously locked using @[lock()] must be
@@ -1280,7 +1280,7 @@ PIKECLASS Surface {
    *! @param flags
    *!   @[flags] specifies the type of surface that should be created.
    *!   It is an OR'd combination of the following possible values:
-   *! 
+   *!
    *! @dl
    *!   @item SDL.SWSURFACE
    *!     SDL will create the surface in system memory. This improves
@@ -1294,7 +1294,7 @@ PIKECLASS Surface {
    *!     (which are often accelerated).
    *!
    *!   @item SDL.SRCCOLORKEY
-   *!     
+   *!
    *!     This flag turns on colourkeying for blits from this
    *!     surface. If SDL.HWSURFACE is also specified and colourkeyed
    *!     blits are hardware-accelerated, then SDL will attempt to
@@ -1309,7 +1309,7 @@ PIKECLASS Surface {
    *!     @[set_alpha()] to set or clear this flag after surface
    *!     creation.
    *! @enddl
-   *! 
+   *!
    *! @note
    *!   If an alpha-channel is specified (that is, if Amask is
    *!   nonzero), then the SDL.SRCALPHA flag is automatically set. You
@@ -1325,12 +1325,12 @@ PIKECLASS Surface {
    *! @seealso
    *!  @[set_image()]
    */
-  PIKEFUN object init(int flags, int width, int height, int depth, 
+  PIKEFUN object init(int flags, int width, int height, int depth,
 		      int Rmask, int Gmask, int Bmask, int Amask) {
     if((THIS->generation == video_generation ) && THIS->_s) {
       SDL_FreeSurface(THIS->_s);
     }
-    THIS->_s = SDL_CreateRGBSurface(flags, width, height, depth, 
+    THIS->_s = SDL_CreateRGBSurface(flags, width, height, depth,
 				    Rmask, Gmask, Bmask, Amask);
     if(THIS->_s == NULL) {
       Pike_error("Failed to create SDL surface: %s\n", SDL_GetError());
@@ -1342,7 +1342,7 @@ PIKECLASS Surface {
 
   /*!  @decl SDL.Surface set_image(Image.Image image, int|void flags)
    *!  @decl SDL.Surface set_image(Image.Image image, Image.Image alpha, @
-   *!                              int|void flags) 
+   *!                              int|void flags)
    *!
    *! This (re)initializes this surface from the @[Image.Image] in
    *! @[image].
@@ -1352,7 +1352,7 @@ PIKECLASS Surface {
    *! If initialization is successful, this surface will use @tt{RGBA8888@}
    *! format. For good blitting performance, it should be converted to
    *! the display format using @[display_format()].
-   *! 
+   *!
    *! @param image
    *!  The source image.
    *! @param alpha
@@ -1366,7 +1366,7 @@ PIKECLASS Surface {
    *!   When present this specifies the type of surface that should be
    *!   created. It is an OR'd combination of the following possible
    *!   values:
-   *! 
+   *!
    *! @dl
    *!   @item SDL.SWSURFACE
    *!     SDL will create the surface in system memory. This improves
@@ -1443,7 +1443,7 @@ PIKECLASS Surface {
       int off = y*THIS->_s->pitch/4;
       for(x = 0; x < i->xsize; x++) {
 	rgb = pixel(i, x, y);
-	*((Uint32 *)dest + off + x) = 
+	*((Uint32 *)dest + off + x) =
 	  (rgb.r << 24) + (rgb.g << 16) + (rgb.b << 8) + (255 - i->alpha);
       }
     }
@@ -1474,7 +1474,7 @@ PIKECLASS Surface {
     }
     i = ((struct image *)(image->storage));
     a = ((struct image *)(alpha->storage));
-    
+
     THIS->_s =
       SDL_CreateRGBSurface(flags, i->xsize, i->ysize, 32,
 			   0xff000000, 0x00ff0000, 0x0000ff00,  0x000000ff);
@@ -1491,7 +1491,7 @@ PIKECLASS Surface {
       for(x = 0; x < i->xsize; x++) {
 	rgb = pixel(i, x, y);
 	argb = pixel(a, x, y);
-	*((Uint32 *)dest + off + x) = 
+	*((Uint32 *)dest + off + x) =
 	  (rgb.r << 24) + (rgb.g << 16) + (rgb.b << 8) + (255 - argb.r);
       }
     }
@@ -1505,12 +1505,12 @@ PIKECLASS Surface {
    *! This function takes a surface and copies it to a new  surface
    *! of  the  pixel format and colors of the video framebuffer,
    *! suitable for fast blitting onto the  display  surface. It calls
-   *! @[convert_surface()]. 
-   *! 
+   *! @[convert_surface()].
+   *!
    *! If you want to take advantage of hardware colorkey or alpha blit
    *! acceleration, you should set the colorkey and / or alpha value
    *! before calling this function.
-   *! 
+   *!
    *! If you want an alpha channel, see @[display_format_alpha()].
    *!
    *! @returns
@@ -1526,7 +1526,7 @@ PIKECLASS Surface {
       RETURN new_surface;
     } else {
       Pike_error("Failed to create SDL surface: %s\n", SDL_GetError());
-    }      
+    }
   }
 
   /*! @decl SDL.Surface display_format_alpha()
@@ -1534,12 +1534,12 @@ PIKECLASS Surface {
    *! This function takes a surface and copies it to a new  surface
    *! of  the  pixel format and colors of the video framebuffer,
    *! suitable for fast blitting onto the  display  surface. It calls
-   *! @[convert_surface()]. 
-   *! 
+   *! @[convert_surface()].
+   *!
    *! If you want to take advantage of hardware colorkey or alpha blit
    *! acceleration, you should set the colorkey and / or alpha value
    *! before calling this function.
-   *! 
+   *!
    *! This function can be used to convert a colourkey to an alpha
    *! channel, if the SDL.SRCCOLORKEY flag is set on the surface. The
    *! generated surface will then be transparent (alpha=0) where the
@@ -1591,7 +1591,7 @@ PIKECLASS Surface {
       CHECK_CLASS(_dstrect, Rect, 3);
       dstrect = &(OBJ2_RECT(_dstrect)->rect);
     }
-    
+
     CHECK_INIT();
     SDL_BlitSurface(THIS->_s, srcrect,
 		    OBJ2_SURFACE(dst)->_s, dstrect);
@@ -1631,7 +1631,7 @@ PIKECLASS Surface {
    *! Also control whether RLE-accelleration is enabled or not.
    *!
    *! @param flag
-   *!   
+   *!
    *! @fixme
    *!   Document this function
    */
@@ -1674,7 +1674,7 @@ PIKECLASS Surface {
     SDL_Surface *tmp;
     CHECK_INIT();
     CHECK_CLASS(fmt, PixelFormat, 1);
-    
+
     tmp = SDL_ConvertSurface(THIS->_s, OBJ2_PIXELFORMAT(fmt)->fmt, flags);
     pop_n_elems(args);
     if(!tmp) {
@@ -1693,8 +1693,15 @@ PIKECLASS Surface {
 
 /*! @decl int video_mode_ok(int width, int height, int bpp, int flags)
  *!
- *! @fixme
- *!   Document this function
+ *! Checks to see if a particular video mode is supported.
+ *!
+ *! @returns
+ *!  Returns 0 if the requested mode isn't supported under any bit depth, or the
+ *!  bits-per-pixel of the closest available mode with the given width, height
+ *!  and @[SDL.Surface] flags.
+ *!
+ *! @seealso
+ *!  @[SDL.Surface], @[SDL.set_video_mode()], @[SDL.get_video_info()]
  */
 PIKEFUN int video_mode_ok(int width, int height, int bpp, int flags) {
   RETURN SDL_VideoModeOK(width, height, bpp, flags);
@@ -1708,22 +1715,22 @@ PIKEFUN int video_mode_ok(int width, int height, int bpp, int flags) {
  *! next video surface blit or lock will return.  On  hardware
  *! that  doesn't support double-buffering, this is equivalent
  *! to calling @[SDL.update_rect(screen, 0, 0, 0, 0)]
- *! 
+ *!
  *! The  @[SDL.DOUBLEBUF] flag must have been passed to
  *! @[SDL.set_video_mode()] when setting the video mode for this
  *! function to perform hardware flipping.
- *! 
+ *!
  *! @param screen
  *!  The screen object to flip. If missing, the default screen is used.
  *! @returns
  *!  This function returns 1 if successful, or 0 if there was an error.
- *! 
+ *!
  *! @seealso
- *!  @[SDL.update_rect()] 
+ *!  @[SDL.update_rect()]
  */
 
 PIKEFUN int flip(object|void screen) {
-  SDL_Surface *vs = NULL;    
+  SDL_Surface *vs = NULL;
   if(!screen) {
     vs = SDL_GetVideoSurface();
   } else {
@@ -1738,16 +1745,16 @@ PIKEFUN int flip(object|void screen) {
 /*PIKEFUN void SDL_UpdateRects(object|void screen, int numrects, array rects);*/
 
 /*! @decl void update_rect(int x, int y, int w, int h, SDL.Surface|void screen)
- *! 
+ *!
  *! Makes sure the given area is updated on the given screen.  The
  *! rectangle must be confined within the screen boundaries (no clipping
  *! is done).
- *! 
+ *!
  *! If 'x', 'y', 'w' and 'h' are all 0, @[SDL.update_rect()] will update
  *! the entire screen.
- *! 
+ *!
  *! This function should not be called while @[screen] is locked.
- *! 
+ *!
  *! @param x
  *! @param y
  *!  Top left corner of the rectangle to update.
@@ -1757,7 +1764,7 @@ PIKEFUN int flip(object|void screen) {
  *! @param screen
  *!  The screen object to flip. If missing, the default screen is used.
  *! @seealso
- *!  @[SDL.flip()] 
+ *!  @[SDL.flip()]
  */
 PIKEFUN void update_rect(int x, int y, int w, int h, object|void screen) {
   SDL_Surface *vs;
@@ -1783,8 +1790,16 @@ PIKEFUN int set_gamma(float red, float green, float blue) {
 
 /*! @decl void|object get_video_surface()
  *!
- *! @fixme
- *!   Document this function
+ *! Returns the current display surface.
+ *!
+ *! If SDL is doing format conversion on the display surface, this method
+ *! returns the publicly visible surface, not the real video surface.
+ *!
+ *! @returns
+ *!   The current display surface, or 0 if there is no display surface.
+ *!
+ *! @seealso
+ *!   @[SDL.set_video_mode()]
  */
 PIKEFUN void|object get_video_surface()
 {
@@ -1792,7 +1807,7 @@ PIKEFUN void|object get_video_surface()
   if(screen != NULL) {
     struct object *surface = clone_object( Surface_program, 0 );
     /* to avoid freeing when the new Surface class is destroyed */
-    screen->refcount ++; 
+    screen->refcount ++;
     OBJ2_SURFACE(surface)->_s = screen;
     push_object(surface);
     return;
@@ -1802,8 +1817,10 @@ PIKEFUN void|object get_video_surface()
 
 /*! @decl void|object get_video_info()
  *!
- *! @fixme
- *!   Document this function
+ *! @returns
+ *!  Returns an @[SDL.VideoInfo] object, which holds information about the video
+ *!  hardware, or 0 if the video device has not yet been initialized (with a
+ *!  call to @[SDL.init()]).
  */
 PIKEFUN void|object get_video_info()
 {
@@ -1897,8 +1914,13 @@ PIKEFUN int show_cursor( int show )
 
 /*! @decl void warp_mouse(int xpos, int ypos)
  *!
- *! @fixme
- *!   Document this function
+ *! Sets the position of the mouse cursor to the given coordinates.
+ *! This generates an @tt{SDL.MOUSEMOTION@} event.
+ *!
+ *! @param xpos
+ *!  Requested position of the mouse cursor along the x-axis.
+ *! @param ypos
+ *!  Requested position of the mouse cursor along the y-axis.
  */
 PIKEFUN void warp_mouse( int xpos, int ypos )
 {
@@ -1923,25 +1945,40 @@ PIKEFUN void gl_swap_buffers( )
 
 /*! @decl object set_video_mode(int width, int height, int bpp, int flags)
  *!
- *! @fixme
- *!   Document this function
+ *! Sets up a video mode with the specified width, height and bits per pixel.
+ *!
+ *! @param width
+ *!  The desired width.  Setting this to <= 0 results in an SDL error.
+ *! @param height
+ *!  The desired height.  Setting this to <= 0 results in an SDL error.
+ *! @param bpp
+ *!  The bits per pixel.  This should be either 0, 8, 16, 24 or 32.  If you set
+ *!  this to 0, the bits-per-pixel value of the current display will be used.
+ *! @param flags
+ *!  An OR'd combination of the desired @[SDL.Surface] flags.
+ *!
+ *! @returns
+ *!  The framebuffer surface.  An error is thrown if the video mode can't be
+ *!  set.
+ *!
+ *! @seealso
+ *!  @[SDL.Surface], @[SDL.video_mode_ok()]
  */
 PIKEFUN object set_video_mode(int width, int height, int bpp, int flags)
 {
-  SDL_Surface *screen;
   if(width <= 0 || height <= 0) { /* To avoid core dump in SDL */
     SDL_SetError("Tried to open window with width and/or height smaller than 1.");
-  } else { 
+  } else {
     SDL_Surface *screen = NULL;
     switch(bpp) { /* Switch to avoid coredump in SDL */
-    case 0: case 8: case 16: case 24: case 32:  
+    case 0: case 8: case 16: case 24: case 32:
       screen = SDL_SetVideoMode(width, height, bpp, flags);
       if(screen != NULL) {
 	struct object *surface = clone_object( Surface_program, 0 );
 	/* to avoid freeing when the new Surface class is destroyed, since
 	 * it's a reference to the screen surface, which SDL handles.
 	 */
-	screen->refcount ++; 
+	screen->refcount ++;
 	OBJ2_SURFACE(surface)->_s = screen;
 	pop_n_elems(args);
 	push_object(surface);
@@ -1949,7 +1986,7 @@ PIKEFUN object set_video_mode(int width, int height, int bpp, int flags)
       }
       break;
     default:
-      SDL_SetError("Invalid bpp, expected 8, 16, 24 or 32.");
+      SDL_SetError("Invalid bpp, expected 0, 8, 16, 24 or 32.");
     }
   }
   Pike_error("Failed to set video mode: %s\n", SDL_GetError());
@@ -1981,6 +2018,9 @@ PIKEFUN object set_video_mode(int width, int height, int bpp, int flags)
  *!
  *! @returns
  *!  If successful, 0, otherwise -1.
+ *!
+ *! @seealso
+ *!  @[SDL.Surface()->blit()]
  */
 PIKEFUN int blit_surface(object src, object dst,
 			 object|void _srcrect,
@@ -2000,15 +2040,19 @@ PIKEFUN int blit_surface(object src, object dst,
     CHECK_CLASS(_dstrect, Rect, 4);
     dstrect = &(OBJ2_RECT(_dstrect)->rect);
   }
-      
+
   RETURN SDL_BlitSurface(OBJ2_SURFACE(src)->_s, srcrect,
 			 OBJ2_SURFACE(dst)->_s, dstrect);
 }
 
 /*! @decl void|string video_driver_name()
  *!
- *! @fixme
- *!   Document this function
+ *! Obtains the name of the video driver.  This is a simple one-word identifier
+ *! such as 'x11' or 'windib'.
+ *!
+ *! @returns
+ *!  The name of the video driver, or 0 if video has not yet been initialized
+ *!  (with a call to @[SDL.init()]).
  */
 PIKEFUN void|string video_driver_name() {
   char tmp[256];
@@ -2064,7 +2108,7 @@ PIKEFUN array(string) get_caption() {
  *! @[SDL.APPACTIVE] loss event.
  *!
  *! @returns
- *!  Non-zero if successful, otherwise @expr{0@}.  
+ *!  Non-zero if successful, otherwise @expr{0@}.
  */
 PIKEFUN int iconify_window() {
   RETURN SDL_WM_IconifyWindow();
@@ -2072,8 +2116,14 @@ PIKEFUN int iconify_window() {
 
 /*! @decl int toggle_fullscreen(void|SDL.Surface screen)
  *!
- *! @fixme
- *!   Document this function
+ *! Toggles the application between windowed and fullscreen mode, if supported.
+ *! X11 is the only target currently supported.
+ *!
+ *! @param screen
+ *!   The framebuffer surface, as returned by @[SDL.set_video_mode()].
+ *!
+ *! @returns
+ *!   Returns 1 on success or 0 on failure.
  */
 PIKEFUN int toggle_fullscreen(void|object screen) {
   SDL_Surface *vs = 0;
@@ -2109,7 +2159,7 @@ PIKEFUN int toggle_fullscreen(void|object screen) {
  *!   @enddl
  *!
  *! @returns
- *!  The current grab mode, either @[SDL.GRAB_ON] or @[SDL.GRAB_OFF]. 
+ *!  The current grab mode, either @[SDL.GRAB_ON] or @[SDL.GRAB_OFF].
  */
 PIKEFUN int grab_input(int mode) {
   RETURN SDL_WM_GrabInput(mode);
@@ -2154,7 +2204,7 @@ PIKECLASS Joystick {
 
   /*! @decl void create(int device_index)
    *!
-   *! Opens the given joystick device for use.  
+   *! Opens the given joystick device for use.
    *!
    *! @param device_index
    *!  The @i{n@}th joystick device available to the system.
@@ -2231,7 +2281,7 @@ PIKECLASS Joystick {
    *!  The axis index.
    *!
    *! @returns
-   *!  The current position of the given axis. 
+   *!  The current position of the given axis.
    *!
    *! @seealso
    *!  @[num_axes()]
@@ -2245,29 +2295,29 @@ PIKECLASS Joystick {
 
   /*! @decl int get_hat(int hat)
    *!
-   *! Returns the current state of the given hat.  
+   *! Returns the current state of the given hat.
    *!
    *! This is represented as an OR'd combination of one or more of the
    *! following constants:
    *!
    *! @dl
-   *!   @item 
+   *!   @item
    *!     @[SDL.HAT_CENTERED]
-   *!   @item 
+   *!   @item
    *!     @[SDL.HAT_UP]
-   *!   @item 
+   *!   @item
    *!     @[SDL.HAT_RIGHT]
-   *!   @item 
+   *!   @item
    *!     @[SDL.HAT_DOWN]
-   *!   @item 
+   *!   @item
    *!     @[SDL.HAT_LEFT]
-   *!   @item 
+   *!   @item
    *!     @[SDL.HAT_RIGHTUP]
-   *!   @item 
+   *!   @item
    *!     @[SDL.HAT_RIGHTDOWN]
-   *!   @item 
+   *!   @item
    *!     @[SDL.HAT_LEFTUP]
-   *!   @item 
+   *!   @item
    *!     @[SDL.HAT_LEFTDOWN]
    *! @enddl
    *!
@@ -2287,12 +2337,12 @@ PIKECLASS Joystick {
 
   /*! @decl array(int) get_ball(int ball)
    *!
-   *! Returns the axis change of the given trackball.  
+   *! Returns the axis change of the given trackball.
    *!
    *! This is its relative motion along both axes since the last call to
    *! @[get_ball()]. It is returned as a 2-element array holding the values
    *! of @i{dx@} and @i{dy@} (- the motion deltas).
-   *! 
+   *!
    *! @returns
    *!  The axis change of the given trackball.
    *!
@@ -2374,7 +2424,7 @@ PIKEFUN void pump_events() {
  *!  The number of joysticks available to the system.
  *!
  *! @seealso
- *!  @[SDL.Joystick] 
+ *!  @[SDL.Joystick]
  */
 PIKEFUN int num_joysticks() {
   RETURN SDL_NumJoysticks();
@@ -2384,12 +2434,12 @@ PIKEFUN int num_joysticks() {
  *!
  *! Returns the implementation-dependent name of the @i{n@}th joystick
  *! device available to the system.
- *! 
+ *!
  *! @param device_index
  *!  The @i{n@}th joystick device.
  *!
  *! @returns
- *!  The implementation-dependent name of the given joystick device. 
+ *!  The implementation-dependent name of the given joystick device.
  *!
  *! @seealso
  *!  @[SDL.Joystick->name()]
@@ -2410,9 +2460,9 @@ PIKEFUN string joystick_name(int device_index) {
  *!
  *! @param device_index
  *!  The @i{n@}th joystick device.
- *!  
+ *!
  *! @returns
- *!  @expr{1@} if this device has already been opened, otherwise @expr{0@}. 
+ *!  @expr{1@} if this device has already been opened, otherwise @expr{0@}.
  */
 PIKEFUN int joystick_opened(int device_index) {
   RETURN SDL_JoystickOpened(device_index);
@@ -2420,7 +2470,7 @@ PIKEFUN int joystick_opened(int device_index) {
 
 /*! @decl void joystick_update()
  *!
- *! Updates the state of all open joysticks attached to the system.  
+ *! Updates the state of all open joysticks attached to the system.
  */
 PIKEFUN void joystick_update() {
   SDL_JoystickUpdate();
@@ -2428,20 +2478,20 @@ PIKEFUN void joystick_update() {
 
 /*! @decl int joystick_event_state(int state)
  *!
- *! Enables, disables or queries the state of joystick event processing.  
+ *! Enables, disables or queries the state of joystick event processing.
  *!
  *! @param state
  *!  One of the following constants:
  *!  @dl
- *!    @item 
+ *!    @item
  *!     @[SDL.ENABLE]
  *!
  *!      Enables joystick event processing.
- *!    @item 
+ *!    @item
  *!     @[SDL.IGNORE]
  *!
  *!      Disables joystick event processing.
- *!    @item 
+ *!    @item
  *!     @[SDL.QUERY]
  *!
  *!      Queries the current state and returns it.
@@ -2751,7 +2801,7 @@ PIKECLASS Music {
   PIKEFUN void create(string fname) {
     if((THIS->generation == audio_generation) && (THIS->music)) {
       // Since you can manually call this...
-      Mix_FreeMusic(THIS->music); 
+      Mix_FreeMusic(THIS->music);
     }
     THIS->music = Mix_LoadMUS(fname->str);
     if(THIS->music == NULL) {
@@ -2764,7 +2814,7 @@ PIKECLASS Music {
   /*! @decl object pause()
    *!
    *! Pauses the music playback.
-   *! 
+   *!
    *! It is safe to call this method when the music is already paused.
    *!
    *! @returns
@@ -2781,7 +2831,7 @@ PIKECLASS Music {
   /*! @decl object halt()
    *!
    *! Stops music playback immediately, including any fader effects.
-   *! 
+   *!
    *! @returns
    *!  The @[SDL.Music] object.
    */
@@ -2837,11 +2887,11 @@ PIKECLASS Music {
   }
 
   /*! @decl int playing()
-   *! 
+   *!
    *! Determines if the music is already playing.
-   *! 
+   *!
    *! This method will return @expr{1@} even if the music has been paused.
-   *! 
+   *!
    *! @returns
    *!  @expr{1@} if the music is playing, otherwise @expr{0@}.
    */
@@ -2856,7 +2906,7 @@ PIKECLASS Music {
    *! @returns
    *!  One of the following constants:
    *!  @dl
-   *!   @item 
+   *!   @item
    *!    @[SDL.MIX_NO_FADING]
    *!   @item
    *!    @[SDL.MIX_FADING_IN]
@@ -3056,8 +3106,11 @@ PIKECLASS Event {
 
   /*! @decl int get()
    *!
-   *! @fixme
-   *!   Document this function
+   *! Removes the next event (if any) from the queue and stores it in this
+   *! @[SDL.Event] object.
+   *!
+   *! @returns
+   *!  1 if there was an event to 'get', otherwise 0.
    */
   PIKEFUN int get() {
     RETURN SDL_PollEvent(&THIS->event);
@@ -3065,8 +3118,12 @@ PIKECLASS Event {
 
   /*! @decl int wait()
    *!
-   *! @fixme
-   *!   Document this function
+   *! Waits indefinitely for the next available event, which is then removed
+   *! from the queue and stored in this @[SDL.Event] object.
+   *!
+   *! @returns
+   *!  Returns 1 on success, or 0 if there was an error while waiting for the
+   *!  next event.
    */
   PIKEFUN int wait() {
     RETURN SDL_WaitEvent(&THIS->event);
@@ -3074,8 +3131,10 @@ PIKECLASS Event {
 
   /*! @decl int poll()
    *!
-   *! @fixme
-   *!   Document this function
+   *! Polls for currently pending events.
+   *!
+   *! @returns
+   *!  1 if there are currently pending events, otherwise 0.
    */
   PIKEFUN int poll() {
     RETURN SDL_PollEvent(NULL);
@@ -3282,9 +3341,9 @@ PIKECLASS Event {
 PIKE_MODULE_INIT
 {
   INIT;
-  
+
   init_sdl_constants();
-   
+
 #ifdef DYNAMIC_MODULE
   image_program = PIKE_MODULE_IMPORT(Image, image_program);
   image_color_program = PIKE_MODULE_IMPORT(Image, image_color_program);
