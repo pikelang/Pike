@@ -8042,6 +8042,8 @@ test_equal("foobargazonk"/4,({"foob","arga","zonk"}))
 test_equal("foobargazonk"/5,({"fooba","rgazo"}))
 test_equal("foobargazonk"/-6,({"foobar","gazonk"}))
 test_equal("foobargazonk"/-7,({"rgazonk"}))
+test_eq(({})/100.0, ({}));
+test_eq(({})/100, ({}));
 
 test_equal("foobargazonk"/5.0,({"fooba","rgazo","nk"}))
 test_equal("foobargazonk"/-5.0,({"fo","obarg","azonk"}))
