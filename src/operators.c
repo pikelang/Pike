@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.193 2008/05/21 21:13:04 mast Exp $
+|| $Id$
 */
 
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.193 2008/05/21 21:13:04 mast Exp $");
+RCSID("$Id$");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -3458,6 +3458,12 @@ PMOD_EXPORT void o_divide(void)
 	INT_TYPE len=sp[-1].u.integer;
 	if(!len)
 	  OP_DIVISION_BY_ZERO_ERROR("`/");
+
+	if (!Pike_sp[-2].u.array->size) {
+	  pop_n_elems (2);
+	  ref_push_array (&empty_array);
+	  return;
+	}
 	
 	if(len<0)
 	{
@@ -3492,6 +3498,12 @@ PMOD_EXPORT void o_divide(void)
 	len=sp[-1].u.float_number;
 	if(len==0.0)
 	  OP_DIVISION_BY_ZERO_ERROR("`/");
+
+	if (!Pike_sp[-2].u.array->size) {
+	  pop_n_elems (2);
+	  ref_push_array (&empty_array);
+	  return;
+	}
 
 	if(len<0)
 	{
