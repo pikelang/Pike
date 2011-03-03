@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: precompiled_mysql.h,v 1.21 2009/11/15 00:58:35 mast Exp $
+|| $Id$
 */
 
 /*
@@ -43,6 +43,14 @@
 #ifndef _mysql_h
 #define _mysql_h
 #endif
+#endif
+
+/* These aren't present in old mysql client libs. */
+#ifndef FIELD_TYPE_GEOMETRY
+#define FIELD_TYPE_GEOMETRY 255
+#endif
+#ifndef FIELD_TYPE_BIT
+#define FIELD_TYPE_BIT 16
 #endif
 
 /* From the Pike-dist */

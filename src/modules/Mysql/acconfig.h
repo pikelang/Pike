@@ -56,12 +56,6 @@
 /* Define if your mysql.h defines SHUTDOWN_DEFAULT */
 #undef HAVE_SHUTDOWN_DEFAULT
 
-/* Define if your mysql.h defines FIELD_TYPE_GEOMETRY */
-#undef HAVE_FIELD_TYPE_GEOMETRY
-
-/* Define if your mysql.h defines FIELD_TYPE_BIT */
-#undef HAVE_FIELD_TYPE_BIT
-
 /* Define if your mysql.h defines CLIENT_INTERACTIVE */
 #undef HAVE_CLIENT_INTERACTIVE
 

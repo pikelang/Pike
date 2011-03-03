@@ -194,11 +194,7 @@ void mysqlmod_parse_field(MYSQL_FIELD *field, int support_default)
     case FIELD_TYPE_NEWDATE:
       push_text("newdate");
       break;
-#ifdef HAVE_FIELD_TYPE_BIT
     case FIELD_TYPE_BIT:
-#else
-    case 16:
-#endif
       push_text("bit");
       break;
     case FIELD_TYPE_ENUM:
@@ -225,11 +221,7 @@ void mysqlmod_parse_field(MYSQL_FIELD *field, int support_default)
     case FIELD_TYPE_STRING:
       push_text("string");
       break;
-#ifdef HAVE_FIELD_TYPE_GEOMETRY
     case FIELD_TYPE_GEOMETRY:
-#else
-    case 255:
-#endif
       push_text("geometry");
       break;
     default:
@@ -607,11 +599,7 @@ static void f_fetch_row(INT32 args)
 	  case FIELD_TYPE_SHORT:
 	  case FIELD_TYPE_LONG:
 	  case FIELD_TYPE_INT24:
-#ifdef HAVE_FIELD_TYPE_BIT
 	  case FIELD_TYPE_BIT:
-#else
-	  case 16:
-#endif
 	    push_int(STRTOL(row[i], 0, 10));
 	    break;
 	    /* Floating point types */

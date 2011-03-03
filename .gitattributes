@@ -520,7 +520,6 @@ testfont binary
 /src/modules/Msql/version.h foreign_ident
 /src/modules/Mysql/Makefile.in foreign_ident
 /src/modules/Mysql/dummy.c foreign_ident
-/src/modules/Mysql/precompiled_mysql.h foreign_ident
 /src/modules/Odbc/Makefile.in foreign_ident
 /src/modules/Odbc/acconfig.h foreign_ident
 /src/modules/Odbc/configure.in foreign_ident
