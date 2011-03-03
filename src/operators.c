@@ -3827,6 +3827,12 @@ PMOD_EXPORT void o_divide(void)
 	INT_TYPE len=sp[-1].u.integer;
 	if(!len)
 	  OP_DIVISION_BY_ZERO_ERROR("`/");
+
+	if (!Pike_sp[-2].u.array->size) {
+	  pop_n_elems (2);
+	  ref_push_array (&empty_array);
+	  return;
+	}
 	
 	if(len<0)
 	{
@@ -3861,6 +3867,12 @@ PMOD_EXPORT void o_divide(void)
 	len=sp[-1].u.float_number;
 	if(len==0.0)
 	  OP_DIVISION_BY_ZERO_ERROR("`/");
+
+	if (!Pike_sp[-2].u.array->size) {
+	  pop_n_elems (2);
+	  ref_push_array (&empty_array);
+	  return;
+	}
 
 	if(len<0)
 	{
