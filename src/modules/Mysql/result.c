@@ -605,9 +605,27 @@ static void f_fetch_row(INT32 args)
 	  case FIELD_TYPE_SHORT:
 	  case FIELD_TYPE_LONG:
 	  case FIELD_TYPE_INT24:
-	  case FIELD_TYPE_BIT:
 	    push_int(STRTOL(row[i], 0, 10));
 	    break;
+
+#if defined (HAVE_MYSQL_FETCH_LENGTHS) && defined (AUTO_BIGNUM)
+	  case FIELD_TYPE_BIT:
+	    if (row_lengths[i] <= SIZEOF_LONGEST) {
+	      unsigned LONGEST val = 0;
+	      unsigned j;
+	      for (j = 0; j < row_lengths[i]; j++)
+		val = (val << 8) | (unsigned char) row[i][j];
+	      push_ulongest (val);
+	    }
+	    else {
+	      push_string (make_shared_binary_string (row[i], row_lengths[i]));
+	      push_int (256);
+	      convert_stack_top_with_base_to_bignum();
+	      reduce_stack_top_bignum();
+	    }
+	    break;
+#endif
+
 	    /* Floating point types */
 	  case FIELD_TYPE_FLOAT:
 	  case FIELD_TYPE_DOUBLE:
