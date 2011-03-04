@@ -537,7 +537,6 @@ testfont binary
 /src/modules/_Image_GIF/gif_lzw.h foreign_ident
 /src/modules/_Image_JPEG/Makefile.in foreign_ident
 /src/modules/_Image_JPEG/acconfig.h foreign_ident
-/src/modules/_Image_JPEG/configure.in foreign_ident
 /src/modules/_Image_JPEG/image_jpeg.c foreign_ident
 /src/modules/_Image_JPEG/jinclude.h foreign_ident
 /src/modules/_Image_JPEG/transupp.c foreign_ident
