@@ -74,8 +74,10 @@ PIKECLASS mpq
       if(digits->size_shift)
 	Pike_error("Illegal characters, cannot convert to mpq.\n");
       str=STR0(digits);
-      
+
+      /* Huh, wot? /mast
       get_mpz_from_digits(mpq_numref(tmp), digits, base);
+      */
       
       if(!base || ((base >= 2) && (base <= 36)))
       {

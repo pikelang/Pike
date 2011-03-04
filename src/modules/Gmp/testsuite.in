@@ -71,6 +71,10 @@ cond_begin([[ master()->resolv("Gmp")->mpq ]])
   test_eq(Gmp.mpq(10.0),10)
   test_eq(Gmp.mpq("10",8),8)
   test_eq(Gmp.mpq("0",256),'0')
+  test_eq(sprintf("%.20f", Gmp.mpq("10.1234567890123456789")),
+	  "10.12345678901234567890");
+  test_eq(sprintf("%.20f", Gmp.mpq("-10.1234567890123456789")),
+	  "-10.12345678901234567890");
 
   test_eq(sprintf("%.0f", Gmp.mpq(1)/10), "0");
   test_eq(sprintf("%.1f", Gmp.mpq(1)/10), "0.1");
