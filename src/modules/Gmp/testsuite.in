@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.23 2003/03/18 03:44:02 nilsson Exp $
+dnl $Id$
 
 cond( [[ master()->resolv("Gmp")->mpz ]],
 [[
@@ -63,6 +63,13 @@ cond( [[ master()->resolv("Gmp")->mpq ]],
   test_eq(Gmp.mpq(10.0),10)
   test_eq(Gmp.mpq("10",8),8)
   test_eq(Gmp.mpq("0",256),'0')
+
+  test_eq(sprintf("%.0f", Gmp.mpq(1)/10), "0");
+  test_eq(sprintf("%.1f", Gmp.mpq(1)/10), "0.1");
+  test_eq(sprintf("%.2f", Gmp.mpq(1)/100), "0.01");
+  test_eq(sprintf("%.0f", Gmp.mpq(1)/-10), "0");
+  test_eq(sprintf("%.1f", Gmp.mpq(1)/-10), "-0.1");
+  test_eq(sprintf("%.2f", Gmp.mpq(1)/-100), "-0.01");
 
   test_eq(Gmp.mpq("17") == "foo", 0)
   test_eq(Gmp.mpq("17") != "foo", 1)
