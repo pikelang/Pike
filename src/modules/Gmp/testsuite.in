@@ -1,5 +1,5 @@
 START_MARKER
-dnl $Id: testsuite.in,v 1.34 2009/06/26 06:57:41 grubba Exp $
+dnl $Id$
 
 cond_begin([[ master()->resolv("Gmp")->mpz ]])
 
@@ -71,6 +71,13 @@ cond_begin([[ master()->resolv("Gmp")->mpq ]])
   test_eq(Gmp.mpq(10.0),10)
   test_eq(Gmp.mpq("10",8),8)
   test_eq(Gmp.mpq("0",256),'0')
+
+  test_eq(sprintf("%.0f", Gmp.mpq(1)/10), "0");
+  test_eq(sprintf("%.1f", Gmp.mpq(1)/10), "0.1");
+  test_eq(sprintf("%.2f", Gmp.mpq(1)/100), "0.01");
+  test_eq(sprintf("%.0f", Gmp.mpq(1)/-10), "0");
+  test_eq(sprintf("%.1f", Gmp.mpq(1)/-10), "-0.1");
+  test_eq(sprintf("%.2f", Gmp.mpq(1)/-100), "-0.01");
 
   test_eq(Gmp.mpq("17") == "foo", 0)
   test_eq(Gmp.mpq("17") != "foo", 1)

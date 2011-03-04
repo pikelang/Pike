@@ -392,13 +392,11 @@ testfont binary
 /src/modules/Gmp/acconfig.h foreign_ident
 /src/modules/Gmp/configure.in foreign_ident
 /src/modules/Gmp/mpf.cmod foreign_ident
-/src/modules/Gmp/mpq.cmod foreign_ident
 /src/modules/Gmp/mpz_glue.c foreign_ident
 /src/modules/Gmp/my_gmp.h foreign_ident
 /src/modules/Gmp/my_mpz_xor.c foreign_ident
 /src/modules/Gmp/next_prime.c foreign_ident
 /src/modules/Gmp/prime_table.pike foreign_ident
-/src/modules/Gmp/testsuite.in foreign_ident
 /src/modules/Gz/Makefile.in foreign_ident
 /src/modules/Gz/acconfig.h foreign_ident
 /src/modules/Gz/configure.in foreign_ident
