@@ -98,6 +98,9 @@
 #ifndef FIELD_TYPE_BIT
 #define FIELD_TYPE_BIT 16
 #endif
+#ifndef FIELD_TYPE_NEWDECIMAL
+#define FIELD_TYPE_NEWDECIMAL 246
+#endif
 #ifndef FIELD_TYPE_GEOMETRY
 #define FIELD_TYPE_GEOMETRY 255
 #endif
@@ -202,6 +205,9 @@ void mysqlmod_parse_field(MYSQL_FIELD *field, int support_default)
       break;
     case FIELD_TYPE_BIT:
       push_text("bit");
+      break;
+    case FIELD_TYPE_NEWDECIMAL:
+      push_text ("newdecimal");
       break;
     case FIELD_TYPE_ENUM:
       push_text("enum");
@@ -632,6 +638,7 @@ static void f_fetch_row(INT32 args)
 	    push_float(atof(row[i]));
 	    break;
 	  case FIELD_TYPE_DECIMAL:
+	  case FIELD_TYPE_NEWDECIMAL:
 	    /* Fixed-point number. */
 	    /* FIXME: Convert to Gmp.mpr? */
 	  default:
