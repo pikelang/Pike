@@ -56,9 +56,6 @@
 /* Define if your mysql.h defines SHUTDOWN_DEFAULT */
 #undef HAVE_SHUTDOWN_DEFAULT
 
-/* Define if your mysql.h defines CLIENT_INTERACTIVE */
-#undef HAVE_CLIENT_INTERACTIVE
-
 /* Define if MYSQL_FIELD has a charsetnr member */
 #undef HAVE_MYSQL_FIELD_CHARSETNR
 

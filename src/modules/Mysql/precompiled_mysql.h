@@ -45,14 +45,6 @@
 #endif
 #endif
 
-/* These aren't present in old mysql client libs. */
-#ifndef FIELD_TYPE_GEOMETRY
-#define FIELD_TYPE_GEOMETRY 255
-#endif
-#ifndef FIELD_TYPE_BIT
-#define FIELD_TYPE_BIT 16
-#endif
-
 /* From the Pike-dist */
 
 /*

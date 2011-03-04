@@ -95,6 +95,12 @@
 #ifndef BINARY_FLAG
 #define BINARY_FLAG	128
 #endif
+#ifndef FIELD_TYPE_BIT
+#define FIELD_TYPE_BIT 16
+#endif
+#ifndef FIELD_TYPE_GEOMETRY
+#define FIELD_TYPE_GEOMETRY 255
+#endif
 
 /*
  * Globals

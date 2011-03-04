@@ -1943,7 +1943,7 @@ PIKE_MODULE_INIT
   add_integer_constant( "CLIENT_COMPRESS", CLIENT_COMPRESS, 0);
   add_integer_constant( "CLIENT_FOUND_ROWS", CLIENT_FOUND_ROWS, 0);
   add_integer_constant( "CLIENT_IGNORE_SPACE", CLIENT_IGNORE_SPACE, 0);
-#ifdef HAVE_CLIENT_INTERACTIVE
+#ifdef CLIENT_INTERACTIVE
   add_integer_constant( "CLIENT_INTERACTIVE", CLIENT_INTERACTIVE, 0);
 #endif
   add_integer_constant( "CLIENT_NO_SCHEMA", CLIENT_NO_SCHEMA, 0);
