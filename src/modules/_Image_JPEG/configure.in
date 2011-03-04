@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.21 2005/02/26 00:43:15 nilsson Exp $
+# $Id$
 #
 AC_INIT(image_jpeg.c)
 AC_CONFIG_HEADER(config.h)
@@ -65,17 +65,10 @@ int main(int argc, char **argv)
 #define size_t unsigned int
 #include <jpeglib.h>
       ],[
-#define FILE void
-#define size_t unsigned int
-#include <jpeglib.h>
-
 j_decompress_ptr srcinfo;
 void *test_ptr;
 
-int main() {
-    test_ptr=(void*)srcinfo->marker_list;
-    return 0;
-}
+test_ptr=(void*)srcinfo->marker_list;
       ],[
         pike_cv_marker_list=yes
       ],[
