@@ -905,6 +905,7 @@ void exit_mysql_res(void)
     free_program(mysql_result_program);
     mysql_result_program = NULL;
   }
+  free_svalue (&mpq_program);
 }
 
 #else
