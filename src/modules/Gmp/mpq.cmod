@@ -363,15 +363,109 @@ PIKECLASS mpq
       RETURN (FLOAT_TYPE) mpq_get_d(THISMPQ);
     }
 
-  /*! @decl string get_string()
-   */
-  PIKEFUN string get_string()
+  static void format_int_with_dot (mpz_t num, ptrdiff_t len, int prec)
+  /* Returns an unfinished string. */
+  {
+    struct pike_string *s;
+    /* one for the dot... */
+    prec++;
+    /* present 'num' and insert dot */
+    len += 3;
+    s = begin_shared_string(len);
+    if(len/2 > prec)
     {
-      push_string(low_get_mpz_digits(mpq_numref(THISMPQ),10));
-      push_constant_text("/");
-      push_string(low_get_mpz_digits(mpq_denref(THISMPQ),10));
-      f_add(3);
+      /* Shift the integer part forward to make room for the dot. */
+      mpz_get_str(s->str+1, 10, num);
+      /* Find NULL character */
+      len-=4;
+      if (len < 1) len = 1;
+      while(s->str[len]) len++;
+      MEMMOVE(s->str, s->str+1, len-prec);
+    }else{
+      /* Shift the fractional part backward to make room for the dot. */
+      mpz_get_str(s->str, 10, num);
+      /* Find NULL character */
+      len-=5;
+      if (len < 0) len = 0;
+      while(s->str[len]) len++;
+      MEMMOVE(s->str+len-prec+1,
+	      s->str+len-prec,
+	      prec+1);
+      len++;
     }
+    s->str[len-prec]='.';
+    push_string (end_and_resize_shared_string (s, len));
+  }
+
+  static void format_string (mpq_t mpq, int dec_fract)
+  {
+    if (dec_fract >= 1) {
+      mpz_t tmp;
+      mpz_t f;
+      size_t twos, fives;
+
+      if (!mpz_cmp_ui (mpq_denref (mpq), 1u)) {
+	push_string (low_get_mpz_digits (mpq_numref (mpq), 10));
+	if (dec_fract >= 2) return;
+	push_constant_text (".0");
+	f_add (2);
+	return;
+      }
+
+      /* If the denominator have other factors than 2 or 5 then the
+       * fractional part would never end. */
+      mpz_init_set (tmp, mpq_denref (mpq));
+      mpz_init_set_ui (f, 2u);
+      twos = mpz_remove (tmp, tmp, f);
+      mpz_set_ui (f, 5u);
+      fives = mpz_remove (tmp, tmp, f);
+      mpz_clear (f);
+
+      if (!mpz_cmp_ui (tmp, 1u)) {
+	/* The necessary precision is the same as the number of times
+	 * we have to multiply by 10 to get an integer. Since we
+	 * "consume" one factor 2 and one factor 5 every time, that
+	 * means we need the same number of 10's as the max of the 2's
+	 * and 5's. */
+	size_t prec = MAXIMUM (twos, fives);
+	mpz_ui_pow_ui (tmp, 10, prec);
+	mpz_mul (tmp, tmp, mpq_numref (mpq));
+	assert (mpz_divisible_p (tmp, mpq_denref (mpq)));
+	mpz_tdiv_q (tmp, tmp, mpq_denref (mpq));
+	format_int_with_dot (tmp, mpz_sizeinbase (tmp, 10), prec);
+	mpz_clear (tmp);
+	return;
+      }
+
+      mpz_clear (tmp);
+    }
+
+    push_string(low_get_mpz_digits(mpq_numref(mpq),10));
+    push_constant_text("/");
+    push_string(low_get_mpz_digits(mpq_denref(mpq),10));
+    f_add(3);
+  }
+
+  /*! @decl string get_string (void|int decimal_fraction)
+   *!
+   *! If @[decimal_fraction] >= 2 and the number can be accurately
+   *! represented as an integer then it's returned as a string
+   *! containing a decimal integer.
+   *!
+   *! Otherwise, if @[decimal_fraction] >= 1 and the number can be
+   *! accurately represented as decimal fraction, i.e. a decimal
+   *! number with a '.' somewhere, then it's returned as such. The
+   *! returned string always contains a '.' on this form, followed by
+   *! at least one digit.
+   *!
+   *! Otherwise, the number is returned as a string on the form
+   *! @expr{"numerator/denominator"@}, where both parts are decimal
+   *! integers, the numerator possibly preceded by a negation sign.
+   */
+  PIKEFUN string get_string (void|zero|int decimal_fraction)
+  {
+    format_string (THISMPQ, decimal_fraction);
+  }
 
   static int lookup(const char *name,
 		    struct mapping *m,
@@ -418,7 +512,7 @@ PIKECLASS mpq
 
 	case 'O':
 	  push_constant_text ("Gmp.mpq(");
-	  f_mpq_get_string(0);
+	  format_string (THISMPQ, 2);
 	  push_constant_text (")");
 	  f_add (3);
 	  return;
@@ -445,37 +539,8 @@ PIKECLASS mpq
 	  else {
 	    len = mpz_sizeinbase(tmp, 10);
 
-	    if (len > precision) {
-	      /* one for the dot... */
-	      precision++;
-	      /* present 'tmp' and insert dot */
-	      len += 3;
-	      s = begin_shared_string(len);
-	      if(len/2 > precision)
-	      {
-		/* Shift the integer part forward to make room for the dot. */
-		mpz_get_str(s->str+1, 10, tmp);
-		/* Find NULL character */
-		len-=4;
-		if (len < 1) len = 1;
-		while(s->str[len]) len++;
-		MEMMOVE(s->str, s->str+1, len-precision);
-	      }else{
-		/* Shift the fractional part backward to make room for
-		 * the dot. */
-		mpz_get_str(s->str, 10, tmp);
-		/* Find NULL character */
-		len-=5;
-		if (len < 0) len = 0;
-		while(s->str[len]) len++;
-		MEMMOVE(s->str+len-precision+1,
-			s->str+len-precision,
-			precision+1);
-		len++;
-	      }
-	      s->str[len-precision]='.';
-	      push_string(end_and_resize_shared_string(s, len));
-	    }
+	    if (len > precision)
+	      format_int_with_dot (tmp, len, precision);
 
 	    else {
 	      /* The precision is greater than the length, so start out
@@ -537,7 +602,7 @@ PIKECLASS mpq
 	  if(!strcmp(s->str, "string"))
 	  {
 	    free_string(s);
-	    f_mpq_get_string(0);
+	    format_string (THISMPQ, 2);
 	    return;
 	  }
 	  break;

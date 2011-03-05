@@ -103,10 +103,16 @@ cond_begin([[ master()->resolv("Gmp")->mpq ]])
   test_binop(66,+,11,77)
   test_binop(66,-,11,55)
 
+  test_eq((string) Gmp.mpq ("43215432562346.543662323333"),
+	  "43215432562346.543662323333");
+  test_eq((string) (Gmp.mpq ("43215432562346.543662323333") / 3),
+	  "14405144187448.847887441111");
+
   test_eq([[`+(1,1,1,Gmp.mpq(1),1,1)]],6)
   test_eq(-Gmp.mpq(17),-17)
   test_true(stringp((string)Gmp.mpq(17)))
-  test_eq((string)Gmp.mpq(17),"17/1")
+  test_eq((string)Gmp.mpq(17),"17")
+  test_eq((string)Gmp.mpq(1.25),"1.25")
   test_eq((int)Gmp.mpq(17),17)
   test_false(Gmp.mpq(0))
   test_true(Gmp.mpq(1))
