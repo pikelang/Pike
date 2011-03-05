@@ -797,20 +797,10 @@ Mysql.mysql_result big_typed_query (string query,
 				    void|string charset)
 //! Makes a typed SQL query.
 //!
-//! This function sends the SQL query @[query] to the Mysql-server.
-//!
-//! The types of the result fields depend on the corresponding SQL types.
-//! They are mapped as follows:
-//! @mixed
-//!   @type Sql.Null
-//!     The @tt{NULL@} value is returned as @[Sql.NULL].
-//!   @type int
-//!     Integer values are returned as @tt{int@} values.
-//!   @type float
-//!     Floating point values are returned as @tt{float@} values.
-//!   @type string
-//!     All other SQL field types are returned as @tt{string@} values.
-//! @endmixed
+//! This function sends the SQL query @[query] to the MySQL server and
+//! returns a result object in typed mode, which means that the types
+//! of the result fields depend on the corresponding SQL types. See
+//! the class docs for details.
 //!
 //! In all other respects, it behaves like @[big_query].
 //!
