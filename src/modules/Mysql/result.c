@@ -708,7 +708,7 @@ static void f_fetch_row(INT32 args)
       } else {
 	/* NULL */
 	if (PIKE_MYSQL_RES->typed_mode) {
-	  ref_push_object(get_val_null());
+	  push_object(get_val_null());
 	} else {
 	  push_undefined();
 	}
