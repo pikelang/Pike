@@ -821,7 +821,7 @@ test_true([[
   Process.system(RUNPIKE+" -e 'exit(1)'")
 #endif /* __NT__ */
 ]])
-test_any([[object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(2)"})); sleep(10); return p->wait()]],2)
+test_any([[object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(2)"})); sleep(2); return p->wait()]],2)
 test_eq([[
 #ifdef __NT__
   Process.popen(RUNPIKE+" -e \"write(\\\"test\\\");\"")
