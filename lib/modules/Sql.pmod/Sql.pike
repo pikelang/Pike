@@ -608,12 +608,16 @@ array(mapping(string:string)) query(object|string q,
 //!       result (eg @tt{INSERT@} or similar).
 //!   @endmixed
 //!
+//! @note
+//!   Typed mode is not supported by all sql databases. If not
+//!   supported, an error is thrown.
+//!
 //! @seealso
 //!   @[query], @[big_typed_query]
 array(mapping(string:mixed)) typed_query(object|string q, mixed ... extraargs)
 {
   if (!master_sql->big_typed_query)
-    return query(q, @extraargs); // FIXME: Throw error instead?
+    ERROR ("Typed mode not supported by the backend %O.\n", master_sql);
 
   if (sizeof(extraargs)) {
     mapping(string|int:mixed) bindings;
@@ -701,9 +705,8 @@ int|object big_query(object|string q, mixed ... extraargs)
 //! or similar).
 //!
 //! @note
-//!   This interface is not supported by all sql databases.
-//!   If not supported, the result will currently be the same
-//!   as if @[big_query()] would be called.
+//!   Typed mode is not supported by all sql databases. If not
+//!   supported, an error is thrown.
 //!
 //! @note
 //! Despite the name, this function is not only useful for "big"
@@ -714,7 +717,8 @@ int|object big_query(object|string q, mixed ... extraargs)
 //!   @[query], @[typed_query], @[big_query], @[streaming_query]
 int|object big_typed_query(object|string q, mixed ... extraargs)
 {
-  if (!master_sql->big_typed_query) return big_query(q, @extraargs);
+  if (!master_sql->big_typed_query)
+    ERROR ("Typed mode not supported by the backend %O.\n", master_sql);
 
   mapping(string|int:mixed) bindings;
 
@@ -795,8 +799,7 @@ int|object streaming_query(object|string q, mixed ... extraargs)
 //! @note
 //!   Neither streaming operation nor typed results are supported
 //!   by all sql databases. If not supported, this function will
-//!   fall back to calling @[big_typed_query()] (which in turn
-//!   may fall back even further).
+//!   fall back to calling @[big_typed_query()].
 //!
 //! @seealso
 //!   @[streaming_query], @[big_typed_query]
