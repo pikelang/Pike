@@ -1,5 +1,5 @@
 /*
- * $Id: Sql.pike,v 1.100 2009/11/18 10:20:22 grubba Exp $
+ * $Id$
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -545,6 +545,50 @@ array(mapping(string:string)) query(object|string q,
   if (master_sql->query)
     return master_sql->query(q);
   return res_obj_to_array(master_sql->big_query(q));
+}
+
+//! Sends an SQL query synchronously to the underlying SQL-server and
+//! returns the results in typed mode.
+//!
+//! For the arguments, please see the @[query()] function.
+//!
+//! @returns
+//!   Returns one of the following on success:
+//!   @mixed
+//!     @type array(mapping(string:mixed))
+//!       The result as an array of mappings indexed on the name of
+//!       the columns. The values have the appropriate native pike
+//!       types where they fit the SQL data types.
+//!     @type zero
+//!       The value @expr{0@} (zero) if the query didn't return any
+//!       result (eg @tt{INSERT@} or similar).
+//!   @endmixed
+//!
+//! @seealso
+//!   @[query], @[big_typed_query]
+array(mapping(string:mixed)) typed_query(object|string q, mixed ... extraargs)
+{
+  if (!master_sql->big_typed_query)
+    return query(q, @extraargs); // FIXME: Throw error instead?
+
+  if (sizeof(extraargs)) {
+    mapping(string|int:mixed) bindings;
+
+    if (mappingp(extraargs[0]))
+      bindings=extraargs[0];
+    else
+      [q,bindings]=handle_extraargs(q,extraargs);
+
+    if(bindings) {
+      if(master_sql->typed_query)
+	return master_sql->typed_query(q, bindings);
+      return res_obj_to_array(master_sql->big_typed_query(q, bindings));
+    }
+  }
+
+  if (master_sql->typed_query)
+    return master_sql->typed_query(q);
+  return res_obj_to_array(master_sql->big_typed_query(q));
 }
 
 //! Send an SQL query to the underlying SQL-server.
