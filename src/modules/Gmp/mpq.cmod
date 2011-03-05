@@ -431,75 +431,72 @@ PIKECLASS mpq
 	{
 	  mpz_t tmp;
 	  ptrdiff_t len;
-	  base=10;
 
 	  mpz_init(tmp);
 	  mpz_ui_pow_ui(tmp, 10, precision);
 	  mpz_mul(tmp, tmp, mpq_numref(THISMPQ));
 	  mpz_tdiv_q(tmp, tmp, mpq_denref(THISMPQ));
 
-	  len = mpz_sizeinbase(tmp, base);
-
-	  if (!precision) {
+	  if (!precision)
 	    /* No dot if the precision is zero. This is consistent
 	     * with normal printf behavior. */
-	    s = begin_shared_string (len + 2);
-	    mpz_get_str (s->str, base, tmp);
-	    len--;
-	    while (s->str[len]) len++;
-	    push_string (end_and_resize_shared_string (s, len));
-	  }
-
-	  else if (len > precision) {
-	    /* one for the dot... */
-	    precision++;
-	    /* present 'tmp' and insert dot */
-	    len += 3;
-	    s = begin_shared_string(len);
-	    if(len/2 > precision)
-	    {
-	      /* Shift the integer part forward to make room for the dot. */
-	      mpz_get_str(s->str+1, base, tmp);
-	      /* Find NULL character */
-	      len-=4;
-	      if (len < 1) len = 1;
-	      while(s->str[len]) len++;
-	      MEMMOVE(s->str, s->str+1, len-precision);
-	    }else{
-	      /* Shift the fractional part backward to make room for the dot. */
-	      mpz_get_str(s->str, base, tmp);
-	      /* Find NULL character */
-	      len-=5;
-	      if (len < 0) len = 0;
-	      while(s->str[len]) len++;
-	      MEMMOVE(s->str+len-precision+1,
-		      s->str+len-precision,
-		      precision+1);
-	      len++;
-	    }
-	    s->str[len-precision]='.';
-	    push_string(end_and_resize_shared_string(s, len));
-	  }
+	    push_string (low_get_mpz_digits (tmp, 10));
 
 	  else {
-	    /* The precision is greater than the length, so start out
-	     * with a string of zeroes. */
-	    char *p;
-	    s = begin_shared_string (precision + 4);
-	    p = s->str;
-	    if (mpz_sgn (tmp) < 0) {
-	      *p++ = '-';
-	      mpz_neg (tmp, tmp);
+	    len = mpz_sizeinbase(tmp, 10);
+
+	    if (len > precision) {
+	      /* one for the dot... */
+	      precision++;
+	      /* present 'tmp' and insert dot */
+	      len += 3;
+	      s = begin_shared_string(len);
+	      if(len/2 > precision)
+	      {
+		/* Shift the integer part forward to make room for the dot. */
+		mpz_get_str(s->str+1, 10, tmp);
+		/* Find NULL character */
+		len-=4;
+		if (len < 1) len = 1;
+		while(s->str[len]) len++;
+		MEMMOVE(s->str, s->str+1, len-precision);
+	      }else{
+		/* Shift the fractional part backward to make room for
+		 * the dot. */
+		mpz_get_str(s->str, 10, tmp);
+		/* Find NULL character */
+		len-=5;
+		if (len < 0) len = 0;
+		while(s->str[len]) len++;
+		MEMMOVE(s->str+len-precision+1,
+			s->str+len-precision,
+			precision+1);
+		len++;
+	      }
+	      s->str[len-precision]='.';
+	      push_string(end_and_resize_shared_string(s, len));
 	    }
-	    *p++ = '0';
-	    *p++ = '.';
-	    for (; precision > len; precision--) *p++ = '0';
-	    mpz_get_str (p, base, tmp);
-	    if (!p[len - 1]) {
-	      MEMMOVE (p + 1, p, len - 1);
-	      *p = '0';
+
+	    else {
+	      /* The precision is greater than the length, so start out
+	       * with a string of zeroes. */
+	      char *p;
+	      s = begin_shared_string (precision + 4);
+	      p = s->str;
+	      if (mpz_sgn (tmp) < 0) {
+		*p++ = '-';
+		mpz_neg (tmp, tmp);
+	      }
+	      *p++ = '0';
+	      *p++ = '.';
+	      for (; precision > len; precision--) *p++ = '0';
+	      mpz_get_str (p, 10, tmp);
+	      if (!p[len - 1]) {
+		MEMMOVE (p + 1, p, len - 1);
+		*p = '0';
+	      }
+	      push_string (end_and_resize_shared_string (s, p - s->str + len));
 	    }
-	    push_string (end_and_resize_shared_string (s, p - s->str + len));
 	  }
 
 	  mpz_clear(tmp);
