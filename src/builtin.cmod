@@ -3679,7 +3679,7 @@ PIKEFUN function(mixed:void) _get_setter(object o, string s)
 /*! @endclass
  */
 
-/*! @class SqlNull
+/*! @class Null
  *!
  *! This class is used to implement the low-level aspects of @[Val.Null].
  *!
@@ -3696,12 +3696,20 @@ PIKEFUN function(mixed:void) _get_setter(object o, string s)
  *! @seealso
  *!   @[Val.Null], @[Val.null]
  */
-PIKECLASS SqlNull
+PIKECLASS Null
 {
   EXTRA {
+    /*! @decl constant is_val_null = 1
+     *!
+     *! Nonzero recognition constant.
+     */
+    add_integer_constant("is_val_null", 1, 0);
+
     /*! @decl constant is_sql_null = 1
      *!
      *! SQL Null marker.
+     *!
+     *! @deprecated is_val_null
      */
     add_integer_constant("is_sql_null", 1, 0);
   }
@@ -3717,7 +3725,7 @@ PIKECLASS SqlNull
   {
     pop_n_elems(args);
     if (fmt == 'O') {
-      push_constant_text("Sql.NULL");
+      push_constant_text("Val.null");
     } else {
       push_undefined();
     }
@@ -3738,7 +3746,7 @@ PIKECLASS SqlNull
       push_int(0);
       return;
     }
-    push_constant_text("is_sql_null");
+    push_constant_text("is_val_null");
     o_index();
   }
 
@@ -4891,7 +4899,7 @@ GET_VAL (null)
  * ought to be fixed to use dynamic lookup of them instead. */
 PMOD_EXPORT struct program *get_sql_null_prog(void)
 {
-  return SqlNull_program;
+  return Null_program;
 }
 
 void init_builtin(void)

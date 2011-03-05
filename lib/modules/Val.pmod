@@ -96,20 +96,13 @@ False false = False();
 //! @[Protocols.JSON] uses these objects to represent the JSON
 //! literals @expr{true@} and @expr{false@}.
 
-class Null
+//! @class Null
 //! Type for the @[Val.null] object. Do not create more instances of
 //! this - use @[Val.null] instead.
-{
-  inherit Builtin.SqlNull;
 
-  constant is_val_null = 1;
-  //! Nonzero recognition constant.
+constant Null = Builtin.Null;
 
-  protected string _sprintf (int flag)
-  {
-    return flag == 'O' && "Val.null";
-  }
-}
+//! @endclass
 
 Null null = Null();
 //! Object that represents a null value.

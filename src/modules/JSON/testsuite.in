@@ -70,8 +70,8 @@ return Standards.JSON.encode(m);
 
 test_dec_enc_canon([["{\"a\":[{\"b\":2}]}"]], ([ "a":({(["b":2])}) ]))
 
-test_enc(Sql.NULL, "null")
-test_eval_error( Standards.JSON.encode(Sql.Null) ) dnl FIXME?
+test_enc(Val.null, "null")
+test_eval_error( Standards.JSON.encode(Val.Null) ) dnl FIXME?
 					dnl No, we can't encode types. /mast
 test_any([[
 class X { string encode_json() { return "smallpox"; } };

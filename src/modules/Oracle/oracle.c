@@ -2616,9 +2616,9 @@ static void dbnull_eq(INT32 args)
   push_constant_text("is_oracle_null");
   o_index();
   if ((Pike_sp[-1].type != T_INT) || !Pike_sp[-1].u.integer) {
-    /* No - is it the generic Sql.NULL? */
+    /* No - is it the generic Val.null? */
     pop_stack();
-    push_constant_text("is_sql_null");
+    push_constant_text("is_val_null");
     o_index();
     return;
   }

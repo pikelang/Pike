@@ -25,7 +25,7 @@ Val.Null `->NULL() {return Val->null;}
 //! @deprecated Val.Null
 //!
 //! @seealso
-//!   @[Val.Null], @[Val.null], @[Sql.NULL]
+//!   @[Val.Null], @[Val.null]
 
 //! @endclass
 
