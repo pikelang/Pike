@@ -4,8 +4,54 @@
  * Glue for the Mysql-module
  */
 
-//! Implements the glue needed to access the Mysql-module from the generic
-//! SQL module.
+//! This class encapsulates a connection to a MySQL server, and
+//! implements the glue needed to access the Mysql module from the
+//! generic SQL module.
+//!
+//! @section Typed mode
+//!
+//! When query results are returned in typed mode, the MySQL data
+//! types are represented like this:
+//!
+//! @dl
+//! @item The NULL value
+//!   Returned as @[Val.null].
+//!
+//! @item BIT, TINYINT, BOOL, SMALLINT, MEDIUMINT, INT, BIGINT
+//!   Returned as pike integers.
+//!
+//! @item FLOAT, DOUBLE
+//!   Returned as pike floats.
+//!
+//! @item DECIMAL
+//!   Returned as pike integers for fields that are declared to
+//!   contain zero decimals, otherwise returned as @[Gmp.mpq] objects.
+//!
+//! @item DATE, DATETIME, TIME, YEAR
+//!   Returned as strings in their display representation (see the
+//!   MySQL manual).
+//!
+//!   @[Calendar] objects are not used partly because they always
+//!   represent a specific point or range in time, which these MySQL
+//!   types do not.
+//!
+//! @item TIMESTAMP
+//!   Also returned as strings in the display representation.
+//!
+//!   The reason is that it's both more efficient and more robust (wrt
+//!   time zone interpretations) to convert these to unix timestamps
+//!   on the MySQL side rather than in the client glue. I.e. use the
+//!   @tt{UNIX_TIMESTAMP@} function in the queries to retrieve them as
+//!   unix timestamps on integer form.
+//!
+//! @item String types
+//!   All string types are returned as pike strings. The MySQL glue
+//!   can handle charset conversions for text strings - see
+//!   @[set_charset] and @[set_unicode_decode_mode].
+//!
+//! @enddl
+//!
+//! @section
 
 #pike __REAL_VERSION__
 
