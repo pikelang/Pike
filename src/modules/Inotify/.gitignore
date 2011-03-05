@@ -10,5 +10,5 @@
 /stamp-h.in
 /testsuite
 
-/vcdiff.c
-/vcdiff.cmod.compiled
+/inotify.c
+/inotify.cmod.compiled
