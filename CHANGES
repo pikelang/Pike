@@ -7,11 +7,31 @@ Extensions and New Functions
 o Added module Search. 
   FIXME: Needs a couple of paragraphs of description.
 
+o Typed query result support in Sql.Sql and in the MySQL module.
+
+  Traditionally the SQL glue has returned all types of data as
+  formatted strings with their display representations. Now there are
+  new so-called "typed" variants of the query functions (typed_query,
+  big_typed_query, and streaming_typed_query in the Sql.Sql class)
+  that instead return the data as the appropriate pike native types,
+  e.g. pike integers for SQL integers, pike floats for SQL floats,
+  etc.
+
+  This requires support by the DB server specific backends, which is
+  currently limited to the MySQL glue.
+
 o has_prefix now works on objects.
 
 o Standards.JSON
 
   New module for encoding and decoding JSON data. Implemented in C.
+
+o Val
+
+  New module to contain some global special objects that are shared
+  between other modules. There is e.g. a Val.null object which is used
+  both by the Sql module to represent SQL NULLs in typed mode, and by
+  Standards.JSON to represent the null value.
 
 o Protocols.HTTP.Session will no longer override an existing
   content-type header in async_do_method_url.
@@ -44,7 +64,7 @@ o Modules/programs that have the constant "dont_dump_program" will not
 o Added Thread.Queue.peek_array.
 
 o Fixed stack overrun bug in Nettle.CBC and Nettle.Proxy. This is not
-  belived to have been a security issue.
+  believed to have been a security issue.
 
 o Added System.getloadavg() on platforms that support the getloadavg() call.
 
