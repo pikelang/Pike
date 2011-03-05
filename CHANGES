@@ -4,8 +4,16 @@ Changes since Pike 7.8.352 (third 7.8 release):
 Extensions and New Functions
 ----------------------------
 
-o Added module Search. 
-  FIXME: Needs a couple of paragraphs of description.
+o Added module Search.
+
+  This module implements a free text search database. It needs some
+  indexed storage, and there is a storage backend for use with MySQL.
+  There is support for indexers with filters for different document
+  types. The query support includes metadata and date range searches.
+
+  It is the core of the search functionality that is used in the
+  commercial Roxen products, so it has been in production use for
+  quite some time already.
 
 o Typed query result support in Sql.Sql and in the MySQL module.
 
