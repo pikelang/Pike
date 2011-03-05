@@ -111,6 +111,8 @@
 
 struct program *mysql_result_program = NULL;
 
+static struct svalue mpq_program = SVALUE_INIT_FREE;
+
 /*
  * Functions
  */
@@ -637,10 +639,56 @@ static void f_fetch_row(INT32 args)
 	  case FIELD_TYPE_DOUBLE:
 	    push_float(atof(row[i]));
 	    break;
+
 	  case FIELD_TYPE_DECIMAL:
 	  case FIELD_TYPE_NEWDECIMAL:
-	    /* Fixed-point number. */
-	    /* FIXME: Convert to Gmp.mpr? */
+	    if (!field->decimals) {
+#ifdef AUTO_BIGNUM
+	      if (
+#ifdef HAVE_MYSQL_FETCH_LENGTHS
+		row_lengths[i]
+#else
+		strlen(row[i])
+#endif
+		>= 10
+	      ) {
+#ifdef HAVE_MYSQL_FETCH_LENGTHS
+		push_string(make_shared_binary_string(row[i], row_lengths[i]));
+#else
+		push_text(row[i]);
+#endif
+		convert_stack_top_string_to_inumber(10);
+		break;
+	      }
+#endif
+	      push_int(STRTOL(row[i], 0, 10));
+	      break;
+	    }
+
+	    /* Fixed-point number with fraction part. Make an mpq. */
+
+	    if (mpq_program.type == PIKE_T_FREE) {
+	      push_text ("Gmp.mpq");
+	      SAFE_APPLY_MASTER ("resolv", 1);
+	      if (Pike_sp[-1].type == T_PROGRAM)
+		move_svalue (&mpq_program, --Pike_sp);
+	      else {
+		pop_stack();
+		mpq_program.type = T_INT;
+	      }
+	    }
+
+	    if (mpq_program.type = T_PROGRAM) {
+#ifdef HAVE_MYSQL_FETCH_LENGTHS
+	      push_string(make_shared_binary_string(row[i], row_lengths[i]));
+#else
+	      push_text(row[i]);
+#endif
+	      apply_svalue (&mpq_program, 1);
+	      break;
+	    }
+	    /* FALL_THROUGH */
+
 	  default:
 #ifdef HAVE_MYSQL_FETCH_LENGTHS
 	    push_string(make_shared_binary_string(row[i], row_lengths[i]));
@@ -857,6 +905,7 @@ void exit_mysql_res(void)
     free_program(mysql_result_program);
     mysql_result_program = NULL;
   }
+  free_svalue (&mpq_program);
 }
 
 #else
