@@ -8,11 +8,48 @@
 
 #pike __REAL_VERSION__
 
-//! Implements those functions that need not be present in all SQL-modules.
+//! This class encapsulates a connection to an SQL server. It is a
+//! generic interface on top of the DB server specific
+//! implementations. That doesn't mean that there aren't plenty of
+//! server specific characteristics that still shine through, though.
+//!
+//! This class also serves as an interface guideline for the DB server
+//! specific connection classes.
+//!
+//! @section Untyped and typed mode
+//!
+//! The query results are returned in different ways depending on the
+//! query functions used: The @tt{..typed_query@} functions select
+//! typed mode, while the other query functions uses the older untyped
+//! mode.
+//!
+//! In untyped mode, all values except SQL NULL are returned as
+//! strings in their display representation, and SQL NULL is returned
+//! as zero.
+//!
+//! In typed mode, values are returned in pike native form where it
+//! works well. That means at least that SQL integer fields are
+//! returned as pike integers, floats as floats, SQL NULL as
+//! @[Val.null], and of course strings still as strings. The
+//! representation of other SQL types depend on the capabilities of
+//! the server specific backends. It's also possible that floats in
+//! some cases are represented in other ways if too much precision is
+//! lost in the conversion to pike floats.
+//!
+//! @endsection
+//!
+//! @note
+//! For historical reasons, there may be server specific backends that
+//! operate differently from what is described here, e.g. some that
+//! return a bit of typed data in untyped mode.
+//!
+//! @note
+//! Typed operation was not supported at all prior to Pike 7.8.363,
+//! and may not be supported for all databases.
 
 #define ERROR(X ...)	predef::error(X)
 
-//! Object to use for the actual SQL-queries.
+//! Server specific connection object used for the actual SQL queries.
 object master_sql;
 
 //! Convert all field names in mappings to lower_case.
@@ -397,11 +434,15 @@ void select_db(string db)
 }
 
 //! Compiles the query (if possible). Otherwise returns it as is.
-//! The resulting object can be used multiple times in query() and
-//! big_query().
+//! The resulting object can be used multiple times to the query
+//! functions.
 //!
 //! @param q
 //!   SQL-query to compile.
+//!
+//! @seealso
+//! @[query], @[typed_query], @[big_query], @[big_typed_query],
+//! @[streaming_query], @[streaming_typed_query]
 string|object compile_query(string q)
 {
   if (functionp(master_sql->compile_query)) {
@@ -439,7 +480,7 @@ protected ZeroWrapper zero = ZeroWrapper();
 //! Handle @[sprintf]-based quoted arguments
 //!
 //! @param query
-//!   The query as sent to @[query()] or @[big_query()].
+//!   The query as sent to one of the query functions.
 //!
 //! @param extraargs
 //!   The arguments following the query.
@@ -476,7 +517,8 @@ protected array(string|mapping(string|int:mixed))
   return ({sprintf(query,@args), b});
 }
 
-//!   Send an SQL query to the underlying SQL-server.
+//! Sends an SQL query synchronously to the underlying SQL-server and
+//! returns the results in untyped mode.
 //!
 //! @param q
 //!   Query to send to the SQL-server. This can either be a string with the
@@ -512,8 +554,9 @@ protected array(string|mapping(string|int:mixed))
 //!   Returns one of the following on success:
 //!   @mixed
 //!     @type array(mapping(string:string))
-//!       The result as an array of mappings indexed on the name
-//!       of the columns
+//!       The result as an array of mappings indexed on the name of
+//!       the columns. The values are either strings with the display
+//!       representations or zero for the SQL NULL value.
 //!     @type zero
 //!       The value @expr{0@} (zero) if the query didn't return any
 //!       result (eg @tt{INSERT@} or similar).
@@ -523,7 +566,7 @@ protected array(string|mapping(string|int:mixed))
 //!   Throws an exception if the query fails.
 //!
 //! @seealso
-//!   @[big_query]
+//!   @[typed_query], @[big_query], @[streaming_query]
 array(mapping(string:string)) query(object|string q,
 				    mixed ... extraargs)
 {
@@ -558,7 +601,8 @@ array(mapping(string:string)) query(object|string q,
 //!     @type array(mapping(string:mixed))
 //!       The result as an array of mappings indexed on the name of
 //!       the columns. The values have the appropriate native pike
-//!       types where they fit the SQL data types.
+//!       types where they fit the SQL data types - see the class doc
+//!       for details on typed mode.
 //!     @type zero
 //!       The value @expr{0@} (zero) if the query didn't return any
 //!       result (eg @tt{INSERT@} or similar).
@@ -591,17 +635,22 @@ array(mapping(string:mixed)) typed_query(object|string q, mixed ... extraargs)
   return res_obj_to_array(master_sql->big_typed_query(q));
 }
 
-//! Send an SQL query to the underlying SQL-server.
+//! Sends an SQL query synchronously to the underlying SQL-server and
+//! returns the results in untyped mode.
 //!
 //! For the arguments, please see the @[query()] function.
 //!
-//! Send an SQL query to the underlying SQL-server. The result is
-//! returned as an Sql.sql_result object. This allows for having some
-//! more info about the result as well as processing the result in a
-//! streaming fashion, although the result itself wasn't obtained
-//! streamingly from the server. Returns @expr{0@} if the query didn't
-//! return any result (e.g. @tt{INSERT@} or similar). For the other
-//! arguments, they are the same as for the @[query()] function.
+//! The result is returned as an @[Sql.sql_result] object in untyped
+//! mode. This allows for having some more info about the result as
+//! well as processing the result in a streaming fashion, although the
+//! result itself wasn't obtained streamingly from the server. Returns
+//! @expr{0@} if the query didn't return any result (e.g. @tt{INSERT@}
+//! or similar).
+//!
+//! @note
+//! Despite the name, this function is not only useful for "big"
+//! queries. It typically has less overhead than @[query] also for
+//! ones that return only a few rows.
 //!
 //! @seealso
 //!   @[query], @[streaming_query]
@@ -639,28 +688,30 @@ int|object big_query(object|string q, mixed ... extraargs)
   return 0;
 }
 
-//! Send an SQL query to the underlying SQL-server.
+//! Sends an SQL query synchronously to the underlying SQL-server and
+//! returns the results in typed mode.
 //!
 //! For the arguments, please see the @[query()] function.
 //!
-//! The returned @[Sql.sql_result] object (if any) will be in
-//! @tt{TYPED@}-mode.
+//! The result is returned as an @[Sql.sql_result] object in typed
+//! mode. This allows for having some more info about the result as
+//! well as processing the result in a streaming fashion, although the
+//! result itself wasn't obtained streamingly from the server. Returns
+//! @expr{0@} if the query didn't return any result (e.g. @tt{INSERT@}
+//! or similar).
 //!
 //! @note
 //!   This interface is not supported by all sql databases.
 //!   If not supported, the result will currently be the same
 //!   as if @[big_query()] would be called.
 //!
-//! @returns
-//!   Returns @expr{0@} if the query didn't return any result
-//!   (e.g. @tt{INSERT@} or similar).
-//!   The result (if any) is returned as an @[Sql.sql_result] object.
-//!   This allows for having some more info about the result as well
-//!   as processing the result in a streaming fashion, although the
-//!   result itself wasn't obtained streamingly from the server.
+//! @note
+//! Despite the name, this function is not only useful for "big"
+//! queries. It typically has less overhead than @[typed_query] also
+//! for ones that return only a few rows.
 //!
 //! @seealso
-//!   @[query], @[big_query], @[streaming_query]
+//!   @[query], @[typed_query], @[big_query], @[streaming_query]
 int|object big_typed_query(object|string q, mixed ... extraargs)
 {
   if (!master_sql->big_typed_query) return big_query(q, @extraargs);
@@ -686,12 +737,17 @@ int|object big_typed_query(object|string q, mixed ... extraargs)
   return 0;
 }
 
-//! Send an SQL query to the underlying SQL-server. The result is
-//! returned as a streaming Sql.sql_result object. This allows for
-//! having results larger than the available memory, and returning
-//! some more info about the result. Returns @expr{0@} if the query
-//! didn't return any result (e.g. INSERT or similar). For the other
-//! arguments, they are the same as for the @[query()] function.
+//! Sends an SQL query synchronously to the underlying SQL-server and
+//! returns the results streaming in untyped mode.
+//!
+//! For the arguments, please see the @[query()] function.
+//!
+//! The result is returned as a streaming @[Sql.sql_result] object in
+//! untyped mode. This allows for having results larger than the
+//! available memory, and returning some more info about the result.
+//! Returns @expr{0@} if the query didn't return any result (e.g.
+//! INSERT or similar). For the other arguments, they are the same as
+//! for the @[query()] function.
 //!
 //! @note
 //!   Streaming operation is not supported by all sql databases.
@@ -699,7 +755,7 @@ int|object big_typed_query(object|string q, mixed ... extraargs)
 //!   @[big_query()].
 //!
 //! @seealso
-//!   @[big_query]
+//!   @[big_query], @[streaming_typed_query]
 int|object streaming_query(object|string q, mixed ... extraargs)
 {
   if(!master_sql->streaming_query) return big_query(q, @extraargs);
@@ -725,12 +781,16 @@ int|object streaming_query(object|string q, mixed ... extraargs)
   return 0;
 }
 
-//! Send an SQL query to the underlying SQL-server. The result is
-//! returned as a streaming Sql.sql_result object. This allows for
-//! having results larger than the available memory, and returning
-//! some more info about the result. Returns @expr{0@} if the query
-//! didn't return any result (e.g. INSERT or similar). For the other
-//! arguments, they are the same as for the @[query()] function.
+//! Sends an SQL query synchronously to the underlying SQL-server and
+//! returns the results streaming in typed mode.
+//!
+//! For the arguments, please see the @[query()] function.
+//!
+//! The result is returned as a streaming @[Sql.sql_result] object in
+//! typed mode. This allows for having results larger than the
+//! available memory, and returning some more info about the result.
+//! Returns @expr{0@} if the query didn't return any result (e.g.
+//! INSERT or similar).
 //!
 //! @note
 //!   Neither streaming operation nor typed results are supported
@@ -739,7 +799,7 @@ int|object streaming_query(object|string q, mixed ... extraargs)
 //!   may fall back even further).
 //!
 //! @seealso
-//!   @[big_query]
+//!   @[streaming_query], @[big_typed_query]
 int|object streaming_typed_query(object|string q, mixed ... extraargs)
 {
   if(!master_sql->streaming_typed_query) return big_typed_query(q, @extraargs);
