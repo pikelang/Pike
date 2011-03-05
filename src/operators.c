@@ -1854,6 +1854,11 @@ static node *optimize_eq(node *n)
     if(!first_arg || !second_arg)
       Pike_fatal("Couldn't find argument!\n");
 #endif
+
+#if 0
+    /* Disabled these - boolean falsehood is not the same thing as
+     * equality with the integer 0. */
+
     if(node_is_false(*first_arg) && !node_may_overload(*second_arg,LFUN_EQ))
     {
       ret=*second_arg;
@@ -1867,6 +1872,7 @@ static node *optimize_eq(node *n)
       ADD_NODE_REF(*first_arg);
       return mkopernode("`!",ret,0);
     }
+#endif
 
     if (((*second_arg)->token == F_CONSTANT) &&
 	((*second_arg)->u.sval.type == T_STRING) &&
