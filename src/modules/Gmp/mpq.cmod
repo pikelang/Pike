@@ -373,6 +373,28 @@ PIKECLASS mpq
       f_add(3);
     }
 
+  /*! @decl int num()
+   *!
+   *! Returns the numerator.
+   */
+  PIKEFUN int num()
+  {
+    push_object (fast_clone_object (bignum_program));
+    mpz_set (OBTOMPZ (sp[-1].u.object), mpq_numref (THISMPQ));
+    reduce_stack_top_bignum();
+  }
+
+  /*! @decl int den()
+   *!
+   *! Returns the denominator. It is always positive.
+   */
+  PIKEFUN int den()
+  {
+    push_object (fast_clone_object (bignum_program));
+    mpz_set (OBTOMPZ (sp[-1].u.object), mpq_denref (THISMPQ));
+    reduce_stack_top_bignum();
+  }
+
   static int lookup(const char *name,
 		    struct mapping *m,
 		    char *ind,
