@@ -169,6 +169,8 @@ NUMBER [$1a] BRANCH_WHEN_NON_ZERO: BRANCH($2a)
 // These optimizations are now handled in optimize_eq
 // CONST0 BRANCH_WHEN_EQ: BRANCH_WHEN_ZERO($2a)
 // CONST0 BRANCH_WHEN_NE: BRANCH_WHEN_NON_ZERO($2a)
+//
+// This one is not safe.
 // CONST0 EQ: NOT
 
 EQ BRANCH_WHEN_NON_ZERO: BRANCH_WHEN_EQ ($2a)
