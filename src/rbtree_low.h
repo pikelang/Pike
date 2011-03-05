@@ -572,4 +572,4 @@ void debug_check_rbstack (struct rb_node_hdr *root, struct rbstack_ptr rbstack);
     }									\
   } while (0)
 
-#endif	/* RBTREE_H */
+#endif	/* RBTREE_LOW_H */
