@@ -3838,7 +3838,7 @@ void _main(array(string) orig_argv)
      case "info":
        write("Software......Pike\n"
 	     "Version......."+version()+"\n"
-	     "WWW...........http://pike.ida.liu.se/\n"
+	     "WWW...........http://pike.lysator.liu.se/\n"
 	     "\n"
 	     "pike binary..."+_pike_file_name+"\n"+
 	      format_paths() + "\n"

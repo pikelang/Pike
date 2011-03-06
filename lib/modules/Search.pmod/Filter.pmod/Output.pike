@@ -17,7 +17,7 @@ mapping(string:string) fields=([]);
 int document_size;
 
 //! Maps un-normalized URLs to raw text, e.g.
-//! @expr{ ([ "http://pike.ida.liu.se": "Pike language" ]) @}.
+//! @expr{ ([ "http://pike.lysator.liu.se": "Pike language" ]) @}.
 mapping(string:string) uri_anchors=([]);
 
 //! All links collected from the document.

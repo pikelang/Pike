@@ -23,7 +23,7 @@
 //! int main()
 //! {
 //!    o->set_callbacks(ok, fail);
-//!    o->async_request("pike.ida.liu.se", 80, "HEAD / HTTP/1.0");
+//!    o->async_request("pike.lysator.liu.se", 80, "HEAD / HTTP/1.0");
 //!    return -1;
 //! }
 

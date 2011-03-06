@@ -33,7 +33,7 @@
 //! @enddl
 
 // Author:  Johan Schön.
-// $Id: Crawler.pmod,v 1.28 2009/09/14 08:06:39 mast Exp $
+// $Id$
 
 #define CRAWLER_DEBUG
 #ifdef CRAWLER_DEBUG
@@ -228,7 +228,7 @@ class Rule
 //! @param pattern
 //!  a glob pattern that the rule will match against.
 //! @example
-//! GlobRule("http://pike.ida.liu.se/*.xml");
+//! GlobRule("http://pike.lysator.liu.se/*.xml");
 class GlobRule(string pattern)
 {
   inherit Rule;  

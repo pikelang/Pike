@@ -235,12 +235,10 @@ testfont binary
 /lib/modules/Tools.pmod/Standalone.pmod/process_files.pike foreign_ident
 /lib/modules/Tools.pmod/Standalone.pmod/rsif.pike foreign_ident
 /lib/modules/Tools.pmod/Standalone.pmod/rsqld.pike foreign_ident
-/lib/modules/Web.pmod/Crawler.pmod foreign_ident
 /lib/modules/Web.pmod/OWL.pike foreign_ident
 /lib/modules/Web.pmod/RDF.pike foreign_ident
 /lib/modules/Web.pmod/RDFS.pike foreign_ident
 /lib/modules/Web.pmod/RSS.pmod foreign_ident
-/lib/modules/Web.pmod/testsuite.in foreign_ident
 /lib/modules/Yabu.pmod/module.pmod foreign_ident
 /lib/modules/Yabu.pmod/testsuite.in foreign_ident
 /lib/modules/_Image.pmod/Dims.pmod foreign_ident

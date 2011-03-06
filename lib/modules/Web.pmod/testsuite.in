@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.10 2004/05/02 18:24:04 nilsson Exp $"]]);
+test_true([["$Id$"]]);
 
 
 // - Web.RDF
@@ -14,7 +14,7 @@ test_any_equal([[
 		    r->URIResource("http://www.example.org/terms/creation-date"),
 		    y );
   r->add_statement( y,
-		    r->URIResource("http://pike.ida.liu.se/terms/ruppar"),
+		    r->URIResource("http://pike.lysator.liu.se/terms/ruppar"),
 		    r->LiteralResource("August 16, 1999") );
   r->add_statement( x,
 		    r->URIResource("http://www.example.org/terms/language"),
@@ -28,7 +28,7 @@ test_any_equal([[
     "RESOURCE <http://www.example.org/terms/language> \"English\" .",
     "RESOURCE <http://www.example.org/terms/creation-date> RESOURCE .",
     "<http://www.example.org/index.html> <http://purl.org/dc/elements/1.1/creator> RESOURCE .",
-    "RESOURCE <http://pike.ida.liu.se/terms/ruppar> \"August 16, 1999\" ."
+    "RESOURCE <http://pike.lysator.liu.se/terms/ruppar> \"August 16, 1999\" ."
 >))
 
 test_do([[ add_constant("my_rdf", Web.RDF()); ]])

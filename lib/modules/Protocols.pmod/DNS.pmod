@@ -269,8 +269,8 @@ class protocol
 //!  @[Protocols.DNS.client.do_sync_query]
 //!
 //! @example
-//! // generate a query PDU for a address lookup on the hostname pike.ida.liu.se
-//! string q=Protocols.DNS.protocol()->mkquery("pike.ida.liu.se", Protocols.DNS.C_IN, Protocols.DNS.T_A);
+//! // generate a query PDU for a address lookup on the hostname pike.lysator.liu.se
+//! string q=Protocols.DNS.protocol()->mkquery("pike.lysator.liu.se", Protocols.DNS.C_IN, Protocols.DNS.T_A);
   string mkquery(string|mapping dnameorquery, int|void cl, int|void type)
   {
     if(mappingp(dnameorquery))
@@ -1054,7 +1054,7 @@ class client
 //!   @code
 //!     // Perform a hostname lookup, results stored in r->an
 //!     object d=Protocols.DNS.client();
-//!     mapping r=d->do_sync_query(d->mkquery("pike.ida.liu.se", C_IN, T_A));
+//!     mapping r=d->do_sync_query(d->mkquery("pike.lysator.liu.se", C_IN, T_A));
 //!   @endcode
   mapping do_sync_query(string s)
   {

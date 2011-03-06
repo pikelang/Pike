@@ -105,7 +105,7 @@ constant DAV_STORAGE_FULL	= 507; // RFC 2518 10.6: Insufficient Storage
 //!   The HTTP method to use, e.g. @expr{"GET"@}.
 //! @param url
 //!   The URL to perform @[method] on. Should be a complete URL,
-//!   including protocol, e.g. @expr{"https://pike.ida.liu.se/"@}.
+//!   including protocol, e.g. @expr{"https://pike.lysator.liu.se/"@}.
 //! @param query_variables
 //!   Calls @[http_encode_query] and appends the result to the URL.
 //! @param request_headers
@@ -239,7 +239,7 @@ protected .Query do_udp_method(string method, Standards.URI url,
 //!   The HTTP method to use, e.g. @expr{"GET"@}.
 //! @param url
 //!   The URL to perform @[method] on. Should be a complete URL,
-//!   including protocol, e.g. @expr{"https://pike.ida.liu.se/"@}.
+//!   including protocol, e.g. @expr{"https://pike.lysator.liu.se/"@}.
 //! @param query_variables
 //!   Calls @[http_encode_query] and appends the result to the URL.
 //! @param request_headers
