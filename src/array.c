@@ -1012,7 +1012,8 @@ static int obj_or_func_cmp (const struct svalue *a, const struct svalue *b)
     return a->subtype - b->subtype;
 
   /* Destructed objects are considered equal to each other, and
-   * (arbitrarily chosen) greater than others. */
+   * greater than others. That makes them sort close to real zeroes,
+   * which are sorted after objects without compare functions. */
   if (!a->u.object->prog)
     return !b->u.object->prog ? 0 : 1;
   else if (!b->u.object->prog)
