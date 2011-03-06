@@ -5378,6 +5378,36 @@ test_any([[multiset m=(<>);int e;
   return -1;
 ]],-1)
 
+test_any_equal([[
+  class X (float i)
+  {
+    protected int `< (X o) {return i < o->i;}
+    protected int id = ++all_constants()->cnt;
+    protected string _sprintf() {return "X(" + i + ")[" + id + "]";}
+  };
+  X x1 = X(1.0), x2 = X(1.0);
+  multiset m = (<x1, X(2.0), X(3.0)>);
+  m[x2] = 1;
+  add_constant ("cnt");
+  return ({m[x1], m[x2], m[X(0.5)]});
+]], [[({1, 1, 0})]])
+
+test_any_equal([[
+  class X (float i)
+  {
+    protected int `< (X o) {return i < o->i;}
+    protected int id = ++all_constants()->cnt;
+    protected string _sprintf() {return "X(" + i + ")[" + id + "]";}
+  };
+  X x1 = X(1.0), x2 = X(1.0);
+  multiset m = (<x1, X(2.0), X(3.0)>);
+  m[x2] = 1;
+  add_constant ("cnt");
+  return ({(m[x1] = 1, sizeof (m)),
+	   (m[x2] = 1, sizeof (m)),
+	   (m[X(0.5)] = 1, sizeof (m))});
+]], [[({4, 4, 5})]])
+
 test_eq([[sizeof(mtest_m2)]],sizeof(mtest_i2))
 test_any([[int e;multiset q=(<>),p=(<>); for(e=0;e<1000;e++) { p[reverse(e)]=1; q+=(<reverse(e)>); if(!equal(sort(indices(p)),sort(indices(q)))) return 0; } return 1;]],1)
 

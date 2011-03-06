@@ -1333,14 +1333,45 @@ union msnode *low_multiset_find_eq (struct multiset *l, struct svalue *key)
 
       if (msd->cmp_less.type == T_INT) {
 	struct svalue tmp;
-	LOW_RB_FIND (
-	  node,
-	  {
+	if (!(msd->ind_types & (BIT_OBJECT | BIT_FUNCTION))) {
+	  /* Can assume an internal order which defines a total order
+	   * for all values. */
+	  LOW_RB_FIND (
+	    node,
+	    {
+	      low_use_multiset_index (RBNODE (node), tmp);
+	      assert (!IS_DESTRUCTED (&tmp));
+	      INTERNAL_CMP (key, &tmp, cmp_res);
+	      assert (cmp_res != CMPFUN_UNORDERED);
+	    },
+	    node = NULL, ;, node = NULL);
+	}
+
+	else {
+	  /* Find the biggest node less or order-wise equal to key. */
+	  LOW_RB_FIND_NEQ (
+	    node,
+	    {
+	      low_use_multiset_index (RBNODE (node), tmp);
+	      if (IS_DESTRUCTED (&tmp)) goto index_destructed;
+	      INTERNAL_CMP (key, &tmp, cmp_res);
+	      if (!cmp_res) cmp_res = 1;
+	      /* Note: CMPFUN_UNORDERED > 0 - treated as equal. */
+	    },
+	    {},			/* Got less or equal or unordered. */
+	    {node = node->prev;}); /* Got greater - step back one. */
+
+	  /* Step backwards until a less or really equal node is found. */
+	  for (; node; node = rb_prev (node)) {
+	    int cmp_res;
 	    low_use_multiset_index (RBNODE (node), tmp);
 	    if (IS_DESTRUCTED (&tmp)) goto index_destructed;
-	    INTERNAL_CMP (key, &tmp, cmp_res);
-	  },
-	  node = NULL, ;, node = NULL);
+	    if (is_eq (&tmp, key)) break;
+	    INTERNAL_CMP (&tmp, key, cmp_res);
+	    /* Note: CMPFUN_UNORDERED > 0 - treated as equal. */
+	    if (cmp_res < 0) {node = NULL; break;}
+	  }
+	}
       }
 
       else {
@@ -1459,6 +1490,7 @@ static enum find_types low_multiset_find_le_gt (
 	  /* TODO: Use special variant of set_svalue_cmpfun so we
 	   * don't have to copy the index svalues. */
 	  INTERNAL_CMP (key, &tmp, cmp_res);
+	  /* Note: CMPFUN_UNORDERED > 0 - treated as equal. */
 	  cmp_res = cmp_res >= 0 ? 1 : -1;
 	},
 	{*found = RBNODE (node); find_type = FIND_LESS; goto done;},
@@ -1526,8 +1558,9 @@ static enum find_types low_multiset_find_lt_ge (
 	  }
 	  /* TODO: Use special variant of set_svalue_cmpfun so we
 	   * don't have to copy the index svalues. */
-	  INTERNAL_CMP (key, &tmp, cmp_res);
-	  cmp_res = cmp_res <= 0 ? -1 : 1;
+	  INTERNAL_CMP (&tmp, key, cmp_res);
+	  /* Note: CMPFUN_UNORDERED > 0 - treated as equal. */
+	  cmp_res = cmp_res >= 0 ? -1 : 1;
 	},
 	{*found = RBNODE (node); find_type = FIND_LESS; goto done;},
 	{*found = RBNODE (node); find_type = FIND_GREATER; goto done;});
@@ -2055,23 +2088,82 @@ static enum find_types low_multiset_track_eq (
 
   if (msd->cmp_less.type == T_INT) {
     struct svalue tmp;
-    LOW_RB_TRACK (
-      rbstack, node,
-      {
+    if (!(msd->ind_types & (BIT_OBJECT | BIT_FUNCTION))) {
+      /* Can assume an internal order which defines a total order for
+       * all values. */
+      LOW_RB_TRACK (
+	rbstack, node,
+	{
+	  low_use_multiset_index (RBNODE (node), tmp);
+	  assert (!IS_DESTRUCTED (&tmp));
+	  /* TODO: Use special variant of set_svalue_cmpfun so we don't
+	   * have to copy the index svalues. */
+	  INTERNAL_CMP (key, &tmp, cmp_res);
+	  assert (cmp_res != CMPFUN_UNORDERED);
+	},
+	{find_type = FIND_LESS; goto done;},
+	{find_type = FIND_EQUAL; goto done;},
+	{find_type = FIND_GREATER; goto done;});
+      /* NOT REACHED */
+    }
+
+    else {
+      /* Find the biggest node less or order-wise equal to key. */
+      struct rb_node_hdr *found_node;
+      int step_count;
+
+      LOW_RB_TRACK_NEQ (
+	rbstack, node,
+	{
+	  low_use_multiset_index (RBNODE (node), tmp);
+	  if (IS_DESTRUCTED (&tmp)) {
+	    UNSET_ONERROR (uwp);
+	    *track = rbstack;
+	    return FIND_DESTRUCTED;
+	  }
+	  INTERNAL_CMP (key, &tmp, cmp_res);
+	  if (!cmp_res) cmp_res = 1;
+	  /* Note: CMPFUN_UNORDERED > 0 - treated as equal. */
+	}, {
+	  find_type = FIND_LESS;
+	  found_node = node;
+	  step_count = 0;
+	}, {
+	  find_type = FIND_GREATER;
+	  found_node = node;
+	  node = node->prev;
+	  step_count = 1;
+	});
+
+      if (IS_DESTRUCTED (key)) {
+	/* An extra check for a destructed key before entering the loop below,
+	 * lest we might go backwards through the whole multiset. */
+	RBSTACK_FREE (rbstack);
+	UNSET_ONERROR (uwp);
+	*track = rbstack;
+	return FIND_KEY_DESTRUCTED;
+      }
+
+      /* Step backwards until a less or really equal node is found. */
+      while (1) {
+	int cmp_res;
+	if (!node) goto done;
 	low_use_multiset_index (RBNODE (node), tmp);
-	if (IS_DESTRUCTED (&tmp)) {
-	  UNSET_ONERROR (uwp);
-	  *track = rbstack;
-	  return FIND_DESTRUCTED;
-	}
-	/* TODO: Use special variant of set_svalue_cmpfun so we don't
-	 * have to copy the index svalues. */
-	INTERNAL_CMP (key, &tmp, cmp_res);
-      },
-      {find_type = FIND_LESS; goto done;},
-      {find_type = FIND_EQUAL; goto done;},
-      {find_type = FIND_GREATER; goto done;});
-    /* NOT REACHED */
+	if (IS_DESTRUCTED (&tmp)) {find_type = FIND_DESTRUCTED; break;}
+	if (is_eq (&tmp, key)) {find_type = FIND_EQUAL; break;}
+	INTERNAL_CMP (&tmp, key, cmp_res);
+	/* Note: CMPFUN_UNORDERED > 0 - treated as equal. */
+	if (cmp_res < 0) goto done;
+	node = rb_prev (node);
+	step_count++;
+      }
+
+      /* A node was found during stepping. Adjust rbstack. */
+      while (step_count--) LOW_RB_TRACK_PREV (rbstack, found_node);
+#ifdef PIKE_DEBUG
+      if (node != RBSTACK_PEEK (rbstack)) Pike_fatal ("Stack stepping failed.\n");
+#endif
+    }
   }
 
   else {
@@ -2178,7 +2270,9 @@ static enum find_types low_multiset_track_le_gt (
 	}
 	/* TODO: Use special variant of set_svalue_cmpfun so we don't
 	 * have to copy the index svalues. */
-	INTERNAL_CMP (key, low_use_multiset_index (RBNODE (node), tmp), cmp_res);
+	INTERNAL_CMP (key, low_use_multiset_index (RBNODE (node), tmp),
+		      cmp_res);
+	/* Note: CMPFUN_UNORDERED > 0 - treated as equal. */
 	cmp_res = cmp_res >= 0 ? 1 : -1;
       },
       {find_type = FIND_LESS; goto done;},
@@ -2247,10 +2341,12 @@ static enum find_types low_multiset_track_lt_ge (
 	  *track = rbstack;
 	  return FIND_DESTRUCTED;
 	}
-	/* TODO: Use special variant of alpha_svalue_cmpfun so we don't
+	/* TODO: Use special variant of set_svalue_cmpfun so we don't
 	 * have to copy the index svalues. */
-	INTERNAL_CMP (key, low_use_multiset_index (RBNODE (node), tmp), cmp_res);
-	cmp_res = cmp_res <= 0 ? -1 : 1;
+	INTERNAL_CMP (low_use_multiset_index (RBNODE (node), tmp), key,
+		      cmp_res);
+	/* Note: CMPFUN_UNORDERED > 0 - treated as equal. */
+	cmp_res = cmp_res >= 0 ? -1 : 1;
       },
       {find_type = FIND_LESS; goto done;},
       {find_type = FIND_GREATER; goto done;});
@@ -3589,7 +3685,10 @@ PMOD_EXPORT struct multiset *merge_multisets (struct multiset *a,
 	  if (IS_DESTRUCTED (&b_ind)) goto ic_nd_free_b;
 	},
 
-	INTERNAL_CMP (&a_ind, &b_ind, cmp_res);,
+	{
+	  INTERNAL_CMP (&a_ind, &b_ind, cmp_res);
+	  if (cmp_res == CMPFUN_UNORDERED) cmp_res = 0;
+	},
 
 	{			/* Copy m.a_node. */
 	  ALLOC_RES_NODE (m.res, res_msd, new_node);
@@ -3630,7 +3729,10 @@ PMOD_EXPORT struct multiset *merge_multisets (struct multiset *a,
 	  if (IS_DESTRUCTED (&b_ind)) goto ic_da_free_b;
 	},
 
-	INTERNAL_CMP (&a_ind, &b_ind, cmp_res);,
+	{
+	  INTERNAL_CMP (&a_ind, &b_ind, cmp_res);
+	  if (cmp_res == CMPFUN_UNORDERED) cmp_res = 0;
+	},
 
 	{			/* Copy m.a_node. */
 	  new_node = m.a_node;
@@ -5045,7 +5147,7 @@ void check_multiset (struct multiset *l, int safe)
 	    nextpos = MSNODE2OFF (msd, next);
 	    /* FIXME: Handle destructed index in node. */
 	    INTERNAL_CMP (low_use_multiset_index (node, tmp1), &tmp2, cmp_res);
-	    if (cmp_res > 0)
+	    if (cmp_res > 0 && cmp_res != CMPFUN_UNORDERED)
 	      Pike_fatal ("Order failure in multiset data with internal order.\n");
 
 	    if (l->msd != msd) {
