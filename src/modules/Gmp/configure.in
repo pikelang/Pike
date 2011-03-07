@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.50 2009/06/28 10:08:26 grubba Exp $
+# $Id$
 AC_INIT(mpz_glue.c)
 AC_CONFIG_HEADER(gmp_machine.h)
 AC_ARG_WITH(gmp,     [  --with(out)-gmp        Support bignums],[],[with_gmp=yes])
@@ -225,6 +225,15 @@ PIKE_FEATURE_WITHOUT([Gmp (bignums)])
 
 if test x$with_gmp = xyes ; then
   PIKE_FEATURE_NODEP([Gmp (bignums)])
+
+  # Kludge for yet more autoconf breakage: We need this dummy use of
+  # AC_TRY_LINK since it in (at least) autoconf 2.64 expands to a
+  # function definition the first time it's used, but if that is
+  # inside a branch that never is executed (such as the
+  # cross-compilation case inside AC_CHECK_GMP above), we become
+  # unhappy afterwards.
+  AC_TRY_LINK([], [], [], [])
+
   AC_CHECK_GMP(gmp2, gmp2/gmp.h, [
     AC_CHECK_GMP(gmp, gmp.h)
   ])

@@ -343,7 +343,6 @@ testfont binary
 /src/modules/Gettext/gettext.c foreign_ident
 /src/modules/Gmp/Makefile.in foreign_ident
 /src/modules/Gmp/acconfig.h foreign_ident
-/src/modules/Gmp/configure.in foreign_ident
 /src/modules/Gmp/mpf.cmod foreign_ident
 /src/modules/Gmp/mpz_glue.c foreign_ident
 /src/modules/Gmp/my_gmp.h foreign_ident
