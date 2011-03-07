@@ -5974,8 +5974,13 @@ static int any_does_match( struct svalue *items, int nglobs, struct pike_string 
 {
    INT32 i;
    for( i =0; i<nglobs; i++ )
-    if( does_match(str,0,items[i].u.string,0) )
-         return 1;
+   {
+     struct pike_string *str2 = items[i].u.string;
+     if( str == str2 )
+       return 1;
+     if( does_match(str,0,str2,0) )
+       return 1;
+   }
    return 0;
 } 
 
