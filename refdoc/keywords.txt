@@ -606,9 +606,9 @@ _______________________________________________________________________________
 
 Keyword:      @section - @endsection
 Description:  Begin a new section in the text.
-Arguments:    <name>
+Arguments:    <title>
               Where:
-                <name> is any text that is the name of the section.
+		<title> is any text that is the title of the section.
 Children:     Text (with markup)
 Groups with:  -
 Examples:
@@ -619,7 +619,9 @@ Examples:
                 ...
               @endsection
 
-XML:          <section name=" ... ">
+XML:          <section title=" ... ">
+	      The attribute "name" can be used instead of "title", for
+	      compatibility.
 _______________________________________________________________________________
 
 Keyword:      @string - @endstring

@@ -408,7 +408,7 @@ protected class DocParserClass {
   }
 
   protected mapping(string : string) sectionArgHandler(string keyword, string arg) {
-    return ([ "name" : arg ]);
+    return ([ "title" : String.trim_all_whites (arg) ]);
   }
 
   protected string typeArgHandler(string keyword, string arg) {

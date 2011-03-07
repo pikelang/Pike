@@ -125,7 +125,9 @@ string low_parse_chapter(Node n, int chapter, void|int section, void|int subsect
       ret += "</dd>\n<dt><a name='" + section + "'></a>\n"
 	"<table width='100%' cellpadding='3' cellspacing='0' border='0'><tr>"
 	"<td bgcolor='#EEEEEE'><font size='+3'>&nbsp; " + chapter + "." + section +
-	". " + quote(c->get_attributes()->title) +
+	". " + quote(c->get_attributes()->title ||
+		     // The following for bug compat.
+		     c->get_attributes()->name) +
 	"</font></td></tr></table><br />\n"
 	"</dt>\n<dd>";
       ret += low_parse_chapter(c, chapter, section);
