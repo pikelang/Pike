@@ -83,7 +83,9 @@ Node get_first_element(Node n) {
   error( "Node had no element child.\n" );
 }
 
-string low_parse_chapter(Node n, int chapter, void|int section, void|int subsection) {
+int section, subsection;
+
+string low_parse_chapter(Node n, int chapter) {
   string ret = "";
   Node dummy = Node(XML_ELEMENT, "dummy", ([]), "");
   foreach(n->get_elements(), Node c)
@@ -119,6 +121,8 @@ string low_parse_chapter(Node n, int chapter, void|int section, void|int subsect
       break;
 
     case "section":
+      if(section)
+	error("Section inside section.\n");
       if(subsection)
 	error("Section inside subsection.\n");
       section = (int)c->get_attributes()->number;
@@ -130,7 +134,7 @@ string low_parse_chapter(Node n, int chapter, void|int section, void|int subsect
 		     c->get_attributes()->name) +
 	"</font></td></tr></table><br />\n"
 	"</dt>\n<dd>";
-      ret += low_parse_chapter(c, chapter, section);
+      ret += low_parse_chapter(c, chapter);
       section = 0;
       break;
 
@@ -146,7 +150,7 @@ string low_parse_chapter(Node n, int chapter, void|int section, void|int subsect
 	". " + quote(c->get_attributes()->title) +
 	"</font></td></tr></table><br />\n"
 	"</dt><dd>";
-      ret += low_parse_chapter(c, chapter, section, subsection);
+      ret += low_parse_chapter(c, chapter);
       subsection = 0;
       break;
 
@@ -594,13 +598,17 @@ string parse_text(Node n, void|String.Buffer ret) {
       break;
 
     case "section":
+      if(section)
+	error("Section inside section.\n");
       ret->add ("<h2>", quote (c->get_attributes()->title ||
 			       // The following for bug compat.
 			       c->get_attributes()->name),
 		"</h2>\n");
       if (!equal (c->get_children()->get_any_name(), ({"text"})))
 	error ("Expected a single <text> element inside <section>.\n");
+      section = -1;
       parse_text (c->get_children()[0], ret);
+      section = 0;
       break;
 
     case "ul":

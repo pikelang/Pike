@@ -605,7 +605,7 @@ XML:          <ref>...</ref>
 _______________________________________________________________________________
 
 Keyword:      @section - @endsection
-Description:  Begin a new section in the text.
+Description:  Begin a new section in the text. Sections cannot be nested.
 Arguments:    <title>
               Where:
 		<title> is any text that is the title of the section.
