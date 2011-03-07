@@ -329,6 +329,7 @@ protected class DocParserClass {
     "section" : sectionArgHandler,
     "type" : typeArgHandler,
     "value" : valueArgHandler,
+    "item": itemArgHandler,
   ]);
 
   protected string memberArgHandler(string keyword, string arg) {
@@ -446,6 +447,11 @@ protected class DocParserClass {
         return xmltag("maxvalue", xmlquote(s2));
       else
         parseError("@value: expected indentifier or literal constant, got %O", arg);
+  }
+
+  protected mapping(string:string) itemArgHandler (string keyword, string arg)
+  {
+    return (["name": String.trim_all_whites (arg)]);
   }
 
   protected mapping(string : string) standardArgHandler(string keyword, string arg)
