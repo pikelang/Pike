@@ -825,9 +825,9 @@ next_row:
       if (row[i]) {
 	string_builder_putchar(&res, '\"');
 #ifdef HAVE_MYSQL_FETCH_LENGTHS
-	json_escape(&res, row[i], row_lengths[i]);
+	json_escape(&res, (unsigned char *) row[i], row_lengths[i]);
 #else
-	json_escape(&res, row[i], strlen([i]));
+	json_escape(&res, (unsigned char *) row[i], strlen([i]));
 #endif /* HAVE_MYSQL_FETCH_LENGTHS */
 	string_builder_putchar(&res, '\"');
       } else {
