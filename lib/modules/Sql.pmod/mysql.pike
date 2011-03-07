@@ -51,7 +51,7 @@
 //!
 //! @enddl
 //!
-//! @section
+//! @endsection
 
 #pike __REAL_VERSION__
 
