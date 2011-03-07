@@ -400,67 +400,95 @@ PIKECLASS mpq
   static void format_string (mpq_t mpq, int dec_fract)
   {
     if (dec_fract >= 1) {
-      mpz_t tmp;
-      mpz_t f;
-      size_t twos, fives;
+      mpz_t den, f;
+      size_t strings = 0, twos, fives, prec;
 
-      if (!mpz_cmp_ui (mpq_denref (mpq), 1u)) {
-	push_string (low_get_mpz_digits (mpq_numref (mpq), 10));
-	if (dec_fract >= 2) return;
-	push_constant_text (".0");
-	f_add (2);
-	return;
-      }
-
-      /* If the denominator have other factors than 2 or 5 then the
-       * fractional part would never end. */
-      mpz_init_set (tmp, mpq_denref (mpq));
+      /* Remove from the denominator all factors 2 and 5, which are
+       * the only ones we can compensate for with a decimal
+       * fraction. */
+      mpz_init_set (den, mpq_denref (mpq));
       mpz_init_set_ui (f, 2u);
-      twos = mpz_remove (tmp, tmp, f);
+      twos = mpz_remove (den, den, f);
       mpz_set_ui (f, 5u);
-      fives = mpz_remove (tmp, tmp, f);
-      mpz_clear (f);
+      fives = mpz_remove (den, den, f);
 
-      if (!mpz_cmp_ui (tmp, 1u)) {
-	/* The necessary precision is the same as the number of times
-	 * we have to multiply by 10 to get an integer. Since we
-	 * "consume" one factor 2 and one factor 5 every time, that
-	 * means we need the same number of 10's as the max of the 2's
-	 * and 5's. */
-	size_t prec = MAXIMUM (twos, fives);
-	mpz_ui_pow_ui (tmp, 10, prec);
-	mpz_mul (tmp, tmp, mpq_numref (mpq));
-	assert (mpz_divisible_p (tmp, mpq_denref (mpq)));
-	mpz_tdiv_q (tmp, tmp, mpq_denref (mpq));
-	format_int_with_dot (tmp, mpz_sizeinbase (tmp, 10), prec);
-	mpz_clear (tmp);
-	return;
+      /* The necessary number of decimals is the same as the number of
+       * times we have to multiply by 10 to get an integer (if the
+       * denominator only contains factors 2 and 5). Since we
+       * "consume" one factor 2 and one factor 5 every time, that
+       * means we need the same number of 10's as the max of the 2's
+       * and 5's. */
+      prec = MAXIMUM (twos, fives);
+
+      if (prec) {
+	mpz_t num;
+	mpz_init (num);
+	mpz_ui_pow_ui (num, 10, prec);
+	mpz_mul (num, num, mpq_numref (mpq));
+	if (twos)
+	  mpz_tdiv_q_2exp (num, num, twos);
+	if (fives) {
+	  mpz_pow_ui (f, f, fives);
+	  assert (mpz_divisible_p (num, f));
+	  mpz_tdiv_q (num, num, f);
+	}
+	format_int_with_dot (num, mpz_sizeinbase (num, 10), prec);
+	strings++;
+	mpz_clear (num);
+      }
+      else {
+	push_string (low_get_mpz_digits (mpq_numref (mpq), 10));
+	strings++;
+	if (dec_fract >= 2) {
+	  push_constant_text (".0");
+	  strings++;
+	}
       }
 
-      mpz_clear (tmp);
+      /* If the denominator contains other factors we still need to
+       * display it. */
+      if (mpz_cmp_ui (den, 1u)) {
+	push_constant_text ("/");
+	push_string (low_get_mpz_digits (den, 10));
+	strings += 2;
+      }
+
+      mpz_clear (den);
+      mpz_clear (f);
+      if (strings > 1) f_add (strings);
     }
 
-    push_string(low_get_mpz_digits(mpq_numref(mpq),10));
-    push_constant_text("/");
-    push_string(low_get_mpz_digits(mpq_denref(mpq),10));
-    f_add(3);
+    else {
+      push_string(low_get_mpz_digits(mpq_numref(mpq),10));
+      push_constant_text("/");
+      push_string(low_get_mpz_digits(mpq_denref(mpq),10));
+      f_add(3);
+    }
   }
 
   /*! @decl string get_string (void|int decimal_fraction)
    *!
-   *! If @[decimal_fraction] >= 2 and the number can be accurately
-   *! represented as an integer then it's returned as a string
-   *! containing a decimal integer.
+   *! If @[decimal_fraction] is zero or left out, the number is
+   *! returned as a string on the form @expr{"numerator/denominator"@},
+   *! where both parts are decimal integers (without leading zeroes,
+   *! except for zero itself). The numerator may be negative, but the
+   *! denominator is always positive.
    *!
-   *! Otherwise, if @[decimal_fraction] >= 1 and the number can be
-   *! accurately represented as decimal fraction, i.e. a decimal
-   *! number with a '.' somewhere, then it's returned as such. The
-   *! returned string always contains a '.' on this form, followed by
-   *! at least one digit.
+   *! If @[decimal_fraction] is set, then the number is returned as a
+   *! (possibly negative) decimal fraction, i.e. a decimal number with
+   *! a decimal point somewhere inside.
    *!
-   *! Otherwise, the number is returned as a string on the form
-   *! @expr{"numerator/denominator"@}, where both parts are decimal
-   *! integers, the numerator possibly preceded by a negation sign.
+   *! If the number can be accurately described that way, i.e. without
+   *! an infinite number of decimals, then no denominator is included.
+   *! Otherwise the remaining denominator is added to the decimal
+   *! fraction after a "/". For example, 4711/100 is returned as
+   *! @expr{"47.11"@}, 4711/200 as @expr{"23.555"@}, and 4711/300 as
+   *! @expr{"47.11/3"@}.
+   *!
+   *! If @[decimal_fraction] is 1 then the decimal fraction contains a
+   *! '.' only if there are decimals in it. If it is 2 or higher then
+   *! the decimal fraction always contains a '.' with at least one
+   *! digit after it.
    */
   PIKEFUN string get_string (void|zero|int decimal_fraction)
   {
@@ -534,7 +562,7 @@ PIKECLASS mpq
 
 	case 'O':
 	  push_constant_text ("Gmp.mpq(");
-	  format_string (THISMPQ, 2);
+	  format_string (THISMPQ, 1);
 	  push_constant_text (")");
 	  f_add (3);
 	  return;
@@ -624,7 +652,7 @@ PIKECLASS mpq
 	  if(!strcmp(s->str, "string"))
 	  {
 	    free_string(s);
-	    format_string (THISMPQ, 2);
+	    format_string (THISMPQ, 1);
 	    return;
 	  }
 	  break;
