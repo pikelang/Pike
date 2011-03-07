@@ -14,30 +14,20 @@
 //! types are represented like this:
 //!
 //! @dl
-//! @item NULL
+//! @item The NULL value
 //!   Returned as @[Val.null].
 //!
-//! @item BIT
-//! @item TINYINT
-//! @item BOOL
-//! @item SMALLINT
-//! @item MEDIUMINT
-//! @item INT
-//! @item BIGINT
+//! @item BIT, TINYINT, BOOL, SMALLINT, MEDIUMINT, INT, BIGINT
 //!   Returned as pike integers.
 //!
-//! @item FLOAT
-//! @item DOUBLE
+//! @item FLOAT, DOUBLE
 //!   Returned as pike floats.
 //!
 //! @item DECIMAL
 //!   Returned as pike integers for fields that are declared to
 //!   contain zero decimals, otherwise returned as @[Gmp.mpq] objects.
 //!
-//! @item DATE
-//! @item DATETIME
-//! @item TIME
-//! @item YEAR
+//! @item DATE, DATETIME, TIME, YEAR
 //!   Returned as strings in their display representation (see the
 //!   MySQL manual).
 //!
@@ -54,7 +44,7 @@
 //!   @tt{UNIX_TIMESTAMP@} function in the queries to retrieve them as
 //!   unix timestamps on integer form.
 //!
-//! @item "String types"
+//! @item String types
 //!   All string types are returned as pike strings. The MySQL glue
 //!   can handle charset conversions for text strings - see
 //!   @[set_charset] and @[set_unicode_decode_mode].
