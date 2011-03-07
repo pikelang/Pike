@@ -678,7 +678,7 @@ static void f_fetch_row(INT32 args)
 	      }
 	    }
 
-	    if (mpq_program.type = T_PROGRAM) {
+	    if (mpq_program.type == T_PROGRAM) {
 #ifdef HAVE_MYSQL_FETCH_LENGTHS
 	      push_string(make_shared_binary_string(row[i], row_lengths[i]));
 #else
