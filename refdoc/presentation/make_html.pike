@@ -588,10 +588,16 @@ string parse_text(Node n, void|String.Buffer ret) {
 	m->href=c->value_of_node();
       ret->add( sprintf("<a%{ %s='%s'%}>%s</a>",
 			(array)m, c->value_of_node()) );
+      break;
 
     case "section":
-      //      werror(c->html_of_node()+"\n");
-      // Found...
+      ret->add ("<h2>", quote (c->get_attributes()->title ||
+			       // The following for bug compat.
+			       c->get_attributes()->name),
+		"</h2>\n");
+      if (!equal (c->get_children()->get_any_name(), ({"text"})))
+	error ("Expected a single <text> element inside <section>.\n");
+      parse_text (c->get_children()[0], ret);
       break;
 
     case "ul":
