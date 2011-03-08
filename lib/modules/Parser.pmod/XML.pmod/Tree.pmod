@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.77 2009/10/16 12:10:07 grubba Exp $
+ * $Id$
  *
  */
 
@@ -354,7 +354,7 @@ class AbstractSimpleNode {
   }
 
   //! Adds the node @[c] to the list of children of this node. The
-  //! node is added before the node @[old], which is assumed to be an
+  //! node is added after the node @[old], which is assumed to be an
   //! existing child of this node. The node is added first if @[old]
   //! is zero.
   //!
@@ -595,23 +595,21 @@ class AbstractNode {
   //!
   //! @returns
   //!   The current node.
-  AbstractSimpleNode add_child_before (AbstractSimpleNode c,
-				       AbstractSimpleNode old)
+  AbstractNode add_child_before (AbstractNode c, AbstractNode old)
   {
-    return c->parent = ::add_child_before (c, old);
+    return c->mParent = ::add_child_before (c, old);
   }
 
   //! Adds the node @[c] to the list of children of this node. The
-  //! node is added before the node @[old], which is assumed to be an
+  //! node is added after the node @[old], which is assumed to be an
   //! existing child of this node. The node is added first if @[old]
   //! is zero.
   //!
   //! @returns
   //!   The current node.
-  AbstractSimpleNode add_child_after (AbstractSimpleNode c,
-				      AbstractSimpleNode old)
+  AbstractNode add_child_after (AbstractNode c, AbstractNode old)
   {
-    return c->parent = ::add_child_after (c, old);
+    return c->mParent = ::add_child_after (c, old);
   }
 
   //! Variants of @[add_child], @[add_child_before] and
