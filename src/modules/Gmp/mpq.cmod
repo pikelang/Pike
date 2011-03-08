@@ -496,13 +496,13 @@ PIKECLASS mpq
    *!
    *! If @[decimal_fraction] is zero or left out, the number is
    *! returned as a string on the form @expr{"numerator/denominator"@},
-   *! where both parts are decimal integers (without leading zeroes,
-   *! except for zero itself). The numerator may be negative, but the
-   *! denominator is always positive.
+   *! where both parts are decimal integers. The numerator may be
+   *! negative, but the denominator is always positive.
    *!
    *! If @[decimal_fraction] is set, then the number is returned as a
    *! (possibly negative) decimal fraction, i.e. a decimal number with
-   *! a decimal point somewhere inside.
+   *! a decimal point somewhere inside. There is always at least one
+   *! digit before and after the decimal point.
    *!
    *! If the number can be accurately described that way, i.e. without
    *! an infinite number of decimals, then no denominator is included.
@@ -514,7 +514,11 @@ PIKECLASS mpq
    *! If @[decimal_fraction] is 1 then the decimal fraction contains a
    *! '.' only if there are decimals in it. If it is 2 or higher then
    *! the decimal fraction always contains a '.' with at least one
-   *! digit after it.
+   *! digit before and after it.
+   *!
+   *! @note
+   *! In any case, there are no unnecessary padding zeroes at the
+   *! beginning or end of any decimal number.
    */
   PIKEFUN string get_string (void|zero|int decimal_fraction)
   {
@@ -629,6 +633,11 @@ PIKECLASS mpq
     }
 
   /*! @decl static int|string|float|object cast(string s)
+   *!
+   *! Casting to a string returns the number in the decimal fraction
+   *! format, where both decimal point and quotient is included only
+   *! if required. I.e. it is the same as calling @[get_string] with 1
+   *! as argument.
    */
   PIKEFUN int|string|float|object cast(string s)
     flags ID_PROTECTED;
