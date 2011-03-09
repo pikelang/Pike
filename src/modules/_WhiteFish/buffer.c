@@ -1,9 +1,4 @@
-
-
-/* $Id: buffer.c,v 1.14 2004/08/17 16:18:21 grubba Exp $
- */
 #include "global.h"
-
 #include "config.h"
 
 #ifdef HAVE_SYS_TYPES_H
@@ -17,7 +12,6 @@
 #endif
 
 #include "stralloc.h"
-RCSID("$Id: buffer.c,v 1.14 2004/08/17 16:18:21 grubba Exp $");
 #include "interpret.h"
 
 #include "whitefish.h"

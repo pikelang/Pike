@@ -1,7 +1,6 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: blob.c,v 1.36 2005/05/19 22:35:47 mast Exp $");
 #include "interpret.h"
 #include "program.h"
 #include "object.h"

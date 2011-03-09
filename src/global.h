@@ -488,21 +488,8 @@ typedef struct p_wchar_p
   int shift;
 } PCHARP;
 
-#ifndef CONFIGURE_TEST
-#if __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 7)
-#define RCSID(X) \
- static const char rcsid[] __attribute__ ((unused)) =X
-#elif __GNUC__ == 2
-#define RCSID(X) \
- static const char rcsid[] = X; \
- static const void *use_rcsid=(&use_rcsid, (void *)&rcsid)
-#else
-#define RCSID(X) \
- static const char rcsid[] = X
-#endif
-#else
+/* Pointless in git. */
 #define RCSID(X)
-#endif
 
 #ifdef PIKE_DEBUG
 
