@@ -2079,8 +2079,51 @@ static void decode_value2(struct decode_data *data);
 static int my_extract_char(struct decode_data *data)
 {
   if(data->ptr >= data->len)
-    Pike_error("Format error, not enough data in string.\n");
+    Pike_error("Decode error: Not enough data in string.\n");
   return data->data [ data->ptr++ ];
+}
+
+static DECLSPEC(noreturn) void decode_error (
+  struct decode_data *data, struct svalue *decoding, const char *msg, ...)
+  ATTRIBUTE((noreturn));
+
+static DECLSPEC(noreturn) void decode_error (
+  struct decode_data *data, struct svalue *decoding, const char *msg, ...)
+{
+  int n = 0;
+  va_list args;
+  struct string_builder sb;
+  struct object *o = fast_clone_object (decode_error_program);
+  struct decode_error_struct *dec =
+    (struct decode_error_struct *) (o->storage + decode_error_offset);
+  struct generic_error_struct *gen =
+    (struct generic_error_struct *) get_storage (o, generic_error_program);
+
+  ASSERT_THREAD_SWAPPED_IN();
+
+  copy_shared_string (dec->decode_string, data->data_str);
+
+  if (decoding) {
+    push_constant_text ("Error while decoding "); n++;
+    push_constant_text ("%O");
+    push_svalue (decoding);
+    f_sprintf (2); n++;
+    push_constant_text (":\n"); n++;
+  }
+  else {
+    push_constant_text ("Decode error: "); n++;
+  }
+
+  init_string_builder (&sb, 0);
+  va_start (args, msg);
+  string_builder_vsprintf (&sb, msg, args);
+  va_end (args);
+  push_string (finish_string_builder (&sb)); n++;
+
+  f_add (n);
+  gen->error_message = (--Pike_sp)->u.string;
+
+  generic_error_va (o, NULL, NULL, 0, NULL, NULL);
 }
 
 #define GETC() my_extract_char(data)
@@ -2108,21 +2151,19 @@ static int my_extract_char(struct decode_data *data)
 	    (long)num) ); 				\
 } while (0)
 
-
-
 #define decode_entry(X,Y,Z)					\
   do {								\
     INT32 what, e;						\
     INT64 num;							\
     DECODE("decode_entry");					\
     if((what & TAG_MASK) != (X))				\
-      Pike_error("Failed to decode, wrong bits (%d).\n", what & TAG_MASK); \
-    (Y)=num;							\
+      decode_error(data, NULL, "Wrong bits (%d).\n", what & TAG_MASK);	\
+    (Y)=num;								\
   } while(0);
 
 #define getdata2(S,L) do {						\
       if(data->ptr + (ptrdiff_t)(sizeof(S[0])*(L)) > data->len)		\
-	Pike_error("Failed to decode string. (string range error)\n");	\
+	decode_error(data, NULL, "String range error.\n");		\
       MEMCPY((S),(data->data + data->ptr), sizeof(S[0])*(L));		\
       data->ptr+=sizeof(S[0])*(L);					\
   }while(0)
@@ -2147,16 +2188,13 @@ static int my_extract_char(struct decode_data *data)
     DECODE("get_string_data");						    \
     what &= TAG_MASK;							    \
     if(what<0 || what>2)						    \
-      Pike_error ("Failed to decode string: Illegal size shift %d.\n",	\
-		  what);						\
+      decode_error (data, NULL, "Illegal size shift %d.\n", what);	\
     sz = (ptrdiff_t) num << what;					\
     if (sz < 0)								\
-      Pike_error ("Failed to decode string: Illegal negative size "	\
-		  "%"PRINTPTRDIFFT"d.\n", sz);				\
+      decode_error (data, NULL, "Illegal negative size %td.\n", sz);	\
     if (sz > data->len - data->ptr)					\
-      Pike_error ("Failed to decode string: Too large size %"PRINTPTRDIFFT"d " \
-		  "(max is %"PRINTPTRDIFFT"d).\n",			\
-		  sz, data->len - data->ptr);				\
+      decode_error (data, NULL, "Too large size %td (max is %td).\n",	\
+		    sz, data->len - data->ptr);				\
     STR=begin_wide_shared_string(num, what);				\
     MEMCPY(STR->str, data->data + data->ptr, sz);			\
     data->ptr += sz;							\
@@ -2165,12 +2203,10 @@ static int my_extract_char(struct decode_data *data)
   }else{								    \
     ptrdiff_t sz = (LEN);						\
     if (sz < 0)								\
-      Pike_error ("Failed to decode string: Illegal negative size "	\
-		  "%"PRINTPTRDIFFT"d.\n", sz);				\
+      decode_error (data, NULL, "Illegal negative size %td.\n", sz);	\
     if (sz > data->len - data->ptr)					\
-      Pike_error ("Failed to decode string: Too large size %"PRINTPTRDIFFT"d " \
-		  "(max is %"PRINTPTRDIFFT"d).\n",			\
-		  sz, data->len - data->ptr);				\
+      decode_error (data, NULL, "Too large size %td (max is %td).\n",	\
+		    sz, data->len - data->ptr);				\
     STR=make_shared_binary_string((char *)(data->data + data->ptr), sz); \
     data->ptr += sz;							\
   }									    \
@@ -2200,8 +2236,7 @@ static int my_extract_char(struct decode_data *data)
       break;								     \
 									     \
     default:								     \
-      Pike_error("Failed to decode string, tag is wrong: %d\n",		     \
-            what & TAG_MASK);						     \
+      decode_error (data, NULL, "Tag is wrong: %d\n", what & TAG_MASK);	\
     }									     \
 }while(0)
 
@@ -2260,14 +2295,14 @@ static void low_decode_type(struct decode_data *data)
   switch(tmp)
   {
     default:
-      Pike_error("decode_value(): Error in type string (%d).\n", tmp);
+      decode_error(data, NULL, "Error in type string (%d).\n", tmp);
       /*NOTREACHED*/
       break;
 
     case T_ASSIGN:
       tmp = GETC();
       if ((tmp < '0') || (tmp > '9')) {
-	Pike_error("decode_value(): Bad marker in type string (%d).\n", tmp);
+	decode_error(data, NULL, "Bad marker in type string (%d).\n", tmp);
       }
       low_decode_type(data);
       push_assign_type(tmp);	/* Actually reverse, but they're the same */
@@ -2364,8 +2399,8 @@ static void low_decode_type(struct decode_data *data)
       decode_value2(data);
 
       if (Pike_sp[-1].type != PIKE_T_STRING) {
-	Pike_error("decode_value(): Type attribute is not a string (%s)\n",
-		   get_name_of_type(Pike_sp[-1].type));
+	decode_error(data, NULL, "Type attribute is not a string: %O\n",
+		     Pike_sp - 1);
       }
       low_decode_type(data);
       push_type_attribute(Pike_sp[-1].u.string);
@@ -2376,8 +2411,8 @@ static void low_decode_type(struct decode_data *data)
       decode_value2(data);
 
       if (Pike_sp[-1].type != PIKE_T_STRING) {
-	Pike_error("decode_value(): Type name is not a string (%s)\n",
-		   get_name_of_type(Pike_sp[-1].type));
+	decode_error(data, NULL, "Type name is not a string: %O\n",
+		     Pike_sp - 1);
       }
       low_decode_type(data);
       push_type_name(Pike_sp[-1].u.string);
@@ -2403,11 +2438,11 @@ static void low_decode_type(struct decode_data *data)
 	  {
 	    struct program *prog;
 	    if (Pike_sp[-1].subtype == FUNCTION_BUILTIN) {
-	      Pike_error("Failed to decode object type.\n");
+	      decode_error(data, NULL, "Failed to decode object type.\n");
 	    }
 	    prog = program_from_svalue(Pike_sp-1);
 	    if (!prog) {
-	      Pike_error("Failed to decode object type.\n");
+	      decode_error(data, NULL, "Failed to decode object type.\n");
 	    }
 	    debug_malloc_touch(prog);
 	    push_object_type_backwards(flag, prog->id);
@@ -2415,9 +2450,9 @@ static void low_decode_type(struct decode_data *data)
 	  break;
 
 	default:
-	  Pike_error("Failed to decode type "
-		"(object(%s), expected object(zero|program)).\n",
-		get_name_of_type(Pike_sp[-1].type));
+	  decode_error(data, NULL, "Failed to decode type "
+		       "(object(%s), expected object(zero|program)).\n",
+		       get_name_of_type(Pike_sp[-1].type));
       }
       pop_stack();
     }
@@ -2489,52 +2524,10 @@ static void restore_current_file(void *save_current_file)
   c->lex.current_file = save_current_file;
 }
 
-static DECLSPEC(noreturn) void decode_error (struct svalue *decoding,
-					     struct svalue *other,
-					     char *msg, ...)
-  ATTRIBUTE((noreturn,format (printf, 3, 4)));
-
-static DECLSPEC(noreturn) void decode_error (struct svalue *decoding,
-					     struct svalue *other,
-					     char *msg, ...)
-{
-  int n = 0;
-  char buf[4096];
-  va_list args;
-  va_start (args, msg);
-  VSNPRINTF (buf, sizeof (buf), msg, args);
-  va_end (args);
-
-  if (decoding) {
-    push_constant_text ("Error while decoding "); n++;
-    push_constant_text ("%O");
-    push_svalue (decoding);
-    f_sprintf (2); n++;
-    push_constant_text (":\n"); n++;
-  }
-  push_text (buf); n++;
-  if (other) {
-    push_constant_text ("%O (%s)\n");
-    push_svalue (other);
-    push_text(get_name_of_type(other->type));
-    f_sprintf (3); n++;
-  }
-  f_add (n);
-
-  f_backtrace (0);
-  f_aggregate (2);
-
-  free_svalue(& throw_value);
-  dmalloc_touch_svalue(Pike_sp-1);
-  throw_value = *--Pike_sp;
-  throw_severity = THROW_ERROR;
-  pike_throw();
-}
-
 /* Decode bytecode string @[string_no].
  * Returns resulting offset in p->program.
  */
-static INT32 decode_portable_bytecode(INT32 string_no)
+static INT32 decode_portable_bytecode(struct decode_data *data, INT32 string_no)
 {
   struct program *p = Pike_compiler->new_program;
   struct pike_string *bytecode;
@@ -2545,16 +2538,16 @@ static INT32 decode_portable_bytecode(INT32 string_no)
 
   debug_malloc_touch(p);
   if ((string_no < 0) || (string_no >= p->num_strings)) {
-    Pike_error("Bad bytecode string number: %d (expected 0 - %d).\n",
-	       string_no, p->num_strings-1);
+    decode_error(data, NULL,
+		 "Bad bytecode string number: %d (expected 0 - %d).\n",
+		 string_no, p->num_strings-1);
   }
 
   bytecode = p->strings[string_no];
 
   if (bytecode->len % 3) {
-    Pike_error("Bad bytecode string length: "
-	       "%"PRINTPTRDIFFT"d (expected multiple of 3).\n",
-	       bytecode->len);
+    decode_error(data, NULL, "Bad bytecode string length: "
+		 "%td (expected multiple of 3).\n", bytecode->len);
   }
 
   init_bytecode();  
@@ -2573,19 +2566,19 @@ static INT32 decode_portable_bytecode(INT32 string_no)
 	INT32 strno = STR(bytecode)[e+1];		\
 	if (SIGNED_CHAR(strno < 0) ||			\
 	    (strno >= p->num_strings)) {		\
-	  Pike_error("Bad filename directive number:"	\
-		     " %d (expected 0 - %d).\n",	\
-		     strno, p->num_strings);		\
+	  decode_error(data, NULL, "Bad filename directive number:"	\
+		       " %d (expected 0 - %d).\n",			\
+		       strno, p->num_strings);				\
 	}						\
 	current_file = p->strings[strno];		\
       } else if (STR(bytecode)[e] == F_LINE) {		\
 	current_line = STR(bytecode)[e+1];		\
       } else if (!current_file) {			\
-	Pike_error("Missing filename directive in "	\
-		   "byte code.\n");			\
+	decode_error(data, NULL, "Missing filename directive in "	\
+		     "byte code.\n");			\
       } else if (!current_line) {			\
-	Pike_error("Missing line directive in "		\
-		   "byte code.\n");			\
+	decode_error(data, NULL, "Missing line directive in "		\
+		     "byte code.\n");			\
       } else
 
 #define EMIT_BYTECODE(STR, X) do {		\
@@ -2613,11 +2606,11 @@ static INT32 decode_portable_bytecode(INT32 string_no)
 #undef EMIT_BYTECODE2
 #define EMIT_BYTECODE2(X)				\
     if (!current_file) {				\
-      Pike_error("Missing filename directive in "	\
-		 "byte code.\n");			\
+      decode_error(data, NULL, "Missing filename directive in "		\
+		   "byte code.\n");			\
     } else if (!current_line) {				\
-      Pike_error("Missing line directive in "		\
-		 "byte code.\n");			\
+      decode_error(data, NULL, "Missing line directive in "		\
+		   "byte code.\n");			\
     } else
 
     EMIT_BYTECODE(STR0, EMIT_BYTECODE2);
@@ -2665,8 +2658,8 @@ static void decode_value2(struct decode_data *data)
       entry_id.subtype = NUMBER_NUMBER;
       entry_id.u.integer = num;
       if (!(delayed_enc_val = low_mapping_lookup (data->decoded, &entry_id)))
-	Pike_error ("Failed to find previous record of delay encoded entry <%d>.\n",
-		    num);
+	decode_error (data, NULL, "Failed to find previous record of "
+		      "delay encoded entry <%d>.\n", num);
       DECODE ("decode_value2");
       break;
 
@@ -2680,7 +2673,8 @@ static void decode_value2(struct decode_data *data)
       {
 	push_svalue(tmp2);
       }else{
-	Pike_error("Failed to decode TAG_AGAIN entry <%d>.\n", num);
+	decode_error(data, NULL, "Failed to decode TAG_AGAIN entry <%d>.\n",
+		     num);
       }
       goto decode_done;
 
@@ -2783,11 +2777,12 @@ static void decode_value2(struct decode_data *data)
       struct array *a;
       TYPE_FIELD types;
       if(num < 0)
-	Pike_error("Failed to decode array. (array size is negative)\n");
+	decode_error(data, NULL,
+		     "Failed to decode array (array size is negative).\n");
 
       /* Heruetical */
       if(data->ptr + num > data->len)
-	Pike_error("Failed to decode array. (not enough data)\n");
+	decode_error(data, NULL, "Failed to decode array (not enough data).\n");
 
       EDB(2,fprintf(stderr, "%*sDecoding array of size %d to <%d>\n",
 		  data->depth, "", num, entry_id.u.integer));
@@ -2811,11 +2806,13 @@ static void decode_value2(struct decode_data *data)
     {
       struct mapping *m;
       if(num<0)
-	Pike_error("Failed to decode mapping. (mapping size is negative)\n");
+	decode_error(data, NULL, "Failed to decode mapping "
+		     "(mapping size is negative).\n");
 
       /* Heuristical */
       if(data->ptr + num > data->len)
-	Pike_error("Failed to decode mapping. (not enough data)\n");
+	decode_error(data, NULL, "Failed to decode mapping "
+		     "(not enough data).\n");
 
       EDB(2,fprintf(stderr, "%*sDecoding mapping of size %d to <%d>\n",
 		  data->depth, "", num, entry_id.u.integer));
@@ -2839,11 +2836,13 @@ static void decode_value2(struct decode_data *data)
       struct array *a;
       TYPE_FIELD types;
       if(num<0)
-	Pike_error("Failed to decode multiset. (multiset size is negative)\n");
+	decode_error(data, NULL, "Failed to decode multiset "
+		     "(multiset size is negative).\n");
 
       /* Heruetical */
       if(data->ptr + num > data->len)
-	Pike_error("Failed to decode multiset. (not enough data)\n");
+	decode_error(data, NULL, "Failed to decode multiset "
+		     "(not enough data).\n");
 
       /* NOTE: This code knows stuff about the implementation of multisets...*/
 
@@ -2897,8 +2896,9 @@ static void decode_value2(struct decode_data *data)
 
 	    if (!o) {
 	      if (data->pickyness)
-		decode_error (NULL, Pike_sp - 1,
-			      "Failed to decode program for object. Got: ");
+		decode_error (data, NULL,
+			      "Failed to decode program for object. Got: %O\n",
+			      Pike_sp - 1);
 	      EDB(1,fprintf(stderr, "%*sDecoded a failed object to <%d>: ",
 			    data->depth, "", entry_id.u.integer);
 		  print_svalue(stderr, Pike_sp-1);
@@ -2952,12 +2952,12 @@ static void decode_value2(struct decode_data *data)
 	    ref_push_object(o);
 	    decode_value2(data);
 	    if(!data->codec)
-	      decode_error(Pike_sp - 1, NULL,
+	      decode_error(data, Pike_sp - 1,
 			   "Cannot decode object without codec.\n");
 
 	    fun = find_identifier("decode_object", data->codec->prog);
 	    if (fun < 0)
-	      decode_error(Pike_sp - 1, NULL,
+	      decode_error(data, Pike_sp - 1,
 			   "Cannot decode objects without a "
 			   "\"decode_object\" function in the codec.\n");
 	    apply_low(data->codec,fun,2);
@@ -3010,27 +3010,32 @@ static void decode_value2(struct decode_data *data)
 	  /* Subtyped object. */
 	  if ((Pike_sp[-1].type != T_OBJECT) || Pike_sp[-1].subtype ||
 	      !Pike_sp[-1].u.object->prog) {
-	    decode_error(NULL, Pike_sp-1, "Expected plain object. Got: ");
+	    decode_error(data, NULL, "Expected plain object. Got: %O\n",
+			 Pike_sp-1);
 	  }
 	  if ((subtype < 0) ||
 	      (subtype >= Pike_sp[-1].u.object->prog->num_inherits)) {
-	    decode_error(NULL, Pike_sp-1,
-			 "Invalid subtype for object: %d (max: %d). Object: ",
-			 subtype, Pike_sp[-1].u.object->prog->num_inherits);
+	    decode_error(data, NULL,
+			 "Invalid subtype for object: %d (max: %d). "
+			 "Object: %O\n",
+			 subtype, Pike_sp[-1].u.object->prog->num_inherits,
+			 Pike_sp-1);
 	  }
 	  Pike_sp[-1].subtype = subtype;
 	  break;
 
 	default:
-	  Pike_error("Object coding not compatible.\n");
+	  decode_error(data, NULL, "Object coding not compatible: %d\n", num);
 	  break;
       }
 
       if((Pike_sp[-1].type != T_OBJECT) && data->pickyness) {
 	if (num != 2) {
-	  decode_error(NULL, Pike_sp - 1, "Failed to decode object. Got: ");
+	  decode_error(data, NULL, "Failed to decode object. Got: %O\n",
+		       Pike_sp - 1);
 	} else if (Pike_sp[-1].type != PIKE_T_INT) {
-	  decode_error(NULL, Pike_sp - 1, "Failed to decode bignum. Got: ");
+	  decode_error(data, NULL, "Failed to decode bignum. Got: %O\n",
+		       Pike_sp - 1);
 	}
       }
 
@@ -3050,13 +3055,15 @@ static void decode_value2(struct decode_data *data)
 	case 1: {
 	  struct program *p;
 	  if(Pike_sp[-1].type != T_OBJECT && data->pickyness)
-	    decode_error(NULL, Pike_sp - 1,
-			 "Failed to decode function object. Got: ");
+	    decode_error(data, NULL,
+			 "Failed to decode function object. Got: %O\n",
+			 Pike_sp - 1);
 
 	  decode_value2(data);
 	  if(Pike_sp[-1].type != T_STRING && data->pickyness)
-	    decode_error(NULL, Pike_sp - 1,
-			 "Failed to decode function identifier. Got: ");
+	    decode_error(data, NULL,
+			 "Failed to decode function identifier. Got: %O\n",
+			 Pike_sp - 1);
 
 	  if (Pike_sp[-2].type == T_OBJECT &&
 	      Pike_sp[-1].type == T_STRING &&
@@ -3081,10 +3088,11 @@ static void decode_value2(struct decode_data *data)
 	    else if (data->pickyness) {
 	      debug_malloc_touch(p);
 	      if (Pike_sp[-1].u.string->size_shift)
-		decode_error(NULL, Pike_sp - 2, "Couldn't find identifier in ");
+		decode_error(data, NULL, "Couldn't find identifier in %O.\n",
+			     Pike_sp - 2);
 	      else
-		decode_error(NULL, Pike_sp - 2, "Couldn't find identifier %s in ",
-			     Pike_sp[-1].u.string->str);
+		decode_error(data, NULL, "Couldn't find identifier %s in %O.\n",
+			     Pike_sp[-1].u.string->str, Pike_sp - 2);
 	    }
 	    debug_malloc_touch(p);
 	  }
@@ -3093,14 +3101,14 @@ static void decode_value2(struct decode_data *data)
 	}
 
 	default:
-	  Pike_error("Function coding not compatible.\n");
+	  decode_error(data, NULL, "Function coding not compatible: %d\n", num);
 	  break;
       }
 
       if((Pike_sp[-1].type != T_FUNCTION) && (Pike_sp[-1].type != T_PROGRAM) &&
 	 data->pickyness)
-	decode_error(Pike_sp - 2, Pike_sp - 1,
-		     "Failed to decode function. Got: ");
+	decode_error(data, Pike_sp - 2,
+		     "Failed to decode function. Got: %O\n", Pike_sp - 1);
 
       stack_pop_keep_top();
 
@@ -3124,8 +3132,8 @@ static void decode_value2(struct decode_data *data)
 
 	  if (!p) {
 	    if(data->pickyness)
-	      decode_error(NULL, Pike_sp - 1,
-			   "Failed to decode program. Got: ");
+	      decode_error(data, NULL, "Failed to decode program. Got: %O\n",
+			   Pike_sp - 1);
 	    pop_stack();
 	    push_undefined();
 	    break;
@@ -3180,14 +3188,15 @@ static void decode_value2(struct decode_data *data)
 	    {
 	      placeholder=Pike_sp[-1].u.object;
 	      if(placeholder->prog != null_program)
-		Pike_error("Placeholder object is not a __null_program clone.\n");
+		decode_error(data, NULL, "Placeholder object is not "
+			     "a __null_program clone.\n");
 	      dmalloc_touch_svalue(Pike_sp-1);
 	      Pike_sp--;
 	    }
 	    else if (Pike_sp[-1].type != T_INT ||
 		     Pike_sp[-1].u.integer)
-	      Pike_error ("Expected placeholder object or zero "
-			  "from __register_new_program.\n");
+	      decode_error (data, NULL, "Expected placeholder object or zero "
+			    "from __register_new_program.\n");
 	    else {
 	      pop_stack();
 	    }
@@ -3203,7 +3212,8 @@ static void decode_value2(struct decode_data *data)
 	     && !data->debug
 #endif
 	    )
-	    Pike_error("Cannot decode programs encoded with other pike version.\n");
+	    decode_error(data, NULL, "Cannot decode programs encoded "
+			 "with other pike version %O.\n", Pike_sp - 2);
 	  pop_n_elems(2);
 
 #ifdef ENCODE_DEBUG
@@ -3248,7 +3258,8 @@ static void decode_value2(struct decode_data *data)
 	      break;
 	    default:
 	      if (data->pickyness)
-		decode_error(NULL, Pike_sp - 1, "Program decode failed. Got: ");
+		decode_error(data, NULL, "Program decode failed. Got: %O\n",
+			     Pike_sp - 1);
 	      p->parent = 0;
 	      break;
 	  }
@@ -3306,8 +3317,9 @@ static void decode_value2(struct decode_data *data)
 	    INT32 bytecode_method = 0;
 	    decode_number(bytecode_method, data);
 	    if (bytecode_method != PIKE_BYTECODE_METHOD) {
-	      Pike_error("Unsupported byte-code method: %d. Expected %d\n",
-			 bytecode_method, PIKE_BYTECODE_METHOD);
+	      decode_error(data, NULL,
+			   "Unsupported byte-code method: %d. Expected %d\n",
+			   bytecode_method, PIKE_BYTECODE_METHOD);
 	    }
 	  }
 
@@ -3351,7 +3363,7 @@ static void decode_value2(struct decode_data *data)
 	    {
 	      p->identifier_index[d]=0;
 	      ref_push_program (p);
-	      decode_error(Pike_sp - 1, NULL, "Malformed program in decode.\n");
+	      decode_error(data, Pike_sp - 1, "Malformed program in decode.\n");
 	    }
 	  }
 
@@ -3363,7 +3375,7 @@ static void decode_value2(struct decode_data *data)
 	    {
 	      p->variable_index[d]=0;
 	      ref_push_program (p);
-	      decode_error(Pike_sp - 1, NULL, "Malformed program in decode.\n");
+	      decode_error(data, Pike_sp - 1, "Malformed program in decode.\n");
 	    }
 	  }
 
@@ -3375,7 +3387,7 @@ static void decode_value2(struct decode_data *data)
 	    {
 	      p->identifier_references[d].inherit_offset=0;
 	      ref_push_program (p);
-	      decode_error(Pike_sp - 1, NULL, "Malformed program in decode.\n");
+	      decode_error(data, Pike_sp - 1, "Malformed program in decode.\n");
 	    }
 	    decode_number(p->identifier_references[d].identifier_offset,data);
 	    decode_number(p->identifier_references[d].id_flags,data);
@@ -3404,8 +3416,8 @@ static void decode_value2(struct decode_data *data)
 	    {
 	      debug_malloc_touch(placeholder);
 	      ref_push_program (p);
-	      decode_error(Pike_sp - 1, NULL,
-			   "Placeholder is no longer a __null_program clone.\n");
+	      decode_error(data, Pike_sp - 1, "Placeholder is no longer "
+			   "a __null_program clone.\n");
 	    }else{
 	      free_program(placeholder->prog);
 	      add_ref(placeholder->prog = p);
@@ -3430,8 +3442,9 @@ static void decode_value2(struct decode_data *data)
 	      if(Pike_sp[-1].type != T_PROGRAM ||
 		 Pike_sp[-1].u.program != p) {
 		ref_push_program (p);
-		decode_error(Pike_sp - 1, Pike_sp - 2,
-			     "Program decode of self inherit failed. Got: ");
+		decode_error(data, Pike_sp - 1,
+			     "Program decode of self inherit failed. Got: %O\n",
+			     Pike_sp - 2);
 	      }
 	      sub_ref(p);
 	    }
@@ -3468,8 +3481,8 @@ static void decode_value2(struct decode_data *data)
 		  p->inherits[d].prog=program_from_svalue(Pike_sp-1);
 		  if(!p->inherits[d].prog) {
 		    ref_push_program (p);
-		    decode_error(Pike_sp - 1, Pike_sp - 2,
-				 "Failed to decode inherited program. Got: ");
+		    decode_error(data, Pike_sp - 1, "Failed to decode "
+				 "inherited program. Got: %O\n", Pike_sp - 2);
 		  }
 		  add_ref(p->inherits[d].prog);
 		  p->inherits[d].parent=Pike_sp[-1].u.object;
@@ -3481,8 +3494,9 @@ static void decode_value2(struct decode_data *data)
 
 	      default:
 		ref_push_program (p);
-		decode_error(Pike_sp - 1, Pike_sp - 2,
-			     "Failed to decode inherited program. Got: ");
+		decode_error(data, Pike_sp - 1,
+			     "Failed to decode inherited program. Got: %O\n",
+			     Pike_sp - 2);
 	    }
 
 	    p->num_inherits=d+1;
@@ -3519,9 +3533,9 @@ static void decode_value2(struct decode_data *data)
 	      decode_number(p->identifiers[d].func.offset,data);
 	    } else {
 	      ref_push_program (p);
-	      ref_push_string (p->identifiers[d].name);
-	      decode_error(Pike_sp - 1, Pike_sp - 2,
-			   "Cannot decode function implemented in C: ");
+	      decode_error(data, Pike_sp - 1,
+			   "Cannot decode function implemented in C: %S\n",
+			   p->identifiers[d].name);
 	    }
 	  }
 
@@ -3581,7 +3595,8 @@ static void decode_value2(struct decode_data *data)
 	    if(placeholder->storage)
 	    {
 	      ref_push_program (p);
-	      decode_error(Pike_sp - 1, NULL, "Placeholder already has storage!\n");
+	      decode_error(data, Pike_sp - 1,
+			   "Placeholder already has storage!\n");
 	    } else {
 	      placeholder->storage=p->storage_needed ?
 		(char *)xcalloc(p->storage_needed, 1) :
@@ -3680,13 +3695,13 @@ static void decode_value2(struct decode_data *data)
 		struct unfinished_obj_link *l, **ptr;
 		if (data->unfinished_objects) {
 		  if(!data->codec)
-		    decode_error(Pike_sp - 1, NULL,
+		    decode_error(data, Pike_sp - 1,
 				 "Cannot decode object without codec.\n");
 
 		  decode_fun =
 		    find_identifier("decode_object", data->codec->prog);
 		  if (decode_fun < 0)
-		    decode_error(Pike_sp - 1, NULL,
+		    decode_error(data, Pike_sp - 1,
 				 "Cannot decode objects without a "
 				 "\"decode_object\" function in the codec.\n");
 		}
@@ -3760,7 +3775,8 @@ static void decode_value2(struct decode_data *data)
 	    f_arrow(2);
 	  }
 	  if(Pike_sp[-1].type != T_PROGRAM && data->pickyness)
-	    decode_error(NULL, Pike_sp - 1, "Failed to decode program. Got: ");
+	    decode_error(data, NULL, "Failed to decode program. Got: %O\n",
+			 Pike_sp - 1);
 	  break;
 
         case 3:
@@ -3770,14 +3786,14 @@ static void decode_value2(struct decode_data *data)
 	      (Pike_sp[-1].u.integer > 0)) {
 	    struct program *p = id_to_program(Pike_sp[-1].u.integer);
 	    if (!p) {
-	      Pike_error("Failed to get program from ID %"PRINTPIKEINT"d\n",
-			 Pike_sp[-1].u.integer);
+	      decode_error(data, NULL, "Failed to get program from ID %O.\n",
+			   Pike_sp - 1);
 	    }
 	    pop_stack();
 	    ref_push_program(p);
 	  } else {
-	    decode_error(NULL, Pike_sp - 1,
-			 "Failed to decode program by ID. Expected integer, got: ");
+	    decode_error(data, NULL, "Failed to decode program by ID. "
+			 "Expected integer, got: %O\n", Pike_sp - 1);
 	  }
 	  break;
 
@@ -3805,12 +3821,13 @@ static void decode_value2(struct decode_data *data)
 	    /* Returns a placeholder. */
 	    if (Pike_sp[-1].type == T_OBJECT) {
 	      if (Pike_sp[-1].u.object->prog != null_program)
-		Pike_error ("Placeholder object is not a null_program clone.\n");
+		decode_error (data, NULL, "Placeholder object is not "
+			      "a null_program clone.\n");
 	    }
 	    else if (Pike_sp[-1].type != T_INT ||
 		     Pike_sp[-1].u.integer)
-	      Pike_error ("Expected placeholder object or zero "
-			  "from __register_new_program.\n");
+	      decode_error (data, NULL, "Expected placeholder object or zero "
+			    "from __register_new_program.\n");
 	    pop_stack();
 	  }
 #endif
@@ -3857,8 +3874,8 @@ static void decode_value2(struct decode_data *data)
 #endif
 #endif
 	      ) {
-	    Pike_error("Unsupported byte-order. Native:%d Encoded:%d\n",
-		       PIKE_BYTEORDER, byteorder);
+	    decode_error (data, NULL, "Unsupported byte-order. "
+			  "Native:%d Encoded:%d\n", PIKE_BYTEORDER, byteorder);
 	  }
 
 	  /* Decode flags. */
@@ -3874,10 +3891,9 @@ static void decode_value2(struct decode_data *data)
 		fputc('\n', stderr););
 	    if (delayed_enc_val->type != T_PROGRAM ||
 		delayed_enc_val->u.program->flags != PROGRAM_VIRGIN) {
-	      decode_error (NULL, delayed_enc_val,
-			    "Didn't get program embryo "
-			    "for delay encoded program <%"PRINTPIKEINT"d>: ",
-			    entry_id.u.integer);
+	      decode_error (data, NULL, "Didn't get program embryo "
+			    "for delay encoded program <%O>: %O\n",
+			    &entry_id, delayed_enc_val);
 	    }
 	    /* No new ref here; low_start_new_program will add one for
 	     * Pike_compiler->new_program and we want ride on that one
@@ -3926,13 +3942,13 @@ static void decode_value2(struct decode_data *data)
 	      {
 		add_ref(c->placeholder=Pike_sp[-1].u.object);
 		if(c->placeholder->prog != null_program) {
-		  Pike_error("Placeholder object is not "
-			     "a __null_program clone.\n");
+		  decode_error(data, NULL, "Placeholder object is not "
+			       "a __null_program clone.\n");
 		}
 	      } else if (Pike_sp[-1].type != T_INT ||
 			 Pike_sp[-1].u.integer) {
-		Pike_error ("Expected placeholder object or zero "
-			    "from __register_new_program.\n");
+		decode_error (data, NULL, "Expected placeholder object or zero "
+			      "from __register_new_program.\n");
 	      }
 	      pop_stack();
 	    }
@@ -3967,7 +3983,8 @@ static void decode_value2(struct decode_data *data)
 	     && !data->debug
 #endif
 	    )
-	    Pike_error("Cannot decode programs encoded with other pike version.\n");
+	    decode_error(data, NULL, "Cannot decode programs encoded with "
+			 "other pike version %O.\n", Pike_sp - 2);
 	  pop_n_elems(2);
 
 	  debug_malloc_touch(p);
@@ -3986,8 +4003,8 @@ static void decode_value2(struct decode_data *data)
 		     (!Pike_sp[-1].u.integer)) {
 	    p->parent = NULL;
 	  } else {
-	    Pike_error("Bad type for parent program (%s)\n",
-		       get_name_of_type(Pike_sp[-1].type));
+	    decode_error (data, NULL, "Bad type for parent program (%s).\n",
+			  get_name_of_type(Pike_sp[-1].type));
 	  }
 	  dmalloc_touch_svalue(Pike_sp-1);
 	  Pike_sp--;
@@ -4001,7 +4018,8 @@ static void decode_value2(struct decode_data *data)
 	  decode_number(bytecode_method, data);
 	  if (bytecode_method == PIKE_BYTECODE_PORTABLE) {
 	  } else if (bytecode_method != PIKE_BYTECODE_METHOD) {
-	    Pike_error("Unsupported byte-code method: %d\n", bytecode_method);
+	    decode_error(data, NULL, "Unsupported byte-code method: %d\n",
+			 bytecode_method);
 	  } else {
 
 #ifdef PIKE_PORTABLE_BYTECODE
@@ -4014,15 +4032,17 @@ static void decode_value2(struct decode_data *data)
 	      /* Check the checksum of the instrs array. */
 	      decode_number(csum, data);
 	      if (csum != instrs_checksum) {
-		Pike_error("Bad instruction checksum: %d (expected %d)\n",
-			   csum, instrs_checksum);
+		decode_error(data, NULL,
+			     "Bad instruction checksum: %d (expected %d)\n",
+			     csum, instrs_checksum);
 	      }	    
 	    }
 #endif /* PIKE_USE_MACHINE_CODE */
 
 	    /* Decode program */
 	    if (data->ptr + (int)local_num_program >= data->len) {
-	      Pike_error("Failed to decode program. (string too short)\n");
+	      decode_error(data, NULL,
+			   "Failed to decode program (string too short).\n");
 	    }
 	    low_add_many_to_program(Pike_compiler,
 				    (PIKE_OPCODE_T *)(data->data + data->ptr),
@@ -4045,7 +4065,8 @@ static void decode_value2(struct decode_data *data)
 
 	    /* Decode linenumbers */
 	    if (data->ptr + (int)local_num_linenumbers >= data->len) {
-	      Pike_error("Failed to decode linenumbers. (string too short)\n");
+	      decode_error(data, NULL, "Failed to decode linenumbers "
+			   "(string too short).\n");
 	    }
 	    for (e=0; e<(int)local_num_linenumbers; e++) {
 	      char lineno_info;
@@ -4072,8 +4093,8 @@ static void decode_value2(struct decode_data *data)
 	    decode_value2(data);
 	    if (Pike_sp[-1].type != T_STRING) {
 	      ref_push_program (p);
-	      decode_error(Pike_sp - 1, Pike_sp - 2,
-			   "Nonstrings in string table: ");
+	      decode_error(data, Pike_sp - 1,
+			   "Nonstrings in string table: %O\n", Pike_sp - 2);
 	    }
 	    add_to_strings(Pike_sp[-1].u.string);
 	    dmalloc_touch_svalue(Pike_sp-1);
@@ -4114,7 +4135,7 @@ static void decode_value2(struct decode_data *data)
 			data->depth, "", efun_no));
 	    if ((efun_no < 0) || (efun_no >= local_num_constants)) {
 	      ref_push_program (p);
-	      decode_error(Pike_sp - 1, NULL,
+	      decode_error(data, Pike_sp - 1,
 			   "Bad efun/type number: %d (expected 0 - %d).\n",
 			   efun_no, local_num_constants-1);	      
 	    }
@@ -4127,21 +4148,22 @@ static void decode_value2(struct decode_data *data)
 		   (Pike_sp[-1].subtype != FUNCTION_BUILTIN)) &&
 		  data->pickyness) {
 		ref_push_program (p);
-		decode_error(Pike_sp - 1, Pike_sp - 2,
-			     "Expected efun constant: ");
+		decode_error(data, Pike_sp - 1,
+			     "Expected efun constant: %O\n", Pike_sp - 2);
 	      }
 	      break;
 	    case ID_ENTRY_TYPE_CONSTANT:
 	      if (Pike_sp[-1].type != T_TYPE && data->pickyness) {
 		ref_push_program (p);
-		decode_error(Pike_sp - 1, Pike_sp - 2,
-			     "Expected type constant: ");
+		decode_error(data, Pike_sp - 1,
+			     "Expected type constant: %O\n", Pike_sp - 2);
 	      }
 	      break;
 	    default:
 	      if (data->pickyness)
-		Pike_error("Internal error: Unsupported early constant (%d)\n",
-			   entry_type);
+		decode_error(data, NULL, "Internal error: "
+			     "Unsupported early constant (%d).\n",
+			     entry_type);
 	      break;
 	    }
 	    /* name */
@@ -4154,8 +4176,9 @@ static void decode_value2(struct decode_data *data)
 	      constant->name = NULL;
 	    } else {
 	      ref_push_program (p);
-	      decode_error(Pike_sp - 1, Pike_sp - 2,
-			   "Name of constant is not a string: ");
+	      decode_error(data, Pike_sp - 1,
+			   "Name of constant is not a string: %O\n",
+			   Pike_sp - 2);
 	    }
 	    constant->sval = Pike_sp[-2];
 	    dmalloc_touch_svalue(Pike_sp-1);
@@ -4183,23 +4206,25 @@ static void decode_value2(struct decode_data *data)
 	      decode_value2(data);
 	      if (Pike_sp[-1].type != T_STRING) {
 		ref_push_program (p);
-		decode_error(Pike_sp - 1, Pike_sp - 2,
-			     "Bad identifier name (not a string): ");
+		decode_error(data, Pike_sp - 1,
+			     "Bad identifier name (not a string): %O\n",
+			     Pike_sp - 2);
 	      }
 
 	      /* type */
 	      decode_value2(data);
 	      if (Pike_sp[-1].type != T_TYPE) {
 		ref_push_program (p);
-		decode_error(Pike_sp - 1, Pike_sp - 2,
-			     "Bad identifier type (not a type): ");
+		decode_error(data, Pike_sp - 1,
+			     "Bad identifier type (not a type): %O\n",
+			     Pike_sp - 2);
 	      }
 
 	      /* filename */
 	      decode_number(filename_strno, data);
 	      if (filename_strno >= p->num_strings) {
 		ref_push_program(p);
-		decode_error(NULL, NULL,
+		decode_error(data, NULL,
 			     "String number out of range: %ld >= %ld",
 			     (long)filename_strno, (long)p->num_strings);
 	      }
@@ -4242,8 +4267,9 @@ static void decode_value2(struct decode_data *data)
 		if (no > p->num_identifier_references) {
 		  EDB (3, dump_program_tables (p, data->depth));
 		  ref_push_program (p);
-		  decode_error(Pike_sp - 1, NULL,
-			       "Bad identifier reference offset: %d != %d\n", no,
+		  decode_error(data, Pike_sp - 1,
+			       "Bad identifier reference offset: %d != %d\n",
+			       no,
 			       Pike_compiler->new_program->
 			       num_identifier_references);
 		} else if (no == p->num_identifier_references) {
@@ -4278,9 +4304,9 @@ static void decode_value2(struct decode_data *data)
 				    id_flags);
 		if (no != n) {
 		  ref_push_program (p);
-		  decode_error(Pike_sp - 1, NULL,
-			       "Bad variable identifier offset: got %d, expected %d\n",
-			       n, no);
+		  decode_error(data, Pike_sp - 1,
+			       "Bad variable identifier offset "
+			       "(got %d, expected %d).\n", n, no);
 		}
 
 		pop_n_elems(2);
@@ -4311,7 +4337,7 @@ static void decode_value2(struct decode_data *data)
 		    old_a_flag = a_flag;
 		    a_flag = (a_flag > (data->debug-1))?a_flag:(data->debug-1);
 		  });
-		  func.offset = decode_portable_bytecode(func.offset);
+		  func.offset = decode_portable_bytecode(data, func.offset);
 		  EDB(2, a_flag = old_a_flag);
 		}
 
@@ -4355,7 +4381,7 @@ static void decode_value2(struct decode_data *data)
 		     p->identifier_references[n].identifier_offset ||
 		     p->identifier_references[no].inherit_offset != 0)) {
 		  ref_push_program (p);
-		  decode_error(Pike_sp - 1, NULL,
+		  decode_error(data, Pike_sp - 1,
 			       "Bad function identifier offset: %d\n", no);
 		}
 
@@ -4439,10 +4465,10 @@ static void decode_value2(struct decode_data *data)
 
 		if (no != n) {
 		  ref_push_program (p);
-		  ref_push_string (id.name);
-		  decode_error(Pike_sp - 2, Pike_sp - 1,
+		  decode_error(data, Pike_sp - 1,
 			       "Bad function identifier offset "
-			       "(expected %d, got %d) for ", no, n);
+			       "(expected %d, got %d) for %S.\n",
+			       no, n, id.name);
 		}
 
 	      }
@@ -4484,9 +4510,10 @@ static void decode_value2(struct decode_data *data)
 
 		if (no != n) {
 		  ref_push_program (p);
-		  decode_error(Pike_sp - 1, Pike_sp - 3,
+		  decode_error(data, Pike_sp - 1,
 			       "Bad alias identifier offset "
-			       "(expected %d, got %d) for ", no, n);
+			       "(expected %d, got %d) for %O.\n",
+			       no, n, Pike_sp - 3);
 		}
 
 		pop_n_elems(2);
@@ -4505,7 +4532,7 @@ static void decode_value2(struct decode_data *data)
 		if (no !=
 		    Pike_compiler->new_program->num_identifier_references) {
 		  ref_push_program (p);
-		  decode_error(Pike_sp - 1, NULL,
+		  decode_error(data, Pike_sp - 1,
 			       "Bad inherit identifier offset: %d\n", no);
 		}
 
@@ -4516,29 +4543,32 @@ static void decode_value2(struct decode_data *data)
 		} else if ((Pike_sp[-1].type != T_INT) ||
 			   Pike_sp[-1].u.integer) {
 		  ref_push_program (p);
-		  decode_error(Pike_sp - 1, Pike_sp - 2,
-			       "Bad inherit name (not a string): ");
+		  decode_error(data, Pike_sp - 1,
+			       "Bad inherit name (not a string): %O\n",
+			       Pike_sp - 2);
 		}
 
 		/* prog */
 		decode_value2(data);
 		if (Pike_sp[-1].type != T_PROGRAM) {
 		  ref_push_program (p);
-		  decode_error(Pike_sp - 1, Pike_sp - 2,
-			       "Bad inherit: Expected program, got ");
+		  decode_error(data, Pike_sp - 1,
+			       "Bad inherit: Expected program, got: %O\n",
+			       Pike_sp - 2);
 		}
 		prog = Pike_sp[-1].u.program;
 		if (prog == placeholder_program) {
 		  ref_push_program (p);
-		  decode_error (Pike_sp - 1, NULL,
+		  decode_error (data, Pike_sp - 1,
 				"Trying to inherit placeholder program "
 				"(resolver or codec problem).\n");
 		}
 		if(!(prog->flags & (PROGRAM_FINISHED | PROGRAM_PASS_1_DONE))) {
 		  ref_push_program (p);
-		  decode_error (Pike_sp - 1, Pike_sp - 2,
+		  decode_error (data, Pike_sp - 1,
 				"Cannot inherit a program which is not "
-				"fully compiled yet (resolver or codec problem):\n");
+				"fully compiled yet (resolver or codec "
+				"problem): %O\n", Pike_sp - 2);
 		}
 
 		/* parent */
@@ -4548,8 +4578,9 @@ static void decode_value2(struct decode_data *data)
 		} else if ((Pike_sp[-1].type != T_INT) ||
 			   Pike_sp[-1].u.integer) {
 		  ref_push_program (p);
-		  decode_error(Pike_sp - 1, Pike_sp - 2,
-			       "Bad inherit: Parent isn't an object: ");
+		  decode_error(data, Pike_sp - 1,
+			       "Bad inherit: Parent isn't an object: %O\n",
+			       Pike_sp - 2);
 		}
 
 		/* parent_identifier */
@@ -4563,8 +4594,8 @@ static void decode_value2(struct decode_data *data)
 
 		if (prog->num_identifier_references != no) {
 		  ref_push_program (p);
-		  decode_error(Pike_sp - 1, NULL,
-			       "Bad number of identifiers in inherit: %d != %d\n",
+		  decode_error(data, Pike_sp - 1, "Bad number of identifiers "
+			       "in inherit (%d != %d).\n",
 			       no, prog->num_identifier_references);
 		}
 
@@ -4585,7 +4616,8 @@ static void decode_value2(struct decode_data *data)
 	      }
 	      break;
 	    default:
-	      Pike_error("Unsupported id entry type: %d\n", entry_type);
+	      decode_error(data, NULL, "Unsupported id entry type: %d\n",
+			   entry_type);
 	    }
 	    decode_number(entry_type, data);
 	  }
@@ -4611,7 +4643,7 @@ static void decode_value2(struct decode_data *data)
 	   */
 	  ref_push_program (p);
 	  if (!(p = end_first_pass(2))) {
-	    decode_error(Pike_sp - 1, NULL, "Failed to decode program.\n");
+	    decode_error(data, Pike_sp - 1, "Failed to decode program.\n");
 	  }
 	  pop_stack();
 	  push_program(p);
@@ -4639,10 +4671,9 @@ static void decode_value2(struct decode_data *data)
 #define FOO(NUMTYPE,TYPE,ARGTYPE,NAME)					\
 	  if (PIKE_CONCAT(local_num_, NAME) != p->PIKE_CONCAT(num_,NAME)) { \
 	    ref_push_program (p);					\
-	    decode_error(Pike_sp - 1, NULL,				\
+	    decode_error(data, Pike_sp - 1,				\
 			 "Value mismatch for num_" TOSTR(NAME) ": "	\
-			 "%"PRINTSIZET"d != %"PRINTSIZET"d "		\
-			 "(bytecode method: %d)\n",			\
+			 "%zd != %zd (bytecode method: %d)\n",		\
 			 (size_t) PIKE_CONCAT(local_num_, NAME),	\
 			 (size_t) p->PIKE_CONCAT(num_, NAME),		\
 			 bytecode_method);				\
@@ -4675,8 +4706,9 @@ static void decode_value2(struct decode_data *data)
 	      constant->name = NULL;
 	    } else {
 	      ref_push_program (p);
-	      decode_error(Pike_sp - 1, Pike_sp - 2,
-			   "Name of constant is not a string: ");
+	      decode_error(data, Pike_sp - 1,
+			   "Name of constant is not a string: %O\n",
+			   Pike_sp - 2);
 	    }
 	    constant->sval = Pike_sp[-2];
 	    dmalloc_touch_svalue(Pike_sp-1);
@@ -4708,7 +4740,8 @@ static void decode_value2(struct decode_data *data)
 
 	  if (placeholder) {
 	    if (placeholder->prog != null_program) {
-	      Pike_error("Placeholder has been zapped during decoding.\n");
+	      decode_error(data, NULL,
+			   "Placeholder has been zapped during decoding.\n");
 	    }
 	    debug_malloc_touch(placeholder);
 	    free_program(placeholder->prog);
@@ -4753,12 +4786,14 @@ static void decode_value2(struct decode_data *data)
 	}
 
 	default:
-	  Pike_error("Cannot decode program encoding type %d\n",num);
+	  decode_error(data, NULL,
+		       "Cannot decode program encoding type %d\n",num);
       }
       break;
 
   default:
-    Pike_error("Failed to restore string. (Illegal type)\n");
+    decode_error(data, NULL, "Failed to restore string (illegal type %d).\n",
+		 what & TAG_MASK);
   }
 
   mapping_insert(data->decoded, &entry_id, Pike_sp-1);
@@ -4829,9 +4864,9 @@ static void free_decode_data (struct decode_data *data, int delay,
     NEW_MAPPING_LOOP (data->decoded->data) {
       if (k->val.type == T_PROGRAM &&
 	  !(k->val.u.program->flags & PROGRAM_FINISHED)) {
-	decode_error (NULL, &k->val,
-		      "Got unfinished program <%"PRINTPIKEINT"d> "
-		      "after decode: ", k->ind.u.integer);
+	decode_error (data, NULL,
+		      "Got unfinished program <%O> after decode: %O\n",
+		      &k->ind, &k->val);
       }
     }
     if(data->unfinished_programs)
@@ -5031,32 +5066,6 @@ static INT32 my_decode(struct pike_string *tmp,
   return 1;
 }
 
-/* Compatibilidy decoder */
-
-static unsigned char extract_char(char **v, ptrdiff_t *l)
-{
-  if(!*l) Pike_error("Format error, not enough place for char.\n");
-  else (*l)--;
-  (*v)++;
-  return ((unsigned char *)(*v))[-1];
-}
-
-static ptrdiff_t extract_int(char **v, ptrdiff_t *l)
-{
-  INT32 j;
-  ptrdiff_t i;
-
-  j=extract_char(v,l);
-  if(j & 0x80) return (j & 0x7f);
-
-  if((j & ~8) > 4)
-    Pike_error("Format error: Error in format string, invalid integer.\n");
-  i=0;
-  while(j & 7) { i=(i<<8) | extract_char(v,l); j--; }
-  if(j & 8) return -i;
-  return i;
-}
-
 /*! @class MasterObject
  */
 
@@ -5181,6 +5190,32 @@ static ptrdiff_t extract_int(char **v, ptrdiff_t *l)
 /*! @endclass
  */
 
+/* Compatibility decoder */
+
+static unsigned char extract_char(char **v, ptrdiff_t *l)
+{
+  if(!*l) decode_error(current_decode, NULL, "Not enough place for char.\n");
+  else (*l)--;
+  (*v)++;
+  return ((unsigned char *)(*v))[-1];
+}
+
+static ptrdiff_t extract_int(char **v, ptrdiff_t *l)
+{
+  INT32 j;
+  ptrdiff_t i;
+
+  j=extract_char(v,l);
+  if(j & 0x80) return (j & 0x7f);
+
+  if((j & ~8) > 4)
+    decode_error(current_decode, NULL, "Invalid integer.\n");
+  i=0;
+  while(j & 7) { i=(i<<8) | extract_char(v,l); j--; }
+  if(j & 8) return -i;
+  return i;
+}
+
 static void rec_restore_value(char **v, ptrdiff_t *l)
 {
   ptrdiff_t t, i;
@@ -5195,41 +5230,45 @@ static void rec_restore_value(char **v, ptrdiff_t *l)
 
   case TAG_FLOAT:
     if(sizeof(ptrdiff_t) < sizeof(FLOAT_TYPE))  /* FIXME FIXME FIXME FIXME */
-      Pike_error("Float architecture not supported.\n");
+      decode_error(current_decode, NULL, "Float architecture not supported.\n");
     push_int(DO_NOT_WARN(t)); /* WARNING! */
     Pike_sp[-1].type = T_FLOAT;
     return;
 
   case TAG_TYPE:
     {
-      Pike_error("Format error: TAG_TYPE not supported yet.\n");
+      decode_error(current_decode, NULL, "TAG_TYPE not supported yet.\n");
     }
     return;
 
   case TAG_STRING:
-    if(t<0) Pike_error("Format error: length of string is negative.\n");
-    if(*l < t) Pike_error("Format error: string too short\n");
+    if(t<0) decode_error(current_decode, NULL,
+			 "length of string is negative.\n");
+    if(*l < t) decode_error(current_decode, NULL, "string too short\n");
     push_string(make_shared_binary_string(*v, t));
     (*l)-= t;
     (*v)+= t;
     return;
 
   case TAG_ARRAY:
-    if(t<0) Pike_error("Format error: length of array is negative.\n");
+    if(t<0) decode_error(current_decode, NULL,
+			 "length of array is negative.\n");
     check_stack(t);
     for(i=0;i<t;i++) rec_restore_value(v,l);
     f_aggregate(DO_NOT_WARN(t)); /* FIXME: Unbounded stack consumption. */
     return;
 
   case TAG_MULTISET:
-    if(t<0) Pike_error("Format error: length of multiset is negative.\n");
+    if(t<0) decode_error(current_decode, NULL,
+			 "length of multiset is negative.\n");
     check_stack(t);
     for(i=0;i<t;i++) rec_restore_value(v,l);
     f_aggregate_multiset(DO_NOT_WARN(t)); /* FIXME: Unbounded stack consumption. */
     return;
 
   case TAG_MAPPING:
-    if(t<0) Pike_error("Format error: length of mapping is negative.\n");
+    if(t<0) decode_error(current_decode, NULL,
+			 "length of mapping is negative.\n");
     check_stack(t*2);
     for(i=0;i<t;i++)
     {
@@ -5240,33 +5279,41 @@ static void rec_restore_value(char **v, ptrdiff_t *l)
     return;
 
   case TAG_OBJECT:
-    if(t<0) Pike_error("Format error: length of object is negative.\n");
-    if(*l < t) Pike_error("Format error: string too short\n");
+    if(t<0) decode_error(current_decode, NULL,
+			 "length of object is negative.\n");
+    if(*l < t) decode_error(current_decode, NULL, "string too short\n");
     push_string(make_shared_binary_string(*v, t));
     (*l) -= t; (*v) += t;
     APPLY_MASTER("objectof", 1);
     return;
 
   case TAG_FUNCTION:
-    if(t<0) Pike_error("Format error: length of function is negative.\n");
-    if(*l < t) Pike_error("Format error: string too short\n");
+    if(t<0) decode_error(current_decode, NULL,
+			 "length of function is negative.\n");
+    if(*l < t) decode_error(current_decode, NULL, "string too short\n");
     push_string(make_shared_binary_string(*v, t));
     (*l) -= t; (*v) += t;
     APPLY_MASTER("functionof", 1);
     return;
 
   case TAG_PROGRAM:
-    if(t<0) Pike_error("Format error: length of program is negative.\n");
-    if(*l < t) Pike_error("Format error: string too short\n");
+    if(t<0) decode_error(current_decode, NULL,
+			 "length of program is negative.\n");
+    if(*l < t) decode_error(current_decode, NULL, "string too short\n");
     push_string(make_shared_binary_string(*v, t));
     (*l) -= t; (*v) += t;
     APPLY_MASTER("programof", 1);
     return;
 
   default:
-    Pike_error("Format error: Unknown type tag %ld:%ld\n",
+    decode_error(current_decode, NULL, "Unknown type tag %ld:%ld\n",
 	  PTRDIFF_T_TO_LONG(i), PTRDIFF_T_TO_LONG(t));
   }
+}
+
+static void restore_current_decode (struct decode_data *old_data)
+{
+  current_decode = old_data;
 }
 
 /* Defined in builtin.cmod. */
@@ -5318,8 +5365,11 @@ void f_decode_value(INT32 args)
 #endif
       if (Pike_sp[1-args].type == T_OBJECT) {
 	if (Pike_sp[1-args].subtype) {
-	  Pike_error("decode_value: "
-		     "The codec may not be a subtyped object yet.\n");
+	  struct decode_data data;
+	  MEMSET (&data, 0, sizeof (data));
+	  data.data_str = s;	/* Not refcounted. */
+	  decode_error(&data, NULL,
+		       "The codec may not be a subtyped object yet.\n");
 	}
 	codec = Pike_sp[1-args].u.object;
 	break;
@@ -5343,7 +5393,14 @@ void f_decode_value(INT32 args)
   {
     char *v=s->str;
     ptrdiff_t l=s->len;
+    struct decode_data data;
+    ONERROR uwp;
+    MEMSET (&data, 0, sizeof (data));
+    data.data_str = s;		/* Not refcounted. */
+    SET_ONERROR (uwp, restore_current_decode, current_decode);
+    current_decode = &data;
     rec_restore_value(&v, &l);
+    CALL_AND_UNSET_ONERROR (uwp);
   }
   assign_svalue(Pike_sp-args-1, Pike_sp-1);
   pop_n_elems(args);

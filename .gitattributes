@@ -105,7 +105,6 @@ testfont binary
 /lib/modules/Debug.pmod/Subject.pike foreign_ident
 /lib/modules/Debug.pmod/module.pmod foreign_ident
 /lib/modules/Debug.pmod/werror.pmod foreign_ident
-/lib/modules/Error.pmod foreign_ident
 /lib/modules/Float.pmod foreign_ident
 /lib/modules/Filesystem.pmod/Monitor.pmod/basic.pike foreign_ident
 /lib/modules/Filesystem.pmod/Monitor.pmod/symlinks.pike foreign_ident
@@ -286,7 +285,6 @@ testfont binary
 /src/dynamic_load.c foreign_ident
 /src/dynamic_load.h foreign_ident
 /src/encode.h foreign_ident
-/src/errors.h foreign_ident
 /src/export_list foreign_ident
 /src/facetgroup.cmod foreign_ident
 /src/fd_control.c foreign_ident

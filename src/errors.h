@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: errors.h,v 1.40 2008/06/29 12:37:10 nilsson Exp $
+|| $Id$
 */
 
 #ifdef ERR_DECLARE
@@ -153,6 +153,11 @@ DECLARE_ERROR(resource, Resource,
 DECLARE_ERROR(permission, Permission,
 	      ERR_INHERIT(generic),
   ERR_VAR(struct pike_string *, tStr, PIKE_T_STRING,permission_type)
+)
+
+DECLARE_ERROR (decode, Decode,
+	       ERR_INHERIT (generic),
+  ERR_VAR (struct pike_string *, tStr, PIKE_T_STRING, decode_string)
 )
 
 DECLARE_PURE_ERROR(

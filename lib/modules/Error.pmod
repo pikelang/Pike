@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Error.pmod,v 1.4 2007/11/11 16:16:24 nilsson Exp $
+// $Id$
 
 constant Generic = __builtin.GenericError;
 
@@ -13,6 +13,8 @@ constant Math = __builtin.MathError;
 constant Resource = __builtin.ResourceError;
 
 constant Permission = __builtin.PermissionError;
+
+constant Decode = __builtin.DecodeError;
 
 constant Cpp = __builtin.CppError;
 
