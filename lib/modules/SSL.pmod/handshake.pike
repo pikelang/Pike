@@ -266,7 +266,7 @@ Packet client_key_exchange_packet()
   switch (session->ke_method)
   {
   case KE_rsa:
-    struct->put_uint(3,1); struct->put_uint(1,1);
+    struct->put_uint(version[0],1); struct->put_uint(version[1],1);
     string random = context->random(46);
     struct->put_fix_string(random);
     string premaster_secret = struct->pop_data();
@@ -1563,7 +1563,7 @@ werror("sending certificate: " + Standards.PKCS.Certificate.get_dn_string(Tools.
     } else {
       SSL3_DEBUG_MSG("SSL.session: FINISHED\n");
 
-      server_verify_data = input->get_var_string(1);
+      server_verify_data = input->get_fix_string(12);
 
       return 1;			// We're done shaking hands
     }
