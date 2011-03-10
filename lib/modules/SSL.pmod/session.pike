@@ -330,7 +330,7 @@ array(.state) new_client_states(string client_random, string server_random,
     {
       if (version[1] >= 2) {
 	// TLS 1.1 or later have an explicit IV.
-	read_state->tls_iv = write_state->tls_id = cipher_spec->iv_size;
+	read_state->tls_iv = write_state->tls_iv = cipher_spec->iv_size;
       }
       read_state->crypt->set_iv(keys[5]);
       write_state->crypt->set_iv(keys[4]);
