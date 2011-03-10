@@ -1609,6 +1609,15 @@ werror("sending certificate: " + Standards.PKCS.Certificate.get_dn_string(Tools.
 
       server_verify_data = input->get_fix_string(12);
 
+      string my_digest = hash_messages(version[1]?"server finished":"SRVR");
+      if (my_digest != server_verify_data) {
+	SSL3_DEBUG_MSG("digests differ\n");
+	send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
+			  "SSL.session->handle_handshake: unexpected message\n",
+			  backtrace()));
+	return -1;
+      }
+
       return 1;			// We're done shaking hands
     }
     }
