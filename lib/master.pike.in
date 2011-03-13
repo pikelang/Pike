@@ -1952,10 +1952,16 @@ void unregister(program p)
     else
       programs[fname] = no_value;
 
+    string name = program_path_to_name (fname);
+    mixed n = has_value (name, ".") ?
+      resolv ((name / ".")[..<1] * ".") :
+      get_root_module();
+    if (objectp (n) && (n->is_resolv_dirnode || n->is_resolv_joinnode))
+      n->delete_value (p);
+
     fname = dirname (fname);
-    object n;
     if ( fname!="" && objectp (n = fc[fname]) )
-      if (n->is_resolv_dirnode || n->is_resolv_joinnode)
+      if (n->is_resolv_dirnode) // Won't find joinnodes in fc.
 	n->delete_value (p);
   }
 
@@ -1971,7 +1977,7 @@ void unregister(program p)
       else
 	fc[name] = no_value;
 
-  // FIXME: Delete from caches in dirnodes and joinnodes.
+  // FIXME: What about compat handlers?
 }
 
 protected program findprog(string pname,
