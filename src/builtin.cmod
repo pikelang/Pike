@@ -3575,8 +3575,23 @@ PIKECLASS SqlNull
       push_int(0);
       return;
     }
+
+    /* Look for the is_val_null constant directly in the program of
+     * other, without going through its `[]. When this is called in a
+     * codec, other can be a completely arbitrary object which may not
+     * have a `[] that works in that context. */
+    push_int (0);
+    ref_push_program (other->u.object->prog);
     push_constant_text("is_sql_null");
-    o_index();
+    if (program_index_no_free (Pike_sp - 3, Pike_sp - 2, Pike_sp - 1) &&
+	Pike_sp[-3].type == T_INT && Pike_sp[-3].u.integer) {
+      pop_n_elems (4);
+      push_int (1);
+    }
+    else {
+      pop_n_elems (4);
+      push_int (0);
+    }
   }
 
   /*! @decl string encode_json()
