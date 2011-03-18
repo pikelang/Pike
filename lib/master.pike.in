@@ -5686,7 +5686,7 @@ class Codec
   }
 }
 
-// The master acts as the default codec.
+// Compat. The master used to act as the default codec.
 inherit Codec;
 
 

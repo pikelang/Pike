@@ -122,6 +122,34 @@
 #define ID_ENTRY_INHERIT	3
 #define ID_ENTRY_ALIAS		4
 
+static struct object *lookup_codec (struct pike_string *codec_name)
+{
+  struct object *m = get_master();
+  if (!m) {
+    /* Use a dummy if there's no master around yet. This will cause an
+     * error in apply later, so we don't need to bother. */
+    return clone_object (null_program, 0);
+  }
+  else {
+    ref_push_object (m);
+    ref_push_string (codec_name);
+    o_index();
+    if (UNSAFE_IS_ZERO (Pike_sp - 1)) {
+      add_ref (m);
+      return m;
+    }
+    else {
+      apply_svalue (Pike_sp - 1, 0);
+      if (Pike_sp[-1].type != T_OBJECT)
+	Pike_error ("master()->%s() did not return an object. Got: %O\n",
+		    codec_name->str, Pike_sp - 1);
+      m = (--Pike_sp)->u.object;
+      pop_stack();
+      return m;
+    }
+  }
+}
+
 struct encode_data
 {
   int canonic;
@@ -137,6 +165,14 @@ struct encode_data
   int debug, depth;
 #endif
 };
+
+static struct object *encoder_codec (struct encode_data *data)
+{
+  struct pike_string *encoder_str;
+  if (data->codec) return data->codec;
+  MAKE_CONST_STRING (encoder_str, "Encoder");
+  return data->codec = lookup_codec (encoder_str);
+}
 
 /* Convert to/from forward reference ID. */
 #define CONVERT_ENTRY_ID(ID) (-((ID) - COUNTER_START) - (-COUNTER_START + 1))
@@ -870,7 +906,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
       if (data->canonic)
 	Pike_error("Canonical encoding of objects not supported.\n");
       push_svalue(val);
-      apply(data->codec, "nameof", 1);
+      apply(encoder_codec (data), "nameof", 1);
       EDB(5, fprintf(stderr, "%*s->nameof: ", data->depth, "");
 	  print_svalue(stderr, Pike_sp-1);
 	  fputc('\n', stderr););
@@ -926,7 +962,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	       */
 	      data->buf.s.str[to_change] = 99;
 
-	      fun = find_identifier("encode_object", data->codec->prog);
+	      fun = find_identifier("encode_object",
+				    encoder_codec (data)->prog);
 	      if (fun < 0)
 		Pike_error("Cannot encode objects without an "
 			   "\"encode_object\" function in the codec.\n");
@@ -953,7 +990,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	Pike_error("Canonical encoding of functions not supported.\n");
       check_stack(1);
       push_svalue(val);
-      apply(data->codec,"nameof", 1);
+      apply(encoder_codec (data),"nameof", 1);
       if(Pike_sp[-1].type == T_INT && Pike_sp[-1].subtype==NUMBER_UNDEFINED)
       {
 	if(val->subtype != FUNCTION_BUILTIN)
@@ -1010,7 +1047,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	Pike_error("Encoding of unfixated programs not supported.\n");
       check_stack(1);
       push_svalue(val);
-      apply(data->codec,"nameof", 1);
+      apply(encoder_codec (data),"nameof", 1);
       if(Pike_sp[-1].type == val->type)
 	Pike_error("Error in master()->nameof(), same type returned.\n");
       if(Pike_sp[-1].type == T_INT && Pike_sp[-1].subtype == NUMBER_UNDEFINED)
@@ -1840,6 +1877,7 @@ encode_done:;
 static void free_encode_data(struct encode_data *data)
 {
   toss_buffer(& data->buf);
+  if (data->codec) free_object (data->codec);
   free_mapping(data->encoded);
   free_array(data->delayed);
 }
@@ -1856,8 +1894,10 @@ static void free_encode_data(struct encode_data *data)
  *! Almost any value can be coded, mappings, floats, arrays, circular
  *! structures etc.
  *!
- *! If @[codec] is specified, it's used as the codec for the decode.
- *! If no codec is specified, the current master object will be used.
+ *! If @[codec] is specified, it's used as the codec for the encode.
+ *! If none is specified, then one is instantiated through
+ *! @expr{master()->Encoder()@}. As a compatibility fallback, the
+ *! master itself is used if it has no @expr{Encoder@} class.
  *!
  *! If @expr{@[codec]->nameof(o)@} returns @tt{UNDEFINED@} for an
  *! object, @expr{val = o->encode_object(o)@} will be called. The
@@ -1919,13 +1959,7 @@ void f_encode_value(INT32 args)
     }
     data->codec=Pike_sp[1-args].u.object;
   }else{
-    data->codec=get_master();
-    if (!data->codec) {
-      /* Use a dummy if there's no master around yet, to avoid checks. */
-      push_object (clone_object (null_program, 0));
-      args++;
-      data->codec = Pike_sp[-1].u.object;
-    }
+    data->codec=NULL;
   }
 
   SET_ONERROR(tmp, free_encode_data, data);
@@ -1938,6 +1972,7 @@ void f_encode_value(INT32 args)
 
   UNSET_ONERROR(tmp);
 
+  if (data->codec) free_object (data->codec);
   free_mapping(data->encoded);
   free_array (data->delayed);
 
@@ -2003,13 +2038,7 @@ void f_encode_value_canonic(INT32 args)
     }
     data->codec=Pike_sp[1-args].u.object;
   }else{
-    data->codec=get_master();
-    if (!data->codec) {
-      /* Use a dummy if there's no master around yet, to avoid checks. */
-      push_object (clone_object (null_program, 0));
-      args++;
-      data->codec = Pike_sp[-1].u.object;
-    }
+    data->codec=NULL;
   }
 
   SET_ONERROR(tmp, free_encode_data, data);
@@ -2022,6 +2051,7 @@ void f_encode_value_canonic(INT32 args)
 
   UNSET_ONERROR(tmp);
 
+  if (data->codec) free_object (data->codec);
   free_mapping(data->encoded);
   free_array (data->delayed);
 
@@ -2055,6 +2085,7 @@ struct decode_data
   struct unfinished_obj_link *unfinished_placeholders;
   struct svalue counter;
   struct object *codec;
+  int explicit_codec;
   int pickyness;
   int pass;
   int delay_counter;
@@ -2073,6 +2104,14 @@ struct decode_data
   struct Supporter supporter;
 #endif
 };
+
+static struct object *decoder_codec (struct decode_data *data)
+{
+  struct pike_string *decoder_str;
+  if (data->codec) return data->codec;
+  MAKE_CONST_STRING (decoder_str, "Decoder");
+  return data->codec = lookup_codec (decoder_str);
+}
 
 static void decode_value2(struct decode_data *data);
 
@@ -2883,7 +2922,7 @@ static void decode_value2(struct decode_data *data)
       switch(num)
       {
 	case 0:
-	  apply(data->codec,"objectof", 1);
+	  apply(decoder_codec (data),"objectof", 1);
 	  break;
 
 	case 1:
@@ -2951,11 +2990,8 @@ static void decode_value2(struct decode_data *data)
 
 	    ref_push_object(o);
 	    decode_value2(data);
-	    if(!data->codec)
-	      decode_error(data, Pike_sp - 1,
-			   "Cannot decode object without codec.\n");
 
-	    fun = find_identifier("decode_object", data->codec->prog);
+	    fun = find_identifier("decode_object", decoder_codec (data)->prog);
 	    if (fun < 0)
 	      decode_error(data, Pike_sp - 1,
 			   "Cannot decode objects without a "
@@ -3049,7 +3085,7 @@ static void decode_value2(struct decode_data *data)
       switch(num)
       {
 	case 0:
-	  apply(data->codec,"functionof", 1);
+	  apply(decoder_codec (data),"functionof", 1);
 	  break;
 
 	case 1: {
@@ -3126,7 +3162,7 @@ static void decode_value2(struct decode_data *data)
 	  struct program *p;
 
 	  decode_value2(data);
-	  apply(data->codec,"programof", 1);
+	  apply(decoder_codec (data),"programof", 1);
 
 	  p = program_from_svalue(Pike_sp-1);
 
@@ -3181,7 +3217,7 @@ static void decode_value2(struct decode_data *data)
 
 	    debug_malloc_touch(p);
 	    ref_push_program(p);
-	    apply(data->codec, "__register_new_program", 1);
+	    apply(decoder_codec (data), "__register_new_program", 1);
 	      
 	    /* return a placeholder */
 	    if(Pike_sp[-1].type == T_OBJECT)
@@ -3694,12 +3730,8 @@ static void decode_value2(struct decode_data *data)
 		int decode_fun = -1;
 		struct unfinished_obj_link *l, **ptr;
 		if (data->unfinished_objects) {
-		  if(!data->codec)
-		    decode_error(data, Pike_sp - 1,
-				 "Cannot decode object without codec.\n");
-
-		  decode_fun =
-		    find_identifier("decode_object", data->codec->prog);
+		  decode_fun = find_identifier("decode_object",
+					       decoder_codec (data)->prog);
 		  if (decode_fun < 0)
 		    decode_error(data, Pike_sp - 1,
 				 "Cannot decode objects without a "
@@ -3731,7 +3763,7 @@ static void decode_value2(struct decode_data *data)
 		  free((char *)l);
 
 		  /* Let the codec do it's job... */
-		  apply_low(data->codec, decode_fun, 2);
+		  apply_low(decoder_codec (data), decode_fun, 2);
 		  if ((Pike_sp[-1].type == T_ARRAY) &&
 		      ((fun = FIND_LFUN(o->prog, LFUN_CREATE)) != -1)) {
 		    /* Call lfun::create(@args). */
@@ -3814,9 +3846,8 @@ static void decode_value2(struct decode_data *data)
 	  /* Is this necessary? In that case, how do we pass an
 	   * adequate context to __register_new_program so that it
 	   * knows which program is being decoded? */
-	  if (data->codec) {
 	    ref_push_program (p);
-	    apply (data->codec, "__register_new_program", 1);
+	    apply (decoder_codec (data), "__register_new_program", 1);
 	      
 	    /* Returns a placeholder. */
 	    if (Pike_sp[-1].type == T_OBJECT) {
@@ -3829,7 +3860,6 @@ static void decode_value2(struct decode_data *data)
 	      decode_error (data, NULL, "Expected placeholder object or zero "
 			    "from __register_new_program.\n");
 	    pop_stack();
-	  }
 #endif
 
 	  break;
@@ -3931,7 +3961,7 @@ static void decode_value2(struct decode_data *data)
 
 	  {
 	    int fun = find_identifier("__register_new_program",
-				      data->codec->prog);
+				      decoder_codec (data)->prog);
 
 	    if (fun >= 0) {
 	      ref_push_program(p);
@@ -4879,7 +4909,7 @@ static void free_decode_data (struct decode_data *data, int delay,
 #endif
 
   free_string (data->data_str);
-  free_object (data->codec);
+  if (data->codec) free_object (data->codec);
   free_mapping(data->decoded);
 
   while(data->unfinished_programs)
@@ -4979,7 +5009,8 @@ static INT32 my_decode(struct pike_string *tmp,
 
   /* Attempt to avoid infinite recursion on circular structures. */
   for (data = current_decode; data; data=data->next) {
-    if (data->raw == tmp && data->codec == codec
+    if (data->raw == tmp &&
+	(codec ? data->codec == codec : !data->explicit_codec)
 #ifdef PIKE_THREADS
 	&& data->thread_state == Pike_interpreter.thread_state
 #endif
@@ -5005,6 +5036,7 @@ static INT32 my_decode(struct pike_string *tmp,
   data->len=tmp->len;
   data->ptr=0;
   data->codec=codec;
+  data->explicit_codec = codec ? 1 : 0;
   data->pickyness=0;
   data->pass=1;
   data->unfinished_programs=0;
@@ -5036,7 +5068,7 @@ static INT32 my_decode(struct pike_string *tmp,
   data->decoded=allocate_mapping(128);
 
   add_ref (data->data_str);
-  add_ref (data->codec);
+  if (data->codec) add_ref (data->codec);
 #ifdef PIKE_THREADS
   add_ref (data->thread_obj);
 #endif
@@ -5328,7 +5360,9 @@ extern struct program *MasterCodec_program;
  *! coded.
  *!
  *! If @[codec] is specified, it's used as the codec for the decode.
- *! If no codec is specified, the current master object will be used.
+ *! If none is specified, then one is instantiated through
+ *! @expr{master()->Decoder()@}. As a compatibility fallback, the
+ *! master itself is used if it has no @expr{Decoder@} class.
  *!
  *! @seealso
  *!   @[encode_value()], @[encode_value_canonic()]
@@ -5376,13 +5410,14 @@ void f_decode_value(INT32 args)
       }
       /* Fall through. */
     case 1:
-      codec = get_master();
-      if (!codec) {
+      if (!get_master()) {
 	/* The codec used for decoding the master program. */
 	push_object (clone_object (MasterCodec_program, 0));
 	args++;
 	codec = Pike_sp[-1].u.object;
       }
+      else
+	codec = NULL;
   }
 
   if(!my_decode(s, codec
