@@ -1151,4 +1151,19 @@ test_false(Val.null == Val.true)
 test_false(Val.null == Val.false)
 test_true(Val.null == Val.null)
 
+test_true(decode_value (encode_value (Val.null)) == Val.null)
+test_true(decode_value (encode_value (Val.true)) == Val.true)
+test_true(decode_value (encode_value (Val.false)) == Val.false)
+test_true(decode_value ("\266ke0#\6\5rVal.null") == Val.null)
+test_true(decode_value ("\266ke0#\6\5rVal.true") == Val.true)
+test_true(decode_value ("\266ke0#\6\6rVal.false") == Val.false)
+
+test_true(([Val.null: 1])[Val.null])
+test_false(([Val.false: 1])[Val.null])
+test_false(([0: 1])[Val.null])
+test_true(([Val.true: 1])[Val.true])
+test_false(([Val.true: 1])[Val.false])
+test_true(([Val.false: 1])[Val.false])
+test_false(([Val.true: 1])[Val.false])
+
 END_MARKER
