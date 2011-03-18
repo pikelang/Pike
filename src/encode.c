@@ -5101,26 +5101,39 @@ static INT32 my_decode(struct pike_string *tmp,
 /*! @class MasterObject
  */
 
-/*! @decl inherit Codec
+/*! @decl program Encoder;
  *!
- *!   The master object is used as a fallback codec by @[encode_value()]
- *!   and @[decode_value()] if no codec was given.
+ *! This program in the master is cloned and used as codec by
+ *! @[encode_value] if it wasn't given any codec. An instance is only
+ *! created on-demand the first time @[encode_value] encounters
+ *! something for which it needs a codec, i.e. an object, program, or
+ *! function.
  *!
- *!   It will also be used as a codec if @[decode_value()] encounters
- *!   old-style @[encode_value()]'ed data.
+ *! @seealso
+ *! @[Encoder], @[Pike.Encoder]
+ */
+
+/*! @decl program Decoder;
+ *!
+ *! This program in the master is cloned and used as codec by
+ *! @[decode_value] if it wasn't given any codec. An instance is only
+ *! created on-demand the first time @[decode_value] encounters
+ *! something for which it needs a codec, i.e. the result of a call to
+ *! @[Pike.Encoder.nameof].
+ *!
+ *! @seealso
+ *! @[Decoder], @[Pike.Decoder]
  */
 
 /*! @endclass
  */
 
-/*! @class Codec
+/*! @class Encoder
  *!
- *!   Codec objects are used by @[encode_value()] and @[decode_value()]
- *!   to encode and decode objects, functions and programs.
- *!
- *! @note
- *!   @[encode_value()] and @[decode_value()] will use the current
- *!   master object as fallback codec object if no codec was specified.
+ *!   Codec used by @[encode_value()] to encode objects, functions and
+ *!   programs. Its purpose is to look up some kind of identifier for
+ *!   them, so they can be mapped back to the corresponding instance
+ *!   by @[decode_value()], rather than creating a new copy.
  */
 
 /*! @decl mixed nameof(object|function|program x)
@@ -5133,14 +5146,27 @@ static INT32 my_decode(struct pike_string *tmp,
  *!   @[objectof()], @[functionof()] or @[programof()] by
  *!   @[decode_value()].
  *!
- *!   Returns @[UNDEFINED] on failure.
+ *!   If it returns @[UNDEFINED] then @[encode_value] starts to encode
+ *!   the thing recursively, so that @[decode_value] later will
+ *!   rebuild a copy.
  *!
  *! @note
  *!   @[encode_value()] has fallbacks for some classes of objects,
  *!   functions and programs.
  *!
  *! @seealso
- *!   @[objectof()], @[functionof()], @[objectof()]
+ *!   @[Decoder.objectof()], @[Decoder.functionof()],
+ *!   @[Decoder.objectof()]
+ */
+
+/*! @endclass
+ */
+
+/*! @class Decoder
+ *!
+ *!   Codec used by @[decode_value()] to decode objects, functions and
+ *!   programs which have been encoded by @[Encoder.nameof] in the
+ *!   corresponding @[Encoder] object.
  */
 
 /*! @decl object objectof(string data)
@@ -5151,10 +5177,7 @@ static INT32 my_decode(struct pike_string *tmp,
  *!   encoded objects.
  *!
  *! @param data
- *!   Encoding of some object as specified by @[nameof()].
- *!
- *! @param minor
- *!   Minor version.
+ *!   Encoding of some object as returned by @[Encoder.nameof()].
  *!
  *! @returns
  *!   Returns the decoded object.
@@ -5171,10 +5194,7 @@ static INT32 my_decode(struct pike_string *tmp,
  *!   encoded functions.
  *!
  *! @param data
- *!   Encoding of some function as specified by @[nameof()].
- *!
- *! @param minor
- *!   Minor version.
+ *!   Encoding of some function as returned by @[Encoder.nameof()].
  *!
  *! @returns
  *!   Returns the decoded function.
@@ -5191,10 +5211,7 @@ static INT32 my_decode(struct pike_string *tmp,
  *!   encoded programs.
  *!
  *! @param data
- *!   Encoding of some program as specified by @[nameof()].
- *!
- *! @param minor
- *!   Minor version.
+ *!   Encoding of some program as returned by @[Encoder.nameof()].
  *!
  *! @returns
  *!   Returns the decoded program.
@@ -5205,18 +5222,33 @@ static INT32 my_decode(struct pike_string *tmp,
 
 /*! @decl object __register_new_program(program p)
  *!
- *!   Called by @[decode_value()] to register the program that is
- *!   being decoded. Might get called repeatedly with several other
- *!   programs that are being decoded recursively. The only safe
- *!   assumption is that when the top level thing being decoded is a
- *!   program, then the first call will be with the unfinished embryo
- *!   that will later become that program.
+ *!   Called to register the program that is being decoded. Might get
+ *!   called repeatedly with several other programs that are being
+ *!   decoded recursively. The only safe assumption is that when the
+ *!   top level thing being decoded is a program, then the first call
+ *!   will be with the unfinished embryo that will later become that
+ *!   program.
  *!
  *! @returns
  *!   Returns either zero or a placeholder object. A placeholder
  *!   object must be a clone of @[__null_program]. When the program is
  *!   finished, the placeholder object will be converted to a clone of
  *!   it. This is used for pike module objects.
+ */
+
+/*! @endclass
+ */
+
+/*! @class Codec
+ *!
+ *! An @[Encoder] and a @[Decoder] lumped into a single instance which
+ *! can be used for both encoding and decoding.
+ */
+
+/*! @decl inherit Encoder;
+ */
+
+/*! @decl inherit Decoder;
  */
 
 /*! @endclass
