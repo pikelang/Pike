@@ -549,7 +549,7 @@ undump_modules: delete_dumped_modules
 # -Hubbe
 #
 .cmod.c: precompile.sh-stamp $(TMP_BINDIR)/precompile.pike
-	./precompile.sh --cache precompile.pike $(PRECOMPILER_ARGS) >"$@" "$<" || { rm "$@"; exit 1; }
+	./precompile.sh --cache precompile.pike --api=3 $(PRECOMPILER_ARGS) >"$@" "$<" || { rm "$@"; exit 1; }
 
 # The same applies to this.
 .symlist.c: precompile.sh-stamp $(SRCDIR)/mklibpike.pike
