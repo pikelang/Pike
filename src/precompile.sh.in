@@ -169,28 +169,28 @@ case $method in
 esac
 
 if test "x${RUNPIKE-}" != x ; then
-echo "precompile: $RUNPIKE $SCRIPT $@ (method=$method)"
+  echo "precompile: $RUNPIKE $SCRIPT $@ (method=$method)"
 
-if [ $CACHE_OUTPUT = yes ]; then
-  $RUNPIKE $SCRIPT "$@" >"$TMPOUTPUT"
-else
-  $RUNPIKE $SCRIPT "$@" >&5
-fi
+  if [ $CACHE_OUTPUT = yes ]; then
+    $RUNPIKE $SCRIPT "$@" >"$TMPOUTPUT"
+  else
+    $RUNPIKE $SCRIPT "$@" >&5
+  fi
 
-if [ $? = 0 ]; then
+  if [ $? = 0 ]; then
 
-cat > "$PREDIR/method.$$" <<EOF && \
-  mv "$PREDIR/method.$$" "$PREDIR/method"
+    cat > "$PREDIR/method.$$" <<EOF && \
+      mv "$PREDIR/method.$$" "$PREDIR/method"
 LAST_PIKE="$LAST_PIKE"
 method="$method"
 #retries="$retries"
 EOF
 
-  test $CACHE_OUTPUT = yes && cat "$TMPOUTPUT" >&5
-exit 0
-else
-  test $CACHE_OUTPUT = yes && rm "$TMPOUTPUT"
-fi
+    test $CACHE_OUTPUT = yes && cat "$TMPOUTPUT" >&5
+    exit 0
+  else
+    test $CACHE_OUTPUT = yes && rm "$TMPOUTPUT"
+  fi
 fi
 
 method="Q$method"
