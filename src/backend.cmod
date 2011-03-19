@@ -1661,13 +1661,13 @@ PIKECLASS Backend
   {
   }
 
-#ifndef tObjImpl_THREAD
+#ifndef tObjImpl_THREAD_THREAD
   /* Kludge for precompile.pike; it resolves object(Thread.Thread)
-   * to tObjImpl_THREAD, while "program_id.h" only knows about
+   * to tObjImpl_THREAD_THREAD, while "program_id.h" only knows about
    * tObjImpl_THREAD_ID.
    */
-#define tObjImpl_THREAD	tObjImpl_THREAD_ID
-#endif /* !tObjImpl_THREAD */
+#define tObjImpl_THREAD_THREAD	tObjImpl_THREAD_ID
+#endif /* !tObjImpl_THREAD_THREAD */
 
   /*! @decl Thread.Thread executing_thread()
    *! @decl int executing_thread()
