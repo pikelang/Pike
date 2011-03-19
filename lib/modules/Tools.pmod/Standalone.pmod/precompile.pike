@@ -1,5 +1,10 @@
 #! /usr/bin/env pike
 
+#if __REAL_VERSION__ < 7.8
+#error Pike binary is too old to be used for precompile.
+#error At least 7.8 is required.
+#endif
+
 #pike __REAL_VERSION__
 
 #define FUNC_OVERLOAD
