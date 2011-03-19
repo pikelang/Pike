@@ -1958,6 +1958,7 @@ void f_encode_value(INT32 args)
 		 "The codec may not be a subtyped object yet.\n");
     }
     data->codec=Pike_sp[1-args].u.object;
+    add_ref (data->codec);
   }else{
     data->codec=NULL;
   }
@@ -2037,6 +2038,7 @@ void f_encode_value_canonic(INT32 args)
 		 "The codec may not be a subtyped object yet.\n");
     }
     data->codec=Pike_sp[1-args].u.object;
+    add_ref (data->codec);
   }else{
     data->codec=NULL;
   }
