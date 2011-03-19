@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.179 2010/09/18 11:56:50 marcus Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -241,18 +241,19 @@ static void cpp_handle_exception(struct cpp *this,
 
 static void cpp_warning(struct cpp *this, const char *cpp_warn_fmt, ...)
 {
-  char msg[8192];
+  struct string_builder sb;
   va_list args;
 
+  init_string_builder (&sb, 0);
   va_start(args, cpp_warn_fmt);
-  Pike_vsnprintf(msg, sizeof(msg), cpp_warn_fmt, args);
+  string_builder_vsprintf (&sb, cpp_warn_fmt, args);
   va_end(args);
 
   if((this->handler && this->handler->prog) || get_master())
   {
     ref_push_string(this->current_file);
     push_int(this->current_line);
-    push_text(msg);
+    push_string (finish_string_builder (&sb));
     low_safe_apply_handler("compile_warning", this->handler,
 			   this->compat_handler, 3);
     pop_stack();
@@ -260,8 +261,9 @@ static void cpp_warning(struct cpp *this, const char *cpp_warn_fmt, ...)
     (void)fprintf(stderr, "%s:%ld: %s\n",
 		  this->current_file->str,
 		  (long)this->current_line,
-		  msg);
+		  sb.s->str);
     fflush(stderr);
+    free_string_builder (&sb);
   }
 }
 
