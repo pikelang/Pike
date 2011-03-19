@@ -8,15 +8,17 @@ else
   CACHE_OUTPUT=no
 fi
 
+exec 5>&1 1>&2
+
 if [ x"$1" = xprecompile.pike ] ; then
   if pike -x 2>&1 | grep precompile > /dev/null 2>&1 ; then
     shift
-    if pike -x precompile "$@"; then exit 0; fi
+    # FIXME: What about CACHE_OUTPUT here?
+    echo "precompile: pike -x precompile $@"
+    if pike -x precompile "$@" >&5; then exit 0; fi
     set - "precompile.pike" "$@"
   fi
 fi
-
-exec 5>&1 1>&2
 
 TMP_BUILDDIR="@BUILDDIR@"
 TMP_BINDIR="@BINDIR@"
