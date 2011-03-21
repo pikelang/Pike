@@ -293,6 +293,11 @@ static void stat_push_compat(INT_TYPE n)
    }
 }
 
+static void stat_init (struct object *o)
+{
+  MEMSET ((char *) &THIS_STAT->s, 0, sizeof (THIS_STAT->s));
+}
+
 /*! @decl void create (void|object|array stat);
  *!
  *! A new @[Stdio.Stat] object can be initialized in two ways:
@@ -323,7 +328,6 @@ static void stat_create (INT32 args)
       }
 
     if ((1 << sp[-1].type) & (BIT_PROGRAM|BIT_OBJECT|BIT_MAPPING)) {
-      MEMSET ((char *) &THIS_STAT->s, 0, sizeof (THIS_STAT->s));
 
 #define ASSIGN_INDEX(ENUM)						\
       do {								\
@@ -381,9 +385,6 @@ static void stat_create (INT32 args)
     else
       SIMPLE_BAD_ARG_ERROR ("Stat create", 1, "void|Stdio.Stat|array(int)");
   }
-
-  else
-    MEMSET ((char *) &THIS_STAT->s, 0, sizeof (THIS_STAT->s));
 
   pop_n_elems (args);
 }
@@ -1006,6 +1007,8 @@ void init_files_stat()
 		tFunc(tNone,tArr(tOr(tString,tInt))),0);
    ADD_FUNCTION("_values",stat_values,
 		tFunc(tNone,tArr(tOr(tString,tInt))),0);
+
+   set_init_callback (stat_init);
 
    stat_program=end_program();
    add_program_constant("Stat",stat_program,0);
