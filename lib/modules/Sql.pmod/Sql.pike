@@ -477,6 +477,13 @@ protected class ZeroWrapper
 //! Instance of @[Zerowrapper] used by @[handle_extraargs()].
 protected ZeroWrapper zero = ZeroWrapper();
 
+protected class NullArg
+{
+  protected string _sprintf (int fmt)
+    {return fmt == 'O' ? "Sql.Sql.NullArg()" : "NULL";}
+}
+protected NullArg null_arg = NullArg();
+
 //! Handle @[sprintf]-based quoted arguments
 //!
 //! @param query
@@ -508,6 +515,10 @@ protected array(string|mapping(string|int:mixed))
     }
     if (intp(s) || floatp(s)) {
       args[j] = s || zero;
+      continue;
+    }
+    if (objectp (s) && s->is_val_null) {
+      args[j] = null_arg;
       continue;
     }
     ERROR("Wrong type to query argument #"+(j+1)+".\n");
