@@ -809,7 +809,8 @@ static int low_fd_query_properties(int fd)
     return open_mode | FILE_CAPABILITIES;
   } else {
     switch (addr.sa.sa_family) {
-#if defined(AF_UNIX) && (AF_UNIX != AF_INET)
+      /* NB: NT defines AF_UNIX (but doesn't support it). */
+#if defined(AF_UNIX) && (AF_UNIX != AF_INET) && !defined(__NT__)
     case AF_UNIX:
       return open_mode | UNIX_SOCKET_CAPABILITIES;
 #endif
