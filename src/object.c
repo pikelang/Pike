@@ -1587,9 +1587,11 @@ static void object_lower_set_index(struct object *o, union idptr func, int rtt,
       continue;
 
     default:
+      rtt &= ~PIKE_T_NO_REF_FLAG;
+      if ((rtt != from->type) && !is_zero) break;	/* Error. */
       debug_malloc_touch(u->refs);
       if(u->refs && !sub_ref(u->dummy))
-	really_free_short_svalue(u, rtt & ~PIKE_T_NO_REF_FLAG);
+	really_free_short_svalue(u, rtt);
       if (is_zero) {
 	debug_malloc_touch(u->ptr);
 	u->refs = NULL;
