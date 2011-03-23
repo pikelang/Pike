@@ -341,6 +341,9 @@ static void memory__mmap(INT32 args,int complain,int private)
       
       THREADS_ALLOW();
       fd = fd_open(filename,fd_RDWR,0);
+      if( fd < 0 )
+          fd = fd_open(filename,fd_RDONLY,0);
+
       if (fd>=0) osize=file_size(fd);
       THREADS_DISALLOW();
 
