@@ -1587,9 +1587,11 @@ static void object_lower_set_index(struct object *o, union idptr func, int rtt,
       continue;
 
     default:
+      rtt &= ~PIKE_T_NO_REF_FLAG;
+      if ((rtt != from->type) && !is_zero) break;	/* Error. */
       debug_malloc_touch(u->refs);
       if(u->refs && !sub_ref(u->dummy))
-	really_free_short_svalue(u, rtt & ~PIKE_T_NO_REF_FLAG);
+	really_free_short_svalue(u, rtt);
       if (is_zero) {
 	debug_malloc_touch(u->ptr);
 	u->refs = NULL;
@@ -2606,6 +2608,14 @@ void push_magic_index(struct program *type, int inherit_no, int parent_level)
  * those in inheriting classes, are indexed.
  */
 
+#define INDEX_PROTECTED		0x01
+#define INDEX_THIS_OBJECT	0x02
+#define INDEX_VTAB_MASK		0x03
+#define INDEX_FILTER_CONSTANTS	0x10
+#define INDEX_FILTER_FUNCTIONS	0x20
+#define INDEX_FILTER_VARIABLES	0x40
+#define INDEX_FILTER_MASK	0x70
+
 
 /*! @decl mixed ::`->(string index)
  *!
@@ -2644,25 +2654,16 @@ static void f_magic_index(INT32 args)
   if(!o->prog)
     Pike_error("::`-> on destructed object.\n");
 
-  switch (type) {
-    case 0:
-      inherit=MAGIC_THIS->inherit;
-      f=find_shared_string_identifier(s,inherit->prog);
-      break;
-    case 1:
-      inherit = MAGIC_THIS->inherit;
-      f = really_low_find_shared_string_identifier (s, inherit->prog, SEE_PROTECTED);
-      break;
-    case 2:
-      inherit = o->prog->inherits + 0;
-      f = find_shared_string_identifier (s, inherit->prog);
-      break;
-    case 3:
-      inherit = o->prog->inherits + 0;
-      f = really_low_find_shared_string_identifier (s, inherit->prog, SEE_PROTECTED);
-      break;
-    default:
-      Pike_error("Unknown indexing type: %d.\n", type);
+  if (type & INDEX_THIS_OBJECT) {
+    inherit = o->prog->inherits;
+  } else {
+    inherit=MAGIC_THIS->inherit;
+  }
+  if (type & INDEX_PROTECTED) {
+    f = really_low_find_shared_string_identifier(s, inherit->prog,
+						 SEE_PROTECTED);
+  } else {
+    f=find_shared_string_identifier(s,inherit->prog);
   }
 
   pop_n_elems(args);
@@ -2721,25 +2722,16 @@ static void f_magic_set_index(INT32 args)
   if(!o->prog)
     Pike_error("::`->= on destructed object.\n");
 
-  switch (type) {
-    case 0:
-      inherit=MAGIC_THIS->inherit;
-      f=find_shared_string_identifier(s,inherit->prog);
-      break;
-    case 1:
-      inherit = MAGIC_THIS->inherit;
-      f = really_low_find_shared_string_identifier (s, inherit->prog, SEE_PROTECTED);
-      break;
-    case 2:
-      inherit = o->prog->inherits + 0;
-      f = find_shared_string_identifier (s, inherit->prog);
-      break;
-    case 3:
-      inherit = o->prog->inherits + 0;
-      f = really_low_find_shared_string_identifier (s, inherit->prog, SEE_PROTECTED);
-      break;
-    default:
-      Pike_error("Unknown indexing type.\n");
+  if (type & INDEX_THIS_OBJECT) {
+    inherit = o->prog->inherits;
+  } else {
+    inherit=MAGIC_THIS->inherit;
+  }
+  if (type & INDEX_PROTECTED) {
+    f = really_low_find_shared_string_identifier(s, inherit->prog,
+						 SEE_PROTECTED);
+  } else {
+    f=find_shared_string_identifier(s,inherit->prog);
   }
 
   if(f<0)
@@ -2784,46 +2776,59 @@ static void f_magic_indices (INT32 args)
    * (e.g. listing duplicate identifiers). But then again, this is not
    * the only place where that gives strange effects, imho. /mast */
 
-  switch (type) {
-    case 0:
-      prog = MAGIC_THIS->inherit->prog;
-      break;
-    case 1:
-    case 3:
-      if (type == 1) {
-	prog = MAGIC_THIS->inherit->prog;
-      } else {
-	prog = obj->prog;
-      }
-      pop_n_elems (args);
-      push_array (res = allocate_array(prog->num_identifier_references));
-      for (e = i = 0; e < (int) prog->num_identifier_references; e++) {
-	struct reference *ref = prog->identifier_references + e;
-	struct identifier *id = ID_FROM_PTR (prog, ref);
-	if (ref->id_flags & ID_HIDDEN) continue;
-	if ((ref->id_flags & (ID_INHERITED|ID_PRIVATE)) ==
-	    (ID_INHERITED|ID_PRIVATE)) continue;
-	copy_shared_string (ITEM(res)[i].u.string, id->name);
-	ITEM(res)[i++].type = T_STRING;
-      }
-      res->type_field |= BIT_STRING;
-      sp[-1].u.array = resize_array (res, i);
-      res->type_field = BIT_STRING;
-      return;
-    case 2:
-      prog = obj->prog;
-      break;
-    default:
-      Pike_error("Unknown indexing type.\n");
+  if (type & INDEX_THIS_OBJECT) {
+    prog = obj->prog;
+  } else {
+    prog = MAGIC_THIS->inherit->prog;
   }
 
   pop_n_elems (args);
-  push_array (res = allocate_array_no_init (prog->num_identifier_index, 0));
-  for (e = 0; e < (int) prog->num_identifier_index; e++) {
-    copy_shared_string (ITEM(res)[e].u.string,
-			ID_FROM_INT (prog, prog->identifier_index[e])->name);
-    ITEM(res)[e].type = T_STRING;
+
+  if (type & INDEX_PROTECTED) {
+    push_array (res = allocate_array(prog->num_identifier_references));
+    for (e = i = 0; e < (int) prog->num_identifier_references; e++) {
+      struct reference *ref = prog->identifier_references + e;
+      struct identifier *id = ID_FROM_PTR (prog, ref);
+      if (ref->id_flags & ID_HIDDEN) continue;
+      if ((ref->id_flags & (ID_INHERITED|ID_PRIVATE)) ==
+	  (ID_INHERITED|ID_PRIVATE)) continue;
+      if (((type & INDEX_FILTER_CONSTANTS) &&
+	   IDENTIFIER_IS_CONSTANT(id->identifier_flags)) ||
+	  ((type & INDEX_FILTER_FUNCTIONS) &&
+	   IDENTIFIER_IS_FUNCTION(id->identifier_flags)) ||
+	  ((type & INDEX_FILTER_VARIABLES) &&
+	   IDENTIFIER_IS_VARIABLE(id->identifier_flags)))
+	continue;
+      copy_shared_string (ITEM(res)[i].u.string, id->name);
+      ITEM(res)[i++].type = T_STRING;
+    }
+    res->type_field |= BIT_STRING;
+    sp[-1].u.array = resize_array (res, i);
+  } else if (type & INDEX_FILTER_MASK) {
+    push_array (res = allocate_array(prog->num_identifier_index));
+    for (e = i = 0; e < (int) prog->num_identifier_index; e++) {
+      struct identifier *id = ID_FROM_INT (prog, prog->identifier_index[e]);
+      if (((type & INDEX_FILTER_CONSTANTS) &&
+	   IDENTIFIER_IS_CONSTANT(id->identifier_flags)) ||
+	  ((type & INDEX_FILTER_FUNCTIONS) &&
+	   IDENTIFIER_IS_FUNCTION(id->identifier_flags)) ||
+	  ((type & INDEX_FILTER_VARIABLES) &&
+	   IDENTIFIER_IS_VARIABLE(id->identifier_flags)))
+	continue;
+      copy_shared_string (ITEM(res)[i].u.string, id->name);
+      ITEM(res)[i++].type = T_STRING;
+    }
+    res->type_field |= BIT_STRING;
+    sp[-1].u.array = resize_array (res, i);
+  } else {
+    push_array (res = allocate_array_no_init (prog->num_identifier_index, 0));
+    for (e = 0; e < (int) prog->num_identifier_index; e++) {
+      copy_shared_string (ITEM(res)[e].u.string,
+			  ID_FROM_INT (prog, prog->identifier_index[e])->name);
+      ITEM(res)[e].type = T_STRING;
+    }
   }
+
   res->type_field = BIT_STRING;
 }
 
@@ -2857,52 +2862,64 @@ static void f_magic_values (INT32 args)
    * (e.g. listing duplicate identifiers). But then again, this is not
    * the only place where that gives strange effects, imho. /mast */
 
-  switch (type) {
-    case 0:
-      inherit = MAGIC_THIS->inherit;
-      prog = inherit->prog;
-      break;
-    case 1:
-    case 3:
-      if (type == 1) {
-	inherit = MAGIC_THIS->inherit;
-	prog = inherit->prog;
-      } else {
-	prog = obj->prog;
-	inherit = prog->inherits + 0;
-      }
-      pop_n_elems (args);
-      push_array (res = allocate_array(prog->num_identifier_references));
-      types = 0;
-      for (e = i = 0; e < (int) prog->num_identifier_references; e++) {
-	struct reference *ref = prog->identifier_references + e;
-	struct identifier *id = ID_FROM_PTR (prog, ref);
-	if (ref->id_flags & ID_HIDDEN) continue;
-	if ((ref->id_flags & (ID_INHERITED|ID_PRIVATE)) ==
-	    (ID_INHERITED|ID_PRIVATE)) continue;
-	low_object_index_no_free (ITEM(res) + i, obj,
-				  e + inherit->identifier_level);
-	types |= 1 << ITEM(res)[i++].type;
-      }
-      res->type_field |= types;
-      sp[-1].u.array = resize_array (res, i);
-      res->type_field = types;
-      return;
-    case 2:
-      prog = obj->prog;
-      inherit = prog->inherits + 0;
-      break;
-    default:
-      Pike_error("Unknown indexing type.\n");
+  if (type & INDEX_THIS_OBJECT) {
+    prog = obj->prog;
+    inherit = prog->inherits;
+  } else {
+    inherit = MAGIC_THIS->inherit;
+    prog = inherit->prog;
   }
 
   pop_n_elems (args);
-  push_array (res = allocate_array_no_init (prog->num_identifier_index, 0));
-  types = 0;
-  for (e = 0; e < (int) prog->num_identifier_index; e++) {
-    low_object_index_no_free (ITEM(res) + e, obj,
-			      prog->identifier_index[e] + inherit->identifier_level);
-    types |= 1 << ITEM(res)[e].type;
+
+  if (type & INDEX_PROTECTED) {
+    push_array(res = allocate_array(prog->num_identifier_references));
+    types = 0;
+    for (e = i = 0; e < (int) prog->num_identifier_references; e++) {
+      struct reference *ref = prog->identifier_references + e;
+      struct identifier *id = ID_FROM_PTR (prog, ref);
+      if (ref->id_flags & ID_HIDDEN) continue;
+      if ((ref->id_flags & (ID_INHERITED|ID_PRIVATE)) ==
+	  (ID_INHERITED|ID_PRIVATE)) continue;
+      if (((type & INDEX_FILTER_CONSTANTS) &&
+	   IDENTIFIER_IS_CONSTANT(id->identifier_flags)) ||
+	  ((type & INDEX_FILTER_FUNCTIONS) &&
+	   IDENTIFIER_IS_FUNCTION(id->identifier_flags)) ||
+	  ((type & INDEX_FILTER_VARIABLES) &&
+	   IDENTIFIER_IS_VARIABLE(id->identifier_flags)))
+	continue;
+      low_object_index_no_free (ITEM(res) + i, obj,
+				e + inherit->identifier_level);
+      types |= 1 << ITEM(res)[i++].type;
+    }
+    res->type_field |= types;
+    sp[-1].u.array = resize_array (res, i);
+  } else if (type & INDEX_FILTER_MASK) {
+    push_array(res = allocate_array(prog->num_identifier_index));
+    types = 0;
+    for (e = i = 0; e < (int) prog->num_identifier_index; e++) {
+      struct identifier *id = ID_FROM_INT (prog, prog->identifier_index[e]);
+      if (((type & INDEX_FILTER_CONSTANTS) &&
+	   IDENTIFIER_IS_CONSTANT(id->identifier_flags)) ||
+	  ((type & INDEX_FILTER_FUNCTIONS) &&
+	   IDENTIFIER_IS_FUNCTION(id->identifier_flags)) ||
+	  ((type & INDEX_FILTER_VARIABLES) &&
+	   IDENTIFIER_IS_VARIABLE(id->identifier_flags)))
+	continue;
+      low_object_index_no_free (ITEM(res) + i, obj,
+				prog->identifier_index[e] + inherit->identifier_level);
+      types |= 1 << ITEM(res)[i++].type;
+    }
+    res->type_field |= types;
+    sp[-1].u.array = resize_array (res, i);
+  } else {
+    push_array (res = allocate_array_no_init (prog->num_identifier_index, 0));
+    types = 0;
+    for (e = 0; e < (int) prog->num_identifier_index; e++) {
+      low_object_index_no_free (ITEM(res) + e, obj,
+				prog->identifier_index[e] + inherit->identifier_level);
+      types |= 1 << ITEM(res)[e].type;
+    }
   }
   res->type_field = types;
 }
@@ -2937,54 +2954,67 @@ static void f_magic_types (INT32 args)
    * (e.g. listing duplicate identifiers). But then again, this is not
    * the only place where that gives strange effects, imho. /mast */
 
-  switch (type) {
-    case 0:
-      inherit = MAGIC_THIS->inherit;
-      prog = inherit->prog;
-      break;
-    case 1:
-    case 3:
-      if (type == 1) {
-	inherit = MAGIC_THIS->inherit;
-	prog = inherit->prog;
-      } else {
-	prog = obj->prog;
-	inherit = prog->inherits + 0;
-      }
-      pop_n_elems (args);
-      push_array (res = allocate_array(prog->num_identifier_references));
-      types = 0;
-      for (e = i = 0; e < (int) prog->num_identifier_references; e++) {
-	struct reference *ref = prog->identifier_references + e;
-	struct identifier *id = ID_FROM_PTR (prog, ref);
-	if (ref->id_flags & ID_HIDDEN) continue;
-	if ((ref->id_flags & (ID_INHERITED|ID_PRIVATE)) ==
-	    (ID_INHERITED|ID_PRIVATE)) continue;
-	add_ref(ITEM(res)[i].u.type = id->type);
-	ITEM(res)[i++].type = PIKE_T_TYPE;
-	types = BIT_TYPE;
-      }
-      res->type_field |= types;
-      sp[-1].u.array = resize_array (res, i);
-      res->type_field = types;
-      return;
-    case 2:
-      prog = obj->prog;
-      inherit = prog->inherits + 0;
-      break;
-    default:
-      Pike_error("Unknown indexing type.\n");
+  if (type & INDEX_THIS_OBJECT) {
+    prog = obj->prog;
+    inherit = prog->inherits;
+  } else {
+    inherit = MAGIC_THIS->inherit;
+    prog = inherit->prog;
   }
 
   pop_n_elems (args);
-  push_array (res = allocate_array_no_init (prog->num_identifier_index, 0));
-  types = 0;
-  for (e = 0; e < (int) prog->num_identifier_index; e++) {
-    struct identifier *id = ID_FROM_INT(prog, prog->identifier_index[e]);
-    add_ref(ITEM(res)[e].u.type = id->type);
-    ITEM(res)[e].type = PIKE_T_TYPE;
-    types = BIT_TYPE;
+
+  if (type & INDEX_PROTECTED) {
+    push_array (res = allocate_array(prog->num_identifier_references));
+    types = 0;
+    for (e = i = 0; e < (int) prog->num_identifier_references; e++) {
+      struct reference *ref = prog->identifier_references + e;
+      struct identifier *id = ID_FROM_PTR (prog, ref);
+      if (ref->id_flags & ID_HIDDEN) continue;
+      if ((ref->id_flags & (ID_INHERITED|ID_PRIVATE)) ==
+	  (ID_INHERITED|ID_PRIVATE)) continue;
+      if (((type & INDEX_FILTER_CONSTANTS) &&
+	   IDENTIFIER_IS_CONSTANT(id->identifier_flags)) ||
+	  ((type & INDEX_FILTER_FUNCTIONS) &&
+	   IDENTIFIER_IS_FUNCTION(id->identifier_flags)) ||
+	  ((type & INDEX_FILTER_VARIABLES) &&
+	   IDENTIFIER_IS_VARIABLE(id->identifier_flags)))
+	continue;
+      add_ref(ITEM(res)[i].u.type = id->type);
+      ITEM(res)[i++].type = PIKE_T_TYPE;
+      types = BIT_TYPE;
+    }
+    res->type_field |= types;
+    sp[-1].u.array = resize_array (res, i);
+  } else if (type & INDEX_FILTER_MASK) {
+    push_array(res = allocate_array(prog->num_identifier_index));
+    types = 0;
+    for (e = i = 0; e < (int) prog->num_identifier_index; e++) {
+      struct identifier *id = ID_FROM_INT(prog, prog->identifier_index[e]);
+      if (((type & INDEX_FILTER_CONSTANTS) &&
+	   IDENTIFIER_IS_CONSTANT(id->identifier_flags)) ||
+	  ((type & INDEX_FILTER_FUNCTIONS) &&
+	   IDENTIFIER_IS_FUNCTION(id->identifier_flags)) ||
+	  ((type & INDEX_FILTER_VARIABLES) &&
+	   IDENTIFIER_IS_VARIABLE(id->identifier_flags)))
+	continue;
+      add_ref(ITEM(res)[i].u.type = id->type);
+      ITEM(res)[i++].type = PIKE_T_TYPE;
+      types = BIT_TYPE;
+    }
+    res->type_field |= types;
+    sp[-1].u.array = resize_array (res, i);
+  } else {
+    push_array (res = allocate_array_no_init (prog->num_identifier_index, 0));
+    types = 0;
+    for (e = 0; e < (int) prog->num_identifier_index; e++) {
+      struct identifier *id = ID_FROM_INT(prog, prog->identifier_index[e]);
+      add_ref(ITEM(res)[e].u.type = id->type);
+      ITEM(res)[e].type = PIKE_T_TYPE;
+      types = BIT_TYPE;
+    }
   }
+
   res->type_field = types;
 }
 
