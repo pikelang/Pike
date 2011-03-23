@@ -6624,7 +6624,8 @@ test_true([[Pike.count_memory (-1, ({time(1)})) +
 test_true([[Pike.count_memory (0, class X {mapping(X:array(int)) x;}) >
 	    Pike.count_memory (0, class Y {int x;})]])
 test_true([[Pike.count_memory (0, ({compile (
-				      "constant x = ([1: time(1)]);")})) >
+				      "constant x = ([1: " + time(1) +
+				      "]);")})) >
 	    Pike.count_memory (0, ({([1: time(1)])}))]])
 test_eq([[count_memory_stats (-1, ({time(1)}))]],
 	[["i:1,c:0,e:0,v:1,r:0,rnd:1"]])
