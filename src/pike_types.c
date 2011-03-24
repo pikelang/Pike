@@ -2593,6 +2593,11 @@ static void low_or_pike_types(struct pike_type *t1,
  * Returns -1 if t1 was pushed.
  *          0 if the OR was pushed. (Successful join)
  *          1 if t2 was pushed.
+ *
+ * zero_implied: One of:
+ *          0 the zero type (if any) must be explicit in the result.
+ *          1 the zero type is implicit.
+ *          3 zero is implicit and integers are regarded as masks (cf enums).
  */
 static int lower_or_pike_types(struct pike_type *t1,
 			       struct pike_type *t2,
@@ -2754,8 +2759,40 @@ static int lower_or_pike_types(struct pike_type *t1,
 	  if (min2 == 1) min2 = 0;
 	  if (max1 == -1) max1 = 0;
 	  if (max2 == -1) max2 = 0;
+
+	  if (zero_implied == 3) {
+	    /* Or between integer masks.
+	     * This is a bit more lenient than the default further below,
+	     * and is used for generating the type for enums.
+	     */
+	    if (max2 >= max1) {
+	      if (max1 > 0) {
+		max2 |= max1;
+	      }
+	    } else if (max2 > 0) {
+	      max2 |= max1;
+	    } else {
+	      max2 = max1;
+	    }
+	    if (min2 <= min1) {
+	      if (min1 < 0) {
+		min2 &= min1;
+	      }
+	    } else if (min2 < 0) {
+	      min2 &= min1;
+	    } else {
+	      min2 = min1;
+	    }
+	    /* Ensure that zero is always in the range. */
+	    if (max2 < 0) max2 = 0;
+	    if (min2 > 0) min2 = 0;
+	    Pike_compiler->type_stackp--;
+	    free_type(top);
+	    push_int_type(min2, max2);
+	    break;
+	  }
 	}
-    
+
 	if ((min1 > max2) && (min1 > max2 + 1)) {
 	  /* No overlap. */
 	  push_finished_type(t);
