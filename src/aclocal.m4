@@ -495,7 +495,7 @@ EOF
     AC_CV_NAME=ifelse([$2], , 0, [$2])
   fi
   undefine([AC_CV_NAME])dnl
-  ORIG_AC_CHECK_SIZEOF($1,$2)
+  ORIG_AC_CHECK_SIZEOF([$1],[$2],[$3])
 ])
 
 define([ORIG_CHECK_HEADERS], defn([AC_CHECK_HEADERS]))
