@@ -2442,7 +2442,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	  if(OUTP())
 	  {
 	    push_string(MAKE_BINARY_STRING(data+foo, pos-foo));
-	    cpp_warning(this, "%O", Pike_sp[-1]);
+	    cpp_warning(this, "%O", Pike_sp-1);
 	  }
 	  break;
 	}
