@@ -1118,7 +1118,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	   data[pos+3]=='<'  &&
 	   data[pos+4]=='<'  &&
 	   data[pos+5]=='<')
-	  cpp_error(this, "CVS conflict detected.");
+	  cpp_error(this, "Merge conflict detected.");
 	
       case '!': case '@': case '$': case '%': case '^': case '&':
       case '*': case '(': case ')': case '-': case '=': case '+':
