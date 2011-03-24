@@ -2929,7 +2929,7 @@ struct pike_type *or_pike_types(struct pike_type *a,
 {
   struct pike_type *res;
   type_stack_mark();
-  low_or_pike_types(a,b,1 /*zero_implied*/);
+  low_or_pike_types(a,b,1|zero_implied);
   res = pop_unfinished_type();
 #if 0
   fprintf(stderr, "  ==> ");
