@@ -403,6 +403,10 @@ mixed `[]=(string property, mixed value)
       reparse_uri([object(this_program)|string]value);
       return base_uri;
 
+    case "query":
+      variables = 0;
+      return ::`[]=(property, value);
+
     case "scheme":
       /* RFC 3986 §3.1
        *
@@ -446,18 +450,42 @@ string get_path_query()
   return (path||"") + (query ? "?" + query : "");
 }
 
+protected mapping(string:string) variables;
+
 //! Returns the query variables as a @expr{mapping(string:string)@}.
 mapping(string:string) get_query_variables() {
+  if( variables ) return variables;
   if(!query) return ([]);
-  return (mapping(string:string))((query/"&")[*]/"=");
+
+  variables = ([]);
+  foreach( query/"&";; string pair )
+  {
+    if( sscanf( pair, "%s=%s", string var, string val )==2 )
+      variables[var] = val;
+    else
+      variables[pair] = 0;
+  }
+
+  return variables;
 }
 
 //! Sets the query variables from the provided mapping.
 void set_query_variables(mapping(string:string) vars) {
+  variables = vars;
   if(!sizeof(vars))
     query = 0;
   else
-    query = ((array)vars)[*]*"="*"&";
+  {
+    query = "";
+    foreach( vars; string var; string val )
+    {
+      if( sizeof(query) )
+        query += "&";
+      query += var;
+      if( val )
+        query += "=" + val;
+    }
+  }
 }
 
 //! Adds the provided query variable to the already existing ones.
