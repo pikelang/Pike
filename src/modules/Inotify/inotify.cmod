@@ -242,6 +242,11 @@ PIKECLASS _Instance {
     add_integer_constant(#name, name, 0);	\
 } while(0);
 
+#else /* !HAVE_SYS_INOTIFY_H */
+
+#define ADD_ICONST(name)
+
+#endif /* HAVE_SYS_INOTIFY_H */
 
 PIKE_MODULE_INIT {
     ADD_ICONST(IN_ACCESS);
@@ -289,4 +294,3 @@ PIKE_MODULE_EXIT {
  */
 /*! @endmodule
  */
-#endif /* HAVE_SYS_INOTIFY_H */
