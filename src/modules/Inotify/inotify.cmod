@@ -17,11 +17,6 @@
 # include "config.h"
 #endif
 
-#ifdef HAVE_SYS_INOTIFY_H
-
-#include <sys/inotify.h>
-#include <errno.h>
-
 #include "global.h"
 #include "interpret.h"
 #include "module.h"
@@ -31,6 +26,11 @@
 #include "object.h"
 #include "pike_types.h"
 #include "builtin_functions.h"
+
+#ifdef HAVE_SYS_INOTIFY_H
+
+#include <sys/inotify.h>
+#include <errno.h>
 
 DECLARATIONS
 
