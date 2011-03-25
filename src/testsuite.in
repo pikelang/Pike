@@ -8774,6 +8774,18 @@ test_any([[
   return i;
 ]], 0)
 
+test_any([[
+  // Check foreach iterator stepping behavior.
+  array a = indices (allocate (7));
+  Array.Iterator i = get_iterator (a);
+  foreach (i;; int v)
+    if (v > 3) break;
+  foreach (i;; int v)
+    if (v < 5) break;
+  foreach (i;; int v)
+    return v;
+]], 4)
+
 // do-while
 test_any(int e;string t=""; e=0; do{ t+=e; }while(++e<6); return t,"012345";)
 
