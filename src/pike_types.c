@@ -2765,31 +2765,21 @@ static int lower_or_pike_types(struct pike_type *t1,
 	     * This is a bit more lenient than the default further below,
 	     * and is used for generating the type for enums.
 	     */
-	    if (max2 >= max1) {
-	      if (max1 > 0) {
-		max2 |= max1;
-	      }
-	    } else if (max2 > 0) {
-	      max2 |= max1;
-	    } else {
-	      max2 = max1;
-	    }
-	    if (min2 <= min1) {
-	      if (min1 < 0) {
-		min2 &= min1;
-	      }
-	    } else if (min2 < 0) {
-	      min2 &= min1;
-	    } else {
-	      min2 = min1;
-	    }
-	    /* Ensure that zero is always in the range. */
+
+	    /* Ensure that zero is always in the range.
+	     * This also ensures that there'll be an overlap.
+	     */
+	    if (max1 < 0) max1 = 0;
 	    if (max2 < 0) max2 = 0;
+	    if (min1 > 0) min1 = 0;
 	    if (min2 > 0) min2 = 0;
-	    Pike_compiler->type_stackp--;
-	    free_type(top);
-	    push_int_type(min2, max2);
-	    break;
+
+	    /* Both max values are now >= 0, so this or is safe. */
+	    max1 |= max2;
+
+	    if ((min1 < 0) && (min2 < 0)) {
+	      min1 &= min2;
+	    }
 	  }
 	}
 
