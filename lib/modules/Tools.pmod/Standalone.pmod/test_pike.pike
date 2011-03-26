@@ -9,6 +9,13 @@ constant log_msg = Tools.Testsuite.log_msg;
 constant log_msg_cont = Tools.Testsuite.log_msg_cont;
 constant log_status = Tools.Testsuite.log_status;
 
+protected enum exit_codes {
+  EXIT_OK,
+  EXIT_TEST_FAILED,
+  EXIT_TEST_NOT_FOUND,
+  EXIT_WATCHDOG_FAILED,
+};
+
 #if !constant(_verify_internals)
 #define _verify_internals()
 #endif
@@ -80,7 +87,7 @@ array(string|array(string)) read_tests( string fn ) {
   if(!tests) {
     log_msg("Failed to read test file %O, errno=%d.\n",
 	    fn, errno());
-    exit(1);
+    exit(EXIT_TEST_NOT_FOUND);
   }
 
   string pike_compat;
@@ -255,14 +262,14 @@ class Watchdog
       WATCHDOG_MSG ("Error reading stdin pipe: %s\n",
 		    strerror (stdin->errno()));
     }
-    _exit(0);
+    _exit(EXIT_OK);
   }
 
   void check_parent_pid()
   {
     if (!kill (parent_pid, 0)) {
       WATCHDOG_DEBUG_MSG ("Parent process %d gone - exiting\n", parent_pid);
-      _exit(0);
+      _exit(EXIT_OK);
     }
     call_out (check_parent_pid, 10);
   }
@@ -463,7 +470,7 @@ int main(int argc, array(string) argv)
 
 	case "help":
 	  write(doc);
-	  return 0;
+	  return EXIT_OK;
 
 	case "verbose": verbose+=foo(opt[1]); break;
 	case "prompt": prompt+=foo(opt[1]); break;
@@ -542,7 +549,7 @@ int main(int argc, array(string) argv)
   if (watchdog_pid) {
 #if defined(__NT__) && !constant(thread_create)
     log_msg("Watchdog not supported on NT without threads.\n");
-    return 1;
+    return EXIT_WATCHDOG_FAILED;
 #else
     Watchdog (watchdog_pid, verbose);
     return -1;
@@ -601,7 +608,7 @@ int main(int argc, array(string) argv)
       if (!pipe_2) {
 	log_msg ("Failed to create pipe for watchdog: %s\n",
 		 strerror (pipe_1->errno()));
-	exit (1);
+	exit(EXIT_WATCHDOG_FAILED);
       }
       pipe_2->dup2 (Stdio.stdout);
       watchdog=Process.create_process(
@@ -651,11 +658,12 @@ int main(int argc, array(string) argv)
     if(Stdio.is_dir(ts))
       testsuites[pos] = ts = combine_path(ts, "testsuite");
     if(!file_stat(ts))
-      exit(1, "Could not find test %O.\n", ts);
+      exit(EXIT_TEST_NOT_FOUND, "Could not find test %O.\n", ts);
   }
 
   if(!sizeof(testsuites))
-    exit(1, "No tests found. Use --help for more information.\n");
+    exit(EXIT_TEST_NOT_FOUND,
+	 "No tests found. Use --help for more information.\n");
 
 #if 1
   // Store the name of all constants so that we can see
@@ -695,7 +703,7 @@ int main(int argc, array(string) argv)
 	  log_msg("Accumulated: %d tests, %d failed, %d skipped\n",
 		  successes + errors, errors, skipped);
 	if (fail && errors) {
-	  exit(1);
+	  exit(EXIT_TEST_FAILED);
 	}
       }
     } else {
@@ -1252,7 +1260,7 @@ int main(int argc, array(string) argv)
 	if(check > 2) _verify_internals();
 	
 	if(fail && errors)
-	  exit(1);
+	  exit(EXIT_TEST_FAILED);
 
 	if(successes+errors > end)
 	{
@@ -1345,7 +1353,7 @@ int main(int argc, array(string) argv)
     watchdog->wait();
   }
 
-  return errors;
+  return errors && EXIT_TEST_FAILED;
 }
 
 constant doc = #"
