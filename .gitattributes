@@ -37,7 +37,6 @@ testfont binary
 /bin/pike_etags.sh foreign_ident
 /bin/test_pike.pike foreign_ident
 /bin/unbug foreign_ident
-/bin/xenofarm.sh foreign_ident
 /lib/0.6/modules/Regexp.pike foreign_ident
 /lib/7.0/modules/Calendar.pmod/Stardate.pmod foreign_ident
 /lib/7.0/modules/__default.pmod foreign_ident
