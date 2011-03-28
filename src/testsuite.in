@@ -245,19 +245,58 @@ test_any([[
   return 0;
 ]], 0)
 
-test_eval_error([[
+test_any([[
   // Check that parent pointers aren't added unnecessarily [bug 2672].
   class I {};
 
   class X
   {
-    // The cloning of I makes X need its parent.
+    // The cloning of I makes X need its parent usually,
+    // but note that since we're nested in a function
+    // scope by the testsuite, I will not be overloadable,
+    // and thus we won't need the parent.
     inherit I;
     I i = I();
   };
 
   X x = ((program) X)(); // Error: Parent lost, cannot clone program.
   return 0;
+]], 0)
+
+test_eval_error([[
+  class Wrapper {
+    // Check that parent pointers aren't added unnecessarily [bug 2672].
+    class I {}
+
+    class X
+    {
+      // The cloning of I makes X need its parent.
+      inherit I;
+      I i = I();
+    }
+  };
+
+  object x = ((program) (Wrapper()->X))(); // Error: Parent lost, cannot clone program.
+  return 0;
+]], 0)
+
+test_any([[
+  // Check that parent pointers aren't added unnecessarily [LysLysKOM 18781511].
+
+  class Foo {
+    final constant const = 1; 
+    class Bar
+    {
+      int func()
+      {
+        // parent-pointer not needed, since const is final.
+        return const;
+      };
+    }
+  };
+
+  return !Foo.Bar;
+
 ]], 0)
 
 test_compile_any([[
