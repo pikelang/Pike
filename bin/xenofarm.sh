@@ -45,7 +45,7 @@ xenofarm_post_build() {
   log_start verify
   # Note: verify and valgrind_verify perform the same actions
   #       if not compiled --with-valgrind.
-  $MAKE METATARGET=valgrind_verify TESTARGS="-a -T -F -v" > \
+  $MAKE METATARGET=valgrind_verify TESTARGS="-a -T -F" > \
     xenofarm_result/verifylog.txt 2>&1
   log_end $?
   [ $LASTERR = 0 ] || return 1

@@ -21,16 +21,19 @@ protected int verbosity = lambda () {return (int) getenv()->TEST_VERBOSITY;}();
 protected int on_tty = lambda () {return (int) getenv()->TEST_ON_TTY;}();
 
 protected string last_log;
-// The last message passed to log_msg if verbosity == 0.
+// The last message passed to log_status if verbosity == 0 (always
+// destined for stdout).
 
 protected int last_line_length;
 // The length of the last logged line that didn't end with a newline.
+// Positive if it was logged to stdout, negative for stderr.
 
 protected int last_line_inplace = lambda () {return verbosity == 1;}();
-// Set if the last line was logged by log_status on verbosity level 1.
-// Initialized to 1 on verbosity level 1 to work with subtests, since
-// the main testsuite typically logs an "in place" message just before
-// spawning the subtest.
+// Set if the last line was logged by log_status (to stdout) on
+// verbosity level 1. Initialized to 1 on verbosity level 1 to work
+// with subtests, since the main testsuite typically logs an "in
+// place" message just before spawning the subtest. last_line_length
+// is never negative when this is set.
 
 void log_start (int verbosity, int on_tty)
 {
@@ -50,7 +53,7 @@ protected void unlocked_log_msg_cont (string msg)
   }
 
   last_log = 0;
-  write (msg);
+  werror (msg);
   twiddler_counter = -1;
   last_line_inplace = 0;
 
@@ -61,14 +64,15 @@ protected void unlocked_log_msg_cont (string msg)
     if (sizeof (msg_lines) > 1) last_line_length = 0;
     // FIXME: This length calculation is too simplistic since it
     // assumes 1 char == 1 position.
-    last_line_length += sizeof (msg_lines[-1]);
+    last_line_length -= sizeof (msg_lines[-1]);
   }
 }
 
 void log_msg (string msg, mixed... args)
-//! Logs a testsuite message. The message is shown regardless of the
-//! verbosity level. If the previous message was logged without a
-//! trailing newline then a newline is inserted first.
+//! Logs a testsuite message to stderr. The message is shown
+//! regardless of the verbosity level. If the previous message was
+//! logged without a trailing newline then a newline is inserted
+//! first.
 //!
 //! The message should normally have a trailing newline - no extra
 //! newline is added to it. Use @[log_status] to log a message
@@ -79,13 +83,13 @@ void log_msg (string msg, mixed... args)
   Thread.MutexKey lock = log_mutex->lock();
 
   if (last_line_length) {
-    write ("\n");
+    if (last_line_length < 0) werror ("\n"); else write ("\n");
     last_line_length = 0;
   }
 
   if (last_log) {
     if (!has_suffix (last_log, "\n")) last_log += "\n";
-    write (last_log);
+    werror (last_log);
     last_log = 0;
   }
 
@@ -104,8 +108,8 @@ void log_msg_cont (string msg, mixed... args)
 }
 
 void log_status (string msg, mixed... args)
-//! Logs a testsuite status message. This is suitable for nonimportant
-//! progress messages.
+//! Logs a testsuite status message to stdout. This is suitable for
+//! nonimportant progress messages.
 //!
 //! @ul
 //! @item
@@ -146,9 +150,11 @@ void log_status (string msg, mixed... args)
 	return;
       }
 
-      if (last_line_inplace)
+      if (last_line_length < 0)
+	werror ("\n");
+      else if (last_line_inplace)
 	write ("\r%*s\r", max (last_line_length, 40), "");
-      else if (last_line_length)
+      else if (last_line_length > 0)
 	write ("\n");
       twiddler_counter = -1;
       write (msg);
@@ -158,6 +164,8 @@ void log_status (string msg, mixed... args)
     default:
       if (msg == "")
 	return;
+      if (last_line_length < 0)
+	werror ("\n");
       if (!has_suffix (msg, "\n")) msg += "\n";
       write (msg);
       last_line_inplace = 0;
@@ -174,11 +182,11 @@ void log_status (string msg, mixed... args)
 }
 
 void log_twiddler()
-//! Logs a rotating line for showing progress. Only output at the end
+//! Logs a rotating bar for showing progress. Only output at the end
 //! of an "in place" message written by @[log_status] on verbosity
 //! level 1.
 {
-  if (verbosity != 1 || !last_line_length || !on_tty) return;
+  if (verbosity != 1 || last_line_length <= 0 || !on_tty) return;
   if (twiddler_counter == -1) {
     write (" ");
     last_line_length += 2;
