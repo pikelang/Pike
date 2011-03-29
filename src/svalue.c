@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.200 2007/10/12 13:07:51 mast Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -30,7 +30,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: svalue.c,v 1.200 2007/10/12 13:07:51 mast Exp $");
+RCSID("$Id$");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -891,7 +891,7 @@ PMOD_EXPORT int low_short_is_equal(const union anything *a,
     sb.type=type;
   }else{
     sb.type=T_INT;
-    sa.u.integer=0;
+    sb.u.integer=0;
   }
 
   return low_is_equal(&sa,&sb,p);
