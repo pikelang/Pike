@@ -5358,7 +5358,7 @@ ptrdiff_t eval_low(node *n,int print_error)
 #ifdef PIKE_DEBUG
   if(l_flag > 3 && n)
   {
-    fprintf(stderr,"Evaluation ==> %d\n", ret);
+    fprintf(stderr,"Evaluation ==> %"PRINTPTRDIFFT"d\n", ret);
   }
 #endif
 
