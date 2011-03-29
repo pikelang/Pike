@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.262 2010/07/28 22:46:39 mast Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -933,7 +933,7 @@ PMOD_EXPORT int low_short_is_equal(const union anything *a,
     sb.type=type;
   }else{
     sb.type=T_INT;
-    sa.u.integer=0;
+    sb.u.integer=0;
   }
 
   return low_is_equal(&sa,&sb,p);
