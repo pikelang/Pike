@@ -10596,7 +10596,20 @@ test_do(add_constant("PROG"))
 // Tested in lib
 
 // - equal
-// equal is already tested by this script
+// equal is already tested a lot in this script
+
+test_any([[
+  class X (string s) {};
+  return equal (({X ("foo")}), ({X (0)}));
+]], 0)
+test_any([[
+  class X (string s) {};
+  return equal (({X (0)}), ({X ("foo")}));
+]], 0)
+test_any([[
+  class X (string s) {};
+  return equal (({X ("foo")}), ({X ("foo")}));
+]], 1)
 
 // - errno
 

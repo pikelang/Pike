@@ -933,7 +933,7 @@ PMOD_EXPORT int low_short_is_equal(const union anything *a,
     sb.type=type;
   }else{
     sb.type=T_INT;
-    sa.u.integer=0;
+    sb.u.integer=0;
   }
 
   return low_is_equal(&sa,&sb,p);
