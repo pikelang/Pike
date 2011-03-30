@@ -5060,10 +5060,12 @@ dnl  test_any([[ catch { allocate(10000,thread_create)(lambda() { sleep(1); })->
     // Test that a loop relinquishes the interpreter lock every now and then.
     int count, stop, fail;
     Thread.thread_create (lambda() {
-			    int stop_time = time() + 1;
+                            int t_start = time();
+                            // Note: We need sub-second precision.
+			    float stop_time = 1.0 + time(t_start);
 			    while (!stop) {
 			      count++;
-			      if (time() > stop_time) {
+			      if (time(t_start) > stop_time) {
 				fail = 1;
 				break;
 			      }
