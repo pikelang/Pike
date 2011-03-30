@@ -4583,11 +4583,8 @@ static void delaysleep(double delay, unsigned do_abort_on_signal,
 {
 #define POLL_SLEEP_LIMIT 0.02
 
-#ifdef HAVE_GETHRTIME
-   hrtime_t t0,tv;
-#else
-   struct timeval t0,tv;
-#endif
+   struct timeval gtod_t0, gtod_tv;
+   cpu_time_t t0, tv;
 
    /* Special case, sleep(0) means 'yield' */
    if(delay == 0.0)
@@ -4602,21 +4599,25 @@ static void delaysleep(double delay, unsigned do_abort_on_signal,
    if(sizeof(FLOAT_TYPE)<sizeof(double))
      delay += FLT_EPSILON*5;	/* round up */
 
-#ifdef HAVE_GETHRTIME
-   t0=tv=gethrtime();
-#define GET_TIME_ELAPSED tv=gethrtime()
-#define TIME_ELAPSED (tv-t0)*1e-9
-#else
-   GETTIMEOFDAY(&t0);
-   tv=t0;
-#define GET_TIME_ELAPSED GETTIMEOFDAY(&tv)
-#define TIME_ELAPSED ((tv.tv_sec-t0.tv_sec) + (tv.tv_usec-t0.tv_usec)*1e-6)
-#endif
+   t0 = tv = get_real_time();
+   if (t0 == -1) {
+     /* Paranoia in case get_real_time fails. */
+     /* fprintf (stderr, "get_real_time failed in sleep()\n"); */
+     GETTIMEOFDAY (&gtod_t0);
+     gtod_tv = gtod_t0;
+   }
 
-#define FIX_LEFT() \
-       GET_TIME_ELAPSED; \
-       left = delay - TIME_ELAPSED; \
-       if (do_microsleep) left-=POLL_SLEEP_LIMIT;
+#define FIX_LEFT()							\
+   if (t0 == -1) {							\
+     GETTIMEOFDAY (&gtod_tv);						\
+     left = delay - ((gtod_tv.tv_sec-gtod_t0.tv_sec) +			\
+		     (gtod_tv.tv_usec-gtod_t0.tv_usec)*1e-6);		\
+   }									\
+   else {								\
+     tv = get_real_time();						\
+     left = delay - (tv - t0) * (1.0 / CPU_TIME_TICKS);			\
+   }									\
+   if (do_microsleep) left-=POLL_SLEEP_LIMIT;
 
    if (!do_microsleep || delay>POLL_SLEEP_LIMIT)
    {
@@ -4641,9 +4642,19 @@ static void delaysleep(double delay, unsigned do_abort_on_signal,
      GETTIMEOFDAY (&current_time);
    }
 
-   if (do_microsleep)
-      while (delay>TIME_ELAPSED)
-	 GET_TIME_ELAPSED;
+   if (do_microsleep) {
+     if (t0 == -1) {
+       while (delay> ((gtod_tv.tv_sec-gtod_t0.tv_sec) +
+		      (gtod_tv.tv_usec-gtod_t0.tv_usec)*1e-6))
+	 GETTIMEOFDAY (&gtod_tv);
+     }
+     else {
+       while (delay> (tv - t0) * (1.0 / CPU_TIME_TICKS))
+	 tv = get_real_time();
+     }
+   }
+
+   /* fprintf (stderr, "slept %g\n", (tv - t0) * (1.0 / CPU_TIME_TICKS)); */
 }
 
 /*! @decl void sleep(int|float s, void|int abort_on_signal)
