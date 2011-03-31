@@ -1068,6 +1068,8 @@ static int obj_or_func_cmp (const struct svalue *a, const struct svalue *b)
     else
       return a->u.object->prog < b->u.object->prog ? -1 : 1;
   }
+  else if (!res)
+    return a_subtype - b_subtype;
 
   return res;
 }
