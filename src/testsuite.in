@@ -11673,6 +11673,14 @@ test_any([[
   return -1;
 ]],-1)
 test_equal(sort (({(<2>), (<1>)})), ({(<1>), (<2>)}))
+test_any_equal([[
+  function pike_fun = lambda() {};
+  function c_fun = sleep;
+  return ({equal (sort (({pike_fun, pike_fun})), ({pike_fun, pike_fun})),
+	   equal (sort (({c_fun, c_fun})), ({c_fun, c_fun})),
+	   equal (sort (({pike_fun, c_fun})), ({pike_fun, c_fun})),
+	   equal (sort (({c_fun, pike_fun})), ({pike_fun, c_fun}))});
+]], [[({1, 1, 1, 1})]])
 
 dnl missing tests for objects, arrays, multisets and mappings
 

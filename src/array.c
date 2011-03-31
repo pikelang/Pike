@@ -1020,6 +1020,17 @@ static int obj_or_func_cmp (const struct svalue *a, const struct svalue *b)
     return -1;
 
   if (a->type == T_FUNCTION) {
+    /* Sort pike functions before builtins. */
+    if (a->subtype == FUNCTION_BUILTIN) {
+      if (b->subtype == FUNCTION_BUILTIN)
+	return a->u.efun < b->u.efun ? -1 : (a->u.efun == b->u.efun ? 0 : 1);
+      else
+	return 1;
+    }
+    else
+      if (b->subtype == FUNCTION_BUILTIN)
+	return -1;
+
     if (a->u.object->prog != b->u.object->prog)
       return a->u.object->prog < b->u.object->prog ? -1 : 1;
     if (a->subtype != b->subtype)
