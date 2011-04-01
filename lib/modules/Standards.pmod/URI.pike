@@ -220,6 +220,8 @@ void reparse_uri(this_program|string|void base_uri)
     if( !sizeof(uri) )
     {
       DEBUG("Fragment only. Using entire base URI, except fragment.");
+      if( !this_program::base_uri )
+        error("fragment only URI lacking base URI.\n");
       string f = fragment;
       inherit_properties(this_program::base_uri);
       fragment = f;
@@ -357,7 +359,7 @@ void create(this_program|string uri,
   DEBUG("create(%O, %O) called!", uri, base_uri);
   if(stringp(uri))
     raw_uri = [string]uri; // Keep for future runs of reparse_uri after a base_uri change
-  else // if(objectp(uri)) (implied)
+  else if(objectp(uri)) // If uri is 0, we want to inherit from the base_uri.
   {
     raw_uri = uri->raw_uri;
     inherit_properties([object(this_program)]uri);
