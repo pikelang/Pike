@@ -353,7 +353,7 @@ static THREAD_T last_clocked_thread = 0;
 #ifdef RDTSC
 static int use_tsc_for_slices;
 #define TSC_START_INTERVAL 100000
-static INT64 prev_tsc;
+static INT64 prev_tsc;	   /* TSC and */
 static clock_t prev_clock; /* clock() at the beg of the last tsc interval */
 #endif
 #endif
@@ -1371,7 +1371,11 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
 	* unsynchronized tsc's between cores, OS tsc resets, etc -
 	* individual intervals can be off by more than an order of
 	* magnitude in either direction without affecting the final time
-	* slice length appreciably. */
+	* slice length appreciably.
+	*
+	* Note that the real interval lengths will always be longer.
+	* One reason is that we won't get calls exactly when they run
+	* out. Another is the often lousy clock(3) resolution. */
 
        if (prev_tsc) {
 	 clock_t tsc_interval_time = clock_now - prev_clock;
@@ -1380,12 +1384,21 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
 	    * tsc/clock ratio of the last one. This adapts very
 	    * quickly but is also very "jumpy". That shouldn't matter
 	    * due to the approach with dividing the time slice into
-	    * ~20 tsc intervals. */
+	    * ~20 tsc intervals.
+	    *
+	    * Note: The main source of the jumpiness is probably that
+	    * clock(3) has so lousy resolution on many platforms, i.e.
+	    * it may step forward very large intervals very seldom
+	    * (100 times/sec on linux/glibc 2.x). It also has the
+	    * effect that the actual tsc intervals will be closer to
+	    * 1/200 sec. */
 	   INT64 new_target_int =
 	     (tsc_elapsed * (CLOCKS_PER_SEC / 400)) / tsc_interval_time;
 	   if (new_target_int < target_int << 1)
 	     target_int = new_target_int;
 	   else {
+	     /* The most likely cause for this is high variance in the
+	      * interval lengths due to low clock(3) resolution. */
 #ifdef PROFILE_CHECK_THREADS
 	     fprintf (stderr, "TSC suspect forward jump detected "
 		      "(prev int: %"PRINTINT64"d, "
