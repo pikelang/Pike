@@ -5056,6 +5056,7 @@ cond_begin([[all_constants()->thread_create]])
 dnl this will crash pike on out-of-address-space-related errors
 dnl  test_any([[ catch { allocate(10000,thread_create)(lambda() { sleep(1); })->wait(); } ]])
 
+cond_end // thread_create
 cond(0, [[
   test_any([[
     // Test that a loop relinquishes the interpreter lock every now and then.
@@ -5085,6 +5086,7 @@ cond(0, [[
     return fail ? -1 : count > 0;
   ]], 1)
 ]])
+cond_begin([[all_constants()->thread_create]])
 
   // _disable_threads
   test_any([[
