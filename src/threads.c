@@ -1405,7 +1405,7 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
 	    * 1/200 sec. */
 	   INT64 new_target_int =
 	     (tsc_elapsed * (CLOCKS_PER_SEC / 400)) / tsc_interval_time;
-	   if (new_target_int < target_int << 1)
+	   if (new_target_int < target_int << 2)
 	     target_int = new_target_int;
 	   else {
 	     /* The most likely cause for this is high variance in the
@@ -1417,7 +1417,7 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
 		      target_int, new_target_int);
 #endif
 	     /* The + 1 is paranoia just in case it has become zero somehow. */
-	     target_int = (target_int << 1) + 1;
+	     target_int = (target_int << 2) + 1;
 	   }
 	   prev_tsc = tsc_now;
 	   prev_clock = clock_now;
