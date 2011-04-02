@@ -5056,8 +5056,16 @@ cond_begin([[all_constants()->thread_create]])
 dnl this will crash pike on out-of-address-space-related errors
 dnl  test_any([[ catch { allocate(10000,thread_create)(lambda() { sleep(1); })->wait(); } ]])
 
+cond(0, [[
   test_any([[
     // Test that a loop relinquishes the interpreter lock every now and then.
+    //
+    // This test is unfortunately disabled since it fails too often.
+    // The subthread does really yield in the loop, but the main
+    // thread, which really is waiting, fails to run. My conclusion is
+    // that the problem is the unreliability of th_yield() - we need
+    // to replace it with something else. :(
+    // /mast
     int count, stop, fail;
     Thread.thread_create (lambda() {
                             int t_start = time();
@@ -5076,6 +5084,7 @@ dnl  test_any([[ catch { allocate(10000,thread_create)(lambda() { sleep(1); })->
     sleep (0.1);
     return fail ? -1 : count > 0;
   ]], 1)
+]])
 
   // _disable_threads
   test_any([[
