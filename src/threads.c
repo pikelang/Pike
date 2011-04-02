@@ -414,6 +414,19 @@ static INLINE void check_interpreter_lock (DLOC_DECL)
   }
 }
 
+static unsigned LONGEST thread_swaps = 0;
+static unsigned LONGEST check_threads_calls = 0;
+static unsigned LONGEST check_threads_yields = 0;
+static unsigned LONGEST check_threads_swaps = 0;
+static void f__thread_swaps (INT32 args)
+  {push_ulongest (thread_swaps);}
+static void f__check_threads_calls (INT32 args)
+  {push_ulongest (check_threads_calls);}
+static void f__check_threads_yields (INT32 args)
+  {push_ulongest (check_threads_yields);}
+static void f__check_threads_swaps (INT32 args)
+  {push_ulongest (check_threads_swaps);}
+
 #else
 
 #define SET_LOCKING_THREAD 0
@@ -532,6 +545,7 @@ PMOD_EXPORT void pike_init_thread_state (struct thread_state *ts)
   ts->swapped = 0;
 #ifdef PIKE_DEBUG
   ts->debug_flags = 0;
+  thread_swaps++;
 #endif
 #ifdef USE_CLOCK_FOR_SLICES
   /* Initialize thread_start_clock to zero instead of clock() since we
@@ -614,6 +628,9 @@ PMOD_EXPORT void pike_swap_in_thread (struct thread_state *ts
 
   ts->swapped=0;
   Pike_interpreter=ts->state;
+#ifdef PIKE_DEBUG
+  thread_swaps++;
+#endif
 
 #ifdef USE_CLOCK_FOR_SLICES
   if (last_clocked_thread != ts->id) {
@@ -1286,6 +1303,9 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
   static double tps_int_mean = 0.0, tps_int_m2 = 0.0;
   calls++;
 #endif
+#ifdef PIKE_DEBUG
+  check_threads_calls++;
+#endif
 
 #if defined (USE_CLOCK_FOR_SLICES) && defined (PIKE_DEBUG)
   if (last_clocked_thread != th_self())
@@ -1517,6 +1537,9 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
 #endif
 
   do_yield:;
+#ifdef PIKE_DEBUG
+  check_threads_yields++;
+#endif
 
 #ifdef PROFILE_CHECK_THREADS
   {
@@ -1553,7 +1576,16 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
   }
 #endif
 
-  pike_thread_yield();
+  {
+#ifdef PIKE_DEBUG
+    unsigned LONGEST old_thread_swaps = thread_swaps;
+#endif
+    pike_thread_yield();
+#ifdef PIKE_DEBUG
+    if (thread_swaps != old_thread_swaps)
+      check_threads_swaps++;
+#endif
+  }
 }
 
 PMOD_EXPORT void pike_thread_yield(void)
@@ -3122,6 +3154,17 @@ void th_init(void)
 #ifdef UNIX_THREADS
   
   ADD_EFUN("thread_set_concurrency",f_thread_set_concurrency,tFunc(tInt,tVoid), OPT_SIDE_EFFECT);
+#endif
+
+#ifdef PIKE_DEBUG
+  ADD_EFUN("_thread_swaps", f__thread_swaps,
+	   tFunc(tVoid,tInt), OPT_SIDE_EFFECT);
+  ADD_EFUN("_check_threads_calls", f__check_threads_calls,
+	   tFunc(tVoid,tInt), OPT_SIDE_EFFECT);
+  ADD_EFUN("_check_threads_yields", f__check_threads_yields,
+	   tFunc(tVoid,tInt), OPT_SIDE_EFFECT);
+  ADD_EFUN("_check_threads_swaps", f__check_threads_swaps,
+	   tFunc(tVoid,tInt), OPT_SIDE_EFFECT);
 #endif
 
   START_NEW_PROGRAM_ID(THREAD_MUTEX_KEY);
