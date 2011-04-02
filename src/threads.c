@@ -16,6 +16,8 @@
 /* Define to get a debug trace of thread operations. Debug levels can be 0-2. */
 /* #define VERBOSE_THREADS_DEBUG 1 */
 
+/* #define PROFILE_CHECK_THREADS */
+
 #ifndef CONFIGURE_TEST
 
 #include "threads.h"
@@ -554,6 +556,10 @@ PMOD_EXPORT void pike_init_thread_state (struct thread_state *ts)
   last_clocked_thread = ts->id;
 #ifdef RDTSC
   prev_tsc = 0;
+#endif
+#ifdef PROFILE_CHECK_THREADS
+  fprintf (stderr, "[%d:%f] pike_init_thread_state: tsc reset\n",
+	   getpid(), get_real_time() * (1.0 / CPU_TIME_TICKS));
 #endif
 #endif
 }
@@ -1287,12 +1293,11 @@ PMOD_EXPORT int count_pike_threads(void)
   return num_pike_threads;
 }
 
-/* #define PROFILE_CHECK_THREADS */
-
 static void check_threads(struct callback *cb, void *arg, void * arg2)
 {
 #ifdef PROFILE_CHECK_THREADS
-  static unsigned long calls = 0, clock_checks = 0, no_clock_advs = 0;
+  static unsigned long calls = 0, yields = 0;
+  static unsigned long clock_checks = 0, no_clock_advs = 0;
   static unsigned long slice_int_n = 0; /* Slice interval length. */
   static double slice_int_mean = 0.0, slice_int_m2 = 0.0;
   static unsigned long tsc_int_n = 0; /* Actual tsc interval length. */
@@ -1337,9 +1342,11 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
 	  * the only effect is that we always fall back to
 	  * clock(3). */
 #ifdef PROFILE_CHECK_THREADS
-	 fprintf (stderr, "TSC backward jump detected (now: %"PRINTINT64"d, "
-		  "prev: %"PRINTINT64"d, target_int: %"PRINTINT64"d) - "
-		  "resetting\n", tsc_now, prev_tsc, target_int);
+	 fprintf (stderr, "[%d:%f] TSC backward jump detected "
+		  "(now: %"PRINTINT64"d, prev: %"PRINTINT64"d, "
+		  "target_int: %"PRINTINT64"d) - resetting\n",
+		  getpid(), get_real_time() * (1.0 / CPU_TIME_TICKS),
+		  tsc_now, prev_tsc, target_int);
 #endif
 	 target_int = TSC_START_INTERVAL;
 	 prev_tsc = 0;
@@ -1400,10 +1407,10 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
 	     /* The most likely cause for this is high variance in the
 	      * interval lengths due to low clock(3) resolution. */
 #ifdef PROFILE_CHECK_THREADS
-	     fprintf (stderr, "TSC suspect forward jump detected "
-		      "(prev int: %"PRINTINT64"d, "
-		      "calculated int: %"PRINTINT64"d) - "
-		      "capping\n", target_int, new_target_int);
+	     fprintf (stderr, "[%d:%f] Capping large TSC interval increase "
+		      "(from %"PRINTINT64"d to %"PRINTINT64"d)\n",
+		      getpid(), get_real_time() * (1.0 / CPU_TIME_TICKS),
+		      target_int, new_target_int);
 #endif
 	     /* The + 1 is paranoia just in case it has become zero somehow. */
 	     target_int = (target_int << 1) + 1;
@@ -1440,7 +1447,11 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
        }
        else {
 #ifdef PROFILE_CHECK_THREADS
-	 fprintf (stderr, "Warning: Encountered zero prev_tsc.\n");
+	 fprintf (stderr, "[%d:%f] Warning: Encountered zero prev_tsc "
+		  "(thread_start_clock: %"PRINTINT64"d, "
+		  "clock_now: %"PRINTINT64"d)\n",
+		  getpid(), get_real_time() * (1.0 / CPU_TIME_TICKS),
+		  (INT64) thread_start_clock, (INT64) clock_now);
 #endif
 	 prev_tsc = tsc_now;
        }
@@ -1559,6 +1570,8 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
     static long last_time;
     struct timeval now;
 
+    yields++;
+
 #ifdef USE_CLOCK_FOR_SLICES
     if (thread_start_clock) {
       double slice_time =
@@ -1572,9 +1585,12 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
 
     GETTIMEOFDAY (&now);
     if (now.tv_sec > last_time) {
-      fprintf (stderr, "check_threads: %lu calls, %lu clocks, %lu no advs, "
-	       "slice %.3f:%.1e, tsc int %.2e:%.1e, tsc tgt %.2e:%.1e, tps %g:%.1e\n",
-	       calls, clock_checks, no_clock_advs,
+      fprintf (stderr, "[%d:%f] check_threads: %lu calls, "
+	       "%lu clocks, %lu no advs, %lu yields"
+	       ", slice %.3f:%.1e, tsc int %.2e:%.1e, tsc tgt %.2e:%.1e"
+	       ", tps %g:%.1e\n",
+	       getpid(), get_real_time() * (1.0 / CPU_TIME_TICKS),
+	       calls, clock_checks, no_clock_advs, yields,
 	       slice_int_mean,
 	       slice_int_n > 1 ? sqrt (slice_int_m2 / (slice_int_n - 1)) : 0.0,
 	       tsc_int_mean,
@@ -1584,7 +1600,7 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
 	       tps_int_mean,
 	       tps_int_n > 1 ? sqrt (tps_int_m2 / (tps_int_n - 1)) : 0.0);
       last_time = (unsigned long) now.tv_sec;
-      calls = clock_checks = no_clock_advs = 0;
+      calls = yields = clock_checks = no_clock_advs = 0;
     }
   }
 #endif
