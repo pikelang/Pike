@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iterators.cmod,v 1.73 2009/11/09 16:37:17 grubba Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -23,6 +23,7 @@
 #include "pike_security.h"
 #include "opcodes.h"
 #include "pike_error.h"
+#include "pike_types.h"
 #include "program.h"
 #include "operators.h"
 #include "builtin_functions.h"
@@ -1802,6 +1803,282 @@ PIKECLASS string_split_iterator
       return NULL;
     }
 };
+
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
+
+/*! @module Program
+ */
+
+/*! @class SymbolIterator
+ */
+
+PIKECLASS program_symbol_iterator
+{
+  CVAR struct program *p;
+  CVAR int mask;
+  CVAR int current;
+
+  INIT
+    {
+      THIS->p = NULL;
+    }
+
+  EXIT
+    gc_trivial;
+    {
+      if (THIS->p) {
+	free_program(THIS->p);
+      }
+    }
+
+  static int psi_next(void)
+  {
+    struct program *p = THIS->p;
+    int f = THIS->current;
+    int mask = THIS->mask;
+    if (!p || (f >= p->num_identifier_references)) {
+      return 0;
+    }
+    do {
+      struct reference *ref;
+      struct identifier *id;
+      f++;
+      if (f >= p->num_identifier_references) break;
+      ref = PTR_FROM_INT(p, f);
+      if (ref->id_flags & THIS->mask) continue;
+      id = ID_FROM_PTR(p, ref);
+      if (IDENTIFIER_IS_ALIAS(id->identifier_flags)) continue;
+      if (!IDENTIFIER_IS_VARIABLE(id->identifier_flags)) continue;
+    } while(1);
+    THIS->current = f;
+    if (f < p->num_identifier_references) {
+      return 1;
+    }
+    return 0;
+  }
+
+  /*! @decl void create(program p, int|void flags)
+   */
+  PIKEFUN void create(program p, int|void flags)
+    flags ID_PROTECTED;
+  {
+    if (THIS->p) free_program(THIS->p);
+    add_ref(THIS->p = p);
+    THIS->mask = (ID_HIDDEN|ID_PRIVATE);
+    if (!flags || !flags->u.integer) {
+      THIS->mask |= ID_PROTECTED;
+    }
+    THIS->current = -1;
+    psi_next();
+  }
+
+  /*! @decl int(0..1) `!()
+   */
+  PIKEFUN int(0..1) `!()
+    flags ID_PROTECTED;
+  {
+    RETURN THIS->current < THIS->p->num_identifier_references;
+  }
+
+  /*! @decl optional Iterator `+ (int steps)
+   *!
+   *! Returns a clone of this iterator which is advanced the specified
+   *! number of steps. The amount may be negative to move backwards.
+   *! If the iterator doesn't support backward movement it should
+   *! throw an exception in that case.
+   *!
+   *! @seealso
+   *!   @[next], @[`+=], @[`-]
+   */
+  PIKEFUN Iterator `+(int steps)
+    flags ID_PROTECTED|ID_OPTIONAL;
+    prototype;
+  {}
+
+  /*! @decl optional Iterator `+= (int steps)
+   *!
+   *! Advance this iterator the specified number of steps and return
+   *! it. The amount may be negative to move backwards. If the
+   *! iterator doesn't support backward movement it should throw an
+   *! exception in that case.
+   *!
+   *! @note
+   *!   @[foreach] calls this function with a step value of @expr{1@}
+   *!   if @[next()] doesn't exist for compatibility with Pike 7.6
+   *!   and earlier.
+   *!
+   *! @note
+   *!   @[foreach] will call this function even when the the
+   *!   iterator has more than one reference. If you want to
+   *!   loop over a copy of the iterator, you can create a
+   *!   copy by adding @expr{0@} (zero) to it:
+   *!   @code
+   *!     Iterator iterator;
+   *!     ...
+   *!     foreach(iterator+0; mixed index; mixed value) {
+   *!       ...
+   *!     }
+   *!   @endcode
+   *!
+   *! @note
+   *!   Even though this function is sufficient for @[foreach] to
+   *!   advance the iterator, @[next()] is the preferred API.
+   *!   @[next()] has the additional advantage of not being an
+   *!   lfun, so it is possible to advance the iterator by hand.
+   *!
+   *! @seealso
+   *!   @[next], @[`+], @[`-]
+   */
+  PIKEFUN Iterator `+=(int steps)
+    flags ID_PROTECTED|ID_OPTIONAL;
+  {
+    if (steps < 0)
+      SIMPLE_ARG_ERROR ("Program.SymbolIterator.`+=", 1,
+			"This iterator doesn't support going backwards.\n");
+    while(--steps>=0 && psi_next())
+      ;
+    REF_RETURN Pike_fp->current_object;
+  }
+
+  /*! @decl optional Iterator `- (int steps)
+   *!
+   *! This lfun should be defined if and only if the iterator supports
+   *! backward movement to some degree. It should back up the
+   *! specified number of steps. The amount may be negative to move
+   *! forward.
+   *!
+   *! @seealso
+   *!   @[next], @[`+], @[`+=]
+   */
+  PIKEFUN int(0..1) `-(int steps)
+    flags ID_PROTECTED|ID_OPTIONAL;
+    prototype;
+  {}
+
+  /*! @decl string index()
+   *!
+   *! Returns the current index, or @[UNDEFINED] if the iterator
+   *! doesn't point to any item.
+   *!
+   *! If there's no obvious index set then the index is the current
+   *! position in the data set, counting from @expr{0@} (zero).
+   */
+  PIKEFUN string index()
+  {
+    struct identifier *id;
+
+    if (!THIS->p || (THIS->current < THIS->p->num_identifier_references)) {
+      push_undefined();
+      return;
+    }
+    id = ID_FROM_INT(THIS->p, THIS->current);
+    ref_push_string(id->name);
+  }
+
+  /*! @decl type(mixed) value()
+   *!
+   *! Returns the current value, or @[UNDEFINED] if the iterator
+   *! doesn't point to any item.
+   */
+  PIKEFUN mixed value()
+  {
+    struct identifier *id;
+
+    if (!THIS->p || (THIS->current < THIS->p->num_identifier_references)) {
+      push_undefined();
+      return;
+    }
+    id = ID_FROM_INT(THIS->p, THIS->current);
+    ref_push_type_value(id->type);
+  }
+
+  /*! @decl optional int _sizeof()
+   *!
+   *! Returns the total number of items in the data set according to
+   *! this iterator. If the size of the data set is unlimited or
+   *! unknown then this function shouldn't be defined.
+   */
+  PIKEFUN int _sizeof()
+    flags ID_OPTIONAL;
+    prototype;
+  {}
+
+  /*! @decl optional void _random()
+   *!
+   *! If this function is defined then it sets the iterator to point
+   *! to a random item in the accessible set. The random distribution
+   *! should be rectangular within that set, and the pseudorandom
+   *! sequence provided by @[random] should be used.
+   */
+  PIKEFUN void _random()
+    flags ID_OPTIONAL;
+    prototype;
+  {}
+
+  /*! @decl optional int(0..1) first()
+   *!
+   *! If this function is defined then it resets the iterator to point
+   *! to the first item.
+   *!
+   *! @returns
+   *!   Returns zero if there are no items at all in
+   *!   the data set, one otherwise.
+   *!
+   *! @note
+   *!   It's not enough to set the iterator to the earliest accessible
+   *!   item. If the iterator doesn't support backing up to the
+   *!   original start position then this function should not be
+   *!   implemented.
+   */
+  PIKEFUN int(0..1) first()
+    flags ID_OPTIONAL;
+  {
+    THIS->current = -1;
+    RETURN psi_next();
+  }
+
+  /*! @decl int next()
+   *!
+   *! If this function is defined it should advance the iterator one
+   *! step, just like @expr{@[`+=](1)@} would do.
+   *!
+   *! @note
+   *!   This is the preferred way to advance the iterator, since it
+   *!   reduces the overhead.
+   *!
+   *! @note
+   *!   This function was optional in Pike 7.6 and earlier.
+   *!
+   *! @returns
+   *!   Returns @tt{1@} if it succeeded in advancing, and
+   *!   @tt{0@} (zero) if it has reached the end of the iterator.
+   *!
+   *! @seealso
+   *!   @[`+], @[`+=], @[`-]
+   */
+  PIKEFUN int(0..1) next()
+  {
+    RETURN psi_next();
+  }
+
+  /*! @decl optional void set_index(zero index)
+   *!
+   *! If this function is defined it should set the iterator at
+   *! the specified index.
+   *!
+   *! @note
+   *!   It should be possible to set the index at the end of
+   *!   the iterator.
+   */
+  PIKEFUN void set_index(zero index)
+    flags ID_OPTIONAL;
+    prototype;
+  {}
+}
 
 /*! @endclass
  */
