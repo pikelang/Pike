@@ -17,8 +17,17 @@ array(int) run_script (string|array(string) pike_script)
     ({0, 1, 0});
 }
 
-protected int verbosity = lambda () {return (int) getenv()->TEST_VERBOSITY;}();
-protected int on_tty = lambda () {return (int) getenv()->TEST_ON_TTY;}();
+protected int verbosity =
+  lambda () {
+    string v = getenv()->TEST_VERBOSITY;
+    // Default to 1 in case test scripts are run standalone.
+    return zero_type (v) ? 1 : (int) v;
+  }();
+protected int on_tty =
+  lambda () {
+    string v = getenv()->TEST_ON_TTY;
+    return zero_type (v) ? 1 : (int) v;
+  }();
 
 protected string last_log;
 // The last message passed to log_status if verbosity == 0 (always
@@ -28,12 +37,18 @@ protected int last_line_length;
 // The length of the last logged line that didn't end with a newline.
 // Positive if it was logged to stdout, negative for stderr.
 
-protected int last_line_inplace = lambda () {return verbosity == 1;}();
+protected int last_line_inplace =
+  lambda () {
+    if (verbosity == 1 && !zero_type (getenv()->TEST_VERBOSITY))
+      // Initialize to 1 on verbosity level 1 when it looks like we're
+      // being run from the main testsuite, since it typically logs an
+      // "in place" message just before spawning the subtest.
+      return 1;
+    return 0;
+  }();
 // Set if the last line was logged by log_status (to stdout) on
-// verbosity level 1. Initialized to 1 on verbosity level 1 to work
-// with subtests, since the main testsuite typically logs an "in
-// place" message just before spawning the subtest. last_line_length
-// is never negative when this is set.
+// verbosity level 1. last_line_length is never negative when this is
+// set.
 
 void log_start (int verbosity, int on_tty)
 {
