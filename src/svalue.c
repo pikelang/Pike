@@ -478,14 +478,38 @@ PMOD_EXPORT unsigned INT32 hash_svalue(const struct svalue *s)
     /* FALL THROUGH */
   default:
 #if SIZEOF_CHAR_P > 4
-    q=DO_NOT_WARN((unsigned INT32)(PTR_TO_INT(s->u.refs) >> 2));
+    q=DO_NOT_WARN((unsigned INT32)(PTR_TO_INT(s->u.ptr) >> 2));
 #else
-    q=DO_NOT_WARN((unsigned INT32)(PTR_TO_INT(s->u.refs)));
+    q=DO_NOT_WARN((unsigned INT32)(PTR_TO_INT(s->u.ptr)));
 #endif
     break;
-  case T_INT:   q=s->u.integer; break;
+  case T_INT:
+    q=(unsigned INT32) s->u.integer;
+#if SIZEOF_INT_TYPE == 8
+    q^=(unsigned INT32)(s->u.integer >> 32);
+#endif
+    break;
   case T_FLOAT:
-    q=DO_NOT_WARN((unsigned INT32)(s->u.float_number * 16843009.731757771173));
+    /* this is true for both +0.0 and -0.0 */
+    if (s->u.float_number == 0.0) {
+	q = 0;
+    } else {
+	union {
+	    FLOAT_TYPE f;
+#if SIZEOF_FLOAT_TYPE == 8
+	    unsigned INT64 i;
+#elif SIZEOF_FLOAT_TYPE == 4
+	    unsigned INT32 i;
+#else
+#error Size of FLOAT_TYPE not supported.
+#endif
+	} ufloat;
+	ufloat.f = s->u.float_number;
+	q = (unsigned INT32)ufloat.i;
+#if SIZEOF_FLOAT_TYPE == 8
+	q ^= (unsigned INT32)(ufloat.i >> 32);
+#endif
+    }
     break;
   }
 #if 0
