@@ -94,7 +94,8 @@ int(0..) reflect(int value, int(0..) bits)
   return value>>bits;
 }
 
-protected class Inf {
+//! The type of @[Int.inf]. Do not create more instances of this.
+class Inf {
 
   protected constant neg = 0;
   protected int __hash() { return 17; }
@@ -181,5 +182,5 @@ class NInf {
 
 protected Inf ninf = NInf();
 
-//! An infinite number.
+//! An object that behaves like positive infinity.
 Inf inf = Inf();
