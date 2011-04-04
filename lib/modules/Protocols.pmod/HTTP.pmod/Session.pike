@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Session.pike,v 1.25 2010/03/07 21:48:27 srb Exp $
+// $Id$
 
 import Protocols.HTTP;
 
@@ -94,9 +94,9 @@ class Request
       if (url->referer)
 	 request_headers->referer=(string)url->referer;
 
-      if(url->user || url->passwd)
+      if(url->user || url->password)
 	 request_headers->authorization = "Basic "
-	    + MIME.encode_base64(url->user + ":" +
+	    + MIME.encode_base64((url->user || "") + ":" +
 				 (url->password || ""));
 
       request_headers->connection=
