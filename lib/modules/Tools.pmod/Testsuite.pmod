@@ -59,6 +59,8 @@ void log_start (int verbosity, int on_tty)
 
 protected Thread.Mutex log_mutex = Thread.Mutex();
 protected int twiddler_counter = -1;
+protected int twiddle_time_base = time();
+protected float last_twiddle;
 
 protected void unlocked_log_msg_cont (string msg)
 {
@@ -69,7 +71,7 @@ protected void unlocked_log_msg_cont (string msg)
 
   last_log = 0;
   werror (msg);
-  twiddler_counter = -1;
+  twiddler_counter = -abs (twiddler_counter);
   last_line_inplace = 0;
 
   if (has_suffix (msg, "\n") || has_suffix (msg, "\r"))
@@ -171,7 +173,7 @@ void log_status (string msg, mixed... args)
 	write ("\r%*s\r", max (last_line_length, 40), "");
       else if (last_line_length > 0)
 	write ("\n");
-      twiddler_counter = -1;
+      twiddler_counter = -abs (twiddler_counter);
       write (msg);
       last_line_inplace = 1;
       break;
@@ -202,11 +204,22 @@ void log_twiddler()
 //! level 1.
 {
   if (verbosity != 1 || last_line_length <= 0 || !on_tty) return;
-  if (twiddler_counter == -1) {
+
+  float now = time (twiddle_time_base), t = now - last_twiddle;
+
+  if (twiddler_counter < 0) {
     write (" ");
     last_line_length += 2;
+    twiddler_counter = -twiddler_counter;
   }
-  write ("%c\b", "|/-\\"[++twiddler_counter & 3]);
+  else if (t < 0.2) return;
+
+  if (t >= 0.2) {
+    twiddler_counter++;
+    last_twiddle = now;
+  }
+
+  write ("%c\b", "|/-\\"[twiddler_counter & 3]);
 }
 
 void report_result (int succeeded, int failed, void|int skipped)
