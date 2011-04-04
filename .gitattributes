@@ -665,7 +665,6 @@ testfont binary
 /src/post_modules/Nettle/idea.c foreign_ident
 /src/post_modules/Nettle/idea.h foreign_ident
 /src/post_modules/Nettle/nt.cmod foreign_ident
-/src/post_modules/Nettle/rijndaeltest.pike foreign_ident
 /src/post_modules/SDL/Makefile.in foreign_ident
 /src/post_modules/SDL/acconfig.h foreign_ident
 /src/post_modules/SDL/configure.in foreign_ident
@@ -715,7 +714,6 @@ testfont binary
 /src/smartlink.c foreign_ident
 /src/specs.in foreign_ident
 /src/sscanf.h foreign_ident
-/src/test_co.pike foreign_ident
 /src/time_stuff.h foreign_ident
 /src/tmodule.c foreign_ident
 /src/uncompressor.c foreign_ident

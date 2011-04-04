@@ -1,3 +1,5 @@
+import Tools.Testsuite;
+
 array(int) a() {
   int got_error = 0;
   array(string) destruct_order;
@@ -6,8 +8,7 @@ array(int) a() {
 
   add_constant ("destructing", lambda (string id) {destruct_order += ({id});});
   add_constant ("my_error", lambda (string s, mixed... args) {
-			      if (!got_error) write ("\n");
-			      werror (s, @args);
+			      log_msg (s, @args);
 			      got_error++;
 			    });
 
@@ -645,10 +646,11 @@ array(int) a() {
 
     int n = 1;
     for (int f = sizeof (obj_names); f > 1; f--) n *= f;
-    write ("\rGC destruct order test %d, %d permutations    ", test, n);
+    log_status ("GC destruct order test %d, %d permutations", test, n);
     tests += n;
 
     while (n--) {
+      log_twiddler();
       array(string) alloc_order = Array.permute (obj_names, n);
 
       foreach (({"dead", "live"}), string base) {
@@ -759,7 +761,7 @@ array(int) a() {
       destruct_order = ({""}); // Using ({}) would alloc a new array in destructing().
       object o;
       if (mixed err = catch (o = compile_string(prog)())) {
-	werror ("Failed program was:\n\n" + prog + "\n");
+	log_msg ("Failed program was:\n\n" + prog + "\n");
 	throw (err);
       }
       gc();
@@ -768,14 +770,14 @@ array(int) a() {
       destruct_order = destruct_order[1..];
 
       if (!got_error && (got_error = sizeof (destruct_order) != nlive + nlnested))
-	werror ("\nGC should garb %d live objects, "
-		"but took %d.\n", nlive + nlnested, sizeof (destruct_order));
+	log_msg ("GC should garb %d live objects, "
+		 "but took %d.\n", nlive + nlnested, sizeof (destruct_order));
       if (!got_error && (got_error = garbed < to_garb))
-	werror ("\nGC should garb at least %d things, "
-		"but took only %d.\n", to_garb, garbed);
+	log_msg ("GC should garb at least %d things, "
+		 "but took only %d.\n", to_garb, garbed);
       if (got_error) {
-	werror ("Destruct order was: " + destruct_order * ", " + "\n"
-		"Setup program was:\n\n" + prog + "\n");
+	log_msg ("Destruct order was: " + destruct_order * ", " + "\n"
+		 "Setup program was:\n\n" + prog + "\n");
 	tests_failed += 1;
 	got_error = 0;
 	break;
@@ -787,7 +789,7 @@ array(int) a() {
     }
   }
 
-  write ("\r%60s\r", "");
+  log_status ("");
 
   add_constant ("destructing");
   add_constant ("my_error");
@@ -803,5 +805,5 @@ array(int) a() {
 int main()
 {
   [int ok, int failed] = a();
-  werror ("%d tests ok, %d failed\n", ok, failed);
+  report_result (ok, failed);
 }

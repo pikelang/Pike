@@ -114,7 +114,7 @@ class Test {
       if(!msg) break;
       tests++;
       if( Crypto.SHA1->hash(msg)!=h->get_hash() ) {
-	werror("Fail %d %d\n", h->row, m->row);
+	Tools.Testsuite.log_msg("Fail %d %d\n", h->row, m->row);
 	fails++;
       }
     }

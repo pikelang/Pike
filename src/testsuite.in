@@ -3299,11 +3299,7 @@ test_tests([[
 int errors;
 int tests;
 
-#define indent(X) (X)
-#define FMT "%d:%d  "
-
 int maxdepth;
-string status_prefix="";
 
 class Codec {
   string nameof(mixed x)
@@ -3336,8 +3332,7 @@ void low_generate(int depth,
     if(!(tests & 63))
     {	
       __signal_watchdog();
-      if (_verbose == 1)
-	log_status("%s" FMT, status_prefix,maxdepth,tests);
+      log_status("Testing vtables and scope access: %d:%d",maxdepth,tests);
     }
 
     string test=code*"\n"+"\n"
@@ -3398,7 +3393,7 @@ void low_generate(int depth,
     {
       low_generate(depth, 
 		   code[..e-1]+({
-		     sprintf("class C%d {\n%s\n};",cnt,indent(code[e..]*"\n"))
+		     sprintf("class C%d {\n%s\n};",cnt,code[e..]*"\n")
 		       }),
 		   sprintf("C%d()->%s",cnt,acc),
 		   ans,cnt+1);
@@ -3418,8 +3413,6 @@ void low_generate(int depth,
 
 array(int) a()
 {
-  log_status("Testing vtables and scope access.\n");
-
   int total_tests;
   for(maxdepth=1;maxdepth<9 && !errors;maxdepth++)
   {
@@ -3428,9 +3421,6 @@ array(int) a()
 		 "X",
 		 "X",0);
 
-    status_prefix+=sprintf(FMT,maxdepth,tests);
-    if (_verbose == 1)
-      log_status(status_prefix);
     total_tests+=tests;
     tests=0;
   }
