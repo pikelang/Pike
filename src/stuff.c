@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stuff.c,v 1.23 2004/11/14 18:03:50 mast Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -429,4 +429,20 @@ unsigned long find_good_hash_size(unsigned long num)
   if(y >= NELEM(primes)) return num|7;
 
   return primes[y];
+}
+
+/*
+ * This rounds an integer up to the next power of two. For x a power
+ * of two, this will just return the same again.
+ */
+unsigned INT32 find_next_power(unsigned INT32 x)
+{
+    x--;
+    x |= x >> 1;
+    x |= x >> 2;
+    x |= x >> 4;
+    x |= x >> 8;
+    x |= x >> 16;
+    x++;
+    return x;
 }

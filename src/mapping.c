@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.218 2010/07/11 19:12:01 mast Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -93,7 +93,7 @@ BLOCK_ALLOC_FILL_PAGES(mapping, 2)
       INT32 e;						\
       /* Move the last keypair to the new hole. */	\
       *k = *(md->free_list);				\
-      h_ = k->hval % md->hashsize;			\
+      h_ = k->hval & ( md->hashsize - 1);		\
       prev_ = md->hash + h_;				\
       DO_IF_DEBUG(					\
 	if (!*prev_) {					\
@@ -181,7 +181,7 @@ static void init_mapping(struct mapping *m,
 #endif
   if(size)
   {
-    hashsize=find_good_hash_size(size / AVG_LINK_LENGTH + 1);
+    hashsize=find_next_power(size / AVG_LINK_LENGTH + 1);
 
     e=MAPPING_DATA_SIZE(hashsize, size);
 
@@ -324,7 +324,7 @@ static void mapping_rehash_backwards_evil(struct mapping_data *md,
 
     /* link */
     h=k->hval;
-    h%=md->hashsize;
+    h&=md->hashsize - 1;
     k->next=md->hash[h];
     md->hash[h]=k;
 
@@ -379,7 +379,7 @@ static void mapping_rehash_backwards_good(struct mapping_data *md,
 
     /* link */
     h=k->hval;
-    h%=md->hashsize;
+    h&=md->hashsize - 1;
     k->next=md->hash[h];
     md->hash[h]=k;
 
@@ -534,7 +534,7 @@ struct mapping_data *copy_mapping_data(struct mapping_data *md)
   add_ref(md);						        \
   if(md->hashsize)						\
   {								\
-    h=h2 % md->hashsize;					\
+    h=h2 & (md->hashsize - 1);					\
     DO_IF_DEBUG( if(d_flag > 1) check_mapping_type_fields(m); ) \
     if(md->ind_types & ((1 << key->type) | BIT_OBJECT))		\
     {								\
@@ -557,11 +557,11 @@ struct mapping_data *copy_mapping_data(struct mapping_data *md)
   add_ref(md);							\
   if(md->hashsize)						\
   {								\
-    h=h2 % md->hashsize;					\
+    h=h2 & (md->hashsize-1);					\
     DO_IF_DEBUG( if(d_flag > 1) check_mapping_type_fields(m); ) \
     if(md->ind_types & ((1 << key->type) | BIT_OBJECT))		\
     {								\
-      k2=omd->hash[h2 % omd->hashsize];			        \
+      k2=omd->hash[h2 & (omd->hashsize - 1)];			        \
       prev= md->hash + h;					\
       for(;(k=*prev) && k2;(prev=&k->next),(k2=k2->next))	\
         if(!(h2 == k->hval && is_identical(&k2->ind, &k->ind)))	\
@@ -622,7 +622,7 @@ struct mapping_data *copy_mapping_data(struct mapping_data *md)
 #define PROPAGATE() do {			\
    if(md->refs==1)				\
    {						\
-     h=h2 % md->hashsize;                       \
+     h=h2 & (md->hashsize - 1);                 \
      *prev=k->next;				\
      k->next=md->hash[h];			\
      md->hash[h]=k;				\
@@ -784,7 +784,7 @@ PMOD_EXPORT void low_mapping_insert(struct mapping *m,
     rehash(m, md->size * 2 + 2);
     md=m->data;
   }
-  h=h2 % md->hashsize;
+  h=h2 & ( md->hashsize - 1);
 
   /* no need to lock here since we are not calling is_eq - Hubbe */
 
@@ -908,7 +908,7 @@ PMOD_EXPORT union anything *mapping_get_item_ptr(struct mapping *m,
     rehash(m, md->size * 2 + 2);
     md=m->data;
   }
-  h=h2 % md->hashsize;
+  h=h2 & ( md->hashsize - 1);
 
   k=md->free_list;
 #ifndef PIKE_MAPPING_KEYPAIR_LOOP
@@ -1469,7 +1469,7 @@ static struct mapping *subtract_mappings(struct mapping *a, struct mapping *b)
     res = allocate_mapping(a_md->size);
     SET_ONERROR(err, do_free_mapping, res);
     NEW_MAPPING_LOOP(a_md) {
-      size_t h = k->hval % b_md->hashsize;
+      size_t h = k->hval & ( b_md->hashsize - 1);
       struct keypair *k2;
       for (k2 = b_md->hash[h]; k2; k2 = k2->next) {
 	if ((k2->hval == k->hval) && is_eq(&k2->ind, &k->ind)) {
@@ -1514,7 +1514,7 @@ static struct mapping *and_mappings(struct mapping *a, struct mapping *b)
 
   /* Remove elements in res that aren't in a. */
   NEW_MAPPING_LOOP(b_md) {
-    size_t h = k->hval % a_md->hashsize;
+    size_t h = k->hval & ( a_md->hashsize - 1);
     struct keypair *k2;
     for (k2 = a_md->hash[h]; k2; k2 = k2->next) {
       if ((k2->hval == k->hval) && is_eq(&k2->ind, &k->ind)) {
@@ -1557,7 +1557,7 @@ static struct mapping *or_mappings(struct mapping *a, struct mapping *b)
 
     /* Add elements in a that aren't in b. */
     NEW_MAPPING_LOOP(a_md) {
-      size_t h = k->hval % b_md->hashsize;
+      size_t h = k->hval & ( b_md->hashsize - 1);
       struct keypair *k2;
       for (k2 = b_md->hash[h]; k2; k2 = k2->next) {
 	if ((k2->hval == k->hval) && is_eq(&k2->ind, &k->ind)) {
@@ -1614,7 +1614,7 @@ static struct mapping *xor_mappings(struct mapping *a, struct mapping *b)
 
   /* Add elements in a that aren't in b, and remove those that are. */
   NEW_MAPPING_LOOP(a_md) {
-    size_t h = k->hval % b_md->hashsize;
+    size_t h = k->hval & ( b_md->hashsize - 1);
     struct keypair *k2;
     for (k2 = b_md->hash[h]; k2; k2 = k2->next) {
       if ((k2->hval == k->hval) && is_eq(&k2->ind, &k->ind)) {
@@ -2483,7 +2483,7 @@ PMOD_EXPORT void visit_mapping (struct mapping *m, int action)
       if (remove) {							\
 	/* Find and unlink k. */					\
 	unsigned INT32 h_;						\
-	h_ = k->hval % md->hashsize;					\
+	h_ = k->hval & ( md->hashsize - 1);				\
 	prev_ = md->hash + h_;						\
 	DO_IF_DEBUG(							\
 		    if (!*prev_) {					\

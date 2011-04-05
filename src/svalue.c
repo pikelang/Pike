@@ -516,8 +516,14 @@ PMOD_EXPORT unsigned INT32 hash_svalue(const struct svalue *s)
   q+=q % 997;
   q+=((q + s->type) * 9248339);
 #endif
-  
-  return q;
+
+  /*
+   * This simple mixing function comes from the java HashMap implementation.
+   * It makes sure that the resulting hash value can be used for hash tables
+   * with power of 2 size and simple masking instead of modulo prime.
+   */
+  q ^= (q >> 20) ^ (q >> 12);
+  return q ^ (q >> 7) ^ (q >> 4);
 }
 
 PMOD_EXPORT int svalue_is_true(const struct svalue *s)

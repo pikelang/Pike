@@ -304,7 +304,6 @@ testfont binary
 /src/main.c foreign_ident
 /src/main.h foreign_ident
 /src/make_banner.pike foreign_ident
-/src/mapping.c foreign_ident
 /src/mapping.h foreign_ident
 /src/mklibpike.pike foreign_ident
 /src/module.c foreign_ident
@@ -719,8 +718,6 @@ testfont binary
 /src/smartlink.c foreign_ident
 /src/specs.in foreign_ident
 /src/sscanf.h foreign_ident
-/src/stuff.c foreign_ident
-/src/stuff.h foreign_ident
 /src/test_co.pike foreign_ident
 /src/time_stuff.h foreign_ident
 /src/tmodule.c foreign_ident
