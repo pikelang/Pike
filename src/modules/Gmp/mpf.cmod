@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpf.cmod,v 1.40 2008/07/31 14:52:26 mast Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -228,9 +228,16 @@ PIKECLASS mpf
     flags ID_PROTECTED;
     {
       /* from hash_svalue */
-      RETURN 
-	DO_NOT_WARN((unsigned INT32)(mpf_get_d(THISMPF) *
-				     16843009.731757771173));
+      union {
+	  double f;
+	  unsigned INT64 u;
+      } ufloat;
+      ufloat.f = mpf_get_d(THISMPF);
+      if (ufloat.f == 0.0) {
+	  RETURN 0;
+      } else {
+	  RETURN (unsigned INT32)ufloat.u ^ (unsigned INT32)(ufloat.u >> 32);
+      }
     }
 
   /*! @decl int|object get_int()
