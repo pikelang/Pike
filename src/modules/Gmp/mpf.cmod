@@ -236,7 +236,11 @@ PIKECLASS mpf
       if (ufloat.f == 0.0) {
 	  RETURN 0;
       } else {
+#if SIZEOF_INT_TYPE == 8
+	  RETURN (INT_TYPE)ufloat.u;
+#else
 	  RETURN (unsigned INT32)ufloat.u ^ (unsigned INT32)(ufloat.u >> 32);
+#endif
       }
     }
 

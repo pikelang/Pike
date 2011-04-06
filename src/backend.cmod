@@ -350,7 +350,6 @@ PIKECLASS Backend
   CVAR int call_buffer_size;     /* no of pointers in buffer */
   
   CVAR unsigned int hash_size;
-  CVAR unsigned int hash_order;
   CVAR struct hash_ent *call_hash;
 
   /* Should really exist only in PIKE_DEBUG, but 
@@ -638,7 +637,6 @@ PIKECLASS Backend
 	 MEMSET(me->call_buffer, 0, sizeof(call_out *)*me->call_buffer_size);
 	 me->num_pending_calls=0;
 	 
-	 me->hash_size=hashprimes[me->hash_order];
 	 me->call_hash=(struct hash_ent *)xalloc(sizeof(struct hash_ent)*me->hash_size);
 	 MEMSET(me->call_hash, 0, sizeof(struct hash_ent)*me->hash_size);
        }else{
@@ -656,21 +654,21 @@ PIKECLASS Backend
 	 me->call_buffer=new_buffer;
 
 	 if((new_hash=(struct hash_ent *)malloc(sizeof(struct hash_ent)*
-						hashprimes[me->hash_order+1])))
+						me->hash_size * 2)))
 	 {
 	   free((char *)me->call_hash);
 	   me->call_hash=new_hash;
-	   me->hash_size=hashprimes[++me->hash_order];
+	   me->hash_size *= 2;
 	   MEMSET(me->call_hash, 0, sizeof(struct hash_ent)*me->hash_size);
 
 	   /* Re-hash */
 	   for(e=0;e<me->num_pending_calls;e++)
 	   {
 	     call_out *c=CALL(e);
-	     hval=PTR_TO_INT(c->args);
+	     hval=hash_pointer(c->args);
 
 #define LINK(X,c)							\
-	     hval%=me->hash_size;					\
+	     hval&=me->hash_size - 1;					\
 	     if((c->PIKE_CONCAT(next_,X)=me->call_hash[hval].X))	\
 	       c->PIKE_CONCAT(next_,X)->PIKE_CONCAT(prev_,X)=		\
 		 &c->PIKE_CONCAT(next_,X);				\
@@ -698,7 +696,7 @@ PIKECLASS Backend
      new->pos=me->num_pending_calls;
      
      {
-       hval=PTR_TO_INT(args);
+       hval=hash_pointer(args);
        LINK(arr,new);
        hval = new->fun_hval = fun_hval;
        LINK(fun,new);
@@ -953,8 +951,8 @@ PIKECLASS Backend
        
        if(fun->type == T_ARRAY)
        {
-	 hval=PTR_TO_INT(fun->u.array);
-	 hval%=me->hash_size;
+	 hval=hash_pointer(fun->u.array);
+	 hval&=me->hash_size - 1;
 	 for(c=me->call_hash[hval].arr;c;c=c->next_arr)
 	 {
 	   if(c->args == fun->u.array)
@@ -966,12 +964,15 @@ PIKECLASS Backend
 	     return c->pos;
 	   }
 	 }
+	 
+	 /* we wont find anything later, anyhow. */
+	 return -1;
        }
        /* Note: is_eq() may call Pike code (which we want),
 	*       but Pike code may change the hash tables...
 	*/
        fun_hval=hash_svalue(fun);
-       hval = fun_hval % me->hash_size;
+       hval = fun_hval & (me->hash_size - 1);
        save_sp = Pike_sp;
        for(c=me->call_hash[hval].fun;c;c=c->next_fun)
        {
@@ -2074,8 +2075,7 @@ PIKECLASS Backend
     me->num_pending_calls=0;
     me->call_buffer=0;
     me->call_buffer_size=0;
-    me->hash_size=0;
-    me->hash_order=5;
+    me->hash_size=32;
     me->call_hash=0;
 
     me->backend_obj = Pike_fp->current_object; /* Note: Not refcounted. */

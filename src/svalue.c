@@ -27,6 +27,7 @@
 #include "cyclic.h"
 #include "pike_float.h"
 #include <math.h>
+#include "stuff.h"
 
 #define sp Pike_sp
 
@@ -439,8 +440,6 @@ PMOD_EXPORT void assign_short_svalue(union anything *to,
 
 PMOD_EXPORT unsigned INT32 hash_svalue(const struct svalue *s)
 {
-  unsigned INT32 q;
-
   check_svalue_type (s);
   check_refs(s);
 
@@ -453,12 +452,12 @@ PMOD_EXPORT unsigned INT32 hash_svalue(const struct svalue *s)
 
       if(!(p = s->u.object->prog))
       {
-	q=0;
-	break;
+	return 0;
       }
 
       if((fun = FIND_LFUN(p->inherits[s->subtype].prog, LFUN___HASH)) != -1)
       {
+	INT_TYPE hval = 0;
 	STACK_LEVEL_START(0);
 	safe_apply_low2(s->u.object,
 			fun + p->inherits[s->subtype].identifier_level,
@@ -466,33 +465,22 @@ PMOD_EXPORT unsigned INT32 hash_svalue(const struct svalue *s)
 	STACK_LEVEL_CHECK(1);
 	if(sp[-1].type == T_INT)
 	{
-	  q=sp[-1].u.integer;
-	}else{
-	  q=0;
+	  hval = hash_int(sp[-1].u.integer);
 	}
 	pop_stack();
 	STACK_LEVEL_DONE(0);
-	break;
+	return hval;
       }
     }
     /* FALL THROUGH */
   default:
-#if SIZEOF_CHAR_P > 4
-    q=DO_NOT_WARN((unsigned INT32)(PTR_TO_INT(s->u.ptr) >> 2));
-#else
-    q=DO_NOT_WARN((unsigned INT32)(PTR_TO_INT(s->u.ptr)));
-#endif
-    break;
+    return hash_pointer(s->u.ptr);
   case T_INT:
-    q=(unsigned INT32) s->u.integer;
-#if SIZEOF_INT_TYPE == 8
-    q^=(unsigned INT32)(s->u.integer >> 32);
-#endif
-    break;
+    return hash_int(s->u.integer);
   case T_FLOAT:
     /* this is true for both +0.0 and -0.0 */
     if (s->u.float_number == 0.0) {
-	q = 0;
+	return 0;
     } else {
 	union {
 	    FLOAT_TYPE f;
@@ -505,25 +493,17 @@ PMOD_EXPORT unsigned INT32 hash_svalue(const struct svalue *s)
 #endif
 	} ufloat;
 	ufloat.f = s->u.float_number;
-	q = (unsigned INT32)ufloat.i;
 #if SIZEOF_FLOAT_TYPE == 8
-	q ^= (unsigned INT32)(ufloat.i >> 32);
+	return hash_int64(ufloat.i);
+#else
+	return hash_int32(ufloat.i);
 #endif
     }
-    break;
   }
 #if 0
   q+=q % 997;
   q+=((q + s->type) * 9248339);
 #endif
-
-  /*
-   * This simple mixing function comes from the java HashMap implementation.
-   * It makes sure that the resulting hash value can be used for hash tables
-   * with power of 2 size and simple masking instead of modulo prime.
-   */
-  q ^= (q >> 20) ^ (q >> 12);
-  return q ^ (q >> 7) ^ (q >> 4);
 }
 
 PMOD_EXPORT int svalue_is_true(const struct svalue *s)
