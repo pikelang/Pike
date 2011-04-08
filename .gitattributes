@@ -372,7 +372,6 @@ testfont binary
 /src/modules/Image/acconfig.h foreign_ident
 /src/modules/Image/assembly.h foreign_ident
 /src/modules/Image/blit_layer_include.h foreign_ident
-/src/modules/Image/colors.c foreign_ident
 /src/modules/Image/colors.h foreign_ident
 /src/modules/Image/colortable.h foreign_ident
 /src/modules/Image/colortable_lookup.h foreign_ident
@@ -412,7 +411,6 @@ testfont binary
 /src/modules/Image/orient.c foreign_ident
 /src/modules/Image/phase.h foreign_ident
 /src/modules/Image/polyfill.c foreign_ident
-/src/modules/Image/testsuite.in foreign_ident
 /src/modules/JSON/configure.in foreign_ident
 /src/modules/Java/Makefile.in foreign_ident
 /src/modules/Java/acconfig.h foreign_ident

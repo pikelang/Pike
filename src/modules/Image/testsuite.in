@@ -1,5 +1,5 @@
 START_MARKER
-dnl $Id: testsuite.in,v 1.27 2010/02/15 02:05:53 srb Exp $
+dnl $Id$
 
 test_eq([[ Image.PNM.decode("P1\n5 5\n0 1 1 1 1\n1 0 1 1 1\n"
   "1 1 0 1 1\n1 1 1 0 1\n1 1 1 1 0") ]],
@@ -100,6 +100,8 @@ test_true( sizeof(indices(Image.Color))>8 )
 test_true( arrayp(values(Image.Color)) )
 test_true( objectp(values(Image.Color)[0]) )
 test_eq( sizeof(indices(Image.Color)), sizeof(values(Image.Color)) )
+test_eq( Image.Color(0xffffff), Image.Color.white )
+test_eq( (int)Image.Color(0xabcdef), 0xabcdef )
 
 define(test_img,[[
 test_do([[

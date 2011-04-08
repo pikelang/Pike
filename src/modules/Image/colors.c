@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: colors.c,v 1.77 2008/12/13 08:23:45 nilsson Exp $
+|| $Id$
 */
 
 /*
@@ -224,6 +224,7 @@ extern struct program *image_colortable_program;
 
 static struct pike_string *str_array;
 static struct pike_string *str_string;
+static struct pike_string *str_int;
 static struct pike_string *str_r;
 static struct pike_string *str_g;
 static struct pike_string *str_b;
@@ -771,6 +772,12 @@ static void image_color_cast(INT32 args)
    {
       image_color_name(args);
       return;
+   }
+   if (sp[-1].u.string==str_int)
+   {
+     pop_stack();
+     push_int( (THIS->rgb.r << 8 | THIS->rgb.g)  << 8 | THIS->rgb.b );
+     return;
    }
    Pike_error("Image.Color.Color->cast(): Can't cast to that\n");
 }
@@ -1559,7 +1566,17 @@ static void image_make_rgb_color(INT32 args)
 {
    INT_TYPE r=0,g=0,b=0;
 
-   get_all_args("Image.Color.rgb()",args,"%i%i%i",&r,&g,&b);
+   if( args==1 && sp[-1].type==T_INT )
+   {
+     r = sp[-1].u.integer;
+     b = r & 0xff;
+     r >>= 8;
+     g = r & 0xff;
+     r >>= 8;
+     r &= 0xff;
+   }
+   else
+     get_all_args("Image.Color.rgb()",args,"%i%i%i",&r,&g,&b);
 
    _image_make_rgb_color(r,g,b);
 }
@@ -1713,6 +1730,7 @@ void init_image_colors(void)
 {
    str_array=make_shared_string("array");
    str_string=make_shared_string("string");
+   str_int=make_shared_string("int");
    str_r=make_shared_string("r");
    str_g=make_shared_string("g");
    str_b=make_shared_string("b");
@@ -1784,10 +1802,12 @@ void init_image_colors(void)
    
    ADD_FUNCTION("`[]",image_colors_index,tFunc(tStr,tObjIs_IMAGE_COLOR_COLOR_ID),0);
    ADD_FUNCTION("`()",image_make_color,
-		tOr(tFunc(tStr,tObjIs_IMAGE_COLOR_COLOR_ID),
-		    tFunc(tInt tInt tInt,tObjIs_IMAGE_COLOR_COLOR_ID)),0);
+		tOr3(tFunc(tStr,tObjIs_IMAGE_COLOR_COLOR_ID),
+                     tFunc(tInt,tObjIs_IMAGE_COLOR_COLOR_ID),
+                     tFunc(tInt tInt tInt,tObjIs_IMAGE_COLOR_COLOR_ID)),0);
    ADD_FUNCTION("rgb",image_make_rgb_color,
-		tFunc(tInt tInt tInt,tObjIs_IMAGE_COLOR_COLOR_ID),0);
+		tOr(tFunc(tInt,tObjIs_IMAGE_COLOR_COLOR_ID),
+                    tFunc(tInt tInt tInt,tObjIs_IMAGE_COLOR_COLOR_ID)),0);
    ADD_FUNCTION("hsv",image_make_hsv_color,
 		tOr(tFunc(tInt tInt tInt,tObjIs_IMAGE_COLOR_COLOR_ID),
 		    tFunc(tFlt tFlt tFlt,tObjIs_IMAGE_COLOR_COLOR_ID)) ,0);
@@ -1832,6 +1852,7 @@ void exit_image_colors(void)
    }
    free_string(str_array);
    free_string(str_string);
+   free_string(str_int);
    free_string(str_r);
    free_string(str_g);
    free_string(str_b);
