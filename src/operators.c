@@ -1319,6 +1319,33 @@ PMOD_EXPORT INT32 low_rop(struct object *o, int i, INT32 e, INT32 args)
   }
 }
 
+/* Sift down large (absolute) values on the heap. */
+static void float_heap_sift_down(struct svalue *svalues, int root, int nelems)
+{
+  FLOAT_ARG_TYPE val = svalues[root].u.float_number;
+  FLOAT_ARG_TYPE abs_val = abs(val);
+  int child;
+
+  while ((child = ((root<<1) +1)) < nelems) {
+    int swap = root;
+    FLOAT_ARG_TYPE s_abs_val;
+    if ((s_abs_val = abs(svalues[child].u.float_number)) < abs_val) {
+      swap = child;
+    } else {
+      s_abs_val = abs_val;
+    }
+    child++;
+    if ((child < nelems) &&
+	(abs(svalues[child].u.float_number) < s_abs_val)) {
+      swap = child;
+    }
+    if (swap == root) break;
+    svalues[root] = svalues[swap];
+    root = swap;
+  }
+  svalues[root].u.float_number = val;
+}
+
 /*! @decl mixed `+(mixed arg)
  *! @decl mixed `+(object arg, mixed ... more)
  *! @decl int `+(int arg, int ... more)
@@ -1399,6 +1426,8 @@ PMOD_EXPORT void f_add(INT32 args)
   TYPE_FIELD types;
 
  tail_recurse:
+  if (args == 1) return;
+
   types=0;
   for(e=-args;e<0;e++) types|=1<<sp[e].type;
     
@@ -1667,32 +1696,64 @@ PMOD_EXPORT void f_add(INT32 args)
     break;
 
   case BIT_FLOAT:
-  {
-    FLOAT_ARG_TYPE sum;
-    sum=0.0;
-    for(e=-args; e<0; e++) sum+=sp[e].u.float_number;
-    sp-=args-1;
-    sp[-1].u.float_number = (FLOAT_TYPE) sum;
+    if (args > 2) {
+      /* Attempt to minimize the accumulated summation error
+       * by adding the smallest (absolute) values first.
+       *
+       * This can eg happen when the number of values to add
+       * is in the same order as the number of bits in the
+       * mantissa.
+       */
+      /* Heapify */
+      for(e = args>>1; e--;) {
+	float_heap_sift_down(Pike_sp-args, e, args);
+      }
+      while (args > 2) {
+	FLOAT_ARG_TYPE top = Pike_sp[-args].u.float_number;
+	Pike_sp[-args] = *(--Pike_sp);
+	args--;
+	float_heap_sift_down(Pike_sp-args, 0, args);
+
+	Pike_sp[-args].u.float_number += top;
+	float_heap_sift_down(Pike_sp-args, 0, args);
+      }
+    }
+    sp[-2].u.float_number += sp[-1].u.float_number;
+    sp--;
     break;
-  }
 
   case BIT_FLOAT|BIT_INT:
   {
-    FLOAT_ARG_TYPE sum;
-    sum=0.0;
-    for(e=-args; e<0; e++)
-    {
-      if(sp[e].type==T_FLOAT)
-      {
-	sum+=sp[e].u.float_number;
-      }else{
-	sum+=(FLOAT_ARG_TYPE)sp[e].u.integer;
+    /* For improved precision; partition the values
+     * into floats followed by ints, so that we
+     * can add the integers exactly.
+     */
+    int i = args-1;
+    e = 0;
+    while (e < i) {
+      for(;e < i; i--) {
+	if (sp[i-args].type == T_FLOAT) break;
+      }
+      for(;e < i; e++) {
+	if (sp[e-args].type == T_INT) break;
+      }
+      if (e < i) {
+	/* Swap */
+	struct svalue sval = sp[e-args];
+	sp[e-args] = sp[i-args];
+	sp[i-args] = sval;
       }
     }
-    sp-=args-1;
-    sp[-1].type=T_FLOAT;
-    sp[-1].u.float_number = (FLOAT_TYPE) sum;
-    break;
+    if (sp[e-args].type == T_FLOAT) e++;
+    /* Sum the integers. */
+    if (args - e > 1) {
+      f_add(args-e);
+    }
+    args = e+1;
+    o_cast(float_type_string, PIKE_T_FLOAT);
+
+    /* Now all the values should be floats. */
+    goto tail_recurse;
   }
 
 #define ADD_WITH_UNDEFINED(TYPE, T_TYPEID, ADD_FUNC, PUSH_FUNC) do {	\
