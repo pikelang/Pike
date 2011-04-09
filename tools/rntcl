@@ -547,6 +547,10 @@ int main(int argc, array(string) argv)
 			  // FIXME: The following checks should
 			  // probably only check the stderr (2) or
 			  // unknown (0) channels.
+			  //
+			  // Better not, since cl.exe is known to happily send
+			  // errors/warnings to either stdout and stderr.. :P
+			  // /mast
 #ifdef ECL
 			  // Warning 147 is prototype mismatch.
 			  // for some reason this isn't an error.
