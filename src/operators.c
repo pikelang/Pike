@@ -1700,20 +1700,24 @@ PMOD_EXPORT void f_add(INT32 args)
       /* Attempt to minimize the accumulated summation error
        * by adding the smallest (absolute) values first.
        *
-       * This can eg happen when the number of values to add
-       * is in the same order as the number of bits in the
-       * mantissa.
+       * Large accumulated errors can occur eg when the number
+       * of values to add is of the same order as the largest
+       * number representable by the mantissa alone. ie when
+       * the sum differs by an order of magnitude from a
+       * typical term.
        */
       /* Heapify */
       for(e = args>>1; e--;) {
 	float_heap_sift_down(Pike_sp-args, e, args);
       }
       while (args > 2) {
+	/* Pop the smallest element from the heap. */
 	FLOAT_ARG_TYPE top = Pike_sp[-args].u.float_number;
 	Pike_sp[-args] = *(--Pike_sp);
 	args--;
 	float_heap_sift_down(Pike_sp-args, 0, args);
 
+	/* And add it to the second smallest. */
 	Pike_sp[-args].u.float_number += top;
 	float_heap_sift_down(Pike_sp-args, 0, args);
       }
@@ -2455,7 +2459,18 @@ PMOD_EXPORT void f_minus(INT32 args)
     default:
     {
       INT32 e;
+      TYPE_FIELD types = 0;
       struct svalue *s=sp-args;
+
+      for(e=-args;e<0;e++) types|=1<<sp[e].type;
+
+      if ((types | BIT_INT | BIT_FLOAT) == (BIT_INT | BIT_FLOAT)) {
+	/* Take advantage of the precision control in f_add(). */
+	f_add(args-1);
+	o_subtract();
+	break;
+      }
+    
       push_svalue(s);
       for(e=1;e<args;e++)
       {
