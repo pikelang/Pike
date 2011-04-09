@@ -535,8 +535,11 @@ int main(int argc, array(string) argv)
 			  // Strip the first line if it is the name of the
 			  // file being compiled.
 			  if (lines[0] == compile_source) {
+#if 0
+			    // Always false due to test above..
 			    if (verbose && (target != "-"))
 			      write(lines[0]+"\n");
+#endif
 			    lines = lines[1..];
 			  }
 			  first_line = 0;
