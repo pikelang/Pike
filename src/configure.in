@@ -2897,11 +2897,12 @@ fi
 AC_SUBST(LIGHT)
 
 # Wix tool
-if test "x${TALLOW-}" = x ; then
-  PIKE_NT_PROG(TALLOW, tallow, , $PATH:$EXTRA_PATH)
-  export TALLOW
-fi
-AC_SUBST(TALLOW)
+# This one doesn't exist any more in WiX 3.x.
+#if test "x${TALLOW-}" = x ; then
+#  PIKE_NT_PROG(TALLOW, tallow, , $PATH:$EXTRA_PATH)
+#  export TALLOW
+#fi
+#AC_SUBST(TALLOW)
 
 # VC8 manifest tool
 if test "x${MTEXE-}" = x ; then
