@@ -81,7 +81,7 @@ string opt_path(string p1, string p2)
 
 Thread.Mutex outlock=Thread.Mutex();
 
-void myproxy(object pi, object io, int channel)
+void myproxy(object pi, object io, int channel, Process.Process p)
 {
   while(1)
   {
@@ -107,7 +107,11 @@ void myproxy(object pi, object io, int channel)
     }
 #endif
     object key=outlock->lock();
-    io->write(sprintf("%c%3c%s",channel,strlen(s),s));
+#ifdef DEBUG
+    werror ("Process %O: Channel %d: %O\n", p->pid(), channel, s);
+#endif
+    if (io->write(sprintf("%c%3c%s",channel,strlen(s),s)) != 4 + sizeof (s))
+      werror ("Write on %O failed: %d\n", io, io->errno());
     destruct(key);
   }
 }
@@ -324,18 +328,20 @@ void handle_incoming_connection(object(Stdio.File) io)
 	object proxythread;
 	if(env->__handles_stderr)
 	{
-	  proxythread=thread_create(myproxy,pe,io,2);
-	  myproxy(pi,io,1);
+	  proxythread=thread_create(myproxy,pe,io,2,p);
+	  myproxy(pi,io,1,p);
 	}else{
-	  proxythread=thread_create(myproxy,pe,io,0);
-	  myproxy(pi,io,0);
+	  proxythread=thread_create(myproxy,pe,io,0,p);
+	  myproxy(pi,io,0,p);
 	}
 #ifdef DEBUG
-	werror ("Waiting for stderr on %O to close.\n", pe);
+	werror ("Process %O: Waiting for stderr on %O to close.\n",
+		p->pid(), pe);
 #endif
 	proxythread->wait();
 
-	io->write(sprintf("%4c",0));
+	if (io->write(sprintf("%4c",0)) != 4)
+	  werror ("Write on %O failed: %d\n", io, io->errno());
 
 #ifdef DEBUG
 	werror ("Waiting for process %O to exit.\n", p->pid());
@@ -346,9 +352,10 @@ void handle_incoming_connection(object(Stdio.File) io)
 	  io->write(sprintf("%4c", -1));
 	} else {
 #ifdef DEBUG
-	  werror ("Process exited with code %d.\n", p->pid(), code);
+	  werror ("Process %O exited with code %d.\n", p->pid(), code);
 #endif
-	  io->write(sprintf("%4c", code));
+	  if (io->write(sprintf("%4c",code)) != 4)
+	    werror ("Write on %O failed: %d\n", io, io->errno());
 	}
       }else{
 	werror("create_process failed: %s", master()->describe_error (err));
