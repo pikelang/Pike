@@ -178,6 +178,11 @@ int main(int argc, array(string) argv)
     ));
   foreach(opts, array option)
     {
+      // All the code below is oblivious to the fact that option[1] is
+      // the integer 1 if a Getopt.MAY_HAVE_ARG lacks an arg. Let's
+      // handle it without special cases.
+      if (option[1] == 1) option[1] = "";
+
       switch(option[0])
       {
 	case "dynamic":
@@ -372,7 +377,7 @@ int main(int argc, array(string) argv)
 
   foreach(argv[1..], string tmp)
   {
-    if(tmp[0]=='-')
+    if(tmp[0]=='-' || tmp[0] == '+')
     {
       werror("Unrecognized option "+tmp+".\n");
       exit(1);
