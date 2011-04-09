@@ -14,7 +14,12 @@
 // o  Start menu entries.
 // o  Make sure old installer regstry keys are removed.
 // o  Separate shell icon for .pmod
-// o  Refresh shell when icons. Now a explorer restart is needed to see them.
+// o  Refresh shell when icons are installed. Now a explorer restart
+//    is needed to see them.
+// o  Upgrading an existing installation seems flaky - the old one has
+//    been observed to still be considered installed according to the
+//    installed program list (in the same location and hence
+//    overwritten).
 //
 // Note: It's not possible to change the .msi icon.
 
@@ -2378,6 +2383,11 @@ an extra CRT instance.\n");
 
 void collect_dlls (function(string:void) handle_dll)
 {
+  // $PIKE_BUILD_ROOT/dll contains placeholders for the dlls that need
+  // to be included in the install package. install.pike searches for
+  // these in PATH. The contents of the files here are not important;
+  // they can be zero length. The MS CRT dlls shouldn't be here,
+  // though (see add_msm instead).
   if (string pike_build_root = getenv ("PIKE_BUILD_ROOT"))
     if (array(string) dlls = get_dir (combine_path (pike_build_root, "dll"))) {
     dll_loop:
@@ -2658,7 +2668,7 @@ void do_install()
       finalize_pike();
 
 #ifdef __NT__
-    if (export)
+    if (export) {
       collect_dlls (lambda (string dll_path) {
 		      status ("Including dll", dll_path);
 		      string name = basename (dll_path);
@@ -2666,6 +2676,32 @@ void do_install()
 				   combine_path (vars->TMP_BUILDDIR, name),
 				   combine_path (exec_prefix, name));
 		    });
+
+      // $PIKE_BUILD_ROOT/install-tree contains other files that needs
+      // to be added to the installation. The paths below this
+      // directory will be mirrored below the pike installation
+      // directory.
+      if (string pike_build_root = getenv ("PIKE_BUILD_ROOT")) {
+	string install_tree_path = combine_path (pike_build_root,
+						 "install-tree");
+	ADT.Queue install_dirs = ADT.Queue (install_tree_path);
+	while (string path = install_dirs->get()) {
+	  foreach (get_dir (path) || ({}), string dirent) {
+	    dirent = combine_path (path, dirent);
+	    if (Stdio.Stat stat = file_stat (dirent)) {
+	      if (stat->isdir)
+		install_dirs->put (dirent);
+	      else if (stat->isreg) {
+		string install_path = dirent[sizeof (install_tree_path) + 1..];
+		export_file (dirent,
+			     combine_path (vars->TMP_BUILDDIR, install_path),
+			     combine_path (prefix, install_path));
+	      }
+	    }
+	  }
+	}
+      }
+    }
 
 #ifndef PRIVATE_CRT
     if (export == 1 && include_crt &&
