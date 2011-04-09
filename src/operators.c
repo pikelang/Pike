@@ -1323,20 +1323,20 @@ PMOD_EXPORT INT32 low_rop(struct object *o, int i, INT32 e, INT32 args)
 static void float_heap_sift_down(struct svalue *svalues, int root, int nelems)
 {
   FLOAT_ARG_TYPE val = svalues[root].u.float_number;
-  FLOAT_ARG_TYPE abs_val = abs(val);
+  FLOAT_ARG_TYPE abs_val = fabs(val);
   int child;
 
   while ((child = ((root<<1) +1)) < nelems) {
     int swap = root;
     FLOAT_ARG_TYPE s_abs_val;
-    if ((s_abs_val = abs(svalues[child].u.float_number)) < abs_val) {
+    if ((s_abs_val = fabs(svalues[child].u.float_number)) < abs_val) {
       swap = child;
     } else {
       s_abs_val = abs_val;
     }
     child++;
     if ((child < nelems) &&
-	(abs(svalues[child].u.float_number) < s_abs_val)) {
+	(fabs(svalues[child].u.float_number) < s_abs_val)) {
       swap = child;
     }
     if (swap == root) break;
