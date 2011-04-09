@@ -2465,9 +2465,32 @@ PMOD_EXPORT void f_minus(INT32 args)
       for(e=-args;e<0;e++) types|=1<<sp[e].type;
 
       if ((types | BIT_INT | BIT_FLOAT) == (BIT_INT | BIT_FLOAT)) {
+	INT32 carry = 0;
+	if (types == BIT_INT) {
+	  f_add(args-1);
+	  o_subtract();
+	  break;
+	}
 	/* Take advantage of the precision control in f_add(). */
-	f_add(args-1);
-	o_subtract();
+	for(e = 1; e < args; e++) {
+	  if (s[e].type == PIKE_T_INT) {
+	    INT_TYPE val = s[e].u.integer;
+	    if (val >= -0x7fffffff) {
+	      s[e].u.integer = -val;
+	    } else {
+	      /* Protect against negative overflow. */
+	      s[e].u.integer = ~val;
+	      carry++;
+	    }
+	  } else {
+	    s[e].u.float_number = -s[e].u.float_number;
+	  }
+	}
+	if (carry) {
+	  push_int(carry);
+	  args++;
+	}
+	f_add(args);
 	break;
       }
     
