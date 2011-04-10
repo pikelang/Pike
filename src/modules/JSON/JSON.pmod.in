@@ -54,12 +54,17 @@ class DecodeError {
 	    err_pos > 0 ?
 	    sprintf ("%O", err_str[..err_pos - 1]) :
 	    "";
-	string post_context = err_pos < sizeof (err_str) - 14 ?
+	if (err_pos >= sizeof (err_str))
+	  err_str = sprintf ("%s-><-", pre_context);
+	else {
+	  string post_context = err_pos < sizeof (err_str) - 14 ?
 	    sprintf ("%O...", err_str[err_pos + 1..err_pos + 10]) :
 	    err_pos + 1 < sizeof (err_str) ?
 	    sprintf ("%O", err_str[err_pos + 1..]) :
 	    "";
-	err_str = sprintf ("%s->[%c]<-%s", pre_context, err_str[err_pos], post_context);
+	  err_str = sprintf ("%s->[%c]<-%s",
+			     pre_context, err_str[err_pos], post_context);
+	}
 
 	if (reason)
 	    ::create(sprintf("Error decoding JSON at position %d %s: %s.\n",
