@@ -483,7 +483,6 @@ testfont binary
 /src/modules/Regexp/configure.in foreign_ident
 /src/modules/Regexp/glue.c foreign_ident
 /src/modules/Regexp/pike_regexp.h foreign_ident
-/src/modules/Regexp/testsuite.in foreign_ident
 /src/modules/SANE/Makefile.in foreign_ident
 /src/modules/SANE/acconfig.h foreign_ident
 /src/modules/SANE/configure.in foreign_ident

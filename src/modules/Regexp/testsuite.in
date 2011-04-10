@@ -1,5 +1,5 @@
 START_MARKER
-dnl $Id: testsuite.in,v 1.13 2004/05/02 18:43:33 nilsson Exp $
+dnl $Id$
 
 dnl - Here we try the Regexp module
 test_true(objectp(Regexp))
@@ -64,6 +64,7 @@ cond_resolv(Regexp.match, [[
 dnl Compat
 test_false([[
 #pike 0.6
+# 1 "-" // Prevent "." from being imported
 Regexp()->replace ]])
 test_true([[
 #pike 7.4
