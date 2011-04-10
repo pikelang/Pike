@@ -2397,7 +2397,6 @@ class dirnode (string dirname, object|void compilation_handler,
     int `!()
     {
       resolv_debug ("dirnode(%O)->module_checker()->`!()\n",dirname);
-      INC_RESOLV_MSG_DEPTH();
 
       if (mixed err = catch { 
 	// Look up module.
@@ -2409,7 +2408,6 @@ class dirnode (string dirname, object|void compilation_handler,
 	  cache=([]);
 	  _cache_full=0;
 	}
-	DEC_RESOLV_MSG_DEPTH();
 	resolv_debug("dirnode(%O)->module_checker()->`!() => %s\n",
 		     dirname, !module ? "doesn't exist" : "exists");
 	return !module;
@@ -2422,7 +2420,6 @@ class dirnode (string dirname, object|void compilation_handler,
 	// "Cannot call functions in unfinished objects."
 
 	// Pretend not to exist for now...
-	DEC_RESOLV_MSG_DEPTH();
 	resolv_debug("dirnode(%O)->module_checker()->`!() => failure, doesn't exist\n",
 		     dirname);
 	return 1;
@@ -2442,6 +2439,8 @@ class dirnode (string dirname, object|void compilation_handler,
   protected mixed low_ind(string index, int(0..1)|void set_module)
   {
     array(string) paths;
+
+    INC_RESOLV_MSG_DEPTH();
 
     if (!(paths = file_paths[index])) {
       DEC_RESOLV_MSG_DEPTH();
@@ -2558,6 +2557,7 @@ class dirnode (string dirname, object|void compilation_handler,
     else
       resolv_debug ("dirnode(%O)->ind(%O) => no module\n", dirname, index);
 
+    DEC_RESOLV_MSG_DEPTH();
     return low_ind(index);
   }
 
