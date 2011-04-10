@@ -73,8 +73,10 @@ void test_dir(string dir, int|void base_size, object|void handler)
   {
     switch(s)
     {
-#if !constant(GTK.Window)
+#if !constant(GTK1.Window)
       case "GTKSupport.pmod":
+#endif
+#if !constant(GTK.Window)
       case "PV.pike":
       case "pv.pike":
 #endif
