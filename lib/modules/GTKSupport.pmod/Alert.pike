@@ -4,7 +4,7 @@
 // single button @expr{Ok@} will be created. Pressing it removes the
 // dialog.
 
-inherit GTK.Dialog;
+inherit GTK1.Dialog;
 
 void begone(object w2)
 {
@@ -14,7 +14,7 @@ void begone(object w2)
 object ok_button;
 
 //! Returns the ok @[Button] object.
-GTK.Button ok()
+GTK1.Button ok()
 {
   return ok_button;
 }
@@ -23,13 +23,13 @@ GTK.Button ok()
 void create(string text, string|void title)
 {
   ::create();
-  object l = GTK.Label( text );
+  object l = GTK1.Label( text );
   set_title( title||"Alert" );
-  l->set_justify( GTK.JUSTIFY_LEFT );
+  l->set_justify( GTK1.JUSTIFY_LEFT );
   l->set_alignment(0.0, 0.5);
   l->set_padding( 20, 20 );
   vbox()->add( l->show() );
-  ok_button = GTK.Button("OK");
+  ok_button = GTK1.Button("OK");
   ok_button->signal_connect( "clicked", begone );
   action_area()->add( ok_button->show() );
   show();

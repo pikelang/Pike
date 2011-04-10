@@ -232,7 +232,7 @@ void set_menubar_modify_callback( function to )
 
 mapping menubar_objects = ([]);
 
-//! Returns a (flat) mapping @expr{([ path:GTK.MenuItem ])@}.
+//! Returns a (flat) mapping @expr{([ path:GTK1.MenuItem ])@}.
 //!
 //! @note
 //! This function can only be called @i{after@} the menubar is
@@ -242,7 +242,7 @@ mapping get_menubar_mapping(  )
   return copy_value(menubar_objects);
 }
 
-mapping(string:GTK.Menu|GTK.MenuBar) submenues;
+mapping(string:GTK1.Menu|GTK1.MenuBar) submenues;
 mapping get_submenu_mapping(  )
 {
   return copy_value(submenues);
@@ -252,18 +252,18 @@ mapping get_submenu_mapping(  )
 //!
 //! @returns
 //! @array
-//!   @elem GTK.Menu 0
-//!     GTK.Menu
-//!   @elem GTK.AccelGroup 1
-//!     GTK.AccelGroup
+//!   @elem GTK1.Menu 0
+//!     GTK1.Menu
+//!   @elem GTK1.AccelGroup 1
+//!     GTK1.AccelGroup
 //! @endarray
 array(object) PopupMenuFactory( MenuDef ... definition )
 {
-  GTK.Menu bar = GTK.Menu();
-  GTK.AccelGroup table= GTK.AccelGroup();
+  GTK1.Menu bar = GTK1.Menu();
+  GTK1.AccelGroup table= GTK1.AccelGroup();
   menubar_objects = ([]);
   submenues = (["":bar]);
-  mapping(string:GTK.RadioMenuItem) radiogroups = ([]);
+  mapping(string:GTK1.RadioMenuItem) radiogroups = ([]);
   foreach(definition, object d)
   {
     string path="";
@@ -274,8 +274,8 @@ array(object) PopupMenuFactory( MenuDef ... definition )
       path += segment+"/";
       if(!submenues[path])
       {
-     GTK.MenuItem i = GTK.MenuItem( segment );
-     submenues[path] = GTK.Menu();
+     GTK1.MenuItem i = GTK1.MenuItem( segment );
+     submenues[path] = GTK1.Menu();
      submenues[path]->set_accel_group( table );
 //         d->menu_obj = submenues[path];
      parent->append( i );
@@ -285,31 +285,31 @@ array(object) PopupMenuFactory( MenuDef ... definition )
       }
       parent = submenues[path];
     }
-    GTK.Item i;
+    GTK1.Item i;
     string q,g;
     sscanf(p[-1], "<%s>%s", q, p[-1]);
     if(q) sscanf(q, "%s:%s", q, g);
     switch( q )
     {
      default:
-       i = GTK.MenuItem( p[-1] );
+       i = GTK1.MenuItem( p[-1] );
        break;
      case "check":
-       i = GTK.CheckMenuItem( p[-1] );
+       i = GTK1.CheckMenuItem( p[-1] );
        break;
      case "separator":
-       i = GTK.MenuItem();
-       i->set_state( GTK.StateInsensitive );
+       i = GTK1.MenuItem();
+       i->set_state( GTK1.StateInsensitive );
        break;
      case "tearoff":
-       i = GTK.TearoffMenuItem();
+       i = GTK1.TearoffMenuItem();
        break;
     case "radio":
       if (!radiogroups[path+":"+g]) {
-     i = GTK.RadioMenuItem( p[-1] );
+     i = GTK1.RadioMenuItem( p[-1] );
      radiogroups[path+":"+g] = i;
       } else {
-     i = GTK.RadioMenuItem( p[-1], radiogroups[path+":"+g] );
+     i = GTK1.RadioMenuItem( p[-1], radiogroups[path+":"+g] );
       }
       break;
     }
@@ -317,7 +317,7 @@ array(object) PopupMenuFactory( MenuDef ... definition )
     i->show();
     if(d->shortcut)
       i->add_accelerator( "activate", table, d->shortcut, d->modifiers,
-                          GTK.AccelVisible);
+                          GTK1.AccelVisible);
     i->signal_connect( "activate", d->selected, 0 );
     i->signal_connect("add_accelerator", d->install_accelerator,  0);
     i->signal_connect("remove_accelerator",  d->remove_accelerator,   0);
@@ -331,8 +331,8 @@ array(object) PopupMenuFactory( MenuDef ... definition )
 //! This is the function that actually builds the menubar.
 //!
 //! @example
-//! import GTK.MenuFactory;
-//! [GTK.MenuBar bar, GTK.AcceleratorTable map] = 
+//! import GTK1.MenuFactory;
+//! [GTK1.MenuBar bar, GTK1.AcceleratorTable map] = 
 //!  MenuFactory( 
 //!    MenuDef( "File/New", new_file, 0, "A-N" ), 
 //!    MenuDef( "File/Open", new_file, 1, "A-O" ), 
@@ -343,18 +343,18 @@ array(object) PopupMenuFactory( MenuDef ... definition )
 //!
 //! @returns
 //! @array
-//!   @elem GTK.MenuBar 0
-//!     GTK.MenuBar
-//!   @elem GTK.AcceleratorTable 1
-//!     GTK.AcceleratorTable
+//!   @elem GTK1.MenuBar 0
+//!     GTK1.MenuBar
+//!   @elem GTK1.AcceleratorTable 1
+//!     GTK1.AcceleratorTable
 //! @endarray
 array(object) MenuFactory( MenuDef ... definition )
 {
-  GTK.MenuBar bar = GTK.MenuBar();
-  GTK.AccelGroup table= GTK.AccelGroup();
+  GTK1.MenuBar bar = GTK1.MenuBar();
+  GTK1.AccelGroup table= GTK1.AccelGroup();
   menubar_objects = ([]);
   submenues = (["":bar]);
-  mapping(string:GTK.RadioMenuItem) radiogroups = ([]);
+  mapping(string:GTK1.RadioMenuItem) radiogroups = ([]);
   foreach(definition, object d)
   {
     string path="";
@@ -365,8 +365,8 @@ array(object) MenuFactory( MenuDef ... definition )
       path += segment+"/";
       if(!submenues[path])
       {
-	GTK.MenuItem i = GTK.MenuItem( segment );
-	submenues[path] = GTK.Menu();
+	GTK1.MenuItem i = GTK1.MenuItem( segment );
+	submenues[path] = GTK1.Menu();
 	submenues[path]->set_accel_group( table );
 //         d->menu_obj = submenues[path];
 	parent->append( i );
@@ -376,31 +376,31 @@ array(object) MenuFactory( MenuDef ... definition )
       }
       parent = submenues[path];
     }
-    GTK.Item i;
+    GTK1.Item i;
     string q,g;
     sscanf(p[-1], "<%s>%s", q, p[-1]);
     if(q) sscanf(q, "%s:%s", q, g);
     switch( q )
     {
      default:
-       i = GTK.MenuItem( p[-1] );
+       i = GTK1.MenuItem( p[-1] );
        break;
      case "check":
-       i = GTK.CheckMenuItem( p[-1] );
+       i = GTK1.CheckMenuItem( p[-1] );
        break;
      case "separator":
-       i = GTK.MenuItem();
-       i->set_state( GTK.StateInsensitive );
+       i = GTK1.MenuItem();
+       i->set_state( GTK1.StateInsensitive );
        break;
      case "tearoff":
-       i = GTK.TearoffMenuItem();
+       i = GTK1.TearoffMenuItem();
        break;
     case "radio":
       if (!radiogroups[path+":"+g]) {
-	i = GTK.RadioMenuItem( p[-1] );
+	i = GTK1.RadioMenuItem( p[-1] );
 	radiogroups[path+":"+g] = i;
       } else {
-	i = GTK.RadioMenuItem( p[-1], radiogroups[path+":"+g] );
+	i = GTK1.RadioMenuItem( p[-1], radiogroups[path+":"+g] );
       }
       break;
     }
@@ -409,7 +409,7 @@ array(object) MenuFactory( MenuDef ... definition )
     parent->add( i );
     if(d->shortcut)
       i->add_accelerator( "activate", table, d->shortcut, d->modifiers,
-                          GTK.AccelVisible);
+                          GTK1.AccelVisible);
     i->signal_connect( "activate", d->selected, 0 );
     i->signal_connect("add_accelerator", d->install_accelerator,  0);
     i->signal_connect("remove_accelerator",  d->remove_accelerator,   0);

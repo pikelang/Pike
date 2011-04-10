@@ -5,13 +5,13 @@
 
 //! @ignore
 
-inherit GTK.ScrolledWindow;
+inherit GTK1.ScrolledWindow;
 
-GTK.Clist cl;
+GTK1.Clist cl;
 void create( mixed ... args )
 {
   ::create( 0, 0 );
-  cl = GTK.Clist( @args );
+  cl = GTK1.Clist( @args );
   add( cl->show() );
 }
 

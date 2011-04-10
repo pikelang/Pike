@@ -1,19 +1,19 @@
 #pike __REAL_VERSION__
 
-inherit GTK.Ctree:ctree;
+inherit GTK1.Ctree:ctree;
 
 class Node
 {
    private protected program Prog=object_program(this_object());
 
-   private protected GTK.CTreeNode node;
+   private protected GTK1.CTreeNode node;
 
    void create(object _node)
    {
       node=_node;
    }
 
-   object(GTK.CTreeNode) get_node()
+   object(GTK1.CTreeNode) get_node()
    {
       return node;
    }
@@ -93,17 +93,17 @@ class Node
       return this;
    }
 
-   GTK.Style get_cell_style(int cell)
+   GTK1.Style get_cell_style(int cell)
    {
       return ctree::node_get_cell_style(node,cell);
    }
 
-   GTK.Style get_style()
+   GTK1.Style get_style()
    {
       return ctree::node_get_row_style(node);
    }
 
-   Node set_style(GTK.Style style)
+   Node set_style(GTK1.Style style)
    {
       ctree::node_set_row_style(node,style);
       return node;
@@ -126,7 +126,7 @@ class Node
       return this;
    }
 
-   Node set_cell_style(int column,GTK.Style style)
+   Node set_cell_style(int column,GTK1.Style style)
    {
       ctree::node_set_cell_style(node, column, style);
       return this;

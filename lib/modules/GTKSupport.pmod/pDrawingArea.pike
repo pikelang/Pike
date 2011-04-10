@@ -8,9 +8,9 @@
 //! pixmap has many bitplanes, and the drawing area is large.
 //!
 //! @seealso
-//!   @[GTK.DrawingArea]
+//!   @[GTK1.DrawingArea]
 
-inherit GTK.DrawingArea;
+inherit GTK1.DrawingArea;
 protected object backing_store, bgc;
 protected int _xsize, _ysize, is_realized;
 
@@ -79,7 +79,7 @@ protected void rrefresh()
   if(backing_store)
   {
     ::draw_pixmap( bgc, backing_store, 0, 0, 0, 0, _xsize, _ysize);
-    GTK.flush();
+    GTK1.flush();
   }
 }
 
