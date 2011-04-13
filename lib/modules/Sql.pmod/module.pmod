@@ -19,7 +19,9 @@ program `->Null() {return Val->Null;}
 Val.Null `->NULL() {return Val->null;}
 //! @endignore
 
-//! @decl program Null;
 //! @decl Val.Null NULL;
 //!
-//! @deprecated Val.Null, Val.null
+//! @deprecated Val.null
+//!
+//! @seealso
+//!   @[Val.null]

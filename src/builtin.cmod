@@ -3530,8 +3530,10 @@ PMOD_EXPORT void append_list_node(struct pike_list_node *node,
  *!   but some databases (eg Oracle) have multiple types of NULL,
  *!   in which case they all inherit this class.
  *!
+ *! @deprecated Val.Null
+ *!
  *! @seealso
- *!   @[Sql.NULL]
+ *!   @[Val.Null], @[Val.null], @[Sql.NULL]
  */
 PIKECLASS SqlNull
 {
