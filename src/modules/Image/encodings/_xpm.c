@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: _xpm.c,v 1.36 2005/12/12 20:25:34 nilsson Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -83,9 +83,7 @@ static rgba_group decode_color( struct buffer *s )
   } 
   if(s->len==4&&(!strncmp(s->str,"None",4)||!strncmp(s->str,"none",4)))
   {
-#ifdef HIDE_WARNINGS
-      res.r = res.g = res.b = 0;
-#endif
+    res.r = res.g = res.b = 0;
     res.alpha = 0;
     return res;
   }

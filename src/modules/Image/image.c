@@ -2526,9 +2526,7 @@ void image_threshold(INT32 args)
    if (args==1 && sp[-args].type==T_INT) {
       get_all_args("threshold",args,"%i",&level);
       level*=3;
-#ifdef HIDE_WARNINGS
       rgb.r=rgb.g=rgb.b=0;
-#endif
    }
    else if (!getrgb(THIS,0,args,args,"Image.Image->threshold()"))
       rgb.r=rgb.g=rgb.b=0;
