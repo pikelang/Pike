@@ -2577,8 +2577,8 @@ int cp(string from, string to)
 //! @returns
 //!  0 on error, 1 on success
 //! @note
-//! This function keeps file and directory permissions unlike in Pike 7.6 and
-//! earlier
+//! This function keeps file and directory mode bits, unlike in Pike
+//! 7.6 and earlier.
 {
   string data;
   Stat stat = file_stat(from, 1);
@@ -2773,7 +2773,7 @@ int recursive_rm (string path)
 }
 
 //! Copy a file or a directory tree by copying and then 
-//! removing.
+//! removing. Mode bits are preserved in the copy.
 //! It's not the fastest but works on every OS and
 //! works well across different file systems.
 //!
