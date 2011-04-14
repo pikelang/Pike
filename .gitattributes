@@ -224,7 +224,6 @@ testfont binary
 /lib/modules/Stdio.pmod/FakeFile.pike foreign_ident
 /lib/modules/Stdio.pmod/Readline.pike foreign_ident
 /lib/modules/Stdio.pmod/Terminfo.pmod foreign_ident
-/lib/modules/Stdio.pmod/module.pmod foreign_ident
 /lib/modules/String.pmod/Elite.pmod foreign_ident
 /lib/modules/String.pmod/HTML.pmod foreign_ident
 /lib/modules/String.pmod/testsuite.in foreign_ident
