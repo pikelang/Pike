@@ -2653,9 +2653,6 @@ int convert_modestring2int(string mode_string)
   return result;
 }
 
-#if constant(System.cp)
-constant cp=System.cp;
-#else
 int cp(string from, string to)
 //! Copies the file @[from] to the new position @[to]. If there is
 //! no system function for cp, a new file will be created and the
@@ -2687,6 +2684,10 @@ int cp(string from, string to)
   }
   else
   {
+#if constant(System.cp)
+    if (!System.cp (from, to))
+      return 0;
+#else
     File f=File(), t;
     if(!f->open(from,"r")) return 0;
     function(int,int|void:string) r=f->read;
@@ -2707,9 +2708,9 @@ int cp(string from, string to)
     t->close();
     chmod(to, convert_modestring2int([string]stat->mode_string));
     return 1;
+#endif
   }
 }
-#endif
 
 int file_equal (string file_1, string file_2)
 //! Returns nonzero if the given paths are files with identical
