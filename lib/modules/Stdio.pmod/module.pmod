@@ -2584,19 +2584,18 @@ int cp(string from, string to)
   Stat stat = file_stat(from, 1);
   if( !stat ) 
      return 0;
+
   if(stat->isdir)
   {
     // recursive copying of directories
     if(!mkdir(to))
       return 0;
-    chmod(to, convert_modestring2int([string]stat->mode_string));
     array(string) sub_files = get_dir(from);
     foreach(sub_files, string sub_file)
     {
       if(!cp(combine_path(from, sub_file), combine_path(to, sub_file)))
         return 0;
     }
-    return 1;
   }
   else
   {
@@ -2622,10 +2621,11 @@ int cp(string from, string to)
   
     f->close();
     t->close();
-    chmod(to, convert_modestring2int([string]stat->mode_string));
-    return 1;
 #endif
   }
+
+  chmod(to, convert_modestring2int([string]stat->mode_string));
+  return 1;
 }
 
 int file_equal (string file_1, string file_2)
