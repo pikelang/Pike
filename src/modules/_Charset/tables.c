@@ -14032,7 +14032,7 @@ const struct charset_def charset_map[] = {
   /* :: iso-ir-205 */
   /* :: iso-ir-206 */
   /* :: iso-ir-207 */
-  { "isoir209", map_IS_434_1997, MODE_96 },                           /* :: iso-ir-208 */
+  { "isoir208", map_IS_434_1997, MODE_96 },                           /* :: iso-ir-208 */
   { "isoir209", map_ISO_IR_209, MODE_96 },                            /* :: iso-ir-209 */
   { "isoir21", map_DIN_66003, MODE_94 },                              /* :: iso-ir-21 */
   { "isoir216", map_ISO_6438, MODE_94 },
