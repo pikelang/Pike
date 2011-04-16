@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: charsetmod.h,v 1.2 2008/06/29 13:54:59 mast Exp $
+|| $Id$
 */
 
 #ifndef CHARSETMOD_H
@@ -75,6 +75,7 @@ extern const UNICHAR map_ANSI_X3_4_1968[];
 extern const UNICHAR map_ISO_8859_1_1998[];
 extern const UNICHAR map_JIS_C6226_1983[];
 extern const UNICHAR * const iso2022_94[];
+extern const UNICHAR * const iso2022_94_2[];
 extern const UNICHAR * const iso2022_96[];
 extern const UNICHAR * const iso2022_9494[];
 extern const UNICHAR * const iso2022_9696[];

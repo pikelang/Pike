@@ -10909,6 +10909,23 @@ const UNICHAR * const iso2022_94[] = {
   map_ANSI_X3_110_1983, map_T_61_7bit, map_T_61_8bit, map_CSA_Z243_4_1985_1, 
   map_CSA_Z243_4_1985_2, /*ISOIR137*/NULL, map_JUS_I_B1_002, map_JUS_I_B1_003_serb, 
   map_T_101_G2, map_JUS_I_B1_003_mac, NULL };
+const UNICHAR * const iso2022_94_2[] = {
+  NULL, NULL, NULL, NULL,
+  NULL, NULL, map_TDS_616_2003, NULL,
+  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL, };
 const UNICHAR * const iso2022_96[] = {
   map_ECMA_cyrillic, map_ISO_8859_1_1998, map_ISO_8859_2_1999, map_ISO_8859_3_1999, 
   map_ISO_8859_4_1998, map_CSA_Z243_4_1985_gr, map_ISO_8859_7_1987, map_ISO_8859_6_1999, 
@@ -14071,7 +14088,7 @@ const struct charset_def charset_map[] = {
   { "stsev35888", map_GOST_19768_74, MODE_96 },                       /* :: st_sev_358-88 */
   { "t617bit", map_T_61_7bit, MODE_94 },                              /* :: t.61-7bit */
   { "tds616", map_TDS_616_2003, MODE_94 },                            /* :: tds 616 */
-  { "tds6162003", map_TDS_616_2003, MODE_94 },                        /* :: tds 616:2003 */
+  { "tds6162003", map_TDS_616_2003, MODE_94 },                        /* :: tds 616-2003 */
   { "uk", map_BS_4730, MODE_94 },                                     /* :: uk */
   { "us", map_ANSI_X3_4_1968, MODE_94 },                              /* :: us */
   { "usascii", map_ANSI_X3_4_1968, MODE_94 },                         /* :: us-ascii */

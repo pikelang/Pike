@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iso2022.c,v 1.51 2008/06/29 15:01:11 mast Exp $
+|| $Id$
 */
 
 #ifdef HAVE_CONFIG_H
@@ -57,8 +57,10 @@ struct iso2022enc_stor {
 
 #define EMIT(X) string_builder_putchar(&s->strbuild,(X))
 
-static const UNICHAR * const *transltab[4] = { iso2022_94, iso2022_96,
-					       iso2022_9494, iso2022_9696 };
+static const UNICHAR * const *transltab[8] = { iso2022_94, iso2022_96,
+					       iso2022_9494, iso2022_9696,
+					       iso2022_94_2, NULL,
+					       NULL, NULL, };
 
 static ptrdiff_t eat_text(unsigned char *src, ptrdiff_t srclen,
 			  struct iso2022_stor *s, struct gdesc *g)
@@ -157,7 +159,7 @@ static ptrdiff_t eat_text(unsigned char *src, ptrdiff_t srclen,
 static INT32 parse_esc(unsigned char *src, ptrdiff_t srclen,
 		       struct iso2022_stor *s)
 {
-  int grp=-1, wide=0, final, mode, l=1;
+  int grp=-1, wide=0, final, mode, l=1, second = 0;
   struct gdesc *g;
 
   /* Return value:
@@ -214,7 +216,7 @@ static INT32 parse_esc(unsigned char *src, ptrdiff_t srclen,
       return -1;
     }
 
-  if(src[1]<0x24 || src[1]>=0x30)
+  if((src[1]<0x24 || src[1]>=0x30) && src[1] != 0x21)
     return -1;
 
   if(srclen<3)
@@ -229,9 +231,15 @@ static INT32 parse_esc(unsigned char *src, ptrdiff_t srclen,
     grp = src[l++]-0x28;
   if(l>=srclen)
     return 0;
-  if(grp<0 || src[l]<0x30 || src[l]>0x7e)
+  if(grp<0 || ((src[l]<0x30 || src[l]>0x7e) && src[l] != 0x21))
     return -1;
   final = src[l++];
+  if (final == 0x21) {
+    /* Second set of 94-character maps. */
+    if (l >= srclen) return 0;
+    second = 4;
+    final = src[l++];
+  }
   mode = MODE_94;
   if(grp>=4) {
     mode = MODE_96;
@@ -245,7 +253,7 @@ static INT32 parse_esc(unsigned char *src, ptrdiff_t srclen,
   if(final<0x40 || (wide && final>=0x60))
     g->transl = NULL;
   else
-    g->transl = transltab[mode][final-0x40];
+    g->transl = transltab[mode + second][final-0x40];
   return l;
 }
 
