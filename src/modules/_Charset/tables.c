@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: tables.c,v 1.37 2008/06/29 13:54:59 mast Exp $
+|| $Id$
 */
 
 #include "charsetmod.h"
@@ -13774,6 +13774,7 @@ const struct charset_def charset_map[] = {
   { "isoir21", map_DIN_66003, MODE_94 },                              /* :: iso-ir-21 */
   { "isoir216", map_ISO_6438, MODE_94 },
   { "isoir25", map_NF_Z_62_010_1973, MODE_94 },                       /* :: iso-ir-25 */
+  /* :: iso-ir-26: Only control characters. */
   { "isoir27", map_Latin_greek_1, MODE_94 },                          /* :: iso-ir-27 */
   { "isoir37", map_ISO_5427, MODE_94 },                               /* :: iso-ir-37 */
   { "isoir38", map_DIN_31624, MODE_94 },
@@ -13793,8 +13794,9 @@ const struct charset_def charset_map[] = {
   { "isoir60", map_NS_4551_1, MODE_94 },                              /* :: iso-ir-60 */
   { "isoir61", map_NS_4551_2, MODE_94 },                              /* :: iso-ir-61 */
   { "isoir69", map_NF_Z_62_010, MODE_94 },                            /* :: iso-ir-69 */
-  { "isoir81", map_NATS_SEFI, MODE_94 },                              /* :: iso-ir-8-1 */
-  { "isoir82", map_NATS_SEFI_ADD, MODE_94 },                          /* :: iso-ir-8-2 */
+  /* :: iso-ir-7: Only control characters. */
+  { "isoir8-1", map_NATS_SEFI, MODE_94 },                              /* :: iso-ir-8-1 */
+  { "isoir8-2", map_NATS_SEFI_ADD, MODE_94 },                          /* :: iso-ir-8-2 */
   { "isoir84", map_PT2, MODE_94 },                                    /* :: iso-ir-84 */
   { "isoir85", map_ES2, MODE_94 },                                    /* :: iso-ir-85 */
   { "isoir86", map_MSZ_7795_3, MODE_94 },                             /* :: iso-ir-86 */

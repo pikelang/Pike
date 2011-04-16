@@ -379,6 +379,8 @@ void set_decoder(string name, Decoder decoder)
 //!   If the asked-for @[name] was not supported, an error is thrown.
 Decoder decoder(string name)
 {
+  string orig_name = name;
+
   name = normalize(name);
 
   if( custom_decoders[name] )
@@ -436,6 +438,12 @@ Decoder decoder(string name)
 
   if( (< "gb18030", "gbk", "936", "949" >)[ name ] )
     return MulticharDec(name);
+
+  if ((< "isoir81", "isoir82", "isoir91", "isoir92" >)[name] &&
+      has_suffix(orig_name, "-1")) {
+    // There are both ISO-IR-9-1 and ISO-IR-91...
+    name = name[..<1] + "-1";
+  }
 
   Decoder o = rfc1345(name);
 
@@ -719,6 +727,8 @@ void set_encoder(string name, Encoder encoder)
 Encoder encoder(string name, string|void replacement,
 		function(string:string)|void repcb)
 {
+  string orig_name = name;
+
   name = normalize(name);
 
   if( custom_encoders[name] )
@@ -779,6 +789,12 @@ Encoder encoder(string name, string|void replacement,
   if( (< "extendedunixcodepackedformatforjapanese",
 	 "eucpkdfmtjapanese" >)[ name ] )
     return EUCEnc("x0208", "eucpkdfmtjapanese", replacement, repcb);
+
+  if ((< "isoir81", "isoir82", "isoir91", "isoir92" >)[name] &&
+      has_suffix(orig_name, "-1")) {
+    // There are both ISO-IR-9-1 and ISO-IR-91...
+    name = name[..<1] + "-1";
+  }
 
   Encoder o = rfc1345(name, 1, replacement, repcb);
 

@@ -500,7 +500,6 @@ testfont binary
 /src/modules/_Charset/make_gb18030_h.pike foreign_ident
 /src/modules/_Charset/make_gbk_tables_h.pike foreign_ident
 /src/modules/_Charset/misc.c foreign_ident
-/src/modules/_Charset/tables.c foreign_ident
 /src/modules/_Charset/testsuite.in foreign_ident
 /src/modules/_Crypto/include/rc4.h foreign_ident
 /src/modules/_Crypto/lib/rc4.c foreign_ident
