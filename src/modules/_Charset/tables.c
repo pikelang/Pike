@@ -148,6 +148,19 @@ const UNICHAR map_ANSI_X3_4_1968[] = {
   0x0069, 0x006a, 0x006b, 0x006c, 0x006d, 0x006e, 0x006f, 0x0070,
   0x0071, 0x0072, 0x0073, 0x0074, 0x0075, 0x0076, 0x0077, 0x0078,
   0x0079, 0x007a, 0x007b, 0x007c, 0x007d, 0x007e, };
+static const UNICHAR map_ANSI_Z39_47[] = {
+  0x0141, 0x00d8, 0x0110, 0x00de, 0x00c6, 0x0152, 0x02b9, 0x00b7,
+  0x266d, 0x00ae, 0x00b1, 0x01a0, 0x01af, 0x02bc, 0xfffc, 0x02bb,
+  0x0142, 0x00f8, 0x0111, 0x00fe, 0x00e6, 0x0153, 0x02ba, 0x0131,
+  0x00a3, 0x00f0, 0xfffc, 0x01a1, 0x01b0, 0xfffc, 0xfffc, 0x00b0,
+  0x2113, 0x2117, 0x00a9, 0x266f, 0x00bf, 0x00a1, 0x00df, 0x20ac,
+  0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
+  0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
+  0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xe309,
+  0xe300, 0xe301, 0xe302, 0xe303, 0xe304, 0xe306, 0xe307, 0xe308,
+  0xe30c, 0xe30a, 0xee20, 0xee21, 0xe315, 0xe30b, 0xe310, 0xe327,
+  0xe328, 0xe323, 0xe324, 0xe325, 0xe333, 0xe332, 0xe326, 0xe31c,
+  0xe32e, 0xee22, 0xee23, 0xfffd, 0xfffd, 0xe313, };
 static const UNICHAR map_NATS_SEFI[] = {
   0x0021, 0x0022, 0x0023, 0x0024, 0x0025, 0x0026, 0x0027, 0x0028,
   0x0029, 0x002a, 0x002b, 0x002c, 0x002d, 0x002e, 0x002f, 0x0030,
@@ -10924,7 +10937,7 @@ const UNICHAR * const iso2022_94[] = {
   map_T_101_G2, map_JUS_I_B1_003_mac, NULL };
 const UNICHAR * const iso2022_94_2[] = {
   NULL, NULL, NULL, NULL,
-  NULL, NULL, map_TDS_616_2003, NULL,
+  NULL, map_ANSI_Z39_47, map_TDS_616_2003, NULL,
   NULL, NULL, NULL, NULL,
   NULL, NULL, NULL, NULL,
   NULL, NULL, NULL, NULL,
@@ -13647,8 +13660,10 @@ const struct charset_def charset_map[] = {
   { "950", map_CP950, MODE_BIG5 },                                    /* :: cp950 */
   { "a71", map_CSA_Z243_4_1985_1, MODE_94 },                          /* :: csa7-1 */
   { "a72", map_CSA_Z243_4_1985_2, MODE_94 },                          /* :: csa7-2 */
+  { "ansel", map_ANSI_Z39_47, MODE_94 },                              /* :: ansel */
   { "ansix341968", map_ANSI_X3_4_1968, MODE_94 },                     /* :: ansi_x3.4-1968 */
   { "ansix341986", map_ANSI_X3_4_1968, MODE_94 },                     /* :: ansi_x3.4-1986 */
+  { "ansiz3947", map_ANSI_Z39_47, MODE_94 },                          /* :: ansi_z39.47 */
   { "arabic", map_ISO_8859_6_1999, MODE_96 },                         /* :: arabic */
   { "arabic7", map_ASMO_449, MODE_94 },                               /* :: arabic7 */
   { "ascii", map_ANSI_X3_4_1968, MODE_94 },                           /* :: ascii */
@@ -13945,7 +13960,7 @@ const struct charset_def charset_map[] = {
   /* :: iso-ir-228 */
   /* :: iso-ir-229 */
   /* :: iso-ir-230 */
-  /* :: iso-ir-231 */
+  { "isoir231", map_ANSI_Z39_47, MODE_94 },                           /* :: iso-ir-231 */
   { "isoir232", map_TDS_616_2003, MODE_94 },                          /* :: iso-ir-232 */
   /* :: iso-ir-233 */
   { "isoir234", map_SI_1311_2002, MODE_96 },                          /* :: iso-ir-234 */
@@ -14075,6 +14090,7 @@ const struct charset_def charset_map[] = {
   { "latingreek1", map_Latin_greek_1, MODE_94 },                      /* :: latin-greek-1 */
   { "latinlap", map_latin_lap, MODE_96 },
   { "macedonian", map_JUS_I_B1_003_mac, MODE_94 },                    /* :: macedonian */
+  { "marc21", map_ANSI_Z39_47, MODE_94 },                             /* :: marc 21 */
   { "msz77953", map_MSZ_7795_3, MODE_94 },                            /* :: msz_7795.3 */
   { "n369103", map_CSN_369103, MODE_96 },                             /* :: csn_369103 */
   { "natsdano", map_NATS_DANO, MODE_94 },                             /* :: nats-dano */
@@ -14083,6 +14099,7 @@ const struct charset_def charset_map[] = {
   { "natssefiadd", map_NATS_SEFI_ADD, MODE_94 },                      /* :: nats-sefi-add */
   { "nfz62010", map_NF_Z_62_010, MODE_94 },                           /* :: nf_z_62-010 */
   { "nfz620101973", map_NF_Z_62_010_1973, MODE_94 },                  /* :: nf_z_62-010_(1973) */
+  { "nisoz3947", map_ANSI_Z39_47, MODE_94 },                          /* :: niso z39.47 */
   { "no", map_NS_4551_1, MODE_94 },                                   /* :: no */
   { "no2", map_NS_4551_2, MODE_94 },                                  /* :: no2 */
   { "ns45511", map_NS_4551_1, MODE_94 },                              /* :: ns_4551-1 */
