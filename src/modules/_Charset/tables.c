@@ -850,6 +850,19 @@ const UNICHAR map_ISO_8859_1_1998[] = {
   0x00e8, 0x00e9, 0x00ea, 0x00eb, 0x00ec, 0x00ed, 0x00ee, 0x00ef,
   0x00f0, 0x00f1, 0x00f2, 0x00f3, 0x00f4, 0x00f5, 0x00f6, 0x00f7,
   0x00f8, 0x00f9, 0x00fa, 0x00fb, 0x00fc, 0x00fd, 0x00fe, 0x00ff, };
+static const UNICHAR map_SR_14111_1998[] = {
+  0x00a0, 0x0104, 0x0105, 0x0141, 0x20ac, 0x201e, 0x0160, 0x00a7,
+  0x0161, 0x00a9, 0x0218, 0x00ab, 0x0179, 0x00ad, 0x017a, 0x017b,
+  0x00b0, 0x00b1, 0x010c, 0x0142, 0x017d, 0x201d, 0x00b6, 0x00b7,
+  0x017e, 0x010d, 0x0219, 0x00bb, 0x0152, 0x0153, 0x0178, 0x017c,
+  0x00c0, 0x00c1, 0x00c2, 0x0102, 0x00c4, 0x0106, 0x00c6, 0x00c7,
+  0x00c8, 0x00c9, 0x00ca, 0x00cb, 0x00cc, 0x00cd, 0x00ce, 0x00cf,
+  0x0110, 0x0143, 0x00d2, 0x00d3, 0x00d4, 0x0150, 0x00d6, 0x015a,
+  0x0170, 0x00d9, 0x00da, 0x00db, 0x00dc, 0x0118, 0x021a, 0x00df,
+  0x00e0, 0x00e1, 0x00e2, 0x0103, 0x00e4, 0x0107, 0x00e6, 0x00e7,
+  0x00e8, 0x00e9, 0x00ea, 0x00eb, 0x00ec, 0x00ed, 0x00ee, 0x00ef,
+  0x0111, 0x0144, 0x00f2, 0x00f3, 0x00f4, 0x0151, 0x00f6, 0x015b,
+  0x0171, 0x00f9, 0x00fa, 0x00fb, 0x00fc, 0x0119, 0x021b, 0x00ff, };
 static const UNICHAR map_ISO_8859_2_1999[] = {
   0x00a0, 0x0104, 0x02d8, 0x0141, 0x00a4, 0x013d, 0x015a, 0x00a7,
   0x00a8, 0x0160, 0x015e, 0x0164, 0x0179, 0x00ad, 0x017d, 0x017b,
@@ -10988,7 +11001,7 @@ const UNICHAR * const iso2022_96[] = {
   map_latin_lap, map_ISO_8859_13_1998, /*ISOIR180*/NULL, /*ISOIR181*/NULL, 
   /*ISOIR182*/NULL, /*ISOIR197*/NULL, /*198*/NULL, map_ISO_8859_14_1998, 
   /*ISOIR200*/NULL, /*ISOIR201*/NULL, map_ISO_8859_15_1999, /*ISOIR204*/NULL, 
-  /*ISOIR205*/NULL, /*ISOIR206*/NULL, /*ISOIR226*/NULL, /*ISOIR208*/NULL, 
+  /*ISOIR205*/NULL, /*ISOIR206*/NULL, map_SR_14111_1998, /*ISOIR208*/NULL,
   /*ISOIR209*/NULL, map_ISO_8859_7_2003, map_SI_1311_2002, NULL, 
   NULL, NULL, NULL, NULL, 
   NULL, NULL, NULL, NULL, 
@@ -13982,7 +13995,7 @@ const struct charset_def charset_map[] = {
   /* :: iso-ir-209 */
   { "isoir21", map_DIN_66003, MODE_94 },                              /* :: iso-ir-21 */
   { "isoir216", map_ISO_6438, MODE_94 },
-  /* :: iso-ir-226 */
+  { "isoir226", map_SR_14111_1998, MODE_96 },                         /* :: iso-ir-226 */
   { "isoir227", map_ISO_8859_7_2003, MODE_96 },                       /* :: iso-ir-227 */
   /* :: iso-ir-228 */
   /* :: iso-ir-229 */
@@ -14142,6 +14155,8 @@ const struct charset_def charset_map[] = {
   { "si13112002", map_SI_1311_2002, MODE_96 },                        /* :: si 1311:2002 */
   { "sisd47", map_SEN_850200_B, MODE_94 },                            /* :: sis d47 */
   { "sise47", map_SEN_850200_C, MODE_94 },                            /* :: sis e47 */
+  { "sr14111", map_SR_14111_1998, MODE_96 },                          /* :: sr 14111 */
+  { "sr141111998", map_SR_14111_1998, MODE_96 },                      /* :: sr 14111:1998 */
   { "stsev35888", map_GOST_19768_74, MODE_96 },                       /* :: st_sev_358-88 */
   { "t617bit", map_T_61_7bit, MODE_94 },                              /* :: t.61-7bit */
   { "tds565", map_TDS_565, MODE_94 },                                 /* :: tds 565 */
