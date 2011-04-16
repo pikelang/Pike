@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: charsetmod.c,v 1.71 2008/07/03 19:14:45 grubba Exp $
+|| $Id$
 */
 
 #ifdef HAVE_CONFIG_H
@@ -50,6 +50,9 @@ static struct program *std_8bit_program = NULL, *std_8bite_program = NULL;
 static struct program *std_16bite_program = NULL;
 
 static size_t rfc_charset_name_offs = 0;
+
+static struct array *double_custom_chars = NULL;
+static struct array *double_combiner_chars = NULL;
 
 struct std_cs_stor { 
   struct string_builder strbuild;
@@ -251,6 +254,7 @@ static void f_drain_rfc1345(INT32 args)
 {
   struct std_cs_stor *s = (struct std_cs_stor *)fp->current_storage;
   UNICHAR trailer = 0;
+  int double_combiners = 0;
 
   if (s->strbuild.s->size_shift) {
     ptrdiff_t i, len = s->strbuild.s->len;
@@ -260,17 +264,34 @@ static void f_drain_rfc1345(INT32 args)
       {
 	p_wchar1 *s1 = STR1(s->strbuild.s);
 	for (i=0; i < len; i++) {
-	  if ((s1[i] & 0xff00) == 0xe300) {
-	    /* Non-spacing character ==> combiner  */
-	    trailer = s1[i++];
-	    if (i < len) {
-	      s1[i-1] = s1[i];
-	      s1[i] = trailer & 0x0fff;
-	      trailer = 0;
-	    } else {
-	      s->strbuild.s->len--;
-	      break;
-	    }
+	  if ((s1[i] & 0xf000) == 0xe000) {
+	    if ((s1[i] & 0xff00) == 0xe300) {
+	      /* Non-spacing character ==> combiner  */
+	      trailer = s1[i++];
+	      if (i < len) {
+		s1[i-1] = s1[i];
+		s1[i] = trailer & 0x0fff;
+		trailer = 0;
+	      } else {
+		s->strbuild.s->len--;
+		break;
+	      }
+	    } else if ((s1[i] & 0xff00) == 0xe100) {
+	      /* Non-spacing character ==> double combiner
+	       *
+	       * Reorder here, and expand later.
+	       */
+	      trailer = s1[i++];
+	      if (i < len) {
+		s1[i-1] = s1[i];
+		s1[i] = trailer;
+		trailer = 0;
+		double_combiners = 1;
+	      } else {
+		s->strbuild.s->len--;
+		break;
+	      }
+	    } 
 	  }
 	}
       }
@@ -279,16 +300,33 @@ static void f_drain_rfc1345(INT32 args)
       {
 	p_wchar2 *s2 = STR2(s->strbuild.s);
 	for (i=0; i < len; i++) {
-	  if ((s2[i] & 0xff00) == 0xe300) {
-	    /* Non-spacing character ==> combiner */
-	    trailer = s2[i++];
-	    if (i < len) {
-	      s2[i-1] = s2[i];
-	      s2[i] = trailer & 0x0fff;
-	      trailer = 0;
-	    } else {
-	      s->strbuild.s->len--;
-	      break;
+	  if ((s2[i] & 0xf000) == 0xe000) {
+	    if ((s2[i] & 0xff00) == 0xe300) {
+	      /* Non-spacing character ==> combiner */
+	      trailer = s2[i++];
+	      if (i < len) {
+		s2[i-1] = s2[i];
+		s2[i] = trailer & 0x0fff;
+		trailer = 0;
+	      } else {
+		s->strbuild.s->len--;
+		break;
+	      }
+	    } else if ((s2[i] & 0xff00) == 0xe100) {
+	      /* Non-spacing character ==> double combiner
+	       *
+	       * Reorder here, and expand later.
+	       */
+	      trailer = s2[i++];
+	      if (i < len) {
+		s2[i-1] = s2[i];
+		s2[i] = trailer;
+		trailer = 0;
+		double_combiners = 1;
+	      } else {
+		s->strbuild.s->len--;
+		break;
+	      }
 	    }
 	  }
 	}
@@ -302,6 +340,12 @@ static void f_drain_rfc1345(INT32 args)
      * Restore it for the next pass.
      */
     string_builder_putchar(&s->strbuild, trailer);
+  }
+  if (double_combiners) {
+    /* There were non-spacing double modifiers used. */
+    ref_push_array(double_custom_chars);
+    ref_push_array(double_combiner_chars);
+    f_replace(3);
   }
 }
 
@@ -2352,8 +2396,32 @@ static void f_feed_std16e(INT32 args)
 
 PIKE_MODULE_INIT
 {
-  int i;
+  int i,n;
   struct svalue prog;
+  static p_wchar1 doubles_first_char[] =  { 0x0308, 0x0313, 0x0314 };
+  static p_wchar1 doubles_second_char[] = { 0x0300, 0x0301, 0x0342 };
+  p_wchar1 double_char[2];
+
+  /* Handling of double non-spacing characters used by eg ISO-IR-31. */
+  n = 0;
+  for(i = 0xe100; i < 0xe130; i += 0x0010) {
+    int j;
+    for(j = 0; j < 3; j++,n++) {
+      p_wchar1 c = i+j;
+      push_string(make_shared_binary_string1(&c, 1));
+    }
+  }
+  double_custom_chars = aggregate_array(n);
+  n = 0;
+  for (i = 0; i < 3; i++) {
+    int j;
+    double_char[0] = doubles_first_char[i];
+    for (j = 0; j < 3; j++,n++) {
+      double_char[1] = doubles_second_char[j];
+      push_string(make_shared_binary_string1(double_char, 2));
+    }
+  }
+  double_combiner_chars = aggregate_array(n);
 
   iso2022_init();
 
@@ -2663,4 +2731,7 @@ PIKE_MODULE_EXIT
 
   if (encode_err_prog.type != T_INT) free_svalue (&encode_err_prog);
   if (decode_err_prog.type != T_INT) free_svalue (&decode_err_prog);
+
+  free_array(double_custom_chars);
+  free_array(double_combiner_chars);
 }

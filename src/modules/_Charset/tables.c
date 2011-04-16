@@ -40,6 +40,8 @@
  *   e016	e345	NON-SPACING IOTA BELOW
  *   e017	e314	NON-SPACING DASIA PNEUMATA
  *   e018	e313	NON-SPACING PSILI PNEUMATA
+ *   -   	e342	NON-SPACING GREEK PERISPOMENI
+ *   -   	e345	NON-SPACING GREEK YPOGEGRAMMENI
  *	
  *   e019	02bd	GREEK DASIA PNEUMATA
  *   e01a	02bc	GREEK PSILI PNEUMATA
@@ -58,13 +60,39 @@
  *   e027	1fc0	GREEK PERISPOMENI
  *   e028	-	LATIN CAPITAL LETTER J WITH CARON
  *
+ * Note that this means that the non-spacing 0xe3xx characters
+ * map straight to the corresponding combiners at 0x03xx.
+ *
  * In addition Pike uses the following codepoints:
  *   		e000	Remove (Used in DIN:31624 for
  *			half nonspacing modifiers).
  *
- * Note that this means that the non-spacing 0xe3xx characters
- * map straight to the corresponding combiners at 0x03xx. There
- * are thus only two private characters left after reordering
+ * Some Greek character sets (eg ISO-IR-31) have double non-spacing
+ * characters:
+ *
+ *   -   	e100	NON-SPACING GREEK DIALYTIKA AND VARIA
+ *   -   	e101	NON-SPACING GREEK DIALYTIKA AND OXIA
+ *   -   	e102	NON-SPACING GREEK DIALYTIKA AND PERISPOMENI
+ *   -   	e110	NON-SPACING GREEK PSILI AND VARIA
+ *   -   	e111	NON-SPASING GREEK PSILI AND OXIA
+ *   -   	e112	NON-SPACING GREEK PSILI AND PERISPOMENI
+ *   -   	e120	NON-SPACING GREEK DASIA AND VARIA
+ *   -   	e121	NON-SPACING GREEK DASIA AND OXIA
+ *   -   	e122	NON-SPACING GREEK DASIA AND PERISPOMENI
+ *
+ * These map to combinations of one of
+ *
+ *   0308	COMBINING GREEK DIALYTIKA
+ *   0313	COMBINING GREEK PSILI
+ *   0314	COMBINING GREEK DASIA
+ *
+ * followed by one of
+ *
+ *   0300	COMBINING GREEK VARIA
+ *   0301	COMBINING GREEK OXIA
+ *   0342	COMBINING GREEK PERISPOMENI
+ *
+ * There are thus only two private characters left after reordering
  * and filtering.
  */
 
