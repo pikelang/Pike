@@ -759,6 +759,19 @@ static const UNICHAR map_CSA_Z243_4_1985_2[] = {
   0x0069, 0x006a, 0x006b, 0x006c, 0x006d, 0x006e, 0x006f, 0x0070,
   0x0071, 0x0072, 0x0073, 0x0074, 0x0075, 0x0076, 0x0077, 0x0078,
   0x0079, 0x007a, 0x00e9, 0x00f9, 0x00e8, 0x00fb, };
+static const UNICHAR map_TDS_565[] = {
+  0x0021, 0x0022, 0x0023, 0x0024, 0x0025, 0x0026, 0x0027, 0x0028,
+  0x0029, 0x002a, 0x002b, 0x002c, 0x002d, 0x002e, 0x002f, 0x0030,
+  0x0031, 0x0032, 0x0033, 0x0034, 0x0035, 0x0036, 0x0037, 0x0038,
+  0x0039, 0x003a, 0x003b, 0x003c, 0x003d, 0x003e, 0x003f, 0x0040,
+  0x0041, 0x0042, 0x00c7, 0x0044, 0x0045, 0x00c4, 0x0046, 0x0047,
+  0x0048, 0x0049, 0x004a, 0x017d, 0x004b, 0x004c, 0x004d, 0x004e,
+  0x0147, 0x004f, 0x00d6, 0x0050, 0x0052, 0x0053, 0x015e, 0x0054,
+  0x0055, 0x00dc, 0x0057, 0x0059, 0x00dd, 0x005a, 0x005f, 0x2116,
+  0x0061, 0x0062, 0x00e7, 0x0064, 0x0065, 0x00e4, 0x0066, 0x0067,
+  0x0068, 0x0069, 0x006a, 0x017e, 0x006b, 0x006c, 0x006d, 0x006e,
+  0x0148, 0x006f, 0x00f6, 0x0070, 0x0072, 0x0073, 0x015f, 0x0074,
+  0x0075, 0x00fc, 0x0077, 0x0079, 0x00fd, 0x007a, };
 static const UNICHAR map_TDS_616_2003[] = {
   0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
   0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
@@ -10937,7 +10950,7 @@ const UNICHAR * const iso2022_94[] = {
   map_T_101_G2, map_JUS_I_B1_003_mac, NULL };
 const UNICHAR * const iso2022_94_2[] = {
   NULL, NULL, NULL, NULL,
-  NULL, map_ANSI_Z39_47, map_TDS_616_2003, NULL,
+  map_TDS_565, map_ANSI_Z39_47, map_TDS_616_2003, NULL,
   NULL, NULL, NULL, NULL,
   NULL, NULL, NULL, NULL,
   NULL, NULL, NULL, NULL,
@@ -13959,7 +13972,7 @@ const struct charset_def charset_map[] = {
   /* :: iso-ir-227 */
   /* :: iso-ir-228 */
   /* :: iso-ir-229 */
-  /* :: iso-ir-230 */
+  { "isoir230", map_TDS_565, MODE_94 },                               /* :: iso-ir-230 */
   { "isoir231", map_ANSI_Z39_47, MODE_94 },                           /* :: iso-ir-231 */
   { "isoir232", map_TDS_616_2003, MODE_94 },                          /* :: iso-ir-232 */
   /* :: iso-ir-233 */
@@ -14117,6 +14130,7 @@ const struct charset_def charset_map[] = {
   { "sise47", map_SEN_850200_C, MODE_94 },                            /* :: sis e47 */
   { "stsev35888", map_GOST_19768_74, MODE_96 },                       /* :: st_sev_358-88 */
   { "t617bit", map_T_61_7bit, MODE_94 },                              /* :: t.61-7bit */
+  { "tds565", map_TDS_565, MODE_94 },                                 /* :: tds 565 */
   { "tds616", map_TDS_616_2003, MODE_94 },                            /* :: tds 616 */
   { "tds6162003", map_TDS_616_2003, MODE_94 },                        /* :: tds 616-2003 */
   { "uk", map_BS_4730, MODE_94 },                                     /* :: uk */
