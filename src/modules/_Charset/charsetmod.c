@@ -276,6 +276,17 @@ static void f_drain_rfc1345(INT32 args)
 		s->strbuild.s->len--;
 		break;
 	      }
+	    } else if ((s1[i] & 0xff00) == 0xee00) {
+	      /* Non-spacing character ==> combiner  */
+	      trailer = s1[i++];
+	      if (i < len) {
+		s1[i-1] = s1[i];
+		s1[i] = 0xf000 | (trailer & 0x0fff);
+		trailer = 0;
+	      } else {
+		s->strbuild.s->len--;
+		break;
+	      }
 	    } else if ((s1[i] & 0xff00) == 0xe100) {
 	      /* Non-spacing character ==> double combiner
 	       *
@@ -307,6 +318,17 @@ static void f_drain_rfc1345(INT32 args)
 	      if (i < len) {
 		s2[i-1] = s2[i];
 		s2[i] = trailer & 0x0fff;
+		trailer = 0;
+	      } else {
+		s->strbuild.s->len--;
+		break;
+	      }
+	    } else if ((s2[i] & 0xff00) == 0xee00) {
+	      /* Non-spacing character ==> combiner  */
+	      trailer = s2[i++];
+	      if (i < len) {
+		s2[i-1] = s2[i];
+		s2[i] = 0xf000 | (trailer & 0x0fff);
 		trailer = 0;
 	      } else {
 		s->strbuild.s->len--;

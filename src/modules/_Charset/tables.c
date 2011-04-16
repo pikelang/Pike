@@ -63,6 +63,19 @@
  * Note that this means that the non-spacing 0xe3xx characters
  * map straight to the corresponding combiners at 0x03xx.
  *
+ * There is also a block of combining characters at fe20.
+ *
+ *   -   	ee20	NON-SPACING LIGATURE LEFT HALF
+ *   -   	ee21	NON-SPACING LIGATURE RIGHT HALF
+ *   -   	ee22	NON-SPACING DOUBLE TILDE LEFT HALF
+ *   -   	ee23	NON-SPACING DOUBLE TILDE RIGHT HALF
+ *   -   	ee24	NON-SPACING MACRON LEFT HALF
+ *   -   	ee25	NON-SPACING MACRON RIGHT HALF
+ *   -   	ee26	NON-SPACING CONJOINING MACRON
+ *
+ * Note that this means that the non-spacing 0xeexx characters
+ * map straight to the corresponding combiners at 0xfexx.
+ *
  * In addition Pike uses the following codepoints:
  *   		e000	Remove (Used in DIN:31624 for
  *			half nonspacing modifiers).
