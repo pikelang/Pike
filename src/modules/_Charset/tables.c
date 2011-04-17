@@ -850,6 +850,19 @@ const UNICHAR map_ISO_8859_1_1998[] = {
   0x00e8, 0x00e9, 0x00ea, 0x00eb, 0x00ec, 0x00ed, 0x00ee, 0x00ef,
   0x00f0, 0x00f1, 0x00f2, 0x00f3, 0x00f4, 0x00f5, 0x00f6, 0x00f7,
   0x00f8, 0x00f9, 0x00fa, 0x00fb, 0x00fc, 0x00fd, 0x00fe, 0x00ff, };
+const UNICHAR map_ISO_IR_182[] = {
+  0x00a0, 0x00a1, 0x00a2, 0x00a3, 0x00a4, 0x00a5, 0x00a6, 0x00a7,
+  0x1e80, 0x00a9, 0x1e82, 0x00ab, 0x1ef2, 0x00ad, 0x00ae, 0x0178,
+  0x00b0, 0x00b1, 0x00b2, 0x00b3, 0x00b4, 0x00b5, 0x00b6, 0x00b7,
+  0x1e81, 0x00b9, 0x1e83, 0x00bb, 0x1ef3, 0x1e84, 0x1e85, 0x00bf,
+  0x00c0, 0x00c1, 0x00c2, 0x00c3, 0x00c4, 0x00c5, 0x00c6, 0x00c7,
+  0x00c8, 0x00c9, 0x00ca, 0x00cb, 0x00cc, 0x00cd, 0x00ce, 0x00cf,
+  0x0174, 0x00d1, 0x00d2, 0x00d3, 0x00d4, 0x00d5, 0x00d6, 0x00d7,
+  0x00d8, 0x00d9, 0x00da, 0x00db, 0x00dc, 0x00dd, 0x0176, 0x00df,
+  0x00e0, 0x00e1, 0x00e2, 0x00e3, 0x00e4, 0x00e5, 0x00e6, 0x00e7,
+  0x00e8, 0x00e9, 0x00ea, 0x00eb, 0x00ec, 0x00ed, 0x00ee, 0x00ef,
+  0x0175, 0x00f1, 0x00f2, 0x00f3, 0x00f4, 0x00f5, 0x00f6, 0x00f7,
+  0x00f8, 0x00f9, 0x00fa, 0x00fb, 0x00fc, 0x00fd, 0x0177, 0x00ff, };
 const UNICHAR map_ISO_IR_197[] = {
   0x00a0, 0x010c, 0x010d, 0x0110, 0x0111, 0x01e4, 0x01e5, 0x00a7,
   0x01e6, 0x00a9, 0x01e7, 0x00ab, 0x01e8, 0x00ad, 0x01e9, 0x014a,
@@ -11129,7 +11142,7 @@ const UNICHAR * const iso2022_96[] = {
   map_ISO_8859_supp, map_ISO_10367_box, map_ISO_6937_2001, /*ISOIR164*/NULL, 
   /*ISOIR166*/NULL, /*ISOIR167*/NULL, map_ISO_8859_10_1998, NULL, 
   map_latin_lap, map_ISO_8859_13_1998, /*ISOIR180*/NULL, /*ISOIR181*/NULL, 
-  /*ISOIR182*/NULL, map_ISO_IR_197, map_ISO_8859_8_1999, map_ISO_8859_14_1998,
+  map_ISO_IR_182, map_ISO_IR_197, map_ISO_8859_8_1999, map_ISO_8859_14_1998,
   map_ISO_IR_200, map_ISO_IR_201, map_ISO_8859_15_1999, map_ISO_IR_204,
   map_ISO_IR_205, map_ISO_IR_206, map_SR_14111_1998, map_IS_434_1997,
   map_ISO_IR_209, map_ISO_8859_7_2003, map_SI_1311_2002, NULL, 
@@ -14099,7 +14112,7 @@ const struct charset_def charset_map[] = {
   { "isoir18", map_greek7_old, MODE_94 },                             /* :: iso-ir-18 */
   /* :: iso-ir-180 */
   /* :: iso-ir-181 */
-  /* :: iso-ir-182 */
+  { "isoir182", map_ISO_IR_182, MODE_96 },                            /* :: iso-ir-182 */
   /* :: iso-ir-183 */
   /* :: iso-ir-184 */
   /* :: iso-ir-185 */
@@ -14302,6 +14315,7 @@ const struct charset_def charset_map[] = {
   { "uk", map_BS_4730, MODE_94 },                                     /* :: uk */
   { "us", map_ANSI_X3_4_1968, MODE_94 },                              /* :: us */
   { "usascii", map_ANSI_X3_4_1968, MODE_94 },                         /* :: us-ascii */
+  { "welsh", map_ISO_IR_182, MODE_96 },                               /* :: welsh */
   { "x02017", map_JIS_C6220_1969_jp, MODE_94 },                       /* :: x0201-7 */
   { "x0208", map_JIS_C6226_1983, MODE_9494 },                         /* :: x0208 */
   { "x0212", map_JIS_X0212_1990, MODE_9494 },                         /* :: x0212 */
