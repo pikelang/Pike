@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cipher.cmod,v 1.41 2009/07/02 16:35:38 grubba Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -572,6 +572,12 @@ pike_des_set_key(void *c,
 
   if (!des_set_key(ctx, (const uint8_t *)key))
   {
+#ifndef DES_WEAK_KEY
+    /* Nettle 2.1 and later. */
+    if (!force)
+      Pike_error("DES_INFO: Key is weak.\n");
+#else
+    /* Nettle 2.0 and earlier. */
     switch (ctx->status)
     {
     case DES_WEAK_KEY:
@@ -589,6 +595,7 @@ pike_des_set_key(void *c,
     default:
       Pike_error("DES_INFO: Unexpected error, please send a bug report.\n");
     }
+#endif
   }
 }
 
@@ -747,6 +754,13 @@ pike_des3_set_key(void *c,
    * individual keys by ourself. */
   for (i = 0; i<3; i++, key += DES_KEY_SIZE)
     if (!des_set_key(&ctx->des[i], (const uint8_t *)key))
+    {
+#ifndef DES_WEAK_KEY
+      /* Nettle 2.1 and later. */
+      if (!force)
+	Pike_error("DES3_INFO: Key is weak.\n");
+#else
+      /* Nettle 2.0 and earlier. */
       switch (ctx->des[i].status)
       {
       case DES_WEAK_KEY:
@@ -763,6 +777,8 @@ pike_des3_set_key(void *c,
 	Pike_error("DES3_INFO: Key has bad parity.\n");
       default:
 	Pike_error("DES3_INFO: Unexpected error, please send a bug report.\n");
+      }
+#endif
     }
 }
 #define pike_des3_set_encrypt_key pike_des3_set_key
