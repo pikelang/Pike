@@ -1006,6 +1006,19 @@ static const UNICHAR map_ISO_8859_6_1999[] = {
   0x0648, 0x0649, 0x064a, 0x064b, 0x064c, 0x064d, 0x064e, 0x064f,
   0x0650, 0x0651, 0x0652, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
   0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, };
+static const UNICHAR map_ECMA_121[] = {
+  0x00a0, 0xfffd, 0x00a2, 0x00a3, 0x00a4, 0x00a5, 0x00a6, 0x00a7,
+  0x00a8, 0x00a9, 0x00d7, 0x00ab, 0x00ac, 0x00ad, 0x00ae, 0x00af,
+  0x00b0, 0x00b1, 0x00b2, 0x00b3, 0x00b4, 0x00b5, 0x00b6, 0x00b7,
+  0x00b8, 0x00b9, 0x00f7, 0x00bb, 0x00bc, 0x00bd, 0x00be, 0xfffd,
+  0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
+  0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
+  0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
+  0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0x2017,
+  0x05d0, 0x05d1, 0x05d2, 0x05d3, 0x05d4, 0x05d5, 0x05d6, 0x05d7,
+  0x05d8, 0x05d9, 0x05da, 0x05db, 0x05dc, 0x05dd, 0x05de, 0x05df,
+  0x05e0, 0x05e1, 0x05e2, 0x05e3, 0x05e4, 0x05e5, 0x05e6, 0x05e7,
+  0x05e8, 0x05e9, 0x05ea, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, };
 static const UNICHAR map_ISO_8859_8_1999[] = {
   0x00a0, 0xfffd, 0x00a2, 0x00a3, 0x00a4, 0x00a5, 0x00a6, 0x00a7,
   0x00a8, 0x00a9, 0x00d7, 0x00ab, 0x00ac, 0x00ad, 0x00ae, 0x00af,
@@ -11111,12 +11124,12 @@ const UNICHAR * const iso2022_94_2[] = {
 const UNICHAR * const iso2022_96[] = {
   map_ECMA_cyrillic, map_ISO_8859_1_1998, map_ISO_8859_2_1999, map_ISO_8859_3_1999, 
   map_ISO_8859_4_1998, map_CSA_Z243_4_1985_gr, map_ISO_8859_7_1987, map_ISO_8859_6_1999, 
-  map_ISO_8859_8_1999, map_CSN_369103, map_ISO_6937_2_add, map_IEC_P27_1, 
+  map_ECMA_121, map_CSN_369103, map_ISO_6937_2_add, map_IEC_P27_1,
   map_ISO_8859_5_1999, map_ISO_8859_9_1999, map_ISO_6937_2_25, map_GOST_19768_74, 
   map_ISO_8859_supp, map_ISO_10367_box, map_ISO_6937_2001, /*ISOIR164*/NULL, 
   /*ISOIR166*/NULL, /*ISOIR167*/NULL, map_ISO_8859_10_1998, NULL, 
   map_latin_lap, map_ISO_8859_13_1998, /*ISOIR180*/NULL, /*ISOIR181*/NULL, 
-  /*ISOIR182*/NULL, map_ISO_IR_197, /*ISOIR198*/NULL, map_ISO_8859_14_1998, 
+  /*ISOIR182*/NULL, map_ISO_IR_197, map_ISO_8859_8_1999, map_ISO_8859_14_1998,
   map_ISO_IR_200, map_ISO_IR_201, map_ISO_8859_15_1999, map_ISO_IR_204,
   map_ISO_IR_205, map_ISO_IR_206, map_SR_14111_1998, map_IS_434_1997,
   map_ISO_IR_209, map_ISO_8859_7_2003, map_SI_1311_2002, NULL, 
@@ -13842,6 +13855,7 @@ const struct charset_def charset_map[] = {
   { "e13b", map_ISO_2033_1983, MODE_94 },                             /* :: e13b */
   { "ecma114", map_ISO_8859_6_1999, MODE_96 },                        /* :: ecma-114 */
   { "ecma118", map_ISO_8859_7_1987, MODE_96 },                        /* :: ecma-118 */
+  { "ecma121", map_ECMA_121, MODE_96 },                               /* :: ecma-121 */
   { "ecmacyrillic", map_ECMA_cyrillic, MODE_96 },                     /* :: ecma-cyrillic */
   { "elot928", map_ISO_8859_7_1987, MODE_96 },                        /* :: elot_928 */
   { "es", map_ES, MODE_94 },                                          /* :: es */
@@ -14036,7 +14050,7 @@ const struct charset_def charset_map[] = {
   /* :: iso-ir-135 */
   /* :: iso-ir-136 */
   /* :: iso-ir-137 */
-  { "isoir138", map_ISO_8859_8_1999, MODE_96 },                       /* :: iso-ir-138 */
+  { "isoir138", map_ECMA_121, MODE_96 },                              /* :: iso-ir-138 */
   { "isoir139", map_CSN_369103, MODE_96 },                            /* :: iso-ir-139 */
   { "isoir14", map_JIS_C6220_1969_ro, MODE_94 },                      /* :: iso-ir-14 */
   /* :: iso-ir-140 */
@@ -14102,7 +14116,7 @@ const struct charset_def charset_map[] = {
   /* :: iso-ir-195 */
   /* :: iso-ir-196 */
   { "isoir197", map_ISO_IR_197, MODE_96 },                            /* :: iso-ir-197 */
-  /* :: iso-ir-198 */
+  { "isoir198", map_ISO_8859_8_1999, MODE_96 },                       /* :: iso-ir-198 */
   { "isoir199", map_ISO_8859_14_1998, MODE_96 },                      /* :: iso-ir-199 */
   { "isoir2", map_ISO_646_irv_1983, MODE_94 },                        /* :: iso-ir-2 */
   { "isoir200", map_ISO_IR_200, MODE_96 },                            /* :: iso-ir-200 */
