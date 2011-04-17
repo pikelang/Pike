@@ -229,6 +229,18 @@ static INT32 parse_esc(unsigned char *src, ptrdiff_t srclen,
   }
   if(src[l] >= 0x28 && src[l] < 0x30)
     grp = src[l++]-0x28;
+  /* FIXME: Consider supporting the general coding modes:
+   *
+   *   <ESC> 0x25 0x48		T.107, Videotex Data Syntax, ISO-IR 188.
+   *   <ESC> 0x64		CODING METHOD DELIMITER, ISO-IR 189.
+   *   <ESC> 0x25 0x2f 0x47     UTF-8, level 1, no std return, ISO-IR 190.
+   *   <ESC> 0x25 0x2f 0x48     UTF-8, level 2, no std return, ISO-IR 191.
+   *   <ESC> 0x25 0x2f 0x49     UTF-8, level 3, no std return, ISO-IR 192.
+   *   <ESC> 0x25 0x2f 0x4a	UTF-16, level 1, no std return, ISO-IR-193.
+   *   <ESC> 0x25 0x2f 0x4b	UTF-16, level 2, no std return, ISO-IR-194.
+   *   <ESC> 0x25 0x2f 0x4c	UTF-16, level 3, no std return, ISO-IR-195.
+   *   <ESC> 0x25 0x47		UTF-8, std return, ISO-IR 196.
+   */
   if(l>=srclen)
     return 0;
   if(grp<0 || ((src[l]<0x30 || src[l]>0x7e) && src[l] != 0x21))

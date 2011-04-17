@@ -14105,16 +14105,16 @@ const struct charset_def charset_map[] = {
   /* :: iso-ir-185 */
   /* :: iso-ir-186 */
   /* :: iso-ir-187 */
-  /* :: iso-ir-188 */
-  /* :: iso-ir-189 */
+  /* :: iso-ir-188: T.107 Videotex Data Syntax */
+  /* :: iso-ir-189: CODING METHOD DELIMITER */
   { "isoir19", map_latin_greek, MODE_94 },                            /* :: iso-ir-19 */
-  /* :: iso-ir-190 */
-  /* :: iso-ir-191 */
-  /* :: iso-ir-192 */
-  /* :: iso-ir-193 */
-  /* :: iso-ir-194 */
-  /* :: iso-ir-195 */
-  /* :: iso-ir-196 */
+  /* :: iso-ir-190: UTF-8 level 1 */
+  /* :: iso-ir-191: UTF-8 level 2 */
+  /* :: iso-ir-192: UTF-8 level 3 */
+  /* :: iso-ir-193: UTF-16 level 1 */
+  /* :: iso-ir-194: UTF-16 level 2 */
+  /* :: iso-ir-195: UTF-16 level 3 */
+  /* :: iso-ir-196: UTF-8 */
   { "isoir197", map_ISO_IR_197, MODE_96 },                            /* :: iso-ir-197 */
   { "isoir198", map_ISO_8859_8_1999, MODE_96 },                       /* :: iso-ir-198 */
   { "isoir199", map_ISO_8859_14_1998, MODE_96 },                      /* :: iso-ir-199 */
