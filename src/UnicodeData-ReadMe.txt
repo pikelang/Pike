@@ -1,14 +1,14 @@
 UNICODE CHARACTER DATABASE
-Version 5.1.0
+Version 6.0.0
 
- Revision           5.1.0
- Authors            Mark Davis and Ken Whistler
- Date               2008-03-25
- This Version       http://www.unicode.org/Public/5.1.0/ucd/
- Previous Version   http://www.unicode.org/Public/5.0.0/ucd/
+ Revision           6.0.0
+ Authors            Asmus Freytag and Mark Davis
+ Date               2010-06-25
+ This Version       http://www.unicode.org/Public/6.0.0/ucd/
+ Previous Version   http://www.unicode.org/Public/5.2.0/ucd/
  Latest Version     http://www.unicode.org/Public/UNIDATA/
 
-          Copyright © 1991-2007 Unicode, Inc. All Rights reserved.
+          Copyright © 1991-2010 Unicode, Inc. All Rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of the Unicode data files and any associated documentation (the
