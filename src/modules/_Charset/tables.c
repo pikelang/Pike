@@ -14063,9 +14063,9 @@ const struct charset_def charset_map[] = {
   { "isoir100", map_ISO_8859_1_1998, MODE_96 },                       /* :: iso-ir-100 */
   { "isoir101", map_ISO_8859_2_1999, MODE_96 },                       /* :: iso-ir-101 */
   { "isoir102", map_T_61_7bit, MODE_94 },                             /* :: iso-ir-102 */
-  /* :: iso-ir-103 */
+  /* :: iso-ir-103: Defined in misc.c. */
   /* :: iso-ir-104 */
-  /* :: iso-ir-105*/
+  /* :: iso-ir-105 */
   /* :: iso-ir-106 */
   /* :: iso-ir-107 */
   /* :: iso-ir-108: CSA T500-1983/ANSI X3.110-1983 (NAPLPS) */
@@ -14080,7 +14080,7 @@ const struct charset_def charset_map[] = {
   /* :: iso-ir-125: ISO 9040 Virtual Terminal Service Transparent Set */
   { "isoir126", map_ISO_8859_7_1987, MODE_96 },                       /* :: iso-ir-126 */
   { "isoir127", map_ISO_8859_6_1999, MODE_96 },                       /* :: iso-ir-127 */
-  /* :: iso-ir-128 */
+  /* :: iso-ir-128: Defined in misc.c. */
   /* :: iso-ir-129 */
   { "isoir13", map_JIS_C6220_1969_jp, MODE_94 },                      /* :: iso-ir-13 */
   /* :: iso-ir-130 */
@@ -14105,8 +14105,8 @@ const struct charset_def charset_map[] = {
   { "isoir148", map_ISO_8859_9_1999, MODE_96 },                       /* :: iso-ir-148 */
   { "isoir149", map_KS_C_5601_1987, MODE_9494 },                      /* :: iso-ir-149 */
   { "isoir15", map_IT, MODE_94 },                                     /* :: iso-ir-15 */
-  /* :: iso-ir-150 */
-  /* :: iso-ir-151 */
+  /* :: iso-ir-150: Defined in misc.c. */
+  /* :: iso-ir-151: Defined in misc.c. */
   { "isoir152", map_ISO_6937_2_25, MODE_96 },                         /* :: iso-ir-152 */
   { "isoir153", map_GOST_19768_74, MODE_96 },                         /* :: iso-ir-153 */
   { "isoir154", map_ISO_8859_supp, MODE_96 },                         /* :: iso-ir-154 */
@@ -14219,7 +14219,7 @@ const struct charset_def charset_map[] = {
   /* :: iso-ir-68 */
   { "isoir69", map_NF_Z_62_010, MODE_94 },                            /* :: iso-ir-69 */
   /* :: iso-ir-7: Only control characters. */
-  /* :: iso-ir-70 */
+  /* :: iso-ir-70: Defined in misc.c. */
   /* :: iso-ir-71 */
   /* :: iso-ir-72 */
   /* :: iso-ir-73 */
@@ -14235,7 +14235,7 @@ const struct charset_def charset_map[] = {
   { "isoir89", map_ASMO_449, MODE_94 },                               /* :: iso-ir-89 */
   { "isoir9-1", map_NATS_DANO, MODE_94 },                             /* :: iso-ir-9-1 */
   { "isoir9-2", map_NATS_DANO_ADD, MODE_94 },                         /* :: iso-ir-9-2 */
-  /* :: iso-ir-90 */
+  /* :: iso-ir-90: Defined in misc.c. */
   { "isoir91", map_JIS_C6229_1984_a, MODE_94 },                       /* :: iso-ir-91 */
   { "isoir92", map_JIS_C6229_1984_b, MODE_94 },                       /* :: iso-ir-92 */
   { "isoir93", map_JIS_C6229_1984_b_add, MODE_94 },                   /* :: iso-ir-93 */
@@ -14243,7 +14243,7 @@ const struct charset_def charset_map[] = {
   { "isoir95", map_JIS_C6229_1984_hand_add, MODE_94 },                /* :: iso-ir-95 */
   { "isoir96", map_JIS_C6229_1984_kana, MODE_94 },                    /* :: iso-ir-96 */
   { "isoir98", map_ISO_2033_1983, MODE_94 },                          /* :: iso-ir-98 */
-  /* :: iso-ir-99 */
+  /* :: iso-ir-99: Defined in misc.c. */
   { "isolatin2", map_ISO_8859_2_1999, MODE_96 },
   { "isolatin3", map_ISO_8859_3_1999, MODE_96 },
   { "isolatin4", map_ISO_8859_4_1998, MODE_96 },
