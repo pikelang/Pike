@@ -14066,7 +14066,7 @@ const struct charset_def charset_map[] = {
   /* :: iso-ir-105*/
   /* :: iso-ir-106 */
   /* :: iso-ir-107 */
-  /* :: iso-ir-108 */
+  /* :: iso-ir-108: CSA T500-1983/ANSI X3.110-1983 (NAPLPS) */
   { "isoir109", map_ISO_8859_3_1999, MODE_96 },                       /* :: iso-ir-109 */
   { "isoir11", map_SEN_850200_C, MODE_94 },                           /* :: iso-ir-11 */
   { "isoir110", map_ISO_8859_4_1998, MODE_96 },                       /* :: iso-ir-110 */
@@ -14075,14 +14075,14 @@ const struct charset_def charset_map[] = {
   { "isoir122", map_CSA_Z243_4_1985_2, MODE_94 },                     /* :: iso-ir-122 */
   { "isoir123", map_CSA_Z243_4_1985_gr, MODE_96 },                    /* :: iso-ir-123 */
   /* :: iso-ir-124 */
-  /* :: iso-ir-125 */
+  /* :: iso-ir-125: ISO 9040 Virtual Terminal Service Transparent Set */
   { "isoir126", map_ISO_8859_7_1987, MODE_96 },                       /* :: iso-ir-126 */
   { "isoir127", map_ISO_8859_6_1999, MODE_96 },                       /* :: iso-ir-127 */
   /* :: iso-ir-128 */
   /* :: iso-ir-129 */
   { "isoir13", map_JIS_C6220_1969_jp, MODE_94 },                      /* :: iso-ir-13 */
   /* :: iso-ir-130 */
-  /* :: iso-ir-131 */
+  /* :: iso-ir-131: CCITT T.101 Data Syntax I */
   /* :: iso-ir-132 */
   /* :: iso-ir-133 */
   /* :: iso-ir-134 */
@@ -14097,7 +14097,7 @@ const struct charset_def charset_map[] = {
   { "isoir142", map_ISO_6937_2_add, MODE_96 },                        /* :: iso-ir-142 */
   { "isoir143", map_IEC_P27_1, MODE_96 },                             /* :: iso-ir-143 */
   { "isoir144", map_ISO_8859_5_1999, MODE_96 },                       /* :: iso-ir-144 */
-  /* :: iso-ir-145 */
+  /* :: iso-ir-145: CCITT T.101 Data Syntax II */
   { "isoir146", map_JUS_I_B1_003_serb, MODE_94 },                     /* :: iso-ir-146 */
   { "isoir147", map_JUS_I_B1_003_mac, MODE_94 },                      /* :: iso-ir-147 */
   { "isoir148", map_ISO_8859_9_1999, MODE_96 },                       /* :: iso-ir-148 */
@@ -14114,10 +14114,10 @@ const struct charset_def charset_map[] = {
   { "isoir158", map_latin_lap, MODE_96 },                             /* :: iso-ir-158 */
   { "isoir159", map_JIS_X0212_1990, MODE_9494 },                      /* :: iso-ir-159 */
   { "isoir16", map_PT, MODE_94 },                                     /* :: iso-ir-16 */
-  /* :: iso-ir-160 */
-  /* :: iso-ir-161 */
-  /* :: iso-ir-162 */
-  /* :: iso-ir-163 */
+  /* :: iso-ir-160: CCITT T.101 Photo-Videotex Data Syntax */
+  /* :: iso-ir-161: CCITT T.101 Audio Data Syntax */
+  /* :: iso-ir-162: UCS-2, level 1 */
+  /* :: iso-ir-163: UCS-4, level 1 */
   /* :: iso-ir-164 */
   /* :: iso-ir-165 */
   /* :: iso-ir-166 */
@@ -14129,11 +14129,11 @@ const struct charset_def charset_map[] = {
   /* :: iso-ir-171 */
   /* :: iso-ir-172 */
   /* :: iso-ir-173 */
-  /* :: iso-ir-174 */
-  /* :: iso-ir-175 */
-  /* :: iso-ir-176 */
-  /* :: iso-ir-177 */
-  /* :: iso-ir-178 */
+  /* :: iso-ir-174: UCS-2, level 2 */
+  /* :: iso-ir-175: UCS-4, level 2 */
+  /* :: iso-ir-176: UCS-2, level 3 */
+  /* :: iso-ir-177: UCS-4, level 4 */
+  /* :: iso-ir-178: UTF-1 */
   { "isoir179", map_ISO_8859_13_1998, MODE_96 },                      /* :: iso-ir-179 */
   { "isoir18", map_greek7_old, MODE_94 },                             /* :: iso-ir-18 */
   { "isoir180", map_TCVN_5712_1993, MODE_96 },                        /* :: iso-ir-180 */
@@ -14144,7 +14144,7 @@ const struct charset_def charset_map[] = {
   /* :: iso-ir-185 */
   /* :: iso-ir-186 */
   /* :: iso-ir-187 */
-  /* :: iso-ir-188: T.107 Videotex Data Syntax */
+  /* :: iso-ir-188: CCITT T.107 Videotex Data Syntax */
   /* :: iso-ir-189: CODING METHOD DELIMITER */
   { "isoir19", map_latin_greek, MODE_94 },                            /* :: iso-ir-19 */
   /* :: iso-ir-190: UTF-8 level 1 */

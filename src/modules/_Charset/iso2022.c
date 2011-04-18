@@ -231,15 +231,29 @@ static INT32 parse_esc(unsigned char *src, ptrdiff_t srclen,
     grp = src[l++]-0x28;
   /* FIXME: Consider supporting the general coding modes:
    *
-   *   <ESC> 0x25 0x48		T.107, Videotex Data Syntax, ISO-IR 188.
-   *   <ESC> 0x64		CODING METHOD DELIMITER, ISO-IR 189.
-   *   <ESC> 0x25 0x2f 0x47     UTF-8, level 1, no std return, ISO-IR 190.
-   *   <ESC> 0x25 0x2f 0x48     UTF-8, level 2, no std return, ISO-IR 191.
-   *   <ESC> 0x25 0x2f 0x49     UTF-8, level 3, no std return, ISO-IR 192.
+   *   <ESC> 0x25 0x40		ISO-2022, ISO-IR 108, ISO-IR 178.
+   *   <ESC> 0x25 0x41		CSA T500/ANSI X3.110-1983 (NAPLPS), ISO-IR 108.
+   *   <ESC> 0x25 0x42		UTF-1, ISO-IR 178.
+   *   <ESC> 0x25 0x43		CCITT T.101, Data Syntax I, ISO-IR 131.
+   *   <ESC> 0x25 0x44		CCITT T.101, Data Syntax II, ISO-IR 145.
+   *   <ESC> 0x25 0x45		CCITT T.101, Photo Data Syntax, ISO-IR 160.
+   *   <ESC> 0x25 0x46		CCITT T.101, Audio Data Syntax, ISO-IR 161.
+   *   <ESC> 0x25 0x47		UTF-8, std return, ISO-IR 196.
+   *   <ESC> 0x25 0x48		CCITT T.107, Videotex Data Syntax, ISO-IR 188.
+   *   <ESC> 0x25 0x2f 0x40	USC-2, level 1, ISO-IR 162.
+   *   <ESC> 0x25 0x2f 0x41	USC-4, level 1, ISO-IR 163.
+   *   <ESC> 0x25 0x2f 0x42	Virtual Terminal Service, ISO-IR 125.
+   *   <ESC> 0x25 0x2f 0x43	UCS-2, level 2, ISO-IR 174.
+   *   <ESC> 0x25 0x2f 0x44	UCS-4, level 2, ISO-IR 175.
+   *   <ESC> 0x25 0x2f 0x45	UCS-2, level 3, ISO-IR 176.
+   *   <ESC> 0x25 0x2f 0x46	UCS-4, level 4, ISO-IR 177.
+   *   <ESC> 0x25 0x2f 0x47	UTF-8, level 1, no std return, ISO-IR 190.
+   *   <ESC> 0x25 0x2f 0x48	UTF-8, level 2, no std return, ISO-IR 191.
+   *   <ESC> 0x25 0x2f 0x49	UTF-8, level 3, no std return, ISO-IR 192.
    *   <ESC> 0x25 0x2f 0x4a	UTF-16, level 1, no std return, ISO-IR-193.
    *   <ESC> 0x25 0x2f 0x4b	UTF-16, level 2, no std return, ISO-IR-194.
    *   <ESC> 0x25 0x2f 0x4c	UTF-16, level 3, no std return, ISO-IR-195.
-   *   <ESC> 0x25 0x47		UTF-8, std return, ISO-IR 196.
+   *   <ESC> 0x64		CODING METHOD DELIMITER, ISO-IR 189.
    */
   if(l>=srclen)
     return 0;
