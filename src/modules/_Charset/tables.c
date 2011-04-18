@@ -13887,6 +13887,8 @@ const struct charset_def charset_map[] = {
   { "celtic", map_ISO_8859_14_1998, MODE_96 },                        /* :: celtic */
   { "chinese", map_GB_2312_80, MODE_9494 },                           /* :: chinese */
   { "cn", map_GB_1988_80, MODE_94 },                                  /* :: cn */
+  { "csaz2434", map_ANSI_X3_4_1968, MODE_94 },                        /* :: csa z243.4 */
+  { "csaz24341973", map_ANSI_X3_4_1968, MODE_94 },                    /* :: csa z243.4-1973 */
   { "cyrillic", map_ISO_8859_5_1999, MODE_96 },                       /* :: cyrillic */
   { "de", map_DIN_66003, MODE_94 },                                   /* :: de */
   { "din31624", map_DIN_31624, MODE_94 },
