@@ -13866,8 +13866,6 @@ const struct charset_def charset_map[] = {
   { "367", map_ANSI_X3_4_1968, MODE_94 },                             /* :: ibm367 */
   { "819", map_ISO_8859_1_1998, MODE_96 },                            /* :: ibm819 */
   { "950", map_CP950, MODE_BIG5 },                                    /* :: cp950 */
-  { "a71", map_CSA_Z243_4_1985_1, MODE_94 },                          /* :: csa7-1 */
-  { "a72", map_CSA_Z243_4_1985_2, MODE_94 },                          /* :: csa7-2 */
   { "ansel", map_ANSI_Z39_47, MODE_94 },                              /* :: ansel */
   { "ansix341968", map_ANSI_X3_4_1968, MODE_94 },                     /* :: ansi_x3.4-1968 */
   { "ansix341986", map_ANSI_X3_4_1968, MODE_94 },                     /* :: ansi_x3.4-1986 */
@@ -13877,9 +13875,6 @@ const struct charset_def charset_map[] = {
   { "ascii", map_ANSI_X3_4_1968, MODE_94 },                           /* :: ascii */
   { "asmo449", map_ASMO_449, MODE_94 },                               /* :: asmo_449 */
   { "asmo708", map_ISO_8859_6_1999, MODE_96 },                        /* :: asmo-708 */
-  { "az243419851", map_CSA_Z243_4_1985_1, MODE_94 },                  /* :: csa_z243.4-1985-1 */
-  { "az243419852", map_CSA_Z243_4_1985_2, MODE_94 },                  /* :: csa_z243.4-1985-2 */
-  { "az24341985gr", map_CSA_Z243_4_1985_gr, MODE_96 },                /* :: csa_z243.4-1985-gr */
   { "big5", map_BIG5, MODE_BIG5 },                                    /* :: big5 */
   { "bs4730", map_BS_4730, MODE_94 },                                 /* :: bs_4730 */
   { "bsviewdata", map_BS_viewdata, MODE_94 },                         /* :: bs_viewdata */
@@ -13887,8 +13882,13 @@ const struct charset_def charset_map[] = {
   { "celtic", map_ISO_8859_14_1998, MODE_96 },                        /* :: celtic */
   { "chinese", map_GB_2312_80, MODE_9494 },                           /* :: chinese */
   { "cn", map_GB_1988_80, MODE_94 },                                  /* :: cn */
-  { "csaz2434", map_ANSI_X3_4_1968, MODE_94 },                        /* :: csa z243.4 */
+  { "csa71", map_CSA_Z243_4_1985_1, MODE_94 },                        /* :: csa7-1 */
+  { "csa72", map_CSA_Z243_4_1985_2, MODE_94 },                        /* :: csa7-2 */
+  { "csaz2434", map_CSA_Z243_4_1985_1, MODE_94 },                     /* :: csa z243.4 */
   { "csaz24341973", map_ANSI_X3_4_1968, MODE_94 },                    /* :: csa z243.4-1973 */
+  { "csaz243419851", map_CSA_Z243_4_1985_1, MODE_94 },                /* :: csa_z243.4-1985-1 */
+  { "csaz243419852", map_CSA_Z243_4_1985_2, MODE_94 },                /* :: csa_z243.4-1985-2 */
+  { "csaz24341985gr", map_CSA_Z243_4_1985_gr, MODE_96 },              /* :: csa_z243.4-1985-gr */
   { "cyrillic", map_ISO_8859_5_1999, MODE_96 },                       /* :: cyrillic */
   { "de", map_DIN_66003, MODE_94 },                                   /* :: de */
   { "din31624", map_DIN_31624, MODE_94 },
