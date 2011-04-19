@@ -439,10 +439,14 @@ Decoder decoder(string name)
   if( (< "gb18030", "gbk", "936", "949" >)[ name ] )
     return MulticharDec(name);
 
-  if ((< "isoir81", "isoir82", "isoir91", "isoir92" >)[name] &&
-      has_suffix(orig_name, "-1")) {
-    // There are both ISO-IR-9-1 and ISO-IR-91...
-    name = name[..<1] + "-1";
+  if ((< "isoir81", "isoir82", "isoir91", "isoir92" >)[name]) {
+    if (has_suffix(orig_name, "-1")) {
+      // There are both ISO-IR-9-1 and ISO-IR-91...
+      name = name[..<1] + "-1";
+    } else if (has_suffix(orig_name, "-2")) {
+      // There are both ISO-IR-9-2 and ISO-IR-92...
+      name = name[..<1] + "-2";
+    }
   }
 
   Decoder o = rfc1345(name);
@@ -790,10 +794,14 @@ Encoder encoder(string name, string|void replacement,
 	 "eucpkdfmtjapanese" >)[ name ] )
     return EUCEnc("x0208", "eucpkdfmtjapanese", replacement, repcb);
 
-  if ((< "isoir81", "isoir82", "isoir91", "isoir92" >)[name] &&
-      has_suffix(orig_name, "-1")) {
-    // There are both ISO-IR-9-1 and ISO-IR-91...
-    name = name[..<1] + "-1";
+  if ((< "isoir81", "isoir82", "isoir91", "isoir92" >)[name]) {
+    if (has_suffix(orig_name, "-1")) {
+      // There are both ISO-IR-9-1 and ISO-IR-91...
+      name = name[..<1] + "-1";
+    } else if (has_suffix(orig_name, "-2")) {
+      // There are both ISO-IR-9-2 and ISO-IR-92...
+      name = name[..<1] + "-2";
+    }
   }
 
   Encoder o = rfc1345(name, 1, replacement, repcb);
