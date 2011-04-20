@@ -331,6 +331,87 @@ void do_async_method(string method,
 		     request_headers, data);
 }
 
+//! Low level asynchronous proxied HTTP call method.
+//!
+//! Makes an HTTP request through a proxy.
+//!
+//! @param proxy
+//!   URL for the proxy.
+//!
+//! @param user
+//! @param password
+//!   Proxy authentication credentials.
+//!
+//! @param method
+//!   The HTTP method to use, e.g. @expr{"GET"@}.
+//! @param url
+//!   The URL to perform @[method] on. Should be a complete URL,
+//!   including protocol, e.g. @expr{"https://pike.lysator.liu.se/"@}.
+//! @param query_variables
+//!   Calls @[http_encode_query] and appends the result to the URL.
+//! @param request_headers
+//!   The HTTP headers to be added to the request. By default the
+//!   headers User-agent, Host and, if needed by the url,
+//!   Authorization will be added, with generated contents.
+//!   Providing these headers will override the default. Setting
+//!   the value to 0 will remove that header from the request.
+//! @param con
+//!   Previously initialized connection object.
+//!   In particular the callbacks must have been set
+//!   (@[Query.set_callbacks()]).
+//! @param data
+//!   Data payload to be transmitted in the request.
+//!
+//! @seealso
+//!   @[do_async_method()], @[do_proxied_method()], @[Query.set_callbacks()]
+void do_async_proxied_method(string|Standards.URI proxy,
+			     string user, string password,
+			     string method,
+			     string|Standards.URI url,
+			     void|mapping(string:int|string|array(string)) query_variables,
+			     void|mapping(string:string|array(string)) request_headers,
+			     Protocols.HTTP.Query con, void|string data)
+{
+  // Make sure we don't propagate our changes to the
+  // url and proxy objects below to the caller.
+  proxy = Standards.URI(proxy);
+  url = Standards.URI(url);
+
+  if( (< "httpu", "httpmu" >)[url->scheme] ) {
+    error("Asynchronous httpu or httpmu not yet supported.\n");
+  }
+
+  mapping(string:string|array(string)) proxy_headers;
+
+  if( user || password )
+  {
+    if( !request_headers )
+      proxy_headers = ([]);
+    else
+      proxy_headers = request_headers + ([]);
+
+    proxy_headers["Proxy-Authorization"] = "Basic "
+      + MIME.encode_base64((user || "") + ":" + (password || ""));
+  }
+
+  if (url->scheme == "http") {
+    if( query_variables )
+      url->set_query_variables( url->get_query_variables() +
+				query_variables );
+    string web_url = (string)url;
+
+    // Note: url object is wrecked here
+    url->host = proxy->host;
+    url->port = proxy->port;
+    query_variables = url->query = 0;
+    url->path = web_url;
+  } else {
+    error("Can't handle proxying of %O.\n", url->scheme);
+  }
+
+  do_async_method(method, url, query_variables, proxy_headers, con, data);
+}
+
 //! Sends a HTTP GET request to the server in the URL and returns the
 //! created and initialized @[Query] object. @expr{0@} is returned
 //! upon failure. If a query object having
