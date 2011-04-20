@@ -61,6 +61,24 @@ constant TCN_VARIANT_NEGOTIATES	= 506; // RFC 2295 8.1: Variant Also Negotiates
 constant DAV_STORAGE_FULL	= 507; // RFC 2518 10.6: Insufficient Storage
 
 //! Makes an HTTP request through a proxy.
+//!
+//! @param proxy
+//!   URL for the proxy.
+//!
+//! @param user
+//! @param password
+//!   Proxy authentication credentials.
+//!
+//! @param method
+//! @param url
+//! @param query_variables
+//! @param request_headers
+//! @param con
+//! @param data
+//!   The remaining arguments are identical to @[do_method()].
+//!
+//! @seealso
+//!   @[do_method()], @[do_async_proxied_method()]
 .Query do_proxied_method(string|Standards.URI proxy,
                          string user, string password,
                          string method,
