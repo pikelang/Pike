@@ -401,14 +401,18 @@ protected void https_proxy_connect_ok(Protocols.HTTP.Query con,
 {
   con->set_callbacks(@orig_cb_info);
 
+  con->con->set_nonblocking(0,
+			    lambda() {
+			      do_async_method(method, url, query_variables,
+					      request_headers, con, data);
+			    }, con->async_failed);
+
   con->headers["connect"] = "keep-alive";
   con->headers["content-length"] = "0";
   con->host = url->host;
   con->port = url->port;
   con->https = 1;
-  con->start_tls(0, 1);
-
-  do_async_method(method, url, query_variables, request_headers, con, data);
+  con->start_tls(0);
 }
 
 //! Low level asynchronous proxied HTTP call method.
