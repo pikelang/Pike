@@ -342,7 +342,10 @@ string normalize(string in) {
   if( (out=="isoir91" || out=="isoir92") && in[-2]!='9')
     return sprintf("%s-%c", out[..<1], out[-1]);
 
-  sscanf(out, "cs%s", out);
+  if (has_prefix(out, "cs") && !has_prefix(out, "csaz")) {
+    // Leave CSA_Z alone, but handle csISO, CSASCII, etc.
+    out = out[2..];
+  }
 
   int cp;
   sscanf(out, "cp%d", cp) ||
