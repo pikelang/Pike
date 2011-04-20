@@ -69,34 +69,66 @@ constant DAV_STORAGE_FULL	= 507; // RFC 2518 10.6: Insufficient Storage
                          void|mapping(string:string|array(string)) request_headers,
                          void|Protocols.HTTP.Query con, void|string data)
 {
-  if( stringp(proxy) )
-    proxy = Standards.URI(proxy);
-  if( stringp(url) )
-    url = Standards.URI(url);
-  if( url->scheme != "http" ) error("No can do.\n");
+  // Make sure we don't propagate our changes to the
+  // url and proxy objects below to the caller.
+  proxy = Standards.URI(proxy);
+  url = Standards.URI(url);
 
-  if( query_variables )
-    url->set_query_variables( url->get_query_variables() +
-                              query_variables );
-  string web_url = (string)url;
-
-  // Note: url object is wrecked here
-  url->host = proxy->host;
-  url->port = proxy->port;
-  url->query = 0;
-  url->path = web_url;
-
+  mapping(string:string|array(string)) proxy_headers;
 
   if( user || password )
   {
     if( !request_headers )
-      request_headers = ([]);
-    request_headers["Proxy-Authorization"] = "Basic "
-      + MIME.encode_base64(url->user + ":" +
-                           (url->password || ""));
+      proxy_headers = ([]);
+    else
+      proxy_headers = request_headers + ([]);
+
+    proxy_headers["Proxy-Authorization"] = "Basic "
+      + MIME.encode_base64((user || "") + ":" + (password || ""));
   }
 
-  return do_method(method, url, 0, request_headers, con, data);
+  if (url->scheme == "http") {
+    if( query_variables )
+      url->set_query_variables( url->get_query_variables() +
+				query_variables );
+    string web_url = (string)url;
+
+    // Note: url object is wrecked here
+    url->host = proxy->host;
+    url->port = proxy->port;
+    query_variables = url->query = 0;
+    url->path = web_url;
+#if constant(SSL.sslfile)
+  } else if (url->scheme == "https") {
+#ifdef HTTP_QUERY_DEBUG
+    werror("Proxied SSL request.\n");
+#endif
+    if (!con || (con->host != url->host) || (con->port != url->port)) {
+      // Make a CONNECT request to the proxy,
+      // and use keep-alive to stack the real request on top.
+      proxy->path = url->host + ":" + url->port;
+      if (!proxy_headers) proxy_headers = ([]);
+      proxy_headers->connection = "keep-alive";
+      m_delete(proxy_headers, "authorization");	// Keep the proxy in the dark.
+      con = do_method("CONNECT", proxy, 0, proxy_headers);
+      con->data(0);
+      if (con->status/100 > 2) {
+	return con;
+      }
+      con->headers["connect"] = "keep-alive";
+      con->headers["content-length"] = "0";
+      con->host = url->host;
+      con->port = url->port;
+      con->https = 1;
+      con->start_tls(1);
+    }
+    proxy_headers = request_headers;
+#endif
+  } else {
+    error("Can't handle proxying of %O.\n", url->scheme);
+  }
+
+  return do_method(method, url, query_variables, proxy_headers, con, data);
 }
 
 //! Low level HTTP call method.
@@ -331,6 +363,36 @@ void do_async_method(string method,
 		     request_headers, data);
 }
 
+protected void https_proxy_connect_fail(Protocols.HTTP.Query con,
+					array(mixed) orig_cb_info,
+					Standards.URI url, string method,
+					mapping(string:string) query_variables,
+					mapping(string:string) request_headers,
+					string data)
+{
+  con->set_callbacks(@orig_cb_info);
+  con->request_fail(con, @con->extra_args);
+}
+
+protected void https_proxy_connect_ok(Protocols.HTTP.Query con,
+				      array(mixed) orig_cb_info,
+				      Standards.URI url, string method,
+				      mapping(string:string) query_variables,
+				      mapping(string:string) request_headers,
+				      string data)
+{
+  con->set_callbacks(@orig_cb_info);
+
+  con->headers["connect"] = "keep-alive";
+  con->headers["content-length"] = "0";
+  con->host = url->host;
+  con->port = url->port;
+  con->https = 1;
+  con->start_tls(0, 1);
+
+  do_async_method(method, url, query_variables, request_headers, con, data);
+}
+
 //! Low level asynchronous proxied HTTP call method.
 //!
 //! Makes an HTTP request through a proxy.
@@ -405,6 +467,38 @@ void do_async_proxied_method(string|Standards.URI proxy,
     url->port = proxy->port;
     query_variables = url->query = 0;
     url->path = web_url;
+#if constant(SSL.sslfile)
+  } else if(url->scheme == "https") {
+#ifdef HTTP_QUERY_DEBUG
+    werror("Proxied SSL request.\n");
+#endif
+    if (!con || (con->host != url->host) || (con->port != url->port)) {
+      // Make a CONNECT request to the proxy,
+      // and use keep-alive to stack the real request on top.
+      proxy->path = url->host + ":" + url->port;
+      if (!proxy_headers) proxy_headers = ([]);
+      proxy_headers->connection = "keep-alive";
+      m_delete(proxy_headers, "authorization");	// Keep the proxy in the dark.
+
+      array(mixed) orig_cb_info = ({
+	con->request_ok,
+	con->request_fail,
+	@con->extra_args,
+      });
+      con->set_callbacks(https_proxy_connect_ok,
+			 https_proxy_connect_fail,
+			 orig_cb_info,
+			 url, method,
+			 query_variables,
+			 request_headers && request_headers + ([]),
+			 data);
+      method = "CONNECT";
+      url = proxy;
+      data = 0;
+    } else {
+      proxy_headers = request_headers;
+    }
+#endif
   } else {
     error("Can't handle proxying of %O.\n", url->scheme);
   }
