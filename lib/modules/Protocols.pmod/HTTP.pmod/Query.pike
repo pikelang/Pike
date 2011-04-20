@@ -170,6 +170,43 @@ protected void close_connection()
   con->close();
 }
 
+void start_tls(int|void blocking, int|void async)
+{
+#ifdef HTTP_QUERY_DEBUG
+  werror("start_tls(%d)\n", blocking);
+#endif
+#if constant(SSL.Cipher.CipherAlgorithm)
+  // Create a context
+  SSL.context context = SSL.context();
+  // Allow only strong crypto
+  context->preferred_suites -= ({
+    //Weaker ciphersuites.
+    SSL_rsa_export_with_rc4_40_md5,
+    SSL_rsa_export_with_rc2_cbc_40_md5,
+    SSL_rsa_export_with_des40_cbc_sha,
+  });
+  context->random = Crypto.Random.random_string;
+
+  object read_callback=con->query_read_callback();
+  object write_callback=con->query_write_callback();
+  object close_callback=con->query_close_callback();
+
+  ssl = SSL.sslfile(con, context, 1,blocking);
+  if(!blocking) {
+    if (async) {
+      ssl->set_nonblocking(0,async_connected,async_failed);
+    } else {
+      ssl->set_read_callback(read_callback);
+      ssl->set_write_callback(write_callback);
+      ssl->set_close_callback(close_callback);
+    }
+  }
+  con=ssl;
+#else
+  error ("HTTPS not supported (Nettle support is required).\n");
+#endif
+}
+
 protected void connect(string server,int port,int blocking)
 {
 #ifdef HTTP_QUERY_DEBUG
@@ -198,32 +235,7 @@ protected void connect(string server,int port,int blocking)
 #endif
 
    if(https) {
-#if constant(SSL.Cipher.CipherAlgorithm)
-     // Create a context
-     SSL.context context = SSL.context();
-     // Allow only strong crypto
-     context->preferred_suites -= ({
-       //Weaker ciphersuites.
-       SSL_rsa_export_with_rc4_40_md5,
-       SSL_rsa_export_with_rc2_cbc_40_md5,
-       SSL_rsa_export_with_des40_cbc_sha,
-     });
-     context->random = Crypto.Random.random_string;
-
-     object read_callback=con->query_read_callback();
-     object write_callback=con->query_write_callback();
-     object close_callback=con->query_close_callback();
-
-     ssl = SSL.sslfile(con, context, 1,blocking);
-     if(!blocking) {
-       ssl->set_read_callback(read_callback);
-       ssl->set_write_callback(write_callback);
-       ssl->set_close_callback(close_callback);
-     }
-     con=ssl;
-#else
-     error ("HTTPS not supported (Nettle support is required).\n");
-#endif
+     start_tls(blocking);
    }
 
    if (con->write(request) != sizeof (request)) {
@@ -331,25 +343,7 @@ void async_got_host(string server,int port)
 			if (success) {
 			  // Connect ok.
 			  if(https) {
-#if constant(SSL.Cipher.CipherAlgorithm)
-			    //Create a context
-			    SSL.context context = SSL.context();
-			    // Allow only strong crypto
-			    context->preferred_suites = ({
-			      SSL_rsa_with_idea_cbc_sha,
-			      SSL_rsa_with_rc4_128_sha,
-			      SSL_rsa_with_rc4_128_md5,
-			      SSL_rsa_with_3des_ede_cbc_sha,
-			    });
-			    context->random = Crypto.Random.random_string;
-
-			    ssl = SSL.sslfile(con, context, 1,0);
-			    ssl->set_nonblocking(0,async_connected,async_failed);
-			    con=ssl;
-#else
-			    error ("HTTPS not supported "
-				   "(Nettle support is required).\n");
-#endif
+			    start_tls(0, 1);
 			  }
 			  else
 			    async_connected();
