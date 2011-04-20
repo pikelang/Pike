@@ -61,6 +61,12 @@ int timeout = 120;	// seconds
 #endif
 int(0..1) https = 0;
 
+//! Connected host and port.
+//!
+//! Used to detect whether keep-alive can be used.
+string host;
+int port;
+
 object con;
 string request;
 protected string send_buffer;
@@ -625,13 +631,12 @@ this_program sync_request(string server, int port, string query,
 			  void|string data)
 {
   int kept_alive;
-  string ip = dns_lookup( server );
-  if(ip) server = ip; // cheaty, if host doesn't exist
 
   // start open the connection
 
   if(con && con->is_open() &&
-     con->query_address() == server + " " + port &&
+     this_program::host == server &&
+     this_program::port == port &&
      headers && headers->connection &&
      lower_case( headers->connection ) != "close")
   {
@@ -644,13 +649,26 @@ this_program sync_request(string server, int port, string query,
   }
   else
   {
+#ifdef HTTP_QUERY_DEBUG
+    werror("** Starting new connection to %O:%d.\n"
+	   "   con: %O (%d)\n"
+	   "   Previously connected to %O:%d\n",
+	   server, port, con, con && con->is_open(),
+	   this_program::host, this_program::port);
+#endif
     close_connection();	// Close any old connection.
+
+    string ip = dns_lookup( server );
+    if(ip) server = ip; // cheaty, if host doesn't exist
+
     con = Stdio.File();
     if(!con->open_socket(-1, 0, server)) {
       int errno = con->errno();
       con = 0;
       error("HTTP.Query(): can't open socket; "+strerror(errno)+"\n");
     }
+    this_program::host = server;
+    this_program::port = port;
   }
 
   // prepare the request
@@ -743,8 +761,13 @@ this_program async_request(string server,int port,string query,
 
    send_buffer = request = query+"\r\n"+headers+"\r\n"+data;
 
-   if (!con)
+   if (!con || !con->is_open() || this_program::host != server ||
+       this_program::port != port || !headers || !headers->connection ||
+       lower_case(headers->connection) == "close")
    {
+      close_connection();
+      this_program::host = server;
+      this_program::port = port;
       dns_lookup_async(server,async_got_host,port);
       return this;
    }
