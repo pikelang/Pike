@@ -342,8 +342,9 @@ string normalize(string in) {
   if( (out=="isoir91" || out=="isoir92") && in[-2]!='9')
     return sprintf("%s-%c", out[..<1], out[-1]);
 
-  if (has_prefix(out, "cs") && !has_prefix(out, "csaz")) {
-    // Leave CSA_Z alone, but handle csISO, CSASCII, etc.
+  if (has_prefix(out, "cs") && !has_prefix(out, "csaz") &&
+      !has_prefix(out, "csa7")) {
+    // Leave CSA_Z and CSA7 alone, but handle csISO, CSASCII, etc.
     out = out[2..];
   }
 
