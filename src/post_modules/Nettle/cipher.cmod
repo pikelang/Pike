@@ -26,12 +26,12 @@ DECLARATIONS
 
 #include <nettle/aes.h>
 #include <nettle/arcfour.h>
-#ifdef HAVE_BLOWFISH_DECRYPT
+#ifdef HAVE_NETTLE_BLOWFISH_DECRYPT
 #include <nettle/blowfish.h>
 #endif
 #include <nettle/des.h>
 #include <nettle/cast128.h>
-#ifdef HAVE_SERPENT_DECRYPT
+#ifdef HAVE_NETTLE_SERPENT_DECRYPT
 #include <nettle/serpent.h>
 #endif
 #include <nettle/twofish.h>
@@ -447,7 +447,7 @@ PIKECLASS ARCFOUR_State
 }
 /*! @endclass ARCFOUR_State */
 
-#ifdef HAVE_BLOWFISH_DECRYPT
+#ifdef HAVE_NETTLE_BLOWFISH_DECRYPT
 
 static void
 pike_blowfish_set_key(void *ctx,
@@ -504,7 +504,7 @@ PIKECLASS BLOWFISH_State
 }
 /*! @endclass BLOWFISH_State */
 
-#endif	/* HAVE_BLOWFISH_DECRYPT */
+#endif	/* HAVE_NETTLE_BLOWFISH_DECRYPT */
 
 static void
 pike_cast128_set_key(void *ctx,
@@ -881,7 +881,7 @@ PIKECLASS DES3_State
 }
 /*! @endclass DES3_State */
 
-#ifdef HAVE_SERPENT_DECRYPT
+#ifdef HAVE_NETTLE_SERPENT_DECRYPT
 
 static void
 pike_serpent_set_key(void *ctx,
@@ -937,7 +937,7 @@ PIKECLASS Serpent_State
 }
 /*! @endclass Serpent_State */
 
-#endif	/* HAVE_SERPENT_DECRYPT */
+#endif	/* HAVE_NETTLE_SERPENT_DECRYPT */
 
 static void
 pike_twofish_set_key(void *ctx,
