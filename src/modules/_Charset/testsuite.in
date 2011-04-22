@@ -1,5 +1,5 @@
 START_MARKER
-// $Id: testsuite.in,v 1.20 2010/05/21 14:09:32 jonasw Exp $
+// $Id$
 
 // Locale.Charset.decoder
 test_true([[objectp(Locale.Charset)]])
@@ -20,6 +20,11 @@ test_eq([[Locale.Charset.decoder("iso-ir-126")->feed("abcåäö")->drain()]],
 test_eq([[Locale.Charset.decoder("iso-2022")->
 	feed("\033-Aeäv\016ed\017v\033$(BF|K\\\033(Bfoo")->drain()]],
 	"eävåäv\x65e5\x672c""foo")
+// Verify that characters mapping to multiple UTF-16 characters work.
+// ISO-IR 233 aka JIS X0213.
+test_eq([[Locale.Charset.decoder("iso-2022")->
+	feed("\e$(Q$w%wy)")->drain()]],
+	"\u304b\u309a\u30ab\u309a\U0002550e")
 
 // 2022 variants
 test_eq([[Locale.Charset.encoder("iso-2022-jp")->
@@ -422,6 +427,8 @@ test_codec(ISO_10367-box,iso-ir-155,csISO10367Box)
 test_codec(ISO-8859-10,iso-ir-157,l6,ISO_8859-10:1992,csISOLatin6,latin6)
 test_codec(latin-lap,lap,iso-ir-158,csISO158Lap)
 test_codec(JIS_X0212-1990,x0212,iso-ir-159,csISO159JISX02121990)
+test_codec(JIS_X0213-2000,iso-ir-228)
+test_codec(JIS_X0213-2004,iso-ir-233)
 test_codec(DS_2089,DS2089,ISO646-DK,dk,csISO646Danish)
 dnl test_codec(us-dk,csUSDK)
 dnl test_codec(dk-us,csDKUS)
