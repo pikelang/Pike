@@ -491,7 +491,6 @@ testfont binary
 /src/modules/Yp/configure.in foreign_ident
 /src/modules/Yp/module.pmod.in foreign_ident
 /src/modules/Yp/yp.c foreign_ident
-/src/modules/_Charset/Makefile.in foreign_ident
 /src/modules/_Charset/acconfig.h foreign_ident
 /src/modules/_Charset/configure.in foreign_ident
 /src/modules/_Charset/make_gb18030_h.pike foreign_ident

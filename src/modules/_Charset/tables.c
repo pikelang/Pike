@@ -11126,6 +11126,9 @@ static const UNICHAR map_CP950[] = {
   0x2555, 0x255e, 0x256a, 0x2561, 0x2558, 0x2567, 0x255b, 0x2553,
   0x2565, 0x2556, 0x255f, 0x256b, 0x2562, 0x2559, 0x2568, 0x255c,
   0x2551, 0x2550, 0x256d, 0x256e, 0x2570, 0x256f, 0x2593, };
+
+#include "jisx0213_tables.h"
+
 const UNICHAR * const iso2022_94[] = {
   map_ISO_646_irv_1983, map_BS_4730, map_ANSI_X3_4_1968, map_NATS_SEFI, 
   map_NATS_SEFI_ADD, map_NATS_DANO, map_NATS_DANO_ADD, map_SEN_850200_B, 
@@ -11181,8 +11184,8 @@ const UNICHAR * const iso2022_9494[] = {
   map_JIS_C6226_1978, map_GB_2312_80, map_JIS_C6226_1983, map_KS_C_5601_1987, 
   map_JIS_X0212_1990, /*ISOIR165*/NULL, /*ISOIR169*/NULL, /*ISOIR171*/NULL, 
   /*ISOIR172*/NULL, /*ISOIR183*/NULL, /*ISOIR184*/NULL, /*ISOIR185*/NULL, 
-  /*ISOIR186*/NULL, /*ISOIR187*/NULL, /*ISOIR202*/NULL, /*ISOIR228*/NULL, 
-  /*ISOIR229*/NULL, /*ISOIR233*/NULL, NULL, NULL, 
+  /*ISOIR186*/NULL, /*ISOIR187*/NULL, /*ISOIR202*/NULL, map_JISX0213_2000_1,
+  map_JISX0213_2000_2, map_JISX0213_2004_1, NULL, NULL,
   NULL, NULL, NULL, NULL, 
   NULL, NULL, NULL, NULL, 
   NULL, NULL, NULL, NULL };
@@ -14174,12 +14177,12 @@ const struct charset_def charset_map[] = {
   { "isoir216", map_ISO_6438, MODE_94 },
   { "isoir226", map_SR_14111_1998, MODE_96 },                         /* :: iso-ir-226 */
   { "isoir227", map_ISO_8859_7_2003, MODE_96 },                       /* :: iso-ir-227 */
-  /* :: iso-ir-228 */
-  /* :: iso-ir-229 */
+  { "isoir228", map_JIS_X0213_2000_1, MODE_9494 },                    /* :: iso-ir-228 */
+  { "isoir229", map_JIS_X0213_2000_2, MODE_9494 },                    /* :: iso-ir-229 */
   { "isoir230", map_TDS_565, MODE_94 },                               /* :: iso-ir-230 */
   { "isoir231", map_ANSI_Z39_47, MODE_94 },                           /* :: iso-ir-231 */
   { "isoir232", map_TDS_616_2003, MODE_94 },                          /* :: iso-ir-232 */
-  /* :: iso-ir-233 */
+  { "isoir233", map_JIS_X0213_2004_1, MODE_9494 },                    /* :: iso-ir-233 */
   { "isoir234", map_SI_1311_2002, MODE_96 },                          /* :: iso-ir-234 */
   { "isoir25", map_NF_Z_62_010_1973, MODE_94 },                       /* :: iso-ir-25 */
   /* :: iso-ir-26: Only control characters. */
@@ -14268,6 +14271,9 @@ const struct charset_def charset_map[] = {
   { "jisc62291984kana", map_JIS_C6229_1984_kana, MODE_94 },           /* :: jis_c6229-1984-kana */
   { "jisx02081983", map_JIS_C6226_1983, MODE_9494 },                  /* :: jis_x0208-1983 */
   { "jisx02121990", map_JIS_X0212_1990, MODE_9494 },                  /* :: jis_x0212-1990 */
+  { "jisx0213", map_JIS_X0213_2004_1, MODE_9494 },                    /* :: jis_x0213-2004 */
+  { "jisx02132000", map_JIS_X0213_2000_1, MODE_9494 },                /* :: jis_x0213-2000 */
+  { "jisx02132004", map_JIS_X0213_2004_1, MODE_9494 },                /* :: jis_x0213-2004 */
   { "jp", map_JIS_C6220_1969_ro, MODE_94 },                           /* :: jp */
   { "jpocra", map_JIS_C6229_1984_a, MODE_94 },                        /* :: jp-ocr-a */
   { "jpocrb", map_JIS_C6229_1984_b, MODE_94 },                        /* :: jp-ocr-b */
