@@ -9,7 +9,21 @@
 
 /* Updates can be found at http://www.itscj.ipsj.or.jp/ISO-IR/ */
 
-/*
+/* Table encoding notes
+ * ====================
+ *
+ * Surrogates and UTF-16
+ * ---------------------
+ *
+ * When a character needs to be mapped to multiple UTF-16 characters,
+ * this is done by having a set of NUL-terminated UTF-16 strings
+ * after the main table, and using a character in the surrogate block
+ * (0xd800 - 0xdfff) to encode the offset to the string from the main
+ * table. This is currently only used by the JIS X0213 tables.
+ *
+ * Private characters
+ * ------------------
+ *
  * The private characters used by RFC1345 have been mapped as follows:
  *
  * RFC1345	Pike	Name

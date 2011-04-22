@@ -1430,6 +1430,33 @@ static struct std16e_stor *push_std_16bite(int args, int allargs, int lo, int hi
   return s16;
 }
 
+/* Feed a NUL-terminated string of UNICHARs possibly containing surrogates. */
+static void feed_unistr(const UNICHAR *unistr, struct std_cs_stor *s)
+{
+  UNICHAR uc;
+  while ((uc = *(unistr++))) {
+    if ((uc & 0xf800) == 0xd800) {
+      /* Surrogate. */
+      p_wchar2 wchar = uc & 0x03ff;
+      if (!(uc & 0x0400)) {
+	/* High order 10 bits. */
+	wchar <<= 10;
+      }
+      uc = *(unistr++);
+      if (uc & 0x0400) {
+	/* Low order 10 bits. */
+	wchar |= (uc & 0x3ff);
+      } else {
+	/* High order 10 bits. */
+	wchar |= (uc & 0x3ff) << 10;
+      }
+      string_builder_putchar(&s->strbuild, wchar + 0x00010000);
+    } else {
+      string_builder_putchar(&s->strbuild, uc);
+    }
+  }
+}
+
 static void f_rfc1345(INT32 args)
 {
   struct pike_string *str;
@@ -1588,8 +1615,16 @@ static ptrdiff_t feed_94(struct pike_string *str, struct std_cs_stor *s)
     p_wchar0 x = *p++;
     if(x<=0x20 || x>=0x7f)
       string_builder_putchar(&s->strbuild, x);
-    else if (table[x-0x21] != 0xe000)
-      string_builder_putchar(&s->strbuild, table[x-0x21]);
+    else {
+      UNICHAR uc = table[x-0x21];
+      if ((uc & 0xf800) == 0xd800) {
+	/* We use the surrogate block as an offset after the 94 table
+	 * to a NUL-terminated string of UNICHARs, for the case where
+	 * the mapping doesn't fit in a single UNICHAR. */
+	feed_unistr(table + 94 + (uc & 0x07ff), s);
+      } else if (uc != 0xe000)
+	string_builder_putchar(&s->strbuild, uc);
+    }
   }
   return 0;
 }
@@ -1609,8 +1644,16 @@ static ptrdiff_t feed_96(struct pike_string *str, struct std_cs_stor *s)
     p_wchar0 x = *p++;
     if(x<0xa0)
       string_builder_putchar(&s->strbuild, x);
-    else if (table[x-0xa0] != 0xe000)
-      string_builder_putchar(&s->strbuild, table[x-0xa0]);
+    else {
+      UNICHAR uc = table[x-0xa0];
+      if ((uc & 0xf800) == 0xd800) {
+	/* We use the surrogate block as an offset after the 96 table
+	 * to a NUL-terminated string of UNICHARs, for the case where
+	 * the mapping doesn't fit in a single UNICHAR. */
+	feed_unistr(table + 96 + (uc & 0x07ff), s);
+      } else if (uc != 0xe000)
+	string_builder_putchar(&s->strbuild, table[x-0xa0]);
+    }
   }
   return 0;
 }
@@ -1633,10 +1676,17 @@ static ptrdiff_t feed_9494(struct pike_string *str, struct std_cs_stor *s)
     else if(l==0)
       return 1;
     else if((y=(*p)&0x7f)>0x20 && y<0x7f) {
+      UNICHAR uc;
       --l;
       p++;
-      if (table[(x-0x21)*94+(y-0x21)] != 0xe000) {
-	string_builder_putchar(&s->strbuild, table[(x-0x21)*94+(y-0x21)]);
+      uc = table[(x-0x21)*94+(y-0x21)];
+      if ((uc & 0xf800) == 0xd800) {
+	/* We use the surrogate block as an offset after the 9494 table
+	 * to a NUL-terminated string of UNICHARs, for the case where
+	 * the mapping doesn't fit in a single UNICHAR. */
+	feed_unistr(table + 94*94 + (uc & 0x07ff), s);
+      } else if (uc != 0xe000) {
+	string_builder_putchar(&s->strbuild, uc);
       }
     } else {
       string_builder_putchar(&s->strbuild, x);
@@ -1663,9 +1713,16 @@ static ptrdiff_t feed_9696(struct pike_string *str, struct std_cs_stor *s)
     else if(l==0)
       return 1;
     else if((y=(*p)&0x7f)>=0x20) {
+      UNICHAR uc;
       --l;
       p++;
-      if (table[(x-0x20)*96+(y-0x20)] != 0xe000) {
+      uc = table[(x-0x20)*96+(y-0x20)];
+      if ((uc & 0xf800) == 0xd800) {
+	/* We use the surrogate block as an offset after the 9696 table
+	 * to a NUL-terminated string of UNICHARs, for the case where
+	 * the mapping doesn't fit in a single UNICHAR. */
+	feed_unistr(table + 96*96 + (uc & 0x07ff), s);
+      } else if (uc != 0xe000) {
 	string_builder_putchar(&s->strbuild, table[(x-0x20)*96+(y-0x20)]);
       }
     } else {
