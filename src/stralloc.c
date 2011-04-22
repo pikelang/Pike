@@ -2551,6 +2551,34 @@ PMOD_EXPORT void string_builder_fill(struct string_builder *s,
   s->s->str[s->s->len << s->s->size_shift] = 0;
 }
 
+/* Append a NUL-terminated UTF16 string possibly containing surrogates. */
+PMOD_EXPORT void string_builder_utf16_strcat(struct string_builder *s,
+					     const p_wchar1 *utf16str)
+{
+  p_wchar1 uc;
+  while ((uc = *(utf16str++))) {
+    if ((uc & 0xf800) == 0xd800) {
+      /* Surrogate. */
+      p_wchar2 wchar = uc & 0x03ff;
+      if (!(uc & 0x0400)) {
+	/* High order 10 bits. */
+	wchar <<= 10;
+      }
+      uc = *(utf16str++);
+      if (uc & 0x0400) {
+	/* Low order 10 bits. */
+	wchar |= (uc & 0x3ff);
+      } else {
+	/* High order 10 bits. */
+	wchar |= (uc & 0x3ff) << 10;
+      }
+      string_builder_putchar(s, wchar + 0x00010000);
+    } else {
+      string_builder_putchar(s, uc);
+    }
+  }
+}
+
 PMOD_EXPORT void string_builder_strcat(struct string_builder *s, char *str)
 {
   string_builder_binary_strcat(s,str,strlen(str));

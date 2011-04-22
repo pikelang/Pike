@@ -363,6 +363,8 @@ PMOD_EXPORT void string_builder_fill(struct string_builder *s,
 				     PCHARP from,
 				     ptrdiff_t len,
 				     ptrdiff_t offset);
+PMOD_EXPORT void string_builder_utf16_strcat(struct string_builder *s,
+					     const p_wchar1 *utf16str);
 PMOD_EXPORT void string_builder_strcat(struct string_builder *s, char *str);
 PMOD_EXPORT void string_builder_shared_strcat(struct string_builder *s, struct pike_string *str);
 PMOD_EXPORT ptrdiff_t string_builder_quote_string(struct string_builder *buf,
