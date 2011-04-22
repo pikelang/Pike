@@ -111,16 +111,33 @@ static ptrdiff_t eat_text(unsigned char *src, ptrdiff_t srclen,
       char x = (*src++)&0x7f;
       if(x==0x20 || x==0x7f)
 	EMIT((UNICHAR)x);
-      else if (g->transl[x-0x21] != 0xe000)
-	EMIT(g->transl[x-0x21]);
+      else {
+	UNICHAR uc = g->transl[x-0x21];
+	if ((uc & 0xf800) == 0xd800) {
+	  /* We use the surrogate block as an offset after the 94 table
+	   * to a NUL-terminated string of UNICHARs, for the case where
+	   * the mapping doesn't fit in a single UNICHAR. */
+	  string_builder_utf16_strcat(&s->strbuild,
+				      g->transl + 94 + (uc & 0x07ff));
+	} else if (uc != 0xe000)
+	  EMIT(uc);
+      }
     }
     return 0;
     break;
   case MODE_96:
     while(srclen--) {
       UNICHAR c;
-      if ((c = g->transl[((*src++)&0x7f)-0x20]) != 0xe000)
-	EMIT(c);
+      if ((c = g->transl[((*src++)&0x7f)-0x20]) != 0xe000) {
+	if ((c & 0xf800) == 0xd800) {
+	  /* We use the surrogate block as an offset after the 96 table
+	   * to a NUL-terminated string of UNICHARs, for the case where
+	   * the mapping doesn't fit in a single UNICHAR. */
+	  string_builder_utf16_strcat(&s->strbuild,
+				      g->transl + 96 + (c & 0x07ff));
+	} else
+	  EMIT(c);
+      }
     }
     return 0;
     break;
@@ -129,8 +146,15 @@ static ptrdiff_t eat_text(unsigned char *src, ptrdiff_t srclen,
       char hi, lo;
       if ((hi = (*src++)&0x7f)!=0x20 && hi != 0x7f &&
 	  (lo = (*src)&0x7f)!=0x20 && lo != 0x7f) {
-	if (g->transl[(hi-0x21)*94+(lo-0x21)] != 0xe000)
-	  EMIT(g->transl[(hi-0x21)*94+(lo-0x21)]);
+	UNICHAR uc = g->transl[(hi-0x21)*94+(lo-0x21)];
+	if ((uc & 0xf800) == 0xd800) {
+	  /* We use the surrogate block as an offset after the 9494 table
+	   * to a NUL-terminated string of UNICHARs, for the case where
+	   * the mapping doesn't fit in a single UNICHAR. */
+	  string_builder_utf16_strcat(&s->strbuild,
+				      g->transl + 94*94 + (uc & 0x07ff));
+	} else if (uc != 0xe000)
+	  EMIT(uc);
 	src++;
 	srclen -= 2;
       } else {
@@ -147,8 +171,15 @@ static ptrdiff_t eat_text(unsigned char *src, ptrdiff_t srclen,
     while(srclen>1) {
       char hi = (*src++)&0x7f;
       char lo = (*src++)&0x7f;
-      if (g->transl[(hi-0x20)*96+(lo-0x20)] != 0xe000)
-	EMIT(g->transl[(hi-0x20)*96+(lo-0x20)]);
+      UNICHAR uc = g->transl[(hi-0x20)*96+(lo-0x20)];
+      if ((uc & 0xf800) == 0xd800) {
+	/* We use the surrogate block as an offset after the 9696 table
+	 * to a NUL-terminated string of UNICHARs, for the case where
+	 * the mapping doesn't fit in a single UNICHAR. */
+	string_builder_utf16_strcat(&s->strbuild,
+				    g->transl + 96*96 + (uc & 0x07ff));
+      } else if (uc != 0xe000)
+	EMIT(uc);
       srclen -= 2;
     }
     break;
