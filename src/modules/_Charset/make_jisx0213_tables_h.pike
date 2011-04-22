@@ -102,15 +102,29 @@ array(array(int)) parse_jisx_file(string path)
 void generate_table(Stdio.File out, string name,
 		    array(int) table9494, int|void plane)
 {
+  array(int) unistrs = ({});
   out->write("const UNICHAR map_%s[] = {", name);
   foreach(table9494; int i; int ucs) {
     if (!(i & 0x7)) out->write("\n ");
     if (ucs > 0xffff) {
       // Convert to utf16.
-      combiners[plane][i] = 0xdc00 | (ucs & 0x3ff);
-      ucs = 0xd800 | (ucs >> 10);
+      ucs -= 0x00010000;
+      unistrs += ({ 0xd800 | (ucs >> 10),
+		    0xdc00 | (ucs & 0x3ff),
+		    0x0000 });
+      ucs = 0xd800 + sizeof(unistrs) - 3;
+    } else if (combiners[plane][i]) {
+      unistrs += ({ ucs, combiners[plane][i], 0x0000 });
+      ucs = 0xd800 + sizeof(unistrs) - 3;
     }
     out->write(" 0x%04x,", ucs);
+  }
+  if (sizeof(unistrs)) {
+    out->write("\n");
+    foreach(unistrs; int i; int ucs) {
+      if (!(i & 0x7)) out->write("\n ");
+      out->write(" 0x%04x,", ucs);
+    }
   }
   out->write(" };\n");
 }
@@ -143,19 +157,6 @@ int main(int argc, array(string) argv)
   }
   generate_table(out, "JIS_X0213_2000_1", jisx0213_2004[0]);
   generate_table(out, "JIS_X0213_2000_2", jisx0213_2004[1], 1);
-
-  out->write("const UNICHAR map_JIS_X0213_2000_1_combiners[] = {\n");
-  foreach(sort(indices(combiners[0])); int i; int c9494) {
-    out->write("  0x%04x, 0x%04x,", c9494, combiners[0][c9494]);
-    if ((i&3) == 3) out->write("\n");
-  }
-  out->write("  0xffff, };\n");	// Terminating sentinel.
-  out->write("const UNICHAR map_JIS_X0213_2000_2_combiners[] = {\n");
-  foreach(sort(indices(combiners[1])); int i; int c9494) {
-    out->write("  0x%04x, 0x%04x,", c9494, combiners[1][c9494]);
-    if ((i&3) == 3) out->write("\n");
-  }
-  out->write("  0xffff, };\n");	// Terminating sentinel.
   out->close();
   return 0;
 }
