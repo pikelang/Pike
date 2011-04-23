@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: misc.c,v 1.23 2008/07/03 19:08:35 grubba Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -464,19 +464,6 @@ static const p_wchar1 map_EBCDIC_US[] = {
   0x0059, 0x005a, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
   0x0030, 0x0031, 0x0032, 0x0033, 0x0034, 0x0035, 0x0036, 0x0037,
   0x0038, 0x0039, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0x007f, };
-static const p_wchar1 map_greek_ccitt[] = {
-  0x00a4, 0x0025, 0x0026, 0x0027, 0x0028, 0x0029, 0x002a, 0x002b,
-  0x002c, 0x002d, 0x002e, 0x002f, 0x0030, 0x0031, 0x0032, 0x0033,
-  0x0034, 0x0035, 0x0036, 0x0037, 0x0038, 0x0039, 0x003a, 0x003b,
-  0x003c, 0x003d, 0x003e, 0x003f, 0x0040, 0x0391, 0x0392, 0x0393,
-  0x0394, 0x0395, 0x0396, 0x0397, 0x0398, 0x0399, 0x039a, 0x039b,
-  0x039c, 0x039d, 0x039e, 0x039f, 0x03a0, 0x03a1, 0xfffd, 0x03a3,
-  0x03a4, 0x03a5, 0x03a6, 0x03a7, 0x03a8, 0x03a9, 0xfffd, 0x005b,
-  0x005c, 0x005d, 0x005e, 0x005f, 0xfffd, 0x03b1, 0x03b2, 0x03b3,
-  0x03b4, 0x03b5, 0x03b6, 0x03b7, 0x03b8, 0x03b9, 0x03ba, 0x03bb,
-  0x03bc, 0x03bd, 0x03be, 0x03bf, 0x03c0, 0x03c1, 0x03c2, 0x03c3,
-  0x03c4, 0x03c5, 0x03c6, 0x03c7, 0x03c8, 0x03c9, 0xfffd, 0x007b,
-  0x007c, 0x007d, 0x007e, 0x007f, };
 static const p_wchar1 map_koi8_r [] = {
   0x2500, 0x2502, 0x250C, 0x2510, 0x2514, 0x2518, 0x251C, 0x2524,
   0x252C, 0x2534, 0x253C, 0x2580, 0x2584, 0x2588, 0x258C, 0x2590,
@@ -1584,19 +1571,6 @@ static const p_wchar1 map_macintosh_cyr [] = {
   0x0438, 0x0439, 0x043A, 0x043B, 0x043C, 0x043D, 0x043E, 0x043F,
   0x0440, 0x0441, 0x0442, 0x0443, 0x0444, 0x0445, 0x0446, 0x0447,
   0x0448, 0x0449, 0x044A, 0x044B, 0x044C, 0x044D, 0x044E, 0x00A4, };
-static const p_wchar1 map_NC_NC00_10_81[] = {
-  0x00a4, 0x0025, 0x0026, 0x0027, 0x0028, 0x0029, 0x002a, 0x002b,
-  0x002c, 0x002d, 0x002e, 0x002f, 0x0030, 0x0031, 0x0032, 0x0033,
-  0x0034, 0x0035, 0x0036, 0x0037, 0x0038, 0x0039, 0x003a, 0x003b,
-  0x003c, 0x003d, 0x003e, 0x003f, 0x0040, 0x0041, 0x0042, 0x0043,
-  0x0044, 0x0045, 0x0046, 0x0047, 0x0048, 0x0049, 0x004a, 0x004b,
-  0x004c, 0x004d, 0x004e, 0x004f, 0x0050, 0x0051, 0x0052, 0x0053,
-  0x0054, 0x0055, 0x0056, 0x0057, 0x0058, 0x0059, 0x005a, 0x00a1,
-  0x00d1, 0x005d, 0x00bf, 0x005f, 0x0060, 0x0061, 0x0062, 0x0063,
-  0x0064, 0x0065, 0x0066, 0x0067, 0x0068, 0x0069, 0x006a, 0x006b,
-  0x006c, 0x006d, 0x006e, 0x006f, 0x0070, 0x0071, 0x0072, 0x0073,
-  0x0074, 0x0075, 0x0076, 0x0077, 0x0078, 0x0079, 0x007a, 0x00b4,
-  0x00f1, 0x005b, 0x00a8, 0x007f, };
 const p_wchar1 map_ANSI_X3_110_1983[] = {
   0x0021, 0x0022, 0xfffd, 0xfffd, 0x0025, 0x0026, 0x0027, 0x0028,
   0x0029, 0x002a, 0x002b, 0x002c, 0x002d, 0x002e, 0x002f, 0x0030,
@@ -2011,7 +1985,6 @@ static const struct {
   { "cpar", map_IBM868, 128, 255 },                                   /* :: cp-ar */
   { "cpgr", map_IBM869, 128, 255 },                                   /* :: cp-gr */
   { "cpis", map_IBM861, 128, 255 },                                   /* :: cp-is */
-  { "cuba", map_NC_NC00_10_81, 36, 127 },                             /* :: cuba */
   { "dec", map_DEC_MCS, 160, 255 },                                   /* :: dec */
   { "decmcs", map_DEC_MCS, 160, 255 },                                /* :: dec-mcs */
   { "dk", map_DS_2089, 91, 127 },                                     /* :: dk */
@@ -2060,7 +2033,6 @@ static const struct {
   { "ebcdicpt", map_EBCDIC_PT, 32, 255 },                             /* :: ebcdic-pt */
   { "ebcdicuk", map_EBCDIC_UK, 32, 255 },                             /* :: ebcdic-uk */
   { "ebcdicus", map_EBCDIC_US, 32, 255 },                             /* :: ebcdic-us */
-  { "greekccitt", map_greek_ccitt, 36, 127 },                         /* :: greek-ccitt */
   { "gsm", map_gsm_03_38, 0, 127 },                                   /* :: gsm 03.38 */
   { "gsm0338", map_gsm_03_38, 0, 127 },                               /* :: gsm 03.38 */
   { "halfwidthkatakana", map_JIS_X0201, 92, 255 },
@@ -2069,11 +2041,7 @@ static const struct {
   { "invariant", map_INVARIANT, 35, 127 },                            /* :: invariant */
   { "iso103t618bit", map_T_61_8bit, 33, 255 },
   { "iso128t101g2", map_T_101_G2, 33, 255 },
-  { "iso150", map_greek_ccitt, 36, 127 },
-  { "iso150greekccitt", map_greek_ccitt, 36, 127 },
-  { "iso151cuba", map_NC_NC00_10_81, 36, 127 },
   { "iso646basic1983", map_ISO_646_basic_1983, 35, 122 },             /* :: iso_646.basic:1983 */
-  { "iso646cu", map_NC_NC00_10_81, 36, 127 },                         /* :: iso646-cu */
   { "iso646danish", map_DS_2089, 91, 127 },
   { "iso646dk", map_DS_2089, 91, 127 },                               /* :: iso646-dk */
   { "iso646kr", map_KSC5636, 92, 127 },                               /* :: iso646-kr */
@@ -2082,8 +2050,6 @@ static const struct {
   { "iso99naplps", map_ANSI_X3_110_1983, 33, 255 },
   { "isoir103", map_T_61_8bit, 33, 255 },                             /* :: iso-ir-103 */
   { "isoir128", map_T_101_G2, 33, 255 },                              /* :: iso-ir-128 */
-  { "isoir150", map_greek_ccitt, 36, 127 },                           /* :: iso-ir-150 */
-  { "isoir151", map_NC_NC00_10_81, 36, 127 },                         /* :: iso-ir-151 */
   { "isoir70", map_videotex_suppl, 33, 255 },                         /* :: iso-ir-70 */
   { "isoir90", map_iso_ir_90, 33, 255 },                              /* :: iso-ir-90 */
   { "isoir99", map_ANSI_X3_110_1983, 33, 255 },                       /* :: iso-ir-99 */
@@ -2099,7 +2065,6 @@ static const struct {
   { "msansi", map_windows_1252, 128, 255 },                           /* :: ms-ansi */
   { "mysqllatin1", map_mysql_latin1, 128, 255 },                      /* :: mysql-latin1 */
   { "naplps", map_ANSI_X3_110_1983, 33, 255 },                        /* :: naplps */
-  { "ncnc001081", map_NC_NC00_10_81, 36, 127 },                       /* :: nc_nc00-10:81 */
   { "pc850multilingual", map_IBM850, 128, 255 },
   { "pc862latinhebrew", map_IBM862, 128, 255 },
   { "pc8codepage437", map_IBM437, 128, 255 },
