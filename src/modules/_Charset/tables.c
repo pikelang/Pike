@@ -11226,14 +11226,14 @@ const UNICHAR * const iso2022_94[] = {
   map_GB_1988_80, map_Latin_greek_1, map_BS_viewdata, map_INIS, 
   map_ISO_5428_bibl, map_IT, map_ES, map_greek7_old, 
   map_latin_greek, map_INIS_8, map_INIS_cyrillic, /*ISOIR59*/NULL, 
-  map_NS_4551_1, map_NS_4551_2, map_videotex_suppl, /*ISOIR71*/NULL, 
+  map_NS_4551_1, map_NS_4551_2, map_videotex_suppl + 0x80, /*ISOIR71*/NULL,
   /*ISOIR72*/NULL, /*ISOIR68*/NULL, map_NF_Z_62_010, map_PT2, 
   map_ES2, map_MSZ_7795_3, map_greek7, map_ASMO_449, 
-  map_iso_ir_90, map_JIS_C6229_1984_a, map_JIS_C6229_1984_b, map_JIS_C6229_1984_b_add, 
+  map_iso_ir_90 + 0x80, map_JIS_C6229_1984_a, map_JIS_C6229_1984_b, map_JIS_C6229_1984_b_add,
   map_JIS_C6229_1984_hand, map_JIS_C6229_1984_hand_add, map_JIS_C6229_1984_kana, map_ISO_2033_1983, 
-  map_ANSI_X3_110_1983, map_T_61_7bit, map_T_61_8bit, map_CSA_Z243_4_1985_1, 
+  map_ANSI_X3_110_1983 + 0x80, map_T_61_7bit, map_T_61_8bit + 0x80, map_CSA_Z243_4_1985_1,
   map_CSA_Z243_4_1985_2, /*ISOIR137*/NULL, map_JUS_I_B1_002, map_JUS_I_B1_003_serb, 
-  map_T_101_G2, map_JUS_I_B1_003_mac, NULL };
+  map_T_101_G2 + 0x80, map_JUS_I_B1_003_mac, NULL };
 const UNICHAR * const iso2022_94_2[] = {
   map_greek_ccitt, map_NC_NC00_10_81, map_ISO_IR_170, map_IS_433_1996,
   map_TDS_565, map_ANSI_Z39_47, map_TDS_616_2003, NULL,
