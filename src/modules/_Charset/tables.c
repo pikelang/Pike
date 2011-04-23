@@ -162,7 +162,7 @@ const UNICHAR map_ANSI_X3_4_1968[] = {
   0x0069, 0x006a, 0x006b, 0x006c, 0x006d, 0x006e, 0x006f, 0x0070,
   0x0071, 0x0072, 0x0073, 0x0074, 0x0075, 0x0076, 0x0077, 0x0078,
   0x0079, 0x007a, 0x007b, 0x007c, 0x007d, 0x007e, };
-static const p_wchar1 map_NC_NC00_10_81[] = {
+static const p_wchar1 map_NC_99_10_81[] = {
   0x0021, 0x0022, 0x0023, 0x00a4, 0x0025, 0x0026, 0x0027, 0x0028,
   0x0029, 0x002a, 0x002b, 0x002c, 0x002d, 0x002e, 0x002f, 0x0030,
   0x0031, 0x0032, 0x0033, 0x0034, 0x0035, 0x0036, 0x0037, 0x0038,
@@ -11235,7 +11235,7 @@ const UNICHAR * const iso2022_94[] = {
   map_CSA_Z243_4_1985_2, /*ISOIR137*/NULL, map_JUS_I_B1_002, map_JUS_I_B1_003_serb, 
   map_T_101_G2 + 0x80, map_JUS_I_B1_003_mac, NULL };
 const UNICHAR * const iso2022_94_2[] = {
-  map_greek_ccitt, map_NC_NC00_10_81, map_ISO_IR_170, map_IS_433_1996,
+  map_greek_ccitt, map_NC_99_10_81, map_ISO_IR_170, map_IS_433_1996,
   map_TDS_565, map_ANSI_Z39_47, map_TDS_616_2003, NULL,
   NULL, NULL, NULL, NULL,
   NULL, NULL, NULL, NULL,
@@ -13980,7 +13980,7 @@ const struct charset_def charset_map[] = {
   { "csaz243419851", map_CSA_Z243_4_1985_1, MODE_94 },                /* :: csa_z243.4-1985-1 */
   { "csaz243419852", map_CSA_Z243_4_1985_2, MODE_94 },                /* :: csa_z243.4-1985-2 */
   { "csaz24341985gr", map_CSA_Z243_4_1985_gr, MODE_96 },              /* :: csa_z243.4-1985-gr */
-  { "cuba", map_NC_NC00_10_81, MODE_94 },                             /* :: cuba */
+  { "cuba", map_NC_99_10_81, MODE_94 },                               /* :: cuba */
   { "cyrillic", map_ISO_8859_5_1999, MODE_96 },                       /* :: cyrillic */
   { "de", map_DIN_66003, MODE_94 },                                   /* :: de */
   { "din31624", map_DIN_31624, MODE_94 },
@@ -14034,7 +14034,7 @@ const struct charset_def charset_map[] = {
   { "iso14jisc6220ro", map_JIS_C6220_1969_ro, MODE_94 },
   { "iso150", map_greek_ccitt, MODE_94 },
   { "iso150greekccitt", map_greek_ccitt, MODE_94 },
-  { "iso151cuba", map_NC_NC00_10_81, MODE_94 },
+  { "iso151cuba", map_NC_99_10_81, MODE_94 },
   { "iso153gost1976874", map_GOST_19768_74, MODE_96 },
   { "iso158lap", map_latin_lap, MODE_96 },
   { "iso159jisx02121990", map_JIS_X0212_1990, MODE_9494 },
@@ -14075,7 +14075,7 @@ const struct charset_def charset_map[] = {
   { "iso646ca", map_CSA_Z243_4_1985_1, MODE_94 },                     /* :: iso646-ca */
   { "iso646ca2", map_CSA_Z243_4_1985_2, MODE_94 },                    /* :: iso646-ca2 */
   { "iso646cn", map_GB_1988_80, MODE_94 },                            /* :: iso646-cn */
-  { "iso646cu", map_NC_NC00_10_81, MODE_94 },                         /* :: iso646-cu */
+  { "iso646cu", map_NC_99_10_81, MODE_94 },                           /* :: iso646-cu */
   { "iso646de", map_DIN_66003, MODE_94 },                             /* :: iso646-de */
   { "iso646es", map_ES, MODE_94 },                                    /* :: iso646-es */
   { "iso646es2", map_ES2, MODE_94 },                                  /* :: iso646-es2 */
@@ -14203,7 +14203,7 @@ const struct charset_def charset_map[] = {
   { "isoir149", map_KS_C_5601_1987, MODE_9494 },                      /* :: iso-ir-149 */
   { "isoir15", map_IT, MODE_94 },                                     /* :: iso-ir-15 */
   { "isoir150", map_greek_ccitt, MODE_94 },                           /* :: iso-ir-150 */
-  { "isoir151", map_NC_NC00_10_81, MODE_94 },                         /* :: iso-ir-151 */
+  { "isoir151", map_NC_99_10_81, MODE_94 },                           /* :: iso-ir-151 */
   { "isoir152", map_ISO_6937_2_25, MODE_96 },                         /* :: iso-ir-152 */
   { "isoir153", map_GOST_19768_74, MODE_96 },                         /* :: iso-ir-153 */
   { "isoir154", map_ISO_8859_supp, MODE_96 },                         /* :: iso-ir-154 */
@@ -14414,7 +14414,7 @@ const struct charset_def charset_map[] = {
   { "natsdanoadd", map_NATS_DANO_ADD, MODE_94 },                      /* :: nats-dano-add */
   { "natssefi", map_NATS_SEFI, MODE_94 },                             /* :: nats-sefi */
   { "natssefiadd", map_NATS_SEFI_ADD, MODE_94 },                      /* :: nats-sefi-add */
-  { "ncnc001081", map_NC_NC00_10_81, MODE_94 },                       /* :: nc_nc00-10:81 */
+  { "nc991081", map_NC_99_10_81, MODE_94 },                           /* :: nc-99-10:81 */
   { "nfz62010", map_NF_Z_62_010, MODE_94 },                           /* :: nf_z_62-010 */
   { "nfz620101973", map_NF_Z_62_010_1973, MODE_94 },                  /* :: nf_z_62-010_(1973) */
   { "nisoz3947", map_ANSI_Z39_47, MODE_94 },                          /* :: niso z39.47 */
