@@ -1406,6 +1406,19 @@ static const UNICHAR map_IS_434_1997[] = {
   0x1688, 0x1689, 0x168a, 0x168b, 0x168c, 0x168d, 0x168e, 0x168f,
   0x1690, 0x1691, 0x1692, 0x1693, 0x1694, 0x1695, 0x1696, 0x1697,
   0x1698, 0x1699, 0x169a, 0x169b, 0x169c, 0xfffd, 0xfffd, 0xfffd, };
+static const UNICHAR map_ISO_IR_68[] = {
+  0x00a8, 0x0029, 0x003c, 0x2264, 0x003c, 0x003e, 0x005d, 0x2228,
+  0x2227, 0x2260, 0x00f7, 0x002c, 0x002b, 0x002e, 0x002f, 0x0030,
+  0x0031, 0x0032, 0x0033, 0x0034, 0x0035, 0x0036, 0x0037, 0x0038,
+  0x0039, 0x0028, 0x005b, 0x003b, 0x00d7, 0x003a, 0x005c, 0x203e,
+  0x237a, 0x22a5, 0x2228, 0x230a, 0x2208, 0x005f, 0x2207, 0x2206,
+  0x2373, 0x2218, 0x0027, 0x25a1, 0x007c, 0x22a4, 0x25cb, 0x002a,
+  0x003f, 0x2374, 0x2308, 0x007e, 0x2193, 0x2229, 0x2375, 0x2283,
+  0x2191, 0x2282, 0x2190, 0x22a2, 0x2192, 0x2265, 0x002d, 0x25c7,
+  0x0041, 0x0042, 0x0043, 0x0044, 0x0045, 0x0046, 0x0047, 0x0048,
+  0x0049, 0x004a, 0x004b, 0x004c, 0x004d, 0x004e, 0x004f, 0x0050,
+  0x0051, 0x0052, 0x0053, 0x0054, 0x0055, 0x0056, 0x0057, 0x0058,
+  0x0059, 0x005a, 0x007b, 0x22a3, 0x007d, 0x0024, };
 static const UNICHAR map_ISO_10367_box[] = {
   0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
   0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
@@ -11231,7 +11244,7 @@ const UNICHAR * const iso2022_94[] = {
   map_ISO_5428_bibl, map_IT, map_ES, map_greek7_old, 
   map_latin_greek, map_INIS_8, map_INIS_cyrillic, /*ISOIR59*/NULL, 
   map_NS_4551_1, map_NS_4551_2, map_videotex_suppl + 0x80, /*ISOIR71*/NULL,
-  /*ISOIR72*/NULL, /*ISOIR68*/NULL, map_NF_Z_62_010, map_PT2, 
+  /*ISOIR72/ISOIR173*/NULL, map_ISO_IR_68, map_NF_Z_62_010, map_PT2, 
   map_ES2, map_MSZ_7795_3, map_greek7, map_ASMO_449, 
   map_iso_ir_90 + 0x80, map_JIS_C6229_1984_a, map_JIS_C6229_1984_b, map_JIS_C6229_1984_b_add,
   map_JIS_C6229_1984_hand, map_JIS_C6229_1984_hand_add, map_JIS_C6229_1984_kana, map_ISO_2033_1983, 
@@ -13965,6 +13978,7 @@ const struct charset_def charset_map[] = {
   { "ansix341968", map_ANSI_X3_4_1968, MODE_94 },                     /* :: ansi_x3.4-1968 */
   { "ansix341986", map_ANSI_X3_4_1968, MODE_94 },                     /* :: ansi_x3.4-1986 */
   { "ansiz3947", map_ANSI_Z39_47, MODE_94 },                          /* :: ansi_z39.47 */
+  { "apl", map_ISO_IR_68, MODE_94 },                                  /* :: apl */
   { "arabic", map_ISO_8859_6_1999, MODE_96 },                         /* :: arabic */
   { "arabic7", map_ASMO_449, MODE_94 },                               /* :: arabic7 */
   { "ascii", map_ANSI_X3_4_1968, MODE_94 },                           /* :: ascii */
@@ -14317,7 +14331,7 @@ const struct charset_def charset_map[] = {
   /* :: iso-ir-65 */
   /* :: iso-ir-66 */
   /* :: iso-ir-67 */
-  /* :: iso-ir-68 */
+  { "isoir68", map_ISO_IR_68, MODE_94 },                              /* :: iso-ir-68 */
   { "isoir69", map_NF_Z_62_010, MODE_94 },                            /* :: iso-ir-69 */
   /* :: iso-ir-7: Only control characters. */
   /* :: iso-ir-70: Defined in misc.c. */
