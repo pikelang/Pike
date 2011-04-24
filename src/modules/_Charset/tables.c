@@ -14179,10 +14179,10 @@ const struct charset_def charset_map[] = {
   { "isoir101", map_ISO_8859_2_1999, MODE_96 },                       /* :: iso-ir-101 */
   { "isoir102", map_T_61_7bit, MODE_94 },                             /* :: iso-ir-102 */
   /* :: iso-ir-103: Defined in misc.c. */
-  /* :: iso-ir-104 */
-  /* :: iso-ir-105 */
-  /* :: iso-ir-106 */
-  /* :: iso-ir-107 */
+  /* :: iso-ir-104: Only control characters. */
+  /* :: iso-ir-105: Only control characters. */
+  /* :: iso-ir-106: Only control characters. */
+  /* :: iso-ir-107: Only control characters. */
   /* :: iso-ir-108: CSA T500-1983/ANSI X3.110-1983 (NAPLPS) */
   { "isoir109", map_ISO_8859_3_1999, MODE_96 },                       /* :: iso-ir-109 */
   { "isoir11", map_SEN_850200_C, MODE_94 },                           /* :: iso-ir-11 */
@@ -14191,25 +14191,25 @@ const struct charset_def charset_map[] = {
   { "isoir121", map_CSA_Z243_4_1985_1, MODE_94 },                     /* :: iso-ir-121 */
   { "isoir122", map_CSA_Z243_4_1985_2, MODE_94 },                     /* :: iso-ir-122 */
   { "isoir123", map_CSA_Z243_4_1985_gr, MODE_96 },                    /* :: iso-ir-123 */
-  /* :: iso-ir-124 */
+  /* :: iso-ir-124: Only control characters. */
   /* :: iso-ir-125: ISO 9040 Virtual Terminal Service Transparent Set */
   { "isoir126", map_ISO_8859_7_1987, MODE_96 },                       /* :: iso-ir-126 */
   { "isoir127", map_ISO_8859_6_1999, MODE_96 },                       /* :: iso-ir-127 */
   /* :: iso-ir-128: Defined in misc.c. */
-  /* :: iso-ir-129 */
+  /* :: iso-ir-129: CCITT T101-III Mosaic drawing. */
   { "isoir13", map_JIS_C6220_1969_jp, MODE_94 },                      /* :: iso-ir-13 */
-  /* :: iso-ir-130 */
+  /* :: iso-ir-130: Only control characters. */
   /* :: iso-ir-131: CCITT T.101 Data Syntax I */
-  /* :: iso-ir-132 */
-  /* :: iso-ir-133 */
-  /* :: iso-ir-134 */
-  /* :: iso-ir-135 */
-  /* :: iso-ir-136 */
-  /* :: iso-ir-137 */
+  /* :: iso-ir-132: Only control characters. */
+  /* :: iso-ir-133: Only control characters. */
+  /* :: iso-ir-134: Only control characters. */
+  /* :: iso-ir-135: Only control characters. */
+  /* :: iso-ir-136: Only control characters. */
+  /* :: iso-ir-137: CCITT T.101-I Mosaic drawing. */
   { "isoir138", map_ECMA_121, MODE_96 },                              /* :: iso-ir-138 */
   { "isoir139", map_CSN_369103, MODE_96 },                            /* :: iso-ir-139 */
   { "isoir14", map_JIS_C6220_1969_ro, MODE_94 },                      /* :: iso-ir-14 */
-  /* :: iso-ir-140 */
+  /* :: iso-ir-140: Only control characters. */
   { "isoir141", map_JUS_I_B1_002, MODE_94 },                          /* :: iso-ir-141 */
   { "isoir142", map_ISO_6937_2_add, MODE_96 },                        /* :: iso-ir-142 */
   { "isoir143", map_IEC_P27_1, MODE_96 },                             /* :: iso-ir-143 */
@@ -14236,16 +14236,16 @@ const struct charset_def charset_map[] = {
   /* :: iso-ir-162: UCS-2, level 1 */
   /* :: iso-ir-163: UCS-4, level 1 */
   { "isoir164", map_ISO_IR_164, MODE_96 },                            /* :: iso-ir-164 */
-  /* :: iso-ir-165 */
+  /* :: iso-ir-165: GB 8565.2 */
   { "isoir166", map_TIS_620_2533_1990, MODE_96 },                     /* :: iso-ir-166 */
   { "isoir167", map_ISO_IR_167, MODE_96 },                            /* :: iso-ir-167 */
-  /* :: iso-ir-168 */
-  /* :: iso-ir-169 */
+  /* :: iso-ir-168: JIS X0208-1990 */
+  /* :: iso-ir-169: Bliss, symbols not available in Unicode 6.0.0 */
   { "isoir17", map_ES, MODE_94 },                                     /* :: iso-ir-17 */
   { "isoir170", map_ISO_IR_170, MODE_94 },                            /* :: iso-ir-170 */
-  /* :: iso-ir-171 */
-  /* :: iso-ir-172 */
-  /* :: iso-ir-173 */
+  /* :: iso-ir-171: CNS 11643-1986 Set 1 */
+  /* :: iso-ir-172: CNS 11643-1986 Set 2 */
+  /* :: iso-ir-173: Videotex Mosaic Drawing. */
   /* :: iso-ir-174: UCS-2, level 2 */
   /* :: iso-ir-175: UCS-4, level 2 */
   /* :: iso-ir-176: UCS-2, level 3 */
@@ -14256,11 +14256,11 @@ const struct charset_def charset_map[] = {
   { "isoir180", map_TCVN_5712_1993, MODE_96 },                        /* :: iso-ir-180 */
   { "isoir181", map_ISO_IR_181, MODE_96 },                            /* :: iso-ir-181 */
   { "isoir182", map_ISO_IR_182, MODE_96 },                            /* :: iso-ir-182 */
-  /* :: iso-ir-183 */
-  /* :: iso-ir-184 */
-  /* :: iso-ir-185 */
-  /* :: iso-ir-186 */
-  /* :: iso-ir-187 */
+  /* :: iso-ir-183: CNS 11643-1992 Set 3 */
+  /* :: iso-ir-184: CNS 11643-1992 Set 4 */
+  /* :: iso-ir-185: CNS 11643-1992 Set 5 */
+  /* :: iso-ir-186: CNS 11643-1992 Set 6 */
+  /* :: iso-ir-187: CNS 11643-1992 Set 7 */
   /* :: iso-ir-188: CCITT T.107 Videotex Data Syntax */
   /* :: iso-ir-189: CODING METHOD DELIMITER */
   { "isoir19", map_latin_greek, MODE_94 },                            /* :: iso-ir-19 */
@@ -14277,7 +14277,7 @@ const struct charset_def charset_map[] = {
   { "isoir2", map_ISO_646_irv_1983, MODE_94 },                        /* :: iso-ir-2 */
   { "isoir200", map_ISO_IR_200, MODE_96 },                            /* :: iso-ir-200 */
   { "isoir201", map_ISO_IR_201, MODE_96 },                            /* :: iso-ir-201 */
-  /* :: iso-ir-202 */
+  /* :: iso-ir-202: KPS 9566-97 */
   { "isoir203", map_ISO_8859_15_1999, MODE_96 },                      /* :: iso-ir-203 */
   { "isoir204", map_ISO_IR_204, MODE_96 },                            /* :: iso-ir-204 */
   { "isoir205", map_ISO_IR_205, MODE_96 },                            /* :: iso-ir-205 */
@@ -14300,19 +14300,19 @@ const struct charset_def charset_map[] = {
   /* :: iso-ir-26: Only control characters. */
   { "isoir27", map_Latin_greek_1, MODE_94 },                          /* :: iso-ir-27 */
   { "isoir31", map_ISO_5428_bibl, MODE_94 },                          /* :: iso-ir-31 */
-  /* :: iso-ir-32 */
-  /* :: iso-ir-33 */
-  /* :: iso-ir-34 */
-  /* :: iso-ir-35 */
-  /* :: iso-ir-36 */
+  /* :: iso-ir-32: DMI */
+  /* :: iso-ir-33: INT */
+  /* :: iso-ir-34: EMI */
+  /* :: iso-ir-35: RIS */
+  /* :: iso-ir-36: Only control characters. */
   { "isoir37", map_ISO_5427, MODE_94 },                               /* :: iso-ir-37 */
   { "isoir38", map_DIN_31624, MODE_94 },
   { "isoir39", map_ISO_6438, MODE_94 },
   { "isoir4", map_BS_4730, MODE_94 },                                 /* :: iso-ir-4 */
-  /* :: iso-ir-40 */
+  /* :: iso-ir-40: Only control characters. */
   { "isoir42", map_JIS_C6226_1978, MODE_9494 },                       /* :: iso-ir-42 */
   { "isoir47", map_BS_viewdata, MODE_94 },                            /* :: iso-ir-47 */
-  /* :: iso-ir-48 */
+  /* :: iso-ir-48: Only control characters. */
   { "isoir49", map_INIS, MODE_94 },                                   /* :: iso-ir-49 */
   { "isoir50", map_INIS_8, MODE_94 },
   { "isoir51", map_INIS_cyrillic, MODE_94 },                          /* :: iso-ir-51 */
@@ -14321,25 +14321,25 @@ const struct charset_def charset_map[] = {
   { "isoir55", map_ISO_5428_1980, MODE_94 },                          /* :: iso-ir-55 */
   { "isoir57", map_GB_1988_80, MODE_94 },                             /* :: iso-ir-57 */
   { "isoir58", map_GB_2312_80, MODE_9494 },                           /* :: iso-ir-58 */
-  /* :: iso-ir-59 */
+  /* :: iso-ir-59: Arabic */
   { "isoir6", map_ANSI_X3_4_1968, MODE_94 },                          /* :: iso-ir-6 */
   { "isoir60", map_NS_4551_1, MODE_94 },                              /* :: iso-ir-60 */
   { "isoir61", map_NS_4551_2, MODE_94 },                              /* :: iso-ir-61 */
-  /* :: iso-ir-62 */
-  /* :: iso-ir-63 */
-  /* :: iso-ir-64 */
-  /* :: iso-ir-65 */
-  /* :: iso-ir-66 */
-  /* :: iso-ir-67 */
+  /* :: iso-ir-62: LS2 */
+  /* :: iso-ir-63: LS3 */
+  /* :: iso-ir-64: LS3R */
+  /* :: iso-ir-65: LS2R */
+  /* :: iso-ir-66: LS1R */
+  /* :: iso-ir-67: Only control characters. */
   { "isoir68", map_ISO_IR_68, MODE_94 },                              /* :: iso-ir-68 */
   { "isoir69", map_NF_Z_62_010, MODE_94 },                            /* :: iso-ir-69 */
   /* :: iso-ir-7: Only control characters. */
   /* :: iso-ir-70: Defined in misc.c. */
-  /* :: iso-ir-71 */
-  /* :: iso-ir-72 */
-  /* :: iso-ir-73 */
-  /* :: iso-ir-74 */
-  /* :: iso-ir-77 */
+  /* :: iso-ir-71: Videotex Mosaic Drawing. */
+  /* :: iso-ir-72: Videotex Mosaic Drawing. */
+  /* :: iso-ir-73: Only control characters. */
+  /* :: iso-ir-74: Only control characters. */
+  /* :: iso-ir-77: Only control characters. */
   { "isoir8-1", map_NATS_SEFI, MODE_94 },                              /* :: iso-ir-8-1 */
   { "isoir8-2", map_NATS_SEFI_ADD, MODE_94 },                          /* :: iso-ir-8-2 */
   { "isoir84", map_PT2, MODE_94 },                                    /* :: iso-ir-84 */
