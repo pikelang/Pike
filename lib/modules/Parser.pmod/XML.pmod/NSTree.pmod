@@ -72,6 +72,7 @@ class NSNode {
     foreach(nss; string sym; string ns)
       if(nss[sym]!=ns)
 	res[sym]=nss[sym];
+    return res;
   }
 
   protected string make_prefix(string ns) {
