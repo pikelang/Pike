@@ -1,6 +1,6 @@
 /* _Xlib.pmod
  *
- * $Id: _Xlib.pmod,v 1.17 2002/01/15 22:32:43 nilsson Exp $
+ * $Id$
  *
  * Kluge, should be in Xlib.pmod
  */

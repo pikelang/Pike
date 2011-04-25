@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.8 2002/10/21 15:55:21 nilsson Exp $
+dnl $Id$
 
 dnl - tan
 test_true(floatp(tan(0.5)))

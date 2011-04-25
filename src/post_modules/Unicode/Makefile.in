@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.4 2002/01/27 00:54:02 mast Exp $
+# $Id$
 @make_variables@
 VPATH=@srcdir@:@srcdir@/../..:../..
 OBJS=unicode_module.o normalize.o split.o buffer.o

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dlopen.c,v 1.71 2008/12/02 19:19:07 mast Exp $
+|| $Id$
 */
 
 #include <global.h>
@@ -199,7 +199,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.71 2008/12/02 19:19:07 mast Exp $");
+RCSID("$Id$");
 
 #endif
 

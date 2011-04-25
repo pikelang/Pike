@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.14 2002/04/30 21:33:00 mast Exp $
+# $Id$
 AC_INIT(sha.c)
 
 AC_SET_MAKE

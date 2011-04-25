@@ -1,4 +1,4 @@
-/* $Id: des3.pike,v 1.7 2001/11/08 01:45:38 nilsson Exp $
+/* $Id$
  *
  */
 

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.h,v 1.27 2003/12/09 09:57:14 grubba Exp $
+|| $Id$
 */
 
 #ifndef FILE_H

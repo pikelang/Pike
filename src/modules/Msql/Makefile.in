@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.6 2002/03/14 01:53:00 mast Exp $
+# $Id$
 @make_variables@
 VPATH=@srcdir@:@srcdir@/../..:../..
 OBJS=msqlmod.o

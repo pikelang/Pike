@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: desinfo.h,v 1.5 2002/10/11 01:39:52 nilsson Exp $
+|| $Id$
 */
 
 /*
@@ -15,7 +15,7 @@
  */
 
 #include "RCSID.h"
-RCSID2(desinfo_hRcs, "$Id: desinfo.h,v 1.5 2002/10/11 01:39:52 nilsson Exp $");
+RCSID2(desinfo_hRcs, "$Id$");
 
 /* the initial permutation, E selection, and final permutation are hardwired */
 

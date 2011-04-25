@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.6 2002/08/05 17:24:41 kiwi Exp $
+# $Id$
 #
 AC_INIT(pdflib_glue.c)
 AC_CONFIG_HEADER(pdf_machine.h)

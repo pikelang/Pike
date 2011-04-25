@@ -4,7 +4,7 @@
 //
 // Author: Honza Petrous, hop@unibase.cz
 //
-// $Id: module.pmod,v 1.5 2002/11/29 00:30:37 nilsson Exp $
+// $Id$
 
 //#define AUDIO_FORMAT_DEBUG
 #ifdef AUDIO_FORMAT_DEBUG

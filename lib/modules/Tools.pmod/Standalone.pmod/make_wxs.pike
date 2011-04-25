@@ -1,5 +1,5 @@
 /*
- * $Id: make_wxs.pike,v 1.2 2004/11/09 17:06:53 grubba Exp $
+ * $Id$
  *
  * Make a Wix modules source XML file from an existing set of
  * directories or files.

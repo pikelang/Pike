@@ -1,6 +1,6 @@
 # TODO file for the sybase pike driver
 # by Francesco Chemolli
-# $Id: TODO,v 1.2 2002/01/16 03:06:15 nilsson Exp $
+# $Id$
 
 Improve the checks for the sybase-libraries, and use a lock to serialize
 all accesses unless the reentrant (thread-hot) libraries are found. This

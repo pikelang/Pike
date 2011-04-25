@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: desdata.c,v 1.7 2002/10/11 01:39:52 nilsson Exp $
+|| $Id$
 */
 
 /*
@@ -20,7 +20,7 @@
 #include	"desCode.h"
 
 #include "RCSID.h"
-RCSID2(desdata_cRcs, "$Id: desdata.c,v 1.7 2002/10/11 01:39:52 nilsson Exp $");
+RCSID2(desdata_cRcs, "$Id$");
 
 /* list of weak and semi-weak keys
 

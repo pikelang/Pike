@@ -4,7 +4,7 @@
 //! absolute form, as defined in RFC 2396
 
 // Implemented by Johan Sundström and Johan Schön.
-// $Id: URI.pike,v 1.15 2002/12/11 23:10:36 anders Exp $
+// $Id$
 
 #pragma strict_types
 

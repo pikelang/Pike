@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: tga.c,v 1.31 2002/10/25 14:10:30 nilsson Exp $
+|| $Id$
 */
 
 /*
@@ -80,7 +80,7 @@
 
 
 
-RCSID("$Id: tga.c,v 1.31 2002/10/25 14:10:30 nilsson Exp $");
+RCSID("$Id$");
 
 #define ROUNDUP_DIVIDE(n,d) (((n) + (d - 1)) / (d))
 

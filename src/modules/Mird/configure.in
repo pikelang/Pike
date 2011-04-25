@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.8 2001/03/30 18:45:47 grubba Exp $
+# $Id$
 AC_INIT(mird_glue.c)
 AC_CONFIG_HEADER(config.h)
 

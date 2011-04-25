@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: poly.c,v 1.17 2002/10/21 17:06:14 marcus Exp $
+|| $Id$
 */
 
 /*
@@ -23,7 +23,7 @@ another?
 
 #include "global.h"
 
-RCSID("$Id: poly.c,v 1.17 2002/10/21 17:06:14 marcus Exp $");
+RCSID("$Id$");
 
 #include "image_machine.h"
 

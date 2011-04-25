@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.c,v 1.168 2006/03/02 10:39:25 grubba Exp $
+|| $Id$
 */
 
 #include "global.h"
-RCSID("$Id: docode.c,v 1.168 2006/03/02 10:39:25 grubba Exp $");
+RCSID("$Id$");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"

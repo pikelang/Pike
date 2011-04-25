@@ -1,5 +1,5 @@
 /*
- * $Id: aes.pike,v 1.3 2001/11/08 01:45:38 nilsson Exp $
+ * $Id$
  *
  */
 

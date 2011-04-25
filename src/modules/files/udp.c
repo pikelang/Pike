@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: udp.c,v 1.44 2005/09/14 12:52:06 grubba Exp $
+|| $Id$
 */
 
 #define NO_PIKE_SHORTHAND
@@ -10,7 +10,7 @@
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.44 2005/09/14 12:52:06 grubba Exp $");
+RCSID("$Id$");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"

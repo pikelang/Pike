@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod,v 1.17 2009/04/01 20:20:35 mast Exp $
+ * $Id$
  *
  */
 

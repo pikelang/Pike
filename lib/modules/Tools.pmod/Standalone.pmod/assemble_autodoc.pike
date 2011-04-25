@@ -1,4 +1,4 @@
-// $Id: assemble_autodoc.pike,v 1.20 2003/09/15 18:35:12 nilsson Exp $
+// $Id$
 
 #pike __REAL_VERSION__
 

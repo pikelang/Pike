@@ -1,5 +1,5 @@
 /*
- * $Id: sql_result.pike,v 1.12 2009/08/26 12:38:11 grubba Exp $
+ * $Id$
  *
  * Implements the generic result module of the SQL-interface
  *

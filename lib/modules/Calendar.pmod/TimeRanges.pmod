@@ -1,6 +1,6 @@
 //! module Calendar
 
-// $Id: TimeRanges.pmod,v 1.19 2008/11/04 15:43:32 mast Exp $
+// $Id$
 
 #pike __REAL_VERSION__
 

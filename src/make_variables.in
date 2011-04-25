@@ -1,6 +1,6 @@
 # -*- Makefile -*-
 #
-# $Id: make_variables.in,v 1.11 2002/09/13 01:14:26 marcus Exp $
+# $Id$
 #
 # Note: This template is actually used only for make_variables in the
 # subdirectories; the one created in the build base dir is just an

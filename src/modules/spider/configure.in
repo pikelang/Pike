@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.25 2000/08/12 06:17:21 per Exp $
+# $Id$
 AC_INIT(spider.c)
 AC_CONFIG_HEADER(config.h)
 

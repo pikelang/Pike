@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_gif.c,v 1.16 2008/08/22 16:23:44 jonasw Exp $
+|| $Id$
 */
 
 /*
@@ -39,7 +39,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: image_gif.c,v 1.16 2008/08/22 16:23:44 jonasw Exp $");
+RCSID("$Id$");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"

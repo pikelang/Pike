@@ -1,4 +1,4 @@
-// $Id: Readline.pike,v 1.43 2002/11/26 15:06:46 jhs Exp $
+// $Id$
 #pike __REAL_VERSION__
 
 class OutputController

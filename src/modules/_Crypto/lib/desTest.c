@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: desTest.c,v 1.5 2002/10/11 01:39:52 nilsson Exp $
+|| $Id$
 */
 
 /*
@@ -14,7 +14,7 @@
  */
 
 #ifndef	lint
-static char desTest_cRcs[] = "$Id: desTest.c,v 1.5 2002/10/11 01:39:52 nilsson Exp $";
+static char desTest_cRcs[] = "$Id$";
 #endif
 
 #include	"des.h"

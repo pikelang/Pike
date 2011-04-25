@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.131 2007/11/20 14:29:01 jonasw Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.131 2007/11/20 14:29:01 jonasw Exp $");
+RCSID("$Id$");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>

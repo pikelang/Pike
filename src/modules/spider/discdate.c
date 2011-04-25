@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: discdate.c,v 1.14 2002/10/21 17:06:26 marcus Exp $
+|| $Id$
 */
 
 /* DiscDate.C .. converts boring normal dates to fun Discordian Date -><-
@@ -31,7 +31,7 @@
 #include <stdio.h>
 
 
-RCSID("$Id: discdate.c,v 1.14 2002/10/21 17:06:26 marcus Exp $");
+RCSID("$Id$");
 
 struct disc_time
 {

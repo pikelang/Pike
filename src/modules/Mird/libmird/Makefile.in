@@ -1,6 +1,6 @@
 # Makefile for builtin Pike libmird
 
-# $Id: Makefile.in,v 1.6 2002/04/06 23:45:32 mast Exp $
+# $Id$
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../../..:../../..
 

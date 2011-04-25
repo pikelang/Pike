@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: opcodes.h,v 1.33 2004/05/11 15:25:26 grubba Exp $
+|| $Id$
 */
 
 #ifndef OPCODES_H

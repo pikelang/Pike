@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: freelist.c,v 1.4 2002/10/11 01:39:46 nilsson Exp $
+|| $Id$
 */
 
 /*
@@ -26,7 +26,7 @@
 #include <stdio.h>
 
 static const char RCSID[]=
-   "$Id: freelist.c,v 1.4 2002/10/11 01:39:46 nilsson Exp $";
+   "$Id$";
 
 
 #define BLOCKS_IN_FREE_LIST(DB) (LONGS_IN_BLOCK(DB)-6)

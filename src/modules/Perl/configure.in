@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.13 2002/08/15 15:33:12 grubba Exp $
+# $Id$
 AC_INIT(perlmod.c)
 AC_CONFIG_HEADER(perl_machine.h)
 

@@ -1,6 +1,6 @@
 /* Xlib.pmod
  *
- * $Id: Xlib.pmod,v 1.47 2002/06/15 20:55:25 bill Exp $
+ * $Id$
  */
 
 /*

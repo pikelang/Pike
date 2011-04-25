@@ -3,7 +3,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dumpmodule.pike,v 1.38 2004/03/19 14:28:03 grubba Exp $
+|| $Id$
 */
 
 int quiet = 1, report_failed = 0, recursive = 0, update = 0;

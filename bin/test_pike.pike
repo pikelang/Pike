@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.78 2003/03/29 14:08:17 marcus Exp $ */
+/* $Id$ */
 
 import Stdio;
 

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: nt.c,v 1.58 2007/12/20 17:17:45 grubba Exp $
+|| $Id$
 */
 
 /*

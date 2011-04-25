@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: handshake.pike,v 1.32 2004/08/10 12:46:08 mast Exp $
+/* $Id$
  *
  */
 

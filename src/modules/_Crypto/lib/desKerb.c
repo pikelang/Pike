@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: desKerb.c,v 1.5 2002/10/11 01:39:52 nilsson Exp $
+|| $Id$
 */
 
 /*
@@ -14,7 +14,7 @@
 #include "des.h"
 
 #include "RCSID.h"
-RCSID2(desKerb_cRcs, "$Id: desKerb.c,v 1.5 2002/10/11 01:39:52 nilsson Exp $");
+RCSID2(desKerb_cRcs, "$Id$");
 
 /* permit the default style of des functions to be changed */
 

@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.8 2001/03/04 19:27:20 mirar Exp $
+# $Id$
 AC_INIT(sprintf.c)
 
 AC_CONFIG_HEADER(config.h)

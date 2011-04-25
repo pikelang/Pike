@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.7 2007/11/01 14:26:46 grubba Exp $
+// $Id$
 
 // Tools.Hilfe
 define(test_hilfe_setup_low,[[test_do([[

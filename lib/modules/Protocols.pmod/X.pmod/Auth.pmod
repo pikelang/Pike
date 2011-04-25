@@ -1,6 +1,6 @@
 /* Auth.pmod
  *
- * $Id: Auth.pmod,v 1.12 2002/12/10 15:12:17 marcus Exp $
+ * $Id$
  */
 
 /*

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ia32.h,v 1.22 2006/09/29 14:49:19 stewa Exp $
+|| $Id$
 */
 
 /* #define ALIGN_PIKE_JUMPS 8 */

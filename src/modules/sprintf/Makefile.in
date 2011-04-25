@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.8 1999/11/18 08:03:18 hubbe Exp $
+# $Id$
 @make_variables@
 VPATH=@srcdir@:@srcdir@/../..:../..
 OBJS=sprintf.o

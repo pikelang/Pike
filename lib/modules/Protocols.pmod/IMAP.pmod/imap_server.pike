@@ -1,6 +1,6 @@
 /* imap_server.pike
  *
- * $Id: imap_server.pike,v 1.21 2002/03/09 18:58:29 nilsson Exp $
+ * $Id$
  */
 #pike __REAL_VERSION__
 

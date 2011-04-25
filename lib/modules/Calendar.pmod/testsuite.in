@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.6 2008/01/28 20:50:03 mast Exp $
+dnl $Id$
 
 dnl NOTE:
 dnl   *every* time the Calendar tests have failed, it's not the 

@@ -1,7 +1,7 @@
 /*
  * This is part of the Postgres module for Pike.
  *
- * $Id: postgres.pike,v 1.19 2008/01/09 14:26:07 mast Exp $
+ * $Id$
  *
  */
 

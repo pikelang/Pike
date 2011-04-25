@@ -1,5 +1,5 @@
 /*
- * $Id: mysql_result.pike,v 1.4 2000/09/28 03:39:08 hubbe Exp $
+ * $Id$
  *
  * Glue for the Mysql-module
  */

@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: freetype.c,v 1.19 2005/10/31 09:12:10 grubba Exp $
+|| $Id$
 */
 
 #include "config.h"
 #include "global.h"
-RCSID("$Id: freetype.c,v 1.19 2005/10/31 09:12:10 grubba Exp $");
+RCSID("$Id$");
 #include "module.h"
 #include "pike_error.h"
 

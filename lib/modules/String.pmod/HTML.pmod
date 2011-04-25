@@ -1,4 +1,4 @@
-// $Id: HTML.pmod,v 1.3 2002/11/27 21:34:39 marcus Exp $
+// $Id$
 
 #pike __REAL_VERSION__
 

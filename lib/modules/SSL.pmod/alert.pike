@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: alert.pike,v 1.7 2002/03/20 16:40:00 nilsson Exp $
+/* $Id$
  *
  */
 

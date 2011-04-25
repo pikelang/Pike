@@ -18,7 +18,7 @@
 // = american standard for countries and country division codes
 
 // Updated 2001-04-17 from ...bugger, lost url
-// $Id: FIPS10_4.pmod,v 1.2 2001/04/17 18:26:16 mirar Exp $
+// $Id$
 
 #pike __REAL_VERSION__
 

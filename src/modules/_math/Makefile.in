@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.7 1999/11/18 08:02:42 hubbe Exp $
+# $Id$
 @make_variables@
 VPATH=@srcdir@:@srcdir@/../..:../..
 MODULE_LDFLAGS=@LIBS@

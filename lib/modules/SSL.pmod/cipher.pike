@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: cipher.pike,v 1.20 2002/06/11 18:01:04 mast Exp $
+/* $Id$
  *
  */
 

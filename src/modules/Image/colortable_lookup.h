@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: colortable_lookup.h,v 1.21 2003/03/21 18:58:31 marcus Exp $
+|| $Id$
 */
 
 /* included w/ defines in colortable.c */

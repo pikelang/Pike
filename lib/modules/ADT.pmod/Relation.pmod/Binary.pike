@@ -1,4 +1,4 @@
-// $Id: Binary.pike,v 1.6 2003/09/15 18:33:58 nilsson Exp $
+// $Id$
 // An abstract data type for binary relations.
 
 #pike __REAL_VERSION__

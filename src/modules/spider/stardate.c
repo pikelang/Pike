@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stardate.c,v 1.17 2002/11/28 23:47:29 nilsson Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -20,7 +20,7 @@
 #include "builtin_functions.h"
 #include "pike_error.h"
 
-RCSID("$Id: stardate.c,v 1.17 2002/11/28 23:47:29 nilsson Exp $");
+RCSID("$Id$");
 
 #ifdef HAVE_SYS_TIME_H 
 #include <sys/time.h>

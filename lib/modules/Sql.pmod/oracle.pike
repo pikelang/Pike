@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.pike,v 1.7 2002/11/27 15:40:34 mast Exp $
+ * $Id$
  *
  * Glue for the Oracle-module
  */

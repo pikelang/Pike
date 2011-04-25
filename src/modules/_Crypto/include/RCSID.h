@@ -2,10 +2,10 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: RCSID.h,v 1.8 2002/10/11 01:39:51 nilsson Exp $
+|| $Id$
 */
 
-/* $Id: RCSID.h,v 1.8 2002/10/11 01:39:51 nilsson Exp $ */
+/* $Id$ */
 #ifndef RCSID_H_INCLUDED
 #define RCSID_H_INCLUDED
 

@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.3 2005/04/02 22:22:57 mast Exp $
+// $Id$
 
 // _Charset.decoder
 test_true([[objectp(_Charset)]])

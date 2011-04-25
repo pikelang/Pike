@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: oracle.c,v 1.87 2009/10/30 11:00:21 mast Exp $
+|| $Id$
 */
 
 /*
@@ -54,7 +54,7 @@
 
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.87 2009/10/30 11:00:21 mast Exp $");
+RCSID("$Id$");
 
 
 /* User-changable defines: */

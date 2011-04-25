@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operator.c,v 1.45 2004/05/15 19:14:23 jonasw Exp $
+|| $Id$
 */
 
 /*

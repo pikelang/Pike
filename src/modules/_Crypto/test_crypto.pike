@@ -1,6 +1,6 @@
 #! /usr/local/bin/pike
 
-/* $Id: test_crypto.pike,v 1.5 1997/05/31 22:04:10 grubba Exp $ */
+/* $Id$ */
 
 import Crypto;
 

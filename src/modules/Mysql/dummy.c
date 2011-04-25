@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dummy.c,v 1.14 2003/06/24 08:05:10 kiwi Exp $
+|| $Id$
 */
 
 /*

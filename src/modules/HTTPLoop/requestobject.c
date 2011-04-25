@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: requestobject.c,v 1.25 2002/10/25 18:59:58 nilsson Exp $
+|| $Id$
 */
 
 #include "global.h"

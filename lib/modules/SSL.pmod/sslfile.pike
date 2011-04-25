@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.57 2004/11/30 14:29:37 mast Exp $
+/* $Id$
  *
  */
 

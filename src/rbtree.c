@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rbtree.c,v 1.14 2002/12/05 20:13:04 mast Exp $
+|| $Id$
 */
 
 /* An implementation of a threaded red/black balanced binary tree.
@@ -12,7 +12,7 @@
 
 #include "global.h"
 
-RCSID("$Id: rbtree.c,v 1.14 2002/12/05 20:13:04 mast Exp $");
+RCSID("$Id$");
 
 #include "interpret.h"
 #include "pike_error.h"

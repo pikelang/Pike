@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pgresult.c,v 1.20 2002/10/21 17:06:22 marcus Exp $
+|| $Id$
 */
 
 /*
@@ -68,7 +68,7 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 
-RCSID("$Id: pgresult.c,v 1.20 2002/10/21 17:06:22 marcus Exp $");
+RCSID("$Id$");
 
 #ifdef _REENTRANT
 PIKE_MUTEX_T pike_postgres_result_mutex STATIC_MUTEX_INIT;

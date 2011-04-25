@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.14 2001/02/27 18:52:26 grubba Exp $
+# $Id$
 AC_INIT(crypto.c)
 AC_CONFIG_HEADER(config.h)
 

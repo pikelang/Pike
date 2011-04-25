@@ -1,4 +1,4 @@
-/* $Id: randomness.pmod,v 1.21 2002/03/09 18:13:09 nilsson Exp $
+/* $Id$
  */
 
 //! Assorted stronger or weaker randomnumber generators.

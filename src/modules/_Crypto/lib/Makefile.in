@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.36 2002/05/04 16:51:33 mast Exp $
+# $Id$
 #
 # Makefile for low-level crypto library
 

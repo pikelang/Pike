@@ -1,4 +1,4 @@
-# $Id: extensions,v 1.1 1999/11/14 00:43:14 per Exp $
+# $Id$
 # name="Extension database";
 # doc="The database used to map from extension to mime-type (example: *.gif to image/gif)";
 #

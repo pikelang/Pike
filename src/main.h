@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.h,v 1.21 2003/04/03 16:58:36 mast Exp $
+|| $Id$
 */
 
 #ifndef MAIN_H

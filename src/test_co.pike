@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_co.pike,v 1.7 2001/10/01 19:54:00 nilsson Exp $ */
+/* $Id$ */
 
 void verify();
 

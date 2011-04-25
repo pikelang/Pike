@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: desCode.h,v 1.4 2002/10/11 01:39:52 nilsson Exp $
+|| $Id$
 */
 
 /*
@@ -16,7 +16,7 @@
 #include "des.h"
 
 #include "RCSID.h"
-RCSID2(desCode_hRcs, "$Id: desCode.h,v 1.4 2002/10/11 01:39:52 nilsson Exp $");
+RCSID2(desCode_hRcs, "$Id$");
 
 extern unsigned INT32 des_keymap[], des_bigmap[];
 

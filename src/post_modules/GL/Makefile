@@ -1,6 +1,6 @@
 #
 # Makefile for building AutoDoc documentation
-# $Id: Makefile,v 1.1 2002/02/12 23:57:02 nilsson Exp $
+# $Id$
 #
 
 PIKE=pike

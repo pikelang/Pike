@@ -2,7 +2,7 @@
 <!-- put everything together, as well as information about how to -->
 <!-- split it up into smaller files. -->
 
-<!-- $Id: onepage.xml,v 1.3 2002/04/06 21:28:15 nilsson Exp $ -->
+<!-- $Id$ -->
 
 <manual>
   <dir name="onepage">

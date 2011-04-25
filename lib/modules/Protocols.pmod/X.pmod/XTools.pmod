@@ -1,6 +1,6 @@
 /* XTools.pmod
  *
- * $Id: XTools.pmod,v 1.8 2002/01/15 22:32:43 nilsson Exp $
+ * $Id$
  *
  * Various tools that are higher level than raw X, but are lower level
  * than widgets.

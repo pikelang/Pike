@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: matrix.c,v 1.45 2003/03/22 16:44:21 grubba Exp $
+|| $Id$
 */
 
 /*

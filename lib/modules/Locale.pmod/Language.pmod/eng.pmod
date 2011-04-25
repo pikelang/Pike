@@ -3,7 +3,7 @@
 
 //! English language locale.
 
-// $Id: eng.pmod,v 1.4 2002/11/25 11:29:52 grubba Exp $
+// $Id$
 
 inherit "abstract";
 

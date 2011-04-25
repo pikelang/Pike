@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image.c,v 1.203 2006/09/20 13:28:11 grubba Exp $
+|| $Id$
 */
 
 /*
@@ -101,7 +101,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.203 2006/09/20 13:28:11 grubba Exp $");
+RCSID("$Id$");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"

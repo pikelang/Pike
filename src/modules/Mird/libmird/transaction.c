@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: transaction.c,v 1.5 2007/04/28 18:19:36 grubba Exp $
+|| $Id$
 */
 
 /*
@@ -33,7 +33,7 @@
 
 
 static const char RCSID[]=
-   "$Id: transaction.c,v 1.5 2007/04/28 18:19:36 grubba Exp $";
+   "$Id$";
 
 /*
  * start a new transaction

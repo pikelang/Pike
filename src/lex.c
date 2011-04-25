@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lex.c,v 1.113 2003/11/18 14:22:52 grubba Exp $
+|| $Id$
 */
 
 #include "global.h"
-RCSID("$Id: lex.c,v 1.113 2003/11/18 14:22:52 grubba Exp $");
+RCSID("$Id$");
 #include "language.h"
 #include "array.h"
 #include "lex.h"

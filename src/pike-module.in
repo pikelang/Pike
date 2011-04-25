@@ -1,7 +1,7 @@
 #!¤pike¤
 // -*- Pike -*-
 
-// $Id: pike-module.in,v 1.5 2000/04/03 14:36:51 grubba Exp $
+// $Id$
 
 // Source directory
 string srcdir;

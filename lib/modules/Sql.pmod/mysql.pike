@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.pike,v 1.30 2010/01/04 17:18:18 mast Exp $
+ * $Id$
  *
  * Glue for the Mysql-module
  */

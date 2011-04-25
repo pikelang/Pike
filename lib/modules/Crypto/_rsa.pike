@@ -1,4 +1,4 @@
-/* $Id: _rsa.pike,v 1.6 2002/03/09 18:12:21 nilsson Exp $
+/* $Id$
  *
  * Follow the PKCS#1 standard for padding and encryption.
  */

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: precompiled_odbc.h,v 1.24 2010/08/05 08:27:49 grubba Exp $
+|| $Id$
 */
 
 /*

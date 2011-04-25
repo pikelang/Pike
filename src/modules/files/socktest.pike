@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.20 2002/10/12 13:32:31 grubba Exp $ */
+/* $Id$ */
 
 
 import Stdio;

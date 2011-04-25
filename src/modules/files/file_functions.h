@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file_functions.h,v 1.26 2004/08/18 14:14:26 mast Exp $
+|| $Id$
 */
 
 FILE_FUNC("open",file_open,"function(string,string,void|int:int)")

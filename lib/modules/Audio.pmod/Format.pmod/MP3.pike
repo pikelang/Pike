@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: MP3.pike,v 1.1 2002/09/13 13:37:53 hop Exp $
+// $Id$
 
 // MP3 file parser/formatter
 //

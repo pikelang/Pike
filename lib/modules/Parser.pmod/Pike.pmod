@@ -4,7 +4,7 @@
 //
 // #pike __REAL_VERSION__
 //
-// $Id: Pike.pmod,v 1.25 2003/01/22 15:12:51 nilsson Exp $
+// $Id$
 
 //! This module parses and tokanizes Pike source code.
 

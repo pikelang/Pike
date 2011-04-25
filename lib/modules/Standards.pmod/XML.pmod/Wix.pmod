@@ -1,4 +1,4 @@
-// $Id: Wix.pmod,v 1.2 2005/12/20 18:31:38 jonasw Exp $
+// $Id$
 //
 // 2004-11-01 Henrik Grubbström
 

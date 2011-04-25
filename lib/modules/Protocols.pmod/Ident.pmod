@@ -1,6 +1,6 @@
 // An implementation of the IDENT protocol, specified in RFC 931.
 //
-// $Id: Ident.pmod,v 1.9 2000/09/28 03:38:50 hubbe Exp $
+// $Id$
 
 #pike __REAL_VERSION__
 

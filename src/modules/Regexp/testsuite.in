@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.8 2002/11/26 16:31:11 nilsson Exp $
+dnl $Id$
 
 dnl - Here we try the Regexp module
 test_true([[objectp(Regexp("foo"))]])

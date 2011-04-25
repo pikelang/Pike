@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.1 1999/11/07 01:33:42 per Exp $
+# $Id$
 AC_INIT(Makefile.in)
 
 AC_SET_MAKE

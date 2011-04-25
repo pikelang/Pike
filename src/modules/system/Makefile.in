@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.12 2002/01/27 01:52:46 mast Exp $
+# $Id$
 @make_variables@
 VPATH=@srcdir@:@srcdir@/../..:../..:.
 OBJS=system.o syslog.o passwords.o nt.o memory.o

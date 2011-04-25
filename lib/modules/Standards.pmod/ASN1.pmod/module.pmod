@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.1 2008/06/13 19:57:15 mast Exp $
+// $Id$
 
 string encode_der_oid (string dotted_decimal)
 //! Convenience function to convert an oid (object identifier) on

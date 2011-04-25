@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.103 2006/05/10 19:43:53 mast Exp $
+|| $Id$
 */
 
 #define NO_PIKE_SHORTHAND
@@ -23,7 +23,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.103 2006/05/10 19:43:53 mast Exp $");
+RCSID("$Id$");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)

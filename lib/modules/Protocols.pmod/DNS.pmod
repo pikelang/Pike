@@ -1,4 +1,4 @@
-// $Id: DNS.pmod,v 1.75 2008/03/10 13:41:19 grubba Exp $
+// $Id$
 // Not yet finished -- Fredrik Hubinette
 
 //! Domain Name System

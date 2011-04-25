@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: module.c,v 1.20 2002/10/11 01:39:33 nilsson Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -25,7 +25,7 @@
 #include "post_modules/modlist_headers.h"
 #endif
 
-RCSID("$Id: module.c,v 1.20 2002/10/11 01:39:33 nilsson Exp $");
+RCSID("$Id$");
 
 typedef void (*modfun)(void);
 

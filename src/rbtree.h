@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rbtree.h,v 1.9 2007/05/07 15:27:27 mast Exp $
+|| $Id$
 */
 
 /* An implementation of a threaded red/black balanced binary tree.

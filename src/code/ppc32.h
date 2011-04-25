@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ppc32.h,v 1.23 2005/05/24 17:35:42 jonasw Exp $
+|| $Id$
 */
 
 #define PPC_INSTR_B_FORM(OPCD,BO,BI,BD,AA,LK)			\

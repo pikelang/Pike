@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dvb.h,v 1.6 2002/11/09 14:07:55 grubba Exp $
+|| $Id$
 */
 
 #ifndef DVB_H

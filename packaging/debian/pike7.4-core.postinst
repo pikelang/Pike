@@ -3,7 +3,7 @@
 #
 # see: dh_installdeb(1)
 # 
-# $Id: pike7.4-core.postinst,v 1.1 2005/11/21 20:14:12 grendel Exp $
+# $Id$
 #
 
 set -e

@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.264 2008/08/04 11:38:56 mast Exp $
+|| $Id$
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.264 2008/08/04 11:38:56 mast Exp $");
+RCSID("$Id$");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"

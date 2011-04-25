@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.45 2006/06/17 11:11:47 mast Exp $
+# $Id$
 
 @make_variables@
 

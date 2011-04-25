@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.331 2006/06/09 18:21:51 mast Exp $
+|| $Id$
 */
 
 #include "global.h"
-RCSID("$Id: las.c,v 1.331 2006/06/09 18:21:51 mast Exp $");
+RCSID("$Id$");
 
 #include "language.h"
 #include "interpret.h"

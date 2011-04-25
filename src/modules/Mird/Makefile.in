@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.5 2002/03/14 01:52:59 mast Exp $
+# $Id$
 @make_variables@
 VPATH=@srcdir@:@srcdir@/../..:../..
 OBJS=mird_glue.o

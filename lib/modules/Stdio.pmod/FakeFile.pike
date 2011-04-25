@@ -1,4 +1,4 @@
-// $Id: FakeFile.pike,v 1.6 2003/05/14 15:59:06 nilsson Exp $
+// $Id$
 #pike __REAL_VERSION__
 
 //! A string wrapper that pretends to be a @[Stdio.File] object.

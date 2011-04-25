@@ -1,5 +1,5 @@
 This file contains various notes about the Perl support.
-( $Id: README.txt,v 1.1 2002/04/07 14:54:03 leif Exp $ )
+( $Id$ )
 
 PERL 5.6.x:
    The semantics of Perl's embedding interface seems to be in flux, changing

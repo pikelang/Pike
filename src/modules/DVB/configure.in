@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.4 2004/11/10 16:17:29 grubba Exp $
+# $Id$
 #
 AC_INIT(dvb.c)
 AC_CONFIG_HEADER(config.h)

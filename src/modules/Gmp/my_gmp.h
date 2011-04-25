@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: my_gmp.h,v 1.15 2003/03/29 03:07:19 mast Exp $
+|| $Id$
 */
 
 /*

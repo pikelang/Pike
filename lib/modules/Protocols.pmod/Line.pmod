@@ -1,5 +1,5 @@
 /*
- * $Id: Line.pmod,v 1.20 2002/11/26 21:39:51 grubba Exp $
+ * $Id$
  *
  * Line-buffered protocol handling.
  *

@@ -1,5 +1,5 @@
 // Compatibility module
-// $Id: __default.pmod,v 1.12 2002/11/30 22:33:51 bill Exp $
+// $Id$
 
 #pike 7.3
 

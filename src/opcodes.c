@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: opcodes.c,v 1.132 2005/08/08 09:44:06 jonasw Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -30,7 +30,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: opcodes.c,v 1.132 2005/08/08 09:44:06 jonasw Exp $");
+RCSID("$Id$");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {

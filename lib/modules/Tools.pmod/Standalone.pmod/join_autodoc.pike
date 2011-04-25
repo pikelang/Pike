@@ -1,5 +1,5 @@
 /*
- * $Id: join_autodoc.pike,v 1.11 2003/09/15 18:35:13 nilsson Exp $
+ * $Id$
  *
  * AutoDoc mk II join script.
  *

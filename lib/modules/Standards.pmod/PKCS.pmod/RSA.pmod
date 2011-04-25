@@ -1,4 +1,4 @@
-// $Id: RSA.pmod,v 1.17 2002/11/27 16:31:21 nilsson Exp $
+// $Id$
 
 //! RSA operations and types as described in PKCS-1.
 

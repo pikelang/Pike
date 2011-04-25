@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.6 1998/09/20 08:32:28 hubbe Exp $
+# $Id$
 AC_INIT(pike_regexp.c)
 AC_CONFIG_HEADER(config.h)
 

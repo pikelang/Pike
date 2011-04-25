@@ -2,7 +2,7 @@
 //! Support for Universal Unique Identifiers (UUID) and
 //! Globally Unique Identifiers (GUID).
 //!
-// $Id: UUID.pmod,v 1.3 2007/08/05 11:59:15 marcus Exp $
+// $Id$
 //
 // 2004-10-01 Henrik Grubbström
 // 2004-10-04 Martin Nilsson

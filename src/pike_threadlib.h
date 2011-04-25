@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_threadlib.h,v 1.36 2010/09/28 16:14:14 grubba Exp $
+|| $Id$
 */
 
 #ifndef PIKE_THREADLIB_H

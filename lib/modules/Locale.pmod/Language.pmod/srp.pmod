@@ -3,7 +3,7 @@
 
 //! Serbian language locale by Goran Opacic 1996/12/11
 
-// $Id: srp.pmod,v 1.1 2002/10/01 10:57:57 nilsson Exp $
+// $Id$
 
 inherit "abstract";
 

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: roxen.c,v 1.36 2005/10/27 16:55:33 grubba Exp $
+|| $Id$
 */
 
 #define NO_PIKE_SHORTHAND

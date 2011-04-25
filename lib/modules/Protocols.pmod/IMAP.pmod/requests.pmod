@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.90 2002/03/09 18:58:30 nilsson Exp $
+ * $Id$
  */
 
 #pike __REAL_VERSION__

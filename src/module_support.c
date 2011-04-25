@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: module_support.c,v 1.55 2004/05/18 07:59:13 grubba Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -18,7 +18,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: module_support.c,v 1.55 2004/05/18 07:59:13 grubba Exp $");
+RCSID("$Id$");
 
 /* Checks that args_to_check arguments are OK.
  * Returns 1 if everything worked ok, zero otherwise.

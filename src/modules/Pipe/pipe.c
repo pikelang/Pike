@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pipe.c,v 1.53 2003/10/07 16:27:25 mast Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -38,7 +38,7 @@
 
 #include <fcntl.h>
 
-RCSID("$Id: pipe.c,v 1.53 2003/10/07 16:27:25 mast Exp $");
+RCSID("$Id$");
 
 #include "threads.h"
 #include "stralloc.h"

@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: constants.pike,v 1.11 2009/11/16 14:13:20 mast Exp $
+/* $Id$
  *
  */
 

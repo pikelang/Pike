@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: uncompressor.c,v 1.7 2003/03/26 14:15:41 mast Exp $
+|| $Id$
 */
 
 #include <sys/types.h>

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: des.h,v 1.6 2002/10/11 01:39:51 nilsson Exp $
+|| $Id$
 */
 
 /*
@@ -19,7 +19,7 @@
 #include "crypto_types.h"
 
 #include "RCSID.h"
-RCSID2(desCore_hRcs, "$Id: des.h,v 1.6 2002/10/11 01:39:51 nilsson Exp $");
+RCSID2(desCore_hRcs, "$Id$");
 
 #define DES_KEYSIZE 8
 #define DES_BLOCKSIZE 8

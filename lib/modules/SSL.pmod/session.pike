@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: session.pike,v 1.20 2002/03/20 16:40:02 nilsson Exp $
+/* $Id$
  *
  */
 

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: passwords.c,v 1.38 2002/10/11 01:39:56 nilsson Exp $
+|| $Id$
 */
 
 /*
@@ -27,7 +27,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: passwords.c,v 1.38 2002/10/11 01:39:56 nilsson Exp $");
+RCSID("$Id$");
 
 #include "module_support.h"
 #include "interpret.h"

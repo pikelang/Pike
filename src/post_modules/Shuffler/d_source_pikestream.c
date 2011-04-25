@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: d_source_pikestream.c,v 1.5 2002/11/06 23:08:19 nilsson Exp $
+|| $Id$
 */
 
 #include "global.h"

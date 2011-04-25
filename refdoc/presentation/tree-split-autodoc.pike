@@ -1,5 +1,5 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.35 2002/12/18 20:36:00 grubba Exp $
+ * $Id$
  *
  */
 

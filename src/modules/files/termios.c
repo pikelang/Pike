@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: termios.c,v 1.19 2002/11/23 15:47:58 mast Exp $
+|| $Id$
 */
 
 #include "global.h"
-RCSID("$Id: termios.c,v 1.19 2002/11/23 15:47:58 mast Exp $");
+RCSID("$Id$");
 #include "file_machine.h"
 
 #if defined(HAVE_TERMIOS_H)

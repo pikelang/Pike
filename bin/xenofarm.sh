@@ -1,6 +1,6 @@
 #! /bin/sh
 
-# $Id: xenofarm.sh,v 1.14 2005/03/18 19:28:01 grubba Exp $
+# $Id$
 # This file scripts the xenofarm actions and creates a result package
 # to send back.
 

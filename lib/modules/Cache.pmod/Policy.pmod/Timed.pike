@@ -2,7 +2,7 @@
  * An access-time-based expiration policy manager.
  * by Francesco Chemolli <kinkie@roxen.com>
  *
- * $Id: Timed.pike,v 1.5 2002/01/15 22:31:24 nilsson Exp $
+ * $Id$
  */
 
 #pike __REAL_VERSION__

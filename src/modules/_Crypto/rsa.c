@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rsa.c,v 1.28 2002/10/21 17:06:24 marcus Exp $
+|| $Id$
 */
 
 /*
@@ -39,7 +39,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: rsa.c,v 1.28 2002/10/21 17:06:24 marcus Exp $");
+RCSID("$Id$");
 
 struct pike_rsa_data
 {

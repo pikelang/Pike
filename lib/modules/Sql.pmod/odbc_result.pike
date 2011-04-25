@@ -1,5 +1,5 @@
 /*
- * $Id: odbc_result.pike,v 1.4 2000/09/28 03:39:09 hubbe Exp $
+ * $Id$
  *
  * Glue for the ODBC-module
  */

@@ -1,6 +1,6 @@
 /* XImage.pmod
  *
- * $Id: XImage.pmod,v 1.20 2002/01/15 22:47:12 nilsson Exp $
+ * $Id$
  */
 
 /*

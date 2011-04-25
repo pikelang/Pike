@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: global.h,v 1.81 2008/04/22 18:17:55 mast Exp $
+|| $Id$
 */
 
 #ifndef GLOBAL_H

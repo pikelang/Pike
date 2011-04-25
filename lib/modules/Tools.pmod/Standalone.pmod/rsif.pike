@@ -1,5 +1,5 @@
 #! /usr/bin/env pike
-// -*- pike -*- $Id: rsif.pike,v 1.3 2008/06/20 19:15:33 srb Exp $
+// -*- pike -*- $Id$
 
 #pike __REAL_VERSION__
 

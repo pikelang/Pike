@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.1 2000/08/12 06:18:22 per Exp $
+# $Id$
 @make_variables@
 VPATH=@srcdir@:@srcdir@/../..:../..
 OBJS=roxen.o

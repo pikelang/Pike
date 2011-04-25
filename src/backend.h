@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.h,v 1.17 2005/03/22 11:46:37 jonasw Exp $
+|| $Id$
 */
 
 #ifndef BACKEND_H

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: database.c,v 1.7 2007/04/28 18:19:36 grubba Exp $
+|| $Id$
 */
 
 /*
@@ -31,7 +31,7 @@
 #endif
 
 static const char RCSID[]=
-   "$Id: database.c,v 1.7 2007/04/28 18:19:36 grubba Exp $";
+   "$Id$";
 
 /* forward declarations */
 

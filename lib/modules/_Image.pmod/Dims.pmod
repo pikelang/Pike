@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-//   $Id: Dims.pmod,v 1.4 2006/09/19 08:02:33 tor Exp $
+//   $Id$
 //
 //   Imagedimensionreadermodule for Pike.
 //   Created by Johan Sch�n, <js@roxen.com>.

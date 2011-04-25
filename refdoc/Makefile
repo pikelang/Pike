@@ -1,7 +1,7 @@
 #
 # Main Makefile for extracting AutoDoc mk II to XML
 #
-# $Id: Makefile,v 1.50 2003/09/27 09:53:54 kiwi Exp $
+# $Id$
 #
 # Henrik Grubbström 2001-02-02
 #

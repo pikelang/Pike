@@ -1,5 +1,5 @@
 //
-// $Id: TELNET.pmod,v 1.18 2002/03/09 18:55:50 nilsson Exp $
+// $Id$
 //
 // The TELNET protocol as described by RFC 764 and others.
 //

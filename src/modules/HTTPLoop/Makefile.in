@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.2 1999/11/18 07:59:12 hubbe Exp $
+# $Id$
 @make_variables@
 VPATH=@srcdir@:@srcdir@/../..:../..
 OBJS=accept_and_parse.o util.o cache.o requestobject.o log.o timeout.o 

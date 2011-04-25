@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: LGPL.pmod,v 1.2 2002/05/31 22:24:42 nilsson Exp $
+// $Id$
 
 inherit .GPL;
 

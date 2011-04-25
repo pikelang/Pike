@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.h,v 1.117 2004/09/30 15:22:37 mast Exp $
+|| $Id$
 */
 
 #ifndef SVALUE_H

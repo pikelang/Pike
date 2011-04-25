@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pikecode.c,v 1.8 2003/12/09 17:44:59 grubba Exp $
+|| $Id$
 */
 
 /*

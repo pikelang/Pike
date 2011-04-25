@@ -1,7 +1,7 @@
 #!/usr/local/bin/pike
 // By Martin Nilsson and Andreas Lange
 //
-// $Id: extract_locale.pike,v 1.1 2005/03/22 17:45:30 grubba Exp $
+// $Id$
 //
 
 

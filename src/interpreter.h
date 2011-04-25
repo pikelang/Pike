@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpreter.h,v 1.83 2003/03/29 00:10:48 mast Exp $
+|| $Id$
 */
 
 #undef LOW_GET_ARG

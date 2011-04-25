@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.1 2000/12/11 10:43:51 per Exp $
+# $Id$
 @make_variables@
 VPATH=@srcdir@:@srcdir@/../..:../..
 OBJS=freetype.o

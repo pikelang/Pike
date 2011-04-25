@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: crypto.h,v 1.11 2006/06/09 09:28:45 mast Exp $
+|| $Id$
 */
 
 /*

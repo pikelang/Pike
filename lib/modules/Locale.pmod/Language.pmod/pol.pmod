@@ -4,7 +4,7 @@
 
 //! Polish language locale by Piotr Klaban.
 
-// $Id: pol.pmod,v 1.2 2002/11/24 15:34:17 marcus Exp $
+// $Id$
 
 inherit "abstract";
 

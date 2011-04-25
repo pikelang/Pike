@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod,v 1.10 2002/06/14 14:32:04 nilsson Exp $
+ * $Id$
  *
  * A BNF-grammar in Pike.
  * Compiles to a LALR(1) state-machine.

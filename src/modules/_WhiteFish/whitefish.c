@@ -3,7 +3,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: whitefish.c,v 1.35 2004/08/07 15:26:57 js Exp $");
+RCSID("$Id$");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"

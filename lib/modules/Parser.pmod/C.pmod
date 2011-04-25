@@ -4,7 +4,7 @@
 //
 // #pike __REAL_VERSION__
 //
-// $Id: C.pmod,v 1.35 2009/05/29 10:36:50 grubba Exp $
+// $Id$
 
 mapping(string:string) global_groupings=(["{":"}","(":")","[":"]"]);
 

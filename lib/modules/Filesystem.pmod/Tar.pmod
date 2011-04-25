@@ -1,5 +1,5 @@
 /*
- * $Id: Tar.pmod,v 1.18 2002/11/29 00:35:51 nilsson Exp $
+ * $Id$
  */
 
 #pike __REAL_VERSION__

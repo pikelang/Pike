@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.2 2002/11/08 12:06:19 hop Exp $
+# $Id$
 @make_variables@
 VPATH=@srcdir@:@srcdir@/../..:../..
 OBJS=dvb.o psparser.o

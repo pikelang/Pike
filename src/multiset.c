@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.72 2008/05/30 19:38:09 mast Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -14,7 +14,7 @@
  * Created by Martin Stjernholm 2001-05-07
  */
 
-RCSID("$Id: multiset.c,v 1.72 2008/05/30 19:38:09 mast Exp $");
+RCSID("$Id$");
 
 #include "builtin_functions.h"
 #include "gc.h"
@@ -5315,7 +5315,7 @@ void test_multiset (void)
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.72 2008/05/30 19:38:09 mast Exp $");
+RCSID("$Id$");
 
 struct multiset *first_multiset;
 

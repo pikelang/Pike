@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: any.c,v 1.29 2006/09/12 09:47:11 grubba Exp $
+|| $Id$
 */
 
 /*
@@ -26,7 +26,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: any.c,v 1.29 2006/09/12 09:47:11 grubba Exp $");
+RCSID("$Id$");
 #include "pike_macros.h"
 #include "operators.h"
 #include "builtin_functions.h"

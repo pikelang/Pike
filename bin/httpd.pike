@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: httpd.pike,v 1.4 2002/12/01 01:38:28 nilsson Exp $ */
+/* $Id$ */
 
 /* A very small httpd capable of fetching files only.
  * Written by Fredrik Hübinette as a demonstration of Pike

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: b_source_normal_file.c,v 1.8 2003/03/26 14:15:42 mast Exp $
+|| $Id$
 */
 
 #include "global.h"

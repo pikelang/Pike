@@ -1,4 +1,4 @@
-// $Id: RDF.pike,v 1.10 2003/09/15 18:34:45 nilsson Exp $
+// $Id$
 
 #pike __REAL_VERSION__
 

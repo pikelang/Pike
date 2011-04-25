@@ -2,7 +2,7 @@
  *
  * Kludge for pike-0.5
  *
- * $Id: _Types.pmod,v 1.7 2002/01/15 22:32:43 nilsson Exp $
+ * $Id$
  */
 
 /*

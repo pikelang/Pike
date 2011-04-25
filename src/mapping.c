@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.163 2006/06/21 11:33:02 mast Exp $
+|| $Id$
 */
 
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.163 2006/06/21 11:33:02 mast Exp $");
+RCSID("$Id$");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"

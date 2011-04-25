@@ -6,7 +6,7 @@
 # architecture-dependant package, as well as an architecture-independent
 # package.
 #
-# $Id: rules,v 1.55 2005/11/21 22:43:17 grendel Exp $
+# $Id$
 #
 
 # Uncomment this to turn on verbose mode. 

@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.5 2000/07/28 07:12:28 hubbe Exp $
+# $Id$
 AC_INIT(accept_and_parse.c)
 AC_CONFIG_HEADER(config.h)
 

@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: https.pike,v 1.12 2002/03/20 16:40:01 nilsson Exp $
+/* $Id$
  *
  * dummy https server
  */

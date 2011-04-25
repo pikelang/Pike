@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ia32.c,v 1.31 2007/10/11 16:47:16 mast Exp $
+|| $Id$
 */
 
 /*

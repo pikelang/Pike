@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.5 1999/11/18 08:01:22 hubbe Exp $
+# $Id$
 @make_variables@
 VPATH=@srcdir@:@srcdir@/../..:../..
 MODULE_CFLAGS=@DEFS@ @CPPFLAGS@

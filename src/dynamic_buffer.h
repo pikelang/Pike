@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dynamic_buffer.h,v 1.17 2002/10/20 22:05:07 marcus Exp $
+|| $Id$
 */
 
 #ifndef DYNAMIC_BUFFER_H

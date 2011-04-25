@@ -1,6 +1,6 @@
 /* KeySyms.pmod
  *
- * $Id: KeySyms.pmod,v 1.2 2002/06/16 17:55:46 nilsson Exp $
+ * $Id$
  */
 
 /*

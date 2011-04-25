@@ -1,5 +1,5 @@
 /*
- * $Id: parser.pike,v 1.2 2002/12/04 14:00:12 grubba Exp $
+ * $Id$
  *
  * A BNF-grammar in Pike.
  * Compiles to a LALR(1) state-machine.

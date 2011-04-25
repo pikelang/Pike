@@ -1,7 +1,7 @@
 #!/usr/local/bin/pike
 // By Martin Nilsson and Andreas Lange
 //
-// $Id: extract.pike,v 1.15 2002/07/26 14:21:20 nilsson Exp $
+// $Id$
 //
 
 

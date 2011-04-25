@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.262 2009/03/05 11:44:43 grubba Exp $
+// $Id$
 
 #pike __REAL_VERSION__
 

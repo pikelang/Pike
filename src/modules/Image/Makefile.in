@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.33 2002/08/26 09:58:00 grubba Exp $
+# $Id$
 @make_variables@
 VPATH=@srcdir@:@srcdir@/../..:../..
 OBJS = image_module.o \

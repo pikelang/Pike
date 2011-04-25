@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.1 2007/05/04 18:47:42 mast Exp $
+# $Id$
 @make_variables@
 VPATH=@srcdir@
 OBJS=pcre_glue.o 

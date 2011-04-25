@@ -1,5 +1,5 @@
 /*
- * $Id: Types.pmod,v 1.21 2007/09/12 17:00:04 grubba Exp $
+ * $Id$
  *
  * Encodes various asn.1 objects according to the Distinguished
  * Encoding Rules (DER) */

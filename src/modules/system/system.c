@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.135 2008/01/15 14:32:25 jonasw Exp $
+|| $Id$
 */
 
 /*
@@ -20,7 +20,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.135 2008/01/15 14:32:25 jonasw Exp $");
+RCSID("$Id$");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif

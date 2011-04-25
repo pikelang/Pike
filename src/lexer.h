@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lexer.h,v 1.41 2002/11/04 20:00:25 nilsson Exp $
+|| $Id$
 */
 
 /*

@@ -1,7 +1,7 @@
 //
 // snmp_globals.h
 //
-// $Id: snmp_globals.h,v 1.3 2002/12/04 19:14:00 bill Exp $
+// $Id$
 //
 
 #define SNMP_DEFAULT_PORT       161

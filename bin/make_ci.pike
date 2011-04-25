@@ -1,5 +1,5 @@
 /*
- * $Id: make_ci.pike,v 1.7 2001/06/21 13:23:20 grubba Exp $
+ * $Id$
  *
  * Creates the file case_info.h
  *
@@ -83,7 +83,7 @@ int main(int argc, array(string) argv)
 
   write(sprintf("/*\n"
 		" * Created by\n"
-		" * $Id: make_ci.pike,v 1.7 2001/06/21 13:23:20 grubba Exp $\n"
+		" * $Id$\n"
 		" * on %s"
 		" *\n"
 		" * Table used for looking up the case of\n"

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: arcfour.c,v 1.20 2002/10/21 17:06:23 marcus Exp $
+|| $Id$
 */
 
 /* arcfour.c
@@ -26,7 +26,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: arcfour.c,v 1.20 2002/10/21 17:06:23 marcus Exp $");
+RCSID("$Id$");
 
 #undef THIS
 #define THIS ((struct arcfour_ctx *)(Pike_fp->current_storage))

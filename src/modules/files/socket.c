@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: socket.c,v 1.68 2003/10/15 18:30:24 grubba Exp $
+|| $Id$
 */
 
 #define NO_PIKE_SHORTHAND
@@ -23,7 +23,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: socket.c,v 1.68 2003/10/15 18:30:24 grubba Exp $");
+RCSID("$Id$");
 
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>

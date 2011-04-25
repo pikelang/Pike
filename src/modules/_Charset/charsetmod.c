@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: charsetmod.c,v 1.42 2005/04/02 22:22:57 mast Exp $
+|| $Id$
 */
 
 #ifdef HAVE_CONFIG_H
@@ -10,7 +10,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: charsetmod.c,v 1.42 2005/04/02 22:22:57 mast Exp $");
+RCSID("$Id$");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"

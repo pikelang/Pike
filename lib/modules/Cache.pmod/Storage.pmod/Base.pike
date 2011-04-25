@@ -2,7 +2,7 @@
  * Storage Manager prototype.
  * by Francesco Chemolli <kinkie@roxen.com>
  *
- * $Id: Base.pike,v 1.7 2002/03/09 18:08:04 nilsson Exp $
+ * $Id$
  *
  * All storage managers must provide these methods.
  */

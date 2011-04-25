@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# $Id: build_modlist_h,v 1.2 1998/03/28 15:39:28 grubba Exp $
+# $Id$
 #
 # Create a modlist.h from a list of dirs with modules
 #

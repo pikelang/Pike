@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# $Id: run_autoconfig,v 1.37 2004/10/25 12:05:07 grubba Exp $
+# $Id$
 #
 # Bootstrap script
 

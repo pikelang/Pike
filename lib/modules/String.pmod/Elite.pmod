@@ -1,4 +1,4 @@
-// $Id: Elite.pmod,v 1.2 2002/03/19 23:58:06 nilsson Exp $
+// $Id$
 
 #pike __REAL_VERSION__
 

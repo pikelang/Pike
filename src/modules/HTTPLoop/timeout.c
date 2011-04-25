@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: timeout.c,v 1.11 2003/09/19 12:27:51 jonasw Exp $
+|| $Id$
 */
 
 #include "config.h"

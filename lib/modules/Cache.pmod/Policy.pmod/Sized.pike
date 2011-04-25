@@ -2,7 +2,7 @@
  * An LRU, size-constrained expiration policy manager.
  * by Francesco Chemolli <kinkie@roxen.com>
  *
- * $Id: Sized.pike,v 1.4 2002/01/15 22:31:24 nilsson Exp $
+ * $Id$
  */
 
 #pike __REAL_VERSION__

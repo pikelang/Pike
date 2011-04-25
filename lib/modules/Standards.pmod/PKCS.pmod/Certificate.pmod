@@ -1,4 +1,4 @@
-// $Id: Certificate.pmod,v 1.11 2002/11/27 16:49:08 grubba Exp $
+// $Id$
 
 //! Handle PKCS-6 and PKCS-10 certificates and certificate requests.
 

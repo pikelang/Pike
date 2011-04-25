@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.1 2000/09/11 16:05:02 grubba Exp $
+# $Id$
 @make_variables@
 VPATH=@srcdir@:@srcdir@/../..:../..
 OBJS=image_gif.o gif_lzw.o

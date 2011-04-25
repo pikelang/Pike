@@ -4,7 +4,7 @@
 
 #pragma strict_types
 
-/* $Id: mkpeep.pike,v 1.30 2009/05/05 13:36:34 tor Exp $ */
+/* $Id$ */
 
 #define JUMPBACK 3
 
