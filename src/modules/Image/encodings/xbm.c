@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xbm.c,v 1.26 2007/05/28 11:48:17 jonasw Exp $
+|| $Id$
 */
 
 #define NO_PIKE_SHORTHAND

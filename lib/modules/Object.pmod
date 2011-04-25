@@ -1,4 +1,4 @@
-//! $Id: Object.pmod,v 1.1 2005/02/09 16:35:50 mast Exp $
+//! $Id$
 
 #pike __REAL_VERSION__
 #pragma strict_types

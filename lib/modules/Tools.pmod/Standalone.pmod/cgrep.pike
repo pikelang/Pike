@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 // -*- Pike -*-
-// $Id: cgrep.pike,v 1.14 2008/06/20 16:24:18 srb Exp $
+// $Id$
 
 #pike __REAL_VERSION__
 

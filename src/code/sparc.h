@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sparc.h,v 1.32 2009/11/21 21:52:28 marcus Exp $
+|| $Id$
 */
 
 #define PIKE_OPCODE_ALIGN	4

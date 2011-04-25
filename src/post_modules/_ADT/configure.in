@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.1 2003/02/12 18:39:33 peta Exp $
+# $Id$
 AC_INIT(adt.cmod)
 
 AC_CONFIG_HEADER(config.h)

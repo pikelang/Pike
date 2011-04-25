@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: bytecode.h,v 1.13 2005/11/21 10:38:22 grubba Exp $
+|| $Id$
 */
 
 #define UPDATE_PC()

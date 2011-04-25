@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_module.c,v 1.24 2008/04/14 10:15:24 grubba Exp $
+|| $Id$
 */
 
 #include "global.h"

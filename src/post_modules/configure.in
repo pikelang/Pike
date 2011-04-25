@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.11 2008/06/04 12:07:22 grubba Exp $
+# $Id$
 AC_INIT(Makefile.in)
 
 PIKE_RETAIN_VARIABLES()

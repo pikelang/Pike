@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: split.c,v 1.8 2008/08/05 12:18:07 mast Exp $
+|| $Id$
 */
 
 #include "global.h"

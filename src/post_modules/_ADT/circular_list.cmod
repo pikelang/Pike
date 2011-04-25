@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: circular_list.cmod,v 1.20 2008/08/28 12:11:14 grubba Exp $
+|| $Id$
 */
 
 #include "global.h"

@@ -1,4 +1,4 @@
-//  $Id: DNS_SD.pmod,v 1.3 2008/06/28 16:49:54 nilsson Exp $
+//  $Id$
 //  Interface to DNS Service Discovery. Written by Jonas Walldén.
 
 

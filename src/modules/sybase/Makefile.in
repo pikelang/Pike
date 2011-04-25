@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.6 2003/11/13 00:37:56 mast Exp $
+# $Id$
 # by Francesco Chemolli <kinkie@roxen.com>
 
 @make_variables@

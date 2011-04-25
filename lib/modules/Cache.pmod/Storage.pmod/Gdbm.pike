@@ -2,7 +2,7 @@
  * A GBM-based storage manager.
  * by Francesco Chemolli <kinkie@roxen.com>
  *
- * $Id: Gdbm.pike,v 1.12 2008/06/28 16:36:53 nilsson Exp $
+ * $Id$
  *
  * This storage manager provides the means to save data to memory.
  * In this manager I'll add reference documentation as comments to

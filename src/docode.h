@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.h,v 1.21 2008/08/28 15:13:19 grubba Exp $
+|| $Id$
 */
 
 #ifndef DOCODE_H

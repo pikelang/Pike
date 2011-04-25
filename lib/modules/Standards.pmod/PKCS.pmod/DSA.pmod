@@ -1,5 +1,5 @@
 //
-// $Id: DSA.pmod,v 1.8 2004/04/14 20:19:26 nilsson Exp $
+// $Id$
 //
 
 //! DSA operations as defined in RFC-2459.

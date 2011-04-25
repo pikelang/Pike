@@ -1,6 +1,6 @@
 
 /*
- * $Id: lr.pike,v 1.3 2009/08/22 18:37:27 nilsson Exp $
+ * $Id$
  *
  * An LR(1) Parser in Pike
  *

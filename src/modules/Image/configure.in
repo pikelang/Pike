@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.33 2008/11/21 09:22:02 grubba Exp $
+# $Id$
 AC_INIT(image.c)
 AC_CONFIG_HEADER(image_machine.h)
 

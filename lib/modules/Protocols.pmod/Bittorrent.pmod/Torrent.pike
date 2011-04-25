@@ -62,7 +62,7 @@
 
 import .Bencoding;
 
-constant cvsid="$Id: Torrent.pike,v 1.39 2009/09/12 00:05:18 nilsson Exp $";
+constant cvsid="$Id$";
 
 Protocols.HTTP.Session http=Protocols.HTTP.Session();
 

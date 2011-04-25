@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.172 2010/06/22 00:07:45 arne Exp $
+|| $Id$
 */
 
 /* TODO: use ONERROR to cleanup fsp */

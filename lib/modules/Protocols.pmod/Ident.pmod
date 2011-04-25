@@ -1,5 +1,5 @@
 //
-// $Id: Ident.pmod,v 1.12 2008/06/28 16:36:56 nilsson Exp $
+// $Id$
 
 //! An implementation of the IDENT protocol, specified in RFC 931.
 

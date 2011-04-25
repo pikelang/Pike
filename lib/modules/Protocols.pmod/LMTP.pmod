@@ -1,5 +1,5 @@
 //
-// $Id: LMTP.pmod,v 1.14 2008/07/22 14:10:36 bill Exp $
+// $Id$
 //
 
 #pike __REAL_VERSION__

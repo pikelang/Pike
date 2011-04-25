@@ -1,5 +1,5 @@
 #! /usr/bin/env pike
-// -*- pike -*- $Id: parse_install_log,v 1.4 2002/07/09 00:31:41 nilsson Exp $
+// -*- pike -*- $Id$
 
 mapping install_from=([]);
 mapping fake_dirs=([]);

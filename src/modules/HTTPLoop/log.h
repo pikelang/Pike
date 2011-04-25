@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: log.h,v 1.3 2002/10/11 01:39:41 nilsson Exp $
+|| $Id$
 */
 
 void f_aap_log_as_array(INT32 args);

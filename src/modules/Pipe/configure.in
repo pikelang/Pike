@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.9 2008/04/18 10:36:33 srb Exp $
+# $Id$
 AC_INIT(pipe.c)
 AC_CONFIG_HEADER(config.h)
 

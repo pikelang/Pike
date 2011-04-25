@@ -6,7 +6,7 @@ NICK Mirar^
 USER mirar mistel.idonex.se irc.starchat.net :Mirar is testing
 */
 
-string __cvs_id="$Id: Requests.pmod,v 1.7 2008/06/28 16:49:54 nilsson Exp $";
+string __cvs_id="$Id$";
 
 import ".";
 

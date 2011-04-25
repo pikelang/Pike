@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iterators.cmod,v 1.73 2009/11/09 16:37:17 grubba Exp $
+|| $Id$
 */
 
 #include "global.h"

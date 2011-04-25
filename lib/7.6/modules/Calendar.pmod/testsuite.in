@@ -1,5 +1,5 @@
 START_MARKER(7.6)
-dnl $Id: testsuite.in,v 1.1 2008/05/23 01:03:10 mast Exp $
+dnl $Id$
 
 test_true(Calendar.Day())
 

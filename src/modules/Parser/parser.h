@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: parser.h,v 1.5 2004/10/05 21:17:15 nilsson Exp $
+|| $Id$
 */
 
 void init_parser_html(void);

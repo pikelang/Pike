@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: PGsql.cmod,v 1.35 2009/04/10 17:20:28 srb Exp $
+ * $Id$
  *
  * PGsql, accelerator functions for Sql.pgsql for Pike.
  *

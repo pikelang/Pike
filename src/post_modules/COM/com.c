@@ -1,5 +1,5 @@
 /*
- * $Id: com.c,v 1.11 2009/06/17 10:59:59 grubba Exp $
+ * $Id$
  *
  * Pike interface to Common Object Model (COM)
  *

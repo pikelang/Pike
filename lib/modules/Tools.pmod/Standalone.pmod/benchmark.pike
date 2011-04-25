@@ -1,4 +1,4 @@
-// $Id: benchmark.pike,v 1.8 2004/07/15 08:55:10 grubba Exp $
+// $Id$
 
 #pike __REAL_VERSION__
 

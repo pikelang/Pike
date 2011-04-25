@@ -1,5 +1,5 @@
 /*
- * $Id: make_banner.pike,v 1.2 2004/12/15 20:58:41 grubba Exp $
+ * $Id$
  *
  * Make a 500×70 banner BMP image suitable for the Wix installer.
  *

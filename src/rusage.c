@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rusage.c,v 1.55 2010/02/27 01:21:31 jonasw Exp $
+|| $Id$
 */
 
 #include "global.h"

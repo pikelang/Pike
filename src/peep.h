@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: peep.h,v 1.14 2003/11/19 17:19:29 grubba Exp $
+|| $Id$
 */
 
 #ifndef PEEP_H

@@ -1,6 +1,6 @@
 #!/usr/bin/env pike
 #pragma strict_types
-/* $Id: prime_table.pike,v 1.7 2003/04/02 19:28:05 nilsson Exp $
+/* $Id$
  *
  * Generates a table of primes.
  * Used when cross-compiling.
@@ -23,7 +23,7 @@ int main(int argc, array(string) argv)
 		"#define NUMBER_OF_PRIMES %d\n"
 		"\n"
 		"const unsigned long primes[NUMBER_OF_PRIMES] = {",
-		"$Id: prime_table.pike,v 1.7 2003/04/02 19:28:05 nilsson Exp $",
+		"$Id$",
 		argv, count));
 
   Gmp.mpz prime = Gmp.mpz(1);

@@ -1,7 +1,7 @@
 //
 // Argument parser
 // By Martin Nilsson
-// $Id: Arg.pmod,v 1.6 2008/06/28 16:36:52 nilsson Exp $
+// $Id$
 //
 
 #pike __REAL_VERSION__

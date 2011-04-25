@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: layer_oper.h,v 1.11 2002/12/09 22:43:27 mirar Exp $
+|| $Id$
 */
 
 /* template for operator layer row function */

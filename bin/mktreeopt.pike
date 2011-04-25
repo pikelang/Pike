@@ -1,5 +1,5 @@
 /*
- * $Id: mktreeopt.pike,v 1.35 2010/02/03 20:21:20 grubba Exp $
+ * $Id$
  *
  * Generates tree-transformation code from a specification.
  *
@@ -236,7 +236,7 @@ constant header =
 "/* Tree transformation code.\n"
 " *\n"
 " * This file was generated from %O by\n"
-" * $Id: mktreeopt.pike,v 1.35 2010/02/03 20:21:20 grubba Exp $\n"
+" * $Id$\n"
 " *\n"
 " * Do NOT edit!\n"
 " */\n"

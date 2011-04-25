@@ -1,6 +1,6 @@
 /* Types.pmod
  *
- * $Id: Types.pmod,v 1.39 2004/01/11 00:46:12 nilsson Exp $
+ * $Id$
  */
 
 /*

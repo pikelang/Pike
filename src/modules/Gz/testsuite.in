@@ -1,5 +1,5 @@
 START_MARKER
-// $Id: testsuite.in,v 1.23 2008/12/30 16:32:32 grubba Exp $
+// $Id$
 
 cond_resolv(Gz.deflate,
 [[

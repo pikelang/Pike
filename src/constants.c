@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: constants.c,v 1.61 2008/06/18 21:23:12 grubba Exp $
+|| $Id$
 */
 
 #include "global.h"

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: parser.c,v 1.21 2010/05/11 16:10:48 grubba Exp $
+|| $Id$
 */
 
 #include "global.h"

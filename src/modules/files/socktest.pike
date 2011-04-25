@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.62 2010/07/11 18:28:11 mast Exp $ */
+/* $Id$ */
 
 // #define OOB_DEBUG
 

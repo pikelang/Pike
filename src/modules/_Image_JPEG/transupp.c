@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: transupp.c,v 1.13 2003/04/30 18:03:14 grubba Exp $
+|| $Id$
 */
 
 #include "global.h"

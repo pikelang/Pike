@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.119 2009/08/10 08:01:05 grubba Exp $
+# $Id$
 AC_INIT(file.c)
 AC_CONFIG_HEADER(file_machine.h)
 

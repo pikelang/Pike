@@ -1,7 +1,7 @@
 //
 // Filesystem monitor with support for symbolic links.
 //
-// $Id: symlinks.pike,v 1.9 2010/04/27 14:58:11 grubba Exp $
+// $Id$
 //
 // 2010-01-25 Henrik Grubbström
 //

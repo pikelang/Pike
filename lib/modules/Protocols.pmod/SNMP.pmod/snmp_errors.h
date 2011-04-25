@@ -1,6 +1,6 @@
 // SNMP protocol implementation for Pike.
 //
-// $Id: snmp_errors.h,v 1.2 2001/03/30 09:26:35 hop Exp $
+// $Id$
 //
 // Honza Petrous, hop@roxen.com
 //

@@ -1,5 +1,5 @@
 //
-// $Id: Identifiers.pmod,v 1.15 2004/04/14 20:19:26 nilsson Exp $
+// $Id$
 // Object identifiers
 
 #pike __REAL_VERSION__

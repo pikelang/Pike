@@ -1,5 +1,5 @@
 // Compatibility namespace
-// $Id: __default.pmod,v 1.23 2008/06/28 16:54:02 nilsson Exp $
+// $Id$
 
 #pike 7.3
 

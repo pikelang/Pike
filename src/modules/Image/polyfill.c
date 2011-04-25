@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: polyfill.c,v 1.52 2007/05/04 18:31:35 grubba Exp $
+|| $Id$
 */
 
 #include "global.h"

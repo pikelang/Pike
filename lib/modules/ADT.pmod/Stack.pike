@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Stack.pike,v 1.11 2005/12/13 23:34:51 nilsson Exp $
+// $Id$
 
 //! This class implements a simple stack. Instead of adding and removing
 //! elements to an array, and thus making it vary in size for every push

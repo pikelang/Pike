@@ -1,5 +1,5 @@
 //
-// $Id: TELNET.pmod,v 1.2 2008/12/11 18:21:04 grubba Exp $
+// $Id$
 //
 
 #pike 7.7

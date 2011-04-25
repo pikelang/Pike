@@ -1,4 +1,4 @@
-// $Id: ext_to_media_type.pmod,v 1.10 2010/03/04 02:21:21 nilsson Exp $
+// $Id$
 
 #pike __REAL_VERSION__
 

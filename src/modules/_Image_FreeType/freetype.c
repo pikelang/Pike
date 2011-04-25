@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: freetype.c,v 1.31 2008/05/04 03:32:27 mast Exp $
+|| $Id$
 */
 
 #include "config.h"

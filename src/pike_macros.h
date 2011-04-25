@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_macros.h,v 1.43 2008/12/20 15:49:19 grubba Exp $
+|| $Id$
 */
 
 #ifndef MACROS_H

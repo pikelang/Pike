@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: yp.c,v 1.33 2005/04/09 10:18:05 grubba Exp $
+|| $Id$
 */
 
 #include "global.h"

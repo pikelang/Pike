@@ -1,6 +1,6 @@
 // -*- Pike -*-
 
-// $Id: module.pike,v 1.34 2009/10/24 14:59:00 bill Exp $
+// $Id$
 
 #pike __REAL_VERSION__
 

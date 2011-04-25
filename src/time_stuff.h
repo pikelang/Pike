@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: time_stuff.h,v 1.16 2006/08/02 15:02:40 mast Exp $
+|| $Id$
 */
 
 #ifndef TIME_STUFF_H

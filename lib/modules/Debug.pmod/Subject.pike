@@ -1,4 +1,4 @@
-// $Id: Subject.pike,v 1.9 2008/06/28 16:36:54 nilsson Exp $
+// $Id$
 
 #pike __REAL_VERSION__
 

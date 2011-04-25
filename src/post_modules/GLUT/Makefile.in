@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.8 2004/03/26 12:50:24 grubba Exp $
+# $Id$
 @make_variables@
 VPATH=@srcdir@
 OBJS=top.o @AUTO@

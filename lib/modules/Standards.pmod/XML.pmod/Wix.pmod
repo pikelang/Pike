@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Wix.pmod,v 1.35 2009/05/06 12:14:08 grubba Exp $
+// $Id$
 //
 // 2004-11-01 Henrik Grubbström
 

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sane.c,v 1.26 2008/06/28 23:06:01 nilsson Exp $
+|| $Id$
 */
 
 #include "config.h"

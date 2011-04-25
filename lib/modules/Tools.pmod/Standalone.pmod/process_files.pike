@@ -1,5 +1,5 @@
 #! /usr/bin/pike
-// -*- pike -*- $Id: process_files.pike,v 1.6 2008/06/28 15:32:55 per Exp $
+// -*- pike -*- $Id$
 #pike __REAL_VERSION__
 
 #ifdef SUGGESTED_MODE_OF_USAGE

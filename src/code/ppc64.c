@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ppc64.c,v 1.4 2010/09/16 21:19:47 marcus Exp $
+|| $Id$
 */
 
 /*

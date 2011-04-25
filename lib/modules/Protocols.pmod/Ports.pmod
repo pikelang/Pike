@@ -1,5 +1,5 @@
 /*
- * $Id: Ports.pmod,v 1.9 2001/01/11 20:23:40 js Exp $
+ * $Id$
  *
  * IP port assignments
  *

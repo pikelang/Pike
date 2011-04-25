@@ -1,6 +1,6 @@
 //! Graph sub-module providing draw functions.
 //!
-//! $Id: polyline.pike,v 1.7 2008/06/28 16:36:55 nilsson Exp $
+//! $Id$
 
 #pike __REAL_VERSION__
 

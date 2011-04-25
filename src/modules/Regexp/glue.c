@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: glue.c,v 1.37 2004/10/07 22:49:58 nilsson Exp $
+|| $Id$
 */
 
 #include "global.h"

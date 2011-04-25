@@ -3,7 +3,7 @@
 // 
 // http://www.iptc.org/IIM/
 //
-// $Id: IIM.pmod,v 1.9 2008/06/28 16:49:56 nilsson Exp $
+// $Id$
 //
 // Anders Johansson & Henrik Grubbström
 

@@ -1,5 +1,5 @@
 START_MARKER
-dnl $Id: testsuite.in,v 1.9 2008/04/30 17:01:38 nilsson Exp $
+dnl $Id$
 
 test_any([[
 #pike 7.4

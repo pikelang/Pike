@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: constants.h,v 1.37 2008/05/11 14:55:53 mast Exp $
+|| $Id$
 */
 
 #ifndef ADD_EFUN_H

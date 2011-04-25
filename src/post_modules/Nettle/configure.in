@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.24 2009/07/02 21:27:56 grubba Exp $
+# $Id$
 AC_INIT(nettle.cmod)
 AC_CONFIG_HEADER(nettle_config.h)
 

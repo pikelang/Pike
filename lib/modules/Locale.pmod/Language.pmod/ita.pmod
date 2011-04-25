@@ -3,7 +3,7 @@
 
 //! Italian language locale by Francesco Chemolli
 
-// $Id: ita.pmod,v 1.2 2006/11/04 19:06:48 nilsson Exp $
+// $Id$
 
 inherit "abstract";
 

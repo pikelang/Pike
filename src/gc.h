@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.h,v 1.146 2010/06/22 09:24:32 mast Exp $
+|| $Id$
 */
 
 #ifndef GC_H

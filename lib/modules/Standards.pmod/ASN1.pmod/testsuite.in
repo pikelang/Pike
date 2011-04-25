@@ -1,5 +1,5 @@
 START_MARKER
-dnl $Id: testsuite.in,v 1.9 2008/05/01 10:42:28 nilsson Exp $
+dnl $Id$
 
 dnl Tests from ITU-T Rec.X690 (07/2002)
 dnl (originally from A Layman's Guide to a Subset of ASN.1, BER, and

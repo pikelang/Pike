@@ -1,5 +1,5 @@
 //
-// $Id: CSR.pmod,v 1.13 2005/08/30 11:38:34 grubba Exp $
+// $Id$
 
 //! Handling of Certifikate Signing Requests (PKCS-10)
 

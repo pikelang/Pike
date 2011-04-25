@@ -1,6 +1,6 @@
 /* Requests.pike
  *
- * $Id: Requests.pmod,v 1.33 2008/01/13 17:02:43 nilsson Exp $
+ * $Id$
  */
 
 /*

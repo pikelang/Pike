@@ -1,5 +1,5 @@
 //
-// $Id: make_gbk_tables_h.pike,v 1.1 2006/01/16 18:47:51 grubba Exp $
+// $Id$
 //
 // Create lookup tables for GBK.
 //
@@ -107,7 +107,7 @@ int main(int argc, array(string) argv)
 			"%{%s\n%}"
 			"};\n"
 			"\n",
-			"$Id: make_gbk_tables_h.pike,v 1.1 2006/01/16 18:47:51 grubba Exp $",
+			"$Id$",
 			chmap->get_attributes()->id || "UNKNOWN",
 			chmap->get_attributes()->version || "UNKNOWN",
 			map(dec_table,

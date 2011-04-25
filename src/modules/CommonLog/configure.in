@@ -1,10 +1,10 @@
 #
-# $Id: configure.in,v 1.1 1999/11/14 00:47:21 per Exp $
+# $Id$
 #
 # configure.in for CommonLog.
 #
 
-AC_REVISION("$Id: configure.in,v 1.1 1999/11/14 00:47:21 per Exp $")
+AC_REVISION("$Id$")
 AC_INIT(clf.c)
 AC_CONFIG_HEADER(clf_machine.h)
 

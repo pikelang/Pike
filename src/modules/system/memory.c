@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: memory.c,v 1.35 2008/01/22 17:17:44 grubba Exp $
+|| $Id$
 */
 
 /*! @module System

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: crypt.c,v 1.9 2003/12/07 19:42:03 marcus Exp $
+|| $Id$
 */
 
 /*

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: peep.c,v 1.112 2007/04/19 11:39:40 mast Exp $
+|| $Id$
 */
 
 #include "global.h"

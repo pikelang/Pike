@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.14 2006/07/01 23:53:19 mast Exp $
+# $Id$
 AC_INIT(math.c)
 
 AC_CONFIG_HEADER(config.h)

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.h,v 1.81 2008/07/18 13:02:29 mast Exp $
+|| $Id$
 */
 
 #ifndef LAS_H

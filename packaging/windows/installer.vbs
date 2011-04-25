@@ -1,5 +1,5 @@
 '
-' $Id: installer.vbs,v 1.7 2009/03/09 13:15:36 grubba Exp $
+' $Id$
 '
 ' Companion file to bin/install.pike for custom actions.
 '

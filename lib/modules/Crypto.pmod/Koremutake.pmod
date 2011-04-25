@@ -1,4 +1,4 @@
-// $Id: Koremutake.pmod,v 1.4 2008/06/28 16:36:54 nilsson Exp $
+// $Id$
 
 #pike __REAL_VERSION__
 #pragma strict_types

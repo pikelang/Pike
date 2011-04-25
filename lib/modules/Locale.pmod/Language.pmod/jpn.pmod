@@ -4,7 +4,7 @@
 
 //! Japanese language locale.
 
-// $Id: jpn.pmod,v 1.2 2004/05/16 10:06:36 nilsson Exp $
+// $Id$
 
 inherit "abstract";
 

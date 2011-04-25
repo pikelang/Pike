@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: security.c,v 1.46 2004/04/06 13:00:47 nilsson Exp $
+|| $Id$
 */
 
 #include "global.h"

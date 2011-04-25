@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: nt.cmod,v 1.20 2008/06/28 22:57:14 nilsson Exp $
+ * $Id$
  */
 
 #include "global.h"

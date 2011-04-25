@@ -1,5 +1,5 @@
 //! Graph sub-module for drawing pie-charts.
-// $Id: create_pie.pike,v 1.15 2008/01/13 17:04:39 nilsson Exp $
+// $Id$
 //
 // These functions were written by Henrik "Hedda" Wallin (hedda@roxen.com)
 // Create_pie can draw pie charts in different forms.

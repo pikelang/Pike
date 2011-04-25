@@ -1,4 +1,4 @@
-// $Id: RSS.pmod,v 1.9 2008/09/01 18:10:51 grubba Exp $
+// $Id$
 
 #pike __REAL_VERSION__
 

@@ -1,5 +1,5 @@
 START_MARKER
-// $Id: testsuite.in,v 1.3 2009/03/15 12:09:24 mast Exp $
+// $Id$
 cond_begin([[ master()->resolv("_Image_XFace")->decode ]])
 cond_end
 END_MARKER

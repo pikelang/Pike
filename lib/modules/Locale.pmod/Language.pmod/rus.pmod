@@ -4,7 +4,7 @@
 
 //! Russian language locale
 
-// $Id: rus.pmod,v 1.2 2003/09/01 16:37:32 nilsson Exp $
+// $Id$
 
 inherit "abstract";
 

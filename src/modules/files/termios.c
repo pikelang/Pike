@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: termios.c,v 1.25 2009/07/17 14:31:20 grubba Exp $
+|| $Id$
 */
 
 #include "global.h"

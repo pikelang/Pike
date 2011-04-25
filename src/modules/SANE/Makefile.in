@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.2 2003/05/04 13:32:21 mast Exp $
+# $Id$
 @make_variables@
 VPATH=@srcdir@
 OBJS=sane.o

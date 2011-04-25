@@ -1,4 +1,4 @@
-// $Id: RDFS.pike,v 1.2 2003/12/18 00:42:39 stensson Exp $
+// $Id$
 
 #pike __REAL_VERSION__
 

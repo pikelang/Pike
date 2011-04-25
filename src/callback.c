@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: callback.c,v 1.37 2006/07/05 19:24:18 mast Exp $
+|| $Id$
 */
 
 #include "global.h"

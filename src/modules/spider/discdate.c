@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: discdate.c,v 1.19 2008/01/21 20:30:42 grubba Exp $
+|| $Id$
 */
 
 /* DiscDate.C .. converts boring normal dates to fun Discordian Date -><-

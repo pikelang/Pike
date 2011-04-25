@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.h,v 1.21 2007/12/28 10:29:58 grubba Exp $
+|| $Id$
 */
 
 #ifndef OPERATORS_H

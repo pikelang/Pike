@@ -1,7 +1,7 @@
 /*
    Compatibility code for 7.2-
 
-   $Id: client.pike,v 1.3 2005/03/19 13:14:57 mast Exp $
+   $Id$
 
  */
 

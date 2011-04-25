@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.8 2008/04/18 10:36:33 srb Exp $
+# $Id$
 @make_variables@
 VPATH=@srcdir@
 OBJS=pipe.o

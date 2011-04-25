@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.h,v 1.12 2004/06/29 21:15:59 nilsson Exp $
+|| $Id$
 */
 
 #ifndef CPP_H

@@ -1,7 +1,7 @@
 //
 // Basic filesystem monitor.
 //
-// $Id: basic.pike,v 1.39 2010/07/14 14:11:08 jonasw Exp $
+// $Id$
 //
 // 2009-07-09 Henrik Grubbström
 //
