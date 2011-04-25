@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: msqlmod.c,v 1.31 2009/02/15 16:15:41 srb Exp $
+|| $Id$
 */
 
 /* All this code is pretty useless if we don't have a msql library...*/

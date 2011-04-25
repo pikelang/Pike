@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: blobs.c,v 1.14 2005/05/19 22:35:47 mast Exp $");
+RCSID("$Id$");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"

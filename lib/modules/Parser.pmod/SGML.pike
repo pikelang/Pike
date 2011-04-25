@@ -1,5 +1,5 @@
 //
-// $Id: SGML.pike,v 1.7 2009/04/05 10:12:08 mast Exp $
+// $Id$
 
 #pike __REAL_VERSION__
 

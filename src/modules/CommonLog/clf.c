@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: clf.c,v 1.19 2008/01/16 18:19:47 grubba Exp $
+|| $Id$
 */
 
 /* MUST BE FIRST */

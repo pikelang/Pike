@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.14 2002/12/18 15:01:41 grubba Exp $
+# $Id$
 #
 AC_INIT(image_ttf.c)
 AC_CONFIG_HEADER(config.h)

@@ -1,4 +1,4 @@
-//  $Id: Connection.pike,v 1.11 2004/01/11 00:47:34 nilsson Exp $
+//  $Id$
 //!	This class contains nice abstraction for calls into the
 //!	server. They are named "@tt{@i{call@}@}",
 //!	"@tt{async_@i{call@}@}" or

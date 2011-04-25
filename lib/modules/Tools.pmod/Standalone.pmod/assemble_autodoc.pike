@@ -1,4 +1,4 @@
-// $Id: assemble_autodoc.pike,v 1.35 2008/06/28 16:37:02 nilsson Exp $
+// $Id$
 
 #pike __REAL_VERSION__
 
@@ -459,7 +459,7 @@ int(0..1) main(int num, array(string) args) {
 
   int T = time();
   if(has_value(args, "--version"))
-    exit(0, "$Id: assemble_autodoc.pike,v 1.35 2008/06/28 16:37:02 nilsson Exp $\n");
+    exit(0, "$Id$\n");
 
   if(has_value(args, "--help"))
     exit(0, "pike -x assemble_autodoc <structure file> <autodoc file>\n");

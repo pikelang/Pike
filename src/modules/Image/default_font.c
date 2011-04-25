@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: default_font.c,v 1.9 2005/11/19 17:39:38 grubba Exp $
+|| $Id$
 */
 
 /* Use cpp to RLE-encode... */

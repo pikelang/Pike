@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.50 2009/06/28 10:08:26 grubba Exp $
+# $Id$
 AC_INIT(mpz_glue.c)
 AC_CONFIG_HEADER(gmp_machine.h)
 AC_ARG_WITH(gmp,     [  --with(out)-gmp        Support bignums],[],[with_gmp=yes])

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.h,v 1.17 2005/05/25 09:19:21 grubba Exp $
+|| $Id$
 */
 
 #ifndef SIGNAL_H

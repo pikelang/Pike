@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: blit.c,v 1.60 2006/08/31 14:02:47 nilsson Exp $
+|| $Id$
 */
 
 #include "global.h"

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: shuffler.h,v 1.6 2004/10/16 07:27:29 agehall Exp $
+|| $Id$
 */
 
 struct data

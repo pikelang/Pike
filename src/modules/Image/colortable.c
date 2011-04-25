@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: colortable.c,v 1.133 2009/07/22 12:54:29 grubba Exp $
+|| $Id$
 */
 
 #include "global.h"

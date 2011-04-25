@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fuse.c,v 1.13 2008/02/11 08:37:16 per Exp $
+|| $Id$
 */
 
 #include "global.h"

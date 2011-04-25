@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.h,v 1.99 2010/04/19 13:50:11 mast Exp $
+|| $Id$
 */
 
 #ifndef OBJECT_H

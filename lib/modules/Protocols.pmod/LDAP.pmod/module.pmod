@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: module.pmod,v 1.34 2009/10/08 12:14:58 mast Exp $
+// $Id$
 
 #include "ldap_globals.h"
 

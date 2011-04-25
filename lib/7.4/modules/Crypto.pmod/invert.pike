@@ -1,6 +1,6 @@
 #pike 7.5
 #pragma strict_types
-// $Id: invert.pike,v 1.2 2008/01/05 14:22:40 grubba Exp $
+// $Id$
 
 //! Inversion crypto module.
 

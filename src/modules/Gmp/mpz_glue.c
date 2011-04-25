@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.190 2010/05/29 14:00:31 mast Exp $
+|| $Id$
 */
 
 #include "global.h"

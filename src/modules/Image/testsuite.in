@@ -1,5 +1,5 @@
 START_MARKER
-dnl $Id: testsuite.in,v 1.27 2010/02/15 02:05:53 srb Exp $
+dnl $Id$
 
 test_eq([[ Image.PNM.decode("P1\n5 5\n0 1 1 1 1\n1 0 1 1 1\n"
   "1 1 0 1 1\n1 1 1 0 1\n1 1 1 1 0") ]],

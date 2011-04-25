@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: sendfiletest.pike,v 1.15 2010/07/11 18:28:11 mast Exp $ */
+/* $Id$ */
 
 final constant TEST_SIZE = 16384;
 

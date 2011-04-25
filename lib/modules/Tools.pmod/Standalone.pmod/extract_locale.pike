@@ -2,7 +2,7 @@
 //
 // By Martin Nilsson and Andreas Lange
 //
-// $Id: extract_locale.pike,v 1.20 2008/06/20 16:24:19 srb Exp $
+// $Id$
 
 #pike __REAL_VERSION__
 

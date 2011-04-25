@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_jpeg.c,v 1.75 2008/08/22 14:17:16 jonasw Exp $
+|| $Id$
 */
 
 #include "global.h"

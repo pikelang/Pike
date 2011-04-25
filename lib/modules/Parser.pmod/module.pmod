@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod,v 1.25 2008/06/28 16:36:55 nilsson Exp $
+// $Id$
 
 #pike __REAL_VERSION__
 

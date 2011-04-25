@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gettext.c,v 1.28 2010/07/27 16:46:04 mast Exp $
+|| $Id$
 */
 
 #include "global.h"

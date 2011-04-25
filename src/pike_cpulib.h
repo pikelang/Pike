@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_cpulib.h,v 1.12 2004/06/02 00:08:12 nilsson Exp $
+|| $Id$
 */
 
 #ifndef PIKE_CPULIB_H

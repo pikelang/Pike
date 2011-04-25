@@ -1,5 +1,5 @@
 #! /usr/bin/env pike
-// -*- pike -*- $Id: rsif.pike,v 1.7 2008/06/20 16:24:19 srb Exp $
+// -*- pike -*- $Id$
 #pike __REAL_VERSION__
 
 inherit Tools.Standalone.process_files;

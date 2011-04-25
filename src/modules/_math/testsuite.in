@@ -1,5 +1,5 @@
 START_MARKER
-dnl $Id: testsuite.in,v 1.14 2009/03/15 12:11:24 mast Exp $
+dnl $Id$
 
 define(exarg,[[test_any([[
   function x=$1;

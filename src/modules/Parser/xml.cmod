@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xml.cmod,v 1.107 2008/11/30 16:45:29 grubba Exp $
+|| $Id$
 */
 
 #include "global.h"

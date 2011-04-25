@@ -1,5 +1,5 @@
 START_MARKER
-// $Id: testsuite.in,v 1.4 2005/11/14 22:10:45 nilsson Exp $
+// $Id$
 
 define(graph_test, [[test_do([[
 constant data = ([ "data":

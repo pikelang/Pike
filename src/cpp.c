@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.179 2010/09/18 11:56:50 marcus Exp $
+|| $Id$
 */
 
 #include "global.h"

@@ -1,6 +1,6 @@
 
 
-/* $Id: buffer.c,v 1.14 2004/08/17 16:18:21 grubba Exp $
+/* $Id$
  */
 #include "global.h"
 
@@ -17,7 +17,7 @@
 #endif
 
 #include "stralloc.h"
-RCSID("$Id: buffer.c,v 1.14 2004/08/17 16:18:21 grubba Exp $");
+RCSID("$Id$");
 #include "interpret.h"
 
 #include "whitefish.h"

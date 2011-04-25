@@ -5,7 +5,7 @@
 //!
 //! cf http://wwww.w3.org/TR/REC-xml/
 //!
-//! $Id: Validating.pike,v 1.20 2008/12/01 10:03:42 grubba Exp $
+//! $Id$
 //!
 
 #pike __REAL_VERSION__

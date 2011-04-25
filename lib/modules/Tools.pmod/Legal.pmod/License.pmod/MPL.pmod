@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: MPL.pmod,v 1.3 2008/06/28 16:37:02 nilsson Exp $
+// $Id$
 
 protected constant name = "Mozilla Public License 1.1";
 protected constant text = #string "mpl.txt";

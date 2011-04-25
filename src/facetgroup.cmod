@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: facetgroup.cmod,v 1.7 2009/09/12 13:28:15 grubba Exp $
+|| $Id$
 */
 
 #include "global.h"

@@ -1,5 +1,5 @@
 START_MARKER
-// $Id: testsuite.in,v 1.9 2004/05/02 18:45:09 nilsson Exp $
+// $Id$
 
 // MIME
 test_true([[objectp(MIME)]])

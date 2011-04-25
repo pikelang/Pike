@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iff.c,v 1.16 2005/05/06 00:48:09 nilsson Exp $
+|| $Id$
 */
 
 #include "global.h"

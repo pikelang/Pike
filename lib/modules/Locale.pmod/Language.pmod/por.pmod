@@ -3,7 +3,7 @@
 
 //! Portuguese language locale
 
-// $Id: por.pmod,v 1.2 2010/04/15 13:08:30 grubba Exp $
+// $Id$
 
 inherit "abstract";
 

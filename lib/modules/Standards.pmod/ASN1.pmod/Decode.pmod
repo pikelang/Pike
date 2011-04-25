@@ -1,5 +1,5 @@
 //
-// $Id: Decode.pmod,v 1.25 2008/06/28 16:49:56 nilsson Exp $
+// $Id$
 //
 
 #pike __REAL_VERSION__

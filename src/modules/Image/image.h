@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image.h,v 1.51 2003/01/27 11:59:14 mirar Exp $
+|| $Id$
 */
 
 #ifdef PIKE_IMAGE_IMAGE_H

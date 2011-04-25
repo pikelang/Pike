@@ -3,7 +3,7 @@
 
 //! Dutch language locale by Stephen R. van den Berg
 
-// $Id: nld.pmod,v 1.2 2008/06/28 16:36:55 nilsson Exp $
+// $Id$
 
 inherit "abstract";
 

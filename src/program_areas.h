@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program_areas.h,v 1.15 2007/10/13 15:32:06 grubba Exp $
+|| $Id$
 */
 
 /* Who needs templates anyway? / Hubbe */

@@ -1,5 +1,5 @@
 START_MARKER
-dnl $Id: testsuite.in,v 1.13 2004/05/02 18:43:33 nilsson Exp $
+dnl $Id$
 
 dnl - Here we try the Regexp module
 test_true(objectp(Regexp))

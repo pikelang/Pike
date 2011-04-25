@@ -1,6 +1,6 @@
 #pike 7.4
 
-/* $Id: cipher.pike,v 1.4 2008/06/28 16:54:21 nilsson Exp $
+/* $Id$
  *
  */
 

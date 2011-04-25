@@ -11,7 +11,7 @@
 //!                identifier components
 //!
 
-// $Id: UUID.pmod,v 1.18 2008/06/28 16:49:56 nilsson Exp $
+// $Id$
 //
 // 2004-10-01 Henrik Grubbström
 // 2004-10-04 Martin Nilsson

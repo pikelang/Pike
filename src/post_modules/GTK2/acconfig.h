@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.11 2009/06/01 19:48:22 ldillon Exp $
+|| $Id$
 */
 
 #undef FUNCPROTO

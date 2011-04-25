@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.2 2005/11/30 17:46:59 grubba Exp $
+// $Id$
 #pike 7.7
 
 inherit Stdio.module;

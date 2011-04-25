@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.170 2010/09/27 17:06:17 grubba Exp $
+|| $Id$
 */
 
 #define NO_PIKE_SHORTHAND

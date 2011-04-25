@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.119 2009/12/14 12:28:24 mast Exp $
+// $Id$
 //
 // Honza Petrous, hop@unibase.cz
 //

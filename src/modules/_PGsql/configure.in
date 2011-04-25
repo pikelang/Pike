@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.10 2008/08/16 19:57:56 srb Exp $
+# $Id$
 #
 
 AC_INIT(PGsql.cmod)

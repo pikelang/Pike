@@ -1,5 +1,5 @@
 START_MARKER
-// $Id: testsuite.in,v 1.20 2010/05/21 14:09:32 jonasw Exp $
+// $Id$
 
 // Locale.Charset.decoder
 test_true([[objectp(Locale.Charset)]])

@@ -1,5 +1,5 @@
 //
-// $Id: profiling.h,v 1.2 2007/10/02 20:08:48 nilsson Exp $
+// $Id$
 
 #ifdef PROF_REALTIME
 

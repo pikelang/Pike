@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.6 2008/08/18 10:11:39 srb Exp $
+# $Id$
 
 AC_INIT(gssapi.cmod)
 AC_CONFIG_HEADER(gssapi_config.h)

@@ -1,6 +1,6 @@
 /* Misc stuff for dealing with floats.
  *
- * $Id: pike_float.h,v 1.9 2010/05/27 23:17:09 mast Exp $
+ * $Id$
  */
 
 #ifndef PIKE_FLOAT_H

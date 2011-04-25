@@ -1,5 +1,5 @@
 START_MARKER
-// $Id: testsuite.in,v 1.10 2009/03/15 12:11:24 mast Exp $
+// $Id$
 
 cond_begin([[ master()->resolv("Java")->jvm ]])
 

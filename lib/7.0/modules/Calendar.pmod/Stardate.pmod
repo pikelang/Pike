@@ -1,4 +1,4 @@
-// $Id: Stardate.pmod,v 1.5 2008/06/28 16:53:43 nilsson Exp $
+// $Id$
 
 //!	time unit: TNGDate
 

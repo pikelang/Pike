@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pcx.c,v 1.25 2008/01/15 14:10:02 grubba Exp $
+|| $Id$
 */
 
 #include "global.h"

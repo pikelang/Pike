@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: MP3.pike,v 1.5 2008/06/28 16:49:53 nilsson Exp $
+// $Id$
 
 // MP3 file parser/formatter
 //

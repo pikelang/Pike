@@ -3,7 +3,7 @@
 
 //! Swedish language locale
 
-// $Id: swe.pmod,v 1.2 2003/09/01 16:37:32 nilsson Exp $
+// $Id$
 
 inherit "abstract";
 

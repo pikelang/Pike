@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.6 2008/06/28 16:54:21 nilsson Exp $
+// $Id$
 #pike 7.5
 
 //! The life length of the Fd instance has changed. In newer versions

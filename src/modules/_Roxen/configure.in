@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.1 2000/08/12 06:18:22 per Exp $
+# $Id$
 AC_INIT(roxen.c)
 AC_CONFIG_HEADER(config.h)
 AC_MODULE_INIT()

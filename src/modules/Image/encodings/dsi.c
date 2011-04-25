@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dsi.c,v 1.10 2005/01/23 13:30:04 nilsson Exp $
+|| $Id$
 */
 
 /* Dream SNES Image file */

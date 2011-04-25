@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pdflib_glue.c,v 1.15 2005/12/28 12:20:27 grubba Exp $
+|| $Id$
 */
 
 #include "global.h"

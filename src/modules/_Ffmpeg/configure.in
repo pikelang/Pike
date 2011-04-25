@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.14 2008/09/15 14:12:14 grubba Exp $
+# $Id$
 #
 AC_INIT(ffmpeg.c)
 AC_CONFIG_HEADER(config.h)

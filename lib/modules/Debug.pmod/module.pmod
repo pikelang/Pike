@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.6 2010/07/19 15:30:47 mast Exp $
+// $Id$
 
 #pike __REAL_VERSION__
 

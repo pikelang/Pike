@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pvr.c,v 1.27 2008/06/16 21:56:24 mast Exp $
+|| $Id$
 */
 
 #include "global.h"

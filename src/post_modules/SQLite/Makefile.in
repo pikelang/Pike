@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.1 2004/10/14 18:46:21 nilsson Exp $
+# $Id$
 @make_variables@
 VPATH=@srcdir@
 OBJS=sqlite.o

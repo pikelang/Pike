@@ -1,5 +1,5 @@
 // Compatibility namespace
-// $Id: __default.pmod,v 1.15 2009/03/17 12:26:02 grubba Exp $
+// $Id$
 
 #pike 7.7
 

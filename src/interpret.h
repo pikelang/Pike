@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.h,v 1.181 2010/03/24 20:47:54 mast Exp $
+|| $Id$
 */
 
 #ifndef INTERPRET_H

@@ -1,6 +1,6 @@
 // -*- Pike -*-
 
-// $Id: MongerUser.pike,v 1.8 2008/06/28 16:37:02 nilsson Exp $
+// $Id$
 
 #pike __REAL_VERSION__
 

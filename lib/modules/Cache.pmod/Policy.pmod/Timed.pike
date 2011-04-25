@@ -2,7 +2,7 @@
  * An access-time-based expiration policy manager.
  * by Francesco Chemolli <kinkie@roxen.com>
  *
- * $Id: Timed.pike,v 1.8 2005/01/04 12:29:52 grubba Exp $
+ * $Id$
  */
 
 //! An access-time-based expiration policy manager.

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: zlibmod.c,v 1.90 2010/07/09 12:52:58 nilsson Exp $
+|| $Id$
 */
 
 #include "global.h"

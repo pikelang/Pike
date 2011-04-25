@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_regexp.c,v 1.28 2010/08/16 19:00:19 mast Exp $
+|| $Id$
 */
 
 /*

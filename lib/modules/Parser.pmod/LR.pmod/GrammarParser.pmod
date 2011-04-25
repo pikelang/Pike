@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: GrammarParser.pmod,v 1.7 2009/08/22 18:39:23 nilsson Exp $
+ * $Id$
  *
  * Generates a parser from a textual specification.
  *

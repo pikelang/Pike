@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_xface.c,v 1.23 2004/10/15 15:10:14 grubba Exp $
+|| $Id$
 */
 
 #include "global.h"

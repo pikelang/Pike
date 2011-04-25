@@ -4,7 +4,7 @@
 
 //! Polish language locale by Piotr Klaban <makler@@man.torun.pl>.
 
-// $Id: pol.pmod,v 1.5 2010/06/30 15:22:23 grubba Exp $
+// $Id$
 
 inherit "abstract";
 

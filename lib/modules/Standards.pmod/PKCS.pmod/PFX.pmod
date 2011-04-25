@@ -1,5 +1,5 @@
 //
-// $Id: PFX.pmod,v 1.10 2004/02/02 23:01:20 nilsson Exp $
+// $Id$
 //
 
 #if 0 // This code is broken. (Missing mac identifier for sha)

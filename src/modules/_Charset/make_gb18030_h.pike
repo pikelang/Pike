@@ -1,5 +1,5 @@
 //
-// $Id: make_gb18030_h.pike,v 1.5 2008/06/16 22:05:19 mast Exp $
+// $Id$
 //
 // Create lookup tables and code for GB18030.
 //
@@ -344,7 +344,7 @@ int main(int argc, array(string) argv)
 			"  return gb18030e_info + last_j;\n"
 			"}\n"
 			"\n",
-			"$Id: make_gb18030_h.pike,v 1.5 2008/06/16 22:05:19 mast Exp $",
+			"$Id$",
 			chmap->get_attributes()->id || "UNKNOWN",
 			chmap->get_attributes()->version || "UNKNOWN",
 			dec_table,

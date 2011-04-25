@@ -1,5 +1,5 @@
 //
-// $Id: PGP.pmod,v 1.15 2008/06/28 16:49:53 nilsson Exp $
+// $Id$
 
 //! PGP stuff. See RFC 2440.
 

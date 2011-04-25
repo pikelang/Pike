@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: charsetmod.c,v 1.71 2008/07/03 19:14:45 grubba Exp $
+|| $Id$
 */
 
 #ifdef HAVE_CONFIG_H

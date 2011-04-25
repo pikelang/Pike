@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.c,v 1.90 2009/05/28 22:43:57 grubba Exp $
+|| $Id$
 */
 
 #include "global.h"

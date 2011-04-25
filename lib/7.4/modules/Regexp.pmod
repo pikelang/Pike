@@ -1,4 +1,4 @@
-// $Id: Regexp.pmod,v 1.2 2008/06/24 12:27:08 mast Exp $
+// $Id$
 
 #pike 7.5
 

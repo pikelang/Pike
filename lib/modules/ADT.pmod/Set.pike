@@ -1,4 +1,4 @@
-// $Id: Set.pike,v 1.2 2004/10/10 23:33:33 stensson Exp $
+// $Id$
 
 //! ADT.Set implements a datatype for sets. These sets behave much
 //! like multisets, except that they are restricted to containing only

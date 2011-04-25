@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.6 2008/07/18 17:28:52 mast Exp $
+# $Id$
 AC_INIT(gdbmmod.c)
 AC_CONFIG_HEADER(gdbm_machine.h)
 

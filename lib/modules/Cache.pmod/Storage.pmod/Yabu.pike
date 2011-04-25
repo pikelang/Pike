@@ -2,7 +2,7 @@
  * A Yabu-based storage manager.
  * by Francesco Chemolli <kinkie@roxen.com>
  *
- * $Id: Yabu.pike,v 1.8 2002/01/15 22:31:24 nilsson Exp $
+ * $Id$
  *
  * Settings will be added later.
  * 

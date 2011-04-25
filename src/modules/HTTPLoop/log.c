@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: log.c,v 1.19 2009/05/28 11:54:37 grubba Exp $
+|| $Id$
 */
 
 #include "config.h"

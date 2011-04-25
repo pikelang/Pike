@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fsort_template.h,v 1.19 2008/07/08 17:21:29 grubba Exp $
+|| $Id$
 */
 
 #ifdef SORT_BY_INDEX

@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.39 2003/09/14 18:50:13 sigge Exp $
+# $Id$
 
 @make_variables@
 VPATH=@srcdir@

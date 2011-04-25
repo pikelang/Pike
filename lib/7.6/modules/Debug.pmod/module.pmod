@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod,v 1.2 2008/06/28 16:52:49 nilsson Exp $
+ * $Id$
  *
  * Debug API changes since Pike 7.6.
  *

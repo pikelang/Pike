@@ -1,5 +1,5 @@
 /*
- * $Id: _Crypto.pmod,v 1.2 2008/06/28 16:52:14 nilsson Exp $
+ * $Id$
  *
  * Compat for _Crypto.
  *

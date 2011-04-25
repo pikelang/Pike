@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: libbzip2mod.cmod,v 1.25 2010/05/31 22:43:04 nilsson Exp $
+|| $Id$
 */
 
 #include "global.h"

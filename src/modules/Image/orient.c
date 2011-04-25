@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: orient.c,v 1.26 2007/01/17 17:22:27 grubba Exp $
+|| $Id$
 */
 
 /*

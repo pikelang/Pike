@@ -1,7 +1,7 @@
 #! /usr/bin/env pike
 
 /*
- * $Id: make_ci.pike,v 1.12 2008/05/29 20:08:43 nilsson Exp $
+ * $Id$
  *
  * Creates the file case_info.h
  *
@@ -137,7 +137,7 @@ int main(int argc, array(string) argv)
   outfile->
     write("/*\n"
           " * Created by\n"
-          " * $Id: make_ci.pike,v 1.12 2008/05/29 20:08:43 nilsson Exp $\n"
+          " * $Id$\n"
           " * on %s"
           " *\n"
           " * Table used for looking up the case of\n"

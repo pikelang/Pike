@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: buffer.c,v 1.7 2005/12/30 22:20:30 nilsson Exp $
+|| $Id$
 */
 
 #include "global.h"

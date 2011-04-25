@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: psd.c,v 1.48 2010/10/01 14:12:10 nilsson Exp $
+|| $Id$
 */
 
 #include "global.h"

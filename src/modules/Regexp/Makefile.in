@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.9 2003/08/08 19:30:05 nilsson Exp $
+# $Id$
 @make_variables@
 VPATH=@srcdir@
 OBJS=glue.o @REGEXP_OBJS@

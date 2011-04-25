@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pcre_glue.cmod,v 1.24 2010/07/28 21:34:29 mast Exp $
+|| $Id$
 || (original author: mirar)
 */
 

@@ -1,5 +1,5 @@
 START_MARKER
-dnl $Id: testsuite.in,v 1.32 2010/05/29 21:27:56 nilsson Exp $
+dnl $Id$
 
 test_eq([[ String.Buffer()->add("xxx") ]], 3)
 test_any([[

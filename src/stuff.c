@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stuff.c,v 1.23 2004/11/14 18:03:50 mast Exp $
+|| $Id$
 */
 
 #include "global.h"

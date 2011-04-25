@@ -4,7 +4,7 @@
 
   creator: Honza Petrous, hop@unibase.cz
 
-  $Id: Codec.pmod,v 1.12 2008/06/28 16:49:53 nilsson Exp $
+  $Id$
 
  */
 

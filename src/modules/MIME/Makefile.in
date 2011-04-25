@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.7 2004/04/17 15:33:35 marcus Exp $
+# $Id$
 @make_variables@
 VPATH=@srcdir@
 OBJS=mime.o

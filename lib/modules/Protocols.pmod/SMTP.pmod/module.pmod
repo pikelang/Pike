@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod,v 1.51 2010/02/15 20:13:44 grubba Exp $
+// $Id$
 //
 
 #pike __REAL_VERSION__

@@ -1,4 +1,4 @@
-// $Id: Regexp.pike,v 1.3 2008/06/28 16:50:22 nilsson Exp $
+// $Id$
 
 #pike 7.0
 

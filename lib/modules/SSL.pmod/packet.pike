@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: packet.pike,v 1.17 2008/06/28 16:49:55 nilsson Exp $
+/* $Id$
  *
  * SSL Record Layer
  */

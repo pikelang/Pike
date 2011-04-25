@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gif_lzw.c,v 1.7 2003/08/12 20:44:52 nilsson Exp $
+|| $Id$
 */
 
 /*

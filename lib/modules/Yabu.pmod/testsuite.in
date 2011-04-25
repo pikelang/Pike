@@ -1,5 +1,5 @@
 START_MARKER
-// $Id: testsuite.in,v 1.4 2004/05/02 18:23:27 nilsson Exp $
+// $Id$
 
 test_do([[ Yabu.db("test.db", "wct")->purge(); ]])
 test_do([[ add_constant("db", Yabu.db("test.db", "wct")) ]])

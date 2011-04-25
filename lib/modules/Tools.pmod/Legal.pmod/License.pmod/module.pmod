@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: module.pmod,v 1.2 2002/05/31 22:24:27 nilsson Exp $
+// $Id$
 
 //! Returns all the licenses as a string, suitable for
 //! saving as a file.

@@ -1,5 +1,5 @@
 START_MARKER
-// $Id: testsuite.in,v 1.30 2010/02/14 23:13:46 srb Exp $
+// $Id$
 
 // Tools.Hilfe
 define(test_hilfe_setup_low,[[test_do([[

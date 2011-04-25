@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.13 2006/05/03 16:20:25 grubba Exp $
+# $Id$
 @make_variables@
 VPATH=@srcdir@
 OBJS=parser.o html.o rcs.o c.o pike.o xml.o

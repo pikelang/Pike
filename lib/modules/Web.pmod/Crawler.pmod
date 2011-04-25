@@ -33,7 +33,7 @@
 //! @enddl
 
 // Author:  Johan Schön.
-// $Id: Crawler.pmod,v 1.28 2009/09/14 08:06:39 mast Exp $
+// $Id$
 
 #define CRAWLER_DEBUG
 #ifdef CRAWLER_DEBUG

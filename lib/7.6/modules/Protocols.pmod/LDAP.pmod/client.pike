@@ -1,4 +1,4 @@
-// $Id: client.pike,v 1.5 2008/06/28 16:54:40 nilsson Exp $
+// $Id$
 
 #pike 7.7
 

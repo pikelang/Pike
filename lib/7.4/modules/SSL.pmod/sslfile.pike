@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.4 2010/02/21 22:42:16 srb Exp $
+/* $Id$
  *
  */
 

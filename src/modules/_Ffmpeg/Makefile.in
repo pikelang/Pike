@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.7 2005/06/10 16:15:06 grubba Exp $
+# $Id$
 @make_variables@
 VPATH=@srcdir@
 OBJS=ffmpeg.o

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iso2022.c,v 1.51 2008/06/29 15:01:11 mast Exp $
+|| $Id$
 */
 
 #ifdef HAVE_CONFIG_H

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: errors.h,v 1.40 2008/06/29 12:37:10 nilsson Exp $
+|| $Id$
 */
 
 #ifdef ERR_DECLARE

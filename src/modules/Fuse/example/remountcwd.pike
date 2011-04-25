@@ -1,6 +1,6 @@
 // Re-mount CWD somewhere else.
 //
-// $Id: remountcwd.pike,v 1.2 2005/04/29 18:39:49 grubba Exp $
+// $Id$
 // 
 // To test: mkdir /tmp/test; pike test.pike -d /tmp/test
 

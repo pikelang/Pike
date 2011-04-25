@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.5 2008/03/31 14:39:21 mast Exp $
+|| $Id$
 */
 
 #ifndef GETTEXT_CONFIG_H

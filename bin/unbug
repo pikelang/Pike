@@ -3127,7 +3127,7 @@ string find_in_path(string cmd)
 
 int main(int argc, array(string) argv)
 {
-  write(#"UNBUG $Id: unbug,v 1.26 2008/01/04 20:42:58 nilsson Exp $
+  write(#"UNBUG $Id$
 Copyright 2001-2002, Roxen Internet Software AB.
 Copyright 2002-2008, Department of Computer and Information Science,
                      Linköping University

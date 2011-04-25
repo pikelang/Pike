@@ -1,5 +1,5 @@
 START_MARKER
-dnl $Id: testsuite.in,v 1.4 2009/03/15 12:09:24 mast Exp $
+dnl $Id$
 
 dnl cond_begin([[ master()->resolv("GTK")->setup_gtk ]])
 dnl   test_do( GTK.setup_gtk("",1) )

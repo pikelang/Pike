@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: support.c,v 1.28 2010/09/19 20:12:25 marcus Exp $
+|| $Id$
 */
 
 #include <version.h>

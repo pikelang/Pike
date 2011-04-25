@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dynamic_load.c,v 1.96 2009/03/19 10:16:38 grubba Exp $
+|| $Id$
 */
 
 #ifdef TESTING

@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-// $Id: test.pike,v 1.8 2007/06/17 23:20:41 mast Exp $
+// $Id$
 
 #define c1 c[0]
 #define c2 c[1]

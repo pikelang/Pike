@@ -1,4 +1,4 @@
-// $Id: Queue.pike,v 1.14 2008/06/28 16:36:53 nilsson Exp $
+// $Id$
 
 //! A simple FIFO queue.
 

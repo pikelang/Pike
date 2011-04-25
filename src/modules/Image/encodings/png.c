@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.101 2010/05/29 16:12:12 nilsson Exp $
+|| $Id$
 */
 
 #include "global.h"

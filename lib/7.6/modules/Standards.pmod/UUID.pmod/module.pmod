@@ -1,7 +1,7 @@
 /*
  * Compatibility with Pike 7.6 Standards.UUID.
  *
- * $Id: module.pmod,v 1.2 2010/05/27 15:53:39 grubba Exp $
+ * $Id$
  *
  * Henrik Grubbström 2005-01-06
  */

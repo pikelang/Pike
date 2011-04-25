@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_netlib.h,v 1.5 2006/07/01 01:26:17 mast Exp $
+|| $Id$
 */
 
 #ifndef PIKE_NETLIB_H

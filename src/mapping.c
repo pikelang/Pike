@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.218 2010/07/11 19:12:01 mast Exp $
+|| $Id$
 */
 
 #include "global.h"

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_ttf.c,v 1.54 2007/12/20 18:59:42 nilsson Exp $
+|| $Id$
 */
 
 #include "config.h"

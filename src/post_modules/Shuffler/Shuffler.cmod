@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: Shuffler.cmod,v 1.51 2010/06/22 14:02:37 grubba Exp $
+|| $Id$
 */
 
 #include "global.h"

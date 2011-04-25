@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# $Id: pike_etags.sh,v 1.1 2003/01/31 22:04:13 grubba Exp $
+# $Id$
 #
 # Run etags with regexps suitable for Pike files.
 #

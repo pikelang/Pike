@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: math_matrix.c,v 1.41 2010/03/14 20:07:39 mirar Exp $
+|| $Id$
 */
 
 #include "global.h"

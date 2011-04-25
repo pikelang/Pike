@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program_id.h,v 1.26 2006/12/27 16:26:48 grubba Exp $
+|| $Id$
 */
 
 #ifndef PROGRAM_ID_H

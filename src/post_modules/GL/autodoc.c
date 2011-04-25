@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: autodoc.c,v 1.8 2002/10/18 22:18:43 nilsson Exp $
+|| $Id$
 */
 
 /* AutoDoc generated from OpenGL man pages */

@@ -1,5 +1,5 @@
 /*
- * $Id: rule.pike,v 1.3 2008/06/28 16:51:29 nilsson Exp $
+ * $Id$
  *
  * A BNF-rule.
  *

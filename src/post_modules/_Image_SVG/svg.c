@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svg.c,v 1.10 2004/10/07 22:19:12 nilsson Exp $
+|| $Id$
 */
 
 #include "config.h"

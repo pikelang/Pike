@@ -2,7 +2,7 @@
 #pike 7.2
 
 /*
- * $Id: Grammar_parser.pmod,v 1.4 2009/08/22 18:37:27 nilsson Exp $
+ * $Id$
  *
  * Generates a parser from a textual specification.
  *

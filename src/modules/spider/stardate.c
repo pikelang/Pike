@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stardate.c,v 1.20 2006/03/06 08:46:23 peter Exp $
+|| $Id$
 */
 
 #include "global.h"

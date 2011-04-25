@@ -5,7 +5,7 @@
 <!-- The description in this file will compile a reference manual -->
 <!-- similar to the old "Pike Tutorial". -->
 
-<!-- $Id: traditional.xml,v 1.25 2006/08/09 01:16:46 nilsson Exp $ -->
+<!-- $Id$ -->
 
 <manual>
   <dir name="traditional_manual">

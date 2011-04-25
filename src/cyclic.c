@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cyclic.c,v 1.14 2010/06/01 09:43:19 grubba Exp $
+|| $Id$
 */
 
 #include "global.h"

@@ -1,5 +1,5 @@
 /*
- * $Id: Line.pmod,v 1.23 2008/06/28 16:36:56 nilsson Exp $
+ * $Id$
  *
  * Line-buffered protocol handling.
  *

@@ -3,7 +3,7 @@
 
 //! Hungarian language locale by Zsolt Varga.
 
-// $Id: hun.pmod,v 1.1 2002/10/01 10:57:56 nilsson Exp $
+// $Id$
 
 inherit "abstract";
 

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lex.c,v 1.123 2008/06/29 21:33:25 marcus Exp $
+|| $Id$
 */
 
 #include "global.h"

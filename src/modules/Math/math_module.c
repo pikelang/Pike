@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: math_module.c,v 1.14 2004/09/19 00:36:22 nilsson Exp $
+|| $Id$
 */
 
 #include "global.h"

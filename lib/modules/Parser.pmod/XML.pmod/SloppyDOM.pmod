@@ -1,4 +1,4 @@
-// $Id: SloppyDOM.pmod,v 1.5 2010/06/30 10:01:59 mast Exp $
+// $Id$
 
 #pike __REAL_VERSION__
 

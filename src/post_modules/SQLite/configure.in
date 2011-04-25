@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.3 2008/08/04 22:12:36 mast Exp $
+# $Id$
 AC_INIT(sqlite.cmod)
 
 AC_ARG_WITH(sqlite,[ --with(out)-sqlite    Support SQLite],[],[with_sqlite=yes])

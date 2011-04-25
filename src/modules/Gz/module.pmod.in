@@ -1,5 +1,5 @@
 // -*- pike -*-
-// $Id: module.pmod.in,v 1.20 2009/01/28 03:05:04 mast Exp $
+// $Id$
 #pike __REAL_VERSION__
 
 #if constant(@module@)

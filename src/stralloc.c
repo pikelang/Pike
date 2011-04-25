@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.239 2010/06/15 16:10:19 grubba Exp $
+|| $Id$
 */
 
 #include "global.h"

@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# $Id: run_autoconfig,v 1.44 2006/05/20 14:05:35 marcus Exp $
+# $Id$
 #
 # Bootstrap script
 

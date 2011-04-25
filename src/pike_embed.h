@@ -1,5 +1,5 @@
 /*
- * $Id: pike_embed.h,v 1.12 2008/07/31 18:13:17 mast Exp $
+ * $Id$
  *
  * Pike embedding API.
  *

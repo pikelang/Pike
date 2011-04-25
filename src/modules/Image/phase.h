@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: phase.h,v 1.7 2005/11/10 17:49:43 grubba Exp $
+|| $Id$
 */
 
 /* This file is incuded in search.c with the following defines set:

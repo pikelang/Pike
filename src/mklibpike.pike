@@ -1,5 +1,5 @@
 /*
- * $Id: mklibpike.pike,v 1.5 2008/06/28 22:05:04 mast Exp $
+ * $Id$
  *
  * Create strapping code for a list of symbols in pike.so,
  * and the pike headerfiles.

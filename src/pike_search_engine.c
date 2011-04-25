@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_search_engine.c,v 1.14 2008/06/23 16:02:25 mast Exp $
+|| $Id$
 */
 
 /*

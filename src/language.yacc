@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.455 2010/05/29 13:44:32 grubba Exp $
+|| $Id$
 */
 
 %pure_parser

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: layer_channel.h,v 1.10 2008/07/11 13:11:39 mast Exp $
+|| $Id$
 */
 
 /* template for operator layer row function */

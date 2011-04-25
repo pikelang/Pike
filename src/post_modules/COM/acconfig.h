@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.1 2003/09/01 14:05:58 tomas Exp $
+ * $Id$
  *
  * Config-file for the COM module.
  *
