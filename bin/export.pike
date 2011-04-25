@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: export.pike,v 1.74 2007/04/15 16:50:47 peter Exp $ */
+/* $Id$ */
 
 multiset except_modules = (<>);
 string vpath;

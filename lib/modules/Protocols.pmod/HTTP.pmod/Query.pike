@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.82 2007/02/25 14:20:41 grubba Exp $
+// $Id$
 
 //! Open and execute an HTTP query.
 //!

@@ -17,7 +17,7 @@
 //!      2570   : v3 description
 //!
 
-// $Id: protocol.pike,v 1.13 2004/01/11 00:46:54 nilsson Exp $
+// $Id$
 
 
 #include "snmp_globals.h"

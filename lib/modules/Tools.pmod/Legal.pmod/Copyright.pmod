@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Copyright.pmod,v 1.10 2007/01/01 00:27:44 nilsson Exp $
+// $Id$
 
 //! Contains functions and information to store and present
 //! copyright information about Pike and it's components.

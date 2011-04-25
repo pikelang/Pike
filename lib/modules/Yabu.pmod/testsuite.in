@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.3 2003/03/08 21:01:03 grubba Exp $
+// $Id$
 
 test_do([[ Yabu.db("test.db", "wct")->purge(); ]])
 test_do([[ add_constant("db", Yabu.db("test.db", "wct")) ]])

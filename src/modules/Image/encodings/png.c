@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.67 2010/03/02 17:32:53 grubba Exp $
+|| $Id$
 */
 
 #include "global.h"
-RCSID("$Id: png.c,v 1.67 2010/03/02 17:32:53 grubba Exp $");
+RCSID("$Id$");
 
 #include "image_machine.h"
 

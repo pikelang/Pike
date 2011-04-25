@@ -1,4 +1,4 @@
-// $Id: Koremutake.pmod,v 1.1 2004/02/14 02:43:16 nilsson Exp $
+// $Id$
 
 #pike __REAL_VERSION__
 

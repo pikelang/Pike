@@ -1,5 +1,5 @@
 /*
- * $Id: sequence.h,v 1.3 2003/09/10 15:19:09 mast Exp $
+ * $Id$
  */
 
 void pike_init_Sequence_module(void);

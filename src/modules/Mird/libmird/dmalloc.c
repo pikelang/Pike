@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dmalloc.c,v 1.5 2003/01/03 20:52:48 grubba Exp $
+|| $Id$
 */
 
 /*

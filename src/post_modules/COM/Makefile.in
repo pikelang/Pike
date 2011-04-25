@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.4 2005/10/12 17:24:46 grubba Exp $
+# $Id$
 #
 
 @make_variables@

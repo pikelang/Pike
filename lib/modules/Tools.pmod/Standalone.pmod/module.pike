@@ -1,6 +1,6 @@
 // -*- Pike -*-
 
-// $Id: module.pike,v 1.25 2008/06/20 19:05:37 srb Exp $
+// $Id$
 
 #pike __REAL_VERSION__
 

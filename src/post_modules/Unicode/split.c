@@ -2,13 +2,13 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: split.c,v 1.5 2006/02/28 22:39:32 marcus Exp $
+|| $Id$
 */
 
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: split.c,v 1.5 2006/02/28 22:39:32 marcus Exp $");
+RCSID("$Id$");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"

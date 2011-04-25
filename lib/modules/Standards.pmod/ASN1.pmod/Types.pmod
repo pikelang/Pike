@@ -1,5 +1,5 @@
 //
-// $Id: Types.pmod,v 1.36 2004/04/14 20:18:57 nilsson Exp $
+// $Id$
 //
 
 //! Encodes various asn.1 objects according to the Distinguished

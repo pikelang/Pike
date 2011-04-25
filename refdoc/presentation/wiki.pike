@@ -1,4 +1,4 @@
-// $Id: wiki.pike,v 1.2 2002/02/15 13:57:59 nilsson Exp $
+// $Id$
 
 inherit "tree-split-autodoc.pike";
 

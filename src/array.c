@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.166 2006/08/06 14:28:16 mast Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -27,7 +27,7 @@
 #include "multiset.h"
 #include "mapping.h"
 
-RCSID("$Id: array.c,v 1.166 2006/08/06 14:28:16 mast Exp $");
+RCSID("$Id$");
 
 PMOD_EXPORT struct array empty_array=
 {

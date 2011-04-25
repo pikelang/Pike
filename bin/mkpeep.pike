@@ -4,7 +4,7 @@
 
 #pragma strict_types
 
-// $Id: mkpeep.pike,v 1.39 2009/03/11 16:54:15 grubba Exp $
+// $Id$
 
 #define SKIPWHITE(X) sscanf(X, "%*[ \t\n]%s", X)
 

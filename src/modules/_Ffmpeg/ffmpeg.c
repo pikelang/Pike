@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ffmpeg.c,v 1.21 2007/01/08 18:46:53 mast Exp $
+|| $Id$
 */
 
 /*

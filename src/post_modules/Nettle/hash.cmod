@@ -1,7 +1,7 @@
 /* hash.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: hash.cmod,v 1.18 2004/02/21 18:36:06 nilsson Exp $");
+RCSID("$Id$");
 #include "interpret.h"
 #include "svalue.h"
 #include "threads.h"

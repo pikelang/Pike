@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: psd_constant_strings.h,v 1.7 2003/09/24 08:47:53 jonasw Exp $
+|| $Id$
 */
 
 STRING(height);

@@ -1,4 +1,4 @@
-// $Id: Certificate.pmod,v 1.18 2004/04/14 20:19:26 nilsson Exp $
+// $Id$
 
 //! Handle PKCS-6 and PKCS-10 certificates and certificate requests.
 

@@ -2,7 +2,7 @@
 
 //! Abstract language locale class, inherited by all the language locale classes.
 
-// $Id: abstract.pike,v 1.2 2002/03/20 16:39:54 nilsson Exp $
+// $Id$
 
 //! Array(string) with the months of the year, beginning with January.
 constant months = ({ "", "", "", "", "", "", "", "", "", "", "", "" });

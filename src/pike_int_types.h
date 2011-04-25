@@ -1,6 +1,6 @@
 /* Integer types with defined sizes.
  *
- * $Id: pike_int_types.h,v 1.4 2008/04/22 18:18:17 mast Exp $
+ * $Id$
  *
  * Extracted from global.h 1.90
  */

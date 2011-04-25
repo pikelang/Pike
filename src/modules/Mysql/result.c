@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: result.c,v 1.37 2009/10/12 09:41:27 grubba Exp $
+|| $Id$
 */
 
 /*
@@ -98,7 +98,7 @@
  * Globals
  */
 
-RCSID("$Id: result.c,v 1.37 2009/10/12 09:41:27 grubba Exp $");
+RCSID("$Id$");
 
 struct program *mysql_result_program = NULL;
 

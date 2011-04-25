@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 #pragma strict_types
 
-/* $Id: handshake.pike,v 1.50 2004/08/10 12:46:08 mast Exp $
+/* $Id$
  *
  */
 

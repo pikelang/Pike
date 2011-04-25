@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: test_pike.pike,v 1.100 2007/06/12 08:08:55 grubba Exp $ */
+/* $Id$ */
 
 #if !constant(_verify_internals)
 #define _verify_internals()

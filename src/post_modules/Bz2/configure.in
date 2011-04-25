@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.7 2003/01/26 10:10:57 mirar Exp $
+# $Id$
 AC_INIT(libbzip2mod.cmod)
 AC_CONFIG_HEADER(libbzip2mod_config.h)
 AC_ARG_WITH(bz2,     [  --without-bz2       Disable Bz2],[],[with_bz2=yes])

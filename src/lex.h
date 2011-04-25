@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lex.h,v 1.34 2004/03/24 16:42:09 grubba Exp $
+|| $Id$
 */
 
 #ifndef LEX_H

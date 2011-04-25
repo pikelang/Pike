@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cells.c,v 1.5 2003/01/03 20:52:48 grubba Exp $
+|| $Id$
 */
 
 /*
@@ -20,7 +20,7 @@
 #include "internal.h"
 
 static const char RCSID[]=
-   "$Id: cells.c,v 1.5 2003/01/03 20:52:48 grubba Exp $";
+   "$Id$";
 
 #define BIG_THRESHOLD(DB) ((DB)->block_size-(4<<(DB)->frag_bits)-64)
 #define DATA_IN_BIG(DB) ((DB)->block_size-(5+2)*4)

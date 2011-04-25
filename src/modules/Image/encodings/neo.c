@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: neo.c,v 1.9 2003/12/14 23:22:42 nilsson Exp $
+|| $Id$
 */
 
 #include "global.h"

@@ -1,4 +1,4 @@
-// $Id: Terminfo.pmod,v 1.21 2008/11/03 08:43:22 stewa Exp $
+// $Id$
 #pike __REAL_VERSION__
 
 

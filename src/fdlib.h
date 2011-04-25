@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.h,v 1.50 2003/12/17 21:27:17 marcus Exp $
+|| $Id$
 */
 
 #ifndef FDLIB_H

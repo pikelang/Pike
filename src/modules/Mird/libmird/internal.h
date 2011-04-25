@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: internal.h,v 1.7 2007/04/28 18:19:09 grubba Exp $
+|| $Id$
 */
 
 /*

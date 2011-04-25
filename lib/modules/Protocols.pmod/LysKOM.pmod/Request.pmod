@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-//  $Id: Request.pmod,v 1.10 2003/04/01 17:45:35 nilsson Exp $
+//  $Id$
 //!	This module contains nice abstraction for calls into the
 //!	server. They are named "@tt{@i{call@}@}",
 //!	"@tt{async_@i{call@}@}" or 

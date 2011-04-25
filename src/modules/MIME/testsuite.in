@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.8 2002/07/03 09:59:57 grubba Exp $
+// $Id$
 
 // MIME
 test_true([[objectp(MIME)]])

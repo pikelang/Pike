@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.25 2003/04/14 17:10:57 marcus Exp $
+# $Id$
 AC_INIT(zlibmod.c)
 AC_CONFIG_HEADER(zlib_machine.h)
 AC_ARG_WITH(zlib,     [  --with(out)-zlib       Support gzip compression],[],[with_zlib=yes])

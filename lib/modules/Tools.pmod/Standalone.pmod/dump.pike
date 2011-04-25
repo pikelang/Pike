@@ -6,7 +6,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dump.pike,v 1.4 2004/09/25 20:49:11 nilsson Exp $
+|| $Id$
 */
 
 constant description = "Dumps Pike files into object files.";

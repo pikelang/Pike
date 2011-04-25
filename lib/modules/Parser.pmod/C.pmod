@@ -4,7 +4,7 @@
 //
 // #pike __REAL_VERSION__
 //
-// $Id: C.pmod,v 1.45 2009/05/29 10:36:49 grubba Exp $
+// $Id$
 
 //! Splits the @[data] string into an array of tokens. An additional
 //! element with a newline will be added to the resulting array of

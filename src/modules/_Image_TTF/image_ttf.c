@@ -2,13 +2,13 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_ttf.c,v 1.52 2006/06/21 17:13:27 mast Exp $
+|| $Id$
 */
 
 #include "config.h"
 
 #include "global.h"
-RCSID("$Id: image_ttf.c,v 1.52 2006/06/21 17:13:27 mast Exp $");
+RCSID("$Id$");
 #include "module.h"
 
 #ifdef HAVE_LIBTTF

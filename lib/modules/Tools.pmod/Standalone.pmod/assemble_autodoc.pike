@@ -1,4 +1,4 @@
-// $Id: assemble_autodoc.pike,v 1.28 2003/11/07 05:38:57 nilsson Exp $
+// $Id$
 
 #pike __REAL_VERSION__
 
@@ -441,7 +441,7 @@ int(0..1) main(int num, array(string) args) {
 
   int T = time();
   if(has_value(args, "--version"))
-     werror("$Id: assemble_autodoc.pike,v 1.28 2003/11/07 05:38:57 nilsson Exp $\n");
+     werror("$Id$\n");
   if(num<3)
     error("To few arguments\n");
 

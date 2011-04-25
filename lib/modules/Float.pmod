@@ -1,4 +1,4 @@
-// $Id: Float.pmod,v 1.4 2003/11/12 19:17:24 mast Exp $
+// $Id$
 
 #pike __REAL_VERSION__
 

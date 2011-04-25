@@ -1,5 +1,5 @@
 /*
- * $Id: graph.h,v 1.3 2001/11/18 23:59:55 nilsson Exp $
+ * $Id$
  */
 
 #define PI 3.14159265358979

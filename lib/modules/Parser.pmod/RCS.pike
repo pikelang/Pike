@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 inherit Parser._RCS;
 
-// $Id: RCS.pike,v 1.33 2004/02/24 13:23:02 jhs Exp $
+// $Id$
 
 //! A RCS file parser that eats a RCS *,v file and presents nice pike
 //! data structures of its contents.

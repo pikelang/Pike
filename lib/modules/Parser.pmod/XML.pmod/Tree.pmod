@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.58 2009/10/16 12:10:07 grubba Exp $
+ * $Id$
  *
  */
 

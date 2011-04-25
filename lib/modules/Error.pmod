@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Error.pmod,v 1.2 2004/04/20 13:56:52 nilsson Exp $
+// $Id$
 
 constant Generic = __builtin.GenericError;
 

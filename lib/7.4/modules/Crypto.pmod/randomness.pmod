@@ -1,4 +1,4 @@
-// $Id: randomness.pmod,v 1.5 2004/03/10 00:43:17 nilsson Exp $
+// $Id$
 
 //! Assorted stronger or weaker randomnumber generators.
 //! These devices try to collect entropy from the environment.

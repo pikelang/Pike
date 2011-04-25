@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iso2022.c,v 1.33 2005/12/16 23:28:25 marcus Exp $
+|| $Id$
 */
 
 #ifdef HAVE_CONFIG_H
@@ -10,7 +10,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: iso2022.c,v 1.33 2005/12/16 23:28:25 marcus Exp $");
+RCSID("$Id$");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"

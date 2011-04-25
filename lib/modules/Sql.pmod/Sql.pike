@@ -1,5 +1,5 @@
 /*
- * $Id: Sql.pike,v 1.80 2008/01/09 14:26:07 mast Exp $
+ * $Id$
  *
  * Implements the generic parts of the SQL-interface
  *

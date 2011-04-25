@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: usage.c,v 1.5 2003/01/03 20:52:49 grubba Exp $
+|| $Id$
 */
 
 /*
@@ -25,7 +25,7 @@
 #include "dmalloc.h"
 
 static const char RCSID[]=
-   "$Id: usage.c,v 1.5 2003/01/03 20:52:49 grubba Exp $";
+   "$Id$";
 
 #ifdef MASSIVE_DEBUG
 #define USAGE_DEBUG

@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-//  $Id: Session.pike,v 1.33 2004/01/11 00:47:34 nilsson Exp $
+//  $Id$
 
 import ".";
 

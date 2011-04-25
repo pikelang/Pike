@@ -1,6 +1,6 @@
 // ID3.pmod
 //
-//  $Id: ID3.pmod,v 1.20 2004/04/06 21:44:57 nilsson Exp $
+//  $Id$
 //
 
 #pike __REAL_VERSION__

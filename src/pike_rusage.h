@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_rusage.h,v 1.17 2007/06/10 18:53:28 mast Exp $
+|| $Id$
 */
 
 #ifndef PIKE_RUSAGE_H

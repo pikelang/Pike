@@ -2,7 +2,7 @@
 <!-- put everything together, as well as information about how to -->
 <!-- split it up into smaller files. -->
 
-<!-- $Id: module_modref.xml,v 1.1 2003/11/12 03:59:33 bill Exp $ -->
+<!-- $Id$ -->
 
 <manual>
   <dir name="ignored">

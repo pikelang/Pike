@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.18 2004/02/04 14:34:53 nilsson Exp $
+// $Id$
 
 cond_resolv(Gz.deflate,
 [[

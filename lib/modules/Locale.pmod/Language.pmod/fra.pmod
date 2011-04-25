@@ -3,7 +3,7 @@
 
 //! French language locale by Patrick Kremer.
 
-// $Id: fra.pmod,v 1.1 2002/10/01 10:57:56 nilsson Exp $
+// $Id$
 
 inherit "abstract";
 

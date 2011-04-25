@@ -1,5 +1,5 @@
 START_MARKER
-// $Id: testsuite.in,v 1.1 2006/01/20 15:20:08 nilsson Exp $
+// $Id$
 
 define(setup_request_test,[[
   test_do( add_constant("R", Protocols.HTTP.Server.Request()) )

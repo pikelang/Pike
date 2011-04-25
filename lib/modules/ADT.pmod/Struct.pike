@@ -1,7 +1,7 @@
 //
 // Struct ADT
 // By Martin Nilsson
-// $Id: Struct.pike,v 1.12 2004/03/19 15:54:38 grubba Exp $
+// $Id$
 //
 
 #pike __REAL_VERSION__

@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 #pragma strict_types
 
-// $Id: alert.pike,v 1.11 2004/04/19 23:01:03 agehall Exp $
+// $Id$
 
 //! Alert package.
 

@@ -1,5 +1,5 @@
 /*
- * $Id: com.c,v 1.6 2006/07/05 15:08:10 mast Exp $
+ * $Id$
  *
  * Pike interface to Common Object Model (COM)
  *

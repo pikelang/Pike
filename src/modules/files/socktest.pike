@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.30 2004/04/09 16:45:23 grubba Exp $ */
+/* $Id$ */
 
 // #define OOB_DEBUG
 

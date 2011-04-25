@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: port.h,v 1.55 2003/11/14 06:55:58 mast Exp $
+|| $Id$
 */
 
 #ifndef PORT_H

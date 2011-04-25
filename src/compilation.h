@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: compilation.h,v 1.31 2004/03/13 14:45:05 grubba Exp $
+|| $Id$
 */
 
 /*

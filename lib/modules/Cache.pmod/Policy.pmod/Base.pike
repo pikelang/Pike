@@ -4,7 +4,7 @@
  *
  * All Storage-related class must MUST implement this method.
  *
- * $Id: Base.pike,v 1.6 2003/11/22 15:00:54 grubba Exp $
+ * $Id$
  */
 
 #pike __REAL_VERSION__

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: atari.h,v 1.3 2003/12/14 22:48:36 nilsson Exp $
+|| $Id$
 */
 
 #include "global.h"

@@ -1,7 +1,7 @@
 #pike 7.3
 
 //
-// $Id: Thread.pmod,v 1.3 2002/12/15 00:15:45 marcus Exp $
+// $Id$
 //
 // Pike 7.2 backward compatibility layer.
 //

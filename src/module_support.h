@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: module_support.h,v 1.16 2002/10/21 17:05:07 marcus Exp $
+|| $Id$
 */
 
 #ifndef MODULE_SUPPORT_H

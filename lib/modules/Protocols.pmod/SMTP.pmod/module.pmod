@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod,v 1.44 2008/02/21 14:01:00 agehall Exp $
+// $Id$
 //
 
 #pike __REAL_VERSION__

@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.11 2003/07/17 19:26:37 marcus Exp $
+dnl $Id$
 
 define(exarg,[[test_any([[
   function x=$1;

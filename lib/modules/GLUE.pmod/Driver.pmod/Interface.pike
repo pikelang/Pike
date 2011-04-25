@@ -1,5 +1,5 @@
 //
-// $Id: Interface.pike,v 1.2 2004/01/24 21:42:26 nilsson Exp $
+// $Id$
 
 #pike __REAL_VERSION__
 

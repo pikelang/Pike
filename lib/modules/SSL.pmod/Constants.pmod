@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: Constants.pmod,v 1.3 2009/11/16 14:13:20 mast Exp $
+/* $Id$
  *
  */
 

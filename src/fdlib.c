@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.c,v 1.69 2006/07/05 18:07:23 mast Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -10,7 +10,7 @@
 #include "pike_error.h"
 #include <math.h>
 
-RCSID("$Id: fdlib.c,v 1.69 2006/07/05 18:07:23 mast Exp $");
+RCSID("$Id$");
 
 #ifdef HAVE_WINSOCK_H
 

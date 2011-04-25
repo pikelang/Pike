@@ -3,7 +3,7 @@
 // This is a module for pike.
 // 3 July 1998 <hww3@riverweb.com> Bill Welliver
 //
-// $Id: LPD.pmod,v 1.9 2002/06/17 11:46:58 grubba Exp $
+// $Id$
 //
 
 #pike __REAL_VERSION__

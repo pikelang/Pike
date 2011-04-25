@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: clf.c,v 1.16 2004/04/06 13:00:48 nilsson Exp $
+|| $Id$
 */
 
 /* MUST BE FIRST */
 #include "global.h"
-RCSID("$Id: clf.c,v 1.16 2004/04/06 13:00:48 nilsson Exp $");
+RCSID("$Id$");
 #include "fdlib.h"
 #include "stralloc.h"
 #include "program.h"

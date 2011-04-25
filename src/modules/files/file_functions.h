@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file_functions.h,v 1.34 2004/08/27 02:24:06 nilsson Exp $
+|| $Id$
 */
 
 #define CB_FUNC tFunc(tNone,tOr(tVoid,tMixed))

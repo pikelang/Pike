@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.5 2003/02/21 18:49:55 marcus Exp $
+// $Id$
 
 cond( [[ master()->resolv("Java")->jvm ]],
 [[

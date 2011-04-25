@@ -3,7 +3,7 @@
 // YP (NIS) Functionality for Pike
 // Per Hedbor & Henrik Grubbström 1996-1997
 //
-// $Id: module.pmod.in,v 1.19 2003/04/07 17:22:53 nilsson Exp $
+// $Id$
 
 #pike __REAL_VERSION__
 inherit @module@;

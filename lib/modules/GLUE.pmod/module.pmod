@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod,v 1.7 2004/04/21 08:55:22 nilsson Exp $
+// $Id$
 
 #pike __REAL_VERSION__
 #if constant(GL) && constant(GL.glOrtho)

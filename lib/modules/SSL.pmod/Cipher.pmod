@@ -1,5 +1,5 @@
 //
-//  $Id: Cipher.pmod,v 1.14 2004/07/06 15:42:47 grubba Exp $
+//  $Id$
 
 #pike __REAL_VERSION__
 

@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.1 2004/05/13 08:57:07 grubba Exp $
+# $Id$
 @make_variables@
 VPATH=@srcdir@
 OBJS=kerberos.o

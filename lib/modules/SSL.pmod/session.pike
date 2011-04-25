@@ -1,5 +1,5 @@
 //
-// $Id: session.pike,v 1.34 2004/02/29 02:56:04 nilsson Exp $
+// $Id$
 
 #pike __REAL_VERSION__
 #pragma strict_types

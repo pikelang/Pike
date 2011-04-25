@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.h,v 1.127 2003/03/31 17:44:27 grubba Exp $
+|| $Id$
 */
 
 #ifndef THREADS_H

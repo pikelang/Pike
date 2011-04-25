@@ -2,7 +2,7 @@
 <!-- put everything together, as well as information about how to -->
 <!-- split it up into smaller files. -->
 
-<!-- $Id: modref.xml,v 1.8 2004/03/11 19:34:26 grubba Exp $ -->
+<!-- $Id$ -->
 
 <manual>
   <dir name="ignored">

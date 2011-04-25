@@ -1,6 +1,6 @@
 #pike 7.5
 #pragma strict_types
-// $Id: invert.pike,v 1.1 2003/08/06 23:52:42 nilsson Exp $
+// $Id$
 
 //! Inversion crypto module.
 

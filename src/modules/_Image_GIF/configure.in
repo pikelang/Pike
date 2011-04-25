@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.4 2003/08/12 20:44:52 nilsson Exp $
+# $Id$
 #
 AC_INIT(image_gif.c)
 AC_CONFIG_HEADER(config.h)

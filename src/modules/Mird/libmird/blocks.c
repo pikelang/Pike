@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: blocks.c,v 1.6 2003/01/03 20:52:48 grubba Exp $
+|| $Id$
 */
 
 /*
@@ -23,7 +23,7 @@
 #include "dmalloc.h"
 
 static const char RCSID[]=
-   "$Id: blocks.c,v 1.6 2003/01/03 20:52:48 grubba Exp $";
+   "$Id$";
 
 #ifdef SUPERMASSIVE_DEBUG
 #define BLOCK_DEBUG

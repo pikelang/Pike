@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.17 2004/03/20 12:57:41 grubba Exp $
+dnl $Id$
 
 test_eq([[ Image.PNM.decode("P1\n5 5\n0 1 1 1 1\n1 0 1 1 1\n"
   "1 1 0 1 1\n1 1 1 0 1\n1 1 1 1 0") ]],

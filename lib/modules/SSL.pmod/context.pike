@@ -1,5 +1,5 @@
 //
-// $Id: context.pike,v 1.32 2007/03/08 16:17:29 mast Exp $
+// $Id$
 
 #pike __REAL_VERSION__
 #pragma strict_types

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.h,v 1.82 2004/09/27 21:37:13 mast Exp $
+|| $Id$
 */
 
 #ifndef STRALLOC_H

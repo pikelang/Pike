@@ -6,7 +6,7 @@
 
 #pike __REAL_VERSION__
 
-constant cvs_id = "$Id: module.pmod,v 1.29 2007/03/06 13:05:45 mast Exp $";
+constant cvs_id = "$Id$";
 
 #define ERR(msg) error( "(Yabu) "+msg+"\n" )
 #define IO_ERR(msg) error( "(Yabu) %s, %s (%d)\n",msg,strerror(errno()),errno() )

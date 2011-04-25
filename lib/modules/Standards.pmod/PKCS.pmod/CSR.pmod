@@ -1,5 +1,5 @@
 //
-// $Id: CSR.pmod,v 1.12 2004/04/14 20:19:26 nilsson Exp $
+// $Id$
 
 //! Handling of Certifikate Signing Requests (PKCS-10)
 

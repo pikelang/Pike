@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod,v 1.22 2004/02/24 12:27:36 jhs Exp $
+// $Id$
 
 #pike __REAL_VERSION__
 

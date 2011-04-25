@@ -1,5 +1,5 @@
 #! /usr/bin/env pike
-// $Id: rsqld.pike,v 1.10 2004/01/11 00:40:07 nilsson Exp $
+// $Id$
 
 #pike __REAL_VERSION__
 

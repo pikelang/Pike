@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cyclic.h,v 1.9 2003/01/05 14:29:54 grubba Exp $
+|| $Id$
 */
 
 #ifndef CYCLIC_H

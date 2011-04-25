@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: smartlink.c,v 1.15 2003/01/16 20:00:35 neotron Exp $
+|| $Id$
 */
 
 /*
@@ -92,7 +92,7 @@ int main(int argc, char **argv)
 
   if (!strcmp(argv[1], "-v")) {
     fprintf(stdout,
-	    "$Id: smartlink.c,v 1.15 2003/01/16 20:00:35 neotron Exp $\n"
+	    "$Id$\n"
 	    "Usage:\n"
 	    "\t%s binary [args]\n",
 	    argv[0]);

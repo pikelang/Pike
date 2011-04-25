@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_xface.c,v 1.20 2003/12/01 20:22:16 nilsson Exp $
+|| $Id$
 */
 
 #include "global.h"
-RCSID("$Id: image_xface.c,v 1.20 2003/12/01 20:22:16 nilsson Exp $");
+RCSID("$Id$");
 
 #include "module.h"
 #include "config.h"

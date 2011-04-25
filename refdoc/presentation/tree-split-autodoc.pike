@@ -1,5 +1,5 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.56 2004/03/02 12:37:45 vida Exp $
+ * $Id$
  *
  */
 

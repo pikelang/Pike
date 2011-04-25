@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.98 2009/12/03 15:04:20 mast Exp $
+/* $Id$
  */
 
 #if constant(SSL.Cipher.CipherAlgorithm)

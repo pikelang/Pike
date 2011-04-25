@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.106 2007/03/28 15:16:53 marcus Exp $
+dnl $Id$
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -374,7 +374,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.106 2007/03/28 15:16:53 marcus Exp $
+  # $Id$
 
   MY_AC_PROG_CC
 

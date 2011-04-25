@@ -1,4 +1,4 @@
-// $Id: Readline.pike,v 1.55 2004/02/26 21:51:17 agehall Exp $
+// $Id$
 #pike __REAL_VERSION__
 
 //!

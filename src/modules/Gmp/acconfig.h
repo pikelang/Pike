@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.6 2003/05/19 19:22:54 mast Exp $
+|| $Id$
 */
 
 #ifndef GMP_MACHINE_H

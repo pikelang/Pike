@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: font.c,v 1.84 2006/03/06 08:47:47 peter Exp $
+|| $Id$
 */
 
 #include "global.h"

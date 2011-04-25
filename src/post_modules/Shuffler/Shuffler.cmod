@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: Shuffler.cmod,v 1.33 2007/03/06 23:48:31 bill Exp $
+|| $Id$
 */
 
 #include "global.h"
 #include "stralloc.h"
-RCSID("$Id: Shuffler.cmod,v 1.33 2007/03/06 23:48:31 bill Exp $");
+RCSID("$Id$");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "threads.h"

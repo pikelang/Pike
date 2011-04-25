@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stat.c,v 1.29 2003/11/14 10:26:43 mast Exp $
+|| $Id$
 */
 
 #include "global.h"
-RCSID("$Id: stat.c,v 1.29 2003/11/14 10:26:43 mast Exp $");
+RCSID("$Id$");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"

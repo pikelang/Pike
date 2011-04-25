@@ -1,4 +1,4 @@
-/* $Id: MirarDocParser.pike,v 1.25 2003/11/07 05:39:39 nilsson Exp $ */
+/* $Id$ */
 
 #pike __REAL_VERSION__
 

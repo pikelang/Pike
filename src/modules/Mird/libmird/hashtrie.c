@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: hashtrie.c,v 1.8 2004/03/14 16:15:53 mast Exp $
+|| $Id$
 */
 
 /*
@@ -47,7 +47,7 @@ void *alloca();
 #endif
 
 static const char RCSID[]=
-   "$Id: hashtrie.c,v 1.8 2004/03/14 16:15:53 mast Exp $";
+   "$Id$";
 
 #define TOO_DEEP_RECURSION 31 /* we can only shift down that */
 

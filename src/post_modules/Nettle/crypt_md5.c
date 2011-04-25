@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: crypt_md5.c,v 1.5 2004/03/20 12:51:13 grubba Exp $
+|| $Id$
 */
 
 /*

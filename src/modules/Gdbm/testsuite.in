@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.6 2002/11/26 18:45:07 nilsson Exp $
+// $Id$
 
 // gdbm
 cond( [[ master()->resolv("Gdbm")->gdbm ]],

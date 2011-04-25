@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: libbzip2mod.cmod,v 1.15 2005/03/22 16:56:53 grubba Exp $");
+RCSID("$Id$");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"

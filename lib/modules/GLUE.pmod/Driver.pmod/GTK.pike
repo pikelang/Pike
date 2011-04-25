@@ -1,5 +1,5 @@
 //
-// $Id: GTK.pike,v 1.5 2004/01/29 21:44:54 nilsson Exp $
+// $Id$
 
 #pike __REAL_VERSION__
 

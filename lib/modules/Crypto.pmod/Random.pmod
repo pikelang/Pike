@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 #pragma strict_types
-// $Id: Random.pmod,v 1.15 2006/01/05 01:04:48 nilsson Exp $
+// $Id$
 
 //! This module contains stuff to that tries to give you the
 //! best possible random generation.

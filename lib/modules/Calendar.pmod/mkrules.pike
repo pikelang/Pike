@@ -10,7 +10,7 @@
 // and zic(8) is the usual compiler.
 
 // pike mkrules.pike ../data/{africa,antarctica,asia,australasia,backward,etcetera,europe,northamerica,pacificnew,southamerica,systemv}
-// $Id: mkrules.pike,v 1.10 2004/01/11 00:51:23 nilsson Exp $
+// $Id$
 
 #pike __REAL_VERSION__
 

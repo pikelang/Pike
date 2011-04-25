@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: nt.cmod,v 1.10 2005/11/04 20:23:55 nilsson Exp $
+ * $Id$
  */
 
 #ifdef __NT__

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dynamic_load.c,v 1.85 2008/05/30 15:26:22 mast Exp $
+|| $Id$
 */
 
 #ifdef TESTING
@@ -24,7 +24,7 @@
 #  include "lex.h"
 #  include "object.h"
 
-RCSID("$Id: dynamic_load.c,v 1.85 2008/05/30 15:26:22 mast Exp $");
+RCSID("$Id$");
 
 #else /* TESTING */
 

@@ -1,5 +1,5 @@
 /*
- * $Id: werror.pmod,v 1.5 2000/09/28 03:38:39 hubbe Exp $
+ * $Id$
  *
  * Some functions to simplify writing debug-messages.
  * (Aren't we lazy? :-) )

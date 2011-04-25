@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: accept_and_parse.c,v 1.36 2004/03/25 12:56:07 grubba Exp $
+|| $Id$
 */
 
 /* Hohum. Here we go. This is try number four for a more optimized

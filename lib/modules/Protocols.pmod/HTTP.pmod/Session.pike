@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Session.pike,v 1.16 2004/06/08 15:07:52 vida Exp $
+// $Id$
 
 import Protocols.HTTP;
 

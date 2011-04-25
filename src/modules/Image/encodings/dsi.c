@@ -2,13 +2,13 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dsi.c,v 1.8 2004/03/06 00:06:59 nilsson Exp $
+|| $Id$
 */
 
 /* Dream SNES Image file */
 
 #include "global.h"
-RCSID("$Id: dsi.c,v 1.8 2004/03/06 00:06:59 nilsson Exp $");
+RCSID("$Id$");
 
 #include "image_machine.h"
 

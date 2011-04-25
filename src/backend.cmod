@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.160 2010/06/21 13:25:10 grubba Exp $
+|| $Id$
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.160 2010/06/21 13:25:10 grubba Exp $");
+RCSID("$Id$");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>

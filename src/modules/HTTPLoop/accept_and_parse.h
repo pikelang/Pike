@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: accept_and_parse.h,v 1.14 2003/04/23 23:50:37 marcus Exp $
+|| $Id$
 */
 
 /* #define AAP_DEBUG 1 */

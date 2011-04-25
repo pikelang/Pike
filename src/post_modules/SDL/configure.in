@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.8 2005/11/13 04:25:19 peter Exp $
+# $Id$
 AC_INIT(SDL.cmod)
 
 AC_MODULE_INIT()

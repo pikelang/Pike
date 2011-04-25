@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: wbf.c,v 1.16 2006/03/06 08:51:19 peter Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -12,7 +12,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: wbf.c,v 1.16 2006/03/06 08:51:19 peter Exp $");
+RCSID("$Id$");
 #include "object.h"
 #include "mapping.h"
 #include "interpret.h"

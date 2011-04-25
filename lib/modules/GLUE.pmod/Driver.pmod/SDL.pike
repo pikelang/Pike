@@ -1,5 +1,5 @@
 //
-// $Id: SDL.pike,v 1.5 2004/04/21 08:55:49 nilsson Exp $
+// $Id$
 
 #pike __REAL_VERSION__
 

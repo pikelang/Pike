@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: module.pmod,v 1.44 2006/09/12 13:59:20 nilsson Exp $
+// $Id$
 
 static constant fmts = ([
   "image/x-pnm" : "PNM",

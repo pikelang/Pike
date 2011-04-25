@@ -1,5 +1,5 @@
 //
-// $Id: connection.pike,v 1.38 2009/11/16 14:13:20 mast Exp $
+// $Id$
 
 #pike __REAL_VERSION__
 //#pragma strict_types

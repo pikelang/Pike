@@ -2,7 +2,7 @@
 //#pragma strict_types
 
 /* 
- * $Id: X509.pmod,v 1.36 2004/03/25 21:36:01 bill Exp $
+ * $Id$
  *
  * Some random functions for creating RFC-2459 style X.509 certificates.
  *

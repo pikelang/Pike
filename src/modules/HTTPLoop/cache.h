@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cache.h,v 1.10 2002/10/11 01:39:41 nilsson Exp $
+|| $Id$
 */
 
 struct cache_entry *aap_cache_lookup(char *s, ptrdiff_t len,

@@ -5,7 +5,7 @@
 // 
 // http://www.iptc.org/IIM/
 //
-// $Id: IIM.pmod,v 1.5 2007/03/01 14:49:36 grubba Exp $
+// $Id$
 //
 // Anders Johansson & Henrik Grubbström
 

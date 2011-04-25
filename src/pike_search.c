@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_search.c,v 1.21 2004/03/08 18:16:32 grubba Exp $
+|| $Id$
 */
 
 /* New memory searcher functions */

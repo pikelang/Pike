@@ -1,4 +1,4 @@
-// $Id: Regexp.pmod,v 1.1 2003/09/07 10:54:27 grubba Exp $
+// $Id$
 
 #pike 7.5
 

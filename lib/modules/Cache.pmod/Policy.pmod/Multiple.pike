@@ -2,7 +2,7 @@
  * A multiple-policies expiration policy manager.
  * by Francesco Chemolli <kinkie@roxen.com>
  *
- * $Id: Multiple.pike,v 1.5 2003/01/16 14:35:58 grubba Exp $
+ * $Id$
  */
 
 #pike __REAL_VERSION__

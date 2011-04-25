@@ -1,4 +1,4 @@
-# $Id: module_makefile,v 1.4 2002/12/12 21:19:57 nilsson Exp $
+# $Id$
 PREFLAGS=$(DEFINES) -I. -I$(SRCDIR) -I$(SRCDIR)/../.. -I../.. -I.
 CFLAGS=$(PREFLAGS) $(OTHERFLAGS)
 

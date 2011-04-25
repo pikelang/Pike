@@ -1,5 +1,5 @@
 /*
- * $Id: mysqls.pike,v 1.5 2004/04/16 12:12:46 grubba Exp $
+ * $Id$
  *
  * Glue for the Mysql-module using SSL
  */

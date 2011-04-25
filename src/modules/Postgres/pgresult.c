@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pgresult.c,v 1.30 2006/04/10 15:55:55 grubba Exp $
+|| $Id$
 */
 
 /*
@@ -84,7 +84,7 @@
 #include <catalog/pg_type.h>
 #endif
 
-RCSID("$Id: pgresult.c,v 1.30 2006/04/10 15:55:55 grubba Exp $");
+RCSID("$Id$");
 
 #ifdef _REENTRANT
 # ifdef PQ_THREADSAFE

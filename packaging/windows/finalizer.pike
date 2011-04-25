@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: finalizer.pike,v 1.1 2004/09/16 00:46:15 nilsson Exp $
+|| $Id$
 */
 
 

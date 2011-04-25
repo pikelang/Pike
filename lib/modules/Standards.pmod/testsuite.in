@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.11 2003/10/14 23:51:51 nilsson Exp $"]]);
+test_true([["$Id$"]]);
 
 // - Standards.ISO639_2
 test_equal(Standards.ISO639_2.get_language("swe"),"Swedish")

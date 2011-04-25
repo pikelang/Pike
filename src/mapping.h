@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.h,v 1.57 2004/09/28 23:58:35 mast Exp $
+|| $Id$
 */
 
 #ifndef MAPPING_H

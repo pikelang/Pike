@@ -2,13 +2,13 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: buffer.c,v 1.5 2002/10/11 01:40:00 nilsson Exp $
+|| $Id$
 */
 
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: buffer.c,v 1.5 2002/10/11 01:40:00 nilsson Exp $");
+RCSID("$Id$");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"

@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.10 2002/01/27 00:54:01 mast Exp $
+# $Id$
 AC_INIT(image_xface.c)
 AC_CONFIG_HEADER(config.h)
 AC_ARG_WITH(gmp,     [  --with(out)-gmp        Support bignums],[],[with_gmp=yes])

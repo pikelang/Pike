@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xml.c,v 1.71 2005/05/18 12:36:54 mast Exp $
+|| $Id$
 */
 
 #include "global.h"

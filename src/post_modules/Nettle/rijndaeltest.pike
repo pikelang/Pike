@@ -1,5 +1,5 @@
 /*
- * $Id: rijndaeltest.pike,v 1.1 2004/02/05 17:29:53 nilsson Exp $
+ * $Id$
  *
  * Test Crypto.aes against the official test-vectors.
  *

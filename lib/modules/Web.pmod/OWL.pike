@@ -1,4 +1,4 @@
-// $Id: OWL.pike,v 1.6 2004/03/09 14:12:30 nilsson Exp $
+// $Id$
 
 #pike __REAL_VERSION__
 #define Node Parser.XML.NSTree.NSNode

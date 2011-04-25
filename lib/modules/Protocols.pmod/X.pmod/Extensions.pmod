@@ -1,6 +1,6 @@
 /* Shaped windows.
  *
- * $Id: Extensions.pmod,v 1.15 2004/01/11 00:46:12 nilsson Exp $
+ * $Id$
 
 /*
  *    Protocols.X, a Pike interface to the X Window System

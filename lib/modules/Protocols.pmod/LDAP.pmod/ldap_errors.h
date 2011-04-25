@@ -1,6 +1,6 @@
 // LDAP client protocol implementation for Pike.
 //
-// $Id: ldap_errors.h,v 1.2 1999/08/12 00:44:16 marcus fake $
+// $Id$
 //
 // Honza Petrous, hop@unibase.cz
 //

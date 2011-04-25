@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.9 2003/01/05 09:07:15 mirar Exp $
+# $Id$
 AC_INIT(mird_glue.c)
 AC_CONFIG_HEADER(config.h)
 

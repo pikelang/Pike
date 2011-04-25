@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: postgres.c,v 1.43 2007/04/18 13:25:32 grubba Exp $
+|| $Id$
 */
 
 /*
@@ -72,7 +72,7 @@ static void pgdebug (char * a, ...) {}
 
 struct program * postgres_program;
 
-RCSID("$Id: postgres.c,v 1.43 2007/04/18 13:25:32 grubba Exp $");
+RCSID("$Id$");
 
 static void set_error (char * newerror)
 {

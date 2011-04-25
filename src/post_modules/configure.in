@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.2 2003/02/06 17:05:23 grubba Exp $
+# $Id$
 AC_INIT(Makefile.in)
 
 AC_SET_MAKE

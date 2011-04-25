@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.29 2008/07/29 13:15:09 grubba Exp $
+dnl $Id$
 
 AC_INIT(postgres.c)
 AC_CONFIG_HEADER(pgres_config.h)

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encodings.h,v 1.8 2004/03/20 15:36:49 grubba Exp $
+|| $Id$
 */
 
 #ifndef IMAGE_ENCODINGS_ENCODINGS_H

@@ -3,7 +3,7 @@
 // RFC1521 functionality for Pike
 //
 // Marcus Comstedt 1996-1999
-// $Id: module.pmod,v 1.11 2005/08/26 11:48:56 jonasw Exp $
+// $Id$
 
 
 //! RFC1521, the @b{Multipurpose Internet Mail Extensions@} memo, defines a

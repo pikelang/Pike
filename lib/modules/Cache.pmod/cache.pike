@@ -2,7 +2,7 @@
  * A generic cache front-end
  * by Francesco Chemolli <kinkie@roxen.com>
  *
- * $Id: cache.pike,v 1.13 2007/01/06 05:30:56 nilsson Exp $
+ * $Id$
  *
  */
 

@@ -1,5 +1,5 @@
 /*
- * $Id: GLU.pmod,v 1.14 2004/04/16 15:43:01 nilsson Exp $
+ * $Id$
  *
  * GL Utilities module.
  */

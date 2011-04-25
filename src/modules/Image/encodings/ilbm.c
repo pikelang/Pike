@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ilbm.c,v 1.28 2004/03/06 00:06:59 nilsson Exp $
+|| $Id$
 */
 
 /*
@@ -17,7 +17,7 @@
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: ilbm.c,v 1.28 2004/03/06 00:06:59 nilsson Exp $");
+RCSID("$Id$");
 #include "object.h"
 #include "interpret.h"
 #include "svalue.h"

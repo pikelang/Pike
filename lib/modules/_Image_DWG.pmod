@@ -1,5 +1,5 @@
 // AutoCAD R13/R14/R2000 DWG file decoder
-// $Id: _Image_DWG.pmod,v 1.4 2004/03/01 22:28:23 nilsson Exp $
+// $Id$
 
 #pike __REAL_VERSION__
 

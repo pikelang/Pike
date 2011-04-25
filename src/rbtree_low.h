@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rbtree_low.h,v 1.9 2009/04/07 14:53:38 peter Exp $
+|| $Id$
 */
 
 /* The lower level api for using rbtree. This is in a separate file

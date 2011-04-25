@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: ldap_privates.pmod,v 1.9 2004/06/19 10:16:41 grubba Exp $
+// $Id$
 //
 // Honza Petrous, hop@unibase.cz
 //

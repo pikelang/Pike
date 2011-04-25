@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: tables.c,v 1.5 2003/01/03 20:52:49 grubba Exp $
+|| $Id$
 */
 
 /*
@@ -24,7 +24,7 @@
 #include "dmalloc.h"
 
 static const char RCSID[]=
-   "$Id: tables.c,v 1.5 2003/01/03 20:52:49 grubba Exp $";
+   "$Id$";
 
 /*
  * looks up a table id in the master table

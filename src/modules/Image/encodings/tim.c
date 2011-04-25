@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: tim.c,v 1.17 2004/03/06 00:07:00 nilsson Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -10,7 +10,7 @@
 #include <math.h>
 #include <ctype.h>
 
-RCSID("$Id: tim.c,v 1.17 2004/03/06 00:07:00 nilsson Exp $");
+RCSID("$Id$");
 #include "object.h"
 #include "interpret.h"
 #include "svalue.h"

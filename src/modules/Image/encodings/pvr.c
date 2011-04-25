@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pvr.c,v 1.25 2004/03/06 00:07:00 nilsson Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -11,7 +11,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: pvr.c,v 1.25 2004/03/06 00:07:00 nilsson Exp $");
+RCSID("$Id$");
 #include "object.h"
 #include "interpret.h"
 #include "svalue.h"

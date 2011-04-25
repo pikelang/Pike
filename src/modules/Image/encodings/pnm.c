@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pnm.c,v 1.32 2004/03/06 00:06:59 nilsson Exp $
+|| $Id$
 */
 
 /*
@@ -52,7 +52,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: pnm.c,v 1.32 2004/03/06 00:06:59 nilsson Exp $");
+RCSID("$Id$");
 #include "pike_macros.h"
 #include "object.h"
 #include "interpret.h"

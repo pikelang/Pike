@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.258 2006/01/12 12:32:09 grubba Exp $
+|| $Id$
 */
 
 #include "global.h"
-RCSID("$Id: object.c,v 1.258 2006/01/12 12:32:09 grubba Exp $");
+RCSID("$Id$");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"

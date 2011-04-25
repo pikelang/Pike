@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: make_wxs.pike,v 1.4 2008/06/20 19:05:37 srb Exp $
+ * $Id$
  *
  * Make a Wix modules source XML file from an existing set of
  * directories or files.

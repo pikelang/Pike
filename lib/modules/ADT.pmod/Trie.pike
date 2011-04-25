@@ -1,5 +1,5 @@
 /*
- * $Id: Trie.pike,v 1.3 2007/10/31 13:51:34 grubba Exp $
+ * $Id$
  *
  * An implementation of a trie.
  *

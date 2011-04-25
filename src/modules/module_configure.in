@@ -1,4 +1,4 @@
-# $Id: module_configure.in,v 1.7 2000/03/20 20:56:11 hubbe Exp $
+# $Id$
 AC_PROG_CC
 
 AC_DEFINE(POSIX_SOURCE)

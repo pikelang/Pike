@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iso2022.h,v 1.7 2005/12/16 23:28:25 marcus Exp $
+|| $Id$
 */
 
 #include "global.h"

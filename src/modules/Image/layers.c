@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: layers.c,v 1.98 2006/03/08 01:21:35 peter Exp $
+|| $Id$
 */
 
 /*
@@ -15,7 +15,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.98 2006/03/08 01:21:35 peter Exp $");
+RCSID("$Id$");
 
 #include "image_machine.h"
 

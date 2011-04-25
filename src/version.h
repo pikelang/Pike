@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: version.h,v 1.484 2009/09/17 12:20:50 peter Exp $
+|| $Id$
 */
 
 #define PIKE_MAJOR_VERSION 7

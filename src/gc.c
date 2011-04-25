@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.262 2007/03/07 18:41:31 mast Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -33,7 +33,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.262 2007/03/07 18:41:31 mast Exp $");
+RCSID("$Id$");
 
 int gc_enabled = 1;
 

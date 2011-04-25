@@ -1,5 +1,5 @@
 //
-// $Id: LMTP.pmod,v 1.10 2004/06/02 12:09:23 kiwi Exp $
+// $Id$
 //
 
 #pike __REAL_VERSION__

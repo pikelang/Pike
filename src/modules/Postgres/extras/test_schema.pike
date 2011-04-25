@@ -1,4 +1,4 @@
-// $Id: test_schema.pike,v 1.2 1998/03/28 14:38:49 grubba Exp $
+// $Id$
 
 //#include "postgres.h"
 #include <sql.h>

@@ -2,13 +2,13 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cyclic.c,v 1.12 2003/11/09 21:35:05 nilsson Exp $
+|| $Id$
 */
 
 #include "global.h"
 #include "cyclic.h"
 
-RCSID("$Id: cyclic.c,v 1.12 2003/11/09 21:35:05 nilsson Exp $");
+RCSID("$Id$");
 
 #define CYCLIC_HASH_SIZE 4711
 

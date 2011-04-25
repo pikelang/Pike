@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.166 2009/11/28 14:59:31 mast Exp $
+|| $Id$
 */
 
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.166 2009/11/28 14:59:31 mast Exp $");
+RCSID("$Id$");
 #include "gmp_machine.h"
 #include "module.h"
 

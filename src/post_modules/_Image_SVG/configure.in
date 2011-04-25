@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.2 2003/12/17 22:04:50 marcus Exp $
+# $Id$
 #
 AC_INIT(svg.c)
 

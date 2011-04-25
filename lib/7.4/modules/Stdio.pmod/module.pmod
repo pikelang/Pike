@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.5 2005/11/30 17:53:20 grubba Exp $
+// $Id$
 #pike 7.5
 
 //! The life length of the Fd instance has changed. In newer versions

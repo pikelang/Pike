@@ -1,5 +1,5 @@
 //
-// $Id: BitBuffer.pike,v 1.6 2004/05/01 16:21:32 nilsson Exp $
+// $Id$
 
 //! Implements a FIFO bit buffer, i.e. a buffer that operates on bits
 //! instead of bytes. It is not designed for performance, but as a way

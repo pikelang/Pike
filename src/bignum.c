@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: bignum.c,v 1.40 2003/11/15 17:25:05 mast Exp $
+|| $Id$
 */
 
 #include "global.h"

@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.18 2007/03/10 18:00:00 marcus Exp $
+# $Id$
 AC_INIT(nettle.cmod)
 AC_CONFIG_HEADER(nettle_config.h)
 

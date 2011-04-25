@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.213 2009/12/03 17:06:47 mast Exp $
+// $Id$
 #pike __REAL_VERSION__
 
 inherit files;

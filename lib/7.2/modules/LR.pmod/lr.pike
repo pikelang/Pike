@@ -1,7 +1,7 @@
 #!/usr/local/bin/pike
 
 /*
- * $Id: lr.pike,v 1.2 2002/12/04 14:00:12 grubba Exp $
+ * $Id$
  *
  * An LR(1) Parser in Pike
  *

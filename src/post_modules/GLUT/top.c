@@ -2,14 +2,14 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: top.c,v 1.9 2003/05/12 12:38:15 grubba Exp $
+|| $Id$
 */
 
 #include "global.h"
 
 #include "config.h"
 
-RCSID("$Id: top.c,v 1.9 2003/05/12 12:38:15 grubba Exp $");
+RCSID("$Id$");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"

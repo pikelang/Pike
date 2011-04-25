@@ -4,7 +4,7 @@
 //
 // #pike __REAL_VERSION__
 //
-// $Id: Pike.pmod,v 1.35 2004/04/25 15:04:56 grubba Exp $
+// $Id$
 
 //! This module parses and tokenizes Pike source code.
 

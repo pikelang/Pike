@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: skeys.c,v 1.5 2003/01/03 20:52:48 grubba Exp $
+|| $Id$
 */
 
 /*
@@ -20,7 +20,7 @@
 #include "dmalloc.h"
 
 static const char RCSID[]=
-   "$Id: skeys.c,v 1.5 2003/01/03 20:52:48 grubba Exp $";
+   "$Id$";
 
 #define SKEY_OVERHEAD 16
 

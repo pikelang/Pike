@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: block_alloc_h.h,v 1.21 2004/02/06 12:26:15 grubba Exp $
+|| $Id$
 */
 
 #undef BLOCK_ALLOC

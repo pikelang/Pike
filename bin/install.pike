@@ -2,7 +2,7 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.147 2009/03/05 11:48:00 grubba Exp $
+// $Id$
 
 #define USE_GTK
 

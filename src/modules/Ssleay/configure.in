@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.8 2003/01/25 08:32:17 mirar Exp $
+# $Id$
 AC_INIT(ssleay.c)
 
 AC_CONFIG_HEADER(config.h)

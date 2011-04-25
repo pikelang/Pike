@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dmalloc.h,v 1.53 2006/08/06 16:58:07 mast Exp $
+|| $Id$
 */
 
 #ifndef DMALLOC_H

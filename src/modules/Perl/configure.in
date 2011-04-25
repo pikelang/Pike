@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.14 2003/01/25 08:32:36 mirar Exp $
+# $Id$
 AC_INIT(perlmod.c)
 AC_CONFIG_HEADER(perl_machine.h)
 

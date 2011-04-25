@@ -1,5 +1,5 @@
 // Table.pmod by Fredrik Noring, 1998
-// $Id: Table.pmod,v 1.28 2007/11/11 14:25:11 nilsson Exp $
+// $Id$
 
 #pike __REAL_VERSION__
 #define TABLE_ERR(msg) error("(Table) "+msg+"\n")

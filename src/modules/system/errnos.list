@@ -1,4 +1,4 @@
-# $Id: errnos.list,v 1.8 2003/02/25 18:32:16 grubba Exp $
+# $Id$
 E2BIG
 EACCES
 EADDRINUSE

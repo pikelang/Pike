@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: opcodes.c,v 1.163 2007/01/10 17:15:15 grubba Exp $
+|| $Id$
 */
 
 #include "global.h"
-RCSID("$Id: opcodes.c,v 1.163 2007/01/10 17:15:15 grubba Exp $");
+RCSID("$Id$");
 #include "constants.h"
 #include "interpret.h"
 #include "opcodes.h"

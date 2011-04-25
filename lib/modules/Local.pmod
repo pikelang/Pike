@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Local.pmod,v 1.7 2003/04/27 02:25:33 nilsson Exp $
+// $Id$
 
 //! @[Local] gives a local module namespace used for locally
 //! installed pike modules. Modules are searched for in

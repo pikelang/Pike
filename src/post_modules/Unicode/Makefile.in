@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.7 2004/04/02 19:12:38 grubba Exp $
+# $Id$
 @make_variables@
 VPATH=@srcdir@
 OBJS=unicode_module.o normalize.o split.o buffer.o

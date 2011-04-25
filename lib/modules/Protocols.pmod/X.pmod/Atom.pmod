@@ -1,6 +1,6 @@
 /* Atom.pmod
  *
- * X Atoms $Id: Atom.pmod,v 1.13 2004/01/11 00:46:12 nilsson Exp $
+ * X Atoms $Id$
  *
  */
 

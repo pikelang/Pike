@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Python.pmod,v 1.2 2002/07/26 22:59:14 nilsson Exp $
+// $Id$
 
 //! Returns the provided string with Python code as
 //! an array with tokens.

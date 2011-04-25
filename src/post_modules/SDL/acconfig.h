@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.4 2003/09/10 12:40:50 mirar Exp $
+|| $Id$
 */
 
 #ifndef SDL_CONFIG_H

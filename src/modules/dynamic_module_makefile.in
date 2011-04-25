@@ -1,5 +1,5 @@
 #
-# $Id: dynamic_module_makefile.in,v 1.115 2004/04/17 15:18:52 marcus Exp $
+# $Id$
 #
 
 LIBGCC=@LIBGCC@

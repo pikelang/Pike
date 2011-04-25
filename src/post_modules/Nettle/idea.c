@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: idea.c,v 1.5 2004/01/23 01:05:06 nilsson Exp $
+|| $Id$
 */
 
 /* The basic IDEA transformation

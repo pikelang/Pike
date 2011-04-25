@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.8 2003/08/08 12:48:26 nilsson Exp $
+# $Id$
 AC_INIT(pike_regexp.c)
 AC_CONFIG_HEADER(config.h)
 

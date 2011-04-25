@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.120 2005/09/09 16:03:05 mast Exp $
+|| $Id$
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -278,7 +278,7 @@
  *!   @[lfun::_sprintf()]
  */
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.120 2005/09/09 16:03:05 mast Exp $");
+RCSID("$Id$");
 #include "pike_error.h"
 #include "array.h"
 #include "svalue.h"

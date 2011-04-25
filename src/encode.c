@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.220 2008/02/29 14:27:53 grubba Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -32,7 +32,7 @@
 #include "opcodes.h"
 #include "peep.h"
 
-RCSID("$Id: encode.c,v 1.220 2008/02/29 14:27:53 grubba Exp $");
+RCSID("$Id$");
 
 /* #define ENCODE_DEBUG */
 

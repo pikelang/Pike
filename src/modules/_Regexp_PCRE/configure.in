@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.8 2003/10/08 17:02:55 mast Exp $
+# $Id$
 #
 AC_INIT(pcre_glue.cmod)
 AC_CONFIG_HEADER(pcre_machine.h)

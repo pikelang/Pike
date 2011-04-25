@@ -1,5 +1,5 @@
 /*
- * $Id: extract_autodoc.pike,v 1.44 2004/04/23 13:41:10 per Exp $
+ * $Id$
  *
  * AutoDoc mk II extraction script.
  *

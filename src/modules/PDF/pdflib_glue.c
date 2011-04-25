@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pdflib_glue.c,v 1.12 2004/03/21 06:10:31 nilsson Exp $
+|| $Id$
 */
 
 #include "global.h"
-RCSID("$Id: pdflib_glue.c,v 1.12 2004/03/21 06:10:31 nilsson Exp $");
+RCSID("$Id$");
 
 #include "pdf_machine.h"
 

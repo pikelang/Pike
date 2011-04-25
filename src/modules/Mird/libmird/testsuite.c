@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: testsuite.c,v 1.6 2003/05/04 14:42:16 nilsson Exp $
+|| $Id$
 */
 
 /*

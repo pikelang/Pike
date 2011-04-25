@@ -1,5 +1,5 @@
 //
-// $Id: Events.pmod,v 1.3 2004/04/08 21:52:24 nilsson Exp $
+// $Id$
 //
 
 #pike __REAL_VERSION__

@@ -2,7 +2,7 @@
  * An SQL-based storage manager
  * by Francesco Chemolli <kinkie@roxen.com>
  *
- * $Id: MySQL.pike,v 1.6 2003/04/28 22:12:10 nilsson Exp $
+ * $Id$
  *
  * This storage manager provides the means to save data to an SQL-based 
  * backend.
