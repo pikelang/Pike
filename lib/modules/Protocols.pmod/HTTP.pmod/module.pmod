@@ -408,7 +408,7 @@ protected void https_proxy_connect_ok(Protocols.HTTP.Query con,
 					      request_headers, con, data);
 			    }, con->async_failed);
 
-  con->headers["connect"] = "keep-alive";
+  con->headers["connection"] = "keep-alive";
   con->headers["content-length"] = "0";
   con->host = url->host;
   con->port = url->port;
