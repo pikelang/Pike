@@ -369,8 +369,6 @@ void do_async_method(string method,
   con->status_desc = 0;
   con->data_timeout = 120;
   con->timeout = 120;
-  if (con->ssl)
-    con->ssl = 0;
   con->con = 0;
   con->request = 0;
   con->buf = "";
