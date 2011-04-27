@@ -730,7 +730,25 @@ this_program async_request(string server,int port,string query,
 			   void|mapping|string headers,void|string data)
 {
 #ifdef HTTP_QUERY_DEBUG
-  werror("async_request %s:%d\n", server, port);
+   werror("async_request %s:%d\n", server, port);
+#endif
+
+   int keep_alive = con && con->is_open() && (this_program::host == server) &&
+     (this_program::port == port) && this_program::headers &&
+     (lower_case(this_program::headers->connection||"close") != "close");
+
+#if 0
+   if (con && !keep_alive) {
+     werror("NOT KEPT ALIVE!\n"
+	    "con->is_open: %O\n"
+	    "Connected host: %O:%O\n"
+	    "Requested host: %O:%O\n"
+	    "Connection headers: %O\n",
+	    con->is_open(),
+	    this_program::host, this_program::port,
+	    server, port,
+	    this_program::headers);
+   }
 #endif
 
    // start open the connection
@@ -754,10 +772,7 @@ this_program async_request(string server,int port,string query,
 
    send_buffer = request = query+"\r\n"+headers+"\r\n"+data;
 
-   if (!con || !con->is_open() || this_program::host != server ||
-       this_program::port != port || !headers || !headers->connection ||
-       lower_case(headers->connection) == "close")
-   {
+   if (!keep_alive) {
       close_connection();
       this_program::host = server;
       this_program::port = port;
