@@ -87,6 +87,9 @@ constant DAV_STORAGE_FULL	= 507; // RFC 2518 10.6: Insufficient Storage
                          void|mapping(string:string|array(string)) request_headers,
                          void|Protocols.HTTP.Query con, void|string data)
 {
+  if (!proxy || (proxy == "")) {
+    return do_method(method, url, query_variables, request_headers, con, data);
+  }
   // Make sure we don't propagate our changes to the
   // url and proxy objects below to the caller.
   proxy = Standards.URI(proxy);
@@ -456,6 +459,10 @@ void do_async_proxied_method(string|Standards.URI proxy,
 			     void|mapping(string:string|array(string)) request_headers,
 			     Protocols.HTTP.Query con, void|string data)
 {
+  if (!proxy || (proxy == "")) {
+    do_async_method(method, url, query_variables, request_headers, con, data);
+    return;
+  }
   // Make sure we don't propagate our changes to the
   // url and proxy objects below to the caller.
   proxy = Standards.URI(proxy);
