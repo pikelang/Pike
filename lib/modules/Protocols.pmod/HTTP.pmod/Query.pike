@@ -594,8 +594,9 @@ this_program thread_request(string server, int port, string query,
    // prepare the request
 
    errno = ok = protocol = this_program::headers = status_desc = status =
-     datapos = 0;
+     discarded_bytes = datapos = 0;
    buf = "";
+   headerbuf = "";
 
    if (!data) data="";
 
@@ -666,8 +667,10 @@ this_program sync_request(string server, int port, string query,
 
   // prepare the request
 
-  errno = ok = protocol = headers = status_desc = status = datapos = 0;
+  errno = ok = protocol = headers = status_desc = status =
+    datapos = discarded_bytes = 0;
   buf = "";
+  headerbuf = "";
 
   if(!data)
     data = "";
@@ -772,17 +775,22 @@ this_program async_request(string server,int port,string query,
 
    send_buffer = request = query+"\r\n"+headers+"\r\n"+data;
 
+   errno = ok = protocol = this_program::headers = status_desc = status =
+     discarded_bytes = datapos = 0;
+   buf = "";
+   headerbuf = "";
+
    if (!keep_alive) {
       close_connection();
       this_program::host = server;
       this_program::port = port;
       dns_lookup_async(server,async_got_host,port);
-      return this;
    }
    else
    {
       async_connected();
    }
+   return this;
 }
 
 #if constant(thread_create)
