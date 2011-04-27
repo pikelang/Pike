@@ -57,7 +57,6 @@ int timeout = 120;	// seconds
 // internal
 #if constant(SSL.Cipher.CipherAlgorithm)
  import SSL.Constants;
- SSL.sslfile ssl;
 #endif
 int(0..1) https = 0;
 
@@ -191,7 +190,7 @@ void start_tls(int|void blocking, int|void async)
   object write_callback=con->query_write_callback();
   object close_callback=con->query_close_callback();
 
-  ssl = SSL.sslfile(con, context, 1,blocking);
+  SSL.sslfile ssl = SSL.sslfile(con, context, 1,blocking);
   if(!blocking) {
     if (async) {
       ssl->set_nonblocking(0,async_connected,async_failed);
