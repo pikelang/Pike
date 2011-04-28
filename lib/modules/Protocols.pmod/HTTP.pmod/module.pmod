@@ -136,7 +136,7 @@ constant DAV_STORAGE_FULL	= 507; // RFC 2518 10.6: Insufficient Storage
       if (con->status/100 > 2) {
 	return con;
       }
-      con->headers["connect"] = "keep-alive";
+      con->headers["connection"] = "keep-alive";
       con->headers["content-length"] = "0";
       con->host = url->host;
       con->port = url->port;
