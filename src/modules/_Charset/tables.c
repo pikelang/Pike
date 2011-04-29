@@ -669,6 +669,21 @@ static const p_wchar1 map_greek_ccitt[] = {
   0x03b9, 0x03ba, 0x03bb, 0x03bc, 0x03bd, 0x03be, 0x03bf, 0x03c0,
   0x03c1, 0x03c2, 0x03c3, 0x03c4, 0x03c5, 0x03c6, 0x03c7, 0x03c8,
   0x03c9, 0xfffd, 0x007b, 0x007c, 0x007d, 0x007e, };
+static const UNICHAR map_CODAR_U[] = {
+  0x0021, 0x0022, 0x0023, 0x00a4, 0x0025, 0x0026, 0x0027, 0x0028,
+  0x0029, 0x002a, 0x002b, 0x060c, 0x002d, 0x002e, 0x002f, 0x0030,
+  0x0031, 0x0032, 0x0033, 0x0034, 0x0035, 0x0036, 0x0037, 0x0038,
+  0x0039, 0x003a, 0x061b, 0x003c, 0x003d, 0x003e, 0x061f, 0x0040,
+  0xfcf2, 0xfc60, 0xfcf3, 0xfc61, 0xfcf4, 0xfc62, 0xfe77, 0xfe76,
+  0xfe70, 0xfe79, 0xfe78, 0xfe72, 0xfe7b, 0xfe7a, 0xfe74, 0xfe7f,
+  0xfe7e, 0xfe7d, 0xfe7c, 0x0623, 0x0622, 0x0624, 0x0626, 0x0626 /*!!*/,
+  0x0625, 0xfef2, 0x067e, 0x06a4, 0x06af, 0xd800, 0x0627, 0x0628,
+  0x062a, 0x0629, 0x062b, 0x062c, 0x062d, 0x062e, 0x062f, 0x0630,
+  0x0631, 0x0632, 0x0633, 0x0634, 0x0635, 0x0636, 0x0637, 0x0638,
+  0x0639, 0x063a, 0x0642, 0x0643, 0x06a9, 0x0644, 0x0645, 0x0646,
+  0x0647, 0x0648, 0x064a, 0x00a6, 0x0649, 0x0640,
+
+  0x0640, 0x0654, 0x0000, /* ARABIC TATWEEL WITH HAMZA ABOVE */};
 static const UNICHAR map_ASMO_449[] = {
   0x0021, 0x0022, 0x0023, 0x00a4, 0x0025, 0x0026, 0x0027, 0x0028,
   0x0029, 0x002a, 0x002b, 0x060c, 0x002d, 0x002e, 0x002f, 0x0030,
@@ -11242,7 +11257,7 @@ const UNICHAR * const iso2022_94[] = {
   map_ISO_5426_1980, map_ISO_5427_1981, map_NF_Z_62_010_1973, map_ISO_5428_1980, 
   map_GB_1988_80, map_Latin_greek_1, map_BS_viewdata, map_INIS, 
   map_ISO_5428_bibl, map_IT, map_ES, map_greek7_old, 
-  map_latin_greek, map_INIS_8, map_INIS_cyrillic, /*ISOIR59*/NULL, 
+  map_latin_greek, map_INIS_8, map_INIS_cyrillic, map_CODAR_U,
   map_NS_4551_1, map_NS_4551_2, map_videotex_suppl + 0x80, /*ISOIR71*/NULL,
   /*ISOIR72/ISOIR173*/NULL, map_ISO_IR_68, map_NF_Z_62_010, map_PT2, 
   map_ES2, map_MSZ_7795_3, map_greek7, map_ASMO_449, 
@@ -13991,6 +14006,7 @@ const struct charset_def charset_map[] = {
   { "celtic", map_ISO_8859_14_1998, MODE_96 },                        /* :: celtic */
   { "chinese", map_GB_2312_80, MODE_9494 },                           /* :: chinese */
   { "cn", map_GB_1988_80, MODE_94 },                                  /* :: cn */
+  { "codaru", map_CODAR_U, MODE_94 },                                 /* :: codar-u */
   { "csa71", map_CSA_Z243_4_1985_1, MODE_94 },                        /* :: csa7-1 */
   { "csa72", map_CSA_Z243_4_1985_2, MODE_94 },                        /* :: csa7-2 */
   { "csaz2434", map_CSA_Z243_4_1985_1, MODE_94 },                     /* :: csa z243.4 */
@@ -14321,7 +14337,7 @@ const struct charset_def charset_map[] = {
   { "isoir55", map_ISO_5428_1980, MODE_94 },                          /* :: iso-ir-55 */
   { "isoir57", map_GB_1988_80, MODE_94 },                             /* :: iso-ir-57 */
   { "isoir58", map_GB_2312_80, MODE_9494 },                           /* :: iso-ir-58 */
-  /* :: iso-ir-59: Arabic */
+  { "isoir59", map_CODAR_U, MODE_94 },                                /* :: iso-ir-59 */
   { "isoir6", map_ANSI_X3_4_1968, MODE_94 },                          /* :: iso-ir-6 */
   { "isoir60", map_NS_4551_1, MODE_94 },                              /* :: iso-ir-60 */
   { "isoir61", map_NS_4551_2, MODE_94 },                              /* :: iso-ir-61 */
