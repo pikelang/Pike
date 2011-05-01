@@ -136,37 +136,40 @@ struct mem_searcher
 #include "pike_search.h"
 
 #include "block_alloc_h.h"
-#define MEMCHR0 MEMCHR
-
 extern int page_size;
 
 /* Note to self: Prototypes must be updated manually /Hubbe */
-PMOD_EXPORT ptrdiff_t pcharp_memcmp(PCHARP a, PCHARP b, int sz);
-PMOD_EXPORT long pcharp_strlen(PCHARP a);
-PMOD_EXPORT p_wchar1 *MEMCHR1(p_wchar1 *p, p_wchar2 c, ptrdiff_t e);
-PMOD_EXPORT p_wchar2 *MEMCHR2(p_wchar2 *p, p_wchar2 c, ptrdiff_t e);
-PMOD_EXPORT void swap(char *a, char *b, size_t size);
+PMOD_EXPORT ptrdiff_t pcharp_memcmp(PCHARP a, PCHARP b, int sz) ATTRIBUTE((pure));
+PMOD_EXPORT long pcharp_strlen(PCHARP a)  ATTRIBUTE((pure));
+
+#define MEMCHR0 MEMCHR
+p_wchar1 *MEMCHR1(p_wchar1 *p, p_wchar2 c, ptrdiff_t e)  ATTRIBUTE((pure));
+p_wchar2 *MEMCHR2(p_wchar2 *p, p_wchar2 c, ptrdiff_t e)  ATTRIBUTE((pure));
+
+/* PMOD_EXPORT void swap(char *a, char *b, size_t size); */
 PMOD_EXPORT void reverse(char *memory, size_t nitems, size_t size);
 PMOD_EXPORT void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order);
-PMOD_EXPORT size_t hashmem(const unsigned char *a, size_t len, size_t mlen);
-PMOD_EXPORT size_t hashstr(const unsigned char *str, ptrdiff_t maxn);
-PMOD_EXPORT size_t simple_hashmem(const unsigned char *str, ptrdiff_t len, ptrdiff_t maxn);
-PMOD_EXPORT size_t simple_hashmem1(const p_wchar1 *str, ptrdiff_t len, ptrdiff_t maxn);
-PMOD_EXPORT size_t simple_hashmem2(const p_wchar2 *str, ptrdiff_t len, ptrdiff_t maxn);
+PMOD_EXPORT size_t hashmem(const unsigned char *a, size_t len, size_t mlen)  ATTRIBUTE((pure));
+PMOD_EXPORT size_t hashstr(const unsigned char *str, ptrdiff_t maxn)  ATTRIBUTE((pure));
+PMOD_EXPORT size_t simple_hashmem(const unsigned char *str, ptrdiff_t len, ptrdiff_t maxn)  ATTRIBUTE((pure));
+PMOD_EXPORT size_t simple_hashmem1(const p_wchar1 *str, ptrdiff_t len, ptrdiff_t maxn)  ATTRIBUTE((pure));
+PMOD_EXPORT size_t simple_hashmem2(const p_wchar2 *str, ptrdiff_t len, ptrdiff_t maxn)  ATTRIBUTE((pure));
+/*
 PMOD_EXPORT void memfill(char *to,
 	     INT32 tolen,
 	     char *from,
 	     INT32 fromlen,
 	     INT32 offset);
-PMOD_EXPORT void *debug_xalloc(size_t size);
-PMOD_EXPORT void *debug_xmalloc(size_t s);
+*/
+PMOD_EXPORT void *debug_xalloc(size_t size)  ATTRIBUTE((malloc)) ATTRIBUTE((alloc_size(1))) ATTRIBUTE((warn_unused_result));
+PMOD_EXPORT void *debug_xmalloc(size_t s)  ATTRIBUTE((malloc))  ATTRIBUTE((alloc_size(1))) ATTRIBUTE((warn_unused_result));
 PMOD_EXPORT void debug_xfree(void *mem);
-PMOD_EXPORT void *debug_xrealloc(void *m, size_t s);
-PMOD_EXPORT void *debug_xcalloc(size_t n, size_t s);
+PMOD_EXPORT void *debug_xrealloc(void *m, size_t s)   ATTRIBUTE((malloc)) ATTRIBUTE((alloc_size(2))) ATTRIBUTE((warn_unused_result));
+PMOD_EXPORT void *debug_xcalloc(size_t n, size_t s)  ATTRIBUTE((malloc))  ATTRIBUTE((alloc_size(1,2))) ATTRIBUTE((warn_unused_result));
 
-PMOD_EXPORT void *mexec_alloc(size_t sz);
-PMOD_EXPORT void *mexec_realloc(void *ptr, size_t sz);
-PMOD_EXPORT void mexec_free(void *ptr);
+void *mexec_alloc(size_t sz) ATTRIBUTE((malloc)) ATTRIBUTE((alloc_size(1))) ATTRIBUTE((warn_unused_result));
+void *mexec_realloc(void *ptr, size_t sz)   ATTRIBUTE((malloc)) ATTRIBUTE((alloc_size(1))) ATTRIBUTE((warn_unused_result));
+void mexec_free(void *ptr);
 void init_pike_memory (void);
 void exit_pike_memory (void);
 

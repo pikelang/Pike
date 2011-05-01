@@ -248,28 +248,11 @@ CONVERT(1,2)
 CONVERT(2,0)
 CONVERT(2,1)
 
-
-PMOD_EXPORT int generic_compare_strings(const void *a, ptrdiff_t alen, int asize,
-					const void *b, ptrdiff_t blen, int bsize)
-{
 #define TWO_SIZES(X,Y) (((X)<<2)+(Y))
-  if(alen != blen) return 0;
-  if(asize==bsize)
-  {
-    return !MEMCMP(a,b,alen<<asize);
-  }else{
-    INT32 pos;
-    for(pos=0;pos< alen ;pos++)
-      if(generic_extract(a,asize,pos) != generic_extract(b,bsize,pos))
-	return 0;
-    return 1;
-  }
-}
 
-
-PMOD_EXPORT void generic_memcpy(PCHARP to,
-				PCHARP from,
-				ptrdiff_t len)
+void generic_memcpy(PCHARP to,
+                    PCHARP from,
+                    ptrdiff_t len)
 {
 #ifdef PIKE_DEBUG
   if(len<0)
@@ -768,7 +751,7 @@ PMOD_EXPORT void hash_string(struct pike_string *s)
  * This function assumes that the shift size is already the minimum it
  * can be.
  */
-PMOD_EXPORT struct pike_string *low_end_shared_string(struct pike_string *s)
+struct pike_string *low_end_shared_string(struct pike_string *s)
 {
   ptrdiff_t len;
   size_t h=0;
@@ -873,6 +856,7 @@ PMOD_EXPORT struct pike_string *end_shared_string(struct pike_string *s)
   return low_end_shared_string(s);
 }
 
+#if 0
 PMOD_EXPORT struct pike_string *defer_end_string(struct pike_string *s)
 {
 #ifdef STRING_DEFER_THRESHOLD
@@ -882,6 +866,7 @@ PMOD_EXPORT struct pike_string *defer_end_string(struct pike_string *s)
 #endif
   return end_shared_string(s);
 }
+#endif
 
 PMOD_EXPORT struct pike_string *end_and_resize_shared_string(struct pike_string *str, ptrdiff_t len)
 {
@@ -1045,7 +1030,7 @@ PMOD_EXPORT struct pike_string *debug_make_shared_string2(const p_wchar2 *str)
 
 /*** Free strings ***/
 
-PMOD_EXPORT void unlink_pike_string(struct pike_string *s)
+static void unlink_pike_string(struct pike_string *s)
 {
   size_t h;
   LOCK_BUCKET(s->hval);
@@ -1108,7 +1093,7 @@ PMOD_EXPORT void really_free_string(struct pike_string *s)
   GC_FREE_SIMPLE_BLOCK(s);
 }
 
-PMOD_EXPORT void do_really_free_string(struct pike_string *s)
+void do_really_free_string(struct pike_string *s)
 {
   if (s)
     really_free_string(s);
@@ -1294,7 +1279,7 @@ PMOD_EXPORT void verify_shared_strings_tables(void)
     Pike_fatal("Num strings is wrong %d!=%d\n",num,num_strings);
 }
 
-PMOD_EXPORT int safe_debug_findstring(struct pike_string *foo)
+int safe_debug_findstring(struct pike_string *foo)
 {
   unsigned INT32 e;
   if(!base_table) return 0;
@@ -1315,7 +1300,7 @@ PMOD_EXPORT int safe_debug_findstring(struct pike_string *foo)
   return 0;
 }
 
-PMOD_EXPORT struct pike_string *debug_findstring(const struct pike_string *foo)
+struct pike_string *debug_findstring(const struct pike_string *foo)
 {
   struct pike_string *tmp;
   tmp=propagate_shared_string(foo, HMODULO(foo->hval));
@@ -1443,7 +1428,7 @@ PMOD_EXPORT int low_quick_binary_strcmp(char *a, ptrdiff_t alen,
 
 
 /* does not take locale into account */
-PMOD_EXPORT ptrdiff_t generic_quick_binary_strcmp(const char *a,
+ptrdiff_t generic_quick_binary_strcmp(const char *a,
 						  ptrdiff_t alen, int asize,
 						  const char *b,
 						  ptrdiff_t blen, int bsize)
@@ -1489,7 +1474,7 @@ PMOD_EXPORT ptrdiff_t generic_quick_binary_strcmp(const char *a,
  *
  * This can be used by eg replace_many() to speed up the comparisons.
  */
-PMOD_EXPORT ptrdiff_t generic_find_binary_prefix(const char *a,
+ptrdiff_t generic_find_binary_prefix(const char *a,
 						 ptrdiff_t alen, int asize,
 						 const char *b,
 						 ptrdiff_t blen, int bsize)
@@ -1646,8 +1631,8 @@ PMOD_EXPORT struct pike_string *realloc_unlinked_string(struct pike_string *a,
 }
 
 /* Returns an unlinked string ready for end_shared_string */
-PMOD_EXPORT struct pike_string *realloc_shared_string(struct pike_string *a,
-						      ptrdiff_t size)
+static struct pike_string *realloc_shared_string(struct pike_string *a,
+                                                 ptrdiff_t size)
 {
   struct pike_string *r;
   if(a->refs==1)
@@ -1662,7 +1647,7 @@ PMOD_EXPORT struct pike_string *realloc_shared_string(struct pike_string *a,
   }
 }
 
-PMOD_EXPORT struct pike_string *new_realloc_shared_string(struct pike_string *a, INT32 size, int shift)
+struct pike_string *new_realloc_shared_string(struct pike_string *a, INT32 size, int shift)
 {
   struct pike_string *r;
   if(shift == a->size_shift) return realloc_shared_string(a,size);
@@ -1681,7 +1666,7 @@ PMOD_EXPORT struct pike_string *new_realloc_shared_string(struct pike_string *a,
  * Phew, this function become complicated when I inserted magic for wide
  * characters...
  */
-PMOD_EXPORT struct pike_string *modify_shared_string(struct pike_string *a,
+struct pike_string *modify_shared_string(struct pike_string *a,
 					 INT32 index,
 					 INT32 c)
 {
@@ -3125,7 +3110,7 @@ PMOD_EXPORT PCHARP MEMCHR_PCHARP(PCHARP ptr, int chr, ptrdiff_t len)
 {
   switch(ptr.shift)
   {
-    case 0: return MKPCHARP(MEMCHR0(ptr.ptr,chr,len),0);
+    case 0: return MKPCHARP(MEMCHR(ptr.ptr,chr,len),0);
     case 1: return MKPCHARP(MEMCHR1((p_wchar1 *)ptr.ptr,chr,len),1);
     case 2: return MKPCHARP(MEMCHR2((p_wchar2 *)ptr.ptr,chr,len),2);
   }
@@ -3220,7 +3205,8 @@ PMOD_EXPORT long STRTOL_PCHARP(PCHARP str, PCHARP *ptr, int base)
   }
 }
 
-PMOD_EXPORT int string_to_svalue_inumber(struct svalue *r,
+/*
+static int string_to_svalue_inumber(struct svalue *r,
 			     char * str,
 			     char **ptr,
 			     int base,
@@ -3235,8 +3221,9 @@ PMOD_EXPORT int string_to_svalue_inumber(struct svalue *r,
   if(ptr) *ptr=(char *)tmp.ptr;
   return ret;
 }
+*/
 
-PMOD_EXPORT int wide_string_to_svalue_inumber(struct svalue *r,
+int wide_string_to_svalue_inumber(struct svalue *r,
 					      void * str,
 					      void *ptr,
 					      int base,

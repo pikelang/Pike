@@ -71,7 +71,7 @@ p_wchar2 *MEMCHR2(p_wchar2 *p, p_wchar2 c, ptrdiff_t e)
   return (p_wchar2 *)NULL;
 }
 
-void swap(char *a, char *b, size_t size)
+static void swap(char *a, char *b, size_t size)
 {
   size_t tmp;
   char tmpbuf[1024];
@@ -232,7 +232,7 @@ size_t hashstr(const unsigned char *str, ptrdiff_t maxn)
 MK_HASHMEM(simple_hashmem, unsigned char)
 MK_HASHMEM(simple_hashmem1, p_wchar1)
 MK_HASHMEM(simple_hashmem2, p_wchar2)
-
+#if 0
 void memfill(char *to,
 	     INT32 tolen,
 	     char *from,
@@ -269,6 +269,7 @@ void memfill(char *to,
     }
   }
 }
+#endif
 
 #if 0
 #if defined(HAVE_GETRLIMIT) && defined(HAVE_SETRLIMIT) && defined(RLIMIT_DATA)
@@ -704,7 +705,7 @@ PMOD_EXPORT void mexec_free(void *ptr)
   verify_mexec_hdr(hdr);
 }
 
-PMOD_EXPORT void *mexec_alloc(size_t sz)
+void *mexec_alloc(size_t sz)
 {
   struct mexec_hdr *hdr;
   struct mexec_block *res;
@@ -747,7 +748,7 @@ PMOD_EXPORT void *mexec_alloc(size_t sz)
   return res + 1;
 }
 
-PMOD_EXPORT void *mexec_realloc(void *ptr, size_t sz)
+void *mexec_realloc(void *ptr, size_t sz)
 {
   struct mexec_hdr *hdr;
   struct mexec_hdr *old_hdr = NULL;
@@ -863,7 +864,7 @@ PMOD_EXPORT void *mexec_realloc(void *ptr, size_t sz)
 
 #elif defined (VALGRIND_DISCARD_TRANSLATIONS)
 
-PMOD_EXPORT void *mexec_alloc (size_t sz)
+void *mexec_alloc (size_t sz)
 {
   size_t *blk = malloc (sz + sizeof (size_t));
   if (!blk) return NULL;
@@ -871,7 +872,7 @@ PMOD_EXPORT void *mexec_alloc (size_t sz)
   return blk + 1;
 }
 
-PMOD_EXPORT void *mexec_realloc (void *ptr, size_t sz)
+void *mexec_realloc (void *ptr, size_t sz)
 {
   if (ptr) {
     size_t *oldblk = ptr;
@@ -888,7 +889,7 @@ PMOD_EXPORT void *mexec_realloc (void *ptr, size_t sz)
   return mexec_malloc (sz);
 }
 
-PMOD_EXPORT void mexec_free (void *ptr)
+void mexec_free (void *ptr)
 {
   size_t *blk = ptr;
   VALGRIND_DISCARD_TRANSLATIONS (blk, blk[-1]);
@@ -897,16 +898,16 @@ PMOD_EXPORT void mexec_free (void *ptr)
 
 #else  /* !USE_MY_MEXEC_ALLOC && !VALGRIND_DISCARD_TRANSLATIONS */
 
-PMOD_EXPORT void *mexec_alloc(size_t sz)
+void *mexec_alloc(size_t sz)
 {
   return malloc(sz);
 }
-PMOD_EXPORT void *mexec_realloc(void *ptr, size_t sz)
+void *mexec_realloc(void *ptr, size_t sz)
 {
   if (ptr) return realloc(ptr, sz);
   return malloc(sz);
 }
-PMOD_EXPORT void mexec_free(void *ptr)
+void mexec_free(void *ptr)
 {
   free(ptr);
 }
