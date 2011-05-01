@@ -994,6 +994,9 @@ else
 fi
 fi
 
+AC_SYS_COMPILER_FLAG([-fvisibility=hidden],[fvisibility_hidden],CFLAGS)
+
+
 AC_SYS_COMPILER_FLAG(+O3,plus_O3,OPTIMIZE, [
   AC_SYS_COMPILER_FLAG(-O3,O3,OPTIMIZE, [
     AC_SYS_COMPILER_FLAG(-O2,O2,OPTIMIZE, [
@@ -8101,6 +8104,9 @@ AC_CACHE_VAL(pike_cv_sys_dynamic_loading,
   cat >conftest.c <<EOF
 #include <stdio.h>
 #include <stdlib.h>
+#if __GNUC__ >= 4
+__attribute__ ((visibility("default")))
+# endif
 void testfunc(void) {
   fprintf(stderr,"Calling testfunc2\n");
   testfunc2();
@@ -8130,6 +8136,9 @@ EOF
     AC_TRY_RUN([
 #define TESTING
 #include "dynamic_load.c"
+#if __GNUC__ >= 4
+__attribute__ ((visibility("default")))
+# endif
 void testfunc2(void) { exit(0); }
 ], pike_cv_sys_dynamic_loading=yes, pike_cv_sys_dynamic_loading=no, pike_cv_sys_dynamic_loading=no)
     CFLAGS="$OLD_CFLAGS"

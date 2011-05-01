@@ -560,7 +560,9 @@ typedef struct p_wchar_p
  * themselves, unless they are compiled statically. */
 #   define PMOD_EXPORT __declspec(dllexport)
 #  endif
-# else
+# elif __GNUC__ >= 4
+#   define PMOD_EXPORT  __attribute__ ((visibility("default")))
+# else 
 #  define PMOD_EXPORT
 # endif
 #endif

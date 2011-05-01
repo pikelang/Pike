@@ -22,8 +22,8 @@
 
 #define BLOCK_ALLOC(DATA,SIZE)						\
 struct DATA *PIKE_CONCAT(alloc_,DATA)(void);				\
-void PIKE_CONCAT3(new_,DATA,_context)(void);				\
-void PIKE_CONCAT(really_free_,DATA)(struct DATA *d);			\
+PMOD_EXPORT void PIKE_CONCAT3(new_,DATA,_context)(void);				\
+PMOD_EXPORT void PIKE_CONCAT(really_free_,DATA)(struct DATA *d);			\
 void PIKE_CONCAT3(free_all_,DATA,_blocks)(void);			\
 void PIKE_CONCAT3(count_memory_in_,DATA,s)(size_t *num, size_t *size);	\
 void PIKE_CONCAT3(init_,DATA,_blocks)(void)

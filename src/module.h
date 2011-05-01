@@ -14,8 +14,8 @@
 #define PIKE_MODULE_INIT __declspec(dllexport) void pike_module_init(void)
 #define PIKE_MODULE_EXIT __declspec(dllexport) void pike_module_exit(void)
 #else
-#define PIKE_MODULE_INIT void pike_module_init(void)
-#define PIKE_MODULE_EXIT void pike_module_exit(void)
+#define PIKE_MODULE_INIT PMOD_EXPORT void pike_module_init(void)
+#define PIKE_MODULE_EXIT PMOD_EXPORT void pike_module_exit(void)
 #endif /* DYNAMIC_MODULE && __NT__ */
 
 /* Prototypes begin here */
