@@ -248,7 +248,7 @@ void init(void|string title, void|string icon)
   SDL.gl_set_attribute( SDL.GL_RED_SIZE, 8 );
   SDL.gl_set_attribute( SDL.GL_GREEN_SIZE, 8 );
   SDL.gl_set_attribute( SDL.GL_BLUE_SIZE, 8 );
-  SDL.gl_set_attribute( SDL.GL_DEPTH_SIZE, 8 );
+  SDL.gl_set_attribute( SDL.GL_DEPTH_SIZE, 32 );
   SDL.gl_set_attribute( SDL.GL_DOUBLEBUFFER, 1 );
 
 #if constant(SDL.Joystick)
