@@ -102,7 +102,7 @@ PMOD_EXPORT struct pike_string *empty_pike_string = 0;
 
 #define StrHash(s,len) low_do_hash(s,len,0)
 
-static INLINE size_t low_do_hash(const void *s,
+static size_t low_do_hash(const void *s,
 				 ptrdiff_t len__,
 				 int size_shift)
 {
@@ -119,23 +119,25 @@ static INLINE size_t do_hash(struct pike_string *s)
 
 static INLINE int find_magnitude1(const p_wchar1 *s, ptrdiff_t len)
 {
-  while(--len>=0)
-    if(s[len]>=256)
+  const p_wchar1 *e=s+len;
+  while(s<e)
+    if(*s++>=256)
       return 1;
   return 0;
 }
 
 static INLINE int find_magnitude2(const p_wchar2 *s, ptrdiff_t len)
 {
-  while(--len>=0)
+  const p_wchar2 *e=s+len;
+  while(s<e)
   {    
-    if((unsigned INT32)s[len]>=256)
+    if((unsigned INT32)*s++>=256)
     {
       do
       {
-	if((unsigned INT32)s[len]>=65536)
+	if((unsigned INT32)*s++>=65536)
 	  return 2;
-      }while(--len>=0);
+      }while(s<e);
       return 1;
     }
   }
