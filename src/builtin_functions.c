@@ -5916,7 +5916,7 @@ static void f_parse_format(INT32 args)
 }
 
 /* Common case: both strings are 8bit. */
-static int does_match_88( const unsigned char *s, int j, int sl,
+static int does_match_8_8( const unsigned char *s, int j, int sl,
                           const unsigned char *m, int i, int ml)
 {
   for (; i<ml; i++)
@@ -5940,7 +5940,45 @@ static int does_match_88( const unsigned char *s, int j, int sl,
       for (;j<sl;j++)
       {
         if( s[j] == m[i] &&
-            does_match_88(s,j,sl,m,i,ml))
+            does_match_8_8(s,j,sl,m,i,ml))
+          return 1;
+      }
+      return 0;
+
+     default:
+         if(j>=sl || m[i] != s[j] )
+             return 0;
+         j++;
+    }
+  }
+  return j==sl;
+}
+
+static int does_match_16_8( const unsigned short *s, int j, int sl,
+                            const unsigned char *m, int i, int ml)
+{
+  for (; i<ml; i++)
+  {
+    switch (m[i])
+    {
+     case '?':
+       if(j++>=sl) return 0;
+       break;
+
+     case '*':
+      while(m[i] == '*' && i<ml )
+        i++;
+      while( m[i] == '?' && i<ml && j<sl)
+      {
+        i++;
+        j++;
+      }
+      if (i==ml) return 1;
+
+      for (;j<sl;j++)
+      {
+        if( s[j] == m[i] &&
+            does_match_16_8(s,j,sl,m,i,ml))
           return 1;
       }
       return 0;
@@ -5956,8 +5994,8 @@ static int does_match_88( const unsigned char *s, int j, int sl,
 
 
 /* Check if the string s[0..len[ matches the glob m[0..mlen[ */
-static int does_match_xx(struct pike_string *s,int j,
-		      struct pike_string *m,int i)
+static int does_match_x_x(struct pike_string *s,int j,
+                          struct pike_string *m,int i)
 {
   for (; i<m->len; i++)
   {
@@ -5972,7 +6010,7 @@ static int does_match_xx(struct pike_string *s,int j,
       if (i==m->len) return 1;	/* slut */
 
       for (;j<s->len;j++)
-	if (does_match_xx(s,j,m,i))
+	if (does_match_x_x(s,j,m,i))
 	  return 1;
 
       return 0;
@@ -5990,9 +6028,12 @@ static int does_match(struct pike_string *s,int j,
 		      struct pike_string *m,int i)
 {
     if( s->size_shift + m->size_shift == 0 )
-        return does_match_88(s->str, j, s->len, 
-                             m->str, i, m->len);
-    return does_match_xx( s,j,m,i );
+      return does_match_8_8((const unsigned char*)s->str, j, s->len,
+                           (const unsigned char*)m->str, i, m->len);
+    if( s->size_shift==1 && m->size_shift == 0 )
+      return does_match_16_8((const unsigned short*)s->str, j, s->len,
+                             (const unsigned char*)m->str, i, m->len);
+    return does_match_x_x( s,j,m,i );
 }
 /*! @decl int(0..1) glob(string glob, string str)
  *! @decl int(0..1) glob(array(string) glob, string str)
