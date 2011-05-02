@@ -2337,7 +2337,7 @@ PMOD_EXPORT void call_handle_error(void)
 }
 
 /* NOTE: This function may only be called from the compiler! */
-PMOD_EXPORT int apply_low_safe_and_stupid(struct object *o, INT32 offset)
+int apply_low_safe_and_stupid(struct object *o, INT32 offset)
 {
   JMP_BUF tmp;
   struct pike_frame *new_frame=alloc_pike_frame();
@@ -2442,7 +2442,7 @@ PMOD_EXPORT int apply_low_safe_and_stupid(struct object *o, INT32 offset)
   return ret;
 }
 
-PMOD_EXPORT int safe_apply_low2(struct object *o, int fun, int args,
+int safe_apply_low2(struct object *o, int fun, int args,
 				const char *fun_name)
 {
   JMP_BUF recovery;
@@ -2486,7 +2486,7 @@ PMOD_EXPORT int safe_apply(struct object *o, const char *fun, INT32 args)
 }
 
 /* Returns nonzero if the function was called in some handler. */
-PMOD_EXPORT int low_unsafe_apply_handler(const char *fun,
+int low_unsafe_apply_handler(const char *fun,
 					 struct object *handler,
 					 struct object *compat,
 					 INT32 args)
@@ -2515,7 +2515,7 @@ PMOD_EXPORT int low_unsafe_apply_handler(const char *fun,
   return 1;
 }
 
-PMOD_EXPORT void low_safe_apply_handler(const char *fun,
+void low_safe_apply_handler(const char *fun,
 					struct object *handler,
 					struct object *compat,
 					INT32 args)
@@ -2730,7 +2730,7 @@ void slow_check_stack(void)
     }
   }
 }
-#endif
+
 
 static const char *safe_idname_from_int(struct program *prog, int func)
 {
@@ -2987,6 +2987,7 @@ void gdb_backtraces()
   gdb_backtrace();
 #endif
 }
+#endif
 
 PMOD_EXPORT void custom_check_stack(ptrdiff_t amount, const char *fmt, ...)
 {
