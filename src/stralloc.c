@@ -1900,6 +1900,11 @@ PMOD_EXPORT struct pike_string *string_slice(struct pike_string *s,
 	  DO_NOT_WARN((long)s->len));
   }
 #endif
+  if( len == 0)
+  {
+    add_ref(empty_pike_string);
+    return empty_pike_string;
+  }
 
   if(start==0 && len==s->len)
   {
