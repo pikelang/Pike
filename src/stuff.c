@@ -29,7 +29,7 @@ PMOD_EXPORT const char Pike_is8bitalnum_vector[] =
   "1111111011111111";
 
 /* Not all of these are primes, but they should be adequate */
-PMOD_EXPORT const INT32 hashprimes[32] =
+const INT32 hashprimes[32] =
 {
   31,        /* ~ 2^0  = 1 */
   31,        /* ~ 2^1  = 2 */
@@ -111,6 +111,7 @@ PMOD_EXPORT int my_log2(size_t x)
 }
 
 
+#if 0
 /* Return the number of bits in a 32-bit integer */
 PMOD_EXPORT int count_bits(unsigned INT32 x)
 {
@@ -131,12 +132,7 @@ PMOD_EXPORT int count_bits(unsigned INT32 x)
 	  bits[(x>>16) & 255] +
 	  bits[(x>>24) & 255]);
 }
-
-/* Return true for integers with more than one bit set */
-PMOD_EXPORT int is_more_than_one_bit(unsigned INT32 x)
-{
-  return !!(x & (x-1));
-}
+#endif
 
 PMOD_EXPORT double my_strtod(char *nptr, char **endptr)
 {
@@ -165,6 +161,7 @@ PMOD_EXPORT unsigned INT32 my_sqrt(unsigned INT32 n)
   return x;
 }
 
+#if 0
 /* This routine basically finds a prime number
  * which is larger than 'x'
  */
@@ -430,6 +427,7 @@ unsigned long find_good_hash_size(unsigned long num)
 
   return primes[y];
 }
+#endif
 
 /*
  * This rounds an integer up to the next power of two. For x a power

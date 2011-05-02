@@ -2098,6 +2098,12 @@ int array_is_constant(struct array *a,
 			      p);
 }
 
+/* Return true for integers with more than one bit set */
+static inline int is_more_than_one_bit(unsigned INT32 x)
+{
+  return !!(x & (x-1));
+}
+
 node *make_node_from_array(struct array *a)
 {
   struct svalue s;
