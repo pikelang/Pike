@@ -561,7 +561,11 @@ typedef struct p_wchar_p
 #   define PMOD_EXPORT __declspec(dllexport)
 #  endif
 # elif __GNUC__ >= 4
-#   define PMOD_EXPORT  __attribute__ ((visibility("default")))
+#  ifdef DYNAMIC_MODULE
+#    define PMOD_EXPORT  __attribute__ ((visibility("default")))
+#  else
+#    define PMOD_EXPORT  __attribute__ ((visibility("protected")))
+#  endif
 # else 
 #  define PMOD_EXPORT
 # endif
