@@ -70,6 +70,15 @@ const INT32 hashprimes[32] =
 
 PMOD_EXPORT int my_log2(size_t x)
 {
+#if defined(__i386__) && defined(__GNUC__)
+    long ret = -2;
+#if SIZEOF_CHAR_P > 4
+    asm("bsrq %1, %0" :"+r"(ret) :"rm"(x));
+#else
+    asm("bsrl %1, %0" :"+r"(ret) :"rm"(x));
+#endif
+    return ret+1;
+#else
   static const signed char bit[256] =
   {
     -1, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,
@@ -108,6 +117,7 @@ PMOD_EXPORT int my_log2(size_t x)
   }
   if((tmp=(x>>8))) return bit[tmp]+8;
   return bit[x];
+#endif
 }
 
 
