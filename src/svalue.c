@@ -30,10 +30,10 @@
 
 #define sp Pike_sp
 
-PMOD_EXPORT struct svalue svalue_undefined =
+PMOD_EXPORT const struct svalue svalue_undefined =
   SVALUE_INIT (T_INT, NUMBER_UNDEFINED, 0);
-PMOD_EXPORT struct svalue svalue_int_zero = SVALUE_INIT_INT (0);
-PMOD_EXPORT struct svalue svalue_int_one = SVALUE_INIT_INT (1);
+PMOD_EXPORT const struct svalue svalue_int_zero = SVALUE_INIT_INT (0);
+PMOD_EXPORT const struct svalue svalue_int_one = SVALUE_INIT_INT (1);
 
 #ifdef PIKE_DEBUG
 PMOD_EXPORT const char msg_type_error[] =
