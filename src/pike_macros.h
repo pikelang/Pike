@@ -18,23 +18,16 @@
 
 #define PTR_TO_INT(PTR) ((size_t) ((char *) (PTR) - (char *) NULL))
 
-#define OFFSETOF(str_type, field) \
-  PTR_TO_INT(& (((struct str_type *)NULL)->field))
-#define BASEOF(ptr, str_type, field)  \
-  ((struct str_type *)((char*)ptr - OFFSETOF(str_type, field)))
-#ifdef __cplusplus
-extern "C++" {
-    template<typename T> static inline int low_alignof_(T *ignored)
-    {
-	struct { char x; T y;} *bar = NULL;
-	return PTR_TO_INT(&bar->y);
-    }
-}
-#define ALIGNOF(X) low_alignof_((X*)NULL)
+#if __GNUC__ >= 4
+#  define OFFSETOF(T,X) __builtin_offsetof(struct T,X)
+#  define ALIGNOF(X) __alignof__(X)
 #else
-#define ALIGNOF(X) OFFSETOF({ char ignored_; X fooo_;}, fooo_)
+#  define OFFSETOF(T, X) PTR_TO_INT(& (((struct T *)NULL)->X))
+#  define ALIGNOF(X) OFFSETOF({ char ignored_; X fooo_;}, fooo_)
 #endif
-/* #define ALIGNOF(X) PTR_TO_INT(&(((struct { char ignored_ ; X fooo_; } *)NULL)->fooo_)) */
+
+#define BASEOF(ptr, str_type, field) \
+   ((struct str_type *)((char*)ptr - OFFSETOF(str_type, field)))
 
 #define NELEM(a) (sizeof (a) / sizeof ((a)[0]))
 #define ALLOC_STRUCT(X) ( (struct X *)xalloc(sizeof(struct X)) )
@@ -129,8 +122,4 @@ PMOD_EXPORT extern const char Pike_is8bitalnum_vector[];
 
 /* Necessary to pass an empty argument to a macro for some preprocessors. */
 #define NOTHING
-
-/* Needed for fsort_template.h */
-PMOD_EXPORT int my_log2(size_t x);
-
 #endif
