@@ -332,7 +332,7 @@ struct svalue
 
 #define FUNCTION_BUILTIN USHRT_MAX
 
-extern PMOD_EXPORT struct svalue svalue_undefined,
+extern PMOD_EXPORT const  struct svalue svalue_undefined,
   svalue_int_zero, svalue_int_one;
 
 #define is_gt(a,b) is_lt(b,a)
