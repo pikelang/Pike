@@ -729,6 +729,7 @@ this_program sync_request(string server, int port, string query,
       if (ponder_answer() == -1) {
 	// The keepalive connection was closed from the server end.
 	// Retry with a new one.
+	// FIXME: Proxy handling?
 	close_connection();
 	return sync_request (server, port, query, http_headers, data);
       }
