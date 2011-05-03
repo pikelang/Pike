@@ -672,9 +672,6 @@ this_program sync_request(string server, int port, string query,
   buf = "";
   headerbuf = "";
 
-  if(!data)
-    data = "";
-
   if(!stringp( http_headers )) {
 
     if(mappingp( http_headers ))
@@ -683,27 +680,28 @@ this_program sync_request(string server, int port, string query,
     else
       http_headers = ([]);
 
-    if(String.width(data)>8) {
-      if(!http_headers["content-type"])
-	error("Wide string as data and no content-type header set.\n");
-      array split = http_headers["content-type"]/"charset=";
-      if(sizeof(split)==1)
-	http_headers["content-type"] += "; charset=utf-8";
-      else {
-	string tail = split[1];
-	sscanf(tail, "%s ", tail);
-	http_headers["content-type"] = split[0] + "utf-8" + tail;
+    if(data) {
+      if(String.width(data)>8) {
+	if(!http_headers["content-type"])
+	  error("Wide string as data and no content-type header set.\n");
+	array split = http_headers["content-type"]/"charset=";
+	if(sizeof(split)==1)
+	  http_headers["content-type"] += "; charset=utf-8";
+	else {
+	  string tail = split[1];
+	  sscanf(tail, "%s ", tail);
+	  http_headers["content-type"] = split[0] + "utf-8" + tail;
+	}
+	data = string_to_utf8(data);
       }
-      data = string_to_utf8(data);
-    }
 
-    if(data != "")
       http_headers["content-length"] = sizeof( data );
+    }
 
     http_headers = headers_encode( http_headers );
   }
 
-  request = query + "\r\n" + http_headers + "\r\n" + data;
+  request = query + "\r\n" + http_headers + "\r\n" + (data||"");
 
   if(kept_alive)
   {
@@ -760,20 +758,18 @@ this_program async_request(string server,int port,string query,
 
    // prepare the request
 
-   if (!data) data="";
-
    if (!headers) headers="";
    else if (mappingp(headers))
    {
       headers=mkmapping(Array.map(indices(headers),lower_case),
 			values(headers));
 
-      if (data!="") headers["content-length"]=sizeof(data);
+      if (data) headers["content-length"]=sizeof(data);
 
       headers=headers_encode(headers);
    }
 
-   send_buffer = request = query+"\r\n"+headers+"\r\n"+data;
+   send_buffer = request = query+"\r\n"+headers+"\r\n"+(data||"");
 
    errno = ok = protocol = this_program::headers = status_desc = status =
      discarded_bytes = datapos = 0;
