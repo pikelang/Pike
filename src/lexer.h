@@ -223,6 +223,11 @@ int parse_esc_seq (WCHAR *buf, p_wchar2 *chr, ptrdiff_t *len)
       c = (p_wchar2)n;
       break;
     }
+
+    case '8': case '9':
+      if( Pike_compiler->compiler_pass == 1 )
+	yywarning("%c is not a valid octal digit.", c);
+      break;
       
     case 'x': {
       unsigned of = 0;
