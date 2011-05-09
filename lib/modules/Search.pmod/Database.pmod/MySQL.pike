@@ -620,25 +620,15 @@ _WhiteFish.DateSet get_global_publ_dateset()
   {
     array(mapping(string:mixed)) a = 
       db->query("SELECT doc_id, value FROM metadata "
-		" WHERE name = 'external_use' "
+		" WHERE name = 'publish-time' "
 		"   AND doc_id > %d ORDER BY doc_id ASC",
 		publ_dateset_cache_max_doc_id);
-    
-    a = map(a, lambda(mapping(string:mixed) row)
-	       {
-		 int visible_from = 0;
-		 catch {
-		   visible_from = 
-		     decode_value(MIME.decode_base64(row->value))[0];
-		 };
-		 return row + ([ "visible_from" : visible_from ]);
-	       });
-    
+
     publ_dateset_cache_max_doc_id = max_doc_id;
     if(!publ_dateset_cache)
       publ_dateset_cache = _WhiteFish.DateSet();
     publ_dateset_cache->add_many( (array(int))a->doc_id,
-				  (array(int))a->visible_from );
+				  (array(int))a->value );
     return publ_dateset_cache;
   }
 }
