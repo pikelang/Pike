@@ -1,3 +1,7 @@
+
+#define OPCODE_INLINE_BRANCH
+#define OPCODE_RETURN_JUMPADDR
+
 #if defined(_M_X64) && !defined(__GNUC__)
 
 #define DEF_PROG_COUNTER	void *amd64_pc; \
@@ -13,6 +17,28 @@
 #define PROG_COUNTER (((unsigned char **)__builtin_frame_address(0))[1])
 #endif
 
+#endif
+
+#define CALL_MACHINE_CODE(pc)					\
+  do {								\
+    /* The test is needed to get the labels to work... */	\
+    if (pc) {							\
+      return ((int (*)(struct Pike_interpreter *))(pc))		\
+	(&Pike_interpreter);					\
+    }								\
+  } while(0)
+
+void amd64_ins_entry(void);
+#define INS_ENTRY()	amd64_ins_entry()
+/* Size of the prologue added by INS_ENTRY() (in PIKE_OPCODE_T's). */
+#define ENTRY_PROLOGUE_SIZE	0x23
+
+#if 0
+int ins_f_jump(unsigned int op, int backward_jump);
+int ins_f_jump_with_arg(unsigned int op, unsigned INT32 arg,
+			int backward_jump);
+int ins_f_jump_with_two_args(unsigned int op, unsigned INT32 arg1,
+			     unsigned INT32 arg2, int backward_jump);
 #endif
 
 #ifdef OPCODE_RETURN_JUMPADDR
