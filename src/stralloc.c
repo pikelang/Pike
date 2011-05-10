@@ -131,7 +131,7 @@ static INLINE int find_magnitude2(const p_wchar2 *s, ptrdiff_t len)
   const p_wchar2 *e=s+len;
   while(s<e)
   {    
-    if((unsigned INT32)*s++>=256)
+    if((unsigned INT32)*s>=256)
     {
       do
       {
@@ -140,6 +140,7 @@ static INLINE int find_magnitude2(const p_wchar2 *s, ptrdiff_t len)
       }while(s<e);
       return 1;
     }
+    s++;
   }
   return 0;
 }
