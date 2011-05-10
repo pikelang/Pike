@@ -161,15 +161,17 @@ PMOD_EXPORT void memfill(char *to,
 	     INT32 fromlen,
 	     INT32 offset);
 */
-PMOD_EXPORT void *debug_xalloc(size_t size)  ATTRIBUTE((malloc)) ATTRIBUTE((alloc_size(1))) ATTRIBUTE((warn_unused_result));
-PMOD_EXPORT void *debug_xmalloc(size_t s)  ATTRIBUTE((malloc))  ATTRIBUTE((alloc_size(1))) ATTRIBUTE((warn_unused_result));
-PMOD_EXPORT void debug_xfree(void *mem);
-PMOD_EXPORT void *debug_xrealloc(void *m, size_t s)   ATTRIBUTE((malloc)) ATTRIBUTE((alloc_size(2))) ATTRIBUTE((warn_unused_result));
-PMOD_EXPORT void *debug_xcalloc(size_t n, size_t s)  ATTRIBUTE((malloc))  ATTRIBUTE((alloc_size(1,2))) ATTRIBUTE((warn_unused_result));
+#define MALLOC_FUNCTION  ATTRIBUTE((malloc)) ATTRIBUTE((warn_unused_result))
 
-void *mexec_alloc(size_t sz) ATTRIBUTE((malloc)) ATTRIBUTE((alloc_size(1))) ATTRIBUTE((warn_unused_result));
-void *mexec_realloc(void *ptr, size_t sz)   ATTRIBUTE((malloc)) ATTRIBUTE((alloc_size(1))) ATTRIBUTE((warn_unused_result));
-void mexec_free(void *ptr);
+PMOD_EXPORT void *debug_xalloc(size_t size) MALLOC_FUNCTION;
+PMOD_EXPORT void *debug_xmalloc(size_t s) MALLOC_FUNCTION;
+PMOD_EXPORT void debug_xfree(void *mem);
+PMOD_EXPORT void *debug_xrealloc(void *m, size_t s) MALLOC_FUNCTION;
+PMOD_EXPORT void *debug_xcalloc(size_t n, size_t s) MALLOC_FUNCTION;
+
+PMOD_EXPORT void *mexec_alloc(size_t sz) MALLOC_FUNCTION;
+PMOD_EXPORT void *mexec_realloc(void *ptr, size_t sz) MALLOC_FUNCTION;
+PMOD_EXPORT void mexec_free(void *ptr);
 void init_pike_memory (void);
 void exit_pike_memory (void);
 
