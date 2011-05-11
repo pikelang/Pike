@@ -5460,6 +5460,22 @@ if test "$with_machine_code" = "no"; then :; else
     ], [])
     AC_TRY_COMPILE([
 #if defined(__GNUC__)
+#if !defined(__x86_64__) && !defined(__x86_64) && !defined(__amd64) && !defined(__amd64__)
+#error Not amd64 architecture
+#endif
+#elif defined(_MSC_VER)
+#if !defined(_M_X64)
+#error Not amd64 architecture
+#endif
+#error Unsupported ABI.
+#else
+#error Unsupported compiler
+#endif
+    ], [], [
+      pike_cv_machine_code_arch=amd64
+    ], [])
+    AC_TRY_COMPILE([
+#if defined(__GNUC__)
 #if !defined(sparc) && !defined(__sparc__) && !defined(__sparc)
 #error Not sparc architecture
 #endif
