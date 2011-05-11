@@ -190,8 +190,8 @@ void th_atfork_child(void);
 /* Some pthread libs define yield as non-portable function. */
 #define low_th_yield()	pthread_yield_np()
 #endif
-PMOD_EPXORT extern pthread_attr_t pattr;
-PMOD_EPXORT extern pthread_attr_t small_pattr;
+PMOD_EXPORT extern pthread_attr_t pattr;
+PMOD_EXPORT extern pthread_attr_t small_pattr;
 
 #define th_create(ID,fun,arg) pthread_create(ID,&pattr,fun,arg)
 #define th_create_small(ID,fun,arg) pthread_create(ID,&small_pattr,fun,arg)
