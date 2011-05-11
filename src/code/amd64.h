@@ -1,6 +1,7 @@
 
 #define OPCODE_INLINE_BRANCH
 #define OPCODE_RETURN_JUMPADDR
+#define OPCODE_INLINE_RETURN
 
 #if defined(_M_X64) && !defined(__GNUC__)
 
@@ -19,31 +20,41 @@
 
 #endif
 
-#define CALL_MACHINE_CODE(pc)					\
-  do {								\
-    /* The test is needed to get the labels to work... */	\
-    if (pc) {							\
-      return ((int (*)(struct Pike_interpreter *))(pc))		\
-	(&Pike_interpreter);					\
-    }								\
+#define CALL_MACHINE_CODE(pc)						\
+  do {									\
+    /* The test is needed to get the labels to work... */		\
+    if (pc) {								\
+      ((int (*)(struct Pike_interpreter *))(pc)) (&Pike_interpreter);	\
+      goto inter_return_label;						\
+    }									\
   } while(0)
 
 void amd64_ins_entry(void);
 #define INS_ENTRY()	amd64_ins_entry()
 /* Size of the prologue added by INS_ENTRY() (in PIKE_OPCODE_T's). */
-#define ENTRY_PROLOGUE_SIZE	0x23
+#define ENTRY_PROLOGUE_SIZE	0x1f
 
-#if 0
-int ins_f_jump(unsigned int op, int backward_jump);
-int ins_f_jump_with_arg(unsigned int op, unsigned INT32 arg,
-			int backward_jump);
-int ins_f_jump_with_two_args(unsigned int op, unsigned INT32 arg1,
-			     unsigned INT32 arg2, int backward_jump);
-#endif
+void amd64_flush_code_generator_state(void);
+#define FLUSH_CODE_GENERATOR_STATE()	amd64_flush_code_generator_state()
+
+int amd64_ins_f_jump(unsigned int op, int backward_jump);
+int amd64_ins_f_jump_with_arg(unsigned int op, INT32 a, int backward_jump);
+int amd64_ins_f_jump_with_2_args(unsigned int op, INT32 a, INT32 b,
+				 int backward_jump);
+void amd64_update_f_jump(INT32 offset, INT32 to_offset);
+INT32 amd64_read_f_jump(INT32 offset);
+#define INS_F_JUMP			amd64_ins_f_jump
+#define INS_F_JUMP_WITH_ARG		amd64_ins_f_jump_with_arg
+#define INS_F_JUMP_WITH_TWO_ARGS	amd64_ins_f_jump_with_2_args
+#define UPDATE_F_JUMP			amd64_update_f_jump
+#define READ_F_JUMP			amd64_read_f_jump
+
+void amd64_init_interpreter_state(void);
+#define INIT_INTERPRETER_STATE		amd64_init_interpreter_state
 
 #ifdef OPCODE_RETURN_JUMPADDR
 /* Adjust for the machine code inserted after the call for I_JUMP opcodes. */
-#define JUMP_EPILOGUE_SIZE 2
+#define JUMP_EPILOGUE_SIZE 2+3
 #define JUMP_SET_TO_PC_AT_NEXT(PC) \
   ((PC) = PROG_COUNTER + JUMP_EPILOGUE_SIZE)
 #else

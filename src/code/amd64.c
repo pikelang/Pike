@@ -24,8 +24,10 @@ enum amd64_reg {REG_RAX = 0, REG_RBX = 3, REG_RCX = 1, REG_RDX = 2,
 /* We reserve register r13 and above (as well as RSP and RBP). */
 #define REG_BITMASK	((1 << REG_MAX) - 1)
 #define REG_RESERVED	(REG_RSP|REG_RBP)
-#define REG_MAX			REG_R13
-#define Pike_fp_reg		REG_R13
+#define REG_MAX			REG_R11
+#define PIKE_MARK_SP_REG	REG_R11
+#define PIKE_SP_REG		REG_R12
+#define PIKE_FP_REG		REG_R13
 #define Pike_interpreter_reg	REG_R14
 #define imm32_offset_reg	REG_R15
 
@@ -49,6 +51,10 @@ enum amd64_reg {REG_RAX = 0, REG_RBX = 3, REG_RCX = 1, REG_RDX = 2,
 #endif
 
 #define PUSH_INT(X) ins_int((INT32)(X), (void (*)(char))add_to_program)
+
+#define AMD64_RET() add_to_program(0xc3)
+
+#define AMD64_NOP() add_to_program(0x90)
 
 #define AMD64_PUSH(REG) do {			\
     enum amd64_reg reg__ = (REG);		\
@@ -122,6 +128,25 @@ enum amd64_reg {REG_RAX = 0, REG_RBX = 3, REG_RCX = 1, REG_RDX = 2,
     PUSH_INT(off32__);							\
   } while(0)
 
+#define AMD64_ADD_IMM32(REG, IMM32) do {		\
+    enum amd64_reg reg__ = (REG);			\
+    int imm32__ = (IMM32);				\
+    if (reg__ & 0x08) {					\
+      add_to_program(0x49);				\
+      reg__ &= 0x07;					\
+    } else {						\
+      add_to_program(0x48);				\
+    }							\
+    add_to_program(0x83);				\
+    if ((imm32__ >= -0x80) && (imm32__ <= 0x7f)) {	\
+      add_to_program(0xc0|reg__);			\
+      add_to_program(imm32__);				\
+    } else {						\
+      Pike_error("Not supported yet.\n");		\
+      PUSH_INT(imm32__);				\
+    }							\
+  } while(0)
+
 #define AMD64_SUB_IMM32(REG, IMM32) do {		\
     enum amd64_reg reg__ = (REG);			\
     int imm32__ = (IMM32);				\
@@ -149,8 +174,44 @@ enum amd64_reg {REG_RAX = 0, REG_RBX = 3, REG_RCX = 1, REG_RDX = 2,
     } else {					\
       add_to_program(0x48);			\
     }						\
-    add_to_program(0x21);			\
+    add_to_program(0x85);			\
     add_to_program(0xc0|(reg__ <<3)|reg__);	\
+  } while(0)
+
+#define AMD64_CMP_REG_IMM32(REG, IMM32) do {		\
+    enum amd64_reg reg__ = (REG);			\
+    int imm32__ = (IMM32);				\
+    if (reg__ & 0x08) {					\
+      add_to_program(0x49);				\
+      reg__ &= 0x07;					\
+    } else {						\
+      add_to_program(0x48);				\
+    }							\
+    add_to_program(0x83);				\
+    if ((imm32__ >= -0x80) && (imm32__ <= 0x7f)) {	\
+      add_to_program(0xf8|reg__);			\
+      add_to_program(imm32__);				\
+    } else {						\
+      Pike_error("Not supported yet.\n");		\
+      PUSH_INT(imm32__);				\
+    }							\
+  } while(0)
+
+#define AMD64_CMP_REG(REG1, REG2) do {			\
+    enum amd64_reg reg1__ = (REG1);			\
+    enum amd64_reg reg2__ = (REG2);			\
+    int rex = 0x48;					\
+    if (reg1__ & 0x08) {				\
+      rex |= 0x04;					\
+      reg1__ &= 0x07;					\
+    }							\
+    if (reg2__ & 0x08) {				\
+      rex |= 0x01;					\
+      reg2__ &= 0x07;					\
+    }							\
+    add_to_program(rex);				\
+    add_to_program(0x39);				\
+    add_to_program(0xc0|(reg1__<<3)|reg2__);		\
   } while(0)
 
 #define AMD64_JUMP_REG(REG) do {		\
@@ -174,12 +235,15 @@ enum amd64_reg {REG_RAX = 0, REG_RBX = 3, REG_RCX = 1, REG_RDX = 2,
     AMD64_CALL_REL32(imm32_offset_reg, ((char *)(X)) - ((char *)0x80000000LL));
 
 #define AMD64_CLEAR_REG(REG) do {		\
-    enum amd64_reg reg__ = (REG);		\
-    if (reg__ & 0x08) {				\
-      add_to_program(0x45);			\
+    enum amd64_reg creg__ = (REG);		\
+    if (creg__ & 0x08) {			\
+      add_to_program(0x4d);			\
+      creg__ &= 0x07;				\
+    } else {					\
+      add_to_program(0x48);			\
     }						\
     add_to_program(0x31);			\
-    add_to_program((reg__<<3)|0xc0);		\
+    add_to_program(0xc0|(creg__<<3)|creg__);	\
   } while(0)
 
 #define AMD64_ADD_REG_IMM32(FROM_REG, IMM32, TO_REG) do {	\
@@ -202,9 +266,54 @@ enum amd64_reg {REG_RAX = 0, REG_RBX = 3, REG_RCX = 1, REG_RDX = 2,
       }								\
       add_to_program(rex);					\
       add_to_program(0x8d);					\
-      add_to_program(0x80|(to_reg__<<3)|from_reg__);		\
-      PUSH_INT(imm32__);					\
+      if ((-0x80 <= imm32__) && (0x7f >= imm32__)) {		\
+	add_to_program(0x40|(to_reg__<<3)|from_reg__);		\
+	add_to_program(imm32__);				\
+      } else {							\
+	add_to_program(0x80|(to_reg__<<3)|from_reg__);		\
+	PUSH_INT(imm32__);					\
+      }								\
     }								\
+  } while(0)
+
+#define AMD64_LOAD_RIP32(RIP32, REG) do {	\
+    enum amd64_reg reg__ = (REG);				\
+    int rip32__ = (RIP32);					\
+    if (reg__ & 0x08) {						\
+      add_to_program(0x4c);					\
+      reg__ &= 0x07;						\
+    } else {							\
+      add_to_program(0x48);					\
+    }								\
+    add_to_program(0x8d);					\
+    add_to_program(0x05|(reg__<<3));				\
+    PUSH_INT(rip32__);						\
+  } while(0)
+
+#define AMD64_MOVE_RIP32_TO_REG(RIP32, REG) do {		\
+    enum amd64_reg reg__ = (REG);				\
+    int rip32__ = (RIP32);					\
+    if (reg__ & 0x08) {						\
+      add_to_program(0x4c);					\
+      reg__ &= 0x07;						\
+    } else {							\
+      add_to_program(0x48);					\
+    }								\
+    add_to_program(0x8b);					\
+    add_to_program(0x05|(reg__<<3));				\
+    PUSH_INT(rip32__);						\
+  } while(0)
+
+#define AMD64_MOVE32_RIP32_TO_REG(RIP32, REG) do {		\
+    enum amd64_reg reg__ = (REG);				\
+    int rip32__ = (RIP32);					\
+    if (reg__ & 0x08) {						\
+      add_to_program(0x44);					\
+      reg__ &= 0x07;						\
+    }								\
+    add_to_program(0x8b);					\
+    add_to_program(0x05|(reg__<<3));				\
+    PUSH_INT(rip32__);						\
   } while(0)
 
 #define AMD64_LOAD_IMM32(REG, IMM32) do {	\
@@ -268,6 +377,16 @@ enum amd64_reg {REG_RAX = 0, REG_RBX = 3, REG_RCX = 1, REG_RDX = 2,
     }									\
   } while (0)
 
+#define AMD64_JMP(SKIP) do {\
+    int skip__ = (SKIP);    \
+    if ((skip__ >= -0x80) && (skip__ <= 0x7f)) {	\
+      add_to_program(0xeb);				\
+      add_to_program(skip__);				\
+    } else {						\
+      Pike_error("Not supported yet.\n");		\
+    }							\
+  } while(0)
+
 #define AMD64_JNE(SKIP) do {\
     int skip__ = (SKIP);    \
     if ((skip__ >= -0x80) && (skip__ <= 0x7f)) {	\
@@ -294,18 +413,18 @@ enum amd64_reg {REG_RAX = 0, REG_RBX = 3, REG_RCX = 1, REG_RDX = 2,
  *   RDI: Pike_interpreter	(ARG1_REG)
  *
  * During interpreting:
- *   R13: Pike_fp
  *   R14: Pike_interpreter
  *   R15: 0x0000000080000000
  */
 void amd64_ins_entry(void)
 {
   /* Push all registers that the ABI requires to be preserved. */
+  AMD64_PUSH(REG_RBP);
+  AMD64_MOV_REG(REG_RSP, REG_RBP);
   AMD64_PUSH(REG_R15);
   AMD64_PUSH(REG_R14);
   AMD64_PUSH(REG_R13);
   AMD64_PUSH(REG_R12);
-  AMD64_PUSH(REG_RBP);
   AMD64_PUSH(REG_RBX);
   AMD64_SUB_IMM32(REG_RSP, 8);	/* Align on 16 bytes. */
 
@@ -317,10 +436,6 @@ void amd64_ins_entry(void)
   add_to_program(0xe7);
 
   AMD64_MOV_REG(ARG1_REG, Pike_interpreter_reg);
-
-  AMD64_MOVE_RELADDR_TO_REG(Pike_interpreter_reg,
-			    OFFSETOF(Pike_interpreter, frame_pointer),
-			    Pike_fp_reg);
 }
 
 #define ALLOC_REG(REG) do {} while (0)
@@ -351,15 +466,25 @@ void amd64_ins_entry(void)
     PUSH_INT(VALUE);							\
   } while(0)								\
 
-static enum amd64_reg next_reg;
-static enum amd64_reg sp_reg, mark_sp_reg;
+static enum amd64_reg next_reg = 0;
+static enum amd64_reg sp_reg = 0, fp_reg = 0, mark_sp_reg = 0;
+static int dirty_regs = 0;
 ptrdiff_t amd64_prev_stored_pc = -1; /* PROG_PC at the last point Pike_fp->pc was updated. */
+
+void amd64_flush_code_generator_state(void)
+{
+  next_reg = 0;
+  sp_reg = 0;
+  fp_reg = 0;
+  mark_sp_reg = 0;
+  dirty_regs = 0;
+  amd64_prev_stored_pc = -1;
+}
 
 static enum amd64_reg alloc_reg (int avoid_regs)
 {
   enum amd64_reg reg;
-  int used_regs = (avoid_regs | REG_RESERVED | \
-		   (1 << sp_reg) | (1 << mark_sp_reg)) & REG_BITMASK;
+  int used_regs = (avoid_regs | REG_RESERVED) & REG_BITMASK;
 
   avoid_regs |= REG_RESERVED;
 
@@ -387,9 +512,6 @@ static enum amd64_reg alloc_reg (int avoid_regs)
       if (reg == next_reg) Pike_fatal ("Failed to find a non-excluded register.\n");
 #endif
     }
-
-    if (sp_reg == reg)			{sp_reg = REG_NONE; DEALLOC_REG (reg);}
-    else if (mark_sp_reg == reg)	{mark_sp_reg = REG_NONE; DEALLOC_REG (reg);}
   }
 
 #ifdef REGISTER_DEBUG
@@ -402,6 +524,39 @@ static enum amd64_reg alloc_reg (int avoid_regs)
   if (next_reg >= REG_MAX) next_reg = 0;
 
   return reg;
+}
+
+/* NB: We load Pike_fp et al into registers that
+ *     are persistent across function calls.
+ */
+void amd64_load_fp_reg(void)
+{
+  if (!fp_reg) {
+    AMD64_MOVE_RELADDR_TO_REG(Pike_interpreter_reg,
+			      OFFSETOF(Pike_interpreter, frame_pointer),
+			      PIKE_FP_REG);
+    fp_reg = PIKE_FP_REG;
+  }
+}
+
+void amd64_load_sp_reg(void)
+{
+  if (!sp_reg) {
+    AMD64_MOVE_RELADDR_TO_REG(Pike_interpreter_reg,
+			      OFFSETOF(Pike_interpreter, stack_pointer),
+			      PIKE_SP_REG);
+    sp_reg = PIKE_SP_REG;
+  }
+}
+
+void amd64_load_mark_sp_reg(void)
+{
+  if (!mark_sp_reg) {
+    AMD64_MOVE_RELADDR_TO_REG(Pike_interpreter_reg,
+			      OFFSETOF(Pike_interpreter, mark_stack_pointer),
+			      PIKE_MARK_SP_REG);
+    mark_sp_reg = PIKE_MARK_SP_REG;
+  }
 }
 
 
@@ -424,7 +579,6 @@ static void amd64_call_c_function(void *addr)
 {
   CALL_ABSOLUTE(addr);
   next_reg = REG_RAX;
-  sp_reg = mark_sp_reg = REG_NONE;
   CLEAR_REGS();
 }
 
@@ -432,13 +586,15 @@ void amd64_update_pc(void)
 {
   INT32 tmp = PIKE_PC, disp;
 	
-  if (amd64_prev_stored_pc < 0) {
-    enum amd64_reg tmp_reg = alloc_reg (1 << Pike_fp_reg);
+  if (amd64_prev_stored_pc == -1) {
+    enum amd64_reg tmp_reg = alloc_reg(0);
+    amd64_load_fp_reg();
     AMD64_MOV_REG(REG_RSP, tmp_reg);
-    AMD64_ADD_REG_IMM32(Pike_fp_reg, OFFSETOF(pike_frame, pc) + 0x08, REG_RSP);
+    AMD64_ADD_REG_IMM32(fp_reg, OFFSETOF(pike_frame, pc) + 0x08, REG_RSP);
     /* CALL .+0 */
     add_to_program(0xe8);
     PUSH_INT(0x00000000);
+    tmp = PIKE_PC;
     AMD64_MOV_REG(tmp_reg, REG_RSP);
 #ifdef PIKE_DEBUG
     if (a_flag >= 60)
@@ -451,7 +607,8 @@ void amd64_update_pc(void)
     if (a_flag >= 60)
       fprintf (stderr, "pc %d  update pc relative: %d\n", tmp, disp);
 #endif
-    AMD64_ADD_VAL_TO_RELADDR (disp, OFFSETOF (pike_frame, pc), Pike_fp_reg);
+    amd64_load_fp_reg();
+    AMD64_ADD_VAL_TO_RELADDR (disp, OFFSETOF (pike_frame, pc), fp_reg);
   }
   else {
 #ifdef PIKE_DEBUG
@@ -483,8 +640,38 @@ static void maybe_update_pc(void)
   }
 }
 
+#ifdef PIKE_DEBUG
+static void ins_debug_instr_prologue (PIKE_INSTR_T instr, INT32 arg1, INT32 arg2)
+{
+  int flags = instrs[instr].flags;
+
+  maybe_update_pc();
+
+  if (flags & I_HASARG2)
+    AMD64_LOAD_IMM32(ARG3_REG, arg2);
+  if (flags & I_HASARG)
+    AMD64_LOAD_IMM32(ARG2_REG, arg1);
+  AMD64_LOAD_IMM32(ARG1_REG, instr);
+
+  if (flags & I_HASARG2)
+    amd64_call_c_function (simple_debug_instr_prologue_2);
+  else if (flags & I_HASARG)
+    amd64_call_c_function (simple_debug_instr_prologue_1);
+  else
+    amd64_call_c_function (simple_debug_instr_prologue_0);
+}
+#else  /* !PIKE_DEBUG */
+#define ins_debug_instr_prologue(instr, arg1, arg2)
+#endif
+
+void amd64_init_interpreter_state(void)
+{
+  instrs[F_CATCH - F_OFFSET].address = inter_return_opcode_F_CATCH;
+}
+
 void ins_f_byte(unsigned int b)
 {
+  int flags;
   void *addr;
   b-=F_OFFSET;
 #ifdef PIKE_DEBUG
@@ -492,15 +679,152 @@ void ins_f_byte(unsigned int b)
     Pike_error("Instruction too big %d\n",b);
 #endif
   maybe_update_pc();
+
+  flags = instrs[b].flags;
+
+  /* NB: PIKE_FP_REG is currently never dirty. */
+  if (dirty_regs & (1 << PIKE_SP_REG)) {
+    amd64_load_fp_reg();
+    AMD64_MOVE_REG_TO_RELADDR(PIKE_SP_REG, Pike_interpreter_reg,
+			      OFFSETOF(Pike_interpreter, stack_pointer));
+    dirty_regs &= ~(1 << PIKE_SP_REG);
+  }
+  if (dirty_regs & (1 << PIKE_MARK_SP_REG)) {
+    amd64_load_fp_reg();
+    AMD64_MOVE_REG_TO_RELADDR(PIKE_MARK_SP_REG, Pike_interpreter_reg,
+			      OFFSETOF(Pike_interpreter, mark_stack_pointer));
+    dirty_regs &= ~(1 << PIKE_MARK_SP_REG);
+  }
+
+  if (flags & I_UPDATE_SP) sp_reg = 0;
+  if (flags & I_UPDATE_M_SP) mark_sp_reg = 0;
+  if (flags & I_UPDATE_FP) fp_reg = 0;
+
   addr=instrs[b].address;
+  if ((b + F_OFFSET) == F_CATCH) {
+    /* Special arguments for the F_CATCH instruction. */
+    AMD64_MOVE32_RIP32_TO_REG(0x2a, ARG2_REG);	/* Load the POINTER. */
+    AMD64_LOAD_RIP32(0x27, ARG1_REG);		/* Next valid address. */
+    addr = inter_return_opcode_F_CATCH;
+  }
+
   amd64_call_c_function(addr);
-  if (instrs[b].flags & I_BRANCH) {
+  if (instrs[b].flags & I_RETURN) {
+    if ((b + F_OFFSET) == F_RETURN_IF_TRUE) {
+      /* Kludge. We must check if the ret addr is
+       * orig_addr + JUMP_EPILOGUE_SIZE. */
+      AMD64_LOAD_RIP32(JUMP_EPILOGUE_SIZE - 7, REG_RCX);
+    }
+    AMD64_CMP_REG_IMM32(REG_RAX, -1);
+    AMD64_JNE(0x0f);
+    AMD64_ADD_REG_IMM32(REG_RBP, -0x28, REG_RSP);
+    AMD64_POP(REG_RBX);
+    AMD64_POP(REG_R12);
+    AMD64_POP(REG_R13);
+    AMD64_POP(REG_R14);
+    AMD64_POP(REG_R15);
+    AMD64_POP(REG_RBP);
+    AMD64_RET();
+    if ((b + F_OFFSET) == F_RETURN_IF_TRUE) {
+      /* Kludge. We must check if the ret addr is
+       * orig_addr + JUMP_EPILOGUE_SIZE. */
+      AMD64_CMP_REG(REG_RAX, REG_RCX);
+      AMD64_JE(0x02);
+      AMD64_JUMP_REG(REG_RAX);
+      return;
+    }
+  }
+  if (flags & I_JUMP) {
+    if (flags & I_UPDATE_FP) {
+      /* Probably a function call... */
+      AMD64_MOV_REG(Pike_interpreter_reg, ARG1_REG);
+    } else {
+      /* NB: MUST be the same size as the above case. */
+      AMD64_NOP();
+      AMD64_NOP();
+      AMD64_NOP();
+    }
+  }
+  if (flags & I_JUMP_NEXT) {
     AMD64_TEST_REG(REG_RAX);
-    AMD64_JNE(0x02);
+    AMD64_JE(0x02);
     AMD64_JUMP_REG(REG_RAX);
-  } else if (instrs[b].flags & I_JUMP) {
+  } else if (flags & I_JUMP) {
     AMD64_JUMP_REG(REG_RAX);
   }
+}
+
+int amd64_ins_f_jump(unsigned int op, int backward_jump)
+{
+  int flags;
+  void *addr;
+  int off = op - F_OFFSET;
+  int ret = -1;
+#ifdef PIKE_DEBUG
+  if(off>255)
+    Pike_error("Instruction too big %d\n",off);
+#endif
+  flags = instrs[off].flags;
+  if (!(flags & I_BRANCH)) return -1;
+
+  maybe_update_pc();
+
+  /* NB: PIKE_FP_REG is currently never dirty. */
+  if (dirty_regs & (1 << PIKE_SP_REG)) {
+    amd64_load_fp_reg();
+    AMD64_MOVE_REG_TO_RELADDR(PIKE_SP_REG, Pike_interpreter_reg,
+			      OFFSETOF(Pike_interpreter, stack_pointer));
+    dirty_regs &= ~(1 << PIKE_SP_REG);
+  }
+  if (dirty_regs & (1 << PIKE_MARK_SP_REG)) {
+    amd64_load_fp_reg();
+    AMD64_MOVE_REG_TO_RELADDR(PIKE_MARK_SP_REG, Pike_interpreter_reg,
+			      OFFSETOF(Pike_interpreter, mark_stack_pointer));
+    dirty_regs &= ~(1 << PIKE_MARK_SP_REG);
+  }
+
+  if (flags & I_UPDATE_SP) sp_reg = 0;
+  if (flags & I_UPDATE_M_SP) mark_sp_reg = 0;
+  if (flags & I_UPDATE_FP) fp_reg = 0;
+
+  if (op == F_BRANCH) {
+    ins_debug_instr_prologue(off, 0, 0);
+    if (backward_jump) {
+      amd64_call_c_function(branch_check_threads_etc);
+    }
+    add_to_program(0xe9);
+    ret=DO_NOT_WARN( (INT32) PIKE_PC );
+    PUSH_INT(0);
+    return ret;
+  }
+
+  addr=instrs[off].address;
+  amd64_call_c_function(addr);
+  AMD64_TEST_REG(REG_RAX);
+
+  if (backward_jump) {
+    add_to_program (0x74);	/* jz rel8 */
+    add_to_program (9 + 1 + 4);
+    amd64_call_c_function (branch_check_threads_etc); /* 9 bytes */
+    add_to_program (0xe9);	/* jmp rel32 */
+    ret = DO_NOT_WARN ((INT32) PIKE_PC);
+    PUSH_INT (0);		/* 4 bytes */
+  }
+  else {
+#if 0
+    if ((cpu_vendor == PIKE_CPU_VENDOR_AMD) &&
+	(op == F_LOOP || op == F_FOREACH)) {
+      /* FIXME: Slows down Intel PIII/x86 by 7%, speeds up Athlon XP by 22%. :P */
+      add_to_program (0x3e);	/* Branch taken hint. */
+    }
+#endif
+    add_to_program (0x0f);	/* jnz rel32 */
+    add_to_program (0x85);
+    ret = DO_NOT_WARN ((INT32) PIKE_PC);
+    PUSH_INT (0);
+  }
+
+  return ret;
 }
 
 void ins_f_byte_with_arg(unsigned int a, INT32 b)
@@ -510,11 +834,39 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
   ins_f_byte(a);
 }
 
+int amd64_ins_f_jump_with_arg(unsigned int op, INT32 a, int backward_jump)
+{
+  if (!(instrs[op - F_OFFSET].flags & I_BRANCH)) return -1;
+  maybe_update_pc();
+  update_arg1(a);
+  return amd64_ins_f_jump(op, backward_jump);
+}
+
 void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
 {
   maybe_update_pc();
   update_arg2(c);
   update_arg1(b);
   ins_f_byte(a);
+}
+
+int amd64_ins_f_jump_with_2_args(unsigned int op, INT32 a, INT32 b,
+				 int backward_jump)
+{
+  if (!(instrs[op - F_OFFSET].flags & I_BRANCH)) return -1;
+  maybe_update_pc();
+  update_arg2(b);
+  update_arg1(a);
+  return amd64_ins_f_jump(op, backward_jump);
+}
+
+void amd64_update_f_jump(INT32 offset, INT32 to_offset)
+{
+  upd_pointer(offset, to_offset - offset - 4);
+}
+
+INT32 amd64_read_f_jump(INT32 offset)
+{
+  return read_pointer(offset) + offset + 4;
 }
 
