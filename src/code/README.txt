@@ -192,6 +192,13 @@ OPCODE_INLINE_BRANCH
 	value for those opcodes and jump iff it's nonzero. This is to
 	facilitate easier inlining of branches in the machine code.
 
+OPCODE_INLINE_RETURN
+	If defined, opcode functions that perform INTER_RETURN will
+	return (void *)(ptrdiff_t)-1 when they want to exit from
+	the running interpreter. These opcodes also have the I_RETURN
+	flag set. This is to facilitate easier use of and clean up
+	of INS_ENTRY().
+
 OPCODE_RETURN_JUMPADDR
 	If defined, jump functions that return the address to jump to
 	will be generated for I_JUMP instructions, so the ins_f_byte*

@@ -1107,10 +1107,177 @@ static int catching_eval_instruction (PIKE_OPCODE_T *pc);
 
 
 #ifdef PIKE_USE_MACHINE_CODE
+#ifdef OPCODE_INLINE_RETURN
+/* Catch notes:
+ *
+ * Typical F_CATCH use:
+ *
+ *   F_CATCH
+ * 	F_PTR	continue_label
+ *
+ *   ENTRY
+ *
+ *   catch body
+ *
+ *   F_EXIT_CATCH
+ *
+ *   F_BRANCH
+ *	F_PTR	continue_label
+ *
+ *   ENTRY
+ *
+ * continue_label:
+ *
+ *   rest of code.
+ */
+
+/* Modified calling-conventions to simplify code-generation when
+ * INTER_RETURN is inlined.
+ *
+ * cf interpret_functions.h:F_CATCH
+ *
+ * Arguments:
+ *   addr:
+ *     Entry-point for the catch block.
+ *
+ *   continue_addr:
+ *     Offset from addr for code after the catch (and after ENTRY).
+ *
+ * Returns:
+ *   (PIKE_OPCODE_T *)-1 on INTER_RETURN.
+ *   jump_destination otherwise.
+ */
+PIKE_OPCODE_T *inter_return_opcode_F_CATCH(PIKE_OPCODE_T *addr,
+					   INT32 continue_addr)
+{
+  if (d_flag || Pike_interpreter.trace_level > 2) {
+    low_debug_instr_prologue (F_CATCH - F_OFFSET);
+    if (Pike_interpreter.trace_level>3) {
+      sprintf(trace_buffer,
+	      "-    Addr = %p\n"
+	      "-    Continue = 0x%ld\n",
+	      addr, continue_addr);
+      write_to_stderr(trace_buffer,strlen(trace_buffer));
+    }
+  }
+  {
+    struct catch_context *new_catch_ctx = alloc_catch_context();
+#ifdef PIKE_DEBUG
+      new_catch_ctx->frame = Pike_fp;
+      init_recovery (&new_catch_ctx->recovery, 0, 0, PERR_LOCATION());
+#else
+      init_recovery (&new_catch_ctx->recovery, 0);
+#endif
+    new_catch_ctx->save_expendible = Pike_fp->expendible;
+    new_catch_ctx->continue_reladdr = continue_addr
+      /* We need to run the entry prologue... */
+      - ENTRY_PROLOGUE_SIZE;
+
+    new_catch_ctx->next_addr = addr;
+    new_catch_ctx->prev = Pike_interpreter.catch_ctx;
+    Pike_interpreter.catch_ctx = new_catch_ctx;
+    DO_IF_DEBUG({
+	TRACE((3,"-   Pushed catch context %p\n", new_catch_ctx));
+      });
+  }
+
+  Pike_fp->expendible = Pike_fp->locals + Pike_fp->num_locals;
+
+#if 0
+  /* Need to adjust next_addr by sizeof(INT32) to skip past the jump
+   * address to the continue position after the catch block. */
+  addr = (PIKE_OPCODE_T *) ((INT32 *) addr + 1);
+#endif
+
+  if (Pike_interpreter.catching_eval_jmpbuf) {
+    /* There's already a catching_eval_instruction around our
+     * eval_instruction, so we can just continue. */
+    debug_malloc_touch_named (Pike_interpreter.catch_ctx, "(1)");
+    /* Skip past the entry prologue... */
+    addr += ENTRY_PROLOGUE_SIZE;
+    DO_IF_DEBUG({
+	TRACE((3,"-   In active catch; continuing at %p\n", addr));
+      });
+    return addr;
+  }
+  else {
+    debug_malloc_touch_named (Pike_interpreter.catch_ctx, "(2)");
+
+    while (1) {
+      /* Loop here every time an exception is caught. Once we've
+       * gotten here and set things up to run eval_instruction from
+       * inside catching_eval_instruction, we keep doing it until it's
+       * time to return. */
+
+      int res;
+
+      DO_IF_DEBUG({
+	  TRACE((3,"-   Activating catch; calling %p in context %p\n",
+		 addr, Pike_interpreter.catch_ctx));
+	});
+
+      res = catching_eval_instruction (addr);
+
+      DO_IF_DEBUG({
+	  TRACE((3,"-   catching_eval_instruction(%p) returned %d\n",
+		 addr, res));
+	});
+
+      if (res != -3) {
+	/* There was an inter return inside the evaluated code. Just
+	 * propagate it. */
+	DO_IF_DEBUG ({
+	    TRACE((3,"-   Returning from catch.\n"));
+	    if (res != -1) Pike_fatal ("Unexpected return value from "
+				       "catching_eval_instruction: %d\n", res);
+	  });
+	break;
+      }
+
+      else {
+	/* Caught an exception. */
+	struct catch_context *cc = Pike_interpreter.catch_ctx;
+
+	DO_IF_DEBUG ({
+	    TRACE((3,"-   Caught exception. catch context: %p\n", cc));
+	    if (!cc) Pike_fatal ("Catch context dropoff.\n");
+	    if (cc->frame != Pike_fp)
+	      Pike_fatal ("Catch context doesn't belong to this frame.\n");
+	  });
+
+	debug_malloc_touch_named (cc, "(3)");
+	UNSETJMP (cc->recovery);
+	Pike_fp->expendible = cc->save_expendible;
+	move_svalue (Pike_sp++, &throw_value);
+	mark_free_svalue (&throw_value);
+	low_destruct_objects_to_destruct();
+
+	if (cc->continue_reladdr < 0)
+	  FAST_CHECK_THREADS_ON_BRANCH();
+	addr = cc->next_addr + cc->continue_reladdr;
+
+	DO_IF_DEBUG({
+	    TRACE((3,"-   Popping catch context %p ==> %p\n",
+		   cc, cc->prev));
+	    if (!addr) Pike_fatal ("Unexpected null continue addr.\n");
+	  });
+
+	Pike_interpreter.catch_ctx = cc->prev;
+	really_free_catch_context (cc);
+      }
+    }
+
+    return (PIKE_OPCODE_T *)(ptrdiff_t)-1;	/* INTER_RETURN; */
+  }
+}
+
+void *do_inter_return_label = (void*)(ptrdiff_t)-1;
+#else
 /* Labels to jump to to cause eval_instruction to return */
 /* FIXME: Replace these with assembler lables */
 void *do_inter_return_label = NULL;
 void *dummy_label = NULL;
+#endif
 
 #ifndef CALL_MACHINE_CODE
 #define CALL_MACHINE_CODE(pc)					\
@@ -1280,8 +1447,8 @@ C }
 
 #if defined(OPCODE_INLINE_BRANCH) || defined(PIKE_SMALL_EVAL_INSTRUCTION)
 #define TEST_OPCODE0(O,N,F,C) \
-int PIKE_CONCAT(test_opcode_,O)(void) { \
-    int branch_taken = 0;	\
+ptrdiff_t PIKE_CONCAT(test_opcode_,O)(void) { \
+    ptrdiff_t branch_taken = 0;	\
     DEF_PROG_COUNTER; \
     DEBUG_PROLOGUE (O, ;);						\
     C; \
@@ -1289,8 +1456,8 @@ int PIKE_CONCAT(test_opcode_,O)(void) { \
   }
 
 #define TEST_OPCODE1(O,N,F,C) \
-int PIKE_CONCAT(test_opcode_,O)(INT32 arg1) {\
-    int branch_taken = 0;	\
+ptrdiff_t PIKE_CONCAT(test_opcode_,O)(INT32 arg1) {\
+    ptrdiff_t branch_taken = 0;	\
     DEF_PROG_COUNTER; \
     DEBUG_PROLOGUE (O, DEBUG_LOG_ARG (arg1));				\
     C; \
@@ -1299,8 +1466,8 @@ int PIKE_CONCAT(test_opcode_,O)(INT32 arg1) {\
 
 
 #define TEST_OPCODE2(O,N,F,C) \
-int PIKE_CONCAT(test_opcode_,O)(INT32 arg1, INT32 arg2) { \
-    int branch_taken = 0;	\
+ptrdiff_t PIKE_CONCAT(test_opcode_,O)(INT32 arg1, INT32 arg2) { \
+    ptrdiff_t branch_taken = 0;	\
     DEF_PROG_COUNTER; \
     DEBUG_PROLOGUE (O, DEBUG_LOG_ARG (arg1); DEBUG_LOG_ARG2 (arg2));	\
     C; \
@@ -1326,9 +1493,9 @@ int PIKE_CONCAT(test_opcode_,O)(INT32 arg1, INT32 arg2) { \
 #define OPCODE1_TAILPTRJUMP(O,N,F,C) OPCODE1_PTRJUMP(O,N,F,C)
 #define OPCODE2_TAILPTRJUMP(O,N,F,C) OPCODE2_PTRJUMP(O,N,F,C)
 
-#define OPCODE0_RETURN(O,N,F,C) OPCODE0_JUMP(O,N,F,C)
-#define OPCODE1_RETURN(O,N,F,C) OPCODE1_JUMP(O,N,F,C)
-#define OPCODE2_RETURN(O,N,F,C) OPCODE2_JUMP(O,N,F,C)
+#define OPCODE0_RETURN(O,N,F,C) OPCODE0_JUMP(O,N,F | I_RETURN,C)
+#define OPCODE1_RETURN(O,N,F,C) OPCODE1_JUMP(O,N,F | I_RETURN,C)
+#define OPCODE2_RETURN(O,N,F,C) OPCODE2_JUMP(O,N,F | I_RETURN,C)
 #define OPCODE0_TAILRETURN(O,N,F,C) OPCODE0_RETURN(O,N,F,C)
 #define OPCODE1_TAILRETURN(O,N,F,C) OPCODE1_RETURN(O,N,F,C)
 #define OPCODE2_TAILRETURN(O,N,F,C) OPCODE2_RETURN(O,N,F,C)
@@ -1427,6 +1594,7 @@ static int eval_instruction_low(PIKE_OPCODE_T *pc)
 {
   if(pc == NULL) {
 
+#ifndef OPCODE_INLINE_RETURN
     if(do_inter_return_label != NULL)
       Pike_fatal("eval_instruction called with NULL (twice).\n");
 
@@ -1458,6 +1626,7 @@ static int eval_instruction_low(PIKE_OPCODE_T *pc)
     /* Trick optimizer */
     if(!dummy_label)
       return 0;
+#endif /* !OPCODE_INLINE_RETURN */
   }
 
   /* This else is important to avoid an overoptimization bug in (at
@@ -1475,6 +1644,7 @@ static int eval_instruction_low(PIKE_OPCODE_T *pc)
 #endif
   }
 
+#ifndef OPCODE_INLINE_RETURN
 #ifdef __GNUC__
   goto *dummy_label;
 #endif
@@ -1487,6 +1657,7 @@ static int eval_instruction_low(PIKE_OPCODE_T *pc)
   }
 #endif
 
+#endif /* !OPCODE_INLINE_RETURN */
  inter_return_label:
   EXIT_MACHINE_CODE();
 #ifdef PIKE_DEBUG

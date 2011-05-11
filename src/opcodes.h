@@ -50,6 +50,8 @@ struct keyword
 #define I_UPDATE_FP	512	/* Opcode modifies Pike_fp */
 #define I_UPDATE_M_SP	1024	/* Opcode modifies Pike_mark_sp */
 
+#define I_RETURN	2048	/* Opcode may return to the previous frame. */
+
 /* Convenience variants */
 #define I_TWO_ARGS	(I_HASARG | I_HASARG2)
 #define I_DATA		(I_HASARG | I__DATA)

@@ -1312,7 +1312,7 @@ OPCODE0_BRANCH(F_EQ_AND, "==&&", I_UPDATE_SP, {
 /* Ideally this ought to be an OPCODE0_PTRRETURN but I don't fancy
  * adding that variety to this macro hell. At the end of the day there
  * wouldn't be any difference anyway afaics. /mast */
-OPCODE0_PTRJUMP(F_CATCH, "catch", I_UPDATE_ALL, {
+OPCODE0_PTRJUMP(F_CATCH, "catch", I_UPDATE_ALL|I_RETURN, {
   PIKE_OPCODE_T *addr;
 
   {
