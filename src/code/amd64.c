@@ -745,11 +745,7 @@ void ins_f_byte(unsigned int b)
       AMD64_NOP();
     }
   }
-  if (flags & I_JUMP_NEXT) {
-    AMD64_TEST_REG(REG_RAX);
-    AMD64_JE(0x02);
-    AMD64_JUMP_REG(REG_RAX);
-  } else if (flags & I_JUMP) {
+  if (flags & I_JUMP) {
     AMD64_JUMP_REG(REG_RAX);
   }
 }
