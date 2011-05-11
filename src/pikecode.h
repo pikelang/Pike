@@ -30,7 +30,9 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b);
 void ins_f_byte_with_2_args(unsigned int a, INT32 c, INT32 b);
 
 #if PIKE_BYTECODE_METHOD == PIKE_BYTECODE_AMD64
+#ifdef __NT__
 #warning using amd64
+#endif
 #endif			    
 			    
 #if PIKE_BYTECODE_METHOD == PIKE_BYTECODE_IA32
