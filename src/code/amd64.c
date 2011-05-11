@@ -124,8 +124,42 @@ enum amd64_reg {REG_RAX = 0, REG_RBX = 3, REG_RCX = 1, REG_RDX = 2,
     }									\
     add_to_program(rex__);						\
     add_to_program(0x89);						\
-    add_to_program(0x80|(from_reg__<<3)| to_reg__);			\
-    PUSH_INT(off32__);							\
+    if (!off32__) {							\
+      if (!from_reg__) {						\
+	add_to_program(0x04);						\
+	from_reg__ = 0x04;						\
+      }									\
+      add_to_program((from_reg__<<3)| to_reg__);			\
+    } else if ((-0x80 <= off32__) && (0x7f >= off32__)) {		\
+      if (!from_reg__) {						\
+	add_to_program(0x44);						\
+	from_reg__ = 0x04;						\
+      }									\
+      add_to_program((from_reg__<<3)| to_reg__);			\
+      add_to_program(off32__);						\
+    } else {								\
+      add_to_program(0x80|(from_reg__<<3)| to_reg__);			\
+      PUSH_INT(off32__);						\
+    }									\
+  } while(0)
+
+#define AMD64_SHL_IMM8(REG, IMM8) do {	\
+    enum amd64_reg reg__ = (REG);	\
+    int imm8__ = (IMM8);		\
+    if (reg__ & 0x08) {			\
+      add_to_program(0x49);		\
+      reg__ &= 0x07;			\
+    } else {				\
+      add_to_program(0x48);		\
+    }					\
+    if (imm8__ == 1) {			\
+      add_to_program(0xd1);		\
+      add_to_program(0xe0|reg__);	\
+    } else {				\
+      add_to_program(0xc1);		\
+      add_to_program(0xe0|reg__);	\
+      add_to_program(imm8__);		\
+    }					\
   } while(0)
 
 #define AMD64_ADD_IMM32(REG, IMM32) do {		\
@@ -333,6 +367,24 @@ enum amd64_reg {REG_RAX = 0, REG_RBX = 3, REG_RCX = 1, REG_RDX = 2,
       add_to_program(0x25);			\
       PUSH_INT(imm32__);			\
     }						\
+  } while(0)
+
+#define AMD64_LOAD_IMM(REG, IMM) do {			\
+    enum amd64_reg reg64__ = (REG);			\
+    INT64 imm__ = (IMM);				\
+    if ((-0x80000000LL <= imm__) &&			\
+	(0x7fffffffLL >= imm__)) {			\
+      AMD64_LOAD_IMM32(reg64__, imm__);			\
+    } else {						\
+      if (imm__ & 0x80000000LL) {			\
+	/* 32-bit negative. */				\
+	AMD64_LOAD_IMM32(reg64__, (imm__>>32) + 1);	\
+      } else {						\
+	AMD64_LOAD_IMM32(reg64__, (imm__>>32));		\
+      }							\
+      AMD64_SHL_IMM8(reg64__, 32);			\
+      AMD64_ADD_REG_IMM32(reg64__, imm__, reg64__);	\
+    }							\
   } while(0)
 
 #define AMD64_ADD_VAL_TO_RELADDR(VAL, OFFSET, REG) do {			\
@@ -573,7 +625,22 @@ static void update_arg2(INT32 value)
   /* FIXME: Alloc stack space on NT. */
 }
 
-
+static void amd64_push_int(INT64 value, int subtype)
+{
+  amd64_load_sp_reg();
+  AMD64_LOAD_IMM32(REG_RAX, (subtype<<16) + PIKE_T_INT);
+  AMD64_MOVE_REG_TO_RELADDR(REG_RAX, sp_reg, OFFSETOF(svalue, type));
+  AMD64_LOAD_IMM(REG_RAX, value);
+  AMD64_MOVE_REG_TO_RELADDR(REG_RAX, sp_reg, OFFSETOF(svalue, u.integer));
+  AMD64_ADD_IMM32(sp_reg, sizeof(struct svalue));
+  dirty_regs |= 1 << sp_reg;
+  /* FIXME: Deferred writing of Pike_sp doen't seem to work reliably yet. */
+  if (dirty_regs & (1 << PIKE_SP_REG)) {
+    AMD64_MOVE_REG_TO_RELADDR(PIKE_SP_REG, Pike_interpreter_reg,
+			      OFFSETOF(Pike_interpreter, stack_pointer));
+    dirty_regs &= ~(1 << PIKE_SP_REG);
+  }
+}
 
 static void amd64_call_c_function(void *addr)
 {
@@ -682,31 +749,63 @@ void ins_f_byte(unsigned int b)
 
   flags = instrs[b].flags;
 
+  addr=instrs[b].address;
+  switch(b + F_OFFSET) {
+  case F_CATCH:
+    /* Special arguments for the F_CATCH instruction. */
+    AMD64_MOVE32_RIP32_TO_REG(0x2a, ARG2_REG);	/* Load the POINTER. */
+    AMD64_LOAD_RIP32(0x27, ARG1_REG);		/* Next valid address. */
+    addr = inter_return_opcode_F_CATCH;
+    break;
+  case F_UNDEFINED:
+    ins_debug_instr_prologue(b, 0, 0);
+    amd64_push_int(0, 1);
+    return;
+  case F_CONST0:
+    ins_debug_instr_prologue(b, 0, 0);
+    amd64_push_int(0, 0);
+    return;
+  case F_CONST1:
+    ins_debug_instr_prologue(b, 0, 0);
+    amd64_push_int(1, 0);
+    return;
+  case F_CONST_1:
+    ins_debug_instr_prologue(b, 0, 0);
+    amd64_push_int(-1, 0);
+    return;
+  case F_BIGNUM:
+    ins_debug_instr_prologue(b, 0, 0);
+    amd64_push_int(0x7fffffff, 0);
+    return;
+  case F_RETURN_1:
+    ins_f_byte(F_CONST1);
+    ins_f_byte(F_RETURN);
+    return;
+  case F_RETURN_0:
+    ins_f_byte(F_CONST0);
+    ins_f_byte(F_RETURN);
+    return;
+  case F_ADD:
+    ins_debug_instr_prologue(b, 0, 0);
+    update_arg1(2);
+    addr = f_add;
+    break;
+  }
+
   /* NB: PIKE_FP_REG is currently never dirty. */
   if (dirty_regs & (1 << PIKE_SP_REG)) {
-    amd64_load_fp_reg();
     AMD64_MOVE_REG_TO_RELADDR(PIKE_SP_REG, Pike_interpreter_reg,
 			      OFFSETOF(Pike_interpreter, stack_pointer));
     dirty_regs &= ~(1 << PIKE_SP_REG);
   }
   if (dirty_regs & (1 << PIKE_MARK_SP_REG)) {
-    amd64_load_fp_reg();
     AMD64_MOVE_REG_TO_RELADDR(PIKE_MARK_SP_REG, Pike_interpreter_reg,
 			      OFFSETOF(Pike_interpreter, mark_stack_pointer));
     dirty_regs &= ~(1 << PIKE_MARK_SP_REG);
   }
-
   if (flags & I_UPDATE_SP) sp_reg = 0;
   if (flags & I_UPDATE_M_SP) mark_sp_reg = 0;
   if (flags & I_UPDATE_FP) fp_reg = 0;
-
-  addr=instrs[b].address;
-  if ((b + F_OFFSET) == F_CATCH) {
-    /* Special arguments for the F_CATCH instruction. */
-    AMD64_MOVE32_RIP32_TO_REG(0x2a, ARG2_REG);	/* Load the POINTER. */
-    AMD64_LOAD_RIP32(0x27, ARG1_REG);		/* Next valid address. */
-    addr = inter_return_opcode_F_CATCH;
-  }
 
   amd64_call_c_function(addr);
   if (instrs[b].flags & I_RETURN) {
@@ -826,6 +925,24 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
 void ins_f_byte_with_arg(unsigned int a, INT32 b)
 {
   maybe_update_pc();
+  switch(a) {
+  case F_NUMBER:
+    ins_debug_instr_prologue(a-F_OFFSET, 0, 0);
+    amd64_push_int(b, 0);
+    return;
+  case F_NEG_NUMBER:
+    ins_debug_instr_prologue(a-F_OFFSET, 0, 0);
+    amd64_push_int(-(INT64)b, 0);
+    return;
+  case F_POS_INT_INDEX:
+    ins_f_byte_with_arg(F_NUMBER, b);
+    ins_f_byte(F_INDEX);
+    return;
+  case F_NEG_INT_INDEX:
+    ins_f_byte_with_arg(F_NEG_NUMBER, b);
+    ins_f_byte(F_INDEX);
+    return;
+  }
   update_arg1(b);
   ins_f_byte(a);
 }
@@ -841,6 +958,12 @@ int amd64_ins_f_jump_with_arg(unsigned int op, INT32 a, int backward_jump)
 void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
 {
   maybe_update_pc();
+  switch(a) {
+  case F_NUMBER64:
+    ins_debug_instr_prologue(a-F_OFFSET, 0, 0);
+    amd64_push_int((((unsigned INT64)b)<<32)|(unsigned INT32)c, 0);
+    return;
+  }
   update_arg2(c);
   update_arg1(b);
   ins_f_byte(a);
