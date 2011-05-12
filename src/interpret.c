@@ -1150,6 +1150,7 @@ static int catching_eval_instruction (PIKE_OPCODE_T *pc);
 PIKE_OPCODE_T *inter_return_opcode_F_CATCH(PIKE_OPCODE_T *addr,
 					   INT32 continue_addr)
 {
+#ifdef PIKE_DEBUG
   if (d_flag || Pike_interpreter.trace_level > 2) {
     low_debug_instr_prologue (F_CATCH - F_OFFSET);
     if (Pike_interpreter.trace_level>3) {
@@ -1160,6 +1161,7 @@ PIKE_OPCODE_T *inter_return_opcode_F_CATCH(PIKE_OPCODE_T *addr,
       write_to_stderr(trace_buffer,strlen(trace_buffer));
     }
   }
+#endif
   {
     struct catch_context *new_catch_ctx = alloc_catch_context();
 #ifdef PIKE_DEBUG
