@@ -32,7 +32,7 @@
 void amd64_ins_entry(void);
 #define INS_ENTRY()	amd64_ins_entry()
 /* Size of the prologue added by INS_ENTRY() (in PIKE_OPCODE_T's). */
-#define ENTRY_PROLOGUE_SIZE	0x1f
+#define ENTRY_PROLOGUE_SIZE	0x1e
 
 void amd64_flush_code_generator_state(void);
 #define FLUSH_CODE_GENERATOR_STATE()	amd64_flush_code_generator_state()

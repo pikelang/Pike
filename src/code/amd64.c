@@ -357,14 +357,13 @@ enum amd64_reg {REG_RAX = 0, REG_RBX = 3, REG_RCX = 1, REG_RDX = 2,
       AMD64_CLEAR_REG(reg__);			\
     } else {					\
       if (reg__ & 0x08) {			\
-	add_to_program(0x4c);			\
+	add_to_program(0x49);			\
 	reg__ &= 0x07;				\
       } else {					\
 	add_to_program(0x48);			\
       }						\
-      add_to_program(0x8d);			\
-      add_to_program((reg__<<3)|0x04);		\
-      add_to_program(0x25);			\
+      add_to_program(0xc7);			\
+      add_to_program(0xc0|reg__);		\
       PUSH_INT(imm32__);			\
     }						\
   } while(0)
