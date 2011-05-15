@@ -101,20 +101,8 @@ PMOD_EXPORT struct pike_string *empty_pike_string = 0;
 /*** Main string hash function ***/
 
 #define StrHash(s,len) low_do_hash(s,len,0)
-
-static size_t low_do_hash(const void *s,
-				 ptrdiff_t len__,
-				 int size_shift)
-{
-  size_t h;
-  DO_HASHMEM(h, s, len__<<size_shift, HASH_PREFIX<<size_shift);
-  return h;
-}
-
-static INLINE size_t do_hash(struct pike_string *s)
-{
-  return low_do_hash(s->str, s->len, s->size_shift);
-}
+#define low_do_hash(STR,LEN,SHIFT) hashmem( (STR), (LEN)<<(SHIFT), HASH_PREFIX<<(SHIFT) )
+#define do_hash(STR) low_do_hash(STR->str,STR->len,STR->size_shift)
 
 
 static INLINE int find_magnitude1(const p_wchar1 *s, ptrdiff_t len)
@@ -130,7 +118,7 @@ static INLINE int find_magnitude2(const p_wchar2 *s, ptrdiff_t len)
 {
   const p_wchar2 *e=s+len;
   while(s<e)
-  {    
+  {
     if((unsigned INT32)*s>=256)
     {
       do

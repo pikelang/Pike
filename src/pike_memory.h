@@ -149,7 +149,15 @@ p_wchar2 *MEMCHR2(p_wchar2 *p, p_wchar2 c, ptrdiff_t e)  ATTRIBUTE((pure));
 /* PMOD_EXPORT void swap(char *a, char *b, size_t size); */
 PMOD_EXPORT void reverse(char *memory, size_t nitems, size_t size);
 PMOD_EXPORT void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order);
-PMOD_EXPORT size_t hashmem(const unsigned char *a, size_t len, size_t mlen)  ATTRIBUTE((pure));
+
+#if (defined(__i386__) || defined(__amd64__)) && defined(__GNUC__)
+#ifdef __i386__
+__attribute__((fastcall)) 
+#endif
+size_t (*hashmem)(const void *, size_t, size_t);
+#else
+PMOD_EXPORT size_t hashmem(const void *, size_t len, size_t mlen) ATTRIBUTE((pure));
+#endif
 /*
 PMOD_EXPORT void memfill(char *to,
 	     INT32 tolen,
@@ -178,88 +186,6 @@ void exit_pike_memory (void);
 #else /* !HANDLES_UNALIGNED_MEMORY_ACCESS */
 #define DO_IF_ELSE_UNALIGNED_MEMORY_ACCESS(IF, ELSE)	ELSE
 #endif /* HANDLES_UNALIGNED_MEMORY_ACCESS */
-
-#if SIZEOF_CHAR_P == 4
-#define DIVIDE_BY_2_CHAR_P(X)	(X >>= 3)
-#else /* sizeof(char *) != 4 */
-#if SIZEOF_CHAR_P == 8
-#define DIVIDE_BY_2_CHAR_P(X)	(X >>= 4)
-#else /* sizeof(char *) != 8 */
-#define DIVIDE_BY_2_CHAR_P(X)	(X /= 2*sizeof(size_t))
-#endif /* sizeof(char *) == 8 */
-#endif /* sizeof(char *) == 4 */
-
-/* MLEN is the length of the longest prefix of A to use for hashing.
- * (If A is longer then additionally some bytes at the end are
- * included.) */
-/* NB: RET should be an lvalue of type size_t. */
-#define DO_HASHMEM(RET, A, LEN, MLEN)			\
-  do {							\
-    const unsigned char *a = A;				\
-    size_t len = LEN;					\
-    size_t mlen = MLEN;					\
-    size_t ret;						\
-  							\
-    ret = 9248339*len;					\
-    if(len<=mlen)					\
-      mlen=len;						\
-    else						\
-    {							\
-      switch(len-mlen)					\
-      {							\
-  	default: ret^=(ret<<6) + a[len-7];		\
-  	case 7:						\
-  	case 6: ret^=(ret<<7) + a[len-5];		\
-  	case 5:						\
-  	case 4: ret^=(ret<<4) + a[len-4];		\
-  	case 3: ret^=(ret<<3) + a[len-3];		\
-  	case 2: ret^=(ret<<3) + a[len-2];		\
-  	case 1: ret^=(ret<<3) + a[len-1];		\
-      }							\
-    }							\
-    a += mlen & 7;					\
-    switch(mlen&7)					\
-    {							\
-      case 7: ret^=a[-7];				\
-      case 6: ret^=(ret<<4)+a[-6];			\
-      case 5: ret^=(ret<<7)+a[-5];			\
-      case 4: ret^=(ret<<6)+a[-4];			\
-      case 3: ret^=(ret<<3)+a[-3];			\
-      case 2: ret^=(ret<<7)+a[-2];			\
-      case 1: ret^=(ret<<5)+a[-1];			\
-    }							\
-  							\
-    DO_IF_ELSE_UNALIGNED_MEMORY_ACCESS(			\
-      {							\
-  	size_t *b;					\
-  	b=(size_t *)a;					\
-    							\
-  	for(DIVIDE_BY_2_CHAR_P(mlen);mlen--;)		\
-  	{						\
-  	  ret^=(ret<<7)+*(b++);				\
-  	  ret^=(ret>>6)+*(b++);				\
-  	}						\
-      }							\
-    ,							\
-      for(mlen >>= 3; mlen--;)				\
-      {							\
-  	register size_t t1;				\
-  	register size_t t2;				\
-  	t1= a[0];					\
-  	t2= a[1];					\
-  	t1=(t1<<5) + a[2];				\
-  	t2=(t2<<4) + a[3];				\
-  	t1=(t1<<7) + a[4];				\
-  	t2=(t2<<5) + a[5];				\
-  	t1=(t1<<3) + a[6];				\
-  	t2=(t2<<4) + a[7];				\
-  	a += 8;						\
-  	ret^=(ret<<7) + (ret>>6) + t1 + (t2<<6);	\
-      }							\
-    )							\
-  							\
-    RET = ret;						\
-  } while(0)
 
 /* Determine if we should use our own heap manager for executable
  * memory. */

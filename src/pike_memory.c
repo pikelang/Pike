@@ -185,100 +185,217 @@ void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order)
   free(tmp);
 }
 
-size_t hashmem(const unsigned char *a_, size_t len_, size_t mlen_)
+#if (defined(__i386__)|| defined(__amd64__)) && defined(__GNUC__)
+/*
+ * This would look much better using the compiler intrisics, or even the
+ * assembler instructions directly.
+ *
+ * However, that requires a (at least in 2011) somewhat modern gcc (4.5.*).
+ *
+ * For reference:
+ *  #define CRC32SI(H,P) H=__builtin_ia32_crc32si(H,P)
+ *  #define CRC32SQ(H,P) H=__builtin_ia32_crc32sq(H,P)
+ *  #define __cpuid(level,a,b,c,d) cpuid(level, &a,&b,&c,&d)
+ *
+ * The value for the SSE4_2 is also available in cpuid.h in modern
+ * gcc:s.
+ */
+#define CRC32SI(H,P)                                                  \
+    __asm__ __volatile__(                                             \
+        ".byte 0xf2, 0xf, 0x38, 0xf1, 0xf1;"                          \
+        :"=S"(H) :"0"(H), "c"(*(P)))
+
+#define CRC32SQ(H,P)                                                  \
+    __asm__ __volatile__(                                             \
+        ".byte 0xf2, 0xf, 0x38, 0xf0, 0xf1"                           \
+        :"=S"(H) :"0"(H), "c"(*(P)))
+
+#define __cpuid(level, a, b, c, d)                      \
+    __asm__ ("xchg{l} {%%}ebx, %1\n"                    \
+             "cpuid\n"                                  \
+             "xchg{l} {%%}ebx, %1\n"                    \
+             : "=a" (a), "=r" (b), "=c" (c), "=d" (d)   \
+             : "0" (level))
+
+#define bit_SSE4_2 (1<<20)
+
+__attribute__((const)) static inline int supports_sse42( ) 
 {
-  size_t ret_;
-
-  DO_HASHMEM(ret_, a_, len_, mlen_);
-
-  return ret_;
+    unsigned int ignore, cpuid_ecx;
+    __cpuid( 0x1, ignore, ignore, cpuid_ecx, ignore );
+    return cpuid_ecx & bit_SSE4_2;
 }
 
-size_t hashstr(const unsigned char *str, ptrdiff_t maxn)
+#ifdef __i386__
+__attribute__((fastcall))
+#endif
+__attribute__((hot))
+__attribute__((target("sse4,arch=core2")))
+static inline size_t hashmem_ia32_crc32( const void *s, size_t len__, size_t nbytes )
 {
-  size_t ret,c;
-  
-  if(!(ret=str++[0]))
-    return ret;
-  for(; maxn>=0; maxn--)
-  {
-    c=str++[0];
-    if(!c) break;
-    ret ^= ( ret << 4 ) + c ;
-    ret &= 0x7fffffff;
-  }
-
-  return ret;
-}
-
-#define MK_HASHMEM(NAME, TYPE)					\
-  size_t NAME(const TYPE *str, ptrdiff_t len, ptrdiff_t maxn)	\
-  {								\
-    size_t ret,c;						\
-    								\
-    ret = len*92873743;						\
-  								\
-    len = MINIMUM(maxn,len);					\
-    for(; len>=0; len--)					\
-    {								\
-      c=str++[0];						\
-      ret ^= ( ret << 4 ) + c ;					\
-      ret &= 0x7fffffff;					\
-    }								\
-  								\
-    return ret;							\
-  }
-
-MK_HASHMEM(simple_hashmem, unsigned char)
-MK_HASHMEM(simple_hashmem1, p_wchar1)
-MK_HASHMEM(simple_hashmem2, p_wchar2)
-#if 0
-void memfill(char *to,
-	     INT32 tolen,
-	     char *from,
-	     INT32 fromlen,
-	     INT32 offset)
-{
-  if(fromlen==1)
-  {
-    MEMSET(to, *from, tolen);
-  }
-  else if(tolen>0)
-  {
-    INT32 tmp=MINIMUM(tolen, fromlen - offset);
-    MEMCPY(to, from + offset, tmp);
-    to+=tmp;
-    tolen-=tmp;
-
-    if(tolen > 0)
+#ifdef PIKE_DEBUG
+    if( nytes & 3 )
+        Pike_fatal("do_hash_crc32: nbytes & 3 should be 0.\n");
+#endif
+    unsigned int h = len__;
+    const unsigned int *p = s;
+    if( nbytes > len__ )
     {
-      tmp=MINIMUM(tolen, fromlen);
-      MEMCPY(to, from, tmp);
-      from=to;
-      to+=tmp;
-      tolen-=tmp;
-      
-      while(tolen>0)
-      {
-	tmp=MINIMUM(tolen, fromlen);
-	MEMCPY(to, from, tmp);
-	fromlen+=tmp;
-	tolen-=tmp;
-	to+=tmp;
-      }
+        const unsigned int *e = p + (len__>>2);
+        while( p<e )
+            CRC32SI(h, p++ );
+
+        if( len__ & 3 )
+        {
+            const unsigned char *p = (const unsigned char*)s+len__-(len__&3);
+            while( p < (unsigned char *)s )
+                CRC32SQ( h, p++ );
+        }
     }
-  }
+    else
+    {
+        const unsigned int *e = p+(nbytes>>2);
+        while( p<e )
+            CRC32SI(h,p++);
+
+        /* include 8 bytes from the end. Note that this might be a
+         * duplicate of the previous bytes.
+         *
+         * Also note that this means we are rather likely to read
+         * unaligned memory.  That is OK, however.
+         */
+        e = (const unsigned int *)((const unsigned char *)s+len__-8);
+        CRC32SI(h,e--);
+        CRC32SI(h,e);
+    }
+#if SIZEOF_CHAR_P > 4
+    /* FIXME: We could use the long long crc32 instructions that work on 64 bit values.
+     * however, those are only available when compiling to amd64.
+     */
+    return (h <<32) | h;
+#endif
+    return h;
+}
+
+#if SIZEOF_CHAR_P == 4
+#define DIVIDE_BY_2_CHAR_P(X)	(X >>= 3)
+#else /* sizeof(char *) != 4 */
+#if SIZEOF_CHAR_P == 8
+#define DIVIDE_BY_2_CHAR_P(X)	(X >>= 4)
+#else /* sizeof(char *) != 8 */
+#define DIVIDE_BY_2_CHAR_P(X)	(X /= 2*sizeof(size_t))
+#endif /* sizeof(char *) == 8 */
+#endif /* sizeof(char *) == 4 */
+
+/* MLEN is the length of the longest prefix of A to use for hashing.
+ * (If A is longer then additionally some bytes at the end are
+ * included.) */
+/* NB: RET should be an lvalue of type size_t. */
+#define DO_HASHMEM(RET, A, LEN, MLEN)			\
+  do {							\
+    const unsigned char *a = A;				\
+    size_t len = LEN;					\
+    size_t mlen = MLEN;					\
+    size_t ret;						\
+  							\
+    ret = 9248339*len;					\
+    if(len<=mlen)					\
+      mlen=len;						\
+    else						\
+    {							\
+      switch(len-mlen)					\
+      {							\
+  	default: ret^=(ret<<6) + a[len-7];		\
+  	case 7:						\
+  	case 6: ret^=(ret<<7) + a[len-5];		\
+  	case 5:						\
+  	case 4: ret^=(ret<<4) + a[len-4];		\
+  	case 3: ret^=(ret<<3) + a[len-3];		\
+  	case 2: ret^=(ret<<3) + a[len-2];		\
+  	case 1: ret^=(ret<<3) + a[len-1];		\
+      }							\
+    }							\
+    a += mlen & 7;					\
+    switch(mlen&7)					\
+    {							\
+      case 7: ret^=a[-7];				\
+      case 6: ret^=(ret<<4)+a[-6];			\
+      case 5: ret^=(ret<<7)+a[-5];			\
+      case 4: ret^=(ret<<6)+a[-4];			\
+      case 3: ret^=(ret<<3)+a[-3];			\
+      case 2: ret^=(ret<<7)+a[-2];			\
+      case 1: ret^=(ret<<5)+a[-1];			\
+    }							\
+  							\
+    DO_IF_ELSE_UNALIGNED_MEMORY_ACCESS(			\
+      {							\
+  	size_t *b;					\
+  	b=(size_t *)a;					\
+    							\
+  	for(DIVIDE_BY_2_CHAR_P(mlen);mlen--;)		\
+  	{						\
+  	  ret^=(ret<<7)+*(b++);				\
+  	  ret^=(ret>>6)+*(b++);				\
+  	}						\
+      }							\
+    ,							\
+      for(mlen >>= 3; mlen--;)				\
+      {							\
+  	register size_t t1;				\
+  	register size_t t2;				\
+  	t1= a[0];					\
+  	t2= a[1];					\
+  	t1=(t1<<5) + a[2];				\
+  	t2=(t2<<4) + a[3];				\
+  	t1=(t1<<7) + a[4];				\
+  	t2=(t2<<5) + a[5];				\
+  	t1=(t1<<3) + a[6];				\
+  	t2=(t2<<4) + a[7];				\
+  	a += 8;						\
+  	ret^=(ret<<7) + (ret>>6) + t1 + (t2<<6);	\
+      }							\
+    )							\
+  							\
+    RET = ret;						\
+  } while(0)
+
+
+#ifdef __i386__
+__attribute__((fastcall))
+#endif
+__attribute__((hot))
+static size_t hashmem_generic(const void *a, size_t len_, size_t mlen_)
+{
+    const unsigned char*a_ = a;
+    size_t ret_;
+    DO_HASHMEM(ret_, a_, len_, mlen_);
+    return ret_;
+}
+
+#ifdef __i386__
+__attribute__((fastcall))
+#endif
+size_t (*hashmem)(const void *, size_t, size_t);
+
+static void init_hashmem()
+{
+  if( supports_sse42() )
+    hashmem = hashmem_ia32_crc32;
+  else
+    hashmem = hashmem_generic;
+}
+#else
+static void init_hashmem(){}
+
+ATTRIBUTE((hot))
+size_t hashmem(const void *a, size_t len_, size_t mlen_)
+{
+    const unsigned char *a_ = a;
+    size_t ret_;
+    DO_HASHMEM(ret_, a_, len_, mlen_);
+    return ret_;
 }
 #endif
-
-#if 0
-#if defined(HAVE_GETRLIMIT) && defined(HAVE_SETRLIMIT) && defined(RLIMIT_DATA)
-#define SOFTLIM 
-
-static long softlim_should_be=0;
-#endif
-#endif
-
 
 PMOD_EXPORT void *debug_xalloc(size_t size)
 {
@@ -3320,6 +3437,7 @@ static void cleanup_debug_malloc(void)
 
 void init_pike_memory (void)
 {
+  init_hashmem();
 #if defined (HAVE_GETPAGESIZE)
   page_size = getpagesize();
 #elif defined (HAVE_SYSCONF) && defined (_SC_PAGESIZE)
