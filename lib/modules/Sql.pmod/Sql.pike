@@ -500,7 +500,7 @@ protected NullArg null_arg = NullArg();
 //!     @elem mapping(string|int:mixed) 1
 //!       A bindings mapping.
 //!   @endarray
-protected array(string|mapping(string|int:mixed))
+array(string|mapping(string|int:mixed))
   handle_extraargs(string query, array(mixed) extraargs) {
 
   array(mixed) args=allocate(sizeof(extraargs));
