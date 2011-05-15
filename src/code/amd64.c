@@ -131,11 +131,10 @@ enum amd64_reg {REG_RAX = 0, REG_RBX = 3, REG_RCX = 1, REG_RDX = 2,
       }									\
       add_to_program((from_reg__<<3)| to_reg__);			\
     } else if ((-0x80 <= off32__) && (0x7f >= off32__)) {		\
-      if (!from_reg__) {						\
-	add_to_program(0x44);						\
-	from_reg__ = 0x04;						\
+      add_to_program(0x40|(from_reg__<<3)| to_reg__);			\
+      if (to_reg__ == 4) {						\
+	add_to_program(0x24);						\
       }									\
-      add_to_program((from_reg__<<3)| to_reg__);			\
       add_to_program(off32__);						\
     } else {								\
       add_to_program(0x80|(from_reg__<<3)| to_reg__);			\
@@ -160,6 +159,25 @@ enum amd64_reg {REG_RAX = 0, REG_RBX = 3, REG_RCX = 1, REG_RDX = 2,
       add_to_program(0xe0|reg__);	\
       add_to_program(imm8__);		\
     }					\
+  } while(0)
+
+#define AMD64_AND_IMM32(REG, IMM32) do {		\
+    enum amd64_reg reg__ = (REG);			\
+    int imm32__ = (IMM32);				\
+    if (reg__ & 0x08) {					\
+      add_to_program(0x49);				\
+      reg__ &= 0x07;					\
+    } else {						\
+      add_to_program(0x48);				\
+    }							\
+    add_to_program(0x83);				\
+    if ((imm32__ >= -0x80) && (imm32__ <= 0x7f)) {	\
+      add_to_program(0xe0|reg__);			\
+      add_to_program(imm32__);				\
+    } else {						\
+      Pike_error("Not supported yet.\n");		\
+      PUSH_INT(imm32__);				\
+    }							\
   } while(0)
 
 #define AMD64_ADD_IMM32(REG, IMM32) do {		\
@@ -655,13 +673,9 @@ void amd64_update_pc(void)
   if (amd64_prev_stored_pc == -1) {
     enum amd64_reg tmp_reg = alloc_reg(0);
     amd64_load_fp_reg();
-    AMD64_MOV_REG(REG_RSP, tmp_reg);
-    AMD64_ADD_REG_IMM32(fp_reg, OFFSETOF(pike_frame, pc) + 0x08, REG_RSP);
-    /* CALL .+0 */
-    add_to_program(0xe8);
-    PUSH_INT(0x00000000);
+    AMD64_LOAD_RIP32(0x00, tmp_reg);
     tmp = PIKE_PC;
-    AMD64_MOV_REG(tmp_reg, REG_RSP);
+    AMD64_MOVE_REG_TO_RELADDR(tmp_reg, fp_reg, OFFSETOF(pike_frame, pc));
 #ifdef PIKE_DEBUG
     if (a_flag >= 60)
       fprintf (stderr, "pc %d  update pc via call\n", tmp);
