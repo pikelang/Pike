@@ -38,7 +38,7 @@
 #define SET_HSIZE(X) htable_mask=(htable_size=(1<<(X)))-1
 #define HMODULO(X) ((X) & (htable_mask))
 
-unsigned INT32 htable_mask;
+static unsigned INT32 htable_mask;
 
 #endif
 
@@ -84,7 +84,7 @@ static PIKE_MUTEX_T *bucket_locks;
 #endif
 
 #define BEGIN_HASH_SIZE 997
-#define MAX_AVG_LINK_LENGTH 3
+#define MAX_AVG_LINK_LENGTH 2
 
 /* Experimental dynamic hash length */
 #ifndef HASH_PREFIX
