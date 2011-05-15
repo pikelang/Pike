@@ -521,7 +521,7 @@ protected array(string|mapping(string|int:mixed))
       args[j] = null_arg;
       continue;
     }
-    ERROR("Wrong type to query argument #"+(j+1)+".\n");
+    ERROR("Wrong type to query argument %d: %O\n", j + 1, s);
   }
   if(!sizeof(b)) b=0;
 
