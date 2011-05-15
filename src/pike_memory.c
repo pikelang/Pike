@@ -185,7 +185,7 @@ void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order)
   free(tmp);
 }
 
-#if (defined(__i386__)|| defined(__amd64__)) && defined(__GNUC__)
+#if (defined(__i386__) || defined(__amd64__)) && defined(__GNUC__)
 /*
  * This would look much better using the compiler intrisics, or even the
  * assembler instructions directly.
@@ -233,12 +233,12 @@ __attribute__((hot))
 __attribute__((target("sse4,arch=core2")))
 static inline size_t hashmem_ia32_crc32( const void *s, size_t len__, size_t nbytes )
 {
-#ifdef PIKE_DEBUG
-    if( nytes & 3 )
-        Pike_fatal("do_hash_crc32: nbytes & 3 should be 0.\n");
-#endif
     unsigned int h = len__;
     const unsigned int *p = s;
+#ifdef PIKE_DEBUG
+    if( nbytes & 3 )
+        Pike_fatal("do_hash_crc32: nbytes & 3 should be 0.\n");
+#endif
     if( nbytes > len__ )
     {
         const unsigned int *e = p + (len__>>2);
@@ -272,7 +272,7 @@ static inline size_t hashmem_ia32_crc32( const void *s, size_t len__, size_t nby
     /* FIXME: We could use the long long crc32 instructions that work on 64 bit values.
      * however, those are only available when compiling to amd64.
      */
-    return (h <<32) | h;
+    return (((size_t)h)<<32) | h;
 #endif
     return h;
 }
