@@ -24,12 +24,11 @@ enum amd64_reg {REG_RAX = 0, REG_RBX = 3, REG_RCX = 1, REG_RDX = 2,
 /* We reserve register r13 and above (as well as RSP and RBP). */
 #define REG_BITMASK	((1 << REG_MAX) - 1)
 #define REG_RESERVED	(REG_RSP|REG_RBP)
-#define REG_MAX			REG_R11
-#define PIKE_MARK_SP_REG	REG_R11
-#define PIKE_SP_REG		REG_R12
-#define PIKE_FP_REG		REG_R13
-#define Pike_interpreter_reg	REG_R14
-#define imm32_offset_reg	REG_R15
+#define REG_MAX			REG_R12
+#define PIKE_MARK_SP_REG	REG_R12
+#define PIKE_SP_REG		REG_R13
+#define PIKE_FP_REG		REG_R14
+#define Pike_interpreter_reg	REG_R15
 
 #ifdef __NT__
 /* From http://software.intel.com/en-us/articles/introduction-to-x64-assembly/
@@ -124,15 +123,14 @@ enum amd64_reg {REG_RAX = 0, REG_RBX = 3, REG_RCX = 1, REG_RDX = 2,
     }									\
     add_to_program(rex__);						\
     add_to_program(0x89);						\
-    if (!off32__) {							\
-      if (!from_reg__) {						\
-	add_to_program(0x04);						\
-	from_reg__ = 0x04;						\
-      }									\
+    if (!off32__ && (to_reg__ != REG_RBP)) {				\
       add_to_program((from_reg__<<3)| to_reg__);			\
+      if (to_reg__ == REG_RSP) {					\
+	add_to_program(0x24);						\
+      }									\
     } else if ((-0x80 <= off32__) && (0x7f >= off32__)) {		\
       add_to_program(0x40|(from_reg__<<3)| to_reg__);			\
-      if (to_reg__ == 4) {						\
+      if (to_reg__ == REG_RSP) {					\
 	add_to_program(0x24);						\
       }									\
       add_to_program(off32__);						\
@@ -282,9 +280,13 @@ enum amd64_reg {REG_RAX = 0, REG_RBX = 3, REG_RCX = 1, REG_RDX = 2,
     add_to_program(0xd0);			\
   } while(0)
 
-/* CALL *(addr)(%r15) */
-#define CALL_ABSOLUTE(X)						\
-    AMD64_CALL_REL32(imm32_offset_reg, ((char *)(X)) - ((char *)0x80000000LL));
+/* CALL *addr */
+#define CALL_ABSOLUTE(X) do {			\
+    void *addr__ = (X);				\
+    AMD64_LOAD_IMM32(REG_RAX, addr__);		\
+    add_to_program(0xff);			\
+    add_to_program(0xd0);			\
+  } while(0)
 
 #define AMD64_CLEAR_REG(REG) do {		\
     enum amd64_reg creg__ = (REG);		\
@@ -482,8 +484,7 @@ enum amd64_reg {REG_RAX = 0, REG_RBX = 3, REG_RCX = 1, REG_RDX = 2,
  *   RDI: Pike_interpreter	(ARG1_REG)
  *
  * During interpreting:
- *   R14: Pike_interpreter
- *   R15: 0x0000000080000000
+ *   R15: Pike_interpreter
  */
 void amd64_ins_entry(void)
 {
@@ -497,14 +498,9 @@ void amd64_ins_entry(void)
   AMD64_PUSH(REG_RBX);
   AMD64_SUB_IMM32(REG_RSP, 8);	/* Align on 16 bytes. */
 
-  AMD64_LOAD_IMM32(imm32_offset_reg, 0x40000000);
-
-  /* REX.W SHL %r15, 1 */ /* FIXME: imm32_offset_reg */
-  add_to_program(0x49);
-  add_to_program(0xd1);
-  add_to_program(0xe7);
-
   AMD64_MOV_REG(ARG1_REG, Pike_interpreter_reg);
+
+  amd64_flush_code_generator_state();
 }
 
 #define ALLOC_REG(REG) do {} while (0)
@@ -673,8 +669,7 @@ void amd64_update_pc(void)
   if (amd64_prev_stored_pc == -1) {
     enum amd64_reg tmp_reg = alloc_reg(0);
     amd64_load_fp_reg();
-    AMD64_LOAD_RIP32(0x00, tmp_reg);
-    tmp = PIKE_PC;
+    AMD64_LOAD_RIP32(tmp - (PIKE_PC + 7), tmp_reg);
     AMD64_MOVE_REG_TO_RELADDR(tmp_reg, fp_reg, OFFSETOF(pike_frame, pc));
 #ifdef PIKE_DEBUG
     if (a_flag >= 60)
@@ -766,8 +761,8 @@ void ins_f_byte(unsigned int b)
   switch(b + F_OFFSET) {
   case F_CATCH:
     /* Special arguments for the F_CATCH instruction. */
-    AMD64_MOVE32_RIP32_TO_REG(0x2a, ARG2_REG);	/* Load the POINTER. */
-    AMD64_LOAD_RIP32(0x27, ARG1_REG);		/* Next valid address. */
+    AMD64_MOVE32_RIP32_TO_REG(0x27, ARG2_REG);	/* Load the POINTER. */
+    AMD64_LOAD_RIP32(0x24, ARG1_REG);		/* Next valid address. */
     addr = inter_return_opcode_F_CATCH;
     break;
   case F_UNDEFINED:
@@ -844,17 +839,6 @@ void ins_f_byte(unsigned int b)
       AMD64_JE(0x02);
       AMD64_JUMP_REG(REG_RAX);
       return;
-    }
-  }
-  if (flags & I_JUMP) {
-    if (flags & I_UPDATE_FP) {
-      /* Probably a function call... */
-      AMD64_MOV_REG(Pike_interpreter_reg, ARG1_REG);
-    } else {
-      /* NB: MUST be the same size as the above case. */
-      AMD64_NOP();
-      AMD64_NOP();
-      AMD64_NOP();
     }
   }
   if (flags & I_JUMP) {

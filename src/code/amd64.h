@@ -32,7 +32,7 @@
 void amd64_ins_entry(void);
 #define INS_ENTRY()	amd64_ins_entry()
 /* Size of the prologue added by INS_ENTRY() (in PIKE_OPCODE_T's). */
-#define ENTRY_PROLOGUE_SIZE	0x1e
+#define ENTRY_PROLOGUE_SIZE	0x14
 
 void amd64_flush_code_generator_state(void);
 #define FLUSH_CODE_GENERATOR_STATE()	amd64_flush_code_generator_state()
@@ -54,7 +54,7 @@ void amd64_init_interpreter_state(void);
 
 #ifdef OPCODE_RETURN_JUMPADDR
 /* Adjust for the machine code inserted after the call for I_JUMP opcodes. */
-#define JUMP_EPILOGUE_SIZE 2+3
+#define JUMP_EPILOGUE_SIZE 2
 #define JUMP_SET_TO_PC_AT_NEXT(PC) \
   ((PC) = PROG_COUNTER + JUMP_EPILOGUE_SIZE)
 #else
