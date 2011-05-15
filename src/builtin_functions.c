@@ -220,6 +220,27 @@ static node *optimize_f_aggregate(node *n)
 /*! @namespace 7.4::
  */
 
+#define MK_HASHMEM(NAME, TYPE)		ATTRIBUTE((const))	\
+  static INLINE size_t NAME(const TYPE *str, ptrdiff_t len, ptrdiff_t maxn) \
+  {                                                                         \
+      size_t ret,c;                                                         \
+                                                                            \
+      ret = len*92873743;                                                   \
+                                                                            \
+      len = MINIMUM(maxn,len);                                              \
+      for(; len>=0; len--)                                                  \
+      {                                                                     \
+          c=str++[0];                                                       \
+          ret ^= ( ret << 4 ) + c ;                                         \
+          ret &= 0x7fffffff;                                                \
+      }                                                                     \
+      return ret;                                                           \
+  }
+
+MK_HASHMEM(simple_hashmem, unsigned char)
+MK_HASHMEM(simple_hashmem1, p_wchar1)
+MK_HASHMEM(simple_hashmem2, p_wchar2)
+
 /*! @decl int hash(string s)
  *! @decl int hash(string s, int max)
  *!
@@ -270,6 +291,23 @@ static void f_hash_7_4(INT32 args)
 
 /*! @namespace 7.0::
  */
+
+ATTRIBUTE((const)) static INLINE size_t hashstr(const unsigned char *str, ptrdiff_t maxn)
+{
+  size_t ret,c;
+  
+  if(!(ret=str++[0]))
+    return ret;
+  for(; maxn>=0; maxn--)
+  {
+    c=str++[0];
+    if(!c) break;
+    ret ^= ( ret << 4 ) + c ;
+    ret &= 0x7fffffff;
+  }
+
+  return ret;
+}
 
 /*! @decl int hash(string s)
  *! @decl int hash(string s, int max)
