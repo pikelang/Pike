@@ -5,8 +5,11 @@ constant name="String Creation";
 
 int k = 1000; /* variable to tune the time of the test */
 int n;
-string file = random_string(1000*1024);
+string file = (string)enumerate(500*1024);
 
+// Tests the string_magnitude, internal_findstring and memhash
+// functions most (and malloc + memcpy).
+//
 void perform()
 {
     int q;

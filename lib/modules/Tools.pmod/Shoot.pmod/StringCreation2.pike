@@ -3,10 +3,12 @@ inherit Tools.Shoot.Test;
 
 constant name="String Creation (existing)";
 
-int k = 800; /* variable to tune the time of the test */
+int k = 1000; /* variable to tune the time of the test */
 int n;
-string file = random_string(1000*1024);
+string file = (string)enumerate(256*1024);
+string file2 = file+"0";
 
+// This code mostly tests memcmp, actually.
 void perform()
 {
     int q;
@@ -17,7 +19,7 @@ void perform()
 
     for( int i=0; i<k; i++ )
     {
-        ss = file/z;
+        ss = file2/z;
         q += sizeof(ss);
     }
     ss = zz = 0;
