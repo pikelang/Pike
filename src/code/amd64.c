@@ -775,8 +775,7 @@ void ins_f_byte(unsigned int b)
   switch(b + F_OFFSET) {
   case F_CATCH:
     /* Special arguments for the F_CATCH instruction. */
-    AMD64_MOVE32_RIP32_TO_REG(0x27, ARG2_REG);	/* Load the POINTER. */
-    AMD64_LOAD_RIP32(0x24, ARG1_REG);		/* Next valid address. */
+    AMD64_LOAD_RIP32(0x20, ARG1_REG);		/* Address for the POINTER.. */
     addr = inter_return_opcode_F_CATCH;
     break;
   case F_UNDEFINED:

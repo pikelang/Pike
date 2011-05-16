@@ -1138,26 +1138,20 @@ static int catching_eval_instruction (PIKE_OPCODE_T *pc);
  *
  * Arguments:
  *   addr:
- *     Entry-point for the catch block.
- *
- *   continue_addr:
- *     Offset from addr for code after the catch (and after ENTRY).
+ *     Address where the continue POINTER (INT32) is stored.
+ *     Directly after the POINTER is the ENTRY for the catch block.
  *
  * Returns:
  *   (PIKE_OPCODE_T *)-1 on INTER_RETURN.
  *   jump_destination otherwise.
  */
-PIKE_OPCODE_T *inter_return_opcode_F_CATCH(PIKE_OPCODE_T *addr,
-					   INT32 continue_addr)
+PIKE_OPCODE_T *inter_return_opcode_F_CATCH(PIKE_OPCODE_T *addr)
 {
 #ifdef PIKE_DEBUG
   if (d_flag || Pike_interpreter.trace_level > 2) {
     low_debug_instr_prologue (F_CATCH - F_OFFSET);
     if (Pike_interpreter.trace_level>3) {
-      sprintf(trace_buffer,
-	      "-    Addr = %p\n"
-	      "-    Continue = 0x%ld\n",
-	      addr, continue_addr);
+      sprintf(trace_buffer, "-    Addr = %p\n", addr);
       write_to_stderr(trace_buffer,strlen(trace_buffer));
     }
   }
@@ -1171,7 +1165,7 @@ PIKE_OPCODE_T *inter_return_opcode_F_CATCH(PIKE_OPCODE_T *addr,
       init_recovery (&new_catch_ctx->recovery, 0);
 #endif
     new_catch_ctx->save_expendible = Pike_fp->expendible;
-    new_catch_ctx->continue_reladdr = continue_addr
+    new_catch_ctx->continue_reladdr = ((INT32 *)addr)[0]
       /* We need to run the entry prologue... */
       - ENTRY_PROLOGUE_SIZE;
 
@@ -1179,17 +1173,15 @@ PIKE_OPCODE_T *inter_return_opcode_F_CATCH(PIKE_OPCODE_T *addr,
     new_catch_ctx->prev = Pike_interpreter.catch_ctx;
     Pike_interpreter.catch_ctx = new_catch_ctx;
     DO_IF_DEBUG({
-	TRACE((3,"-   Pushed catch context %p\n", new_catch_ctx));
+	TRACE((CATCH_TRACE_LEVEL,"-   Pushed catch context %p\n", new_catch_ctx));
       });
   }
 
   Pike_fp->expendible = Pike_fp->locals + Pike_fp->num_locals;
 
-#if 0
   /* Need to adjust next_addr by sizeof(INT32) to skip past the jump
    * address to the continue position after the catch block. */
   addr = (PIKE_OPCODE_T *) ((INT32 *) addr + 1);
-#endif
 
   if (Pike_interpreter.catching_eval_jmpbuf) {
     /* There's already a catching_eval_instruction around our

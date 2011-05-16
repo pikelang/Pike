@@ -776,8 +776,7 @@ void call_check_threads_etc();
 void branch_check_threads_etc();
 #endif
 #ifdef OPCODE_INLINE_RETURN
-PIKE_OPCODE_T *inter_return_opcode_F_CATCH(PIKE_OPCODE_T *addr,
-					   INT32 continue_addr);
+PIKE_OPCODE_T *inter_return_opcode_F_CATCH(PIKE_OPCODE_T *addr);
 #endif
 #ifdef PIKE_DEBUG
 void simple_debug_instr_prologue_0 (PIKE_INSTR_T instr);
