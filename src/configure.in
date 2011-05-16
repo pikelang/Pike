@@ -1004,18 +1004,6 @@ AC_SYS_COMPILER_FLAG(+O3,plus_O3,OPTIMIZE, [
   ])
 ])
 
-  AC_MSG_CHECKING([crc32 intrisics])
-  AC_CACHE_VAL(pike_cv_sys_have_crc_intrisics,[
-   AC_TRY_COMPILE([__attribute__((target("sse4"))) int c(int a) { return __builtin_ia32_crc32si(0,a); }],[],
-      [pike_cv_sys_have_crc_intrisics=yes],
-      [pike_cv_sys_have_crc_intrisics=no])
-   ])
-  AC_MSG_RESULT($pike_cv_sys_have_crc_intrisics)
-
-  if test "x$pike_cv_sys_have_crc_intrisics" = "xyes" ; then
-     AC_DEFINE(HAVE_CRC32_INTRISICS,[], [True if crc32 intrisics are available])
-  fi
-
 if test "$GCC" = "yes"; then
 
   if test "$cflags_is_set" = "no"; then
@@ -2458,6 +2446,23 @@ else
 fi
 
 AC_SUBST(DLOPEN_O)
+
+AC_MSG_CHECKING([crc32 intrinsics])
+AC_CACHE_VAL(pike_cv_sys_have_crc_intrinsics,[
+  AC_TRY_LINK([
+    __attribute__((target("sse4"))) int c(int a) {
+      return __builtin_ia32_crc32si(0,a);
+    }],[
+      return c(0);
+    ],
+    [pike_cv_sys_have_crc_intrinsics=yes],
+    [pike_cv_sys_have_crc_intrinsics=no])
+])
+AC_MSG_RESULT($pike_cv_sys_have_crc_intrinsics)
+
+if test "x$pike_cv_sys_have_crc_intrinsics" = "xyes" ; then
+  AC_DEFINE(HAVE_CRC32_INTRINSICS,[], [True if crc32 intrinsics are available])
+fi
 
 #############################################################################
 

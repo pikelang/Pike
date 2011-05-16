@@ -187,7 +187,7 @@ void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order)
 
 #if (defined(__i386__) || defined(__amd64__)) && defined(__GNUC__)
 /*
- * This would look much better using the compiler intrisics, or even the
+ * This would look much better using the compiler intrinsics, or even the
  * assembler instructions directly.
  *
  * However, that requires a (at least in 2011) somewhat modern gcc (4.5.*).
@@ -200,7 +200,7 @@ void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order)
  * The value for the SSE4_2 is also available in cpuid.h in modern
  * gcc:s.
  */
-#ifdef HAVE_CRC32_INTRISICS
+#ifdef HAVE_CRC32_INTRINSICS
 #define CRC32SI(H,P) H=__builtin_ia32_crc32si(H,*(P))
 #define CRC32SQ(H,P) H=__builtin_ia32_crc32qi(H,*(P))
 #else
@@ -239,9 +239,9 @@ __attribute__((const)) static inline int supports_sse42( )
 #ifdef __i386__
 __attribute__((fastcall))
 #endif
-#ifdef HAVE_CRC32_INTRISICS
+#ifdef HAVE_CRC32_INTRINSICS
 /*
-The intrisics are only available if -msse4 is specified.
+The intrinsics are only available if -msse4 is specified.
 However, specifying that option on the command-line makes the whole runtime-test here
 pointless, since gcc will use other sse4 instructions when suitable.
 */
