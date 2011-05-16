@@ -1,11 +1,11 @@
 #pike __REAL_VERSION__
 inherit Tools.Shoot.Test;
 
-constant name="String Creation";
+constant name="String Creation (wide)";
 
-int k = 1000; /* variable to tune the time of the test */
+int k = 200; /* variable to tune the time of the test */
 int n;
-string file = random_string(255*1024*10);
+string file = (string)enumerate(255*1024*10);
 
 // Tests the string_magnitude, internal_findstring and memhash
 // functions most (and malloc/free/memcpy).
