@@ -249,29 +249,47 @@ __attribute__((target("sse4")))
 #endif
 __attribute__((hot))
 __attribute__((target("sse4,arch=core2")))
-static inline size_t hashmem_ia32_crc32( const void *s, size_t len__, size_t nbytes )
+static inline size_t hashmem_ia32_crc32( const void *s, size_t len, size_t nbytes )
 {
-    unsigned int h = len__;
+    unsigned int h = len;
     const unsigned int *p = s;
-#ifdef PIKE_DEBUG
-    if( nbytes & 3 )
-        Pike_fatal("do_hash_crc32: nbytes & 3 should be 0.\n");
-#endif
-    if( nbytes > len__ )
+    if( nbytes >= len )
     {
-        const unsigned int *e = p + (len__>>2);
+        /* Hash the whole memory area */
+        const unsigned int *e = p + (len>>2);
+        const unsigned char *c = (const unsigned char*)e;
+
+        /* .. all full intgers .. */
         while( p<e )
             CRC32SI(h, p++ );
 
-        if( len__ & 3 )
-        {
-            const unsigned char *p = (const unsigned char*)s+len__-(len__&3);
-            while( p < (unsigned char *)s )
-                CRC32SQ( h, p++ );
-        }
+        len &= 3;
+
+        /* any remaining bytes. */
+        while( len-- )
+            CRC32SQ( h, c++ );
+        return h;
     }
     else
     {
+#ifdef PIKE_DEBUG
+        /*
+           This code makes assumputions that is not true if nbytes & 3 is true.
+
+           Specifically, it will not read enough (up to 3 bytes too
+           little) n the first loop.
+
+           Also, if nbytes < 8 the end CRC32SI will read too much.
+
+           This could easily be fixed, but all calls to hashmem tends
+           to use either power-of-two values or the length of the
+           whole memory area.
+        */
+        if( nbytes & 3 )
+            Pike_fatal("do_hash_ia32_crc32: nbytes & 3 should be 0.\n");
+        if( nbytes < 8 )
+            Pike_fatal("do_hash_ia32_crc32: nbytes is less than 8.\n");
+#endif
         const unsigned int *e = p+(nbytes>>2);
         while( p<e )
             CRC32SI(h,p++);
@@ -282,8 +300,8 @@ static inline size_t hashmem_ia32_crc32( const void *s, size_t len__, size_t nby
          * Also note that this means we are rather likely to read
          * unaligned memory.  That is OK, however.
          */
-        e = (const unsigned int *)((const unsigned char *)s+len__-8);
-        CRC32SI(h,e--);
+        e = (const unsigned int *)((const unsigned char *)s+len-8);
+        CRC32SI(h,e++);
         CRC32SI(h,e);
     }
 #if SIZEOF_CHAR_P > 4
