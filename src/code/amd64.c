@@ -662,6 +662,11 @@ static void amd64_call_c_function(void *addr)
   CLEAR_REGS();
 }
 
+static void amd64_stack_error(void)
+{
+  Pike_fatal("Stack error\n");
+}
+
 void amd64_update_pc(void)
 {
   INT32 tmp = PIKE_PC, disp;
@@ -692,6 +697,15 @@ void amd64_update_pc(void)
 #endif
   }
   amd64_prev_stored_pc = tmp;
+#ifdef PIKE_DEBUG
+  if (d_flag) {
+    /* Check that the stack keeps being 16 byte aligned. */
+    AMD64_MOV_REG(REG_RSP, REG_RAX);
+    AMD64_AND_IMM32(REG_RAX, 0x08);
+    AMD64_JE(0x09);
+    CALL_ABSOLUTE(amd64_stack_error);
+  }
+#endif
 }
 
 
