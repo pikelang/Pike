@@ -996,7 +996,6 @@ fi
 
 AC_SYS_COMPILER_FLAG([-fvisibility=hidden],[fvisibility_hidden],CFLAGS)
 
-
 AC_SYS_COMPILER_FLAG(+O3,plus_O3,OPTIMIZE, [
   AC_SYS_COMPILER_FLAG(-O3,O3,OPTIMIZE, [
     AC_SYS_COMPILER_FLAG(-O2,O2,OPTIMIZE, [
@@ -1005,7 +1004,20 @@ AC_SYS_COMPILER_FLAG(+O3,plus_O3,OPTIMIZE, [
   ])
 ])
 
+  AC_MSG_CHECKING([crc32 intrisics])
+  AC_CACHE_VAL(pike_cv_sys_have_crc_intrisics,[
+   AC_TRY_COMPILE([__attribute__((target("sse4"))) int c(int a) { return __builtin_ia32_crc32si(0,a); }],[],
+      [pike_cv_sys_have_crc_intrisics=yes],
+      [pike_cv_sys_have_crc_intrisics=no])
+   ])
+  AC_MSG_RESULT($pike_cv_sys_have_crc_intrisics)
+
+  if test "x$pike_cv_sys_have_crc_intrisics" = "xyes" ; then
+     AC_DEFINE(HAVE_CRC32_INTRISICS,[], [True if crc32 intrisics are available])
+  fi
+
 if test "$GCC" = "yes"; then
+
   if test "$cflags_is_set" = "no"; then
     AC_SYS_COMPILER_FLAG(-pipe, pipe, OPTIMIZE)
 

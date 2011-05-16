@@ -194,12 +194,23 @@ void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order)
  *
  * For reference:
  *  #define CRC32SI(H,P) H=__builtin_ia32_crc32si(H,P)
- *  #define CRC32SQ(H,P) H=__builtin_ia32_crc32sq(H,P)
- *  #define __cpuid(level,a,b,c,d) cpuid(level, &a,&b,&c,&d)
+ *  #define CRC32SQ(H,P) H=__builtin_ia32_crc32qi(H,P)
+ *  #define __cpuid(level,a,b,c,d) __get_cpuid(level, &a,&b,&c,&d)
  *
  * The value for the SSE4_2 is also available in cpuid.h in modern
  * gcc:s.
  */
+#ifdef HAVE_CRC32_INTRISICS
+#define CRC32SI(H,P) H=__builtin_ia32_crc32si(H,*(P))
+#define CRC32SQ(H,P) H=__builtin_ia32_crc32qi(H,*(P))
+#else
+
+/* GCC versions without __builtin_ia32_crc32* also lacks the support
+ * in the assembler, given that the binutils are the same version.
+ *
+ * Adding a second test for that seems like overkill.
+ */
+
 #define CRC32SI(H,P)                                                  \
     __asm__ __volatile__(                                             \
         ".byte 0xf2, 0xf, 0x38, 0xf1, 0xf1;"                          \
@@ -209,13 +220,12 @@ void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order)
     __asm__ __volatile__(                                             \
         ".byte 0xf2, 0xf, 0x38, 0xf0, 0xf1"                           \
         :"=S"(H) :"0"(H), "c"(*(P)))
+#endif
 
 #define __cpuid(level, a, b, c, d)                      \
-    __asm__ ("xchg{l} {%%}ebx, %1\n"                    \
-             "cpuid\n"                                  \
-             "xchg{l} {%%}ebx, %1\n"                    \
-             : "=a" (a), "=r" (b), "=c" (c), "=d" (d)   \
-             : "0" (level))
+    __asm__ ("cpuid"                                    \
+             : "=a" (a), "=b" (b), "=c" (c), "=d" (d)   \
+             : "a" (level))
 
 #define bit_SSE4_2 (1<<20)
 
@@ -228,6 +238,14 @@ __attribute__((const)) static inline int supports_sse42( )
 
 #ifdef __i386__
 __attribute__((fastcall))
+#endif
+#ifdef HAVE_CRC32_INTRISICS
+/*
+The intrisics are only available if -msse4 is specified.
+However, specifying that option on the command-line makes the whole runtime-test here
+pointless, since gcc will use other sse4 instructions when suitable.
+*/
+__attribute__((target("sse4")))
 #endif
 __attribute__((hot))
 __attribute__((target("sse4,arch=core2")))
