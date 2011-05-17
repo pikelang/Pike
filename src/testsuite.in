@@ -7269,7 +7269,7 @@ cond_begin([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]])
   test_eq([[ sprintf("%08x", @array_sscanf("\0\0\0\5\1\2\3\4", "%8c")) ]], "501020304")
   test_eq([[ sprintf("%08x", @array_sscanf("\0\0\6\5\1\2\3\4", "%8c")) ]], "60501020304")
   test_eq([[ sprintf("%08x", @array_sscanf("\0\7\6\5\1\2\3\4", "%8c")) ]], "7060501020304")
-  test_eq([[ sprintf("%08x", @array_sscanf("\8\7\6\5\1\2\3\4", "%8c")) ]], "3807060501020304")
+  test_eq([[ sprintf("%08x", @array_sscanf("8\7\6\5\1\2\3\4", "%8c")) ]], "3807060501020304")
   test_eq([[ sprintf("%08x", @array_sscanf("\010\7\6\5\1\2\3\4", "%8c")) ]], "807060501020304")
 
   test_equal([[ ({ 118 }) ]], [[ array_sscanf("0x76", "%x") ]])
