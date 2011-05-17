@@ -1173,7 +1173,7 @@ PIKE_OPCODE_T *inter_return_opcode_F_CATCH(PIKE_OPCODE_T *addr)
     new_catch_ctx->prev = Pike_interpreter.catch_ctx;
     Pike_interpreter.catch_ctx = new_catch_ctx;
     DO_IF_DEBUG({
-	TRACE((CATCH_TRACE_LEVEL,"-   Pushed catch context %p\n", new_catch_ctx));
+	TRACE((3,"-   Pushed catch context %p\n", new_catch_ctx));
       });
   }
 
