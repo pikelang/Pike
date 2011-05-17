@@ -880,10 +880,10 @@ static INLINE void low_debug_instr_prologue (PIKE_INSTR_T instr)
       while((f=STRCHR(file,'/')))
 	file=f+1;
     }
-    fprintf(stderr,"- %s:%4ld:(%"PRINTPTRDIFFT"d): "
+    fprintf(stderr,"- %s:%4ld:%p(%"PRINTPTRDIFFT"d): "
 	    "%-25s %4"PRINTPTRDIFFT"d %4"PRINTPTRDIFFT"d\n",
 	    file ? file : "-",(long)linep,
-	    Pike_fp->pc - Pike_fp->context->prog->program,
+	    Pike_fp->pc, Pike_fp->pc - Pike_fp->context->prog->program,
 	    get_opcode_name(instr),
 	    Pike_sp-Pike_interpreter.evaluator_stack,
 	    Pike_mark_sp-Pike_interpreter.mark_stack);
