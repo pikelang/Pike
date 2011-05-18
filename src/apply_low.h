@@ -200,6 +200,24 @@
 	  my_strcat(function->name->str);
 	do_trace_call(args, &save_buf);
       }
+      if (PIKE_FN_START_ENABLED()) {
+	/* DTrace enter probe
+	   arg0: function name
+	   arg1: object
+	*/
+	dynamic_buffer save_buf;
+	dynbuf_string obj_name;
+	struct svalue obj_sval;
+	obj_sval.type = T_OBJECT;
+	obj_sval.subtype = 0;
+	obj_sval.u.object = o;
+	init_buf(&save_buf);
+	safe_describe_svalue(&obj_sval, 0, NULL);
+	obj_name = complex_free_buf(&save_buf);
+	PIKE_FN_START(function->name->size_shift == 0 ?
+		      function->name->str : "[widestring fn name]",
+		      obj_name.str);
+      }
 
 #ifdef PROFILING
       function->num_calls++;
@@ -285,6 +303,10 @@
 	  pop_n_elems(Pike_sp-save_sp-args);
 	}
 	arg1=(void *)(Pike_sp-args-1);
+	if (PIKE_FN_POPFRAME_ENABLED()) {
+	  /* DTrace adjust frame depth */
+	  PIKE_FN_POPFRAME();
+	}
 	goto apply_svalue;
       }
 
@@ -371,6 +393,10 @@
 	    p = (o = loc.o)->prog;
 	    function = ID_FROM_INT(p, fun);
 	  } while (IDENTIFIER_IS_ALIAS(function->identifier_flags));
+	  if (PIKE_FN_POPFRAME_ENABLED()) {
+	    /* DTrace adjust frame depth */
+	    PIKE_FN_POPFRAME();
+	  }
 	  goto apply_low;
 	}
 #ifdef PIKE_DEBUG

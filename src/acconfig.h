@@ -41,6 +41,9 @@
 /* Define this if you want pike to interact with valgrind. */
 #undef USE_VALGRIND
 
+/* Define this to embed DTrace probes */
+#undef USE_DTRACE
+
 /* Define this if you are going to use a memory access checker (like Purify) */
 #undef __CHECKER__
 

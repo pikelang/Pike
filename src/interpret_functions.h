@@ -2296,6 +2296,15 @@ OPCODE1_JUMP(F_CALL_OTHER_AND_RETURN,"call other & return", I_UPDATE_ALL, {
       my_strcat (s->u.efun->name->str);					 \
     do_trace_call(args_, &save_buf);					 \
   }									 \
+  if (PIKE_FN_START_ENABLED()) {					 \
+    /* DTrace enter probe						 \
+       arg0: function name						 \
+       arg1: object							 \
+    */									 \
+    PIKE_FN_START(s->u.efun->name->size_shift == 0 ?			 \
+		  s->u.efun->name->str : "[widestring fn name]",	 \
+		  "");							 \
+  }									 \
   (*(s->u.efun->function))(args_);					 \
   DO_IF_PROFILING (s->u.efun->runs++);					 \
   if(Pike_sp != expected_stack + !s->u.efun->may_return_void)		 \
@@ -2324,6 +2333,13 @@ OPCODE1_JUMP(F_CALL_OTHER_AND_RETURN,"call other & return", I_UPDATE_ALL, {
       my_strcat (s->u.efun->name->str);					 \
     my_strcat ("() ");							 \
     do_trace_return (Pike_sp>expected_stack, &save_buf);		 \
+  }									 \
+  if (PIKE_FN_DONE_ENABLED()) {						 \
+    /* DTrace leave probe						 \
+       arg0: function name						 \
+    */									 \
+    PIKE_FN_DONE(s->u.efun->name->size_shift == 0 ?			 \
+		 s->u.efun->name->str : "[widestring fn name]");	 \
   }									 \
 }while(0)
 #else

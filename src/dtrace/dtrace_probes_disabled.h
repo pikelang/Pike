@@ -1,0 +1,6 @@
+#define PIKE_FN_START_ENABLED() 0
+#define PIKE_FN_START(arg0, arg1)
+#define PIKE_FN_POPFRAME_ENABLED() 0
+#define PIKE_FN_POPFRAME()
+#define PIKE_FN_DONE_ENABLED() 0
+#define PIKE_FN_DONE(arg0)

@@ -776,6 +776,10 @@ valgrind_just_verify: testsuites master-stamp
 	else args="$(TESTARGS)" ; fi; \
 	$(VALGRIND) $(VALGRINDARGS) $(RUNPIKE) -x test_pike --subproc-start="$(VALGRIND) $(VALGRINDARGS)" $$args
 
+dtrace_probes.h: $(SRCDIR)/dtrace/dtrace_probes.d
+	dtrace -h -s "$(SRCDIR)/dtrace/dtrace_probes.d" -o "$(TMP_BUILDDIR)/dtrace_probes.h"
+
+
 # Testsuite for dynamic loading debugging
 test_dlopen: dynloadtest.sh
 	sh ./dynloadtest.sh
@@ -1266,7 +1270,7 @@ $(SRCDIR)/interpret_protos.h_src: $(SRCDIR)/interpret_functions.h $(SRCDIR)/stri
 
 lex.o: $(SRCDIR)/lex.c $(SRCDIR)/interpret_protos.h
 
-interpret.o: $(SRCDIR)/lex.c $(SRCDIR)/interpret_protos.h
+interpret.o: $(SRCDIR)/lex.c $(SRCDIR)/interpret_protos.h @DTRACE_REQUIREMENTS@
 
 lex_t.o: $(SRCDIR)/lex_t.c $(SRCDIR)/interpret_protos.h
 

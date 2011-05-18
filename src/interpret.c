@@ -53,6 +53,12 @@
 #endif
 #endif
 
+#ifdef USE_DTRACE
+#include "dtrace_probes.h"
+#else
+#include "dtrace/dtrace_probes_disabled.h"
+#endif
+
 /*
  * Define the default evaluator stack size, used for just about everything.
  */
@@ -2015,8 +2021,24 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 	    my_strcat (s->u.efun->name->str);
 	  do_trace_call(args, &save_buf);
 	}
+	if (PIKE_FN_START_ENABLED()) {
+	  /* DTrace enter probe
+	     arg0: function name
+	     arg1: object
+	   */
+	  PIKE_FN_START(s->u.efun->name->size_shift == 0 ?
+			s->u.efun->name->str : "[widestring fn name]",
+			"");
+	}
 	FAST_CHECK_THREADS_ON_CALL();
 	(*(s->u.efun->function))(args);
+	if (PIKE_FN_DONE_ENABLED()) {
+	  /* DTrace leave probe
+	     arg0: function name
+	  */
+	  PIKE_FN_DONE(s->u.efun->name->size_shift == 0 ?
+		       s->u.efun->name->str : "[widestring fn name]");
+	}
 
 #ifdef PIKE_DEBUG
 	s->u.efun->runs++;
@@ -2062,6 +2084,13 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 	safe_describe_svalue(s,0,0);
 	do_trace_call(args, &save_buf);
       }
+      if (PIKE_FN_START_ENABLED()) {
+	/* DTrace enter probe
+	   arg0: function name
+	   arg1: object
+	*/
+	PIKE_FN_START("[array]", "");
+      }
       apply_array(s->u.array, args, (type == APPLY_STACK));
       break;
 
@@ -2080,6 +2109,18 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 	init_buf(&save_buf);
 	safe_describe_svalue(s,0,0);
 	do_trace_call(args, &save_buf);
+      }
+      if (PIKE_FN_START_ENABLED()) {
+	/* DTrace enter probe
+	   arg0: function name
+	   arg1: object
+	*/
+	dynamic_buffer save_buf;
+	dynbuf_string prog_name;
+	init_buf(&save_buf);
+	safe_describe_svalue(s,0,0);
+	prog_name = complex_free_buf(&save_buf);
+	PIKE_FN_START("[program]", prog_name.str);
       }
       push_object(clone_object(s->u.program,args));
       break;
@@ -2160,6 +2201,19 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
     if(Pike_interpreter.trace_level>1)
       do_trace_func_return (1, o, fun);
   }
+
+  if (PIKE_FN_DONE_ENABLED()) {
+    /* DTrace leave probe
+       arg0: function name
+    */
+    char *fn = "(unknown)";
+    if (o && o->prog) {
+      struct identifier *id = ID_FROM_INT(o->prog, fun);
+      fn = id->name->size_shift == 0 ? id->name->str : "[widestring fn name]";
+    }
+    PIKE_FN_DONE(fn);
+  }
+
   return 0;
 }
 
@@ -2188,6 +2242,20 @@ void low_return(void)
   if (trace_level > 1) {
     o = Pike_fp->current_object;
     fun = Pike_fp->fun;
+  }
+
+  if (PIKE_FN_DONE_ENABLED()) {
+    /* DTrace leave probe
+       arg0: function name
+    */
+    char *fn = "(unknown)";
+    o = Pike_fp->current_object;
+    fun = Pike_fp->fun;
+    if (o && o->prog) {
+      struct identifier *id = ID_FROM_INT(o->prog, fun);
+      fn = id->name->size_shift == 0 ? id->name->str : "[widestring fn name]";
+    }
+    PIKE_FN_DONE(fn);
   }
 
 #if defined (PIKE_USE_MACHINE_CODE) && defined (OPCODE_RETURN_JUMPADDR)
@@ -2232,6 +2300,20 @@ void low_return_pop(void)
   struct object *o = Pike_fp->current_object;
   add_ref (o);
 #endif
+
+  if (PIKE_FN_DONE_ENABLED()) {
+    /* DTrace leave probe
+       arg0: function name
+    */
+    char *fn = "(unknown)";
+    struct object *o = Pike_fp->current_object;
+    int fun = Pike_fp->fun;
+    if (o && o->prog) {
+      struct identifier *id = ID_FROM_INT(o->prog, fun);
+      fn = id->name->size_shift == 0 ? id->name->str : "[widestring fn name]";
+    }
+    PIKE_FN_DONE(fn);
+  }
 
   basic_low_return (save_sp);
 

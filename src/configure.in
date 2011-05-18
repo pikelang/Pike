@@ -1578,6 +1578,7 @@ AC_ARG_WITH(valgrind, MY_DESCR([--with-valgrind=path],
     else :; fi
   else :; fi
 ], [with_valgrind=no])
+AC_ARG_WITH(dtrace, MY_DESCR([--with-dtrace],[embed DTrace probes]))
 AC_ARG_WITH(checker, MY_DESCR([--with-checker],
 			      [add extra memory checking overhead (Purify)]))
 AC_ARG_WITH(gcov, MY_DESCR([--with-gcov],
@@ -1753,6 +1754,15 @@ fi
 export VALGRIND VALGRINDARGS
 AC_SUBST(VALGRIND)
 AC_SUBST(VALGRINDARGS)
+
+# DTrace probes
+if test "x$with_dtrace" = "xyes"; then
+   AC_PATH_PROG(dtrace_prog, dtrace, no)
+   if test "x$ac_cv_path_dtrace_prog" != "xno"; then
+      AC_DEFINE(USE_DTRACE)
+      DTRACE_REQUIREMENTS="dtrace_probes.h"
+   fi
+fi
 
 if test "x$with_checker" = "xyes"; then
   AC_DEFINE(__CHECKER__)
@@ -8552,6 +8562,7 @@ AC_SUBST(EXTRA_OBJS)
 AC_SUBST(RANLIB)
 AC_SUBST(DEBUGDEF)
 AC_SUBST(EXTRA_MODULE_REQUIREMENTS)
+AC_SUBST(DTRACE_REQUIREMENTS)
 AC_SUBST(noopt_retry)
 
 pike_cv_prog_CC="${CC}"
@@ -8999,6 +9010,11 @@ EOF
 if test "x$with_valgrind" != xno ; then 
   cat >>config.info <<EOF
 valgrind........ yes, using $VALGRIND $VALGRINDARGS
+EOF
+fi
+if test "x$with_dtrace" != xno ; then 
+  cat >>config.info <<EOF
+dtrace.......... yes
 EOF
 fi
 
