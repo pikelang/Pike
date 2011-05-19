@@ -22,7 +22,7 @@ char *indentstr;
 
 syscall::getpriority:entry/execname=="Instruments"/ {}
 
-BEGIN{printf("<dtrace_output_begin/>\n %-14d\n928DA016-CC75-4D44-9C36-CE93CEE8FC38\n", walltimestamp);
+BEGIN{printf("<dtrace_output_begin/>\n %-14d\n2BE2386B-9075-4AD6-B966-28DAC5FA6317\n", walltimestamp);
 
 self->indent = 0;
 indentstr = ".                                                                                                                                                                 ";}
@@ -31,21 +31,21 @@ indentstr = ".                                                                  
 
 pike*:::fn-done/((1 == 1))/{
 
-self->indent = (self->indent > 0) ? (self->indent - 2) : 0; 
+self->indent = (self->indent > 0) ? (self->indent - 1) : 0; 
 
-printf("<e> -1 0 %d %u %-14d\n%s\n%s\n%d \n</e>\n",cpu, tid, walltimestamp, probename, strjoin(substr(indentstr, 0, self->indent + 2), strjoin("<- ", copyinstr(arg0))), self->indent);printf("<s>\n");ustack(128);printf("</s>\n");
+printf("<e> -1 0 %d %u %-14d\n%s\n%s\n%d\n%d \n</e>\n",cpu, tid, walltimestamp, probename, strjoin(substr(indentstr, 0, 2 * (self->indent + 1)), strjoin("< ", copyinstr(arg0))), tid, self->indent + 1);printf("<s>\n");ustack(128);printf("</s>\n");
 }
 
 pike*:::fn-start/((1 == 1))/{
 
-self->indent += 2; 
+self->indent++; 
 
-printf("<e> -1 1 %d %u %-14d\n%s\n%d\n%s\n%s \n</e>\n",cpu, tid, walltimestamp, probename, self->indent, strjoin(substr(indentstr, 0, self->indent), strjoin("-> ", copyinstr(arg0))), stringof(copyinstr(arg1)));printf("<s>\n");ustack(128);printf("</s>\n");
+printf("<e> -1 1 %d %u %-14d\n%s\n%s\n%s\n%d\n%d \n</e>\n",cpu, tid, walltimestamp, probename, stringof(copyinstr(arg1)), strjoin(substr(indentstr, 0, 2 * self->indent), strjoin("> ", copyinstr(arg0))), self->indent, tid);printf("<s>\n");ustack(128);printf("</s>\n");
 }
 
 pike*:::fn-popframe/((1 == 1))/{
 
-self->indent -= 2;
+self->indent--;
 }
 
 
