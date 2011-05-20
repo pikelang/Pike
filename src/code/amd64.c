@@ -21,9 +21,9 @@ enum amd64_reg {REG_RAX = 0, REG_RBX = 3, REG_RCX = 1, REG_RDX = 2,
 		REG_R12 = 12, REG_R13 = 13, REG_R14 = 14, REG_R15 = 15,
 		REG_NONE = 4};
 
-/* We reserve register r13 and above (as well as RSP and RBP). */
+/* We reserve register r12 and above (as well as RSP, RBP and RBX). */
 #define REG_BITMASK	((1 << REG_MAX) - 1)
-#define REG_RESERVED	(REG_RSP|REG_RBP)
+#define REG_RESERVED	(REG_RSP|REG_RBP|REG_RBX)
 #define REG_MAX			REG_R12
 #define PIKE_MARK_SP_REG	REG_R12
 #define PIKE_SP_REG		REG_R13
@@ -282,8 +282,26 @@ enum amd64_reg {REG_RAX = 0, REG_RBX = 3, REG_RCX = 1, REG_RDX = 2,
 
 /* CALL *addr */
 #define CALL_ABSOLUTE(X) do {			\
-    void *addr__ = (X);				\
-    AMD64_LOAD_IMM32(REG_RAX, addr__);		\
+    size_t addr__ = (size_t)(void *)(X);	\
+    if (addr__ & ~0x7fffffffLL) {		\
+      /* Apple in their wisdom has the text	\
+       * segment in the second 4GB block...	\
+       *					\
+       * Fortunately function entry points	\
+       * are at least 32-bit aligned.		\
+       */					\
+      if (!(addr__ & ~0x3fffffff8LL)) {		\
+	AMD64_LOAD_IMM32(REG_RAX, addr__>>3);	\
+	AMD64_SHL_IMM8(REG_RAX, 3);		\
+      } else {					\
+	/* Catch all. */			\
+	AMD64_LOAD_IMM(REG_RAX, addr__);	\
+      }						\
+    } else {					\
+      /* Low 31-bit block.			\
+       * Linux, Solaris, etc... */		\
+      AMD64_LOAD_IMM32(REG_RAX, addr__);	\
+    }						\
     add_to_program(0xff);			\
     add_to_program(0xd0);			\
   } while(0)
@@ -774,8 +792,8 @@ void ins_f_byte(unsigned int b)
   addr=instrs[b].address;
   switch(b + F_OFFSET) {
   case F_CATCH:
-    /* Special arguments for the F_CATCH instruction. */
-    AMD64_LOAD_RIP32(0x20, ARG1_REG);		/* Address for the POINTER.. */
+    /* Special argument for the F_CATCH instruction. */
+    AMD64_LOAD_RIP32(0x20 - 0x03, ARG1_REG);		/* Address for the POINTER. */
     addr = inter_return_opcode_F_CATCH;
     break;
   case F_UNDEFINED:
@@ -836,8 +854,8 @@ void ins_f_byte(unsigned int b)
       AMD64_LOAD_RIP32(JUMP_EPILOGUE_SIZE - 7, REG_RCX);
     }
     AMD64_CMP_REG_IMM32(REG_RAX, -1);
-    AMD64_JNE(0x0f);
-    AMD64_ADD_REG_IMM32(REG_RBP, -0x28, REG_RSP);
+    AMD64_JNE(0x0f - 0x03);
+    AMD64_POP(REG_RBX);	// Stack padding.
     AMD64_POP(REG_RBX);
     AMD64_POP(REG_R12);
     AMD64_POP(REG_R13);
