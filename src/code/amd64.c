@@ -780,6 +780,7 @@ void ins_f_byte(unsigned int b)
 {
   int flags;
   void *addr;
+  INT32 rel_addr = 0;
   b-=F_OFFSET;
 #ifdef PIKE_DEBUG
   if(b>255)
@@ -794,21 +795,9 @@ void ins_f_byte(unsigned int b)
   case F_CATCH:
     {
       /* Special argument for the F_CATCH instruction. */
-      int ptr_offset = 0x20 - 0x03;
-      size_t int_addr;
       addr = inter_return_opcode_F_CATCH;
-      int_addr = (size_t)addr;
-      /* We need to compensate for the size of the code to call
-       * inter_return_opcode_F_CATCH.
-       */
-      if (int_addr & ~0x7fffffffLL) {
-	/* Adjust for an additional SHL. */
-	ptr_offset += 0x04;
-	if (int_addr & ~0x3fffffff8LL) {
-	  Pike_error("Not supported yet.\n");
-	}
-      }
-      AMD64_LOAD_RIP32(ptr_offset, ARG1_REG);	/* Address for the POINTER. */
+      AMD64_LOAD_RIP32(0, ARG1_REG);	/* Address for the POINTER. */
+      rel_addr = PIKE_PC;
     }
     break;
   case F_UNDEFINED:
@@ -863,13 +852,15 @@ void ins_f_byte(unsigned int b)
 
   amd64_call_c_function(addr);
   if (instrs[b].flags & I_RETURN) {
+    INT32 skip;
     if ((b + F_OFFSET) == F_RETURN_IF_TRUE) {
       /* Kludge. We must check if the ret addr is
        * orig_addr + JUMP_EPILOGUE_SIZE. */
       AMD64_LOAD_RIP32(JUMP_EPILOGUE_SIZE - 7, REG_RCX);
     }
     AMD64_CMP_REG_IMM32(REG_RAX, -1);
-    AMD64_JNE(0x0f - 0x03);
+    AMD64_JNE(0);
+    skip = (INT32)PIKE_PC;
     AMD64_POP(REG_RBX);	// Stack padding.
     AMD64_POP(REG_RBX);
     AMD64_POP(REG_R12);
@@ -878,6 +869,7 @@ void ins_f_byte(unsigned int b)
     AMD64_POP(REG_R15);
     AMD64_POP(REG_RBP);
     AMD64_RET();
+    Pike_compiler->new_program->program[skip-1] = ((INT32)PIKE_PC) - skip;
     if ((b + F_OFFSET) == F_RETURN_IF_TRUE) {
       /* Kludge. We must check if the ret addr is
        * orig_addr + JUMP_EPILOGUE_SIZE. */
@@ -889,6 +881,10 @@ void ins_f_byte(unsigned int b)
   }
   if (flags & I_JUMP) {
     AMD64_JUMP_REG(REG_RAX);
+
+    if (b + F_OFFSET == F_CATCH) {
+      upd_pointer(rel_addr - 4, PIKE_PC - rel_addr);
+    }
   }
 }
 
@@ -941,12 +937,16 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
   AMD64_TEST_REG(REG_RAX);
 
   if (backward_jump) {
+    INT32 skip;
     add_to_program (0x74);	/* jz rel8 */
-    add_to_program (9 + 1 + 4);
-    amd64_call_c_function (branch_check_threads_etc); /* 9 bytes */
+    add_to_program (0);		/* Bytes to skip. */
+    skip = (INT32)PIKE_PC;
+    amd64_call_c_function (branch_check_threads_etc);
     add_to_program (0xe9);	/* jmp rel32 */
     ret = DO_NOT_WARN ((INT32) PIKE_PC);
-    PUSH_INT (0);		/* 4 bytes */
+    PUSH_INT (0);
+    /* Adjust the skip for the relative jump. */
+    Pike_compiler->new_program->program[skip-1] = ((INT32)PIKE_PC - skip);
   }
   else {
 #if 0
