@@ -792,9 +792,24 @@ void ins_f_byte(unsigned int b)
   addr=instrs[b].address;
   switch(b + F_OFFSET) {
   case F_CATCH:
-    /* Special argument for the F_CATCH instruction. */
-    AMD64_LOAD_RIP32(0x20 - 0x03, ARG1_REG);		/* Address for the POINTER. */
-    addr = inter_return_opcode_F_CATCH;
+    {
+      /* Special argument for the F_CATCH instruction. */
+      int ptr_offset = 0x20 - 0x03;
+      size_t int_addr;
+      addr = inter_return_opcode_F_CATCH;
+      int_addr = (size_t)addr;
+      /* We need to compensate for the size of the code to call
+       * inter_return_opcode_F_CATCH.
+       */
+      if (int_addr & ~0x7fffffffLL) {
+	/* Adjust for an additional SHL. */
+	ptr_offset += 0x04;
+	if (int_addr & ~0x3fffffff8LL) {
+	  Pike_error("Not supported yet.\n");
+	}
+      }
+      AMD64_LOAD_RIP32(ptr_offset, ARG1_REG);	/* Address for the POINTER. */
+    }
     break;
   case F_UNDEFINED:
     ins_debug_instr_prologue(b, 0, 0);
