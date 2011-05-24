@@ -95,11 +95,11 @@ enum amd64_reg {REG_RAX = 0, REG_RBX = 3, REG_RCX = 1, REG_RDX = 2,
     int off32__ = (FROM_OFFSET);					\
     int rex__ = 0x48;							\
     if (from_reg__ & 0x08) {						\
-      rex__ |= 0x04;							\
+      rex__ |= 0x01;							\
       from_reg__ &= 0x07;						\
     }									\
     if (to_reg__ & 0x08) {						\
-      rex__ |= 0x01;							\
+      rex__ |= 0x04;							\
       to_reg__ &= 0x07;							\
     }									\
     add_to_program(rex__);						\
@@ -673,6 +673,64 @@ static void amd64_push_int(INT64 value, int subtype)
   }
 }
 
+static void amd64_mark(int offset)
+{
+  amd64_load_sp_reg();
+  amd64_load_mark_sp_reg();
+  if (offset) {
+    AMD64_ADD_REG_IMM32(sp_reg, -offset * sizeof(struct svalue), REG_RAX);
+    AMD64_MOVE_REG_TO_RELADDR(REG_RAX, mark_sp_reg, 0x00);
+  } else {
+    AMD64_MOVE_REG_TO_RELADDR(sp_reg, mark_sp_reg, 0x00);
+  }
+  AMD64_ADD_IMM32(mark_sp_reg, sizeof(struct svalue *));
+  dirty_regs |= 1 << mark_sp_reg;
+  /* FIXME: Deferred writing of Pike_mark_sp doen't seem to work reliably yet. */
+  if (dirty_regs & (1 << PIKE_MARK_SP_REG)) {
+    AMD64_MOVE_REG_TO_RELADDR(PIKE_MARK_SP_REG, Pike_interpreter_reg,
+			      OFFSETOF(Pike_interpreter, mark_stack_pointer));
+    dirty_regs &= ~(1 << PIKE_MARK_SP_REG);
+  }
+}
+
+static void amd64_pop_mark(void)
+{
+  amd64_load_mark_sp_reg();
+  AMD64_ADD_IMM32(mark_sp_reg, -(int)sizeof(struct svalue *));
+  dirty_regs |= 1 << mark_sp_reg;
+  /* FIXME: Deferred writing of Pike_mark_sp doen't seem to work reliably yet. */
+  if (dirty_regs & (1 << PIKE_MARK_SP_REG)) {
+    AMD64_MOVE_REG_TO_RELADDR(PIKE_MARK_SP_REG, Pike_interpreter_reg,
+			      OFFSETOF(Pike_interpreter, mark_stack_pointer));
+    dirty_regs &= ~(1 << PIKE_MARK_SP_REG);
+  }
+}
+
+static void amd64_push_string(int strno, int subtype)
+{
+  amd64_load_fp_reg();
+  amd64_load_sp_reg();
+  AMD64_MOVE_RELADDR_TO_REG(fp_reg, OFFSETOF(pike_frame, context), REG_RAX);
+  AMD64_LOAD_IMM32(REG_RCX, (subtype<<16) | PIKE_T_STRING);
+  AMD64_MOVE_RELADDR_TO_REG(REG_RAX, OFFSETOF(inherit, prog), REG_RAX);
+  AMD64_MOVE_REG_TO_RELADDR(REG_RCX, sp_reg, OFFSETOF(svalue, type));
+  AMD64_MOVE_RELADDR_TO_REG(REG_RAX, OFFSETOF(program, strings), REG_RAX);
+  AMD64_ADD_IMM32(sp_reg, sizeof(struct svalue));
+  AMD64_MOVE_RELADDR_TO_REG(REG_RAX, strno * sizeof(struct pike_string *),
+			    REG_RAX);
+  AMD64_MOVE_REG_TO_RELADDR(REG_RAX, sp_reg,
+			    (INT32)OFFSETOF(svalue, u.string) -
+			    (INT32)sizeof(struct svalue));
+  AMD64_ADD_VAL_TO_RELADDR(1, OFFSETOF(pike_string, refs), REG_RAX);
+  dirty_regs |= 1 << sp_reg;
+  /* FIXME: Deferred writing of Pike_sp doen't seem to work reliably yet. */
+  if (dirty_regs & (1 << PIKE_SP_REG)) {
+    AMD64_MOVE_REG_TO_RELADDR(PIKE_SP_REG, Pike_interpreter_reg,
+			      OFFSETOF(Pike_interpreter, stack_pointer));
+    dirty_regs &= ~(1 << PIKE_SP_REG);
+  }
+}
+
 static void amd64_call_c_function(void *addr)
 {
   CALL_ABSOLUTE(addr);
@@ -833,6 +891,19 @@ void ins_f_byte(unsigned int b)
     update_arg1(2);
     addr = f_add;
     break;
+  case F_MARK:
+  case F_SYNCH_MARK:
+    ins_debug_instr_prologue(b, 0, 0);
+    amd64_mark(0);
+    return;
+  case F_MARK2:
+    ins_f_byte(F_MARK);
+    ins_f_byte(F_MARK);
+    return;
+  case F_POP_MARK:
+    ins_debug_instr_prologue(b, 0, 0);
+    amd64_pop_mark();
+    return;
   }
 
   /* NB: PIKE_FP_REG is currently never dirty. */
@@ -970,12 +1041,20 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
   maybe_update_pc();
   switch(a) {
   case F_NUMBER:
-    ins_debug_instr_prologue(a-F_OFFSET, 0, 0);
+    ins_debug_instr_prologue(a-F_OFFSET, b, 0);
     amd64_push_int(b, 0);
     return;
   case F_NEG_NUMBER:
-    ins_debug_instr_prologue(a-F_OFFSET, 0, 0);
+    ins_debug_instr_prologue(a-F_OFFSET, b, 0);
     amd64_push_int(-(INT64)b, 0);
+    return;
+  case F_STRING:
+    ins_debug_instr_prologue(a-F_OFFSET, b, 0);
+    amd64_push_string(b, 0);
+    return;
+  case F_ARROW_STRING:
+    ins_debug_instr_prologue(a-F_OFFSET, b, 0);
+    amd64_push_string(b, 1);
     return;
   case F_POS_INT_INDEX:
     ins_f_byte_with_arg(F_NUMBER, b);
@@ -984,6 +1063,30 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
   case F_NEG_INT_INDEX:
     ins_f_byte_with_arg(F_NEG_NUMBER, b);
     ins_f_byte(F_INDEX);
+    return;
+  case F_MARK_AND_CONST0:
+    ins_f_byte(F_MARK);
+    ins_f_byte(F_CONST0);
+    return;
+  case F_MARK_AND_CONST1:
+    ins_f_byte(F_MARK);
+    ins_f_byte(F_CONST0);
+    return;
+  case F_MARK_AND_STRING:
+    ins_f_byte(F_MARK);
+    ins_f_byte_with_arg(F_STRING, b);
+    return;
+  case F_MARK_AND_GLOBAL:
+    ins_f_byte(F_MARK);
+    ins_f_byte_with_arg(F_GLOBAL, b);
+    return;
+  case F_MARK_AND_LOCAL:
+    ins_f_byte(F_MARK);
+    ins_f_byte_with_arg(F_LOCAL, b);
+    return;
+  case F_MARK_X:
+    ins_debug_instr_prologue(a-F_OFFSET, b, 0);
+    amd64_mark(b);
     return;
   }
   update_arg1(b);
@@ -1003,8 +1106,12 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
   maybe_update_pc();
   switch(a) {
   case F_NUMBER64:
-    ins_debug_instr_prologue(a-F_OFFSET, 0, 0);
+    ins_debug_instr_prologue(a-F_OFFSET, b, c);
     amd64_push_int((((unsigned INT64)b)<<32)|(unsigned INT32)c, 0);
+    return;
+  case F_MARK_AND_EXTERNAL:
+    ins_f_byte(F_MARK);
+    ins_f_byte_with_2_args(F_EXTERNAL, b, c);
     return;
   }
   update_arg2(c);
