@@ -44,9 +44,15 @@ static void perhaps_create_table(  )
 	recurse    tinyint not null,
 	stage      tinyint not null,
 	UNIQUE(uri_md5),
-	INDEX stage   (stage)
+	INDEX stage   (stage),
+	INDEX uri     (uri(256))
 	)
     ");
+  if (!sizeof(db->query("SHOW INDEX FROM " + table +
+			" WHERE key_name = 'uri'"))) {
+    db->query("ALTER TABLE " + table +
+	      "  ADD INDEX uri (uri(256))");
+  }
 }
   
 static mapping hascache = ([]);
