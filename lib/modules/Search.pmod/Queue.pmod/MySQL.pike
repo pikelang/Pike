@@ -235,7 +235,7 @@ array(string) get_schemes()
 		lambda(string s) {
 		  return (s/":")[0];
 		});
-  return uniq(sort(schemes));
+  return Array.uniq(sort(schemes));
 }
 
 void put(string|array(string)|Standards.URI|array(Standards.URI) uri)
