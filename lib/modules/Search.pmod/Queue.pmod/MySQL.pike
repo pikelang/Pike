@@ -224,6 +224,20 @@ array(Standards.URI) get_uris(void|int stage)
   return uris;
 }
 
+array(string) get_schemes()
+{
+  // FIXME: Consider using SUBSTRING_INDEX().
+  array(string) schemes =
+    db->query("SELECT DISTINCT"
+	      "       SUBSTRING(uri, 1, 20) AS scheme"
+	      "  FROM "+table)->scheme;
+  schemes = map(schemes,
+		lambda(string s) {
+		  return (s/":")[0];
+		});
+  return uniq(sort(schemes));
+}
+
 void put(string|array(string)|Standards.URI|array(Standards.URI) uri)
 {
   if(arrayp(uri))
@@ -298,4 +312,15 @@ int get_stage( Standards.URI uri )
     return (int)a[0]->stage;
   else
     return -1;
+}
+
+void reset_stage(string|void uri_prefix)
+{
+  if (uri_prefix) {
+    db->query("UPDATE " + table + " SET stage = 0"
+	      " WHERE SUBSTRING(uri, 1, " + sizeof(uri_prefix) + ") = %s",
+	      uri_prefix);
+  } else {
+    db->query("UPDATE " + table + " SET stage = 0");
+  }
 }
