@@ -108,6 +108,27 @@ enum amd64_reg {REG_RAX = 0, REG_RBX = 3, REG_RCX = 1, REG_RDX = 2,
     PUSH_INT(off32__);							\
   } while(0)
 
+#define AMD64_MOVE32_RELADDR_TO_REG(FROM_REG, FROM_OFFSET, TO_REG) do {	\
+    enum amd64_reg from_reg__ = (FROM_REG);				\
+    enum amd64_reg to_reg__ = (TO_REG);					\
+    int off32__ = (FROM_OFFSET);					\
+    int rex__ = 0x40;							\
+    if (from_reg__ & 0x08) {						\
+      rex__ |= 0x01;							\
+      from_reg__ &= 0x07;						\
+    }									\
+    if (to_reg__ & 0x08) {						\
+      rex__ |= 0x04;							\
+      to_reg__ &= 0x07;							\
+    }									\
+    if (rex__ != 0x40) {						\
+      add_to_program(rex__);						\
+    }									\
+    add_to_program(0x8b);						\
+    add_to_program(0x80|(to_reg__<<3)| from_reg__);			\
+    PUSH_INT(off32__);							\
+  } while(0)
+
 #define AMD64_MOVE_REG_TO_RELADDR(FROM_REG, TO_REG, TO_OFFSET) do {	\
     enum amd64_reg from_reg__ = (FROM_REG);				\
     enum amd64_reg to_reg__ = (TO_REG);					\
@@ -168,12 +189,13 @@ enum amd64_reg {REG_RAX = 0, REG_RBX = 3, REG_RCX = 1, REG_RDX = 2,
     } else {						\
       add_to_program(0x48);				\
     }							\
-    add_to_program(0x83);				\
     if ((imm32__ >= -0x80) && (imm32__ <= 0x7f)) {	\
+      add_to_program(0x83);				\
       add_to_program(0xe0|reg__);			\
       add_to_program(imm32__);				\
     } else {						\
-      Pike_error("Not supported yet.\n");		\
+      add_to_program(0x81);				\
+      add_to_program(0xe0|reg__);			\
       PUSH_INT(imm32__);				\
     }							\
   } while(0)
@@ -187,12 +209,13 @@ enum amd64_reg {REG_RAX = 0, REG_RBX = 3, REG_RCX = 1, REG_RDX = 2,
     } else {						\
       add_to_program(0x48);				\
     }							\
-    add_to_program(0x83);				\
     if ((imm32__ >= -0x80) && (imm32__ <= 0x7f)) {	\
+      add_to_program(0x83);				\
       add_to_program(0xc0|reg__);			\
       add_to_program(imm32__);				\
     } else {						\
-      Pike_error("Not supported yet.\n");		\
+      add_to_program(0x81);				\
+      add_to_program(0xc0|reg__);			\
       PUSH_INT(imm32__);				\
     }							\
   } while(0)
@@ -211,7 +234,7 @@ enum amd64_reg {REG_RAX = 0, REG_RBX = 3, REG_RCX = 1, REG_RDX = 2,
       add_to_program(0xe8|reg__);			\
       add_to_program(imm32__);				\
     } else {						\
-      Pike_error("Not supported yet.\n");		\
+      Pike_fatal("Not supported yet.\n");		\
       PUSH_INT(imm32__);				\
     }							\
   } while(0)
@@ -242,7 +265,7 @@ enum amd64_reg {REG_RAX = 0, REG_RBX = 3, REG_RCX = 1, REG_RDX = 2,
       add_to_program(0xf8|reg__);			\
       add_to_program(imm32__);				\
     } else {						\
-      Pike_error("Not supported yet.\n");		\
+      Pike_fatal("Not supported yet.\n");		\
       PUSH_INT(imm32__);				\
     }							\
   } while(0)
@@ -472,7 +495,7 @@ enum amd64_reg {REG_RAX = 0, REG_RBX = 3, REG_RCX = 1, REG_RDX = 2,
       add_to_program(0xeb);				\
       add_to_program(skip__);				\
     } else {						\
-      Pike_error("Not supported yet.\n");		\
+      Pike_fatal("Not supported yet.\n");		\
     }							\
   } while(0)
 
@@ -482,7 +505,7 @@ enum amd64_reg {REG_RAX = 0, REG_RBX = 3, REG_RCX = 1, REG_RDX = 2,
       add_to_program(0x75);				\
       add_to_program(skip__);				\
     } else {						\
-      Pike_error("Not supported yet.\n");		\
+      Pike_fatal("Not supported yet.\n");		\
     }							\
   } while(0)
 
@@ -492,7 +515,17 @@ enum amd64_reg {REG_RAX = 0, REG_RBX = 3, REG_RCX = 1, REG_RDX = 2,
       add_to_program(0x74);				\
       add_to_program(skip__);				\
     } else {						\
-      Pike_error("Not supported yet.\n");		\
+      Pike_fatal("Not supported yet.\n");		\
+    }							\
+  } while(0)
+
+#define AMD64_JG(SKIP) do {\
+    int skip__ = (SKIP);    \
+    if ((skip__ >= -0x80) && (skip__ <= 0x7f)) {	\
+      add_to_program(0x7f);				\
+      add_to_program(skip__);				\
+    } else {						\
+      Pike_fatal("Not supported yet.\n");		\
     }							\
   } while(0)
 
@@ -562,6 +595,21 @@ void amd64_flush_code_generator_state(void)
   mark_sp_reg = 0;
   dirty_regs = 0;
   amd64_prev_stored_pc = -1;
+}
+
+static void flush_dirty_regs(void)
+{
+  /* NB: PIKE_FP_REG is currently never dirty. */
+  if (dirty_regs & (1 << PIKE_SP_REG)) {
+    AMD64_MOVE_REG_TO_RELADDR(PIKE_SP_REG, Pike_interpreter_reg,
+			      OFFSETOF(Pike_interpreter, stack_pointer));
+    dirty_regs &= ~(1 << PIKE_SP_REG);
+  }
+  if (dirty_regs & (1 << PIKE_MARK_SP_REG)) {
+    AMD64_MOVE_REG_TO_RELADDR(PIKE_MARK_SP_REG, Pike_interpreter_reg,
+			      OFFSETOF(Pike_interpreter, mark_stack_pointer));
+    dirty_regs &= ~(1 << PIKE_MARK_SP_REG);
+  }
 }
 
 static enum amd64_reg alloc_reg (int avoid_regs)
@@ -656,6 +704,31 @@ static void update_arg2(INT32 value)
   /* FIXME: Alloc stack space on NT. */
 }
 
+/* Note: Uses RAX and RCX internally. reg MUST not be REG_RAX. */
+static void amd64_push_svaluep(int reg)
+{
+  INT32 skip;
+  amd64_load_sp_reg();
+  AMD64_MOVE_RELADDR_TO_REG(reg, OFFSETOF(svalue, type), REG_RAX);
+  AMD64_MOVE_RELADDR_TO_REG(reg, OFFSETOF(svalue, u.refs), REG_RCX);
+  AMD64_MOVE_REG_TO_RELADDR(REG_RAX, sp_reg, OFFSETOF(svalue, type));
+  AMD64_AND_IMM32(REG_RAX, 0x1f);
+  AMD64_MOVE_REG_TO_RELADDR(REG_RCX, sp_reg, OFFSETOF(svalue, u.refs));
+  AMD64_CMP_REG_IMM32(REG_RAX, MAX_REF_TYPE);
+  AMD64_JG(0);
+  skip = PIKE_PC;
+  AMD64_ADD_VAL_TO_RELADDR(1, OFFSETOF(pike_string, refs), REG_RCX);
+  Pike_compiler->new_program->program[skip-1] = ((INT32)PIKE_PC) - skip;
+  AMD64_ADD_IMM32(sp_reg, sizeof(struct svalue));
+  dirty_regs |= 1 << sp_reg;
+  /* FIXME: Deferred writing of Pike_sp doen't seem to work reliably yet. */
+  if (dirty_regs & (1 << PIKE_SP_REG)) {
+    AMD64_MOVE_REG_TO_RELADDR(PIKE_SP_REG, Pike_interpreter_reg,
+			      OFFSETOF(Pike_interpreter, stack_pointer));
+    dirty_regs &= ~(1 << PIKE_SP_REG);
+  }
+}
+
 static void amd64_push_int(INT64 value, int subtype)
 {
   amd64_load_sp_reg();
@@ -722,6 +795,31 @@ static void amd64_push_string(int strno, int subtype)
 			    (INT32)OFFSETOF(svalue, u.string) -
 			    (INT32)sizeof(struct svalue));
   AMD64_ADD_VAL_TO_RELADDR(1, OFFSETOF(pike_string, refs), REG_RAX);
+  dirty_regs |= 1 << sp_reg;
+  /* FIXME: Deferred writing of Pike_sp doen't seem to work reliably yet. */
+  if (dirty_regs & (1 << PIKE_SP_REG)) {
+    AMD64_MOVE_REG_TO_RELADDR(PIKE_SP_REG, Pike_interpreter_reg,
+			      OFFSETOF(Pike_interpreter, stack_pointer));
+    dirty_regs &= ~(1 << PIKE_SP_REG);
+  }
+}
+
+static void amd64_push_local_function(int fun)
+{
+  amd64_load_fp_reg();
+  amd64_load_sp_reg();
+  AMD64_MOVE_RELADDR_TO_REG(fp_reg, OFFSETOF(pike_frame, context), REG_RAX);
+  AMD64_MOVE_RELADDR_TO_REG(fp_reg, OFFSETOF(pike_frame, current_object),
+			    REG_RCX);
+  AMD64_MOVE32_RELADDR_TO_REG(REG_RAX, OFFSETOF(inherit, identifier_level),
+			      REG_RAX);
+  AMD64_MOVE_REG_TO_RELADDR(REG_RCX, sp_reg, OFFSETOF(svalue, u.object));
+  AMD64_ADD_IMM32(REG_RAX, fun);
+  AMD64_ADD_VAL_TO_RELADDR(1, (INT32)OFFSETOF(object, refs), REG_RCX);
+  AMD64_SHL_IMM8(REG_RAX, 16);
+  AMD64_ADD_IMM32(REG_RAX, PIKE_T_FUNCTION);
+  AMD64_MOVE_REG_TO_RELADDR(REG_RAX, sp_reg, OFFSETOF(svalue, type));
+  AMD64_ADD_IMM32(sp_reg, sizeof(struct svalue));
   dirty_regs |= 1 << sp_reg;
   /* FIXME: Deferred writing of Pike_sp doen't seem to work reliably yet. */
   if (dirty_regs & (1 << PIKE_SP_REG)) {
@@ -906,17 +1004,7 @@ void ins_f_byte(unsigned int b)
     return;
   }
 
-  /* NB: PIKE_FP_REG is currently never dirty. */
-  if (dirty_regs & (1 << PIKE_SP_REG)) {
-    AMD64_MOVE_REG_TO_RELADDR(PIKE_SP_REG, Pike_interpreter_reg,
-			      OFFSETOF(Pike_interpreter, stack_pointer));
-    dirty_regs &= ~(1 << PIKE_SP_REG);
-  }
-  if (dirty_regs & (1 << PIKE_MARK_SP_REG)) {
-    AMD64_MOVE_REG_TO_RELADDR(PIKE_MARK_SP_REG, Pike_interpreter_reg,
-			      OFFSETOF(Pike_interpreter, mark_stack_pointer));
-    dirty_regs &= ~(1 << PIKE_MARK_SP_REG);
-  }
+  flush_dirty_regs();
   if (flags & I_UPDATE_SP) sp_reg = 0;
   if (flags & I_UPDATE_M_SP) mark_sp_reg = 0;
   if (flags & I_UPDATE_FP) fp_reg = 0;
@@ -974,19 +1062,7 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
 
   maybe_update_pc();
 
-  /* NB: PIKE_FP_REG is currently never dirty. */
-  if (dirty_regs & (1 << PIKE_SP_REG)) {
-    amd64_load_fp_reg();
-    AMD64_MOVE_REG_TO_RELADDR(PIKE_SP_REG, Pike_interpreter_reg,
-			      OFFSETOF(Pike_interpreter, stack_pointer));
-    dirty_regs &= ~(1 << PIKE_SP_REG);
-  }
-  if (dirty_regs & (1 << PIKE_MARK_SP_REG)) {
-    amd64_load_fp_reg();
-    AMD64_MOVE_REG_TO_RELADDR(PIKE_MARK_SP_REG, Pike_interpreter_reg,
-			      OFFSETOF(Pike_interpreter, mark_stack_pointer));
-    dirty_regs &= ~(1 << PIKE_MARK_SP_REG);
-  }
+  flush_dirty_regs();
 
   if (flags & I_UPDATE_SP) sp_reg = 0;
   if (flags & I_UPDATE_M_SP) mark_sp_reg = 0;
@@ -1088,6 +1164,38 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     ins_debug_instr_prologue(a-F_OFFSET, b, 0);
     amd64_mark(b);
     return;
+  case F_LFUN:
+    ins_debug_instr_prologue(a-F_OFFSET, b, 0);
+    amd64_push_local_function(b);
+    return;
+  case F_GLOBAL:
+    ins_debug_instr_prologue(a-F_OFFSET, b, 0);
+    amd64_load_fp_reg();
+    amd64_load_sp_reg();
+    AMD64_MOVE_RELADDR_TO_REG(fp_reg, OFFSETOF(pike_frame, context), ARG3_REG);
+    AMD64_MOVE_RELADDR_TO_REG(fp_reg, OFFSETOF(pike_frame, current_object),
+			      ARG2_REG);
+    AMD64_MOV_REG(sp_reg, ARG1_REG);
+    AMD64_MOVE32_RELADDR_TO_REG(ARG3_REG, OFFSETOF(inherit, identifier_level),
+				ARG3_REG);
+    AMD64_AND_IMM32(ARG3_REG, 0xffff);
+    AMD64_ADD_IMM32(ARG3_REG, b);
+    flush_dirty_regs();	/* In case an error is thrown. */
+    CALL_ABSOLUTE(low_object_index_no_free);
+    /* NB: We know that low_object_index_no_free() doesn't
+     *     mess with the stack pointer. */
+    AMD64_ADD_IMM32(sp_reg, sizeof(struct svalue));
+    dirty_regs |= 1 << sp_reg;
+    flush_dirty_regs();
+    return;
+  case F_LOCAL:
+    ins_debug_instr_prologue(a-F_OFFSET, b, 0);
+    amd64_load_fp_reg();
+    amd64_load_sp_reg();
+    AMD64_MOVE_RELADDR_TO_REG(fp_reg, OFFSETOF(pike_frame, locals), REG_RCX);
+    AMD64_ADD_IMM32(REG_RCX, b*sizeof(struct svalue));
+    amd64_push_svaluep(REG_RCX);
+    return;
   }
   update_arg1(b);
   ins_f_byte(a);
@@ -1112,6 +1220,10 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
   case F_MARK_AND_EXTERNAL:
     ins_f_byte(F_MARK);
     ins_f_byte_with_2_args(F_EXTERNAL, b, c);
+    return;
+  case F_2_LOCALS:
+    ins_f_byte_with_arg(F_LOCAL, b);
+    ins_f_byte_with_arg(F_LOCAL, c);
     return;
   }
   update_arg2(c);
