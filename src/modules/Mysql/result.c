@@ -271,6 +271,10 @@ void mysqlmod_parse_field(MYSQL_FIELD *field, int support_default)
       nbits++;
       push_text("binary");
     }
+    if (field->flags & AUTO_INCREMENT_FLAG) {
+      nbits++;
+      push_text("auto_increment");
+    }
     f_aggregate_multiset(nbits);
 
     push_text("decimals"); push_int(field->decimals);

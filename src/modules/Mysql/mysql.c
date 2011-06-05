@@ -1614,6 +1614,8 @@ static void f_list_tables(INT32 args)
  *!     This field may not be NULL.
  *!   @index "blob"
  *!     This field is a blob field.
+ *!   @index "auto_increment"
+ *!     This field has the auto_increment flag.
  *! @endmultiset
  *!
  *! @note
