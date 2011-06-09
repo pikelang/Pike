@@ -3137,7 +3137,7 @@ TimeofDay dwim_time(string what,void|TimeRange cx)
 	 }
 	 else
 	 {
-	    if ( (t=parse(dayformat+"%*[ ,:]"+todformat,what,cx)) ) return t;
+	    if ( (t=parse(dayformat+"%*[ ,:T]"+todformat,what,cx)) ) return t;
 	    if ( (t=parse(todformat+"%*[ ,:]"+dayformat,what,cx)) ) return t;
 	 }
       }
