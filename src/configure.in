@@ -54,7 +54,7 @@ fi
 # since bash is usually several orders of magnitude faster
 # on machines that have a real /bin/sh.
 # Some OS's also have a seriously broken /bin/sh (eg NetBSD).
-if test "x$CONFIG_SHELL" = "x"; then 
+if test "x$CONFIG_SHELL" = "x" -a "x$BASH" = x; then
   AC_PATH_PROG(bash_prog, bash, no)
   if test "x$ac_cv_path_bash_prog" = "xno"; then :; else
     AC_MSG_CHECKING([if $ac_cv_path_bash_prog works])
