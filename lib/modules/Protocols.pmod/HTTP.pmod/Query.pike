@@ -584,12 +584,14 @@ this_program thread_request(string server, int port, string query,
 
    if (server1) server=server1; // cheaty, if host doesn't exist
 
-   con=Stdio.File();
-   if (!con->open_socket(-1, 0, server)) {
+   con = 0;
+   Stdio.File new_con = Stdio.File();
+   if (!new_con->open_socket(-1, 0, server)) {
      int errno = con->errno();
-     con = 0;
+     new_con = 0;
      error("HTTP.Query(): can't open socket; "+strerror(errno)+"\n");
    }
+   con = new_con;
 
    // prepare the request
 
@@ -655,12 +657,15 @@ this_program sync_request(string server, int port, string query,
     string ip = dns_lookup( server );
     if(ip) server = ip; // cheaty, if host doesn't exist
 
-    con = Stdio.File();
-    if(!con->open_socket(-1, 0, server)) {
+    con = 0;
+    Stdio.File new_con = Stdio.File();
+    if(!new_con->open_socket(-1, 0, server)) {
       int errno = con->errno();
-      con = 0;
+      new_con = 0;
       error("HTTP.Query(): can't open socket; "+strerror(errno)+"\n");
     }
+    con = new_con;
+
     this_program::host = server;
     this_program::port = port;
   }
