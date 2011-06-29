@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.153 2008/09/14 07:17:11 grubba Exp $");
+RCSID("$Id$");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1161,7 +1161,7 @@ void f_crypt(INT32 args)
       
     saltp=sp[1-args].u.string->str;
   } else {
-    unsigned int foo; /* Sun CC want's this :( */
+    unsigned int foo; /* Sun CC wants this :( */
     foo=my_rand();
     salt[0] = choise[foo % (unsigned int) strlen(choise)];
     foo=my_rand();
@@ -1177,6 +1177,23 @@ void f_crypt(INT32 args)
   ret = sp[-args].u.string->str;
 #endif
 #endif
+  if (!ret) {
+    switch(errno) {
+#ifdef ELIBACC
+    case ELIBACC:
+      Pike_error("Failed to load a required shared library. "
+		 "Unsupported salt.\n");
+      break;
+#endif
+    case ENOMEM:
+      Pike_error("Out of memory.\n");
+      break;
+    case EINVAL:
+    default:
+      Pike_error("Unsupported salt (%d).\n", errno);
+      break;
+    }
+  }
   if(args < 2)
   {
     pop_n_elems(args);

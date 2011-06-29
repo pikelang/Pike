@@ -93,7 +93,6 @@ testfont binary
 /src/backend.h foreign_ident
 /src/block_alloc.h foreign_ident
 /src/build_modlist_h foreign_ident
-/src/builtin_functions.c foreign_ident
 /src/builtin_functions.h foreign_ident
 /src/callback.c foreign_ident
 /src/callback.h foreign_ident
