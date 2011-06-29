@@ -1555,16 +1555,16 @@ void f_crypt(INT32 args)
     switch(errno) {
 #ifdef ELIBACC
     case ELIBACC:
-      Pike_error("Failed to load a required shared library. "
-		 "Unsupported salt.\n");
+      error("Failed to load a required shared library. "
+	    "Unsupported salt.\n");
       break;
 #endif
     case ENOMEM:
-      Pike_error("Out of memory.\n");
+      error("Out of memory.\n");
       break;
     case EINVAL:
     default:
-      Pike_error("Unsupported salt (%d).\n", errno);
+      error("Unsupported salt (%d).\n", errno);
       break;
     }
   }
