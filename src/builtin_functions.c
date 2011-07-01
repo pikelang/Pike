@@ -39,6 +39,8 @@ RCSID("$Id$");
 #include "cyclic.h"
 #include "signal_handler.h"
 
+#include <errno.h>
+
 #ifdef HAVE_POLL
 #ifdef HAVE_POLL_H
 #include <poll.h>
