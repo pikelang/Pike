@@ -46,6 +46,8 @@ RCSID("$Id$");
 #include "docode.h"
 #include "lex.h"
 
+#include <errno.h>
+
 #ifdef HAVE_POLL
 #ifdef HAVE_POLL_H
 #include <poll.h>
