@@ -42,6 +42,8 @@ RCSID("$Id$");
 #include "bignum.h"
 #include "language.h"
 
+#include <errno.h>
+
 #ifdef HAVE_POLL
 #ifdef HAVE_POLL_H
 #include <poll.h>
