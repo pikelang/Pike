@@ -46,6 +46,8 @@
 #include "pike_float.h"
 #include "pike_compiler.h"
 
+#include <errno.h>
+
 #ifdef HAVE_POLL
 #ifdef HAVE_POLL_H
 #include <poll.h>
