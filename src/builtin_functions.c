@@ -46,6 +46,8 @@ RCSID("$Id$");
 #include "lex.h"
 #include "pike_float.h"
 
+#include <errno.h>
+
 #ifdef HAVE_POLL
 #ifdef HAVE_POLL_H
 #include <poll.h>
