@@ -38,6 +38,8 @@ RCSID("$Id$");
 #include "opcodes.h"
 #include "cyclic.h"
 
+#include <errno.h>
+
 #ifdef HAVE_CRYPT_H
 #include <crypt.h>
 #endif
