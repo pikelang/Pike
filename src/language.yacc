@@ -3837,7 +3837,9 @@ expr4: string
   {
     $$=index_node($1,".",$4->u.sval.u.string);
     COPY_LINE_NUMBER_INFO($$, $3);
+    free_node ($1);
     free_node ($3);
+    free_node ($4);
   }
   | expr4 TOK_ARROW line_number_info error {$$=$1; free_node ($3);}
   ;
