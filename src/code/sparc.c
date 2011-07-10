@@ -235,7 +235,7 @@
  * I6	Frame pointer
  * I7	Return address
  *
- * L0	&Pike_interpreter
+ * L0	Pike_interpreter_pointer
  * L1	Pike_fp
  * L7	&d_flag
  *
@@ -271,7 +271,8 @@ ptrdiff_t sparc_last_pc = 0;
 #define LOAD_PIKE_INTERPRETER() do {				\
     if (!(sparc_codegen_state & SPARC_CODEGEN_IP_IS_SET)) {	\
       SET_REG(SPARC_REG_PIKE_IP,				\
-	      ((ptrdiff_t)(&Pike_interpreter)));		\
+	      ((ptrdiff_t)(&Pike_interpreter_pointer)));	\
+      PIKE_LDPTR(SPARC_REG_PIKE_IP, SPARC_REG_PIKE_IP, 0, 1);	\
       sparc_codegen_state |= SPARC_CODEGEN_IP_IS_SET;		\
     }								\
   } while(0)
@@ -281,7 +282,7 @@ ptrdiff_t sparc_last_pc = 0;
       LOAD_PIKE_INTERPRETER();						\
       /* lduw [ %ip, %offset(Pike_interpreter, frame_pointer) ], %l1 */	\
       PIKE_LDPTR(SPARC_REG_PIKE_FP, SPARC_REG_PIKE_IP,			\
-		 OFFSETOF(Pike_interpreter, frame_pointer), 1);		\
+		 OFFSETOF(Pike_interpreter_struct, frame_pointer), 1);	\
       sparc_codegen_state |= SPARC_CODEGEN_FP_IS_SET;			\
     }									\
   } while(0)
@@ -291,7 +292,7 @@ ptrdiff_t sparc_last_pc = 0;
       LOAD_PIKE_INTERPRETER();						\
       /* lduw [ %ip, %offset(Pike_interpreter, stack_pointer) ], %l2 */	\
       PIKE_LDPTR(SPARC_REG_PIKE_SP, SPARC_REG_PIKE_IP,			\
-		 OFFSETOF(Pike_interpreter, stack_pointer), 1);		\
+		 OFFSETOF(Pike_interpreter_struct, stack_pointer), 1);	\
       sparc_codegen_state |= SPARC_CODEGEN_SP_IS_SET;			\
       sparc_pike_sp_bias = 0;						\
     } else if (sparc_pike_sp_bias > 0xf00) {				\
@@ -308,7 +309,7 @@ ptrdiff_t sparc_last_pc = 0;
       LOAD_PIKE_INTERPRETER();						\
       /* lduw [ %ip, %offset(Pike_interpreter, mark_stack_pointer) ], %l2 */	\
       PIKE_LDPTR(SPARC_REG_PIKE_MARK_SP, SPARC_REG_PIKE_IP,		\
-		 OFFSETOF(Pike_interpreter, mark_stack_pointer), 1);	\
+		 OFFSETOF(Pike_interpreter_struct, mark_stack_pointer), 1);	\
       sparc_codegen_state |= SPARC_CODEGEN_MARK_SP_IS_SET;		\
     }									\
   } while(0)
@@ -323,13 +324,13 @@ ptrdiff_t sparc_last_pc = 0;
     if (sparc_codegen_state & SPARC_CODEGEN_MARK_SP_NEEDS_STORE) {	\
       /* stw %pike_mark_sp, [ %ip, %offset(Pike_interpreter, mark_stack_pointer) ] */	\
       PIKE_STPTR(SPARC_REG_PIKE_MARK_SP, SPARC_REG_PIKE_IP,		\
-		 OFFSETOF(Pike_interpreter, mark_stack_pointer), 1);	\
+		 OFFSETOF(Pike_interpreter_struct, mark_stack_pointer), 1);	\
       sparc_codegen_state &= ~SPARC_CODEGEN_MARK_SP_NEEDS_STORE;	\
     }									\
     if (sparc_codegen_state & SPARC_CODEGEN_SP_NEEDS_STORE) {		\
       /* stw %pike_sp, [ %ip, %offset(Pike_interpreter, stack_pointer) ] */	\
       PIKE_STPTR(SPARC_REG_PIKE_SP, SPARC_REG_PIKE_IP,			\
-		 OFFSETOF(Pike_interpreter, stack_pointer), 1);		\
+		 OFFSETOF(Pike_interpreter_struct, stack_pointer), 1);	\
       sparc_codegen_state &= ~SPARC_CODEGEN_SP_NEEDS_STORE;		\
     }									\
   } while(0)
@@ -574,13 +575,13 @@ void sparc_local_lvalue(unsigned int no)
 
 #ifdef PIKE_DEBUG
 void sparc_debug_check_registers(int state,
-				 struct Pike_interpreter *cached_ip,
+				 struct Pike_interpreter_struct *cached_ip,
 				 struct pike_frame *cached_fp,
 				 struct svalue *cached_sp,
 				 struct svalue **cached_mark_sp)
 {
   if (((state & SPARC_CODEGEN_IP_IS_SET) &&
-       (cached_ip != &Pike_interpreter)) ||
+       (cached_ip != Pike_interpreter_pointer)) ||
       ((state & SPARC_CODEGEN_FP_IS_SET) &&
        (cached_fp != Pike_interpreter.frame_pointer)) ||
       ((state & SPARC_CODEGEN_SP_IS_SET) &&
@@ -593,7 +594,8 @@ void sparc_debug_check_registers(int state,
 	       state,
 	       (INT32)cached_ip, (INT32)cached_fp,
 	       (INT32)cached_sp, (INT32)cached_mark_sp,
-	       (INT32)&Pike_interpreter, (INT32)Pike_interpreter.frame_pointer,
+	       (INT32)Pike_interpreter_pointer,
+	       (INT32)Pike_interpreter.frame_pointer,
 	       (INT32)Pike_interpreter.stack_pointer,
 	       (INT32)Pike_interpreter.mark_stack_pointer);
   }

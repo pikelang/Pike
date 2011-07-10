@@ -602,12 +602,12 @@ static void flush_dirty_regs(void)
   /* NB: PIKE_FP_REG is currently never dirty. */
   if (dirty_regs & (1 << PIKE_SP_REG)) {
     AMD64_MOVE_REG_TO_RELADDR(PIKE_SP_REG, Pike_interpreter_reg,
-			      OFFSETOF(Pike_interpreter, stack_pointer));
+			      OFFSETOF(Pike_interpreter_struct, stack_pointer));
     dirty_regs &= ~(1 << PIKE_SP_REG);
   }
   if (dirty_regs & (1 << PIKE_MARK_SP_REG)) {
     AMD64_MOVE_REG_TO_RELADDR(PIKE_MARK_SP_REG, Pike_interpreter_reg,
-			      OFFSETOF(Pike_interpreter, mark_stack_pointer));
+			      OFFSETOF(Pike_interpreter_struct, mark_stack_pointer));
     dirty_regs &= ~(1 << PIKE_MARK_SP_REG);
   }
 }
@@ -664,7 +664,7 @@ void amd64_load_fp_reg(void)
 {
   if (!fp_reg) {
     AMD64_MOVE_RELADDR_TO_REG(Pike_interpreter_reg,
-			      OFFSETOF(Pike_interpreter, frame_pointer),
+			      OFFSETOF(Pike_interpreter_struct, frame_pointer),
 			      PIKE_FP_REG);
     fp_reg = PIKE_FP_REG;
   }
@@ -674,7 +674,7 @@ void amd64_load_sp_reg(void)
 {
   if (!sp_reg) {
     AMD64_MOVE_RELADDR_TO_REG(Pike_interpreter_reg,
-			      OFFSETOF(Pike_interpreter, stack_pointer),
+			      OFFSETOF(Pike_interpreter_struct, stack_pointer),
 			      PIKE_SP_REG);
     sp_reg = PIKE_SP_REG;
   }
@@ -684,7 +684,7 @@ void amd64_load_mark_sp_reg(void)
 {
   if (!mark_sp_reg) {
     AMD64_MOVE_RELADDR_TO_REG(Pike_interpreter_reg,
-			      OFFSETOF(Pike_interpreter, mark_stack_pointer),
+			      OFFSETOF(Pike_interpreter_struct, mark_stack_pointer),
 			      PIKE_MARK_SP_REG);
     mark_sp_reg = PIKE_MARK_SP_REG;
   }
@@ -724,7 +724,7 @@ static void amd64_push_svaluep(int reg)
   /* FIXME: Deferred writing of Pike_sp doen't seem to work reliably yet. */
   if (dirty_regs & (1 << PIKE_SP_REG)) {
     AMD64_MOVE_REG_TO_RELADDR(PIKE_SP_REG, Pike_interpreter_reg,
-			      OFFSETOF(Pike_interpreter, stack_pointer));
+			      OFFSETOF(Pike_interpreter_struct, stack_pointer));
     dirty_regs &= ~(1 << PIKE_SP_REG);
   }
 }
@@ -741,7 +741,7 @@ static void amd64_push_int(INT64 value, int subtype)
   /* FIXME: Deferred writing of Pike_sp doen't seem to work reliably yet. */
   if (dirty_regs & (1 << PIKE_SP_REG)) {
     AMD64_MOVE_REG_TO_RELADDR(PIKE_SP_REG, Pike_interpreter_reg,
-			      OFFSETOF(Pike_interpreter, stack_pointer));
+			      OFFSETOF(Pike_interpreter_struct, stack_pointer));
     dirty_regs &= ~(1 << PIKE_SP_REG);
   }
 }
@@ -761,7 +761,7 @@ static void amd64_mark(int offset)
   /* FIXME: Deferred writing of Pike_mark_sp doen't seem to work reliably yet. */
   if (dirty_regs & (1 << PIKE_MARK_SP_REG)) {
     AMD64_MOVE_REG_TO_RELADDR(PIKE_MARK_SP_REG, Pike_interpreter_reg,
-			      OFFSETOF(Pike_interpreter, mark_stack_pointer));
+			      OFFSETOF(Pike_interpreter_struct, mark_stack_pointer));
     dirty_regs &= ~(1 << PIKE_MARK_SP_REG);
   }
 }
@@ -774,7 +774,7 @@ static void amd64_pop_mark(void)
   /* FIXME: Deferred writing of Pike_mark_sp doen't seem to work reliably yet. */
   if (dirty_regs & (1 << PIKE_MARK_SP_REG)) {
     AMD64_MOVE_REG_TO_RELADDR(PIKE_MARK_SP_REG, Pike_interpreter_reg,
-			      OFFSETOF(Pike_interpreter, mark_stack_pointer));
+			      OFFSETOF(Pike_interpreter_struct, mark_stack_pointer));
     dirty_regs &= ~(1 << PIKE_MARK_SP_REG);
   }
 }
@@ -799,7 +799,7 @@ static void amd64_push_string(int strno, int subtype)
   /* FIXME: Deferred writing of Pike_sp doen't seem to work reliably yet. */
   if (dirty_regs & (1 << PIKE_SP_REG)) {
     AMD64_MOVE_REG_TO_RELADDR(PIKE_SP_REG, Pike_interpreter_reg,
-			      OFFSETOF(Pike_interpreter, stack_pointer));
+			      OFFSETOF(Pike_interpreter_struct, stack_pointer));
     dirty_regs &= ~(1 << PIKE_SP_REG);
   }
 }
@@ -824,7 +824,7 @@ static void amd64_push_local_function(int fun)
   /* FIXME: Deferred writing of Pike_sp doen't seem to work reliably yet. */
   if (dirty_regs & (1 << PIKE_SP_REG)) {
     AMD64_MOVE_REG_TO_RELADDR(PIKE_SP_REG, Pike_interpreter_reg,
-			      OFFSETOF(Pike_interpreter, stack_pointer));
+			      OFFSETOF(Pike_interpreter_struct, stack_pointer));
     dirty_regs &= ~(1 << PIKE_SP_REG);
   }
 }

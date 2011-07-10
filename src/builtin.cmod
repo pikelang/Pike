@@ -2048,7 +2048,7 @@ PIKEFUN mapping(string:int|string) get_runtime_info()
 /*! @endmodule
  */
 
-void low_backtrace(struct Pike_interpreter *i)
+void low_backtrace(struct Pike_interpreter_struct *i)
 {
   struct svalue *stack_top = i->stack_pointer;
   struct pike_frame *f, *of = 0;

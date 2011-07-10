@@ -35,7 +35,7 @@ struct pike_frame;
 #define THREAD_DEBUG_LOOSE  1	/* Thread is not bound to the interpreter. */
 
 struct thread_state {
-  struct Pike_interpreter state;
+  struct Pike_interpreter_struct state;
   struct object *thread_obj;	/* NOTE: Not ref-counted! */
   struct mapping *thread_local;
   struct thread_state *hashlink, **backlink;

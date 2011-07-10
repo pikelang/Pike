@@ -24,7 +24,7 @@
   do {									\
     /* The test is needed to get the labels to work... */		\
     if (pc) {								\
-      ((int (*)(struct Pike_interpreter *))(pc)) (&Pike_interpreter);	\
+      ((int (*)(struct Pike_interpreter_struct *))(pc)) (Pike_interpreter_pointer);	\
       goto inter_return_label;						\
     }									\
   } while(0)

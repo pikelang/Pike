@@ -547,7 +547,7 @@ PMOD_EXPORT void debug_list_all_threads(void);
 #endif
 
 #define HIDE_GLOBAL_VARIABLES() do {					\
-    int Pike_interpreter =0;						\
+    int Pike_interpreter_pointer =0;					\
     int pop_n_elems = 0;						\
     int push_sp_mark = 0, pop_sp_mark = 0, threads_disabled = 1;	\
     HIDE_PC;								\

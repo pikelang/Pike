@@ -110,10 +110,16 @@ PMOD_EXPORT unsigned long evaluator_callback_calls = 0;
 
 int fast_check_threads_counter = 0;
 
+/* This is used for strapping the interpreter before the threads
+ * are loaded, and when there's no support for threads.
+ */
+static struct Pike_interpreter_struct static_pike_interpreter;
+
 /* Pike_sp points to first unused value on stack
  * (much simpler than letting it point at the last used value.)
  */
-PMOD_EXPORT struct Pike_interpreter Pike_interpreter;
+PMOD_EXPORT struct Pike_interpreter_struct *Pike_interpreter_pointer =
+  &static_pike_interpreter;
 PMOD_EXPORT int Pike_stack_size = EVALUATOR_STACK_SIZE;
 
 static void do_trace_call(INT32 args, dynamic_buffer *old_buf);
@@ -192,7 +198,7 @@ static void gc_check_stack_callback(struct callback *foo, void *bar, void *gazon
  */
 static int eval_instruction(PIKE_OPCODE_T *pc);
 
-PMOD_EXPORT int low_init_interpreter(struct Pike_interpreter *interpreter)
+PMOD_EXPORT int low_init_interpreter(struct Pike_interpreter_struct *interpreter)
 {
 #ifdef USE_MMAP_FOR_STACK
   static int fd = -1;
@@ -291,7 +297,7 @@ use_malloc:
 
 PMOD_EXPORT void init_interpreter(void)
 {
-  if (low_init_interpreter(&Pike_interpreter)) {
+  if (low_init_interpreter(Pike_interpreter_pointer)) {
     Pike_fatal("Out of memory initializing the interpreter stack.\n");
   }
 
@@ -3035,10 +3041,7 @@ void gdb_backtrace (
     fputs ("Not a Pike thread.\n", stderr);
     return;
   }
-  if (ts->swapped)
-    f = ts->state.frame_pointer;
-  else
-    f = Pike_fp;
+  f = ts->state.frame_pointer;
 #else
   f = Pike_fp;
 #endif
@@ -3245,7 +3248,7 @@ PMOD_EXPORT void custom_check_stack(ptrdiff_t amount, const char *fmt, ...)
   }
 }
 
-PMOD_EXPORT void low_cleanup_interpret(struct Pike_interpreter *interpreter)
+PMOD_EXPORT void low_cleanup_interpret(struct Pike_interpreter_struct *interpreter)
 {
 #ifdef USE_MMAP_FOR_STACK
   if(!interpreter->evaluator_stack_malloced)

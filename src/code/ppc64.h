@@ -118,29 +118,29 @@ void ppc64_flush_code_generator_state(void);
 #define PPC_CODEGEN_MARK_SP_NEEDSSTORE 16
 #define PPC_CODEGEN_PC_ISSET 32
 
-#define LOAD_FP_REG() do {				\
-    if(!(ppc64_codegen_state & PPC_CODEGEN_FP_ISSET)) {	\
-      /* ld pike_fp,frame_pointer(pike_interpreter) */	\
-      LD(PPC_REG_PIKE_FP, PPC_REG_PIKE_INTERP, 	\
-	 OFFSETOF(Pike_interpreter, frame_pointer));	\
-      ppc64_codegen_state |= PPC_CODEGEN_FP_ISSET;	\
-    }							\
+#define LOAD_FP_REG() do {					\
+    if(!(ppc64_codegen_state & PPC_CODEGEN_FP_ISSET)) {		\
+      /* ld pike_fp,frame_pointer(pike_interpreter) */		\
+      LD(PPC_REG_PIKE_FP, PPC_REG_PIKE_INTERP,			\
+	 OFFSETOF(Pike_interpreter_struct, frame_pointer));	\
+      ppc64_codegen_state |= PPC_CODEGEN_FP_ISSET;		\
+    }								\
   } while(0)
 
-#define LOAD_SP_REG() do {				\
-    if(!(ppc64_codegen_state & PPC_CODEGEN_SP_ISSET)) {	\
-      /* ld pike_sp,stack_pointer(pike_interpreter) */	\
-      LD(PPC_REG_PIKE_SP, PPC_REG_PIKE_INTERP,		\
-	  OFFSETOF(Pike_interpreter, stack_pointer));	\
-      ppc64_codegen_state |= PPC_CODEGEN_SP_ISSET;	\
-    }							\
+#define LOAD_SP_REG() do {					\
+    if(!(ppc64_codegen_state & PPC_CODEGEN_SP_ISSET)) {		\
+      /* ld pike_sp,stack_pointer(pike_interpreter) */		\
+      LD(PPC_REG_PIKE_SP, PPC_REG_PIKE_INTERP,			\
+	  OFFSETOF(Pike_interpreter_struct, stack_pointer));	\
+      ppc64_codegen_state |= PPC_CODEGEN_SP_ISSET;		\
+    }								\
   } while(0)
 
 #define LOAD_MARK_SP_REG() do {						\
     if(!(ppc64_codegen_state & PPC_CODEGEN_MARK_SP_ISSET)) {		\
       /* ld pike_mark_sp,mark_stack_pointer(pike_interpreter) */	\
       LD(PPC_REG_PIKE_MARK_SP, PPC_REG_PIKE_INTERP,			\
-	 OFFSETOF(Pike_interpreter, mark_stack_pointer));		\
+	 OFFSETOF(Pike_interpreter_struct, mark_stack_pointer));	\
       ppc64_codegen_state |= PPC_CODEGEN_MARK_SP_ISSET;			\
     }									\
   } while(0)
@@ -268,7 +268,7 @@ void ppc64_decode_program(struct program *p);
 			"	mr "PPC_REGNAME(29)",%1\n"		    \
 			"	bctr"					    \
 			:						    \
-			: "r" (pc), "r" (&Pike_interpreter)		    \
+			: "r" (pc), "r" (Pike_interpreter_pointer)	    \
 			: "ctr", "lr", "cc", "memory", "r29", "r0", "r2",   \
 			  "r3", "r4", "r5", "r6", "r7", "r8", "r9",	    \
 			  "r10", "r11", "r12")

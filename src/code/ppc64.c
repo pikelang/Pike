@@ -53,12 +53,12 @@ void ppc64_flush_code_generator_state()
   if(ppc64_codegen_state & PPC_CODEGEN_SP_NEEDSSTORE) {
     /* stw pike_sp,stack_pointer(pike_interpreter) */
     STD(PPC_REG_PIKE_SP, PPC_REG_PIKE_INTERP,
-	OFFSETOF(Pike_interpreter, stack_pointer));
+	OFFSETOF(Pike_interpreter_struct, stack_pointer));
   }
   if(ppc64_codegen_state & PPC_CODEGEN_MARK_SP_NEEDSSTORE) {
     /* stw pike_mark_sp,mark_stack_pointer(pike_interpreter) */
     STD(PPC_REG_PIKE_MARK_SP, PPC_REG_PIKE_INTERP,
-	OFFSETOF(Pike_interpreter, mark_stack_pointer));
+	OFFSETOF(Pike_interpreter_struct, mark_stack_pointer));
   }
   ppc64_codegen_state = 0;
   last_prog_id=-1;
@@ -252,7 +252,7 @@ void ppc64_push_global(INT32 arg)
   } else {
     /* ld r3,stack_pointer(pike_interpreter) */ 
     LD(PPC_REG_ARG1, PPC_REG_PIKE_INTERP,
-       OFFSETOF(Pike_interpreter, stack_pointer));
+       OFFSETOF(Pike_interpreter_struct, stack_pointer));
   }
   if(arg) {
     /* addi r5,r5,arg */
@@ -358,13 +358,13 @@ static void ppc64_escape_catch(void)
   LOAD_FP_REG();
   /* ld r3,catch_ctx(pike_interpreter) */
   LD(PPC_REG_ARG1, PPC_REG_PIKE_INTERP,
-     OFFSETOF(Pike_interpreter, catch_ctx));
+     OFFSETOF(Pike_interpreter_struct, catch_ctx));
   /* ld r4,recovery.previous(r3) */
   LD(PPC_REG_ARG2, PPC_REG_ARG1,
      OFFSETOF(catch_context, recovery.previous));
   /* std r4,recoveries(pike_interpreter) */
   STD(PPC_REG_ARG2, PPC_REG_PIKE_INTERP,
-      OFFSETOF(Pike_interpreter, recoveries));
+      OFFSETOF(Pike_interpreter_struct, recoveries));
   /* ld r4,save_expendible(r3) */
   LD(PPC_REG_ARG2, PPC_REG_ARG1,
      OFFSETOF(catch_context, save_expendible));
@@ -376,7 +376,7 @@ static void ppc64_escape_catch(void)
      OFFSETOF(catch_context, prev));
   /* std r4,catch_ctx(pike_interpreter) */
   STD(PPC_REG_ARG2, PPC_REG_PIKE_INTERP,
-      OFFSETOF(Pike_interpreter, catch_ctx));
+      OFFSETOF(Pike_interpreter_struct, catch_ctx));
 
   FLUSH_CODE_GENERATOR_STATE();
   ADD_CALL(really_free_catch_context);

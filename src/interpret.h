@@ -26,7 +26,7 @@ struct catch_context
 #endif
 };
 
-struct Pike_interpreter {
+struct Pike_interpreter_struct {
   /* Swapped variables */
   struct svalue *stack_pointer;
   struct svalue *evaluator_stack;
@@ -757,7 +757,7 @@ void push_sp_mark(void);
 ptrdiff_t pop_sp_mark(void);
 void gc_mark_stack_external (struct pike_frame *frame,
 			     struct svalue *stack_p, struct svalue *stack);
-PMOD_EXPORT int low_init_interpreter(struct Pike_interpreter *interpreter);
+PMOD_EXPORT int low_init_interpreter(struct Pike_interpreter_struct *interpreter);
 PMOD_EXPORT void init_interpreter(void);
 void lvalue_to_svalue_no_free(struct svalue *to,struct svalue *lval);
 PMOD_EXPORT void assign_lvalue(struct svalue *lval,struct svalue *from);
@@ -826,7 +826,7 @@ void slow_check_stack(void);
 PMOD_EXPORT void custom_check_stack(ptrdiff_t amount, const char *fmt, ...)
   ATTRIBUTE((format (printf, 2, 3)));
 PMOD_EXPORT void cleanup_interpret(void);
-PMOD_EXPORT void low_cleanup_interpret(struct Pike_interpreter *interpreter);
+PMOD_EXPORT void low_cleanup_interpret(struct Pike_interpreter_struct *interpreter);
 void really_clean_up_interpret(void);
 /* Prototypes end here */
 
@@ -883,7 +883,8 @@ PMOD_EXPORT extern struct callback_list evaluator_callbacks;
  * The above define could also be used to facilitate dynamic loading
  * on Win32..
  */
-PMOD_EXPORT extern struct Pike_interpreter Pike_interpreter;
+PMOD_EXPORT extern struct Pike_interpreter_struct *Pike_interpreter_pointer;
+#define Pike_interpreter (*Pike_interpreter_pointer)
 
 #define Pike_sp Pike_interpreter.stack_pointer
 #define Pike_fp Pike_interpreter.frame_pointer

@@ -329,13 +329,13 @@ static void update_arg2(INT32 value)
 static int cpu_vendor = PIKE_CPU_VENDOR_UNKNOWN;
 
 static enum ia32_reg next_reg;
-static enum ia32_reg sp_reg, fp_reg, mark_sp_reg;
+static enum ia32_reg pi_reg, sp_reg, fp_reg, mark_sp_reg;
 ptrdiff_t ia32_prev_stored_pc; /* PROG_PC at the last point Pike_fp->pc was updated. */
 
 void ia32_flush_code_generator(void)
 {
   next_reg = REG_EAX;
-  sp_reg = fp_reg = mark_sp_reg = REG_NONE;
+  pi_reg = sp_reg = fp_reg = mark_sp_reg = REG_NONE;
   CLEAR_REGS();
   ia32_prev_stored_pc = -1;
 }
@@ -373,7 +373,10 @@ static enum ia32_reg alloc_reg (int avoid_regs)
     if (sp_reg == reg)			{sp_reg = REG_NONE; DEALLOC_REG (reg);}
     else if (fp_reg == reg)		{fp_reg = REG_NONE; DEALLOC_REG (reg);}
     else if (mark_sp_reg == reg)	{mark_sp_reg = REG_NONE; DEALLOC_REG (reg);}
+    else if (pi_reg == reg)		{pi_reg = REG_NONE; DEALLOC_REG (reg);}
   }
+
+  if (reg == pi_reg)		        {pi_reg = REG_NONE; DEALLOC_REG (reg);}
 
 #ifdef REGISTER_DEBUG
   if ((1 << reg) & alloc_regs) Pike_fatal ("Clobbering allocated register.\n");
@@ -397,21 +400,30 @@ static enum ia32_reg alloc_reg (int avoid_regs)
       ALLOC_REG (REG);							\
   }
 
+DEF_LOAD_REG (pi_reg, {
+    MOV_ABSADDR_TO_REG (Pike_interpreter_pointer, pi_reg);
+  });
 DEF_LOAD_REG (sp_reg, {
-    MOV_ABSADDR_TO_REG (Pike_interpreter.stack_pointer, sp_reg);
+    load_pi_reg(avoid_regs|(1 << sp_reg));
+    MOV_RELADDR_TO_REG (OFFSETOF(Pike_interpreter_struct, stack_pointer),
+			pi_reg, sp_reg);
   });
 DEF_LOAD_REG (fp_reg, {
-    MOV_ABSADDR_TO_REG (Pike_interpreter.frame_pointer, fp_reg);
+    load_pi_reg(avoid_regs|(1 << fp_reg));
+    MOV_RELADDR_TO_REG (OFFSETOF(Pike_interpreter_struct, frame_pointer),
+			pi_reg, fp_reg);
   });
 DEF_LOAD_REG (mark_sp_reg, {
-    MOV_ABSADDR_TO_REG (Pike_interpreter.mark_stack_pointer, mark_sp_reg);
+    load_pi_reg(avoid_regs|(1 << mark_sp_reg));
+    MOV_RELADDR_TO_REG (OFFSETOF(Pike_interpreter_struct, mark_stack_pointer),
+			pi_reg, mark_sp_reg);
   });
 
 static void ia32_call_c_function(void *addr)
 {
   CALL_RELATIVE(addr);
   next_reg = REG_EAX;
-  sp_reg = fp_reg = mark_sp_reg = REG_NONE;
+  pi_reg = sp_reg = fp_reg = mark_sp_reg = REG_NONE;
   CLEAR_REGS();
 }
 
@@ -423,13 +435,16 @@ static void ia32_push_constant(struct svalue *tmp)
   if(tmp->type <= MAX_REF_TYPE)
     ADD_VAL_TO_ABSADDR (1, tmp->u.refs);
 
-  load_sp_reg (0);
+  load_pi_reg (0);
+  load_sp_reg (1<<pi_reg);
 
   for(e=0;e<(int)sizeof(*tmp)/4;e++)
     MOV_VAL_TO_RELADDR (((INT32 *)tmp)[e], e*4, sp_reg);
 
   ADD_VAL_TO_REG (sizeof(*tmp), sp_reg);
-  MOV_REG_TO_ABSADDR (sp_reg, Pike_interpreter.stack_pointer);
+  MOV_REG_TO_RELADDR (sp_reg,
+		      OFFSETOF(Pike_interpreter_struct, stack_pointer),
+		      pi_reg);
 }
 
 /* The given register holds the address of the svalue we wish to push. */
@@ -475,7 +490,10 @@ static void ia32_push_svalue (enum ia32_reg svalue_ptr_reg)
 
   /* bork: */
   ADD_VAL_TO_REG (sizeof(struct svalue), sp_reg);
-  MOV_REG_TO_ABSADDR (sp_reg, Pike_interpreter.stack_pointer);
+  load_pi_reg(1 << sp_reg);
+  MOV_REG_TO_RELADDR (sp_reg,
+		      OFFSETOF(Pike_interpreter_struct, stack_pointer),
+		      pi_reg);
 }
 
 /* A register holding &Pike_fp->locals[arg] is returned. */
@@ -504,7 +522,8 @@ static void ia32_local_lvalue(INT32 arg)
   tmp[0].type=T_SVALUE_PTR;
   tmp[1].type=T_VOID;
 
-  load_sp_reg (1 << addr_reg);
+  load_pi_reg ((1 << addr_reg)|(1 << sp_reg));
+  load_sp_reg ((1 << addr_reg)|(1 << pi_reg));
 
   for(e=0;e<sizeof(tmp)/4;e++)
   {
@@ -518,7 +537,9 @@ static void ia32_local_lvalue(INT32 arg)
   DEALLOC_REG (addr_reg);
 
   ADD_VAL_TO_REG (sizeof(struct svalue)*2, sp_reg);
-  MOV_REG_TO_ABSADDR (sp_reg, Pike_interpreter.stack_pointer);
+  MOV_REG_TO_RELADDR (sp_reg,
+		      OFFSETOF(Pike_interpreter_struct, stack_pointer),
+		      pi_reg);
 }
 
 static void ia32_push_global (INT32 arg)
@@ -543,19 +564,26 @@ static void ia32_push_global (INT32 arg)
   /* Could do an add directly to memory here, but this isn't much
    * slower and it's not unlikely that sp_reg will be used later
    * on. */
-  load_sp_reg (0);
+  load_pi_reg (0);
+  load_sp_reg (1 << pi_reg);
   ADD_VAL_TO_REG (sizeof (struct svalue), sp_reg);
-  MOV_REG_TO_ABSADDR (sp_reg, Pike_interpreter.stack_pointer);
+  MOV_REG_TO_RELADDR (sp_reg,
+		      OFFSETOF(Pike_interpreter_struct, stack_pointer),
+		      pi_reg);
 }
 
 static void ia32_mark(void)
 {
-  load_mark_sp_reg (1 << sp_reg);
-  load_sp_reg (1 << mark_sp_reg);
+  load_mark_sp_reg ((1 << sp_reg)|(1 << pi_reg));
+  load_sp_reg ((1 << mark_sp_reg)|(1 << pi_reg));
 
   MOV_REG_TO_RELADDR (sp_reg, 0, mark_sp_reg);
   ADD_VAL_TO_REG (sizeof (struct svalue *), mark_sp_reg);
-  MOV_REG_TO_ABSADDR (mark_sp_reg, Pike_interpreter.mark_stack_pointer);
+
+  load_pi_reg (0);
+  MOV_REG_TO_RELADDR (mark_sp_reg,
+		      OFFSETOF(Pike_interpreter_struct, mark_stack_pointer),
+		      pi_reg);
 }
 
 static void ia32_push_int(INT32 x)
@@ -581,7 +609,7 @@ static void ia32_push_string (INT32 x, int subtype)
   MOV_RELADDR_TO_REG (x * sizeof (struct pike_string *), tmp_reg, tmp_reg);
   /* tmp_reg is now Pike_fp->context->prog->strings[x] */
 
-  load_sp_reg (1 << tmp_reg);
+  load_sp_reg ((1 << tmp_reg)|(1 << pi_reg));
 
   for (e = 0; e < sizeof (tmp) / 4; e++) {
     if (((INT32 *) &tmp) + e == (INT32 *) &tmp.u.string)
@@ -593,8 +621,11 @@ static void ia32_push_string (INT32 x, int subtype)
   ADD_VAL_TO_RELADDR (1, 0, tmp_reg);
   DEALLOC_REG (tmp_reg);
 
+  load_pi_reg (0);
   ADD_VAL_TO_REG (sizeof (struct svalue), sp_reg);
-  MOV_REG_TO_ABSADDR (sp_reg, Pike_interpreter.stack_pointer);
+  MOV_REG_TO_RELADDR (sp_reg,
+		      OFFSETOF(Pike_interpreter_struct, stack_pointer),
+		      pi_reg);
 }
 
 void ia32_update_pc(void)

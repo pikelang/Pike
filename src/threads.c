@@ -540,8 +540,13 @@ PMOD_EXPORT INLINE int pike_timedwait_interpreter (COND_T *cond,
 
 PMOD_EXPORT void pike_init_thread_state (struct thread_state *ts)
 {
+  /* NB: Assumes that there's a temporary Pike_interpreter_struct
+   *     in Pike_interpreter_pointer, which we copy, and replace
+   *     with ourselves.
+   */
   Pike_interpreter.thread_state = ts;
   ts->state = Pike_interpreter;
+  Pike_interpreter_pointer = &ts->state;
   ts->id = th_self();
   ts->status = THREAD_RUNNING;
   ts->swapped = 0;
@@ -572,8 +577,6 @@ PMOD_EXPORT void pike_swap_out_thread (struct thread_state *ts
 		       ts
 		       COMMA_DLOC_ARGS_OPT));
 
-  ts->state = Pike_interpreter;
-
 #ifdef PROFILING
   if (!ts->swapped) {
     cpu_time_t now = get_cpu_time();
@@ -588,14 +591,7 @@ PMOD_EXPORT void pike_swap_out_thread (struct thread_state *ts
 
   ts->swapped=1;
 
-#ifdef PIKE_DEBUG
-  Pike_sp = (struct svalue *) (ptrdiff_t) -1;
-  Pike_fp = (struct pike_frame *) (ptrdiff_t) -1;
-#endif
-
-  /* Do this one always to catch nested THREADS_ALLOW(), etc. */
-  Pike_interpreter.thread_state =
-    (struct thread_state *) (ptrdiff_t) -1;
+  Pike_interpreter_pointer = NULL;
 }
 
 PMOD_EXPORT void pike_swap_in_thread (struct thread_state *ts
@@ -605,7 +601,7 @@ PMOD_EXPORT void pike_swap_in_thread (struct thread_state *ts
 		       ts COMMA_DLOC_ARGS_OPT));
 
 #ifdef PIKE_DEBUG
-  if (Pike_sp != (struct svalue *) (ptrdiff_t) -1)
+  if (Pike_interpreter_pointer)
     pike_fatal_dloc ("Thread %"PRINTSIZET"x swapped in "
 		     "over existing thread %"PRINTSIZET"x.\n",
 		     (size_t) ts->id,
@@ -633,7 +629,7 @@ PMOD_EXPORT void pike_swap_in_thread (struct thread_state *ts
 #endif
 
   ts->swapped=0;
-  Pike_interpreter=ts->state;
+  Pike_interpreter_pointer = &ts->state;
 #ifdef PIKE_DEBUG
   thread_swaps++;
 #endif
@@ -1183,8 +1179,10 @@ PMOD_EXPORT void call_with_interpreter(void (*func)(void *ctx), void *ctx)
   } else {
     /* Not a pike thread.  Create a temporary thread_id... */
     struct object *thread_obj;
+    struct Pike_interpreter_struct new_interpreter;
 
     mt_lock_interpreter();
+    Pike_interpreter_pointer = &new_interpreter;
     init_interpreter();
     Pike_interpreter.stack_top=((char *)&state)+ (thread_stack_size-16384) * STACK_DIRECTION;
     Pike_interpreter.recoveries = NULL;
@@ -1725,7 +1723,7 @@ TH_RETURN_TYPE new_thread_func(void *data)
 #endif
 
   arg.thread_state->swapped = 0;
-  Pike_interpreter = arg.thread_state->state;
+  Pike_interpreter_pointer = &arg.thread_state->state;
 
 #ifdef PROFILING
   Pike_interpreter.stack_bottom=((char *)&data);
@@ -1811,6 +1809,7 @@ TH_RETURN_TYPE new_thread_func(void *data)
   thread_table_delete(thread_state);
   EXIT_THREAD_STATE(thread_state);
   Pike_interpreter.thread_state = thread_state = NULL;
+  Pike_interpreter_pointer = NULL;
 
   /* Free ourselves.
    * NB: This really ought to run in some other thread...
@@ -2621,7 +2620,7 @@ void exit_cond_obj(struct object *o)
  */
 void f_thread_backtrace(INT32 args)
 {
-  void low_backtrace(struct Pike_interpreter *);
+  void low_backtrace(struct Pike_interpreter_struct *);
   struct thread_state *foo = THIS_THREAD;
 
   pop_n_elems(args);
@@ -2813,7 +2812,7 @@ static void f_thread_id_kill(INT32 args)
 
 void init_thread_obj(struct object *o)
 {
-  MEMSET(&THIS_THREAD->state, 0, sizeof(struct Pike_interpreter));
+  MEMSET(&THIS_THREAD->state, 0, sizeof(struct Pike_interpreter_struct));
   THIS_THREAD->thread_obj = Pike_fp->current_object;
   THIS_THREAD->swapped = 0;
   THIS_THREAD->status=THREAD_NOT_STARTED;
@@ -3188,6 +3187,8 @@ void low_th_init(void)
 
 static struct object *backend_thread_obj = NULL;
 
+static struct Pike_interpreter_struct *original_interpreter = NULL;
+
 void th_init(void)
 {
   ptrdiff_t mutex_key_offset;
@@ -3334,6 +3335,7 @@ void th_init(void)
   add_integer_constant("THREAD_RUNNING", THREAD_RUNNING, 0);
   add_integer_constant("THREAD_EXITED", THREAD_EXITED, 0);
 
+  original_interpreter = Pike_interpreter_pointer;
   backend_thread_obj = fast_clone_object(thread_id_prog);
   INIT_THREAD_STATE((struct thread_state *)(backend_thread_obj->storage +
 					    thread_storage_offset));
@@ -3386,9 +3388,15 @@ void th_cleanup(void)
 
   if(backend_thread_obj)
   {
+    /* Switch back to the original interpreter struct. */
+    *original_interpreter = Pike_interpreter;
+
     destruct(backend_thread_obj);
     free_object(backend_thread_obj);
     backend_thread_obj = NULL;
+
+    Pike_interpreter_pointer = original_interpreter;
+
     destruct_objects_to_destruct_cb();
   }
 
