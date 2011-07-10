@@ -272,6 +272,7 @@ static inline size_t hashmem_ia32_crc32( const void *s, size_t len, size_t nbyte
     }
     else
     {
+        const unsigned int *e = p+(nbytes>>2);
 #ifdef PIKE_DEBUG
         /*
            This code makes assumputions that is not true if nbytes & 3 is true.
@@ -290,7 +291,6 @@ static inline size_t hashmem_ia32_crc32( const void *s, size_t len, size_t nbyte
         if( nbytes < 8 )
             Pike_fatal("do_hash_ia32_crc32: nbytes is less than 8.\n");
 #endif
-        const unsigned int *e = p+(nbytes>>2);
         while( p<e )
             CRC32SI(h,p++);
 
