@@ -1,4 +1,4 @@
-/gmp-*.tar.gz
-/gmp-*.tar.bz2
-/nettle-*.tar.gz
-/libffi-*.tar.gz
+# Ignore both the dist archives, and the extracted archives.
+/gmp-*
+/libffi-*
+/nettle-*
