@@ -1,3 +1,4 @@
 /gmp-*.tar.gz
+/gmp-*.tar.bz2
 /nettle-*.tar.gz
 /libffi-*.tar.gz

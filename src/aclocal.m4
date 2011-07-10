@@ -1127,10 +1127,23 @@ define(PIKE_LOW_ENABLE_BUNDLE, [
 	break
       fi
     done
-    if test "$f" = "no"; then      
-      # Bundle not available.
-      echo "Bundle [$1] not available in $pike_bundle_dir." >&2
-      [$3]
+    if test "$f" = "no"; then
+      # Try bzip2-ed tars as well.
+      for f in `cd "$pike_bundle_dir" && echo [$1]*.tar.bz2` no; do
+        if test -f "$pike_bundle_dir/$f"; then
+          # Notify toplevel that we want the bundle.
+	  # Note that invalidation of the cache variables can't be done
+	  # until the bundle actually has been built.
+	  PIKE_MSG_NOTE([Enabling bundle $1 from $pike_bundle_dir/$f.])
+          echo "[$2]" >"[$1].bundle"
+	  break
+        fi
+      done
+      if test "$f" = "no"; then
+        # Bundle not available.
+        echo "Bundle [$1] not available in $pike_bundle_dir." >&2
+        [$3]
+      fi
     fi
   fi
 ])

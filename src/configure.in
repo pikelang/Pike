@@ -8637,7 +8637,7 @@ EOF
     for bundle in $bundles; do
       AC_MSG_CHECKING(for bundle $bundle)
       dist_file=no
-      for dist in no `cd "$pike_bundle_dir" && echo ${bundle}*.tar.gz`; do
+      for dist in no `cd "$pike_bundle_dir" && echo ${bundle}*.tar.gz ${bundle}*.tar.bz2`; do
         if test -f "$pike_bundle_dir/$dist"; then
 	  dist_file="$pike_bundle_dir/$dist"
 	fi
@@ -8668,16 +8668,25 @@ $bundle_info])
 
         # Bundle source is expected to be extracted into a directory
 	# of the same name as the bundle.
-        bundle_source_dir=`echo "$dist_file"|sed -e 's/.tar.gz$//'`
+        bundle_source_dir=`echo "$dist_file"|sed -e 's/.tar.gz$//' -e 's/.tar.bz2$//'`
 
         if test -f "$bundle_source_dir/configure"; then
 	  # Bundle source already extracted.
 	  :
 	else
 	  echo "Extracting bundle $dist_file..."
-	  ( cd "$pike_bundle_dir" && \
-	    gzip -cd "$dist_file" | tar xf -
-	  )
+          case "$dist_file" in
+            *.tar.bz2)
+	      ( cd "$pike_bundle_dir" && \
+	        bzip2 -cd "$dist_file" | tar xf -
+	      )
+              ;;
+            *)
+	      ( cd "$pike_bundle_dir" && \
+	        gzip -cd "$dist_file" | tar xf -
+	      )
+              ;;
+          esac
 	fi
 	patch_dir=`echo "${bundle_source_dir}" | sed -e "s@^${pike_bundle_dir}@${pike_bundle_dir}/patches@"`
 	if test -d "${patch_dir}/."; then
