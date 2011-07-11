@@ -185,6 +185,16 @@ void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order)
   free(tmp);
 }
 
+#if SIZEOF_CHAR_P == 4
+#define DIVIDE_BY_2_CHAR_P(X)	(X >>= 3)
+#else /* sizeof(char *) != 4 */
+#if SIZEOF_CHAR_P == 8
+#define DIVIDE_BY_2_CHAR_P(X)	(X >>= 4)
+#else /* sizeof(char *) != 8 */
+#define DIVIDE_BY_2_CHAR_P(X)	(X /= 2*sizeof(size_t))
+#endif /* sizeof(char *) == 8 */
+#endif /* sizeof(char *) == 4 */
+
 /* MLEN is the length of the longest prefix of A to use for hashing.
  * (If A is longer then additionally some bytes at the end are
  * included.) */
@@ -384,16 +394,6 @@ static inline size_t hashmem_ia32_crc32( const void *s, size_t len, size_t nbyte
 #endif
     return h;
 }
-
-#if SIZEOF_CHAR_P == 4
-#define DIVIDE_BY_2_CHAR_P(X)	(X >>= 3)
-#else /* sizeof(char *) != 4 */
-#if SIZEOF_CHAR_P == 8
-#define DIVIDE_BY_2_CHAR_P(X)	(X >>= 4)
-#else /* sizeof(char *) != 8 */
-#define DIVIDE_BY_2_CHAR_P(X)	(X /= 2*sizeof(size_t))
-#endif /* sizeof(char *) == 8 */
-#endif /* sizeof(char *) == 4 */
 
 #ifdef __i386__
 __attribute__((fastcall))
