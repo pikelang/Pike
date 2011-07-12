@@ -28,7 +28,7 @@ if test x$ac_cv_header_gssapi_h = xyes -o \
   PIKE_SEARCH_LIBS(gss_wrap, [
     gss_wrap (NULL, GSS_C_NO_CONTEXT, 0, GSS_C_QOP_DEFAULT,
 	      GSS_C_NO_BUFFER, NULL, GSS_C_NO_BUFFER);
-  ], gssapi gssapiv2 gssapi_krb5 gssapi32 gssglue, [
+  ], gssapi gssapiv2 gssapi_krb5 gssapi32 gssglue gss, [
     AC_DEFINE(HAVE_GSSAPI,, [Defined if GSSAPI works.])
     PIKE_FEATURE(GSSAPI, [yes ($pike_cv_search_gss_wrap)])
   ])
