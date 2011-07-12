@@ -21,9 +21,9 @@ if test x$with_krb5 = xyes ; then
 
   PIKE_FEATURE(Kerberos,[no (krb5.h not found)])
 
-  AC_CHECK_HEADERS(krb5.h)
+  AC_CHECK_HEADERS(krb5.h kerberosv5/krb5.h)
 
-  if test "$ac_cv_header_krb5_h" = "yes"; then
+  if test "$ac_cv_header_krb5_h" = "yes" -o "$ac_cv_header_kerberosv5_krb5_h" = "yes"; then
     dnl Checks for libraries.
 
     PIKE_FEATURE(Kerberos,[no (krb5 libraries not found)])

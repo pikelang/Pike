@@ -29,6 +29,10 @@ DECLARATIONS
 
 #ifdef HAVE_KRB5_H
 #include <krb5.h>
+#else
+#ifdef HAVE_KERBEROSV5_KRB5_H
+#include <kerberosv5/krb5.h>
+#endif
 #endif
 
 PIKECLASS Context
