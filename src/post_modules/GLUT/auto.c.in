@@ -36,7 +36,7 @@ static void pre_init()
 static void f_glutInit(INT32 args)
 {
   int argc = 1;
-  extern char ** ARGV;
+  char * ARGV[] = { "glut" };
   glutInit(&argc,ARGV);
   pop_n_elems(args);
 }
