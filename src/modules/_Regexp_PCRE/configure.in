@@ -11,8 +11,8 @@ PIKE_FEATURE_WITHOUT(Regexp.PCRE)
 
 if test x$with_libpcre = xyes ; then
   PIKE_FEATURE_NODEP(Regexp.PCRE)
-  AC_CHECK_HEADERS(pcre.h)
-  if test $ac_cv_header_pcre_h = yes ; then
+  AC_CHECK_HEADERS(pcre.h pcre/pcre.h)
+  if test $ac_cv_header_pcre_h = yes -o $ac_cv_header_pcre_pcre_h = yes; then
     AC_CHECK_LIB(pcre, pcre_compile, [
       AC_DEFINE(HAVE_LIBPCRE) 
       LIBS="${LIBS-} -lpcre"
