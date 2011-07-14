@@ -61,6 +61,7 @@ compile1: options
 	@echo "Modified CFLAGS:`echo ' $(CFLAGS) ' | sed -e 's/ -g[^ ]*//g' -e 's/ -W[^ ]*//g'` `echo ' $(CFLAGS) ' | sed -ne 's/.*\( -gcc-version[^ ]*\).*/\1/p'`"
 	@$(MAKE) OBJS="`cat files_to_compile`" \
 	         CFLAGS="`echo ' $(CFLAGS) ' | sed -e 's/ -g[^ ]*/ /g' -e 's/ -W[^ ]*/ /g'` `echo ' $(CFLAGS) ' | sed -ne 's/.*\( -gcc-version[^ ]*\).*/\1/p'`" \
+	         MAKE_FLAGS='-e $(MAKE_FLAGS)' \
 	         all
 
 compile2: compile1
