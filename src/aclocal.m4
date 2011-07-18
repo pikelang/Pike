@@ -812,6 +812,7 @@ pushdef([AC_OUTPUT],
     make_variables_in=${uplevels}make_variables.in
     make_variables_in_file=$make_variables_in
     AC_MSG_RESULT(${uplevels}.)
+    PIKE_SRC_DIR="`cd $srcdir/${uplevels} && pwd`"
   fi
 
   AC_SUBST(make_variables_in)
@@ -861,6 +862,17 @@ pushdef([AC_OUTPUT],
 
   AC_SUBST_FILE(make_variables)
   make_variables=make_variables
+
+  dnl Assert that there are configure-scripts in the subdirectories.
+  if test "x$subdirs" != x; then
+    for subdir in $subdirs; do
+      if test -f "$srcdir/$subdir/configure"; then :; else
+	echo "$as_me: no configurescript in $srcdir/$subdir/" >&AC_FD_MSG
+	echo "$as_me: running ${PIKE_SRC_DIR}/run_autoconfig $srcdir/$subdir" >&AC_FD_MSG
+	"${PIKE_SRC_DIR}/run_autoconfig" "$srcdir/${subdir}" >&AC_FD_MSG 2>&AC_FD_MSG
+      fi
+    done
+  fi
 
   # Autoconf 2.50 and later stupidity...
   if_autoconf(2,50,[
