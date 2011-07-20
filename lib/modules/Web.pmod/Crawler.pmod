@@ -801,9 +801,29 @@ class Crawler
       hostname_cache=_hostname_cache;
       set_callbacks(request_ok, request_fail);
 
-      https= (uri->scheme=="https")? 1 : 0;
+      https = (uri->scheme=="https");
+
+      string path_query = uri->get_path_query();
+      if ((String.width(path_query) > 8) ||
+	  catch { path_query != utf8_to_string(path_query); }) {
+	// Wide or not valid UTF-8.
+
+	// RFC 3986 2.5:
+	// When a new URI scheme defines a component that represents
+	// textual data consisting of characters from the Universal
+	// Character Set [UCS], the data should first be encoded as
+	// octets according to the UTF-8 character encoding [STD63];
+	// then only those octets that do not correspond to characters
+	// in the unreserved set should be percent-encoded.
+	// For example, the character A would be represented as "A",
+	// the character LATIN CAPITAL LETTER A WITH GRAVE would be
+	// represented as "%C3%80", and the character KATAKANA LETTER
+	// A would be represented as "%E3%82%A2".
+	path_query = string_to_utf8(path_query);
+      }
+
       async_request(uri->host, uri->port,
-		    sprintf("GET %s HTTP/1.0", uri->get_path_query()),
+		    sprintf("GET %s HTTP/1.0", path_query),
 		    headers );
     }
   }
