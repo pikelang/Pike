@@ -532,12 +532,22 @@ struct pike_string_hdr {
 /* Use the BLOCK_ALLOC() stuff for short strings */
 
 #undef INIT_BLOCK
+#ifdef ATOMIC_SVALUE
+#define INIT_BLOCK(NEW_STR) do {				\
+    (NEW_STR)->ref_type = T_STRING;				\
+    (NEW_STR)->refs = 0;					\
+    add_ref((NEW_STR));						\
+    (NEW_STR)->flags =						\
+      STRING_NOT_HASHED|STRING_NOT_SHARED|STRING_IS_SHORT;	\
+  } while(0)
+#else /* !ATOMIC_SVALUE */
 #define INIT_BLOCK(NEW_STR) do {				\
     (NEW_STR)->refs = 0;					\
     add_ref((NEW_STR));						\
     (NEW_STR)->flags =						\
       STRING_NOT_HASHED|STRING_NOT_SHARED|STRING_IS_SHORT;	\
   } while(0)
+#endif
 
 #define SHORT_STRING_BLOCK	256
 #define SHORT_STRING_THRESHOLD	15 /* % 4 === -1 */
@@ -603,6 +613,9 @@ PMOD_EXPORT struct pike_string *debug_begin_shared_string(size_t len)
     t=(struct pike_string *)xalloc(len + 1 + sizeof(struct pike_string_hdr));
     t->flags = STRING_NOT_HASHED | STRING_NOT_SHARED;
   }
+#ifdef ATOMIC_SVALUE
+  t->ref_type = T_STRING;
+#endif
   t->refs = 0;
   add_ref(t);	/* For DMALLOC */
   t->str[len]=0;
@@ -724,6 +737,9 @@ PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(size_t len, int s
 				   sizeof(struct pike_string_hdr));
     t->flags = STRING_NOT_HASHED|STRING_NOT_SHARED;
   }
+#ifdef ATOMIC_SVALUE
+  t->ref_type = T_STRING;
+#endif
   t->refs = 0;
   add_ref(t);	/* For DMALLOC */
   t->len=len;

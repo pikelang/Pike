@@ -980,32 +980,67 @@ static INLINE void assign_svalue(struct svalue *to, const struct svalue *from)
  * but it would cost a couple of cycles in every lock/unlock
  * operation instead.
  */
-#define PIKE_MEMORY_OBJECT_MEMBERS \
-  INT32 refs \
+#ifdef ATOMIC_SVALUE
+/* Atomic svalues: Store the type in the reference types,
+ * instead of on the stack. This allows for changing an
+ * svalue in a single atomic operation.
+ */
+#define PIKE_MEMORY_OBJECT_MEMBERS	\
+  INT32 refs;				\
+  INT32 ref_type			\
   DO_IF_SECURITY(; struct object *prot) \
   IF_LOCAL_MUTEX(; PIKE_MUTEX_T mutex)
 
 #ifdef PIKE_SECURITY
 #ifdef USE_LOCAL_MUTEX
-#define PIKE_CONSTANT_MEMOBJ_INIT(refs) refs, 0, PTHREAD_MUTEX_INITIALIZER
+#define PIKE_CONSTANT_MEMOBJ_INIT(refs, type) refs, type, 0, PTHREAD_MUTEX_INITIALIZER
 #else
-#define PIKE_CONSTANT_MEMOBJ_INIT(refs) refs, 0
+#define PIKE_CONSTANT_MEMOBJ_INIT(refs, type) refs, type, 0
 #endif
 #else
 #ifdef USE_LOCAL_MUTEX
-#define PIKE_CONSTANT_MEMOBJ_INIT(refs) refs, PTHREAD_MUTEX_INITIALIZER
+#define PIKE_CONSTANT_MEMOBJ_INIT(refs, type) refs, type, PTHREAD_MUTEX_INITIALIZER
 #else
-#define PIKE_CONSTANT_MEMOBJ_INIT(refs) refs
+#define PIKE_CONSTANT_MEMOBJ_INIT(refs, type) refs, type
 #endif
 #endif
 
-#define INIT_PIKE_MEMOBJ(X) do {			\
+#define INIT_PIKE_MEMOBJ(X, TYPE) do {			\
+  struct ref_dummy *v_=(struct ref_dummy *)(X);		\
+  v_->ref_type = (TYPE);				\
+  v_->refs=0;						\
+  add_ref(v_); /* For DMALLOC... */			\
+  DO_IF_SECURITY( INITIALIZE_PROT(v_) );		\
+  IF_LOCAL_MUTEX(mt_init_recursive(&(v_->mutex)));	\
+}while(0)
+#else /* !ATOMIC_SVALUE */
+#define PIKE_MEMORY_OBJECT_MEMBERS	\
+  INT32 refs				\
+  DO_IF_SECURITY(; struct object *prot) \
+  IF_LOCAL_MUTEX(; PIKE_MUTEX_T mutex)
+
+#ifdef PIKE_SECURITY
+#ifdef USE_LOCAL_MUTEX
+#define PIKE_CONSTANT_MEMOBJ_INIT(refs, type) refs, 0, PTHREAD_MUTEX_INITIALIZER
+#else
+#define PIKE_CONSTANT_MEMOBJ_INIT(refs, type) refs, 0
+#endif
+#else
+#ifdef USE_LOCAL_MUTEX
+#define PIKE_CONSTANT_MEMOBJ_INIT(refs, type) refs, PTHREAD_MUTEX_INITIALIZER
+#else
+#define PIKE_CONSTANT_MEMOBJ_INIT(refs, type) refs
+#endif
+#endif
+
+#define INIT_PIKE_MEMOBJ(X, TYPE) do {			\
   struct ref_dummy *v_=(struct ref_dummy *)(X);		\
   v_->refs=0;						\
   add_ref(v_); /* For DMALLOC... */			\
   DO_IF_SECURITY( INITIALIZE_PROT(v_) );		\
   IF_LOCAL_MUTEX(mt_init_recursive(&(v_->mutex)));	\
 }while(0)
+#endif /* ATOMIC_SVALUE */
 
 #define EXIT_PIKE_MEMOBJ(X) do {		\
   struct ref_dummy *v_=(struct ref_dummy *)(X);		\

@@ -18,6 +18,16 @@
 #define STRUCT_PIKE_STRING_DECLARED
 #endif
 
+#ifdef ATOMIC_SVALUE
+#define PIKE_STRING_CONTENTS						\
+  INT32 refs;								\
+  INT32 ref_type;							\
+  INT16 flags;								\
+  INT16 size_shift; /* 14 bit waste, but good for alignment... */	\
+  ptrdiff_t len; /* Not counting terminating NUL. */			\
+  size_t hval;								\
+  struct pike_string *next 
+#else /* !ATOMIC_SVALUE */
 #define PIKE_STRING_CONTENTS						\
   INT32 refs;								\
   INT16 flags;								\
@@ -25,6 +35,7 @@
   ptrdiff_t len; /* Not counting terminating NUL. */			\
   size_t hval;								\
   struct pike_string *next 
+#endif
 
 struct pike_string
 {

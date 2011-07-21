@@ -30,7 +30,7 @@
 /** The empty array. */
 PMOD_EXPORT struct array empty_array=
 {
-  PIKE_CONSTANT_MEMOBJ_INIT(1), /* Never free */
+  PIKE_CONSTANT_MEMOBJ_INIT(1, PIKE_T_ARRAY), /* Never free */
   &weak_empty_array,     /* Next */
   0,			 /* previous */
   0,                     /* Size = 0 */
@@ -44,7 +44,7 @@ PMOD_EXPORT struct array empty_array=
 /** The empty weak array. */
 PMOD_EXPORT struct array weak_empty_array=
 {
-  PIKE_CONSTANT_MEMOBJ_INIT(1),
+  PIKE_CONSTANT_MEMOBJ_INIT(1, PIKE_T_ARRAY),
   0, &empty_array, 0, 0, 0, ARRAY_WEAK_FLAG,
   weak_empty_array.real_item,
   {SVALUE_INIT_FREE},
@@ -112,7 +112,7 @@ PMOD_EXPORT struct array *real_allocate_array(ptrdiff_t size,
   v->malloced_size = DO_NOT_WARN((INT32)(size + extra_space));
   v->item=v->real_item;
   v->size = DO_NOT_WARN((INT32)size);
-  INIT_PIKE_MEMOBJ(v);
+  INIT_PIKE_MEMOBJ(v, T_ARRAY);
   DOUBLELINK (first_array, v);
   
   {

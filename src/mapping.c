@@ -149,16 +149,16 @@ static void check_mapping_type_fields(const struct mapping *m)
 #endif
 
 static struct mapping_data empty_data =
-  { PIKE_CONSTANT_MEMOBJ_INIT(1), 1, 0,0,0,0,0,0, 0,
+  { PIKE_CONSTANT_MEMOBJ_INIT(1, T_MAPPING_DATA), 1, 0,0,0,0,0,0, 0,
     IF_ELSE_KEYPAIR_LOOP((struct keypair *)&empty_data.hash, 0), {0}};
 static struct mapping_data weak_ind_empty_data =
-  { PIKE_CONSTANT_MEMOBJ_INIT(1), 1, 0,0,0,0,0,0, MAPPING_WEAK_INDICES,
+  { PIKE_CONSTANT_MEMOBJ_INIT(1, T_MAPPING_DATA), 1, 0,0,0,0,0,0, MAPPING_WEAK_INDICES,
     IF_ELSE_KEYPAIR_LOOP((struct keypair *)&weak_ind_empty_data.hash, 0), {0}};
 static struct mapping_data weak_val_empty_data =
-  { PIKE_CONSTANT_MEMOBJ_INIT(1), 1, 0,0,0,0,0,0, MAPPING_WEAK_VALUES,
+  { PIKE_CONSTANT_MEMOBJ_INIT(1, T_MAPPING_DATA), 1, 0,0,0,0,0,0, MAPPING_WEAK_VALUES,
     IF_ELSE_KEYPAIR_LOOP((struct keypair *)&weak_val_empty_data.hash, 0), {0}};
 static struct mapping_data weak_both_empty_data =
-  { PIKE_CONSTANT_MEMOBJ_INIT(1), 1, 0,0,0,0,0,0, MAPPING_WEAK,
+  { PIKE_CONSTANT_MEMOBJ_INIT(1, T_MAPPING_DATA), 1, 0,0,0,0,0,0, MAPPING_WEAK,
     IF_ELSE_KEYPAIR_LOOP((struct keypair *)&weak_both_empty_data.hash, 0), {0}};
 
 /** This function allocates the hash table and svalue space for a mapping
@@ -209,6 +209,9 @@ static void init_mapping(struct mapping *m,
     md->flags = flags;
     md->size = 0;
     md->refs=0;
+#ifdef ATOMIC_SVALUE
+    md->ref_type = T_MAPPING_DATA;
+#endif
     md->valrefs=0;
     md->hardlinks=0;
     md->num_keypairs=size;
@@ -246,6 +249,9 @@ PMOD_EXPORT struct mapping *debug_allocate_mapping(int size)
   INITIALIZE_PROT(m);
   init_mapping(m,size,0);
 
+#ifdef ATOMIC_SVALUE
+  m->ref_type = T_MAPPING;
+#endif
   m->refs = 0;
   add_ref(m);	/* For DMALLOC... */
 

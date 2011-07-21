@@ -151,7 +151,7 @@ PMOD_EXPORT struct object *low_clone(struct program *p)
 
   DOUBLELINK(first_object,o);
 
-  INIT_PIKE_MEMOBJ(o);
+  INIT_PIKE_MEMOBJ(o, T_OBJECT);
 
 #ifdef PIKE_DEBUG
   o->program_id=p->id;

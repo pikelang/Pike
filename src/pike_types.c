@@ -554,6 +554,9 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
       
   debug_malloc_pass(t = alloc_pike_type());
 
+#ifdef ATOMIC_SVALUE
+  t->ref_type = PIKE_T_TYPE;
+#endif
   t->refs = 0;
   add_ref(t);	/* For DMALLOC... */
   t->type = type;

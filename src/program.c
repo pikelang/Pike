@@ -2572,7 +2572,7 @@ struct program *low_allocate_program(void)
 
   GC_ALLOC(p);
   p->id=++current_program_id;
-  INIT_PIKE_MEMOBJ(p);
+  INIT_PIKE_MEMOBJ(p, T_PROGRAM);
 
   DOUBLELINK(first_program, p);
   GETTIMEOFDAY(& p->timestamp);

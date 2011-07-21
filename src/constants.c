@@ -100,7 +100,7 @@ PMOD_EXPORT struct callable *low_make_callable(c_fun fun,
 					       docode_fun docode)
 {
   struct callable *f=alloc_callable();
-  INIT_PIKE_MEMOBJ(f);
+  INIT_PIKE_MEMOBJ(f, T_STRUCT_CALLABLE);
   f->function=fun;
   f->name=name;
   f->type=type;
