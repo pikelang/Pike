@@ -533,7 +533,8 @@ struct pike_string_hdr {
 
 #undef INIT_BLOCK
 #define INIT_BLOCK(NEW_STR) do {				\
-    (NEW_STR)->refs = 1;					\
+    (NEW_STR)->refs = 0;					\
+    add_ref((NEW_STR));						\
     (NEW_STR)->flags =						\
       STRING_NOT_HASHED|STRING_NOT_SHARED|STRING_IS_SHORT;	\
   } while(0)
@@ -723,7 +724,8 @@ PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(size_t len, int s
 				   sizeof(struct pike_string_hdr));
     t->flags = STRING_NOT_HASHED|STRING_NOT_SHARED;
   }
-  t->refs = 1;
+  t->refs = 0;
+  add_ref(t);	/* For DMALLOC */
   t->len=len;
   t->size_shift=shift;
   DO_IF_DEBUG(t->next = NULL);
