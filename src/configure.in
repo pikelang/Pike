@@ -1569,8 +1569,9 @@ AC_ARG_WITH(mysql, MY_DESCR([--without-mysql],
 			    [disable support for the Mysql database]),
 	    [],[with_mysql=yes])
 AC_ARG_WITH(valgrind, MY_DESCR([--with-valgrind=path],
-	    [Support for running with valgrind. Implies --with-cleanup-on-exit.
-             Specify --without-cleanup-on-exit if you do not want this.]), [
+	    [Support for running with valgrind. Implies --with-cleanup-on-exit.])
+MY_DESCR([],[Specify --without-cleanup-on-exit if you do not want this.]),
+            [
   if test "x$with_valgrind" = "xyes"; then
     AC_PATH_PROG(with_valgrind, valgrind, no)
     if test "x$with_valgrind" = "xno"; then
