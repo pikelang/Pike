@@ -224,7 +224,7 @@ Layer decode_layer(mapping layer, mapping i)
 //!   @member string "image_data"
 //!     Ram image data.
 //!   @member  mapping(string|int:mixed) "resources"
-//!     Additional image data. Se mappping below.
+//!     Additional image data. See mappping below.
 //!   @member array(mapping) "layers"
 //!     An array with the layers of the image. See mapping below.
 //! @endmapping
@@ -246,7 +246,7 @@ Layer decode_layer(mapping layer, mapping i)
 //!       @member int(0..1) "vertical"
 //!         1 if the guide is vertical, 0 if it is horizontal.
 //!     @endmapping
-//!   @member mapping(string:int) "resinof"
+//!   @member mapping(string:int) "resinfo"
 //!     Resolution information
 //!     @mapping
 //!       @member int "hres"
