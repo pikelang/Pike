@@ -448,6 +448,10 @@ static void pike_mysql_reconnect (int reconnect)
 
   MYSQL_ALLOW();
 
+#ifdef HAVE_MYSQL_REAL_CONNECT
+  socket = mysql_real_connect(mysql, host, user, password,
+                              NULL, port, portptr, options);
+#else
 #if defined(HAVE_MYSQL_PORT) || defined(HAVE_MYSQL_UNIX_PORT)
   STUPID_PORT_LOCK();
 #endif /* HAVE_MYSQL_PORT || HAVE_MYSQL_UNIX_PORT */
@@ -465,12 +469,7 @@ static void pike_mysql_reconnect (int reconnect)
   }
 #endif /* HAVE_MYSQL_UNIX_PORT */
 
-#ifdef HAVE_MYSQL_REAL_CONNECT
-  socket = mysql_real_connect(mysql, host, user, password,
-                              NULL, port, portptr, options);
-#else
   socket = mysql_connect(mysql, host, user, password);
-#endif /* HAVE_MYSQL_REAL_CONNECT */
 
 #ifdef HAVE_MYSQL_PORT
   if (port) {
@@ -482,9 +481,11 @@ static void pike_mysql_reconnect (int reconnect)
     mysql_unix_port = saved_unix_port;
   }
 #endif /* HAVE_MYSQL_UNIX_PORT */
+
 #if defined(HAVE_MYSQL_PORT) || defined(HAVE_MYSQL_UNIX_PORT)
   STUPID_PORT_UNLOCK();
 #endif /* HAVE_MYSQL_PORT || MAVE_MYSQL_UNIX_PORT*/
+#endif /* HAVE_MYSQL_REAL_CONNECT */
 
   MYSQL_DISALLOW();
 
