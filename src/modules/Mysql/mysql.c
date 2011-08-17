@@ -753,6 +753,39 @@ static void mysql__sprintf(INT32 args)
   Pike_sp[-1].subtype = 1;
 }
 
+/*! @decl int ping()
+ *!
+ *! Check whether the connection is alive.
+ *!
+ *! @returns
+ *!   Returns one of the following:
+ *!   @int
+ *!     @value 0
+ *!       Everything ok.
+ *!     @value 1
+ *!       The connection reconnected automatically.
+ *!     @value -1
+ *!       The server has gone away, and the connection is dead.
+ *!   @endint
+ */
+static void f_ping(INT32 args)
+{
+  MYSQL *mysql = PIKE_MYSQL->mysql;
+  unsigned long orig_id = mysql_thread_id(mysql);
+  int err;
+  MYSQL_ALLOW();
+  err = mysql_ping(mysql);
+  MYSQL_DISALLOW();
+  pop_n_elems(args);
+  if (err) {
+    push_int(-1);
+  } else if (orig_id != mysql_thread_id(mysql)) {
+    push_int(1);
+  } else {
+    push_int(0);
+  }
+}
+
 /*! @decl int affected_rows()
  *!
  *! Returns the number of rows affected by the last query.
@@ -1888,6 +1921,8 @@ PIKE_MODULE_INIT
   /* function(int, void|mapping:string) */
   ADD_FUNCTION("_sprintf",mysql__sprintf,
 	       tFunc(tInt tOr(tVoid,tMapping),tString),0);
+  /* function(void:int) */
+  ADD_FUNCTION("ping", f_ping, tFunc(tVoid,tInt), ID_PUBLIC);
   /* function(void:int) */
   ADD_FUNCTION("affected_rows", f_affected_rows,tFunc(tVoid,tInt), ID_PUBLIC);
   /* function(void:int) */
