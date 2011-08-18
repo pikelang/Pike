@@ -26,6 +26,9 @@
 /* Return type of mysql_fetch_lengths(). Usually unsigned long. */
 #undef FETCH_LENGTHS_TYPE
 
+/* Define if your mysql.h defines MYSQL_OPT_RECONNECT */
+#undef HAVE_MYSQL_OPT_RECONNECT
+
 /* Define if your mysql.h defines MYSQL_OPT_CONNECT_TIMEOUT */
 #undef HAVE_MYSQL_OPT_CONNECT_TIMEOUT
 

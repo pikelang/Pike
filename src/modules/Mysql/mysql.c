@@ -287,6 +287,13 @@ static void pike_mysql_set_options(struct mapping *options)
   struct svalue *val;
 
 #ifdef HAVE_MYSQL_OPTIONS
+#ifdef HAVE_MYSQL_OPT_RECONNECT
+  if ((val = simple_mapping_string_lookup(options, "reconnect"))) {
+    my_bool reconnectp = 0;
+    if (!SAFE_IS_ZERO(val)) reconnectp = 1;
+    mysql_options(PIKE_MYSQL->mysql, MYSQL_OPT_RECONNECT, &reconnectp);
+  }
+#endif
 #ifdef HAVE_MYSQL_READ_DEFAULT_FILE
   if ((val = simple_mapping_string_lookup(options, "mysql_config_file")) &&
       (val->type == T_STRING) && (!val->u.string->size_shift)) {
@@ -438,6 +445,14 @@ static void pike_mysql_reconnect (int reconnect)
       (val->type == T_INT) && (val->u.integer)) {
     options = (unsigned int)val->u.integer;
   }
+
+#if defined(HAVE_MYSQL_OPTIONS) && defined(HAVE_MYSQL_OPT_RECONNECT)
+  {
+    /* Enable the automatic reconnect. */
+    my_bool reconnectp = 1;
+    mysql_options(mysql, MYSQL_OPT_RECONNECT, &reconnectp);
+  }
+#endif
 
 #if defined (HAVE_MYSQL_OPTIONS) && defined (HAVE_MYSQL_SET_CHARSET_NAME)
   if (PIKE_MYSQL->conn_charset)
