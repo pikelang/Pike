@@ -810,9 +810,6 @@ static void f_affected_rows(INT32 args)
   MYSQL *mysql;
   INT64 count;
 
-  if (!PIKE_MYSQL->mysql) {
-    pike_mysql_reconnect (1);
-  }
   pop_n_elems(args);
   mysql = PIKE_MYSQL->mysql;
 
@@ -833,9 +830,6 @@ static void f_insert_id(INT32 args)
   MYSQL *mysql;
   INT64 id;
 
-  if (!PIKE_MYSQL->mysql) {
-    pike_mysql_reconnect (1);
-  }
   pop_n_elems(args);
 
   mysql = PIKE_MYSQL->mysql;
@@ -857,10 +851,6 @@ static void f_error(INT32 args)
 {
   MYSQL *mysql;
   const char *error_msg;
-
-  if (!PIKE_MYSQL->mysql) {
-    pike_mysql_reconnect (1);
-  }
 
   mysql = PIKE_MYSQL->mysql;
 
@@ -903,18 +893,6 @@ static void f_select_db(INT32 args)
   database = sp[-args].u.string->str;
 
   if (mysql) {
-    MYSQL_ALLOW();
-
-    tmp = mysql_select_db(mysql, database);
-
-    MYSQL_DISALLOW();
-  }
-  if (!mysql || tmp) {
-    /* The connection might have been closed. */
-    pike_mysql_reconnect (1);
-
-    mysql = PIKE_MYSQL->mysql;
-
     MYSQL_ALLOW();
 
     tmp = mysql_select_db(mysql, database);
@@ -967,44 +945,6 @@ static void low_query(INT32 args, char *name, int flags)
   check_c_stack(0x10000);
 
   if (mysql) {
-    MYSQL_ALLOW();
-
-#ifdef HAVE_MYSQL_REAL_QUERY
-    tmp = mysql_real_query(mysql, query, qlen);
-#else
-    tmp = mysql_query(mysql, query);
-#endif /* HAVE_MYSQL_REAL_QUERY */
-
-    if (!tmp) {
-      if (flags & PIKE_MYSQL_FLAG_STORE_RESULT) {
-	result = mysql_store_result(mysql);
-      } else {
-	result = mysql_use_result(mysql);
-      }
-    }
-
-    MYSQL_DISALLOW();
-  }
-  if (mysql && tmp) {
-    /* Check if we need to reconnect. */
-#if defined(CR_SERVER_GONE_ERROR) && defined(CR_SERVER_LOST) && \
-  defined(CR_UNKNOWN_ERROR)
-    int eno = mysql_errno(mysql);
-    if ((eno == CR_SERVER_GONE_ERROR) ||
-	(eno == CR_SERVER_LOST) ||
-	(eno == CR_UNKNOWN_ERROR)) {
-      mysql = NULL;
-    }
-#else /* !CR_SERVER_GONE_ERROR || !CR_SERVER_LOST || !CR_UNKNOWN_ERROR */
-    mysql = NULL;
-#endif /* CR_SERVER_GONE_ERROR && CR_SERVER_LOST && CR_UNKNOWN_ERROR */
-  }
-  if (!mysql) {
-    /* The connection might have been closed. */
-    pike_mysql_reconnect (1);
-
-    mysql = PIKE_MYSQL->mysql;
-
     MYSQL_ALLOW();
 
 #ifdef HAVE_MYSQL_REAL_QUERY
@@ -1153,18 +1093,6 @@ static void f_create_db(INT32 args)
     tmp = mysql_create_db(mysql, database);
     MYSQL_DISALLOW();
   }
-  if (!mysql || tmp) {
-    /* The connection might have been closed */
-    pike_mysql_reconnect (1);
-
-    mysql = PIKE_MYSQL->mysql;
-
-    MYSQL_ALLOW();
-
-    tmp = mysql_create_db(mysql, database);
-
-    MYSQL_DISALLOW();
-  }
 
   if (tmp) {
     Pike_error("Mysql.mysql->create_db(): Creation of database \"%s\" failed\n",
@@ -1211,18 +1139,6 @@ static void f_drop_db(INT32 args)
 
     MYSQL_DISALLOW();
   }
-  if (!mysql || tmp) {
-    /* The connection might have been closed */
-    pike_mysql_reconnect (1);
-
-    mysql = PIKE_MYSQL->mysql;
-
-    MYSQL_ALLOW();
-
-    tmp = mysql_drop_db(mysql, database);
-
-    MYSQL_DISALLOW();
-  }    
 
   if (tmp) {
     Pike_error("Mysql.mysql->drop_db(): Drop of database \"%s\" failed\n",
@@ -1248,23 +1164,6 @@ static void f_shutdown(INT32 args)
   int tmp = -1;
 
   if (mysql) {
-    MYSQL_ALLOW();
-  
-#ifdef HAVE_SHUTDOWN_DEFAULT
-    /* Mysql 4.1.3 added an extra shutdown_level argument. */
-    tmp = mysql_shutdown(mysql, SHUTDOWN_DEFAULT);
-#else /* !HAVE_SHUTDOWN_DEFAULT */
-    tmp = mysql_shutdown(mysql);
-#endif /* HAVE_SHUTDOWN_DEFAULT */
-
-    MYSQL_DISALLOW();
-  }
-  if (!mysql || tmp) {
-    /* The connection might have been closed */
-    pike_mysql_reconnect (1);
-
-    mysql = PIKE_MYSQL->mysql;
-
     MYSQL_ALLOW();
   
 #ifdef HAVE_SHUTDOWN_DEFAULT
@@ -1305,18 +1204,6 @@ static void f_reload(INT32 args)
 
     MYSQL_DISALLOW();
   }
-  if (!mysql || tmp) {
-    /* The connection might have been closed */
-    pike_mysql_reconnect (1);
-
-    mysql = PIKE_MYSQL->mysql;
-
-    MYSQL_ALLOW();
-
-    tmp = mysql_reload(mysql);
-
-    MYSQL_DISALLOW();
-  }
 
   if (tmp) {
     Pike_error("Mysql.mysql->reload(): Reload failed\n");
@@ -1338,11 +1225,6 @@ static void f_statistics(INT32 args)
 {
   MYSQL *mysql = PIKE_MYSQL->mysql;
   const char *stats;
-
-  if (!mysql) {
-    pike_mysql_reconnect (1);
-    mysql = PIKE_MYSQL->mysql;
-  }
 
   pop_n_elems(args);
 
@@ -1366,11 +1248,6 @@ static void f_server_info(INT32 args)
 {
   MYSQL *mysql = PIKE_MYSQL->mysql;
   const char *info;
-
-  if (!mysql) {
-    pike_mysql_reconnect (1);
-    mysql = PIKE_MYSQL->mysql;
-  }
 
   pop_n_elems(args);
 
@@ -1397,10 +1274,6 @@ static void f_host_info(INT32 args)
 {
   MYSQL *mysql;
   const char *info;
-
-  if (!PIKE_MYSQL->mysql) {
-    pike_mysql_reconnect (1);
-  }
 
   mysql = PIKE_MYSQL->mysql;
 
@@ -1429,10 +1302,6 @@ static void f_protocol_info(INT32 args)
 {
   MYSQL *mysql;
   int prot;
-
-  if (!PIKE_MYSQL->mysql) {
-    pike_mysql_reconnect (1);
-  }
 
   pop_n_elems(args);
 
@@ -1479,18 +1348,6 @@ static void f_list_dbs(INT32 args)
   }
 
   if (mysql) {
-    MYSQL_ALLOW();
-
-    result = mysql_list_dbs(mysql, wild);
-
-    MYSQL_DISALLOW();
-  }
-  if (!mysql || !result) {
-    /* The connection might have been closed */
-    pike_mysql_reconnect (1);
-
-    mysql = PIKE_MYSQL->mysql;
-
     MYSQL_ALLOW();
 
     result = mysql_list_dbs(mysql, wild);
@@ -1565,18 +1422,6 @@ static void f_list_tables(INT32 args)
   }
 
   if (mysql) {
-    MYSQL_ALLOW();
-
-    result = mysql_list_tables(mysql, wild);
-
-    MYSQL_DISALLOW();
-  }
-  if (!mysql || !result) {
-    /* The connection might have been closed */
-    pike_mysql_reconnect (1);
-
-    mysql = PIKE_MYSQL->mysql;
-
     MYSQL_ALLOW();
 
     result = mysql_list_tables(mysql, wild);
@@ -1722,18 +1567,6 @@ static void f_list_fields(INT32 args)
 
     MYSQL_DISALLOW();
   }
-  if (!mysql || !result) {
-    /* The connection might have been closed */
-    pike_mysql_reconnect (1);
-
-    mysql = PIKE_MYSQL->mysql;
-
-    MYSQL_ALLOW();
-
-    result = mysql_list_fields(mysql, table, wild);
-
-    MYSQL_DISALLOW();
-  }
 
   if (!result) {
     const char *err;
@@ -1776,18 +1609,6 @@ static void f_list_processes(INT32 args)
   pop_n_elems(args);
 
   if (mysql) {
-    MYSQL_ALLOW();
-
-    result = mysql_list_processes(mysql);
-
-    MYSQL_DISALLOW();
-  }
-  if (!mysql || !result) {
-    /* The connection might have been closed */
-    pike_mysql_reconnect (1);
-
-    mysql = PIKE_MYSQL->mysql;
-
     MYSQL_ALLOW();
 
     result = mysql_list_processes(mysql);
