@@ -79,6 +79,10 @@ else
           fi
         fi
       done
+      # Blastwave adds an extra lib on top.
+      if test -d "$pike_cv_mysql_lib_dir/lib/."; then
+	pike_cv_mysql_lib_dir="$pike_cv_mysql_lib_dir/lib"
+      fi
     ])
     AC_MSG_RESULT($pike_cv_mysql_lib_dir)
     if test "x$pike_cv_mysql_lib_dir" = "xno"; then :; else
