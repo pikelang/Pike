@@ -360,6 +360,11 @@ static void pike_mysql_set_options(struct mapping *options)
   if ((val = simple_mapping_string_lookup(options, "mysql_charset_name")) &&
       (val->type == T_STRING) && (!val->u.string->size_shift) &&
       !string_has_null (val->u.string)) {
+#if defined (HAVE_MYSQL_OPTIONS) && defined (HAVE_MYSQL_SET_CHARSET_NAME)
+    mysql_options (PIKE_MYSQL->mysql, MYSQL_SET_CHARSET_NAME,
+		   val->u.string->str);
+#endif
+
     if (PIKE_MYSQL->conn_charset)
       free (PIKE_MYSQL->conn_charset);
     copy_shared_string (PIKE_MYSQL->conn_charset, val->u.string);
@@ -370,10 +375,17 @@ static void low_query(INT32 args, char *name, int flags);
 
 static void connection_set_charset()
 {
-#ifdef HAVE_MYSQL_SET_CHARACTER_SET
   int res;
   MYSQL *mysql = PIKE_MYSQL->mysql;
   struct pike_string *charset = PIKE_MYSQL->conn_charset;
+
+#if defined (HAVE_MYSQL_OPTIONS) && defined (HAVE_MYSQL_SET_CHARSET_NAME)
+  /* Update the default charset for the connection,
+   * so that it will be restored on reconnect. */
+  mysql_options (mysql, MYSQL_SET_CHARSET_NAME, charset->str);
+#endif
+
+#ifdef HAVE_MYSQL_SET_CHARACTER_SET
   MYSQL_ALLOW();
   res = mysql_set_character_set (mysql, charset->str);
   MYSQL_DISALLOW();
@@ -391,7 +403,7 @@ static void connection_set_charset()
    * that this doesn't work with mysql_real_escape_string, but that
    * function isn't used. */
   push_constant_text ("SET NAMES '");
-  ref_push_string (PIKE_MYSQL->conn_charset);
+  ref_push_string (charset);	/* FIXME: Quote? */
   push_constant_text ("'");
   f_add (3);
   low_query (1, "set_charset", PIKE_MYSQL_FLAG_STORE_RESULT);
@@ -696,6 +708,11 @@ static void f_create(INT32 args)
   }
 
   pike_mysql_set_ssl(PIKE_MYSQL->options);
+
+  if (!PIKE_MYSQL->conn_charset) {
+    /* Backward compat with Mysql 4.0 and earlier. */
+    PIKE_MYSQL->conn_charset = make_shared_string("latin1");
+  }
 
   pike_mysql_reconnect (0);
 
