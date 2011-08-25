@@ -333,6 +333,53 @@ void create(string|object host, void|string|mapping(string:int|string) db,
   decode_datetime = master_sql->decode_datetime || .sql_util.fallback;
 }
 
+//! Returns true if the connection seems to be open.
+//!
+//! @note
+//!   This function only checks that there's an open connection,
+//!   and that the other end hasn't closed it yet. No data is
+//!   sent over the connection.
+//!
+//!   For a more reliable check of whether the connection
+//!   is alive, please use @[ping()].
+//!
+//! @seealso
+//!   @[ping()]
+int is_open()
+{
+  if (!master_sql) return 0;
+  if (master_sql->is_open) return master_sql->is_open();
+  return 1;
+}
+
+//! @decl int ping()
+//!
+//! Check whether the connection is alive.
+//!
+//! @returns
+//!   Returns one of the following:
+//!   @int
+//!     @value 0
+//!       Everything ok.
+//!     @value 1
+//!       The connection reconnected automatically.
+//!     @value -1
+//!       The server has gone away, and the connection is dead.
+//!   @endint
+//!
+//! @seealso
+//!   @[is_open()]
+int ping()
+{
+  if (!master_sql) return -1;
+  if (master_sql->ping) return master_sql->ping();
+  catch {
+    return sizeof(query("SELECT 0 AS zero") || ({})) - 1;
+  };
+  master_sql = UNDEFINED;	// Inform is_open().
+  return -1;
+}
+
 void set_charset (string charset)
 //! Changes the charset that the connection uses for queries and
 //! returned text strings.
