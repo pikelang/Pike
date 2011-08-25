@@ -87,6 +87,10 @@
 #include <memory.h>
 #endif
 
+#ifdef HAVE_POLL_H
+#include <poll.h>
+#endif
+
 #define sp Pike_sp
 
 #ifdef HAVE_MYSQL
@@ -785,6 +789,52 @@ static void mysql__sprintf(INT32 args)
   Pike_sp[-1].subtype = 1;
 }
 
+/*! @decl int is_open()
+ *!
+ *! Returns true if the connection seems to be open.
+ *!
+ *! @note
+ *!   This function only checks that there's an
+ *!   open connection, and that the other end hasn't
+ *!   closed it yet. No data is sent over the
+ *!   connection.
+ *!
+ *!   For a more reliable check of whether the connection
+ *!   is alive, please use @[ping()].
+ *!
+ *! @seealso
+ *!   @[ping()]
+ */
+static void f_is_open(INT32 args)
+{
+  int fd = PIKE_MYSQL->mysql->net.fd;
+
+  pop_n_elems(args);
+  if (
+#ifdef HAVE_MYSQL_FIELD_NET_VIO
+      !(PIKE_MYSQL->mysql->net.vio) ||
+#endif
+      (fd < 0)) {
+    push_int(0);
+  } else {
+#ifdef HAVE_POLL
+    struct pollfd fds[1];
+    fds->fd = fd;
+    fds->events = POLLOUT|POLLHUP;
+    fds->revents = 0;
+    if ((poll(fds, 1, 0) == 1) && (fds->revents & POLLOUT)) {
+      push_int(1);
+    } else {
+      /* POLLHUP or POLLERR or timeout */
+      push_int(0);
+    }
+#else
+    /* FIXME: Use select(). */
+    push_int(1);
+#endif
+  }
+}
+
 /*! @decl int ping()
  *!
  *! Check whether the connection is alive.
@@ -799,6 +849,9 @@ static void mysql__sprintf(INT32 args)
  *!     @value -1
  *!       The server has gone away, and the connection is dead.
  *!   @endint
+ *!
+ *! @seealso
+ *!   @[is_open()]
  */
 static void f_ping(INT32 args)
 {
@@ -1774,6 +1827,8 @@ PIKE_MODULE_INIT
   /* function(int, void|mapping:string) */
   ADD_FUNCTION("_sprintf",mysql__sprintf,
 	       tFunc(tInt tOr(tVoid,tMapping),tString),0);
+  /* function(void:int) */
+  ADD_FUNCTION("is_open", f_is_open, tFunc(tVoid,tInt), ID_PUBLIC);
   /* function(void:int) */
   ADD_FUNCTION("ping", f_ping, tFunc(tVoid,tInt), ID_PUBLIC);
   /* function(void:int) */

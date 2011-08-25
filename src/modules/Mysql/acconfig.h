@@ -62,4 +62,7 @@
 /* Define if MYSQL_FIELD has a charsetnr member */
 #undef HAVE_MYSQL_FIELD_CHARSETNR
 
+/* Define if MYSQL has a net.vio member */
+#undef HAVE_MYSQL_FIELD_NET_VIO
+
 #endif /* PIKE_MYSQL_CONFIG_H */
