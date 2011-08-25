@@ -291,13 +291,15 @@ static void pike_mysql_set_options(struct mapping *options)
   struct svalue *val;
 
 #ifdef HAVE_MYSQL_OPTIONS
-#ifdef HAVE_MYSQL_OPT_RECONNECT
   if ((val = simple_mapping_string_lookup(options, "reconnect"))) {
     my_bool reconnectp = 0;
     if (!SAFE_IS_ZERO(val)) reconnectp = 1;
+#ifdef HAVE_MYSQL_OPT_RECONNECT
     mysql_options(PIKE_MYSQL->mysql, MYSQL_OPT_RECONNECT, &reconnectp);
-  }
+#else
+    PIKE_MYSQL->mysql->reconnect = reconnectp;
 #endif
+  }
 #ifdef HAVE_MYSQL_READ_DEFAULT_FILE
   if ((val = simple_mapping_string_lookup(options, "mysql_config_file")) &&
       (val->type == T_STRING) && (!val->u.string->size_shift)) {
@@ -519,6 +521,18 @@ static void pike_mysql_reconnect (int reconnect)
 #endif /* HAVE_MYSQL_REAL_CONNECT */
 
   MYSQL_DISALLOW();
+
+#ifndef HAVE_MYSQL_OPT_RECONNECT
+  /* Note: In Mysql 3.22 the reconnect flag is always set by
+   *       mysql_real_connect(), so we need to reset it here.
+   */
+  if (PIKE_MYSQL->options &&
+      (val = simple_mapping_string_lookup(PIKE_MYSQL->options, "reconnect"))) {
+    my_bool reconnectp = 0;
+    if (!SAFE_IS_ZERO(val)) reconnectp = 1;
+    PIKE_MYSQL->mysql->reconnect = reconnectp;
+  }
+#endif
 
   if (hostptr) {
     /* No longer needed */
