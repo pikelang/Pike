@@ -481,6 +481,34 @@ $ret_type * STDCALL mysql_fetch_lengths(MYSQL_RES *mysql)
     fi
     AC_MSG_RESULT($pike_cv_have_mysql_field_charsetnr)
 
+    AC_MSG_CHECKING(for the net.vio member in MYSQL)
+    AC_CACHE_VAL(pike_cv_have_mysql_field_net_vio, [
+      AC_TRY_LINK([
+#ifdef HAVE_WINSOCK2_H
+#include <winsock2.h>
+#elif defined(HAVE_WINSOCK_H)
+#include <winsock.h>
+#endif
+
+#ifdef HAVE_MYSQL_H
+#include <mysql.h>
+#else
+#ifdef HAVE_MYSQL_MYSQL_H
+#include <mysql/mysql.h>
+#else
+#error Need mysql.h headerfile!
+#endif
+#endif
+      ], [
+	void *foo__ = &(((MYSQL *) 0)->net.vio);
+      ], [pike_cv_have_mysql_field_net_vio="yes"],
+	 [pike_cv_have_mysql_field_net_vio="no"])
+    ])
+    if test "$pike_cv_have_mysql_field_net_vio" = yes; then
+      AC_DEFINE(HAVE_MYSQL_FIELD_NET_VIO)
+    fi
+    AC_MSG_RESULT($pike_cv_have_mysql_field_net_vio)
+
   fi
 fi
 
