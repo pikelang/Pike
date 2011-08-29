@@ -207,6 +207,14 @@ static void json_encode_recur (struct encode_context *ctx, struct svalue *val)
 	if (c < 0 || c > 0x10ffff)
 	  Pike_error ("Cannot json encode non-unicode char "
 		      "0x%"PRINTPIKEINT"x.\n", (INT_TYPE) c);
+	/* FIXME: RFC 4627 says:
+	 *   To escape an extended character that is not in the Basic
+	 *   Multilingual Plane, the character is represented as a
+	 *   twelve-character sequence, encoding the UTF-16 surrogate
+	 *   pair. So, for example, a string containing only the G
+	 *   clef character (U+1D11E) may be represented as
+	 *   "\uD834\uDD1E".
+	 */
 	if (c == '"' || c == '\\' || c <= 0x1f ||
 	    (c >= 0x7f && ctx->flags & ASCII_ONLY && c <= 0xffff)) {
 	  if (s < i) {
