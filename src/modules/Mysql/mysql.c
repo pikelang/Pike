@@ -520,6 +520,8 @@ static void pike_mysql_reconnect (int reconnect)
 #endif /* HAVE_MYSQL_PORT || MAVE_MYSQL_UNIX_PORT*/
 #endif /* HAVE_MYSQL_REAL_CONNECT */
 
+  MYSQL_DISALLOW();
+
 #ifndef HAVE_MYSQL_OPT_RECONNECT
   /* Note: In Mysql 3.22 the reconnect flag is always set by
    *       mysql_real_connect(), so we need to reset it here.
@@ -532,8 +534,6 @@ static void pike_mysql_reconnect (int reconnect)
     PIKE_MYSQL->mysql->reconnect = reconnectp;
   }
 #endif
-
-  MYSQL_DISALLOW();
 
   if (hostptr) {
     /* No longer needed */
