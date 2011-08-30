@@ -2301,15 +2301,13 @@ int write_file(string filename, string str, int|void access)
   if(!f->open(filename, "twc", access))
     error("Couldn't open %O: %s\n", filename, strerror(f->errno()));
 
-  do {
+  while (ret < sizeof (str)) {
     int bytes = f->write(str[ret..]);
-    if (bytes < 0) {
-      if (ret) break;
+    if (bytes <= 0) {
       error ("Couldn't write to %O: %s\n", filename, strerror (f->errno()));
     }
-    if (!bytes) break;
     ret += bytes;
-  } while (ret < sizeof (str));
+  }
 
   f->close();
   return ret;
@@ -2340,15 +2338,13 @@ int append_file(string filename, string str, int|void access)
   if(!f->open(filename, "awc", access))
     error("Couldn't open %O: %s\n", filename, strerror(f->errno()));
 
-  do {
+  while (ret < sizeof (str)) {
     int bytes = f->write(str[ret..]);
-    if (bytes < 0) {
-      if (ret) break;
+    if (bytes <= 0) {
       error ("Couldn't write to %O: %s\n", filename, strerror (f->errno()));
     }
-    if (!bytes) break;
     ret += bytes;
-  } while (ret < sizeof (str));
+  }
 
   f->close();
   return ret;
