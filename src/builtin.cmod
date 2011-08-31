@@ -3538,9 +3538,17 @@ PMOD_EXPORT void append_list_node(struct pike_list_node *node,
 PIKECLASS SqlNull
 {
   EXTRA {
+    /*! @decl constant is_val_null = 1
+     *!
+     *! Nonzero recognition constant.
+     */
+    add_integer_constant("is_val_null", 1, 0);
+
     /*! @decl constant is_sql_null = 1
      *!
      *! SQL Null marker.
+     *!
+     *! @deprecated is_val_null
      */
     add_integer_constant("is_sql_null", 1, 0);
   }
