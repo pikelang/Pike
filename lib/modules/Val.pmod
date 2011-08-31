@@ -95,6 +95,22 @@ False false = False();
 //!
 //! @[Protocols.JSON] uses these objects to represent the JSON
 //! literals @expr{true@} and @expr{false@}.
+//!
+//! @note
+//! The correct way to programmatically recognize these values is
+//! something like
+//!
+//! @code
+//!   if (objectp(something) && something->is_val_true) ...
+//! @endcode
+//!
+//! and
+//!
+//! @code
+//!   if (objectp(something) && something->is_val_false) ...
+//! @endcode
+//!
+//! respectively. See @[Val.null] for rationale.
 
 class Null
 //! Type for the @[Val.null] object. Do not create more instances of
@@ -138,6 +154,18 @@ Null null = Null();
 //! effort, it is transient in nature (for instance, it automatically
 //! becomes an ordinary zero when inserted in a mapping). That makes
 //! it unsuitable for use as a reliable null value.
+//!
+//! @note
+//! The correct way to programmatically recognize @[Val.null] is
+//! something like
+//!
+//! @code
+//!   if (objectp(something) && something->is_val_null) ...
+//! @endcode
+//!
+//! That way it's possible for other code to replace it with an
+//! extended class, or create their own variants which needs to behave
+//! like @[Val.null].
 //!
 //! @fixme
 //! The Oracle glue currently uses static null objects which won't be
