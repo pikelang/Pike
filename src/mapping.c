@@ -181,7 +181,8 @@ static void init_mapping(struct mapping *m,
 #endif
   if(size)
   {
-    hashsize=find_next_power(size / AVG_LINK_LENGTH + 1);
+    hashsize = size / AVG_LINK_LENGTH + 1;
+    hashsize = (hashsize <= 32) ? 32 : find_next_power(hashsize);
 
     e=MAPPING_DATA_SIZE(hashsize, size);
 
