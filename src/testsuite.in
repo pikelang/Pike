@@ -440,6 +440,15 @@ test_eval_error([[
   X()->s = (mixed) X();
 ]])
 
+test_any([[
+  // Bug 6062
+  class C { mapping options = ([ 1:1 ]); };
+  C c = C();
+  c->options[3] = 3;
+  c = C();
+  return sizeof(c->options) == 1;
+]], 1)
+
 dnl bug in for loop optimization in combination with +=
 
 test_any([[
