@@ -427,7 +427,10 @@ static struct mapping *rehash(struct mapping *m, int new_size)
   if(d_flag>1)  check_mapping(m);
 #endif
 
-  if (md->hashsize == new_size) return m;
+  /* FIXME: The special case below seems suspect.
+   *	/grubba 2011-09-04
+   */
+  if ((md->hashsize == new_size) && (md->refs == 1)) return m;
 
   init_mapping(m, new_size, md->flags);
   debug_malloc_touch(m);
@@ -2354,6 +2357,9 @@ void check_mapping(const struct mapping *m)
 
   if(md->size > md->num_keypairs)
     Pike_fatal("Pretty mean hashtable there buster!\n");
+
+  if(md->hashsize & (md->hashsize - 1))
+    Pike_fatal("Invalid hashtable size: 0x%08lx\n", (long)md->hashsize);
 
   if(md->hashsize > md->num_keypairs)
     Pike_fatal("Pretty mean hashtable there buster %d > %d (2)!\n",md->hashsize,md->num_keypairs);
