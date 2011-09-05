@@ -3637,6 +3637,16 @@ struct program *end_first_pass(int finish)
 	optimize_program(Pike_compiler->new_program);
 	Pike_compiler->new_program->flags |= PROGRAM_FINISHED;
       }
+    } else {
+      /* All references in prog are now known.
+       * Fixup identifier overrides, so that inherit is safe.
+       */
+      for (e = 0; e < prog->num_identifier_references; e++) {
+	struct reference *ref = prog->identifier_references + e;
+	if (ref->id_flags & ID_HIDDEN) continue;
+	if (ref->inherit_offset != 0) continue;
+	override_identifier (ref, ID_FROM_PTR (prog, ref)->name);
+      }
     }
 
 #ifdef PIKE_DEBUG
