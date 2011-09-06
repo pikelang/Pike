@@ -126,6 +126,15 @@ Boolean false = False();
 //! @endcode
 //!
 //! respectively. See @[Val.null] for rationale.
+//!
+//! @note
+//! Pike natively uses integers (zero and non-zero) as booleans. These
+//! objects don't change that, and unless there's a particular reason
+//! to use these objects it's better to stick to e.g. 0 and 1 for
+//! boolean values - that is both more efficient and more in line with
+//! existing coding practice. These objects are intended for cases
+//! where integers and booleans occur in the same place and it is
+//! necessary to distinguish them.
 
 //! @class Null
 //! Type for the @[Val.null] object. Do not create more instances of
