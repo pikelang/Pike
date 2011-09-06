@@ -18,10 +18,23 @@
 //! reason, pike libraries should use dynamic resolution through e.g.
 //! @expr{->@} or @expr{master()->resolv()@} instead.
 
+class Boolean
+//! Common base class for @[Val.True] and @[Val.False], mainly to
+//! facilitate typing. Do not create any instances of this.
+{
+  constant is_val_boolean = 1;
+  //! Nonzero recognition constant that can be used to recognize both
+  //! @[Val.true] and @[Val.false].
+
+  string encode_json();
+}
+
 class True
 //! Type for the @[Val.true] object. Do not create more instances of
 //! this - use @[Val.true] instead.
 {
+  inherit Boolean;
+
   constant is_val_true = 1;
   //! Nonzero recognition constant.
 
@@ -53,6 +66,8 @@ class False
 //! Type for the @[Val.false] object. Do not create more instances of
 //! this - use @[Val.false] instead.
 {
+  inherit Boolean;
+
   constant is_val_false = 1;
   //! Nonzero recognition constant.
 
@@ -80,8 +95,8 @@ class False
   }
 }
 
-True true = True();
-False false = False();
+Boolean true = True();
+Boolean false = False();
 //! Objects that represents the boolean values true and false. In a
 //! boolean context these evaluate to true and false, respectively.
 //!
