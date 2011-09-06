@@ -1304,7 +1304,7 @@ static void f_reload(INT32 args)
  *! This function returns some server statistics.
  *!
  *! @seealso
- *!   @[server_info()], @[host_info()], @[protocol_info()]
+ *!   @[server_info()], @[host_info()], @[protocol_info()], @[info()]
  */
 static void f_statistics(INT32 args)
 {
@@ -1327,7 +1327,7 @@ static void f_statistics(INT32 args)
  *! Get the version number of the Mysql-server.
  *!
  *! @seealso
- *!   @[statistics()], @[host_info()], @[protocol_info()]
+ *!   @[statistics()], @[host_info()], @[protocol_info()], @[info()]
  */
 static void f_server_info(INT32 args)
 {
@@ -1353,7 +1353,7 @@ static void f_server_info(INT32 args)
  *! Get information about the Mysql-server connection
  *!
  *! @seealso
- *!   @[statistics()], @[server_info()], @[protocol_info()]
+ *!   @[statistics()], @[server_info()], @[protocol_info()], @[info()]
  */
 static void f_host_info(INT32 args)
 {
@@ -1371,6 +1371,37 @@ static void f_host_info(INT32 args)
   MYSQL_DISALLOW();
 
   push_text(info);
+}
+
+/*! @decl string info()
+ *!
+ *! Get information about the most recently executed statement.
+ *!
+ *! @seealso
+ *!   @[statistics()], @[server_info()], @[protocol_info()], @[host_info()]
+ */
+static void f_info(INT32 args) {
+  MYSQL *mysql;
+  const char *info;
+
+  pop_n_elems(args);
+
+  if (!PIKE_MYSQL->mysql) {
+    pike_mysql_reconnect (1);
+    push_undefined();
+    return;
+  }
+
+  mysql = PIKE_MYSQL->mysql;
+
+  MYSQL_ALLOW();
+
+  info = mysql_info(mysql);
+
+  MYSQL_DISALLOW();
+
+  if (info) push_text(info);
+  else push_undefined();
 }
 
 /*! @decl int protocol_info()
@@ -1882,6 +1913,8 @@ PIKE_MODULE_INIT
   ADD_FUNCTION("server_info", f_server_info,tFunc(tVoid,tStr), ID_PUBLIC);
   /* function(void:string) */
   ADD_FUNCTION("host_info", f_host_info,tFunc(tVoid,tStr), ID_PUBLIC);
+  /* function(void:string) */
+  ADD_FUNCTION("info", f_info,tFunc(tVoid,tStr), ID_PUBLIC);
   /* function(void:int) */
   ADD_FUNCTION("protocol_info", f_protocol_info,tFunc(tVoid,tInt), ID_PUBLIC);
   /* function(void|string:object) */
