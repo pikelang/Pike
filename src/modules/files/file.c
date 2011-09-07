@@ -293,10 +293,22 @@ static int got_fd_event (struct fd_callback_box *box, int event)
   return 0;
 }
 
+static int fd_receive_fd_fun_num;
+
 static void init_fd(int fd, int open_mode, int flags)
 {
   size_t ev;
+  struct identifier *i;
   ERRNO=0;
+
+  i = ID_FROM_INT(Pike_fp->current_object->prog,
+		  fd_receive_fd_fun_num + Pike_fp->context->identifier_level);
+  if (((i->identifier_flags & IDENTIFIER_TYPE_MASK) ==
+       IDENTIFIER_PIKE_FUNCTION) && (i->func.offset != -1)) {
+    /* receive_fd() is not a prototype. */
+    flags |= FILE_HAVE_RECV_FD;
+  }
+
   THIS->flags=flags;
   THIS->open_mode=open_mode;
   for (ev = 0; ev < NELEM (THIS->event_cbs); ev++) {
@@ -852,8 +864,6 @@ static int low_fd_query_properties(int fd)
  *! @seealso
  *!   @[send_fd()], @[read()], @[fd_factory()], @[__HAVE_SEND_FD__]
  */
-static int fd_receive_fd_fun_num;
-
 #ifdef HAVE_PIKE_SEND_FD
 static void receive_fds(int *fds, size_t num_fds)
 {
@@ -1232,18 +1242,22 @@ static struct pike_string *do_read_oob(int fd,
  *! If no arguments are given, @[read()] reads to the end of the file
  *! or stream.
  *!
+ *! If any file descriptors have been sent by the other side of the
+ *! stream, @[receive_fd()] will be called once for every sent file
+ *! descriptor.
+ *!
  *! @note
  *! It's not necessary to set @[not_all] to avoid blocking reading
  *! when nonblocking mode is used.
  *!
  *! @note
  *! When at the end of a file or stream, repeated calls to @[read()]
- *! returns the empty string since it's not considered an error. The
- *! empty string is never returned in other cases, unless nonblocking
+ *! will return the empty string since it's not considered an error.
+ *! The empty string is never returned in other cases, unless nonblocking
  *! mode is used or @[len] is zero.
  *!
  *! @seealso
- *!   @[read_oob()], @[write()]
+ *!   @[read_oob()], @[write()], @[receive_fd()], @[send_fd()]
  */
 static void file_read(INT32 args)
 {
@@ -4107,6 +4121,7 @@ static void file_handle_events(int event)
 {
   struct object *o=Pike_fp->current_object;
   struct my_file *f = THIS;
+  struct identifier *i;
 
   switch(event)
   {
@@ -4114,6 +4129,14 @@ static void file_handle_events(int event)
       f->box.backend = NULL;
       init_fd (-1, 0, 0);
       INIT_FD_CALLBACK_BOX(&f->box, NULL, o, f->box.fd, 0, got_fd_event);
+
+      i = ID_FROM_INT(o->prog, fd_receive_fd_fun_num +
+		      Pike_fp->context->identifier_level);
+      if (((i->identifier_flags & IDENTIFIER_TYPE_MASK) ==
+	   IDENTIFIER_PIKE_FUNCTION) && (i->func.offset != -1)) {
+	/* receive_fd() is not a prototype. */
+	f->flags |= FILE_HAVE_RECV_FD;
+      }
       break;
 
     case PROG_EVENT_EXIT:
@@ -4162,6 +4185,7 @@ static void low_dup(struct object *toob,
   to->flags = from->flags & ~(FILE_NO_CLOSE_ON_DESTRUCT |
 			      FILE_LOCK_FD |
 			      FILE_NOT_OPENED);
+  /* FIXME: FILE_HAVE_RECV_FD? */
 
   /* Enforce that stdin, stdout and stderr aren't closed during
    * normal operation.
