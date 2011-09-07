@@ -123,7 +123,7 @@ FILE_FUNC("connect_unix",file_connect_unix, tFunc(tStr,tInt))
 /* function(int|void:string) */
 FILE_FUNC("query_address",file_query_address, tFunc(tOr(tInt01,tVoid),tStr))
 /* function(void|string,void|string:void) */
-FILE_FUNC("create",file_create, tFunc(tOr(tVoid,tStr) tOr(tVoid,tStr),tVoid))
+FILE_FUNC("create",file_create, tFunc(tOr3(tVoid,tInt,tStr) tOr(tVoid,tStr) tOr(tVoid,tInt),tVoid))
 /* function(mixed:object) */
 FILE_FUNC("`<<",file_lsh, tAttr("deprecated", tFunc(tMixed,FILE_OBJ)))
 
