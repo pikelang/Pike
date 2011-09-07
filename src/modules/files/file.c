@@ -2520,10 +2520,6 @@ static void file_open(INT32 args)
   }
   else
   {
-     int default_capabilities = FILE_CAPABILITIES;
-     int so_type = -1;
-     ACCEPT_SIZE_T so_type_len = sizeof(so_type);
-
 #ifdef PIKE_SECURITY
      if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
      {
@@ -2537,26 +2533,11 @@ static void file_open(INT32 args)
      if (fd<0)
 	Pike_error("Not a valid FD.\n");
 
-#ifdef SO_TYPE
-     /* Check if we have a socket. */
-     while ((getsockopt(fd, SOL_SOCKET, SO_TYPE,
-			(void *)&so_type, &so_type_len) == -1) &&
-	    (errno == EINTR))
-       ;
-
-     if (so_type != -1) {
-       default_capabilities = SOCKET_CAPABILITIES;
-       /* FIXME: Detect pipes and UNIX-domain sockets. */
-     }
-#endif
-
      /* FIXME: What are the intended semantics for the flag FILE_NOT_OPENED?
       *        (grubba 2004-09-01
       */
-     init_fd(fd, flags | fd_query_properties(fd, default_capabilities),
-	     FILE_NOT_OPENED);
+     init_fd(fd, flags | low_fd_query_properties(fd), FILE_NOT_OPENED);
   }
-
 
   pop_n_elems(args);
   push_int(fd>=0);
@@ -4851,7 +4832,7 @@ static void file_lsh(INT32 args)
 
 /*! @decl void create(string filename)
  *! @decl void create(string filename, string mode)
- *! @decl void create(string filename, string mode, in access)
+ *! @decl void create(string filename, string mode, int access)
  *! @decl void create(int fd)
  *! @decl void create(int fd, string mode)
  *!
