@@ -216,7 +216,8 @@ static void fd_backtick__fd(INT32 args)
 static struct my_file *get_file_storage(struct object *o)
 {
   struct my_file *f;
-  struct object **ob;
+  struct svalue *sval;
+  struct object *ob;
   if(o->prog == file_program)
     return ((struct my_file *)
 	    (o->storage + file_program->inherits->storage_offset));
@@ -224,9 +225,14 @@ static struct my_file *get_file_storage(struct object *o)
   if((f=(struct my_file *)get_storage(o,file_program)))
     return f;
 
-  if((ob=(struct object **)get_storage(o,file_ref_program)))
-     if(*ob && (f=(struct my_file *)get_storage(*ob, file_program)))
+  if((sval=(struct svalue *)get_storage(o,file_ref_program))) {
+    if (sval->type == PIKE_T_OBJECT) {
+      ob = sval->u.object;
+      /* FIXME: Use the subtype information! */
+      if(ob && (f=(struct my_file *)get_storage(ob, file_program)))
 	return f;
+    }
+  }
 
   return 0;
 }
@@ -5397,27 +5403,33 @@ PIKE_MODULE_EXIT
   port_exit_program();
 }
 
-#define REF (*((struct object **)(Pike_fp->current_storage)))
+#define REF (*((struct svalue *)(Pike_fp->current_storage)))
 
 #define FILE_FUNC(X,Y,Z)					\
   static ptrdiff_t PIKE_CONCAT(Y,_function_number);		\
   void PIKE_CONCAT(Y,_ref) (INT32 args) {			\
-    struct object *o=REF;					\
+    struct object *o = REF.u.object;				\
+    int fun = PIKE_CONCAT(Y,_function_number);			\
+    struct program *prog;					\
     debug_malloc_touch(o);					\
-    if(!o || !o->prog) {					\
+    if(!o || (REF.type != PIKE_T_OBJECT) || !o->prog) {		\
       /* This is a temporary kluge */				\
       Pike_error("Stdio.File(): not open.\n");			\
     }								\
-    if(o->prog != file_program)					\
+    prog = o->prog->inherits[REF.subtype].prog;			\
+    fun += o->prog->inherits[REF.subtype].identifier_level;	\
+    if(prog != file_program)					\
       Pike_error("Wrong type of object in Stdio.File->_fd\n");	\
-    apply_low(o, PIKE_CONCAT(Y,_function_number), args);	\
+    apply_low(o, fun, args);					\
   }
 
 #include "file_functions.h"
 
 static void file___init_ref(struct object *o)
 {
-  REF = file_make_object_from_fd(-1, 0, 0);
+  REF.u.object = file_make_object_from_fd(-1, 0, 0);
+  REF.type = PIKE_T_OBJECT;
+  REF.subtype = 0;
 }
 
 /* Avoid loss of precision warnings. */
@@ -5651,8 +5663,8 @@ PIKE_MODULE_INIT
   free_object(o);
 
   START_NEW_PROGRAM_ID (STDIO_FD_REF);
-  ADD_STORAGE(struct object *);
-  MAP_VARIABLE("_fd", tObj, 0, 0, PIKE_T_OBJECT);
+  ADD_STORAGE(struct svalue);
+  MAP_VARIABLE("_fd", tObjIs_STDIO_FD, 0, 0, PIKE_T_MIXED);
   set_init_callback(file___init_ref);
 
 #define FILE_FUNC(X,Y,Z)			\
