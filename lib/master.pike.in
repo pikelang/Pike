@@ -3407,6 +3407,7 @@ void _main(array(string) orig_argv)
   predefines = initial_predefines =
     Builtin._take_over_initial_predefines();
   _pike_file_name = orig_argv[0];
+  _master_file_name = __FILE__;
 #if constant(thread_create)
   _backend_thread = this_thread();
 #endif
