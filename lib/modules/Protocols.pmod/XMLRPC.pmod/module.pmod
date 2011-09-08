@@ -15,12 +15,15 @@
 //! Pike @expr{mapping@} is translated to XML-RPC @tt{<struct>@}.
 //! Pike @expr{array@} is translated to XML-RPC @tt{<array>@}.
 //! Pike @[Calendar] object is translated to XML-RPC @tt{<dateTime.iso8601@}.
+//! Pike @expr{Val.false@} and @expr{Val.true@} is translated to
+//!   XML-RPC @tt{<boolean>@}.
 //!
 //! Translation rules for conversions from XML-RPC datatypes to Pike
 //! datatypes:
 //!
-//! XML-RPC @tt{<i4>@}, @tt{<int>@} and @tt{<boolean>@} are
-//!   translated to Pike @expr{int@}.
+//! XML-RPC @tt{<i4>@} and @tt{<int>@} are translated to Pike @expr{int@}.
+//! XML-RPC @tt{<boolean>} is translated to Pike @expr{Val.true@} and
+//!   @expr{Val.false@}.
 //! XML-RPC @tt{<string>@} and @tt{<base64>@} are translated to
 //!   Pike @expr{string@}.
 //! XML_RPC @tt{<double>@} is translated to Pike @expr{float@}.
@@ -225,8 +228,9 @@ protected mixed decode(string xml_input, string dtd_input)
 			       return sizeof(data)?data[0]:"";
 			     case "i4":
 			     case "int":
-			     case "boolean":
 			       return (int)(data*"") || magic_zero;
+			     case "boolean":
+			       return ((int)(data*""))?Val.true:Val.false;
 			     case "double":
 			       return (float)(data*"");
 			     case "string":
@@ -274,7 +278,7 @@ protected string xml_encode_string(string s)
 		 ({ "&amp;", "&lt;", "&gt;", "&#34;", "&#39;", "&#0;" }));
 }
 
-protected string encode(int|float|string|mapping|array value)
+protected string encode(int|float|string|mapping|array|object value)
 {
   string r = "<value>";
   if(intp(value))
@@ -303,6 +307,8 @@ protected string encode(int|float|string|mapping|array value)
   else if (objectp (value) && value->format_iso_short)
     r += "<dateTime.iso8601>" + value->format_iso_short() +
       "</dateTime.iso8601>";
+  else if (objectp(value) && (value->is_val_true || value->is_val_false))
+    r += sprintf("<boolean>%d</boolean>",(int)value);
   else
     error("Cannot encode %O.\n", value);
   return r+"</value>\n";
