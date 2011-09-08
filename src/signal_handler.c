@@ -4501,6 +4501,9 @@ static void f_kill(INT32 args)
  *! @note
  *!   This function is only available on platforms that
  *!   support signals.
+ *!
+ *! @seealso
+ *!   @[predef::kill()]
  */
 static void f_pid_status_kill(INT32 args)
 {
@@ -4947,11 +4950,14 @@ void init_signals(void)
   PIKE_MAP_VARIABLE("__pid", OFFSETOF(pid_status, pid),
 		    tInt, T_INT, ID_PROTECTED);
 #ifndef __NT__
+  /* Note that several of the fields are renamed to
+   * match closer with the corresponding function.
+   */
   PIKE_MAP_VARIABLE("__last_signal", OFFSETOF(pid_status, sig),
 		    tInt, T_INT, ID_PROTECTED);
   PIKE_MAP_VARIABLE("__flags", OFFSETOF(pid_status, flags),
 		    tInt, T_INT, ID_PROTECTED|ID_PRIVATE); /* Don't touch! */
-  PIKE_MAP_VARIABLE("__state", OFFSETOF(pid_status, state),
+  PIKE_MAP_VARIABLE("__status", OFFSETOF(pid_status, state),
 		    tInt, T_INT, ID_PROTECTED);
   PIKE_MAP_VARIABLE("__result", OFFSETOF(pid_status, result),
 		    tInt, T_INT, ID_PROTECTED);
