@@ -6,22 +6,96 @@ constant create_process = __builtin.create_process;
 constant TraceProcess = __builtin.TraceProcess;
 #endif
 
-//! Slightly polished version of @[create_process].
+#if constant(Stdio.__HAVE_SEND_FD__)
+protected Stdio.File forkd_pipe;
+protected create_process forkd_pid;
+
+//! Encoder for data to be sent to @[Tools.Standalone.forkd].
+//!
 //! @seealso
-//!   @[create_process]
+//!   @[ForkdDecoder]
+class ForkdEncoder(Stdio.File remote_fd)
+{
+  int fd_counter;
+  mixed nameof(mixed what)
+  {
+    if (objectp(what)) {
+      if (what->_fd) {
+	remote_fd->send_fd(what->_fd);
+	return fd_counter++;
+      }
+    }
+    error("Unsupported argument for RemoteProcess.\n");
+  }
+}
+
+//! Decoder for data received by @[Tools.Standalone.forkd].
+//!
+//! @seealso
+//!   @[ForkdEncoder]
+class ForkdDecoder(array(Stdio.Fd) fds)
+{
+  object objectof(mixed code)
+  {
+    return fds[code];
+  }
+}
+
+// Ensure that there's a live forkd running.
+protected int assert_forkd()
+{
+  if (!forkd_pid || !forkd_pid->kill(0)) {
+    forkd_pipe = Stdio.File();
+    forkd_pid = spawn_pike(({ "-x", "forkd" }),
+			   ([
+			     "forkd":0,
+			     "uid":getuid(),
+			     "gid":getgid(),
+			     "noinitgroups":1,
+			     "fds":({
+			       forkd_pipe->pipe(Stdio.PROP_BIDIRECTIONAL|
+						Stdio.PROP_SEND_FD),
+			     }),
+			   ]));
+  }
+  return forkd_pid && forkd_pid->kill(0);
+}
+#endif
+
+//! Slightly polished version of @[create_process].
+//!
+//! In addition to the features supported by @[create_process],
+//! it also supports:
+//!
+//! @ul
+//!   @item
+//!     Callbacks on timeout and process termination.
+//!   @item
+//!     Using @[Tools.Standalone.forkd] via RPC to
+//!     spawn the new process.
+//! @endul
+//!
+//! @seealso
+//!   @[create_process], @[Tools.Standalone.forkd]
 class Process
 {
+  //! Based on @[create_process].
   inherit create_process;
+
   protected function(Process:void) read_cb;
   protected function(Process:void) timeout_cb;
 
-  //! @param args
+  protected Stdio.File process_fd;
+
+  protected Pike.Backend process_backend;
+
+  //! @param command_args
   //!   Either a command line array, as the command_args
   //!   argument to @[create_process()], or a string that
   //!   will be splitted into a command line array by
   //!   calling @[split_quoted_string()] in an operating
   //!   system dependant mode.
-  //! @param m
+  //! @param modifiers
   //!   In addition to the modifiers that @[create_process] accepts,
   //!   this object also accepts
   //!   @mapping
@@ -33,30 +107,202 @@ class Process
   //!     @member int "timeout"
   //!       The time it takes for the process to time out. Default is
   //!       15 seconds.
+  //!     @member int(0..1) "forkd"
+  //!       Use @[Tools.Standalone.forkd] to actually spawn the process.
   //!   @endmapping
   //! @seealso
-  //!   @[create_process], @[split_quoted_string]
-  protected void create( string|array(string) args, void|mapping(string:mixed) m )
+  //!   @[create_process], @[create_process()->create()],
+  //!   @[split_quoted_string()], @[Tools.Standalone.forkd]
+  protected void create( string|array(string) command_args,
+			 void|mapping(string:mixed) modifiers )
   {
-    if( stringp( args ) ) {
-      args = split_quoted_string( [string]args
+    if( stringp( command_args ) ) {
+      command_args = split_quoted_string( [string]command_args
 #ifdef __NT__
 				  ,1
 #endif /* __NT__ */
 				  );
     }
-    if( !m )
-      ::create( [array(string)]args );
-    else {
-      ::create( [array(string)]args, [mapping(string:mixed)]m );
 
-      if(read_cb=m->read_callback)
+    mapping(string:mixed) new_modifiers = modifiers + ([]);
+
+    if (new_modifiers->keep_signals) {
+      // This option is currently not supported with forkd.
+      m_delete(new_modifiers, "forkd");
+    }
+
+#if constant(Stdio.__HAVE_SEND_FD__)
+    // Forkd mode requires send_fd().
+    if (new_modifiers->forkd && assert_forkd()) {
+      process_fd = Stdio.File();
+      forkd_pipe->
+	send_fd(process_fd->pipe(Stdio.PROP_BIDIRECTIONAL|Stdio.PROP_SEND_FD));
+      forkd_pipe->write("\0");
+
+      m_delete(new_modifiers, "forkd");
+      __callback = m_delete(new_modifiers, "callback");
+
+      if (zero_type(new_modifiers->uid)) {
+	new_modifiers->uid = geteuid();
+	if (zero_type(new_modifiers->gid)) {
+	  new_modifiers->gid = getegid();
+	}
+	if (!new_modifiers->setgroups) {
+	  new_modifiers->setgroups = getgroups();
+	}
+      } else if (new_modifiers->noinitgroups) {
+	if (!new_modifiers->setgroups) {
+	  new_modifiers->setgroups = getgroups();
+	}
+      }
+      m_delete(new_modifiers, "noinitgroups");
+
+      if (!new_modifiers->env) {
+	new_modifiers->env = getenv();
+      }
+
+      if (new_modifiers->cwd) {
+	new_modifiers->cwd = combine_path(getcwd(), new_modifiers->cwd);
+      } else {
+	new_modifiers->cwd = getcwd();
+      }
+
+      if (!new_modifiers->stdin) new_modifiers->stdin = Stdio.stdin;
+      if (!new_modifiers->stdout) new_modifiers->stdout = Stdio.stdout;
+      if (!new_modifiers->stderr) new_modifiers->stderr = Stdio.stderr;
+
+      string data = encode_value(({ command_args, new_modifiers }),
+				 ForkdEncoder(process_fd));
+      data = sprintf("%4c%s", sizeof(data), data);
+      int bytes = process_fd->write(data);
+      if (bytes != sizeof(data)) {
+	process_fd->close();
+	process_fd = UNDEFINED;
+	error("Failed to write spawn request (%d != %d).\n",
+	      bytes, sizeof(data));
+      }
+      process_backend = Pike.SmallBackend();
+      process_backend->add_file(process_fd);
+      process_fd->set_nonblocking(got_data, UNDEFINED, got_close);
+
+      // Wait for the process to fork (or fail).
+      while (__status == -1) {
+	process_backend(3600.0);
+      }
+    } else
+#endif
+    {
+      ::create( [array(string)]command_args, new_modifiers );
+    }
+
+    if (modifiers) {
+      if(read_cb = modifiers->read_callback)
 	call_out(watcher, 0.1);
 
-      if( (timeout_cb=m->timeout_callback) || m->timeout )
-	call_out(killer, m->timeout||15);
+      if( (timeout_cb = modifiers->timeout_callback) ||
+	  modifiers->timeout )
+	call_out(killer, modifiers->timeout||15);
     }
   }
+
+#if constant(Stdio.__HAVE_SEND_FD__)
+  protected void do_close()
+  {
+    if (process_fd) {
+      process_fd->set_blocking();
+      process_fd->close();
+    }
+    process_fd = UNDEFINED;
+    process_backend = UNDEFINED;
+  }
+
+  protected string recv_buf = "";
+  protected void got_data(mixed ignored, string data)
+  {
+    recv_buf += data;
+    while (sizeof(recv_buf) > 3) {
+      while (has_prefix(recv_buf, "\0\0\0\0")) recv_buf = recv_buf[4..];
+      if (sizeof(recv_buf) < 5) return;
+      int len = 0;
+      sscanf(recv_buf, "%04c", len);
+      if (sizeof(recv_buf) < len + 4) return;
+      data = recv_buf[4..len+3];
+      recv_buf = recv_buf[len+4..];
+      [string tag, mixed packet] = decode_value(data);
+
+      switch(tag) {
+      case "ERROR":
+	__result = 255;
+	__status = 2;
+	do_close();
+	error(packet);
+	break;
+      case "PID":
+	__pid = packet;
+	if (__status == -1) __status = 0;
+	if (__callback) __callback(this_object());
+	break;
+      case "SIGNAL":
+	__last_signal = packet;
+	break;
+      case "START":
+	__status = 0;
+	if (__callback) __callback(this_object());
+	break;
+      case "STOP":
+	__status = 1;
+	if (__callback) __callback(this_object());
+	break;
+      case "EXIT":
+	__result = packet;
+	__status = 2;
+	do_close();
+	if (__callback) __callback(this_object());
+	break;
+      default:
+	__result = 255;
+	__status = 2;
+	do_close();
+	error("Unsupported packet from forkd: %O\n", tag);
+	break;
+      }
+    }
+  }
+
+  protected void got_close(mixed ignored)
+  {
+    do_close();
+    if (__status == -1) {
+      // Early close.
+      __result = 255;
+      __status = 2;
+    }
+  }
+
+  int last_signal()
+  {
+    process_backend && process_backend(0.0);
+    return ::last_signal();
+  }
+
+  int(-1..2) status()
+  {
+    process_backend && process_backend(0.0);
+    return ::status();
+  }
+
+  int wait()
+  {
+    if (process_backend) {
+      process_backend(0.0);
+      while (__status <= 0) {
+	process_backend(3600.0);
+      }
+      return __result;
+    }
+    return ::wait();
+  }
+#endif /* __HAVE_SEND_FD__ */
 
   protected void destroy() {
     remove_call_out(watcher);
@@ -65,7 +311,7 @@ class Process
 
   protected void watcher() {
     // It was another sigchld, but not one from our process.
-    if(::status()==0)
+    if(status()==0)
       call_out(watcher, 0.1);
     else {
       remove_call_out(killer);
