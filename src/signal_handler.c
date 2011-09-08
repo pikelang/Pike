@@ -1211,14 +1211,14 @@ static struct mapping *pid_mapping=0;
 
 struct pid_status
 {
-  int pid;
+  INT_TYPE pid;
 #ifdef __NT__
   HANDLE handle;
 #else
-  int sig;
-  int flags;
-  int state;
-  int result;
+  INT_TYPE sig;
+  INT_TYPE flags;
+  INT_TYPE state;
+  INT_TYPE result;
   struct svalue callback;
 #endif
 };
@@ -1532,6 +1532,9 @@ static TH_RETURN_TYPE wait_thread(void *data)
  *! This is the recommended and most portable way to start processes
  *! in Pike. The process object is a pike abstraction of the running
  *! system process, with methods for various process housekeeping.
+ *!
+ *! @seealso
+ *!   @[Process]
  */
 
 /*! @decl int wait()
@@ -4941,10 +4944,19 @@ void init_signals(void)
 
   START_NEW_PROGRAM_ID(PROCESS);
   ADD_STORAGE(struct pid_status);
+  PIKE_MAP_VARIABLE("__pid", OFFSETOF(pid_status, pid),
+		    tInt, T_INT, ID_PROTECTED);
 #ifndef __NT__
+  PIKE_MAP_VARIABLE("__last_signal", OFFSETOF(pid_status, sig),
+		    tInt, T_INT, ID_PROTECTED);
+  PIKE_MAP_VARIABLE("__flags", OFFSETOF(pid_status, flags),
+		    tInt, T_INT, ID_PROTECTED|ID_PRIVATE); /* Don't touch! */
+  PIKE_MAP_VARIABLE("__state", OFFSETOF(pid_status, state),
+		    tInt, T_INT, ID_PROTECTED);
+  PIKE_MAP_VARIABLE("__result", OFFSETOF(pid_status, result),
+		    tInt, T_INT, ID_PROTECTED);
   PIKE_MAP_VARIABLE("__callback", OFFSETOF(pid_status, callback),
-		    tFunc(tObjIs_PROCESS,tVoid), T_MIXED,
-		    ID_PROTECTED|ID_PRIVATE);
+		    tFunc(tObjIs_PROCESS,tVoid), T_MIXED, ID_PROTECTED);
 #endif /* !__NT__ */
   set_init_callback(init_pid_status);
   set_exit_callback(exit_pid_status);
