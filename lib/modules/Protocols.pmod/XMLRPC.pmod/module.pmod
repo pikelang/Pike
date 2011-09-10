@@ -22,7 +22,7 @@
 //! datatypes:
 //!
 //! XML-RPC @tt{<i4>@} and @tt{<int>@} are translated to Pike @expr{int@}.
-//! XML-RPC @tt{<boolean>} is translated to Pike @expr{Val.true@} and
+//! XML-RPC @tt{<boolean>@} is translated to Pike @expr{Val.true@} and
 //!   @expr{Val.false@}.
 //! XML-RPC @tt{<string>@} and @tt{<base64>@} are translated to
 //!   Pike @expr{string@}.
@@ -95,9 +95,9 @@ Call decode_call(string xml_input)
 //!
 //! @seealso
 //! @[Fault]
-array|Fault decode_response(string xml_input)
+array|Fault decode_response(string xml_input, int|void compat)
 {
-  array|mapping r = decode(xml_input, response_dtd);
+  array|mapping r = decode(xml_input, response_dtd, compat);
   if(arrayp(r))
     return r;
   return Fault(r->faultCode, r->faultString);
@@ -181,11 +181,13 @@ protected constant response_dtd = #"
 // (that is omitting string inside a value).
 protected class StringWrap(string s){};
 
-protected mixed decode(string xml_input, string dtd_input)
+protected mixed decode(string xml_input, string dtd_input, int|void compat)
 {
   // We cannot insert 0 integers directly into the parse tree, so
   // we'll use magic_zero as a placeholder and destruct it afterwards.
   object magic_zero = class {}();
+  // Same with Val.false
+  object magic_false = class {}();
 
   Parser.XML.Validating xml = Parser.XML.Validating();
   array tree = xml->
@@ -230,7 +232,9 @@ protected mixed decode(string xml_input, string dtd_input)
 			     case "int":
 			       return (int)(data*"") || magic_zero;
 			     case "boolean":
-			       return ((int)(data*""))?Val.true:Val.false;
+			       if (compat)
+				 return (int)(data*"") || magic_zero;
+			       return (int)(data*"")?Val.true:magic_false;
 			     case "double":
 			       return (float)(data*"");
 			     case "string":
@@ -268,6 +272,12 @@ protected mixed decode(string xml_input, string dtd_input)
 		       return 0;
 		     });
   destruct(magic_zero);   // Apply Magic! Replace magic_zero with real 0:s.
+  if (!compat) {
+    // extra magic, change magic_false to Val.false
+    if (arrayp(tree[0][0]) || mappingp(tree[0][0]))
+      tree[0][0]=replace(tree[0][0],magic_false,Val.false);
+    tree[0]=replace(tree[0],magic_false,Val.false);
+  }
   return tree[0];
 }
 
@@ -324,6 +334,9 @@ protected string encode_params(array params)
 
 //! This class implements an XML-RPC client that uses HTTP transport.
 //!
+//! There is an optional compatibility flag to get the old behavior of
+//! booleans being returned as ints instead of Val.
+//!
 //! @example
 //! @pre{
 //!   > Protocols.XMLRPC.Client client = Protocols.XMLRPC.Client("http://www.oreillynet.com/meerkat/xml-rpc/server.php");
@@ -343,7 +356,7 @@ protected string encode_params(array params)
 //!  		    })
 //!  		})
 //! @}
-class Client(string|Standards.URI url)
+class Client(string|Standards.URI url, int|void compat)
 {
 
   function `[](string call)
@@ -359,7 +372,7 @@ class Client(string|Standards.URI url)
 	       // error, always return 200 OK."
 	       error ("Got invalid return code %d from %O: %O\n%O", c->status,
 		      url, c->status_desc, c->data());
-	     return decode_response(c->data());
+	     return decode_response(c->data(),compat);
 	   };
   }
 
@@ -371,6 +384,10 @@ class Client(string|Standards.URI url)
 
 //! This class implements an XML-RPC client that uses HTTP transport using
 //! non blocking sockets.
+//!
+//! There is an optional compatibility flag to get the old behavior of
+//! booleans being returned as ints instead of Val.
+//!
 //! @example
 //! @pre{void data_ok(mixed result)
 //!{
@@ -393,10 +410,12 @@ class AsyncClient
   protected object request;
   protected function user_data_ok;
   protected string _url;
+  protected int _compat;
 
-  void create(string|Standards.URI|Protocols.HTTP.Session.SessionURL url)
+  void create(string|Standards.URI|Protocols.HTTP.Session.SessionURL url, int|void compat)
   {
     _url = url;
+    _compat = compat;
   }
   
   protected void _data_ok()
@@ -406,7 +425,7 @@ class AsyncClient
       if (request->status() == 200)
 	// The xml-rpc spec says "Unless there's a lower-level error,
 	// always return 200 OK."
-	result = decode_response(request->data());
+	result = decode_response(request->data(),_compat);
     }
     user_data_ok(result);
   }
