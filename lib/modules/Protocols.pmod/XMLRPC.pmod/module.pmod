@@ -15,12 +15,15 @@
 //! Pike @expr{mapping@} is translated to XML-RPC @tt{<struct>@}.
 //! Pike @expr{array@} is translated to XML-RPC @tt{<array>@}.
 //! Pike @[Calendar] object is translated to XML-RPC @tt{<dateTime.iso8601@}.
+//! Pike @expr{Val.false@} and @expr{Val.true@} is translated to
+//!   XML-RPC @tt{<boolean>@}.
 //!
 //! Translation rules for conversions from XML-RPC datatypes to Pike
 //! datatypes:
 //!
-//! XML-RPC @tt{<i4>@}, @tt{<int>@} and @tt{<boolean>@} are
-//!   translated to Pike @expr{int@}.
+//! XML-RPC @tt{<i4>@} and @tt{<int>@} are translated to Pike @expr{int@}.
+//! XML-RPC @tt{<boolean>@} is translated to Pike @expr{Val.true@} and
+//!   @expr{Val.false@}.
 //! XML-RPC @tt{<string>@} and @tt{<base64>@} are translated to
 //!   Pike @expr{string@}.
 //! XML_RPC @tt{<double>@} is translated to Pike @expr{float@}.
@@ -92,9 +95,9 @@ Call decode_call(string xml_input)
 //!
 //! @seealso
 //! @[Fault]
-array|Fault decode_response(string xml_input)
+array|Fault decode_response(string xml_input, int|void boolean)
 {
-  array|mapping r = decode(xml_input, response_dtd);
+  array|mapping r = decode(xml_input, response_dtd, boolean);
   if(arrayp(r))
     return r;
   return Fault(r->faultCode, r->faultString);
@@ -178,7 +181,19 @@ protected constant response_dtd = #"
 // (that is omitting string inside a value).
 protected class StringWrap(string s){};
 
-protected mixed decode(string xml_input, string dtd_input)
+// Same as magic_zero below
+object magic_false = class {}();
+
+// Replace all magic_false with Val.false if necessary
+void replace_magic_false(array|mapping a) {
+  replace(a,magic_false,Val.false);
+  foreach (a;; mixed b) {
+    if (mappingp(b) || arrayp(b))
+      replace_magic_false(b);
+  }
+}
+
+protected mixed decode(string xml_input, string dtd_input, int|void boolean)
 {
   // We cannot insert 0 integers directly into the parse tree, so
   // we'll use magic_zero as a placeholder and destruct it afterwards.
@@ -225,8 +240,11 @@ protected mixed decode(string xml_input, string dtd_input)
 			       return sizeof(data)?data[0]:"";
 			     case "i4":
 			     case "int":
-			     case "boolean":
 			       return (int)(data*"") || magic_zero;
+			     case "boolean":
+			       if (!boolean)
+				 return (int)(data*"") || magic_zero;
+			       return (int)(data*"")?Val.true:magic_false;
 			     case "double":
 			       return (float)(data*"");
 			     case "string":
@@ -264,6 +282,11 @@ protected mixed decode(string xml_input, string dtd_input)
 		       return 0;
 		     });
   destruct(magic_zero);   // Apply Magic! Replace magic_zero with real 0:s.
+
+  if (boolean) {
+    // extra magic, change magic_false to Val.false
+    replace_magic_false(tree);
+  }
   return tree[0];
 }
 
@@ -274,7 +297,7 @@ protected string xml_encode_string(string s)
 		 ({ "&amp;", "&lt;", "&gt;", "&#34;", "&#39;", "&#0;" }));
 }
 
-protected string encode(int|float|string|mapping|array value)
+protected string encode(int|float|string|mapping|array|object value)
 {
   string r = "<value>";
   if(intp(value))
@@ -303,6 +326,8 @@ protected string encode(int|float|string|mapping|array value)
   else if (objectp (value) && value->format_iso_short)
     r += "<dateTime.iso8601>" + value->format_iso_short() +
       "</dateTime.iso8601>";
+  else if (objectp(value) && (value->is_val_true || value->is_val_false))
+    r += sprintf("<boolean>%d</boolean>",(int)value);
   else
     error("Cannot encode %O.\n", value);
   return r+"</value>\n";
@@ -317,6 +342,9 @@ protected string encode_params(array params)
 }
 
 //! This class implements an XML-RPC client that uses HTTP transport.
+//!
+//! There is an optional boolean flag to get the new behavior of
+//! booleans being returned as Val instead of ints.
 //!
 //! @example
 //! @pre{
@@ -337,7 +365,7 @@ protected string encode_params(array params)
 //!  		    })
 //!  		})
 //! @}
-class Client(string|Standards.URI url)
+class Client(string|Standards.URI url, int|void boolean)
 {
 
   function `[](string call)
@@ -353,7 +381,7 @@ class Client(string|Standards.URI url)
 	       // error, always return 200 OK."
 	       error ("Got invalid return code %d from %O: %O\n%O", c->status,
 		      url, c->status_desc, c->data());
-	     return decode_response(c->data());
+	     return decode_response(c->data(),boolean);
 	   };
   }
 
@@ -365,6 +393,10 @@ class Client(string|Standards.URI url)
 
 //! This class implements an XML-RPC client that uses HTTP transport using
 //! non blocking sockets.
+//!
+//! There is an optional boolean flag to get the new behavior of
+//! booleans being returned Val instead of ints.
+//!
 //! @example
 //! @pre{void data_ok(mixed result)
 //!{
@@ -387,10 +419,12 @@ class AsyncClient
   protected object request;
   protected function user_data_ok;
   protected string _url;
+  protected int _boolean;
 
-  void create(string|Standards.URI|Protocols.HTTP.Session.SessionURL url)
+  void create(string|Standards.URI|Protocols.HTTP.Session.SessionURL url, int|void boolean)
   {
     _url = url;
+    _boolean = boolean;
   }
   
   protected void _data_ok()
@@ -400,7 +434,7 @@ class AsyncClient
       if (request->status() == 200)
 	// The xml-rpc spec says "Unless there's a lower-level error,
 	// always return 200 OK."
-	result = decode_response(request->data());
+	result = decode_response(request->data(),_boolean);
     }
     user_data_ok(result);
   }
