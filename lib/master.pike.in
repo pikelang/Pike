@@ -108,20 +108,32 @@ private function werror = Files()->_stderr->write;
 // Tell Pike.count_memory this is global.
 constant pike_cycle_depth = 0;
 
-#ifdef RESOLV_DEBUG
+//#define RECUR_COMPILE_DEBUG
+// More brief than RESOLV_DEBUG. Usually enough to find those pesky
+// "Recursive module dependency" bugs. :P
+
+#if defined (RESOLV_DEBUG) || defined (RECUR_COMPILE_DEBUG)
 
 #if constant (thread_local)
-protected object resolv_msg_depth = thread_local();
+protected object _msg_depth = thread_local();
 // NOTE: May be used before __INIT has completed.
-#define GET_RESOLV_MSG_DEPTH (resolv_msg_depth && resolv_msg_depth->get())
-#define INC_RESOLV_MSG_DEPTH() (resolv_msg_depth && resolv_msg_depth->set (resolv_msg_depth->get() + 1))
-#define DEC_RESOLV_MSG_DEPTH() (resolv_msg_depth && resolv_msg_depth->set (resolv_msg_depth->get() - 1))
+#define GET_MSG_DEPTH (_msg_depth && _msg_depth->get())
+#define INC_MSG_DEPTH() (_msg_depth && _msg_depth->set (_msg_depth->get() + 1))
+#define DEC_MSG_DEPTH() (_msg_depth && _msg_depth->set (_msg_depth->get() - 1))
 #else
-protected int resolv_msg_depth;
-#define GET_RESOLV_MSG_DEPTH resolv_msg_depth
-#define INC_RESOLV_MSG_DEPTH() (++resolv_msg_depth)
-#define DEC_RESOLV_MSG_DEPTH() (--resolv_msg_depth)
+protected int _msg_depth;
+#define GET_MSG_DEPTH _msg_depth
+#define INC_MSG_DEPTH() (++_msg_depth)
+#define DEC_MSG_DEPTH() (--_msg_depth)
 #endif
+
+#endif
+
+#ifdef RESOLV_DEBUG
+
+#define GET_RESOLV_MSG_DEPTH GET_MSG_DEPTH
+#define INC_RESOLV_MSG_DEPTH INC_MSG_DEPTH
+#define DEC_RESOLV_MSG_DEPTH DEC_MSG_DEPTH
 
 void resolv_debug (sprintf_format fmt, sprintf_args... args)
 {
@@ -1154,6 +1166,10 @@ program compile_string(string source, void|string filename,
 		       void|object o,
 		       void|int _show_if_constant_errors)
 {
+#ifdef RECUR_COMPILE_DEBUG
+  werror ("%*s>>> compile_string %O\n", GET_MSG_DEPTH, "", filename);
+  INC_MSG_DEPTH();
+#endif
   program ret = compile(cpp(source, filename||"-", 1, handler,
 		     compat_major, compat_minor,
 		     (zero_type(_show_if_constant_errors)?
@@ -1166,6 +1182,10 @@ program compile_string(string source, void|string filename,
 		 o);
   if (source_cache)
     source_cache[ret] = source;
+#ifdef RECUR_COMPILE_DEBUG
+  DEC_MSG_DEPTH();
+  werror ("%*s<<< compile_string %O\n", GET_MSG_DEPTH, "", filename);
+#endif
   return ret;
 }
 
