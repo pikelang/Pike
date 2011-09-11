@@ -95,9 +95,9 @@ Call decode_call(string xml_input)
 //!
 //! @seealso
 //! @[Fault]
-array|Fault decode_response(string xml_input, int|void compat)
+array|Fault decode_response(string xml_input, int|void boolean)
 {
-  array|mapping r = decode(xml_input, response_dtd, compat);
+  array|mapping r = decode(xml_input, response_dtd, boolean);
   if(arrayp(r))
     return r;
   return Fault(r->faultCode, r->faultString);
@@ -181,13 +181,23 @@ protected constant response_dtd = #"
 // (that is omitting string inside a value).
 protected class StringWrap(string s){};
 
-protected mixed decode(string xml_input, string dtd_input, int|void compat)
+// Same as magic_zero below
+object magic_false = class {}();
+
+// Replace all magic_false with Val.false if necessary
+void replace_magic_false(array|mapping a) {
+  replace(a,magic_false,Val.false);
+  foreach (a;; mixed b) {
+    if (mappingp(b) || arrayp(b))
+      replace_magic_false(b);
+  }
+}
+
+protected mixed decode(string xml_input, string dtd_input, int|void boolean)
 {
   // We cannot insert 0 integers directly into the parse tree, so
   // we'll use magic_zero as a placeholder and destruct it afterwards.
   object magic_zero = class {}();
-  // Same with Val.false
-  object magic_false = class {}();
 
   Parser.XML.Validating xml = Parser.XML.Validating();
   array tree = xml->
@@ -232,7 +242,7 @@ protected mixed decode(string xml_input, string dtd_input, int|void compat)
 			     case "int":
 			       return (int)(data*"") || magic_zero;
 			     case "boolean":
-			       if (compat)
+			       if (!boolean)
 				 return (int)(data*"") || magic_zero;
 			       return (int)(data*"")?Val.true:magic_false;
 			     case "double":
@@ -272,11 +282,10 @@ protected mixed decode(string xml_input, string dtd_input, int|void compat)
 		       return 0;
 		     });
   destruct(magic_zero);   // Apply Magic! Replace magic_zero with real 0:s.
-  if (!compat) {
+
+  if (boolean) {
     // extra magic, change magic_false to Val.false
-    if (arrayp(tree[0][0]) || mappingp(tree[0][0]))
-      tree[0][0]=replace(tree[0][0],magic_false,Val.false);
-    tree[0]=replace(tree[0],magic_false,Val.false);
+    replace_magic_false(tree);
   }
   return tree[0];
 }
@@ -334,8 +343,8 @@ protected string encode_params(array params)
 
 //! This class implements an XML-RPC client that uses HTTP transport.
 //!
-//! There is an optional compatibility flag to get the old behavior of
-//! booleans being returned as ints instead of Val.
+//! There is an optional boolean flag to get the new behavior of
+//! booleans being returned as Val instead of ints.
 //!
 //! @example
 //! @pre{
@@ -356,7 +365,7 @@ protected string encode_params(array params)
 //!  		    })
 //!  		})
 //! @}
-class Client(string|Standards.URI url, int|void compat)
+class Client(string|Standards.URI url, int|void boolean)
 {
 
   function `[](string call)
@@ -372,7 +381,7 @@ class Client(string|Standards.URI url, int|void compat)
 	       // error, always return 200 OK."
 	       error ("Got invalid return code %d from %O: %O\n%O", c->status,
 		      url, c->status_desc, c->data());
-	     return decode_response(c->data(),compat);
+	     return decode_response(c->data(),boolean);
 	   };
   }
 
@@ -385,8 +394,8 @@ class Client(string|Standards.URI url, int|void compat)
 //! This class implements an XML-RPC client that uses HTTP transport using
 //! non blocking sockets.
 //!
-//! There is an optional compatibility flag to get the old behavior of
-//! booleans being returned as ints instead of Val.
+//! There is an optional boolean flag to get the new behavior of
+//! booleans being returned Val instead of ints.
 //!
 //! @example
 //! @pre{void data_ok(mixed result)
@@ -410,12 +419,12 @@ class AsyncClient
   protected object request;
   protected function user_data_ok;
   protected string _url;
-  protected int _compat;
+  protected int _boolean;
 
-  void create(string|Standards.URI|Protocols.HTTP.Session.SessionURL url, int|void compat)
+  void create(string|Standards.URI|Protocols.HTTP.Session.SessionURL url, int|void boolean)
   {
     _url = url;
-    _compat = compat;
+    _boolean = boolean;
   }
   
   protected void _data_ok()
@@ -425,7 +434,7 @@ class AsyncClient
       if (request->status() == 200)
 	// The xml-rpc spec says "Unless there's a lower-level error,
 	// always return 200 OK."
-	result = decode_response(request->data(),_compat);
+	result = decode_response(request->data(),_boolean);
     }
     user_data_ok(result);
   }
