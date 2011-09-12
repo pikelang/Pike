@@ -62,6 +62,34 @@ protected int assert_forkd()
 }
 #endif
 
+protected int(0..1) forkd_default = 0;
+
+//! Set the default value for the @expr{"forkd"@} modifier
+//! to @[Process].
+//!
+//! @note
+//!   The default default value is @expr{0@} (zero).
+//!
+//! @seealso
+//!   @[get_forkd_default()], @[Process()->create()]
+void set_forkd_default(int(0..1) mode)
+{
+  forkd_default = mode;
+}
+
+//! Get the default value for the @expr{"forkd"@} modifier
+//! to @[Process].
+//!
+//! @note
+//!   The default default value is @expr{0@} (zero).
+//!
+//! @seealso
+//!   @[set_forkd_default()], @[Process()->create()]
+int(0..1) get_forkd_default()
+{
+  return forkd_default;
+}
+
 //! Slightly polished version of @[create_process].
 //!
 //! In addition to the features supported by @[create_process],
@@ -110,9 +138,15 @@ class Process
   //!     @member int(0..1) "forkd"
   //!       Use @[Tools.Standalone.forkd] to actually spawn the process.
   //!   @endmapping
+  //!
+  //! @note
+  //!   The default value for the @expr{"forkd"@} modifier may be
+  //!   set via @[set_forkd_default()].
+  //!
   //! @seealso
   //!   @[create_process], @[create_process()->create()],
-  //!   @[split_quoted_string()], @[Tools.Standalone.forkd]
+  //!   @[split_quoted_string()], @[Tools.Standalone.forkd],
+  //!   @[set_forkd_default()], @[get_forkd_default()]
   protected void create( string|array(string) command_args,
 			 void|mapping(string:mixed) modifiers )
   {
@@ -133,6 +167,7 @@ class Process
 
 #if constant(Stdio.__HAVE_SEND_FD__)
     // Forkd mode requires send_fd().
+    if (zero_type(new_modifiers->forkd)) new_modifiers->forkd = forkd_default;
     if (new_modifiers->forkd && assert_forkd()) {
       process_fd = Stdio.File();
       forkd_pipe->
