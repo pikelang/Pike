@@ -458,6 +458,13 @@ test_any([[
   return ({ B(), C(), D() })->q() * "";
 ]], "sss")
 
+test_any([[
+  // bug 6065
+  class A(string s) {};
+  class B(string s) { inherit A; };
+  return B("foo")->s;
+]], "foo")
+
 dnl bug in for loop optimization in combination with +=
 
 test_any([[
