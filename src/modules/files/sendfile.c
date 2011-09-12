@@ -918,20 +918,20 @@ static void sf_create(INT32 args)
     sf.to = (struct my_file *)(sf.to_file->storage);
   } else if (!(sf.to = (struct my_file *)get_storage(sf.to_file,
 						     file_program))) {
-    struct object **ob;
-    if (!(ob = (struct object **)get_storage(sf.to_file, file_ref_program)) ||
-	!(*ob) ||
-	!(sf.to = (struct my_file *)get_storage(*ob, file_program))) {
+    struct svalue *sval;
+    if (!(sval = (struct svalue *)get_storage(sf.to_file, file_ref_program)) ||
+	(sval->type != T_OBJECT) ||
+	!(sf.to = (struct my_file *)get_storage(sval->u.object, file_program))) {
       SIMPLE_BAD_ARG_ERROR("sendfile", 6, "object(Stdio.File)");
     }
-    add_ref(*ob);
+    add_ref(sval->u.object);
 #ifdef PIKE_DEBUG
     if ((sp[5-args].type != T_OBJECT) ||
 	(sp[5-args].u.object != sf.to_file)) {
       Pike_fatal("sendfile: Stack out of sync(1).\n");
     }
 #endif /* PIKE_DEBUG */
-    sf.to_file = *ob;
+    sf.to_file = sval->u.object;
     free_object(sp[5-args].u.object);
     sp[5-args].u.object = sf.to_file;
   }
@@ -957,21 +957,21 @@ static void sf_create(INT32 args)
       sf.from = (struct my_file *)(sf.from_file->storage);
     } else if (!(sf.from = (struct my_file *)get_storage(sf.from_file,
 							 file_program))) {
-      struct object **ob;
-      if (!(ob = (struct object **)get_storage(sf.from_file,
-					       file_ref_program)) ||
-	!(*ob) ||
-	!(sf.from = (struct my_file *)get_storage(*ob, file_program))) {
+      struct svalue *sval;
+      if (!(sval = (struct svalue *)get_storage(sf.from_file,
+						file_ref_program)) ||
+	!(sval->type != T_OBJECT) ||
+	!(sf.from = (struct my_file *)get_storage(sval->u.object, file_program))) {
 	SIMPLE_BAD_ARG_ERROR("sendfile", 2, "object(Stdio.File)");
       }
-      add_ref(*ob);
+      add_ref(sval->u.object);
 #ifdef PIKE_DEBUG
       if ((sp[1-args].type != T_OBJECT) ||
 	  (sp[1-args].u.object != sf.from_file)) {
 	Pike_fatal("sendfile: Stack out of sync(2).\n");
       }
 #endif /* PIKE_DEBUG */
-      sf.from_file = *ob;
+      sf.from_file = sval->u.object;
       free_object(sp[1-args].u.object);
       sp[1-args].u.object = sf.from_file;
     }
