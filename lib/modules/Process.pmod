@@ -775,13 +775,12 @@ Process spawn(string command, void|Stdio.Stream stdin,
   if (sizeof(command) <= 1 ||
       command[0] != '\"' || command[sizeof(command)-1] != '\"')
     command = "\"" + command + "\"";
-  return create_process(({ "cmd", "/c", command }),data);
+  return Process(({ "cmd", "/c", command }),data);
 #elif defined(__amigaos__)
-  return create_process(split_quoted_string(command),data);
+  return Process(split_quoted_string(command),data);
 #else /* !__NT__||__amigaos__ */
-  return create_process(({ "/bin/sh", "-c", command }),data);
+  return Process(({ "/bin/sh", "-c", command }),data);
 #endif /* __NT__||__amigaos__ */
-
 }
 
 //! @decl string popen(string command)
