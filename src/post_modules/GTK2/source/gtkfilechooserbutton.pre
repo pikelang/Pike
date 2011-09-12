@@ -3,6 +3,7 @@ require gtk26;
 
 class GTK2.FileChooserButton;
 inherit GTK2.Hbox;
+inherit GTK2.FileChooser;
 
 //! Properties:
 //! GTK2.FileChooserDialog dialog
