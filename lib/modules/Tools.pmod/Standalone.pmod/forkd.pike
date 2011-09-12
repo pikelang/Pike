@@ -82,7 +82,7 @@ class ForkStream
 
   protected void send_pid()
   {
-    if (state) return;
+    if (state || !pid) return;
     send_packet("PID", pid->pid());
     state = 1;
   }
