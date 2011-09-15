@@ -393,15 +393,6 @@ test_any([[
   return sizeof(a);
 ]], 1)
 
-test_any([[
-  // Bug 6063
-  class A { extern string s; string q() { return s; } };
-  class B { inherit A; string s = "s"; };
-  class C { inherit B; };
-  class D { inherit C; };
-  return ({ B(), C(), D() })->q() * "";
-]], "sss")
-
 dnl bug in for loop optimization in combination with +=
 
 test_any([[
