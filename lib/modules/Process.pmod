@@ -117,6 +117,8 @@ class Process
 
   protected Pike.Backend process_backend;
 
+  protected mixed process_poll;
+
   //! @param command_args
   //!   Either a command line array, as the command_args
   //!   argument to @[create_process()], or a string that
@@ -224,6 +226,10 @@ class Process
       while (__status == -1) {
 	process_backend(3600.0);
       }
+
+      if (process_fd) {
+	process_poll = call_out(do_poll_loop, 0.1);
+      }
     } else
 #endif
     {
@@ -249,6 +255,7 @@ class Process
     }
     process_fd = UNDEFINED;
     process_backend = UNDEFINED;
+    remove_call_out(process_poll);
   }
 
   protected string recv_buf = "";
@@ -314,24 +321,44 @@ class Process
     }
   }
 
+  protected void do_poll(float t)
+  {
+    mixed err = catch {
+	process_backend && process_backend(t);
+	return;
+      };
+    // Filter errors about the backend already running.
+    if (arrayp(err) && sizeof(err) &&
+	stringp(err[0]) && has_prefix(err[0], "Backend already ")) return;
+    throw(err);
+  }
+
+  protected void do_poll_loop()
+  {
+    process_poll = UNDEFINED;
+    if (!process_backend) return;
+    do_poll(0.0);
+    process_poll = call_out(do_poll_loop, 0.1);
+  }
+
   int last_signal()
   {
-    process_backend && process_backend(0.0);
+    do_poll(0.0);
     return ::last_signal();
   }
 
   int(-1..2) status()
   {
-    process_backend && process_backend(0.0);
+    do_poll(0.0);
     return ::status();
   }
 
   int wait()
   {
     if (process_backend) {
-      process_backend(0.0);
+      do_poll(0.0);
       while (__status <= 0) {
-	process_backend(3600.0);
+	do_poll(3600.0);
       }
       return __result;
     }
@@ -342,6 +369,9 @@ class Process
   protected void destroy() {
     remove_call_out(watcher);
     remove_call_out(killer);
+#if constant(Stdio.__HAVE_SEND_FD__)
+    remove_call_out(process_poll);
+#endif
   }
 
   protected void watcher() {
