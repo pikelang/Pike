@@ -382,7 +382,8 @@ static int pf_listxattr(const char *path, char *list, size_t size)
     if( Pike_sp[-1].type != PIKE_T_STRING ||
 	(Pike_sp[-1].u.string->size_shift) )
 	DEFAULT_ERRNO();
-    ds = Pike_sp[-1].u.string->len <<Pike_sp[-1].u.string->size_shift;
+    /* We need to account for the terminating NUL. */
+    ds = (Pike_sp[-1].u.string->len + 1) <<Pike_sp[-1].u.string->size_shift;
     if( !size )
 	return ds;
     if( size < ds )
