@@ -531,7 +531,9 @@ class Runtime_timezone_compiler
 	    case 5:
 	       dayrule=think_day(a[0],a[1]);
 	       comment=a[0]+" "+a[1];
-	       [time,timetype]=parse_tod(a[2]);
+	       // NB: The Morocco rule for 2011-07-31 has 0 as AT,
+	       //     while all others have 0:00.
+	       [time,timetype] = parse_tod(a[2]) || ({ 0, "" });
 	       switch (timetype)
 	       {
 		  case "": timetype="w"; break;
