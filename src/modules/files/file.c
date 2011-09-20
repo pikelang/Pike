@@ -70,6 +70,10 @@
 #include <sys/xattr.h>
 #endif /* HAVE_SYS_XATTR_H */
 
+#ifdef HAVE_AVAILABILITYMACROS_H
+#include <AvailabilityMacros.h>
+#endif
+
 #if defined(HAVE_WINSOCK_H) || defined(HAVE_WINSOCK2_H)
 #ifndef EWOULDBLOCK
 #define EWOULDBLOCK WSAEWOULDBLOCK
@@ -890,6 +894,21 @@ static void check_message(struct msghdr *msg)
 {
 #ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
   struct cmsghdr *cmsg;
+
+#if defined(MAC_OS_X_VERSION_10_0) && !defined(MAC_OS_X_VERSION_10_6)
+  /* The CMSG_DATA() and CMSG_LEN() macros are broken on MacOS X 10.5
+   * and earlier for 64-bit ABI, where it adds extra padding between
+   * the struct cmsghdr and the data, while the kernel doesn't...
+   *
+   * The macros seem to be fixed in the 10.6 header files.
+   *
+   * /grubba 2011-09-19.
+   */
+#undef CMSG_DATA
+#define CMSG_DATA(X)	((void *)((X) + 1))
+#undef CMSG_LEN
+#define CMSG_LEN(X)	(sizeof(struct cmsghdr) + (X))
+#endif
 
   for (cmsg = CMSG_FIRSTHDR(msg); cmsg; cmsg = CMSG_NXTHDR(msg, cmsg)) {
     if ((cmsg->cmsg_level == SOL_SOCKET) && (cmsg->cmsg_type == SCM_RIGHTS)) {
