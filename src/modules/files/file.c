@@ -1122,20 +1122,34 @@ static int writev_fds(int fd, struct iovec *iov, int iovcnt,
   struct msghdr msg;
 #ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
   /* XPG 4.2 */
-  struct cmsghdr *cmsg = malloc(CMSG_LEN(num_fds * sizeof(int)));
 
-/*   fprintf(stderr, "writev_fds(%d, %p, %d, %p, %d)\n", fd, iov, iovcnt, fds, num_fds); */
+#ifndef CMSG_SPACE(X)
+#define CMSG_SPACE(X)	CMSG_LEN(X)
+#endif
+
+  struct cmsghdr *cmsg = malloc(CMSG_SPACE(num_fds * sizeof(int)));
+
+#if 0
+  fprintf(stderr, "writev_fds(%d, %p, %d, %p, %d)\n", fd, iov, iovcnt, fds, num_fds);
+
+  for (e = 0; e < num_fds; e++) {
+    fprintf(stderr, "  fd #%d: %d\n", e, fds[e]);
+  }
+#endif /* 0 */
 
   if (!cmsg) {
     errno = ENOMEM;
     return -1;
   }
+
   msg.msg_control = cmsg;
   msg.msg_controllen = cmsg->cmsg_len = CMSG_LEN(num_fds * sizeof(int));
   cmsg->cmsg_level = SOL_SOCKET;
   cmsg->cmsg_type = SCM_RIGHTS;
+
   MEMCPY(CMSG_DATA(cmsg), fds, num_fds * sizeof(int));
   msg.msg_flags = 0;
+
 #else
   /* BSD */
   msg.msg_accrights = (void *)fds;
@@ -1989,6 +2003,10 @@ static void file_write(INT32 args)
 #endif
   }
 
+#ifdef _REENTRANT
+  /* check_signals() may have done something... */
+  if(FD<0) Pike_error("File closed while in file->write.\n");
+#endif
   /* Race: A backend in another thread might have managed to set these
    * again for buffer space available after the write above. Not that
    * bad - it will get through in a later backend round. */
