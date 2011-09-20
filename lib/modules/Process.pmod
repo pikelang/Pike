@@ -57,6 +57,10 @@ protected int assert_forkd()
 						Stdio.PROP_SEND_FD),
 			     }),
 			   ]));
+    if (forkd_pipe->read(1) != "\0") {
+      // werror("Failed to start forkd.\n");
+      return 0;
+    }
   }
   return forkd_pid && forkd_pid->kill(0);
 }
@@ -174,7 +178,8 @@ class Process
       process_fd = Stdio.File();
       forkd_pipe->
 	send_fd(process_fd->pipe(Stdio.PROP_BIDIRECTIONAL|Stdio.PROP_SEND_FD));
-      forkd_pipe->write("\0");
+      while (forkd_pipe->write("\0") < 0)
+	;
 
       m_delete(new_modifiers, "forkd");
       __callback = m_delete(new_modifiers, "callback");
@@ -211,6 +216,12 @@ class Process
       string data = encode_value(({ command_args, new_modifiers }),
 				 ForkdEncoder(process_fd));
       data = sprintf("%4c%s", sizeof(data), data);
+      // Wait for forkd to acknowledge the process_fd.
+      if (process_fd->read(4) != "\0\0\0\0") {
+	process_fd->close();
+	process_fd = UNDEFINED;
+	error("Failed to create spawn request.\n");
+      }
       int bytes = process_fd->write(data);
       if (bytes != sizeof(data)) {
 	process_fd->close();

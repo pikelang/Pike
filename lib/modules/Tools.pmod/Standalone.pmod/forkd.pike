@@ -150,6 +150,8 @@ class ForkStream
 
   void start()
   {
+    // Inform the initiator that we're alive and ready.
+    write("\0\0\0\0");
     set_nonblocking(got_data, UNDEFINED, do_close);
   }
 }
@@ -188,6 +190,9 @@ int main(int argc, array(string) argv)
   Stdio.File fork_file = Stdio.File();
   FdStream fd = FdStream(3, "");
   fork_file->_fd = fd->_fd;
+
+  // Inform the dispatcher that we're up and running.
+  fork_file->write("\0");
 
   fork_file->set_nonblocking(ignore, UNDEFINED, terminate);
 
