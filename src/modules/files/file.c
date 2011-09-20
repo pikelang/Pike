@@ -370,6 +370,13 @@ static void restore_fd_info(int *fd_info)
     /* Someone added fds to send when we weren't looking... */
     int i, j, cnt;
     int num_fds = fd_info[1] + other_fd_info[1] + 2;
+
+#ifdef PIKE_DEBUG
+    if (other_fd_info == fd_info) {
+      Pike_fatal("restore_fd_info: Double restore!\n");
+    }
+#endif
+
     if (num_fds <= fd_info[0]) {
       cnt = other_fd_info[1] + 2;
       for (i = 2; i < cnt; i++) {
@@ -1921,6 +1928,7 @@ static void file_write(INT32 args)
 /*     fprintf(stderr, "fd_info: %p\n", THIS->fd_info); */
     if (THIS->fd_info && (num_fds = THIS->fd_info[1])) {
       fd_info = THIS->fd_info;
+      THIS->fd_info = NULL;
     }
 #endif
     THREADS_ALLOW();
