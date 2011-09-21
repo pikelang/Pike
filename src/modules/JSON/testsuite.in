@@ -50,6 +50,8 @@ test_dec_enc_canon("\"\\\"\\\\\\b\\f\\n\\r\\t\"", "\"\\\b\f\n\r\t")
 test_dec_enc_canon("\"\u0123\"", "\x0123")
 test_eval_error(Standards.JSON.encode("\x0123456"))
 
+test_dec_enc_canon("\"\u2027\\u2028\\u2029\u2030\"", "\u2027\u2028\u2029\u2030")
+
 test_dec_enc_canon("[]", ({}))
 test_dec_enc_canon([[ "[1,2.0,\"3\"]" ]], ({1,2.0,"3"}))
 test_eval_error([[
