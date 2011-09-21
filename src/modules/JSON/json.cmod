@@ -83,16 +83,8 @@ static void json_escape_string (struct string_builder *buf, int flags,
     if (c < 0 || c > 0x10ffff)
       Pike_error ("Cannot json encode non-unicode char "
 		  "0x%"PRINTPIKEINT"x.\n", (INT_TYPE) c);
-    /* FIXME: RFC 4627 says:
-     *   To escape an extended character that is not in the Basic
-     *   Multilingual Plane, the character is represented as a
-     *   twelve-character sequence, encoding the UTF-16 surrogate
-     *   pair. So, for example, a string containing only the G
-     *   clef character (U+1D11E) may be represented as
-     *   "\uD834\uDD1E".
-     */
     if (c == '"' || c == '\\' || c <= 0x1f ||
-	(c >= 0x7f && flags & ASCII_ONLY && c <= 0xffff) ||
+	(c >= 0x7f && flags & ASCII_ONLY) ||
 	/* Let's escape U+2028 and U+2029 as well for compat with
 	 * parsers built in javascript - see
 	 * http://timelessrepo.com/json-isnt-a-javascript-subset. */
@@ -111,8 +103,19 @@ static void json_escape_string (struct string_builder *buf, int flags,
 	case '\r': string_builder_putchar (buf, 'r'); break;
 	case '\t': string_builder_putchar (buf, 't'); break;
 	default:
-	  string_builder_putchar (buf, 'u');
-	  string_builder_append_integer (buf, c, 16, APPEND_ZERO_PAD, 4, 4);
+	  if (c <= 0xffff) {
+	    string_builder_putchar (buf, 'u');
+	    string_builder_append_integer (buf, c, 16, APPEND_ZERO_PAD, 4, 4);
+	  }
+	  else {
+	    string_builder_putchar (buf, 'u');
+	    c -= 0x10000;
+	    string_builder_append_integer (buf, (c >> 10) + 0xd800, 16,
+					   APPEND_ZERO_PAD, 4, 4);
+	    string_builder_strcat (buf, "\\u");
+	    string_builder_append_integer (buf, (c & 0x3ff) + 0xdc00, 16,
+					   APPEND_ZERO_PAD, 4, 4);
+	  }
 	  break;
       }
       s = i + 1;
@@ -369,10 +372,8 @@ static void json_encode_recur (struct encode_context *ctx, struct svalue *val)
  *!   (U+007f). The default is to escape only the characters that must
  *!   be escaped. The flag value is 1.
  *!
- *!   Note however that the limited length of the escapes makes it
- *!   possible to escape chars up to U+ffff inclusive only. Chars
- *!   above that are still unescaped in the output (which can be
- *!   detected with @[String.width]).
+ *!   Characters above U+FFFF are encoded using escaped surrogate
+ *!   pairs, as per RFC 4627.
  *!
  *! @item Standards.JSON.HUMAN_READABLE
  *!   Pretty print with indentation to make the result easier on human
