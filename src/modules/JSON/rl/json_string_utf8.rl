@@ -6,20 +6,50 @@
     alphtype unsigned char;
     include JSOND "json_defaults.rl";
 
-    action hex0 {
-	temp = HEX2DEC(fc);
+    action hex0beg {
+	hexchr0 = HEX2DEC(fc);
     }
 
-    action hex1 {
-	temp *= 16;
-	temp += HEX2DEC(fc);
+    action hex0mid {
+	hexchr0 *= 16;
+	hexchr0 += HEX2DEC(fc);
     }
 
-    action hex2 {
-	if (IS_NUNICODE(temp)) {
-		goto failure;	
+    action hex0end {
+	if (IS_HIGH_SURROGATE (hexchr0)) {
+	    /* Chars outside the BMP can be expressed as two hex
+	     * escapes that codes a surrogate pair, so see if we can
+	     * read a second one. */
+	    fnext hex1;
 	}
-	if (!(state->flags&JSON_VALIDATE)) string_builder_putchar(&s, temp);
+	else {
+	    if (IS_NUNICODE(hexchr0)) {
+		goto failure;
+	    }
+	    if (!(state->flags&JSON_VALIDATE)) {
+		string_builder_putchar(&s, hexchr0);
+	    }
+	}
+    }
+
+    action hex1beg {
+	hexchr1 = HEX2DEC(fc);
+    }
+
+    action hex1mid {
+	hexchr1 *= 16;
+	hexchr1 += HEX2DEC(fc);
+    }
+
+    action hex1end {
+	if (!IS_LOW_SURROGATE (hexchr1)) {
+	    goto failure;
+	}
+	if (!(state->flags&JSON_VALIDATE)) {
+	    int cp = (((hexchr0 - 0xd800) << 10) | (hexchr1 - 0xdc00)) +
+		0x10000;
+	    string_builder_putchar(&s, cp);
+	}
     }
 
     action add_unquote {
@@ -88,7 +118,10 @@
 		   ),
 		   unquote: (
 		       ["\\/bfnrt] >add_unquote -> start |
-		       'u' . xdigit >hex0 . (xdigit{3} $hex1) @hex2 -> start
+		       'u' . xdigit >hex0beg . (xdigit{3} $hex0mid) @hex0end -> start
+		   ) @mark_next,
+		   hex1: (
+		       '\\u' . xdigit >hex1beg . (xdigit{3} $hex1mid) @hex1end -> start
 		   ) @mark_next
 		  ) >mark %*{ fpc--; fbreak; };
 }%%
@@ -101,7 +134,7 @@ static ptrdiff_t _parse_JSON_string_utf8(PCHARP str, ptrdiff_t pos, ptrdiff_t en
     struct string_builder s;
     int cs;
     ONERROR handle;
-    p_wchar2 temp = 0;
+    int hexchr0, hexchr1;
     p_wchar2 unicode = 0;
 
     %% write data;
