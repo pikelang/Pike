@@ -70,8 +70,11 @@ static char *err_msg;
     c++;								\
 } while(0)
 
-#define IS_NUNICODE(x)	((x) < 0 || ((x) > 0xd7ff && (x) < 0xe000) || (x) > 0x10ffff)
-#define IS_NUNICODE1(x)	((x) < 0 || ((x) > 0xd7ff && (x) < 0xe000))
+#define IS_SURROGATE(x) ((x) >= 0xd800 && (x) < 0xe000)
+#define IS_HIGH_SURROGATE(x) ((x) >= 0xd800 && (x) < 0xdc00)
+#define IS_LOW_SURROGATE(x) ((x) >= 0xdc00 && (x) < 0xe000)
+#define IS_NUNICODE(x)	((x) < 0 || IS_SURROGATE (x) || (x) > 0x10ffff)
+#define IS_NUNICODE1(x)	((x) < 0 || IS_SURROGATE (x))
 
 static void json_escape_string (struct string_builder *buf, int flags,
 				struct pike_string *val)
