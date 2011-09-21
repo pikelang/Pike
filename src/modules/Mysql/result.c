@@ -783,8 +783,26 @@ static void json_escape(struct string_builder *res,
  *! @seealso
  *!   @[fetch_row()]
  *!
- *! @fixme
- *!   Ensure that all fields (including binary fields) are UTF-8 encoded.
+ *! @note
+ *!   This function passes on string values without any charset
+ *!   conversions. That means the result is correct JSON only if the
+ *!   result charset is UTF-8 (which includes if unicode decode mode
+ *!   is enabled - see @[set_unicode_decode_mode]).
+ *!
+ *!   For many other charsets it is possible to do charset conversion
+ *!   afterwards on the result string, since all markup is in the
+ *!   ASCII range, which is typically invariant. However, that won't
+ *!   work if binary and text results are returned at the same time.
+ *!
+ *!   Also note that the characters U+2028 (LINE SEPARATOR) and U+2029
+ *!   (PARAGRAPH SEPARATOR) are passed through without being converted
+ *!   to @tt{\uxxxx@} escapes. Those two characters can cause trouble
+ *!   with some Javascript based JSON parsers since they aren't
+ *!   allowed in Javascript string literals. It is possible to use
+ *!   @[replace] on the returned string to escape them, though.
+ *!
+ *! @seealso
+ *! @[Standards.JSON.encode]
  */
 static void f_fetch_json_result(INT32 args)
 {
