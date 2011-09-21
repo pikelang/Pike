@@ -51,6 +51,10 @@ test_dec_enc_canon("\"\u0123\"", "\x0123")
 test_eval_error(Standards.JSON.encode("\x0123456"))
 
 test_dec_enc_canon("\"\u2027\\u2028\\u2029\u2030\"", "\u2027\u2028\u2029\u2030")
+test_eq(Standards.JSON.validate ("\"\U00110000\""), 1);
+test_eval_error(Standards.JSON.decode ("\"\U00110000\""));
+test_eq(Standards.JSON.validate ("\"\\ud800\""), 6);
+test_eval_error(Standards.JSON.decode ("\"\\ud800\""));
 
 test_dec_enc_canon("[]", ({}))
 test_dec_enc_canon([[ "[1,2.0,\"3\"]" ]], ({1,2.0,"3"}))
