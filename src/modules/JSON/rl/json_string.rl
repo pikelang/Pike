@@ -8,22 +8,21 @@
     getkey ((int)INDEX_PCHARP(str, fpc));
 
     action hex0 {
-	if (!(state->flags&JSON_VALIDATE)) temp = HEX2DEC(fc);
+	temp = HEX2DEC(fc);
     }
 
     action hex1 {
-	if (!(state->flags&JSON_VALIDATE)) {
-	    temp *= 16;
-	    temp += HEX2DEC(fc);
-
-	    if (IS_NUNICODE(temp)) {
-		fpc--; fbreak;
-	    }
-	}
+	temp *= 16;
+	temp += HEX2DEC(fc);
     }
 
     action hex2 {
-	if (!(state->flags&JSON_VALIDATE)) string_builder_putchar(&s, temp);
+	if (IS_NUNICODE(temp)) {
+	    fpc--; fbreak;
+	}
+	if (!(state->flags&JSON_VALIDATE)) {
+	    string_builder_putchar(&s, temp);
+	}
     }
 
     action add_unquote {
