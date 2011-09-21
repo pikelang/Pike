@@ -73,6 +73,57 @@ static char *err_msg;
 #define IS_NUNICODE(x)	((x) < 0 || ((x) > 0xd7ff && (x) < 0xe000) || (x) > 0x10ffff)
 #define IS_NUNICODE1(x)	((x) < 0 || ((x) > 0xd7ff && (x) < 0xe000))
 
+static void json_escape_string (struct string_builder *buf, int flags,
+				struct pike_string *val)
+{
+  PCHARP str = MKPCHARP_STR (val);
+  ptrdiff_t l = val->len, i, s;
+  for (s = 0, i = 0; i < l; i++) {
+    p_wchar2 c = INDEX_PCHARP (str, i);
+    if (c < 0 || c > 0x10ffff)
+      Pike_error ("Cannot json encode non-unicode char "
+		  "0x%"PRINTPIKEINT"x.\n", (INT_TYPE) c);
+    /* FIXME: RFC 4627 says:
+     *   To escape an extended character that is not in the Basic
+     *   Multilingual Plane, the character is represented as a
+     *   twelve-character sequence, encoding the UTF-16 surrogate
+     *   pair. So, for example, a string containing only the G
+     *   clef character (U+1D11E) may be represented as
+     *   "\uD834\uDD1E".
+     */
+    if (c == '"' || c == '\\' || c <= 0x1f ||
+	(c >= 0x7f && flags & ASCII_ONLY && c <= 0xffff) ||
+	/* Let's escape U+2028 and U+2029 as well for compat with
+	 * parsers built in javascript - see
+	 * http://timelessrepo.com/json-isnt-a-javascript-subset. */
+	c == 0x2028 || c == 0x2029) {
+      if (s < i) {
+	PCHARP piece = ADD_PCHARP (str, s);
+	string_builder_append (buf, piece, i - s);
+      }
+      string_builder_putchar (buf, '\\');
+      switch (c) {
+	case '"': string_builder_putchar (buf, '"'); break;
+	case '\\': string_builder_putchar (buf, '\\'); break;
+	case '\b': string_builder_putchar (buf, 'b'); break;
+	case '\f': string_builder_putchar (buf, 'f'); break;
+	case '\n': string_builder_putchar (buf, 'n'); break;
+	case '\r': string_builder_putchar (buf, 'r'); break;
+	case '\t': string_builder_putchar (buf, 't'); break;
+	default:
+	  string_builder_putchar (buf, 'u');
+	  string_builder_append_integer (buf, c, 16, APPEND_ZERO_PAD, 4, 4);
+	  break;
+      }
+      s = i + 1;
+    }
+  }
+  if (s < i) {
+    PCHARP piece = ADD_PCHARP (str, s);
+    string_builder_append (buf, piece, i - s);
+  }
+}
+
 struct parser_state {
     unsigned int level;
     int flags;
@@ -199,45 +250,8 @@ static void json_encode_recur (struct encode_context *ctx, struct svalue *val)
   switch (val->type) {
     case PIKE_T_STRING: {
       struct string_builder *buf = &ctx->buf;
-      PCHARP str = MKPCHARP_STR (val->u.string);
-      ptrdiff_t l = val->u.string->len, i, s;
       string_builder_putchar (buf, '"');
-      for (s = 0, i = 0; i < l; i++) {
-	p_wchar2 c = INDEX_PCHARP (str, i);
-	if (c < 0 || c > 0x10ffff)
-	  Pike_error ("Cannot json encode non-unicode char "
-		      "0x%"PRINTPIKEINT"x.\n", (INT_TYPE) c);
-	if (c == '"' || c == '\\' || c <= 0x1f ||
-	    (c >= 0x7f && ctx->flags & ASCII_ONLY && c <= 0xffff) ||
-	    /* Let's escape U+2028 and U+2029 as well for compat with
-	     * parsers built in javascript - see
-	     * http://timelessrepo.com/json-isnt-a-javascript-subset. */
-	    c == 0x2028 || c == 0x2029) {
-	  if (s < i) {
-	    PCHARP piece = ADD_PCHARP (str, s);
-	    string_builder_append (buf, piece, i - s);
-	  }
-	  string_builder_putchar (buf, '\\');
-	  switch (c) {
-	    case '"': string_builder_putchar (buf, '"'); break;
-	    case '\\': string_builder_putchar (buf, '\\'); break;
-	    case '\b': string_builder_putchar (buf, 'b'); break;
-	    case '\f': string_builder_putchar (buf, 'f'); break;
-	    case '\n': string_builder_putchar (buf, 'n'); break;
-	    case '\r': string_builder_putchar (buf, 'r'); break;
-	    case '\t': string_builder_putchar (buf, 't'); break;
-	    default:
-	      string_builder_putchar (buf, 'u');
-	      string_builder_append_integer (buf, c, 16, APPEND_ZERO_PAD, 4, 4);
-	      break;
-	  }
-	  s = i + 1;
-	}
-      }
-      if (s < i) {
-	PCHARP piece = ADD_PCHARP (str, s);
-	string_builder_append (buf, piece, i - s);
-      }
+      json_escape_string (buf, ctx->flags, val->u.string);
       string_builder_putchar (buf, '"');
       break;
     }
@@ -403,13 +417,11 @@ static void json_encode_recur (struct encode_context *ctx, struct svalue *val)
  *! 8-bit and wider characters in input strings are neither escaped
  *! nor utf-8 encoded by default. @[string_to_utf8] can be used safely
  *! on the returned string to get a valid transport encoded JSON
- *! string.
+ *! string. See @[escape_string] for further details on string
+ *! escaping.
  *!
- *! The characters U+2028 (LINE SEPARATOR) and U+2029 (PARAGRAPH
- *! SEPARATOR) are exceptions - they are encoded with \u escapes for
- *! compatibility. The reason is that those characters are not allowed
- *! in Javascript strings, so JSON parsers built in Javascript may
- *! have trouble with them otherwise.
+ *! @seealso
+ *! @[escape_string]
  */
 PIKEFUN string encode (int|float|string|array|mapping|object val,
 		       void|int flags)
@@ -424,6 +436,47 @@ PIKEFUN string encode (int|float|string|array|mapping|object val,
   json_encode_recur (&ctx, val);
   UNSET_ONERROR (uwp);
   RETURN finish_string_builder (&ctx.buf);
+}
+
+/*! @decl string escape_string (string str, void|int flags)
+ *!
+ *! Escapes string data for use in a JSON string.
+ *!
+ *! 8-bit and wider characters in input strings are neither escaped
+ *! nor utf-8 encoded by default. @[string_to_utf8] can be used safely
+ *! on the returned string to get a valid transport encoded JSON
+ *! string.
+ *!
+ *! The characters U+2028 (LINE SEPARATOR) and U+2029 (PARAGRAPH
+ *! SEPARATOR) are exceptions - they are encoded with \u escapes for
+ *! compatibility. The reason is that those characters are not allowed
+ *! in Javascript strings, so JSON parsers built in Javascript may
+ *! have trouble with them otherwise.
+ *!
+ *! @param val
+ *!   The string to escape.
+ *!
+ *! @param flags
+ *!   Flag bit field to control formatting. @[ASCII_ONLY] is the only
+ *!   flag that has any effect for this function.
+ *!
+ *! @note
+ *! The difference between using this function and @[encode] on a
+ *! string is that @[encode] returns quotations marks around the
+ *! result.
+ *!
+ *! @seealso
+ *! @[encode]
+ */
+PIKEFUN string escape_string (string str, void|int flags)
+{
+  struct string_builder buf;
+  ONERROR uwp;
+  init_string_builder (&buf, 0);
+  SET_ONERROR (uwp, free_string_builder, &buf);
+  json_escape_string (&buf, flags ? flags->u.integer : 0, str);
+  UNSET_ONERROR (uwp);
+  RETURN finish_string_builder (&buf);
 }
 
 #include "json_parser.c"
