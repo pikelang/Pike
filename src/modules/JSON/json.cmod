@@ -208,7 +208,11 @@ static void json_encode_recur (struct encode_context *ctx, struct svalue *val)
 	  Pike_error ("Cannot json encode non-unicode char "
 		      "0x%"PRINTPIKEINT"x.\n", (INT_TYPE) c);
 	if (c == '"' || c == '\\' || c <= 0x1f ||
-	    (c >= 0x7f && ctx->flags & ASCII_ONLY && c <= 0xffff)) {
+	    (c >= 0x7f && ctx->flags & ASCII_ONLY && c <= 0xffff) ||
+	    /* Let's escape U+2028 and U+2029 as well for compat with
+	     * parsers built in javascript - see
+	     * http://timelessrepo.com/json-isnt-a-javascript-subset. */
+	    c == 0x2028 || c == 0x2029) {
 	  if (s < i) {
 	    PCHARP piece = ADD_PCHARP (str, s);
 	    string_builder_append (buf, piece, i - s);
@@ -400,6 +404,12 @@ static void json_encode_recur (struct encode_context *ctx, struct svalue *val)
  *! nor utf-8 encoded by default. @[string_to_utf8] can be used safely
  *! on the returned string to get a valid transport encoded JSON
  *! string.
+ *!
+ *! The characters U+2028 (LINE SEPARATOR) and U+2029 (PARAGRAPH
+ *! SEPARATOR) are exceptions - they are encoded with \u escapes for
+ *! compatibility. The reason is that those characters are not allowed
+ *! in Javascript strings, so JSON parsers built in Javascript may
+ *! have trouble with them otherwise.
  */
 PIKEFUN string encode (int|float|string|array|mapping|object val,
 		       void|int flags)
