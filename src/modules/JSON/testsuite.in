@@ -32,6 +32,11 @@ define(test_dec_enc_canon,[[
   test_enc([[$2]], [[$1]])
 ]])
 
+define(test_dec_enc_string,[[
+  test_dec_enc_canon([["\"$1\""]], [["$2"]])
+  test_eq(Standards.JSON.escape_string ("$2"), "$1")
+]])
+
 test_dec_enc_canon("-1", -1)
 test_dec_enc_canon("0", 0)
 test_dec_enc_canon("1", 1)
@@ -46,11 +51,12 @@ test_eval_error(Standards.JSON.encode(Math.inf))
 test_eval_error(Standards.JSON.encode(Math.nan))
 
 test_dec_enc_canon("\"\"", "")
-test_dec_enc_canon("\"\\\"\\\\\\b\\f\\n\\r\\t\"", "\"\\\b\f\n\r\t")
-test_dec_enc_canon("\"\u0123\"", "\x0123")
+test_dec_enc_string(\\\"\\\\\\b\\f\\n\\r\\t, \"\\\b\f\n\r\t)
+test_dec_enc_string(\u0123, \x0123)
+test_dec_enc_string(\u20ac, \x20AC)
 test_eval_error(Standards.JSON.encode("\x0123456"))
 
-test_dec_enc_canon("\"\u2027\\u2028\\u2029\u2030\"", "\u2027\u2028\u2029\u2030")
+test_dec_enc_string(\u2027\\u2028\\u2029\u2030, \u2027\u2028\u2029\u2030)
 test_eq(Standards.JSON.validate ("\"\U00110000\""), 1);
 test_eval_error(Standards.JSON.decode ("\"\U00110000\""));
 test_eq(Standards.JSON.validate ("\"\\ud800\""), 6);
@@ -107,8 +113,8 @@ test_eq(_refs(Standards.JSON.decode(" [ 45, 34, 3, 4, 5 ] ")), 1)
 test_true(-1 != Standards.JSON.validate_utf8("[ 32, 23, 43  , 54   ,45]        uh"))
 test_eq(-1, Standards.JSON.validate_utf8("[ 32, 23, 43  , 54   ,45]       "))
 
-test_dec_enc_canon("\"\\\\/\\\"\\\"\\\\\"", "\\/\"\"\\")
-test_dec_enc_canon("\"\\\\/skjdhf\\\"sdf\\\"d\\\\\"", "\\/skjdhf\"sdf\"d\\")
+test_dec_enc_string(\\\\/\\\"\\\"\\\\, \\/\"\"\\)
+test_dec_enc_string(\\\\/skjdhf\\\"sdf\\\"d\\\\, \\/skjdhf\"sdf\"d\\)
 
 // test examples from json.org
 test_dec_enc([[
