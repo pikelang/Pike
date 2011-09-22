@@ -541,6 +541,7 @@ static void f_html_encode_string( INT32 args )
 	case '>': newlen+=3; break;/* &gt; 	*/			\
 	case '&': 		   /* &amp;	*/			\
 	case '"': 		   /* &#34;	*/			\
+        case '=':		   /* &#61;	*/			\
 	case '\'': newlen+=4;break;/* &#39;	*/		  	\
       }									\
     }
@@ -566,6 +567,7 @@ static void f_html_encode_string( INT32 args )
 	case '>': ADD("&gt;");  break;					\
 	case '"': ADD("&#34;"); break;					\
 	case '\'':ADD("&#39;"); break;					\
+        case '=': ADD("&#61;"); break;					\
 	default: *d = *s;   break;					\
       }									\
   }									\
