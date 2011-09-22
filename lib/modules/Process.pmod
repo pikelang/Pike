@@ -164,7 +164,7 @@ class Process
 				  );
     }
 
-    mapping(string:mixed) new_modifiers = modifiers + ([]);
+    mapping(string:mixed) new_modifiers = (modifiers || ([])) + ([]);
 
     if (new_modifiers->keep_signals) {
       // This option is currently not supported with forkd.
