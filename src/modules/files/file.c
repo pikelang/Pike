@@ -1123,7 +1123,7 @@ static int writev_fds(int fd, struct iovec *iov, int iovcnt,
 #ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
   /* XPG 4.2 */
 
-#ifndef CMSG_SPACE(X)
+#ifndef CMSG_SPACE
 #define CMSG_SPACE(X)	CMSG_LEN(X)
 #endif
 
