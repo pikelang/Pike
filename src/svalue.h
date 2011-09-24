@@ -346,28 +346,28 @@ extern PMOD_EXPORT const  struct svalue svalue_undefined,
 /* SAFE_IS_ZERO is compatible with the old IS_ZERO, but you should
  * consider using UNSAFE_IS_ZERO instead, since exceptions thrown from
  * `! functions will be propagated correctly then. */
-#define UNSAFE_IS_ZERO(X) ((X)->type==PIKE_T_INT?(X)->u.integer==0:(1<<(X)->type)&(BIT_OBJECT|BIT_FUNCTION)?!svalue_is_true(X):0)
-#define SAFE_IS_ZERO(X) ((X)->type==PIKE_T_INT?(X)->u.integer==0:(1<<(X)->type)&(BIT_OBJECT|BIT_FUNCTION)?!safe_svalue_is_true(X):0)
+#define UNSAFE_IS_ZERO(X) (TYPEOF(*(X))==PIKE_T_INT?(X)->u.integer==0:(1<<TYPEOF(*(X)))&(BIT_OBJECT|BIT_FUNCTION)?!svalue_is_true(X):0)
+#define SAFE_IS_ZERO(X) (TYPEOF(*(X))==PIKE_T_INT?(X)->u.integer==0:(1<<TYPEOF(*(X)))&(BIT_OBJECT|BIT_FUNCTION)?!safe_svalue_is_true(X):0)
 
-#define IS_UNDEFINED(X) (check_svalue (X), (X)->type==PIKE_T_INT&&(X)->subtype==NUMBER_UNDEFINED)
+#define IS_UNDEFINED(X) (check_svalue (X), TYPEOF(*(X))==PIKE_T_INT&&SUBTYPEOF(*(X))==NUMBER_UNDEFINED)
 
 #define IS_DESTRUCTED(X) \
-  (((X)->type == PIKE_T_OBJECT || (X)->type==PIKE_T_FUNCTION) && !(X)->u.object->prog)
+  ((TYPEOF(*(X)) == PIKE_T_OBJECT || TYPEOF(*(X))==PIKE_T_FUNCTION) && !(X)->u.object->prog)
 
-#define check_destructed(S) \
-do{ \
-  struct svalue *_s=(S); \
-  if(IS_DESTRUCTED(_s)) { \
-    free_object(_s->u.object); \
-    _s->type = PIKE_T_INT; \
-    _s->subtype = NUMBER_DESTRUCTED ; \
-    _s->u.integer = 0; \
-  } \
-}while(0)
+#define check_destructed(S)			\
+  do{						\
+    struct svalue *_s=(S);			\
+    if(IS_DESTRUCTED(_s)) {			\
+      free_object(_s->u.object);		\
+      SET_SVAL_TYPE(*_s, PIKE_T_INT);		\
+      SET_SVAL_SUBTYPE(*_s, NUMBER_DESTRUCTED);	\
+      _s->u.integer = 0;			\
+    }						\
+  }while(0)
 
 /* var MUST be a variable!!! */
 #define safe_check_destructed(var) do{ \
-  if((var->type == PIKE_T_OBJECT || var->type==PIKE_T_FUNCTION) && !var->u.object->prog) \
+    if((TYPEOF(*var) == PIKE_T_OBJECT || TYPEOF(*var)==PIKE_T_FUNCTION) && !var->u.object->prog) \
     var=&svalue_int_zero; \
 }while(0)
 
@@ -421,7 +421,7 @@ PMOD_EXPORT extern const char msg_assign_svalue_error[];
 
 #define check_svalue_type(S) do {					\
     const struct svalue *sval_ = (S);					\
-    TYPE_T typ_ = sval_->type;						\
+    TYPE_T typ_ = TYPEOF(*sval_);					\
     if (IS_INVALID_TYPE (typ_)) debug_svalue_type_error (sval_);	\
   } while (0)
 
@@ -440,8 +440,8 @@ void low_thorough_check_short_svalue (const union anything *u, TYPE_T type);
     struct svalue *sval_ = (S);						\
     check_svalue (sval_);						\
     if (d_flag <= 50) /* Done directly by check_svalue otherwise. */	\
-      if (sval_->type <= MAX_REF_TYPE)					\
-	low_thorough_check_short_svalue (&sval_->u, sval_->type);	\
+      if (TYPEOF(*sval_) <= MAX_REF_TYPE)				\
+	low_thorough_check_short_svalue (&sval_->u, TYPEOF(*sval_));	\
   } while (0)
 
 void check_short_svalue(const union anything *u, TYPE_T type);
@@ -453,7 +453,7 @@ PMOD_EXPORT void real_gc_mark_external_svalues(const struct svalue *s, ptrdiff_t
 
 PMOD_EXPORT extern const char msg_sval_obj_wo_refs[];
 #define check_refs(S) do {\
- if((S)->type <= MAX_REF_TYPE && (!(S)->u.refs || (S)->u.refs[0] < 0)) { \
+ if(TYPEOF(*(S)) <= MAX_REF_TYPE && (!(S)->u.refs || (S)->u.refs[0] < 0)) { \
    fprintf (stderr, "%s", msg_sval_obj_wo_refs);			\
    describe((S)->u.refs);						\
    Pike_fatal("%s", msg_sval_obj_wo_refs);				\
@@ -479,7 +479,7 @@ static INLINE struct svalue *dmalloc_check_svalue(struct svalue *s, char *l)
   debug_malloc_update_location(s,l);
 #endif
 #if 1
-  if(s && s->type <= MAX_REF_TYPE)
+  if(s && TYPEOF(*s) <= MAX_REF_TYPE)
     debug_malloc_update_location(s->u.refs,l);
 #endif
   return s;
@@ -565,7 +565,7 @@ static INLINE struct callable *pass_callable (struct callable *c) {return c;}
       _X__->u.loc++; /* Attempt to achieve an odd address. */		\
     );									\
     PIKE_MEM_WO(*_X__);							\
-    _X__->type = PIKE_T_FREE;						\
+    SET_SVAL_TYPE(*_X__, PIKE_T_FREE);					\
   } while (0)
 
 /* This is a debug macro to assert that an svalue is free and
@@ -575,7 +575,7 @@ static INLINE struct callable *pass_callable (struct callable *c) {return c;}
 #define assert_free_svalue(X) do {					\
     DO_IF_DEBUG (							\
       struct svalue *_X__ = (X);					\
-      _X__->type = PIKE_T_UNKNOWN;					\
+      SET_SVAL_TYPE(*_X__, PIKE_T_UNKNOWN);				\
       DO_IF_DMALLOC (							\
 	_X__->u.loc = " " __FILE__ ":" DEFINETOSTR (__LINE__);		\
 	_X__->u.loc++; /* Attempt to achieve an odd address. */		\
@@ -610,18 +610,18 @@ static INLINE struct callable *pass_callable (struct callable *c) {return c;}
   struct svalue *_s=(X);					\
   assert_svalue_locked(_s);					\
   DO_IF_DEBUG (							\
-    if (_s->type != PIKE_T_FREE) {				\
+    if (TYPEOF(*_s) != PIKE_T_FREE) {				\
       check_svalue_type(_s);					\
       check_refs(_s);						\
     }								\
   );								\
-  if (_s->type > MAX_REF_TYPE)					\
+  if (TYPEOF(*_s) > MAX_REF_TYPE)				\
     assert_free_svalue (_s);					\
   else {							\
     DO_IF_DEBUG (						\
       DO_IF_PIKE_CLEANUP (					\
 	if (gc_external_refs_zapped)				\
-	  gc_check_zapped (_s->u.ptr, _s->type, __FILE__, __LINE__))); \
+	  gc_check_zapped (_s->u.ptr, TYPEOF(*_s), __FILE__, __LINE__))); \
     if (sub_ref(_s->u.dummy) <=0)				\
       really_free_svalue(_s);					\
     else							\
@@ -648,12 +648,12 @@ static INLINE struct callable *pass_callable (struct callable *c) {return c;}
 #define add_ref_svalue_unlocked(X) do {				\
   struct svalue *_tmp=(X);					\
   DO_IF_DEBUG (							\
-    if (_tmp->type != PIKE_T_FREE) {				\
+    if (TYPEOF(*_tmp) != PIKE_T_FREE) {				\
       check_svalue_type(_tmp);					\
       check_refs(_tmp);						\
     }								\
   );								\
-  if(_tmp->type <= MAX_REF_TYPE) add_ref(_tmp->u.dummy);	\
+  if(TYPEOF(*_tmp) <= MAX_REF_TYPE) add_ref(_tmp->u.dummy);	\
 }while(0)
 
 /* Handles PIKE_T_FREE. */
@@ -661,7 +661,7 @@ static INLINE struct callable *pass_callable (struct callable *c) {return c;}
   struct svalue *_to=(X);				\
   const struct svalue *_from=(Y);			\
   DO_IF_DEBUG (						\
-    if (_from->type != PIKE_T_FREE) {			\
+    if (TYPEOF(*_from) != PIKE_T_FREE) {		\
       check_svalue_type(_from);				\
       check_refs(_from);				\
     }							\
@@ -669,7 +669,7 @@ static INLINE struct callable *pass_callable (struct callable *c) {return c;}
       Pike_fatal(msg_assign_svalue_error, _to);		\
   );							\
   *_to=*_from;						\
-  if(_to->type <= MAX_REF_TYPE) add_ref(_to->u.dummy);	\
+  if(TYPEOF(*_to) <= MAX_REF_TYPE) add_ref(_to->u.dummy);	\
 }while(0)
 
 /* Handles PIKE_T_FREE. */
@@ -714,9 +714,9 @@ static INLINE struct callable *pass_callable (struct callable *c) {return c;}
   ptrdiff_t num_=(Y);				\
   for(;num_-- > 0;s_++)				\
   {						\
-      s_->type=PIKE_T_INT;			\
-      s_->subtype=(N);				\
-      s_->u.integer=0;				\
+    SET_SVAL_TYPE(*s_, PIKE_T_INT);		\
+    SET_SVAL_SUBTYPE(*s_, (N));			\
+    s_->u.integer = 0;				\
   }						\
 }while(0)
 

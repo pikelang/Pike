@@ -685,7 +685,7 @@ static INLINE TYPE_FIELD dmalloc_visit_svalues (struct svalue *s, size_t num,
 static INLINE void dmalloc_visit_svalue (struct svalue *s,
 					 int ref_type, char *l)
 {
-  int t = s->type;
+  int t = TYPEOF(*s);
   check_svalue (s);
   dmalloc_check_svalue (s, l);
   if (t <= MAX_REF_TYPE) {
@@ -699,7 +699,7 @@ static INLINE void dmalloc_visit_svalue (struct svalue *s,
 #define visit_svalues real_visit_svalues
 static INLINE void visit_svalue (struct svalue *s, int ref_type)
 {
-  int t = s->type;
+  int t = TYPEOF(*s);
   check_svalue (s);
   if (t <= MAX_REF_TYPE) {
     if (t == PIKE_T_FUNCTION) visit_function (s, ref_type);

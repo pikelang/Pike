@@ -273,31 +273,31 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     struct svalue *_sp_ = Pike_sp++;					\
     debug_malloc_touch(_);						\
     _sp_->u.program=_;							\
-    _sp_->type=PIKE_T_PROGRAM;						\
-    IF_CHECKER(_sp_->subtype=0);					\
+    SET_SVAL_TYPE(*_sp_, PIKE_T_PROGRAM);				\
+    IF_CHECKER(SET_SVAL_SUBTYPE(*_sp_, 0));				\
   }while(0)
 
 #define push_int(I) do{							\
     INT_TYPE _=(I);							\
     struct svalue *_sp_ = Pike_sp++;					\
     _sp_->u.integer=_;							\
-    _sp_->type=PIKE_T_INT;						\
-    _sp_->subtype=NUMBER_NUMBER;					\
+    SET_SVAL_TYPE(*_sp_, PIKE_T_INT);					\
+    SET_SVAL_SUBTYPE(*_sp_, NUMBER_NUMBER);				\
   }while(0)
 
 #define push_undefined() do{						\
     struct svalue *_sp_ = Pike_sp++;					\
     _sp_->u.integer=0;							\
-    _sp_->type=PIKE_T_INT;						\
-    _sp_->subtype=NUMBER_UNDEFINED;					\
+    SET_SVAL_TYPE(*_sp_, PIKE_T_INT);					\
+    SET_SVAL_SUBTYPE(*_sp_, NUMBER_UNDEFINED);				\
   }while(0)
 
 #define push_obj_index(I) do{						\
     int _=(I);								\
     struct svalue *_sp_ = Pike_sp++;					\
     _sp_->u.identifier=_;						\
-    _sp_->type=T_OBJ_INDEX;						\
-    IF_CHECKER(_sp_->subtype=0);					\
+    SET_SVAL_TYPE(*_sp_, T_OBJ_INDEX);					\
+    IF_CHECKER(SET_SVAL_SUBTYPE(*_sp_, 0));				\
   }while(0)
 
 #define push_mapping(M) do{						\
@@ -305,8 +305,8 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     struct svalue *_sp_ = Pike_sp++;					\
     debug_malloc_touch(_);						\
     _sp_->u.mapping=_;							\
-    _sp_->type=PIKE_T_MAPPING;						\
-    IF_CHECKER(_sp_->subtype=0);					\
+    SET_SVAL_TYPE(*_sp_, PIKE_T_MAPPING);				\
+    IF_CHECKER(SET_SVAL_SUBTYPE(*_sp_, 0));				\
   }while(0)
 
 #define push_array(A) do{						\
@@ -314,8 +314,8 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     struct svalue *_sp_ = Pike_sp++;					\
     debug_malloc_touch(_);						\
     _sp_->u.array=_ ;							\
-    _sp_->type=PIKE_T_ARRAY;						\
-    IF_CHECKER(_sp_->subtype=0);					\
+    SET_SVAL_TYPE(*_sp_, PIKE_T_ARRAY);					\
+    IF_CHECKER(SET_SVAL_SUBTYPE(*_sp_, 0));				\
   }while(0)
 
 #define push_empty_array() ref_push_array(&empty_array)
@@ -325,8 +325,8 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     struct svalue *_sp_ = Pike_sp++;					\
     debug_malloc_touch(_);						\
     _sp_->u.multiset=_;							\
-    _sp_->type=PIKE_T_MULTISET;						\
-    IF_CHECKER(_sp_->subtype=0);					\
+    SET_SVAL_TYPE(*_sp_, PIKE_T_MULTISET);				\
+    IF_CHECKER(SET_SVAL_SUBTYPE(*_sp_, 0));				\
   }while(0)
 
 #define push_string(S) do {						\
@@ -337,9 +337,9 @@ PMOD_EXPORT extern const char msg_pop_neg[];
 		  Pike_fatal("Pushing string with bad shift: %d\n",	\
 			     _->size_shift);				\
 		});							\
-    _sp_->subtype=0;							\
+    SET_SVAL_SUBTYPE(*_sp_, 0);						\
     _sp_->u.string=_;							\
-    _sp_->type=PIKE_T_STRING;						\
+    SET_SVAL_TYPE(*_sp_, PIKE_T_STRING);				\
   }while(0)
 
 #define push_empty_string() ref_push_string(empty_pike_string)
@@ -349,8 +349,8 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     struct svalue *_sp_ = Pike_sp++;					\
     debug_malloc_touch(_);						\
     _sp_->u.type=_;							\
-    _sp_->type=PIKE_T_TYPE;						\
-    IF_CHECKER(_sp_->subtype=0);					\
+    SET_SVAL_TYPE(*_sp_, PIKE_T_TYPE);					\
+    IF_CHECKER(SET_SVAL_SUBTYPE(*_sp_, 0));				\
   }while(0)
 
 #define push_object(O) do {						\
@@ -358,8 +358,8 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     struct svalue *_sp_ = Pike_sp++;					\
     debug_malloc_touch(_);						\
     _sp_->u.object=_;							\
-    _sp_->type=PIKE_T_OBJECT;						\
-    _sp_->subtype = 0;							\
+    SET_SVAL_TYPE(*_sp_, PIKE_T_OBJECT);				\
+    SET_SVAL_SUBTYPE(*_sp_, 0);						\
   }while(0)
 
 #define push_object_inherit(O, INH_NUM) do {				\
@@ -368,32 +368,32 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     int _inh_ = (INH_NUM);						\
     debug_malloc_touch(_);						\
     _sp_->u.object = _;							\
-    _sp_->type = PIKE_T_OBJECT;						\
-    _sp_->subtype = _inh_;						\
+    SET_SVAL_TYPE(*_sp_, PIKE_T_OBJECT);				\
+    SET_SVAL_SUBTYPE(*_sp_, _inh_);					\
   }while(0)
 
 #define push_float(F) do{						\
     FLOAT_TYPE _=(F);							\
     struct svalue *_sp_ = Pike_sp++;					\
     _sp_->u.float_number=_;						\
-    _sp_->type=PIKE_T_FLOAT;						\
-    IF_CHECKER(_sp_->subtype=0);					\
+    SET_SVAL_TYPE(*_sp_, PIKE_T_FLOAT);					\
+    IF_CHECKER(SET_SVAL_SUBTYPE(*_sp_, 0));				\
   }while(0)
 
 #define push_text(T) do {						\
     const char *_ = (T);						\
     struct svalue *_sp_ = Pike_sp++;					\
-    _sp_->subtype=0;							\
+    SET_SVAL_SUBTYPE(*_sp_, 0);						\
     _sp_->u.string=make_shared_binary_string(_,strlen(_));		\
     debug_malloc_touch(_sp_->u.string);					\
-    _sp_->type=PIKE_T_STRING;						\
+    SET_SVAL_TYPE(*_sp_, PIKE_T_STRING);				\
   }while(0)
 
 #define push_constant_text(T) do{					\
     struct svalue *_sp_ = Pike_sp++;					\
-    _sp_->subtype=0;							\
+    SET_SVAL_SUBTYPE(*_sp_, 0);						\
     REF_MAKE_CONST_STRING(_sp_->u.string,T);				\
-    _sp_->type=PIKE_T_STRING;						\
+    SET_SVAL_TYPE(*_sp_, PIKE_T_STRING);				\
   }while(0)
 
 #define push_constant_string_code(STR, CODE) do{			\
@@ -407,8 +407,8 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     struct svalue *_sp_ = Pike_sp++;					\
     debug_malloc_touch(_);						\
     _sp_->u.object=_;							\
-    _sp_->subtype=(FUN);						\
-    _sp_->type=PIKE_T_FUNCTION;						\
+    SET_SVAL_SUBTYPE(*_sp_, (FUN));					\
+    SET_SVAL_TYPE(*_sp_, PIKE_T_FUNCTION);				\
   } while (0)
 
 #define ref_push_program(P) do{						\
@@ -416,8 +416,8 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     struct svalue *_sp_ = Pike_sp++;					\
     add_ref(_);								\
     _sp_->u.program=_;							\
-    _sp_->type=PIKE_T_PROGRAM;						\
-    IF_CHECKER(_sp_->subtype=0);					\
+    SET_SVAL_TYPE(*_sp_, PIKE_T_PROGRAM);				\
+    IF_CHECKER(SET_SVAL_SUBTYPE(*_sp_, 0));				\
   }while(0)
 
 #define ref_push_mapping(M) do{						\
@@ -425,8 +425,8 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     struct svalue *_sp_ = Pike_sp++;					\
     add_ref(_);								\
     _sp_->u.mapping=_;							\
-    _sp_->type=PIKE_T_MAPPING;						\
-    IF_CHECKER(_sp_->subtype=0);					\
+    SET_SVAL_TYPE(*_sp_, PIKE_T_MAPPING);				\
+    IF_CHECKER(SET_SVAL_SUBTYPE(*_sp_, 0));				\
   }while(0)
 
 #define ref_push_array(A) do{						\
@@ -434,8 +434,8 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     struct svalue *_sp_ = Pike_sp++;					\
     add_ref(_);								\
     _sp_->u.array=_ ;							\
-    _sp_->type=PIKE_T_ARRAY;						\
-    IF_CHECKER(_sp_->subtype=0);					\
+    SET_SVAL_TYPE(*_sp_, PIKE_T_ARRAY);					\
+    IF_CHECKER(SET_SVAL_SUBTYPE(*_sp_, 0));				\
   }while(0)
 
 #define ref_push_multiset(L) do{					\
@@ -443,8 +443,8 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     struct svalue *_sp_ = Pike_sp++;					\
     add_ref(_);								\
     _sp_->u.multiset=_;							\
-    _sp_->type=PIKE_T_MULTISET;						\
-    IF_CHECKER(_sp_->subtype=0);					\
+    SET_SVAL_TYPE(*_sp_, PIKE_T_MULTISET);				\
+    IF_CHECKER(SET_SVAL_SUBTYPE(*_sp_, 0));				\
   }while(0)
 
 #define ref_push_string(S) do{						\
@@ -455,9 +455,9 @@ PMOD_EXPORT extern const char msg_pop_neg[];
 			     _->size_shift);				\
 		});							\
     add_ref(_);								\
-    _sp_->subtype=0;							\
+    SET_SVAL_SUBTYPE(*_sp_, 0);						\
     _sp_->u.string=_;							\
-    _sp_->type=PIKE_T_STRING;						\
+    SET_SVAL_TYPE(*_sp_, PIKE_T_STRING);				\
   }while(0)
 
 #define ref_push_type_value(S) do{					\
@@ -465,8 +465,8 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     struct svalue *_sp_ = Pike_sp++;					\
     add_ref(_);								\
     _sp_->u.type=_;							\
-    _sp_->type=PIKE_T_TYPE;						\
-    IF_CHECKER(_sp_->subtype=0);					\
+    SET_SVAL_TYPE(*_sp_, PIKE_T_TYPE);					\
+    IF_CHECKER(SET_SVAL_SUBTYPE(*_sp_, 0));				\
   }while(0)
 
 #define ref_push_object(O) do{						\
@@ -474,8 +474,8 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     struct svalue *_sp_ = Pike_sp++;					\
     add_ref(_);								\
     _sp_->u.object=_;							\
-    _sp_->type=PIKE_T_OBJECT;						\
-    _sp_->subtype = 0;							\
+    SET_SVAL_TYPE(*_sp_, PIKE_T_OBJECT);				\
+    SET_SVAL_SUBTYPE(*_sp_, 0);						\
   }while(0)
 
 #define ref_push_object_inherit(O, INH_NUM) do{				\
@@ -484,8 +484,8 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     int _inh_ = (INH_NUM);						\
     add_ref(_);								\
     _sp_->u.object = _;							\
-    _sp_->type = PIKE_T_OBJECT;						\
-    _sp_->subtype = _inh_;						\
+    SET_SVAL_TYPE(*_sp_, PIKE_T_OBJECT);				\
+    SET_SVAL_SUBTYPE(*_sp_, _inh_);					\
   }while(0)
 
 #define ref_push_function(OBJ, FUN) do {				\
@@ -493,8 +493,8 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     struct svalue *_sp_ = Pike_sp++;					\
     add_ref(_);								\
     _sp_->u.object=_;							\
-    _sp_->subtype=(FUN);						\
-    _sp_->type=PIKE_T_FUNCTION;						\
+    SET_SVAL_SUBTYPE(*_sp_, (FUN));					\
+    SET_SVAL_TYPE(*_sp_, PIKE_T_FUNCTION);				\
   } while (0)
 
 #define push_svalue(S) do {						\
@@ -517,8 +517,8 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     ptrdiff_t num_= (N);			\
     for(;num_-- > 0;s_++)			\
     {						\
-      s_->type=PIKE_T_INT;			\
-      s_->subtype=NUMBER_NUMBER;		\
+      SET_SVAL_TYPE(*s_, PIKE_T_INT);		\
+      SET_SVAL_SUBTYPE(*s_, NUMBER_NUMBER);	\
       s_->u.integer=0;				\
     }						\
     Pike_sp=s_;					\
@@ -529,8 +529,8 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     ptrdiff_t num_= (N);			\
     for(;num_-- > 0;s_++)			\
     {						\
-      s_->type=PIKE_T_INT;			\
-      s_->subtype=NUMBER_UNDEFINED;		\
+      SET_SVAL_TYPE(*s_, PIKE_T_INT);		\
+      SET_SVAL_SUBTYPE(*s_, NUMBER_UNDEFINED);	\
       s_->u.integer=0;				\
     }						\
     Pike_sp=s_;					\
