@@ -100,6 +100,11 @@ struct svalue
   union anything u; /**< contains the value */
 };
 
+#define TYPEOF(SVAL)	((SVAL).type)
+#define SUBTYPEOF(SVAL)	((SVAL).subtype)
+#define SET_SVAL_TYPE(SVAL, TYPE)	(TYPEOF(SVAL) = (TYPE))
+#define SET_SVAL_SUBTYPE(SVAL, TYPE)	(SUBTYPEOF(SVAL) = (TYPE))
+
 #define PIKE_T_ARRAY 0
 #define PIKE_T_MAPPING 1
 #define PIKE_T_MULTISET 2
