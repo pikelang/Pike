@@ -298,8 +298,8 @@ string allocate_string_svalue(string orig_str)
   int svalue_id = last_svalue_id++;
   stradd += ({
     sprintf("\n#ifdef module_svalues_declared\n"
-	    "module_svalues[%d].type = PIKE_T_STRING;\n"
-	    "module_svalues[%d].subtype = 0;\n"
+	    "SET_SVAL_TYPE(module_svalues[%d], PIKE_T_STRING);\n"
+	    "SET_SVAL_SUBTYPE(module_svalues[%d], 0);\n"
 	    "copy_shared_string(module_svalues[%d].u.string, %s);\n"
 	    "#endif\n",
 	    svalue_id, svalue_id, svalue_id, str_sym),
@@ -1603,7 +1603,7 @@ array generate_overload_func_for(array(FuncData) d,
     if(min_possible_arg == max_possible_arg)
       argbase=(string) (-min_possible_arg);
     
-    out+=({PC.Token(sprintf("%*nswitch(Pike_sp[%d%s].type) {\n",
+    out+=({PC.Token(sprintf("%*nswitch(TYPEOF(Pike_sp[%d%s])) {\n",
 			    indent,
 			    best_method,argbase)) });
 
@@ -2247,7 +2247,7 @@ static struct %s *%s_gdb_dummy_ptr;
 		if (!(<"int","mixed">)[arg->basetype()]) {
 		  ret+=({
 		    PC.Token(sprintf("if (args > %d &&"
-				     "    (Pike_sp[%d%s].type != PIKE_T_INT ||"
+				     "    (TYPEOF(Pike_sp[%d%s]) != PIKE_T_INT ||"
 				     "     Pike_sp[%d%s].u.integer)) {\n",
 				     argnum,
 				     argnum, check_argbase,
@@ -2264,7 +2264,7 @@ static struct %s *%s_gdb_dummy_ptr;
 	      else if (void_or_zero == 1) {
 		if (!(<"int", "mixed">)[arg->basetype()]) {
 		  ret += ({
-		    PC.Token (sprintf ("if (Pike_sp[%d%s].type != PIKE_T_INT ||"
+		    PC.Token (sprintf ("if (TYPEOF(Pike_sp[%d%s]) != PIKE_T_INT ||"
 				       "    Pike_sp[%d%s].u.integer) {\n",
 				       argnum, check_argbase,
 				       argnum, check_argbase), arg->line()),
@@ -2282,7 +2282,7 @@ static struct %s *%s_gdb_dummy_ptr;
 	       * wide strings
 	       */
 	      ret+=({
-		PC.Token(sprintf("if(Pike_sp[%d%s].type != PIKE_T_STRING || Pike_sp[%d%s].u.string->shift_size)",
+		PC.Token(sprintf("if(TYPEOF(Pike_sp[%d%s]) != PIKE_T_STRING || Pike_sp[%d%s].u.string->shift_size)",
 				 argnum,check_argbase,
 				 argnum,check_argbase), arg->line())
 	      });
@@ -2292,7 +2292,7 @@ static struct %s *%s_gdb_dummy_ptr;
 	      {
 	      default:
 		ret+=({
-		  PC.Token(sprintf("if(Pike_sp[%d%s].type != PIKE_T_%s)",
+		  PC.Token(sprintf("if(TYPEOF(Pike_sp[%d%s]) != PIKE_T_%s)",
 				   argnum,check_argbase,
 				   upper_case(arg->basetype())),arg->line())
 		});
@@ -2317,7 +2317,7 @@ static struct %s *%s_gdb_dummy_ptr;
 		// instead of "Expected int, got object").
 		ret += ({
 		  PC.Token (
-		    sprintf ("if (Pike_sp[%d%s].type != PIKE_T_INT",
+		    sprintf ("if (TYPEOF(Pike_sp[%d%s]) != PIKE_T_INT",
 			     argnum, check_argbase),
 		    arg->line()),
 		  "\n#ifdef AUTO_BIGNUM\n",
@@ -2390,7 +2390,7 @@ static struct %s *%s_gdb_dummy_ptr;
 		  ret += ({
 		    "\n#ifdef AUTO_BIGNUM\n",
 		    PC.Token (
-		      sprintf ("if (Pike_sp[%d%s].type == PIKE_T_INT)\n",
+		      sprintf ("if (TYPEOF(Pike_sp[%d%s]) == PIKE_T_INT)\n",
 			       argnum, argbase),
 		      arg->line()),
 		    PC.Token (
@@ -2681,6 +2681,15 @@ int main(int argc, array(string) argv)
   ParseBlock tmp=ParseBlock(x,"");
 
   tmp->declarations += ({
+    "\n\n"
+    "#ifndef TYPEOF\n"
+    "/* Compat with older Pikes. */\n"
+    "#define TYPEOF(SVAL)\t((SVAL).type)\n"
+    "#define SUBTYPEOF(SVAL)\t((SVAL).subtype)\n"
+    "#define SET_SVAL_TYPE(SVAL, TYPE)\t(TYPEOF(SVAL) = TYPE)\n"
+    "#define SET_SVAL_SUBTYPE(SVAL, TYPE)\t(SUBTYPEOF(SVAL) = TYPE)\n"
+    "#endif /* !TYPEOF */\n"
+    "\n\n",
     // FIXME: Ought to default to static in 7.9.
     "#ifndef DEFAULT_CMOD_STORAGE\n"
     "#define DEFAULT_CMOD_STORAGE\n"
