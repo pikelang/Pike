@@ -1028,6 +1028,7 @@ void close()
 { cancelquery();
   if(_c)
     _c.sendterminate();
+  _c=0;
 }
 
 void destroy()
@@ -1041,7 +1042,9 @@ private int reconnect(void|int force)
     prepstmtused=0;
     if(!force)
       _c.sendterminate();
-    _c.close(); _c=0;
+    else
+      _c.close();
+    _c=0;
     foreach(prepareds;;mapping tp)
       m_delete(tp,"preparedname");
     if(!(connectmtxkey = _stealmutex.trylock(2)))
