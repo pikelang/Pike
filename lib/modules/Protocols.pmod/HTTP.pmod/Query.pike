@@ -736,7 +736,7 @@ this_program async_request(string server,int port,string query,
 			   void|mapping|string headers,void|string data)
 {
 #ifdef HTTP_QUERY_DEBUG
-   werror("async_request %s:%d\n", server, port);
+   werror("async_request %s:%d %q\n", server, port, query);
 #endif
 
    int keep_alive = con && con->is_open() && (this_program::host == server) &&
