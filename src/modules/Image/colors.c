@@ -1291,8 +1291,7 @@ static void image_get_color(INT32 args)
 		  if (HEXTONUM(*src)==-1)
 		  {
 		     pop_stack();
-		     push_int(0);
-		     sp[-1].subtype=NUMBER_UNDEFINED;
+		     push_undefined();
 		     return;
 		  }
 		  z=z*16+HEXTONUM(*src),src++;
@@ -1412,8 +1411,7 @@ static void image_get_color(INT32 args)
    /* try other stuff here */
 
    pop_stack();
-   push_int(0);
-   sp[-1].subtype=NUMBER_UNDEFINED;
+   push_undefined();
    return;
 }
 
