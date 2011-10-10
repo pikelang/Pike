@@ -371,4 +371,11 @@ test_any([[
   f->set_backend (b);
   return f->query_backend() == b;
 ]], 1)
+
+dnl Displaced tests for SSL.sslfile.
+run_sub_test(({"SRCDIR/async_tls_close_test.pike", "0", "0"}))
+run_sub_test(({"SRCDIR/async_tls_close_test.pike", "0", "1"}))
+run_sub_test(({"SRCDIR/async_tls_close_test.pike", "1", "0"}))
+run_sub_test(({"SRCDIR/async_tls_close_test.pike", "1", "1"}))
+
 END_MARKER

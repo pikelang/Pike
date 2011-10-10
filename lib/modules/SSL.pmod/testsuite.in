@@ -1,6 +1,9 @@
 START_MARKER
 dnl $Id$
 
+dnl Note: This module has some tests with an external test script in
+dnl src/modules/files.
+
 test_any([[
 #pike 7.4
 return SSL.constants && 1;

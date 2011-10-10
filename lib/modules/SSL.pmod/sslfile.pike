@@ -533,10 +533,10 @@ int close (void|string how, void|int clean_close, void|int dont_throw)
 //! close an already closed connection.
 //!
 //! @note
-//! In nonblocking mode the stream might not be closed right away and
-//! the backend might be used for a while afterwards. This means that
-//! if there's an I/O problem it might not be signalled immediately by
-//! @[close].
+//! If a clean close is requested in nonblocking mode then the stream
+//! is most likely not closed right away, and the backend is then
+//! still needed for a while afterwards to exchange the close packets.
+//! @[is_open] returns 2 in that time window.
 //!
 //! @note
 //! I/O errors from both reading and writing might occur in blocking
@@ -624,9 +624,22 @@ protected void cleanup_on_error()
 }
 
 Stdio.File shutdown()
-//! Shut down the SSL connection without sending any more packets. The
-//! underlying stream is returned if the connection isn't shut down
-//! already and if a nonclean close hasn't been requested.
+//! Shut down the SSL connection without sending any more packets.
+//!
+//! If the connection is open then the underlying (still open) stream
+//! is returned.
+//!
+//! If a nonclean (i.e. normal) close has been requested then the
+//! underlying stream is closed now if it wasn't closed already, and
+//! zero is returned.
+//!
+//! If a clean close has been requested (see the second argument to
+//! @[close]) then the behavior depends on the state of the close
+//! packet exchange: The first @[shutdown] call after a successful
+//! exchange returns the (still open) underlying stream, and later
+//! calls return zero and clears @[errno]. If the exchange hasn't
+//! finished then the stream is closed, zero is returned, and @[errno]
+//! will return @[System.EPIPE].
 {
   ENTER (0, 0) {
     if (!stream) {
@@ -660,6 +673,7 @@ Stdio.File shutdown()
       close_state = STREAM_OPEN;
     }
 
+    int conn_closing = conn->closing;
     destruct (conn);		// Necessary to avoid garbage.
 
     write_buffer = ({});
@@ -684,15 +698,29 @@ Stdio.File shutdown()
 
     switch (close_state) {
       case CLEAN_CLOSE:
-	SSL3_DEBUG_MSG ("SSL.sslfile->shutdown(): Clean close - leaving stream\n");
-	RETURN (stream);
+	if (conn_closing == 3) {
+	  SSL3_DEBUG_MSG ("SSL.sslfile->shutdown(): Clean close - "
+			  "leaving stream\n");
+	  local_errno = 0;
+	  RETURN (stream);
+	}
+	else {
+	  SSL3_DEBUG_MSG ("SSL.sslfile->shutdown(): Close packets not fully "
+			  "exchanged after clean close (%d) - closing stream\n",
+			  conn_closing);
+	  stream->close();
+	  local_errno = System.EPIPE;
+	  RETURN (0);
+	}
       case STREAM_OPEN:
 	close_state = STREAM_UNINITIALIZED;
 	SSL3_DEBUG_MSG ("SSL.sslfile->shutdown(): Not closed - leaving stream\n");
+	local_errno = 0;
 	RETURN (stream);
       default:
 	SSL3_DEBUG_MSG ("SSL.sslfile->shutdown(): Nonclean close - closing stream\n");
 	stream->close();
+	local_errno = stream->errno();
 	RETURN (0);
     }
   } LEAVE;
@@ -1308,25 +1336,41 @@ int is_open()
 //! Return nonzero if the stream currently is open, zero otherwise.
 //! This function does nonblocking I/O to check for a close packet in
 //! the input buffer.
+//!
+//! If a clean close has been requested in nonblocking mode, then 2 is
+//! returned until the close packet exchanged has been completed.
+//!
+//! @note
+//! In Pike 7.8 and earlier, this function returned zero in the case
+//! above where it now returns 2.
 {
   SSL3_DEBUG_MSG ("SSL.sslfile->is_open()\n");
   ENTER (0, 0) {
-    if (close_state == STREAM_OPEN && stream && stream->is_open()) {
-      // Have to check if there's a close packet waiting to be read.
-      // This is common in keep-alive situations since the remote end
-      // might have sent a close packet and closed the connection a
-      // long time ago, and in a typical blocking client no action has
-      // been taken causing the close packet to be read.
+    if ((close_state == STREAM_OPEN || close_state == CLEAN_CLOSE) &&
+	stream && stream->is_open()) {
+      // When close_state == STREAM_OPEN, we have to check if there's
+      // a close packet waiting to be read. This is common in
+      // keep-alive situations since the remote end might have sent a
+      // close packet and closed the connection a long time ago, and
+      // in a typical blocking client no action has been taken causing
+      // the close packet to be read.
+      //
+      // If close_state == CLEAN_CLOSE, we should return true as long
+      // as close packets haven't been exchanged in both directions.
       //
       // Could avoid the whole local backend hoopla here by
       // essentially doing a peek and call ssl_read_callback directly,
       // but that'd lead to subtle code duplication. (Also, peek is
       // currently not implemented on NT.)
-      if (!conn->closing)
+      if ((close_state == CLEAN_CLOSE ?
+	   conn->closing != 3 : !conn->closing))
 	RUN_MAYBE_BLOCKING (
-	  action && !conn->closing, 1, 1,
+	  action && (close_state == CLEAN_CLOSE ?
+		     conn->closing != 3 : !conn->closing),
+	  1, 1,
 	  RETURN (!epipe_errnos[local_errno]));
-      RETURN (conn && !conn->closing);
+      RETURN (conn && (close_state == CLEAN_CLOSE ?
+		       conn->closing != 3 && 2 : !conn->closing));
     }
   } LEAVE;
   return 0;
@@ -1904,17 +1948,23 @@ protected int ssl_write_callback (int called_from_real_backend)
 	  if (sizeof (write_buffer))
 	    SSL3_DEBUG_MSG ("ssl_write_callback: "
 			    "Close packet queued but not yet sent\n");
-	  else if (!SSL_INTERNAL_READING) {
-	    SSL3_DEBUG_MSG ("ssl_write_callback: %s\n",
-			    conn->closing == 3 ?
-			    "Close packets exchanged" : "Close packet sent");
-	    break write_to_stream;
-	  }
 	  else {
-	    SSL3_DEBUG_MSG ("ssl_write_callback: "
-			    "Close packet sent - expecting response\n");
-	    // Not SSL_INTERNAL_WRITING anymore.
-	    update_internal_state();
+#ifdef DEBUG
+	    if (!(conn->closing & 1))
+	      error ("Expected a close packet to be queued or sent.\n");
+#endif
+	    if (conn->closing == 3 || close_state != CLEAN_CLOSE) {
+	      SSL3_DEBUG_MSG ("ssl_write_callback: %s\n",
+			      conn->closing == 3 ?
+			      "Close packets exchanged" : "Close packet sent");
+	      break write_to_stream;
+	    }
+	    else {
+	      SSL3_DEBUG_MSG ("ssl_write_callback: "
+			      "Close packet sent - expecting response\n");
+	      // Not SSL_INTERNAL_WRITING anymore.
+	      update_internal_state();
+	    }
 	  }
 
 	  RESTORE;
