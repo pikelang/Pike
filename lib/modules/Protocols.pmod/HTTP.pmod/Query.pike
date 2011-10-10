@@ -165,7 +165,7 @@ protected void close_connection()
   Stdio.File con = this_program::con;
   if (!con) return;
   this_program::con = 0;
-  con->set_blocking();	// Clear any remaining callbacks.
+  con->set_callbacks(0, 0, 0, 0, 0);	// Clear any remaining callbacks.
   con->close();
 }
 
