@@ -942,6 +942,69 @@ int renegotiate()
   } LEAVE;
 }
 
+void set_callbacks (void|function(mixed, string:int) read,
+		    void|function(mixed:int) write,
+		    void|function(mixed:int) close,
+		    void|function(mixed, string:int) read_oob,
+		    void|function(mixed:int) write_oob,
+		    void|function(void|mixed:int) accept)
+//! Installs all the specified callbacks at once. Use @[UNDEFINED]
+//! to keep the current setting for a callback.
+//!
+//! Like @[set_nonblocking], the callbacks are installed atomically.
+//! As opposed to @[set_nonblocking], this function does not do
+//! anything with the stream, and it doesn't even have to be open.
+//!
+//! @bugs
+//! @[read_oob] and @[write_oob] are currently ignored.
+//!
+//! @seealso
+//! @[set_read_callback], @[set_write_callback],
+//! @[set_close_callback], @[aet_accept_callback], @[query_callbacks]
+{
+  SSL3_DEBUG_MSG ("SSL.sslfile->set_callbacks (%O, %O, %O, %O, %O, %O)\n%s",
+		  read, write, close, read_oob, write_oob, accept,
+		  "" || describe_backtrace (backtrace()));
+
+  ENTER(0, 0) {
+
+    // Bypass the ::set_xxx_callback functions; we instead enable all
+    // the event bits at once through the _enable_callbacks call at the end.
+
+    if (!zero_type(read))
+      read_callback = read;
+    if (!zero_type(write))
+      write_callback = write;
+
+    if (!zero_type(close))
+      close_callback = close;
+
+#if 0
+    if (!zero_type(read_oob))
+      read_oob_callback = read_oob);
+    if (!zero_type (write_oob_cb))
+      write_oob_callback = write_oob;
+#endif
+
+    if (!zero_type(accept))
+      accept_callback = accept;
+
+    if (stream) update_internal_state();
+  } LEAVE;
+}
+
+array(function(mixed,void|string:int)) query_callbacks()
+{
+  return ({
+    read_callback,
+    write_callback,
+    close_callback,
+    UNDEFINED,
+    UNDEFINED,
+    accept_callback,
+  });
+}
+
 void set_nonblocking (void|function(void|mixed,void|string:int) read,
 		      void|function(void|mixed:int) write,
 		      void|function(void|mixed:int) close,
