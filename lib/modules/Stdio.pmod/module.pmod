@@ -2668,7 +2668,6 @@ int cp(string from, string to)
 //! This function keeps file and directory mode bits, unlike in Pike
 //! 7.6 and earlier.
 {
-  string data;
   Stat stat = file_stat(from, 1);
   if( !stat ) 
      return 0;
@@ -2699,6 +2698,7 @@ int cp(string from, string to)
       f->close();
       return 0;
     }
+    string data;
     function(string:int) w=t->write;
     do
     {
