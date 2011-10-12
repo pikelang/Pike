@@ -342,10 +342,10 @@ int parse_type(array t, int p)
 	  case "multiset":
 	  case "int":
 	  case "type":
+	  case "string":
 	    if(arrayp(t[p])) p++;
 	  case "bignum":
 	  case "longest":
-	  case "string":
 	  case "float":
 	    break;
 	}
@@ -790,7 +790,23 @@ class PikeType
 	case "zero":    return "tZero";
 	case "void":    return "tVoid";
 	case "float":   return "tFloat";
-	case "string":  return "tString";
+	case "string":
+	  {
+	    int low = (int)(string)(args[0]->t);
+	    int high = (int)(string)(args[1]->t);
+	    if (!low) {
+	      switch(high) {
+	      case 0x0000: return "tStr0";
+	      case 0x007f: return "tStr7";
+	      case 0x00ff: return "tStr8";
+	      case 0xffff: return "tStr16";
+	      }
+	    } else if ((low == -0x80000000) && (high == 0x7fffffff)) {
+	      return "tStr";
+	    }
+	    return sprintf("tNStr(%s)",
+			   stringify(sprintf("%4c%4c", low, high)));
+	  }
 	case "program": return "tPrg(tObj)";
 	case "any":     return "tAny";
 	case "mixed":   return "tMix";
@@ -864,10 +880,12 @@ class PikeType
 			 args[1]->output_pike_type(0));
 
 	case "int":
-	  ret=sprintf("int(%s..%s)",
+        case "string":
+	  ret=sprintf("%s(%s..%s)",
+		      ret,
 		      args[0]->t == "-2147483648" ? "" : args[0]->t,
 		      args[1]->t ==  "2147483647" ? "" : args[1]->t);
-	  if(ret=="int(..)") return "int";
+	  if(has_suffix(ret, "(..)")) return ret[..sizeof(ret)-5];
 	  return ret;
 
 	case "bignum":
@@ -992,6 +1010,7 @@ class PikeType
 		args=({PikeType("mixed")});
 		break;
 	      case "int":
+	      case "string":
 		string low = (string)(int)-0x80000000;
 		string high = (string)0x7fffffff;
 		args=({PikeType(PC.Token(low)),PikeType(PC.Token(high))});
@@ -1063,6 +1082,7 @@ class PikeType
 		return;
 		
 	      case "int":
+	      case "string":
 		string low = (string)(int)-0x80000000;
 		string high = (string)0x7fffffff;
 
