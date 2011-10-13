@@ -315,6 +315,15 @@ PIKECLASS mapping_iterator
       }
     }
 
+  PIKEFUN int _sizeof()
+    flags ID_STATIC;
+  {
+    if (THIS->md) {
+      push_int(THIS->md->size);
+    }
+    push_undefined();
+  }
+
 #ifdef PIKE_MAPPING_KEYPAIR_LOOP
   static int mi_step(struct mapping_iterator_struct *i)
     {
@@ -509,6 +518,15 @@ PIKECLASS array_iterator
       }
     }
 
+  PIKEFUN int _sizeof()
+    flags ID_STATIC;
+  {
+    if (THIS->a) {
+      push_int(THIS->a->size);
+    }
+    push_undefined();
+  }
+
   PIKEFUN object `+(int steps)
     {
       struct object *o=low_clone(array_iterator_program);
@@ -633,6 +651,15 @@ PIKECLASS multiset_iterator
       else
 	push_multiset_index (THIS->l, THIS->nodepos);
     }
+
+  PIKEFUN int _sizeof()
+    flags ID_STATIC;
+  {
+    if (THIS->l) {
+      push_int(THIS->l->msd->size);
+    }
+    push_undefined();
+  }
 
   static struct object *li_copy (struct multiset_iterator_struct *li)
     {
@@ -838,6 +865,15 @@ PIKECLASS string_iterator
 	RETURN THIS->pos;
       }
     }
+
+  PIKEFUN int _sizeof()
+    flags ID_STATIC;
+  {
+    if (THIS->s) {
+      push_int(THIS->s->len);
+    }
+    push_undefined();
+  }
 
   PIKEFUN object `+(int steps)
     {
