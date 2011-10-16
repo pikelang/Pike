@@ -3156,7 +3156,7 @@ void f_create_process(INT32 args)
 	    extern void f_getgrnam(INT32);
 	    push_svalue(tmp);
 	    f_getgrnam(1);
-	    if(!Pike_sp[-1].type != T_ARRAY)
+	    if(Pike_sp[-1].type != T_ARRAY)
 	      Pike_error("No such group.\n");
 	    if(Pike_sp[-1].u.array->item[2].type != PIKE_T_INT)
 	      Pike_error("Getgrnam failed!\n");
