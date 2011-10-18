@@ -765,6 +765,23 @@ static void json_escape(struct string_builder *res,
  	string_builder_putchar(res, '\\');
  	string_builder_putchar(res, 't');
 	break;
+      case 226:
+	if (((i + 2) < len) &&
+	    (str[i+1] == 128) && ((str[i+2] & 0xfe) == 168)) {
+	  /* UTF8-encoded \u2028 or \u2029.
+	   *
+	   * Javascript-based JSON-decoders don't like these
+	   * raw in strings. cf [bug 6103] and others.
+	   */
+	  i += 2;
+	  if (str[i] & 1) {
+	    string_builder_strcat(res, "\\u2029");
+	  } else {
+	    string_builder_strcat(res, "\\u2028");
+	  }
+	  break;
+	}
+	/* FALL_THROUGH */
       default:
 	string_builder_putchar(res, str[i]);
 	break;
