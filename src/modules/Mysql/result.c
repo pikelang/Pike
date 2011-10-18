@@ -736,6 +736,12 @@ static void json_escape(struct string_builder *res,
   size_t i;
   // FIXME: Use string_builder_append on string segments for maximum speed
   for (i = 0; i < len; i++) {
+    if (!(i & 0xff)) {
+      /* Optimization: Make sure that there's space for at least
+       * the rest of the string unquoted.
+       */
+      string_build_mkspace(res, len-i, 0);
+    }
     switch (str[i]) {
       case 0:
  	string_builder_putchar(res, '\\');
