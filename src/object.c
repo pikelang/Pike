@@ -2670,8 +2670,7 @@ static void f_magic_index(INT32 args)
   pop_n_elems(args);
   if(f<0)
   {
-    push_int(0);
-    sp[-1].subtype=NUMBER_UNDEFINED;
+    push_undefined();
   }else{
     struct svalue sval;
     low_object_index_no_free(&sval,o,f+

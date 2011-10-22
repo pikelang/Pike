@@ -6,7 +6,7 @@ class GDK2.Event;
 %{
 #define GTK_GDKEVENT(X) ((GdkEvent *)X)
 
-#define RETURN_NIL() do{ pgtk2_pop_n_elems( args );push_int( 0 );Pike_sp[-1].subtype=1;return; } while(0)
+#define RETURN_NIL() do{ pgtk2_pop_n_elems( args );push_undefined();return; } while(0)
 #define RETURN_INT(X) do { pgtk2_pop_n_elems( args );push_int( X ); return; } while(0)
 #define RETURN_FLOAT(X) do { pgtk2_pop_n_elems( args );push_float( X ); return; } while(0)
 #define RETURN_STRING(X) do { pgtk2_pop_n_elems( args );push_string( X ); return; } while(0)

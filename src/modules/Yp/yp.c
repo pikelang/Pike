@@ -271,8 +271,7 @@ static void f_match(INT32 args)
   if(err == YPERR_KEY)
   {
     pop_n_elems( args );
-    push_int(0);
-    sp[-1].subtype = NUMBER_UNDEFINED;
+    push_undefined();
     return;
   }
 

@@ -630,8 +630,7 @@ PIKECLASS Sequence
 	 !THIS->sequence->a || 
 	 THIS->pos >= THIS->sequence->a->size) 
       {
-	push_int(0);
-	Pike_sp[-1].subtype=NUMBER_UNDEFINED;
+	push_undefined();
       }
       else
       {
@@ -652,8 +651,7 @@ PIKECLASS Sequence
 	 !THIS->sequence->a || 
 	 THIS->pos >= THIS->sequence->a->size) 
       {
-	push_int(0);
-	Pike_sp[-1].subtype=NUMBER_UNDEFINED;
+	push_undefined();
       }
       else
       {
@@ -951,8 +949,7 @@ PIKECLASS Sequence
       }
       else
       {
-	push_int(0);
-	Pike_sp[-1].subtype=NUMBER_UNDEFINED;
+	push_undefined();
       }
     }
     

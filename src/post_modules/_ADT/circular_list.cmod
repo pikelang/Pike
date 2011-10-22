@@ -956,8 +956,7 @@ PIKECLASS CircularList
 	 !THIS->list->a || 
 	 THIS->pos >= THIS->list->size) 
       {
-	push_int(0);
-	Pike_sp[-1].subtype=NUMBER_UNDEFINED;
+	push_undefined();
       }
       else
       {
@@ -978,8 +977,7 @@ PIKECLASS CircularList
 	 !THIS->list->a || 
 	 THIS->pos >= THIS->list->size) 
       {
-	push_int(0);
-	Pike_sp[-1].subtype=NUMBER_UNDEFINED;
+	push_undefined();
       }
       else
       {
@@ -1275,8 +1273,7 @@ PIKECLASS CircularList
       }
       else
       {
-	push_int(0);
-	Pike_sp[-1].subtype=NUMBER_UNDEFINED;
+	push_undefined();
       }
     }
     

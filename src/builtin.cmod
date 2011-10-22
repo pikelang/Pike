@@ -2277,8 +2277,7 @@ PIKECLASS Buffer
 	RETURN make_shared_binary_string("Buffer",6);
     }
     pop_n_elems( args );
-    push_int( 0 );
-    Pike_sp[-1].subtype = 1;
+    push_undefined();
   }
 
   /*! @decl mixed cast( string type )

@@ -2940,8 +2940,7 @@ void f_thread_local_get(INT32 args)
      (m = Pike_interpreter.thread_state->thread_local) != NULL)
     mapping_index_no_free(Pike_sp++, m, &key);
   else {
-    push_int(0);
-    Pike_sp[-1].subtype=NUMBER_UNDEFINED;
+    push_undefined();
   }
 }
 

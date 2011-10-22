@@ -800,8 +800,7 @@ static void mysql__sprintf(INT32 args)
       return;
     }
   }
-  push_int( 0 );
-  Pike_sp[-1].subtype = 1;
+  push_undefined();
 }
 
 /*! @decl int is_open()

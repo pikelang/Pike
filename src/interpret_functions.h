@@ -211,8 +211,7 @@
 
 
 OPCODE0(F_UNDEFINED, "push UNDEFINED", I_UPDATE_SP, {
-  push_int(0);
-  Pike_sp[-1].subtype=NUMBER_UNDEFINED;
+  push_undefined();
 });
 
 OPCODE0(F_CONST0, "push 0", I_UPDATE_SP, {
