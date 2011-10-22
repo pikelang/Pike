@@ -104,6 +104,13 @@ struct svalue
 #define SUBTYPEOF(SVAL)	((SVAL).subtype)
 #define SET_SVAL_TYPE(SVAL, TYPE)	(TYPEOF(SVAL) = (TYPE))
 #define SET_SVAL_SUBTYPE(SVAL, TYPE)	(SUBTYPEOF(SVAL) = (TYPE))
+#define SET_SVAL(SVAL, TYPE, SUBTYPE, FIELD, EXPR) do {	\
+    /* Set the type afterwards to avoid a clobbered	\
+     * svalue in case EXPR throws. */			\
+    (SVAL).u.FIELD = (EXPR);				\
+    SET_SVAL_TYPE((SVAL), (TYPE));			\
+    SET_SVAL_SUBTYPE((SVAL), (SUBTYPE));		\
+  } while(0)
 
 #define PIKE_T_ARRAY 0
 #define PIKE_T_MAPPING 1
@@ -706,9 +713,7 @@ static INLINE struct callable *pass_callable (struct callable *c) {return c;}
   ptrdiff_t num_=(Y);				\
   for(;num_-- > 0;s_++)				\
   {						\
-      s_->type=PIKE_T_INT;			\
-      s_->subtype=(N);				\
-      s_->u.integer=0;				\
+    SET_SVAL(*s_, PIKE_T_INT, (N), integer, 0);	\
   }						\
 }while(0)
 
@@ -887,8 +892,7 @@ static INLINE void free_svalue(struct svalue *s)
 {
   INT64 tmp;
   struct svalue zero;
-  zero.type=PIKE_T_INT;
-  zero.subtype = NUMBER_NUMBER;
+  SET_SVAL(zero, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
   tmp=pike_atomic_swap64((INT64 *)s, *(INT64 *)&zero);
   free_svalue_unlocked((struct svalue *)&tmp);
 }
