@@ -49,6 +49,7 @@
 #define DEF_ARG_STRINGIFY   0x100000
 #define DEF_ARG_NOPRESPACE  0x200000
 #define DEF_ARG_NOPOSTSPACE 0x400000
+#define DEF_ARG_NEED_COMMA  0x800000
 #define DEF_ARG_MASK        0x0fffff
 
 #if 0
@@ -960,6 +961,27 @@ static void simple_add_define(struct cpp *this,
     }								\
     PUTNL();							\
     this->current_line++;					\
+  } while (1)
+
+/* Skips horizontal whitespace and escaped newlines,
+ * does not touch buffer. */
+#define SKIPSPACE_PRETEND()					\
+  do {								\
+    while (WC_ISSPACE(data[pos]) && data[pos]!='\n') {		\
+      pos++;							\
+    }								\
+    if (data[pos] == '\\') {					\
+      if (data[pos+1] == '\n') {				\
+	pos+=2;							\
+      } else if ((data[pos+1] == '\r') &&			\
+		 (data[pos+2] == '\n')) {			\
+	pos+=3;							\
+      } else {							\
+	break;							\
+      }								\
+    } else {							\
+      break;							\
+    }								\
   } while (1)
 
 /* The current char is assumed to be '*', the previous '/'. */

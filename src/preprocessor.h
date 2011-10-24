@@ -1325,6 +1325,13 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	      a = (WCHAR *)
 		(arguments[d->parts[e].argument&DEF_ARG_MASK].arg.ptr);
 	      l = arguments[d->parts[e].argument&DEF_ARG_MASK].len;
+
+	      if (d->parts[e].argument&DEF_ARG_NEED_COMMA
+		      && !(d->varargs && d->args-1
+			   == (d->parts[e].argument&DEF_ARG_MASK) && l == 0)) {
+		  string_builder_putchar(&tmp, ',');
+		  string_builder_putchar(&tmp, ' ');
+	      }
 	      
 	      if(!(d->parts[e].argument & DEF_ARG_NOPRESPACE))
 		string_builder_putchar(&tmp, ' ');
@@ -2171,13 +2178,30 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	       * an identifier now. */
 	      goto gobble_identifier_in_define;
 
+	    case ',':
+	      {
+		  int oldpos;
+
+		  oldpos = pos;
+		  SKIPSPACE_PRETEND();
+
+		  if (data[pos] == '#' && data[pos+1] == '#') {
+		      extra|= DEF_ARG_NEED_COMMA;
+		      pos += 2;
+		      goto concat_identifier;
+		  } else {
+		      pos = oldpos;
+		      goto gobble_identifier_in_define;
+		  }
+	      }
 	    case '#':
 	      if(GOBBLE('#'))
 	      {
-		extra=DEF_ARG_NOPRESPACE;
+		extra= (extra & DEF_ARG_NEED_COMMA) | DEF_ARG_NOPRESPACE;
 		/* FIXME: Wide strings? */
 		while(str.s->len && isspace(((unsigned char *)str.s->str)[str.s->len-1]))
 		  str.s->len--;
+concat_identifier:
 		if(!str.s->len && Pike_sp-partbase>1)
 		{
 #ifdef PIKE_DEBUG
