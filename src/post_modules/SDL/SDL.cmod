@@ -572,6 +572,16 @@ PIKECLASS Keysym {
 
 #define CHECK_INIT() if(THIS->fmt == NULL) { Pike_error("PixelFormat unitialized!\n"); }
 
+#if !defined(SDL_ALPHA_OPAQUE) || !SDL_ALPHA_OPAQUE
+/* SDL 1.1.4 and earlier had inverted alpha.
+ * This was changed in 1.1.5, when also
+ * SDL_ALPHA_{OPAQUE,TRANSPARENT} were added.
+ */
+#define CONVERT_ALPHA(X)	(255-(X))
+#else
+#define CONVERT_ALPHA(X)	(X)
+#endif
+
 /*! @class PixelFormat
  *!
  *! This describes the format of the pixel data stored at the pixels field
@@ -677,7 +687,7 @@ PIKECLASS PixelFormat {
   PIKEFUN int `alpha()
   {
     CHECK_INIT(); /* Make sure this is inited */
-    push_int(THIS->fmt->alpha);
+    push_int(CONVERT_ALPHA(THIS->fmt->alpha));
   }
 
   /*! @decl int colorkey
@@ -812,14 +822,15 @@ PIKECLASS PixelFormat {
    *!   @[map_rgb()], @[get_rgb()], @[get_rgba()]
    */
   PIKEFUN int map_rgba(int r, int g, int b, int a) {
-    RETURN SDL_MapRGBA(THIS->fmt, r, g, b, a);
+    RETURN SDL_MapRGBA(THIS->fmt, r, g, b, CONVERT_ALPHA(a));
   }
 
   PIKEFUN int map_rgba(object color, int a) {
     struct color_struct *cs;
     CHECK_CLASS(color, image_color, 1);
     cs = ((struct color_struct *)(color->storage));
-    RETURN SDL_MapRGBA(THIS->fmt, cs->rgb.r, cs->rgb.g, cs->rgb.b, a);
+    RETURN SDL_MapRGBA(THIS->fmt, cs->rgb.r, cs->rgb.g, cs->rgb.b,
+		       CONVERT_ALPHA(a));
   }
 
   /*! @decl Image.Color.Color get_rgb(int pixel)
@@ -868,7 +879,7 @@ PIKECLASS PixelFormat {
     push_text("color");
     push_object(image_make_rgb_color(r, g, b));
     push_text("alpha");
-    push_int(a);
+    push_int(CONVERT_ALPHA(a));
     f_aggregate_mapping(4);
   }
 }
@@ -1444,7 +1455,8 @@ PIKECLASS Surface {
       for(x = 0; x < i->xsize; x++) {
 	rgb = pixel(i, x, y);
 	*((Uint32 *)dest + off + x) =
-	  (rgb.r << 24) + (rgb.g << 16) + (rgb.b << 8) + (255 - i->alpha);
+	  (rgb.r << 24) + (rgb.g << 16) + (rgb.b << 8) +
+	  CONVERT_ALPHA(i->alpha);
       }
     }
 #undef pixel
@@ -1648,7 +1660,7 @@ PIKECLASS Surface {
    */
   PIKEFUN object set_alpha(int flag, int alpha)  {
     CHECK_INIT();
-    SDL_SetAlpha(THIS->_s, flag, alpha);
+    SDL_SetAlpha(THIS->_s, flag, CONVERT_ALPHA(alpha));
     RET_THIS();
   }
 
