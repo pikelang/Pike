@@ -1504,7 +1504,8 @@ PIKECLASS Surface {
 	rgb = pixel(i, x, y);
 	argb = pixel(a, x, y);
 	*((Uint32 *)dest + off + x) =
-	  (rgb.r << 24) + (rgb.g << 16) + (rgb.b << 8) + (255 - argb.r);
+	  (rgb.r << 24) + (rgb.g << 16) + (rgb.b << 8) +
+	  CONVERT_ALPHA(argb.r);
       }
     }
 #undef pixel
