@@ -343,11 +343,29 @@ PIKECLASS _pcre
 #endif /* HAVE_PCRE_FULLINFO */
 
 /*! @decl int|array exec(string subject,void|int startoffset)
- *!     match a regexp; will return an array of 2*n integers
- *!	where n is the number of hits;
- *!	returns an int upon failure
+ *!     Matches the regexp against @[subject], starting at
+ *!     @[startoffset] if it is given.
  *!
- *!	Error codes:
+ *!     If the match is successful, the return value is an array that
+ *!     holds the offsets of all matches:
+ *!
+ *!     Elements 0 and 1 have the start and end offsets, respectively,
+ *!     of the match for the whole regexp. The start offset is
+ *!     inclusive while the end is exclusive, i.e. the matching
+ *!     string is @expr{@[subject][res[0]..res[1]-1]@}.
+ *!
+ *!     Elements 2 and 3 have the offsets of the first capturing
+ *!     submatch (if any) in the same way, elements 4 and 5 are for
+ *!     the second capturing submatch, etc. If a submatch didn't match
+ *!     anything, the corresponding elements are set to -1. If a
+ *!     submatch has matched successfully several times, the offsets
+ *!     of the last match are returned.
+ *!
+ *!     The returned array is always of length 2*n + 1, where n is the
+ *!     total number of capturing submatches in the regexp.
+ *!
+ *!     If there is an error, an integer error code is returned:
+ *!
  *!  @int
  *!     @value ERROR.NOMATCH
  *!
