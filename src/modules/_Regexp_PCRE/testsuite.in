@@ -38,6 +38,11 @@ test_any_equal([[
   return re->split("b");
 ]], [[({0, "b"})]])
 
+test_equal([[Regexp.PCRE ("^(?:(.*b)|(.*c))$")->exec ("GERGXVb")]],
+	   [[({0, 7, 0, 7, -1, -1})]])
+test_equal([[Regexp.PCRE ("^(?:(.*b)|(.*c))$")->exec ("GERGXVc")]],
+	   [[({0, 7, -1, -1, 0, 7})]])
+
 cond_end // Regexp.PCRE.Plain
 
 cond_begin([[ master()->resolv("Regexp.PCRE.Widestring") ]])

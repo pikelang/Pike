@@ -448,13 +448,21 @@ PIKECLASS _pcre
 	   else
 	   {
 	     int i;
+	     /* pcre_info is deprecated, but we can assume it exists,
+	      * and it's enough for what we need here. */
+	     int len = (pcre_info (THIS->re, NULL, NULL) + 1) * 2;
 	     rc*=2;
-	     res=allocate_array(rc);
+	     res=allocate_array(len);
 	     for (i=0; i<rc; i++)
 	     {
 	       ITEM(res)[i].type=T_INT;
 	       ITEM(res)[i].subtype=0;
 	       ITEM(res)[i].u.integer=ovector[i];
+	     }
+	     for (; i < len; i++) {
+	       ITEM(res)[i].type=T_INT;
+	       ITEM(res)[i].subtype=0;
+	       ITEM(res)[i].u.integer=-1;
 	     }
 	     push_array(res);
 	   }
