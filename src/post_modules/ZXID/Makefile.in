@@ -1,0 +1,14 @@
+# $Id$
+@make_variables@
+VPATH=@srcdir@
+MODNAME=ZXID
+OBJS=zxid.o
+MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
+CONFIG_HEADERS=@CONFIG_HEADERS@
+
+@dynamic_module_makefile@
+
+# Compatibility with stupid makes..
+zxid.o: $(SRCDIR)/zxid.c
+
+@dependencies@
