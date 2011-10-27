@@ -85,10 +85,8 @@ static int pf_readlink(const char *path, char *buf, size_t size)
     int res;
     push_text( path );
     apply( global_fuse_obj, "readlink", 1 );
-    
-    res = readlink(path, buf, size - 1);
-    if(res == -1)
-        return -errno;
+    if(Pike_sp[-1].type == T_INT)
+        return -Pike_sp[-1].u.integer;
     if( (Pike_sp[-1].type != PIKE_T_STRING) ||
 	(Pike_sp[-1].u.string->size_shift) )
 	DEFAULT_ERRNO();
