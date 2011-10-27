@@ -1,0 +1,34 @@
+# $Id$
+AC_INIT(zxid.cmod)
+
+AC_MODULE_INIT()
+AC_CONFIG_HEADER(zxid_config.h)
+
+PIKE_FEATURE_NODEP(ZXID)
+
+AC_ARG_WITH(zxid-prefix,[  --with-zxid-prefix=PFX   Prefix where ZXID is installed (optional)],
+            zxid_prefix="$withval", zxid_prefix="")
+
+if test x$zxid_prefix != x ; then
+    # FIXME: Add include and lib paths here.
+    :
+fi
+
+AC_CHECK_LIB(z, deflate,, [
+  AC_CHECK_LIB(gz, deflate,, [
+    AC_CHECK_LIB(zlib, deflate)
+  ])
+])
+AC_CHECK_LIB(crypto, SHA1)
+AC_CHECK_LIB(ssl, EVP_CIPHER_block_size)
+AC_CHECK_LIB(curl, curl_easy_reset)
+AC_CHECK_LIB(zxid, zxid_simple)
+AC_CHECK_HEADERS(zx/zx.h zxid/zxid.h)
+
+if test x"$ac_cv_lib_zxid_zxid_simple:$ac_cv_header_zxid_zxid_h" = "xyes:yes";
+then
+    PIKE_FEATURE_OK(ZXID)
+    AC_DEFINE(HAVE_ZXID)
+fi
+
+AC_OUTPUT(Makefile,echo FOO >stamp-h )

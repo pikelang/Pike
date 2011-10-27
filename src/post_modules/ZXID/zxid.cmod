@@ -1,0 +1,759 @@
+/* -*- c -*-
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id$
+*/
+
+#include "global.h"
+#include "stralloc.h"
+#include "pike_macros.h"
+#include "program.h"
+#include "program_id.h"
+#include "operators.h"
+#include "fdlib.h"
+#include "fd_control.h"
+#include "backend.h"
+#include "module_support.h"
+#include "array.h"
+#include "builtin_functions.h"
+#include "mapping.h"
+#include "pike_types.h"
+#include "threads.h"
+
+#include "zxid_config.h"
+
+DECLARATIONS
+
+#ifdef HAVE_ZXID
+
+/*! @module ZXID
+ *!
+ *! ZXID is a library that implements SAML 2.0, Liberty ID-WSF 2.0
+ *! and XACML 2.0.
+ *!
+ *! This module implements a wrapper for ZXID. The interface is similar
+ *! to the C one, but using generally accepted Pike syntax.
+ */
+
+#include <zxid/zxid.h>
+
+/* Needed for some obscure macros (like ERR, DD, MB, ME, etc). */
+#include <zxid/errmac.h>
+
+/* Needed for zxid_new_at(). */
+#include <zxid/zxidpriv.h>
+
+#include "constants.h"
+
+#define THIS_OBJ Pike_interpreter.frame_pointer->current_object
+#define RET_THIS() do { pop_n_elems(args); ref_push_object(THIS_OBJ); return; } while(0)
+
+/* Fall back to a normal index on this object, in case
+ * someone inherited us. */
+ #define OBJ_INDEX() do { \
+      struct svalue res; \
+      object_index_no_free2 (&res, Pike_fp->current_object, 0, Pike_sp-1); \
+      pop_stack(); \
+      *Pike_sp++ = res; \
+    } while(0) \
+
+
+#define CHECK_CLASS(o, name, arg)\
+  if(o->prog != PIKE_CONCAT(name, _program)) { \
+    Pike_error("Invalid class for argument %d\n", arg); \
+  }
+
+/*! @class Configuration
+ *!
+ *! A set of configuration parameters for a ZXID context.
+ *!
+ *! This is typically overloaded with new definitions
+ *! for the various callback functions.
+ */
+PIKECLASS Configuration {
+  CVAR zxid_conf conf;
+
+  PIKEVAR mapping(string:mixed) conf_m
+    flags ID_PRIVATE|ID_PROTECTED;
+
+  /* Lots of free-related functions are missing in the 1.02 API.
+   *
+   * Here are some that we need.
+   */
+
+  /* Reverse of zxid_new_at(). */
+  static void zxid_free_at(struct zx_ctx *ctx, struct zxid_attr *attr)
+  {
+    while (attr) {
+      struct zxid_attr *next = attr->n;
+      ZX_FREE(ctx, attr->name);
+      if (attr->val) ZX_FREE(ctx, attr->val);
+      ZX_FREE(ctx, attr);
+      attr = next;
+    }
+  }
+
+  /* Reverse of zxid_load_need().
+   */
+  static void zxid_free_need(struct zx_ctx *ctx, struct zxid_need *need)
+  {
+    while (need) {
+      struct zxid_need *next = need->n;
+      ZX_FREE(ctx, need->usage);
+      ZX_FREE(ctx, need->retent);
+      ZX_FREE(ctx, need->oblig);
+      ZX_FREE(ctx, need->ext);
+      zxid_free_at(ctx, need->at);
+      need = next;
+    }
+  }
+
+  /* Reverse of zxid_load_atsrc(). */
+  static void zxid_free_atsrc(struct zx_ctx *ctx, struct zxid_atsrc *src)
+  {
+    while (src) {
+      struct zxid_atsrc *next = src->n;
+      zxid_free_at(ctx, src->at);
+      ZX_FREE(ctx, src->ns);
+      ZX_FREE(ctx, src->weight);
+      ZX_FREE(ctx, src->url);
+      ZX_FREE(ctx, src->aapml);
+      ZX_FREE(ctx, src->otherlim);
+      ZX_FREE(ctx, src->ext);
+      ZX_FREE(ctx, src);
+      src = next;
+    }
+  }
+
+  /* Reverse of zxid_load_map().
+   */
+  static void zxid_free_map(struct zx_ctx *ctx, struct zxid_map *map)
+  {
+    while (map) {
+      struct zxid_map *next = map->n;
+      ZX_FREE(ctx, map->ns);
+      ZX_FREE(ctx, map->src);
+      ZX_FREE(ctx, map->dst);
+      ZX_FREE(ctx, map->ext);
+      ZX_FREE(ctx, map);
+      map = next;
+    }
+  }
+
+  /* Reverse of zxid_load_cstr_list(). */
+  static void zxid_free_cstr_list(struct zx_ctx *ctx,
+				  struct zxid_cstr_list *l)
+  {
+    while (l) {
+      struct zxid_cstr_list *next = l->n;
+      ZX_FREE(ctx, l->s);
+      ZX_FREE(ctx, l);
+      l = next;
+    }
+  }
+
+  /* These low-level functions are declared static in zxidconf.c,
+   * but we need them...
+   */
+
+  /* BEGIN Copied from zxidconf.c 1.51 (zxid 1.02). */
+
+#define IS_RULE(rule, val) (!memcmp((rule), (val), sizeof(val)-1) && (rule)[sizeof(val)-1] == '$')
+
+static struct zxid_need* zxid_load_need(zxid_conf* cf, struct zxid_need* need, char* v)
+{
+  char* attrs;
+  char* usage;
+  char* retent;
+  char* oblig;
+  char* ext;
+  char* p = v;
+  char* a;
+  int len;
+  struct zxid_need* nn;
+
+  while (p && *p) {
+    attrs = p;
+    p = strchr(p, '$');
+    if (!p) {
+      ERR("Malformed NEED or WANT directive: attribute list at pos %d", ((int)(p-v)));
+      return need;
+    }
+
+    usage = ++p;
+    p = strchr(p, '$');
+    if (!p) {
+      ERR("Malformed NEED or WANT directive: usage missing at pos %d", ((int)(p-v)));
+      return need;
+    }
+
+    retent = ++p;
+    p = strchr(p, '$');
+    if (!p) {
+      ERR("Malformed NEED or WANT directive: retention missing at pos %d", ((int)(p-v)));
+      return need;
+    }
+
+    oblig = ++p;
+    p = strchr(p, '$');
+    if (!p) {
+      ERR("Malformed NEED or WANT directive: obligations missing at pos %d", ((int)(p-v)));
+      return need;
+    }
+    
+    ext = ++p;
+    p = strchr(p, ';');  /* Stanza ends in separator ; or end of string nul */
+    if (!p)
+      p = ext + strlen(ext);
+    
+    if (IS_RULE(usage, "reset")) {
+      INFO("Reset need %p", need);
+  /* END Copied from zxidconf.c 1.51 (zxid 1.02). */
+
+      /* The original code here leaks.
+       * /grubba
+       */
+      zxid_free_need(cf->ctx, need);
+      need = NULL;
+
+  /* BEGIN Copied from zxidconf.c 1.51 (zxid 1.02). */
+      if (!*p) break;
+      ++p;
+      continue;
+    }
+    
+    nn = ZX_ZALLOC(cf->ctx, struct zxid_need);
+    nn->n = need;
+    need = nn;
+
+    COPYVAL(nn->usage,  usage,  retent-1);
+    COPYVAL(nn->retent, retent, oblig-1);
+    COPYVAL(nn->oblig,  oblig,  ext-1);
+    COPYVAL(nn->ext,    ext,    p);
+
+    DD("need attrs(%.*s) usage(%s) retent(%s) oblig(%s) ext(%s)", usage-attrs-1, attrs, nn->usage, nn->retent, nn->oblig, nn->ext);
+
+    for (a = attrs; ; a += len+1) {
+      len = strcspn(a, ",$");
+      nn->at = zxid_new_at(cf, nn->at, len, a, 0,0, "need/want");
+      if (a[len] == '$')
+	break;
+    }
+    if (!*p) break;
+    ++p;
+  }
+
+  return need;
+}
+
+static struct zxid_cstr_list* zxid_load_cstr_list(zxid_conf* cf, struct zxid_cstr_list* l, char* p)
+{
+  char* q;
+  struct zxid_cstr_list* cs;
+
+  for (; p && *p;) {
+    q = p;
+    p = strchr(p, ',');
+    if (!p)
+      p = q + strlen(q);
+    cs = ZX_ZALLOC(cf->ctx, struct zxid_cstr_list);
+    cs->n = l;
+    l = cs;
+    COPYVAL(cs->s, q, p);    
+  }
+  return l;
+}
+
+static struct zxid_atsrc* zxid_load_atsrc(zxid_conf* cf, struct zxid_atsrc* atsrc, char* v)
+{
+  char* ns;
+  char* attrs;
+  char* weight;
+  char* url;
+  char* aapml;
+  char* otherlim;
+  char* ext;
+  char* p = v;
+  char* a;
+  int len;
+  struct zxid_atsrc* as;
+
+  while (p && *p) {
+    ns = p;
+    p = strchr(p, '$');
+    if (!p) {
+      ERR("Malformed ATSRC directive: namespace missing at pos %d", ((int)(p-v)));
+      return atsrc;
+    }
+
+    attrs = ++p;
+    p = strchr(p, '$');
+    if (!p) {
+      ERR("Malformed ATSRC directive: attribute list missing at pos %d", ((int)(p-v)));
+      return atsrc;
+    }
+
+    weight = ++p;
+    p = strchr(p, '$');
+    if (!p) {
+      ERR("Malformed ATSRC directive: weight missing at pos %d", ((int)(p-v)));
+      return atsrc;
+    }
+
+    url = ++p;
+    p = strchr(p, '$');
+    if (!p) {
+      ERR("Malformed ATSRC directive: url missing at pos %d", ((int)(p-v)));
+      return atsrc;
+    }
+
+    aapml = ++p;
+    p = strchr(p, '$');
+    if (!p) {
+      ERR("Malformed ATSRC directive: aapml ref missing at pos %d", ((int)(p-v)));
+      return atsrc;
+    }
+    
+    otherlim = ++p;
+    p = strchr(p, '$');
+    if (!p) {
+      ERR("Malformed ATSRC directive: otherlim missing at pos %d", ((int)(p-v)));
+      return atsrc;
+    }
+    
+    ext = ++p;
+    p = strchr(p, ';');  /* Stanza ends in separator ; or end of string nul */
+    if (!p)
+      p = ext + strlen(ext);
+    
+    if (IS_RULE(url, "reset")) {
+      INFO("Reset atsrc %p", atsrc);
+  /* END Copied from zxidconf.c 1.51 (zxid 1.02). */
+
+      /* The original code here leaks.
+       * /grubba
+       */
+      zxid_free_atsrc(cf->ctx, atsrc);
+      atsrc = NULL;
+
+  /* BEGIN Copied from zxidconf.c 1.51 (zxid 1.02). */
+      if (!*p) break;
+      ++p;
+      continue;
+    }
+    
+    as = ZX_ZALLOC(cf->ctx, struct zxid_atsrc);
+    as->n = atsrc;
+    atsrc = as;
+
+    COPYVAL(as->ns,       ns,        attrs-1);
+    COPYVAL(as->weight,   weight,    url-1);
+    COPYVAL(as->url,      url,       aapml-1);
+    COPYVAL(as->aapml,    aapml,     otherlim-1);
+    COPYVAL(as->otherlim, otherlim,  ext-1);
+    COPYVAL(as->ext,      ext,       p);
+
+    D("atsrc ns(%s) attrs(%.*s) weight(%s) url(%s) aapml(%s) otherlim(%s) ext(%s)", as->ns, ((int)(weight-attrs-1)), attrs, as->weight, as->url, as->aapml, as->otherlim, as->ext);
+
+    for (a = attrs; ; a += len+1) {
+      len = strcspn(a, ",$");
+      as->at = zxid_new_at(cf, as->at, len, a, 0,0, "atsrc");
+      if (a[len] == '$')
+	break;
+    }
+    if (!*p) break;
+    ++p;
+  }
+
+  return atsrc;
+}
+
+static char* zxid_grab_domain_name(zxid_conf* cf, const char* url)
+{
+  char* dom;
+  char* p;
+  int len;
+  if (!url || !*url)
+    return 0;
+  dom = strchr(url, ':');
+  if (!dom || dom[1] != '/' || dom[2] != '/')
+    return 0;
+  dom += 3;
+  /* After shipping https:// scan for domain name allowable characters. */
+  len = strspn(dom, ".abcdefghijklmnopqrstuvwxyz0123456789-ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+  p = ZX_ALLOC(cf->ctx, len+1);
+  memcpy(p, dom, len);
+  p[len] = 0;
+  return p;
+}
+
+  /* END Copied from zxidconf.c 1.51 (zxid 1.02). */
+
+  /* Attempt to do the reverse of zxid_init_conf(). */
+  static void zxid_free_conf(struct zx_ctx *ctx, zxid_conf *conf)
+  {
+    zxid_free_need(ctx, conf->need);
+    zxid_free_need(ctx, conf->want);
+    zxid_free_atsrc(ctx, conf->attrsrc);
+    zxid_free_map(ctx, conf->inmap);
+    zxid_free_map(ctx, conf->outmap);
+    zxid_free_map(ctx, conf->pepmap);
+    zxid_free_map(ctx, conf->pepmap_rqout);
+    zxid_free_map(ctx, conf->pepmap_rqin);
+    zxid_free_map(ctx, conf->pepmap_rsout);
+    zxid_free_map(ctx, conf->pepmap_rsin);
+    zxid_free_cstr_list(ctx, conf->localpdp_role_permit);
+    zxid_free_cstr_list(ctx, conf->localpdp_role_deny);
+    zxid_free_cstr_list(ctx, conf->localpdp_idpnid_permit);
+    zxid_free_cstr_list(ctx, conf->localpdp_idpnid_deny);
+    if (conf->path) {
+      ZX_FREE(ctx, conf->path);
+    }
+  }
+
+  INIT {
+    THIS->conf.ctx = zx_init_ctx();
+    zxid_init_conf(&THIS->conf, NULL);
+    THIS->conf_m = allocate_mapping(8);
+  }
+
+  EXIT {
+    struct zx_ctx *ctx = THIS->conf.ctx;
+
+    zxid_free_conf(ctx, &THIS->conf);
+
+    /* NB: zx_init_ctx() allocates the struct zx_ctx with malloc(3C).
+     *     It might be safer on eg __NT__ to use ZX_FREE() here as well,
+     *     since it currently expands to free(3C), and will use the
+     *     same crt.
+     */
+    free(ctx);
+  }
+
+  /*! @decl void create(string|mapping(string(0..255):string(0..255)) conf)
+   *!
+   *!   Create a new @[Configuration].
+   *!
+   *! @param conf
+   *!   ZXID configuration parameters. Either as a
+   *!   configuration string (as per the ZXID book chapter 7 and 10),
+   *!   or as a mapping of parameter settings. These are the most
+   *!   common parameters:
+   *!   @mapping
+   *!     @member string(0..255) "PATH"
+   *!       Path to the directory containing the @expr{"zxid.conf"@}
+   *!       file.
+   *!     @member string(0..255) "URL"
+   *!       URL of the SP.
+   *!     @member string(0..255) "CDC_URL"
+   *!       The Common Domain URL.
+   *!   @endmapping
+   */
+  PIKEFUN void create(mapping(string(0..255):string(0..255)) conf)
+    flags ID_PROTECTED;
+  {
+    struct svalue *s;
+
+#define LOW_CHECK_ARG(ARG, CHECK, CODE) do {			\
+      if ((s = low_mapping_string_lookup(conf, (ARG))) &&	\
+	  (CHECK)) {						\
+	CODE;							\
+      }								\
+    } while(0)
+
+#define CHECK_ARG_KEEP(ARG, CHECK, CODE)			\
+    LOW_CHECK_ARG(ARG, CHECK,					\
+		  do {						\
+		    mapping_string_insert(THIS->conf_m,		\
+					  (ARG), s);		\
+		    CODE;					\
+		  } while(0))
+
+#define CHECK_ARG_STRING(ARG, FIELD)				\
+    CHECK_ARG_KEEP(ARG, ((TYPEOF(*s) == PIKE_T_STRING) &&	\
+			!s->u.string->size_shift),		\
+		   (FIELD) = s->u.string->str)
+
+#define CHECK_ARG_STRING_VOID(ARG, FIELD)			\
+    CHECK_ARG_KEEP(ARG, (((TYPEOF(*s) == PIKE_T_STRING) &&	\
+			  !s->u.string->size_shift) ||		\
+			 ((TYPEOF(*s) == PIKE_T_INT) &&		\
+			  !s->u.integer)),			\
+			 do {					\
+			   if (TYPEOF(*s) == PIKE_T_STRING) {	\
+			     (FIELD) = s->u.string->str;	\
+			   } else {				\
+			     (FIELD) = NULL;			\
+			   }					\
+			 } while(0))
+
+#define CHECK_ARG_CHAR(ARG, FIELD) 				\
+    LOW_CHECK_ARG(ARG, ((TYPEOF(*s) == PIKE_T_STRING) &&	\
+			!s->u.string->size_shift &&		\
+			s->u.string->len),			\
+		  (FIELD) = s->u.string->str[0])
+
+#define CHECK_ARG_INT(ARG, FIELD) 				\
+    LOW_CHECK_ARG(ARG, (TYPEOF(*s) == PIKE_T_INT),		\
+		  (FIELD) = s->u.integer)
+
+#define CHECK_ARG_PARSER_FUNC(ARG, FIELD, FUNC)			\
+    LOW_CHECK_ARG(ARG,((TYPEOF(*s) == PIKE_T_STRING) &&		\
+		       !s->u.string->size_shift),		\
+		  (FIELD) = (FUNC)(&THIS->conf, (FIELD),	\
+				   s->u.string->str))
+
+#define CHECK_ARG_MAP(ARG, FIELD)				\
+    CHECK_ARG_PARSER_FUNC(ARG, FIELD, zxid_load_map)
+
+#define CHECK_ARG_NEED(ARG, FIELD)				\
+    CHECK_ARG_PARSER_FUNC(ARG, FIELD, zxid_load_need)
+
+#define CHECK_ARG_CSTR_LIST(ARG, FIELD)				\
+    CHECK_ARG_PARSER_FUNC(ARG, FIELD, zxid_load_cstr_list)
+
+
+    CHECK_ARG_INT(MK_STRING("AUTO_CERT"), THIS->conf.auto_cert);
+
+    CHECK_ARG_INT(MK_STRING("AUTO_CERT"), THIS->conf.auto_cert);
+    CHECK_ARG_INT(MK_STRING("AUTHN_REQ_SIGN"), THIS->conf.authn_req_sign);
+    CHECK_ARG_INT(MK_STRING("ACT"), THIS->conf.log_act);
+    CHECK_ARG_INT(MK_STRING("ACT_IN_ERR"), THIS->conf.log_err_in_act);
+    CHECK_ARG_INT(MK_STRING("AUDIENCE_FATAL"), THIS->conf.audience_fatal);
+    CHECK_ARG_INT(MK_STRING("AFTER_SLOP"), THIS->conf.after_slop);
+    CHECK_ARG_STRING(MK_STRING("ANON_OK"), THIS->conf.anon_ok);
+    CHECK_ARG_STRING(MK_STRING("AN_PAGE"), THIS->conf.an_page);
+    CHECK_ARG_STRING(MK_STRING("AN_TEMPL_FILE"), THIS->conf.an_templ_file);
+    CHECK_ARG_STRING(MK_STRING("AN_TEMPL"), THIS->conf.an_templ);
+    CHECK_ARG_STRING(MK_STRING("ATSEL_PAGE"), THIS->conf.atsel_page);
+    LOW_CHECK_ARG(MK_STRING("ATTRSRC"),
+		  ((TYPEOF(*s) == PIKE_T_STRING) && !s->u.string->size_shift),
+		  THIS->conf.attrsrc =
+		  zxid_load_atsrc(&THIS->conf, THIS->conf.attrsrc,
+				  s->u.string->str));
+    CHECK_ARG_INT(MK_STRING("A7NTTL"), THIS->conf.a7nttl);
+    CHECK_ARG_INT(MK_STRING("AS_ENA"), THIS->conf.as_ena);
+    CHECK_ARG_INT(MK_STRING("AZ_OPT"), THIS->conf.az_opt);
+    CHECK_ARG_INT(MK_STRING("BEFORE_SLOP"), THIS->conf.before_slop);
+    CHECK_ARG_INT(MK_STRING("BOOTSTRAP_LEVEL"), THIS->conf.bootstrap_level);
+    CHECK_ARG_INT(MK_STRING("BARE_URL_ENTITYID"),
+		  THIS->conf.bare_url_entityid);
+    CHECK_ARG_STRING(MK_STRING("CDC_URL"), THIS->conf.cdc_url);
+    CHECK_ARG_INT(MK_STRING("CDC_CHOICE"), THIS->conf.cdc_choice);
+    CHECK_ARG_STRING(MK_STRING("CONTACT_ORG"), THIS->conf.contact_org);
+    CHECK_ARG_STRING(MK_STRING("CONTACT_NAME"), THIS->conf.contact_name);
+    CHECK_ARG_STRING(MK_STRING("CONTACT_EMAIL"), THIS->conf.contact_email);
+    CHECK_ARG_STRING(MK_STRING("CONTACT_TEL"), THIS->conf.contact_tel);
+    CHECK_ARG_STRING(MK_STRING("COUNTRY"), THIS->conf.country);
+    CHECK_ARG_INT(MK_STRING("CANON_INOPT"), THIS->conf.canon_inopt);
+    THIS->conf.ctx->canon_inopt = THIS->conf.canon_inopt;
+    CHECK_ARG_INT(MK_STRING("CPN_ENA"), THIS->conf.cpn_ena);
+    CHECK_ARG_STRING(MK_STRING("DEFAULTQS"), THIS->conf.defaultqs);
+    CHECK_ARG_INT(MK_STRING("DUP_A7N_FATAL"), THIS->conf.dup_a7n_fatal);
+    CHECK_ARG_INT(MK_STRING("DUP_MSG_FATAL"), THIS->conf.dup_msg_fatal);
+    CHECK_ARG_CHAR(MK_STRING("DI_ALLOW_CREATE"), THIS->conf.di_allow_create);
+    CHECK_ARG_INT(MK_STRING("DI_NID_FMT"), THIS->conf.di_nid_fmt);
+    CHECK_ARG_INT(MK_STRING("DI_A7N_ENC"), THIS->conf.di_a7n_enc);
+    CHECK_ARG_INT(MK_STRING("ERR"), THIS->conf.log_err);
+    CHECK_ARG_INT(MK_STRING("ERR_IN_ACT"), THIS->conf.log_err_in_act);
+    CHECK_ARG_INT(MK_STRING("ENC_TAIL_OPT"), THIS->conf.enc_tail_opt);
+    CHECK_ARG_INT(MK_STRING("ENCKEY_OPT"), THIS->conf.enckey_opt);
+    CHECK_ARG_STRING(MK_STRING("ERR_PAGE"), THIS->conf.err_page);
+    CHECK_ARG_STRING(MK_STRING("ERR_TEMPL_FILE"), THIS->conf.err_templ_file);
+    CHECK_ARG_STRING(MK_STRING("ERR_TEMPL"), THIS->conf.err_templ);
+    CHECK_ARG_STRING(MK_STRING("FEDUSERNAME_SUFFIX"),
+		     THIS->conf.fedusername_suffix);
+    CHECK_ARG_INT(MK_STRING("ISSUE_A7N"), THIS->conf.log_issue_a7n);
+    CHECK_ARG_INT(MK_STRING("ISSUE_MSG"), THIS->conf.log_issue_msg);
+    CHECK_ARG_STRING(MK_STRING("ISSUE_AUTHNCTX_PW"),
+		     THIS->conf.issue_authnctx_pw);
+    CHECK_ARG_STRING(MK_STRING("IDP_SEL_START"), THIS->conf.idp_sel_start);
+    CHECK_ARG_STRING(MK_STRING("IDP_SEL_NEW_IDP"), THIS->conf.idp_sel_new_idp);
+    CHECK_ARG_STRING(MK_STRING("IDP_SEL_OUR_EID"), THIS->conf.idp_sel_our_eid);
+    CHECK_ARG_STRING(MK_STRING("IDP_SEL_TECH_USER"),
+		     THIS->conf.idp_sel_tech_user);
+    CHECK_ARG_STRING(MK_STRING("IDP_SEL_TECH_SITE"),
+		     THIS->conf.idp_sel_tech_site);
+    CHECK_ARG_STRING(MK_STRING("IDP_SEL_FOOTER"), THIS->conf.idp_sel_footer);
+    CHECK_ARG_STRING(MK_STRING("IDP_SEL_END"), THIS->conf.idp_sel_end);
+    CHECK_ARG_STRING(MK_STRING("IDP_SEL_PAGE"), THIS->conf.idp_sel_page);
+    CHECK_ARG_STRING(MK_STRING("IDP_SEL_TEMPL_FILE"),
+		     THIS->conf.idp_sel_templ_file);
+    CHECK_ARG_STRING(MK_STRING("IDP_SEL_TEMPL"), THIS->conf.idp_sel_templ);
+    CHECK_ARG_INT(MK_STRING("IDP_ENA"), THIS->conf.idp_ena);
+    CHECK_ARG_INT(MK_STRING("IDP_PXY_ENA"), THIS->conf.idp_pxy_ena);
+    CHECK_ARG_INT(MK_STRING("IMPS_ENA"), THIS->conf.imps_ena);
+    CHECK_ARG_STRING(MK_STRING("IDP_PREF_ACS_BINDING"),
+		     THIS->conf.idp_pref_acs_binding);
+    CHECK_ARG_INT(MK_STRING("IDPATOPT"), THIS->conf.idpatopt);
+    CHECK_ARG_INT(MK_STRING("IDP_LIST_METH"), THIS->conf.idp_list_meth);
+    CHECK_ARG_MAP(MK_STRING("INMAP"), THIS->conf.inmap);
+    CHECK_ARG_INT(MK_STRING("LEVEL"), THIS->conf.log_level);
+    CHECK_ARG_INT(MK_STRING("LOGUSER"), THIS->conf.loguser);
+    CHECK_ARG_CSTR_LIST(MK_STRING("LOCALPDP_ROLE_PERMIT"),
+			THIS->conf.localpdp_role_permit);
+    CHECK_ARG_CSTR_LIST(MK_STRING("LOCALPDP_ROLE_DENY"),
+			THIS->conf.localpdp_role_deny);
+    CHECK_ARG_CSTR_LIST(MK_STRING("LOCALPDP_IDPNID_PERMIT"),
+			THIS->conf.localpdp_idpnid_permit);
+    CHECK_ARG_CSTR_LIST(MK_STRING("LOCALPDP_IDPNID_DENY"),
+			THIS->conf.localpdp_idpnid_deny);
+    CHECK_ARG_STRING(MK_STRING("LOAD_COT_CACHE"), THIS->conf.load_cot_cache);
+    CHECK_ARG_STRING(MK_STRING("LOCALITY"), THIS->conf.locality);
+    CHECK_ARG_STRING(MK_STRING("MANDATORY_ATTR"), THIS->conf.mandatory_attr);
+    CHECK_ARG_INT(MK_STRING("MD_FETCH"), THIS->conf.md_fetch);
+    CHECK_ARG_INT(MK_STRING("MD_POPULATE_CACHE"),
+		  THIS->conf.md_populate_cache);
+    CHECK_ARG_INT(MK_STRING("MD_CACHE_FIRST"), THIS->conf.md_cache_first);
+    CHECK_ARG_INT(MK_STRING("MD_CACHE_LAST"), THIS->conf.md_cache_last);
+    CHECK_ARG_STRING(MK_STRING("MGMT_START"), THIS->conf.mgmt_start);
+    CHECK_ARG_STRING(MK_STRING("MGMT_LOGOUT"), THIS->conf.mgmt_logout);
+    CHECK_ARG_STRING(MK_STRING("MGMT_DEFED"), THIS->conf.mgmt_defed);
+    CHECK_ARG_STRING(MK_STRING("MGMT_FOOTER"), THIS->conf.mgmt_footer);
+    CHECK_ARG_STRING(MK_STRING("MGMT_END"), THIS->conf.mgmt_end);
+    CHECK_ARG_INT(MK_STRING("MSG_SIG_OK"), THIS->conf.msg_sig_ok);
+    CHECK_ARG_INT(MK_STRING("MAX_SOAP_RETRY"), THIS->conf.max_soap_retry);
+    CHECK_ARG_STRING(MK_STRING("MOD_SAML_ATTR_PREFIX"),
+		     THIS->conf.mod_saml_attr_prefix);
+    CHECK_ARG_INT(MK_STRING("NAMEID_ENC"), THIS->conf.nameid_enc);
+    CHECK_ARG_STRING(MK_STRING("NICE_NAME"), THIS->conf.nice_name);
+    CHECK_ARG_STRING(MK_STRING("NON_STANDARD_ENTITYID"),
+		     THIS->conf.non_standard_entityid);
+    CHECK_ARG_INT(MK_STRING("NOSIG_FATAL"), THIS->conf.nosig_fatal);
+    CHECK_ARG_INT(MK_STRING("NOTIMESTAMP_FATAL"),
+		  THIS->conf.notimestamp_fatal);
+    CHECK_ARG_NEED(MK_STRING("NEED"), THIS->conf.need);
+    CHECK_ARG_STRING(MK_STRING("NEW_USER_PAGE"), THIS->conf.new_user_page);
+    CHECK_ARG_MAP(MK_STRING("OUTMAP"), THIS->conf.outmap);
+    CHECK_ARG_STRING(MK_STRING("ORG_NAME"), THIS->conf.org_name);
+    CHECK_ARG_STRING(MK_STRING("ORG_URL"), THIS->conf.org_url);
+
+    CHECK_ARG_STRING(MK_STRING("PATH"), THIS->conf.path);
+    CHECK_ARG_INT(MK_STRING("PDP_ENA"), THIS->conf.pdp_ena);
+    CHECK_ARG_STRING(MK_STRING("PDP_URL"), THIS->conf.pdp_url);
+    CHECK_ARG_STRING(MK_STRING("PDP_CALL_URL"), THIS->conf.pdp_call_url);
+    CHECK_ARG_MAP(MK_STRING("PEPMAP"), THIS->conf.pepmap);
+    CHECK_ARG_MAP(MK_STRING("PEPMAP_RQOUT"), THIS->conf.pepmap_rqout);
+    CHECK_ARG_MAP(MK_STRING("PEPMAP_RQIN"), THIS->conf.pepmap_rqin);
+    CHECK_ARG_MAP(MK_STRING("PEPMAP_RSOUT"), THIS->conf.pepmap_rsout);
+    CHECK_ARG_MAP(MK_STRING("PEPMAP_RSIN"), THIS->conf.pepmap_rsin);
+    CHECK_ARG_INT(MK_STRING("POST_A7N_ENC"), THIS->conf.post_a7n_enc);
+    CHECK_ARG_STRING(MK_STRING("POST_TEMPL_FILE"), THIS->conf.post_templ_file);
+    CHECK_ARG_STRING(MK_STRING("POST_TEMPL"), THIS->conf.post_templ);
+    CHECK_ARG_STRING(MK_STRING("REDIRECT_HACK_IMPOSED_URL"),
+		     THIS->conf.redirect_hack_imposed_url);
+    CHECK_ARG_STRING(MK_STRING("REDIRECT_HACK_ZXID_URL"),
+		     THIS->conf.redirect_hack_zxid_url);
+    CHECK_ARG_STRING(MK_STRING("REDIRECT_HACK_ZXID_QS"),
+		     THIS->conf.redirect_hack_zxid_qs);
+    CHECK_ARG_INT(MK_STRING("REDIR_TO_CONTENT"), THIS->conf.redir_to_content);
+    CHECK_ARG_INT(MK_STRING("REMOTE_USER_ENA"), THIS->conf.remote_user_ena);
+    CHECK_ARG_INT(MK_STRING("RELY_A7N"), THIS->conf.log_rely_a7n);
+    CHECK_ARG_INT(MK_STRING("RELY_MSG"), THIS->conf.log_rely_msg);
+    CHECK_ARG_KEEP(MK_STRING("REQUIRED_AUTHNCTX"),
+		   (TYPEOF(*s) == PIKE_T_ARRAY), do {
+		     int i;
+		     char **p;
+		     if (THIS->conf.required_authnctx) {
+		       ZX_FREE(THIS->conf.ctx, THIS->conf.required_authnctx);
+		     }
+		     THIS->conf.required_authnctx = p =
+		       zx_zalloc(THIS->conf.ctx,
+				 sizeof(char*) * (s->u.array->size + 1));
+		     for (i = 0; i < s->u.array->size; i++) {
+		       struct pike_string *str;
+		       if ((TYPEOF(s->u.array->item[i]) == PIKE_T_STRING) &&
+			   !((str = s->u.array->item[i].u.string)->size_shift))
+			 *(p++) = str->str;
+		     }
+		     *p = NULL;
+		   } while(0));
+    CHECK_ARG_STRING(MK_STRING("RECOVER_PASSWD"), THIS->conf.recover_passwd);
+    CHECK_ARG_INT(MK_STRING("RELTO_FATAL"), THIS->conf.relto_fatal);
+    CHECK_ARG_STRING_VOID(MK_STRING("SES_ARCH_DIR"), THIS->conf.ses_arch_dir);
+    CHECK_ARG_STRING_VOID(MK_STRING("SES_COOKIE_NAME"),
+			  THIS->conf.ses_cookie_name);
+    CHECK_ARG_INT(MK_STRING("SIGFAIL_IS_ERR"), THIS->conf.log_sigfail_is_err);
+    CHECK_ARG_INT(MK_STRING("SIG_FATAL"), THIS->conf.sig_fatal);
+    CHECK_ARG_INT(MK_STRING("SSO_SIGN"), THIS->conf.sso_sign);
+    CHECK_ARG_INT(MK_STRING("SSO_SOAP_SIGN"), THIS->conf.sso_soap_sign);
+    CHECK_ARG_INT(MK_STRING("SSO_SOAP_RESP_SIGN"),
+		  THIS->conf.sso_soap_resp_sign);
+    CHECK_ARG_INT(MK_STRING("SHOW_CONF"), THIS->conf.show_conf);
+    CHECK_ARG_INT(MK_STRING("SHOW_TECH"), THIS->conf.show_tech);
+    CHECK_ARG_STRING(MK_STRING("STATE"), THIS->conf.state);
+    CHECK_ARG_INT(MK_STRING("TIMEOUT_FATAL"), THIS->conf.timeout_fatal);
+    CHECK_ARG_INT(MK_STRING("TIMESKEW"), THIS->conf.timeskew);
+    CHECK_ARG_STRING(MK_STRING("TRUSTPDP_URL"), THIS->conf.trustpdp_url);
+    CHECK_ARG_KEEP(MK_STRING("URL"), ((TYPEOF(*s) == PIKE_T_STRING) &&
+				      !s->u.string->size_shift), do {
+		     THIS->conf.url = s->u.string->str;
+		     if (THIS->conf.fedusername_suffix) {
+		       ZX_FREE(THIS->conf.ctx, THIS->conf.fedusername_suffix);
+		       THIS->conf.fedusername_suffix = NULL;
+		     }
+		     THIS->conf.fedusername_suffix =
+		       zxid_grab_domain_name(&THIS->conf, s->u.string->str);
+		   } while(0));
+    CHECK_ARG_INT(MK_STRING("USER_LOCAL"), THIS->conf.user_local);
+    CHECK_ARG_INT(MK_STRING("VALID_OPT"), THIS->conf.valid_opt);
+    CHECK_ARG_NEED(MK_STRING("WANT"), THIS->conf.want);
+    CHECK_ARG_INT(MK_STRING("WANT_SSO_A7N_SIGNED"),
+		  THIS->conf.want_sso_a7n_signed);
+    CHECK_ARG_INT(MK_STRING("WANT_AUTHN_REQ_SIGNED"),
+		  THIS->conf.want_authn_req_signed);
+    CHECK_ARG_INT(MK_STRING("WSC_SIGN"), THIS->conf.wsc_sign);
+    CHECK_ARG_INT(MK_STRING("WSP_SIGN"), THIS->conf.wsp_sign);
+    CHECK_ARG_STRING(MK_STRING("WSPCGICMD"), THIS->conf.wspcgicmd);
+    CHECK_ARG_INT(MK_STRING("WSP_NOSIG_FATAL"), THIS->conf.wsp_nosig_fatal);
+    CHECK_ARG_STRING(MK_STRING("WSC_LOCALPDP_OBL_PLEDGE"),
+		     THIS->conf.wsc_localpdp_obl_pledge);
+    CHECK_ARG_STRING(MK_STRING("WSP_LOCALPDP_OBL_REQ"),
+		     THIS->conf.wsp_localpdp_obl_req   );
+    CHECK_ARG_STRING(MK_STRING("WSP_LOCALPDP_OBL_EMIT"),
+		     THIS->conf.wsp_localpdp_obl_emit  );
+    CHECK_ARG_STRING(MK_STRING("WSC_LOCALPDP_OBL_ACCEPT"),
+		     THIS->conf.wsc_localpdp_obl_accept);
+    CHECK_ARG_STRING(MK_STRING("XASP_VERS"), THIS->conf.xasp_vers);
+
+    /* The above does approximately the same as
+     *   zxid_conf_to_cf_len(&THIS->conf,
+     *                       conf->u.string->len, conf->u.string->str);
+     * but avoids the HTTP-transport encoding by using a mapping,
+     * and also attempts not to leak...
+     */
+  }
+
+  PIKEFUN string(0..255) authenticate(string(0..255) query)
+  {
+    char *res = zxid_simple_cf(&THIS->conf, query->len, query->str, 0, 0);
+
+    push_text(res);
+
+    ZX_FREE(THIS->conf.ctx, res);
+
+    stack_pop_n_elems_keep_top(args);
+  }
+}
+/*! @endclass Context */
+
+PIKE_MODULE_INIT
+{
+  INIT;
+}
+
+PIKE_MODULE_EXIT
+{
+  EXIT;
+}
+
+/*! @endmodule ZXID */
+
+#else /* HAVE_ZXID */
+
+PIKE_MODULE_INIT {
+}
+PIKE_MODULE_EXIT {
+}
+#endif /* HAVE_ZXID */

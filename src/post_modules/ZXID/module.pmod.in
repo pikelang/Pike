@@ -1,0 +1,66 @@
+inherit @module@;
+
+//! Convert a mapping of query variables to a query string.
+string(0..255) mapping_to_query(mapping(string(0..255):string(0..255)) map)
+{
+  return predef::map((array(array(string)))map,
+		     lambda(array(string) pair) {
+		       return predef::map(pair,
+					  Protocols.HTTP.percent_encode) * "=";
+		     }) * "&";
+}
+
+class Configuration
+{
+  inherit ::Configuration;
+
+  mapping(string(0..255):string(0..255)|array(string(0..255)))
+  parse_conf_file(string file)
+  {
+    mapping(string(0..255):string(0..255)) conf = ([]);
+
+    Stdio.File f = Stdio.File(file, "r");
+    foreach(f->line_iterator(1), string line) {
+      foreach(line/"&", string frag) {
+	sscanf(frag, "%*[ \t]%s=%s", string name, string val);
+	if (!sizeof(name) || (name[0] == '#') || !val) continue;
+	conf[Protocols.HTTP.uri_decode(name)] = Protocols.HTTP.uri_decode(val);
+      }
+    }
+    return conf;
+  }
+
+  // Perform some parsing here.
+  protected void create(mapping(string(0..255):string(0..255)|array(string(0..255))) conf)
+  {
+    conf += ([]);
+    while(1) {
+      if (stringp(conf->REDIRECT_HACK_ZXID_URL)) {
+	array(string(0..255)) a = conf->REDIRECT_HACK_ZXID_URL/"?";
+	if (sizeof(a) > 1) {
+	  conf->REDIRECT_HACK_ZXID_QS = a[1..]*"?";
+	}
+	conf->REDIRECT_HACK_ZXID_URL = a[0];
+      }
+      if (stringp(conf->REQUIRED_AUTHNCTX)) {
+	conf->REQUIRED_AUTHNCTX /= "$";
+      }
+      ::create(conf);
+      if (conf->PATH) {
+	// Recurse.
+	conf = parse_conf_file(combine_path(conf->PATH, "zxid.conf"));
+
+	// FIXME: Loop detection.
+	continue;
+      }
+      break;
+    }
+  }
+
+  string(0..255) authenticate(string(0..255)|mapping(string(0..255):string(0..255)) query)
+  {
+    if (mappingp(query)) query = mapping_to_query(query);
+    return ::authenticate(query);
+  }
+
+}
