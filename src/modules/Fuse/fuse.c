@@ -65,7 +65,7 @@ static void push_fuse_cmd(struct fuse_cmd *cmd, struct fuse *f)
 
 static struct object *global_fuse_obj; // There Can Be Only One
 
-#define DEFAULT_ERRNO() do{if(Pike_sp[-1].u.integer) return -Pike_sp[-1].u.integer;return -ENOENT;}while(0)
+#define DEFAULT_ERRNO() do{if((TYPEOF(Pike_sp[-1]) == T_INT) && Pike_sp[-1].u.integer) return -Pike_sp[-1].u.integer;return -ENOENT;}while(0)
 
 static int pf_getattr(const char *path, struct stat *stbuf)
 {
