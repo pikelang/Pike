@@ -298,11 +298,10 @@ string allocate_string_svalue(string orig_str)
   int svalue_id = last_svalue_id++;
   stradd += ({
     sprintf("\n#ifdef module_svalues_declared\n"
-	    "SET_SVAL_TYPE(module_svalues[%d], PIKE_T_STRING);\n"
-	    "SET_SVAL_SUBTYPE(module_svalues[%d], 0);\n"
-	    "copy_shared_string(module_svalues[%d].u.string, %s);\n"
+	    "SET_SVAL(module_svalues[%d], PIKE_T_STRING, 0, string, %s);\n"
+	    "add_ref(module_svalues[%d].u.string);\n"
 	    "#endif\n",
-	    svalue_id, svalue_id, svalue_id, str_sym),
+	    svalue_id, str_sym, svalue_id),
   });
   svalue_sym = svalues[str_sym] = sprintf("(module_svalues+%d)", svalue_id);
   return svalue_sym;
@@ -2708,6 +2707,13 @@ int main(int argc, array(string) argv)
     "#define SUBTYPEOF(SVAL)\t((SVAL).subtype)\n"
     "#define SET_SVAL_TYPE(SVAL, TYPE)\t(TYPEOF(SVAL) = TYPE)\n"
     "#define SET_SVAL_SUBTYPE(SVAL, TYPE)\t(SUBTYPEOF(SVAL) = TYPE)\n"
+    "#define SET_SVAL(SVAL, TYPE, SUBTYPE, FIELD, EXPR) do {\t\\\n"
+    "    /* Set the type afterwards to avoid a clobbered\t\\\n"
+    "     * svalue in case EXPR throws. */\t\t\t\\\n"
+    "    (SVAL).u.FIELD = (EXPR);\t\t\t\t\\\n"
+    "    SET_SVAL_TYPE((SVAL), (TYPE));\t\t\t\\\n"
+    "    SET_SVAL_SUBTYPE((SVAL), (SUBTYPE));\t\t\\\n"
+    "  } while(0)\n"
     "#endif /* !TYPEOF */\n"
     "\n\n",
     // FIXME: Ought to default to static in 7.9.
