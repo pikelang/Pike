@@ -927,10 +927,10 @@ static INLINE void low_debug_instr_prologue (PIKE_INSTR_T instr)
     if(d_flag>1) DEBUG_CHECK_THREAD();
 #endif
 
-    SET_SVAL_TYPE(Pike_sp[0], 99); /* an invalid type */
-    SET_SVAL_TYPE(Pike_sp[1], 99);
-    SET_SVAL_TYPE(Pike_sp[2], 99);
-    SET_SVAL_TYPE(Pike_sp[3], 99);
+    INVALIDATE_SVAL(Pike_sp[0]);
+    INVALIDATE_SVAL(Pike_sp[1]);
+    INVALIDATE_SVAL(Pike_sp[2]);
+    INVALIDATE_SVAL(Pike_sp[3]);
       
     if(Pike_sp<Pike_interpreter.evaluator_stack ||
        Pike_mark_sp < Pike_interpreter.mark_stack || Pike_fp->locals>Pike_sp)
