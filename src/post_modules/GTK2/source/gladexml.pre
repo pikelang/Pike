@@ -44,7 +44,7 @@ static void pgtk2__signal_connect(const gchar *handler_name,
     fprintf(stderr,"** WARNING **: Unknown function %s for signal %s\n",
 	    handler_name,signal_name);
     return;
-  } else if (cb->type!=PIKE_T_FUNCTION) {
+  } else if (TYPEOF(*cb) != PIKE_T_FUNCTION) {
     fprintf(stderr,"** WARNING **: Value for handler %s for signal %s not a function.\n",
 	    handler_name,signal_name);
     return;
@@ -202,7 +202,7 @@ void signal_autoconnect(mapping(string:function) callbacks, mixed data)
 //! be saved and sent as the first argument to all callback functions.
 {
   pgtk2_verify_inited();
-  if (args!=2 || Pike_sp[-args].type!=PIKE_T_MAPPING)
+  if (args!=2 || TYPEOF(Pike_sp[-args]) != PIKE_T_MAPPING)
     Pike_error("GTK2.GladeXML->signal_autoconnect: Invalid arguments, expected (mapping,mixed)\n");
   glade_xml_signal_autoconnect_full(GLADE_XML(THIS->obj),pgtk2__signal_connect,&args);
   RETURN_THIS();

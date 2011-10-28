@@ -12,8 +12,8 @@
 // Note: This can cause problems if optimize is called
 // before the other tests... /Hubbe
 0 = F_APPLY(F_CONSTANT
-	    [$$->u.sval.type == T_FUNCTION]
-	    [$$->u.sval.subtype == FUNCTION_BUILTIN]
+	    [TYPEOF($$->u.sval) == T_FUNCTION]
+	    [SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 	    [$$->u.sval.u.efun->optimize]
             [ (tmp1=$$->u.sval.u.efun->optimize($0)) ], *):
 {
@@ -24,7 +24,7 @@
 // Note: This can cause problems if optimize is called
 // before the other tests... /Hubbe
 0 = F_APPLY(F_CONSTANT
-	    [$$->u.sval.type == T_PROGRAM]
+	    [TYPEOF($$->u.sval) == T_PROGRAM]
 	    [$$->u.sval.u.program->optimize]
             [ (tmp1=$$->u.sval.u.program->optimize($0)) ], *):
 {
@@ -45,14 +45,14 @@ F_RETURN(-, *):
 // @({ a, b, c })  =>  a, b, c
 // Nonconstant array
 F_PUSH_ARRAY(F_APPLY(F_CONSTANT
-		     [$$->u.sval.type == T_FUNCTION]
-		     [$$->u.sval.subtype == FUNCTION_BUILTIN]
+		     [TYPEOF($$->u.sval) == T_FUNCTION]
+		     [SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 		     [$$->u.sval.u.efun->function == debug_f_aggregate], 0), *):
   $0;
 
 // @({ a, b, c })  =>  a, b, c
 // Constant array
-F_PUSH_ARRAY(0 = F_CONSTANT[$$->u.sval.type == T_ARRAY], *):
+F_PUSH_ARRAY(0 = F_CONSTANT[TYPEOF($$->u.sval) == T_ARRAY], *):
   {
     struct array *a = $0->u.sval.u.array;
     node *res = NULL;
@@ -75,12 +75,12 @@ F_PUSH_ARRAY(0 = F_CONSTANT[$$->u.sval.type == T_ARRAY], *):
 
 // sizeof(`*(A,B))  =>  `*(A, sizeof(B))  if typeof(A) <= int
 F_APPLY(0 = F_CONSTANT
-	[$$->u.sval.type == T_FUNCTION]
-	[$$->u.sval.subtype == FUNCTION_BUILTIN]
+	[TYPEOF($$->u.sval) == T_FUNCTION]
+	[SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 	[$$->u.sval.u.efun->function == f_sizeof],
 	F_APPLY(1 = F_CONSTANT
-		[$$->u.sval.type == T_FUNCTION]
-		[$$->u.sval.subtype == FUNCTION_BUILTIN]
+		[TYPEOF($$->u.sval) == T_FUNCTION]
+		[SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 		[$$->u.sval.u.efun->function == f_multiply],
 		F_ARG_LIST(2 = +[pike_types_le($$->type, int_type_string)],
 			   3 = +[!match_types(object_type_string, $$->type)]))):
@@ -88,12 +88,12 @@ F_APPLY(0 = F_CONSTANT
 			   
 // sizeof(`*(A,B))  =>  `*(sizeof(A), B)  if typeof(B) <= int
 F_APPLY(0 = F_CONSTANT
-	[$$->u.sval.type == T_FUNCTION]
-	[$$->u.sval.subtype == FUNCTION_BUILTIN]
+	[TYPEOF($$->u.sval) == T_FUNCTION]
+	[SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 	[$$->u.sval.u.efun->function == f_sizeof],
 	F_APPLY(1 = F_CONSTANT
-		[$$->u.sval.type == T_FUNCTION]
-		[$$->u.sval.subtype == FUNCTION_BUILTIN]
+		[TYPEOF($$->u.sval) == T_FUNCTION]
+		[SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 		[$$->u.sval.u.efun->function == f_multiply],
 		F_ARG_LIST(2 = +[!match_types(object_type_string, $$->type)],
 			   3 = +[pike_types_le($$->type, int_type_string)]))):
@@ -114,17 +114,17 @@ F_GT(0, 1):
 		   
 // search(indices(map), key) < 0)  =>  zero_type(map[key]) if typeof(map) <= mapping
 F_LT(F_APPLY(F_CONSTANT
-	     [$$->u.sval.type == T_FUNCTION]
-	     [$$->u.sval.subtype == FUNCTION_BUILTIN]
+	     [TYPEOF($$->u.sval) == T_FUNCTION]
+	     [SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 	     [$$->u.sval.u.efun->function == f_search],
 	     F_ARG_LIST(F_APPLY(F_CONSTANT
-				[$$->u.sval.type == T_FUNCTION]
-				[$$->u.sval.subtype == FUNCTION_BUILTIN]
+				[TYPEOF($$->u.sval) == T_FUNCTION]
+				[SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 				[$$->u.sval.u.efun->function == f_indices],
 				0 = +[pike_types_le($$->type, mapping_type_string)]),
 			1)),
      F_CONSTANT
-     [$$->u.sval.type == T_INT]
+     [TYPEOF($$->u.sval) == T_INT]
      [!$$->u.sval.u.integer]):
 {
   $$ = mkefuncallnode("zero_type",mknode(F_ARG_LIST, $0, $1));
@@ -132,17 +132,17 @@ F_LT(F_APPLY(F_CONSTANT
 			   
 // search(indices(map), key) == -1)  =>  zero_type(map[key]) if typeof(map) <= mapping
 F_EQ(F_APPLY(F_CONSTANT
-	     [$$->u.sval.type == T_FUNCTION]
-	     [$$->u.sval.subtype == FUNCTION_BUILTIN]
+	     [TYPEOF($$->u.sval) == T_FUNCTION]
+	     [SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 	     [$$->u.sval.u.efun->function == f_search],
 	     F_ARG_LIST(F_APPLY(F_CONSTANT
-				[$$->u.sval.type == T_FUNCTION]
-				[$$->u.sval.subtype == FUNCTION_BUILTIN]
+				[TYPEOF($$->u.sval) == T_FUNCTION]
+				[SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 				[$$->u.sval.u.efun->function == f_indices],
 				0 = +[pike_types_le($$->type, mapping_type_string)]),
 			1)),
      F_CONSTANT
-     [$$->u.sval.type == T_INT]
+     [TYPEOF($$->u.sval) == T_INT]
      [$$->u.sval.u.integer == -1]):
 {
   $$ = mkefuncallnode("zero_type",mknode(F_ARG_LIST, $0, $1));
@@ -150,17 +150,17 @@ F_EQ(F_APPLY(F_CONSTANT
 			   
 // search(indices(map), key) >= 0)  =>  !zero_type(map[key]) if typeof(map) <= mapping
 F_GE(F_APPLY(F_CONSTANT
-	     [$$->u.sval.type == T_FUNCTION]
-	     [$$->u.sval.subtype == FUNCTION_BUILTIN]
+	     [TYPEOF($$->u.sval) == T_FUNCTION]
+	     [SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 	     [$$->u.sval.u.efun->function == f_search],
 	     F_ARG_LIST(F_APPLY(F_CONSTANT
-				[$$->u.sval.type == T_FUNCTION]
-				[$$->u.sval.subtype == FUNCTION_BUILTIN]
+				[TYPEOF($$->u.sval) == T_FUNCTION]
+				[SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 				[$$->u.sval.u.efun->function == f_indices],
 				0 = +[pike_types_le($$->type, mapping_type_string)]),
 			1)),
      F_CONSTANT
-     [$$->u.sval.type == T_INT]
+     [TYPEOF($$->u.sval) == T_INT]
      [!$$->u.sval.u.integer]):
 {
   $$ = mknode(F_NOT,mkefuncallnode("zero_type",mknode(F_ARG_LIST, $0, $1)),0);
@@ -168,17 +168,17 @@ F_GE(F_APPLY(F_CONSTANT
 
 // search(indices(map), key) > -1)  =>  !zero_type(map[key]) if typeof(map) <= mapping
 F_GE(F_APPLY(F_CONSTANT
-	     [$$->u.sval.type == T_FUNCTION]
-	     [$$->u.sval.subtype == FUNCTION_BUILTIN]
+	     [TYPEOF($$->u.sval) == T_FUNCTION]
+	     [SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 	     [$$->u.sval.u.efun->function == f_search],
 	     F_ARG_LIST(F_APPLY(F_CONSTANT
-				[$$->u.sval.type == T_FUNCTION]
-				[$$->u.sval.subtype == FUNCTION_BUILTIN]
+				[TYPEOF($$->u.sval) == T_FUNCTION]
+				[SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 				[$$->u.sval.u.efun->function == f_indices],
 				0 = +[pike_types_le($$->type, mapping_type_string)]),
 			1)),
      F_CONSTANT
-     [$$->u.sval.type == T_INT]
+     [TYPEOF($$->u.sval) == T_INT]
      [$$->u.sval.u.integer == -1]):
 {
   $$ = mknode(F_NOT,mkefuncallnode("zero_type",mknode(F_ARG_LIST, $0, $1)),0);
@@ -228,12 +228,12 @@ F_SSCANF(':'(4 = +,
 // NOTE: We do some ugly stuff here to avoid
 //	 resolving the resulting type multiple times.
 F_APPLY(0 = F_CONSTANT
-	[$$->u.sval.type == T_FUNCTION]
-	[$$->u.sval.subtype == FUNCTION_BUILTIN]
+	[TYPEOF($$->u.sval) == T_FUNCTION]
+	[SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 	[$$->u.sval.u.efun->function == f_add],
 	2 = F_ARG_LIST(F_APPLY(F_CONSTANT
-			       [$$->u.sval.type == T_FUNCTION]
-			       [$$->u.sval.subtype == FUNCTION_BUILTIN]
+			       [TYPEOF($$->u.sval) == T_FUNCTION]
+			       [SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 			       [$$->u.sval.u.efun->function == f_add], 1), 3)):
   {
     node *arglist = $2;
@@ -257,12 +257,12 @@ F_APPLY(0 = F_CONSTANT
 // NOTE: We do some ugly stuff here to avoid
 //	 resolving the resulting type multiple times.
 F_APPLY(0 = F_CONSTANT
-	[$$->u.sval.type == T_FUNCTION]
-	[$$->u.sval.subtype == FUNCTION_BUILTIN]
+	[TYPEOF($$->u.sval) == T_FUNCTION]
+	[SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 	[$$->u.sval.u.efun->function == f_minus],
 	2 = F_ARG_LIST(F_APPLY(F_CONSTANT
-			       [$$->u.sval.type == T_FUNCTION]
-			       [$$->u.sval.subtype == FUNCTION_BUILTIN]
+			       [TYPEOF($$->u.sval) == T_FUNCTION]
+			       [SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 			       [$$->u.sval.u.efun->function == f_minus], 1 = F_ARG_LIST(+, +)), 3)):
 {
     node *arglist = $2;
@@ -288,12 +288,12 @@ F_APPLY(0 = F_CONSTANT
 // NOTE: In this case we also need to do this since
 //	 typeof(`*) isn't permissive enough.
 F_APPLY(0 = F_CONSTANT
-	[$$->u.sval.type == T_FUNCTION]
-	[$$->u.sval.subtype == FUNCTION_BUILTIN]
+	[TYPEOF($$->u.sval) == T_FUNCTION]
+	[SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 	[$$->u.sval.u.efun->function == f_multiply],
 	2 = F_ARG_LIST(F_APPLY(F_CONSTANT
-			       [$$->u.sval.type == T_FUNCTION]
-			       [$$->u.sval.subtype == FUNCTION_BUILTIN]
+			       [TYPEOF($$->u.sval) == T_FUNCTION]
+			       [SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 			       [$$->u.sval.u.efun->function == f_multiply], 1), 3)):
   {
     node *arglist = $2;
@@ -465,7 +465,7 @@ F_CAST(0 = +[$$->type == void_type_string], *):
 // 	   $0;
 
 
-F_RANGE(*, ':'(*, F_RANGE_FROM_BEG (F_CONSTANT[$$->u.sval.type == T_INT]
+F_RANGE(*, ':'(*, F_RANGE_FROM_BEG (F_CONSTANT[TYPEOF($$->u.sval) == T_INT]
 					      [$$->u.sval.u.integer < 0],
 				    *))):
 {
@@ -473,7 +473,7 @@ F_RANGE(*, ':'(*, F_RANGE_FROM_BEG (F_CONSTANT[$$->u.sval.type == T_INT]
 }
 ;
 
-F_RANGE(*, ':'(*, F_RANGE_FROM_BEG (F_CONSTANT[$$->u.sval.type == T_FLOAT]
+F_RANGE(*, ':'(*, F_RANGE_FROM_BEG (F_CONSTANT[TYPEOF($$->u.sval) == T_FLOAT]
 					      [$$->u.sval.u.float_number < 0.0],
 				    *))):
 {
@@ -490,8 +490,8 @@ F_RANGE(0, ':'(F_RANGE_OPEN, F_RANGE_OPEN)):
   }
 };
 
-F_RANGE(0, ':'(F_RANGE_FROM_BEG(1 = F_CONSTANT[$$->u.sval.type == T_INT], *),
-	       F_RANGE_FROM_BEG(F_CONSTANT[$$->u.sval.type == T_INT]
+F_RANGE(0, ':'(F_RANGE_FROM_BEG(1 = F_CONSTANT[TYPEOF($$->u.sval) == T_INT], *),
+	       F_RANGE_FROM_BEG(F_CONSTANT[TYPEOF($$->u.sval) == T_INT]
 				[$$->u.sval.u.integer < $1->u.sval.u.integer], *))):
 {
   /* Objects may want to use the range for obscure purposes. */
@@ -692,8 +692,8 @@ F_COMMA_EXPR(F_ASSIGN(0, 1 = F_LOCAL),
 
 // [ vars... ] = ({ vals... })  ==>  multi_assign(vals, vars)
 F_ASSIGN(F_APPLY(F_CONSTANT
-		 [$$->u.sval.type == T_FUNCTION]
-		 [$$->u.sval.subtype == FUNCTION_BUILTIN]
+		 [TYPEOF($$->u.sval) == T_FUNCTION]
+		 [SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 		 [$$->u.sval.u.efun->function == debug_f_aggregate],
 		 0 = +[count_args($$) >= 0]),
 	 F_ARRAY_LVALUE(1, -)):
@@ -703,8 +703,8 @@ F_ASSIGN(F_APPLY(F_CONSTANT
 //   ==>
 //  vars[n-1] = vars[n-2] = ... = vars[0] = x
 F_ASSIGN(0 = F_APPLY(F_CONSTANT
-		     [$$->u.sval.type == T_FUNCTION]
-		     [$$->u.sval.subtype == FUNCTION_BUILTIN]
+		     [TYPEOF($$->u.sval) == T_FUNCTION]
+		     [SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 		     [$$->u.sval.u.efun->function == f_allocate],
 		     *),
 	 F_ARRAY_LVALUE(1, -)):
@@ -807,12 +807,12 @@ F_LOR(0, -):
 
 // DeMorgan
 F_LOR(F_APPLY(0 = F_CONSTANT
-	      [$$->u.sval.type == T_FUNCTION]
-	      [$$->u.sval.subtype == FUNCTION_BUILTIN]
+	      [TYPEOF($$->u.sval) == T_FUNCTION]
+	      [SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 	      [$$->u.sval.u.efun->function == f_not], 1),
       F_APPLY(F_CONSTANT
-	      [$$->u.sval.type == T_FUNCTION]
-	      [$$->u.sval.subtype == FUNCTION_BUILTIN]
+	      [TYPEOF($$->u.sval) == T_FUNCTION]
+	      [SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 	      [$$->u.sval.u.efun->function == f_not], 2)):
   F_APPLY($0, F_LAND($1, $2));
 
@@ -854,12 +854,12 @@ F_LAND(0, -):
 
 // DeMorgan
 F_LAND(F_APPLY(0 = F_CONSTANT
-	       [$$->u.sval.type == T_FUNCTION]
-	       [$$->u.sval.subtype == FUNCTION_BUILTIN]
+	       [TYPEOF($$->u.sval) == T_FUNCTION]
+	       [SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 	       [$$->u.sval.u.efun->function == f_not], 1),
        F_APPLY(F_CONSTANT
-	       [$$->u.sval.type == T_FUNCTION]
-	       [$$->u.sval.subtype == FUNCTION_BUILTIN]
+	       [TYPEOF($$->u.sval) == T_FUNCTION]
+	       [SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 	       [$$->u.sval.u.efun->function == f_not], 2)):
   F_APPLY($0, F_LOR($1, $2));
 
@@ -904,8 +904,8 @@ F_LAND(0 = F_LAND(*, +[node_is_false($$)]), *):
   $0;
 
 '?'(F_APPLY(F_CONSTANT
-	    [$$->u.sval.type == T_FUNCTION]
-	    [$$->u.sval.subtype == FUNCTION_BUILTIN]
+	    [TYPEOF($$->u.sval) == T_FUNCTION]
+	    [SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 	    [$$->u.sval.u.efun->function == f_not], 0), ':'(1, 2)):
   '?'($0, ':'($2, $1));
 
@@ -970,40 +970,42 @@ F_NOT(F_NE(0, 1), *):
 
 
 // a += 0  ->  a
-F_ADD_EQ(0 [ $$->token != F_AUTO_MAP_MARKER ], 1 = F_CONSTANT[$$->u.sval.type == T_INT]
+F_ADD_EQ(0 [ $$->token != F_AUTO_MAP_MARKER ],
+	 1 = F_CONSTANT[TYPEOF($$->u.sval) == T_INT]
 	 [!($$->u.sval.u.integer)]):
   $0;
 
 // a += 1  ->  ++a
-F_ADD_EQ(0, 1 = F_CONSTANT[$$->u.sval.type == T_INT]
+F_ADD_EQ(0, 1 = F_CONSTANT[TYPEOF($$->u.sval) == T_INT]
 	 [($$->u.sval.u.integer) == 1]):
   F_INC($0, -);
 
 // a += -1  ->  --a
-F_ADD_EQ(0, 1 = F_CONSTANT[$$->u.sval.type == T_INT]
+F_ADD_EQ(0, 1 = F_CONSTANT[TYPEOF($$->u.sval) == T_INT]
 	 [($$->u.sval.u.integer) == -1]):
   F_DEC($0, -);
 
 
 // a -= 0  ->  a
-F_SUB_EQ(0 [ $$->token != F_AUTO_MAP_MARKER ], 1 = F_CONSTANT[$$->u.sval.type == T_INT]
+F_SUB_EQ(0 [ $$->token != F_AUTO_MAP_MARKER ],
+	 1 = F_CONSTANT[TYPEOF($$->u.sval) == T_INT]
 	 [!($$->u.sval.u.integer)]):
   $0;
 
 // a -= 1  ->  --a
-F_SUB_EQ(0, 1 = F_CONSTANT[$$->u.sval.type == T_INT]
+F_SUB_EQ(0, 1 = F_CONSTANT[TYPEOF($$->u.sval) == T_INT]
 	 [($$->u.sval.u.integer) == 1]):
   F_DEC($0, -);
 
 // a -= -1  ->  ++a
-F_SUB_EQ(0, 1 = F_CONSTANT[$$->u.sval.type == T_INT]
+F_SUB_EQ(0, 1 = F_CONSTANT[TYPEOF($$->u.sval) == T_INT]
 	 [($$->u.sval.u.integer) == -1]):
   F_INC($0, -);
 
 // a += ({ args... })  ->  F_APPEND_ARRAY(a, args...)
 F_ADD_EQ(0, F_APPLY(F_CONSTANT
-		    [$$->u.sval.type == T_FUNCTION]
-		    [$$->u.sval.subtype == FUNCTION_BUILTIN]
+		    [TYPEOF($$->u.sval) == T_FUNCTION]
+		    [SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 		    [$$->u.sval.u.efun->function == debug_f_aggregate], 1)):
   F_APPEND_ARRAY($0, $1);
 
@@ -1012,16 +1014,16 @@ F_INDEX(-, 0 = *):
 
 // foo["str"]  ->  foo->str
 F_INDEX(0 [ !match_types($$->type, object_type_string) ],
-	1 = F_CONSTANT[$$->u.sval.type == T_STRING]):
+	1 = F_CONSTANT[TYPEOF($$->u.sval) == T_STRING]):
   F_ARROW($0, $1);
 
 
 F_ARROW(-, 0 = *):
   F_COMMA_EXPR(F_POP_VALUE($0, -), 0);
 
-F_ARROW(0 = F_CONSTANT[$$->u.sval.type == T_OBJECT]
+F_ARROW(0 = F_CONSTANT[TYPEOF($$->u.sval) == T_OBJECT]
 	    [$$->u.sval.u.object->prog],
-	1 = F_CONSTANT[$$->u.sval.type == T_STRING]):
+	1 = F_CONSTANT[TYPEOF($$->u.sval) == T_STRING]):
 {
   /*
   if (find_identifier("`->", $0->u.sval.u.object->prog) == -1) {
@@ -1090,12 +1092,12 @@ F_FOREACH(F_VAL_LVAL(0, -), 1):
 
 // foreach(str/"x", ...)  ==>  foreach(String.SplitIterator(str, 'x'), ...)
 F_FOREACH(F_VAL_LVAL(F_APPLY(F_CONSTANT
-			     [$$->u.sval.type == T_FUNCTION]
-			     [$$->u.sval.subtype == FUNCTION_BUILTIN]
+			     [TYPEOF($$->u.sval) == T_FUNCTION]
+			     [SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 			     [$$->u.sval.u.efun->function == f_divide],
 			     F_ARG_LIST(0[pike_types_le($$->type, string_type_string)],
 					1 = F_CONSTANT
-					[$$->u.sval.type == T_STRING]
+					[TYPEOF($$->u.sval) == T_STRING]
 					[$$->u.sval.u.string->len == 1])),
 		     2), 3):
 {
@@ -1126,22 +1128,22 @@ F_FOREACH(F_VAL_LVAL(F_APPLY(F_CONSTANT
 //   ==>
 // foreach(String.SplitIterator(str, 'x', 1), ...)
 F_FOREACH(F_VAL_LVAL(F_APPLY(F_CONSTANT
-			     [$$->u.sval.type == T_FUNCTION]
-			     [$$->u.sval.subtype == FUNCTION_BUILTIN]
+			     [TYPEOF($$->u.sval) == T_FUNCTION]
+			     [SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 			     [$$->u.sval.u.efun->function == f_minus],
 			     F_ARG_LIST(
 		     F_APPLY(F_CONSTANT
-			     [$$->u.sval.type == T_FUNCTION]
-			     [$$->u.sval.subtype == FUNCTION_BUILTIN]
+			     [TYPEOF($$->u.sval) == T_FUNCTION]
+			     [SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 			     [$$->u.sval.u.efun->function == f_divide],
 			     F_ARG_LIST(0[pike_types_le($$->type, string_type_string)],
 					1 = F_CONSTANT
-					[$$->u.sval.type == T_STRING]
+					[TYPEOF($$->u.sval) == T_STRING]
 					[$$->u.sval.u.string->len == 1])),
 		     F_CONSTANT
-		     [$$->u.sval.type == T_ARRAY]
+		     [TYPEOF($$->u.sval) == T_ARRAY]
 		     [$$->u.sval.u.array->size == 1]
-		     [$$->u.sval.u.array->item[0].type == T_STRING]
+		     [TYPEOF($$->u.sval.u.array->item[0]) == T_STRING]
 		     [$$->u.sval.u.array->item[0].u.string->len == 0])),
 		     2), 3):
 {
@@ -1171,27 +1173,27 @@ F_FOREACH(F_VAL_LVAL(F_APPLY(F_CONSTANT
 ;
 // Same, but with allocate(1, "") instead of a constant ({""}).
 F_FOREACH(F_VAL_LVAL(F_APPLY(F_CONSTANT
-			     [$$->u.sval.type == T_FUNCTION]
-			     [$$->u.sval.subtype == FUNCTION_BUILTIN]
+			     [TYPEOF($$->u.sval) == T_FUNCTION]
+			     [SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 			     [$$->u.sval.u.efun->function == f_minus],
 			     F_ARG_LIST(
 		     F_APPLY(F_CONSTANT
-			     [$$->u.sval.type == T_FUNCTION]
-			     [$$->u.sval.subtype == FUNCTION_BUILTIN]
+			     [TYPEOF($$->u.sval) == T_FUNCTION]
+			     [SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 			     [$$->u.sval.u.efun->function == f_divide],
 			     F_ARG_LIST(0[pike_types_le($$->type, string_type_string)],
 					1 = F_CONSTANT
-					[$$->u.sval.type == T_STRING]
+					[TYPEOF($$->u.sval) == T_STRING]
 					[$$->u.sval.u.string->len == 1])),
 		     F_APPLY(F_CONSTANT
-			     [$$->u.sval.type == T_FUNCTION]
-			     [$$->u.sval.subtype == FUNCTION_BUILTIN]
+			     [TYPEOF($$->u.sval) == T_FUNCTION]
+			     [SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 			     [$$->u.sval.u.efun->function == f_allocate],
 			     F_ARG_LIST(F_CONSTANT
-					[$$->u.sval.type == T_INT]
+					[TYPEOF($$->u.sval) == T_INT]
 					[$$->u.sval.u.integer == 1],
 					F_CONSTANT
-					[$$->u.sval.type == T_STRING]
+					[TYPEOF($$->u.sval) == T_STRING]
 					[$$->u.sval.u.string->len == 0])))),
 		     2), 3):
 {
@@ -1304,8 +1306,8 @@ F_FOR(0, ':'(1, F_CAST[$$->type == void_type_string](2, *))):
 // ;
 
 F_FOR(0 = F_APPLY(1 = F_CONSTANT
-		  [$$->u.sval.type == T_FUNCTION]
-		  [$$->u.sval.subtype == FUNCTION_BUILTIN],
+		  [TYPEOF($$->u.sval) == T_FUNCTION]
+		  [SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN],
                   2),
       4 = ':'(3, *)):
 {

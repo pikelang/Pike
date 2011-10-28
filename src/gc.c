@@ -1644,11 +1644,11 @@ PMOD_EXPORT void describe(void *x)
 void debug_describe_svalue(struct svalue *s)
 {
   fprintf(stderr,"Svalue at %p is:\n",s);
-  switch(s->type)
+  switch(TYPEOF(*s))
   {
     case T_INT:
       fprintf(stderr,"    %"PRINTPIKEINT"d (subtype %d)\n",s->u.integer,
-	      s->subtype);
+	      SUBTYPEOF(*s));
       return;
 
     case T_FLOAT:
@@ -1656,7 +1656,7 @@ void debug_describe_svalue(struct svalue *s)
       return;
 
     case T_FUNCTION:
-      if(s->subtype == FUNCTION_BUILTIN)
+      if(SUBTYPEOF(*s) == FUNCTION_BUILTIN)
       {
 	fprintf(stderr,"    Builtin function: %s\n",s->u.efun->name->str);
       }else{
@@ -1666,17 +1666,17 @@ void debug_describe_svalue(struct svalue *s)
 	  if(p)
 	  {
 	    fprintf(stderr,"    Function in destructed object: %s\n",
-		    ID_FROM_INT(p,s->subtype)->name->str);
+		    ID_FROM_INT(p, SUBTYPEOF(*s))->name->str);
 	  }else{
 	    fprintf(stderr,"    Function in destructed object.\n");
 	  }
 	}else{
 	  fprintf(stderr,"    Function name: %s\n",
-		  ID_FROM_INT(s->u.object->prog,s->subtype)->name->str);
+		  ID_FROM_INT(s->u.object->prog, SUBTYPEOF(*s))->name->str);
 	}
       }
   }
-  describe_something(s->u.refs,s->type,0,1,0,0);
+  describe_something(s->u.refs, TYPEOF(*s), 0, 1, 0, 0);
 }
 
 void gc_watch(void *a)
@@ -4804,7 +4804,7 @@ static int mc_cycle_depth_from_obj (struct object *o)
 
   object_index_no_free2 (&val, o, 0, &pike_cycle_depth_str);
 
-  if (val.type != T_INT) {
+  if (TYPEOF(val) != T_INT) {
     int i = find_shared_string_identifier (pike_cycle_depth_str.u.string, p);
     INT32 line;
     struct pike_string *file = get_identifier_line (p, i, &line);
@@ -4816,7 +4816,7 @@ static int mc_cycle_depth_from_obj (struct object *o)
     return -1;
   }
 
-  if (val.subtype == NUMBER_UNDEFINED)
+  if (SUBTYPEOF(val) == NUMBER_UNDEFINED)
     return -1;
 
   if (val.u.integer > (unsigned INT16) -1)
@@ -5380,14 +5380,14 @@ void f_count_memory (INT32 args)
   mc_block_pike_cycle_depth = 0;
   mc_block_strings = 0;
 
-  if (Pike_sp[-args].type == T_MAPPING) {
+  if (TYPEOF(Pike_sp[-args]) == T_MAPPING) {
     struct mapping *opts = Pike_sp[-args].u.mapping;
     struct pike_string *ind;
     struct svalue *val;
 
     MAKE_CONST_STRING (ind, "lookahead");
     if ((val = low_mapping_string_lookup (opts, ind))) {
-      if (val->type != T_INT)
+      if (TYPEOF(*val) != T_INT)
 	SIMPLE_ARG_ERROR ("count_memory", 1,
 			  "\"lookahead\" must be an integer.");
       mc_lookahead =
@@ -5415,7 +5415,7 @@ void f_count_memory (INT32 args)
 
     MAKE_CONST_STRING (ind, "block_strings");
     if ((val = low_mapping_string_lookup (opts, ind))) {
-      if (val->type != T_INT)
+      if (TYPEOF(*val) != T_INT)
 	SIMPLE_ARG_ERROR ("count_memory", 1,
 			  "\"block_strings\" must be an integer.");
       mc_block_strings = val->u.integer > 0 ? 1 : val->u.integer < 0 ? -1 : 0;
@@ -5439,7 +5439,7 @@ void f_count_memory (INT32 args)
   }
 
   else {
-    if (Pike_sp[-args].type != T_INT)
+    if (TYPEOF(Pike_sp[-args]) != T_INT)
       SIMPLE_ARG_TYPE_ERROR ("count_memory", 1, "int|mapping(string:int)");
     mc_lookahead =
       Pike_sp[-args].u.integer > (unsigned INT16) -1 ? (unsigned INT16) -1 :
@@ -5449,8 +5449,8 @@ void f_count_memory (INT32 args)
 
   init_mc_marker_hash();
 
-  if (pike_cycle_depth_str.type == PIKE_T_FREE) {
-    pike_cycle_depth_str.type = T_STRING;
+  if (TYPEOF(pike_cycle_depth_str) == PIKE_T_FREE) {
+    SET_SVAL_TYPE(pike_cycle_depth_str, T_STRING);
     MAKE_CONST_STRING (pike_cycle_depth_str.u.string, "pike_cycle_depth");
   }
 
@@ -5476,10 +5476,10 @@ void f_count_memory (INT32 args)
     for (i = -args + 1; i < 0; i++) {
       struct svalue *s = Pike_sp + i;
 
-      if (s->type == T_INT)
+      if (TYPEOF(*s) == T_INT)
 	continue;
 
-      else if (s->type > MAX_REF_TYPE) {
+      else if (TYPEOF(*s) > MAX_REF_TYPE) {
 	exit_mc_marker_hash();
 	free (mc_work_queue + 1);
 	mc_work_queue = NULL;
@@ -5489,7 +5489,7 @@ void f_count_memory (INT32 args)
       }
 
       else {
-	if (s->type == T_FUNCTION) {
+	if (TYPEOF(*s) == T_FUNCTION) {
 	  struct svalue s2;
 	  if (!(s2.u.program = program_from_function (s))) {
 	    exit_mc_marker_hash();
@@ -5500,7 +5500,7 @@ void f_count_memory (INT32 args)
 	      "array|multiset|mapping|object|program|string|type|int");
 	  }
 	  add_ref (s2.u.program);
-	  s2.type = T_PROGRAM;
+	  SET_SVAL_TYPE(s2, T_PROGRAM);
 	  free_svalue (s);
 	  move_svalue (s, &s2);
 	}
@@ -5511,11 +5511,11 @@ void f_count_memory (INT32 args)
 
 	else {
 	  struct mc_marker *m =
-	    my_make_mc_marker (s->u.ptr, visit_fn_from_type[s->type], NULL);
+	    my_make_mc_marker (s->u.ptr, visit_fn_from_type[TYPEOF(*s)], NULL);
 	  m->flags |= MC_FLAG_INTERNAL;
-	  if (!mc_block_pike_cycle_depth && s->type == T_OBJECT) {
+	  if (!mc_block_pike_cycle_depth && TYPEOF(*s) == T_OBJECT) {
 	    int cycle_depth = mc_cycle_depth_from_obj (s->u.object);
-	    if (throw_value.type != PIKE_T_FREE) {
+	    if (TYPEOF(throw_value) != PIKE_T_FREE) {
 	      exit_mc_marker_hash();
 	      free (mc_work_queue + 1);
 	      mc_work_queue = NULL;
@@ -5594,9 +5594,7 @@ void f_count_memory (INT32 args)
 	  if (type <= MAX_TYPE) {
 	    count_internal++;
 	    if (collect_internal) {
-	      Pike_sp->type = type;
-	      Pike_sp->subtype = 0;
-	      Pike_sp->u.ptr = mc_ref_from->thing;
+	      SET_SVAL(*Pike_sp, type, 0, ptr, mc_ref_from->thing);
 	      add_ref ((struct ref_dummy *) mc_ref_from->thing);
 	      dmalloc_touch_svalue (Pike_sp);
 	      Pike_sp++;
@@ -5640,7 +5638,7 @@ void f_count_memory (INT32 args)
 	}
       }
 
-      if (throw_value.type != PIKE_T_FREE) {
+      if (TYPEOF(throw_value) != PIKE_T_FREE) {
 	exit_mc_marker_hash();
 	free (mc_work_queue + 1);
 	mc_work_queue = NULL;
@@ -5798,7 +5796,7 @@ void f_count_memory (INT32 args)
     mapping_string_insert (Pike_sp[-args].u.mapping, ind, Pike_sp - 1);
   }
 
-  if (Pike_sp[-args].type == T_MAPPING) {
+  if (TYPEOF(Pike_sp[-args]) == T_MAPPING) {
     struct mapping *opts = Pike_sp[-args].u.mapping;
     struct pike_string *ind;
     struct svalue *val;
@@ -5835,9 +5833,7 @@ void f_count_memory (INT32 args)
 	    assert (!(m->flags & MC_FLAG_INTERNAL));
 	    assert (m->flags & MC_FLAG_LA_VISITED);
 	    if (type <= MAX_TYPE) {
-	      Pike_sp->type = type;
-	      Pike_sp->subtype = 0;
-	      Pike_sp->u.ptr = m->thing;
+	      SET_SVAL(*Pike_sp, type, 0, ptr, m->thing);
 	      add_ref ((struct ref_dummy *) m->thing);
 	      dmalloc_touch_svalue (Pike_sp);
 	      Pike_sp++;
@@ -5863,9 +5859,7 @@ void f_count_memory (INT32 args)
 	  assert (!(m->flags & MC_FLAG_INTERNAL));
 	  assert (m->flags & MC_FLAG_LA_VISITED);
 	  if (type <= MAX_TYPE) {
-	    Pike_sp->type = type;
-	    Pike_sp->subtype = 0;
-	    Pike_sp->u.ptr = m->thing;
+	    SET_SVAL(*Pike_sp, type, 0, ptr, m->thing);
 	    add_ref ((struct ref_dummy *) m->thing);
 	    dmalloc_touch_svalue (Pike_sp);
 	    Pike_sp++;

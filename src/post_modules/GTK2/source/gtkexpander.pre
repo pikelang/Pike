@@ -26,7 +26,7 @@ void create(string|mapping(string:mixed) label)
   pgtk2_verify_not_inited();
   pgtk2_verify_setup();
   {
-    if (Pike_sp[-args].type==PIKE_T_STRING) {
+    if (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) {
       struct pike_string *label;
       GtkWidget *ge;
       get_all_args("create",args,"%t",&label);

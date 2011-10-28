@@ -182,7 +182,7 @@ static struct svalue int_pos_inf = SVALUE_INIT_FREE;
 static void resolve_syms();
 
 #define RESOLVE_SYMS() do {						\
-    if (int_pos_inf.type == PIKE_T_FREE) resolve_syms();		\
+    if (TYPEOF(int_pos_inf) == PIKE_T_FREE) resolve_syms();		\
   } while (0)
 
 #define PUSH_TIME(TIME) do {						\
@@ -285,7 +285,7 @@ static int get_pushed_gss_oid (struct pike_string *dd_oid, gss_OID gss_oid)
 {
   struct svalue *v = low_mapping_string_lookup (der_dd_map, dd_oid);
   if (v) {
-    assert (v->type == T_STRING && !v->u.string->size_shift);
+    assert (TYPEOF(*v) == T_STRING && !v->u.string->size_shift);
     gss_oid->length = v->u.string->str[1];
     gss_oid->elements = v->u.string->str + 2;
     return 0;
@@ -295,7 +295,7 @@ static int get_pushed_gss_oid (struct pike_string *dd_oid, gss_OID gss_oid)
 
   ref_push_string (dd_oid);
   apply_svalue (&encode_der_oid, 1);
-  if (Pike_sp[-1].type != T_STRING ||
+  if (TYPEOF(Pike_sp[-1]) != T_STRING ||
       Pike_sp[-1].u.string->size_shift ||
       Pike_sp[-1].u.string->len < 3 ||
       Pike_sp[-1].u.string->str[0] != 0x6) {
@@ -341,7 +341,7 @@ static struct pike_string *get_dd_oid (const gss_OID_desc * const gss_oid)
     struct svalue *v = low_mapping_string_lookup (der_dd_map, der_oid);
     if (v) {
       free_string (der_oid);
-      assert (v->type == T_STRING);
+      assert (TYPEOF(*v) == T_STRING);
       return v->u.string;
     }
   }
@@ -351,7 +351,7 @@ static struct pike_string *get_dd_oid (const gss_OID_desc * const gss_oid)
   ref_push_string (der_oid);	/* Save extra ref for use afterwards. */
   push_string (der_oid);
   apply_svalue (&decode_der_oid, 1);
-  if (Pike_sp[-1].type != T_STRING ||
+  if (TYPEOF(Pike_sp[-1]) != T_STRING ||
       Pike_sp[-1].u.string->size_shift) {
     Pike_error ("decode_der_oid function returned a bogus value: %O.\n",
 		Pike_sp - 1);
@@ -390,7 +390,7 @@ static void convert_to_oid_set (struct multiset *oid_strs, gss_OID_set *set)
     SET_ONERROR (uwp, do_sub_msnode_ref, oid_strs);
     for (; p >= 0; p = multiset_next (oid_strs, p)) {
       use_multiset_index (oid_strs, p, oid_str);
-      assert (oid_str.type == T_STRING);
+      assert (TYPEOF(oid_str) == T_STRING);
       WITH_PUSHED_GSS_OID (oid, oid_str.u.string) {
 	/* The storage for oid might disappear in each round, but
 	 * gss_add_oid_set_member makes a copy. */
@@ -408,7 +408,7 @@ static void convert_from_oid_set_and_push (gss_OID_set set)
   size_t i, n = set->count;
   struct multiset *l;
   struct svalue oid_str;
-  oid_str.type = T_STRING;
+  SET_SVAL_TYPE(oid_str, T_STRING);
 
   l = allocate_multiset (n, 0, NULL);
   push_multiset (l);
@@ -814,20 +814,20 @@ static void gssapi_err_create (INT32 args)
   if(args > 5) wrong_number_of_args_error("create",args,5);
 
   if(args > 0) {
-    if(Pike_sp[0-args].type != T_INT)
+    if(TYPEOF(Pike_sp[0-args]) != T_INT)
       SIMPLE_ARG_TYPE_ERROR ("create",1,"void|int");
     THIS->major_status = Pike_sp[-args].u.integer;
   }
 
   if(args > 1) {
-    if(Pike_sp[1-args].type != T_INT)
+    if(TYPEOF(Pike_sp[1-args]) != T_INT)
       SIMPLE_ARG_TYPE_ERROR ("create",2,"void|int");
     THIS->minor_status = Pike_sp[-args].u.integer;
   }
 
   if(args > 2 &&
-     (Pike_sp[2-args].type != T_INT || Pike_sp[2-args].u.integer)) {
-    if(Pike_sp[2-args].type != T_STRING)
+     (TYPEOF(Pike_sp[2-args]) != T_INT || Pike_sp[2-args].u.integer)) {
+    if(TYPEOF(Pike_sp[2-args]) != T_STRING)
       SIMPLE_ARG_TYPE_ERROR ("create",3,"void|string");
     WITH_PUSHED_GSS_OID (mech_oid, Pike_sp[2-args].u.string) {
       if (THIS->mech.elements) free (THIS->mech.elements);
@@ -839,8 +839,8 @@ static void gssapi_err_create (INT32 args)
     gss_OID mech = THIS->mech.elements ? &THIS->mech : GSS_C_NO_OID;
 
     if(args > 3 &&
-       (Pike_sp[3-args].type != T_INT || Pike_sp[3-args].u.integer)) {
-      if(Pike_sp[3-args].type != T_STRING)
+       (TYPEOF(Pike_sp[3-args]) != T_INT || Pike_sp[3-args].u.integer)) {
+      if(TYPEOF(Pike_sp[3-args]) != T_STRING)
 	SIMPLE_ARG_TYPE_ERROR ("create",4,"void|string");
       ref_push_string (Pike_sp[3-args].u.string);
       push_constant_text (": ");
@@ -862,8 +862,8 @@ static void gssapi_err_create (INT32 args)
   if (GEN_ERR_THIS->error_backtrace)
     free_array (GEN_ERR_THIS->error_backtrace);
   if(args > 4 &&
-     (Pike_sp[4-args].type != T_INT || Pike_sp[4-args].u.integer)) {
-    if(Pike_sp[4-args].type != T_ARRAY)
+     (TYPEOF(Pike_sp[4-args]) != T_INT || Pike_sp[4-args].u.integer)) {
+    if(TYPEOF(Pike_sp[4-args]) != T_ARRAY)
       SIMPLE_ARG_TYPE_ERROR ("create",5,"void|array");
     add_ref (GEN_ERR_THIS->error_backtrace = Pike_sp[4-args].u.array);
   }
@@ -1085,7 +1085,7 @@ static struct pike_string *make_missing_err_message (OM_uint32 missing)
   describe_services_and_push (missing);
   push_text ("\n");
   f_add (3);
-  assert (Pike_sp[-1].type == T_STRING);
+  assert (TYPEOF(Pike_sp[-1]) == T_STRING);
   return (--Pike_sp)->u.string;
 }
 
@@ -1099,7 +1099,7 @@ static void missing_err_create (INT32 args)
   if (args > 1) wrong_number_of_args_error ("create", args, 1);
 
   if (args) {
-    if (Pike_sp[-1].type != T_INT)
+    if (TYPEOF(Pike_sp[-1]) != T_INT)
       SIMPLE_ARG_TYPE_ERROR ("create", 1, "void|int");
     THIS->services = Pike_sp[-1].u.integer;
   }
@@ -1542,7 +1542,7 @@ PIKECLASS Name
     flags ID_STATIC;
   {
     if (THIS->name != GSS_C_NO_NAME &&
-	other->type == T_OBJECT) {
+	TYPEOF(*other) == T_OBJECT) {
       struct Name_struct *other_stor =
 	(struct Name_struct *) get_storage (other->u.object, Name_program);
 
@@ -1778,7 +1778,7 @@ PIKECLASS Cred
 #define desired_time _desired_time
 #endif
 
-    switch (name->type) {
+    switch (TYPEOF(*name)) {
       case T_OBJECT:
 	GET_GSS_NAME_FROM_OBJ_ARG (gss_name, name->u.object, "acquire", 1);
 	break;
@@ -1836,7 +1836,7 @@ PIKECLASS Cred
 
     if (desired_mechs)
       CALL_AND_UNSET_ONERROR (uwp2);
-    if (name->type == T_STRING)
+    if (TYPEOF(*name) == T_STRING)
       CALL_AND_UNSET_ONERROR (uwp1);
 
 #undef desired_mechs
@@ -1902,7 +1902,7 @@ PIKECLASS Cred
     OM_uint32 init_time, acc_time;
     ONERROR uwp;
 
-    switch (name->type) {
+    switch (TYPEOF(*name)) {
       case T_OBJECT:
 	GET_GSS_NAME_FROM_OBJ_ARG (gss_name, name->u.object, "add", 1);
 	break;
@@ -1923,7 +1923,7 @@ PIKECLASS Cred
     if (!desired_time)
       init_time = acc_time = 0;
     else
-      switch (desired_time->type) {
+      switch (TYPEOF(*desired_time)) {
 	case T_INT:
 	  if (desired_time->u.integer < 0)
 	    SIMPLE_ARG_ERROR ("add", 4, "Expected positive integer.");
@@ -1936,7 +1936,7 @@ PIKECLASS Cred
 	  if (times->size != 2)
 	    SIMPLE_ARG_ERROR ("add", 4, "Array should have two elements.");
 	  for (e = 0; e < 2; e++)
-	    if (times->item[e].type != T_INT || times->item[e].u.integer < 0)
+	    if (TYPEOF(times->item[e]) != T_INT || times->item[e].u.integer < 0)
 	      SIMPLE_ARG_ERROR ("add", 4,
 				"Array element is not a positive integer.");
 	  init_time = times->item[0].u.integer;
@@ -2691,14 +2691,14 @@ PIKECLASS Context
 
 #ifndef PRECOMPILE_API_VERSION
       /* Live with the pessimal precompile.pike in 7.4.. :P */
-      if (services->type != T_INT)
+      if (TYPEOF(*services) != T_INT)
 	SIMPLE_ARG_TYPE_ERROR ("required_services", 1, "void|int");
 #endif
 
       srv = services->u.integer & ~GSS_C_PROT_READY_FLAG;
 
       f_Context_is_established (0);
-      assert (Pike_sp[-1].type == T_INT);
+      assert (TYPEOF(Pike_sp[-1]) == T_INT);
       if ((--Pike_sp)->u.integer) {
 	OM_uint32 missing = ~THIS->current_services & srv;
 	if (missing) {
@@ -3786,7 +3786,7 @@ PIKECLASS InitContext
 
     if (!target_name)
       goto free_target_name;
-    switch (target_name->type) {
+    switch (TYPEOF(*target_name)) {
       case T_OBJECT:
 	if (!get_storage (target_name->u.object, Name_program))
 	  SIMPLE_ARG_TYPE_ERROR ("create", 2, "GSSAPI.Name|string");
@@ -4436,7 +4436,7 @@ PIKE_MODULE_INIT
 
   {
     struct svalue str;
-    str.type = T_STRING;
+    SET_SVAL(str, T_STRING, 0, string, NULL);
 
 #define ADD_DD_OID_CONSTANT(PIKE_SYM, GSS_SYM) do {			\
       str.u.string = get_dd_oid (GSS_SYM);				\

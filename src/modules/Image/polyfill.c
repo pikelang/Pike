@@ -755,7 +755,7 @@ static INLINE struct vertex *polyfill_add(struct vertex **top,
 #endif
    }
 
-#define POINT(A,N) (((A)->item[N].type==T_FLOAT)?((A)->item[N].u.float_number):((FLOAT_TYPE)((A)->item[N].u.integer)))
+#define POINT(A,N) ((TYPEOF((A)->item[N]) == T_FLOAT)?((A)->item[N].u.float_number):((FLOAT_TYPE)((A)->item[N].u.integer)))
 
    last = first = vertex_new(DO_NOT_WARN(POINT(a,0)),
 			     DO_NOT_WARN(POINT(a,1)),
@@ -815,7 +815,7 @@ void image_polyfill(INT32 args)
    {
       struct vertex *v_tmp;
 
-      if (sp[-1].type!=T_ARRAY)
+      if (TYPEOF(sp[-1]) != T_ARRAY)
       {
 	 polyfill_free(v);
 	 SIMPLE_BAD_ARG_ERROR("Image.Image->polyfill", args,

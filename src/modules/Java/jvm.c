@@ -206,7 +206,7 @@ static JNIEnv *jvm_procure_env(struct object *jvm)
 
     if(j->tl_env != NULL && j->tl_env->prog != NULL) {
       safe_apply(j->tl_env, "get", 0);
-      if(Pike_sp[-1].type != PIKE_T_OBJECT)
+      if(TYPEOF(Pike_sp[-1]) != PIKE_T_OBJECT)
 	pop_n_elems(1);
       else {
 	env = ((struct att_storage *)((Pike_sp[-1].u.object)->storage))->env;
@@ -217,7 +217,7 @@ static JNIEnv *jvm_procure_env(struct object *jvm)
 
     ref_push_object(jvm);
     push_object(clone_object(attachment_program, 1));
-    if(Pike_sp[-1].type != PIKE_T_OBJECT || Pike_sp[-1].u.object == NULL) {
+    if(TYPEOF(Pike_sp[-1]) != PIKE_T_OBJECT || Pike_sp[-1].u.object == NULL) {
       pop_n_elems(1);
       return NULL;
     }
@@ -387,7 +387,7 @@ static void f_jobj_cast(INT32 args)
 
   if(args < 1)
     Pike_error("cast() called without arguments.\n");
-  if(Pike_sp[-args].type != PIKE_T_STRING)
+  if(TYPEOF(Pike_sp[-args]) != PIKE_T_STRING)
     Pike_error("Bad argument 1 to cast().\n");
 
   if(!strcmp(Pike_sp[-args].u.string->str, "object")) {
@@ -423,7 +423,7 @@ static void f_jobj_eq(INT32 args)
   JNIEnv *env;
   jboolean res;
 
-  if(args<1 || Pike_sp[-args].type != PIKE_T_OBJECT || 
+  if(args<1 || TYPEOF(Pike_sp[-args]) != PIKE_T_OBJECT ||
      (jo2 = (struct jobj_storage *)get_storage(Pike_sp[-args].u.object,
 					       jobj_program))==NULL) {
     pop_n_elems(args);
@@ -629,7 +629,7 @@ static void make_jargs(jvalue *jargs, INT32 args, char *dorelease, char *sig,
   for(i=0; i<args; i++) {
     struct svalue *sv = &Pike_sp[i-args];
     dorelease && (*dorelease = 0);
-    switch(sv->type) {
+    switch(TYPEOF(*sv)) {
     case PIKE_T_INT:
       switch(*sig++) {
       case 'L':
@@ -925,7 +925,7 @@ static void f_call_virtual(INT32 args)
   if(args != 1+m->nargs)
     Pike_error("wrong number of arguments for method.\n");
 
-  if(Pike_sp[-args].type != PIKE_T_OBJECT || 
+  if(TYPEOF(Pike_sp[-args]) != PIKE_T_OBJECT ||
      (jo = (struct jobj_storage *)get_storage(Pike_sp[-args].u.object,
 					      jobj_program))==NULL)
     Pike_error("Bad argument 1 to `().\n");
@@ -1037,7 +1037,7 @@ static void f_call_nonvirtual(INT32 args)
   if(args != 1+m->nargs)
     Pike_error("wrong number of arguments for method.\n");
 
-  if(Pike_sp[-args].type != PIKE_T_OBJECT || 
+  if(TYPEOF(Pike_sp[-args]) != PIKE_T_OBJECT ||
      (jo = (struct jobj_storage *)get_storage(Pike_sp[-args].u.object,
 					      jobj_program))==NULL)
     Pike_error("Bad argument 1 to call_nonvirtual.\n");
@@ -1241,7 +1241,7 @@ static void f_field_set(INT32 args)
   if(args!=2)
     Pike_error("Incorrect number of arguments to set.\n");
 
-  if(Pike_sp[-args].type != PIKE_T_OBJECT || 
+  if(TYPEOF(Pike_sp[-args]) != PIKE_T_OBJECT ||
      (jo = (struct jobj_storage *)get_storage(Pike_sp[-args].u.object,
 					      jobj_program))==NULL)
     Pike_error("Bad argument 1 to set.\n");
@@ -1301,7 +1301,7 @@ static void f_field_get(INT32 args)
   jobject jjo; FLOAT_TYPE jjf; INT32 jji;
   struct jobj_storage *jo;
 
-  if(Pike_sp[-args].type != PIKE_T_OBJECT || 
+  if(TYPEOF(Pike_sp[-args]) != PIKE_T_OBJECT ||
      (jo = (struct jobj_storage *)get_storage(Pike_sp[-args].u.object,
 					      jobj_program))==NULL)
     Pike_error("Bad argument 1 to get.\n");
@@ -2267,7 +2267,7 @@ static void make_java_exception(struct object *jvm, JNIEnv *env,
   push_svalue (v);
   SAFE_APPLY_MASTER ("describe_error", 1);
 #ifdef PIKE_DEBUG
-  if (Pike_sp[-1].type != PIKE_T_STRING)
+  if (TYPEOF(Pike_sp[-1]) != PIKE_T_STRING)
     Pike_fatal ("Unexpected return value from destribe_error\n");
 #endif
   (*env)->ThrowNew(env, j->class_runtimex, Pike_sp[-1].u.string->str);
@@ -2606,10 +2606,12 @@ static void f_natives_create(INT32 args)
 
     for(i=0; i<arr->size; i++) {
       struct array *nm;
-      if(ITEM(arr)[i].type != PIKE_T_ARRAY || ITEM(arr)[i].u.array->size != 3)
+      if(TYPEOF(ITEM(arr)[i]) != PIKE_T_ARRAY ||
+	 ITEM(arr)[i].u.array->size != 3)
 	Pike_error("Bad argument 1 to create().\n");
       nm = ITEM(arr)[i].u.array;
-      if(ITEM(nm)[0].type != PIKE_T_STRING || ITEM(nm)[1].type != PIKE_T_STRING)
+      if(TYPEOF(ITEM(nm)[0]) != PIKE_T_STRING ||
+	 TYPEOF(ITEM(nm)[1]) != PIKE_T_STRING)
 	Pike_error("Bad argument 1 to create().\n");
       assign_svalue_no_free(&n->cons[i].callback, &ITEM(nm)[2]);
       n->cons[i].nat = n;
@@ -2655,7 +2657,7 @@ static void f_is_assignable_from(INT32 args)
   JNIEnv *env;
   jboolean iaf;
 
-  if(args<1 || Pike_sp[-args].type != PIKE_T_OBJECT ||
+  if(args<1 || TYPEOF(Pike_sp[-args]) != PIKE_T_OBJECT ||
      (jc = (struct jobj_storage *)get_storage(Pike_sp[-args].u.object,
 					      jclass_program))==NULL)
     Pike_error("illegal argument 1 to is_assignable_from\n");
@@ -2958,8 +2960,8 @@ static void f_javaarray_getelt(INT32 args)
   INT32 n;
   jvalue jjv;
 
-  if(args<1 || Pike_sp[-args].type != PIKE_T_INT ||
-     (args>1 && Pike_sp[1-args].type != PIKE_T_INT))
+  if(args<1 || TYPEOF(Pike_sp[-args]) != PIKE_T_INT ||
+     (args>1 && TYPEOF(Pike_sp[1-args]) != PIKE_T_INT))
     Pike_error("Bad args to `[].\n");
 
   n = Pike_sp[-args].u.integer;
@@ -3036,7 +3038,7 @@ static void f_javaarray_setelt(INT32 args)
   char dorelease;
   char ty2;
 
-  if(args<2 || Pike_sp[-args].type != PIKE_T_INT)
+  if(args<2 || TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
     Pike_error("Bad args to `[]=.\n");
 
   if(args>2)
@@ -3112,9 +3114,7 @@ static void f_javaarray_indices(INT32 args)
   a = allocate_array_no_init(size,0);
   a->type_field=BIT_INT;
   while(--size>=0) {
-    ITEM(a)[size].type=PIKE_T_INT;
-    ITEM(a)[size].subtype=NUMBER_NUMBER;
-    ITEM(a)[size].u.integer=size;
+    SET_SVAL(ITEM(a)[size], PIKE_T_INT, NUMBER_NUMBER, integer, size);
   }
   pop_n_elems(args);
   push_array(a);
@@ -3148,64 +3148,58 @@ static void f_javaarray_values(INT32 args)
 	  case 'Z':
 	    ar->type_field=BIT_INT;
 	    for(i=0; i<size; i++) {
-	      ITEM(ar)[i].type = PIKE_T_INT;
-	      ITEM(ar)[i].subtype = NUMBER_NUMBER;
-	      ITEM(ar)[i].u.integer = ((jboolean*)a)[i];
+	      SET_SVAL(ITEM(ar)[i],  PIKE_T_INT, NUMBER_NUMBER, integer,
+		       ((jboolean*)a)[i]);
 	    }
 	    break;
 	  case 'B':
 	    ar->type_field=BIT_INT;
 	    for(i=0; i<size; i++) {
-	      ITEM(ar)[i].type = PIKE_T_INT;
-	      ITEM(ar)[i].subtype = NUMBER_NUMBER;
-	      ITEM(ar)[i].u.integer = ((jbyte*)a)[i];
+	      SET_SVAL(ITEM(ar)[i], PIKE_T_INT, NUMBER_NUMBER, integer,
+		       ((jbyte*)a)[i]);
 	    }
 	    break;
 	  case 'C':
 	    ar->type_field=BIT_INT;
 	    for(i=0; i<size; i++) {
-	      ITEM(ar)[i].type = PIKE_T_INT;
-	      ITEM(ar)[i].subtype = NUMBER_NUMBER;
-	      ITEM(ar)[i].u.integer = ((jchar*)a)[i];
+	      SET_SVAL(ITEM(ar)[i], PIKE_T_INT, NUMBER_NUMBER, integer,
+		       ((jchar*)a)[i]);
 	    }
 	    break;
 	  case 'S':
 	    ar->type_field=BIT_INT;
 	    for(i=0; i<size; i++) {
-	      ITEM(ar)[i].type = PIKE_T_INT;
-	      ITEM(ar)[i].subtype = NUMBER_NUMBER;
-	      ITEM(ar)[i].u.integer = ((jshort*)a)[i];
+	      SET_SVAL(ITEM(ar)[i], PIKE_T_INT, NUMBER_NUMBER, integer,
+		       ((jshort*)a)[i]);
 	    }
 	    break;
 	  case 'I':
 	  default:
 	    ar->type_field=BIT_INT;
 	    for(i=0; i<size; i++) {
-	      ITEM(ar)[i].type = PIKE_T_INT;
-	      ITEM(ar)[i].subtype = NUMBER_NUMBER;
-	      ITEM(ar)[i].u.integer = ((jint*)a)[i];
+	      SET_SVAL(ITEM(ar)[i], PIKE_T_INT, NUMBER_NUMBER, integer,
+		       ((jint*)a)[i]);
 	    }
 	    break;
 	  case 'J':
 	    ar->type_field=BIT_INT;
 	    for(i=0; i<size; i++) {
-	      ITEM(ar)[i].type = PIKE_T_INT;
-	      ITEM(ar)[i].subtype = NUMBER_NUMBER;
-	      ITEM(ar)[i].u.integer = ((jlong*)a)[i];
+	      SET_SVAL(ITEM(ar)[i], PIKE_T_INT, NUMBER_NUMBER, integer,
+		       ((jlong*)a)[i]);
 	    }
 	    break;
 	  case 'F':
 	    ar->type_field=BIT_FLOAT;
 	    for(i=0; i<size; i++) {
-	      ITEM(ar)[i].type = PIKE_T_FLOAT;
-	      ITEM(ar)[i].u.float_number = ((jfloat*)a)[i];
+	      SET_SVAL(ITEM(ar)[i], PIKE_T_FLOAT, 0, float_number,
+		       ((jfloat*)a)[i]);
 	    }
 	    break;
 	  case 'D':
 	    ar->type_field=BIT_FLOAT;
 	    for(i=0; i<size; i++) {
-	      ITEM(ar)[i].type = PIKE_T_FLOAT;
-	      ITEM(ar)[i].u.float_number = ((jdouble*)a)[i];
+	      SET_SVAL(ITEM(ar)[i], PIKE_T_FLOAT, 0, float_number,
+		       ((jdouble*)a)[i]);
 	    }
 	    break;	    
 	  }
@@ -3396,7 +3390,7 @@ static void f_create(INT32 args)
   j->vm_args.ignoreUnrecognized = JNI_TRUE;
 
   /* Set classpath */
-  if(args>0 && Pike_sp[-args].type == PIKE_T_STRING) {
+  if(args>0 && TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) {
     classpath = Pike_sp[-args].u.string->str;
     copy_shared_string(j->classpath_string, Pike_sp[-args].u.string);
   } else {
@@ -3507,7 +3501,7 @@ static void f_create(INT32 args)
 
 #ifdef _REENTRANT
   f_thread_local(0);
-  if(Pike_sp[-1].type == PIKE_T_OBJECT) {
+  if(TYPEOF(Pike_sp[-1]) == PIKE_T_OBJECT) {
     j->tl_env = Pike_sp[-1].u.object;
     add_ref(j->tl_env);
   }
@@ -3848,8 +3842,8 @@ PIKE_MODULE_INIT
 {
 #ifdef HAVE_JAVA
   struct svalue prog;
-  prog.type = PIKE_T_PROGRAM;
-  prog.subtype = 0;
+  SET_SVAL_TYPE(prog, PIKE_T_PROGRAM);
+  SET_SVAL_SUBTYPE(prog, 0);
 
 #ifdef __NT__
   if (open_nt_dll()<0)

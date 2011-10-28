@@ -101,7 +101,7 @@ static void f_hp_feed( INT32 args )
 
   if (args != 1)
     Pike_error("Bad number of arguments to feed().\n");
-  if( Pike_sp[-1].type != PIKE_T_STRING )
+  if( TYPEOF(Pike_sp[-1]) != PIKE_T_STRING )
     Pike_error("Wrong type of argument to feed()\n");
   if( str->size_shift )
     Pike_error("Wide string headers not supported\n");
@@ -232,7 +232,7 @@ static void f_hp_feed( INT32 args )
 
       if((tmp = low_mapping_lookup(headers, Pike_sp-2)))
       {
-	if( tmp->type == PIKE_T_ARRAY )
+	if( TYPEOF(*tmp) == PIKE_T_ARRAY )
 	{
           f_aggregate( 1 );
 	  ref_push_array(tmp->u.array);
@@ -302,12 +302,12 @@ static void f_make_http_headers( INT32 args )
   struct pike_string *res;
   int terminator = 2;
 
-  if( Pike_sp[-args].type != PIKE_T_MAPPING )
+  if( TYPEOF(Pike_sp[-args]) != PIKE_T_MAPPING )
     Pike_error("Wrong argument type to make_http_headers(mapping heads)\n");
   m = Pike_sp[-args].u.mapping;
 
   if (args > 1) {
-    if (Pike_sp[1-args].type != PIKE_T_INT)
+    if (TYPEOF(Pike_sp[1-args]) != PIKE_T_INT)
       Pike_error("Bad argument 2 to make_http_headers(). Expected int.\n");
     if (Pike_sp[1-args].u.integer)
       terminator = 0;
@@ -316,17 +316,18 @@ static void f_make_http_headers( INT32 args )
   /* loop to check len */
   NEW_MAPPING_LOOP( m->data )
   {
-    if( k->ind.type != PIKE_T_STRING || k->ind.u.string->size_shift )
+    if( TYPEOF(k->ind) != PIKE_T_STRING || k->ind.u.string->size_shift )
       Pike_error("Wrong argument type to make_http_headers("
             "mapping(string(8bit):string(8bit)|array(string(8bit))) heads)\n");
-    if( k->val.type == PIKE_T_STRING && !k->val.u.string->size_shift )
+    if( TYPEOF(k->val) == PIKE_T_STRING && !k->val.u.string->size_shift )
       total_len +=  k->val.u.string->len + 2 + k->ind.u.string->len + 2;
-    else if( k->val.type == PIKE_T_ARRAY )
+    else if( TYPEOF(k->val) == PIKE_T_ARRAY )
     {
       struct array *a = k->val.u.array;
       ptrdiff_t i, kl = k->ind.u.string->len + 2 ;
       for( i = 0; i<a->size; i++ )
-        if( a->item[i].type != PIKE_T_STRING||a->item[i].u.string->size_shift )
+        if( TYPEOF(a->item[i]) != PIKE_T_STRING ||
+	    a->item[i].u.string->size_shift )
           Pike_error("Wrong argument type to make_http_headers("
                 "mapping(string(8bit):string(8bit)|"
                 "array(string(8bit))) heads)\n");
@@ -349,7 +350,7 @@ static void f_make_http_headers( INT32 args )
   {
     unsigned char *s;
     ptrdiff_t l, c;
-    if( k->val.type == PIKE_T_STRING )
+    if( TYPEOF(k->val) == PIKE_T_STRING )
     {
       STRADD( k->ind ); *(pnt++) = ':'; *(pnt++) = ' ';
       STRADD( k->val ); *(pnt++) = '\r'; *(pnt++) = '\n';
@@ -386,7 +387,7 @@ static void f_http_decode_string(INT32 args)
    p_wchar0 *foo, *bar, *end;
    struct pike_string *newstr;
 
-   if (!args || Pike_sp[-args].type != PIKE_T_STRING ||
+   if (!args || TYPEOF(Pike_sp[-args]) != PIKE_T_STRING ||
        Pike_sp[-args].u.string->size_shift)
      Pike_error("Invalid argument to http_decode_string(string(8bit));\n");
 
@@ -482,7 +483,7 @@ static void f_html_encode_string( INT32 args )
   if( args != 1 )
     Pike_error("Wrong number of arguments to html_encode_string\n" );
   
-  switch( Pike_sp[-1].type )
+  switch( TYPEOF(Pike_sp[-1]) )
   {
     void o_cast_to_string();
 

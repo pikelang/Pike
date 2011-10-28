@@ -704,7 +704,7 @@ PIKECLASS Backend
        LINK(fun,new);
      }
      
-     switch(Pike_sp[-2].type)
+     switch(TYPEOF(Pike_sp[-2]))
      {
        case T_INT:
 	 new->tv.tv_sec=Pike_sp[-2].u.integer;
@@ -848,7 +848,7 @@ PIKECLASS Backend
        if(args<2)
 	 SIMPLE_TOO_FEW_ARGS_ERROR("call_out", 2);
 
-       if(t->type != T_INT && t->type != T_FLOAT)
+       if(TYPEOF(*t) != T_INT && TYPEOF(*t) != T_FLOAT)
 	 SIMPLE_BAD_ARG_ERROR("call_out", 2, "int|float");
 
        /* Swap, for compatibility */
@@ -894,7 +894,7 @@ PIKECLASS Backend
 	 args=c.args->size;
 	 push_array_items(c.args);
 	 check_destructed(Pike_sp - args);
-	 if(Pike_sp[-args].type!=T_INT)
+	 if(TYPEOF(Pike_sp[-args]) != T_INT)
 	 {
 	   IF_CO(
 	     fprintf(stderr, "[%d]BACKEND[%d]: backend_do_call_outs: "
@@ -904,7 +904,7 @@ PIKECLASS Backend
 	   );
 	   call_count++;
 	   f_call_function(args);
-	   if (Pike_sp[-1].type == T_INT && Pike_sp[-1].u.integer == -1) {
+	   if (TYPEOF(Pike_sp[-1]) == T_INT && Pike_sp[-1].u.integer == -1) {
 	     pop_stack();
 	     backend_verify_call_outs(me);
 	     call_count = -call_count;
@@ -951,7 +951,7 @@ PIKECLASS Backend
        
        if(!me->num_pending_calls) return -1;
        
-       if(fun->type == T_ARRAY)
+       if(TYPEOF(*fun) == T_ARRAY)
        {
 	 hval=PTR_TO_INT(fun->u.array);
 	 hval%=me->hash_size;
@@ -991,7 +991,7 @@ PIKECLASS Backend
 	 if (is_eq(fun, Pike_sp-1)) {
 	   INT_TYPE pos;
 #ifdef PIKE_DEBUG
-	   if (Pike_sp[-2].type != T_INT)
+	   if (TYPEOF(Pike_sp[-2]) != T_INT)
 	     Pike_fatal("Call_out->pos out of sync!\n");
 #endif
 	   pos = Pike_sp[-2].u.integer;
@@ -1058,9 +1058,8 @@ PIKECLASS Backend
        pop_n_elems(args);
        if(e==-1)
        {
-	 Pike_sp->type = T_INT;
-	 Pike_sp->subtype = NUMBER_UNDEFINED;
-	 Pike_sp->u.integer=-1;
+	 /* NB: This is a very exotic value! */
+	 SET_SVAL(*Pike_sp, T_INT, NUMBER_UNDEFINED, integer, -1);
 	 Pike_sp++;
        }else{
 	 push_int(CALL(e)->tv.tv_sec - current_time.tv_sec);
@@ -1115,9 +1114,8 @@ PIKECLASS Backend
 	 CALL_(me->num_pending_calls) = NULL;
        }else{
 	 pop_n_elems(args);
-	 Pike_sp->type = T_INT;
-	 Pike_sp->subtype = NUMBER_UNDEFINED;
-	 Pike_sp->u.integer = -1;
+	 /* NB: This is a very exotic value! */
+	 SET_SVAL(*Pike_sp, T_INT, NUMBER_UNDEFINED, integer, -1);
 	 Pike_sp++;
        }
        backend_verify_call_outs(me);
@@ -1146,9 +1144,8 @@ PIKECLASS Backend
 	 
 	 if(CALL(e)->caller)
 	 {
-	   ITEM(v)[1].type=T_OBJECT;
-	   ITEM(v)[1].subtype = 0;
-	   add_ref(ITEM(v)[1].u.object=CALL(e)->caller);
+	   SET_SVAL(ITEM(v)[1], T_OBJECT, 0, object, CALL(e)->caller);
+	   add_ref(CALL(e)->caller);
 	   v->type_field = BIT_INT|BIT_OBJECT;
 	 }else{
 	   v->type_field = BIT_INT;
@@ -1159,8 +1156,7 @@ PIKECLASS Backend
 				  ITEM(CALL(e)->args),
 				  CALL(e)->args->size,BIT_MIXED);
 	 
-	 ITEM(ret)[e].type=T_ARRAY;
-	 ITEM(ret)[e].u.array=v;
+	 SET_SVAL(ITEM(ret)[e], T_ARRAY, 0, array, v);
 	 ret->size++;
        }
        UNSET_ONERROR(err);
@@ -3179,7 +3175,7 @@ PIKECLASS PollDeviceBackend
     SET_ONERROR(uwp, low_backend_cleanup, THIS->backend);
     low_backend_once_setup(pdb->backend, &start_time);
 
-    if (me->before_callback.type != T_INT)
+    if (TYPEOF(me->before_callback) != T_INT)
       call_backend_monitor_cb (me, &me->before_callback);
 
     {
@@ -3233,7 +3229,7 @@ PIKECLASS PollDeviceBackend
       GETTIMEOFDAY(&current_time);
     }
 
-    if (me->after_callback.type != T_INT)
+    if (TYPEOF(me->after_callback) != T_INT)
       call_backend_monitor_cb (me, &me->after_callback);
 
     if (!i) {
@@ -3507,12 +3503,12 @@ PIKECLASS PollDeviceBackend
   {
     struct timeval timeout;	/* Got bogus gcc warning on timeout.tv_usec. */
 
-    if (sleep_time && sleep_time->type == PIKE_T_FLOAT) {
+    if (sleep_time && TYPEOF(*sleep_time) == PIKE_T_FLOAT) {
       timeout.tv_sec = (long) floor (sleep_time->u.float_number);
       timeout.tv_usec =
 	(long) ((sleep_time->u.float_number - timeout.tv_sec) * 1e6);
     }
-    else if (sleep_time && sleep_time->type == T_INT &&
+    else if (sleep_time && TYPEOF(*sleep_time) == T_INT &&
 	     sleep_time->u.integer) {
       SIMPLE_BAD_ARG_ERROR("`()", 1, "float|int(0..0)");
     }
@@ -3772,7 +3768,7 @@ PIKECLASS PollBackend
     SET_ONERROR(uwp, low_backend_cleanup, THIS->backend);
     low_backend_once_setup(pb->backend, &start_time);
 
-    if (me->before_callback.type != T_INT)
+    if (TYPEOF(me->before_callback) != T_INT)
       call_backend_monitor_cb (me, &me->before_callback);
 
     {
@@ -3831,7 +3827,7 @@ PIKECLASS PollBackend
       GETTIMEOFDAY(&current_time);
     }
 
-    if (me->after_callback.type != T_INT)
+    if (TYPEOF(me->after_callback) != T_INT)
       call_backend_monitor_cb (me, &me->after_callback);
 
     if (!i) {
@@ -4069,7 +4065,7 @@ PIKECLASS PollBackend
   {
     struct timeval timeout;	/* Got correct gcc warning on timeout.tv_usec. */
 
-    if (sleep_time && sleep_time->type == PIKE_T_FLOAT) {
+    if (sleep_time && TYPEOF(*sleep_time) == PIKE_T_FLOAT) {
       timeout.tv_sec = (long) floor (sleep_time->u.float_number);
       timeout.tv_usec =
 	(long) ((sleep_time->u.float_number - timeout.tv_sec) * 1e6);
@@ -4356,7 +4352,7 @@ PIKECLASS SelectBackend
     SET_ONERROR(uwp, low_backend_cleanup, THIS->backend);
     low_backend_once_setup(sb->backend, &start_time);
 
-    if (me->before_callback.type != T_INT)
+    if (TYPEOF(me->before_callback) != T_INT)
       call_backend_monitor_cb (me, &me->before_callback);
 
     {
@@ -4386,7 +4382,7 @@ PIKECLASS SelectBackend
       GETTIMEOFDAY(&current_time);
     }
 
-    if (me->after_callback.type != T_INT)
+    if (TYPEOF(me->after_callback) != T_INT)
       call_backend_monitor_cb (me, &me->after_callback);
 
     if (!i) {
@@ -4623,7 +4619,7 @@ PIKECLASS SelectBackend
   {
     struct timeval timeout;	/* Got bogus gcc warning on timeout.tv_usec. */
 
-    if (sleep_time && sleep_time->type == PIKE_T_FLOAT) {
+    if (sleep_time && TYPEOF(*sleep_time) == PIKE_T_FLOAT) {
       timeout.tv_sec = (long) floor (sleep_time->u.float_number);
       timeout.tv_usec =
 	(long) ((sleep_time->u.float_number - timeout.tv_sec) * 1e6);

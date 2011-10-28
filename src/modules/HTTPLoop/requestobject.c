@@ -305,7 +305,7 @@ static void parse_query(void)
   }
   sp--;
 
-  if(q->type == T_STRING) 
+  if(TYPEOF(*q) == T_STRING)
   {
     char *dec = aap_malloc(q->u.string->len*2+1);
     char *rest_query = dec+q->u.string->len+1, *rp=rest_query;
@@ -556,9 +556,7 @@ void f_aap_index_op(INT32 args)
     }
     else
     {
-      sp[-1].type = T_INT;
-      sp[-1].subtype = NUMBER_NUMBER;
-      sp[-1].u.integer = 0;
+      SET_SVAL(sp[-1], T_INT, NUMBER_NUMBER, integer, 0);
     }
     push_string(s_since);
     mapping_insert(THIS->misc_variables, sp-1, sp-2);
@@ -574,7 +572,7 @@ void f_aap_index_op(INT32 args)
     pop_stack();
     push_constant_text("roxen");
     if((tmp = low_mapping_lookup(get_builtin_constants(), sp-1)) 
-       && tmp->type == T_OBJECT)
+       && TYPEOF(*tmp) == T_OBJECT)
     {
       pop_stack( );
       ref_push_object( tmp->u.object );
@@ -655,7 +653,7 @@ void f_aap_end(INT32 args)
 
 void f_aap_output(INT32 args)
 {
-  if(sp[-1].type != T_STRING) Pike_error("Bad argument 1 to output\n");
+  if(TYPEOF(sp[-1]) != T_STRING) Pike_error("Bad argument 1 to output\n");
   WRITE(THIS->request->fd, sp[-1].u.string->str, sp[-1].u.string->len);
 }
 
@@ -944,16 +942,16 @@ void f_aap_reply(INT32 args)
   struct send_args *q;
   if(!THIS->request)
     Pike_error("reply already called.\n");
-  if(args && sp[-args].type == T_STRING) 
+  if(args && TYPEOF(sp[-args]) == T_STRING)
     reply_string = 1;
 
   if(args>1)
   {
     if(args<3)
       Pike_error("->reply(string|void pre,object(Stdio.file) fd,int len)\n");
-    if(sp[-args+1].type != T_OBJECT)
+    if(TYPEOF(sp[-args+1]) != T_OBJECT)
       Pike_error("Bad argument 2 to reply\n");
-    if(sp[-args+2].type != T_INT)
+    if(TYPEOF(sp[-args+2]) != T_INT)
       Pike_error("Bad argument 3 to reply\n");
     reply_object = 1;
   }
@@ -966,7 +964,7 @@ void f_aap_reply(INT32 args)
   {
     /* safe_apply() needed to avoid leak of q */
     safe_apply(sp[-2].u.object, "query_fd", 0);
-    if((sp[-1].type != T_INT) || (sp[-1].u.integer <= 0))
+    if((TYPEOF(sp[-1]) != T_INT) || (sp[-1].u.integer <= 0))
     {
       aap_free(q);
       Pike_error("Bad fileobject to request_object->reply()\n");

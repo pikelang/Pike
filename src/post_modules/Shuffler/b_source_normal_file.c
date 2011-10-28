@@ -77,7 +77,7 @@ struct source *source_normal_file_make( struct svalue *s,
 {
   struct fd_source *res;
   PIKE_STAT_T st;
-  if(s->type != PIKE_T_OBJECT)
+  if(TYPEOF(*s) != PIKE_T_OBJECT)
     return 0;
 
   if (!Fd_ref_program)

@@ -912,7 +912,7 @@ static void f_signal(int args)
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("signal", 1);
 
-  if(Pike_sp[-args].type != PIKE_T_INT)
+  if(TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
     SIMPLE_BAD_ARG_ERROR("signal", 1, "int");
 
   signum=Pike_sp[-args].u.integer;
@@ -1005,7 +1005,7 @@ static void f_signum(int args)
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("signum", 1);
 
-  if(Pike_sp[-args].type != T_STRING)
+  if(TYPEOF(Pike_sp[-args]) != T_STRING)
     SIMPLE_BAD_ARG_ERROR("signum", 1, "string");
 
   i=signum(Pike_sp[-args].u.string->str);
@@ -1026,7 +1026,7 @@ static void f_signame(int args)
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("signame", 1);
 
-  if(Pike_sp[-args].type != PIKE_T_INT)
+  if(TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
     SIMPLE_BAD_ARG_ERROR("signame", 1, "int");
 
   n=signame(Pike_sp[-args].u.integer);
@@ -1235,9 +1235,7 @@ static void init_pid_status(struct object *o)
   THIS->flags=0;
   THIS->state=PROCESS_UNKNOWN;
   THIS->result=-1;
-  THIS->callback.type = T_INT;
-  THIS->callback.subtype = NUMBER_NUMBER;
-  THIS->callback.u.integer = 0;
+  SET_SVAL(THIS->callback, T_INT, NUMBER_NUMBER, integer, 0);
 #endif
 }
 
@@ -1247,9 +1245,7 @@ static void exit_pid_status(struct object *o)
   if(pid_mapping)
   {
     struct svalue key;
-    key.type=PIKE_T_INT;
-    key.subtype = NUMBER_NUMBER;
-    key.u.integer=THIS->pid;
+    SET_SVAL(key, PIKE_T_INT, NUMBER_NUMBER, integer, THIS->pid);
     map_delete(pid_mapping, &key);
   }
 #endif
@@ -1289,14 +1285,12 @@ static void report_child(int pid,
   if(pid_mapping)
   {
     struct svalue *s, key;
-    key.type = PIKE_T_INT;
-    key.subtype = 0;
-    key.u.integer=pid;
+    SET_SVAL(key, PIKE_T_INT, NUMBER_NUMBER, integer, pid);
     if((s=low_mapping_lookup(pid_mapping, &key)))
     {
       struct pid_status *p = NULL;
       int call_callback = 0;
-      if(s->type == T_OBJECT)
+      if(TYPEOF(*s) == T_OBJECT)
       {
 	struct object *o;
 	if((p=(struct pid_status *)get_storage((o = s->u.object),
@@ -1883,7 +1877,7 @@ static void f_trace_process_cont(INT32 args)
     Pike_error("Process not stopped\n");
   }
 
-  if (args && Pike_sp[-args].type == PIKE_T_INT) {
+  if (args && TYPEOF(Pike_sp[-args]) == PIKE_T_INT) {
     cont_signal = Pike_sp[-args].u.integer;
   }
 
@@ -2033,7 +2027,7 @@ static BPTR get_amigados_handle(struct mapping *optional, char *name, int fd)
 
   if(optional && (tmp=simple_mapping_string_lookup(optional, name)))
   {
-    if(tmp->type == T_OBJECT)
+    if(TYPEOF(*tmp) == T_OBJECT)
     {
       fd = fd_from_object(tmp->u.object);
 
@@ -2091,7 +2085,7 @@ static HANDLE get_inheritable_handle(struct mapping *optional,
   struct svalue *tmp;
   if((tmp=simple_mapping_string_lookup(optional, name)))
   {
-    if(tmp->type == T_OBJECT)
+    if(TYPEOF(*tmp) == T_OBJECT)
     {
       INT32 fd=fd_from_object(tmp->u.object);
 
@@ -2467,16 +2461,16 @@ static void internal_add_limit( struct perishables *storage,
   ol.rlim_cur = RLIM_SAVED_CUR;
 #endif
 
-  if(limit_value->type == PIKE_T_INT)
+  if(TYPEOF(*limit_value) == PIKE_T_INT)
   {
     l = malloc(sizeof( struct pike_limit ));
     l->rlp.rlim_max = ol.rlim_max;
     l->rlp.rlim_cur = limit_value->u.integer;
-  } else if(limit_value->type == T_MAPPING) {
+  } else if(TYPEOF(*limit_value) == T_MAPPING) {
     struct svalue *tmp3;
     l = malloc(sizeof( struct pike_limit ));
     if((tmp3=simple_mapping_string_lookup(limit_value->u.mapping, "soft"))) {
-      if(tmp3->type == PIKE_T_INT)
+      if(TYPEOF(*tmp3) == PIKE_T_INT)
         l->rlp.rlim_cur = (tmp3->u.integer >= 0) ?
 	  (unsigned INT32)tmp3->u.integer:(unsigned INT32)ol.rlim_cur;
       else
@@ -2484,24 +2478,24 @@ static void internal_add_limit( struct perishables *storage,
     } else
       l->rlp.rlim_cur = ol.rlim_cur;
     if((tmp3=simple_mapping_string_lookup(limit_value->u.mapping, "hard"))) {
-      if(tmp3->type == PIKE_T_INT)
+      if(TYPEOF(*tmp3) == PIKE_T_INT)
         l->rlp.rlim_max = (tmp3->u.integer >= 0) ?
 	  (unsigned INT32)tmp3->u.integer:(unsigned INT32)ol.rlim_max;
       else
         l->rlp.rlim_max = RLIM_INFINITY;
     } else
       l->rlp.rlim_max = ol.rlim_max;
-  } else if(limit_value->type == T_ARRAY && limit_value->u.array->size == 2) {
+  } else if(TYPEOF(*limit_value) == T_ARRAY && limit_value->u.array->size == 2) {
     l = malloc(sizeof( struct pike_limit ));
-    if(limit_value->u.array->item[0].type == PIKE_T_INT)
+    if(TYPEOF(limit_value->u.array->item[0]) == PIKE_T_INT)
       l->rlp.rlim_max = limit_value->u.array->item[0].u.integer;
     else
       l->rlp.rlim_max = ol.rlim_max;
-    if(limit_value->u.array->item[1].type == PIKE_T_INT)
+    if(TYPEOF(limit_value->u.array->item[1]) == PIKE_T_INT)
       l->rlp.rlim_cur = limit_value->u.array->item[1].u.integer;
     else
       l->rlp.rlim_max = ol.rlim_cur;
-  } else if(limit_value->type == T_STRING) {
+  } else if(TYPEOF(*limit_value) == T_STRING) {
     l = malloc(sizeof(struct pike_limit));
     l->rlp.rlim_max = RLIM_INFINITY;
     l->rlp.rlim_cur = RLIM_INFINITY;
@@ -2894,7 +2888,7 @@ void f_create_process(INT32 args)
     {
       if( (tmp=simple_mapping_string_lookup(optional, "cwd")) )
       {
-	if(tmp->type == T_STRING)
+	if(TYPEOF(*tmp) == T_STRING)
 	{
 	  dir=(TCHAR *)STR0(tmp->u.string);
 	  /* fprintf(stderr,"DIR: %s\n",STR0(tmp->u.string)); */
@@ -2912,7 +2906,7 @@ void f_create_process(INT32 args)
 
 	if((tmp=simple_mapping_string_lookup(optional, "env")))
 	{
-	  if(tmp->type == T_MAPPING)
+	  if(TYPEOF(*tmp) == T_MAPPING)
 	  {
 	    struct mapping *m=tmp->u.mapping;
 	    struct array *i,*v;
@@ -2928,7 +2922,8 @@ void f_create_process(INT32 args)
 
 	    for(e=0;e<i->size;e++)
 	    {
-	      if(ITEM(i)[e].type == T_STRING && ITEM(v)[e].type == T_STRING)
+	      if(TYPEOF(ITEM(i)[e]) == T_STRING &&
+		 TYPEOF(ITEM(v)[e]) == T_STRING)
 	      {
 		check_stack(3);
 		ref_push_string(ITEM(i)[e].u.string);
@@ -3031,7 +3026,7 @@ void f_create_process(INT32 args)
     low_my_putchar('\0', &storage.cmd_buf);
 
     if(optional && (tmp=simple_mapping_string_lookup(optional, "cwd")))
-      if(tmp->type == T_STRING)
+      if(TYPEOF(*tmp) == T_STRING)
         if((storage.cwd_lock=Lock((char *)STR0(tmp->u.string), ACCESS_READ))==0)
 	  Pike_error("Failed to lock cwd \"%S\".\n", tmp->u.string);
 
@@ -3138,12 +3133,12 @@ void f_create_process(INT32 args)
 	assign_svalue(&(THIS->callback), tmp);
       }
       if((tmp = simple_mapping_string_lookup(optional, "priority")) &&
-         tmp->type == T_STRING)
+         TYPEOF(*tmp) == T_STRING)
         priority = tmp->u.string->str;
 
       if((tmp = simple_mapping_string_lookup(optional, "gid")))
       {
-	switch(tmp->type)
+	switch(TYPEOF(*tmp))
 	{
 	  case PIKE_T_INT:
 	    wanted_gid=tmp->u.integer;
@@ -3156,9 +3151,9 @@ void f_create_process(INT32 args)
 	    extern void f_getgrnam(INT32);
 	    push_svalue(tmp);
 	    f_getgrnam(1);
-	    if(Pike_sp[-1].type != T_ARRAY)
+	    if(TYPEOF(Pike_sp[-1]) != T_ARRAY)
 	      Pike_error("No such group.\n");
-	    if(Pike_sp[-1].u.array->item[2].type != PIKE_T_INT)
+	    if(TYPEOF(Pike_sp[-1].u.array->item[2]) != PIKE_T_INT)
 	      Pike_error("Getgrnam failed!\n");
 	    wanted_gid = Pike_sp[-1].u.array->item[2].u.integer;
 	    pop_stack();
@@ -3173,21 +3168,21 @@ void f_create_process(INT32 args)
       }
 
       if((tmp = simple_mapping_string_lookup( optional, "chroot" )) &&
-         tmp->type == T_STRING && !tmp->u.string->size_shift)
+         TYPEOF(*tmp) == T_STRING && !tmp->u.string->size_shift)
         mchroot = tmp->u.string->str;
 
       if((tmp = simple_mapping_string_lookup( optional, "cwd" )) &&
-         tmp->type == T_STRING && !tmp->u.string->size_shift)
+         TYPEOF(*tmp) == T_STRING && !tmp->u.string->size_shift)
         tmp_cwd = tmp->u.string->str;
 
       if((tmp = simple_mapping_string_lookup( optional, "setsid" )) &&
-	 ((tmp->type == PIKE_T_INT && tmp->u.integer) ||
-	  (tmp->type == T_OBJECT &&
+	 ((TYPEOF(*tmp) == PIKE_T_INT && tmp->u.integer) ||
+	  (TYPEOF(*tmp) == T_OBJECT &&
 	   (cterm = fd_from_object(tmp->u.object)) >= 0)))
         setsid_request=1;
 
       if ((tmp = simple_mapping_string_lookup( optional, "fds" )) &&
-	  tmp->type == T_ARRAY) {
+	  TYPEOF(*tmp) == T_ARRAY) {
 	struct array *a = tmp->u.array;
 	int i = a->size;
 	if (i) {
@@ -3196,7 +3191,7 @@ void f_create_process(INT32 args)
 	  storage.fds = fds = (int *)xalloc(sizeof(int)*(num_fds));
 	  fds[0] = fds[1] = fds[2] = -1;
 	  while (i--) {
-	    if (a->item[i].type == T_OBJECT) {
+	    if (TYPEOF(a->item[i]) == T_OBJECT) {
 	      fds[i+3] = fd_from_object(a->item[i].u.object);
 	      /* FIXME: Error if -1? */
 	    } else {
@@ -3207,7 +3202,7 @@ void f_create_process(INT32 args)
       }
 
       if((tmp = simple_mapping_string_lookup( optional, "stdin" )) &&
-         tmp->type == T_OBJECT)
+         TYPEOF(*tmp) == T_OBJECT)
       {
         fds[0] = fd_from_object( tmp->u.object );
         if(fds[0] == -1)
@@ -3215,7 +3210,7 @@ void f_create_process(INT32 args)
       }
 
       if((tmp = simple_mapping_string_lookup( optional, "stdout" )) &&
-	 tmp->type == T_OBJECT)
+	 TYPEOF(*tmp) == T_OBJECT)
       {
         fds[1] = fd_from_object( tmp->u.object );
         if(fds[1] == -1)
@@ -3223,7 +3218,7 @@ void f_create_process(INT32 args)
       }
 
       if((tmp = simple_mapping_string_lookup( optional, "stderr" )) &&
-	 tmp->type == T_OBJECT)
+	 TYPEOF(*tmp) == T_OBJECT)
       {
         fds[2] = fd_from_object( tmp->u.object );
         if(fds[2] == -1)
@@ -3231,7 +3226,7 @@ void f_create_process(INT32 args)
       }
 
       if((tmp = simple_mapping_string_lookup( optional, "nice"))
-         && tmp->type == PIKE_T_INT )
+         && TYPEOF(*tmp) == PIKE_T_INT )
         nice_val = tmp->u.integer;
 
 
@@ -3239,7 +3234,7 @@ void f_create_process(INT32 args)
       if((tmp=simple_mapping_string_lookup(optional, "rlimit")))
       {
         struct svalue *tmp2;
-        if(tmp->type != T_MAPPING)
+        if(TYPEOF(*tmp) != T_MAPPING)
           Pike_error("Wrong type of argument for the 'rusage' option. "
                 "Should be mapping.\n");
 
@@ -3286,7 +3281,7 @@ void f_create_process(INT32 args)
       
       if((tmp=simple_mapping_string_lookup(optional, "uid")))
       {
-	switch(tmp->type)
+	switch(TYPEOF(*tmp))
 	{
 	  case PIKE_T_INT:
 	    wanted_uid=tmp->u.integer;
@@ -3297,9 +3292,9 @@ void f_create_process(INT32 args)
 	      push_int(wanted_uid);
 	      f_getpwuid(1);
 
-	      if(Pike_sp[-1].type==T_ARRAY)
+	      if(TYPEOF(Pike_sp[-1]) == T_ARRAY)
 	      {
-		if(Pike_sp[-1].u.array->item[3].type!=PIKE_T_INT)
+		if(TYPEOF(Pike_sp[-1].u.array->item[3]) != PIKE_T_INT)
 		  Pike_error("Getpwuid failed!\n");
 		wanted_gid = Pike_sp[-1].u.array->item[3].u.integer;
 	      }
@@ -3314,10 +3309,10 @@ void f_create_process(INT32 args)
 	    extern void f_getpwnam(INT32);
 	    push_svalue(tmp);
 	    f_getpwnam(1);
-	    if(Pike_sp[-1].type != T_ARRAY)
+	    if(TYPEOF(Pike_sp[-1]) != T_ARRAY)
 	      Pike_error("No such user.\n");
-	    if(Pike_sp[-1].u.array->item[2].type != PIKE_T_INT ||
-	       Pike_sp[-1].u.array->item[3].type != PIKE_T_INT)
+	    if(TYPEOF(Pike_sp[-1].u.array->item[2]) != PIKE_T_INT ||
+	       TYPEOF(Pike_sp[-1].u.array->item[3]) != PIKE_T_INT)
 	      Pike_error("Getpwnam failed!\n");
 	    wanted_uid=Pike_sp[-1].u.array->item[2].u.integer;
 	    if(!gid_request)
@@ -3335,12 +3330,12 @@ void f_create_process(INT32 args)
       if((tmp=simple_mapping_string_lookup(optional, "setgroups")))
       {
 #ifdef HAVE_SETGROUPS
-	if(tmp->type == T_ARRAY)
+	if(TYPEOF(*tmp) == T_ARRAY)
 	{
 	  storage.wanted_gids_array=tmp->u.array;
 	  add_ref(storage.wanted_gids_array);
 	  for(e=0;e<storage.wanted_gids_array->size;e++)
-	    if(storage.wanted_gids_array->item[e].type != PIKE_T_INT)
+	    if(TYPEOF(storage.wanted_gids_array->item[e]) != PIKE_T_INT)
 	      Pike_error("Invalid type for setgroups.\n");
 	  do_initgroups=0;
 	}else{
@@ -3354,7 +3349,7 @@ void f_create_process(INT32 args)
 
       if((tmp=simple_mapping_string_lookup(optional, "env")))
       {
-	if(tmp->type == T_MAPPING)
+	if(TYPEOF(*tmp) == T_MAPPING)
 	{
 	  struct mapping *m=tmp->u.mapping;
 	  struct array *i,*v;
@@ -3365,8 +3360,8 @@ void f_create_process(INT32 args)
 	  storage.env=(char **)xalloc((1+m_sizeof(m)) * sizeof(char *));
 	  for(e=0;e<i->size;e++)
 	  {
-	    if(ITEM(i)[e].type == T_STRING &&
-	       ITEM(v)[e].type == T_STRING)
+	    if(TYPEOF(ITEM(i)[e]) == T_STRING &&
+	       TYPEOF(ITEM(v)[e]) == T_STRING)
 	    {
 	      check_stack(3);
 	      ref_push_string(ITEM(i)[e].u.string);
@@ -3405,7 +3400,7 @@ void f_create_process(INT32 args)
       extern void f_get_groups_for_user(INT32);
       push_int(wanted_uid);
       f_get_groups_for_user(1);
-      if(Pike_sp[-1].type == T_ARRAY)
+      if(TYPEOF(Pike_sp[-1]) == T_ARRAY)
       {
 	storage.wanted_gids_array=Pike_sp[-1].u.array;
 	Pike_sp--;
@@ -3423,7 +3418,7 @@ void f_create_process(INT32 args)
       storage.wanted_gids[0]=65534; /* Paranoia */
       for(e=0;e<storage.wanted_gids_array->size;e++)
       {
-	switch(storage.wanted_gids_array->item[e].type)
+	switch(TYPEOF(storage.wanted_gids_array->item[e]))
 	{
 	  case PIKE_T_INT:
 	    storage.wanted_gids[e]=storage.wanted_gids_array->item[e].u.integer;
@@ -3435,7 +3430,7 @@ void f_create_process(INT32 args)
 	    extern void f_getgrnam(INT32);
 	    ref_push_string(storage.wanted_gids_array->item[e].u.string);
 	    f_getgrnam(2);
-	    if(Pike_sp[-1].type != T_ARRAY)
+	    if(TYPEOF(Pike_sp[-1]) != T_ARRAY)
 	      Pike_error("No such group.\n");
 
 	    storage.wanted_gids[e]=Pike_sp[-1].u.array->item[2].u.integer;
@@ -4451,7 +4446,7 @@ static void f_kill(INT32 args)
   if(args < 2)
     SIMPLE_TOO_FEW_ARGS_ERROR("kill", 2);
 
-  switch(Pike_sp[-args].type)
+  switch(TYPEOF(Pike_sp[-args]))
   {
   case PIKE_T_INT:
     pid = Pike_sp[-args].u.integer;
@@ -4463,7 +4458,7 @@ static void f_kill(INT32 args)
     SIMPLE_BAD_ARG_ERROR("kill", 1, "int");
   }
     
-  if(Pike_sp[1-args].type != PIKE_T_INT)
+  if(TYPEOF(Pike_sp[1-args]) != PIKE_T_INT)
     SIMPLE_BAD_ARG_ERROR("kill", 2, "int");
 
   signum = Pike_sp[1-args].u.integer;
@@ -4552,7 +4547,7 @@ static void f_kill(INT32 args)
   if(args < 2)
     SIMPLE_TOO_FEW_ARGS_ERROR("kill", 2);
 
-  switch(Pike_sp[-args].type)
+  switch(TYPEOF(Pike_sp[-args]))
   {
   case PIKE_T_INT:
     tofree=proc=OpenProcess(PROCESS_TERMINATE,
@@ -4583,7 +4578,7 @@ static void f_kill(INT32 args)
     SIMPLE_BAD_ARG_ERROR("kill", 1, "int|object");
   }
     
-  if(Pike_sp[1-args].type != PIKE_T_INT)
+  if(TYPEOF(Pike_sp[1-args]) != PIKE_T_INT)
     SIMPLE_BAD_ARG_ERROR("kill", 2, "int");
 
   switch(Pike_sp[1-args].u.integer)
@@ -4678,7 +4673,7 @@ static void f_alarm(INT32 args)
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("alarm", 1);
 
-  if(Pike_sp[-args].type != PIKE_T_INT)
+  if(TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
     SIMPLE_BAD_ARG_ERROR("alarm", 1, "int");
 
   seconds=Pike_sp[-args].u.integer;
@@ -4724,7 +4719,7 @@ static void f_ualarm(INT32 args)
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("ualarm", 1);
 
-  if(Pike_sp[-args].type != PIKE_T_INT)
+  if(TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
     SIMPLE_BAD_ARG_ERROR("ualarm", 1, "int");
 
   useconds=Pike_sp[-args].u.integer;
@@ -4889,7 +4884,7 @@ PMOD_EXPORT void low_init_signals(void)
   /* Restore aby custom signals if needed. */
   for(e=0;e<MAX_SIGNALS;e++) {
     
-    if ((signal_callbacks[e].type != PIKE_T_INT) ||
+    if ((TYPEOF(signal_callbacks[e]) != PIKE_T_INT) ||
 	default_signals[e])
     {
       sigfunctype func = receive_signal;
@@ -4915,8 +4910,8 @@ void init_signals(void)
 #endif /* __NT__ */
 
   for(e=0;e<MAX_SIGNALS;e++) {
-    signal_callbacks[e].type = PIKE_T_INT;
-    signal_callbacks[e].subtype = NUMBER_NUMBER;
+    SET_SVAL_TYPE(signal_callbacks[e], PIKE_T_INT);
+    SET_SVAL_SUBTYPE(signal_callbacks[e], NUMBER_NUMBER);
   }
 
   low_init_signals();
@@ -5076,7 +5071,7 @@ void exit_signals(void)
   for(e=0;e<MAX_SIGNALS;e++)
   {
     free_svalue(signal_callbacks+e);
-    signal_callbacks[e].type = PIKE_T_INT;
-    signal_callbacks[e].subtype = NUMBER_NUMBER;
+    SET_SVAL_TYPE(signal_callbacks[e], PIKE_T_INT);
+    SET_SVAL_SUBTYPE(signal_callbacks[e], NUMBER_NUMBER);
   }
 }

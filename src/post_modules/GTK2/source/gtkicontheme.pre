@@ -39,7 +39,7 @@ void set_search_path(array(string) path)
     if (path==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("set_search_path",sizeof(const gchar *)*a->size);
     for (i=num=0; i<a->size; i++) {
-      if ((ITEM(a)+i)->type!=PIKE_T_STRING)
+      if (TYPEOF(ITEM(a)[i]) != PIKE_T_STRING)
 	continue;
       path[num++]=(const gchar *)STR0((ITEM(a)+i)->u.string);
     }

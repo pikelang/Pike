@@ -766,7 +766,7 @@ void f_get_groups_for_user(INT32 arg)
   check_all_args("get_groups_for_user",arg,BIT_INT | BIT_STRING, 0);
   pop_n_elems(arg-1);
   a=low_allocate_array(0,10);
-  if(sp[-1].type == T_INT)
+  if(TYPEOF(sp[-1]) == T_INT)
   {
     int uid=sp[-1].u.integer;
 
@@ -778,8 +778,7 @@ void f_get_groups_for_user(INT32 arg)
 
     if(pw)
     {
-      sp[-1].u.string=make_shared_string(pw->pw_name);
-      sp[-1].type=T_STRING;
+      SET_SVAL(sp[-1], T_STRING, 0, string, make_shared_string(pw->pw_name));
       user=sp[-1].u.string->str;
     }
   }else{

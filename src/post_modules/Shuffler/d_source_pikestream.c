@@ -137,7 +137,7 @@ static void f_got_data( INT32 args )
   remove_callbacks( (struct source *)s );
 
   if( s->str ||
-      Pike_sp[-1].type != PIKE_T_STRING ||
+      TYPEOF(Pike_sp[-1]) != PIKE_T_STRING ||
       Pike_sp[-1].u.string->size_shift ||
       Pike_sp[-1].u.string->len == 0)
   {
@@ -167,7 +167,7 @@ struct source *source_pikestream_make( struct svalue *s,
 {
   struct pf_source *res;
 
-  if( (s->type != PIKE_T_OBJECT) ||
+  if( (TYPEOF(*s) != PIKE_T_OBJECT) ||
       (find_identifier("set_read_callback",s->u.object->prog)==-1) )
     return 0;
   

@@ -551,16 +551,16 @@ void pike_do_exit(int num)
 #endif
 
 #ifdef PIKE_DEBUG
-  if (svalue_int_zero.type != T_INT ||
-      svalue_int_zero.subtype != NUMBER_NUMBER ||
+  if (TYPEOF(svalue_int_zero) != T_INT ||
+      SUBTYPEOF(svalue_int_zero) != NUMBER_NUMBER ||
       svalue_int_zero.u.integer != 0)
     Pike_fatal ("svalue_int_zero has been changed.\n");
-  if (svalue_undefined.type != T_INT ||
-      svalue_undefined.subtype != NUMBER_UNDEFINED ||
+  if (TYPEOF(svalue_undefined) != T_INT ||
+      SUBTYPEOF(svalue_undefined) != NUMBER_UNDEFINED ||
       svalue_undefined.u.integer != 0)
     Pike_fatal ("svalue_undefined has been changed.\n");
-  if (svalue_int_one.type != T_INT ||
-      svalue_int_one.subtype != NUMBER_NUMBER ||
+  if (TYPEOF(svalue_int_one) != T_INT ||
+      SUBTYPEOF(svalue_int_one) != NUMBER_NUMBER ||
       svalue_int_one.u.integer != 1)
     Pike_fatal ("svalue_int_one has been changed.\n");
 #endif
@@ -578,8 +578,7 @@ void pike_push_argv(int argc, char **argv)
   a=allocate_array_no_init(argc,0);
   for(num=0;num<argc;num++)
   {
-    ITEM(a)[num].u.string=make_shared_string(argv[num]);
-    ITEM(a)[num].type=T_STRING;
+    SET_SVAL(ITEM(a)[num], T_STRING, 0, string, make_shared_string(argv[num]));
   }
   a->type_field = BIT_STRING;
   push_array(a);
@@ -640,8 +639,8 @@ void pike_push_env(void)
   a=allocate_array_no_init(num,0);
   for(num=0;environ[num];num++)
   {
-    ITEM(a)[num].u.string=make_shared_string(environ[num]);
-    ITEM(a)[num].type=T_STRING;
+    SET_SVAL(ITEM(a)[num], T_STRING, 0,
+	     string, make_shared_string(environ[num]));
   }
   a->type_field = BIT_STRING;
   push_array(a);

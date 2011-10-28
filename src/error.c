@@ -204,7 +204,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void pike_throw(void) ATTRIBUTE((noreturn))
 
 #if defined(DEBUG_MALLOC) && defined(PIKE_DEBUG)
   /* This will tell us where the value was caught (I hope) */
-  if(throw_value.type <= MAX_REF_TYPE)
+  if(TYPEOF(throw_value) <= MAX_REF_TYPE)
   {
     debug_malloc_update_location(throw_value.u.refs,
 				 Pike_interpreter.recoveries->file);
@@ -370,12 +370,12 @@ PMOD_EXPORT DECLSPEC(noreturn) void new_error(const char *name,
     push_int(0);
 
   for (i=-args; i; i++) {
-    if (oldsp[i].type <= PIKE_T_FLOAT) {
+    if (TYPEOF(oldsp[i]) <= PIKE_T_FLOAT) {
       push_svalue(oldsp + i);
     } else {
       char buffer[50];
       sprintf(buffer, "<Svalue:0x%04x:0x%04x:%p>",
-	      oldsp[i].type, oldsp[i].subtype, oldsp[i].u.ptr);
+	      TYPEOF(oldsp[i]), SUBTYPEOF(oldsp[i]), oldsp[i].u.ptr);
       push_text(buffer);
     }
   }
@@ -523,7 +523,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_va_fatal(const char *fmt, va_list args
       jmp.severity = THROW_EXIT; /* Don't want normal exit code to run here. */
       push_error("Backtrace at time of fatal:\n");
       APPLY_MASTER("describe_backtrace",1);
-      if(Pike_sp[-1].type==PIKE_T_STRING)
+      if(TYPEOF(Pike_sp[-1]) == PIKE_T_STRING)
 	write_to_stderr(Pike_sp[-1].u.string->str, Pike_sp[-1].u.string->len);
     }
     UNSETJMP (jmp);
@@ -725,7 +725,7 @@ static void f_error__sprintf(INT32 args)
 {
   int mode = 0;
 
-  if(args>0 && Pike_sp[-args].type == PIKE_T_INT)
+  if(args>0 && TYPEOF(Pike_sp[-args]) == PIKE_T_INT)
     mode = Pike_sp[-args].u.integer;
   pop_n_elems(args);
 
@@ -776,7 +776,7 @@ static void f_error__is_type(INT32 args)
   MAKE_CONST_STRING(array_string, "array");
   if (args < 0) SIMPLE_TOO_FEW_ARGS_ERROR("_is_type", 1);
   if (args > 1) SIMPLE_WRONG_NUM_ARGS_ERROR("_is_type", 1);
-  if (Pike_sp[-args].type != PIKE_T_STRING)
+  if (TYPEOF(Pike_sp[-args]) != PIKE_T_STRING)
     SIMPLE_ARG_TYPE_ERROR("_is_type", 1, "string");
   ret = Pike_sp[-args].u.string == array_string;
   pop_n_elems(args);
@@ -849,9 +849,8 @@ static void f_error_create(INT32 args)
     if (X) { \
       assign_svalue_no_free( & ERROR_STRUCT(STRUCT,o)->X, X); \
     } else { \
-      ERROR_STRUCT(STRUCT, o)->X.type = PIKE_T_INT; \
-      ERROR_STRUCT(STRUCT, o)->X.subtype = NUMBER_UNDEFINED; \
-      ERROR_STRUCT(STRUCT, o)->X.u.integer = 0; \
+      SET_SVAL(ERROR_STRUCT(STRUCT, o)->X, PIKE_T_INT, NUMBER_UNDEFINED, \
+	       integer, 0); \ 
     } \
   } while (0)
 
@@ -924,7 +923,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void generic_error_va(
     f_add(2);
   }
 
-  if(Pike_sp[-1].type!=PIKE_T_ARRAY)
+  if(TYPEOF(Pike_sp[-1]) != PIKE_T_ARRAY)
     Pike_fatal("f_backtrace failed to generate a backtrace!\n");
 
   if (err->error_backtrace) free_array(err->error_backtrace);
@@ -933,9 +932,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void generic_error_va(
   dmalloc_touch_svalue(Pike_sp);
 
   free_svalue(& throw_value);
-  throw_value.type=PIKE_T_OBJECT;
-  throw_value.subtype = 0;
-  throw_value.u.object=o;
+  SET_SVAL(throw_value, PIKE_T_OBJECT, 0, object, o);
   throw_severity = THROW_ERROR;
   in_error=0;
 
@@ -997,7 +994,8 @@ PMOD_EXPORT DECLSPEC(noreturn) void bad_arg_error(
   INIT_ERROR(bad_argument);
   ERROR_COPY(bad_argument, which_argument);
   if (expected_type)
-    ERROR_STRUCT(bad_argument,o)->expected_type=make_shared_string(expected_type);
+    ERROR_STRUCT(bad_argument,o)->expected_type =
+      make_shared_string(expected_type);
   else
     ERROR_STRUCT(bad_argument,o)->expected_type = NULL;
   ERROR_COPY_SVALUE(bad_argument, got_value);
@@ -1017,9 +1015,8 @@ PMOD_EXPORT DECLSPEC(noreturn) void math_error(
   {
     ERROR_COPY_SVALUE(math, number);
   }else{
-    ERROR_STRUCT(math,o)->number.type=PIKE_T_INT;
-    ERROR_STRUCT(math,o)->number.subtype=NUMBER_UNDEFINED;
-    ERROR_STRUCT(math,o)->number.u.integer=0;
+    SET_SVAL(ERROR_STRUCT(math,o)->number, PIKE_T_INT, NUMBER_UNDEFINED,
+	     integer, 0);
   }
   ERROR_DONE(generic);
 }

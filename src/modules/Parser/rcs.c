@@ -45,9 +45,7 @@ static void push_token( const char * from, int start, int end )
 	Pike_sp[-1].u.array = a = resize_array( a, a->size+1 );
 	a->size--;
     }
-    a->item[a->size].type = PIKE_T_STRING;
-    a->item[a->size].subtype = 0;
-    a->item[a->size].u.string = token;
+    SET_SVAL(a->item[a->size], PIKE_T_STRING, 0, string, token);
     a->size++;
 }
 
@@ -109,7 +107,7 @@ static void tokenize( struct pike_string *s )
 
 static void f_tokenize( INT32 args )
 {
-    if( !args || Pike_sp[-args].type != PIKE_T_STRING )
+    if( !args || TYPEOF(Pike_sp[-args]) != PIKE_T_STRING )
 	Pike_error("Illegal argument 1 to tokenize\n");
     tokenize( Pike_sp[-args].u.string );
     stack_swap();

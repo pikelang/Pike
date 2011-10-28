@@ -321,7 +321,7 @@ static void f_create(INT32 args)
   if (!args) {
     Pike_error("Too few arguments to mysql_result()\n");
   }
-  if (sp[-args].type != T_OBJECT) {
+  if (TYPEOF(sp[-args]) != T_OBJECT) {
     Pike_error("Bad argument 1 to mysql_result()\n");
   }
 
@@ -331,7 +331,7 @@ static void f_create(INT32 args)
   PIKE_MYSQL_RES->typed_mode = 0;
 #endif
   if (args > 1) {
-    if (sp[1-args].type != T_INT) {
+    if (TYPEOF(sp[1-args]) != T_INT) {
       Pike_error("Bad argument 2 to mysql_result()\n");
     }
     PIKE_MYSQL_RES->typed_mode = !!sp[1-args].u.integer;
@@ -410,7 +410,7 @@ static void f_field_seek(INT32 args)
   if (!args) {
     Pike_error("Too few arguments to mysql->field_seek()\n");
   }
-  if (sp[-args].type != T_INT) {
+  if (TYPEOF(sp[-args]) != T_INT) {
     Pike_error("Bad argument 1 to mysql->field_seek()\n");
   }
   if (!PIKE_MYSQL_RES->result) {
@@ -671,18 +671,18 @@ static void f_fetch_row(INT32 args)
 
 	    /* Fixed-point number with fraction part. Make an mpq. */
 
-	    if (mpq_program.type == PIKE_T_FREE) {
+	    if (TYPEOF(mpq_program) == PIKE_T_FREE) {
 	      push_text ("Gmp.mpq");
 	      SAFE_APPLY_MASTER ("resolv", 1);
-	      if (Pike_sp[-1].type == T_PROGRAM)
+	      if (TYPEOF(Pike_sp[-1]) == T_PROGRAM)
 		move_svalue (&mpq_program, --Pike_sp);
 	      else {
 		pop_stack();
-		mpq_program.type = T_INT;
+		TYPEOF(mpq_program) = T_INT;
 	      }
 	    }
 
-	    if (mpq_program.type == T_PROGRAM) {
+	    if (TYPEOF(mpq_program) == T_PROGRAM) {
 #ifdef HAVE_MYSQL_FETCH_LENGTHS
 	      push_string(make_shared_binary_string(row[i], row_lengths[i]));
 #else

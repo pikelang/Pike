@@ -17,7 +17,7 @@ void create(string|mapping(string:mixed) uri_or_props, ?string label)
   pgtk2_verify_not_inited();
   pgtk2_verify_setup();
   {
-    if (Pike_sp[-args].type==PIKE_T_STRING) {
+    if (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) {
       struct pike_string *t,*t1=NULL;
       GtkWidget *gl;
 

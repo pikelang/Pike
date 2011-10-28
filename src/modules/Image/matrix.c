@@ -92,14 +92,14 @@ static INLINE int getrgb(struct image *img,
    if (args-args_start<3) return 0;
 
    for (i=0; i<3; i++)
-      if (sp[-args+i+args_start].type!=T_INT)
+      if (TYPEOF(sp[-args+i+args_start]) != T_INT)
          Pike_error("Illegal r,g,b argument to %s\n",name);
    img->rgb.r=(unsigned char)sp[-args+args_start].u.integer;
    img->rgb.g=(unsigned char)sp[1-args+args_start].u.integer;
    img->rgb.b=(unsigned char)sp[2-args+args_start].u.integer;
 
    if (args-args_start>=4) {
-      if (sp[3-args+args_start].type!=T_INT) {
+     if (TYPEOF(sp[3-args+args_start]) != T_INT) {
          Pike_error("Illegal alpha argument to %s\n",name);
       }
 
@@ -117,7 +117,7 @@ static INLINE int getrgbl(rgbl_group *rgb,INT32 args_start,INT32 args,char *name
    INT32 i;
    if (args-args_start<3) return 0;
    for (i=0; i<3; i++)
-      if (sp[-args+i+args_start].type!=T_INT)
+      if (TYPEOF(sp[-args+i+args_start]) != T_INT)
          Pike_error("Illegal r,g,b argument to %s\n",name);
    rgb->r=sp[-args+args_start].u.integer;
    rgb->g=sp[1-args+args_start].u.integer;
@@ -365,13 +365,13 @@ void image_scale(INT32 args)
    o=clone_object(image_program,0);
    newimg=(struct image*)(o->storage);
 
-   if (args==1 && sp[-args].type==T_INT)
+   if (args==1 && TYPEOF(sp[-args]) == T_INT)
    {
       free_object(o);
       image_bitscale( args );
       return;
    }
-   else if (args==1 && sp[-args].type==T_FLOAT) 
+   else if (args==1 && TYPEOF(sp[-args]) == T_FLOAT)
    {
       if (sp[-args].u.float_number == 0.5)
 	 img_scale2(newimg,THIS);
@@ -389,8 +389,8 @@ void image_scale(INT32 args)
       }
    }
    else if (args>=2 &&
-	    sp[-args].type==T_INT && sp[-args].u.integer==0 &&
-	    sp[1-args].type==T_INT)
+	    TYPEOF(sp[-args]) == T_INT && sp[-args].u.integer==0 &&
+	    TYPEOF(sp[1-args]) == T_INT)
    {
       factor=((float)sp[1-args].u.integer)/THIS->ysize;
       img_scale(newimg,THIS,
@@ -398,8 +398,8 @@ void image_scale(INT32 args)
 		sp[1-args].u.integer);
    }
    else if (args>=2 &&
-	    sp[1-args].type==T_INT && sp[1-args].u.integer==0 &&
-	    sp[-args].type==T_INT)
+	    TYPEOF(sp[1-args]) == T_INT && sp[1-args].u.integer==0 &&
+	    TYPEOF(sp[-args]) == T_INT)
    {
       factor=((float)sp[-args].u.integer)/THIS->xsize;
       img_scale(newimg,THIS,
@@ -407,14 +407,14 @@ void image_scale(INT32 args)
 		(INT32)(THIS->ysize*factor));
    }
    else if (args>=2 &&
-	    sp[-args].type==T_FLOAT &&
-	    sp[1-args].type==T_FLOAT)
+	    TYPEOF(sp[-args]) == T_FLOAT &&
+	    TYPEOF(sp[1-args]) == T_FLOAT)
       img_scale(newimg, THIS,
 		DOUBLE_TO_INT(THIS->xsize*sp[-args].u.float_number),
 		DOUBLE_TO_INT(THIS->ysize*sp[1-args].u.float_number));
    else if (args>=2 &&
-	    sp[-args].type==T_INT &&
-	    sp[1-args].type==T_INT)
+	    TYPEOF(sp[-args]) == T_INT &&
+	    TYPEOF(sp[1-args]) == T_INT)
       img_scale(newimg,THIS,
 		sp[-args].u.integer,
 		sp[1-args].u.integer);
@@ -920,9 +920,9 @@ void image_skewx(INT32 args)
 
    if (args<1)
       SIMPLE_TOO_FEW_ARGS_ERROR("image->skewx",1);
-   else if (sp[-args].type==T_FLOAT)
+   else if (TYPEOF(sp[-args]) == T_FLOAT)
       diff = THIS->ysize*sp[-args].u.float_number;
-   else if (sp[-args].type==T_INT)
+   else if (TYPEOF(sp[-args])== T_INT)
       diff = (double)sp[-args].u.integer;
    else
       bad_arg_error("image->skewx",sp-args,args,0,"",sp-args,
@@ -984,9 +984,9 @@ void image_skewy(INT32 args)
 
    if (args<1)
       SIMPLE_TOO_FEW_ARGS_ERROR("image->skewy",1);
-   else if (sp[-args].type==T_FLOAT)
+   else if (TYPEOF(sp[-args]) == T_FLOAT)
       diff = THIS->xsize*sp[-args].u.float_number;
-   else if (sp[-args].type==T_INT)
+   else if (TYPEOF(sp[-args]) == T_INT)
       diff = (double)sp[-args].u.integer;
    else
       bad_arg_error("image->skewx",sp-args,args,0,"",sp-args,
@@ -1012,9 +1012,9 @@ void image_skewx_expand(INT32 args)
 
    if (args<1)
       SIMPLE_TOO_FEW_ARGS_ERROR("image->skewx",1);
-   else if (sp[-args].type==T_FLOAT)
+   else if (TYPEOF(sp[-args]) == T_FLOAT)
       diff = THIS->ysize*sp[-args].u.float_number;
-   else if (sp[-args].type==T_INT)
+   else if (TYPEOF(sp[-args]) == T_INT)
       diff = (double)sp[-args].u.integer;
    else
       bad_arg_error("image->skewx",sp-args,args,0,"",sp-args,
@@ -1040,9 +1040,9 @@ void image_skewy_expand(INT32 args)
 
    if (args<1)
       SIMPLE_TOO_FEW_ARGS_ERROR("image->skewy",1);
-   else if (sp[-args].type==T_FLOAT)
+   else if (TYPEOF(sp[-args]) == T_FLOAT)
       diff = THIS->xsize*sp[-args].u.float_number;
-   else if (sp[-args].type==T_INT)
+   else if (TYPEOF(sp[-args]) == T_INT)
       diff = (double)sp[-args].u.integer;
    else
       bad_arg_error("image->skewx",sp-args,args,0,"",sp-args,
@@ -1071,9 +1071,9 @@ void img_rotate(INT32 args,int xpn)
 
    if (args<1)
       SIMPLE_TOO_FEW_ARGS_ERROR("image->rotate",1);
-   else if (sp[-args].type==T_FLOAT)
+   else if (TYPEOF(sp[-args]) == T_FLOAT)
       angle = sp[-args].u.float_number;
-   else if (sp[-args].type==T_INT)
+   else if (TYPEOF(sp[-args]) == T_INT)
       angle = (double)sp[-args].u.integer;
    else
       bad_arg_error("image->rotate",sp-args,args,0,"",sp-args,
@@ -1177,13 +1177,13 @@ void img_translate(INT32 args,int expand)
    if (args<2)
      Pike_error("illegal number of arguments to image->translate()\n");
 
-   if (sp[-args].type==T_FLOAT) xt=sp[-args].u.float_number;
-   else if (sp[-args].type==T_INT) xt=sp[-args].u.integer;
+   if (TYPEOF(sp[-args]) == T_FLOAT) xt=sp[-args].u.float_number;
+   else if (TYPEOF(sp[-args]) == T_INT) xt=sp[-args].u.integer;
    else bad_arg_error("image->translate",sp-args,args,1,"",sp+1-1-args,
 		"Bad argument 1 to image->translate()\n");
 
-   if (sp[1-args].type==T_FLOAT) yt=sp[1-args].u.float_number;
-   else if (sp[1-args].type==T_INT) yt=sp[1-args].u.integer;
+   if (TYPEOF(sp[1-args]) == T_FLOAT) yt=sp[1-args].u.float_number;
+   else if (TYPEOF(sp[1-args]) == T_INT) yt=sp[1-args].u.integer;
    else bad_arg_error("image->translate",sp-args,args,2,"",sp+2-1-args,
 		"Bad argument 2 to image->translate()\n");
 

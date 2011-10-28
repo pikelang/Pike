@@ -25,7 +25,7 @@ void create(GTK2.Adjustment|mapping(string:mixed)|void xscroll_or_props,
   pgtk2_verify_not_inited();
   pgtk2_verify_setup();
   if (args) {
-    if (Pike_sp[-args].type==PIKE_T_OBJECT) {
+    if (TYPEOF(Pike_sp[-args]) == PIKE_T_OBJECT) {
       struct object *o1,*o2=NULL;
       GtkWidget *gv;
       get_all_args("create",args,"%o.%o",&o1,&o2);

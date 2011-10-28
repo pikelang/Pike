@@ -152,7 +152,7 @@ void set_focus_chain(array focusable_widgets)
       int i;
       GtkWidget *w;
       for (i=0; i<a->size; i++) {
-	if ((ITEM(a)+i)->type==PIKE_T_OBJECT) {
+	if (TYPEOF(ITEM(a)[i]) == PIKE_T_OBJECT) {
 	  w=GTK_WIDGET(get_gobject((ITEM(a)+i)->u.object));
 	  gl=g_list_append(gl,w);
 	}

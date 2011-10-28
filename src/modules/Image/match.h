@@ -51,14 +51,14 @@ void INAME(INT32 args)
   else if (args<2) { Pike_error("Too few arguments to image->"NAME"\n");  return; }
   else 
     {
-      if (sp[-args].type==T_INT) 
+      if (TYPEOF(sp[-args]) == T_INT)
 	scale = (double)sp[-args].u.integer;
-      else if (sp[-args].type==T_FLOAT)
+      else if (TYPEOF(sp[-args]) == T_FLOAT)
 	scale = sp[-args].u.float_number;
       else
 	Pike_error("Illegal argument 1 to image->"NAME"\n");
 
-      if ((sp[1-args].type!=T_OBJECT)
+      if ((TYPEOF(sp[1-args]) != T_OBJECT)
 	  || !(needle=
 	       (struct image*)get_storage(sp[1-args].u.object,image_program)))
 	Pike_error("Illegal argument 2 to image->"NAME"()\n");
@@ -73,7 +73,7 @@ void INAME(INT32 args)
 	type=1;
       else
 	{
-	  if ((sp[2-args].type!=T_OBJECT)|| 
+	  if ((TYPEOF(sp[2-args]) != T_OBJECT) ||
 		   !(haystack_cert=
 		     (struct image*)get_storage(sp[2-args].u.object,image_program)))
 	    Pike_error("Illegal argument 3 to image->"NAME"()\n");
@@ -82,14 +82,14 @@ void INAME(INT32 args)
 		(haystack->ysize!=haystack_cert->ysize))
 	      Pike_error("Argument 3 must be the same size as haystack error in image->"NAME"()\n");
 	  
-	  if ((sp[3-args].type==T_INT))
+	  if ((TYPEOF(sp[3-args]) == T_INT))
 	    {
 	      foo=sp[3-args].u.integer;
 	      type=3;
 	      haystack_avoid=haystack_cert;
 	      haystack_cert=0;
 	    }
-	  else if ((sp[3-args].type!=T_OBJECT)|| 
+	  else if ((TYPEOF(sp[3-args]) != T_OBJECT) ||
 		   !(needle_cert=
 		     (struct image*)get_storage(sp[3-args].u.object,image_program)))
 	    Pike_error("Illegal argument 4 to image->"NAME"()\n");
@@ -102,14 +102,14 @@ void INAME(INT32 args)
 	    }
 	  if (args>=6)
 	    {
-	      if (sp[5-args].type==T_INT)
+	      if (TYPEOF(sp[5-args]) == T_INT)
 		{
 		  foo=sp[5-args].u.integer;
 		  type=4;
 		}
 	      else 
 		Pike_error("Illegal argument 6 to image->"NAME"()\n");
-	      if ((sp[4-args].type!=T_OBJECT)|| 
+	      if ((TYPEOF(sp[4-args]) != T_OBJECT) ||
 		  !(haystack_avoid=
 		    (struct image*)get_storage(sp[4-args].u.object,image_program)))
 		Pike_error("Illegal argument 5 to image->"NAME"()\n");

@@ -60,7 +60,7 @@ static void do_resize( gint *width, gint *height, gpointer user_data )
   /* Exact size specified */
   
   if( (opt = simple_mapping_string_lookup( opts, "xsize" ))
-      && opt->type == PIKE_T_INT)
+      && TYPEOF(*opt) == PIKE_T_INT)
   {
     xsize = opt->u.integer;
     *height = (*height * xsize) / *width;
@@ -68,7 +68,7 @@ static void do_resize( gint *width, gint *height, gpointer user_data )
   }
 
   if( (opt = simple_mapping_string_lookup( opts, "ysize" ))
-      && opt->type == PIKE_T_INT)
+      && TYPEOF(*opt) == PIKE_T_INT)
   {
     if( xsize )
       *height = opt->u.integer;
@@ -86,7 +86,7 @@ static void do_resize( gint *width, gint *height, gpointer user_data )
 
   /* Scale specified */
   if( (opt = simple_mapping_string_lookup( opts, "scale" ))
-      && opt->type == PIKE_T_FLOAT )
+      && TYPEOF(*opt) == PIKE_T_FLOAT )
   {
     *width *= opt->u.float_number;
     *height *= opt->u.float_number;
@@ -108,14 +108,14 @@ static void low__decode( INT32 args, int header_only )
   
   if( args == 2 )
   {
-    if( Pike_sp[-1].type != PIKE_T_MAPPING )
+    if( TYPEOF(Pike_sp[-1]) != PIKE_T_MAPPING )
       Pike_error("Illegal argument 2, expected mapping\n");
     opts = Pike_sp[-1].u.mapping;
     Pike_sp--;
     args--;
   }
 
-  if( Pike_sp[-1].type != PIKE_T_STRING )
+  if( TYPEOF(Pike_sp[-1]) != PIKE_T_STRING )
     Pike_error("Illegal argument 1, expected string\n");
 
   f_string_to_utf8( 1 );

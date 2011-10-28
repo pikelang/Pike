@@ -28,7 +28,7 @@ void create(mapping|string label, ?float xalign, ?float yalign,
 {
   pgtk2_verify_not_inited();
   pgtk2_verify_setup();
-  if (args>0 && Pike_sp[-args].type==PIKE_T_STRING) {
+  if (args>0 && TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) {
     struct pike_string *label;
     FLOAT_TYPE xalign=0.5,yalign=0.5,ratio=1.0;
     INT_TYPE obey_child=1;

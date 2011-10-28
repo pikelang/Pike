@@ -24,7 +24,7 @@ void create(GTK2.Adjustment|float|mapping(string:mixed) settings_or_min_props,
   pgtk2_verify_not_inited();
   pgtk2_verify_setup();
   if (args==1) {
-    if (Pike_sp[-args].type==PIKE_T_OBJECT) {
+    if (TYPEOF(Pike_sp[-args]) == PIKE_T_OBJECT) {
       struct object *o1;
       GtkWidget *gv;
       get_all_args("create",args,"%o",&o1);

@@ -181,9 +181,8 @@ static void f_linkfarm_read( INT32 args )
     while( h )
     {
 /*    fprintf(stderr, "%d/%d %s\n", n+1, THIS->size, h->s->str ); */
-      a->item[n].u.string = h->s;
+      SET_SVAL(a->item[n], PIKE_T_STRING, 0, string, h->s);
       h->s = 0;
-      a->item[n].type = PIKE_T_STRING;
       h = h->next;
       n++;
     }

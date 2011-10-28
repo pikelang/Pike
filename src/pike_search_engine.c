@@ -302,7 +302,7 @@ SearchMojt NameN(compile_memsearcher)(NCHAR *needle,
 
     if((sval=low_mapping_string_lookup(memsearch_cache,hashkey)))
     {
-      if(sval->type == T_OBJECT)
+      if(TYPEOF(*sval) == T_OBJECT)
       {
 	o=sval->u.object;
 	if(o->prog == pike_search_program)
@@ -328,9 +328,7 @@ SearchMojt NameN(compile_memsearcher)(NCHAR *needle,
     NameN(init_memsearch)(s,
 			  needle,len,
 			  0x7fffffff);
-    stmp.type = T_OBJECT;
-    stmp.subtype = 0;
-    stmp.u.object = o;
+    SET_SVAL(stmp, T_OBJECT, 0, object, o);
 
     mapping_string_insert(memsearch_cache, hashkey, &stmp);
 

@@ -1596,7 +1596,7 @@ void add_relocated_int_to_program(INT32 i)
 void use_module(struct svalue *s)
 {
   struct compilation *c = THIS_COMPILATION;
-  if( (1<<s->type) & (BIT_MAPPING | BIT_OBJECT | BIT_PROGRAM))
+  if( (1<<TYPEOF(*s)) & (BIT_MAPPING | BIT_OBJECT | BIT_PROGRAM))
   {
     c->num_used_modules++;
     Pike_compiler->num_used_modules++;
@@ -1650,7 +1650,7 @@ static struct node_s *index_modules(struct pike_string *ident,
     struct svalue *tmp=low_mapping_string_lookup(*module_index_cache,ident);
     if(tmp)
     {
-      if(!(SAFE_IS_ZERO(tmp) && tmp->subtype==1))
+      if(!(SAFE_IS_ZERO(tmp) && SUBTYPEOF(*tmp)==1))
 	return mksvaluenode(tmp);
       return 0;
     }
@@ -1679,13 +1679,13 @@ static struct node_s *index_modules(struct pike_string *ident,
 	  UNSETJMP(tmp);
 
 	  if (Pike_compiler->compiler_pass == 2 &&
-	      ((Pike_sp[-1].type == T_OBJECT &&
+	      ((TYPEOF(Pike_sp[-1]) == T_OBJECT &&
 		Pike_sp[-1].u.object == placeholder_object) ||
-	       (Pike_sp[-1].type == T_PROGRAM &&
+	       (TYPEOF(Pike_sp[-1]) == T_PROGRAM &&
 		Pike_sp[-1].u.program == placeholder_program))) {
 	    my_yyerror("Got placeholder %s (resolver problem) "
 		       "when indexing a module with %S.",
-		       get_name_of_type (Pike_sp[-1].type), ident);
+		       get_name_of_type (TYPEOF(Pike_sp[-1])), ident);
 	    ret = 0;
 	  }
 	  else {
@@ -1813,24 +1813,24 @@ struct node_s *resolve_identifier(struct pike_string *ident)
      * pass 2 gets delayed. Otherwise the other program might still be
      * just as unfinished when we come back here in pass 2. */
     struct program *p = NULL;
-    if (Pike_sp[-1].type == T_PROGRAM)
+    if (TYPEOF(Pike_sp[-1]) == T_PROGRAM)
       p = Pike_sp[-1].u.program;
-    else if (Pike_sp[-1].type == T_OBJECT ||
-	     (Pike_sp[-1].type == T_FUNCTION &&
-	      Pike_sp[-1].subtype != FUNCTION_BUILTIN))
+    else if (TYPEOF(Pike_sp[-1]) == T_OBJECT ||
+	     (TYPEOF(Pike_sp[-1]) == T_FUNCTION &&
+	      SUBTYPEOF(Pike_sp[-1]) != FUNCTION_BUILTIN))
       p = Pike_sp[-1].u.object->prog;
     if (p && !(p->flags & PROGRAM_PASS_1_DONE))
       report_compiler_dependency (p);
   }
 
   if (Pike_compiler->compiler_pass == 2 &&
-      ((Pike_sp[-1].type == T_OBJECT &&
+      ((TYPEOF(Pike_sp[-1]) == T_OBJECT &&
 	Pike_sp[-1].u.object == placeholder_object) ||
-       (Pike_sp[-1].type == T_PROGRAM &&
+       (TYPEOF(Pike_sp[-1]) == T_PROGRAM &&
 	Pike_sp[-1].u.program == placeholder_program))) {
     my_yyerror("Got placeholder %s (resolver problem) "
 	       "when resolving '%S'.",
-	       get_name_of_type (Pike_sp[-1].type), ident);
+	       get_name_of_type (TYPEOF(Pike_sp[-1])), ident);
   } else {
     if(!resolve_cache)
       resolve_cache=dmalloc_touch(struct mapping *, allocate_mapping(10));
@@ -2612,7 +2612,7 @@ void low_start_new_program(struct program *p,
     new_node_s_context();
   }
 
-  tmp.type=T_PROGRAM;
+  SET_SVAL_TYPE(tmp, T_PROGRAM);
   if(!p)
   {
     p=low_allocate_program();
@@ -3302,12 +3302,12 @@ void dump_program_tables (const struct program *p, int indent)
 #if 1
     fprintf(stderr, "%*s  %4d: %-15s %p\n",
 	    indent, "",
-	    d, get_name_of_type (c->sval.type),
+	    d, get_name_of_type (TYPEOF(c->sval)),
 	    c->sval.u.ptr);
 #else /* !0 */
     fprintf(stderr, "%*s  %4d: %-15s %"PRINTPTRDIFFT"d\n",
 	    indent, "",
-	    d, get_name_of_type (c->sval.type),
+	    d, get_name_of_type (TYPEOF(c->sval)),
 	    c->offset);
 #endif /* 0 */
   }
@@ -3405,7 +3405,7 @@ void check_program(struct program *p)
   {
     struct svalue *s = & p->constants[e].sval;
     check_svalue(s);
-    if (p->flags & PROGRAM_FINISHED && s->type == T_OBJECT &&
+    if (p->flags & PROGRAM_FINISHED && TYPEOF(*s) == T_OBJECT &&
 	s->u.object->next == s->u.object)
       Pike_fatal ("Got fake object in constant in finished program.\n");
 #if 0
@@ -4712,8 +4712,8 @@ PMOD_EXPORT void do_inherit(struct svalue *s,
 {
   struct program *p=program_from_svalue(s);
   low_inherit(p,
-	      s->type == T_FUNCTION ? s->u.object : 0,
-	      s->type == T_FUNCTION ? s->subtype : -1,
+	      TYPEOF(*s) == T_FUNCTION ? s->u.object : 0,
+	      TYPEOF(*s) == T_FUNCTION ? SUBTYPEOF(*s) : -1,
 	      0,
 	      flags,
 	      name);
@@ -4768,7 +4768,7 @@ void compiler_do_inherit(node *n,
       {
 	struct svalue *s=&PROG_FROM_INT(p, numid)->
 	  constants[i->func.const_info.offset].sval;
-	if(s->type != T_PROGRAM)
+	if(TYPEOF(*s) != T_PROGRAM)
 	{
 	  do_inherit(s,flags,name);
 	  return;
@@ -4820,7 +4820,7 @@ int call_handle_inherit(struct pike_string *s)
   }
 
   if (safe_apply_current2(PC_HANDLE_INHERIT_FUN_NUM, 1, NULL))
-    if (Pike_sp[-1].type != T_INT)
+    if (TYPEOF(Pike_sp[-1]) != T_INT)
       return 1;
     else {
       my_yyerror("Couldn't find program %S", s);
@@ -5365,9 +5365,9 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
     Pike_fatal("define_constant on nonshared string.\n");
   if (c) {
     check_svalue (c);
-    if (c->type > MAX_TYPE)
+    if (TYPEOF(*c) > MAX_TYPE)
       /* check_svalue allows some things like T_SVALUE_PTR. */
-      Pike_fatal ("Invalid type in svalue: %d\n", c->type);
+      Pike_fatal ("Invalid type in svalue: %d\n", TYPEOF(*c));
   }
 #endif
 
@@ -5377,12 +5377,12 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
 #if 1
     c &&
 #endif
-    c->type == T_FUNCTION &&
-    c->subtype != FUNCTION_BUILTIN &&
+    TYPEOF(*c) == T_FUNCTION &&
+    SUBTYPEOF(*c) != FUNCTION_BUILTIN &&
     c->u.object->prog)
   {
     struct program_state *state = Pike_compiler;
-    struct reference *idref = PTR_FROM_INT(c->u.object->prog, c->subtype);
+    struct reference *idref = PTR_FROM_INT(c->u.object->prog, SUBTYPEOF(*c));
     struct program *p = PROG_FROM_PTR(c->u.object->prog, idref);
     struct identifier *id = p->identifiers + idref->identifier_offset;
     int depth = 0;
@@ -5406,7 +5406,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
 	/* Alias for a function or a variable or constant in a surrounding
 	 * scope.
 	 */
-	int n = c->subtype;
+	int n = SUBTYPEOF(*c);
 	struct reference *remote_ref = PTR_FROM_INT(state->new_program, n);
 	if (!(remote_ref->id_flags & (ID_INLINE|ID_HIDDEN))) {
 	  /* We need to get a suitable reference. */
@@ -5441,11 +5441,11 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
 	assign_svalue (&PROG_FROM_INT(Pike_compiler->new_program,n)->
 		       constants[id->func.const_info.offset].sval, c);
       } else {
-	id->run_time_type = (unsigned char) c->type;
+	id->run_time_type = (unsigned char) TYPEOF(*c);
 	id->func.const_info.offset = store_constant(c, 0, 0);
       }
       free_type(id->type);
-      if ((c->type == T_INT) && !(flags & ID_INLINE)) {
+      if ((TYPEOF(*c) == T_INT) && !(flags & ID_INLINE)) {
 	if (c->u.integer) {
 	  copy_pike_type(id->type, int_type_string);
 	} else {
@@ -5483,7 +5483,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
 #if 1
   if (c) {
 #endif
-    if ((c->type == T_INT) && !(flags & ID_INLINE)) {
+    if ((TYPEOF(*c) == T_INT) && !(flags & ID_INLINE)) {
       if (c->u.integer) {
 	copy_pike_type(dummy.type, int_type_string);
       } else {
@@ -5492,10 +5492,10 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
     } else {
       dummy.type = get_type_of_svalue(c);
     }
-    dummy.run_time_type = (unsigned char) c->type;
+    dummy.run_time_type = (unsigned char) TYPEOF(*c);
     dummy.func.const_info.offset = store_constant(c, 0, 0);
     dummy.opt_flags=OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND;
-    if(c->type == PIKE_T_PROGRAM && (c->u.program->flags & PROGRAM_CONSTANT))
+    if(TYPEOF(*c) == PIKE_T_PROGRAM && (c->u.program->flags & PROGRAM_CONSTANT))
        dummy.opt_flags=0;
 #if 1
   }
@@ -5580,9 +5580,7 @@ PMOD_EXPORT int add_integer_constant(const char *name,
 				     INT32 flags)
 {
   struct svalue tmp;
-  tmp.u.integer=i;
-  tmp.type=T_INT;
-  tmp.subtype=NUMBER_NUMBER;
+  SET_SVAL(tmp, T_INT, NUMBER_NUMBER, integer, i);
   return simple_add_constant(name, &tmp, flags);
 }
 
@@ -5595,9 +5593,7 @@ PMOD_EXPORT int quick_add_integer_constant(const char *name,
   struct pike_string *id;
   INT32 ret;
 
-  tmp.u.integer=i;
-  tmp.type=T_INT;
-  tmp.subtype=NUMBER_NUMBER;
+  SET_SVAL(tmp, T_INT, NUMBER_NUMBER, integer, i);
   id=make_shared_binary_string(name,name_length);
   ret=add_constant(id, &tmp, flags);
   free_string(id);
@@ -5609,9 +5605,7 @@ PMOD_EXPORT int add_float_constant(const char *name,
 				   INT32 flags)
 {
   struct svalue tmp;
-  tmp.type=T_FLOAT;
-  tmp.u.float_number = (FLOAT_TYPE) f;
-  tmp.subtype=0;
+  SET_SVAL(tmp, T_FLOAT, 0, float_number, (FLOAT_TYPE)f);
   return simple_add_constant(name, &tmp, flags);
 }
 
@@ -5624,9 +5618,7 @@ PMOD_EXPORT int quick_add_float_constant(const char *name,
   struct pike_string *id;
   INT32 ret;
 
-  tmp.u.float_number = (FLOAT_TYPE) f;
-  tmp.type=T_FLOAT;
-  tmp.subtype=0;
+  SET_SVAL(tmp, T_FLOAT, 0, float_number, (FLOAT_TYPE)f);
   id=make_shared_binary_string(name,name_length);
   ret=add_constant(id, &tmp, flags);
   free_string(id);
@@ -5639,9 +5631,7 @@ PMOD_EXPORT int add_string_constant(const char *name,
 {
   INT32 ret;
   struct svalue tmp;
-  tmp.type=T_STRING;
-  tmp.subtype=0;
-  tmp.u.string=make_shared_string(str);
+  SET_SVAL(tmp, T_STRING, 0, string, make_shared_string(str));
   ret=simple_add_constant(name, &tmp, flags);
   free_svalue(&tmp);
   return ret;
@@ -5654,14 +5644,10 @@ PMOD_EXPORT int add_program_constant(const char *name,
   INT32 ret;
   struct svalue tmp;
   if (p) {
-    tmp.type=T_PROGRAM;
-    tmp.subtype=0;
-    tmp.u.program=p;
+    SET_SVAL(tmp, T_PROGRAM, 0, program, p);
   } else {
     /* Probable compilation error in a C-module. */
-    tmp.type = T_INT;
-    tmp.subtype = NUMBER_UNDEFINED;
-    tmp.u.integer = 0;
+    SET_SVAL(tmp, T_INT, NUMBER_UNDEFINED, integer, 0);
     my_yyerror("Program constant \"%s\" is NULL.", name);
   }
   ret=simple_add_constant(name, &tmp, flags);
@@ -5674,9 +5660,7 @@ PMOD_EXPORT int add_object_constant(const char *name,
 {
   INT32 ret;
   struct svalue tmp;
-  tmp.type=T_OBJECT;
-  tmp.subtype=0;
-  tmp.u.object=o;
+  SET_SVAL(tmp, T_OBJECT, 0, object, o);
   ret=simple_add_constant(name, &tmp, flags);
   return ret;
 }
@@ -5687,9 +5671,8 @@ PMOD_EXPORT int add_function_constant(const char *name, void (*cfun)(INT32),
   struct svalue s;
   INT32 ret;
 
-  s.type=T_FUNCTION;
-  s.subtype=FUNCTION_BUILTIN;
-  s.u.efun=make_callable(cfun, name, type, flags, 0, 0);
+  SET_SVAL(s, T_FUNCTION, FUNCTION_BUILTIN, efun,
+	   make_callable(cfun, name, type, flags, 0, 0));
   ret=simple_add_constant(name, &s, 0);
   free_svalue(&s);
   return ret;
@@ -5702,9 +5685,7 @@ PMOD_EXPORT int debug_end_class(const char *name, ptrdiff_t namelen, INT32 flags
   struct svalue tmp;
   struct pike_string *id;
 
-  tmp.type=T_PROGRAM;
-  tmp.subtype=0;
-  tmp.u.program=end_program();
+  SET_SVAL(tmp, T_PROGRAM, 0, program, end_program());
   if(!tmp.u.program)
     Pike_fatal("Failed to initialize class '%s'\n",name);
 
@@ -5760,7 +5741,7 @@ INT32 define_function(struct pike_string *name,
   /* If this is an lfun, match against the predefined type. */
   if ((lfun_type = low_mapping_string_lookup(lfun_types, name))) {
 #ifdef PIKE_DEBUG
-    if (lfun_type->type != T_TYPE) {
+    if (TYPEOF(*lfun_type) != T_TYPE) {
       Pike_fatal("Bad entry in lfun_types for key \"%s\"\n", name->str);
     }
 #endif /* PIKE_DEBUG */
@@ -6302,7 +6283,7 @@ int lfun_lookup_id(struct pike_string *lfun_name)
 {
   struct svalue *id = low_mapping_string_lookup(lfun_ids, lfun_name);
   if (!id) return -1;
-  if (id->type == T_INT) return id->u.integer;
+  if (TYPEOF(*id) == T_INT) return id->u.integer;
   my_yyerror("Bad entry in lfun lookup table for %S.", lfun_name);
   return -1;
 }
@@ -6447,19 +6428,19 @@ int store_constant(const struct svalue *foo,
     {
       struct program_constant *c = Pike_compiler->new_program->constants+e;
 
-      if (foo->type == c->sval.type) {
+      if (TYPEOF(*foo) == TYPEOF(c->sval)) {
 	/* Make sure only to compare within the same basic type. */
-	if (foo->type == T_OBJECT) {
+	if (TYPEOF(*foo) == T_OBJECT) {
 	  /* Special case objects -- We don't want strange LFUN effects... */
 	  if ((foo->u.object == c->sval.u.object) &&
-	      (foo->subtype == c->sval.subtype)) {
+	      (SUBTYPEOF(*foo) == SUBTYPEOF(c->sval))) {
 	    UNSETJMP(jmp);
 	    return e;
 	  }
-	} else if (foo->type == T_INT) {
+	} else if (TYPEOF(*foo) == T_INT) {
 	  if (foo->u.integer == c->sval.u.integer) {
 	    /* Make sure UNDEFINED is kept (but not in compat mode). */
-	    if (foo->u.integer || (foo->subtype == c->sval.subtype) ||
+	    if (foo->u.integer || (SUBTYPEOF(*foo) == SUBTYPEOF(c->sval)) ||
 		TEST_COMPAT(7, 6)) {
 	      UNSETJMP(jmp);
 	      return e;
@@ -6509,7 +6490,7 @@ struct array *program_indices(struct program *p)
       if (id->func.const_info.offset >= 0) {
 	struct program *p2 = PROG_FROM_INT(p, e);
 	struct svalue *val = &p2->constants[id->func.const_info.offset].sval;
-	if ((val->type != T_PROGRAM) ||
+	if ((TYPEOF(*val) != T_PROGRAM) ||
 	    !(val->u.program->flags & PROGRAM_USES_PARENT)) {
 	  ref_push_string(ID_FROM_INT(p, e)->name);
 	  n++;
@@ -6548,7 +6529,7 @@ struct array *program_values(struct program *p)
       if (id->func.const_info.offset >= 0) {
 	struct program *p2 = PROG_FROM_INT(p, e);
 	struct svalue *val = &p2->constants[id->func.const_info.offset].sval;
-	if ((val->type != T_PROGRAM) ||
+	if ((TYPEOF(*val) != T_PROGRAM) ||
 	    !(val->u.program->flags & PROGRAM_USES_PARENT)) {
 	  push_svalue(val);
 	  n++;
@@ -6587,7 +6568,7 @@ struct array *program_types(struct program *p)
       if (id->func.const_info.offset >= 0) {
 	struct program *p2 = PROG_FROM_INT(p, e);
 	struct svalue *val = &p2->constants[id->func.const_info.offset].sval;
-	if ((val->type != T_PROGRAM) ||
+	if ((TYPEOF(*val) != T_PROGRAM) ||
 	    !(val->u.program->flags & PROGRAM_USES_PARENT)) {
 	  ref_push_type_value(ID_FROM_INT(p, e)->type);
 	  n++;
@@ -6662,9 +6643,7 @@ int low_program_index_no_free(struct svalue *to, struct program *p, int e,
       assign_svalue_no_free(to, val);
     } else {
       /* Prototype constant. */
-      to->type = T_INT;
-      to->subtype = NUMBER_NUMBER;
-      to->u.integer = 0;
+      SET_SVAL(*to, T_INT, NUMBER_NUMBER, integer, 0);
     }
 #if 0 && defined (COMPILER_DEBUG)
     safe_pike_fprintf (stderr, "low_program_index_no_free2 %O->%S: %O\n",
@@ -6686,25 +6665,25 @@ int program_index_no_free(struct svalue *to, struct svalue *what,
   struct identifier *id;
   int parent_identifier = -1;
 
-  if (what->type == T_PROGRAM) {
+  if (TYPEOF(*what) == T_PROGRAM) {
     p = what->u.program;
-  } else if ((what->type == T_FUNCTION) &&
-	     (what->subtype != FUNCTION_BUILTIN) &&
+  } else if ((TYPEOF(*what) == T_FUNCTION) &&
+	     (SUBTYPEOF(*what) != FUNCTION_BUILTIN) &&
 	     ((parent = what->u.object)->prog) &&
 	     IDENTIFIER_IS_CONSTANT((id = ID_FROM_INT(parent->prog,
-						      what->subtype))->identifier_flags) &&
+						      SUBTYPEOF(*what)))->identifier_flags) &&
 	     (id->func.const_info.offset != -1) &&
-	     ((sub = &PROG_FROM_INT(parent->prog, what->subtype)->
-	       constants[id->func.const_info.offset].sval)->type == T_PROGRAM)) {
+	     (TYPEOF(*(sub = &PROG_FROM_INT(parent->prog, SUBTYPEOF(*what))->
+		       constants[id->func.const_info.offset].sval)) == T_PROGRAM)) {
     p = sub->u.program;
-    parent_identifier = what->subtype;
+    parent_identifier = SUBTYPEOF(*what);
   } else {
     /* Not a program. */
     return 0;
   }
-  if (ind->type != T_STRING) {
+  if (TYPEOF(*ind) != T_STRING) {
     Pike_error("Can't index a program with a %s (expected string)\n",
-	  get_name_of_type(ind->type));
+	       get_name_of_type(TYPEOF(*ind)));
   }
   s = ind->u.string;
   e=find_shared_string_identifier(s, p);
@@ -6714,9 +6693,7 @@ int program_index_no_free(struct svalue *to, struct svalue *what,
       return 1;
   }
 
-  to->type=T_INT;
-  to->subtype=NUMBER_UNDEFINED;
-  to->u.integer=0;
+  SET_SVAL(*to, T_INT, NUMBER_UNDEFINED, integer, 0);
   return 1;
 }
 
@@ -7508,7 +7485,7 @@ struct pike_string *format_exception_for_error_msg (struct svalue *thrown)
   push_svalue (thrown);
   SAFE_APPLY_MASTER ("describe_error", 1);
 
-  if (sp[-1].type == T_STRING) {
+  if (TYPEOF(sp[-1]) == T_STRING) {
     f_string_trim_all_whites(1);
     push_constant_text("\n");
     push_constant_text(" ");
@@ -7992,7 +7969,7 @@ static void f_compilation_env_compile(INT32 args)
 {
   apply_current(CE_PIKE_COMPILER_FUN_NUM, args);
   args = 1;
-  if (Pike_sp[-1].type != T_OBJECT) {
+  if (TYPEOF(Pike_sp[-1]) != T_OBJECT) {
     Pike_error("Bad return value from PikeCompiler().\n");
   }
   apply(Pike_sp[-1].u.object, "compile", 0);
@@ -8192,8 +8169,7 @@ static void free_compilation(struct compilation *c)
     c->lex.current_file = NULL;
   }
   free_svalue(& c->default_module);
-  c->default_module.type = T_INT;
-  c->default_module.subtype = NUMBER_NUMBER;
+  SET_SVAL(c->default_module, T_INT, NUMBER_NUMBER, integer, 0);
   free_supporter(&c->supporter);
   verify_supporters();
 }
@@ -8248,7 +8224,7 @@ static void run_init2(struct compilation *c)
 
   /* Get the proper default module. */
   safe_apply_current2(PC_GET_DEFAULT_MODULE_FUN_NUM, 0, NULL);
-  if(Pike_sp[-1].type == T_INT)
+  if(TYPEOF(Pike_sp[-1]) == T_INT)
   {
     pop_stack();
     ref_push_mapping(get_builtin_constants());
@@ -8500,8 +8476,8 @@ static void run_cleanup(struct compilation *c, int delayed)
 	int i;
 	for (i = 0; i < p->num_constants; i++) {
 	  free_svalue(&p->constants[i].sval);
-	  p->constants[i].sval.type = T_INT;
-	  p->constants[i].sval.subtype = NUMBER_NUMBER;
+	  SET_SVAL(p->constants[i].sval, T_INT, NUMBER_NUMBER,
+		   integer, 0);
 	}
       }
 
@@ -8629,8 +8605,8 @@ static void compilation_event_handler(int e)
     c->compilation_inherit =
       Pike_fp->context - Pike_fp->current_object->prog->inherits;
     initialize_buf(&c->used_modules);
-    add_ref(c->default_module.u.mapping = get_builtin_constants());
-    c->default_module.type = T_MAPPING;
+    SET_SVAL(c->default_module, T_MAPPING, 0, mapping, get_builtin_constants());
+    add_ref(c->default_module.u.mapping);
     c->major = -1;
     c->minor = -1;
     c->lex.current_line = 1;
@@ -9070,9 +9046,9 @@ static void f_compilation_change_compiler_compatibility(INT32 args)
   {
     apply_current(PC_GET_COMPILATION_HANDLER_FUN_NUM, args);
 
-    if((Pike_sp[-1].type == T_OBJECT) && (Pike_sp[-1].u.object->prog))
+    if((TYPEOF(Pike_sp[-1]) == T_OBJECT) && (Pike_sp[-1].u.object->prog))
     {
-      if (Pike_sp[-1].subtype) {
+      if (SUBTYPEOF(Pike_sp[-1])) {
 	/* FIXME: */
 	Pike_error("Subtyped compat handlers are not supported yet.\n");
       }
@@ -9116,7 +9092,7 @@ static void f_compilation_change_compiler_compatibility(INT32 args)
 
   apply_current(PC_GET_DEFAULT_MODULE_FUN_NUM, 0);
 
-  if(Pike_sp[-1].type == T_INT)
+  if(TYPEOF(Pike_sp[-1]) == T_INT)
   {
     pop_stack();
     ref_push_mapping(get_builtin_constants());
@@ -9252,7 +9228,7 @@ static void f_compilation_push_type_attribute(INT32 args)
     MAKE_CONST_STRING(deprecated_string, "deprecated");
     if ((attr == deprecated_string) &&
 	!(c->lex.pragmas & ID_NO_DEPRECATION_WARNINGS) &&
-	!((a->type == PIKE_T_TYPE) && (a->u.type == zero_type_string))) {
+	!((TYPEOF(*a) == PIKE_T_TYPE) && (a->u.type == zero_type_string))) {
       /* Don't warn about setting deprecated values to zero. */
       push_svalue(b);
       yytype_report(REPORT_WARNING, NULL, 0, NULL,
@@ -9309,7 +9285,7 @@ static void f_compilation_apply_type_attribute(INT32 args)
     if ((attr == deprecated_string) &&
 	!(c->lex.pragmas & ID_NO_DEPRECATION_WARNINGS) &&
 	(!b ||
-	 ((b->type == T_INT) && (b->subtype == NUMBER_UNDEFINED) &&
+	 ((TYPEOF(*b) == T_INT) && (SUBTYPEOF(*b) == NUMBER_UNDEFINED) &&
 	  (!b->u.integer)))) {
       /* push_svalue(a); */
       yytype_report(REPORT_WARNING, NULL, 0, NULL,
@@ -9368,7 +9344,7 @@ static void f_compilation_apply_attribute_constant(INT32 args)
   struct svalue *sval;
   get_all_args("apply_attribute_constant", args, "%S%*", &attribute, &sval);
 
-  if ((sval->type == T_INT) && !sval->u.integer) {
+  if ((TYPEOF(*sval) == T_INT) && !sval->u.integer) {
     pop_n_elems(args);
     push_undefined();
     return;
@@ -9745,9 +9721,8 @@ static void compile_compiler(void)
     struct svalue type_value;
 
     /* enum SeverityLevel { NOTICE, WARNING, ERROR, FATAL } */
-    type_value.type = PIKE_T_TYPE;
-    type_value.subtype = 0;
-    type_value.u.type = CONSTTYPE(tName("SeverityLevel", tInt03));
+    SET_SVAL(type_value, PIKE_T_TYPE, 0, type,
+	     CONSTTYPE(tName("SeverityLevel", tInt03)));
     simple_add_constant("SeverityLevel", &type_value, 0);
     free_svalue(&type_value);
 
@@ -9803,8 +9778,7 @@ struct program *compile(struct pike_string *aprog,
   c->minor=aminor;
   if((c->target=atarget)) add_ref(atarget);
   if((c->placeholder=aplaceholder)) add_ref(aplaceholder);
-  c->default_module.type=T_INT;
-  c->default_module.subtype = NUMBER_NUMBER;
+  SET_SVAL(c->default_module, T_INT, NUMBER_NUMBER, integer, 0);
 
   if (c->handler)
   {
@@ -10015,7 +9989,7 @@ static void sprintf_trampoline (INT32 args)
   dynamic_buffer save_buf;
   dynbuf_string str;
 
-  if (!args || sp[-args].type != T_INT || sp[-args].u.integer != 'O' ||
+  if (!args || TYPEOF(sp[-args]) != T_INT || sp[-args].u.integer != 'O' ||
       !THIS->frame || !THIS->frame->current_object) {
     pop_n_elems (args);
     push_int (0);
@@ -10099,7 +10073,7 @@ static void placeholder_sprintf (INT32 args)
 {
   struct pike_string *s;
 
-  if (!args || sp[-args].type != T_INT || sp[-args].u.integer != 'O') {
+  if (!args || TYPEOF(sp[-args]) != T_INT || sp[-args].u.integer != 'O') {
     pop_n_elems (args);
     push_int (0);
     return;
@@ -10131,15 +10105,11 @@ void init_program(void)
   for (i=0; i < NELEM(lfun_names); i++) {
     lfun_strings[i] = make_shared_string(lfun_names[i]);
 
-    id.type = T_INT;
-    id.subtype = NUMBER_NUMBER;
-    id.u.integer = i;
-    key.type = T_STRING;
-    key.u.string = lfun_strings[i];
+    SET_SVAL(id, T_INT, NUMBER_NUMBER, integer, i);
+    SET_SVAL(key, T_STRING, 0, string, lfun_strings[i]);
     mapping_insert(lfun_ids, &key, &id);
 
-    val.type = T_TYPE;
-    val.u.type = make_pike_type(raw_lfun_types[i]);
+    SET_SVAL(val, T_TYPE, 0, type, make_pike_type(raw_lfun_types[i]));
     mapping_insert(lfun_types, &key, &val);
     free_type(val.u.type);
   }
@@ -10180,8 +10150,7 @@ void init_program(void)
     struct svalue s;
     debug_start_new_program(0, "__null_program");
     null_program=end_program();
-    s.type=T_PROGRAM;
-    s.u.program=null_program;
+    SET_SVAL(s, T_PROGRAM, 0, program, null_program);
     low_add_constant("__null_program",&s);
     debug_malloc_touch(null_program);
   }
@@ -10203,9 +10172,7 @@ void init_program(void)
     placeholder_program=end_program();
     placeholder_object=fast_clone_object(placeholder_program);
 
-    s.type=T_OBJECT;
-    s.subtype = 0;
-    s.u.object=placeholder_object;
+    SET_SVAL(s, T_OBJECT, 0, object, placeholder_object);
     low_add_constant("__placeholder_object",&s);
     debug_malloc_touch(placeholder_object);
   }
@@ -10560,8 +10527,7 @@ size_t gc_free_all_unreferenced_programs(void)
       for(e=0;e<p->num_constants;e++)
       {
 	free_svalue(& p->constants[e].sval);
-	p->constants[e].sval.type=T_INT;
-	p->constants[e].sval.subtype = NUMBER_NUMBER;
+	SET_SVAL(p->constants[e].sval, T_INT, NUMBER_NUMBER, integer, 0);
       }
 
       for(e=0;e<p->num_inherits;e++)
@@ -10600,7 +10566,8 @@ size_t gc_free_all_unreferenced_programs(void)
 	Pike_fatal("gc_internal_program was bogus.\n");
       for(e=0;e<p->num_constants;e++)
       {
-	if(p->constants[e].sval.type == T_PROGRAM && p->constants[e].sval.u.program == p)
+	if(TYPEOF(p->constants[e].sval) == T_PROGRAM &&
+	   p->constants[e].sval.u.program == p)
 	  tmp++;
       }
       if(tmp >= p->refs)
@@ -10800,21 +10767,21 @@ struct program *low_program_from_function(struct object *o, INT32 i)
   if(!IDENTIFIER_IS_CONSTANT(id->identifier_flags)) return 0;
   if(id->func.const_info.offset==-1) return 0;
   f = &PROG_FROM_INT(p,i)->constants[id->func.const_info.offset].sval;
-  if(f->type!=T_PROGRAM) return 0;
+  if(TYPEOF(*f) != T_PROGRAM) return 0;
   return f->u.program;
 }
 
 PMOD_EXPORT struct program *program_from_function(const struct svalue *f)
 {
-  if(f->type != T_FUNCTION) return 0;
-  if(f->subtype == FUNCTION_BUILTIN) return 0;
-  return low_program_from_function(f->u.object, f->subtype);
+  if(TYPEOF(*f) != T_FUNCTION) return 0;
+  if(SUBTYPEOF(*f) == FUNCTION_BUILTIN) return 0;
+  return low_program_from_function(f->u.object, SUBTYPEOF(*f));
 }
 
 /* NOTE: Does not add references to the return value! */
 PMOD_EXPORT struct program *program_from_svalue(const struct svalue *s)
 {
-  switch(s->type)
+  switch(TYPEOF(*s))
   {
     case T_OBJECT:
     {
@@ -10826,7 +10793,7 @@ PMOD_EXPORT struct program *program_from_svalue(const struct svalue *s)
       if (!p) return 0;
 
 #if 0
-      p = p->inherits[s->subtype].prog;
+      p = p->inherits[SUBTYPEOF(*s)].prog;
       if ((call_fun = FIND_LFUN(p, LFUN_CALL)) >= 0) {
 	/* Get the program from the return type. */
 	struct identifier *id = ID_FROM_INT(p, call_fun);

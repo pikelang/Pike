@@ -99,7 +99,7 @@ PMOD_EXPORT void really_free_svalue(struct svalue *s)
   move_svalue (&tmp, s);
   mark_free_svalue (s);
 
-  switch(tmp.type)
+  switch(TYPEOF(tmp))
   {
   case T_ARRAY:
     really_free_array(tmp.u.array);
@@ -114,7 +114,7 @@ PMOD_EXPORT void really_free_svalue(struct svalue *s)
     break;
     
   case T_FUNCTION:
-    if(tmp.subtype == FUNCTION_BUILTIN)
+    if(SUBTYPEOF(tmp) == FUNCTION_BUILTIN)
     {
       really_free_callable(tmp.u.efun);
       break;
@@ -240,7 +240,7 @@ PMOD_EXPORT void debug_free_svalues(struct svalue *s, size_t num, INT32 type_hin
 #endif
       if(!sub_ref(s->u.dummy))
       {
-	if(s->subtype == FUNCTION_BUILTIN)
+	if(SUBTYPEOF(*s) == FUNCTION_BUILTIN)
 	  really_free_callable(s->u.efun);
 	else
 	  schedule_really_free_object(s->u.object);
@@ -255,7 +255,7 @@ PMOD_EXPORT void debug_free_svalues(struct svalue *s, size_t num, INT32 type_hin
     while(num--)
       {
 #ifdef DEBUG_MALLOC
-	if(s->type <= MAX_REF_TYPE)
+	if(TYPEOF(*s) <= MAX_REF_TYPE)
 	  debug_malloc_update_location(s->u.refs  DMALLOC_PROXY_ARGS);
 #endif
 	free_svalue(s++);
@@ -268,7 +268,7 @@ PMOD_EXPORT void debug_free_mixed_svalues(struct svalue *s, size_t num, INT32 ty
   while(num--)
   {
 #ifdef DEBUG_MALLOC
-    if(s->type <= MAX_REF_TYPE)
+    if(TYPEOF(*s) <= MAX_REF_TYPE)
       debug_malloc_update_location(s->u.refs  DMALLOC_PROXY_ARGS);
 #endif
     free_svalue(s++);
@@ -300,8 +300,8 @@ PMOD_EXPORT TYPE_FIELD assign_svalues_no_free(struct svalue *to,
 
   type_hint = 0;
   while(num--) {
-    type_hint |= 1 << from->type;
-    if (from->type <= MAX_REF_TYPE) {
+    type_hint |= 1 << TYPEOF(*from);
+    if (TYPEOF(*from) <= MAX_REF_TYPE) {
       add_ref(from->u.dummy);
     }
     from++;
@@ -326,7 +326,7 @@ PMOD_EXPORT void assign_to_short_svalue(union anything *u,
   check_svalue_type (s);
   check_refs(s);
 
-  if(s->type == type)
+  if(TYPEOF(*s) == type)
   {
     switch(type)
     {
@@ -342,8 +342,8 @@ PMOD_EXPORT void assign_to_short_svalue(union anything *u,
     u->refs=0;
   }else{
     Pike_error("Wrong type in assignment, expected %s, got %s.\n",
-	  get_name_of_type(type),
-	  get_name_of_type(s->type));
+	       get_name_of_type(type),
+	       get_name_of_type(TYPEOF(*s)));
   }
 }
 
@@ -354,7 +354,7 @@ PMOD_EXPORT void assign_to_short_svalue_no_free(union anything *u,
   check_svalue_type (s);
   check_refs(s);
 
-  if(s->type == type)
+  if(TYPEOF(*s) == type)
   {
     switch(type)
     {
@@ -368,8 +368,8 @@ PMOD_EXPORT void assign_to_short_svalue_no_free(union anything *u,
     u->refs=0;
   }else{
     Pike_error("Wrong type in assignment, expected %s, got %s.\n",
-	  get_name_of_type(type),
-	  get_name_of_type(s->type));
+	       get_name_of_type(type),
+	       get_name_of_type(TYPEOF(*s)));
   }
 }
 
@@ -381,21 +381,21 @@ PMOD_EXPORT void assign_from_short_svalue_no_free(struct svalue *s,
   check_type(type);
   check_refs2(u,type);
 
-  s->type = type;
-  s->subtype = 0;
-
   switch(type)
   {
-    case T_FLOAT: s->u.float_number=u->float_number; break;
-    case T_INT: s->u.integer=u->integer; break;
+    case T_FLOAT:
+      SET_SVAL(*s, T_FLOAT, 0, float_number, u->float_number);
+      break;
+    case T_INT:
+      SET_SVAL(*s, T_INT, NUMBER_NUMBER, integer, u->integer);
+      break;
     default:
-      if((s->u.refs=u->refs))
+      if(u->refs)
       {
-	add_ref( u->array );
+	SET_SVAL(*s, type, 0, refs, u->refs);
+	add_ref(u->dummy);
       }else{
-	s->type=T_INT;
-	s->subtype=NUMBER_NUMBER;
-	s->u.integer=0;
+	SET_SVAL(*s, T_INT, NUMBER_NUMBER, integer, 0);
       }
   }
 }
@@ -444,7 +444,7 @@ PMOD_EXPORT unsigned INT32 hash_svalue(const struct svalue *s)
   check_svalue_type (s);
   check_refs(s);
 
-  switch(s->type)
+  switch(TYPEOF(*s))
   {
   case T_OBJECT:
     {
@@ -457,14 +457,14 @@ PMOD_EXPORT unsigned INT32 hash_svalue(const struct svalue *s)
 	break;
       }
 
-      if((fun = FIND_LFUN(p->inherits[s->subtype].prog, LFUN___HASH)) != -1)
+      if((fun = FIND_LFUN(p->inherits[SUBTYPEOF(*s)].prog, LFUN___HASH)) != -1)
       {
 	STACK_LEVEL_START(0);
 	safe_apply_low2(s->u.object,
-			fun + p->inherits[s->subtype].identifier_level,
+			fun + p->inherits[SUBTYPEOF(*s)].identifier_level,
 			0, "__hash");
 	STACK_LEVEL_CHECK(1);
-	if(sp[-1].type == T_INT)
+	if(TYPEOF(sp[-1]) == T_INT)
 	{
 	  q=sp[-1].u.integer;
 	}else{
@@ -514,7 +514,7 @@ PMOD_EXPORT unsigned INT32 hash_svalue(const struct svalue *s)
   }
 #if 0
   q+=q % 997;
-  q+=((q + s->type) * 9248339);
+  q+=((q + TYPEOF(*s)) * 9248339);
 #endif
 
   /*
@@ -531,14 +531,14 @@ PMOD_EXPORT int svalue_is_true(const struct svalue *s)
   check_svalue_type (s);
   check_refs(s);
 
-  switch(s->type)
+  switch(TYPEOF(*s))
   {
   case T_INT:
     if(s->u.integer) return 1;
     return 0;
 
   case T_FUNCTION:
-    if (s->subtype == FUNCTION_BUILTIN) return 1;
+    if (SUBTYPEOF(*s) == FUNCTION_BUILTIN) return 1;
     if(!s->u.object->prog) return 0;
     if (s->u.object->prog == pike_trampoline_program) {
       /* Trampoline */
@@ -552,7 +552,7 @@ PMOD_EXPORT int svalue_is_true(const struct svalue *s)
     } else {
 #if 0
       /* We should never get a function svalue for a prototype. */
-      struct identifier *i = ID_FROM_INT(s->u.object->prog, s->subtype);
+      struct identifier *i = ID_FROM_INT(s->u.object->prog, SUBTYPEOF(*s));
       if (IDENTIFIER_IS_PIKE_FUNCTION(i->identifier_flags) &&
 	  (i->func.offset == -1)) {
 	/* Prototype. */
@@ -569,11 +569,11 @@ PMOD_EXPORT int svalue_is_true(const struct svalue *s)
 
       if(!(p = s->u.object->prog)) return 0;
 
-      if((fun = FIND_LFUN(p->inherits[s->subtype].prog, LFUN_NOT)) != -1)
+      if((fun = FIND_LFUN(p->inherits[SUBTYPEOF(*s)].prog, LFUN_NOT)) != -1)
       {
 	apply_low(s->u.object,
-		  fun + p->inherits[s->subtype].identifier_level, 0);
-	if(sp[-1].type == T_INT && sp[-1].u.integer == 0)
+		  fun + p->inherits[SUBTYPEOF(*s)].identifier_level, 0);
+	if(TYPEOF(sp[-1]) == T_INT && sp[-1].u.integer == 0)
 	{
 	  pop_stack();
 	  return 1;
@@ -595,14 +595,14 @@ PMOD_EXPORT int safe_svalue_is_true(const struct svalue *s)
   check_svalue_type (s);
   check_refs(s);
 
-  switch(s->type)
+  switch(TYPEOF(*s))
   {
   case T_INT:
     if(s->u.integer) return 1;
     return 0;
 
   case T_FUNCTION:
-    if (s->subtype == FUNCTION_BUILTIN) return 1;
+    if (SUBTYPEOF(*s) == FUNCTION_BUILTIN) return 1;
     if(!s->u.object->prog) return 0;
     if (s->u.object->prog == pike_trampoline_program) {
       /* Trampoline */
@@ -616,7 +616,7 @@ PMOD_EXPORT int safe_svalue_is_true(const struct svalue *s)
     } else {
 #if 0
       /* We should never get a function svalue for a prototype. */
-      struct identifier *i = ID_FROM_INT(s->u.object->prog, s->subtype);
+      struct identifier *i = ID_FROM_INT(s->u.object->prog, SUBTYPEOF(*s));
       if (IDENTIFIER_IS_PIKE_FUNCTION(i->identifier_flags) &&
 	  (i->func.offset == -1)) {
 	/* Prototype. */
@@ -633,12 +633,12 @@ PMOD_EXPORT int safe_svalue_is_true(const struct svalue *s)
 
       if(!(p = s->u.object->prog)) return 0;
 
-      if((fun = FIND_LFUN(p->inherits[s->subtype].prog, LFUN_NOT)) != -1)
+      if((fun = FIND_LFUN(p->inherits[SUBTYPEOF(*s)].prog, LFUN_NOT)) != -1)
       {
 	safe_apply_low2(s->u.object,
-			fun + p->inherits[s->subtype].identifier_level, 0,
+			fun + p->inherits[SUBTYPEOF(*s)].identifier_level, 0,
 			"`!");
-	if(sp[-1].type == T_INT && sp[-1].u.integer == 0)
+	if(TYPEOF(sp[-1]) == T_INT && sp[-1].u.integer == 0)
 	{
 	  pop_stack();
 	  return 1;
@@ -659,11 +659,11 @@ PMOD_EXPORT int safe_svalue_is_true(const struct svalue *s)
 
 PMOD_EXPORT int is_identical(const struct svalue *a, const struct svalue *b)
 {
-  if(a->type != b->type) return 0;
-  switch(a->type)
+  if(TYPEOF(*a) != TYPEOF(*b)) return 0;
+  switch(TYPEOF(*a))
   {
   case T_OBJECT:
-    return (a->u.refs == b->u.refs) && (a->subtype == b->subtype);
+    return (a->u.refs == b->u.refs) && (SUBTYPEOF(*a) == SUBTYPEOF(*b));
 
   case T_TYPE:
   case T_STRING:
@@ -677,13 +677,13 @@ PMOD_EXPORT int is_identical(const struct svalue *a, const struct svalue *b)
     return a->u.integer == b->u.integer;
 
   case T_FUNCTION:
-    return (a->subtype == b->subtype && a->u.object == b->u.object);
+    return (SUBTYPEOF(*a) == SUBTYPEOF(*b) && a->u.object == b->u.object);
       
   case T_FLOAT:
     return a->u.float_number == b->u.float_number;
 
   default:
-    Pike_fatal("Unknown type %x\n",a->type);
+    Pike_fatal("Unknown type %x\n", TYPEOF(*a));
     return 0; /* make gcc happy */
   }
 
@@ -699,9 +699,9 @@ PMOD_EXPORT int is_eq(const struct svalue *a, const struct svalue *b)
   safe_check_destructed(a);
   safe_check_destructed(b);
 
-  if (a->type != b->type)
+  if (TYPEOF(*a) != TYPEOF(*b))
   {
-    switch(TWO_TYPES((1<<a->type),(1<<b->type)))
+    switch(TWO_TYPES((1<<TYPEOF(*a)),(1<<TYPEOF(*b))))
     {
     case TWO_TYPES(BIT_FUNCTION,BIT_PROGRAM):
       return program_from_function(a) == b->u.program;
@@ -724,12 +724,12 @@ PMOD_EXPORT int is_eq(const struct svalue *a, const struct svalue *b)
 
       a_is_obj:
 	if ((p = a->u.object->prog) &&
-	    ((fun = FIND_LFUN(p->inherits[a->subtype].prog, LFUN_EQ)) != -1))
+	    ((fun = FIND_LFUN(p->inherits[SUBTYPEOF(*a)].prog, LFUN_EQ)) != -1))
 	{
 	  /* FIXME: CYCLIC */
 	  push_svalue(b);
 	  apply_low(a->u.object,
-		    fun + p->inherits[a->subtype].identifier_level, 1);
+		    fun + p->inherits[SUBTYPEOF(*a)].identifier_level, 1);
 	  if(UNSAFE_IS_ZERO(sp-1))
 	  {
 	    pop_stack();
@@ -739,7 +739,7 @@ PMOD_EXPORT int is_eq(const struct svalue *a, const struct svalue *b)
 	    return 1;
 	  }
 	}
-	if(b->type != T_OBJECT) return 0;
+	if(TYPEOF(*b) != T_OBJECT) return 0;
       }
 
     case TWO_TYPES(BIT_ARRAY,BIT_OBJECT):
@@ -756,12 +756,12 @@ PMOD_EXPORT int is_eq(const struct svalue *a, const struct svalue *b)
 
       b_is_obj:
 	if ((p = b->u.object->prog) &&
-	    ((fun = FIND_LFUN(p->inherits[b->subtype].prog, LFUN_EQ)) != -1))
+	    ((fun = FIND_LFUN(p->inherits[SUBTYPEOF(*b)].prog, LFUN_EQ)) != -1))
 	{
 	  /* FIXME: CYCLIC */
 	  push_svalue(a);
 	  apply_low(b->u.object,
-		    fun + p->inherits[b->subtype].identifier_level, 1);
+		    fun + p->inherits[SUBTYPEOF(*b)].identifier_level, 1);
 	  if(UNSAFE_IS_ZERO(sp-1))
 	  {
 	    pop_stack();
@@ -776,21 +776,22 @@ PMOD_EXPORT int is_eq(const struct svalue *a, const struct svalue *b)
 
     return 0;
   }
-  switch(a->type)
+  switch(TYPEOF(*a))
   {
   case T_OBJECT:
     {
       struct program *p;
 
       if ((a->u.object == b->u.object) &&
-	  (a->type == b->type) && (a->subtype == b->subtype)) return 1;
+	  (TYPEOF(*a) == TYPEOF(*b)) &&
+	  (SUBTYPEOF(*a) == SUBTYPEOF(*b))) return 1;
       /* FIXME: What if both have lfun::`==(), and they disagree? */
       if((p = a->u.object->prog) &&
-	 (FIND_LFUN(p->inherits[a->subtype].prog, LFUN_EQ) != -1))
+	 (FIND_LFUN(p->inherits[SUBTYPEOF(*a)].prog, LFUN_EQ) != -1))
 	goto a_is_obj;
 
       if((p = b->u.object->prog) &&
-	 (FIND_LFUN(p->inherits[b->subtype].prog, LFUN_EQ) != -1))
+	 (FIND_LFUN(p->inherits[SUBTYPEOF(*b)].prog, LFUN_EQ) != -1))
 	goto b_is_obj;
       return 0;
     }
@@ -810,9 +811,9 @@ PMOD_EXPORT int is_eq(const struct svalue *a, const struct svalue *b)
     return a->u.type == b->u.type;
 
   case T_FUNCTION:
-    if (a->subtype != b->subtype) return 0;
+    if (SUBTYPEOF(*a) != SUBTYPEOF(*b)) return 0;
     if (a->u.object == b->u.object) return 1;
-    if ((a->subtype != FUNCTION_BUILTIN) &&
+    if ((SUBTYPEOF(*a) != FUNCTION_BUILTIN) &&
 	(a->u.object->prog == pike_trampoline_program) &&
 	(b->u.object->prog == pike_trampoline_program)) {
       /* Trampoline. */
@@ -838,7 +839,7 @@ PMOD_EXPORT int is_eq(const struct svalue *a, const struct svalue *b)
 
   default:
 #ifdef PIKE_DEBUG
-    Pike_fatal("Unknown type %x\n",a->type);
+    Pike_fatal("Unknown type %x\n", TYPEOF(*a));
 #endif
     return 0; /* make gcc happy */
   }
@@ -858,16 +859,16 @@ PMOD_EXPORT int low_is_equal(const struct svalue *a,
     struct program *p;
     int fun;
 
-    if(a->type == T_OBJECT) {
-      if ((a->type == b->type) && (a->subtype == b->subtype) &&
+    if(TYPEOF(*a) == T_OBJECT) {
+      if ((TYPEOF(*a) == TYPEOF(*b)) && (SUBTYPEOF(*a) == SUBTYPEOF(*b)) &&
 	  (a->u.object == b->u.object)) return 1;
 
       if ((p = a->u.object->prog) &&
-	  (fun = FIND_LFUN(p->inherits[a->subtype].prog, LFUN__EQUAL)) != -1)
+	  (fun = FIND_LFUN(p->inherits[SUBTYPEOF(*a)].prog, LFUN__EQUAL)) != -1)
       {
 	push_svalue(b);
 	apply_low(a->u.object,
-		  fun + p->inherits[a->subtype].identifier_level, 1);
+		  fun + p->inherits[SUBTYPEOF(*a)].identifier_level, 1);
 	if(UNSAFE_IS_ZERO(sp-1))
 	{
 	  pop_stack();
@@ -879,12 +880,12 @@ PMOD_EXPORT int low_is_equal(const struct svalue *a,
       }
     }
 
-    if(b->type == T_OBJECT && (p = b->u.object->prog) &&
-       (fun = FIND_LFUN(p->inherits[b->subtype].prog, LFUN__EQUAL)) != -1)
+    if(TYPEOF(*b) == T_OBJECT && (p = b->u.object->prog) &&
+       (fun = FIND_LFUN(p->inherits[SUBTYPEOF(*b)].prog, LFUN__EQUAL)) != -1)
     {
       push_svalue(a);
       apply_low(b->u.object,
-		fun + p->inherits[b->subtype].identifier_level, 1);
+		fun + p->inherits[SUBTYPEOF(*b)].identifier_level, 1);
       if(UNSAFE_IS_ZERO(sp-1))
       {
 	pop_stack();
@@ -898,9 +899,9 @@ PMOD_EXPORT int low_is_equal(const struct svalue *a,
 
   if(is_eq(a,b)) return 1;
 
-  if(a->type != b->type) return 0;
+  if(TYPEOF(*a) != TYPEOF(*b)) return 0;
 
-  switch(a->type)
+  switch(TYPEOF(*a))
   {
     case T_INT:
     case T_STRING:
@@ -950,20 +951,18 @@ PMOD_EXPORT int low_short_is_equal(const union anything *a,
     case T_FLOAT: return a->float_number == b->float_number;
   }
 
-  if((sa.u.refs=a->refs))
+  if(a->refs)
   {
-    sa.type=type;
+    SET_SVAL(sa, type, 0, refs, a->refs);
   }else{
-    sa.type=T_INT;
-    sa.u.integer=0;
+    SET_SVAL(sa, T_INT, NUMBER_NUMBER, integer, 0);
   }
 
-  if((sb.u.refs=b->refs))
+  if(b->refs)
   {
-    sb.type=type;
+    SET_SVAL(sb, type, 0, refs, b->refs);
   }else{
-    sb.type=T_INT;
-    sb.u.integer=0;
+    SET_SVAL(sb, T_INT, NUMBER_NUMBER, integer, 0);
   }
 
   return low_is_equal(&sa,&sb,p);
@@ -976,12 +975,12 @@ PMOD_EXPORT int is_equal(const struct svalue *a, const struct svalue *b)
 
 PMOD_EXPORT int is_lt(const struct svalue *a, const struct svalue *b)
 {
-  check_type(a->type);
-  check_type(b->type);
+  check_type(TYPEOF(*a));
+  check_type(TYPEOF(*b));
   check_refs(a);
   check_refs(b);
 
-  if ((a->type == b->type) && (a->type == T_INT)) {
+  if ((TYPEOF(*a) == TYPEOF(*b)) && (TYPEOF(*a) == T_INT)) {
     /* Common case...
      * Note: the case in the switch still needs to be kept,
      *       since a or b may be a destructed object.
@@ -992,11 +991,11 @@ PMOD_EXPORT int is_lt(const struct svalue *a, const struct svalue *b)
   safe_check_destructed(a);
   safe_check_destructed(b);
 
-  if (a->type != b->type)
+  if (TYPEOF(*a) != TYPEOF(*b))
   {
     int a_is_obj_without_lt;
 
-    if(a->type == T_FLOAT && b->type==T_INT) {
+    if(TYPEOF(*a) == T_FLOAT && TYPEOF(*b) == T_INT) {
 #ifdef HAVE_ISLESS
       return isless(a->u.float_number, (FLOAT_TYPE)b->u.integer);
 #else
@@ -1004,7 +1003,7 @@ PMOD_EXPORT int is_lt(const struct svalue *a, const struct svalue *b)
 #endif
     }
 
-    if(a->type == T_INT && b->type==T_FLOAT) {
+    if(TYPEOF(*a) == T_INT && TYPEOF(*b) == T_FLOAT) {
 #ifdef HAVE_ISLESS
       return isless((FLOAT_TYPE)a->u.integer, b->u.float_number);
 #else
@@ -1012,13 +1011,13 @@ PMOD_EXPORT int is_lt(const struct svalue *a, const struct svalue *b)
 #endif
     }
 
-    if (((a->type == T_TYPE) ||
-	 (a->type == T_FUNCTION) || (a->type == T_PROGRAM)) &&
-	((b->type == T_FUNCTION) ||
-	 (b->type == T_PROGRAM) || (b->type == T_TYPE)))
+    if (((TYPEOF(*a) == T_TYPE) ||
+	 (TYPEOF(*a) == T_FUNCTION) || (TYPEOF(*a) == T_PROGRAM)) &&
+	((TYPEOF(*b) == T_FUNCTION) ||
+	 (TYPEOF(*b) == T_PROGRAM) || (TYPEOF(*b) == T_TYPE)))
       goto compare_types;
 
-    if(a->type == T_OBJECT)
+    if(TYPEOF(*a) == T_OBJECT)
     {
       struct program *p;
       int fun;
@@ -1030,14 +1029,14 @@ PMOD_EXPORT int is_lt(const struct svalue *a, const struct svalue *b)
 	Pike_error("Comparison on destructed object.\n");
 #endif
       p = a->u.object->prog;
-      if((fun = FIND_LFUN(p->inherits[a->subtype].prog, LFUN_LT)) != -1)
+      if((fun = FIND_LFUN(p->inherits[SUBTYPEOF(*a)].prog, LFUN_LT)) != -1)
       {
 	push_svalue(b);
 	apply_low(a->u.object,
-		  fun + p->inherits[a->subtype].identifier_level, 1);
+		  fun + p->inherits[SUBTYPEOF(*a)].identifier_level, 1);
 	if(UNSAFE_IS_ZERO(sp-1))
 	{
-	  if(!sp[-1].subtype)
+	  if(!SUBTYPEOF(sp[-1]))
 	  {
 	    pop_stack();
 	    return 0;
@@ -1056,7 +1055,7 @@ PMOD_EXPORT int is_lt(const struct svalue *a, const struct svalue *b)
     else
       a_is_obj_without_lt = 0;
 
-    if(b->type == T_OBJECT)
+    if(TYPEOF(*b) == T_OBJECT)
     {
       struct program *p;
       int fun;
@@ -1068,7 +1067,7 @@ PMOD_EXPORT int is_lt(const struct svalue *a, const struct svalue *b)
 #endif
       p = b->u.object->prog;
 
-      if((fun = FIND_LFUN(p->inherits[b->subtype].prog, LFUN_GT)) == -1) {
+      if((fun = FIND_LFUN(p->inherits[SUBTYPEOF(*b)].prog, LFUN_GT)) == -1) {
 	if (a_is_obj_without_lt)
 	  Pike_error ("Object a lacks `< and object b lacks `> "
 		      "in comparison on the form a < b.\n");
@@ -1078,10 +1077,10 @@ PMOD_EXPORT int is_lt(const struct svalue *a, const struct svalue *b)
       }
       push_svalue(a);
       apply_low(b->u.object,
-		fun + p->inherits[b->subtype].identifier_level, 1);
+		fun + p->inherits[SUBTYPEOF(*b)].identifier_level, 1);
       if(UNSAFE_IS_ZERO(sp-1))
       {
-	if(!sp[-1].subtype)
+	if(!SUBTYPEOF(sp[-1]))
 	{
 	  pop_stack();
 	  return 0;
@@ -1101,14 +1100,14 @@ PMOD_EXPORT int is_lt(const struct svalue *a, const struct svalue *b)
       Pike_error ("Cannot compare different types.\n");
   }
 
-  switch(a->type)
+  switch(TYPEOF(*a))
   {
     case T_OBJECT:
       goto a_is_object;
       
     default:
       Pike_error("Cannot compare values of type %s.\n",
-		 get_name_of_type (a->type));
+		 get_name_of_type (TYPEOF(*a)));
       
     case T_INT:
       return a->u.integer < b->u.integer;
@@ -1129,7 +1128,7 @@ PMOD_EXPORT int is_lt(const struct svalue *a, const struct svalue *b)
     case T_PROGRAM:
     case T_FUNCTION:
   compare_types:
-    if (a->type != T_TYPE) {
+      if (TYPEOF(*a) != T_TYPE) {
       /* Try converting a to a program, and then to a type. */
       struct svalue aa;
       int res;
@@ -1139,13 +1138,12 @@ PMOD_EXPORT int is_lt(const struct svalue *a, const struct svalue *b)
       }
       type_stack_mark();
       push_object_type(0, aa.u.program->id);
-      aa.u.type = pop_unfinished_type();
-      aa.type = T_TYPE;
+      SET_SVAL(aa, T_TYPE, 0, type, pop_unfinished_type());
       res = is_lt(&aa, b);
       free_type(aa.u.type);
       return res;
     }
-    if (b->type != T_TYPE) {
+      if (TYPEOF(*b) != T_TYPE) {
       /* Try converting b to a program, and then to a type. */
       struct svalue bb;
       int res;
@@ -1155,8 +1153,7 @@ PMOD_EXPORT int is_lt(const struct svalue *a, const struct svalue *b)
       }
       type_stack_mark();
       push_object_type(0, bb.u.program->id);
-      bb.u.type = pop_unfinished_type();
-      bb.type = T_TYPE;
+      SET_SVAL(bb, T_TYPE, 0, type, pop_unfinished_type());
       res = is_lt(a, &bb);
       free_type(bb.u.type);
       return res;
@@ -1164,7 +1161,7 @@ PMOD_EXPORT int is_lt(const struct svalue *a, const struct svalue *b)
     
     /* At this point both a and b have type T_TYPE */
 #ifdef PIKE_DEBUG
-    if ((a->type != T_TYPE) || (b->type != T_TYPE)) {
+    if ((TYPEOF(*a) != T_TYPE) || (TYPEOF(*b) != T_TYPE)) {
       Pike_fatal("Unexpected types in comparison.\n");
     }
 #endif /* PIKE_DEBUG */
@@ -1179,7 +1176,7 @@ PMOD_EXPORT int is_lt(const struct svalue *a, const struct svalue *b)
 PMOD_EXPORT int is_le(const struct svalue *a, const struct svalue *b)
 {
   /* Can't optimize this to !is_gt (a, b) since that'd assume total order. */
-  int mask = (1 << a->type)|(1 << b->type);
+  int mask = (1 << TYPEOF(*a))|(1 << TYPEOF(*b));
   if (!(mask & ~(BIT_FUNCTION|BIT_PROGRAM|BIT_TYPE))) {
     /* NOTE: Special case for types, since is_eq() below only does
      * a pointer comparison.
@@ -1187,8 +1184,9 @@ PMOD_EXPORT int is_le(const struct svalue *a, const struct svalue *b)
     struct pike_type *a_type = NULL;
     struct pike_type *b_type = NULL;
     int res;
-    if ((a->type == b->type) && (a->u.ptr == b->u.ptr)) return 1;  /* eq */
-    if (a->type == T_TYPE) {
+    if ((TYPEOF(*a) == TYPEOF(*b)) &&
+	(a->u.ptr == b->u.ptr)) return 1;  /* eq */
+    if (TYPEOF(*a) == T_TYPE) {
       add_ref(a_type = a->u.type);
     } else {
       struct program *p = program_from_svalue(a);
@@ -1201,7 +1199,7 @@ PMOD_EXPORT int is_le(const struct svalue *a, const struct svalue *b)
 	Pike_error("Bad argument to comparison.\n");
       }
     }
-    if (b->type == T_TYPE) {
+    if (TYPEOF(*b) == T_TYPE) {
       add_ref(b_type = b->u.type);
     } else {
       struct program *p = program_from_svalue(b);
@@ -1223,7 +1221,7 @@ PMOD_EXPORT int is_le(const struct svalue *a, const struct svalue *b)
   } else if (mask == (BIT_INT | BIT_FLOAT)) {
     /* Special case, since is_eq() won't promote ints to floats... */
     FLOAT_TYPE aa, bb;
-    if (a->type == PIKE_T_INT) {
+    if (TYPEOF(*a) == PIKE_T_INT) {
       aa = (FLOAT_TYPE)a->u.integer;
       bb = b->u.float_number;
     } else {
@@ -1300,7 +1298,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
   /* fprintf(stderr, "Describing svalue: %s\n", get_name_of_type(s->type)); */
     
   indent+=2;
-  switch(s->type)
+  switch(TYPEOF(*s))
   {
     case T_INT:
       sprintf(buf,"%"PRINTPIKEINT"d",s->u.integer);
@@ -1410,7 +1408,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
       break;
 
     case T_FUNCTION:
-      if(s->subtype == FUNCTION_BUILTIN)
+      if(SUBTYPEOF(*s) == FUNCTION_BUILTIN)
       {
 	dsv_add_string_to_buf(s->u.efun->name);
       }else{
@@ -1423,9 +1421,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	  struct pike_trampoline *t = (struct pike_trampoline *) obj->storage;
 	  if (t->frame->current_object->prog) {
 	    struct svalue f;
-	    f.type = T_FUNCTION;
-	    f.subtype = t->func;
-	    f.u.object = t->frame->current_object;
+	    SET_SVAL(f, T_FUNCTION, t->func, object, t->frame->current_object);
 	    describe_svalue (&f, indent, p);
 	    break;
 	  }
@@ -1451,7 +1447,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	      id = ID_FROM_INT(prog, tramp->func);
 	    }
 	  } else {
-	    id = ID_FROM_INT(prog, s->subtype);
+	    id = ID_FROM_INT(prog, SUBTYPEOF(*s));
 	  }
 	  if (id) name = id->name;
 
@@ -1480,7 +1476,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	    
 	      if(!SAFE_IS_ZERO(sp-1))
 		{
-		  if(sp[-1].type != T_STRING)
+		  if(TYPEOF(sp[-1]) != T_STRING)
 		    {
 		      pop_stack();
 		      push_text("(master returned illegal value from describe_module)");
@@ -1544,7 +1540,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
       else {
 	int describe_nicely;
 	struct inherit *inh;
-	prog = (inh = prog->inherits + s->subtype)->prog;
+	prog = (inh = prog->inherits + SUBTYPEOF(*s))->prog;
 
 	describe_nicely =
 	  (prog->flags & PROGRAM_FINISHED) &&
@@ -1590,7 +1586,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 
 	      if(!SAFE_IS_ZERO(sp-1))
 		{
-		  if(sp[-1].type != T_STRING)
+		  if(TYPEOF(sp[-1]) != T_STRING)
 		    {
 		      pop_stack();
 		      push_text("(object returned illegal value from _sprintf)");
@@ -1627,14 +1623,14 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	    
 	    debug_malloc_touch(obj);
 	    
-	    ref_push_object_inherit(obj, s->subtype);
+	    ref_push_object_inherit(obj, SUBTYPEOF(*s));
 	    SAFE_APPLY_MASTER("describe_object", 1);
 	    
 	    debug_malloc_touch(obj);
 	    
 	    if(!SAFE_IS_ZERO(sp-1))
 	      {
-		if(sp[-1].type != T_STRING)
+		if(TYPEOF(sp[-1]) != T_STRING)
 		  {
 		    pop_stack();
 		    push_text("(master returned illegal value from describe_object)");
@@ -1713,7 +1709,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	    
 	  if(!SAFE_IS_ZERO(sp-1))
 	    {
-	      if(sp[-1].type != T_STRING)
+	      if(TYPEOF(sp[-1]) != T_STRING)
 		{
 		  pop_stack();
 		  push_text("(master returned illegal value from describe_program)");
@@ -1778,7 +1774,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
       break;
 
     default:
-      sprintf(buf,"<Unknown %d>",s->type);
+      sprintf(buf,"<Unknown %d>", TYPEOF(*s));
       my_strcat(buf);
   }
 }
@@ -1817,8 +1813,7 @@ PMOD_EXPORT void print_short_svalue (FILE *out, const union anything *a, TYPE_T 
     fputc ('0', out);
   else {
     struct svalue sval;
-    sval.type = type;
-    sval.subtype = 0;
+    SET_SVAL(sval, type, 0, ptr, a->ptr);
     sval.u = *a;
     print_svalue (out, &sval);
   }
@@ -1833,7 +1828,7 @@ PMOD_EXPORT void safe_print_short_svalue (FILE *out, const union anything *a, TY
 
 PMOD_EXPORT void print_svalue_compact (FILE *out, const struct svalue *s)
 {
-  switch (s->type) {
+  switch (TYPEOF(*s)) {
     case T_ARRAY:
       fprintf (out, "array of size %d", s->u.array->size);
       break;
@@ -1846,8 +1841,7 @@ PMOD_EXPORT void print_svalue_compact (FILE *out, const struct svalue *s)
     case T_STRING:
       if (s->u.string->len > 80) {
 	struct svalue sval;
-	sval.type = T_STRING;
-	sval.u.string = string_slice (s->u.string, 0, 80);
+	SET_SVAL(sval, T_STRING, 0, string, string_slice(s->u.string, 0, 80));
 	print_svalue (out, &sval);
 	free_string (sval.u.string);
 	fprintf (out, "... (%" PRINTPTRDIFFT "d chars more)",
@@ -1874,8 +1868,7 @@ PMOD_EXPORT void print_short_svalue_compact (FILE *out, const union anything *a,
     fputs ("0", out);
   else {
     struct svalue sval;
-    sval.type = type;
-    sval.subtype = 0;
+    SET_SVAL(sval, type, 0, ptr, a->ptr);
     sval.u = *a;
     print_svalue_compact (out, &sval);
   }
@@ -1925,7 +1918,7 @@ PMOD_EXPORT void copy_svalues_recursively_no_free(struct svalue *to,
   while(num--)
   {
     struct svalue *tmp;
-    int from_type = from->type;
+    int from_type = TYPEOF(*from);
     
     check_svalue_type (from);
     check_refs(from);
@@ -1936,7 +1929,7 @@ PMOD_EXPORT void copy_svalues_recursively_no_free(struct svalue *to,
       /* Recursive data */
       if (m && (tmp = low_mapping_lookup(m, from))) {
 	*to = *tmp;
-	if (tmp->type <= MAX_REF_TYPE) add_ref(tmp->u.dummy);
+	if (TYPEOF(*tmp) <= MAX_REF_TYPE) add_ref(tmp->u.dummy);
       } else {
 #define ALLOC_DUPL_MAPPING(type_hint)				\
 	do if (!m && (type_hint) & BIT_COMPLEX) {		\
@@ -1948,17 +1941,17 @@ PMOD_EXPORT void copy_svalues_recursively_no_free(struct svalue *to,
 	if (from_type == T_ARRAY) {
 	  struct array *ar = from->u.array;
 	  ALLOC_DUPL_MAPPING(ar->type_field);
-	  to->u.array = copy_array_recursively(ar, m);
+	  SET_SVAL(*to, T_ARRAY, 0, array, copy_array_recursively(ar, m));
 	} else if (from_type == T_MAPPING) {
 	  struct mapping *ma = from->u.mapping;
 	  ALLOC_DUPL_MAPPING(m_ind_types(ma) | m_val_types(ma));
-	  to->u.mapping = copy_mapping_recursively(ma, m);
+	  SET_SVAL(*to, T_MAPPING, 0, mapping, copy_mapping_recursively(ma, m));
 	} else {
 	  struct multiset *mu = from->u.multiset;
 	  ALLOC_DUPL_MAPPING(multiset_ind_types(mu) | multiset_val_types(mu));
-	  to->u.multiset = copy_multiset_recursively(mu, m);
+	  SET_SVAL(*to, T_MULTISET, 0, multiset,
+		   copy_multiset_recursively(mu, m));
 	}
-	to->type = from_type;
 #undef ALLOC_DUPL_MAPPING
       }
     } else {
@@ -2062,38 +2055,39 @@ void check_short_svalue(const union anything *u, TYPE_T type)
 PMOD_EXPORT void debug_svalue_type_error (const struct svalue *s)
 {
   /* This is only called if s->type is invalid. */
-  if (s->type == PIKE_T_FREE || s->type == PIKE_T_UNKNOWN) {
+  if (TYPEOF(*s) == PIKE_T_FREE || TYPEOF(*s) == PIKE_T_UNKNOWN) {
 #ifdef DEBUG_MALLOC
     Pike_fatal ("Using %s freed svalue at %p.\nIt was freed at %s.\n",
-		s->type == PIKE_T_FREE ? "marked" : "unmarked", s, s->u.loc);
+		TYPEOF(*s) == PIKE_T_FREE ? "marked" : "unmarked", s, s->u.loc);
 #else
     Pike_fatal ("Using %s freed svalue at %p.\n",
-		s->type == PIKE_T_FREE ? "marked" : "unmarked", s);
+		TYPEOF(*s) == PIKE_T_FREE ? "marked" : "unmarked", s);
 #endif
   }
   else
-    Pike_fatal ("Invalid type %d in svalue at %p.\n", s->type, s);
+    Pike_fatal ("Invalid type %d in svalue at %p.\n", TYPEOF(*s), s);
 }
 
 PMOD_EXPORT void debug_check_svalue(const struct svalue *s)
 {
   check_svalue_type (s);
-  if(s->type<=MAX_REF_TYPE &&
+  if(TYPEOF(*s) <= MAX_REF_TYPE &&
      ((PIKE_POINTER_ALIGNMENT-1) & (ptrdiff_t)(s->u.refs)))
     Pike_fatal("Odd pointer! type=%d u->refs=%p, align: %d\n",
-	       s->type, s->u.refs, PIKE_POINTER_ALIGNMENT);
+	       TYPEOF(*s), s->u.refs, PIKE_POINTER_ALIGNMENT);
 
-  if(s->type==T_INT) {
-    if(s->subtype!=NUMBER_NUMBER &&
-       s->subtype!=NUMBER_UNDEFINED && s->subtype!=NUMBER_DESTRUCTED) {
-      Pike_fatal("Unknown integer subtype %d\n", s->subtype);
+  if(TYPEOF(*s) == T_INT) {
+    if(SUBTYPEOF(*s) != NUMBER_NUMBER &&
+       SUBTYPEOF(*s) != NUMBER_UNDEFINED &&
+       SUBTYPEOF(*s) != NUMBER_DESTRUCTED) {
+      Pike_fatal("Unknown integer subtype %d\n", SUBTYPEOF(*s));
     }
-    if (s->subtype != NUMBER_NUMBER && s->u.integer)
-      Pike_fatal ("Invalid subtype %d in nonzero integer.\n", s->subtype);
+    if (SUBTYPEOF(*s) != NUMBER_NUMBER && s->u.integer && (s->u.integer != -1))
+      Pike_fatal ("Invalid subtype %d in nonzero integer.\n", SUBTYPEOF(*s));
   }
 
   check_refs(s);
-  low_check_short_svalue(& s->u, s->type);
+  low_check_short_svalue(& s->u, TYPEOF(*s));
 }
 
 void debug_check_type_hint (const struct svalue *svals, size_t num, TYPE_FIELD type_hint)
@@ -2102,9 +2096,9 @@ void debug_check_type_hint (const struct svalue *svals, size_t num, TYPE_FIELD t
   {
     size_t e;
     for(e=0;e<num;e++)
-      if(!(type_hint & (1<<svals[e].type)))
+      if(!(type_hint & (1 << TYPEOF(svals[e]))))
 	Pike_fatal("Type hint lies (%"PRINTSIZET"d %ld %d)!\n",
-		   e, (long)type_hint, svals[e].type);
+		   e, (long)type_hint, TYPEOF(svals[e]));
   }
 }
 
@@ -2121,13 +2115,13 @@ PMOD_EXPORT void real_gc_mark_external_svalues(const struct svalue *s, ptrdiff_t
   for(e=0;e<num;e++,s++)
   {
 #ifdef PIKE_DEBUG
-    if (s->type != PIKE_T_FREE)
+    if (TYPEOF(*s) != PIKE_T_FREE)
       check_svalue((struct svalue *) s);
 #endif
     
     gc_svalue_location=(void *)s;
 
-    if(s->type <= MAX_REF_TYPE)
+    if(TYPEOF(*s) <= MAX_REF_TYPE)
       gc_mark_external (s->u.refs, place);
   }
   gc_svalue_location=0;
@@ -2157,7 +2151,7 @@ PMOD_EXPORT void real_gc_mark_external_svalues(const struct svalue *s, ptrdiff_t
   }
 
 #define DO_CHECK_FUNC_SVALUE(U, T, ZAP, GC_DO)				\
-      if (s->subtype == FUNCTION_BUILTIN) {				\
+  if (SUBTYPEOF(*s) == FUNCTION_BUILTIN) {				\
 	DO_IF_DEBUG_OR_CLEANUP (					\
 	  if (!gc_check (s->u.efun)) {					\
 	    DO_IF_DEBUG (if (d_flag) gc_check (s->u.efun->name));	\
@@ -2183,7 +2177,7 @@ PMOD_EXPORT void real_gc_mark_external_svalues(const struct svalue *s, ptrdiff_t
 
 #define NEVER_ZAP()
 
-#define SET_SUB_SVALUE(V) s->subtype = (V)
+#define SET_SUB_SVALUE(V) SET_SVAL_SUBTYPE(*s, (V))
 
 #define SET_SUB_SHORT_SVALUE(V)
 
@@ -2196,11 +2190,11 @@ PMOD_EXPORT void real_gc_check_svalues(const struct svalue *s, size_t num)
   for(e=0;e<num;e++,s++)
   {
 #ifdef PIKE_DEBUG
-    if (s->type != PIKE_T_FREE)
+    if (TYPEOF(*s) != PIKE_T_FREE)
       check_svalue((struct svalue *) s);
     gc_svalue_location=(void *)s;
 #endif
-    GC_CHECK_SWITCH((s->u), (s->type), NEVER_ZAP, gc_check,
+    GC_CHECK_SWITCH((s->u), TYPEOF(*s), NEVER_ZAP, gc_check,
 		    {}, DO_CHECK_FUNC_SVALUE,
 		    DO_CHECK_OBJ);
   }
@@ -2218,11 +2212,11 @@ void gc_check_weak_svalues(const struct svalue *s, size_t num)
   for(e=0;e<num;e++,s++)
   {
 #ifdef PIKE_DEBUG
-    if (s->type != PIKE_T_FREE)
+    if (TYPEOF(*s) != PIKE_T_FREE)
       check_svalue((struct svalue *) s);
     gc_svalue_location=(void *)s;
 #endif
-    GC_CHECK_SWITCH((s->u), (s->type), NEVER_ZAP, gc_check_weak,
+    GC_CHECK_SWITCH((s->u), TYPEOF(*s), NEVER_ZAP, gc_check_weak,
 		    {}, DO_CHECK_FUNC_SVALUE,
 		    DO_CHECK_OBJ_WEAK);
   }
@@ -2264,9 +2258,7 @@ void gc_check_weak_short_svalue(const union anything *u, TYPE_T type)
 #define ZAP_SVALUE()							\
       do {								\
 	gc_free_svalue(s);						\
-	s->type = T_INT;						\
-	s->u.integer = 0;						\
-	s->subtype = NUMBER_DESTRUCTED;					\
+	SET_SVAL(*s, T_INT, NUMBER_DESTRUCTED, integer, 0);		\
       } while (0)
 
 #define ZAP_SHORT_SVALUE()						\
@@ -2326,12 +2318,13 @@ void gc_check_weak_short_svalue(const union anything *u, TYPE_T type)
 #define MARK_PRE {							\
     DO_IF_DEBUG (							\
       if (!s->u.refs)							\
-	(gc_fatal_2 (s->u.ptr, s->type, 0, "Marking thing without refs.\n")); \
+	(gc_fatal_2 (s->u.ptr, TYPEOF(*s),				\
+		     0, "Marking thing without refs.\n"));		\
     );									\
   }
 
 #define DO_MARK_FUNC_SVALUE(U, T, ZAP, GC_DO)				\
-      if (s->subtype == FUNCTION_BUILTIN) {				\
+      if (SUBTYPEOF(*s) == FUNCTION_BUILTIN) {				\
 	DO_IF_DEBUG (if (d_flag) gc_mark (s->u.efun->name, T_STRING));	\
 	DO_IF_DEBUG_OR_CLEANUP (GC_DO_MARK ((*s->u.efun), type));	\
 	break;								\
@@ -2339,7 +2332,7 @@ void gc_check_weak_short_svalue(const union anything *u, TYPE_T type)
       /* Fall through to T_OBJECT. */
 
 #define DONT_MARK_FUNC_SVALUE(U, T, ZAP, GC_DO)				\
-      if (s->subtype == FUNCTION_BUILTIN)				\
+      if (SUBTYPEOF(*s) == FUNCTION_BUILTIN)				\
 	break;								\
       /* Fall through to T_OBJECT. */
 
@@ -2361,11 +2354,11 @@ PMOD_EXPORT TYPE_FIELD real_gc_mark_svalues(struct svalue *s, size_t num)
   for(e=0;e<num;e++,s++)
   {
     dmalloc_touch_svalue(s);
-    GC_RECURSE_SWITCH((s->u), (s->type), ZAP_SVALUE, DONT_FREE_WEAK,
+    GC_RECURSE_SWITCH((s->u), TYPEOF(*s), ZAP_SVALUE, DONT_FREE_WEAK,
 		      GC_DO_MARK, MARK_PRE,
 		      DO_MARK_FUNC_SVALUE, GC_DO_MARK,
 		      DO_MARK_STRING, GC_DO_MARK);
-    t |= 1 << s->type;
+    t |= 1 << TYPEOF(*s);
   }
   return freed ? t : 0;
 }
@@ -2378,11 +2371,11 @@ TYPE_FIELD gc_mark_weak_svalues(struct svalue *s, size_t num)
   for(e=0;e<num;e++,s++)
   {
     dmalloc_touch_svalue(s);
-    GC_RECURSE_SWITCH((s->u), (s->type), ZAP_SVALUE, FREE_WEAK,
+    GC_RECURSE_SWITCH((s->u), TYPEOF(*s), ZAP_SVALUE, FREE_WEAK,
 		      GC_DONT_MARK, MARK_PRE,
 		      DO_MARK_FUNC_SVALUE, DO_MARK_OBJ_WEAK,
 		      DO_MARK_STRING, GC_DO_MARK);
-    t |= 1 << s->type;
+    t |= 1 << TYPEOF(*s);
   }
   return freed ? t : 0;
 }
@@ -2418,7 +2411,7 @@ int gc_mark_without_recurse(struct svalue *s)
   int freed = 0;
   do {
     dmalloc_touch_svalue(s);
-    GC_RECURSE_SWITCH((s->u), (s->type), ZAP_SVALUE, DONT_FREE_WEAK,
+    GC_RECURSE_SWITCH((s->u), TYPEOF(*s), ZAP_SVALUE, DONT_FREE_WEAK,
 		      GC_DONT_MARK, MARK_PRE,
 		      DONT_MARK_FUNC_SVALUE, GC_DONT_MARK,
 		      DONT_MARK_STRING, GC_DONT_MARK);
@@ -2431,7 +2424,7 @@ int gc_mark_weak_without_recurse(struct svalue *s)
   int freed = 0;
   do {
     dmalloc_touch_svalue(s);
-    GC_RECURSE_SWITCH((s->u), (s->type), ZAP_SVALUE, FREE_WEAK,
+    GC_RECURSE_SWITCH((s->u), TYPEOF(*s), ZAP_SVALUE, FREE_WEAK,
 		      GC_DONT_MARK, MARK_PRE,
 		      DONT_MARK_FUNC_SVALUE, GC_DONT_MARK,
 		      DONT_MARK_STRING, GC_DONT_MARK);
@@ -2440,7 +2433,7 @@ int gc_mark_weak_without_recurse(struct svalue *s)
 }
 
 #define DO_CYCLE_CHECK_FUNC_SVALUE(U, T, ZAP, GC_DO)			\
-      if (s->subtype == FUNCTION_BUILTIN) break;			\
+      if (SUBTYPEOF(*s) == FUNCTION_BUILTIN) break;			\
       /* Fall through to T_OBJECT. */
 
 #define DONT_CYCLE_CHECK_STRING(U)
@@ -2457,11 +2450,11 @@ PMOD_EXPORT TYPE_FIELD real_gc_cycle_check_svalues(struct svalue *s, size_t num)
   for(e=0;e<num;e++,s++)
   {
     dmalloc_touch_svalue(s);
-    GC_RECURSE_SWITCH((s->u), (s->type), ZAP_SVALUE, DONT_FREE_WEAK,
+    GC_RECURSE_SWITCH((s->u), TYPEOF(*s), ZAP_SVALUE, DONT_FREE_WEAK,
 		      DO_CYCLE_CHECK, {},
 		      DO_CYCLE_CHECK_FUNC_SVALUE, DO_CYCLE_CHECK,
 		      DONT_CYCLE_CHECK_STRING, DONT_CYCLE_CHECK);
-    t |= 1 << s->type;
+    t |= 1 << TYPEOF(*s);
   }
   return freed ? t : 0;
 }
@@ -2474,11 +2467,11 @@ TYPE_FIELD gc_cycle_check_weak_svalues(struct svalue *s, size_t num)
   for(e=0;e<num;e++,s++)
   {
     dmalloc_touch_svalue(s);
-    GC_RECURSE_SWITCH((s->u), (s->type), ZAP_SVALUE, DONT_FREE_WEAK,
+    GC_RECURSE_SWITCH((s->u), TYPEOF(*s), ZAP_SVALUE, DONT_FREE_WEAK,
 		      DO_CYCLE_CHECK_WEAK, {},
 		      DO_CYCLE_CHECK_FUNC_SVALUE, DO_CYCLE_CHECK_WEAK,
 		      DONT_CYCLE_CHECK_STRING, DONT_CYCLE_CHECK);
-    t |= 1 << s->type;
+    t |= 1 << TYPEOF(*s);
   }
   return freed ? t : 0;
 }
@@ -2528,8 +2521,8 @@ void real_gc_free_svalue(struct svalue *s)
 	Pike_in_gc != GC_PASS_ZAP_WEAK)
       Pike_fatal("gc_free_svalue() called in invalid gc pass.\n");
 #endif
-    if (s->type <= MAX_COMPLEX && *(s->u.refs) == 1)
-      gc_delayed_free(s->u.refs, s->type);
+    if (TYPEOF(*s) <= MAX_COMPLEX && *(s->u.refs) == 1)
+      gc_delayed_free(s->u.refs, TYPEOF(*s));
   }
   free_svalue(s);
 }
@@ -2550,7 +2543,7 @@ void real_gc_free_short_svalue(union anything *u, TYPE_T type)
 
 PMOD_EXPORT INT32 pike_sizeof(const struct svalue *s)
 {
-  switch(s->type)
+  switch(TYPEOF(*s))
   {
   case T_STRING:
     return DO_NOT_WARN((INT32)s->u.string->len);
@@ -2564,13 +2557,13 @@ PMOD_EXPORT INT32 pike_sizeof(const struct svalue *s)
 
       if(!(p = s->u.object->prog))
 	Pike_error("sizeof() on destructed object.\n");
-      if((fun = FIND_LFUN(p->inherits[s->subtype].prog, LFUN__SIZEOF)) == -1)
+      if((fun = FIND_LFUN(p->inherits[SUBTYPEOF(*s)].prog, LFUN__SIZEOF)) == -1)
       {
-	return p->inherits[s->subtype].prog->num_identifier_index;
+	return p->inherits[SUBTYPEOF(*s)].prog->num_identifier_index;
       }else{
 	apply_low(s->u.object,
-		  fun + p->inherits[s->subtype].identifier_level, 0);
-	if(sp[-1].type != T_INT)
+		  fun + p->inherits[SUBTYPEOF(*s)].identifier_level, 0);
+	if(TYPEOF(sp[-1]) != T_INT)
 	  Pike_error("Bad return type from o->_sizeof() (not int)\n");
 	dmalloc_touch_svalue(Pike_sp-1);
 	sp--;
@@ -2594,7 +2587,7 @@ int svalues_are_constant(const struct svalue *s,
     INT32 e;
     for(e=0;e<num;e++)
     {
-      switch(s->type)
+      switch(TYPEOF(*s))
       {
 	case T_ARRAY:
 	case T_MAPPING:
@@ -2608,7 +2601,7 @@ int svalues_are_constant(const struct svalue *s,
 	    if(p->pointer_a == (void *)s->u.refs)
 	      return 1;
 	  
-	  switch(s->type)
+	  switch(TYPEOF(*s))
 	  {
 	    case T_ARRAY:
 	      if(!array_is_constant(s->u.array,&curr))
@@ -2629,7 +2622,7 @@ int svalues_are_constant(const struct svalue *s,
 	}
 	  
 	case T_FUNCTION:
-	  if(s->subtype == FUNCTION_BUILTIN) continue;
+	  if(SUBTYPEOF(*s) == FUNCTION_BUILTIN) continue;
 	  /* Fall through */
 	  
 	case T_OBJECT:

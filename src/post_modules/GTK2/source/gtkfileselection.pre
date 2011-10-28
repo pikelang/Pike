@@ -65,7 +65,7 @@ void create(string|mapping(string:mixed) title_or_props)
   {
     struct pike_string *title;
 
-    if (Pike_sp[-args].type==PIKE_T_STRING) {
+    if (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) {
       GtkWidget *gf;
       get_all_args("create",args,"%t",&title);
       ref_push_string(title);

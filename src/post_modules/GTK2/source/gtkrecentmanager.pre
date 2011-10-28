@@ -9,14 +9,14 @@ void create(mapping(string:mixed)|int|GDK2.Screen|void props_or_def)
   pgtk2_verify_not_inited();
   pgtk2_verify_setup();
   if (args) {
-    if (Pike_sp[-args].type==PIKE_T_MAPPING)
+    if (TYPEOF(Pike_sp[-args]) == PIKE_T_MAPPING)
       INIT_WITH_PROPS(GTK_TYPE_RECENT_MANAGER);
     else {
       INT_TYPE def;
       GtkRecentManager *grm;
       struct object *o1;
 
-      if (Pike_sp[-args].type==PIKE_T_INT) {
+      if (TYPEOF(Pike_sp[-args]) == PIKE_T_INT) {
         get_all_args("create",args,"%i",&def);
 	if (def)
  	  grm=gtk_recent_manager_get_default();

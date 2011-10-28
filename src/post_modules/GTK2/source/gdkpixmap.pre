@@ -49,7 +49,7 @@ void create(int|object image)
   pgtk2_verify_setup();
   pgtk2_verify_not_inited();
 
-  if (Pike_sp[-args].type==PIKE_T_OBJECT) {
+  if (TYPEOF(Pike_sp[-args]) == PIKE_T_OBJECT) {
     get_all_args("create",args,"%o",&o);
     i=pgtk2_pixmap_setup(o,&f);
 
@@ -63,7 +63,7 @@ void create(int|object image)
     pgtk2__pixmap_draw(i);
     if (f)
       g_object_unref(i);
-  } else if (args && Pike_sp[-1].type==PIKE_T_INT) {
+  } else if (args && TYPEOF(Pike_sp[-1]) == PIKE_T_INT) {
     gp=gdk_pixmap_foreign_new(Pike_sp[-1].u.integer);
     THIS->obj=G_OBJECT(gp);
     if (!THIS->obj)

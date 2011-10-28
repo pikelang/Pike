@@ -1430,7 +1430,7 @@ PIKECLASS Surface {
     CHECK_CLASS(image, image, 1);
     //    }
     if(_flags) {
-      if(_flags->type != PIKE_T_INT) {
+      if(TYPEOF(*_flags) != PIKE_T_INT) {
 	SIMPLE_BAD_ARG_ERROR("set_image",2,"int|void");
       }
       flags = _flags->u.integer;
@@ -1479,7 +1479,7 @@ PIKECLASS Surface {
     CHECK_CLASS(alpha, image, 2);
 
     if(_flags) {
-      if(_flags->type != PIKE_T_INT) {
+      if(TYPEOF(*_flags) != PIKE_T_INT) {
 	SIMPLE_BAD_ARG_ERROR("set_image",3,"int|void");
       }
       flags = _flags->u.integer;
@@ -2949,7 +2949,7 @@ PIKECLASS Music {
   PIKEFUN object play(int|void _loops) {
     int loops = -1;
     if(_loops) {
-      if(_loops->type == PIKE_T_INT) {
+      if(TYPEOF(*_loops) == PIKE_T_INT) {
 	loops = _loops->u.integer;
       } else {
 	SIMPLE_BAD_ARG_ERROR("Music.play", 1, "void|int");
@@ -2988,7 +2988,7 @@ PIKECLASS Music {
   PIKEFUN object fade_in(int ms, int|void _loops) {
     int loops = -1;
     if(_loops) {
-      if(_loops->type == PIKE_T_INT) {
+      if(TYPEOF(*_loops) == PIKE_T_INT) {
 	loops = _loops->u.integer;
       } else {
 	SIMPLE_BAD_ARG_ERROR("Music.fade_in", 2, "void|int");

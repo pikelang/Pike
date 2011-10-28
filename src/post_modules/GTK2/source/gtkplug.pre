@@ -25,7 +25,7 @@ void create(int|mapping(string:mixed) socket_id_or_props)
   pgtk2_verify_not_inited();
   pgtk2_verify_setup();
   {
-    if (Pike_sp[-args].type==PIKE_T_INT) {
+    if (TYPEOF(Pike_sp[-args]) == PIKE_T_INT) {
       INT_TYPE id;
       GtkWidget *gp;
       get_all_args("create",args,"%i",&id);

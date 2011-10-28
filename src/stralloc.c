@@ -3304,9 +3304,7 @@ PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
   str_start = str;
 
   /* In case no number is formed. */
-  r->type = T_INT;
-  r->subtype = NUMBER_NUMBER;
-  r->u.integer = 0;
+  SET_SVAL(*r, T_INT, NUMBER_NUMBER, integer, 0);
   if(ptr != 0)
     *ptr = str;
   
@@ -3424,7 +3422,7 @@ PMOD_EXPORT int convert_stack_top_string_to_inumber(int base)
   struct svalue r;
   int i;
 
-  if(Pike_sp[-1].type != T_STRING)
+  if(TYPEOF(Pike_sp[-1]) != T_STRING)
     Pike_error("Cannot convert stack top to integer number.\n");
   
   i=pcharp_to_svalue_inumber(&r, MKPCHARP_STR(Pike_sp[-1].u.string), 0, base, 0);

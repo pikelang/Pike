@@ -61,7 +61,7 @@ void set_match_func( function(object,string,object:void) cb )
     if (sd==NULL)
         SIMPLE_OUT_OF_MEMORY_ERROR("set_match_func",sizeof(struct signal_data));
     assign_svalue_no_free( &sd->cb, sv1 );
-    sd->args.type = PIKE_T_INT;
+    SET_SVAL(sd->args, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
     gtk_entry_completion_set_match_func( GTK_ENTRY_COMPLETION(THIS->obj),
                                          pgtk2_entry_completion_match_func,
                                          (gpointer*)sd,

@@ -18,12 +18,12 @@ void create(string|GTK2.TreeModel|mapping(string:mixed)|void model,
   pgtk2_verify_setup();
   if (args) {
     GtkWidget *gcb;
-    if (Pike_sp[-args].type==PIKE_T_STRING) {
+    if (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) {
       char *text;
       get_all_args("create",args,"%s",&text);
       gcb=gtk_combo_box_entry_new_text();
       THIS->obj=G_OBJECT(gcb);
-    } else if (Pike_sp[-args].type==PIKE_T_OBJECT) {
+    } else if (TYPEOF(Pike_sp[-args]) == PIKE_T_OBJECT) {
       struct object *o1;
       INT_TYPE text_column;
       get_all_args("create",args,"%o%i",&o1,&text_column);

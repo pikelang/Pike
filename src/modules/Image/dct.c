@@ -101,8 +101,8 @@ void image_dct(INT32 args)
    *img=*THIS;
    
    if (args>=2 
-       && sp[-args].type==T_INT 
-       && sp[1-args].type==T_INT)
+       && TYPEOF(sp[-args]) == T_INT
+       && TYPEOF(sp[1-args]) == T_INT)
    {
       img->xsize=MAXIMUM(1,sp[-args].u.integer);
       img->ysize=MAXIMUM(1,sp[1-args].u.integer);

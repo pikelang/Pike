@@ -256,13 +256,13 @@ void pgtk2_encode_truecolor_masks(struct image *i,
 void pgtk2_push_gchar(const gchar *s);
 gchar *pgtk2_get_str(struct svalue *sv);
 void pgtk2_free_str(gchar *s);
-# define PGTK_ISSTR(X) ((X)->type==PIKE_T_STRING)
+# define PGTK_ISSTR(X) (TYPEOF(*(X)) == PIKE_T_STRING)
 # define PGTK_GETSTR(X)  pgtk2_get_str(X)
 # define PGTK_FREESTR(X) pgtk2_free_str(X)
 # define PGTK_PUSH_GCHAR(X) pgtk2_push_gchar(X)
 /*
 #else
-# define PGTK_ISSTR( X ) (((X)->type==PIKE_T_STRING)&&((X)->u.string->size_shift==0))
+# define PGTK_ISSTR( X ) ((TYPEOF(*(X)) == PIKE_T_STRING)&&((X)->u.string->size_shift==0))
 # define PGTK_GETSTR(X)  ((char*)((X)->u.string->str))
 # define PGTK_FREESTR(X)  
 # define PGTK_PUSH_GCHAR(X) push_text( X )
@@ -276,7 +276,7 @@ void pgtk2_free_str(gchar *s);
 LONGEST pgtk2_get_int(struct svalue *s);
 int pgtk2_is_int(struct svalue *s);
 
-# define PGTK_ISINT(X)    (((X)->type==PIKE_T_INT) || pgtk2_is_int(X))
+# define PGTK_ISINT(X)    ((TYPEOF(*(X)) == PIKE_T_INT) || pgtk2_is_int(X))
 # define PGTK_GETINT(X)   pgtk2_get_int(X)
 # define PGTK_PUSH_INT(X) push_int64((LONGEST)(X))
 

@@ -113,7 +113,7 @@ static void f_blobs_add_words( INT32 args )
 		&docid, &words, &field_id);
 
   for( i = 0; i<words->size; i++ )
-    if( words->item[i].type != PIKE_T_STRING )
+    if( TYPEOF(words->item[i]) != PIKE_T_STRING )
       Pike_error("Illegal element %d in words array\n", i );
     else
     {
@@ -170,10 +170,8 @@ static void f_blobs_read( INT32 args )
   {
     if( t->next_ind >= HSIZE )
     {
-      a->item[0].type = PIKE_T_INT;
-      a->item[0].u.integer = 0;
-      a->item[1].type = PIKE_T_INT;
-      a->item[1].u.integer = 0;
+      SET_SVAL(a->item[0], PIKE_T_INT, NUMBER_NUMBER, integer, 0);
+      SET_SVAL(a->item[1], PIKE_T_INT, NUMBER_NUMBER, integer, 0);
       push_array( a );
       return;
     }
@@ -181,11 +179,10 @@ static void f_blobs_read( INT32 args )
     t->next_ind++;
   }
 
-  a->item[0].type = PIKE_T_STRING;
-  a->item[0].u.string = t->next_h->id;
-  a->item[1].type = PIKE_T_STRING;
-  a->item[1].u.string = make_shared_binary_string( t->next_h->buffer->data,
-						   t->next_h->buffer->size );
+  SET_SVAL(a->item[0], PIKE_T_STRING, 0, string, t->next_h->id);
+  SET_SVAL(a->item[1], PIKE_T_STRING, 0, string,
+	   make_shared_binary_string( t->next_h->buffer->data,
+				      t->next_h->buffer->size ));
   wf_buffer_free( t->next_h->buffer );
   t->next_h->buffer = 0;
   t->next_h->id = 0;

@@ -31,7 +31,7 @@ void create(GTK2.TextTagTable|mapping(string:mixed)|void table_or_props)
   pgtk2_verify_not_inited();
   pgtk2_verify_setup();
   if (args) {
-    if (Pike_sp[-args].type==PIKE_T_OBJECT) {
+    if (TYPEOF(Pike_sp[-args]) == PIKE_T_OBJECT) {
       struct object *o1;
       GtkTextBuffer *gt;
       get_all_args("create",args,"%o",&o1);
@@ -176,7 +176,7 @@ void insert_with_tags(GTK2.TextIter iter, string text, int len, array tags)
     if (a==NULL)
       Pike_error("Invalid array.\n");
     for (i=0; i<a->size; i++) {
-      if ((ITEM(a)+i)->type==PIKE_T_OBJECT) {
+      if (TYPEOF(ITEM(a)[i]) == PIKE_T_OBJECT) {
 	GObject *go=get_gobject((ITEM(a)+i)->u.object);
 /*	if (G_OBJECT_TYPE(go)==GTK_TYPE_TEXT_TAG) { */
 	if (g_type_is_a(GTK_TYPE_TEXT_TAG,G_OBJECT_TYPE(go))) {
@@ -216,7 +216,7 @@ void insert_with_tags_by_name(GTK2.TextIter iter, string text, int len,
       Pike_error("Invalid array\n");
     table=gtk_text_buffer_get_tag_table(GTK_TEXT_BUFFER(THIS->obj));
     for (i=0; i<a->size; i++) {
-      if ((ITEM(a)+i)->type==PIKE_T_STRING) {
+      if (TYPEOF(ITEM(a)[i]) == PIKE_T_STRING) {
 	tag_name=(char *)STR0((ITEM(a)+i)->u.string);
 	tag=gtk_text_tag_table_lookup(table,tag_name);
 	if (tag==NULL) {
@@ -645,7 +645,7 @@ void remove_all_tags(GTK2.TextIter start, GTK2.TextIter end)
     tag=gtk_text_tag_new(name);
     gtk_text_tag_table_add(gtk_text_buffer_get_tag_table(GTK_TEXT_BUFFER(THIS->obj)),tag);
     NEW_MAPPING_LOOP(m->data) {
-      if (k->ind.type==PIKE_T_STRING) {
+      if (TYPEOF(k->ind) == PIKE_T_STRING) {
 	char *s=PGTK_GETSTR(&k->ind);
 	pgtk2_set_property(G_OBJECT(tag),s,&k->val);
 	PGTK_FREESTR(s);

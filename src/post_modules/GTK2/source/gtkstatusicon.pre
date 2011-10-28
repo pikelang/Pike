@@ -45,12 +45,12 @@ void create(mapping(string:mixed)|GDK2.Pixbuf|string arg)
   pgtk2_verify_not_inited();
   pgtk2_verify_setup();
   if (args) {
-    if (Pike_sp[-args].type==PIKE_T_MAPPING) {
+    if (TYPEOF(Pike_sp[-args]) == PIKE_T_MAPPING) {
       INIT_WITH_PROPS(GTK_TYPE_STATUS_ICON);
     } else {
       GtkStatusIcon *gi;
 
-      if (Pike_sp[-args].type==PIKE_T_STRING) {
+      if (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) {
 	struct pike_string *s1;
 	int t=0;
 	GtkStockItem item;

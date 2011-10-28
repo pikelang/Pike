@@ -946,7 +946,7 @@ PIKECLASS string_iterator
       f_search(3);
       stack_pop_n_elems_keep_top(args);
       /* Advance to the found position. */
-      if (Pike_sp[-1].type == T_INT) {
+      if (TYPEOF(Pike_sp[-1]) == T_INT) {
 	if (Pike_sp[-1].u.integer >= 0) {
 	  THIS->pos = Pike_sp[-1].u.integer;
 	} else {
@@ -1027,7 +1027,7 @@ PIKECLASS file_line_iterator
 	}
 
       apply_svalue( &ssi->feed, 0 );
-      if( Pike_sp[-1].type == PIKE_T_STRING &&
+      if( TYPEOF(Pike_sp[-1]) == PIKE_T_STRING &&
 	  Pike_sp[-1].u.string->len )
       {
 	push_string(make_shared_binary_string( ssi->buffer->str+start_off,
@@ -1126,7 +1126,7 @@ PIKECLASS file_line_iterator
       }
       assign_svalue( &THIS->feed, feed );
       apply_svalue( &THIS->feed, 0 );
-      if( Pike_sp[-1].type != PIKE_T_STRING )
+      if( TYPEOF(Pike_sp[-1]) != PIKE_T_STRING )
 	Pike_error("Feed function returned illegal value\n");
       THIS->buffer = Pike_sp[-1].u.string;
       dmalloc_touch_svalue(Pike_sp-1);
@@ -1327,7 +1327,7 @@ PIKECLASS string_split_iterator
       ssi->buffer = NULL;					\
       ssi->offset = 0;						\
       offset = 0;						\
-      if (ssi->feed.type == PIKE_T_FREE) {			\
+      if (TYPEOF(ssi->feed) == PIKE_T_FREE) {			\
 	if (!(FLAGS)) {						\
 	  copy_shared_string(ssi->current, empty_pike_string);	\
 	  ssi->index++;						\
@@ -1336,7 +1336,7 @@ PIKECLASS string_split_iterator
       } else {							\
 	/* Attempt to fill the buffer with some more. */	\
 	apply_svalue(&ssi->feed, 0);				\
-	if ((Pike_sp[-1].type == T_STRING) &&			\
+	if ((TYPEOF(Pike_sp[-1]) == T_STRING) &&		\
 	    (Pike_sp[-1].u.string->len)) {			\
 	  ssi->buffer = Pike_sp[-1].u.string;			\
           dmalloc_touch_svalue(Pike_sp-1);			\
@@ -1366,12 +1366,12 @@ PIKECLASS string_split_iterator
       COMPLEX_SCAN_PUSH(ssi, SHIFT, end);			\
     }								\
     if ((end == ssi->buffer->len) &&				\
-	(ssi->feed.type != PIKE_T_FREE)) {			\
+	(TYPEOF(ssi->feed) != PIKE_T_FREE)) {			\
       apply_svalue(&ssi->feed, 0);				\
-      if ((Pike_sp[-1].type == T_STRING) &&			\
+      if ((TYPEOF(Pike_sp[-1]) == T_STRING) &&			\
 	  (Pike_sp[-1].u.string->len)) {			\
 	f_add(2);						\
-	if (Pike_sp[-1].type != T_STRING) {			\
+	if (TYPEOF(Pike_sp[-1]) != T_STRING) {			\
 	  Pike_error("Bad result from concatenation!\n");	\
 	}							\
 	free_string(ssi->buffer);				\
@@ -1506,9 +1506,9 @@ PIKECLASS string_split_iterator
 	push_int(THIS->buffer->len);
 	o_range();
       }
-      for (i = 1; THIS->feed.type != PIKE_T_FREE; i++) {
+      for (i = 1; TYPEOF(THIS->feed) != PIKE_T_FREE; i++) {
 	apply_svalue(&THIS->feed, 0);
-	if ((Pike_sp[-1].type != T_STRING) ||
+	if ((TYPEOF(Pike_sp[-1]) != T_STRING) ||
 	    (!Pike_sp[-1].u.string->len)) {
 	  /* End of stream marker. */
 	  pop_stack();
@@ -1604,16 +1604,16 @@ PIKECLASS string_split_iterator
       if (THIS->buffer) {
 	Pike_error("String.split() iterators cannot be reused.\n");
       }
-      if (split_set->type == T_INT) {
+      if (TYPEOF(*split_set) == T_INT) {
 	THIS->split_set = (p_wchar2 *)xalloc(sizeof(p_wchar2));
 	THIS->split_set[0] = split_set->u.integer;
 	THIS->split_set_size = 1;
       } else {
 	struct array *a;
 	int i;
-	if (split_set->type == T_ARRAY) {
+	if (TYPEOF(*split_set) == T_ARRAY) {
 	  a = split_set->u.array;
-	} else if (split_set->type == T_MULTISET) {
+	} else if (TYPEOF(*split_set) == T_MULTISET) {
 	  a = multiset_indices (split_set->u.multiset);
 	  push_array (a);
 	} else {
@@ -1625,7 +1625,7 @@ PIKECLASS string_split_iterator
 			       "int|array(int)|multiset(int)");
 	}
 	for (i=0; i < a->size; i++) {
-	  if (a->item[i].type != T_INT) {
+	  if (TYPEOF(a->item[i]) != T_INT) {
 	    SIMPLE_BAD_ARG_ERROR("String.split", 2,
 				 "int|array(int)|multiset(int)");
 	  }
@@ -1635,11 +1635,11 @@ PIKECLASS string_split_iterator
 	  THIS->split_set[i] = a->item[i].u.integer;
 	}
 	THIS->split_set_size = a->size;
-	if (split_set->type == T_MULTISET) pop_stack();
+	if (TYPEOF(*split_set) == T_MULTISET) pop_stack();
       }
       add_ref(THIS->buffer = buffer);
       if (args > 2) {
-	if (flags && (flags->type == T_INT)) {
+	if (flags && (TYPEOF(*flags) == T_INT)) {
 	  THIS->flags = flags->u.integer;
 	} else {
 	  THIS->flags = 0;
@@ -1693,8 +1693,8 @@ PIKECLASS string_split_iterator
       if (CDR(n) && (CDR(n)->token == F_ARG_LIST) &&
 	  CADR(n) && (CADR(n)->token == F_APPLY) &&
 	  CAADR(n) && (CAADR(n)->token == F_CONSTANT) &&
-	  (CAADR(n)->u.sval.type == T_FUNCTION) &&
-	  (CAADR(n)->u.sval.subtype == FUNCTION_BUILTIN) &&
+	  (TYPEOF(CAADR(n)->u.sval) == T_FUNCTION) &&
+	  (SUBTYPEOF(CAADR(n)->u.sval) == FUNCTION_BUILTIN) &&
 	  (CAADR(n)->u.sval.u.efun->function == f_replace)) {
 	/* String.SplitIterator(replace(...),...) */
 	node *repl_args = CDADR(n);
@@ -1709,15 +1709,15 @@ PIKECLASS string_split_iterator
 
 	  if (((*to)->token == F_APPLY) &&
 	      CAR(*to) && (CAR(*to)->token == F_CONSTANT) &&
-	      (CAR(*to)->u.sval.type == T_FUNCTION) &&
-	      (CAR(*to)->u.sval.subtype == FUNCTION_BUILTIN) &&
+	      (TYPEOF(CAR(*to)->u.sval) == T_FUNCTION) &&
+	      (SUBTYPEOF(CAR(*to)->u.sval) == FUNCTION_BUILTIN) &&
 	      (CAR(*to)->u.sval.u.efun->function == f_allocate) &&
 	      CDR(*to) && (CDR(*to)->token == F_ARG_LIST) &&
 	      CADR(*to) && (CADR(*to)->token == F_CONSTANT) &&
-	      (CADR(*to)->u.sval.type == T_INT) &&
+	      (TYPEOF(CADR(*to)->u.sval) == T_INT) &&
 	      (num = CADR(*to)->u.sval.u.integer) &&
 	      CDDR(*to) && (CDDR(*to)->token == F_CONSTANT) &&
-	      (CDDR(*to)->u.sval.type == T_STRING) &&
+	      (TYPEOF(CDDR(*to)->u.sval) == T_STRING) &&
 	      (CDDR(*to)->u.sval.u.string->len == 1)) {
 	    /* String.SplitIterator(replace(str, from, allocate(num, "x")),
 	     *                      ...) */
@@ -1725,11 +1725,11 @@ PIKECLASS string_split_iterator
 
 	    if (CDDR(n) &&
 		(((CDDR(n)->token == F_CONSTANT) &&
-		  (CDDR(n)->u.sval.type == T_INT) &&
+		  (TYPEOF(CDDR(n)->u.sval) == T_INT) &&
 		  (CDDR(n)->u.sval.u.integer == split_val)) ||
 		 ((CDDR(n)->token == F_ARG_LIST) &&
 		  CADDR(n) && (CADDR(n)->token == F_CONSTANT) &&
-		  (CADDR(n)->u.sval.type == T_INT) &&
+		  (TYPEOF(CADDR(n)->u.sval) == T_INT) &&
 		  (CADDR(n)->u.sval.u.integer == split_val)))) {
 	      /* String.SplitIterator(replace(str, from, allocate(n, "x")),
 	       *                      'x', ...)
@@ -1739,11 +1739,11 @@ PIKECLASS string_split_iterator
 
 	      switch((*from)->token) {
 	      case F_CONSTANT:
-		if (((*from)->u.sval.type == T_ARRAY) &&
+		if ((TYPEOF((*from)->u.sval) == T_ARRAY) &&
 		    ((*from)->u.sval.u.array->size == num)) {
 		  int i;
 		  for (i=0; i < num; i++) {
-		    if (((*from)->u.sval.u.array->item[i].type != T_STRING) ||
+		    if ((TYPEOF((*from)->u.sval.u.array->item[i]) != T_STRING) ||
 			((*from)->u.sval.u.array->item[i].u.string->len != 1)) {
 		      return NULL;
 		    }
@@ -1760,8 +1760,8 @@ PIKECLASS string_split_iterator
 		break;
 	      case F_APPLY:
 		if (CAR(*from) && (CAR(*from)->token == F_CONSTANT) &&
-		    (CAR(*from)->u.sval.type == T_FUNCTION) &&
-		    (CAR(*from)->u.sval.subtype == FUNCTION_BUILTIN)) {
+		    (TYPEOF(CAR(*from)->u.sval) == T_FUNCTION) &&
+		    (SUBTYPEOF(CAR(*from)->u.sval) == FUNCTION_BUILTIN)) {
 		  if (CAR(*from)->u.sval.u.efun->function == f_allocate) {
 		    /* FIXME: Not likely */
 		  } else if (CAR(*from)->u.sval.u.efun->function ==
@@ -1772,7 +1772,7 @@ PIKECLASS string_split_iterator
 			 tmp = CDR(tmp)) {
 		      if (!CAR(tmp)) continue;
 		      if ((CAR(tmp)->token != F_CONSTANT) || 
-			  (CAR(tmp)->u.sval.type != T_STRING) ||
+			  (TYPEOF(CAR(tmp)->u.sval) != T_STRING) ||
 			  (CAR(tmp)->u.sval.u.string->len != 1)) {
 			return NULL;
 		      }
@@ -1882,7 +1882,7 @@ PIKECLASS string_split_iterator
 PIKEFUN object(Iterator) get_iterator(object|array|mapping|multiset|string data)
   efun;
 {
-  switch(data->type)
+  switch(TYPEOF(*data))
   {
     case PIKE_T_STRING:
       push_object(clone_object(string_iterator_program, 1));
@@ -1908,12 +1908,12 @@ PIKEFUN object(Iterator) get_iterator(object|array|mapping|multiset|string data)
       if(!(p = data->u.object->prog))
 	SIMPLE_ARG_ERROR ("get_iterator", 1, "Got a destructed object.\n");
 
-      fun = FIND_LFUN(p->inherits[data->subtype].prog, LFUN__GET_ITERATOR);
+      fun = FIND_LFUN(p->inherits[SUBTYPEOF(*data)].prog, LFUN__GET_ITERATOR);
       if (fun != -1)
       {
 	apply_low (data->u.object,
-		   fun + p->inherits[data->subtype].identifier_level, 0);
-	if (sp[-1].type != T_OBJECT) {
+		   fun + p->inherits[SUBTYPEOF(*data)].identifier_level, 0);
+	if (TYPEOF(sp[-1]) != T_OBJECT) {
 	  /* FIXME: Ought to include what we got in the error message. */
 	  pop_stack();
 	  SIMPLE_ARG_ERROR ("get_iterator", 1,
@@ -1966,10 +1966,10 @@ int foreach_iterate(struct object *o, int do_step)
       }
 #endif /* PIKE_MAPPING_KEYPAIR_LOOP */
 
-      if(Pike_sp[-4].type != T_INT)
+      if(TYPEOF(Pike_sp[-4]) != T_INT)
 	assign_lvalue(Pike_sp-4, & i->current->ind);
 	
-      if(Pike_sp[-2].type != T_INT)
+      if(TYPEOF(Pike_sp[-2]) != T_INT)
 	assign_lvalue(Pike_sp-2, & i->current->val);
 
       return 1;
@@ -1985,7 +1985,7 @@ int foreach_iterate(struct object *o, int do_step)
 	if (!i->current) return 0;
       }
 
-      if(Pike_sp[-4].type != T_INT)
+      if(TYPEOF(Pike_sp[-4]) != T_INT)
       {
 	/* Black Magic... */
 	push_int(i->index);
@@ -1993,7 +1993,7 @@ int foreach_iterate(struct object *o, int do_step)
 	assign_lvalue(Pike_sp-4, Pike_sp);
       }
 
-      if(Pike_sp[-2].type != T_INT)
+      if(TYPEOF(Pike_sp[-2]) != T_INT)
       {
 	/* Black Magic... */
 	push_string(i->current);
@@ -2015,7 +2015,7 @@ int foreach_iterate(struct object *o, int do_step)
 	if (!i->current) return 0;
       }
 
-      if(Pike_sp[-4].type != T_INT)
+      if(TYPEOF(Pike_sp[-4]) != T_INT)
       {
 	/* Black Magic... */
 	push_int(i->index);
@@ -2023,7 +2023,7 @@ int foreach_iterate(struct object *o, int do_step)
 	assign_lvalue(Pike_sp-4, Pike_sp);
       }
 
-      if(Pike_sp[-2].type != T_INT)
+      if(TYPEOF(Pike_sp[-2]) != T_INT)
       {
 	/* Black Magic... */
 	push_string(i->current);
@@ -2043,14 +2043,14 @@ int foreach_iterate(struct object *o, int do_step)
       if (do_step)
 	if (++i->pos == i->a->size) return 0;
 
-      if(Pike_sp[-4].type != T_INT)
+      if(TYPEOF(Pike_sp[-4]) != T_INT)
       {
 	push_int(i->pos);
 	assign_lvalue(Pike_sp-5, Pike_sp-1);
 	pop_stack();
       }
 
-      if(Pike_sp[-2].type != T_INT)
+      if(TYPEOF(Pike_sp[-2]) != T_INT)
 	assign_lvalue(Pike_sp-2, i->a->item + i->pos);
 
       return 1;
@@ -2071,9 +2071,9 @@ int foreach_iterate(struct object *o, int do_step)
 	}
       }
 
-      if (Pike_sp[-4].type != T_INT)
+      if (TYPEOF(Pike_sp[-4]) != T_INT)
 	assign_lvalue (Pike_sp - 4, use_multiset_index (i->l, i->nodepos, ind));
-      if (Pike_sp[-2].type != T_INT)
+      if (TYPEOF(Pike_sp[-2]) != T_INT)
 	assign_lvalue (Pike_sp - 2, get_multiset_value (i->l, i->nodepos));
 
       return 1;
@@ -2087,14 +2087,14 @@ int foreach_iterate(struct object *o, int do_step)
       if (do_step)
 	if (++i->pos == i->s->len) return 0;
 
-      if(Pike_sp[-4].type != T_INT)
+      if(TYPEOF(Pike_sp[-4]) != T_INT)
       {
 	push_int(i->pos);
 	assign_lvalue(Pike_sp-5, Pike_sp-1);
 	pop_stack();
       }
 
-      if(Pike_sp[-2].type != T_INT)
+      if(TYPEOF(Pike_sp[-2]) != T_INT)
       {
 	push_int(index_shared_string(i->s, i->pos));
 	assign_lvalue(Pike_sp-3, Pike_sp-1);
@@ -2158,7 +2158,7 @@ int foreach_iterate(struct object *o, int do_step)
 
   fun = -1;
 
-  if(Pike_sp[-4].type != T_INT)
+  if(TYPEOF(Pike_sp[-4]) != T_INT)
   {
     fun = find_identifier ("index", prog);
     if (fun < 0) Pike_error ("Iterator object lacks index().\n");
@@ -2171,7 +2171,7 @@ int foreach_iterate(struct object *o, int do_step)
     pop_stack();
   }
 
-  if(Pike_sp[-2].type != T_INT)
+  if(TYPEOF(Pike_sp[-2]) != T_INT)
   {
     fun = find_identifier ("value", prog);
     if (fun < 0) Pike_error ("Iterator object lacks value().\n");
@@ -2210,7 +2210,7 @@ int foreach_iterate(struct object *o, int do_step)
 
   pop_stack();	/* Get rid of the return value from `!() or step(). */
 
-  if(Pike_sp[-4].type != T_INT)
+  if(TYPEOF(Pike_sp[-4]) != T_INT)
   {
     fun = find_shared_string_identifier(MK_STRING("index"), prog);
     if (fun < 0) Pike_error ("Iterator object lacks index().\n");
@@ -2219,7 +2219,7 @@ int foreach_iterate(struct object *o, int do_step)
     pop_stack();
   }
 
-  if(Pike_sp[-2].type != T_INT)
+  if(TYPEOF(Pike_sp[-2]) != T_INT)
   {
     fun = find_shared_string_identifier(MK_STRING("value"), o->prog);
     if (fun < 0) Pike_error ("Iterator object lacks value().\n");

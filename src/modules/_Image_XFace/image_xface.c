@@ -398,7 +398,7 @@ static void image_xface_decode(INT32 args)
   struct object *o;
   struct image *img;
 
-  if(args<1 || sp[-args].type!=T_STRING)
+  if(args<1 || TYPEOF(sp[-args]) != T_STRING)
     Pike_error("Image.XFace.decode: Illegal arguments\n");
 
   o=clone_object(image_program,0);
@@ -436,10 +436,10 @@ static void image_xface_encode(INT32 args)
   struct pike_string *res;
 
   if (args<1 
-      || sp[-args].type!=T_OBJECT
+      || TYPEOF(sp[-args]) != T_OBJECT
       || !(img=(struct image*)
 	   get_storage(sp[-args].u.object,image_program))
-      || (args>1 && sp[1-args].type!=T_MAPPING))
+      || (args>1 && TYPEOF(sp[1-args]) != T_MAPPING))
     Pike_error("Image.XFace.encode: Illegal arguments\n");
   
   if (!img->img)
@@ -483,7 +483,7 @@ static void image_xface_encode(INT32 args)
 
 static void image_xface_decode_header(INT32 args)
 {
-  if(args<1 || sp[-args].type!=T_STRING)
+  if(args<1 || TYPEOF(sp[-args]) != T_STRING)
     Pike_error("Image.XFace.decode: Illegal arguments\n");
 
   pop_n_elems(args);
@@ -516,7 +516,7 @@ PIKE_MODULE_INIT
 #ifdef DYNAMIC_MODULE
    push_text("Image.Image");
    SAFE_APPLY_MASTER("resolv",1);
-   if (sp[-1].type==T_PROGRAM)
+   if (TYPEOF(sp[-1]) == T_PROGRAM)
       image_program=program_from_svalue(sp-1);
    pop_stack();
 #endif /* DYNAMIC_MODULE */

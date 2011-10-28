@@ -120,7 +120,7 @@ void draw_text(GDK2.GC gc, int x, int y, string|Pango.Layout text)
 
   get_all_args("draw_text",args,"%o%+%+%*",&g,&x,&y,&sv);
 
-  if (sv->type==PIKE_T_STRING) {
+  if (TYPEOF(*sv) == PIKE_T_STRING) {
     push_svalue(sv);
     f_string_to_utf8(1);
     pl=gtk_widget_create_pango_layout(GTK_WIDGET(THIS->obj),

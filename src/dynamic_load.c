@@ -421,7 +421,7 @@ void f_load_module(INT32 args)
 
   module_name = Pike_sp[-args].u.string;
 
-  if((Pike_sp[-args].type != T_STRING) ||
+  if((TYPEOF(Pike_sp[-args]) != T_STRING) ||
      (module_name->size_shift) ||
      string_has_null(module_name)) {
     Pike_error("Bad argument 1 to load_module()\n");

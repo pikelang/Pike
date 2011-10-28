@@ -284,20 +284,15 @@ OPCODE1_TAIL(F_MARK_AND_STRING, "mark & string", I_UPDATE_SP|I_UPDATE_M_SP, {
   *(Pike_mark_sp++)=Pike_sp;
 
   OPCODE1(F_STRING, "string", I_UPDATE_SP, {
-    copy_shared_string(Pike_sp->u.string,Pike_fp->context->prog->strings[arg1]);
-    Pike_sp->type=PIKE_T_STRING;
-    Pike_sp->subtype=0;
-    Pike_sp++;
+    ref_push_string(Pike_fp->context->prog->strings[arg1]);
     print_return_value();
   });
 });
 
 
 OPCODE1(F_ARROW_STRING, "->string", I_UPDATE_SP, {
-  copy_shared_string(Pike_sp->u.string,Pike_fp->context->prog->strings[arg1]);
-  Pike_sp->type=PIKE_T_STRING;
-  Pike_sp->subtype=1; /* Magic */
-  Pike_sp++;
+  ref_push_string(Pike_fp->context->prog->strings[arg1]);
+  SET_SVAL_SUBTYPE(Pike_sp[-1], 1); /* Magic */
   print_return_value();
 });
 
@@ -306,27 +301,23 @@ OPCODE1(F_LOOKUP_LFUN, "->lfun", 0, {
   LOCAL_VAR(struct svalue tmp);
   LOCAL_VAR(struct program *p);
 
-  if ((Pike_sp[-1].type == T_OBJECT) &&
+  if ((TYPEOF(Pike_sp[-1]) == T_OBJECT) &&
       (p = (o = Pike_sp[-1].u.object)->prog) &&
-      (FIND_LFUN(p = p->inherits[Pike_sp[-1].subtype].prog,
+      (FIND_LFUN(p = p->inherits[SUBTYPEOF(Pike_sp[-1])].prog,
 		 LFUN_ARROW) == -1)) {
     int id = FIND_LFUN(p, arg1);
     if ((id != -1) &&
 	(!(p->identifier_references[id].id_flags &
 	   (ID_PROTECTED|ID_PRIVATE|ID_HIDDEN)))) {
-      id += o->prog->inherits[Pike_sp[-1].subtype].identifier_level;
+      id += o->prog->inherits[SUBTYPEOF(Pike_sp[-1])].identifier_level;
       low_object_index_no_free(&tmp, o, id);
     } else {
       /* Not found. */
-      tmp.type = T_INT;
-      tmp.subtype = NUMBER_UNDEFINED;
-      tmp.u.integer = 0;
+      SET_SVAL(tmp, T_INT, NUMBER_UNDEFINED, integer, 0);
     }
   } else {
     LOCAL_VAR(struct svalue tmp2);
-    tmp2.type = PIKE_T_STRING;
-    tmp2.u.string = lfun_strings[arg1];
-    tmp2.subtype = 1;
+    SET_SVAL(tmp2, PIKE_T_STRING, 1, string, lfun_strings[arg1]);
     index_no_free(&tmp, Pike_sp-1, &tmp2);
   }
   free_svalue(Pike_sp-1);
@@ -462,9 +453,8 @@ OPCODE2(F_GLOBAL_2_LOCAL, "local = global", 0, {
 });
 
 OPCODE1(F_LOCAL_LVALUE, "& local", I_UPDATE_SP, {
-  Pike_sp[0].type = T_SVALUE_PTR;
-  Pike_sp[0].u.lval = Pike_fp->locals + arg1;
-  Pike_sp[1].type = T_VOID;
+  SET_SVAL(Pike_sp[0], T_SVALUE_PTR, 0, lval, Pike_fp->locals + arg1);
+  SET_SVAL_TYPE(Pike_sp[1], T_VOID);
   Pike_sp += 2;
 });
 
@@ -486,9 +476,8 @@ OPCODE2(F_LEXICAL_LOCAL_LVALUE, "&lexical local", I_UPDATE_SP, {
     f=f->scope;
     if(!f) Pike_error("Lexical scope error.\n");
   }
-  Pike_sp[0].type=T_SVALUE_PTR;
-  Pike_sp[0].u.lval=f->locals+arg1;
-  Pike_sp[1].type=T_VOID;
+  SET_SVAL(Pike_sp[0], T_SVALUE_PTR, 0, lval, f->locals+arg1);
+  SET_SVAL_TYPE(Pike_sp[1], T_VOID);
   Pike_sp+=2;
 });
 
@@ -498,18 +487,14 @@ OPCODE1(F_ARRAY_LVALUE, "[ lvalues ]", I_UPDATE_SP, {
   Pike_sp[-1].u.array->type_field |= BIT_UNFINISHED | BIT_MIXED;
   /* FIXME: Shouldn't a ref be added here? */
   move_svalue (Pike_sp, Pike_sp - 1);
-  Pike_sp[-1].type = T_ARRAY_LVALUE;
+  SET_SVAL_TYPE(Pike_sp[-1], T_ARRAY_LVALUE);
   Pike_sp++;
 });
 
 OPCODE1(F_CLEAR_2_LOCAL, "clear 2 local", 0, {
   free_mixed_svalues(Pike_fp->locals + arg1, 2);
-  Pike_fp->locals[arg1].type = PIKE_T_INT;
-  Pike_fp->locals[arg1].subtype = NUMBER_NUMBER;
-  Pike_fp->locals[arg1].u.integer = 0;
-  Pike_fp->locals[arg1+1].type = PIKE_T_INT;
-  Pike_fp->locals[arg1+1].subtype = NUMBER_NUMBER;
-  Pike_fp->locals[arg1+1].u.integer = 0;
+  SET_SVAL(Pike_fp->locals[arg1], PIKE_T_INT, NUMBER_NUMBER, integer, 0);
+  SET_SVAL(Pike_fp->locals[arg1+1], PIKE_T_INT, NUMBER_NUMBER, integer, 0);
 });
 
 OPCODE1(F_CLEAR_4_LOCAL, "clear 4 local", 0, {
@@ -517,28 +502,24 @@ OPCODE1(F_CLEAR_4_LOCAL, "clear 4 local", 0, {
   free_mixed_svalues(Pike_fp->locals + arg1, 4);
   for(e = 0; e < 4; e++)
   {
-    Pike_fp->locals[arg1+e].type = PIKE_T_INT;
-    Pike_fp->locals[arg1+e].subtype = NUMBER_NUMBER;
-    Pike_fp->locals[arg1+e].u.integer = 0;
+    SET_SVAL(Pike_fp->locals[arg1+e], PIKE_T_INT, NUMBER_NUMBER, integer, 0);
   }
 });
 
 OPCODE1(F_CLEAR_LOCAL, "clear local", 0, {
   free_svalue(Pike_fp->locals + arg1);
-  Pike_fp->locals[arg1].type = PIKE_T_INT;
-  Pike_fp->locals[arg1].subtype = NUMBER_NUMBER;
-  Pike_fp->locals[arg1].u.integer = 0;
+  SET_SVAL(Pike_fp->locals[arg1], PIKE_T_INT, NUMBER_NUMBER, integer, 0);
 });
 
 OPCODE1(F_INC_LOCAL, "++local", I_UPDATE_SP, {
-  if( (Pike_fp->locals[arg1].type == PIKE_T_INT)
+  if( (TYPEOF(Pike_fp->locals[arg1]) == PIKE_T_INT)
       DO_IF_BIGNUM(
       && (!INT_TYPE_ADD_OVERFLOW(Pike_fp->locals[arg1].u.integer, 1))
       )
       )
   {
     push_int(++(Pike_fp->locals[arg1].u.integer));
-    Pike_fp->locals[arg1].subtype = NUMBER_NUMBER; /* Could have UNDEFINED there before. */
+    SET_SVAL_SUBTYPE(Pike_fp->locals[arg1], NUMBER_NUMBER); /* Could have UNDEFINED there before. */
   } else {
     push_svalue(Pike_fp->locals+arg1);
     push_int(1);
@@ -550,14 +531,14 @@ OPCODE1(F_INC_LOCAL, "++local", I_UPDATE_SP, {
 OPCODE1(F_POST_INC_LOCAL, "local++", I_UPDATE_SP, {
   push_svalue( Pike_fp->locals + arg1);
 
-  if( (Pike_fp->locals[arg1].type == PIKE_T_INT)
+  if( (TYPEOF(Pike_fp->locals[arg1]) == PIKE_T_INT)
       DO_IF_BIGNUM(
       && (!INT_TYPE_ADD_OVERFLOW(Pike_fp->locals[arg1].u.integer, 1))
       )
       )
   {
     Pike_fp->locals[arg1].u.integer++;
-    Pike_fp->locals[arg1].subtype = NUMBER_NUMBER; /* Could have UNDEFINED there before. */
+    SET_SVAL_SUBTYPE(Pike_fp->locals[arg1], NUMBER_NUMBER); /* Could have UNDEFINED there before. */
   } else {
     push_svalue(Pike_fp->locals + arg1);
     push_int(1);
@@ -567,14 +548,14 @@ OPCODE1(F_POST_INC_LOCAL, "local++", I_UPDATE_SP, {
 });
 
 OPCODE1(F_INC_LOCAL_AND_POP, "++local and pop", 0, {
-  if( (Pike_fp->locals[arg1].type == PIKE_T_INT)
+  if( (TYPEOF(Pike_fp->locals[arg1]) == PIKE_T_INT)
       DO_IF_BIGNUM(
       && (!INT_TYPE_ADD_OVERFLOW(Pike_fp->locals[arg1].u.integer, 1))
       )
       )
   {
     Pike_fp->locals[arg1].u.integer++;
-    Pike_fp->locals[arg1].subtype = NUMBER_NUMBER; /* Could have UNDEFINED there before. */
+    SET_SVAL_SUBTYPE(Pike_fp->locals[arg1], NUMBER_NUMBER); /* Could have UNDEFINED there before. */
   } else {
     push_svalue( Pike_fp->locals + arg1);
     push_int(1);
@@ -584,14 +565,14 @@ OPCODE1(F_INC_LOCAL_AND_POP, "++local and pop", 0, {
 });
 
 OPCODE1(F_DEC_LOCAL, "--local", I_UPDATE_SP, {
-  if( (Pike_fp->locals[arg1].type == PIKE_T_INT)
+  if( (TYPEOF(Pike_fp->locals[arg1]) == PIKE_T_INT)
       DO_IF_BIGNUM(
       && (!INT_TYPE_SUB_OVERFLOW(Pike_fp->locals[arg1].u.integer, 1))
       )
       )
   {
     push_int(--(Pike_fp->locals[arg1].u.integer));
-    Pike_fp->locals[arg1].subtype = NUMBER_NUMBER; /* Could have UNDEFINED there before. */
+    SET_SVAL_SUBTYPE(Pike_fp->locals[arg1], NUMBER_NUMBER); /* Could have UNDEFINED there before. */
   } else {
     push_svalue(Pike_fp->locals+arg1);
     push_int(1);
@@ -603,14 +584,14 @@ OPCODE1(F_DEC_LOCAL, "--local", I_UPDATE_SP, {
 OPCODE1(F_POST_DEC_LOCAL, "local--", I_UPDATE_SP, {
   push_svalue( Pike_fp->locals + arg1);
 
-  if( (Pike_fp->locals[arg1].type == PIKE_T_INT)
+  if( (TYPEOF(Pike_fp->locals[arg1]) == PIKE_T_INT)
       DO_IF_BIGNUM(
       && (!INT_TYPE_SUB_OVERFLOW(Pike_fp->locals[arg1].u.integer, 1))
       )
       )
   {
     Pike_fp->locals[arg1].u.integer--;
-    Pike_fp->locals[arg1].subtype = NUMBER_NUMBER; /* Could have UNDEFINED there before. */
+    SET_SVAL_SUBTYPE(Pike_fp->locals[arg1], NUMBER_NUMBER); /* Could have UNDEFINED there before. */
   } else {
     push_svalue(Pike_fp->locals + arg1);
     push_int(1);
@@ -620,14 +601,14 @@ OPCODE1(F_POST_DEC_LOCAL, "local--", I_UPDATE_SP, {
 });
 
 OPCODE1(F_DEC_LOCAL_AND_POP, "--local and pop", 0, {
-  if( (Pike_fp->locals[arg1].type == PIKE_T_INT)
+  if( (TYPEOF(Pike_fp->locals[arg1]) == PIKE_T_INT)
       DO_IF_BIGNUM(
       && (!INT_TYPE_SUB_OVERFLOW(Pike_fp->locals[arg1].u.integer, 1))
       )
       )
   {
     Pike_fp->locals[arg1].u.integer--;
-    Pike_fp->locals[arg1].subtype = NUMBER_NUMBER; /* Could have UNDEFINED there before. */
+    SET_SVAL_SUBTYPE(Pike_fp->locals[arg1], NUMBER_NUMBER); /* Could have UNDEFINED there before. */
   } else {
     push_svalue(Pike_fp->locals + arg1);
     push_int(1);
@@ -681,13 +662,11 @@ OPCODE0(F_LTOSVAL2_AND_FREE, "ltosval2 and free", I_UPDATE_SP, {
   Pike_sp++;
   lvalue_to_svalue_no_free(Pike_sp-2, Pike_sp-4);
 
-  if( (1 << Pike_sp[-2].type) &
+  if( (1 << TYPEOF(Pike_sp[-2])) &
       (BIT_ARRAY | BIT_MULTISET | BIT_MAPPING | BIT_STRING) )
   {
     LOCAL_VAR(struct svalue tmp);
-    tmp.type = PIKE_T_INT;
-    tmp.subtype = NUMBER_NUMBER;
-    tmp.u.integer = 0;
+    SET_SVAL(tmp, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
     assign_lvalue(Pike_sp-4, &tmp);
   }
 });
@@ -714,13 +693,11 @@ OPCODE0(F_LTOSVAL3_AND_FREE, "ltosval3 and free", I_UPDATE_SP, {
    * are lucky, and then the low array/multiset/mapping manipulation
    * routines can be destructive if they like.
    */
-  if( (1 << Pike_sp[-3].type) &
+  if( (1 << TYPEOF(Pike_sp[-3])) &
       (BIT_ARRAY | BIT_MULTISET | BIT_MAPPING | BIT_STRING) )
   {
     LOCAL_VAR(struct svalue tmp);
-    tmp.type = PIKE_T_INT;
-    tmp.subtype = NUMBER_NUMBER;
-    tmp.u.integer = 0;
+    SET_SVAL(tmp, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
     assign_lvalue(Pike_sp-5, &tmp);
   }
 });
@@ -738,13 +715,11 @@ OPCODE0(F_LTOSVAL_AND_FREE, "ltosval and free", I_UPDATE_SP, {
 
   /* See ltosval3. This opcode is used e.g. in foo = foo[..] where no
    * bound arguments are pushed on the stack. */
-  if( (1 << Pike_sp[-1].type) &
+  if( (1 << TYPEOF(Pike_sp[-1])) &
       (BIT_ARRAY | BIT_MULTISET | BIT_MAPPING | BIT_STRING) )
   {
     LOCAL_VAR(struct svalue tmp);
-    tmp.type = PIKE_T_INT;
-    tmp.subtype = NUMBER_NUMBER;
-    tmp.u.integer = 0;
+    SET_SVAL(tmp, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
     assign_lvalue(Pike_sp-3, &tmp);
   }
 });
@@ -756,8 +731,8 @@ OPCODE0(F_ADD_TO, "+=", I_UPDATE_SP, {
   Pike_sp++;
   lvalue_to_svalue_no_free(Pike_sp-2,Pike_sp-4);
 
-  if( Pike_sp[-1].type == PIKE_T_INT &&
-      Pike_sp[-2].type == PIKE_T_INT  )
+  if( TYPEOF(Pike_sp[-1]) == PIKE_T_INT &&
+      TYPEOF(Pike_sp[-2]) == PIKE_T_INT  )
   {
     DO_IF_BIGNUM(
     if(!INT_TYPE_ADD_OVERFLOW(Pike_sp[-1].u.integer, Pike_sp[-2].u.integer))
@@ -765,7 +740,7 @@ OPCODE0(F_ADD_TO, "+=", I_UPDATE_SP, {
     {
       /* Optimization for a rather common case. Makes it 30% faster. */
       INT_TYPE val = (Pike_sp[-1].u.integer += Pike_sp[-2].u.integer);
-      Pike_sp[-1].subtype = NUMBER_NUMBER; /* Could have UNDEFINED there before. */
+      SET_SVAL_SUBTYPE(Pike_sp[-1], NUMBER_NUMBER); /* Could have UNDEFINED there before. */
       assign_lvalue(Pike_sp-4,Pike_sp-1);
       Pike_sp-=2;
       pop_2_elems();
@@ -779,25 +754,23 @@ OPCODE0(F_ADD_TO, "+=", I_UPDATE_SP, {
    * are lucky, and then the low array/multiset/mapping manipulation
    * routines can be destructive if they like.
    */
-  if( (1 << Pike_sp[-2].type) &
+  if( (1 << TYPEOF(Pike_sp[-2])) &
       (BIT_ARRAY | BIT_MULTISET | BIT_MAPPING | BIT_STRING) )
   {
     LOCAL_VAR(struct svalue tmp);
-    tmp.type=PIKE_T_INT;
-    tmp.subtype=NUMBER_NUMBER;
-    tmp.u.integer=0;
+    SET_SVAL(tmp, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
     assign_lvalue(Pike_sp-4, &tmp);
-  } else if (Pike_sp[-2].type == T_OBJECT) {
+  } else if (TYPEOF(Pike_sp[-2]) == T_OBJECT) {
     /* One ref in the lvalue, and one on the stack. */
     int i;
     LOCAL_VAR(struct object *o);
     LOCAL_VAR(struct program *p);
     if((o = Pike_sp[-2].u.object)->refs <= 2 &&
        (p = o->prog) &&
-       (i = FIND_LFUN(p->inherits[Pike_sp[-2].subtype].prog,
+       (i = FIND_LFUN(p->inherits[SUBTYPEOF(Pike_sp[-2])].prog,
 		      LFUN_ADD_EQ)) != -1)
     {
-      apply_low(o, i + p->inherits[Pike_sp[-2].subtype].identifier_level, 1);
+      apply_low(o, i + p->inherits[SUBTYPEOF(Pike_sp[-2])].identifier_level, 1);
       /* NB: The lvalue already contains the object, so
        *     no need to reassign it.
        */
@@ -825,8 +798,8 @@ OPCODE0(F_ADD_TO_AND_POP, "+= and pop", I_UPDATE_SP, {
   Pike_sp++;
   lvalue_to_svalue_no_free(Pike_sp-2,Pike_sp-4);
 
-  if( Pike_sp[-1].type == PIKE_T_INT &&
-      Pike_sp[-2].type == PIKE_T_INT  )
+  if( TYPEOF(Pike_sp[-1]) == PIKE_T_INT &&
+      TYPEOF(Pike_sp[-2]) == PIKE_T_INT  )
   {
     DO_IF_BIGNUM(
     if(!INT_TYPE_ADD_OVERFLOW(Pike_sp[-1].u.integer, Pike_sp[-2].u.integer))
@@ -834,7 +807,7 @@ OPCODE0(F_ADD_TO_AND_POP, "+= and pop", I_UPDATE_SP, {
     {
       /* Optimization for a rather common case. Makes it 30% faster. */
       Pike_sp[-1].u.integer += Pike_sp[-2].u.integer;
-      Pike_sp[-1].subtype = NUMBER_NUMBER; /* Could have UNDEFINED there before. */
+      SET_SVAL_SUBTYPE(Pike_sp[-1], NUMBER_NUMBER); /* Could have UNDEFINED there before. */
       assign_lvalue(Pike_sp-4,Pike_sp-1);
       Pike_sp-=2;
       pop_2_elems();
@@ -847,25 +820,23 @@ OPCODE0(F_ADD_TO_AND_POP, "+= and pop", I_UPDATE_SP, {
    * are lucky, and then the low array/multiset/mapping manipulation
    * routines can be destructive if they like.
    */
-  if( (1 << Pike_sp[-2].type) &
+  if( (1 << TYPEOF(Pike_sp[-2])) &
       (BIT_ARRAY | BIT_MULTISET | BIT_MAPPING | BIT_STRING) )
   {
     LOCAL_VAR(struct svalue tmp);
-    tmp.type=PIKE_T_INT;
-    tmp.subtype=NUMBER_NUMBER;
-    tmp.u.integer=0;
+    SET_SVAL(tmp, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
     assign_lvalue(Pike_sp-4, &tmp);
-  } else if (Pike_sp[-2].type == PIKE_T_OBJECT) {
+  } else if (TYPEOF(Pike_sp[-2]) == PIKE_T_OBJECT) {
     /* One ref in the lvalue, and one on the stack. */
     int i;
     LOCAL_VAR(struct object *o);
     LOCAL_VAR(struct program *p);
     if((o = Pike_sp[-2].u.object)->refs <= 2 &&
        (p = o->prog) &&
-       (i = FIND_LFUN(p->inherits[Pike_sp[-2].subtype].prog,
+       (i = FIND_LFUN(p->inherits[SUBTYPEOF(Pike_sp[-2])].prog,
 		      LFUN_ADD_EQ)) != -1)
     {
-      apply_low(o, i + p->inherits[Pike_sp[-2].subtype].identifier_level, 1);
+      apply_low(o, i + p->inherits[SUBTYPEOF(Pike_sp[-2])].identifier_level, 1);
       /* NB: The lvalue already contains the object, so
        *     no need to reassign it.
        */
@@ -1124,7 +1095,7 @@ OPCODE0_TAIL(F_CLEANUP_SYNCH_MARK, "cleanup synch mark", I_UPDATE_SP|I_UPDATE_M_
 });
 
 OPCODE0(F_CLEAR_STRING_SUBTYPE, "clear string subtype", 0, {
-  if(Pike_sp[-1].type==PIKE_T_STRING) Pike_sp[-1].subtype=0;
+  if(TYPEOF(Pike_sp[-1]) == PIKE_T_STRING) SET_SVAL_SUBTYPE(Pike_sp[-1], 0);
 });
 
       /* Jumps */
@@ -1134,9 +1105,8 @@ OPCODE0_BRANCH(F_BRANCH, "branch", 0, {
 
 OPCODE2_BRANCH(F_BRANCH_IF_NOT_LOCAL_ARROW, "branch if !local->x", 0, {
   LOCAL_VAR(struct svalue tmp);
-  tmp.type=PIKE_T_STRING;
-  tmp.u.string=Pike_fp->context->prog->strings[arg1];
-  tmp.subtype=1;
+  SET_SVAL(tmp, PIKE_T_STRING, 1, string,
+	   Pike_fp->context->prog->strings[arg1]);
   mark_free_svalue (Pike_sp);
   Pike_sp++;
   index_no_free(Pike_sp-1,Pike_fp->locals+arg2, &tmp);
@@ -1171,22 +1141,22 @@ OPCODE0_BRANCH(F_BRANCH_WHEN_NON_ZERO, "branch if not zero", I_UPDATE_SP, {
 OPCODE1_BRANCH(F_BRANCH_IF_TYPE_IS_NOT, "branch if type is !=", I_UPDATE_SP, {
 /*  fprintf(stderr,"******BRANCH IF TYPE IS NOT***** %s\n",get_name_of_type(arg1)); */
   LOCAL_VAR(struct object *o);
-  if(Pike_sp[-1].type == T_OBJECT &&
+  if(TYPEOF(Pike_sp[-1]) == T_OBJECT &&
      (o = Pike_sp[-1].u.object)->prog)
   {
-    int fun = FIND_LFUN(o->prog->inherits[Pike_sp[-1].subtype].prog,
+    int fun = FIND_LFUN(o->prog->inherits[SUBTYPEOF(Pike_sp[-1])].prog,
 			LFUN__IS_TYPE);
     if(fun != -1)
     {
 /*      fprintf(stderr,"******OBJECT OVERLOAD IN TYPEP***** %s\n",get_name_of_type(arg1)); */
       push_text(get_name_of_type(arg1));
       apply_low(o, fun +
-		o->prog->inherits[Pike_sp[-2].subtype].identifier_level, 1);
+		o->prog->inherits[SUBTYPEOF(Pike_sp[-2])].identifier_level, 1);
       arg1=UNSAFE_IS_ZERO(Pike_sp-1) ? T_FLOAT : T_OBJECT ;
       pop_stack();
     }
   }
-  if(Pike_sp[-1].type == arg1)
+  if(TYPEOF(Pike_sp[-1]) == arg1)
   {
     /* write_to_stderr("foreach\n", 8); */
     DONT_BRANCH();
@@ -1498,7 +1468,7 @@ OPCODE2_JUMP(F_SWITCH_ON_LOCAL, "switch on local", 0, {
   OPCODE0_BRANCH(ID, DESC, 0, {						\
     union anything *i=get_pointer_if_this_type(Pike_sp-2, T_INT);	\
     if(i && !AUTO_BIGNUM_LOOP_TEST(i->integer,INC) &&			\
-       Pike_sp[-3].type == T_INT)					\
+       TYPEOF(Pike_sp[-3]) == T_INT)					\
     {									\
       i->integer += INC;						\
       if(i->integer OP2 Pike_sp[-3].u.integer)				\
@@ -1554,7 +1524,7 @@ OPCODE0_BRANCH(F_LOOP, "loop", I_UPDATE_SP, { /* loopcnt */
 });
 
 OPCODE0_BRANCH(F_FOREACH, "foreach", 0, { /* array, lvalue, i */
-  if(Pike_sp[-4].type != PIKE_T_ARRAY)
+  if(TYPEOF(Pike_sp[-4]) != PIKE_T_ARRAY)
     PIKE_ERROR("foreach", "Bad argument 1.\n", Pike_sp-3, 1);
   if(Pike_sp[-1].u.integer < Pike_sp[-4].u.array->size)
   {
@@ -1565,7 +1535,7 @@ OPCODE0_BRANCH(F_FOREACH, "foreach", 0, { /* array, lvalue, i */
     DO_BRANCH();
     Pike_sp[-1].u.integer++;
     DO_IF_DEBUG (
-      if (Pike_sp[-1].subtype)
+      if (SUBTYPEOF(Pike_sp[-1]))
 	Pike_fatal ("Got unexpected subtype in loop variable.\n");
     );
   }else{
@@ -1581,7 +1551,7 @@ OPCODE0(F_MAKE_ITERATOR, "get_iterator", 0, {
 /* Stack is: iterator, index lvalue, value lvalue. */
 OPCODE0_BRANCH (F_FOREACH_START, "foreach start", 0, {
   DO_IF_DEBUG (
-    if(Pike_sp[-5].type != PIKE_T_OBJECT)
+    if(TYPEOF(Pike_sp[-5]) != PIKE_T_OBJECT)
       Pike_fatal ("Iterator gone from stack.\n");
   );
   /* FIXME: object subtype. */
@@ -1595,7 +1565,7 @@ OPCODE0_BRANCH (F_FOREACH_START, "foreach start", 0, {
 /* Stack is: iterator, index lvalue, value lvalue. */
 OPCODE0_BRANCH(F_FOREACH_LOOP, "foreach loop", 0, {
   DO_IF_DEBUG (
-    if(Pike_sp[-5].type != PIKE_T_OBJECT)
+    if(TYPEOF(Pike_sp[-5]) != PIKE_T_OBJECT)
       Pike_fatal ("Iterator gone from stack.\n");
   );
   /* FIXME: object subtype. */
@@ -1652,7 +1622,7 @@ OPCODE0_RETURN(F_DUMB_RETURN,"dumb return", I_UPDATE_FP, {
 });
 
 OPCODE0(F_NEGATE, "unary minus", 0, {
-  if(Pike_sp[-1].type == PIKE_T_INT)
+  if(TYPEOF(Pike_sp[-1]) == PIKE_T_INT)
   {
     DO_IF_BIGNUM(
       if(INT_TYPE_NEG_OVERFLOW(Pike_sp[-1].u.integer))
@@ -1664,10 +1634,10 @@ OPCODE0(F_NEGATE, "unary minus", 0, {
     )
     {
       Pike_sp[-1].u.integer =- Pike_sp[-1].u.integer;
-      Pike_sp[-1].subtype = NUMBER_NUMBER; /* Could have UNDEFINED there before. */
+      SET_SVAL_SUBTYPE(Pike_sp[-1], NUMBER_NUMBER); /* Could have UNDEFINED there before. */
     }
   }
-  else if(Pike_sp[-1].type == PIKE_T_FLOAT)
+  else if(TYPEOF(Pike_sp[-1]) == PIKE_T_FLOAT)
   {
     Pike_sp[-1].u.float_number =- Pike_sp[-1].u.float_number;
   }else{
@@ -1678,11 +1648,11 @@ OPCODE0(F_NEGATE, "unary minus", 0, {
 OPCODE0_ALIAS(F_COMPL, "~", 0, o_compl);
 
 OPCODE0(F_NOT, "!", 0, {
-  switch(Pike_sp[-1].type)
+  switch(TYPEOF(Pike_sp[-1]))
   {
   case PIKE_T_INT:
     Pike_sp[-1].u.integer =! Pike_sp[-1].u.integer;
-    Pike_sp[-1].subtype = NUMBER_NUMBER; /* Could have UNDEFINED there before. */
+    SET_SVAL_SUBTYPE(Pike_sp[-1], NUMBER_NUMBER); /* Could have UNDEFINED there before. */
     break;
 
   case PIKE_T_FUNCTION:
@@ -1699,9 +1669,7 @@ OPCODE0(F_NOT, "!", 0, {
 
   default:
     free_svalue(Pike_sp-1);
-    Pike_sp[-1].type=PIKE_T_INT;
-    Pike_sp[-1].subtype = NUMBER_NUMBER;
-    Pike_sp[-1].u.integer=0;
+    SET_SVAL(Pike_sp[-1], PIKE_T_INT, NUMBER_NUMBER, integer, 0);
   }
 });
 
@@ -1730,14 +1698,14 @@ OPCODE0(F_ADD, "+", I_UPDATE_SP, {
 
 /* Used with F_LTOSVAL*_AND_FREE - must not release interpreter lock. */
 OPCODE0(F_ADD_INTS, "int+int", I_UPDATE_SP, {
-  if(Pike_sp[-1].type == T_INT && Pike_sp[-2].type == T_INT 
+  if(TYPEOF(Pike_sp[-1]) == T_INT && TYPEOF(Pike_sp[-2]) == T_INT
      DO_IF_BIGNUM(
       && (!INT_TYPE_ADD_OVERFLOW(Pike_sp[-1].u.integer, Pike_sp[-2].u.integer))
       )
     )
   {
     Pike_sp[-2].u.integer+=Pike_sp[-1].u.integer;
-    Pike_sp[-2].subtype = NUMBER_NUMBER; /* Could have UNDEFINED there before. */
+    SET_SVAL_SUBTYPE(Pike_sp[-2], NUMBER_NUMBER); /* Could have UNDEFINED there before. */
     dmalloc_touch_svalue(Pike_sp-1);
     Pike_sp--;
   }else{
@@ -1747,7 +1715,7 @@ OPCODE0(F_ADD_INTS, "int+int", I_UPDATE_SP, {
 
 /* Used with F_LTOSVAL*_AND_FREE - must not release interpreter lock. */
 OPCODE0(F_ADD_FLOATS, "float+float", I_UPDATE_SP, {
-  if(Pike_sp[-1].type == T_FLOAT && Pike_sp[-2].type == T_FLOAT)
+  if(TYPEOF(Pike_sp[-1]) == T_FLOAT && TYPEOF(Pike_sp[-2]) == T_FLOAT)
   {
     Pike_sp[-2].u.float_number+=Pike_sp[-1].u.float_number;
     dmalloc_touch_svalue(Pike_sp-1);
@@ -1767,14 +1735,14 @@ OPCODE0_ALIAS(F_DIVIDE, "/", I_UPDATE_SP, o_divide);
 OPCODE0_ALIAS(F_MOD, "%", I_UPDATE_SP, o_mod);
 
 OPCODE1(F_ADD_INT, "add integer", 0, {
-  if(Pike_sp[-1].type == T_INT
+  if(TYPEOF(Pike_sp[-1]) == T_INT
      DO_IF_BIGNUM(
       && (!INT_TYPE_ADD_OVERFLOW(Pike_sp[-1].u.integer, arg1))
       )
      )
   {
     Pike_sp[-1].u.integer+=arg1;
-    Pike_sp[-1].subtype = NUMBER_NUMBER; /* Could have UNDEFINED there before. */
+    SET_SVAL_SUBTYPE(Pike_sp[-1], NUMBER_NUMBER); /* Could have UNDEFINED there before. */
   }else{
     push_int(arg1);
     f_add(2);
@@ -1782,14 +1750,14 @@ OPCODE1(F_ADD_INT, "add integer", 0, {
 });
 
 OPCODE1(F_ADD_NEG_INT, "add -integer", 0, {
-  if(Pike_sp[-1].type == T_INT
+  if(TYPEOF(Pike_sp[-1]) == T_INT
      DO_IF_BIGNUM(
       && (!INT_TYPE_ADD_OVERFLOW(Pike_sp[-1].u.integer, -arg1))
       )
      )
   {
     Pike_sp[-1].u.integer-=arg1;
-    Pike_sp[-1].subtype = NUMBER_NUMBER; /* Could have UNDEFINED there before. */
+    SET_SVAL_SUBTYPE(Pike_sp[-1], NUMBER_NUMBER); /* Could have UNDEFINED there before. */
   }else{
     push_int(-arg1);
     f_add(2);
@@ -1801,19 +1769,19 @@ OPCODE0(F_PUSH_ARRAY, "@", I_UPDATE_SP, {
   LOCAL_VAR(struct object *o);
   LOCAL_VAR(struct program *p);
 
-  switch(Pike_sp[-1].type)
+  switch(TYPEOF(Pike_sp[-1]))
   {
   default:
     PIKE_ERROR("@", "Bad argument.\n", Pike_sp, 1);
     
   case PIKE_T_OBJECT:
     if(!(p = (o = Pike_sp[-1].u.object)->prog) ||
-       (i = FIND_LFUN(p->inherits[Pike_sp[-1].subtype].prog,
+       (i = FIND_LFUN(p->inherits[SUBTYPEOF(Pike_sp[-1])].prog,
 		      LFUN__VALUES)) == -1)
       PIKE_ERROR("@", "Bad argument.\n", Pike_sp, 1);
 
-    apply_low(o, i + p->inherits[Pike_sp[-1].subtype].identifier_level, 0);
-    if(Pike_sp[-1].type != PIKE_T_ARRAY)
+    apply_low(o, i + p->inherits[SUBTYPEOF(Pike_sp[-1])].identifier_level, 0);
+    if(TYPEOF(Pike_sp[-1]) != PIKE_T_ARRAY)
       Pike_error("Bad return type from o->_values() in @\n");
     free_svalue(Pike_sp-2);
     move_svalue (Pike_sp - 2, Pike_sp - 1);
@@ -1834,7 +1802,7 @@ OPCODE0(F_APPEND_ARRAY, "append array", I_UPDATE_SP|I_UPDATE_M_SP, {
 OPCODE2(F_LOCAL_LOCAL_INDEX, "local[local]", I_UPDATE_SP, {
   LOCAL_VAR(struct svalue *s);
   s = Pike_fp->locals + arg1;
-  if(s->type == PIKE_T_STRING) s->subtype=0;
+  if(TYPEOF(*s) == PIKE_T_STRING) SET_SVAL_SUBTYPE(*s, 0);
   mark_free_svalue (Pike_sp++);
   index_no_free(Pike_sp-1,Pike_fp->locals+arg2,s);
 });
@@ -1843,7 +1811,7 @@ OPCODE1(F_LOCAL_INDEX, "local index", 0, {
   LOCAL_VAR(struct svalue *s);
   LOCAL_VAR(struct svalue tmp);
   s = Pike_fp->locals + arg1;
-  if(s->type == PIKE_T_STRING) s->subtype=0;
+  if(TYPEOF(*s) == PIKE_T_STRING) SET_SVAL_SUBTYPE(*s, 0);
   index_no_free(&tmp,Pike_sp-1,s);
   free_svalue(Pike_sp-1);
   move_svalue (Pike_sp - 1, &tmp);
@@ -1855,7 +1823,7 @@ OPCODE2(F_GLOBAL_LOCAL_INDEX, "global[local]", I_UPDATE_SP, {
   low_index_current_object_no_free(Pike_sp, arg1);
   Pike_sp++;
   s=Pike_fp->locals+arg2;
-  if(s->type == PIKE_T_STRING) s->subtype=0;
+  if(TYPEOF(*s) == PIKE_T_STRING) SET_SVAL_SUBTYPE(*s, 0);
   index_no_free(&tmp,Pike_sp-1,s);
   free_svalue(Pike_sp-1);
   move_svalue (Pike_sp - 1, &tmp);
@@ -1863,9 +1831,8 @@ OPCODE2(F_GLOBAL_LOCAL_INDEX, "global[local]", I_UPDATE_SP, {
 
 OPCODE2(F_LOCAL_ARROW, "local->x", I_UPDATE_SP, {
   LOCAL_VAR(struct svalue tmp);
-  tmp.type=PIKE_T_STRING;
-  tmp.u.string=Pike_fp->context->prog->strings[arg1];
-  tmp.subtype=1;
+  SET_SVAL(tmp, PIKE_T_STRING, 1, string,
+	   Pike_fp->context->prog->strings[arg1]);
   mark_free_svalue (Pike_sp++);
   index_no_free(Pike_sp-1,Pike_fp->locals+arg2, &tmp);
   print_return_value();
@@ -1874,9 +1841,8 @@ OPCODE2(F_LOCAL_ARROW, "local->x", I_UPDATE_SP, {
 OPCODE1(F_ARROW, "->x", 0, {
   LOCAL_VAR(struct svalue tmp);
   LOCAL_VAR(struct svalue tmp2);
-  tmp.type=PIKE_T_STRING;
-  tmp.u.string=Pike_fp->context->prog->strings[arg1];
-  tmp.subtype=1;
+  SET_SVAL(tmp, PIKE_T_STRING, 1, string,
+	   Pike_fp->context->prog->strings[arg1]);
   index_no_free(&tmp2, Pike_sp-1, &tmp);
   free_svalue(Pike_sp-1);
   move_svalue (Pike_sp - 1, &tmp2);
@@ -1886,9 +1852,8 @@ OPCODE1(F_ARROW, "->x", 0, {
 OPCODE1(F_STRING_INDEX, "string index", 0, {
   LOCAL_VAR(struct svalue tmp);
   LOCAL_VAR(struct svalue tmp2);
-  tmp.type=PIKE_T_STRING;
-  tmp.u.string=Pike_fp->context->prog->strings[arg1];
-  tmp.subtype=0;
+  SET_SVAL(tmp, PIKE_T_STRING, 0, string,
+	   Pike_fp->context->prog->strings[arg1]);
   index_no_free(&tmp2, Pike_sp-1, &tmp);
   free_svalue(Pike_sp-1);
   move_svalue (Pike_sp - 1, &tmp2);
@@ -1934,7 +1899,7 @@ OPCODE0_ALIAS(F_CAST_TO_STRING, "cast_to_string", 0, o_cast_to_string);
 OPCODE0(F_SOFT_CAST, "soft cast", I_UPDATE_SP, {
   /* Stack: type_string, value */
   DO_IF_DEBUG({
-    if (Pike_sp[-2].type != T_TYPE) {
+    if (TYPEOF(Pike_sp[-2]) != T_TYPE) {
       Pike_fatal("Argument 1 to soft_cast isn't a type!\n");
     }
   });
@@ -1966,7 +1931,7 @@ OPCODE0(F_COPY_VALUE, "copy_value", 0, {
 OPCODE0(F_INDIRECT, "indirect", I_UPDATE_SP, {
   LOCAL_VAR(struct svalue tmp);
   lvalue_to_svalue_no_free(&tmp, Pike_sp-2);
-  if(tmp.type != PIKE_T_STRING)
+  if(TYPEOF(tmp) != PIKE_T_STRING)
   {
     pop_2_elems();
     move_svalue (Pike_sp, &tmp);
@@ -2105,14 +2070,14 @@ OPCODE1_JUMP(F_CALL_OTHER,"call other", I_UPDATE_ALL, {
   LOCAL_VAR(struct svalue *s);
   s = Pike_sp-args;
   JUMP_SET_TO_PC_AT_NEXT (Pike_fp->return_addr);
-  if(s->type == T_OBJECT)
+  if(TYPEOF(*s) == T_OBJECT)
   {
     LOCAL_VAR(struct object *o);
     LOCAL_VAR(struct program *p);
     o = s->u.object;
     if((p=o->prog))
     {
-      p = p->inherits[s->subtype].prog;
+      p = p->inherits[SUBTYPEOF(*s)].prog;
       if(FIND_LFUN(p, LFUN_ARROW) == -1)
       {
 	int fun;
@@ -2120,7 +2085,7 @@ OPCODE1_JUMP(F_CALL_OTHER,"call other", I_UPDATE_ALL, {
 					  p);
 	if(fun >= 0)
 	{
-	  fun += o->prog->inherits[s->subtype].identifier_level;
+	  fun += o->prog->inherits[SUBTYPEOF(*s)].identifier_level;
 	  if(low_mega_apply(APPLY_LOW, args-1, o, (void *)(ptrdiff_t)fun))
 	  {
 	    Pike_fp->save_sp--;
@@ -2138,9 +2103,8 @@ OPCODE1_JUMP(F_CALL_OTHER,"call other", I_UPDATE_ALL, {
     LOCAL_VAR(struct svalue tmp);
     LOCAL_VAR(struct svalue tmp2);
 
-    tmp.type=PIKE_T_STRING;
-    tmp.u.string=Pike_fp->context->prog->strings[arg1];
-    tmp.subtype=1;
+    SET_SVAL(tmp, PIKE_T_STRING, 1, string,
+	     Pike_fp->context->prog->strings[arg1]);
 
     index_no_free(&tmp2, s, &tmp);
     free_svalue(s);
@@ -2163,14 +2127,14 @@ OPCODE1_JUMP(F_CALL_OTHER_AND_POP,"call other & pop", I_UPDATE_ALL, {
   LOCAL_VAR(struct svalue *s);
   s = Pike_sp-args;
   JUMP_SET_TO_PC_AT_NEXT (Pike_fp->return_addr);
-  if(s->type == T_OBJECT)
+  if(TYPEOF(*s) == T_OBJECT)
   {
     LOCAL_VAR(struct object *o);
     LOCAL_VAR(struct program *p);
     o = s->u.object;
     if((p=o->prog))
     {
-      p = p->inherits[s->subtype].prog;
+      p = p->inherits[SUBTYPEOF(*s)].prog;
       if(FIND_LFUN(p, LFUN_ARROW) == -1)
       {
 	int fun;
@@ -2178,7 +2142,7 @@ OPCODE1_JUMP(F_CALL_OTHER_AND_POP,"call other & pop", I_UPDATE_ALL, {
 					  p);
 	if(fun >= 0)
 	{
-	  fun += o->prog->inherits[s->subtype].identifier_level;
+	  fun += o->prog->inherits[SUBTYPEOF(*s)].identifier_level;
 	  if(low_mega_apply(APPLY_LOW, args-1, o, (void *)(ptrdiff_t)fun))
 	  {
 	    Pike_fp->save_sp--;
@@ -2198,9 +2162,8 @@ OPCODE1_JUMP(F_CALL_OTHER_AND_POP,"call other & pop", I_UPDATE_ALL, {
     LOCAL_VAR(struct svalue tmp);
     LOCAL_VAR(struct svalue tmp2);
 
-    tmp.type=PIKE_T_STRING;
-    tmp.u.string=Pike_fp->context->prog->strings[arg1];
-    tmp.subtype=1;
+    SET_SVAL(tmp, PIKE_T_STRING, 1, string,
+	     Pike_fp->context->prog->strings[arg1]);
 
     index_no_free(&tmp2, s, &tmp);
     free_svalue(s);
@@ -2223,14 +2186,14 @@ OPCODE1_RETURN(F_CALL_OTHER_AND_RETURN,"call other & return", I_UPDATE_ALL, {
   INT32 args=DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp));
   LOCAL_VAR(struct svalue *s);
   s = Pike_sp - args;
-  if(s->type == T_OBJECT)
+  if(TYPEOF(*s) == T_OBJECT)
   {
     LOCAL_VAR(struct object *o);
     LOCAL_VAR(struct program *p);
     o = s->u.object;
     if((p=o->prog))
     {
-      p = p->inherits[s->subtype].prog;
+      p = p->inherits[SUBTYPEOF(*s)].prog;
       if(FIND_LFUN(p, LFUN_ARROW) == -1)
       {
 	int fun;
@@ -2238,7 +2201,7 @@ OPCODE1_RETURN(F_CALL_OTHER_AND_RETURN,"call other & return", I_UPDATE_ALL, {
 					  p);
 	if(fun >= 0)
 	{
-	  fun += o->prog->inherits[s->subtype].identifier_level;
+	  fun += o->prog->inherits[SUBTYPEOF(*s)].identifier_level;
 	  if(low_mega_apply(APPLY_LOW, args-1, o, (void *)(ptrdiff_t)fun))
 	  {
 	    PIKE_OPCODE_T *addr = Pike_fp->pc;
@@ -2258,9 +2221,8 @@ OPCODE1_RETURN(F_CALL_OTHER_AND_RETURN,"call other & return", I_UPDATE_ALL, {
     LOCAL_VAR(struct svalue tmp);
     LOCAL_VAR(struct svalue tmp2);
 
-    tmp.type=PIKE_T_STRING;
-    tmp.u.string=Pike_fp->context->prog->strings[arg1];
-    tmp.subtype=1;
+    SET_SVAL(tmp, PIKE_T_STRING, 1, string,
+	     Pike_fp->context->prog->strings[arg1]);
 
     index_no_free(&tmp2, s, &tmp);
     free_svalue(s);
@@ -2416,13 +2378,11 @@ OPCODE1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN, "ltosval, call builtin & assign",
    * are lucky, and then the low array/multiset/mapping manipulation
    * routines can be destructive if they like.
    */
-  if( (1 << Pike_sp[-args].type) &
+  if( (1 << TYPEOF(Pike_sp[-args])) &
       (BIT_ARRAY | BIT_MULTISET | BIT_MAPPING | BIT_STRING) )
   {
     LOCAL_VAR(struct svalue tmp);
-    tmp.type = PIKE_T_INT;
-    tmp.subtype = NUMBER_NUMBER;
-    tmp.u.integer = 0;
+    SET_SVAL(tmp, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
     assign_lvalue(Pike_sp-args-2, &tmp);
   }
   /* NOTE: Pike_sp-args-2 is the lvalue, Pike_sp-args is the original value.
@@ -2464,13 +2424,11 @@ OPCODE1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN_POP,
    * are lucky, and then the low array/multiset/mapping manipulation
    * routines can be destructive if they like.
    */
-  if( (1 << Pike_sp[-args].type) &
+  if( (1 << TYPEOF(Pike_sp[-args])) &
       (BIT_ARRAY | BIT_MULTISET | BIT_MAPPING | BIT_STRING) )
   {
     LOCAL_VAR(struct svalue tmp);
-    tmp.type = PIKE_T_INT;
-    tmp.subtype = NUMBER_NUMBER;
-    tmp.u.integer = 0;
+    SET_SVAL(tmp, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
     assign_lvalue(Pike_sp-args-2, &tmp);
   }
   /* NOTE: Pike_sp-args-2 is the lvalue, Pike_sp-args is the original value.
@@ -2696,9 +2654,9 @@ OPCODE1(F_THIS_OBJECT, "this_object", I_UPDATE_SP, {
   });
 
 OPCODE0(F_ZERO_TYPE, "zero_type", 0, {
-  if(Pike_sp[-1].type != T_INT)
+  if(TYPEOF(Pike_sp[-1]) != T_INT)
   {
-    if((Pike_sp[-1].type==T_OBJECT || Pike_sp[-1].type==T_FUNCTION)
+    if((TYPEOF(Pike_sp[-1]) == T_OBJECT || TYPEOF(Pike_sp[-1]) == T_FUNCTION)
        && !Pike_sp[-1].u.object->prog)
     {
       pop_stack();
@@ -2708,8 +2666,8 @@ OPCODE0(F_ZERO_TYPE, "zero_type", 0, {
       push_int(0);
     }
   }else{
-    Pike_sp[-1].u.integer=Pike_sp[-1].subtype;
-    Pike_sp[-1].subtype=NUMBER_NUMBER;
+    SET_SVAL(Pike_sp[-1], T_INT, NUMBER_NUMBER, integer,
+	     SUBTYPEOF(Pike_sp[-1]));
   }
 });
 

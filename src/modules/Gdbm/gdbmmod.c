@@ -166,12 +166,12 @@ static void gdbmmod_create(INT32 args)
     struct pike_string *tmp2;
     int rwmode = GDBM_WRCREAT|GDBM_NOLOCK;
 
-    if(sp[-args].type != T_STRING)
+    if(TYPEOF(sp[-args]) != T_STRING)
       Pike_error("Bad argument 1 to gdbm->create()\n");
 
     if(args>1)
     {
-      if(sp[1-args].type != T_STRING)
+      if(TYPEOF(sp[1-args]) != T_STRING)
 	Pike_error("Bad argument 2 to gdbm->create()\n");
 
       rwmode=fixmods(sp[1-args].u.string->str);
@@ -221,7 +221,7 @@ static void gdbmmod_fetch(INT32 args)
   if(!args)
     Pike_error("Too few arguments to gdbm->fetch()\n");
 
-  if(sp[-args].type != T_STRING)
+  if(TYPEOF(sp[-args]) != T_STRING)
     Pike_error("Bad argument 1 to gdbm->fetch()\n");
 
   if(!THIS->dbf)
@@ -260,7 +260,7 @@ static void gdbmmod_delete(INT32 args)
   if(!args)
     Pike_error("Too few arguments to gdbm->delete()\n");
 
-  if(sp[-args].type != T_STRING)
+  if(TYPEOF(sp[-args]) != T_STRING)
     Pike_error("Bad argument 1 to gdbm->delete()\n");
 
   if(!this->dbf)
@@ -325,7 +325,7 @@ static void gdbmmod_nextkey(INT32 args)
   if(!args)
     Pike_error("Too few arguments to gdbm->nextkey()\n");
 
-  if(sp[-args].type != T_STRING)
+  if(TYPEOF(sp[-args]) != T_STRING)
     Pike_error("Bad argument 1 to gdbm->nextkey()\n");
 
   if(!THIS->dbf)
@@ -395,14 +395,14 @@ static void gdbmmod_store(INT32 args)
   if(args<2)
     Pike_error("Too few arguments to gdbm->store()\n");
 
-  if(sp[-args].type != T_STRING)
+  if(TYPEOF(sp[-args]) != T_STRING)
     Pike_error("Bad argument 1 to gdbm->store()\n");
 
-  if(sp[1-args].type != T_STRING)
+  if(TYPEOF(sp[1-args]) != T_STRING)
     Pike_error("Bad argument 2 to gdbm->store()\n");
 
   if (args > 2) {
-    if (sp[2-args].type != T_INT) {
+    if (TYPEOF(sp[2-args]) != T_INT) {
       Pike_error("Bad argument 3 to gdbm->store()\n");
     }
     if (sp[2-args].u.integer) {

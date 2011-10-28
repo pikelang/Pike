@@ -256,7 +256,7 @@ mixed _index(string ind)
 string _sprintf(int flag)
 {
   int mode = 0;
-  if(args>0 && Pike_sp[-args].type == PIKE_T_INT)
+  if(args>0 && TYPEOF(Pike_sp[-args]) == PIKE_T_INT)
     mode = Pike_sp[-args].u.integer;
   pop_n_elems( args );
   if(mode != 'O') {

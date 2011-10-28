@@ -30,7 +30,7 @@ void create(string|mapping|void label_or_props, ?int mnemonic)
     GtkWidget *gt;
     INT_TYPE nem=0;
 
-    if (Pike_sp[-1].type==PIKE_T_STRING) {
+    if (TYPEOF(Pike_sp[-1]) == PIKE_T_STRING) {
       get_all_args("create",args,"%T.%i",&t,&nem);
       if (t) {
 	ref_push_string(t);

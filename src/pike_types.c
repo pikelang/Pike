@@ -2250,8 +2250,8 @@ static void low_describe_type(struct pike_type *t)
 	s.u.program = id_to_program(CDR_TO_INT(t));
 	CALL_AND_UNSET_ONERROR(err);
 	if (s.u.program) {
-	  s.type = T_PROGRAM;
-	  s.subtype = 0;
+	  SET_SVAL_TYPE(s, T_PROGRAM);
+	  SET_SVAL_SUBTYPE(s, 0);
 	  describe_svalue(&s, 0, NULL);
 	  my_strcat(")");
 	} else {
@@ -3945,8 +3945,8 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
     ref_push_type_value(b);
     safe_apply_current2(PC_POP_TYPE_ATTRIBUTE_FUN_NUM, 3,
 			"pop_type_attribute");
-    if ((Pike_sp[-1].type == T_INT) &&
-	(Pike_sp[-1].subtype == NUMBER_NUMBER) &&
+    if ((TYPEOF(Pike_sp[-1]) == T_INT) &&
+	(SUBTYPEOF(Pike_sp[-1]) == NUMBER_NUMBER) &&
 	(!Pike_sp[-1].u.integer)) {
       pop_stack();
       return 0;
@@ -4120,8 +4120,8 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
     ref_push_type_value(b->cdr);
     safe_apply_current2(PC_PUSH_TYPE_ATTRIBUTE_FUN_NUM, 3,
 			"push_type_attribute");
-    if ((Pike_sp[-1].type == T_INT) &&
-	(Pike_sp[-1].subtype == NUMBER_NUMBER) &&
+    if ((TYPEOF(Pike_sp[-1]) == T_INT) &&
+	(SUBTYPEOF(Pike_sp[-1]) == NUMBER_NUMBER) &&
 	(!Pike_sp[-1].u.integer)) {
       pop_stack();
       return 0;
@@ -4818,7 +4818,7 @@ static struct pike_type *debug_low_index_type(struct pike_type *t,
 	  return mixed_type_string;
 	}
       }
-      if(CDR(n)->token == F_CONSTANT && CDR(n)->u.sval.type==T_STRING)
+      if(CDR(n)->token == F_CONSTANT && TYPEOF(CDR(n)->u.sval) == T_STRING)
       {
 	i = find_shared_string_identifier(CDR(n)->u.sval.u.string, p);
 	if(i==-1)
@@ -6048,8 +6048,8 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
       ref_push_type_value(arg_type);
       safe_apply_current2(PC_APPLY_TYPE_ATTRIBUTE_FUN_NUM, 3,
 			  "apply_type_attribute");
-      if ((Pike_sp[-1].type == T_INT) &&
-	  (Pike_sp[-1].subtype == NUMBER_NUMBER) &&
+      if ((TYPEOF(Pike_sp[-1]) == T_INT) &&
+	  (SUBTYPEOF(Pike_sp[-1]) == NUMBER_NUMBER) &&
 	  (!Pike_sp[-1].u.integer)) {
 	pop_stack();
 	free_type(res);
@@ -6295,7 +6295,7 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
 	  ref_push_type_value(tmp2->cdr);
 	  ref_push_type_value(res);
 	  safe_apply_current(PC_APPLY_ATTRIBUTE_CONSTANT_FUN_NUM, 4);
-	  if (Pike_sp[-1].type == PIKE_T_TYPE) {
+	  if (TYPEOF(Pike_sp[-1]) == PIKE_T_TYPE) {
 	    type_stack_mark();
 	    push_finished_type(Pike_sp[-1].u.type);
 	    push_finished_type(res);
@@ -6505,8 +6505,8 @@ struct pike_type *new_get_return_type(struct pike_type *fun_type,
       ref_push_type_value(fun_type->cdr);
       safe_apply_current2(PC_APPLY_TYPE_ATTRIBUTE_FUN_NUM, 2,
 			  "apply_type_attribute");
-      if ((Pike_sp[-1].type == T_INT) &&
-	  (Pike_sp[-1].subtype == NUMBER_NUMBER) &&
+      if ((TYPEOF(Pike_sp[-1]) == T_INT) &&
+	  (SUBTYPEOF(Pike_sp[-1]) == NUMBER_NUMBER) &&
 	  (!Pike_sp[-1].u.integer)) {
 	free_type(tmp);
 	pop_stack();
@@ -6994,7 +6994,8 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
     fprintf(stderr, "  Checking argument #%d... ", *argno);
     simple_describe_type(args->type);
     if (sval) {
-      fprintf(stderr, "\n  Constant of type %s", get_name_of_type(sval->type));
+      fprintf(stderr, "\n  Constant of type %s",
+	      get_name_of_type(TYPEOF(*sval)));
     }
     fprintf(stderr, "\n  fun_type: ");
     simple_describe_type(fun_type);
@@ -7191,10 +7192,10 @@ struct pike_type *zzap_function_return(struct pike_type *a,
 struct pike_type *get_type_of_svalue(const struct svalue *s)
 {
   struct pike_type *ret;
-  switch(s->type)
+  switch(TYPEOF(*s))
   {
   case T_FUNCTION:
-    if(s->subtype == FUNCTION_BUILTIN)
+    if(SUBTYPEOF(*s) == FUNCTION_BUILTIN)
     {
       copy_pike_type(ret, s->u.efun->type);
     }else{
@@ -7213,7 +7214,7 @@ struct pike_type *get_type_of_svalue(const struct svalue *s)
 	  copy_pike_type(ret, zero_type_string);
 	}
       } else {
-	copy_pike_type(ret, ID_FROM_INT(p,s->subtype)->type);
+	copy_pike_type(ret, ID_FROM_INT(p,SUBTYPEOF(*s))->type);
       }
     }
     return ret;
@@ -7383,7 +7384,7 @@ struct pike_type *get_type_of_svalue(const struct svalue *s)
 
   default:
     type_stack_mark();
-    push_type(s->type);
+    push_type(TYPEOF(*s));
     return pop_unfinished_type();
   }
 }
@@ -7414,7 +7415,7 @@ static struct pike_type *low_object_type_to_program_type(struct pike_type *obj_t
     }
     obj_t = obj_t->cdr;
   }
-  sval.type = T_PROGRAM;
+  SET_SVAL_TYPE(sval, T_PROGRAM);
   if ((obj_t->type != T_OBJECT) ||
       (!(id = CDR_TO_INT(obj_t))) ||
       (!(sval.u.program = id_to_program(id))) ||

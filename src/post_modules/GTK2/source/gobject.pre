@@ -228,7 +228,7 @@ int new_signal(string name, array types, string return_type)
       }
 
       for (i=n_params=0; i<a->size; i++) {
-	if (ITEM(a)[i].type!=PIKE_T_STRING)
+	if (TYPEOF(ITEM(a)[i]) != PIKE_T_STRING)
 	  continue;
 	if (is_same_string(ITEM(a)[i].u.string,_STR("int"))) {
 	  param_types[n_params]=G_TYPE_INT;

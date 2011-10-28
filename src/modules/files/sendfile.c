@@ -156,7 +156,7 @@ static void init_pike_sendfile(struct object *o)
    * mapped variable, but since we just zapped it with zeroes we need
    * to set the type to T_INT again.. /Hubbe
    */
-  THIS->callback.type = T_INT;
+  SET_SVAL(THIS->callback, T_INT, NUMBER_NUMBER, integer, 0);
 }
 
 static void exit_pike_sendfile(struct object *o)
@@ -202,9 +202,7 @@ static void exit_pike_sendfile(struct object *o)
    * /grubba 1999-10-14
    */
   free_svalue(&(THIS->callback));
-  THIS->callback.type = T_INT;
-  THIS->callback.subtype = NUMBER_NUMBER;
-  THIS->callback.u.integer = 0;
+  SET_SVAL(THIS->callback, T_INT, NUMBER_NUMBER, integer, 0);
   if (THIS->backend_callback) {
     remove_callback (THIS->backend_callback);
     THIS->backend_callback = NULL;
@@ -234,10 +232,10 @@ static void sf_call_callback(struct pike_sendfile *this)
 {
   debug_malloc_touch(this->args);
 
-  if (this->callback.type != T_INT) {
-    if (((this->callback.type == T_OBJECT) ||
-	 ((this->callback.type == T_FUNCTION) &&
-	  (this->callback.subtype != FUNCTION_BUILTIN))) &&
+  if (TYPEOF(this->callback) != T_INT) {
+    if (((TYPEOF(this->callback) == T_OBJECT) ||
+	 ((TYPEOF(this->callback) == T_FUNCTION) &&
+	  (SUBTYPEOF(this->callback) != FUNCTION_BUILTIN))) &&
 	!this->callback.u.object->prog) {
       /* Destructed object or function. */
       free_array(this->args);
@@ -254,9 +252,7 @@ static void sf_call_callback(struct pike_sendfile *this)
     }
 
     free_svalue(&this->callback);
-    this->callback.type = T_INT;
-    this->callback.subtype = NUMBER_NUMBER;
-    this->callback.u.integer = 0;
+    SET_SVAL(this->callback, T_INT, NUMBER_NUMBER, integer, 0);
   } else {
     free_array(this->args);
     this->args = NULL;
@@ -881,17 +877,14 @@ static void sf_create(INT32 args)
    * before create() is called.
    */
   free_svalue(&(THIS->callback));
-  THIS->callback.type = T_INT;
-  THIS->callback.subtype = NUMBER_NUMBER;
-  THIS->callback.u.integer = 0;
+  SET_SVAL(THIS->callback, T_INT, NUMBER_NUMBER, integer, 0);
 
   /* NOTE: The references to the stuff in sf are held by the stack.
    * This means that we can throw errors without needing to clean up.
    */
 
   MEMSET(&sf, 0, sizeof(struct pike_sendfile));
-  sf.callback.type = T_INT;
-  sf.callback.subtype = NUMBER_NUMBER;
+  SET_SVAL(sf.callback, T_INT, NUMBER_NUMBER, integer, 0);
 
   get_all_args("sendfile", args, "%A%O%l%l%A%o%*",
 	       &(sf.headers), &(sf.from_file), &offset,
@@ -920,13 +913,13 @@ static void sf_create(INT32 args)
 						     file_program))) {
     struct svalue *sval;
     if (!(sval = (struct svalue *)get_storage(sf.to_file, file_ref_program)) ||
-	(sval->type != T_OBJECT) ||
+	(TYPEOF(*sval) != T_OBJECT) ||
 	!(sf.to = (struct my_file *)get_storage(sval->u.object, file_program))) {
       SIMPLE_BAD_ARG_ERROR("sendfile", 6, "object(Stdio.File)");
     }
     add_ref(sval->u.object);
 #ifdef PIKE_DEBUG
-    if ((sp[5-args].type != T_OBJECT) ||
+    if ((TYPEOF(sp[5-args]) != T_OBJECT) ||
 	(sp[5-args].u.object != sf.to_file)) {
       Pike_fatal("sendfile: Stack out of sync(1).\n");
     }
@@ -947,9 +940,7 @@ static void sf_create(INT32 args)
     free_object(sf.from_file);
     sf.from_file = NULL;
     sf.from = NULL;
-    sp[1-args].type = T_INT;
-    sp[1-args].subtype = NUMBER_NUMBER;
-    sp[1-args].u.integer = 0;
+    SET_SVAL(sp[1-args], T_INT, NUMBER_NUMBER, integer, 0);
   }
 
   if (sf.from_file) {
@@ -960,13 +951,13 @@ static void sf_create(INT32 args)
       struct svalue *sval;
       if (!(sval = (struct svalue *)get_storage(sf.from_file,
 						file_ref_program)) ||
-	!(sval->type != T_OBJECT) ||
+	  !(TYPEOF(*sval) != T_OBJECT) ||
 	!(sf.from = (struct my_file *)get_storage(sval->u.object, file_program))) {
 	SIMPLE_BAD_ARG_ERROR("sendfile", 2, "object(Stdio.File)");
       }
       add_ref(sval->u.object);
 #ifdef PIKE_DEBUG
-      if ((sp[1-args].type != T_OBJECT) ||
+      if ((TYPEOF(sp[1-args]) != T_OBJECT) ||
 	  (sp[1-args].u.object != sf.from_file)) {
 	Pike_fatal("sendfile: Stack out of sync(2).\n");
       }
@@ -989,7 +980,7 @@ static void sf_create(INT32 args)
     int i;
 
     for (i=0; i < a->size; i++) {
-      if ((a->item[i].type != T_STRING) || (a->item[i].u.string->size_shift)) {
+      if ((TYPEOF(a->item[i]) != T_STRING) || (a->item[i].u.string->size_shift)) {
 	SIMPLE_BAD_ARG_ERROR("sendfile", 1, "array(string)");
       }
     }
@@ -1003,7 +994,7 @@ static void sf_create(INT32 args)
     int i;
 
     for (i=0; i < a->size; i++) {
-      if ((a->item[i].type != T_STRING) || (a->item[i].u.string->size_shift)) {
+      if ((TYPEOF(a->item[i]) != T_STRING) || (a->item[i].u.string->size_shift)) {
 	SIMPLE_BAD_ARG_ERROR("sendfile", 5, "array(string)");
       }
     }
@@ -1098,7 +1089,7 @@ static void sf_create(INT32 args)
   if ((sf.headers) && (sf.headers->refs > 1)) {
     struct array *a = copy_array(sf.headers);
 #ifdef PIKE_DEBUG
-    if ((sp[-args].type != T_ARRAY) || (sp[-args].u.array != sf.headers)) {
+    if ((TYPEOF(sp[-args]) != T_ARRAY) || (sp[-args].u.array != sf.headers)) {
       Pike_fatal("sendfile: Stack out of sync(3).\n");
     }
 #endif /* PIKE_DEBUG */
@@ -1109,7 +1100,7 @@ static void sf_create(INT32 args)
   if ((sf.trailers) && (sf.trailers->refs > 1)) {
     struct array *a = copy_array(sf.trailers);
 #ifdef PIKE_DEBUG
-    if ((sp[4-args].type != T_ARRAY) || (sp[4-args].u.array != sf.trailers)) {
+    if ((TYPEOF(sp[4-args]) != T_ARRAY) || (sp[4-args].u.array != sf.trailers)) {
       Pike_fatal("sendfile: Stack out of sync(4).\n");
     }
 #endif /* PIKE_DEBUG */

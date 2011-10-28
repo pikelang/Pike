@@ -80,7 +80,7 @@ static void bind_arguments(sqlite3 *db,
   struct keypair *k;
   NEW_MAPPING_LOOP(md) {
     int idx;
-    switch(k->ind.type) {
+    switch(TYPEOF(k->ind)) {
     case T_INT:
       idx = k->ind.u.integer;
       break;
@@ -95,7 +95,7 @@ static void bind_arguments(sqlite3 *db,
     default:
       Pike_error("Bind index is not int|string.\n");
     }
-    switch(k->val.type) {
+    switch(TYPEOF(k->val)) {
     case T_INT:
       ERR( sqlite3_bind_int64(stmt, idx, k->val.u.integer),
 	   db );

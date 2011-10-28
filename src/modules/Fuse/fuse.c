@@ -73,7 +73,7 @@ static int pf_getattr(const char *path, struct stat *stbuf)
     struct stat *st;
     push_text( path );
     apply( global_fuse_obj, "getattr", 1 );
-    if( Pike_sp[-1].type != PIKE_T_OBJECT ||
+    if( TYPEOF(Pike_sp[-1]) != PIKE_T_OBJECT ||
 	!(st = (struct stat *)get_storage( Pike_sp[-1].u.object, stat_program)) )
 	DEFAULT_ERRNO();
     *stbuf = *st;
@@ -85,9 +85,7 @@ static int pf_readlink(const char *path, char *buf, size_t size)
     int res;
     push_text( path );
     apply( global_fuse_obj, "readlink", 1 );
-    if(Pike_sp[-1].type == T_INT)
-        return -Pike_sp[-1].u.integer;
-    if( (Pike_sp[-1].type != PIKE_T_STRING) ||
+    if( (TYPEOF(Pike_sp[-1]) != PIKE_T_STRING) ||
 	(Pike_sp[-1].u.string->size_shift) )
 	DEFAULT_ERRNO();
     if( Pike_sp[-1].u.string->len >= (int)size )
@@ -123,7 +121,7 @@ static int pf_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
     push_text( path );
     push_getdir_callback( h, filler );
     apply( global_fuse_obj, "readdir", 2 );
-    if (Pike_sp[-1].type != T_INT)
+    if (TYPEOF(Pike_sp[-1]) != T_INT)
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
@@ -134,7 +132,7 @@ static int pf_mknod(const char *path, mode_t mode, dev_t rdev)
     push_int( mode );
     push_int( rdev );
     apply( global_fuse_obj, "mknod", 3 );
-    if (Pike_sp[-1].type != T_INT)
+    if (TYPEOF(Pike_sp[-1]) != T_INT)
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
@@ -144,7 +142,7 @@ static int pf_mkdir(const char *path, mode_t mode)
     push_text( path );
     push_int( mode );
     apply( global_fuse_obj, "mkdir", 2 );
-    if (Pike_sp[-1].type != T_INT)
+    if (TYPEOF(Pike_sp[-1]) != T_INT)
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
@@ -153,7 +151,7 @@ static int pf_unlink(const char *path)
 {
     push_text( path );
     apply( global_fuse_obj, "unlink", 1 );
-    if (Pike_sp[-1].type != T_INT)
+    if (TYPEOF(Pike_sp[-1]) != T_INT)
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
@@ -162,7 +160,7 @@ static int pf_rmdir(const char *path)
 {
     push_text( path );
     apply( global_fuse_obj, "rmdir", 1 );
-    if (Pike_sp[-1].type != T_INT)
+    if (TYPEOF(Pike_sp[-1]) != T_INT)
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
@@ -172,7 +170,7 @@ static int pf_symlink(const char *from, const char *to)
     push_text( from );
     push_text( to );
     apply( global_fuse_obj, "symlink", 2 );
-    if (Pike_sp[-1].type != T_INT)
+    if (TYPEOF(Pike_sp[-1]) != T_INT)
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
@@ -182,7 +180,7 @@ static int pf_rename(const char *from, const char *to)
     push_text( from );
     push_text( to );
     apply( global_fuse_obj, "rename", 2 );
-    if (Pike_sp[-1].type != T_INT)
+    if (TYPEOF(Pike_sp[-1]) != T_INT)
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
@@ -192,7 +190,7 @@ static int pf_link(const char *from, const char *to)
     push_text( from );
     push_text( to );
     apply( global_fuse_obj, "link", 2 );
-    if (Pike_sp[-1].type != T_INT)
+    if (TYPEOF(Pike_sp[-1]) != T_INT)
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
@@ -202,7 +200,7 @@ static int pf_chmod(const char *path, mode_t mode)
     push_text( path );
     push_int( mode );
     apply( global_fuse_obj, "chmod", 2 );
-    if (Pike_sp[-1].type != T_INT)
+    if (TYPEOF(Pike_sp[-1]) != T_INT)
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
@@ -213,7 +211,7 @@ static int pf_chown(const char *path, uid_t uid, gid_t gid)
     push_int( uid );
     push_int( gid );
     apply( global_fuse_obj, "chown", 3 );
-    if (Pike_sp[-1].type != T_INT)
+    if (TYPEOF(Pike_sp[-1]) != T_INT)
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
@@ -223,7 +221,7 @@ static int pf_truncate(const char *path, off_t size)
     push_text( path );
     push_int64( size );
     apply( global_fuse_obj, "truncate", 2 );
-    if (Pike_sp[-1].type != T_INT)
+    if (TYPEOF(Pike_sp[-1]) != T_INT)
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
@@ -234,7 +232,7 @@ static int pf_utime(const char *path, struct utimbuf *buf)
     push_int( buf->actime );
     push_int( buf->modtime );
     apply( global_fuse_obj, "utime", 3 );
-    if (Pike_sp[-1].type != T_INT)
+    if (TYPEOF(Pike_sp[-1]) != T_INT)
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
@@ -245,7 +243,7 @@ static int pf_open(const char *path, struct fuse_file_info *fi)
     push_text( path );
     push_int( fi->flags );
     apply( global_fuse_obj, "open", 2 );
-    if (Pike_sp[-1].type != T_INT)
+    if (TYPEOF(Pike_sp[-1]) != T_INT)
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
@@ -258,7 +256,7 @@ static int pf_read(const char *path, char *buf, size_t size, off_t offset,
     push_int64( offset );
     apply( global_fuse_obj, "read", 3 );
     
-    if( (Pike_sp[-1].type != PIKE_T_STRING) ||
+    if( (TYPEOF(Pike_sp[-1]) != PIKE_T_STRING) ||
 	(Pike_sp[-1].u.string->size_shift) )
 	DEFAULT_ERRNO();
     if (((size_t)Pike_sp[-1].u.string->len) > size) {
@@ -275,7 +273,7 @@ static int pf_write(const char *path, const char *buf, size_t size,
     push_string( make_shared_binary_string(buf, size ) );
     push_int64( offset );
     apply( global_fuse_obj, "write", 3 );
-    if (Pike_sp[-1].type != T_INT)
+    if (TYPEOF(Pike_sp[-1]) != T_INT)
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
@@ -287,7 +285,7 @@ static int pf_statfs(const char *path, struct statvfs *stbuf)
 
     push_text( path );
     apply( global_fuse_obj, "statfs", 1 );
-    if( Pike_sp[-1].type != PIKE_T_MAPPING )
+    if( TYPEOF(Pike_sp[-1]) != PIKE_T_MAPPING )
 	DEFAULT_ERRNO();
     m = Pike_sp[-1].u.mapping;
     memset( stbuf, 0, sizeof(*stbuf) );
@@ -295,7 +293,7 @@ static int pf_statfs(const char *path, struct statvfs *stbuf)
     stbuf->f_bsize = 1024;
 #define STSET(X)    do {				\
       if ((val=simple_mapping_string_lookup( m,#X )) &&	\
-	  (val->type == T_INT))				\
+	  (TYPEOF(*val) == T_INT))			\
 	stbuf->f_##X=val->u.integer;			\
     } while(0)
     STSET(bsize);
@@ -305,10 +303,10 @@ static int pf_statfs(const char *path, struct statvfs *stbuf)
     STSET(files);
     STSET(ffree);
     if (((val=simple_mapping_string_lookup( m,"namemax" )) &&
-	 (val->type == T_INT)) ||
+	 (TYPEOF(*val) == T_INT)) ||
 	/* namelen is compat. */
 	((val=simple_mapping_string_lookup( m,"namelen" )) &&
-	 (val->type == T_INT))) {
+	 (TYPEOF(*val) == T_INT))) {
       stbuf->f_namemax = val->u.integer;
     }
 #undef STSET
@@ -319,7 +317,7 @@ static int pf_release(const char *path, struct fuse_file_info *fi)
 {
     push_text( path );
     apply( global_fuse_obj, "release", 1 );
-    if (Pike_sp[-1].type != T_INT)
+    if (TYPEOF(Pike_sp[-1]) != T_INT)
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
@@ -330,7 +328,7 @@ static int pf_fsync(const char *path, int isdatasync,
     push_text( path );
     push_int( isdatasync );
     apply( global_fuse_obj, "fsync", 2 );
-    if (Pike_sp[-1].type != T_INT)
+    if (TYPEOF(Pike_sp[-1]) != T_INT)
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
@@ -343,7 +341,7 @@ static int pf_setxattr(const char *path, const char *name, const char *value,
     push_string( make_shared_binary_string( value, size ) );
     push_int( flags );
     apply( global_fuse_obj, "setxattr", 4 );
-    if (Pike_sp[-1].type != T_INT)
+    if (TYPEOF(Pike_sp[-1]) != T_INT)
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
@@ -355,7 +353,7 @@ static int pf_getxattr(const char *path, const char *name, char *value,
     push_text( path );
     push_text( name );
     apply( global_fuse_obj, "getxattr", 2 );
-    if( Pike_sp[-1].type != PIKE_T_STRING ||
+    if( TYPEOF(Pike_sp[-1]) != PIKE_T_STRING ||
 	(Pike_sp[-1].u.string->size_shift) )
 	DEFAULT_ERRNO();
     ds = Pike_sp[-1].u.string->len <<Pike_sp[-1].u.string->size_shift;
@@ -373,11 +371,11 @@ static int pf_listxattr(const char *path, char *list, size_t size)
 
     push_text( path );
     apply( global_fuse_obj, "listxattr", 1 );
-    if( Pike_sp[-1].type != PIKE_T_ARRAY )
+    if( TYPEOF(Pike_sp[-1]) != PIKE_T_ARRAY )
 	DEFAULT_ERRNO();
     push_string( make_shared_binary_string( "\0", 1 ) );
     o_multiply();
-    if( Pike_sp[-1].type != PIKE_T_STRING ||
+    if( TYPEOF(Pike_sp[-1]) != PIKE_T_STRING ||
 	(Pike_sp[-1].u.string->size_shift) )
 	DEFAULT_ERRNO();
     /* We need to account for the terminating NUL. */
@@ -395,7 +393,7 @@ static int pf_removexattr(const char *path, const char *name)
     push_text( path );
     push_text( name );
     apply( global_fuse_obj, "removexattr", 2 );
-    if (Pike_sp[-1].type != T_INT)
+    if (TYPEOF(Pike_sp[-1]) != T_INT)
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
@@ -405,7 +403,7 @@ static int pf_flush( const char *path, struct fuse_file_info *fi)
     push_text( path );
     push_int( fi->flags );
     apply( global_fuse_obj, "flush", 2 );
-    if (Pike_sp[-1].type != T_INT)
+    if (TYPEOF(Pike_sp[-1]) != T_INT)
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
@@ -415,7 +413,7 @@ static int pf_opendir( const char *path, struct fuse_file_info *fi)
     push_text( path );
     push_int( fi->flags );
     apply( global_fuse_obj, "opendir", 2 );
-    if (Pike_sp[-1].type != T_INT)
+    if (TYPEOF(Pike_sp[-1]) != T_INT)
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
@@ -426,7 +424,7 @@ static int pf_creat( const char *path, mode_t mode, struct fuse_file_info *fi)
     push_int( mode );
     push_int( fi->flags );
     apply( global_fuse_obj, "creat", 3 );
-    if (Pike_sp[-1].type != T_INT)
+    if (TYPEOF(Pike_sp[-1]) != T_INT)
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
@@ -436,7 +434,7 @@ static int pf_access( const char *path, int mode)
     push_text( path );
     push_int( mode );
     apply( global_fuse_obj, "access", 2 );
-    if (Pike_sp[-1].type != T_INT)
+    if (TYPEOF(Pike_sp[-1]) != T_INT)
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
@@ -445,7 +443,7 @@ static int pf_releasedir( const char *path, struct fuse_file_info *fi)
 {
     push_text( path );
     apply( global_fuse_obj, "releasedir", 1 );
-    if (Pike_sp[-1].type != T_INT)
+    if (TYPEOF(Pike_sp[-1]) != T_INT)
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
@@ -455,7 +453,7 @@ static int pf_fsyncdir( const char *path, int nometa, struct fuse_file_info *fi)
     push_text( path );
     push_int( nometa );
     apply( global_fuse_obj, "fsyncdir", 2 );
-    if (Pike_sp[-1].type != T_INT)
+    if (TYPEOF(Pike_sp[-1]) != T_INT)
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
@@ -577,7 +575,7 @@ static void f_fuse_run( INT32 nargs )
     argv = malloc( sizeof(char *) * args->size );
     for( i = 0; i<args->size; i++ )
     {
-	if( args->item[i].type != PIKE_T_STRING ||
+        if( TYPEOF(args->item[i]) != PIKE_T_STRING ||
 	    string_has_null(args->item[i].u.string) )
 	{
 	    free( argv );

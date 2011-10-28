@@ -97,7 +97,7 @@ struct pike_creds
 									\
     safe_apply(OBJ2CREDS(CURRENT_CREDS)->user,"valid_io",args+2);	\
 									\
-    switch(Pike_sp[-1].type)				       		\
+    switch(TYPEOF(Pike_sp[-1]))						\
     {									\
       case PIKE_T_ARRAY:				       		\
       case PIKE_T_OBJECT:				       		\

@@ -115,7 +115,7 @@ static void pgres_destroy (struct object * o)
 			free_string(THIS->last_error);
 		THIS->last_error=NULL;
 	}
-	if (THIS->notify_callback.type!=PIKE_T_FREE) {
+	if (TYPEOF(THIS->notify_callback) != PIKE_T_FREE) {
 		free_svalue(&THIS->notify_callback);
 		mark_free_svalue(&THIS->notify_callback);
 	}
@@ -429,7 +429,7 @@ static void f_big_query(INT32 args)
         switch(args)
         {
           default:
-            if(Pike_sp[1-args].type == PIKE_T_ARRAY)
+            if(TYPEOF(Pike_sp[1-args]) == PIKE_T_ARRAY)
               bnds=Pike_sp[1-args].u.array;
       
           case 1:
@@ -450,7 +450,7 @@ static void f_big_query(INT32 args)
 
 	  for (i=0,item=bnds->item; cnt--; item++,i++) {
 	    int sendbin=0;
-	    switch(item->type)
+	    switch(TYPEOF(*item))
 	    { case PIKE_T_STRING: {
 	          long len;
 		  const char*p;
@@ -478,7 +478,7 @@ static void f_big_query(INT32 args)
 	        break;
 	      default:
                   Pike_error("Expected string or UNDEFINED element, Got %d.\n",
-		   item->type);
+		   TYPEOF(*item));
 	        break;
 	    }
 	    paramFormats[i] = sendbin;
@@ -703,7 +703,7 @@ static void f_trace (INT32 args)
 {
 	if (args!=1)
 		Pike_error ("Wrong args for trace().\n");
-	if (Pike_sp[-args].type==PIKE_T_INT)
+	if (TYPEOF(Pike_sp[-args]) == PIKE_T_INT)
 		if (Pike_sp[-args].u.integer==0)
 			PQuntrace(THIS->dblink);
 		else
@@ -750,8 +750,8 @@ static void f_callback(INT32 args)
 	check_all_args("postgres->_set_notify_callback()",
 		       args, BIT_INT|BIT_FUNCTION, 0);
 
-	if (Pike_sp[-args].type==PIKE_T_INT) {
-		if (THIS->notify_callback.type!=PIKE_T_FREE) {
+	if (TYPEOF(Pike_sp[-args]) == PIKE_T_INT) {
+		if (TYPEOF(THIS->notify_callback) != PIKE_T_FREE) {
 			free_svalue(&THIS->notify_callback);
 			mark_free_svalue (&THIS->notify_callback);
 		}

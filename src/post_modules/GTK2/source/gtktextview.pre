@@ -43,7 +43,7 @@ void create(GTK2.TextBuffer|mapping(string:mixed)|void buffer_or_props)
   pgtk2_verify_not_inited();
   pgtk2_verify_setup();
   if (args) {
-    if (Pike_sp[-args].type==PIKE_T_OBJECT) {
+    if (TYPEOF(Pike_sp[-args]) == PIKE_T_OBJECT) {
       struct object *o1;
       GtkWidget *gt;
       get_all_args("create",args,"%o",&o1);

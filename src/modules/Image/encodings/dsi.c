@@ -37,7 +37,7 @@ void f__decode( INT32 args )
   struct object *i, *a;
   struct image *ip, *ap;
   rgb_group black = {0,0,0};
-  if( sp[-args].type != T_STRING )
+  if( TYPEOF(sp[-args]) != T_STRING )
     Pike_error("Illegal argument 1 to Image.DSI._decode\n");
   data = (unsigned char *)sp[-args].u.string->str;
   len = (size_t)sp[-args].u.string->len;

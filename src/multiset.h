@@ -175,10 +175,11 @@ union msnode *low_multiset_find_eq (struct multiset *l, struct svalue *key);
     struct svalue *_ms_index_to_ = (TO);				\
     *_ms_index_to_ = msnode_check (NODE)->i.ind;			\
     DO_IF_DEBUG (							\
-      if (!(_ms_index_to_->type & MULTISET_FLAG_MARKER))		\
+      if (!(TYPEOF(*_ms_index_to_) & MULTISET_FLAG_MARKER))		\
 	Pike_fatal (msg_no_multiset_flag_marker);			\
     );									\
-    _ms_index_to_->type &= ~MULTISET_FLAG_MASK;				\
+    SET_SVAL_TYPE(*_ms_index_to_,					\
+		  TYPEOF(*_ms_index_to_) & ~MULTISET_FLAG_MASK);	\
     add_ref_svalue (_ms_index_to_);					\
   } while (0)
 #define low_assign_multiset_index(TO, NODE) do {			\
@@ -190,9 +191,9 @@ union msnode *low_multiset_find_eq (struct multiset *l, struct svalue *key);
   low_assign_multiset_index_no_free (Pike_sp++, (NODE))
 #define low_use_multiset_index(NODE, VAR)				\
   ((VAR) = msnode_check (NODE)->i.ind,					\
-   DO_IF_DEBUG ((VAR).type & MULTISET_FLAG_MARKER ? 0 :			\
+    DO_IF_DEBUG (TYPEOF(VAR) & MULTISET_FLAG_MARKER ? 0 :		\
 		(Pike_fatal (msg_no_multiset_flag_marker), 0) COMMA)	\
-   (VAR).type &= ~MULTISET_FLAG_MASK,					\
+   SET_SVAL_TYPE((VAR), TYPEOF(VAR) & ~MULTISET_FLAG_MASK),		\
    &(VAR))
 
 #define low_get_multiset_value(MSD, NODE)				\
@@ -349,7 +350,7 @@ PMOD_EXPORT int msnode_is_deleted (struct multiset *l, ptrdiff_t nodepos);
   assign_multiset_index_no_free (Pike_sp++, (L), (NODEPOS))
 #define use_multiset_index(L, NODEPOS, VAR)				\
   ((VAR) = access_msnode ((L), (NODEPOS))->i.ind,			\
-   (VAR).type &= ~MULTISET_FLAG_MASK,					\
+   SET_SVAL_TYPE((VAR), TYPEOF(VAR) & ~MULTISET_FLAG_MASK),		\
    &(VAR))
 
 #define get_multiset_value(L, NODEPOS)					\

@@ -130,14 +130,14 @@ static void check_mapping_type_fields(const struct mapping *m)
   md = m->data;
   NEW_MAPPING_LOOP(md)
     {
-      if (k->val.type > MAX_TYPE)
+      if (TYPEOF(k->val) > MAX_TYPE)
 	Pike_fatal("Invalid mapping keypair value type: %s\n",
-		   get_name_of_type(k->val.type));
-      val_types |= 1 << k->val.type;
-      if (k->ind.type > MAX_TYPE)
+		   get_name_of_type(TYPEOF(k->val)));
+      val_types |= 1 << TYPEOF(k->val);
+      if (TYPEOF(k->ind) > MAX_TYPE)
 	Pike_fatal("Invalid maping keypair index type: %s\n",
-		   get_name_of_type(k->ind.type));
-      ind_types |= 1 << k->ind.type;
+		   get_name_of_type(TYPEOF(k->ind)));
+      ind_types |= 1 << TYPEOF(k->ind);
     }
 
   if(val_types & ~(m->data->val_types))
@@ -335,8 +335,8 @@ static void mapping_rehash_backwards_evil(struct mapping_data *md,
     md->hash[h]=k;
 
     /* update */
-    md->ind_types |= 1<< (k->ind.type);
-    md->val_types |= 1<< (k->val.type);
+    md->ind_types |= 1<< (TYPEOF(k->ind));
+    md->val_types |= 1<< (TYPEOF(k->val));
     md->size++;
 
     /* Reverse */
@@ -390,8 +390,8 @@ static void mapping_rehash_backwards_good(struct mapping_data *md,
     md->hash[h]=k;
 
     /* update */
-    md->ind_types |= 1<< (k->ind.type);
-    md->val_types |= 1<< (k->val.type);
+    md->ind_types |= 1<< (TYPEOF(k->ind));
+    md->val_types |= 1<< (TYPEOF(k->val));
     md->size++;
 
     /* Reverse */
@@ -545,7 +545,7 @@ struct mapping_data *copy_mapping_data(struct mapping_data *md)
   {								\
     h=h2 & (md->hashsize - 1);					\
     DO_IF_DEBUG( if(d_flag > 1) check_mapping_type_fields(m); ) \
-    if(md->ind_types & ((1 << key->type) | BIT_OBJECT))		\
+    if(md->ind_types & ((1 << TYPEOF(*key)) | BIT_OBJECT))	\
     {								\
       for(prev= md->hash + h;(k=*prev);prev=&k->next)		\
       {								\
@@ -568,7 +568,7 @@ struct mapping_data *copy_mapping_data(struct mapping_data *md)
   {								\
     h=h2 & (md->hashsize-1);					\
     DO_IF_DEBUG( if(d_flag > 1) check_mapping_type_fields(m); ) \
-    if(md->ind_types & ((1 << key->type) | BIT_OBJECT))		\
+    if(md->ind_types & ((1 << TYPEOF(*key)) | BIT_OBJECT))	\
     {								\
       k2=omd->hash[h2 & (omd->hashsize - 1)];			        \
       prev= md->hash + h;					\
@@ -671,8 +671,8 @@ PMOD_EXPORT void mapping_fix_type_field(struct mapping *m)
 
   NEW_MAPPING_LOOP(m->data)
     {
-      val_types |= 1 << k->val.type;
-      ind_types |= 1 << k->ind.type;
+      val_types |= 1 << TYPEOF(k->val);
+      ind_types |= 1 << TYPEOF(k->ind);
     }
 
 #ifdef PIKE_DEBUG
@@ -762,8 +762,8 @@ PMOD_EXPORT void low_mapping_insert(struct mapping *m,
   if(!overwrite) return;
   PREPARE_FOR_DATA_CHANGE2();
   PROPAGATE(); /* propagate after preparing */
-  md->val_types |= 1 << val->type;
-  if (overwrite == 2 && key->type == T_OBJECT)
+  md->val_types |= 1 << TYPEOF(*val);
+  if (overwrite == 2 && TYPEOF(*key) == T_OBJECT)
     /* Should replace the index too. It's only for objects that it's
      * possible to tell the difference. */
     assign_svalue (&k->ind, key);
@@ -805,8 +805,8 @@ PMOD_EXPORT void low_mapping_insert(struct mapping *m,
 #endif /* !PIKE_MAPPING_KEYPAIR_LOOP */
   k->next=md->hash[h];
   md->hash[h]=k;
-  md->ind_types |= 1 << key->type;
-  md->val_types |= 1 << val->type;
+  md->ind_types |= 1 << TYPEOF(*key);
+  md->val_types |= 1 << TYPEOF(*val);
   assign_svalue_no_free(& k->ind, key);
   assign_svalue_no_free(& k->val, val);
   k->hval = h2;
@@ -883,7 +883,7 @@ PMOD_EXPORT union anything *mapping_get_item_ptr(struct mapping *m,
     check_mapping(m);
 #endif
   free_mapping_data(md);
-  if(k->val.type == t)
+  if(TYPEOF(k->val) == t)
   {
     PREPARE_FOR_DATA_CHANGE2();
     PROPAGATE(); /* prepare then propagate */
@@ -928,11 +928,9 @@ PMOD_EXPORT union anything *mapping_get_item_ptr(struct mapping *m,
   k->next=md->hash[h];
   md->hash[h]=k;
   assign_svalue_no_free(& k->ind, key);
-  k->val.type=T_INT;
-  k->val.subtype=NUMBER_NUMBER;
-  k->val.u.integer=0;
+  SET_SVAL(k->val, T_INT, NUMBER_NUMBER, integer, 0);
   k->hval = h2;
-  md->ind_types |= 1 << key->type;
+  md->ind_types |= 1 << TYPEOF(*key);
   md->val_types |= BIT_INT;
   md->size++;
 #ifdef MAPPING_SIZE_DEBUG
@@ -980,9 +978,7 @@ PMOD_EXPORT void map_delete_no_free(struct mapping *m,
   free_mapping_data(md);
   if(to)
   {
-    to->type=T_INT;
-    to->subtype=NUMBER_UNDEFINED;
-    to->u.integer=0;
+    SET_SVAL(*to, T_INT, NUMBER_UNDEFINED, integer, 0);
   }
   return;
 
@@ -1058,7 +1054,7 @@ PMOD_EXPORT void check_mapping_for_destruct(struct mapping *m)
       {
 	check_destructed(& k->val);
 	
-	if((k->ind.type == T_OBJECT || k->ind.type == T_FUNCTION) &&
+	if((TYPEOF(k->ind) == T_OBJECT || TYPEOF(k->ind) == T_FUNCTION) &&
 	   !k->ind.u.object->prog)
 	{
 	  debug_malloc_touch(m);
@@ -1081,8 +1077,8 @@ PMOD_EXPORT void check_mapping_for_destruct(struct mapping *m)
 #endif
 	  debug_malloc_touch(md);
 	}else{
-	  val_types |= 1 << k->val.type;
-	  ind_types |= 1 << k->ind.type;
+	  val_types |= 1 << TYPEOF(k->val);
+	  ind_types |= 1 << TYPEOF(k->ind);
 	  prev=&k->next;
 	}
       }
@@ -1133,8 +1129,7 @@ PMOD_EXPORT struct svalue *low_mapping_string_lookup(struct mapping *m,
                                                      struct pike_string *p)
 {
   struct svalue tmp;
-  tmp.type=T_STRING;
-  tmp.u.string=p;
+  SET_SVAL(tmp, T_STRING, 0, string, p);
   return low_mapping_lookup(m, &tmp);
 }
 
@@ -1143,8 +1138,7 @@ PMOD_EXPORT void mapping_string_insert(struct mapping *m,
                                        const struct svalue *val)
 {
   struct svalue tmp;
-  tmp.type=T_STRING;
-  tmp.u.string=p;
+  SET_SVAL(tmp, T_STRING, 0, string, p);
   mapping_insert(m, &tmp, val);
 }
 
@@ -1153,8 +1147,7 @@ PMOD_EXPORT void mapping_string_insert_string(struct mapping *m,
 				  struct pike_string *val)
 {
   struct svalue tmp;
-  tmp.type=T_STRING;
-  tmp.u.string=val;
+  SET_SVAL(tmp, T_STRING, 0, string, val);
   mapping_string_insert(m, p, &tmp);
 }
 
@@ -1183,11 +1176,10 @@ PMOD_EXPORT struct svalue *mapping_mapping_lookup(struct mapping *m,
     Pike_fatal("Zero refs in mapping->data\n");
 #endif
 
-  if(!s || !s->type==T_MAPPING)
+  if(!s || TYPEOF(*s) != T_MAPPING)
   {
     if(!create) return 0;
-    tmp.u.mapping=allocate_mapping(5);
-    tmp.type=T_MAPPING;
+    SET_SVAL(tmp, T_MAPPING, 0, mapping, allocate_mapping(5));
     mapping_insert(m, key1, &tmp);
     debug_malloc_touch(m);
     debug_malloc_touch(tmp.u.mapping);
@@ -1201,9 +1193,7 @@ PMOD_EXPORT struct svalue *mapping_mapping_lookup(struct mapping *m,
   if(s) return s;
   if(!create) return 0;
 
-  tmp.type=T_INT;
-  tmp.subtype=NUMBER_UNDEFINED;
-  tmp.u.integer=0;
+  SET_SVAL(tmp, T_INT, NUMBER_UNDEFINED, integer, 0);
 
   mapping_insert(m2, key2, &tmp);
   debug_malloc_touch(m2);
@@ -1218,10 +1208,8 @@ PMOD_EXPORT struct svalue *mapping_mapping_string_lookup(struct mapping *m,
 				      int create)
 {
   struct svalue k1,k2;
-  k1.type=T_STRING;
-  k1.u.string=key1;
-  k2.type=T_STRING;
-  k2.u.string=key2;
+  SET_SVAL(k1, T_STRING, 0, string, key1);
+  SET_SVAL(k2, T_STRING, 0, string, key2);
   return mapping_mapping_lookup(m,&k1,&k2,create);
 }
 
@@ -1241,12 +1229,10 @@ PMOD_EXPORT void mapping_index_no_free(struct svalue *dest,
     /* Note: There is code that counts on storing UNDEFINED in mapping
      * values (using e.g. low_mapping_lookup to get them), so we have
      * to fix the subtype here rather than in mapping_insert. */
-    if(p->type==T_INT)
-      dest->subtype=NUMBER_NUMBER;
+    if(TYPEOF(*p) == T_INT)
+      SET_SVAL_SUBTYPE(*dest, NUMBER_NUMBER);
   }else{
-    dest->type=T_INT;
-    dest->u.integer=0;
-    dest->subtype=NUMBER_UNDEFINED;
+    SET_SVAL(*dest, T_INT, NUMBER_UNDEFINED, integer, 0);
   }
 }
 
@@ -1329,9 +1315,8 @@ PMOD_EXPORT struct array *mapping_to_array(struct mapping *m)
       struct array *b=allocate_array(2);
       assign_svalue(b->item+0, & k->ind);
       assign_svalue(b->item+1, & k->val);
-      b->type_field = (1 << k->ind.type) | (1 << k->val.type);
-      s->u.array=b;
-      s->type=T_ARRAY;
+      b->type_field = (1 << TYPEOF(k->ind)) | (1 << TYPEOF(k->val));
+      SET_SVAL(*s, T_ARRAY, 0, array, b);
       s++;
     }
   a->type_field = BIT_ARRAY;
@@ -1360,7 +1345,7 @@ PMOD_EXPORT void mapping_replace(struct mapping *m,struct svalue *from, struct s
 	{
 	  PREPARE_FOR_DATA_CHANGE();
 	  assign_svalue(& k->val, to);
-	  md->val_types|=1<<to->type;
+	  md->val_types |= 1<<TYPEOF(*to);
 	}
       }
     free_mapping_data(md);
@@ -2098,9 +2083,7 @@ node *make_node_from_mapping(struct mapping *m)
     if(!m->data->size)
       return mkefuncallnode("aggregate_mapping",0);
 
-    s.type=T_MAPPING;
-    s.subtype=0;
-    s.u.mapping=m;
+    SET_SVAL(s, T_MAPPING, 0, mapping, m);
     return mkconstantsvaluenode(&s);
   }
 }
@@ -2168,10 +2151,8 @@ PMOD_EXPORT struct mapping *copy_mapping_recursively(struct mapping *m,
 
   if (p) {
     struct svalue aa, bb;
-    aa.type = T_MAPPING;
-    aa.u.mapping = m;
-    bb.type = T_MAPPING;
-    bb.u.mapping = ret;
+    SET_SVAL(aa, T_MAPPING, 0, mapping, m);
+    SET_SVAL(bb, T_MAPPING, 0, mapping, ret);
     mapping_insert(p, &aa, &bb);
   }
 
@@ -2234,9 +2215,7 @@ PMOD_EXPORT void mapping_search_no_free(struct svalue *to,
       
       if(!k)
       {
-	to->type=T_INT;
-	to->subtype=NUMBER_UNDEFINED;
-	to->u.integer=0;
+	SET_SVAL(*to, T_INT, NUMBER_UNDEFINED, integer, 0);
 	return;
       }
       k=k->next;
@@ -2277,9 +2256,7 @@ PMOD_EXPORT void mapping_search_no_free(struct svalue *to,
     free_mapping_data(md);
   }
 
-  to->type=T_INT;
-  to->subtype=NUMBER_UNDEFINED;
-  to->u.integer=0;
+  SET_SVAL(*to, T_INT, NUMBER_UNDEFINED, integer, 0);
 }
 
 #ifdef PIKE_DEBUG
@@ -2375,16 +2352,16 @@ void check_mapping(const struct mapping *m)
     {
       num++;
 
-      if (k->ind.type > MAX_TYPE)
+      if (TYPEOF(k->ind) > MAX_TYPE)
 	Pike_fatal("Invalid maping keypair index type: %s\n",
-		   get_name_of_type(k->ind.type));
-      if(! ( (1 << k->ind.type) & (md->ind_types) ))
+		   get_name_of_type(TYPEOF(k->ind)));
+      if(! ( (1 << TYPEOF(k->ind)) & (md->ind_types) ))
 	Pike_fatal("Mapping indices type field lies.\n");
 
-      if (k->val.type > MAX_TYPE)
+      if (TYPEOF(k->val) > MAX_TYPE)
 	Pike_fatal("Invalid mapping keypair value type: %s\n",
-		   get_name_of_type(k->val.type));
-      if(! ( (1 << k->val.type) & (md->val_types) ))
+		   get_name_of_type(TYPEOF(k->val)));
+      if(! ( (1 << TYPEOF(k->val)) & (md->val_types) ))
 	Pike_fatal("Mapping values type field lies.\n");
 
       check_svalue(& k->ind);
@@ -2475,7 +2452,7 @@ PMOD_EXPORT void visit_mapping (struct mapping *m, int action)
       DO_IF_DEBUG(Pike_fatal("Didn't expect an svalue zapping now.\n")); \
     }									\
     RECURSE_FN(&k->val, 1);						\
-    VAL_TYPES |= 1 << k->val.type;					\
+    VAL_TYPES |= 1 << TYPEOF(k->val);					\
   }									\
 } while (0)
 
@@ -2520,8 +2497,8 @@ PMOD_EXPORT void visit_mapping (struct mapping *m, int action)
 	    M->debug_size--;						\
 	);								\
       } else {								\
-	VAL_TYPES |= 1 << k->val.type;					\
-	IND_TYPES |= 1 << k->ind.type;					\
+	VAL_TYPES |= 1 << TYPEOF(k->val);				\
+	IND_TYPES |= 1 << TYPEOF(k->ind);				\
 	k++;								\
       }									\
     }									\
@@ -2553,8 +2530,8 @@ PMOD_EXPORT void visit_mapping (struct mapping *m, int action)
 	    M->debug_size--;						\
 	);								\
       }else{								\
-	VAL_TYPES |= 1 << k->val.type;					\
-	IND_TYPES |= 1 << k->ind.type;					\
+	VAL_TYPES |= 1 << TYPEOF(k->val);				\
+	IND_TYPES |= 1 << TYPEOF(k->ind);				\
 	prev=&k->next;							\
       }									\
     }									\

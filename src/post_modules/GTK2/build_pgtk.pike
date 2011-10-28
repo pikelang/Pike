@@ -880,7 +880,7 @@ class Type
        declare = " CONST gchar *a%[0]d = 0;\n";
 //       declare = "  gchar *a%[0]d = 0;\n";
        fetch =
-             "  if( Pike_sp[%[0]d-args].type != PIKE_T_STRING )\n"
+             "  if( TYPEOF(Pike_sp[%[0]d-args]) != PIKE_T_STRING )\n"
              "    Pike_error( "+S("Illegal argument %d, expected string\n",1,0,16)+",\n                %[0]d);\n"
              "  a%[0]d = PGTK_GETSTR( &Pike_sp[%[0]d-args] );\n";
        free = "  PGTK_FREESTR( a%[0]d );\n";
@@ -974,7 +974,7 @@ class Type
          pass = "a%d";
          fetch =
 #"
-  if( Pike_sp[%[0]d-args].type != PIKE_T_ARRAY )
+  if( TYPEOF(Pike_sp[%[0]d-args]) != PIKE_T_ARRAY )
     Pike_error("+S("Bad argument %d, expected array\n", 1,0,16)+#",\n                %[0]d);
   _a%[0]d = Pike_sp[%[0]d-args].u.array;
 "+(check_size||"")+
@@ -1204,7 +1204,7 @@ class Class( string name, string file, int line )
       {
         _fetch=
 #"
-  if( Pike_sp[ %[0]d - args ].type != PIKE_T_OBJECT )
+  if( TYPEOF(Pike_sp[ %[0]d - args ]) != PIKE_T_OBJECT )
     a%[0]d = NULL;
   else
     a%[0]d = "+c_cast("get_pg2object(Pike_sp[%[0]d-args].u.object, "+
@@ -1215,7 +1215,7 @@ class Class( string name, string file, int line )
         string s = (name/".")[-1];
         _fetch=
 #"
-  if( Pike_sp[ %[0]d - args ].type != PIKE_T_OBJECT )
+  if( TYPEOF(Pike_sp[ %[0]d - args ]) != PIKE_T_OBJECT )
     a%[0]d = NULL;
   else
     a%[0]d = get_gdkobject(Pike_sp[%[0]d-args].u.object,"+lower_case(s)+");\n";

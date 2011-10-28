@@ -148,7 +148,7 @@ struct source *source_stream_make( struct svalue *s,
 				   INT64 start, INT64 len )
 {
   struct fd_source *res;
-  if(s->type != PIKE_T_OBJECT)
+  if(TYPEOF(*s) != PIKE_T_OBJECT)
     return 0;
 
   if (!Fd_ref_program) {

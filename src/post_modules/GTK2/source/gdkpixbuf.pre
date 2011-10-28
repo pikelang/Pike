@@ -73,7 +73,7 @@ void create(string|mapping options)
 
   pgtk2_verify_not_inited();
   pgtk2_verify_setup();
-  if (Pike_sp[-1].type==PIKE_T_STRING) {
+  if (TYPEOF(Pike_sp[-1]) == PIKE_T_STRING) {
     char *file;
     
     get_all_args("create",args,"%s",&file);
@@ -89,7 +89,7 @@ void create(string|mapping options)
     if (m==NULL)
       SIMPLE_TOO_FEW_ARGS_ERROR("create",1);
     sv=low_mapping_string_lookup(m,_STR("file"));
-    if (sv && sv->type==PIKE_T_STRING) {
+    if (sv && TYPEOF(*sv) == PIKE_T_STRING) {
       const char *file;
 #ifdef HAVE_GTK26
       int scale=0;
@@ -130,7 +130,7 @@ void create(string|mapping options)
     } else {
       sv=low_mapping_string_lookup(m,_STR("xpm"));
       if (sv) {
-	if (sv->type==PIKE_T_ARRAY) {
+	if (TYPEOF(*sv) == PIKE_T_ARRAY) {
 	  const gchar **data;
 	  int i,j;
 	  struct array *a;
@@ -142,7 +142,7 @@ void create(string|mapping options)
 	  if (data==NULL)
 	    SIMPLE_OUT_OF_MEMORY_ERROR("create",sizeof(gchar *)*a->size);
 	  for (i=j=0; i<a->size; i++) {
-	    if ((ITEM(a)+i)->type!=PIKE_T_STRING)
+	    if (TYPEOF(ITEM(a)[i]) != PIKE_T_STRING)
 	      continue;
 	    data[j++]=(const gchar *)STR0((ITEM(a)+i)->u.string);
 	  }
@@ -156,20 +156,20 @@ void create(string|mapping options)
 	guchar *pixel_data;
 	
 	sv=low_mapping_string_lookup(m,_STR("alpha"));
-	if (sv && sv->type==PIKE_T_INT)
+	if (sv && TYPEOF(*sv) == PIKE_T_INT)
 	  alpha=PGTK_GETINT(sv);
 	sv=low_mapping_string_lookup(m,_STR("bits"));
-	if (sv && sv->type==PIKE_T_INT)
+	if (sv && TYPEOF(*sv) == PIKE_T_INT)
 	  bits=PGTK_GETINT(sv);
 	sv=low_mapping_string_lookup(m,_STR("width"));
-	if (sv && sv->type==PIKE_T_INT)
+	if (sv && TYPEOF(*sv) == PIKE_T_INT)
 	  width=PGTK_GETINT(sv);
 	sv=low_mapping_string_lookup(m,_STR("height"));
-	if (sv && sv->type==PIKE_T_INT)
+	if (sv && TYPEOF(*sv) == PIKE_T_INT)
 	  height=PGTK_GETINT(sv);
 	
 	rowdata=low_mapping_string_lookup(m,_STR("data"));
-	if (rowdata && rowdata->type==PIKE_T_STRING) {
+	if (rowdata && TYPEOF(*rowdata) == PIKE_T_STRING) {
 	  int stride;
 	  
 	  sv = low_mapping_string_lookup(m,_STR("rowstride"));
@@ -283,7 +283,7 @@ endrequire;
         quality="100";
       } else {
 	sv=low_mapping_string_lookup(m,_STR("quality"));
-	if (sv && sv->type==PIKE_T_STRING)
+	if (sv && TYPEOF(*sv) == PIKE_T_STRING)
 	  quality=(const char *)STR0(sv->u.string);
 	else
 	  quality="100";
@@ -297,7 +297,7 @@ endrequire;
 	compression="0";
       } else {
 	sv=low_mapping_string_lookup(m,_STR("compression"));
-	if (sv && sv->type==PIKE_T_STRING)
+	if (sv && TYPEOF(*sv) == PIKE_T_STRING)
 	  compression=(const char *)STR0(sv->u.string);
 	else
 	  compression="0";
@@ -314,17 +314,17 @@ endrequire;
 	const char *x_hot,*y_hot;
 	
 	sv=low_mapping_string_lookup(m,_STR("depth"));
-	if (sv && sv->type==PIKE_T_STRING)
+	if (sv && TYPEOF(*sv) == PIKE_T_STRING)
 	  depth=(const char *)STR0(sv->u.string);
 	else
 	  depth="16";
 	sv=low_mapping_string_lookup(m,_STR("x_hot"));
-	if (sv && sv->type==PIKE_T_STRING)
+	if (sv && TYPEOF(*sv) == PIKE_T_STRING)
 	  x_hot=(const char *)STR0(sv->u.string);
 	else
 	  hot=0;
 	sv=low_mapping_string_lookup(m,_STR("y_hot"));
-	if (sv && sv->type==PIKE_T_STRING)
+	if (sv && TYPEOF(*sv) == PIKE_T_STRING)
 	  y_hot=(const char *)STR0(sv->u.string);
 	else
 	  hot=0;

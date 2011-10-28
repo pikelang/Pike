@@ -126,7 +126,7 @@ void f_parse_accessed_database(INT32 args)
   if(!args)
     SIMPLE_TOO_FEW_ARGS_ERROR("parse_accessed_database",1);
 
-  if ((sp[-args].type != T_STRING) || (sp[-args].u.string->size_shift)) {
+  if ((TYPEOF(sp[-args]) != T_STRING) || (sp[-args].u.string->size_shift)) {
     Pike_error("Bad argument 1 to parse_accessed_database(string(0..255)).\n");
   }
 
@@ -136,7 +136,7 @@ void f_parse_accessed_database(INT32 args)
   push_constant_text("\n");
   f_divide(2);
 
-  if (sp[-1].type != T_ARRAY) {
+  if (TYPEOF(sp[-1]) != T_ARRAY) {
     Pike_error("Expected array as result of string-division.\n");
   }
 
@@ -183,9 +183,9 @@ void f_parse_html(INT32 args)
   ONERROR serr, cerr, eerr, sserr;
 
   if (args<3||
-      sp[-args].type!=T_STRING||
-      sp[1-args].type!=T_MAPPING||
-      sp[2-args].type!=T_MAPPING)
+      TYPEOF(sp[-args]) != T_STRING||
+      TYPEOF(sp[1-args]) != T_MAPPING||
+      TYPEOF(sp[2-args]) != T_MAPPING)
     Pike_error("Bad argument(s) to parse_html.\n");
 
   ss=sp[-args].u.string;
@@ -250,9 +250,9 @@ void f_parse_html_lines(INT32 args)
   struct array *extra_args;
   ONERROR serr, cerr, eerr, sserr;
   if (args<3||
-      sp[-args].type!=T_STRING||
-      sp[1-args].type!=T_MAPPING||
-      sp[2-args].type!=T_MAPPING)
+      TYPEOF(sp[-args]) != T_STRING||
+      TYPEOF(sp[1-args]) != T_MAPPING||
+      TYPEOF(sp[2-args]) != T_MAPPING)
     Pike_error("Bad argument(s) to parse_html_lines.\n");
 
   ss=sp[-args].u.string;
@@ -310,7 +310,7 @@ static char end_quote_character = '\000';
  */
 void f_set_end_quote(INT32 args)
 {
-  if(args < 1 || sp[-1].type != T_INT)
+  if(args < 1 || TYPEOF(sp[-1]) != T_INT)
     Pike_error("Wrong argument to set_end_quote(int CHAR)\n");
   end_quote_character = (char) sp[-1].u.integer;
 }
@@ -319,7 +319,7 @@ void f_set_end_quote(INT32 args)
  */
 void f_set_start_quote(INT32 args)
 {
-  if(args < 1 || sp[-1].type != T_INT)
+  if(args < 1 || TYPEOF(sp[-1]) != T_INT)
     Pike_error("Wrong argument to set_start_quote(int CHAR)\n");
   start_quote_character = (char) sp[-1].u.integer;
 }
@@ -416,7 +416,7 @@ ptrdiff_t push_parsed_tag(char *s, ptrdiff_t len)
   int is_SSI_tag;
 
   /* NOTE: At entry sp[-1] is the tagname */
-  is_SSI_tag = (sp[-1].type == T_STRING) &&
+  is_SSI_tag = (TYPEOF(sp[-1]) == T_STRING) &&
     (!strncmp(sp[-1].u.string->str, "!--", 3));
 
   /* Find X=Y pairs. */
@@ -550,14 +550,14 @@ void do_html_parse(struct pike_string *ss,
 
       push_string(make_shared_binary_string((char *)s+n, j-n));
       f_lower_case(1);
-      add_ref(sval2.u.string = sp[-1].u.string);
-      sval2.type=T_STRING;
+      add_ref(sp[-1].u.string);
+      SET_SVAL(sval2, T_STRING, 0, string, sp[-1].u.string);
       pop_stack();
 
       /* Is this a non-container? */
       mapping_index_no_free(&sval1,single,&sval2);
 
-      if (sval1.type==T_STRING)
+      if (TYPEOF(sval1) == T_STRING)
       {
 	int quote = 0;
 	/* A simple string ... */
@@ -590,7 +590,7 @@ void do_html_parse(struct pike_string *ss,
 	i=last=j;
 	continue;
       }
-      else if (sval1.type!=T_INT)
+      else if (TYPEOF(sval1) != T_INT)
       {
 	ONERROR sv1, sv2;
 	/* Hopefully something callable ... */
@@ -610,7 +610,7 @@ void do_html_parse(struct pike_string *ss,
 	free_svalue(&sval2);
 	free_svalue(&sval1);
 
-	if (sp[-1].type==T_STRING)
+	if (TYPEOF(sp[-1]) == T_STRING)
 	{
 	  copy_shared_string(ss2,sp[-1].u.string);
 	  pop_stack();
@@ -622,7 +622,7 @@ void do_html_parse(struct pike_string *ss,
 	  i=last=j+k;
 	  do_html_parse(ss2,cont,single,strings,recurse_left-1,extra_args);
 	  continue;
-	} else if (sp[-1].type==T_ARRAY) {
+	} else if (TYPEOF(sp[-1]) == T_ARRAY) {
 	  push_empty_string();
 	  f_multiply(2);
 	  copy_shared_string(ss2,sp[-1].u.string);
@@ -646,7 +646,7 @@ void do_html_parse(struct pike_string *ss,
       /* Is it a container then? */
       free_svalue(&sval1);
       mapping_index_no_free(&sval1,cont,&sval2);
-      if (sval1.type==T_STRING)
+      if (TYPEOF(sval1) == T_STRING)
       {
 	if (last < i-1)
 	{
@@ -664,7 +664,7 @@ void do_html_parse(struct pike_string *ss,
 	i=last=j;
 	continue;
       }
-      else if (sval1.type != T_INT)
+      else if (TYPEOF(sval1) != T_INT)
       {
 	ONERROR sv1, sv2;
 	assign_svalue_no_free(sp++, &sval2);
@@ -689,7 +689,7 @@ void do_html_parse(struct pike_string *ss,
 	free_svalue(&sval1);
 	free_svalue(&sval2);
 
-	if (sp[-1].type==T_STRING)
+	if (TYPEOF(sp[-1]) == T_STRING)
 	{
 	  copy_shared_string(ss2,sp[-1].u.string);
 	  pop_stack();
@@ -705,7 +705,7 @@ void do_html_parse(struct pike_string *ss,
 	  do_html_parse(ss2,cont,single,strings,recurse_left-1,extra_args);
 	  continue;
 
-	} else if (sp[-1].type==T_ARRAY) {
+	} else if (TYPEOF(sp[-1]) == T_ARRAY) {
 	  push_empty_string();
 	  f_multiply(2);
 	  copy_shared_string(ss2,sp[-1].u.string);
@@ -783,11 +783,11 @@ void do_html_parse(struct pike_string *ss,
 
 #define HANDLE_RETURN_VALUE(END) do {		\
   free_svalue(&sval1);                          \
-  if (sp[-1].type==T_STRING)			\
+  if (TYPEOF(sp[-1]) == T_STRING)		\
   {						\
     PARSE_RECURSE(END);				\
     continue;					\
-  } else if (sp[-1].type==T_ARRAY) {		\
+  } else if (TYPEOF(sp[-1]) == T_ARRAY) {	\
     PARSE_RETURN(END);				\
     continue;					\
   }						\
@@ -842,16 +842,16 @@ void do_html_parse_lines(struct pike_string *ss,
 
       push_string(make_shared_binary_string((char *)s+i, j-i));
       f_lower_case(1);
-      add_ref(sval2.u.string = sp[-1].u.string);
-      sval2.type=T_STRING;
+      add_ref(sp[-1].u.string);
+      SET_SVAL(sval2, T_STRING, 0, string, sp[-1].u.string);
       pop_stack();
 
       /* Is this a non-container? */
       mapping_index_no_free(&sval1,single,&sval2);
-/*       if(sval1.type == T_INT) */
+/*       if(TYPEOF(sval1) == T_INT) */
 /* 	mapping_index_no_free(&sval1,single,&empty_string_svalue); */
 
-      if (sval1.type==T_STRING)
+      if (TYPEOF(sval1) == T_STRING)
       {
 	int quote = 0;
 	/* A simple string ... */
@@ -863,7 +863,7 @@ void do_html_parse_lines(struct pike_string *ss,
 
 	*(sp++)=sval1;
 #ifdef PIKE_DEBUG
-	sval1.type=99;
+	SET_SVAL_TYPE(sval1, 99);
 #endif
 	(*strings)++;
 	free_svalue(&sval2);
@@ -886,12 +886,12 @@ void do_html_parse_lines(struct pike_string *ss,
 	i=last=j;
 	continue;
       }
-      else if (sval1.type!=T_INT)
+      else if (TYPEOF(sval1) != T_INT)
       {
 	ONERROR sv1;
 	*(sp++)=sval2;
 #ifdef PIKE_DEBUG
-	sval2.type=99;
+	SET_SVAL_TYPE(sval2, 99);
 #endif
 	k=push_parsed_tag(s+j,len-j);
 	push_int(line);
@@ -913,9 +913,9 @@ void do_html_parse_lines(struct pike_string *ss,
       /* Is it a container then? */
 
       mapping_index_no_free(&sval1,cont,&sval2);
-      if(sval1.type == T_INT)
+      if(TYPEOF(sval1) == T_INT)
 	mapping_index_no_free(&sval1,cont,&empty_string_svalue);
-      if (sval1.type==T_STRING)
+      if (TYPEOF(sval1) == T_STRING)
       {
 	if (last < i-1)
 	{
@@ -925,7 +925,7 @@ void do_html_parse_lines(struct pike_string *ss,
 
 	*(sp++)=sval1;
 #ifdef PIKE_DEBUG
-	sval1.type=99;
+	SET_SVAL_TYPE(sval1, 99);
 #endif
 	(*strings)++;
 	find_endtag(sval2.u.string,s+j,len-j,&l);
@@ -935,13 +935,13 @@ void do_html_parse_lines(struct pike_string *ss,
 	i=last=j;
 	continue;
       }
-      else if (sval1.type != T_INT)
+      else if (TYPEOF(sval1) != T_INT)
       {
 	ONERROR sv1;
 
 	*(sp++)=sval2;
 #ifdef PIKE_DEBUG
-	sval2.type=99;
+	SET_SVAL_TYPE(sval2, 99);
 #endif
 	m = push_parsed_tag(s+j, len-j) + j;
 	k = find_endtag(sval2.u.string, s+m, len-m, &l);
@@ -1023,7 +1023,7 @@ void f_fd_info(INT32 args)
   VALID_FILE_IO("spider.fd_info","status");
 
   if (args<1||
-      sp[-args].type!=T_INT)
+      TYPEOF(sp[-args]) != T_INT)
     Pike_error("Illegal argument to fd_info\n");
   i=sp[-args].u.integer;
   pop_n_elems(args);
@@ -1046,7 +1046,7 @@ static void program_name(struct program *p)
   INT32 n=0;
   ref_push_program(p);
   APPLY_MASTER("program_name", 1);
-  if(sp[-1].type == T_STRING)
+  if(TYPEOF(sp[-1]) == T_STRING)
     return;
   pop_stack();
   f=(char *)(p->linenumbers+1);

@@ -91,9 +91,9 @@ void drag_set_icon_pixmap(GDK.Pixmap p, GDK.Bitmap b, int hot_x, int hot_y )
   int x, y;
   if(args != 4)
     Pike_error("Too few arguments to drag_set_icon_pixmap\n");
-  if(Pike_sp[-args].type == PIKE_T_OBJECT)
+  if(TYPEOF(Pike_sp[-args]) == PIKE_T_OBJECT)
     p = Pike_sp[-args].u.object;
-  if(Pike_sp[-args+1].type == PIKE_T_OBJECT)
+  if(TYPEOF(Pike_sp[-args+1]) == PIKE_T_OBJECT)
     m = Pike_sp[-args+1].u.object;
   x  = Pike_sp[-args+2].u.integer;
   y  = Pike_sp[-args+3].u.integer;

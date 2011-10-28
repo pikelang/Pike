@@ -129,7 +129,7 @@ struct array *encode_stat(PIKE_STAT_T *s)
   case S_IFREG:
     push_int64((INT64)s->st_size);
     stack_pop_to_no_free (ITEM(a) + 1);
-    if (ITEM(a)[1].type == T_OBJECT) a->type_field |= BIT_OBJECT;
+    if (TYPEOF(ITEM(a)[1]) == T_OBJECT) a->type_field |= BIT_OBJECT;
     break;
     
   case S_IFDIR: ITEM(a)[1].u.integer=-2; break;
@@ -442,7 +442,7 @@ void f_file_stat(INT32 args)
 
   if(args<1)
     SIMPLE_TOO_FEW_ARGS_ERROR("file_stat", 1);
-  if((sp[-args].type != T_STRING) || sp[-args].u.string->size_shift)
+  if((TYPEOF(sp[-args]) != T_STRING) || sp[-args].u.string->size_shift)
     SIMPLE_BAD_ARG_ERROR("file_stat", 1, "string(0..255)");
 
   str = sp[-args].u.string;
@@ -497,7 +497,7 @@ void f_file_truncate(INT32 args)
 
   if(args < 2)
     SIMPLE_TOO_FEW_ARGS_ERROR("file_truncate", 2);
-  if(sp[-args].type != T_STRING)
+  if(TYPEOF(sp[-args]) != T_STRING)
     SIMPLE_BAD_ARG_ERROR("file_truncate", 1, "string");
 
 #if defined (INT64) && defined (AUTO_BIGNUM)
@@ -509,7 +509,7 @@ void f_file_truncate(INT32 args)
   else
 #endif
 #endif
-    if(sp[1-args].type != T_INT)
+    if(TYPEOF(sp[1-args]) != T_INT)
       SIMPLE_BAD_ARG_ERROR("file_truncate", 2, "int");
     else
       len = sp[1-args].u.integer;
@@ -731,7 +731,7 @@ void f_filesystem_stat(INT32 args)
 
   if(args<1)
     SIMPLE_TOO_FEW_ARGS_ERROR("filesystem_stat", 1);
-  if(sp[-args].type != T_STRING)
+  if(TYPEOF(sp[-args]) != T_STRING)
     SIMPLE_BAD_ARG_ERROR("filesystem_stat", 1, "string");
 
   str = sp[-args].u.string;
@@ -899,7 +899,7 @@ void f_rm(INT32 args)
   if(!args)
     SIMPLE_TOO_FEW_ARGS_ERROR("rm", 1);
 
-  if(sp[-args].type != T_STRING)
+  if(TYPEOF(sp[-args]) != T_STRING)
     SIMPLE_BAD_ARG_ERROR("rm", 1, "string");
 
   str = sp[-args].u.string;
@@ -980,14 +980,14 @@ void f_mkdir(INT32 args)
   if(!args)
     SIMPLE_TOO_FEW_ARGS_ERROR("mkdir", 1);
 
-  if(sp[-args].type != T_STRING)
+  if(TYPEOF(sp[-args]) != T_STRING)
     SIMPLE_BAD_ARG_ERROR("mkdir", 1, "string");
 
   mode = 0777;			/* &'ed with ~umask anyway. */
 
   if(args > 1)
   {
-    if(sp[1-args].type != T_INT)
+    if(TYPEOF(sp[1-args]) != T_INT)
       Pike_error("Bad argument 2 to mkdir.\n");
 
     mode = sp[1-args].u.integer;
@@ -1470,7 +1470,7 @@ void f_cd(INT32 args)
   if(!args)
     SIMPLE_TOO_FEW_ARGS_ERROR("cd", 1);
 
-  if(sp[-args].type != T_STRING)
+  if(TYPEOF(sp[-args]) != T_STRING)
     SIMPLE_BAD_ARG_ERROR("cd", 1, "string");
 
   str = sp[-args].u.string;
@@ -1582,7 +1582,7 @@ void f_exece(INT32 args)
   switch(args)
   {
   default:
-    if(sp[2-args].type != T_MAPPING)
+    if(TYPEOF(sp[2-args]) != T_MAPPING)
       SIMPLE_BAD_ARG_ERROR("exece", 3, "mapping(string:string)");
     en=sp[2-args].u.mapping;
     mapping_fix_type_field(en);
@@ -1593,7 +1593,7 @@ void f_exece(INT32 args)
       SIMPLE_BAD_ARG_ERROR("exece", 3, "mapping(string:string)");
 
   case 2:
-    if(sp[1-args].type != T_ARRAY)
+    if(TYPEOF(sp[1-args]) != T_ARRAY)
       SIMPLE_BAD_ARG_ERROR("exece", 2, "array(string)");
 
 
@@ -1601,7 +1601,7 @@ void f_exece(INT32 args)
       SIMPLE_BAD_ARG_ERROR("exece", 2, "array(string)");
 
   case 1:
-    if(sp[0-args].type != T_STRING)
+    if(TYPEOF(sp[0-args]) != T_STRING)
       SIMPLE_BAD_ARG_ERROR("exece", 1, "string");
   }
 
@@ -1703,10 +1703,10 @@ void f_mv(INT32 args)
   if(args<2)
     SIMPLE_TOO_FEW_ARGS_ERROR("mv", 2);
 
-  if(sp[-args].type != T_STRING)
+  if(TYPEOF(sp[-args]) != T_STRING)
     SIMPLE_BAD_ARG_ERROR("mv", 1, "string");
 
-  if(sp[-args+1].type != T_STRING)
+  if(TYPEOF(sp[-args+1]) != T_STRING)
     SIMPLE_BAD_ARG_ERROR("mv", 2, "string");
 
   str1 = sp[-args].u.string;
@@ -1905,7 +1905,7 @@ void f_strerror(INT32 args)
 
   if(!args) 
     SIMPLE_TOO_FEW_ARGS_ERROR("strerror", 1);
-  if(sp[-args].type != T_INT)
+  if(TYPEOF(sp[-args]) != T_INT)
     SIMPLE_BAD_ARG_ERROR("strerror", 1, "int");
 
   err = sp[-args].u.integer;

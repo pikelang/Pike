@@ -488,9 +488,9 @@ void cpp_change_compat(struct cpp *this, int major, int minor)
   push_int(major);
   push_int(minor);
   SAFE_APPLY_MASTER("get_compilation_handler",2);
-  if(sp[-1].type == T_OBJECT)
+  if(TYPEOF(sp[-1]) == T_OBJECT)
   {
-    if (sp[-1].subtype) {
+    if (SUBTYPEOF(sp[-1])) {
       cpp_error(this,
 		"#pike: Subtyped compilation handlers are not supported yet.");
     }
@@ -554,7 +554,7 @@ static int do_safe_index_call(struct cpp *this, struct pike_string *s)
     ref_push_string(s);
     f_index(2);
     
-    res=!(UNSAFE_IS_ZERO(sp-1) && sp[-1].subtype == NUMBER_UNDEFINED);
+    res=!(UNSAFE_IS_ZERO(sp-1) && SUBTYPEOF(sp[-1]) == NUMBER_UNDEFINED);
   }
   UNSETJMP(recovery);
   return res;
@@ -577,10 +577,10 @@ static void cpp_low_constant(struct cpp *this, int value)
   push_constant_text(".");
   o_divide();
 #ifdef PIKE_DEBUG
-  if (Pike_sp[-1].type != T_ARRAY) {
+  if (TYPEOF(Pike_sp[-1]) != T_ARRAY) {
     Pike_fatal("Bad result from division in constant(): %s "
 	       "(expected array(string)).\n",
-	       get_name_of_type(Pike_sp[-1].type));
+	       get_name_of_type(TYPEOF(Pike_sp[-1])));
   }
 #endif /* PIKE_DEBUG */
   arr = Pike_sp[-1].u.array;
@@ -616,19 +616,19 @@ static void cpp_low_constant(struct cpp *this, int value)
 
       if (safe_apply_handler("resolv", this->handler,
 			     this->compat_handler, 3, 0)) {
-	if ((Pike_sp[-1].type == T_OBJECT &&
+	if ((TYPEOF(Pike_sp[-1]) == T_OBJECT &&
 	     Pike_sp[-1].u.object == placeholder_object) ||
-	    (Pike_sp[-1].type == T_PROGRAM &&
+	    (TYPEOF(Pike_sp[-1]) == T_PROGRAM &&
 	     Pike_sp[-1].u.program == placeholder_program)) {
 	  cpp_error_sprintf (this, "Got placeholder %s (resolver problem) "
 			     "when resolving %S.",
-			     get_name_of_type(Pike_sp[-1].type),
+			     get_name_of_type(TYPEOF(Pike_sp[-1])),
 			     str);
 	}
 	else
-	  res = !(SAFE_IS_ZERO(sp-1) && sp[-1].subtype == NUMBER_UNDEFINED);
+	  res = !(SAFE_IS_ZERO(sp-1) && SUBTYPEOF(sp[-1]) == NUMBER_UNDEFINED);
       }
-      else if (throw_value.type == T_STRING &&
+      else if (TYPEOF(throw_value) == T_STRING &&
 	       !throw_value.u.string->size_shift) {
 	cpp_error(this, throw_value.u.string->str);
 	free_svalue(&throw_value);
@@ -653,7 +653,7 @@ static void cpp_low_constant(struct cpp *this, int value)
     if (safe_apply_handler("handle_import", this->handler,
 			   this->compat_handler, 3,
 			   BIT_MAPPING|BIT_OBJECT|BIT_PROGRAM))
-      res = !(SAFE_IS_ZERO(sp-1) && sp[-1].subtype == NUMBER_UNDEFINED);
+      res = !(SAFE_IS_ZERO(sp-1) && SUBTYPEOF(sp[-1]) == NUMBER_UNDEFINED);
     else {
       cpp_handle_exception (this, "Error importing '.'.");
     }
@@ -664,7 +664,7 @@ static void cpp_low_constant(struct cpp *this, int value)
   }
 
   if (value && res) {
-    if (sp[-1].type == T_INT)
+    if (TYPEOF(sp[-1]) == T_INT)
       res = sp[-1].u.integer;
     else
       res = 0;
@@ -683,9 +683,9 @@ void cpp_func_constant(struct cpp *this, INT32 args)
     return;
   }
 #ifdef PIKE_DEBUG
-  if (Pike_sp[-1].type != T_STRING) {
+  if (TYPEOF(Pike_sp[-1]) != T_STRING) {
     Pike_fatal("Bad argument 1 to constant(): %s (expected string).\n",
-	       get_name_of_type(Pike_sp[-1].type));
+	       get_name_of_type(TYPEOF(Pike_sp[-1])));
   }
 #endif /* PIKE_DEBUG */
   cpp_low_constant(this, 0);
@@ -1837,7 +1837,7 @@ void f_cpp(INT32 args)
   SET_ONERROR(err, free_cpp, &this);
 
   if(charset_sv) {
-    if(charset_sv->type == T_STRING) {
+    if(TYPEOF(*charset_sv) == T_STRING) {
       charset = charset_sv->u.string;
       push_string(data);
       ref_push_string(charset);
@@ -1852,7 +1852,7 @@ void f_cpp(INT32 args)
       sp--;
       dmalloc_touch_svalue(sp);
     }
-    else if(charset_sv->type == T_INT)
+    else if(TYPEOF(*charset_sv) == T_INT)
       auto_convert = charset_sv->u.integer;
     else {
       SIMPLE_BAD_ARG_ERROR("cpp", 3, "string|int");
@@ -1873,7 +1873,7 @@ void f_cpp(INT32 args)
     if (!UNSAFE_IS_ZERO (sp - 1)) {
       struct keypair *k;
       int e, sprintf_args = 0;
-      if (sp[-1].type != T_MAPPING) {
+      if (TYPEOF(sp[-1]) != T_MAPPING) {
 	push_constant_text ("Invalid return value from get_predefines\n");
 	push_constant_text ("Invalid return value from get_predefines, got %O\n");
 	push_svalue (sp - 3);
@@ -1882,7 +1882,7 @@ void f_cpp(INT32 args)
       else {
 	predefs = copy_mapping (sp[-1].u.mapping);
 	NEW_MAPPING_LOOP (predefs->data) {
-	  if (k->ind.type != T_STRING || !k->ind.u.string->len) {
+	  if (TYPEOF(k->ind) != T_STRING || !k->ind.u.string->len) {
 	    push_constant_text ("Expected nonempty string as predefine name\n");
 	    push_constant_text ("Expected nonempty string as predefine name, got %O\n");
 	    push_svalue (&k->ind);
@@ -1891,8 +1891,8 @@ void f_cpp(INT32 args)
 	    predefs = NULL;
 	    goto predef_map_error;
 	  }
-	  if (k->val.type != T_STRING &&
-	      (k->val.type != T_INT || k->val.u.integer)) {
+	  if (TYPEOF(k->val) != T_STRING &&
+	      (TYPEOF(k->val) != T_INT || k->val.u.integer)) {
 	    push_constant_text ("Expected zero or string value for predefine\n");
 	    push_constant_text ("Expected zero or string value for predefine %O\n");
 	    push_svalue (&k->ind);
@@ -1983,7 +1983,7 @@ void f_cpp(INT32 args)
     struct keypair *k;
     int e;
     NEW_MAPPING_LOOP (predefs->data) {
-      if (k->val.type == T_STRING)
+      if (TYPEOF(k->val) == T_STRING)
 	add_define (&this, k->ind.u.string, k->val.u.string);
       else
 	add_define (&this, k->ind.u.string, empty_pike_string);
@@ -2068,12 +2068,11 @@ void init_cpp()
 	   OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
 
   /* Somewhat tricky to add a _constant_ function in _static_modules.Builtin. */
-  s.type = T_FUNCTION;
-  s.subtype = FUNCTION_BUILTIN;
-  s.u.efun = make_callable (f__take_over_initial_predefines,
-			    "_take_over_initial_predefines",
-			    "function(void:mapping(string:string))",
-			    OPT_SIDE_EFFECT, NULL, NULL);
+  SET_SVAL(s, T_FUNCTION, FUNCTION_BUILTIN, efun,
+	   make_callable (f__take_over_initial_predefines,
+			  "_take_over_initial_predefines",
+			  "function(void:mapping(string:string))",
+			  OPT_SIDE_EFFECT, NULL, NULL));
   simple_add_constant ("_take_over_initial_predefines", &s, 0);
   free_svalue (&s);
 }

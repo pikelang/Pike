@@ -320,20 +320,20 @@ static void stat_create (INT32 args)
     pop_n_elems (args - 1);
     args = 1;
 
-    if (sp[-1].type == T_OBJECT)
+    if (TYPEOF(sp[-1]) == T_OBJECT)
       if (sp[-1].u.object->prog == stat_program) {
 	*THIS_STAT = *(struct stat_storage *) sp[-1].u.object->storage;
 	pop_stack();
 	return;
       }
 
-    if ((1 << sp[-1].type) & (BIT_PROGRAM|BIT_OBJECT|BIT_MAPPING)) {
+    if ((1 << TYPEOF(sp[-1])) & (BIT_PROGRAM|BIT_OBJECT|BIT_MAPPING)) {
 
 #define ASSIGN_INDEX(ENUM)						\
       do {								\
 	stack_dup();							\
 	ref_push_string (stat_index_strs[ENUM]);			\
-	sp[-1].subtype = 1;						\
+	SET_SVAL_SUBTYPE(sp[-1], 1);					\
 	o_index();							\
 	if (!IS_UNDEFINED (sp-1)) {					\
 	  ref_push_string (stat_index_strs[ENUM]);			\
@@ -360,17 +360,17 @@ static void stat_create (INT32 args)
 #endif
     }
 
-    else if (sp[-1].type == T_ARRAY) {
+    else if (TYPEOF(sp[-1]) == T_ARRAY) {
       struct array *a = sp[-1].u.array;
       int i;
       if (a->size != 7)
 	SIMPLE_BAD_ARG_ERROR ("Stat create", 1, "stat array with 7 elements");
       for (i = 0; i < 7; i++) {
 	INT64 val;
-	if (ITEM(a)[i].type == T_INT)
+	if (TYPEOF(ITEM(a)[i]) == T_INT)
 	  val = ITEM(a)[i].u.integer;
 #ifdef AUTO_BIGNUM
-	else if (ITEM(a)[i].type == T_OBJECT &&
+	else if (TYPEOF(ITEM(a)[i]) == T_OBJECT &&
 		 is_bignum_object (ITEM(a)[i].u.object)) {
 	  if (!int64_from_bignum (&val, ITEM(a)[i].u.object))
 	    Pike_error ("Stat create: Too big integer in stat array.\n");
@@ -398,13 +398,13 @@ static void stat_index(INT32 args)
       SIMPLE_TOO_FEW_ARGS_ERROR("Stat `[]",1);
    else if (args==1)
    {
-      if (sp[-1].type==T_INT)
+      if (TYPEOF(sp[-1]) == T_INT)
       {
 	 int index = sp[-1].u.integer;
 	 pop_stack();
 	 stat_push_compat(index);
       }
-      else if (sp[-1].type==T_STRING)
+      else if (TYPEOF(sp[-1]) == T_STRING)
       {
 	 INT_TYPE code;
 
@@ -585,12 +585,12 @@ static void stat_index(INT32 args)
       }
 
 #if AUTO_BIGNUM
-      if (sp[-2].type!=T_INT &&
-	  !(sp[-2].type == T_OBJECT && is_bignum_object (sp[-2].u.object)))
+      if (TYPEOF(sp[-2]) != T_INT &&
+	  !(TYPEOF(sp[-2]) == T_OBJECT && is_bignum_object (sp[-2].u.object)))
 	 SIMPLE_BAD_ARG_ERROR("Stat `[..]",1,"int");
 
-      if (sp[-1].type!=T_INT &&
-	  !(sp[-1].type == T_OBJECT && is_bignum_object (sp[-1].u.object)))
+      if (TYPEOF(sp[-1]) != T_INT &&
+	  !(TYPEOF(sp[-1]) == T_OBJECT && is_bignum_object (sp[-1].u.object)))
 	 SIMPLE_BAD_ARG_ERROR("Stat `[..]",2,"int");
 #endif
 
@@ -629,11 +629,11 @@ static void stat_index_set (INT32 args)
     args = 2;
   }
 
-  if (sp[-1].type == T_INT)
+  if (TYPEOF(sp[-1]) == T_INT)
     int_val = sp[-1].u.integer, got_int_val = 1;
 
 #if AUTO_BIGNUM
-  else if (sp[-1].type == T_OBJECT && is_bignum_object (sp[-1].u.object)) {
+  else if (TYPEOF(sp[-1]) == T_OBJECT && is_bignum_object (sp[-1].u.object)) {
     if (!int64_from_bignum (&int_val, sp[-1].u.object))
       Pike_error ("Stat `[]=: Too big integer as value.\n");
     else
@@ -644,7 +644,7 @@ static void stat_index_set (INT32 args)
   /* No, the second argument is checked further below depending on
    * what the first is. /mast */
 
-  if (sp[-2].type == T_INT) {
+  if (TYPEOF(sp[-2]) == T_INT) {
     if (!got_int_val)
       SIMPLE_BAD_ARG_ERROR ("Stat `[]=", 2,
 			    "integer when the first argument is an integer");
@@ -652,7 +652,7 @@ static void stat_index_set (INT32 args)
       SIMPLE_BAD_ARG_ERROR ("Stat `[]=", 1, "int(0..6)|string");
   }
 
-  else if (sp[-2].type == T_STRING) {
+  else if (TYPEOF(sp[-2]) == T_STRING) {
     INT_TYPE code;
 
     ref_push_mapping (stat_map);
@@ -675,7 +675,7 @@ static void stat_index_set (INT32 args)
 	SIMPLE_BAD_ARG_ERROR ("Stat `[]=", 1, "a valid index");
 
       case STAT_MODE_STRING:
-	if (sp[-1].type != T_STRING)
+	if (TYPEOF(sp[-1]) != T_STRING)
 	  SIMPLE_BAD_ARG_ERROR ("Stat `[]=", 2, "string");
 
 	/* FIXME: Handle modes on the form u+rw, perhaps? */
@@ -747,7 +747,7 @@ static void stat_index_set (INT32 args)
 	break;
 
       case STAT_TYPE:
-	if (sp[-1].type != T_STRING)
+	if (TYPEOF(sp[-1]) != T_STRING)
 	  SIMPLE_BAD_ARG_ERROR ("Stat `[]=", 2, "string");
 
 	if (sp[-1].u.string == str_type_reg)
@@ -836,7 +836,7 @@ static void stat_cast(INT32 args)
 {
    if (!args)
       SIMPLE_TOO_FEW_ARGS_ERROR("Stat cast",1);
-   if (sp[-args].type==T_STRING && !sp[-args].u.string->size_shift)
+   if (TYPEOF(sp[-args]) == T_STRING && !sp[-args].u.string->size_shift)
    {
       if (strncmp(sp[-args].u.string->str,"array",5)==0)
       {
@@ -858,7 +858,7 @@ static void stat__sprintf(INT32 args)
    if (args<1)
       SIMPLE_TOO_FEW_ARGS_ERROR("_sprintf",2);
 
-   if (sp[-args].type!=T_INT)
+   if (TYPEOF(sp[-args]) != T_INT)
       SIMPLE_BAD_ARG_ERROR("_sprintf",0,"integer");
 
    x=sp[-args].u.integer;

@@ -95,14 +95,14 @@ static INLINE int getrgb(struct image *img,
    if (max<3 || args-args_start<3) return 0;
 
    for (i=0; i<3; i++)
-      if (sp[-args+i+args_start].type!=T_INT)
+      if (TYPEOF(sp[-args+i+args_start]) != T_INT)
          Pike_error("Illegal r,g,b argument to %s\n",name);
    img->rgb.r=(unsigned char)sp[-args+args_start].u.integer;
    img->rgb.g=(unsigned char)sp[1-args+args_start].u.integer;
    img->rgb.b=(unsigned char)sp[2-args+args_start].u.integer;
 
    if (max > 3 && args-args_start>=4) {
-      if (sp[3-args+args_start].type!=T_INT) {
+      if (TYPEOF(sp[3-args+args_start]) != T_INT) {
          Pike_error("Illegal alpha argument to %s\n",name);
       }
       img->alpha=sp[3-args+args_start].u.integer;
@@ -291,7 +291,7 @@ void image_paste(INT32 args)
    INT32 x1,y1,x2,y2,blitwidth,blitheight;
 
    if (args<1
-       || sp[-args].type!=T_OBJECT
+       || TYPEOF(sp[-args]) != T_OBJECT
        || !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
       bad_arg_error("image->paste",sp-args,args,1,"",sp+1-1-args,
 		"Bad argument 1 to image->paste()\n");
@@ -302,8 +302,8 @@ void image_paste(INT32 args)
    if (args>1)
    {
       if (args<3 
-	  || sp[1-args].type!=T_INT
-	  || sp[2-args].type!=T_INT)
+	  || TYPEOF(sp[1-args]) != T_INT
+	  || TYPEOF(sp[2-args]) != T_INT)
          bad_arg_error("image->paste",sp-args,args,0,"",sp-args,
 		"Bad arguments to image->paste()\n");
       x1=sp[1-args].u.integer;
@@ -369,10 +369,10 @@ void image_paste_alpha(INT32 args)
    INT32 x1,y1;
 
    if (args<2
-       || sp[-args].type!=T_OBJECT
+       || TYPEOF(sp[-args]) != T_OBJECT
        || !sp[-args].u.object
        || !(img=(struct image*)get_storage(sp[-args].u.object,image_program))
-       || sp[1-args].type!=T_INT)
+       || TYPEOF(sp[1-args]) != T_INT)
       bad_arg_error("image->paste_alpha",sp-args,args,0,"",sp-args,
 		"Bad arguments to image->paste_alpha()\n");
    if (!THIS->img) return;
@@ -381,8 +381,8 @@ void image_paste_alpha(INT32 args)
    
    if (args>=4)
    {
-      if (sp[2-args].type!=T_INT
-	  || sp[3-args].type!=T_INT)
+      if (TYPEOF(sp[2-args]) != T_INT
+	  || TYPEOF(sp[3-args]) != T_INT)
          bad_arg_error("image->paste_alpha",sp-args,args,0,"",sp-args,
 		"Bad arguments to image->paste_alpha()\n");
       x1=sp[2-args].u.integer;
@@ -459,11 +459,11 @@ CHRONO("image_paste_mask init");
 
    if (args<2)
       Pike_error("illegal number of arguments to image->paste_mask()\n");
-   if (sp[-args].type!=T_OBJECT
+   if (TYPEOF(sp[-args]) != T_OBJECT
        || !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
       bad_arg_error("image->paste_mask",sp-args,args,1,"",sp+1-1-args,
 		"Bad argument 1 to image->paste_mask()\n");
-   if (sp[1-args].type!=T_OBJECT
+   if (TYPEOF(sp[1-args]) != T_OBJECT
        || !(mask=(struct image*)get_storage(sp[1-args].u.object,image_program)))
       bad_arg_error("image->paste_mask",sp-args,args,2,"",sp+2-1-args,
 		"Bad argument 2 to image->paste_mask()\n");
@@ -474,8 +474,8 @@ CHRONO("image_paste_mask init");
    
    if (args>=4)
    {
-      if (sp[2-args].type!=T_INT
-	  || sp[3-args].type!=T_INT)
+      if (TYPEOF(sp[2-args]) != T_INT
+	  || TYPEOF(sp[3-args]) != T_INT)
          Pike_error("illegal coordinate arguments to image->paste_mask()\n");
       x1=sp[2-args].u.integer;
       y1=sp[3-args].u.integer;
@@ -564,7 +564,7 @@ void image_paste_alpha_color(INT32 args)
 
    if (args<1)
       SIMPLE_TOO_FEW_ARGS_ERROR("image->paste_alpha_color",1);
-   if (sp[-args].type!=T_OBJECT
+   if (TYPEOF(sp[-args]) != T_OBJECT
        || !sp[-args].u.object
        || !(mask=(struct image*)get_storage(sp[-args].u.object,image_program)))
       bad_arg_error("image->paste_alpha_color",sp-args,args,1,"",sp+1-1-args,
@@ -576,8 +576,8 @@ void image_paste_alpha_color(INT32 args)
       arg=1+getrgb(THIS,1,args,3,"image->paste_alpha_color()\n");
    if (args>arg+1) 
    {
-      if (sp[arg-args].type!=T_INT
-	  || sp[1+arg-args].type!=T_INT)
+      if (TYPEOF(sp[arg-args]) != T_INT
+	  || TYPEOF(sp[1+arg-args]) != T_INT)
          Pike_error("illegal coordinate arguments to image->paste_alpha_color()\n");
       x1=sp[arg-args].u.integer;
       y1=sp[1+arg-args].u.integer;

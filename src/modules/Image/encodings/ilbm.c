@@ -120,9 +120,9 @@ static void image_ilbm___decode(INT32 args)
    map_delete(m, &string_[string_CAMG]);
    map_delete(m, &string_[string_BODY]);
 
-   if(sp[-5].type != T_STRING)
+   if(TYPEOF(sp[-5]) != T_STRING)
      Pike_error("Missing BMHD chunk\n");
-   if(sp[-2].type != T_STRING)
+   if(TYPEOF(sp[-2]) != T_STRING)
      Pike_error("Missing BODY chunk\n");
 
    /* Extract image size from BMHD */
@@ -134,12 +134,8 @@ static void image_ilbm___decode(INT32 args)
 
    free_svalue(sp-7);
 
-   sp[-7].u.integer = (s[0]<<8)|s[1];
-   sp[-7].type = T_INT;
-   sp[-7].subtype = NUMBER_NUMBER;
-   sp[-6].u.integer = (s[2]<<8)|s[3];
-   sp[-6].type = T_INT;
-   sp[-6].subtype = NUMBER_NUMBER;
+   SET_SVAL(sp[-7], T_INT, NUMBER_NUMBER, integer, (s[0]<<8)|s[1]);
+   SET_SVAL(sp[-6], T_INT, NUMBER_NUMBER, integer, (s[2]<<8)|s[3]);
 
    f_aggregate(7);
 }
@@ -441,7 +437,7 @@ static void image_ilbm__decode(INT32 args)
   int n = 0;
   INT32 camg = 0;
 
-  if(args>0 && sp[-args].type == T_STRING) {
+  if(args>0 && TYPEOF(sp[-args]) == T_STRING) {
     image_ilbm___decode(args);
     args = 1;
   }
@@ -452,8 +448,10 @@ static void image_ilbm__decode(INT32 args)
     pop_n_elems(args-1);
 
   if(arr->size < 6 ||
-     ITEM(arr)[2].type != T_STRING || ITEM(arr)[2].u.string->size_shift != 0 ||
-     ITEM(arr)[5].type != T_STRING || ITEM(arr)[5].u.string->size_shift != 0)
+     TYPEOF(ITEM(arr)[2]) != T_STRING ||
+     ITEM(arr)[2].u.string->size_shift != 0 ||
+     TYPEOF(ITEM(arr)[5]) != T_STRING ||
+     ITEM(arr)[5].u.string->size_shift != 0)
     Pike_error("Image.ILBM._decode: illegal argument\n");
 
   parse_bmhd(&bmhd, STR0(ITEM(arr)[2].u.string), ITEM(arr)[2].u.string->len);
@@ -476,7 +474,8 @@ static void image_ilbm__decode(INT32 args)
     n++;
   }
 
-  if(ITEM(arr)[4].type == T_STRING && ITEM(arr)[4].u.string->size_shift == 0 &&
+  if(TYPEOF(ITEM(arr)[4]) == T_STRING &&
+     ITEM(arr)[4].u.string->size_shift == 0 &&
      ITEM(arr)[4].u.string->len>=4) {
     unsigned char *camgp = STR0(ITEM(arr)[4].u.string);
     camg = (camgp[0]<<24)|(camgp[1]<<16)|(camgp[2]<<8)|camgp[3];
@@ -493,7 +492,8 @@ static void image_ilbm__decode(INT32 args)
     n++;
   }
 
-  if(ITEM(arr)[3].type == T_STRING && ITEM(arr)[3].u.string->size_shift == 0) {
+  if(TYPEOF(ITEM(arr)[3]) == T_STRING &&
+     ITEM(arr)[3].u.string->size_shift == 0) {
     unsigned char *pal = STR0(ITEM(arr)[3].u.string);
     INT32 col, mcol = 1<<bmhd.nPlanes;
     ptrdiff_t ncol = ITEM(arr)[3].u.string->len/3;
@@ -559,12 +559,12 @@ void img_ilbm_decode(INT32 args)
    if (!args)
       Pike_error("Image.ILBM.decode: too few argument\n");
 
-   if (sp[-args].type != T_MAPPING) {
+   if (TYPEOF(sp[-args]) != T_MAPPING) {
      image_ilbm__decode(args);
      args = 1;
    }
      
-   if (sp[-args].type != T_MAPPING)
+   if (TYPEOF(sp[-args]) != T_MAPPING)
      Pike_error("Image.ILBM.decode: illegal argument\n");
 
    if(args>1)
@@ -572,7 +572,7 @@ void img_ilbm_decode(INT32 args)
 
    sv = simple_mapping_string_lookup(sp[-args].u.mapping, "image");
 
-   if(sv == NULL || sv->type != T_OBJECT)
+   if(sv == NULL || TYPEOF(*sv) != T_OBJECT)
      Pike_error("Image.ILBM.decode: illegal argument\n");
 
    ref_push_object(sv->u.object);
@@ -757,11 +757,11 @@ static void image_ilbm_encode(INT32 args)
   if(optm != NULL) {
     struct svalue *s;
     if((s = simple_mapping_string_lookup(optm, "alpha"))!=NULL && !UNSAFE_IS_ZERO(s))
-      if(s->type != T_OBJECT ||
+      if(TYPEOF(*s) != T_OBJECT ||
 	 (alpha=(struct image*)get_storage(s->u.object, image_program))==NULL)
 	Pike_error("Image.ILBM.encode: option (arg 2) \"alpha\" has illegal type\n");
     if((s=simple_mapping_string_lookup(optm, "palette"))!=NULL && !UNSAFE_IS_ZERO(s))
-      if(s->type != T_OBJECT ||
+      if(TYPEOF(*s) != T_OBJECT ||
 	 (ct=(struct neo_colortable*)
 	  get_storage(s->u.object, image_colortable_program))==NULL)
 	Pike_error("Image.ILBM.encode: option (arg 2) \"palette\" has illegal type\n");

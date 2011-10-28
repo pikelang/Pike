@@ -61,7 +61,7 @@ void pgtk_index_stack( char *what )
   push_text(what);
   f_index(2);
 #ifdef DEBUG
-  if (Pike_sp[-1].type==PIKE_T_INT)
+  if (TYPEOF(Pike_sp[-1]) == PIKE_T_INT)
     Pike_error("Internal indexing error.\n");
 #endif
 }
@@ -245,7 +245,7 @@ GdkImage *gdkimage_from_pikeimage( struct object *img, int fast, GdkImage *i )
       /*             6       5    4  3       2     1 */
       PFTIME("Dithering image");
       apply_svalue( Pike_sp-6, 5 );
-      if(Pike_sp[-1].type != PIKE_T_STRING)
+      if(TYPEOF(Pike_sp[-1]) != PIKE_T_STRING)
       {
 	gdk_image_destroy((void *)i);
 	Pike_error("Failed to convert image\n");
@@ -349,7 +349,7 @@ void pgtk_get_mapping_arg( struct mapping *map,
   struct svalue *s;
   if( (s = simple_mapping_string_lookup( map, name )) )
   {
-    if( s->type == type )
+    if( TYPEOF(*s) == type )
     {
       switch(type)
       {
@@ -823,7 +823,7 @@ void pgtk_free_str( gchar *s )
 void pgtk_default__sprintf( int args, int offset, int len )
 {
   int mode = 0;
-  if(args>0 && Pike_sp[-args].type == PIKE_T_INT)
+  if(args>0 && TYPEOF(Pike_sp[-args]) == PIKE_T_INT)
     mode = Pike_sp[-args].u.integer;
   my_pop_n_elems( args );
   if(mode != 'O') {
@@ -841,7 +841,7 @@ void pgtk_clear_obj_struct(struct object *o)
 
 LONGEST pgtk_get_int( struct svalue *s )
 {
-  if( s->type == PIKE_T_INT )
+  if( TYPEOF(*s) == PIKE_T_INT )
     return s->u.integer;
 #ifdef AUTO_BIGNUM
   if( is_bignum_object_in_svalue( s ) )
@@ -851,15 +851,15 @@ LONGEST pgtk_get_int( struct svalue *s )
     return res;
   }
 #endif
-  if( s->type == PIKE_T_FLOAT )
+  if( TYPEOF(*s) == PIKE_T_FLOAT )
     return (LONGEST)s->u.float_number;
   return 0;
 }
 
 int pgtk_is_int( struct svalue *s )
 {
-  return ((s->type ==PIKE_T_INT) ||
-          (s->type ==PIKE_T_FLOAT)
+  return ((TYPEOF(*s) ==PIKE_T_INT) ||
+          (TYPEOF(*s) ==PIKE_T_FLOAT)
 #ifdef AUTO_BIGNUM
           || is_bignum_object_in_svalue( s )
 #endif
@@ -869,9 +869,9 @@ int pgtk_is_int( struct svalue *s )
 /* double should be enough */
 double pgtk_get_float( struct svalue *s )
 {
-  if( s->type == PIKE_T_FLOAT )
+  if( TYPEOF(*s) == PIKE_T_FLOAT )
     return s->u.float_number;
-  if( s->type == PIKE_T_INT )
+  if( TYPEOF(*s) == PIKE_T_INT )
     return (double)s->u.integer;
 #ifdef AUTO_BIGNUM
   if( is_bignum_object_in_svalue( s ) )
@@ -894,8 +894,8 @@ void pgtk_free_object(struct object *o)
 
 int pgtk_is_float( struct svalue *s )
 {
-  return ((s->type ==PIKE_T_FLOAT) ||
-          (s->type ==PIKE_T_INT)
+  return ((TYPEOF(*s) ==PIKE_T_FLOAT) ||
+          (TYPEOF(*s) ==PIKE_T_INT)
 #ifdef AUTO_BIGNUM
           ||is_bignum_object_in_svalue( s )
 #endif

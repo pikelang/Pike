@@ -122,7 +122,7 @@ static int parameter_int(struct svalue *map,struct pike_string *what,INT32 *p)
    struct svalue *v;
    v=low_mapping_string_lookup(map->u.mapping,what);
 
-   if (!v || v->type!=T_INT) return 0;
+   if (!v || TYPEOF(*v) != T_INT) return 0;
 
    *p=v->u.integer;
    return 1;
@@ -186,19 +186,19 @@ void img_bmp_encode(INT32 args)
    if (!args)
       SIMPLE_TOO_FEW_ARGS_ERROR("Image.BMP.encode",1);
 
-   if (sp[-args].type!=T_OBJECT ||
+   if (TYPEOF(sp[-args]) != T_OBJECT ||
        !(img=(struct image*)get_storage(o=sp[-args].u.object,image_program)))
       SIMPLE_BAD_ARG_ERROR("Image.BMP.encode",1,"image object");
 
    if (args>1) {
-      if (sp[1-args].type==T_OBJECT)
+      if (TYPEOF(sp[1-args]) == T_OBJECT)
       {
 	 if (!(nct=(struct neo_colortable*)
 	       get_storage(oc=sp[1-args].u.object,image_colortable_program)))
 	    SIMPLE_BAD_ARG_ERROR("Image.BMP.encode",2,"colortable object");
 	 add_ref(oc);
       }
-      else if (sp[1-args].type==T_MAPPING)
+      else if (TYPEOF(sp[1-args]) == T_MAPPING)
       {
 	 struct svalue *v;
 
@@ -209,14 +209,14 @@ void img_bmp_encode(INT32 args)
 
 	 if (parameter(sp+1-args, colortable_string, &v))
 	 {
-	    if (v->type!=T_OBJECT  ||
+	    if (TYPEOF(*v) != T_OBJECT  ||
 		!(nct=(struct neo_colortable*)
 		  get_storage(oc=v->u.object,image_colortable_program)))
 	       SIMPLE_BAD_ARG_ERROR("Image.BMP.encode",2,"colortable object at index \"colortable\"\n");
 	    add_ref(oc);
 	 }
       } 
-      else if (sp[1-args].type==T_INT)
+      else if (TYPEOF(sp[1-args]) == T_INT)
       {
 	 bpp=sp[1-args].u.integer;
       }
@@ -279,7 +279,7 @@ void img_bmp_encode(INT32 args)
 
    apply(o,"mirrory",0);
    free_object(o);
-   if (sp[-1].type!=T_OBJECT ||
+   if (TYPEOF(sp[-1]) != T_OBJECT ||
        !(img=(struct image*)get_storage(o=sp[-1].u.object,image_program))) {
       free_object(oc);
       Pike_error("Image.BMP.encode: weird result from ->mirrory()\n");
@@ -557,13 +557,13 @@ void i_img_bmp__decode(INT32 args,int header_only)
    if (args<1)
       SIMPLE_TOO_FEW_ARGS_ERROR("Image.BMP.decode",1);
 
-   if (sp[-args].type!=T_STRING)
+   if (TYPEOF(sp[-args]) != T_STRING)
       SIMPLE_BAD_ARG_ERROR("Image.BMP.decode",1,"string");
    if (sp[-args].u.string->size_shift)
       SIMPLE_BAD_ARG_ERROR("Image.BMP.decode",1,"8 bit string");
 
    if (args>1) {
-      if (sp[1-args].type!=T_MAPPING)
+      if (TYPEOF(sp[1-args]) != T_MAPPING)
 	 SIMPLE_BAD_ARG_ERROR("Image.BMP.decode",2,"mapping");
       else
       {

@@ -165,14 +165,14 @@ static MUTEX_T stupid_port_lock;
 #define PIKE_MYSQL_FLAG_TYPED_RESULT	2
 
 #define CHECK_8BIT_NONBINARY_STRING(FUNC, ARG) do {			\
-    if (sp[ARG-1-args].type != T_STRING ||				\
+    if (TYPEOF(sp[ARG-1-args]) != T_STRING ||				\
 	sp[ARG-1-args].u.string->size_shift ||				\
         string_has_null(sp[ARG-1-args].u.string))			\
       SIMPLE_BAD_ARG_ERROR (FUNC, ARG, "string (nonbinary 8bit)");	\
   } while (0)
 
 #define CHECK_8BIT_STRING(FUNC, ARG) do {				\
-    if (sp[ARG-1-args].type != T_STRING ||				\
+    if (TYPEOF(sp[ARG-1-args]) != T_STRING ||				\
 	sp[ARG-1-args].u.string->size_shift)				\
       SIMPLE_BAD_ARG_ERROR (FUNC, ARG, "string (8bit)");	\
   } while (0)
@@ -252,27 +252,27 @@ void pike_mysql_set_ssl(struct mapping *options)
 
 #ifdef HAVE_MYSQL_SSL
     if ((val = simple_mapping_string_lookup(options, "ssl_key")) &&
-	(val->type == T_STRING) &&
+	(TYPEOF(*val) == T_STRING) &&
 	(!val->u.string->size_shift))
       ssl_key = val->u.string->str;
 
     if ((val = simple_mapping_string_lookup(options, "ssl_cert")) &&
-	(val->type == T_STRING) &&
+	(TYPEOF(*val) == T_STRING) &&
 	(!val->u.string->size_shift))
       ssl_cert = val->u.string->str;
 
     if ((val = simple_mapping_string_lookup(options, "ssl_ca")) &&
-	(val->type == T_STRING) &&
+	(TYPEOF(*val) == T_STRING) &&
 	(!val->u.string->size_shift))
       ssl_ca = val->u.string->str;
 
     if ((val = simple_mapping_string_lookup(options, "ssl_capath")) &&
-	(val->type == T_STRING) &&
+	(TYPEOF(*val) == T_STRING) &&
 	(!val->u.string->size_shift))
       ssl_capath = val->u.string->str;
 
     if ((val = simple_mapping_string_lookup(options, "ssl_cipher")) &&
-	(val->type == T_STRING) &&
+	(TYPEOF(*val) == T_STRING) &&
 	(!val->u.string->size_shift))
       ssl_cipher = val->u.string->str;
 
@@ -302,34 +302,34 @@ static void pike_mysql_set_options(struct mapping *options)
   }
 #ifdef HAVE_MYSQL_READ_DEFAULT_FILE
   if ((val = simple_mapping_string_lookup(options, "mysql_config_file")) &&
-      (val->type == T_STRING) && (!val->u.string->size_shift)) {
+      (TYPEOF(*val) == T_STRING) && (!val->u.string->size_shift)) {
     mysql_options(PIKE_MYSQL->mysql, MYSQL_READ_DEFAULT_FILE,
 		  val->u.string->str);
   }
 #endif /* MYSQL_READ_DEFAULT_FILE */
 #ifdef HAVE_MYSQL_READ_DEFAULT_GROUP
   if ((val = simple_mapping_string_lookup(options, "mysql_group")) &&
-      (val->type == T_STRING) && (!val->u.string->size_shift)) {
+      (TYPEOF(*val) == T_STRING) && (!val->u.string->size_shift)) {
     mysql_options(PIKE_MYSQL->mysql, MYSQL_READ_DEFAULT_GROUP,
 		  val->u.string->str);
   }
 #endif /* MYSQL_READ_DEFAULT_GROUP */
 #ifdef HAVE_MYSQL_INIT_COMMAND
   if ((val = simple_mapping_string_lookup(options, "init_command")) &&
-      (val->type == T_STRING) && (!val->u.string->size_shift)) {
+      (TYPEOF(*val) == T_STRING) && (!val->u.string->size_shift)) {
     mysql_options(PIKE_MYSQL->mysql, MYSQL_INIT_COMMAND,
 		  val->u.string->str);
   }
 #endif /* MYSQL_INIT_COMMAND */
 #ifdef HAVE_MYSQL_OPT_NAMED_PIPE
   if ((val = simple_mapping_string_lookup(options, "mysql_named_pipe")) &&
-      (val->type == T_INT) && (val->u.integer)) {
+      (TYPEOF(*val) == T_INT) && (val->u.integer)) {
     mysql_options(PIKE_MYSQL->mysql, MYSQL_OPT_NAMED_PIPE, NULL);
   }
 #endif /* MYSQL_OPT_NAMED_PIPE */
 #ifdef HAVE_MYSQL_OPT_CONNECT_TIMEOUT
   if ((val = simple_mapping_string_lookup(options, "timeout")) &&
-      (val->type == T_INT)) {
+      (TYPEOF(*val) == T_INT)) {
     unsigned int timeout = (unsigned int)val->u.integer;
     mysql_options(PIKE_MYSQL->mysql, MYSQL_OPT_CONNECT_TIMEOUT,
 		  (char *)&timeout);
@@ -337,13 +337,13 @@ static void pike_mysql_set_options(struct mapping *options)
 #endif /* MYSQL_OPT_CONNECT_TIMEOUT */
 #ifdef HAVE_MYSQL_OPT_COMPRESS
   if ((val = simple_mapping_string_lookup(options, "compress")) &&
-      (val->type == T_INT) && (val->u.integer)) {
+      (TYPEOF(*val) == T_INT) && (val->u.integer)) {
     mysql_options(PIKE_MYSQL->mysql, MYSQL_OPT_COMPRESS, NULL);
   }
 #endif /* MYSQL_OPT_COMPRESS */
 #ifdef HAVE_MYSQL_OPT_LOCAL_INFILE
   if ((val = simple_mapping_string_lookup(options, "mysql_local_infile")) &&
-      (val->type == T_INT)) {
+      (TYPEOF(*val) == T_INT)) {
     unsigned int allowed = (unsigned int)val->u.integer;
     mysql_options(PIKE_MYSQL->mysql, MYSQL_OPT_LOCAL_INFILE,
 		  (char *)&allowed);
@@ -356,7 +356,7 @@ static void pike_mysql_set_options(struct mapping *options)
 #endif /* MYSQL_OPT_LOCAL_INFILE */
 #ifdef HAVE_MYSQL_SET_CHARSET_DIR
   if ((val = simple_mapping_string_lookup(options, "mysql_charset_dir")) &&
-      (val->type == T_STRING) && (!val->u.string->size_shift)) {
+      (TYPEOF(*val) == T_STRING) && (!val->u.string->size_shift)) {
     mysql_options(PIKE_MYSQL->mysql, MYSQL_SET_CHARSET_DIR,
 		  val->u.string->str);
   }
@@ -364,7 +364,7 @@ static void pike_mysql_set_options(struct mapping *options)
 #endif /* HAVE_MYSQL_OPTIONS */
 
   if ((val = simple_mapping_string_lookup(options, "mysql_charset_name")) &&
-      (val->type == T_STRING) && (!val->u.string->size_shift) &&
+      (TYPEOF(*val) == T_STRING) && (!val->u.string->size_shift) &&
       !string_has_null (val->u.string)) {
 #if defined (HAVE_MYSQL_OPTIONS) && defined (HAVE_MYSQL_SET_CHARSET_NAME)
     mysql_options (PIKE_MYSQL->mysql, MYSQL_SET_CHARSET_NAME,
@@ -460,7 +460,7 @@ static void pike_mysql_reconnect (int reconnect)
   if (PIKE_MYSQL->options &&
       (val = simple_mapping_string_lookup(PIKE_MYSQL->options,
 					  "connect_options")) &&
-      (val->type == T_INT) && (val->u.integer)) {
+      (TYPEOF(*val) == T_INT) && (val->u.integer)) {
     options = (unsigned int)val->u.integer;
   }
 
@@ -715,7 +715,7 @@ static void f_create(INT32 args)
 	    add_ref(PIKE_MYSQL->password = sp[3-args].u.string);
 	  }
 	  if (args >= 5) {
-	    if (sp[4-args].type != T_MAPPING) {
+	    if (TYPEOF(sp[4-args]) != T_MAPPING) {
 	      SIMPLE_BAD_ARG_ERROR ("Mysql.mysql->create", 5, "mapping(string:mixed)");
 	    }
 	    add_ref(PIKE_MYSQL->options = sp[4-args].u.mapping);
@@ -755,7 +755,7 @@ static void mysql__sprintf(INT32 args)
 
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("_sprintf",2);
-  if(sp[-args].type!=T_INT)
+  if(TYPEOF(sp[-args]) != T_INT)
     SIMPLE_BAD_ARG_ERROR("_sprintf",0,"integer");
 
   type = sp[-args].u.integer;
@@ -1819,7 +1819,7 @@ static void f__can_send_as_latin1 (INT32 args)
 
   if (args != 1)
     SIMPLE_WRONG_NUM_ARGS_ERROR ("_can_send_as_latin1", 1);
-  if (Pike_sp[-1].type != T_STRING)
+  if (TYPEOF(Pike_sp[-1]) != T_STRING)
     SIMPLE_ARG_TYPE_ERROR ("_can_send_as_latin1", 0, "string");
   str = Pike_sp[-1].u.string;
 

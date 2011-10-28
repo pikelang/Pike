@@ -415,7 +415,7 @@ static int call_repcb(struct svalue *repcb, p_wchar2 ch)
 {
   push_string(make_shared_binary_string2(&ch, 1));
   apply_svalue(repcb, 1);
-  if(sp[-1].type == T_STRING)
+  if(TYPEOF(sp[-1]) == T_STRING)
     return 1;
   pop_stack();
   return 0;
@@ -1380,7 +1380,7 @@ static void f_enc_feed(INT32 args)
   if( str->len )
     eat_enc_string(str, (struct iso2022enc_stor *)fp->current_storage,
 		   ((struct iso2022enc_stor *)fp->current_storage)->replace,
-		   (((struct iso2022enc_stor *)fp->current_storage)->repcb.type
+		   (TYPEOF(((struct iso2022enc_stor *)fp->current_storage)->repcb)
 		    == T_FUNCTION?
 		    &((struct iso2022enc_stor *)fp->current_storage)->repcb :
 		    NULL));
@@ -1463,13 +1463,13 @@ static void f_create(INT32 args)
 
   select_encoding_parameters(s, sp[-args].u.string);
 
-  if(args>1 && sp[1-args].type == T_STRING) {
+  if(args>1 && TYPEOF(sp[1-args]) == T_STRING) {
     if(s->replace != NULL)
       free_string(s->replace);
     add_ref(s->replace = sp[1-args].u.string);
   }
 
-  if(args>2 && sp[2-args].type == T_FUNCTION)
+  if(args>2 && TYPEOF(sp[2-args]) == T_FUNCTION)
     assign_svalue(&s->repcb, &sp[2-args]);
 
   pop_n_elems(args);

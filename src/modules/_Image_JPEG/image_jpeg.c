@@ -280,7 +280,7 @@ static int parameter_int(struct svalue *map,struct pike_string *what,INT32 *p)
    struct svalue *v;
    v=low_mapping_string_lookup(map->u.mapping,what);
 
-   if (!v || v->type!=T_INT) return 0;
+   if (!v || TYPEOF(*v) != T_INT) return 0;
 
    *p=v->u.integer;
    return 1;
@@ -293,7 +293,7 @@ static int store_int_in_table(struct array *a,
    int i;
    int z=0;
    for (i=0; i<a->size && len; i++)
-      if (a->item[i].type==T_ARRAY)
+      if (TYPEOF(a->item[i]) == T_ARRAY)
       {
 	 int n;
 	 n=store_int_in_table(a->item[i].u.array,len,d);
@@ -301,7 +301,7 @@ static int store_int_in_table(struct array *a,
 	 len-=n;
 	 z+=n;
       }
-      else if (a->item[i].type==T_INT)
+      else if (TYPEOF(a->item[i]) == T_INT)
       {
 	 *(d++)=(unsigned int)(a->item[i].u.integer);
 	 len--;
@@ -322,14 +322,14 @@ static int parameter_qt(struct svalue *map,struct pike_string *what,
    v=low_mapping_string_lookup(map->u.mapping,what);
 
    if (!v) return 0;
-   else if (v->type!=T_MAPPING) 
+   else if (TYPEOF(*v) != T_MAPPING)
       Pike_error("Image.JPEG.encode: illegal value of option quant_table; expected mapping\n");
 
    md=v->u.mapping->data;
    NEW_MAPPING_LOOP(md)
       {
 	 int z;
-	 if (k->ind.type!=T_INT || k->val.type!=T_ARRAY)
+	 if (TYPEOF(k->ind) != T_INT || TYPEOF(k->val) != T_ARRAY)
 	    Pike_error("Image.JPEG.encode: illegal value of option quant_table; expected mapping(int:array)\n");
 
 	 if (k->ind.u.integer<0 || k->ind.u.integer>=NUM_QUANT_TBLS)
@@ -360,14 +360,14 @@ static int parameter_qt_d(struct svalue *map,struct pike_string *what,
    v=low_mapping_string_lookup(map->u.mapping,what);
 
    if (!v) return 0;
-   else if (v->type!=T_MAPPING) 
+   else if (TYPEOF(*v) != T_MAPPING)
       Pike_error("Image.JPEG.encode: illegal value of option quant_table; expected mapping\n");
 
    md=v->u.mapping->data;
    NEW_MAPPING_LOOP(md)
       {
 	 int z;
-	 if (k->ind.type!=T_INT || k->val.type!=T_ARRAY)
+	 if (TYPEOF(k->ind) != T_INT || TYPEOF(k->val) != T_ARRAY)
 	    Pike_error("Image.JPEG.encode: illegal value of option quant_table; expected mapping(int:array)\n");
 
 	 if (k->ind.u.integer<0 || k->ind.u.integer>=NUM_QUANT_TBLS)
@@ -418,13 +418,13 @@ static int parameter_marker(struct svalue *map,struct pike_string *what,
    v=low_mapping_string_lookup(map->u.mapping,what);
 
    if (!v) return 0;
-   else if (v->type!=T_MAPPING) 
+   else if (TYPEOF(*v) != T_MAPPING)
       Pike_error("Image.JPEG.encode: illegal value of option marker;"
 		 " expected mapping\n");
    md=v->u.mapping->data;
    NEW_MAPPING_LOOP(md)
       {
-	 if (k->ind.type!=T_INT || k->val.type!=T_STRING ||
+	 if (TYPEOF(k->ind) != T_INT || TYPEOF(k->val) != T_STRING ||
 	     k->val.u.string->size_shift)
 	    Pike_error("Image.JPEG.encode: illegal value of option "
 		       "marker; expected mapping(int:8 bit string)\n");
@@ -444,7 +444,7 @@ static int parameter_comment(struct svalue *map,struct pike_string *what,
    v=low_mapping_string_lookup(map->u.mapping,what);
 
    if (!v) return 0;
-   else if (v->type!=T_STRING || v->u.string->size_shift) 
+   else if (TYPEOF(*v) != T_STRING || v->u.string->size_shift)
       Pike_error("Image.JPEG.encode: illegal value of option comment;"
 		 " expected 8 bit string\n");
 
@@ -507,14 +507,14 @@ static int marker_exists_in_args(INT32 args, int which)
    struct keypair *k;
    v=low_mapping_string_lookup(map->u.mapping, param_comment);
    if (which==JPEG_COM && v) {
-     return (v->type==T_STRING && !v->u.string->size_shift);
+     return (TYPEOF(*v) == T_STRING && !v->u.string->size_shift);
    } else {
      v=low_mapping_string_lookup(map->u.mapping, param_marker);
-     if (v && v->type==T_MAPPING) {
+     if (v && TYPEOF(*v) == T_MAPPING) {
        md=v->u.mapping->data;
        NEW_MAPPING_LOOP(md)
        {
-	 if (k->ind.type==T_INT && k->val.type==T_STRING
+	 if (TYPEOF(k->ind) == T_INT && TYPEOF(k->val) == T_STRING
 	     && k->ind.u.integer==which && !k->val.u.string->size_shift) {
 	   return 1;
 	 }
@@ -701,11 +701,11 @@ static void image_jpeg_encode(INT32 args)
    rgb_group *s;
    JSAMPROW row_pointer[8];
 
-   if (args<1 
-       || (sp[-args].type!=T_OBJECT && sp[-args].type!=T_STRING)
-       || (sp[-args].type==T_OBJECT &&
+   if (args<1
+       || (TYPEOF(sp[-args]) != T_OBJECT && TYPEOF(sp[-args]) != T_STRING)
+       || (TYPEOF(sp[-args]) == T_OBJECT &&
 	   !(img=(struct image*) get_storage(sp[-args].u.object,image_program)))
-       || (args>1 && sp[1-args].type!=T_MAPPING))
+       || (args>1 && TYPEOF(sp[1-args]) != T_MAPPING))
       Pike_error("Image.JPEG.encode: Illegal arguments\n");
 
    if (img) {
@@ -1004,9 +1004,9 @@ static void img_jpeg_decode(INT32 args,int mode)
 
    int n=0,m;
 
-   if (args<1 
-       || sp[-args].type!=T_STRING
-       || (args>1 && sp[1-args].type!=T_MAPPING))
+   if (args<1
+       || TYPEOF(sp[-args]) != T_STRING
+       || (args>1 && TYPEOF(sp[1-args]) != T_MAPPING))
       Pike_error("Image.JPEG.decode: Illegal arguments\n");
 
    /* init jpeg library objects */
@@ -1132,7 +1132,7 @@ static void img_jpeg_decode(INT32 args,int mode)
 	 stack_dup();
 	 push_int(JPEG_COM);
 	 f_index(2);
-	 if (sp[-1].type==T_STRING) 
+	 if (TYPEOF(sp[-1]) == T_STRING)
 	 {
 	    ref_push_string(param_comment); n++;
 	    stack_swap();

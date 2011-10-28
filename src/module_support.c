@@ -44,11 +44,11 @@ static int va_check_args(struct svalue *s,
       }
     }
 
-    if (!((1UL << s[res->argno].type) & res->expected) &&
+    if (!((1UL << TYPEOF(s[res->argno])) & res->expected) &&
 	!(res->expected & BIT_ZERO &&
-	  s[res->argno].type == T_INT && s[res->argno].u.integer == 0))
+	  TYPEOF(s[res->argno]) == T_INT && s[res->argno].u.integer == 0))
     {
-      res->got = DO_NOT_WARN((unsigned char)s[res->argno].type);
+      res->got = DO_NOT_WARN((unsigned char)TYPEOF(s[res->argno]));
       res->error_type = ERR_BAD_ARG;
       return 0;
     }
@@ -251,27 +251,27 @@ static int va_get_args_2(struct svalue *s,
     else switch(*++fmt)
     {
     case 'd':
-      if(s->type != T_INT) goto type_err;
+      if(TYPEOF(*s) != T_INT) goto type_err;
       /* FIXME: Range checks, including bignum objects. */
       *cast_arg(ptr, int *)=s->u.integer;
       break;
     case 'i':
-      if(s->type != T_INT) goto type_err;
+      if(TYPEOF(*s) != T_INT) goto type_err;
       /* FIXME: Error reporting for bignum objects. */
       *cast_arg(ptr, INT_TYPE *)=s->u.integer;
       break;
     case '+':
-      if(s->type != T_INT) goto type_err;
+      if(TYPEOF(*s) != T_INT) goto type_err;
       if(s->u.integer<0) goto type_err;
       /* FIXME: Error reporting for bignum objects. */
       *cast_arg(ptr, INT_TYPE *)=s->u.integer;
       break;
 
     case 'D':
-      if(s->type == T_INT)
+      if(TYPEOF(*s) == T_INT)
 	/* FIXME: Range checks. */
 	 *cast_arg(ptr, int *)=s->u.integer;
-      else if(s->type == T_FLOAT)
+      else if(TYPEOF(*s) == T_FLOAT)
 	/* FIXME: Range checks. */
 	*cast_arg(ptr, int *)=
 	  DO_NOT_WARN((int)s->u.float_number);
@@ -280,10 +280,10 @@ static int va_get_args_2(struct svalue *s,
         ref_push_type_value(int_type_string);
         push_svalue( s );
         f_cast( );
-	if(sp[-1].type == T_INT)
+	if(TYPEOF(sp[-1]) == T_INT)
 	  /* FIXME: Range checks. */
 	  *cast_arg(ptr, int *)=sp[-1].u.integer;
-	else if(s->type == T_FLOAT)
+	else if(TYPEOF(*s) == T_FLOAT)
 	  /* FIXME: Range checks. Btw, does this case occur? */
 	  *cast_arg(ptr, int *)=
 	    DO_NOT_WARN((int)sp[-1].u.float_number);
@@ -294,9 +294,9 @@ static int va_get_args_2(struct svalue *s,
       break;
 
     case 'I':
-      if(s->type == T_INT)
+      if(TYPEOF(*s) == T_INT)
 	 *cast_arg(ptr, INT_TYPE *)=s->u.integer;
-      else if(s->type == T_FLOAT)
+      else if(TYPEOF(*s) == T_FLOAT)
 	/* FIXME: Range checks. */
 	*cast_arg(ptr, INT_TYPE *) = DO_NOT_WARN((INT_TYPE)s->u.float_number);
       else 
@@ -305,9 +305,9 @@ static int va_get_args_2(struct svalue *s,
         ref_push_type_value(int_type_string);
         push_svalue( s );
         f_cast( );
-	if(sp[-1].type == T_INT)
+	if(TYPEOF(sp[-1]) == T_INT)
 	  *cast_arg(ptr, INT_TYPE *)=sp[-1].u.integer;
-	else if(s->type == T_FLOAT)
+	else if(TYPEOF(*s) == T_FLOAT)
 	  /* FIXME: Range checks. Btw, does this case occur? */
 	  *cast_arg(ptr, INT_TYPE *)=
 	    DO_NOT_WARN((INT_TYPE)sp[-1].u.float_number);
@@ -318,7 +318,7 @@ static int va_get_args_2(struct svalue *s,
       break;
 
     case 'l':
-      if (s->type == T_INT) {
+      if (TYPEOF(*s) == T_INT) {
 	*cast_arg(ptr, LONGEST *)=s->u.integer;
 	break;
 #ifdef AUTO_BIGNUM
@@ -331,14 +331,14 @@ static int va_get_args_2(struct svalue *s,
       goto type_err;
 
     case 'C':
-      if(s->type != T_STRING && UNSAFE_IS_ZERO (s)) {
+      if(TYPEOF(*s) != T_STRING && UNSAFE_IS_ZERO (s)) {
 	*cast_arg(ptr, char **) = NULL;
 	break;
       }
       /* FALL THROUGH */
     case 'c':
     case 's':
-      if(s->type != T_STRING) goto type_err;
+      if(TYPEOF(*s) != T_STRING) goto type_err;
       if(s->u.string->size_shift) goto type_err;
 
       if(string_has_null(s->u.string)) {
@@ -350,49 +350,49 @@ static int va_get_args_2(struct svalue *s,
       break;
 
     case 'N':
-      if(s->type != T_STRING && UNSAFE_IS_ZERO (s)) {
+      if(TYPEOF(*s) != T_STRING && UNSAFE_IS_ZERO (s)) {
 	*cast_arg(ptr, struct pike_string **) = NULL;
 	break;
       }
       /* FALL THROUGH */
     case 'n':
     case 'S':
-      if(s->type != T_STRING) goto type_err;
+      if(TYPEOF(*s) != T_STRING) goto type_err;
       if(s->u.string->size_shift) goto type_err;
       *cast_arg(ptr, struct pike_string **)=s->u.string;
       break;
 
     case 'T':
-      if(s->type != T_STRING && UNSAFE_IS_ZERO (s)) {
+      if(TYPEOF(*s) != T_STRING && UNSAFE_IS_ZERO (s)) {
 	*cast_arg(ptr, struct pike_string **) = NULL;
 	break;
       }
       /* FALL THROUGH */
     case 't':
     case 'W':
-      if(s->type != T_STRING) goto type_err;
+      if(TYPEOF(*s) != T_STRING) goto type_err;
       *cast_arg(ptr, struct pike_string **)=s->u.string;
       break;
 
     case 'A':
-      if(s->type != T_ARRAY && UNSAFE_IS_ZERO (s)) {
+      if(TYPEOF(*s) != T_ARRAY && UNSAFE_IS_ZERO (s)) {
 	*cast_arg(ptr, struct array **) = NULL;
 	break;
       }
       /* FALL THROUGH */
     case 'a':
-      if(s->type != T_ARRAY) goto type_err;
+      if(TYPEOF(*s) != T_ARRAY) goto type_err;
       *cast_arg(ptr, struct array **)=s->u.array;
       break;
 
     case 'f':
-      if(s->type != T_FLOAT) goto type_err;
+      if(TYPEOF(*s) != T_FLOAT) goto type_err;
       *cast_arg(ptr, FLOAT_TYPE *)=s->u.float_number;
       break;
     case 'F':
-      if(s->type == T_FLOAT)
+      if(TYPEOF(*s) == T_FLOAT)
 	 *cast_arg(ptr, FLOAT_TYPE *)=s->u.float_number;
-      else if(s->type == T_INT)
+      else if(TYPEOF(*s) == T_INT)
 	 *cast_arg(ptr, FLOAT_TYPE *)=(FLOAT_TYPE)s->u.integer;
       else 
       {
@@ -405,37 +405,37 @@ static int va_get_args_2(struct svalue *s,
       break;
 
     case 'G':
-      if(s->type != T_MAPPING && UNSAFE_IS_ZERO (s)) {
+      if(TYPEOF(*s) != T_MAPPING && UNSAFE_IS_ZERO (s)) {
 	*cast_arg(ptr, struct mapping **) = NULL;
 	break;
       }
       /* FALL THROUGH */
     case 'm':
-      if(s->type != T_MAPPING) goto type_err;
+      if(TYPEOF(*s) != T_MAPPING) goto type_err;
       *cast_arg(ptr, struct mapping **)=s->u.mapping;
       break;
 
     case 'U':
-      if(s->type != T_MULTISET && UNSAFE_IS_ZERO (s)) {
+      if(TYPEOF(*s) != T_MULTISET && UNSAFE_IS_ZERO (s)) {
 	*cast_arg(ptr, struct multiset **) = NULL;
 	break;
       }
       /* FALL THROUGH */
     case 'u':
     case 'M':
-      if(s->type != T_MULTISET) goto type_err;
+      if(TYPEOF(*s) != T_MULTISET) goto type_err;
       *cast_arg(ptr, struct multiset **)=s->u.multiset;
       break;
 
     case 'O':
-      if(s->type != T_OBJECT && UNSAFE_IS_ZERO (s)) {
+      if(TYPEOF(*s) != T_OBJECT && UNSAFE_IS_ZERO (s)) {
 	*cast_arg(ptr, struct object **) = NULL;
 	break;
       }
       /* FALL THROUGH */
     case 'o':
-      if(s->type != T_OBJECT) goto type_err;
-      if (s->subtype) {
+      if(TYPEOF(*s) != T_OBJECT) goto type_err;
+      if (SUBTYPEOF(*s)) {
 	*info = ARGS_SUBTYPED_OBJECT;
 	return ret;
       }
@@ -444,7 +444,7 @@ static int va_get_args_2(struct svalue *s,
 
     case 'P':
     case 'p':
-      switch(s->type)
+      switch(TYPEOF(*s))
       {
 	case T_PROGRAM:
 	  *cast_arg(ptr, struct program **)=s->u.program;
@@ -625,9 +625,7 @@ PMOD_EXPORT void pike_module_export_symbol(const char *name,
   struct pike_string *str=make_shared_binary_string(name,len);
   struct svalue s;
   if(!exported_symbols) exported_symbols=allocate_mapping(10);
-  s.u.ptr=ptr;
-  s.type=T_INT;
-  s.subtype=NUMBER_NUMBER;
+  SET_SVAL(s, T_INT, NUMBER_NUMBER, ptr, ptr);
   mapping_string_insert(exported_symbols, str, &s);
   free_string(str);
 }
@@ -645,7 +643,7 @@ PMOD_EXPORT void *pike_module_import_symbol(const char *name,
     if(s)
     {
 #ifdef PIKE_DEBUG
-      if (s->type != T_INT || s->subtype != NUMBER_NUMBER)
+      if (TYPEOF(*s) != T_INT || SUBTYPEOF(*s) != NUMBER_NUMBER)
 	Pike_fatal("Unexpected value in exported_symbols.\n");
 #endif
       free_string(str);
@@ -665,7 +663,7 @@ PMOD_EXPORT void *pike_module_import_symbol(const char *name,
     if(s)
     {
 #ifdef PIKE_DEBUG
-      if (s->type != T_INT || s->subtype != NUMBER_NUMBER)
+      if (TYPEOF(*s) != T_INT || SUBTYPEOF(*s) != NUMBER_NUMBER)
 	Pike_fatal("Unexpected value in exported_symbols.\n");
 #endif
       free_string(str);

@@ -147,8 +147,18 @@ PMOD_EXPORT void debug_malloc_dump_references(void *x, int indent, int depth, in
 #define dmalloc_touch(TYPE,X) ((TYPE) debug_malloc_pass (X))
 #define dmalloc_touch_named(TYPE,X,NAME) ((TYPE) debug_malloc_pass_named (X, NAME))
 void debug_malloc_dump_fd(int fd);
-#define dmalloc_touch_svalue(X) do { const struct svalue *_tmp = (X); if (_tmp->type <= MAX_REF_TYPE) { debug_malloc_touch(_tmp->u.refs); } } while(0)
-#define dmalloc_touch_svalue_named(X,NAME) do { const struct svalue *_tmp = (X); if (_tmp->type <= MAX_REF_TYPE) { debug_malloc_touch_named(_tmp->u.refs,NAME); } } while(0)
+#define dmalloc_touch_svalue(X) do {		\
+    const struct svalue *_tmp = (X);		\
+    if (TYPEOF(*_tmp) <= MAX_REF_TYPE) {	\
+      debug_malloc_touch(_tmp->u.refs);		\
+    }						\
+  } while(0)
+#define dmalloc_touch_svalue_named(X,NAME) do {		\
+    const struct svalue *_tmp = (X);			\
+    if (TYPEOF(*_tmp) <= MAX_REF_TYPE) {		\
+      debug_malloc_touch_named(_tmp->u.refs,NAME);	\
+    }							\
+  } while(0)
 
 #define DMALLOC_LINE_ARGS ,char * dmalloc_location
 #define DMALLOC_POS ,DMALLOC_LOCATION()

@@ -131,7 +131,7 @@ static void gmp_reduce_stack_top_bignum (void)
 {
   struct object *o;
 #ifdef PIKE_DEBUG
-  if (sp[-1].type != T_OBJECT || sp[-1].u.object->prog != bignum_program)
+  if (TYPEOF(sp[-1]) != T_OBJECT || sp[-1].u.object->prog != bignum_program)
     Pike_fatal ("Not a Gmp.bignum.\n");
 #endif
   o = (--sp)->u.object;
@@ -436,7 +436,7 @@ void get_mpz_from_digits(MP_INT *tmp,
 int get_new_mpz(MP_INT *tmp, struct svalue *s,
 		int throw_error, const char *arg_func, int arg, int args)
 {
-  switch(s->type)
+  switch(TYPEOF(*s))
   {
   case T_INT:
 #ifndef BIG_PIKE_INT
@@ -512,8 +512,8 @@ int get_new_mpz(MP_INT *tmp, struct svalue *s,
 
   case T_ARRAY:   /* Experimental */
     if ( (s->u.array->size != 2)
-	 || (ITEM(s->u.array)[0].type != T_STRING)
-	 || (ITEM(s->u.array)[1].type != T_INT))
+	 || (TYPEOF(ITEM(s->u.array)[0]) != T_STRING)
+	 || (TYPEOF(ITEM(s->u.array)[1]) != T_INT))
       Pike_error("Cannot convert array to Gmp.mpz.\n");
     get_mpz_from_digits(tmp, ITEM(s->u.array)[0].u.string,
 			ITEM(s->u.array)[1]);
@@ -540,8 +540,7 @@ MP_INT *debug_get_mpz(struct svalue *s,
   if (get_new_mpz (OBTOMPZ (o), s, throw_error, arg_func, arg, args)) {
     UNSET_ONERROR (uwp);
     free_svalue(s);
-    s->u.object=o;
-    s->type=T_OBJECT;
+    SET_SVAL(*s, T_OBJECT, 0, object, o);
     return OBTOMPZ (o);
   }
   else {
@@ -578,17 +577,17 @@ static void mpzmod_create(INT32 args)
   switch(args)
   {
   case 1:
-    if(sp[-args].type == T_STRING)
+    if(TYPEOF(sp[-args]) == T_STRING)
       get_mpz_from_digits(THIS, sp[-args].u.string, 0);
     else
       get_new_mpz(THIS, sp-args, 1, "Gmp.mpz", 1, args);
     break;
 
   case 2: /* Args are string of digits and integer base */
-    if(sp[-args].type != T_STRING)
+    if(TYPEOF(sp[-args]) != T_STRING)
       SIMPLE_ARG_TYPE_ERROR ("Gmp.mpz", 1, "string");
 
-    if (sp[1-args].type != T_INT)
+    if (TYPEOF(sp[1-args]) != T_INT)
       SIMPLE_ARG_TYPE_ERROR ("Gmp.mpz", 2, "int");
 
     get_mpz_from_digits(THIS, sp[-args].u.string, sp[1-args].u.integer);
@@ -608,7 +607,7 @@ static void mpzmod_get_int(INT32 args)
 #ifdef AUTO_BIGNUM
   add_ref(fp->current_object);
   mpzmod_reduce(fp->current_object);
-  if( Pike_sp[-1].type == T_OBJECT &&
+  if( TYPEOF(Pike_sp[-1]) == T_OBJECT &&
       Pike_sp[-1].u.object->prog != bignum_program )
   {
     apply_svalue(&auto_bignum_program, 1);
@@ -778,7 +777,7 @@ static void mpzmod_digits(INT32 args)
   }
   else
   {
-    if (sp[-args].type != T_INT)
+    if (TYPEOF(sp[-args]) != T_INT)
       SIMPLE_ARG_TYPE_ERROR ("Gmp.mpz->digits", 1, "int");
     base = sp[-args].u.integer;
   }
@@ -801,15 +800,15 @@ static void mpzmod__sprintf(INT32 args)
   
   if(args < 2)
     SIMPLE_TOO_FEW_ARGS_ERROR("Gmp.mpz->_sprintf", 2);
-  if(sp[-args].type != T_INT)
+  if(TYPEOF(sp[-args]) != T_INT)
     SIMPLE_ARG_TYPE_ERROR ("Gmp.mpz->_sprintf", 1, "int");
-  if(sp[1-args].type != T_MAPPING)
+  if(TYPEOF(sp[1-args]) != T_MAPPING)
     SIMPLE_ARG_TYPE_ERROR ("Gmp.mpz->_sprintf", 2, "mapping");
 
   push_svalue(&sp[1-args]);
   push_constant_text("precision");
   f_index(2);
-  if(sp[-1].type != T_INT)
+  if(TYPEOF(sp[-1]) != T_INT)
     SIMPLE_ARG_ERROR ("Gmp.mpz->_sprintf", 2,
 		      "The field \"precision\" doesn't hold an integer.");
   precision = (--sp)->u.integer;
@@ -817,16 +816,16 @@ static void mpzmod__sprintf(INT32 args)
   push_svalue(&sp[1-args]);
   push_constant_text("width");
   f_index(2);
-  if(sp[-1].type != T_INT)
+  if(TYPEOF(sp[-1]) != T_INT)
     SIMPLE_ARG_ERROR ("Gmp.mpz->_sprintf", 2,
 		      "The field \"width\" doesn't hold an integer.");
-  width_undecided = ((sp-1)->subtype != NUMBER_NUMBER);
+  width_undecided = (SUBTYPEOF(sp[-1]) != NUMBER_NUMBER);
   width = (--sp)->u.integer;
 
   push_svalue(&sp[1-args]);
   push_constant_text("flag_left");
   f_index(2);
-  if(sp[-1].type != T_INT)
+  if(TYPEOF(sp[-1]) != T_INT)
     SIMPLE_ARG_ERROR ("Gmp.mpz->_sprintf", 2,
 		      "The field \"flag_left\" doesn't hold an integer.");
   flag_left=sp[-1].u.integer;
@@ -979,8 +978,7 @@ static void mpzmod__sprintf(INT32 args)
       f_upper_case(1);
     }
   } else {
-    push_int(0);   /* Push false? */
-    sp[-1].subtype = 1;
+    push_undefined();
   }
 }
 
@@ -990,7 +988,7 @@ static void mpzmod__is_type(INT32 args)
 {
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("Gmp.mpz->_is_type", 1);
-  if(sp[-args].type != T_STRING)
+  if(TYPEOF(sp[-args]) != T_STRING)
     SIMPLE_ARG_TYPE_ERROR ("Gmp.mpz->_is_type", 1, "string");
 
   pop_n_elems(args-1);
@@ -1013,7 +1011,7 @@ static void mpzmod_size(INT32 args)
   }
   else
   {
-    if (sp[-args].type != T_INT)
+    if (TYPEOF(sp[-args]) != T_INT)
       SIMPLE_ARG_TYPE_ERROR ("Gmp.mpz->size", 1, "int");
     base = sp[-args].u.integer;
     if ((base != 256) && ((base < 2) || (base > 36)))
@@ -1041,7 +1039,7 @@ static void mpzmod_cast(INT32 args)
 
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("Gmp.mpz->cast", 1);
-  if(sp[-args].type != T_STRING)
+  if(TYPEOF(sp[-args]) != T_STRING)
     SIMPLE_ARG_TYPE_ERROR ("Gmp.mpz->cast", 1, "string");
 
   s = sp[-args].u.string;
@@ -1128,7 +1126,7 @@ static void return_temporary(INT32 args)
 #define DO_IF_AUTO_BIGNUM(X) X
 double double_from_sval(struct svalue *s)
 {
-  switch(s->type)
+  switch(TYPEOF(*s))
   {
     case T_INT: return (double)s->u.integer;
     case T_FLOAT: return (double)s->u.float_number;
@@ -1157,7 +1155,7 @@ static void name(INT32 args)						\
     double ret;								\
     for(e=0; e<args; e++)						\
     {									\
-      switch(sp[e-args].type)						\
+      switch(TYPEOF(sp[e-args]))					\
       {									\
       case T_OBJECT:							\
 	{								\
@@ -1165,7 +1163,7 @@ static void name(INT32 args)						\
 	  struct program *p = NULL;					\
 	  int fun = -1;							\
 	  if (o->prog &&						\
-	      ((p = o->prog->inherits[sp[e-args].subtype].prog) !=	\
+	      ((p = o->prog->inherits[SUBTYPEOF(sp[e-args])].prog) !=	\
 	       bignum_program) &&					\
 	      ((fun = FIND_LFUN(p, PIKE_CONCAT(LFUN_R, LFUN))) !=	\
 	       -1)) {							\
@@ -1175,9 +1173,9 @@ static void name(INT32 args)						\
 	    Pike_sp++;							\
 	    args++;							\
 	    e++;							\
-	    Pike_sp[-args].type = T_OBJECT;				\
-	    Pike_sp[-args].subtype = 0; /* FIXME? */			\
-	    add_ref(Pike_sp[-args].u.object = Pike_fp->current_object);	\
+	    SET_SVAL(Pike_sp[-args], T_OBJECT, 0 /* FIXME? */, object,	\
+		     Pike_fp->current_object);				\
+	    add_ref(Pike_fp->current_object);				\
 	    args = low_rop(o, fun, e, args);				\
 	    if (args > 1) {						\
 	      f_op(args);						\
@@ -1198,21 +1196,21 @@ static void name(INT32 args)						\
        case T_STRING:                                                   \
         MEMMOVE(sp-args+1, sp-args, sizeof(struct svalue)*args);        \
         sp++; args++;                                                   \
-	sp[-args].type=PIKE_T_FREE;					\
-        sp[-args].u.string=low_get_mpz_digits(THIS, 10);                \
-        sp[-args].type=T_STRING;                                        \
+        SET_SVAL_TYPE(sp[-args], PIKE_T_FREE);				\
+        SET_SVAL(sp[-args], T_STRING, 0, string,			\
+		 low_get_mpz_digits(THIS, 10));				\
         f_add(args);                                                    \
 	return; )							\
       }									\
     }									\
   } )									\
   for(e=0; e<args; e++)							\
-    if(sp[e-args].type != T_INT || !FITS_ULONG (sp[e-args].u.integer))	\
+    if(TYPEOF(sp[e-args]) != T_INT || !FITS_ULONG (sp[e-args].u.integer)) \
       get_mpz(sp+e-args, 1, "Gmp.mpz->`" errmsg_op, e + 1, args);	\
   res = fast_clone_object(THIS_PROGRAM);				\
   mpz_set(OBTOMPZ(res), THIS);						\
   for(e=0;e<args;e++)							\
-    if(sp[e-args].type != T_INT)					\
+    if(TYPEOF(sp[e-args]) != T_INT)					\
       fun(OBTOMPZ(res), OBTOMPZ(res), OBTOMPZ(sp[e-args].u.object));	\
     else								\
       PIKE_CONCAT(fun,_ui)(OBTOMPZ(res), OBTOMPZ(res),			\
@@ -1233,7 +1231,7 @@ static void PIKE_CONCAT(name,_rhs)(INT32 args)				\
     double ret;								\
     for(e=0; e<args; e++)						\
     {									\
-      switch(sp[e-args].type)						\
+      switch(TYPEOF(sp[e-args]))					\
       {									\
        case T_FLOAT:                                                    \
 	ret=mpz_get_d(THIS);						\
@@ -1251,12 +1249,12 @@ static void PIKE_CONCAT(name,_rhs)(INT32 args)				\
     }									\
   } )									\
   for(e=0; e<args; e++)							\
-    if(sp[e-args].type != T_INT || !FITS_ULONG (sp[e-args].u.integer))	\
+    if(TYPEOF(sp[e-args]) != T_INT || !FITS_ULONG (sp[e-args].u.integer)) \
       get_mpz(sp+e-args, 1, "Gmp.mpz->``" errmsg_op, e + 1, args);	\
   res = fast_clone_object(THIS_PROGRAM);				\
   mpz_set(OBTOMPZ(res), THIS);						\
   for(e=0;e<args;e++)							\
-    if(sp[e-args].type != T_INT)					\
+    if(TYPEOF(sp[e-args]) != T_INT)					\
       fun(OBTOMPZ(res), OBTOMPZ(res), OBTOMPZ(sp[e-args].u.object));	\
     else								\
       PIKE_CONCAT(fun,_ui)(OBTOMPZ(res), OBTOMPZ(res),			\
@@ -1276,7 +1274,7 @@ static void PIKE_CONCAT(name,_eq)(INT32 args)				\
     double ret;								\
     for(e=0; e<args; e++)						\
     {									\
-      switch(sp[e-args].type)						\
+      switch(TYPEOF(sp[e-args]))					\
       {									\
        case T_FLOAT:                                                    \
 	ret=mpz_get_d(THIS);						\
@@ -1289,19 +1287,19 @@ static void PIKE_CONCAT(name,_eq)(INT32 args)				\
        case T_STRING:                                                   \
         MEMMOVE(sp-args+1, sp-args, sizeof(struct svalue)*args);        \
         sp++; args++;                                                   \
-	sp[-args].type=PIKE_T_FREE;					\
-        sp[-args].u.string=low_get_mpz_digits(THIS, 10);                \
-        sp[-args].type=T_STRING;                                        \
+	SET_SVAL_TYPE(sp[-args], PIKE_T_FREE);				\
+        SET_SVAL(sp[-args], T_STRING, 0, string,			\
+		 low_get_mpz_digits(THIS, 10));				\
         f_add(args);                                                    \
 	return;								\
       }									\
     }									\
   } )									\
   for(e=0; e<args; e++)							\
-    if(sp[e-args].type != T_INT || !FITS_ULONG (sp[e-args].u.integer))	\
+    if(TYPEOF(sp[e-args]) != T_INT || !FITS_ULONG (sp[e-args].u.integer)) \
      get_mpz(sp+e-args, 1, "Gmp.mpz->`" errmsg_op "=", e + 1, args);	\
   for(e=0;e<args;e++)							\
-    if(sp[e-args].type != T_INT)					\
+    if(TYPEOF(sp[e-args]) != T_INT)					\
       fun(THIS, THIS, OBTOMPZ(sp[e-args].u.object));			\
     else								\
       PIKE_CONCAT(fun,_ui)(THIS,THIS, sp[e-args].u.integer);		\
@@ -1340,13 +1338,13 @@ static void mpzmod_gcd(INT32 args)
   INT32 e;
   struct object *res;
   for(e=0; e<args; e++)
-   if(sp[e-args].type != T_INT || sp[e-args].u.integer<=0)
-     get_mpz(sp+e-args, 1, "Gmp.mpz->gcd", e + 1, args);
+    if(TYPEOF(sp[e-args]) != T_INT || sp[e-args].u.integer<=0)
+      get_mpz(sp+e-args, 1, "Gmp.mpz->gcd", e + 1, args);
   res = fast_clone_object(THIS_PROGRAM);
   mpz_set(OBTOMPZ(res), THIS);
   for(e=0;e<args;e++)
-    if(sp[e-args].type != T_INT)
-     mpz_gcd(OBTOMPZ(res), OBTOMPZ(res), OBTOMPZ(sp[e-args].u.object));
+    if(TYPEOF(sp[e-args]) != T_INT)
+      mpz_gcd(OBTOMPZ(res), OBTOMPZ(res), OBTOMPZ(sp[e-args].u.object));
     else
       mpz_gcd_ui(OBTOMPZ(res), OBTOMPZ(res),sp[e-args].u.integer);
 
@@ -1408,7 +1406,7 @@ static void mpzmod_div(INT32 args)
   
   for(e=0;e<args;e++)
   {
-    if(sp[e-args].type != T_INT || sp[e-args].u.integer<=0)
+    if(TYPEOF(sp[e-args]) != T_INT || sp[e-args].u.integer<=0)
       if (!mpz_sgn(get_mpz(sp+e-args, 1, "Gmp.mpz->`/", e + 1, args)))
 	SIMPLE_DIVISION_BY_ZERO_ERROR ("Gmp.mpz->`/");
   }
@@ -1417,7 +1415,7 @@ static void mpzmod_div(INT32 args)
   mpz_set(OBTOMPZ(res), THIS);
   for(e=0;e<args;e++)	
   {
-    if(sp[e-args].type == T_INT)
+    if(TYPEOF(sp[e-args]) == T_INT)
 #ifdef BIG_PIKE_INT
     {
        INT_TYPE i=sp[e-args].u.integer;
@@ -1759,7 +1757,7 @@ static void mpzmod_probably_prime_p(INT32 args)
   INT_TYPE count;
   if (args)
   {
-    if (sp[-args].type != T_INT)
+    if (TYPEOF(sp[-args]) != T_INT)
       SIMPLE_ARG_TYPE_ERROR ("Gmp.mpz->probably_prime_p", 1, "int");
     count = sp[-args].u.integer;
     if (count <= 0)
@@ -1779,7 +1777,7 @@ static void mpzmod_small_factor(INT32 args)
 
   if (args)
     {
-      if (sp[-args].type != T_INT)
+      if (TYPEOF(sp[-args]) != T_INT)
 	SIMPLE_ARG_TYPE_ERROR ("Gmp.mpz->small_factor", 1, "int");
       limit = sp[-args].u.integer;
       if (limit < 1)
@@ -1871,7 +1869,7 @@ static void mpzmod_lsh(INT32 args)
   if (args != 1)
     SIMPLE_WRONG_NUM_ARGS_ERROR ("Gmp.mpz->`<<", 1);
 
-  if(sp[-1].type == T_INT) {
+  if(TYPEOF(sp[-1]) == T_INT) {
     if(sp[-1].u.integer < 0)
       SIMPLE_ARG_ERROR ("Gmp.mpz->`<<", 1, "Got negative shift count.");
 #ifdef BIG_PIKE_INT
@@ -1913,7 +1911,7 @@ static void mpzmod_rsh(INT32 args)
   if (args != 1)
     SIMPLE_WRONG_NUM_ARGS_ERROR ("Gmp.mpz->`>>", 1);
 
-  if(sp[-1].type == T_INT)
+  if(TYPEOF(sp[-1]) == T_INT)
   {
      if (sp[-1].u.integer < 0)
        SIMPLE_ARG_ERROR ("Gmp.mpz->`>>", 1, "Got negative shift count.");
@@ -2050,7 +2048,7 @@ static void mpzmod_pow(INT32 args)
   
   if (args != 1)
     SIMPLE_WRONG_NUM_ARGS_ERROR ("Gmp.mpz->pow", 1);
-  if (sp[-1].type == T_INT) {
+  if (TYPEOF(sp[-1]) == T_INT) {
     if (sp[-1].u.integer < 0)
       SIMPLE_ARG_ERROR ("Gmp.mpz->pow", 1, "Negative exponent.");
     /* Cut off at 1 MB. */
@@ -2158,7 +2156,7 @@ static void mpzmod_random(INT32 args)
   /* We add four to assure reasonably uniform randomness */
   push_int(mpz_size(THIS)*sizeof(mp_limb_t) + 4);
   f_random_string(1);
-  if (sp[-1].type != T_STRING) {
+  if (TYPEOF(sp[-1]) != T_STRING) {
     Pike_error("random_string(%ld) returned non string.\n",
 	       mpz_size(THIS)*sizeof(mp_limb_t) + 4);
   }
@@ -2204,7 +2202,7 @@ static void gmp_fac(INT32 args)
   struct object *res = NULL;
   if (args != 1)
     Pike_error("Gmp.fac: Wrong number of arguments.\n");
-  if (sp[-1].type != T_INT)
+  if (TYPEOF(sp[-1]) != T_INT)
     SIMPLE_ARG_TYPE_ERROR ("Gmp.fac", 1, "int");
   if (sp[-1].u.integer < 0)
     SIMPLE_ARG_ERROR ("Gmp.fac", 1, "Got negative exponent.");
@@ -2259,7 +2257,7 @@ PIKE_MODULE_EXIT
   {
     extern struct svalue auto_bignum_program;
     free_svalue(&auto_bignum_program);
-    auto_bignum_program.type=PIKE_T_FREE;
+    SET_SVAL_TYPE(auto_bignum_program, PIKE_T_FREE);
     if(bignum_program)
     {
       free_program(bignum_program);
@@ -2489,13 +2487,13 @@ PIKE_MODULE_INIT
     
     /* Magic hook in... */
 #ifdef PIKE_DEBUG
-    if (auto_bignum_program.type <= MAX_REF_TYPE) {
+    if (TYPEOF(auto_bignum_program) <= MAX_REF_TYPE) {
       Pike_fatal("Strange initial value for auto_bignum_program\n");
     }
 #endif /* PIKE_DEBUG */
     free_svalue(&auto_bignum_program);
-    add_ref(auto_bignum_program.u.program = bignum_program);
-    auto_bignum_program.type = PIKE_T_PROGRAM;
+    SET_SVAL(auto_bignum_program, PIKE_T_PROGRAM, 0, program, bignum_program);
+    add_ref(bignum_program);
 
 #ifdef INT64
     mpz_init (mpz_int64_min);

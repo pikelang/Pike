@@ -67,9 +67,7 @@ PIKECLASS Context
 
     /* Hide the password from backtraces. */
     Pike_sp[0] = Pike_sp[1-args];
-    Pike_sp[1-args].type = PIKE_T_INT;
-    Pike_sp[1-args].subtype = NUMBER_UNDEFINED;
-    Pike_sp[1-args].u.integer = 0;
+    SET_SVAL(Pike_sp[1-args], PIKE_T_INT, NUMBER_UNDEFINED, integer, 0);
     Pike_sp++;
     args++;
 

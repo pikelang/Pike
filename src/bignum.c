@@ -26,7 +26,7 @@ PMOD_EXPORT struct program *get_auto_bignum_program(void)
 
 PMOD_EXPORT struct program *get_auto_bignum_program_or_zero(void)
 {
-  if (auto_bignum_program.type == PIKE_T_FREE)
+  if (TYPEOF(auto_bignum_program) == PIKE_T_FREE)
     return 0;
   return program_from_function(&auto_bignum_program);
 }
@@ -39,14 +39,14 @@ void exit_auto_bignum(void)
 
 PMOD_EXPORT void convert_stack_top_to_bignum(void)
 {
-  if (auto_bignum_program.type!=T_PROGRAM)
+  if (TYPEOF(auto_bignum_program) != T_PROGRAM)
     Pike_error("Gmp.mpz conversion failed (Gmp.bignum not loaded).\n");
   apply_svalue(&auto_bignum_program, 1);
 }
 
 PMOD_EXPORT void convert_stack_top_with_base_to_bignum(void)
 {
-  if (auto_bignum_program.type!=T_PROGRAM)
+  if (TYPEOF(auto_bignum_program) != T_PROGRAM)
     Pike_error("Gmp.mpz conversion failed (Gmp.bignum not loaded).\n");
   apply_svalue(&auto_bignum_program, 2);
 }
@@ -59,7 +59,7 @@ int is_bignum_object(struct object *o)
    * /Hubbe
    */
 
-  if (auto_bignum_program.type == T_INT)
+  if (TYPEOF(auto_bignum_program) == T_INT)
     return 0; /* not possible */
  
   return o->prog == program_from_svalue(&auto_bignum_program);
@@ -68,7 +68,7 @@ int is_bignum_object(struct object *o)
 PMOD_EXPORT int is_bignum_object_in_svalue(struct svalue *sv)
 {
   /* FIXME: object subtype? */
-  return sv->type == T_OBJECT && is_bignum_object(sv->u.object);
+  return TYPEOF(*sv) == T_OBJECT && is_bignum_object(sv->u.object);
 }
 
 PMOD_EXPORT struct object *make_bignum_object(void)
@@ -91,7 +91,7 @@ PMOD_EXPORT struct pike_string *string_from_bignum(struct object *o, int base)
   push_int(base);
   safe_apply(o, "digits", 1);
   
-  if(sp[-1].type != T_STRING)
+  if(TYPEOF(sp[-1]) != T_STRING)
     Pike_error("Gmp.mpz string conversion failed.\n");
   
   dmalloc_touch_svalue(sp-1);

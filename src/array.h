@@ -277,7 +277,7 @@ PMOD_EXPORT struct array *implode_array(struct array *a, struct array *b);
       AGGR_ARR_CHECK (base_sval, 0);					\
     if (base_sval[-1].u.array->type_field & BIT_UNFINISHED)		\
       array_fix_type_field(Pike_sp[-1].u.array);			\
-    DO_IF_DEBUG(if (Pike_sp[-1].type != T_ARRAY) {			\
+    DO_IF_DEBUG(if (TYPEOF(Pike_sp[-1]) != T_ARRAY) {			\
 	Pike_fatal("Lost track of aggregated array.\n");		\
       });								\
   } while (0)
@@ -328,7 +328,7 @@ PMOD_EXPORT struct array *implode_array(struct array *a, struct array *b);
 									 \
   check_destructed(s_);							 \
 									 \
-  v_->type_field |= 1 << s_->type;					 \
+  v_->type_field |= 1 << TYPEOF(*s_);					 \
   assign_svalue_no_free( ITEM(v_) + index_, s_);			 \
 }while(0)
 #define array_set_index(V,I,S) do {					\
@@ -343,7 +343,7 @@ PMOD_EXPORT struct array *implode_array(struct array *a, struct array *b);
 									 \
   check_destructed(s_);							 \
 									 \
-  v_->type_field |= 1 << s_->type;					 \
+  v_->type_field |= 1 << TYPEOF(*s_);					 \
   assign_svalue( ITEM(v_) + index_, s_);				\
 }while(0)
 

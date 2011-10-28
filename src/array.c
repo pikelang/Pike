@@ -243,7 +243,7 @@ PMOD_EXPORT struct array *array_column (struct array *data, struct svalue *index
     for(e=0;e<data->size;e++)
     {
       index_no_free(&sval, ITEM(data)+e, index);
-      types |= 1 << sval.type;
+      types |= 1 << TYPEOF(sval);
       free_svalue(ITEM(data)+e);
       move_svalue (ITEM(data) + e, &sval);
     }
@@ -261,7 +261,7 @@ PMOD_EXPORT struct array *array_column (struct array *data, struct svalue *index
 
     for(e=0;e<a->size;e++) {
       index_no_free(ITEM(a)+e, ITEM(data)+e, index);
-      types |= 1 << ITEM(a)[e].type;
+      types |= 1 << TYPEOF(ITEM(a)[e]);
     }
     a->type_field = types;
 
@@ -276,15 +276,14 @@ PMOD_EXPORT struct array *array_column (struct array *data, struct svalue *index
 PMOD_EXPORT void simple_array_index_no_free(struct svalue *s,
 				struct array *a,struct svalue *ind)
 {
-  switch(ind->type)
+  switch(TYPEOF(*ind))
   {
     case T_INT: {
       INT_TYPE p = ind->u.integer;
       INT_TYPE i = p < 0 ? p + a->size : p;
       if(i<0 || i>=a->size) {
 	struct svalue tmp;
-	tmp.type=T_ARRAY;
-	tmp.u.array=a;
+	SET_SVAL(tmp, T_ARRAY, 0, array, a);
 	if (a->size) {
 	  index_error(0,0,0,&tmp,ind,
 		      "Index %"PRINTPIKEINT"d is out of array range "
@@ -300,18 +299,14 @@ PMOD_EXPORT void simple_array_index_no_free(struct svalue *s,
 
     case T_STRING:
     {
-      /* Set the type afterwards to avoid a clobbered svalue in case
-       * array_column throws. */
-      s->u.array = array_column (a, ind, 0);
-      s->type = T_ARRAY;
+      SET_SVAL(*s, T_ARRAY, 0, array, array_column(a, ind, 0));
       break;
     }
 	
     default:
       {
 	struct svalue tmp;
-	tmp.type=T_ARRAY;
-	tmp.u.array=a;
+	SET_SVAL(tmp, T_ARRAY, 0, array, a);
 	index_error(0,0,0,&tmp,ind,"Array index is neither int nor string.\n");
       }
   }
@@ -338,7 +333,7 @@ PMOD_EXPORT void array_free_index(struct array *v,INT32 index)
  */
 PMOD_EXPORT void simple_set_index(struct array *a,struct svalue *ind,struct svalue *s)
 {
-  switch (ind->type) {
+  switch (TYPEOF(*ind)) {
     case T_INT: {
       INT_TYPE p = ind->u.integer;
       INT_TYPE i = p < 0 ? p + a->size : p;
@@ -371,8 +366,7 @@ PMOD_EXPORT void simple_set_index(struct array *a,struct svalue *ind,struct sval
     default:
     {
       struct svalue tmp;
-      tmp.type=T_ARRAY;
-      tmp.u.array=a;
+      SET_SVAL(tmp, T_ARRAY, 0, array, a);
       index_error(0,0,0,&tmp,ind,"Array index is neither int nor string.\n");
     }
   }
@@ -424,7 +418,7 @@ PMOD_EXPORT struct array *array_insert(struct array *v,struct svalue *s,INT32 in
       int e = v->size;
       struct svalue *s = ITEM(ret);
       while (e--) {
-	if (s->type <= MAX_REF_TYPE) add_ref(s->u.dummy);
+	if (TYPEOF(*s) <= MAX_REF_TYPE) add_ref(s->u.dummy);
 	s++;
       }
     }
@@ -455,7 +449,7 @@ void o_append_array(INT32 args)
   /* Note: val should always be a zero here! */
   lvalue_to_svalue_no_free(val, lval);
 
-  if (val->type == T_ARRAY) {
+  if (TYPEOF(*val) == T_ARRAY) {
     struct svalue tmp;
     struct array *v = val->u.array;
     /* This is so that we can minimize the number of references
@@ -465,9 +459,7 @@ void o_append_array(INT32 args)
      * are lucky, and then the low array manipulation routines can
      * be destructive if they like.
      */
-    tmp.type=PIKE_T_INT;
-    tmp.subtype=NUMBER_NUMBER;
-    tmp.u.integer=0;
+    SET_SVAL(tmp, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
     assign_lvalue(lval, &tmp);
 
     if (args == 1) {
@@ -494,13 +486,13 @@ void o_append_array(INT32 args)
     struct program *p;
     /* Fall back to aggregate(). */
     f_aggregate(args);
-    if ((val->type == T_OBJECT) &&
+    if ((TYPEOF(*val) == T_OBJECT) &&
 	/* One ref in the lvalue, and one on the stack. */
 	((o = val->u.object)->refs <= 2) &&
 	(p = o->prog) &&
-	(i = FIND_LFUN(p->inherits[Pike_sp[-2].subtype].prog,
+	(i = FIND_LFUN(p->inherits[SUBTYPEOF(Pike_sp[-2])].prog,
 		       LFUN_ADD_EQ)) != -1) {
-      apply_low(o, i + p->inherits[Pike_sp[-2].subtype].identifier_level, 1);
+      apply_low(o, i + p->inherits[SUBTYPEOF(Pike_sp[-2])].identifier_level, 1);
       /* NB: The lvalue already contains the object, so
        *     no need to reassign it.
        */
@@ -585,9 +577,7 @@ PMOD_EXPORT struct array *resize_array(struct array *a, INT32 size)
     {
       for(;a->size < size; a->size++)
       {
-	ITEM(a)[a->size].type=T_INT;
-	ITEM(a)[a->size].subtype=NUMBER_NUMBER;
-	ITEM(a)[a->size].u.integer=0;
+	SET_SVAL(ITEM(a)[a->size], T_INT, NUMBER_NUMBER, integer, 0);
       }
       a->type_field |= BIT_INT;
       return a;
@@ -683,9 +673,9 @@ PMOD_EXPORT ptrdiff_t array_search(struct array *v, struct svalue *s,
    * however, we must explicitly check for searches
    * for destructed objects/functions
    */
-  if((v->type_field & (1 << s->type))  ||
+  if((v->type_field & (1 << TYPEOF(*s)))  ||
      (UNSAFE_IS_ZERO(s) && (v->type_field & (BIT_FUNCTION|BIT_OBJECT))) ||
-     ( (v->type_field | (1<<s->type))  & BIT_OBJECT )) /* for overloading */
+     ( (v->type_field | (1<<TYPEOF(*s)))  & BIT_OBJECT )) /* for overloading */
   {
     if(start)
     {
@@ -696,7 +686,7 @@ PMOD_EXPORT ptrdiff_t array_search(struct array *v, struct svalue *s,
       for(e=0;e<v->size;e++)
       {
 	if(is_eq(ITEM(v)+e,s)) return e;
-	t |= 1<<ITEM(v)[e].type;
+	t |= 1<<TYPEOF(ITEM(v)[e]);
       }
       v->type_field=t;
     }
@@ -814,19 +804,17 @@ PMOD_EXPORT void check_array_for_destruct(struct array *v)
   {
     for(e=0; e<v->size; e++)
     {
-      if((ITEM(v)[e].type == T_OBJECT ||
-	  (ITEM(v)[e].type == T_FUNCTION &&
-	   ITEM(v)[e].subtype!=FUNCTION_BUILTIN)) &&
+      if((TYPEOF(ITEM(v)[e]) == T_OBJECT ||
+	  (TYPEOF(ITEM(v)[e]) == T_FUNCTION &&
+	   SUBTYPEOF(ITEM(v)[e]) != FUNCTION_BUILTIN)) &&
 	 (!ITEM(v)[e].u.object->prog))
       {
 	free_svalue(ITEM(v)+e);
-	ITEM(v)[e].type=T_INT;
-	ITEM(v)[e].subtype=NUMBER_DESTRUCTED;
-	ITEM(v)[e].u.integer=0;
+	SET_SVAL(ITEM(v)[e], T_INT, NUMBER_DESTRUCTED, integer, 0);
 
 	types |= BIT_INT;
       }else{
-	types |= 1<<ITEM(v)[e].type;
+	types |= 1<<TYPEOF(ITEM(v)[e]);
       }
     }
     v->type_field = types;
@@ -850,12 +838,12 @@ PMOD_EXPORT INT32 array_find_destructed_object(struct array *v)
     types=0;
     for(e=0; e<v->size; e++)
     {
-      if((ITEM(v)[e].type == T_OBJECT ||
-	  (ITEM(v)[e].type == T_FUNCTION &&
-	   ITEM(v)[e].subtype!=FUNCTION_BUILTIN)) &&
+      if((TYPEOF(ITEM(v)[e]) == T_OBJECT ||
+	  (TYPEOF(ITEM(v)[e]) == T_FUNCTION &&
+	   SUBTYPEOF(ITEM(v)[e]) != FUNCTION_BUILTIN)) &&
 	 (!ITEM(v)[e].u.object->prog))
 	return e;
-      types |= 1<<ITEM(v)[e].type;
+      types |= 1<<TYPEOF(ITEM(v)[e]);
     }
     v->type_field = types;
   }
@@ -918,11 +906,11 @@ static int lfun_cmp (const struct svalue *a, const struct svalue *b)
   struct program *p;
   int default_res = -CMPFUN_UNORDERED, fun;
 
-  if (a->type == T_OBJECT && (p = a->u.object->prog)) {
-    if ((fun = FIND_LFUN(p->inherits[a->subtype].prog, LFUN_LT)) != -1) {
+  if (TYPEOF(*a) == T_OBJECT && (p = a->u.object->prog)) {
+    if ((fun = FIND_LFUN(p->inherits[SUBTYPEOF(*a)].prog, LFUN_LT)) != -1) {
       push_svalue(b);
       apply_low(a->u.object,
-		fun + p->inherits[a->subtype].identifier_level, 1);
+		fun + p->inherits[SUBTYPEOF(*a)].identifier_level, 1);
       if(!UNSAFE_IS_ZERO(Pike_sp-1))
       {
 	pop_stack();
@@ -932,10 +920,10 @@ static int lfun_cmp (const struct svalue *a, const struct svalue *b)
       default_res = CMPFUN_UNORDERED;
     }
 
-    if ((fun = FIND_LFUN(p->inherits[a->subtype].prog, LFUN_GT)) != -1) {
+    if ((fun = FIND_LFUN(p->inherits[SUBTYPEOF(*a)].prog, LFUN_GT)) != -1) {
       push_svalue(b);
       apply_low(a->u.object,
-		fun + p->inherits[a->subtype].identifier_level, 1);
+		fun + p->inherits[SUBTYPEOF(*a)].identifier_level, 1);
       if(!UNSAFE_IS_ZERO(Pike_sp-1))
       {
 	pop_stack();
@@ -945,10 +933,10 @@ static int lfun_cmp (const struct svalue *a, const struct svalue *b)
       default_res = CMPFUN_UNORDERED;
     }
 
-    if ((fun = FIND_LFUN(p->inherits[a->subtype].prog, LFUN_EQ)) != -1) {
+    if ((fun = FIND_LFUN(p->inherits[SUBTYPEOF(*a)].prog, LFUN_EQ)) != -1) {
       push_svalue(b);
       apply_low(a->u.object,
-		fun + p->inherits[a->subtype].identifier_level, 1);
+		fun + p->inherits[SUBTYPEOF(*a)].identifier_level, 1);
       if (!UNSAFE_IS_ZERO(Pike_sp-1)) {
 	pop_stack();
 	return 0;
@@ -957,11 +945,11 @@ static int lfun_cmp (const struct svalue *a, const struct svalue *b)
     }
   }
 
-  if(b->type == T_OBJECT && (p = b->u.object->prog)) {
-    if ((fun = FIND_LFUN(p->inherits[b->subtype].prog, LFUN_LT)) != -1) {
+  if(TYPEOF(*b) == T_OBJECT && (p = b->u.object->prog)) {
+    if ((fun = FIND_LFUN(p->inherits[SUBTYPEOF(*b)].prog, LFUN_LT)) != -1) {
       push_svalue(a);
       apply_low(b->u.object,
-		fun + p->inherits[b->subtype].identifier_level, 1);
+		fun + p->inherits[SUBTYPEOF(*b)].identifier_level, 1);
       if(!UNSAFE_IS_ZERO(Pike_sp-1))
       {
 	pop_stack();
@@ -971,10 +959,10 @@ static int lfun_cmp (const struct svalue *a, const struct svalue *b)
       default_res = CMPFUN_UNORDERED;
     }
 
-    if ((fun = FIND_LFUN(p->inherits[b->subtype].prog, LFUN_GT)) != -1) {
+    if ((fun = FIND_LFUN(p->inherits[SUBTYPEOF(*b)].prog, LFUN_GT)) != -1) {
       push_svalue(a);
       apply_low(b->u.object,
-		fun + p->inherits[b->subtype].identifier_level, 1);
+		fun + p->inherits[SUBTYPEOF(*b)].identifier_level, 1);
       if(!UNSAFE_IS_ZERO(Pike_sp-1))
       {
 	pop_stack();
@@ -984,10 +972,10 @@ static int lfun_cmp (const struct svalue *a, const struct svalue *b)
       default_res = CMPFUN_UNORDERED;
     }
 
-    if ((fun = FIND_LFUN(p->inherits[b->subtype].prog, LFUN_EQ)) != -1) {
+    if ((fun = FIND_LFUN(p->inherits[SUBTYPEOF(*b)].prog, LFUN_EQ)) != -1) {
       push_svalue(a);
       apply_low(b->u.object,
-		fun + p->inherits[b->subtype].identifier_level, 1);
+		fun + p->inherits[SUBTYPEOF(*b)].identifier_level, 1);
       if (!UNSAFE_IS_ZERO(Pike_sp-1)) {
 	pop_stack();
 	return 0;
@@ -1005,11 +993,11 @@ static int obj_or_func_cmp (const struct svalue *a, const struct svalue *b)
   int a_subtype, b_subtype, res;
   struct svalue tmp_a, tmp_b;
 
-  assert ((a->type == T_OBJECT && b->type == T_OBJECT) ||
-	  (a->type == T_FUNCTION && b->type == T_FUNCTION));
+  assert ((TYPEOF(*a) == T_OBJECT && TYPEOF(*b) == T_OBJECT) ||
+	  (TYPEOF(*a) == T_FUNCTION && TYPEOF(*b) == T_FUNCTION));
 
   if (a->u.object == b->u.object)
-    return a->subtype - b->subtype;
+    return SUBTYPEOF(*a) - SUBTYPEOF(*b);
 
   /* Destructed objects are considered equal to each other, and
    * greater than others. That makes them sort close to real zeroes,
@@ -1019,42 +1007,38 @@ static int obj_or_func_cmp (const struct svalue *a, const struct svalue *b)
   else if (!b->u.object->prog)
     return -1;
 
-  if (a->type == T_FUNCTION) {
+  if (TYPEOF(*a) == T_FUNCTION) {
     /* Sort pike functions before builtins. */
-    if (a->subtype == FUNCTION_BUILTIN) {
-      if (b->subtype == FUNCTION_BUILTIN)
+    if (SUBTYPEOF(*a) == FUNCTION_BUILTIN) {
+      if (SUBTYPEOF(*b) == FUNCTION_BUILTIN)
 	return a->u.efun < b->u.efun ? -1 : (a->u.efun == b->u.efun ? 0 : 1);
       else
 	return 1;
     }
     else
-      if (b->subtype == FUNCTION_BUILTIN)
+      if (SUBTYPEOF(*b) == FUNCTION_BUILTIN)
 	return -1;
 
     if (a->u.object->prog != b->u.object->prog)
       return a->u.object->prog < b->u.object->prog ? -1 : 1;
-    if (a->subtype != b->subtype)
-      return a->subtype - b->subtype;
+    if (SUBTYPEOF(*a) != SUBTYPEOF(*b))
+      return SUBTYPEOF(*a) - SUBTYPEOF(*b);
 
     /* We have the same function but in different objects. Compare the
      * objects themselves. */
     /* FIXME: Should we try to convert the subtypes to the ones for
      * the closest inherits? That'd make some sense if the functions
      * are private, but otherwise it's doubtful. */
-    a_subtype = b_subtype = a->subtype;
-    tmp_a = *a;
-    tmp_a.type = T_OBJECT;
-    tmp_a.subtype = 0;
+    a_subtype = b_subtype = SUBTYPEOF(*a);
+    SET_SVAL(tmp_a, T_OBJECT, 0, object, a->u.object);
     a = &tmp_a;
-    tmp_b = *b;
-    tmp_b.type = T_OBJECT;
-    tmp_b.subtype = 0;
+    SET_SVAL(tmp_b, T_OBJECT, 0, object, b->u.object);
     b = &tmp_b;
   }
 
   else {
-    a_subtype = a->subtype;
-    b_subtype = b->subtype;
+    a_subtype = SUBTYPEOF(*a);
+    b_subtype = SUBTYPEOF(*b);
   }
 
   res = lfun_cmp (a, b);
@@ -1076,16 +1060,16 @@ static int obj_or_func_cmp (const struct svalue *a, const struct svalue *b)
 
 int set_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
 {
-  int typediff = a->type - b->type;
+  int typediff = TYPEOF(*a) - TYPEOF(*b);
   if (typediff) {
-    if (a->type == T_OBJECT || b->type == T_OBJECT) {
+    if (TYPEOF(*a) == T_OBJECT || TYPEOF(*b) == T_OBJECT) {
       int res = lfun_cmp (a, b);
       if (res != -CMPFUN_UNORDERED) return res;
     }
     return typediff;
   }
 
-  switch(a->type)
+  switch(TYPEOF(*a))
   {
     case T_FLOAT:
       if(a->u.float_number < b->u.float_number) return -1;
@@ -1111,11 +1095,11 @@ int set_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
 
 static int switch_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
 {
-  int typediff = a->type - b->type;
+  int typediff = TYPEOF(*a) - TYPEOF(*b);
   if (typediff)
     return typediff;
 
-  switch(a->type)
+  switch(TYPEOF(*a))
   {
     case T_INT:
       if(a->u.integer < b->u.integer) return -1;
@@ -1144,16 +1128,16 @@ static int switch_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
 
 int alpha_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
 {
-  int typediff = a->type - b->type;
+  int typediff = TYPEOF(*a) - TYPEOF(*b);
   if (typediff) {
-    if (a->type == T_OBJECT || b->type == T_OBJECT) {
+    if (TYPEOF(*a) == T_OBJECT || TYPEOF(*b) == T_OBJECT) {
       int res = lfun_cmp (a, b);
       if (res != -CMPFUN_UNORDERED) return res;
     }
     return typediff;
   }
 
-  switch(a->type)
+  switch(TYPEOF(*a))
   {
     case T_INT:
       if(a->u.integer < b->u.integer) return -1;
@@ -1227,7 +1211,7 @@ int alpha_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
 static int alpha_int_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
 {
 #ifdef PIKE_DEBUG
-  if ((a->type != T_INT) || (b->type != T_INT)) {
+  if ((TYPEOF(*a) != T_INT) || (TYPEOF(*b) != T_INT)) {
     Pike_fatal("Invalid elements in supposedly integer array.\n");
   }
 #endif /* PIKE_DEBUG */
@@ -1363,14 +1347,14 @@ INT32 set_lookup(struct array *a, struct svalue *s)
 #endif
 
   /* objects may have `< `> operators, evil stuff! */
-  if(s->type != T_OBJECT && !(a->type_field & BIT_OBJECT))
+  if(TYPEOF(*s) != T_OBJECT && !(a->type_field & BIT_OBJECT))
   {
     /* face it, it's not there */
-    if( (((2 << s->type) -1) & a->type_field) == 0)
+    if( (((2 << TYPEOF(*s)) -1) & a->type_field) == 0)
       return -1;
     
   /* face it, it's not there */
-    if( ((BIT_MIXED << s->type) & BIT_MIXED & a->type_field) == 0)
+    if( ((BIT_MIXED << TYPEOF(*s)) & BIT_MIXED & a->type_field) == 0)
       return ~a->size;
   }
 
@@ -1384,13 +1368,13 @@ INT32 switch_lookup(struct array *a, struct svalue *s)
   if(d_flag > 1)  array_check_type_field(a);
 #endif
   /* objects may have `< `> operators, evil stuff! */
-  if(s->type != T_OBJECT && !(a->type_field & BIT_OBJECT))
+  if(TYPEOF(*s) != T_OBJECT && !(a->type_field & BIT_OBJECT))
   {
-    if( (((2 << s->type) -1) & a->type_field) == 0)
+    if( (((2 << TYPEOF(*s)) -1) & a->type_field) == 0)
       return -1;
 
     /* face it, it's not there */
-    if( ((BIT_MIXED << s->type) & BIT_MIXED & a->type_field) == 0)
+    if( ((BIT_MIXED << TYPEOF(*s)) & BIT_MIXED & a->type_field) == 0)
       return ~a->size;
   }
 
@@ -1440,7 +1424,7 @@ PMOD_EXPORT TYPE_FIELD array_fix_type_field(struct array *v)
 
   for(e=0; e<v->size; e++) {
     check_svalue (ITEM(v) + e);
-    t |= 1 << ITEM(v)[e].type;
+    t |= 1 << TYPEOF(ITEM(v)[e]);
   }
 
 #ifdef PIKE_DEBUG
@@ -1476,10 +1460,10 @@ PMOD_EXPORT void array_check_type_field(struct array *v)
 
   for(e=0; e<v->size; e++)
   {
-    if(ITEM(v)[e].type > MAX_TYPE)
+    if(TYPEOF(ITEM(v)[e]) > MAX_TYPE)
       Pike_fatal("Type is out of range.\n");
       
-    t |= 1 << ITEM(v)[e].type;
+    t |= 1 << TYPEOF(ITEM(v)[e]);
   }
 
   if(t & ~(v->type_field))
@@ -1498,7 +1482,7 @@ PMOD_EXPORT union anything *low_array_get_item_ptr(struct array *a,
 						   INT32 ind,
 						   TYPE_T t)
 {
-  if(ITEM(a)[ind].type == t) return & (ITEM(a)[ind].u);
+  if(TYPEOF(ITEM(a)[ind]) == t) return & (ITEM(a)[ind].u);
   return 0;
 }
 
@@ -1513,9 +1497,9 @@ PMOD_EXPORT union anything *array_get_item_ptr(struct array *a,
 					       TYPE_T t)
 {
   INT_TYPE i, p;
-  if(ind->type != T_INT)
+  if(TYPEOF(*ind) != T_INT)
     Pike_error("Expected integer as array index, got %s.\n",
-	       get_name_of_type (ind->type));
+	       get_name_of_type (TYPEOF(*ind)));
   p = ind->u.integer;
   i = p < 0 ? p + a->size : p;
   if(i<0 || i>=a->size) {
@@ -2151,7 +2135,7 @@ node *make_node_from_array(struct array *a)
       case BIT_FUNCTION:
 	for(e=1; e<a->size; e++)
 	  if(ITEM(a)[e].u.object != ITEM(a)[0].u.object ||
-	     ITEM(a)[e].subtype != ITEM(a)[0].subtype)
+	     SUBTYPEOF(ITEM(a)[e]) != SUBTYPEOF(ITEM(a)[0]))
 	    break;
 	break;
     }
@@ -2165,9 +2149,7 @@ node *make_node_from_array(struct array *a)
   if(array_is_constant(a,0))
   {
     debug_malloc_touch(a);
-    s.type=T_ARRAY;
-    s.subtype=0;
-    s.u.array=a;
+    SET_SVAL(s, T_ARRAY, 0, array, a);
     return mkconstantsvaluenode(&s);
   }else{
     node *ret=0;
@@ -2334,8 +2316,7 @@ PMOD_EXPORT struct array *explode(struct pike_string *str,
     ret=allocate_array_no_init(str->len,0);
     for(e=0;e<str->len;e++)
     {
-      ITEM(ret)[e].type=T_STRING;
-      ITEM(ret)[e].u.string=string_slice(str,e,1);
+      SET_SVAL(ITEM(ret)[e], T_STRING, 0, string, string_slice(str,e,1));
     }
   }else{
     SearchMojt mojt;
@@ -2375,10 +2356,10 @@ PMOD_EXPORT struct array *explode(struct pike_string *str,
 	ret->size=e;
       }
 
-      ITEM(ret)[ret->size].u.string=string_slice(str,
-						 (s-str->str)>>str->size_shift,
-						 (tmp-s)>>str->size_shift);
-      ITEM(ret)[ret->size].type=T_STRING;
+      SET_SVAL(ITEM(ret)[ret->size], T_STRING, 0, string,
+	       string_slice(str,
+			    (s-str->str)>>str->size_shift,
+			    (tmp-s)>>str->size_shift));
       ret->size++;
 
       s=tmp+(del->len << str->size_shift);
@@ -2393,11 +2374,10 @@ PMOD_EXPORT struct array *explode(struct pike_string *str,
       ret->size=e;
     }
 
-    ITEM(ret)[ret->size].u.string=string_slice(str,
-					       (s-str->str)>>str->size_shift,
-					       (end-s)>>str->size_shift);
-
-    ITEM(ret)[ret->size].type=T_STRING;
+    SET_SVAL(ITEM(ret)[ret->size], T_STRING, 0, string,
+	     string_slice(str,
+			  (s-str->str)>>str->size_shift,
+			  (end-s)>>str->size_shift));
     ret->size++;
 
     CALL_AND_UNSET_ONERROR (uwp);
@@ -2426,7 +2406,7 @@ PMOD_EXPORT struct pike_string *implode(struct array *a,
   len=0;
 
   for(e=a->size, ae=a->item; e--; ae++)
-    switch(ae->type)
+    switch(TYPEOF(*ae))
     {
       case T_INT:
 	 if(!ae->u.integer)
@@ -2448,7 +2428,7 @@ PMOD_EXPORT struct pike_string *implode(struct array *a,
   if((e = a->size))
     for(ae=a->item;;ae++)
     {
-      switch(ae->type)
+      switch(TYPEOF(*ae))
       {
         case T_STRING:
         {
@@ -2496,12 +2476,8 @@ PMOD_EXPORT struct array *copy_array_recursively(struct array *a,
   ret=allocate_array_no_init(a->size,0);
   
   if (m) {
-    aa.type = T_ARRAY;
-    aa.subtype = 0;
-    aa.u.array = a;
-    bb.type = T_ARRAY;
-    bb.subtype = 0;
-    bb.u.array = ret;
+    SET_SVAL(aa, T_ARRAY, 0, array, a);
+    SET_SVAL(bb, T_ARRAY, 0, array, ret);
     low_mapping_insert(m, &aa, &bb, 1);
   }
 
@@ -2544,7 +2520,7 @@ PMOD_EXPORT void apply_array(struct array *a, INT32 args, int flags)
 	Pike_sp+=args;
 	/* FIXME: Don't throw apply errors from apply_svalue here. */
 	apply_svalue(ITEM(a)+e,args);
-	new_types |= 1 << Pike_sp[-1].type;
+	new_types |= 1 << TYPEOF(Pike_sp[-1]);
 	assign_svalue(ITEM(a)+e, &Pike_sp[-1]);
 	pop_stack();
       }
@@ -2561,7 +2537,7 @@ PMOD_EXPORT void apply_array(struct array *a, INT32 args, int flags)
 	Pike_sp+=args;
 	/* FIXME: Don't throw apply errors from apply_svalue here. */
 	apply_svalue(ITEM(a)+e,args);
-	new_types |= 1 << Pike_sp[-1].type;
+	new_types |= 1 << TYPEOF(Pike_sp[-1]);
 	assign_svalue_no_free(ITEM(aa)+e, &Pike_sp[-1]);
 	aa->size = e+1;
 	pop_stack();
@@ -2688,7 +2664,8 @@ PMOD_EXPORT void check_array(struct array *a)
 
   for(e=0;e<a->size;e++)
   {
-    if(! ( (1 << ITEM(a)[e].type) & (a->type_field) ) && ITEM(a)[e].type<16)
+    if(! ( (1 << TYPEOF(ITEM(a)[e])) & (a->type_field) ) &&
+       TYPEOF(ITEM(a)[e])<16)
       Pike_fatal("Type field lies.\n");
     
     check_svalue(ITEM(a)+e);
@@ -3037,7 +3014,7 @@ PMOD_EXPORT struct array *implode_array(struct array *a, struct array *b)
   size=0;
   for(e=0;e<a->size;e++)
   {
-    if(ITEM(a)[e].type!=T_ARRAY)
+    if(TYPEOF(ITEM(a)[e]) != T_ARRAY)
       Pike_error("Implode array contains non-arrays.\n");
     size+=ITEM(a)[e].u.array->size;
   }

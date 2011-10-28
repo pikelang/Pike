@@ -165,18 +165,18 @@ static void free_rs()
 static void f_resultset_create( INT32 args )
 {
   wf_resultset_clear( Pike_fp->current_object );
-  if( args && sp[-1].type == PIKE_T_ARRAY )
+  if( args && TYPEOF(sp[-1]) == PIKE_T_ARRAY )
   {
     int i;
     struct array *d = sp[-1].u.array;
     for(i = 0; i< d->size; i++ )
-      if( d->item[i].type == PIKE_T_ARRAY )
+      if( TYPEOF(d->item[i]) == PIKE_T_ARRAY )
       {
 	LONGEST di, ri;
 	struct array *a = d->item[i].u.array;
 	if( a->size < 2 )
 	  continue;
-	if( a->item[0].type == PIKE_T_OBJECT )
+	if( TYPEOF(a->item[0]) == PIKE_T_OBJECT )
 	{
 	  push_object( a->item[0].u.object );
 	  get_all_args( "create", 1, "%l", &di );
@@ -184,7 +184,7 @@ static void f_resultset_create( INT32 args )
 	}
 	else
 	  di = a->item[0].u.integer;
-	if( a->item[1].type == PIKE_T_OBJECT )
+	if( TYPEOF(a->item[1]) == PIKE_T_OBJECT )
 	{
 	  push_object( a->item[1].u.object );
 	  get_all_args( "create", 1, "%l", &ri );
@@ -197,7 +197,7 @@ static void f_resultset_create( INT32 args )
       else
       {
 	LONGEST ri;
-	if( d->item[i].type == PIKE_T_OBJECT )
+	if( TYPEOF(d->item[i]) == PIKE_T_OBJECT )
 	{
 	  push_object( d->item[i].u.object );
 	  get_all_args( "create", 1, "%l", &ri );
@@ -286,10 +286,9 @@ static void f_resultset_slice( INT32 args )
   for( i = 0; i<nelems; i++ )
   {
     struct array *a2 = allocate_array(2);
-    res->item[i].type = PIKE_T_ARRAY;
-    res->item[i].u.array = a2;
-    a2->item[0].type = PIKE_T_INT;
-    a2->item[1].type = PIKE_T_INT;
+    SET_SVAL(res->item[i], PIKE_T_ARRAY, 0, array, a2);
+    SET_SVAL_TYPE(a2->item[0], PIKE_T_INT);
+    SET_SVAL_TYPE(a2->item[1], PIKE_T_INT);
     if( THIS->d->hits[i+first].doc_id <= ((((unsigned int)1<<31)-1)) )
 	a2->item[0].u.integer = THIS->d->hits[i+first].doc_id;
     else
@@ -997,7 +996,7 @@ static void f_resultset_add_many( INT32 args )
   for( i=0;i<a->size;i++ )
   {
     LONGEST ri, di;
-    if( a->item[i].type == PIKE_T_OBJECT )
+    if( TYPEOF(a->item[i]) == PIKE_T_OBJECT )
     {
       push_object( a->item[i].u.object );
       get_all_args( "create", 1, "%l", &di );
@@ -1005,7 +1004,7 @@ static void f_resultset_add_many( INT32 args )
     }
     else
       di = a->item[i].u.integer;
-    if( b->item[i].type == PIKE_T_OBJECT )
+    if( TYPEOF(b->item[i]) == PIKE_T_OBJECT )
     {
       push_object( b->item[i].u.object );
       get_all_args( "create", 1, "%l", &ri );
@@ -1073,8 +1072,7 @@ void init_resultset_program(void)
   start_new_program();
   {
     struct svalue x;
-    x.type = PIKE_T_PROGRAM;
-    x.u.program = resultset_program;
+    SET_SVAL(x, PIKE_T_PROGRAM, 0, program, resultset_program);
     add_function( "before", f_dateset_before,    "function(int:object)", 0 );
     add_function( "after", f_dateset_after,     "function(int:object)", 0 );
     add_function( "between", f_dateset_between, "function(int,int:object)", 0 );

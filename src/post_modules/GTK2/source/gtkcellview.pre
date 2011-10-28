@@ -16,12 +16,12 @@ void create(string|GDK2.Pixbuf|mapping(string:mixed)|void text, ?int markup)
   pgtk2_verify_setup();
   if (args==1) {
     GtkWidget *gcv;
-    if (Pike_sp[-args].type==PIKE_T_OBJECT) {
+    if (TYPEOF(Pike_sp[-args]) == PIKE_T_OBJECT) {
       struct object *o1;
       get_all_args("create",args,"%o",&o1);
       gcv=gtk_cell_view_new_with_pixbuf(GDK_PIXBUF(get_gobject(o1)));
       THIS->obj=G_OBJECT(gcv);
-    } else if (Pike_sp[-args].type==PIKE_T_STRING) {
+    } else if (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) {
       struct pike_string *str;
       get_all_args("create",args,"%t",&str);
       ref_push_string(str);

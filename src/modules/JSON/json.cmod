@@ -169,7 +169,7 @@ static void encode_mapcont (struct encode_context *ctx, struct mapping *m)
       notfirst = 1;
     }
 
-    if (k->ind.type != T_STRING)
+    if (TYPEOF(k->ind) != T_STRING)
       Pike_error ("Cannot json encode mapping with non-string index %O.\n",
 		  &k->ind);
     json_encode_recur (ctx, &k->ind);
@@ -228,7 +228,7 @@ static void encode_mapcont_canon (struct encode_context *ctx, struct mapping *m)
       notfirst = 1;
     }
 
-    if (ind->type != T_STRING)
+    if (TYPEOF(*ind) != T_STRING)
       Pike_error ("Cannot json encode mapping with non-string index %O.\n",
 		  ind);
     json_encode_recur (ctx, ind);
@@ -250,10 +250,10 @@ static void json_encode_recur (struct encode_context *ctx, struct svalue *val)
 
   check_c_stack (1024);
 
-  if (val->type <= MAX_COMPLEX && BEGIN_CYCLIC (val->u.ptr, 0))
+  if (TYPEOF(*val) <= MAX_COMPLEX && BEGIN_CYCLIC (val->u.ptr, 0))
     Pike_error ("Cyclic data structure - already visited %O.\n", val);
 
-  switch (val->type) {
+  switch (TYPEOF(*val)) {
     case PIKE_T_STRING: {
       struct string_builder *buf = &ctx->buf;
       string_builder_putchar (buf, '"');
@@ -343,9 +343,9 @@ static void json_encode_recur (struct encode_context *ctx, struct svalue *val)
 	    args++;
 	  }
 	  apply_low (o, fun, args);
-	  if (Pike_sp[-1].type != PIKE_T_STRING)
+	  if (TYPEOF(Pike_sp[-1]) != PIKE_T_STRING)
 	    Pike_error ("Expected string from %O->encode_json(), got %s.\n",
-			val, get_name_of_type (Pike_sp[-1].type));
+			val, get_name_of_type (TYPEOF(Pike_sp[-1])));
 	  string_builder_shared_strcat (&ctx->buf, Pike_sp[-1].u.string);
 	  free_string ((--Pike_sp)->u.string);
 	  break;
@@ -356,10 +356,10 @@ static void json_encode_recur (struct encode_context *ctx, struct svalue *val)
     }
 
     default:
-      Pike_error ("Cannot json encode %s.\n", get_name_of_type (val->type));
+      Pike_error ("Cannot json encode %s.\n", get_name_of_type (TYPEOF(*val)));
   }
 
-  if (val->type <= MAX_COMPLEX)
+  if (TYPEOF(*val) <= MAX_COMPLEX)
     END_CYCLIC();
 }
 

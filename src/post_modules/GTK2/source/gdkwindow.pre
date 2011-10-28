@@ -18,7 +18,7 @@ void create(GDK2.Window|int parent, mapping|void attributes)
 {
   pgtk2_verify_setup();
   pgtk2_verify_not_inited();
-  if (Pike_sp[-args].type==PIKE_T_INT)
+  if (TYPEOF(Pike_sp[-args]) == PIKE_T_INT)
   {
     GdkWindow *w;
     INT_TYPE id;
@@ -27,7 +27,7 @@ void create(GDK2.Window|int parent, mapping|void attributes)
     THIS->obj=G_OBJECT(w);
     if (!THIS->obj)
       Pike_error("The window with id 0x%x does not exist\n",id);
-  } else if (Pike_sp[-args].type==PIKE_T_OBJECT) {
+  } else if (TYPEOF(Pike_sp[-args]) == PIKE_T_OBJECT) {
     struct object *parent;
     struct mapping *m;
     GdkWindowAttr attrs;
@@ -271,13 +271,13 @@ void set_icon(GDK2.Pixmap pixmap, GDK2.Bitmap mask, GDK2.Window|void window)
   switch (args) {
    default:
    case 3:
-     if (Pike_sp[-args+2].type==PIKE_T_OBJECT)
+     if (TYPEOF(Pike_sp[-args+2]) == PIKE_T_OBJECT)
        w=GDK_WINDOW(get_gobject(Pike_sp[-args+2].u.object));
    case 2:
-     if (Pike_sp[-args+1].type == PIKE_T_OBJECT)
+     if (TYPEOF(Pike_sp[-args+1]) == PIKE_T_OBJECT)
        m=get_gdkobject(Pike_sp[-args+1].u.object,bitmap);
    case 1:
-     if (Pike_sp[-args].type==PIKE_T_OBJECT)
+     if (TYPEOF(Pike_sp[-args]) == PIKE_T_OBJECT)
        p=GDK_PIXMAP(get_gobject(Pike_sp[-args].u.object));
      /*    case 0:
       * Some commercial CC breaks with empty case.

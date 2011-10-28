@@ -59,7 +59,7 @@ void create(GTK2.TreeModel|mapping(string:mixed)|void model_or_props)
   pgtk2_verify_not_inited();
   pgtk2_verify_setup();
   if (args) {
-    if (Pike_sp[-args].type==PIKE_T_OBJECT) {
+    if (TYPEOF(Pike_sp[-args]) == PIKE_T_OBJECT) {
       struct object *o1;
       GtkTreeModel *gtm;
       GtkWidget *gt;

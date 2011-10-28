@@ -230,7 +230,7 @@ void file_tcsetattr(INT32 args)
    {
       if (args>2)
 	pop_n_elems(args-2);
-      if (sp[-1].type!=T_STRING)
+      if (TYPEOF(sp[-1]) != T_STRING)
 	SIMPLE_BAD_ARG_ERROR("tcsetattr", 2, "string");
 
       if (!strcmp(sp[-1].u.string->str,"TCSANOW"))
@@ -245,7 +245,7 @@ void file_tcsetattr(INT32 args)
       pop_stack();
    }
 
-   if (sp[-1].type!=T_MAPPING)
+   if (TYPEOF(sp[-1]) != T_MAPPING)
      SIMPLE_BAD_ARG_ERROR("tcsetattr", 1, "mapping");
 
    /* read attr to edit */
@@ -262,7 +262,7 @@ void file_tcsetattr(INT32 args)
    f_index(2); \
    if (!IS_UNDEFINED(sp-1)) \
    { \
-      if (sp[-1].type!=T_INT)  \
+     if (TYPEOF(sp[-1]) != T_INT) \
          Pike_error("illegal argument 1 to tcsetattr: key %s has illegal value\n",sflag); \
       if (sp[-1].u.integer) ti.where|=flag; else ti.where&=~flag; \
    } \
@@ -274,7 +274,7 @@ void file_tcsetattr(INT32 args)
    f_index(2); \
    if (!IS_UNDEFINED(sp-1)) \
    { \
-      if (sp[-1].type!=T_INT)  \
+     if (TYPEOF(sp[-1]) != T_INT) \
          Pike_error("illegal argument 1 to tcsetattr: key %s has illegal value\n",scc); \
       ti.c_cc[cc]=(char)sp[-1].u.integer; \
    } \
@@ -292,7 +292,7 @@ void file_tcsetattr(INT32 args)
 
    if (!IS_UNDEFINED(sp-1)) 
    {
-      if (sp[-1].type!=T_INT)  
+      if (TYPEOF(sp[-1]) != T_INT)
    	 Pike_error("illegal argument 1 to tcsetattr: key %s has illegal value\n","csize");
 
       switch (sp[-1].u.integer)
@@ -323,7 +323,7 @@ void file_tcsetattr(INT32 args)
    f_index(2); 
    if (!IS_UNDEFINED(sp-1)) 
    {
-      if (sp[-1].type!=T_INT)  
+      if (TYPEOF(sp[-1]) != T_INT)
    	 Pike_error("illegal argument 1 to tcsetattr: key %s has illegal value\n","ospeed");
       switch (sp[-1].u.integer)
       {
@@ -342,7 +342,7 @@ void file_tcsetattr(INT32 args)
    f_index(2); 
    if (!IS_UNDEFINED(sp-1)) 
    {
-      if (sp[-1].type!=T_INT)  
+      if (TYPEOF(sp[-1]) != T_INT)
    	 Pike_error("illegal argument 1 to tcsetattr: key %s has illegal value","ispeed"); 
       switch (sp[-1].u.integer)
       {

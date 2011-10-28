@@ -21,7 +21,7 @@ void create(string|mapping(string:mixed)|void font_or_props)
   pgtk2_verify_not_inited();
   pgtk2_verify_setup();
   if (args) {
-    if (Pike_sp[-args].type==PIKE_T_STRING) {
+    if (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) {
       const gchar *font;
       GtkWidget *gf;
       get_all_args("create",args,"%s",&font);

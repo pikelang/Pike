@@ -13,7 +13,7 @@ void create(mapping(string:mixed)|string title, GTK2.Window|int|void parent,
   pgtk2_verify_not_inited();
   pgtk2_verify_setup();
   if (args) {
-    if (Pike_sp[-args].type==PIKE_T_MAPPING) {
+    if (TYPEOF(Pike_sp[-args]) == PIKE_T_MAPPING) {
       INIT_WITH_PROPS(GTK_TYPE_RECENT_CHOOSER_DIALOG);
     } else {
       struct pike_string *title;
@@ -43,7 +43,7 @@ void create(mapping(string:mixed)|string title, GTK2.Window|int|void parent,
 	  struct svalue *sv;
 	  struct mapping *m;
 
-	  if (ITEM(a)[i].type!=PIKE_T_MAPPING)
+	  if (TYPEOF(ITEM(a)[i]) != PIKE_T_MAPPING)
 	    continue;
 	  m=ITEM(a)[i].u.mapping;
 	  sv=low_mapping_string_lookup(m,_STR("text"));

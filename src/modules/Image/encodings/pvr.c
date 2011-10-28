@@ -592,12 +592,12 @@ void image_pvr_f_encode(INT32 args)
   if(optm != NULL) {
     struct svalue *s;
     if((s = simple_mapping_string_lookup(optm, "alpha"))!=NULL && !UNSAFE_IS_ZERO(s))
-      if(s->type != T_OBJECT ||
+      if(TYPEOF(*s) != T_OBJECT ||
 	 (alpha=(struct image*)get_storage(s->u.object, image_program))==NULL)
 	Pike_error("Image.PVR.encode: option (arg 2) \"alpha\" has illegal type\n");
     if((s = simple_mapping_string_lookup(optm, "global_index"))!=NULL &&
        !IS_UNDEFINED(s)) {
-      if(s->type == T_INT) {
+      if(TYPEOF(*s) == T_INT) {
 	gbix = s->u.integer;
 	has_gbix=1;
       }

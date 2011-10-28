@@ -20,7 +20,7 @@ void create(string|mapping(string:mixed) title_or_props, ?int action)
   pgtk2_verify_not_inited();
   pgtk2_verify_setup();
   {
-    if (Pike_sp[-args].type==PIKE_T_STRING) {
+    if (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) {
       struct pike_string *title;
       INT_TYPE action;
       GtkWidget *gf;

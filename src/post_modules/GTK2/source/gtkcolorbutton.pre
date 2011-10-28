@@ -19,7 +19,7 @@ void create(GDK2.Color|mapping(string:mixed)|int|void red_or_props, ?int green, 
   pgtk2_verify_not_inited();
   pgtk2_verify_setup();
   if (args) {
-    if (Pike_sp[-args].type==PIKE_T_INT) {
+    if (TYPEOF(Pike_sp[-args]) == PIKE_T_INT) {
       GdkColor color;
       GtkWidget *gcb;
       INT_TYPE red, green, blue;
@@ -30,7 +30,7 @@ void create(GDK2.Color|mapping(string:mixed)|int|void red_or_props, ?int green, 
       color.blue = (guint16)blue;
       gcb=gtk_color_button_new_with_color(&color);
       THIS->obj=G_OBJECT(gcb);
-    } else if (Pike_sp[-args].type==PIKE_T_OBJECT) {
+    } else if (TYPEOF(Pike_sp[-args]) == PIKE_T_OBJECT) {
       struct object *o1;
       GdkColor *col;
       GtkWidget *gcb;

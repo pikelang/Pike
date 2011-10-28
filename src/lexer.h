@@ -892,9 +892,7 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	struct svalue sval;
 	base = 16;
       read_based_number:
-	sval.type = PIKE_T_INT;
-	sval.subtype = NUMBER_NUMBER;
-	sval.u.integer = 0;
+	SET_SVAL(sval, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
 	safe_wide_string_to_svalue_inumber(&sval,
 					   lex->pos,
 					   &lex->pos,
@@ -927,9 +925,7 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
     read_float:
       f=lex_strtod(lex->pos, &p1);
 
-      sval.type = PIKE_T_INT;
-      sval.subtype = NUMBER_NUMBER;
-      sval.u.integer = 0;      
+      SET_SVAL(sval, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
 
       safe_wide_string_to_svalue_inumber(&sval,
 					 lex->pos,
@@ -940,7 +936,7 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
       if(p1>p2)
       {
 	/* Floating point or version. */
-	if ((sval.type == PIKE_T_INT) &&
+	if ((TYPEOF(sval) == PIKE_T_INT) &&
 	    (INDEX_CHARP(p2, 0, SHIFT) == '.')) {
 	  int major = sval.u.integer;
 	  char *p3 = p2;
@@ -955,7 +951,7 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 					     0,
 					     SHIFT);
 	  dmalloc_touch_svalue(&sval);
-	  if ((sval.type == PIKE_T_INT) && (p3 > p2)) {
+	  if ((TYPEOF(sval) == PIKE_T_INT) && (p3 > p2)) {
 	    for (l=0; ISSPACE(INDEX_CHARP(p3, l, SHIFT)); l++)
 	      ;
 	    if ((INDEX_CHARP(p3, l, SHIFT) == ':') &&

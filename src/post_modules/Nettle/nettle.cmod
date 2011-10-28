@@ -88,7 +88,7 @@ PIKECLASS Yarrow
     INT32 num = 0;
 
     if(arg) {
-      if (arg->type != PIKE_T_INT)
+      if (TYPEOF(*arg) != PIKE_T_INT)
 	Pike_error("Bad argument type.\n");
       num = arg->u.integer;
       if(num < 0)
@@ -315,7 +315,7 @@ static struct object *make_cipher_object(INT32 args) {
   struct svalue *top = Pike_sp-args;
   struct object *obj;
 
-  switch(top->type)
+  switch(TYPEOF(*top))
   {
     case T_PROGRAM:
       obj = clone_object(top->u.program, args-1);
@@ -325,7 +325,7 @@ static struct object *make_cipher_object(INT32 args) {
       apply_svalue(Pike_sp - args, args-1);
 
       /* Check return value */
-      if(Pike_sp[-1].type != T_OBJECT)
+      if(TYPEOF(Pike_sp[-1]) != T_OBJECT)
 	Pike_error("Returned value is not an object.\n");
 
       add_ref(obj = Pike_sp[-1].u.object);
@@ -407,7 +407,7 @@ PIKECLASS CBC
     push_string(make_shared_binary_string((INT8 *)THIS->iv, block_size));
     safe_apply(THIS->object, "crypt", 1);
 
-    if(Pike_sp[-1].type != T_STRING)
+    if(TYPEOF(Pike_sp[-1]) != T_STRING)
       Pike_error("Expected string from crypt()\n");
 
     if(Pike_sp[-1].u.string->len != block_size) {
@@ -428,7 +428,7 @@ PIKECLASS CBC
     push_string(make_shared_binary_string((const INT8 *)source, block_size));
     safe_apply(THIS->object, "crypt", 1);
 
-    if(Pike_sp[-1].type != T_STRING)
+    if(TYPEOF(Pike_sp[-1]) != T_STRING)
       Pike_error("Expected string from crypt()\n");
 
     if(Pike_sp[-1].u.string->len != block_size) {
@@ -458,7 +458,7 @@ PIKECLASS CBC
 
     safe_apply(THIS->object, "block_size", 0);
 
-    if(Pike_sp[-1].type != T_INT)
+    if(TYPEOF(Pike_sp[-1]) != T_INT)
       Pike_error("block_size() didn't return an int.\n");
 
     THIS->block_size = Pike_sp[-1].u.integer;
@@ -640,7 +640,7 @@ PIKECLASS Proxy {
     THIS->object = make_cipher_object(args);
 
     safe_apply(THIS->object, "block_size", 0);
-    if (Pike_sp[-1].type != T_INT)
+    if (TYPEOF(Pike_sp[-1]) != T_INT)
       Pike_error("block_size() didn't return an int\n");
     THIS->block_size = Pike_sp[-1].u.integer;
 
@@ -750,7 +750,7 @@ PIKECLASS Proxy {
 	push_string(make_shared_binary_string((char *)THIS->backlog,
 					      THIS->block_size));
 	safe_apply(THIS->object, "crypt", 1);
-	if (Pike_sp[-1].type != T_STRING)
+	if (TYPEOF(Pike_sp[-1]) != T_STRING)
 	  Pike_error("crypt() did not return string\n");
 	if (Pike_sp[-1].u.string->len != THIS->block_size)
 	  Pike_error("Unexpected string length %ld\n",
@@ -781,7 +781,7 @@ PIKECLASS Proxy {
 
       safe_apply(THIS->object, "crypt", 1);
 
-      if (Pike_sp[-1].type != T_STRING)
+      if (TYPEOF(Pike_sp[-1]) != T_STRING)
 	Pike_error("crypt() did not return string.\n");
       if (Pike_sp[-1].u.string->len != len)
 	Pike_error("crypt() Unexpected string length %ld.\n",
@@ -830,7 +830,7 @@ PIKECLASS Proxy {
 
     if(method)
     {
-      if(method->type != PIKE_T_INT)
+      if(TYPEOF(*method) != PIKE_T_INT)
         Pike_error("Bad argument type.\n");
       m = method->u.integer;
     }
@@ -920,7 +920,7 @@ PIKECLASS Proxy {
     }
 
     safe_apply(THIS->object, "crypt", 1);
-    if (Pike_sp[-1].type != T_STRING)
+    if (TYPEOF(Pike_sp[-1]) != T_STRING)
       Pike_error("crypt() did not return string.\n");
     if (Pike_sp[-1].u.string->len != len)
       Pike_error("crypt() Unexpected string length %ld.\n",

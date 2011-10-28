@@ -30,12 +30,12 @@ void create(string|GDK2.Pixbuf|GDK2.PixbufAnimation|GDK2.Image|GDK2.Pixmap|mappi
   pgtk2_verify_not_inited();
   pgtk2_verify_setup();
   if (args==1) {
-    if (Pike_sp[-args].type==PIKE_T_MAPPING) {
+    if (TYPEOF(Pike_sp[-args]) == PIKE_T_MAPPING) {
       INIT_WITH_PROPS(GTK_TYPE_IMAGE);
     } else {
       GtkWidget *gi;
 
-      if (Pike_sp[-args].type==PIKE_T_STRING) {
+      if (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) {
 	char *filename;
 	get_all_args("create",args,"%s",&filename);
 	gi=gtk_image_new_from_file(filename);
@@ -56,7 +56,7 @@ void create(string|GDK2.Pixbuf|GDK2.PixbufAnimation|GDK2.Image|GDK2.Pixmap|mappi
       THIS->obj=G_OBJECT(gi);
     }
   } else if (args==2) {
-    if (Pike_sp[1-args].type==PIKE_T_INT) {
+    if (TYPEOF(Pike_sp[1-args]) == PIKE_T_INT) {
       struct pike_string *s1;
       GtkWidget *gi;
       GtkStockItem item;

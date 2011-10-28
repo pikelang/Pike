@@ -21,7 +21,7 @@ void create(string|mapping|void label_or_props, ?int mnemonic)
   pgtk2_verify_not_inited();
   pgtk2_verify_setup();
   if (args) {
-    if (Pike_sp[-args].type==PIKE_T_STRING) {
+    if (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) {
       struct pike_string *t;
       GtkWidget *gcb;
       INT_TYPE nem=0;

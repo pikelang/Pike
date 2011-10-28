@@ -64,7 +64,7 @@ struct source *source_system_memory_make( struct svalue *s,
 {
   struct sm_source *res;
 
-  if( s->type != PIKE_T_OBJECT )
+  if( TYPEOF(*s) != PIKE_T_OBJECT )
     return 0;
 
   if (!shm_program) {

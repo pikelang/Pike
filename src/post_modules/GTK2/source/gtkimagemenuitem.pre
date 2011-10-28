@@ -12,7 +12,7 @@ void create(string|mapping(string:mixed)|void label)
   pgtk2_verify_setup();
 
   if (args) {
-    if (Pike_sp[-args].type==PIKE_T_STRING) {
+    if (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) {
       struct pike_string *s1;
       GtkStockItem item;
       GtkWidget *gi;

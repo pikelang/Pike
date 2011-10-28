@@ -122,7 +122,7 @@ static void image_ft_face_write_char( INT32 args )
   struct object *o;
   rgb_group *d;
 
-  if( sp[-args].type != T_INT )
+  if( TYPEOF(sp[-args]) != T_INT )
     Pike_error("Bad argument 1 to write_char\n" );
 
   c = sp[-args].u.integer;
@@ -214,8 +214,8 @@ static void image_ft_face_set_size( INT32 args )
 {
   int w, h;
   FT_Error errcode;
-  if( (args != 2) || (sp[-args].type != sp[1-args].type)
-      || (sp[-args].type != T_INT) )
+  if( (args != 2) || (TYPEOF(sp[-args]) != TYPEOF(sp[1-args]))
+      || (TYPEOF(sp[-args]) != T_INT) )
     Pike_error("Illegal arguments to set_size\n");
   w = sp[-2].u.integer;
   h = sp[-1].u.integer;
@@ -251,10 +251,10 @@ static void image_ft_face_select_encoding( INT32 args )
 {
   FT_Encoding e = 0;
   FT_Error er;
-  if( args != 1 || (sp[-args].type != PIKE_T_INT &&
-		    sp[-args].type != PIKE_T_STRING) )
+  if( args != 1 || (TYPEOF(sp[-args]) != PIKE_T_INT &&
+		    TYPEOF(sp[-args]) != PIKE_T_STRING) )
     Pike_error("Illegal arguments to select_encoding\n");
-  if( sp[-args].type == PIKE_T_INT )
+  if( TYPEOF(sp[-args]) == PIKE_T_INT )
     e = (sp[-args].u.integer == 0? ft_encoding_none : sp[-args].u.integer);
   else if( sp[-args].u.string->len != 4 || sp[-args].u.string->size_shift )
     Pike_error("Invalid encoding name in select_encoding\n");
@@ -307,7 +307,7 @@ static void image_ft_face_create( INT32 args )
   int er;
   FT_Encoding best_enc = ft_encoding_none;
   int enc_no, enc_score, best_enc_score = -2;
-  if( !args || sp[-args].type != T_STRING )
+  if( !args || TYPEOF(sp[-args]) != T_STRING )
     Pike_error("Illegal argument 1 to FreeType.Face. Expected string.\n");
   er = FT_New_Face( library, sp[-args].u.string->str, 0, &TFACE );
   if( er == FT_Err_Unknown_File_Format )

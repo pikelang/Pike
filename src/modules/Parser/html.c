@@ -942,14 +942,14 @@ static void html_add_tag(INT32 args)
 {
    check_all_args("add_tag",args,BIT_STRING,
 		  BIT_INT|BIT_STRING|BIT_ARRAY|BIT_FUNCTION|BIT_OBJECT|BIT_PROGRAM,0);
-   if (sp[1-args].type == T_ARRAY) {
+   if (TYPEOF(sp[1-args]) == T_ARRAY) {
      struct array *a = sp[1-args].u.array;
      if (!a->size ||
-	 (a->item[0].type != T_FUNCTION && a->item[0].type != T_OBJECT &&
-	  a->item[0].type != T_PROGRAM))
+	 (TYPEOF(a->item[0]) != T_FUNCTION && TYPEOF(a->item[0]) != T_OBJECT &&
+	  TYPEOF(a->item[0]) != T_PROGRAM))
        SIMPLE_BAD_ARG_ERROR("add_tag", 1, "array with function as first element");
    }
-   else if (sp[1-args].type == T_INT && sp[1-args].u.integer)
+   else if (TYPEOF(sp[1-args]) == T_INT && sp[1-args].u.integer)
      SIMPLE_BAD_ARG_ERROR("add_tag", 1, "zero, string, array or function");
 
    if (THIS->maptag->refs>1)
@@ -977,14 +977,14 @@ static void html_add_container(INT32 args)
 {
    check_all_args("add_container",args,BIT_STRING,
 		  BIT_INT|BIT_STRING|BIT_ARRAY|BIT_FUNCTION|BIT_OBJECT|BIT_PROGRAM,0);
-   if (sp[1-args].type == T_ARRAY) {
+   if (TYPEOF(sp[1-args]) == T_ARRAY) {
      struct array *a = sp[1-args].u.array;
      if (!a->size ||
-	 (a->item[0].type != T_FUNCTION && a->item[0].type != T_OBJECT &&
-	  a->item[0].type != T_PROGRAM))
+	 (TYPEOF(a->item[0]) != T_FUNCTION && TYPEOF(a->item[0]) != T_OBJECT &&
+	  TYPEOF(a->item[0]) != T_PROGRAM))
        SIMPLE_BAD_ARG_ERROR("add_container", 1, "array with function as first element");
    }
-   else if (sp[1-args].type == T_INT && sp[1-args].u.integer)
+   else if (TYPEOF(sp[1-args]) == T_INT && sp[1-args].u.integer)
      SIMPLE_BAD_ARG_ERROR("add_tag", 1, "zero, string, array or function");
 
    if (args > 2) {
@@ -1017,14 +1017,14 @@ static void html_add_entity(INT32 args)
 {
    check_all_args("add_entity",args,BIT_STRING,
 		  BIT_INT|BIT_STRING|BIT_ARRAY|BIT_FUNCTION|BIT_OBJECT|BIT_PROGRAM,0);
-   if (sp[1-args].type == T_ARRAY) {
+   if (TYPEOF(sp[1-args]) == T_ARRAY) {
      struct array *a = sp[1-args].u.array;
      if (!a->size ||
-	 (a->item[0].type != T_FUNCTION && a->item[0].type != T_OBJECT &&
-	  a->item[0].type != T_PROGRAM))
+	 (TYPEOF(a->item[0]) != T_FUNCTION && TYPEOF(a->item[0]) != T_OBJECT &&
+	  TYPEOF(a->item[0]) != T_PROGRAM))
        SIMPLE_BAD_ARG_ERROR("add_entity", 1, "array with function as first element");
    }
-   else if (sp[1-args].type == T_INT && sp[1-args].u.integer)
+   else if (TYPEOF(sp[1-args]) == T_INT && sp[1-args].u.integer)
      SIMPLE_BAD_ARG_ERROR("add_tag", 1, "zero, string, array or function");
 
    if (THIS->mapentity->refs>1)
@@ -1054,14 +1054,14 @@ static void html_add_quote_tag(INT32 args)
   check_all_args("add_quote_tag",args,BIT_STRING,
 		 BIT_INT|BIT_STRING|BIT_ARRAY|BIT_FUNCTION|BIT_OBJECT|BIT_PROGRAM,
 		 BIT_STRING|BIT_VOID,0);
-   if (sp[1-args].type == T_ARRAY) {
+   if (TYPEOF(sp[1-args]) == T_ARRAY) {
      struct array *a = sp[1-args].u.array;
      if (!a->size ||
-	 (a->item[0].type != T_FUNCTION && a->item[0].type != T_OBJECT &&
-	  a->item[0].type != T_PROGRAM))
+	 (TYPEOF(a->item[0]) != T_FUNCTION && TYPEOF(a->item[0]) != T_OBJECT &&
+	  TYPEOF(a->item[0]) != T_PROGRAM))
        SIMPLE_BAD_ARG_ERROR("add_quote_tag", 1, "array with function as first element");
    }
-   else if (sp[1-args].type == T_INT && sp[1-args].u.integer)
+   else if (TYPEOF(sp[1-args]) == T_INT && sp[1-args].u.integer)
      SIMPLE_BAD_ARG_ERROR("add_tag", 1, "zero, string, array or function");
 
   remove = UNSAFE_IS_ZERO (sp+1-args);
@@ -1097,14 +1097,16 @@ static void html_add_quote_tag(INT32 args)
     int i;
     struct array *arr;
 #ifdef PIKE_DEBUG
-    if (val->type != T_ARRAY) Pike_fatal ("Expected array as value in mapqtag.\n");
+    if (TYPEOF(*val) != T_ARRAY)
+      Pike_fatal ("Expected array as value in mapqtag.\n");
 #endif
     arr = val->u.array;
 
     for (i = 0; i < arr->size; i += 3) {
       struct pike_string *curname;
 #ifdef PIKE_DEBUG
-      if (arr->item[i].type != T_STRING) Pike_fatal ("Expected string as name in mapqtag.\n");
+      if (TYPEOF(arr->item[i]) != T_STRING)
+	Pike_fatal ("Expected string as name in mapqtag.\n");
 #endif
       curname = dmalloc_touch (struct pike_string *, arr->item[i].u.string);
 
@@ -1112,8 +1114,7 @@ static void html_add_quote_tag(INT32 args)
 	if (remove)
 	  if (arr->size == 3) {
 	    struct svalue tmp;
-	    tmp.type = T_STRING;
-	    tmp.u.string = prefix;
+	    SET_SVAL(tmp, T_STRING, 0, string, prefix);
 	    map_delete (map, &tmp);
 	  }
 	  else {
@@ -1357,7 +1358,7 @@ static void html_quote_tags(INT32 args)
        struct pike_string *end;
        push_svalue (arr->item+i+1);
 #ifdef PIKE_DEBUG
-       if (arr->item[i+2].type != T_STRING)
+       if (TYPEOF(arr->item[i+2]) != T_STRING)
 	 Pike_fatal ("Expected string as end in mapqtag.\n");
 #endif
        end = arr->item[i+2].u.string;
@@ -1376,7 +1377,7 @@ static void html_quote_tags(INT32 args)
 static INLINE void recheck_scan(struct parser_html_storage *this,
 				int *scan_entity)
 {
-   if (this->callback__entity.type!=T_INT ||
+   if (TYPEOF(this->callback__entity) != T_INT ||
        m_sizeof(this->mapentity))
       *scan_entity=1;
    else 
@@ -1391,7 +1392,7 @@ static void put_out_feed(struct parser_html_storage *this, struct svalue *v)
    struct out_piece *f;
 
 #ifdef PIKE_DEBUG
-   if (v->type != T_STRING && this->out_max_shift >= 0)
+   if (TYPEOF(*v) != T_STRING && this->out_max_shift >= 0)
      Pike_fatal ("Putting a non-string into output queue in non-mixed mode.\n");
 #endif
 
@@ -2323,14 +2324,15 @@ static int quote_tag_lookup (struct parser_html_storage *this,
 	      isprint (buf.str[0]) ? buf.str[0] : '.',
 	      isprint (buf.str[1]) ? buf.str[1] : '.', checklen));
 #ifdef PIKE_DEBUG
-      if (val->type != T_ARRAY) Pike_fatal ("Expected array as value in mapqtag.\n");
+      if (TYPEOF(*val) != T_ARRAY)
+	Pike_fatal ("Expected array as value in mapqtag.\n");
 #endif
       arr = val->u.array;
 
       for (i = 0; i < arr->size; i += 3) {
 	struct pike_string *tag;
 #ifdef PIKE_DEBUG
-	if (arr->item[i].type != T_STRING)
+	if (TYPEOF(arr->item[i]) != T_STRING)
 	  Pike_fatal ("Expected string as name in mapqtag.\n");
 #endif
 	tag = arr->item[i].u.string;
@@ -2430,7 +2432,7 @@ static newstate handle_result(struct parser_html_storage *this,
       int: noop, output range
       array(string): output string */
 
-   switch (sp[-1].type)
+   switch (TYPEOF(sp[-1]))
    {
       case T_STRING: /* push it to feed stack */
 	 
@@ -2459,7 +2461,7 @@ static newstate handle_result(struct parser_html_storage *this,
 	    case 0:
 	       if ((this->type == TYPE_TAG ||
 		    this->type == TYPE_CONT) &&
-		   (this->callback__entity.type != T_INT ||
+		   (TYPEOF(this->callback__entity) != T_INT ||
 		    m_sizeof (this->mapentity))) {
 		 /* If it's a tag and we got entities, just output the
 		  * tag starter and name and switch to CTX_TAG to
@@ -2501,7 +2503,7 @@ static newstate handle_result(struct parser_html_storage *this,
 	 for (i=0; i<sp[-1].u.array->size; i++)
 	 {
 	    if (THIS->out_max_shift >= 0 &&
-		sp[-1].u.array->item[i].type!=T_STRING)
+		TYPEOF(sp[-1].u.array->item[i]) != T_STRING)
 	       Pike_error("Parser.HTML: illegal result from callback: "
 			  "element in array not string\n");
 	    push_svalue(sp[-1].u.array->item+i);
@@ -2537,8 +2539,8 @@ static void do_callback(struct parser_html_storage *this,
 {
    ONERROR uwp;
 
-   if (callback_function->type!=T_FUNCTION &&
-       callback_function->type!=T_PROGRAM)
+   if (TYPEOF(*callback_function) != T_FUNCTION &&
+       TYPEOF(*callback_function) != T_PROGRAM)
    {
       push_svalue(callback_function);
       this->start=NULL;
@@ -2598,7 +2600,7 @@ static newstate data_callback (struct parser_html_storage *this,
   ONERROR uwp;
 
 #ifdef PIKE_DEBUG
-  if (this->callback__data.type == T_INT || !this->data_cb_feed)
+  if (TYPEOF(this->callback__data) == T_INT || !this->data_cb_feed)
     Pike_fatal ("data_callback called in bogus state.\n");
 #endif
 
@@ -2652,14 +2654,14 @@ static newstate data_callback (struct parser_html_storage *this,
    ONERROR uwp;								\
    newstate res;							\
 									\
-   if (v->type == T_STRING) {						\
+   if (TYPEOF(*v) == T_STRING) {					\
      if (this->flags & FLAG_REPARSE_STRINGS) {				\
        add_local_feed (this, v->u.string);				\
        skip_feed_range(st,cutstart,ccutstart,cutend,ccutend);		\
        return STATE_REREAD;						\
      }									\
      else {								\
-       if (this->callback__data.type != T_INT && this->data_cb_feed) {	\
+       if (TYPEOF(this->callback__data) != T_INT && this->data_cb_feed) { \
 	 res = data_callback (this, thisobj, st);			\
 	 return res ? res : STATE_REREAD;				\
        }								\
@@ -2669,12 +2671,12 @@ static newstate data_callback (struct parser_html_storage *this,
      }									\
    }									\
 									\
-   if (this->callback__data.type != T_INT && this->data_cb_feed) {	\
+   if (TYPEOF(this->callback__data) != T_INT && this->data_cb_feed) {	\
      res = data_callback (this, thisobj, st);				\
      return res ? res : STATE_REREAD;					\
    }									\
 									\
-   switch (v->type)							\
+   switch (TYPEOF(*v))							\
    {									\
       case T_FUNCTION:							\
       case T_OBJECT:							\
@@ -2701,7 +2703,7 @@ static newstate data_callback (struct parser_html_storage *this,
    ref_push_object(thisobj);						\
    PREPARE_SPEC								\
 									\
-   if (v->type==T_ARRAY && v->u.array->size>1)				\
+   if (TYPEOF(*v)==T_ARRAY && v->u.array->size>1)			\
    {									\
       assign_svalues_no_free(sp,v->u.array->item+1,			\
 			     v->u.array->size-1,			\
@@ -3043,7 +3045,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	 if (*feed != dst || st->c != cdst) { /* Found some data. */
 	   ignore_tag_cb = 0;
 
-	   if (this->callback__data.type != T_INT) {
+	   if (TYPEOF(this->callback__data) != T_INT) {
 	     struct piece *f;
 	     DEBUG((stderr, "put data cb feed range "
 		    "%p:%"PRINTPTRDIFFT"d - %p:%"PRINTPTRDIFFT"d\n",
@@ -3277,7 +3279,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
 
 	 dmalloc_touch_svalue(&(this->callback__tag));
 
-	 if (this->callback__tag.type!=T_INT && !ignore_tag_cb)
+	 if (TYPEOF(this->callback__tag) != T_INT && !ignore_tag_cb)
 	 {
 	    if (!tagend &&
 		!scan_for_end_of_tag(this,dst,cdst,&tagend,&ctagend,finished,
@@ -3287,7 +3289,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	       return STATE_WAIT; /* come again */
 	    }
 
-	    if (this->callback__data.type != T_INT && this->data_cb_feed) {
+	    if (TYPEOF(this->callback__data) != T_INT && this->data_cb_feed) {
 	      res = data_callback (this, thisobj, st);
 	      return res ? res : STATE_REREAD;
 	    }
@@ -3337,7 +3339,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
         ptrdiff_t c1 = cdst, c2, c3;
 	int pushed = 0;
 
-	if (this->callback__data.type != T_INT && this->data_cb_feed) {
+	if (TYPEOF(this->callback__data) != T_INT && this->data_cb_feed) {
 	  res = data_callback (this, thisobj, st);
 	  return res ? res : STATE_REREAD;
 	}
@@ -3697,9 +3699,9 @@ static newstate do_try_feed(struct parser_html_storage *this,
 
 	dmalloc_touch_svalue(&(this->callback__entity));
 
-	if (this->callback__entity.type!=T_INT && !ignore_tag_cb)
+	if (TYPEOF(this->callback__entity) != T_INT && !ignore_tag_cb)
 	{
-	  if (this->callback__data.type != T_INT && this->data_cb_feed) {
+	  if (TYPEOF(this->callback__data) != T_INT && this->data_cb_feed) {
 	    res = data_callback (this, thisobj, st);
 	    return res ? res : STATE_REREAD;
 	  }
@@ -3739,7 +3741,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	}
 	else if (*feed)
 	{
-	  if (this->callback__data.type != T_INT && this->data_cb_feed &&
+	  if (TYPEOF(this->callback__data) != T_INT && this->data_cb_feed &&
 	      (res = data_callback (this, thisobj, st)))
 	    return res;
 	  put_out_feed_range(this,*feed,st->c,dst,cdst);
@@ -3814,7 +3816,8 @@ static void try_feed(int finished)
 
 	    st=THIS->stack->prev;
 	    if (!st) {
-	       if (THIS->callback__data.type != T_INT && THIS->data_cb_feed &&
+	       if (TYPEOF(THIS->callback__data) != T_INT &&
+		   THIS->data_cb_feed &&
 		   (res = data_callback (THIS, THISOBJ, st)))
 		 goto state_reread;
 	       if (finished) reset_stack_head (THIS);
@@ -3898,18 +3901,18 @@ static void low_feed(struct pike_string *ps)
 static void html_feed(INT32 args)
 {
    DEBUG((stderr,"feed %"PRINTPTRDIFFT"d chars\n",
-	  (args&&sp[-args].type==T_STRING)?
+	  (args && TYPEOF(sp[-args]) == T_STRING)?
 	  sp[-args].u.string->len:-1));
 
    if (args)
    {
-      if (sp[-args].type==T_STRING)
+      if (TYPEOF(sp[-args]) == T_STRING)
 	 low_feed(sp[-args].u.string);
-      else if (sp[-args].type!=T_INT || sp[-args].u.integer)
+      else if (TYPEOF(sp[-args]) != T_INT || sp[-args].u.integer)
 	 SIMPLE_BAD_ARG_ERROR("feed",1,"string");
    }
 
-   if (args<2 || sp[1-args].type!=T_INT || sp[1-args].u.integer)
+   if (args<2 || TYPEOF(sp[1-args]) != T_INT || sp[1-args].u.integer)
    {
       pop_n_elems(args);
       try_feed(0);
@@ -3935,7 +3938,7 @@ static void html_feed_insert(INT32 args)
    if (!args)
       SIMPLE_TOO_FEW_ARGS_ERROR("feed_insert",1);
 
-   if (sp[-args].type!=T_STRING)
+   if (TYPEOF(sp[-args]) != T_STRING)
       SIMPLE_BAD_ARG_ERROR("feed_insert",1,"string");
 
    DEBUG((stderr,"html_feed_insert: "
@@ -3944,7 +3947,7 @@ static void html_feed_insert(INT32 args)
 
    add_local_feed (THIS, sp[-args].u.string);
 
-   if (args<2 || sp[1-args].type!=T_INT || sp[1-args].u.integer)
+   if (args<2 || TYPEOF(sp[1-args]) != T_INT || sp[1-args].u.integer)
    {
       pop_n_elems(args);
       try_feed(0);
@@ -3967,9 +3970,9 @@ static void html_finish(INT32 args)
 {
    if (args)
    {
-      if (sp[-args].type==T_STRING)
+      if (TYPEOF(sp[-args]) == T_STRING)
 	 low_feed(sp[-args].u.string);
-      else if (sp[-args].type!=T_INT || sp[-args].u.integer)
+      else if (TYPEOF(sp[-args]) != T_INT || sp[-args].u.integer)
 	 SIMPLE_BAD_ARG_ERROR("finish",1,"string");
    }
    try_feed(1);
@@ -3990,7 +3993,7 @@ static void html_read(INT32 args)
    ptrdiff_t n = THIS->out_length;
 
    if (args) {
-      if (sp[-args].type==T_INT && sp[-args].u.integer >= 0)
+      if (TYPEOF(sp[-args]) == T_INT && sp[-args].u.integer >= 0)
 	n = MINIMUM (sp[-args].u.integer, n);
       else
 	SIMPLE_BAD_ARG_ERROR ("read", 1, "nonnegative integer");
@@ -4008,7 +4011,7 @@ static void html_read(INT32 args)
       for (i = 0; i < n; i++)
       {
 	 struct out_piece *z = THIS->out;
-	 type_field |= 1 << z->v.type;
+	 type_field |= 1 << TYPEOF(z->v);
 	 move_svalue (&ITEM(res)[i], &z->v);
 	 mark_free_svalue (&z->v);
 	 THIS->out = z->next;
@@ -4032,7 +4035,7 @@ static void html_read(INT32 args)
        while (l < n) {
 	 struct out_piece *z = THIS->out;
 #ifdef PIKE_DEBUG
-	 if (z->v.type != T_STRING)
+	 if (TYPEOF(z->v) != T_STRING)
 	    Pike_fatal ("Got nonstring in parsed data\n");
 #endif
 	 if (z->v.u.string->len>n)
@@ -4073,7 +4076,7 @@ static void html_read(INT32 args)
      if (!THIS->out_length) {
        struct out_piece *z;
        for (z = THIS->out; z; z = z->next)
-	 if (z->v.type != T_STRING || z->v.u.string->len)
+	 if (TYPEOF(z->v) != T_STRING || z->v.u.string->len)
 	   Pike_fatal ("Inconsistency in output queue.\n");
      }
      else if (!THIS->out)
@@ -4098,7 +4101,7 @@ static void html_write_out(INT32 args)
    int i;
    for (i = args; i; i--)
    {
-      if (THIS->out_max_shift >= 0 && sp[-i].type!=T_STRING)
+      if (THIS->out_max_shift >= 0 && TYPEOF(sp[-i]) != T_STRING)
 	 Pike_error("write_out: not a string argument\n");
       put_out_feed(THIS,sp-i);
    }
@@ -4922,7 +4925,7 @@ static void html_splice_arg (INT32 args)
   struct pike_string *old = THIS->splice_arg;
    check_all_args("splice_arg",args,BIT_VOID|BIT_STRING|BIT_INT,0);
    if (args) {
-     if (sp[-args].type == T_STRING)
+     if (TYPEOF(sp[-args]) == T_STRING)
        add_ref (THIS->splice_arg = sp[-args].u.string);
      else if (sp[-args].u.integer)
        SIMPLE_BAD_ARG_ERROR ("splice_arg", 1, "string or zero");
@@ -5167,7 +5170,7 @@ static void html_mixed_mode(INT32 args)
 	 int max_shift = 0;
 	 size_t length;
 	 for (f = THIS->out, length = 0; f; f = f->next) {
-	   if (f->v.type != T_STRING)
+	   if (TYPEOF(f->v) != T_STRING)
 	     Pike_error ("Cannot switch from mixed mode "
 			 "with nonstrings in the output queue.\n");
 	   if (f->v.u.string->size_shift > max_shift)

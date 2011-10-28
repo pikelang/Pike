@@ -94,13 +94,13 @@ void set_icon( ?GDK.Pixmap p, ?GDK.Bitmap b, ?GDK.Window w )
   {
    default:
    case 3:
-     if(Pike_sp[-args+2].type == PIKE_T_OBJECT)
+     if(TYPEOF(Pike_sp[-args+2]) == PIKE_T_OBJECT)
        w = get_gdkobject(Pike_sp[-args+2].u.object , window );
    case 2:
-     if(Pike_sp[-args+1].type == PIKE_T_OBJECT)
+     if(TYPEOF(Pike_sp[-args+1]) == PIKE_T_OBJECT)
        m = get_gdkobject(Pike_sp[-args+1].u.object , bitmap );
    case 1:
-     if(Pike_sp[-args].type == PIKE_T_OBJECT)
+     if(TYPEOF(Pike_sp[-args]) == PIKE_T_OBJECT)
        p = get_gdkobject(Pike_sp[-args].u.object , pixmap );
   }
   gdk_window_set_icon(GTK_WIDGET(THIS->obj)->window, w, p, m );

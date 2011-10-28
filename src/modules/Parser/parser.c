@@ -123,7 +123,7 @@ static void parser_magic_index(INT32 args)
 
    if (args!=1) 
       Pike_error("Parser.`[]: Too few or too many arguments\n");
-   if (sp[-1].type!=T_STRING)
+   if (TYPEOF(sp[-1]) != T_STRING)
       Pike_error("Parser.`[]: Illegal type of argument\n");
 
    for (i=0; i<(int)NELEM(submagic)-1; i++)
@@ -158,7 +158,7 @@ static void parser_magic_index(INT32 args)
    stack_swap();
    f_arrow(2);
 
-   if (sp[-1].type==T_INT)
+   if (TYPEOF(sp[-1]) == T_INT)
    {
       pop_stack();
       stack_dup();
@@ -167,14 +167,14 @@ static void parser_magic_index(INT32 args)
       f_add(2);
       SAFE_APPLY_MASTER("resolv",1);
    }
-   if (sp[-1].type==T_INT)
+   if (TYPEOF(sp[-1]) == T_INT)
    {
       pop_stack();
       stack_dup();
       push_constant_text("_Parser");
       SAFE_APPLY_MASTER("resolv",1);
       stack_swap();
-      if(sp[-2].type == T_INT)
+      if(TYPEOF(sp[-2]) == T_INT)
       {
 	pop_stack();
       }else{

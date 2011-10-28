@@ -278,8 +278,8 @@ INT32 count_args(node *n)
 
   case F_APPLY:
     if(CAR(n)->token == F_CONSTANT &&
-       CAR(n)->u.sval.type == T_FUNCTION &&
-       CAR(n)->u.sval.subtype == FUNCTION_BUILTIN &&
+       TYPEOF(CAR(n)->u.sval) == T_FUNCTION &&
+       SUBTYPEOF(CAR(n)->u.sval) == FUNCTION_BUILTIN &&
        n->type == void_type_string)
       return 0;
     return 1;
@@ -747,14 +747,14 @@ node *debug_mknode(int token, node *a, node *b)
       if (a) {
 	switch(a->token) {
 	case F_CONSTANT:
-	  switch(a->u.sval.type)
+	  switch(TYPEOF(a->u.sval))
 	  {
 	    case T_FUNCTION:
-	      if (a->u.sval.subtype == FUNCTION_BUILTIN)
+	      if (SUBTYPEOF(a->u.sval) == FUNCTION_BUILTIN)
 	      {
 		opt_flags = a->u.sval.u.efun->flags;
 	      } else if (a->u.sval.u.object->prog) {
-		i = ID_FROM_INT(a->u.sval.u.object->prog, a->u.sval.subtype);
+		i = ID_FROM_INT(a->u.sval.u.object->prog, SUBTYPEOF(a->u.sval));
 	      } else {
 		yyerror("Calling function in destructed module.");
 	      }
@@ -940,11 +940,8 @@ node *debug_mkstrnode(struct pike_string *str)
 {
   node *res = mkemptynode();
   res->token = F_CONSTANT;
-  res->u.sval.type = T_STRING;
-#ifdef __CHECKER__
-  res->u.sval.subtype = 0;
-#endif
-  copy_shared_string(res->u.sval.u.string, str);
+  SET_SVAL(res->u.sval, T_STRING, 0, string, str);
+  add_ref(str);
   res->type = get_type_of_svalue(&res->u.sval);
   res->tree_info = OPT_SAFE;
   return res;
@@ -954,9 +951,7 @@ node *debug_mkintnode(INT_TYPE nr)
 {
   node *res = mkemptynode();
   res->token = F_CONSTANT;
-  res->u.sval.type = T_INT;
-  res->u.sval.subtype = NUMBER_NUMBER;
-  res->u.sval.u.integer = nr;
+  SET_SVAL(res->u.sval, T_INT, NUMBER_NUMBER, integer, nr);
   res->type=get_type_of_svalue( & res->u.sval);
   res->tree_info = OPT_SAFE;
 
@@ -967,9 +962,7 @@ node *debug_mknewintnode(INT_TYPE nr)
 {
   node *res = mkemptynode();
   res->token = F_CONSTANT;
-  res->u.sval.type = T_INT;
-  res->u.sval.subtype = NUMBER_NUMBER;
-  res->u.sval.u.integer = nr;
+  SET_SVAL(res->u.sval, T_INT, NUMBER_NUMBER, integer, nr);
   res->type=get_type_of_svalue( & res->u.sval);
   res->tree_info = OPT_SAFE;
   return res;
@@ -980,11 +973,7 @@ node *debug_mkfloatnode(FLOAT_TYPE foo)
   node *res = mkemptynode();
   res->token = F_CONSTANT;
   copy_pike_type(res->type, float_type_string);
-  res->u.sval.type = T_FLOAT;
-#ifdef __CHECKER__
-  res->u.sval.subtype = 0;
-#endif
-  res->u.sval.u.float_number = foo;
+  SET_SVAL(res->u.sval, T_FLOAT, 0, float_number, foo);
   res->tree_info = OPT_SAFE;
 
   return res;
@@ -994,11 +983,7 @@ node *debug_mkfloatnode(FLOAT_TYPE foo)
 node *debug_mkprgnode(struct program *p)
 {
   struct svalue s;
-  s.u.program=p;
-  s.type = T_PROGRAM;
-#ifdef __CHECKER__
-  s.subtype = 0;
-#endif
+  SET_SVAL(s, T_PROGRAM, 0, program, p);
   return mkconstantsvaluenode(&s);
 }
 
@@ -1191,7 +1176,7 @@ node *debug_mkexternalnode(struct program *parent_prog, int i)
 	res->node_info = OPT_EXTERNAL_DEPEND;
       } else if (id->func.const_info.offset != -1) {
 	struct svalue *s = &parent_prog->constants[id->func.const_info.offset].sval;
-	if ((s->type == T_PROGRAM) &&
+	if ((TYPEOF(*s) == T_PROGRAM) &&
 	    (s->u.program->flags & PROGRAM_USES_PARENT)) {
 	  /* The constant program refers to its parent, so we need as well. */
 	  res->node_info = OPT_EXTERNAL_DEPEND;
@@ -1545,7 +1530,7 @@ void resolv_class(node *n)
   check_tree(n,0);
 
   resolv_constant(n);
-  switch(Pike_sp[-1].type)
+  switch(TYPEOF(Pike_sp[-1]))
   {
     case T_OBJECT:
       if(!Pike_sp[-1].u.object->prog)
@@ -1575,7 +1560,7 @@ void resolv_program(node *n)
   check_tree(n,0);
 
   resolv_class(n);
-  switch(Pike_sp[-1].type)
+  switch(TYPEOF(Pike_sp[-1]))
   {
     case T_FUNCTION:
       if(program_from_function(Pike_sp-1))
@@ -1613,7 +1598,7 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
     }
   }else{
     resolv_constant(n);
-    switch(Pike_sp[-1].type)
+    switch(TYPEOF(Pike_sp[-1]))
     {
     case T_INT:
       if (!Pike_sp[-1].u.integer) {
@@ -1637,10 +1622,10 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
     case T_ARRAY:
       if (node_name) {
 	my_yyerror("Failed to index module %s, got %s. (Not a module?)",
-		   node_name, get_name_of_type (Pike_sp[-1].type));
+		   node_name, get_name_of_type (TYPEOF(Pike_sp[-1])));
       } else {
 	my_yyerror("Failed to index a module, got %s. (Not a module?)",
-		   get_name_of_type (Pike_sp[-1].type));
+		   get_name_of_type (TYPEOF(Pike_sp[-1])));
       }
       pop_stack();
       push_int(0);
@@ -1651,7 +1636,7 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
       if(!(Pike_compiler->new_program->flags & PROGRAM_PASS_1_DONE))
       {
 	struct program *p;
-	if(Pike_sp[-1].type == T_OBJECT)
+	if(TYPEOF(Pike_sp[-1]) == T_OBJECT)
 	  p=Pike_sp[-1].u.object->prog;
 	else
 	  p=Pike_sp[-1].u.program;
@@ -1706,9 +1691,9 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
 	  UNSETJMP(recovery);
 	}
       
-	if(Pike_sp[-1].type == T_INT &&
+	if(TYPEOF(Pike_sp[-1]) == T_INT &&
 	   !Pike_sp[-1].u.integer &&
-	   Pike_sp[-1].subtype==NUMBER_UNDEFINED)
+	   SUBTYPEOF(Pike_sp[-1]) == NUMBER_UNDEFINED)
 	{
 	  if(Pike_compiler->new_program->flags & PROGRAM_PASS_1_DONE)
 	  {
@@ -1737,9 +1722,9 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
 	}
 
 	else if (Pike_compiler->new_program->flags & PROGRAM_PASS_1_DONE) {
-	  if (((Pike_sp[-1].type == T_OBJECT &&
+	  if (((TYPEOF(Pike_sp[-1]) == T_OBJECT &&
 		Pike_sp[-1].u.object == placeholder_object) ||
-	       (Pike_sp[-1].type == T_PROGRAM &&
+	       (TYPEOF(Pike_sp[-1]) == T_PROGRAM &&
 		Pike_sp[-1].u.program == placeholder_program)) &&
 	      /* Ugly special case: We must be able to get
 	       * predef::__placeholder_object. */
@@ -1747,12 +1732,12 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
 	    if (node_name)
 	      my_yyerror("Got placeholder %s when indexing "
 			 "module %s with '%S'. (Resolver problem.)",
-			 get_name_of_type (Pike_sp[-1].type),
+			 get_name_of_type (TYPEOF(Pike_sp[-1])),
 			 node_name, id);
 	    else
 	      my_yyerror("Got placeholder %s when indexing "
 			 "module with '%S'. (Resolver problem.)",
-			 get_name_of_type (Pike_sp[-1].type),
+			 get_name_of_type (TYPEOF(Pike_sp[-1])),
 			 id);
 	  }
 	}
@@ -1764,11 +1749,11 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
 	   * program might still be just as unfinished when we come
 	   * back here in pass 2. */
 	  struct program *p = NULL;
-	  if (Pike_sp[-1].type == T_PROGRAM)
+	  if (TYPEOF(Pike_sp[-1]) == T_PROGRAM)
 	    p = Pike_sp[-1].u.program;
-	  else if (Pike_sp[-1].type == T_OBJECT ||
-		   (Pike_sp[-1].type == T_FUNCTION &&
-		    Pike_sp[-1].subtype != FUNCTION_BUILTIN))
+	  else if (TYPEOF(Pike_sp[-1]) == T_OBJECT ||
+		   (TYPEOF(Pike_sp[-1]) == T_FUNCTION &&
+		    SUBTYPEOF(Pike_sp[-1]) != FUNCTION_BUILTIN))
 	    p = Pike_sp[-1].u.object->prog;
 	  if (p && !(p->flags & PROGRAM_PASS_1_DONE))
 	    report_compiler_dependency (p);
@@ -1835,8 +1820,8 @@ node *debug_mktypenode(struct pike_type *t)
 {
   node *res = mkemptynode();
   res->token = F_CONSTANT;
-  copy_pike_type(res->u.sval.u.type, t);
-  res->u.sval.type = T_TYPE;
+  SET_SVAL(res->u.sval, T_TYPE, 0, type, t);
+  add_ref(t);
   /* FIXME: Should be type(val) */
   type_stack_mark();
   push_finished_type(t);
@@ -1850,8 +1835,8 @@ node *low_mkconstantsvaluenode(const struct svalue *s)
   node *res = mkemptynode();
   res->token = F_CONSTANT;
   assign_svalue_no_free(& res->u.sval, s);
-  if(s->type == T_OBJECT ||
-     (s->type==T_FUNCTION && s->subtype!=FUNCTION_BUILTIN))
+  if(TYPEOF(*s) == T_OBJECT ||
+     (TYPEOF(*s) == T_FUNCTION && SUBTYPEOF(*s) != FUNCTION_BUILTIN))
   {
     if(!(s->u.object->prog && (s->u.object->prog->flags & PROGRAM_CONSTANT)))
       res->node_info|=OPT_EXTERNAL_DEPEND;
@@ -1870,7 +1855,7 @@ node *debug_mkliteralsvaluenode(const struct svalue *s)
 {
   node *res = low_mkconstantsvaluenode(s);
 
-  if(s->type!=T_STRING && s->type!=T_INT && s->type!=T_FLOAT)
+  if(TYPEOF(*s) != T_STRING && TYPEOF(*s) != T_INT && TYPEOF(*s) != T_FLOAT)
     res->node_info|=OPT_EXTERNAL_DEPEND;
 
   return res;
@@ -1878,7 +1863,7 @@ node *debug_mkliteralsvaluenode(const struct svalue *s)
 
 node *debug_mksvaluenode(struct svalue *s)
 {
-  switch(s->type)
+  switch(TYPEOF(*s))
   {
   case T_ARRAY:
     return make_node_from_array(s->u.array);
@@ -1925,14 +1910,14 @@ node *debug_mksvaluenode(struct svalue *s)
 
   case T_FUNCTION:
   {
-    if(s->subtype != FUNCTION_BUILTIN)
+    if(SUBTYPEOF(*s) != FUNCTION_BUILTIN)
     {
       if(s->u.object == Pike_compiler->fake_object)
-	return mkidentifiernode(s->subtype);
+	return mkidentifiernode(SUBTYPEOF(*s));
 
       if(s->u.object->next == s->u.object)
       {
-	return mkexternalnode(s->u.object->prog, s->subtype);
+	return mkexternalnode(s->u.object->prog, SUBTYPEOF(*s));
       }
 
 /*      yyerror("Non-constant function pointer! (should not happen!)"); */
@@ -2115,8 +2100,8 @@ node **is_call_to(node *n, c_fun f)
     case F_APPLY:
       if(CAR(n) &&
 	 CAR(n)->token == F_CONSTANT &&
-	 CAR(n)->u.sval.type == T_FUNCTION &&
-	 CAR(n)->u.sval.subtype == FUNCTION_BUILTIN &&
+	 TYPEOF(CAR(n)->u.sval) == T_FUNCTION &&
+	 SUBTYPEOF(CAR(n)->u.sval) == FUNCTION_BUILTIN &&
 	 CAR(n)->u.sval.u.efun->function == f)
 	return &_CDR(n);
   }
@@ -3150,7 +3135,7 @@ static struct pike_string *get_name_of_function(node *n)
   case F_ARROW:
   case F_INDEX:
     if(CDR(n)->token == F_CONSTANT &&
-       CDR(n)->u.sval.type == T_STRING)
+       TYPEOF(CDR(n)->u.sval) == T_STRING)
     {
       name = CDR(n)->u.sval.u.string;
     }else{
@@ -3159,14 +3144,15 @@ static struct pike_string *get_name_of_function(node *n)
     break;
 
   case F_CONSTANT:
-    switch(n->u.sval.type)
+    switch(TYPEOF(n->u.sval))
     {
     case T_FUNCTION:
-      if(n->u.sval.subtype == FUNCTION_BUILTIN)
+      if(SUBTYPEOF(n->u.sval) == FUNCTION_BUILTIN)
       {
 	name = n->u.sval.u.efun->name;
       }else{
-	name = ID_FROM_INT(n->u.sval.u.object->prog, n->u.sval.subtype)->name;
+	name =
+	  ID_FROM_INT(n->u.sval.u.object->prog, SUBTYPEOF(n->u.sval))->name;
       }
       break;
 
@@ -3244,8 +3230,8 @@ static struct pike_string *get_name_of_function(node *n)
 
   case F_APPLY:
     if ((CAR(n)->token == F_CONSTANT) &&
-	(CAR(n)->u.sval.type == T_FUNCTION) &&
-	(CAR(n)->u.sval.subtype == FUNCTION_BUILTIN) &&
+	(TYPEOF(CAR(n)->u.sval) == T_FUNCTION) &&
+	(SUBTYPEOF(CAR(n)->u.sval) == FUNCTION_BUILTIN) &&
 	(CAR(n)->u.sval.u.efun->function == debug_f_aggregate)) {
       if (CDR(n)) {
 	n = CDR(n);
@@ -3297,7 +3283,7 @@ void fix_type_field(node *n)
 #ifdef NEW_ARG_CHECK
       struct pike_type *soft_type = NULL;
       if (CDR(n) && (CDR(n)->token == F_CONSTANT) &&
-	  (CDR(n)->u.sval.type == T_TYPE)) {
+	  (TYPEOF(CDR(n)->u.sval) == T_TYPE)) {
 	soft_type = CDR(n)->u.sval.u.type;
 	if ((n->type = soft_cast(soft_type, CAR(n)->type, 0))) {
 	  /* Success. */
@@ -3680,7 +3666,7 @@ void fix_type_field(node *n)
 	case F_ARROW:
 	case F_INDEX:
 	  if(CDAR(n)->token == F_CONSTANT &&
-	     CDAR(n)->u.sval.type == T_STRING)
+	     TYPEOF(CDAR(n)->u.sval) == T_STRING)
 	  {
 	    name=CDAR(n)->u.sval.u.string;
 	  }else{
@@ -3689,15 +3675,15 @@ void fix_type_field(node *n)
 	  break;
 
       case F_CONSTANT:
-	switch(CAR(n)->u.sval.type)
+	switch(TYPEOF(CAR(n)->u.sval))
 	{
 	case T_FUNCTION:
-	  if(CAR(n)->u.sval.subtype == FUNCTION_BUILTIN)
+	  if(SUBTYPEOF(CAR(n)->u.sval) == FUNCTION_BUILTIN)
 	  {
 	    name=CAR(n)->u.sval.u.efun->name;
 	  }else{
 	    name=ID_FROM_INT(CAR(n)->u.sval.u.object->prog,
-			     CAR(n)->u.sval.subtype)->name;
+			     SUBTYPEOF(CAR(n)->u.sval))->name;
 	  }
 	  break;
 
@@ -5587,7 +5573,7 @@ int dooptcode(struct pike_string *name,
     
     if((foo=is_stupid_func(n, args, vargs, type)))
     {
-      if(foo->type == T_FUNCTION && foo->subtype==FUNCTION_BUILTIN)
+      if(TYPEOF(*foo) == T_FUNCTION && SUBTYPEOF(*foo) == FUNCTION_BUILTIN)
       {
 	tmp.c_fun=foo->u.efun->function;
 	if(tmp.c_fun != f_destruct &&

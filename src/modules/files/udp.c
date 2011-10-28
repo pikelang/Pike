@@ -192,8 +192,8 @@ static void udp_bind(INT32 args)
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("Stdio.UDP->bind", 1);
 
-  if(Pike_sp[-args].type != PIKE_T_INT &&
-     (Pike_sp[-args].type != PIKE_T_STRING ||
+  if(TYPEOF(Pike_sp[-args]) != PIKE_T_INT &&
+     (TYPEOF(Pike_sp[-args]) != PIKE_T_STRING ||
       Pike_sp[-args].u.string->size_shift))
     SIMPLE_BAD_ARG_ERROR("Stdio.UDP->bind", 1, "int|string (8bit)");
 
@@ -210,11 +210,11 @@ static void udp_bind(INT32 args)
     fd_close(fd);
   }
 
-  addr_len = get_inet_addr(&addr, (args > 1 && Pike_sp[1-args].type==PIKE_T_STRING?
+  addr_len = get_inet_addr(&addr, (args > 1 && TYPEOF(Pike_sp[1-args])==PIKE_T_STRING?
 				   Pike_sp[1-args].u.string->str : NULL),
-			   (Pike_sp[-args].type == PIKE_T_STRING?
+			   (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING?
 			    Pike_sp[-args].u.string->str : NULL),
-			   (Pike_sp[-args].type == PIKE_T_INT?
+			   (TYPEOF(Pike_sp[-args]) == PIKE_T_INT?
 			    Pike_sp[-args].u.integer : -1), 1);
 
   fd = fd_socket(SOCKADDR_FAMILY(addr), THIS->type, THIS->protocol);
@@ -705,9 +705,9 @@ void udp_sendto(INT32 args)
   }
 
   to_len = get_inet_addr(&to, Pike_sp[-args].u.string->str,
-			 (Pike_sp[1-args].type == PIKE_T_STRING?
+			 (TYPEOF(Pike_sp[1-args]) == PIKE_T_STRING?
 			  Pike_sp[1-args].u.string->str : NULL),
-			 (Pike_sp[1-args].type == PIKE_T_INT?
+			 (TYPEOF(Pike_sp[1-args]) == PIKE_T_INT?
 			  Pike_sp[1-args].u.integer : -1), 1);
 
   fd = FD;
@@ -771,7 +771,7 @@ static int got_udp_event (struct fd_callback_box *box, int event)
     set_fd_callback_events (&u->box, 0);
   else {
     apply_svalue (&u->read_callback, 0);
-    if (Pike_sp[-1].type == PIKE_T_INT && Pike_sp[-1].u.integer == -1) {
+    if (TYPEOF(Pike_sp[-1]) == PIKE_T_INT && Pike_sp[-1].u.integer == -1) {
       pop_stack();
       return -1;
     }
@@ -889,14 +889,14 @@ static void udp_connect(INT32 args)
 
   get_all_args("UDP.connect", args, "%S%*", &dest_addr, &dest_port);
 
-  if(dest_port->type != PIKE_T_INT &&
-     (dest_port->type != PIKE_T_STRING || dest_port->u.string->size_shift))
+  if(TYPEOF(*dest_port) != PIKE_T_INT &&
+     (TYPEOF(*dest_port) != PIKE_T_STRING || dest_port->u.string->size_shift))
     SIMPLE_BAD_ARG_ERROR("UDP.connect", 2, "int|string (8bit)");
 
   addr_len =  get_inet_addr(&addr, dest_addr->str,
-			    (dest_port->type == PIKE_T_STRING?
+			    (TYPEOF(*dest_port) == PIKE_T_STRING?
 			     dest_port->u.string->str : NULL),
-			    (dest_port->type == PIKE_T_INT?
+			    (TYPEOF(*dest_port) == PIKE_T_INT?
 			     dest_port->u.integer : -1), 0);
 
   if(FD < 0)
@@ -989,7 +989,7 @@ static void udp_set_backend (INT32 args)
 
   if (!args)
     SIMPLE_TOO_FEW_ARGS_ERROR ("Stdio.UDP->set_backend", 1);
-  if (Pike_sp[-args].type != PIKE_T_OBJECT)
+  if (TYPEOF(Pike_sp[-args]) != PIKE_T_OBJECT)
     SIMPLE_BAD_ARG_ERROR ("Stdio.UDP->set_backend", 1, "object(Pike.Backend)");
   backend = (struct Backend_struct *)
     get_storage (Pike_sp[-args].u.object, Backend_program);

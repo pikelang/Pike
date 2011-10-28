@@ -35,9 +35,7 @@ void low_add_efun(struct pike_string *name, struct svalue *fun)
 {
   struct svalue s;
 
-  s.type=T_STRING;
-  s.subtype=0;
-  s.u.string=name;
+  SET_SVAL(s, T_STRING, 0, string, name);
 
   if(fun)
   {
@@ -67,9 +65,7 @@ void add_pike_string_constant(const char *name, const char *str, int len)
 PMOD_EXPORT void add_global_program(const char *name, struct program *p)
 {
   struct svalue s;
-  s.type=T_PROGRAM;
-  s.subtype=0;
-  s.u.program=p;
+  SET_SVAL(s, T_PROGRAM, 0, program, p);
   low_add_constant(name, p?&s:NULL);
 }
 
@@ -151,9 +147,8 @@ PMOD_EXPORT struct callable *add_efun2(const char *name,
   struct callable *ret;
 
   n=make_shared_string(name);
-  s.type=T_FUNCTION;
-  s.subtype=FUNCTION_BUILTIN;
-  ret=s.u.efun=make_callable(fun, name, type, flags, optimize, docode);
+  SET_SVAL(s, T_FUNCTION, FUNCTION_BUILTIN, efun,
+	   make_callable(fun, name, type, flags, optimize, docode));
   low_add_efun(n, &s);
   free_svalue(&s);
   free_string(n);
@@ -187,10 +182,9 @@ PMOD_EXPORT struct callable *quick_add_efun(const char *name, ptrdiff_t name_len
 #ifdef DEBUG
   check_type_string(t);
 #endif
-  s.type=T_FUNCTION;
-  s.subtype=FUNCTION_BUILTIN;
   add_ref(n);
-  ret=s.u.efun=low_make_callable(fun, n, t, flags, optimize, docode);
+  SET_SVAL(s, T_FUNCTION, FUNCTION_BUILTIN, efun,
+	   ret = low_make_callable(fun, n, t, flags, optimize, docode));
   mapping_string_insert(builtin_constants, n, &s);
   free_svalue(&s);
   free_string(n);

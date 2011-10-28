@@ -34,10 +34,9 @@ static void push_words( struct buffer *data, struct words *w )
   unsigned int i;
   for( i=0; i<w->size; i++ )
   {
-    r->item[i].type = PIKE_T_STRING;
-    r->item[i].u.string =
-      make_shared_binary_string2( d+w->words[i].start,
-				  w->words[i].size );
+    SET_SVAL(r->item[i], PIKE_T_STRING, 0, string,
+	     make_shared_binary_string2( d+w->words[i].start,
+					 w->words[i].size ));
   }
   r->type_field = BIT_STRING;
   push_array( r );
@@ -53,10 +52,9 @@ static void push_words0( struct pike_string *ds, struct words *w )
   unsigned int i;
   for( i=0; i<w->size; i++ )
   {
-    r->item[i].type = PIKE_T_STRING;
-    r->item[i].u.string =
-      make_shared_binary_string( (const char *)d+w->words[i].start,
-				 w->words[i].size );
+    SET_SVAL(r->item[i], PIKE_T_STRING, 0, string,
+	     make_shared_binary_string( (const char *)d+w->words[i].start,
+					w->words[i].size ));
   }
   r->type_field = BIT_STRING;
   pop_stack();

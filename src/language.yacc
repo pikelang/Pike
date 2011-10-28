@@ -425,7 +425,7 @@ low_program_ref: string_constant
     STACK_LEVEL_CHECK(1);
     if($$->name) free_string($$->name);
 #ifdef PIKE_DEBUG
-    if (Pike_sp[-1].type != T_STRING) {
+    if (TYPEOF(Pike_sp[-1]) != T_STRING) {
       Pike_fatal("Compiler lost track of program name.\n");
     }
 #endif /* PIKE_DEBUG */
@@ -473,14 +473,14 @@ facet: TOK_FACET TOK_IDENTIFIER ':' idents ';'
       }
       else {
 	resolv_constant($4);
-	if (Pike_sp[-1].type == T_OBJECT) {
+	if (TYPEOF(Pike_sp[-1]) == T_OBJECT) {
 	  /* FIXME: Object subtypes! */
 	  o = Pike_sp[-1].u.object;
 	  ref_push_string($2->u.sval.u.string);
 	  push_int(Pike_compiler->new_program->id);
 	  push_int(!!(Pike_compiler->new_program->flags & PROGRAM_IS_PRODUCT));
 	  safe_apply(o, "add_facet_class", 3);
-	  if (Pike_sp[-1].type == T_INT &&
+	  if (TYPEOF(Pike_sp[-1]) == T_INT &&
 	      Pike_sp[-1].u.integer >= 0) {
 	    Pike_compiler->new_program->flags &= ~PROGRAM_IS_PRODUCT;
 	    Pike_compiler->new_program->flags |= PROGRAM_IS_FACET;
@@ -537,7 +537,7 @@ inheritance: modifiers TOK_INHERIT inherit_ref optional_rename_inherit ';'
 	else {
 	  safe_apply(Pike_compiler->new_program->facet_group,
 		     "product_classes_checked", 0);
-	  if (Pike_sp[-1].type == T_INT &&
+	  if (TYPEOF(Pike_sp[-1]) == T_INT &&
 	      Pike_sp[-1].u.integer == 0) {
 	    pop_stack();
 	    safe_apply(Pike_compiler->new_program->facet_group,
@@ -1541,26 +1541,28 @@ identifier_type: idents
   { 
     resolv_constant($1);
 
-    if (Pike_sp[-1].type == T_TYPE) {
+    if (TYPEOF(Pike_sp[-1]) == T_TYPE) {
       /* "typedef" */
       push_finished_type(Pike_sp[-1].u.type);
     } else {
       /* object type */
       struct program *p = NULL;
 
-      if (Pike_sp[-1].type == T_OBJECT) {
+      if (TYPEOF(Pike_sp[-1]) == T_OBJECT) {
 	if(!(p = Pike_sp[-1].u.object->prog))
 	{
 	  pop_stack();
 	  push_int(0);
 	  yyerror("Destructed object used as program identifier.");
 	}else{
-	  int f = FIND_LFUN(p->inherits[Pike_sp[-1].subtype].prog, LFUN_CALL);
+	  int f = FIND_LFUN(p->inherits[SUBTYPEOF(Pike_sp[-1])].prog,
+			    LFUN_CALL);
 	  if(f!=-1)
 	  {
-	    Pike_sp[-1].subtype =
-	      f + p->inherits[Pike_sp[-1].subtype].identifier_level;
-	    Pike_sp[-1].type=T_FUNCTION;
+	    SET_SVAL_SUBTYPE(Pike_sp[-1],
+			     f + p->inherits[SUBTYPEOF(Pike_sp[-1])].
+			     identifier_level);
+	    SET_SVAL_TYPE(Pike_sp[-1], T_FUNCTION);
 	  }else{
 	    extern void f_object_program(INT32);
 	    if (Pike_compiler->compiler_pass == 2 && !TEST_COMPAT (7, 4)) {
@@ -1571,7 +1573,7 @@ identifier_type: idents
 	}
       }
 
-      switch(Pike_sp[-1].type) {
+      switch(TYPEOF(Pike_sp[-1])) {
 	case T_FUNCTION:
 	if((p = program_from_function(Pike_sp-1))) {
 	  push_object_type(0, p?(p->id):0);
@@ -1630,7 +1632,7 @@ number_or_maxint: /* Empty */
   | '-' TOK_NUMBER
   {
 #ifdef PIKE_DEBUG
-    if (($2->token != F_CONSTANT) || ($2->u.sval.type != T_INT)) {
+    if (($2->token != F_CONSTANT) || (TYPEOF($2->u.sval) != T_INT)) {
       Pike_fatal("Unexpected number in negative int-range.\n");
     }
 #endif /* PIKE_DEBUG */
@@ -1647,7 +1649,7 @@ number_or_minint: /* Empty */
   | '-' TOK_NUMBER
   {
 #ifdef PIKE_DEBUG
-    if (($2->token != F_CONSTANT) || ($2->u.sval.type != T_INT)) {
+    if (($2->token != F_CONSTANT) || (TYPEOF($2->u.sval) != T_INT)) {
       Pike_fatal("Unexpected number in negative int-range.\n");
     }
 #endif /* PIKE_DEBUG */
@@ -1674,7 +1676,7 @@ opt_int_range: /* Empty */
 
     /* FIXME: Check that $4 is >= $2. */
     if($4->token == F_CONSTANT) {
-      if ($4->u.sval.type == T_INT) {
+      if (TYPEOF($4->u.sval) == T_INT) {
 	max = $4->u.sval.u.integer;
 #ifdef AUTO_BIGNUM
       } else if (is_bignum_object_in_svalue(&$4->u.sval)) {
@@ -1688,7 +1690,7 @@ opt_int_range: /* Empty */
     }
 
     if($2->token == F_CONSTANT) {
-      if ($2->u.sval.type == T_INT) {
+      if (TYPEOF($2->u.sval) == T_INT) {
 	min = $2->u.sval.u.integer;
 #ifdef AUTO_BIGNUM
       } else if (is_bignum_object_in_svalue(&$2->u.sval)) {
@@ -1747,7 +1749,7 @@ opt_object_type:  /* Empty */ { push_object_type(0, 0); }
     }
     push_object_type(0, p?(p->id):0);
     /* Attempt to name the type. */
-    if (Pike_sp[-2].type == T_STRING) {
+    if (TYPEOF(Pike_sp[-2]) == T_STRING) {
       push_type_name(Pike_sp[-2].u.string);
     }
     pop_n_elems(2);
@@ -2793,8 +2795,9 @@ class: TOK_CLASS line_number_info optional_identifier
 	{
 	  struct svalue *s;
 	  if ((id->func.const_info.offset >= 0) &&
-	      ((s = &PROG_FROM_INT(Pike_compiler->new_program,i)->
-		constants[id->func.const_info.offset].sval)->type == T_PROGRAM))
+	      (TYPEOF(*(s = &PROG_FROM_INT(Pike_compiler->new_program,i)->
+			constants[id->func.const_info.offset].sval)) ==
+	       T_PROGRAM))
 	  {
 	    low_start_new_program(s->u.program, 2,
 				  $3->u.sval.u.string,
@@ -2979,9 +2982,7 @@ class: TOK_CLASS line_number_info optional_identifier
        * since we might have a lfun::create(). */
       struct identifier *i;
       struct svalue sv;
-      sv.type = T_PROGRAM;
-      sv.subtype = 0;
-      sv.u.program = p;
+      SET_SVAL(sv, T_PROGRAM, 0, program, p);
       i = ID_FROM_INT(Pike_compiler->new_program, $<number>4);
       free_type(i->type);
       i->type = get_type_of_svalue(&sv);
@@ -4106,13 +4107,13 @@ low_idents: TOK_IDENTIFIER
 
     $$ = 0;
 
-    if (c->default_module.type == T_MAPPING) {
+    if (TYPEOF(c->default_module) == T_MAPPING) {
       if ((efun = low_mapping_lookup(c->default_module.u.mapping,
 				     &($3->u.sval))))
 	$$ = mkconstantsvaluenode(efun);
     }
 
-    else if (c->default_module.type != T_INT) {
+    else if (TYPEOF(c->default_module) != T_INT) {
       JMP_BUF tmp;
       if (SETJMP (tmp))
 	handle_compile_exception ("Couldn't index %d.%d "
@@ -4926,7 +4927,7 @@ static int call_handle_import(struct pike_string *s)
 
   if (safe_apply_handler("handle_import", c->handler, c->compat_handler,
 			 args, BIT_MAPPING|BIT_OBJECT|BIT_PROGRAM|BIT_ZERO))
-    if (Pike_sp[-1].type != T_INT)
+    if (TYPEOF(Pike_sp[-1]) != T_INT)
       return 1;
     else {
       pop_stack();

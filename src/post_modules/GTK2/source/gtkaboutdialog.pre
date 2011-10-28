@@ -137,14 +137,14 @@ void set_authors(array(string) auth)
     SET_ONERROR(err, free, auth);
 
     for (i=j=0; i<a->size; i++) {
-      if (ITEM(a)[i].type == PIKE_T_STRING) {
+      if (TYPEOF(ITEM(a)[i]) == PIKE_T_STRING) {
 	ref_push_string(ITEM(a)[i].u.string);
 	f_string_to_utf8(1);
 #ifdef PIKE_DEBUG
-	if ((Pike_sp[-1].type != PIKE_T_STRING) ||
+	if ((TYPEOF(Pike_sp[-1]) != PIKE_T_STRING) ||
 	    (Pike_sp[-1].u.string->size_shift)) {
 	  Pike_fatal("Unexpected result from string_to_utf8: %s\n",
-		     get_name_of_type(Pike_sp[-1].type));
+		     get_name_of_type(TYPEOF(Pike_sp[-1])));
 	}
 #endif /* PIKE_DEBUG */
 	auth[j++] = Pike_sp[-1].u.string->str;
@@ -200,14 +200,14 @@ void set_artists(array(string) art)
     SET_ONERROR(err, free, art);
 
     for (i=j=0; i<a->size; i++) {
-      if (ITEM(a)[i].type == PIKE_T_STRING) {
+      if (TYPEOF(ITEM(a)[i]) == PIKE_T_STRING) {
 	ref_push_string(ITEM(a)[i].u.string);
 	f_string_to_utf8(1);
 #ifdef PIKE_DEBUG
-	if ((Pike_sp[-1].type != PIKE_T_STRING) ||
+	if ((TYPEOF(Pike_sp[-1]) != PIKE_T_STRING) ||
 	    (Pike_sp[-1].u.string->size_shift)) {
 	  Pike_fatal("Unexpected result from string_to_utf8: %s\n",
-		     get_name_of_type(Pike_sp[-1].type));
+		     get_name_of_type(TYPEOF(Pike_sp[-1])));
 	}
 #endif /* PIKE_DEBUG */
 	art[j++] = Pike_sp[-1].u.string->str;
@@ -263,14 +263,14 @@ void set_documenters(array(string) doc)
     SET_ONERROR(err, free, doc);
 
     for (i=j=0; i<a->size; i++) {
-      if (ITEM(a)[i].type == PIKE_T_STRING) {
+      if (TYPEOF(ITEM(a)[i]) == PIKE_T_STRING) {
 	ref_push_string(ITEM(a)[i].u.string);
 	f_string_to_utf8(1);
 #ifdef PIKE_DEBUG
-	if ((Pike_sp[-1].type != PIKE_T_STRING) ||
+	if ((TYPEOF(Pike_sp[-1]) != PIKE_T_STRING) ||
 	    (Pike_sp[-1].u.string->size_shift)) {
 	  Pike_fatal("Unexpected result from string_to_utf8: %s\n",
-		     get_name_of_type(Pike_sp[-1].type));
+		     get_name_of_type(TYPEOF(Pike_sp[-1])));
 	}
 #endif /* PIKE_DEBUG */
 	doc[j++] = Pike_sp[-1].u.string->str;

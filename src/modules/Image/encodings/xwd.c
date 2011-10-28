@@ -129,8 +129,7 @@ void img_xwd__decode(INT32 args,int header_only,int skipcmap)
 
    ONERROR uwp;
 
-   if (args<1 ||
-       sp[-args].type!=T_STRING)
+   if (args<1 || TYPEOF(sp[-args]) != T_STRING)
       Pike_error("Image.XWD._decode(): Illegal arguments\n");
    
    s=sp[-args].u.string;

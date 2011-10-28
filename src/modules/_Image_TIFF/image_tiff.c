@@ -719,7 +719,7 @@ static void image_tiff_decode( INT32 args )
   if(!args) 
     Pike_error("Too few arguments to Image.TIFF.decode()\n");
 
-  if(sp[-args].type != T_STRING)
+  if(TYPEOF(sp[-args]) != T_STRING)
     Pike_error("Invalid argument 1 to Image.TIFF.decode()\n");
 
   buffer.str = sp[-args].u.string->str;
@@ -809,7 +809,7 @@ static void image_tiff__decode( INT32 args )
   struct svalue *osp=sp;
   if(!args) 
     Pike_error("Too few arguments to Image.TIFF.decode()\n");
-  if(sp[-args].type != T_STRING)
+  if(TYPEOF(sp[-args]) != T_STRING)
     Pike_error("Invalid argument 1 to Image.TIFF.decode()\n");
 
   MEMSET(&res, 0, sizeof(res));
@@ -841,7 +841,7 @@ static int parameter_int(struct svalue *map,struct pike_string *what,
 {
    struct svalue *v;
    v=low_mapping_string_lookup(map->u.mapping,what);
-   if (!v || v->type!=T_INT) return 0;
+   if (!v || TYPEOF(*v) != T_INT) return 0;
    *p=v->u.integer;
    return 1;
 }
@@ -851,7 +851,7 @@ static int parameter_string(struct svalue *map,struct pike_string *what,
 {
    struct svalue *v;
    v=low_mapping_string_lookup(map->u.mapping,what);
-   if (!v || v->type!=T_STRING) return 0;
+   if (!v || TYPEOF(*v) != T_STRING) return 0;
    if(v->u.string->size_shift) return 0;
    *p=(char *)v->u.string->str;
    return 1;
@@ -862,7 +862,7 @@ static int parameter_float(struct svalue *map,struct pike_string *what,
 {
    struct svalue *v;
    v=low_mapping_string_lookup(map->u.mapping,what);
-   if (!v || v->type!=T_FLOAT) return 0;
+   if (!v || TYPEOF(*v) != T_FLOAT) return 0;
    *p=v->u.float_number;
    return 1;
 }
@@ -872,7 +872,7 @@ static int parameter_object(struct svalue *map,struct pike_string *what,
 {
    struct svalue *v;
    v=low_mapping_string_lookup(map->u.mapping,what);
-   if (!v || v->type!=T_OBJECT) return 0;
+   if (!v || TYPEOF(*v) != T_OBJECT) return 0;
    *p=v->u.object;
    return 1;
 }
@@ -918,7 +918,7 @@ static void image_tiff_encode( INT32 args )
   if(args > 1)
   {
     float dpy;
-    if(sp[-args+1].type != T_MAPPING)
+    if(TYPEOF(sp[-args+1]) != T_MAPPING)
       Pike_error("Invalid argument 2 to Image.TIFF.encode. Expected mapping.\n");
     parameter_int( sp-args+1, opt_compression, &c.compression );
     if(parameter_float( sp-args+1, opt_dpy, &dpy ))

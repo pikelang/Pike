@@ -51,23 +51,23 @@ extern struct program *image_program;
 									\
    if (!THIS->img) Pike_error("no image\n");				\
 									\
-   if (args && sp[-args].type==T_INT)					\
+   if (args && TYPEOF(sp[-args]) == T_INT)				\
    {									\
       rgb.r=sp[-args].u.integer;					\
       rgb.g=sp[-args].u.integer;					\
       rgb.b=sp[-args].u.integer;					\
       oper=NULL;							\
    }									\
-   else if (args && sp[-args].type==T_FLOAT)				\
+   else if (args && TYPEOF(sp[-args]) == T_FLOAT)			\
    {									\
       rgb.r=DOUBLE_TO_INT(255*sp[-args].u.float_number);		\
       rgb.g=DOUBLE_TO_INT(255*sp[-args].u.float_number);		\
       rgb.b=DOUBLE_TO_INT(255*sp[-args].u.float_number);		\
       oper=NULL;							\
    }									\
-   else if (args && (sp[-args].type==T_ARRAY ||				\
-		     sp[-args].type==T_OBJECT ||			\
-		     sp[-args].type==T_STRING) &&			\
+   else if (args && (TYPEOF(sp[-args]) == T_ARRAY ||			\
+		     TYPEOF(sp[-args]) == T_OBJECT ||			\
+		     TYPEOF(sp[-args]) == T_STRING) &&			\
             image_color_arg(-args,&trgb))				\
    {									\
       rgb.r=trgb.r; rgb.g=trgb.g; rgb.b=trgb.b; 			\
@@ -75,7 +75,7 @@ extern struct program *image_program;
    }									\
    else									\
    {									\
-      if (args<1 || sp[-args].type!=T_OBJECT				\
+     if (args<1 || TYPEOF(sp[-args]) != T_OBJECT			\
        || !sp[-args].u.object						\
        || sp[-args].u.object->prog!=image_program)			\
       Pike_error("illegal arguments to image->"what"()\n");		\
@@ -370,8 +370,8 @@ void image_operator_divide(INT32 args)
 {
 
   if( args == 1 &&
-      (Pike_sp[-1].type == T_INT ||
-       Pike_sp[-1].type == T_FLOAT ) )
+      (TYPEOF(Pike_sp[-1]) == T_INT ||
+       TYPEOF(Pike_sp[-1]) == T_FLOAT ) )
   {
     extern void f_divide( int x );
     /* Major optimization for this not totally uncommon case. Perhaps
@@ -549,7 +549,7 @@ void image_operator_equal(INT32 args)
    if (!args)
      SIMPLE_TOO_FEW_ARGS_ERROR ("Image->`==", 1);
 
-   if (sp[-args].type==T_INT)
+   if (TYPEOF(sp[-args]) == T_INT)
    {
       rgb.r=sp[-args].u.integer;
       rgb.g=sp[-args].u.integer;
@@ -562,11 +562,11 @@ void image_operator_equal(INT32 args)
 	 return;
       }
    }
-   else if (sp[-args].type==T_ARRAY
+   else if (TYPEOF(sp[-args]) == T_ARRAY
        && sp[-args].u.array->size>=3
-       && sp[-args].u.array->item[0].type==T_INT
-       && sp[-args].u.array->item[1].type==T_INT
-       && sp[-args].u.array->item[2].type==T_INT)
+       && TYPEOF(sp[-args].u.array->item[0]) == T_INT
+       && TYPEOF(sp[-args].u.array->item[1]) == T_INT
+       && TYPEOF(sp[-args].u.array->item[2]) == T_INT)
    {
       rgb.r=sp[-args].u.array->item[0].u.integer;
       rgb.g=sp[-args].u.array->item[1].u.integer;
@@ -581,7 +581,7 @@ void image_operator_equal(INT32 args)
    }
    else
    {
-      if (sp[-args].type!=T_OBJECT
+      if (TYPEOF(sp[-args]) != T_OBJECT
        || !(oper=(struct image*)get_storage(sp[-args].u.object,image_program))) {
 	/* `== must be able to compare anything with anything -
 	 * shouldn't throw an error here. */
@@ -644,18 +644,18 @@ void image_operator_lesser(INT32 args)
    if (!THIS->img)
       Pike_error("image->`<: operator 1 has no image\n");
 
-   if (args && sp[-args].type==T_INT)
+   if (args && TYPEOF(sp[-args]) == T_INT)
    {
       rgb.r=sp[-args].u.integer;
       rgb.g=sp[-args].u.integer;
       rgb.b=sp[-args].u.integer;
       oper=NULL;
    }
-   else if (args && sp[-args].type==T_ARRAY
+   else if (args && TYPEOF(sp[-args]) == T_ARRAY
        && sp[-args].u.array->size>=3
-       && sp[-args].u.array->item[0].type==T_INT
-       && sp[-args].u.array->item[1].type==T_INT
-       && sp[-args].u.array->item[2].type==T_INT)
+       && TYPEOF(sp[-args].u.array->item[0]) == T_INT
+       && TYPEOF(sp[-args].u.array->item[1]) == T_INT
+       && TYPEOF(sp[-args].u.array->item[2]) == T_INT)
    {
       rgb.r=sp[-args].u.array->item[0].u.integer;
       rgb.g=sp[-args].u.array->item[1].u.integer;
@@ -664,7 +664,7 @@ void image_operator_lesser(INT32 args)
    }
    else
    {
-      if (args<1 || sp[-args].type!=T_OBJECT
+      if (args<1 || TYPEOF(sp[-args]) != T_OBJECT
        || !sp[-args].u.object
        || !(oper=(struct image*)get_storage(sp[-args].u.object,image_program)))
 	 Pike_error("image->`<: illegal argument 2\n");
@@ -716,18 +716,18 @@ void image_operator_greater(INT32 args)
    if (!THIS->img)
       Pike_error("image->`>: operator 1 has no image\n");
 
-   if (args && sp[-args].type==T_INT)
+   if (args && TYPEOF(sp[-args]) == T_INT)
    {
       rgb.r=sp[-args].u.integer;
       rgb.g=sp[-args].u.integer;
       rgb.b=sp[-args].u.integer;
       oper=NULL;
    }
-   else if (args && sp[-args].type==T_ARRAY
+   else if (args && TYPEOF(sp[-args]) == T_ARRAY
        && sp[-args].u.array->size>=3
-       && sp[-args].u.array->item[0].type==T_INT
-       && sp[-args].u.array->item[1].type==T_INT
-       && sp[-args].u.array->item[2].type==T_INT)
+       && TYPEOF(sp[-args].u.array->item[0]) == T_INT
+       && TYPEOF(sp[-args].u.array->item[1]) == T_INT
+       && TYPEOF(sp[-args].u.array->item[2]) == T_INT)
    {
       rgb.r=sp[-args].u.array->item[0].u.integer;
       rgb.g=sp[-args].u.array->item[1].u.integer;
@@ -736,7 +736,7 @@ void image_operator_greater(INT32 args)
    }
    else
    {
-      if (args<1 || sp[-args].type!=T_OBJECT
+      if (args<1 || TYPEOF(sp[-args]) != T_OBJECT
        || !sp[-args].u.object
        || !(oper=(struct image*)get_storage(sp[-args].u.object,image_program)))
 	 Pike_error("image->`>: illegal argument 2\n");
@@ -987,7 +987,7 @@ static INLINE void getrgbl(rgbl_group *rgb,INT32 args_start,INT32 args,
    INT32 i;
    if (args-args_start<3) return;
    for (i=0; i<3; i++)
-      if (sp[-args+i+args_start].type!=T_INT)
+      if (TYPEOF(sp[-args+i+args_start]) != T_INT)
          Pike_error("Illegal r,g,b argument to %s\n",name);
    rgb->r=sp[-args+args_start].u.integer;
    rgb->g=sp[1-args+args_start].u.integer;

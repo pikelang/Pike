@@ -63,7 +63,7 @@ void set_colors(struct array *a, GdkColor *b) {
   int i;
   GdkColor *color;
   for (i=0; i<(a->size>5?5:a->size); i++) {
-    if ((ITEM(a)+i)->type==PIKE_T_OBJECT) {
+    if (TYPEOF(ITEM(a)[i]) == PIKE_T_OBJECT) {
       color=(GdkColor *)get_gdkobject((ITEM(a)+i)->u.object,color);
       if (color) {
 	b[i].pixel=color->pixel;

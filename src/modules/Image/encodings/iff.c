@@ -74,9 +74,9 @@ static struct pike_string *low_make_iff(struct svalue *s)
   size_t len;
   unsigned char lenb[4];
 
-  if(s->type != T_ARRAY || s->u.array->size != 2 ||
-     s->u.array->item[0].type != T_STRING ||
-     s->u.array->item[1].type != T_STRING)
+  if(TYPEOF(*s) != T_ARRAY || s->u.array->size != 2 ||
+     TYPEOF(s->u.array->item[0]) != T_STRING ||
+     TYPEOF(s->u.array->item[1]) != T_STRING)
     Pike_error("invalid chunk\n");
 
   add_ref(s->u.array);

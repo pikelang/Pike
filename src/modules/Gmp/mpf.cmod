@@ -127,7 +127,7 @@ PIKECLASS mpf
 
   static void get_new_mpf(MP_FLT *tmp, struct svalue *s)
     {
-      switch(s->type)
+      switch(TYPEOF(*s))
       {
 	case T_FLOAT:
 	{
@@ -194,11 +194,11 @@ PIKECLASS mpf
 	base=sp[2-args].u.integer;
 	if(base<2 || base>36)
 	  Pike_error("Bad argument 3 to Gmp.mpf, must be 2 <= base <= 36, not %d.\n",base);
-	if(sp[-args].type != T_STRING)
+	if(TYPEOF(sp[-args]) != T_STRING)
 	  Pike_error("First argument to Gmp.mpf must be a string when specifying a base.\n");
 
       case 2:
-	if(sp[1-args].type == T_INT)
+	if(TYPEOF(sp[1-args]) == T_INT)
 	{
 	  if(sp[1-args].u.integer<0) {
 	    Pike_error("Bad argument 2 to Gmp.mpf, must be positive.\n");
@@ -209,7 +209,7 @@ PIKECLASS mpf
 	}
 
       case 1:
-	if(x->type == T_STRING)
+	if(TYPEOF(*x) == T_STRING)
 	{
 	  if(x->u.string->size_shift)
 	    Pike_error("First argument to Gmp.mpf must not be a wide string.\n");
@@ -328,7 +328,7 @@ PIKECLASS mpf
       struct svalue *sv;
       if((sv=simple_mapping_string_lookup(m,ind)))
       {
-	if(sv->type == T_INT)
+	if(TYPEOF(*sv) == T_INT)
 	{
 	  return sv->u.integer;
 	}else{
@@ -452,7 +452,7 @@ PIKECLASS mpf
 
 #ifdef DEBUG_MALLOC
 #define get_mpf(X,Y,Z) \
- (debug_get_mpf((X),(Y),(Z)),( (X)->type==T_OBJECT? debug_malloc_touch((X)->u.object) :0 ),debug_get_mpf((X),(Y),(Z)))
+  (debug_get_mpf((X),(Y),(Z)),( TYPEOF(*(X))==T_OBJECT? debug_malloc_touch((X)->u.object) :0 ),debug_get_mpf((X),(Y),(Z)))
 #else
 #define get_mpf debug_get_mpf 
 #endif
@@ -472,7 +472,7 @@ PIKECLASS mpf
 #define MPF_ERROR(x) if (throw_error) Pike_error(x)
       struct object *o;
       unsigned long int prec=1;
-      switch(s->type)
+      switch(TYPEOF(*s))
       {
 	default:
 	  MPF_ERROR("Wrong type of value, cannot convert to Gmp.mpf.\n");
@@ -518,8 +518,7 @@ PIKECLASS mpf
       o=get_mpf_with_prec(prec);
       get_new_mpf(OBTOMPF(o), s);
       free_svalue(s);
-      s->u.object=o;
-      s->type=T_OBJECT;
+      SET_SVAL(*s, T_OBJECT, 0, object, o);
       return (MP_FLT *)o->storage;
     }
 
@@ -538,7 +537,7 @@ PIKECLASS mpf
 
       for(e=0; e<args; e++)
       {
-	if(sp[e-args].type != T_INT || TOOBIGTEST(e))
+	if(TYPEOF(sp[e-args]) != T_INT || TOOBIGTEST(e))
 	  tmp=mpf_get_prec( get_mpf(sp+e-args, 1, prec) );
 	else
 	  tmp=sizeof(sp[e-args].u.integer)*CHAR_BITS;
@@ -553,7 +552,7 @@ PIKECLASS mpf
       INT32 e;
       for(e=0;e<args;e++)
       {
-	if(sp[e-args].type == T_INT)
+	if(TYPEOF(sp[e-args]) == T_INT)
 	{
 	  if(sp[e-args].u.integer > 0)
 	    mpf_add_ui(res, res, sp[e-args].u.integer);
@@ -637,7 +636,7 @@ PIKECLASS mpf
       INT32 e;
       for(e=0;e<args;e++)
       {
-	if(sp[e-args].type == T_INT)
+	if(TYPEOF(sp[e-args]) == T_INT)
 	  mpf_mul_ui(res, res, sp[e-args].u.integer);
 	else
 	  mpf_mul(res, res, OBTOMPF(sp[e-args].u.object));
@@ -692,7 +691,7 @@ PIKECLASS mpf
       INT32 e;
       for(e=0;e<args;e++)
       {
-	if(sp[e-args].type == T_INT)
+	if(TYPEOF(sp[e-args]) == T_INT)
 	  mpf_sub_ui(res, res, sp[e-args].u.integer);
 	else
 	  mpf_sub(res, res, OBTOMPF(sp[e-args].u.object));
@@ -744,7 +743,7 @@ PIKECLASS mpf
 
       for(e=0; e<args; e++)
       {
-	if(sp[e-args].type != T_INT || TOOBIGTEST(e))
+	if(TYPEOF(sp[e-args]) != T_INT || TOOBIGTEST(e))
 	{
 	  MP_FLT *a=get_mpf(sp+e-args, 1, prec);
 	  tmp=mpf_get_prec(a);
@@ -762,7 +761,7 @@ PIKECLASS mpf
       mpf_set(OBTOMPF(res), THISMPF);
       for(e=0;e<args;e++)
       {
-	if(Pike_sp[e-args].type == T_INT)
+	if(TYPEOF(Pike_sp[e-args]) == T_INT)
 	{
 	  mpf_div_ui(OBTOMPF(res), OBTOMPF(res), sp[e-args].u.integer);
 	}else{
@@ -814,7 +813,7 @@ PIKECLASS mpf
     }
 
 #define CMPOP(OP) 					\
-      ((q->type != T_INT || TOOBIGTEST(0)) ?		\
+    ((TYPEOF(*q) != T_INT || TOOBIGTEST(0)) ?		\
        mpf_cmp(THISMPF, get_mpf(q, 1, 0)) OP 0 :	\
        mpf_cmp_ui(THISMPF, q->u.integer) OP 0)
 	
@@ -858,7 +857,7 @@ PIKECLASS mpf
   {
     MP_FLT *arg;
     /* FIXME: We need separate TOOBIGTEST for *_si and *_ui */
-    if(q->type == T_INT && TOOBIGTEST(0))
+    if(TYPEOF(*q) == T_INT && TOOBIGTEST(0))
       RETURN mpf_cmp_si(THISMPF, q->u.integer) == 0;
     arg=get_mpf(q, 0, 0);
     RETURN (arg && !mpf_cmp(THISMPF, arg));
@@ -870,7 +869,7 @@ PIKECLASS mpf
     flags ID_PROTECTED;
   {
     MP_FLT *arg;
-    if(q->type == T_INT && TOOBIGTEST(0))
+    if(TYPEOF(*q) == T_INT && TOOBIGTEST(0))
       RETURN mpf_cmp_si(THISMPF, q->u.integer) != 0;
     arg=get_mpf(q, 0, 0);
     RETURN (!arg || mpf_cmp(THISMPF, arg));

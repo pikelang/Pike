@@ -49,7 +49,7 @@ void create(int|mapping(string:mixed)|void maxlen_or_props)
   pgtk2_verify_not_inited();
   pgtk2_verify_setup();
   if (args) {
-    if (Pike_sp[-args].type==PIKE_T_INT) {
+    if (TYPEOF(Pike_sp[-args]) == PIKE_T_INT) {
       INT_TYPE max;
       GtkWidget *ge;
       get_all_args("create",args,"%i",&max);

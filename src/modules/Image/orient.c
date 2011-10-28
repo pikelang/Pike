@@ -167,9 +167,9 @@ void image_orient(INT32 args)
 
   if (args)
   {
-    if (sp[-args].type==T_INT) 
+    if (TYPEOF(sp[-args]) == T_INT)
       mag=sp[-args].u.integer;
-    else if (sp[-args].type==T_FLOAT)
+    else if (TYPEOF(sp[-args]) == T_FLOAT)
       mag=sp[-args].u.float_number;
     else {
       bad_arg_error("image->orient\\n",sp-args,args,1,"",sp+1-1-args,
@@ -185,13 +185,13 @@ void image_orient(INT32 args)
 
   if (args>1)
   {
-    if (sp[1-args].type!=T_ARRAY) 
+    if (TYPEOF(sp[1-args]) != T_ARRAY)
       bad_arg_error("image->orient\\n",sp-args,args,2,"",sp+2-1-args,
 		"Bad argument 2 to image->orient\n()\n");
     if (sp[1-args].u.array->size!=4)
       Pike_error("The array given as argument 2 to image->orient do not have size 4\n");
     for(i=0; i<4; i++)
-      if ((sp[1-args].u.array->item[i].type!=T_OBJECT) ||
+      if ((TYPEOF(sp[1-args].u.array->item[i]) != T_OBJECT) ||
 	  (!(sp[1-args].u.array->item[i].u.object)) ||
 	  (sp[1-args].u.array->item[i].u.object->prog!=image_program))
 	Pike_error("The array given as argument 2 to image->orient do not contain images\n");

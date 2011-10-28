@@ -251,16 +251,16 @@ static void port_bind(INT32 args)
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("Port->bind", 1);
 
-  if(Pike_sp[-args].type != PIKE_T_INT &&
-     (Pike_sp[-args].type != PIKE_T_STRING ||
+  if(TYPEOF(Pike_sp[-args]) != PIKE_T_INT &&
+     (TYPEOF(Pike_sp[-args]) != PIKE_T_STRING ||
       Pike_sp[-args].u.string->size_shift))
     SIMPLE_BAD_ARG_ERROR("Port->bind", 1, "int|string (8bit)");
 
-  addr_len = get_inet_addr(&addr, (args > 2 && Pike_sp[2-args].type==PIKE_T_STRING?
+  addr_len = get_inet_addr(&addr, (args > 2 && TYPEOF(Pike_sp[2-args])==PIKE_T_STRING?
 				   Pike_sp[2-args].u.string->str : NULL),
-			   (Pike_sp[-args].type == PIKE_T_STRING?
+			   (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING?
 			    Pike_sp[-args].u.string->str : NULL),
-			   (Pike_sp[-args].type == PIKE_T_INT?
+			   (TYPEOF(Pike_sp[-args]) == PIKE_T_INT?
 			    Pike_sp[-args].u.integer : -1), 0);
 
   fd=fd_socket(SOCKADDR_FAMILY(addr), SOCK_STREAM, 0);
@@ -462,8 +462,8 @@ static void port_create(INT32 args)
 {
   if(args)
   {
-    if(Pike_sp[-args].type == PIKE_T_INT ||
-       (Pike_sp[-args].type == PIKE_T_STRING &&
+    if(TYPEOF(Pike_sp[-args]) == PIKE_T_INT ||
+       (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING &&
 	(Pike_sp[-args].u.string->len != 5 ||
 	 strcmp("stdin",Pike_sp[-args].u.string->str))))
     {
@@ -472,7 +472,7 @@ static void port_create(INT32 args)
     }else{
       struct port *p = THIS;
 
-      if(Pike_sp[-args].type != PIKE_T_STRING)
+      if(TYPEOF(Pike_sp[-args]) != PIKE_T_STRING)
 	SIMPLE_TOO_FEW_ARGS_ERROR("Port->create", 1);
 
       /* FIXME: Check that the argument is "stdin". */
@@ -559,7 +559,7 @@ static void port_accept(INT32 args)
   if (this->box.backend) {
     struct object *o = Pike_sp[-1].u.object;
     struct my_file *f = (struct my_file *)
-      (o->storage + o->prog->inherits[Pike_sp[-1].subtype].storage_offset);
+      (o->storage + o->prog->inherits[SUBTYPEOF(Pike_sp[-1])].storage_offset);
     change_backend_for_box(&f->box, this->box.backend);
   }
 
@@ -650,7 +650,7 @@ static void port_set_backend (INT32 args)
 
   if (!args)
     SIMPLE_TOO_FEW_ARGS_ERROR ("Stdio.Port->set_backend", 1);
-  if (Pike_sp[-args].type != PIKE_T_OBJECT)
+  if (TYPEOF(Pike_sp[-args]) != PIKE_T_OBJECT)
     SIMPLE_BAD_ARG_ERROR ("Stdio.Port->set_backend", 1, "object(Pike.Backend)");
   backend = (struct Backend_struct *)
     get_storage (Pike_sp[-args].u.object, Backend_program);

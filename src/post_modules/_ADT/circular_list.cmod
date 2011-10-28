@@ -88,9 +88,7 @@ PIKECLASS CircularList
   PIKEFUN mixed `[](int index) {
     struct svalue ind;
     FIX_AND_CHECK_INDEX(index, THIS->size, 0);
-    ind.u.integer = circ2array(index);
-    ind.type = T_INT;
-    ind.subtype = NUMBER_NUMBER;
+    SET_SVAL(ind, T_INT, NUMBER_NUMBER, integer, circ2array(index));
     simple_array_index_no_free(Pike_sp, THIS->a, &ind);
     Pike_sp++;
   }
@@ -116,9 +114,7 @@ PIKECLASS CircularList
   PIKEFUN mixed `[]=(int index, mixed value) {
     struct svalue ind;
     FIX_AND_CHECK_INDEX(index, THIS->size, 0);
-    ind.u.integer = circ2array(index);
-    ind.type = T_INT;
-    ind.subtype = NUMBER_NUMBER;
+    SET_SVAL(ind, T_INT, NUMBER_NUMBER, integer, circ2array(index));
     should_copy();
     simple_set_index(THIS->a, &ind, value);
     pop_n_elems(args);
@@ -217,7 +213,7 @@ PIKECLASS CircularList
 
   PIKEFUN int(0..1) _equal(mixed coll)
   {
-    if (coll->type == T_OBJECT && 
+    if (TYPEOF(*coll) == T_OBJECT &&
 	coll->u.object->prog == CircularList_program)
     {
       struct CircularList_struct *list = OBJ2_CIRCULARLIST(coll->u.object);
@@ -371,9 +367,9 @@ PIKECLASS CircularList
     int s;
     int retval;
     if(args == 2)
-    { 
-      if (start->type != PIKE_T_INT)
-      { 
+    {
+      if (TYPEOF(*start) != PIKE_T_INT)
+      {
 	SIMPLE_BAD_ARG_ERROR("_search",2,"int");
       }
       if(start->u.integer <0 || start->u.integer>=THIS->size) {
@@ -473,9 +469,7 @@ PIKECLASS CircularList
     {
       THIS->pos=THIS->a->size-1;
     }
-    ind.u.integer = THIS->pos;
-    ind.type = T_INT;
-    ind.subtype = NUMBER_NUMBER;
+    SET_SVAL(ind, T_INT, NUMBER_NUMBER, integer, THIS->pos);
     simple_set_index(THIS->a, &ind, value);
     THIS->size++;
     pop_n_elems(args);
@@ -500,9 +494,8 @@ PIKECLASS CircularList
     {
       for(;THIS->a->size < size; THIS->a->size++)
       {
-	ITEM(THIS->a)[THIS->a->size].type=T_INT;
-	ITEM(THIS->a)[THIS->a->size].subtype=NUMBER_NUMBER;
-	ITEM(THIS->a)[THIS->a->size].u.integer=0;
+	SET_SVAL(ITEM(THIS->a)[THIS->a->size], T_INT, NUMBER_NUMBER,
+		 integer, 0);
       }
       THIS->a->type_field |= BIT_INT;
       if (THIS->size > 0)
@@ -675,9 +668,7 @@ PIKECLASS CircularList
     {
       Pike_error("Can not peek an empty list.\n");
     }
-    ind.u.integer=circ2array(THIS->size-1);
-    ind.type =T_INT;
-    ind.subtype = NUMBER_NUMBER;
+    SET_SVAL(ind, T_INT, NUMBER_NUMBER, integer, circ2array(THIS->size-1));
     simple_array_index_no_free(Pike_sp, THIS->a, &ind);
     Pike_sp++;
   }
@@ -695,9 +686,7 @@ PIKECLASS CircularList
     {
       Pike_error("Can not peek an empty list.\n");
     }
-    ind.u.integer=THIS->pos;
-    ind.type =T_INT;
-    ind.subtype = NUMBER_NUMBER;
+    SET_SVAL(ind, T_INT, NUMBER_NUMBER, integer, THIS->pos);
     simple_array_index_no_free(Pike_sp, THIS->a, &ind);
     Pike_sp++;
   }
@@ -721,12 +710,8 @@ PIKECLASS CircularList
     
     should_copy();
     THIS->size--;
-    ind.u.integer=circ2array(THIS->size);
-    ind.type =T_INT;
-    ind.subtype = NUMBER_NUMBER;
-    zero.u.integer=0;
-    zero.type =T_INT;
-    zero.subtype = NUMBER_NUMBER;
+    SET_SVAL(ind, T_INT, NUMBER_NUMBER, integer, circ2array(THIS->size));
+    SET_SVAL(zero, T_INT, NUMBER_NUMBER, integer, 0);
     simple_array_index_no_free(Pike_sp, THIS->a, &ind);
     simple_set_index(THIS->a, &ind, &zero);
     Pike_sp++;
@@ -751,12 +736,8 @@ PIKECLASS CircularList
     }
     
     should_copy();
-    ind.u.integer=THIS->pos;
-    ind.type =T_INT;
-    ind.subtype = NUMBER_NUMBER;
-    zero.u.integer=0;
-    zero.type =T_INT;
-    zero.subtype = NUMBER_NUMBER;
+    SET_SVAL(ind, T_INT, NUMBER_NUMBER, integer, THIS->pos);
+    SET_SVAL(zero, T_INT, NUMBER_NUMBER, integer, 0);
     if (++THIS->pos >= THIS->a->size)
     {
       THIS->pos = 0;
@@ -785,9 +766,7 @@ PIKECLASS CircularList
       Pike_error("The list is full, could not add value, please allocate more memory.\n");
     }
     
-    ind.u.integer=circ2array(THIS->size);
-    ind.type =T_INT;
-    ind.subtype = NUMBER_NUMBER;
+    SET_SVAL(ind, T_INT, NUMBER_NUMBER, integer, circ2array(THIS->size));
     THIS->size++;
     simple_set_index(THIS->a, &ind, value);
   }
@@ -814,9 +793,7 @@ PIKECLASS CircularList
     {
       THIS->pos=THIS->a->size-1;
     }
-    ind.u.integer = THIS->pos;
-    ind.type = T_INT;
-    ind.subtype = NUMBER_NUMBER;
+    SET_SVAL(ind, T_INT, NUMBER_NUMBER, integer, THIS->pos);
     simple_set_index(THIS->a, &ind, value);
     THIS->size++;
     pop_n_elems(args);
@@ -828,14 +805,14 @@ PIKECLASS CircularList
    *!   @[CircularList] with the maximum size of arg.
    */
 
-  PIKEFUN void create(array|int arg) 
+  PIKEFUN void create(array|int arg)
   {
-    if (arg->type == T_INT)
+    if (TYPEOF(*arg) == T_INT)
     {
       THIS->a =allocate_array_no_init(arg->u.integer, 0);
       THIS->a->type_field = BIT_INT;
     }
-    else if (arg->type == T_ARRAY)
+    else if (TYPEOF(*arg) == T_ARRAY)
     {
       add_ref(THIS->a=arg->u.array);
       THIS->size=THIS->a->size;
@@ -1138,7 +1115,7 @@ PIKECLASS CircularList
 
     PIKEFUN int(0..1) _equal(mixed iter)
     {
-      if (iter->type == T_OBJECT && 
+      if (TYPEOF(*iter) == T_OBJECT &&
 	  iter->u.object->prog == CircularList_CircularListIterator_program)
       {
 	struct CircularList_CircularListIterator_struct *i = 
@@ -1162,7 +1139,7 @@ PIKECLASS CircularList
 
     PIKEFUN int(0..1) `<(mixed iter)
     {
-      if (iter->type == T_OBJECT &&
+      if (TYPEOF(*iter) == T_OBJECT &&
 	  iter->u.object->prog == CircularList_CircularListIterator_program)
       {
 	struct CircularList_CircularListIterator_struct *i = 
@@ -1187,7 +1164,7 @@ PIKECLASS CircularList
 
     PIKEFUN int(0..1) `>(mixed iter)
     {
-      if (iter->type == T_OBJECT &&
+      if (TYPEOF(*iter) == T_OBJECT &&
 	  iter->u.object->prog == CircularList_CircularListIterator_program)
       {
 	struct CircularList_CircularListIterator_struct *i = 
@@ -1264,9 +1241,8 @@ PIKECLASS CircularList
 	  THIS->list->a = copy_array(THIS->list->a);
 	}
 
-	ind.u.integer =  (THIS->pos+THIS->list->pos)%THIS->list->a->size;
-	ind.type = T_INT;
-	ind.subtype = NUMBER_NUMBER;
+	SET_SVAL(ind, T_INT, NUMBER_NUMBER, integer,
+		 (THIS->pos+THIS->list->pos)%THIS->list->a->size);
 	simple_array_index_no_free(&retval, THIS->list->a, &ind);
 	simple_set_index(THIS->list->a, &ind, val);
 	push_svalue(&retval);
@@ -1324,9 +1300,7 @@ PIKECLASS CircularList
   PIKEFUN object last()
   {
     struct svalue ind;
-    ind.u.integer=THIS_CIRCULARLIST->size;
-    ind.type=T_INT;
-    ind.subtype = NUMBER_NUMBER;
+    SET_SVAL(ind, T_INT, NUMBER_NUMBER, integer, THIS_CIRCULARLIST->size);
     ref_push_object(Pike_fp->current_object);
     push_svalue(&ind);
     push_object(clone_object(CircularList_CircularListIterator_program, 2));

@@ -28,7 +28,7 @@ void create(string|mapping|void title, ?GTK2.RadioButton groupmember, ?int mnemo
   pgtk2_verify_not_inited();
   pgtk2_verify_setup();
   if (args) {
-    if (Pike_sp[-args].type==PIKE_T_STRING) {
+    if (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) {
       GtkWidget *gr;
       struct pike_string *t;
       struct object *o1=NULL;

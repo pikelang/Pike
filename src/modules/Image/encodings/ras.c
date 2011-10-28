@@ -116,7 +116,7 @@ void img_ras__decode(INT32 args)
      messages. */
   if(args<1)
     SIMPLE_TOO_FEW_ARGS_ERROR("Image.RAS._decode", 1);
-  if(Pike_sp[-1].type!=T_STRING)
+  if(TYPEOF(Pike_sp[-1]) != T_STRING)
     SIMPLE_BAD_ARG_ERROR("Image.RAS._decode", 1, "string");
   img_ras_decode(args);
   push_constant_text("image");
@@ -445,7 +445,7 @@ static void img_ras_encode(INT32 args)
     struct svalue *s;
 
     if((s=simple_mapping_string_lookup(optm, "palette"))!=NULL && !UNSAFE_IS_ZERO(s))
-      if(s->type != T_OBJECT ||
+      if(TYPEOF(*s) != T_OBJECT ||
 	 (ct=(struct neo_colortable*)
 	  get_storage(s->u.object, image_colortable_program))==NULL)
 	Pike_error("Image.RAS.encode: option (arg 2) \"palette\" has illegal type\n");

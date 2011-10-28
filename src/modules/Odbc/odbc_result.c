@@ -382,7 +382,7 @@ static void f_create(INT32 args)
   if (!args) {
     Pike_error("Too few arguments to odbc_result()\n");
   }
-  if ((Pike_sp[-args].type != T_OBJECT) ||
+  if ((TYPEOF(Pike_sp[-args]) != T_OBJECT) ||
       (!(PIKE_ODBC_RES->odbc =
 	 (struct precompiled_odbc *)get_storage(Pike_sp[-args].u.object,
 						odbc_program)))) {
@@ -492,7 +492,7 @@ static void f_list_tables(INT32 args)
   if (!args) {
     push_constant_text("%");
     args = 1;
-  } else if ((Pike_sp[-args].type != T_STRING) ||
+  } else if ((TYPEOF(Pike_sp[-args]) != T_STRING) ||
 	     (Pike_sp[-args].u.string->size_shift)) {
     Pike_error("odbc_result->list_tables(): "
 	       "Bad argument 1. Expected 8-bit string.\n");

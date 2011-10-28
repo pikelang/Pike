@@ -359,11 +359,11 @@ PMOD_EXPORT void init_interpreter(void)
 void lvalue_to_svalue_no_free(struct svalue *to,struct svalue *lval)
 {
 #ifdef PIKE_SECURITY
-  if(lval->type <= MAX_COMPLEX)
+  if(TYPEOF(*lval) <= MAX_COMPLEX)
     if(!CHECK_DATA_SECURITY(lval->u.array, SECURITY_BIT_INDEX))
       Pike_error("Index permission denied.\n");
 #endif
-  switch(lval->type)
+  switch(TYPEOF(*lval))
   {
    case T_ARRAY_LVALUE:
     {
@@ -375,11 +375,10 @@ void lvalue_to_svalue_no_free(struct svalue *to,struct svalue *lval)
       SET_ONERROR(err, do_free_array, a);
       for(e=0;e<a->size;e++) {
 	lvalue_to_svalue_no_free(ITEM(a)+e, ITEM(lval[1].u.array)+(e<<1));
-	types |= 1 << ITEM(a)[e].type;
+	types |= 1 << TYPEOF(ITEM(a)[e]);
       }
       a->type_field = types;
-      to->type = T_ARRAY;
-      to->u.array=a;
+      SET_SVAL(*to, T_ARRAY, 0, array, a);
       UNSET_ONERROR(err);
       break;
     }
@@ -391,10 +390,10 @@ void lvalue_to_svalue_no_free(struct svalue *to,struct svalue *lval)
 
     case T_OBJECT:
       /* FIXME: Object subtypes! */
-      if (lval[1].type == T_OBJ_INDEX)
+      if (TYPEOF(lval[1]) == T_OBJ_INDEX)
 	low_object_index_no_free (to, lval->u.object, lval[1].u.identifier);
       else
-	object_index_no_free(to, lval->u.object, lval->subtype, lval+1);
+	object_index_no_free(to, lval->u.object, SUBTYPEOF(*lval), lval+1);
       break;
       
     case T_ARRAY:
@@ -406,14 +405,11 @@ void lvalue_to_svalue_no_free(struct svalue *to,struct svalue *lval)
       break;
       
     case T_MULTISET:
-      to->type=T_INT;
       if(multiset_member(lval->u.multiset,lval+1))
       {
-	to->u.integer=1;
-	to->subtype=NUMBER_NUMBER;
+	SET_SVAL(*to, T_INT, NUMBER_NUMBER, integer, 1);
       }else{
-	to->u.integer=0;
-	to->subtype=NUMBER_UNDEFINED;
+	SET_SVAL(*to, T_INT, NUMBER_UNDEFINED, integer, 0);
       }
       break;
       
@@ -428,17 +424,17 @@ void lvalue_to_svalue_no_free(struct svalue *to,struct svalue *lval)
 PMOD_EXPORT void assign_lvalue(struct svalue *lval,struct svalue *from)
 {
 #ifdef PIKE_SECURITY
-  if(lval->type <= MAX_COMPLEX)
+  if(TYPEOF(*lval) <= MAX_COMPLEX)
     if(!CHECK_DATA_SECURITY(lval->u.array, SECURITY_BIT_SET_INDEX))
       Pike_error("Assign index permission denied.\n");
 #endif
 
-  switch(lval->type)
+  switch(TYPEOF(*lval))
   {
     case T_ARRAY_LVALUE:
     {
       INT32 e;
-      if(from->type != T_ARRAY)
+      if(TYPEOF(*from) != T_ARRAY)
 	Pike_error("Trying to assign combined lvalue from non-array.\n");
 
       if(from->u.array->size < (lval[1].u.array->size>>1))
@@ -460,10 +456,10 @@ PMOD_EXPORT void assign_lvalue(struct svalue *lval,struct svalue *from)
 
   case T_OBJECT:
     /* FIXME: Object subtypes! */
-    if (lval[1].type == T_OBJ_INDEX)
+    if (TYPEOF(lval[1]) == T_OBJ_INDEX)
       object_low_set_index (lval->u.object, lval[1].u.identifier, from);
     else
-      object_set_index(lval->u.object, lval->subtype, lval+1, from);
+      object_set_index(lval->u.object, SUBTYPEOF(*lval), lval+1, from);
     break;
 
   case T_ARRAY:
@@ -498,24 +494,24 @@ static void o_assign_lvalue(struct svalue *lvalue)
 union anything *get_pointer_if_this_type(struct svalue *lval, TYPE_T t)
 {
 #ifdef PIKE_SECURITY
-  if(lval->type <= MAX_COMPLEX)
+  if(TYPEOF(*lval) <= MAX_COMPLEX)
     if(!CHECK_DATA_SECURITY(lval->u.array, SECURITY_BIT_SET_INDEX))
       Pike_error("Assign index permission denied.\n");
 #endif
 
-  switch(lval->type)
+  switch(TYPEOF(*lval))
   {
     case T_ARRAY_LVALUE:
       return 0;
       
     case T_SVALUE_PTR:
       dmalloc_touch_svalue(lval->u.lval);
-      if(lval->u.lval->type == t) return & ( lval->u.lval->u );
+      if(TYPEOF(*(lval->u.lval)) == t) return & ( lval->u.lval->u );
       return 0;
 
     case T_OBJECT:
       /* FIXME: What about object subtypes? */
-      return object_get_item_ptr(lval->u.object, lval->subtype, lval+1, t);
+      return object_get_item_ptr(lval->u.object, SUBTYPEOF(*lval), lval+1, t);
       
     case T_ARRAY:
       return array_get_item_ptr(lval->u.array,lval+1,t);
@@ -931,10 +927,10 @@ static INLINE void low_debug_instr_prologue (PIKE_INSTR_T instr)
     if(d_flag>1) DEBUG_CHECK_THREAD();
 #endif
 
-    Pike_sp[0].type=99; /* an invalid type */
-    Pike_sp[1].type=99;
-    Pike_sp[2].type=99;
-    Pike_sp[3].type=99;
+    SET_SVAL_TYPE(Pike_sp[0], 99); /* an invalid type */
+    SET_SVAL_TYPE(Pike_sp[1], 99);
+    SET_SVAL_TYPE(Pike_sp[2], 99);
+    SET_SVAL_TYPE(Pike_sp[3], 99);
       
     if(Pike_sp<Pike_interpreter.evaluator_stack ||
        Pike_mark_sp < Pike_interpreter.mark_stack || Pike_fp->locals>Pike_sp)
@@ -1989,7 +1985,7 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
   apply_svalue:
   {
     struct svalue *s=(struct svalue *)arg1;
-    switch(s->type)
+    switch(TYPEOF(*s))
     {
     case T_INT:
       if (!s->u.integer) {
@@ -2009,10 +2005,10 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
       Pike_error("Attempt to call a mapping\n");
     default:
       Pike_error("Call to non-function value type:%s.\n",
-	    get_name_of_type(s->type));
+		 get_name_of_type(TYPEOF(*s)));
       
     case T_FUNCTION:
-      if(s->subtype == FUNCTION_BUILTIN)
+      if(SUBTYPEOF(*s) == FUNCTION_BUILTIN)
       {
 #ifdef PIKE_DEBUG
 	struct svalue *expected_stack = Pike_sp-args;
@@ -2070,14 +2066,14 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 	type=APPLY_SVALUE;
 	o=s->u.object;
 	if(o->prog == pike_trampoline_program &&
-	   s->subtype == QUICK_FIND_LFUN(pike_trampoline_program, LFUN_CALL))
+	   SUBTYPEOF(*s) == QUICK_FIND_LFUN(pike_trampoline_program, LFUN_CALL))
 	{
 	  fun=((struct pike_trampoline *)(o->storage))->func;
 	  scope=((struct pike_trampoline *)(o->storage))->frame;
 	  o=scope->current_object;
 	  goto apply_low_with_scope;
 	}
-	fun=s->subtype;
+	fun = SUBTYPEOF(*s);
 	goto apply_low;
       }
       break;
@@ -2562,7 +2558,7 @@ PMOD_EXPORT void call_handle_error(void)
       s=simple_free_buf(&save_buf);
       fprintf(stderr,"%s\n",s);
       free(s);
-      if (Pike_sp[-1].type == PIKE_T_OBJECT && Pike_sp[-1].u.object->prog) {
+      if (TYPEOF(Pike_sp[-1]) == PIKE_T_OBJECT && Pike_sp[-1].u.object->prog) {
 	int fun = find_identifier("backtrace", Pike_sp[-1].u.object->prog);
 	if (fun != -1) {
 	  fprintf(stderr, "Attempting to extract the backtrace.\n");
@@ -2819,7 +2815,7 @@ PMOD_EXPORT int safe_apply_handler(const char *fun,
     ret = 0;
   } else {
     if (low_unsafe_apply_handler (fun, handler, compat, args) &&
-	rettypes && !((1 << Pike_sp[-1].type) & rettypes)) {
+	rettypes && !((1 << TYPEOF(Pike_sp[-1])) & rettypes)) {
       if ((rettypes & BIT_ZERO) && SAFE_IS_ZERO (Pike_sp - 1)) {
 	pop_stack();
 	push_int(0);
@@ -2875,7 +2871,7 @@ PMOD_EXPORT void apply(struct object *o, const char *fun, int args)
 
 PMOD_EXPORT void apply_svalue(struct svalue *s, INT32 args)
 {
-  if(s->type==T_INT)
+  if(TYPEOF(*s) == T_INT)
   {
     pop_n_elems(args);
     push_int(0);
@@ -2955,7 +2951,7 @@ void slow_check_stack(void)
 
   for(s=Pike_interpreter.evaluator_stack;s<Pike_sp;s++) {
     /* NOTE: Freed svalues are allowed on the stack. */
-    if (s->type != PIKE_T_FREE) check_svalue(s);
+    if (TYPEOF(*s) != PIKE_T_FREE) check_svalue(s);
   }
 
   s=Pike_interpreter.evaluator_stack;
@@ -3085,7 +3081,7 @@ void gdb_backtrace (
       for (i = 0; i < args; i++) {
 	struct svalue *arg = f->locals + i;
 
-	switch (arg->type) {
+	switch (TYPEOF(*arg)) {
 	  case T_INT:
 	    fprintf (stderr, "%ld", (long) arg->u.integer);
 	    break;
@@ -3158,10 +3154,11 @@ void gdb_backtrace (
 
 	  case T_FUNCTION:
 	    /* FIXME: Wide string identifiers. */
-	    if(arg->subtype == FUNCTION_BUILTIN)
+	    if(SUBTYPEOF(*arg) == FUNCTION_BUILTIN)
 	      fputs (arg->u.efun->name->str, stderr);
 	    else if(arg->u.object->prog)
-	      fputs (safe_idname_from_int(arg->u.object->prog,arg->subtype), stderr);
+	      fputs (safe_idname_from_int(arg->u.object->prog,
+					  SUBTYPEOF(*arg)), stderr);
 	    else
 	      fputc ('0', stderr);
 	    break;
@@ -3205,7 +3202,7 @@ void gdb_backtrace (
 	    break;
 
 	  default:
-	    fprintf (stderr, "<Unknown %d>", arg->type);
+	    fprintf (stderr, "<Unknown %d>", TYPEOF(*arg));
 	}
 
 	if (i < args - 1) fputs (", ", stderr);

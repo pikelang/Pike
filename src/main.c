@@ -621,7 +621,7 @@ int main(int argc, char **argv)
     {
       num=throw_value.u.integer;
     }else{
-      if (throw_value.type == T_OBJECT &&
+      if (TYPEOF(throw_value) == T_OBJECT &&
 	  throw_value.u.object->prog == master_load_error_program &&
 	  !get_master()) {
 	/* Report this specific error in a nice way. Since there's no
@@ -637,8 +637,7 @@ int main(int argc, char **argv)
 	err = (struct generic_error_struct *)
 	  get_storage (Pike_sp[-1].u.object, generic_error_program);
 
-	t.type = PIKE_T_STRING;
-	t.u.string = err->error_message;
+	SET_SVAL(t, PIKE_T_STRING, 0, string, err->error_message);
 
 	init_buf(&buf);
 	describe_svalue(&t,0,0);

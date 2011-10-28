@@ -146,13 +146,13 @@ PIKECLASS Deflate
     case 0: 
       break;
     case 1:
-      if(compression->type != T_INT){
+      if(TYPEOF(*compression) != T_INT){
 	Pike_error("Wrong type of argument 1 in call to Bz2.Deflate().\n");
       }
       compression_rate = compression->u.integer;
       break;
     case 2:
-      if(work->type != T_INT){
+      if(TYPEOF(*work) != T_INT){
 	Pike_error("Wrong type of argument 2 in call to Bz2.Deflate().\n");
       }
       compression_rate = compression->u.integer;
@@ -501,7 +501,7 @@ PIKECLASS Deflate
       flush_mode = BZ_FLUSH;
       break;
     case 2:
-    if(mode->type == T_INT){
+      if(TYPEOF(*mode) == T_INT){
       flush_mode = mode->u.integer;
     }
     else{
@@ -939,7 +939,7 @@ PIKECLASS File
     FILE *tmp = NULL;
     
     if(compression){
-      if(compression->type != T_INT){
+      if(TYPEOF(*compression) != T_INT){
 	Pike_error("Bad argument 2 in call to Bz2.File()->write_open().\n");
       }
       else{
@@ -947,7 +947,7 @@ PIKECLASS File
       }
     }
     if(work){
-      if(work->type != T_INT){
+      if(TYPEOF(*work) != T_INT){
 	Pike_error("Bad argument 3 in call to Bz2.File()->write_open().\n");
       }
       else{
@@ -1062,7 +1062,7 @@ PIKECLASS File
     int i = 1;
 
     if(args == 1){
-      if(bytes->type == T_INT){
+      if(TYPEOF(*bytes) == T_INT){
 	to_be_read = bytes->u.integer;
       }
       else{

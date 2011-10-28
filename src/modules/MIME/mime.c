@@ -172,7 +172,7 @@ static void f_decode_base64( INT32 args )
 {
   if(args != 1)
     Pike_error( "Wrong number of arguments to MIME.decode_base64()\n" );
-  else if (sp[-1].type != T_STRING)
+  else if (TYPEOF(sp[-1]) != T_STRING)
     Pike_error( "Wrong type of argument to MIME.decode_base64()\n" );
   else if (sp[-1].u.string->size_shift != 0)
     Pike_error( "Char out of range for MIME.decode_base64()\n" );
@@ -271,7 +271,7 @@ static void f_encode_base64( INT32 args )
 {
   if(args != 1 && args != 2)
     Pike_error( "Wrong number of arguments to MIME.encode_base64()\n" );
-  else if(sp[-args].type != T_STRING)
+  else if(TYPEOF(sp[-args]) != T_STRING)
     Pike_error( "Wrong type of argument to MIME.encode_base64()\n" );
   else if (sp[-args].u.string->size_shift != 0)
     Pike_error( "Char out of range for MIME.encode_base64()\n" );
@@ -284,7 +284,7 @@ static void f_encode_base64( INT32 args )
     ptrdiff_t groups = (sp[-args].u.string->len+2)/3;
     ptrdiff_t last = (sp[-args].u.string->len-1)%3+1;
 
-    int insert_crlf = !(args == 2 && sp[-1].type == T_INT &&
+    int insert_crlf = !(args == 2 && TYPEOF(sp[-1]) == T_INT &&
 			sp[-1].u.integer != 0);
 
     /* We need 4 bytes for each 24 bit group, and 2 bytes for each linebreak */
@@ -337,7 +337,7 @@ static void f_decode_qp( INT32 args )
 {
   if(args != 1)
     Pike_error( "Wrong number of arguments to MIME.decode_qp()\n" );
-  else if(sp[-1].type != T_STRING)
+  else if(TYPEOF(sp[-1]) != T_STRING)
     Pike_error( "Wrong type of argument to MIME.decode_qp()\n" );
   else if (sp[-1].u.string->size_shift != 0)
     Pike_error( "Char out of range for MIME.decode_qp()\n" );
@@ -403,7 +403,7 @@ static void f_encode_qp( INT32 args )
 {
   if (args != 1 && args != 2)
     Pike_error( "Wrong number of arguments to MIME.encode_qp()\n" );
-  else if (sp[-args].type != T_STRING)
+  else if (TYPEOF(sp[-args]) != T_STRING)
     Pike_error( "Wrong type of argument to MIME.encode_qp()\n" );
   else if (sp[-args].u.string->size_shift != 0)
     Pike_error( "Char out of range for MIME.encode_qp()\n" );
@@ -417,7 +417,7 @@ static void f_encode_qp( INT32 args )
     unsigned char *src = (unsigned char *)sp[-args].u.string->str;
     ptrdiff_t cnt;
     int col = 0;
-    int insert_crlf = !(args == 2 && sp[-1].type == T_INT &&
+    int insert_crlf = !(args == 2 && TYPEOF(sp[-1]) == T_INT &&
 			sp[-1].u.integer != 0);
 
     init_string_builder( &buf, 0 );
@@ -463,7 +463,7 @@ static void f_decode_uue( INT32 args )
 {
   if (args != 1)
     Pike_error( "Wrong number of arguments to MIME.decode_uue()\n" );
-  else if(sp[-1].type != T_STRING)
+  else if(TYPEOF(sp[-1]) != T_STRING)
     Pike_error( "Wrong type of argument to MIME.decode_uue()\n" );
   else if (sp[-1].u.string->size_shift != 0)
     Pike_error( "Char out of range for MIME.decode_uue()\n" );
@@ -611,12 +611,12 @@ static void f_encode_uue( INT32 args )
 {
   if (args != 1 && args != 2)
     Pike_error( "Wrong number of arguments to MIME.encode_uue()\n" );
-  else if (sp[-args].type != T_STRING ||
-	   (args == 2 && sp[-1].type != T_VOID && sp[-1].type != T_STRING &&
-	    sp[-1].type != T_INT))
+  else if (TYPEOF(sp[-args]) != T_STRING ||
+	   (args == 2 && TYPEOF(sp[-1]) != T_VOID &&
+	    TYPEOF(sp[-1]) != T_STRING && TYPEOF(sp[-1]) != T_INT))
     Pike_error( "Wrong type of argument to MIME.encode_uue()\n" );
   else if (sp[-args].u.string->size_shift != 0 ||
-	   (args == 2 && sp[-1].type == T_STRING &&
+	   (args == 2 && TYPEOF(sp[-1]) == T_STRING &&
 	    sp[-1].u.string->size_shift != 0))
     Pike_error( "Char out of range for MIME.encode_uue()\n" );
   else {
@@ -633,7 +633,7 @@ static void f_encode_uue( INT32 args )
     ptrdiff_t last= (sp[-args].u.string->len - 1)%3 + 1;
 
     /* Get the filename if provided */
-    if (args == 2 && sp[-1].type == T_STRING)
+    if (args == 2 && TYPEOF(sp[-1]) == T_STRING)
       filename = sp[-1].u.string->str;
 
     /* Allocate the space we need.  This included space for the actual
@@ -1083,7 +1083,7 @@ static void f_quote( INT32 args )
 
   if (args != 1)
     Pike_error( "Wrong number of arguments to MIME.quote()\n" );
-  else if (sp[-1].type != T_ARRAY)
+  else if (TYPEOF(sp[-1]) != T_ARRAY)
     Pike_error( "Wrong type of argument to MIME.quote()\n" );
 
   /* Quote array in sp[-1].u.array.  Once again we'll rely on a
@@ -1093,13 +1093,13 @@ static void f_quote( INT32 args )
 
   for (cnt=sp[-1].u.array->size, item=sp[-1].u.array->item; cnt--; item++) {
 
-    if (item->type == T_INT) {
+    if (TYPEOF(*item) == T_INT) {
 
       /* Single special character */
       string_builder_putchar( &buf, item->u.integer );
       prev_atom = 0;
 
-    } else if (item->type != T_STRING) {
+    } else if (TYPEOF(*item) != T_STRING) {
 
       /* Neither int or string.  Too bad... */
       free_string_builder( &buf );
@@ -1170,7 +1170,7 @@ static void f_quote_labled( INT32 args )
 
   if (args != 1)
     Pike_error( "Wrong number of arguments to MIME.quote_labled()\n" );
-  else if (sp[-1].type != T_ARRAY)
+  else if (TYPEOF(sp[-1]) != T_ARRAY)
     Pike_error( "Wrong type of argument to MIME.quote_labled()\n" );
 
   /* Quote array in sp[-1].u.array.  Once again we'll rely on a
@@ -1180,15 +1180,15 @@ static void f_quote_labled( INT32 args )
 
   for (cnt=sp[-1].u.array->size, item=sp[-1].u.array->item; cnt--; item++) {
 
-    if (item->type != T_ARRAY || item->u.array->size<2 ||
-	item->u.array->item[0].type != T_STRING) {
+    if (TYPEOF(*item) != T_ARRAY || item->u.array->size<2 ||
+	TYPEOF(item->u.array->item[0]) != T_STRING) {
       free_string_builder( &buf );
       Pike_error( "Wrong type of argument to MIME.quote_labled()\n" );
     }
 
     if (c_compare_string( item->u.array->item[0].u.string, "special", 7 )) {
 
-      if(item->u.array->item[1].type != T_INT) {
+      if(TYPEOF(item->u.array->item[1]) != T_INT) {
 	free_string_builder( &buf );
 	Pike_error( "Wrong type of argument to MIME.quote_labled()\n" );
       }
@@ -1197,7 +1197,7 @@ static void f_quote_labled( INT32 args )
       string_builder_putchar( &buf, item->u.array->item[1].u.integer );
       prev_atom = 0;
 
-    } else if(item->u.array->item[1].type != T_STRING) {
+    } else if(TYPEOF(item->u.array->item[1]) != T_STRING) {
 
       /* All the remaining lexical items require item[1] to be a string */
       free_string_builder( &buf );

@@ -539,7 +539,7 @@ void font_write(INT32 args)
    for (j=0; j<args; j++)
    {
       int max;
-      if (sp[j-args].type!=T_STRING)
+      if (TYPEOF(sp[j-args]) != T_STRING)
 	 bad_arg_error("font->write",sp-args,args,0,"",sp-args,
 		"Bad arguments to font->write()\n");
      
@@ -761,7 +761,7 @@ void font_text_extents(INT32 args)
      p_wchar1 *to_write1;
      p_wchar2 *to_write2;
      ptrdiff_t to_write_len;
-     if (sp[j-args].type!=T_STRING)
+     if (TYPEOF(sp[j-args]) != T_STRING)
 	bad_arg_error("font->text_extents",sp-args,args,0,"",sp-args,
 		"Bad arguments to font->text_extents()\n");
      

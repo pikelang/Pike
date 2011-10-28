@@ -199,7 +199,7 @@ static gchar **get_argv( int *argc_ret, int an )
   struct array *a;
   int argc;
   gchar **data;
-  if( Pike_sp[-an].type != PIKE_T_ARRAY )
+  if( TYPEOF(Pike_sp[-an]) != PIKE_T_ARRAY )
     Pike_error("Expected array\n");
   a = Pike_sp[-an].u.array;
   if (!a->size)
@@ -698,7 +698,7 @@ void set_default_icon_list(array(GDK2.Pixbuf) list)
   if (a==NULL)
     SIMPLE_ARG_ERROR("set_default_icon_list",args,"Invalid array");
   for (i=0; i<a->size; i++) {
-    if ((ITEM(a)+i)->type!=PIKE_T_OBJECT)
+    if (TYPEOF(ITEM(a)[i]) != PIKE_T_OBJECT)
       continue;
     gp=GDK_PIXBUF(get_gobject((ITEM(a)+i)->u.object));
     if (gp)

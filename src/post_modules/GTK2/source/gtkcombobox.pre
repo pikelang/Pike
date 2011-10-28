@@ -36,12 +36,12 @@ void create(GTK2.TreeModel|mapping(string:mixed)|string|void model_or_props)
   pgtk2_verify_setup();
   if (args) {
     GtkWidget *gcb;
-    if (Pike_sp[-args].type==PIKE_T_STRING) {
+    if (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) {
       char *text;
       get_all_args("create",args,"%s",&text);
       gcb=gtk_combo_box_new_text();
       THIS->obj=G_OBJECT(gcb);
-    } else if (Pike_sp[-args].type==PIKE_T_OBJECT) {
+    } else if (TYPEOF(Pike_sp[-args]) == PIKE_T_OBJECT) {
       struct object *o1;
       get_all_args("create",args,"%o",&o1);
       gcb=gtk_combo_box_new_with_model(GTK_TREE_MODEL(get_gobject(o1)));

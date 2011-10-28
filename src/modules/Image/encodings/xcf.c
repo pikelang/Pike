@@ -94,9 +94,9 @@ static void f_substring__sprintf( INT32 args )
 
   if (args != 2 )
     SIMPLE_TOO_FEW_ARGS_ERROR("_sprintf",2);
-  if (sp[-2].type!=T_INT)
+  if (TYPEOF(sp[-2]) != T_INT)
     SIMPLE_BAD_ARG_ERROR("_sprintf",0,"integer");
-  if (sp[-1].type!=T_MAPPING)
+  if (TYPEOF(sp[-1]) != T_MAPPING)
     SIMPLE_BAD_ARG_ERROR("_sprintf",1,"mapping");
   x = sp[-2].u.integer;
   pop_n_elems( args );
@@ -1197,7 +1197,7 @@ void image_xcf_f__decode_tiles( INT32 args )
     Pike_error("Wrong type object argument 4 (colortable)\n");
 
   for(l=0; l<(unsigned int)tiles->size; l++)
-    if(tiles->item[l].type != T_OBJECT)
+    if(TYPEOF(tiles->item[l]) != T_OBJECT)
       Pike_error("Wrong type array argument 3 (tiles)\n");
 
   if(a && ((i->xsize != a->xsize) || (i->ysize != a->ysize)))

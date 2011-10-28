@@ -120,9 +120,7 @@ PIKECLASS Shuffle
       set_fd_callback_events(&t->box, PIKE_BIT_FD_WRITE);
     else if( t->file_obj && t->file_obj->prog )
     {
-      ref_push_object( t->box.ref_obj );
-      Pike_sp[-1].type = PIKE_T_FUNCTION;
-      Pike_sp[-1].subtype = t->write_callback;
+      ref_push_function( t->box.ref_obj, t->write_callback );
       safe_apply( t->file_obj, "set_write_callback", 1 );
       pop_stack();
     }
@@ -216,9 +214,7 @@ PIKECLASS Shuffle
     THIS->throttler = 0;
     THIS->sent = 0;
     mark_free_svalue (&THIS->done_callback);
-    THIS->request_arg.type = PIKE_T_INT;
-    THIS->request_arg.subtype = NUMBER_NUMBER;
-    THIS->request_arg.u.integer = 0;
+    SET_SVAL(THIS->request_arg, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
     THIS->leftovers.len = 0;
     THIS->current_source = NULL;
     THIS->file_obj = NULL;
@@ -279,9 +275,7 @@ PIKECLASS Shuffle
       debug_malloc_touch( t->box.ref_obj );
       ref_push_object( t->box.ref_obj );
       push_int( amount );
-      ref_push_object( t->box.ref_obj );
-      Pike_sp[-1].type = PIKE_T_FUNCTION;
-      Pike_sp[-1].subtype = t->callback;
+      ref_push_function( t->box.ref_obj, t->callback );
       push_svalue( &t->request_arg );
       safe_apply( t->throttler, "request", 4 );
       pop_stack();
@@ -348,7 +342,7 @@ PIKECLASS Shuffle
     /* If a callback exists, we call it before destroying
      * source and destination
      */
-    if( t->done_callback.type != PIKE_T_FREE )
+    if( TYPEOF(t->done_callback) != PIKE_T_FREE )
     {
       SHUFFLE_DEBUG3("_all_done(%d): Calling done callback: %p\n", t,
 		    reason, t->done_callback.u.object);
@@ -413,7 +407,7 @@ PIKECLASS Shuffle
   {
     SHUFFLE_DEBUG2("set_done_callback(%p)\n", THIS, cb->u.object );
     assign_svalue( &THIS->done_callback,cb);
-    if (THIS->done_callback.type == PIKE_T_INT)
+    if (TYPEOF(THIS->done_callback) == PIKE_T_INT)
       mark_free_svalue (&THIS->done_callback);
   }
 
@@ -510,12 +504,12 @@ PIKECLASS Shuffle
 		     t->leftovers.data+t->leftovers.off,
 		    MINIMUM(amount,t->leftovers.len) ) );
       apply( t->file_obj, "write", 1 );
-      if( Pike_sp[-1].type == PIKE_T_INT )
+      if( TYPEOF(Pike_sp[-1]) == PIKE_T_INT )
 	sent = Pike_sp[-1].u.integer;
       else
       {
 	SHUFFLE_DEBUG2("Oops: write returned object of type %d, not integer\n",
-		      t, Pike_sp[-1].type );
+		       t, TYPEOF(Pike_sp[-1]) );
       }
       pop_stack();
     }
@@ -595,7 +589,7 @@ PIKECLASS Shuffle
     THIS->shuffler = shuffler;
     add_ref(THIS->shuffler);
 
-    if( throttler->type == PIKE_T_OBJECT )
+    if( TYPEOF(*throttler) == PIKE_T_OBJECT )
     {
       THIS->throttler = throttler->u.object;
       add_ref(THIS->throttler);
@@ -605,7 +599,7 @@ PIKECLASS Shuffle
       change_fd_for_box(&THIS->box, -1);
     else {
       safe_apply( fd, "release_fd", 0 );
-      if(backend->type == PIKE_T_OBJECT && backend->u.object) {
+      if(TYPEOF(*backend) == PIKE_T_OBJECT && backend->u.object) {
         be = (struct Backend_struct*)
 	  get_storage(backend->u.object, Backend_program);
 	if (!be) {
@@ -713,21 +707,21 @@ PIKECLASS Shuffle
     if( args > 1 )
     {
 #ifdef AUTO_BIGNUM
-      if( start->type == PIKE_T_OBJECT )
+      if( TYPEOF(*start) == PIKE_T_OBJECT )
 	int64_from_bignum( &rstart, start->u.object );
       else
 #endif
-	if( start->type == PIKE_T_INT && !start->subtype )
+	if( TYPEOF(*start) == PIKE_T_INT && !SUBTYPEOF(*start) )
 	  rstart = start->u.integer;
     }
     if( args > 2 )
     {
 #ifdef AUTO_BIGNUM
-      if( length->type == PIKE_T_OBJECT )
+      if( TYPEOF(*length) == PIKE_T_OBJECT )
 	int64_from_bignum( &rlength, length->u.object );
       else
 #endif
-	if( length->type == PIKE_T_INT && !length->subtype )
+	if( TYPEOF(*length) == PIKE_T_INT && !SUBTYPEOF(*length) )
 	  rlength = length->u.integer;
     }
     if( rlength == 0 )

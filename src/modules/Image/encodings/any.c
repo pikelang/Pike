@@ -41,7 +41,7 @@
 static void fix_png_mapping(void)
 {
   struct svalue *s;
-  if(sp[-1].type != T_MAPPING) return;
+  if(TYPEOF(sp[-1]) != T_MAPPING) return;
   if((s = simple_mapping_string_lookup(sp[-1].u.mapping, "type"))) {
     push_text("_type");
     mapping_insert(sp[-2].u.mapping, &sp[-1], s);
@@ -77,7 +77,7 @@ static void fix_png_mapping(void)
  */
 void image_any__decode(INT32 args)
 {
-   if (args!=1 || sp[-args].type!=T_STRING)
+   if (args!=1 || TYPEOF(sp[-args]) != T_STRING)
       Pike_error("Image.ANY.decode: illegal arguments\n");
 
    if (sp[-args].u.string->len<4)
@@ -240,7 +240,7 @@ simple_image:
  */
 void image_any_decode_header(INT32 args)
 {
-   if (args!=1 || sp[-args].type!=T_STRING)
+   if (args!=1 || TYPEOF(sp[-args]) != T_STRING)
       Pike_error("Image.ANY.decode_header: illegal arguments\n");
 
    if (sp[-args].u.string->len<4)

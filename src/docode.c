@@ -322,7 +322,7 @@ int do_docode(node *n, int flags)
 static int is_efun(node *n, c_fun fun)
 {
   return n && n->token == F_CONSTANT &&
-     n->u.sval.subtype == FUNCTION_BUILTIN &&
+    SUBTYPEOF(n->u.sval) == FUNCTION_BUILTIN &&
     n->u.sval.u.efun->function == fun;
 }
 
@@ -547,8 +547,8 @@ static void emit_apply_builtin(char *func)
       tmp1=store_constant(&n->u.sval,
 			  !(n->tree_info & OPT_EXTERNAL_DEPEND),
 			  n->name);
-      if(n->u.sval.type == T_FUNCTION &&
-	 n->u.sval.subtype == FUNCTION_BUILTIN)
+      if(TYPEOF(n->u.sval) == T_FUNCTION &&
+	 SUBTYPEOF(n->u.sval) == FUNCTION_BUILTIN)
 	emit1(F_CALL_BUILTIN, DO_NOT_WARN((INT32)tmp1));
       else
 	emit1(F_APPLY, DO_NOT_WARN((INT32)tmp1));
@@ -611,7 +611,7 @@ static void emit_builtin_svalue(char *func)
     case F_CONSTANT:
       tmp1=store_constant(&n->u.sval,
 			  (!(n->tree_info & OPT_EXTERNAL_DEPEND)) &&
-			  (n->u.sval.type != T_TYPE),
+			  (TYPEOF(n->u.sval) != T_TYPE),
 			  n->name);
       emit1(F_CONSTANT, DO_NOT_WARN((INT32)tmp1));
       break;
@@ -938,7 +938,7 @@ static int do_docode2(node *n, int flags)
 	     */
 	    struct svalue *s = &state->new_program->
 	      constants[id->func.const_info.offset].sval;
-	    if (s->type == T_PROGRAM &&
+	    if (TYPEOF(*s) == T_PROGRAM &&
 		s->u.program->flags & PROGRAM_USES_PARENT) {
 	      /* An external reference is required. */
 	      emit2(F_EXTERNAL, n->u.integer.b, level);
@@ -966,7 +966,7 @@ static int do_docode2(node *n, int flags)
 	   */
 	  struct svalue *s = &state->new_program->
 	    constants[id->func.const_info.offset].sval;
-	  if (s->type == T_PROGRAM &&
+	  if (TYPEOF(*s) == T_PROGRAM &&
 	      s->u.program->flags & PROGRAM_USES_PARENT) {
 	    /* Program using parent. Convert to an LFUN. */
 	    emit1(F_LFUN, n->u.integer.b);
@@ -1287,8 +1287,8 @@ static int do_docode2(node *n, int flags)
       }
     case F_APPLY:
       if ((CAAR(n)->token == F_CONSTANT) &&
-	  (CAAR(n)->u.sval.type == T_FUNCTION) &&
-	  (CAAR(n)->u.sval.subtype == FUNCTION_BUILTIN) &&
+	  (TYPEOF(CAAR(n)->u.sval) == T_FUNCTION) &&
+	  (SUBTYPEOF(CAAR(n)->u.sval) == FUNCTION_BUILTIN) &&
 	  (CAAR(n)->u.sval.u.efun->function != f_map) &&
 	  (CAAR(n)->u.sval.u.efun->function != f_filter)) {
 	/* efuns typically don't access object variables. */
@@ -1856,9 +1856,7 @@ static int do_docode2(node *n, int flags)
     }
     {
       struct svalue sv;
-      sv.type = T_TYPE;
-      sv.subtype = 0;
-      sv.u.type = n->type;
+      SET_SVAL(sv, T_TYPE, 0, type, n->type);
       tmp1 = store_constant(&sv, 0, n->name);
       emit1(F_CONSTANT, DO_NOT_WARN((INT32)tmp1));
     }
@@ -1874,9 +1872,7 @@ static int do_docode2(node *n, int flags)
     if (runtime_options & RUNTIME_CHECK_TYPES) {
       {
 	struct svalue sv;
-	sv.type = T_TYPE;
-	sv.subtype = 0;
-	sv.u.type = n->type;
+	SET_SVAL(sv, T_TYPE, 0, type, n->type);
 	tmp1 = store_constant(&sv, 0, n->name);
 	emit1(F_CONSTANT, DO_NOT_WARN((INT32)tmp1));
       }
@@ -1893,9 +1889,9 @@ static int do_docode2(node *n, int flags)
   case F_APPLY:
     if(CAR(n)->token == F_CONSTANT)
     {
-      if(CAR(n)->u.sval.type == T_FUNCTION)
+      if(TYPEOF(CAR(n)->u.sval) == T_FUNCTION)
       {
-	if(CAR(n)->u.sval.subtype == FUNCTION_BUILTIN) /* driver fun? */
+	if(SUBTYPEOF(CAR(n)->u.sval) == FUNCTION_BUILTIN) /* driver fun? */
 	{
 	  if(!CAR(n)->u.sval.u.efun->docode || 
 	     !CAR(n)->u.sval.u.efun->docode(n))
@@ -1924,7 +1920,7 @@ static int do_docode2(node *n, int flags)
 	  return 1;
 	}else{
 	  if(CAR(n)->u.sval.u.object == Pike_compiler->fake_object)
-	    return do_lfun_call(CAR(n)->u.sval.subtype, CDR(n));
+	    return do_lfun_call(SUBTYPEOF(CAR(n)->u.sval), CDR(n));
        	}
       }
 
@@ -1982,8 +1978,8 @@ static int do_docode2(node *n, int flags)
       {
 	yyerror("No call_function efun.");
       }else{
-	if(foo->u.sval.type == T_FUNCTION &&
-	   foo->u.sval.subtype == FUNCTION_BUILTIN &&
+	if(TYPEOF(foo->u.sval) == T_FUNCTION &&
+	   SUBTYPEOF(foo->u.sval) == FUNCTION_BUILTIN &&
 	   foo->u.sval.u.efun->function == f_call_function)
 	{
 	  emit0(F_CALL_FUNCTION);
@@ -2460,7 +2456,7 @@ static int do_docode2(node *n, int flags)
       return 2;
 
   case F_ARROW:
-    if(CDR(n)->token != F_CONSTANT || CDR(n)->u.sval.type!=T_STRING)
+    if(CDR(n)->token != F_CONSTANT || TYPEOF(CDR(n)->u.sval) != T_STRING)
       Pike_fatal("Bugg in F_ARROW, index not string.\n");
     if(flags & WANT_LVALUE)
     {
@@ -2525,10 +2521,10 @@ static int do_docode2(node *n, int flags)
     return DO_NOT_WARN((INT32)tmp1);
 
   case F_CONSTANT:
-    switch(n->u.sval.type)
+    switch(TYPEOF(n->u.sval))
     {
     case T_INT:
-      if(!n->u.sval.u.integer && n->u.sval.subtype==NUMBER_UNDEFINED)
+      if(!n->u.sval.u.integer && SUBTYPEOF(n->u.sval) == NUMBER_UNDEFINED)
       {
 	emit0(F_UNDEFINED);
       }else{
@@ -2556,12 +2552,12 @@ static int do_docode2(node *n, int flags)
       return 1;
 
     case T_FUNCTION:
-      if(n->u.sval.subtype!=FUNCTION_BUILTIN)
+      if(SUBTYPEOF(n->u.sval) != FUNCTION_BUILTIN)
       {
 	if(n->u.sval.u.object == Pike_compiler->fake_object)
 	{
 	  /* When does this occur? /mast */
-	  emit1(F_GLOBAL,n->u.sval.subtype);
+	  emit1(F_GLOBAL, SUBTYPEOF(n->u.sval));
 	  return 1;
 	}
 
@@ -2584,7 +2580,7 @@ static int do_docode2(node *n, int flags)
 	    x++;
 	  }
 #endif
-	  emit2(F_EXTERNAL, n->u.sval.subtype, x);
+	  emit2(F_EXTERNAL, SUBTYPEOF(n->u.sval), x);
 	  Pike_compiler->new_program->flags |=
 	    PROGRAM_USES_PARENT | PROGRAM_NEEDS_PARENT;
 	  return 1;
@@ -2593,7 +2589,7 @@ static int do_docode2(node *n, int flags)
       /* FALL_THROUGH */
     default:
 #ifdef PIKE_DEBUG
-      if((n->u.sval.type == T_OBJECT) &&
+      if((TYPEOF(n->u.sval) == T_OBJECT) &&
 	 (n->u.sval.u.object->next == n->u.sval.u.object))
 	Pike_fatal("Internal error: Pointer to parent cannot be a compile time constant!\n");
 #endif
@@ -2621,7 +2617,7 @@ static int do_docode2(node *n, int flags)
       {
 	if(flags & DO_NOT_COPY_TOPLEVEL)
 	{
-	  switch(n->u.sval.type)
+	  switch(TYPEOF(n->u.sval))
 	  {
 	    case T_ARRAY:
 	      if(array_fix_type_field(n->u.sval.u.array) & BIT_COMPLEX)

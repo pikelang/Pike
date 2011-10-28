@@ -128,9 +128,7 @@ static void *pcharp_to_svalue_percent_o(struct svalue *res,
 					PCHARP str,
 					ptrdiff_t len)
 {
-  res->type = T_INT;
-  res->subtype = NUMBER_UNDEFINED;
-  res->u.integer = 0;
+  SET_SVAL(*res, T_INT, NUMBER_UNDEFINED, integer, 0);
 
   for (;len>0; INC_PCHARP(str, 1), len--)
   {
@@ -173,9 +171,7 @@ static void *pcharp_to_svalue_percent_o(struct svalue *res,
 	    INC_PCHARP(str, 1);	/* Skip the quote. */
 
 	    if (cnt) string_builder_append(&tmp, start, cnt);
-	    res->type=T_STRING;
-	    res->subtype=0;
-	    res->u.string=finish_string_builder(&tmp);
+	    SET_SVAL(*res, T_STRING, 0, string, finish_string_builder(&tmp));
 	    return str.ptr;
 
 	  case '\\':
@@ -219,9 +215,7 @@ static void *pcharp_to_svalue_percent_o(struct svalue *res,
       {
 	INC_PCHARP(str, 1);	/* Skip the quote. */
 
-	res->subtype=0;
-	res->type=T_INT;
-	res->u.integer = EXTRACT_PCHARP(str);
+	SET_SVAL(*res, T_INT, NUMBER_NUMBER, integer, EXTRACT_PCHARP(str));
 	INC_PCHARP(str, 1);
 
 	len -= 2;
@@ -722,9 +716,7 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
 	      }								 \
 	    }								 \
 	  }								 \
-	  sval.type=T_ARRAY;						 \
-	  DO_IF_CHECKER(sval.subtype=0);				 \
-	  sval.u.array=allocate_array(0);				 \
+	  SET_SVAL(sval, T_ARRAY, 0, array, allocate_array(0));		 \
 	  SET_ONERROR(err, do_free_array, sval.u.array);		 \
 									 \
 	  while(input_len-eye)						 \
@@ -759,8 +751,7 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
 INPUT_IS_WIDE(								 \
           int e;							 \
 )									 \
-	  sval.type=T_INT;						 \
-	  sval.subtype=NUMBER_NUMBER;					 \
+          SET_SVAL(sval, T_INT, NUMBER_NUMBER, integer, 0);		 \
           if(field_length == -1)					 \
           { 								 \
 	    if(eye+1 > input_len)					 \
@@ -900,11 +891,9 @@ INPUT_IS_WIDE(								 \
 	  if (no_assign) {						\
 	    no_assign = 2;						\
 	  } else {							\
-	    sval.type=T_STRING;						\
-	    DO_IF_CHECKER(sval.subtype=0);				\
-	    sval.u.string=PIKE_CONCAT(make_shared_binary_string,	\
-				      INPUT_SHIFT)(input+eye,		\
-						   len);		\
+	    SET_SVAL(sval, T_STRING, 0, string,				\
+		     PIKE_CONCAT(make_shared_binary_string,		\
+				 INPUT_SHIFT)(input+eye, len));		\
 	  }								\
 	  eye+=len;							\
 	  break;							\
@@ -951,15 +940,15 @@ INPUT_IS_WIDE(								 \
 	{								 \
 	  PIKE_CONCAT(p_wchar, INPUT_SHIFT) *t;				 \
 	  PCHARP t2;							 \
+	  FLOAT_TYPE f;							 \
 									 \
 	  if(eye>=input_len)						 \
 	  {								 \
 	    chars_matched[0]=eye;					 \
 	    return matches;						 \
 	  }								 \
-	  sval.u.float_number =						 \
-	    (FLOAT_TYPE)STRTOD_PCHARP(MKPCHARP(input+eye,		 \
-					       INPUT_SHIFT),&t2);	 \
+	  f = (FLOAT_TYPE)STRTOD_PCHARP(MKPCHARP(input+eye,		 \
+						 INPUT_SHIFT),&t2);	 \
 	  t = (PIKE_CONCAT(p_wchar, INPUT_SHIFT) *)(t2.ptr);		 \
 	  if(input + eye == t)						 \
 	  {								 \
@@ -967,8 +956,7 @@ INPUT_IS_WIDE(								 \
 	    return matches;						 \
 	  }								 \
 	  eye=t-input;							 \
-	  sval.type=T_FLOAT;						 \
-	  DO_IF_CHECKER(sval.subtype=0);				 \
+	  SET_SVAL(sval, T_FLOAT, 0, float_number, f);			 \
 	  break;							 \
 	}								 \
 									 \
@@ -982,8 +970,7 @@ INPUT_IS_WIDE(								 \
 	    chars_matched[0]=eye;					 \
 	    return matches;						 \
 	  }								 \
-	  sval.type=T_FLOAT;						 \
-	  DO_IF_CHECKER(sval.subtype=0);				 \
+	  SET_SVAL(sval, T_FLOAT, 0, float_number, 0.0);		 \
 	  switch(field_length) {					 \
 	    case 4:							 \
 	      EXTRACT_FLOAT(sval, input+eye, INPUT_SHIFT);		 \
@@ -1008,11 +995,10 @@ INPUT_IS_WIDE(								 \
 	    if (no_assign) {						 \
 	      no_assign = 2;						 \
 	    } else {							 \
-	      sval.type=T_STRING;					 \
-	      DO_IF_CHECKER(sval.subtype=0);				 \
-	      sval.u.string=PIKE_CONCAT(make_shared_binary_string,	 \
-					INPUT_SHIFT)(input+eye,		 \
-						     field_length);	 \
+	      SET_SVAL(sval, T_STRING, 0, string,			 \
+		       PIKE_CONCAT(make_shared_binary_string,		 \
+				   INPUT_SHIFT)(input+eye,		 \
+						field_length));		 \
 	    }								 \
 	    eye+=field_length;						 \
 	    break;							 \
@@ -1023,11 +1009,10 @@ INPUT_IS_WIDE(								 \
 	    if (no_assign) {						 \
 	      no_assign = 2;						 \
 	    } else {							 \
-	      sval.type=T_STRING;					 \
-	      DO_IF_CHECKER(sval.subtype=0);				 \
-	      sval.u.string=PIKE_CONCAT(make_shared_binary_string,	 \
-					INPUT_SHIFT)(input+eye,		 \
-						     input_len-eye);	 \
+	      SET_SVAL(sval, T_STRING, 0, string,			 \
+		       PIKE_CONCAT(make_shared_binary_string,		 \
+				   INPUT_SHIFT)(input+eye,		 \
+						input_len-eye));	 \
 	    }								 \
 	    eye=input_len;						 \
 	    break;							 \
@@ -1130,11 +1115,10 @@ INPUT_IS_WIDE(								 \
 	      if (no_assign) {						 \
 		no_assign = 2;						 \
 	      } else {							 \
-		sval.type=T_STRING;					 \
-		DO_IF_CHECKER(sval.subtype=0);				 \
-		sval.u.string=PIKE_CONCAT(make_shared_binary_string,	 \
-					  INPUT_SHIFT)(input+eye,	 \
-						       input_len-eye);	 \
+		SET_SVAL(sval, T_STRING, 0, string,			 \
+			 PIKE_CONCAT(make_shared_binary_string,		 \
+				     INPUT_SHIFT)(input+eye,		 \
+						  input_len-eye));	 \
 	      }								 \
 	      eye=input_len;						 \
 	      break;							 \
@@ -1179,11 +1163,10 @@ INPUT_IS_WIDE(								 \
 	    if (no_assign) {						 \
 	      no_assign = 2;						 \
 	    } else {							 \
-	      sval.type=T_STRING;					 \
-	      DO_IF_CHECKER(sval.subtype=0);				 \
-	      sval.u.string=PIKE_CONCAT(make_shared_binary_string,	 \
-					INPUT_SHIFT)(input+start,	 \
-						     eye-start);	 \
+	      SET_SVAL(sval, T_STRING, 0, string,			 \
+		       PIKE_CONCAT(make_shared_binary_string,		 \
+				   INPUT_SHIFT)(input+start,		 \
+						eye-start));		 \
 	    }								 \
 									 \
 	    cnt=end_str_end-match-1;					 \
@@ -1220,9 +1203,8 @@ INPUT_IS_WIDE(								 \
 	        {							 \
 		  INT32 x;						 \
 		  struct svalue tmp;					 \
-		  tmp.type=T_INT;					 \
-		  tmp.subtype = NUMBER_NUMBER;				\
-		  tmp.u.integer=input[eye];				 \
+		  SET_SVAL(tmp, T_INT, NUMBER_NUMBER,			 \
+			   integer, input[eye]);			 \
 		  x=switch_lookup(set.a, &tmp);				 \
 		  if( set.neg != (x<0 && (x&1)) ) break;		 \
 	        }else{							 \
@@ -1241,10 +1223,9 @@ INPUT_IS_WIDE(								 \
 	  if (no_assign) {						 \
 	    no_assign = 2;						 \
 	  } else {							 \
-	    sval.type=T_STRING;						 \
-	    DO_IF_CHECKER(sval.subtype=0);				 \
-	    sval.u.string=PIKE_CONCAT(make_shared_binary_string,	 \
-				      INPUT_SHIFT)(input+e,eye-e);	 \
+	    SET_SVAL(sval, T_STRING, 0, string,				 \
+		     PIKE_CONCAT(make_shared_binary_string,		 \
+				 INPUT_SHIFT)(input+e,eye-e));		 \
 	  }								 \
 	  break;							 \
 									 \
@@ -1275,9 +1256,8 @@ INPUT_IS_WIDE(								 \
         }								 \
 									 \
 	case 'n':							 \
-	  sval.type=T_INT;						 \
-	  sval.subtype=NUMBER_NUMBER;					 \
-	  sval.u.integer=TO_INT32(eye - truncated);			 \
+	  SET_SVAL(sval, T_INT, NUMBER_NUMBER, integer,			 \
+		   TO_INT32(eye - truncated));				 \
 	  break;							 \
 									 \
 	default:							 \
@@ -1299,7 +1279,7 @@ INPUT_IS_WIDE(								 \
       check_stack(1);							 \
       *sp++=sval;							 \
       dmalloc_touch_svalue(Pike_sp-1);					 \
-      DO_IF_DEBUG(sval.type=99);					 \
+      DO_IF_DEBUG(SET_SVAL_TYPE(sval, 99));				 \
     }									 \
   }									 \
   chars_matched[0]=eye;							 \
@@ -1590,10 +1570,10 @@ void o_sscanf(INT32 args, INT32 flags)
   int x;
   struct svalue *save_sp=sp;
 
-  if(sp[-args].type != T_STRING)
+  if(TYPEOF(sp[-args]) != T_STRING)
     SIMPLE_BAD_ARG_ERROR("sscanf", 1, "string");
 
-  if(sp[1-args].type != T_STRING)
+  if(TYPEOF(sp[1-args]) != T_STRING)
     SIMPLE_BAD_ARG_ERROR("sscanf", 2, "string");
 
   i = low_sscanf(sp[-args].u.string, sp[1-args].u.string, flags);
@@ -1856,13 +1836,13 @@ void f___handle_sscanf_format(INT32 args)
 #endif /* 0 */
   if (args != 4)
     SIMPLE_WRONG_NUM_ARGS_ERROR("__handle_sscanf_format", 4);
-  if (Pike_sp[-4].type != PIKE_T_STRING)
+  if (TYPEOF(Pike_sp[-4]) != PIKE_T_STRING)
     SIMPLE_ARG_TYPE_ERROR("__handle_sscanf_format", 1, "string");
-  if (Pike_sp[-3].type != PIKE_T_STRING)
+  if (TYPEOF(Pike_sp[-3]) != PIKE_T_STRING)
     SIMPLE_ARG_TYPE_ERROR("__handle_sscanf_format", 2, "string");
-  if (Pike_sp[-2].type != PIKE_T_TYPE)
+  if (TYPEOF(Pike_sp[-2]) != PIKE_T_TYPE)
     SIMPLE_ARG_TYPE_ERROR("__handle_sscanf_format", 3, "type");
-  if (Pike_sp[-1].type != PIKE_T_TYPE)
+  if (TYPEOF(Pike_sp[-1]) != PIKE_T_TYPE)
     SIMPLE_ARG_TYPE_ERROR("__handle_sscanf_format", 4, "type");
 
   tmp = Pike_sp[-1].u.type;

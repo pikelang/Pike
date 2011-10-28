@@ -167,7 +167,7 @@ static void f_read( INT32 args )
   int bufsize=CLF_BLOCK_SIZE, bufpos=0;
 #endif
 
-  if(args>2 && sp[-1].type == T_INT) {
+  if(args>2 && TYPEOF(sp[-1]) == T_INT) {
     offs0 = sp[-1].u.integer;
     pop_n_elems(1);
     --args;
@@ -175,17 +175,17 @@ static void f_read( INT32 args )
   old_sp = sp;
 
   get_all_args("CommonLog.read", args, "%*%*", &logfun, &file);
-  if(logfun->type != T_FUNCTION)
+  if(TYPEOF(*logfun) != T_FUNCTION)
     SIMPLE_BAD_ARG_ERROR("CommonLog.read", 1, "function");
 
-  if(file->type == T_OBJECT)
+  if(TYPEOF(*file) == T_OBJECT)
   {
     f = fd_from_object(file->u.object);
     
     if(f == -1)
       Pike_error("CommonLog.read: File is not open.\n");
     my_fd = 0;
-  } else if(file->type == T_STRING &&
+  } else if(TYPEOF(*file) == T_STRING &&
 	    file->u.string->size_shift == 0) {
 #ifdef PIKE_SECURITY
       if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
@@ -199,7 +199,7 @@ static void f_read( INT32 args )
 	push_int(00666);
 
 	safe_apply(OBJ2CREDS(CURRENT_CREDS)->user,"valid_open",5);
-	switch(Pike_sp[-1].type)
+	switch(TYPEOF(Pike_sp[-1]))
 	{
 	case PIKE_T_INT:
 	  switch(Pike_sp[-1].u.integer)

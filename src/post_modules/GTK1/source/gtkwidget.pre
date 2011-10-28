@@ -212,11 +212,11 @@ int selecton_convert( ?GDK.Atom selection,
   if( args == 3 && PGTK_ISINT( Pike_sp - 1 ))
     time = PGTK_GETINT( Pike_sp - 1 );
 
-  if( !args || (Pike_sp[ -args ].type != PIKE_T_OBJECT) )
+  if( !args || (TYPEOF(Pike_sp[ -args ]) != PIKE_T_OBJECT) )
     selection = GDK_SELECTION_PRIMARY;
   else
     selection = get_gdkatom( Pike_sp[ -args ].u.object );
-  if( (args < 2) || (Pike_sp[ 1-args ].type != PIKE_T_OBJECT) )
+  if( (args < 2) || (TYPEOF(Pike_sp[ 1-args ]) != PIKE_T_OBJECT) )
     target = GDK_SELECTION_TYPE_STRING;
   else
     target = get_gdkatom( Pike_sp[ 1-args ].u.object );
@@ -247,11 +247,11 @@ void selection_add_target( ?GDK.Atom selection,
   if( args == 3 && PGTK_ISINT( Pike_sp - 1 ))
     info = PGTK_GETINT( Pike_sp - 1 );
 
-  if( !args || (Pike_sp[ -args ].type != PIKE_T_OBJECT) )
+  if( !args || (TYPEOF(Pike_sp[ -args ]) != PIKE_T_OBJECT) )
     selection = GDK_SELECTION_PRIMARY;
   else
     selection = get_gdkatom( Pike_sp[ -args ].u.object );
-  if( (args < 2) || (Pike_sp[ 1-args ].type != PIKE_T_OBJECT ))
+  if( (args < 2) || (TYPEOF(Pike_sp[ 1-args ]) != PIKE_T_OBJECT ))
     target = GDK_SELECTION_TYPE_STRING;
   else
     target = get_gdkatom( Pike_sp[1-args].u.object );
@@ -273,7 +273,7 @@ void selection_owner_set( ?GDK.Atom selection, ?int time )
   GdkAtom selection;
   if( args == 2 && PGTK_ISINT( Pike_sp - 1 ))
     time = PGTK_GETINT( Pike_sp - 1 );
-  if( !args || Pike_sp[ -args ].type != PIKE_T_OBJECT )
+  if( !args || TYPEOF(Pike_sp[ -args ]) != PIKE_T_OBJECT )
     selection = GDK_SELECTION_PRIMARY;
   else
     selection = get_gdkatom( Pike_sp[ -args ].u.object );
@@ -785,12 +785,12 @@ void drag_dest_set(int flags, array(array) targets, int actions )
 
   for(j=0; j<a->size; j++)
   {
-    if(a->item[j].type != PIKE_T_ARRAY ||
+    if(TYPEOF(a->item[j]) != PIKE_T_ARRAY ||
        a->item[j].u.array->size != 3 ||
-       a->item[j].u.array->item[0].type != PIKE_T_STRING ||
+       TYPEOF(a->item[j].u.array->item[0]) != PIKE_T_STRING ||
        a->item[j].u.array->item[0].u.string->size_shift > 1 ||
-       a->item[j].u.array->item[1].type != PIKE_T_INT ||
-       a->item[j].u.array->item[2].type != PIKE_T_INT)
+       TYPEOF(a->item[j].u.array->item[1]) != PIKE_T_INT ||
+       TYPEOF(a->item[j].u.array->item[2]) != PIKE_T_INT)
     {
       g_free(entries);
       Pike_error("The array is malformed.\n");
@@ -825,12 +825,12 @@ void drag_source_set(int flags, array(array) targets, int actions)
 
   for(j=0; j<a->size; j++)
   {
-    if(a->item[j].type != PIKE_T_ARRAY ||
+    if(TYPEOF(a->item[j]) != PIKE_T_ARRAY ||
        a->item[j].u.array->size != 3 ||
-       a->item[j].u.array->item[0].type != PIKE_T_STRING ||
+       TYPEOF(a->item[j].u.array->item[0]) != PIKE_T_STRING ||
        a->item[j].u.array->item[0].u.string->size_shift > 1 ||
-       a->item[j].u.array->item[1].type != PIKE_T_INT ||
-       a->item[j].u.array->item[2].type != PIKE_T_INT)
+       TYPEOF(a->item[j].u.array->item[1]) != PIKE_T_INT ||
+       TYPEOF(a->item[j].u.array->item[2]) != PIKE_T_INT)
     {
       g_free(entries);
       Pike_error("The array is malformed.\n");
@@ -859,12 +859,12 @@ void drag_source_set_icon(GDK.Pixmap pm, ?GDK.Bitmap mask)
   struct object *p=NULL, *m=NULL;
   if(args == 2)
   {
-    if(Pike_sp[-args].type == PIKE_T_OBJECT)
+    if(TYPEOF(Pike_sp[-args]) == PIKE_T_OBJECT)
       p = Pike_sp[-args].u.object;
-    if(Pike_sp[-args+1].type == PIKE_T_OBJECT)
+    if(TYPEOF(Pike_sp[-args+1]) == PIKE_T_OBJECT)
       m = Pike_sp[-args+1].u.object;
   }  else if( args ) {
-    if(Pike_sp[-args].type == PIKE_T_OBJECT)
+    if(TYPEOF(Pike_sp[-args]) == PIKE_T_OBJECT)
       p = Pike_sp[-args].u.object;
   }
   gtk_drag_source_set_icon( GTK_WIDGET( THIS->obj ),

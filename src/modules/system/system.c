@@ -792,7 +792,7 @@ void f_setgroups(INT32 args)
   }
 
   for (i=0; i < size; i++) {
-    if (arr->item[i].type != T_INT) {
+    if (TYPEOF(arr->item[i]) != T_INT) {
       Pike_error("setgroups(): Bad element %d in array (expected int)\n", i);
     }
     gids[i] = arr->item[i].u.integer;
@@ -873,7 +873,7 @@ void f_innetgr(INT32 args)
 		 BIT_STRING|BIT_INT|BIT_VOID, BIT_STRING|BIT_INT|BIT_VOID, 0);
 
   for(i = 0; i < args; i++) {
-    if (sp[i-args].type == T_STRING) {
+    if (TYPEOF(sp[i-args]) == T_STRING) {
       if (sp[i-args].u.string->size_shift) {
 	SIMPLE_BAD_ARG_ERROR("innetgr", i+1, "string (8bit)");
       }
@@ -1098,7 +1098,7 @@ void f_getpgrp(INT32 args)
   int pgid = 0;
 
   if (args) {
-    if (sp[-args].type != T_INT) {
+    if (TYPEOF(sp[-args]) != T_INT) {
       SIMPLE_BAD_ARG_ERROR("getpgrp", 1, "int");
     }
     pid = sp[-args].u.integer;
@@ -1162,7 +1162,7 @@ void f_setpgrp(INT32 args)
 void f_getsid(INT32 args)
 {
   int pid = 0;
-  if (args >= 1 && sp[-args].type != T_INT)
+  if (args >= 1 && TYPEOF(sp[-args]) != T_INT)
     SIMPLE_BAD_ARG_ERROR("getsid", 1, "int");
   if (args >= 1)
        pid = sp[-args].u.integer;
@@ -1393,7 +1393,7 @@ void f_chroot(INT32 args)
 
 
 #ifdef HAVE_FCHROOT
-  if(sp[-args].type == T_STRING)
+  if(TYPEOF(sp[-args]) == T_STRING)
   {
 #endif /* HAVE_FCHROOT */
     res = chroot((char *)sp[-args].u.string->str);
@@ -1403,7 +1403,7 @@ void f_chroot(INT32 args)
 #ifdef HAVE_FCHROOT
   } else
 #if 0 
-    if(sp[-args].type == T_OBJECT)
+    if(TYPEOF(sp[-args]) == T_OBJECT)
 #endif /* 0 */
       {
 	int fd;
@@ -2353,7 +2353,7 @@ static void f_getrlimit(INT32 args)
    if (!s_cpu) make_rlimit_strings();
    if (args<1)
       SIMPLE_TOO_FEW_ARGS_ERROR("getrlimit",1);
-   if (sp[-args].type!=T_STRING) 
+   if (TYPEOF(sp[-args]) != T_STRING)
       SIMPLE_BAD_ARG_ERROR("getrlimit",1,"string");
 
 #ifdef RLIMIT_CPU
@@ -2567,12 +2567,12 @@ static void f_setrlimit(INT32 args)
    if (!s_cpu) make_rlimit_strings();
    if (args<3)
       SIMPLE_TOO_FEW_ARGS_ERROR("setrlimit",3);
-   if (sp[-args].type!=T_STRING) 
+   if (TYPEOF(sp[-args]) != T_STRING)
       SIMPLE_BAD_ARG_ERROR("setrlimit",1,"string");
-   if (sp[1-args].type!=T_INT ||
+   if (TYPEOF(sp[1-args]) != T_INT ||
        sp[1-args].u.integer<-1) 
       SIMPLE_BAD_ARG_ERROR("setrlimit",2,"int(-1..)");
-   if (sp[2-args].type!=T_INT ||
+   if (TYPEOF(sp[2-args]) != T_INT ||
        sp[2-args].u.integer<-1) 
       SIMPLE_BAD_ARG_ERROR("setrlimit",3,"int(-1..)");
 

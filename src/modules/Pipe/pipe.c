@@ -212,9 +212,10 @@ static INLINE void output_try_write_some(struct object *obj);
  */
 static void push_callback(ptrdiff_t no)
 {
-  add_ref(Pike_sp->u.object=THISOBJ);
-  Pike_sp->subtype = DO_NOT_WARN(no + Pike_fp->context->identifier_level);
-  Pike_sp->type = T_FUNCTION;
+  SET_SVAL(*Pike_sp, T_FUNCTION,
+	   DO_NOT_WARN(no + Pike_fp->context->identifier_level),
+	   object, THISOBJ);
+  add_ref(THISOBJ);
   Pike_sp++;
 }
 
@@ -282,7 +283,7 @@ static INLINE void free_input(struct input *i)
 /* do the done_callback, then close and free everything */
 static INLINE void pipe_done(void)
 {
-  if (THIS->done_callback.type!=T_INT)
+  if (TYPEOF(THIS->done_callback) != T_INT)
   {
     assign_svalue_no_free(sp++,&THIS->id);
     apply_svalue(&(THIS->done_callback),1);
@@ -411,7 +412,7 @@ static int read_some_data(void)
   push_int(8192);
   push_int(1);    /* We don't care if we don't get all 8192 bytes. */
   apply(i->u.obj, "read", 2);
-  if ((sp[-1].type == T_STRING) && (sp[-1].u.string->len > 0)) {
+  if ((TYPEOF(sp[-1]) == T_STRING) && (sp[-1].u.string->len > 0)) {
     append_buffer(sp[-1].u.string);
     pop_stack();
     THIS->sleeping = 1;
@@ -695,7 +696,7 @@ static INLINE void output_try_write_some(struct object *obj)
     out->mode=O_RUN;
 
     ret=-1;
-    if(sp[-1].type == T_INT) ret=sp[-1].u.integer;
+    if(TYPEOF(sp[-1]) == T_INT) ret=sp[-1].u.integer;
     pop_stack();
 
     if (ret==-1)		/* error, byebye */
@@ -723,7 +724,7 @@ static void pipe_input(INT32 args)
    int fd=-1;			/* Per, one less warning to worry about... */
    struct object *obj;
 
-   if (args<1 || sp[-args].type != T_OBJECT)
+   if (args<1 || TYPEOF(sp[-args]) != T_OBJECT)
      Pike_error("Bad/missing argument 1 to pipe->input().\n");
 
    obj=sp[-args].u.object;
@@ -745,7 +746,7 @@ static void pipe_input(INT32 args)
      struct stat s;
 
      apply(obj, "query_fd", 0);
-     if(sp[-1].type == T_INT) fd=sp[-1].u.integer;
+     if(TYPEOF(sp[-1]) == T_INT) fd=sp[-1].u.integer;
      pop_stack();
 
      if (fd != -1 && fstat(fd,&s)==0)
@@ -836,7 +837,7 @@ static void pipe_write(INT32 args)
 {
   struct input *i;
 
-  if (args<1 || sp[-args].type!=T_STRING)
+  if (args<1 || TYPEOF(sp[-args]) != T_STRING)
     Pike_error("illegal argument to pipe->write()\n");
 
   if (!THIS->firstinput)
@@ -869,13 +870,13 @@ static void pipe_output(INT32 args)
   struct buffer *b;
 
   if (args<1 || 
-      sp[-args].type != T_OBJECT ||
+      TYPEOF(sp[-args]) != T_OBJECT ||
       !sp[-args].u.object ||
       !sp[-args].u.object->prog)
     Pike_error("Bad/missing argument 1 to pipe->output().\n");
 
   if (args==2 &&
-      sp[1-args].type != T_INT)
+      TYPEOF(sp[1-args]) != T_INT)
     Pike_error("Bad argument 2 to pipe->output().\n");
        
   if (THIS->fd==-1)		/* no buffer */
@@ -883,7 +884,7 @@ static void pipe_output(INT32 args)
     /* test if usable as buffer */ 
     apply(sp[-args].u.object,"query_fd",0);
 
-    if ((sp[-1].type==T_INT)
+    if ((TYPEOF(sp[-1]) == T_INT)
 	&& (fd=sp[-1].u.integer)>=0
 	&& (fstat(fd,&s)==0)
 	&& S_ISREG(s.st_mode)
@@ -993,10 +994,11 @@ static void pipe_set_done_callback(INT32 args)
   if (args==0)
   {
     free_svalue(&THIS->done_callback);
-    THIS->done_callback.type=T_INT;
+    SET_SVAL_TYPE(THIS->done_callback, T_INT);
     return;
   }
-  if (args<1 || (sp[-args].type!=T_FUNCTION && sp[-args].type!=T_ARRAY))
+  if (args<1 || (TYPEOF(sp[-args]) != T_FUNCTION &&
+		 TYPEOF(sp[-args]) != T_ARRAY))
     Pike_error("Illegal argument to set_done_callback()\n");
 
   if (args>1)
@@ -1021,10 +1023,11 @@ static void pipe_set_output_closed_callback(INT32 args)
   if (args==0)
   {
     free_svalue(&THIS->output_closed_callback);
-    THIS->output_closed_callback.type=T_INT;
+    SET_SVAL_TYPE(THIS->output_closed_callback, T_INT);
     return;
   }
-  if (args<1 || (sp[-args].type!=T_FUNCTION && sp[-args].type!=T_ARRAY))
+  if (args<1 || (TYPEOF(sp[-args]) != T_FUNCTION &&
+		 TYPEOF(sp[-args]) != T_ARRAY))
     Pike_error("Illegal argument to set_output_closed_callback()\n");
 
   if (args>1)
@@ -1073,7 +1076,7 @@ static void f_bytes_sent(INT32 args)
 
 static void pipe_write_output_callback(INT32 args)
 {
-   if (args<1 || sp[-args].type!=T_OBJECT)
+   if (args<1 || TYPEOF(sp[-args]) != T_OBJECT)
      Pike_error("Illegal argument to pipe->write_output_callback\n");
 
    if(!sp[-args].u.object->prog) return;
@@ -1089,7 +1092,7 @@ static void pipe_write_output_callback(INT32 args)
 static void pipe_close_output_callback(INT32 args)
 {
   struct output *o;
-   if (args<1 || sp[-args].type!=T_OBJECT)
+   if (args<1 || TYPEOF(sp[-args]) != T_OBJECT)
 
    if(!sp[-args].u.object->prog) return;
 
@@ -1098,7 +1101,7 @@ static void pipe_close_output_callback(INT32 args)
 
   o=(struct output *)(sp[-args].u.object->storage);
 
-  if (THIS->output_closed_callback.type!=T_INT)
+  if (TYPEOF(THIS->output_closed_callback) != T_INT)
   {
     assign_svalue_no_free(sp++,&THIS->id);
     push_object(o->obj);
@@ -1115,7 +1118,7 @@ static void pipe_read_input_callback(INT32 args)
   struct input *i;
   struct pike_string *s;
 
-  if (args<2 || sp[1-args].type!=T_STRING)
+  if (args<2 || TYPEOF(sp[1-args]) != T_STRING)
     Pike_error("Illegal argument to pipe->read_input_callback\n");
    
   i=THIS->firstinput;
@@ -1243,9 +1246,9 @@ void close_and_free_everything(struct object *thisobj,struct pipe *p)
    free_svalue(& p->output_closed_callback);
    free_svalue(& p->id);
 
-   p->done_callback.type=T_INT;
-   p->output_closed_callback.type=T_INT;
-   p->id.type=T_INT;
+   SET_SVAL_TYPE(p->done_callback, T_INT);
+   SET_SVAL_TYPE(p->output_closed_callback, T_INT);
+   SET_SVAL_TYPE(p->id, T_INT);
 
    /* p->done=0; */
 }
@@ -1262,9 +1265,9 @@ static void init_pipe_struct(struct object *o)
    THIS->sleeping=0;
    THIS->done=0;
    THIS->fd=-1;
-   THIS->done_callback.type=T_INT;
-   THIS->output_closed_callback.type=T_INT;
-   THIS->id.type=T_INT;
+   SET_SVAL_TYPE(THIS->done_callback, T_INT);
+   SET_SVAL_TYPE(THIS->output_closed_callback, T_INT);
+   SET_SVAL_TYPE(THIS->id, T_INT);
    THIS->id.u.integer=0;
    THIS->living_outputs=0;
    THIS->sent=0;

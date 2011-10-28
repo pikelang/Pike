@@ -116,13 +116,13 @@ static void f_create(INT32 args)
   check_all_args("create()", args, BIT_STRING|BIT_VOID|BIT_INT,
 		 BIT_FUNCTION|BIT_VOID|BIT_INT, 0);
 
-  if(args>0 && sp[-args].type == T_STRING) {
+  if(args>0 && TYPEOF(sp[-args]) == T_STRING) {
     if(s->replace != NULL)
       free_string(s->replace);
     add_ref(s->replace = sp[-args].u.string);
   }
 
-  if(args>1 && sp[1-args].type == T_FUNCTION)
+  if(args>1 && TYPEOF(sp[1-args]) == T_FUNCTION)
     assign_svalue(&s->repcb, &sp[1-args]);
 
   pop_n_elems(args);
@@ -146,7 +146,7 @@ static int call_repcb(struct svalue *repcb, p_wchar2 ch)
 {
   push_string(make_shared_binary_string2(&ch, 1));
   apply_svalue(repcb, 1);
-  if(sp[-1].type == T_STRING)
+  if(TYPEOF(sp[-1]) == T_STRING)
     return 1;
   pop_stack();
   return 0;
@@ -166,10 +166,10 @@ static void DECLSPEC(noreturn) transcode_error_va (
   struct svalue *err_prog;
 
   if (encode) {
-    if (encode_err_prog.type == T_INT) {
+    if (TYPEOF(encode_err_prog) == T_INT) {
       push_text ("Locale.Charset.EncodeError");
       SAFE_APPLY_MASTER ("resolv", 1);
-      if (sp[-1].type != T_PROGRAM && sp[-1].type != T_FUNCTION)
+      if (TYPEOF(sp[-1]) != T_PROGRAM && TYPEOF(sp[-1]) != T_FUNCTION)
 	Pike_error ("Failed to resolve Locale.Charset.EncodeError "
 		    "to a program - unable to throw an encode error.\n");
       move_svalue (&encode_err_prog, --sp);
@@ -178,10 +178,10 @@ static void DECLSPEC(noreturn) transcode_error_va (
   }
 
   else {
-    if (decode_err_prog.type == T_INT) {
+    if (TYPEOF(decode_err_prog) == T_INT) {
       push_text ("Locale.Charset.DecodeError");
       SAFE_APPLY_MASTER ("resolv", 1);
-      if (sp[-1].type != T_PROGRAM && sp[-1].type != T_FUNCTION)
+      if (TYPEOF(sp[-1]) != T_PROGRAM && TYPEOF(sp[-1]) != T_FUNCTION)
 	Pike_error ("Failed to resolve Locale.Charset.DecodeError "
 		    "to a program - unable to throw an decode error.\n");
       move_svalue (&decode_err_prog, --sp);
@@ -221,9 +221,9 @@ void DECLSPEC(noreturn) transcoder_error (
   struct svalue charset_str, charset;
   va_list args;
   va_start (args, reason);
-  charset_str.subtype = 0;
+  SET_SVAL_SUBTYPE(charset_str, 0);
   MAKE_CONST_STRING (charset_str.u.string, "charset");
-  charset_str.type = T_STRING;
+  SET_SVAL_TYPE(charset_str, T_STRING);
   object_index_no_free (&charset, fp->current_object, 0, &charset_str);
   transcode_error_va (str, pos, charset.u.string, encode, reason, args);
   va_end (args);
@@ -239,7 +239,7 @@ void DECLSPEC(noreturn) transcoder_error (
       transcoder_error (str, pos, 1, "Unsupported character.\n");	\
   } while (0)
 
-#define MKREPCB(c) ((c).type == T_FUNCTION? &(c):NULL)
+#define MKREPCB(c) (TYPEOF(c) == T_FUNCTION? &(c):NULL)
 
 static void f_drain(INT32 args)
 {
@@ -1450,7 +1450,7 @@ static void f_rfc1345(INT32 args)
     if((c = strcmp((char *)STR0(str), charset_map[mid].name))==0) {
       struct program *p = NULL;
 
-      if(args>1 && sp[1-args].type == T_INT && sp[1-args].u.integer != 0) {
+      if(args>1 && TYPEOF(sp[1-args]) == T_INT && sp[1-args].u.integer != 0) {
 	unsigned lowtrans = 0;
 	int i, j, lo2=0, hi2=0, z, c;
 
@@ -1528,7 +1528,7 @@ static void f_rfc1345(INT32 args)
   if(str->size_shift==0 &&
      (tabl = misc_charset_lookup((char *)STR0(str), &lo, &hi))!=NULL) {
 
-    if(args>1 && sp[1-args].type == T_INT && sp[1-args].u.integer != 0) {
+    if(args>1 && TYPEOF(sp[1-args]) == T_INT && sp[1-args].u.integer != 0) {
       struct std8e_stor *s8;
       int i, c;
 
@@ -2497,9 +2497,7 @@ PIKE_MODULE_INIT
   set_exit_callback(exit_stor);
   std_cs_program = end_program();
 
-  prog.type = T_PROGRAM;
-  prog.subtype = 0;
-  prog.u.program = std_cs_program;
+  SET_SVAL(prog, T_PROGRAM, 0, program, std_cs_program);
 
   memset(rev64t, -1, sizeof(rev64t));
   for(i=0; i<64; i++)
@@ -2785,8 +2783,8 @@ PIKE_MODULE_EXIT
 
   iso2022_exit();
 
-  if (encode_err_prog.type != T_INT) free_svalue (&encode_err_prog);
-  if (decode_err_prog.type != T_INT) free_svalue (&decode_err_prog);
+  if (TYPEOF(encode_err_prog) != T_INT) free_svalue (&encode_err_prog);
+  if (TYPEOF(decode_err_prog) != T_INT) free_svalue (&decode_err_prog);
 
   free_array(double_custom_chars);
   free_array(double_combiner_chars);

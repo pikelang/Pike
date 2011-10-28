@@ -1749,7 +1749,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	      cpp_handle_exception (this, "Couldn't read include file.");
 	      pop_n_elems(Pike_sp-save_sp);
 	      break;
-	    } else if (Pike_sp[-1].type == PIKE_T_INT) {
+	    } else if (TYPEOF(Pike_sp[-1]) == PIKE_T_INT) {
 	      cpp_error_sprintf(this, "Couldn't read include file \"%S\".",
 				new_file);
 	      pop_n_elems(Pike_sp-save_sp);
@@ -2205,7 +2205,7 @@ concat_identifier:
 		if(!str.s->len && Pike_sp-partbase>1)
 		{
 #ifdef PIKE_DEBUG
-		  if(Pike_sp[-1].type != PIKE_T_INT)
+		  if(TYPEOF(Pike_sp[-1]) != PIKE_T_INT)
 		    Pike_fatal("Internal error in CPP\n");
 #endif
 		  Pike_sp[-1].u.integer|=DEF_ARG_NOPOSTSPACE;
@@ -2287,10 +2287,10 @@ concat_identifier:
 	    for(e=0;e<def->num_parts;e++)
 	    {
 #ifdef PIKE_DEBUG
-	      if(partbase[e*2+1].type != PIKE_T_INT)
+	      if(TYPEOF(partbase[e*2+1]) != PIKE_T_INT)
 		Pike_fatal("Cpp internal error, expected integer!\n");
 	      
-	      if(partbase[e*2+2].type != PIKE_T_STRING)
+	      if(TYPEOF(partbase[e*2+2]) != PIKE_T_STRING)
 		Pike_fatal("Cpp internal error, expected string!\n");
 #endif
 	      def->parts[e].argument=partbase[e*2+1].u.integer;

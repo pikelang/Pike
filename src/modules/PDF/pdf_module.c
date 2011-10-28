@@ -117,7 +117,7 @@ static void pdf_magic_index(INT32 args)
 
    if (args!=1) 
       Pike_error("PDF.`[]: Too few or too many arguments\n");
-   if (sp[-1].type!=T_STRING)
+   if (TYPEOF(sp[-1]) != T_STRING)
       Pike_error("PDF.`[]: Illegal type of argument\n");
 
    for (i=0; i<(int)NELEM(submagic); i++)
@@ -152,7 +152,7 @@ static void pdf_magic_index(INT32 args)
    stack_swap();
    f_arrow(2);
 
-   if (sp[-1].type==T_INT)
+   if (TYPEOF(sp[-1]) == T_INT)
    {
       pop_stack();
       stack_dup();
@@ -161,7 +161,7 @@ static void pdf_magic_index(INT32 args)
       f_add(2);
       SAFE_APPLY_MASTER("resolv",1);
    }
-   if (sp[-1].type==T_INT)
+   if (TYPEOF(sp[-1]) == T_INT)
    {
       pop_stack();
       stack_dup();

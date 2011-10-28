@@ -178,7 +178,7 @@
 	  size_t i;
 	  struct svalue *l = Pike_fp->locals;
 	  for (i = 0; l + i < Pike_sp; i++)
-	    if (l[i].type != PIKE_T_FREE)
+	    if (TYPEOF(l[i]) != PIKE_T_FREE)
 	      debug_check_svalue (l + i);
 	}
       }
@@ -208,9 +208,7 @@
 	dynamic_buffer save_buf;
 	dynbuf_string obj_name;
 	struct svalue obj_sval;
-	obj_sval.type = T_OBJECT;
-	obj_sval.subtype = 0;
-	obj_sval.u.object = o;
+	SET_SVAL(obj_sval, T_OBJECT, 0, object, o);
 	init_buf(&save_buf);
 	safe_describe_svalue(&obj_sval, 0, NULL);
 	obj_name = complex_free_buf(&save_buf);
@@ -249,7 +247,7 @@
 	struct svalue *s=&(Pike_fp->context->prog->
 			   constants[function->func.const_info.offset].sval);
 	debug_malloc_touch(Pike_fp);
-	if(s->type == T_PROGRAM)
+	if(TYPEOF(*s) == T_PROGRAM)
 	{
 	  struct object *tmp;
 	  FAST_CHECK_THREADS_ON_CALL();

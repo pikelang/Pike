@@ -705,7 +705,7 @@ static void exit_sid(struct object *o)
 static void f_sid_eq(INT32 args)
 {
   check_all_args("system.SID->`==",args,BIT_MIXED,0);
-  if(sp[-1].type == T_OBJECT)
+  if(TYPEOF(sp[-1]) == T_OBJECT)
   {
     PSID *tmp=(PSID *)get_storage(sp[-1].u.object,sid_program);
     if(tmp)
@@ -826,7 +826,7 @@ void f_LogonUser(INT32 args)
 
   username=(LPTSTR)sp[-args].u.string->str;
 
-  if(sp[1-args].type==T_STRING)
+  if(TYPEOF(sp[1-args]) == T_STRING)
     domain=(LPTSTR)sp[1-args].u.string->str;
   else
     domain=0;
@@ -1324,7 +1324,7 @@ void f_NetUserGetInfo(INT32 args)
       Pike_error("Unsupported information level in NetUserGetInfo.\n");
   }
 
-  if(sp[-args].type==T_STRING)
+  if(TYPEOF(sp[-args]) == T_STRING)
   {
     server=(LPWSTR)require_wstring1(sp[-args].u.string,&to_free1);
     if(!server)
@@ -1422,7 +1422,7 @@ void f_NetUserEnum(INT32 args)
       }
 
     case 1:
-      if(sp[-args].type==T_STRING)
+      if(TYPEOF(sp[-args]) == T_STRING)
 	server=(LPWSTR)require_wstring1(sp[-args].u.string,&to_free1);
 
     case 0: break;
@@ -1522,10 +1522,10 @@ void f_NetGroupEnum(INT32 args)
 
   check_all_args("NetGroupEnum",args,BIT_STRING|BIT_INT|BIT_VOID, BIT_INT|BIT_VOID,0);
 
-  if(args && sp[-args].type==T_STRING)
+  if(args && TYPEOF(sp[-args]) == T_STRING)
     server=(LPWSTR)require_wstring1(sp[-args].u.string,&to_free1);
 
-  if(args>1 && sp[1-args].type==T_INT) {
+  if(args>1 && TYPEOF(sp[1-args]) == T_INT) {
     level = sp[1-args].u.integer;
     switch(level)
     {
@@ -1624,10 +1624,10 @@ void f_NetLocalGroupEnum(INT32 args)
 
   check_all_args("NetLocalGroupEnum",args,BIT_STRING|BIT_INT|BIT_VOID, BIT_INT|BIT_VOID,0);
 
-  if(args && sp[-args].type==T_STRING)
+  if(args && TYPEOF(sp[-args]) == T_STRING)
     server=(LPWSTR)require_wstring1(sp[-args].u.string,&to_free1);
 
-  if(args>1 && sp[1-args].type==T_INT) {
+  if(args>1 && TYPEOF(sp[1-args]) == T_INT) {
     level = sp[1-args].u.integer;
     switch(level)
     {
@@ -1730,13 +1730,13 @@ void f_NetUserGetGroups(INT32 args)
 
   check_all_args("NetUserGetGroups",args,BIT_STRING|BIT_INT, BIT_STRING,BIT_INT|BIT_VOID, 0);
 
-  if(args>0 && sp[-args].type==T_STRING)
+  if(args>0 && TYPEOF(sp[-args]) == T_STRING)
     server=(LPWSTR)require_wstring1(sp[-args].u.string,&to_free1);
 
-  if(args>1 && sp[-args+1].type==T_STRING)
+  if(args>1 && TYPEOF(sp[-args+1]) == T_STRING)
     user=(LPWSTR)require_wstring1(sp[-args+1].u.string,&to_free2);
 
-  if(args>2 && sp[2-args].type==T_INT) {
+  if(args>2 && TYPEOF(sp[2-args]) == T_INT) {
     level = sp[2-args].u.integer;
     switch(level)
     {
@@ -1842,13 +1842,13 @@ void f_NetUserGetLocalGroups(INT32 args)
 
   check_all_args("NetUserGetLocalGroups",args,BIT_STRING|BIT_INT, BIT_STRING,BIT_INT|BIT_VOID, BIT_INT|BIT_VOID, 0);
 
-  if(args>0 && sp[-args].type==T_STRING)
+  if(args>0 && TYPEOF(sp[-args]) == T_STRING)
     server=(LPWSTR)require_wstring1(sp[-args].u.string,&to_free1);
 
-  if(args>1 && sp[-args+1].type==T_STRING)
+  if(args>1 && TYPEOF(sp[-args+1]) == T_STRING)
     user=(LPWSTR)require_wstring1(sp[-args+1].u.string,&to_free2);
 
-  if(args>2 && sp[2-args].type==T_INT) {
+  if(args>2 && TYPEOF(sp[2-args]) == T_INT) {
     level = sp[2-args].u.integer;
     switch(level)
     {
@@ -1859,7 +1859,7 @@ void f_NetUserGetLocalGroups(INT32 args)
     }
   }
 
-  if(args>3 && sp[3-args].type==T_INT)
+  if(args>3 && TYPEOF(sp[3-args]) == T_INT)
     flags = sp[3-args].u.integer;
 
   pop_n_elems(args);
@@ -1951,13 +1951,13 @@ void f_NetGroupGetUsers(INT32 args)
 
   check_all_args("NetGroupGetUsers",args,BIT_STRING|BIT_INT|BIT_VOID, BIT_STRING, BIT_INT|BIT_VOID,0);
 
-  if(args && sp[-args].type==T_STRING)
+  if(args && TYPEOF(sp[-args]) == T_STRING)
     server=(LPWSTR)require_wstring1(sp[-args].u.string,&to_free1);
 
-  if(args>1 && sp[1-args].type==T_STRING)
+  if(args>1 && TYPEOF(sp[1-args]) == T_STRING)
     group=(LPWSTR)require_wstring1(sp[1-args].u.string,&to_free2);
 
-  if(args>2 && sp[2-args].type==T_INT) {
+  if(args>2 && TYPEOF(sp[2-args]) == T_INT) {
     level = sp[2-args].u.integer;
     switch(level)
     {
@@ -2068,13 +2068,13 @@ void f_NetLocalGroupGetMembers(INT32 args)
 
   check_all_args("NetLocalGroupGetMembers",args,BIT_STRING|BIT_INT|BIT_VOID, BIT_STRING, BIT_INT|BIT_VOID,0);
 
-  if(args && sp[-args].type==T_STRING)
+  if(args && TYPEOF(sp[-args]) == T_STRING)
     server=(LPWSTR)require_wstring1(sp[-args].u.string,&to_free1);
 
-  if(args>1 && sp[1-args].type==T_STRING)
+  if(args>1 && TYPEOF(sp[1-args]) == T_STRING)
     group=(LPWSTR)require_wstring1(sp[1-args].u.string,&to_free2);
 
-  if(args>2 && sp[2-args].type==T_INT) {
+  if(args>2 && TYPEOF(sp[2-args]) == T_INT) {
     level = sp[2-args].u.integer;
     switch(level)
     {
@@ -2176,7 +2176,7 @@ void f_NetGetDCName(INT32 args)
 
   check_all_args("NetGetDCName",args,BIT_STRING|BIT_INT, BIT_STRING, 0);
 
-  if(sp[-args].type==T_STRING)
+  if(TYPEOF(sp[-args]) == T_STRING)
   {
     server=(LPWSTR)require_wstring1(sp[-args].u.string,&to_free1);
     if(!server)
@@ -2245,7 +2245,7 @@ void f_NetGetAnyDCName(INT32 args)
 
   check_all_args("NetGetAnyDCName",args,BIT_STRING|BIT_INT, BIT_STRING, 0);
 
-  if(sp[-args].type==T_STRING)
+  if(TYPEOF(sp[-args]) == T_STRING)
   {
     server=(LPWSTR)require_wstring1(sp[-args].u.string,&to_free1);
     if(!server)
@@ -2283,7 +2283,7 @@ void f_NetGetAnyDCName(INT32 args)
 
 static LPWSTR get_wstring(struct svalue *s)
 {
-  if(s->type != T_STRING) return (LPWSTR)0;
+  if(TYPEOF(*s) != T_STRING) return (LPWSTR)0;
   switch(s->u.string->size_shift)
   {
     case 0:
@@ -2880,7 +2880,7 @@ static void f_LookupAccountName(INT32 args)
   char buffer[1];
 
   check_all_args("LookupAccountName",args,BIT_INT|BIT_STRING, BIT_STRING,0);
-  if(sp[-args].type == T_STRING)
+  if(TYPEOF(sp[-args]) == T_STRING)
   {
     if(sp[-args].u.string->size_shift != 0)
        Pike_error("LookupAccountName: System name is wide string.\n");
@@ -2994,22 +2994,22 @@ static PACL decode_acl(struct array *arr)
 
   for(a=0;a<arr->size;a++)
   {
-    if(arr->item[a].type != T_ARRAY)
+    if(TYPEOF(arr->item[a]) != T_ARRAY)
       Pike_error("Index %d in ACL is not an array.\n",a);
 
     if(arr->item[a].u.array->size != 4)
       Pike_error("Index %d in ACL is not of size 4.\n",a);
 
-    if(arr->item[a].u.array->item[0].type != T_STRING)
+    if(TYPEOF(arr->item[a].u.array->item[0]) != T_STRING)
       Pike_error("ACE[%d][%d] is not a string.\n",a,0);
 
-    if(arr->item[a].u.array->item[1].type != T_INT)
+    if(TYPEOF(arr->item[a].u.array->item[1]) != T_INT)
       Pike_error("ACE[%d][%d] is not an integer.\n",a,1);
 
-    if(arr->item[a].u.array->item[2].type != T_INT)
+    if(TYPEOF(arr->item[a].u.array->item[2]) != T_INT)
       Pike_error("ACE[%d][%d] is not an integer.\n",a,2);
 
-    if(arr->item[a].u.array->item[3].type != T_OBJECT)
+    if(TYPEOF(arr->item[a].u.array->item[3]) != T_OBJECT)
       Pike_error("ACE[%d][%d] is not a SID class.\n",a,3);
 
     sid=(PSID *)get_storage(arr->item[a].u.array->item[3].u.object,sid_program);
@@ -3097,14 +3097,14 @@ static void f_SetNamedSecurityInfo(INT32 args)
 
   if((sval=simple_mapping_string_lookup(m, "type")))
   {
-    if(sval->type != T_INT)
+    if(TYPEOF(*sval) != T_INT)
       Pike_error("Bad 'type' in SetNamedSecurityInfo.\n");
     type=sval->u.integer;
   }
 
   if((sval=simple_mapping_string_lookup(m,"owner")))
   {
-    if(sval->type != T_OBJECT ||
+    if(TYPEOF(*sval) != T_OBJECT ||
        !get_storage(sval->u.object, sid_program))
       Pike_error("Bad 'owner' in SetNamedSecurityInfo.\n");
     owner=*(PSID *)get_storage(sval->u.object, sid_program);
@@ -3113,7 +3113,7 @@ static void f_SetNamedSecurityInfo(INT32 args)
 
   if((sval=simple_mapping_string_lookup(m,"group")))
   {
-    if(sval->type != T_OBJECT ||
+    if(TYPEOF(*sval) != T_OBJECT ||
        !get_storage(sval->u.object, sid_program))
       Pike_error("Bad 'group' in SetNamedSecurityInfo.\n");
     group=*(PSID *)get_storage(sval->u.object, sid_program);
@@ -3122,7 +3122,7 @@ static void f_SetNamedSecurityInfo(INT32 args)
 
   if((sval=simple_mapping_string_lookup(m,"dacl")))
   {
-    if(sval->type != T_ARRAY)
+    if(TYPEOF(*sval) != T_ARRAY)
       Pike_error("Bad 'dacl' in SetNamedSecurityInfo.\n");
     dacl=decode_acl(sval->u.array);
     flags |= DACL_SECURITY_INFORMATION;
@@ -3130,7 +3130,7 @@ static void f_SetNamedSecurityInfo(INT32 args)
 
   if((sval=simple_mapping_string_lookup(m,"sacl")))
   {
-    if(sval->type != T_ARRAY)
+    if(TYPEOF(*sval) != T_ARRAY)
       Pike_error("Bad 'sacl' in SetNamedSecurityInfo.\n");
     sacl=decode_acl(sval->u.array);
     flags |= SACL_SECURITY_INFORMATION;

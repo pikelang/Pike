@@ -58,7 +58,7 @@ struct source *source_pikestring_make( struct svalue *s,
 {
   struct ps_source *res;
 
-  if( s->type != PIKE_T_STRING )   return 0;
+  if( TYPEOF(*s) != PIKE_T_STRING )   return 0;
   if( s->u.string->size_shift )    return 0;
 
   res = malloc( sizeof( struct ps_source ) );

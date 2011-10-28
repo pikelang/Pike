@@ -2664,7 +2664,7 @@ void f_thread_id_status(INT32 args)
 void f_thread_id__sprintf (INT32 args)
 {
   int c = 0;
-  if(args>0 && Pike_sp[-args].type == PIKE_T_INT)
+  if(args>0 && TYPEOF(Pike_sp[-args]) == PIKE_T_INT)
     c = Pike_sp[-args].u.integer;
   pop_n_elems (args);
   if(c != 'O') {
@@ -2818,9 +2818,7 @@ void init_thread_obj(struct object *o)
   THIS_THREAD->status=THREAD_NOT_STARTED;
   THIS_THREAD->flags = 0;
   THIS_THREAD->waiting = 0;
-  THIS_THREAD->result.type = T_INT;
-  THIS_THREAD->result.subtype = NUMBER_UNDEFINED;
-  THIS_THREAD->result.u.integer = 0;
+  SET_SVAL(THIS_THREAD->result, T_INT, NUMBER_UNDEFINED, integer, 0);
   co_init(& THIS_THREAD->status_change);
   THIS_THREAD->thread_local=NULL;
 #ifdef CPU_TIME_MIGHT_BE_THREAD_LOCAL
@@ -2932,9 +2930,8 @@ void f_thread_local_get(INT32 args)
 {
   struct svalue key;
   struct mapping *m;
-  key.u.integer = ((struct thread_local *)CURRENT_STORAGE)->id;
-  key.type = T_INT;
-  key.subtype = NUMBER_NUMBER;
+  SET_SVAL(key, T_INT, NUMBER_NUMBER, integer,
+	   ((struct thread_local *)CURRENT_STORAGE)->id);
   pop_n_elems(args);
   if(Pike_interpreter.thread_state != NULL &&
      (m = Pike_interpreter.thread_state->thread_local) != NULL)
@@ -2967,9 +2964,8 @@ void f_thread_local_set(INT32 args)
 {
   struct svalue key;
   struct mapping *m;
-  key.u.integer = ((struct thread_local *)CURRENT_STORAGE)->id;
-  key.type = T_INT;
-  key.subtype = NUMBER_NUMBER;
+  SET_SVAL(key, T_INT, NUMBER_NUMBER, integer,
+	   ((struct thread_local *)CURRENT_STORAGE)->id);
   if(args>1)
     pop_n_elems(args-1);
   else if(args<1)
@@ -2993,9 +2989,8 @@ void gc_check_thread_local (struct object *o)
     struct svalue key, *val;
     struct thread_state *s;
 
-    key.u.integer = ((struct thread_local *)CURRENT_STORAGE)->id;
-    key.type = T_INT;
-    key.subtype = NUMBER_NUMBER;
+    SET_SVAL(key, T_INT, NUMBER_NUMBER, integer,
+	     ((struct thread_local *)CURRENT_STORAGE)->id);
 
     FOR_EACH_THREAD (s, {
 	if (s->thread_local &&

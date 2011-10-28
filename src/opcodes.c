@@ -310,8 +310,8 @@ const char *low_get_f_name(int n, struct program *p)
 
   if(p &&
      (int)p->num_constants > (int)(n-F_MAX_OPCODE) &&
-     p->constants[n-F_MAX_OPCODE].sval.type==T_FUNCTION &&
-     (p->constants[n-F_MAX_OPCODE].sval.subtype == FUNCTION_BUILTIN) &&
+     (TYPEOF(p->constants[n-F_MAX_OPCODE].sval) == T_FUNCTION) &&
+     (SUBTYPEOF(p->constants[n-F_MAX_OPCODE].sval) == FUNCTION_BUILTIN) &&
      p->constants[n-F_MAX_OPCODE].sval.u.efun) {
     return p->constants[n-F_MAX_OPCODE].sval.u.efun->name->str;
   }

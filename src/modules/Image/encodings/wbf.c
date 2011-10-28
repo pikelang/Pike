@@ -397,7 +397,7 @@ static void image_f_wbf_encode( int args )
     Pike_error("No image given to encode.\n");
   if( args > 2 )
     Pike_error("Too many arguments to encode.\n");
-  if( sp[-args].type != T_OBJECT )
+  if( TYPEOF(sp[-args]) != T_OBJECT )
     Pike_error("No image given to encode.\n");
 
   o = sp[-args].u.object;
@@ -406,7 +406,7 @@ static void image_f_wbf_encode( int args )
     Pike_error("Wrong type object argument\n");
   if( args == 2 )
   {
-    if( sp[-args+1].type != T_MAPPING )
+    if( TYPEOF(sp[-args+1]) != T_MAPPING )
       Pike_error("Wrong type for argument 2.\n");
     options = sp[-args+1].u.mapping;
   }

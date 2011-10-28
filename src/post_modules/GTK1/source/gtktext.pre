@@ -69,13 +69,13 @@ void insert(string text, ?GDK.Font font, ?GDK.Color bg, ?GDK.Color fg )
   {
     get_all_args("insert", args, "%S%*%*%*", &s,&a,&b,&c);
 
-    if(a->type == PIKE_T_OBJECT)
+    if(TYPEOF(*a) == PIKE_T_OBJECT)
       font = get_gdkobject( a->u.object,font );
 
-    if(b->type == PIKE_T_OBJECT)
+    if(TYPEOF(*b) == PIKE_T_OBJECT)
       fg = get_gdkobject( b->u.object,color );
 
-    if(c->type == PIKE_T_OBJECT)
+    if(TYPEOF(*c) == PIKE_T_OBJECT)
       bg = get_gdkobject( c->u.object,color );
   } else
     get_all_args("insert", args, "%S", &s);

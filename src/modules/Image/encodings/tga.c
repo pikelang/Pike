@@ -929,7 +929,7 @@ void image_tga_encode( INT32 args )
   if (!args)
     Pike_error("Image.TGA.encode: too few arguments\n");
 
-  if (Pike_sp[-args].type!=PIKE_T_OBJECT ||
+  if (TYPEOF(Pike_sp[-args]) != PIKE_T_OBJECT ||
       !(img=(struct image*)
         get_storage(Pike_sp[-args].u.object,image_program)))
     Pike_error("Image.TGA.encode: illegal argument 1\n");
@@ -939,15 +939,15 @@ void image_tga_encode( INT32 args )
 
   if (args>1)
   {
-    if (Pike_sp[1-args].type!=PIKE_T_MAPPING)
+    if (TYPEOF(Pike_sp[1-args]) != PIKE_T_MAPPING)
       Pike_error("Image.TGA.encode: illegal argument 2\n");
 
     push_svalue(Pike_sp+1-args);
     ref_push_string(param_alpha);
     f_index(2);
-    if (!(Pike_sp[-1].type==PIKE_T_INT
-          && Pike_sp[-1].subtype==NUMBER_UNDEFINED))
-      if (Pike_sp[-1].type!=PIKE_T_OBJECT ||
+    if (!(TYPEOF(Pike_sp[-1]) == PIKE_T_INT
+          && SUBTYPEOF(Pike_sp[-1]) == NUMBER_UNDEFINED))
+      if (TYPEOF(Pike_sp[-1]) != PIKE_T_OBJECT ||
           !(alpha=(struct image*)
             get_storage(Pike_sp[-1].u.object,image_program)))
         Pike_error("Image.TGA.encode: option (arg 2) \"alpha\" has illegal type\n");

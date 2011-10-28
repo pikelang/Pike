@@ -618,14 +618,14 @@ void image_apply_max(INT32 args)
    double div;
 
    if (args<1 ||
-       sp[-args].type!=T_ARRAY)
+       TYPEOF(sp[-args]) != T_ARRAY)
       bad_arg_error("Image",sp-args,args,0,"",sp-args,
 		"Bad arguments to Image()\n");
 
    if (args>3) 
-      if (sp[1-args].type!=T_INT ||
-	  sp[2-args].type!=T_INT ||
-	  sp[3-args].type!=T_INT)
+      if (TYPEOF(sp[1-args]) != T_INT ||
+	  TYPEOF(sp[2-args]) != T_INT ||
+	  TYPEOF(sp[3-args]) != T_INT)
 	 Pike_error("Illegal argument(s) (2,3,4) to Image.Image->apply_max()\n");
       else
       {
@@ -641,13 +641,13 @@ void image_apply_max(INT32 args)
    }
 
    if (args>4 
-       && sp[4-args].type==T_INT)
+       && TYPEOF(sp[4-args]) == T_INT)
    {
       div=sp[4-args].u.integer;
       if (!div) div=1;
    }
    else if (args>4 
-	    && sp[4-args].type==T_FLOAT)
+	    && TYPEOF(sp[4-args]) == T_FLOAT)
    {
       div=sp[4-args].u.float_number;
       if (!div) div=1;
@@ -659,7 +659,7 @@ void image_apply_max(INT32 args)
    for (i=0; i<height; i++)
    {
       struct svalue s=sp[-args].u.array->item[i];
-      if (s.type!=T_ARRAY) 
+      if (TYPEOF(s) != T_ARRAY)
 	 Pike_error("Illegal contents of (root) array (Image.Image->apply_max)\n");
       if (width==-1)
 	 width=s.u.array->size;
@@ -677,22 +677,22 @@ void image_apply_max(INT32 args)
       for (j=0; j<width; j++)
       {
 	 struct svalue s2=s.u.array->item[j];
-	 if (s2.type==T_ARRAY && s2.u.array->size == 3)
+	 if (TYPEOF(s2) == T_ARRAY && s2.u.array->size == 3)
 	 {
 	    struct svalue s3;
 	    s3=s2.u.array->item[0];
-	    if (s3.type==T_INT) matrix[j+i*width].r = (float)s3.u.integer; 
+	    if (TYPEOF(s3) == T_INT) matrix[j+i*width].r = (float)s3.u.integer;
 	    else matrix[j+i*width].r=0;
 
 	    s3=s2.u.array->item[1];
-	    if (s3.type==T_INT) matrix[j+i*width].g = (float)s3.u.integer;
+	    if (TYPEOF(s3) == T_INT) matrix[j+i*width].g = (float)s3.u.integer;
 	    else matrix[j+i*width].g=0;
 
 	    s3=s2.u.array->item[2];
-	    if (s3.type==T_INT) matrix[j+i*width].b = (float)s3.u.integer; 
+	    if (TYPEOF(s3) == T_INT) matrix[j+i*width].b = (float)s3.u.integer;
 	    else matrix[j+i*width].b=0;
 	 }
-	 else if (s2.type==T_INT)
+	 else if (TYPEOF(s2) == T_INT)
 	    matrix[j+i*width].r=matrix[j+i*width].g=
 	       matrix[j+i*width].b = (float)s2.u.integer;
 	 else

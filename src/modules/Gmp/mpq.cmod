@@ -183,7 +183,7 @@ PIKECLASS mpq
   int get_new_mpq(MP_RAT *tmp, struct svalue *s,
 		  int throw_error, const char *arg_func, int arg, int args)
     {
-      switch(s->type)
+      switch(TYPEOF(*s))
       {
 	case T_FLOAT:
 	{
@@ -254,8 +254,7 @@ PIKECLASS mpq
     if (get_new_mpq (OBTOMPQ (o), s, throw_error, arg_func, arg, args)) {
       UNSET_ONERROR (uwp);
       free_svalue(s);
-      s->u.object=o;
-      s->type=T_OBJECT;
+      SET_SVAL(*s, T_OBJECT, 0, object, o);
       return OBTOMPQ (o);
     }
     else {
@@ -267,7 +266,7 @@ PIKECLASS mpq
 
 #ifdef DEBUG_MALLOC
 #define get_mpq(S, THROW_ERROR, ARG_FUNC, ARG, ARGS)			\
-  ((S)->type <= MAX_REF_TYPE ? debug_malloc_touch((S)->u.object) : 0,	\
+  (TYPEOF(*(S)) <= MAX_REF_TYPE ? debug_malloc_touch((S)->u.object) : 0, \
    debug_get_mpq((S), (THROW_ERROR), (ARG_FUNC), (ARG), (ARGS)))
 #else
 #define get_mpq debug_get_mpq
@@ -284,7 +283,7 @@ PIKECLASS mpq
     switch(args)
     {
       case 1:
-	if(sp[-args].type == T_STRING)
+	if(TYPEOF(sp[-args]) == T_STRING)
 	  get_mpq_from_digits(THISMPQ, sp[-args].u.string, 0);
 	else
 	  get_new_mpq(THISMPQ, sp-args, 1, "Gmp.mpq", 1, args);
@@ -294,15 +293,15 @@ PIKECLASS mpq
 	/* Args are string of digits and integer base */
 	/* or int num / den */
 	
-	if (sp[1-args].type != T_INT)
+	if (TYPEOF(sp[1-args]) != T_INT)
 #ifdef AUTO_BIGNUM
-	  if(sp[1-args].type != T_OBJECT ||
+	  if(TYPEOF(sp[1-args]) != T_OBJECT ||
 	     sp[1-args].u.object->prog != bignum_program ||
-	     sp[-args].type == T_STRING)
+	     TYPEOF(sp[-args]) == T_STRING)
 #endif
 	  SIMPLE_ARG_TYPE_ERROR ("Gmp.mpq", 2, "int");
 
-	switch(sp[-args].type)
+	switch(TYPEOF(sp[-args]))
 	{
 	  case T_STRING:
 	    get_mpq_from_digits(THISMPQ, sp[-args].u.string, sp[1-args].u.integer);
@@ -556,7 +555,7 @@ PIKECLASS mpq
       struct svalue *sv;
       if((sv=simple_mapping_string_lookup(m,ind)))
       {
-	if(sv->type == T_INT)
+	if(TYPEOF(*sv) == T_INT)
 	{
 	  return sv->u.integer;
 	}else{
@@ -757,7 +756,7 @@ PIKECLASS mpq
       INT32 e;
       for(e=0; e<args; e++)
       {
-	if(sp[e-args].type == T_OBJECT)
+	if(TYPEOF(sp[e-args]) == T_OBJECT)
 	{
 	  if(sp[e-args].u.object->prog == mpzmod_program)
 	    continue;
@@ -767,7 +766,7 @@ PIKECLASS mpq
 #endif
 	}
 	
-	if(sp[e-args].type != T_INT || sp[e-args].u.integer<=0 TOOBIGTEST)
+	if(TYPEOF(sp[e-args]) != T_INT || sp[e-args].u.integer<=0 TOOBIGTEST)
 	  get_mpq(sp+e-args, 1, arg_func, e + 1, args);
       }
     }
@@ -779,7 +778,7 @@ PIKECLASS mpq
       int norm=0;
       for(;e<args;e++)
       {
-	if(sp[e-args].type == T_INT)
+	if(TYPEOF(sp[e-args]) == T_INT)
 	{
 	  mpz_mul_ui(mpq_numref(res),
 		      mpq_numref(res),

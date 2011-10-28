@@ -897,10 +897,10 @@ INLINE static int do_one(struct format_stack *fs,
   { \
     struct svalue *tmp_; \
     GET_SVALUE(tmp_); \
-    if(tmp_->type!=PIKE_TYPE) \
+    if(TYPEOF(*tmp_) != PIKE_TYPE) \
     { \
       sprintf_error(fs, "Wrong type for argument %d: expected %s, got %s.\n",argument+1,TYPE_NAME, \
-	get_name_of_type(tmp_->type)); \
+		    get_name_of_type(TYPEOF(*tmp_))); \
       break; /* make gcc happy */ \
     } \
     VAR=tmp_->u.EXTENSION; \
@@ -949,7 +949,7 @@ INLINE static int do_one(struct format_stack *fs,
 	   /* but it cannot be since we need to break out of the case... */   \
 	  struct svalue *sv;						      \
 	  PEEK_SVALUE(sv);						      \
-	  if(sv->type == T_OBJECT && sv->u.object->prog)		      \
+	  if(TYPEOF(*sv) == T_OBJECT && sv->u.object->prog)		      \
 	  {                                                                   \
             ptrdiff_t fun=FIND_LFUN(sv->u.object->prog, LFUN__SPRINTF);	      \
 	    if (fun != -1) {						      \
@@ -981,7 +981,7 @@ INLINE static int do_one(struct format_stack *fs,
 	      	SET_CYCLIC_RET(1);					      \
 	      	apply_low(sv->u.object, fun, 2);                              \
 									      \
-	      	if(Pike_sp[-1].type == T_STRING)			      \
+		if(TYPEOF(Pike_sp[-1]) == T_STRING)			      \
 	      	{	                                                      \
               	  DO_IF_DEBUG( if(fs->fsp->to_free_string)                    \
               		       Pike_fatal("OOps in sprintf\n"); )             \
@@ -1129,26 +1129,26 @@ static void low_pike_sprintf(struct format_stack *fs,
 	  struct svalue *sval;
 	  struct mapping *m;
 	  GET_SVALUE(sval);
-	  if (sval->type == T_INT) {
+	  if (TYPEOF(*sval) == T_INT) {
 	    tmp = sval->u.integer;
 	    goto got_arg;
-	  } else if (sval->type != T_MAPPING) {
+	  } else if (TYPEOF(*sval) != T_MAPPING) {
 	    sprintf_error(fs, "Wrong type for argument %d: "
 			  "expected %s, got %s.\n",
 			  argument+1, "int|mapping(string:int)",
-			  get_name_of_type(sval->type));
+			  get_name_of_type(TYPEOF(*sval)));
 	  }
 	  m = sval->u.mapping;
 	  if ((sval = simple_mapping_string_lookup(m, "precision")) &&
-	      (sval->type == T_INT)) {
+	      (TYPEOF(*sval) == T_INT)) {
 	    fs->fsp->precision = sval->u.integer;
 	  }
 	  if ((sval = simple_mapping_string_lookup(m, "width")) &&
-	      (sval->type == T_INT) && (sval->u.integer >= 0)) {
+	      (TYPEOF(*sval) == T_INT) && (sval->u.integer >= 0)) {
 	    fs->fsp->width = sval->u.integer;
 	  }
 	  if ((sval = simple_mapping_string_lookup(m, "flag_left")) &&
-	      (sval->type == T_INT)) {
+	      (TYPEOF(*sval) == T_INT)) {
 	    if (sval->u.integer) {
 	      fs->fsp->flags |= FIELD_LEFT;
 	    } else {
@@ -1156,7 +1156,7 @@ static void low_pike_sprintf(struct format_stack *fs,
 	    }
 	  }
 	  if ((sval = simple_mapping_string_lookup(m, "indent")) &&
-	      (sval->type == T_INT) && (sval->u.integer >= 0)) {
+	      (TYPEOF(*sval) == T_INT) && (sval->u.integer >= 0)) {
 	    indent = sval->u.integer;
 	  }
 	  continue;
@@ -1350,7 +1350,7 @@ static void low_pike_sprintf(struct format_stack *fs,
 	DO_OP();
 	CHECK_OBJECT_SPRINTF()
 	GET_SVALUE(t);
-	fs->fsp->b=MKPCHARP(get_name_of_type(t->type),0);
+	fs->fsp->b = MKPCHARP(get_name_of_type(TYPEOF(*t)),0);
 	fs->fsp->len=strlen((char *)fs->fsp->b.ptr);
 	break;
       }
@@ -1703,7 +1703,7 @@ static void low_pike_sprintf(struct format_stack *fs,
 	  /* We don't care about the nested case, since it
 	   * contains line feeds and comments and stuff anyway.
 	   */
-	  if (t->type == T_STRING) {
+	  if (TYPEOF(*t) == T_STRING) {
 	    struct string_builder buf;
 	    init_string_builder_alloc(&buf, t->u.string->len+2, 0);
 	    string_builder_putchar(&buf, '"');
@@ -1900,12 +1900,12 @@ void low_f_sprintf(INT32 args, int compat_mode)
 
   argp=Pike_sp-args;
 
-  if(argp[0].type != T_STRING) {
-    if (argp[0].type == T_OBJECT) {
+  if(TYPEOF(argp[0]) != T_STRING) {
+    if (TYPEOF(argp[0]) == T_OBJECT) {
       /* Try checking if we can cast it to a string... */
       ref_push_object(argp[0].u.object);
       o_cast(string_type_string, PIKE_T_STRING);
-      if (Pike_sp[-1].type != T_STRING) {
+      if (TYPEOF(Pike_sp[-1]) != T_STRING) {
 	/* We don't accept objects... */
 	Pike_error("sprintf(): Cast to string failed.\n");
       }
@@ -2294,7 +2294,7 @@ static node *optimize_sprintf(node *n)
   int num_args=count_args(CDR(n));
   if(arg0 &&
      (*arg0)->token == F_CONSTANT &&
-     (*arg0)->u.sval.type == T_STRING)
+     TYPEOF((*arg0)->u.sval) == T_STRING)
   {
     /* First argument is a constant string. */
     struct pike_string *fmt = (*arg0)->u.sval.u.string;
@@ -2395,13 +2395,13 @@ void f___handle_sprintf_format(INT32 args)
 
   if (args != 4)
     SIMPLE_WRONG_NUM_ARGS_ERROR("__handle_sprintf_format", 4);
-  if (Pike_sp[-4].type != PIKE_T_STRING)
+  if (TYPEOF(Pike_sp[-4]) != PIKE_T_STRING)
     SIMPLE_ARG_TYPE_ERROR("__handle_sprintf_format", 1, "string");
-  if (Pike_sp[-3].type != PIKE_T_STRING)
+  if (TYPEOF(Pike_sp[-3]) != PIKE_T_STRING)
     SIMPLE_ARG_TYPE_ERROR("__handle_sprintf_format", 2, "string");
-  if (Pike_sp[-2].type != PIKE_T_TYPE)
+  if (TYPEOF(Pike_sp[-2]) != PIKE_T_TYPE)
     SIMPLE_ARG_TYPE_ERROR("__handle_sprintf_format", 3, "type");
-  if (Pike_sp[-1].type != PIKE_T_TYPE)
+  if (TYPEOF(Pike_sp[-1]) != PIKE_T_TYPE)
     SIMPLE_ARG_TYPE_ERROR("__handle_sprintf_format", 4, "type");
 
   tmp = Pike_sp[-1].u.type;
@@ -2652,16 +2652,14 @@ PIKE_MODULE_INIT
 	   0);
 
   MAKE_CONST_STRING(attr, "sprintf_format");
-  s.type = T_TYPE;
-  s.subtype = 0;
-  s.u.type = make_pike_type(tAttr("sprintf_format", tOr(tStr, tObj)));
+  SET_SVAL(s, T_TYPE, 0, type,
+	   make_pike_type(tAttr("sprintf_format", tOr(tStr, tObj))));
   low_add_efun(attr, &s);
   free_type(s.u.type);
 
   MAKE_CONST_STRING(attr, "strict_sprintf_format");
-  s.type = T_TYPE;
-  s.subtype = 0;
-  s.u.type = make_pike_type(tAttr("strict_sprintf_format", tOr(tStr, tObj)));
+  SET_SVAL(s, T_TYPE, 0, type,
+	   make_pike_type(tAttr("strict_sprintf_format", tOr(tStr, tObj))));
   low_add_efun(attr, &s);
   free_type(s.u.type);
 

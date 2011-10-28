@@ -11,7 +11,7 @@ void create(mapping(string:mixed)|GTK2.RecentManager|void props)
   pgtk2_verify_setup();
   if (args) {
 
-    if (Pike_sp[-args].type==PIKE_T_MAPPING) {
+    if (TYPEOF(Pike_sp[-args]) == PIKE_T_MAPPING) {
       INIT_WITH_PROPS(GTK_TYPE_RECENT_CHOOSER_WIDGET);
     } else {
       struct object *o1;

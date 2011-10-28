@@ -545,7 +545,7 @@ static int parameter_int(struct svalue *map,struct pike_string *what,
 {
    struct svalue *v;
    v=low_mapping_string_lookup(map->u.mapping,what);
-   if (!v || v->type!=T_INT) 
+   if (!v || TYPEOF(*v) != T_INT) 
      return 0;
    *p=v->u.integer;
    return 1;
@@ -556,7 +556,7 @@ static int parameter_colortable(struct svalue *map,struct pike_string *what,
 {
    struct svalue *v;
    v=low_mapping_string_lookup(map->u.mapping,what);
-   if (!v || v->type!=T_OBJECT) return 0;
+   if (!v || TYPEOF(*v) != T_OBJECT) return 0;
    if( !(*p = (struct neo_colortable *)get_storage( v->u.object, image_colortable_program )))
      return 0;
    return 1;
@@ -585,7 +585,7 @@ void image_pcx_encode( INT32 args )
   if(args > 1)
   {
     int dpy;
-    if(sp[-args+1].type != T_MAPPING)
+    if(TYPEOF(sp[-args+1]) != T_MAPPING)
       Pike_error("Invalid argument 2 to Image.PCX.encode. Expected mapping.\n");
     parameter_int( sp-args+1, opt_raw, &c.raw );
     if(parameter_int( sp-args+1, opt_dpy, &dpy ))

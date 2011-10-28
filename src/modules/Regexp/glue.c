@@ -123,7 +123,7 @@ static void regexp_match(INT32 args)
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("Regexp.SimpleRegexp->match", 1);
   
-  if(Pike_sp[-args].type == T_STRING)
+  if(TYPEOF(Pike_sp[-args]) == T_STRING)
   {
     if(Pike_sp[-args].u.string->size_shift)
       SIMPLE_BAD_ARG_ERROR("Regexp.SimpleRegexp->match", 1,
@@ -134,7 +134,7 @@ static void regexp_match(INT32 args)
     push_int(i);
     return;
   }
-  else if(Pike_sp[-args].type == T_ARRAY)
+  else if(TYPEOF(Pike_sp[-args]) == T_ARRAY)
   {
     struct array *arr;
     int i, n;
@@ -145,7 +145,7 @@ static void regexp_match(INT32 args)
     {
       struct svalue *sv = ITEM(arr) + i;
       
-      if(sv->type != T_STRING || sv->u.string->size_shift)
+      if(TYPEOF(*sv) != T_STRING || sv->u.string->size_shift)
 	SIMPLE_BAD_ARG_ERROR("Regexp.SimpleRegexp->match", 1,
 			     "Expected string (8bit)");
 

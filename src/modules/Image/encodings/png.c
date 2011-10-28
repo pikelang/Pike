@@ -167,8 +167,8 @@ static void image_png__chunk(INT32 args)
    struct pike_string *a,*b;
 
    if (args!=2 ||
-       sp[-args].type!=T_STRING ||
-       sp[1-args].type!=T_STRING)
+       TYPEOF(sp[-args]) != T_STRING ||
+       TYPEOF(sp[1-args]) != T_STRING)
       PIKE_ERROR("Image.PNG._chunk", "Illegal argument(s).\n", sp, args);
 
    a=sp[-args].u.string;
@@ -217,11 +217,11 @@ static void image_png___decode(INT32 args)
 
    if (args<1)
      SIMPLE_TOO_FEW_ARGS_ERROR("Image.PNG.__decode", 1);
-   if (sp[-args].type!=T_STRING)
+   if (TYPEOF(sp[-args]) != T_STRING)
      SIMPLE_BAD_ARG_ERROR("Image.PNG.__decode", 1, "string");
 
    if (args>1 &&
-       (sp[1-args].type!=T_INT ||
+       (TYPEOF(sp[1-args]) != T_INT ||
 	sp[1-args].u.integer!=0))
       nocrc=1;
 
@@ -989,7 +989,7 @@ static int _png_decode_idat(struct IHDR *ihdr, struct neo_colortable *ct,
   ONERROR err, a_err;
 
   png_decompress(ihdr->compression);
-  if( sp[-1].type!=T_STRING )
+  if( TYPEOF(sp[-1]) != T_STRING )
     Pike_error("Got illegal data from decompression.\n");
 
   w1=xalloc(sizeof(rgb_group)*ihdr->width*ihdr->height + RGB_VEC_PAD);
@@ -1149,17 +1149,17 @@ static void img_png_decode(INT32 args, int mode)
 
    if (args>=2)
    {
-      if (sp[1-args-1].type!=T_MAPPING)
+      if (TYPEOF(sp[1-args-1]) != T_MAPPING)
 	SIMPLE_BAD_ARG_ERROR("Image.PNG._decode", 2, "mapping");
 
       push_svalue(sp+1-args-1);
       ref_push_string(param_palette);
       f_index(2);
-      switch (sp[-1].type)
+      switch (TYPEOF(sp[-1]))
       {
 	 case T_OBJECT:
 	    push_text("cast");
-	    if (sp[-1].type==T_INT)
+	    if (TYPEOF(sp[-1]) == T_INT)
 	       PIKE_ERROR("Image.PNG._decode",
 			  "Illegal value of option \"palette\".\n",
 			  sp, args);
@@ -1193,14 +1193,14 @@ static void img_png_decode(INT32 args, int mode)
    push_mapping(m);
    stack_swap();
 
-   if (sp[-1].type==T_STRING)
+   if (TYPEOF(sp[-1]) == T_STRING)
    {
       push_int(1); /* no care crc */
       image_png___decode(2);
-      if (sp[-1].type!=T_ARRAY)
+      if (TYPEOF(sp[-1]) != T_ARRAY)
 	 PIKE_ERROR("Image.PNG._decode", "Not PNG data.\n", sp ,args);
    }
-   else if (sp[-1].type!=T_ARRAY)
+   else if (TYPEOF(sp[-1]) != T_ARRAY)
      SIMPLE_BAD_ARG_ERROR("Image.PNG._decode", 1, "string");
 
    a=sp[-1].u.array;
@@ -1212,10 +1212,10 @@ static void img_png_decode(INT32 args, int mode)
       size_t len;
 
 #ifdef PIKE_DEBUG
-      if (a->item[i].type!=T_ARRAY ||
+      if (TYPEOF(a->item[i]) != T_ARRAY ||
 	  (b=a->item[i].u.array)->size!=3 ||
-	  b->item[0].type!=T_STRING ||
-	  b->item[1].type!=T_STRING ||
+	  TYPEOF(b->item[0]) != T_STRING ||
+	  TYPEOF(b->item[1]) != T_STRING ||
 	  b->item[0].u.string->len!=4)
 	 Pike_error("Image.PNG._decode: Illegal stuff in array index %d\n",i);
 #else
@@ -1543,7 +1543,7 @@ static void image_png_encode(INT32 args)
    if (!args)
      SIMPLE_TOO_FEW_ARGS_ERROR("Image.PNG.encode", 1);
 
-   if (sp[-args].type!=T_OBJECT ||
+   if (TYPEOF(sp[-args]) != T_OBJECT ||
        !(img=(struct image*)
 	 get_storage(sp[-args].u.object,image_program)))
      SIMPLE_BAD_ARG_ERROR("Image.PNG.encode", 1, "Image.Image");
@@ -1555,7 +1555,7 @@ static void image_png_encode(INT32 args)
    {
      struct svalue *s;
 
-     if (sp[1-args].type!=T_MAPPING)
+     if (TYPEOF(sp[1-args]) != T_MAPPING)
 	SIMPLE_BAD_ARG_ERROR("Image.PNG.encode", 2, "mapping");
 
       /* Attribute alpha */
@@ -1563,7 +1563,7 @@ static void image_png_encode(INT32 args)
 
       if( s )
       {
-        if( s->type==T_OBJECT &&
+        if( TYPEOF(*s) == T_OBJECT &&
             (alpha=(struct image*)
              get_storage(s->u.object,image_program)) )
         {
@@ -1578,7 +1578,7 @@ static void image_png_encode(INT32 args)
                        "Option (arg 2) \"alpha\"; no image\n",
                        sp, args);
         }
-        else if( !(s->type==T_INT && s->u.integer==0) )
+        else if( !(TYPEOF(*s) == T_INT && s->u.integer==0) )
           PIKE_ERROR("Image.PNG.encode",
                      "Option (arg 2) \"alpha\" has illegal type.\n",
                      sp, args);
@@ -1587,8 +1587,8 @@ static void image_png_encode(INT32 args)
       /* Attribute palette */
       s = low_mapping_string_lookup(sp[1-args].u.mapping, param_palette);
 
-      if (s && !(s->type==T_INT && s->u.integer==0))
-	 if (s->type!=T_OBJECT ||
+      if (s && !(TYPEOF(*s) == T_INT && s->u.integer==0))
+	 if (TYPEOF(*s) != T_OBJECT ||
 	     !(ct=(struct neo_colortable*)
 	       get_storage(s->u.object,image_colortable_program)))
 	   PIKE_ERROR("Image.PNG.encode",
@@ -1600,7 +1600,7 @@ static void image_png_encode(INT32 args)
 
       if ( s )
       {
-        if( s->type!=T_INT )
+        if( TYPEOF(*s) != T_INT )
           PIKE_ERROR("Image.PNG.encode",
                      "Option (arg 2) \"zlevel\" has illegal value.\n",
                      sp, args);
@@ -1612,7 +1612,7 @@ static void image_png_encode(INT32 args)
       s = low_mapping_string_lookup(sp[1-args].u.mapping, param_zstrategy);
       if( s )
       {
-        if ( s->type!=T_INT )
+        if ( TYPEOF(*s) != T_INT )
           PIKE_ERROR("Image.PNG.encode",
                      "Option (arg 2) \"zstrategy\" has illegal value.\n",
                      sp, args);
@@ -1835,7 +1835,7 @@ static void image_png_decode_alpha(INT32 args)
    push_constant_text("alpha");
    f_index(2);
 
-   if (sp[-1].type==T_INT)
+   if (TYPEOF(sp[-1]) == T_INT)
    {
       push_svalue(&s);
       push_constant_text("xsize");
@@ -1884,7 +1884,7 @@ void init_image_png(void)
 #else
    push_text("Gz.inflate");
    SAFE_APPLY_MASTER("resolv",1);
-   if( Pike_sp[-1].type==T_PROGRAM )
+   if( TYPEOF(Pike_sp[-1]) == T_PROGRAM )
      gz = 1;
    pop_stack();
 #endif

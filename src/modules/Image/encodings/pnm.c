@@ -137,8 +137,7 @@ void img_pnm_decode(INT32 args)
 
    struct pike_string *s;
 
-   if (args<1 ||
-       sp[-args].type!=T_STRING)
+   if (args<1 || TYPEOF(sp[-args]) != T_STRING)
       Pike_error("Image.PNM.decode(): Illegal arguments\n");
 
    s=sp[-args].u.string;
@@ -280,8 +279,7 @@ void img_pnm_encode_P1(INT32 args) /* ascii PBM */
    int x,y;
    rgb_group *s;
 
-   if (args<1 ||
-       sp[-args].type!=T_OBJECT ||
+   if (args<1 || TYPEOF(sp[-args]) != T_OBJECT ||
        !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
       Pike_error("Image.PNM.encode_P1(): Illegal arguments\n");
    if (!img->img)
@@ -323,8 +321,7 @@ void img_pnm_encode_P2(INT32 args) /* ascii PGM */
    int n;
    struct object *o = NULL;
 
-   if (args<1 ||
-       sp[-args].type!=T_OBJECT ||
+   if (args<1 || TYPEOF(sp[-args]) != T_OBJECT ||
        !(img=(struct image*)get_storage((o=sp[-args].u.object),image_program)))
       Pike_error("Image.PNM.encode_P2(): Illegal arguments\n");
    if (!img->img)
@@ -364,8 +361,7 @@ void img_pnm_encode_P3(INT32 args) /* ascii PPM */
    int n;
    struct object *o = NULL;
 
-   if (args<1 ||
-       sp[-args].type!=T_OBJECT ||
+   if (args<1 || TYPEOF(sp[-args]) != T_OBJECT ||
        !(img=(struct image*)get_storage((o=sp[-args].u.object),image_program)))
       Pike_error("Image.PNM.encode_P3(): Illegal arguments\n");
    if (!img->img)
@@ -405,8 +401,7 @@ void img_pnm_encode_P4(INT32 args) /* binary PBM */
    int y,x,bit;
    rgb_group *s;
 
-   if (args<1 ||
-       sp[-args].type!=T_OBJECT ||
+   if (args<1 || TYPEOF(sp[-args]) != T_OBJECT ||
        !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
       Pike_error("Image.PNM.encode_P4(): Illegal arguments\n");
    if (!img->img)
@@ -451,8 +446,7 @@ void img_pnm_encode_P5(INT32 args) /* binary PGM */
    int n;
    rgb_group *s;
 
-   if (args<1 ||
-       sp[-args].type!=T_OBJECT ||
+   if (args<1 || TYPEOF(sp[-args]) != T_OBJECT ||
        !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
       Pike_error("Image.PNM.encode_P5(): Illegal arguments\n");
    if (!img->img)
@@ -483,8 +477,7 @@ void img_pnm_encode_P6(INT32 args)
    struct pike_string *a,*b;
    struct image *img=NULL;
 
-   if (args<1 ||
-       sp[-args].type!=T_OBJECT ||
+   if (args<1 || TYPEOF(sp[-args]) != T_OBJECT ||
        !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
       Pike_error("Image.PNM.encode_P6(): Illegal arguments\n");
    if (!img->img)
@@ -524,8 +517,7 @@ void img_pnm_encode_ascii(INT32 args)
    int n;
    void (*func)(INT32);
 
-   if (args<1 ||
-       sp[-args].type!=T_OBJECT ||
+   if (args<1 || TYPEOF(sp[-args]) != T_OBJECT ||
        !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
       Pike_error("Image.PNM.encode_ascii(): Illegal arguments\n");
    if (!img->img)
@@ -558,8 +550,7 @@ void img_pnm_encode_binary(INT32 args)
    int n;
    void (*func)(INT32);
 
-   if (args<1 ||
-       sp[-args].type!=T_OBJECT ||
+   if (args<1 || TYPEOF(sp[-args]) != T_OBJECT ||
        !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
       Pike_error("Image.PNM.encode_binary(): Illegal arguments\n");
    if (!img->img)

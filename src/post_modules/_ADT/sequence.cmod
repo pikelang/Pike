@@ -269,7 +269,7 @@ PIKECLASS Sequence
 
   PIKEFUN int(0..1) _equal(mixed coll)
   {
-    if (coll->type == T_OBJECT && 
+    if (TYPEOF(*coll) == T_OBJECT &&
 	coll->u.object->prog == Sequence_program)
     {
       struct Sequence_struct *adapter = OBJ2_SEQUENCE(coll->u.object);
@@ -362,7 +362,7 @@ PIKECLASS Sequence
   {
     if(args == 2)
     { 
-      if (start->type != PIKE_T_INT)
+      if (TYPEOF(*start) != PIKE_T_INT)
       { 
 	SIMPLE_BAD_ARG_ERROR("_search",2,"int");
       }
@@ -508,14 +508,14 @@ PIKECLASS Sequence
 
   PIKEFUN void create(array|int arg) 
   {
-    if (arg->type == T_INT)
+    if (TYPEOF(*arg) == T_INT)
     {
       struct array *b = allocate_array_no_init(arg->u.integer, 0);
       free_array(THIS->a);
       THIS->a = b;
       THIS->a->type_field = BIT_INT;
     }
-    else if (arg->type == T_ARRAY)
+    else if (TYPEOF(*arg) == T_ARRAY)
     {
       free_array(THIS->a);
       add_ref(THIS->a=arg->u.array);
@@ -810,7 +810,7 @@ PIKECLASS Sequence
 
     PIKEFUN int(0..1) _equal(mixed iter)
     {
-      if (iter->type == T_OBJECT && 
+      if (TYPEOF(*iter) == T_OBJECT &&
 	  iter->u.object->prog == Sequence_SequenceIterator_program)
       {
 	//to do: Check so that it is an SequenceIterator
@@ -835,7 +835,7 @@ PIKECLASS Sequence
 
     PIKEFUN int(0..1) `<(mixed iter)
     {
-      if (iter->type == T_OBJECT &&
+      if (TYPEOF(*iter) == T_OBJECT &&
 	  iter->u.object->prog == Sequence_SequenceIterator_program)
       {
 	//to do: Check so that it is an SequenceIterator
@@ -861,7 +861,7 @@ PIKECLASS Sequence
 
     PIKEFUN int(0..1) `>(mixed iter)
     {
-      if (iter->type == T_OBJECT &&
+      if (TYPEOF(*iter) == T_OBJECT &&
 	  iter->u.object->prog == Sequence_SequenceIterator_program)
       {
 	//to do: Check so that it is an SequenceIterator
@@ -940,9 +940,7 @@ PIKECLASS Sequence
 	  THIS->sequence->a = copy_array(THIS->sequence->a);
 	}
 
-	ind.u.integer = THIS->pos;
-	ind.type = T_INT;
-	ind.subtype = NUMBER_NUMBER;
+	SET_SVAL(ind, T_INT, NUMBER_NUMBER, integer, THIS->pos);
 	simple_array_index_no_free(&retval, THIS->sequence->a, &ind);
 	simple_set_index(THIS->sequence->a, &ind, val);
 	push_svalue(&retval);
@@ -999,9 +997,7 @@ PIKECLASS Sequence
   PIKEFUN object last()
   {
     struct svalue ind;
-    ind.u.integer=THIS_SEQUENCE->a->size;
-    ind.type=T_INT;
-    ind.subtype = NUMBER_NUMBER;
+    SET_SVAL(ind, T_INT, NUMBER_NUMBER, integer, THIS_SEQUENCE->a->size);
     ref_push_object(Pike_fp->current_object);
     push_svalue(&ind);
     push_object(clone_object(Sequence_SequenceIterator_program, 2));

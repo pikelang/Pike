@@ -48,7 +48,7 @@ static struct data get_data( struct source *src, off_t len )
     push_int( len );
     apply( s->obj, "read", 1 );
 
-    if(Pike_sp[-1].type != PIKE_T_STRING
+    if(TYPEOF(Pike_sp[-1]) != PIKE_T_STRING
      || !(st = Pike_sp[-1].u.string)->len) {
       pop_stack();
       break;
@@ -82,7 +82,7 @@ struct source *source_block_pikestream_make( struct svalue *s,
 {
   struct pf_source *res;
 
-  if( (s->type != PIKE_T_OBJECT) ||
+  if( (TYPEOF(*s) != PIKE_T_OBJECT) ||
       (find_identifier("read",s->u.object->prog)==-1) )
     return 0;
   

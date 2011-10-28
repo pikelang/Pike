@@ -28,7 +28,7 @@ void create(string|mapping(string:mixed)|void label_or_props)
   pgtk2_verify_setup();
   if (args) {
     GtkWidget *gm;
-    if (Pike_sp[-args].type==PIKE_T_STRING) {
+    if (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) {
       struct pike_string *label;
       get_all_args("create",args,"%t",&label);
       ref_push_string(label);

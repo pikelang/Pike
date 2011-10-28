@@ -330,7 +330,7 @@ PIKECLASS HashState
 	length = meta->digest_size;
       else
 	{
-	  if (arg->type != PIKE_T_INT)
+	  if (TYPEOF(*arg) != PIKE_T_INT)
 	    Pike_error("Bad argument type.\n");
 	  if (arg->u.integer < 0)
 	    Pike_error("Invalid length, must be positive.\n");

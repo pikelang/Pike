@@ -262,7 +262,7 @@ PMOD_EXPORT void call_c_initializers(struct object *o)
 	{
 	  struct svalue *s;
 	  s=(struct svalue *)(storage + prog->identifiers[d].func.offset);
-	  s->type=T_INT;
+	  SET_SVAL_TYPE(*s, T_INT);
 #ifdef NEED_CUSTOM_IEEE
 	} else if (prog->identifiers[d].run_time_type == T_FLOAT) {
 	  /* Note: In IEEE representations the value 0.0 is represented as all
@@ -451,10 +451,10 @@ struct object *decode_value_clone_object(struct svalue *prog)
   SET_ONERROR(tmp, do_free_object, o);
   debug_malloc_touch(o);
   
-  if(prog->type == T_FUNCTION)
+  if(TYPEOF(*prog) == T_FUNCTION)
   {
     parent=prog->u.object;
-    parent_identifier=prog->subtype;
+    parent_identifier = SUBTYPEOF(*prog);
   }else{
     parent=0;
     parent_identifier=0;
@@ -613,7 +613,7 @@ PMOD_EXPORT struct object *get_master(void)
 	f_decode_value(2);
 	UNSETJMP(tmp);
 
-	if(sp[-1].type == T_PROGRAM)
+	if(TYPEOF(sp[-1]) == T_PROGRAM)
 	  goto compiled;
 
 	pop_stack();
@@ -643,7 +643,7 @@ PMOD_EXPORT struct object *get_master(void)
       f_compile(1);
 
     compiled:
-      if(sp[-1].type != T_PROGRAM)
+      if(TYPEOF(sp[-1]) != T_PROGRAM)
       {
 	pop_stack();
 	return 0;
@@ -887,7 +887,7 @@ PMOD_EXPORT void destruct_object (struct object *o, enum object_destruct_reason 
 	struct svalue *s;
 	s=(struct svalue *)(storage + id->func.offset);
 	dmalloc_touch_svalue(s);
-	if ((s->type != T_OBJECT && s->type != T_FUNCTION) ||
+	if ((TYPEOF(*s) != T_OBJECT && TYPEOF(*s) != T_FUNCTION) ||
 	    s->u.object != o ||
 	    !(identifier_flags & IDENTIFIER_NO_THIS_REF)) {
 	  (void) debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" free_global"));
@@ -1131,9 +1131,7 @@ static void assign_svalue_from_ptr_no_free(struct svalue *to,
     }
   case T_OBJ_INDEX:
     {
-      to->type = T_FUNCTION;
-      to->subtype = DO_NOT_WARN(func.offset);
-      to->u.object = o;
+      SET_SVAL(*to, T_FUNCTION, DO_NOT_WARN(func.offset), object, o);
       add_ref(o);
       break;
     }
@@ -1169,30 +1167,25 @@ static void assign_svalue_from_ptr_no_free(struct svalue *to,
 
   case T_FLOAT:
   case PIKE_T_NO_REF_FLOAT:
-    to->type=T_FLOAT;
-    to->subtype=0;
-    to->u.float_number=*(FLOAT_TYPE *)ptr;
+    SET_SVAL(*to, T_FLOAT, 0, float_number, *(FLOAT_TYPE *)ptr);
     break;
 
   case T_INT:
   case PIKE_T_NO_REF_INT:
-    to->type=T_INT;
-    to->subtype=0;
-    to->u.integer=*(INT_TYPE *)ptr;
+    SET_SVAL(*to, T_INT, NUMBER_NUMBER, integer, *(INT_TYPE *)ptr);
     break;
 
   default:
     {
       struct ref_dummy *dummy;
 
-      to->subtype=0;
       if((dummy=*(struct ref_dummy  **)ptr))
       {
-	add_ref(to->u.dummy=dummy);
-	to->type = run_time_type & ~PIKE_T_NO_REF_FLAG;
+	SET_SVAL(*to, run_time_type & ~PIKE_T_NO_REF_FLAG, 0,
+		 dummy, dummy);
+	add_ref(dummy);
       }else{
-	to->type=T_INT;
-	to->u.integer=0;
+	SET_SVAL(*to, T_INT, NUMBER_NUMBER, integer, 0);
       }
       break;
     }
@@ -1263,9 +1256,7 @@ PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
        *
        * On the other hand, consider mixins.
        */
-      to->type=T_INT;
-      to->subtype=NUMBER_UNDEFINED;
-      to->u.integer=0;
+      SET_SVAL(*to, T_INT, NUMBER_UNDEFINED, integer, 0);
       break;
     }
     /* Fall through. */
@@ -1273,9 +1264,7 @@ PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
   case IDENTIFIER_C_FUNCTION:
     ref->func.offset = f;
     ref->run_time_type = T_OBJ_INDEX;
-    to->type=T_FUNCTION;
-    to->subtype = DO_NOT_WARN(f);
-    to->u.object=o;
+    SET_SVAL(*to, T_FUNCTION, DO_NOT_WARN(f), object, o);
     add_ref(o);
     break;
 
@@ -1284,12 +1273,10 @@ PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
       if (i->func.const_info.offset >= 0) {
 	struct svalue *s;
 	s=& PROG_FROM_INT(p,f)->constants[i->func.const_info.offset].sval;
-	if(s->type==T_PROGRAM &&
+	if(TYPEOF(*s) == T_PROGRAM &&
 	   (s->u.program->flags & PROGRAM_USES_PARENT))
 	{
-	  to->type=T_FUNCTION;
-	  to->subtype = DO_NOT_WARN(f);
-	  to->u.object=o;
+	  SET_SVAL(*to, T_FUNCTION, DO_NOT_WARN(f), object, o);
 	  add_ref(o);
 	}else{
 	  if (p->flags & PROGRAM_OPTIMIZED) {
@@ -1301,9 +1288,7 @@ PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
 	}
       } else {
 	/* Prototype constant. */
-	to->type = T_INT;
-	to->subtype = NUMBER_NUMBER;
-	to->u.integer = 0;
+	SET_SVAL(*to, T_INT, NUMBER_NUMBER, integer, 0);
       }
       break;
     }
@@ -1331,10 +1316,9 @@ PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
 	Pike_fatal("Object without variable storage!\n");
       }
 #endif /* PIKE_DEBUG */
-      to->type = T_INT;
-      to->subtype = ((i->run_time_type == PIKE_T_FREE)?
-		     NUMBER_UNDEFINED:NUMBER_NUMBER);
-      to->u.integer = 0;
+      SET_SVAL(*to, T_INT, ((i->run_time_type == PIKE_T_FREE)?
+			    NUMBER_UNDEFINED:NUMBER_NUMBER),
+	       integer, 0);
     } else {
       ref->func.offset = INHERIT_FROM_INT(o->prog, f)->storage_offset +
 	i->func.offset;
@@ -1374,7 +1358,7 @@ PMOD_EXPORT void object_index_no_free2(struct svalue *to,
 
   p = (inh = p->inherits + inherit_number)->prog;
 
-  switch(index->type)
+  switch(TYPEOF(*index))
   {
   case T_STRING:
     f=find_shared_string_identifier(index->u.string, p);
@@ -1387,23 +1371,21 @@ PMOD_EXPORT void object_index_no_free2(struct svalue *to,
 
   default:
 #ifdef PIKE_DEBUG
-    if (index->type > MAX_TYPE)
-      Pike_fatal ("Invalid type %d in index.\n", index->type);
+    if (TYPEOF(*index) > MAX_TYPE)
+      Pike_fatal ("Invalid type %d in index.\n", TYPEOF(*index));
 #endif
     Pike_error("Lookup in object with non-string index.\n");
   }
 
   if(f < 0)
   {
-    to->type=T_INT;
-    to->subtype=NUMBER_UNDEFINED;
-    to->u.integer=0;
+    SET_SVAL(*to, T_INT, NUMBER_UNDEFINED, integer, 0);
   }else{
     low_object_index_no_free(to, o, f);
   }
 }
 
-#define ARROW_INDEX_P(X) ((X)->type==T_STRING && (X)->subtype)
+#define ARROW_INDEX_P(X) (TYPEOF(*(X)) == T_STRING && SUBTYPEOF(*(X)))
 
 /* Get a variable through external indexing, i.e. by going through
  * `-> or `[] lfuns, not seeing private and protected etc. */
@@ -1425,8 +1407,8 @@ PMOD_EXPORT void object_index_no_free(struct svalue *to,
   p = (inh = p->inherits + inherit_number)->prog;
 
 #ifdef PIKE_DEBUG
-  if (index->type > MAX_TYPE)
-    Pike_fatal ("Invalid index type %d.\n", index->type);
+  if (TYPEOF(*index) > MAX_TYPE)
+    Pike_fatal ("Invalid index type %d.\n", TYPEOF(*index));
 #endif
 
   lfun=ARROW_INDEX_P(index) ? LFUN_ARROW : LFUN_INDEX;
@@ -1442,17 +1424,14 @@ PMOD_EXPORT void object_index_no_free(struct svalue *to,
 #if 0
 	struct svalue tmp;
 	fprintf(stderr,"Placeholder deployed for %p when indexing ", p);
-	tmp.type = T_OBJECT;
-	tmp.subtype = 0;
-	tmp.u.object = o;
+	SET_SVAL(tmp, T_OBJECT, 0, object, o);
 	print_svalue (stderr, &tmp);
 	fputs (" with ", stderr);
 	print_svalue (stderr, index);
 	fputc ('\n', stderr);
 #endif
-	add_ref(to->u.object=placeholder_object);
-	to->type=T_OBJECT;
-	to->subtype = 0;
+	SET_SVAL(*to, T_OBJECT, 0, object, placeholder_object);
+	add_ref(placeholder_object);
 	return;
       }
     }
@@ -1516,7 +1495,7 @@ static void object_lower_set_index(struct object *o, union idptr func, int rtt,
     case PIKE_T_NO_REF_MIXED:
       /* Don't count references to ourselves to help the gc. DDTAH. */
       dmalloc_touch_svalue(to);
-      if ((to->type != T_OBJECT && to->type != T_FUNCTION) ||
+      if ((TYPEOF(*to) != T_OBJECT && TYPEOF(*to) != T_FUNCTION) ||
 	  to->u.object != o) {
 	(void) debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" free_global"));
 	free_svalue(to);
@@ -1528,9 +1507,9 @@ static void object_lower_set_index(struct object *o, union idptr func, int rtt,
       }
       *to = *from;
       dmalloc_touch_svalue (to);
-      if ((to->type != T_OBJECT && to->type != T_FUNCTION) ||
+      if ((TYPEOF(*to) != T_OBJECT && TYPEOF(*to) != T_FUNCTION) ||
 	  (to->u.object != o)) {
-	if(to->type <= MAX_REF_TYPE) {
+	if(TYPEOF(*to) <= MAX_REF_TYPE) {
 	  (void) debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" store_global"));
 	  add_ref(to->u.dummy);
 #ifdef DEBUG_MALLOC
@@ -1548,18 +1527,18 @@ static void object_lower_set_index(struct object *o, union idptr func, int rtt,
 
     case T_INT:
     case PIKE_T_NO_REF_INT:
-      if (from->type != T_INT) break;
+      if (TYPEOF(*from) != T_INT) break;
       u->integer=from->u.integer;
       continue;
     case T_FLOAT:
     case PIKE_T_NO_REF_FLOAT:
-      if (from->type != T_FLOAT) break;
+      if (TYPEOF(*from) != T_FLOAT) break;
       u->float_number=from->u.float_number;
       continue;
 
     case PIKE_T_NO_REF_OBJECT:
       /* Don't count references to ourselves to help the gc. */
-      if ((from->type != T_OBJECT) && !is_zero) break;
+      if ((TYPEOF(*from) != T_OBJECT) && !is_zero) break;
       debug_malloc_touch(u->object);
       if ((u->object != o) && u->refs && !sub_ref(u->dummy)) {
 	debug_malloc_touch(o);
@@ -1588,7 +1567,7 @@ static void object_lower_set_index(struct object *o, union idptr func, int rtt,
 
     default:
       rtt &= ~PIKE_T_NO_REF_FLAG;
-      if ((rtt != from->type) && !is_zero) break;	/* Error. */
+      if ((rtt != TYPEOF(*from)) && !is_zero) break;	/* Error. */
       debug_malloc_touch(u->refs);
       if(u->refs && !sub_ref(u->dummy))
 	really_free_short_svalue(u, rtt);
@@ -1604,7 +1583,7 @@ static void object_lower_set_index(struct object *o, union idptr func, int rtt,
 
     Pike_error("Wrong type in assignment, expected %s, got %s.\n",
 	       get_name_of_type(rtt & ~PIKE_T_NO_REF_FLAG),
-	       get_name_of_type(from->type));
+	       get_name_of_type(TYPEOF(*from)));
   } while(0);
 }
 
@@ -1722,7 +1701,7 @@ PMOD_EXPORT void object_set_index2(struct object *o,
 
   p = (inh = p->inherits + inherit_number)->prog;
 
-  switch(index->type)
+  switch(TYPEOF(*index))
   {
   case T_STRING:
     f=find_shared_string_identifier(index->u.string, p);
@@ -1735,15 +1714,15 @@ PMOD_EXPORT void object_set_index2(struct object *o,
 
   default:
 #ifdef PIKE_DEBUG
-    if (index->type > MAX_TYPE)
-      Pike_fatal ("Invalid type %d in index.\n", index->type);
+    if (TYPEOF(*index) > MAX_TYPE)
+      Pike_fatal ("Invalid type %d in index.\n", TYPEOF(*index));
 #endif
     Pike_error("Lookup on non-string value.\n");
   }
 
   if(f < 0)
   {
-    if (index->type == T_STRING && index->u.string->len < 1024)
+    if (TYPEOF(*index) == T_STRING && index->u.string->len < 1024)
       Pike_error("No such variable (%S) in object.\n", index->u.string);
     else
       Pike_error("No such variable in object.\n");
@@ -1773,8 +1752,8 @@ PMOD_EXPORT void object_set_index(struct object *o,
   p = (inh = p->inherits + inherit_number)->prog;
 
 #ifdef PIKE_DEBUG
-  if (index->type > MAX_TYPE)
-    Pike_fatal ("Invalid index type %d.\n", index->type);
+  if (TYPEOF(*index) > MAX_TYPE)
+    Pike_fatal ("Invalid index type %d.\n", TYPEOF(*index));
 #endif
 
   lfun=ARROW_INDEX_P(index) ? LFUN_ASSIGN_ARROW : LFUN_ASSIGN_INDEX;
@@ -1834,7 +1813,7 @@ static union anything *object_low_get_item_ptr(struct object *o,
   {
     struct svalue *s;
     s=(struct svalue *)LOW_GET_GLOBAL(o,f,i);
-    if(s->type == type) return & s->u;
+    if(TYPEOF(*s) == type) return & s->u;
   }
   else if(i->run_time_type == type)
   {
@@ -1864,7 +1843,7 @@ union anything *object_get_item_ptr(struct object *o,
 
   p = (inh = p->inherits + inherit_number)->prog;
 
-  switch(index->type)
+  switch(TYPEOF(*index))
   {
   case T_STRING:
     f=ARROW_INDEX_P(index) ? LFUN_ASSIGN_ARROW : LFUN_ASSIGN_INDEX;
@@ -1887,8 +1866,8 @@ union anything *object_get_item_ptr(struct object *o,
 
   default:
 #ifdef PIKE_DEBUG
-    if (index->type > MAX_TYPE)
-      Pike_fatal ("Invalid type %d in index.\n", index->type);
+    if (TYPEOF(*index) > MAX_TYPE)
+      Pike_fatal ("Invalid type %d in index.\n", TYPEOF(*index));
 #endif
 /*    Pike_error("Lookup on non-string value.\n"); */
     return 0;
@@ -1896,7 +1875,7 @@ union anything *object_get_item_ptr(struct object *o,
 
   if(f < 0)
   {
-    if (index->type == T_STRING && index->u.string->len < 1024)
+    if (TYPEOF(*index) == T_STRING && index->u.string->len < 1024)
       Pike_error("No such variable (%S) in object.\n", index->u.string);
     else
       Pike_error("No such variable in object.\n");
@@ -1976,14 +1955,14 @@ PMOD_EXPORT struct array *object_indices(struct object *o, int inherit_number)
     a=allocate_array_no_init(p->num_identifier_index,0);
     for(e=0;e<(int)p->num_identifier_index;e++)
     {
-      copy_shared_string(ITEM(a)[e].u.string,
-			 ID_FROM_INT(p,p->identifier_index[e])->name);
-      ITEM(a)[e].type=T_STRING;
+      SET_SVAL(ITEM(a)[e], T_STRING, 0, string,
+	       ID_FROM_INT(p,p->identifier_index[e])->name);
+      add_ref(ITEM(a)[e].u.string);
     }
     a->type_field = BIT_STRING;
   }else{
     apply_low(o, fun + inh->identifier_level, 0);
-    if(sp[-1].type != T_ARRAY)
+    if(TYPEOF(sp[-1]) != T_ARRAY)
       Pike_error("Bad return type from o->_indices()\n");
     a=sp[-1].u.array;
     sp--;
@@ -2014,12 +1993,12 @@ PMOD_EXPORT struct array *object_values(struct object *o, int inherit_number)
     {
       low_object_index_no_free(ITEM(a)+e, o,
 			       p->identifier_index[e] + inh->identifier_level);
-      types |= 1 << ITEM(a)[e].type;
+      types |= 1 << TYPEOF(ITEM(a)[e]);
     }
     a->type_field = types;
   }else{
     apply_low(o, fun + inh->identifier_level, 0);
-    if(sp[-1].type != T_ARRAY)
+    if(TYPEOF(sp[-1]) != T_ARRAY)
       Pike_error("Bad return type from o->_values()\n");
     a=sp[-1].u.array;
     sp--;
@@ -2051,8 +2030,7 @@ PMOD_EXPORT struct array *object_types(struct object *o, int inherit_number)
       for(e=0;e<a->size;e++) {
 	struct pike_type *t = get_type_of_svalue(ITEM(a) + e);
 	free_svalue(ITEM(a) + e);
-	ITEM(a)[e].u.type = t;
-	ITEM(a)[e].type = PIKE_T_TYPE;
+	SET_SVAL(ITEM(a)[e], PIKE_T_TYPE, 0, type, t);
       }
       a->type_field = BIT_TYPE;
       return a;
@@ -2061,13 +2039,12 @@ PMOD_EXPORT struct array *object_types(struct object *o, int inherit_number)
     for(e=0;e<(int)p->num_identifier_index;e++)
     {
       struct identifier *id = ID_FROM_INT(p,p->identifier_index[e]);
-      add_ref(ITEM(a)[e].u.type = id->type);
-      ITEM(a)[e].type = PIKE_T_TYPE;
+      SET_SVAL(ITEM(a)[e], PIKE_T_TYPE, 0, type, id->type);
     }
     a->type_field = BIT_TYPE;
   }else{
     apply_low(o, fun + inh->identifier_level, 0);
-    if(sp[-1].type != T_ARRAY)
+    if(TYPEOF(sp[-1]) != T_ARRAY)
       Pike_error("Bad return type from o->_types()\n");
     a=sp[-1].u.array;
     sp--;
@@ -2139,7 +2116,7 @@ PMOD_EXPORT void visit_object (struct object *o, int action)
 	  case T_MIXED: {
 	    struct svalue *s = (struct svalue *) var;
 	    dmalloc_touch_svalue (s);
-	    if ((s->type != T_OBJECT && s->type != T_FUNCTION) ||
+	    if ((TYPEOF(*s) != T_OBJECT && TYPEOF(*s) != T_FUNCTION) ||
 		s->u.object != o ||
 		!(id_flags & IDENTIFIER_NO_THIS_REF))
 	      visit_svalue (s, REF_TYPE_NORMAL);
@@ -2209,11 +2186,11 @@ PMOD_EXPORT void visit_object (struct object *o, int action)
 PMOD_EXPORT void visit_function (const struct svalue *s, int ref_type)
 {
 #ifdef PIKE_DEBUG
-  if (s->type != T_FUNCTION)
+  if (TYPEOF(*s) != T_FUNCTION)
     Pike_fatal ("Should only be called for a function svalue.\n");
 #endif
 
-  if (s->subtype == FUNCTION_BUILTIN)
+  if (SUBTYPEOF(*s) == FUNCTION_BUILTIN)
     /* Could avoid this if we had access to the action from the caller
      * and check if it's VISIT_COMPLEX_ONLY. However, visit_callable
      * will only return first thing. */
@@ -2278,8 +2255,8 @@ PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o)
 	      struct svalue *s;
 	      s=(struct svalue *)(pike_frame->current_storage + id->func.offset);
 	      dmalloc_touch_svalue(s);
-	      if ((s->type != T_OBJECT && s->type != T_FUNCTION) || s->u.object != o ||
-		  !(id_flags & IDENTIFIER_NO_THIS_REF))
+	      if ((TYPEOF(*s) != T_OBJECT && TYPEOF(*s) != T_FUNCTION) ||
+		  s->u.object != o || !(id_flags & IDENTIFIER_NO_THIS_REF))
 		gc_mark_svalues(s, 1);
 	    }else{
 	      union anything *u;
@@ -2344,8 +2321,8 @@ PMOD_EXPORT void real_gc_cycle_check_object(struct object *o, int weak)
 	    struct svalue *s;
 	    s=(struct svalue *)(pike_frame->current_storage + id->func.offset);
 	    dmalloc_touch_svalue(s);
-	    if ((s->type != T_OBJECT && s->type != T_FUNCTION) || s->u.object != o ||
-		!(id_flags & IDENTIFIER_NO_THIS_REF))
+	    if ((TYPEOF(*s) != T_OBJECT && TYPEOF(*s) != T_FUNCTION) ||
+		s->u.object != o || !(id_flags & IDENTIFIER_NO_THIS_REF))
 	      gc_cycle_check_svalues(s, 1);
 	  }else{
 	    union anything *u;
@@ -2418,8 +2395,8 @@ static void gc_check_object(struct object *o)
 	    struct svalue *s;
 	    s=(struct svalue *)(pike_frame->current_storage + id->func.offset);
 	    dmalloc_touch_svalue(s);
-	    if ((s->type != T_OBJECT && s->type != T_FUNCTION) || s->u.object != o ||
-		!(id_flags & IDENTIFIER_NO_THIS_REF))
+	    if ((TYPEOF(*s) != T_OBJECT && TYPEOF(*s) != T_FUNCTION) ||
+		s->u.object != o || !(id_flags & IDENTIFIER_NO_THIS_REF))
 	      gc_check_svalues(s, 1);
 	  }else{
 	    union anything *u;
@@ -2629,11 +2606,13 @@ static void f_magic_index(INT32 args)
   switch (args) {
     default:
     case 2:
-      if (sp[-args+1].type != T_INT) SIMPLE_BAD_ARG_ERROR ("::`->", 2, "void|int");
+      if (TYPEOF(sp[-args+1]) != T_INT)
+	SIMPLE_BAD_ARG_ERROR ("::`->", 2, "void|int");
       type = sp[-args+1].u.integer;
       /* FALL THROUGH */
     case 1:
-      if (sp[-args].type != T_STRING) SIMPLE_BAD_ARG_ERROR ("::`->", 1, "string");
+      if (TYPEOF(sp[-args]) != T_STRING)
+	SIMPLE_BAD_ARG_ERROR ("::`->", 1, "string");
       s = sp[-args].u.string;
       break;
     case 0:
@@ -2703,12 +2682,14 @@ static void f_magic_set_index(INT32 args)
   switch (args) {
     default:
     case 3:
-      if (sp[-args+2].type != T_INT) SIMPLE_BAD_ARG_ERROR ("::`->=", 3, "void|int");
+      if (TYPEOF(sp[-args+2]) != T_INT)
+	SIMPLE_BAD_ARG_ERROR ("::`->=", 3, "void|int");
       type = sp[-args+2].u.integer;
       /* FALL THROUGH */
     case 2:
       val = sp-args+1;
-      if (sp[-args].type != T_STRING) SIMPLE_BAD_ARG_ERROR ("::`->=", 1, "string");
+      if (TYPEOF(sp[-args]) != T_STRING)
+	SIMPLE_BAD_ARG_ERROR ("::`->=", 1, "string");
       s = sp[-args].u.string;
       break;
     case 1:
@@ -2773,7 +2754,8 @@ static void f_magic_indices (INT32 args)
   int type = 0, e, i;
 
   if (args >= 1) {
-    if (sp[-args].type != T_INT) SIMPLE_BAD_ARG_ERROR ("::_indices", 1, "void|int");
+    if (TYPEOF(sp[-args]) != T_INT)
+      SIMPLE_BAD_ARG_ERROR ("::_indices", 1, "void|int");
     type = sp[-args].u.integer;
   }
 
@@ -2804,8 +2786,9 @@ static void f_magic_indices (INT32 args)
 	if (ref->id_flags & ID_HIDDEN) continue;
 	if ((ref->id_flags & (ID_INHERITED|ID_PRIVATE)) ==
 	    (ID_INHERITED|ID_PRIVATE)) continue;
-	copy_shared_string (ITEM(res)[i].u.string, id->name);
-	ITEM(res)[i++].type = T_STRING;
+	SET_SVAL(ITEM(res)[i], T_STRING, 0, string, id->name);
+	add_ref(id->name);
+	i++;
       }
       res->type_field |= BIT_STRING;
       sp[-1].u.array = resize_array (res, i);
@@ -2821,9 +2804,9 @@ static void f_magic_indices (INT32 args)
   pop_n_elems (args);
   push_array (res = allocate_array_no_init (prog->num_identifier_index, 0));
   for (e = 0; e < (int) prog->num_identifier_index; e++) {
-    copy_shared_string (ITEM(res)[e].u.string,
-			ID_FROM_INT (prog, prog->identifier_index[e])->name);
-    ITEM(res)[e].type = T_STRING;
+    SET_SVAL(ITEM(res)[e], T_STRING, 0, string,
+	     ID_FROM_INT (prog, prog->identifier_index[e])->name);
+    add_ref(ITEM(res)[e].u.string);
   }
   res->type_field = BIT_STRING;
 }
@@ -2846,7 +2829,8 @@ static void f_magic_values (INT32 args)
   int type = 0, e, i;
 
   if (args >= 1) {
-    if (sp[-args].type != T_INT) SIMPLE_BAD_ARG_ERROR ("::_indices", 1, "void|int");
+    if (TYPEOF(sp[-args]) != T_INT)
+      SIMPLE_BAD_ARG_ERROR ("::_indices", 1, "void|int");
     type = sp[-args].u.integer;
   }
 
@@ -2883,7 +2867,8 @@ static void f_magic_values (INT32 args)
 	    (ID_INHERITED|ID_PRIVATE)) continue;
 	low_object_index_no_free (ITEM(res) + i, obj,
 				  e + inherit->identifier_level);
-	types |= 1 << ITEM(res)[i++].type;
+	types |= 1 << TYPEOF(ITEM(res)[i]);
+	i++;
       }
       res->type_field |= types;
       sp[-1].u.array = resize_array (res, i);
@@ -2903,7 +2888,7 @@ static void f_magic_values (INT32 args)
   for (e = 0; e < (int) prog->num_identifier_index; e++) {
     low_object_index_no_free (ITEM(res) + e, obj,
 			      prog->identifier_index[e] + inherit->identifier_level);
-    types |= 1 << ITEM(res)[e].type;
+    types |= 1 << TYPEOF(ITEM(res)[e]);
   }
   res->type_field = types;
 }
@@ -2926,7 +2911,8 @@ static void f_magic_types (INT32 args)
   int type = 0, e, i;
 
   if (args >= 1) {
-    if (sp[-args].type != T_INT) SIMPLE_BAD_ARG_ERROR ("::_types", 1, "void|int");
+    if (TYPEOF(sp[-args]) != T_INT)
+      SIMPLE_BAD_ARG_ERROR ("::_types", 1, "void|int");
     type = sp[-args].u.integer;
   }
 
@@ -2961,8 +2947,9 @@ static void f_magic_types (INT32 args)
 	if (ref->id_flags & ID_HIDDEN) continue;
 	if ((ref->id_flags & (ID_INHERITED|ID_PRIVATE)) ==
 	    (ID_INHERITED|ID_PRIVATE)) continue;
-	add_ref(ITEM(res)[i].u.type = id->type);
-	ITEM(res)[i++].type = PIKE_T_TYPE;
+	SET_SVAL(ITEM(res)[i], PIKE_T_TYPE, 0, type, id->type);
+	add_ref(id->type);
+	i++;
 	types = BIT_TYPE;
       }
       res->type_field |= types;
@@ -2982,8 +2969,8 @@ static void f_magic_types (INT32 args)
   types = 0;
   for (e = 0; e < (int) prog->num_identifier_index; e++) {
     struct identifier *id = ID_FROM_INT(prog, prog->identifier_index[e]);
-    add_ref(ITEM(res)[e].u.type = id->type);
-    ITEM(res)[e].type = PIKE_T_TYPE;
+    SET_SVAL(ITEM(res)[e], PIKE_T_TYPE, 0, type, id->type);
+    add_ref(id->type);
     types = BIT_TYPE;
   }
   res->type_field = types;

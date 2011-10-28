@@ -247,7 +247,7 @@ static void init_colorrange(rgb_group *cr,struct svalue *s,char *where)
    double fr,fg,fb,q;
    int b;
 
-   if (s->type!=T_ARRAY)
+   if (TYPEOF(*s) != T_ARRAY)
       Pike_error("Illegal colorrange to %s\n",where);
    else if (s->u.array->size<2)
       Pike_error("Colorrange array too small (meaningless) (to %s)\n",where);
@@ -259,9 +259,9 @@ static void init_colorrange(rgb_group *cr,struct svalue *s,char *where)
    {
       rgb_group rgbt;
 
-      if (s->u.array->item[i].type==T_INT) 
+      if (TYPEOF(s->u.array->item[i]) == T_INT)
 	 *vp = (double)s->u.array->item[i].u.integer;
-      else if (s->u.array->item[i].type==T_FLOAT) 
+      else if (TYPEOF(s->u.array->item[i]) == T_FLOAT)
 	 *vp = s->u.array->item[i].u.float_number;
       else 
 	 bad_arg_error(where,
@@ -323,14 +323,14 @@ static void init_colorrange(rgb_group *cr,struct svalue *s,char *where)
 
 #define GET_FLOAT_ARG(sp,args,n,def,where) \
    ( (args>n) \
-      ? ( (sp[n-args].type==T_INT) ? (double)(sp[n-args].u.integer) \
-	  : ( (sp[n-args].type==T_FLOAT) ? sp[n-args].u.float_number \
+      ? ( (TYPEOF(sp[n-args]) == T_INT) ? (double)(sp[n-args].u.integer) \
+	  : ( (TYPEOF(sp[n-args]) == T_FLOAT) ? sp[n-args].u.float_number \
 	      : ( Pike_error("illegal argument(s) to %s\n", where), 0.0 ) ) ) \
       : def )
 #define GET_INT_ARG(sp,args,n,def,where) \
    ( (args>n) \
-      ? ( (sp[n-args].type==T_INT) ? sp[n-args].u.integer \
-	  : ( (sp[n-args].type==T_FLOAT) ? DOUBLE_TO_INT(sp[n-args].u.float_number) \
+      ? ( (TYPEOF(sp[n-args]) == T_INT) ? sp[n-args].u.integer		\
+	  : ( (TYPEOF(sp[n-args]) == T_FLOAT) ? DOUBLE_TO_INT(sp[n-args].u.float_number) \
 	      : ( Pike_error("illegal argument(s) to %s\n", where), 0 ) ) ) \
       : def )
 

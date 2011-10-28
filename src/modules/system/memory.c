@@ -162,12 +162,13 @@ static void memory_create(INT32 args)
 {
    if (args)
    {
-      if (sp[-args].type==T_STRING ||
-	  sp[-args].type==T_OBJECT) /* filename to mmap */
+      if (TYPEOF(sp[-args]) == T_STRING ||
+	  TYPEOF(sp[-args]) == T_OBJECT) /* filename to mmap */
 	memory__mmap(args,1,0);
-      else if (sp[-args].type==T_INT && args==1) /* bytes to allocate */
+      else if (TYPEOF(sp[-args]) == T_INT && args==1) /* bytes to allocate */
 	memory_allocate(args);
-      else if(sp[-args].type==T_INT && sp[-args+1].type==T_INT && args==2 )
+      else if(TYPEOF(sp[-args]) == T_INT &&
+	      TYPEOF(sp[-args+1]) == T_INT && args==2 )
 	memory_shm( args );
       else
 	 SIMPLE_BAD_ARG_ERROR("Memory",1,"int or string");
@@ -215,9 +216,9 @@ static void memory_shm( INT32 args )
 
   if( args < 2 )
     SIMPLE_TOO_FEW_ARGS_ERROR("Memory.shmat",2);
-  if (Pike_sp[1-args].type!=T_INT )
+  if (TYPEOF(Pike_sp[1-args]) != T_INT )
     SIMPLE_BAD_ARG_ERROR("Memory.shmat",1,"int(0..)");
-  if (Pike_sp[-args].type!=T_INT )
+  if (TYPEOF(Pike_sp[-args]) != T_INT )
     SIMPLE_BAD_ARG_ERROR("Memory.shmat",0,"int(0..)");
 
   if( (id = shmget( Pike_sp[0-args].u.integer,
@@ -292,7 +293,7 @@ static void memory__mmap(INT32 args,int complain,int private)
       SIMPLE_TOO_FEW_ARGS_ERROR("Memory.mmap",1);
 
    if (args>=2) {
-      if (sp[1-args].type!=T_INT ||
+      if (TYPEOF(sp[1-args]) != T_INT ||
 	  sp[1-args].u.integer<0)
 	 SIMPLE_BAD_ARG_ERROR("Memory.mmap",2,"int(0..)");
       else
@@ -300,24 +301,24 @@ static void memory__mmap(INT32 args,int complain,int private)
    }
 
    if (args>=3) {
-      if (sp[2-args].type!=T_INT ||
+      if (TYPEOF(sp[2-args]) != T_INT ||
 	  sp[2-args].u.integer<0)
 	 SIMPLE_BAD_ARG_ERROR("Memory.mmap",3,"int(0..)");
       else
 	 size=sp[2-args].u.integer;
    }
 
-   if (sp[-args].type==T_OBJECT)
+   if (TYPEOF(sp[-args]) == T_OBJECT)
    {
       struct object *o=sp[-args].u.object;
       ref_push_object(o);
       push_text("query_fd");
       f_index(2);
-      if (sp[-1].type==T_INT)
+      if (TYPEOF(sp[-1]) == T_INT)
 	 SIMPLE_BAD_ARG_ERROR("Memory.mmap",1,
 			      "(string or) Stdio.File (missing query_fd)");
       f_call_function(1);
-      if (sp[-1].type!=T_INT)
+      if (TYPEOF(sp[-1]) != T_INT)
 	 SIMPLE_BAD_ARG_ERROR("Memory.mmap",1,
 			      "(string or) Stdio.File (weird query_fd)");
       fd=sp[-1].u.integer;
@@ -334,7 +335,7 @@ static void memory__mmap(INT32 args,int complain,int private)
       osize=file_size(fd);
       THREADS_DISALLOW();
    }
-   else if (sp[-args].type==T_STRING)
+   else if (TYPEOF(sp[-args]) == T_STRING)
    {
       char *filename;
       get_all_args("Memory.mmap",args,"%s",&filename); /* 8 bit! */

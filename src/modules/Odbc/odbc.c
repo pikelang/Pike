@@ -292,7 +292,7 @@ static void f_create(INT32 args)
 		 BIT_STRING|BIT_INT|BIT_VOID, BIT_STRING|BIT_VOID|BIT_INT, 0);
 
 #define GET_ARG(VAR, ARG) do {					\
-    if ((args > (ARG)) && (sp[(ARG)-args].type == T_STRING)) {	\
+    if ((args > (ARG)) && (TYPEOF(sp[(ARG)-args]) == T_STRING)) {	\
       VAR = sp[(ARG)-args].u.string;				\
       if (VAR->size_shift) {					\
 	SIMPLE_ARG_TYPE_ERROR("create", (ARG), "string(8bit)");	\
@@ -460,7 +460,7 @@ static void f_big_query(INT32 args)
   push_string(q);
   apply(sp[-2].u.object, "execute", 1);
   
-  if (sp[-1].type != T_INT) {
+  if (TYPEOF(sp[-1]) != T_INT) {
     Pike_error("odbc->big_query(): Unexpected return value from "
 	  "odbc_result->execute().\n");
   }
@@ -501,7 +501,7 @@ static void f_list_tables(INT32 args)
   struct pike_string *pattern = NULL;
 
   if (args) {
-    if ((Pike_sp[-args].type != T_STRING) ||
+    if ((TYPEOF(Pike_sp[-args]) != T_STRING) ||
 	(Pike_sp[-args].u.string->size_shift)) {
       Pike_error("odbc->list_tables(): "
 		 "Bad argument 1. Expected 8-bit string.\n");
@@ -533,7 +533,7 @@ static void f_list_tables(INT32 args)
     apply(sp[-1].u.object, "list_tables", 0);
   }
   
-  if (sp[-1].type != T_INT) {
+  if (TYPEOF(sp[-1]) != T_INT) {
     Pike_error("odbc->list_tables(): Unexpected return value from "
 	       "odbc_result->list_tables().\n");
   }

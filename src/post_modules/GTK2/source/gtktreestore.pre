@@ -37,7 +37,7 @@ void create(array(mixed) types)
     } else
       Pike_error("Invalid size of array.\n");
     for (i=sd->n_cols=0; i<a->size; i++) {
-      if ((ITEM(a)+i)->type==PIKE_T_STRING) {
+      if (TYPEOF(ITEM(a)[i]) == PIKE_T_STRING) {
         const struct pike_string *str = (ITEM(a)+i)->u.string;
 	if (is_same_string(_STR("int"),str)) {
 	  sd->types[sd->n_cols++]=G_TYPE_INT;
@@ -67,7 +67,7 @@ void create(array(mixed) types)
 	    break;
 	  sd->n_cols++;
 	}
-      } else if ((ITEM(a)+i)->type==PIKE_T_OBJECT) {
+      } else if (TYPEOF(ITEM(a)[i]) == PIKE_T_OBJECT) {
 	struct object *o1=(ITEM(a)+i)->u.object;
 	sd->types[sd->n_cols++]=G_OBJECT_TYPE(get_gobject(o1));
       }
@@ -105,7 +105,7 @@ void set_row(GTK2.TreeIter iter, array(mixed) values)
       Pike_error("store-data not found.\n");
     for (i=0; i<(a->size>sd->n_cols?sd->n_cols:a->size); i++) {
 /*
-      if ((ITEM(a)+i)->type==PIKE_T_STRING)
+      if (TYPEOF(ITEM(a)[i]) == PIKE_T_STRING)
 	fprintf(stderr,"set_row: val==%s\n",STR0((ITEM(a)+i)->u.string));
 */
       pgtk2_set_gvalue(&gv,sd->types[i],(ITEM(a)+i));

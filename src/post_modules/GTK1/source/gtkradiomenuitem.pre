@@ -14,9 +14,9 @@ void create( ?string title, ?GTK.RadioMenuItem groupmember )
   struct object *o=NULL;
   if(args)
   {
-    if(Pike_sp[-args].type == PIKE_T_STRING)
+    if(TYPEOF(Pike_sp[-args]) == PIKE_T_STRING)
       label = (gchar *)Pike_sp[-args].u.string->str;
-    if(args==2 && (Pike_sp[-1].type == PIKE_T_OBJECT))
+    if(args==2 && (TYPEOF(Pike_sp[-1]) == PIKE_T_OBJECT))
 	o = Pike_sp[-1].u.object;
   }
 

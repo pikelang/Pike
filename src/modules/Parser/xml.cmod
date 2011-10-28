@@ -721,22 +721,20 @@ PIKECLASS Simple
       sp[1-d] = sp[-d];
     }
     d = 1-args;
-    if (cb->type == T_STRING) {
+    if (TYPEOF(*cb) == T_STRING) {
       /* We have a context. Keep it in place.
        * NOTE: We have copied one element too much in this case,
        *       but it doesn't matter, since we overwrite the copy.
        */
       d++;
     }
-    sp[d].type = T_INT;
-    sp[d].subtype = NUMBER_NUMBER;
-    sp[d].u.integer = THIS->flags;
+    SET_SVAL(sp[d], T_INT, NUMBER_NUMBER, integer, THIS->flags);
     args++;
     sp++;
 
     apply_current(Simple_Context_program_fun_num, args);
 
-    if ((Pike_sp[-1].type != T_OBJECT) || (!Pike_sp[-1].u.object->prog)) {
+    if ((TYPEOF(Pike_sp[-1]) != T_OBJECT) || (!Pike_sp[-1].u.object->prog)) {
       Pike_error("Unexpected return value from Parser.XML.Low.Context().\n");
     }
     apply(Pike_sp[-1].u.object, "parse_xml", 0);
@@ -761,22 +759,21 @@ PIKECLASS Simple
       sp[1-d] = sp[-d];
     }
     d = 1-args;
-    if (cb->type == T_STRING) {
+    if (TYPEOF(*cb) == T_STRING) {
       /* We have a context. Keep it in place.
        * NOTE: We have copied one element too much in this case,
        *       but it doesn't matter, since we overwrite the copy.
        */
       d++;
     }
-    sp[d].type = T_INT;
-    sp[d].subtype = NUMBER_NUMBER;
-    sp[d].u.integer = THIS->flags | ALLOW_PESMEG_EVERYWHERE;
+    SET_SVAL(sp[d], T_INT, NUMBER_NUMBER, integer,
+	     THIS->flags | ALLOW_PESMEG_EVERYWHERE);
     args++;
     sp++;
 
     apply_current(Simple_Context_program_fun_num, args);
 
-    if ((Pike_sp[-1].type != T_OBJECT) || (!Pike_sp[-1].u.object->prog)) {
+    if ((TYPEOF(Pike_sp[-1]) != T_OBJECT) || (!Pike_sp[-1].u.object->prog)) {
       Pike_error("Unexpected return value from Parser.XML.Low.Context().\n");
     }
     apply(Pike_sp[-1].u.object, "parse_dtd", 0);
@@ -796,7 +793,7 @@ PIKECLASS Simple
   PIKEFUN mapping(string:int(0..1)) get_tag_attribute_cdata(string tag)
   {
     struct svalue *s = low_mapping_lookup(THIS->is_cdata, sp-1);
-    if (s && s->type == T_MAPPING) {
+    if (s && TYPEOF(*s) == T_MAPPING) {
       struct mapping *m = copy_mapping(s->u.mapping);
       pop_stack();
       push_mapping(m);
@@ -817,7 +814,7 @@ PIKECLASS Simple
   PIKEFUN mapping(string:string) get_default_attributes(string tag)
   {
     struct svalue *s = low_mapping_string_lookup(THIS->attributes, tag);
-    if (s && s->type == T_MAPPING) {
+    if (s && TYPEOF(*s) == T_MAPPING) {
       struct mapping *m = copy_mapping(s->u.mapping);
       pop_n_elems(args);
       push_mapping(m);
@@ -899,9 +896,7 @@ PIKECLASS Simple
     for (d = 2; d < args; d++) {
       sp[2-d] = sp[-d];
     }
-    sp[2-args].type = T_INT;
-    sp[2-args].subtype = NUMBER_NUMBER;
-    sp[2-args].u.integer = THIS->flags;
+    SET_SVAL(sp[2-args], T_INT, NUMBER_NUMBER, integer, THIS->flags);
     args++;
     sp++;
 
@@ -910,7 +905,7 @@ PIKECLASS Simple
     apply_current(Simple_Context_program_fun_num, args-1);
     args = 2;
 
-    if ((Pike_sp[-1].type != T_OBJECT) || (!Pike_sp[-1].u.object->prog)) {
+    if ((TYPEOF(Pike_sp[-1]) != T_OBJECT) || (!Pike_sp[-1].u.object->prog)) {
       Pike_error("Unexpected return value from Parser.XML.Low.Context().\n");
     }
     apply(Pike_sp[-1].u.object, "parse_entity", 0);
@@ -1042,9 +1037,7 @@ PIKECLASS Simple
     INIT
     {
       THIS->input = NULL;
-      THIS->func.type = PIKE_T_INT;
-      THIS->func.subtype = NUMBER_UNDEFINED;
-      THIS->func.u.integer = 0;
+      SET_SVAL(THIS->func, PIKE_T_INT, NUMBER_UNDEFINED, integer, 0);
       THIS->extra_args = NULL;
       THIS->flags = 0;
       THIS->doc_seq_pos = 0;
@@ -1336,7 +1329,7 @@ static int gobble(char *s)
 	  f_aggregate_mapping(2); /* attributes */			 \
 	  push_int(0); /* no data */					 \
 	  very_low_sys(callbackinfo);					 \
-	  if(sp[-1].type != T_STRING)				 	 \
+	  if(TYPEOF(sp[-1]) != T_STRING)				 \
 	  {								 \
 	    pop_stack();						 \
 	    XMLERROR("No such entity.");				 \
@@ -1348,7 +1341,7 @@ static int gobble(char *s)
 	}								 \
 	else								 \
 	{								 \
-	  if(sp[-1].type!=T_STRING)					 \
+	  if(TYPEOF(sp[-1]) != T_STRING)				 \
 	  {								 \
 	    XMLERROR("lookup_entity() returned non-string!");		 \
 	    break;                                        		 \
@@ -1620,7 +1613,7 @@ static void xmlerror(char *desc, struct pike_string *tag_name)
 	very_low_sys(callbackinfo);
       }
 
-      if(sp[-1].type == T_STRING)
+      if(TYPEOF(sp[-1]) == T_STRING)
       {
 	struct pike_string *s=sp[-1].u.string;
 	IF_XMLDEBUG(fprintf(stderr, "ptr=%p len=%d pos=%d to_free=%p\n",
@@ -2006,7 +1999,7 @@ void read_choice_seq_or_name(int maybe_pcdata)
 		sp[-num].u.string=make_shared_string(",");
 	      else
 		sp[-num].u.string=make_shared_string("|");
-	      sp[-num].type = T_STRING;
+	      SET_SVAL_TYPE(sp[-num], T_STRING);
 	      f_aggregate(num);
 	    }
 	    break;
@@ -3040,7 +3033,7 @@ static struct pike_string *very_low_parse_xml(struct pike_string *end,
 
 	    {
 	      struct mapping *m = NULL;
-	      if (sp[-2].type == T_MAPPING)
+	      if (TYPEOF(sp[-2]) == T_MAPPING)
 		m = sp[-2].u.mapping;
 	      SIMPLE_READ_ATTRIBUTES(m);
 	      /* Get rid of the cdata mapping. */
@@ -3238,12 +3231,12 @@ static int low_parse_xml(struct pike_string *end)
       rawtype tOr(tFuncV(tString tInt CALLBACKTYPE, tMix, tVoid),
 		  tFuncV(tString tString tInt CALLBACKTYPE, tMix, tVoid));
     {
-      if (flags->type == T_STRING) {
+      if (TYPEOF(*flags) == T_STRING) {
 	/* We have a context argument.
 	 * Advance the other parameters, and type check.
 	 */
 	flags++;
-	if (flags->type != T_INT) {
+	if (TYPEOF(*flags) != T_INT) {
 	  SIMPLE_BAD_ARG_ERROR("create", 3, "int");
 	}
 	if (args < 4) {

@@ -70,7 +70,7 @@ void pgtk2_index_stack(char *what) {
   push_text(what);
   f_index(2);
 #ifdef PIKE_DEBUG
-  if (Pike_sp[-1].type==PIKE_T_INT)
+  if (TYPEOF(Pike_sp[-1]) == PIKE_T_INT)
     Pike_error("Internal indexing error.\n");
 #endif
 }
@@ -243,7 +243,7 @@ GdkImage *gdkimage_from_pikeimage(struct object *img, int fast, GObject **pi) {
       /*             6       5    4  3       2     1 */
       PFTIME("Dithering image");
       apply_svalue(Pike_sp-6,5);
-      if (Pike_sp[-1].type!=PIKE_T_STRING) {
+      if (TYPEOF(Pike_sp[-1]) != PIKE_T_STRING) {
 	gdk_image_destroy((void *)i);
 	Pike_error("Failed to convert image\n");
       }
@@ -343,7 +343,7 @@ void pgtk2_get_mapping_arg(struct mapping *map,
                           void *dest, long *mask, int len) {
   struct svalue *s;
   if ((s=simple_mapping_string_lookup(map,name))) {
-    if (s->type==type) {
+    if (TYPEOF(*s) == type) {
       switch(type) {
        case PIKE_T_STRING:
 #ifdef PIKE_DEBUG
@@ -821,7 +821,7 @@ void pgtk2_get_string_arg_with_sprintf( INT32 args )
   if( args < 1 )
     Pike_error("Too few arguments, %d required, got %d\n", 1, args);
 
-  if( Pike_sp[-args].type != PIKE_T_STRING )
+  if( TYPEOF(Pike_sp[-args]) != PIKE_T_STRING )
     Pike_error("Illegal argument %d, expected string\n", 0);
 
   if( args > 1 )
@@ -832,7 +832,7 @@ void pgtk2_get_string_arg_with_sprintf( INT32 args )
 
 void pgtk2_default__sprintf(int args, int offset, int len) {
   int mode = 0;
-  if (args>0 && Pike_sp[-args].type==PIKE_T_INT)
+  if (args>0 && TYPEOF(Pike_sp[-args]) == PIKE_T_INT)
     mode=Pike_sp[-args].u.integer;
   pgtk2_pop_n_elems(args);
   if (mode!='O') {
@@ -855,7 +855,7 @@ void pgtk2_setup_mixin(struct object *o, struct program *p) {
 }
 
 LONGEST pgtk2_get_int(struct svalue *s) {
-  if (s->type==PIKE_T_INT)
+  if (TYPEOF(*s) == PIKE_T_INT)
     return s->u.integer;
 #ifdef AUTO_BIGNUM
   if (is_bignum_object_in_svalue(s)) {
@@ -864,14 +864,14 @@ LONGEST pgtk2_get_int(struct svalue *s) {
     return res;
   }
 #endif
-  if (s->type==PIKE_T_FLOAT)
+  if (TYPEOF(*s) == PIKE_T_FLOAT)
     return (LONGEST)s->u.float_number;
   return 0;
 }
 
 int pgtk2_is_int(struct svalue *s) {
-  return ((s->type==PIKE_T_INT) ||
-          (s->type==PIKE_T_FLOAT)
+  return ((TYPEOF(*s) == PIKE_T_INT) ||
+          (TYPEOF(*s) == PIKE_T_FLOAT)
 #ifdef AUTO_BIGNUM
           || is_bignum_object_in_svalue(s)
 #endif
@@ -880,9 +880,9 @@ int pgtk2_is_int(struct svalue *s) {
 
 /* double should be enough */
 double pgtk2_get_float(struct svalue *s) {
-  if (s->type==PIKE_T_FLOAT)
+  if (TYPEOF(*s) == PIKE_T_FLOAT)
     return s->u.float_number;
-  if (s->type==PIKE_T_INT)
+  if (TYPEOF(*s) == PIKE_T_INT)
     return (double)s->u.integer;
 #ifdef AUTO_BIGNUM
   if (is_bignum_object_in_svalue(s)) {
@@ -902,8 +902,8 @@ void pgtk2_free_object(struct object *o) {
 }
 
 int pgtk2_is_float(struct svalue *s) {
-  return ((s->type==PIKE_T_FLOAT) ||
-          (s->type==PIKE_T_INT)
+  return ((TYPEOF(*s) == PIKE_T_FLOAT) ||
+          (TYPEOF(*s) == PIKE_T_INT)
 #ifdef AUTO_BIGNUM
           || is_bignum_object_in_svalue(s)
 #endif
@@ -928,7 +928,7 @@ void pgtk2_set_property(GObject *g, char *prop, struct svalue *sv) {
     return;
   }
 */
-  if (sv->type==PIKE_T_OBJECT) {
+  if (TYPEOF(*sv) == PIKE_T_OBJECT) {
     GObject *go=get_gobject(sv->u.object);
     if (go && G_IS_OBJECT(go)) {
       if (gps->value_type==GDK_TYPE_PIXMAP || gps->value_type==GTK_TYPE_WIDGET)
@@ -1176,7 +1176,7 @@ void pgtk2_set_gvalue(GValue *gv, GType gt, struct svalue *sv) {
       gt==GDK_TYPE_PIXBUF || gt==GDK_TYPE_PIXMAP || gt==GDK_TYPE_IMAGE ||
       gt==GDK_TYPE_WINDOW || gt==GDK_TYPE_VISUAL ||
       gt==GDK_TYPE_DRAWABLE || gt==GDK_TYPE_GC) {
-    if (sv->type==PIKE_T_OBJECT) {
+    if (TYPEOF(*sv) == PIKE_T_OBJECT) {
       GObject *go;
       go=get_gobject(sv->u.object);
       if (go && G_IS_OBJECT(go))
@@ -1185,12 +1185,12 @@ void pgtk2_set_gvalue(GValue *gv, GType gt, struct svalue *sv) {
     }
   }
   if (gt==GDK_TYPE_COLOR) {
-    if (sv->type==PIKE_T_OBJECT && get_gdkobject(sv->u.object,color))
+    if (TYPEOF(*sv) == PIKE_T_OBJECT && get_gdkobject(sv->u.object,color))
       g_value_set_boxed(gv,get_gdkobject(sv->u.object,color));
     return;
   }
   if (gt==GDK_TYPE_RECTANGLE) {
-    if (sv->type==PIKE_T_OBJECT && get_gdkobject(sv->u.object,rectangle))
+    if (TYPEOF(*sv) == PIKE_T_OBJECT && get_gdkobject(sv->u.object,rectangle))
       g_value_set_boxed(gv,get_gdkobject(sv->u.object,rectangle));
     return;
   }
@@ -1235,7 +1235,7 @@ void pgtk2_set_gvalue(GValue *gv, GType gt, struct svalue *sv) {
       g_value_set_double(gv,(gdouble)pgtk2_get_float(sv));
       break;
     case G_TYPE_STRING:
-      if (sv->type==PIKE_T_STRING) 
+      if (TYPEOF(*sv) == PIKE_T_STRING)
       {
 	  push_svalue( sv );
 	  f_string_to_utf8(1);
@@ -1245,7 +1245,7 @@ void pgtk2_set_gvalue(GValue *gv, GType gt, struct svalue *sv) {
 	g_value_set_string(gv,"");
       break;
     case G_TYPE_OBJECT:
-      if (sv->type==PIKE_T_OBJECT) {
+      if (TYPEOF(*sv) == PIKE_T_OBJECT) {
 	GObject *go=get_gobject(sv->u.object);
 	if (go && G_IS_OBJECT(go))
 	  g_value_set_object(gv,go);
@@ -1255,7 +1255,7 @@ void pgtk2_set_gvalue(GValue *gv, GType gt, struct svalue *sv) {
 	g_value_set_object(gv,NULL);
       break;
     case G_TYPE_POINTER:
-      if (sv->type==PIKE_T_OBJECT) {
+      if (TYPEOF(*sv) == PIKE_T_OBJECT) {
 	g_value_set_pointer(gv,sv->u.object);
  	add_ref(sv->u.object); 
       } else
@@ -1296,7 +1296,7 @@ GObject *pgtk2_create_new_obj_with_properties(GType type, struct mapping *m) {
     Pike_error("Could not get a reference to type %s.\n",g_type_name(type));
   params=g_new0(GParameter,m_sizeof(m));
   NEW_MAPPING_LOOP(m->data) {
-    if (k->ind.type==PIKE_T_STRING) {
+    if (TYPEOF(k->ind) == PIKE_T_STRING) {
       gchar *s=PGTK_GETSTR(&k->ind);
       pspec=g_object_class_find_property(class,s);
       if (!pspec) {

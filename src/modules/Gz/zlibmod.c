@@ -145,7 +145,7 @@ static void gz_deflate_create(INT32 args)
 
   if(args>2)
   {
-    if(sp[2-args].type != T_INT)
+    if(TYPEOF(sp[2-args]) != T_INT)
       Pike_error("Bad argument 3 to gz->create()\n");
     wbits = sp[2-args].u.integer;
     if( wbits == 0 ) wbits = 15;
@@ -155,7 +155,7 @@ static void gz_deflate_create(INT32 args)
 
   if(args)
   {
-    if(sp[-args].type != T_INT)
+    if(TYPEOF(sp[-args]) != T_INT)
       Pike_error("Bad argument 1 to gz->create()\n");
     THIS->level=sp[-args].u.integer;
     if( THIS->level < 0 )
@@ -172,7 +172,7 @@ static void gz_deflate_create(INT32 args)
 
   if(args>1)
   {
-    if(sp[1-args].type != T_INT)
+    if(TYPEOF(sp[1-args]) != T_INT)
       Pike_error("Bad argument 2 to gz->create()\n");
     strategy=sp[1-args].u.integer;
     if(strategy != Z_DEFAULT_STRATEGY &&
@@ -488,7 +488,7 @@ static void gz_deflate(INT32 args)
   if(args<1)
     Pike_error("Too few arguments to gz_deflate->deflate()\n");
 
-  if(sp[-args].type != T_STRING)
+  if(TYPEOF(sp[-args]) != T_STRING)
     Pike_error("Bad argument 1 to gz_deflate->deflate()\n");
 
   data=sp[-args].u.string;
@@ -497,7 +497,7 @@ static void gz_deflate(INT32 args)
   
   if(args>1)
   {
-    if(sp[1-args].type != T_INT)
+    if(TYPEOF(sp[1-args]) != T_INT)
       Pike_error("Bad argument 2 to gz_deflate->deflate()\n");
     
     flush=sp[1-args].u.integer;
@@ -619,7 +619,7 @@ static void gz_inflate_create(INT32 args)
   THIS->gz.zalloc=Z_NULL;
   THIS->gz.zfree=Z_NULL;
   THIS->gz.opaque=(void *)THIS;
-  if( args  && Pike_sp[-1].type == PIKE_T_INT )
+  if( args  && TYPEOF(Pike_sp[-1]) == PIKE_T_INT )
   {
     tmp=inflateInit2(& THIS->gz, Pike_sp[-1].u.integer);
   }
@@ -788,13 +788,13 @@ static void gz_uncompress(INT32 args)
 
   if(args<1)
     SIMPLE_TOO_FEW_ARGS_ERROR("uncompress", 1);
-  if(Pike_sp[-args].type!=PIKE_T_STRING)
+  if(TYPEOF(Pike_sp[-args]) != PIKE_T_STRING)
     SIMPLE_BAD_ARG_ERROR("uncompress", 1, "string");
   if (Pike_sp[-args].u.string->size_shift)
     Pike_error("Cannot input wide string to uncompress\n");
   if(args>1)
   {
-    if(Pike_sp[1-args].type==PIKE_T_INT)
+    if(TYPEOF(Pike_sp[1-args]) == PIKE_T_INT)
       raw = Pike_sp[1-args].u.integer;
     else
       SIMPLE_BAD_ARG_ERROR("uncompress", 2, "int");
@@ -844,7 +844,7 @@ static void gz_inflate(INT32 args)
   if(args<1)
     Pike_error("Too few arguments to gz_inflate->inflate()\n");
 
-  if(sp[-args].type != T_STRING)
+  if(TYPEOF(sp[-args]) != T_STRING)
     Pike_error("Bad argument 1 to gz_inflate->inflate()\n");
 
   data=sp[-args].u.string;
@@ -884,7 +884,7 @@ static void gz_inflate(INT32 args)
 					  this->gz.avail_in));
     if(old_epilogue)
       f_add(2);
-    if(sp[-1].type == PIKE_T_STRING)
+    if(TYPEOF(sp[-1]) == PIKE_T_STRING)
       this->epilogue = (--sp)->u.string;
     else
       pop_stack();
@@ -949,14 +949,13 @@ static void exit_gz_inflate(struct object *o)
 static void gz_crc32(INT32 args)
 {
    unsigned INT32 crc;
-   if (!args ||
-       sp[-args].type!=T_STRING)
+   if (!args || TYPEOF(sp[-args]) != T_STRING)
       Pike_error("Gz.crc32: illegal or missing argument 1 (expected string)\n");
   if (sp[-args].u.string->size_shift)
     Pike_error("Cannot input wide string to Gz.crc32\n");
 
    if (args>1) {
-      if (sp[1-args].type!=T_INT)
+      if (TYPEOF(sp[1-args]) != T_INT)
 	 Pike_error("Gz.crc32: illegal argument 2 (expected integer)\n");
       else
 	 crc=(unsigned INT32)sp[1-args].u.integer;

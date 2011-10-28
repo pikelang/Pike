@@ -43,7 +43,7 @@ int wf_blob_next( Blob *b )
     ref_push_string( b->word );
     push_int( b->docid );
     apply_svalue( b->feed, 2 );
-    if( sp[-1].type != T_STRING )
+    if( TYPEOF(sp[-1]) != T_STRING )
     {
       b->eof = 1;
       return -1;
@@ -65,7 +65,7 @@ int wf_blob_next( Blob *b )
       ref_push_string( b->word );
       push_int( b->docid );
       apply_svalue( b->feed, 2 );
-      if( sp[-1].type != T_STRING )
+      if( TYPEOF(sp[-1]) != T_STRING )
       {
 	b->eof = 1;
 	return -1;
@@ -296,7 +296,7 @@ static void f_blob_create( INT32 args )
   if( args )
   {
     struct pike_string *s = sp[-1].u.string;
-    if( sp[-1].type != PIKE_T_STRING )
+    if( TYPEOF(sp[-1]) != PIKE_T_STRING )
       Pike_error("Expected a string\n");
     _append_blob( THIS, s );
   }
@@ -307,7 +307,7 @@ static void f_blob_create( INT32 args )
 
 static void f_blob_merge( INT32 args )
 {
-  if(!args || sp[-1].type != PIKE_T_STRING )
+  if(!args || TYPEOF(sp[-1]) != PIKE_T_STRING )
     Pike_error("Expected a string\n");
   _append_blob( THIS, sp[-1].u.string );
 }
@@ -367,7 +367,7 @@ static void f_blob_remove_list( INT32 args )
     struct hash *h;
     struct hash *p = NULL;
 
-    if (docs->item[i].type != T_INT)
+    if (TYPEOF(docs->item[i]) != T_INT)
       Pike_error("Bad argument 1 to remove_list, expected array(int).\n");
 
     doc_id = docs->item[i].u.integer;

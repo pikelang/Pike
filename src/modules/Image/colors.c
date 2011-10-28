@@ -759,7 +759,7 @@ static void image_color_name(INT32 args)
 static void image_color_cast(INT32 args)
 {
    if (args!=1 ||
-       sp[-1].type!=T_STRING)
+       TYPEOF(sp[-1]) != T_STRING)
       bad_arg_error("Image.Color.Color->cast",sp-args,args,0,"",sp-args,
 		"Bad arguments to Image.Color.Color->cast()\n");
    
@@ -789,16 +789,16 @@ static void image_color__sprintf(INT32 args)
    if (args<2)
       SIMPLE_TOO_FEW_ARGS_ERROR("_sprintf",2);
 
-   if (sp[-args].type!=T_INT)
+   if (TYPEOF(sp[-args]) != T_INT)
       SIMPLE_BAD_ARG_ERROR("_sprintf",0,"integer");
-   if (sp[1-args].type!=T_MAPPING)
+   if (TYPEOF(sp[1-args]) != T_MAPPING)
       SIMPLE_BAD_ARG_ERROR("_sprintf",1,"mapping");
 
    pop_n_elems(args-2);
 
    push_text("precision");
    f_index(2);
-   if (sp[-1].type!=T_INT)
+   if (TYPEOF(sp[-1]) != T_INT)
       SIMPLE_BAD_ARG_ERROR("_sprintf",1,"mapping(\"precision\":int)");
    prec=sp[-1].u.integer;
    x=sp[-2].u.integer;
@@ -871,7 +871,7 @@ static void image_color_index(INT32 args)
       Pike_error("Image.Color[]: illegal number of arguments\n");
 
    object_index_no_free2(&s, THISOBJ, 0, sp-1);
-   if (s.type==T_INT && sp[-1].type==T_STRING)
+   if (TYPEOF(s) == T_INT && TYPEOF(sp[-1]) == T_STRING)
    {
       if (sp[-1].u.string==str_r)
       {
@@ -950,7 +950,7 @@ static void image_color_equal(INT32 args)
    if (args!=1) 
       Pike_error("Image.Color.Color->`==: illegal number of arguments\n");
 
-   if (sp[-1].type==T_OBJECT)
+   if (TYPEOF(sp[-1]) == T_OBJECT)
    {
       struct color_struct *other;
       other=(struct color_struct*)
@@ -965,12 +965,12 @@ static void image_color_equal(INT32 args)
 	 return;
       }
    }
-   else if (sp[-1].type==T_ARRAY)
+   else if (TYPEOF(sp[-1]) == T_ARRAY)
    {
       if (sp[-1].u.array->size==3 &&
-	  sp[-1].u.array->item[0].type==T_INT &&
-	  sp[-1].u.array->item[1].type==T_INT &&
-	  sp[-1].u.array->item[2].type==T_INT &&
+	  TYPEOF(sp[-1].u.array->item[0]) == T_INT &&
+	  TYPEOF(sp[-1].u.array->item[1]) == T_INT &&
+	  TYPEOF(sp[-1].u.array->item[2]) == T_INT &&
 	  sp[-1].u.array->item[0].u.integer == THIS->rgb.r &&
 	  sp[-1].u.array->item[1].u.integer == THIS->rgb.g &&
 	  sp[-1].u.array->item[2].u.integer == THIS->rgb.b)
@@ -980,7 +980,7 @@ static void image_color_equal(INT32 args)
 	 return;
       }
    }
-/*    else if (sp[-1].type==T_INT) */
+/*    else if (TYPEOF(sp[-1]) == T_INT) */
 /*    { */
 /*       if (sp[-1].u.integer == THIS->rgb.r && */
 /* 	  THIS->rgb.r==THIS->rgb.g && */
@@ -991,7 +991,7 @@ static void image_color_equal(INT32 args)
 /* 	 return; */
 /*       } */
 /*    } */
-   else if (sp[-1].type==T_STRING)
+   else if (TYPEOF(sp[-1]) == T_STRING)
    {
       if (!THIS->name)
 	 try_find_name(THIS);
@@ -1176,7 +1176,7 @@ static void image_color_mult(INT32 args)
 
 int image_color_svalue(struct svalue *v,rgb_group *rgb)
 {
-   if (v->type==T_OBJECT)
+   if (TYPEOF(*v) == T_OBJECT)
    {
       struct color_struct *cs=(struct color_struct*)
 	 get_storage(v->u.object,image_color_program);
@@ -1187,12 +1187,12 @@ int image_color_svalue(struct svalue *v,rgb_group *rgb)
 	 return 1;
       }
    }
-   else if (v->type==T_ARRAY)
+   else if (TYPEOF(*v) == T_ARRAY)
    {
       if (v->u.array->size==3 &&
-	  v->u.array->item[0].type==T_INT &&
-	  v->u.array->item[1].type==T_INT &&
-	  v->u.array->item[2].type==T_INT)
+	  TYPEOF(v->u.array->item[0]) == T_INT &&
+	  TYPEOF(v->u.array->item[1]) == T_INT &&
+	  TYPEOF(v->u.array->item[2]) == T_INT)
       {
 	 rgb->r=(COLORTYPE)(v->u.array->item[0].u.integer);
 	 rgb->g=(COLORTYPE)(v->u.array->item[1].u.integer);
@@ -1200,11 +1200,11 @@ int image_color_svalue(struct svalue *v,rgb_group *rgb)
 	 return 1;
       }
    }
-   else if (v->type==T_STRING)
+   else if (TYPEOF(*v) == T_STRING)
    {
       push_svalue(v);
       image_make_color(1);
-      if (sp[-1].type==T_OBJECT)
+      if (TYPEOF(sp[-1]) == T_OBJECT)
       {
 	 struct color_struct *cs=(struct color_struct*)
 	    get_storage(sp[-1].u.object,image_color_program);
@@ -1256,10 +1256,10 @@ static void image_get_color(INT32 args)
    if (!colors)
       make_colors();
 
-   if (sp[-1].type==T_STRING)
+   if (TYPEOF(sp[-1]) == T_STRING)
    {
       mapping_index_no_free(&s,colors,sp-1);
-      if (s.type==T_OBJECT)
+      if (TYPEOF(s) == T_OBJECT)
       {
 	 pop_stack();
 	 *(sp++)=s;
@@ -1269,7 +1269,7 @@ static void image_get_color(INT32 args)
 	 free_svalue(&s);
    }
 
-   if (sp[-1].type==T_STRING &&
+   if (TYPEOF(sp[-1]) == T_STRING &&
        sp[-1].u.string->size_shift==0)
    {
       if (sp[-1].u.string->len>=4 &&
@@ -1329,7 +1329,7 @@ static void image_get_color(INT32 args)
 	 stack_dup();
 	 push_text("@%f,%f,%f\n");
 	 f_sscanf(2);
-	 if (sp[-1].type==T_ARRAY &&
+	 if (TYPEOF(sp[-1]) == T_ARRAY &&
 	     sp[-1].u.array->size==3)
 	 {
             FLOAT_TYPE h,s,v;
@@ -1355,7 +1355,7 @@ static void image_get_color(INT32 args)
 	 stack_dup();
 	 push_text("%%%f,%f,%f,%f\n");
 	 f_sscanf(2);
-	 if (sp[-1].type==T_ARRAY &&
+	 if (TYPEOF(sp[-1]) == T_ARRAY &&
 	     sp[-1].u.array->size==4)
 	 {
 	    stack_swap();
@@ -1376,7 +1376,7 @@ static void image_get_color(INT32 args)
 	    push_int(1000000);
 	    f_index(3);
 	    image_get_color(1);
-	    if (sp[-1].type!=T_OBJECT) return; /* no way */
+	    if (TYPEOF(sp[-1]) != T_OBJECT) return; /* no way */
 	    safe_apply(sp[-1].u.object,callables[n],0);
 	    stack_swap();
 	    pop_stack();
@@ -1389,7 +1389,7 @@ static void image_get_color(INT32 args)
 	 stack_dup();
 	 push_text("gr%*[ea]y%f\n");
 	 f_sscanf(2);
-	 if (sp[-1].type==T_ARRAY &&
+	 if (TYPEOF(sp[-1]) == T_ARRAY &&
 	     sp[-1].u.array->size==1)
 	 {
 	    double f;	
@@ -1417,7 +1417,7 @@ static void image_get_color(INT32 args)
 
 static void image_guess_color(INT32 args)
 {
-   if (args!=1 && sp[-args].type!=T_STRING) 
+   if (args!=1 && TYPEOF(sp[-args]) != T_STRING) 
       bad_arg_error("Image.Color->guess",sp-args,args,0,"",sp-args,
 		"Bad arguments to Image.Color->guess()\n");
    
@@ -1427,7 +1427,7 @@ static void image_guess_color(INT32 args)
 
    stack_dup();
    image_get_color(1);
-   if (sp[-1].type==T_OBJECT)
+   if (TYPEOF(sp[-1]) == T_OBJECT)
    {
       stack_swap();
       pop_stack();
@@ -1445,7 +1445,7 @@ static void image_colors_index(INT32 args)
 {
    struct svalue s;
    object_index_no_free2(&s, THISOBJ, 0, sp-1);
-   if (s.type!=T_INT)
+   if (TYPEOF(s) != T_INT)
    {
       pop_stack();
       *(sp++)=s;
@@ -1456,7 +1456,7 @@ static void image_colors_index(INT32 args)
 
 static void image_make_color(INT32 args)
 {
-   if (args==1 && sp[-args].type==T_STRING) 
+   if (args==1 && TYPEOF(sp[-args]) == T_STRING) 
    {
       image_get_color(args);
       return;
@@ -1524,7 +1524,7 @@ static void image_color__encode( INT32 args )
 static void image_color__decode( INT32 args )
 {
     struct svalue *a;
-    if( Pike_sp[-1].type != PIKE_T_ARRAY || Pike_sp[-1].u.array->size != 3 )
+    if( TYPEOF(Pike_sp[-1]) != PIKE_T_ARRAY || Pike_sp[-1].u.array->size != 3 )
 	Pike_error("Illegal argument to _decode\n");
     a=Pike_sp[-1].u.array->item;
     THIS->rgbl.r = a[0].u.integer;
@@ -1564,7 +1564,7 @@ static void image_make_rgb_color(INT32 args)
 {
    INT_TYPE r=0,g=0,b=0;
 
-   if( args==1 && sp[-1].type==T_INT )
+   if( args==1 && TYPEOF(sp[-1]) == T_INT )
    {
      r = sp[-1].u.integer;
      b = r & 0xff;
@@ -1584,7 +1584,7 @@ static void image_make_hsv_color(INT32 args)
    FLOAT_TYPE h,s,v;
    FLOAT_TYPE r=0,g=0,b=0; /* to avoid warning */
 
-   if (args && sp[-args].type==T_INT)
+   if (args && TYPEOF(sp[-args]) == T_INT)
    {
       INT_TYPE hi,si,vi;
       get_all_args("Image.Color.hsv()",args,"%i%i%i",
@@ -1670,7 +1670,7 @@ static void image_make_html_color(INT32 args)
    int i;
 
    if (args!=1 ||
-       sp[-1].type!=T_STRING) 
+       TYPEOF(sp[-1]) != T_STRING) 
    {
       bad_arg_error("Image.Color.html",sp-args,args,0,"",sp-args,
 		"Bad arguments to Image.Color.html()\n");

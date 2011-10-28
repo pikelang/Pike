@@ -34,7 +34,7 @@
 #define sp Pike_sp
 #define TRIM_STACK(X) if(args>(X)) pop_n_elems(args-(X));
 #define ARG_CHECK(X) if(args<1) SIMPLE_TOO_FEW_ARGS_ERROR(X, 1); \
-  if(sp[-args].type!=T_FLOAT) SIMPLE_BAD_ARG_ERROR(X, 1, "float"); \
+  if(TYPEOF(sp[-args]) != T_FLOAT) SIMPLE_BAD_ARG_ERROR(X, 1, "float"); \
   TRIM_STACK(1)
 
 #ifndef M_PI
@@ -232,9 +232,9 @@ void f_atan2(INT32 args)
   if(args<2)
     SIMPLE_TOO_FEW_ARGS_ERROR("atan2", 1);
   TRIM_STACK(2);
-  if(sp[-2].type!=T_FLOAT)
+  if(TYPEOF(sp[-2]) != T_FLOAT)
     SIMPLE_BAD_ARG_ERROR("atan2", 1, "float");
-  if(sp[-1].type!=T_FLOAT)
+  if(TYPEOF(sp[-1]) != T_FLOAT)
     SIMPLE_BAD_ARG_ERROR("atan2", 2, "float");
   sp[-2].u.float_number= FL2(atan2,sp[-2].u.float_number,sp[-1].u.float_number);
   pop_stack();
@@ -371,7 +371,7 @@ void f_sqrt(INT32 args)
     SIMPLE_TOO_FEW_ARGS_ERROR("sqrt", 1);
   TRIM_STACK(1);
 
-  if(sp[-1].type==T_INT)
+  if(TYPEOF(sp[-1]) == T_INT)
   {
     /* Note: This algorithm is also implemented in src/stuff.c */
     unsigned INT_TYPE n, b, s, y=0;
@@ -392,7 +392,7 @@ void f_sqrt(INT32 args)
     }
     sp[-1].u.integer=x;
   }
-  else if(sp[-1].type==T_FLOAT)
+  else if(TYPEOF(sp[-1]) == T_FLOAT)
   {
     if (sp[-1].u.float_number< 0.0)
     {
@@ -401,7 +401,7 @@ void f_sqrt(INT32 args)
     }
     sp[-1].u.float_number = FL1(sqrt,sp[-1].u.float_number);
   }
-  else if(sp[-1].type == T_OBJECT)
+  else if(TYPEOF(sp[-1]) == T_OBJECT)
   {
     stack_dup();
     push_constant_text("_sqrt");
@@ -449,8 +449,7 @@ void f_exp(INT32 args)
   FLOAT_TYPE f;
   get_all_args("exp",args,"%F",&f);
   TRIM_STACK(1);
-  sp[-1].type = T_FLOAT;
-  sp[-1].u.float_number = FL1(exp,f);
+  SET_SVAL(sp[-1], T_FLOAT, 0, float_number, FL1(exp,f));
 }
 
 /*! @decl int|float pow(float|int n, float|int x)
@@ -470,12 +469,12 @@ void f_pow(INT32 args)
     SIMPLE_TOO_FEW_ARGS_ERROR("pow", 2);
   TRIM_STACK(2);
 
-  switch(Pike_sp[-2].type * 16 + Pike_sp[-1].type)
+  switch(TYPEOF(Pike_sp[-2]) * 16 + TYPEOF(Pike_sp[-1]))
   {
     case T_INT * 16 + T_OBJECT:
 #ifndef AUTO_BIGNUM
       o_cast_to_int();
-      if (Pike_sp[-1].type != T_INT) {
+      if (TYPEOF(Pike_sp[-1]) != T_INT) {
 	math_error("pow", Pike_sp-2, 2, 0,
 		   "Failed to cast exponent to int.\n");
       }
@@ -528,8 +527,7 @@ void f_pow(INT32 args)
       FLOAT_TYPE x,y;
       get_all_args("pow",2,"%F%F",&x,&y);
       pop_stack();
-      sp[-1].type = T_FLOAT;
-      sp[-1].u.float_number = FL2(pow,x,y);
+      SET_SVAL(sp[-1], T_FLOAT, 0, float_number, FL2(pow,x,y));
       return;
     }
 
@@ -702,9 +700,7 @@ void f_max(INT32 args)
 void f_abs(INT32 args)
 {
   struct svalue zero;
-  zero.type=T_INT;
-  zero.subtype = NUMBER_NUMBER;
-  zero.u.integer=0;
+  SET_SVAL(zero, T_INT, NUMBER_NUMBER, integer, 0);
 
   check_all_args("abs",args,BIT_INT|BIT_FLOAT|BIT_OBJECT,0);
   pop_n_elems(args-1);

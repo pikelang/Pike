@@ -65,7 +65,7 @@ void create(int|mapping(string:mixed) props)
   {
     INT_TYPE wt;
     
-    if (Pike_sp[-args].type==PIKE_T_INT) {
+    if (TYPEOF(Pike_sp[-args]) == PIKE_T_INT) {
       GtkWidget *gw;
       get_all_args("create",args,"%i",&wt);
       gw=gtk_window_new(wt);
@@ -666,7 +666,7 @@ void set_icon_list(array(GDK2.Pixbuf) list)
     if (a==NULL)
       SIMPLE_ARG_ERROR("set_icon_list",args,"Invalid array");
     for (i=0; i<a->size; i++) {
-      if ((ITEM(a)+i)->type!=PIKE_T_OBJECT)
+      if (TYPEOF(ITEM(a)[i]) != PIKE_T_OBJECT)
 	continue;
       gp=GDK_PIXBUF(get_gobject((ITEM(a)+i)->u.object));
       if (gp)

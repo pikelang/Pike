@@ -161,7 +161,7 @@ static gchar **get_argv( int *argc_ret, int an )
   struct array *a;
   int argc;
   gchar **data;
-  if( Pike_sp[-an].type != PIKE_T_ARRAY )
+  if( TYPEOF(Pike_sp[-an]) != PIKE_T_ARRAY )
     Pike_error("Expected array\n");
   a = Pike_sp[-an].u.array;
   if (!a->size)

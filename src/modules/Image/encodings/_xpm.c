@@ -98,14 +98,14 @@ static rgba_group decode_color( struct buffer *s )
   push_svalue( parse_color );
   push_string(make_shared_binary_string(s->str,s->len));
   f_index( 2 );
-  if(sp[-1].type != T_OBJECT) {
+  if(TYPEOF(sp[-1]) != T_OBJECT) {
     push_int(0);
     stack_swap();
   } else {
     push_constant_text( "array" );
     apply( sp[-2].u.object, "cast", 1 );
   }
-  if(sp[-1].type == T_ARRAY && sp[-1].u.array->size == 3)
+  if(TYPEOF(sp[-1]) == T_ARRAY && sp[-1].u.array->size == 3)
   {
     res.r = sp[-1].u.array->item[0].u.integer;
     res.g = sp[-1].u.array->item[1].u.integer;
@@ -271,13 +271,13 @@ void f__xpm_write_rows( INT32 args )
   }
 
   for(y = 0; y < iimg->ysize + colors->size + 1; y++) {
-    if ((pixels->item[y].type != T_STRING) ||
+    if ((TYPEOF(pixels->item[y]) != T_STRING) ||
 	(pixels->item[y].u.string->size_shift)) {
       SIMPLE_ARG_ERROR("_xpm_write_rows", 5,
 		       "Pixel array contains elements other than 8bit strings.");
     }
     if (y < colors->size) {
-      if ((colors->item[y].type != T_STRING) ||
+      if ((TYPEOF(colors->item[y]) != T_STRING) ||
 	  (pixels->item[y].u.string->size_shift)) {
 	SIMPLE_ARG_ERROR("_xpm_write_rows", 5,
 			 "Color array contains elements other than 8bit strings.");
@@ -443,7 +443,7 @@ void f__xpm_trim_rows( INT32 args )
   {
     int len,start;
     struct pike_string *s = a->item[i].u.string;
-    if(a->item[i].type != T_STRING)
+    if(TYPEOF(a->item[i]) != T_STRING)
       Pike_error("Array must be array(string).\n");
     if(s->len > 4)
     {

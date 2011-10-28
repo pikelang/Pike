@@ -81,7 +81,7 @@ void f_gettext(INT32 args)
   get_all_args("Locale.Gettext.gettext", args, "%c.%C%D", &msg, &domain, &cat);
 
   if (domain) {
-    if (args > 2 && Pike_sp[2-args].subtype == NUMBER_NUMBER)
+    if (args > 2 && SUBTYPEOF(Pike_sp[2-args]) == NUMBER_NUMBER)
       push_text(dcgettext(domain, msg, cat));
     else
       push_text(dgettext(domain, msg));

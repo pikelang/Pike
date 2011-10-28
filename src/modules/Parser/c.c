@@ -63,10 +63,8 @@ static int m_isidchar2( unsigned int x )
     a = *_a = resize_array( a, a->malloced_size + 10 );			\
     a->size = sz;							\
   }									\
-  a->item[sz].type = PIKE_T_STRING;					\
-  a->item[sz].subtype = 0;						\
-  a->item[sz].u.string =						\
-    PIKE_CONCAT(make_shared_binary_string,X)(x, l);			\
+  SET_SVAL(a->item[sz], PIKE_T_STRING, 0, string,			\
+	   PIKE_CONCAT(make_shared_binary_string,X)(x, l));		\
   a->size++;								\
 }
 
