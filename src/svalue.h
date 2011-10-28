@@ -111,6 +111,7 @@ struct svalue
     SET_SVAL_TYPE((SVAL), (TYPE));			\
     SET_SVAL_SUBTYPE((SVAL), (SUBTYPE));		\
   } while(0)
+#define INVALIDATE_SVAL(SVAL) SET_SVAL_TYPE(SVAL, 99) /* an invalid type */
 
 #define PIKE_T_ARRAY 0
 #define PIKE_T_MAPPING 1

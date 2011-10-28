@@ -1298,7 +1298,7 @@ INPUT_IS_WIDE(								 \
       check_stack(1);							 \
       *sp++=sval;							 \
       dmalloc_touch_svalue(Pike_sp-1);					 \
-      DO_IF_DEBUG(sval.type=99);					 \
+      DO_IF_DEBUG(INVALIDATE_SVAL(sval));				 \
     }									 \
   }									 \
   chars_matched[0]=eye;							 \

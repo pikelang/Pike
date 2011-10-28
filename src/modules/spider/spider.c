@@ -863,7 +863,7 @@ void do_html_parse_lines(struct pike_string *ss,
 
 	*(sp++)=sval1;
 #ifdef PIKE_DEBUG
-	sval1.type=99;
+	INVALIDATE_SVAL(sval1);
 #endif
 	(*strings)++;
 	free_svalue(&sval2);
@@ -891,7 +891,7 @@ void do_html_parse_lines(struct pike_string *ss,
 	ONERROR sv1;
 	*(sp++)=sval2;
 #ifdef PIKE_DEBUG
-	sval2.type=99;
+	INVALIDATE_SVAL(sval2);
 #endif
 	k=push_parsed_tag(s+j,len-j);
 	push_int(line);
@@ -925,7 +925,7 @@ void do_html_parse_lines(struct pike_string *ss,
 
 	*(sp++)=sval1;
 #ifdef PIKE_DEBUG
-	sval1.type=99;
+	INVALIDATE_SVAL(sval1);
 #endif
 	(*strings)++;
 	find_endtag(sval2.u.string,s+j,len-j,&l);
@@ -941,7 +941,7 @@ void do_html_parse_lines(struct pike_string *ss,
 
 	*(sp++)=sval2;
 #ifdef PIKE_DEBUG
-	sval2.type=99;
+	INVALIDATE_SVAL(sval2);
 #endif
 	m = push_parsed_tag(s+j, len-j) + j;
 	k = find_endtag(sval2.u.string, s+m, len-m, &l);

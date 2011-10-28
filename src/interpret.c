@@ -920,10 +920,10 @@ static INLINE void low_debug_instr_prologue (PIKE_INSTR_T instr)
     if(d_flag>1) DEBUG_CHECK_THREAD();
 #endif
 
-    Pike_sp[0].type=99; /* an invalid type */
-    Pike_sp[1].type=99;
-    Pike_sp[2].type=99;
-    Pike_sp[3].type=99;
+    INVALIDATE_SVAL(Pike_sp[0]);
+    INVALIDATE_SVAL(Pike_sp[1]);
+    INVALIDATE_SVAL(Pike_sp[2]);
+    INVALIDATE_SVAL(Pike_sp[3]);
       
     if(Pike_sp<Pike_interpreter.evaluator_stack ||
        Pike_mark_sp < Pike_interpreter.mark_stack || Pike_fp->locals>Pike_sp)
