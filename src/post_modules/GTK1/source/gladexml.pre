@@ -52,7 +52,7 @@ class GTK.GladeXML;
     fprintf(stderr, "** WARNING **: Unknown function %s for signal %s\n",
 	    handler_name, signal_name);
     return;
-  } else if(cb->type != PIKE_T_FUNCTION) {
+  } else if(TYPEOF(*cb) != PIKE_T_FUNCTION) {
     fprintf(stderr, "** WARNING **: Value for handler %s for signal %s not a function\n.\n",
 	    handler_name, signal_name);
     return;
@@ -108,7 +108,7 @@ static void glade_verify_setup()
   {
     glade_init();
 #if defined(NEED_GNOMESUPPORT_H) && defined(HAVE_GLADE_GNOME_INIT)
-    if(Pike_sp[-args].type == PIKE_T_INT && Pike_sp[-1].u.integer != 0)
+    if(TYPEOF(Pike_sp[-args]) == PIKE_T_INT && Pike_sp[-1].u.integer != 0)
       glade_gnome_init();
 #endif
     glade_is_setup = 1;
@@ -137,21 +137,21 @@ void new_from_memory(string data, string|void root, string|void domain)
   switch(args)
   {
    case 3:
-    if(Pike_sp[-1].type == PIKE_T_STRING) {
+    if(TYPEOF(Pike_sp[-1]) == PIKE_T_STRING) {
       domain = Pike_sp[-1].u.string->str;
       pop_n_elems(1);
       args--;
     } else
       Pike_error("GladeXML->new_from_memory(): Invalid argument 3, expected string.\n");
    case 2:
-    if(Pike_sp[-1].type == PIKE_T_STRING) {
+    if(TYPEOF(Pike_sp[-1]) == PIKE_T_STRING) {
       root = Pike_sp[-1].u.string->str;
       pop_n_elems(1);
       args--;
     } else
       Pike_error("GladeXML->new_from_memory(): Invalid argument 2, expected string.\n");
    case 1:
-    if(Pike_sp[-1].type == PIKE_T_STRING) {
+    if(TYPEOF(Pike_sp[-1]) == PIKE_T_STRING) {
       data = Pike_sp[-1].u.string;
       pop_n_elems(1);
       args--;
@@ -191,7 +191,7 @@ void new(string filename, string|void root, string|void domain)
   switch(args)
   {
    case 3:
-    if(Pike_sp[-1].type == PIKE_T_STRING) {
+    if(TYPEOF(Pike_sp[-1]) == PIKE_T_STRING) {
       domain = Pike_sp[-1].u.string->str;
       pop_n_elems(1);
       args--;
@@ -199,7 +199,7 @@ void new(string filename, string|void root, string|void domain)
       Pike_error("GladeXML->new(): Invalid argument 3, expected string.\n");
 
    case 2:
-    if(Pike_sp[-1].type == PIKE_T_STRING) {
+    if(TYPEOF(Pike_sp[-1]) == PIKE_T_STRING) {
       root = Pike_sp[-1].u.string->str;
       pop_n_elems(1);
       args--;
@@ -207,7 +207,7 @@ void new(string filename, string|void root, string|void domain)
       Pike_error("GladeXML->new(): Invalid argument 2, expected string.\n");
 
    case 1:
-    if(Pike_sp[-1].type == PIKE_T_STRING) {
+    if(TYPEOF(Pike_sp[-1]) == PIKE_T_STRING) {
       data = Pike_sp[-1].u.string->str;
       pop_n_elems(1);
       args--;
@@ -236,7 +236,7 @@ GTK.Widget get_widget(string name)
   if(!THIS->obj)
     Pike_error("GladeXML->get_widget(): No widgets are loaded.\n");
   xml = (GladeXML *)THIS->obj;
-  if(args == 1 && Pike_sp[-1].type == PIKE_T_STRING) {
+  if(args == 1 && TYPEOF(Pike_sp[-1]) == PIKE_T_STRING) {
     widget = glade_xml_get_widget(xml, Pike_sp[-1].u.string->str);
     pop_n_elems(args);
     push_gtkobjectclass( widget, pgtk_type_to_program(widget));
@@ -258,7 +258,7 @@ GTK.Widget get_widget_by_long_name(string long_name)
   if(!THIS->obj)
     Pike_error("GladeXML->get_widget_by_long_name(): No widgets are loaded.\n");
   xml = (GladeXML *)THIS->obj;
-  if(args == 1 && Pike_sp[-1].type == PIKE_T_STRING) {
+  if(args == 1 && TYPEOF(Pike_sp[-1]) == PIKE_T_STRING) {
     widget = glade_xml_get_widget_by_long_name(xml, Pike_sp[-1].u.string->str);
     pop_n_elems(args);
     push_gtkobjectclass( widget, pgtk_type_to_program(widget));
@@ -325,7 +325,7 @@ void signal_autoconnect(mapping(string:function) callbacks, mixed data)
 //! callback functions. 
 {
   GladeXML *xml;
-  if(args != 2 || Pike_sp[-args].type != PIKE_T_MAPPING)
+  if(args != 2 || TYPEOF(Pike_sp[-args]) != PIKE_T_MAPPING)
     Pike_error("GTK.GladeXML->signal_autoconnect: Invalid arguments, expected (mapping,mixed)\n");
   if(!THIS->obj)
     Pike_error("GladeXML->get_widget_by_long_name(): No widgets are loaded.\n");
@@ -355,7 +355,7 @@ void signal_autoconnect_new(mapping(string:function) callbacks, mixed data)
 //! </pre>
 {
   GladeXML *xml;
-  if(args != 2 || Pike_sp[-args].type != PIKE_T_MAPPING)
+  if(args != 2 || TYPEOF(Pike_sp[-args]) != PIKE_T_MAPPING)
     Pike_error("GTK.GladeXML->signal_autoconnect: Invalid arguments, expected (mapping,mixed)\n");
   if(!THIS->obj)
     Pike_error("GladeXML->get_widget_by_long_name(): No widgets are loaded.\n");

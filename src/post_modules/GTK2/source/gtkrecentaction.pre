@@ -13,7 +13,7 @@ void create(string|mapping(string:mixed) name_or_props, ?string label,
 {
   pgtk2_verify_not_inited();
   pgtk2_verify_setup();
-  if (args>0 && Pike_sp[-args].type==PIKE_T_STRING) {
+  if (args>0 && TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) {
     char *name,*stock_id=NULL;
     struct pike_string *label=NULL,*tooltip=NULL;
     gchar *label2=NULL,*tooltip2=NULL;

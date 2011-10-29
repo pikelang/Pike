@@ -278,7 +278,7 @@ class Gnome.AppProgressKey;
 //! Wrapper for the opaque GnomeAppProgressKey type
 void set(float percent)
 {
-  if(args!=1 || Pike_sp[-1].type != PIKE_T_FLOAT )
+  if(args!=1 || TYPEOF(Pike_sp[-1]) != PIKE_T_FLOAT )
     Pike_error("Bad argument 1 to set\n");
   if( THIS->obj )
     gnome_app_set_progress( (GnomeAppProgressKey)THIS->obj,

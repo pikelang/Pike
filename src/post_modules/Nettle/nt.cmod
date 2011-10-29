@@ -59,13 +59,13 @@ PIKECLASS CryptContext
     flags ID_PROTECTED;
   {
     if(THIS->handle) Pike_error("Already initialized.\n");
-    if(str1->type==T_STRING && str1->u.string->size_shift)
+    if(TYPEOF(*str1) == T_STRING && str1->u.string->size_shift)
       Pike_error("Bad argument 1. Must be 8-bit string.\n");
-    if(str2->type==T_STRING && str2->u.string->size_shift)
+    if(TYPEOF(*str2) == T_STRING && str2->u.string->size_shift)
       Pike_error("Bad argument 2. Must be 8-bit string.\n");
     if(!CryptAcquireContext(&THIS->handle,
-			    (str1->type==T_STRING ? str1->u.string->str : 0),
-			    (str2->type==T_STRING ? str2->u.string->str : 0),
+			    (TYPEOF(*str1) == T_STRING ? str1->u.string->str : 0),
+			    (TYPEOF(*str2) == T_STRING ? str2->u.string->str : 0),
 			    type, flags)) {
       INT32 errcode = GetLastError();
 

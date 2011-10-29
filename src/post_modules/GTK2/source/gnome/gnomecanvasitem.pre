@@ -44,9 +44,9 @@ NAME_ARGS(variable_name,variable_value);
   gint i;
   void *p;
   GnomeCanvasItem *tci = (void *)THIS->obj;
-  if( args != 2 || Pike_sp[-2].type != PIKE_T_STRING )
+  if( args != 2 || TYPEOF(Pike_sp[-2]) != PIKE_T_STRING )
     error("Bad argument 1 to set\n");
-  switch( Pike_sp[-1].type )
+  switch( TYPEOF(Pike_sp[-1]) )
   {
    case PIKE_T_OBJECT:
      p = get_pgtk2object(Pike_sp[-1].u.object,pgtk2_object_program);

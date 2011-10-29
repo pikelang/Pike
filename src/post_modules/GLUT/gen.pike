@@ -168,7 +168,7 @@ array(string) gen_func(string name, string ty)
       args += ({ "(void *)&"+name+"_cb_wrapper" });
 
       after_variables =
-	"  if("+name+"_fun.type)\n"
+	"  if(TYPEOF("+name+"_fun))\n"
 	"    free_svalue(&"+name+"_fun);\n"
 	"  assign_svalue_no_free(&"+name+"_fun, &Pike_sp[-args+"+(a-1)+"]);\n";
 

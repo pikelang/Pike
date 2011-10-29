@@ -73,7 +73,7 @@ static int check_234_args(char *func, INT32 args, int mn, int mx, int ty,
   struct svalue *s;
   int i, tt, tr=0;
 
-  if(args==1 && sp[-1].type==T_ARRAY) {
+  if(args==1 && TYPEOF(sp[-1]) == T_ARRAY) {
     struct array *a = sp[-1].u.array;
     args = a->size;
     if(args<mn || args>mx)
@@ -85,7 +85,7 @@ static int check_234_args(char *func, INT32 args, int mn, int mx, int ty,
     s = sp-args;
   }
   for(i=0; i<args; i++)
-    if(!((tt=1<<s[i].type)&ty)) {
+    if(!((tt=1<<TYPEOF(s[i]))&ty)) {
       char buf[32];
       int n=0;
       buf[0]='\0';
@@ -97,7 +97,7 @@ static int check_234_args(char *func, INT32 args, int mn, int mx, int ty,
 	  strcat(buf, get_name_of_type(tt));
 	}
       Pike_error("%s: got %s, expected %s.\n", func,
-	    get_name_of_type(s[i].type), buf);
+		 get_name_of_type(TYPEOF(s[i])), buf);
     } else
       tr|=tt;
   if(tr==(BIT_INT|BIT_FLOAT))
@@ -118,10 +118,10 @@ static int check_234_args(char *func, INT32 args, int mn, int mx, int ty,
       ret->v.i[i]=s[i].u.integer;
       break;
     case ZT_FLOAT:
-      ret->v.f[i]=(s[i].type==T_INT?(float)s[i].u.integer:s[i].u.float_number);
+      ret->v.f[i]=(TYPEOF(s[i]) == T_INT?(float)s[i].u.integer:s[i].u.float_number);
       break;      
     case ZT_DOUBLE:
-      ret->v.d[i]=(s[i].type==T_INT?(double)s[i].u.integer:
+      ret->v.d[i]=(TYPEOF(s[i]) == T_INT?(double)s[i].u.integer:
 		   s[i].u.float_number);
       break;      
     }
@@ -176,10 +176,10 @@ static void check_img_arg(struct svalue *a, struct zimage *img,
   }
 
   img->alloc = 0;
-  if(a->type == T_MAPPING) {
+  if(TYPEOF(*a) == T_MAPPING) {
     struct svalue *v;
     if((v=simple_mapping_string_lookup(a->u.mapping, "rgb"))) {
-      if(v->type == T_OBJECT &&
+      if(TYPEOF(*v) == T_OBJECT &&
 	 (rgbstor = (void *)get_storage(v->u.object, image_program)) != NULL &&
 	 rgbstor->img != NULL)
 	;
@@ -187,7 +187,7 @@ static void check_img_arg(struct svalue *a, struct zimage *img,
 	Pike_error("Bad argument %d to %s.\n", arg, func);
     }
     if((v=simple_mapping_string_lookup(a->u.mapping, "luminance"))) {
-      if(v->type == T_OBJECT &&
+      if(TYPEOF(*v) == T_OBJECT &&
 	 (lumstor = (void *)get_storage(v->u.object, image_program)) != NULL &&
 	 lumstor->img != NULL)
 	;
@@ -195,7 +195,7 @@ static void check_img_arg(struct svalue *a, struct zimage *img,
 	Pike_error("Bad argument %d to %s.\n", arg, func);
     }
     if((v=simple_mapping_string_lookup(a->u.mapping, "alpha"))) {
-      if(v->type == T_OBJECT &&
+      if(TYPEOF(*v) == T_OBJECT &&
 	 (astor = (void *)get_storage(v->u.object, image_program)) != NULL &&
 	 astor->img != NULL)
 	;
@@ -213,7 +213,7 @@ static void check_img_arg(struct svalue *a, struct zimage *img,
 	  Pike_error("%s: Can't resolve System.Memory!\n", func);
       }
 
-      if( v->type == T_OBJECT &&
+      if( TYPEOF(*v) == T_OBJECT &&
 	  (stor_mem = (void *)get_storage( v->u.object, shm_program ) ) )
       {
 	INT_TYPE x=0, y=0, row=0;
@@ -253,7 +253,7 @@ static void check_img_arg(struct svalue *a, struct zimage *img,
 	return;
       }
     }
-  } else if(a->type == T_OBJECT &&
+  } else if(TYPEOF(*a) == T_OBJECT &&
 	    (rgbstor = (void *)get_storage(a->u.object, image_program)) !=
 	    NULL && rgbstor->img != NULL)
     ;
@@ -356,7 +356,7 @@ static void *get_mem_object( struct svalue *x )
     if(shm_program == NULL)
       Pike_error("Can't resolve System.Memory!\n");
   }
-  if( x->type != T_OBJECT ||
+  if( TYPEOF(*x) != T_OBJECT ||
       !(stor_mem = (void *)get_storage( x->u.object, shm_program ) ) )
     Pike_error("Expected System.Memory object\n");
   return stor_mem->p;
@@ -379,7 +379,7 @@ static int check_1n_args(char *func, INT32 args, int ty, int rty,
   if(args!=1)
     Pike_error("%s: too %s arguments.\n", func, (args<1? "few":"many"));
   
-  if(sp[-1].type==T_ARRAY) {
+  if(TYPEOF(sp[-1]) == T_ARRAY) {
     struct array *a = sp[-1].u.array;
     args = a->size;
     if(args>16)
@@ -390,7 +390,7 @@ static int check_1n_args(char *func, INT32 args, int ty, int rty,
     s = sp-args;
 
   for(i=0; i<args; i++)
-    if(!((tt=1<<s[i].type)&ty)) {
+    if(!((tt=1<<TYPEOF(s[i]))&ty)) {
       char buf[32];
       int n=0;
       buf[0]='\0';
@@ -402,7 +402,7 @@ static int check_1n_args(char *func, INT32 args, int ty, int rty,
 	  strcat(buf, get_name_of_type(tt));
 	}
       Pike_error("%s: got %s, expected %s.\n", func,
-	    get_name_of_type(s[i].type), buf);
+		 get_name_of_type(TYPEOF(s[i])), buf);
     } else
       tr|=tt;
   if(tr==(BIT_INT|BIT_FLOAT))
@@ -423,10 +423,10 @@ static int check_1n_args(char *func, INT32 args, int ty, int rty,
       ret->i[i]=s[i].u.integer;
       break;
     case ZT_FLOAT:
-      ret->f[i]=(s[i].type==T_INT?(float)s[i].u.integer:s[i].u.float_number);
+      ret->f[i]=(TYPEOF(s[i]) == T_INT?(float)s[i].u.integer:s[i].u.float_number);
       break;      
     case ZT_DOUBLE:
-      ret->d[i]=(s[i].type==T_INT?(double)s[i].u.integer:s[i].u.float_number);
+      ret->d[i]=(TYPEOF(s[i]) == T_INT?(double)s[i].u.integer:s[i].u.float_number);
       break;      
     }  
 
@@ -449,7 +449,7 @@ static int check_1unlimited_args(char *func, INT32 args, int ty, int rty,
     Pike_error("%s: too %s arguments.\n", func, (args<1? "few":"many"));
   
   /* Make sure we were sent an array */
-  if(sp[-1].type==T_ARRAY) {
+  if(TYPEOF(sp[-1]) == T_ARRAY) {
     struct array *a = sp[-1].u.array;
     args = a->size;
     arr++;
@@ -459,7 +459,7 @@ static int check_1unlimited_args(char *func, INT32 args, int ty, int rty,
 
   /* Check what types of arguments that are in the array */
   for(i=0; i<args; i++)
-    if(!((tt=1<<s[i].type)&ty)) {
+    if(!((tt=1<<TYPEOF(s[i]))&ty)) {
       char buf[32];
       int n=0;
       buf[0]='\0';
@@ -471,7 +471,7 @@ static int check_1unlimited_args(char *func, INT32 args, int ty, int rty,
 	  strcat(buf, get_name_of_type(tt));
 	}
       Pike_error("%s: got %s, expected %s.\n", func,
-	    get_name_of_type(s[i].type), buf);
+		 get_name_of_type(TYPEOF(s[i])), buf);
     } else
       tr|=tt;
   if(tr==(BIT_INT|BIT_FLOAT))
@@ -493,10 +493,10 @@ static int check_1unlimited_args(char *func, INT32 args, int ty, int rty,
       ((GLint *)ret[0])[i]=s[i].u.integer;
       break;
     case ZT_FLOAT:
-      ((GLfloat *)ret[0])[i]=(s[i].type==T_INT?(float)s[i].u.integer:s[i].u.float_number);
+      ((GLfloat *)ret[0])[i]=(TYPEOF(s[i]) == T_INT?(float)s[i].u.integer:s[i].u.float_number);
       break;      
     case ZT_DOUBLE:
-      ((GLdouble *)ret[0])[i]=(s[i].type==T_INT?(double)s[i].u.integer:s[i].u.float_number);
+      ((GLdouble *)ret[0])[i]=(TYPEOF(s[i]) == T_INT?(double)s[i].u.integer:s[i].u.float_number);
       break;      
     }  
 
@@ -548,7 +548,7 @@ static void my_glGenTextures( INT32 args )
   struct array *a;
   int ntexts;
   int i;
-  if( args != 1 || Pike_sp[-1].type != PIKE_T_INT )
+  if( args != 1 || TYPEOF(Pike_sp[-1]) != PIKE_T_INT )
     Pike_error("Illegal argument to glGenTextures. Expected integer\n");
   ntexts = Pike_sp[-1].u.integer;
   pop_stack();
@@ -572,7 +572,7 @@ static void my_glDeleteTextures( INT32 args )
     int i;
     for( i = 0; i<args; i++ )
     {
-      if( Pike_sp[i-args].type != PIKE_T_INT ) {
+      if( TYPEOF(Pike_sp[i-args]) != PIKE_T_INT ) {
 	free( ls );
 	SIMPLE_BAD_ARG_ERROR("glDeleteTextures", i+1, "int");
       }
@@ -593,7 +593,7 @@ static void my_glCallLists( INT32 args )
     int i;
     for( i = 0; i<args; i++ )
     {
-      if( Pike_sp[i-args].type != PIKE_T_INT ) {
+      if( TYPEOF(Pike_sp[i-args]) != PIKE_T_INT ) {
 	free( ls );
 	SIMPLE_BAD_ARG_ERROR("glCallLists", i+1, "int");
       }

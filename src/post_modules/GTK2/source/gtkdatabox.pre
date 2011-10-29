@@ -137,11 +137,11 @@ static GtkDataboxCoord get_coord(int offset, int args) {
   GtkDataboxCoord c;
   if (args<offset+2)
     Pike_error("too few arguments\n");
-  if (Pike_sp[-args+offset].type!=PIKE_T_INT)
+  if (TYPEOF(Pike_sp[-args+offset]) != PIKE_T_INT)
     Pike_error("Bad argument %d\n",offset);
   else
     c.x=Pike_sp[-args+offset].u.integer;
-  if (Pike_sp[-args+offset+1].type!=PIKE_T_INT)
+  if (TYPEOF(Pike_sp[-args+offset+1]) != PIKE_T_INT)
     Pike_error("Bad argument %d\n",offset);
   else
     c.y=Pike_sp[-args+offset+1].u.integer;
@@ -152,11 +152,11 @@ static GtkDataboxValue get_value(int offset, int args) {
   GtkDataboxValue c;
   if (args<offset+2)
     Pike_error("too few arguments\n");
-  if (Pike_sp[-args+offset].type!=PIKE_T_FLOAT)
+  if (TYPEOF(Pike_sp[-args+offset]) != PIKE_T_FLOAT)
     Pike_error("Bad argument %d\n",offset);
   else
     c.x=Pike_sp[-args+offset].u.float_number;
-  if (Pike_sp[-args+offset+1].type!=PIKE_T_FLOAT)
+  if (TYPEOF(Pike_sp[-args+offset+1]) != PIKE_T_FLOAT)
     Pike_error("Bad argument %d\n",offset);
   else
     c.y=Pike_sp[-args+offset+1].u.float_number;

@@ -333,7 +333,7 @@ array(string) gen_func(string name, string ty)
     if(polya<0)
       res += (vret?"  res=":"  ")+fu+"("+(args*",")+");\n";
     else
-      res += "  switch("+args[polya]+".type) {\n"+
+      res += "  switch(TYPEOF("+args[polya]+")) {\n"+
 	Array.map(argt[polya]/"|", lambda(string t) 
 				   {
 				     array(string) a = copy_value(args);

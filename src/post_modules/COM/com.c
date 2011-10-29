@@ -165,7 +165,7 @@ static void set_variant_arg(VARIANT *v, struct svalue *sv)
 
   VariantInit(v);
       
-  switch(sv->type)
+  switch(TYPEOF(*sv))
   {
     case PIKE_T_INT:
       v->vt = VT_I4;
@@ -218,22 +218,22 @@ static void set_variant_arg(VARIANT *v, struct svalue *sv)
       /* TODO: Convert array to SAFEARRAY ? */
     case PIKE_T_ARRAY:
       Pike_error("Com: create_variant: Pike array can't be converted!\n",
-                 sv->type);
+                 TYPEOF(*sv));
       break;
 
     case PIKE_T_MAPPING:
       Pike_error("Com: create_variant: Pike mapping can't be converted!\n",
-                 sv->type);
+                 TYPEOF(*sv));
       break;
 
     case PIKE_T_MULTISET:
       Pike_error("Com: create_variant: Pike multiset can't be converted!\n",
-                 sv->type);
+                 TYPEOF(*sv));
       break;
 
     default:
       Pike_error("Com: create_variant: Pike type %d can't be converted!\n",
-                 sv->type);
+                 TYPEOF(*sv));
       break;
   }
 }
@@ -712,7 +712,7 @@ static void f_cval_cast(INT32 args)
 
   if (args < 1)
     Pike_error("cast() called without arguments.\n");
-  if (Pike_sp[-args].type != PIKE_T_STRING)
+  if (TYPEOF(Pike_sp[-args]) != PIKE_T_STRING)
     Pike_error("Bad argument 1 to cast().\n");
 
   if (!strcmp(Pike_sp[-args].u.string->str, "object")) {
@@ -748,7 +748,7 @@ static void f_cval_arrow(INT32 args)
   if (args != 1)
     Pike_error("Bad argument to cval::`->\n");
 
-  if (Pike_sp[-1].type == PIKE_T_STRING &&
+  if (TYPEOF(Pike_sp[-1]) == PIKE_T_STRING &&
       !strncmp(Pike_sp[-1].u.string->str, "_value", Pike_sp[-1].u.string->len))
   {
     pop_n_elems(args);
@@ -757,7 +757,7 @@ static void f_cval_arrow(INT32 args)
   }
 
   cval_push_result(0, DISPATCH_PROPERTYGET);
-  if (Pike_sp[-1].type != PIKE_T_OBJECT ||
+  if (TYPEOF(Pike_sp[-1]) != PIKE_T_OBJECT ||
       Pike_sp[-1].u.object->prog != cobj_program)
   {
     pop_n_elems(args+1);
@@ -777,7 +777,7 @@ static void f_cval_arrow_assign(INT32 args)
     Pike_error("Bad argument to cval::`->=\n");
 
   cval_push_result(0, DISPATCH_PROPERTYGET);
-  if (Pike_sp[-1].type != PIKE_T_OBJECT ||
+  if (TYPEOF(Pike_sp[-1]) != PIKE_T_OBJECT ||
       Pike_sp[-1].u.object->prog != cobj_program)
   {
     pop_n_elems(args+1);
@@ -831,31 +831,31 @@ static void f_cval__sprintf(INT32 args)
   struct string_builder s;
   
 /*   get_all_args("_sprintf",args,"%i",&x); */
-  if (args < 1 || Pike_sp[-args].type != PIKE_T_INT)
+  if (args < 1 || TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
     Pike_error("Bad argument 1 for Com.cval->_sprintf().\n");
-  if (args < 2 || Pike_sp[1-args].type != PIKE_T_MAPPING)
+  if (args < 2 || TYPEOF(Pike_sp[1-args]) != PIKE_T_MAPPING)
     Pike_error("Bad argument 2 for Com.cval->_sprintf().\n");
   
   push_svalue(&Pike_sp[1-args]);
   push_constant_text("precision");
   f_index(2);
-  if (Pike_sp[-1].type != PIKE_T_INT)
+  if (TYPEOF(Pike_sp[-1]) != PIKE_T_INT)
     Pike_error("\"precision\" argument to Com->_sprintf() is not an integer.\n");
-  precision_undecided = ((Pike_sp-1)->subtype != NUMBER_NUMBER);
+  precision_undecided = (SUBTYPEOF(Pike_sp[-1]) != NUMBER_NUMBER);
   precision = (--Pike_sp)->u.integer;
   
   push_svalue(&Pike_sp[1-args]);
   push_constant_text("width");
   f_index(2);
-  if (Pike_sp[-1].type != PIKE_T_INT)
+  if (TYPEOF(Pike_sp[-1]) != PIKE_T_INT)
     Pike_error("\"width\" argument to Com->_sprintf() is not an integer.\n");
-  width_undecided = ((Pike_sp-1)->subtype != NUMBER_NUMBER);
+  width_undecided = (SUBTYPEOF(Pike_sp[-1]) != NUMBER_NUMBER);
   width = (--Pike_sp)->u.integer;
 
   push_svalue(&Pike_sp[1-args]);
   push_constant_text("flag_left");
   f_index(2);
-  if (Pike_sp[-1].type != PIKE_T_INT)
+  if (TYPEOF(Pike_sp[-1]) != PIKE_T_INT)
     Pike_error("\"flag_left\" argument to Com->_sprintf() is not an integer.\n");
   flag_left=Pike_sp[-1].u.integer;
   pop_stack();
@@ -1040,7 +1040,7 @@ static void f_cobj_setprop(INT32 args)
   if (args!=2)
     Pike_error("Incorrect number of arguments to set_prop.\n");
 
-  if (Pike_sp[-args].type != PIKE_T_STRING)
+  if (TYPEOF(Pike_sp[-args]) != PIKE_T_STRING)
     Pike_error("Bad argument 1 to set_prop.\n");
 
   prop = Pike_sp[-args].u.string;
@@ -1088,7 +1088,7 @@ static void f_cobj_call_method(INT32 args)
   if (args<1)
     Pike_error("Incorrect number of arguments to call_method.\n");
 
-  if (Pike_sp[-args].type != PIKE_T_STRING)
+  if (TYPEOF(Pike_sp[-args]) != PIKE_T_STRING)
     Pike_error("Bad argument 1 to call_method.\n");
 
   prop = Pike_sp[-args].u.string;
@@ -1127,7 +1127,7 @@ static void f_cobj_arrow(INT32 args)
   struct cobj_storage *cobj = THIS_COBJ;
   struct svalue *cval_prog;
 
-  if (args<1 || Pike_sp[-args].type != PIKE_T_STRING ||
+  if (args<1 || TYPEOF(Pike_sp[-args]) != PIKE_T_STRING ||
      args>1)
     Pike_error("Bad args to `->.");
 
@@ -1195,9 +1195,9 @@ static void f_cobj__sprintf(INT32 args)
 {
   struct cobj_storage *cobj = THIS_COBJ;
 
-  if (args < 1 || Pike_sp[-args].type != PIKE_T_INT)
+  if (args < 1 || TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
     Pike_error("Bad argument 1 for Com.cobj->_sprintf().\n");
-  if (args < 2 || Pike_sp[1-args].type != PIKE_T_MAPPING)
+  if (args < 2 || TYPEOF(Pike_sp[1-args]) != PIKE_T_MAPPING)
     Pike_error("Bad argument 2 for Com.cobj->_sprintf().\n");
   
   switch (Pike_sp[-args].u.integer)
@@ -1476,7 +1476,7 @@ static void f_get_object(INT32 args)
     PCHARP     tmp;
     type += 0x1;
 
-    if (Pike_sp[-args].type != PIKE_T_STRING)
+    if (TYPEOF(Pike_sp[-args]) != PIKE_T_STRING)
       Pike_error("Bad argument 1 to GetObject\n");
     filename = Pike_sp[-args].u.string;
 
@@ -1491,7 +1491,7 @@ static void f_get_object(INT32 args)
   {
     type += 0x2;
 
-    if (Pike_sp[1-args].type != PIKE_T_STRING)
+    if (TYPEOF(Pike_sp[1-args]) != PIKE_T_STRING)
       Pike_error("Bad argument 2 to GetObject\n");
     progID = Pike_sp[1-args].u.string;
 
@@ -1750,7 +1750,7 @@ static void f_get_typeinfo(INT32 args)
 
   if (args != 1)
     Pike_error("Bad number of arguments for Com->GetTypeInfo().\n");
-  if (Pike_sp[-args].type != PIKE_T_OBJECT ||
+  if (TYPEOF(Pike_sp[-args]) != PIKE_T_OBJECT ||
       Pike_sp[-args].u.object->prog != cobj_program)
     Pike_error("Bad argument 1 for Com->GetTypeInfo().\n");
  
@@ -1794,10 +1794,10 @@ static void f_get_constants(INT32 args)
 
   if (args != 1)
     Pike_error("Bad number of arguments for Com->GetConstants().\n");
-/*   if (Pike_sp[-args].type != PIKE_T_OBJECT || */
+/*   if (TYPEOF(Pike_sp[-args]) != PIKE_T_OBJECT || */
 /*       Pike_sp[-args].u.object->prog != cobj_program) */
 /*     Pike_error("Bad argument 1 for Com->GetConstants().\n"); */
-  if (Pike_sp[-args].type == PIKE_T_STRING)
+  if (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING)
   {
     /* String */
     char *to_free = NULL;
@@ -1818,7 +1818,7 @@ static void f_get_constants(INT32 args)
       return;
     }
   }
-  else if (Pike_sp[-args].type == PIKE_T_OBJECT &&
+  else if (TYPEOF(Pike_sp[-args]) == PIKE_T_OBJECT &&
       Pike_sp[-args].u.object->prog == cobj_program)
   {
     /* cobj */
@@ -1885,9 +1885,9 @@ static void f_com__sprintf(INT32 args)
   struct com_storage *com = THIS_COM;
 #endif /* USE_COM_PROG */
   
-  if (args < 1 || Pike_sp[-args].type != PIKE_T_INT)
+  if (args < 1 || TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
     Pike_error("Bad argument 1 for Com->_sprintf().\n");
-  if (args < 2 || Pike_sp[1-args].type != PIKE_T_MAPPING)
+  if (args < 2 || TYPEOF(Pike_sp[1-args]) != PIKE_T_MAPPING)
     Pike_error("Bad argument 2 for Com->_sprintf().\n");
   
   switch (Pike_sp[-args].u.integer)
@@ -1908,8 +1908,7 @@ PIKE_MODULE_INIT
 {
 #ifdef HAVE_COM
   struct svalue prog;
-  prog.type = PIKE_T_PROGRAM;
-  prog.subtype = 0;
+  SET_SVAL(prog, PIKE_T_PROGRAM, 0, program, NULL);
 
   /* load and initialize COM */
   CoInitialize(0);

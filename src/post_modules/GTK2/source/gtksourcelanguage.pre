@@ -73,7 +73,7 @@ void set_mime_types(?array(string) types)
     } else {
       int i;
       for (i=0; i<a->size; i++) {
-	if ((ITEM(a)+i)->type!=PIKE_T_STRING)
+	if (TYPEOF(ITEM(a)[i]) != PIKE_T_STRING)
 	  continue;
 	gsl=g_slist_prepend(gsl,STR0((ITEM(a)+i)->u.string));
       }
@@ -157,12 +157,12 @@ void set_tag_style(string id, ?mapping(string:mixed) style)
       sts->mask=PGTK_GETINT(sv);
     sv=low_mapping_string_lookup(m,_STR("foreground"));
     if (sv) {
-      if (sv->type==PIKE_T_OBJECT && get_gdkobject(sv->u.object,color))
+      if (TYPEOF(*sv) == PIKE_T_OBJECT && get_gdkobject(sv->u.object,color))
         sts->foreground=*(GdkColor *)get_gdkobject(sv->u.object,color);
     }
     sv=low_mapping_string_lookup(m,_STR("background"));
     if (sv) {
-      if (sv->type==PIKE_T_OBJECT && get_gdkobject(sv->u.object,color))
+      if (TYPEOF(*sv) == PIKE_T_OBJECT && get_gdkobject(sv->u.object,color))
         sts->background=*(GdkColor *)get_gdkobject(sv->u.object,color);
     }
     sv=low_mapping_string_lookup(m,_STR("italic"));

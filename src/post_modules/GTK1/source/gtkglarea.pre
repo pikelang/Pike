@@ -18,7 +18,7 @@ void create( array(int) gloptions )
 
   pgtk_verify_setup();
   if( (args < 1) ||
-      Pike_sp[0-args].type != PIKE_T_ARRAY )
+      TYPEOF(Pike_sp[0-args]) != PIKE_T_ARRAY )
     Pike_error("Bad argument 0, expected array\n");
 
   _arg_list = Pike_sp[0-args].u.array;
