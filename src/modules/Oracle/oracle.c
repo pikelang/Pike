@@ -1748,7 +1748,7 @@ static void f_fetch_row(INT32 args)
        *       rescan the first columns in every pass.
        */
       for (; i < dbquery->field_info->size; i++) {
-	if (dbquery->field_info->item[i].type == T_OBJECT) {
+	if (TYPEOF(dbquery->field_info->item[i]) == T_OBJECT) {
 	  struct object *o = dbquery->field_info->item[i].u.object;
 	  if (o->prog == dbresultinfo_program) {
 	    struct dbresultinfo *in = (struct dbresultinfo *)STORAGE(o);
@@ -1826,7 +1826,7 @@ static void f_fetch_row(INT32 args)
 
   for(i=0;i<dbquery->cols;i++)
   {
-    if(dbquery->field_info->item[i].type == T_OBJECT &&
+    if(TYPEOF(dbquery->field_info->item[i]) == T_OBJECT &&
        dbquery->field_info->item[i].u.object->prog == dbresultinfo_program)
     {
       struct dbresultinfo *info;
@@ -1850,11 +1850,11 @@ static void f_oracle_create(INT32 args)
 		 BIT_STRING|BIT_INT, BIT_STRING|BIT_INT, BIT_STRING,
 		 BIT_STRING|BIT_VOID|BIT_INT, 0);
 
-  host = (Pike_sp[-args].type == T_STRING? Pike_sp[-args].u.string : NULL);
-  database = (Pike_sp[1-args].type == T_STRING? Pike_sp[1-args].u.string : NULL);
-  uid = (Pike_sp[2-args].type == T_STRING? Pike_sp[2-args].u.string : NULL);
+  host = (TYPEOF(Pike_sp[-args]) == T_STRING? Pike_sp[-args].u.string : NULL);
+  database = (TYPEOF(Pike_sp[1-args]) == T_STRING? Pike_sp[1-args].u.string : NULL);
+  uid = (TYPEOF(Pike_sp[2-args]) == T_STRING? Pike_sp[2-args].u.string : NULL);
   if(args >= 4)
-    passwd = (Pike_sp[3-args].type == T_STRING? Pike_sp[3-args].u.string : NULL);
+    passwd = (TYPEOF(Pike_sp[3-args]) == T_STRING? Pike_sp[3-args].u.string : NULL);
   else
     passwd = NULL;
 
@@ -2101,7 +2101,7 @@ static void free_bind_block(struct bind_block *bind)
   while(bind->bindnum>=0)
   {
     free_svalue( & bind->bind[bind->bindnum].ind);
-    if (bind->bind[bind->bindnum].val.type == T_MULTISET) {
+    if (TYPEOF(bind->bind[bind->bindnum].val) == T_MULTISET) {
       sub_msnode_ref(bind->bind[bind->bindnum].val.u.multiset);
     }
     free_svalue( & bind->bind[bind->bindnum].val);
@@ -2159,7 +2159,7 @@ static void f_big_typed_query_create(INT32 args)
       autocommit=Pike_sp[1-args].u.integer;
 
     case 1:
-      if(Pike_sp[-args].type == T_MAPPING)
+      if(TYPEOF(Pike_sp[-args]) == T_MAPPING)
 	bnds=Pike_sp[-args].u.mapping;
 
     case 0: break;
@@ -2230,7 +2230,7 @@ static void f_big_typed_query_create(INT32 args)
 	init_inout(& bind.bind[bind.bindnum].data);
 
       retry:
-	switch(value->type)
+	switch(TYPEOF(*value))
 	{
 	  case T_OBJECT:
 	    if(value->u.object->prog == Date_program)
@@ -2270,7 +2270,7 @@ static void f_big_typed_query_create(INT32 args)
 	    break;
 	    
 	  case T_INT:
-	    if(value->subtype)
+	    if(SUBTYPEOF(*value))
 	    {
 #ifdef ORACLE_DEBUG
 	      fprintf(stderr,"NULL IN\n");
@@ -2292,9 +2292,9 @@ static void f_big_typed_query_create(INT32 args)
 	      struct pike_string *s;
 	      {
 		struct svalue tmp;
-		if (use_multiset_index (value->u.multiset,
-					multiset_first (value->u.multiset),
-					tmp)->type == T_STRING)
+		if (TYPEOF(use_multiset_index (value->u.multiset,
+					       multiset_first (value->u.multiset),
+					       tmp)) == T_STRING)
 		  s = tmp.u.string;
 		else
 		  s = NULL;
@@ -2324,7 +2324,7 @@ static void f_big_typed_query_create(INT32 args)
 		(long)rlen,
 		addr, (long)len, fty);
 #endif
-	if(k->ind.type == T_INT)
+	if(TYPEOF(k->ind) == T_INT)
 	{
 	  rc = OCIBindByPos(dbquery->statement,
 			    & bind.bind[bind.bindnum].bind,
@@ -2340,7 +2340,7 @@ static void f_big_typed_query_create(INT32 args)
 			    0,
 			    mode);
 	}
-	else if(k->ind.type == T_STRING)
+	else if(TYPEOF(k->ind) == T_STRING)
 	{
 	  rc = OCIBindByName(dbquery->statement,
 			     & bind.bind[bind.bindnum].bind,
@@ -2477,7 +2477,7 @@ static void dbdate_create(INT32 args)
   sword rc;
 
   check_all_args("Oracle.Date",args,BIT_INT|BIT_STRING,0);
-  switch(Pike_sp[-args].type)
+  switch(TYPEOF(Pike_sp[-args]))
   {
     case T_STRING:
       rc=OCIDateFromText(get_global_error_handle(),
@@ -2508,7 +2508,7 @@ static void dbdate_sprintf(INT32 args)
   sword rc;
   sb4 bsize=100;
   int mode = 0;
-  if(args>0 && Pike_sp[-args].type == PIKE_T_INT)
+  if(args>0 && TYPEOF(Pike_sp[-args]) == PIKE_T_INT)
     mode = Pike_sp[-args].u.integer;
   if(mode != 'O' && mode != 's') {
     pop_n_elems(args);
@@ -2584,14 +2584,14 @@ static void dbnull_create(INT32 args)
 static void dbnull_sprintf(INT32 args)
 {
   int mode = 0;
-  if(args>0 && Pike_sp[-args].type == PIKE_T_INT)
+  if(args>0 && TYPEOF(Pike_sp[-args]) == PIKE_T_INT)
     mode = Pike_sp[-args].u.integer;
   pop_n_elems(args);
   if(mode != 'O') {
     push_undefined();
     return;
   }
-  switch(THIS_DBNULL->type.type)
+  switch(TYPEOF(THIS_DBNULL->type))
   {
     case T_INT: push_text("Oracle.NULLint"); break;
     case T_STRING: push_text("Oracle.NULLstring"); break;
@@ -2607,7 +2607,7 @@ static void dbnull_eq(INT32 args)
   if(args<1) Pike_error("Too few arguments to Oracle.NULL->`==\n");
   if(args > 1) pop_n_elems(args-1);
   args = 1;
-  if (Pike_sp[-1].type != T_OBJECT) {
+  if (TYPEOF(Pike_sp[-1]) != T_OBJECT) {
     push_int(0);
     return;
   }
@@ -2615,7 +2615,7 @@ static void dbnull_eq(INT32 args)
   stack_dup();
   push_constant_text("is_oracle_null");
   o_index();
-  if ((Pike_sp[-1].type != T_INT) || !Pike_sp[-1].u.integer) {
+  if ((TYPEOF(Pike_sp[-1]) != T_INT) || !Pike_sp[-1].u.integer) {
     /* No - is it the generic Val.null? */
     pop_stack();
     push_constant_text("is_val_null");

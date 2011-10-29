@@ -141,29 +141,29 @@ static void f_create(INT32 args)
 
   switch(args) {
     case 5:
-      if(Pike_sp[-1].type != T_INT)
+      if(TYPEOF(Pike_sp[-1]) != T_INT)
 	Pike_error("Invalid argument 5, expected int.\n");
       chns = (u_short)Pike_sp[-1].u.integer;
       Pike_sp--;
     case 4:
-      if(Pike_sp[-1].type != T_INT)
+      if(TYPEOF(Pike_sp[-1]) != T_INT)
 	Pike_error("Invalid argument 4, expected int.\n");
       wide = (u_short)Pike_sp[-1].u.integer;
       Pike_sp--;
     case 3:
-      if(Pike_sp[-1].type != T_INT)
+      if(TYPEOF(Pike_sp[-1]) != T_INT)
 	Pike_error("Invalid argument 3, expected int.\n");
       rate = (u_short)Pike_sp[-1].u.integer;
       Pike_sp--;
 
     case 2:
-      if(Pike_sp[-1].type != T_INT)
+      if(TYPEOF(Pike_sp[-1]) != T_INT)
 	Pike_error("Invalid argument 2, expected int.\n");
       THIS->encoder = (u_short)Pike_sp[-1].u.integer;
       Pike_sp--;
 
     /* case 1: */
-      if(Pike_sp[-1].type != T_INT)
+      if(TYPEOF(Pike_sp[-1]) != T_INT)
 	Pike_error("Invalid argument 1, expected int.\n");
       codec_id = (u_short)Pike_sp[-1].u.integer;
       Pike_sp--;
@@ -236,13 +236,13 @@ static void f_set_codec_param(INT32 args) {
 
   if(args != 2)
     Pike_error("Invalid number of arguments to set_codec_param().\n");
-  if(Pike_sp[-args].type != T_STRING)
+  if(TYPEOF(Pike_sp[-args]) != T_STRING)
     Pike_error("Invalid argument 1, expected string.\n");
   pname = Pike_sp[-args].u.string;
 
   /* bit_rate */
   if(!strncmp(pname->str, "bit_rate", 8)) {
-    if(Pike_sp[-1].type != T_INT)
+    if(TYPEOF(Pike_sp[-1]) != T_INT)
       Pike_error("Invalid argument 2, expected integer.\n");
     /* FIXME: test correct value of bit rate argument */
     THIS->codec_context.bit_rate = Pike_sp[-1].u.integer;
@@ -253,7 +253,7 @@ static void f_set_codec_param(INT32 args) {
 
   /* sample_rate */
   if(!strncmp(pname->str, "sample_rate", 11)) {
-    if(Pike_sp[-1].type != T_INT)
+    if(TYPEOF(Pike_sp[-1]) != T_INT)
       Pike_error("Invalid argument 2, expected integer.\n");
     /* FIXME: test correct value of bit rate argument */
     THIS->codec_context.sample_rate = Pike_sp[-1].u.integer;
@@ -264,7 +264,7 @@ static void f_set_codec_param(INT32 args) {
 
   /* channels */
   if(!strncmp(pname->str, "channels", 8)) {
-    if(Pike_sp[-1].type != T_INT)
+    if(TYPEOF(Pike_sp[-1]) != T_INT)
       Pike_error("Invalid argument 2, expected integer.\n");
     /* FIXME: test correct value of bit rate argument */
     THIS->codec_context.channels = (u_short)Pike_sp[-1].u.integer;
@@ -350,7 +350,7 @@ static void f_decode(INT32 args) {
   int len, samples_size;
   struct svalue feeder;
 
-  if(Pike_sp[-args].type != T_STRING)
+  if(TYPEOF(Pike_sp[-args]) != T_STRING)
     Pike_error("Invalid argument 1, expected string.\n");
 
   idata = Pike_sp[-args].u.string;
@@ -370,7 +370,7 @@ static void f_decode(INT32 args) {
   if(args > 1) {
     /* FIXME: shuffler part not implemented, yet */
 #if NOT_IMPLEMENTED_YET
-    if(Pike_sp[-1].type != T_FUNCTION)
+    if(TYPEOF(Pike_sp[-1]) != T_FUNCTION)
       Pike_error("Invalid argument 2, expected function.\n");
     feeder = Pike_sp[1-args].u.svalue;
     apply_svalue(&feeder, 0); /* we want more data */

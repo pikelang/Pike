@@ -416,17 +416,17 @@ static void f_connect (INT32 args) {
                  BIT_INT|BIT_VOID,0);
 
   /* fetch arguments, so that we can enable threads */
-  if (sp[2-args].type == T_STRING && sp[2-args].u.string->len) { /*username*/
+  if (TYPEOF(sp[2-args]) == T_STRING && sp[2-args].u.string->len) { /*username*/
     username=sp[2-args].u.string->str;
     usernamelen=sp[2-args].u.string->len;
     sybdebug((stderr,"\tgot username: %s\n",username));
   }
-  if (sp[3-args].type == T_STRING && sp[2-args].u.string->len) { /*password*/
+  if (TYPEOF(sp[3-args]) == T_STRING && sp[2-args].u.string->len) { /*password*/
       pass=sp[3-args].u.string->str;
     passlen=sp[3-args].u.string->len;
     sybdebug((stderr,"\tgot password: %s\n",pass));
   }
-  if (sp[-args].type==T_STRING && sp[-args].u.string->len) { /*hostname*/
+  if (TYPEOF(sp[-args]) == T_STRING && sp[-args].u.string->len) { /*hostname*/
     hostname=sp[-args].u.string->str;
     hostnamelen=sp[-args].u.string->len;
     sybdebug((stderr,"\tgot hostname: %s\n",hostname));

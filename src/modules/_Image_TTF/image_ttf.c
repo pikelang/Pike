@@ -246,7 +246,7 @@ static void image_ttf_make(INT32 args)
    TT_Error res;
    TT_Face face;
 
-   if (sp[-args].type!=T_STRING)
+   if (TYPEOF(sp[-args]) != T_STRING)
       Pike_error("Image.TTF(): illegal argument 1\n");
 
    res=TT_Open_Collection(engine, sp[-args].u.string->str, col, &face);
@@ -556,7 +556,7 @@ static void image_ttf_face_names(INT32 args)
 
    image_ttf_face__names(args);
 
-   if (sp[-1].type!=T_ARRAY)
+   if (TYPEOF(sp[-1]) != T_ARRAY)
       Pike_error("Image.TTF.Face->names(): internal error, weird _names()\n");
 
    a=sp[-1].u.array;
@@ -682,7 +682,7 @@ static void image_ttf_faceinstance_create(INT32 args)
    if (!args)
       Pike_error("Image.TTF.FaceInstance(): too few arguments\n");
 
-   if (sp[-args].type!=T_OBJECT ||
+   if (TYPEOF(sp[-args]) != T_OBJECT ||
        !(face_s=(struct image_ttf_face_struct*)
 	 get_storage(sp[-args].u.object,image_ttf_face_program)))
       Pike_error("Image.TTF.FaceInstance(): illegal argument 1\n");
@@ -705,9 +705,9 @@ static void image_ttf_faceinstance_set_height(INT32 args)
    if (!args)
       Pike_error("Image.TTF.FaceInstance->set_height(): missing arguments\n");
 
-   if (sp[-args].type==T_INT)
+   if (TYPEOF(sp[-args]) == T_INT)
       h = sp[-args].u.integer*64;
-   else if (sp[-args].type==T_FLOAT)
+   else if (TYPEOF(sp[-args]) == T_FLOAT)
       h = DOUBLE_TO_INT(sp[-args].u.float_number*64);
    else
       Pike_error("Image.TTF.FaceInstance->set_height(): illegal argument 1\n");
@@ -840,14 +840,14 @@ static void image_ttf_faceinstance_ponder(INT32 args)
 	 get_storage(THISi->faceobj,image_ttf_face_program)))
       Pike_error("Image.TTF.FaceInstance->ponder(): lost Face\n");
 
-   if (args && sp[-1].type==T_INT)
+   if (args && TYPEOF(sp[-1]) == T_INT)
    {
       base=sp[-1].u.integer;
       args--;
       pop_stack();
    }
 
-   if (sp[-args].type!=T_STRING)
+   if (TYPEOF(sp[-args]) != T_STRING)
       Pike_error("Image.TTF.FaceInstance->ponder(): illegal argument 1\n");
 
    switch( sp[-args].u.string->size_shift )
@@ -1005,7 +1005,7 @@ static void image_ttf_faceinstance_write(INT32 args)
 /*      fprintf(stderr, "offset=%d\n", (int)metrics.x_scale); */
    }
 
-   if (args && sp[-1].type==T_INT)
+   if (args && TYPEOF(sp[-1]) == T_INT)
    {
       base=sp[-1].u.integer;
       args--;
@@ -1031,7 +1031,7 @@ static void image_ttf_faceinstance_write(INT32 args)
      char *errs=NULL;
      TT_Glyph_Metrics metrics;
 
-      if (sp[a-args].type!=T_STRING)
+      if (TYPEOF(sp[a-args]) != T_STRING)
 	 Pike_error("Image.TTF.FaceInstance->write(): illegal argument %d\n",a+1);
 
       switch(sp[a-args].u.string->size_shift)
@@ -1282,7 +1282,7 @@ PIKE_MODULE_INIT
 #ifdef DYNAMIC_MODULE
    push_text("Image.Image");
    SAFE_APPLY_MASTER("resolv",1);
-   if (sp[-1].type==T_PROGRAM)
+   if (TYPEOF(sp[-1]) == T_PROGRAM)
       image_program=program_from_svalue(sp-1);
    pop_stack();
 #endif /* DYNAMIC_MODULE */

@@ -240,7 +240,7 @@ static void f_create(INT32 args) {
 
   DVB->cardn = 0;
   if(args) {
-    if(Pike_sp[-1].type != T_INT)
+    if(TYPEOF(Pike_sp[-1]) != T_INT)
       Pike_error("Invalid argument 1, expected int.\n");
     else
       DVB->cardn = (u_short)Pike_sp[-1].u.integer;
@@ -495,7 +495,7 @@ static void f_zap(INT32 args) {
   sr = (u_short)Pike_sp[-1].u.integer * 1000;
   Pike_sp--;
 
-  if(Pike_sp[-1].type == T_INT)
+  if(TYPEOF(Pike_sp[-1]) == T_INT)
       pol = (u_short)Pike_sp[-1].u.integer;
   else
       pol = Pike_sp[-1].u.string->str[0] == 'V' ||
@@ -1118,7 +1118,7 @@ static void f_stream_attach(INT32 args) {
   push_int(ptype);
   push_object( clone_object(dvb_stream_program, 4 ) );
 
-  if(Pike_sp[-1].type!=PIKE_T_OBJECT)
+  if(TYPEOF(Pike_sp[-1]) != PIKE_T_OBJECT)
     Pike_error("Failed to create Stream object!\n");
 
 }
@@ -1434,7 +1434,7 @@ static void f_audio_create(INT32 args) {
     Pike_error("Create already called!\n");
 
   if(args) {
-    if(Pike_sp[-1].type != T_INT)
+    if(TYPEOF(Pike_sp[-1]) != T_INT)
       Pike_error("Invalid argument 1, expected int.\n");
     else
       devno = (u_short)Pike_sp[-1].u.integer;
@@ -1543,7 +1543,7 @@ static void f_audio_ctrl(INT32 args) {
 
   check_all_args("DVB.dvb->ctrl", args, BIT_INT | BIT_STRING, 0);
 
-  if(Pike_sp[-1].type == T_INT)
+  if(TYPEOF(Pike_sp[-1]) == T_INT)
     cw = (u_short)Pike_sp[-1].u.integer;
   else 
     if(!strcmp(Pike_sp[-1].u.string->str, "play"))
