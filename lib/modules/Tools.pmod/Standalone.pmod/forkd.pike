@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 //! Fork Daemon
 //!
 //! This is a light-weight daemon that can be used via @[Process.Process]
@@ -9,6 +11,8 @@
 //!
 //! @seealso
 //!   @[Process.RemoteProcess], @[Process.create_process]
+
+constant description = "Light-weight daemon for spawning new processes.";
 
 //! This is a process unique @[Stdio.Fd] that is
 //! used to receive remote file descriptors and
