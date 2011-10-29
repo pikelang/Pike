@@ -3314,10 +3314,10 @@ struct array *multiset_range_values (struct multiset *l,
       values->type_field = types;
     }
     else {
-      do {
-	SET_SVAL(ITEM (values)[--range_size], T_INT, NUMBER_NUMBER,
+      while(range_size--) {
+	SET_SVAL(ITEM (values)[range_size], T_INT, NUMBER_NUMBER,
 		 integer, 1);
-      } while (range_size);
+      }
       values->type_field = BIT_INT;
     }
   }
