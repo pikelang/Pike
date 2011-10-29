@@ -192,7 +192,7 @@
 #define S_ISVTX 0x200
 #endif /* !S_ISVTX */
 
-struct program *stat_program=NULL;
+PMOD_EXPORT struct program *stat_program=NULL;
 
 struct stat_storage
 {
