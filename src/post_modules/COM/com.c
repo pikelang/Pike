@@ -322,8 +322,7 @@ static void low_push_safearray(SAFEARRAY *psa, UINT dims,
     /* TODO: Handle more array types */
     Pike_error("Unknown vartype: %d\n", vtype);
     /* Not reached! */
-    push_int(0);
-    Pike_sp[-1].subtype = NUMBER_UNDEFINED;
+    push_undefined();
     return;
   }
 
@@ -458,8 +457,7 @@ static void push_varg(VARIANT *varg)
           }
           else
           {
-            push_int(0);
-            Pike_sp[-1].subtype = NUMBER_UNDEFINED;
+            push_undefined();
           }
         }
         else
@@ -763,8 +761,7 @@ static void f_cval_arrow(INT32 args)
       Pike_sp[-1].u.object->prog != cobj_program)
   {
     pop_n_elems(args+1);
-    push_int(0);
-    Pike_sp[-1].subtype=NUMBER_UNDEFINED;
+    push_undefined();
     return;
   }
   stack_swap();
