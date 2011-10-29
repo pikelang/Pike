@@ -5633,7 +5633,8 @@ INT32 define_function(struct pike_string *name,
   struct svalue *lfun_type;
   int run_time_type = T_FUNCTION;
   INT32 i;
-  INT16 *getter_setter = NULL;
+  int getter_setter = -1;
+  int is_setter = 0;
 
   CHECK_COMPILER();
 
@@ -5687,7 +5688,6 @@ INT32 define_function(struct pike_string *name,
     struct pike_string *symbol = NULL;
     struct pike_type *symbol_type = NULL;
     struct pike_type *gs_type = NULL;
-    int is_setter = 0;
     int delta = 1;	/* new-style */
     if (index_shared_string(name, 1) == '-') {
       /* Getter setter (old-style). */
@@ -5737,7 +5737,7 @@ INT32 define_function(struct pike_string *name,
 	    }
 	    ref->id_flags &= flags | ID_USED;
 	  }
-	  getter_setter = &id->func.gs_info.getter + is_setter;
+	  getter_setter = i;
 	}
 	/* FIXME: Update id->type here. */
       } else {
@@ -5750,7 +5750,7 @@ INT32 define_function(struct pike_string *name,
 	id->func.gs_info.getter = -1;
 	id->func.gs_info.setter = -1;
 
-	getter_setter = &id->func.gs_info.getter + is_setter;
+	getter_setter = i;
       }
       /* NOTE: The function needs to have the same PRIVATE/INLINE
        *       behaviour as the variable for overloading to behave
@@ -5804,8 +5804,10 @@ INT32 define_function(struct pike_string *name,
       {
 	my_yyerror("Identifier %S defined twice.", name);
 
-	if (getter_setter) {
-	  *getter_setter = i;
+	if (getter_setter != -1) {
+	  struct identifier *id = ID_FROM_INT(Pike_compiler->new_program,
+					      getter_setter);
+	  (&id->func.gs_info.getter)[is_setter] = i;
 	}
 	return i;
       }
@@ -5920,12 +5922,14 @@ INT32 define_function(struct pike_string *name,
       }
 #endif
 
-      if (getter_setter) {
-	INT32 old_i = *getter_setter;
+      if (getter_setter != -1) {
+	struct identifier *id = ID_FROM_INT(Pike_compiler->new_program,
+					    getter_setter);
+	INT32 old_i = (&id->func.gs_info.getter)[is_setter];
 	if ((old_i >= 0) && (old_i != overridden)) {
 	  my_yyerror("Multiple definitions for %S.", name);
 	}
-	*getter_setter = overridden;
+	(&id->func.gs_info.getter)[is_setter] = overridden;
       }
       return overridden;
     }
@@ -5989,12 +5993,14 @@ INT32 define_function(struct pike_string *name,
 	  c->compilation_depth, "", i);
 #endif
 
-  if (getter_setter) {
-    INT32 old_i = *getter_setter;
+  if (getter_setter != -1) {
+    struct identifier *id = ID_FROM_INT(Pike_compiler->new_program,
+					getter_setter);
+    INT32 old_i = (&id->func.gs_info.getter)[is_setter];
     if (old_i >= 0) {
       my_yyerror("Multiple definitions for %S.", name);
     }
-    *getter_setter = i;
+    (&id->func.gs_info.getter)[is_setter] = i;
   }
 
   return i;
