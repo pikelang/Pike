@@ -56,7 +56,7 @@ void create(GTK2.SourceTagTable|GTK2.SourceLanguage|void table_or_lang)
 }
 endrequire;
 require gtksourceview20;
-void create(GTK2.SourceLanguage|void table_or_lang)
+void create(GTK2.TextTagTable|GTK2.SourceLanguage|void table_or_lang)
 {
   pgtk2_verify_not_inited();
   pgtk2_verify_setup();
@@ -64,8 +64,13 @@ void create(GTK2.SourceLanguage|void table_or_lang)
     struct object *o1;
     GtkSourceBuffer *gs;
     get_all_args("create",args,"%o",&o1);
-    gs=gtk_source_buffer_new_with_language(
+    if (G_TYPE_FROM_INSTANCE(get_gobject(o1))==GTK_TYPE_TEXT_TAG_TABLE) {
+      gs=gtk_source_buffer_new(
+			GTK_TEXT_TAG_TABLE(get_gobject(o1)));
+    } else {
+      gs=gtk_source_buffer_new_with_language(
 			GTK_SOURCE_LANGUAGE(get_gobject(o1)));
+    }
     THIS->obj=G_OBJECT(gs);
   } else {
     GtkSourceBuffer *gs;
