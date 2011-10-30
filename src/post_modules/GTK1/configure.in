@@ -260,9 +260,6 @@ AC_CONFIG_HEADER(pgtk_config.h)
 
 
 PIKE_FEATURE_WITHOUT(GTK1)
-PIKE_FEATURE_WITHOUT(Gnome)
-PIKE_FEATURE_WITHOUT(GTK1.GladeXML)
-PIKE_FEATURE_WITHOUT(GTK1.GlArea)
 
 AC_MODULE_INIT()
 
@@ -281,9 +278,7 @@ AC_CHECK_FUNCS( gethrtime signal sigaction )
 
 if test "x$with_GTK" = "xyes" ; then
   
-  PIKE_FEATURE_NODEP(GTK1.GlArea)
   PIKE_FEATURE_NODEP(GTK1)
-  PIKE_FEATURE_NODEP(GTK1.GladeXML)
   if test "x$with_GTK2" = "xyes" ; then
     MY_AC_PATH_PROG(PKG_CONFIG,${ac_tool_prefix}pkg-config,no)
   else
@@ -367,6 +362,8 @@ AC_SUBST(have_gtk_120)
 if test "x$WITH_GTK" = x1 ; then
  PIKE_FEATURE_OK(GTK1)
  AC_SUBST(WITH_GTK)
+
+ PIKE_FEATURE_NODEP(GTK1.GladeXML)
  AC_SUBST(pgtk_has_libglade)
  AM_PATH_LIBGLADE([
  pgtk_has_libglade=libglade], [
@@ -402,6 +399,7 @@ if test "x$WITH_GTK" = x1 ; then
  
  saved_LIBS="$LIBS"
  
+ PIKE_FEATURE_WITHOUT(Gnome)
  AC_ARG_WITH(gnome, [  --without-gnome         no support for gnome],[],[with_gnome=yes])
  
  if test "x$with_gnome" = "xyes"; then
@@ -438,6 +436,7 @@ if test "x$WITH_GTK" = x1 ; then
    pgtk_has_docklets=nodocklets
    AC_MSG_RESULT(no);
  else
+   PIKE_FEATURE_NODEP(Gnome.StatusDocklet)
    GNOME_DOCKLETS_LIBS="`$GNOME_CONFIG --libs docklets 2>/dev/null`"
    if test x"$GNOME_DOCKLETS_LIBS" = x ; then
      pgtk_has_docklets=nodocklets
@@ -447,6 +446,7 @@ if test "x$WITH_GTK" = x1 ; then
      GNOME_LIBS="`$GNOME_CONFIG --libs gnome gnomeui gnorba gtkxmhtml applets docklets`"
      GNOME_CFLAGS="`$GNOME_CONFIG --cflags gnome gnomeui gnorba gtkxmhtml applets docklets`"
      AC_MSG_RESULT(yes);
+     PIKE_FEATURE_OK(Gnome.StatusDocklet)
    fi
  fi
 
@@ -639,6 +639,7 @@ if test "x$WITH_GTK" = x1 ; then
  AC_CHECK_HEADERS(gtkdatabox.h)
  
  AC_SUBST(pgtk_have_gtkdatabox)
+ PIKE_FEATURE_NODEP(GTK1.Databox)
  AC_SUBST(DATABOX_LIBS)
  DATABOX_LIBS=""
  AC_MSG_CHECKING([gtkdatabox support]);
@@ -647,6 +648,7 @@ if test "x$WITH_GTK" = x1 ; then
      AC_MSG_RESULT(yes)
      DATABOX_LIBS=-lgtkdatabox
      pgtk_has_gtkdatabox=gtkdatabox
+     PIKE_FEATURE_OK(GTK1.Databox)
    else
      AC_MSG_RESULT(no)
      pgtk_has_gtkdatabox=nogtkdatabox
@@ -663,6 +665,7 @@ if test "x$WITH_GTK" = x1 ; then
  fi
 
 
+ PIKE_FEATURE_NODEP(GTK1.GlArea)
  AC_MSG_CHECKING([OpenGL])
 
  LIBS="$saved_LIBS $GL_LDOPTS -lGL $GTK_LIBS"
