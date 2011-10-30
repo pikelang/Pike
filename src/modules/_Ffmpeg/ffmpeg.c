@@ -60,11 +60,14 @@
 #endif
 #endif
 
-#ifdef HAVE_FFMPEG_AVCODEC_H
-#include <ffmpeg/avcodec.h>
-#else
+#define FF_API_AUDIO_OLD 1
+#define FF_API_VIDEO_OLD 1
+
 #ifdef HAVE_LIBAVCODEC_AVCODEC_H
 #include <libavcodec/avcodec.h>
+#else
+#ifdef HAVE_FFMPEG_AVCODEC_H
+#include <ffmpeg/avcodec.h>
 #else
 #ifdef HAVE_LIBFFMPEG_AVCODEC_H
 #include <libffmpeg/avcodec.h>
@@ -325,6 +328,10 @@ static void f_get_codec_status(INT32 args) {
   f_aggregate_mapping(2 * cnt);
 }
 
+#ifndef HAVE_AVCODEC_DECODE_AUDIO
+#define avcodec_decode_audio avcodec_decode_audio2
+#endif
+
 /*! @decl mapping|int decode(string data)
  *!
  *! Returns a mapping with the new decoded frame and lenght of
@@ -436,6 +443,17 @@ static void f_list_codecs(INT32 args) {
   avcodec_register_all();
 
   pop_n_elems(args);
+#ifdef HAVE_AV_CODEC_NEXT
+  codec = NULL;
+  while ((codec = av_codec_next(codec))) {
+    cnt++;
+    push_text("name");		push_text( codec->name );
+    push_text("type");		push_int( codec->type );
+    push_text("id");		push_int( codec->id );
+    push_text("encoder_flg");	push_int( encoder_flg(codec) );
+    f_aggregate_mapping( 2*4 );
+  }
+#else /* !HAVE_AV_CODEC_NEXT */
   if(first_avcodec == NULL) {
     push_int(0);
     return;
@@ -451,6 +469,7 @@ static void f_list_codecs(INT32 args) {
     codec = codec->next;
     f_aggregate_mapping( 2*4 );
   }
+#endif /* HAVE_AV_CODEC_NEXT */
   push_array(aggregate_array( cnt ));
 }
 

@@ -21,6 +21,10 @@ if test x$with_ffmpeg = xyes ; then
         break
       elif test -d $pike_cv_ffmpeg_include_dir/ffmpeg/avcodec.h; then
         break
+      elif test -d $pike_cv_ffmpeg_include_dir/libffmpeg/avcodec.h; then
+        break
+      elif test -d $pike_cv_ffmpeg_include_dir/libavcodec/avcodec.h; then
+        break
       else
         :
       fi
@@ -32,8 +36,8 @@ if test x$with_ffmpeg = xyes ; then
     CPPFLAGS="${CPPFLAGS} -I$pike_cv_ffmpeg_include_dir"
   fi
 
-  AC_CHECK_HEADERS(avcodec.h)
-  AC_CHECK_HEADERS(ffmpeg/avcodec.h)
+  AC_CHECK_HEADERS([avcodec.h ffmpeg/avcodec.h libffmpeg/avcodec.h \
+                    libavcodec/avcodec.h])
 
 dnl ffmpeg and avcodec are the same libs... with 2 differents..
 dnl don't ask me why.
@@ -74,11 +78,19 @@ dnl my libavcodec needs libmp3lame that needs libm /Mirar
     AC_MSG_CHECKING([if library is really working])
     AC_CACHE_VAL(pike_cv_ffmpeg_working, [
       AC_TRY_COMPILE([
+#ifdef HAVE_LIBAVCODEC_AVCODEC_H
+#include <libavcodec/avcodec.h>
+#else
 #ifdef HAVE_FFMPEG_AVCODEC_H
 #include <ffmpeg/avcodec.h>
 #else
+#ifdef HAVE_LIBFFMPEG_AVCODEC_H
+#include <libffmpeg/avcodec.h>
+#else
 #ifdef HAVE_AVCODEC_H
 #include <avcodec.h>
+#endif
+#endif
 #endif
 #endif
       ], [
@@ -95,6 +107,8 @@ dnl my libavcodec needs libmp3lame that needs libm /Mirar
     if test "x$pike_cv_ffmpeg_working" = "xyes"; then
       AC_DEFINE(HAVE_WORKING_LIBFFMPEG)
       dnl PIKE_FEATURE(FFmpeg)
+
+      AC_CHECK_FUNCS(avcodec_decode_audio av_codec_next)
     else 
       PIKE_FEATURE(FFmpeg,[no (not working)])
     fi
@@ -104,11 +118,19 @@ dnl my libavcodec needs libmp3lame that needs libm /Mirar
     AC_CACHE_VAL(pike_cv_ffmpeg_UINT8, [
       AC_TRY_COMPILE([
 #define UINT8 "hepp"
+#ifdef HAVE_LIBAVCODEC_AVCODEC_H
+#include <libavcodec/avcodec.h>
+#else
 #ifdef HAVE_FFMPEG_AVCODEC_H
 #include <ffmpeg/avcodec.h>
 #else
+#ifdef HAVE_LIBFFMPEG_AVCODEC_H
+#include <libffmpeg/avcodec.h>
+#else
 #ifdef HAVE_AVCODEC_H
 #include <avcodec.h>
+#endif
+#endif
 #endif
 #endif
         ], [
@@ -128,11 +150,19 @@ dnl my libavcodec needs libmp3lame that needs libm /Mirar
     AC_MSG_CHECKING([if uint8_t is defined])
     AC_CACHE_VAL(pike_cv_ffmpeg_uint8_t, [
       AC_TRY_COMPILE([
+#ifdef HAVE_LIBAVCODEC_AVCODEC_H
+#include <libavcodec/avcodec.h>
+#else
 #ifdef HAVE_FFMPEG_AVCODEC_H
 #include <ffmpeg/avcodec.h>
 #else
+#ifdef HAVE_LIBAVCODEC_AVCODEC_H
+#include <libffmpeg/avcodec.h>
+#else
 #ifdef HAVE_AVCODEC_H
 #include <avcodec.h>
+#endif
+#endif
 #endif
 #endif
       ], [
@@ -151,11 +181,19 @@ dnl my libavcodec needs libmp3lame that needs libm /Mirar
     AC_MSG_CHECKING(if AVCodecContext has frame_rate)
     AC_CACHE_VAL(pike_cv_AVCodecContext_has_frame_rate, [
       AC_TRY_COMPILE([
+#ifdef HAVE_LIBAVCODEC_AVCODEC_H
+#include <libavcodec/avcodec.h>
+#else
 #ifdef HAVE_FFMPEG_AVCODEC_H
 #include <ffmpeg/avcodec.h>
 #else
+#ifdef HAVE_FFMPEG_AVCODEC_H
+#include <libffmpeg/avcodec.h>
+#else
 #ifdef HAVE_AVCODEC_H
 #include <avcodec.h>
+#endif
+#endif
 #endif
 #endif
       ], [
