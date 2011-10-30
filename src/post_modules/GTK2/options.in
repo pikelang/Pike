@@ -25,4 +25,5 @@
 @pgtk_has_gtkdatabox@
 @pgtk_has_gtksourceview@
 @pgtk_has_gtksourceview11@
+@pgtk_has_gtksourceview20@
 @pgtk_has_gnomeui@

@@ -25,6 +25,7 @@ signal can_undo;
 signal highlight_updated;
 signal marker_updated;
 
+not gtksourceview20;
 void create(GTK2.SourceTagTable|GTK2.SourceLanguage|void table_or_lang)
 //! Creates a new source buffer.  If table_or_lang is a GTK2.SourceLanguage,
 //! it will create a buffer using the highlighting patterns of that language.
@@ -53,6 +54,28 @@ void create(GTK2.SourceTagTable|GTK2.SourceLanguage|void table_or_lang)
   pgtk2_pop_n_elems(args);
   pgtk2__init_this_object();
 }
+endrequire;
+require gtksourceview20;
+void create(GTK2.SourceLanguage|void table_or_lang)
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  if (args) {
+    struct object *o1;
+    GtkSourceBuffer *gs;
+    get_all_args("create",args,"%o",&o1);
+    gs=gtk_source_buffer_new_with_language(
+			GTK_SOURCE_LANGUAGE(get_gobject(o1)));
+    THIS->obj=G_OBJECT(gs);
+  } else {
+    GtkSourceBuffer *gs;
+    gs=gtk_source_buffer_new(NULL);
+    THIS->obj=G_OBJECT(gs);
+  }
+  pgtk2_pop_n_elems(args);
+  pgtk2__init_this_object();
+}
+endrequire;
 
 int get_check_brackets();
 //! Determines whether bracket match highlighting is activated.
@@ -64,6 +87,7 @@ void set_check_brackets(int setting);
 //! bracket character will be highlighted.  You can specify the style with the
 //! set_bracket_match_style() function.
 
+not gtksourceview20;
 void set_bracket_match_style(mapping(string:mixed) style)
 //! Sets the style used for highlighting matching brackets.
 //! <code>
@@ -122,6 +146,7 @@ void set_bracket_match_style(mapping(string:mixed) style)
   }
   RETURN_THIS();
 }
+endrequire;
 
 int get_highlight();
 //! Determines whether text highlighting is activated in the source buffer.

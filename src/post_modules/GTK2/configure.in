@@ -73,6 +73,8 @@ AC_SUBST(pgtk_has_gtksourceview)
 pgtk_has_gtksourceview=nogtksourceview
 AC_SUBST(pgtk_has_gtksourceview11)
 pgtk_has_gtksourceview11=nogtksourceview11
+AC_SUBST(pgtk_has_gtksourceview20)
+pgtk_has_gtksourceview20=nogtksourceview20
 
 # lib, header, symbol, ok, fail, feature
 AC_DEFUN([AC_CHECK_PKG],
@@ -279,33 +281,56 @@ else
       AC_DEFINE(HAVE_GNOMECANVAS)
       pgtk_has_gnomecanvas=gnomecanvas
     ])
+    # FIXME: gtk_databox_data_add() is no longer part of the API in 0.9.1.3.
     PIKE_FEATURE_NODEP(GTK2.Databox)
+    # This cache variable interferes with GTK1.
+    unset ac_cv_header_gtkdatabox_h
     AC_CHECK_PKG(gtkdatabox, gtkdatabox.h, gtk_databox_data_add, [
       PIKE_FEATURE_OK(GTK2.Databox)
       AC_DEFINE(HAVE_GTKDATABOX)
       pgtk_has_gtkdatabox=gtkdatabox
     ])
     PIKE_FEATURE_NODEP(GTK2.SourceView)
-    AC_CHECK_PKG(gtksourceview-1.0, gtksourceview/gtksourceview.h,
+    AC_CHECK_PKG(gtksourceview-2.0, gtksourceview/gtksourceview.h,
 		 gtk_source_view_new, [
-      PIKE_FEATURE_NODEP(GTK2.SourceView)
+      PIKE_FEATURE(GTK2.SourceView, [yes (2.0)])
       AC_DEFINE(HAVE_GTKSOURCEVIEW)
       pgtk_has_gtksourceview=gtksourceview
 
-      PGTK_CHECK_VERSION(gtksourceview-1.0)
+      PGTK_CHECK_VERSION(gtksourceview-2.0)
       OIFS="$IFS"
       IFS="."
-      set $pgtk2_cv_ver_gtksourceview_1_0
+      set $pgtk2_cv_ver_gtksourceview_2_0
       IFS="$OIFS"
       gtksourceviewversmajorvers=$1
       gtksourceviewversminorvers=$2
       gtksourceviewverspatchvers=$3
-      if test $gtksourceviewversminorvers -ge 1 ; then
-	pgtk_has_gtksourceview11=gtksourceview11
-	AC_DEFINE(HAVE_GTKSOURCEVIEW11)
-      fi
-    ])
+      pgtk_has_gtksourceview11=gtksourceview11
+      pgtk_has_gtksourceview20=gtksourceview20
+      AC_DEFINE(HAVE_GTKSOURCEVIEW11)
+    ], [
+      AC_CHECK_PKG(gtksourceview-1.0,
+	           gtksourceview/gtksourceview.h,
+	           gtk_source_view_new, [
+        PIKE_FEATURE(GTK2.SourceView, [yes (1.0)])
+        AC_DEFINE(HAVE_GTKSOURCEVIEW)
+        pgtk_has_gtksourceview=gtksourceview
 
+        PGTK_CHECK_VERSION(gtksourceview-1.0)
+        OIFS="$IFS"
+        IFS="."
+        set $pgtk2_cv_ver_gtksourceview_1_0
+        IFS="$OIFS"
+        gtksourceviewversmajorvers=$1
+        gtksourceviewversminorvers=$2
+        gtksourceviewverspatchvers=$3
+        if test $gtksourceviewversminorvers -ge 1 ; then
+	  pgtk_has_gtksourceview11=gtksourceview11
+	  AC_DEFINE(HAVE_GTKSOURCEVIEW11)
+        fi
+      ])
+    ])
+  
     # Note: ORBit-2.0.pc on Solaris 10/x86 adds -mt to cflags,
     #       which gcc doesn't like...
     #       The manual for cc says that -mt is -D_REENTRANT plus -lthread;

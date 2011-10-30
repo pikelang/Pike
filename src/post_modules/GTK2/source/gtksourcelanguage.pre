@@ -17,6 +17,7 @@ string get_section();
 //! Returns the localized section of the language.  Each language belongs to a
 //! section (ex. HTML belongs to the Markup section).
 
+not gtksourceview20;
 array(GTK2.SourceTag) get_tags()
 //! Returns a list of tags for this language.
 {
@@ -35,6 +36,7 @@ array(GTK2.SourceTag) get_tags()
     g_slist_free(gsl);
   }
 }
+endrequire;
 
 int get_escape_char();
 //! Gets the value of the ESC character in the given language.
@@ -98,6 +100,7 @@ GTK2.SourceStyleScheme get_style_scheme()
   }
 }
 
+not gtksourceview20;
 mapping(string:mixed) get_tag_style(string id)
 //! Gets the style of the tag id.  If the style is not defined, then returns
 //! the default style.
@@ -221,3 +224,5 @@ mapping(string:mixed) get_tag_default_style(string id)
       push_int(0);
   }
 }
+
+endrequire;
