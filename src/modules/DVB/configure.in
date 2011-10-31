@@ -19,7 +19,7 @@ if test x$with_dvb = xyes ; then
   if test x$pike_dvb_include_dir != x; then
     AC_MSG_RESULT(user-provided: $pike_dvb_include_dir)
   else
-    AC_MSG_RESULT(include dir wasn't specified.)
+    AC_MSG_RESULT(include dir was not specified.)
   fi
 
   if test x$pike_dvb_include_dir != x; then

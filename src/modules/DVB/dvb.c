@@ -45,7 +45,9 @@
 
 #if HAVE_DVB > 19
 #  include <linux/dvb/version.h>
-#  include <linux/dvb/sec.h>
+#  ifdef HAVE_LINUX_DVB_SEC_H
+#    include <linux/dvb/sec.h>
+#  endif
 #  include <linux/dvb/frontend.h>
 #  include <linux/dvb/dmx.h>
 #  include <linux/dvb/audio.h>
@@ -79,6 +81,35 @@
 
 #include "dvb.h"
 
+#if HAVE_DVB >= 30
+/* Compat with old DVB. */
+/* frontend.h */
+typedef struct dvb_frontend_info FrontendInfo;
+typedef struct dvb_frontend_parameters FrontendParameters;
+typedef struct dvb_frontend_event FrontendEvent;
+#define minFrequency frequency_min
+#define maxFrequency frequency_max
+#define minSymbolRate symbol_rate_min
+#define maxSymbolRate symbol_rate_max
+#define hwType type
+#define Frequency frequency
+#define SymbolRate symbol_rate
+#define FEC_inner fec_inner
+/* audio.h */
+typedef audio_status_t audioStatus_t;
+typedef audio_mixer_t audioMixer_t;
+#define AVSyncState AV_sync_state
+#define muteState mute_state
+#define playState play_state
+#define streamSource stream_source
+#define channelSelect channel_select
+#define bypassMode bypass_mode
+/* dmx.h */
+typedef __u16 dvb_pid_t;
+#define dmxSctFilterParams dmx_sct_filter_params
+#define dmxPesFilterParams dmx_pes_filter_params
+#define pesType pes_type
+#endif
 
 /* WARNING: It is a design limit of DVB-S full cards! */
 #define MAX_PES_FD	8
@@ -304,15 +335,18 @@ static void f_fe_status(INT32 args) {
   if(ret < 0)
     push_int(0);
   else {
-    push_text("power"); push_int(!!(status & ~FE_HAS_POWER));
     push_text("signal"); push_int(!!(status & ~FE_HAS_SIGNAL));
-    /*push_text("spectrum_inverse"); push_int(status & ~FE_HAS_SPECTRUM_INV);*/
-    push_text("lock"); push_int(!!(status & ~FE_HAS_LOCK));
     push_text("carrier"); push_int(!!(status & ~FE_HAS_CARRIER));
     push_text("viterbi"); push_int(!!(status & ~FE_HAS_VITERBI));
+    push_text("lock"); push_int(!!(status & ~FE_HAS_LOCK));
     push_text("sync"); push_int(!!(status & ~FE_HAS_SYNC));
+    cnt = 5;
+    /*push_text("spectrum_inverse"); push_int(status & ~FE_HAS_SPECTRUM_INV);*/
+#if HAVE_DVB < 30
+    push_text("power"); push_int(!!(status & ~FE_HAS_POWER));
     push_text("tuner_lock"); push_int(!!(status & ~FE_TUNER_HAS_LOCK));
-    cnt = 7;
+    cnt += 2;
+#endif
     THREADS_ALLOW();
     ret = ioctl(dvb->fefd, FE_READ_BER, &status);
     THREADS_DISALLOW();
@@ -361,25 +395,37 @@ static void f_fe_info(INT32 args) {
     push_int(0);
   else {
     push_text("frequency");
-      push_text("min"); push_int(info.minFrequency);
-      push_text("max"); push_int(info.maxFrequency);
+      push_text("min");
+      push_int(info.minFrequency);
+      push_text("max");
+      push_int(info.maxFrequency);
       f_aggregate_mapping(2 * 2);
     push_text("sr");
-      push_text("min"); push_int(info.minSymbolRate);
-      push_text("max"); push_int(info.maxSymbolRate);
+      push_text("min");
+      push_int(info.minSymbolRate);
+      push_text("max");
+      push_int(info.maxSymbolRate);
       f_aggregate_mapping(2 * 2);
     push_text("hardware");
-      push_text("type"); push_int(info.hwType);
-      push_text("version"); push_int(info.hwVersion);
+      push_text("type");
+      push_int(info.hwType);
+#if HAVE_DVB < 30
+      push_text("version");
+      push_int(info.hwVersion);
       f_aggregate_mapping(2 * 2);
+#else
+      /* FIXME: Where is the version in the new DVB API? */
+      f_aggregate_mapping(1 * 2);
+#endif
     f_aggregate_mapping(2 * 3);
   }
 }
 
 /* digital satellite equipment control,
- * specification is available from http://www.eutelsat.com/ 
+ * specification is available from http://www.eutelsat.com/
  */
 static int diseqc (int secfd, int sat_no, int pol, int hi_lo) {
+#if HAVE_DVB < 30
   struct secCmdSequence secseq;
   struct secCommand scmd;
 
@@ -401,7 +447,27 @@ static int diseqc (int secfd, int sat_no, int pol, int hi_lo) {
   secseq.commands = &scmd;
 
   if (ioctl (secfd, SEC_SEND_SEQUENCE, &secseq) == -1)
-    return 0; 
+    return 0;
+#else
+  struct dvb_diseqc_master_cmd cmd;
+  cmd.msg[0] = 0xe0;	/* framing (master, no reply expected, first send) */
+  cmd.msg[1] = 0x10;	/* address (any switch) */
+  cmd.msg[2] = 0x38;	/* command (set port group 0) */
+  /* param: high nibble: reset bits, low nibble set bits,
+   * bits are: option, position, polarizaion, band
+   */
+  cmd.msg[3] = 0xF0 | (((sat_no * 4) & 0x0F)
+                                    | (hi_lo?1:0) | (pol?0:2));
+  cmd.msg_len = 4;
+
+  if (ioctl (secfd, FE_DISEQC_SEND_MASTER_CMD, &cmd) == -1) {
+    /* tone/volt for backwards compatiblity with non-diseqc LNBs */
+    if (ioctl (secfd, FE_SET_VOLTAGE, pol ? SEC_VOLTAGE_13 : SEC_VOLTAGE_18) == -1)
+      return 0;
+    if (ioctl (secfd, FE_SET_TONE, hi_lo ? SEC_TONE_ON : SEC_TONE_OFF) == -1)
+      return 0;
+  }
+#endif
   return 1;
 }
 
@@ -449,14 +515,20 @@ static int do_tune(int fefd, uint ifreq, uint sr)
       return 0;
   }
 
+#if HAVE_DVB < 30
   if (ev.type != FE_COMPLETION_EV) {
       snprintf (DVB->low_errmsg, MAX_ERR_LEN, "tuning failed\n");
       return 0;
   }
+#else
+  if (ev.status != FE_HAS_LOCK) {
+      snprintf (DVB->low_errmsg, MAX_ERR_LEN, "tuning failed\n");
+      return 0;
+  }
+#endif
 
   return 1;
 }
-
 
 /*! @decl int tune(int(0..3) lnb, int freq, int(0..1)|string pol, int sr)
  *!
@@ -507,6 +579,7 @@ static void f_zap(INT32 args) {
 
   satno = (u_short)Pike_sp[-1].u.integer;
 
+#if HAVE_DVB < 30
   if((devname = mk_devname(dvb->cardn, SECDEVICE)) == NULL)
       Pike_error("Internal error: can't malloc buffer.\n");
   secfd = open (devname, O_RDWR);
@@ -514,6 +587,9 @@ static void f_zap(INT32 args) {
   if (secfd == -1) {
       Pike_error ("opening SEC device failed\n");
   }
+#else
+  secfd = dvb->fefd;
+#endif
   THREADS_ALLOW();
   result = ioctl (dvb->fefd, FE_GET_INFO, &fe_info);
   THREADS_DISALLOW();
@@ -540,7 +616,6 @@ static void f_zap(INT32 args) {
 
   push_int(result);
 }
-
 
 /*! @decl mapping|int get_pids()
  *!

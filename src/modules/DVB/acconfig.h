@@ -22,13 +22,15 @@
 #undef HAVE_DVB
 
 #ifdef HAVE_LINUX_DVB_VERSION_H
-  #ifdef HAVE_LINUX_DVB_SEC_H
-   #define HAVE_DVB	20
-  #endif
+#  ifdef HAVE_LINUX_DVB_SEC_H
+#   define HAVE_DVB	20
+#  else
+#   define HAVE_DVB	30
+#  endif
 #else
-  #ifdef HAVE_OST_FRONTEND_H
-    #define HAVE_DVB	9
-  #endif
+#  ifdef HAVE_OST_FRONTEND_H
+#    define HAVE_DVB	9
+#  endif
 #endif
 
 #endif /* DVB_CONFIG_H */
