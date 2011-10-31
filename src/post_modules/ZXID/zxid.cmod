@@ -64,6 +64,9 @@ DECLARATIONS
     Pike_error("Invalid class for argument %d\n", arg); \
   }
 
+static char *original_fedusername_suffix = NULL;
+static char *original_required_authnctx = NULL;
+
 /*! @class Configuration
  *!
  *! A set of configuration parameters for a ZXID context.
@@ -415,6 +418,11 @@ static char* zxid_grab_domain_name(zxid_conf* cf, const char* url)
   INIT {
     THIS->conf.ctx = zx_init_ctx();
     zxid_init_conf(&THIS->conf, NULL);
+    /* FIXUP the fields that otherwise are dynamically allocated... */
+    if (!original_fedusername_suffix)
+      original_fedusername_suffix = THIS->conf.fedusername_suffix;
+    if (!original_required_authnctx)
+      original_required_authnctx = THIS->conf.required_authnctx;
     THIS->conf_m = allocate_mapping(8);
   }
 
@@ -655,7 +663,9 @@ static char* zxid_grab_domain_name(zxid_conf* cf, const char* url)
 		   (TYPEOF(*s) == PIKE_T_ARRAY), do {
 		     int i;
 		     char **p;
-		     if (THIS->conf.required_authnctx) {
+		     if (THIS->conf.required_authnctx &&
+			 (THIS->conf.required_authnctx !=
+			  original_required_authnctx)) {
 		       ZX_FREE(THIS->conf.ctx, THIS->conf.required_authnctx);
 		     }
 		     THIS->conf.required_authnctx = p =
@@ -689,7 +699,9 @@ static char* zxid_grab_domain_name(zxid_conf* cf, const char* url)
     CHECK_ARG_KEEP(MK_STRING("URL"), ((TYPEOF(*s) == PIKE_T_STRING) &&
 				      !s->u.string->size_shift), do {
 		     THIS->conf.url = s->u.string->str;
-		     if (THIS->conf.fedusername_suffix) {
+		     if (THIS->conf.fedusername_suffix &&
+			 (THIS->conf.fedusername_suffix !=
+			  original_fedusername_suffix)) {
 		       ZX_FREE(THIS->conf.ctx, THIS->conf.fedusername_suffix);
 		       THIS->conf.fedusername_suffix = NULL;
 		     }
