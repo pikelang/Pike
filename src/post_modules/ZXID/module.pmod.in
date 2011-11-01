@@ -1,5 +1,10 @@
+#pike __REAL_VERSION__
+
 inherit @module@ : ZXID;
 
+final constant dont_dump_module = 1;
+
+#if constant(@module@.Configuration)
 //! Convert a mapping of query variables to a query string.
 string(0..255) mapping_to_query(mapping(string(0..255):string(0..255)) map)
 {
@@ -64,3 +69,4 @@ class Configuration
   }
 
 }
+#endif
