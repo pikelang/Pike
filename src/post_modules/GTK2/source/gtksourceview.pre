@@ -72,7 +72,7 @@ int get_show_line_numbers();
 not gtksourceview20;
 void set_show_line_markers(int setting);
 //! If true, line makers will be displayed beside the text.
-endrequire;
+endnot;
 
 int get_show_line_numbers();
 //! Returns whether line markers are displayed beside the text.
@@ -83,7 +83,7 @@ void set_tabs_width(int width);
 
 int get_tabs_width();
 //! Returns the width of tabulation in characters.
-endrequire;
+endnot;
 
 void set_auto_indent(int setting);
 //! If true, auto indentation of text is enabled.

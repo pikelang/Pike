@@ -42,7 +42,7 @@ mapping(string:mixed) get_tag_style(string name)
       push_int(0);
   }
 }
-endrequire;
+endnot;
 
 string get_name()
 //! Gets the name of this scheme.

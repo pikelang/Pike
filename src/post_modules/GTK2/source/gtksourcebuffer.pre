@@ -54,7 +54,7 @@ void create(GTK2.SourceTagTable|GTK2.SourceLanguage|void table_or_lang)
   pgtk2_pop_n_elems(args);
   pgtk2__init_this_object();
 }
-endrequire;
+endnot;
 require gtksourceview20;
 void create(GTK2.TextTagTable|GTK2.SourceLanguage|void table_or_lang)
 {
@@ -151,7 +151,7 @@ void set_bracket_match_style(mapping(string:mixed) style)
   }
   RETURN_THIS();
 }
-endrequire;
+endnot;
 
 int get_highlight();
 //! Determines whether text highlighting is activated in the source buffer.

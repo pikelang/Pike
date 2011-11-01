@@ -36,7 +36,7 @@ array(GTK2.SourceTag) get_tags()
     g_slist_free(gsl);
   }
 }
-endrequire;
+endnot;
 
 int get_escape_char();
 //! Gets the value of the ESC character in the given language.
