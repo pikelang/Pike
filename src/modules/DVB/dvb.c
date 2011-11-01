@@ -1835,6 +1835,10 @@ PIKE_MODULE_INIT {
 
 PIKE_MODULE_EXIT {
 
+  if(dvb_stream_program) {
+    free_program(dvb_stream_program);
+    dvb_stream_program = NULL;
+  }
   if(dvb_program) {
     free_program(dvb_program);
     dvb_program = NULL;
