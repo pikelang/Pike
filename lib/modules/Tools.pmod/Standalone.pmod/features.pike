@@ -128,6 +128,9 @@ int main(int num, array(string) args) {
   write("\nBz2\n");
   M(Bz2.Deflate);
 
+  write("\nCOM\n");
+  M(COM.com);
+
   write("\nCrypto\n");
   F(Crypto.IDEA);
 
@@ -146,6 +149,9 @@ int main(int num, array(string) args) {
 
   write("\nDVB\n");
   M(DVB.dvb);
+
+  write("\nFFmpeg\n");
+  M(_Ffmpeg.list_codecs);
 
   write("\nFuse\n");
   M(Fuse.Operations);
@@ -177,27 +183,39 @@ int main(int num, array(string) args) {
   // require HAVE_APPLET_QUEUE_RESIZE
 #endif
 
-  write("\nGTK\n");
-  M(GTK.gtk_init);
-  F(GTK.Databox);
-  F(GTK.GladeXML);
-  F(GTK.GLArea);
-  F(GTK.HandleBox);
+  write("\nGnome2\n");
+  F(Gnome2.Canvas);
+  F(Gnome2.Client);
+
+  write("\nGSSAPI\n");
+  M(GSSAPI.Context);
+
+  write("\nGTK1\n");
+  M(GTK1.gtk_init);
+  F(GTK1.Databox);
+  F(GTK1.GladeXML);
+  F(GTK1.GLArea);
+  F(GTK1.HandleBox);
 
   write("\nGTK2\n");
   M(GTK2.gtk_init);
+  F(GTK2.Databox);
+  F(GTK2.GladeXML);
+  F(GTK2.HandleBox);
 
   write("\nGz\n");
   M(Gz.crc32);
 
   write("\nImage\n");
   M(Image.FreeType.Face);
+  M(Image.GIF.decode);
   M(Image.JPEG.decode);
   f("Image.JPEG.FLIP_H", "JPEG transforms");
   M(Image.PNG.decode);
   M(Image.SVG.decode);
   M(Image.TIFF.decode);
   f("Image.TTF->`()","Image.TTF"); // FIXME: Does this work? Fix _Image.Fonts
+  M(Image.WebP.decode);
   M(Image.XFace.decode);
 
   write("\nJava\n");
@@ -210,6 +228,9 @@ int main(int num, array(string) args) {
   write("\nMath\n");
   M(Math.Transforms.FFT);
   F(Math.LMatrix);
+
+  write("\nMIME\n");
+  M(MIME.Message);
 
   write("\nMird\n");
   M(Mird.Mird);
@@ -227,13 +248,13 @@ int main(int num, array(string) args) {
   int mysql_db_fun = mysql_obj && mysql_obj->MYSQL_NO_ADD_DROP_DB;
   item("Mysql.mysql->create_db", mysql_db_fun);
   item("Mysql.mysql->drop_db", mysql_db_fun);
-  item("SSL support", mysql_obj && mysql_obj->CLIENT_SSL);
+  item("Mysql SSL support", mysql_obj && mysql_obj->CLIENT_SSL);
 
   write("\nNettle\n");
   M(Nettle.Yarrow);
   // F(Nettle.IDEA_Info); // Expose as Crypto.IDEA
 
-  write("\nODBC\n");
+  write("\nOdbc\n");
   M(Odbc.odbc);
 
   write("\nOracle\n");
@@ -257,10 +278,11 @@ int main(int num, array(string) args) {
 
   write("\nPostgres\n");
   M(Postgres.postgres);
+  M(_PGsql.PGsql);
 
   write("\nRegexp\n");
   f("_Regexp_PCRE._pcre", "Regexp.PCRE");
-  f("_Regexp_PCRE.UTF8", "PCRE wide string support");
+  f("_Regexp_PCRE.Widestring", "PCRE wide string support");
 
   write("\nSANE\n");
   M(SANE.list_scanners);
@@ -269,9 +291,12 @@ int main(int num, array(string) args) {
   M(SDL.init);
   F(SDL.Joystick);
   F(SDL.Music);
-  F(SDL.open_audio);
+  F(SDL.open_audio);	/* Aka SDL_mixer */
 
   // Ssleay
+
+  write("\nStandards\n");
+  M(Standards.JSON.encode);
 
   write("\nStdio\n");
   F(Stdio.DN_ACCESS);
@@ -348,8 +373,14 @@ int main(int num, array(string) args) {
   // System.Memory.PAGE_MASK
   // System.Memory.__MMAP__
 
+  write("\nVCDiff\n");
+  M(VCDiff.Encoder);
+
   write("\nYp\n");
   M(Yp.default_domain);
+
+  write("\nZXID\n");
+  M(ZXID.Configuration);
 
   return 0;
 }
