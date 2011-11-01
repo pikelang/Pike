@@ -1652,10 +1652,12 @@ string parse_pre_file( string file )
          current_unrequire += ({ (q->text*" ") });
          continue;
        case "endrequire":
+	 if (!sizeof(current_require)) SYNTAX("endrequire without matching require",token);
          current_require = current_require[ .. sizeof(current_require)-2 ];
          SEMICOLON("endrequire");
          continue;
        case "endnot":
+         if (!sizeof(current_unrequire)) SYNTAX("endnot without matching not",token);
          current_unrequire = current_unrequire[ .. sizeof(current_unrequire)-2 ];
          SEMICOLON("endnot");
          continue;
