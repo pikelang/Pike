@@ -55,7 +55,7 @@ array(string) features()
   m += ({ "PostgresNative" });
 #endif
 
-  foreach(({ "Nettle", "Dbm", "DVB", "_Ffmpeg", "GL", "GLUT", "GTK", "Gdbm",
+  foreach(({ "Nettle", "Dbm", "DVB", "_Ffmpeg", "GL", "GLUT", "GTK1", "Gdbm",
 	     "Gmp", "Gz", "_Image_FreeType", "_Image_GIF", "_Image_JPEG",
              "_Image_TIFF", "_Image_TTF", "_Image_XFace", "Image.PNG",
 	     "Java.machine", "Mird", "Msql", "Mysql", "Odbc", "Oracle",
@@ -63,7 +63,8 @@ array(string) features()
              "Postgres", "SANE", "SDL", "Ssleay", "Yp", "sybase", "_WhiteFish",
 	     "X", "Bz2", "COM", "Fuse", "GTK2", "Gettext", "HTTPAccept",
 	     "Kerberos", "SQLite", "_Image_SVG", "_Regexp_PCRE", "GSSAPI",
-	     "Protocols.DNS_SD"}),
+	     "Protocols.DNS_SD", "Gnome2", "MIME", "_PGsql", "Standards.JSON",
+	     "VCDiff", "ZXID" }),
 	  string modname)
   {
     catch
