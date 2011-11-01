@@ -82,6 +82,7 @@ void create(GTK2.TextTagTable|GTK2.SourceLanguage|void table_or_lang)
 }
 endrequire;
 
+not gtksourceview20;
 int get_check_brackets();
 //! Determines whether bracket match highlighting is activated.
 
@@ -92,7 +93,6 @@ void set_check_brackets(int setting);
 //! bracket character will be highlighted.  You can specify the style with the
 //! set_bracket_match_style() function.
 
-not gtksourceview20;
 void set_bracket_match_style(mapping(string:mixed) style)
 //! Sets the style used for highlighting matching brackets.
 //! <code>
@@ -151,7 +151,6 @@ void set_bracket_match_style(mapping(string:mixed) style)
   }
   RETURN_THIS();
 }
-endnot;
 
 int get_highlight();
 //! Determines whether text highlighting is activated in the source buffer.
@@ -169,6 +168,7 @@ void set_highlight(int setting);
 //! If not using a GTK2.SourceLanguage for setting the highlighting patterns in
 //! the buffer, it is recommended for performance reasons that you add all the
 //! GTK2.SourceTag tags with highlighting disabled and enable it when finished.
+endnot;
 
 int get_max_undo_levels();
 //! Determines the number of undo levels the buffer will track for buffer edits.
@@ -203,6 +203,7 @@ void set_language(GTK2.SourceLanguage lang);
 //! set_escape_char().  Note that this will remove any GTK2.SourceTag tags
 //! currently in the buffer's tag table.
 
+not gtksourceview20;
 int get_escape_char();
 //! Determines the escaping character used by the source buffer highlighting
 //! engine.
@@ -216,6 +217,7 @@ void set_escape_char(int escape_char);
 //! embedded.
 //! <p>
 //! This setting affects only syntax patterns.
+endnot;
 
 int can_undo();
 //! Determines whether a source buffer can undo the last action.
@@ -248,6 +250,7 @@ void end_not_undoable_action();
 //! undoable block is closed through a call to this function, the list of undo
 //! actions is cleared and the undo manager is re-enabled.
 
+not gtksourceview20;
 GTK2.SourceMarker create_marker(string name, string type, GTK2.TextIter where)
 //! Creates a marker in the buffer of type type.  A marker is semantically very
 //! similar to a GTK2.TextMark, except it has a type which is used by the
@@ -449,3 +452,4 @@ GTK2.SourceMarker get_prev_marker(GTK2.TextIter iter)
       push_int(0);
   }
 }
+#endnot

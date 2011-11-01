@@ -1,8 +1,23 @@
 /* -*- C -*- */
 require gtksourceview;
-not gtksourceview20;
 
 class GTK2.SourceMarker;
+require gtksourceview20;
+/* Backward compat. */
+inherit GTK2.SourceMark;
+
+string get_marker_type()
+{
+  pgtk2_verify_inited();
+  {
+    const gchar *res = gtk_source_mark_get_category(GTK_SOURCE_MARK(THIS->obj));
+    my_pop_n_elems(args);
+    PGTK_PUSH_GCHAR(res);
+  }
+}
+endrequire;
+not gtksourceview20;
+inherit GTK2.TextMark;
 
 %{
 #include "gtksourceview/gtksourceview.h"

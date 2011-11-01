@@ -19,6 +19,8 @@ inherit GTK2.TextView;
  * that SourceTag and SourceTagTable are gone in 2.0, where
  * their parents TextTag and TextTagTable are used instead.
  *
+ * Another incompatibility is that SourceMarker was renamed SourceMark.
+ *
  * To be backward compatible with code for 1.0, we should
  * probably add some aliases.
  */
@@ -99,6 +101,7 @@ int get_insert_spaces_instead_of_tabs();
 //! Returns whether when inserting a tabulator character it should be replaced
 //! by a group of space characters.
 
+not gtksourceview20;
 void set_show_margin(int setting);
 //! If true, a margin is displayed.
 
@@ -141,6 +144,7 @@ GDK2.Pixbuf get_marker_pixbuf(string type)
       push_int(0);
   }
 }
+endnot;
 
 void set_smart_home_end(int setting);
 //! If true, HOME and END keys will move to the first/last non-space character
@@ -150,6 +154,7 @@ int get_smart_home_end();
 //! Returns whether HOME and END keys will move to the first/last non-space
 //! character of the line before moving to the start/end.
 
+not gtksourceview20;
 /* from GtkSourceStyleScheme */
 GTK2.SourceStyleScheme get_default()
 //! Gets the default style scheme.
@@ -162,3 +167,4 @@ GTK2.SourceStyleScheme get_default()
     push_gobjectclass(gss,pgtk2_source_style_scheme_program);
   }
 }
+endnot;
