@@ -748,7 +748,7 @@ static char* zxid_grab_domain_name(zxid_conf* cf, const char* url)
     stack_pop_n_elems_keep_top(args);
   }
 }
-/*! @endclass Context */
+/*! @endclass Configuration */
 
 PIKE_MODULE_INIT
 {
