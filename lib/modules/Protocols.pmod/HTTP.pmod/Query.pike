@@ -92,9 +92,13 @@ protected int ponder_answer( int|void start_position )
       string s;
 
       if (i<0) i=0;
-      j=search(buf, "\r\n\r\n", i); if(j==-1) j=10000000;
-      i=search(buf, "\n\n", i);     if(i==-1) i=10000000;
-      if ((i=min(i,j))!=10000000) break;
+      j=search(buf, "\r\n\r\n", i);
+      i=search(buf, "\n\n", i);
+      if (`!=(-1, i, j)) {
+	  if (i*j >= 0) i = min(i, j);
+	  else if (i == -1) i = j;
+	  break;
+      }
 
       s=con->read(8192,1);
 #ifdef HTTP_QUERY_DEBUG
