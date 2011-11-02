@@ -452,4 +452,4 @@ GTK2.SourceMarker get_prev_marker(GTK2.TextIter iter)
       push_int(0);
   }
 }
-#endnot
+endnot;
