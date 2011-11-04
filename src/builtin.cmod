@@ -297,11 +297,6 @@ PIKEFUN string int2hex(int|object x)
 }
 
 
-static INLINE int hexchar( int v )
-{
-  return v<10 ? v+'0' : (v-10)+'a';
-}
-
 /*! @decl string string2hex(string data)
  *! @appears String.string2hex
  *!
@@ -310,23 +305,50 @@ static INLINE int hexchar( int v )
  *! @seealso
  *!   @[hex2string()]
  */
+
+static const char hexchar[] = {
+  '0','1','2','3','4','5','6','7','8','9',
+  'a','b','c','d','e','f'
+};
+
+static const unsigned char hexdecode[256] =
+{
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+
+  /* '0' - '9' */
+  0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+
+  0,0,0,0,0,0,0,
+
+  /* 'A' - 'F' */
+  10,  11,  12,  13,  14,  15,
+
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  /* 'a' - 'f' */
+  10,  11,  12,  13,  14,  15,
+};
+
 PMOD_EXPORT
 PIKEFUN string string2hex(string s)
   errname String.string2hex;
   optflags OPT_TRY_OPTIMIZE;
 {
   struct pike_string *hex;
-  unsigned char *st = (unsigned char *)s->str;
-  int i;
+  unsigned char *p,*st = (unsigned char *)s->str;
+  int i, l;
 
   if (s->size_shift)
     Pike_error("Bad argument 1 to string2hex(), expected 8-bit string.\n");
 
   hex = begin_shared_string(2 * s->len);
+  p = (unsigned char *)hex->str;
+  l = s->len;
 
-  for (i=0; i<s->len; i++) {
-    hex->str[i<<1] = hexchar(st[i]>>4);
-    hex->str[i<<1|1] = hexchar(st[i]&15);
+  for (i=0; i<l; i++) {
+    *p++   = hexchar[*st>>4];
+    *p++   = hexchar[*st&15];
+    st++;
    }
 
   RETURN end_shared_string(hex);
@@ -346,17 +368,18 @@ PIKEFUN string hex2string(string hex)
   optflags OPT_TRY_OPTIMIZE;
 {
   struct pike_string *s;
-  int i, o=0;
-  unsigned char *q = (unsigned char *)hex->str;
+  int tmp, i;
+  unsigned char *p, *q = (unsigned char *)hex->str;
   int l = hex->len>>1;
   if(hex->size_shift) Pike_error("Only hex digits allowed.\n");
   if(hex->len&1) Pike_error("Can't have odd number of digits.\n");
 
   s = begin_shared_string(l);
+  p = (unsigned char *)s->str;
   for (i=0; i<l; i++)
   {
-      s->str[i]  = (q[o]<='9' ? q[o]-'0' :((q[o]+9)&15))<<4; o++;
-      s->str[i] |= (q[o]<='9' ? q[o]-'0': ((q[o]+9)&15));    o++;
+    tmp = hexdecode[*q++];
+    *p++ = (tmp<<4) | hexdecode[*q++];
   }
   RETURN end_shared_string(s);
 }
