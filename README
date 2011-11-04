@@ -26,28 +26,6 @@ on additional "DEPENDENCIES", on "CONFIGURE OPTIONS AND BUILD VARIABLES",
 on "MANUAL BUILDING" and, if needed, the section "IF IT DOESN'T WORK".
 
 
-THREADS SUPPORT
-
-Getting threads support might be hairy on some platforms, most
-platforms have threads support but quite a few have problems running
-external processes (through create_process).  By default threads
-support is disabled on platforms where threading is known not to work
-100% properly.
-
-IRIX: Starting many processes causes a resource error which sometimes
-      causes a complete hang and 100% cpu usage.
-
-FreeBSD 3.x: Symptoms are similar to IRIX, but the problem has
-      something to do with signal handling. (And as you may know,
-      process handling uses signals on UNIX...)
-
-Linux: Not all linux variations have 100% working threads, in fact
-      most libc5 systems do not work very well with threads.  Threads
-      support is enabled by default on Linux, but we recommend running
-      'make verify' after compilation.  This will (hopefully) tell you
-      if your threads are not working.
-
-
 BUGS
 
 If you find a bug in the interpreter, the first thing to do is to make
