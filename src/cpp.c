@@ -1612,6 +1612,30 @@ static void insert_current_major(struct cpp *this,
   string_builder_sprintf(tmp, " %d ", this->compat_major);
 }
 
+static void insert_callback_define(struct cpp *this,
+                                   struct define *def,
+                                   struct define_argument *args,
+                                   struct string_builder *tmp)
+{
+  ref_push_string( def->link.s );
+  push_string( make_shared_binary_pcharp( args[0].arg, args[0].len ) );
+  safe_apply_handler( "evaluate_define", this->handler, this->compat_handler, 2, 0 );
+  if( sp[-1].type == T_STRING )
+    string_builder_shared_strcat(tmp,sp[-1].u.string);
+  pop_stack();
+}
+
+static void insert_callback_define_no_args(struct cpp *this,
+                                           struct define *def,
+                                           struct define_argument *args,
+                                           struct string_builder *tmp)
+{
+  ref_push_string( def->link.s );
+  safe_apply_handler( "evaluate_define", this->handler, this->compat_handler, 1, 0 );
+  if( sp[-1].type == T_STRING )
+    string_builder_shared_strcat(tmp,sp[-1].u.string);
+  pop_stack();
+}
 
 /*! @namespace predef:: */
 /*! @decl import cpp:: */
@@ -1786,6 +1810,7 @@ static void free_cpp(struct cpp *this)
     free_string(this->data);
 }
 
+
 void f_cpp(INT32 args)
 {
   struct cpp this;
@@ -1891,16 +1916,6 @@ void f_cpp(INT32 args)
 	    predefs = NULL;
 	    goto predef_map_error;
 	  }
-	  if (TYPEOF(k->val) != T_STRING &&
-	      (TYPEOF(k->val) != T_INT || k->val.u.integer)) {
-	    push_constant_text ("Expected zero or string value for predefine\n");
-	    push_constant_text ("Expected zero or string value for predefine %O\n");
-	    push_svalue (&k->ind);
-	    sprintf_args = 2;
-	    free_mapping (predefs);
-	    predefs = NULL;
-	    goto predef_map_error;
-	  }
 	}
       }
       if (!predefs) {
@@ -1935,6 +1950,7 @@ void f_cpp(INT32 args)
   do_magic_define(&this,"__VERSION__",insert_current_version);
   do_magic_define(&this,"__MAJOR__",insert_current_major);
   do_magic_define(&this,"__MINOR__",insert_current_minor);
+
 
   {
 #if 0
@@ -1985,6 +2001,25 @@ void f_cpp(INT32 args)
     NEW_MAPPING_LOOP (predefs->data) {
       if (TYPEOF(k->val) == T_STRING)
 	add_define (&this, k->ind.u.string, k->val.u.string);
+      else if(k->val.type != T_INT || k->val.u.integer )
+      {
+        struct define *def;
+        if( index_shared_string( k->ind.u.string, k->ind.u.string->len-1) == ')' )
+        {
+          struct pike_string *s = string_slice( k->ind.u.string, 0, k->ind.u.string->len-2);
+          def = alloc_empty_define( s, 0 );
+          def->magic = insert_callback_define;
+          def->varargs=1;
+          def->args=1;
+        }
+        else
+        {
+          def = alloc_empty_define( k->ind.u.string, 0 );
+          k->ind.u.string->refs++;
+          def->magic = insert_callback_define_no_args;
+        }
+        this.defines = hash_insert( this.defines, &def->link );
+      }
       else
 	add_define (&this, k->ind.u.string, empty_pike_string);
     }

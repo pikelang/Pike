@@ -3198,7 +3198,7 @@ class CompatResolver
 
   //! Add a define (without arguments) which will be implicitly
   //! defined in @[cpp] calls.
-  void add_predefine (string name, string value)
+  void add_predefine (string name, mixed value)
   {
     predefines[name] = value;
   }
@@ -3214,6 +3214,25 @@ class CompatResolver
   mapping get_predefines()
   {
     return predefines;
+  }
+
+  string evaluate_define(string def, string arguments)
+  {
+      mixed val = arguments ? predefines[def+"()"] : predefines[def];
+      if( callablep(val) )
+      {
+          object C = resolv("Parser.C");
+          array args;
+          if( arguments )
+              args = map(
+                  map(C.group(C.split(arguments))/({","}),C.simple_reconstitute),
+                  resolv("String.trim_all_whites"));
+          else
+              args = ({});
+
+          val = val( @args );
+      }
+      return (string)val;
   }
 
   //! Instantiate static modules in the same way that dynamic modules
