@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 inherit "symlinks.pike";
 
 void data_changed(string path) { werror("data_changed(%O)\r\n", path); }

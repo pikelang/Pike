@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 inherit .Base;
 
 Sql.Sql db;

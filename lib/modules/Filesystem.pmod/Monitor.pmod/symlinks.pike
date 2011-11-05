@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 //
 // Filesystem monitor with support for symbolic links.
 //

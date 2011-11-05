@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 inherit Web.Crawler.Queue;
 
 void add_uri( Standards.URI uri, int recurse, string template, void|int force );
