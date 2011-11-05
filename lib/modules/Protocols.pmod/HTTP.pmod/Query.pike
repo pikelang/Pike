@@ -71,7 +71,7 @@ string request;
 protected string send_buffer;
 
 string buf="",headerbuf="";
-int datapos, discarded_bytes;
+int datapos, discarded_bytes, cpos;
 
 #if constant(thread_create)
 object conthread;
@@ -376,6 +376,40 @@ void async_fetch_read(mixed dummy,string data)
       con->set_nonblocking(0,0,0);
       request_ok(this_object(), @extra_args);
    }
+}
+
+// This function is "liberal in what it receives" because it has no
+// real way to inform the user of errors in the chunked encoding sent
+// by the server. Except for calling the callback and have ->data() be
+// the messenger...
+void async_fetch_read_chunked(mixed dummy, string data) {
+    int np = -1, f;
+    buf+=data;
+OUTER: while (sizeof(buf) > cpos) {
+	do {
+	// in here:
+	// break calls the callback
+	// return waits for more input
+	// continue OUTER tries to parse one more chunk from buffer
+	    if ((f = search(buf, "\r\n", cpos)) != -1) {
+		if (sscanf(buf[cpos..f], "%x", np)) {
+		    if (np) cpos = f+np+4;
+		    else {
+			if (sscanf(buf[cpos..f+3], "%*x%*[ ]%s", data)
+				== 3 && sizeof(data) == 4) break;
+			return;
+		    }
+		    continue OUTER;
+		}
+		break;
+	    }
+	    return;
+	} while(0);
+	remove_call_out(async_timeout);
+	con->set_nonblocking(0,0,0);
+	request_ok(this, @extra_args);
+	break;
+    }
 }
 
 void async_fetch_close()
@@ -1250,7 +1284,14 @@ void async_fetch(function callback,mixed ... extra)
    }
    extra_args=extra;
    request_ok=callback;
-   con->set_nonblocking(async_fetch_read,0,async_fetch_close);
+   cpos = datapos;
+   if (lower_case(headers["transfer-encoding"]) != "chunked")
+       con->set_nonblocking(async_fetch_read,0,async_fetch_close);
+   else {
+       con->set_nonblocking(async_fetch_read_chunked,0,async_fetch_close);
+       async_fetch_read_chunked(0, ""); // might already be complete
+					// in buffer
+   }
 }
 
 //! Like @[async_fetch()], except with a timeout and a corresponding fail 
