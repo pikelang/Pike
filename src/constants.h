@@ -61,19 +61,19 @@ PMOD_EXPORT struct callable *make_callable(c_fun fun,
 			       int flags,
 			       optimize_fun optimize,
 			       docode_fun docode);
-PMOD_EXPORT struct callable *add_efun2(const char *name,
-			    c_fun fun,
-			    const char *type,
-			    int flags,
-			    optimize_fun optimize,
-			    docode_fun docode);
-PMOD_EXPORT struct callable *add_efun(const char *name, c_fun fun, const char *type, int flags);
-PMOD_EXPORT struct callable *quick_add_efun(const char *name, ptrdiff_t name_length,
-					    c_fun fun,
-					    const char *type, ptrdiff_t type_length,
-					    int flags,
-					    optimize_fun optimize,
-					    docode_fun docode);
+PMOD_EXPORT void add_efun2(const char *name,
+                           c_fun fun,
+                           const char *type,
+                           int flags,
+                           optimize_fun optimize,
+                           docode_fun docode);
+PMOD_EXPORT void add_efun(const char *name, c_fun fun, const char *type, int flags);
+PMOD_EXPORT void quick_add_efun(const char *name, ptrdiff_t name_length,
+                                c_fun fun,
+                                const char *type, ptrdiff_t type_length,
+                                int flags,
+                                optimize_fun optimize,
+                                docode_fun docode);
 PMOD_EXPORT void visit_callable (struct callable *c, int action);
 void init_builtin_constants(void);
 void exit_builtin_constants(void);

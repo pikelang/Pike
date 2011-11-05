@@ -134,16 +134,15 @@ PMOD_EXPORT struct callable *make_callable(c_fun fun,
 			   flags, optimize, docode);
 }
 
-PMOD_EXPORT struct callable *add_efun2(const char *name,
-			    c_fun fun,
-			    const char *type,
-			    int flags,
-			    optimize_fun optimize,
-			    docode_fun docode)
+PMOD_EXPORT void add_efun2(const char *name,
+                           c_fun fun,
+                           const char *type,
+                           int flags,
+                           optimize_fun optimize,
+                           docode_fun docode)
 {
   struct svalue s;
   struct pike_string *n;
-  struct callable *ret;
 
   n=make_shared_string(name);
   SET_SVAL(s, T_FUNCTION, FUNCTION_BUILTIN, efun,
@@ -151,25 +150,23 @@ PMOD_EXPORT struct callable *add_efun2(const char *name,
   low_add_efun(n, &s);
   free_svalue(&s);
   free_string(n);
-  return ret;
 }
 
-PMOD_EXPORT struct callable *add_efun(const char *name, c_fun fun, const char *type, int flags)
+PMOD_EXPORT void add_efun(const char *name, c_fun fun, const char *type, int flags)
 {
-  return add_efun2(name,fun,type,flags,0,0);
+  add_efun2(name,fun,type,flags,0,0);
 }
 
-PMOD_EXPORT struct callable *quick_add_efun(const char *name, ptrdiff_t name_length,
-					    c_fun fun,
-					    const char *type, ptrdiff_t type_length,
-					    int flags,
-					    optimize_fun optimize,
-					    docode_fun docode)
+PMOD_EXPORT void quick_add_efun(const char *name, ptrdiff_t name_length,
+                                c_fun fun,
+                                const char *type, ptrdiff_t type_length,
+                                int flags,
+                                optimize_fun optimize,
+                                docode_fun docode)
 {
   struct svalue s;
   struct pike_string *n;
   struct pike_type *t;
-  struct callable *ret;
 
 #ifdef PIKE_DEBUG
   if(simple_mapping_string_lookup(builtin_constants, name))
@@ -183,11 +180,10 @@ PMOD_EXPORT struct callable *quick_add_efun(const char *name, ptrdiff_t name_len
 #endif
   add_ref(n);
   SET_SVAL(s, T_FUNCTION, FUNCTION_BUILTIN, efun,
-	   ret = low_make_callable(fun, n, t, flags, optimize, docode));
+	   low_make_callable(fun, n, t, flags, optimize, docode));
   mapping_string_insert(builtin_constants, n, &s);
   free_svalue(&s);
   free_string(n);
-  return ret;
 }
 
 PMOD_EXPORT void visit_callable (struct callable *c, int action)
