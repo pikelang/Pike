@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Compat for _Crypto.
  *
  * 2005-05-22 Henrik Grubbström

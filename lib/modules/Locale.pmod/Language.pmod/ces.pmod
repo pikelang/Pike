@@ -5,8 +5,6 @@
 //! Czech language locale by Jan Petrous 16.10.1997,
 //! based on Slovenian language module by Iztok Umek.
 
-// $Id$
-
 inherit "abstract";
 
 constant name = "\33-B\415esky";

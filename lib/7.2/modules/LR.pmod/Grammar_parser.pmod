@@ -2,8 +2,6 @@
 #pike 7.2
 
 /*
- * $Id$
- *
  * Generates a parser from a textual specification.
  *
  * Henrik Grubbström 1996-12-06

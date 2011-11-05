@@ -1,7 +1,5 @@
 #pike __REAL_VERSION__
 
-//   $Id$
-//
 //   Imagedimensionreadermodule for Pike.
 //   Created by Johan Sch�n, <js@roxen.com>.
 //

@@ -1,5 +1,4 @@
 /* nettle.cmod -*- c -*- */
-/* $Id$ */
 
 #include "global.h"
 #include "interpret.h"

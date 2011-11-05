@@ -1,6 +1,4 @@
 //
-// $Id$
-//
 // Create lookup tables for GBK.
 //
 // 2006-01-16 Henrik Grubbström

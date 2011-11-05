@@ -1,9 +1,3 @@
-/* Atom.pmod
- *
- * X Atoms $Id$
- *
- */
-
 /*
  *    Proocols.X, a Pike interface to the X Window System
  *

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Debug API changes since Pike 7.6.
  *
  * Henrik Grubbström 2005-01-08

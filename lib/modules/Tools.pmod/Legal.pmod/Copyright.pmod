@@ -1,7 +1,5 @@
 #pike __REAL_VERSION__
 
-// $Id$
-
 //! Contains functions and information to store and present
 //! copyright information about Pike and it's components.
 

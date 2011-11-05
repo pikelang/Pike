@@ -1,4 +1,3 @@
-// $Id$
 #pike __REAL_VERSION__
 
 #include "search.h"

@@ -1,5 +1,4 @@
 START_MARKER
-// $Id$
 
 test_do([[ Yabu.db("test.db", "wct")->purge(); ]])
 test_do([[ add_constant("db", Yabu.db("test.db", "wct")) ]])

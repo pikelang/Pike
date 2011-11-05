@@ -1,8 +1,6 @@
 /*
  * This is part of the Postgres module for Pike.
  *
- * $Id$
- *
  */
 
 #pike __REAL_VERSION__

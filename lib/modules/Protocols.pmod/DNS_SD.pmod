@@ -1,6 +1,4 @@
-//  $Id$
 //  Interface to DNS Service Discovery. Written by Jonas Walldén.
-
 
 #pike __REAL_VERSION__
 

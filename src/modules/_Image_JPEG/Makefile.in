@@ -1,4 +1,3 @@
-# $Id$
 @make_variables@
 VPATH=@srcdir@
 OBJS=image_jpeg.o transupp.o

@@ -1,5 +1,4 @@
 START_MARKER
-// $Id$
 
 // Locale.Charset.decoder
 test_true([[objectp(Locale.Charset)]])

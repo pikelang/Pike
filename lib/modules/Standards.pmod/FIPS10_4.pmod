@@ -18,7 +18,6 @@
 // = american standard for countries and country division codes
 
 // Updated 2001-04-17 from ...bugger, lost url
-// $Id$
 
 #pike __REAL_VERSION__
 

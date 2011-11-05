@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * A Pike implementation of the TDS protocol.
  *
  * Henrik Grubbström 2006-02-08.

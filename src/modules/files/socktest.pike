@@ -1,7 +1,5 @@
 #!/usr/local/bin/pike
 
-/* $Id$ */
-
 // #define OOB_DEBUG
 
 //#define SOCK_DEBUG

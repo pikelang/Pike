@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Some functions to simplify writing debug-messages.
  * (Aren't we lazy? :-) )
  */

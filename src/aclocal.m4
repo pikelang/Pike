@@ -1,4 +1,3 @@
-dnl $Id$
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -654,8 +653,7 @@ define([PIKE_RETAIN_VARIABLES],
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id$
-
+  
   MY_AC_PROG_CC
 
   dnl The following shouldn't be necessary; it comes from the core

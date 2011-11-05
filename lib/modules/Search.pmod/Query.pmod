@@ -1,4 +1,3 @@
-// $Id$
 #pike __REAL_VERSION__
 
 static function(string,int:string) blobfeeder(Search.Database.Base db,

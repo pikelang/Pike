@@ -1,10 +1,6 @@
 #pike __REAL_VERSION__
 #pragma strict_types
 
-/* $Id$
- *
- */
-
 //! SSL.handshake keeps the state relevant for SSL handshaking. This
 //! includes a pointer to a context object (which doesn't change), various
 //! buffers, a pointer to a session object (reuse or created as

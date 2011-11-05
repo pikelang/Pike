@@ -1,7 +1,5 @@
 #pike __REAL_VERSION__
 
-// $Id$
-
 // MP3 file parser/formatter
 //
 // Author: Honza Petrous, hop@unibase.cz

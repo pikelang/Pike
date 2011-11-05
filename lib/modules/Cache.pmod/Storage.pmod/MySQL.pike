@@ -2,8 +2,6 @@
  * An SQL-based storage manager
  * by Francesco Chemolli <kinkie@roxen.com>
  *
- * $Id$
- *
  * This storage manager provides the means to save data to an SQL-based 
  * backend.
  * 

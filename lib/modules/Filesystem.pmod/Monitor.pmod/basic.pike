@@ -1,11 +1,9 @@
 //
 // Basic filesystem monitor.
 //
-// $Id$
 //
 // 2009-07-09 Henrik Grubbström
 //
-
 //! Basic filesystem monitor.
 //!
 //! This module is intended to be used for incremental scanning of

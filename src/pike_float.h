@@ -1,6 +1,4 @@
 /* Misc stuff for dealing with floats.
- *
- * $Id$
  */
 
 #ifndef PIKE_FLOAT_H

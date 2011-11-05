@@ -1,6 +1,3 @@
-#
-# $Id$
-#
 AC_INIT(sane.c)
 AC_CONFIG_HEADER(config.h)
 

@@ -1,4 +1,3 @@
-// $Id$
 // An abstract data type for binary relations.
 
 #pike __REAL_VERSION__

@@ -1,6 +1,5 @@
 #pike __REAL_VERSION__
 
-// $Id$
 //
 // 2004-11-01 Henrik Grubbström
 

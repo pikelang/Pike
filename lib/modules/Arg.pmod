@@ -1,7 +1,6 @@
 //
 // Argument parser
 // By Martin Nilsson
-// $Id$
 //
 
 #pike __REAL_VERSION__

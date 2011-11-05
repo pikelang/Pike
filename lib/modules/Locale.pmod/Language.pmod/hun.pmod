@@ -1,9 +1,6 @@
 #pike __REAL_VERSION__
 
-
 //! Hungarian language locale by Zsolt Varga.
-
-// $Id$
 
 inherit "abstract";
 

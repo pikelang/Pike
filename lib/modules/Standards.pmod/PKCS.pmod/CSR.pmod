@@ -1,6 +1,3 @@
-//
-// $Id$
-
 //! Handling of Certifikate Signing Requests (PKCS-10)
 
 #pike __REAL_VERSION__

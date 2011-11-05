@@ -1,9 +1,6 @@
 #pike __REAL_VERSION__
 
-
 //! Maaori (New Zealand) language locale by Jason Rumney
-
-// $Id$
 
 inherit "abstract";
 

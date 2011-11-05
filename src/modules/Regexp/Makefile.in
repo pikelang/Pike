@@ -1,4 +1,3 @@
-# $Id$
 @make_variables@
 VPATH=@srcdir@
 OBJS=glue.o @REGEXP_OBJS@

@@ -3,8 +3,6 @@
 // This is a module for pike.
 // 3 July 1998 <hww3@riverweb.com> Bill Welliver
 //
-// $Id$
-//
 
 #pike __REAL_VERSION__
 

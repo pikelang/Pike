@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Glue for the Oracle-module
  */
 

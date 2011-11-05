@@ -1,5 +1,4 @@
 START_MARKER
-// $Id$
 
 // MIME
 test_true([[objectp(MIME)]])

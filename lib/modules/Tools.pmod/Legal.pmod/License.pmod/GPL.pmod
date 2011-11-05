@@ -1,7 +1,5 @@
 #pike __REAL_VERSION__
 
-// $Id$
-
 protected constant name = "GNU General Public License 2";
 protected constant text = #string "gpl.txt";
 

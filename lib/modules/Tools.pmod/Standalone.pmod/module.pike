@@ -1,7 +1,5 @@
 // -*- Pike -*-
 
-// $Id$
-
 #pike __REAL_VERSION__
 
 constant version =

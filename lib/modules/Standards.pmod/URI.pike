@@ -4,7 +4,6 @@
 //! absolute form, as defined in RFC 2396 and RFC 3986.
 
 // Implemented by Johan Sundström and Johan Schön.
-// $Id$
 
 #pragma strict_types
 

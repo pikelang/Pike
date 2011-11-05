@@ -1,7 +1,5 @@
 #pike __REAL_VERSION__
 
-// $Id$
-
 //! Open and execute an HTTP query.
 //!
 //! @example

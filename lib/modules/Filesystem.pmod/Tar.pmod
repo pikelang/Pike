@@ -1,7 +1,3 @@
-/*
- * $Id$
- */
-
 #pike __REAL_VERSION__
 
 constant EXTRACT_SKIP_MODE = 1;

@@ -2,8 +2,6 @@
 
 #pragma strict_types
 
-// $Id$
-
 #define SKIPWHITE(X) sscanf(X, "%*[ \t\n]%s", X)
 
 void err(string e, mixed ... a) {

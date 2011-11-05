@@ -1,5 +1,4 @@
 //
-// $Id$
 
 #pike __REAL_VERSION__
 #if constant(GL) && constant(GL.glOrtho)

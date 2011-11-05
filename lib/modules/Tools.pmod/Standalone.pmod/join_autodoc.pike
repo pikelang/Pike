@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * AutoDoc mk II join script.
  *
  * Usage: pike -x join_autodoc destination.xml builddir

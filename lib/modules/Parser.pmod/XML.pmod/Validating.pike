@@ -5,8 +5,6 @@
 //!
 //! cf http://wwww.w3.org/TR/REC-xml/
 //!
-//! $Id$
-//!
 
 #pike __REAL_VERSION__
 

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * IP port assignments
  *
  * Henrik Grubbström 1998-06-23

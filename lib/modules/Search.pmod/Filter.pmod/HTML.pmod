@@ -1,4 +1,3 @@
-// $Id$
 #pike __REAL_VERSION__
 
 // Cannot dump this because of the #if constant(Roxen.xxx) check below.

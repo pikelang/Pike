@@ -1,4 +1,3 @@
-// $Id$
 #pike __REAL_VERSION__
 
 //! Base class for Search database storage abstraction implementations.

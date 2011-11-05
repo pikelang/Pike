@@ -1,7 +1,5 @@
 /* Integer types with defined sizes.
  *
- * $Id$
- *
  * Extracted from global.h 1.90
  */
 

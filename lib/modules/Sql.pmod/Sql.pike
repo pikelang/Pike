@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Implements the generic parts of the SQL-interface
  *
  * Henrik Grubbström 1996-01-09

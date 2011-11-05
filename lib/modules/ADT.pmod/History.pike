@@ -1,7 +1,5 @@
 #pike __REAL_VERSION__
 
-// $Id$
-
 //! A history is a stack where you can only push entries. When the stack has
 //! reached a certain size the oldest entries are removed on every push.
 //! Other proposed names for this data type is leaking stack and table

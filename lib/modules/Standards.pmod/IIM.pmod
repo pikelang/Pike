@@ -3,8 +3,6 @@
 // 
 // http://www.iptc.org/IIM/
 //
-// $Id$
-//
 // Anders Johansson & Henrik Grubbström
 
 #pike __REAL_VERSION__

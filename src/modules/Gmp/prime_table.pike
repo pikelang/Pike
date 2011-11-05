@@ -1,7 +1,6 @@
 #!/usr/bin/env pike
 #pragma strict_types
-/* $Id$
- *
+/*
  * Generates a table of primes.
  * Used when cross-compiling.
  *

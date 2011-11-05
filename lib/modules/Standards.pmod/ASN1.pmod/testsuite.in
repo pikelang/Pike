@@ -1,5 +1,4 @@
 START_MARKER
-dnl $Id$
 
 dnl Tests from ITU-T Rec.X690 (07/2002)
 dnl (originally from A Layman's Guide to a Subset of ASN.1, BER, and

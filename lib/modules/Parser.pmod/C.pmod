@@ -4,7 +4,6 @@
 //
 // #pike __REAL_VERSION__
 //
-// $Id$
 
 //! Splits the @[data] string into an array of tokens. An additional
 //! element with a newline will be added to the resulting array of

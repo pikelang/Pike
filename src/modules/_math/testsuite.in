@@ -1,5 +1,4 @@
 START_MARKER
-dnl $Id$
 
 define(exarg,[[test_any([[
   function x=$1;

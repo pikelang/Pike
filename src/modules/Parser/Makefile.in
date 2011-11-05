@@ -1,4 +1,3 @@
-# $Id$
 @make_variables@
 VPATH=@srcdir@
 OBJS=parser.o html.o rcs.o c.o pike.o xml.o

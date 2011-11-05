@@ -1,4 +1,3 @@
-# $Id$
 AC_INIT(math_module.c)
 AC_CONFIG_HEADER(config.h)
 AC_ARG_WITH(fftw,     [  --with(out)-fftw       Support for fftw],[],[with_fftw=yes])

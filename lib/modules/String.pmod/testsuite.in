@@ -1,5 +1,4 @@
 START_MARKER
-dnl $Id$
 
 test_eq([[ String.Buffer()->add("xxx") ]], 3)
 test_any([[

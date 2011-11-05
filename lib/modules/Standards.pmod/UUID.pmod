@@ -11,7 +11,6 @@
 //!                identifier components
 //!
 
-// $Id$
 //
 // 2004-10-01 Henrik Grubbström
 // 2004-10-04 Martin Nilsson

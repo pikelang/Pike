@@ -1,8 +1,6 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id$
- *
  */
 
 //! XML parser that generates node-trees.

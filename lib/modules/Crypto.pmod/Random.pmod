@@ -1,6 +1,5 @@
 #pike __REAL_VERSION__
 #pragma strict_types
-// $Id$
 
 //! This module contains stuff to that tries to give you the
 //! best possible random generation.

@@ -1,8 +1,6 @@
 /*
  * A multiple-policies expiration policy manager.
  * by Francesco Chemolli <kinkie@roxen.com>
- *
- * $Id$
  */
 
 #pike __REAL_VERSION__

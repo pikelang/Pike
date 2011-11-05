@@ -1,6 +1,3 @@
-#
-# $Id$
-#
 AC_INIT(dvb.c)
 AC_CONFIG_HEADER(config.h)
 

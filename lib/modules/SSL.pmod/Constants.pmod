@@ -1,7 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id$
- *
+/*
  * The SSL3 Protocol is specified in the following RFCs and drafts:
  *
  *   SSL 3.0			draft-freier-ssl-version3-02.txt

@@ -1,4 +1,3 @@
-// $Id$
 // Not yet finished -- Fredrik Hubinette
 
   //inherit Stdio.UDP : udp;

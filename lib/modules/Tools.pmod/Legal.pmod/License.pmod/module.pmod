@@ -1,7 +1,5 @@
 #pike __REAL_VERSION__
 
-// $Id$
-
 //! Returns all the licenses as a string, suitable for
 //! saving as a file.
 string get_text() {

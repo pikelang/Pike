@@ -1,7 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id$
- *
+/*
  * dummy https server
  */
 

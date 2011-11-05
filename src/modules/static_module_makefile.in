@@ -1,7 +1,3 @@
-#
-# $Id$
-#
-
 
 UNIQUE_MODNAME=$(MODNAME)
 

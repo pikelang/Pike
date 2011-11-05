@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Make a 500×70 banner BMP image suitable for the Wix installer.
  *
  * 2004-11-02 Henrik Grubbström

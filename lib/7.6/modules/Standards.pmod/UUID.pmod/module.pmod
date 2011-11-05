@@ -1,8 +1,6 @@
 /*
  * Compatibility with Pike 7.6 Standards.UUID.
  *
- * $Id$
- *
  * Henrik Grubbström 2005-01-06
  */
 

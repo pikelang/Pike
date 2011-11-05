@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Generates tree-transformation code from a specification.
  *
  * Henrik Grubbström 1999-11-06
@@ -235,8 +233,7 @@
 constant header =
 "/* Tree transformation code.\n"
 " *\n"
-" * This file was generated from %O by\n"
-" * $Id$\n"
+" * This file was generated from %O.\n"
 " *\n"
 " * Do NOT edit!\n"
 " */\n"

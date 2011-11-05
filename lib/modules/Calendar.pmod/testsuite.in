@@ -1,5 +1,4 @@
 START_MARKER
-dnl $Id$
 
 dnl NOTE:
 dnl   *every* time the Calendar tests have failed, it's not the 

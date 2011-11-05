@@ -1,6 +1,3 @@
-//
-// $Id$
-
 #pike __REAL_VERSION__
 
 //!  	This is a handy simple parser of SGML-like

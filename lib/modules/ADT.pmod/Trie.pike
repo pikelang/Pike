@@ -1,8 +1,6 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id$
- *
  * An implementation of a trie.
  *
  * 2007-08-24 Henrik Grubbström

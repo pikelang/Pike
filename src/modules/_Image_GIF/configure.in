@@ -1,6 +1,3 @@
-#
-# $Id$
-#
 AC_INIT(image_gif.c)
 AC_CONFIG_HEADER(config.h)
 AC_ARG_WITH(gif,     [  --with(out)-gif       Support GIF (Image.GIF)],[],[with_gif=yes])

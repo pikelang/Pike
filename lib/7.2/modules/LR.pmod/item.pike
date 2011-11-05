@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * An LR(0) item
  *
  * Henrik Grubbström 1996-11-27

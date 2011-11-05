@@ -2,8 +2,6 @@
  * A Yabu-based storage manager.
  * by Francesco Chemolli <kinkie@roxen.com>
  *
- * $Id$
- *
  * Settings will be added later.
  * 
  */

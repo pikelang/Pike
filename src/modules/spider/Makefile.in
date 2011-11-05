@@ -1,4 +1,3 @@
-# $Id$
 @make_variables@
 VPATH=@srcdir@
 OBJS=spider.o discdate.o stardate.o

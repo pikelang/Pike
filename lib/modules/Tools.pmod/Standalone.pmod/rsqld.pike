@@ -1,5 +1,4 @@
 #! /usr/bin/env pike
-// $Id$
 
 #pike __REAL_VERSION__
 

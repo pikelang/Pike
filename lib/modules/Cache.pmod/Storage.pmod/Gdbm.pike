@@ -2,8 +2,6 @@
  * A GBM-based storage manager.
  * by Francesco Chemolli <kinkie@roxen.com>
  *
- * $Id$
- *
  * This storage manager provides the means to save data to memory.
  * In this manager I'll add reference documentation as comments to
  * interfaces. It will be organized later in a more comprehensive format

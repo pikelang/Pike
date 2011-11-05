@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Some SQL utility functions.
  * They are kept here to avoid circular references.
  *

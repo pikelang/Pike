@@ -1,8 +1,6 @@
 #! /usr/bin/env pike
 #pike __REAL_VERSION__
 
-/* $Id$ */
-
 constant description = "Executes tests according to testsuite files.";
 
 constant log_msg = Tools.Testsuite.log_msg;

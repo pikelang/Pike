@@ -1,5 +1,4 @@
 // -*- pike -*-
-// $Id$
 #pike __REAL_VERSION__
 
 #if constant(@module@)

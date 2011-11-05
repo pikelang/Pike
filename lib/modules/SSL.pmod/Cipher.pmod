@@ -1,6 +1,3 @@
-//
-//  $Id$
-
 #pike __REAL_VERSION__
 
 #if constant(Crypto.Hash)

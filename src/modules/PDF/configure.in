@@ -1,6 +1,3 @@
-#
-# $Id$
-#
 AC_INIT(pdflib_glue.c)
 AC_CONFIG_HEADER(pdf_machine.h)
 AC_ARG_WITH(libpdf,     [  --with(out)-libpdf       Support PDF through PDFlib],[],[with_libpdf=yes])

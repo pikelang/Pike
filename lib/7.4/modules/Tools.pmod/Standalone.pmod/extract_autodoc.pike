@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * AutoDoc mk II extraction script.
  *
  * Henrik Grubbström 2001-01-08

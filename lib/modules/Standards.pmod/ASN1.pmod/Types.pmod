@@ -1,7 +1,3 @@
-//
-// $Id$
-//
-
 //! Encodes various asn.1 objects according to the Distinguished
 //! Encoding Rules (DER)
 

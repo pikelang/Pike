@@ -1,9 +1,6 @@
 #pike __REAL_VERSION__
 
-
 //! French language locale by Patrick Kremer.
-
-// $Id$
 
 inherit "abstract";
 

@@ -1,7 +1,5 @@
 #pike __REAL_VERSION__
 
-// $Id$
-
 //! @[Local] gives a local module namespace used for locally
 //! installed pike modules. Modules are searched for in
 //! the directory @tt{pike_modules@} which can be located in

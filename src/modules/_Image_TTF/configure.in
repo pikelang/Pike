@@ -1,6 +1,3 @@
-#
-# $Id$
-#
 AC_INIT(image_ttf.c)
 AC_CONFIG_HEADER(config.h)
 AC_ARG_WITH(ttflib,     [  --with(out)-ttflib       Support TTF via ttf.lib (freetype) (Image.TTF)],[],[with_ttflib=yes])

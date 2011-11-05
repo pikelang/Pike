@@ -1,4 +1,3 @@
-// $Id$
 
 //! RSA operations and types as described in PKCS-1.
 

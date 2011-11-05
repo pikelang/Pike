@@ -1,5 +1,4 @@
 // Compatibility namespace
-// $Id$
 
 #pike 7.1
 

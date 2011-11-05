@@ -1,7 +1,5 @@
 #!/usr/local/bin/pike
 
-/* $Id$ */
-
 import Tools.Testsuite;
 
 void verify();

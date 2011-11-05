@@ -1,7 +1,3 @@
-//
-// $Id$
-//
-
 #pike __REAL_VERSION__
 
 //! A mapping(int:string) that maps SMTP return

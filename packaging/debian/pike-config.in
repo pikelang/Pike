@@ -1,7 +1,4 @@
 #!/bin/sh
-#
-# $Id$
-#
 
 MY_CFLAGS="@CFLAGS@"
 MY_LDFLAGS="@LDFLAGS@"

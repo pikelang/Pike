@@ -1,4 +1,3 @@
-// $Id$
 
 inherit "tree-split-autodoc.pike";
 

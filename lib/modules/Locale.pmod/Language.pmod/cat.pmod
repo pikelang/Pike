@@ -1,9 +1,6 @@
 #pike __REAL_VERSION__
 
-
 //! Catalan language locale.
-
-// $Id$
 
 inherit "abstract";
 

@@ -1,4 +1,3 @@
-// $Id$
 #pike __REAL_VERSION__
 
 //! A string wrapper that pretends to be a @[Stdio.File] object

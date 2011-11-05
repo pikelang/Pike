@@ -1,5 +1,4 @@
 //! Graph sub-module for drawing pie-charts.
-// $Id$
 //
 // These functions were written by Henrik "Hedda" Wallin (hedda@roxen.com)
 // Create_pie can draw pie charts in different forms.

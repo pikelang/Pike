@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Pike embedding API.
  *
  * Henrik Grubbström 2004-12-27

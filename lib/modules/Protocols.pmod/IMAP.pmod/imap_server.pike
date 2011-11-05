@@ -1,6 +1,4 @@
 /* imap_server.pike
- *
- * $Id$
  */
 #pike __REAL_VERSION__
 

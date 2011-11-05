@@ -1,5 +1,4 @@
 START_MARKER
-dnl $Id$
 
 cond_begin([[ master()->resolv("Gmp")->mpz ]])
 

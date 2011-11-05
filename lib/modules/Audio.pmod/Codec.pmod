@@ -4,8 +4,6 @@
 
   creator: Honza Petrous, hop@unibase.cz
 
-  $Id$
-
  */
 
 #pike __REAL_VERSION__

@@ -1,7 +1,3 @@
-//
-// $Id$
-//
-
 //! DSA operations as defined in RFC-2459.
 
 /* NOTE: Unlike the functions in RSA.pmod, this function returns

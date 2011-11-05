@@ -4,8 +4,6 @@
 
 //! Polish language locale by Piotr Klaban <makler@@man.torun.pl>.
 
-// $Id$
-
 inherit "abstract";
 
 constant name = "polski";

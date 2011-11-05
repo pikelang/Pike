@@ -17,9 +17,6 @@
 //!      2570   : v3 description
 //!
 
-// $Id$
-
-
 #include "snmp_globals.h"
 #include "snmp_errors.h"
 

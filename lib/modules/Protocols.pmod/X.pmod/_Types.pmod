@@ -1,8 +1,6 @@
 /* _Types.pmod
  *
  * Kludge for pike-0.5
- *
- * $Id$
  */
 
 /*

@@ -1,8 +1,5 @@
 #pike 7.9
 
-/* $Id$
- */
-
 //! Dummy HTTPS server - Compat with Pike 7.8.
 
 #if constant(SSL.Cipher.CipherAlgorithm)

@@ -1,6 +1,3 @@
-//
-// $Id$
-//
 
 #if 0 // This code is broken. (Missing mac identifier for sha)
 

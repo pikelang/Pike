@@ -1,5 +1,4 @@
 START_MARKER(7.6)
-dnl $Id$
 
 test_true(Calendar.Day())
 

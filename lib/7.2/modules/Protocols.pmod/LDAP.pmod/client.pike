@@ -1,8 +1,5 @@
 /*
    Compatibility code for 7.2-
-
-   $Id$
-
  */
 
 #pike 7.3

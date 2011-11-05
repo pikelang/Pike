@@ -1,4 +1,3 @@
-// $Id$
 
 //! ADT.Set implements a datatype for sets. These sets behave much
 //! like multisets, except that they are restricted to containing only

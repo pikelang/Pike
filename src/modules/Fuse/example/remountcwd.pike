@@ -1,6 +1,5 @@
 // Re-mount CWD somewhere else.
 //
-// $Id$
 // 
 // To test: mkdir /tmp/test; pike test.pike -d /tmp/test
 

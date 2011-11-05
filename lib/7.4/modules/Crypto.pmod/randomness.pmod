@@ -1,4 +1,3 @@
-// $Id$
 
 //! Assorted stronger or weaker randomnumber generators.
 //! These devices try to collect entropy from the environment.

@@ -1,6 +1,3 @@
-//
-// $Id$
-
 #ifdef PROF_REALTIME
 
 private mapping __prof_data = ([]);

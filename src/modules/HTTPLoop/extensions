@@ -1,4 +1,3 @@
-# $Id$
 # name="Extension database";
 # doc="The database used to map from extension to mime-type (example: *.gif to image/gif)";
 #

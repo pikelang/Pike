@@ -2,8 +2,6 @@
  * Storage Manager prototype.
  * by Francesco Chemolli <kinkie@roxen.com>
  *
- * $Id$
- *
  * All storage managers must provide these methods.
  */
 

@@ -2,7 +2,6 @@
 //
 // By Martin Nilsson and Andreas Lange
 //
-// $Id$
 
 #pike __REAL_VERSION__
 

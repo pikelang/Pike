@@ -1,7 +1,5 @@
 #!/usr/local/bin/pike
 
-/* $Id$ */
-
 final constant TEST_SIZE = 16384;
 
 string testdata = random_string(TEST_SIZE);

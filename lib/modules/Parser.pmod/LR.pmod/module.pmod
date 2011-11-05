@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * A BNF-grammar in Pike.
  * Compiles to a LALR(1) state-machine.
  *

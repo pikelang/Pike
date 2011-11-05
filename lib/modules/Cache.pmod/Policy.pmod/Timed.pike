@@ -1,8 +1,6 @@
 /*
  * An access-time-based expiration policy manager.
  * by Francesco Chemolli <kinkie@roxen.com>
- *
- * $Id$
  */
 
 //! An access-time-based expiration policy manager.

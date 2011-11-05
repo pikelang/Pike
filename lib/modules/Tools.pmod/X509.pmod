@@ -2,8 +2,6 @@
 //#pragma strict_types
 
 /* 
- * $Id$
- *
  * Some random functions for creating RFC-2459 style X.509 certificates.
  *
  */

@@ -1,6 +1,3 @@
-//
-// $Id$
-
 //! An implementation of the IDENT protocol, specified in RFC 931.
 
 #pike __REAL_VERSION__

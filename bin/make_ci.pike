@@ -1,8 +1,6 @@
 #! /usr/bin/env pike
 
 /*
- * $Id$
- *
  * Creates the file case_info.h
  *
  * Henrik Grubbström 1999-03-20

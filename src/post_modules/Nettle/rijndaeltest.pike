@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Test Crypto.aes against the official test-vectors.
  *
  * Henrik Grubbström 2001-03-24

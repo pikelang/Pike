@@ -1,7 +1,5 @@
 #pike __REAL_VERSION__
 
-// $Id$
-
 constant Generic = __builtin.GenericError;
 
 constant Index = __builtin.IndexError;

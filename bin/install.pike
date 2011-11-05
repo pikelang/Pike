@@ -1,8 +1,6 @@
 #! /usr/bin/env pike
 
 // Pike installer and exporter.
-//
-// $Id$
 
 // Windows installer FIXMEs:
 //

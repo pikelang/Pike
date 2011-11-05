@@ -1,5 +1,3 @@
-//
-// $Id$
 
 //! Implements a FIFO bit buffer, i.e. a buffer that operates on bits
 //! instead of bytes. It is not designed for performance, but as a way

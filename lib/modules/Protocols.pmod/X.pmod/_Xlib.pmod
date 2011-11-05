@@ -1,7 +1,5 @@
 /* _Xlib.pmod
  *
- * $Id$
- *
  * Kluge, should be in Xlib.pmod
  */
 

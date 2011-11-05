@@ -1,6 +1,4 @@
 #
-# $Id$
-#
 # Contains stuff common to both dynamic_module_makefile and
 # static_module_makefile.
 #

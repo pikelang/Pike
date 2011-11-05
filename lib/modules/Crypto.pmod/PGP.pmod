@@ -1,5 +1,3 @@
-//
-// $Id$
 
 //! PGP stuff. See RFC 2440.
 

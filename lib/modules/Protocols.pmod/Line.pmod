@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Line-buffered protocol handling.
  *
  * Henrik Grubbström 1998-05-27

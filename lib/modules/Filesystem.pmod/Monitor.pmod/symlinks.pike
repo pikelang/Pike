@@ -1,11 +1,9 @@
 //
 // Filesystem monitor with support for symbolic links.
 //
-// $Id$
 //
 // 2010-01-25 Henrik Grubbström
 //
-
 //! Filesystem monitor with support for symbolic links.
 //!
 //! This module extends @[Filesystem.Monitor.basic] with

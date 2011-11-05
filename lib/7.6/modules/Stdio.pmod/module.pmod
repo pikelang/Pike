@@ -1,4 +1,3 @@
-// $Id$
 #pike 7.7
 
 inherit Stdio.module;

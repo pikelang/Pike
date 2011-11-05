@@ -1,9 +1,6 @@
 #pike __REAL_VERSION__
 
-
 //! Italian language locale by Francesco Chemolli
-
-// $Id$
 
 inherit "abstract";
 

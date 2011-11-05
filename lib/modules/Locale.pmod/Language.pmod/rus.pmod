@@ -4,7 +4,6 @@
 
 //! Russian language locale
 
-// $Id$
 
 inherit "abstract";
 

@@ -1,4 +1,3 @@
-# $Id$
 AC_INIT(Makefile.in)
 
 PIKE_RETAIN_VARIABLES()

@@ -1,4 +1,3 @@
-# $Id$
 AC_INIT(accept_and_parse.c)
 AC_CONFIG_HEADER(config.h)
 

@@ -3,7 +3,6 @@
 
 //! German language locale by Tvns Böker.
 
-// $Id$
 
 inherit "abstract";
 

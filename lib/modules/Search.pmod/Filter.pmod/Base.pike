@@ -1,4 +1,3 @@
-// $Id$
 #pike __REAL_VERSION__
 
 //! The MIME content types this class can filter.

@@ -1,6 +1,4 @@
 /* Shaped windows.
- *
- * $Id$
 
 /*
  *    Protocols.X, a Pike interface to the X Window System

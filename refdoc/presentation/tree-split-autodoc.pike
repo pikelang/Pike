@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  */
 
 inherit "make_html.pike";

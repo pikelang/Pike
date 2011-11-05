@@ -1,7 +1,3 @@
-//
-// $Id$
-//
-
 #pike 7.9
 
 //! Pike 7.8 compatibility.

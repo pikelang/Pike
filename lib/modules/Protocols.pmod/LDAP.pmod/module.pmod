@@ -1,6 +1,5 @@
 #pike __REAL_VERSION__
 
-// $Id$
 
 #include "ldap_globals.h"
 

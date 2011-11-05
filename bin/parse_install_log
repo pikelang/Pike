@@ -1,5 +1,5 @@
 #! /usr/bin/env pike
-// -*- pike -*- $Id$
+// -*- pike -*-
 
 mapping install_from=([]);
 mapping fake_dirs=([]);

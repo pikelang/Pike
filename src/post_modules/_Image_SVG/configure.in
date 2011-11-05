@@ -1,6 +1,3 @@
-#
-# $Id$
-#
 AC_INIT(svg.c)
 
 AC_ARG_WITH(svg,[  --with(out)-svg       Support SVG via librsvg (from gnome2) (Image.SVG)],[],[with_svg=yes])

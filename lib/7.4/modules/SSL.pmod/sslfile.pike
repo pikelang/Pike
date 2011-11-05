@@ -1,9 +1,5 @@
 #pike __REAL_VERSION__
 
-/* $Id$
- *
- */
-
 //! Interface similar to Stdio.File.
 
 inherit "cipher";

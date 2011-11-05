@@ -1,7 +1,6 @@
 //
 // Struct ADT
 // By Martin Nilsson
-// $Id$
 //
 
 #pike __REAL_VERSION__

@@ -1,9 +1,5 @@
 #pike 7.4
 
-/* $Id$
- *
- */
-
 #pragma dont_save_parent
 // Override if someone set __pragma_save_parent__ globally. Other code
 // assumes the constants can be indexed out of this class directly. It

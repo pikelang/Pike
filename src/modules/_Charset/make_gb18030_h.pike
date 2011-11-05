@@ -1,5 +1,4 @@
 //
-// $Id$
 //
 // Create lookup tables and code for GB18030.
 //

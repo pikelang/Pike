@@ -1,8 +1,6 @@
 #pike 7.3
 
 //
-// $Id$
-//
 // Pike 7.2 backward compatibility layer.
 //
 

@@ -1,6 +1,5 @@
 #!/bin/sh
-#
-# $Id$
+
 #
 # Run etags with regexps suitable for Pike files.
 #

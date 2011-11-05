@@ -1,7 +1,3 @@
-//
-// $Id$
-//
-
 #pike __REAL_VERSION__
 class Configuration {
   inherit .SMTP.Configuration;

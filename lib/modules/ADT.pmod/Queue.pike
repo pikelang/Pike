@@ -1,4 +1,3 @@
-// $Id$
 
 //! A simple FIFO queue.
 

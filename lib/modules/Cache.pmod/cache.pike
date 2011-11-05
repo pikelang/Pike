@@ -2,8 +2,6 @@
  * A generic cache front-end
  * by Francesco Chemolli <kinkie@roxen.com>
  *
- * $Id$
- *
  */
 
 //! This module serves as a front-end to different kinds of caching systems.

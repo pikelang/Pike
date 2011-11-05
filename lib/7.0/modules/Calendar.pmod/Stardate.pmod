@@ -1,4 +1,3 @@
-// $Id$
 
 //!	time unit: TNGDate
 

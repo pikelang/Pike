@@ -1,5 +1,4 @@
-/* $Id$
- *
+/*
  * Follow the PKCS#1 standard for padding and encryption.
  */
 

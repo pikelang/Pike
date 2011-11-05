@@ -1,6 +1,4 @@
 //! Graph sub-module providing draw functions.
-//!
-//! $Id$
 
 #pike __REAL_VERSION__
 

@@ -1,6 +1,4 @@
 /* Requests.pike
- *
- * $Id$
  */
 
 /*

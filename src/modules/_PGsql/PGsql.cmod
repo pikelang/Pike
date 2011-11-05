@@ -1,6 +1,4 @@
 /* -*- c -*-
- * $Id$
- *
  * PGsql, accelerator functions for Sql.pgsql for Pike.
  *
  */

@@ -1,6 +1,5 @@
 #pike 7.5
 #pragma strict_types
-// $Id$
 
 //! Inversion crypto module.
 

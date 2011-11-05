@@ -4,7 +4,6 @@
 //
 // Author: Honza Petrous, hop@unibase.cz
 //
-// $Id$
 
 //#define AUDIO_FORMAT_DEBUG
 #ifdef AUDIO_FORMAT_DEBUG

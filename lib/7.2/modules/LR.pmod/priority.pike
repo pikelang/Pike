@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Rule priority specification
  *
  * Henrik Grubbström 1996-12-05

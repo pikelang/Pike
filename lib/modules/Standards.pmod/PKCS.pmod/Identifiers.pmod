@@ -1,5 +1,4 @@
 //
-// $Id$
 // Object identifiers
 
 #pike __REAL_VERSION__

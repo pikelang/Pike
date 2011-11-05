@@ -1,6 +1,3 @@
-//
-//  $Id$
-
 #pike 7.9
 
 #if constant(Crypto.Hash)

@@ -1,4 +1,3 @@
-# $Id$
 AC_INIT(SDL.cmod)
 
 AC_MODULE_INIT()

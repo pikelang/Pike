@@ -1,4 +1,3 @@
-# $Id$
 AC_INIT(file.c)
 AC_CONFIG_HEADER(file_machine.h)
 

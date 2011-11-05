@@ -3,7 +3,6 @@
 // YP (NIS) Functionality for Pike
 // Per Hedbor & Henrik Grubbström 1996-1997
 //
-// $Id$
 
 #pike __REAL_VERSION__
 inherit @module@;

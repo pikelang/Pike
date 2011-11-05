@@ -1,4 +1,3 @@
-# $Id$
 @make_variables@
 VPATH=@srcdir@
 OBJS=file.o efuns.o socket.o termios.o sendfile.o udp.o stat.o

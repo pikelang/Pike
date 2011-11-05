@@ -4,7 +4,6 @@
 //
 // #pike __REAL_VERSION__
 //
-// $Id$
 
 //! This module parses and tokenizes Pike source code.
 

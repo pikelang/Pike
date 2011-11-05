@@ -1,7 +1,5 @@
 #pike __REAL_VERSION__
 
-// $Id$
-
 import Protocols.HTTP;
 
 typedef string|Standards.URI|SessionURL URL;

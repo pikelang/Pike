@@ -1,9 +1,6 @@
 #pike __REAL_VERSION__
 
-
 //! Dutch language locale by Stephen R. van den Berg
-
-// $Id$
 
 inherit "abstract";
 

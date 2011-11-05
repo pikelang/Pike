@@ -1,4 +1,3 @@
-// $Id$
 #pike 7.5
 
 //! The life length of the Fd instance has changed. In newer versions

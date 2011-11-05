@@ -3,7 +3,6 @@
 #
 # Creates testsuit files form the testsuit.in files
 # found in the lib directory.
-# $Id$
 #
 
 src_dir=

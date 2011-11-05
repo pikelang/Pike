@@ -1,8 +1,6 @@
 #pike __REAL_VERSION__
 inherit Parser._RCS;
 
-// $Id$
-
 //! A RCS file parser that eats a RCS *,v file and presents nice pike
 //! data structures of its contents.
 

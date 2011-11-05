@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Pike interface to Common Object Model (COM)
  *
  * Tomas Nilsson

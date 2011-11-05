@@ -1,13 +1,7 @@
 // SNMP protocol implementation for Pike.
 //
-// $Id$
-//
 // Honza Petrous, hop@roxen.com
 //
-//
-
-
-
 
 /* 
  * possible error codes we can return

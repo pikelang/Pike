@@ -33,7 +33,6 @@
 //! @enddl
 
 // Author:  Johan Schön.
-// $Id$
 
 #define CRAWLER_DEBUG
 #ifdef CRAWLER_DEBUG

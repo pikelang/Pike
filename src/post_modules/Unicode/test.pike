@@ -1,7 +1,5 @@
 #! /usr/bin/env pike
 
-// $Id$
-
 #define c1 c[0]
 #define c2 c[1]
 #define c3 c[2]

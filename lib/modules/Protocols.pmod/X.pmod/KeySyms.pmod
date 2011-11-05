@@ -1,6 +1,4 @@
 /* KeySyms.pmod
- *
- * $Id$
  */
 
 /*

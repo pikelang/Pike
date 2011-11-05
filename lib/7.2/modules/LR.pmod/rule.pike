@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * A BNF-rule.
  *
  * Henrik Grubbström 1996-11-24

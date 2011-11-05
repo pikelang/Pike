@@ -1,7 +1,5 @@
 
 /*
- * $Id$
- *
  * An LR(1) Parser in Pike
  *
  * Henrik Grubbström 1996-11-23

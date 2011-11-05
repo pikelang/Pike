@@ -1,4 +1,3 @@
-// $Id$
 
 //! Handle PKCS-6 and PKCS-10 certificates and certificate requests.
 

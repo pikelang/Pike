@@ -1,8 +1,6 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id$
- *
  * Make a Wix modules source XML file from an existing set of
  * directories or files.
  *

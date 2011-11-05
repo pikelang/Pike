@@ -1,6 +1,4 @@
 /* XImage.pmod
- *
- * $Id$
  */
 
 /*

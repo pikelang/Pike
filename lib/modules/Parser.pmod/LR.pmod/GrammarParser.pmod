@@ -1,8 +1,6 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id$
- *
  * Generates a parser from a textual specification.
  *
  * Henrik Grubbström 1996-12-06

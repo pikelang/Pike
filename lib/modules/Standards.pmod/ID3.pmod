@@ -1,8 +1,3 @@
-// ID3.pmod
-//
-//  $Id$
-//
-
 #pike __REAL_VERSION__
 
 //! ID3 decoder/encoder.

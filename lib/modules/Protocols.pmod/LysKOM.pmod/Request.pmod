@@ -1,6 +1,5 @@
 #pike __REAL_VERSION__
 
-//  $Id$
 //!	This module contains nice abstraction for calls into the
 //!	server. They are named "@tt{@i{call@}@}",
 //!	"@tt{async_@i{call@}@}" or 

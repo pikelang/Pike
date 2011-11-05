@@ -1,6 +1,4 @@
 START_MARKER
-test_true([["$Id$"]]);
-
 
 // - Web.RDF
 test_any_equal([[

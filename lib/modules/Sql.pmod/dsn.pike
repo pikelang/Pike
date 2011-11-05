@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Glue for the ODBC-module
  *
  * Carl Grubbström 2005-01-26
