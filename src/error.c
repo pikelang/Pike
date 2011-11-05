@@ -849,7 +849,7 @@ static void f_error_create(INT32 args)
       assign_svalue_no_free( & ERROR_STRUCT(STRUCT,o)->X, X); \
     } else { \
       SET_SVAL(ERROR_STRUCT(STRUCT, o)->X, PIKE_T_INT, NUMBER_UNDEFINED, \
-	       integer, 0); \ 
+	       integer, 0); \
     } \
   } while (0)
 
