@@ -125,6 +125,10 @@ static void do_trace_call(INT32 args, dynamic_buffer *old_buf);
 static void do_trace_func_return (int got_retval, struct object *o, int fun);
 static void do_trace_return (int got_retval, dynamic_buffer *old_buf);
 
+PMOD_EXPORT struct Pike_interpreter_struct * pike_get_interpreter_pointer()
+{
+  return Pike_interpreter_pointer;
+}
 
 void push_sp_mark(void)
 {

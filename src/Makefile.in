@@ -294,11 +294,13 @@ compiler-warnings : clean
 # if you want to install the framework in a standard location, like /Library/Frameworks, you will
 # need to use install_name_tool to change the location. don't blame me, blame dyld.
 #
+# the following target assumes MacOS X 10.6 or higher, and is configured to use garbage collection
 framework: OCPikeInterpreter.o $(OBJ) modules/linker_options @STATIC_POST_MODULES_LINKOPTS@
 	@echo "Linking Pike.framework";\
-	gcc -o Pike OCPikeInterpreter.o $(OBJ) `cat modules/linker_options @STATIC_POST_MODULES_LINKOPTS@` -framework Cocoa -dynamiclib -Wl,-single_module \
-	  -undefined dynamic_lookup -mmacosx-version-min=10.4 -current_version 7.7 -install_name @executable_path/../Frameworks/Pike.framework/Pike \
-	  -isysroot /Developer/SDKs/MacOSX10.4u.sdk 
+	gcc -o Pike OCPikeInterpreter.o $(OBJ) `cat modules/linker_options @STATIC_POST_MODULES_LINKOPTS@` -framework Cocoa \ 
+	  -dynamiclib -Wl,-no_pie -mpic-no-dynamic -Wl,-single_module \
+	  -undefined dynamic_lookup -mmacosx-version-min=10.4 -current_version 7.9 -install_name @executable_path/../Frameworks/Pike.framework/Pike \
+	  -isysroot /Developer/SDKs/MacOSX10.6.sdk 
 	ls -l Pike
 	if test -x Pike.framework ; then rm -rf Pike.framework; fi
 	mkdir Pike.framework
@@ -525,7 +527,7 @@ undump_modules: delete_dumped_modules
 	@echo "Compiling `echo '$<' | sed -e 's|^$(PIKE_SRC_DIR)/||'`" ; \
 	rm -f $@.fail >/dev/null 2>&1; \
 	if test "x$@" = "xinterpret.o"; then EXTRAFLAGS="$(INTERPRET_DEOPTIMIZE)"; else EXTRAFLAGS=; fi; \
-	if $(CC) $(CFLAGS) $$EXTRAFLAGS -fobjc-exceptions -c $< -o $@ ; then : ; else \
+	if $(CC) $(CFLAGS) $$EXTRAFLAGS -fobjc-exceptions -fobjc-gc -c $< -o $@ ; then : ; else \
 	  status=$$?; \
 	  if test x"@noopt_retry@" = xyes ; then \
 	    echo "WARNING: Compiler failure! Trying without optimization!" >&2;\

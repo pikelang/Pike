@@ -9,6 +9,6 @@
 #define PIKE_BUILD_VERSION 5
 
 /* Prototypes begin here */
-void f_version(INT32 args);
+PMOD_EXPORT void f_version(INT32 args);
 void push_compact_version();
 /* Prototypes end here */

@@ -22,7 +22,7 @@
  *!   @[__VERSION__], @[__MINOR__], @[__BUILD__],
  *!   @[__REAL_VERSION__], @[__REAL_MINOR__], @[__REAL_BUILD__],
  */
-void f_version(INT32 args)
+PMOD_EXPORT void f_version(INT32 args)
 {
   pop_n_elems(args);
   push_constant_text ("Pike v"
