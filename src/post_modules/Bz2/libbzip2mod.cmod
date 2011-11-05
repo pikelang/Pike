@@ -860,28 +860,6 @@ PIKECLASS File
 
   }
 
-  /*! @decl void create()
-   *! Creates a Bz2.File object
-   */
-
-
-  PIKEFUN void create(){
-    if(THIS->file != NULL){
-      f_File_close(0);
-    }
-    THIS->small = 0;
-    THIS->bzerror = 0;
-    THIS->mode = NO_FILE_MODE;
-    THIS->file = NULL;
-    THIS->fp = NULL;
-    
-    if(args != 0){
-      Pike_error("Bz2.File()must be called with NO arguments.\n");
-    }
-    pop_n_elems(args);
-  }
-
-  
   /*! @decl int(0..1) read_open(string file)
    *! Opens a file for reading.
    *! @param file
@@ -1023,6 +1001,26 @@ PIKECLASS File
     }
   }
   
+
+  /*! @decl void create()
+   *! @decl void create(string filename, void|string mode)
+   *! Creates a Bz2.File object
+   */
+
+  PIKEFUN void create(void|string file, void|string mode){
+    if(THIS->file != NULL){
+      f_File_close(0);
+    }
+    THIS->small = 0;
+    THIS->bzerror = 0;
+    THIS->mode = NO_FILE_MODE;
+    THIS->file = NULL;
+    THIS->fp = NULL;
+    
+    if(args != 0){
+      f_File_open(args);
+    }
+  }
 
   /*! @decl int write(string data)
    *! Writes the data to the file.

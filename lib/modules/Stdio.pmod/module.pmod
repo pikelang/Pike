@@ -29,7 +29,7 @@ inherit files;
 #define register_close_file(id)
 #endif
 
-protected constant LineIterator = __builtin.file_line_iterator;
+constant LineIterator = __builtin.file_line_iterator;
 
 final constant DATA_CHUNK_SIZE = 64 * 1024;
 //! Size used in various places to divide incoming or outgoing data
