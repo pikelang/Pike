@@ -487,16 +487,12 @@ string make_response_header(mapping m)
 	    m->error=206;
 	 }
 	 break;
-      case 302:
-	 res+=({protocol+" 302 TEMPORARY REDIRECT"}); 
-	 break;
-      case 304:
-	 res+=({protocol+" 304 Not Modified"}); 
-	 break;
       default:
-   // better error names?
-	 res+=({protocol+" "+m->error+" ERROR"});
-	 break;
+         if(Protocols.HTTP.response_codes[(int)m->error])
+          res+=({protocol+" " + Protocols.HTTP.response_codes[(int)m->error]});
+         else
+          res+=({protocol+" "+m->error+" ERROR"});	 
+	break;
    }
 
    if (!m->type)

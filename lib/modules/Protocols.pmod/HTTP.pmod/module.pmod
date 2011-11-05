@@ -60,6 +60,79 @@ constant HTTP_UNSUPP_VERSION	= 505; // RFC 2616 10.5.6: HTTP Version Not Support
 constant TCN_VARIANT_NEGOTIATES	= 506; // RFC 2295 8.1: Variant Also Negotiates
 constant DAV_STORAGE_FULL	= 507; // RFC 2518 10.6: Insufficient Storage
 
+constant response_codes =
+([
+  // Informational
+  100:"100 Continue",
+  101:"101 Switching Protocols",
+  102:"102 Processing", // WebDAV
+  103:"103 Checkpoint",
+  122:"122 Request-URI too long", // a non standard IE7 error
+
+  // Successful
+  200:"200 OK",
+  201:"201 Created, URI follows",
+  202:"202 Accepted",
+  203:"203 Non-Authoritative Information",
+  204:"204 No Content",
+  205:"205 Reset Content",
+  206:"206 Partial Content", // Byte ranges
+  207:"207 Multi-Status", // WebDAV
+  226:"226 IM Used", // RFC 3229
+
+  // Redirection
+  300:"300 Moved",
+  301:"301 Permanent Relocation",
+  302:"302 Found", // a potential alligator swamp. for HTTP/1.1, use 303/307.
+  303:"303 See Other", // temporary redirect, any POST data is received, use GET.
+  304:"304 Not Modified",
+  305:"305 Use Proxy",
+  306:"306 Switch Proxy", // Deprecated
+  307:"307 Temporary Redirect", // retry request elsewhere, don't change method.
+  308:"308 Resume Incomplete",
+
+  // Client Error
+  400:"400 Bad Request",
+  401:"401 Access denied",
+  402:"402 Payment Required",
+  403:"403 Forbidden",
+  404:"404 No such file or directory.",
+  405:"405 Method not allowed",
+  406:"406 Not Acceptable",
+  407:"407 Proxy authorization needed",
+  408:"408 Request timeout",
+  409:"409 Conflict",
+  410:"410 Gone",
+  411:"411 Length Required",
+  412:"412 Precondition Failed",
+  413:"413 Request Entity Too Large",
+  414:"414 Request-URI Too Large",
+  415:"415 Unsupported Media Type",
+  416:"416 Requested range not statisfiable",
+  417:"417 Expectation Failed",
+  418:"418 I'm a teapot", // Ha ha
+  422:"422 Unprocessable Entity", // WebDAV
+  423:"423 Locked", // WebDAV
+  424:"424 Failed Dependency", // WebDAV
+  425:"425 Unordered Collection", // RFC3648
+  426:"426 Upgrade Required", // RFC2817
+
+  // Internal Server Errors
+  500:"500 Internal Server Error.",
+  501:"501 Not Implemented",
+  502:"502 Bad Gateway",
+  503:"503 Service unavailable",
+  504:"504 Gateway Timeout",
+  505:"505 HTTP Version Not Supported",
+  506:"506 Variant Also Negotiates", // RFC2295
+  507:"507 Insufficient Storage", // WebDAV / RFC4918
+  509:"509 Bandwidth Limit Exceeded", // An Apache defined extension in popular use
+  510:"510 Not Extended", // RFC2774
+  598:"598 Network read timeout error", // Informal extension used by some HTTP proxies
+  599:"599 Network connect timeout error", // Informal extension used by some HTTP proxies
+]);
+
+
 //! Makes an HTTP request through a proxy.
 //!
 //! @param proxy
