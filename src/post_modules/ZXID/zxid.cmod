@@ -36,6 +36,11 @@ DECLARATIONS
  *! to the C one, but using generally accepted Pike syntax.
  */
 
+/* These defines are needed to get the right size for the zxid_conf struct! */
+#define USE_CURL
+#define USE_PTHREAD
+#define USE_OPENSSL
+
 #include <zxid/zxid.h>
 
 /* Needed for some obscure macros (like ERR, DD, MB, ME, etc). */
@@ -108,6 +113,7 @@ PIKECLASS Configuration {
       ZX_FREE(ctx, need->oblig);
       ZX_FREE(ctx, need->ext);
       zxid_free_at(ctx, need->at);
+      ZX_FREE(ctx, need);
       need = next;
     }
   }
