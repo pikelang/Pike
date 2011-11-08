@@ -430,6 +430,14 @@ static char* zxid_grab_domain_name(zxid_conf* cf, const char* url)
     if (!original_required_authnctx)
       original_required_authnctx = THIS->conf.required_authnctx;
     THIS->conf_m = allocate_mapping(8);
+#ifdef USE_CURL
+    LOCK(THIS->conf.curl_mx, "curl init");
+    THIS->conf.curl = curl_easy_init();
+    UNLOCK(THIS->conf.curl_mx, "curl init");
+    if (!THIS->conf.curl) {
+      Pike_error("Failed to init curl bindings.\n");
+    }
+#endif
   }
 
   EXIT {
