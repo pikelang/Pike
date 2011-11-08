@@ -761,6 +761,23 @@ static char* zxid_grab_domain_name(zxid_conf* cf, const char* url)
 
     stack_pop_n_elems_keep_top(args);
   }
+
+  PIKEFUN string(0..255) idp_list()
+  {
+    int res_len = 0;
+    char *res = zxid_idp_list_cf_cgi(&THIS->conf, NULL, &res_len, 0);
+
+    push_string(make_shared_binary_string(res, res_len));
+
+    if (res_len) {
+      /* Note: zxd_idp_list_cf_cgi() returns an empty constant string
+       *       in some circumstances.
+       */
+      ZX_FREE(THIS->conf.ctx, res);
+    }
+
+    stack_pop_n_elems_keep_top(args);
+  }
 }
 /*! @endclass Configuration */
 
