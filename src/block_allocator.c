@@ -1,31 +1,35 @@
-#include "block_allocator.h"
+#include <stdlib.h>
+
 #include "bitvector.h"
+#include "pike_error.h"
 
 struct ba_page {
     char * data;
-    uint16_t next;
+    uint16_t free;
     uintptr_t mask[1];
-}
+};
+
+#include "block_allocator.h"
 
 #define BA_DIVIDE(a, b)	    ((a) / (b) + !!((a) % (b)))
 #define BA_PAGESIZE(a)	    ((a)->blocks * (a)->block_size) 
 #define BA_MASK_NUM(a)	    BA_DIVIDE((a)->blocks, sizeof(uintptr_t)*8)
 #define BA_SPAGE_SIZE(a)    (sizeof(struct ba_page) + (BA_MASK_NUM(a) - 1)*sizeof(uintptr_t))
 #define BA_HASH_MASK(a)  ((1 << (a->allocated + 1)) - 1)
-#define BA_CHECK_PTR(a, p, ptr)	(ptr >= p->data && ((uintptr_t)(p->data) + BA_PAGESIZE(a) > (uintptr_t)ptr))
+#define BA_CHECK_PTR(a, p, ptr)	((char*)ptr >= p->data && ((uintptr_t)(p->data) + BA_PAGESIZE(a) > (uintptr_t)ptr))
 
 void ba_init(struct block_allocator * a,
-				 uint32_t blocks_size, uint32_t blocks) {
-    uint32_t page_size = blocks_size * blocks;
+				 uint32_t block_size, uint32_t blocks) {
+    uint32_t page_size = block_size * blocks;
 
     a->free = 0;
 
-    if (page_size & (page_size - 1) == 0)
+    if ((page_size & (page_size - 1)) == 0)
 	a->magnitude = (uint16_t)clz32(page_size); 
     else 
 	a->magnitude = (uint16_t)clz32(round_up32(page_size));
 
-    a->blocks_size = blocks_size;
+    a->block_size = block_size;
     a->blocks = blocks;
     a->num_pages = 0;
 
@@ -63,14 +67,7 @@ static inline uint16_t hash2(struct block_allocator * a, void * ptr) {
  */
 static inline void ba_htable_insert(struct block_allocator * a,
 					void * ptr, uint16_t n) {
-    uint16_t hval;
-    uintptr_t t = (((uintptr_t)ptr) >> a->magnitude) << a->magnitude;
-
-    if ( (uintptr_t)ptr - t >= (t + (1 << a->magnitude)) - (uintptr_t)ptr ) {
-	hval = hash1(a, ptr);
-    } else {
-	hval = hash2(a, ptr);
-    }
+    uint16_t hval = hash1(a, ptr);
 
     while (a->htable[hval & BA_HASH_MASK(a)]) hval++;
     a->htable[hval & BA_HASH_MASK(a)] = n;
@@ -80,20 +77,21 @@ static inline uint16_t ba_htable_lookup(struct block_allocator * a,
 					void * ptr) {
     uint16_t hval; 
     uint16_t n;
+    ba_page p;
 
-    hval = hash1(ptr);
+    hval = hash1(a, ptr);
 
     while ((n = a->htable[hval & BA_HASH_MASK(a)])) {
-	ba_page p = a->pages[n-1];
+	p = &a->pages[n-1];
 	if (BA_CHECK_PTR(a, p, ptr)) {
 	    return n;
 	}
     }
 
-    hval = hash2(ptr);
+    hval = hash2(a, ptr);
 
     while ((n = a->htable[hval & BA_HASH_MASK(a)])) {
-	ba_page p = a->pages[n-1];
+	p = &a->pages[n-1];
 	if (BA_CHECK_PTR(a, p, ptr)) {
 	    return n;
 	}
@@ -107,19 +105,19 @@ void * ba_alloc(struct block_allocator * a) {
     size_t i, j;
 
     if (a->free == 0) {
-	p = a->pages[a->num_pages++];
+	p = &a->pages[a->num_pages++];
 	p->data = malloc(BA_PAGESIZE(a));
 	if (!p->data) {
 	    Pike_error("no mem");
 	}
 	memset((void*)p->mask, 0xff, BA_MASK_NUM(a)*sizeof(uintptr_t));
-	p->next = 0;
+	p->free = 0;
 	a->free = a->num_pages;
-	ba_htable_insert(a, p->data, a->num_pages);
+	ba_htable_insert(a, (void*)((char*)p->data + BA_PAGESIZE(a) - 1), a->num_pages);
 	p->mask[0] = ~TBITMASK(uintptr_t, 0);
 	return p->data;
     } else {
-	p = a->pages[a->free - 1];
+	p = &a->pages[a->free - 1];
 
 	for (i = 0; i < BA_MASK_NUM(a); i++) {
 	    uintptr_t m = p->mask[i];
@@ -128,7 +126,7 @@ void * ba_alloc(struct block_allocator * a) {
 		    j = ctz64(m);
 		else 
 		    j = ctz32(m);
-		blk->mask[i] ^= TBITMASK(uintptr_t, j);
+		p->mask[i] ^= TBITMASK(uintptr_t, j);
 		break;
 	    }
 	}
@@ -145,15 +143,18 @@ void * ba_alloc(struct block_allocator * a) {
 
 void ba_free(struct block_allocator * a, void * ptr) {
     uint16_t n = ba_htable_lookup(a, ptr);
+    uintptr_t t;
+    unsigned int mask, bit;
+    ba_page p;
 
     if (!n) {
 	Pike_error("Unknown pointer: %p\n", ptr);
     }
     
-    ba_page p = a->pages[n-1];
-    uintptr_t t = (uintptr_t)(ptr - p->data)/a->block_size;
-    unsigned int mask = t / (sizeof(uintptr_t) * 8);
-    unsigned int bit = t & ((sizeof(uintptr_t)*8) - 1);
+    p = &a->pages[n-1];
+    t = (uintptr_t)((char*)ptr - p->data)/a->block_size;
+    mask = t / (sizeof(uintptr_t) * 8);
+    bit = t & ((sizeof(uintptr_t)*8) - 1);
 
     if (p->mask[mask] & TBITMASK(uintptr_t, bit)) {
 	Pike_error("double free!");
@@ -170,9 +171,9 @@ void ba_free(struct block_allocator * a, void * ptr) {
 	    p->free = a->free;
 	    a->free = n;
 	} else {
-	    ba_page tmp = a->pages[a->free-1];
+	    ba_page tmp = &a->pages[a->free-1];
 	    while (tmp->free && tmp->free < n) {
-		tmp = a->pages[tmp->free - 1];
+		tmp = &a->pages[tmp->free - 1];
 	    }
 	    p->free = tmp->free;
 	    tmp->free = n;
