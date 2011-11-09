@@ -136,6 +136,7 @@ MAKE_FLAGS=
 # Add alloca.o if you don't have alloca() on your machine.
 #
 CORE_OBJ= \
+ block_allocator.o \
  language.o \
  security.o \
  bignum.o \
