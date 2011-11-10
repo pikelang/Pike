@@ -389,22 +389,32 @@ protected void parse_post()
     foreach(messg->body_parts, object part) {
       if(part->disp_params->filename) {
 
-	if(variables[part->disp_params->name] && !arrayp(variables[part->disp_params->name]))
-	  variables[part->disp_params->name] = ({ variables[part->disp_params->name] });
+	      if(variables[part->disp_params->name] && !arrayp(variables[part->disp_params->name]))
+	        variables[part->disp_params->name] = ({ variables[part->disp_params->name] });
 	
-	if(variables[part->disp_params->name] && arrayp(variables[part->disp_params->name]))
-	  variables[part->disp_params->name] += ({part->getdata()});
-	else variables[part->disp_params->name]=part->getdata();
+	      if(variables[part->disp_params->name] && arrayp(variables[part->disp_params->name]))
+	        variables[part->disp_params->name] += ({part->getdata()});
+	      else variables[part->disp_params->name]=part->getdata();
 
-	if(variables[part->disp_params->name+".filename"] && !arrayp(variables[part->disp_params->name+".filename"]))
-	  variables[part->disp_params->name+".filename"] = ({ variables[part->disp_params->name+".filename"] });
+	      if(variables[part->disp_params->name+".filename"] && !arrayp(variables[part->disp_params->name+".filename"]))
+	        variables[part->disp_params->name+".filename"] = ({ variables[part->disp_params->name+".filename"] });
 	
-	if(variables[part->disp_params->name+".filename"] && arrayp(variables[part->disp_params->name+".filename"]))
-	  variables[part->disp_params->name+".filename"] += ({part->disp_params->filename});
-	else
- 	  variables[part->disp_params->name+".filename"]= part->disp_params->filename;      
-	} else
-	variables[part->disp_params->name] = part->getdata();
+	      if(variables[part->disp_params->name+".filename"] && arrayp(variables[part->disp_params->name+".filename"]))
+	        variables[part->disp_params->name+".filename"] += ({part->disp_params->filename});
+	      else
+ 	        variables[part->disp_params->name+".filename"]= part->disp_params->filename;      
+ 	        
+ 	      if(variables[part->disp_params->name+".mimetype"] && !arrayp(variables[part->disp_params->name+".mimetype"]))
+  	      variables[part->disp_params->name+".mimetype"] = ({ variables[part->disp_params->name+".mimetype"] });
+
+  	    if(variables[part->disp_params->name+".mimetype"] && arrayp(variables[part->disp_params->name+".mimetype"]))
+  	      variables[part->disp_params->name+".mimetype"] += ({part->disp_params->filename});
+  	    else
+   	      variables[part->disp_params->name+".mimetype"]= part->disp_params->filename;      
+  	    
+	    } 
+	    else
+	      variables[part->disp_params->name] = part->getdata();
     }
   }
   else if( request_headers["content-type"] &&
