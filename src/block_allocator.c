@@ -17,6 +17,7 @@ struct ba_page {
 #define BA_SPAGE_SIZE(a)    (sizeof(struct ba_page) + (BA_MASK_NUM(a) - 1)*sizeof(uintptr_t))
 #define BA_HASH_MASK(a)  ((1 << (a->allocated + 1)) - 1)
 #define BA_CHECK_PTR(a, p, ptr)	((char*)ptr >= p->data && ((uintptr_t)(p->data) + BA_PAGESIZE(a) > (uintptr_t)ptr))
+#define BA_PAGE(a, n)   ((ba_page)((char*)a->pages + (n) * BA_SPAGE_SIZE(a)))
 
 void ba_init(struct block_allocator * a,
 				 uint32_t block_size, uint32_t blocks) {
@@ -34,13 +35,13 @@ void ba_init(struct block_allocator * a,
     a->num_pages = 0;
 
     a->allocated = 5;
-    a->pages = (ba_page)malloc(( BA_SPAGE_SIZE(a) + 2 * sizeof(uint16_t))
+    a->pages = malloc(( BA_SPAGE_SIZE(a) + 2 * sizeof(uint16_t))
 				 * (1 << a->allocated));
     if (!a->pages) {
 	Pike_error("no mem");
     }
-    a->htable = (uint16_t*) (((char*)a->pages) + BA_SPAGE_SIZE(a) * (1 << a->allocated));
-    memset((void*)a->pages, 0,
+    a->htable = (uint16_t*) BA_PAGE(a, (1 << a->allocated));
+    memset(a->pages, 0,
 	   ( BA_SPAGE_SIZE(a) + 2 * sizeof(uint16_t)) * (1 << a->allocated));
 }
 
@@ -82,7 +83,7 @@ static inline uint16_t ba_htable_lookup(struct block_allocator * a,
     hval = hash1(a, ptr);
 
     while ((n = a->htable[hval & BA_HASH_MASK(a)])) {
-	p = &a->pages[n-1];
+	p = BA_PAGE(a, n-1);
 	if (BA_CHECK_PTR(a, p, ptr)) {
 	    return n;
 	}
@@ -91,7 +92,7 @@ static inline uint16_t ba_htable_lookup(struct block_allocator * a,
     hval = hash2(a, ptr);
 
     while ((n = a->htable[hval & BA_HASH_MASK(a)])) {
-	p = &a->pages[n-1];
+	p = BA_PAGE(a, n-1);
 	if (BA_CHECK_PTR(a, p, ptr)) {
 	    return n;
 	}
@@ -105,7 +106,7 @@ void * ba_alloc(struct block_allocator * a) {
     size_t i, j;
 
     if (a->free == 0) {
-	p = &a->pages[a->num_pages++];
+	p = BA_PAGE(a, a->num_pages++);
 	p->data = malloc(BA_PAGESIZE(a));
 	if (!p->data) {
 	    Pike_error("no mem");
@@ -117,9 +118,9 @@ void * ba_alloc(struct block_allocator * a) {
 	p->mask[0] = ~TBITMASK(uintptr_t, 0);
 	return p->data;
     } else {
-	p = &a->pages[a->free - 1];
+	p = BA_PAGE(a, a->free - 1);
 
-	for (i = 0; i < BA_MASK_NUM(a); i++) {
+	for (j = -1, i = 0; i < BA_MASK_NUM(a); i++) {
 	    uintptr_t m = p->mask[i];
 	    if (m) {
 		if (sizeof(uintptr_t) == 8)
@@ -129,6 +130,10 @@ void * ba_alloc(struct block_allocator * a) {
 		p->mask[i] ^= TBITMASK(uintptr_t, j);
 		break;
 	    }
+	}
+
+	if (j == -1) {
+	    Pike_error("This should not happen!\n");
 	}
 
 	// now empty.
@@ -151,7 +156,7 @@ void ba_free(struct block_allocator * a, void * ptr) {
 	Pike_error("Unknown pointer: %p\n", ptr);
     }
     
-    p = &a->pages[n-1];
+    p = BA_PAGE(a, n-1);
     t = (uintptr_t)((char*)ptr - p->data)/a->block_size;
     mask = t / (sizeof(uintptr_t) * 8);
     bit = t & ((sizeof(uintptr_t)*8) - 1);
@@ -171,9 +176,9 @@ void ba_free(struct block_allocator * a, void * ptr) {
 	    p->free = a->free;
 	    a->free = n;
 	} else {
-	    ba_page tmp = &a->pages[a->free-1];
+	    ba_page tmp = BA_PAGE(a, a->free-1);
 	    while (tmp->free && tmp->free < n) {
-		tmp = &a->pages[tmp->free - 1];
+		tmp = BA_PAGE(a, tmp->free - 1);
 	    }
 	    p->free = tmp->free;
 	    tmp->free = n;

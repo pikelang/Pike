@@ -9,7 +9,7 @@ struct block_allocator {
     uint16_t free; 
     uint16_t magnitude;
     uint16_t allocated;
-    ba_page pages;
+    void * pages;
     uint16_t * htable;
 };
 
