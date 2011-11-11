@@ -10,6 +10,7 @@ constant description = "Extracts autodoc from Pike or C code.";
 
 string imgsrc;
 string imgdir;
+int compat;
 
 int verbosity = 2;
 
@@ -24,6 +25,7 @@ int main(int n, array(string) args) {
     ({ "builddir",   Getopt.HAS_ARG,      "--builddir" }),
     ({ "imgdir",     Getopt.NO_ARG,       "--imgdir" }),
     ({ "root",       Getopt.HAS_ARG,      "--root" }),
+    ({ "compat",     Getopt.NO_ARG,       "--compat" }),
     ({ "quiet",      Getopt.NO_ARG,       "-q,--quiet"/"," }),
     ({ "help",       Getopt.NO_ARG,       "-h,--help"/"," }) })), array opt)
     switch(opt[0])
@@ -43,6 +45,9 @@ int main(int n, array(string) args) {
       imgdir = combine_path(getcwd(), opt[1]);
       if(imgdir[-1]!='/') imgdir += "/";
       break;
+    case "compat":
+      compat++;
+      break;
     case "root":
       root = opt[1]/".";
       break;
@@ -53,7 +58,8 @@ int main(int n, array(string) args) {
       werror("Usage:\n"
 	     "\tpike -x extract_autodoc [-q] --srcdir=<srcdir> \n"
 	     "\t     [--imgsrcdir=<imgsrcdir>] [--builddir=<builddir>]\n"
-	     "\t     [--imgdir=<imgdir>] [--root=<module>] [file1 [... filen]]\n");
+	     "\t     [--imgdir=<imgdir>] [--root=<module>]\n"
+	     "\t     [--compat] [file1 [... filen]]\n");
       return 0;
     }
 
@@ -183,7 +189,7 @@ string extract(string filename, string imgdest,
     // Mirar-style markup.
     if(imgsrc && imgdest) {
       Tools.AutoDoc.MirarDocParser mirar_parser =
-	Tools.AutoDoc.MirarDocParser(imgsrc, !verbosity);
+	Tools.AutoDoc.MirarDocParser(imgsrc, !verbosity, compat);
       int lineno = 1;
       foreach(file/"\n", string line) {
 	mirar_parser->process_line(line, filename, lineno++);

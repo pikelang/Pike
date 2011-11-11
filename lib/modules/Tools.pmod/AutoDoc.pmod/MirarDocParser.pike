@@ -4,8 +4,93 @@
 /* MirarDoc documentation extractor.
  */
 
-string makepic1;
-string makepic2;
+string IMAGE_DIR;
+
+// Alternative makepic implementations, current first.
+constant makepic = ({
+  // Pike 0.7.11 and later:
+  #"// Illustration.
+#pike __REAL_VERSION__
+  string fn;
+
+  int verbosity;
+
+  void create(string _fn, int|void _verbosity, void|string type) {
+    fn = _fn;
+    verbosity = _verbosity;
+    string ext;
+    if(type==\"image/gif\") ext=\"gif\";
+    fn += \".\" + (ext||\"png\");
+  }
+
+  object lena() {
+    catch { return Image.load(IMAGE_DIR + \"image_ill.pnm\"); };
+    catch { return Image.load(IMAGE_DIR + \"lena.ppm\"); };
+    return Image.load(IMAGE_DIR + \"lena.gif\");
+  }
+
+  object|string render();
+
+  string make() {
+#if constant(Image.PNG.encode)
+    object|string o=render();
+    if(objectp(o))
+      o=Image.PNG.encode(o);
+    Stdio.write_file(fn, o);
+    if(verbosity > 1)
+      werror(\"Wrote %s.\\n\", fn);
+#endif
+    return \"<image>\"+fn+\"</image>\";
+  }
+
+  object|string render() {
+",
+  // Prior to 7.3.11 there were implicit imports of Image
+  // and Stdio. cf src/modules/Image/illustration.pike.
+  //
+  // There was also a compat layer for various functions
+  // that later were removed.
+  #"// Pike 7.3 illustration, implicit imports.
+#pike 7.3
+
+  import Image;
+  import Stdio;
+  string fn;
+
+  int verbosity;
+
+  void create(string _fn, int|void _verbosity, void|string type) {
+    fn = _fn;
+    verbosity = _verbosity;
+    string ext;
+    if(type==\"image/gif\") ext=\"gif\";
+    fn += \".\" + (ext||\"png\");
+  }
+
+  object lena() {
+    catch { return load(IMAGE_DIR + \"image_ill.pnm\"); };
+    catch { return load(IMAGE_DIR + \"lena.ppm\"); };
+    return load(IMAGE_DIR + \"lena.gif\");
+  }
+
+  object|string render();
+
+  string make() {
+#if constant(Image.PNG.encode)
+    object|string o=render();
+    if(objectp(o))
+      o=PNG.encode(o);
+    Stdio.write_file(fn, o);
+    if(verbosity > 1)
+      werror(\"Wrote %s.\\n\", fn);
+#endif
+    return \"<image>\"+fn+\"</image>\";
+  }
+
+  object|string render() {
+",
+});
+
 string execute;
 
 mapping parse=([ ]);
@@ -94,7 +179,7 @@ void report(string s)
 string file_version = "";
 
 mapping keywords=
-(["$Id":lambda(string arg, string line)
+(["$""Id":lambda(string arg, string line)
 	{
 	  file_version = " version='Id: "+arg[..search(arg, "$")-1]+"'";
 	},
@@ -839,7 +924,7 @@ void process_line(string s,string currentfile,int line)
       {
 	 string d=s[i+3..];
    //  	    sscanf(d,"%*[ \t]!%s",d);
-   //	    if (search(s,"$Id")!=-1) report("Id: "+d);
+   //	    if (search(s,"$""Id")!=-1) report("Id: "+d);
 	 if (!descM) descM=methodM;
 	 if (!descM)
 	 {
@@ -878,9 +963,41 @@ array(string) tag_preserve_ws(Parser.HTML p, mapping args, string c) {
 		    p->tag_name()) });
 }
 
-void create(string IMAGE_DIR, int|void quiet)
+int compat;
+
+program try_compile_illustration(array(string) templates,
+				 string illustration_code,
+				 string where)
+{
+  mixed err;
+  string defines = sprintf("#define IMAGE_DIR %O\n", IMAGE_DIR);
+  foreach(templates; int t; string template) {
+    if (compat && !t &&
+	(has_value(illustration_code, "->map_closest") ||
+	 has_value(illustration_code, "->map_fs"))) {
+      continue;
+    }
+    string code = defines + template + illustration_code + "}\n";
+    err = catch {
+	return compile_string(code);
+      };
+    array(string) rows = code/"\n";
+    werror("%O\n"
+	   "******\n", where);
+    for(int i; i<sizeof(rows); i++)
+      werror("%04d: %s\n", i, rows[i]);
+    werror("******\n");
+    if (!compat) throw(err);
+  }
+  throw(err);
+}
+
+void create(string image_dir, int|void quiet, int|void compat)
 {
   verbosity = !quiet;
+  this_program::compat = compat;
+
+  IMAGE_DIR = image_dir;
 
   parser = Parser.HTML();
 
@@ -904,21 +1021,9 @@ void create(string IMAGE_DIR, int|void quiet)
       string name;
       sscanf(where, "file='%s'", name);
       name = (name/"/")[-1];
-      array err;
       object g;
-      err = catch {
-	g = compile_string(makepic1 + c +
-			   makepic2)(name+(illustration_counter++), args->type);
-      };
-      if(err) {
-	werror("%O\n", where);
-	array rows = (makepic1+c+makepic2)/"\n";
-	werror("******\n");
-	for(int i; i<sizeof(rows); i++)
-	  werror("%04d: %s\n", i, rows[i]);
-	werror("******\n");
-	throw(err);
-      }
+      g = try_compile_illustration(makepic, c, where)
+	(name+(illustration_counter++), verbosity, args->type);
 
       return ({ g->make() });
     });
@@ -1023,40 +1128,6 @@ void create(string IMAGE_DIR, int|void quiet)
   IMAGE_DIR = combine_path(getcwd(), IMAGE_DIR);
   if (!sizeof(IMAGE_DIR)) IMAGE_DIR="./";
   else if (IMAGE_DIR[-1] != '/') IMAGE_DIR += "/";
-
-  makepic1 = #"
-  string fn;
-
-  void create(string _fn, void|string type) {
-    fn = _fn;
-    string ext;
-    if(type==\"image/gif\") ext=\"gif\";
-    fn += \".\" + (ext||\"png\");
-  }
-
-  object lena() {
-    object i = Image.load(\"" + IMAGE_DIR + #"image_ill.pnm\");
-    return i;
-  }
-
-  object|string render() {
-";
-
-  makepic2 = #";
-  }
-
-  string make() {
-#if constant(Image.PNG.encode)
-    object|string o=render();
-    if(objectp(o))
-      o=Image.PNG.encode(o);
-    Stdio.write_file(fn, o);" +
-    ((verbosity > 1)?#"
-    werror(\"Wrote %s.\\n\", fn);":"") + #"
-#endif
-    return \"<image>\"+fn+\"</image>\";
-  }
-";
 
   execute = #"
   class Interceptor {
