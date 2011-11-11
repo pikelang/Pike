@@ -492,6 +492,7 @@ THREADS_DISALLOW();
 
 /*
 **! method void create()
+**! method void create(Image.Image image)
 **! method void create(int xsize,int ysize)
 **! method void create(int xsize,int ysize,Color color)
 **! method void create(int xsize,int ysize,int r,int g,int b)
@@ -512,8 +513,8 @@ THREADS_DISALLOW();
 **!	for convinience:
 **!
 **!	<pre>
-**!	channel modes; followed by a number of 1-char-per-pixel strings 
-**!	or image objects (where red channel will be used), 
+**!	channel modes; followed by a number of 1-char-per-pixel strings
+**!	or image objects (where red channel will be used),
 **!	or an integer value:
 **!	  "grey" : make a grey image (needs 1 source: grey)
 **!	  "rgb"  : make an rgb image (needs 3 sources: red, green and blue)
@@ -524,7 +525,7 @@ THREADS_DISALLOW();
 **!
 **!	generate modes; all extra arguments is given to the
 **!	generation function. These has the same name as the method:
-**!	  "<ref>test</ref>," 
+**!	  "<ref>test</ref>,"
 **!	  "<ref>gradients</ref>"
 **!	  "<ref>noise</ref>"
 **!	  "<ref>turbulence</ref>"
@@ -534,6 +535,8 @@ THREADS_DISALLOW();
 **!	  "<ref>tuned_box</ref>" (coordinates is automatic)
 **!	</pre>
 **!
+**! arg Image.Image image
+**!     Image to clone.
 **! arg int xsize
 **! arg int ysize
 **! 	size of (new) image in pixels
@@ -548,7 +551,7 @@ THREADS_DISALLOW();
 **! see also: copy, clone, Image.Image
 **! bugs
 **!	SIGSEGVS can be caused if the size is too big, due
-**!	to unchecked overflow - 
+**!	to unchecked overflow -
 **!	(xsize*ysize)&MAXINT is small enough to allocate.
 */
 
@@ -935,6 +938,15 @@ void image_create_method(INT32 args)
 
 void image_create(INT32 args)
 {
+   if ((args >= 1) && (TYPEOF(sp[-args]) == T_OBJECT)) {
+      struct object *o = sp[-args].u.object;
+      pop_n_elems(args - 1);
+      apply(o, "xsize", 0);
+      apply(o, "ysize", 0);
+      image_create(2);
+      image_paste(1);
+      return;
+   }
    if (args<2) return;
    if (TYPEOF(sp[-args]) != T_INT||
        TYPEOF(sp[1-args]) != T_INT)
@@ -4874,8 +4886,9 @@ void init_image_image(void)
    ADD_FUNCTION("_decode", image__decode, tFunc(tArray,tVoid), 0 );
 
    ADD_FUNCTION("create",image_create,
-		tOr(tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid) tRGB,tVoid),
-		    tFuncV(tInt tInt tString,tMixed,tVoid)),0);
+		tOr3(tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid) tRGB,tVoid),
+		     tFunc(tObj, tVoid),
+		     tFuncV(tInt tInt tString,tMixed,tVoid)),0);
    ADD_FUNCTION("clone",image_clone,
 		tOr3(tFunc(tInt tInt tInt tInt tRGB,tObj),
                      tFunc(tRGB,tObj),
