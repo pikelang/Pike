@@ -937,9 +937,6 @@ void document(string enttype,
 
 string make_doc_files(string builddir, string imgdest, string|void namespace)
 {
-   string here = getcwd();
-   cd(builddir);
-
    if (verbosity > 0)
      werror("modules: " +
 	    sort(indices(parse))*", " +
@@ -961,14 +958,25 @@ string make_doc_files(string builddir, string imgdest, string|void namespace)
       }
    }();
 
-   // Module documentation exists in a namespace...
-   f->write("<namespace name='" + namespace + "'>\n");
-   foreach (sort(indices(parse)-({"_order"})),string module)
-      document("module",parse[module],module,module+".", f);
-   f->write("</namespace>\n");
+   string here = getcwd();
+   cd(builddir);
+
+   mixed err = catch {
+       // Module documentation exists in a namespace...
+       f->write("<namespace name='" + namespace + "'>\n");
+       foreach (sort(indices(parse)-({"_order"})),string module)
+	 document("module",parse[module],module,module+".", f);
+       f->write("</namespace>\n");
+     };
 
    cd(here);
-   return Tools.AutoDoc.ProcessXML.moveImages(f->read(), builddir, imgdest);
+   if (err) throw(err);
+   string autodoc = f->read();
+   err = catch {
+       return Tools.AutoDoc.ProcessXML.moveImages(autodoc, builddir, imgdest);
+     };
+   werror("Autodoc:\n%O\n", autodoc);
+   throw(err);
 }
 
 void process_line(string s,string currentfile,int line)
@@ -987,7 +995,7 @@ void process_line(string s,string currentfile,int line)
 	 if ( (err=keywords[kw](arg,"file='"+currentfile+"' first-line='"+line+"'")) )
 	 {
 	   report(currentfile+"file='"+currentfile+"' line="+line);
-	   exit(1);
+	   error("process_line failed: %O\n", err);
 	 }
       }
       else if (s[i+3..]!="")
@@ -999,7 +1007,8 @@ void process_line(string s,string currentfile,int line)
 	 if (!descM)
 	 {
 	    report(currentfile+" line "+line+": illegal description position");
-	    exit(1);
+	    //error("process_line failed: Illegal description position.\n");
+	    return;
 	 }
 	 if (!descM->desc) descM->desc="";
 	 else descM->desc+="\n";
