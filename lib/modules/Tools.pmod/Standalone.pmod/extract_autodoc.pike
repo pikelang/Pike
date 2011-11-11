@@ -100,8 +100,26 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
     root_ts = st->mtime;
   }
 
+  foreach(get_dir(builddir), string fn) {
+    if ((fn != ".cache.xml") && has_suffix(fn, ".xml")) {
+      if (!Stdio.exist(srcdir + fn[..<4])) {
+	if (verbosity > 0)
+	  werror("The file %O is no more.\n", srcdir + fn[..<4]);
+	rm(builddir + fn);
+	rm(builddir + ".cache.xml");
+      }
+    } else if (Stdio.is_dir(builddir + fn) && !Stdio.exist(srcdir + fn)) {
+      // Recurse and clean away old obsolete files.
+      recurse(srcdir + fn + "/", builddir + fn + "/", root_ts, root);
+      // Try deleting the directory.
+      rm(builddir + fn);
+      rm(builddir + ".cache.xml");
+    }
+  }
+
   if(!file_stat(srcdir)) {
-    werror("Could not find directory %O.\n", srcdir);
+    if (!Stdio.is_dir(builddir))
+      werror("Could not find directory %O.\n", srcdir);
     return;
   }
 
