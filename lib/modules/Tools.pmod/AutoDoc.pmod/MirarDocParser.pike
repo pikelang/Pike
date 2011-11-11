@@ -320,11 +320,81 @@ string make_nice_reference(string what,string prefix,string stuff)
    return "<ref to="+linkify(q)+">"+htmlify(stuff)+"</ref>";
 }
 
+// Mapping from tag to their required parent tag.
+constant dtd_nesting = ([
+  "dt":"dl",
+  "dd":"dl",
+  "tr":"table",
+  "td":"tr",
+  "th":"tr",
+]);
+
+constant self_terminating = (< "br" >);
+
+ADT.Stack nesting;
+
+array(string) pop_to_tag(string tag)
+{
+  array(string) res = ({});
+  string top;
+  while ((top = nesting->top()) && (top != tag)) {
+    res += ({ "</" + top + ">" });
+    nesting->pop();
+  }
+  if (!top) {
+    error("Missing container tag %O\n", tag);
+  }
+  return res;
+}
+
+array(string) fix_tag_nesting(Parser.HTML p, string value)
+{
+  // werror("fix_nesting(%O, %O)\n", p, value);
+
+  if ((nesting->top() == "pre") && !has_prefix(value, "</pre>")) {
+    return ({ _Roxen.html_encode_string(value) });
+  }
+
+  string tag = p->parse_tag_name(value[1..<1]);
+
+  array(string) ret = ({});
+
+  if (has_prefix(tag, "/")) {
+    // End tag. Pop to starttag.
+    ret = pop_to_tag(tag[1..]);
+    nesting->pop();
+  } else {
+    if (dtd_nesting[tag]) {
+      ret = pop_to_tag(dtd_nesting[tag]);
+    }
+    if (has_suffix(value, "/>")) {
+      // Self-terminating tag.
+    } else if (self_terminating[tag]) {
+      value = value[..<1] + " />";
+    } else {
+      nesting->push(tag);
+    }
+  }
+  ret += ({ value });
+
+  return ret;
+}
+
+Parser.HTML nesting_parser;
+
 Parser.HTML parser;
 
 string fixdesc(string s,string prefix,void|string where)
 {
    s = stripws(replace(s, "<p>", "\n"));
+
+   nesting = ADT.Stack();
+   nesting->push(0);	// End sentinel.
+
+   nesting_parser->set_extra(where);
+
+   string old_s = s;
+   s = nesting_parser->finish(s)->read();
 
    parser->set_extra(where);
 
@@ -998,6 +1068,9 @@ void create(string image_dir, int|void quiet, int|void compat)
   this_program::compat = compat;
 
   IMAGE_DIR = image_dir;
+
+  nesting_parser = Parser.HTML();
+  nesting_parser->_set_tag_callback(fix_tag_nesting);
 
   parser = Parser.HTML();
 
