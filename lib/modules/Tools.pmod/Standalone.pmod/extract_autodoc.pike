@@ -184,8 +184,9 @@ string extract(string filename, string imgdest,
 
   int i;
   if (has_value(file, "**""!") ||
-      (((i = search(file, "//! ""module ")) != -1) &&
-       (sizeof(array_sscanf(file[i+11..],"%s\n%*s")[0]/" ") == 1))) {
+      ((((i = search(file, "//! ""module ")) != -1) ||
+	((i = search(file, "//! ""submodule ")) != -1)) &&
+       (sizeof(array_sscanf(file[i..],"%s\n%*s")[0]/" ") == 3))) {
     // Mirar-style markup.
     if(imgsrc && imgdest) {
       Tools.AutoDoc.MirarDocParser mirar_parser =
