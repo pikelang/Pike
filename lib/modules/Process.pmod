@@ -567,10 +567,12 @@ mapping run(string|array(string) cmd, void|mapping modifiers)
                                } );
   mystdout->set_close_callback( lambda () {
 				  mystdout->set_read_callback(0);
+				  catch { mystdout->close(); };
 				  mystdout = 0;
 				});
   mystderr->set_close_callback( lambda () {
 				  mystderr->set_read_callback(0);
+				  catch { mystderr->close(); };
 				  mystderr = 0;
 				});
 
@@ -580,6 +582,7 @@ mapping run(string|array(string) cmd, void|mapping modifiers)
     Shuffler.Shuffle sf = sfr->shuffle( mystdin );
     sf->add_source(stdin_str);
     sf->set_done_callback (lambda () {
+			     catch { mystdin->close(); };
 			     mystdin = 0;
 			   });
     sf->start();
