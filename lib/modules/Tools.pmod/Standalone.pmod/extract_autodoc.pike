@@ -10,9 +10,10 @@ constant description = "Extracts autodoc from Pike or C code.";
 
 string imgsrc;
 string imgdir;
-int compat;
 
-int verbosity = 2;
+Tools.AutoDoc.Flags flags = Tools.AutoDoc.FLAG_VERBOSE;
+
+int verbosity = Tools.AutoDoc.FLAG_VERBOSE;
 
 int main(int n, array(string) args) {
 
@@ -26,6 +27,8 @@ int main(int n, array(string) args) {
     ({ "imgdir",     Getopt.NO_ARG,       "--imgdir" }),
     ({ "root",       Getopt.HAS_ARG,      "--root" }),
     ({ "compat",     Getopt.NO_ARG,       "--compat" }),
+    ({ "no-dynamic", Getopt.NO_ARG,       "--no-dynamic" }),
+    ({ "keep-going", Getopt.NO_ARG,       "--keep-going" }),
     ({ "quiet",      Getopt.NO_ARG,       "-q,--quiet"/"," }),
     ({ "help",       Getopt.NO_ARG,       "-h,--help"/"," }) })), array opt)
     switch(opt[0])
@@ -46,22 +49,30 @@ int main(int n, array(string) args) {
       if(imgdir[-1]!='/') imgdir += "/";
       break;
     case "compat":
-      compat++;
+      flags |= Tools.AutoDoc.FLAG_COMPAT;
+      break;
+    case "no-dynamic":
+      flags |= Tools.AutoDoc.FLAG_NO_DYNAMIC;
+      break;
+    case "keep-going":
+      flags |= Tools.AutoDoc.FLAG_KEEP_GOING;
       break;
     case "root":
       root = opt[1]/".";
       break;
     case "quiet":
-      verbosity = 0;
+      flags = (flags & ~Tools.AutoDoc.FLAG_VERB_MASK)|Tools.AutoDoc.FLAG_QUIET;
       break;
     case "help":
       werror("Usage:\n"
 	     "\tpike -x extract_autodoc [-q] --srcdir=<srcdir> \n"
 	     "\t     [--imgsrcdir=<imgsrcdir>] [--builddir=<builddir>]\n"
 	     "\t     [--imgdir=<imgdir>] [--root=<module>]\n"
-	     "\t     [--compat] [file1 [... filen]]\n");
+	     "\t     [--compat] [--no-dynamic] [--keep-going] [file1 [... filen]]\n");
       return 0;
     }
+
+  verbosity = flags & Tools.AutoDoc.FLAG_VERB_MASK;
 
   args = args[1..] - ({0});
 
@@ -78,9 +89,12 @@ int main(int n, array(string) args) {
       if(!dstat || dstat->mtime < stat->mtime) {
         string res = extract(fn, imgdir, builddir, root);
 
-        if(!res) exit(1);
+        if(!res) {
+	  if (flags & Tools.AutoDoc.FLAG_KEEP_GOING) continue;
+	  exit(1);
+	}
         Stdio.write_file(builddir+fn+".xml", res);
-        }
+      }
     }
   }
   else {
@@ -131,7 +145,7 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
 
   // do not recurse into the build dir directory to avoid infinite loop
   // by building the autodoc of the autodoc and so on
-  if(search(builddir, srcdir) == -1)
+  if(search(builddir, srcdir) == -1) {
     foreach(get_dir(srcdir), string fn) {
       if(fn=="CVS") continue;
       if(fn[0]=='.') continue;
@@ -164,10 +178,14 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
       // source file, or if the root has changed since the previous build.
       if(!dstat || dstat->mtime < stat->mtime || dstat->mtime < root_ts) {
 	string res = extract(srcdir+fn, imgdir, builddir, root);
-	if(!res) exit(1);
+	if(!res) {
+	  if (flags & Tools.AutoDoc.FLAG_KEEP_GOING) continue;
+	  exit(1);
+	}
 	Stdio.write_file(builddir+fn+".xml", res);
       }
     }
+  }
 }
 
 string extract(string filename, string imgdest,
@@ -190,7 +208,7 @@ string extract(string filename, string imgdest,
     // Mirar-style markup.
     if(imgsrc && imgdest) {
       Tools.AutoDoc.MirarDocParser mirar_parser =
-	Tools.AutoDoc.MirarDocParser(imgsrc, !verbosity, compat);
+	Tools.AutoDoc.MirarDocParser(imgsrc, flags);
       int lineno = 1;
       foreach(file/"\n", string line) {
 	mirar_parser->process_line(line, filename, lineno++);

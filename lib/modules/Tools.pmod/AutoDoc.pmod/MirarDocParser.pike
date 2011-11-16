@@ -434,6 +434,8 @@ array(string) fix_tag_nesting(Parser.HTML p, string value)
   return ret;
 }
 
+.Flags flags;
+
 Parser.HTML nesting_parser;
 
 Parser.HTML parser;
@@ -469,7 +471,7 @@ string fixdesc(string s,string prefix,void|string where)
    s = "<p>" + (s/"\n\n")*"</p>\n\n<p>" + "</p>";
    s = htmlify(s);
 
-   if (where)
+   if (where && !(flags & .FLAG_NO_DYNAMIC))
       return "<source-position " + where + "/>\n"+s;
 
    return s;
@@ -804,7 +806,8 @@ void document(string enttype,
 	  }
 	break;
    }
-   f->write("<source-position " + huh->_line + "/>\n");
+   if (!(flags & .FLAG_NO_DYNAMIC))
+     f->write("<source-position " + huh->_line + "/>\n");
 
 // [DESCRIPTION]
 
@@ -1040,7 +1043,9 @@ string make_doc_files(string builddir, string imgdest, string|void namespace)
    if (err) throw(err);
    string autodoc = f->read();
    err = catch {
-       return Tools.AutoDoc.ProcessXML.moveImages(autodoc, builddir, imgdest);
+       return Tools.AutoDoc.ProcessXML.moveImages(autodoc, builddir, imgdest,
+						  (flags & .FLAG_VERB_MASK) <
+						  .FLAG_VERBOSE);
      };
    werror("Autodoc:\n%O\n", autodoc);
    throw(err);
@@ -1109,8 +1114,6 @@ array(string) tag_preserve_ws(Parser.HTML p, mapping args, string c) {
 		    p->tag_name()) });
 }
 
-int compat;
-
 class CompilationHandler
 {
   array(string) lines = ({});
@@ -1133,7 +1136,7 @@ array(program|string) try_compile_illustration(array(string) templates,
   mixed err;
   string defines = sprintf("#define IMAGE_DIR %O\n", IMAGE_DIR);
   foreach(templates; int t; string template) {
-    if (compat && !t &&
+    if ((flags & .FLAG_COMPAT) && !t &&
 	(has_value(illustration_code, "->map_closest") ||
 	 has_value(illustration_code, "->map_fs"))) {
       continue;
@@ -1143,7 +1146,7 @@ array(program|string) try_compile_illustration(array(string) templates,
     err = catch {
 	return ({ compile_string(code, "-", handler), code });
       };
-    if (!compat) break;
+    if (!(flags & .FLAG_COMPAT)) break;
   }
   werror("Compilation of illustration at %O failed:\n"
 	 "%s\n"
@@ -1155,10 +1158,10 @@ array(program|string) try_compile_illustration(array(string) templates,
   throw(err);
 }
 
-void create(string image_dir, int|void quiet, int|void compat)
+void create(string image_dir, void|.Flags flags)
 {
-  verbosity = !quiet;
-  this_program::compat = compat;
+  verbosity = (flags & .FLAG_VERB_MASK);
+  this_program::flags = flags;
 
   IMAGE_DIR = image_dir;
 
