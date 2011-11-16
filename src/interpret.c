@@ -295,6 +295,8 @@ use_malloc:
   interpreter->accounted_time = 0;
 #endif
 
+  interpreter->trace_level = default_t_flag;
+
   return 0;	/* OK. */
 }
 
