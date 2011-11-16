@@ -1100,8 +1100,6 @@ TH_RETURN_TYPE new_thread_func(void *data)
 
   DEBUG_CHECK_THREAD();
 
-  Pike_interpreter.trace_level = default_t_flag;
-
   THREADS_FPRINTF(0, (stderr,"new_thread_func(): Thread %p inited\n",
 		      arg.thread_state));
 
