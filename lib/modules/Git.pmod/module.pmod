@@ -17,9 +17,6 @@ constant MODE_GITLINK = 0160000;
 constant MODE_DIR = 040000;
 
 //! The NULL SHA1.
-//!
-//! This can be used eg as the parent in @[Git.Export.commit] for 
-//! an existing branch to force there to be no parents.
 constant NULL_SHA1 = "0000000000000000000000000000000000000000";
 
 //! Start a git process.
