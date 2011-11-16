@@ -11,6 +11,7 @@
 #include "global.h"
 #include "fdlib.h"
 #include "backend.h"
+#include "time_stuff.h"
 #include <errno.h>
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -191,6 +192,7 @@ DECLARATIONS
 
 struct callback_list do_debug_callbacks;
 struct timeval current_time;
+int current_time_invalid = 1;
 
 /*
  * Stuff to map fds to the proper Backend
@@ -725,7 +727,7 @@ PIKECLASS Backend
      if(num_threads>1)
      {
        struct timeval tmp;
-       GETTIMEOFDAY(&tmp);
+       ACCURATE_GETTIMEOFDAY(&tmp);
        my_add_timeval(& new->tv, &tmp);
        IF_CO (fprintf (stderr, "BACKEND[%d]: Adding call out at %ld.%ld "
 		       "(current time is %ld.%ld)\n", me->id,
@@ -734,11 +736,13 @@ PIKECLASS Backend
      }else
 #endif
      {
-       my_add_timeval(& new->tv, &current_time);
+       struct timeval tmp;
+       INACCURATE_GETTIMEOFDAY(&tmp);
+       my_add_timeval(& new->tv, &tmp);
        IF_CO (fprintf (stderr, "BACKEND[%d]: Adding call out at %ld.%ld "
 		       "(current_time is %ld.%ld)\n", me->id,
 		       new->tv.tv_sec, new->tv.tv_usec,
-		       current_time.tv_sec, current_time.tv_usec));
+		       tmp.tv_sec, tmp.tv_usec));
      }
 
      if(Pike_fp && Pike_fp->current_object)
@@ -863,15 +867,17 @@ PIKECLASS Backend
      {
        int call_count = 0;
        int args;
-       struct timeval tmp;
+       struct timeval tmp, now;
        backend_verify_call_outs(me);
 
-       tmp.tv_sec = current_time.tv_sec;
-       tmp.tv_usec = current_time.tv_usec;
+       INACCURATE_GETTIMEOFDAY(&now);
+       tmp.tv_sec = now.tv_sec;
+       tmp.tv_usec = now.tv_usec;
        tmp.tv_sec++;
        while(me->num_pending_calls &&
-	     my_timercmp(&CALL(0)->tv, <= ,&current_time))
+	     my_timercmp(&CALL(0)->tv, <= ,&now))
        {
+	 struct timeval now;
 	 /* unlink call out */
 	 call_out c,*cc;
 	 
@@ -917,8 +923,8 @@ PIKECLASS Backend
 	 }
 	 backend_verify_call_outs(me);
 	 
-	 GETTIMEOFDAY(&current_time);
-	 if(my_timercmp(&current_time, > , &tmp)) break;
+	 ACCURATE_GETTIMEOFDAY(&now);
+	 if(my_timercmp(&now, > , &tmp)) break;
        }
 
        IF_CO (
@@ -928,7 +934,7 @@ PIKECLASS Backend
 		    "(current_time %ld.%ld, limit at %ld.%ld)\n",
 		    me->id, me->num_pending_calls,
 		    CALL(0)->tv.tv_sec, CALL(0)->tv.tv_usec,
-		    current_time.tv_sec, current_time.tv_usec,
+		    now.tv_sec, now.tv_usec,
 		    tmp.tv_sec, tmp.tv_usec);
 	 else
 	   fprintf (stderr, "BACKEND[%d]: backend_do_call_outs: "
@@ -1021,7 +1027,7 @@ PIKECLASS Backend
  */
    PIKEFUN int _do_call_outs()
      {
-       GETTIMEOFDAY(&current_time);
+       INVALIDATE_CURRENT_TIME();
        RETURN backend_do_call_outs(THIS);
      }
 
@@ -1060,7 +1066,9 @@ PIKECLASS Backend
 	 SET_SVAL(*Pike_sp, T_INT, NUMBER_UNDEFINED, integer, -1);
 	 Pike_sp++;
        }else{
-	 push_int(CALL(e)->tv.tv_sec - current_time.tv_sec);
+	 struct timeval now;
+	 INACCURATE_GETTIMEOFDAY(&now);
+	 push_int(CALL(e)->tv.tv_sec - now.tv_sec);
        }
        UNPROTECT_CALL_OUTS();
        backend_verify_call_outs(me);
@@ -1093,12 +1101,14 @@ PIKECLASS Backend
        backend_verify_call_outs(me);
        if(e!=-1)
        {
+	 struct timeval now;
+	 INACCURATE_GETTIMEOFDAY(&now);
 	 IF_CO (fprintf (stderr, "BACKEND[%d]: Removing call out at %ld.%ld "
 			 "(current_time is %ld.%ld)\n", me->id,
 			 CALL(e)->tv.tv_sec, CALL(e)->tv.tv_usec,
-			 current_time.tv_sec, current_time.tv_usec));
+			 now.tv_sec, now.tv_usec));
 	 pop_n_elems(args);
-	 push_int(CALL(e)->tv.tv_sec - current_time.tv_sec);
+	 push_int(CALL(e)->tv.tv_sec - now.tv_sec);
 	 free_array(CALL(e)->args);
 	 if(CALL(e)->caller)
 	   free_object(CALL(e)->caller);
@@ -1127,6 +1137,7 @@ PIKECLASS Backend
      {
        int e;
        struct array *ret;
+       struct timeval now;
        ONERROR err;
 
        backend_verify_call_outs(me);
@@ -1134,11 +1145,12 @@ PIKECLASS Backend
        ret=allocate_array_no_init(0, me->num_pending_calls);
        SET_ONERROR(err, do_free_array, ret);
        ret->type_field = BIT_ARRAY;
+       if(me->num_pending_calls) INACCURATE_GETTIMEOFDAY(&now);
        for(e=0;e<me->num_pending_calls;e++)
        {
 	 struct array *v;
 	 v=allocate_array_no_init(CALL(e)->args->size+2, 0);
-	 ITEM(v)[0].u.integer=CALL(e)->tv.tv_sec - current_time.tv_sec;
+	 ITEM(v)[0].u.integer=CALL(e)->tv.tv_sec - now.tv_sec;
 	 
 	 if(CALL(e)->caller)
 	 {
@@ -1799,7 +1811,7 @@ PIKECLASS Backend
 #ifdef PIKE_DEBUG
     struct timeval max_timeout;
 #endif
-    struct timeval *next_timeout = &me->next_timeout;
+    struct timeval *next_timeout = &me->next_timeout, now;
 
     alloca(0);			/* Do garbage collect */
 #ifdef PIKE_DEBUG
@@ -1826,12 +1838,14 @@ PIKECLASS Backend
     me->exec_thread = 1;
 #endif
       
+
 #ifndef OWN_GETHRTIME
-    GETTIMEOFDAY(&current_time);
+    ACCURATE_GETTIMEOFDAY(&now);
 #else
     /* good place to run the gethrtime-conversion update
        since we have to run gettimeofday anyway /Mirar */
-    own_gethrtime_update(&current_time);
+    INACCURATE_GETTIMEOFDAY(&now);
+    own_gethrtime_update(&now);
 #endif
     if (start_time->tv_sec < 0) {
       next_timeout->tv_sec = -1;
@@ -1839,10 +1853,10 @@ PIKECLASS Backend
     }
     else {
       *next_timeout = *start_time;
-      my_add_timeval(next_timeout, &current_time);
+      my_add_timeval(next_timeout, &now);
     }
 
-    *start_time = current_time;
+    *start_time = now;
 
     /* Call outs */
     if(me->num_pending_calls)
@@ -1870,9 +1884,9 @@ PIKECLASS Backend
       next_timeout->tv_sec = 100000000;
       next_timeout->tv_usec = 0;
     }
-    else if(my_timercmp(next_timeout, > , &current_time))
+    else if(my_timercmp(next_timeout, > , &now))
     {
-      my_subtract_timeval(next_timeout, &current_time);
+      my_subtract_timeval(next_timeout, &now);
     }else{
       next_timeout->tv_usec = 0;
       next_timeout->tv_sec = 0;
@@ -2063,7 +2077,7 @@ PIKECLASS Backend
     me->backend_callbacks.callbacks=0;
     me->backend_callbacks.num_calls=0;
 
-    GETTIMEOFDAY(&current_time); /* Why? /mast */
+    INVALIDATE_CURRENT_TIME(); /* Why? /mast */
 
     me->num_pending_calls=0;
     me->call_buffer=0;
@@ -3224,7 +3238,7 @@ PIKECLASS PollDeviceBackend
       THREADS_DISALLOW();
       check_threads_etc();
       me->may_need_wakeup = 0;
-      GETTIMEOFDAY(&current_time);
+      INVALIDATE_CURRENT_TIME();
     }
 
     if (TYPEOF(me->after_callback) != T_INT)
@@ -3419,7 +3433,7 @@ PIKECLASS PollDeviceBackend
       CALL_AND_UNSET_ONERROR(free_fd_list);
 
       /* Must be up-to-date for backend_do_call_outs. */
-      GETTIMEOFDAY(&current_time);
+      INVALIDATE_CURRENT_TIME();
     }else{
       switch(errno)
       {
@@ -3470,8 +3484,10 @@ PIKECLASS PollDeviceBackend
     if (!done_something)
       timeout->tv_sec = -1;
     else {
-      timeout->tv_sec = current_time.tv_sec;
-      timeout->tv_usec = current_time.tv_usec;
+      struct timeval now;
+      INACCURATE_GETTIMEOFDAY(&now);
+      timeout->tv_sec = now.tv_sec;
+      timeout->tv_usec = now.tv_usec;
       my_subtract_timeval (timeout, &start_time);
     }
 
@@ -3822,7 +3838,7 @@ PIKECLASS PollBackend
       THREADS_DISALLOW();
       check_threads_etc();
       me->may_need_wakeup = 0;
-      GETTIMEOFDAY(&current_time);
+      INVALIDATE_CURRENT_TIME();
     }
 
     if (TYPEOF(me->after_callback) != T_INT)
@@ -3981,7 +3997,7 @@ PIKECLASS PollBackend
       CALL_AND_UNSET_ONERROR(free_fd_list);
 
       /* Must be up-to-date for backend_do_call_outs. */
-      GETTIMEOFDAY(&current_time);
+      INVALIDATE_CURRENT_TIME();
     }else{
       switch(errno)
       {
@@ -4032,8 +4048,10 @@ PIKECLASS PollBackend
     if (!done_something)
       timeout->tv_sec = -1;
     else {
-      timeout->tv_sec = current_time.tv_sec;
-      timeout->tv_usec = current_time.tv_usec;
+      struct timeval now;
+      INACCURATE_GETTIMEOFDAY(&now);
+      timeout->tv_sec = now.tv_sec;
+      timeout->tv_usec = now.tv_usec;
       my_subtract_timeval (timeout, &start_time);
     }
 
@@ -4377,7 +4395,7 @@ PIKECLASS SelectBackend
       THREADS_DISALLOW();
       check_threads_etc();
       me->may_need_wakeup = 0;
-      GETTIMEOFDAY(&current_time);
+      INVALIDATE_CURRENT_TIME();
     }
 
     if (TYPEOF(me->after_callback) != T_INT)
@@ -4462,7 +4480,7 @@ PIKECLASS SelectBackend
       CALL_AND_UNSET_ONERROR(free_fd_list);
 
       /* Must be up-to-date for backend_do_call_outs. */
-      GETTIMEOFDAY(&current_time);
+      INVALIDATE_CURRENT_TIME();
     }else{
       switch(errno)
       {
@@ -4586,8 +4604,10 @@ PIKECLASS SelectBackend
     if (!done_something)
       timeout->tv_sec = -1;
     else {
-      timeout->tv_sec = current_time.tv_sec;
-      timeout->tv_usec = current_time.tv_usec;
+      struct timeval now;
+      INACCURATE_GETTIMEOFDAY(&now);
+      timeout->tv_sec = now.tv_sec;
+      timeout->tv_usec = now.tv_usec;
       my_subtract_timeval (timeout, &start_time);
     }
 
@@ -4943,7 +4963,7 @@ void wake_up_backend(void)
 void do_call_outs(void)
 {
   if(default_backend) {
-    GETTIMEOFDAY (&current_time);
+    INVALIDATE_CURRENT_TIME();
     backend_do_call_outs(default_backend);
   }
 }

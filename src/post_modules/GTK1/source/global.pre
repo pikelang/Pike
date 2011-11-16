@@ -28,7 +28,8 @@ static void backend_callback(struct callback *_cb,
 {
   if(backend)
   {
-    struct timeval timeout = current_time;
+    struct timeval timeout;
+    INACCURATE_GETTIMEOFDAY(&timeout);
     timeout.tv_usec += 20000;
     if(timeout.tv_usec > 1000000)
     {

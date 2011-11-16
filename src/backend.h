@@ -72,7 +72,6 @@
 
 struct Backend_struct;
 
-PMOD_EXPORT extern struct timeval current_time;
 PMOD_EXPORT extern struct Backend_struct *default_backend;
 extern struct callback_list do_debug_callbacks;
 PMOD_EXPORT extern struct program *Backend_program;

@@ -3223,22 +3223,26 @@ PIKECLASS Time
 
   PIKEFUN int `sec()
   {
-    extern struct timeval current_time;
+    struct timeval now;
 
     if( THIS->hard_update )
-      GETTIMEOFDAY( &current_time );
+      ACCURATE_GETTIMEOFDAY( &now );
+    else
+      INACCURATE_GETTIMEOFDAY( &now );
 
-    RETURN current_time.tv_sec;
+    RETURN now.tv_sec;
   }
 
   PIKEFUN int `usec()
   {
-    extern struct timeval current_time;
+    struct timeval now;
 
     if( THIS->hard_update )
-      GETTIMEOFDAY( &current_time );
+      ACCURATE_GETTIMEOFDAY( &now );
+    else
+      INACCURATE_GETTIMEOFDAY( &now );
 
-    RETURN current_time.tv_usec;
+    RETURN now.tv_usec;
   }
 
   /*! @decl int usec_full
@@ -3250,20 +3254,22 @@ PIKECLASS Time
 
   PIKEFUN int `usec_full()
   {
-    extern struct timeval current_time;
+    struct timeval now;
 
     if( THIS->hard_update )
-      GETTIMEOFDAY( &current_time );
+      ACCURATE_GETTIMEOFDAY( &now );
+    else
+      INACCURATE_GETTIMEOFDAY( &now );
 
 #ifdef AUTO_BIGNUM
-    push_int( current_time.tv_sec );
+    push_int( now.tv_sec );
     push_int( 1000000 );
     f_multiply( 2 );
-    push_int( current_time.tv_usec );
+    push_int( now.tv_usec );
     f_add( 2 );
     return;
 #else
-    RETURN (current_time.tv_sec * 1000000 + current_time.tv_usec);
+    RETURN (now.tv_sec * 1000000 + now.tv_usec);
 #endif
   }
 
@@ -3297,12 +3303,14 @@ PIKECLASS Timer
    */
   PIKEFUN float peek( )
   {
-    extern struct timeval current_time;
+    struct timeval now;
     FLOAT_TYPE res;
     if( THIS->hard_update )
-      GETTIMEOFDAY( &current_time );
-    res = current_time.tv_sec-THIS->last_time.tv_sec +
-      (current_time.tv_usec-THIS->last_time.tv_usec)/(FLOAT_TYPE) 1000000.0;
+      ACCURATE_GETTIMEOFDAY( &now );
+    else
+      INACCURATE_GETTIMEOFDAY( &now );
+    res = now.tv_sec-THIS->last_time.tv_sec +
+      (now.tv_usec-THIS->last_time.tv_usec)/(FLOAT_TYPE) 1000000.0;
     RETURN res;
   }
 
@@ -3313,9 +3321,8 @@ PIKECLASS Timer
    */
   PIKEFUN float get( )
   {
-    extern struct timeval current_time;
     f_Timer_peek( 0 );
-    THIS->last_time = current_time;
+    INACCURATE_GETTIMEOFDAY(&THIS->last_time);
     return;
   }
 
@@ -3332,11 +3339,11 @@ PIKECLASS Timer
   PIKEFUN void create( int|zero|void fast )
     flags ID_PROTECTED;
   {
-    extern struct timeval current_time;
     THIS->hard_update = !fast;
     if( THIS->hard_update )
-      GETTIMEOFDAY( &current_time );
-    THIS->last_time = current_time; 
+      ACCURATE_GETTIMEOFDAY( &THIS->last_time );
+    else
+      INACCURATE_GETTIMEOFDAY( &THIS->last_time );
   }
 }
 

@@ -283,6 +283,7 @@ PMOD_EXPORT int co_destroy(COND_T *c)
 #ifndef CONFIGURE_TEST
 PMOD_EXPORT int co_wait_timeout(COND_T *c, PIKE_MUTEX_T *m, long s, long nanos)
 {
+  struct timeval ct;
 #ifdef POSIX_THREADS
   struct timespec timeout;
 #ifdef HAVE_PTHREAD_COND_RELTIMEDWAIT_NP
@@ -292,9 +293,9 @@ PMOD_EXPORT int co_wait_timeout(COND_T *c, PIKE_MUTEX_T *m, long s, long nanos)
   return pthread_cond_reltimedwait_np(c, m, &timeout);
 #else /* !HAVE_PTHREAD_COND_RELTIMEDWAIT_NP */
   /* Absolute timeout. */
-  GETTIMEOFDAY(&current_time);
-  timeout.tv_sec = current_time.tv_sec + s;
-  timeout.tv_nsec = current_time.tv_usec * 1000 + nanos;
+  ACCURATE_GETTIMEOFDAY(&ct);
+  timeout.tv_sec = ct.tv_sec + s;
+  timeout.tv_nsec = ct.tv_usec * 1000 + nanos;
   return pthread_cond_timedwait(c, m, &timeout);
 #endif /* HAVE_PTHREAD_COND_RELTIMEDWAIT_NP */
 #else /* !POSIX_THREADS */
@@ -1500,7 +1501,7 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
        preliminary check that at least 35 ms real time has passed. If
        not yet true we'll postpone the next check a full interval. */
     struct timeval                tv;
-    if (GETTIMEOFDAY(&tv) == 0) {
+    if (ACCURATE_GETTIMEOFDAY(&tv) == 0) {
 #ifdef INT64
       static INT64 real_time_last_check = 0;
       INT64 real_time_now = tv.tv_sec * 1000000 + tv.tv_usec;
@@ -1588,7 +1589,7 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
 #endif
 #endif
 
-    GETTIMEOFDAY (&now);
+    ACCURATE_GETTIMEOFDAY (&now);
     if (now.tv_sec > last_time) {
       fprintf (stderr, "[%d:%f] check_threads: %lu calls, "
 	       "%lu clocks, %lu no advs, %lu yields"

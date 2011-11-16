@@ -77,4 +77,28 @@ struct timeval
 };
 #endif
 
+PMOD_EXPORT extern struct timeval current_time;
+PMOD_EXPORT extern int current_time_invalid;
+
+#define INVALIDATE_CURRENT_TIME() do { current_time_invalid = 1; } while (0)
+#define UPDATE_CURRENT_TIME() do {					\
+	    GETTIMEOFDAY(&current_time);				\
+	    current_time_invalid = 0;					\
+	} while (0)
+#define ACCURATE_GETTIMEOFDAY(X) do {					\
+	    UPDATE_CURRENT_TIME();					\
+	    *(X) = current_time;					\
+	} while (0)
+#define ACCURATE_GETTIMEOFDAY_RVAL(X, ___rval) do {			\
+	    (___rval) = GETTIMEOFDAY(&current_time);			\
+	    current_time_invalid = 0;					\
+	    *(X) = current_time;					\
+	} while (0)
+#define INACCURATE_GETTIMEOFDAY(X) do {					\
+	    /* unlikely() not available */				\
+	    if (!(current_time_invalid)) { }				\
+	    else UPDATE_CURRENT_TIME();					\
+	    *(X) = current_time;					\
+	} while (0)
+
 #endif

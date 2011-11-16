@@ -23,6 +23,7 @@
 #include "builtin_functions.h"
 #include "pike_security.h"
 #include "main.h"
+#include "time_stuff.h"
 #include <signal.h>
 
 #ifdef HAVE_PASSWD_H
@@ -1716,6 +1717,8 @@ static void f_pid_status_wait(INT32 args)
   }
   }
 #endif /* __NT__ */
+
+  INVALIDATE_CURRENT_TIME();
 }
 
 /*! @decl int(-1..2) status()

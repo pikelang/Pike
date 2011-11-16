@@ -36,6 +36,7 @@
 #include "mapping.h"
 #include "builtin_functions.h"
 #include "constants.h"
+#include "time_stuff.h"
 #include "pike_memory.h"
 #include "pike_security.h"
 #include "bignum.h"
@@ -2069,6 +2070,7 @@ void f_gethostbyaddr(INT32 args)
   pop_n_elems(args);
 
   CALL_GETHOSTBYADDR((char *)&addr, sizeof (addr), AF_INET);
+  INVALIDATE_CURRENT_TIME();
 
   if(!ret) {
     push_int(0);
@@ -2108,6 +2110,7 @@ void f_gethostbyname(INT32 args)
   get_all_args("gethostbyname", args, "%s", &name);
 
   CALL_GETHOSTBYNAME(name);
+  INVALIDATE_CURRENT_TIME();
  
   pop_n_elems(args);
   

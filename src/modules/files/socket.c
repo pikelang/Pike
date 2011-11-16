@@ -20,6 +20,7 @@
 #include "threads.h"
 #include "program_id.h"
 #include "module_support.h"
+#include "time_stuff.h"
 
 #include "file_machine.h"
 #include "file.h"
@@ -75,6 +76,7 @@ struct port
 {
   struct fd_callback_box box;	/* Must be first. */
   int my_errno;
+  unsigned int immediate_cnt;
   struct svalue accept_callback; /* Mapped. */
   struct svalue id;		/* Mapped. */
 };
@@ -95,6 +97,7 @@ static int got_port_event (struct fd_callback_box *box, int event)
 #endif
 
   p->my_errno = errno;		/* Propagate backend setting. */
+  p->immediate_cnt++;
   push_svalue (&p->id);
   apply_svalue(& p->accept_callback, 1);
   pop_stack();
@@ -261,6 +264,7 @@ static void port_bind(INT32 args)
 			    Pike_sp[-args].u.string->str : NULL),
 			   (TYPEOF(Pike_sp[-args]) == PIKE_T_INT?
 			    Pike_sp[-args].u.integer : -1), 0);
+  INVALIDATE_CURRENT_TIME();
 
   fd=fd_socket(SOCKADDR_FAMILY(addr), SOCK_STREAM, 0);
 
@@ -536,6 +540,7 @@ static void port_accept(INT32 args)
     err = errno;
   } while (fd < 0 && err == EINTR);
   THREADS_DISALLOW();
+  INVALIDATE_CURRENT_TIME();
 
   if(fd < 0)
   {

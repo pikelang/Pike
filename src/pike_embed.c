@@ -362,7 +362,7 @@ void init_pike_runtime(void (*exit_cb)(int))
   
   TRACE((stderr, "Init time...\n"));
   
-  GETTIMEOFDAY(&current_time);
+  UPDATE_CURRENT_TIME();
 
   TRACE((stderr, "Init threads...\n"));
 

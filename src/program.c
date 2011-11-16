@@ -2574,7 +2574,7 @@ struct program *low_allocate_program(void)
   INIT_PIKE_MEMOBJ(p, T_PROGRAM);
 
   DOUBLELINK(first_program, p);
-  GETTIMEOFDAY(& p->timestamp);
+  ACCURATE_GETTIMEOFDAY(& p->timestamp);
   return p;
 }
 

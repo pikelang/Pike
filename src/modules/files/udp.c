@@ -18,6 +18,7 @@
 #include "mapping.h"
 #include "object.h"
 #include "backend.h"
+#include "time_stuff.h"
 #include "fd_control.h"
 
 #include "pike_error.h"
@@ -133,6 +134,8 @@ struct udp_storage {
   struct fd_callback_box box;	/* Must be first. */
   int my_errno;
    
+  int nonblocking;
+
   int type;
   int protocol;
 
@@ -215,6 +218,7 @@ static void udp_bind(INT32 args)
 			    Pike_sp[-args].u.string->str : NULL),
 			   (TYPEOF(Pike_sp[-args]) == PIKE_T_INT?
 			    Pike_sp[-args].u.integer : -1), 1);
+  INVALIDATE_CURRENT_TIME();
 
   fd = fd_socket(SOCKADDR_FAMILY(addr), THIS->type, THIS->protocol);
   if(fd < 0)
@@ -328,6 +332,7 @@ void udp_enable_multicast(INT32 args)
   get_all_args("enable_multicast", args, "%s", &ip);
 
   get_inet_addr(&reply, ip, NULL, -1, 1);
+  INVALIDATE_CURRENT_TIME();
 
   if(SOCKADDR_FAMILY(reply) != AF_INET)
     Pike_error("Multicast only supported for IPv4.\n");
@@ -378,6 +383,7 @@ void udp_add_membership(INT32 args)
   get_all_args("add_membership", args, "%s.%s%d", &group, &address, &face);
 
   get_inet_addr(&addr, group, NULL, -1, 1);
+  INVALIDATE_CURRENT_TIME();
 
   if(SOCKADDR_FAMILY(addr) != AF_INET)
     Pike_error("Multicast only supported for IPv4.\n");
@@ -388,6 +394,7 @@ void udp_add_membership(INT32 args)
     sock.imr_interface.s_addr = htonl( INADDR_ANY );
   else {
     get_inet_addr(&addr, address, NULL, -1, 1);
+    INVALIDATE_CURRENT_TIME();
 
     if(SOCKADDR_FAMILY(addr) != AF_INET)
       Pike_error("Multicast only supported for IPv4.\n");
@@ -419,6 +426,7 @@ void udp_drop_membership(INT32 args)
   get_all_args("drop_membership", args, "%s.%s%d", &group, &address, &face);
 
   get_inet_addr(&addr, group, NULL, -1, 1);
+  INVALIDATE_CURRENT_TIME();
 
   if(SOCKADDR_FAMILY(addr) != AF_INET)
     Pike_error("Multicast only supported for IPv4.\n");
@@ -429,6 +437,7 @@ void udp_drop_membership(INT32 args)
     sock.imr_interface.s_addr = htonl( INADDR_ANY );
   else {
     get_inet_addr(&addr, address, NULL, -1, 1);
+    INVALIDATE_CURRENT_TIME();
 
     if(SOCKADDR_FAMILY(addr) != AF_INET)
       Pike_error("Multicast only supported for IPv4.\n");
@@ -656,6 +665,9 @@ void udp_read(INT32 args)
   push_constant_text("port");
   push_int(ntohs(from.ipv4.sin_port));
   f_aggregate_mapping( 6 );
+
+  if (!THIS->nonblocking)
+    INVALIDATE_CURRENT_TIME();
 }
 
 /*! @decl int send(string to, int|string port, string message)
@@ -708,6 +720,7 @@ void udp_sendto(INT32 args)
 			  Pike_sp[1-args].u.string->str : NULL),
 			 (TYPEOF(Pike_sp[1-args]) == PIKE_T_INT?
 			  Pike_sp[1-args].u.integer : -1), 1);
+  INVALIDATE_CURRENT_TIME();
 
   fd = FD;
   str = Pike_sp[2-args].u.string->str;
@@ -752,6 +765,8 @@ void udp_sendto(INT32 args)
   }
   pop_n_elems(args);
   push_int64(res);
+  if (!THIS->nonblocking)
+    INVALIDATE_CURRENT_TIME();
 }
 
 
@@ -843,6 +858,7 @@ static void udp_set_nonblocking(INT32 args)
      pop_stack();
   }
   set_nonblocking(FD,1);
+  THIS->nonblocking = 1;
   ref_push_object(THISOBJ);
 }
 
@@ -854,6 +870,7 @@ static void udp_set_blocking(INT32 args)
 {
   if (FD < 0) Pike_error("File not open.\n");
   set_nonblocking(FD,0);
+  THIS->nonblocking = 0;
   pop_n_elems(args);
   ref_push_object(THISOBJ);
 }
@@ -897,6 +914,7 @@ static void udp_connect(INT32 args)
 			     dest_port->u.string->str : NULL),
 			    (TYPEOF(*dest_port) == PIKE_T_INT?
 			     dest_port->u.integer : -1), 0);
+  INVALIDATE_CURRENT_TIME();
 
   if(FD < 0)
   {
@@ -913,6 +931,9 @@ static void udp_connect(INT32 args)
   THREADS_ALLOW();
   tmp=fd_connect(tmp, (struct sockaddr *)&addr, addr_len);
   THREADS_DISALLOW();
+
+  if (!THIS->nonblocking)
+    INVALIDATE_CURRENT_TIME();
 
   if(tmp < 0)
   {

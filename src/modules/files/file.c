@@ -23,6 +23,7 @@
 #include "bignum.h"
 #include "builtin_functions.h"
 #include "gc.h"
+#include "time_stuff.h"
 
 #include "file_machine.h"
 #include "file.h"
@@ -1343,6 +1344,9 @@ static void file_read(INT32 args)
       push_int(0);
     }
 
+  if (!(THIS->open_mode & FILE_NONBLOCKING))
+    INVALIDATE_CURRENT_TIME();
+
   /* Race: A backend in another thread might have managed to set these
    * again for something that arrived after the read above. Not that
    * bad - it will get through in a later backend round. */
@@ -1604,6 +1608,9 @@ static void file_read_oob(INT32 args)
     push_int(0);
   }
 
+  if (!(THIS->open_mode & FILE_NONBLOCKING))
+    INVALIDATE_CURRENT_TIME();
+
   /* Race: A backend in another thread might have managed to set these
    * again for something that arrived after the read above. Not that
    * bad - it will get through in a later backend round. */
@@ -1791,6 +1798,9 @@ static void file_write(INT32 args)
       struct iovec *iov = iovbase;
       int iovcnt = a->size;
 
+      if (!(THIS->open_mode & FILE_NONBLOCKING))
+	INVALIDATE_CURRENT_TIME();
+
       i = a->size;
       while(i--) {
 	if (a->item[i].u.string->len) {
@@ -1952,6 +1962,9 @@ static void file_write(INT32 args)
     THREADS_DISALLOW();
 
     check_threads_etc();
+
+    if (!(THIS->open_mode & FILE_NONBLOCKING))
+      INVALIDATE_CURRENT_TIME();
 
     if(i<0)
     {
@@ -2122,6 +2135,9 @@ static void file_write_oob(INT32 args)
   if(!SAFE_IS_ZERO(& THIS->event_cbs[PIKE_FD_WRITE_OOB]))
     ADD_FD_EVENTS (THIS, PIKE_BIT_FD_WRITE_OOB);
   ERRNO=0;
+
+  if (!(THIS->open_mode & FILE_NONBLOCKING))
+    INVALIDATE_CURRENT_TIME();
 
   pop_n_elems(args);
   push_int64(written);
@@ -4376,6 +4392,7 @@ static void file_open_socket(INT32 args)
     addr_len = get_inet_addr(&addr, (char *) STR0(Pike_sp[2-args].u.string),
 			     NULL, -1, 0);
     family = SOCKADDR_FAMILY(addr);
+    INVALIDATE_CURRENT_TIME();
   }
 
   if (args && TYPEOF(Pike_sp[-args]) == PIKE_T_INT &&
@@ -4411,6 +4428,7 @@ static void file_open_socket(INT32 args)
 			      Pike_sp[-args].u.string->str : NULL),
 			     (TYPEOF(Pike_sp[-args]) == PIKE_T_INT?
 			      Pike_sp[-args].u.integer : -1), 0);
+    INVALIDATE_CURRENT_TIME();
 
     fd=fd_socket((family<0? SOCKADDR_FAMILY(addr):family), SOCK_STREAM, 0);
     if(fd < 0)
@@ -4687,6 +4705,7 @@ static void file_connect(INT32 args)
 			    dest_port->u.string->str : NULL),
 			   (TYPEOF(*dest_port) == PIKE_T_INT?
 			    dest_port->u.integer : -1), 0);
+  INVALIDATE_CURRENT_TIME();
 
   if(was_closed)
   {

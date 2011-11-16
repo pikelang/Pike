@@ -99,7 +99,7 @@ void GETTIMEOFDAY(struct timeval *t)
 time_t TIME(time_t *t)
 {
   struct timeval tv;
-  GETTIMEOFDAY(&tv);
+  ACCURATE_GETTIMEOFDAY(&tv);
   if(t) *t=tv.tv_sec;
   return tv.tv_sec;
 }
@@ -824,7 +824,7 @@ void own_gethrtime_init()
 {
    int fd;
 
-   GETTIMEOFDAY(&hrtime_timeval_zero);
+   ACCURATE_GETTIMEOFDAY(&hrtime_timeval_zero);
    hrtime_rtsc_zero=rtsc();
    hrtime_rtsc_last = hrtime_rtsc_base = hrtime_rtsc_zero;
 #ifdef RTSC_DEBUG
@@ -893,7 +893,7 @@ void own_gethrtime_update(struct timeval *ptr)
    static double w_c_c_sum = 0.0;
    static int count = -COUNT_THRESHOLD;
 
-   GETTIMEOFDAY(ptr);
+   ACCURATE_GETTIMEOFDAY(ptr);
    now=rtsc();
 
 #ifdef RTSC_DEBUG

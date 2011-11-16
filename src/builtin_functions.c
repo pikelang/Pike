@@ -2930,25 +2930,31 @@ void f__exit(INT32 args)
  */
 PMOD_EXPORT void f_time(INT32 args)
 {
+  struct timeval ret;
   if(!args ||
      (TYPEOF(Pike_sp[-args]) == T_INT && Pike_sp[-args].u.integer == 0))
   {
-    GETTIMEOFDAY(&current_time);
+    ACCURATE_GETTIMEOFDAY(&ret);
+    pop_n_elems(args);
+    push_int(ret.tv_sec);
+
+    return;
   }else{
     if(TYPEOF(Pike_sp[-args]) == T_INT && Pike_sp[-args].u.integer > 1)
     {
       struct timeval tmp;
-      GETTIMEOFDAY(&current_time);
+      ACCURATE_GETTIMEOFDAY(&ret);
       tmp.tv_sec=Pike_sp[-args].u.integer;
       tmp.tv_usec=0;
-      my_subtract_timeval(&tmp,&current_time);
+      my_subtract_timeval(&tmp,&ret);
       pop_n_elems(args);
       push_float( - (FLOAT_TYPE)tmp.tv_sec-((FLOAT_TYPE)tmp.tv_usec)/1000000 );
       return;
     }
   }
   pop_n_elems(args);
-  push_int(current_time.tv_sec);
+  INACCURATE_GETTIMEOFDAY(&ret);
+  push_int(ret.tv_sec);
 }
 
 /*! @decl string crypt(string password)
@@ -4662,13 +4668,13 @@ static void delaysleep(double delay, unsigned do_abort_on_signal,
    if (t0 == -1) {
      /* Paranoia in case get_real_time fails. */
      /* fprintf (stderr, "get_real_time failed in sleep()\n"); */
-     GETTIMEOFDAY (&gtod_t0);
+     ACCURATE_GETTIMEOFDAY (&gtod_t0);
      gtod_tv = gtod_t0;
    }
 
 #define FIX_LEFT()							\
    if (t0 == -1) {							\
-     GETTIMEOFDAY (&gtod_tv);						\
+     ACCURATE_GETTIMEOFDAY (&gtod_tv);					\
      left = delay - ((gtod_tv.tv_sec-gtod_t0.tv_sec) +			\
 		     (gtod_tv.tv_usec-gtod_t0.tv_usec)*1e-6);		\
    }									\
@@ -4690,7 +4696,7 @@ static void delaysleep(double delay, unsigned do_abort_on_signal,
 	 sysleep(left);
        THREADS_DISALLOW();
        if(do_abort_on_signal) {
-	 GETTIMEOFDAY (&current_time);
+	 INVALIDATE_CURRENT_TIME();
 	 return;
        }
        FIX_LEFT();
@@ -4698,14 +4704,14 @@ static void delaysleep(double delay, unsigned do_abort_on_signal,
 	 break;
        check_threads_etc();
      }
-     GETTIMEOFDAY (&current_time);
+     INVALIDATE_CURRENT_TIME();
    }
 
    if (do_microsleep) {
      if (t0 == -1) {
        while (delay> ((gtod_tv.tv_sec-gtod_t0.tv_sec) +
 		      (gtod_tv.tv_usec-gtod_t0.tv_usec)*1e-6))
-	 GETTIMEOFDAY (&gtod_tv);
+	 ACCURATE_GETTIMEOFDAY (&gtod_tv);
      }
      else {
        while (delay> (tv - t0) * (1.0 / CPU_TIME_TICKS))
