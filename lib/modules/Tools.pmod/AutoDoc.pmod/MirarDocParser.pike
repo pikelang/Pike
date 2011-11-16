@@ -26,6 +26,7 @@ constant makepic = ({
   object lena() {
     catch { return Image.load(IMAGE_DIR + \"image_ill.pnm\"); };
     catch { return Image.load(IMAGE_DIR + \"lena.ppm\"); };
+    catch { return Image.load(IMAGE_DIR + \"lenna.rs\"); };
     return Image.load(IMAGE_DIR + \"lena.gif\");
   }
 
@@ -70,6 +71,50 @@ constant makepic = ({
   object lena() {
     catch { return load(IMAGE_DIR + \"image_ill.pnm\"); };
     catch { return load(IMAGE_DIR + \"lena.ppm\"); };
+    catch { return load(IMAGE_DIR + \"lenna.rs\"); };
+    return load(IMAGE_DIR + \"lena.gif\");
+  }
+
+  object|string render();
+
+  string make() {
+#if constant(Image.PNG.encode)
+    object|string o=render();
+    if(objectp(o))
+      o=PNG.encode(o);
+    Stdio.write_file(fn, o);
+    if(verbosity > 1)
+      werror(\"Wrote %s.\\n\", fn);
+#endif
+    return \"<image>\"+fn+\"</image>\";
+  }
+
+  object|string render() {
+",
+  // Prior to 0.7.3 the Image module classes were all lower-case.
+  #"// Pike 0.6 illustration, implicit imports, only Image.image.
+#pike 0.6
+
+  import 0.6::Image;
+  import 0.6::Stdio;
+  string fn;
+
+  constant Image = 7.6::Image;
+
+  int verbosity;
+
+  void create(string _fn, int|void _verbosity, void|string type) {
+    fn = _fn;
+    verbosity = _verbosity;
+    string ext;
+    if(type==\"image/gif\") ext=\"gif\";
+    fn += \".\" + (ext||\"png\");
+  }
+
+  object lena() {
+    catch { return load(IMAGE_DIR + \"image_ill.pnm\"); };
+    catch { return load(IMAGE_DIR + \"lena.ppm\"); };
+    catch { return load(IMAGE_DIR + \"lenna.rs\"); };
     return load(IMAGE_DIR + \"lena.gif\");
   }
 
@@ -1044,10 +1089,25 @@ array(string) tag_preserve_ws(Parser.HTML p, mapping args, string c) {
 
 int compat;
 
-program try_compile_illustration(array(string) templates,
-				 string illustration_code,
-				 string where)
+class CompilationHandler
 {
+  array(string) lines = ({});
+  void compile_warning(string filename, int linenumber, string message)
+  {
+    lines += ({ sprintf("%s:%d:%s\n", filename, linenumber, message) });
+  }
+  void compile_error(string filename, int linenumber, string message)
+  {
+    lines += ({ sprintf("%s:%d:%s\n", filename, linenumber, message) });
+  }
+}
+
+array(program|string) try_compile_illustration(array(string) templates,
+					       string illustration_code,
+					       string where)
+{
+  CompilationHandler handler;
+  string code;
   mixed err;
   string defines = sprintf("#define IMAGE_DIR %O\n", IMAGE_DIR);
   foreach(templates; int t; string template) {
@@ -1056,18 +1116,20 @@ program try_compile_illustration(array(string) templates,
 	 has_value(illustration_code, "->map_fs"))) {
       continue;
     }
-    string code = defines + template + illustration_code + "}\n";
+    code = defines + template + illustration_code + "\n;\n}\n";
+    handler = CompilationHandler();
     err = catch {
-	return compile_string(code);
+	return ({ compile_string(code, "-", handler), code });
       };
-    array(string) rows = code/"\n";
-    werror("%O\n"
-	   "******\n", where);
-    for(int i; i<sizeof(rows); i++)
-      werror("%04d: %s\n", i, rows[i]);
-    werror("******\n");
-    if (!compat) throw(err);
+    if (!compat) break;
   }
+  werror("Compilation of illustration at %O failed:\n"
+	 "%s\n"
+	 "******\n", where, handler->lines * "");
+  array(string) rows = code/"\n";
+  for(int i; i<sizeof(rows); i++)
+    werror("%04d: %s\n", i+1, rows[i]);
+  werror("******\n");
   throw(err);
 }
 
@@ -1103,11 +1165,20 @@ void create(string image_dir, int|void quiet, int|void compat)
       string name;
       sscanf(where, "file='%s'", name);
       name = (name/"/")[-1];
-      object g;
-      g = try_compile_illustration(makepic, c, where)
-	(name+(illustration_counter++), verbosity, args->type);
+      [program ip, string code] = try_compile_illustration(makepic, c, where);
+      if (mixed err = catch {
+	  object g = ip(name+(illustration_counter++), verbosity, args->type);
 
-      return ({ g->make() });
+	  return ({ g->make() });
+	}) {
+	werror("Execution of illustration at %O failed:\n"
+	       "******\n", where);
+	array(string) rows = code/"\n";
+	for(int i; i<sizeof(rows); i++)
+	  werror("%04d: %s\n", i+1, rows[i]);
+	werror("******\n");
+	throw(err);
+      }
     });
 
   parser->add_container("execute",
@@ -1131,7 +1202,7 @@ void create(string image_dir, int|void quiet, int|void compat)
 	array rows = (execute+c)/"\n";
 	werror("******\n");
 	for(int i; i<sizeof(rows); i++)
-	  werror("%04d: %s\n", i, rows[i]);
+	  werror("%04d: %s\n", i+1, rows[i]);
 	werror("******\n");
 	throw(err);
       }
