@@ -374,7 +374,7 @@ constant dtd_nesting = ([
   "th":"tr",
 ]);
 
-constant self_terminating = (< "br" >);
+constant self_terminating = (< "br", "wbr" >);
 
 ADT.Stack nesting;
 
@@ -406,7 +406,12 @@ array(string) fix_tag_nesting(Parser.HTML p, string value)
 
   if (has_prefix(tag, "/")) {
     // End tag. Pop to starttag.
-    ret = pop_to_tag(tag[1..]);
+    tag = tag[1..];
+    if (!has_value(nesting->arr[..nesting->ptr-1], tag)) {
+      // Extraneous end-tag -- remove it.
+      return ({""});
+    }
+    ret = pop_to_tag(tag);
     nesting->pop();
   } else {
     if (dtd_nesting[tag]) {
@@ -416,6 +421,10 @@ array(string) fix_tag_nesting(Parser.HTML p, string value)
       // Self-terminating tag.
     } else if (self_terminating[tag]) {
       value = value[..<1] + " />";
+    } else if (nesting->top() == tag) {
+      // Probably a typo. Convert to a close tag.
+      nesting->pop();
+      value = "</" + value[1..];
     } else {
       nesting->push(tag);
     }
@@ -432,6 +441,19 @@ Parser.HTML parser;
 string fixdesc(string s,string prefix,void|string where)
 {
    s = stripws(replace(s, "<p>", "\n"));
+
+   // Take care of some special cases (shifts and arrows):
+   s = replace(s,
+	       ({ "<<", ">>", "<->", "<=>",
+		  "<-", "->", "<=", "=>",
+		  "<0", "<1", "<2", "<3", "<4",
+		  "<5", "<6", "<7", "<8", "<9",
+	       }),
+	       ({ "&lt;&lt;", "&gt;&gt;", "&lt;-&gt;", "&lt;=&gt;",
+		  "&lt;-", "-&gt;", "&lt;=", "=&gt;",
+		  "&lt;0", "&lt;1", "&lt;2", "&lt;3", "&lt;4",
+		  "&lt;5", "&lt;6", "&lt;7", "&lt;8", "&lt;9",
+	       }));
 
    nesting = ADT.Stack();
    nesting->push(0);	// End sentinel.
