@@ -4648,7 +4648,7 @@ static void delaysleep(double delay, unsigned do_abort_on_signal,
 {
 #define POLL_SLEEP_LIMIT 0.02
 
-   struct timeval gtod_t0, gtod_tv;
+   struct timeval gtod_t0 = {0,0}, gtod_tv = {0,0};
    cpu_time_t t0, tv;
 
    /* Special case, sleep(0) means 'yield' */
