@@ -769,7 +769,7 @@ int main(int argc, array(string) argv)
 	   " [<namespace>]\n");
     return 1;
   }
-  if(argc>4) default_namespace=argv[4];
+  if(sizeof(argv)>3) default_namespace=argv[3];
 
-  return low_main(argv[1], argv[2], argv[3]);
+  return low_main(argv[0], argv[1], argv[2]);
 }
