@@ -23,6 +23,35 @@ protected private class Extractor {
   protected .Flags flags;
   protected int verbosity;
 
+  protected string report(SourcePosition pos, int level,
+			  sprintf_format fmt, sprintf_args ... args)
+  {
+    string msg = fmt;
+    if (sizeof(args)) {
+      msg = sprintf("PikeExtractor: " + fmt, @args);
+    }
+
+    if (level <= verbosity) {
+      if (pos->lastline) {
+	werror("%s:%d..%d: %s",
+	       pos->filename||"-", pos->firstline, pos->lastline, msg);
+      } else {
+	werror("%s:%d: %s",
+	       pos->filename||"-", pos->firstline, msg);
+      }
+    }
+    return msg;
+  }
+
+  protected void report_error(SourcePosition pos, int level,
+			      sprintf_format fmt, sprintf_args ... args)
+  {
+    string msg = report(pos, level, fmt, @args);
+    if (!(flags & .FLAG_KEEP_GOING)) {
+      error("%s", msg);
+    }
+  }
+
   protected void create(string s, string filename, .Flags flags) {
     this_program::flags = flags;
     verbosity = flags & .FLAG_VERB_MASK;
@@ -66,9 +95,15 @@ protected private class Extractor {
     parser->setTokens(new_tokens, new_positions);
   }
 
-  protected void extractorError(string message, mixed ... args) {
-    message = sprintf(message, @args);
-    error("PikeExtractor: %s (%O)\n", message, parser->currentPosition);
+  protected void extractorError(sprintf_format message, sprintf_args ... args)
+  {
+    report_error(parser->currentPosition, .FLAG_NORMAL, message + "\n", @args);
+  }
+
+  protected void extractorWarning(sprintf_format message, sprintf_args ... args)
+  {
+    report(parser->currentPosition, .FLAG_VERBOSE,
+	   "Warning: " + message + "\n", @args);
   }
 
   protected int isDocComment(string s) {
@@ -78,7 +113,8 @@ protected private class Extractor {
   protected string stripDocMarker(string s) {
     if (isDocComment(s))
       return s[3..];
-    throw("OOPS");
+    extractorError("Not a doc comment!");
+    return s;
   }
 
   // readAdjacentDocLines consumes the doc lines AND the "\n" after the last one
