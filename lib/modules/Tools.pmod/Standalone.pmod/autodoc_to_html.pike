@@ -1151,9 +1151,13 @@ string parse_not_doc(Node n) {
       ret += "<tt>";
       cc = c->get_first_element("modifiers");
       if(cc) ret += map(cc->get_children(), parse_type)*" " + " ";
-      ret += parse_type(get_first_element(c->get_first_element("type")), "variable") + " " +
-	c->get_attributes()->class_path + "<b><font color='#F000F0'>" + c->get_attributes()->name +
-	"</font></b></tt>";
+      if (c->get_first_element("type")) {
+	ret += parse_type(get_first_element(c->get_first_element("type")),
+			  "variable") + " " +
+	  c->get_attributes()->class_path + "<b><font color='#F000F0'>" +
+	  c->get_attributes()->name + "</font></b></tt>";
+      } else
+	error("Malformed variable element.\n" + c->html_of_node() + "\n");
       break;
 
     case "constant":
