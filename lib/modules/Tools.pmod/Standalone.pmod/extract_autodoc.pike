@@ -11,9 +11,9 @@ constant description = "Extracts autodoc from Pike or C code.";
 string imgsrc;
 string imgdir;
 
-Tools.AutoDoc.Flags flags = Tools.AutoDoc.FLAG_VERBOSE;
+Tools.AutoDoc.Flags flags = Tools.AutoDoc.FLAG_NORMAL;
 
-int verbosity = Tools.AutoDoc.FLAG_VERBOSE;
+int verbosity = Tools.AutoDoc.FLAG_NORMAL;
 
 int main(int n, array(string) args) {
 
@@ -29,6 +29,7 @@ int main(int n, array(string) args) {
     ({ "compat",     Getopt.NO_ARG,       "--compat" }),
     ({ "no-dynamic", Getopt.NO_ARG,       "--no-dynamic" }),
     ({ "keep-going", Getopt.NO_ARG,       "--keep-going" }),
+    ({ "verbose",    Getopt.NO_ARG,       "-v,--verbose"/"," }),
     ({ "quiet",      Getopt.NO_ARG,       "-q,--quiet"/"," }),
     ({ "help",       Getopt.NO_ARG,       "-h,--help"/"," }) })), array opt)
     switch(opt[0])
@@ -63,12 +64,19 @@ int main(int n, array(string) args) {
     case "quiet":
       flags = (flags & ~Tools.AutoDoc.FLAG_VERB_MASK)|Tools.AutoDoc.FLAG_QUIET;
       break;
+    case "verbose":
+      verbosity = flags & Tools.AutoDoc.FLAG_VERB_MASK;
+      if (verbosity < Tools.AutoDoc.FLAG_DEBUG) verbosity++;
+      flags = (flags & ~Tools.AutoDoc.FLAG_VERB_MASK)|verbosity;
+      break;
     case "help":
       werror("Usage:\n"
-	     "\tpike -x extract_autodoc [-q] --srcdir=<srcdir> \n"
+	     "\tpike -x extract_autodoc [-q|--quiet] [-v|--verbose]\n"
+	     "\t     [--compat] [--no-dynamic] [--keep-going]\n"
+	     "\t     --srcdir=<srcdir>\n"
 	     "\t     [--imgsrcdir=<imgsrcdir>] [--builddir=<builddir>]\n"
 	     "\t     [--imgdir=<imgdir>] [--root=<module>]\n"
-	     "\t     [--compat] [--no-dynamic] [--keep-going] [file1 [... filen]]\n");
+	     "\t     [file1 [... filen]]\n");
       return 0;
     }
 
@@ -105,7 +113,7 @@ int main(int n, array(string) args) {
 
 void recurse(string srcdir, string builddir, int root_ts, array(string) root)
 {
-  if (verbosity > 0)
+  if (verbosity > 1)
     werror("Extracting from %s\n", srcdir);
 
   Stdio.Stat st;
@@ -266,7 +274,9 @@ string extract(string filename, string imgdest,
   };
 
   if (err) {
-    if (arrayp(err) && _typeof(err[0]) <= Tools.AutoDoc.AutoDocError)
+    if (!verbosity)
+      ;
+    else if (arrayp(err) && _typeof(err[0]) <= Tools.AutoDoc.AutoDocError)
       werror("%O\n", err[0]);
     else if (objectp(err) && _typeof(err) <= Tools.AutoDoc.AutoDocError)
       werror("%O\n", err);
