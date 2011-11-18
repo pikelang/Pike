@@ -1197,6 +1197,8 @@ array(program|string) try_compile_illustration(array(string) templates,
   for(int i; i<sizeof(rows); i++)
     werror("%04d: %s\n", i+1, rows[i]);
   werror("******\n");
+  if (flags & .FLAG_KEEP_GOING)
+    return ({ UNDEFINED, code });
   throw(err);
 }
 
@@ -1233,10 +1235,12 @@ void create(string image_dir, void|.Flags flags)
       sscanf(where, "file='%s'", name);
       name = (name/"/")[-1];
       [program ip, string code] = try_compile_illustration(makepic, c, where);
-      if (mixed err = catch {
-	  object g = ip(name+(illustration_counter++), verbosity, args->type);
 
-	  return ({ g->make() });
+      if (mixed err = catch {
+	  if (ip) {
+	    object g = ip(name+(illustration_counter++), verbosity, args->type);
+	    return ({ g->make() });
+	  }
 	}) {
 	werror("Execution of illustration at %O failed:\n"
 	       "******\n", where);
@@ -1244,14 +1248,36 @@ void create(string image_dir, void|.Flags flags)
 	for(int i; i<sizeof(rows); i++)
 	  werror("%04d: %s\n", i+1, rows[i]);
 	werror("******\n");
-	throw(err);
+	if (!(flags & .FLAG_KEEP_GOING)) {
+	  throw(err);
+	}
+	werror("%s\n", describe_backtrace(err));
       }
+      return ({ "" });	// FIXME: Broken image?
     });
 
   parser->add_container("execute",
     lambda(Parser.HTML p, mapping args, string c, string where)
     {
-      c = replace(c, ([ "&gt;":">", "&lt;":"<", "&amp;":"&" ]));
+      c = replace(c, ([ "&gt;":">", "&lt;":"<", "&amp;":"&",
+			// NB: src/modules/Image/layers.c had absolute paths...
+			"/home/mirar/pike7/tutorial/":IMAGE_DIR,
+		  ]));
+      // Repair some known typos in old versions.
+      c = replace(c, ({
+		    // src/modules/Image/layers.c:1.33
+		    // Parenthesis/brace matching error.
+		    // The corresponding code is just longdesc at HEAD.
+		    "replace(longdesc,({\",\",\";\",\")\",({\",<wbr />\",\";<wbr />\",\")<wbr />\"}))))/",
+		    "\"<wbr />\"/1*({mktag(\"wbr\")})));",
+		    // src/modules/Image/layers.c:1.36
+		    // longdesc still needs to be quoted.
+		    "mktag(\"td\",([\"align\":\"left\",\"valign\":\"center\"]),longdesc)",
+		  }), ({
+		    "replace(longdesc, ({ \"<\",\">\",\"&\" }), ({\"&lt;\",\"&gt;\",\"&amp;\"}))",
+		    "));",
+		    "mktag(\"td\",([\"align\":\"left\",\"valign\":\"center\"]),replace(longdesc, ({ \"<\",\">\",\"&\" }), ({\"&lt;\",\"&gt;\",\"&amp;\"})))",
+		  }));
       string name;
       sscanf(where, "file='%s'", name);
       name = (name/"/")[-1];
@@ -1392,9 +1418,9 @@ void create(string image_dir, void|.Flags flags)
     return \"<image>\"+fn+\"</image>\";
   }
 
-  string illustration_jpeg(Image.Image img, mapping extra) {
+  string illustration_jpeg(Image.Image img, mapping|void extra) {
 #if constant(Image.JPEG.encode)
-    return illustration(Image.JPEG.encode(img, extra), extra, \".jpeg\");
+    return illustration(Image.JPEG.encode(img, extra||([])), extra, \".jpeg\");
 #else
     return illustration(img, extra);
 #endif
@@ -1424,6 +1450,16 @@ void create(string image_dir, void|.Flags flags)
 
   string fix_image_path(string name) {
     return \"" + IMAGE_DIR + #"\" + name;
+  }
+
+  Image.Image load(string name) {
+    if (!Stdio.exist(name)) name = fix_image_path(name);
+    return Image.load(name);
+  }
+
+  Image.Layer load_layer(string name) {
+    if (!Stdio.exist(name)) name = fix_image_path(name);
+    return Image.load_layer(name);
   }
 
 ";
