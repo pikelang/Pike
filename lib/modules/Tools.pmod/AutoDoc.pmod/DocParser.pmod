@@ -292,7 +292,14 @@ protected class DocParserClass {
 
   protected void parseError(string s, mixed ... args) {
     s = sprintf(s, @args);
-    werror("DocParser error: %O\n", s);
+    if (currentPosition->lastline) {
+      werror("%s:%d..%d: DocParser error: %s\n",
+	     currentPosition->filename, currentPosition->firstline,
+	     currentPosition->lastline, s);
+    } else {
+      werror("%s:%d: DocParser error: %s\n",
+	     currentPosition->filename, currentPosition->firstline, s);
+    }
     throw (AutoDocError(currentPosition, "DocParser", s));
   }
 
