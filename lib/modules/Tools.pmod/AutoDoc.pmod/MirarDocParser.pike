@@ -729,6 +729,10 @@ void docdecl(string enttype,
      f->write("\n   <returntype>"+doctype(rv,"\n      ")+"</returntype>\n"
 	      "   <arguments>"+paramlist(params)+"\n   </arguments>\n");
    }
+   else if (enttype == "variable")
+   {
+      f->write("<type>"+doctype(rv)+"</type>\n");
+   }
    else
    {
       f->write("<typevalue>"+doctype(rv)+"</typevalue>\n");
