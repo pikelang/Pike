@@ -124,6 +124,9 @@ int(0..1) join_files(array(string) files, string save_to,
     werror("Joining %d file%s...\n", sizeof(files),
 	   (sizeof(files)==1?"":"s"));
 
+  // Attempt to keep the result in a canonic order.
+  sort(files);
+
   if (verbosity > 1)
     werror("Reading %s...\n", files[0]);
   Node dest = load_tree(files[0]);
