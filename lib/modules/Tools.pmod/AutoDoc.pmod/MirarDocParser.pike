@@ -382,7 +382,7 @@ constant dtd_nesting = ([
   "th":"tr",
 ]);
 
-constant self_terminating = (< "br", "wbr" >);
+constant self_terminating = (< "br", "hr", "wbr" >);
 
 ADT.Stack nesting;
 
@@ -394,7 +394,7 @@ array(string) pop_to_tag(string tag)
     res += ({ "</" + top + ">" });
     nesting->pop();
   }
-  if (!top) {
+  if (!top && tag) {
     error("Missing container tag %O\n", tag);
   }
   return res;
@@ -423,9 +423,15 @@ array(string) fix_tag_nesting(Parser.HTML p, string value)
     nesting->pop();
   } else {
     if (dtd_nesting[tag]) {
-      ret = pop_to_tag(dtd_nesting[tag]);
+      if (has_value(nesting, dtd_nesting[tag])) {
+	ret = pop_to_tag(dtd_nesting[tag]);
+      } else {
+	// Surrounding tag is missing. Add it.
+	nesting->push(dtd_nesting[tag]);
+	ret += ({ "<" + dtd_nesting[tag] + ">" });
+      }
     }
-    if (has_suffix(value, "/>")) {
+    if (has_suffix(value, " />")) {
       // Self-terminating tag.
     } else if (self_terminating[tag]) {
       value = value[..<1] + " />";
@@ -470,8 +476,7 @@ string fixdesc(string s,string prefix,void|string where)
 
    nesting_parser->set_extra(where);
 
-   string old_s = s;
-   s = nesting_parser->finish(s)->read();
+   s = nesting_parser->finish(s)->read() + pop_to_tag(UNDEFINED) * "";
 
    parser->set_extra(where);
 
@@ -1270,6 +1275,15 @@ void create(string image_dir, void|.Flags flags)
       }
 
       illustration_counter = g->img_counter;
+
+      if (flags & .FLAG_COMPAT) {
+	// NB: We may need to repair the output...
+	nesting = ADT.Stack();
+	nesting->push(0);	// End sentinel.
+	nesting_parser->set_extra(where);
+	return nesting_parser->finish(g->write->get())->read() +
+	  pop_to_tag(UNDEFINED) * "";
+      }
       return g->write->get();
     });
 
