@@ -368,6 +368,18 @@ protected private class Extractor {
         }
       array(PikeObject) docDecls = ({ });
 
+      if (!doc) {
+        foreach (decls, PikeObject obj)
+          if (obj->objtype == "class" &&
+	      ([object(Class)]obj)->containsDoc() &&
+	      sizeof(filter(obj->docGroups->documentation, `!=, EmptyDoc))) {
+	    extractorWarning("undocumented class %O contains doc comments",
+			     obj->name);
+	    doc = EmptyDoc;
+	  }
+      }
+
+
       object(.DocParser.Parse) parse = 0;
       string appears = 0;
       string belongs = 0;
@@ -428,14 +440,7 @@ protected private class Extractor {
         docDecls = meta->decls;
         appears = meta->appears;
         belongs = meta->belongs;
-      } else
-        foreach (decls, PikeObject obj)
-          if (obj->objtype == "class" &&
-	      ([object(Class)]obj)->containsDoc() &&
-	      sizeof(filter(obj->docGroups->documentation, `!=, EmptyDoc)))
-            extractorError("undocumented class %O contains doc comments",
-			   obj->name);
-
+      }
       // Objects added by @decl replace the true objects:
       if (sizeof(docDecls)) {
         if (sizeof(decls)) {
