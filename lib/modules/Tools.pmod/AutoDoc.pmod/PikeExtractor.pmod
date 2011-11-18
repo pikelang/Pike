@@ -65,32 +65,34 @@ protected private class Extractor {
     array(string) new_tokens = ({});
     array(int) new_positions = ({});
 
-    array(SourcePosition) ignores = ({});
+    ADT.Stack ignores = ADT.Stack();
+    ignores->push(0);	// End sentinel.
     for(int i; i<sizeof(tokens); i++) {
       string s = tokens[i];
       int pos = positions[i];
-      int ignoreline = 0;
       if (has_prefix(s, DOC_COMMENT)) {
         s = String.trim_all_whites(s[sizeof(DOC_COMMENT) .. ]);
-        ignoreline = 1;
-        if (s == "@ignore")
-          ignores = ({ pos }) + ignores;
-        else if (s == "@endignore")
-          if (sizeof(ignores))
-            ignores = ignores[1 .. ];
+        if (s == "@ignore") {
+	  ignores->push(pos);
+	  continue;
+        } else if (s == "@endignore") {
+          if (ignores->top())
+            ignores->pop();
           else
-            error("PikeExtractor: @endignore without matching @ignore in line %d.\n", pos);
-        else
-          ignoreline = 0;
+            report_error(SourcePosition(filename, pos), .FLAG_NORMAL,
+			 "@endignore without matching @ignore.\n");
+	  continue;
+	}
       }
-      if (sizeof(ignores) == 0 && !ignoreline) {
+      if (!ignores->top()) {
         new_tokens += ({ tokens[i] });
 	new_positions += ({ pos });
       }
     }
 
-    if (sizeof(ignores))
-      error("PikeExtractor: @ignore without matching @endignore in %s.\n", ignores[0]);
+    if (ignores->top())
+      report_error(SourcePosition(filename, ignores->pop()), .FLAG_NORMAL,
+		   "@ignore without matching @endignore.\n");
 
     parser->setTokens(new_tokens, new_positions);
   }
