@@ -215,13 +215,18 @@ string extract(string filename, string imgdest,
        (sizeof(array_sscanf(file[i..],"%s\n%*s")[0]/" ") == 3))) {
     // Mirar-style markup.
     if(imgsrc && imgdest) {
-      Tools.AutoDoc.MirarDocParser mirar_parser =
-	Tools.AutoDoc.MirarDocParser(imgsrc, flags);
-      int lineno = 1;
-      foreach(file/"\n", string line) {
-	mirar_parser->process_line(line, filename, lineno++);
-      }
-      return mirar_parser->make_doc_files(builddir, imgdest, root[0]);
+      mixed err = catch {
+	Tools.AutoDoc.MirarDocParser mirar_parser =
+	  Tools.AutoDoc.MirarDocParser(imgsrc, flags);
+	int lineno = 1;
+	foreach(file/"\n", string line) {
+	  mirar_parser->process_line(line, filename, lineno++);
+	}
+	return mirar_parser->make_doc_files(builddir, imgdest, root[0]);
+      };
+      if (!(flags & Tools.AutoDoc.FLAG_KEEP_GOING)) throw(err);
+      werror("MirarDoc extractor failed: %s\n", describe_backtrace(err));
+      return "\n";
     }
     else
       error("Found Mirar style markup. Need imgsrc and imgdir.\n");
