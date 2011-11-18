@@ -156,7 +156,7 @@ module : mapping <- moduleM
 			"desc" : text
 			"note" : mapping of "desc": text
 			"methods" : array of mappings <- methodM
-				"decl" : array of textlines of declarations
+				"decl" : array of array of type, name[, params]
 				"desc" : text
 				"returns" : textline
 				"see also" : array of references
@@ -250,7 +250,7 @@ mapping keywords=
 	    if (!nowM || methodM!=nowM || methodM->desc || methodM->args || descM==methodM)
 	    { if (!classM->methods) classM->methods=({});
 	      classM->methods+=({methodM=nowM=(["decl":({}),"_line":line])}); }
-	    methodM->decl+=({stripws(arg)}); descM=0; },
+	    methodM->decl+=({parse_decl(arg)}); descM=0; },
   "inherits":lambda(string arg,string line)
 	  { if (!nowM) return complain("inherits w/o class or module");
   	    if (nowM != classM) return complain("inherits outside class or module");
@@ -262,14 +262,14 @@ mapping keywords=
 	     if (!classM) return complain("variable w/o class");
 	     if (!classM->variables) classM->variables=({});
 	     classM->variables+=({descM=nowM=(["_line":line])});
-	     nowM->decl=stripws(arg);
+	     nowM->decl=({parse_decl(arg)});
 	  },
   "constant":lambda(string arg,string line)
 	  {
 	     if (!classM) return complain("constant w/o class");
 	     if (!classM->constants) classM->constants=({});
 	     classM->constants+=({descM=nowM=(["_line":line])}); 
-	     nowM->decl=stripws(arg);
+	     nowM->decl=({parse_decl(arg)});
 	  },
 
   "arg":lambda(string arg,string line)
@@ -477,17 +477,12 @@ string fixdesc(string s,string prefix,void|string where)
    return s;
 }
 
-multiset(string) get_method_names(array(string) decls)
+multiset(string) get_method_names(array(array(string)) decls)
 {
-   string decl,name;
    multiset(string) names=(<>);
-   foreach (decls,decl)
+   foreach (decls, array(string) decl)
    {
-      sscanf(decl,"%*s%*[\t ]%s%*[\t (]%*s",name);
-      if (name == "`" && has_value(decl, "`()")) {
-	name = "`()";
-      }
-      names[name]=1;
+      names[decl[1]] = 1;
    }
    return names;
 }
@@ -638,11 +633,45 @@ constant convname=
    "`&":"`&amp;",
 ]);
 
+array(string) parse_decl(string raw_decl)
+{
+   string rv,name,params=0;
+   array tokens =
+      Parser.Pike.split(replace(raw_decl, ({ "&lt;", "&gt;" }), ({ "<", ">"})));
+   tokens = Parser.Pike.tokenize(tokens);
+   tokens = (tokens/({"="}))[0];	// Handle constants.
+   tokens = Parser.Pike.group(tokens);
+   tokens = Parser.Pike.hide_whitespaces(tokens);
+
+   if (tokens[-1] == ";") {
+      tokens = tokens[..<1];
+   }
+   if (arrayp(tokens[-1])) {
+      params = Parser.Pike.simple_reconstitute(tokens[-1]);
+      tokens = tokens[..<1];
+   }
+   name = objectp(tokens[-1])?tokens[-1]->text:tokens[-1];
+   rv = "mixed";
+   if (sizeof(tokens) > 1) {
+      rv = Parser.Pike.simple_reconstitute(tokens[..<1]);
+   }
+
+   if (params) {
+      return ({ rv, name, params });
+   }
+   return ({ rv, name });
+}
+
 void docdecl(string enttype,
-	     string decl,
+	     array(string) decl,
 	     object f)
 {
    string rv,name,params=0;
+   rv = decl[0];
+   name = decl[1];
+   if (sizeof(decl) == 3) params = decl[2][1..];
+
+#if 0
    sscanf(decl,"%s %s(%s",rv,name,params) == 3 ||
      sscanf(decl+"\n","%s %s\n",rv,name);
 
@@ -650,6 +679,7 @@ void docdecl(string enttype,
      name = "`()";
      sscanf(params[1..], "%*s(%s", params);
    }
+#endif
 
    if (convname[name]) name=convname[name];
 
@@ -776,19 +806,8 @@ void document(string enttype,
 	if(huh->decl && sizeof(names)==1) {
 	  lambda() {
 	    string m,n;
-
-	    array decl;
-	    if(!arrayp(huh->decl))
-	      decl = ({ huh->decl });
-	    else
-	      decl = huh->decl;
-	    foreach(decl, string prot) {
-	      sscanf(prot, "%*s %s(", n)==2 ||
-		sscanf(prot, "%*s %s ", n)==2 ||
-		sscanf(prot+"\n", "%*s %s\n", n);
-	      if (n == "`" && has_value(prot, "`()")) {
-		n = "`()";
-	      }
+	    foreach(huh->decl, array(string) decl) {
+	      n = decl[1];
 	      if(!m) { m=n; continue; }
 	      if(n!=m) return;
 	    }
@@ -799,7 +818,7 @@ void document(string enttype,
 	f->write(">\n");
 
 	if (huh->decl) {
-	  foreach (arrayp(huh->decl)?huh->decl:({huh->decl}),string decl)
+	  foreach (huh->decl, array(string) decl)
 	    docdecl(enttype,decl,f);
 	}
 	else
@@ -926,9 +945,9 @@ void document(string enttype,
    {
       foreach(huh->constants,mapping m)
       {
-	 sscanf(m->decl,"%s %s",string type,string name);
-	 sscanf(name,"%s=",name);
-	 document("constant",m,prefix+name,prefix+name+".",f);
+	 string type = m->decl[0][0];
+	 string name = m->decl[0][1];
+	 document("constant",m,prefix+name,prefix+name+".",f,currentfile,line);
       }
    }
 
@@ -936,10 +955,9 @@ void document(string enttype,
    {
       foreach(huh->variables,mapping m)
       {
-	 sscanf(m->decl,"%s %s",string type,string name);
-	 if (!name) name=m->decl,type="mixed";
-	 sscanf(name,"%s=%s",name,string value);
-	 document("variable",m,prefix+name,prefix+name+".",f);
+	 string type = m->decl[0][0];
+	 string name = m->decl[0][1];
+	 document("variable",m,prefix+name,prefix+name+".",f,currentfile,line);
       }
    }
 
