@@ -1199,22 +1199,25 @@ class NScopeStack
   NScope top;
   array(NScope) stack = ({});
   mapping(string:mapping(string:int(1..))) failures = ([]);
+  string logfile;
   .Flags flags;
 
-  protected void create(NScope scopes, .Flags|void flags)
+  protected void create(NScope scopes, string|void logfile, .Flags|void flags)
   {
     this_program::scopes = scopes;
+    this_program::logfile = logfile;
     if (zero_type(flags)) flags = .FLAG_NORMAL;
     this_program::flags = flags;
   }
   protected void destroy()
   {
     if (sizeof(failures)) {
+      logfile = logfile || "resolution.log";
       if (flags & .FLAG_VERB_MASK) {
-	werror("Resolution failed for %d symbols. Logging to resolution.log\n",
-	       sizeof(failures));
+	werror("Resolution failed for %d symbols. Logging to %s\n",
+	       sizeof(failures), logfile);
       }
-      Stdio.File f = Stdio.File("resolution.log", "cwt");
+      Stdio.File f = Stdio.File(logfile, "cwt");
       f->write("Reference target: Reference source:references\n\n");
       mapping(string:array(string)) rev = ([]);
       foreach(sort(indices(failures)), string ref) {
@@ -1610,11 +1613,11 @@ void doResolveNode(NScopeStack scopestack, SimpleNode tree)
   }
 }
 
-void resolveRefs(SimpleNode tree, .Flags|void flags)
+void resolveRefs(SimpleNode tree, string|void logfile, .Flags|void flags)
 {
   if ((flags & .FLAG_VERB_MASK) >= .FLAG_VERBOSE)
     werror("Building the scope structure...\n");
-  NScopeStack scopestack = NScopeStack(NScope(tree), flags);
+  NScopeStack scopestack = NScopeStack(NScope(tree), logfile, flags);
   if ((flags & .FLAG_VERB_MASK) >= .FLAG_VERBOSE)
     werror("Adding implicit inherits for compatibility modules...\n");
   scopestack->addImplicitInherits();
@@ -1666,12 +1669,12 @@ void cleanUndocumented(SimpleNode tree, .Flags|void flags)
 //!
 //! @seealso
 //!   @[handleAppears()], @[cleanUndocumented()], @[resolveRefs()]
-void postProcess(SimpleNode root, .Flags|void flags) {
+void postProcess(SimpleNode root, string|void logfile, .Flags|void flags) {
   //  werror("handleAppears\n%s%O\n", ctime(time()), Debug.pp_memory_usage());
   handleAppears(root);
   //  werror("cleanUndocumented\n%s%O\n", ctime(time()), Debug.pp_memory_usage());
   cleanUndocumented(root, flags);
   //  werror("resolveRefs\n%s%O\n", ctime(time()), Debug.pp_memory_usage());
-  resolveRefs(root, flags);
+  resolveRefs(root, logfile, flags);
   //  werror("done postProcess\n%s%O\n", ctime(time()), Debug.pp_memory_usage());
 }

@@ -10,14 +10,15 @@
 constant description = "Joins AutoDoc extractions.";
 mapping sub_cache = ([]);
 
-int verbosity = 2;
+int verbosity = Tools.AutoDoc.FLAG_NORMAL;
 
 protected constant Node = Parser.XML.Tree.SimpleNode;
 
-int main(int n, array(string) args) {
-
+int main(int n, array(string) args)
+{
   int post_process = has_value(args, "--post-process");
   args -= ({ "--post-process" });
+  Tools.AutoDoc.Flags flags = Tools.AutoDoc.FLAG_NORMAL;
 
   if (has_value(args, "-q")) {
     // quiet.
@@ -27,18 +28,29 @@ int main(int n, array(string) args) {
     // quiet.
     verbosity = 0;
     args -= ({ "--quiet" });
-  } 
+  } else if (has_value(args, "--verbose")) {
+    args -= ({ "--verbose" });
+    verbosity++;
+  } else if (has_value(args, "-v")) {
+    args -= ({ "-v" });
+    verbosity++;
+  }
+
+  flags = (flags & ~Tools.AutoDoc.FLAG_VERB_MASK)|verbosity;
 
   if(has_value(args, "--help") || sizeof(args)<3) {
     write("pike -x join_autodoc <destination.xml> <builddir>\n");
-    write("pike -x join_autodoc --post-process <dest.xml> files_to_join.xml [...]\n");
+    write("pike -x join_autodoc [--post-process] [-q|--quiet] [-v|--verbose]\n"
+	  "      <dest.xml> files_to_join.xml [...]\n");
     return 1;
   }
 
-  recurse( args[2..], args[1], post_process );
+  recurse( args[2..], args[1], post_process, flags );
 }
 
-void recurse(array(string) sources, string save_to, int post_process) {
+void recurse(array(string) sources, string save_to,
+	     int(0..1) post_process, Tools.AutoDoc.Flags flags)
+{
   array files = ({});
   int mtime;
 
@@ -57,7 +69,7 @@ void recurse(array(string) sources, string save_to, int post_process) {
 	if(fn[0]=='.' || (fn[0]=='#' && fn[-1]=='#')) continue;
 	Stdio.Stat stat = file_stat(builddir+fn);
 	if(!stat->isdir) continue;
-	recurse(({builddir+fn+"/"}), builddir+fn+"/.cache.xml", 0);
+	recurse(({builddir+fn+"/"}), builddir+fn+"/.cache.xml", 0, flags);
 	
 	stat = file_stat(builddir+fn+"/.cache.xml");
 	if(stat) {
@@ -83,7 +95,7 @@ void recurse(array(string) sources, string save_to, int post_process) {
   }
   Stdio.Stat dstat = file_stat(save_to);
   if(dstat && dstat->mtime > mtime) return;
-  int res = join_files(files, save_to, post_process);
+  int res = join_files(files, save_to, post_process, flags);
   if(res) exit(res);
 }
 
@@ -92,11 +104,13 @@ Node load_tree(string fn) {
   return Parser.XML.Tree.simple_parse_file(fn)[0];
 }
 
-int(0..1) join_files(array(string) files, string save_to, int(0..1) post_process) {
-
+int(0..1) join_files(array(string) files, string save_to,
+		     int(0..1) post_process, Tools.AutoDoc.Flags flags)
+{
   if(!sizeof(files)) {
     if (verbosity > 1)
       werror("No content to merge.\n");
+    Stdio.write_file(save_to, "<autodoc></autodoc>");
     return 0;
   }
 
@@ -160,7 +174,10 @@ int(0..1) join_files(array(string) files, string save_to, int(0..1) post_process
   if(post_process) {
     if (verbosity > 0)
       werror("Post processing manual file.\n");
-    Tools.AutoDoc.ProcessXML.postProcess(dest);
+    Tools.AutoDoc.ProcessXML.postProcess(dest,
+					 combine_path(save_to,
+						      "../resolution.log"),
+					 flags);
   }
 
   if (!fail) {
