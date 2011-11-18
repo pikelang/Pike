@@ -8,6 +8,8 @@
 
 protected inherit .PikeObjects;
 
+protected .Flags flags = .FLAG_NORMAL;
+
 //! The end of file marker.
 constant EOF = "";
 
@@ -934,8 +936,9 @@ void setTokens(array(string) t, array(int) p) {
 //!
 protected void create(string|void s,
 		      string|SourcePosition|void _filename,
-		      int|void line)
+		      int|void line, .Flags|void flags)
 {
+  if (zero_type(flags)) flags = .FLAG_NORMAL;
   if (s) {
     if (objectp(_filename)) {
       line = _filename->firstline;

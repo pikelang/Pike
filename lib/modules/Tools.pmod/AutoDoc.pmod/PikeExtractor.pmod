@@ -27,7 +27,7 @@ protected private class Extractor {
     this_program::flags = flags;
     verbosity = flags & .FLAG_VERB_MASK;
 
-    parser = .PikeParser(0, filename);
+    parser = .PikeParser(0, filename, flags);
 
     array(string) tokens;
     array(int) positions;
