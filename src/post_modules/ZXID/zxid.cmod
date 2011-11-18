@@ -765,7 +765,9 @@ static char* zxid_grab_domain_name(zxid_conf* cf, const char* url)
     stack_pop_n_elems_keep_top(args);
   }
 
-  /*! Return a list of known identity providers.
+  /*! @decl mapping(string(0..255):string(0..255)) idp_list()
+   *!
+   *!   Return a list of known identity providers.
    *!
    *! @returns
    *!   Returns a mapping from IdP EID to display name (if any).
