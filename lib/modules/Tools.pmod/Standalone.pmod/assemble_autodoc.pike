@@ -467,11 +467,13 @@ void report_failed_entries(mapping scope, string path) {
 
 int(0..1) main(int num, array(string) args) {
 
+  string outfile;
 
   int T = time();
   foreach(Getopt.find_all_options(args, ({
      ({ "version",    Getopt.NO_ARG,  "-V,--version"/"," }),
      ({ "help",       Getopt.NO_ARG,  "-h,--help"/"," }),
+     ({ "output",     Getopt.HAS_ARG, "-o,--output,--out"/"," }),
      ({ "verbose",    Getopt.NO_ARG,  "-v,--verbose"/"," }),
      ({ "quiet",      Getopt.NO_ARG,  "-q,--quiet"/"," }),
      ({ "compat",     Getopt.NO_ARG,  "--compat" }),
@@ -483,6 +485,10 @@ int(0..1) main(int num, array(string) args) {
       exit(0, "$Id$\n");
     case "help":
       exit(0, "pike -x assemble_autodoc <structure file> <autodoc file>\n");
+    case "output":
+      if (outfile) exit(1, "Only a single output is supported.\n");
+      outfile = opt[1];
+      break;
     case "verbose":
       if (verbose < Tools.AutoDoc.FLAG_DEBUG) {
 	verbose += 1;
@@ -545,7 +551,11 @@ int(0..1) main(int num, array(string) args) {
 
   if (verbose >= Tools.AutoDoc.FLAG_VERBOSE)
     werror("Writing final manual source file.\n");
-  write( (string)n );
+  if (outfile) {
+    Stdio.write_file(outfile, (string)n);
+  } else {
+    write( (string)n );
+  }
   // Zap the XML trees so that the gc doesn't have to.
   m->zap_tree();
   n->zap_tree();
