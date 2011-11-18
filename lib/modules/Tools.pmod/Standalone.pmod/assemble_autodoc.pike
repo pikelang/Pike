@@ -6,6 +6,7 @@ constant description = "Assembles AutoDoc output file.";
 // AutoDoc mk II assembler
 
 #define Node Parser.XML.Tree.Node
+#define CommentNode Parser.XML.Tree.CommentNode
 #define XML_ELEMENT Parser.XML.Tree.XML_ELEMENT
 #define XML_TEXT Parser.XML.Tree.XML_TEXT
 
@@ -457,6 +458,7 @@ void report_failed_entries(mapping scope, string path) {
     if (verbose >= Tools.AutoDoc.FLAG_VERBOSE) {
       werror("Failed to move %s\n", path[1..]);
     }
+    scope[0](CommentNode(sprintf("<insert-move entity=\"%s\" />", path[1..])));
     m_delete(scope, 0);
   }
   foreach(scope; string id; mapping next)
