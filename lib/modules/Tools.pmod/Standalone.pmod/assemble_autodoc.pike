@@ -19,6 +19,8 @@ Tools.AutoDoc.Flags flags = Tools.AutoDoc.FLAG_NORMAL;
 
 int verbose = Tools.AutoDoc.FLAG_NORMAL;
 
+string refdocdir;
+
 Node void_node = Node(XML_ELEMENT, "void", ([]), 0);
 
 // array( array(name,file,chapter_no,(subchapters)) )
@@ -325,7 +327,7 @@ void ref_expansion(Node n, string dir, void|string file) {
 	error("chapter-ref element outside file element\n");
       if(!c->get_attributes()->file)
 	error("No file attribute on chapter-ref element.\n");
-      n->replace_child(c, c = parse_file(c->get_attributes()->file)->
+      n->replace_child(c, c = parse_file(combine_path(refdocdir, c->get_attributes()->file))->
 		       get_first_element("chapter") );
       // fallthrough
     case "chapter":
@@ -506,7 +508,9 @@ int(0..1) main(int num, array(string) args) {
   mapping t = localtime(time());
   n->get_attributes()["time-stamp"] =
     sprintf("%4d-%02d-%02d", t->year+1900, t->mon+1, t->mday);
+  refdocdir = combine_path(args[1], "../..");
   if (verbose >= Tools.AutoDoc.FLAG_VERBOSE) {
+    werror("Refdoc directory: %s\n", refdocdir);
     werror("Executing reference expansion and queueing node insertions.\n");
   }
   mixed err = catch {
