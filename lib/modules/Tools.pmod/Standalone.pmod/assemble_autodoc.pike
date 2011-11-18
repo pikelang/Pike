@@ -15,6 +15,10 @@ mapping queue = ([]);
 mapping ns_queue = ([]);
 array(Node) chapters = ({});
 
+Tools.AutoDoc.Flags flags = Tools.AutoDoc.FLAG_NORMAL;
+
+int verbose = Tools.AutoDoc.FLAG_NORMAL;
+
 Node void_node = Node(XML_ELEMENT, "void", ([]), 0);
 
 // array( array(name,file,chapter_no,(subchapters)) )
@@ -414,8 +418,9 @@ void move_items(Node n, mapping jobs)
       m_delete(jobs, name);
   }
 
-  foreach(indices(ns_queue), string name)
-    werror("Failed to move namespace %O.\n", name);
+  if (verbose >= Tools.AutoDoc.FLAG_VERBOSE)
+    foreach(indices(ns_queue), string name)
+      werror("Failed to move namespace %O.\n", name);
 }
 
 string make_toc_entry(Node n) {
@@ -447,7 +452,9 @@ void make_toc() {
 
 void report_failed_entries(mapping scope, string path) {
   if(scope[0]) {
-    werror("Failed to move %s\n", path[1..]);
+    if (verbose >= Tools.AutoDoc.FLAG_VERBOSE) {
+      werror("Failed to move %s\n", path[1..]);
+    }
     m_delete(scope, 0);
   }
   foreach(scope; string id; mapping next)
@@ -456,24 +463,52 @@ void report_failed_entries(mapping scope, string path) {
 
 int(0..1) main(int num, array(string) args) {
 
+
   int T = time();
-  if(has_value(args, "--version"))
-    exit(0, "$Id$\n");
-
-  if(has_value(args, "--help"))
-    exit(0, "pike -x assemble_autodoc <structure file> <autodoc file>\n");
-
-  if(num<3)
+  foreach(Getopt.find_all_options(args, ({
+     ({ "version",    Getopt.NO_ARG,  "-V,--version"/"," }),
+     ({ "help",       Getopt.NO_ARG,  "-h,--help"/"," }),
+     ({ "verbose",    Getopt.NO_ARG,  "-v,--verbose"/"," }),
+     ({ "quiet",      Getopt.NO_ARG,  "-q,--quiet"/"," }),
+     ({ "compat",     Getopt.NO_ARG,  "--compat" }),
+     ({ "no-dynamic", Getopt.NO_ARG,  "--no-dynamic" }),
+     ({ "keep-going", Getopt.NO_ARG,  "--keep-going" }),
+				  })), array(string) opt) {
+    switch(opt[0]) {
+    case "version":
+      exit(0, "$Id$\n");
+    case "help":
+      exit(0, "pike -x assemble_autodoc <structure file> <autodoc file>\n");
+    case "verbose":
+      if (verbose < Tools.AutoDoc.FLAG_DEBUG) {
+	verbose += 1;
+	flags = (flags & ~Tools.AutoDoc.FLAG_VERB_MASK) | verbose;
+      }
+      break;
+    case "quiet":
+      flags &= ~Tools.AutoDoc.FLAG_VERB_MASK;
+      verbose = Tools.AutoDoc.FLAG_QUIET;
+      break;
+    case "keep-going":
+      flags |= Tools.AutoDoc.FLAG_KEEP_GOING;
+      break;
+    }
+  }
+  args = Getopt.get_args(args);
+  if(sizeof(args)<3)
     exit(1," Too few arguments\n");
 
-  werror("Parsing structure file %O.\n", args[1]);
+  if (verbose >= Tools.AutoDoc.FLAG_VERBOSE)
+    werror("Parsing structure file %O.\n", args[1]);
   Node n = parse_file(args[1]);
   n = n->get_first_element("manual");
   n->get_attributes()->version = version();
   mapping t = localtime(time());
   n->get_attributes()["time-stamp"] =
     sprintf("%4d-%02d-%02d", t->year+1900, t->mon+1, t->mday);
-  werror("Executing reference expansion and queueing node insertions.\n");
+  if (verbose >= Tools.AutoDoc.FLAG_VERBOSE) {
+    werror("Executing reference expansion and queueing node insertions.\n");
+  }
   mixed err = catch {
     ref_expansion(n, ".");
   };
@@ -481,28 +516,35 @@ int(0..1) main(int num, array(string) args) {
     werror("ref_expansion() failed:\n"
 	   "  ch:%d toc:%O\n",
 	   chapter, toc);
-    throw(err);
+    if (!(flags & Tools.AutoDoc.FLAG_KEEP_GOING))
+      throw(err);
   }
 
-  werror("Parsing autodoc file %O.\n", args[2]);
+  if (verbose >= Tools.AutoDoc.FLAG_VERBOSE)
+    werror("Parsing autodoc file %O.\n", args[2]);
   Node m = parse_file(args[2]);
   m = m->get_first_element("autodoc");
 
-  werror("Executing node insertions.\n");
+  if (verbose >= Tools.AutoDoc.FLAG_VERBOSE)
+    werror("Executing node insertions.\n");
   move_items(m, queue);
   if(sizeof(queue)) {
-    report_failed_entries(queue, "");
-    return 1;
+    if (verbose)
+      report_failed_entries(queue, "");
+    if (!(flags & Tools.AutoDoc.FLAG_KEEP_GOING))
+      return 1;
   }
 
   make_toc();
 
-  werror("Writing final manual source file.\n");
+  if (verbose >= Tools.AutoDoc.FLAG_VERBOSE)
+    werror("Writing final manual source file.\n");
   write( (string)n );
   // Zap the XML trees so that the gc doesn't have to.
   m->zap_tree();
   n->zap_tree();
-  werror("Took %d seconds.\n\n", time()-T);
+  if (verbose >= Tools.AutoDoc.FLAG_VERBOSE)
+    werror("Took %d seconds.\n\n", time()-T);
 
   return 0;
 }
