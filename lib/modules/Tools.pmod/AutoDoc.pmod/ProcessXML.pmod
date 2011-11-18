@@ -427,17 +427,27 @@ void mergeTrees(SimpleNode dest, SimpleNode source) {
         break;
       case "doc":
         if (dest_has_doc) {
-	  werror("Original doc: %O\n", dest_has_doc->value_of_node());
-	  werror("New doc: %O\n", node->value_of_node());
-	  if (isNameSpace(dest))
-            processError("Duplicate documentation for namespace " +
-			 getName(dest));
-          else if (isClass(dest))
-            processError("Duplicate documentation for class " + getName(dest));
-          else if (isModule(dest))
-            processError("Duplicate documentation for module " +
-                         getName(dest));
-          processError("Duplicate documentation");
+	  if (!sizeof(String.trim_all_whites(node->value_of_node())) ||
+	      (String.trim_all_whites(node->value_of_node()) ==
+	       String.trim_all_whites(dest_has_doc->value_of_node()))) {
+	    // New doc is empty or same as old.
+	    break;
+	  }
+	  if (sizeof(String.trim_all_whites(dest_has_doc->value_of_node()))) {
+	    werror("Original doc: %O\n", dest_has_doc->value_of_node());
+	    werror("New doc: %O\n", node->value_of_node());
+	    if (isNameSpace(dest))
+	      processError("Duplicate documentation for namespace " +
+			   getName(dest));
+	    else if (isClass(dest))
+	      processError("Duplicate documentation for class " +
+			   getName(dest));
+	    else if (isModule(dest))
+	      processError("Duplicate documentation for module " +
+			   getName(dest));
+	    processError("Duplicate documentation");
+	  }
+	  // Old doc was empty.
         }
         // fall through
       default:
