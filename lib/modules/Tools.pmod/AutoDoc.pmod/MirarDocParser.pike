@@ -213,91 +213,99 @@ mapping lower_nowM()
    else return nowM=methodM;
 }
 
-void report(string s)
+void report(int level, string currentfile, int line,
+	    sprintf_format msg, sprintf_args ... args)
 {
-  if (verbosity > 0)
-    werror("mkxml:   "+s+"\n");
+  if (verbosity >= level) {
+    if (sizeof(args)) msg = sprintf(msg, @args);
+    werror("%s:%d: %s\n", currentfile, line, msg);
+  }
 }
 
 #define complain(X) (X)
 
 string file_version = "";
 
+string format_line(string currentfile, int line)
+{
+  return "file='"+currentfile+"' first-line='"+line+"'";
+}
+
 mapping keywords=
-(["$""Id":lambda(string arg, string line)
+(["$""Id":lambda(string arg, string currentfile, int line)
 	{
 	  file_version = " version='Id: "+arg[..search(arg, "$")-1]+"'";
 	},
-  "module":lambda(string arg,string line)
-	  { classM=descM=nowM=moduleM=focM(parse,stripws(arg),line);
+  "module":lambda(string arg, string currentfile, int line)
+	  { classM=descM=nowM=moduleM=focM(parse,stripws(arg),format_line(currentfile,line));
 	    methodM=0;
 	    if (!nowM->classes) nowM->classes=(["_order":({})]);
 	    if (!nowM->modules) nowM->modules=(["_order":({})]);
-	    report("module "+arg); },
-  "class":lambda(string arg,string line)
+	    report(.FLAG_VERBOSE,currentfile,line,"module "+arg); },
+  "class":lambda(string arg, string currentfile, int line)
 	  { if (!moduleM) return complain("class w/o module");
-	    descM=nowM=classM=focM(moduleM->classes,stripws(arg),line);
-	    methodM=0; report("class "+arg); },
-  "submodule":lambda(string arg,string line)
+	    descM=nowM=classM=focM(moduleM->classes,stripws(arg),format_line(currentfile,line));
+	    methodM=0; report(.FLAG_VERBOSE,currentfile,line,"class "+arg); },
+  "submodule":lambda(string arg, string currentfile, int line)
 	  { if (!moduleM) return complain("submodule w/o module");
-	    classM=descM=nowM=moduleM=focM(moduleM->modules,stripws(arg),line);
+	    classM=descM=nowM=moduleM=focM(moduleM->modules,stripws(arg),format_line(currentfile,line));
 	    methodM=0;
 	    if (!nowM->classes) nowM->classes=(["_order":({})]);
 	    if (!nowM->modules) nowM->modules=(["_order":({})]);
-	    report("submodule "+arg); },
-  "method":lambda(string arg,string line)
+	    report(.FLAG_VERBOSE,currentfile,line,"submodule "+arg); },
+  "method":lambda(string arg, string currentfile, int line)
 	  { if (!classM) return complain("method w/o class");
 	    if (!nowM || methodM!=nowM || methodM->desc || methodM->args || descM==methodM)
 	    { if (!classM->methods) classM->methods=({});
-	      classM->methods+=({methodM=nowM=(["decl":({}),"_line":line])}); }
+	      classM->methods+=({methodM=nowM=(["decl":({}),"_line":format_line(currentfile,line)])}); }
 	    methodM->decl+=({parse_decl(arg)}); descM=0; },
-  "inherits":lambda(string arg,string line)
+  "inherits":lambda(string arg, string currentfile, int line)
 	  { if (!nowM) return complain("inherits w/o class or module");
   	    if (nowM != classM) return complain("inherits outside class or module");
 	    if (!classM->inherits) classM->inherits=({});
 	    classM->inherits+=({stripws(arg)}); },
 
-  "variable":lambda(string arg,string line)
+  "variable":lambda(string arg, string currentfile, int line)
 	  {
 	     if (!classM) return complain("variable w/o class");
 	     if (!classM->variables) classM->variables=({});
-	     classM->variables+=({descM=nowM=(["_line":line])});
+	     classM->variables+=({descM=nowM=(["_line":format_line(currentfile,line)])});
 	     nowM->decl=({parse_decl(arg)});
 	  },
-  "constant":lambda(string arg,string line)
+  "constant":lambda(string arg, string currentfile, int line)
 	  {
 	     if (!classM) return complain("constant w/o class");
 	     if (!classM->constants) classM->constants=({});
-	     classM->constants+=({descM=nowM=(["_line":line])}); 
+	     classM->constants+=({descM=nowM=(["_line":format_line(currentfile,line)])});
 	     nowM->decl=({parse_decl(arg)});
 	  },
 
-  "arg":lambda(string arg,string line)
+  "arg":lambda(string arg, string currentfile, int line)
 	  {
 	     if (!methodM) return complain("arg w/o method");
 	     if (!methodM->args) methodM->args=({});
-	       methodM->args+=({argM=nowM=(["args":({}),"_line":line])});
+	       methodM->args+=({argM=nowM=(["args":({}),"_line":format_line(currentfile,line)])});
 	     argM->args+=({arg}); descM=argM;
 	  },
-  "note":lambda(string arg,string line)
+  "note":lambda(string arg, string currentfile, int line)
 	  {
 	     if (!lower_nowM())
 	        return complain("note w/o method, class or module");
-	     descM=nowM->note||(nowM->note=(["_line":line]));
+	     descM=nowM->note||(nowM->note=(["_line":format_line(currentfile,line)]));
 	  },
-  "added":lambda(string arg,string line)
+  "added":lambda(string arg, string currentfile, int line)
 	  {
 	     if (!lower_nowM())
 	        return complain("added in: w/o method, class or module");
-	     descM=nowM->added||(nowM->added=(["_line":line]));
+	     descM=nowM->added||(nowM->added=(["_line":format_line(currentfile,line)]));
 	  },
-  "bugs":lambda(string arg,string line)
+  "bugs":lambda(string arg, string currentfile, int line)
 	  {
 	     if (!lower_nowM())
 	        return complain("bugs w/o method, class or module");
-	     descM=nowM->bugs||(nowM->bugs=(["_line":line]));
+	     descM=nowM->bugs||(nowM->bugs=(["_line":format_line(currentfile,line)]));
 	  },
-  "see":lambda(string arg,string line)
+  "see":lambda(string arg, string currentfile, int line)
 	  {
 	     if (arg[0..3]!="also")
 	        return complain("see w/o 'also:'\n");
@@ -773,17 +781,21 @@ void docdecl(string enttype,
 
 void document(string enttype,
 	      mapping huh,string name,string prefix,
-	      object f)
+	      object f, string currentfile, int line)
 {
   int(0..1) has_doc;
    array(string) names;
+
+   if (huh->_line) {
+     sscanf(huh->_line, "file='%s' first-line='%d'", currentfile, line);
+   }
 
    if (huh->names)
       names=map(indices(huh->names),addprefix,name);
    else
       names=({name});
 
-   report(name+" : "+names*",");
+   report(.FLAG_VERBOSE,currentfile,line,name+" : "+names*",");
 
    array v=name/".";
    string canname=v[-1];
@@ -985,7 +997,7 @@ void document(string enttype,
 	    foreach (huh->methods,method)
 	       if ( method->names[method_name] )
 	       {
-		  document("method",method,prefix,prefix,f);
+		  document("method",method,prefix,prefix,f,currentfile,line);
 		  method_names-=method->names;
 	       }
 	    if (method_names[method_name])
@@ -999,7 +1011,7 @@ void document(string enttype,
       {
 //  	 f->write("\n\n\n<section title=\""+prefix+n+"\">\n");
 	 document("class",huh->classes[n],
-		  prefix+n,prefix+n+"->",f);
+		  prefix+n,prefix+n+"->",f,currentfile,line);
 //  	 f->write("</section title=\""+prefix+n+"\">\n");
       }
    }
@@ -1009,7 +1021,7 @@ void document(string enttype,
       foreach(huh->modules->_order,string n)
       {
 	 document("module",huh->modules[n],
-		  prefix+n,prefix+n+".",f);
+		  prefix+n,prefix+n+".",f,currentfile,line);
       }
    }
 // end ANCHOR
@@ -1057,7 +1069,7 @@ string make_doc_files(string builddir, string imgdest, string|void namespace)
        // Module documentation exists in a namespace...
        f->write("<namespace name='" + namespace + "'>\n");
        foreach (sort(indices(parse)-({"_order"})),string module)
-	 document("module",parse[module],module,module+".", f);
+	 document("module",parse[module],module,module+".", f, "-", 1);
        f->write("</namespace>\n");
      };
 
@@ -1086,9 +1098,10 @@ void process_line(string s,string currentfile,int line)
       if (keywords[kw])
       {
 	 string err;
-	 if ( (err=keywords[kw](arg,"file='"+currentfile+"' first-line='"+line+"'")) )
+	 if ( (err=keywords[kw](arg,currentfile,line)) )
 	 {
-	   report(currentfile+"file='"+currentfile+"' line="+line);
+	   report(.FLAG_QUIET, currentfile, line,
+		  "process_line failed: %O", err);
 	   error("process_line failed: %O\n", err);
 	 }
       }
@@ -1096,11 +1109,13 @@ void process_line(string s,string currentfile,int line)
       {
 	 string d=s[i+3..];
    //  	    sscanf(d,"%*[ \t]!%s",d);
-   //	    if (search(s,"$""Id")!=-1) report("Id: "+d);
+   //	    if (search(s,"$""Id")!=-1)
+   //          report(.FLAG_VERBOSE,currentfile,line,"Id: "+d);
 	 if (!descM) descM=methodM;
 	 if (!descM)
 	 {
-	    report(currentfile+" line "+line+": illegal description position");
+	    report(.FLAG_NORMAL, currentfile, line,
+		   "illegal description position.");
 	    //error("process_line failed: Illegal description position.\n");
 	    return;
 	 }
