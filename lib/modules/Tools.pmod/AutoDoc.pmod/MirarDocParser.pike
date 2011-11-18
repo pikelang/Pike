@@ -1105,12 +1105,16 @@ void process_line(string s,string currentfile,int line)
 	 string err;
 	 if ( (err=keywords[kw](arg,currentfile,line)) )
 	 {
-	   report(.FLAG_QUIET, currentfile, line,
-		  "process_line failed: %O", err);
-	   error("process_line failed: %O\n", err);
-	 }
+	    if (sizeof(err)) {
+	       report(.FLAG_QUIET, currentfile, line,
+		      "process_line failed: %O", err);
+	       if (!(flags & .FLAG_KEEP_GOING))
+		  error("process_line failed: %O\n", err);
+	    }
+	 } else return;
       }
-      else if (s[i+3..]!="")
+
+      if (s[i+3..]!="")
       {
 	 string d=s[i+3..];
    //  	    sscanf(d,"%*[ \t]!%s",d);
