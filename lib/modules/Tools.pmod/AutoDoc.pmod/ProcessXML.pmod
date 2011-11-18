@@ -157,6 +157,9 @@ protected object makeWrapper(array(string) modules, object|void child)
 //!   The name of the class/module/namespace.
 //! @param parentModules
 //!   The ancestors of the class/module/namespace.
+//! @param flags
+//!   Flags adjusting the extractor behaviour.
+//!   Defaults to @[FLAG_NORMAL].
 //!
 //! @example
 //!   // To extract doc for Foo.Bar.Ippa:
@@ -164,8 +167,11 @@ protected object makeWrapper(array(string) modules, object|void child)
 //!     "class", "Ippa", ({ "Foo", "Bar" }));
 //!
 string extractXML(string filename, int|void pikeMode, string|void type,
-                  string|void name, array(string)|void parentModules)
+                  string|void name, array(string)|void parentModules,
+		  void|.Flags flags)
 {
+  if (zero_type(flags)) flags = .FLAG_NORMAL;
+
   // extract the file...
   // check if there are C style doc comments in it,
   // because if there are, the CExtractor should be
@@ -1193,16 +1199,21 @@ class NScopeStack
   NScope top;
   array(NScope) stack = ({});
   mapping(string:mapping(string:int(1..))) failures = ([]);
+  .Flags flags;
 
-  protected void create(NScope scopes)
+  protected void create(NScope scopes, .Flags|void flags)
   {
     this_program::scopes = scopes;
+    if (zero_type(flags)) flags = .FLAG_NORMAL;
+    this_program::flags = flags;
   }
   protected void destroy()
   {
     if (sizeof(failures)) {
-      werror("Resolution failed for %d symbols. Logging to resolution.log\n",
-	     sizeof(failures));
+      if (flags & .FLAG_VERB_MASK) {
+	werror("Resolution failed for %d symbols. Logging to resolution.log\n",
+	       sizeof(failures));
+      }
       Stdio.File f = Stdio.File("resolution.log", "cwt");
       f->write("Reference target: Reference source:references\n\n");
       mapping(string:array(string)) rev = ([]);
@@ -1599,23 +1610,28 @@ void doResolveNode(NScopeStack scopestack, SimpleNode tree)
   }
 }
 
-void resolveRefs(SimpleNode tree)
+void resolveRefs(SimpleNode tree, .Flags|void flags)
 {
-  werror("Building the scope structure...\n");
-  NScopeStack scopestack = NScopeStack(NScope(tree));
-  werror("Adding implicit inherits for compatibility modules...\n");
+  if ((flags & .FLAG_VERB_MASK) >= .FLAG_VERBOSE)
+    werror("Building the scope structure...\n");
+  NScopeStack scopestack = NScopeStack(NScope(tree), flags);
+  if ((flags & .FLAG_VERB_MASK) >= .FLAG_VERBOSE)
+    werror("Adding implicit inherits for compatibility modules...\n");
   scopestack->addImplicitInherits();
-  werror("Resolving inherits...\n");
+  if ((flags & .FLAG_VERB_MASK) >= .FLAG_VERBOSE)
+    werror("Resolving inherits...\n");
   scopestack->reset();
   scopestack->resolveInherits();
-  werror("Resolving references...\n");
+  if ((flags & .FLAG_VERB_MASK) >= .FLAG_VERBOSE)
+    werror("Resolving references...\n");
   doResolveNode(scopestack, tree);
   destruct(scopestack);
-  werror("Done.\n");
+  if ((flags & .FLAG_VERB_MASK) >= .FLAG_VERBOSE)
+    werror("Done.\n");
 }
 
-void cleanUndocumented(SimpleNode tree) {
-
+void cleanUndocumented(SimpleNode tree, .Flags|void flags)
+{
   int(0..1) check_node(SimpleNode n) {
     array(SimpleNode) children = n->get_children();
     int num = sizeof(children);
@@ -1632,7 +1648,8 @@ void cleanUndocumented(SimpleNode tree) {
     ch -= ({ "modifiers" });
     ch -= ({ "source-position" });
     if(sizeof(ch)) return 1;
-    werror("Removed empty %s %O\n", name, n->get_attributes()->name);
+    if ((flags & .FLAG_VERB_MASK) >= .FLAG_VERBOSE)
+      werror("Removed empty %s %O\n", name, n->get_attributes()->name);
     return 0;
   };
 
@@ -1649,12 +1666,12 @@ void cleanUndocumented(SimpleNode tree) {
 //!
 //! @seealso
 //!   @[handleAppears()], @[cleanUndocumented()], @[resolveRefs()]
-void postProcess(SimpleNode root) {
+void postProcess(SimpleNode root, .Flags|void flags) {
   //  werror("handleAppears\n%s%O\n", ctime(time()), Debug.pp_memory_usage());
   handleAppears(root);
   //  werror("cleanUndocumented\n%s%O\n", ctime(time()), Debug.pp_memory_usage());
-  cleanUndocumented(root);
+  cleanUndocumented(root, flags);
   //  werror("resolveRefs\n%s%O\n", ctime(time()), Debug.pp_memory_usage());
-  resolveRefs(root);
+  resolveRefs(root, flags);
   //  werror("done postProcess\n%s%O\n", ctime(time()), Debug.pp_memory_usage());
 }

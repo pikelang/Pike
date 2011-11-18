@@ -20,7 +20,13 @@ protected private class Extractor {
   //  static private string filename;
   protected private .PikeParser parser;
 
-  protected void create(string s, string filename) {
+  protected .Flags flags;
+  protected int verbosity;
+
+  protected void create(string s, string filename, .Flags flags) {
+    this_program::flags = flags;
+    verbosity = flags & .FLAG_VERB_MASK;
+
     parser = .PikeParser(0, filename);
 
     array(string) tokens;
@@ -544,8 +550,9 @@ protected private class Extractor {
 //! @seealso
 //!   @[extractModule()], @[extractClass()]
 NameSpace extractNamespace(string s, void|string filename,
-			   void|string namespaceName) {
-  Extractor e = Extractor(s, filename);
+			   void|string namespaceName, void|.Flags flags) {
+  if (zero_type(flags)) flags = .FLAG_NORMAL;
+  Extractor e = Extractor(s, filename, flags);
   NameSpace ns = NameSpace();
   ns->name = namespaceName || filename;
   Documentation doc = e->parseClassBody(ns, 0, filename);
@@ -560,8 +567,10 @@ NameSpace extractNamespace(string s, void|string filename,
 //!
 //! @seealso
 //!   @[extractNamespace()], @[extractClass()]
-Module extractModule(string s, void|string filename, void|string moduleName) {
-  Extractor e = Extractor(s, filename);
+Module extractModule(string s, void|string filename, void|string moduleName,
+		     void|.Flags flags) {
+  if (zero_type(flags)) flags = .FLAG_NORMAL;
+  Extractor e = Extractor(s, filename, flags);
   Module m = Module();
   m->name = moduleName || filename;
   Documentation doc = e->parseClassBody(m, 0, filename);
@@ -576,8 +585,10 @@ Module extractModule(string s, void|string filename, void|string moduleName) {
 //!
 //! @seealso
 //!   @[extractNamespace()], @[extractModule()]
-Class extractClass(string s, void|string filename, void|string className) {
-  Extractor e = Extractor(s, filename);
+Class extractClass(string s, void|string filename, void|string className,
+		   void|.Flags flags) {
+  if (zero_type(flags)) flags = .FLAG_NORMAL;
+  Extractor e = Extractor(s, filename, flags);
   Class c = Class();
   c->name = className || filename;
   Documentation doc = e->parseClassBody(c, 0, filename);

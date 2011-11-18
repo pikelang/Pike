@@ -237,7 +237,7 @@ string extract(string filename, string imgdest,
   mixed err = catch {
     if( suffix == "c" || suffix == "cc" || suffix == "cpp"
 	/* || suffix == "cmod" */)
-      result = Tools.AutoDoc.ProcessXML.extractXML(filename,0,0,0,root);
+      result = Tools.AutoDoc.ProcessXML.extractXML(filename,0,0,0,root,flags);
     else {
       string type = ([ "pike":"class", "pmod":"module", ])[suffix];
       string name = (name_sans_suffix/"/")[-1];
@@ -260,8 +260,8 @@ string extract(string filename, string imgdest,
 	type = "namespace";
       }
 
-      result =
-	Tools.AutoDoc.ProcessXML.extractXML(filename, 1, type, name, root);
+      result = Tools.AutoDoc.ProcessXML.extractXML(filename, 1, type,
+						   name, root, flags);
     }
   };
 
