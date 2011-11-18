@@ -124,13 +124,12 @@ class Plain
 //!
 //! example:
 //!
-//!> Regexp.PCRE("([a-z0-9_\\.-]+)@([\\da-z\\.-]+)\\.([a-z\\.]{2,6})")
-//!   ->replace("foo@bar.org", 
+//!> Regexp.PCRE("([a-z0-9_\\.-]+)@@([\\da-z\\.-]+)\\.([a-z\\.]{2,6})")
+//!   ->replace("foo@@bar.org",
 //!     lambda(string whole, string user, string loc, string domain)
 //!       { return user + " from " + loc + " dot " + domain; }
 //!    );      
 //! (4) Result: "foo from bar dot org"
-
    string replace(string subject,string|function with, mixed|void ... args)
    {
     int i=0;
