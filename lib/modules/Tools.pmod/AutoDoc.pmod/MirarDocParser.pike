@@ -312,7 +312,7 @@ mapping keywords=
 	     if (!lower_nowM())
 	        return complain("see also w/o method, class or module");
 	     sscanf(arg,"also%*[:]%s",arg);
-	     nowM["see also"]=map(arg/",",stripws)-({""});
+	     nowM["see also"]+=map(arg/",",stripws)-({""});
 	     if (!nowM["see also"])
 	        return complain("empty see also\n");
 	  },
