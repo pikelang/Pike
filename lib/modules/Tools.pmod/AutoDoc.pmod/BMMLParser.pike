@@ -24,7 +24,7 @@ string prefix="";
  */
 string smallcaps(string foo)
 {
-  string *ret;
+  array(string) ret;
   ret=({"<b>"});
   foreach(explode(foo," "),foo)
   {
@@ -46,7 +46,7 @@ string fippel_path(string path)
   return docdir+path;
 }
 
-string implode3(string pre, string *stuff, string post)
+string implode3(string pre, array(string) stuff, string post)
 {
   return pre+ stuff * (post+pre) + post;
 }
@@ -99,8 +99,8 @@ string even_more_magic(string block, int indent)
 string more_magic(string s, int quote)
 {
   int e;
-  string *tmp;
-  int *ilevel=({0});
+  array(string) tmp;
+  array(int) ilevel=({0});
   string output="";
   string accumulator="";
 
@@ -143,7 +143,7 @@ string more_magic(string s, int quote)
 
 string magic(string s, int quote)
 {
-  string *ret;
+  array(string) ret;
   ret=({});
 
   foreach(s/"\n\n",s)
@@ -165,7 +165,7 @@ static inherit Regexp : megamagic;
 
 string syntax_magic(string s)
 {
-  string *tmp;
+  array(string) tmp;
   int e;
 
   while(tmp=megamagic::split(s))
@@ -179,12 +179,12 @@ string syntax_magic(string s)
     string a,b;
     if(sscanf(tmp[e],"%s(%s",a,b) && strlen(b)>1 && b[-1]==';' && b[-2]==')')
     {
-      string *tmp2;
+      array(string) tmp2;
       int d;
       tmp2=b[0..strlen(b)-3]/",";
       for(d=0;d<sizeof(tmp2);d++)
       {
-	string *tmp3;
+	array(string) tmp3;
 	if(tmp3=lastident::split(tmp2[d]))
 	{
 	  tmp2[d]=tmp3[0]+"<I>"+tmp3[1]+"</I>"+tmp3[2];
@@ -199,8 +199,8 @@ string syntax_magic(string s)
 
 
 /* HTML quoting / unquoting */
-string *from=({"&","<",">"});
-string *to=({"&amp;","&lt;","&gt;"});
+array(string) from=({"&","<",">"});
+array(string) to=({"&amp;","&lt;","&gt;"});
 
 string html_quote(string s)
 {
@@ -238,7 +238,7 @@ string strip_prefix(string s)
   return s;
 }
 
-string *my_sort(string *s)
+array(string) my_sort(array(string) s)
 {
   s+=({});
   sort(map(s,strip_prefix),s);
@@ -395,11 +395,11 @@ string convert_page(string path, string fname)
       pages[prefix+html_quote(capitalize(tmp))]=path;
 
 
-    string *parts=cont/"============================================================================\n";
+    array(string) parts=cont/"============================================================================\n";
     for(partno=0;partno<sizeof(parts);partno++)
     {
       string part_name="error";
-      string *sections;
+      array(string) sections;
       string part;
       int section;
 
@@ -538,7 +538,7 @@ string convert_page(string path, string fname)
   }
   else if(path[strlen(path)-5..]==".bmml")
   {
-    string *sections;
+    array(string) sections;
     string title;
     int section;
 
@@ -784,7 +784,7 @@ void dodocs(string path, int module)
   traversedir(".");
 }
 
-int main(int argc, string *argv)
+int main(int argc, array(string) argv)
 {
   string np;
   int e;
