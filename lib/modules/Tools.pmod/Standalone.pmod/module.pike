@@ -335,6 +335,16 @@ int main(int argc, array(string) argv)
     }
   }
 
+  if(run->configure && run->autoconf != ALWAYS && old_style_module)
+  {
+    string cfscript = Stdio.read_file(fix("$src/configure"));
+    if(cfscript && !has_value(cfscript, "propagated_variables"))
+    {
+      write("** WARNING: Incompatible configure script detected, deleting it\n");
+      rm(fix("$src/configure"));
+    }
+  }
+
   if(run->autoconf)
   {
     if(tmp1=max_time_of_files(configure_in))
@@ -343,6 +353,11 @@ int main(int argc, array(string) argv)
       {
 	if( old_style_module )
 	{
+	  if(file_stat(fix("$src/aclocal.m4")))
+	  {
+	    write("** WARNING: aclocal.m4 detected in src tree, deleting it\n");
+	    rm(fix("$src/aclocal.m4"));
+	  }
 	  write("** Running autoconf (with extra compat macros)\n");
 	  string data = Process.popen("autoconf --version");
 	  data = (data/"\n")[0];
