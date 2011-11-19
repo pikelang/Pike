@@ -63,7 +63,7 @@ void Pike_error(char * msg) {
 #endif
 
 static inline void ba_realloc(struct block_allocator * a) {
-    int i;
+    unsigned int i;
     a->pages = realloc(a->pages, BA_BYTES(a));
 
     if (!a->pages) {
@@ -85,7 +85,7 @@ static inline void ba_realloc(struct block_allocator * a) {
 
 void ba_init(struct block_allocator * a,
 				 uint32_t block_size, uint32_t blocks) {
-    uint32_t page_size = a->block_size * a->blocks;
+    uint32_t page_size = block_size * blocks;
 
     if (blocks > 0xfffe) {
 	Pike_error("number of blocks cannot exceed 2^16-1\n");
@@ -114,22 +114,22 @@ void ba_init(struct block_allocator * a,
 }
 
 void ba_free_all(struct block_allocator * a) {
-    int i;
+    unsigned int i;
 
     for (i = 0; i < a->num_pages; i++) {
-	free(BA_PAGE(a, i)->data);
+	free(BA_PAGE(a, i+1)->data);
     }
     a->num_pages = 0;
     a->first = a->last = 0;
 }
 
 void ba_count_all(struct block_allocator * a, size_t *num, size_t *size) {
-    int i;
+    unsigned int i;
     size_t n = 0;
 
     *size = BA_BYTES(a) + a->num_pages * BA_PAGESIZE(a);
     for (i = 0; i < a->num_pages; i++) {
-	n += BA_PAGE(a, i)->blocks_used;
+	n += BA_PAGE(a, i+1)->blocks_used;
     }
 
     *num = n;
@@ -479,10 +479,12 @@ static inline void ba_remove_page(struct block_allocator * a,
 
     p = BA_PAGE(a, n);
 
+    /*
     fprintf(stderr, "removing page %4u\t(%p .. %p) -> %X (%X) (of %u).\n", n,
 	    p->data, BA_LASTBLOCK(a, p), hash1(a, BA_LASTBLOCK(a,p)),
 	    hash1(a, BA_LASTBLOCK(a,p)) & BA_HASH_MASK(a),
 	    a->num_pages);
+	    */
 
     ba_htable_delete(a, BA_LASTBLOCK(a, p), n);
 
@@ -492,11 +494,13 @@ static inline void ba_remove_page(struct block_allocator * a,
     if (a->num_pages != n) {
 	tmp = BA_PAGE(a, a->num_pages);
 	ba_htable_replace(a, BA_LASTBLOCK(a, tmp), a->num_pages, n);
+	/*
 	fprintf(stderr, "replacing with page %u\t(%p .. %p) -> %X (%X)\n",
 		a->num_pages,
 		tmp->data, BA_LASTBLOCK(a, tmp), hash1(a, BA_LASTBLOCK(a,tmp)),
 		hash1(a, BA_LASTBLOCK(a,tmp)) & BA_HASH_MASK(a)
 		);
+		*/
 	*p = *tmp;
     }
 
