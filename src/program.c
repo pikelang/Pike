@@ -1326,8 +1326,6 @@ struct object *compilation_environment = NULL;
 struct program *gc_internal_program = 0;
 static struct program *gc_mark_program_pos = 0;
 
-static struct mapping *resolve_cache=0;
-
 #ifdef PIKE_DEBUG
 #define CHECK_FILE_ENTRY(PROG, POS, LEN, SHIFT)				\
   do {									\
@@ -1607,6 +1605,11 @@ void use_module(struct svalue *s)
       free_mapping(Pike_compiler->module_index_cache);
       Pike_compiler->module_index_cache=0;
     }
+    if(c->resolve_cache)
+    {
+      free_mapping(c->resolve_cache);
+      c->resolve_cache=0;
+    }
   }else{
     yyerror("Module is neither mapping nor object");
   }
@@ -1782,9 +1785,9 @@ struct node_s *resolve_identifier(struct pike_string *ident)
     return mkconstantsvaluenode(&svalue_undefined);
   }
 
-  if(resolve_cache)
+  if(c->resolve_cache)
   {
-    struct svalue *tmp=low_mapping_string_lookup(resolve_cache,ident);
+    struct svalue *tmp=low_mapping_string_lookup(c->resolve_cache,ident);
     if(tmp)
     {
       if(!IS_UNDEFINED (tmp))
@@ -1831,9 +1834,9 @@ struct node_s *resolve_identifier(struct pike_string *ident)
 	       "when resolving '%S'.",
 	       get_name_of_type (TYPEOF(Pike_sp[-1])), ident);
   } else {
-    if(!resolve_cache)
-      resolve_cache=dmalloc_touch(struct mapping *, allocate_mapping(10));
-    mapping_string_insert(resolve_cache,ident,Pike_sp-1);
+    if(!c->resolve_cache)
+      c->resolve_cache=dmalloc_touch(struct mapping *, allocate_mapping(10));
+    mapping_string_insert(c->resolve_cache,ident,Pike_sp-1);
 
     if(!IS_UNDEFINED (Pike_sp-1))
     {
@@ -3758,10 +3761,10 @@ struct program *end_first_pass(int finish)
 	     c->compilation_depth, Pike_compiler->compiler_pass));
 #endif
 
-  if(!Pike_compiler->compiler_frame && (Pike_compiler->compiler_pass==2 || !prog) && resolve_cache)
+  if(!Pike_compiler->compiler_frame && (Pike_compiler->compiler_pass==2 || !prog) && c->resolve_cache)
   {
-    free_mapping(dmalloc_touch(struct mapping *, resolve_cache));
-    resolve_cache=0;
+    free_mapping(dmalloc_touch(struct mapping *, c->resolve_cache));
+    c->resolve_cache=0;
   }
 
 #ifdef SHARED_NODES
@@ -8173,6 +8176,10 @@ static void free_compilation(struct compilation *c)
     free_string(c->lex.current_file);
     c->lex.current_file = NULL;
   }
+  if (c->resolve_cache) {
+    free_mapping(c->resolve_cache);
+    c->resolve_cache = NULL;
+  }
   free_svalue(& c->default_module);
   SET_SVAL(c->default_module, T_INT, NUMBER_NUMBER, integer, 0);
   free_supporter(&c->supporter);
@@ -8186,8 +8193,10 @@ static void run_init(struct compilation *c)
   if (c->compat_handler) free_object(c->compat_handler);
   c->compat_handler=0;
 
-  c->resolve_cache_save = resolve_cache;
-  resolve_cache = 0;
+  if (c->resolve_cache) {
+    free_mapping(c->resolve_cache);
+    c->resolve_cache = 0;
+  }
 
   c->lex.current_line=1;
   free_string(c->lex.current_file);
@@ -8274,9 +8283,10 @@ static void run_exit(struct compilation *c)
   }
 #endif /* PIKE_DEBUG */
 
-  if (resolve_cache)
-    free_mapping(resolve_cache);
-  resolve_cache = c->resolve_cache_save;
+  if (c->resolve_cache) {
+    free_mapping(c->resolve_cache);
+    c->resolve_cache = NULL;
+  }
 
   verify_supporters();
 }
@@ -10208,12 +10218,6 @@ void cleanup_program(void)
 #endif
 
 #ifdef DO_PIKE_CLEANUP
-  if(resolve_cache)
-  {
-    free_mapping(dmalloc_touch (struct mapping *, resolve_cache));
-    resolve_cache=0;
-  }
-
   if(pike_trampoline_program)
   {
     free_program(pike_trampoline_program);
