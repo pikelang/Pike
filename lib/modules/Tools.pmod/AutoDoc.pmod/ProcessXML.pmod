@@ -15,6 +15,10 @@ protected private void processError(string message, mixed ... args) {
 	     backtrace() }) );
 }
 
+protected private void processWarning(string message, mixed ... args) {
+  werror("ProcessXML: "+message+"\n", @args);
+}
+
 // XML format:
 //
 // <autodoc>
@@ -372,6 +376,26 @@ protected int isDoc(SimpleNode node) { return node->get_any_name() == "doc"; }
 
 protected string getName(SimpleNode node) { return node->get_attributes()["name"]; }
 
+protected SimpleNode mergeDoc(SimpleNode orig, SimpleNode new)
+{
+  // NB: There can only be one <text> node in a <doc> node,
+  //     and it comes first among the element nodes.
+  SimpleNode orig_text = orig->get_first_element("text");
+  SimpleNode new_text = orig->get_first_element("text");
+  if (!sizeof(String.trim_all_whites(orig_text->value_of_node()))) {
+    orig->replace_child(orig_text, new_text);
+  } else if (sizeof(String.trim_all_whites(new_text->value_of_node()))) {
+    orig_text->replace_children(orig_text->get_children() +
+				new_text->get_children());
+  }
+
+  // Append the remaining (typically <group>) nodes in new after
+  // the previously existing in orig.
+  array(SimpleNode) new_children = new->get_children();
+  orig->replace_children(orig->get_children() +
+			 new_children[search(new_children, new_text)+1..]);
+}
+
 //!   Puts all children of @[source] into the tree @[dest], in their right
 //!   place module-hierarchically.
 //!   Used to merge the results of extractions of different Pike and C files.
@@ -431,23 +455,29 @@ void mergeTrees(SimpleNode dest, SimpleNode source) {
 	      (String.trim_all_whites(node->value_of_node()) ==
 	       String.trim_all_whites(dest_has_doc->value_of_node()))) {
 	    // New doc is empty or same as old.
+	    children[i] = 0;
 	    break;
 	  }
 	  if (sizeof(String.trim_all_whites(dest_has_doc->value_of_node()))) {
-	    werror("Original doc: %O\n", dest_has_doc->value_of_node());
-	    werror("New doc: %O\n", node->value_of_node());
+	    // werror("Original doc: %O\n", dest_has_doc->value_of_node());
+	    // werror("New doc: %O\n", node->value_of_node());
 	    if (isNameSpace(dest))
-	      processError("Duplicate documentation for namespace " +
-			   getName(dest));
+	      processWarning("Duplicate documentation for namespace " +
+			     getName(dest));
 	    else if (isClass(dest))
-	      processError("Duplicate documentation for class " +
-			   getName(dest));
+	      processWarning("Duplicate documentation for class " +
+			     getName(dest));
 	    else if (isModule(dest))
-	      processError("Duplicate documentation for module " +
-			   getName(dest));
-	    processError("Duplicate documentation");
+	      processWarning("Duplicate documentation for module " +
+			     getName(dest));
+	    else
+	      processWarning("Duplicate documentation");
+	    mergeDoc(dest_has_doc, node);
+	    children[i] = 0;
+	  } else {
+	    // Old doc was empty.
+	    dest->remove_child(dest_has_doc);
 	  }
-	  // Old doc was empty.
         }
         // fall through
       default:
