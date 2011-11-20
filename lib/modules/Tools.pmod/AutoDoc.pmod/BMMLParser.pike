@@ -566,6 +566,8 @@ string convert_page(string path, string fname, string|void cont)
   }
   else if(path[strlen(path)-5..]==".bmml")
   {
+    // Ignore these for now.
+#if 0
     array(string) sections;
     string title;
     int section;
@@ -633,9 +635,13 @@ string convert_page(string path, string fname, string|void cont)
       }
       sections[section]=tmp;
     }
-    cont="<p>" + sections*"\n</p>\n<p>\n" + "</p>\n";
+    cont="<doc><text><p>" + sections*"\n</p>\n<p>\n" +
+      "</p></text></doc>\n";
 
     return mkdocument(cont, title || "Pike manual");
+#else
+    return "";
+#endif
   }
   else if(path[strlen(path)-5..]==".html")
   {
