@@ -75,8 +75,8 @@ string even_more_magic(string block, int indent)
     for(e=0;e<sizeof(tmp);e++)
       tmp[e]=implode3("<td> ",tmp[e]," </td>");
 
-    return "<table border=0 cellpadding=0 cellspacing=0>\n"+
-      implode3("<tr valign=top>",tmp,/* "<br />" */ "</tr>\n")+
+    return "<table border='0' cellpadding='0' cellspacing='0'>\n"+
+      implode3("<tr valign='top'>",tmp,/* "<br />" */ "</tr>\n")+
 	"</table>\n";
   }
 }
@@ -259,7 +259,8 @@ string mkindex(string topic, int usehead)
     head="<b>All pages:</b>\n";
     ret="<ul>\n";
     foreach(my_sort(m_indices(pages)),a)
-      ret+="<li><a href='"+pages[a]+"'>"+strip_prefix(a)+"</a>"+short(a)+"\n";
+      ret+="<li><a href='"+pages[a]+"'>"+strip_prefix(a)+"</a>"+short(a)+
+	"</li>\n";
     
     ret+="</ul>\n";
     break;
@@ -343,7 +344,8 @@ string mkindex(string topic, int usehead)
     foreach(my_sort(keywords[prefix+topic]),a)
     {
       a=html_quote(a);
-      ret+="<li><a href='"+pages[a]+"'>"+strip_prefix(a)+"</a>"+ short(a) +"</li>\n";
+      ret+="<li><a href='"+pages[a]+"'>"+strip_prefix(a)+"</a>"+ short(a) +
+	"</li>\n";
     }
     ret+="</ul>\n";
     break;
@@ -389,7 +391,7 @@ string convert_page(string path, string fname, string|void cont)
 	if (i == sizeof(module_path)-1) {
 	  type = "class";
 	}
-	header += "<" + type + " name='" + segment + "'>\n";
+	header += "<" + type + " name='" + html_quote(segment) + "'>\n";
 	trailer = "</" + type + ">\n" + trailer;
       }
     }
