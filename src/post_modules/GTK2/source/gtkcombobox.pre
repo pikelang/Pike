@@ -128,7 +128,7 @@ void set_active_iter(GTK2.TreeIter iter)
     struct object *o1;
     get_all_args("set_active_iter",args,"%o",&o1);
     gtk_combo_box_set_active_iter(GTK_COMBO_BOX(THIS->obj),
-		(GtkTreeIter *)get_gobject(o1));
+		(GtkTreeIter *)get_pg2object(o1,pgtk2_tree_iter_program));
     pgtk2_pop_n_elems(args);
   }
   RETURN_THIS();
