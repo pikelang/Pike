@@ -178,7 +178,8 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
 	 !has_suffix(fn, ".pmod") && !has_suffix(fn, ".pmod.in") &&
 	 //       !has_suffix(fn, ".cmod") && !has_suffix(fn, ".cmod.in") &&
 	 !has_suffix(fn, ".c") && !has_suffix(fn, ".cc") &&
-         !has_suffix(fn, ".m")) continue;
+         !has_suffix(fn, ".m") && !has_suffix(fn, ".bmml") &&
+	 has_value(fn, ".")) continue;
 
       Stdio.Stat dstat = file_stat(builddir+fn+".xml");
 
@@ -206,6 +207,17 @@ string extract(string filename, string imgdest,
   if (!file) {
     werror("WARNING: Failed to read file %O!\n", filename);
     return "\n";
+  }
+
+  if (has_suffix(filename, ".bmml") || !has_value(basename(filename), ".")) {
+    if ((<"Makefile", "configure", "stamp-h", "install-sh", "todo", "README",
+	  "dependencies", "COPYING", "COPYRIGHT", "DISCLAIMER", "BUGS",
+	  "ChangeLog", "create_testsuite", "testsuite",
+	>)[basename(filename)]) {
+      return "\n";
+    }
+    Tools.AutoDoc.BMMLParser bmml_parser = Tools.AutoDoc.BMMLParser();
+    return bmml_parser->convert_page(filename, basename(filename), file);
   }
 
   int i;

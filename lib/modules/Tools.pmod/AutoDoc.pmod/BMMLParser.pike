@@ -464,6 +464,7 @@ string convert_page(string path, string fname, string|void cont)
 	case "RETURN VALUE":
 	case "RETURN VALUES":
 	case "DESCRIPTION":
+	case "DESCRIPITON":	// Common typo.
 	case "NOTA BENE":
 	case "BUGS":
 	  rest=magic(rest, 0);
@@ -501,6 +502,7 @@ string convert_page(string path, string fname, string|void cont)
 
 	case "SYNTAX":
 	case "SYNTAX EXAMPLE":
+	case "SYNAX":	// Common typo.
 	  if(search(rest,name+"(")!=-1) efuns[name]=1;
 	  rest=syntax_magic(rest);
 	  break;
