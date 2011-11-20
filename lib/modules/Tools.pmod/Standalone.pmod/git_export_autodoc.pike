@@ -352,6 +352,14 @@ void extract_autodoc()
 	       "--imgsrc=" + imgsrc,
 	       "--builddir=build/doc/lib",
 	       "--imgdir=build/doc/images" }));
+  progress("Extracting from doc... ");
+  Tools.Standalone.extract_autodoc()->
+    main(9, ({ "extract_autodoc", "-q", "--compat",
+	       "--keep-going", "--no-dynamic",
+	       "--srcdir=doc",
+	       "--imgsrc=" + imgsrc,
+	       "--builddir=build/doc/doc",
+	       "--imgdir=build/doc/images" }));
   progress("Joining... ");
   Tools.Standalone.join_autodoc()->
     main(5, ({ "join_autodoc", "--quiet", "--post-process",
@@ -716,6 +724,7 @@ int main(int argc, array(string) argv)
   mkdir("build/doc");
   mkdir("build/doc/src");
   mkdir("build/doc/lib");
+  mkdir("build/doc/doc");
   mkdir("build/doc/images");
 
   // Get the current references for the source directory.
