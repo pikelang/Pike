@@ -480,11 +480,15 @@ void export_autodoc_for_ref(string ref)
 
     if (sizeof(doc_parents) > 1) {
       // Check if all of the parents are needed.
-      // NB: We only check direct parents, but this should
+      // NB: We only check parents and grandparents, but this should
       //     be sufficient in most circumstances.
       foreach(doc_parents, string parent) {
 	if (doc_to_parents[parent]) {
 	  doc_parents -= (array)doc_to_parents[parent];
+	  foreach((array)doc_to_parents[parent], string grandparent) {
+	    if (doc_to_parents[grandparent])
+	      doc_parents -= (array)doc_to_parents[grandparent];
+	  }
 	}
       }
     }
