@@ -465,13 +465,18 @@ void report_failed_entries(mapping scope, string path) {
     report_failed_entries(next, path + "." + id);
 }
 
-int(0..1) main(int num, array(string) args) {
+int(0..1) main(int num, array(string) args)
+{
+  string pike_version = version();
 
   string outfile;
+  int timestamp = time();
 
   int T = time();
   foreach(Getopt.find_all_options(args, ({
      ({ "version",    Getopt.NO_ARG,  "-V,--version"/"," }),
+     ({ "pikever",    Getopt.HAS_ARG, "--pike-version"/"," }),
+     ({ "timestamp",  Getopt.HAS_ARG, "--timestamp"/"," }),
      ({ "help",       Getopt.NO_ARG,  "-h,--help"/"," }),
      ({ "output",     Getopt.HAS_ARG, "-o,--output,--out"/"," }),
      ({ "verbose",    Getopt.NO_ARG,  "-v,--verbose"/"," }),
@@ -483,6 +488,12 @@ int(0..1) main(int num, array(string) args) {
     switch(opt[0]) {
     case "version":
       exit(0, "$Id$\n");
+    case "pikever":
+      pike_version = opt[1];
+      break;
+    case "timestamp":
+      timestamp = (int)opt[1];
+      break;
     case "help":
       exit(0, "pike -x assemble_autodoc <structure file> <autodoc file>\n");
     case "output":
@@ -512,8 +523,8 @@ int(0..1) main(int num, array(string) args) {
     werror("Parsing structure file %O.\n", args[1]);
   Node n = parse_file(args[1]);
   n = n->get_first_element("manual");
-  n->get_attributes()->version = version();
-  mapping t = localtime(time());
+  n->get_attributes()->version = pike_version;
+  mapping t = localtime(timestamp);
   n->get_attributes()["time-stamp"] =
     sprintf("%4d-%02d-%02d", t->year+1900, t->mon+1, t->mday);
   refdocdir = combine_path(args[1], "../..");
