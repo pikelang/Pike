@@ -235,6 +235,93 @@ void add_src_to_doc_map(string src_rev, string doc_rev)
   doc_to_src[doc_rev] += ({ src_rev });
 }
 
+//! Attempt to get the version for the Pike source tree.
+string get_version()
+{
+  string data;
+  int major, minor, build;
+  if (Stdio.exist("src/version.h")) {
+    // Pike 0.7.1 or later.
+    data = Stdio.read_bytes("src/version.h");
+    if (data && sscanf(data,
+		       "%*s#define PIKE_MAJOR_VERSION %d\n"
+		       "%*s#define PIKE_MINOR_VERSION %d\n"
+		       "%*s#define PIKE_BUILD_VERSION %d\n",
+		       major, minor, build) >= 4) {
+      return sprintf("Pike v%d.%d.%d", major, minor, build);
+    }
+  }
+  string version_string;
+  if (Stdio.exist("src/version.c")) {
+    // Pike 0.4pl2 or later.
+    data = Stdio.read_bytes("src/version.c");
+    if (data && sscanf(data,
+		       "%*s f_version(INT32 args)\n"
+		       "{\n"
+		       "  pop_n_elems(args);\n"
+		       "  push_text(\"%s\");\n",
+		       version_string) >= 2) {
+      return version_string;
+    }
+  }
+  if (Stdio.exist("src/main.c")) {
+    // A few versions during Pike 0.4pl2.
+    data = Stdio.read_bytes("src/main.c");
+    if (data && sscanf(data,
+		       "%*s#define VERSION%*[ \t\"]%s\"",
+		       version_string) >= 3) {
+      return version_string;
+    }
+  }
+  if (Stdio.exist("lib/master.pike")) {
+    // Pike 0.4pl11 and Pike 0.4pl2.
+    data = Stdio.read_bytes("lib/master.pike");
+    if (data && sscanf(data,
+		       "%*s#define VERSION%*[ \t\"]%s\"",
+		       version_string) >= 3) {
+      return version_string;
+    }
+    // Pike 0.1 and later.
+    if (data && sscanf(data,
+		       "%*sadd_constant(\"version\",lambda() { return \"%s\";",
+		       version_string) >= 2) {
+      return version_string;
+    }
+  }
+  if (Stdio.exist("lib/simulate.lpc")) {
+    // ulpc
+    data = Stdio.read_bytes("lib/simulate.lpc");
+    if (data && sscanf(data,
+		       "%*sadd_efun(\"version\",lambda() { return \"%s\";",
+		       version_string) >= 2) {
+      return version_string;
+    }
+  }
+  if (Stdio.exist(".cvsignore")) {
+    // ulpc.
+    data = Stdio.read_bytes(".cvsignore");
+    string best;
+    build = 0x7fffffff;
+    while (data && sscanf(data, "%*suLPC_v%s.tar.gz\n%s",
+			  version_string, data) >= 2) {
+      int major_, minor_, exp_ = 0;
+      if (sscanf(version_string, "%d.%dE-%d", major_, minor_, exp_) >= 2) {
+	if ((exp_ < build) ||
+	    ((exp_ == build) && ((major_ > major) ||
+				 ((major_ == major) && (minor_ > minor))))) {
+	  build = exp_;
+	  major = major_;
+	  minor = minor_;
+	  best = version_string;
+	}
+      }
+    }
+    if (best) return "uLPC v" + best;
+  }
+  error("Unable to determine version of Pike!\n");
+  return UNDEFINED;
+}
+
 void extract_autodoc()
 {
   if (verbose) {
@@ -286,19 +373,21 @@ void assemble_autodoc()
   rm("build/onepage.xml");
   rm("build/traditional.xml");
   rm("build/modref.xml");
+  string pike_version = get_version();
+  // FIXME: Get the timestamp as well.
   Tools.Standalone.assemble_autodoc()->
-    main(6, ({ "assemble_autodoc", "-o", "build/onepage.xml",
-	       "--keep-going",
+    main(8, ({ "assemble_autodoc", "-o", "build/onepage.xml",
+	       "--keep-going", "--pike-version", pike_version,
 	       combine_path(refdocdir, "structure/onepage.xml"),
 	       "build/autodoc.xml" }));
   Tools.Standalone.assemble_autodoc()->
-    main(6, ({ "assemble_autodoc", "-o", "build/traditional.xml",
-	       "--keep-going",
+    main(8, ({ "assemble_autodoc", "-o", "build/traditional.xml",
+	       "--keep-going", "--pike-version", pike_version,
 	       combine_path(refdocdir, "structure/traditional.xml"),
 	       "build/autodoc.xml" }));
   Tools.Standalone.assemble_autodoc()->
-    main(6, ({ "assemble_autodoc", "-o", "build/modref.xml",
-	       "--keep-going",
+    main(8, ({ "assemble_autodoc", "-o", "build/modref.xml",
+	       "--keep-going", "--pike-version", pike_version,
 	       combine_path(refdocdir, "structure/modref.xml"),
 	       "build/autodoc.xml" }));
 }
