@@ -428,6 +428,7 @@ void export_refdoc(mapping(string:array(string)) src_commit)
     Tools.Standalone.autodoc_to_html();
   converter->flags = Tools.AutoDoc.FLAG_KEEP_GOING|Tools.AutoDoc.FLAG_QUIET;
   converter->verbosity = Tools.AutoDoc.FLAG_QUIET;
+  converter->image_path = "../images/";
   // onepage:
   converter->low_main("Pike Reference Manual", "build/onepage.xml",
 		      "index.html", exporter);
