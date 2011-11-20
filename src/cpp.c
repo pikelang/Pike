@@ -1619,8 +1619,8 @@ static void insert_callback_define(struct cpp *this,
   ref_push_string( def->link.s );
   push_string( make_shared_binary_pcharp( args[0].arg, args[0].len ) );
   safe_apply_handler( "evaluate_define", this->handler, this->compat_handler, 2, 0 );
-  if( sp[-1].type == T_STRING )
-    string_builder_shared_strcat(tmp,sp[-1].u.string);
+  if( TYPEOF(sp[-1]) == T_STRING )
+    string_builder_shared_strcat(tmp, sp[-1].u.string);
   pop_stack();
 }
 
@@ -1631,8 +1631,8 @@ static void insert_callback_define_no_args(struct cpp *this,
 {
   ref_push_string( def->link.s );
   safe_apply_handler( "evaluate_define", this->handler, this->compat_handler, 1, 0 );
-  if( sp[-1].type == T_STRING )
-    string_builder_shared_strcat(tmp,sp[-1].u.string);
+  if( TYPEOF(sp[-1]) == T_STRING )
+    string_builder_shared_strcat(tmp, sp[-1].u.string);
   pop_stack();
 }
 
@@ -2000,7 +2000,7 @@ void f_cpp(INT32 args)
     NEW_MAPPING_LOOP (predefs->data) {
       if (TYPEOF(k->val) == T_STRING)
 	add_define (&this, k->ind.u.string, k->val.u.string);
-      else if(k->val.type != T_INT || k->val.u.integer )
+      else if(TYPEOF(k->val) != T_INT || k->val.u.integer )
       {
         struct define *def;
         if( index_shared_string( k->ind.u.string, k->ind.u.string->len-1) == ')' )
