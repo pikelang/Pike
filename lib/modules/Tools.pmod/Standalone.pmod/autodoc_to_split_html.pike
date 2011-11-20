@@ -3,6 +3,8 @@
 
 inherit .autodoc_to_html;
 
+constant description = "AutoDoc XML to splitted HTML converter.";
+
 mapping (string:Node) refs   = ([ ]);
 string default_namespace;
 
@@ -610,14 +612,28 @@ class TopNode {
   constant is_TopNode = 1;
   array(Node) namespace_children = ({ });
 
+  string pike_version = version();
+  string timestamp;
+
   void create(string _data) {
     PROFILE();
+    mapping m = localtime(time());
+    timestamp = sprintf("%4d-%02d-%02d", m->year+1900, m->mon+1, m->mday);
     Parser.HTML parser = Parser.HTML();
     parser->case_insensitive_tag(1);
     parser->xml_tag_syntax(3);
+    parser->add_container("manual",
+			  lambda(Parser.HTML p, mapping args, string c) {
+			    if (args->version)
+			      pike_version = args->version;
+			    if (args["time-stamp"])
+			      timestamp = args["time-stamp"];
+			    return UNDEFINED;
+			  });
     parser->add_container("autodoc",
 			  lambda(Parser.HTML p, mapping args, string c) {
-			    return ({ c }); });
+			    return ({ c });
+			  });
 
     _data = parser->finish(_data)->read();
     ::create("autodoc", "", _data);
@@ -713,16 +729,14 @@ int low_main(string doc_file, string template_file, string outdir,
     werror("Failed to load template %s.\n", template_file);
     return 1;
   }
-  mapping m = localtime(time());
-  template = replace(template,
-		     ([ "$version$":version(),
-			"$date$":sprintf("%4d-%02d-%02d",
-					 m->year+1900, m->mon+1, m->mday),
-		     ]) );
 
   if (verbosity >= Tools.AutoDoc.FLAG_VERBOSE)
     werror("Splitting to destination directory %s...\n", outdir);
   TopNode top = TopNode(doc);
+  template = replace(template,
+		     ([ "$version$":top->pike_version,
+			"$date$":top->timestamp,
+		     ]) );
   top->make_html(template, outdir, exporter);
   ENDPROFILE("main");
 
