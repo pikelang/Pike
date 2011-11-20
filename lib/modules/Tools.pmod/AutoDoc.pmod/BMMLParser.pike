@@ -380,12 +380,14 @@ string convert_page(string path, string fname, string|void cont)
     if(sscanf(name,"/precompiled/%s",tmp))
       pages[prefix+html_quote(capitalize(tmp))]=path;
 
-    array(string) module_path = name/".";
-
     string header = "";
     string trailer = "";
 
-    if (sizeof(module_path) > 1) {
+    array(string) parts=cont/"============================================================================\n";
+
+    array(string) module_path = name/".";
+
+    if ((sizeof(parts) > 1) || (sizeof(module_path) > 1)) {
       foreach(module_path; int i; string segment) {
 	string type = "module";
 	if (i == sizeof(module_path)-1) {
@@ -394,9 +396,15 @@ string convert_page(string path, string fname, string|void cont)
 	header += "<" + type + " name='" + html_quote(segment) + "'>\n";
 	trailer = "</" + type + ">\n" + trailer;
       }
+    } else {
+      header += "<docgroup homogen-name='" + html_quote(name) +
+	"' homogen-type='method'>\n"
+	"<method name='" + html_quote(name) + "'>" +
+	// FIXME <returntype> & <arguments>.
+	"</method>";
+      trailer = "</docgroup>\n" + trailer;
     }
 
-    array(string) parts=cont/"============================================================================\n";
     for(int partno=0; partno<sizeof(parts); partno++)
     {
       string part_name="error";
@@ -413,6 +421,8 @@ string convert_page(string path, string fname, string|void cont)
       /* Merge sections that do not have a header together */
       for(section=0;section<sizeof(sections);section++)
       {
+	if (has_prefix(sections[section], "\n"))
+	  sections[section] = sections[section][1..];
 	if(!strlen(sections[section]) ||
 	   sections[section][0] < 'A' ||
 	   sections[section][0] > 'Z')
@@ -423,11 +433,14 @@ string convert_page(string path, string fname, string|void cont)
 	}
       }
 
+      string term_prev = "";
       for(headno=0;headno<sizeof(sections);headno++)
       {
 	string type, rest;
 	mixed a, b;
 	sscanf(sections[headno],"%s\n%s",type,rest);
+
+	type = type && String.trim_all_whites(type);
 
 	switch(type)
 	{
@@ -461,6 +474,7 @@ string convert_page(string path, string fname, string|void cont)
 	  rest=magic(rest,0);
 	  break;
 
+	case "KEYWORD":
 	case "KEYWORDS":
 	  a=replace(rest,({"\n"," ","\t"}),({"","",""}))/",";
 	  b=({});
@@ -511,16 +525,33 @@ string convert_page(string path, string fname, string|void cont)
 	  "NOTA BENE":"<note/>",
 	  "BUGS":"<bugs/>",
 	  "SEE ALSO":"<seealso/>",
+	  "EXAMPLE":"<example/>",
+	  "EXAMPLES":"<example/>",
 	])[type];
 
-	rest = "<text>\n" + rest + "</text>\n";
 	if (type) {
-	  sections[headno]="<group>"+type + rest + "</group>\n";
+	  // Start a new group with a section header.
+	  if (headno) {
+	    sections[headno-1] += term_prev;
+	  }
+	  sections[headno]="<group>" + type + "<text>\n" + rest;
+	  term_prev = "</text></group>\n";
 	} else {
+	  // Continue the previous group (if any).
+	  if (term_prev == "") {
+	    rest = "<text>\n" + rest;
+	    term_prev = "</text>\n";
+	  }
 	  sections[headno]=rest;
 	}
       }
-      parts[partno]="<doc>\n"+sections*"\n"+"\n</doc>\n";
+      if (sizeof(sections)) {
+	sections[-1] += term_prev;
+	parts[partno]="<doc>\n"+sections*"\n"+"\n</doc>\n";
+      } else {
+	// Empty part!
+	parts[partno] = "";
+      }
       if(partno && part_name)
       {
 	parts[partno]="<docgroup homogen-name='" + part_name +
