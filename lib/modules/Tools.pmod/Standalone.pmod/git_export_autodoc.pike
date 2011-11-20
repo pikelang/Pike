@@ -375,6 +375,8 @@ void assemble_autodoc()
 {
   exporter->export(combine_path(refdocdir, "src_images"), "images");
   exporter->export("build/doc/images", "images");
+  exporter->export(combine_path(refdocdir, "structure/modref.css"),
+		   "modref/modref.css");
   if (verbose) {
     progress("Assembling... ");
   }
