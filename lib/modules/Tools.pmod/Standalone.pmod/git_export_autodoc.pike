@@ -17,6 +17,7 @@
  * TODO:
  *
  *   [X] Extract autodoc.xml from the Pike repository.
+ *       [/] uLPC
  *       [X] Pike 0.5
  *       [X] Pike 0.6
  *       [/] Pike 7.0
@@ -40,11 +41,21 @@
  *       to other pages as well as to images.
  *       [ ] onepage.xml
  *       [ ] traditional.xml
- *       [/] modref.xml
+ *       [X] modref.xml
  *
  *   [X] Export the generated images.
  *
  *   [ ] Remove obsoleted images.
+ *
+ *   [ ] The BMML export is semi-broken for:
+ *       [ ] Constants (PI).
+ *       [ ] Operators (&&, etc).
+ *       [ ] Preprocessor directives. ==> cpp::
+ *       [ ] Example code (eg SET_ONERROR() in Pike 0.4pl6).
+ *       [ ] C-level documentation (SET_ONERROR()). ==> c::
+ *
+ *   [ ] The autodoc resolver is broken for old-style module references.
+ *       eg file->open ==> /precompiled/file->open.
  *
  *   [X] Fix output when compiling code in MirarDoc compat mode.
  *
@@ -70,14 +81,14 @@
  *       [X] Autodoc HTML-renderer
  *       [ ] Autodoc HTML-splitter
  *
- *   [ ] Support extraction of BMML?
+ *   [X] Support extraction of BMML?
  *
  *   [ ] Improve error diagnostics (eg file and line for parser errors).
  *
  *   [X] Cleaning of the <source-position> tags from autodoc.xml
  *       doesn't seem to work.
  *
- *   [ ] Remove Pike version and timestamp from assembled xml,
+ *   [/] Remove Pike version and timestamp from assembled xml,
  *       or in the alternative use the version from the source
  *       Pike and the commit timestamp.
  *
@@ -85,7 +96,9 @@
  *       (ie parallel-depth-first order), and update
  *       other branches as appropriate.
  *
- *   [/] Skip extraneous merges (cf 1997-11-06 - 1997-11-09).
+ *   [ ] Skip extraneous merges (cf 1997-11-06 - 1997-11-09).
+ *
+ *   [ ] Add a suitable /404.html file.
  */
 
 
@@ -322,7 +335,7 @@ string get_version()
   return UNDEFINED;
 }
 
-void extract_autodoc()
+void extract_autodoc(mapping(string:array(string)) src_commit)
 {
   if (verbose) {
     progress("Extracting... ");
@@ -371,7 +384,7 @@ void extract_autodoc()
   }
 }
 
-void assemble_autodoc()
+void assemble_autodoc(mapping(string:array(string)) src_commit)
 {
   exporter->export(combine_path(refdocdir, "src_images"), "images");
   exporter->export("build/doc/images", "images");
@@ -384,25 +397,29 @@ void assemble_autodoc()
   rm("build/traditional.xml");
   rm("build/modref.xml");
   string pike_version = get_version();
+  string timestamp = (src_commit->author[0]/" ")[-2];
   // FIXME: Get the timestamp as well.
   Tools.Standalone.assemble_autodoc()->
-    main(8, ({ "assemble_autodoc", "-o", "build/onepage.xml",
-	       "--keep-going", "--pike-version", pike_version,
-	       combine_path(refdocdir, "structure/onepage.xml"),
-	       "build/autodoc.xml" }));
+    main(10, ({ "assemble_autodoc", "-o", "build/onepage.xml",
+		"--keep-going", "--pike-version", pike_version,
+		"--timestamp", timestamp,
+		combine_path(refdocdir, "structure/onepage.xml"),
+		"build/autodoc.xml" }));
   Tools.Standalone.assemble_autodoc()->
-    main(8, ({ "assemble_autodoc", "-o", "build/traditional.xml",
-	       "--keep-going", "--pike-version", pike_version,
-	       combine_path(refdocdir, "structure/traditional.xml"),
-	       "build/autodoc.xml" }));
+    main(10, ({ "assemble_autodoc", "-o", "build/traditional.xml",
+		"--keep-going", "--pike-version", pike_version,
+		"--timestamp", timestamp,
+		combine_path(refdocdir, "structure/traditional.xml"),
+		"build/autodoc.xml" }));
   Tools.Standalone.assemble_autodoc()->
-    main(8, ({ "assemble_autodoc", "-o", "build/modref.xml",
-	       "--keep-going", "--pike-version", pike_version,
-	       combine_path(refdocdir, "structure/modref.xml"),
-	       "build/autodoc.xml" }));
+    main(10, ({ "assemble_autodoc", "-o", "build/modref.xml",
+		"--keep-going", "--pike-version", pike_version,
+		"--timestamp", timestamp,
+		combine_path(refdocdir, "structure/modref.xml"),
+		"build/autodoc.xml" }));
 }
 
-void export_refdoc()
+void export_refdoc(mapping(string:array(string)) src_commit)
 {
   if (verbose) {
     progress("HTML... ");
@@ -496,7 +513,7 @@ void export_autodoc_for_ref(string ref)
     string doc_mark;
     mixed err = catch {
       // Create the autodoc.xml blob.
-      extract_autodoc();
+      extract_autodoc(src_commit);
 
       if (!Stdio.exist(work_dir + "/build/autodoc.xml")) {
 	progress("Fail!");
@@ -539,7 +556,7 @@ void export_autodoc_for_ref(string ref)
       autodoc_hash[doc_mark] = prev_autodoc_sha1 = new_autodoc_sha1;
 
       // Assemble the autodoc.
-      assemble_autodoc();
+      assemble_autodoc(src_commit);
 
       if (Stdio.exist("build/onepage.xml")) {
 	exporter->export("build/onepage.xml", "onepage.xml");
@@ -552,7 +569,7 @@ void export_autodoc_for_ref(string ref)
       }
 
       // Generate and export the html files.
-      export_refdoc();
+      export_refdoc(src_commit);
     };
     if(!doc_mark) {
       // No change since last commit.
