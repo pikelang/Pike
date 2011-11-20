@@ -9343,7 +9343,6 @@ PMOD_EXPORT void f_function_defined(INT32 args)
 
   pop_n_elems(args);
   push_int(0);
-  
 }
 
 /*! @endmodule Function

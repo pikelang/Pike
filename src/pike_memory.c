@@ -359,7 +359,7 @@ static inline size_t hashmem_ia32_crc32( const void *s, size_t len, size_t nbyte
            This code makes assumputions that is not true if nbytes & 3 is true.
 
            Specifically, it will not read enough (up to 3 bytes too
-           little) n the first loop.
+           little) in the first loop.
 
            Also, if nbytes < 8 the end CRC32SI will read too much.
 
