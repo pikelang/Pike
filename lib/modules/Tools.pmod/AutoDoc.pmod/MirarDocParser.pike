@@ -421,6 +421,9 @@ array(string) fix_tag_nesting(Parser.HTML p, string value)
     }
     ret = pop_to_tag(tag);
     nesting->pop();
+  } else if (!sizeof(tag) || has_value(tag, "(") || has_value(tag, ")")) {
+    // Insufficient quoting of paired < and >.
+    return ({ _Roxen.html_encode_string(value) });
   } else {
     if (dtd_nesting[tag]) {
       if (has_value(nesting, dtd_nesting[tag])) {
