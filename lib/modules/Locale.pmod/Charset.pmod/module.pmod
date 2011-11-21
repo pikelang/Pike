@@ -418,11 +418,17 @@ Decoder decoder(string name)
   if(p)
     return p();
 
+  if ((< "gb2312", "gb231280" >)[name]) {
+    // The GB 2312-80 character set is usually encoded according to EUC.
+    name = "euccn";
+  }
+
   if(has_prefix(name, "euc")) {
     string sub = ([
-      "kr":"korean",
+      "kr":"ksc5601",	// FIXME: Ought to be KS X 1001!
       "jp":"x0208",
-      "cn":"chinese",
+      "cn":"gb2312",
+      // NB: euc-tw is NOT yet supported! "tw":"cns11643",
     ])[name[3..]];
 
     if(sub)
@@ -765,11 +771,17 @@ Encoder encoder(string name, string|void replacement,
   if(p)
     return p(replacement, repcb);
 
+  if ((< "gb2312", "gb231280" >)[name]) {
+    // The GB 2312-80 character set is usually encoded according to EUC.
+    name = "euccn";
+  }
+
   if(has_prefix(name, "euc")) {
     string sub = ([
-      "kr":"korean",
+      "kr":"ksc5601",	// FIXME: Ought to be KS X 1001!
       "jp":"x0208",
-      "cn":"chinese",
+      "cn":"gb2312",
+      // NB: euc-tw is NOT yet supported! "tw":"cns11643",
     ])[name[3..]];
 
     if(sub)
