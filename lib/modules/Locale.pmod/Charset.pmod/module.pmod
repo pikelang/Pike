@@ -325,6 +325,72 @@ private class GSM03_38dec {
   }
 }
 
+// Decode HZ encoding of EUC-CN. RFC 1843.
+private class HZ_dec
+{
+  protected Decoder decoder = EUCDec("gb2312", "euccn");
+  protected int mode;
+
+#define HZ_MODE_MARK  1
+#define HZ_MODE_SHIFT 2
+
+  string drain()
+  {
+    return decoder->drain();
+  }
+  protected void low_feed(string frag)
+  {
+    if (mode & HZ_MODE_SHIFT) {
+      frag |= "\x80"*sizeof(frag);
+    } else {
+      frag &= "\x7f"*sizeof(frag);
+    }
+    decoder->feed(frag);
+  }
+  this_program feed(string s)
+  {
+    array(string) fragments = s/"~";
+    if (!mode & HZ_MODE_MARK) {
+      low_feed(fragments[0]);
+      fragments = fragments[1..];
+    }
+    foreach(fragments, string frag) {
+      if (mode & HZ_MODE_MARK) {
+	mode &= ~HZ_MODE_MARK;
+	low_feed("~" + frag);
+      } else if (!sizeof(frag)) {
+	mode |= HZ_MODE_MARK;
+      } else {
+	switch(frag[0]) {
+	case '{':
+	  mode |= HZ_MODE_SHIFT;
+	  frag = frag[1..];
+	  break;
+	case '}':
+	  mode &= ~HZ_MODE_SHIFT;
+	  frag = frag[1..];
+	  break;
+	case '\n':
+	  frag = frag[1..];
+	  break;
+	default:
+	  // Unsupported escape.
+	  frag = "~" + frag;
+	  break;
+	}
+	low_feed(frag);
+      }
+    }
+    return this;
+  }  
+  this_program clear()
+  {
+    decoder->clear();
+    mode = 0;
+    return this;
+  }
+}
+
 //! All character set names are normalized through this function
 //! before compared.
 string normalize(string in) {
@@ -423,6 +489,7 @@ Decoder decoder(string name)
     "iso69372001": ISO6937dec,
     "gsm": GSM03_38dec,
     "gsm0338": GSM03_38dec,
+    "hz": HZ_dec,
   ])[name];
 
   if(p)
