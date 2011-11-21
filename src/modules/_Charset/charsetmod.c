@@ -784,7 +784,7 @@ static ptrdiff_t feed_euc(struct pike_string *str, struct std_cs_stor *s)
       if(l<2)
 	return l;
       ch = (*p++)|0x80;
-      if(ch > 0xa0 && ch < 0xff)
+      if(map2 && (ch > 0xa0 && ch < 0xff))
 	ch = map2[ch-0xa1];
       else
 	ch = 0xfffd;
@@ -796,7 +796,7 @@ static ptrdiff_t feed_euc(struct pike_string *str, struct std_cs_stor *s)
 	return l;
       ch = (*p++)|0x80;
       lo = (*p++)|0x80;
-      if(ch > 0xa0 && ch < 0xff && lo > 0xa0 && lo < 0xff)
+      if(map3 && (ch > 0xa0 && ch < 0xff && lo > 0xa0 && lo < 0xff))
 	ch = map3[(ch-0xa1)*94+(lo-0xa1)];
       else
 	ch = 0xfffd;
@@ -844,9 +844,9 @@ static void f_create_euc(INT32 args)
   if(s->table == NULL)
     Pike_error("Unknown charset in EUCDec\n");
 
-  if(s->table == iso2022_9494[2]) {
-    s->table2 = iso2022_94[9];
-    s->table3 = iso2022_9494[4];
+  if(s->table == iso2022_9494[2]) {	/* jis-x0208 */
+    s->table2 = iso2022_94[9];		/* jis-x0201 */
+    s->table3 = iso2022_9494[4];	/* jis-x0212 */
   } else {
     s->table2 = NULL;
     s->table3 = NULL;
