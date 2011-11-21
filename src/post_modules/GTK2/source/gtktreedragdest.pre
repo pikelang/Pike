@@ -15,7 +15,7 @@ int drag_data_received(GTK2.TreePath path, GTK2.SelectionData sel)
     get_all_args("drag_data_receive",args,"%o%o",&o1,&o2);
     res=gtk_tree_drag_dest_drag_data_received(
 			GTK_TREE_DRAG_DEST(THIS->obj),
-			(GtkTreePath *)get_gobject(o1),
+			(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program),
 			(GtkSelectionData *)get_gobject(o2));
     pgtk2_pop_n_elems(args);
     PGTK_PUSH_INT(res);
@@ -35,7 +35,7 @@ int row_drop_possible(GTK2.TreePath path, GTK2.SelectionData sel)
     get_all_args("row_drop_possible",args,"%o%o",&o1,&o2);
     res=gtk_tree_drag_dest_row_drop_possible(
 			GTK_TREE_DRAG_DEST(THIS->obj),
-			(GtkTreePath *)get_gobject(o1),
+			(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program),
 			(GtkSelectionData *)get_gobject(o2));
     pgtk2_pop_n_elems(args);
     PGTK_PUSH_INT(res);

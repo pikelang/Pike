@@ -14,7 +14,7 @@ int drag_data_delete(GTK2.TreePath path)
     get_all_args("drag_data_delete",args,"%o",&o1);
     res=gtk_tree_drag_source_drag_data_delete(
 			GTK_TREE_DRAG_SOURCE(THIS->obj),
-			(GtkTreePath *)get_gobject(o1));
+			(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program));
     pgtk2_pop_n_elems(args);
     PGTK_PUSH_INT(res);
   }
@@ -33,7 +33,7 @@ int drag_data_delete(GTK2.TreePath path)
     if (sel==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("drag_data_get",sizeof(GtkSelectionData));
     res=gtk_tree_drag_source_drag_data_get(GTK_TREE_DRAG_SOURCE(THIS->obj),
-			(GtkTreePath *)get_gobject(o1),sel);
+			(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program),sel);
   
     pgtk2_pop_n_elems(args);
     if (res)
@@ -55,7 +55,7 @@ int row_draggable(GTK2.TreePath path)
     get_all_args("row_draggable",args,"%o",&o1);
     res=gtk_tree_drag_source_row_draggable(
 			GTK_TREE_DRAG_SOURCE(THIS->obj),
-			(GtkTreePath *)get_gobject(o1));
+			(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program));
     pgtk2_pop_n_elems(args);
     PGTK_PUSH_INT(res);
   }

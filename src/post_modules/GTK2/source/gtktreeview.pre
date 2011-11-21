@@ -234,7 +234,7 @@ void scroll_to_cell(GTK2.TreePath path, GTK2.TreeViewColumn column,
     get_all_args("scroll_to_cell",args,"%o%o.%f%f",&o1,&o2,
 			&row_align,&col_align);
     gtk_tree_view_scroll_to_cell(GTK_TREE_VIEW(THIS->obj),
-			(GtkTreePath *)get_gobject(o1),
+			(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program),
 			GTK_TREE_VIEW_COLUMN(get_gobject(o2)),
 			1,row_align,col_align);
   }
@@ -259,7 +259,7 @@ void set_cursor(GTK2.TreePath path, ?GTK2.TreeViewColumn focus_column,
 
   get_all_args("set_cursor",args,"%o.%o%i",&o1,&o2,&ed);
   gtk_tree_view_set_cursor(GTK_TREE_VIEW(THIS->obj),
-                           (GtkTreePath *)get_gobject(o1),
+                           (GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program),
                            GTK_TREE_VIEW_COLUMN(get_gobject(o2)),ed);
   RETURN_THIS();
 }
@@ -284,7 +284,7 @@ void set_cursor_on_cell(GTK2.TreePath path, ?GTK2.TreeViewColumn focus_column,
     INT_TYPE ed=0;
     get_all_args("set_cursor_on_cell",args,"%o.%o%i%o",&o1,&o2,&ed,&o3);
     gtk_tree_view_set_cursor_on_cell(GTK_TREE_VIEW(THIS->obj),
-			(GtkTreePath *)get_gobject(o1),
+			(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program),
 			GTK_TREE_VIEW_COLUMN(get_gobject(o2)),
 			GTK_CELL_RENDERER(get_gobject(o3)),ed);
   }
@@ -319,7 +319,7 @@ void row_activated(GTK2.TreePath path, GTK2.TreeViewColumn column)
     struct object *o1,*o2;
     get_all_args("row_activated",args,"%o%o",&o1,&o2);
     gtk_tree_view_row_activated(GTK_TREE_VIEW(THIS->obj),
-			(GtkTreePath *)get_gobject(o1),
+			(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program),
 			GTK_TREE_VIEW_COLUMN(get_gobject(o2)));
   }
   RETURN_THIS();
@@ -341,7 +341,7 @@ void expand_to_path(GTK2.TreePath path)
     struct object *o1;
     get_all_args("expand_to_path",args,"%o",&o1);
     gtk_tree_view_expand_to_path(GTK_TREE_VIEW(THIS->obj),
-			(GtkTreePath *)get_gobject(o1));
+			(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program));
   }
   RETURN_THIS();
 }
@@ -356,7 +356,7 @@ int expand_row(GTK2.TreePath path, int open_all)
     INT_TYPE op;
     get_all_args("expand_row",args,"%o%i",&o1,&op);
     gtk_tree_view_expand_row(GTK_TREE_VIEW(THIS->obj),
-			(GtkTreePath *)get_gobject(o1),op);
+			(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program),op);
   }
   RETURN_THIS();
 }
@@ -369,7 +369,7 @@ int collapse_row(GTK2.TreePath path)
     struct object *o1;
     get_all_args("collapse_row",args,"%o",&o1);
     gtk_tree_view_collapse_row(GTK_TREE_VIEW(THIS->obj),
-			(GtkTreePath *)get_gobject(o1));
+			(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program));
   }
   RETURN_THIS();
 }
@@ -383,7 +383,7 @@ int row_expanded(GTK2.TreePath path)
     int res;
     get_all_args("row_expanded",args,"%o",&o1);
     res=gtk_tree_view_row_expanded(GTK_TREE_VIEW(THIS->obj),
-			(GtkTreePath *)get_gobject(o1));
+			(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program));
     pgtk2_pop_n_elems(args);
     PGTK_PUSH_INT(res);
   }
@@ -460,7 +460,7 @@ mapping get_path_at_pos(int x, int y)
     if (rect==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("get_cell_area",sizeof(GdkRectangle));
     gtk_tree_view_get_cell_area(GTK_TREE_VIEW(THIS->obj),
-			(GtkTreePath *)get_gobject(o1),
+			(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program),
 			GTK_TREE_VIEW_COLUMN(get_gobject(o2)),
 			rect);
     pgtk2_pop_n_elems(args);
@@ -485,7 +485,7 @@ mapping get_path_at_pos(int x, int y)
     if (rect==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("get_background_area",sizeof(GdkRectangle));
     gtk_tree_view_get_background_area(GTK_TREE_VIEW(THIS->obj),
-			(GtkTreePath *)get_gobject(o1),
+			(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program),
 			GTK_TREE_VIEW_COLUMN(get_gobject(o2)),
 			rect);
     pgtk2_pop_n_elems(args);
