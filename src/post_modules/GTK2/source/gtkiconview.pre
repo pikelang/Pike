@@ -143,7 +143,7 @@ void set_cursor(GTK2.TreePath path, ?GTK2.CellRenderer cell, ?int start_editing)
     INT_TYPE se=0;
     get_all_args("set_cursor",args,"%o.%o%i",&o1,&o2,&se);
     gtk_icon_view_set_cursor(GTK_ICON_VIEW(THIS->obj),
-			(GtkTreePath *)get_gobject(o1),
+			(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program),
 			GTK_CELL_RENDERER(get_gobject(o2)),
 			se);
   }
@@ -241,7 +241,7 @@ void select_path(GTK2.TreePath path)
     struct object *o1;
     get_all_args("select_path",args,"%o",&o1);
     gtk_icon_view_select_path(GTK_ICON_VIEW(THIS->obj),
-			(GtkTreePath *)get_gobject(o1));
+			(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program));
   }
   RETURN_THIS();
 }
@@ -254,7 +254,7 @@ void unselect_path(GTK2.TreePath path)
     struct object *o1;
     get_all_args("unselect_path",args,"%o",&o1);
     gtk_icon_view_unselect_path(GTK_ICON_VIEW(THIS->obj),
-			(GtkTreePath *)get_gobject(o1));
+			(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program));
   }
   RETURN_THIS();
 }
@@ -269,7 +269,7 @@ int path_is_selected(GTK2.TreePath path)
     get_all_args("path_is_selected",args,"%o",&o1);
     pgtk2_pop_n_elems(args);
     push_int(gtk_icon_view_path_is_selected(GTK_ICON_VIEW(THIS->obj),
-			(GtkTreePath *)get_gobject(o1)));
+			(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program)));
   }
 }
 
@@ -309,7 +309,7 @@ void item_activated(GTK2.TreePath path)
     struct object *o1;
     get_all_args("item_activated",args,"%o",&o1);
     gtk_icon_view_item_activated(GTK_ICON_VIEW(THIS->obj),
-			(GtkTreePath *)get_gobject(o1));
+			(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program));
   }
   RETURN_THIS();
 }
@@ -342,7 +342,7 @@ void scroll_to_path(GTK2.TreePath path, int use_align,
     get_all_args("scroll_to_path",args,"%o%i%f%f",&o1,&use_align,&row_align,
 			&col_align);
     gtk_icon_view_scroll_to_path(GTK_ICON_VIEW(THIS->obj),
-			(GtkTreePath *)get_gobject(o1),use_align,
+			(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program),use_align,
 			row_align,col_align);
   }
   RETURN_THIS();
