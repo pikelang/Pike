@@ -210,13 +210,14 @@ string get_sha1_for_path(string git_dir, string tree_sha1, string path)
   return "";
 }
 
-void get_src_commits(string doc_sha1)
+void get_src_commits(string doc_sha1_path)
 {
   string notes_blob =
-    get_sha1_for_path(git_dir, "refs/notes/source_revs", doc_sha1);
+    get_sha1_for_path(git_dir, "refs/notes/source_revs", doc_sha1_path);
   if (!sizeof(notes_blob)) return;
   array(string) src_sha1s =
     Git.git(git_dir, "cat-file", "blob", notes_blob)/"\n" - ({ "" });
+  string doc_sha1 = doc_sha1_path - "/";
   if (!sizeof(src_sha1s)) {
     werror("Failed to find the Source-revisions for doc commit %s:\n",
 	   doc_sha1);
@@ -675,7 +676,8 @@ int main(int argc, array(string) argv)
 	// Initialize the forward and reverse mappings.
 	array(string) revs =
 	  Git.git(git_dir,
-		  "ls-tree", "refs/notes/source_revs", "--name-only")/"\n";
+		  "ls-tree", "refs/notes/source_revs",
+		  "--name-only", "-r")/"\n";
 	foreach(revs; int i; string doc_commit) {
 	  if (doc_commit == "") continue;
 	  if (verbose) {
