@@ -134,14 +134,17 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
 	if (verbosity > 0)
 	  werror("The file %O is no more.\n", srcdir + fn[..<4]);
 	rm(builddir + fn);
-	rm(builddir + ".cache.xml");
+	rm(builddir + fn + ".stamp");
+	rm(builddir + ".cache.xml.stamp");
       }
     } else if (Stdio.is_dir(builddir + fn) && !Stdio.exist(srcdir + fn)) {
       // Recurse and clean away old obsolete files.
       recurse(srcdir + fn + "/", builddir + fn + "/", root_ts, root);
+      rm(builddir + fn + ".cache.xml.stamp");
+      rm(builddir + fn + ".cache.xml");
       // Try deleting the directory.
       rm(builddir + fn);
-      rm(builddir + ".cache.xml");
+      rm(builddir + ".cache.xml.stamp");
     }
   }
 
@@ -181,7 +184,7 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
          !has_suffix(fn, ".m") && !has_suffix(fn, ".bmml") &&
 	 has_value(fn, ".")) continue;
 
-      Stdio.Stat dstat = file_stat(builddir+fn+".xml");
+      Stdio.Stat dstat = file_stat(builddir+fn+".xml.stamp");
 
       // Build the xml file if it doesn't exist, if it is older than the
       // source file, or if the root has changed since the previous build.
@@ -191,7 +194,11 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
 	  if (flags & Tools.AutoDoc.FLAG_KEEP_GOING) continue;
 	  exit(1);
 	}
-	Stdio.write_file(builddir+fn+".xml", res);
+	string orig = Stdio.read_bytes(builddir + fn + ".xml");
+	if (res != orig) {
+	  Stdio.write_file(builddir+fn+".xml", res);
+	}
+	Stdio.write_file(builddir+fn+".xml.stamp", "");
       }
     }
   }

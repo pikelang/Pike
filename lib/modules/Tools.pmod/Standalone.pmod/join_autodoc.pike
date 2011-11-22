@@ -93,7 +93,7 @@ void recurse(array(string) sources, string save_to,
       mtime = max(mtime, stat->mtime);
     }
   }
-  Stdio.Stat dstat = file_stat(save_to);
+  Stdio.Stat dstat = file_stat(save_to + ".stamp");
   if(dstat && dstat->mtime > mtime) return;
   int res = join_files(files, save_to, post_process, flags);
   if(res) exit(res);
@@ -107,17 +107,41 @@ Node load_tree(string fn) {
 int(0..1) join_files(array(string) files, string save_to,
 		     int(0..1) post_process, Tools.AutoDoc.Flags flags)
 {
+  string post_process_log = UNDEFINED;
+  if (post_process) {
+    post_process_log = combine_path(save_to, "../resolution.log");
+  }
+  string data = low_join_files(files, post_process_log, flags);
+
+  if (!data) return 1;
+
+  // Don't touch the result file unless the content has changed.
+  string orig_data = Stdio.read_bytes(save_to);
+  if (data != orig_data) {
+    if (verbosity > 0)
+      werror("\rWriting %s...\n", save_to);
+    Stdio.write_file(save_to, data);
+  }
+
+  // Touch the stamp file.
+  Stdio.write_file(save_to + ".stamp", "");
+
+  return 0;
+}
+
+string low_join_files(array(string) files, string post_process_log,
+		      Tools.AutoDoc.Flags flags)
+{
   if(!sizeof(files)) {
     if (verbosity > 1)
       werror("No content to merge.\n");
-    Stdio.write_file(save_to, "<autodoc></autodoc>");
-    return 0;
+    return "<autodoc></autodoc>";
   }
 
   if(sizeof(files)==1) {
     if (verbosity > 1)
       werror("Only one content file present. Copy instead of merge.\n");
-    return !Stdio.cp(files[0], save_to);
+    return Stdio.read_bytes(files[0]);
   }
 
   if (verbosity > 0)
@@ -174,21 +198,19 @@ int(0..1) join_files(array(string) files, string save_to,
     src->zap_tree();
   }
 
-  if(post_process) {
+  if(post_process_log) {
     if (verbosity > 0)
-      werror("Post processing manual file.\n");
-    Tools.AutoDoc.ProcessXML.postProcess(dest,
-					 combine_path(save_to,
-						      "../resolution.log"),
-					 flags);
+      werror("\rPost processing manual file.\n");
+    Tools.AutoDoc.ProcessXML.postProcess(dest, post_process_log, flags);
   }
 
   if (!fail) {
     if (verbosity > 0)
-      werror("\rWriting %s...\n", save_to);
-    Stdio.write_file(save_to, dest->html_of_node());
-    sub_cache[save_to] = dest;
+      werror("\rRendering XML...\n");
+    string res = dest->html_of_node();
+    dest->zap_tree();
+    return res;
   }
   dest->zap_tree();
-  return fail;
+  return UNDEFINED;
 }
