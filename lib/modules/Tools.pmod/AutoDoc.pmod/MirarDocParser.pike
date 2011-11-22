@@ -467,11 +467,13 @@ string fixdesc(string s,string prefix,void|string where)
 		  "<-", "->", "<=", "=>",
 		  "<0", "<1", "<2", "<3", "<4",
 		  "<5", "<6", "<7", "<8", "<9",
+		  "'<'", "'>'", "\"<\"", "\">\"",
 	       }),
 	       ({ "&lt;&lt;", "&gt;&gt;", "&lt;-&gt;", "&lt;=&gt;",
 		  "&lt;-", "-&gt;", "&lt;=", "=&gt;",
 		  "&lt;0", "&lt;1", "&lt;2", "&lt;3", "&lt;4",
 		  "&lt;5", "&lt;6", "&lt;7", "&lt;8", "&lt;9",
+		  "'&lt;'", "'&gt;'", "\"&lt;\"", "\"&gt;\"",
 	       }));
 
    nesting = ADT.Stack();
@@ -1330,6 +1332,7 @@ void create(string image_dir, void|.Flags flags)
 	    {
 	      if(!args->type)
 		throw("mkxml: Type attribute missing on elem tag.");
+	      // FIXME: Handle args->type == "int|string".
 	      if(args->type!="int" && args->type!="float" &&
 		 args->type!="string")
 		throw("mkxml: Unknown type "+args->type+" in elem type attribute.\n");
@@ -1343,6 +1346,7 @@ void create(string image_dir, void|.Flags flags)
 		  safe_newlines(i->finish(c)->read()) +
 		  "</mapping>\n " });
       }
+      // FIXME: Handle args->type == "array".
       throw("mkxml: Unknown data_description type "+args->type+".\n");
     });
 
