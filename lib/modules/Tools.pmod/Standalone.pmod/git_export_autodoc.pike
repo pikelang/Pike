@@ -350,7 +350,9 @@ void extract_autodoc(mapping(string:array(string)) src_commit)
 	Stdio.exist(imgsrc + "/lena.gif") ||
 	Stdio.exist(imgsrc + "/lenna.rs")) break;
   }
-  progress("Extracting from src... ");
+  if (verbose) {
+    progress("Extracting from src... ");
+  }
   Tools.Standalone.extract_autodoc()->
     main(9, ({ "extract_autodoc", "-q", "--compat",
 	       "--keep-going", "--no-dynamic",
@@ -358,7 +360,9 @@ void extract_autodoc(mapping(string:array(string)) src_commit)
 	       "--imgsrc=" + imgsrc,
 	       "--builddir=build/doc/src",
 	       "--imgdir=build/doc/images" }));
-  progress("Extracting from lib... ");
+  if (verbose) {
+    progress("Extracting from lib... ");
+  }
   Tools.Standalone.extract_autodoc()->
     main(9, ({ "extract_autodoc", "-q", "--compat",
 	       "--keep-going", "--no-dynamic",
@@ -366,7 +370,9 @@ void extract_autodoc(mapping(string:array(string)) src_commit)
 	       "--imgsrc=" + imgsrc,
 	       "--builddir=build/doc/lib",
 	       "--imgdir=build/doc/images" }));
-  progress("Extracting from doc... ");
+  if (verbose) {
+    progress("Extracting from doc... ");
+  }
   Tools.Standalone.extract_autodoc()->
     main(9, ({ "extract_autodoc", "-q", "--compat",
 	       "--keep-going", "--no-dynamic",
@@ -374,13 +380,17 @@ void extract_autodoc(mapping(string:array(string)) src_commit)
 	       "--imgsrc=" + imgsrc,
 	       "--builddir=build/doc/doc",
 	       "--imgdir=build/doc/images" }));
-  progress("Joining... ");
+  if (verbose) {
+    progress("Joining... ");
+  }
   Tools.Standalone.join_autodoc()->
     main(5, ({ "join_autodoc", "--quiet", "--post-process",
 	       "build/autodoc.xml", "build/doc" }));
   if (!Stdio.exist("build/autodoc.xml")) {
     // No autodoc.xml created.
-    progress("Joining failure. ");
+    if (verbose) {
+      progress("Joining failure. ");
+    }
     throw(UNDEFINED);
   }
 }
@@ -484,7 +494,9 @@ void export_autodoc_for_ref(string ref)
     // Not previously converted.
 
     // Check out the source.
-    progress("Checkout... ");
+    if (verbose) {
+      progress("Checkout... ");
+    }
     git("checkout", "-f", src_rev);
     git("clean", "-f", "-d", "-q", "src", "lib");
 
@@ -518,7 +530,9 @@ void export_autodoc_for_ref(string ref)
       extract_autodoc(src_commit);
 
       if (!Stdio.exist(work_dir + "/build/autodoc.xml")) {
-	progress("Fail!");
+	if (verbose) {
+	  progress("Fail!");
+	}
 	break;
       }
 
@@ -588,7 +602,9 @@ void export_autodoc_for_ref(string ref)
       }
     }
     add_src_to_doc_map(src_rev, doc_mark);
-    progress("Done. ");
+    if (verbose) {
+      progress("Done. ");
+    }
     exporter->commit("refs/notes/source_revs", UNDEFINED,
 		     src_commit->author[0],
 		     src_commit->committer[0],
