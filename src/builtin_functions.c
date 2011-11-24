@@ -2998,6 +2998,10 @@ PMOD_EXPORT void f_crypt(INT32 args)
     foo=my_rand();
     salt[1] = choise[foo % (size_t) strlen(choise)];
     saltp=salt;
+    if (args > 1) {
+      pop_n_elems(args-1);
+      args = 1;
+    }
   }
 #ifdef HAVE_CRYPT
   ret = (char *)crypt(pwd, saltp);
