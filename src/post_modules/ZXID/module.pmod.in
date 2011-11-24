@@ -17,7 +17,7 @@ string(0..255) mapping_to_query(mapping(string(0..255):string(0..255)) map)
 
 class Configuration
 {
-  inherit ZXID::Configuration;
+  inherit ZXID::Configuration : Configuration;
 
   mapping(string(0..255):string(0..255)|array(string(0..255)))
   parse_conf_file(string file)
@@ -62,42 +62,50 @@ class Configuration
     }
   }
 
-  mixed authenticate(string(0..255)|mapping(string(0..255):string(0..255)) query)
+  class Session
   {
-    if (mappingp(query)) query = mapping_to_query(query);
-    string raw_res = ::authenticate(query);
-    switch(sizeof(raw_res) && raw_res[0]) {
-    case '*':	// Error.
-      error("SAML authentication failure: %s\n", raw_res[1..]);
-    case '<':	// HTML-content.
-      return ([ "data":raw_res, "type":"text/html" ]);
-    case 'L':	// Location header.
-      if (has_prefix(raw_res, "Location:"));
-      raw_res =
-	String.trim_all_whites((raw_res/"\r\n")[0][sizeof("Location:")..]);
-      return ([ "error":Protocols.HTTP.HTTP_FOUND,
-		"rettext":"Redirect to " + raw_res,
-		"extra_heads":([ "Location":raw_res ]) ]);
-    case 'n':	// NOOP.
-      break;
-    case 'b':	// Send SP metadata.
-      // Should be handled by the C-layer already.
-      break;
-    case 'c':	// Send SP CARML declaration.
-      // Should be handled by the C-layer already.
-      break;
-    case 'e':	// Send IdP selection page.
-      break;
-    case 'a':	// Send authentication page (usually on the IdP).
-      break;
-    case 'd':	// Authentication completed. LDIF-entry.
-      break;
-    case 'z':	// Authentication failure.
-      break;
-    default:
-      error("Unknown SAML response: %s\n", raw_res);
+    inherit Configuration::Session;
+
+    mixed authenticate(string(0..255)|mapping(string(0..255):string(0..255)) query)
+    {
+      if (mappingp(query)) query = mapping_to_query(query);
+      string raw_res = ::authenticate(query);
+
+      werror("Raw res: %O\n", raw_res);
+
+      switch(sizeof(raw_res) && raw_res[0]) {
+      case '*':	// Error.
+	error("SAML authentication failure: %s\n", raw_res[1..]);
+      case '<':	// HTML-content.
+	return ([ "data":raw_res, "type":"text/html" ]);
+      case 'L':	// Location header.
+	if (has_prefix(raw_res, "Location:"));
+	raw_res =
+	  String.trim_all_whites((raw_res/"\r\n")[0][sizeof("Location:")..]);
+	return ([ "error":Protocols.HTTP.HTTP_FOUND,
+		  "rettext":"Redirect to " + raw_res,
+		  "extra_heads":([ "Location":raw_res ]) ]);
+      case 'n':	// NOOP.
+	break;
+      case 'b':	// Send SP metadata.
+	// Should be handled by the C-layer already.
+	break;
+      case 'c':	// Send SP CARML declaration.
+	// Should be handled by the C-layer already.
+	break;
+      case 'e':	// Send IdP selection page.
+	break;
+      case 'a':	// Send authentication page (usually on the IdP).
+	break;
+      case 'd':	// Authentication completed. LDIF-entry.
+	break;
+      case 'z':	// Authentication failure.
+	break;
+      default:
+	error("Unknown SAML response: %s\n", raw_res);
+      }
+      return raw_res;
     }
-    return raw_res;
   }
 
 }

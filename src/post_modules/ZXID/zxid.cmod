@@ -754,16 +754,66 @@ static char* zxid_grab_domain_name(zxid_conf* cf, const char* url)
      */
   }
 
-  PIKEFUN string(0..255) authenticate(string(0..255) query)
+  /*! @class Session
+   *!
+   *!   Represents the current session state for a user.
+   */
+  PIKECLASS Session
+    program_flags PROGRAM_USES_PARENT;	/* Shouldn't this be automatic? */
   {
-    char *res = zxid_simple_cf(&THIS->conf, query->len, query->str, 0, 0);
+    CVAR zxid_ses ses;
 
-    push_text(res);
+    EXIT
+    {
+      struct Configuration_struct *config = parent_storage(1);
 
-    ZX_FREE(THIS->conf.ctx, res);
+      if (THIS->ses.sesbuf) {
+	ZX_FREE(&config->conf.ctx, THIS->ses.sesbuf);
+	THIS->ses.sesbuf = NULL;
+      }
+      if (THIS->ses.sid) {
+	ZX_FREE(&config->conf.ctx, THIS->ses.sid);
+	THIS->ses.sid = NULL;
+      }
+    }
 
-    stack_pop_n_elems_keep_top(args);
+    /*! @decl string(0..255) authenticate(string(0..255) query)
+     *!
+     *!   Authenticate via SAML given the query-string @[query].
+     *!
+     *! @returns
+     *!   Returns JSON-encoded data on success, and various other
+     *!   strings otherwise.
+     */
+    PIKEFUN string(0..255) authenticate(string(0..255) query)
+    {
+      struct string_builder mutable_query;
+      char *res;
+      int res_len = 0;
+      struct Configuration_struct *config = parent_storage(1);
+
+      init_string_builder_alloc(&mutable_query, query->len, query->size_shift);
+      string_builder_shared_strcat(&mutable_query, query);
+
+      /* Let the library handle metadata. */
+      res = zxid_simple_cf_ses(&config->conf, mutable_query.s->len,
+			       mutable_query.s->str,
+			       &THIS->ses, &res_len,
+			       ZXID_AUTO_METAC|ZXID_AUTO_FMTJ);
+
+      free_string_builder(&mutable_query);
+
+      push_string(make_shared_binary_string(res, res_len));
+
+      ZX_FREE(config->conf.ctx, res);
+
+      stack_pop_n_elems_keep_top(args);
+    }
   }
+  /*! @endclass
+   */
+#undef THIS
+#define THIS THIS_CONFIGURATION
 
   /*! @decl mapping(string(0..255):string(0..255)) idp_list()
    *!
