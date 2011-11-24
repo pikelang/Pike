@@ -72,8 +72,6 @@ DECLARATIONS
     Pike_error("Invalid class for argument %d\n", arg); \
   }
 
-static char *original_fedusername_suffix = NULL;
-static char *original_required_authnctx = NULL;
 
 /*! @class Configuration
  *!
@@ -88,350 +86,9 @@ PIKECLASS Configuration {
   PIKEVAR mapping(string:mixed) conf_m
     flags ID_PRIVATE|ID_PROTECTED;
 
-  /* Lots of free-related functions are missing in the 1.02 API.
-   *
-   * Here are some that we need.
-   */
-
-  /* Reverse of zxid_new_at(). */
-  static void zxid_free_at(struct zx_ctx *ctx, struct zxid_attr *attr)
-  {
-    while (attr) {
-      struct zxid_attr *next = attr->n;
-      ZX_FREE(ctx, attr->name);
-      if (attr->val) ZX_FREE(ctx, attr->val);
-      ZX_FREE(ctx, attr);
-      attr = next;
-    }
-  }
-
-  /* Reverse of zxid_load_need().
-   */
-  static void zxid_free_need(struct zx_ctx *ctx, struct zxid_need *need)
-  {
-    while (need) {
-      struct zxid_need *next = need->n;
-      ZX_FREE(ctx, need->usage);
-      ZX_FREE(ctx, need->retent);
-      ZX_FREE(ctx, need->oblig);
-      ZX_FREE(ctx, need->ext);
-      zxid_free_at(ctx, need->at);
-      ZX_FREE(ctx, need);
-      need = next;
-    }
-  }
-
-  /* Reverse of zxid_load_atsrc(). */
-  static void zxid_free_atsrc(struct zx_ctx *ctx, struct zxid_atsrc *src)
-  {
-    while (src) {
-      struct zxid_atsrc *next = src->n;
-      zxid_free_at(ctx, src->at);
-      ZX_FREE(ctx, src->ns);
-      ZX_FREE(ctx, src->weight);
-      ZX_FREE(ctx, src->url);
-      ZX_FREE(ctx, src->aapml);
-      ZX_FREE(ctx, src->otherlim);
-      ZX_FREE(ctx, src->ext);
-      ZX_FREE(ctx, src);
-      src = next;
-    }
-  }
-
-  /* Reverse of zxid_load_map().
-   */
-  static void zxid_free_map(struct zx_ctx *ctx, struct zxid_map *map)
-  {
-    while (map) {
-      struct zxid_map *next = map->n;
-      ZX_FREE(ctx, map->ns);
-      ZX_FREE(ctx, map->src);
-      ZX_FREE(ctx, map->dst);
-      ZX_FREE(ctx, map->ext);
-      ZX_FREE(ctx, map);
-      map = next;
-    }
-  }
-
-  /* Reverse of zxid_load_cstr_list(). */
-  static void zxid_free_cstr_list(struct zx_ctx *ctx,
-				  struct zxid_cstr_list *l)
-  {
-    while (l) {
-      struct zxid_cstr_list *next = l->n;
-      ZX_FREE(ctx, l->s);
-      ZX_FREE(ctx, l);
-      l = next;
-    }
-  }
-
-  /* These low-level functions are declared static in zxidconf.c,
-   * but we need them...
-   */
-
-  /* BEGIN Copied from zxidconf.c 1.51 (zxid 1.02). */
-
-#define IS_RULE(rule, val) (!memcmp((rule), (val), sizeof(val)-1) && (rule)[sizeof(val)-1] == '$')
-
-static struct zxid_need* zxid_load_need(zxid_conf* cf, struct zxid_need* need, char* v)
-{
-  char* attrs;
-  char* usage;
-  char* retent;
-  char* oblig;
-  char* ext;
-  char* p = v;
-  char* a;
-  int len;
-  struct zxid_need* nn;
-
-  while (p && *p) {
-    attrs = p;
-    p = strchr(p, '$');
-    if (!p) {
-      ERR("Malformed NEED or WANT directive: attribute list at pos %d", ((int)(p-v)));
-      return need;
-    }
-
-    usage = ++p;
-    p = strchr(p, '$');
-    if (!p) {
-      ERR("Malformed NEED or WANT directive: usage missing at pos %d", ((int)(p-v)));
-      return need;
-    }
-
-    retent = ++p;
-    p = strchr(p, '$');
-    if (!p) {
-      ERR("Malformed NEED or WANT directive: retention missing at pos %d", ((int)(p-v)));
-      return need;
-    }
-
-    oblig = ++p;
-    p = strchr(p, '$');
-    if (!p) {
-      ERR("Malformed NEED or WANT directive: obligations missing at pos %d", ((int)(p-v)));
-      return need;
-    }
-    
-    ext = ++p;
-    p = strchr(p, ';');  /* Stanza ends in separator ; or end of string nul */
-    if (!p)
-      p = ext + strlen(ext);
-    
-    if (IS_RULE(usage, "reset")) {
-      INFO("Reset need %p", need);
-  /* END Copied from zxidconf.c 1.51 (zxid 1.02). */
-
-      /* The original code here leaks.
-       * /grubba
-       */
-      zxid_free_need(cf->ctx, need);
-      need = NULL;
-
-  /* BEGIN Copied from zxidconf.c 1.51 (zxid 1.02). */
-      if (!*p) break;
-      ++p;
-      continue;
-    }
-    
-    nn = ZX_ZALLOC(cf->ctx, struct zxid_need);
-    nn->n = need;
-    need = nn;
-
-    COPYVAL(nn->usage,  usage,  retent-1);
-    COPYVAL(nn->retent, retent, oblig-1);
-    COPYVAL(nn->oblig,  oblig,  ext-1);
-    COPYVAL(nn->ext,    ext,    p);
-
-    DD("need attrs(%.*s) usage(%s) retent(%s) oblig(%s) ext(%s)", usage-attrs-1, attrs, nn->usage, nn->retent, nn->oblig, nn->ext);
-
-    for (a = attrs; ; a += len+1) {
-      len = strcspn(a, ",$");
-      nn->at = zxid_new_at(cf, nn->at, len, a, 0,0, "need/want");
-      if (a[len] == '$')
-	break;
-    }
-    if (!*p) break;
-    ++p;
-  }
-
-  return need;
-}
-
-static struct zxid_cstr_list* zxid_load_cstr_list(zxid_conf* cf, struct zxid_cstr_list* l, char* p)
-{
-  char* q;
-  struct zxid_cstr_list* cs;
-
-  for (; p && *p;) {
-    q = p;
-    p = strchr(p, ',');
-    if (!p)
-      p = q + strlen(q);
-    cs = ZX_ZALLOC(cf->ctx, struct zxid_cstr_list);
-    cs->n = l;
-    l = cs;
-    COPYVAL(cs->s, q, p);    
-  }
-  return l;
-}
-
-static struct zxid_atsrc* zxid_load_atsrc(zxid_conf* cf, struct zxid_atsrc* atsrc, char* v)
-{
-  char* ns;
-  char* attrs;
-  char* weight;
-  char* url;
-  char* aapml;
-  char* otherlim;
-  char* ext;
-  char* p = v;
-  char* a;
-  int len;
-  struct zxid_atsrc* as;
-
-  while (p && *p) {
-    ns = p;
-    p = strchr(p, '$');
-    if (!p) {
-      ERR("Malformed ATSRC directive: namespace missing at pos %d", ((int)(p-v)));
-      return atsrc;
-    }
-
-    attrs = ++p;
-    p = strchr(p, '$');
-    if (!p) {
-      ERR("Malformed ATSRC directive: attribute list missing at pos %d", ((int)(p-v)));
-      return atsrc;
-    }
-
-    weight = ++p;
-    p = strchr(p, '$');
-    if (!p) {
-      ERR("Malformed ATSRC directive: weight missing at pos %d", ((int)(p-v)));
-      return atsrc;
-    }
-
-    url = ++p;
-    p = strchr(p, '$');
-    if (!p) {
-      ERR("Malformed ATSRC directive: url missing at pos %d", ((int)(p-v)));
-      return atsrc;
-    }
-
-    aapml = ++p;
-    p = strchr(p, '$');
-    if (!p) {
-      ERR("Malformed ATSRC directive: aapml ref missing at pos %d", ((int)(p-v)));
-      return atsrc;
-    }
-    
-    otherlim = ++p;
-    p = strchr(p, '$');
-    if (!p) {
-      ERR("Malformed ATSRC directive: otherlim missing at pos %d", ((int)(p-v)));
-      return atsrc;
-    }
-    
-    ext = ++p;
-    p = strchr(p, ';');  /* Stanza ends in separator ; or end of string nul */
-    if (!p)
-      p = ext + strlen(ext);
-    
-    if (IS_RULE(url, "reset")) {
-      INFO("Reset atsrc %p", atsrc);
-  /* END Copied from zxidconf.c 1.51 (zxid 1.02). */
-
-      /* The original code here leaks.
-       * /grubba
-       */
-      zxid_free_atsrc(cf->ctx, atsrc);
-      atsrc = NULL;
-
-  /* BEGIN Copied from zxidconf.c 1.51 (zxid 1.02). */
-      if (!*p) break;
-      ++p;
-      continue;
-    }
-    
-    as = ZX_ZALLOC(cf->ctx, struct zxid_atsrc);
-    as->n = atsrc;
-    atsrc = as;
-
-    COPYVAL(as->ns,       ns,        attrs-1);
-    COPYVAL(as->weight,   weight,    url-1);
-    COPYVAL(as->url,      url,       aapml-1);
-    COPYVAL(as->aapml,    aapml,     otherlim-1);
-    COPYVAL(as->otherlim, otherlim,  ext-1);
-    COPYVAL(as->ext,      ext,       p);
-
-    D("atsrc ns(%s) attrs(%.*s) weight(%s) url(%s) aapml(%s) otherlim(%s) ext(%s)", as->ns, ((int)(weight-attrs-1)), attrs, as->weight, as->url, as->aapml, as->otherlim, as->ext);
-
-    for (a = attrs; ; a += len+1) {
-      len = strcspn(a, ",$");
-      as->at = zxid_new_at(cf, as->at, len, a, 0,0, "atsrc");
-      if (a[len] == '$')
-	break;
-    }
-    if (!*p) break;
-    ++p;
-  }
-
-  return atsrc;
-}
-
-static char* zxid_grab_domain_name(zxid_conf* cf, const char* url)
-{
-  char* dom;
-  char* p;
-  int len;
-  if (!url || !*url)
-    return 0;
-  dom = strchr(url, ':');
-  if (!dom || dom[1] != '/' || dom[2] != '/')
-    return 0;
-  dom += 3;
-  /* After shipping https:// scan for domain name allowable characters. */
-  len = strspn(dom, ".abcdefghijklmnopqrstuvwxyz0123456789-ABCDEFGHIJKLMNOPQRSTUVWXYZ");
-  p = ZX_ALLOC(cf->ctx, len+1);
-  memcpy(p, dom, len);
-  p[len] = 0;
-  return p;
-}
-
-  /* END Copied from zxidconf.c 1.51 (zxid 1.02). */
-
-  /* Attempt to do the reverse of zxid_init_conf(). */
-  static void zxid_free_conf(struct zx_ctx *ctx, zxid_conf *conf)
-  {
-    zxid_free_need(ctx, conf->need);
-    zxid_free_need(ctx, conf->want);
-    zxid_free_atsrc(ctx, conf->attrsrc);
-    zxid_free_map(ctx, conf->inmap);
-    zxid_free_map(ctx, conf->outmap);
-    zxid_free_map(ctx, conf->pepmap);
-    zxid_free_map(ctx, conf->pepmap_rqout);
-    zxid_free_map(ctx, conf->pepmap_rqin);
-    zxid_free_map(ctx, conf->pepmap_rsout);
-    zxid_free_map(ctx, conf->pepmap_rsin);
-    zxid_free_cstr_list(ctx, conf->localpdp_role_permit);
-    zxid_free_cstr_list(ctx, conf->localpdp_role_deny);
-    zxid_free_cstr_list(ctx, conf->localpdp_idpnid_permit);
-    zxid_free_cstr_list(ctx, conf->localpdp_idpnid_deny);
-    if (conf->path) {
-      ZX_FREE(ctx, conf->path);
-    }
-  }
-
   INIT {
     THIS->conf.ctx = zx_init_ctx();
     zxid_init_conf(&THIS->conf, NULL);
-    /* FIXUP the fields that otherwise are dynamically allocated... */
-    if (!original_fedusername_suffix)
-      original_fedusername_suffix = THIS->conf.fedusername_suffix;
-    if (!original_required_authnctx)
-      original_required_authnctx = THIS->conf.required_authnctx;
     THIS->conf_m = allocate_mapping(8);
 #ifdef USE_CURL
     LOCK(THIS->conf.curl_mx, "curl init");
@@ -446,14 +103,9 @@ static char* zxid_grab_domain_name(zxid_conf* cf, const char* url)
   EXIT {
     struct zx_ctx *ctx = THIS->conf.ctx;
 
-    zxid_free_conf(ctx, &THIS->conf);
+    zxid_free_conf(&THIS->conf);
 
-    /* NB: zx_init_ctx() allocates the struct zx_ctx with malloc(3C).
-     *     It might be safer on eg __NT__ to use ZX_FREE() here as well,
-     *     since it currently expands to free(3C), and will use the
-     *     same crt.
-     */
-    free(ctx);
+    zx_free_ctx(ctx);
   }
 
   /*! @decl void create(string|mapping(string(0..255):string(0..255)) conf)
@@ -680,9 +332,7 @@ static char* zxid_grab_domain_name(zxid_conf* cf, const char* url)
 		   (TYPEOF(*s) == PIKE_T_ARRAY), do {
 		     int i;
 		     char **p;
-		     if (THIS->conf.required_authnctx &&
-			 (THIS->conf.required_authnctx !=
-			  original_required_authnctx)) {
+		     if (THIS->conf.required_authnctx) {
 		       ZX_FREE(THIS->conf.ctx, THIS->conf.required_authnctx);
 		     }
 		     THIS->conf.required_authnctx = p =
@@ -716,9 +366,7 @@ static char* zxid_grab_domain_name(zxid_conf* cf, const char* url)
     CHECK_ARG_KEEP(MK_STRING("URL"), ((TYPEOF(*s) == PIKE_T_STRING) &&
 				      !s->u.string->size_shift), do {
 		     THIS->conf.url = s->u.string->str;
-		     if (THIS->conf.fedusername_suffix &&
-			 (THIS->conf.fedusername_suffix !=
-			  original_fedusername_suffix)) {
+		     if (THIS->conf.fedusername_suffix) {
 		       ZX_FREE(THIS->conf.ctx, THIS->conf.fedusername_suffix);
 		       THIS->conf.fedusername_suffix = NULL;
 		     }
