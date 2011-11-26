@@ -15,6 +15,15 @@ Tools.AutoDoc.Flags flags = Tools.AutoDoc.FLAG_NORMAL;
 
 int verbosity = Tools.AutoDoc.FLAG_NORMAL;
 
+int source_timestamp;
+
+constant bmml_invalidation_times = ({
+  0, 855275859, 855644314, 855648534, 855725630, 857038037, 0x7fffffff,
+});
+
+int bmml_invalidate_before;
+int bmml_invalidate_after;
+
 int main(int n, array(string) args) {
 
   string srcdir, builddir = "./";
@@ -27,6 +36,7 @@ int main(int n, array(string) args) {
     ({ "imgdir",     Getopt.NO_ARG,       "--imgdir" }),
     ({ "root",       Getopt.HAS_ARG,      "--root" }),
     ({ "compat",     Getopt.NO_ARG,       "--compat" }),
+    ({ "timestamp",  Getopt.HAS_ARG,      "--source-timestamp" }),
     ({ "no-dynamic", Getopt.NO_ARG,       "--no-dynamic" }),
     ({ "keep-going", Getopt.NO_ARG,       "--keep-going" }),
     ({ "verbose",    Getopt.NO_ARG,       "-v,--verbose"/"," }),
@@ -68,6 +78,20 @@ int main(int n, array(string) args) {
       verbosity = flags & Tools.AutoDoc.FLAG_VERB_MASK;
       if (verbosity < Tools.AutoDoc.FLAG_DEBUG) verbosity++;
       flags = (flags & ~Tools.AutoDoc.FLAG_VERB_MASK)|verbosity;
+      break;
+    case "timestamp":
+      // This is currently only used by the BMML handler.
+      // It's used to convert /precompiled/foo module-references
+      // to their corresponding module name as of this timestamp.
+      source_timestamp = (int)opt[1];
+
+      for (int i = sizeof(bmml_invalidation_times); i--;) {
+	if (bmml_invalidation_times[i] < source_timestamp) {
+	  bmml_invalidate_before = bmml_invalidation_times[i];
+	  bmml_invalidate_after = bmml_invalidation_times[i+1];
+	  break;
+	}
+      }
       break;
     case "help":
       werror("Usage:\n"
@@ -136,6 +160,17 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
 	rm(builddir + fn);
 	rm(builddir + fn + ".stamp");
 	rm(builddir + ".cache.xml.stamp");
+      } else if (source_timestamp && (source_timestamp < 950000000) &&
+		 (sizeof(fn/".") == 2)) {
+	// BMML.
+	int old_ts = (int)Stdio.read_bytes(builddir + fn + ".stamp");
+	if ((old_ts < bmml_invalidate_before) ||
+	    (old_ts >= bmml_invalidate_after)) {
+	  // BMML file that may have changed at this time.
+	  if (verbosity > 1)
+	    werror("Forcing reextraction of %s.\n", srcdir + fn[..<4]);
+	  rm(builddir + fn + ".stamp");
+	}
       }
     } else if (Stdio.is_dir(builddir + fn) && !Stdio.exist(srcdir + fn)) {
       // Recurse and clean away old obsolete files.
@@ -198,7 +233,7 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
 	if (res != orig) {
 	  Stdio.write_file(builddir+fn+".xml", res);
 	}
-	Stdio.write_file(builddir+fn+".xml.stamp", "");
+	Stdio.write_file(builddir+fn+".xml.stamp", (string)source_timestamp);
       }
     }
   }
@@ -217,11 +252,149 @@ string extract(string filename, string imgdest,
   }
 
   if (has_suffix(filename, ".bmml") || !has_value(basename(filename), ".")) {
-    if ((<"Makefile", "configure", "stamp-h", "install-sh", "todo", "README",
-	  "dependencies", "COPYING", "COPYRIGHT", "DISCLAIMER", "BUGS",
-	  "ChangeLog", "create_testsuite", "testsuite",
-	>)[basename(filename)]) {
-      return "\n";
+    if (has_suffix(filename, "/control_structures") ||
+	has_suffix(filename, "/reserved")) {
+      // These two have a unique "markup" that is not yet supported
+      // by the BMML parser.
+      return "";
+    }
+    if(flags & Tools.AutoDoc.FLAG_COMPAT &&
+       (source_timestamp >= 855275859) &&
+       has_value(file, "/precompiled/")) {
+      // After new module system was implemented.
+      // Convert the old module names according to the timestamp
+      if (source_timestamp < 855644314) {
+	// Before the modules were capitalized.
+	file = replace(file,
+		       ({ "/precompiled/FILE",
+			  "/precompiled/file",
+			  "/precompiled/port",
+			  "/precompiled/stack",
+			  "/precompiled/string_buffer",
+		       }),
+		       ({ "stdio.FILE",
+			  "stdio.File",
+			  "stdio.Port",
+			  "stack",
+			  "string_functions.String_buffer",
+		       }));
+      } else {
+	file = replace(file,
+		       ({ "/precompiled/FILE",
+			  "/precompiled/file",
+			  "/precompiled/port",
+			  "/precompiled/stack",
+			  "/precompiled/string_buffer",
+		       }),
+		       ({ "Stdio.FILE",
+			  "Stdio.File",
+			  "Stdio.Port",
+			  "Stack",
+			  "String.String_buffer",
+		       }));
+      }
+      if (source_timestamp < 855648534) {
+	// Before the modules were renamed and capitalized.
+	file = replace(file,
+		       ({ "/precompiled/gdbm",
+			  "/precompiled/mpz",
+			  "/precompiled/regexp",
+			  "/precompiled/sql",
+			  "/precompiled/sql_result",
+			  "/precompiled/sql/*",
+			  "/precompiled/sql/mysql",
+			  "/precompiled/sql/mysql_result",
+		       }),
+		       ({ "gdbmmod.gdbm",
+			  "gmpmod.mpz",
+			  "regexp.regexp",
+			  "sql.sql",
+			  "sql.sql_result",
+			  "sql.*",
+			  "sql.mysql",
+			  "sql.mysql_result",
+		       }));
+      } else {
+	file = replace(file,
+		       ({ "/precompiled/gdbm",
+			  "/precompiled/mpz",
+			  "/precompiled/regexp",
+			  "/precompiled/sql",
+			  "/precompiled/sql_result",
+			  "/precompiled/sql/*",
+			  "/precompiled/sql/mysql",
+			  "/precompiled/sql/mysql_result",
+		       }),
+		       ({ "Gdbm.gdbm",
+			  "Gmp.mpz",
+			  "Regexp",
+			  "sql.sql",
+			  "sql.sql_result",
+			  "sql.*",
+			  "sql.mysql",
+			  "sql.mysql_result",
+		       }));
+      }
+      if (source_timestamp < 855725630) {
+	// Before the builtin was capitalized.
+	file = replace(file,
+		       ({ "/precompiled/condition",
+			  "/precompiled/mutex",
+			  "builtin/",
+		       }),
+		       ({ "builtin.condition",
+			  "builtin.mutex",
+			  "builtin.",
+		       }));
+      } else if (source_timestamp < 857038037) {
+	// Before the Thread module.
+	file = replace(file,
+		       ({ "/precompiled/condition",
+			  "/precompiled/mutex",
+			  "builtin/",
+		       }),
+		       ({ "Builtin.condition",
+			  "Builtin.mutex",
+			  "Builtin.",
+		       }));
+      } else {
+	file = replace(file,
+		       ({ "/precompiled/condition",
+			  "/precompiled/mutex",
+			  "builtin/",
+		       }),
+		       ({ "Thread.Condition",
+			  "Thread.Mutex",
+			  "Builtin.",
+		       }));
+      }
+      if (source_timestamp < 855644314) {
+	// Before the modules were capitalized.
+	file = replace(file,
+		       ({ "/precompiled/fifo",
+			  "/precompiled/queue",
+		       }),
+		       ({ "fifo.Fifo",
+			  "fifo.Queue",
+		       }));
+      } else if (source_timestamp < 857038037) {
+	// Before the Thread module.
+	file = replace(file,
+		       ({ "/precompiled/fifo",
+			  "/precompiled/queue",
+		       }),
+		       ({ "Fifo.Fifo",
+			  "Fifo.Queue",
+		       }));
+      } else {
+	file = replace(file,
+		       ({ "/precompiled/fifo",
+			  "/precompiled/queue",
+		       }),
+		       ({ "Thread.Fifo",
+			  "Thread.Queue",
+		       }));
+      }
     }
     Tools.AutoDoc.BMMLParser bmml_parser = Tools.AutoDoc.BMMLParser();
     return bmml_parser->convert_page(filename, basename(filename), file);
@@ -237,6 +410,68 @@ string extract(string filename, string imgdest,
       mixed err = catch {
 	Tools.AutoDoc.MirarDocParser mirar_parser =
 	  Tools.AutoDoc.MirarDocParser(imgsrc, flags);
+
+	if (flags & Tools.AutoDoc.FLAG_COMPAT) {
+	  // Special cases for some files that have
+	  // known breakage due to missing headers.
+	  foreach((["/files/termios.c":
+		    "**""! module Stdio\n"
+		    "**\n"
+		    "**""! class File\n"
+		    "**\n",
+		    "/Image/blit.c":
+		    "**""! module Image\n"
+		    "**\n"
+		    "**""! class image\n"
+		    "**\n",
+		    "Calendar.pmod/Gregorian.pmod":
+		    "//! module Calendar\n"
+		    "//\n",
+		    "Calendar.pmod/Stardate.pmod":
+		    "//! module Calendar\n"
+		    "//\n",
+		  ]); string suffix; string lines) {
+	    if (has_suffix(filename, suffix) &&
+		!has_value(file, (lines/"\n")[0])) {
+	      foreach(lines/"\n"; int lineno; string line) {
+		mirar_parser->process_line(line, "MAGIC:" + filename, lineno+1);
+	      }
+	      break;
+	    }
+	  }
+	  // Repair some known typos and other breakage.
+	  foreach((["/Image/blit.c":
+		    ({ ({
+		      "object add_layers(array(int|object)) layer0,",
+		      "object add_layers(int x1,int y1,int x2,int y2,"
+		      "array(int|object)) layer0,",
+		    }), ({
+		      "object add_layers(array(int|object) layer0,",
+		      "object add_layers(int x1,int y1,int x2,int y2,"
+		      "array(int|object) layer0,",
+		    }) }),
+		    "/Image/colors.c":
+		    ({ ({
+		      "**""! constant modifiers=({",
+		    }), ({
+		      "**""! array(string) modifiers=({",
+		    }) }),
+		    "/Parser/html.c":
+		    ({ ({
+		      "simplifying work for custom classes that\n"
+		      "**""!\tinherits <ref>Parser.HTML</ref>.",
+		    }), ({
+		      "simplifying work for custom classes that\n"
+		      "**""!\tinherit <ref>Parser.HTML</ref>.",
+		    }) }),
+		  ]); string suffix; array(array(string)) repl) {
+	    if (has_suffix(filename, suffix)) {
+	      file = replace(file, @repl);
+	      break;
+	    }
+	  }
+	}
+
 	int lineno = 1;
 	foreach(file/"\n", string line) {
 	  mirar_parser->process_line(line, filename, lineno++);
