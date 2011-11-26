@@ -96,7 +96,7 @@
  *       (ie parallel-depth-first order), and update
  *       other branches as appropriate.
  *
- *   [ ] Skip extraneous merges (cf 1997-11-06 - 1997-11-09).
+ *   [X] Skip extraneous merges (cf 1997-11-06 - 1997-11-09).
  *
  *   [ ] Add a suitable /404.html file.
  */
@@ -511,16 +511,25 @@ void export_autodoc_for_ref(string ref)
 
     if (sizeof(doc_parents) > 1) {
       // Check if all of the parents are needed.
-      // NB: We only check parents and grandparents, but this should
-      //     be sufficient in most circumstances.
-      foreach(doc_parents, string parent) {
-	if (doc_to_parents[parent]) {
-	  doc_parents -= (array)doc_to_parents[parent];
-	  foreach((array)doc_to_parents[parent], string grandparent) {
-	    if (doc_to_parents[grandparent])
-	      doc_parents -= (array)doc_to_parents[grandparent];
+      // We check the first 1000 unique parents.
+
+      ADT.Queue parent_queue = ADT.Queue(@doc_parents);
+      multiset(string) visited = (<>);
+      int loop_count;
+
+      while (sizeof(parent_queue) && sizeof(doc_parents) > 1) {
+	string p = parent_queue->get();
+	if (visited[p]) continue;
+	visited[p] = 1;
+	if (doc_to_parents[p]) {
+	  doc_parents -= doc_to_parents[p];
+	  if (sizeof(doc_parents) <= 1) break;
+	  foreach(doc_to_parents[p], string gp) {
+	    if (visited[gp]) continue;
+	    parent_queue->put(gp);
 	  }
 	}
+	if (++loop_count >= 1000) break;
       }
     }
 
@@ -597,6 +606,8 @@ void export_autodoc_for_ref(string ref)
 			 src_commit->message*"\n",
 			 @doc_parents);
 	autodoc_hash[doc_mark] = prev_autodoc_sha1;
+
+	doc_to_parents[doc_mark] = doc_parents;
       } else {
 	doc_mark = doc_parents[0];
       }
