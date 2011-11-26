@@ -1178,36 +1178,44 @@ class CompilationHandler
   }
 }
 
-array(program|string) try_compile_illustration(array(string) templates,
-					       string illustration_code,
-					       string where)
+array(string) make_illustration(array(string) templates,
+				string illustration_code,
+				string where,
+				string name,
+				int verbosity,
+				string type)
 {
   CompilationHandler handler;
   string code;
   mixed err;
   string defines = sprintf("#define IMAGE_DIR %O\n", IMAGE_DIR);
-  foreach(templates; int t; string template) {
-    if ((flags & .FLAG_COMPAT) && !t &&
-	(has_value(illustration_code, "->map_closest") ||
-	 has_value(illustration_code, "->map_fs"))) {
+  program ip;
+  foreach(reverse(templates); int t; string template) {
+    if (!(flags & .FLAG_COMPAT) && ((t+1) != sizeof(templates))) {
       continue;
     }
     code = defines + template + illustration_code + "\n;\n}\n";
     handler = CompilationHandler();
+    ip = UNDEFINED;
     err = catch {
-	return ({ compile_string(code, "-", handler), code });
+	ip = compile_string(code, "-", handler);
+	object g = ip(name, verbosity, type);
+	return ({ g->make() });
       };
-    if (!(flags & .FLAG_COMPAT)) break;
   }
-  werror("Compilation of illustration at %O failed:\n"
+  werror("Illustration at %O failed:\n"
 	 "%s\n"
 	 "******\n", where, handler->lines * "");
   array(string) rows = code/"\n";
   for(int i; i<sizeof(rows); i++)
     werror("%04d: %s\n", i+1, rows[i]);
   werror("******\n");
-  if (flags & .FLAG_KEEP_GOING)
-    return ({ UNDEFINED, code });
+  if (flags & .FLAG_KEEP_GOING) {
+    if (ip) {
+      werror("%s\n", describe_backtrace(err));
+    }
+    return ({ "" });	// FIXME: Broken image?
+  }
   throw(err);
 }
 
@@ -1243,26 +1251,9 @@ void create(string image_dir, void|.Flags flags)
       string name;
       sscanf(where, "file='%s'", name);
       name = (name/"/")[-1];
-      [program ip, string code] = try_compile_illustration(makepic, c, where);
-
-      if (mixed err = catch {
-	  if (ip) {
-	    object g = ip(name+(illustration_counter++), verbosity, args->type);
-	    return ({ g->make() });
-	  }
-	}) {
-	werror("Execution of illustration at %O failed:\n"
-	       "******\n", where);
-	array(string) rows = code/"\n";
-	for(int i; i<sizeof(rows); i++)
-	  werror("%04d: %s\n", i+1, rows[i]);
-	werror("******\n");
-	if (!(flags & .FLAG_KEEP_GOING)) {
-	  throw(err);
-	}
-	werror("%s\n", describe_backtrace(err));
-      }
-      return ({ "" });	// FIXME: Broken image?
+      return make_illustration(makepic, c, where,
+			       name + (illustration_counter++), verbosity,
+			       args->type);
     });
 
   parser->add_container("execute",
@@ -1417,11 +1408,13 @@ void create(string image_dir, void|.Flags flags)
     prefix = _prefix;
   }
 
-  string illustration(string|Image.Image img, mapping extra, void|string suffix) {
+  string illustration(string|Image.Image img, mapping|object extra,
+                      void|string suffix) {
     string fn = prefix + \".\" + (img_counter++) + (suffix||\".png\");
+    if (objectp(extra)) extra = ([ \"alpha\":extra ]);
 #if constant(Image.PNG.encode)
     if(!stringp(img))
-      img = Image.PNG.encode(img);
+      img = Image.PNG.encode(img, extra);
     Stdio.write_file(fn, img);"+
     ((verbosity > 1)?#"
     werror(\"Wrote %s from execute.\\n\", fn);":"") + #"
