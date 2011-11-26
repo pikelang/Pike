@@ -73,11 +73,11 @@ string even_more_magic(string block, int indent)
     tmp-=({0});
 
     for(e=0;e<sizeof(tmp);e++)
-      tmp[e]=implode3("<td> ",tmp[e]," </td>");
+      tmp[e]=implode3("<c> ",tmp[e]," </c>");
 
-    return "<table border='0' cellpadding='0' cellspacing='0'>\n"+
-      implode3("<tr valign='top'>",tmp,/* "<br />" */ "</tr>\n")+
-	"</table>\n";
+    return "<matrix>\n"+
+      implode3("<r>",tmp,/* "<br />" */ "</r>\n")+
+	"</matrix>\n";
   }
 }
 
@@ -96,7 +96,7 @@ string more_magic(string s, int quote)
   }
 
 #define FLUSH() do{ output+=even_more_magic(accumulator,ilevel[-1]); accumulator=""; }while(0)
-#define POP() do{ output+="</dd></dl>"; ilevel=ilevel[0..sizeof(ilevel)-2]; }while(0)
+#define POP() do{ output+="</text></group></dl>"; ilevel=ilevel[0..sizeof(ilevel)-2]; }while(0)
 
   tmp=s/"\n";
   for(e=0;e<sizeof(tmp);e++)
@@ -107,7 +107,7 @@ string more_magic(string s, int quote)
     if(strlen(spaces) > ilevel[-1])
     {
       FLUSH();
-      output+="<dl><dd>";
+      output+="<dl><group><text>";
       ilevel+=({ strlen(spaces) });
     }
     else if(strlen(spaces) < ilevel[-1])
