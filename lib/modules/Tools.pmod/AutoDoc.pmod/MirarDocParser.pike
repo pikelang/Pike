@@ -1316,28 +1316,55 @@ void create(string image_dir, void|.Flags flags)
   parser->add_container("data_description",
     lambda(Parser.HTML p, mapping args, string c)
     {
-      if(args->type=="mapping") {
+      string basetype = "mixed";
+      string subtype = "mixed";
+      sscanf(args->type, "%[a-z](%s)", basetype, subtype);
+
+      switch(basetype) {
+      case "mapping": {
 	Parser.HTML i = Parser.HTML()->
 	  add_container("elem",
 	    lambda(Parser.HTML p, mapping args, string c)
 	    {
+	      if(!args->type && !args->name) {
+		// Sub-heading: Note unbalanced tags!
+		return "</mapping></p>\n<p><b>" + String.capitalize(c) +
+		  "</b><mapping>\n";
+	      }
 	      if(!args->type)
 		throw("mkxml: Type attribute missing on elem tag.");
-	      // FIXME: Handle args->type == "int|string".
-	      if(args->type!="int" && args->type!="float" &&
-		 args->type!="string")
-		throw("mkxml: Unknown type "+args->type+" in elem type attribute.\n");
 	      if(!args->name)
 		throw("mkxml: Name attribute missing on elem tag.");
-	      return "<group>\n<member><type><" + args->type +
-		"/></type><index>\"" + args->name + "\"</index></member>\n"
+	      return "<group>\n<member><type>" + doctype(args->type) +
+		"</type><index>\"" + args->name + "\"</index></member>\n"
 		"<text><p>" + c + "</p></text>\n</group>\n";
 	    });
 	return ({ "<mapping>\n " +
 		  safe_newlines(i->finish(c)->read()) +
 		  "</mapping>\n " });
       }
-      // FIXME: Handle args->type == "array".
+      case "array":
+	{
+	  int index;
+	  Parser.HTML i = Parser.HTML()->
+	    add_container("elem",
+			  lambda(Parser.HTML p, mapping args, string c)
+			  {
+			    if (args->value) {
+			      c = "<tt>" + args->value + "</tt>: " + c;
+			    }
+			    return ({ "<group>\n<elem><type>" +
+				      doctype(args->type || subtype) +
+				      "</type><index>" + index++ +
+				      "</index></elem>\n"
+				      "<text><p>" + c + "</p></text>\n"
+				      "</group>\n" });
+			  });
+	  return ({ "<array>\n " +
+		    safe_newlines(i->finish(c)->read()) +
+		    "</array>\n " });
+	}
+      }
       throw("mkxml: Unknown data_description type "+args->type+".\n");
     });
 
