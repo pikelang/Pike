@@ -85,6 +85,16 @@ string quote(string in) {
   return Parser.XML.Tree.text_quote(in);
 }
 
+string render_tag(string tag, mapping(string:string) attrs, int|void term)
+{
+  string res = "<" + tag;
+  foreach(sort(indices(attrs)), string attr) {
+    res += " " + attr + "='" + attrs[attr] + "'";
+  }
+  if (term) res += " /";
+  return res + ">";
+}
+
 Node get_first_element(Node n) {
   foreach(n->get_children(), Node c)
     if(c->get_node_type()==XML_ELEMENT) {
@@ -604,7 +614,7 @@ string parse_text(Node n, void|String.Buffer ret) {
     case "image": // Not in XSLT
       mapping m = c->get_attributes();
       m->src = image_prefix() + m_delete(m, "file");
-      ret->add( sprintf("<img%{ %s='%s'%} />", (array)m) );
+      ret->add( render_tag("img", m, 1) );
       break;
 
     case "url": // Not in XSLT
@@ -616,8 +626,7 @@ string parse_text(Node n, void|String.Buffer ret) {
       m = c->get_attributes();
       if(!m->href)
 	m->href=c->value_of_node();
-      ret->add( sprintf("<a%{ %s='%s'%}>%s</a>",
-			(array)m, c->value_of_node()) );
+      ret->add( sprintf("%s%s</a>", render_tag("a", m), c->value_of_node()) );
       break;
 
     case "section":
@@ -680,14 +689,14 @@ string parse_text(Node n, void|String.Buffer ret) {
 
     // Not really allowed
     case "br":
-      ret->add( sprintf("<%s%{ %s='%s'%} />", c->get_any_name(), (array)c->get_attributes()) );
+      ret->add( render_tag(c->get_any_name(), c->get_attributes(), 1) );
       break;
     case "table":
     case "td":
     case "tr":
     case "th":
-      ret->add( sprintf("<%s%{ %s='%s'%}>%s</%s>",
-			c->get_any_name(), (array)c->get_attributes(),
+      ret->add( sprintf("%s%s</%s>",
+			render_tag(c->get_any_name(), c->get_attributes()),
 			parse_text(c), c->get_any_name()) );
       break;
 

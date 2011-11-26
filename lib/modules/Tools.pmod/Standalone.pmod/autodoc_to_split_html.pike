@@ -121,8 +121,7 @@ class Node
 	parser->xml_tag_syntax(3);
 	parser->add_container("docgroup",
           lambda(Parser.HTML p, mapping m, string c) {
-	    d += sprintf("<docgroup%{ %s='%s'%}>%s</docgroup>",
-			 (array)m, c);
+	    d += sprintf("%s%s</docgroup>", render_tag("docgroup", m), c);
 	    return "";
 	  });
 
