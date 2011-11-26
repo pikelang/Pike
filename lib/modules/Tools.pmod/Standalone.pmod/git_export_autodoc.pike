@@ -621,9 +621,19 @@ void export_autodoc_for_ref(string ref)
 		     src_commit->committer[0],
 		     src_commit->message*"\n",
 		     @git_source_revs_heads);
-    exporter->notemodify(doc_mark);
-    exporter->data(doc_to_src[doc_mark]*"\n" + "\n");
-    git_source_revs_heads = ({});
+    if (sizeof(git_source_revs_heads)) {
+      // Special case needed to work around initialization bugs
+      // for notes in git-fast-import (as of 1.7.8.rc3).
+      exporter->filedeleteall();
+      foreach(doc_to_src; string mark_or_sha1; array(string) source_sha1s) {
+	exporter->notemodify(mark_or_sha1);
+	exporter->data(source_sha1s*"\n" + "\n");
+      }
+      git_source_revs_heads = ({});
+    } else {
+      exporter->notemodify(doc_mark);
+      exporter->data(doc_to_src[doc_mark]*"\n" + "\n");
+    }
     if (err) {
       string msg = describe_error(err);
       if (!has_prefix(msg, "process_line failed: ") &&
