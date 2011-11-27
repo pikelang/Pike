@@ -237,8 +237,10 @@ string short(string s)
 
 inherit Regexp:is_example;
 
+//! @ignore
 list(string) indexes_done=(<>);
 list(string) pages_done=(<>);
+//! @endignore
 
 void done(string a)
 {
