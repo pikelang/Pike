@@ -2,6 +2,10 @@
 #define BLOCK_ALLOCATOR_H
 #include <stdint.h>
 
+#ifndef BA_SEGREGATE
+# define BA_SEGREGATE
+#endif
+
 typedef struct ba_page * ba_page;
 
 struct block_allocator {
@@ -25,10 +29,10 @@ struct block_allocator {
 };
 
 #ifdef BA_SEGREGATE
-#define BA_INIT(block_size, blocks) { block_size, blocks, 0, NULL, NULL, \
+#define BA_INIT(block_size, blocks) { block_size, blocks, 0, 0, 0, \
 				      0, NULL, NULL, 0, 0 }
 #else
-#define BA_INIT(block_size, blocks) { block_size, blocks, 0, NULL, NULL, \
+#define BA_INIT(block_size, blocks) { block_size, blocks, 0, 0, 0, \
 				      0, NULL, NULL, 0, 0, 0 }
 #endif
 
@@ -137,8 +141,8 @@ void ba_destroy(struct block_allocator * a);
 #endif
 
 #define BLOCK_ALLOC(DATA,BSIZE)						\
-static struct block_allocator PIKE_CONCAT(DATA, _allocator) =			\
-	BA_INIT(sizeof(struct DATA), (BSIZE)/sizeof(struct DATA));	\
+static struct block_allocator PIKE_CONCAT(DATA, _allocator) =		\
+	BA_INIT(sizeof(struct DATA), (BSIZE));	\
 									\
 void PIKE_CONCAT3(new_,DATA,_context)(void)				\
 {									\

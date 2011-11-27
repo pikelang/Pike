@@ -922,6 +922,9 @@ int low_install_file(string from,
   }
   mkdirhier(dirname(to));
   if(!mode) {
+    if (!file_stat(from)) {
+	error("file not found: %O\n", combine_path(getcwd(), from));
+    }
     int src_mode = file_stat(from)->mode;
     if (src_mode & 0111) {
       // Executable.
