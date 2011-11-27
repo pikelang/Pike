@@ -2056,7 +2056,7 @@ void f_cpp(INT32 args)
 			      charset);
 	Pike_error("Unknown charset.\n");
       }
-      free(data);
+      free_string(data);
       this.data = data = sp[-1].u.string;
       sp--;
       dmalloc_touch_svalue(sp);
