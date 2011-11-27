@@ -566,10 +566,15 @@ static ptrdiff_t calcC(struct cpp *this, WCHAR *data, ptrdiff_t len,
 	  case '/':
 	    if (data[pos] == '*') {
 	      pos++;
-	      SKIPCOMMENT();
+	      if (this->keep_comments) {
+		start = pos - 2;
+	        SKIPCOMMENT_INC_LINES();
+	      } else SKIPCOMMENT();
 	    } else if (data[pos] == '/') {
-	      pos++;
-	      FIND_EOL();
+	      if (this->keep_comments) {
+		start = pos - 1;
+		FIND_EOL_PRETEND();
+	      } else FIND_EOL();
 	    }
 	    break;
 	  case '\0':
@@ -1065,6 +1070,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
   
   for(pos=0; pos<len;)
   {
+      ptrdiff_t old_pos = pos;
 /*    fprintf(stderr,"%c",data[pos]);
     fflush(stderr); */
 
@@ -1258,9 +1264,16 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 		case '/':
 		  if (data[pos] == '*') {
 		    pos++;
+		    if (this->keep_comments) {
+		      SKIPCOMMENT_INC_LINES();
+		      goto ADD_TO_BUFFER;
+		    }
 		    SKIPCOMMENT();
 		  } else if (data[pos] == '/') {
-		    pos++;
+		    if (this->keep_comments) {
+		      FIND_EOL_PRETEND();
+		      goto ADD_TO_BUFFER;
+		    }
 		    FIND_EOL();
 		  }
 		  continue;
@@ -1489,14 +1502,24 @@ static ptrdiff_t lower_cpp(struct cpp *this,
     case '/':
       if(data[pos]=='/')
       {
+	if (this->keep_comments) {
+	  FIND_EOL_PRETEND();
+	  goto ADD_TO_BUFFER;
+	}
+
 	FIND_EOL();
 	break;
       }
 
       if(data[pos]=='*')
       {
-	PUTC(' ');
-	SKIPCOMMENT();
+	if (this->keep_comments) {
+	  SKIPCOMMENT_INC_LINES();
+	  goto ADD_TO_BUFFER;
+	} else {
+	  PUTC(' ');
+	  SKIPCOMMENT();
+	}
 	break;
       }
 
@@ -1510,6 +1533,34 @@ static ptrdiff_t lower_cpp(struct cpp *this,
       break;
     }
     SKIPSPACE();
+
+    if (this->prefix) {
+	int i;
+	if (this->prefix->len+1 >= len-pos) {
+	    goto ADD_TO_BUFFER;
+	}
+	for (i = 0; i < this->prefix->len; i++) {
+	    if (this->prefix->str[i] != data[pos+i]) {
+		FIND_EOS();
+		goto ADD_TO_BUFFER;
+	    }
+	}
+	if (data[pos+i] != '_') {
+	    FIND_EOS();
+	    goto ADD_TO_BUFFER;
+	}
+
+	pos += this->prefix->len + 1;
+    } else {
+	int i;
+	for (i = pos; i < len; i++) {
+	    if (data[i] == '_') {
+		FIND_EOS();
+		goto ADD_TO_BUFFER;
+	    } else if (!WC_ISIDCHAR(data[i]))
+		break;
+	}
+    }
 
     switch(data[pos])
     {
@@ -2133,11 +2184,16 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 /*	    fprintf(stderr,"%c",data[pos]);
 	    fflush(stderr); */
 
+	    ptrdiff_t old_pos = pos;
 	    switch(data[pos++])
 	    {
 	    case '/':
 	      if(data[pos]=='/')
 	      {
+		if (this->keep_comments) {
+		  KEEPLINE(&str);
+		  continue;
+		}
 		string_builder_putchar(&str, ' ');
 		FIND_EOL();
 		continue;
@@ -2145,6 +2201,10 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	      
 	      if(data[pos]=='*')
 	      {
+		if (this->keep_comments) {
+		  KEEPCOMMENT(&str);
+		  continue;
+		}
 		PUTC(' ');
 		SKIPCOMMENT();
 		continue;
@@ -2487,6 +2547,12 @@ concat_identifier:
       }
     }
     }
+    continue;
+ADD_TO_BUFFER:
+    // keep line
+    PIKE_XCONCAT (string_builder_binary_strcat, SHIFT) (
+      &this->buf, data + old_pos, pos-old_pos);
+
   }
 
   if(flags & CPP_EXPECT_ENDIF) {

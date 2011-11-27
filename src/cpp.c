@@ -127,10 +127,11 @@ struct cpp
   struct string_builder buf;
   struct object *handler;
   struct object *compat_handler;
-  int compat_major;
-  int compat_minor;
+  INT_TYPE compat_major;
+  INT_TYPE compat_minor;
   struct pike_string *data;
-  int picky_cpp;
+  struct pike_string *prefix;
+  INT_TYPE picky_cpp, keep_comments;
 };
 
 struct define *defined_macro =0;
@@ -761,7 +762,20 @@ static void do_magic_define(struct cpp *this,
 			    char *name,
 			    magic_define_fun fun)
 {
-  struct define* def=alloc_empty_define(make_shared_string(name),0);
+  struct define* def;
+
+  if (this->prefix) {
+    struct string_builder s;
+    int len = strlen(name);
+
+    init_string_builder(&s, 0);
+    string_builder_append(&s, MKPCHARP_STR(this->prefix),
+			  this->prefix->len);
+    string_builder_putchar(&s, '_');
+    string_builder_binary_strcat(&s, name, len);
+    def = alloc_empty_define(finish_string_builder(&s),0);
+  } else
+    def = alloc_empty_define(make_shared_string(name),0);
   def->magic=fun;
   this->defines=hash_insert(this->defines, & def->link);
 }
@@ -781,7 +795,21 @@ static void simple_add_define(struct cpp *this,
 			    char *name,
 			    char *what)
 {
-  struct define* def=alloc_empty_define(make_shared_string(name),0);
+  struct define* def;
+
+  if (this->prefix) {
+    struct string_builder s;
+    int len = strlen(name);
+
+    init_string_builder(&s, 0);
+    string_builder_append(&s, MKPCHARP_STR(this->prefix),
+			  this->prefix->len);
+    string_builder_putchar(&s, '_');
+    string_builder_binary_strcat(&s, name, len);
+    def = alloc_empty_define(finish_string_builder(&s),0);
+  } else
+    def = alloc_empty_define(make_shared_string(name),0);
+
   def->first=make_shared_string(what);
   this->defines=hash_insert(this->defines, & def->link);
 }
@@ -899,23 +927,130 @@ static void simple_add_define(struct cpp *this,
 		  fprintf(stderr,"\n");					\
 		  fflush(stderr)
 
-#define FIND_EOL() do {						\
-    while(pos < len && data[pos]!='\n') pos++;			\
-    if (data[pos] == '\\') {					\
-      if (data[pos+1] == '\n') {				\
-	pos+=2;							\
-      } else if ((data[pos+1] == '\r') &&			\
-		 (data[pos+2] == '\n')) {			\
-	pos+=3;							\
-      } else {							\
+/* does not touch buffer */
+#define FIND_EOL_BODY(CODE) do {				\
+    while(pos < len) {						\
+      switch (data[pos++]) {					\
+      case '\n':						\
 	break;							\
+      case '\\':						\
+	if (data[pos] == '\n') {				\
+	  pos+=2;						\
+	} else if ((data[pos] == '\r') &&			\
+		   (data[pos+1] == '\n')) {			\
+	  pos+=3;						\
+	} else {						\
+	  pos++;						\
+	  continue;						\
+	}							\
+	do { CODE } while(0);					\
+      default:							\
+	continue;						\
       }								\
-    } else {							\
+      pos--;							\
       break;							\
     }								\
-    PUTNL();							\
-    this->current_line++;					\
-  } while (1)
+  } while (0)
+
+#define FIND_EOL() do {						\
+    FIND_EOL_BODY({						\
+      PUTNL();							\
+      this->current_line++;					\
+    });								\
+  } while (0)
+
+#define FIND_EOL_PRETEND() do {					\
+    FIND_EOL_BODY({						\
+      this->current_line++;					\
+    });								\
+  } while (0)
+
+/* The current char is assumed to be '*', the previous '/'. */
+#define SKIPCOMMENT()	do{				\
+	pos++;						\
+	while(data[pos]!='*' || data[pos+1]!='/')	\
+	{						\
+	  if(pos+2>=len)				\
+	  {						\
+	    cpp_error(this,"End of file in comment.");	\
+	    break;					\
+	  }						\
+							\
+	  if(data[pos]=='\n')				\
+	  {						\
+	    this->current_line++;			\
+	    PUTNL();					\
+	  }						\
+							\
+	  pos++;					\
+	}						\
+	pos+=2;						\
+  }while(0)
+
+/* The current char is assumed to be '*', the previous '/',
+ * does not touch buffer. */
+#define SKIPCOMMENT_INC_LINES()	do{				\
+	pos++;						\
+	while(data[pos]!='*' || data[pos+1]!='/')	\
+	{						\
+	  if(pos+2>=len)				\
+	  {						\
+	    cpp_error(this,"End of file in comment.");	\
+	    break;					\
+	  }						\
+							\
+	  if(data[pos]=='\n')				\
+	  {						\
+	    this->current_line++;			\
+	  }						\
+							\
+	  pos++;					\
+	}						\
+	pos+=2;						\
+  }while(0)
+
+#define KEEPCOMMENT(s) do{				\
+  SKIPCOMMENT_INC_LINES();				\
+  PIKE_XCONCAT (string_builder_binary_strcat, SHIFT) (	\
+    s, data + old_pos, pos-old_pos);		\
+} while (0)
+
+#define KEEPLINE(s) do{					\
+  FIND_EOL_PRETEND();					\
+  PIKE_XCONCAT (string_builder_binary_strcat, SHIFT) (	\
+    s, data + old_pos, pos-old_pos);		\
+} while (0)
+
+
+#define FIND_EOS() do {						\
+    while(pos < len) {						\
+      switch (data[pos++]) {					\
+      case '\n':						\
+	break;							\
+      case '/':							\
+	if (data[pos] == '/') {					\
+	  FIND_EOL_PRETEND();					\
+	  break;						\
+	} else if (data[pos] == '*') {				\
+	  SKIPCOMMENT_INC_LINES();				\
+	}							\
+	continue;						\
+      case '\\':						\
+	if (data[pos] == '\n') {				\
+	  pos+=1;						\
+	} else if ((data[pos] == '\r') &&			\
+		   (data[pos+1] == '\n')) {			\
+	  pos+=2;						\
+	} else {						\
+	  break;						\
+	}							\
+      default:							\
+	continue;						\
+      }								\
+      this->current_line++;					\
+      break;							\
+    }								\
+  } while (0)
 
 /* Skips horizontal whitespace and newlines. */
 #define SKIPWHITE() do {					\
@@ -982,28 +1117,6 @@ static void simple_add_define(struct cpp *this,
       break;							\
     }								\
   } while (1)
-
-/* The current char is assumed to be '*', the previous '/'. */
-#define SKIPCOMMENT()	do{				\
-  	pos++;						\
-	while(data[pos]!='*' || data[pos+1]!='/')	\
-	{						\
-	  if(pos+2>=len)				\
-	  {						\
-	    cpp_error(this,"End of file in comment.");	\
-	    break;					\
-	  }						\
-							\
-	  if(data[pos]=='\n')				\
-	  {						\
-	    this->current_line++;			\
-	    PUTNL();					\
-	  }						\
-							\
-	  pos++;					\
-	}						\
-	pos+=2;						\
-  }while(0)
 
 /* pos is assumed to be at the backslash. pos it at the last char in
  * the escape afterwards. */
@@ -1771,7 +1884,7 @@ static void insert_callback_define_no_args(struct cpp *this,
 
 /*! @endnamespace */
 
-/*! @decl string cpp(string data, string|void current_file, @
+/*! @decl string cpp(string data, mapping|string|void current_file, @
  *!                  int|string|void charset, object|void handler, @
  *!                  void|int compat_major, void|int compat_minor, @
  *!                  void|int picky_cpp)
@@ -1781,6 +1894,27 @@ static void insert_callback_define_no_args(struct cpp *this,
  *! Preprocesses the string @[data] with Pike's builtin ANSI-C look-alike
  *! preprocessor. If the @[current_file] argument has not been specified,
  *! it will default to @expr{"-"@}. @[charset] defaults to @expr{"ISO-10646"@}.
+ *!
+ *! If the second argument is a mapping, no other arguments may follow.
+ *! Instead, they have to be given as members of the mapping (if wanted).
+ *! The following members are recognized:
+ *!
+ *! @mapping
+ *! 	@member string current_file
+ *! 	@member int|string charset
+ *! 	@member object handler
+ *! 	@member int compat_major
+ *! 	@member int compat_minor
+ *! 	@member int picky_cpp
+ *!	@member int keep_comments
+ *! 		This option does not strip comments from the file. Useful
+ *! 		in combination with the prefix feature.
+ *! 	@member string prefix
+ *! 		If a prefix is given, only prefixed directives will be
+ *! 		processed. For example, if the prefix is @expr{"foo"@}, then
+ *! 		@expr{#foo_ifdef COND@} and @expr{foo___LINE__@} would be
+ *! 		processed, @expr{#ifdef COND@} and @expr{__LINE__@} would not.
+ *! @endmapping
  *!
  *! @seealso
  *!   @[compile()]
@@ -1807,6 +1941,9 @@ static void free_cpp(struct cpp *this)
 
   if(this->data)
     free_string(this->data);
+
+  if(this->prefix)
+    free_string(this->prefix);
 }
 
 
@@ -1816,7 +1953,7 @@ void f_cpp(INT32 args)
   struct svalue *save_sp = sp - args;
   struct mapping *predefs = NULL;
 
-  struct pike_string *data;
+  struct pike_string *data, *prefix = NULL;
 
   struct pike_string *current_file = 0;
 
@@ -1833,13 +1970,46 @@ void f_cpp(INT32 args)
   ONERROR tmp;
 #endif /* PIKE_DEBUG */
 
-  get_all_args("cpp", args, "%t.%T%*%O%d%d%d", &data, &current_file,
-	       &charset_sv, &handler, &compat_major, &compat_minor,
-	       &picky_cpp);
-
+  this.prefix = NULL;
   this.current_line=1;
   this.compile_errors=0;
   this.defines=0;
+  this.keep_comments = 0;
+
+#define TTS(type)	(((type) == PIKE_T_STRING && "string")	\
+		      || ((type) == PIKE_T_MAPPING && "mapping")\
+		      || ((type) == PIKE_T_ARRAY && "array")	\
+		      || ((type) == PIKE_T_FLOAT && "float")	\
+		      || ((type) == PIKE_T_INT && "int")	\
+		      || ((type) == PIKE_T_OBJECT && "object")	\
+		      || "mixed")
+
+#define GET_TYPE(type, name)	((tmp = simple_mapping_string_lookup(m, name)) \
+   && (TYPEOF(*(tmp)) == PIKE_T_##type || (Pike_error("Expected type %s,"\
+       "got type %s for " name ".", TTS(PIKE_T_##type), TTS(TYPEOF(*tmp))), 0)))
+
+  if (args > 1 && TYPEOF(Pike_sp[-args]) == PIKE_T_STRING
+    && TYPEOF(Pike_sp[1-args]) == PIKE_T_MAPPING) {
+    struct svalue *tmp;
+    struct mapping *m = Pike_sp[1-args].u.mapping;
+
+    data = Pike_sp[-args].u.string;
+
+    if (GET_TYPE(STRING, "current_file")) current_file = tmp->u.string;
+    if (GET_TYPE(STRING, "charset")) charset_sv = tmp;
+    if (GET_TYPE(OBJECT, "handler")) handler = tmp->u.object;
+    if (GET_TYPE(INT, "compat_major")) compat_major = tmp->u.integer;
+    if (GET_TYPE(INT, "compat_minor")) compat_minor = tmp->u.integer;
+    if (GET_TYPE(INT, "picky")) picky_cpp = tmp->u.integer;
+    if (GET_TYPE(STRING, "prefix")) prefix = tmp->u.string;
+    if (GET_TYPE(INT, "keep_comments")) this.keep_comments = tmp->u.integer;
+#undef GET_TYPE
+#undef TTS
+  } else {
+    get_all_args("cpp", args, "%t.%T%*%O%d%d%d%T", &data, &current_file,
+		 &charset_sv, &handler, &compat_major, &compat_minor,
+		 &picky_cpp, &this.prefix);
+  }
 
   this.data = data;
   add_ref(data);
@@ -1859,6 +2029,21 @@ void f_cpp(INT32 args)
 
   /* Don't call free_cpp before all variables are cleared or set. */
   SET_ONERROR(err, free_cpp, &this);
+
+  if (prefix) {
+      int i;
+      if (prefix->size_shift) {
+	  Pike_error("No widechars allowed in cpp prefix.\n");
+      }
+      for (i = 0; i < prefix->len; i++) {
+	  if (!isalnum(prefix->str[i])) {
+	      Pike_error("Invalid char in prefix.\n");
+	  }
+      }
+      this.prefix = prefix;
+      add_ref(prefix);
+  }
+
 
   if(charset_sv) {
     if(TYPEOF(*charset_sv) == T_STRING) {
@@ -1940,6 +2125,7 @@ void f_cpp(INT32 args)
   }
 
   init_string_builder(&this.buf, 0);
+
 
   do_magic_define(&this,"__LINE__",insert_current_line);
   do_magic_define(&this,"__FILE__",insert_current_file_as_string);
@@ -2090,8 +2276,8 @@ void init_cpp()
 
   use_initial_predefs = 1;
 
-/* function(string, string|void, int|string|void, object|void, int|void, int|void:string) */
-  ADD_EFUN("cpp", f_cpp, tFunc(tStr tOr(tStr,tVoid)
+/* function(string, mapping|string|void, int|string|void, object|void, int|void, int|void) */
+  ADD_EFUN("cpp", f_cpp, tFunc(tStr tOr(tMapping, tOr(tStr,tVoid))
 			       tOr(tInt,tOr(tStr,tVoid))
 			       tOr(tObj,tVoid)
 			       tOr(tInt,tVoid)
