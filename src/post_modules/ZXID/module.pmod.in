@@ -66,6 +66,25 @@ class Configuration
   {
     inherit Configuration::Session;
 
+    //!
+    mapping(string:mixed) auth_info;
+
+    //! Authenticate via SAML given the query-string @[query].
+    //!
+    //! @returns
+    //!   @mixed
+    //!     @type mapping(string(0..255):string(0..255))
+    //!       Returns a mapping when interaction with the browser
+    //!       is needed.
+    //!     @type string
+    //!       Returns a string on some unsupported actions.
+    //!     @type zero
+    //!       Returns @expr{0@} (zero) on successfull authentication.
+    //!       @[auth_info] will be set with the corresponding user information.
+    //!   @endmixed
+    //!
+    //! @throws
+    //!   Throws errors on most error conditions.
     mixed authenticate(string(0..255)|mapping(string(0..255):string(0..255)) query)
     {
       if (mappingp(query)) query = mapping_to_query(query);
@@ -101,8 +120,11 @@ class Configuration
 	break;
       case 'z':	// Authentication failure.
 	break;
+      case '{':	// Success, JSON result.
+	auth_info = Standards.JSON.decode(raw_res);
+	return 0;
       default:
-	error("Unknown SAML response: %s\n", raw_res);
+	error("Unknown SAML response: %O\n", raw_res[..30]);
       }
       return raw_res;
     }
