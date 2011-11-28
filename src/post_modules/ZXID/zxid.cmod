@@ -463,28 +463,40 @@ PIKECLASS Configuration {
 #undef THIS
 #define THIS THIS_CONFIGURATION
 
-  /*! @decl mapping(string(0..255):string(0..255)) idp_list()
+  /*! @decl mapping(string(0..255):mapping(string(0..255):string(0..255))) idp_list()
    *!
    *!   Return a list of known identity providers.
    *!
    *! @returns
    *!   Returns a mapping from IdP EID to display name (if any).
    */
-  PIKEFUN mapping(string(0..255):string(0..255)) idp_list()
+  PIKEFUN mapping(string(0..255):mapping(string(0..255):string(0..255))) idp_list()
   {
     zxid_entity *idp = zxid_load_cot_cache(&THIS->conf);
     int cnt = 0;
     pop_n_elems(args);
     check_stack(120);
     while(idp) {
+      int attrs = 0;
       /* if (!idp->ed->IDPSSODescriptor) continue; */
       push_text(idp->eid);
+      push_constant_text("eid");
+      push_text(idp->eid);
+      attrs++;
       if (idp->dpy_name) {
+	push_constant_text("name");
 	push_text(idp->dpy_name);
-      } else {
-	push_constant_text("");
+	attrs++;
       }
+      if (idp->sha1_name) {
+	push_constant_text("sha1_name");
+	push_text(idp->sha1_name);
+	attrs++;
+      }
+      f_aggregate_mapping(attrs*2);
       cnt++;
+
+      idp = idp->n;
     }
     f_aggregate_mapping(cnt*2);
   }
