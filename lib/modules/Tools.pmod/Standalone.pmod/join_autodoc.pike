@@ -93,7 +93,7 @@ void recurse(array(string) sources, string save_to,
       mtime = max(mtime, stat->mtime);
     }
   }
-  Stdio.Stat dstat = file_stat(save_to + ".stamp");
+  Stdio.Stat dstat = file_stat(save_to) && file_stat(save_to + ".stamp");
   if(dstat && dstat->mtime > mtime) return;
   int res = join_files(files, save_to, post_process, flags);
   if(res) exit(res);

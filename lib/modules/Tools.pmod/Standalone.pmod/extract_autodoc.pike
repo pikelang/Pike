@@ -219,7 +219,8 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
          !has_suffix(fn, ".m") && !has_suffix(fn, ".bmml") &&
 	 has_value(fn, ".")) continue;
 
-      Stdio.Stat dstat = file_stat(builddir+fn+".xml.stamp");
+      Stdio.Stat dstat = file_stat(builddir+fn+".xml") &&
+	file_stat(builddir+fn+".xml.stamp");
 
       // Build the xml file if it doesn't exist, if it is older than the
       // source file, or if the root has changed since the previous build.
