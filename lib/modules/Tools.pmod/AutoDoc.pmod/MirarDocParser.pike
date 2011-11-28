@@ -1155,14 +1155,25 @@ string safe_newlines(string in) {
   return in;
 }
 
+string low_container(string tag, mapping(string:string) attrs, string|void c)
+{
+  string res = "<" + tag;
+  foreach(sort(indices(attrs)), string attr) {
+    res += " " + attr + "='" + attrs[attr] + "'";
+  }
+  if (c == "") return res + " />";
+  res += ">";
+  if (c) res += c + "</" + tag + ">";
+  return res;
+}
+
 array(string) tag_quote_args(Parser.HTML p, mapping args) {
-  return ({ sprintf("<%s%{ %s='%s'%}>", p->tag_name(), (array)args) });
+  return ({ low_container(p->tag_name(), args) });
 }
 
 array(string) tag_preserve_ws(Parser.HTML p, mapping args, string c) {
-  return ({ sprintf("<%s%{ %s='%s'%}>%s</%s>", p->tag_name(),
-		    (array)args, safe_newlines(p->clone()->finish(c)->read()),
-		    p->tag_name()) });
+  return ({ low_container(p->tag_name(), args,
+			  safe_newlines(p->clone()->finish(c)->read())) });
 }
 
 class CompilationHandler
@@ -1399,13 +1410,13 @@ void create(string image_dir, void|.Flags flags)
   parser->add_container("link",
     lambda(Parser.HTML p, mapping args, string c)
     {
-      return ({ sprintf("<ref%{ %s=\"%s\"%}>%s</ref>", (array)args, c) });
+      return ({ low_container("ref", args, c) });
     });
 
   parser->add_container("a",
     lambda(Parser.HTML p, mapping args, string c)
     {
-      return ({ sprintf("<url%{ %s=\"%s\"%}>%s</url>", (array)args, c) });
+      return ({ low_container("url", args, c) });
     });
 
   // Normalize IMAGE_DIR.
@@ -1457,19 +1468,26 @@ void create(string image_dir, void|.Flags flags)
 #endif
   }
 
-  string mktag(string name, void|mapping args, void|string c) {
+  static string low_mktag(string name, void|mapping args) {
     if(!args) args = ([]);
+    string res = \"<\" + name;
+    foreach(sort(indices(args)), string attr)
+      res += \" \" + attr + \"='\" + args[attr] + \"'\";
+    return res;
+  }
+
+  string mktag(string name, void|mapping args, void|string c) {
+    string res = low_mktag(name, args);
     if(!c)
-      return sprintf(\"<%s%{ %s='%s'%} />\", name, (array)args);
-    return sprintf(\"<%s%{ %s='%s'%}>%s</%s>\", name, (array)args, c, name);
+      return res + \" />\";
+    return res + sprintf(\">%s</%s>\", c, name);
   }
 
   array(string) tag_stack = ({});
 
   string begin_tag(string name, void|mapping args) {
-    if(!args) args = ([]);
     tag_stack += ({ name });
-    return sprintf(\"<%s%{ %s='%s'%}>\", name, (array)args);
+    return low_mktag(name, args) + \">\";
   }
 
   string end_tag() {
