@@ -332,6 +332,20 @@ string get_version()
     }
     if (best) return "uLPC v" + best;
   }
+  if (!Stdio.exist("src/svalue.c")) {
+    // Not the Pike source proper.
+    // Probably a module of some sort.
+    if (Stdio.exist("lib/modules/Remote.pmod/Client.pike")) {
+      return "pike_modules/Remote";
+    }
+    if (Stdio.exist("lib/modules/Protocols.pmod/IMAP.pmod/server.pike")) {
+      return "pike_modules/Protocols.IMAP";
+    }
+    if (Stdio.exist("src/post_modules/GL/gen.pike")) {
+      return "pike_modules/GL";
+    }
+  }
+
   error("Unable to determine version of Pike!\n");
   return UNDEFINED;
 }
@@ -341,6 +355,7 @@ void extract_autodoc(mapping(string:array(string)) src_commit)
   if (verbose) {
     progress("Extracting... ");
   }
+  rm("build/autodoc.xml.stamp");
   rm("build/autodoc.xml");
   string imgsrc;
   foreach(({"refdoc/src_images", "src/modules/Image/doc", "tutorial" }),
