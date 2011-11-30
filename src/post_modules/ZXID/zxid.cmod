@@ -439,15 +439,19 @@ PIKECLASS Configuration {
       char *res;
       int res_len = 0;
       struct Configuration_struct *config = parent_storage(1);
+      zxid_ses *ses = &THIS->ses;
 
       init_string_builder_alloc(&mutable_query, query->len, query->size_shift);
       string_builder_shared_strcat(&mutable_query, query);
 
+      THREADS_ALLOW();
+
       /* Let the library handle metadata. */
       res = zxid_simple_cf_ses(&config->conf, mutable_query.s->len,
-			       mutable_query.s->str,
-			       &THIS->ses, &res_len,
+			       mutable_query.s->str, ses, &res_len,
 			       ZXID_AUTO_METAC|ZXID_AUTO_FMTJ);
+
+      THREADS_DISALLOW();
 
       free_string_builder(&mutable_query);
 
