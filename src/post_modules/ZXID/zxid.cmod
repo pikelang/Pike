@@ -108,7 +108,7 @@ PIKECLASS Configuration {
     zx_free_ctx(ctx);
   }
 
-  /*! @decl void create(string|mapping(string(0..255):string(0..255)) conf)
+  /*! @decl void create(string|mapping(string:string) conf)
    *!
    *!   Create a new @[Configuration].
    *!
@@ -118,16 +118,16 @@ PIKECLASS Configuration {
    *!   or as a mapping of parameter settings. These are the most
    *!   common parameters:
    *!   @mapping
-   *!     @member string(0..255) "PATH"
+   *!     @member string "PATH"
    *!       Path to the directory containing the @expr{"zxid.conf"@}
    *!       file.
-   *!     @member string(0..255) "URL"
+   *!     @member string "URL"
    *!       URL of the SP.
-   *!     @member string(0..255) "CDC_URL"
+   *!     @member string "CDC_URL"
    *!       The Common Domain URL.
    *!   @endmapping
    */
-  PIKEFUN void create(mapping(string(0..255):string(0..255)) conf)
+  PIKEFUN void create(mapping(string:string) conf)
     flags ID_PROTECTED;
   {
     struct svalue *s;
@@ -422,7 +422,7 @@ PIKECLASS Configuration {
       }
     }
 
-    /*! @decl string(0..255) authenticate(string(0..255) query)
+    /*! @decl string authenticate(string query)
      *!
      *!   Authenticate via SAML given the query-string @[query].
      *!
@@ -430,7 +430,7 @@ PIKECLASS Configuration {
      *!   Returns JSON-encoded data on success, and various other
      *!   strings otherwise.
      */
-    PIKEFUN string(0..255) authenticate(string(0..255) query)
+    PIKEFUN string authenticate(string query)
     {
       struct string_builder mutable_query;
       char *res;
@@ -464,14 +464,14 @@ PIKECLASS Configuration {
 #undef THIS
 #define THIS THIS_CONFIGURATION
 
-  /*! @decl mapping(string(0..255):mapping(string(0..255):string(0..255))) idp_list()
+  /*! @decl mapping(string:mapping(string:string)) idp_list()
    *!
    *!   Return a list of known identity providers.
    *!
    *! @returns
    *!   Returns a mapping from IdP EID to display name (if any).
    */
-  PIKEFUN mapping(string(0..255):mapping(string(0..255):string(0..255))) idp_list()
+  PIKEFUN mapping(string:mapping(string:string)) idp_list()
   {
     zxid_entity *idp = zxid_load_cot_cache(&THIS->conf);
     int cnt = 0;
