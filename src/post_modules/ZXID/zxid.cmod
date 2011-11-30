@@ -190,9 +190,6 @@ PIKECLASS Configuration {
 #define CHECK_ARG_CSTR_LIST(ARG, FIELD)				\
     CHECK_ARG_PARSER_FUNC(ARG, FIELD, zxid_load_cstr_list)
 
-
-    CHECK_ARG_INT(MK_STRING("AUTO_CERT"), THIS->conf.auto_cert);
-
     CHECK_ARG_INT(MK_STRING("AUTO_CERT"), THIS->conf.auto_cert);
     CHECK_ARG_INT(MK_STRING("AUTHN_REQ_SIGN"), THIS->conf.authn_req_sign);
     CHECK_ARG_INT(MK_STRING("ACT"), THIS->conf.log_act);
