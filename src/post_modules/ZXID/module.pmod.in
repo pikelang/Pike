@@ -24,6 +24,8 @@ class Configuration
   {
     mapping(string(0..255):string(0..255)) conf = ([]);
 
+    if (!Stdio.exist(file)) return conf;
+
     Stdio.File f = Stdio.File(file, "r");
     foreach(f->line_iterator(1);; string line) {
       foreach(line/"&", string frag) {
@@ -77,7 +79,7 @@ class Configuration
     //!       Returns a mapping when interaction with the browser
     //!       is needed.
     //!     @type string
-    //!       Returns a string on some unsupported actions.
+    //!       Returns a string to ask for some specific actions.
     //!     @type zero
     //!       Returns @expr{0@} (zero) on successfull authentication.
     //!       @[auth_info] will be set with the corresponding user information.
