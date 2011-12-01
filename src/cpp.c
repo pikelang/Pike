@@ -1816,6 +1816,7 @@ void f_cpp(INT32 args)
     if(charset_sv->type == T_STRING) {
       charset = charset_sv->u.string;
       push_string(data);
+      this.data = data = NULL;
       ref_push_string(charset);
       if (!safe_apply_handler ("decode_charset", this.handler,
 			       this.compat_handler, 2, BIT_STRING)) {
@@ -1823,7 +1824,6 @@ void f_cpp(INT32 args)
 			      charset);
 	Pike_error("Unknown charset.\n");
       }
-      free(data);
       this.data = data = sp[-1].u.string;
       sp--;
       dmalloc_touch_svalue(sp);
