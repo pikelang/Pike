@@ -345,9 +345,9 @@ PIKECLASS Backend
   /*
    * CALL OUT variables
    */
-  CVAR int num_pending_calls;           /* no of busy pointers in buffer */
-  CVAR call_out **call_buffer;  /* pointer to buffer */
-  CVAR int call_buffer_size;     /* no of pointers in buffer */
+  CVAR int num_pending_calls;	/* no of busy pointers in heap */
+  CVAR call_out **call_heap;	/* pointer to heap */
+  CVAR int call_heap_size;	/* no of pointers in heap */
   
   CVAR unsigned int hash_size;
   CVAR unsigned int hash_order;
@@ -455,7 +455,7 @@ PIKECLASS Backend
 #define CAR(X) (((X)<<1)+1)
 #define CDR(X) (((X)<<1)+2)
 #define PARENT(X) (((X)-1)>>1)
-#define CALL_(X) (me->call_buffer[(X)])
+#define CALL_(X) (me->call_heap[(X)])
 #define CALL(X) ((struct call_out_s *)debug_malloc_pass(CALL_(X)))
 #define MOVECALL(X,Y) do { INT32 p_=(X); (CALL_(p_)=CALL(Y))->pos=p_; }while(0)
 #define CMP(X,Y) my_timercmp(& CALL(X)->tv, <, & CALL(Y)->tv)
@@ -481,9 +481,9 @@ PIKECLASS Backend
      int e,d;
      
      if(!d_flag) return;
-     if(!me->call_buffer) return;
+     if(!me->call_heap) return;
 
-     if(me->num_pending_calls<0 || me->num_pending_calls>me->call_buffer_size)
+     if(me->num_pending_calls<0 || me->num_pending_calls>me->call_heap_size)
        Pike_fatal("Error in call out tables.\n");
 
      if(d_flag<2) return;
@@ -525,8 +525,8 @@ PIKECLASS Backend
        }
      }
      
-     for(d=0;d<10 && e<me->call_buffer_size;d++,e++) {
-       if (CALL(e)) Pike_fatal("Call out left in buffer.\n");
+     for(d=0;d<10 && e<me->call_heap_size;d++,e++) {
+       if (CALL(e)) Pike_fatal("Call out left in heap.\n");
      }
 
      for(e=0;e<(int)me->hash_size;e++)
@@ -625,35 +625,37 @@ PIKECLASS Backend
      fun_hval = hash_svalue(Pike_sp + 1 - num_arg);
 
      PROTECT_CALL_OUTS();
-     if(me->num_pending_calls==me->call_buffer_size)
+     if(me->num_pending_calls == me->call_heap_size)
      {
        /* here we need to allocate space for more pointers */
-       call_out **new_buffer;
+       call_out **new_heap;
 
-       if(!me->call_buffer)
+       if(!me->call_heap)
        {
-	 me->call_buffer_size=128;
-	 me->call_buffer=(call_out **)xalloc(sizeof(call_out *)*me->call_buffer_size);
-	 if(!me->call_buffer) return 0;
-	 MEMSET(me->call_buffer, 0, sizeof(call_out *)*me->call_buffer_size);
+	 me->call_heap_size = 128;
+	 me->call_heap =
+	   (call_out **)xalloc(sizeof(call_out *)*me->call_heap_size);
+	 if(!me->call_heap) return 0;
+	 MEMSET(me->call_heap, 0, sizeof(call_out *)*me->call_heap_size);
 	 me->num_pending_calls=0;
 	 
 	 me->hash_size=hashprimes[me->hash_order];
-	 me->call_hash=(struct hash_ent *)xalloc(sizeof(struct hash_ent)*me->hash_size);
+	 me->call_hash =
+	   (struct hash_ent *)xalloc(sizeof(struct hash_ent)*me->hash_size);
 	 MEMSET(me->call_hash, 0, sizeof(struct hash_ent)*me->hash_size);
        }else{
 	 struct hash_ent *new_hash;
 	 int e;
 	 
-	 new_buffer = (call_out **)
-	   realloc((char *)me->call_buffer,
-		   sizeof(call_out *)*me->call_buffer_size*2);
-	 if(!new_buffer)
+	 new_heap = (call_out **)
+	   realloc((char *)me->call_heap,
+		   sizeof(call_out *)*me->call_heap_size*2);
+	 if(!new_heap)
 	   Pike_error("Not enough memory for another call_out\n");
-	 MEMSET(new_buffer + me->call_buffer_size, 0,
-		sizeof(call_out *)*me->call_buffer_size);
-	 me->call_buffer_size*=2;
-	 me->call_buffer=new_buffer;
+	 MEMSET(new_heap + me->call_heap_size, 0,
+		sizeof(call_out *)*me->call_heap_size);
+	 me->call_heap_size *= 2;
+	 me->call_heap = new_heap;
 
 	 if((new_hash=(struct hash_ent *)malloc(sizeof(struct hash_ent)*
 						hashprimes[me->hash_order+1])))
@@ -690,7 +692,7 @@ PIKECLASS Backend
 
 #ifdef PIKE_DEBUG
      if (CALL(me->num_pending_calls)) {
-       Pike_fatal("Lost call out in buffer.\n");
+       Pike_fatal("Lost call out in heap.\n");
      }
 #endif /* PIKE_DEBUG */
      
@@ -775,7 +777,7 @@ PIKECLASS Backend
     push_int(me->num_pending_calls);
 
     push_text("call_out_bytes");     
-    push_int64(me->call_buffer_size * sizeof(call_out **)+
+    push_int64(me->call_heap_size * sizeof(call_out **)+
 	       me->num_pending_calls * sizeof(call_out));
 
   }
@@ -2080,8 +2082,8 @@ PIKECLASS Backend
     INVALIDATE_CURRENT_TIME(); /* Why? /mast */
 
     me->num_pending_calls=0;
-    me->call_buffer=0;
-    me->call_buffer_size=0;
+    me->call_heap = 0;
+    me->call_heap_size = 0;
     me->hash_size=0;
     me->hash_order=5;
     me->call_hash=0;
@@ -2202,8 +2204,8 @@ PIKECLASS Backend
       really_free_call_out(CALL(e));
     }
     me->num_pending_calls=0;
-    if(me->call_buffer) free((char*)me->call_buffer);
-    me->call_buffer=NULL;
+    if(me->call_heap) free((char*)me->call_heap);
+    me->call_heap = NULL;
     if(me->call_hash) free((char*)me->call_hash);
     me->call_hash=NULL;
 
