@@ -36,6 +36,7 @@
 #include "mapping.h"
 #include "svalue.h"
 #include "gc.h"
+#include "module_support.h"
 
 /*
  * Things to do
@@ -131,33 +132,12 @@ static int compat_box_dispatcher (struct fd_callback_box *box, int event);
 
 /* CALL OUT STUFF */
 
-struct call_out_s
-{
-  INT32 pos;
-  size_t fun_hval;
-  struct timeval tv;
-  struct call_out_s *next_fun;
-  struct call_out_s **prev_fun;
-  struct call_out_s *next_arr;
-  struct call_out_s **prev_arr;
-  struct object *caller;
-  struct array *args;
-};
-
-/* MUST be after any include of "block_alloc_h.h"! */
-#include "block_alloc.h"
-
-#undef BLOCK_ALLOC_NEXT
-#define BLOCK_ALLOC_NEXT	next_fun
-
 #ifdef PIKE_DEBUG
 #define MESS_UP_BLOCK(X) do {\
- (X)->next_arr=(struct call_out_s *)(ptrdiff_t)-1; \
- (X)->next_fun=(struct call_out_s *)(ptrdiff_t)-1; \
- (X)->prev_arr=(struct call_out_s **)(ptrdiff_t)-1; \
- (X)->prev_fun=(struct call_out_s **)(ptrdiff_t)-1; \
- (X)->caller=(struct object *)(ptrdiff_t)-1; \
- (X)->args=(struct array *)(ptrdiff_t)-1; \
+ (X)->next_arr=(struct Backend_CallOut_struct *)(ptrdiff_t)-1; \
+ (X)->next_fun=(struct Backend_CallOut_struct *)(ptrdiff_t)-1; \
+ (X)->prev_arr=(struct Backend_CallOut_struct **)(ptrdiff_t)-1; \
+ (X)->prev_fun=(struct Backend_CallOut_struct **)(ptrdiff_t)-1; \
  (X)->pos=-1; \
  } while(0)
 #else
@@ -172,17 +152,11 @@ struct call_out_s
   if(X->next_fun) X->next_fun->prev_fun=X->prev_fun; \
   MESS_UP_BLOCK(X); \
   } while(0)
-BLOCK_ALLOC_FILL_PAGES(call_out_s, 2)
-
-#define alloc_call_out()	debug_malloc_pass(alloc_call_out_s())
-#define really_free_call_out(X)	really_free_call_out_s(debug_malloc_pass(X))
-
-typedef struct call_out_s call_out;
 
 struct hash_ent
 {
-  call_out *arr;
-  call_out *fun;
+  struct Backend_CallOut_struct *arr;
+  struct Backend_CallOut_struct *fun;
 };
 
 
@@ -345,9 +319,9 @@ PIKECLASS Backend
   /*
    * CALL OUT variables
    */
-  CVAR int num_pending_calls;	/* no of busy pointers in heap */
-  CVAR call_out **call_heap;	/* pointer to heap */
-  CVAR int call_heap_size;	/* no of pointers in heap */
+  CVAR int num_pending_calls;		    /* no of busy pointers in heap */
+  CVAR struct Backend_CallOut_struct **call_heap;   /* pointer to heap */
+  CVAR int call_heap_size;		    /* no of pointers in heap */
   
   CVAR unsigned int hash_size;
   CVAR unsigned int hash_order;
@@ -449,6 +423,23 @@ PIKECLASS Backend
    * Call outs.
    */
 
+  PIKECLASS CallOut
+    program_flags PROGRAM_USES_PARENT;
+    flags ID_PROTECTED|ID_PRIVATE|ID_USED;
+  {
+    CVAR INT32 pos;
+    CVAR size_t fun_hval;
+    CVAR struct timeval tv;
+    CVAR struct Backend_CallOut_struct *next_fun;
+    CVAR struct Backend_CallOut_struct **prev_fun;
+    CVAR struct Backend_CallOut_struct *next_arr;
+    CVAR struct Backend_CallOut_struct **prev_arr;
+    PIKEVAR array args
+      flags ID_STATIC;
+    CVAR struct object *this;
+
+    DECLARE_STORAGE;
+
 #undef CAR
 #undef CDR
 
@@ -456,10 +447,10 @@ PIKECLASS Backend
 #define CDR(X) (((X)<<1)+2)
 #define PARENT(X) (((X)-1)>>1)
 #define CALL_(X) (me->call_heap[(X)])
-#define CALL(X) ((struct call_out_s *)debug_malloc_pass(CALL_(X)))
+#define CALL(X) ((struct Backend_CallOut_struct *)debug_malloc_pass(CALL_(X)))
 #define MOVECALL(X,Y) do { INT32 p_=(X); (CALL_(p_)=CALL(Y))->pos=p_; }while(0)
 #define CMP(X,Y) my_timercmp(& CALL(X)->tv, <, & CALL(Y)->tv)
-#define SWAP(X,Y) do{ call_out *_tmp=CALL(X); (CALL_(X)=CALL(Y))->pos=(X); (CALL_(Y)=_tmp)->pos=(Y); } while(0)
+#define SWAP(X,Y) do{ struct Backend_CallOut_struct *_tmp=CALL(X); (CALL_(X)=CALL(Y))->pos=(X); (CALL_(Y)=_tmp)->pos=(Y); } while(0)
 
 #ifdef PIKE_DEBUG
 #define PROTECT_CALL_OUTS() \
@@ -531,7 +522,7 @@ PIKECLASS Backend
 
      for(e=0;e<(int)me->hash_size;e++)
      {
-       call_out *c,**prev;
+       struct Backend_CallOut_struct *c,**prev;
        for(prev=& me->call_hash[e].arr;(c=*prev);prev=& c->next_arr)
        {
 	 if(c->prev_arr != prev)
@@ -612,31 +603,64 @@ PIKECLASS Backend
      if(!adjust_up(me,pos)) adjust_down(me,pos);
    }
  
-    /* start a new call out, return 1 for success */
-    static struct array *new_call_out(struct Backend_struct *me,
-				      int num_arg)
+    INIT
     {
-      call_out *new;
-      struct array *args;
+      THIS->pos = -1;
+      THIS->this = Pike_fp->current_object;
+    }
+
+    EXIT
+    {
+      struct Backend_CallOut_struct *this = THIS;
+
+      if (this->pos >= 0) {
+	/* Still active in the heap. DO_PIKE_CLEANUP? */
+	struct Backend_struct *me = parent_storage(1);
+	int e = this->pos;
+
+	me->num_pending_calls--;
+	if (e != me->num_pending_calls) {
+	  MOVECALL(e, me->num_pending_calls);
+	  adjust(me, e);
+	}
+	CALL_(me->num_pending_calls) = NULL;
+	this->pos = -1;
+	free_object(this->this);
+	this->this = NULL;
+      }
+      EXIT_BLOCK(this);
+    }
+
+    /* Start a new call out */
+    PIKEFUN void create(int|float seconds, mixed fun, mixed ... extra_args)
+      flags ID_PROTECTED;
+    {
+      struct array *callable;
       size_t fun_hval;
       size_t hval;
-     
+      struct Backend_struct *me = parent_storage(1);
+      struct Backend_CallOut_struct *new = THIS;
+
+      push_array(callable = aggregate_array(args - 1));
+      args = 2;
+
       /* NOTE: hash_svalue() can run Pike code! */
-      fun_hval = hash_svalue(Pike_sp + 1 - num_arg);
+      fun_hval = hash_svalue(ITEM(callable));
 
       PROTECT_CALL_OUTS();
       if(me->num_pending_calls == me->call_heap_size)
       {
 	/* here we need to allocate space for more pointers */
-	call_out **new_heap;
+	struct Backend_CallOut_struct **new_heap;
 
 	if(!me->call_heap)
 	{
 	  me->call_heap_size = 128;
 	  me->call_heap =
-	    (call_out **)xalloc(sizeof(call_out *)*me->call_heap_size);
-	  if(!me->call_heap) return 0;
-	  MEMSET(me->call_heap, 0, sizeof(call_out *)*me->call_heap_size);
+	    (struct Backend_CallOut_struct **)xalloc(sizeof(struct Backend_CallOut_struct *) *
+					     me->call_heap_size);
+	  MEMSET(me->call_heap, 0, sizeof(struct Backend_CallOut_struct *) *
+		 me->call_heap_size);
 	  me->num_pending_calls = 0;
 
 	  me->hash_size = hashprimes[me->hash_order];
@@ -647,13 +671,13 @@ PIKECLASS Backend
 	  struct hash_ent *new_hash;
 	  int e;
 
-	  new_heap = (call_out **)
+	  new_heap = (struct Backend_CallOut_struct **)
 	    realloc((char *)me->call_heap,
-		    sizeof(call_out *)*me->call_heap_size*2);
+		    sizeof(struct Backend_CallOut_struct *)*me->call_heap_size*2);
 	  if(!new_heap)
 	    Pike_error("Not enough memory for another call_out\n");
 	  MEMSET(new_heap + me->call_heap_size, 0,
-		 sizeof(call_out *)*me->call_heap_size);
+		 sizeof(struct Backend_CallOut_struct *)*me->call_heap_size);
 	  me->call_heap_size *= 2;
 	  me->call_heap = new_heap;
 
@@ -668,7 +692,7 @@ PIKECLASS Backend
 	    /* Re-hash */
 	    for(e=0;e<me->num_pending_calls;e++)
 	    {
-	      call_out *c = CALL(e);
+	      struct Backend_CallOut_struct *c = CALL(e);
 	      hval = PTR_TO_INT(c->args);
 
 #define LINK(X,c)							\
@@ -687,17 +711,15 @@ PIKECLASS Backend
 	}
       }
 
-      /* time to allocate a new call_out struct */
-      push_array(args = aggregate_array(num_arg-1));
-
 #ifdef PIKE_DEBUG
       if (CALL(me->num_pending_calls)) {
 	Pike_fatal("Lost call out in heap.\n");
       }
 #endif /* PIKE_DEBUG */
 
-      CALL_(me->num_pending_calls) = new = alloc_call_out();
-      new->pos = me->num_pending_calls;
+      CALL_(me->num_pending_calls) = new;
+      new->pos = me->num_pending_calls++;
+      add_ref(Pike_fp->current_object);
 
       {
 	hval = PTR_TO_INT(args);
@@ -706,16 +728,16 @@ PIKECLASS Backend
 	LINK(fun,new);
       }
 
-      switch(TYPEOF(Pike_sp[-2]))
+      switch(TYPEOF(*seconds))
       {
       case T_INT:
-	new->tv.tv_sec = Pike_sp[-2].u.integer;
+	new->tv.tv_sec = seconds->u.integer;
 	new->tv.tv_usec = 0;
 	break;
 
       case T_FLOAT:
 	{
-	  FLOAT_TYPE tmp = Pike_sp[-2].u.float_number;
+	  FLOAT_TYPE tmp = seconds->u.float_number;
 	  new->tv.tv_sec = DO_NOT_WARN((long)floor(tmp));
 	  new->tv.tv_usec = DO_NOT_WARN((long)(1000000.0 * (tmp - floor(tmp))));
 	  break;
@@ -747,19 +769,10 @@ PIKECLASS Backend
 			tmp.tv_sec, tmp.tv_usec));
       }
 
-      if(Pike_fp && Pike_fp->current_object)
-      {
-	add_ref(new->caller = Pike_fp->current_object);
-      } else {
-	new->caller = 0;
-      }
-     
-      new->args = args;
+      new->args = callable;
       Pike_sp -= 2;
       dmalloc_touch_svalue(Pike_sp);
 
-
-      me->num_pending_calls++;
       adjust_up(me, me->num_pending_calls-1);
       backend_verify_call_outs(me);
      
@@ -768,8 +781,11 @@ PIKECLASS Backend
 #endif
      
       UNPROTECT_CALL_OUTS();
-      return args;
     }
+  }
+
+#undef THIS
+#define THIS THIS_BACKEND
 
   static void backend_count_memory_in_call_outs(struct Backend_struct *me)
   {
@@ -777,8 +793,8 @@ PIKECLASS Backend
     push_int(me->num_pending_calls);
 
     push_text("call_out_bytes");     
-    push_int64(me->call_heap_size * sizeof(call_out **)+
-	       me->num_pending_calls * sizeof(call_out));
+    push_int64(me->call_heap_size * sizeof(struct Backend_CallOut_struct **)+
+	       me->num_pending_calls * sizeof(struct Backend_CallOut_struct));
 
   }
 
@@ -820,8 +836,6 @@ PIKECLASS Backend
        for(e=0;e<me->num_pending_calls;e++)
        {
 	 gc_mark(CALL(e)->args,0,"call out args");
-	 if(CALL(e)->caller)
-	   gc_mark(CALL(e)->caller,0,"call out caller");
        }
      }
 #endif
@@ -848,7 +862,9 @@ PIKECLASS Backend
    PIKEFUN array call_out(mixed f, int|float t, mixed ... rest)
      {
        struct svalue tmp;
-       struct array *v;
+       struct object *co;
+       struct Backend_CallOut_struct *c;
+
        if(args<2)
 	 SIMPLE_TOO_FEW_ARGS_ERROR("call_out", 2);
 
@@ -859,9 +875,20 @@ PIKECLASS Backend
        tmp = Pike_sp[-args];
        Pike_sp[-args] = Pike_sp[1-args];
        Pike_sp[1-args] = tmp;
-       
-       v = new_call_out(THIS, args);
-       ref_push_array(v);
+
+       apply_current(Backend_CallOut_program_fun_num, args);
+       args = 1;
+
+       get_all_args("low_call_out", args, "%o", &co);
+
+       c = (struct Backend_CallOut_struct *)
+	 get_storage(co, Backend_CallOut_program);
+
+       if (!c) Pike_error("low_call_out(): Unexpected object from CallOut.\n");
+
+       ref_push_array(c->args);
+
+       stack_pop_n_elems_keep_top(args);
      }
 
    /* Assumes current_time is correct on entry. */
@@ -881,7 +908,7 @@ PIKECLASS Backend
        {
 	 struct timeval now;
 	 /* unlink call out */
-	 call_out c,*cc;
+	 struct Backend_CallOut_struct *cc;
 	 
 	 PROTECT_CALL_OUTS();
 	 cc=CALL(0);
@@ -892,13 +919,13 @@ PIKECLASS Backend
 	 }
 	 CALL_(me->num_pending_calls) = NULL;
 	 UNPROTECT_CALL_OUTS();
-	 c=*cc;
-	 really_free_call_out(cc);
-	 
-	 if(c.caller) free_object(c.caller);
-	 
-	 args=c.args->size;
-	 push_array_items(c.args);
+	 cc->pos = -1;
+
+	 args = cc->args->size;
+	 push_array_items(cc->args);
+	 cc->args = NULL;
+	 free_object(cc->this);
+
 	 check_destructed(Pike_sp - args);
 	 if(TYPEOF(Pike_sp[-args]) != T_INT)
 	 {
@@ -952,7 +979,7 @@ PIKECLASS Backend
 				    struct svalue *fun)
      {
        size_t hval, fun_hval;
-       call_out *c;
+       struct Backend_CallOut_struct *c;
        struct svalue *save_sp;
        
        if(!me->num_pending_calls) return -1;
@@ -1103,18 +1130,17 @@ PIKECLASS Backend
        backend_verify_call_outs(me);
        if(e!=-1)
        {
+	 struct Backend_CallOut_struct *c = CALL(e);
 	 struct timeval now;
+
 	 INACCURATE_GETTIMEOFDAY(&now);
 	 IF_CO (fprintf (stderr, "BACKEND[%d]: Removing call out at %ld.%ld "
 			 "(current_time is %ld.%ld)\n", me->id,
-			 CALL(e)->tv.tv_sec, CALL(e)->tv.tv_usec,
+			 c->tv.tv_sec, c->tv.tv_usec,
 			 now.tv_sec, now.tv_usec));
 	 pop_n_elems(args);
-	 push_int(CALL(e)->tv.tv_sec - now.tv_sec);
-	 free_array(CALL(e)->args);
-	 if(CALL(e)->caller)
-	   free_object(CALL(e)->caller);
-	 really_free_call_out(CALL(e));
+	 push_int(c->tv.tv_sec - now.tv_sec);
+
 	 me->num_pending_calls--;
 	 if(e!=me->num_pending_calls)
 	 {
@@ -1122,6 +1148,9 @@ PIKECLASS Backend
 	   adjust(me,e);
 	 }
 	 CALL_(me->num_pending_calls) = NULL;
+	 c->pos = -1;
+
+	 free_object(c->this);
        }else{
 	 pop_n_elems(args);
 	 /* NB: This is a very exotic value! */
@@ -1153,15 +1182,14 @@ PIKECLASS Backend
 	 struct array *v;
 	 v=allocate_array_no_init(CALL(e)->args->size+2, 0);
 	 ITEM(v)[0].u.integer=CALL(e)->tv.tv_sec - now.tv_sec;
-	 
-	 if(CALL(e)->caller)
-	 {
-	   SET_SVAL(ITEM(v)[1], T_OBJECT, 0, object, CALL(e)->caller);
-	   add_ref(CALL(e)->caller);
-	   v->type_field = BIT_INT|BIT_OBJECT;
-	 }else{
-	   v->type_field = BIT_INT;
-	 }
+
+	 /* FIXME: ITEM(v)[1] used to be the current object
+	  *        from when the call_out was created, but
+	  *        that is always the backend since the
+	  *        backend.cmod rewrite.
+	  *        Now we just leave it zero.
+	  */
+	 v->type_field = BIT_INT;
 
 	 v->type_field |=
 	   assign_svalues_no_free(ITEM(v)+2,
@@ -1186,8 +1214,8 @@ PIKECLASS Backend
  *! @array
  *!   @elem int time_left
  *!     Time remaining in seconds until the call_out is to be performed.
- *!   @elem object caller
- *!     The object that scheduled the call_out.
+ *!   @elem int(0..0) zero
+ *!     Used to be the object that scheduled the call_out.
  *!   @elem function fun
  *!     Function to be called.
  *!   @elem mixed ... args
@@ -1757,12 +1785,9 @@ PIKECLASS Backend
     int e;
 
     for (e = 0; e < me->num_pending_calls; e++) {
-      if (CALL(e)->caller)
-	debug_gc_check (CALL(e)->caller,
-			" as caller for call out in backend object");
-      if (CALL(e)->args)
-	debug_gc_check (CALL(e)->args,
-			" as args for call out in backend object");
+      if (CALL(e)->this)
+	debug_gc_check (CALL(e)->this,
+			" as call out in backend object");
     }
 
     {FOR_EACH_ACTIVE_FD_BOX (me, box) {
@@ -1786,10 +1811,8 @@ PIKECLASS Backend
     int e;
 
     for (e = 0; e < me->num_pending_calls; e++) {
-      if (CALL(e)->caller)
-	gc_recurse_object (CALL(e)->caller);
-      if (CALL(e)->args)
-	gc_recurse_array (CALL(e)->args);
+      if (CALL(e)->this)
+	gc_recurse_short_svalue ((union anything *) &CALL(e)->this, T_OBJECT);
     }
 
     {FOR_EACH_ACTIVE_FD_BOX (me, box) {
@@ -2199,9 +2222,9 @@ PIKECLASS Backend
     backend_verify_call_outs(me);
     for(e=0;e<me->num_pending_calls;e++)
     {
-      free_array(CALL(e)->args);
-      if(CALL(e)->caller) free_object(CALL(e)->caller);
-      really_free_call_out(CALL(e));
+      CALL(e)->pos = -1;
+      if (CALL(e)->this)
+	free_object(CALL(e)->this);
     }
     me->num_pending_calls=0;
     if(me->call_heap) free((char*)me->call_heap);
@@ -5017,8 +5040,6 @@ static struct callback *mem_callback;
 
 void init_backend(void)
 {
-  IF_CO(fprintf(stderr, "BACKEND: Init call_out...\n"));
-  init_call_out_s_blocks();
   IF_PD(fprintf(stderr, "BACKEND: Init compat callback boxes...\n"));
   init_compat_cb_box_blocks();
   IF_PD(fprintf(stderr, "BACKEND: INIT...\n"));
@@ -5076,7 +5097,6 @@ static void backend_cleanup()
     num_pdb_backends = 0;
   }
 #endif /* OPEN_POLL_DEVICE */
-  free_all_call_out_s_blocks();
   free_all_compat_cb_box_blocks();
   if(fd_map)
   {
