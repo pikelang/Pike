@@ -448,6 +448,7 @@ void build_box(Node n, String.Buffer ret, string first, string second, function 
   nicebox(rows, ret);
 }
 
+//! Typically called with a <group/> node or a sub-node that is a container.
 string parse_text(Node n, void|String.Buffer ret) {
   if(n->get_node_type()==XML_TEXT && n->get_text()) {
     if(ret)
@@ -543,10 +544,17 @@ string parse_text(Node n, void|String.Buffer ret) {
     case "mapping":
       build_box(c, ret, "group", "member",
 		lambda(Node n) {
-		  return "<font color='green'>" +
-		    parse_text(n->get_first_element("index")) +
-		    "</font> : " +
-		    parse_type(get_first_element(n->get_first_element("type")));
+		  string res = "";
+		  Node nn = n->get_first_element("index");
+		  if (nn) {
+		    res +=
+		      "<font color='green'>" + parse_text(nn) + "</font> : ";
+		  }
+		  nn = n->get_first_element("type");
+		  if (nn) {
+		    res += parse_type(get_first_element(nn));
+		  }
+		  return res;
 		});
       break;
 
@@ -791,7 +799,7 @@ string parse_doc(Node n, void|int no_text) {
 }
 
 string parse_type(Node n, void|string debug) {
-  if(n->get_node_type()!=XML_ELEMENT)
+  if(!n || (n->get_node_type()!=XML_ELEMENT))
     return "";
 
   string ret = "";
