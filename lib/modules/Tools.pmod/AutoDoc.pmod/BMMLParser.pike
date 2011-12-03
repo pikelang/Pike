@@ -371,7 +371,10 @@ string convert_page(string path, string fname,
   cont = cont||read_bytes(path);
 
 //  perror("foo: "+path[strlen(path)-5..]+".\n");
-  if(sscanf(cont,"NAME\n\t%s - %s\n",name,short))
+  if(sscanf(cont,"NAME\n\t%s - %s\n",name,short) ||
+     // Both of the following are broken syntax.
+     sscanf(cont,"NAME\t\n\t%s - %s\n",name,short) ||
+     sscanf(cont,"NAME\n    %*[\t ]%s - %s\n",name,short))
   {
     cont=html_quote(cont);
 
@@ -418,11 +421,13 @@ string convert_page(string path, string fname,
       /* Merge sections that do not have a header together */
       for(section=0;section<sizeof(sections);section++)
       {
+	string section_header = "";
 	if (has_prefix(sections[section], "\n"))
 	  sections[section] = sections[section][1..];
-	if(!strlen(sections[section]) ||
-	   sections[section][0] < 'A' ||
-	   sections[section][0] > 'Z')
+	sscanf(sections[section], "%s\n", section_header);
+	if(!strlen(String.trim_all_whites(section_header)) ||
+	   upper_case(section_header) != section_header ||
+	   lower_case(section_header) == section_header)
 	{
 	  sections[section-1]+="\n\n"+sections[section];
 	  sections=sections[0..section-1]+sections[section+1..0x7fffffff];
@@ -441,8 +446,10 @@ string convert_page(string path, string fname,
 
 	switch(type)
 	{
+	case "NAME\t":
 	case "NAME":
-	  if(sscanf(rest,"\t%s - %s",part_name,b)!=2)
+	  if((sscanf(rest, "\t%s - %s", part_name, b)!=2) &&
+	     (sscanf(rest,"    %*[\t ]%s - %s", part_name, b) != 3))
 	    perror("Warning NAME section broken!\n");
 
 	  section_path = module_path + part_name/".";
@@ -457,14 +464,26 @@ string convert_page(string path, string fname,
 	case "RETURN VALUES":
 	case "DESCRIPTION":
 	case "DESCRIPITON":	// Common typo.
+	case "COPYRIGHT":
 	case "NOTA BENE":
+	case "WARNING":
+	case "THANKS":
 	case "BUGS":
 	  rest=magic(rest, 0);
 	  break;
+	case "NOTES":
+	case "NOTES, TODOs AND OTHER THINGS":
+	  type = "NOTES";
+	  rest=magic(rest, 0);
+	  break;
+	case "AUTHOR":
+	  rest=magic("Author\n\n" + rest, 0);
+	  break;
 
 	default:
-	  perror("Warning: Unknown header on page "+path+": "+type+".\n");
-	  rest=magic(rest,0);
+	  werror("Warning: Unknown section header on page %O: %O\n",
+		 path, type);
+	  rest=magic(type + "\n\n" + rest,0);
 	  break;
 
 	case "KEYWORD":
@@ -490,6 +509,7 @@ string convert_page(string path, string fname,
 	case "SYNTAX":
 	case "SYNTAX EXAMPLE":
 	case "SYNAX":	// Common typo.
+	case "STRING":	// Common typo.
 	  if(search(rest,name+"(")!=-1) efuns[name]=1;
 	  rest=syntax_magic(rest);
 	  break;
@@ -515,10 +535,13 @@ string convert_page(string path, string fname,
 	  "RETURN VALUE":"<returns/>",
 	  "RETURN VALUES":"<returns/>",
 	  "NOTA BENE":"<note/>",
+	  "WARNING":"<note/>",
 	  "BUGS":"<bugs/>",
 	  "SEE ALSO":"<seealso/>",
 	  "EXAMPLE":"<example/>",
 	  "EXAMPLES":"<example/>",
+	  "THANKS":"<thanks/>",
+	  "COPYRIGHT":"<copyright/>",
 	])[type];
 
 	if (type) {

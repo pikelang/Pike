@@ -80,12 +80,14 @@ mapping(string : DocTokenType) keywordtype =
   "deprecated" : SINGLEKEYWORD,
 
   "bugs" : DELIMITERKEYWORD,
+  "copyright" : DELIMITERKEYWORD,
   "example" : DELIMITERKEYWORD,
   "fixme" : DELIMITERKEYWORD,
   "note" : DELIMITERKEYWORD,
   "param" : DELIMITERKEYWORD,
   "returns" : DELIMITERKEYWORD,
   "seealso" : DELIMITERKEYWORD,
+  "thanks" : DELIMITERKEYWORD,
   "throws" : DELIMITERKEYWORD,
 
   "code" : CONTAINERKEYWORD,
@@ -126,7 +128,8 @@ mapping(string:array(string)) required_attributes =
 ]);  
 
 protected constant standard = (<
-  "note", "bugs", "example", "seealso", "deprecated", "fixme", "code"
+  "note", "bugs", "example", "seealso", "deprecated", "fixme", "code",
+  "copyright", "thanks",
 >);
 
 mapping(string : multiset(string)) allowedChildren =

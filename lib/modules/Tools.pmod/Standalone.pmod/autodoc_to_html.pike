@@ -764,8 +764,10 @@ string parse_doc(Node n, void|int no_text) {
       break;
 
     case "bugs":
+    case "copyright":
     case "note":
     case "returns":
+    case "thanks":
     case "throws":
       ret += lay->dochead + String.capitalize(name) + lay->_dochead;
       if (c = c->get_first_element("text")) {

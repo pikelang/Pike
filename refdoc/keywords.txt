@@ -221,6 +221,17 @@ Examples:
 XML:          <bugs/>
 _______________________________________________________________________________
 
+Keyword:      @copyright
+Description:  Inform about implementor(s) and/or license.
+Arguments:    -
+Children:     Text (with markup).
+Groups with:  -
+Examples:     //! @copyright
+              //!  Licenced under single-clause BSD.
+
+XML:          <copyright/>
+_______________________________________________________________________________
+
 Keyword:      @deprecated
 Description:  Documents the fact that the entity is deprecated by one
               or several other classes/modules/methods/variables.
@@ -324,6 +335,19 @@ Examples:     //! @seealso
               //!  @[calc_checksum_w()] is used for wide strings.
 
 XML:          <seealso/>
+_______________________________________________________________________________
+
+Keyword:      @thanks
+Description:  Inform about people and/or organisations that have helped
+	      with the implementation.
+Arguments:    -
+Children:     Text (with markup).
+Groups with:  -
+Examples:     //! @thanks
+              //!  Thanks to Lysator Academic Computer Society for
+	      //!  providing computer resources for testing this.
+
+XML:          <thanks/>
 _______________________________________________________________________________
 
 Keyword:      @throws
