@@ -399,6 +399,7 @@ string extract(string filename, string imgdest,
 		       }));
       }
     }
+    file = replace(file, "Myslq", "Mysql");
     Tools.AutoDoc.BMMLParser bmml_parser = Tools.AutoDoc.BMMLParser();
     return bmml_parser->convert_page(filename, basename(filename), file, flags);
   }
@@ -433,6 +434,12 @@ string extract(string filename, string imgdest,
 		    "Calendar.pmod/Stardate.pmod":
 		    "//! module Calendar\n"
 		    "//\n",
+		    "Calendar_I.pmod/Gregorian.pmod":
+		    "//! module Calendar_I\n"
+		    "//\n",
+		    "Calendar_I.pmod/Stardate.pmod":
+		    "//! module Calendar_I\n"
+		    "//\n",
 		  ]); string suffix; string lines) {
 	    if (has_suffix(filename, suffix) &&
 		!has_value(file, (lines/"\n")[0])) {
@@ -466,6 +473,30 @@ string extract(string filename, string imgdest,
 		    }), ({
 		      "simplifying work for custom classes that\n"
 		      "**""!\tinherit <ref>Parser.HTML</ref>.",
+		    }) }),
+		    "/Calendar.pmod/Islamic.pmod":
+		    ({ ({
+		      "//! submodule Gregorian\n",
+		    }), ({
+		      "//! submodule Islamic\n",
+		    }) }),
+		    "/Calendar_I.pmod/Gregorian.pmod":
+		    ({ ({
+		      "//! module Calendar\n",
+		    }), ({
+		      "//! module Calendar_I\n",
+		    }) }),
+		    "/Calendar_I.pmod/Stardate.pmod":
+		    ({ ({
+		      "//! module Calendar\n",
+		    }), ({
+		      "//! module Calendar_I\n",
+		    }) }),
+		    "/Calendar_I.pmod/module.pmod":
+		    ({ ({
+		      "//! module Calendar\n",
+		    }), ({
+		      "//! module Calendar_I\n",
 		    }) }),
 		  ]); string suffix; array(array(string)) repl) {
 	    if (has_suffix(filename, suffix)) {
