@@ -397,36 +397,38 @@ void extract_autodoc(mapping(string:array(string)) src_commit)
   }
   prev_img = img;
 
+  string timestamp = (src_commit->author[0]/" ")[-2];
+
   if (verbose) {
     progress("Extracting from src... ");
   }
   Tools.Standalone.extract_autodoc()->
-    main(9, ({ "extract_autodoc", "-q", "--compat",
-	       "--keep-going", "--no-dynamic",
-	       "--srcdir=src",
-	       "--imgsrc=" + imgsrc,
-	       "--builddir=build/doc/src",
-	       "--imgdir=build/doc/images" }));
+    main(11, ({ "extract_autodoc", "-q", "--compat",
+		"--keep-going", "--no-dynamic",
+		"--srcdir=src", "--source-timestamp", timestamp,
+		"--imgsrc=" + imgsrc,
+		"--builddir=build/doc/src",
+		"--imgdir=build/doc/images" }));
   if (verbose) {
     progress("Extracting from lib... ");
   }
   Tools.Standalone.extract_autodoc()->
-    main(9, ({ "extract_autodoc", "-q", "--compat",
-	       "--keep-going", "--no-dynamic",
-	       "--srcdir=lib",
-	       "--imgsrc=" + imgsrc,
-	       "--builddir=build/doc/lib",
-	       "--imgdir=build/doc/images" }));
+    main(11, ({ "extract_autodoc", "-q", "--compat",
+		"--keep-going", "--no-dynamic",
+		"--srcdir=lib", "--source-timestamp", timestamp,
+		"--imgsrc=" + imgsrc,
+		"--builddir=build/doc/lib",
+		"--imgdir=build/doc/images" }));
   if (verbose) {
     progress("Extracting from doc... ");
   }
   Tools.Standalone.extract_autodoc()->
-    main(9, ({ "extract_autodoc", "-q", "--compat",
-	       "--keep-going", "--no-dynamic",
-	       "--srcdir=doc",
-	       "--imgsrc=" + imgsrc,
-	       "--builddir=build/doc/doc",
-	       "--imgdir=build/doc/images" }));
+    main(11, ({ "extract_autodoc", "-q", "--compat",
+		"--keep-going", "--no-dynamic",
+		"--srcdir=doc", "--source-timestamp", timestamp,
+		"--imgsrc=" + imgsrc,
+		"--builddir=build/doc/doc",
+		"--imgdir=build/doc/images" }));
   if (verbose) {
     progress("Joining... ");
   }
