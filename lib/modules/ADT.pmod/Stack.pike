@@ -118,6 +118,19 @@ array _values() {
   return arr[..ptr-1];
 }
 
+//! Return the stack-depth to @[item].
+//!
+//! This function makes it possible to use
+//! eg @[search()] and @[has_value()] on the stack.
+protected int _search(mixed item)
+{
+  int i;
+  for (i = ptr; i--;) {
+    if (arr[i] == item) return ptr-(i+1);
+  }
+  return -1;
+}
+
 //! A stack added with another stack yields a third
 //! a third stack will all the stack elements from
 //! the two first stacks.
