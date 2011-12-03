@@ -45,7 +45,11 @@
  *
  *   [X] Export the generated images.
  *
- *   [ ] Remove obsoleted images.
+ *   [/] Remove/update obsoleted images.
+ *       [X] Export only generated images that are referred
+ *           to from autodoc.xml.
+ *       [/] Images should be regenerated when the lena() image
+ *           changes.
  *
  *   [ ] The BMML export is semi-broken for:
  *       [ ] Constants (PI).
@@ -59,9 +63,9 @@
  *
  *   [X] Fix output when compiling code in MirarDoc compat mode.
  *
- *   [ ] Generated xml file from MirarDoc isn't stable.
+ *   [X] Generated xml file from MirarDoc isn't stable.
  *
- *   [ ] Generated html output isn't stable.
+ *   [X] Generated html output isn't stable.
  *
  *   [X] Reduce output for stage:
  *       [X] Extract wrapper
@@ -82,6 +86,9 @@
  *       [ ] Autodoc HTML-splitter
  *
  *   [X] Support extraction of BMML?
+ *
+ *   [X] Speed up the joiner by having the extractor generate
+ *       separate stamp files and xml-files.
  *
  *   [ ] Improve error diagnostics (eg file and line for parser errors).
  *
@@ -350,6 +357,8 @@ string get_version()
   return UNDEFINED;
 }
 
+string prev_img;
+
 void extract_autodoc(mapping(string:array(string)) src_commit)
 {
   if (verbose) {
@@ -357,14 +366,37 @@ void extract_autodoc(mapping(string:array(string)) src_commit)
   }
   rm("build/autodoc.xml.stamp");
   rm("build/autodoc.xml");
+  string img;
   string imgsrc;
   foreach(({"refdoc/src_images", "src/modules/Image/doc", "tutorial" }),
 	  imgsrc) {
-    if (Stdio.exist(imgsrc + "/image_ill.pnm") ||
-	Stdio.exist(imgsrc + "/lena.ppm") ||
-	Stdio.exist(imgsrc + "/lena.gif") ||
-	Stdio.exist(imgsrc + "/lenna.rs")) break;
+    if (Stdio.exist(img = imgsrc + "/image_ill.pnm") ||
+	Stdio.exist(img = imgsrc + "/lena.ppm") ||
+	Stdio.exist(img = imgsrc + "/lena.gif") ||
+	Stdio.exist(img = imgsrc + "/lenna.rs")) break;
   }
+
+  if (img != prev_img) {
+    // We have a new lena() image.
+    //
+    // We need to invalidate the cached image documentation
+    // from the previous pass, so that the images can be
+    // regenerated with the new lena() image.
+    foreach(({ "src/modules/image",
+	       "src/modules/Image",
+	       "src/modules/Image/encodings",
+	    }),
+	    string module_dir) {
+      module_dir = "build/doc/" + module_dir;
+      if (Stdio.is_dir(module_dir)) {
+	foreach(get_dir(module_dir) || ({}), string fn) {
+	  if (has_suffix(fn, ".stamp")) rm(module_dir + "/" + fn);
+	}
+      }
+    }
+  }
+  prev_img = img;
+
   if (verbose) {
     progress("Extracting from src... ");
   }
@@ -410,10 +442,26 @@ void extract_autodoc(mapping(string:array(string)) src_commit)
   }
 }
 
+void export_images(Parser.XML.Tree.SimpleNode node,
+		   string img_src_dir, string img_dest_dir)
+{
+  if (!(< Parser.XML.Tree.XML_ROOT,
+	  Parser.XML.Tree.XML_ELEMENT >)[node->get_node_type()]) return;
+  if (node->get_tag_name() == "image") {
+    string fname = node->get_attributes()->file;
+    if (fname && Stdio.exist(img_src_dir + "/" + fname)) {
+      exporter->export(img_src_dir + "/" + fname, img_dest_dir + "/" + fname);
+    }
+  } else {
+    foreach(node->get_elements(), node) {
+      export_images(node, img_src_dir, img_dest_dir);
+    }
+  }
+}
+
 void assemble_autodoc(mapping(string:array(string)) src_commit)
 {
   exporter->export(combine_path(refdocdir, "src_images"), "images");
-  exporter->export("build/doc/images", "images");
   exporter->export(combine_path(refdocdir, "structure/modref.css"),
 		   "modref/modref.css");
   if (verbose) {
@@ -424,7 +472,11 @@ void assemble_autodoc(mapping(string:array(string)) src_commit)
   rm("build/modref.xml");
   string pike_version = get_version();
   string timestamp = (src_commit->author[0]/" ")[-2];
-  // FIXME: Get the timestamp as well.
+
+  Parser.XML.Tree.SimpleRootNode autodoc =
+    Parser.XML.Tree.simple_parse_file("build/autodoc.xml");
+  export_images(autodoc, "build/doc/images", "images");
+
   Tools.Standalone.assemble_autodoc()->
     main(10, ({ "assemble_autodoc", "-o", "build/onepage.xml",
 		"--keep-going", "--pike-version", pike_version,
