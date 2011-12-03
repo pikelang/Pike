@@ -17,6 +17,8 @@ int verbosity = Tools.AutoDoc.FLAG_NORMAL;
 
 int source_timestamp;
 
+// See the BMML rewriter further below about these values.
+// Not that there is both a start and an end sentinel.
 constant bmml_invalidation_times = ({
   0, 855275859, 855644314, 855648534, 855725630, 857038037, 0x7fffffff,
 });
@@ -398,7 +400,7 @@ string extract(string filename, string imgdest,
       }
     }
     Tools.AutoDoc.BMMLParser bmml_parser = Tools.AutoDoc.BMMLParser();
-    return bmml_parser->convert_page(filename, basename(filename), file);
+    return bmml_parser->convert_page(filename, basename(filename), file, flags);
   }
 
   int i;

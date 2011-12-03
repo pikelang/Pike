@@ -9,10 +9,8 @@
 #include <string.h>
 
 multiset efuns = mklist(indices(all_efuns())) | (<"sscanf","gauge","catch">);
-mapping pages = ([]);
 mapping short_descs = ([]);
 mapping keywords = ([]);
-mapping subpages = ([]);
 
 string new_path;
 string docdir;
@@ -247,6 +245,7 @@ void done(string a)
   pages_done[a]=1;
 }
 
+#if 0
 string mkindex(string topic, int usehead)
 {
   string head;
@@ -357,9 +356,11 @@ string mkindex(string topic, int usehead)
 
   return ret;
 }
+#endif
 
 /* Convert a page */
-string convert_page(string path, string fname, string|void cont)
+string convert_page(string path, string fname,
+		    string|void cont, .Flags|void flags)
 {
   string output, short;
   int headno;
@@ -372,15 +373,9 @@ string convert_page(string path, string fname, string|void cont)
 //  perror("foo: "+path[strlen(path)-5..]+".\n");
   if(sscanf(cont,"NAME\n\t%s - %s\n",name,short))
   {
-    string tmp;
-
     cont=html_quote(cont);
-    path=fippel_path(path);
 
     short_descs[html_quote(name)]=short;
-    pages[prefix+html_quote(name)]=path;
-    if(sscanf(name,"/precompiled/%s",tmp))
-      pages[prefix+html_quote(capitalize(tmp))]=path;
 
     string header = "";
     string trailer = "";
@@ -457,11 +452,6 @@ string convert_page(string path, string fname, string|void cont)
 	  
 	  rest="\t<tt>"+part_name+"</tt> - "+b;
 
-	  if(partno)
-	  {
-	    subpages[prefix+fname+"-&gt;"+part_name]=path+"#"+part_name;
-	  }
-
 	  // FALL_THROUGH
 	case "RETURN VALUE":
 	case "RETURN VALUES":
@@ -485,12 +475,7 @@ string convert_page(string path, string fname, string|void cont)
 	  {
 	    a=prefix+a;
 	    keywords[a] = ( keywords[a] || ({}) ) | ({ prefix+name });
-	    if(pages[a])
-	    {
-	      b+=({ "<a href='"+pages[a]+"'>"+strip_prefix(a)+"</a>" });
-	    }else{
-	      b+=({ strip_prefix(a) });
-	    }
+	    b+=({ strip_prefix(a) });
 	  }
 	  rest=implode_nicely(b);
 	  break;
@@ -517,10 +502,13 @@ string convert_page(string path, string fname, string|void cont)
 	  break;
 
 	case "RELATED FUNCTIONS":
+#if 0
 	  a=name;
 
 	  sscanf(rest,"%*skeyword %[a-z/A-Z0-9]",a);
 	  rest=mkindex(a, 0);
+#endif
+	  break;
 	}
 
 	type = ([
@@ -575,8 +563,6 @@ string convert_page(string path, string fname, string|void cont)
     array(string) sections;
     string title;
     int section;
-
-    pages[prefix+(path[..strlen(path)-6]/"/")[-1]]=fippel_path(path);
 
     cont=replace(cont,"$version",version());
     cont=html_quote(cont);
@@ -649,8 +635,6 @@ string convert_page(string path, string fname, string|void cont)
   }
   else if(path[strlen(path)-5..]==".html")
   {
-    pages[prefix+(path[..strlen(path)-6]/"/")[-1]]=fippel_path(path);
-
     if(sscanf(cont,"<title>%s</title>",part))
       short_descs[(path/"/")[-1]]=part;
     output=cont;
@@ -660,8 +644,6 @@ string convert_page(string path, string fname, string|void cont)
     /** Hmm, this looks like an example file to me... */
     string line,tmp;
     int pre,p;
-
-    pages[prefix+(path/"/")[-1]]=fippel_path(path);
 
     if(sscanf(cont,"%*[0-9.] %s\n",part)==2)
       short_descs[(path/"/")[-1]]=part;
@@ -705,7 +687,8 @@ string convert_page(string path, string fname, string|void cont)
   }
   else
   {
-    perror("Warning: not converting "+path+".\n");
+    if ((flags & .FLAG_VERB_MASK) >= .FLAG_VERBOSE)
+      perror("Warning: not converting "+path+".\n");
     output="";
   }
   return output;
