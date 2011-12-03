@@ -632,7 +632,7 @@ string doctype(string type,void|string indent)
 	 return nindent+"<int><min>"+min+"</min><max>"+max+"</max></int>";
       if (sscanf(b,"..%d",int max)==1)
 	 return nindent+"<int><max>"+max+"</max></int>";
-      if (sscanf(b,"%d..%",int min)==1)
+      if (sscanf(b,"%d..",int min)==1)
 	 return nindent+"<int><min>"+min+"</min></int>";
    }
 
