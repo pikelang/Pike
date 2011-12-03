@@ -72,6 +72,9 @@ mixed `[](string index) {
   case "image":
     return _Image;
     break;
+  case "color":
+    index = "Color";
+    break;
   case "colortable":
     index = "Colortable";
     break;
