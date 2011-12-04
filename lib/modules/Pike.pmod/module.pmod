@@ -84,7 +84,8 @@ constant get_first_arg_type = predef::__get_first_arg_type;
 #if constant(__builtin.__HAVE_CPP_PREFIX_SUPPORT__)
 //! This constant exists and has the value 1 if cpp supports
 //! the prefix feature.
-//! @seealso @[cpp()]
+//! @seealso
+//! 	@[cpp()]
 constant __HAVE_CPP_PREFIX_SUPPORT__ = __builtin.__HAVE_CPP_PREFIX_SUPPORT__;
 #endif
 
