@@ -414,6 +414,11 @@ void extract_autodoc(mapping(string:array(string)) src_commit)
     if (sizeof(compat_version)) compat_version += "::";
     if (Stdio.is_dir(module_dir) && !Stdio.exist(module_dir + "/.autodoc")) {
       Stdio.write_file(module_dir + "/.autodoc", compat_version + "\n");
+#if constant(System.utime)
+      // Ensure that we don't invalidate the already extracted
+      // files due to recreating this file for every revision.
+      System.utime(module_dir + "/.autodoc", 0, 0);
+#endif
     }
   }
 
