@@ -2635,6 +2635,21 @@ array(PC.Token) allocate_strings(array(PC.Token|array(PC.Token)) tokens)
   return tokens;
 }
 
+class Handler {
+    inherit "/master";
+
+    mixed resolv(string identifier, string|void current_file,
+		 object|void current_handler) {
+	return predef::master()->resolv(identifier, current_file,
+					current_handler);
+    }
+
+    void create(mapping|void predefines) {
+	::create();
+	if (predefines) this_program::predefines = predefines;
+    }
+}
+
 int main(int argc, array(string) argv)
 {
   mixed x;
@@ -2677,6 +2692,32 @@ int main(int argc, array(string) argv)
   string file = argv[1];
 
   x=Stdio.read_file(file)-"\r";
+#if constant(Pike.__HAVE_CPP_PREFIX_SUPPORT__)
+  x=sprintf("#cmod_line %d %O\n%s", __LINE__+1, __FILE__),
+    sprintf("#cmod_define cmod_CONCAT_EVAL(x...)\tcmod_CONCAT(x)\n"
+	    "#cmod_define cmod_EVAL(x...)\tcmod_CONCAT(x)\n"
+	    "#cmod_define cmod_STRFY(x...)\t#x\n"
+	    "#cmod_define cmod_DEFINE_EVAL(x...)\tcmod_DEFINE(x)\n"
+	    "#cmod_define cmod_STRFY_EVAL(x...)\tcmod_STRFY( x )\n"
+	    "#cmod_define cmod_REDEFINE(x)\tcmod_DEFINE(##x, x)\n"
+	    "#cmod_define cmod_COMMA ,\n"
+	    "#cmod_line 1 %O\n%s", file, x));
+  x=cpp(x, ([
+    "current_file" : file,
+    "prefix" : "cmod",
+    "keep_comments" : 1,
+    "handler" : Handler(([
+	    "cmod___SLASH__" : "/",
+	    "DOCSTART()" : lambda() { return "cmod___SLASH__*"; },
+	    "DOCEND()" : lambda() { return "*cmod___SLASH__"; },
+	    "cmod_DEFINE()" : lambda(string x, string y) {
+		return sprintf("#ifdef %s\n#undef %<s\n#endif\n#define %<s %s", x, y);
+	    },
+	    "cmod_CONCAT()" : lambda(string ... s) { return s*""; },
+	    "cmod___CMOD__" : "1",
+       ]))
+  ]));
+#endif
   x=split(x);
   x=PC.tokenize(x,file);
   x = convert_comments(x);
@@ -2691,7 +2732,11 @@ int main(int argc, array(string) argv)
 	    argv[1]),
   }) + DEFINE("PRECOMPILE_API_VERSION", (string)precompile_api_version) + ({
     "\n\n",
-  }) + x;
+  })
+#if constant(Pike.__HAVE_CPP_PREFIX_SUPPORT__)
+  + DEFINE("cmod___CMOD__", "1")
+#endif
+  + x;
 
 //  werror("%O\n",x);
 
