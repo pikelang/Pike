@@ -397,6 +397,17 @@ void extract_autodoc(mapping(string:array(string)) src_commit)
   }
   prev_img = img;
 
+  // .autodoc files for the compat version directories were
+  // missing in early versions of Pike 7.2. Ensure that the
+  // documentation is extracted to the correct namespace.
+  foreach(({ "", "0.6", "7.0", "7.2" }), string compat_version) {
+    string module_dir = "lib/" + compat_version + "/modules";
+    if (sizeof(compat_version)) compat_version += "::";
+    if (Stdio.is_dir(module_dir) && !Stdio.exist(module_dir + "/.autodoc")) {
+      Stdio.write_file(module_dir + "/.autodoc", compat_version + "\n");
+    }
+  }
+
   string timestamp = (src_commit->author[0]/" ")[-2];
 
   if (verbose) {
