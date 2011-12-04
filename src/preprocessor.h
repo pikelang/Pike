@@ -1063,6 +1063,10 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 			   int auto_convert,
 			   struct pike_string *charset)
 {
+  static const WCHAR string_recur_[] =
+    { 's', 't', 'r', 'i', 'n', 'g', '_', 'r', 'e', 'c', 'u', 'r' };
+  static const WCHAR include_recur_[] =
+   { 'i', 'n', 'c', 'l', 'u', 'd', 'e', '_', 'r', 'e', 'c', 'u', 'r' };
   ptrdiff_t pos, tmp, e;
   int include_mode;
   INT32 first_line = this->current_line;
@@ -1434,7 +1438,9 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	  }
 	  
 	  /* Remove any newlines from the completed expression. */
-	  switch (tmp.s->size_shift) {
+	  if (!(d->magic == insert_callback_define
+	     || d->magic == insert_callback_define_no_args))
+	     switch (tmp.s->size_shift) {
 	  case 0:
 	    for(e=0; e< (ptrdiff_t)tmp.s->len; e++)
 	      if(STR0(tmp.s)[e]=='\n')
@@ -1534,31 +1540,35 @@ static ptrdiff_t lower_cpp(struct cpp *this,
     }
     SKIPSPACE();
 
-    if (this->prefix) {
-	int i;
-	if (this->prefix->len+1 >= len-pos) {
-	    goto ADD_TO_BUFFER;
-	}
-	for (i = 0; i < this->prefix->len; i++) {
-	    if (this->prefix->str[i] != data[pos+i]) {
+    if (!CHECKWORD2(string_recur_, NELEM(string_recur_))
+     && !CHECKWORD2(include_recur_, NELEM(include_recur_))) {
+	if (this->prefix) {
+	    int i;
+	    if (this->prefix->len+1 >= len-pos) {
+		goto ADD_TO_BUFFER;
+	    }
+	    for (i = 0; i < this->prefix->len; i++) {
+		if (this->prefix->str[i] != data[pos+i]) {
+		    FIND_EOS();
+		    goto ADD_TO_BUFFER;
+		}
+	    }
+	    if (data[pos+i] != '_') {
 		FIND_EOS();
 		goto ADD_TO_BUFFER;
 	    }
-	}
-	if (data[pos+i] != '_') {
-	    FIND_EOS();
-	    goto ADD_TO_BUFFER;
-	}
 
-	pos += this->prefix->len + 1;
-    } else {
-	int i;
-	for (i = pos; i < len; i++) {
-	    if (data[i] == '_') {
-		FIND_EOS();
-		goto ADD_TO_BUFFER;
-	    } else if (!WC_ISIDCHAR(data[i]))
-		break;
+	    pos += this->prefix->len + 1;
+	} else {
+	    int i;
+
+	    for (i = pos; i < len; i++) {
+		if (data[i] == '_') {
+		    FIND_EOS();
+		    goto ADD_TO_BUFFER;
+		} else if (!WC_ISIDCHAR(data[i]))
+		    break;
+	    }
 	}
     }
 
@@ -1637,8 +1647,6 @@ static ptrdiff_t lower_cpp(struct cpp *this,
       case 's':
 	{
 	  static const WCHAR string_[] = { 's', 't', 'r', 'i', 'n', 'g' };
-	  static const WCHAR string_recur_[] =
-	    { 's', 't', 'r', 'i', 'n', 'g', '_', 'r', 'e', 'c', 'u', 'r' };
 
 	  if(WGOBBLE2(string_))
 	  {
@@ -1656,8 +1664,6 @@ static ptrdiff_t lower_cpp(struct cpp *this,
     case 'i': /* include, if, ifdef */
       {
 	static const WCHAR include_[] = { 'i', 'n', 'c', 'l', 'u', 'd', 'e' };
-	static const WCHAR include_recur_[] =
-	  { 'i', 'n', 'c', 'l', 'u', 'd', 'e', '_', 'r', 'e', 'c', 'u', 'r' };
 	static const WCHAR if_[] = { 'i', 'f' };
 	static const WCHAR ifdef_[] = { 'i', 'f', 'd', 'e', 'f' };
 	static const WCHAR ifndef_[] = { 'i', 'f', 'n', 'd', 'e', 'f' };

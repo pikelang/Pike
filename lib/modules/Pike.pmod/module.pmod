@@ -80,6 +80,14 @@ constant low_check_call = predef::__low_check_call;
 constant get_return_type = predef::__get_return_type;
 constant get_first_arg_type = predef::__get_first_arg_type;
 
+// precompile.pike checks for this
+#if constant(__builtin.__HAVE_CPP_PREFIX_SUPPORT__)
+//! This constant exists and has the value 1 if cpp supports
+//! the prefix feature.
+//! @seealso @[cpp()]
+constant __HAVE_CPP_PREFIX_SUPPORT__ = __builtin.__HAVE_CPP_PREFIX_SUPPORT__;
+#endif
+
 program Encoder = [program] master()->Encoder;
 program Decoder = [program] master()->Decoder;
 program Codec = [program] master()->Codec;

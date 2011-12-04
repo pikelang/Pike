@@ -1042,8 +1042,9 @@ static void simple_add_define(struct cpp *this,
 		   (data[pos+1] == '\n')) {			\
 	  pos+=2;						\
 	} else {						\
-	  break;						\
+	    continue;						\
 	}							\
+        this->current_line++;					\
       default:							\
 	continue;						\
       }								\
@@ -1601,7 +1602,14 @@ void free_one_define(struct hash_entry *h)
 static ptrdiff_t low_cpp(struct cpp *this, void *data, ptrdiff_t len,
 			 int shift, int flags, int auto_convert,
 			 struct pike_string *charset);
-
+static void insert_callback_define(struct cpp *this,
+                                   struct define *def,
+                                   struct define_argument *args,
+                                   struct string_builder *tmp);
+static void insert_callback_define_no_args(struct cpp *this,
+                                           struct define *def,
+                                           struct define_argument *args,
+                                           struct string_builder *tmp);
 #define SHIFT 0
 #include "preprocessor.h"
 #undef SHIFT
@@ -1731,10 +1739,10 @@ static void insert_callback_define(struct cpp *this,
 {
   ref_push_string( def->link.s );
   push_string( make_shared_binary_pcharp( args[0].arg, args[0].len ) );
-  safe_apply_handler( "evaluate_define", this->handler, this->compat_handler, 2, 0 );
-  if( TYPEOF(sp[-1]) == T_STRING )
+  if (safe_apply_handler( "evaluate_define", this->handler, this->compat_handler, 2, 0 ) && TYPEOF(sp[-1]) == T_STRING ) {
     string_builder_shared_strcat(tmp, sp[-1].u.string);
-  pop_stack();
+    pop_stack();
+  }
 }
 
 static void insert_callback_define_no_args(struct cpp *this,
@@ -1742,11 +1750,11 @@ static void insert_callback_define_no_args(struct cpp *this,
                                            struct define_argument *args,
                                            struct string_builder *tmp)
 {
+  struct svalue *save_sp = Pike_sp;
   ref_push_string( def->link.s );
-  safe_apply_handler( "evaluate_define", this->handler, this->compat_handler, 1, 0 );
-  if( TYPEOF(sp[-1]) == T_STRING )
+  if (safe_apply_handler( "evaluate_define", this->handler, this->compat_handler, 1, 0 ) && TYPEOF(sp[-1]) == T_STRING )
     string_builder_shared_strcat(tmp, sp[-1].u.string);
-  pop_stack();
+  if (Pike_sp > save_sp) pop_n_elems(Pike_sp-save_sp);
 }
 
 /*! @namespace predef:: */
@@ -2099,6 +2107,20 @@ void f_cpp(INT32 args)
 	    free_mapping (predefs);
 	    predefs = NULL;
 	    goto predef_map_error;
+	  } else if (!(TYPEOF(k->val) == T_INT && !k->val.u.integer)
+		   && TYPEOF(k->val) != T_STRING
+		   && TYPEOF(k->val) != T_FUNCTION
+		   && TYPEOF(k->val) != T_OBJECT) {
+
+	     push_constant_text ("expected zero, string or function value for"
+				 " predefine\n");
+	     push_constant_text ("expected zero, string or function value for"
+				 " predefine %O\n");
+	     push_svalue (&k->ind);
+	     sprintf_args = 2;
+	     free_mapping (predefs);
+	     predefs = NULL;
+	     goto predef_map_error;
 	  }
 	}
       }
@@ -2186,7 +2208,7 @@ void f_cpp(INT32 args)
     NEW_MAPPING_LOOP (predefs->data) {
       if (TYPEOF(k->val) == T_STRING)
 	add_define (&this, k->ind.u.string, k->val.u.string);
-      else if(TYPEOF(k->val) != T_INT || k->val.u.integer )
+      else if(TYPEOF(k->val) == T_FUNCTION || TYPEOF(k->val) == T_OBJECT)
       {
         struct define *def;
         if( index_shared_string( k->ind.u.string, k->ind.u.string->len-1) == ')' )
@@ -2286,6 +2308,8 @@ void init_cpp()
 			       , tStr),
 	   /* OPT_SIDE_EFFECT since we might instantiate modules etc. */
 	   OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
+
+  ADD_INT_CONSTANT("__HAVE_CPP_PREFIX_SUPPORT__", 1, 0);
 
   /* Somewhat tricky to add a _constant_ function in _static_modules.Builtin. */
   SET_SVAL(s, T_FUNCTION, FUNCTION_BUILTIN, efun,
