@@ -27,6 +27,9 @@
  *       [ ] Pike 7.8
  *       [ ] Pike 7.9
  *
+ *   [X] Export directly exportable refs before starting on
+ *       each new branch.
+ *
  *   [X] Convert the autodoc.xml to assembled xml.
  *       [X] onepage.xml
  *       [X] traditional.xml
@@ -897,28 +900,31 @@ int main(int argc, array(string) argv)
     }
   }
 
-  // Then update the remaining.
-  foreach(sort(indices(src_refs)), string ref) {
-    string src_sha1 = src_refs[ref];
-    string doc_sha1 = doc_refs[ref];
-    if (doc_sha1 && (src_to_doc[src_sha1] == doc_sha1)) {
-      // Already up-to-date.
-      if (verbose) {
-	werror("Skipping %s (already up-to-date).\n", ref);
+  // Then export the remaining refs.
+  while (sizeof(src_refs)) {
+    // Check if any of the refs is trivial to export.
+    foreach(src_refs; string ref; string src_sha1) {
+      string src_sha1 = src_refs[ref];
+      string doc_sha1 = doc_refs[ref];
+      if (doc_sha1 && (src_to_doc[src_sha1] == doc_sha1)) {
+	// Already up-to-date.
+	m_delete(src_refs, ref);
+      } else if (doc_sha1 = src_to_doc[src_sha1]) {
+	// Already exported.
+	exporter->reset(ref, doc_sha1);
+	if (has_prefix(ref, "refs/heads/")) {
+	  // Flush all heads as soon as possible.
+	  exporter->checkpoint();
+	}
+	werror("Updated %s (already exported).\n", ref);
+	m_delete(src_refs, ref);
       }
-      continue;
     }
-    if (doc_sha1 = src_to_doc[src_sha1]) {
-      // Already exported.
-      exporter->reset(ref, doc_sha1);
-      if (has_prefix(ref, "refs/heads/")) {
-	// Flush all heads as soon as possible.
-	exporter->checkpoint();
-      }
-      werror("Updated %s (already exported).\n", ref);
-      continue;
-    }
+    if (!sizeof(src_refs)) break;
+    // Update the "earliest" of the remaining refs.
+    string ref = sort(indices(src_refs))[0];
     export_autodoc_for_ref(ref);
+    m_delete(src_refs, ref);
     exporter->checkpoint();
   }
   exporter->checkpoint();
