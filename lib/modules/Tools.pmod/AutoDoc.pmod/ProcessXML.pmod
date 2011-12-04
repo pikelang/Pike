@@ -516,8 +516,15 @@ protected SimpleNode findNode(SimpleNode root, array(string) ref) {
         }
       }
     }
-    if (!found)
-      return 0;
+    if (!found) {
+      if ((n == root) && (root->get_any_name() == "autodoc")) {
+	// Create namespaces on demand.
+	found = SimpleElementNode("namespace", ([ "name": ref[0] ]));
+	root->add_child(found);
+      } else {
+	return 0;
+      }
+    }
     n = found;
     ref = ref[1..];
   }
