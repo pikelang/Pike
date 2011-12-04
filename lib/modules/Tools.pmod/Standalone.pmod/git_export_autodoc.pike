@@ -92,12 +92,18 @@
  *
  *   [ ] Improve error diagnostics (eg file and line for parser errors).
  *
- *   [X] Cleaning of the <source-position> tags from autodoc.xml
- *       doesn't seem to work.
+ *   [/] Clean the <source-position> tags from autodoc.xml.
+ *       [-] BMML
+ *       [X] MirarDoc
+ *       [/] AutoDoc
  *
- *   [/] Remove Pike version and timestamp from assembled xml,
- *       or in the alternative use the version from the source
- *       Pike and the commit timestamp.
+ *   [/] Reduce the number of changed files by removeing the
+ *       Pike version and timestamp from assembled xml.
+ *       [X] Use the version and timestamp from the source
+ *           Pike and the commit timestamp.
+ *       [X] Separate them into files included via
+ *           <script type="text/javascript" src="..." />.
+ *       [ ] Same for navigation?
  *
  *   [ ] Convert commits in topologic timestamp order
  *       (ie parallel-depth-first order), and update
@@ -517,7 +523,8 @@ void export_refdoc(mapping(string:array(string)) src_commit)
   }
   Tools.Standalone.autodoc_to_html converter =
     Tools.Standalone.autodoc_to_html();
-  converter->flags = Tools.AutoDoc.FLAG_KEEP_GOING|Tools.AutoDoc.FLAG_QUIET;
+  converter->flags = Tools.AutoDoc.FLAG_KEEP_GOING|Tools.AutoDoc.FLAG_QUIET|
+    Tools.AutoDoc.FLAG_NO_DYNAMIC;
   converter->verbosity = Tools.AutoDoc.FLAG_QUIET;
   converter->image_path = "../images/";
   // onepage:
@@ -532,7 +539,8 @@ void export_refdoc(mapping(string:array(string)) src_commit)
   // modref:
   Tools.Standalone.autodoc_to_split_html splitter =
     Tools.Standalone.autodoc_to_split_html();
-  splitter->flags = Tools.AutoDoc.FLAG_KEEP_GOING|Tools.AutoDoc.FLAG_QUIET;
+  splitter->flags = Tools.AutoDoc.FLAG_KEEP_GOING|Tools.AutoDoc.FLAG_QUIET|
+    Tools.AutoDoc.FLAG_NO_DYNAMIC;
   splitter->verbosity = Tools.AutoDoc.FLAG_QUIET;
   splitter->image_path = "../images/";
   splitter->default_namespace = "predef";

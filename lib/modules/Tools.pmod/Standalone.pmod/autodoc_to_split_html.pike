@@ -731,11 +731,44 @@ int low_main(string doc_file, string template_file, string outdir,
 
   if (verbosity >= Tools.AutoDoc.FLAG_VERBOSE)
     werror("Splitting to destination directory %s...\n", outdir);
+
   TopNode top = TopNode(doc);
-  template = replace(template,
-		     ([ "$version$":top->pike_version,
-			"$date$":top->timestamp,
-		     ]) );
+  if (flags & Tools.AutoDoc.FLAG_NO_DYNAMIC) {
+    // Attempt to keep down the number of changed files by
+    // using a client-sice include for the version and date.
+    string pike_version_js =
+      sprintf("document.write(%q);\n", top->pike_version);
+    string timestamp_js =
+      sprintf("document.write(%q);\n",
+	      sprintf("<time pubdate=''>%s</time>", top->timestamp));
+    if (exporter) {
+      exporter->filemodify(Git.MODE_FILE, outdir + "/pike_version.js");
+      exporter->data(pike_version_js);
+      exporter->filemodify(Git.MODE_FILE, outdir + "/timestamp.js");
+      exporter->data(timestamp_js);
+    } else {
+      Stdio.mkdirhier(outdir);
+      Stdio.write_file(outdir + "/pike_version.js", pike_version_js);
+      Stdio.write_file(outdir + "/timestamp.js", timestamp_js);
+    }
+
+    // Reduce updating of all files to once a year and when the language
+    // changes name.
+    string product_name = "Pike";
+    sscanf(top->pike_version, "%[^0-9 _]", product_name);
+    int year = localtime(time())->year + 1900;
+    sscanf(top->timestamp, "%d-", year);
+
+    template = replace(template,
+		       ([ "$version$":"<script type='text/javascript' src='$dotdot$pike_version.js' ></script><noscript>" + product_name + "</noscript>",
+			  "$date$":"<script type='text/javascript' src='$dotdot$timestamp.js' ></script><noscript>" + year + "</noscript>",
+		       ]) );
+  } else {
+    template = replace(template,
+		       ([ "$version$":top->pike_version,
+			  "$date$":top->timestamp,
+		       ]) );
+  }
   top->make_html(template, outdir, exporter);
   ENDPROFILE("main");
 
