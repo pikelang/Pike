@@ -2708,7 +2708,7 @@ int main(int argc, array(string) argv)
     "keep_comments" : 1,
     "handler" : Handler(([
 	    "cmod___SLASH__" : "/",
-	    "DOCSTART()" : lambda() { return "cmod___SLASH__*"; },
+	    "DOCSTART()" : lambda() { return "cmod___SLASH__*!"; },
 	    "DOCEND()" : lambda() { return "*cmod___SLASH__"; },
 	    "cmod_DEFINE()" : lambda(string x, string y) {
 		return sprintf("#ifdef %s\n#undef %<s\n#endif\n#define %<s %s", x, y);
