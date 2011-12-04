@@ -90,7 +90,7 @@ protected private class Extractor {
       }
     }
 
-    if (ignores->top())
+    while (ignores->top())
       report_error(SourcePosition(filename, ignores->pop()), .FLAG_NORMAL,
 		   "@ignore without matching @endignore.\n");
 
