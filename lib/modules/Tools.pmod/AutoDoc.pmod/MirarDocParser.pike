@@ -206,11 +206,10 @@ string stripws(string s)
 mapping lower_nowM()
 {
    if (nowM &&
-       (nowM==parse
-	|| nowM==classM
+       (nowM==classM
 	|| nowM==methodM
 	|| nowM==moduleM)) return nowM;
-   else return nowM=methodM;
+   else return nowM=(methodM || classM || moduleM);
 }
 
 void report(int level, string currentfile, int line,
