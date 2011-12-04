@@ -224,7 +224,7 @@ string extractXML(string filename, int|void pikeMode, string|void type,
       break;
     }
     if (m)
-      return makeWrapper(parentModules, m)->xml();
+      return makeWrapper(parentModules, m)->xml(flags);
   }
   return "";
 }

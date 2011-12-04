@@ -136,7 +136,8 @@ class SourcePosition {
 
   //! @returns
   //!   Returns a string with an XML-fragment describing the source position.
-  string xml() {
+  string xml(Flags|void flags) {
+    if (flags & FLAG_NO_DYNAMIC) return "";
     mapping(string:string) m = ([]);
     m["file"] = filename || "?";
     if (firstline) m["first-line"] = (string) firstline;
