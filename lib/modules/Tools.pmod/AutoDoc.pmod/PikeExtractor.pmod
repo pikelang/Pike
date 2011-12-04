@@ -209,7 +209,8 @@ protected private class Extractor {
                        parser->peekToken());
 
       if (doc) {
-        .DocParser.Parse parse = .DocParser.Parse(doc->text, doc->position);
+        .DocParser.Parse parse =
+	  .DocParser.Parse(doc->text, doc->position, flags);
         .DocParser.MetaData metadata = parse->metadata();
         if (metadata->appears || metadata->belongs)
           extractorError("@appears or @belongs not allowed in "
@@ -384,7 +385,7 @@ protected private class Extractor {
       string appears = 0;
       string belongs = 0;
       if (doc) {
-        parse = .DocParser.Parse(doc->text, doc->position);
+        parse = .DocParser.Parse(doc->text, doc->position, flags);
         MetaData meta = parse->metadata();
         if (meta->type && meta->type != "decl") {
           string what = meta->type;
@@ -543,7 +544,7 @@ protected private class Extractor {
       if (isDocComment(s = parser->peekToken())) {
 	doc = readAdjacentDocLines();
 	object(.DocParser.Parse) parse =
-	  .DocParser.Parse(doc->text, doc->position);
+	  .DocParser.Parse(doc->text, doc->position, flags);
 	.DocParser.MetaData metadata = parse->metadata();
 	doc->xml = parse->doc("_variable");
       }

@@ -220,7 +220,8 @@ protected private class Extractor {
   }
 }
 
-AutoDoc extract(string s, string|void filename, string|void namespace)
+AutoDoc extract(string s, string|void filename, string|void namespace,
+		.Flags|void flags)
 {
   Extractor e = Extractor(s, filename);
 

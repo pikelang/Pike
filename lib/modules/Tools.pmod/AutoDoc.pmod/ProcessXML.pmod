@@ -202,7 +202,7 @@ string extractXML(string filename, int|void pikeMode, string|void type,
     if (has_suffix(namespace, "::")) {
       namespace = namespace[..<2];
     }
-    object m = .CExtractor.extract(contents, filename, namespace);
+    object m = .CExtractor.extract(contents, filename, namespace, flags);
     return m->xml();
   }
   else if(stylePike && has_value(contents, "//!")) {
@@ -213,14 +213,14 @@ string extractXML(string filename, int|void pikeMode, string|void type,
     object m;
     switch(type) {
     case "module":
-      m = .PikeExtractor.extractModule(contents, filename, name);
+      m = .PikeExtractor.extractModule(contents, filename, name, flags);
       break;
     default:
     case "class":
-      m = .PikeExtractor.extractClass(contents, filename, name);
+      m = .PikeExtractor.extractClass(contents, filename, name, flags);
       break;
     case "namespace":
-      m = .PikeExtractor.extractNamespace(contents, filename, name);
+      m = .PikeExtractor.extractNamespace(contents, filename, name, flags);
       break;
     }
     if (m)

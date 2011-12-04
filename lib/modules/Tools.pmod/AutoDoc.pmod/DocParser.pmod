@@ -293,6 +293,8 @@ protected class DocParserClass {
   //!
   SourcePosition currentPosition = 0;
 
+  .Flags flags = .FLAG_NORMAL;
+
   protected void parseError(string s, mixed ... args) {
     s = sprintf(s, @args);
     if (currentPosition->lastline) {
@@ -782,8 +784,13 @@ protected class DocParserClass {
   }
 
   protected void create(string | array(Token) s,
-                     SourcePosition|void position)
+			SourcePosition|void position,
+			.Flags|void flags)
   {
+    if (zero_type(flags)) flags = .FLAG_NORMAL;
+
+    this_program::flags = flags;
+
     if (arrayp(s)) {
       tokenArr = s;
     }
@@ -1020,8 +1027,9 @@ class Parse {
   protected string mContext = 0;
 
   //! Parse a documentation string @[s].
-  void create(string | array(Token) s, SourcePosition|void sp) {
-    ::create(s, sp);
+  void create(string | array(Token) s, SourcePosition|void sp,
+	      .Flags|void flags) {
+    ::create(s, sp, flags);
     state = 0;
   }
 
