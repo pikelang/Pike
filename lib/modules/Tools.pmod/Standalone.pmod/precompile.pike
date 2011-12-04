@@ -2693,7 +2693,7 @@ int main(int argc, array(string) argv)
 
   x=Stdio.read_file(file)-"\r";
 #if constant(Pike.__HAVE_CPP_PREFIX_SUPPORT__)
-  x=sprintf("#cmod_line %d %O\n%s", __LINE__+1, __FILE__),
+  x=sprintf("#cmod_line %d %O\n%s", __LINE__+1, __FILE__,
     sprintf("#cmod_define cmod_CONCAT_EVAL(x...)\tcmod_CONCAT(x)\n"
 	    "#cmod_define cmod_EVAL(x...)\tcmod_CONCAT(x)\n"
 	    "#cmod_define cmod_STRFY(x...)\t#x\n"
