@@ -476,7 +476,7 @@ int(0..1) main(int num, array(string) args)
   foreach(Getopt.find_all_options(args, ({
      ({ "version",    Getopt.NO_ARG,  "-V,--version"/"," }),
      ({ "pikever",    Getopt.HAS_ARG, "--pike-version"/"," }),
-     ({ "timestamp",  Getopt.HAS_ARG, "--timestamp"/"," }),
+     ({ "timestamp",  Getopt.HAS_ARG, "--timestamp,--time-stamp"/"," }),
      ({ "help",       Getopt.NO_ARG,  "-h,--help"/"," }),
      ({ "output",     Getopt.HAS_ARG, "-o,--output,--out"/"," }),
      ({ "verbose",    Getopt.NO_ARG,  "-v,--verbose"/"," }),
