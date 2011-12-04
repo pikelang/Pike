@@ -580,7 +580,9 @@ protected void recurseAppears(string namespace,
 //!
 //! @param root
 //!   The root (@tt{<autodoc>@}) node of the documentation tree.
-void handleAppears(SimpleNode root) {
+void handleAppears(SimpleNode root, .Flags|void flags)
+{
+  if (zero_type(flags)) flags = .FLAG_NORMAL;
   tasks = ({ });
   foreach(root->get_elements("namespace"), SimpleNode namespaceNode) {
     string namespace = namespaceNode->get_attributes()->name + "::";
@@ -602,7 +604,9 @@ void handleAppears(SimpleNode root) {
     string newName = task->newName;
     SimpleNode belongsNode = findNode(root, belongsRef);
     if (!belongsNode) {
-      werror("Couldn't find the node: %O\n", belongsRef*".");
+      if (flags & .FLAG_VERB_MASK)
+	werror("Couldn't find the new parent node: %O for fragment:\n%s\n",
+	       belongsRef*".", (string)n);
       continue;
     }
     if (type == "docgroup") {
@@ -630,9 +634,11 @@ void handleAppears(SimpleNode root) {
     task->parent->remove_child(n);
 
     // Perform a merge in case the destination already has some doc.
-    werror("Merging <%s> node %s with <%s> %s...\n",
-	   belongsNode->get_any_name(), belongsRef*".",
-	   n->get_any_name(), newName || "");
+    if ((flags & .FLAG_VERB_MASK) >= .FLAG_VERBOSE) {
+      werror("Merging <%s> node %s:: with <%s> %s...\n",
+	     belongsNode->get_any_name(), belongsRef*".",
+	     n->get_any_name(), newName || "");
+    }
     SimpleNode fakeBelongsNode =
       SimpleElementNode(belongsNode->get_any_name(), ([]))->add_child(n);
     mergeTrees(belongsNode, fakeBelongsNode);
@@ -1249,6 +1255,13 @@ class NScopeStack
   string logfile;
   .Flags flags;
 
+  protected void warn(sprintf_format fmt, sprintf_args ... args)
+  {
+    if (flags & .FLAG_VERB_MASK) {
+      werror(fmt, @args);
+    }
+  }
+
   protected void create(NScope scopes, string|void logfile, .Flags|void flags)
   {
     this_program::scopes = scopes;
@@ -1260,10 +1273,8 @@ class NScopeStack
   {
     if (sizeof(failures)) {
       logfile = logfile || "resolution.log";
-      if (flags & .FLAG_VERB_MASK) {
-	werror("Resolution failed for %d symbols. Logging to %s\n",
-	       sizeof(failures), logfile);
-      }
+      warn("Resolution failed for %d symbols. Logging to %s\n",
+	   sizeof(failures), logfile);
       Stdio.File f = Stdio.File(logfile, "cwt");
       f->write("Reference target: Reference source:references\n\n");
       mapping(string:array(string)) rev = ([]);
@@ -1442,12 +1453,12 @@ class NScopeStack
 	    top->inherits[inh] = path;
 	    continue;
 	  } else {
-	    werror("Failed to resolve inherit %O.\n"
-		   "  Top: %O\n"
-		   "  Scope: %O\n"
-		   "  Stack: %O\n"
-		   "  Ref: %O\n",
-		   inh, top, scope, stack, splitRef(scope));
+	    warn("Failed to resolve inherit %O.\n"
+		 "  Top: %O\n"
+		 "  Scope: %O\n"
+		 "  Stack: %O\n"
+		 "  Ref: %O\n",
+		 inh, top, scope, stack, splitRef(scope));
 	  }
 	}
 	m_delete(top->inherits, inh);
@@ -1464,10 +1475,10 @@ class NScopeStack
 	    top->imports[path] = 1;
 	    continue;
 	  } else {
-	    werror("Failed to resolve import %O.\n"
-		   "  Top: %O\n"
-		   "  Stack: %O\n",
-		   scope, top, stack);
+	    warn("Failed to resolve import %O.\n"
+		 "  Top: %O\n"
+		 "  Stack: %O\n",
+		 scope, top, stack);
 	  }
 	}
       }
@@ -1487,23 +1498,23 @@ class NScopeStack
 	    top->inherits[inh] = nscope;
 	    continue;
 	  }
-	  werror("Failed to lookup inherit %O (loop).\n"
-		 "  Top: %O\n"
-		 "  Scope: %O\n"
-		 "  Path: %O\n"
-		 "  NewScope: %O\n"
-		 "  Stack: %O\n",
-		 inh, top, scope, path, nscope, stack);
+	  warn("Failed to lookup inherit %O (loop).\n"
+	       "  Top: %O\n"
+	       "  Scope: %O\n"
+	       "  Path: %O\n"
+	       "  NewScope: %O\n"
+	       "  Stack: %O\n",
+	       inh, top, scope, path, nscope, stack);
 	} else {
-	  werror("Failed to lookup inherit %O.\n"
-		 "  Top: %O\n"
-		 "  Scope: %O\n"
-		 "  Path: %O\n"
-		 "  NewScope: %O\n"
-		 "  Stack: %O\n"
-		 "  Top->Symbols: %O\n",
-		 inh, top, scope, path, nscope, stack,
-		 indices(top->symbols));
+	  warn("Failed to lookup inherit %O.\n"
+	       "  Top: %O\n"
+	       "  Scope: %O\n"
+	       "  Path: %O\n"
+	       "  NewScope: %O\n"
+	       "  Stack: %O\n"
+	       "  Top->Symbols: %O\n",
+	       inh, top, scope, path, nscope, stack,
+	       indices(top->symbols));
 	}
 	m_delete(top->inherits, inh);
       }
@@ -1519,21 +1530,21 @@ class NScopeStack
 	    top->imports[nscope] = 1;
 	    continue;
 	  }
-	  werror("Failed to lookup import %O (loop).\n"
-		 "  Top: %O\n"
-		 "  Scope: %O\n"
-		 "  NewScope: %O\n"
-		 "  Stack: %O\n",
-		 path, top, scope, nscope, stack);
+	  warn("Failed to lookup import %O (loop).\n"
+	       "  Top: %O\n"
+	       "  Scope: %O\n"
+	       "  NewScope: %O\n"
+	       "  Stack: %O\n",
+	       path, top, scope, nscope, stack);
 	} else {
-	  werror("Failed to lookup import %O.\n"
-		 "  Top: %O\n"
-		 "  Scope: %O\n"
-		 "  NewScope: %O\n"
-		 "  Stack: %O\n"
-		 "  Top->Symbols: %O\n",
-		 path, top, scope, nscope, stack,
-		 indices(top->symbols));
+	  warn("Failed to lookup import %O.\n"
+	       "  Top: %O\n"
+	       "  Scope: %O\n"
+	       "  NewScope: %O\n"
+	       "  Stack: %O\n"
+	       "  Top->Symbols: %O\n",
+	       path, top, scope, nscope, stack,
+	       indices(top->symbols));
 	}
       }
     }
@@ -1718,7 +1729,7 @@ void cleanUndocumented(SimpleNode tree, .Flags|void flags)
 //!   @[handleAppears()], @[cleanUndocumented()], @[resolveRefs()]
 void postProcess(SimpleNode root, string|void logfile, .Flags|void flags) {
   //  werror("handleAppears\n%s%O\n", ctime(time()), Debug.pp_memory_usage());
-  handleAppears(root);
+  handleAppears(root, flags);
   //  werror("cleanUndocumented\n%s%O\n", ctime(time()), Debug.pp_memory_usage());
   cleanUndocumented(root, flags);
   //  werror("resolveRefs\n%s%O\n", ctime(time()), Debug.pp_memory_usage());
