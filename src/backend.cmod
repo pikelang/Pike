@@ -722,7 +722,7 @@ PIKECLASS Backend
       add_ref(Pike_fp->current_object);
 
       {
-	hval = PTR_TO_INT(args);
+	hval = PTR_TO_INT(callable);
 	LINK(arr,new);
 	hval = new->fun_hval = fun_hval;
 	LINK(fun,new);
