@@ -7861,20 +7861,6 @@ int report_compiler_dependency(struct program *p)
  *! @param severity
  *!   The severity of the diagnostic.
  *!
- *!   The default implementation does the following depending on @[severity]:
- *!   @int
- *!     @value NOTICE
- *!       Ignored.
- *!     @value WARNING
- *!       Calls @[MasterObject()->compile_warning()].
- *!     @value ERROR
- *!     @value FATAL
- *!       Calls @[MasterObject()->compile_error()].
- *!   @endint
- *!
- *!   If there's no master object yet, the diagnostic is output to
- *!   @[Stdio.stderr].
- *!
  *! @param filename
  *! @param linenumber
  *!   Location which triggered the diagnostic.
@@ -7888,6 +7874,31 @@ int report_compiler_dependency(struct program *p)
  *! @param extra_args
  *!   Extra arguments to @[sprintf()].
  *!
+ *!   The default implementation does the following:
+ *!
+ *!   @ul
+ *!     @item
+ *!       If there's a @[MasterObject()->report()], call it
+ *!       with the same arguments as ourselves.
+ *!     @item
+ *!       Otherwise depending on @[severity]:
+ *!       @int
+ *!         @value NOTICE
+ *!           Ignored.
+ *!         @value WARNING
+ *!           Calls @[MasterObject()->compile_warning()].
+ *!         @value ERROR
+ *!         @value FATAL
+ *!           Calls @[MasterObject()->compile_error()].
+ *!       @endint
+ *!   @endul
+ *!
+ *!   If there's no master object yet, the diagnostic is output to
+ *!   @[Stdio.stderr].
+ *!
+ *! @note
+ *!   In Pike 7.8 and earlier @[MasterObject()->report()] was not called.
+ *!
  *! @seealso
  *!   @[PikeCompiler()->report()]
  */
@@ -7898,6 +7909,15 @@ static void f_compilation_env_report(INT32 args)
   INT_TYPE linenumber;
   struct pike_string *subsystem;
   struct pike_string *message;
+  struct object *master_ob;
+
+  if ((master_ob = get_master()) && master_ob->prog) {
+    int fun = find_identifier("report", master_ob->prog);
+    if (fun >= 0) {
+      apply_low(master_ob, fun, args);
+      return;
+    }
+  }
 
   if (args > 5) {
     f_sprintf(args - 4);
@@ -7908,7 +7928,7 @@ static void f_compilation_env_report(INT32 args)
 
   /* Ignore informational level messages */
   if (level >= REPORT_WARNING) {
-    if (get_master()) {
+    if (master_ob && master_ob->prog) {
       ref_push_string(filename);
       push_int(linenumber);
       ref_push_string(message);
@@ -8644,9 +8664,48 @@ static void compilation_event_handler(int e)
  *!
  *!   Report a diagnostic from the compiler.
  *!
- *!   The default implementation calls the corresponding function
- *!   in the active handlers, and otherwise falls back to
- *!   @[CompilerEnvironment()->report()] in the parent object.
+ *!   The default implementation attempts to call the first
+ *!   corresponding function in the active handlers in priority order:
+ *!
+ *!   @ol
+ *!     @item
+ *!       Call handler->report().
+ *!     @item
+ *!       Call handler->compile_warning() or handler->compile_error()
+ *!       depending on @[severity].
+ *!     @item
+ *!       Call compat->report().
+ *!     @item
+ *!       Call compat->compile_warning() or compat->compile_error()
+ *!       depending on @[severity].
+ *!     @item
+ *!       Fallback: Call @[CompilerEnvironment()->report()]
+ *!       in the parent object.
+ *!   @endol
+ *!
+ *!   The arguments will be as follows:
+ *!   @dl
+ *!     @item report()
+ *!       The report() function will be called with the same arguments
+ *!       as this function.
+ *!     @item compile_warning()/compile_error()
+ *!       Depending on the @[severity] either compile_warning()
+ *!       or compile_error() will be called.
+ *!
+ *!       They will be called with the @[filename], @[linenumber]
+ *!       and formatted @[message] as arguments.
+ *!
+ *!       Note that these will not be called for the @[NOTICE] severity,
+ *!       and that compile_error() will be used for both @[ERROR] and
+ *!       @[FATAL].
+ *!   @enddl
+ *!
+ *! @note
+ *!   In Pike 7.8 and earlier the report() function was not called
+ *!   in the handlers.
+ *!
+ *! @seealso
+ *!   @[CompilerEnvironment()->report()]
  */
 static void f_compilation_report(INT32 args)
 {
@@ -8664,22 +8723,26 @@ static void f_compilation_report(INT32 args)
    */
   get_all_args("report", args, "%d", &level);
 
-  if ((c->handler || c->compat_handler) &&
-      (level >= REPORT_WARNING)) {
-    /* Ignore informational level messages */
+  if ((c->handler || c->compat_handler)) {
     const char *fun_name = "compile_warning";
 
     if (level >= REPORT_ERROR) fun_name = "compile_error";
 
     if((handler = c->handler) && handler->prog) {
-      if ((fun = find_identifier(fun_name, handler->prog)) !=
-	  -1) {
+      if ((fun = find_identifier("report", handler->prog)) != -1) {
+	apply_low(handler, fun, args);
+	return;
+      }
+      if ((fun = find_identifier(fun_name, handler->prog)) != -1) {
 	goto apply_handler;
       }
     }
     if ((handler = c->compat_handler) && handler->prog) {
-      if ((fun = find_identifier(fun_name, handler->prog)) !=
-	  -1) {
+      if ((fun = find_identifier("report", handler->prog)) != -1) {
+	apply_low(handler, fun, args);
+	return;
+      }
+      if ((fun = find_identifier(fun_name, handler->prog)) != -1) {
 	goto apply_handler;
       }
     }
@@ -8691,6 +8754,8 @@ static void f_compilation_report(INT32 args)
   return;
 
  apply_handler:
+  /* Ignore informational level messages */
+  if (level < REPORT_WARNING) return;
   if (args > 5) {
     f_sprintf(args - 4);
     args = 5;
