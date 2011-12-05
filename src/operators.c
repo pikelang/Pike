@@ -4931,24 +4931,24 @@ PMOD_EXPORT void o_range2 (int bound_types)
  *!       indices in array-like fashion:
  *!
  *!       @dl
- *!         @item @{`[..] (a, i, Pike.INDEX_FROM_BEG, j, Pike.INDEX_FROM_BEG)@}
+ *!         @item @expr{`[..] (a, i, Pike.INDEX_FROM_BEG, j, Pike.INDEX_FROM_BEG)@}
  *!           Calls @expr{a->`[] (i, j)@}
- *!         @item @{`[..] (a, i, Pike.INDEX_FROM_BEG, j, Pike.INDEX_FROM_END)@}
+ *!         @item @expr{`[..] (a, i, Pike.INDEX_FROM_BEG, j, Pike.INDEX_FROM_END)@}
  *!           Calls @expr{a->`[] (i, a->_sizeof()-1-j)@}
- *!         @item @{`[..] (a, i, Pike.INDEX_FROM_BEG, 0, Pike.OPEN_BOUND)@}
+ *!         @item @expr{`[..] (a, i, Pike.INDEX_FROM_BEG, 0, Pike.OPEN_BOUND)@}
  *!           Calls @expr{a->`[] (i, @[Int.NATIVE_MAX])@}
- *!         @item @{`[..] (a, i, Pike.INDEX_FROM_END, j, Pike.INDEX_FROM_BEG)@}
+ *!         @item @expr{`[..] (a, i, Pike.INDEX_FROM_END, j, Pike.INDEX_FROM_BEG)@}
  *!           Calls @expr{a->`[] (a->_sizeof()-1-i, j)@}
- *!         @item @{`[..] (a, i, Pike.INDEX_FROM_END, j, Pike.INDEX_FROM_END)@}
+ *!         @item @expr{`[..] (a, i, Pike.INDEX_FROM_END, j, Pike.INDEX_FROM_END)@}
  *!           Calls @expr{a->`[] (a->_sizeof()-1-i, a->_sizeof()-1-j)@},
  *!           except that @expr{a->_sizeof()@} is called only once.
- *!         @item @{`[..] (a, i, Pike.INDEX_FROM_END, 0, Pike.OPEN_BOUND)@}
+ *!         @item @expr{`[..] (a, i, Pike.INDEX_FROM_END, 0, Pike.OPEN_BOUND)@}
  *!           Calls @expr{a->`[] (a->_sizeof()-1-i, @[Int.NATIVE_MAX])@}
- *!         @item @{`[..] (a, 0, Pike.OPEN_BOUND, j, Pike.INDEX_FROM_BEG)@}
+ *!         @item @expr{`[..] (a, 0, Pike.OPEN_BOUND, j, Pike.INDEX_FROM_BEG)@}
  *!           Calls @expr{a->`[] (0, j)@}
- *!         @item @{`[..] (a, 0, Pike.OPEN_BOUND, j, Pike.INDEX_FROM_END)@}
+ *!         @item @expr{`[..] (a, 0, Pike.OPEN_BOUND, j, Pike.INDEX_FROM_END)@}
  *!           Calls @expr{a->`[] (0, a->_sizeof()-1-j)@}
- *!         @item @{`[..] (a, 0, Pike.OPEN_BOUND, 0, Pike.OPEN_BOUND)@}
+ *!         @item @expr{`[..] (a, 0, Pike.OPEN_BOUND, 0, Pike.OPEN_BOUND)@}
  *!           Calls @expr{a->`[] (0, @[Int.NATIVE_MAX])@}
  *!       @enddl
  *!
