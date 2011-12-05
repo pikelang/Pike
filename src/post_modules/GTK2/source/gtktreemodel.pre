@@ -130,7 +130,7 @@ array get_row(GTK2.TreeIter iter)
 }
 
 mixed get_value(GTK2.TreeIter iter, int column)
-//! Get value at column of iter.
+//! Get value at column of iter.  Column indices start at 0.
 {
   pgtk2_verify_inited();
   {
@@ -147,8 +147,12 @@ mixed get_value(GTK2.TreeIter iter, int column)
   }
 }
 
-+GTK2.TreeIter iter_next(GTK2.TreeIter iter)
-//! Go to next node.
+int iter_next(GTK2.TreeIter iter)
+//! Sets iter to point to the node following it at the current level.  If there
+//! is no next iter, 0 is returned and iter is set to be invalid.
+//! @returns
+//!  Returns 0 if there is no next iter, otherwise 1.
+//!
 {
   pgtk2_verify_inited();
   {
