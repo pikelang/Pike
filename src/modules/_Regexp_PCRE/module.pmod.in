@@ -109,6 +109,9 @@ class Plain
 //! callbacks and replacements will be from the first occurance,
 //! not from the last as in Regexp.Builtin.replace.
 //!
+//! if with is a function, the first argument will be the total match
+//! string, and the subsequent arguments will contain any submatches
+//!
 //! example:
 //! > Regexp.PCRE("b[^-]*m")->replace("abam-boom-fooabadoom","gurka");
 //! Result: "agurka-gurka-fooagurka"
@@ -118,28 +121,53 @@ class Plain
 //! "boom"
 //! "badoom"
 //! Result: "agurka-gurka-fooagurka"
-   string replace(string subject,string|function(string:string) with)
+//!
+//! example:
+//!
+//!> Regexp.PCRE("([a-z0-9_\\.-]+)@([\\da-z\\.-]+)\\.([a-z\\.]{2,6})")
+//!   ->replace("foo@bar.org", 
+//!     lambda(string whole, string user, string loc, string domain)
+//!       { return user + " from " + loc + " dot " + domain; }
+//!    );      
+//! (4) Result: "foo from bar dot org"
+
+   string replace(string subject,string|function with, mixed|void ... args)
    {
-      int i=0;
-      String.Buffer res=String.Buffer();
-      for (;;)
-      {
-	 array(int)|int v=exec(subject,i);
+    int i=0;
+    String.Buffer res = String.Buffer();
 
-	 if (intp(v) && !handle_exec_error([int]v)) break;
+    for (;;)
+    {
+      array(int)|int v=exec(subject,i);
 
-	 if (v[0]>i) res->add(subject[i..v[0]-1]);
+      if (intp(v) && !handle_exec_error([int]v)) break;
 
-	 if (stringp(with)) res->add(with);
-	 else res->add(with(subject[v[0]..v[1]-1]));
+      if (v[0]>i) res+=subject[i..v[0]-1];
 
-	 if (i!=v[1]) i=v[1]; else res->add(subject[i..i++]);
+      if 
+        (stringp(with)) res+=with;
+      else 
+      { 
+        array substrings = ({});
+        if(sizeof(v)>2)
+        {
+          int c = 2;
+          do
+          {
+             substrings += ({ subject[v[c]..(v[c+1]-1)] });
+             c+=2;
+          }
+          while(c<= (sizeof(v)-2));
+        }
+
+        res += with(subject[v[0]..v[1]-1], @substrings, @args); 
       }
+      i=v[1];
+    }
 
-      res->add(subject[i..]);
-
-      return (string)res;
-   }
+    res+=subject[i..];
+    return res->get();
+ }
 
 //! replace one (first) occurance of a pattern in a subject
 //!
