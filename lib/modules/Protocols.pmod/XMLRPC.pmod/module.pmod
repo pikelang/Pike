@@ -216,7 +216,7 @@ protected mixed decode(string xml_input, string dtd_input, int|void boolean)
 			     (dtd_input, lambda(mixed ... args) { return 0; });
 			   return 0;
 			 case "":
-			 case "![CDATA[":
+			 case "<![CDATA[":
 			   return data;
 			 case "<":
 			   return 0;
