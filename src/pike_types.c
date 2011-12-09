@@ -6769,6 +6769,14 @@ struct pike_type *get_first_arg_type(struct pike_type *fun_type,
     fun_type = fun_type->car;
   }
 
+#ifdef PIKE_DEBUG
+  if (l_flag > 2) {
+    fprintf(stderr, "get_first_arg_type(");
+    simple_describe_type(fun_type);
+    fprintf(stderr, ", 0x%04x)\n", flags);
+  }
+#endif
+
   switch(fun_type->type) {
   case PIKE_T_SCOPE:
   case T_ASSIGN:
@@ -6812,7 +6820,8 @@ struct pike_type *get_first_arg_type(struct pike_type *fun_type,
      *     ==>
      *   attribute(sprintf_args, mixed) & object|string
      */
-    if ((fun_type->car->type == T_NOT) == (fun_type->cdr->type == T_NOT)) {
+    if (!(flags & CALL_NOT_LAST_ARG) ||
+	((fun_type->car->type == T_NOT) == (fun_type->cdr->type == T_NOT))) {
       res = and_pike_types(tmp2 = res, tmp);
     } else {
       res = or_pike_types(tmp2 = res, tmp, 1);
@@ -6872,6 +6881,14 @@ struct pike_type *get_first_arg_type(struct pike_type *fun_type,
     break;
 
   case PIKE_T_FUNCTION:
+    if (!(flags & CALL_NOT_LAST_ARG) &&
+	(fun_type->cdr->type == PIKE_T_FUNCTION) &&
+	!low_match_types(fun_type->cdr->car, void_type_string, 0)) {
+      /* Last argument and more arguments required. */
+      res = NULL;
+      break;
+    }
+    /* FALL_THROUGH */
   case T_MANY:
     if ((res = fun_type->car)->type == T_VOID) {
       res = NULL;
@@ -6884,6 +6901,16 @@ struct pike_type *get_first_arg_type(struct pike_type *fun_type,
     /* Not a callable. */
     break;
   }
+
+#ifdef PIKE_DEBUG
+  if (l_flag > 2) {
+    fprintf(stderr, "get_first_arg_type(");
+    simple_describe_type(fun_type);
+    fprintf(stderr, ", 0x%04x) ==> ", flags);
+    simple_describe_type(res);
+    fprintf(stderr, "\n");
+  }
+#endif
 
   return res;
 }
