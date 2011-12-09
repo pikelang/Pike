@@ -6143,7 +6143,7 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
 	  }
 	  res = pop_unfinished_type();
 	}
-      } else if (!(flags & CALL_LAST_ARG) &&
+      } else if ((flags & CALL_NOT_LAST_ARG) &&
 		 (fun_type->car->type == T_MANY)) {
 	/* The next argument might match. */
 	add_ref(fun_type);
@@ -6262,8 +6262,9 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
     if (fun_type->type == PIKE_T_FUNCTION) {
       /* Advance to the next argument. */
       fun_type = fun_type->cdr;
-      if ((flags & CALL_LAST_ARG) &&
-	  (fun_type->type == PIKE_T_FUNCTION)) {
+      if (!(flags & CALL_NOT_LAST_ARG) &&
+	  (fun_type->type == PIKE_T_FUNCTION) &&
+	  !low_match_types(fun_type->car, void_type_string, 0)) {
 	/* There are more required arguments. */
 #ifdef PIKE_DEBUG
 	if (l_flag>2) {
@@ -6907,7 +6908,7 @@ struct pike_type *check_splice_call(struct pike_string *fun_name,
   /* Loop until we get a stable fun_type, or it's an invalid argument. */
   while ((fun_type = low_new_check_call(debug_malloc_pass(prev),
 					debug_malloc_pass(arg_type),
-					flags, sval)) &&
+					flags|CALL_NOT_LAST_ARG, sval)) &&
 	 (fun_type != prev) && --cnt) {
 
 #ifdef PIKE_DEBUG
@@ -6972,7 +6973,8 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
 	 ((args->token == F_ARG_LIST) || (args->token == F_LVALUE_LIST)) &&
 	 fun_type) {
     if (args->token == F_LVALUE_LIST) flags |= CALL_ARG_LVALUE;
-    fun_type = new_check_call(fun_name, fun_type, CAR(args), argno, flags);
+    fun_type = new_check_call(fun_name, fun_type, CAR(args), argno,
+			      flags | (CDR(args)?CALL_NOT_LAST_ARG:0));
     debug_malloc_touch(fun_type);
     args = CDR(args);
   }

@@ -2424,7 +2424,7 @@ static void f___soft_cast(INT32 args)
 static void f___low_check_call(INT32 args)
 {
   struct pike_type *res;
-  INT32 flags = 0;
+  INT32 flags = CALL_NOT_LAST_ARG;
   struct svalue *sval = NULL;
   if (args < 2) Pike_error("Bad number of arguments to __low_check_call().\n");
   if (TYPEOF(Pike_sp[-args]) != PIKE_T_TYPE) {
@@ -2437,7 +2437,7 @@ static void f___low_check_call(INT32 args)
     if (TYPEOF(Pike_sp[2-args]) != PIKE_T_INT) {
       Pike_error("Bad argument 3 to __low_check_call() expected int.\n");
     }
-    flags = Pike_sp[2-args].u.integer;
+    flags = Pike_sp[2-args].u.integer ^ CALL_NOT_LAST_ARG;
   }
   if (args > 3) sval = Pike_sp + 3 - args;
   if (!(res = low_new_check_call(Pike_sp[-args].u.type,
