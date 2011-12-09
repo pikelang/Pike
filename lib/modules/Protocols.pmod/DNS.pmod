@@ -185,6 +185,13 @@ class protocol
        return sprintf("%@1c", (array(int))((entry->a||"0.0.0.0")/".")[0..3]);
      case T_AAAA:
        return make_raw_addr6(entry->aaaa);
+     case T_A6:
+       if( stringp( entry->a6 ) || !entry->a6 )
+         return "\0"+make_raw_addr6(entry->a6);
+       return sprintf( "%c%s%s", 
+                       entry->a6->prefixlen,
+                       make_raw_addr6(entry->a6->address)[entry->a6->prefixlen/8..],
+                       entry->a6->prefixname||"");
      case T_SOA:
        string mname = mkname(entry->mname, pos, c);
        return mname + mkname(entry->rname, pos+sizeof(mname), c) +
