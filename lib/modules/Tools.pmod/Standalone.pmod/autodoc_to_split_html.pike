@@ -590,7 +590,7 @@ class Node
 	"$type$": String.capitalize(type),
 	"$title$": _Roxen.html_encode_string(make_class_path(1)),
 	"$style$": style,
-	"$dotdot$": sizeof(extra_prefix)?extra_prefix:".",
+	"$dotdot$": extra_prefix,
 	"$imagedir$":image_prefix(),
 	"$filename$": _Roxen.html_encode_string(make_filename()),
       ]));
