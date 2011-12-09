@@ -1319,6 +1319,7 @@ static int current_program_id = PROG_DYNAMIC_ID_START;
 
 struct program *null_program=0;
 
+static struct program *reporter_program = NULL;
 struct program *compilation_program = 0;
 struct program *compilation_env_program = 0;
 struct object *compilation_environment = NULL;
@@ -7807,35 +7808,9 @@ int report_compiler_dependency(struct program *p)
   return ret;
 }
 
-/*! @module DefaultCompilerEnvironment
+/*! @class Reporter
  *!
- *!   The @[CompilerEnvironment] object that is used
- *!   for loading C-modules and by @[predef::compile()].
- *!
- *! @note
- *!   @[predef::compile()] is essentially an alias for the
- *!   @[CompilerEnvironment()->compile()] in this object.
- *!
- *! @seealso
- *!   @[CompilerEnvironment], @[predef::compile()]
- */
-
-/*! @endmodule
- */
-
-/*! @class CompilerEnvironment
- *!
- *!   The compiler environment.
- *!
- *!   By inheriting this class and overloading the functions,
- *!   it is possible to make a custom Pike compiler.
- *!
- *! @note
- *!   Prior to Pike 7.8 this sort of customization has to be done
- *!   either via custom master objects, or via @[CompilationHandler]s.
- *!
- *! @seealso
- *!   @[CompilationHandler], @[MasterObject], @[master()], @[replace_master()]
+ *!   API for reporting parse errors and similar.
  */
 
 /*! @decl enum SeverityLevel
@@ -7902,7 +7877,8 @@ int report_compiler_dependency(struct program *p)
  *! @seealso
  *!   @[PikeCompiler()->report()]
  */
-static void f_compilation_env_report(INT32 args)
+/* NOTE: This function MUST NOT use any storage in the Reporter program! */
+static void f_reporter_report(INT32 args)
 {
   int level;
   struct pike_string *filename;
@@ -7955,6 +7931,48 @@ static void f_compilation_env_report(INT32 args)
   pop_n_elems(args);
   push_int(0);
 }
+
+/*! @endclass
+ */
+
+/*! @module DefaultCompilerEnvironment
+ *!
+ *!   The @[CompilerEnvironment] object that is used
+ *!   for loading C-modules and by @[predef::compile()].
+ *!
+ *! @note
+ *!   @[predef::compile()] is essentially an alias for the
+ *!   @[CompilerEnvironment()->compile()] in this object.
+ *!
+ *! @seealso
+ *!   @[CompilerEnvironment], @[predef::compile()]
+ */
+
+/*! @endmodule
+ */
+
+/*! @class CompilerEnvironment
+ *!
+ *!   The compiler environment.
+ *!
+ *!   By inheriting this class and overloading the functions,
+ *!   it is possible to make a custom Pike compiler.
+ *!
+ *! @note
+ *!   Prior to Pike 7.8 this sort of customization has to be done
+ *!   either via custom master objects, or via @[CompilationHandler]s.
+ *!
+ *! @seealso
+ *!   @[CompilationHandler], @[MasterObject], @[master()], @[replace_master()]
+ */
+
+/*! @decl inherit Reporter
+ *!
+ *! Implements the @[Reporter] API.
+ *!
+ *! @seealso
+ *!   @[Reporter()->report()], @[Reporter()->SeverityLevel]
+ */
 
 /*! @decl program compile(string source, CompilationHandler|void handler, @
  *!                       int|void major, int|void minor,@
@@ -9669,7 +9687,12 @@ static void compile_compiler(void)
   low_start_new_program(p, 1, NULL, 0, NULL);
   free_program(p);	/* Remove the extra ref we just got... */
 
-  ADD_FUNCTION("report", f_compilation_env_report, 
+  /* NOTE: The order of these identifiers is hard-coded in
+   *       the CE_*_FUN_NUM definitions in "pike_compiler.h".
+   */
+
+  /* NB: Overloaded properly by inherit of Reporter later on. */
+  ADD_FUNCTION("report", f_reporter_report,
 	       tFuncV(tName("SeverityLevel", tInt03) tStr tIntPos
 		      tStr tStr, tMix, tVoid),0);
 
@@ -9797,8 +9820,14 @@ static void compile_compiler(void)
   ADD_FUNCTION("handle_inherit", f_compilation_env_handle_inherit,
 	       tFunc(tStr tStr tOr(tObj, tVoid), tPrg(tObj)), 0);
 
+  /* Reporter */
+  start_new_program();
   {
     struct svalue type_value;
+
+    ADD_FUNCTION("report", f_reporter_report,
+		 tFuncV(tName("SeverityLevel", tInt03) tStr tIntPos
+			tStr tStr, tMix, tVoid),0);
 
     /* enum SeverityLevel { NOTICE, WARNING, ERROR, FATAL } */
     SET_SVAL(type_value, PIKE_T_TYPE, 0, type,
@@ -9810,7 +9839,12 @@ static void compile_compiler(void)
     add_integer_constant("WARNING", REPORT_WARNING, 0);
     add_integer_constant("ERROR",   REPORT_ERROR, 0);
     add_integer_constant("FATAL",   REPORT_FATAL, 0);
+
+    reporter_program = end_program();
   }
+  add_global_program("Reporter", reporter_program);
+
+  low_inherit(reporter_program, NULL, -1, 0, 0, 0);
 
   compilation_env_program = end_program();
 
@@ -10319,6 +10353,10 @@ void cleanup_program(void)
   if (compilation_env_program) {
     free_program(compilation_env_program);
     compilation_env_program = 0;
+  }
+  if (reporter_program) {
+    free_program(reporter_program);
+    reporter_program = 0;
   }
 }
 
