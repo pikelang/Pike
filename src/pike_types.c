@@ -7070,7 +7070,7 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
 	  !(flags & CALL_ARG_LVALUE)){
 	if (!(tmp = low_new_check_call(fun_type, args->type,
 				       flags|CALL_STRICT, sval))) {
-	  tmp = get_first_arg_type(fun_type, 0);
+	  tmp = get_first_arg_type(fun_type, flags);
 	  yytype_report(REPORT_WARNING, NULL, 0, tmp,
 			NULL, 0, args->type,
 			0, "Type mismatch in argument %d to %S.",

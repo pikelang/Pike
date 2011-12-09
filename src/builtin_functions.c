@@ -2498,7 +2498,8 @@ static void f___get_first_arg_type(INT32 args)
   if (TYPEOF(Pike_sp[-1]) != PIKE_T_TYPE) {
     Pike_error("Bad argument 1 to __get_first_arg_type() expected type.\n");
   }
-  if (!(res = get_first_arg_type(Pike_sp[-1].u.type, 0))) {
+  if (!(res = get_first_arg_type(Pike_sp[-1].u.type, CALL_NOT_LAST_ARG)) &&
+      !(res = get_first_arg_type(Pike_sp[-1].u.type, 0))) {
     pop_n_elems(args);
     push_undefined();
   } else {
