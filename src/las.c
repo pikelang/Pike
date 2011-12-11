@@ -3590,8 +3590,7 @@ void fix_type_field(node *n)
       /* Too few arguments or similar. */
       copy_pike_type(n->type, mixed_type_string);
 
-      if ((s = get_first_arg_type(dmalloc_touch(struct pike_type *, f), 0)) ||
-	  (s = get_first_arg_type(dmalloc_touch(struct pike_type *, f),
+      if ((s = get_first_arg_type(dmalloc_touch(struct pike_type *, f),
 				  CALL_NOT_LAST_ARG))) {
 	yytype_report(REPORT_ERROR, NULL, 0, s,
 		      NULL, 0, NULL,
@@ -4199,8 +4198,7 @@ void fix_type_field(node *n)
       if (sscanf_type) {
 	if (!(n->type = new_get_return_type(sscanf_type, 0))) {
 	  struct pike_type *expected;
-	  if ((expected = get_first_arg_type(sscanf_type, 0)) ||
-	      (expected = get_first_arg_type(sscanf_type, CALL_NOT_LAST_ARG))) {
+	  if ((expected = get_first_arg_type(sscanf_type, CALL_NOT_LAST_ARG))) {
 	    yytype_report(REPORT_ERROR,
 			  NULL, 0, expected,
 			  NULL, 0, NULL,

@@ -73,7 +73,7 @@ BLOCK_ALLOC(pike_type, n/a);
 #define PT_FLAG_MARK_ASSIGN	0x3ff3ff	/* Assigns AND Markers. */
 
 /*
- * new_check_call() and check_splice_call() flags
+ * new_check_call(), check_splice_call() and get_first_arg_type() flags
  */
 #define CALL_STRICT		0x0001	/* Strict checking. */
 #define CALL_NOT_LAST_ARG	0x0002	/* This is not the last argument. */

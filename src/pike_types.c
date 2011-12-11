@@ -61,6 +61,8 @@
 
 /*
  * Flags used by low_get_first_arg_type()
+ *
+ * Note that these differ for the flags to get_first_arg_type().
  */
 #define FILTER_KEEP_VOID 1	/* Keep void during the filtering. */
 
@@ -5212,7 +5214,7 @@ static struct pike_type *debug_low_key_type(struct pike_type *t, node *n)
 	{
 	  /* Get the type of the first argument of the function. */
 	  struct pike_type *res =
-	    get_first_arg_type(ID_FROM_INT(p, i)->type, 0);
+	    get_first_arg_type(ID_FROM_INT(p, i)->type, CALL_NOT_LAST_ARG);
 	  if (res) return res;
 	  /* FIXME: Warn? */
 	  add_ref(string_type_string);
@@ -5225,7 +5227,7 @@ static struct pike_type *debug_low_key_type(struct pike_type *t, node *n)
 	{
 	  /* Get the type of the first argument of the function. */
 	  struct pike_type *res =
-	    get_first_arg_type(ID_FROM_INT(p, i)->type, 0);
+	    get_first_arg_type(ID_FROM_INT(p, i)->type, CALL_NOT_LAST_ARG);
 	  if (res) return res;
 	  /* FIXME: Warn? */
 	  add_ref(mixed_type_string);
