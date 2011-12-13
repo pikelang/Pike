@@ -390,7 +390,21 @@ array(array(string)) decode_words_text( string txt )
     else
       res = ({ w }) + res;
   }
-  return (sizeof(txt)? ({ ({ txt, 0 }) }) : ({ })) + res;
+  a = res;
+  res = ({});
+  if (sizeof(txt)) res = ({ ({ txt, 0 }) });
+  foreach(a, array(string) word) {
+    if (sizeof(res) && res[-1][1] && (res[-1][1] == word[1])) {
+      // Same character set as previous word -- Join the fragments.
+      // This is a workaround for MUA's that split
+      // the text in the middle of encoded characters.
+      // eg PHPMailer [version 1.73]
+      res[-1][0] += word[0];
+    } else {
+      res += ({ word });
+    }
+  }
+  return res;
 }
 
 //! Like @[MIME.decode_words_text()], but the extracted strings are
