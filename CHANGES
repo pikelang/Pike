@@ -3,6 +3,12 @@ Changes since Pike 7.8 (scratch area for future release notes)
 
 o decode_value now throws the error object Error.DecodeError. Useful
   to catch format errors in the decode string.
+o Added ADT.CritBit module
+  Mapping-like key-sorted data structures for string, int and float-keys
+  (ADT.CritBit.Tree, ADT.CritBit.IntTree, ADT.CritBit.FloatTree). Implemented
+  in C.
+
+  
 
 
 Changes since Pike 7.8.352 (third 7.8 release):

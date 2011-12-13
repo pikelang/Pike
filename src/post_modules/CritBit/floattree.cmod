@@ -1,0 +1,101 @@
+/* vim:syntax=c
+ */
+#ifdef cmod___CMOD__
+#ifdef __SSE4_2__
+# include <smmintrin.h>
+#endif
+#include "cyclic.h"
+#include "global.h"
+#include "interpret.h"
+#include "mapping.h"
+#include "module.h"
+#include "pike_error.h"
+#include "pike_float.h"
+#include "pike_types.h"
+#include "stralloc.h"
+#include "svalue.h"
+#include "array.h"
+#include "operators.h"
+#include "builtin_functions.h"
+
+#ifdef CB_USE_BLOCK_ALLOC
+# include "tree_block_alloc.h"
+
+static blk_alloc_t allocator;
+
+# define CB_NODE_ALLOC()	alloc_item(allocator)
+# define CB_NODE_FREE(x)	free_item(allocator, (void*)(x))
+#endif
+
+#define CB_SOURCE
+#define CB_STATIC
+#define CB_INLINE
+#define CB_NAMESPACE
+
+#include "critbit/float2svalue.h"
+#define CB_PRINT_KEY(buf, key)			\
+	do { string_builder_sprintf((buf), "%f",\
+				    cb_decode_float((key).str)); } while(0)
+#include "tree_high.c"
+
+#define DEFAULT_CMOD_STORAGE static
+
+DECLARATIONS
+
+/*! @module ADT */
+/*! @module CritBit */
+
+PIKECLASS FloatTree {
+#cmod_define iterator_class Iterator
+#cmod_define tree_class FloatTree
+#cmod_define cmod_OBJ2_TREE OBJ2_FLOATTREE
+#cmod_define T_KEY (PIKE_T_FLOAT|PIKE_T_INT)
+#cmod_define key_ptype float|int
+#cmod_define sample_key 12.0
+#cmod_define sample_keys ({ 80.4, 99.9, 14.2 })
+#cmod_define ordered_keys 14.2, 80.4 and 99.9
+#cmod_define reverse_ordered_keys 99.9, 80.4 and 14.2
+#cmod_define sample_value ({ 4, 5, 6 })
+#cmod_define extra_doc
+
+#define CB_LOW_ASSIGN_SVALUE_KEY(key, s)	do {			      \
+    struct svalue * __ = (s);						      \
+    SET_SVAL(*__, PIKE_T_FLOAT, 0, float_number, cb_decode_float((key).str)); \
+} while(0)
+#define CB_PUSH_KEY(key)	push_float(cb_decode_float((key).str));
+#define CB_STRING_FROM_SVALUE(v)	cb_encode_float((cb_float)	\
+		    (((v)->type == PIKE_T_INT )				\
+		     ? ((FLOAT_TYPE)(v)->u.integer)			\
+		     : (v)->u.float_number))
+#define CB_LOW_KEY_FROM_SVALUE(x) CB_KEY_FROM_STRING(CB_STRING_FROM_SVALUE(x))
+
+#cmod_include "redefine.H"
+
+#cmod_include "tree_header.H"
+#cmod_include "iterator_source.H"
+#undef THIS
+#define THIS THIS_FLOATTREE
+#cmod_include "tree_source.H"
+}
+
+/*! @endmodule */
+/*! @endmodule */
+
+void pike_init_floattree_module(void) {
+#ifdef CB_USE_BLOCK_ALLOC
+    allocator = init_allocator(128, sizeof(cb_node));
+#endif
+    INIT
+}
+
+void pike_exit_floattree_module(void) {
+#ifdef CB_USE_BLOCK_ALLOC
+    free(allocator);
+    allocator = NULL;
+#endif
+    EXIT
+}
+#else
+void pike_exit_floattree_module(void) {}
+void pike_init_floattree_module(void) {}
+#endif
