@@ -34,6 +34,7 @@ if [ "x1" != "x`git branch | grep -c github_sync`" ]; then
   git fetch github github_sync:github_sync
   git checkout -q github_sync
 else 
+  git fetch -q github github_sync:github_sync
   git checkout -q github_sync
 fi
 
