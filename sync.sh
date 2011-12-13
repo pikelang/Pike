@@ -22,6 +22,13 @@ fi
 
 git fetch -q origin
 git fetch -q github
-git checkout -q github_sync
+
+if [ "x1" != "x`git branch | grep -c github_sync`" ]; then
+  rm -f sync.sh
+  git checkout -b github_sync > github/github_sync
+else 
+  git checkout -q github_sync
+fi
+
 git push -q --mirror github
 
