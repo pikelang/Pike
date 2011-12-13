@@ -13,11 +13,11 @@ if [ ! -e ".git" ]; then
 fi
 
 if [ "x1" != "x`git remote -v  | egrep -c '^origin\s+git://pike-git.lysator.liu.se/pike\s+\(fetch\)$'`" ]; then
-  git remote add --mirror -f origin git://pike-git.lysator.liu.se/pike
+  git remote add --mirror=fetch -f origin git://pike-git.lysator.liu.se/pike
 fi
 
 if [ "x1" != "x`git remote -v  | egrep -c '^github\s+git@github.com:pikelang/Pike.git\s+\(push\)$'`" ]; then
-  git remote add -f github git@github.com:pikelang/Pike.git
+  git remote add --mirror=push -f github git@github.com:pikelang/Pike.git
 fi
 
 git fetch -q origin
@@ -25,7 +25,7 @@ git fetch -q github
 
 if [ "x1" != "x`git branch | grep -c github_sync`" ]; then
   rm -f sync.sh
-  git checkout -b github_sync > github/github_sync
+  git fetch github github_sync:github_sync
 else 
   git checkout -q github_sync
 fi
