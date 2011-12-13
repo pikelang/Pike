@@ -12,11 +12,11 @@ if [ ! -e ".git" ]; then
   git init
 fi
 
-if [ "x1" == "x`git remote -v  | egrep -c '^origin\s+git://pike-git.lysator.liu.se/pike\s+\(push\)$'`" ]; then
+if [ "x1" != "x`git remote -v  | egrep -c '^origin\s+git://pike-git.lysator.liu.se/pike\s+\(fetch\)$'`" ]; then
   git remote add --mirror -f origin git://pike-git.lysator.liu.se/pike
 fi
 
-if [ "x1" == "x`git remote -v  | egrep -c '^github\s+git@github.com:pikelang/Pike.git\s+\(push\)$'`" ]; then
+if [ "x1" != "x`git remote -v  | egrep -c '^github\s+git@github.com:pikelang/Pike.git\s+\(push\)$'`" ]; then
   git remote add -f github git@github.com:pikelang/Pike.git
 fi
 
