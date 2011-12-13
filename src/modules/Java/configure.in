@@ -291,7 +291,7 @@ if test "x$with_java" = xyes; then
   AC_MSG_CHECKING([for JavaVM (MacOS X)])
   AC_CACHE_VAL(pike_cv_java_javavm, [
     pike_cv_java_javavm=no;
-    for tmp_java_javavm in ../.. .. .; do
+    for tmp_java_javavm in ../.. .. . ../../../../Frameworks/JavaVM.framework/; do
       if test -f "$pike_cv_java_java_home"/"$tmp_java_javavm"/JavaVM; then
         pike_cv_java_javavm="$pike_cv_java_java_home"/"$tmp_java_javavm"/JavaVM
       else
