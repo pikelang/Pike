@@ -2436,7 +2436,12 @@ static class nb_sendfile
     SF_WERR("Blocking read.");
     if( sizeof( to_write ) > 2)
       return;
-    string more_data = from->read(DATA_CHUNK_SIZE, 1);
+    string more_data = "";
+    if ((len < 0) || (len > DATA_CHUNK_SIZE)) {
+      more_data = from->read(DATA_CHUNK_SIZE, 1);
+    } else if (len) {
+      more_data = from->read(len, 1);
+    }
     if (!more_data) {
       SF_WERR(sprintf("Blocking read failed with errno: %d\n", from->errno()));
       more_data = "";
@@ -2451,6 +2456,7 @@ static class nb_sendfile
 	trailers = 0;
       }
     } else {
+      if (len > 0) len -= sizeof(more_data);
       to_write += ({ more_data });
     }
   }
@@ -2458,12 +2464,13 @@ static class nb_sendfile
   static void read_cb(mixed ignored, string data)
   {
     SF_WERR("Read callback.");
-    if (len > 0) {
+    if (len >= 0) {
       if (sizeof(data) < len) {
 	len -= sizeof(data);
 	to_write += data / (float) DATA_CHUNK_SIZE;
       } else {
 	to_write += data[..len-1] / (float) DATA_CHUNK_SIZE;
+	len = 0;
 	from->set_blocking();
 	reader_done();
 	return;
