@@ -1,5 +1,5 @@
 
-// $Id: module.pmod,v 1.87 2001/07/19 18:53:06 david%hedbor.org Exp $
+// $Id$
 
 import String;
 
@@ -948,7 +948,12 @@ static class nb_sendfile
     werror("Stdio.sendfile(): Blocking read.\n");
 #endif /* SENDFILE_DEBUG */
 
-    string more_data = from->read(65536, 1);
+    string more_data = "";
+    if ((len < 0) || (len > 65536)) {
+      more_data = from->read(65536, 1);
+    } else if (len) {
+      more_data = from->read(len, 1);
+    }
     if (more_data == "") {
       // EOF.
 #ifdef SENDFILE_DEBUG
@@ -961,6 +966,7 @@ static class nb_sendfile
 	trailers = 0;
       }
     } else {
+      if (len > 0) len -= sizeof(more_data);
       to_write += ({ more_data });
     }
   }
@@ -970,12 +976,13 @@ static class nb_sendfile
 #ifdef SENDFILE_DEBUG
     werror("Stdio.sendfile(): Read callback.\n");
 #endif /* SENDFILE_DEBUG */
-    if (len > 0) {
+    if (len >= 0) {
       if (sizeof(data) < len) {
 	len -= sizeof(data);
 	to_write += ({ data });
       } else {
 	to_write += ({ data[..len-1] });
+	len = 0;
 	reader_done();
 	return;
       }
