@@ -133,7 +133,6 @@ testfont binary
 /lib/modules/Stdio.pmod foreign_ident
 /lib/modules/Stdio.pmod/Readline.pike foreign_ident
 /lib/modules/Stdio.pmod/Terminfo.pmod foreign_ident
-/lib/modules/Stdio.pmod/module.pmod foreign_ident
 /lib/modules/Tools.pmod/X509.pmod foreign_ident
 /lib/modules/Web.pmod/Crawler.pmod foreign_ident
 /lib/modules/Yabu.pmod/module.pmod foreign_ident

@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.117 2003/02/18 11:21:44 mast Exp $
+// $Id$
 #pike __REAL_VERSION__
 
 
@@ -1784,7 +1784,19 @@ static class nb_sendfile
 #endif /* SENDFILE_DEBUG */
     if( sizeof( to_write ) > 2)
       return;
-    string more_data = from->read(65536, 1);
+    string more_data = "";
+    if ((len < 0) || (len > 65536)) {
+      more_data = from->read(65536, 1);
+    } else if (len) {
+      more_data = from->read(len, 1);
+    }
+    if (!more_data) {
+#ifdef SENDFILE_DEBUG
+      werror(sprintf("Stdio.sendfile(): Blocking read failed with errno: %d\n",
+		     from->errno()));
+#endif /* SENDFILE_DEBUG */
+      more_data = "";
+    }
     if (more_data == "") {
       // EOF.
 #ifdef SENDFILE_DEBUG
@@ -1797,6 +1809,7 @@ static class nb_sendfile
 	trailers = 0;
       }
     } else {
+      if (len > 0) len -= sizeof(more_data);
       to_write += ({ more_data });
     }
   }
@@ -1806,12 +1819,13 @@ static class nb_sendfile
 #ifdef SENDFILE_DEBUG
     werror("Stdio.sendfile(): Read callback.\n");
 #endif /* SENDFILE_DEBUG */
-    if (len > 0) {
+    if (len >= 0) {
       if (sizeof(data) < len) {
 	len -= sizeof(data);
 	to_write += ({ data });
       } else {
 	to_write += ({ data[..len-1] });
+	len = 0;
 	from->set_blocking();
 	reader_done();
 	return;
