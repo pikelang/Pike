@@ -5347,7 +5347,7 @@ static int low_check_indexing(struct pike_type *type,
       }
       if (i != -1) {
 	if ((type = low_new_check_call(ID_FROM_INT(p, i)->type, index_type,
-				       0, NULL))) {
+				       CALL_NOT_LAST_ARG, NULL))) {
 	  free_type(type);
 	  return 1;
 	}
