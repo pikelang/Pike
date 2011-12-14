@@ -1563,7 +1563,11 @@ werror("sending certificate: " + Standards.PKCS.Certificate.get_dn_string(Tools.
     } else {
       SSL3_DEBUG_MSG("SSL.session: FINISHED\n");
 
-      server_verify_data = input->get_fix_string(12);
+      if (!version[1]) {
+	server_verify_data = input->get_fix_string(36);
+      } else {
+	server_verify_data = input->get_fix_string(12);
+      }
 
       return 1;			// We're done shaking hands
     }
