@@ -631,7 +631,8 @@ static int _png_write_rgb(rgb_group *w1,
 	    rgb_group tr;
 	    tr.r=tr.g=tr.b=_png_c16(int_from_16bit(trns->str),bpp);
 	    n=n0;
-	    while (n--) *(da1++)=tr;
+	    d1=w1;
+	    while (n--) *(da1++)=(tr.r==(d1++)->r)?black:white;
 	    return 1; /* alpha channel */
 	 }
 	 return 0; /* no alpha channel */
@@ -676,7 +677,8 @@ static int _png_write_rgb(rgb_group *w1,
 	    tr.b=_png_c16(int_from_16bit(trns->str+4),bpp);
 
 	    n=n0;
-	    while (n--) *(da1++)=tr;
+	    d1=w1;
+	    while (n--) *(da1++)=(tr.r==d1->r && tr.g==d1->g && tr.b==d1->b)?black:white,d1++;
 	    return 1; /* alpha channel */
 	 }
 	 return 0; /* no alpha channel */
