@@ -448,19 +448,40 @@ protected THREAD_T op_thread;
   } while (0)
 
 protected void create (Stdio.File stream, SSL.context ctx,
-		    int|void is_client, int|void is_blocking)
-//! Create a connection over @[stream], which should be an open socket or
-//! pipe. @[ctx] is the SSL context. If @[is_client] is set then a
-//! client-side connection is started, server-side otherwise. If
-//! @[is_blocking] is set then the stream is initially set in blocking
-//! mode, nonblocking mode otherwise.
+		       int|void is_client, int|void is_blocking,
+		       SSL.Constants.ProtocolVersion|void min_version,
+		       SSL.Constants.ProtocolVersion|void max_version)
+//! Create an SSL connection over an open @[stream].
+//!
+//! @param stream
+//!   Open socket or pipe to create the connection over.
+//!
+//! @param ctx
+//!   The SSL context.
+//!
+//! @param is_client
+//!   If is set then a client-side connection is started,
+//!   server-side otherwise.
+//!
+//! @param is_blocking
+//!   If is set then the stream is initially set in blocking
+//!   mode, nonblocking mode otherwise.
+//!
+//! @param min_version
+//!   The minimum minor version of SSL to support.
+//!   Defaults to @[PROTOCOL_SSL_3_0].
+//!
+//! @param max_version
+//!   The maximum minor version of SSL to support.
+//!   Defaults to @[PROTOCOL_minor].
 //!
 //! The backend used by @[stream] is taken over and restored after the
 //! connection is closed (see @[close]). The callbacks and id in
 //! @[stream] are overwritten.
 {
-  SSL3_DEBUG_MSG ("SSL.sslfile->create (%O, %O, %O, %O)\n",
-		  stream, ctx, is_client, is_blocking);
+  SSL3_DEBUG_MSG ("SSL.sslfile->create (%O, %O, %O, %O, %O, %O)\n",
+		  stream, ctx, is_client, is_blocking,
+		  min_version, max_version);
 
   ENTER (0, 0) {
     global::stream = stream;
@@ -491,7 +512,7 @@ protected void create (Stdio.File stream, SSL.context ctx,
 
     if(!ctx->random)
       ctx->random = Crypto.Random.random_string;
-    conn = SSL.connection (!is_client, ctx);
+    conn = SSL.connection (!is_client, ctx, min_version, max_version);
 
     if(is_blocking) {
       set_blocking();
@@ -1007,7 +1028,7 @@ void set_callbacks (void|function(mixed, string:int) read,
 
 #if 0
     if (!zero_type(read_oob))
-      read_oob_callback = read_oob);
+      read_oob_callback = read_oob;
     if (!zero_type (write_oob_cb))
       write_oob_callback = write_oob;
 #endif

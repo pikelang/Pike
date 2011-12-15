@@ -26,6 +26,9 @@ constant PROTOCOL_major = 3;
 constant PROTOCOL_minor = 2;
 
 //! Constants for specifying the versions of SSL to use.
+//!
+//! @seealso
+//!   @[SSL.sslfile()->create()], @[SSL.handshake()->create()]
 enum ProtocolVersion {
   PROTOCOL_SSL_3_0	= 0,	//! SSL 3.0 - The original SSL3 draft version.
   PROTOCOL_SSL_3_1	= 1,	//! SSL 3.1 - The RFC 2246 version of SSL.
