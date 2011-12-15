@@ -112,50 +112,67 @@ constant ALERT_warning			= 1;
 constant ALERT_fatal			= 2;
 constant ALERT_levels = (< ALERT_warning, ALERT_fatal >);
 
-constant ALERT_close_notify             = 0;
-constant ALERT_unexpected_message       = 10;
-constant ALERT_bad_record_mac           = 20;
-constant ALERT_decryption_failed        = 21;
-constant ALERT_record_overflow          = 22;
-constant ALERT_decompression_failure    = 30;
-constant ALERT_handshake_failure        = 40;
-constant ALERT_no_certificate           = 41;
-constant ALERT_bad_certificate          = 42;
-constant ALERT_unsupported_certificate  = 43;
-constant ALERT_certificate_revoked      = 44;
-constant ALERT_certificate_expired      = 45;
-constant ALERT_certificate_unknown      = 46;
-constant ALERT_illegal_parameter        = 47;
-constant ALERT_unknown_ca               = 48;
-constant ALERT_access_denied            = 49;
-constant ALERT_decode_error             = 50;
-constant ALERT_decrypt_error            = 51;
-constant ALERT_export_restriction_RESERVED = 60;
-constant ALERT_protocol_version         = 70;
-constant ALERT_insufficient_security    = 71;
-constant ALERT_internal_error           = 80;
-constant ALERT_user_canceled            = 90;
-constant ALERT_no_renegotiation         = 100;
-constant ALERT_unsupported_extension    = 110;
-constant ALERT_certificate_unobtainable = 111;
-constant ALERT_unregonized_name         = 112;
-constant ALERT_bad_certificate_status_response = 113;
-constant ALERT_bad_certificate_hash_value = 114;
-constant ALERT_unknown_psk_identity     = 115;
-constant ALERT_descriptions = (< ALERT_close_notify,
- 				 ALERT_unexpected_message,
- 				 ALERT_bad_record_mac,
- 				 ALERT_decompression_failure,
- 				 ALERT_handshake_failure,
- 				 ALERT_no_certificate,
- 				 ALERT_bad_certificate,
- 				 ALERT_unsupported_certificate,
- 				 ALERT_certificate_revoked,
- 				 ALERT_certificate_expired,
- 				 ALERT_certificate_unknown,
-				 ALERT_illegal_parameter,
-				 ALERT_no_renegotiation,
-			      >);
+constant ALERT_close_notify			= 0;	// SSL 3.0
+constant ALERT_unexpected_message		= 10;	// SSL 3.0
+constant ALERT_bad_record_mac			= 20;	// SSL 3.0
+constant ALERT_decryption_failed		= 21;	// TLS 1.0
+constant ALERT_record_overflow			= 22;	// TLS 1.0
+constant ALERT_decompression_failure		= 30;	// SSL 3.0
+constant ALERT_handshake_failure		= 40;	// SSL 3.0
+constant ALERT_no_certificate			= 41;	// SSL 3.0
+constant ALERT_bad_certificate			= 42;	// SSL 3.0
+constant ALERT_unsupported_certificate		= 43;	// SSL 3.0
+constant ALERT_certificate_revoked		= 44;	// SSL 3.0
+constant ALERT_certificate_expired		= 45;	// SSL 3.0
+constant ALERT_certificate_unknown		= 46;	// SSL 3.0
+constant ALERT_illegal_parameter		= 47;	// SSL 3.0
+constant ALERT_unknown_ca			= 48;	// TLS 1.0
+constant ALERT_access_denied			= 49;	// TLS 1.0
+constant ALERT_decode_error			= 50;	// TLS 1.0
+constant ALERT_decrypt_error			= 51;	// TLS 1.0
+constant ALERT_export_restriction_RESERVED	= 60;	// TLS 1.0
+constant ALERT_protocol_version			= 70;	// TLS 1.0
+constant ALERT_insufficient_security		= 71;	// TLS 1.0
+constant ALERT_internal_error			= 80;	// TLS 1.0
+constant ALERT_user_canceled			= 90;	// TLS 1.0
+constant ALERT_no_renegotiation			= 100;	// TLS 1.0
+constant ALERT_unsupported_extension		= 110;	// RFC 3546
+constant ALERT_certificate_unobtainable		= 111;	// RFC 3546
+constant ALERT_unrecognized_name		= 112;	// RFC 3546
+constant ALERT_bad_certificate_status_response	= 113;	// RFC 3546
+constant ALERT_bad_certificate_hash_value	= 114;	// RFC 3546
+constant ALERT_unknown_psk_identity		= 115;
+constant ALERT_descriptions = ([
+  ALERT_close_notify: "Connection closed.",
+  ALERT_unexpected_message: "An inappropriate message was received.",
+  ALERT_bad_record_mac: "Incorrect MAC.",
+  ALERT_decryption_failed: "Decryption failure.",
+  ALERT_record_overflow: "Record overflow.",
+  ALERT_decompression_failure: "Decompression failure.",
+  ALERT_handshake_failure: "Handshake failure.",
+  ALERT_no_certificate: "Certificate required.",
+  ALERT_bad_certificate: "Bad certificate.",
+  ALERT_unsupported_certificate: "Unsupported certificate.",
+  ALERT_certificate_revoked: "Certificate revoked.",
+  ALERT_certificate_expired: "Certificate expired.",
+  ALERT_certificate_unknown: "Unknown certificate problem.",
+  ALERT_illegal_parameter: "Illegal parameter.",
+  ALERT_unknown_ca: "Unknown certification authority.",
+  ALERT_access_denied: "Access denied.",
+  ALERT_decode_error: "Decoding error.",
+  ALERT_decrypt_error: "Decryption error.",
+  ALERT_export_restriction_RESERVED: "Export restrictions apply.",
+  ALERT_protocol_version: "Unsupported protocol.",
+  ALERT_insufficient_security: "Insufficient security.",
+  ALERT_internal_error: "Internal error.",
+  ALERT_user_canceled: "User canceled.",
+  ALERT_no_renegotiation: "Renegotiation not allowed.",
+  ALERT_unsupported_extension: "Unsolicitaded extension.",
+  ALERT_certificate_unobtainable: "Failed to obtain certificate.",
+  ALERT_unrecognized_name: "Unrecognized host name.",
+  ALERT_bad_certificate_status_response: "Bad certificate status response.",
+  ALERT_bad_certificate_hash_value: "Invalid certificate signature.",
+]);
  			      
 constant CONNECTION_client 	= 0;
 constant CONNECTION_server 	= 1;

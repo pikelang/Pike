@@ -215,7 +215,6 @@ int handle_alert(string s)
 {
   int level = s[0];
   int description = s[1];
-  //FIXME  Include the TLS alerts in ALERT_levels and ALERT_descriptopns aswell!!
   if (! (ALERT_levels[level] && ALERT_descriptions[description]))
   {
     send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
