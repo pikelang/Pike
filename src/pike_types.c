@@ -6108,6 +6108,7 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
       /* Both sides are inverted. Pop both inversions. */
       arg_type = arg_type->car;
       fun_type = fun_type->car;
+      flags ^= CALL_INVERTED_TYPES;
       goto loop;
     } else {
       /* Move the inversion to the argument type. */
@@ -6248,8 +6249,8 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
 	arg_type = zero_type_string;
       }
 
-      if (!((flags & CALL_INVERTED_TYPES)?
-	    low_pike_types_le(tmp2, arg_type, 0, 0):
+      if (!(/*(flags & CALL_INVERTED_TYPES)?
+	      low_pike_types_le(tmp2, arg_type, 0, LE_A_B_SWAPPED): */
 	    low_pike_types_le(arg_type, tmp2, 0, 0)) &&
 	  ((flags & CALL_STRICT) ||
 	   !low_match_types(arg_type, tmp2, NO_SHORTCUTS))) {
