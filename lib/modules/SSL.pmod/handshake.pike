@@ -123,9 +123,9 @@ Packet server_hello_packet()
 {
   ADT.struct struct = ADT.struct();
   /* Build server_hello message */
-  struct->put_uint(3,1); struct->put_uint(version[1],1); /* version */
+  struct->put_uint(version[0],1); struct->put_uint(version[1],1); /* version */
 #ifdef SSL3_DEBUG
-  werror("Writing server hello, with version: 3."+version[1]+"\n");
+  werror("Writing server hello, with version: %d.%d\n", @version);
 #endif
   struct->put_fix_string(server_random);
   struct->put_var_string(session->identity, 1);
@@ -284,7 +284,7 @@ Packet client_key_exchange_packet()
 
     data = (temp_key || context->rsa)->encrypt(premaster_secret);
 
-    if(version[1]>0) 
+    if(version[1] >= PROTOCOL_TLS_1_0)
       data=sprintf("%2c",sizeof(data))+data;
       
     break;
@@ -394,11 +394,11 @@ Packet change_cipher_packet()
 
 string hash_messages(string sender)
 {
-  if(version[1] == 0) {
+  if(version[1] == PROTOCOL_SSL_3_0) {
     return .Cipher.MACmd5(session->master_secret)->hash_master(handshake_messages + sender) +
       .Cipher.MACsha(session->master_secret)->hash_master(handshake_messages + sender);
   }
-  else if(version[1] >= 1) {
+  else if(version[1] >= PROTOCOL_TLS_1_0) {
     return .Cipher.prf(session->master_secret, sender,
 		       .Cipher.MACmd5()->hash_raw(handshake_messages)+
 		       .Cipher.MACsha()->hash_raw(handshake_messages),12);
@@ -519,7 +519,7 @@ string server_derive_master_secret(string data)
 #ifdef SSL3_DEBUG
      werror("encrypted premaster_secret: %O\n", data);
 #endif
-     if(version[1] > 0) {
+     if(version[1] >= PROTOCOL_TLS_1_0) {
        if(sizeof(data)-2 == data[0]*256+data[1]) {
 	 premaster_secret = (temp_key || context->rsa)->decrypt(data[2..]);
        }
@@ -566,13 +566,13 @@ string server_derive_master_secret(string data)
   .Cipher.MACsha sha = .Cipher.MACsha();
   .Cipher.MACmd5 md5 = .Cipher.MACmd5();
 
-  if(version[1] == 0) {
+  if(version[1] == PROTOCOL_SSL_3_0) {
     foreach( ({ "A", "BB", "CCC" }), string cookie)
       res += md5->hash_raw(premaster_secret
 			   + sha->hash_raw(cookie + premaster_secret 
 					   + client_random + server_random));
   }
-  else if(version[1] >= 1) {
+  else if(version[1] >= PROTOCOL_TLS_1_0) {
     res=.Cipher.prf(premaster_secret,"master secret",
 		    client_random+server_random,48);
   }
@@ -594,13 +594,13 @@ string client_derive_master_secret(string premaster_secret)
   werror("Handshake.pike: in client_derive_master_secret is version[1]="+version[1]+"\n");
 #endif
 
-  if(version[1] == 0) {
+  if(version[1] == PROTOCOL_SSL_3_0) {
     foreach( ({ "A", "BB", "CCC" }), string cookie)
       res += md5->hash_raw(premaster_secret
 			   + sha->hash_raw(cookie + premaster_secret 
 					   + client_random + server_random));
   }
-  else if(version[1] >= 1) {
+  else if(version[1] >= PROTOCOL_TLS_1_0) {
     res+=.Cipher.prf(premaster_secret,"master secret",client_random+server_random,48);
   }
   
@@ -919,9 +919,9 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	  pending_read_state = res[0];
 	  pending_write_state = res[1];
 	  send_packet(change_cipher_packet());
-	  if(version[1] == 0)
+	  if(version[1] == PROTOCOL_SSL_3_0)
 	    send_packet(finished_packet("SRVR"));
-	  else if(version[1] >= 1)
+	  else if(version[1] >= PROTOCOL_TLS_1_0)
 	    send_packet(finished_packet("server finished"));
 
 	  expect_change_cipher = 1;
@@ -1029,7 +1029,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
        
 	SSL3_DEBUG_MSG("SSL.session: FINISHED\n");
 
-       if(version[1] == 0) {
+       if(version[1] == PROTOCOL_SSL_3_0) {
 	 my_digest=hash_messages("CLNT");
 	 if (catch {
 	   digest = input->get_fix_string(36);
@@ -1041,7 +1041,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 			       backtrace()));
 	     return -1;
 	   }
-       } else if(version[1] >= 1) {
+       } else if(version[1] >= PROTOCOL_TLS_1_0) {
 	 my_digest=hash_messages("client finished");
 	 if (catch {
 	   digest = input->get_fix_string(12);
@@ -1078,8 +1078,10 @@ int(-1..1) handle_handshake(int type, string data, string raw)
        if (!reuse)
        {
 	 send_packet(change_cipher_packet());
-	 if(version[1] == 0) send_packet(finished_packet("SRVR"));
-	 else if(version[1] >= 1) send_packet(finished_packet("server finished"));
+	 if(version[1] == PROTOCOL_SSL_3_0)
+	   send_packet(finished_packet("SRVR"));
+	 else if(version[1] >= PROTOCOL_TLS_1_0)
+	   send_packet(finished_packet("server finished"));
 	 expect_change_cipher = 1;
 	 context->record_session(session); /* Cache this session */
        }
@@ -1585,8 +1587,10 @@ werror("sending certificate: " + Standards.PKCS.Certificate.get_dn_string(Tools.
 
       send_packet(change_cipher_packet());
 
-      if(version[1] == 0) send_packet(finished_packet("CLNT"));
-      else if(version[1] >= 1) send_packet(finished_packet("client finished"));
+      if(version[1] == PROTOCOL_SSL_3_0)
+	send_packet(finished_packet("CLNT"));
+      else if(version[1] >= PROTOCOL_TLS_1_0)
+	send_packet(finished_packet("client finished"));
       
       }
 	handshake_state = STATE_client_wait_for_finish;
@@ -1608,13 +1612,15 @@ werror("sending certificate: " + Standards.PKCS.Certificate.get_dn_string(Tools.
     } else {
       SSL3_DEBUG_MSG("SSL.session: FINISHED\n");
 
-      if (!version[1]) {
+      string my_digest;
+      if (version[1] == PROTOCOL_SSL_3_0) {
 	server_verify_data = input->get_fix_string(36);
-      } else {
+	my_digest = hash_messages("SRVR");
+      } else if (version[1] >= PROTOCOL_TLS_1_0) {
 	server_verify_data = input->get_fix_string(12);
+	my_digest = hash_messages("server finished");
       }
 
-      string my_digest = hash_messages(version[1]?"server finished":"SRVR");
       if (my_digest != server_verify_data) {
 	SSL3_DEBUG_MSG("digests differ\n");
 	send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],

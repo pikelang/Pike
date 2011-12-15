@@ -33,7 +33,7 @@ void create(void|int extra)
   needed_chars = HEADER_SIZE;
 }
 
-object check_size(int version, int|void extra)
+object check_size(ProtocolVersion version, int|void extra)
 {
   marginal_size = extra;
   return (sizeof(fragment) > (PACKET_MAX_SIZE + extra))
@@ -54,7 +54,7 @@ object check_size(int version, int|void extra)
 //!
 //!   If there's an error, an alert object is returned.
 //!
-object|string recv(string data, int version)
+object|string recv(string data, ProtocolVersion version)
 {
 
 #ifdef SSL3_FRAGDEBUG

@@ -49,6 +49,6 @@ void create(int l, int d, int version, string|void m, mixed|void t)
 
   packet::create();
   packet::content_type = PACKET_alert;
-  packet::protocol_version = ({ 3, version });
+  packet::protocol_version = ({ PROTOCOL_major, version });
   packet::fragment = sprintf("%c%c", level, description);
 }

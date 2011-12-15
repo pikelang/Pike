@@ -25,6 +25,15 @@
 constant PROTOCOL_major = 3;
 constant PROTOCOL_minor = 2;
 
+//! Constants for specifying the versions of SSL to use.
+enum ProtocolVersion {
+  PROTOCOL_SSL_3_0	= 0,	//! SSL 3.0 - The original SSL3 draft version.
+  PROTOCOL_SSL_3_1	= 1,	//! SSL 3.1 - The RFC 2246 version of SSL.
+  PROTOCOL_TLS_1_0	= 1,	//! TLS 1.0 - The RFC 2246 version of TLS.
+  PROTOCOL_SSL_3_2	= 2,	//! SSL 3.2 - The RFC 4346 version of SSL.
+  PROTOCOL_TLS_1_1	= 2,	//! TLS 1.1 - The RFC 4346 version of TLS.
+}
+
 /* Packet types */
 constant PACKET_change_cipher_spec = 20;
 constant PACKET_alert              = 21;
