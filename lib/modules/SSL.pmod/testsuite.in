@@ -86,7 +86,8 @@ test_true([[
 ]])
 
 ]])
-
+dnl Avoid too large strings to cond...
+cond_resolv(Crypto.Hash, [[
 dnl client_min, client_max, server_min, server_max, expected
 define(test_ssl, [[
   test_any([[
@@ -181,7 +182,6 @@ define(test_ssl, [[
   ]], $5)
 ]])
 
-cond_resolv(Crypto.Hash, [[
   test_ssl(0,0,0,0,client_msg)
   test_ssl(0,1,0,0,client_msg)
   test_ssl(1,1,0,0,0)
