@@ -81,6 +81,7 @@ BLOCK_ALLOC(pike_type, n/a);
 #define CALL_WEAK_VOID		0x0008	/* Allow promotion of void to zero. */
 #define CALL_ARG_LVALUE		0x0010	/* Argument is lvalue (sscanf). */
 #define CALL_INHIBIT_WARNINGS	0x0020	/* Inhibit warnings. */
+#define CALL_INVERTED_TYPES	0x0040	/* The fun and arg are inverted. */
 
 /*
  * soft_cast() flags

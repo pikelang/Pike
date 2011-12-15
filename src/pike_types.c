@@ -6115,7 +6115,9 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
       push_finished_type(arg_type);
       push_type(T_NOT);
       arg_type = pop_unfinished_type();
-      res = lower_new_check_call(fun_type->car, arg_type, flags, sval CHECK_CALL_ARGS);
+      res = lower_new_check_call(fun_type->car, arg_type,
+				 flags ^ CALL_INVERTED_TYPES,
+				 sval CHECK_CALL_ARGS);
       free_type(arg_type);
       if (res) {
 	/* Move the inversion back to the function type. */
@@ -6246,7 +6248,9 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
 	arg_type = zero_type_string;
       }
 
-      if (!low_pike_types_le(arg_type, tmp2, 0, 0) &&
+      if (!((flags & CALL_INVERTED_TYPES)?
+	    low_pike_types_le(tmp2, arg_type, 0, 0):
+	    low_pike_types_le(arg_type, tmp2, 0, 0)) &&
 	  ((flags & CALL_STRICT) ||
 	   !low_match_types(arg_type, tmp2, NO_SHORTCUTS))) {
       /* No match. */
@@ -6566,7 +6570,19 @@ struct pike_type *new_get_return_type(struct pike_type *fun_type,
     free_type(tmp2);
     break;
   case T_NOT:
-    /* Doesn't match. */
+    if (!(res = new_get_return_type(fun_type->car, flags))) {
+      copy_pike_type(res, mixed_type_string);
+    } else if (res->type == T_INT) {
+      tmp = res;
+      copy_pike_type(res, tmp->car);
+      free_type(tmp);
+    } else {
+      type_stack_mark();
+      push_finished_type(res);
+      push_type(T_NOT);
+      free_type(res);
+      res = pop_unfinished_type();
+    }
     break;
   case PIKE_T_TYPE:
     /* Casting requires an argument... */
