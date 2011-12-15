@@ -160,8 +160,8 @@ Packet client_hello()
   ADT.struct struct = ADT.struct();
   /* Build client_hello message */
   client_version = ({ PROTOCOL_major, PROTOCOL_minor });
-  struct->put_uint(PROTOCOL_major,1); /* version */
-  struct->put_uint(PROTOCOL_minor,1);
+  struct->put_uint(client_version[0], 1); /* version */
+  struct->put_uint(client_version[1], 1);
   client_random = sprintf("%4c%s", time(), context->random(28));
   struct->put_fix_string(client_random);
   struct->put_var_string("", 1);
