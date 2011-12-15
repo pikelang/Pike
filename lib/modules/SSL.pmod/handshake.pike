@@ -69,11 +69,11 @@ Crypto.RSA temp_key; /* Key used for session key exchange (if not the same
 
 int rsa_message_was_bad;
 array(int) version;
-array(int) remote_version;
+array(int) client_version; /* Used to check for version roll-back attacks. */
 int anonymous = 0;
 int reuse;
 
-//! a few storage variables for client certificate handling on the client side. */
+//! A few storage variables for client certificate handling on the client side.
 array(int) client_cert_types;
 array(string) client_cert_distinguished_names;
 
@@ -159,7 +159,9 @@ Packet client_hello()
 {
   ADT.struct struct = ADT.struct();
   /* Build client_hello message */
-  struct->put_uint(3,1); struct->put_uint(1,1); /* version */
+  client_version = ({ 3, 1 });
+  struct->put_uint(client_version[0], 1); /* version */
+  struct->put_uint(client_version[1], 1);
   client_random = sprintf("%4c%s", time(), context->random(28));
   struct->put_fix_string(client_random);
   struct->put_var_string("", 1);
@@ -266,7 +268,11 @@ Packet client_key_exchange_packet()
   switch (session->ke_method)
   {
   case KE_rsa:
-    struct->put_uint(version[0],1); struct->put_uint(version[1],1);
+    // NOTE: To protect against version roll-back attacks,
+    //       the version sent here MUST be the same as the
+    //       one in the initial handshake!
+    struct->put_uint(client_version[0], 1);
+    struct->put_uint(client_version[1], 1);
     string random = context->random(46);
     struct->put_fix_string(random);
     string premaster_secret = struct->pop_data();
@@ -527,7 +533,7 @@ string server_derive_master_secret(string data)
      if (!premaster_secret
 	 || (sizeof(premaster_secret) != 48)
 	 || (premaster_secret[0] != 3)
-	 || (premaster_secret[1] != remote_version[1]))
+	 || (premaster_secret[1] != client_version[1]))
      {
        /* To avoid the chosen ciphertext attack discovered by Daniel
 	* Bleichenbacher, it is essential not to send any error
@@ -544,7 +550,7 @@ string server_derive_master_secret(string data)
 	 werror("SSL.handshake: Strange version (%d.%d) detected in "
 		"key exchange message (expected %d.%d).\n",
 		premaster_secret[0], premaster_secret[1],
-		remote_version[0], remote_version[1]);
+		client_version[0], client_version[1]);
        }
 #endif
 
@@ -752,7 +758,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 
        	if (
 	  catch{
-	  version = (remote_version = input->get_fix_uint_array(1, 2)) + ({});
+	  version = (client_version = input->get_fix_uint_array(1, 2)) + ({});
 	  client_random = input->get_fix_string(32);
 	  id = input->get_var_string(1);
 	  cipher_len = input->get_uint(2);
@@ -923,7 +929,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	int ch_len;	// Challenge length
 	mixed err;
 	if (err = catch{
-	  version = (remote_version = input->get_fix_uint_array(1, 2)) + ({});
+	  version = (client_version = input->get_fix_uint_array(1, 2)) + ({});
 	  ci_len = input->get_uint(2);
 	  id_len = input->get_uint(2);
 	  ch_len = input->get_uint(2);
@@ -1214,7 +1220,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
       string id;
       int cipher_suite, compression_method;
 
-      version = (remote_version = input->get_fix_uint_array(1, 2)) + ({});
+      version = input->get_fix_uint_array(1, 2);
       server_random = input->get_fix_string(32);
       id = input->get_var_string(1);
       cipher_suite = input->get_uint(2);
