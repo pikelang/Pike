@@ -505,14 +505,14 @@ array lookup(int suite, ProtocolVersion version)
   switch(algorithms[2])
   {
   case HASH_sha:
-    if(version >= (PROTOCOL_TLS_1_0 & 0xff))
+    if(version >= PROTOCOL_TLS_1_0)
       res->mac_algorithm = MAChmac_sha;
     else
       res->mac_algorithm = MACsha;
     res->hash_size = 20;
     break;
   case HASH_md5:
-    if(version >= (PROTOCOL_TLS_1_0 & 0xff))
+    if(version >= PROTOCOL_TLS_1_0)
       res->mac_algorithm = MAChmac_md5;
     else
       res->mac_algorithm = MACmd5;

@@ -25,7 +25,7 @@
 //! Constants for specifying the versions of SSL to use.
 //!
 //! @seealso
-//!   @[context]
+//!   @[context], @[SSL.sslfile()->create()], @[SSL.handshake()->create()]
 enum ProtocolVersion {
   PROTOCOL_SSL_3_0	= 0x0300,
   PROTOCOL_SSL_3_1	= 0x0301,
