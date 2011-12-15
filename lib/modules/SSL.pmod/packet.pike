@@ -34,20 +34,28 @@ void create(void|int extra)
   needed_chars = HEADER_SIZE;
 }
 
-object check_size(int version, int|void extra)
+object check_size(ProtocolVersion version, int|void extra)
 {
   marginal_size = extra;
   return (sizeof(fragment) > (PACKET_MAX_SIZE + extra))
     ? Alert(ALERT_fatal, ALERT_unexpected_message, version) : 0;
 }
 
-/* Called with data read from network.
- *
- * Return string of leftover data if packet is complete, otherwise 0.
- * If there's an error, an alert object is returned.
- */
-
-object|string recv(string data, int version)
+//! Receive data read from the network.
+//!
+//! @param data
+//!   Raw data from the network.
+//!
+//! @param version
+//!   Minor version of the SSL 3 protocol suite to create a packet for.
+//!
+//! @returns
+//!   Returns a string of leftover data if packet is complete,
+//!   otherwise @expr{0@}.
+//!
+//!   If there's an error, an alert object is returned.
+//!
+object|string recv(string data, ProtocolVersion version)
 {
 
 #ifdef SSL3_FRAGDEBUG

@@ -91,7 +91,7 @@ protected string generate_key_block(string client_random, string server_random,
   );
   string key = "";
 
-  if(version[1]==0) {
+  if(version[1] == (PROTOCOL_SSL_3_0 & 0xff)) {
     .Cipher.MACsha sha = .Cipher.MACsha();
     .Cipher.MACmd5 md5 = .Cipher.MACmd5();
     int i = 0;
@@ -108,7 +108,7 @@ protected string generate_key_block(string client_random, string server_random,
 					   server_random + client_random));
       }
   }
-  else if (version[1] >= 1) {
+  else if (version[1] >= (PROTOCOL_TLS_1_0 & 0xff)) {
     // TLS 1.0 or later.
     key = .Cipher.prf(master_secret, "key expansion",
 		      server_random+client_random, required);
@@ -173,7 +173,7 @@ array(string) generate_keys(string client_random, string server_random,
 #endif /* !WEAK_CRYPTO_40BIT (magic comment) */
   {
     // Exportable (ie weak) crypto.
-    if(version[1]==0) {
+    if(version[1] == (PROTOCOL_SSL_3_0 & 0xff)) {
       // SSL 3.0
       function(string:string) md5 = .Cipher.MACmd5()->hash_raw;
       
@@ -191,7 +191,7 @@ array(string) generate_keys(string client_random, string server_random,
 			client_random)[..cipher_spec->iv_size-1];
 	}
 
-    } else if(version[1] >= 1) {
+    } else if(version[1] >= (PROTOCOL_TLS_1_0 & 0xff)) {
       // TLS 1.0 or later.
       string client_wkey = key_data->get_fix_string(5);
       string server_wkey = key_data->get_fix_string(5);
@@ -282,8 +282,8 @@ array(.state) new_server_states(string client_random, string server_random,
     }
     if (cipher_spec->iv_size)
     {
-      if (version[1] >= 2) {
-	// TLS 1.1 or later have an explicit IV.
+      if (version[1] >= (PROTOCOL_TLS_1_1 & 0xff)) {
+	// TLS 1.1 and later have an explicit IV.
 	read_state->tls_iv = write_state->tls_iv = cipher_spec->iv_size;
       }
       read_state->crypt->set_iv(keys[4]);
@@ -328,8 +328,8 @@ array(.state) new_client_states(string client_random, string server_random,
     }
     if (cipher_spec->iv_size)
     {
-      if (version[1] >= 2) {
-	// TLS 1.1 or later have an explicit IV.
+      if (version[1] >= (PROTOCOL_TLS_1_1 & 0xff)) {
+	// TLS 1.1 and later have an explicit IV.
 	read_state->tls_iv = write_state->tls_iv = cipher_spec->iv_size;
       }
       read_state->crypt->set_iv(keys[5]);

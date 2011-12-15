@@ -88,7 +88,7 @@ string tls_unpad(string data)
 //! if needed). On success, returns the decrypted packet. On failure,
 //! returns an alert packet. These cases are distinguished by looking
 //! at the is_alert attribute of the returned packet.
-Alert|.packet decrypt_packet(.packet packet, int version)
+Alert|.packet decrypt_packet(.packet packet, ProtocolVersion version)
 {
   /* NOTE: TLS 1.1 recommends performing the hash check before
    *       sending the alerts to protect against timing attacks.
@@ -118,11 +118,11 @@ Alert|.packet decrypt_packet(.packet packet, int version)
       packet->fragment = #string "alert.pike";	// Some junk data.
       alert = Alert(ALERT_fatal, ALERT_unexpected_message, version);
     } else if (session->cipher_spec->cipher_type == CIPHER_block) {
-      if(version==0) {
+      if(version == (PROTOCOL_SSL_3_0 & 0xff)) {
 	// crypt->unpad() performs decrypt.
 	if (catch { msg = crypt->unpad(msg); })
-	  alert = Alert(ALERT_fatal, ALERT_unexpected_message, version);
-      } else if (version >= 1) {
+	  return Alert(ALERT_fatal, ALERT_unexpected_message, version);
+      } else if (version >= (PROTOCOL_TLS_1_0 & 0xff)) {
 	msg = crypt->crypt(msg);
 
 	if (catch { msg = tls_unpad(msg); })
@@ -194,10 +194,10 @@ Alert|.packet decrypt_packet(.packet packet, int version)
 }
 
 //! Encrypts a packet (including deflating and MAC-generation).
-Alert|.packet encrypt_packet(.packet packet, int version)
+Alert|.packet encrypt_packet(.packet packet, ProtocolVersion version)
 {
   string digest;
-  packet->protocol_version = ({3, version});
+  packet->protocol_version = ({ PROTOCOL_major, version});
   
   if (compress)
   {
@@ -215,10 +215,10 @@ Alert|.packet encrypt_packet(.packet packet, int version)
   {
     if (session->cipher_spec->cipher_type == CIPHER_block)
       {
-	if(version==0) {
+	if(version == (PROTOCOL_SSL_3_0 & 0xff)) {
 	  packet->fragment = crypt->crypt(packet->fragment + digest);
 	  packet->fragment += crypt->pad();
-	} else {
+	} else if (version >= (PROTOCOL_TLS_1_0 & 0xff)) {
 	  packet->fragment = tls_pad(packet->fragment+digest,
 				     crypt->block_size());
 	  if (tls_iv) {
