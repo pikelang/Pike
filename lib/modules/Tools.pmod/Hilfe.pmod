@@ -2846,7 +2846,7 @@ class StdinHilfe
           {
             modules = Array.filter(modules, has_prefix, completable[1]);
             if (sizeof(modules) == 1)
-              return (modules[0]/".")[0][sizeof(completable[1])..];
+              return ({ (modules[0]/".")[0][sizeof(completable[1])..] });
             string prefix = String.common_prefix(modules)[sizeof(completable[1])..];
             if (prefix)
               return ({ prefix });
