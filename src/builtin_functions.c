@@ -9554,29 +9554,14 @@ void init_builtin_efuns(void)
 
   ADD_EFUN("hash_value",f_hash_value,tFunc(tMix,tInt),OPT_TRY_OPTIMIZE);
 
-#if 1
   ADD_EFUN2("indices",f_indices,
-	    tIfnot(tFuncV(tNone,tNot(tOr6(tArray, tMap(tMix, tMix), tSet(tMix),
-					  tStr, tObj, tPrg(tObj))),
-			  tNot(tArr(tMix))),
-		   tOr3(tFunc(tArray,tArr(tIntPos)),
-			tFunc(tOr3(tMap(tSetvar(1,tMix),tMix),
-				   tSet(tSetvar(1,tMix)),
-				   tNStr(tSetvar(1,tInt))),
-			      tArr(tVar(1))),
-			tFunc(tOr(tObj,tPrg(tObj)),tArr(tStr)))
-		   ),
+	    tOr3(tFunc(tArray,tArr(tIntPos)),
+		 tFunc(tOr3(tMap(tSetvar(1,tMix),tMix),
+			    tSet(tSetvar(1,tMix)),
+			    tNStr(tSetvar(1,tInt))),
+		       tArr(tVar(1))),
+		 tFunc(tOr(tObj,tPrg(tObj)),tArr(tStr))),
 	    OPT_TRY_OPTIMIZE,fix_indices_type,0);
-#else
-  ADD_EFUN2("indices",f_indices,
-		   tOr3(tFunc(tArray,tArr(tIntPos)),
-			tFunc(tOr3(tMap(tSetvar(1,tMix),tMix),
-				   tSet(tSetvar(1,tMix)),
-				   tNStr(tSetvar(1,tInt))),
-			      tArr(tVar(1))),
-			tFunc(tOr(tObj,tPrg(tObj)),tArr(tStr))),
-	    OPT_TRY_OPTIMIZE,fix_indices_type,0);
-#endif
 
   ADD_EFUN("undefinedp", f_undefinedp, tFunc(tMix,tInt01), OPT_TRY_OPTIMIZE);
   ADD_EFUN("destructedp", f_destructedp, tFunc(tMix,tInt01), OPT_TRY_OPTIMIZE);
