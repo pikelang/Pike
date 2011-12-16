@@ -476,8 +476,11 @@ protected void create (Stdio.File stream, SSL.context ctx,
 //!   Defaults to @[PROTOCOL_minor].
 //!
 //! The backend used by @[stream] is taken over and restored after the
-//! connection is closed (see @[close]). The callbacks and id in
-//! @[stream] are overwritten.
+//! connection is closed (see @[close] and @[shutdown]). The callbacks
+//! and id in @[stream] are overwritten.
+//!
+//! @throws
+//!   Throws errors on handshake failure in blocking client mode.
 {
   SSL3_DEBUG_MSG ("SSL.sslfile->create (%O, %O, %O, %O, %O, %O)\n",
 		  stream, ctx, is_client, is_blocking,
@@ -530,13 +533,15 @@ protected void create (Stdio.File stream, SSL.context ctx,
   } LEAVE;
 }
 
-//! returns peer certificate information, if any.
+//! @returns
+//!   Returns peer certificate information, if any.
 mapping get_peer_certificate_info()
 {
   return conn->session->cert_data;
 }
 
-//! returns the peer certificate chain, if any.
+//! @returns
+//!   Returns the peer certificate chain, if any.
 array get_peer_certificates()
 {
   return conn->session->peer_certificate_chain;
@@ -544,19 +549,24 @@ array get_peer_certificates()
 
 int close (void|string how, void|int clean_close, void|int dont_throw)
 //! Close the connection. Both the read and write ends are always
-//! closed - the argument @[how] is only for @[Stdio.File]
-//! compatibility and must be either @expr{"rw"@} or @expr{0@}.
+//! closed
 //!
-//! If @[clean_close] is set then close messages are exchanged to shut
-//! down the SSL connection but not the underlying stream. It may then
-//! continue to be used for other communication afterwards. The
-//! default is to send a close message and then close the stream
-//! without waiting for a response.
+//! @param how
+//!   This argument is only for @[Stdio.File] compatibility
+//!   and must be either @expr{"rw"@} or @expr{0@}.
 //!
-//! I/O errors are normally thrown, but that can be turned off with
-//! @[dont_throw]. In that case errno is set instead and 0 is
-//! returned. 1 is always returned otherwise. It's not an error to
-//! close an already closed connection.
+//! @param clean_close
+//!   If set then close messages are exchanged to shut down
+//!   the SSL connection but not the underlying stream. It may then
+//!   continue to be used for other communication afterwards. The
+//!   default is to send a close message and then close the stream
+//!   without waiting for a response.
+//!
+//! @param dont_throw
+//!   I/O errors are normally thrown, but that can be turned off with
+//!   @[dont_throw]. In that case @[errno] is set instead and @expr{0@} is
+//!   returned. @expr{1@} is always returned otherwise. It's not an error to
+//!   close an already closed connection.
 //!
 //! @note
 //! If a clean close is requested in nonblocking mode then the stream
@@ -573,6 +583,9 @@ int close (void|string how, void|int clean_close, void|int dont_throw)
 //! is received at the same time, then this object will read it and
 //! has no way to undo that. That data can be retrieved with @[read]
 //! afterwards.
+//!
+//! @seealso
+//!   @[shutdown]
 {
   SSL3_DEBUG_MSG ("SSL.sslfile->close (%O, %O, %O)\n",
 		  how, clean_close, dont_throw);
@@ -666,6 +679,9 @@ Stdio.File shutdown()
 //! calls return zero and clears @[errno]. If the exchange hasn't
 //! finished then the stream is closed, zero is returned, and @[errno]
 //! will return @[System.EPIPE].
+//!
+//! @seealso
+//!   @[close], @[set_alert_callback]
 {
   ENTER (0, 0) {
     if (!stream) {
@@ -757,6 +773,9 @@ protected void destroy()
 //! close files just by dropping them. No guarantee can be made that
 //! the close packet gets sent successfully though, because we can't
 //! risk blocking I/O here. You should call @[close] explicitly.
+//!
+//! @seealso
+//!   @[close]
 {
   SSL3_DEBUG_MSG ("SSL.sslfile->destroy()\n");
 
@@ -785,6 +804,9 @@ string read (void|int length, void|int(0..1) not_all)
 //! @note
 //! I/O errors from both reading and writing might occur in blocking
 //! mode.
+//!
+//! @seealso
+//!   @[write]
 {
   SSL3_DEBUG_MSG ("SSL.sslfile->read (%d, %d)\n", length, not_all);
 
@@ -852,6 +874,9 @@ int write (string|array(string) data, mixed... args)
 //! @note
 //! I/O errors from both reading and writing might occur in blocking
 //! mode.
+//!
+//! @seealso
+//!   @[read]
 {
   if (sizeof (args))
     data = sprintf (arrayp (data) ? data * "" : data, @args);
@@ -1012,7 +1037,7 @@ void set_callbacks (void|function(mixed, string:int) read,
 //!
 //! @seealso
 //! @[set_read_callback], @[set_write_callback],
-//! @[set_close_callback], @[aet_accept_callback], @[query_callbacks]
+//! @[set_close_callback], @[set_accept_callback], @[query_callbacks]
 {
   SSL3_DEBUG_MSG ("SSL.sslfile->set_callbacks (%O, %O, %O, %O, %O, %O)\n%s",
 		  read, write, close, read_oob, write_oob, accept,
@@ -1045,6 +1070,12 @@ void set_callbacks (void|function(mixed, string:int) read,
   } LEAVE;
 }
 
+//! @returns
+//!   Returns the currently set callbacks in the same order
+//!   as the arguments to @[set_callbacks].
+//!
+//! @seealso
+//!   @[set_callbacks], @[set_nonblocking]
 array(function(mixed,void|string:int)) query_callbacks()
 {
   return ({
@@ -1072,6 +1103,10 @@ void set_nonblocking (void|function(void|mixed,void|string:int) read,
 //!
 //! @bugs
 //! @[read_oob] and @[write_oob] are currently ignored.
+//!
+//! @seealso
+//!   @[set_callbacks], @[query_callbacks], @[set_nonblocking_keep_callbacks],
+//!   @[set_blocking]
 {
   SSL3_DEBUG_MSG ("SSL.sslfile->set_nonblocking (%O, %O, %O, %O, %O, %O)\n%s",
 		  read, write, close, read_oob, write_oob, accept,
@@ -1101,6 +1136,9 @@ void set_nonblocking (void|function(void|mixed,void|string:int) read,
 void set_nonblocking_keep_callbacks()
 //! Set nonblocking mode like @[set_nonblocking], but don't alter any
 //! callbacks.
+//!
+//! @seealso
+//!   @[set_nonblocking], @[set_blocking], @[set_blocking_keep_callbacks]
 {
   SSL3_DEBUG_MSG ("SSL.sslfile->set_nonblocking_keep_callbacks()\n");
 
@@ -1139,6 +1177,10 @@ void set_blocking()
 //! @note
 //! Prior to version 7.5.12, this function didn't clear the accept
 //! callback.
+//!
+//! @seealso
+//!   @[set_nonblocking], @[set_blocking_keep_callbacks],
+//!   @[set_nonblocking_keep_callbacks]
 {
   // Previously this function wrote the remaining write buffer to the
   // stream directly. But that can only be done safely if we implement
@@ -1165,6 +1207,9 @@ void set_blocking()
 void set_blocking_keep_callbacks()
 //! Set blocking mode like @[set_blocking], but don't alter any
 //! callbacks.
+//!
+//! @seealso
+//!   @[set_blocking], @[set_nonblocking]
 {
   SSL3_DEBUG_MSG ("SSL.sslfile->set_blocking_keep_callbacks()\n");
 
@@ -1181,7 +1226,15 @@ void set_blocking_keep_callbacks()
 }
 
 int errno()
-//!
+//! @returns
+//!   Returns the current error number for the connection.
+//!   Notable values are:
+//!   @int
+//!     @value 0
+//!       No error
+//!     @value System.EPIPE
+//!       Connection closed by other end.
+//!   @endint
 {
   // We don't check threads for most other query functions, but
   // looking at errno while doing I/O in another thread can't be done
@@ -1191,14 +1244,25 @@ int errno()
 }
 
 void set_alert_callback (function(object,int|object,string:void) alert)
-//! Install a function that will be called when an alert packet is
-//! received. It doesn't affect the callback mode - it's called both
+//! Install a function that will be called when an alert packet is about
+//! to be sent. It doesn't affect the callback mode - it's called both
 //! from backends and from within normal function calls like @[read]
 //! and @[write].
+//!
+//! This callback can be used to implement fallback to other protocols
+//! when used on the server side together with @[shutdown()].
 //!
 //! @note
 //! This object is part of a cyclic reference whenever this is set,
 //! just like setting any other callback.
+//!
+//! @note
+//!   This callback is not cleared by @[set_blocking], or settable
+//!   by @[set_callbacks] or @[set_nonblocking]. It is also not
+//!   part of the set returned by @[query_callbacks].
+//!
+//! @seealso
+//!   @[query_alert_callback]
 {
   SSL3_DEBUG_MSG ("SSL.sslfile->set_alert_callback (%O)\n", alert);
   CHECK (0, 0);
@@ -1216,7 +1280,11 @@ void set_alert_callback (function(object,int|object,string:void) alert)
 }
 
 function(object,int|object,string:void) query_alert_callback()
+//! @returns
+//!   Returns the current alert callback.
 //!
+//! @seealso
+//!   @[set_alert_callback]
 {
   return conn && conn->alert_callback;
 }
@@ -1231,6 +1299,10 @@ void set_accept_callback (function(void|object,void|mixed:int) accept)
 //! @note
 //! Like the read, write and close callbacks, installing this callback
 //! implies callback mode, even after the handshake is done.
+//!
+//! @seealso
+//!   @[set_nonblocking], @[set_callbacks],
+//!   @[query_accept_callback], @[query_callbacks]
 {
   SSL3_DEBUG_MSG ("SSL.sslfile->set_accept_callback (%O)\n", accept);
   ENTER (0, 0) {
@@ -1244,13 +1316,20 @@ void set_accept_callback (function(void|object,void|mixed:int) accept)
 }
 
 function(void|object,void|mixed:int) query_accept_callback()
+//! @returns
+//!   Returns the current accept callback.
 //!
+//! @seealso
+//!   @[set_accept_callback]
 {
   return accept_callback;
 }
 
 void set_read_callback (function(void|mixed,void|string:int) read)
 //! Install a function to be called when data is available.
+//!
+//! @seealso
+//!   @[query_read_callback], @[set_nonblocking], @[query_callbacks]
 {
   SSL3_DEBUG_MSG ("SSL.sslfile->set_read_callback (%O)\n", read);
   ENTER (0, 0) {
@@ -1264,13 +1343,20 @@ void set_read_callback (function(void|mixed,void|string:int) read)
 }
 
 function(void|mixed,void|string:int) query_read_callback()
+//! @returns
+//!   Returns the current read callback.
 //!
+//! @seealso
+//!   @[set_read_callback], @[set_nonblocking], @[query_callbacks]
 {
   return read_callback;
 }
 
 void set_write_callback (function(void|mixed:int) write)
 //! Install a function to be called when data can be written.
+//!
+//! @seealso
+//!   @[query_write_callback], @[set_nonblocking], @[query_callbacks]
 {
   SSL3_DEBUG_MSG ("SSL.sslfile->set_write_callback (%O)\n", write);
   ENTER (0, 0) {
@@ -1284,7 +1370,11 @@ void set_write_callback (function(void|mixed:int) write)
 }
 
 function(void|mixed:int) query_write_callback()
+//! @returns
+//!   Returns the current write callback.
 //!
+//! @seealso
+//!   @[set_write_callback], @[set_nonblocking], @[query_callbacks]
 {
   return write_callback;
 }
@@ -1292,6 +1382,9 @@ function(void|mixed:int) query_write_callback()
 void set_close_callback (function(void|mixed:int) close)
 //! Install a function to be called when the connection is closed,
 //! either normally or due to an error (use @[errno] to retrieve it).
+//!
+//! @seealso
+//!   @[query_close_callback], @[set_nonblocking], @[query_callbacks]
 {
   SSL3_DEBUG_MSG ("SSL.sslfile->set_close_callback (%O)\n", close);
   ENTER (0, 0) {
@@ -1305,13 +1398,21 @@ void set_close_callback (function(void|mixed:int) close)
 }
 
 function(void|mixed:int) query_close_callback()
+//! @returns
+//!   Returns the current close callback.
 //!
+//! @seealso
+//!   @[set_close_callback], @[set_nonblocking], @[query_callbacks]
 {
   return close_callback;
 }
 
 void set_id (mixed id)
+//! Set the value to be sent as the first argument to the
+//! callbacks installed by @[set_callbacks].
 //!
+//! @seealso
+//!   @[query_id]
 {
   SSL3_DEBUG_MSG ("SSL.sslfile->set_id (%O)\n", id);
   CHECK (0, 0);
@@ -1319,13 +1420,20 @@ void set_id (mixed id)
 }
 
 mixed query_id()
+//! @returns
+//!   Returns the currently set id.
 //!
+//! @seealso
+//!   @[set_id]
 {
   return callback_id;
 }
 
 void set_backend (Pike.Backend backend)
 //! Set the backend used for the file callbacks.
+//!
+//! @seealso
+//!   @[query_backend]
 {
   ENTER (0, 0) {
     if (close_state > STREAM_OPEN) error ("Not open.\n");
@@ -1346,20 +1454,31 @@ void set_backend (Pike.Backend backend)
 
 Pike.Backend query_backend()
 //! Return the backend used for the file callbacks.
+//!
+//! @seealso
+//!   @[set_backend]
 {
   if (close_state > STREAM_OPEN) error ("Not open.\n");
   return real_backend;
 }
 
 string query_address(int|void arg)
+//! @returns
+//!   Returns the address and port of the connection.
 //!
+//!   See @[Stdio.File.query_address] for details.
+//!
+//! @seealso
+//!   @[Stdio.File.query_address]
 {
   if (close_state > STREAM_OPEN) error ("Not open.\n");
   return stream->query_address(arg);
 }
 
 int is_open()
-//! Return nonzero if the stream currently is open, zero otherwise.
+//! @returns
+//! Returns nonzero if the stream currently is open, zero otherwise.
+//!
 //! This function does nonblocking I/O to check for a close packet in
 //! the input buffer.
 //!
@@ -1409,6 +1528,11 @@ Stdio.File query_stream()
 //! Avoid any temptation to do
 //! @expr{destruct(sslfile_obj->query_stream())@}. That almost
 //! certainly creates more problems than it solves.
+//!
+//! You probably want to use @[shutdown].
+//!
+//! @seealso
+//!   @[shutdown]
 {
   SSL3_DEBUG_MSG ("SSL.sslfile->query_stream(): Called from %s:%d\n",
 		  backtrace()[-2][0], backtrace()[-2][1]);
@@ -1417,6 +1541,8 @@ Stdio.File query_stream()
 
 SSL.connection query_connection()
 //! Return the SSL connection object.
+//!
+//! This returns the low-level @[SSL.connection] object.
 {
   SSL3_DEBUG_MSG ("SSL.sslfile->query_connection(): Called from %s:%d\n",
 		  backtrace()[-2][0], backtrace()[-2][1]);
