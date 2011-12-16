@@ -1649,6 +1649,8 @@ protected int ssl_read_callback (int called_from_real_backend, string input)
 	RESTORE;
 	return 0;
       }
+      // Make sure the alert is queued for writing.
+      queue_write();
     }
     else {
       call_read_cb =
