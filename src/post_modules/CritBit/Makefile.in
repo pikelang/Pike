@@ -7,7 +7,7 @@ MODNAME=CritBit
 MODDIR=ADT.pmod/
 MODULE_PMOD_IN=
 MODULE_WRAPPER_PREFIX=_
-AUTODOC_SRC_IN=@srcdir@/stringtree.c @srcdir@/floattree.c @srcdir@/inttree.c
+AUTODOC_SRC_IN=$(SRCDIR)/stringtree.c $(SRCDIR)/floattree.c $(SRCDIR)/inttree.c
 OBJS=glue.o inttree.o stringtree.o floattree.o
 CONFIG_HEADERS=@CONFIG_HEADERS@
 
