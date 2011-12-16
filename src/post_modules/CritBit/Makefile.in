@@ -13,7 +13,7 @@ CONFIG_HEADERS=@CONFIG_HEADERS@
 
 @dynamic_module_makefile@
 
-strintree.o: $(SRCDIR)/stringtree.c
+stringtree.o: $(SRCDIR)/stringtree.c
 
 inttree.o: $(SRCDIR)/inttree.c
 
