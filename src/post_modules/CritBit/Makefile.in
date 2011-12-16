@@ -10,6 +10,7 @@ MODULE_WRAPPER_PREFIX=_
 AUTODOC_SRC_IN=$(SRCDIR)/stringtree.c $(SRCDIR)/floattree.c $(SRCDIR)/inttree.c
 OBJS=glue.o inttree.o stringtree.o floattree.o
 CONFIG_HEADERS=@CONFIG_HEADERS@
+CMOD_HEADERS=redefine.H tree_header.H iterator_source.H tree_source.H
 
 @dynamic_module_makefile@
 
@@ -20,5 +21,9 @@ inttree.o: $(SRCDIR)/inttree.c
 floattree.o: $(SRCDIR)/floattree.c
 
 glue.o: $(SRCDIR)/glue.c
+
+$(SRCDIR)/stringtree.c: $(CMOD_HEADERS)
+$(SRCDIR)/inttree.c: $(CMOD_HEADERS)
+$(SRCDIR)/floattree.c: $(CMOD_HEADERS)
 
 @dependencies@
