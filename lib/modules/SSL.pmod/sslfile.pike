@@ -498,7 +498,12 @@ protected void create (Stdio.File stream, SSL.context ctx,
 
     if(is_blocking) {
       set_blocking();
-      if (is_client) direct_write();
+      if (is_client && !direct_write()) {
+	int err = errno();
+	shutdown();
+	local_errno = err;
+	error("SSL.sslfile: SSL handshake failure: %s\n", strerror(err));
+      }
     }
     else {
       set_nonblocking();
