@@ -886,6 +886,14 @@ int main(int argc, array(string) argv)
   mkdir("build/doc/doc");
   mkdir("build/doc/images");
 
+  // Git between 1.7.7 and 1.7.9 have an infinite loop in the
+  // LF to CRLF filter, which is triggered by some Pike commits.
+  // Since we don't care about CRLF (or in fact the affected files
+  // at all), we just disable CRLF conversion entirely.
+  Stdio.write_file(work_git + "/info/attributes",
+		   "# Kludge around infinite loop in git 1.7.7 and 1.7.8.\n"
+		   "* eol=lf\n");
+
   // Get the current references for the source directory.
   get_refs(work_git, src_refs, 1);
 
