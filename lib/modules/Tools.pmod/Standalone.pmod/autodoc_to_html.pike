@@ -778,6 +778,8 @@ string parse_doc(Node n, void|int no_text) {
     case "thanks":
     case "throws":
       ret += lay->dochead + String.capitalize(name) + lay->_dochead;
+      // FALL_THROUGH
+    case "text":
       if (c = c->get_first_element("text")) {
 	ret += lay->docbody + parse_text(c) + lay->_docbody;
       }
@@ -1324,8 +1326,9 @@ string layout_toploop(Node n, Git.Export|void exporter) {
 	werror("\t%s\n", c->get_attributes()->name);
       }
       if (exporter) {
+	string html = frame_html(layout_toploop(c));
 	exporter->filemodify(Git.MODE_FILE, c->get_attributes()->name);
-	exporter->data(frame_html(layout_toploop(c)));
+	exporter->data(html);
 	break;
       }
       if(dest_path)
