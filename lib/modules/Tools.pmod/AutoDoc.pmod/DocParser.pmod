@@ -54,6 +54,7 @@ mapping(string : DocTokenType) keywordtype =
   "appears" : METAKEYWORD,
   "belongs" : METAKEYWORD,
   "class" : METAKEYWORD,
+  "global" : METAKEYWORD,
   "endclass" : METAKEYWORD,
   "module" : METAKEYWORD,
   "endmodule" : METAKEYWORD,
@@ -934,6 +935,24 @@ protected class DocParserClass {
           }
           else
             parseError("@appears not allowed here");
+	}
+	break;
+
+      case "global":
+	{
+	  parseError("The @global keyword is obsolete. "
+		     "Use @belongs predef:: instead.");
+	  if (meta->type == "class" || meta->type == "decl"
+	      || meta->type == "module" || !meta->type)
+	  {
+	    if (meta->belongs)
+	      parseError("duplicate @belongs/@global");
+	    if (meta->appears)
+	      parseError("both @appears and @belongs/@global");
+	    if (scopeModule)
+	      parseError("both 'scope::' and @belongs/@global");
+	    meta->belongs = "predef::";
+	  }
 	}
 	break;
 
