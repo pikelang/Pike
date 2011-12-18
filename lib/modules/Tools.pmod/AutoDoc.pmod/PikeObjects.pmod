@@ -51,7 +51,7 @@ class ArrayType {
     if (!valuetype)
       return ::xml(flags);
     return xmltag("array",
-                  xmltag("valuetype", valuetype->xml()));
+                  xmltag("valuetype", valuetype->xml(flags)));
   }
 }
 

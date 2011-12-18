@@ -203,7 +203,7 @@ string extractXML(string filename, int|void pikeMode, string|void type,
       namespace = namespace[..<2];
     }
     object m = .CExtractor.extract(contents, filename, namespace, flags);
-    return m->xml();
+    return m->xml(flags);
   }
   else if(stylePike && has_value(contents, "//!")) {
     if(has_suffix(filename, ".pmod.in")) {
