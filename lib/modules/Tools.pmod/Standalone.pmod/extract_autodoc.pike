@@ -229,8 +229,9 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
       if(!dstat || dstat->mtime < stat->mtime || dstat->mtime < root_ts) {
 	string res = extract(srcdir+fn, imgdir, builddir, root);
 	if(!res) {
-	  if (flags & Tools.AutoDoc.FLAG_KEEP_GOING) continue;
-	  exit(1);
+	  if (!(flags & Tools.AutoDoc.FLAG_KEEP_GOING))
+	    exit(1);
+	  res = "";
 	}
 	string orig = Stdio.read_bytes(builddir + fn + ".xml");
 	if (res != orig) {
