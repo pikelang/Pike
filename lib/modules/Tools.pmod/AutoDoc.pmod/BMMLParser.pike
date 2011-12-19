@@ -562,7 +562,7 @@ string convert_page(string path, string fname,
       }
       if (sizeof(sections)) {
 	sections[-1] += term_prev;
-	parts[partno]="<doc>\n"+sections*"\n"+"\n</doc>\n";
+	parts[partno]="<doc placeholder='true'>\n"+sections*"\n"+"\n</doc>\n";
       } else {
 	// Empty part!
 	parts[partno] = "";
@@ -648,7 +648,7 @@ string convert_page(string path, string fname,
       }
       sections[section]=tmp;
     }
-    cont="<doc><text><p>" + sections*"\n</p>\n<p>\n" +
+    cont="<doc placeholder='true'><text><p>" + sections*"\n</p>\n<p>\n" +
       "</p></text></doc>\n";
 
     return mkdocument(cont, title || "Pike manual");

@@ -451,14 +451,16 @@ void mergeTrees(SimpleNode dest, SimpleNode source) {
         break;
       case "doc":
         if (dest_has_doc) {
-	  if (!sizeof(String.trim_all_whites(node->value_of_node())) ||
+	  if ((node->get_attributes()["placeholder"] == "true") ||
+	      !sizeof(String.trim_all_whites(node->value_of_node())) ||
 	      (String.trim_all_whites(node->value_of_node()) ==
 	       String.trim_all_whites(dest_has_doc->value_of_node()))) {
-	    // New doc is empty or same as old.
+	    // New doc is placeholder, empty or same as old.
 	    children[i] = 0;
 	    break;
 	  }
-	  if (sizeof(String.trim_all_whites(dest_has_doc->value_of_node()))) {
+	  if ((dest_has_doc->get_attributes()["placeholder"] != "true") &&
+	      sizeof(String.trim_all_whites(dest_has_doc->value_of_node()))) {
 	    // werror("Original doc: %O\n", dest_has_doc->value_of_node());
 	    // werror("New doc: %O\n", node->value_of_node());
 	    if (isNameSpace(dest))
@@ -475,7 +477,7 @@ void mergeTrees(SimpleNode dest, SimpleNode source) {
 	    mergeDoc(dest_has_doc, node);
 	    children[i] = 0;
 	  } else {
-	    // Old doc was empty.
+	    // Old doc was placeholder or empty.
 	    dest->remove_child(dest_has_doc);
 	  }
         }
