@@ -366,271 +366,41 @@ PIKECLASS HashState
 
 /*! @endclass HashState */
 
-/*! @class MD5_Info
- *!
- *! Internal mixin class, intended to be multiply inherited
- *! together with HashInfo. */
+#cmod_define TOSTR(DEF)	#DEF
 
-PIKECLASS MD5_Info
-{
-  INIT
-    {
-      struct HashInfo_struct *HashInfo
-	= (struct HashInfo_struct *) get_storage(Pike_fp->current_object,
-						 HashInfo_program);
-
-      werror("MD5_Info->INIT\n");
-      
-      if (HashInfo && !HashInfo->meta)
-	HashInfo->meta = &nettle_md5;
-      else {
-	/* Can't call Pike_error here. 
-	 * Pike_error("Can't initialize this object.\n"); */
-	werror("MD5_Info->INIT failed\n");
-      }
-    }
-}
-
-/*! @endclass MD5_Info */
-
-/*! @class MD5_State
- *!
- *! State for MD5 hashing.
- */
-PIKECLASS MD5_State
-{
-  INHERIT MD5_Info;
-  INHERIT HashState;
-  CVAR struct md5_ctx md5;
-
-  INIT
-    {
-      struct HashState_struct *instance
-	= (struct HashState_struct *) get_storage(Pike_fp->current_object,
-						  HashState_program);
-      werror("MD5_State->INIT\n");
-
-      assert(instance);
-
-      md5_init(&THIS->md5);      
-      instance->ctx = &THIS->md5;
-    }
-}
-/*! @endclass MD5_State */
+#cmod_define PIKE_NAME MD5
+#cmod_define NETTLE_NAME md5
+#cmod_include "hash.H"
+#cmod_undef PIKE_NAME
+#cmod_undef NETTLE_NAME
 
 #ifdef HAVE_NETTLE_MD4_INIT
 
-/*! @class MD4_Info
- *!
- *! Internal mixin class, intended to be multiply inherited
- *! together with HashInfo. */
+#cmod_define PIKE_NAME MD4
+#cmod_define NETTLE_NAME md4
+#cmod_include "hash.H"
+#cmod_undef PIKE_NAME
+#cmod_undef NETTLE_NAME
 
-PIKECLASS MD4_Info
-{
-  INIT
-    {
-      struct HashInfo_struct *HashInfo
-	= (struct HashInfo_struct *) get_storage(Pike_fp->current_object,
-						 HashInfo_program);
-
-      werror("MD4_Info->INIT\n");
-      
-      if (HashInfo && !HashInfo->meta)
-	HashInfo->meta = &nettle_md4;
-      else {
-	/* Can't call Pike_error here. 
-	 * Pike_error("Can't initialize this object.\n"); */
-	werror("MD4_Info->INIT failed\n");
-      }
-    }
-}
-
-/*! @endclass MD4_Info */
-
-/*! @class MD4_State
- *!
- *! State for MD4 hashing.
- */
-PIKECLASS MD4_State
-{
-  INHERIT MD4_Info;
-  INHERIT HashState;
-  CVAR struct md4_ctx md4;
-
-  INIT
-    {
-      struct HashState_struct *instance
-	= (struct HashState_struct *) get_storage(Pike_fp->current_object,
-						  HashState_program);
-      werror("MD4_State->INIT\n");
-
-      assert(instance);
-
-      md4_init(&THIS->md4);
-      instance->ctx = &THIS->md4;
-    }
-}
-/*! @endclass MD4_State */
-
-/*! @class MD2_Info
- *!
- *! Internal mixin class, intended to be multiply inherited
- *! together with HashInfo. */
-
-PIKECLASS MD2_Info
-{
-  INIT
-    {
-      struct HashInfo_struct *HashInfo
-	= (struct HashInfo_struct *) get_storage(Pike_fp->current_object,
-						 HashInfo_program);
-
-      werror("MD2_Info->INIT\n");
-      
-      if (HashInfo && !HashInfo->meta)
-	HashInfo->meta = &nettle_md2;
-      else {
-	/* Can't call Pike_error here. 
-	 * Pike_error("Can't initialize this object.\n"); */
-	werror("MD2_Info->INIT failed\n");
-      }
-    }
-}
-
-/*! @endclass MD2_Info */
-
-/*! @class MD2_State
- *!
- *! State for MD2 hashing.
- */
-PIKECLASS MD2_State
-{
-  INHERIT MD2_Info;
-  INHERIT HashState;
-  CVAR struct md2_ctx md2;
-
-  INIT
-    {
-      struct HashState_struct *instance
-	= (struct HashState_struct *) get_storage(Pike_fp->current_object,
-						  HashState_program);
-      werror("MD2_State->INIT\n");
-
-      assert(instance);
-
-      md2_init(&THIS->md2);
-      instance->ctx = &THIS->md2;
-    }
-}
-/*! @endclass MD2_State */
+#cmod_define PIKE_NAME MD2
+#cmod_define NETTLE_NAME md2
+#cmod_include "hash.H"
+#cmod_undef PIKE_NAME
+#cmod_undef NETTLE_NAME
 
 #endif /* HAVE_NETTLE_MD4_INIT */
 
-/*! @class SHA1_Info
- *!
- *! Internal mixin class, intended to be multiply inherited
- *! together with HashInfo. */
+#cmod_define PIKE_NAME SHA1
+#cmod_define NETTLE_NAME sha1
+#cmod_include "hash.H"
+#cmod_undef PIKE_NAME
+#cmod_undef NETTLE_NAME
 
-PIKECLASS SHA1_Info
-{
-  INIT
-    {
-      struct HashInfo_struct *HashInfo
-	= (struct HashInfo_struct *) get_storage(Pike_fp->current_object,
-						 HashInfo_program);
-
-      werror("SHA1_Info->INIT\n");
-      
-      if (HashInfo && !HashInfo->meta)
-	HashInfo->meta = &nettle_sha1;
-      else {
-	/* Can't call Pike_error here. 
-	 * Pike_error("Can't initialize this object.\n"); */
-	werror("SHA1_Info->INIT failed\n");
-      }
-    }
-}
-
-/*! @endclass SHA1_Info */
-
-/*! @class SHA1_State
- *!
- *! State for SHA1 hashing.
- */
-
-PIKECLASS SHA1_State
-{
-  INHERIT SHA1_Info;
-  INHERIT HashState;
-  CVAR struct sha1_ctx sha1;
-
-  INIT
-    {
-      struct HashState_struct *instance
-	= (struct HashState_struct *) get_storage(Pike_fp->current_object,
-						  HashState_program);
-      werror("SHA1_State->INIT\n");
-
-      assert(instance);
-
-      sha1_init(&THIS->sha1);      
-      instance->ctx = &THIS->sha1;
-    }
-}
-/*! @endclass SHA1_State */
-
-/*! @class SHA256_Info
- *!
- *! Internal mixin class, intended to be multiply inherited
- *! together with HashInfo. */
-
-PIKECLASS SHA256_Info
-{
-  INIT
-    {
-      struct HashInfo_struct *HashInfo
-	= (struct HashInfo_struct *) get_storage(Pike_fp->current_object,
-						 HashInfo_program);
-
-      werror("SHA256_Info->INIT\n");
-      
-      if (HashInfo && !HashInfo->meta)
-	HashInfo->meta = &nettle_sha256;
-      else {
-	/* Can't call Pike_error here. 
-	 * Pike_error("Can't initialize this object.\n"); */
-	werror("SHA256_Info->INIT failed\n");
-      }
-    }
-}
-
-/*! @endclass SHA256_Info */
-
-/*! @class SHA256_State
- *!
- *! State for SHA256 hashing.
- */
-
-PIKECLASS SHA256_State
-{
-  INHERIT SHA256_Info;
-  INHERIT HashState;
-  CVAR struct sha256_ctx sha256;
-
-  INIT
-    {
-      struct HashState_struct *instance
-	= (struct HashState_struct *) get_storage(Pike_fp->current_object,
-						  HashState_program);
-      werror("SHA256_State->INIT\n");
-
-      assert(instance);
-
-      sha256_init(&THIS->sha256);
-      instance->ctx = &THIS->sha256;
-    }
-}
-/*! @endclass SHA256_State */
+#cmod_define PIKE_NAME SHA256
+#cmod_define NETTLE_NAME sha256
+#cmod_include "hash.H"
+#cmod_undef PIKE_NAME
+#cmod_undef NETTLE_NAME
 
 /*! @endmodule Nettle */
 
