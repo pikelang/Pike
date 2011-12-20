@@ -40,7 +40,7 @@ array(string) split_reference(string what) {
     array(string) r = what/".";
 
     for (int i = 1; i < sizeof(r) - 1; i++) {
-	if (r[i] == "" && r[i] == "") {
+	if (r[i] == "" && r[i+1] == "") {
 	    r[i-1] = sprintf("%s..%s", r[i-1], r[i+1]);
 	    r = r[..i-1] + r[i+2..];
 	}
