@@ -402,6 +402,26 @@ PIKECLASS HashState
 #cmod_undef PIKE_NAME
 #cmod_undef NETTLE_NAME
 
+#ifdef SHA384_DIGEST_SIZE
+
+#cmod_define PIKE_NAME SHA384
+#cmod_define NETTLE_NAME sha384
+#cmod_include "hash.H"
+#cmod_undef PIKE_NAME
+#cmod_undef NETTLE_NAME
+
+#endif /* SHA384_DIGEST_SIZE */
+
+#ifdef SHA512_DIGEST_SIZE
+
+#cmod_define PIKE_NAME SHA512
+#cmod_define NETTLE_NAME sha512
+#cmod_include "hash.H"
+#cmod_undef PIKE_NAME
+#cmod_undef NETTLE_NAME
+
+#endif /* SHA512_DIGEST_SIZE */
+
 /*! @endmodule Nettle */
 
 void
