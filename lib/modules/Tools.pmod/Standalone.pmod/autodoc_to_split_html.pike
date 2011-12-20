@@ -35,13 +35,27 @@ string cquote(string n)
   return ret;
 }
 
+// This splits references, but leaves ".." intact (mainly for refs to `[..]).
+array(string) split_reference(string what) {
+    array(string) r = what/".";
+
+    for (int i = 1; i < sizeof(r) - 1; i++) {
+	if (r[i] == "" && r[i] == "") {
+	    r[i-1] = sprintf("%s..%s", r[i-1], r[i+1]);
+	    r = r[..i-1] + r[i+2..];
+	}
+    }
+
+    return r;
+}
+
 string create_reference(string from, string to, string text) {
   array a = (to/"::");
   switch(sizeof(a)) {
   case 2:
     if (sizeof(a[1])) {
       // Split trailing module path.
-      a = a[0..0] + a[1]/".";
+      a = a[0..0] + split_reference(a[1]);
     } else {
       // Get rid of trailing "".
       a = a[0..0];
@@ -49,7 +63,7 @@ string create_reference(string from, string to, string text) {
     a[0] += "::";
     break;
   case 1:
-    a = a[0]/".";
+    a = split_reference(a[0]);
     break;
   default:
     error("Bad reference: %O\n", to);
