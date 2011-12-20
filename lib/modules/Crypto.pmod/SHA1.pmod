@@ -13,6 +13,7 @@ inherit .Hash;
 
 .HashState `()() { return Nettle.SHA1_State(); }
 
+// RFC 4055:
 // id-sha1    OBJECT IDENTIFIER ::= {
 //   iso(1) identified-organization(3) oiw(14) secsig(3) algorithms(2) 26
 // }
