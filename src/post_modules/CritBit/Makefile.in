@@ -12,6 +12,8 @@ OBJS=glue.o inttree.o stringtree.o floattree.o
 CONFIG_HEADERS=@CONFIG_HEADERS@
 CMOD_HEADERS=redefine.H tree_header.H iterator_source.H tree_source.H
 
+PRECOMPILER_ARGS=--api=4
+
 @dynamic_module_makefile@
 
 stringtree.o: $(SRCDIR)/stringtree.c

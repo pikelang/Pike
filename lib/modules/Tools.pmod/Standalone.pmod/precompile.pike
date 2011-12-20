@@ -12,7 +12,11 @@
 #define TOSTR(X) #X
 #define DEFINETOSTR(X) TOSTR(X)
 
+#if constant(Pike.__HAVE_CPP_PREFIX_SUPPORT__)
+constant precompile_api_version = "4";
+#else
 constant precompile_api_version = "3";
+#endif
 
 constant want_args = 1;
 
@@ -2692,32 +2696,47 @@ int main(int argc, array(string) argv)
   string file = argv[1];
 
   x=Stdio.read_file(file)-"\r";
+
 #if constant(Pike.__HAVE_CPP_PREFIX_SUPPORT__)
-  x=sprintf("#cmod_line %d %O\n%s", __LINE__+1, __FILE__,
-    sprintf("#cmod_define cmod_CONCAT_EVAL(x...)\tcmod_CONCAT(x)\n"
-	    "#cmod_define cmod_EVAL(x...)\tcmod_CONCAT(x)\n"
-	    "#cmod_define cmod_STRFY(x...)\t#x\n"
-	    "#cmod_define cmod_DEFINE_EVAL(x...)\tcmod_DEFINE(x)\n"
-	    "#cmod_define cmod_STRFY_EVAL(x...)\tcmod_STRFY( x )\n"
-	    "#cmod_define cmod_REDEFINE(x)\tcmod_DEFINE(##x, x)\n"
-	    "#cmod_define cmod_COMMA ,\n"
-	    "#cmod_line 1 %O\n%s", file, x));
-  x=cpp(x, ([
-    "current_file" : file,
-    "prefix" : "cmod",
-    "keep_comments" : 1,
-    "handler" : Handler(([
-	    "cmod___SLASH__" : "/",
-	    "DOCSTART()" : lambda() { return "cmod___SLASH__*!"; },
-	    "DOCEND()" : lambda() { return "*cmod___SLASH__"; },
-	    "cmod_DEFINE()" : lambda(string x, string y) {
-		return sprintf("#ifdef %s\n#undef %<s\n#endif\n#define %<s %s", x, y);
-	    },
-	    "cmod_CONCAT()" : lambda(string ... s) { return s*""; },
-	    "cmod___CMOD__" : "1",
-       ]))
-  ]));
+  // Make sure that the user specifies the correct
+  // minimum API level for build-script compatibility.
+  if (api >= 4) {
+    x=sprintf("#cmod_line %d %O\n%s", __LINE__+1, __FILE__,
+	      sprintf("#cmod_define cmod_CONCAT_EVAL(x...)\tcmod_CONCAT(x)\n"
+		      "#cmod_define cmod_EVAL(x...)\tcmod_CONCAT(x)\n"
+		      "#cmod_define cmod_STRFY(x...)\t#x\n"
+		      "#cmod_define cmod_DEFINE_EVAL(x...)\tcmod_DEFINE(x)\n"
+		      "#cmod_define cmod_STRFY_EVAL(x...)\tcmod_STRFY( x )\n"
+		      "#cmod_define cmod_REDEFINE(x)\tcmod_DEFINE(##x, x)\n"
+		      "#cmod_define cmod_COMMA ,\n"
+		      "#cmod_line 1 %O\n%s", file, x));
+    x=cpp(x, ([
+	    "current_file" : file,
+	    "prefix" : "cmod",
+	    "keep_comments" : 1,
+	    "handler" : Handler(([
+				  "cmod___SLASH__" : "/",
+				  "DOCSTART()" :
+				  lambda() { return "cmod___SLASH__*!"; },
+				  "DOCEND()" :
+				  lambda() { return "*cmod___SLASH__"; },
+				  "cmod_DEFINE()" :
+				  lambda(string x, string y) {
+				    return sprintf("#ifdef %s\n"
+						   "#undef %<s\n"
+						   "#endif\n"
+						   "#define %<s %s", x, y);
+				  },
+				  "cmod_CONCAT()" :
+				  lambda(string ... s) { return s*""; },
+				  "cmod___CMOD__" : "1",
+				]))
+	  ]));
+  } else
 #endif
+    if (has_value(c, "cmod_include")) {
+      werror("Warning: It looks like %O might require API level 4.\n", file);
+    }
   x=split(x);
   x=PC.tokenize(x,file);
   x = convert_comments(x);
