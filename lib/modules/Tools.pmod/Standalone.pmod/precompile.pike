@@ -2734,7 +2734,7 @@ int main(int argc, array(string) argv)
 	  ]));
   } else
 #endif
-    if (has_value(c, "cmod_include")) {
+    if (has_value(x, "cmod_include")) {
       werror("Warning: It looks like %O might require API level 4.\n", file);
     }
   x=split(x);
