@@ -35,14 +35,19 @@ string cquote(string n)
   return ret;
 }
 
-// This splits references, but leaves ".." intact (mainly for refs to `[..]).
+// This splits references, but leaves "..+" intact (mainly for refs to `[..]).
 array(string) split_reference(string what) {
     array(string) r = what/".";
 
     for (int i = 1; i < sizeof(r) - 1; i++) {
 	if (r[i] == "") {
-	    r[i-1] = sprintf("%s..%s", r[i-1], r[i+1]);
-	    r = r[..i-1] + r[i+2..];
+	    int j = i+1;
+
+	    while (j < sizeof(r) - 1 && r[j] == "") j++;
+
+	    r[i-1] = sprintf("%s.%s%s", r[i-1], "."*(j-i), r[j]);
+	    r = r[..i-1] + r[j+1..];
+	    i--;
 	}
     }
 
