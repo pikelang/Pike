@@ -31,33 +31,24 @@ static const char logTable[256] = {
 # undef LT
 #endif
 
-static const unsigned char LMultiplyDeBruijnBitPosition32[33] =
+static const unsigned char LMultiplyDeBruijnBitPosition32[32] =
 {
-    32,
     31, 22, 30, 21, 18, 10, 29,  2,
     20, 17, 15, 13,  9,  6, 28,  1,
     23, 19, 11,  3, 16, 14,  7, 24,
     12,  4,  8, 25,  5, 26, 27,  0,
-/*
-     0,  1, 28,  2, 29, 14, 24,  3,
-    30, 22, 20, 15, 25, 17,  4,  8,
-    31, 27, 13, 23, 21, 19, 16,  7,
-    26, 12, 18,  6, 11,  5, 10,  9
-*/
 };
-static const unsigned char TMultiplyDeBruijnBitPosition32[33] =
-{
-    32,
-    31, 30,  3, 29,  2, 17,  7, 28,
-     1,  9, 11, 16,  6, 14, 27, 23,
-     0,  4, 18,  8, 10, 12, 15, 24,
-     5, 19, 13, 25, 20, 26, 21, 22
-};
-static const unsigned char LMultiplyDeBruijnBitPosition64[65] = {
-    64,
-};
-static const unsigned char TMultiplyDeBruijnBitPosition64[65] = {
-    64,
+/* maps 2^n - 1 -> n
+ */
+static inline uint32_t leading_bit_pos32(const uint32_t v) {
+    return LMultiplyDeBruijnBitPosition32[(((uint32_t)((v) * 0x07C4ACDDU)) >> 27)];
+}
+static inline uint32_t trailing_bit_pos32(const uint32_t v) {
+    return 31 - leading_bit_pos32(v);
+}
+#if SIZEOF_LONG == 8 || SIZEOF_LONG_LONG == 8
+
+static const unsigned char TMultiplyDeBruijnBitPosition64[64] = {
      0, 63,  5, 62,  4, 16, 10, 61,
      3, 24, 15, 36,  9, 30, 21, 60,
      2, 12, 26, 23, 14, 45, 35, 43,
@@ -67,27 +58,14 @@ static const unsigned char TMultiplyDeBruijnBitPosition64[65] = {
      7, 18, 38, 32, 28, 47, 54, 51,
     19, 39, 48, 55, 40, 56, 57, 58
 };
-/* maps 2^n - 1 -> n
- * returns 32 is none is set.
- */
-static inline uint32_t leading_bit_pos32(uint32_t v) {
-    return LMultiplyDeBruijnBitPosition32[!!v + (((uint32_t)((v) * 0x07C4ACDDU)) >> 27)];
+static inline uint64_t trailing_bit_pos64(const uint64_t v) {
+    return TMultiplyDeBruijnBitPosition64[(((uint64_t)((v) * 0x07EDD5E59A4E28C2ULL)) >> 58)];
 }
-static inline uint32_t trailing_bit_pos32(uint32_t v) {
-    return TMultiplyDeBruijnBitPosition32[!!v + (((uint32_t)((v) * 0x077CB531U)) >> 27)];
-}
-static inline uint64_t leading_bit_pos64(uint64_t v) {
-    /*
-     * v * M == (2*v - 1) * N  + N = v * (2*N)
-     * N = M/2;
-     */
-    const uint64_t N = 0x3F6EAF2CD271461UL;
 
-    return LMultiplyDeBruijnBitPosition64[!!v + (((uint64_t)((v) * N + N)) >> 58)];
+static inline uint64_t leading_bit_pos64(const uint64_t v) {
+    return 63 - trailing_bit_pos64(v);
 }
-static inline uint64_t trailing_bit_pos64(uint64_t v) {
-    return TMultiplyDeBruijnBitPosition64[!!v + (((uint64_t)((v) * 0x07EDD5E59A4E28C2UL)) >> 58)];
-}
+#endif
 
 static inline uint32_t round_up32_(uint32_t v) {
     v |= v >> 1; /* first round down to one less than a power of 2 */
@@ -98,15 +76,12 @@ static inline uint32_t round_up32_(uint32_t v) {
     return v;
 }
 
-static inline uint32_t round_up32(uint32_t v) {
-    v = round_up32_(v);
-    v++;
-    return v;
+static inline uint32_t round_up32(const uint32_t v) {
+    return round_up32_(v)+1;
 }
 
-static inline uint32_t round_down32(uint32_t v) {
-    v--;
-    return round_up32(v);
+static inline uint32_t round_down32(const uint32_t v) {
+    return round_up32(v-1);
 }
 
 static inline uint64_t round_up64_(uint64_t v) {
@@ -119,15 +94,12 @@ static inline uint64_t round_up64_(uint64_t v) {
     return v;
 }
 
-static inline uint64_t round_up64(uint64_t v) {
-    v = round_up64_(v);
-    v++;
-    return v;
+static inline uint64_t round_up64(const uint64_t v) {
+    return round_up64_(v) + 1;
 }
 
-static inline uint64_t round_down64(uint64_t v) {
-    v--;
-    return round_up64(v);
+static inline uint64_t round_down64(const uint64_t v) {
+    return round_up64(v-1);
 }
 
 #ifdef HAS___BUILTIN_CLZ
@@ -158,7 +130,7 @@ static inline uint32_t clz32(const uint32_t y) {
 	return 32 - logTable[y];
     }
 #else
-    return leading_bit_pos32(round_up32_(y));
+    return y ? leading_bit_pos32(round_up32_(y)) : 32;
 #endif
 }
 #endif
@@ -189,7 +161,7 @@ static inline uint32_t ctz32(const uint32_t i) {
     };
     return (uint32_t)ctz32Table[((uint32_t)((int)i & -(int)i))%37];
 #else
-    return trailing_bit_pos32((uint32_t)((int)i & -(int)i));
+    return i ? trailing_bit_pos32((uint32_t)((int)i & -(int)i)) : 32;
 #endif
 }
 #endif
@@ -238,7 +210,7 @@ static inline uint32_t clz64(const uint64_t y) {
     }
 #else
     /* This code comes from http://graphics.stanford.edu/~seander/bithacks.html */
-    return leading_bit_pos64(round_up64(y));
+    return y ? leading_bit_pos64(round_up64(y)) : 64;
 # endif
 }
 # endif
@@ -273,8 +245,7 @@ static inline uint32_t ctz64(const uint64_t i) {
     };
     return (uint32_t)ctz64Table[((uint64_t)((int64_t)i & -(int64_t)i))%67];
 #else
-    register uint64_t v = (uint64_t)((int64_t)i & -(int64_t)i);
-    return trailing_bit_pos64(v);
+    return i ? trailing_bit_pos64((uint64_t)((int64_t)i & -(int64_t)i)) : 64;
 #endif
 }
 # endif
