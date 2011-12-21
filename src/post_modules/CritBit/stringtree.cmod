@@ -29,17 +29,23 @@
 
 #define CB_PRINT_KEY(buf, key)				\
 	do { string_builder_shared_strcat((buf), (key).str); } while(0)
-#define CB_LOW_ASSIGN_SVALUE_KEY(key, s)	do {	\
-    struct pike_string * _key = (key).str;		\
-    struct svalue * _svalue = (s);			\
-    add_ref(_key);					\
-    SET_SVAL(*_svalue, PIKE_T_STRING, 0, string, _key); \
-} while(0)
+
+static inline void cb_assign_svalue_key_string(cb_key key,
+					       struct svalue * s) {
+    if ((ptrdiff_t)key.len.chars == key.str->len) {
+	add_ref(key.str);
+	SET_SVAL(*s, PIKE_T_STRING, 0, string, key.str);
+    } else {
+	struct pike_string * prefix = string_slice(key.str, 0, key.len.chars);
+	SET_SVAL(*s, PIKE_T_STRING, 0, string, prefix);
+    }
+}
+
+#define CB_LOW_ASSIGN_SVALUE_KEY(node, s) cb_assign_svalue_key_string(node, s)
 #define CB_PUSH_KEY(key)	ref_push_string((key).str)
 #define CB_PUSH_STRING(str)	ref_push_string(str)
 #define CB_STRING_FROM_SVALUE(v)	((v)->u.string)
 #define CB_LOW_KEY_FROM_SVALUE(v)	CB_KEY_FROM_STRING(CB_STRING_FROM_SVALUE(v))
-
 /* #define CB_USE_BLOCK_ALLOC */
 #ifdef CB_USE_BLOCK_ALLOC
 # undef BLOCK_ALLOC_NEXT
@@ -79,6 +85,7 @@ PIKECLASS StringTree {
 #cmod_include "iterator_source.H"
 #undef THIS
 #define THIS THIS_STRINGTREE
+#cmod_include "prefix.H"
 #cmod_include "tree_source.H"
 }
 

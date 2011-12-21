@@ -110,6 +110,7 @@ struct pike_string * cb_ptype_from_key_ipv4(cb_key key) {
     uint32_t ip = (uint32_t)key.str;
 
     if (key.len.bits || !key.len.chars) {
+	ip &= (~0U) << (32 - key.len.bits);
 	len = snprintf(buf, 19, "%u.%u.%u.%u/%u", ip>>24, (ip>>16)&0xff,
 		       (ip>>8)&0xff, ip&0xff, (uint32_t)(key.len.bits
 							 - WASTED_BITS));
@@ -140,13 +141,13 @@ PIKECLASS IPv4Tree {
 #define CB_INT2UNIT(x) (x)
 #define CB_UINT2INT(x) (x)
 #undef CB_PUSH_KEY
-#define CB_PUSH_KEY(key) push_string(cb_ptype_from_key_ipv4(key))
+#define CB_PUSH_KEY(key)    push_string(cb_ptype_from_key_ipv4(key))
 #undef CB_KEY_FROM_PTYPE
 #define CB_KEY_FROM_PTYPE(x)	cb_key_from_ptype_ipv4(x)
 #undef CB_STRING_FROM_SVALUE
 #undef CB_LOW_KEY_FROM_SVALUE
 #undef CB_KEY_FROM_SVALUE
-#define CB_LOW_KEY_FROM_SVALUE(x)		CB_KEY_FROM_PTYPE((x)->u.string)
+#define CB_LOW_KEY_FROM_SVALUE(x)   CB_KEY_FROM_PTYPE((x)->u.string)
 #undef CB_LOW_ASSIGN_SVALUE_KEY
 #define CB_LOW_ASSIGN_SVALUE_KEY(key, s) do {				  \
     struct svalue * __ = s;						  \
@@ -159,6 +160,7 @@ PIKECLASS IPv4Tree {
 #cmod_include "iterator_source.H"
 #undef THIS
 #define THIS THIS_IPV4TREE
+#cmod_include "prefix.H"
 #cmod_include "tree_source.H"
 
     PIKEFUN int mask(int n) {
