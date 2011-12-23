@@ -28,6 +28,9 @@ DECLARATIONS
 #ifdef HAVE_NETTLE_BLOWFISH_DECRYPT
 #include <nettle/blowfish.h>
 #endif
+#ifdef HAVE_NETTLE_CAMELLIA_H
+#include <nettle/camellia.h>
+#endif
 #include <nettle/des.h>
 #include <nettle/cast128.h>
 #ifdef HAVE_NETTLE_SERPENT_DECRYPT
@@ -398,6 +401,39 @@ pike_blowfish_set_key(void *ctx,
 #cmod_undef NETTLE_NAME
 
 #endif	/* HAVE_NETTLE_BLOWFISH_DECRYPT */
+
+#ifdef CAMELLIA_KEY_SIZE
+
+static void
+pike_camellia_set_encrypt_key(void *ctx,
+			      ptrdiff_t length, const char *key,
+			      int force)
+{
+  if (length < CAMELLIA_MIN_KEY_SIZE || length > CAMELLIA_MAX_KEY_SIZE)
+    Pike_error("CAMELLIA_Info: Bad keysize for CAMELLIA.\n");
+  camellia_set_encrypt_key(ctx, length, (const uint8_t *)key);
+}
+
+static void
+pike_camellia_set_decrypt_key(void *ctx,
+			      ptrdiff_t length, const char *key,
+			      int force)
+{
+  if (length < CAMELLIA_MIN_KEY_SIZE || length > CAMELLIA_MAX_KEY_SIZE)
+    Pike_error("CAMELLIA_Info: Bad keysize for CAMELLIA.\n");
+  camellia_set_decrypt_key(ctx, length, (const uint8_t *)key);
+}
+
+#define camellia_encrypt camellia_crypt
+#define camellia_decrypt camellia_crypt
+
+#cmod_define PIKE_NAME CAMELLIA
+#cmod_define NETTLE_NAME camellia
+#cmod_include "cipher.H"
+#cmod_undef PIKE_NAME
+#cmod_undef NETTLE_NAME
+
+#endif	/* CAMELLIA_KEY_SIZE */
 
 static void
 pike_cast128_set_key(void *ctx,
