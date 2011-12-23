@@ -15,6 +15,7 @@ hash.o: $(SRCDIR)/hash.c
 cipher.o: $(SRCDIR)/cipher.c
 nt.o: $(SRCDIR)/nt.c
 
+$(SRCDIR)/cipher.c: cipher.H
 $(SRCDIR)/hash.c: hash.H
 
 @dependencies@
