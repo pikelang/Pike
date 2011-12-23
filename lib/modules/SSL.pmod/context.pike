@@ -134,46 +134,52 @@ array(string) certificates;
 array(int) preferred_auth_methods =
 ({ AUTH_rsa_sign });
 
-//! Cipher suites we want the server to support, best first.
+//! Cipher suites we want to support, in order of preference, best first.
 array(int) preferred_suites;
 
+//! Filter cipher suites from @[preferred_suites] that don't have
+//! a key with an effective length of at least @[min_keylength] bits.
+void filter_weak_suites(int min_keylength)
+{
+  if (!preferred_suites || !min_keylength) return;
+  preferred_suites =
+    filter(preferred_suites,
+	   lambda(int suite, int min_keylength) {
+	     array(int) def = CIPHER_SUITES[suite];
+	     return def && (CIPHER_algorithms[def[1]] >= min_keylength);
+	   }, min_keylength);
+}
+
 //! Set @[preferred_suites] to RSA based methods.
-void rsa_mode()
+//!
+//! @param min_keylength
+//!   Minimum acceptable key length in bits.
+//!
+//! @seealso
+//!   @[dhe_dss_mode()], @[filter_weak_suites()]
+void rsa_mode(int|void min_keylength)
 {
 #ifdef SSL3_DEBUG
   werror("SSL.context: rsa_mode()\n");
 #endif
-  preferred_suites = ({
-#ifndef WEAK_CRYPTO_40BIT
-    TLS_rsa_with_aes_256_cbc_sha,
-    TLS_rsa_with_aes_128_cbc_sha,
-    SSL_rsa_with_idea_cbc_sha,
-    SSL_rsa_with_rc4_128_sha,
-    SSL_rsa_with_rc4_128_md5,
-    SSL_rsa_with_3des_ede_cbc_sha,
-    SSL_rsa_with_des_cbc_sha,
-#endif /* !WEAK_CRYPTO_40BIT (magic comment) */
-    SSL_rsa_export_with_rc4_40_md5,
-    SSL_rsa_with_null_sha,
-    SSL_rsa_with_null_md5,
-  });
+  preferred_suites = preferred_rsa_suites;
+  filter_weak_suites(min_keylength);
 }
 
 //! Set @[preferred_suites] to DSS based methods.
-void dhe_dss_mode()
+//!
+//! @param min_keylength
+//!   Minimum acceptable key length in bits.
+//!
+//! @seealso
+//!   @[rsa_mode()], @[filter_weak_suites()]
+void dhe_dss_mode(int|void min_keylength)
 {
 #ifdef SSL3_DEBUG
   werror("SSL.context: dhe_dss_mode()\n");
 #endif
-  preferred_suites = ({
-#ifndef WEAK_CRYPTO_40BIT
-    TLS_dhe_dss_with_aes_256_cbc_sha,
-    TLS_dhe_dss_with_aes_128_cbc_sha,
-    SSL_dhe_dss_with_3des_ede_cbc_sha,
-    SSL_dhe_dss_with_des_cbc_sha,
-#endif /* !WEAK_CRYPTO_40BIT (magic comment) */
-    SSL_dhe_dss_export_with_des40_cbc_sha,
-  });
+  preferred_suites = preferred_dhe_dss_suites;
+  filter_weak_suites(min_keylength);
 }
 
 //! Always ({ COMPRESSION_null })
