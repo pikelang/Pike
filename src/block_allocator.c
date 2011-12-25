@@ -291,18 +291,34 @@ void * ba_alloc(struct block_allocator * a) {
 	void * ptr;
 #endif
 
+#ifdef BA_DEBUG
+	if (a->first > a->num_pages) {
+	    fprintf(stderr, "unused page set. %d > num_pages: %d.\n", a->first, a->num_pages);
+	}
+#endif
+
 	p = BA_PAGE(a, a->first);
+
+#ifdef BA_DEBUG
+	if (p->prev) {
+	    fprintf(stderr, "a->first has previous: %d\n", p->prev);
+	}
+#endif
 
 #ifndef BA_SEGREGATE
 	i = p->free_mask;
+#ifdef BA_DEBUG
 	if (i >= BA_MASK_NUM(a)) {
 	    Pike_error("free mask is out of range!\n");
 	}
+#endif
 	m = p->mask[i];
+#ifdef BA_DEBUG
 	if (!m) {
 //	    fprintf(stderr, "blk(%p)# n: %u\tmask: %04X\n", p, i, m);
 	    Pike_error("This should not happen!\n");
 	}
+#endif
 //	fprintf(stderr, "blk(%p)> n: %u\tmask: %04X\n", p, i, m);
 #if SIZEOF_CHAR_P == 8
 	j = ctz64(m);
@@ -337,10 +353,12 @@ void * ba_alloc(struct block_allocator * a) {
 		    return BA_BLOCKN(a, p, (i*sizeof(uintptr_t)*8 + j));
 		}
 	    }
+#ifdef BA_DEBUG
 	    if (p->blocks_used != a->blocks) {
 		fprintf(stderr, "wrong block count detected: %u vs %u\n", p->blocks_used, a->blocks);
 		Pike_error("croak\n");
 	    }
+#endif
 	    //fprintf(stderr, "page is full now\n");
 	    if (a->last == a->first) {
 		a->first = a->last = 0;
@@ -354,7 +372,18 @@ void * ba_alloc(struct block_allocator * a) {
 #else
 	if (p->blocks_used == a->blocks) Pike_error("baaad!\n");
 	p->blocks_used ++;
+#ifdef BA_DEBUG
+	if (p->first < 1 || p->first > a->blocks) {
+	    fprintf(stderr, "bad index: %d (should be [1..%d]\n", p->first-1, a->blocks);
+	}
+#endif
 	ptr = BA_BLOCKN(a, p, p->first-1);
+
+#ifdef BA_DEBUG
+	if (!p->data) {
+	    fprintf(stderr, "got null pointer from uninitialized page %d of block %d (num_pages %d).\n", a->first, p->first-1, a->num_pages);
+	}
+#endif
 	//fprintf(stderr, "alloced pointer %p (%u/%u used %u)\n",
 		//ptr, p->first-1, a->blocks, p->blocks_used);
 
@@ -382,6 +411,9 @@ void * ba_alloc(struct block_allocator * a) {
 	ba_grow(a);
 
     p = BA_PAGE(a, ++a->num_pages);
+    if (p->data) {
+	fprintf(stderr, "reusing unfreed page\n");
+    }
     p->data = malloc(BA_PAGESIZE(a));
     if (!p->data) {
 	Pike_error("no mem");
@@ -425,7 +457,6 @@ void ba_free(struct block_allocator * a, void * ptr) {
 	a->last_free = n = ba_htable_lookup(a, ptr);
 
 	if (unlikely(!n)) {
-#define BA_DEBUG
 #ifdef BA_DEBUG
 	    fprintf(stderr, "magnitude: %u\n", a->magnitude);
 	    fprintf(stderr, "did not find %p (%X[%X] | %X[%X])\n", ptr,
@@ -436,8 +467,21 @@ void ba_free(struct block_allocator * a, void * ptr) {
 #endif
 	    Pike_error("Unknown pointer \n");
 	}
+
+#ifdef BA_DEBUG
+	if (n > a->num_pages) {
+	    fprintf(stderr, "freeing from unknown page %d (num_pages: %d).\n",
+		    n, a->num_pages);
+	}
+#endif
 	
 	p = BA_PAGE(a, n);
+
+#ifdef BA_DEBUG
+	if (!BA_CHECK_PTR(a, p, ptr)) {
+	    fprintf(stderr, "pointer %p in wrong page %p", ptr, p->data);
+	}
+#endif
     }
 
     t = (uintptr_t)((char*)ptr - p->data)/a->block_size;
@@ -576,7 +620,15 @@ static inline void ba_remove_page(struct block_allocator * a,
 	}
     }
 
+#ifdef BA_DEBUG
+    if (a->first == a->num_pages) {
+	fprintf(stderr, "a->first will be old removed page %d\n", a->first);
+	fprintf(stderr, "page %d was not moved and prev was %d\n", n, p->prev);
+    }
+
     memset(BA_PAGE(a, a->num_pages), 0, sizeof(struct ba_page));
+#endif
+
 
     a->num_pages--;
 }
