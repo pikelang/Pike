@@ -2,7 +2,7 @@
 #include <string.h>
 #include <stdint.h>
 
-#include "post_modules/CritBit/bitvector.h"
+#include "bitvector.h"
 #define __PIKE__
 #ifdef __PIKE__
 # include "pike_error.h"
