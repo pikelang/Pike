@@ -111,8 +111,8 @@ void ba_init(struct block_allocator * a,
     a->block_size = block_size;
     a->blocks = blocks;
     a->num_pages = 0;
-    a->empty_blocks = 0;
-    a->max_empty_blocks = 3;
+    a->empty_pages = 0;
+    a->max_empty_pages = 3;
 
     // we start with management structures for 16 pages
     a->allocated = 16;
