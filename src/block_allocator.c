@@ -2,7 +2,7 @@
 #include <string.h>
 #include <stdint.h>
 
-#include "post_modules/Critbit/bitvector.h"
+#include "post_modules/CritBit/bitvector.h"
 #define __PIKE__
 #ifdef __PIKE__
 # include "pike_error.h"
@@ -360,6 +360,7 @@ void * ba_alloc(struct block_allocator * a) {
 
 	if (unlikely(p->blocks_used == a->blocks)) {
 	    a->first = p->next;
+	    BA_PAGE(a, a->first)->prev = 0;
 	    if (!a->first) {
 		a->last = 0;
 	    }
@@ -537,18 +538,6 @@ static inline void ba_remove_page(struct block_allocator * a,
     free(p->data);
     p->data = NULL;
 
-    if (a->num_pages != n) {
-	tmp = BA_PAGE(a, a->num_pages);
-	ba_htable_replace(a, BA_LASTBLOCK(a, tmp), a->num_pages, n);
-	/*
-	fprintf(stderr, "replacing with page %u\t(%p .. %p) -> %X (%X)\n",
-		a->num_pages,
-		tmp->data, BA_LASTBLOCK(a, tmp), hash1(a, BA_LASTBLOCK(a,tmp)),
-		hash1(a, BA_LASTBLOCK(a,tmp)) & BA_HASH_MASK(a)
-		);
-		*/
-	*p = *tmp;
-    }
 
     if (a->last_free == n)
 	a->last_free = 0;
@@ -568,6 +557,26 @@ static inline void ba_remove_page(struct block_allocator * a,
     } else {
 	a->last = p->prev;
     }
+
+    if (a->num_pages != n) {
+	tmp = BA_PAGE(a, a->num_pages);
+	ba_htable_replace(a, BA_LASTBLOCK(a, tmp), a->num_pages, n);
+	/*
+	fprintf(stderr, "replacing with page %u\t(%p .. %p) -> %X (%X)\n",
+		a->num_pages,
+		tmp->data, BA_LASTBLOCK(a, tmp), hash1(a, BA_LASTBLOCK(a,tmp)),
+		hash1(a, BA_LASTBLOCK(a,tmp)) & BA_HASH_MASK(a)
+		);
+		*/
+	*p = *tmp;
+	if (p->next) BA_PAGE(a, p->next)->prev = n;
+	if (p->prev) BA_PAGE(a, p->prev)->next = n;
+	if (a->num_pages == a->first) {
+	    a->first = n;
+	}
+    }
+
+    memset(BA_PAGE(a, a->num_pages), 0, sizeof(struct ba_page));
 
     a->num_pages--;
 }
