@@ -13,6 +13,7 @@ struct block_allocator {
     uint32_t blocks;
     uint32_t num_pages;
     uint16_t first, last; 
+    uint16_t empty_pages, max_empty_pages;
     uint32_t magnitude;
 #ifdef BA_SEGREGATE
     ba_page pages;
@@ -29,10 +30,10 @@ struct block_allocator {
 };
 
 #ifdef BA_SEGREGATE
-#define BA_INIT(block_size, blocks) { block_size, blocks, 0, 0, 0, \
+#define BA_INIT(block_size, blocks) { block_size, blocks, 0, 0, 0, 0, 3, \
 				      0, NULL, NULL, 0, 0 }
 #else
-#define BA_INIT(block_size, blocks) { block_size, blocks, 0, 0, 0, \
+#define BA_INIT(block_size, blocks) { block_size, blocks, 0, 0, 0, 0, 3, \
 				      0, NULL, NULL, 0, 0, 0 }
 #endif
 

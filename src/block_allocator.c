@@ -31,6 +31,8 @@ struct ba_block_header {
 
 #include "block_allocator.h"
 
+size_t _malloc_counter = 0;
+
 static inline void ba_htable_insert(const struct block_allocator * a,
 				    const void * ptr, const uint16_t n);
 static inline void ba_remove_page(struct block_allocator * a,
@@ -109,6 +111,8 @@ void ba_init(struct block_allocator * a,
     a->block_size = block_size;
     a->blocks = blocks;
     a->num_pages = 0;
+    a->empty_blocks = 0;
+    a->max_empty_blocks = 3;
 
     // we start with management structures for 16 pages
     a->allocated = 16;
@@ -371,6 +375,9 @@ void * ba_alloc(struct block_allocator * a) {
 	}
 #else
 	if (p->blocks_used == a->blocks) Pike_error("baaad!\n");
+	if (p->blocks_used == 0) {
+	    a->empty_pages--;
+	}
 	p->blocks_used ++;
 #ifdef BA_DEBUG
 	if (p->first < 1 || p->first > a->blocks) {
@@ -415,6 +422,7 @@ void * ba_alloc(struct block_allocator * a) {
 	fprintf(stderr, "reusing unfreed page\n");
     }
     p->data = malloc(BA_PAGESIZE(a));
+    _malloc_counter++;
     if (!p->data) {
 	Pike_error("no mem");
     }
@@ -554,7 +562,9 @@ void ba_free(struct block_allocator * a, void * ptr) {
 	    a->first = n;
 	}
     } else if (p->blocks_used == 1) {
-	ba_remove_page(a, n);
+	if (a->empty_pages == a->max_empty_pages) {
+	    ba_remove_page(a, n);
+	}
 	return;
     }
     p->blocks_used --;
