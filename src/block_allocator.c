@@ -396,10 +396,10 @@ void * ba_alloc(struct block_allocator * a) {
 
 	if (unlikely(p->blocks_used == a->blocks)) {
 	    a->first = p->next;
-	    BA_PAGE(a, a->first)->prev = 0;
 	    if (!a->first) {
 		a->last = 0;
-	    }
+	    } else
+		BA_PAGE(a, a->first)->prev = 0;
 	    p->next = 0;
 	} else {
 	    //fprintf(stderr, "next: %u\n", ((struct ba_block_header*)ptr)->next);
