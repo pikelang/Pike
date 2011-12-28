@@ -1444,22 +1444,22 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 		d->magic == insert_callback_define_no_args ||
 		d->magic == insert_pragma))
 	     switch (tmp.s->size_shift) {
-	  case 0:
-	    for(e=0; e< (ptrdiff_t)tmp.s->len; e++)
-	      if(STR0(tmp.s)[e]=='\n')
-		STR0(tmp.s)[e]=' ';
-	    break;
-	  case 1:
-	    for(e=0; e< (ptrdiff_t)tmp.s->len; e++)
-	      if(STR1(tmp.s)[e]=='\n')
-		STR1(tmp.s)[e]=' ';
-	    break;
-	  case 2:
-	    for(e=0; e< (ptrdiff_t)tmp.s->len; e++)
-	      if(STR2(tmp.s)[e]=='\n')
-		STR2(tmp.s)[e]=' ';
-	    break;
-	  }
+	     case 0:
+	       for(e=0; e< (ptrdiff_t)tmp.s->len; e++)
+		 if(STR0(tmp.s)[e]=='\n')
+		   STR0(tmp.s)[e]=' ';
+	       break;
+	     case 1:
+	       for(e=0; e< (ptrdiff_t)tmp.s->len; e++)
+		 if(STR1(tmp.s)[e]=='\n')
+		   STR1(tmp.s)[e]=' ';
+	       break;
+	     case 2:
+	       for(e=0; e< (ptrdiff_t)tmp.s->len; e++)
+		 if(STR2(tmp.s)[e]=='\n')
+		   STR2(tmp.s)[e]=' ';
+	       break;
+	     }
 
 	  if(s) d->inside=1;
 	  
