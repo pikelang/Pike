@@ -1198,6 +1198,8 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	        string_builder_shared_strcat(&this->buf,s);
 		free_string(s);
 	      }
+	      /* Restore the post-whitespace. */
+	      string_builder_putchar(&this->buf, ' ');
 	      break;
 	    }
 	    
