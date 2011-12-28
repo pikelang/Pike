@@ -1612,6 +1612,10 @@ static void insert_callback_define_no_args(struct cpp *this,
                                            struct define *def,
                                            struct define_argument *args,
                                            struct string_builder *tmp);
+static void insert_pragma(struct cpp *this,
+			  struct define *def,
+			  struct define_argument *args,
+			  struct string_builder *tmp);
 #define SHIFT 0
 #include "preprocessor.h"
 #undef SHIFT
@@ -1732,6 +1736,69 @@ static void insert_current_major(struct cpp *this,
 				 struct string_builder *tmp)
 {
   string_builder_sprintf(tmp, " %d ", this->compat_major);
+}
+
+/* _Pragma(STRING) */
+static void insert_pragma(struct cpp *this,
+			  struct define *def,
+			  struct define_argument *args,
+			  struct string_builder *tmp)
+{
+  int i;
+  int in_string = 0;
+  PCHARP arg = args->arg;
+  ptrdiff_t len = args->len;
+
+  /* Make some reasonable amount of space. */
+  string_build_mkspace(tmp, len + 20, arg.shift);
+
+  string_builder_strcat(tmp, "\n#pragma ");
+
+  /* Destringize the argument. */
+  for (i = 0; i < len; i++) {
+    p_wchar2 ch = INDEX_PCHARP(arg, i);
+    switch(ch) {
+    case '\n': case '\r':
+      ch = ' ';
+      /* FALL_THROUGH */
+    case ' ': case '\t':
+      if (in_string) {
+	string_builder_putchar(tmp, ch);
+      }
+      break;
+    case '\"':
+      in_string = !in_string;
+      break;
+    case '\\':
+      if (in_string) {
+	ch = (++i < len) ? INDEX_PCHARP(arg, i) : '\0';
+	if ((ch != '\\') && (ch != '\"')) {
+	  cpp_error(this, "Invalid \\-escape in _Pragma().");
+	  break;
+	}
+      }
+      /* FALL_THROUGH */
+    default:
+      if (in_string) {
+	string_builder_putchar(tmp, ch);
+      } else {
+	cpp_error(this, "Invalid character outside of string.");
+      }
+      break;
+    }
+  }
+
+  if (in_string) {
+    cpp_error(this, "Unterminated string constant.");
+  }
+
+  string_builder_sprintf(tmp, "\n#%d ", this->current_line);
+  PUSH_STRING_SHIFT(this->current_file->str,
+		    this->current_file->len,
+		    this->current_file->size_shift,
+		    tmp);
+  string_builder_putchar(tmp, '\n');
+
 }
 
 static void insert_callback_define(struct cpp *this,
@@ -1865,6 +1932,15 @@ static void insert_callback_define_no_args(struct cpp *this,
  *!
  *! This define contains the current time at the time of compilation,
  *! e.g. "12:20:51".
+ */
+
+/*! @decl void _Pragma(string directive)
+ *!
+ *! This macro inserts the corresponding @expr{#pragma@} @[directive]
+ *! in the source.
+ *!
+ *! e.g. @expr{_Pragma("strict_types")@} is the same
+ *! as @expr{#pragma strict_types@} .
  */
 
 /*! @decl constant __PIKE__
@@ -2150,16 +2226,20 @@ void f_cpp(INT32 args)
 
   init_string_builder(&this.buf, 0);
 
-
+  /* These attempt to be compatible with the C standard. */
   do_magic_define(&this,"__LINE__",insert_current_line);
   do_magic_define(&this,"__FILE__",insert_current_file_as_string);
-  do_magic_define(&this,"__DIR__",insert_current_dir_as_string);
   do_magic_define(&this,"__DATE__",insert_current_date_as_string);
   do_magic_define(&this,"__TIME__",insert_current_time_as_string);
+
+  /* This is from the 201x C standard. */
+  do_magic_define(&this,"_Pragma",insert_pragma)->args = 1;
+
+  /* These are Pike extensions. */
+  do_magic_define(&this,"__DIR__",insert_current_dir_as_string);
   do_magic_define(&this,"__VERSION__",insert_current_version);
   do_magic_define(&this,"__MAJOR__",insert_current_major);
   do_magic_define(&this,"__MINOR__",insert_current_minor);
-
 
   {
 #if 0

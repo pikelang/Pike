@@ -9236,6 +9236,8 @@ test_equal([[
 		 "#define TOSTR2(X) TOSTR(X)\n"
 		 "constant val = TOSTR2(FOO);\n")()->val;
 ]], "")
+test_eq([[cpp("foo _Pragma(\"strict_types \\\\back \\\"str\\\"\") bar")]],
+  "# 1 \"-\"\nfoo \n#pragma strict_types \\back \"quote\"\n#1 \"-\"\n bar")
 test_equal([[
   compile_string(Locale.Charset.encoder("ebcdic-us")->
     feed("#charset ebcdic-us\n"

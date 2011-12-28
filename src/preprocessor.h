@@ -1440,8 +1440,9 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	  }
 	  
 	  /* Remove any newlines from the completed expression. */
-	  if (!(d->magic == insert_callback_define
-	     || d->magic == insert_callback_define_no_args))
+	  if (!(d->magic == insert_callback_define ||
+		d->magic == insert_callback_define_no_args ||
+		d->magic == insert_pragma))
 	     switch (tmp.s->size_shift) {
 	  case 0:
 	    for(e=0; e< (ptrdiff_t)tmp.s->len; e++)
