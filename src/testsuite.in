@@ -709,6 +709,9 @@ ignore_warning("Soft cast of scope(0,function(*)) to function is a noop.", [[
   test_eq(typeof([function]`+), typeof(`+))
 ]])
 
+test_compile_error([[ static_assert(0, "Fail."); ]])
+test_any([[ static_assert(1, "Ok."); ]], 0)
+
 test_any([[
   /* Detect bug in modify_shared_string().
    *

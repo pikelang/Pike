@@ -1947,6 +1947,21 @@ static void insert_callback_define_no_args(struct cpp *this,
  *! as @expr{#pragma strict_types@} .
  */
 
+/*! @decl constant static_assert
+ *!
+ *!   This define expands to the symbol @[_Static_assert].
+ *!
+ *!   It is the preferred way to perform static
+ *!   (ie compile-time) assertions.
+ *!
+ *! @note
+ *!   The macro can also be used to check for whether static assertions
+ *!   are supported.
+ *!
+ *! @seealso
+ *!   @[_Static_assert()]
+ */
+
 /*! @decl constant __PIKE__
  *!
  *! This define is always true.
@@ -2236,8 +2251,9 @@ void f_cpp(INT32 args)
   do_magic_define(&this,"__DATE__",insert_current_date_as_string);
   do_magic_define(&this,"__TIME__",insert_current_time_as_string);
 
-  /* This is from the 201x C standard. */
+  /* These are from the 201x C standard. */
   do_magic_define(&this,"_Pragma",insert_pragma)->args = 1;
+  simple_add_define(&this, "static_assert", "_Static_assert");
 
   /* These are Pike extensions. */
   do_magic_define(&this,"__DIR__",insert_current_dir_as_string);
