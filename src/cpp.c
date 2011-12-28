@@ -758,9 +758,9 @@ static void undefine(struct cpp *this,
   free((char *)d);
 }
 
-static void do_magic_define(struct cpp *this,
-			    char *name,
-			    magic_define_fun fun)
+static struct define *do_magic_define(struct cpp *this,
+				      char *name,
+				      magic_define_fun fun)
 {
   struct define* def;
 
@@ -778,6 +778,8 @@ static void do_magic_define(struct cpp *this,
     def = alloc_empty_define(make_shared_string(name),0);
   def->magic=fun;
   this->defines=hash_insert(this->defines, & def->link);
+
+  return def;
 }
 
 static void add_define(struct cpp *this,
