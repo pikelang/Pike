@@ -3,78 +3,108 @@
 #include <stdint.h>
 
 #include "bitvector.h"
-#define __PIKE__
-#ifdef __PIKE__
-# include "pike_error.h"
+#ifdef PMOD_EXPORT
+#include "pike_error.h"
+#else
+#define PMOD_EXPORT
+#include <stdio.h>
+#include <unistd.h>
+
+void _Pike_error(int line, char * file, char * msg) {
+    fprintf(stderr, "%s:%d\t%s\n", file, line, msg);
+    _exit(1);
+}
+#define Pike_error(x)	_Pike_error(__LINE__, __FILE__, x);
 #endif
 
-#define BA_SEGREGATE
+#ifdef HAS___BUILTIN_EXPECT
+#define likely(x)	(__builtin_expect((x), 1))
+#define unlikely(x)	(__builtin_expect((x), 0))
+#else
+#define likely(x)	(x)
+#define unlikely(x)	(x)
+#endif
+
+#include "block_allocator.h"
+
+//#define BA_SEGREGATE
 
 struct ba_page {
     char * data;
-    uint16_t next, prev;
-    uint16_t hchain;
+    ba_page_t next, prev;
+    ba_page_t hchain;
 #ifdef BA_SEGREGATE
-    uint16_t blocks_used, first;
+    ba_block_t blocks_used, first;
 #else 
-    uint16_t blocks_used;
+    ba_block_t blocks_used;
     uint16_t free_mask;
     uintptr_t mask[1];
 #endif
 };
 
-#ifdef BA_SEGREGATE
 struct ba_block_header {
-    uint32_t next;
+#ifdef BA_DEBUG
+    uint32_t magic;
+#endif
+#ifdef BA_SEGREGATE
+#include "block_allocator.h"
+
+    ba_block_t next;
+#endif
 };
+
+#define BA_MARK_FREE	0xF4337575
+#define BA_MARK_ALLOC	0x4110C375
+#define BA_ALLOC_INITIAL	4
+#define BA_HASH_THLD		4
+#ifdef BA_HASH_THLD
+#define IF_HASH(x)	do { if(a->allocated <= BA_HASH_THLD) break; x; }\
+			while(0)
+#else
+#define IF_HASH(x)	x
 #endif
 
-#include "block_allocator.h"
 
 size_t _malloc_counter = 0;
 
 static inline void ba_htable_insert(const struct block_allocator * a,
-				    const void * ptr, const uint16_t n);
+				const void * ptr, const ba_page_t n);
 static inline void ba_remove_page(struct block_allocator * a,
-				  uint16_t n);
+			      ba_page_t n);
 
-#define BA_BLOCKN(a, p, n) ((void*)(((p)->data) + (n)*((a)->block_size)))
+typedef struct ba_block_header * ba_block_header;
+
+#define BA_BLOCKN(a, p, n) ((ba_block_header)(((p)->data) + (n)*((a)->block_size)))
 #define BA_LASTBLOCK(a, p) BA_BLOCKN(a, p, (a)->blocks - 1)
 #define BA_NBLOCK(a, p, ptr)	((uintptr_t)((char*)ptr - (p)->data)/(a)->block_size)
 
-#define BA_DIVIDE(a, b)	    ((a) / (b) + !!((a) & ((b)-1)))
+#define BA_DIVIDE(a, b)	    ((a) / (b) + (!!((a) & ((b)-1))))
 #define BA_PAGESIZE(a)	    ((a)->blocks * (a)->block_size) 
 #define BA_SPAGE_SIZE(a)    (sizeof(struct ba_page) + (BA_DIVIDE((a)->blocks, sizeof(uintptr_t)*8) - 1)*sizeof(uintptr_t))
 #define BA_HASH_MASK(a)  (((a->allocated)) - 1)
-#define BA_CHECK_PTR(a, p, ptr)	((char*)ptr >= p->data && BA_LASTBLOCK(a,p) >= ptr)
+#define BA_CHECK_PTR(a, p, ptr)	((char*)ptr >= p->data && (void*)BA_LASTBLOCK(a,p) >= ptr)
 
 #ifdef BA_SEGREGATE
 # define BA_PAGE(a, n)   ((a)->pages + (n) - 1)
-# define BA_BYTES(a)	( (sizeof(struct ba_page) + sizeof(uint16_t)) * ((a)->allocated) )
+# define BA_BYTES(a)	( (sizeof(struct ba_page) + sizeof(ba_page_t)) * ((a)->allocated) )
 #else
 # define BA_PAGE(a, n)   ((ba_page)((char*)(a)->pages + ((n)-1) * ((a)->ba_page_size)))
-# define BA_BYTES(a)	(( (a)->ba_page_size + sizeof(uint16_t)) * ((a)->allocated))
+# define BA_BYTES(a)	(( (a)->ba_page_size + sizeof(ba_page_t)) * ((a)->allocated))
 # define BA_LAST_BITS(a)	((a)->blocks & (sizeof(uintptr_t)*8 - 1))
-# define BA_LAST_MASK(a)	(BA_LAST_BITS(a) ? TMASK(uintptr_t, BA_LAST_BITS(a)) : ~((uintptr_t)0))
+# define BA_LAST_MASK(a)	(BA_LAST_BITS(a) ? MASK(uintptr_t, BA_LAST_BITS(a)) : ~((uintptr_t)0))
 # define BA_MASK_NUM(a)	    (((a)->ba_page_size - sizeof(struct ba_page) + sizeof(uintptr_t))/sizeof(uintptr_t))
 #endif
 
 
-#ifndef __PIKE__
-#include <stdio.h>
-#include <unistd.h>
-
-void Pike_error(char * msg) {
-    fprintf(stderr, "ERROR: %s\n", msg);
-    _exit(1);
-}
-#endif
-
 static inline void ba_realloc(struct block_allocator * a) {
     unsigned int i;
-    a->pages = realloc(a->pages, BA_BYTES(a));
+    void *old;
+    ba_page p;
+    a->pages = realloc(old = a->pages, BA_BYTES(a));
 
-    if (!a->pages) {
+    if (unlikely(!a->pages)) {
+	a->pages = old;
+	fprintf(stderr, "realloc(%lu) failed.\n", BA_BYTES(a));
 	Pike_error("no mem");
     }
 
@@ -85,21 +115,29 @@ static inline void ba_realloc(struct block_allocator * a) {
 #else
     memset((void*)BA_PAGE(a, a->num_pages+1), 0, BA_BYTES(a) - sizeof(struct ba_page)*a->num_pages);
 #endif
-    a->htable = (uint16_t*) BA_PAGE(a, (a->allocated)+1);
-    for (i = 0; i < a->num_pages; i++) {
-	ba_htable_insert(a, BA_LASTBLOCK(a, BA_PAGE(a, i+1)), i+1);
-    }
+    IF_HASH(
+	a->htable = (ba_page_t*) BA_PAGE(a, (a->allocated)+1);
+/*	memset(a->htable, 0, a->allocated * sizeof(ba_page_t)); */
+	for (i = 0; i < a->num_pages; i++) {
+	    p = BA_PAGE(a, i+1);
+	    p->hchain = 0;
+	    ba_htable_insert(a, BA_LASTBLOCK(a, p), i+1);
+	}
+    );
+#ifdef BA_DEBUG
+    ba_check_allocator(a, "realloc", __FILE__, __LINE__);
+#endif
 }
 
-void ba_init(struct block_allocator * a,
-				 uint32_t block_size, uint32_t blocks) {
+PMOD_EXPORT void ba_init(struct block_allocator * a,
+			 uint32_t block_size, ba_page_t blocks) {
     uint32_t page_size = block_size * blocks;
 
     if (blocks > 0xfffe) {
 	Pike_error("number of blocks cannot exceed 2^16-1\n");
     }
 
-    a->first = a->last = 0;
+    a->first =  0;
     a->last_free = 0;
 
     if ((page_size & (page_size - 1)) == 0)
@@ -115,7 +153,7 @@ void ba_init(struct block_allocator * a,
     a->max_empty_pages = 3;
 
     // we start with management structures for 16 pages
-    a->allocated = 16;
+    a->allocated = BA_ALLOC_INITIAL;
     a->pages = NULL;
 #ifndef BA_SEGREGATE
     a->ba_page_size = BA_SPAGE_SIZE(a);
@@ -123,17 +161,22 @@ void ba_init(struct block_allocator * a,
     ba_realloc(a);
 }
 
-void ba_free_all(struct block_allocator * a) {
+PMOD_EXPORT void ba_free_all(struct block_allocator * a) {
     unsigned int i;
 
     for (i = 0; i < a->num_pages; i++) {
 	free(BA_PAGE(a, i+1)->data);
+	BA_PAGE(a, i+1)->data = NULL;
     }
+    IF_HASH(
+	memset(a->htable, 0, a->allocated * sizeof(ba_page_t));
+    );
     a->num_pages = 0;
-    a->first = a->last = 0;
+    a->empty_pages = 0;
+    a->first = 0;
 }
 
-void ba_count_all(struct block_allocator * a, size_t *num, size_t *size) {
+PMOD_EXPORT void ba_count_all(struct block_allocator * a, size_t *num, size_t *size) {
     unsigned int i;
     size_t n = 0;
 
@@ -146,19 +189,27 @@ void ba_count_all(struct block_allocator * a, size_t *num, size_t *size) {
     *num = n;
 }
 
-void ba_destroy(struct block_allocator * a) {
+PMOD_EXPORT void ba_destroy(struct block_allocator * a) {
     ba_free_all(a);
     free(a->pages);
+    a->allocated = 0;
     a->pages = NULL;
 }
 
 static inline void ba_grow(struct block_allocator * a) {
     if (a->allocated) {
+	// try to detect 32bit overrun?
+	if (a->allocated >= ((ba_page_t)1 << (sizeof(ba_page_t)*8-1))) {
+	    Pike_error("too many pages.\n");
+	}
 	a->allocated *= 2;
 	ba_realloc(a);
     } else {
 	ba_init(a, a->block_size, a->blocks);
     }
+#ifdef BA_DEBUG
+    ba_check_allocator(a, "ba_grow", __FILE__, __LINE__);
+#endif
 }
 
 static inline void ba_shrink(struct block_allocator * a) {
@@ -166,23 +217,53 @@ static inline void ba_shrink(struct block_allocator * a) {
     ba_realloc(a);
 }
 
-static inline unsigned int mix(uintptr_t t) {
-    t ^= (t >> 20) ^ (t >> 12);
-    return (unsigned int)(t ^ (t >> 7) ^ (t >> 4));
-}
+#define MIX(t)	do {		\
+    t ^= (t >> 20) ^ (t >> 12);	\
+    t ^= (t >> 7) ^ (t >> 4);	\
+} while(0)
 
-static inline unsigned int hash1(const struct block_allocator * a,
+static inline ba_page_t hash1(const struct block_allocator * a,
 			     const void * ptr) {
     uintptr_t t = ((uintptr_t)ptr) >> a->magnitude;
 
-    return mix(t);
+    MIX(t);
+
+    return (ba_page_t) t;
 }
 
-static inline unsigned int hash2(const struct block_allocator * a,
+static inline ba_page_t hash2(const struct block_allocator * a,
 			     const void * ptr) {
     uintptr_t t = ((uintptr_t)ptr) >> a->magnitude;
 
-    return mix(t+1); 
+    t++;
+    MIX(t);
+
+    return (ba_page_t) t;
+}
+
+void ba_print_htable(const struct block_allocator * a) {
+    unsigned int i;
+    ba_page p;
+
+    fprintf(stderr, "allocated: %u\n", a->allocated);
+    fprintf(stderr, "num_pages: %u\n", a->num_pages);
+    fprintf(stderr, "max_empty_pages: %u\n", a->max_empty_pages);
+    fprintf(stderr, "empty_pages: %u\n", a->empty_pages);
+    fprintf(stderr, "magnitude: %u\n", a->magnitude);
+    fprintf(stderr, "block_size: %u\n", a->block_size);
+
+    for (i = 0; i < a->allocated; i++) {
+	ba_page_t n = a->htable[i];
+	ba_page_t hval;
+	void * ptr;
+	while (n) {
+	    p = BA_PAGE(a, n);
+	    ptr = BA_LASTBLOCK(a, p);
+	    hval = hash1(a, ptr);
+	    fprintf(stderr, "%u\t%X\t%p-%p\t%X (page %d)\n", i, hval, p->data, ptr, (unsigned int)((uintptr_t)ptr >> a->magnitude), n);
+	    n = p->hchain;
+	}
+    }
 }
 
 /*
@@ -190,110 +271,198 @@ static inline unsigned int hash2(const struct block_allocator * a,
  * hashtable. uses linear probing and open allocation.
  */
 static inline void ba_htable_insert(const struct block_allocator * a,
-				    const void * ptr, const uint16_t n) {
-    unsigned int hval = hash1(a, ptr);
-    uint16_t * b = a->htable + (hval & BA_HASH_MASK(a));
+				    const void * ptr, const ba_page_t n) {
+    ba_page_t hval = hash1(a, ptr);
+    ba_page_t * b = a->htable + (hval & BA_HASH_MASK(a));
+
+
+#ifdef BA_DEBUG
+    while (*b) {
+	if (*b == n) {
+	    fprintf(stderr, "inserting (%p, %d) twice\n", ptr, n);
+	    fprintf(stderr, "is (%p, %d)\n", BA_PAGE(a, n)->data, n);
+	    Pike_error("double insert.\n");
+	    return;
+	}
+	b = &BA_PAGE(a, *b)->hchain;
+    }
+    b = a->htable + (hval & BA_HASH_MASK(a));
+#endif
 
     BA_PAGE(a, n)->hchain = *b;
     *b = n;
 }
 
+
 static inline void ba_htable_replace(const struct block_allocator * a, 
-				     const void * ptr, const uint16_t n,
-				     const uint16_t new) {
-    unsigned int hval = hash1(a, ptr);
-    uint16_t * b = a->htable + (hval & BA_HASH_MASK(a));
+				     const void * ptr, const ba_page_t n,
+				     const ba_page_t new) {
+    ba_page_t hval = hash1(a, ptr);
+    ba_page_t * b = a->htable + (hval & BA_HASH_MASK(a));
 
     while (*b) {
 	if (*b == n) {
 	    *b = new;
 	    BA_PAGE(a, new)->hchain = BA_PAGE(a, n)->hchain;
+	    BA_PAGE(a, n)->hchain = 0;
 	    return;
 	}
 	b = &BA_PAGE(a, *b)->hchain;
     }
+#ifdef DEBUG
+
+    fprintf(stderr, "ba_htable_replace(%p, %u, %u)\n", ptr, n, new);
+    fprintf(stderr, "hval: %u, %u, %u\n", hval, hval & BA_HASH_MASK(a), BA_HASH_MASK(a));
+    ba_print_htable(a);
+    Pike_error("did not find index to replace.\n")
+#endif
 }
 
 static inline void ba_htable_delete(const struct block_allocator * a,
-				    const void * ptr, const uint16_t n) {
-    unsigned int hval = hash1(a, ptr);
-    uint16_t * b = a->htable + (hval & BA_HASH_MASK(a));
+				    const void * ptr, const ba_page_t n) {
+    ba_page_t hval = hash1(a, ptr);
+    ba_page_t * b = a->htable + (hval & BA_HASH_MASK(a));
 
     while (*b) {
 	if (*b == n) {
 	    *b = BA_PAGE(a, n)->hchain;
+	    BA_PAGE(a, n)->hchain = 0;
 	    return;
 	}
 	b = &BA_PAGE(a, *b)->hchain;
     }
+#ifdef DEBUG
+    ba_print_htable(a);
+    fprintf(stderr, "ba_htable_delete(%p, %u)\n", ptr, n);
+    Pike_error("did not find index to delete.\n")
+#endif
 }
 
-void ba_print_htable(struct block_allocator * a) {
-    int i;
-    ba_page p;
-
-    fprintf(stderr, "allocated: %u\n", a->allocated*2);
-    fprintf(stderr, "magnitude: %u\n", a->magnitude);
-    fprintf(stderr, "block_size: %u\n", a->block_size);
-
-    for (i = 0; i < a->allocated; i++) {
-	uint16_t n = a->htable[i];
-	unsigned int hval;
-	void * ptr;
-	while (n) {
-	    p = BA_PAGE(a, n);
-	    ptr = BA_LASTBLOCK(a, p);
-	    hval = hash1(a, ptr);
-	    fprintf(stderr, "%u\t%X\t%p-%p\t%X\n", i, hval, p->data, ptr, ((uintptr_t)ptr >> a->magnitude));
-	    n = p->hchain;
-	}
-    }
-}
-
-#define likely(x)   (__builtin_expect((x), 1))
-#define unlikely(x)   (__builtin_expect((x), 0))
-
-static inline uint16_t ba_htable_lookup(const struct block_allocator * a,
+static inline ba_page_t ba_htable_lookup(const struct block_allocator * a,
 					const void * ptr) {
-    uint16_t n1, n2;
     int c = 0;
+    ba_page_t n1, n2;
     ba_page p;
     n1 = a->htable[hash1(a, ptr) & BA_HASH_MASK(a)];
-    n2 = a->htable[hash2(a, ptr) & BA_HASH_MASK(a)];
-
-    while (n1 || n2) {
-	//fprintf(stderr, "%4d:\tfound %u, %u\n", ++c, n1, n2);
-	if (n1) {
-	    p = BA_PAGE(a, n1);
-	    if (BA_CHECK_PTR(a, p, ptr)) {
-		return n1;
-	    }
-	    n1 = p->hchain;
+    while (n1) {
+	p = BA_PAGE(a, n1);
+	if (BA_CHECK_PTR(a, p, ptr)) {
+	    return n1;
 	}
-	if (n2) {
-	    p = BA_PAGE(a, n2);
-	    if (BA_CHECK_PTR(a, p, ptr)) {
-		return n2;
-	    }
-	    n2 = p->hchain;
+	if (c++ > 100) {
+	    n2 = a->htable[hash1(a, ptr) & BA_HASH_MASK(a)];
+	    n1 = n2;
+	    do {
+		p = BA_PAGE(a, n1);
+		fprintf(stderr, "%d %p -> %d\n", n1, p->data, p->hchain);
+		if (n1 == p->hchain) break;
+		n1 = p->hchain;
+	    } while (n2 != n1);
+	    Pike_error("hash chain is infinite\n");
 	}
+	n1 = p->hchain;
     }
+    n2 = a->htable[hash2(a, ptr) & BA_HASH_MASK(a)];
+    while (n2) {
+	p = BA_PAGE(a, n2);
+	if (BA_CHECK_PTR(a, p, ptr)) {
+	    return n2;
+	}
+	if (c++ > 100) {
+	    Pike_error("hash chain is infinite\n");
+	}
+	n2 = p->hchain;
+    }
+
     return 0;
 }
 
-void * ba_alloc(struct block_allocator * a) {
+PMOD_EXPORT void ba_check_allocator(struct block_allocator * a,
+				    char *fun, char *file, int line) {
+    unsigned int i = 0;
+    int bad = 0;
+    ba_page p;
+
+    if (a->empty_pages > a->num_pages) {
+	fprintf(stderr, "too many empty pages.\n");
+	bad = 1;
+    }
+
+    for (i = 1; i <= a->num_pages; i++) {
+	ba_page_t hval;
+	int found = 0;
+	ba_page_t n;
+	p = BA_PAGE(a, i);
+
+	if (p->blocks_used == a->blocks) {
+	    if (p->prev || p->next) {
+		fprintf(stderr, "block is full but in list. next: %u prev: %u",
+			p->next, p->prev);
+		bad = 1;
+	    }
+	}
+
+	IF_HASH(
+	    hval = hash1(a, BA_LASTBLOCK(a, p));
+	    n = a->htable[hval & BA_HASH_MASK(a)];
+	    while (n) {
+		if (n == i) {
+		    found = 1;
+		    break;
+		}
+		n = BA_PAGE(a, n)->hchain;
+	    }
+
+	    if (!found) {
+		fprintf(stderr, "did not find page %d, %p (%u) in htable.\n",
+			i, BA_LASTBLOCK(a, BA_PAGE(a, i)), hval);
+		fprintf(stderr, "looking in bucket %u mask: %d\n", hval & BA_HASH_MASK(a), BA_HASH_MASK(a));
+		bad = 1;
+	    }
+
+	    for (i = 0; i < a->allocated; i++) {
+		n = a->htable[i];
+
+		while (n) {
+		    p = BA_PAGE(a, n);
+		    hval = hash1(a, BA_LASTBLOCK(a, p));
+		    if (i != (hval & BA_HASH_MASK(a))) {
+			fprintf(stderr, "page %u found in wrong bucket %d\n",
+				n, i);
+			bad = 1;
+		    }
+		    n = p->hchain;
+		}
+	    }
+	);
+    }
+
+    if (bad) {
+	ba_print_htable(a);
+	fprintf(stderr, "\nCalled from %s:%d:%s\n", fun, line, file);
+	fprintf(stderr, "pages: %u\n", a->num_pages);
+	Pike_error("bad");
+    }
+}
+
+
+PMOD_EXPORT void * ba_alloc(struct block_allocator * a) {
     //fprintf(stderr, "ba_alloc(%p)\n", a);
     ba_page p;
+#ifdef BA_DEBUG
+    ba_check_allocator(a, "ba_alloc top", __FILE__, __LINE__);
+#endif
 #ifndef BA_SEGREGATE
     size_t i, j;
+#else
+    int i;
 #endif
 
     if (likely(a->first)) {
 #ifndef BA_SEGREGATE
 	uintptr_t m;
-#else
-	void * ptr;
 #endif
+	ba_block_header ptr;
 
 #ifdef BA_DEBUG
 	if (a->first > a->num_pages) {
@@ -343,7 +512,8 @@ void * ba_alloc(struct block_allocator * a) {
 		    BA_BLOCKN(a, p, (i*sizeof(uintptr_t)*8 + j)),
 		    (i*sizeof(uintptr_t)*8 + j), a->blocks, p->blocks_used);
 		    */
-	    return BA_BLOCKN(a, p, (i*sizeof(uintptr_t)*8 + j));
+	    ptr = BA_BLOCKN(a, p, (i*sizeof(uintptr_t)*8 + j));
+	    goto RETURN_PTR;
 	} else {
 	    for (m = i+1; m < BA_MASK_NUM(a); m++) {
 		if (p->mask[m]) {
@@ -354,9 +524,11 @@ void * ba_alloc(struct block_allocator * a) {
 			    (i*sizeof(uintptr_t)*8 + j), a->blocks,
 			    p->blocks_used);
 			    */
-		    return BA_BLOCKN(a, p, (i*sizeof(uintptr_t)*8 + j));
+		    ptr = BA_BLOCKN(a, p, (i*sizeof(uintptr_t)*8 + j));
+		    goto RETURN_PTR;
 		}
 	    }
+RETURN_PTR:
 #ifdef BA_DEBUG
 	    if (p->blocks_used != a->blocks) {
 		fprintf(stderr, "wrong block count detected: %u vs %u\n", p->blocks_used, a->blocks);
@@ -371,13 +543,13 @@ void * ba_alloc(struct block_allocator * a) {
 	    }
 	    p->next = 0;
 	    p->free_mask = BA_MASK_NUM(a);
-	    return BA_BLOCKN(a, p, (i*sizeof(uintptr_t)*8 + j));
+	    ptr = BA_BLOCKN(a, p, (i*sizeof(uintptr_t)*8 + j));
 	}
 #else
-	if (p->blocks_used == a->blocks) Pike_error("baaad!\n");
-	if (p->blocks_used == 0) {
-	    a->empty_pages--;
-	}
+#ifdef BA_DEBUG
+	if (p->blocks_used == a->blocks)
+	    Pike_error("baaad!\n");
+#endif
 	p->blocks_used ++;
 #ifdef BA_DEBUG
 	if (p->first < 1 || p->first > a->blocks) {
@@ -396,39 +568,58 @@ void * ba_alloc(struct block_allocator * a) {
 
 	if (unlikely(p->blocks_used == a->blocks)) {
 	    a->first = p->next;
-	    if (!a->first) {
-		a->last = 0;
-	    } else
+	    if (a->first)
 		BA_PAGE(a, a->first)->prev = 0;
 	    p->next = 0;
 	} else {
-	    //fprintf(stderr, "next: %u\n", ((struct ba_block_header*)ptr)->next);
-	    if (((struct ba_block_header*)ptr)->next)
-		p->first = ((struct ba_block_header*)ptr)->next;
-	    else p->first++;
+	    if (p->blocks_used == 1) a->empty_pages --;
+	    p->first = ptr->next;
 	}
+#endif
+#ifdef BA_DEBUG
+	if (ptr->magic != BA_MARK_FREE) {
+	    fprintf(stderr, "found block with bad magic.\n");
+	}
+	ptr->magic = BA_MARK_ALLOC;
+#endif
 	//fprintf(stderr, "first is %u\n", p->first);
 
-	return ptr;
-#endif
+	return (void*)ptr;
     }
 	
     //fprintf(stderr, "allocating new page. was %p\n", p);
-    if (unlikely(a->num_pages == a->allocated))
+    if (unlikely(a->num_pages == a->allocated)) {
 	ba_grow(a);
-
-    p = BA_PAGE(a, ++a->num_pages);
-    if (p->data) {
-	fprintf(stderr, "reusing unfreed page\n");
     }
+#ifdef BA_DEBUG
+    ba_check_allocator(a, "ba_alloc after grow", __FILE__, __LINE__);
+#endif
+
+    a->num_pages++;
+    p = BA_PAGE(a, a->num_pages);
+#ifdef BA_DEBUG
+    if (p->data) {
+	void * new = malloc(BA_PAGESIZE(a));
+	fprintf(stderr, "reusing unfreed page %d, data: %p -> %p\n", a->num_pages,
+		p->data, new);
+	p->data = new;
+    } else
+#endif
     p->data = malloc(BA_PAGESIZE(a));
+#ifdef BA_DEBUG
     _malloc_counter++;
+#endif
     if (!p->data) {
-	Pike_error("no mem");
+	Pike_error("no mem. alloc returned zero.");
     }
     p->next = p->prev = 0;
-    a->first = a->last = a->num_pages;
-    ba_htable_insert(a, BA_LASTBLOCK(a, p), a->num_pages);
+    a->first = a->num_pages;
+    IF_HASH(
+	ba_htable_insert(a, BA_LASTBLOCK(a, p), a->num_pages);
+#ifdef BA_DEBUG
+	ba_check_allocator(a, "ba_alloc after insert", __FILE__, __LINE__);
+#endif
+    );
 #ifndef BA_SEGREGATE
     if (BA_MASK_NUM(a) > 1)
 	memset((void*)p->mask, 0xff, (BA_MASK_NUM(a)-1)*sizeof(uintptr_t));
@@ -441,18 +632,28 @@ void * ba_alloc(struct block_allocator * a) {
 #else
     p->blocks_used = 1;
     p->first = 2;
-    memset(p->data, 0x00, BA_PAGESIZE(a));
+    for (i = 1; i < a->blocks; i++) {
+#ifdef BA_DEBUG
+	BA_BLOCKN(a, p, i)->magic = BA_MARK_FREE;
+#endif
+	BA_BLOCKN(a, p, i)->next = i+2;
+    }
+    //memset(p->data, 0x00, BA_PAGESIZE(a));
+#endif
+#ifdef BA_DEBUG
+    BA_BLOCKN(a, p, 0)->magic = BA_MARK_ALLOC;
+    ba_check_allocator(a, "ba_alloc after insert", __FILE__, __LINE__);
 #endif
     return p->data;
 }
 
-void ba_free(struct block_allocator * a, void * ptr) {
+PMOD_EXPORT void ba_free(struct block_allocator * a, void * ptr) {
     uintptr_t t;
 #ifndef BA_SEGREGATE
     unsigned int mask, bit;
 #endif
     ba_page p;
-    unsigned int n;
+    ba_page_t n;
     
     n = a->last_free;
 
@@ -460,9 +661,23 @@ void ba_free(struct block_allocator * a, void * ptr) {
 	p = BA_PAGE(a, n);
 	if (!BA_CHECK_PTR(a, p, ptr)) n = 0;
     }
-    
+
     if (unlikely(!n)) {
-	a->last_free = n = ba_htable_lookup(a, ptr);
+#ifdef BA_HASH_THLD
+	if (a->allocated > BA_HASH_THLD) {
+#endif
+	    a->last_free = n = ba_htable_lookup(a, ptr);
+#ifdef BA_HASH_THLD
+	} else {
+	    for (t = 1; t <= a->num_pages; t++) {
+		p = BA_PAGE(a, t);
+		if (BA_CHECK_PTR(a, p, ptr)) {
+		    a->last_free = n = t;
+		    break;
+		}
+	    }
+	}
+#endif
 
 	if (unlikely(!n)) {
 #ifdef BA_DEBUG
@@ -524,7 +739,7 @@ void ba_free(struct block_allocator * a, void * ptr) {
 	    Pike_error("croak\n");
 	}
 	if (a->first == 0) {
-	    a->first = a->last = n;
+	    a->first =  n;
 	    p->next = p->prev = 0;
 	} else {
 	    p->next = a->first;
@@ -554,7 +769,7 @@ void ba_free(struct block_allocator * a, void * ptr) {
 #else
     if (p->blocks_used == a->blocks) {
 	if (a->first == 0) {
-	    a->first = a->last = n;
+	    a->first = n;
 	    p->next = p->prev = 0;
 	} else {
 	    p->next = a->first;
@@ -564,19 +779,32 @@ void ba_free(struct block_allocator * a, void * ptr) {
     } else if (p->blocks_used == 1) {
 	if (a->empty_pages == a->max_empty_pages) {
 	    ba_remove_page(a, n);
-	}
-	return;
+	    return;
+	} else a->empty_pages++;
     }
     p->blocks_used --;
-    ((struct ba_block_header*)ptr)->next = p->first;
+#ifdef BA_DEBUG
+    if (((ba_block_header)ptr)->magic == BA_MARK_FREE) {
+	fprintf(stderr, "double freed somethign\n");
+    }
+    memset(ptr, 0x75, a->block_size);
+    ((ba_block_header)ptr)->magic = BA_MARK_FREE;
+#endif
+    ((ba_block_header)ptr)->next = p->first;
     //fprintf(stderr, "setting first to %u (%p vs %p) n: %u vs %u\n", t+1, BA_BLOCKN(a, p, t+1), ptr, BA_NBLOCK(a, p, BA_BLOCKN(a, p, t+1)), BA_NBLOCK(a, p, ptr));
     p->first = t+1;
 #endif
 }
 
 static inline void ba_remove_page(struct block_allocator * a,
-				  uint16_t n) {
+				  ba_page_t n) {
     ba_page tmp, p;
+#ifdef BA_DEBUG
+    ba_check_allocator(a, "ba_remove_page", __FILE__, __LINE__);
+    if (a->empty_pages < a->max_empty_pages) {
+	Pike_error("strange things happening\n");
+    }
+#endif
 
     p = BA_PAGE(a, n);
 
@@ -587,11 +815,12 @@ static inline void ba_remove_page(struct block_allocator * a,
 	    a->num_pages);
 	    */
 
-    ba_htable_delete(a, BA_LASTBLOCK(a, p), n);
+    IF_HASH(
+	ba_htable_delete(a, BA_LASTBLOCK(a, p), n);
+    );
 
     free(p->data);
     p->data = NULL;
-
 
     if (a->last_free == n)
 	a->last_free = 0;
@@ -608,13 +837,14 @@ static inline void ba_remove_page(struct block_allocator * a,
     if (p->next) {
 	tmp = BA_PAGE(a, p->next);
 	tmp->prev = p->prev;
-    } else {
-	a->last = p->prev;
     }
 
     if (a->num_pages != n) {
 	tmp = BA_PAGE(a, a->num_pages);
-	ba_htable_replace(a, BA_LASTBLOCK(a, tmp), a->num_pages, n);
+	// page tmp will have index changed to n 
+	IF_HASH(
+	    ba_htable_delete(a, BA_LASTBLOCK(a, tmp), a->num_pages);
+	);
 	/*
 	fprintf(stderr, "replacing with page %u\t(%p .. %p) -> %X (%X)\n",
 		a->num_pages,
@@ -623,12 +853,17 @@ static inline void ba_remove_page(struct block_allocator * a,
 		);
 		*/
 	*p = *tmp;
+	IF_HASH(
+	    // ba_htable_replace(a, BA_LASTBLOCK(a, tmp), a->num_pages, n);
+	    ba_htable_insert(a, BA_LASTBLOCK(a, tmp), n);
+	);
+
 	if (p->next) BA_PAGE(a, p->next)->prev = n;
 	if (p->prev) BA_PAGE(a, p->prev)->next = n;
-	if (a->num_pages == a->first) {
+	if (a->num_pages == a->first)
 	    a->first = n;
-	}
     }
+    memset(BA_PAGE(a, a->num_pages), 0, sizeof(struct ba_page));
 
 #ifdef BA_DEBUG
     if (a->first == a->num_pages) {
@@ -636,9 +871,14 @@ static inline void ba_remove_page(struct block_allocator * a,
 	fprintf(stderr, "page %d was not moved and prev was %d\n", n, p->prev);
     }
 
-    memset(BA_PAGE(a, a->num_pages), 0, sizeof(struct ba_page));
 #endif
 
-
     a->num_pages--;
+
+#ifdef BA_DEBUG
+    ba_check_allocator(a, "ba_remove_page", __FILE__, __LINE__);
+#endif
+    if (a->allocated > BA_ALLOC_INITIAL && a->num_pages < (a->allocated >> 2)) {
+	ba_shrink(a);
+    }
 }

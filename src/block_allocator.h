@@ -1,6 +1,7 @@
 #ifndef BLOCK_ALLOCATOR_H
 #define BLOCK_ALLOCATOR_H
 #include <stdint.h>
+#include "global.h"
 
 #ifndef BA_SEGREGATE
 # define BA_SEGREGATE
@@ -8,42 +9,49 @@
 
 typedef struct ba_page * ba_page;
 
+typedef uint32_t ba_page_t;
+typedef uint16_t ba_block_t;
+
 struct block_allocator {
     uint32_t block_size;
-    uint32_t blocks;
-    uint32_t num_pages;
-    uint16_t first, last; 
-    uint16_t empty_pages, max_empty_pages;
     uint32_t magnitude;
+    ba_block_t blocks;
+    ba_page_t num_pages;
+    ba_page_t first;
+    ba_page_t empty_pages, max_empty_pages;
+    ba_page_t allocated;
+    ba_page_t * htable;
 #ifdef BA_SEGREGATE
     ba_page pages;
 #else
     void * pages;
 #endif
-    uint16_t * htable;
-    uint16_t allocated;
 #ifdef BA_SEGREGATE
-    uint16_t last_free;
+    ba_page_t last_free;
 #else
-    uint16_t last_free, ba_page_size;
+    ba_page_t last_free, ba_page_size;
 #endif
 };
 
 #ifdef BA_SEGREGATE
-#define BA_INIT(block_size, blocks) { block_size, blocks, 0, 0, 0, 0, 3, \
-				      0, NULL, NULL, 0, 0 }
+#define BA_INIT(block_size, blocks) { block_size, 0, blocks, 0, 0, 0, 3, \
+				      0, NULL, NULL, 0 }
 #else
-#define BA_INIT(block_size, blocks) { block_size, blocks, 0, 0, 0, 0, 3, \
-				      0, NULL, NULL, 0, 0, 0 }
+#define BA_INIT(block_size, blocks) { block_size, 0, blocks, 0, 0, 0, 3, \
+				      0, NULL, NULL, 0, 0 }
 #endif
 
-void ba_init(struct block_allocator * a, uint32_t block_size, uint32_t blocks);
-void * ba_alloc(struct block_allocator * a);
-void ba_free(struct block_allocator * a, void * ptr);
-void ba_print_htable(struct block_allocator * a);
-void ba_free_all(struct block_allocator * a);
-void ba_count_all(struct block_allocator * a, size_t *num, size_t *size);
-void ba_destroy(struct block_allocator * a);
+#ifdef PMOD_EXPORT
+PMOD_EXPORT void ba_init(struct block_allocator * a, uint32_t block_size,
+			 ba_page_t blocks);
+PMOD_EXPORT void * ba_alloc(struct block_allocator * a);
+PMOD_EXPORT void ba_free(struct block_allocator * a, void * ptr);
+PMOD_EXPORT void ba_print_htable(const struct block_allocator * a);
+PMOD_EXPORT void ba_check_allocator(struct block_allocator * a, char*, char*, int);
+PMOD_EXPORT void ba_free_all(struct block_allocator * a);
+PMOD_EXPORT void ba_count_all(struct block_allocator * a, size_t *num, size_t *size);
+PMOD_EXPORT void ba_destroy(struct block_allocator * a);
+#endif
 
 #endif /* BLOCK_ALLOCATOR_H */
 
@@ -115,31 +123,30 @@ void ba_destroy(struct block_allocator * a);
 #define BA_INLINE
 #endif
 
-#define BLOCK_ALLOC_FILL_PAGES(DATA, PAGES)				\
-  BLOCK_ALLOC(DATA,							\
-              ((PIKE_MALLOC_PAGE_SIZE * (PAGES))			\
-               - PIKE_MALLOC_OVERHEAD - BLOCK_HEADER_SIZE) /		\
-              sizeof (struct DATA))
-
-#define PTR_HASH_ALLOC_FILL_PAGES(DATA, PAGES)				\
-  PTR_HASH_ALLOC(DATA,							\
-                 ((PIKE_MALLOC_PAGE_SIZE * (PAGES))			\
-                  - PIKE_MALLOC_OVERHEAD - BLOCK_HEADER_SIZE) /		\
-                 sizeof (struct DATA))
-
-#define PTR_HASH_ALLOC_FIXED_FILL_PAGES(DATA, PAGES)			\
-  PTR_HASH_ALLOC_FIXED(DATA,						\
-                       ((PIKE_MALLOC_PAGE_SIZE * (PAGES))		\
-                        - PIKE_MALLOC_OVERHEAD - BLOCK_HEADER_SIZE) /	\
-                       sizeof (struct DATA))
-
 /* Size of the members in the block struct below that don't contain
  * the payload data (i.e. that aren't x). This can be used in BSIZE to
  * make the block fit within a page. */
 #ifndef BLOCK_HEADER_SIZE
-#define BLOCK_HEADER_SIZE (3 * sizeof (void *) + sizeof (INT32) \
-			   DO_IF_DMALLOC( + sizeof(INT32)))
+#define BLOCK_HEADER_SIZE 0
 #endif
+
+
+#define BLOCK_ALLOC_FILL_PAGES(DATA, PAGES)				\
+  BLOCK_ALLOC(DATA,							\
+              ((PIKE_MALLOC_PAGE_SIZE * (PAGES))) /			\
+              sizeof (struct DATA))
+
+#define PTR_HASH_ALLOC_FILL_PAGES(DATA, PAGES)				\
+  PTR_HASH_ALLOC(DATA,							\
+                 ((PIKE_MALLOC_PAGE_SIZE * (PAGES))) /			\
+                 sizeof (struct DATA))
+
+#define PTR_HASH_ALLOC_FIXED_FILL_PAGES(DATA, PAGES)			\
+  PTR_HASH_ALLOC_FIXED(DATA,						\
+                       ((PIKE_MALLOC_PAGE_SIZE * (PAGES))) /		\
+                       sizeof (struct DATA))
+
+#define MS(x)	#x
 
 #define BLOCK_ALLOC(DATA,BSIZE)						\
 static struct block_allocator PIKE_CONCAT(DATA, _allocator) =		\
@@ -157,6 +164,7 @@ BA_STATIC BA_INLINE struct DATA *BA_UL(PIKE_CONCAT(alloc_,DATA))(void)	\
 {									\
   struct DATA *tmp;							\
   tmp = (struct DATA *)ba_alloc(&PIKE_CONCAT(DATA, _allocator));	\
+  INIT_BLOCK(tmp);							\
   return tmp;								\
 }									\
 									\
@@ -191,6 +199,7 @@ static void PIKE_CONCAT(dmalloc_late_free_,DATA) (struct DATA *d)	\
 BA_STATIC BA_INLINE							\
 void BA_UL(PIKE_CONCAT(really_free_,DATA))(struct DATA *d)		\
 {									\
+  EXIT_BLOCK(d);							\
   ba_free(&PIKE_CONCAT(DATA, _allocator), (void*)d);			\
 }									\
 									\
