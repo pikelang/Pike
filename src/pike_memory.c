@@ -196,14 +196,19 @@ void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order)
 
 /* MLEN is the length of the longest prefix of A to use for hashing.
  * (If A is longer then additionally some bytes at the end are
- * included.) */
+ * included.)
+ *
+ * KEY is a value that is mixed into the hash to avoid it being
+ * precomputable (cf the #hashdos vulnerability of December 2011).
+ */
 /* NB: RET should be an lvalue of type size_t. */
-#define DO_HASHMEM(RET, A, LEN, MLEN)			\
+#define DO_HASHMEM(RET, A, LEN, MLEN, KEY)		\
   do {							\
     const unsigned char *a = A;				\
     size_t len = LEN;					\
     size_t mlen = MLEN;					\
     size_t ret;						\
+    size_t key = KEY;					\
   							\
     ret = 9248339*len;					\
     if(len<=mlen)					\
@@ -222,6 +227,7 @@ void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order)
   	case 1: ret^=(ret<<3) + a[len-1];		\
       }							\
     }							\
+    ret ^= key;						\
     a += mlen & 7;					\
     switch(mlen&7)					\
     {							\
@@ -243,6 +249,7 @@ void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order)
   	{						\
   	  ret^=(ret<<7)+*(b++);				\
   	  ret^=(ret>>6)+*(b++);				\
+	  ret^=key;					\
   	}						\
       }							\
     ,							\
@@ -260,6 +267,7 @@ void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order)
   	t2=(t2<<4) + a[7];				\
   	a += 8;						\
   	ret^=(ret<<7) + (ret>>6) + t1 + (t2<<6);	\
+	ret^=key;					\
       }							\
     )							\
   							\
@@ -330,7 +338,8 @@ __attribute__((target("sse4")))
 #endif
 __attribute__((hot))
 __attribute__((target("sse4,arch=core2")))
-static inline size_t hashmem_ia32_crc32( const void *s, size_t len, size_t nbytes )
+  static inline size_t low_hashmem_ia32_crc32( const void *s, size_t len,
+					       size_t nbytes, size_t key )
 {
     unsigned int h = len;
     const unsigned int *p = s;
@@ -340,16 +349,18 @@ static inline size_t hashmem_ia32_crc32( const void *s, size_t len, size_t nbyte
         const unsigned int *e = p + (len>>2);
         const unsigned char *c = (const unsigned char*)e;
 
-        /* .. all full intgers .. */
-        while( p<e )
-            CRC32SI(h, p++ );
+        /* .. all full integers .. */
+        while( p<e ) {
+	    CRC32SI(h, p++ );
+	    h ^= key;
+	}
 
         len &= 3;
 
         /* any remaining bytes. */
         while( len-- )
             CRC32SQ( h, c++ );
-        return h;
+        return h ^ key;
     }
     else
     {
@@ -372,8 +383,10 @@ static inline size_t hashmem_ia32_crc32( const void *s, size_t len, size_t nbyte
         if( nbytes < 8 )
             Pike_fatal("do_hash_ia32_crc32: nbytes is less than 8.\n");
 #endif
-        while( p<e )
+        while( p<e ) {
             CRC32SI(h,p++);
+	    h ^= key;
+	}
 
         /* include 8 bytes from the end. Note that this might be a
          * duplicate of the previous bytes.
@@ -385,6 +398,7 @@ static inline size_t hashmem_ia32_crc32( const void *s, size_t len, size_t nbyte
         CRC32SI(h,e++);
         CRC32SI(h,e);
     }
+    h ^= key;
 #if SIZEOF_CHAR_P > 4
     /* FIXME: We could use the long long crc32 instructions that work on 64 bit values.
      * however, those are only available when compiling to amd64.
@@ -398,38 +412,45 @@ static inline size_t hashmem_ia32_crc32( const void *s, size_t len, size_t nbyte
 __attribute__((fastcall))
 #endif
 __attribute__((hot))
-static size_t hashmem_generic(const void *a, size_t len_, size_t mlen_)
+  static size_t low_hashmem_generic(const void *a, size_t len_,
+				    size_t mlen_, size_t key_)
 {
     const unsigned char*a_ = a;
     size_t ret_;
-    DO_HASHMEM(ret_, a_, len_, mlen_);
+    DO_HASHMEM(ret_, a_, len_, mlen_, key_);
     return ret_;
 }
 
 #ifdef __i386__
 __attribute__((fastcall))
 #endif
-size_t (*hashmem)(const void *, size_t, size_t);
+  size_t (*low_hashmem)(const void *, size_t, size_t, size_t);
 
 static void init_hashmem()
 {
   if( supports_sse42() )
-    hashmem = hashmem_ia32_crc32;
+    low_hashmem = low_hashmem_ia32_crc32;
   else
-    hashmem = hashmem_generic;
+    low_hashmem = low_hashmem_generic;
 }
 #else
 static void init_hashmem(){}
 
 ATTRIBUTE((hot))
-size_t hashmem(const void *a, size_t len_, size_t mlen_)
+  size_t low_hashmem(const void *a, size_t len_, size_t mlen_, size_t key_)
 {
     const unsigned char *a_ = a;
     size_t ret_;
-    DO_HASHMEM(ret_, a_, len_, mlen_);
+    DO_HASHMEM(ret_, a_, len_, mlen_, key_);
     return ret_;
 }
 #endif
+
+ATTRIBUTE((hot))
+  size_t hashmem(const void *a, size_t len_, size_t mlen_)
+{
+  return low_hashmem(a, len_, mlen_, 0);
+}
 
 PMOD_EXPORT void *debug_xalloc(size_t size)
 {
