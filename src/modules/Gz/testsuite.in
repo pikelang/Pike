@@ -85,4 +85,11 @@ return Gz.compress("x",0,9,x);
   test_eval_error(return Gz.compress("x",0,9,Gz.DEFAULT_STRATEGY,16);)
 
 ]])
+cond_resolv(Gz.crc32,
+[[
+  dnl Some known collisions taken from http://blog.trungson.com/?p=99
+  test_eq(Gz.crc32("a1sellers"), Gz.crc32("advertees"))
+  test_eq(Gz.crc32("fc0591"), Gz.crc32("123rainerbommert"))
+  test_not_eq(Gz.crc32("a1sellers"), Gz.crc32("123rainerbommert"))
+]])
 END_MARKER
