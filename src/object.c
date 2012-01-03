@@ -32,7 +32,7 @@
 #include "pike_types.h"
 #include "operators.h"
 
-#include "block_allocator.h"
+#include "block_alloc.h"
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
