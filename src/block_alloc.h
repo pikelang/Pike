@@ -98,6 +98,20 @@
 			   DO_IF_DMALLOC( + sizeof(INT32)))
 #endif
 
+#define WALK_NONFREE_BLOCKS(DATA, BLOCK, FCOND, CODE)	do {		\
+    struct PIKE_CONCAT(DATA,_block) * p;				\
+    for(p=PIKE_CONCAT(DATA,_blocks);p;p=p->next) {			\
+	int n = p->used;						\
+	int i;								\
+	for (i = 0; n && i < (sizeof(p->x)/sizeof(struct DATA)); i++) {	\
+	    BLOCK = &p->x[i];						\
+	    if (FCOND) {						\
+		do CODE while(0);					\
+		--n;							\
+	    }								\
+	}								\
+    }									\
+} while(0)
 #define BLOCK_ALLOC(DATA,BSIZE)						\
 									\
 struct PIKE_CONCAT(DATA,_block)						\
