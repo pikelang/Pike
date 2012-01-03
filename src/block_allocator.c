@@ -19,7 +19,7 @@
 #endif
 PMOD_EXPORT char errbuf[8192];
 
-static inline void ba_htable_insert(const struct block_allocator * a,
+static INLINE void ba_htable_insert(const struct block_allocator * a,
 				    const void * ptr, const ba_page_t n);
 
 #define BA_NBLOCK(a, p, ptr)	((uintptr_t)((char*)ptr - (p)->data)/(a)->block_size)
@@ -39,7 +39,7 @@ static inline void ba_htable_insert(const struct block_allocator * a,
 # define PIKE_MEM_RW_RANGE(x, y)
 #endif
 
-static inline void ba_realloc(struct block_allocator * a) {
+static INLINE void ba_realloc(struct block_allocator * a) {
     unsigned int i;
     ba_page old;
     ba_page p;
@@ -89,7 +89,7 @@ PMOD_EXPORT void ba_show_pages(struct block_allocator * a) {
     }
 }
 
-PMOD_EXPORT inline void ba_init(struct block_allocator * a,
+PMOD_EXPORT INLINE void ba_init(struct block_allocator * a,
 			 uint32_t block_size, ba_page_t blocks) {
     uint32_t page_size = block_size * blocks;
 
@@ -113,7 +113,7 @@ PMOD_EXPORT inline void ba_init(struct block_allocator * a,
     ba_realloc(a);
 }
 
-PMOD_EXPORT inline void ba_free_all(struct block_allocator * a) {
+PMOD_EXPORT INLINE void ba_free_all(struct block_allocator * a) {
     unsigned int i;
 
     if (!a->allocated) return;
@@ -134,7 +134,7 @@ PMOD_EXPORT inline void ba_free_all(struct block_allocator * a) {
     );
 }
 
-PMOD_EXPORT inline void ba_count_all(struct block_allocator * a, size_t *num, size_t *size) {
+PMOD_EXPORT INLINE void ba_count_all(struct block_allocator * a, size_t *num, size_t *size) {
     unsigned int i;
     size_t n = 0;
 
@@ -147,7 +147,7 @@ PMOD_EXPORT inline void ba_count_all(struct block_allocator * a, size_t *num, si
     *num = n;
 }
 
-PMOD_EXPORT inline void ba_destroy(struct block_allocator * a) {
+PMOD_EXPORT INLINE void ba_destroy(struct block_allocator * a) {
     ba_free_all(a);
     PIKE_MEM_RW_RANGE(a->pages, BA_BYTES(a));
     free(a->pages);
@@ -156,7 +156,7 @@ PMOD_EXPORT inline void ba_destroy(struct block_allocator * a) {
     a->pages = NULL;
 }
 
-static inline void ba_grow(struct block_allocator * a) {
+static INLINE void ba_grow(struct block_allocator * a) {
     if (a->allocated) {
 	// try to detect 32bit overrun?
 	if (a->allocated >= ((ba_page_t)1 << (sizeof(ba_page_t)*8-1))) {
@@ -172,7 +172,7 @@ static inline void ba_grow(struct block_allocator * a) {
 #endif
 }
 
-static inline void ba_shrink(struct block_allocator * a) {
+static INLINE void ba_shrink(struct block_allocator * a) {
     a->allocated /= 2;
     ba_realloc(a);
 }
@@ -182,7 +182,7 @@ static inline void ba_shrink(struct block_allocator * a) {
     t ^= (t >> 7) ^ (t >> 4);	\
 } while(0)
 
-static inline ba_page_t hash1(const struct block_allocator * a,
+static INLINE ba_page_t hash1(const struct block_allocator * a,
 			     const void * ptr) {
     uintptr_t t = ((uintptr_t)ptr) >> a->magnitude;
 
@@ -191,7 +191,7 @@ static inline ba_page_t hash1(const struct block_allocator * a,
     return (ba_page_t) t;
 }
 
-static inline ba_page_t hash2(const struct block_allocator * a,
+static INLINE ba_page_t hash2(const struct block_allocator * a,
 			     const void * ptr) {
     uintptr_t t = ((uintptr_t)ptr) >> a->magnitude;
 
@@ -234,7 +234,7 @@ PMOD_EXPORT void ba_print_htable(const struct block_allocator * a) {
  * insert the pointer to an allocated page into the
  * hashtable. uses linear probing and open allocation.
  */
-static inline void ba_htable_insert(const struct block_allocator * a,
+static INLINE void ba_htable_insert(const struct block_allocator * a,
 				    const void * ptr, const ba_page_t n) {
     ba_page_t hval = hash1(a, ptr);
     ba_page_t * b = a->htable + (hval & BA_HASH_MASK(a));
@@ -263,7 +263,7 @@ static inline void ba_htable_insert(const struct block_allocator * a,
 }
 
 
-static inline void ba_htable_replace(const struct block_allocator * a, 
+static INLINE void ba_htable_replace(const struct block_allocator * a, 
 				     const void * ptr, const ba_page_t n,
 				     const ba_page_t new) {
     ba_page_t hval = hash1(a, ptr);
@@ -287,7 +287,7 @@ static inline void ba_htable_replace(const struct block_allocator * a,
 #endif
 }
 
-static inline void ba_htable_delete(const struct block_allocator * a,
+static INLINE void ba_htable_delete(const struct block_allocator * a,
 				    const void * ptr, const ba_page_t n) {
     ba_page_t hval = hash1(a, ptr);
     ba_page_t * b = a->htable + (hval & BA_HASH_MASK(a));
@@ -307,7 +307,7 @@ static inline void ba_htable_delete(const struct block_allocator * a,
 #endif
 }
 
-static inline ba_page_t ba_htable_lookup(const struct block_allocator * a,
+static INLINE ba_page_t ba_htable_lookup(const struct block_allocator * a,
 					const void * ptr) {
 #ifdef BA_DEBUG
     int c = 0;
@@ -340,7 +340,7 @@ static inline ba_page_t ba_htable_lookup(const struct block_allocator * a,
 }
 
 #ifdef BA_DEBUG
-PMOD_EXPORT inline void ba_check_allocator(struct block_allocator * a,
+PMOD_EXPORT INLINE void ba_check_allocator(struct block_allocator * a,
 				    char *fun, char *file, int line) {
     unsigned int i = 0;
     int bad = 0;
@@ -410,7 +410,7 @@ PMOD_EXPORT inline void ba_check_allocator(struct block_allocator * a,
 #endif
 
 
-PMOD_EXPORT inline void * ba_low_alloc(struct block_allocator * a) {
+PMOD_EXPORT INLINE void * ba_low_alloc(struct block_allocator * a) {
     //fprintf(stderr, "ba_alloc(%p)\n", a);
     ba_page p;
 #ifdef BA_DEBUG
@@ -473,7 +473,7 @@ PMOD_EXPORT inline void * ba_low_alloc(struct block_allocator * a) {
     return p->data;
 }
 
-PMOD_EXPORT inline void ba_low_free(struct block_allocator * a,
+PMOD_EXPORT INLINE void ba_low_free(struct block_allocator * a,
 					 void * ptr, ba_page p) {
 #ifdef BA_DEBUG
     ba_check_allocator(a, "ba_low_free", __FILE__, __LINE__);
@@ -541,7 +541,7 @@ PMOD_EXPORT inline void ba_low_free(struct block_allocator * a,
 }
 
 
-PMOD_EXPORT inline void ba_remove_page(struct block_allocator * a,
+PMOD_EXPORT INLINE void ba_remove_page(struct block_allocator * a,
 				       ba_page_t n) {
     ba_page tmp, p;
 #ifdef BA_DEBUG

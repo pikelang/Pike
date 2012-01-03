@@ -118,8 +118,8 @@ PMOD_EXPORT void ba_destroy(struct block_allocator * a);
 #define BA_CHECK_PTR(a, p, ptr)	((char*)ptr >= (char*)p->data && (char*)BA_LASTBLOCK(a,p) >= (char*)ptr)
 #define BA_LASTBLOCK(a, p) BA_BLOCKN(a, p, (a)->blocks - 1)
 
-__attribute__((always_inline,malloc))
-static inline void * ba_alloc(struct block_allocator * a) {
+ATTRIBUTE((always_inline,malloc))
+static INLINE void * ba_alloc(struct block_allocator * a) {
     if (a->first) {
 	ba_block_header ptr;
 	ba_page p = a->first;
@@ -177,8 +177,8 @@ static inline void * ba_alloc(struct block_allocator * a) {
     } else return ba_low_alloc(a);
 }
 
-__attribute__((always_inline))
-static inline void ba_free(struct block_allocator * a, void * ptr) {
+ATTRIBUTE((always_inline))
+static INLINE void ba_free(struct block_allocator * a, void * ptr) {
     ba_page p = a->last_free;
     
     if (!p || !BA_CHECK_PTR(a, p, ptr)) {
@@ -297,8 +297,7 @@ LOW_FREE:
 /* Block Alloc UnLocked */
 #define BA_UL(X) PIKE_CONCAT(X,_unlocked)
 #define BA_STATIC static
-#define BA_INLINE __attribute__((always_inline)) inline __inline__
-#define ____
+#define BA_INLINE INLINE
 #else
 #define BA_UL(X) X
 #define BA_STATIC
