@@ -46,6 +46,9 @@ HCHAR *NameNH(memchr_search)(void *data,
 }
 
 
+#ifndef DEBUG_CLANG
+static /* works around clang 3.0 compilation/linking error. */
+#endif
 INLINE HCHAR *NameNH(memchr_memcmp)(NCHAR *needle,
 				    ptrdiff_t needlelen,
 				    HCHAR *haystack,
