@@ -249,6 +249,17 @@ static void PIKE_CONCAT3(dmalloc_,DATA,_not_freed) (struct DATA *d,	\
   fprintf (stderr, "struct " TOSTR(DATA)				\
 	   " at %p is still in use %s\n", d, msg);			\
 }									\
+\
+PMOD_EXPORT void PIKE_CONCAT(show_pages_,DATA)() {\
+    struct PIKE_CONCAT(DATA,_block) *p = PIKE_CONCAT(DATA,_blocks);	\
+    int c = 0;\
+    fprintf(stderr, "blocks of "#DATA"\n");\
+    while (p) {\
+	double filled = (double)p->used/BSIZE * 100;\
+	fprintf(stderr, "%d\t%f\n", c++, filled);\
+	p = p->next;\
+    }									\
+}									\
 									\
 static void PIKE_CONCAT(dmalloc_late_free_,DATA) (struct DATA *d)	\
 {									\
