@@ -46,11 +46,11 @@ static inline void cb_assign_svalue_key_string(cb_key key,
 #define CB_PUSH_STRING(str)	ref_push_string(str)
 #define CB_STRING_FROM_SVALUE(v)	((v)->u.string)
 #define CB_LOW_KEY_FROM_SVALUE(v)	CB_KEY_FROM_STRING(CB_STRING_FROM_SVALUE(v))
-/* #define CB_USE_BLOCK_ALLOC */
+#define CB_USE_BLOCK_ALLOC
 #ifdef CB_USE_BLOCK_ALLOC
 # undef BLOCK_ALLOC_NEXT
 # define BLOCK_ALLOC_NEXT	parent
-# include "block_alloc.h"
+# include "block_allocator.h"
 
 BLOCK_ALLOC_FILL_PAGES(cb_node, 2)
 # define CB_NODE_ALLOC()	CONCAT2(alloc_,CB_NAME(node))()

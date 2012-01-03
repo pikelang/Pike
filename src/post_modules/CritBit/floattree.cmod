@@ -18,13 +18,14 @@
 #include "operators.h"
 #include "builtin_functions.h"
 
+#define CB_USE_BLOCK_ALLOC
 #ifdef CB_USE_BLOCK_ALLOC
-# include "tree_block_alloc.h"
+# include "block_allocator.h"
 
-static blk_alloc_t allocator;
+static struct block_allocator allocator;
 
-# define CB_NODE_ALLOC()	alloc_item(allocator)
-# define CB_NODE_FREE(x)	free_item(allocator, (void*)(x))
+# define CB_NODE_ALLOC()	ba_alloc(&allocator)
+# define CB_NODE_FREE(x)	ba_free(&allocator, (void*)(x))
 #endif
 
 #define CB_SOURCE
@@ -83,15 +84,16 @@ PIKECLASS FloatTree {
 
 void pike_init_floattree_module(void) {
 #ifdef CB_USE_BLOCK_ALLOC
-    allocator = init_allocator(128, sizeof(cb_node));
+    ba_init(&allocator, sizeof(cb_node), 128);
 #endif
     INIT
 }
 
 void pike_exit_floattree_module(void) {
 #ifdef CB_USE_BLOCK_ALLOC
-    free(allocator);
-    allocator = NULL;
+    ba_destroy(&allocator);
+    //free(allocator);
+    //allocator = NULL;
 #endif
     EXIT
 }
