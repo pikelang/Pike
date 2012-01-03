@@ -366,7 +366,7 @@ BA_STATIC BA_INLINE struct DATA *BA_UL(PIKE_CONCAT(alloc_,DATA))(void)	\
       ba_block_t n;							\
       ba_page p = BA_PAGE(&PIKE_CONCAT(DATA, _allocator), num_pages+1);	\
       for (n = 1; n < PIKE_CONCAT(DATA, _allocator).blocks; n++) {	\
-	  struct DATA *tmp2 = (struct DATA *)BA_BLOCKN(&PIKE_CONCAT(DATA, _allocator), p, n);\
+	  struct DATA *tmp2 = ((struct DATA *)p->data) + n;		\
 	  DO_PRE_INIT_BLOCK(tmp2);					\
       }									\
   }									\
