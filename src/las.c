@@ -407,8 +407,6 @@ static int check_node_type(node *n, struct pike_type *t, const char *msg)
 
 BLOCK_ALLOC_FILL_PAGES(node_s, 2)
 
-#define NODES (sizeof (((struct node_s_block *) NULL)->x) / sizeof (struct node_s))
-
 #undef BLOCK_ALLOC_NEXT
 #define BLOCK_ALLOC_NEXT next
 
@@ -417,32 +415,17 @@ void free_all_nodes(void)
   if(!Pike_compiler->previous)
   {
     node *tmp;
-    struct node_s_block *tmp2;
-    size_t e=0;
+    size_t e=0, s=0;
 
 #ifndef PIKE_DEBUG
     if(cumulative_parse_error)
     {
 #endif
       
-      for(tmp2=node_s_blocks;tmp2;tmp2=tmp2->next) e+=tmp2->used;
+      count_memory_in_node_ss(&e, &s);
       if(e)
       {
-        size_t e2=e;
-	struct node_s_block *nextblk;
-	for(tmp2=node_s_blocks;tmp2;tmp2=nextblk)
-	{
-	  int n = tmp2->used;
-	  nextblk = tmp2->next;
-	  /* We want to be able to access the token field of all
-	   * the blocks...
-	   */
-	  PIKE_MEM_RW(tmp2->x);
-	  for(e=0;n && e<NODES;e++)
-	  {
-	    if (tmp2->x[e].token != USHRT_MAX)
-	    {
-	      tmp=tmp2->x+e;
+	WALK_NONFREE_BLOCKS(node_s, tmp, tmp->token != USHRT_MAX, {
 #ifdef PIKE_DEBUG
 	      if(!cumulative_parse_error)
 	      {
@@ -472,14 +455,11 @@ void free_all_nodes(void)
 		tmp->refs = 1;
 		debug_malloc_touch(tmp->type);
 		free_node(tmp);
-		--n;
 	      }
-	    }
-	  }
-	}
+	});
 #ifdef PIKE_DEBUG
 	if(!cumulative_parse_error)
-	  Pike_fatal("Failed to free %"PRINTSIZET"d nodes when compiling!\n",e2);
+	  Pike_fatal("Failed to free %"PRINTSIZET"d nodes when compiling!\n",e);
 #endif
       }
 #ifndef PIKE_DEBUG
