@@ -337,6 +337,7 @@ LOW_FREE:
 	ba_page p = BA_PAGE(&PIKE_CONCAT(DATA, _allocator), n);		\
 	used = p->blocks_used;						\
 	for (i = 0; used && i < PIKE_CONCAT(DATA, _allocator).blocks; i++) {\
+	    BLOCK = (struct DATA*)BA_BLOCKN(&PIKE_CONCAT(DATA, _allocator), p, i);	\
 	    if (FCOND) {						\
 		do CODE while(0);					\
 		--used;							\
