@@ -402,7 +402,7 @@ static int check_node_type(node *n, struct pike_type *t, const char *msg)
 
 #undef PRE_INIT_BLOCK
 #define PRE_INIT_BLOCK(NODE) do {					\
-    NODE->token = USHRT_MAX;						\
+    (NODE)->token = USHRT_MAX;						\
   } while (0)
 
 BLOCK_ALLOC_FILL_PAGES(node_s, 2)
