@@ -180,6 +180,19 @@ static INLINE void * ba_alloc(struct block_allocator * a) {
     return (void*)ptr;
 }
 
+#ifdef COUNT
+static size_t good = 0, bad = 0, ugly = 0, likely = 0;
+
+static ATTRIBUTE((destructor)) void print_stats() {
+    fprintf(stderr, "%lu good\t %lu bad\t %lu ugly\t %lu likely\n", good, bad, ugly, likely);
+
+}
+
+#define INC(X) do { (X++); } while (0)
+#else
+#define INC(X) do { } while (0)
+#endif
+
 ATTRIBUTE((always_inline))
 static INLINE void ba_free(struct block_allocator * a, void * ptr) {
     ba_page p = a->last_free;
@@ -211,7 +224,7 @@ static INLINE void ba_free(struct block_allocator * a, void * ptr) {
 #endif
 FOUND:
 	a->last_free = p;
-    }
+    } else INC(good);
 
 #ifdef BA_DEBUG
     if ((p < a->pages || p > BA_PAGE(a, a->num_pages))) {
