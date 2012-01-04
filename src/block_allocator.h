@@ -3,6 +3,7 @@
 #include <stdint.h>
 
 //#define BA_DEBUG
+#define COUNT
 
 #ifdef HAS___BUILTIN_EXPECT
 #define likely(x)	(__builtin_expect((x), 1))
@@ -175,15 +176,43 @@ static INLINE void * ba_alloc(struct block_allocator * a) {
 }
 
 #ifdef COUNT
+#define COUNT_NAME(x)	do { count_name = (x); } while(0)
 static size_t good = 0, bad = 0, ugly = 0, likely = 0;
+static char* count_name = NULL;
+#else
+#define COUNT_NAME(x)	
+#endif
 
-static ATTRIBUTE((destructor)) void print_stats() {
-    fprintf(stderr, "%lu good\t %lu bad\t %lu ugly\t %lu likely\n", good, bad, ugly, likely);
-
+#ifdef BA_HASH_STATS
+static void ba_print_hash_stats(struct block_allocator * a) {
+    double av_length;
+    ba_page_t n, ends = 0;
+    for (n = 0; n < a->num_pages; n++) {
+	if (!a->pages[n]->hchain) {
+	    ends++;
+	}
+    }
+    av_length = (double)a->num_pages / ends;
+    fprintf(stderr, "HASH STATS:\naverage chain length: %f\n", av_length);
 }
+#endif
 
+#if defined(COUNT) || defined(BA_HASH_STATS)
+static ATTRIBUTE((destructor)) void print_stats() {
+# ifdef COUNT
+    if (good || bad || ugly || likely) {
+	if (count_name) fprintf(stderr, "%s ", count_name);
+	fprintf(stderr, "COUNTS:\n%lu good\t %lu bad\t %lu ugly\t %lu likely\n", good, bad, ugly, likely);
+    }
+# endif
+}
+#endif
+
+#ifdef COUNT
+#define INIT_COUNT()	do { good = bad = ugly = likely = 0; } while(0)
 #define INC(X) do { (X++); } while (0)
 #else
+#define INIT_COUNT()
 #define INC(X) do { } while (0)
 #endif
 
@@ -204,13 +233,14 @@ static INLINE void ba_free(struct block_allocator * a, void * ptr) {
 		    p = a->pages[t];
 		    if (BA_CHECK_PTR(a, p, ptr)) {
 			n = t + 1;
+			INC(bad);
 			goto FOUND;
 		    }
 		}
 # ifdef BA_DEBUG
-		BA_ERROR("Unknown pointer \n");
 # endif
-	    }
+		BA_ERROR("Unknown pointer \n");
+	    } else INC(ugly);
 #endif
 	    p = NULL;
 	    goto LOW_FREE;
@@ -221,9 +251,12 @@ static INLINE void ba_free(struct block_allocator * a, void * ptr) {
 FOUND:
 	a->last_free_num = n;
 	a->last_free = p;
+    } else {
+	INC(good);
     }
 
     if ((p->blocks_used == 1 && ++a->empty_pages > a->max_empty_pages) || p->blocks_used == a->blocks) {
+	INC(likely);
 	goto LOW_FREE;
     }
 
@@ -347,7 +380,7 @@ LOW_FREE:
 	ba_page p = BA_PAGE(&PIKE_CONCAT(DATA, _allocator), n);		\
 	used = p->blocks_used;						\
 	for (i = 0; used && i < PIKE_CONCAT(DATA, _allocator).blocks; i++) {\
-	    BLOCK = ((struct DATA*)(p+1)) + i;				\
+	    BLOCK = ((struct DATA*)(p+1)) + i;			\
 	    if (FCOND) {						\
 		do CODE while(0);					\
 		--used;							\
@@ -437,6 +470,8 @@ DO_IF_RUN_UNLOCKED(                                                     \
 static void PIKE_CONCAT3(free_all_,DATA,_blocks_unlocked)(void)		\
 {									\
   ba_destroy(&PIKE_CONCAT(DATA, _allocator));				\
+  print_stats();							\
+  INIT_COUNT();								\
 }									\
 									\
 void PIKE_CONCAT3(free_all_,DATA,_blocks)(void)				\
@@ -460,7 +495,8 @@ PMOD_EXPORT void PIKE_CONCAT(show_pages_,DATA)() {\
 									\
 void PIKE_CONCAT3(init_,DATA,_blocks)(void)				\
 {                                                                       \
-    /*fprintf(stderr, #DATA"_allocator: %p\n", &PIKE_CONCAT(DATA, _allocator)); */\
+    COUNT_NAME(#DATA);							\
+    fprintf(stderr, #DATA"_allocator: %p\n", &PIKE_CONCAT(DATA, _allocator));\
 }
 
 

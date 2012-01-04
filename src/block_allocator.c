@@ -307,6 +307,9 @@ static INLINE void ba_htable_delete(const struct block_allocator * a,
 
 static INLINE ba_page_t ba_htable_lookup(const struct block_allocator * a,
 					const void * ptr) {
+#ifdef COUNT
+    count_name = "hash";
+#endif
 #ifdef BA_DEBUG
     int c = 0;
 #endif
@@ -316,6 +319,7 @@ static INLINE ba_page_t ba_htable_lookup(const struct block_allocator * a,
     while (n) {
 	p = BA_PAGE(a, n);
 	if (BA_CHECK_PTR(a, p, ptr)) {
+	    INC(good);
 	    return n;
 	}
 	n = p->hchain;
@@ -324,6 +328,9 @@ static INLINE ba_page_t ba_htable_lookup(const struct block_allocator * a,
     while (n) {
 	p = BA_PAGE(a, n);
 	if (BA_CHECK_PTR(a, p, ptr)) {
+	    if (a->htable[hash1(a, ptr) & BA_HASH_MASK(a)])
+		INC(ugly);
+	    else INC(bad);
 	    return n;
 	}
 #ifdef BA_DEBUG
