@@ -453,28 +453,13 @@ PMOD_EXPORT INLINE void * ba_low_alloc(struct block_allocator * a) {
     );
     p->blocks_used = 1;
     p->first = BA_BLOCKN(a, p, 1);
-    if (a->blueprint) {
-	size_t clen = a->block_size, len;
-	memcpy((char*)p->data, a->blueprint, clen);
-	p->data->next = clen;
-	len = (a->blocks-1) * clen;
-	while (clen < len) {
-	    memcpy((char*)p->data + clen,
-		   (char*)p->data, clen);
-	    len -= clen;
-	    clen <<= 1;
-	}
-	memcpy((char*)p->data + clen,
-	       (char*)p->data, len);
-    } else {
-	ba_block_t i;
-	for (i = 1; i < a->blocks; i++) {
-	    BA_BLOCKN(a, p, i)->next = a->block_size;
-	}
+
+    for (i = 1; i+1 < a->blocks; i++) {
 #ifdef BA_DEBUG
 	PIKE_MEM_RW(BA_BLOCKN(a, p, i)->magic);
 	BA_BLOCKN(a, p, i)->magic = BA_MARK_FREE;
 #endif
+	BA_BLOCKN(a, p, i)->next = BA_BLOCKN(a, p, i+1);
     }
     BA_LASTBLOCK(a, p)->next = NULL;
     //memset(p->data, 0x00, BA_PAGESIZE(a));
