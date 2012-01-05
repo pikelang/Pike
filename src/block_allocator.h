@@ -470,7 +470,7 @@ DO_IF_RUN_UNLOCKED(                                                     \
 static void PIKE_CONCAT3(free_all_,DATA,_blocks_unlocked)(void)		\
 {									\
   ba_destroy(&PIKE_CONCAT(DATA, _allocator));				\
-  print_stats();							\
+  IF_COUNT(print_stats(););						\
   INIT_COUNT();								\
 }									\
 									\
@@ -496,7 +496,7 @@ PMOD_EXPORT void PIKE_CONCAT(show_pages_,DATA)() {\
 void PIKE_CONCAT3(init_,DATA,_blocks)(void)				\
 {                                                                       \
     COUNT_NAME(#DATA);							\
-    fprintf(stderr, #DATA"_allocator: %p\n", &PIKE_CONCAT(DATA, _allocator));\
+    /*fprintf(stderr, #DATA"_allocator: %p\n", &PIKE_CONCAT(DATA, _allocator));*/\
 }
 
 
