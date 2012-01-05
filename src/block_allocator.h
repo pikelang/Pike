@@ -122,12 +122,58 @@ PMOD_EXPORT void ba_destroy(struct block_allocator * a);
 #define BA_CHECK_PTR(a, p, ptr)	((char*)ptr >= (char*)p && (char*)BA_LASTBLOCK(a,p) >= (char*)ptr)
 #define BA_LASTBLOCK(a, p) BA_BLOCKN(a, p, (a)->blocks - 1)
 
+#ifdef COUNT
+#define IF_COUNT(x)	do { x; } while(0)
+#define COUNT_NAME(x)	do { count_name = (x); } while(0)
+static size_t good = 0, bad = 0, ugly = 0, likely = 0, max = 0;
+static char* count_name = NULL;
+#else
+#define COUNT_NAME(x)
+#define IF_COUNT(x)
+#endif
+
+#ifdef BA_HASH_STATS
+static void ba_print_hash_stats(struct block_allocator * a) {
+    double av_length;
+    ba_page_t n, ends = 0;
+    for (n = 0; n < a->num_pages; n++) {
+	if (!a->pages[n]->hchain) {
+	    ends++;
+	}
+    }
+    av_length = (double)a->num_pages / ends;
+    fprintf(stderr, "HASH STATS:\naverage chain length: %f\n", av_length);
+}
+#endif
+
+#if defined(COUNT) || defined(BA_HASH_STATS)
+static ATTRIBUTE((destructor)) void print_stats() {
+# ifdef COUNT
+    if (good || bad || ugly || likely || max) {
+	if (count_name) fprintf(stderr, "%s ", count_name);
+	fprintf(stderr, "COUNTS:\n%lu good\t %lu bad\t %lu ugly\t %lu likely\t %lu max\n", good, bad, ugly, likely, max);
+    }
+# endif
+}
+#endif
+
+#ifdef COUNT
+#define INIT_COUNT()	do { good = bad = ugly = likely = 0; } while(0)
+#define INC(X) do { (X++); } while (0)
+#else
+#define INIT_COUNT() do { } while(0)
+#define INC(X) do { } while (0)
+#endif
+
 ATTRIBUTE((always_inline,malloc))
 static INLINE void * ba_alloc(struct block_allocator * a) {
     ba_block_header ptr;
     ba_page p = a->first;
 
-    if (!p) return ba_low_alloc(a);
+    if (!p) {
+	IF_COUNT(if (max <= a->num_pages) max = a->num_pages+1;);
+	return ba_low_alloc(a);
+    }
 
 #ifdef BA_DEBUG
     if (p->prev) {
@@ -175,46 +221,6 @@ static INLINE void * ba_alloc(struct block_allocator * a) {
     return (void*)ptr;
 }
 
-#ifdef COUNT
-#define COUNT_NAME(x)	do { count_name = (x); } while(0)
-static size_t good = 0, bad = 0, ugly = 0, likely = 0;
-static char* count_name = NULL;
-#else
-#define COUNT_NAME(x)	
-#endif
-
-#ifdef BA_HASH_STATS
-static void ba_print_hash_stats(struct block_allocator * a) {
-    double av_length;
-    ba_page_t n, ends = 0;
-    for (n = 0; n < a->num_pages; n++) {
-	if (!a->pages[n]->hchain) {
-	    ends++;
-	}
-    }
-    av_length = (double)a->num_pages / ends;
-    fprintf(stderr, "HASH STATS:\naverage chain length: %f\n", av_length);
-}
-#endif
-
-#if defined(COUNT) || defined(BA_HASH_STATS)
-static ATTRIBUTE((destructor)) void print_stats() {
-# ifdef COUNT
-    if (good || bad || ugly || likely) {
-	if (count_name) fprintf(stderr, "%s ", count_name);
-	fprintf(stderr, "COUNTS:\n%lu good\t %lu bad\t %lu ugly\t %lu likely\n", good, bad, ugly, likely);
-    }
-# endif
-}
-#endif
-
-#ifdef COUNT
-#define INIT_COUNT()	do { good = bad = ugly = likely = 0; } while(0)
-#define INC(X) do { (X++); } while (0)
-#else
-#define INIT_COUNT()
-#define INC(X) do { } while (0)
-#endif
 
 ATTRIBUTE((always_inline))
 static INLINE void ba_free(struct block_allocator * a, void * ptr) {
