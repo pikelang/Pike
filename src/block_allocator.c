@@ -319,35 +319,26 @@ static INLINE ba_page_t ba_htable_lookup(const struct block_allocator * a,
 #ifdef COUNT
     count_name = "hash";
 #endif
-#ifdef BA_DEBUG
-    int c = 0;
-#endif
-    ba_page_t n;
     ba_page p;
-    n = a->htable[hash1(a, ptr) & BA_HASH_MASK(a)];
-    while (n) {
-	p = BA_PAGE(a, n);
-	if (BA_CHECK_PTR(a, p, ptr)) {
-	    INC(good);
-	    return n;
+    ba_page_t n1, n2;
+    n1 = a->htable[hash1(a, ptr) & BA_HASH_MASK(a)];
+    n2 = a->htable[hash2(a, ptr) & BA_HASH_MASK(a)];
+
+    while (n1 || n2) {
+	if (n1) {
+	    p = BA_PAGE(a, n1);
+	    if (BA_CHECK_PTR(a, p, ptr)) {
+		return n1;
+	    }
+	    n1 = p->hchain;
 	}
-	n = p->hchain;
-    }
-    n = a->htable[hash2(a, ptr) & BA_HASH_MASK(a)];
-    while (n) {
-	p = BA_PAGE(a, n);
-	if (BA_CHECK_PTR(a, p, ptr)) {
-	    if (a->htable[hash1(a, ptr) & BA_HASH_MASK(a)])
-		INC(ugly);
-	    else INC(bad);
-	    return n;
+	if (n2) {
+	    p = BA_PAGE(a, n2);
+	    if (BA_CHECK_PTR(a, p, ptr)) {
+		return n2;
+	    }
+	    n2 = p->hchain;
 	}
-#ifdef BA_DEBUG
-	if (c++ > a->allocated) {
-	    Pike_error("hash chain is infinite\n");
-	}
-#endif
-	n = p->hchain;
     }
 
     return 0;
