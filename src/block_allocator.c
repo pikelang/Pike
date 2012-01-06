@@ -85,9 +85,18 @@ PMOD_EXPORT void ba_show_pages(struct block_allocator * a) {
     }
 }
 
+//#define BA_ALIGNMENT	8
+
 PMOD_EXPORT INLINE void ba_init(struct block_allocator * a,
 			 uint32_t block_size, ba_page_t blocks) {
-    uint32_t page_size = block_size * blocks;
+    uint32_t page_size;
+
+#ifdef BA_ALIGNMENT
+    if (block_size & (BA_ALIGNMENT - 1))
+	block_size += (BA_ALIGNMENT - (block_size & (BA_ALIGNMENT - 1)));
+#endif
+
+    page_size = block_size * blocks;
 
     a->first = NULL;
     a->last_free = NULL;
