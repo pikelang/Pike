@@ -93,13 +93,13 @@ PMOD_EXPORT INLINE void ba_init(struct block_allocator * a,
     a->last_free = NULL;
     a->last_free_num = 0;
 
-    if ((page_size & (page_size - 1)) == 0)
-	a->magnitude = (uint16_t)ctz32(page_size); 
-    else 
-	a->magnitude = (uint16_t)ctz32(round_up32(page_size));
+    if ((page_size & (page_size - 1))) {
+	page_size = round_up32(page_size);
+	a->blocks = page_size/block_size;
+    } else a->blocks = blocks;
 
+    a->magnitude = (uint16_t)ctz32(page_size); 
     a->block_size = block_size;
-    a->blocks = (1 << a->magnitude) / block_size;
     a->num_pages = 0;
     a->empty_pages = 0;
     a->max_empty_pages = BA_MAX_EMPTY;
@@ -457,6 +457,19 @@ PMOD_EXPORT INLINE void * ba_low_alloc(struct block_allocator * a) {
     );
     p->blocks_used = 1;
     p->first = BA_BLOCKN(a, p, 1);
+
+    if (a->blueprint) {
+	size_t len = (a->blocks - 1) * a->block_size, clen = a->block_size;
+	memcpy(p+1, a->blueprint, a->block_size);
+
+	while (len > clen) {
+	    memcpy(((char*)(p+1)) + clen, p+1, clen);
+	    len -= clen;
+	    clen <<= 1;
+	}
+
+	if (len) memcpy(((char*)(p+1)) + clen, p+1, len);
+    }
 
     for (i = 1; i+1 < a->blocks; i++) {
 #ifdef BA_DEBUG

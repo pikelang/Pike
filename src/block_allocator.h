@@ -76,6 +76,7 @@ struct block_allocator {
     ba_page_t empty_pages, max_empty_pages;
     ba_page_t allocated;
     ba_page_t last_free_num;
+    char * blueprint;
     ba_page last_free;
     ba_page first;
     ba_page * pages;
@@ -83,7 +84,7 @@ struct block_allocator {
 };
 #define BA_INIT(block_size, blocks) { block_size, 0, blocks, 0, 0,\
 				      BA_MAX_EMPTY, 0, 0,\
-				      NULL, NULL, NULL, NULL }
+				      NULL, NULL, NULL, NULL, NULL }
 
 
 struct ba_page {
@@ -397,6 +398,7 @@ LOW_FREE:
 #define BLOCK_ALLOC(DATA,BSIZE)						\
 static struct block_allocator PIKE_CONCAT(DATA, _allocator) =		\
 	BA_INIT(sizeof(struct DATA), (BSIZE));				\
+static struct DATA PIKE_CONCAT(DATA,_blueprint);			\
 									\
 void PIKE_CONCAT3(new_,DATA,_context)(void)				\
 {									\
@@ -409,16 +411,7 @@ static void PIKE_CONCAT(alloc_more_,DATA)(void)				\
 BA_STATIC BA_INLINE struct DATA *BA_UL(PIKE_CONCAT(alloc_,DATA))(void)	\
 {									\
   struct DATA *tmp;							\
-  ba_page_t num_pages = PIKE_CONCAT(DATA, _allocator).num_pages;	\
   tmp = (struct DATA *)ba_alloc(&PIKE_CONCAT(DATA, _allocator));	\
-  if (unlikely(num_pages > PIKE_CONCAT(DATA, _allocator).num_pages)) {	\
-      ba_block_t n;							\
-      ba_page p = BA_PAGE(&PIKE_CONCAT(DATA, _allocator), num_pages+1);	\
-      for (n = 1; n < PIKE_CONCAT(DATA, _allocator).blocks; n++) {	\
-	  struct DATA *tmp2 = ((struct DATA *)(p+1)) + n;		\
-	  DO_PRE_INIT_BLOCK(tmp2);					\
-      }									\
-  }									\
   IF_DEBUG(ba_check_allocator(&PIKE_CONCAT(DATA, _allocator), "alloc_"#DATA, __FILE__, __LINE__);)			\
   PIKE_MEM_RW(*tmp);							\
   PIKE_MEM_WO(*tmp);							\
@@ -502,6 +495,7 @@ PMOD_EXPORT void PIKE_CONCAT(show_pages_,DATA)() {\
 void PIKE_CONCAT3(init_,DATA,_blocks)(void)				\
 {                                                                       \
     COUNT_NAME(#DATA);							\
+    DO_PRE_INIT_BLOCK(((struct DATA *)(PIKE_CONCAT(DATA,_allocator).blueprint = (char*)&PIKE_CONCAT(DATA, _blueprint))));	\
     /*fprintf(stderr, #DATA"_allocator: %p\n", &PIKE_CONCAT(DATA, _allocator));*/\
 }
 
