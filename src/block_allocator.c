@@ -497,26 +497,36 @@ PMOD_EXPORT INLINE void ba_low_free(struct block_allocator * a,
 #endif
     if (!p) {
 #ifdef BA_HASH_THLD
-	if (a->allocated <= BA_HASH_THLD)
-	    BA_ERROR("ba_low_free(.., %p) should never be called: %d, %d\n",
-		     ptr, a->allocated, BA_HASH_THLD);
-#endif
-	n = ba_htable_lookup(a, ptr);
-	if (n) {
-	    a->last_free = p = BA_PAGE(a, n);
-	    a->last_free_num = n;
+	if (a->num_pages <= BA_HASH_THLD) {
+	    ba_page_t t;
+	    for (t = 0; t < a->num_pages; t++) {
+		if (BA_CHECK_PTR(a, a->pages[t], ptr)) {
+		    a->last_free = p = a->pages[t];
+		    a->last_free_num = n = t + 1;
+		    break;
+		}
+	    }
 	} else {
-#ifdef BA_DEBUG
-	    fprintf(stderr, "magnitude: %u\n", a->magnitude);
-	    fprintf(stderr, "allocated: %u\n", a->allocated);
-	    fprintf(stderr, "did not find %p (%X[%X] | %X[%X])\n", ptr,
-		    hash1(a, ptr), hash1(a, ptr) & BA_HASH_MASK(a),
-		    hash2(a, ptr), hash2(a, ptr) & BA_HASH_MASK(a)
-		    );
-	    ba_print_htable(a);
 #endif
-	    BA_ERROR("Unknown pointer (not found in hash) %p\n", ptr);
+	    n = ba_htable_lookup(a, ptr);
+	    if (n) {
+		a->last_free = p = BA_PAGE(a, n);
+		a->last_free_num = n;
+	    }
+#ifdef BA_HASH_THLD
 	}
+#endif
+#ifdef BA_DEBUG
+	fprintf(stderr, "magnitude: %u\n", a->magnitude);
+	fprintf(stderr, "allocated: %u\n", a->allocated);
+	fprintf(stderr, "did not find %p (%X[%X] | %X[%X])\n", ptr,
+		hash1(a, ptr), hash1(a, ptr) & BA_HASH_MASK(a),
+		hash2(a, ptr), hash2(a, ptr) & BA_HASH_MASK(a)
+		);
+	ba_print_htable(a);
+#endif
+	if (!p)
+	    BA_ERROR("Unknown pointer (not found in hash) %p\n", ptr);
     }
 
     if (p->blocks_used == a->blocks) {

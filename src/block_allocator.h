@@ -233,31 +233,12 @@ static INLINE void ba_free(struct block_allocator * a, void * ptr) {
 	p = a->first;
 	if (!p || !BA_CHECK_PTR(a, p, ptr)) {
 #endif
-#ifdef BA_HASH_THLD
-	    if (a->num_pages <= BA_HASH_THLD) {
-		ba_page_t t;
-		for (t = 0; t < a->num_pages; t++) {
-		    p = a->pages[t];
-		    if (BA_CHECK_PTR(a, p, ptr)) {
-			n = t + 1;
-			INC(bad);
-			goto FOUND;
-		    }
-		}
-# ifdef BA_DEBUG
-# endif
-		BA_ERROR("Unknown pointer \n");
-	    } else INC(ugly);
-#endif
 	    p = NULL;
 	    goto LOW_FREE;
 #if 0
 	} else bad ++;
 
 #endif
-FOUND:
-	a->last_free_num = n;
-	a->last_free = p;
     } else {
 	INC(good);
     }
