@@ -68,7 +68,8 @@ inherit Mysql.mysql;
 #define UTF8_UNICODE_ENCODE_MODE 4 // Unicode encode mode with utf8 charset
 
 #ifdef MYSQL_CHARSET_DEBUG
-#define CH_DEBUG(X...)	werror("Sql.mysql: " + X)
+#define CH_DEBUG(X...)							\
+  werror(replace (sprintf ("%O", this), "%", "%%") + ": " + X)
 #else
 #define CH_DEBUG(X...)
 #endif
@@ -708,8 +709,11 @@ int decode_datetime (string timestr)
     }									\
   }									\
 									\
-  CH_DEBUG ("Sending query with charset %O: %O.\n",			\
-	    charset || send_charset, query);				\
+  CH_DEBUG ("Sending query with charset %O: %s.\n",			\
+	    charset || send_charset,					\
+	    (sizeof (query) > 200 ?					\
+	     sprintf ("%O...", query[..200]) :				\
+	     sprintf ("%O", query)));					\
 									\
   int|object res = ::do_query(query);					\
 									\
