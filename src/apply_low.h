@@ -211,10 +211,6 @@
 		      "Calling undefined function.\n");
       }
       
-#ifdef PROFILING
-      new_frame->self_time_base=function->total_time;
-#endif
-
       switch(function->identifier_flags & (IDENTIFIER_TYPE_MASK|IDENTIFIER_ALIAS))
       {       
       case IDENTIFIER_C_FUNCTION:
