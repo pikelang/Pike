@@ -2379,7 +2379,8 @@ void unlink_previous_frame(void)
       Pike_interpreter.accounted_time - current->children_base;
     struct identifier *function =
       current->context->prog->identifiers + current->ident;
-    function->total_time += total_time;
+    if (!function->recur_depth)
+      function->total_time += total_time;
     total_time -= child_time;
     function->self_time += total_time;
     Pike_interpreter.accounted_time += total_time;

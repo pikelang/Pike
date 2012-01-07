@@ -4937,6 +4937,7 @@ int low_define_alias(struct pike_string *name, struct pike_type *type,
 #ifdef PROFILING
   dummy.self_time=0;
   dummy.num_calls=0;
+  dummy.recur_depth=0;
   dummy.total_time=0;
 #endif
 
@@ -5067,6 +5068,7 @@ int low_define_variable(struct pike_string *name,
 #ifdef PROFILING
   dummy.self_time=0;
   dummy.num_calls=0;
+  dummy.recur_depth=0;
   dummy.total_time=0;
 #endif
 
@@ -5520,6 +5522,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
 #ifdef PROFILING
   dummy.self_time=0;
   dummy.num_calls=0;
+  dummy.recur_depth=0;
   dummy.total_time=0;
 #endif
 
@@ -5739,6 +5742,7 @@ INT32 define_function(struct pike_string *name,
 #ifdef PROFILING
   fun.self_time=0;
   fun.num_calls=0;
+  fun.recur_depth=0;
   fun.total_time=0;
 #endif
 

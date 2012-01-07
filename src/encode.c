@@ -4442,6 +4442,7 @@ static void decode_value2(struct decode_data *data)
 #ifdef PROFILING
 		id.self_time=0;
 		id.num_calls=0;
+		id.recur_depth=0;
 		id.total_time=0;
 #endif
 
