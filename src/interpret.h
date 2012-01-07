@@ -609,7 +609,8 @@ PMOD_EXPORT extern const char msg_pop_neg[];
       Pike_interpreter.accounted_time += self_time;			\
       /* FIXME: Can context->prog be NULL? */				\
       function = _fp_->context->prog->identifiers + _fp_->ident;	\
-      function->total_time += time_passed;				\
+      if (!--function->recur_depth)					\
+	function->total_time += time_passed;				\
       function->self_time += self_time;					\
     });									\
   LOW_POP_PIKE_FRAME (_fp_);						\

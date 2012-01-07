@@ -203,6 +203,7 @@
 
 #ifdef PROFILING
       function->num_calls++;
+      function->recur_depth++;
 #endif
   
       if(function->func.offset == -1) {

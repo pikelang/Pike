@@ -2529,11 +2529,14 @@ OPCODE1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN_POP,
   new_frame->context = Pike_fp->context;				   \
 									   \
   DO_IF_PROFILING({							   \
+      struct identifier *func;						   \
       new_frame->start_time =						   \
 	get_cpu_time() - Pike_interpreter.unlocked_time;		   \
       new_frame->ident = Pike_fp->ident;				   \
       new_frame->children_base = Pike_interpreter.accounted_time;	   \
-      new_frame->context->prog->identifiers[new_frame->ident].num_calls++;  \
+      func = new_frame->context->prog->identifiers + new_frame->ident;	   \
+      func->num_calls++;						   \
+      func->recur_depth++;						   \
       DO_IF_PROFILING_DEBUG({						   \
 	  fprintf(stderr, "%p{: Push at %" PRINT_CPU_TIME		   \
 		  " %" PRINT_CPU_TIME "\n",				   \

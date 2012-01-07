@@ -277,6 +277,7 @@ struct identifier
   unsigned INT16 opt_flags;		/* OPT_??? */
 #ifdef PROFILING
   unsigned INT32 num_calls;		/* Total number of calls. */
+  unsigned INT32 recur_depth;		/* Recursion depth during timing. */
   cpu_time_t total_time;		/* Total time with children. */
   cpu_time_t self_time;			/* Total time excluding children. */
 #endif /* PROFILING */
