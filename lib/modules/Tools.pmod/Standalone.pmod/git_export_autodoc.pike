@@ -205,6 +205,7 @@ void get_refs(string git_dir, mapping(string:string) refs, int|void is_src)
 	  !has_prefix(ref_name, "refs/tags/") &&
 	  !has_prefix(ref_name, "refs/notes/source_revs")) continue;
     }
+    if (ref_name == "refs/heads/HEAD") continue;
     refs[ref_name] = fields[0];
   }
 }
@@ -941,6 +942,13 @@ int main(int argc, array(string) argv)
     rev_refs[sha1] += (< ref >);
   }
 
+  // Start with the ref for HEAD.
+  string master_ref;
+  catch {
+    master_ref = String.trim_all_whites(Git.git(work_git, "symbolic-ref",
+						"refs/remotes/origin/HEAD"));
+  };
+
   // Then export the remaining refs.
   while (sizeof(src_refs)) {
     // Check if any of the refs is trivial to export.
@@ -950,6 +958,7 @@ int main(int argc, array(string) argv)
       if (doc_sha1 && (src_to_doc[src_sha1] == doc_sha1)) {
 	// Already up-to-date.
 	m_delete(src_refs, ref);
+	if (ref == master_ref) master_ref = UNDEFINED;
       } else if (doc_sha1 = src_to_doc[src_sha1]) {
 	// Already exported.
 	exporter->reset(ref, doc_sha1);
@@ -959,14 +968,23 @@ int main(int argc, array(string) argv)
 	}
 	werror("Updated %s (already exported).\n", ref);
 	m_delete(src_refs, ref);
+	if (ref == master_ref) master_ref = UNDEFINED;
       }
     }
     if (!sizeof(src_refs)) break;
-    // Update the "earliest" of the remaining refs.
-    string ref = sort(indices(src_refs))[0];
+    // Update one of the remaining refs at semi-random,
+    // The master branch first, then the other branches,
+    // and last any remaining refs.
+    string ref = master_ref;
+    if (!src_refs[ref]) {
+      array(string) refs = filter(indices(src_refs), has_prefix, "refs/heads/");
+      if (!sizeof(refs)) refs = indices(src_refs);
+      ref = random(refs);
+    }
     export_autodoc_for_ref(ref);
     m_delete(src_refs, ref);
     exporter->checkpoint();
+    master_ref = UNDEFINED;
   }
   exporter->checkpoint();
 
