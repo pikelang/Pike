@@ -54,6 +54,7 @@ void recurse(array(string) sources, string save_to,
   array files = ({});
   int mtime;
 
+  Stdio.Stat dstat = file_stat(save_to) && file_stat(save_to + ".stamp");
   foreach(sources, string builddir) {
     Stdio.Stat stat = file_stat(builddir);
     if (!stat) {
@@ -74,6 +75,14 @@ void recurse(array(string) sources, string save_to,
 	stat = file_stat(builddir+fn+"/.cache.xml");
 	if(stat) {
 	  files += ({ builddir+fn+"/.cache.xml" });
+
+#if 0
+	  if (dstat && stat->mtime > dstat->mtime) {
+	    werror("Rebuilding %O due to %O.\n",
+		   save_to, builddir + fn + "/.cache.xml");
+	  }
+#endif
+
 	  mtime = max(mtime, stat->mtime);
 	}
       }
@@ -86,6 +95,12 @@ void recurse(array(string) sources, string save_to,
 	Stdio.Stat stat = file_stat(builddir+fn);
 	if(stat->isdir || stat->size < 3) continue;
 	files += ({ builddir+fn });
+#if 0
+	if (dstat && stat->mtime > dstat->mtime) {
+	  werror("Rebuilding %O due to %O.\n",
+		 save_to, builddir + fn);
+	}
+#endif
 	mtime = max(mtime, stat->mtime);
       }
     } else {
@@ -93,7 +108,6 @@ void recurse(array(string) sources, string save_to,
       mtime = max(mtime, stat->mtime);
     }
   }
-  Stdio.Stat dstat = file_stat(save_to) && file_stat(save_to + ".stamp");
   if(dstat && dstat->mtime > mtime) return;
   int res = join_files(files, save_to, post_process, flags);
   if(res) exit(res);
@@ -151,18 +165,18 @@ string low_join_files(array(string) files, string post_process_log,
   // Attempt to keep the result in a canonic order.
   sort(files);
 
-  if (verbosity > 1)
-    werror("Reading %s...\n", files[0]);
-  Node dest = load_tree(files[0]);
+  Node dest = Parser.XML.Tree.SimpleElementNode("autodoc", ([]));
 
   int fail;
 
-  foreach(files[1..], string filename)
+  foreach(files, string filename)
   {    
     Node src;
     if (mixed err = catch {
-      src = load_tree( filename );
-    }) {
+	if (verbosity > 1)
+	  werror("Reading %s...\n", filename);
+	src = load_tree( filename );
+      }) {
       if (arrayp(err)) {
 	throw(err);
       }
