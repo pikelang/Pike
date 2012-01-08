@@ -249,18 +249,40 @@ void get_src_commits(string doc_sha1_path)
   foreach(src_sha1s, string src_sha1) {
     src_to_doc[src_sha1] = doc_sha1;
   }
+}
+
+array(string) get_doc_parents(string doc_sha1)
+{
+  array(string) parents = doc_to_parents[doc_sha1];
+  if (!zero_type(parents)) return parents;
+  mapping(string:array(string)) commit = get_commit(git_dir, doc_sha1);
+  if (commit->parent) {
+    doc_to_parents[doc_sha1] = commit->parent;
+  }
   // Get the sha1 for the autodoc.xml blob while we're at it.
+  if (commit->tree) {
+    string autodoc_sha1 =
+      get_sha1_for_path(git_dir, commit->tree[0], "autodoc.xml");
+    autodoc_hash[doc_sha1] = autodoc_sha1;
+  }
+  return parents;
+}
+
+string get_autodoc_hash(string doc_sha1)
+{
+  string autodoc_sha1 = autodoc_hash[doc_sha1];
+  if (!zero_type(autodoc_sha1)) return autodoc_sha1;
   mapping(string:array(string)) commit = get_commit(git_dir, doc_sha1);
   if (commit->tree) {
     string autodoc_sha1 =
       get_sha1_for_path(git_dir, commit->tree[0], "autodoc.xml");
-    if (autodoc_sha1) {
-      autodoc_hash[doc_sha1] = autodoc_sha1;
-    }
+    autodoc_hash[doc_sha1] = autodoc_sha1;
   }
+  // Get the sha1 for the autodoc.xml blob while we're at it.
   if (commit->parent) {
     doc_to_parents[doc_sha1] = commit->parent;
   }
+  return autodoc_sha1;
 }
 
 Git.Export exporter;
@@ -608,7 +630,7 @@ void export_autodoc_for_ref(string ref)
     string prev_autodoc_sha1;
     if (src_commit->parent) {
       doc_parents = Array.uniq(map(src_commit->parent, src_to_doc));
-      prev_autodoc_sha1 = autodoc_hash[doc_parents[0]];
+      prev_autodoc_sha1 = get_autodoc_hash(doc_parents[0]);
     }
 
     if (sizeof(doc_parents) > 1) {
@@ -623,10 +645,12 @@ void export_autodoc_for_ref(string ref)
 	string p = parent_queue->get();
 	if (visited[p]) continue;
 	visited[p] = 1;
-	if (doc_to_parents[p]) {
-	  doc_parents -= doc_to_parents[p];
+
+	array(string) grandparents = get_doc_parents(p);
+	if (grandparents) {
+	  doc_parents -= grandparents;
 	  if (sizeof(doc_parents) <= 1) break;
-	  foreach(doc_to_parents[p], string gp) {
+	  foreach(grandparents, string gp) {
 	    if (visited[gp]) continue;
 	    parent_queue->put(gp);
 	  }
@@ -830,6 +854,18 @@ int main(int argc, array(string) argv)
 
       if (m_delete(doc_refs, "refs/notes/source_revs")) {
 	git_source_revs_heads = ({ "refs/notes/source_revs^0" });
+
+	// Note: This takes quite a bit of time when there are
+	//       lots (> ~600) of notes.
+
+	// FIXME: Consider reducing the number of spawned git processes
+	//        by checking out the entire notes/source_revs branch.
+	//
+	//        Problematic, since the repository is bare.
+	//
+	//        An alternative could be to only load the revs that
+	//        correspond to refs in git_dir. This is however not
+	//        sufficient in case of new refs in src_git.
 
 	// Initialize the forward and reverse mappings.
 	array(string) revs =
