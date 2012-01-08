@@ -20,15 +20,17 @@
  *       [/] uLPC
  *       [X] Pike 0.5
  *       [X] Pike 0.6
- *       [/] Pike 7.0
- *       [ ] Pike 7.2
- *       [ ] Pike 7.4
+ *       [X] Pike 7.0
+ *       [X] Pike 7.2
+ *       [/] Pike 7.4
  *       [ ] Pike 7.6
  *       [ ] Pike 7.8
  *       [ ] Pike 7.9
  *
  *   [X] Export directly exportable refs before starting on
  *       each new branch.
+ *
+ *   [/] Export refs when the corresponding commit is exported.
  *
  *   [X] Convert the autodoc.xml to assembled xml.
  *       [X] onepage.xml
@@ -100,7 +102,7 @@
  *       [X] MirarDoc
  *       [/] AutoDoc
  *
- *   [/] Reduce the number of changed files by removeing the
+ *   [/] Reduce the number of changed files by removing the
  *       Pike version and timestamp from assembled xml.
  *       [X] Use the version and timestamp from the source
  *           Pike and the commit timestamp.
@@ -171,6 +173,9 @@ mapping(string:string) autodoc_hash = ([]);
 
 //! Mapping from source reference to source commit sha1.
 mapping(string:string) src_refs = ([]);
+
+//! Lookup from source commit sha1 to the corresponding references (if any).
+mapping(string:multiset(string)) rev_refs = ([]);
 
 //! Mapping from doc reference to doc commit sha1 or export reference.
 mapping(string:string) doc_refs = ([]);
@@ -730,6 +735,25 @@ void export_autodoc_for_ref(string ref)
       exporter->notemodify(doc_mark);
       exporter->data(doc_to_src[doc_mark]*"\n" + "\n");
     }
+
+    // Update any refs to the just committed rev.
+    if (rev_refs[src_rev]) {
+      int flush;
+      foreach(rev_refs[src_rev];string src_ref;) {
+	if (src_ref != ref) {
+	  exporter->reset(src_ref, doc_mark);
+	  m_delete(src_refs, src_ref);
+	  if (verbose) {
+	    progress(sprintf("Updating %s. ", src_ref));
+	  }
+	  flush |= has_prefix(src_ref, "refs/heads/");
+	}
+      }
+      if (flush) {
+	exporter->checkpoint();
+      }
+    }
+
     if (err) {
       string msg = describe_error(err);
       if (!has_prefix(msg, "process_line failed: ") &&
@@ -911,6 +935,10 @@ int main(int argc, array(string) argv)
     } else if (has_prefix(ref, "refs/tags/")) {
       Git.git(git_dir, "tag", "-d", ref[sizeof("refs/tags/")..]);
     }
+  }
+
+  foreach(src_refs; string ref; string sha1) {
+    rev_refs[sha1] += (< ref >);
   }
 
   // Then export the remaining refs.
