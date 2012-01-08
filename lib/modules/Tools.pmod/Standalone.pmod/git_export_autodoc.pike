@@ -401,8 +401,10 @@ void extract_autodoc(mapping(string:array(string)) src_commit)
   if (verbose) {
     progress("Extracting... ");
   }
+#if 0
   rm("build/autodoc.xml.stamp");
   rm("build/autodoc.xml");
+#endif
   string img;
   string imgsrc;
   foreach(({"refdoc/src_images", "src/modules/Image/doc", "tutorial" }),
