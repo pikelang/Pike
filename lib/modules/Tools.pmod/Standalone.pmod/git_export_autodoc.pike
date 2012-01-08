@@ -966,6 +966,7 @@ int main(int argc, array(string) argv)
   //
   // Note that this can only happen if we have a git_dir.
   foreach(doc_refs - src_refs; string ref; string sha1) {
+    if (ref == "HEAD") continue;
     if (verbose) {
       werror("Deleting obsolete %s (obsolete).\n", ref);
     }
@@ -985,6 +986,11 @@ int main(int argc, array(string) argv)
   catch {
     master_ref = String.trim_all_whites(Git.git(work_git, "symbolic-ref",
 						"refs/remotes/origin/HEAD"));
+    if (has_prefix(master_ref, "refs/remotes/origin/")) {
+      master_ref = "refs/heads/" + master_ref[sizeof("refs/remotes/origin/")..];
+    }
+
+    Git.git(git_dir, "symbolic-ref", "HEAD", master_ref);
   };
 
   // Then export the remaining refs.
