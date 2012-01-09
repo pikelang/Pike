@@ -1185,6 +1185,9 @@ PIKEFUN string function_name(program|function func)
   efun;
   optflags OPT_TRY_OPTIMIZE;
 {
+  int f = -1;
+  struct program *p = NULL;
+
   switch(TYPEOF(*func))
   {
     default:
@@ -1193,7 +1196,7 @@ PIKEFUN string function_name(program|function func)
 	
     case PIKE_T_PROGRAM:
     {
-      struct program *p=func->u.program;
+      p = func->u.program;
 
       if(p->parent)
       {
@@ -1230,23 +1233,27 @@ PIKEFUN string function_name(program|function func)
     }
 
     case PIKE_T_FUNCTION:
-      if(SUBTYPEOF(*func) == FUNCTION_BUILTIN) break;
-      if(!func->u.object->prog)
+      if((f = SUBTYPEOF(*func)) == FUNCTION_BUILTIN) break;
+      if(!(p = func->u.object->prog))
 	bad_arg_error("function_name", Pike_sp-args, args, 1,
 		      "function", Pike_sp-args,
 		      "Destructed object.\n");
-      if(func->u.object->prog == pike_trampoline_program)
+      if(p == pike_trampoline_program)
       {
 	struct pike_trampoline *t;
 	t=((struct pike_trampoline *)func->u.object->storage);
 
-	if(t->frame->current_object->prog)
-	  RETURN delambda(ID_FROM_INT(t->frame->current_object->prog,
-				      t->func)->name);
+	if(t->frame->current_object->prog) {
+	  p = t->frame->current_object->prog;
+	  f = t->func;
+	}
       }
 
-      RETURN delambda(ID_FROM_INT(func->u.object->prog,
-				  SUBTYPEOF(*func))->name);
+#ifdef PIKE_DEBUG
+      if(f >= p->num_identifier_references)
+	Pike_fatal("Function without reference.\n");
+#endif
+      RETURN delambda(ID_FROM_INT(p, f)->name);
   }
   pop_n_elems(args);
   push_int(0);
@@ -1834,6 +1841,10 @@ PIKECLASS backtrace_frame
 	SET_SVAL(THIS->_fun, PIKE_T_INT, NUMBER_DESTRUCTED, integer, 0);
 	push_text("destructed_function(), ");	
       }
+    } else if (TYPEOF(THIS->_fun) == PIKE_T_STRING) {
+      push_svalue(&THIS->_fun);
+      push_text("(), ");
+      f_add(2);
     } else {
       push_text("destructed_function(), ");
     }
@@ -2098,17 +2109,27 @@ void low_backtrace(struct Pike_interpreter_struct *i)
       bf->pc = f->pc;
     }
 
+    SET_SVAL(bf->_fun, PIKE_T_INT, NUMBER_DESTRUCTED, integer, 0);
+
     if (f->current_object && f->current_object->prog) {
-      SET_SVAL(bf->_fun, PIKE_T_FUNCTION,
-	       CHECK_IDREF_RANGE(f->fun, f->current_object->prog),
-	       object, f->current_object);
-      add_ref(f->current_object);
+      if (f->fun == FUNCTION_BUILTIN) {
+	/* Unusual case. The frame is from call_c_initializers(), gc()
+	 * or similar. cf [bug 6156].	/grubba
+	 */
+	struct pike_string *event_handler_string =
+	  MK_STRING("__EVENT_HANDLER__");
+	SET_SVAL(bf->_fun, PIKE_T_STRING, 0, string, event_handler_string);
+	add_ref(event_handler_string);
+      } else {
+	SET_SVAL(bf->_fun, PIKE_T_FUNCTION,
+		 CHECK_IDREF_RANGE(f->fun, f->current_object->prog),
+		 object, f->current_object);
+	add_ref(f->current_object);
+	function = ID_FROM_INT(f->current_object->prog, f->fun);
 #ifdef PIKE_DEBUG
-      add_ref(bf->oprog = bf->_fun.u.object->prog);
+	add_ref(bf->oprog = bf->_fun.u.object->prog);
 #endif
-      function = ID_FROM_INT(f->current_object->prog, f->fun);
-    } else {
-      SET_SVAL(bf->_fun, PIKE_T_INT, NUMBER_DESTRUCTED, integer, 0);
+      }
     }
 
     if (f->locals) {
@@ -4934,6 +4955,13 @@ GET_VAL (null)
 PMOD_EXPORT struct program *get_sql_null_prog(void)
 {
   return Null_program;
+}
+
+PIKECLASS __Backtrace_Tester__
+{
+  INIT {
+    Pike_error("__Backtrace_Tester__\n");
+  }
 }
 
 void init_builtin(void)
