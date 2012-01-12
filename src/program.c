@@ -6608,6 +6608,10 @@ int program_index_no_free(struct svalue *to, struct svalue *what,
  *   Else if -32768 <= n < 32768:
  *     1. char		-127 (marker).
  *     2. short		The 16-bit signed number stored in big endian order.
+ *   Else if n < -0x80000000 or n > 0x7fffffff in Pike 7.9 and later:
+ *     1. char		-127 (marker).
+ *     2. short		Zero (64-bit marker).
+ *     3. INT_TYPE	The 64-bit signed number stored in big endian order.
  *   Else:
  *     1. char		-128 (marker).
  *     2. int		The 32-bit signed number stored in big endian order.
@@ -6631,8 +6635,12 @@ int get_small_number(char **q)
   case -127:
     ret = (((signed char *)addr)[0]<<8) | addr[1];
     addr += 2;
-    break;
+    if (ret) break;
 
+    /* Forward compat with Pike 7.9. */
+    addr += 4;	/* Ignore the high 32-bits. */
+
+    /* FALL_THROUGH */
   case -128:
     ret = (((signed char *)addr)[0]<<24) | (addr[1]<<16) |
       (addr[2]<<8) | addr[3];
