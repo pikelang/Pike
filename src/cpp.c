@@ -121,7 +121,7 @@ struct define
 struct cpp
 {
   struct hash_table *defines;
-  INT32 current_line;
+  INT_TYPE current_line;
   INT32 compile_errors;
   struct pike_string *current_file;
   struct string_builder buf;
@@ -1792,7 +1792,7 @@ static void insert_pragma(struct cpp *this,
     cpp_error(this, "Unterminated string constant.");
   }
 
-  string_builder_sprintf(tmp, "\n#%d ", this->current_line);
+  string_builder_sprintf(tmp, "\n# %ld ", (long)this->current_line);
   PUSH_STRING_SHIFT(this->current_file->str,
 		    this->current_file->len,
 		    this->current_file->size_shift,

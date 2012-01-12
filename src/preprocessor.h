@@ -373,12 +373,12 @@ static INLINE ptrdiff_t find_end_parenthesis(struct cpp *this,
 					     ptrdiff_t pos)
 /* pos is after the open paren. Returns the position after the close paren. */
 {
-  INT32 start_line = this->current_line;
+  INT_TYPE start_line = this->current_line;
   while(1)
   {
     if(pos+1>=len)
     {
-      INT32 save_line = this->current_line;
+      INT_TYPE save_line = this->current_line;
       this->current_line = start_line;
       cpp_error(this, "End of file while looking for end parenthesis.");
       this->current_line = save_line;
@@ -411,12 +411,12 @@ static INLINE ptrdiff_t find_end_brace(struct cpp *this,
 				       ptrdiff_t pos)
 /* pos is after the open brace. Returns the position after the close brace. */
 {
-  INT32 start_line = this->current_line;
+  INT_TYPE start_line = this->current_line;
   while(1)
   {
     if(pos+1>=len)
     {
-      INT32 save_line = this->current_line;
+      INT_TYPE save_line = this->current_line;
       this->current_line = start_line;
       cpp_error(this, "End of file while looking for end brace.");
       this->current_line = save_line;
@@ -539,7 +539,7 @@ static ptrdiff_t calcC(struct cpp *this, WCHAR *data, ptrdiff_t len,
       {
 	int start, end;
 	int arg = 0;
-	int start_line;
+	INT_TYPE start_line;
 
 #ifdef PIKE_DEBUG
 	if (func_name->size_shift)
@@ -579,7 +579,7 @@ static ptrdiff_t calcC(struct cpp *this, WCHAR *data, ptrdiff_t len,
 	    break;
 	  case '\0':
 	    if (pos > len) {
-	      int old_line = this->current_line;
+	      INT_TYPE old_line = this->current_line;
 	      this->current_line = start_line;
 	      cpp_error_sprintf(this, "Missing ) in the meta function %S().",
 				func_name);
@@ -604,7 +604,7 @@ static ptrdiff_t calcC(struct cpp *this, WCHAR *data, ptrdiff_t len,
 	}
 
 	if(!GOBBLE(')')) {
-	  int old_line = this->current_line;
+	  INT_TYPE old_line = this->current_line;
 	  this->current_line = start_line;
 	  cpp_error_sprintf(this, "Missing ) in the meta function %S().",
 			    func_name);
@@ -1069,7 +1069,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
    { 'i', 'n', 'c', 'l', 'u', 'd', 'e', '_', 'r', 'e', 'c', 'u', 'r' };
   ptrdiff_t pos, tmp, e;
   int include_mode;
-  INT32 first_line = this->current_line;
+  INT_TYPE first_line = this->current_line;
   /* FIXME: What about this->current_file? */
   
   for(pos=0; pos<len;)
@@ -1178,7 +1178,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	if(d && !(d->inside & 1))
 	{
 	  int arg=0;
-	  INT32 start_line = this->current_line;
+	  INT_TYPE start_line = this->current_line;
 	  struct string_builder tmp;
 	  struct define_argument arguments [MAX_ARGS];
 	  short inside = d->inside;
@@ -1237,7 +1237,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	      {
 		if(pos+1>len)
 		{
-		  INT32 save_line = this->current_line;
+		  INT_TYPE save_line = this->current_line;
 		  this->current_line = start_line;
 		  cpp_error(this, "End of file in macro call.");
 		  this->current_line = save_line;
@@ -1417,7 +1417,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 		  PIKE_XCONCAT (string_builder_binary_strcat, SHIFT) (&tmp, a, l);
 		}else{
 		  struct string_builder save;
-		  INT32 line=this->current_line;
+		  INT_TYPE line = this->current_line;
 		  /* FIXME: Shouldn't we save current_file too? */
 		  save=this->buf;
 		  this->buf=tmp;
@@ -1594,7 +1594,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
     case '0': case '1': case '2': case '3': case '4':
     case '5': case '6': case '7': case '8': case '9':
     {
-      INT32 new_lineno;
+      INT_TYPE new_lineno;
       PCHARP foo = MKPCHARP(data+pos, SHIFT);
       new_lineno=STRTOL_PCHARP(foo, &foo, 10)-1;
       if(OUTP())
@@ -1740,7 +1740,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	      } else {
 		/* Try macro expanding (Bug 2440). */
 		struct string_builder save = this->buf, tmp;
-		int save_line = this->current_line;
+		INT_TYPE save_line = this->current_line;
 		init_string_builder(&this->buf, SHIFT);
 
 		/* Prefix the buffer with the corresponding *_recur
@@ -1773,7 +1773,8 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 		free_string_builder(&tmp);
 
 		this->current_line = save_line;
-		string_builder_sprintf(&this->buf, "\n# %d ", save_line);
+		string_builder_sprintf(&this->buf, "\n# %ld ",
+				       (long)save_line);
 		PUSH_STRING_SHIFT(this->current_file->str,
 				  this->current_file->len,
 				  this->current_file->size_shift,
@@ -1818,7 +1819,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	    {
 	      char buffer[47];
 	      struct pike_string *save_current_file;
-	      INT32 save_current_line;
+	      INT_TYPE save_current_line;
 
 	      save_current_file=this->current_file;
 	      save_current_line=this->current_line;
@@ -1871,7 +1872,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	      this->current_file=save_current_file;
 	      this->current_line=save_current_line;
 	      
-	      sprintf(buffer,"\n# %d ",this->current_line);
+	      sprintf(buffer,"\n# %ld ", (long)this->current_line);
 	      string_builder_binary_strcat(&this->buf, buffer, strlen(buffer));
 	      PUSH_STRING_SHIFT(this->current_file->str,
 				this->current_file->len,
@@ -2565,7 +2566,7 @@ ADD_TO_BUFFER:
   }
 
   if(flags & CPP_EXPECT_ENDIF) {
-    INT32 saved_line = this->current_line;
+    INT_TYPE saved_line = this->current_line;
     this->current_line = first_line;
     cpp_error(this, "End of file while searching for #endif.");
     this->current_line = saved_line;
