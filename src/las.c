@@ -446,8 +446,9 @@ void free_all_nodes(void)
 #ifdef PIKE_DEBUG
 	      if(!cumulative_parse_error)
 	      {
-		fprintf(stderr,"Free node at %p, (%s:%d) (token=%d).\n",
-			(void *)tmp, tmp->current_file->str, tmp->line_number,
+		fprintf(stderr,"Free node at %p, (%s:%ld) (token=%d).\n",
+			(void *)tmp,
+			tmp->current_file->str, (long)tmp->line_number,
 			tmp->token);
 
 		debug_malloc_dump_references(tmp,0,2,0);
@@ -3557,8 +3558,8 @@ void fix_type_field(node *n)
 
 #ifdef PIKE_DEBUG
       if (l_flag>2)
-	safe_pike_fprintf (stderr, "Checking call to %S at %S:%d.\n", name,
-			   n->current_file, n->line_number);
+	safe_pike_fprintf (stderr, "Checking call to %S at %S:%ld.\n", name,
+			   n->current_file, (long)n->line_number);
 #endif /* PIKE_DEBUG */
 
       /* NOTE: new_check_call() steals a reference from f! */
@@ -5062,7 +5063,7 @@ static void optimize(node *n)
   struct compilation *c = THIS_COMPILATION;
   struct pike_string *save_file =
     dmalloc_touch(struct pike_string *, c->lex.current_file);
-  INT32 save_line = c->lex.current_line;
+  INT_TYPE save_line = c->lex.current_line;
 
   do
   {
@@ -5584,9 +5585,9 @@ int dooptcode(struct pike_string *name,
 	  struct compilation *c = THIS_COMPILATION;
 
 	  if(a_flag > 1)
-	    fprintf(stderr,"%s:%d: IDENTIFIER OPTIMIZATION %s == %s\n",
+	    fprintf(stderr,"%s:%ld: IDENTIFIER OPTIMIZATION %s == %s\n",
 		    c->lex.current_file->str,
-		    c->lex.current_line,
+		    (long)c->lex.current_line,
 		    name->str,
 		    foo->u.efun->name->str);
 #endif

@@ -8244,7 +8244,7 @@ PMOD_EXPORT void f__dmalloc_set_name(INT32 args)
 {
   char *s;
   INT_TYPE i;
-  extern char * dynamic_location(const char *file, int line);
+  extern char * dynamic_location(const char *file, INT_TYPE line);
   extern char * dmalloc_default_location;
 
   if(args)
@@ -9305,7 +9305,7 @@ PMOD_EXPORT void f_function_defined(INT32 args)
     struct program *id_prog, *p2;
     int func = SUBTYPEOF(Pike_sp[-args]);
     struct identifier *id;
-    INT32 line;
+    INT_TYPE line;
     struct pike_string *file = NULL;
 
     if (p == pike_trampoline_program) {

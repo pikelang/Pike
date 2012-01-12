@@ -60,7 +60,7 @@ extern size_t dmalloc_tracelogptr;
 
 #ifdef PIKE_DEBUG
 PMOD_EXPORT extern int gc_external_refs_zapped;
-PMOD_EXPORT void gc_check_zapped (void *a, TYPE_T type, const char *file, int line);
+PMOD_EXPORT void gc_check_zapped (void *a, TYPE_T type, const char *file, INT_TYPE line);
 #endif
 
 #ifdef DO_PIKE_CLEANUP
@@ -107,11 +107,11 @@ PMOD_EXPORT int dmalloc_mark_as_free(void*,int);
 PMOD_EXPORT void *debug_malloc_update_location(void *, LOCATION);
 PMOD_EXPORT void *debug_malloc_update_location_ptr(void *, ptrdiff_t, LOCATION);
 PMOD_EXPORT void *debug_malloc_update_location_bt (void *p, const char *file,
-						   int line, const char *name);
+						   INT_TYPE line, const char *name);
 void search_all_memheaders_for_references(void);
 
 /* Beware! names of named memory regions are never ever freed!! /Hubbe */
-PMOD_EXPORT void *debug_malloc_name(void *p, const char *fn, int line);
+PMOD_EXPORT void *debug_malloc_name(void *p, const char *fn, INT_TYPE line);
 PMOD_EXPORT int debug_malloc_copy_names(void *p, void *p2);
 char *dmalloc_find_name(void *p);
 
@@ -174,7 +174,7 @@ void dmalloc_set_mmap(void *ptr, struct memory_map *m);
 void dmalloc_set_mmap_template(void *ptr, struct memory_map *m);
 void dmalloc_set_mmap_from_template(void *p, void *p2);
 void dmalloc_describe_location(void *p, int offset, int indent);
-struct memory_map *dmalloc_alloc_mmap(char *name, int line);
+struct memory_map *dmalloc_alloc_mmap(char *name, INT_TYPE line);
 void dmalloc_add_mmap_entry(struct memory_map *m,
 			    char *name,
 			    int offset,

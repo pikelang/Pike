@@ -1039,11 +1039,11 @@ void debug_gc_fatal_2 (void *a, int type, int flags, const char *fmt, ...)
   va_end (args);
 }
 
-static void dloc_gc_fatal (const char *file, int line,
+static void dloc_gc_fatal (const char *file, INT_TYPE line,
 			   void *a, int flags, const char *fmt, ...)
 {
   va_list args;
-  fprintf (stderr, "%s:%d: GC fatal:\n", file, line);
+  fprintf (stderr, "%s:%ld: GC fatal:\n", file, (long)line);
   va_start (args, fmt);
   debug_gc_fatal_va (a, PIKE_T_UNKNOWN, flags, fmt, args);
   va_end (args);
@@ -1052,7 +1052,7 @@ static void dloc_gc_fatal (const char *file, int line,
 static void rec_stack_fatal (struct gc_rec_frame *err, const char *err_name,
 			     struct gc_rec_frame *p1, const char *p1n,
 			     struct gc_rec_frame *p2, const char *p2n,
-			     const char *file, int line,
+			     const char *file, INT_TYPE line,
 			     const char *fmt, ...)
 {
   va_list args;
@@ -1179,7 +1179,7 @@ again:
 	struct object *o = t->frame->current_object;
 	struct program *p = o->prog;
 	struct identifier *id;
-	INT32 line;
+	INT_TYPE line;
 	struct pike_string *file;
 
 	fprintf (stderr, "%*s**The object is a trampoline.\n", indent, "");
@@ -1306,7 +1306,7 @@ again:
     case T_PROGRAM:
     {
       char *tmp;
-      INT32 line;
+      INT_TYPE line;
       ptrdiff_t id_idx, id_count = 0;
       struct inherit *inh = p->inherits, *next_inh = p->inherits + 1;
       ptrdiff_t inh_id_end = p->num_identifier_references;
@@ -1555,7 +1555,7 @@ again:
 	  struct program *p = f->current_object->prog;
 	  if (p) {
 	    struct identifier *id = ID_FROM_INT(p, f->fun);
-	    INT32 line;
+	    INT_TYPE line;
 	    struct pike_string *file;
 	    if (IDENTIFIER_IS_PIKE_FUNCTION(id->identifier_flags) &&
 		id->func.offset >= 0 &&
@@ -2045,12 +2045,12 @@ void exit_gc(void)
 
 #ifdef PIKE_DEBUG
 
-PMOD_EXPORT void gc_check_zapped (void *a, TYPE_T type, const char *file, int line)
+PMOD_EXPORT void gc_check_zapped (void *a, TYPE_T type, const char *file, INT_TYPE line)
 {
   struct marker *m = find_marker (a);
   if (m && (m->flags & GC_CLEANUP_LEAKED))
-    fprintf (stderr, "Free of leaked %s %p from %s:%d, %d refs remaining\n",
-	     get_name_of_type (type), a, file, line, *(INT32 *)a - 1);
+    fprintf (stderr, "Free of leaked %s %p from %s:%ld, %d refs remaining\n",
+	     get_name_of_type (type), a, file, (long)line, *(INT32 *)a - 1);
 }
 
 /* This function marks some known externals. The rest are handled by
@@ -2255,7 +2255,7 @@ int gc_mark_external (void *a, const char *place)
 static void check_rec_stack_frame (struct gc_rec_frame *f,
 				   struct gc_rec_frame *p1, const char *p1n,
 				   struct gc_rec_frame *p2, const char *p2n,
-				   const char *file, int line)
+				   const char *file, INT_TYPE line)
 {
   /* To allow this function to be used after a stack rotation but
    * before cycle_id markup, there are no checks here for cycle_id
@@ -2302,7 +2302,7 @@ static void check_rec_stack_frame (struct gc_rec_frame *f,
   while (0)
 
 static void check_cycle_piece_frame (struct gc_rec_frame *f,
-				     const char *file, int line)
+				     const char *file, INT_TYPE line)
 {
   LOW_CHECK_REC_FRAME (f, file, line);
   if ((f->rf_flags & (GC_ON_CYCLE_PIECE_LIST|GC_ON_KILL_LIST)) !=
@@ -2318,7 +2318,7 @@ static void check_cycle_piece_frame (struct gc_rec_frame *f,
   do check_cycle_piece_frame ((f), __FILE__, __LINE__); while (0)
 
 static void check_kill_list_frame (struct gc_rec_frame *f,
-				   const char *file, int line)
+				   const char *file, INT_TYPE line)
 {
   LOW_CHECK_REC_FRAME (f, file, line);
   if ((f->rf_flags & (GC_ON_CYCLE_PIECE_LIST|GC_ON_KILL_LIST)) !=
@@ -3815,7 +3815,7 @@ size_t do_gc(void *ignored, int explicit_call)
       GC_VERBOSE_DO(
 	fprintf(stderr, "|   Killing %p with %d refs", o, o->refs);
 	if (o->prog) {
-	  INT32 line;
+	  INT_TYPE line;
 	  struct pike_string *file = get_program_line (o->prog, &line);
 	  fprintf(stderr, ", prog %s:%d\n", file->str, line);
 	  free_string(file);
@@ -4805,10 +4805,10 @@ static int mc_cycle_depth_from_obj (struct object *o)
 
   if (TYPEOF(val) != T_INT) {
     int i = find_shared_string_identifier (pike_cycle_depth_str.u.string, p);
-    INT32 line;
+    INT_TYPE line;
     struct pike_string *file = get_identifier_line (p, i, &line);
-    make_error ("Object got non-integer pike_cycle_depth %O at %S:%d.\n",
-		&val, file, line);
+    make_error ("Object got non-integer pike_cycle_depth %O at %S:%ld.\n",
+		&val, file, (long)line);
     free_svalue (&val);
     free_svalue (&throw_value);
     move_svalue (&throw_value, --Pike_sp);
@@ -4823,10 +4823,10 @@ static int mc_cycle_depth_from_obj (struct object *o)
 
   if (val.u.integer < 0) {
     int i = find_shared_string_identifier (pike_cycle_depth_str.u.string, p);
-    INT32 line;
+    INT_TYPE line;
     struct pike_string *file = get_identifier_line (p, i, &line);
-    make_error ("Object got negative pike_cycle_depth at %S:%d.\n",
-		&val, file, line);
+    make_error ("Object got negative pike_cycle_depth at %S:%ld.\n",
+		&val, file, (long)line);
     free_svalue (&throw_value);
     move_svalue (&throw_value, --Pike_sp);
     return -1;

@@ -1338,7 +1338,7 @@ static struct program *gc_mark_program_pos = 0;
 #define CHECK_FILE_ENTRY(PROG, POS, LEN, SHIFT) do {} while (0)
 #endif
 
-int get_small_number(char **q);
+INT_TYPE get_small_number(char **q);
 
 PMOD_EXPORT void do_free_program (struct program *p)
 {
@@ -2144,9 +2144,9 @@ static int program_identifier_index_compare(int a, int b,
 #undef CMP
 
 #ifdef PIKE_DEBUG
-struct pike_string *find_program_name(struct program *p, INT32 *line)
+struct pike_string *find_program_name(struct program *p, INT_TYPE *line)
 {
-  INT32 l;
+  INT_TYPE l;
   if(!line) line=&l;
 
 #ifdef DEBUG_MALLOC
@@ -2502,7 +2502,7 @@ void fixate_program(void)
   {
 #define DBSTR(X) ((X)?(X)->str:"")
     int e,v;
-    INT32 line;
+    INT_TYPE line;
     struct pike_string *tmp;
     struct memory_map *m=0;;
     if(c->lex.current_file && 
@@ -2775,7 +2775,8 @@ void low_start_new_program(struct program *p,
 #include "program_areas.h"
 
     {
-      INT32 line=0, off=0;
+      INT_TYPE line = 0;
+      INT32 off = 0;
       size_t len = 0;
       INT32 shift = 0;
       char *file=0;
@@ -2857,10 +2858,10 @@ void low_start_new_program(struct program *p,
   debug_malloc_touch(Pike_compiler->fake_object->storage);
 }
 
-PMOD_EXPORT void debug_start_new_program(int line, const char *file)
+PMOD_EXPORT void debug_start_new_program(INT_TYPE line, const char *file)
 {
   struct pike_string *save_file;
-  int save_line;
+  INT_TYPE save_line;
   struct compilation *c;
 
   CHECK_COMPILER();
@@ -2879,9 +2880,9 @@ PMOD_EXPORT void debug_start_new_program(int line, const char *file)
   }
 
   CDFPRINTF((stderr,
-	     "th(%ld) start_new_program(%d, %s): "
+	     "th(%ld) start_new_program(%ld, %s): "
 	     "threads_disabled:%d, compilation_depth:%d\n",
-	     (long)th_self(), line, file,
+	     (long)th_self(), (long)line, file,
 	     threads_disabled, c->compilation_depth));
 
   low_start_new_program(0,1,0,0,0);
@@ -3210,13 +3211,14 @@ void dump_program_tables (const struct program *p, int indent)
 
     fprintf(stderr,
 	    "%*s  %4d: %5x %7d %10d  %s\n"
-	    "%*s        %s:%d\n",
+	    "%*s        %s:%ld\n",
 	    indent, "",
 	    d, ref->id_flags, ref->inherit_offset,
 	    ref->identifier_offset,
 	    id->name->size_shift ? "(wide)" : id->name->str,
 	    indent, "",
-	    p->num_strings?p->strings[id->filename_strno]->str:"-", id->linenumber);
+	    p->num_strings?p->strings[id->filename_strno]->str:"-",
+	    (long)id->linenumber);
     if (IDENTIFIER_IS_ALIAS(id->identifier_flags)) {
       fprintf (stderr, "%*s                                  Alias for %d:%d\n",
 	       indent, "", id->func.ext_ref.depth, id->func.ext_ref.id);
@@ -3227,13 +3229,13 @@ void dump_program_tables (const struct program *p, int indent)
       fprintf (stderr, "%*s                                  Offset: 0x%08lx\n",
 	       indent, "", (long)id->func.offset);
     } else if (IDENTIFIER_IS_PIKE_FUNCTION(id->identifier_flags)) {
-      INT32 line;
+      INT_TYPE line;
       struct program *inh_p = INHERIT_FROM_PTR(p,ref)->prog;
       struct pike_string *file =
 	get_line (ID_FROM_PTR(p,ref)->func.offset + inh_p->program, inh_p, &line);
       if (!file->size_shift)
-	fprintf (stderr, "%*s                                  %s:%d\n",
-		 indent, "", file->str, line);
+	fprintf (stderr, "%*s                                  %s:%ld\n",
+		 indent, "", file->str, (long)line);
       free_string (file);
     } else {
       fprintf (stderr, "%*s                                  Cfun: %p\n",
@@ -3279,12 +3281,13 @@ void dump_program_tables (const struct program *p, int indent)
 
     fprintf(stderr,
 	    "%*s  %4d: %5x %6"PRINTPTRDIFFT"d %4d \"%s\"\n"
-	    "%*s        %s:%d\n",
+	    "%*s        %s:%ld\n",
 	    indent, "",
 	    d, id->identifier_flags, id->func.offset,
 	    id->run_time_type, id->name->str,
 	    indent, "",
-	    p->num_strings?p->strings[id->filename_strno]->str:"-", id->linenumber);
+	    p->num_strings?p->strings[id->filename_strno]->str:"-",
+	    (long)id->linenumber);
   }
 
   fprintf(stderr, "\n"
@@ -3339,7 +3342,8 @@ void dump_program_tables (const struct program *p, int indent)
 	  "%*sLinenumber table:\n",
 	  indent, "");
   {
-    INT32 off = 0, line = 0;
+    INT32 off = 0;
+    INT_TYPE line = 0;
     char *cnt = p->linenumbers;
 
     while (cnt < p->linenumbers + p->num_linenumbers) {
@@ -3360,7 +3364,7 @@ void dump_program_tables (const struct program *p, int indent)
       }
       off += get_small_number(&cnt);
       line += get_small_number(&cnt);
-      fprintf(stderr, "%*s    %8d:%8d\n", indent, "", off, line);
+      fprintf(stderr, "%*s    %8d:%8ld\n", indent, "", off, (long)line);
     }
   }
 
@@ -6740,6 +6744,10 @@ int program_index_no_free(struct svalue *to, struct svalue *what,
  *   Else if -32768 <= n < 32768:
  *     1. char		-127 (marker).
  *     2. short		The 16-bit signed number stored in big endian order.
+ *   Else if n < -0x80000000 or n > 0x7fffffff:
+ *     1. char		-127 (marker).
+ *     2. short		Zero (64-bit marker).
+ *     3. INT_TYPE	The 64-bit signed number stored in big endian order.
  *   Else:
  *     1. char		-128 (marker).
  *     2. int		The 32-bit signed number stored in big endian order.
@@ -6751,11 +6759,11 @@ int program_index_no_free(struct svalue *to, struct svalue *what,
  * definition line for a top level program is set to 0.
  */
 
-int get_small_number(char **q)
+INT_TYPE get_small_number(char **q)
 {
   /* This is a workaround for buggy cc & Tru64 */
   unsigned char *addr = (unsigned char *)*q;
-  int ret = *((signed char *)addr);
+  INT_TYPE ret = *((signed char *)addr);
   ret=*(signed char *)*q;
   addr++;
   switch(ret)
@@ -6763,6 +6771,17 @@ int get_small_number(char **q)
   case -127:
     ret = (((signed char *)addr)[0]<<8) | addr[1];
     addr += 2;
+    if (!ret) {
+      /* 64-bit signed number. */
+      ret = *((signed char *)addr++);
+      ret = (ret<<8) | *(addr++);
+      ret = (ret<<8) | *(addr++);
+      ret = (ret<<8) | *(addr++);
+      ret = (ret<<8) | *(addr++);
+      ret = (ret<<8) | *(addr++);
+      ret = (ret<<8) | *(addr++);
+      ret = (ret<<8) | *(addr++);
+    }
     break;
 
   case -128:
@@ -6790,10 +6809,10 @@ void start_line_numbering(void)
   Pike_compiler->last_pc=Pike_compiler->last_line=0;
 }
 
-static void insert_small_number(INT32 a)
+static void insert_small_number(INT_TYPE a)
 {
 #ifdef PIKE_DEBUG
-  int start = Pike_compiler->new_program->num_linenumbers;
+  size_t start = Pike_compiler->new_program->num_linenumbers;
 #endif /* PIKE_DEBUG */
   if(a>-127 && a<127)
   {
@@ -6802,6 +6821,22 @@ static void insert_small_number(INT32 a)
     add_to_linenumbers(-127);
     add_to_linenumbers(a>>8);
     add_to_linenumbers(a);
+#ifdef INT_TYPE_INT32_CONVERSION
+  } else if (a < -0x80000000L || a > 0x7fffffffL) {
+    /* Overload 16-bit zero as marker for 64-bit. */
+    fprintf(stderr, "Saving huge linenumber: %lld\n", (long long)a);
+    add_to_linenumbers(-127);
+    add_to_linenumbers(0);
+    add_to_linenumbers(0);
+    add_to_linenumbers(a>>56);
+    add_to_linenumbers(a>>48);
+    add_to_linenumbers(a>>40);
+    add_to_linenumbers(a>>32);
+    add_to_linenumbers(a>>24);
+    add_to_linenumbers(a>>16);
+    add_to_linenumbers(a>>8);
+    add_to_linenumbers(a);
+#endif
   }else{
     add_to_linenumbers(-128);
     add_to_linenumbers(a>>24);
@@ -6812,20 +6847,27 @@ static void insert_small_number(INT32 a)
 #ifdef PIKE_DEBUG
   {
     char *tmp = Pike_compiler->new_program->linenumbers + start;
-    INT32 res = get_small_number(&tmp);
+    INT_TYPE res = get_small_number(&tmp);
     if (a != res) {
       tmp = Pike_compiler->new_program->linenumbers + start;
       fprintf(stderr, "0x%p: %02x %02x %02x %02x %02x\n",
 	      tmp, (unsigned char) tmp[0], (unsigned char) tmp[1],
 	      (unsigned char) tmp[2], (unsigned char) tmp[3], (unsigned char) tmp[4]);
-      Pike_fatal("insert_small_number failed: %d (0x%08x) != %d (0x%08x)\n",
-	    a, a, res, res);
+      if ((start + 5) < Pike_compiler->new_program->num_linenumbers) {
+	/* 64-bit. Dump the remaining 6 bytes as well. */
+	fprintf(stderr, "0x%p: %02x %02x %02x %02x %02x %02x\n",
+		tmp, (unsigned char) tmp[5], (unsigned char) tmp[6],
+		(unsigned char) tmp[7], (unsigned char) tmp[8],
+		(unsigned char) tmp[9], (unsigned char) tmp[10]);
+      }
+      Pike_fatal("insert_small_number failed: %ld (0x%08lx) != %ld (0x%08lx)\n",
+		 (long)a, (long)a, (long)res, (long)res);
     }
   }
 #endif /* PIKE_DEBUG */
 }
 
-static void ext_insert_small_number (char **ptr, INT32 a)
+static void ext_insert_small_number (char **ptr, INT_TYPE a)
 {
   if(a>-127 && a<127)
   {
@@ -6834,6 +6876,21 @@ static void ext_insert_small_number (char **ptr, INT32 a)
     *(*ptr)++ = -127;
     *(*ptr)++ = a>>8;
     *(*ptr)++ = a;
+#ifdef INT_TYPE_INT32_CONVERSION
+  } else if (a < -0x80000000L || a > 0x7fffffffL) {
+    /* Overload 16-bit zero as marker for 64-bit. */
+    *(*ptr)++ = -127;
+    *(*ptr)++ = 0;
+    *(*ptr)++ = 0;
+    *(*ptr)++ = a>>56;
+    *(*ptr)++ = a>>48;
+    *(*ptr)++ = a>>40;
+    *(*ptr)++ = a>>32;
+    *(*ptr)++ = a>>24;
+    *(*ptr)++ = a>>16;
+    *(*ptr)++ = a>>8;
+    *(*ptr)++ = a;
+#endif
   }else{
     *(*ptr)++ = -128;
     *(*ptr)++ = a>>24;
@@ -6843,7 +6900,7 @@ static void ext_insert_small_number (char **ptr, INT32 a)
   }
 }
 
-void ext_store_program_line (struct program *prog, INT32 line, struct pike_string *file)
+void ext_store_program_line (struct program *prog, INT_TYPE line, struct pike_string *file)
 {
   char *ptr;
 
@@ -6854,35 +6911,36 @@ void ext_store_program_line (struct program *prog, INT32 line, struct pike_strin
     Pike_fatal ("Use store_linenumber instead when the program is compiled.\n");
 #endif
 
-  ptr = prog->linenumbers = xalloc (1 + 5 + 1 + (file->len << file->size_shift) + 5 + 5);
-  *ptr++ = 127;
-  ext_insert_small_number (&ptr, file->len);
-  *ptr++ = (char) file->size_shift;
-  MEMCPY (ptr, file->str, file->len << file->size_shift);
+  ptr = prog->linenumbers = xalloc (1 + 5 + 1 + (file->len << file->size_shift) + 1 + 11);
+  *ptr++ = 127;							/* 1 */
+  ext_insert_small_number (&ptr, file->len);			/* 5 */
+  *ptr++ = (char) file->size_shift;				/* 1 */
+  MEMCPY (ptr, file->str, file->len << file->size_shift);	/* - */
   ptr += file->len << file->size_shift;
-  *ptr++ = 0;			/* PC */
-  ext_insert_small_number (&ptr, line);
+  *ptr++ = 0;			/* PC */			/* 1 */
+  ext_insert_small_number (&ptr, line);				/* 11 */
   prog->num_linenumbers = ptr - prog->linenumbers;
 }
 
-void store_linenumber(INT32 current_line, struct pike_string *current_file)
+void store_linenumber(INT_TYPE current_line, struct pike_string *current_file)
 {
 /*  if(!store_linenumbers)  Pike_fatal("Fnord.\n"); */
 #ifdef PIKE_DEBUG
   if(a_flag)
   {
-    INT32 line=0, off=0;
+    INT_TYPE line=0;
+    INT32 off=0;
     size_t len = 0;
     INT32 shift = 0;
     char *file=0;
     char *cnt=Pike_compiler->new_program->linenumbers;
 
     if (a_flag > 50) {
-      fprintf(stderr, "store_linenumber(%d, \"%s\") at pc %d\n",
-	      current_line, current_file->str,
+      fprintf(stderr, "store_linenumber(%ld, \"%s\") at pc %d\n",
+	      (long)current_line, current_file->str,
 	      (INT32) PIKE_PC);
-      fprintf(stderr, "  last_line:%d last_file:\"%s\"\n",
-	      Pike_compiler->last_line,
+      fprintf(stderr, "  last_line:%ld last_file:\"%s\"\n",
+	      (long)Pike_compiler->last_line,
 	      Pike_compiler->last_file?Pike_compiler->last_file->str:"");
     }
 
@@ -6907,9 +6965,9 @@ void store_linenumber(INT32 current_line, struct pike_string *current_file)
       off+=get_small_number(&cnt);
       line+=get_small_number(&cnt);
       if (a_flag > 100) {
-	fprintf(stderr, "  off: %d, line: %d\n"
+	fprintf(stderr, "  off: %d, line: %ld\n"
 		"  raw: ",
-		off, line);
+		off, (long)line);
 	for (;start < cnt; start++) {
 	  fprintf(stderr, "%02x ", *((unsigned char *)start));
 	}
@@ -6923,12 +6981,12 @@ void store_linenumber(INT32 current_line, struct pike_string *current_file)
 	MEMCMP(Pike_compiler->last_file->str, file, len<<shift)))
     {
       Pike_fatal("Line numbering out of whack\n"
-	    "    (line : %d ?= %d)!\n"
+	    "    (line : %ld ?= %ld)!\n"
 	    "    (  pc : %d ?= %d)!\n"
 	    "    (shift: %d ?= %d)!\n"
 	    "    (len  : %"PRINTSIZET"d ?= %"PRINTSIZET"d)!\n"
 	    "    (file : %s ?= %s)!\n",
-	    Pike_compiler->last_line, line,
+		 (long)Pike_compiler->last_line, (long)line,
 	    Pike_compiler->last_pc, off,
 	    Pike_compiler->last_file?Pike_compiler->last_file->size_shift:0,
 	    shift,
@@ -6983,7 +7041,7 @@ void store_linenumber(INT32 current_line, struct pike_string *current_file)
   } while (0)
 
 PMOD_EXPORT struct pike_string *low_get_program_line (struct program *prog,
-						      INT32 *linep)
+						      INT_TYPE *linep)
 {
   *linep = 0;
 
@@ -7075,7 +7133,8 @@ static char *make_plain_file (char *file, size_t len, INT32 shift, int malloced)
  * can't be touched. It also converts wide strings to ordinary ones
  * with escaping.
  */
-PMOD_EXPORT char *low_get_program_line_plain(struct program *prog, INT32 *linep,
+PMOD_EXPORT char *low_get_program_line_plain(struct program *prog,
+					     INT_TYPE *linep,
 					     int malloced)
 {
   *linep = 0;
@@ -7095,7 +7154,7 @@ PMOD_EXPORT char *low_get_program_line_plain(struct program *prog, INT32 *linep,
  * class start is written to linep, or 0 if the program is the top
  * level of the file. */
 PMOD_EXPORT struct pike_string *get_program_line(struct program *prog,
-						 INT32 *linep)
+						 INT_TYPE *linep)
 {
   struct pike_string *res = low_get_program_line(prog, linep);
   if (!res) {
@@ -7107,7 +7166,8 @@ PMOD_EXPORT struct pike_string *get_program_line(struct program *prog,
 }
 
 PMOD_EXPORT struct pike_string *low_get_line (PIKE_OPCODE_T *pc,
-					      struct program *prog, INT32 *linep)
+					      struct program *prog,
+					      INT_TYPE *linep)
 {
   linep[0] = 0;
 
@@ -7116,7 +7176,8 @@ PMOD_EXPORT struct pike_string *low_get_line (PIKE_OPCODE_T *pc,
     if ((offset < (ptrdiff_t)prog->num_program) && (offset >= 0)) {
       static char *file = NULL;
       static char *base, *cnt;
-      static INT32 off,line,pid;
+      static INT32 off,pid;
+      static INT_TYPE line;
       static size_t len;
       static INT32 shift;
 
@@ -7168,7 +7229,7 @@ PMOD_EXPORT struct pike_string *low_get_line (PIKE_OPCODE_T *pc,
 /* This is to low_get_line as low_get_program_line_plain is to
  * low_get_program_line. */
 PMOD_EXPORT char *low_get_line_plain (PIKE_OPCODE_T *pc, struct program *prog,
-				      INT32 *linep, int malloced)
+				      INT_TYPE *linep, int malloced)
 {
   linep[0] = 0;
 
@@ -7177,7 +7238,8 @@ PMOD_EXPORT char *low_get_line_plain (PIKE_OPCODE_T *pc, struct program *prog,
 
     if ((offset < (ptrdiff_t)prog->num_program) && (offset >= 0)) {
       char *cnt = prog->linenumbers;
-      INT32 off = 0, line = 0;
+      INT32 off = 0;
+      INT_TYPE line = 0;
       char *file = NULL;
       size_t len = 0;
       INT32 shift = 0;
@@ -7211,16 +7273,16 @@ PMOD_EXPORT char *low_get_line_plain (PIKE_OPCODE_T *pc, struct program *prog,
 
 void gdb_program_line (struct program *prog)
 {
-  INT32 line;
+  INT_TYPE line;
   char *file = low_get_program_line_plain (prog, &line, 0);
-  fprintf (stderr, "%s:%d\n", file, line);
+  fprintf (stderr, "%s:%ld\n", file, (long)line);
 }
 
 void gdb_get_line (PIKE_OPCODE_T *pc, struct program *prog)
 {
-  INT32 line;
+  INT_TYPE line;
   char *file = low_get_line_plain (pc, prog, &line, 0);
-  fprintf (stderr, "%s:%d\n", file, line);
+  fprintf (stderr, "%s:%ld\n", file, (long)line);
 }
 
 #endif
@@ -7232,7 +7294,8 @@ void gdb_get_line (PIKE_OPCODE_T *pc, struct program *prog)
  * file.
  */
 PMOD_EXPORT struct pike_string *get_line(PIKE_OPCODE_T *pc,
-					 struct program *prog, INT32 *linep)
+					 struct program *prog,
+					 INT_TYPE *linep)
 {
   struct pike_string *res;
 
@@ -7253,7 +7316,8 @@ PMOD_EXPORT struct pike_string *get_line(PIKE_OPCODE_T *pc,
 }
 
 PMOD_EXPORT struct pike_string *low_get_function_line (struct object *o,
-						       int fun, INT32 *linep)
+						       int fun,
+						       INT_TYPE *linep)
 {
   if (o->prog) {
     struct program *p;
@@ -7292,7 +7356,8 @@ PMOD_EXPORT struct pike_string *low_get_function_line (struct object *o,
  *       add a reference to the returned string.
  */
 PMOD_EXPORT struct pike_string *get_identifier_line(struct program *p,
-						    int fun, INT32 *linep)
+						    int fun,
+						    INT_TYPE *linep)
 {
   struct reference *ref = PTR_FROM_INT(p, fun);
   struct identifier *id = ID_FROM_PTR(p, ref);
@@ -7317,7 +7382,7 @@ PMOD_EXPORT struct pike_string *get_identifier_line(struct program *p,
  *       by Pike-code, in which case it is a NO-OP.
  */
 PMOD_EXPORT void va_yyreport(int severity_level,
-			     struct pike_string *file, INT32 line,
+			     struct pike_string *file, INT_TYPE line,
 			     struct pike_string *system, INT32 args,
 			     const char *fmt, va_list vargs)
 {
@@ -7392,7 +7457,7 @@ PMOD_EXPORT void va_yyreport(int severity_level,
 }
 
 PMOD_EXPORT void low_yyreport(int severity_level,
-			      struct pike_string *file, INT32 line,
+			      struct pike_string *file, INT_TYPE line,
 			      struct pike_string *system,
 			      INT32 args, const char *fmt, ...)
 {
@@ -7449,9 +7514,9 @@ PMOD_EXPORT void yyerror(const char *str)
  * no got_file/got_line.
  */
 void yytype_report(int severity_level,
-		   struct pike_string *expected_file, INT32 expected_line, 
+		   struct pike_string *expected_file, INT_TYPE expected_line,
 		   struct pike_type *expected_t,
-		   struct pike_string *got_file, INT32 got_line,
+		   struct pike_string *got_file, INT_TYPE got_line,
 		   struct pike_type *got_t,
 		   INT32 args, const char *fmt, ...)
 {
@@ -7924,10 +7989,10 @@ static void f_reporter_report(INT32 args)
        * won't contain wide-strings... */
       if (level >= REPORT_ERROR) {
 	fprintf(stderr, "%s:%ld: %s\n",
-		filename->str, linenumber, message->str);
+		filename->str, (long)linenumber, message->str);
       } else {
 	fprintf(stderr, "%s:%ld: Warning: %s\n",
-		filename->str, linenumber, message->str);
+		filename->str, (long)linenumber, message->str);
       }
       fflush(stderr);
     }
@@ -9550,7 +9615,8 @@ static void low_enter_compiler(struct object *ce, int inherit)
   Pike_fp = new_frame;
 }
 
-PMOD_EXPORT void enter_compiler(struct pike_string *filename, int linenumber)
+PMOD_EXPORT void enter_compiler(struct pike_string *filename,
+				INT_TYPE linenumber)
 {
   struct object *ce = parent_clone_object(compilation_program,
 					  compilation_environment,
@@ -11159,8 +11225,8 @@ void yyexplain_not_compatible(int severity_level,
   int e;
   struct pike_string *s=findstring("__INIT");
   int res = 1;
-  INT32 a_line = 0;
-  INT32 b_line = 0;
+  INT_TYPE a_line = 0;
+  INT_TYPE b_line = 0;
   struct pike_string *a_file;
   struct pike_string *b_file;
   DECLARE_CYCLIC();
@@ -11201,8 +11267,8 @@ void yyexplain_not_compatible(int severity_level,
     if(((bid->run_time_type != PIKE_T_INT) ||
 	(ID_FROM_INT(a, i)->run_time_type != PIKE_T_INT)) &&
        !match_types(ID_FROM_INT(a,i)->type, bid->type)) {
-      INT32 aid_line = a_line;
-      INT32 bid_line = b_line;
+      INT_TYPE aid_line = a_line;
+      INT_TYPE bid_line = b_line;
       struct pike_string *aid_file = get_identifier_line(a, i, &aid_line);
       struct pike_string *bid_file = get_identifier_line(b, e, &bid_line);
       if (!aid_file) aid_file = a_file;
@@ -11228,8 +11294,8 @@ void yyexplain_not_implements(int severity_level,
 {
   int e;
   struct pike_string *s=findstring("__INIT");
-  INT32 a_line = 0;
-  INT32 b_line = 0;
+  INT_TYPE a_line = 0;
+  INT_TYPE b_line = 0;
   struct pike_string *a_file;
   struct pike_string *b_file;
   DECLARE_CYCLIC();
@@ -11253,7 +11319,7 @@ void yyexplain_not_implements(int severity_level,
     if(s == bid->name) continue;	/* Skip __INIT */
     i = find_shared_string_identifier(bid->name,a);
     if (i == -1) {
-      INT32 bid_line = b_line;
+      INT_TYPE bid_line = b_line;
       struct pike_string *bid_file;
       if (b->identifier_references[e].id_flags & (ID_OPTIONAL))
 	continue;		/* It's ok... */
@@ -11267,8 +11333,8 @@ void yyexplain_not_implements(int severity_level,
     }
 
     if (!pike_types_le(bid->type, ID_FROM_INT(a, i)->type)) {
-      INT32 aid_line = a_line;
-      INT32 bid_line = b_line;
+      INT_TYPE aid_line = a_line;
+      INT_TYPE bid_line = b_line;
       struct pike_string *aid_file = get_identifier_line(a, i, &aid_line);
       struct pike_string *bid_file = get_identifier_line(b, e, &bid_line);
       if (!aid_file) aid_file = a_file;

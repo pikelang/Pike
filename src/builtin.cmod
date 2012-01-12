@@ -1023,7 +1023,7 @@ PIKEFUN string program_defined(program p)
   errname Program.defined;
   optflags OPT_TRY_OPTIMIZE;
 {
-  INT32 line;
+  INT_TYPE line;
   struct pike_string *tmp = low_get_program_line(p, &line);
 
   pop_n_elems(args);
@@ -1707,7 +1707,7 @@ PIKECLASS backtrace_frame
   /* These two are considered to be uninitialized from prog, pc and
    * fun as long as lineno == -1. */
   CVAR struct pike_string *filename;
-  CVAR INT32 lineno;
+  CVAR INT_TYPE lineno;
 
   INIT
   {

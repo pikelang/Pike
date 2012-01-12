@@ -2562,7 +2562,7 @@ static INT32 decode_portable_bytecode(struct decode_data *data, INT32 string_no)
   struct program *p = Pike_compiler->new_program;
   struct pike_string *bytecode;
   struct pike_string *current_file=NULL;
-  INT32 current_line=0;
+  INT_TYPE current_line = 0;
   int e;
   ONERROR err;
 
@@ -2602,7 +2602,9 @@ static INT32 decode_portable_bytecode(struct decode_data *data, INT32 string_no)
 	}						\
 	current_file = p->strings[strno];		\
       } else if (STR(bytecode)[e] == F_LINE) {		\
-	current_line = STR(bytecode)[e+1];		\
+	current_line =					\
+	  ((unsigned INT32)STR(bytecode)[e+1]) |	\
+	  ((INT_TYPE)STR(bytecode)[e+2])<<32;		\
       } else if (!current_file) {			\
 	decode_error(data, NULL, "Missing filename directive in "	\
 		     "byte code.\n");			\
@@ -3866,7 +3868,7 @@ static void decode_value2(struct decode_data *data)
 	  struct compilation *c;
 	  struct pike_string *save_current_file;
 	  struct object *placeholder = NULL;
-	  unsigned INT32 save_current_line;
+	  INT_TYPE save_current_line;
 #define FOO(NUMTYPE,Y,ARGTYPE,NAME) \
           NUMTYPE PIKE_CONCAT(local_num_, NAME) = 0;
 #include "program_areas.h"
@@ -4366,19 +4368,19 @@ static void decode_value2(struct decode_data *data)
 		decode_number(no, data);
 
 		EDB(5, {
-		  INT32 line;
+		  INT_TYPE line;
 		  struct pike_string *file =
 		    get_line(func.offset + p->program, p, &line);
 		  fprintf(stderr,
 			  "%*sdefine_function(\"%s\", X, 0x%04x, 0x%04x,\n"
 			  "%*s                0x%04x, 0x%04x)\n"
-			  "%*s    @ %s:%d\n",
+			  "%*s    @ %s:%ld\n",
 			  data->depth, "",
 			  Pike_sp[-2].u.string->str, id_flags, func_flags,
 			  data->depth, "",
 			  func.offset, opt_flags,
 			  data->depth, "",
-			  file->str, line);
+			  file->str, (long)line);
 		});
 
 		/* Alters

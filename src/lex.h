@@ -22,7 +22,7 @@ struct lex
 {
   char *pos;
   char *end;
-  INT32 current_line;
+  INT_TYPE current_line;
   INT32 pragmas;
   struct pike_string *current_file;
   int (*current_lexer)(struct lex *, YYSTYPE *);

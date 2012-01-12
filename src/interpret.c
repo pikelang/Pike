@@ -885,7 +885,7 @@ static INLINE void low_debug_instr_prologue (PIKE_INSTR_T instr)
   {
     char *file = NULL, *f;
     struct pike_string *filep;
-    INT32 linep;
+    INT_TYPE linep;
 
     filep = get_line(Pike_fp->pc,Pike_fp->context->prog,&linep);
     if (filep && !filep->size_shift) {
@@ -1026,7 +1026,7 @@ void dump_backlog(void)
     if (p)
     {
       struct pike_string *file;
-      INT32 line;
+      INT_TYPE line;
 
 #ifdef _REENTRANT
       if(thread != backlog[e].thread_state)
@@ -1738,7 +1738,8 @@ static void do_trace_call(INT32 args, dynamic_buffer *old_buf)
 {
   struct pike_string *filep = NULL;
   char *file, *s;
-  INT32 linep,e;
+  INT_TYPE linep;
+  INT32 e;
   ptrdiff_t len = 0;
 
   my_strcat("(");
@@ -1825,7 +1826,7 @@ static void do_trace_return (int got_retval, dynamic_buffer *old_buf)
 {
   struct pike_string *filep = NULL;
   char *file, *s;
-  INT32 linep;
+  INT_TYPE linep;
 
   if (got_retval) {
     my_strcat ("returns: ");
@@ -3052,7 +3053,7 @@ void gdb_backtrace (
     if (f->refs) {
       int args, i;
       char *file = NULL;
-      INT32 line;
+      INT_TYPE line;
 
       if (f->context) {
 	if (f->pc)
@@ -3061,7 +3062,7 @@ void gdb_backtrace (
 	  file = low_get_program_line_plain (f->context->prog, &line, 0);
       }
       if (file)
-	fprintf (stderr, "%s:%d: ", file, line);
+	fprintf (stderr, "%s:%ld: ", file, (long)line);
       else
 	fputs ("unknown program: ", stderr);
 
@@ -3173,7 +3174,7 @@ void gdb_backtrace (
 	    struct program *p = arg->u.object->prog;
 	    if (p && p->num_linenumbers) {
 	      file = low_get_program_line_plain (p, &line, 0);
-	      fprintf (stderr, "object(%s:%d)", file, line);
+	      fprintf (stderr, "object(%s:%ld)", file, (long)line);
 	    }
 	    else
 	      fputs ("object", stderr);
@@ -3184,7 +3185,7 @@ void gdb_backtrace (
 	    struct program *p = arg->u.program;
 	    if (p->num_linenumbers) {
 	      file = low_get_program_line_plain (p, &line, 0);
-	      fprintf (stderr, "program(%s:%d)", file, line);
+	      fprintf (stderr, "program(%s:%ld)", file, (long)line);
 	    }
 	    else
 	      fputs ("program", stderr);
@@ -3233,7 +3234,7 @@ void gdb_backtraces()
   struct thread_state *ts = 0;
   while ((i = gdb_next_thread_state (i, &ts)), ts) {
     fprintf (stderr, "\nTHREAD_ID %p (swapped %s):\n",
-	     (void *)ts->id, ts->swapped ? "out" : "in");
+	     (void *)(ptrdiff_t)ts->id, ts->swapped ? "out" : "in");
     gdb_backtrace (ts->id);
   }
 #else

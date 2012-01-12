@@ -44,7 +44,7 @@ struct statement_label_name
 {
   struct statement_label_name *next;
   struct pike_string *str;
-  unsigned int line_number;
+  INT_TYPE line_number;
 };
 
 struct statement_label
@@ -305,7 +305,7 @@ int do_docode(node *n, int flags)
   int i;
   int stack_depth_save = current_stack_depth;
   struct compilation *c = THIS_COMPILATION;
-  int save_current_line = c->lex.current_line;
+  INT_TYPE save_current_line = c->lex.current_line;
   if(!n) return 0;
   c->lex.current_line=n->line_number;
 #ifdef PIKE_DEBUG
@@ -2274,8 +2274,8 @@ static int do_docode2(node *n, int flags)
 
     label_found_1:
       if (n->token == F_CONTINUE && label->continue_label < 0) {
-	my_yyerror("Cannot continue the non-loop statement on line %d.",
-		   lbl_name->line_number);
+	my_yyerror("Cannot continue the non-loop statement on line %ld.",
+		   (long)lbl_name->line_number);
 	return 0;
       }
     }
@@ -2331,7 +2331,7 @@ static int do_docode2(node *n, int flags)
       struct statement_label_name *lbl_name;
       for (lbl_name = label->name; lbl_name; lbl_name = lbl_name->next)
 	if (lbl_name->str == name.str) {
-	  INT32 save_line = c->lex.current_line;
+	  INT_TYPE save_line = c->lex.current_line;
 	  c->lex.current_line = name.line_number;
 	  my_yyerror("Duplicate nested labels, previous one on line %d.",
 		     lbl_name->line_number);
