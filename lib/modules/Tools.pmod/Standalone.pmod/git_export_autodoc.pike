@@ -274,11 +274,11 @@ string get_autodoc_hash(string doc_sha1)
   if (!zero_type(autodoc_sha1)) return autodoc_sha1;
   mapping(string:array(string)) commit = get_commit(git_dir, doc_sha1);
   if (commit->tree) {
-    string autodoc_sha1 =
+    autodoc_sha1 =
       get_sha1_for_path(git_dir, commit->tree[0], "autodoc.xml");
     autodoc_hash[doc_sha1] = autodoc_sha1;
   }
-  // Get the sha1 for the autodoc.xml blob while we're at it.
+  // Set the parents for the commit while we're at it.
   if (commit->parent) {
     doc_to_parents[doc_sha1] = commit->parent;
   }
@@ -877,7 +877,7 @@ int main(int argc, array(string) argv)
 	foreach(revs; int i; string doc_commit) {
 	  if (doc_commit == "") continue;
 	  if (verbose) {
-	    werror("\rRetrieving existing commits (%d/%d)... ",
+	    werror("\rRetrieving existing doc commits (%d/%d)... ",
 		   i+1, sizeof(revs)-1);
 	  }
 	  get_src_commits(doc_commit);
@@ -949,7 +949,7 @@ int main(int argc, array(string) argv)
   mkdir("build/doc/doc");
   mkdir("build/doc/images");
 
-  // Git between 1.7.7 and 1.7.9 have an infinite loop in the
+  // Git between 1.7.7 and 1.7.8.1 have an infinite loop in the
   // LF to CRLF filter, which is triggered by some Pike commits.
   // Since we don't care about CRLF (or in fact the affected files
   // at all), we just disable CRLF conversion entirely.
