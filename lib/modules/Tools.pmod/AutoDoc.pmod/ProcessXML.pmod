@@ -584,8 +584,10 @@ void mergeTrees(SimpleNode dest, SimpleNode source)
 	    // Old doc was placeholder or empty.
 	    dest_has_doc = node;
 	  }
-	  children[i] = 0;
-        }
+        } else {
+	  dest_has_doc = node;
+	}
+	children[i] = 0;
 	break;
 
       default:
