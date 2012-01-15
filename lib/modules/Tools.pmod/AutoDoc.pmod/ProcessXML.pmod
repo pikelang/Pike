@@ -420,19 +420,22 @@ protected SimpleNode mergeDoc(SimpleNode orig, SimpleNode new)
   // NB: There can only be one <text> node in a <doc> node,
   //     and it comes first among the element nodes.
   SimpleNode orig_text = orig->get_first_element("text");
-  SimpleNode new_text = orig->get_first_element("text");
-  if (!sizeof(String.trim_all_whites(orig_text->value_of_node()))) {
-    orig->replace_child(orig_text, new_text);
-  } else if (sizeof(String.trim_all_whites(new_text->value_of_node()))) {
-    orig_text->replace_children(orig_text->get_children() +
-				new_text->get_children());
+  SimpleNode new_text = new->get_first_element("text");
+  if (new_text && sizeof(String.trim_all_whites(new_text->value_of_node()))) {
+    if (!orig_text) {
+      orig->add_child(new_text);
+    } else if (!sizeof(String.trim_all_whites(orig_text->value_of_node()))) {
+      orig->replace_child(orig_text, new_text);
+    } else {
+      orig_text->replace_children(orig_text->get_children() +
+				  new_text->get_children());
+    }
   }
 
   // Append the remaining (typically <group>) nodes in new after
   // the previously existing in orig.
-  array(SimpleNode) new_children = new->get_children();
-  orig->replace_children(orig->get_children() +
-			 new_children[search(new_children, new_text)+1..]);
+  array(SimpleNode) new_children = new->get_children() - ({ new_text });
+  orig->replace_children(orig->get_children() + new_children);
 }
 
 //!   Puts all children of @[source] into the tree @[dest], in their
