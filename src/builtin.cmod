@@ -1841,6 +1841,9 @@ PIKECLASS backtrace_frame
 	SET_SVAL(THIS->_fun, PIKE_T_INT, NUMBER_DESTRUCTED, integer, 0);
 	push_text("destructed_function(), ");	
       }
+    } else if (TYPEOF(THIS->_fun) == PIKE_T_PROGRAM) {
+      /* FIXME: Use the master? */
+      push_text("program(), ");
     } else if (TYPEOF(THIS->_fun) == PIKE_T_STRING) {
       push_svalue(&THIS->_fun);
       push_text("(), ");
@@ -2115,11 +2118,14 @@ void low_backtrace(struct Pike_interpreter_struct *i)
       if (f->fun == FUNCTION_BUILTIN) {
 	/* Unusual case. The frame is from call_c_initializers(), gc()
 	 * or similar. cf [bug 6156].	/grubba
+	 *
+	 * Masquerade as the program.
+	 *
+	 * FIXME: Ought to keep parent-pointers.
 	 */
-	struct pike_string *event_handler_string =
-	  MK_STRING("__EVENT_HANDLER__");
-	SET_SVAL(bf->_fun, PIKE_T_STRING, 0, string, event_handler_string);
-	add_ref(event_handler_string);
+	SET_SVAL(bf->_fun, PIKE_T_PROGRAM, 0,
+		 program, f->current_object->prog);
+	add_ref(f->current_object->prog);
       } else {
 	SET_SVAL(bf->_fun, PIKE_T_FUNCTION,
 		 CHECK_IDREF_RANGE(f->fun, f->current_object->prog),

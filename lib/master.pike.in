@@ -4850,7 +4850,7 @@ string describe_backtrace(mixed trace, void|int linewidth)
 
 	  if(sizeof(tmp)>=3)
 	  {
-	    if(functionp(tmp[2])) {
+	    if(functionp(tmp[2])|programp(tmp[2])) {
 	      data = describe_function ([function]tmp[2]);
 	    }
 	    else if (stringp(tmp[2])) {
