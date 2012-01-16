@@ -144,19 +144,6 @@ void resolv_debug (sprintf_format fmt, sprintf_args... args)
 constant no_value = (<>);
 constant NoValue = typeof (no_value);
 
-#if constant(_disable_threads)
-// Workaround for call_c_initializers() lying about the current function,
-// which in turn causes backtrace() to generate broken functions. [bug 6156].
-protected string function_name(function|program f)
-{
-  object o = function_object(f);
-  if (o && (object_program(o) == _disable_threads)) {
-    return "__EVENT_HANDLER__";
-  }
-  return predef::function_name(f);
-}
-#endif
-
 // Some API compatibility stuff.
 
 //! Pike 0.5 master compatibility interface.

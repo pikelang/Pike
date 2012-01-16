@@ -3707,6 +3707,17 @@ struct program *end_first_pass(int finish)
  */
 PMOD_EXPORT struct program *debug_end_program(void)
 {
+  if (!Pike_compiler->new_program->num_identifier_references &&
+      Pike_compiler->new_program->event_handler) {
+    /* Program with no symbols, but with event handler.
+     * eg _disable_threads.
+     * Add a symbol to avoid call_c_initializers() creating broken frames.
+     * Workaround for [bug 6156].
+     */
+    add_integer_constant("__EVENT_HANDLER__", 0,
+			 ID_PRIVATE|ID_PROTECTED|ID_USED);
+  }
+
   Pike_compiler->compiler_pass = 2;
   return end_first_pass(1);
 }
