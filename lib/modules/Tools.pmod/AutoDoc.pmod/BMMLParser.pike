@@ -367,7 +367,7 @@ string convert_page(string path, string fname,
 {
   string output, short;
   int headno;
-  string name, part;
+  string name;
 
   output="";
 
@@ -669,6 +669,7 @@ string convert_page(string path, string fname,
   {
     // Ignore these for now.
 #if 0
+    string part;
     if(sscanf(cont,"<title>%s</title>",part))
       short_descs[(path/"/")[-1]]=part;
     output=cont;
@@ -681,6 +682,7 @@ string convert_page(string path, string fname,
     // Ignore these for now.
 #if 0
     /** Hmm, this looks like an example file to me... */
+    string part;
     string line,tmp;
     int pre,p;
 
