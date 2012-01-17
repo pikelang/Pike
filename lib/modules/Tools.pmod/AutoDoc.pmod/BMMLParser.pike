@@ -667,12 +667,19 @@ string convert_page(string path, string fname,
   }
   else if(path[strlen(path)-5..]==".html")
   {
+    // Ignore these for now.
+#if 0
     if(sscanf(cont,"<title>%s</title>",part))
       short_descs[(path/"/")[-1]]=part;
     output=cont;
+#else
+    return "";
+#endif
   }
   else if(is_example::match(cont))
   {
+    // Ignore these for now.
+#if 0
     /** Hmm, this looks like an example file to me... */
     string line,tmp;
     int pre,p;
@@ -716,6 +723,9 @@ string convert_page(string path, string fname,
     }
     output=mkdocument(output,"Pike: "+
 		      replace((fname/"/")[-1],"_"," "));
+#else
+    return "";
+#endif
   }
   else
   {
