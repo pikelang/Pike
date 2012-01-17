@@ -931,7 +931,7 @@ int main(int argc, array(string) argv)
 	git("remote", "add", "-f", "--tags", "origin", src_git);
       }
     }
-    git("fetch", "--force", "--prune", "--tags", "--update-head-ok", "origin");
+    git("fetch", "--force", "--tags", "--update-head-ok", "origin");
 
     // Clean the work dir.
     if (!has_prefix(git("stash"), "No local changes ")) {
