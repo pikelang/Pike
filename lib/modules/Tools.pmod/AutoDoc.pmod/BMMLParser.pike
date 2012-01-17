@@ -16,6 +16,9 @@ string new_path;
 string docdir;
 string prefix="";
 
+// Constants that are known to have been documented in BMML.
+protected constant known_constants = (< "PI" >);
+
 /*
  * convert original path to internal format
  */
@@ -396,6 +399,12 @@ string convert_page(string path, string fname,
 	header += "<" + type + " name='" + html_quote(segment) + "'>\n";
 	trailer = "</" + type + ">\n" + trailer;
       }
+    } else if (known_constants[name]) {
+      header += "<docgroup homogen-name='" + html_quote(name) +
+	"' homogen-type='constant'>\n"
+	"<constant name='" + html_quote(name) + "'>"
+	"</constant>";
+      trailer = "</docgroup>\n" + trailer;
     } else {
       header += "<docgroup homogen-name='" + html_quote(name) +
 	"' homogen-type='method'>\n"
