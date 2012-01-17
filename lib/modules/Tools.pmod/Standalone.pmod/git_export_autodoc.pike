@@ -188,7 +188,8 @@ array(string) git_source_revs_heads = ({});
 
 void get_refs(string git_dir, mapping(string:string) refs, int|void is_src)
 {
-  foreach(Git.git(git_dir, "show-ref")/"\n", string line) {
+  foreach(Git.git(git_dir, "for-each-ref", "--format",
+		  "%(objectname) %(refname)")/"\n", string line) {
     array(string) fields = line/" ";
     if (sizeof(fields) < 2) continue;
     string ref_name = fields[1];
