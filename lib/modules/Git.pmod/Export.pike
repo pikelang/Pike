@@ -383,7 +383,9 @@ void ls(string path, string|void dataref)
 //!   Name of the file in git. Defaults to @[file_name].
 void export(string file_name, string|void git_name)
 {
-  int mode = file_stat(file_name)->mode;
+  Stdio.Stat st = file_stat(file_name);
+  if (!st) return;
+  int mode = st->mode;
   if (mode & Git.MODE_DIR) {
     mode = Git.MODE_DIR;
   } else if (mode & 0111) {
