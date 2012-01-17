@@ -1068,9 +1068,9 @@ class client
     object udp = Stdio.UDP();
     // Attempt to randomize the source port.
     for (i = 0; i < RETRIES; i++) {
-      if (!catch { udp->bind(1024 + random(65536-1024)); }) continue;
+        if (!catch { udp->bind(1024 + random(65536-1024),"::"); }) continue;
     }
-    if (i >= RETRIES) udp->bind(0);
+    if (i >= RETRIES) udp->bind(0,"::") || udp->bind(0);
 #if 0
     werror("Protocols.DNS.client()->do_sync_query(%O)\n"
 	   "UDP Address: %s\n"
