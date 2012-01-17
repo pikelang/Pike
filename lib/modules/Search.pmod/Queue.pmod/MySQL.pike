@@ -48,8 +48,7 @@ static void perhaps_create_table(  )
 	INDEX uri     (uri(255))
 	)
     ");
-  if (!sizeof(db->query("SHOW INDEX FROM " + table +
-			" WHERE key_name = 'uri'"))) {
+  if (!((multiset)db->query("SHOW INDEX FROM " + table)->Key_name)["uri"]) {
     db->query("ALTER TABLE " + table +
 	      "  ADD INDEX uri (uri(255))");
   }
