@@ -131,7 +131,9 @@ string git_binary = "git";
 string git_dir;
 string work_dir = "doc-work-dir";
 string work_git = ".git";
-string refdocdir = combine_path(__FILE__, "../../../../../refdoc");
+string refdocdir = master()->doc_prefix?
+  combine_path(master()->doc_prefix, "src"):
+  combine_path(__FILE__, "../../../../../refdoc");
 
 string git(string git_cmd, string ... args)
 {
