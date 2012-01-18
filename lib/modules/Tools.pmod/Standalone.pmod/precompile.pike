@@ -426,8 +426,7 @@ PikeType convert_ctype(array tokens)
       return PikeType("float");
 
     default:
-      werror("Unknown C type.\n");
-      exit(0);
+      error("Unknown C type.\n");
   }
 }
 
@@ -712,8 +711,7 @@ class PikeType
 	  return "LONGEST";
 
 	default:
-	  werror("Unknown type %s\n",btype);
-	  exit(1);
+	  error("Unknown type %s\n", btype);
       }
     }
 
@@ -1107,11 +1105,10 @@ class PikeType
 		    // Make sure that the user specifies
 		    // the correct minimum API level
 		    // for build-script compatibility.
-		    werror("%s:%d: API level 3 (or higher) is required "
-			   "for type %s.\n",
-			   t->file, t->line,
-			   PC.simple_reconstitute(({ t, tok[1] })));
-		    exit(1);
+		    error("%s:%d: API level 3 (or higher) is required "
+			  "for type %s.\n",
+			  t->file, t->line,
+			  PC.simple_reconstitute(({ t, tok[1] })));
 		  }
 		  t = PC.Token(merge(tok[1][1..sizeof(tok[1])-2]));
 		}
@@ -1338,8 +1335,7 @@ mapping parse_attributes(array attr, void|string location,
 		   attr[0][0]->line);
 	    if(location)
 	      werror("%s: This is where the attributes belong\n", location);
-	    werror("This is what I got: %O\n", attr[0]);
-	    exit(1);
+	    error("This is what I got: %O\n", attr[0]);
 	  }
 	  attributes[(string)attr[0]]=1;
 	  break;
@@ -1352,15 +1348,13 @@ mapping parse_attributes(array attr, void|string location,
       }
 
       if(!(really_valid_attributes || valid_attributes)[(string)attr[0]]) {
-	werror("%s:%d: Invalid attribute name %O.\n",
-	       attr[0]->file, attr[0]->line, (string)attr[0]);
-	exit(1);
+	error("%s:%d: Invalid attribute name %O.\n",
+	      attr[0]->file, attr[0]->line, (string)attr[0]);
       }
     }
 
   if(attributes->optfunc && !attributes->efun) {
-    werror("Only efuns may have an optfunc.\n");
-    exit(1);
+    error("Only efuns may have an optfunc.\n");
   }
 
   return attributes;
@@ -2019,10 +2013,9 @@ static struct %s *%s_gdb_dummy_ptr;
 	p=parse_type(proto,0);
 	if(arrayp(proto[p]))
 	{
-	  werror("%s:%d: Missing return type?\n",
-		 proto[p][0]->file||"-",
-		 proto[p][0]->line);
-	  exit(1);
+	  error("%s:%d: Missing return type?\n",
+		proto[p][0]->file||"-",
+		proto[p][0]->line);
 	}
 	string name=(string)proto[p];
 	name_occurances[name]++;
@@ -2054,10 +2047,9 @@ static struct %s *%s_gdb_dummy_ptr;
 
 	if(arrayp(proto[p]))
 	{
-	  werror("%s:%d: Missing type?\n",
-		 proto[p][0]->file||"-",
-		 proto[p][0]->line);
-	  exit(1);
+	  error("%s:%d: Missing type?\n",
+		proto[p][0]->file||"-",
+		proto[p][0]->line);
 	}
 	string location=proto[p]->file+":"+proto[p]->line;
 
@@ -2131,14 +2123,12 @@ static struct %s *%s_gdb_dummy_ptr;
 	{
 	  if(sizeof(args) != 1)
 	  {
-	    werror("%s must take one argument.\n");
-	    exit(1);
+	    error("%s must take one argument.\n");
 	  }
 	  if(sprintf("%s",args[0]->type()) != "mixed")
 	  {
-	    werror("%s:%s must take a mixed argument (was declared as %s)\n",
-		   location, name, args[0]->type());
-	    exit(1);
+	    error("%s:%s must take a mixed argument (was declared as %s)\n",
+		  location, name, args[0]->type());
 	  }
 	}
 
