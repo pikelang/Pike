@@ -2658,11 +2658,13 @@ int main(int argc, array(string) argv)
 {
   mixed x;
 
+  string outpath;
   if( has_suffix( lower_case(dirname( argv[0] )), "standalone.pmod" ) )
     usage = "pike -x " + basename( argv[0] )-".pike" + " " + usage;
   foreach(Getopt.find_all_options( argv, ({
       ({ "api",        Getopt.HAS_ARG,      "--api"/"," }),
       ({ "help",       Getopt.NO_ARG,       "-h,--help"/"," }),
+      ({ "output",     Getopt.HAS_ARG,      "-o,--out"/"," }),
       ({ "version",    Getopt.NO_ARG,       "-v,--version"/"," }),
    })), array opt ) {
     switch(opt[0]) {
@@ -2684,6 +2686,9 @@ int main(int argc, array(string) argv)
 	       "must not be specified with the --api option.\n");
 	return 1;
       }
+      break;
+    case "output":
+      outpath = opt[1];
       break;
     }
   }
@@ -2874,8 +2879,12 @@ int main(int argc, array(string) argv)
     // NOTA BENE: DECLARATIONS are not handled automatically
     //            on the file level
   }
+  Stdio.File out = Stdio.stdout;
+  if (outpath) {
+    out = Stdio.File(outpath, "twc", 0666);
+  }
   if(getenv("PIKE_DEBUG_PRECOMPILER"))
-    write(PC.simple_reconstitute(x));
+    out->write(PC.simple_reconstitute(x));
   else
-    write(PC.reconstitute_with_line_numbers(x));
+    out->write(PC.reconstitute_with_line_numbers(x));
 }
