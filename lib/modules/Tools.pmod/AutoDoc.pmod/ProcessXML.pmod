@@ -312,11 +312,15 @@ string moveImages(string docXMLFile,
             break;
 
           case "image":
+            string imageFilename;
             array(SimpleNode) children = n->get_children();
             if (sizeof(children || ({})) != 1
-                || children[0]->get_node_type() != XML_TEXT)
-              processError("bad image tag: %s\n", n->html_of_node());
-            string imageFilename = children[0]->get_text();
+                || children[0]->get_node_type() != XML_TEXT) {
+	      if (!(imageFilename = n->get_attributes()["src"]))
+		processError("bad image tag: %s\n", n->html_of_node());
+	      processWarning("Invalid image tag: %s\n", n->html_of_node());
+	    } else
+	      imageFilename = children[0]->get_text();
             imageFilename = combine_path(imageSourceDir, imageFilename);
             imageFilename = combine_path(cwd, imageFilename);
             string formatExt = (basename(imageFilename) / ".")[-1];
