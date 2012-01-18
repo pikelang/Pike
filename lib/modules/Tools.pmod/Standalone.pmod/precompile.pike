@@ -2675,6 +2675,12 @@ int main(int argc, array(string) argv)
       write( usage );
       return 0;
     case "api":
+      if (lower_case(opt[1]) == "max") {
+	// This is used by eg the autodoc extractor, to ensure
+	// that all files are precompilable.
+	api = (int)precompile_api_version;
+	break;
+      }
       api = (int)opt[1];
       if (api > (int)precompile_api_version) {
 	werror("Unsupported API version: %d (max: %d)\n",
