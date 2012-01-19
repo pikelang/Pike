@@ -194,6 +194,35 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
   // do not recurse into the build dir directory to avoid infinite loop
   // by building the autodoc of the autodoc and so on
   if(search(builddir, srcdir) == -1) {
+    foreach(filter(get_dir(srcdir), has_suffix, ".cmod"), string fn) {
+      Stdio.Stat stat = file_stat(srcdir + fn);
+      if (!stat || !stat->isreg) continue;
+      int mtime = stat->mtime;
+
+      // Check for #cmod_include.
+      multiset(string) checked = (<>);
+      string data = Stdio.read_bytes(srcdir + fn);
+      foreach(filter(data/"\n", has_prefix, "#"), string line) {
+	if (sscanf(line, "#%*[ \t]cmod_include%*[ \t]\"%s\"", string inc) > 2) {
+	  if (!checked[inc]) {
+	    checked[inc] = 1;
+	    stat = file_stat(combine_path(srcdir, inc));
+	    if (stat && stat->isreg && stat->mtime > mtime) {
+	      mtime = stat->mtime;
+	    }
+	  }
+	}
+      }
+
+      string target = fn[..<5] + ".c";
+      stat = file_stat(srcdir + target);
+      if (!stat || stat->mtime <= mtime) {
+	// Regenerate the target.
+	Tools.Standalone.precompile()->
+	  main(5, ({ "precompile.pike", "--api=max",
+		     "-o", srcdir+target, srcdir+fn }));
+      }
+    }
     foreach(get_dir(srcdir), string fn) {
       if(fn=="CVS") continue;
       if(fn[0]=='.') continue;
