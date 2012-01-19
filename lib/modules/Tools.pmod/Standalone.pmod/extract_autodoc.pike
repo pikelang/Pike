@@ -436,8 +436,8 @@ string extract(string filename, string imgdest,
 
   int i;
   if (has_value(file, "**""!") ||
-      ((((i = search(file, "//! ""module ")) != -1) ||
-	((i = search(file, "//! ""submodule ")) != -1)) &&
+      ((((i = search(file, "//""! ""module ")) != -1) ||
+	((i = search(file, "//""! ""submodule ")) != -1)) &&
        (sizeof(array_sscanf(file[i..],"%s\n%*s")[0]/" ") == 3))) {
     // Mirar-style markup.
     if(imgsrc && imgdest) {
@@ -506,27 +506,27 @@ string extract(string filename, string imgdest,
 		    }) }),
 		    "/Calendar.pmod/Islamic.pmod":
 		    ({ ({
-		      "//! submodule Gregorian\n",
+		      "//""! submodule Gregorian\n",
 		    }), ({
-		      "//! submodule Islamic\n",
+		      "//""! submodule Islamic\n",
 		    }) }),
 		    "/Calendar_I.pmod/Gregorian.pmod":
 		    ({ ({
-		      "//! module Calendar\n",
+		      "//""! module Calendar\n",
 		    }), ({
-		      "//! module Calendar_I\n",
+		      "//""! module Calendar_I\n",
 		    }) }),
 		    "/Calendar_I.pmod/Stardate.pmod":
 		    ({ ({
-		      "//! module Calendar\n",
+		      "//""! module Calendar\n",
 		    }), ({
-		      "//! module Calendar_I\n",
+		      "//""! module Calendar_I\n",
 		    }) }),
 		    "/Calendar_I.pmod/module.pmod":
 		    ({ ({
-		      "//! module Calendar\n",
+		      "//""! module Calendar\n",
 		    }), ({
-		      "//! module Calendar_I\n",
+		      "//""! module Calendar_I\n",
 		    }) }),
 		  ]); string suffix; array(array(string)) repl) {
 	    if (has_suffix(filename, suffix)) {
