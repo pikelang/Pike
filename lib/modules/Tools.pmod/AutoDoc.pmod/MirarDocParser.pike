@@ -479,18 +479,19 @@ string fixdesc(string s,string prefix,void|string where)
 		  "'&lt;'", "'&gt;'", "\"&lt;\"", "\"&gt;\"",
 	       }));
 
+   parser->set_extra(where);
+
+   s = parser->finish(s)->read();
+
+   s = "<p>" + (s/"\n\n")*"</p>\n\n<p>" + "</p>";
+
    nesting = ADT.Stack();
    nesting->push(0);	// End sentinel.
 
    nesting_parser->set_extra(where);
 
-   s = "<p>" + (s/"\n\n")*"</p>\n\n<p>" + "</p>";
-
    s = nesting_parser->finish(s)->read() + pop_to_tag(UNDEFINED) * "";
 
-   parser->set_extra(where);
-
-   s = parser->finish(s)->read();
    s = htmlify(s);
 
    if (where && !(flags & .FLAG_NO_DYNAMIC))
