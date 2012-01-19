@@ -1096,7 +1096,6 @@ string make_doc_files(string builddir, string imgdest, string|void namespace)
 						  (flags & .FLAG_VERB_MASK) <
 						  .FLAG_VERBOSE);
      };
-   werror("Autodoc:\n%O\n", autodoc);
    throw(err);
 }
 
