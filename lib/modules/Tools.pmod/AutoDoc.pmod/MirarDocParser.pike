@@ -1237,6 +1237,7 @@ void create(string image_dir, void|.Flags flags)
   IMAGE_DIR = image_dir;
 
   nesting_parser = Parser.HTML();
+  nesting_parser->case_insensitive_tag(1);
   nesting_parser->_set_tag_callback(fix_tag_nesting);
 
   parser = Parser.HTML();
