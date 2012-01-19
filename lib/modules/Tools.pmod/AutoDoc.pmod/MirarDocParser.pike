@@ -437,7 +437,7 @@ array(string) fix_tag_nesting(Parser.HTML p, string value)
 	ret += ({ "<" + dtd_nesting[tag] + ">" });
       }
     }
-    if (has_suffix(value, " />")) {
+    if (has_suffix(value, "/>")) {
       // Self-terminating tag.
     } else if (self_terminating[tag]) {
       value = value[..<1] + " />";
@@ -1256,7 +1256,7 @@ void create(string image_dir, void|.Flags flags)
 
   parser->add_container("li",
     lambda(Parser.HTML p, mapping m, string c) {
-      return "<group><item/><text>" + c + "</text></group>";
+      return "<group><item /><text>" + c + "</text></group>";
     });
 
   parser->add_container("illustration",
