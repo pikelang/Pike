@@ -407,6 +407,10 @@ array(string) fix_tag_nesting(Parser.HTML p, string value)
     return ({ _Roxen.html_encode_string(value) });
   }
 
+  string orig_value = value;
+
+  value = lower_case(value);
+
   string tag = p->parse_tag_name(value[1..<1]);
 
   array(string) ret = ({});
@@ -422,7 +426,7 @@ array(string) fix_tag_nesting(Parser.HTML p, string value)
     nesting->pop();
   } else if (!sizeof(tag) || has_value(tag, "(") || has_value(tag, ")")) {
     // Insufficient quoting of paired < and >.
-    return ({ _Roxen.html_encode_string(value) });
+    return ({ _Roxen.html_encode_string(orig_value) });
   } else {
     if (dtd_nesting[tag]) {
       if (has_value(nesting, dtd_nesting[tag])) {
@@ -480,12 +484,13 @@ string fixdesc(string s,string prefix,void|string where)
 
    nesting_parser->set_extra(where);
 
+   s = "<p>" + (s/"\n\n")*"</p>\n\n<p>" + "</p>";
+
    s = nesting_parser->finish(s)->read() + pop_to_tag(UNDEFINED) * "";
 
    parser->set_extra(where);
 
    s = parser->finish(s)->read();
-   s = "<p>" + (s/"\n\n")*"</p>\n\n<p>" + "</p>";
    s = htmlify(s);
 
    if (where && !(flags & .FLAG_NO_DYNAMIC))
@@ -1237,7 +1242,6 @@ void create(string image_dir, void|.Flags flags)
   IMAGE_DIR = image_dir;
 
   nesting_parser = Parser.HTML();
-  nesting_parser->case_insensitive_tag(1);
   nesting_parser->_set_tag_callback(fix_tag_nesting);
 
   parser = Parser.HTML();
