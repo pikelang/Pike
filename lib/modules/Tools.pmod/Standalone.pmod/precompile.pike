@@ -29,11 +29,14 @@ string usage = #"[options] <from> > <to>
 
  Supported options are:
 
-   --api=<n>	Require a minimum API version.
+   --api=<n>	 Require a minimum API version.
 
-   -h,--help	Display this help text.
+   -h,--help	 Display this help text.
 
-   -v,--version	Display the API version.
+   -v,--version	 Display the API version.
+
+   -w,--warnings Generate warnings instead of errors for
+                 recoverable errors.
 
  The input can look something like this:
 
@@ -199,6 +202,19 @@ static parser_pike PP = parser_pike();
 #endif
 
 int api;	// Requested API level.
+
+int warnings;
+
+void warn(string s, mixed ... args)
+{
+  if (warnings) {
+    if (sizeof(args)) s = sprintf(s, @args);
+    werror(s);
+    return;
+  }
+  error(s, @args);
+}
+
 
 /* Strings declared with MK_STRING. */
 mapping(string:string) strings = ([
@@ -1105,10 +1121,10 @@ class PikeType
 		    // Make sure that the user specifies
 		    // the correct minimum API level
 		    // for build-script compatibility.
-		    error("%s:%d: API level 3 (or higher) is required "
-			  "for type %s.\n",
-			  t->file, t->line,
-			  PC.simple_reconstitute(({ t, tok[1] })));
+		    warn("%s:%d: API level 3 (or higher) is required "
+			 "for type %s.\n",
+			 t->file, t->line,
+			 PC.simple_reconstitute(({ t, tok[1] })));
 		  }
 		  t = PC.Token(merge(tok[1][1..sizeof(tok[1])-2]));
 		}
@@ -1354,7 +1370,7 @@ mapping parse_attributes(array attr, void|string location,
     }
 
   if(attributes->optfunc && !attributes->efun) {
-    error("Only efuns may have an optfunc.\n");
+    warn("Only efuns may have an optfunc.\n");
   }
 
   return attributes;
@@ -2123,12 +2139,12 @@ static struct %s *%s_gdb_dummy_ptr;
 	{
 	  if(sizeof(args) != 1)
 	  {
-	    error("%s must take one argument.\n");
+	    warn("%s must take one argument.\n");
 	  }
 	  if(sprintf("%s",args[0]->type()) != "mixed")
 	  {
-	    error("%s:%s must take a mixed argument (was declared as %s)\n",
-		  location, name, args[0]->type());
+	    warn("%s:%s must take a mixed argument (was declared as %s)\n",
+		 location, name, args[0]->type());
 	  }
 	}
 
@@ -2656,6 +2672,7 @@ int main(int argc, array(string) argv)
       ({ "help",       Getopt.NO_ARG,       "-h,--help"/"," }),
       ({ "output",     Getopt.HAS_ARG,      "-o,--out"/"," }),
       ({ "version",    Getopt.NO_ARG,       "-v,--version"/"," }),
+      ({ "warnings",   Getopt.NO_ARG,       "-w,--warnings"/"," }),
    })), array opt ) {
     switch(opt[0]) {
     case "version":
@@ -2685,6 +2702,9 @@ int main(int argc, array(string) argv)
       break;
     case "output":
       outpath = opt[1];
+      break;
+    case "warnings":
+      warnings = 1;
       break;
     }
   }
