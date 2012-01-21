@@ -218,9 +218,20 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
       stat = file_stat(srcdir + target);
       if (!stat || stat->mtime <= mtime) {
 	// Regenerate the target.
-	Tools.Standalone.precompile()->
-	  main(5, ({ "precompile.pike", "--api=max",
-		     "-o", srcdir+target, srcdir+fn }));
+	mixed err;
+	if (err = catch {
+	    Tools.Standalone.precompile()->
+	      main(6, ({ "precompile.pike", "--api=max", "-w",
+			 "-o", srcdir+target, srcdir+fn }));
+	  }) {
+	  // Something failed.
+	  werror("Precompilation of %s to %s failed:\n"
+		 "%s",
+		 srcdir+fn, srcdir+target, describe_error(err));
+	  rm(srcdir+target);
+	  rm(builddir+target+".xml");
+	  rm(builddir+target+".xml.stamp");
+	}
       }
     }
     foreach(get_dir(srcdir), string fn) {
