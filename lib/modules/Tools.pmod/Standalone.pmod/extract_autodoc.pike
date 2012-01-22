@@ -148,7 +148,7 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
     //      "7.0::".
     root = (Stdio.read_file(srcdir+"/.autodoc")/"\n")[0]/" " - ({""});
     if (!sizeof(root) || !has_suffix(root[0], "::")) {
-      if (has_value(root[0], "::")) {
+      if (sizeof(root) && has_value(root[0], "::")) {
 	// Broken .autodoc file
 	werror("Invalid syntax in %s.\n"
 	       ":: Must be last in the token.\n",
