@@ -148,8 +148,20 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
     //      "7.0::".
     root = (Stdio.read_file(srcdir+"/.autodoc")/"\n")[0]/" " - ({""});
     if (!sizeof(root) || !has_suffix(root[0], "::")) {
-      // The default namespace is predef::
-      root = ({ "predef::" }) + root;
+      if (has_value(root[0], "::")) {
+	// Broken .autodoc file
+	werror("Invalid syntax in %s.\n"
+	       ":: Must be last in the token.\n",
+	       srcdir + "/.autodoc");
+	if (!flags & Tools.AutoDoc.FLAG_COMPAT) {
+	  error("Invalid syntax in .autodoc file.\n");
+	}
+	array(string) a = root[0]/"::";
+	root = ({ a[0] + "::" }) + a[1..] + root[1..];
+      } else {
+	// The default namespace is predef::
+	root = ({ "predef::" }) + root;
+      }
     }
     root_ts = st->mtime;
   }
