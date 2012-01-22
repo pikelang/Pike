@@ -736,7 +736,8 @@ string parse_doc(Node n, void|int no_text) {
     case "param":
       foreach(c->get_elements("param"), Node d)
 	ret += lay->dochead + "Parameter " + lay->parameter +
-	  quote(d->get_attributes()->name) + lay->_parameter + lay->_dochead +
+	  quote(d->get_attributes()->name || "") +
+	  lay->_parameter + lay->_dochead +
 	  "<dd></dd>";
       if (c = c->get_first_element("text")) {
 	ret += lay->docbody + parse_text(c) + lay->_docbody;
