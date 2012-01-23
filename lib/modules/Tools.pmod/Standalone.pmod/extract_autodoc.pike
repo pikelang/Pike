@@ -137,7 +137,10 @@ int main(int n, array(string) args) {
 	    werror("Extractor generated broken XML for file %s:\n"
 		   "%s",
 		   builddir + fn + ".xml", describe_error(err));
+	    rm(builddir+fn+".xml");
 	    Stdio.write_file(builddir+fn+".brokenxml", res);
+	    Stdio.write_file(builddir+fn+".xml.stamp",
+			     (string)source_timestamp);
 	    werror("Result saved as %s.\n", builddir + fn + ".brokenxml");
 	    if (flags & Tools.AutoDoc.FLAG_KEEP_GOING) continue;
 	    exit(1);
@@ -145,6 +148,7 @@ int main(int n, array(string) args) {
 	}
 
         Stdio.write_file(builddir+fn+".xml", res);
+	Stdio.write_file(builddir+fn+".xml.stamp", (string)source_timestamp);
       }
     }
   }
@@ -313,6 +317,9 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
 		   "%s",
 		   builddir + fn + ".xml", describe_error(err));
 	    Stdio.write_file(builddir+fn+".brokenxml", res);
+	    rm(builddir+fn+".xml");
+	    Stdio.write_file(builddir+fn+".xml.stamp",
+			     (string)source_timestamp);
 	    werror("Result saved as %s.\n", builddir + fn + ".brokenxml");
 	    if (flags & Tools.AutoDoc.FLAG_KEEP_GOING) continue;
 	    exit(1);
