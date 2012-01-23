@@ -300,6 +300,21 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
 	    exit(1);
 	  res = "";
 	}
+
+	// Validate the extracted XML.
+	mixed err = catch {
+	    Parser.XML.Tree.simple_parse_input(res);
+	  };
+	if (err) {
+	  werror("Extractor generated broken XML for file %s:\n"
+		 "%s",
+		 builddir + fn + ".xml", describe_error(err));
+	  Stdio.write_file(builddir+fn+".brokenxml", res);
+	  werror("Result saved as %s.\n", builddir + fn + ".brokenxml");
+	  if (flags & Tools.AutoDoc.FLAG_KEEP_GOING) continue;
+	  exit(1);
+	}
+
 	string orig = Stdio.read_bytes(builddir + fn + ".xml");
 	if (res != orig) {
 	  Stdio.write_file(builddir+fn+".xml", res);
