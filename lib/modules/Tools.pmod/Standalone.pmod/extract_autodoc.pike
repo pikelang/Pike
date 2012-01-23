@@ -128,7 +128,7 @@ int main(int n, array(string) args) {
 	  exit(1);
 	}
 
-	if (sizeof(res)) {
+	if (sizeof(res) && (res != "\n")) {
 	  // Validate the extracted XML.
 	  mixed err = catch {
 	      Parser.XML.Tree.simple_parse_input(res);
@@ -303,7 +303,7 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
 	  res = "";
 	}
 
-	if (sizeof(res)) {
+	if (sizeof(res) && (res != "\n")) {
 	  // Validate the extracted XML.
 	  mixed err = catch {
 	      Parser.XML.Tree.simple_parse_input(res);
