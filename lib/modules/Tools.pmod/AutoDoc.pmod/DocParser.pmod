@@ -79,6 +79,7 @@ mapping(string : DocTokenType) keywordtype =
   "image" : BRACEKEYWORD,
 
   "deprecated" : SINGLEKEYWORD,
+  "obsolete" : SINGLEKEYWORD,
 
   "bugs" : DELIMITERKEYWORD,
   "copyright" : DELIMITERKEYWORD,
@@ -130,7 +131,7 @@ mapping(string:array(string)) required_attributes =
 
 protected constant standard = (<
   "note", "bugs", "example", "seealso", "deprecated", "fixme", "code",
-  "copyright", "thanks",
+  "copyright", "thanks", "obsolete",
 >);
 
 mapping(string : multiset(string)) allowedChildren =
@@ -340,6 +341,7 @@ protected class DocParserClass {
     "elem" : elemArgHandler,
     "index" : indexArgHandler,
     "deprecated" : deprArgHandler,
+    "obsolete" : deprArgHandler,
     "section" : sectionArgHandler,
     "type" : typeArgHandler,
     "value" : valueArgHandler,
@@ -414,7 +416,11 @@ protected class DocParserClass {
     return xmltag("value", xmlquote(s));
   }
 
-  protected string deprArgHandler(string keyword, string arg) {
+  protected string deprArgHandler(string keyword, string arg)
+  {
+    if (keyword != "deprecated") {
+      parseError("Illegal keyword: @%s, did you mean @deprecated?");
+    }
     .PikeParser parser = .PikeParser(arg, currentPosition);
     if (parser->peekToken() == EOF)
       return "";
