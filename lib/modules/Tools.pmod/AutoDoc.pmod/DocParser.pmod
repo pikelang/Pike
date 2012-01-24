@@ -358,7 +358,7 @@ protected class DocParserClass {
     //  werror("%%%%%% got type == %O\n", t->xml());
     string s = parser->parseLiteral() || parser->parseIdents();
     if (!s) {
-      parseError("@member: expected indentifier or literal constant, got %O", arg);
+      parseError("@member: expected type followed by identifier or literal constant, got %O", arg);
       s = "";
     }
     parser->eat(EOF);
@@ -473,7 +473,7 @@ protected class DocParserClass {
       if (s2)
         return xmltag("maxvalue", xmlquote(s2));
       else
-        parseError("@value: expected indentifier or literal constant, got %O", arg);
+        parseError("@value: expected identifier or literal constant, got %O", arg);
     return "";
   }
 
