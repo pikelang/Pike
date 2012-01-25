@@ -103,7 +103,11 @@ struct pike_sendfile
 extern struct program *file_program;
 extern struct program *file_ref_program;
 
-extern int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port, int udp);
+/* Note: Implemented in ../system/system.c! */
+extern int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service,
+			 INT_TYPE port, int inet_flags);
+#define PIKE_INET_FLAG_UDP	1
+#define PIKE_INET_FLAG_IPV6	2
 
 #ifdef _REENTRANT
 void low_do_sendfile(struct pike_sendfile *);

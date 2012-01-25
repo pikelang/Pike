@@ -1842,12 +1842,15 @@ int my_isipv6nr(char *s)
 #endif /* !GETSERV_DECLARE */
 
 /* this is used from modules/file, and modules/spider! */
-int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port, int udp)
+int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
+		  int inet_flags)
 {
 #ifdef HAVE_GETADDRINFO
   struct addrinfo hints = { 0, PF_UNSPEC, 0, 0, 0, NULL, NULL, NULL, }, *res;
   char servnum_buf[200];
 #endif /* HAVE_GETADDRINFO */
+
+  int udp = inet_flags & 1;
 
   MEMSET((char *)addr,0,sizeof(PIKE_SOCKADDR));
   if(name && !strcmp(name,"*"))
@@ -1860,12 +1863,9 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port, i
     /* Avoid creating an IPv6 address for "*". */
     /* For IN6ADDR_ANY, use "::". */
     hints.ai_family = PF_INET;
-#if 0
-    /* We want to be able to run the compiled Pike
-     * even on systems without IPv6...
-     */
-#if defined(PF_INET6) && defined(AI_V4MAPPED)
-  } else {
+#ifdef PF_INET6
+  } else if (inet_flags & 2) {
+    /* Force IPv6. */
     /* Map all addresses to the IPv6 namespace,
      * to avoid address conflicts when once end
      * of the socket is IPv4 and one end is IPv6.
@@ -1874,9 +1874,10 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port, i
      * to the IPv4 address 127.0.0.1.
      */
     hints.ai_family = PF_INET6;
+#ifdef AI_V4MAPPED
     hints.ai_flags = AI_V4MAPPED;
 #endif
-#endif /* 0 */
+#endif
   }
   hints.ai_protocol = (udp? IPPROTO_UDP:IPPROTO_TCP);
   if(!service)
