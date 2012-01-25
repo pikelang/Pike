@@ -395,6 +395,9 @@ string get_version()
 	Stdio.exist("src/modules/_WhiteFish/whitefish.c")) {
       return "pike_modules/Search";
     }
+    if (Stdio.exist("lib/modules/Filesystem.pmod/Monitor.pmod/basic.pike")) {
+      return "pike_modules/Filesystem.Monitor";
+    }
   }
 
   error("Unable to determine version of Pike!\n");
