@@ -106,6 +106,16 @@ enum EntryType
   T_SPF=99,
 };
 
+int safe_bind(Stdio.UDP udp, mixed ... args)
+{
+  mixed err = catch {
+      udp->bind(@args);
+      return 1;
+    };
+  master()->handle_error(err);
+  return 0;
+}
+
 //! Low level DNS protocol
 class protocol
 {
@@ -624,7 +634,30 @@ class protocol
   }
 };
 
-//! Implements a Domain Name Service (DNS) server.
+protected string ANY;
+
+protected void create()
+{
+  // Check if IPv6 support is available.
+  catch {
+    // Note: Attempt to open a port on the IPv6 loopback (::1)
+    //       rather than on IPv6 any (::), to make sure some
+    //       IPv6 support is actually configured. This is needed
+    //       since eg Solaris happily opens ports on :: even
+    //       if no IPv6 interfaces are configured.
+    //       Try IPv6 any (::) too for paranoia reasons.
+    Stdio.Port p = Stdio.Port();
+    if (p->bind(0, 0, "::1") && p->bind(0, 0, "::")) {
+      ANY = "::";
+    }
+    destruct(p);
+  };
+}
+
+//! Base class for implementing a Domain Name Service (DNS) server.
+//!
+//! This class is typically used by inheriting it,
+//! and overloading @[reply_query()] and @[handle_response()].
 class server
 {
   //!
@@ -733,6 +766,24 @@ class server
       handle_query(q, m, udp);
   }
 
+  //! @decl void create()
+  //! @decl void create(int port)
+  //! @decl void create(string ip)
+  //! @decl void create(string ip, int port)
+  //! @decl void create(string ip, int port, string|int ... more)
+  //!
+  //! Open one or more new DNS server ports.
+  //!
+  //! @param ip
+  //!   The IP to bind to. Defaults to @expr{"::"@} or @expr{0@} (ie ANY)
+  //!   depending on whether IPv6 support is present or not.
+  //!
+  //! @param port
+  //!   The port number to bind to. Defaults to @expr{53@}.
+  //!
+  //! @param more
+  //!   Optional further DNS server ports to open.
+  //!   Must be a set of @[ip], @[port] argument pairs.
   void create(int|string|void arg1, string|int ... args)
   {
     if(!arg1 && !sizeof(args))
@@ -742,7 +793,7 @@ class server
       if(stringp(arg1))
        args = ({ arg1, 53 });
       else
-       args = ({ 0, arg1 });
+       args = ({ ANY, arg1 });
     }
     else
       args = ({ arg1 }) + args;
@@ -753,10 +804,10 @@ class server
     for(int i;i<sizeof(args);i+=2) {
       Stdio.UDP udp = Stdio.UDP();
       if(args[i]) {
-       if (!udp->bind(args[i+1],args[i]))
+	if (!safe_bind(udp, args[i+1], args[i]))
          error("DNS: failed to bind host:port %s:%d.\n", args[i],args[i+1]);
       } else {
-       if(!udp->bind(args[i+1]))
+	if(!safe_bind(udp, args[i+1]))
          error("DNS: failed to bind port %d.\n", args[i+1]);
       }
       udp->set_read_callback(rec_data, udp);
@@ -1023,7 +1074,7 @@ class client
     }
   }
 
-//! perform a syncronous query
+//! Perform a synchronous DNS query.
 //! 
 //! @param s
 //!   result of @[Protocols.DNS.protocol.mkquery]
@@ -1040,9 +1091,9 @@ class client
     object udp = Stdio.UDP();
     // Attempt to randomize the source port.
     for (i = 0; i < RETRIES; i++) {
-      if (!catch { udp->bind(1024 + random(65536-1024)); }) continue;
+      if (!safe_bind(udp, 1024 + random(65536-1024), ANY)) continue;
     }
-    if (i >= RETRIES) udp->bind(0);
+    if (i >= RETRIES) safe_bind(udp, 0, ANY) || udp->bind(0);
 #if 0
     werror("Protocols.DNS.client()->do_sync_query(%O)\n"
 	   "UDP Address: %s\n"
@@ -1546,7 +1597,14 @@ class async_client
 
   void create(void|string|array(string) server, void|string|array(string) domain)
   {
-    if(!udp::bind(0))
+    int i;
+    // Attempt to randomize the source port.
+    for (i = 0; i < RETRIES; i++) {
+      if (safe_bind(udp::this, 1024 + random(65536-1024), ANY)) break;
+    }
+    if((i >= RETRIES) &&
+       !safe_bind(udp::this, 0, ANY) &&
+       !safe_bind(udp::this, 0))
       error( "DNS: failed to bind a port.\n" );
 #if 0
     werror("Protocols.DNS.async_client(%O, %O)\n"
