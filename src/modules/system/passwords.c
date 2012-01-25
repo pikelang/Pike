@@ -219,7 +219,7 @@ void push_grent(struct group *ent)
   {
     char **cp = ent->gr_mem;
     int i=0;
-    while(cp[i]) push_text(cp[i++]);
+    while(cp && cp[i]) push_text(cp[i++]);
     f_aggregate(i);
   }
   f_aggregate(4);
