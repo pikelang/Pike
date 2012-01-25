@@ -390,6 +390,10 @@ string get_version()
     if (Stdio.exist("src/post_modules/GL/gen.pike")) {
       return "pike_modules/GL";
     }
+    if (Stdio.exist("lib/modules/Search.pmod/types.h") ||
+	Stdio.exist("src/modules/_WhiteFish/whitefish.c")) {
+      return "pike_modules/Search";
+    }
   }
 
   error("Unable to determine version of Pike!\n");
