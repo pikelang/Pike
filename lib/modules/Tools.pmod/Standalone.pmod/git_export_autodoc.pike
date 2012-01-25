@@ -391,6 +391,7 @@ string get_version()
       return "pike_modules/GL";
     }
     if (Stdio.exist("lib/modules/Search.pmod/types.h") ||
+	Stdio.exist("lib/modules/Search.pmod/module.pmod") ||
 	Stdio.exist("src/modules/_WhiteFish/whitefish.c")) {
       return "pike_modules/Search";
     }
