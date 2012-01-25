@@ -108,6 +108,7 @@ extern int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service,
 			 INT_TYPE port, int inet_flags);
 #define PIKE_INET_FLAG_UDP	1
 #define PIKE_INET_FLAG_IPV6	2
+#define PIKE_INET_FLAG_NB	4
 
 #ifdef _REENTRANT
 void low_do_sendfile(struct pike_sendfile *);

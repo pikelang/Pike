@@ -134,6 +134,8 @@ struct udp_storage {
   struct fd_callback_box box;	/* Must be first. */
   int my_errno;
    
+  int inet_flags;
+
   int type;
   int protocol;
 
@@ -795,6 +797,7 @@ void zero_udp(struct object *o)
 {
   INIT_FD_CALLBACK_BOX(&THIS->box, NULL, o, -1, 0, got_udp_event);
   THIS->my_errno = 0;
+  THIS->inet_flags = PIKE_INET_FLAG_UDP;
   THIS->type=SOCK_DGRAM;
   THIS->protocol=0;
   /* map_variable handles read_callback. */
@@ -855,6 +858,7 @@ static void udp_set_nonblocking(INT32 args)
      pop_stack();
   }
   set_nonblocking(FD,1);
+  THIS->inet_flags |= PIKE_INET_FLAG_NB;
   ref_push_object(THISOBJ);
 }
 
@@ -866,6 +870,7 @@ static void udp_set_blocking(INT32 args)
 {
   if (FD < 0) Pike_error("File not open.\n");
   set_nonblocking(FD,0);
+  THIS->inet_flags &= ~PIKE_INET_FLAG_NB;
   pop_n_elems(args);
   ref_push_object(THISOBJ);
 }
