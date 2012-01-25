@@ -212,20 +212,30 @@ static void udp_bind(INT32 args)
     fd_close(fd);
   }
 
+  THIS->inet_flags &= ~PIKE_INET_FLAG_IPV6;
+
   addr_len = get_inet_addr(&addr, (args > 1 && TYPEOF(Pike_sp[1-args])==PIKE_T_STRING?
 				   Pike_sp[1-args].u.string->str : NULL),
 			   (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING?
 			    Pike_sp[-args].u.string->str : NULL),
 			   (TYPEOF(Pike_sp[-args]) == PIKE_T_INT?
-			    Pike_sp[-args].u.integer : -1), 1);
+			    Pike_sp[-args].u.integer : -1),
+			   THIS->inet_flags);
   INVALIDATE_CURRENT_TIME();
+
+#ifdef AF_INET6
+  if (SOCKADDR_FAMILY(addr) == AF_INET6) {
+    THIS->inet_flags |= PIKE_INET_FLAG_IPV6;
+  }
+#endif
 
   fd = fd_socket(SOCKADDR_FAMILY(addr), THIS->type, THIS->protocol);
   if(fd < 0)
   {
     pop_n_elems(args);
     THIS->my_errno=errno;
-    Pike_error("Stdio.UDP->bind: failed to create socket\n");
+    Pike_error("Stdio.UDP->bind: failed to create socket (%d, %d, %d)\n",
+	       SOCKADDR_FAMILY(addr), THIS->type, THIS->protocol);
   }
 
   /* Make sure this fd gets closed on exec. */
@@ -331,9 +341,10 @@ void udp_enable_multicast(INT32 args)
 
   get_all_args("enable_multicast", args, "%s", &ip);
 
-  get_inet_addr(&reply, ip, NULL, -1, 1);
+  get_inet_addr(&reply, ip, NULL, -1, THIS->inet_flags);
   INVALIDATE_CURRENT_TIME();
 
+  /* FIXME: Implement support for IPv6! */
   if(SOCKADDR_FAMILY(reply) != AF_INET)
     Pike_error("Multicast only supported for IPv4.\n");
 
@@ -382,9 +393,10 @@ void udp_add_membership(INT32 args)
 
   get_all_args("add_membership", args, "%s.%s%d", &group, &address, &face);
 
-  get_inet_addr(&addr, group, NULL, -1, 1);
+  get_inet_addr(&addr, group, NULL, -1, THIS->inet_flags);
   INVALIDATE_CURRENT_TIME();
 
+  /* FIXME: Implement support for IPv6! */
   if(SOCKADDR_FAMILY(addr) != AF_INET)
     Pike_error("Multicast only supported for IPv4.\n");
 
@@ -393,9 +405,10 @@ void udp_add_membership(INT32 args)
   if( !address )
     sock.imr_interface.s_addr = htonl( INADDR_ANY );
   else {
-    get_inet_addr(&addr, address, NULL, -1, 1);
+    get_inet_addr(&addr, address, NULL, -1, THIS->inet_flags);
     INVALIDATE_CURRENT_TIME();
 
+    /* FIXME: Implement support for IPv6! */
     if(SOCKADDR_FAMILY(addr) != AF_INET)
       Pike_error("Multicast only supported for IPv4.\n");
 
@@ -425,9 +438,10 @@ void udp_drop_membership(INT32 args)
 
   get_all_args("drop_membership", args, "%s.%s%d", &group, &address, &face);
 
-  get_inet_addr(&addr, group, NULL, -1, 1);
+  get_inet_addr(&addr, group, NULL, -1, THIS->inet_flags);
   INVALIDATE_CURRENT_TIME();
 
+  /* FIXME: Implement support for IPv6! */
   if(SOCKADDR_FAMILY(addr) != AF_INET)
     Pike_error("Multicast only supported for IPv4.\n");
 
@@ -436,9 +450,10 @@ void udp_drop_membership(INT32 args)
   if( !address )
     sock.imr_interface.s_addr = htonl( INADDR_ANY );
   else {
-    get_inet_addr(&addr, address, NULL, -1, 1);
+    get_inet_addr(&addr, address, NULL, -1, THIS->inet_flags);
     INVALIDATE_CURRENT_TIME();
 
+    /* FIXME: Implement support for IPv6! */
     if(SOCKADDR_FAMILY(addr) != AF_INET)
       Pike_error("Multicast only supported for IPv4.\n");
 
@@ -730,7 +745,8 @@ void udp_sendto(INT32 args)
 			 (TYPEOF(Pike_sp[1-args]) == PIKE_T_STRING?
 			  Pike_sp[1-args].u.string->str : NULL),
 			 (TYPEOF(Pike_sp[1-args]) == PIKE_T_INT?
-			  Pike_sp[1-args].u.integer : -1), 1);
+			  Pike_sp[1-args].u.integer : -1),
+			 THIS->inet_flags);
   INVALIDATE_CURRENT_TIME();
 
   fd = FD;
@@ -925,7 +941,8 @@ static void udp_connect(INT32 args)
 			    (TYPEOF(*dest_port) == PIKE_T_STRING?
 			     dest_port->u.string->str : NULL),
 			    (TYPEOF(*dest_port) == PIKE_T_INT?
-			     dest_port->u.integer : -1), 0);
+			     dest_port->u.integer : -1),
+			    THIS->inet_flags);
   INVALIDATE_CURRENT_TIME();
 
   if(FD < 0)
