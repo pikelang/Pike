@@ -648,8 +648,19 @@ void udp_read(INT32 args)
 
   push_constant_text("ip");
 #ifdef fd_inet_ntop
-  push_text( fd_inet_ntop( SOCKADDR_FAMILY(from), SOCKADDR_IN_ADDR(from),
-			   buffer, sizeof(buffer) ) );
+  fd_inet_ntop( SOCKADDR_FAMILY(from), SOCKADDR_IN_ADDR(from),
+		buffer, sizeof(buffer) );
+  /* NOTE: IPv6-mapped IPv4 addresses may only connect to other IPv4 addresses.
+   *
+   * Make the Pike-level code believe it has an actual IPv4 address
+   * when getting a mapped address (::FFFF:a.b.c.d).
+   */
+  if ((!strncmp(buffer, "::FFFF:", 7) || !strncmp(buffer, "::ffff:", 7)) &&
+      !strchr(buffer + 7, ':')) {
+    push_text(buffer+7);
+  } else {
+    push_text(buffer);
+  }
 #else
   push_text( inet_ntoa( *SOCKADDR_IN_ADDR(from) ) );
 #endif
@@ -967,7 +978,17 @@ static void udp_query_address(INT32 args)
 #endif
   sprintf(buffer+strlen(buffer)," %d",(int)(ntohs(addr.ipv4.sin_port)));
 
-  push_text(buffer);
+  /* NOTE: IPv6-mapped IPv4 addresses may only connect to other IPv4 addresses.
+   *
+   * Make the Pike-level code believe it has an actual IPv4 address
+   * when getting a mapped address (::FFFF:a.b.c.d).
+   */
+  if ((!strncmp(buffer, "::FFFF:", 7) || !strncmp(buffer, "::ffff:", 7)) &&
+      !strchr(buffer + 7, ':')) {
+    push_text(buffer+7);
+  } else {
+    push_text(buffer);
+  }
 }
 
 /*! @decl void set_backend (Pike.Backend backend)
