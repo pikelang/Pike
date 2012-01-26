@@ -1905,18 +1905,41 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
 #endif /* HAVE_GETADDRINFO */
   
   SOCKADDR_FAMILY(*addr) = AF_INET;
+#ifdef AF_INET6
+  if (inet_flags & 2) {
+    SOCKADDR_FAMILY(*addr) = AF_INET6;
+    /* Note: This is equvivalent to :: (aka IPv6 ANY). */
+    MEMSET(&addr->ipv6.sin6_addr, 0, sizeof(addr->ipv6.sin6_addr));
+  }
+#endif
+
   if(!name)
   {
 /*     fprintf(stderr, "get_inet_addr(): ANY\n"); */
-    addr->ipv4.sin_addr.s_addr=htonl(INADDR_ANY);
+#ifdef AF_INET6
+    if (!(inet_flags & 2))
+#endif
+      addr->ipv4.sin_addr.s_addr=htonl(INADDR_ANY);
   }
+  /* FIXME: Ought to check for IPv6 literal address here, but
+   *        it will typically be handled by getaddrinfo() above.
+   */
   else if(my_isipnr(name)) /* I do not entirely trust inet_addr */
   {
 /*     fprintf(stderr, "get_inet_addr(): IP\n"); */
     if (((IN_ADDR_T)inet_addr(name)) == ((IN_ADDR_T)-1))
       Pike_error("Malformed ip number.\n");
-
-    addr->ipv4.sin_addr.s_addr = inet_addr(name);
+#ifdef AF_INET6
+    if (inet_flags & 2) {
+      /* Convert to IPv4 compat address: ::FFFF:a.b.c.d */
+      struct sockaddr_in ipv4;
+      ipv4.sin_addr.s_addr = inet_addr(name);
+      addr->ipv6.sin6_addr.s6_addr[10] = 0xff;
+      addr->ipv6.sin6_addr.s6_addr[11] = 0xff;
+      MEMCPY(addr->ipv6.sin6_addr.s6_addr + 12, &ipv4.sin_addr.s_addr, 4);
+    } else
+#endif
+      addr->ipv4.sin_addr.s_addr = inet_addr(name);
   }
   else
   {
@@ -1967,7 +1990,12 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
       }
     }
 
-    addr->ipv4.sin_port = ret->s_port;
+#ifdef AF_INET6
+    if (SOCKADDR_FAMILY(*addr) == AF_INET6) {
+      addr->ipv6.sin6_port = ret->s_port;
+    } else
+#endif
+      addr->ipv4.sin_port = ret->s_port;
 #else
     if (strlen(service) < 1024) {
       Pike_error("Invalid service '%s'\n",service);
@@ -1977,10 +2005,20 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
 #endif
   } else if(port >= 0) {
 /*     fprintf(stderr, "get_inet_addr(): port()\n"); */
-    addr->ipv4.sin_port = htons((unsigned INT16)port);
+#ifdef AF_INET6
+    if (SOCKADDR_FAMILY(*addr) == AF_INET6) {
+      addr->ipv6.sin6_port = htons((unsigned INT16)port);
+    } else
+#endif
+      addr->ipv4.sin_port = htons((unsigned INT16)port);
   } else {
 /*     fprintf(stderr, "get_inet_addr(): ANY port()\n"); */
-    addr->ipv4.sin_port = 0;
+#ifdef AF_INET6
+    if (SOCKADDR_FAMILY(*addr) == AF_INET6) {
+      addr->ipv6.sin6_port = 0;
+    } else
+#endif
+      addr->ipv4.sin_port = 0;
   }
 
   return (SOCKADDR_FAMILY(*addr) == AF_INET? sizeof(addr->ipv4):sizeof(*addr));
