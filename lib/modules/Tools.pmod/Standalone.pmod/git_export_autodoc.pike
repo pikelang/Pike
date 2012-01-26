@@ -401,6 +401,9 @@ string get_version()
     if (Stdio.exist("1x1/01-baseline-preview.jpg")) {
       return "extra-tests";
     }
+    if (Stdio.exist("tools/sprshd")) {
+      return "nt-tools";
+    }
   }
 
   error("Unable to determine version of Pike!\n");
