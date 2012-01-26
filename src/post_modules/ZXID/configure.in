@@ -14,6 +14,8 @@ if test x$zxid_prefix != x ; then
     :
 fi
 
+ORIG_LIBS="$LIBS"
+
 AC_CHECK_LIB(z, deflate,, [
   AC_CHECK_LIB(gz, deflate,, [
     AC_CHECK_LIB(zlib, deflate)
@@ -29,6 +31,8 @@ if test x"$ac_cv_lib_zxid_zxid_simple:$ac_cv_header_zxid_zxid_h" = "xyes:yes";
 then
     PIKE_FEATURE_OK(ZXID)
     AC_DEFINE(HAVE_ZXID)
+else
+    LIBS="$ORIG_LIBS"
 fi
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
