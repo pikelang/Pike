@@ -30,6 +30,24 @@ constant makepic = ({
     return Image.load(IMAGE_DIR + \"lena.gif\");
   }
 
+  array indices(mixed x)
+  {
+    if (x == Image.Color) {
+      return sort(predef::indices(x));
+    }
+    return predef::indices(x);
+  }
+
+  array values(mixed x)
+  {
+    if (x == Image.Color) {
+      array res = predef::values(x);
+      sort(predef::indices(x), res);
+      return res;
+    }
+    return predef::values(x);
+  }
+
   object|string render();
 
   string make() {
@@ -75,6 +93,24 @@ constant makepic = ({
     return load(IMAGE_DIR + \"lena.gif\");
   }
 
+  array indices(mixed x)
+  {
+    if (x == Image.Color) {
+      return sort(predef::indices(x));
+    }
+    return predef::indices(x);
+  }
+
+  array values(mixed x)
+  {
+    if (x == Image.Color) {
+      array res = predef::values(x);
+      sort(predef::indices(x), res);
+      return res;
+    }
+    return predef::values(x);
+  }
+
   object|string render();
 
   string make() {
@@ -116,6 +152,24 @@ constant makepic = ({
     catch { return load(IMAGE_DIR + \"lena.ppm\"); };
     catch { return load(IMAGE_DIR + \"lenna.rs\"); };
     return load(IMAGE_DIR + \"lena.gif\");
+  }
+
+  array indices(mixed x)
+  {
+    if (x == Image.Color) {
+      return sort(predef::indices(x));
+    }
+    return predef::indices(x);
+  }
+
+  array values(mixed x)
+  {
+    if (x == Image.Color) {
+      array res = predef::values(x);
+      sort(predef::indices(x), res);
+      return res;
+    }
+    return predef::values(x);
   }
 
   object|string render();
