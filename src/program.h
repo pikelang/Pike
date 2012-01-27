@@ -681,7 +681,7 @@ static INLINE int CHECK_IDREF_RANGE (int x, const struct program *p)
 
 #ifdef DO_PIKE_CLEANUP
 PMOD_EXPORT extern int gc_external_refs_zapped;
-PMOD_EXPORT void gc_check_zapped (void *a, TYPE_T type, const char *file, int line);
+PMOD_EXPORT void gc_check_zapped (void *a, TYPE_T type, const char *file, INT_TYPE line);
 #endif
 
 #if defined (USE_DLL) && defined (DYNAMIC_MODULE)
