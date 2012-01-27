@@ -234,25 +234,6 @@ string get_sha1_for_path(string git_dir, string tree_sha1, string path)
   return "";
 }
 
-void get_src_commits(string doc_sha1_path)
-{
-  string notes_blob =
-    get_sha1_for_path(git_dir, "refs/notes/source_revs", doc_sha1_path);
-  if (!sizeof(notes_blob)) return;
-  array(string) src_sha1s =
-    Git.git(git_dir, "cat-file", "blob", notes_blob)/"\n" - ({ "" });
-  string doc_sha1 = doc_sha1_path - "/";
-  if (!sizeof(src_sha1s)) {
-    werror("Failed to find the Source-revisions for doc commit %s:\n",
-	   doc_sha1);
-    exit(1);
-  }
-  doc_to_src[doc_sha1] = src_sha1s;
-  foreach(src_sha1s, string src_sha1) {
-    src_to_doc[src_sha1] = doc_sha1;
-  }
-}
-
 array(string) get_doc_parents(string doc_sha1)
 {
   array(string) parents = doc_to_parents[doc_sha1];
@@ -873,31 +854,61 @@ int main(int argc, array(string) argv)
       if (m_delete(doc_refs, "refs/notes/source_revs")) {
 	git_source_revs_heads = ({ "refs/notes/source_revs^0" });
 
-	// Note: This takes quite a bit of time when there are
-	//       lots (> ~600) of notes.
-
-	// FIXME: Consider reducing the number of spawned git processes
-	//        by checking out the entire notes/source_revs branch.
-	//
-	//        Problematic, since the repository is bare.
-	//
-	//        An alternative could be to only load the revs that
-	//        correspond to refs in git_dir. This is however not
-	//        sufficient in case of new refs in src_git.
-
 	// Initialize the forward and reverse mappings.
 	array(string) revs =
 	  Git.git(git_dir,
 		  "ls-tree", "refs/notes/source_revs",
 		  "--name-only", "-r")/"\n";
-	foreach(revs; int i; string doc_commit) {
-	  if (doc_commit == "") continue;
-	  if (verbose) {
-	    werror("\rRetrieving existing doc commits (%d/%d)... ",
-		   i+1, sizeof(revs)-1);
-	  }
-	  get_src_commits(doc_commit);
+
+	int i;
+	string doc_sha1;
+	array(string) src_sha1s;
+	if (verbose) {
+	  werror("\rRetrieving existing doc commits (%d/%d)... ",
+		 i, sizeof(revs));
 	}
+	foreach(Git.git(git_dir, "log", "--all", "--format=raw",
+			"--notes=refs/notes/source_revs")/"\n",
+		string line) {
+	  if (!sizeof(line)) continue;
+	  if (has_prefix(line, "    ")) {
+	    // Log message or source_rev.
+	    if (src_sha1s) {
+	      src_sha1s += ({ line[4..] });
+	      src_to_doc[line[4..]] = doc_sha1;
+	    }
+	  } else {
+	    array(string) fields = line/" ";
+	    switch(fields[0]) {
+	    case "commit":
+	      if (doc_sha1 && src_sha1s && sizeof(src_sha1s)) {
+		doc_to_src[doc_sha1] = src_sha1s;
+		src_sha1s = UNDEFINED;
+		i++;
+	      }
+	      if (verbose) {
+		werror("\rRetrieving existing doc commits (%d/%d)... ",
+		       i+1, sizeof(revs));
+	      }
+	      doc_sha1 = fields[1];
+	      break;
+	    case "Notes":
+	      if (fields[1] == "(source_revs):") {
+		src_sha1s = ({});
+	      } else if (doc_sha1 && src_sha1s && sizeof(src_sha1s)) {
+		doc_to_src[doc_sha1] = src_sha1s;
+		src_sha1s = UNDEFINED;
+		i++;
+	      }
+	      break;
+	    }
+	  }
+	}
+	if (doc_sha1 && src_sha1s && sizeof(src_sha1s)) {
+	  doc_to_src[doc_sha1] = src_sha1s;
+	  i++;
+	}
+	// FIXME: Check that all notes were accounted for?
 	if (verbose) werror("\n");
       }
     };
