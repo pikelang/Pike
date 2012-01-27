@@ -166,7 +166,7 @@ protected string module_name( Class cls )
 {
   if( has_prefix( cls->name, "Gnome." ) ) return "Gnome";
   if( has_prefix( cls->name, "GDK." ) )   return "GDK";
-  return "GTK";
+  return "GTK1";
 }
 
 protected string class_name( Class cls, int|void nmn )
@@ -176,7 +176,7 @@ protected string class_name( Class cls, int|void nmn )
     mn = module_name( cls )+".";
   if( has_prefix( cls->name, "Gnome." ) ) return mn+cls->name[6..];
   if( has_prefix( cls->name, "GDK." ) )   return mn+cls->name[4..];
-  if( has_prefix( cls->name, "GTK." ) )   return mn+cls->name[4..];
+  if( has_prefix( cls->name, "GTK1." ) )   return mn+cls->name[4..];
   return mn+cls->name;
 }
 
@@ -275,8 +275,8 @@ protected void output_class( Class cls, int lvl )
   result += column( functions, 1 )*"\n";
   if( cls->pike_name() == "_global" )
   {
-    Stdio.mkdirhier( dir + "GTK.pmod/" );
-    write_file(  dir + "GTK.pmod/module.pmod",
+    Stdio.mkdirhier( dir + "GTK1.pmod/" );
+    write_file(  dir + "GTK1.pmod/module.pmod",
                  "inherit GTKSupport;\n\n"+
                  constants+result );
     constants="";
